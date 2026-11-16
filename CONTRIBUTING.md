@@ -5,7 +5,7 @@ To formalize a textbook or paper, the user can instruct general-purpose LLM agen
 Example prompt:
 
 ```text
-Formalize all numbered definitions and propositions the given textbook (already converted to Markdown via OCR, which may contain transcription errors) into this repository. Follow instructions in prompts/main.md.
+Formalize all numbered definitions and propositions in `references/...` (PDF + OCR Markdown, which may contain transcription errors) into this repository. Follow instructions in `prompts/main.md`.
 ```
 
 You may also set this as a "goal" (instructing the agent to repeatedly check for completion and resume if incomplete).
