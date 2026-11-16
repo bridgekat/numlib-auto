@@ -10,70 +10,144 @@ import NumlibSurface.SaadSparse.Chapter13.Section03
 import NumlibSurface.SaadSparse.Common
 
 /-!
-# Saad §13.4: the standard multigrid cycles
+# Saad, Section 13.4: The standard multigrid cycles
 
-Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM,
-2003, §13.4: the Galerkin coarse problem (13.39), the smoother written through its error propagation
-operator (13.40)–(13.42), the two-grid operator (13.43) and Lemma 13.1, the V- and W-cycles, the
-cost of one cycle (13.44), and full multigrid with its error bound (Theorem 13.2).
+This module formalizes Section 13.4 of [saad2003iterative]: the Galerkin coarse problem (13.39), the
+smoother written through its error propagation operator (13.40)–(13.42), the two-grid operator
+(13.43) and Lemma 13.1, the V- and W-cycles, the cost of one cycle (13.44), and full multigrid with
+its error bound, Theorem 13.2. The section works with a general pair of grids: a fine matrix $A_h$,
+a prolongation $I_H^h$ and a restriction $I_h^H$. The standing hypotheses are that $A_h$ is
+symmetric positive definite, that $I_H^h$ is injective, and that $I_h^H$ is a positive multiple of
+$(I_H^h)^T$, as in (13.37). Under them the coarse-grid projector $Q_h = I_H^h A_H^{-1} I_h^H A_h$ is
+the $A_h$-orthogonal projector onto the range of $I_H^h$, and Lemma 13.1 follows from this.
 
-## The pair of grids
+The proofs specialize `Numlib.Multigrid.Basic` and `Numlib.Multigrid.FullMultigrid`. The cycles of
+Algorithms 13.3–13.5 are definitions only, as in the book: the book proves nothing about them
+directly, since the error operator of a cycle is a perturbation of the two-grid operator, whose
+analysis is Section 13.5. The theorems about the cycles are the cost bound (13.44) and the full
+multigrid error bound, Theorem 13.2. Example 13.6 makes the discretization-error assumption of
+Theorem 13.2 concrete for the one-dimensional model problem, with the truncation error (2.12) of
+Section 2.2 and the spectrum of the model matrix from Section 13.2.
 
-The section is stated for a general pair of grids — a fine matrix `A`, a prolongation `P` and a
-restriction `R` — with `IsCoarsening A R P` bundling the three standing hypotheses: `A` symmetric
-positive definite, `P` injective, and `R` a *positive multiple* of `Pᵀ`, which is Saad's (13.37)
-`I_h^H = 2^{-d} (I_H^h)ᵀ`.  The one-dimensional model problem of §13.2 with the inter-grid operators
-of §13.3 satisfies them (`isCoarsening_model`), and `example_13_2` is the only concrete coarse
-matrix the chapter computes.
+## Main definitions
 
-Everything the chapter proves about the coarse-grid correction is read off
-`Numlib/Multigrid/Basic.lean` through two bridges: `toEuclideanLin_coarseProjector`,
-which identifies Saad's `Q_h = I_H^h A_H⁻¹ I_h^H A_h` with the backbone's `A`-orthogonal projector
-onto `Ran(I_H^h)`, and `equation_13_43_eq`, which identifies the two-grid operator (13.43) with
-`Multigrid.twoGridOperator`.  Lemma 13.1 is then `Submodule.starProjection`'s own idempotence,
-self-adjointness and range, read in the energy inner product.  The factor `2^{-d}` cancels because
-it multiplies both sides of the coarse equation — that is `coarseProjection_apply_eq_of_smul`
-of §13.3.
+* Equation (13.39), `SaadSparse.Chapter13.coarseOperator`: the Galerkin coarse matrix
+  $A_H = I_h^H A_h I_H^h$.
+* Equation (13.39), `SaadSparse.Chapter13.coarseRhs`: the coarse right-hand side $f^H = I_h^H f^h$.
+* Equations (13.40)–(13.41), `SaadSparse.Chapter13.smoother`: the error propagation operator
+  $S = I - BA$ of a smoother.
+* Equation (13.41), `SaadSparse.Chapter13.smootherStep`: one smoothing step $u \leftarrow Su + Bf$.
+* Section 13.4.2, `SaadSparse.Chapter13.IsCoarsening`: the standing hypotheses on a pair of grids.
+* Equation (13.43), `SaadSparse.Chapter13.coarsePreconditioner`: the matrix $I_H^h A_H^{-1} I_h^H$.
+* Equation (13.43), `SaadSparse.Chapter13.coarseProjector`: the coarse-grid projector
+  $Q_h = I_H^h A_H^{-1} I_h^H A_h$.
+* Equation (13.43), `SaadSparse.Chapter13.coarseCorrection`: the coarse-grid correction operator
+  $T_h^H = I - Q_h$.
+* Equation (13.43), `SaadSparse.Chapter13.equation_13_43`: the two-grid operator
+  $M_H^h = S^{\nu_2} T_h^H S^{\nu_1}$.
+* Section 13.4.3, `SaadSparse.Chapter13.Hierarchy`: the data of a multigrid hierarchy.
+* Algorithm 13.4, `SaadSparse.Chapter13.Hierarchy.cycle`: the $\gamma$-cycle.
+* Algorithm 13.3, `SaadSparse.Chapter13.Hierarchy.vcycle`: the V-cycle, $\gamma = 1$.
+* Section 13.4.3, `SaadSparse.Chapter13.Hierarchy.wcycle`: the W-cycle, $\gamma = 2$.
+* Algorithm 13.5, `SaadSparse.Chapter13.Hierarchy.fullMultigrid`: full multigrid.
+* Example 13.6, `SaadSparse.Chapter13.gridSample`: the samples of a function at the interior grid
+  points.
+* Example 13.6, `SaadSparse.Chapter13.discreteL2Norm`: the discrete $L^2$ norm
+  $\|v\|_h = h^{1/2}\|v\|_2$.
 
-## The cycles
+## Main results
 
-The cycles are definitions and nothing more, as they are in the book.  A `Hierarchy` carries one
-grid per level, level `0` being the coarsest; `Hierarchy.cycle` is Algorithm 13.4, its cases
-`γ = 1` and `γ = 2` are the V-cycle (Algorithm 13.3) and the W-cycle, and
-`Hierarchy.fullMultigrid` is Algorithm 13.5.  The book proves nothing about the cycles directly:
-the error operator of a `γ`-cycle is a perturbation of the two-grid one, whose analysis is §13.5.
-So the two theorems of the section are `equation_13_44`, the cost recurrence, and `theorem_13_2`,
-the full multigrid error bound, which is `Multigrid.norm_sub_fullMultigrid_le` under the book's
-(13.49)–(13.52).
+* Equation (13.39), `SaadSparse.Chapter13.coarseOperator_eq_galerkinCoarse`: with
+  $I_h^H = c \, (I_H^h)^T$, the coarse matrix is $c$ times the backbone Galerkin operator.
+* Equation (13.39), `SaadSparse.Chapter13.posDef_coarseOperator`: the coarse matrix is symmetric
+  positive definite.
+* Example 13.2, `SaadSparse.Chapter13.example_13_2`: for the one-dimensional model problem,
+  $I_h^{2h} A_h I_{2h}^h = \frac14 \operatorname{tridiag}(-1, 2, -1)$.
+* Equation (13.41), `SaadSparse.Chapter13.equation_13_41`: the smoothing step is
+  $u \leftarrow u + B(f - Au)$.
+* Equation (13.41), `SaadSparse.Chapter13.smoother_eq_smootherOperator`: the smoother is the
+  backbone error propagation operator.
+* Equation (13.42), `SaadSparse.Chapter13.equation_13_42`: $B = (I - S)A^{-1}$.
+* Equation (13.42), `SaadSparse.Chapter13.smootherStep_iterate_sub`: the error after $\nu$ smoothing
+  steps is $S^\nu d_0$.
+* Equation (13.42), `SaadSparse.Chapter13.smootherStep_iterate_residual`: the residual after $\nu$
+  smoothing steps is $(I - AB)^\nu r_0$.
+* Example 13.3, `SaadSparse.Chapter13.example_13_3_jacobi`,
+  `SaadSparse.Chapter13.example_13_3_gaussSeidel` and
+  `SaadSparse.Chapter13.example_13_3_richardson`: the Jacobi, Gauss–Seidel and Richardson smoothers.
+* Section 13.4.2, `SaadSparse.Chapter13.isCoarsening_model`: the one-dimensional model problem with
+  linear interpolation and full weighting satisfies the standing hypotheses.
+* Section 13.4.2, `SaadSparse.Chapter13.IsCoarsening.isSymmetricCoercive`: the fine matrix is a
+  symmetric coercive operator.
+* Equation (13.43), `SaadSparse.Chapter13.toEuclideanLin_coarseProjector`: $Q_h$ is the
+  $A_h$-orthogonal projector onto the range of $I_H^h$.
+* Equation (13.43), `SaadSparse.Chapter13.toEuclideanLin_coarseCorrection`: $T_h^H$ is the backbone
+  coarse-grid correction.
+* Equation (13.43), `SaadSparse.Chapter13.equation_13_43_eq`: the two-grid operator is the backbone
+  two-grid operator.
+* Lemma 13.1, `SaadSparse.Chapter13.lemma_13_1`: $T_h^H$ is a projector.
+* Lemma 13.1, `SaadSparse.Chapter13.lemma_13_1_energyInner`: $T_h^H$ is self-adjoint in the
+  $A_h$-inner product.
+* Lemma 13.1, `SaadSparse.Chapter13.lemma_13_1_energyInner_eq_zero`: the range of $T_h^H$ is
+  $A_h$-orthogonal to the range of $I_H^h$.
+* Equation (13.44), `SaadSparse.Chapter13.equation_13_44`: if $\gamma < 2^d$, the cost of a
+  $\gamma$-cycle is at most $\eta n_l/(1 - \gamma 2^{-d})$.
+* Theorem 13.2, `SaadSparse.Chapter13.theorem_13_2`: the full multigrid error bound.
+* Example 13.6, `SaadSparse.Chapter13.dirichletExt_gridSample`: the Dirichlet extension of a sampled
+  function with zero boundary values.
+* Example 13.6, `SaadSparse.Chapter13.example_13_6_truncation`: the truncation error is at most
+  $Kh^2/12$ in each component.
+* Example 13.6, `SaadSparse.Chapter13.example_13_6`: the discretization error is at most
+  $Kh^4/(48\sin^2(\pi h/2))$ in the discrete $L^2$ norm.
+* Example 13.6, `SaadSparse.Chapter13.example_13_6_le`: the closing display of the example,
+  corrected.
 
-## Example 13.6 and the erratum in it
+## Implementation notes
 
-`example_13_6` is the discretization-error bound of Example 13.6, `‖u^h - u‖_h ≤ c h²`, which is
-what makes the assumption (13.48) of Theorem 13.2 concrete for the one-dimensional model problem.
-The truncation error is Saad's (2.12), already proved in `Chapter02/Section02.lean` with a Lagrange
-remainder, and the bound on `‖A_h⁻¹‖` comes from the spectrum of the model matrix, so nothing new
-about differential equations is needed here — only the discrete `L²` norm `‖v‖_h = h^{1/2}‖v‖₂`
-(`discreteL2Norm`) and the sampling of the exact solution on the grid (`gridSample`).
+* All matrices are real and indexed by `Fin n` and `Fin m`. The book's $Ax$ is
+  `Matrix.toEuclideanLin A x`, written `A ⬝ x`.
+* The factor $c$ in $I_h^H = c \, (I_H^h)^T$ multiplies both sides of the coarse equation and
+  therefore cancels. This is `SaadSparse.Chapter13.coarseProjection_apply_eq_of_smul` of Section
+  13.3. The backbone coarse-grid projector `Multigrid.coarseProjection` is the orthogonal projector
+  in the energy inner product, so Lemma 13.1 is the idempotence, the self-adjointness and the range
+  of that projector.
+* A hierarchy is indexed by all of $\mathbb{N}$, with level $0$ the coarsest. A cycle on level $l$
+  uses only the levels $0, \dots, l$.
+* Example 13.6 uses the scaled model matrix `SaadSparse.Chapter02.laplacian1D n h`
+  $= h^{-2}\operatorname{tridiag}(-1, 2, -1)$ of Section 2.2, not the unscaled matrix of Section
+  13.2.
 
-**The book's closing display is wrong**, and `example_13_6_le` states the corrected form.  Saad
-bounds `‖A_h⁻¹‖ = 1/λ_min` using `sin x / x ≥ 1 - x²/6` at `x = πh/2`, but `λ_min = π² (sin x/x)²`
-carries a *square*, so the bracket in the denominator must be squared too; the printed
-`1 - (πh/2)²/6` is not a lower bound for `(sin x/x)²` — at `h = 1/2` the two sides are `0.8105…`
-and `0.8971…`.  `example_13_6` itself is stated with the exact `λ_min` and is free of the slip.
+## Deviations from the source
 
-Not formalized: Algorithm 13.1 (nested iteration), which the book presents only to introduce the
-notation and which full multigrid supersedes; the displayed identity
-`M_h = M_H^h + S^{ν₂} I_H^h M_H A_H⁻¹ I_h^H A_h` at the end of §13.4.3, which would need the error
-operator of the whole recursive cycle as an object of its own and is used nowhere.
+* **Example 13.2** (correction). The book's computation ends at
+  $A_H e_j^H = -e_{j-1}^H + 2e_j^H - e_{j+1}^H$, which drops a factor $\frac14$; the Galerkin coarse
+  matrix is $\frac14 \operatorname{tridiag}(-1, 2, -1)$. See `SaadSparse.Chapter13.example_13_2`.
+* **Example 13.3** (correction). The book gives the Gauss–Seidel smoother as $B = (D - E)^{-1}F$;
+  the approximate inverse is $B = (D - E)^{-1}$, and $(D - E)^{-1}F$ is the error propagation
+  operator. See `SaadSparse.Chapter13.example_13_3_gaussSeidel`.
+* **Lemma 13.1** (correction). The third clause names the restriction where the proof of the book
+  gives the prolongation: the range of $T_h^H$ is $A_h$-orthogonal to the range of $I_H^h$. See
+  `SaadSparse.Chapter13.lemma_13_1_energyInner_eq_zero`.
+* **Equation (13.44)** (correction). The book prints the constant $7/3$ for the two-dimensional
+  V-cycle; the geometric series $\sum_k 4^{-k}$ of the recurrence is $4/3$. See
+  `SaadSparse.Chapter13.equation_13_44`.
+* **Example 13.6** (correction). The closing display has $1 - (\pi h/2)^2/6$ in the denominator
+  where the derivation gives its square. See `SaadSparse.Chapter13.example_13_6_le`.
 
-Examples 13.4 and 13.5 are not tracked at all: a table of measured V-cycle convergence factors and
-a log-log plot of measured full multigrid errors. Both record floating point runs, so neither
-carries a mathematical claim; the comparisons the text draws from them — that
-red-black Gauss–Seidel is the best smoother, that a balanced `(ν₁, ν₂)` beats an unbalanced one,
-that the full multigrid error tracks the discretization error — are read off the numbers and proved
-nowhere, and nothing is missing upstream, the cycles themselves being `Hierarchy.cycle` and
-`Hierarchy.fullMultigrid`. The bound Example 13.5's figure illustrates is the discretization-error
-assumption of Theorem 13.2, which `example_13_6_le` states.
+## Not formalized
+
+* **Algorithm 13.1** (nested iteration). The book presents it only to introduce the notation, and
+  full multigrid supersedes it.
+* **The identity $M_h = M_H^h + S^{\nu_2} I_H^h M_H A_H^{-1} I_h^H A_h$** at the end of Section
+  13.4.3. It would need the error operator of the whole recursive cycle as an object of its own, and
+  the book uses it nowhere.
+* **Examples 13.4 and 13.5**, a table of measured V-cycle convergence factors and a plot of measured
+  full multigrid errors. Both record floating-point runs and carry no mathematical claim. The
+  comparisons that the book draws from them (red-black Gauss–Seidel is the best smoother, a balanced
+  $(\nu_1, \nu_2)$ is better than an unbalanced one, the full multigrid error follows the
+  discretization error) are read off the numbers and are not proved. The bound that the figure of
+  Example 13.5 illustrates is the discretization-error assumption of Theorem 13.2, which
+  `SaadSparse.Chapter13.example_13_6_le` states for the model problem.
 -/
 
 open Matrix Stationary
@@ -84,26 +158,31 @@ namespace SaadSparse.Chapter13
 
 variable {n m : ℕ}
 
-/-! ### §13.4.1 The Galerkin coarse problem -/
+/-! ### Section 13.4.1: The Galerkin coarse problem -/
 
-/-- **Saad (13.39)**, the Galerkin coarse matrix `A_H = I_h^H A_h I_H^h`. -/
+/-- **Equation (13.39)** of [saad2003iterative]. The **Galerkin coarse matrix** of a fine matrix
+$A_h \in \mathbb{R}^{n \times n}$, a restriction $I_h^H \in \mathbb{R}^{m \times n}$ and a
+prolongation $I_H^h \in \mathbb{R}^{n \times m}$ is
+$$A_H = I_h^H A_h I_H^h.$$
+-/
 def coarseOperator (R : Matrix (Fin m) (Fin n) ℝ) (A : Matrix (Fin n) (Fin n) ℝ)
     (P : Matrix (Fin n) (Fin m) ℝ) : Matrix (Fin m) (Fin m) ℝ :=
   R * A * P
 
-/-- **Saad (13.39)**, the coarse right-hand side `f^H = I_h^H f^h`. -/
+/-- **Equation (13.39)** of [saad2003iterative]. The **coarse right-hand side** $f^H = I_h^H f^h$ of
+a fine right-hand side $f^h$. -/
 noncomputable def coarseRhs (R : Matrix (Fin m) (Fin n) ℝ) (f : EuclideanSpace ℝ (Fin n)) :
     EuclideanSpace ℝ (Fin m) :=
   R ⬝ f
 
-/-- The adjoint of a real matrix is its transpose. -/
+/-- The adjoint of the linear map of a real matrix $P$ is the linear map of its transpose $P^T$. -/
 theorem adjoint_toEuclideanLin (P : Matrix (Fin n) (Fin m) ℝ) :
     LinearMap.adjoint (toEuclideanLin P) = toEuclideanLin Pᵀ := by
   rw [← Matrix.toEuclideanLin_conjTranspose_eq_adjoint]
   congr 1
 
-/-- The Galerkin coarse matrix built from the *transpose* of the prolongation is the backbone's
-`Multigrid.galerkinCoarse`. -/
+/-- The Galerkin coarse matrix $P^T A P$, built with the transpose of the prolongation as the
+restriction, is the backbone Galerkin coarse operator `Multigrid.galerkinCoarse` of $A$ and $P$. -/
 theorem coarseOperator_transpose_eq_galerkinCoarse (A : Matrix (Fin n) (Fin n) ℝ)
     (P : Matrix (Fin n) (Fin m) ℝ) :
     toEuclideanLin (coarseOperator Pᵀ A P)
@@ -113,23 +192,32 @@ theorem coarseOperator_transpose_eq_galerkinCoarse (A : Matrix (Fin n) (Fin n) �
   rw [hdef, adjoint_toEuclideanLin, coarseOperator, Matrix.toLpLin_mul_same,
     Matrix.toLpLin_mul_same, LinearMap.comp_assoc]
 
-/-- Rescaling the restriction rescales the coarse matrix. -/
+/-- Rescaling the restriction rescales the coarse matrix: $(cR) A P = c \, (RAP)$. -/
 theorem coarseOperator_smul (c : ℝ) (R : Matrix (Fin m) (Fin n) ℝ) (A : Matrix (Fin n) (Fin n) ℝ)
     (P : Matrix (Fin n) (Fin m) ℝ) :
     coarseOperator (c • R) A P = c • coarseOperator R A P := by
   rw [coarseOperator, coarseOperator, Matrix.smul_mul, Matrix.smul_mul]
 
-/-- Saad's restriction is `2^{-d}` times the transpose of the prolongation (13.37), so the coarse
-matrix (13.39) is that factor times the backbone's Galerkin coarse operator. -/
+/-- **Equation (13.39)** of [saad2003iterative] with the restriction of (13.37). Let
+$A \in \mathbb{R}^{n \times n}$, $P \in \mathbb{R}^{n \times m}$ and $c \in \mathbb{R}$. The
+coarse matrix built with the restriction $c \, P^T$ is $c$ times the backbone Galerkin coarse
+operator:
+$$(c \, P^T) A P = c \, P^* A P.$$
+
+The book's restriction is $2^{-d}(I_H^h)^T$ by (13.37), so $c = 2^{-d}$ there. The operator
+$P^* A P$ is `Multigrid.galerkinCoarse`. -/
 theorem coarseOperator_eq_galerkinCoarse (c : ℝ) (A : Matrix (Fin n) (Fin n) ℝ)
     (P : Matrix (Fin n) (Fin m) ℝ) :
     toEuclideanLin (coarseOperator (c • Pᵀ) A P)
       = c • Multigrid.galerkinCoarse (toEuclideanLin A) (toEuclideanLin P) := by
   rw [coarseOperator_smul, map_smul, coarseOperator_transpose_eq_galerkinCoarse]
 
-/-- **The coarse problem is well posed**: for a symmetric positive definite fine matrix and an
-injective prolongation, the Galerkin coarse matrix (13.39) is symmetric positive definite, so the
-coarse solve of Algorithm 13.2 makes sense. -/
+/-- **Equation (13.39)** of [saad2003iterative], the coarse problem is well posed. Let
+$A \in \mathbb{R}^{n \times n}$ be symmetric positive definite, let
+$P \in \mathbb{R}^{n \times m}$ be injective, and let $c > 0$. Then the Galerkin coarse matrix
+$(c \, P^T) A P$ is symmetric positive definite.
+
+So the coarse solve of Algorithm 13.2 makes sense. -/
 theorem posDef_coarseOperator {A : Matrix (Fin n) (Fin n) ℝ} {P : Matrix (Fin n) (Fin m) ℝ}
     (hA : A.PosDef) (hP : Function.Injective (toEuclideanLin P)) {c : ℝ} (hc : 0 < c) :
     (coarseOperator (c • Pᵀ) A P).PosDef := by
@@ -142,8 +230,9 @@ theorem posDef_coarseOperator {A : Matrix (Fin n) (Fin n) ℝ} {P : Matrix (Fin 
 
 /-! ### Example 13.2 -/
 
-/-- Contracting a sum against a column of the interpolation matrix: column `q` carries the stencil
-`½ [1 2 1]` on the fine rows `2 q`, `2 q + 1`, `2 q + 2`. -/
+/-- Contracting a vector against a column of the interpolation matrix: since column $q$ has the
+stencil $\frac12 [1\ 2\ 1]$ on the fine rows $a = 2q$, $b = 2q + 1$, $c = 2q + 2$, $\sum_i g_i
+(I_{2h}^h)_{iq} = (g_a + 2g_b + g_c)/2$. -/
 private theorem sum_mul_prolongation1D (m : ℕ) (g : Fin (2 * m + 1) → ℝ) (q : Fin m)
     {a b c : Fin (2 * m + 1)} (ha : (a : ℕ) = 2 * (q : ℕ)) (hb : (b : ℕ) = 2 * (q : ℕ) + 1)
     (hc : (c : ℕ) = 2 * (q : ℕ) + 2) :
@@ -156,9 +245,10 @@ private theorem sum_mul_prolongation1D (m : ℕ) (g : Fin (2 * m + 1) → ℝ) (
     restriction1D_mulVec m g q ha hb hc]
   ring
 
-/-- One column of `A_h I_{2h}^h` for the one-dimensional model problem: applying
-`tridiag(-1, 2, -1)` to the hat function centred at the fine point `2 q + 1` leaves `1` there and
-`-½` at the two fine points `2 q - 1` and `2 q + 3`, the ends of its support. -/
+/-- One column of $A_h I_{2h}^h$ for the one-dimensional model problem:
+$\operatorname{tridiag}(-1, 2, -1)$ applied to the hat function centred at the fine point
+$2q + 1$ gives $1$ there, $-\frac12$ at the fine points $2q - 1$ and $2q + 3$, and $0$
+elsewhere. -/
 private theorem laplacian1D_mul_prolongation1D_apply (m : ℕ) (i : Fin (2 * m + 1)) (q : Fin m) :
     (laplacian1D (2 * m + 1) * prolongation1D m) i q
       = if (i : ℕ) = 2 * (q : ℕ) + 1 then 1
@@ -172,19 +262,23 @@ private theorem laplacian1D_mul_prolongation1D_apply (m : ℕ) (i : Fin (2 * m +
   simp only [laplacian1D_apply, ha, hb, hc]
   split_ifs <;> first | (exfalso; omega) | norm_num
 
-/-- **Example 13.2**: in one dimension with linear interpolation and full weighting the Galerkin
-coarse matrix (13.39) of the model problem *is* the coarse discretization,
-`I_h^{2h} tridiag(-1, 2, -1)_{2m+1} I_{2h}^h = ¼ tridiag(-1, 2, -1)_m`.
+/-- **Example 13.2** of [saad2003iterative]. In one dimension, with linear interpolation $I_{2h}^h$
+and full weighting $I_h^{2h}$, the Galerkin coarse matrix (13.39) of the model matrix is the
+coarse model matrix:
+$$I_h^{2h} \operatorname{tridiag}(-1, 2, -1)_{2m+1} \, I_{2h}^h = \tfrac14
+  \operatorname{tridiag}(-1, 2, -1)_m.$$
 
-The factor `¼` is the ratio `h² / (2h)²` of the two mesh sizes: the matrices of §13.2 are the
-unscaled ones, and on the scaled matrices `h^{-2} tridiag(-1, 2, -1)` of §2.2.3 the identity reads
-`A_{2h} = I_h^{2h} A_h I_{2h}^h` with no factor at all — which is the sense in which the Galerkin
-coarse operator *is* the coarse discretization.  (The book's column-by-column computation ends at
-`A_H e_j^H = -e_{j-1}^H + 2 e_j^H - e_{j+1}^H`, dropping that factor: applying full weighting
-`¼[1 2 1]` to its own previous line `-½ e^h_{2j-2} + e^h_{2j} - ½ e^h_{2j+2}` gives
-`-¼ e^H_{j-1} + ½ e^H_j - ¼ e^H_{j+1}`.)  Saad's Exercise 6 notes that the corresponding statement
-is false in two dimensions with full weighting, which is why the Galerkin definition, and not the
-coarse discretization, is what §13.4 takes as primary. -/
+**Correction.** The column-by-column computation of the book ends at
+$A_H e_j^H = -e_{j-1}^H + 2e_j^H - e_{j+1}^H$, which drops the factor $\frac14$. Full weighting
+$\frac14 [1\ 2\ 1]$ applied to the previous line of the book, $-\frac12 e^h_{2j-2} + e^h_{2j} -
+\frac12 e^h_{2j+2}$, gives $-\frac14 e^H_{j-1} + \frac12 e^H_j - \frac14 e^H_{j+1}$.
+
+The factor $\frac14$ is the ratio $h^2/(2h)^2$ of the two mesh sizes, because the matrices of
+Section 13.2 are unscaled. For the scaled matrices $h^{-2}\operatorname{tridiag}(-1, 2, -1)$ of
+Section 2.2.3 the identity reads $A_{2h} = I_h^{2h} A_h I_{2h}^h$ with no factor; in this sense
+the Galerkin coarse operator is the coarse discretization. Exercise 6 of the chapter notes that
+the corresponding statement is false in two dimensions with full weighting, which is why Section
+13.4 takes the Galerkin definition, not the coarse discretization, as primary. -/
 theorem example_13_2 (m : ℕ) :
     coarseOperator (restriction1D m) (laplacian1D (2 * m + 1)) (prolongation1D m)
       = (1 / 4 : ℝ) • laplacian1D m := by
@@ -202,44 +296,52 @@ theorem example_13_2 (m : ℕ) :
     smul_eq_mul, ha, hb, hc]
   split_ifs <;> first | (exfalso; omega) | norm_num
 
-/-! ### §13.4.1 Smoothers -/
+/-! ### Section 13.4.1: Smoothers -/
 
-/-- The action of a product of matrices on a vector. -/
+/-- The action of a product of matrices on a vector: $(MN)x = M(Nx)$. -/
 private theorem mul_act {p q r : ℕ} (M : Matrix (Fin p) (Fin q) ℝ) (N : Matrix (Fin q) (Fin r) ℝ)
     (x : EuclideanSpace ℝ (Fin r)) : ((M * N) ⬝ x) = M ⬝ (N ⬝ x) := by
   rw [Matrix.toLpLin_mul_same]
   rfl
 
-/-- The action of a difference of matrices on a vector. -/
+/-- The action of a difference of matrices on a vector: $(M - N)x = Mx - Nx$. -/
 private theorem sub_act {p q : ℕ} (M N : Matrix (Fin p) (Fin q) ℝ)
     (x : EuclideanSpace ℝ (Fin q)) : ((M - N) ⬝ x) = (M ⬝ x) - (N ⬝ x) := by
   rw [map_sub]
   rfl
 
-/-- The identity matrix acts as the identity. -/
+/-- The identity matrix acts as the identity: $Ix = x$. -/
 private theorem one_act (x : EuclideanSpace ℝ (Fin n)) : ((1 : Matrix (Fin n) (Fin n) ℝ) ⬝ x) = x :=
   congrFun (congrArg _ (Matrix.toLpLin_one 2)) x
 
-/-- **Saad (13.40)–(13.41)**: the error propagation operator `S = I - B A` of a smoother with
-approximate inverse `B`.  A smoother enters the chapter only through this operator, because every
-statement of the theory is about the error. -/
+/-- **Equations (13.40)–(13.41)** of [saad2003iterative]. The **error propagation operator** of a
+smoother with approximate inverse $B$ for the matrix $A$ is
+$$S = I - BA.$$
+
+A smoother enters the chapter only through this operator, because every statement of the theory
+is about the error. -/
 def smoother (A B : Matrix (Fin n) (Fin n) ℝ) : Matrix (Fin n) (Fin n) ℝ := 1 - B * A
 
-/-- The error propagation operator, unfolded. -/
+/-- The error propagation operator of a smoother is $S = I - BA$. -/
 theorem smoother_def (A B : Matrix (Fin n) (Fin n) ℝ) : smoother A B = 1 - B * A := rfl
 
-/-- **Saad (13.41)**: one smoothing step `u ← S u + g` with `g = B f`, the affine iteration whose
-error propagation operator is `S = I - B A`. -/
+/-- **Equation (13.41)** of [saad2003iterative]. One **smoothing step** for $Au = f$ is the affine
+map
+$$u \mapsto Su + g, \qquad g = Bf,$$
+whose error propagation operator is $S = I - BA$. -/
 noncomputable def smootherStep (A B : Matrix (Fin n) (Fin n) ℝ)
     (f u : EuclideanSpace ℝ (Fin n)) : EuclideanSpace ℝ (Fin n) :=
   (smoother A B ⬝ u) + (B ⬝ f)
 
-/-- One smoothing step, unfolded. -/
+/-- One smoothing step is $u \mapsto Su + Bf$. -/
 theorem smootherStep_apply (A B : Matrix (Fin n) (Fin n) ℝ)
     (f u : EuclideanSpace ℝ (Fin n)) :
     smootherStep A B f u = (smoother A B ⬝ u) + (B ⬝ f) := rfl
 
-/-- **Saad (13.41)**, the smoothing step in preconditioning form: `u ← u + B (f - A u)`. -/
+/-- **Equation (13.41)** of [saad2003iterative], the preconditioning form. For all $A$, $B$, $f$ and
+$u$, the smoothing step is
+$$Su + Bf = u + B(f - Au).$$
+-/
 theorem equation_13_41 (A B : Matrix (Fin n) (Fin n) ℝ)
     (f u : EuclideanSpace ℝ (Fin n)) :
     smootherStep A B f u = u + (B ⬝ (f - (A ⬝ u))) := by
@@ -247,7 +349,8 @@ theorem equation_13_41 (A B : Matrix (Fin n) (Fin n) ℝ)
   simp only [map_sub]
   abel
 
-/-- Saad's smoother is the backbone's error propagation operator. -/
+/-- **Equation (13.41)** of [saad2003iterative], the backbone form. The error propagation operator
+$I - BA$ of a smoother is the backbone operator `Multigrid.smootherOperator` of $A$ and $B$. -/
 theorem smoother_eq_smootherOperator (A B : Matrix (Fin n) (Fin n) ℝ) :
     toEuclideanLin (smoother A B)
       = Multigrid.smootherOperator (toEuclideanLin A) (toEuclideanLin B) := by
@@ -256,21 +359,22 @@ theorem smoother_eq_smootherOperator (A B : Matrix (Fin n) (Fin n) ℝ) :
   rw [smoother_def, hdef, map_sub, Matrix.toLpLin_mul_same, Matrix.toLpLin_one]
   rfl
 
-/-- **Saad (13.42)**: the approximate inverse is recovered from the error propagation operator,
-`B = (I - S) A⁻¹`. -/
+/-- **Equation (13.42)** of [saad2003iterative]. Let $A$ be nonsingular. The approximate inverse is
+recovered from the error propagation operator:
+$$B = (I - S)A^{-1}.$$
+-/
 theorem equation_13_42 {A : Matrix (Fin n) (Fin n) ℝ} (hA : IsUnit A)
     (B : Matrix (Fin n) (Fin n) ℝ) : (1 - smoother A B) * A⁻¹ = B := by
   rw [smoother_def, sub_sub_cancel, Matrix.mul_assoc,
     Matrix.mul_nonsing_inv _ ((Matrix.isUnit_iff_isUnit_det _).1 hA), Matrix.mul_one]
 
-/-- The solution of `A u = f` is a fixed point of the smoothing step: the smoother is
-consistent. -/
+/-- The solution of $Ax = f$ is a fixed point of the smoothing step: the smoother is consistent. -/
 theorem smootherStep_of_eq {A B : Matrix (Fin n) (Fin n) ℝ} {f x : EuclideanSpace ℝ (Fin n)}
     (hx : (A ⬝ x) = f) : smootherStep A B f x = x := by
   simp only [smootherStep_apply, smoother_def, sub_act, one_act, mul_act, hx]
   abel
 
-/-- One smoothing step propagates the error by `S`. -/
+/-- One smoothing step multiplies the error by $S$: if $Ax = f$, then $(Su + Bf) - x = S(u - x)$. -/
 theorem smootherStep_sub {A B : Matrix (Fin n) (Fin n) ℝ} {f x : EuclideanSpace ℝ (Fin n)}
     (hx : (A ⬝ x) = f) (u : EuclideanSpace ℝ (Fin n)) :
     smootherStep A B f u - x = smoother A B ⬝ (u - x) := by
@@ -279,7 +383,10 @@ theorem smootherStep_sub {A B : Matrix (Fin n) (Fin n) ℝ} {f x : EuclideanSpac
   rw [map_sub]
   abel
 
-/-- **Saad (13.42)**: the error after `ν` smoothing steps is `d_ν = S^ν d_0`. -/
+/-- **Equation (13.42)** of [saad2003iterative], the error. Let $Ax = f$. After $\nu$ smoothing
+steps from $u_0$, the error is
+$$d_\nu = S^\nu d_0, \qquad d_0 = u_0 - x.$$
+-/
 theorem smootherStep_iterate_sub {A B : Matrix (Fin n) (Fin n) ℝ}
     {f x : EuclideanSpace ℝ (Fin n)} (hx : (A ⬝ x) = f) (u₀ : EuclideanSpace ℝ (Fin n)) (ν : ℕ) :
     (smootherStep A B f)^[ν] u₀ - x = (smoother A B ^ ν) ⬝ (u₀ - x) := by
@@ -288,7 +395,11 @@ theorem smootherStep_iterate_sub {A B : Matrix (Fin n) (Fin n) ℝ}
   | succ ν ih =>
     rw [Function.iterate_succ_apply', smootherStep_sub hx, ih, ← mul_act, ← pow_succ']
 
-/-- **Saad (13.42)**: the residual after `ν` smoothing steps is `r_ν = (I - A B)^ν r_0`. -/
+/-- **Equation (13.42)** of [saad2003iterative], the residual. After $\nu$ smoothing steps from
+$u_0$, the residual $r_\nu = f - Au_\nu$ is
+$$r_\nu = (I - AB)^\nu r_0.$$
+
+No hypothesis on $A$ is needed: the system $Au = f$ need not have a solution. -/
 theorem smootherStep_iterate_residual (A B : Matrix (Fin n) (Fin n) ℝ)
     (f u₀ : EuclideanSpace ℝ (Fin n)) (ν : ℕ) :
     f - (A ⬝ ((smootherStep A B f)^[ν] u₀)) = ((1 - A * B) ^ ν) ⬝ (f - (A ⬝ u₀)) := by
@@ -302,49 +413,69 @@ theorem smootherStep_iterate_residual (A B : Matrix (Fin n) (Fin n) ℝ)
   | succ ν ih =>
     rw [Function.iterate_succ_apply', hstep, ih, ← mul_act, ← pow_succ']
 
-/-- **Example 13.3**: the Jacobi smoother is `B = D⁻¹`, and its error propagation operator is the
-Jacobi iteration matrix of `Numlib/Stationary/Splitting.lean`. -/
+/-- **Example 13.3** of [saad2003iterative], the Jacobi smoother. Let the diagonal $D$ of $A$ be
+invertible. The Jacobi smoother has $B = D^{-1}$, and its error propagation operator
+$I - D^{-1}A$ is the Jacobi iteration matrix, the iteration operator of
+`Matrix.jacobiSplitting`. -/
 theorem example_13_3_jacobi (A : Matrix (Fin n) (Fin n) ℝ) (h : IsUnit (diagPart A)) :
     smoother A (diagPart A)⁻¹ = (A.jacobiSplitting h).iterationOperator := by
   change 1 - (diagPart A)⁻¹ * A = 1 - Ring.inverse (diagPart A) * A
   rw [Matrix.nonsing_inv_eq_ringInverse]
 
-/-- **Example 13.3**: the Gauss–Seidel smoother is `B = (D - E)⁻¹`, in Saad's letters
-`A = D - E - F`, and its error propagation operator is the Gauss–Seidel iteration matrix. -/
+/-- **Example 13.3** of [saad2003iterative], the Gauss–Seidel smoother. Let $A = D - E - F$ with $D$
+the diagonal, $-E$ the strictly lower part and $-F$ the strictly upper part, and let $D$ be
+invertible. The Gauss–Seidel smoother has $B = (D - E)^{-1}$, and its error propagation operator
+$I - (D - E)^{-1}A = (D - E)^{-1}F$ is the Gauss–Seidel iteration matrix, the iteration operator
+of `Matrix.gaussSeidelSplitting`.
+
+**Correction.** The book gives the smoother as $B = (D - E)^{-1}F$. That matrix is the error
+propagation operator $S$; the approximate inverse is $B = (D - E)^{-1}$.
+
+The matrix $D - E$ is `diagPart A + strictLower A`. -/
 theorem example_13_3_gaussSeidel (A : Matrix (Fin n) (Fin n) ℝ) (h : IsUnit (diagPart A)) :
     smoother A (diagPart A + strictLower A)⁻¹ = (A.gaussSeidelSplitting h).iterationOperator := by
   change 1 - (diagPart A + strictLower A)⁻¹ * A
     = 1 - Ring.inverse (diagPart A + strictLower A) * A
   rw [Matrix.nonsing_inv_eq_ringInverse]
 
-/-- **Example 13.3**: Richardson's smoother is `B = ω I`, and its error propagation operator is
-`I - ω A`. -/
+/-- **Example 13.3** of [saad2003iterative], Richardson's smoother. Let $\omega \neq 0$.
+Richardson's smoother has $B = \omega I$, and its error propagation operator is $I - \omega A$,
+the iteration operator of `Stationary.Splitting.richardson`.
+
+The hypothesis $\omega \neq 0$ is needed to define the splitting. -/
 theorem example_13_3_richardson (A : Matrix (Fin n) (Fin n) ℝ) {ω : ℝ} (hω : ω ≠ 0) :
     smoother A (ω • 1) = (Stationary.Splitting.richardson A hω).iterationOperator := by
   rw [Stationary.Splitting.richardson_iterationOperator, smoother_def, Matrix.smul_mul,
     Matrix.one_mul]
 
-/-! ### §13.4.2 The two-grid cycle, (13.43) and Lemma 13.1 -/
+/-! ### Section 13.4.2: The two-grid cycle, (13.43) and Lemma 13.1 -/
 
-/-- The standing hypotheses of §13.4 on one pair of grids: the fine matrix is symmetric positive
-definite, the prolongation has full column rank, and Saad's restriction is the transpose of the
-prolongation scaled by the positive factor `2^{-d}` of (13.37).
+/-- **Section 13.4.2** of [saad2003iterative], the standing hypotheses on a pair of grids. A fine
+matrix $A \in \mathbb{R}^{n \times n}$, a restriction $R \in \mathbb{R}^{m \times n}$ and a
+prolongation $P \in \mathbb{R}^{n \times m}$ form a **coarsening** if $A$ is symmetric positive
+definite, $P$ is injective, and $R = c \, P^T$ for some $c > 0$, as in (13.37).
 
-Under them the Galerkin coarse matrix (13.39) is nonsingular, so the coarse solve of Algorithm 13.2
-makes sense, and the coarse-grid correction (13.43) is the `A`-orthogonal projector of Lemma 13.1.
-The one-dimensional model problem of §13.2–13.3 satisfies them (`isCoarsening_model`). -/
+Under these hypotheses the Galerkin coarse matrix (13.39) is nonsingular, so the coarse solve of
+Algorithm 13.2 makes sense, and the coarse-grid correction (13.43) is the $A$-orthogonal
+projector of Lemma 13.1. The one-dimensional model problem of Sections 13.2–13.3 satisfies them
+(`SaadSparse.Chapter13.isCoarsening_model`). -/
 structure IsCoarsening (A : Matrix (Fin n) (Fin n) ℝ) (R : Matrix (Fin m) (Fin n) ℝ)
     (P : Matrix (Fin n) (Fin m) ℝ) : Prop where
-  /-- The fine matrix is symmetric positive definite. -/
+  /-- The fine matrix $A$ is symmetric positive definite. -/
   posDef : A.PosDef
-  /-- The prolongation is injective: the coarse space has the dimension of the coarse grid. -/
+  /-- The prolongation $P$ is injective, so the coarse space has the dimension of the coarse grid.
+  -/
   injective : Function.Injective (toEuclideanLin P)
-  /-- Saad (13.37): the restriction is a positive multiple of the transpose of the prolongation. -/
+  /-- The restriction is a positive multiple of the transpose of the prolongation, $R = c \, P^T$
+  with $c > 0$, as in (13.37). -/
   exists_smul : ∃ c : ℝ, 0 < c ∧ R = c • Pᵀ
 
-/-- The one-dimensional model problem of §13.2 with the inter-grid operators of §13.3 satisfies
-the hypotheses of §13.4: `tridiag(-1, 2, -1)` is positive definite, linear interpolation is
-injective, and full weighting is `½ (I_{2h}^h)ᵀ` by (13.35). -/
+/-- **Section 13.4.2** of [saad2003iterative], the model problem. The one-dimensional model matrix
+$\operatorname{tridiag}(-1, 2, -1)$ of size $2m + 1$, with full weighting as the restriction and
+linear interpolation as the prolongation, is a coarsening.
+
+The model matrix is positive definite, linear interpolation is injective, and full weighting is
+$\frac12 (I_{2h}^h)^T$ by (13.35). -/
 theorem isCoarsening_model (m : ℕ) :
     IsCoarsening (laplacian1D (2 * m + 1)) (restriction1D m) (prolongation1D m) :=
   ⟨laplacian1D_posDef _, injective_prolongation1D m, 1 / 2, by norm_num, equation_13_35 m⟩
@@ -354,54 +485,68 @@ namespace IsCoarsening
 variable {A : Matrix (Fin n) (Fin n) ℝ} {R : Matrix (Fin m) (Fin n) ℝ}
   {P : Matrix (Fin n) (Fin m) ℝ}
 
-/-- A symmetric positive definite matrix is a symmetric coercive operator, which is the hypothesis
-under which the energy inner product `(x, y)_A` and the backbone's coarse-grid projector exist. -/
+/-- **Section 13.4.2** of [saad2003iterative]. If $(A, R, P)$ is a coarsening, then $A$ is a
+symmetric coercive operator.
+
+This is the hypothesis under which the energy inner product $(x, y)_A$ and the backbone
+coarse-grid projector exist. -/
 theorem isSymmetricCoercive (h : IsCoarsening A R P) : (toEuclideanLin A).IsSymmetricCoercive :=
   (Matrix.posDef_iff_isSymmetricCoercive A).1 h.posDef
 
-/-- The Galerkin coarse matrix (13.39) of a coarsening is symmetric positive definite. -/
+/-- If $(A, R, P)$ is a coarsening, then the Galerkin coarse matrix $RAP$ of (13.39) is symmetric
+positive definite. -/
 theorem posDef_coarseOperator (h : IsCoarsening A R P) : (coarseOperator R A P).PosDef := by
   obtain ⟨c, hc, rfl⟩ := h.exists_smul
   exact _root_.SaadSparse.Chapter13.posDef_coarseOperator h.posDef h.injective hc
 
-/-- The Galerkin coarse matrix (13.39) of a coarsening is nonsingular, so `A_H⁻¹` of (13.43) is a
-genuine inverse. -/
+/-- If $(A, R, P)$ is a coarsening, then the Galerkin coarse matrix $RAP$ of (13.39) is nonsingular,
+so $A_H^{-1}$ in (13.43) is a true inverse. -/
 theorem isUnit_coarseOperator (h : IsCoarsening A R P) : IsUnit (coarseOperator R A P) :=
   h.posDef_coarseOperator.isUnit
 
-/-- The coarse matrix cancels against its inverse, which is what makes the coarse solve of
-(13.43) exact. -/
+/-- If $(A, R, P)$ is a coarsening, then $A_H A_H^{-1} = I$ for the Galerkin coarse matrix
+$A_H = RAP$. This makes the coarse solve of (13.43) exact. -/
 theorem coarseOperator_mul_inv (h : IsCoarsening A R P) :
     coarseOperator R A P * (coarseOperator R A P)⁻¹ = 1 :=
   Matrix.mul_nonsing_inv _ ((Matrix.isUnit_iff_isUnit_det _).1 h.isUnit_coarseOperator)
 
 end IsCoarsening
 
-/-- **Saad (13.43)**: the coarse-grid preconditioner `B_h = I_H^h A_H⁻¹ I_h^H`, which restricts a
-fine residual, solves the coarse problem and interpolates the correction back. -/
+/-- **Equation (13.43)** of [saad2003iterative]. The **coarse-grid preconditioner**
+$$B_h = I_H^h A_H^{-1} I_h^H,$$
+which restricts a fine residual, solves the coarse problem and interpolates the correction back.
+Here $A_H$ is the Galerkin coarse matrix (13.39).
+
+The inverse is the Lean matrix inverse, which is $0$ for a singular matrix; under the hypotheses
+of `SaadSparse.Chapter13.IsCoarsening` the matrix $A_H$ is nonsingular. -/
 noncomputable def coarsePreconditioner (R : Matrix (Fin m) (Fin n) ℝ)
     (A : Matrix (Fin n) (Fin n) ℝ) (P : Matrix (Fin n) (Fin m) ℝ) : Matrix (Fin n) (Fin n) ℝ :=
   P * (coarseOperator R A P)⁻¹ * R
 
-/-- **Saad (13.43)**: the coarse-grid projector `Q_h = I_H^h A_H⁻¹ I_h^H A_h = B_h A_h`. -/
+/-- **Equation (13.43)** of [saad2003iterative]. The **coarse-grid projector**
+$$Q_h = I_H^h A_H^{-1} I_h^H A_h = B_h A_h.$$
+-/
 noncomputable def coarseProjector (R : Matrix (Fin m) (Fin n) ℝ)
     (A : Matrix (Fin n) (Fin n) ℝ) (P : Matrix (Fin n) (Fin m) ℝ) : Matrix (Fin n) (Fin n) ℝ :=
   coarsePreconditioner R A P * A
 
-/-- **Saad (13.43)**: the coarse-grid correction operator `T_h^H = I - I_H^h A_H⁻¹ I_h^H A_h`, the
-error propagation operator of one coarse-grid correction. -/
+/-- **Equation (13.43)** of [saad2003iterative]. The **coarse-grid correction operator**
+$$T_h^H = I - I_H^h A_H^{-1} I_h^H A_h,$$
+the error propagation operator of one coarse-grid correction. -/
 noncomputable def coarseCorrection (R : Matrix (Fin m) (Fin n) ℝ)
     (A : Matrix (Fin n) (Fin n) ℝ) (P : Matrix (Fin n) (Fin m) ℝ) : Matrix (Fin n) (Fin n) ℝ :=
   1 - coarseProjector R A P
 
-/-- The coarse-grid correction is the complement of the coarse-grid projector. -/
+/-- The coarse-grid correction operator is $T_h^H = I - Q_h$. -/
 theorem coarseCorrection_def (R : Matrix (Fin m) (Fin n) ℝ) (A : Matrix (Fin n) (Fin n) ℝ)
     (P : Matrix (Fin n) (Fin m) ℝ) :
     coarseCorrection R A P = 1 - coarseProjector R A P := rfl
 
-/-- **Saad (13.43)** and Algorithm 13.2: the two-grid iteration operator
-`M_H^h = S^{ν₂} (I - I_H^h A_H⁻¹ I_h^H A_h) S^{ν₁}`, with `ν₁` pre-smoothing and `ν₂`
-post-smoothing steps around one coarse-grid correction. -/
+/-- **Equation (13.43)** of [saad2003iterative] and Algorithm 13.2. The **two-grid iteration
+operator** with $\nu_1$ pre-smoothing and $\nu_2$ post-smoothing steps around one coarse-grid
+correction is
+$$M_H^h = S^{\nu_2} \left(I - I_H^h A_H^{-1} I_h^H A_h\right) S^{\nu_1},$$
+where $S$ is the error propagation operator of the smoother. -/
 noncomputable def equation_13_43 (R : Matrix (Fin m) (Fin n) ℝ) (A : Matrix (Fin n) (Fin n) ℝ)
     (P : Matrix (Fin n) (Fin m) ℝ) (S : Matrix (Fin n) (Fin n) ℝ) (ν₁ ν₂ : ℕ) :
     Matrix (Fin n) (Fin n) ℝ :=
@@ -410,9 +555,11 @@ noncomputable def equation_13_43 (R : Matrix (Fin m) (Fin n) ℝ) (A : Matrix (F
 variable {A : Matrix (Fin n) (Fin n) ℝ} {R : Matrix (Fin m) (Fin n) ℝ}
   {P : Matrix (Fin n) (Fin m) ℝ}
 
-/-- **Saad's coarse-grid projector is the backbone's**: `Q_h = I_H^h A_H⁻¹ I_h^H A_h` is the
-`A`-orthogonal projector onto the range of the prolongation.  The factor `2^{-d}` of Saad's
-restriction multiplies both sides of the coarse equation and so cancels. -/
+/-- **Equation (13.43)** of [saad2003iterative], the coarse-grid projector. If $(A, R, P)$ is a
+coarsening, then $Q_h = P A_H^{-1} R A$ is the $A$-orthogonal projector onto the range of $P$:
+its linear map is `Multigrid.coarseProjection` of $A$ and $P$.
+
+The factor $c$ in $R = c \, P^T$ multiplies both sides of the coarse equation and so cancels. -/
 theorem toEuclideanLin_coarseProjector (h : IsCoarsening A R P) :
     toEuclideanLin (coarseProjector R A P)
       = Multigrid.coarseProjection (toEuclideanLin A) h.isSymmetricCoercive
@@ -437,7 +584,9 @@ theorem toEuclideanLin_coarseProjector (h : IsCoarsening A R P) :
     (toEuclideanLin P) (ne_of_gt hc) hy, coarseProjector, coarsePreconditioner]
   simp only [mul_act]
 
-/-- **Saad (13.43)**: the coarse-grid correction operator is the backbone's. -/
+/-- **Equation (13.43)** of [saad2003iterative], the coarse-grid correction. If $(A, R, P)$ is a
+coarsening, then the linear map of $T_h^H = I - Q_h$ is the backbone coarse-grid correction
+`Multigrid.coarseCorrection` of $A$ and $P$. -/
 theorem toEuclideanLin_coarseCorrection (h : IsCoarsening A R P) :
     toEuclideanLin (coarseCorrection R A P)
       = Multigrid.coarseCorrection (toEuclideanLin A) h.isSymmetricCoercive
@@ -450,8 +599,12 @@ theorem toEuclideanLin_coarseCorrection (h : IsCoarsening A R P) :
     Matrix.toEuclideanLin_one]
   rfl
 
-/-- **Saad (13.43)**: the two-grid iteration operator is the backbone's
-`Multigrid.twoGridOperator`, so the convergence theory of §13.5 applies to it. -/
+/-- **Equation (13.43)** of [saad2003iterative], the two-grid operator. If $(A, R, P)$ is a
+coarsening, then for every matrix $S$ and all $\nu_1, \nu_2$ the linear map of
+$M_H^h = S^{\nu_2} T_h^H S^{\nu_1}$ is the backbone two-grid operator
+`Multigrid.twoGridOperator`.
+
+So the convergence theory of Section 13.5 applies to it. -/
 theorem equation_13_43_eq (h : IsCoarsening A R P) (S : Matrix (Fin n) (Fin n) ℝ) (ν₁ ν₂ : ℕ) :
     toEuclideanLin (equation_13_43 R A P S ν₁ ν₂)
       = Multigrid.twoGridOperator (toEuclideanLin A) h.isSymmetricCoercive (toEuclideanLin P)
@@ -464,8 +617,11 @@ theorem equation_13_43_eq (h : IsCoarsening A R P) (S : Matrix (Fin n) (Fin n) �
     toEuclideanLin_coarseCorrection h, Matrix.toEuclideanLin_pow, Matrix.toEuclideanLin_pow,
     LinearMap.comp_assoc]
 
-/-- **Lemma 13.1**: with the coarse matrix defined by (13.39), the coarse-grid correction operator
-(13.43) is a projector, `(T_h^H)² = T_h^H`. -/
+/-- **Lemma 13.1** of [saad2003iterative], the projector property. If $(A, R, P)$ is a coarsening,
+with the coarse matrix defined by (13.39), then the coarse-grid correction operator is a
+projector:
+$$(T_h^H)^2 = T_h^H.$$
+-/
 theorem lemma_13_1 (h : IsCoarsening A R P) :
     coarseCorrection R A P * coarseCorrection R A P = coarseCorrection R A P := by
   have hQ : coarseProjector R A P * coarseProjector R A P = coarseProjector R A P := by
@@ -478,9 +634,13 @@ theorem lemma_13_1 (h : IsCoarsening A R P) :
       (1 - Q) * (1 - Q) = 1 - Q - (Q - Q * Q) := fun Q => by noncomm_ring
   rw [coarseCorrection_def, hexpand, hQ, sub_self, sub_zero]
 
-/-- **Lemma 13.1**: the coarse-grid correction is *orthogonal with respect to the `A_h`-inner
-product*, `(A T x, y) = (A x, T y)`.  Together with `lemma_13_1` this says that `T_h^H` is the
-`A_h`-orthogonal projector onto the complement of the coarse space. -/
+/-- **Lemma 13.1** of [saad2003iterative], orthogonality. If $(A, R, P)$ is a coarsening, then the
+coarse-grid correction operator is self-adjoint in the $A$-inner product: for all
+$x, y \in \mathbb{R}^n$,
+$$(A T_h^H x, y) = (A x, T_h^H y).$$
+
+Together with `SaadSparse.Chapter13.lemma_13_1` this says that $T_h^H$ is an $A$-orthogonal
+projector. The $A$-inner product is `energyInner`. -/
 theorem lemma_13_1_energyInner (h : IsCoarsening A R P) (x y : EuclideanSpace ℝ (Fin n)) :
     energyInner (toEuclideanLin A) (coarseCorrection R A P ⬝ x) y
       = energyInner (toEuclideanLin A) x (coarseCorrection R A P ⬝ y) := by
@@ -495,8 +655,14 @@ theorem lemma_13_1_energyInner (h : IsCoarsening A R P) (x y : EuclideanSpace �
     ← WithEnergy.inner_equiv (toEuclideanLin A) h.isSymmetricCoercive, hval, hval,
     Submodule.inner_starProjection_left_eq_right]
 
-/-- **Lemma 13.1**: the range of the coarse-grid correction is `A_h`-orthogonal to the range of the
-prolongation — the error left by a coarse-grid correction has no component in the coarse space. -/
+/-- **Lemma 13.1** of [saad2003iterative], the range. If $(A, R, P)$ is a coarsening, then the range
+of the coarse-grid correction operator is $A$-orthogonal to the range of the prolongation: for
+all $x \in \mathbb{R}^n$ and $u \in \mathbb{R}^m$,
+$$(A T_h^H x, P u) = 0.$$
+So the error left by a coarse-grid correction has no component in the coarse space.
+
+**Correction.** The third clause of the lemma in the book names the restriction $I_h^H$ where
+its own proof gives the prolongation $I_H^h$. -/
 theorem lemma_13_1_energyInner_eq_zero (h : IsCoarsening A R P) (x : EuclideanSpace ℝ (Fin n))
     (u : EuclideanSpace ℝ (Fin m)) :
     energyInner (toEuclideanLin A) (coarseCorrection R A P ⬝ x) (P ⬝ u) = 0 := by
@@ -509,39 +675,43 @@ theorem lemma_13_1_energyInner_eq_zero (h : IsCoarsening A R P) (x : EuclideanSp
   rw [energyInner, ← LinearMap.adjoint_inner_left (toEuclideanLin P) u
     (toEuclideanLin A (coarseCorrection R A P ⬝ x)), hmem, inner_zero_left]
 
-/-! ### §13.4.3 The V-cycle, the W-cycle and full multigrid -/
+/-! ### Section 13.4.3: The V-cycle, the W-cycle and full multigrid -/
 
-/-- The data of a multigrid hierarchy: for every level `l` a grid of `size l` unknowns carrying the
-matrix `A_{h_l}` and the approximate inverse `B_{h_l}` of its smoother (13.40), a prolongation and a
-restriction between the levels `l` and `l + 1`, and the interpolation `Î` that full multigrid starts
-each level from — Saad allows it to be of higher order than the cycle's own prolongation.
+/-- **Section 13.4.3** of [saad2003iterative], a **multigrid hierarchy**. A hierarchy consists of,
+for every level $l$, a grid of $n_l$ unknowns with a matrix $A_{h_l}$ and the approximate
+inverse $B_{h_l}$ of its smoother (13.40), a prolongation and a restriction between the levels
+$l$ and $l + 1$, and the interpolation $\hat I$ from which full multigrid starts each level. The
+book allows $\hat I$ to be of higher order than the prolongation of the cycle.
 
-Level `0` is the coarsest, where the problem is solved exactly, and level `l + 1` is finer than
-level `l`: Saad's `p + 1` levels `h_0 > h_1 > ⋯ > h_p` are the levels `0, …, p` here.  A hierarchy
-is indexed by all of `ℕ` rather than by `Fin (p + 1)`, so that no bound has to be carried through
-the recursions; a cycle on level `l` uses the levels `0, …, l` only. -/
+Level $0$ is the coarsest, where the problem is solved exactly, and level $l + 1$ is finer than
+level $l$: the $p + 1$ levels $h_0 > h_1 > \dots > h_p$ of the book are the levels
+$0, \dots, p$. A hierarchy is indexed by all of $\mathbb{N}$, not by `Fin (p + 1)`, so that no
+bound has to be carried through the recursions; a cycle on level $l$ uses only the levels
+$0, \dots, l$. -/
 structure Hierarchy where
-  /-- The number of unknowns of level `l`. -/
+  /-- The number $n_l$ of unknowns of level $l$. -/
   size : ℕ → ℕ
-  /-- The matrix `A_{h_l}` of level `l`. -/
+  /-- The matrix $A_{h_l}$ of level $l$. -/
   matrix : ∀ l, Matrix (Fin (size l)) (Fin (size l)) ℝ
-  /-- The approximate inverse `B_{h_l}` defining the smoother (13.40) of level `l`. -/
+  /-- The approximate inverse $B_{h_l}$ that defines the smoother (13.40) of level $l$. -/
   approxInverse : ∀ l, Matrix (Fin (size l)) (Fin (size l)) ℝ
-  /-- The prolongation `I_{h_l}^{h_{l+1}}` from level `l` to the finer level `l + 1`. -/
+  /-- The prolongation $I_{h_l}^{h_{l+1}}$ from level $l$ to the finer level $l + 1$. -/
   prolongation : ∀ l, Matrix (Fin (size (l + 1))) (Fin (size l)) ℝ
-  /-- The restriction `I_{h_{l+1}}^{h_l}` from level `l + 1` to the coarser level `l`. -/
+  /-- The restriction $I_{h_{l+1}}^{h_l}$ from level $l + 1$ to the coarser level $l$. -/
   restriction : ∀ l, Matrix (Fin (size l)) (Fin (size (l + 1))) ℝ
-  /-- The interpolation `Î_{h_l}^{h_{l+1}}` of Algorithm 13.5. -/
+  /-- The interpolation $\hat I_{h_l}^{h_{l+1}}$ of Algorithm 13.5, from level $l$ to level $l + 1$.
+  -/
   fmgInterpolation : ∀ l, Matrix (Fin (size (l + 1))) (Fin (size l)) ℝ
 
 namespace Hierarchy
 
-/-- The vectors of level `l` of a hierarchy. -/
+/-- The vectors of level $l$ of a hierarchy, the Euclidean space $\mathbb{R}^{n_l}$. -/
 abbrev Vec (H : Hierarchy) (l : ℕ) : Type := EuclideanSpace ℝ (Fin (H.size l))
 
-/-- One `γ`-cycle on level `l + 1` written in terms of the solver `mg` of level `l`: `ν₁`
-pre-smoothing steps, a coarse-grid correction obtained by `γ` recursive calls on the restricted
-residual, and `ν₂` post-smoothing steps.  This is the body of Algorithm 13.4. -/
+/-- One $\gamma$-cycle on level $l + 1$, given a solver $\mathrm{mg}$ for level $l$: $\nu_1$
+pre-smoothing steps, a coarse-grid correction obtained by $\gamma$ applications of $\mathrm{mg}$
+from $0$ to the restricted residual, and $\nu_2$ post-smoothing steps. This is the body of
+Algorithm 13.4. -/
 noncomputable def cycleStep (H : Hierarchy) (ν₁ ν₂ γ l : ℕ) (mg : H.Vec l → H.Vec l → H.Vec l)
     (u f : H.Vec (l + 1)) : H.Vec (l + 1) :=
   let S := smootherStep (H.matrix (l + 1)) (H.approxInverse (l + 1)) f
@@ -549,52 +719,62 @@ noncomputable def cycleStep (H : Hierarchy) (ν₁ ν₂ γ l : ℕ) (mg : H.Vec
   let d := coarseRhs (H.restriction l) (f - (H.matrix (l + 1) ⬝ u₁))
   S^[ν₂] (u₁ + (H.prolongation l ⬝ (fun v => mg v d)^[γ] 0))
 
-/-- **Algorithm 13.4**, the `γ`-cycle `MG(A_h, u, f, ν₁, ν₂, γ)`: on the coarsest level the system
-is solved exactly, and on every finer level `ν₁` smoothing steps are followed by `γ` recursive
-cycles on the restricted residual and then by `ν₂` smoothing steps.
+/-- **Algorithm 13.4** of [saad2003iterative], the **$\gamma$-cycle**
+$\mathrm{MG}(A_h, u, f, \nu_1, \nu_2, \gamma)$. On the coarsest level the system is solved
+exactly, $u = A_{h_0}^{-1} f$. On every finer level, $\nu_1$ smoothing steps are followed by
+$\gamma$ recursive cycles on the restricted residual, starting from $0$, and then by $\nu_2$
+smoothing steps.
 
-The book proves nothing about the cycles themselves — their error propagation operators are the
-composites of the two-grid ones of (13.43) — so this is a definition and nothing more; what §13.4
-does prove about them is the cost estimate `equation_13_44` and, through Algorithm 13.5,
-`theorem_13_2`. -/
+The book proves nothing about the cycles themselves, because their error propagation operators
+are composites of the two-grid operators of (13.43). So this is a definition only. What Section
+13.4 proves about the cycles is the cost estimate `SaadSparse.Chapter13.equation_13_44` and,
+through Algorithm 13.5, `SaadSparse.Chapter13.theorem_13_2`. The inverse on level $0$ is the
+Lean matrix inverse, which is $0$ for a singular matrix. -/
 noncomputable def cycle (H : Hierarchy) (ν₁ ν₂ γ : ℕ) : ∀ l : ℕ, H.Vec l → H.Vec l → H.Vec l
   | 0 => fun _ f => ((H.matrix 0)⁻¹ ⬝ f)
   | l + 1 => cycleStep H ν₁ ν₂ γ l (cycle H ν₁ ν₂ γ l)
 
-/-- On the coarsest level a cycle solves the system exactly. -/
+/-- On the coarsest level a cycle solves the system exactly: it returns $A_{h_0}^{-1} f$. -/
 @[simp]
 theorem cycle_zero (H : Hierarchy) (ν₁ ν₂ γ : ℕ) (u f : H.Vec 0) :
     H.cycle ν₁ ν₂ γ 0 u f = ((H.matrix 0)⁻¹ ⬝ f) := rfl
 
-/-- On every finer level a cycle is one `cycleStep` around `γ` cycles of the level below. -/
+/-- On every finer level a cycle is one cycle step around $\gamma$ cycles of the level below. -/
 theorem cycle_succ (H : Hierarchy) (ν₁ ν₂ γ l : ℕ) :
     H.cycle ν₁ ν₂ γ (l + 1) = cycleStep H ν₁ ν₂ γ l (H.cycle ν₁ ν₂ γ l) := rfl
 
-/-- **Algorithm 13.3**, the V-cycle: the `γ`-cycle with one recursive call per level. -/
+/-- **Algorithm 13.3** of [saad2003iterative], the **V-cycle**: the $\gamma$-cycle with
+$\gamma = 1$, one recursive call per level. -/
 noncomputable def vcycle (H : Hierarchy) (ν₁ ν₂ : ℕ) : ∀ l : ℕ, H.Vec l → H.Vec l → H.Vec l :=
   H.cycle ν₁ ν₂ 1
 
-/-- The W-cycle: the `γ`-cycle with two recursive calls per level. -/
+/-- **Section 13.4.3** of [saad2003iterative], the **W-cycle**: the $\gamma$-cycle with
+$\gamma = 2$, two recursive calls per level. -/
 noncomputable def wcycle (H : Hierarchy) (ν₁ ν₂ : ℕ) : ∀ l : ℕ, H.Vec l → H.Vec l → H.Vec l :=
   H.cycle ν₁ ν₂ 2
 
-/-- **Algorithm 13.5**, full multigrid: sweep once from the coarsest level upwards, solving the
-coarsest problem exactly and taking on each finer level the interpolant `Î` of the previous level's
-approximation as the initial guess for `μ` cycles.  The right-hand sides `f l` are the
-discretizations of the problem on each level, not restrictions of one another. -/
+/-- **Algorithm 13.5** of [saad2003iterative], **full multigrid**. The method sweeps once from the
+coarsest level upwards. It solves the coarsest problem exactly,
+$\tilde u^{h_0} = A_{h_0}^{-1} f^{h_0}$. On each finer level $l + 1$ it takes the interpolant
+$\hat I \tilde u^{h_l}$ of the approximation of level $l$ as the initial guess for $\mu$
+$\gamma$-cycles with the right-hand side $f^{h_{l+1}}$.
+
+The right-hand sides $f^{h_l}$ are the discretizations of the problem on each level, not
+restrictions of one another. -/
 noncomputable def fullMultigrid (H : Hierarchy) (ν₁ ν₂ γ μ : ℕ) (f : ∀ l, H.Vec l) :
     ∀ l : ℕ, H.Vec l
   | 0 => ((H.matrix 0)⁻¹ ⬝ f 0)
   | l + 1 => (fun u => H.cycle ν₁ ν₂ γ (l + 1) u (f (l + 1)))^[μ]
       (H.fmgInterpolation l ⬝ fullMultigrid H ν₁ ν₂ γ μ f l)
 
-/-- Full multigrid solves the coarsest system exactly. -/
+/-- Full multigrid solves the coarsest system exactly: it returns $A_{h_0}^{-1} f^{h_0}$ on level
+$0$. -/
 @[simp]
 theorem fullMultigrid_zero (H : Hierarchy) (ν₁ ν₂ γ μ : ℕ) (f : ∀ l, H.Vec l) :
     H.fullMultigrid ν₁ ν₂ γ μ f 0 = ((H.matrix 0)⁻¹ ⬝ f 0) := rfl
 
-/-- On every finer level full multigrid applies `μ` cycles to the interpolated approximation of
-the level below. -/
+/-- On every finer level $l + 1$, full multigrid applies $\mu$ cycles to the interpolant of the
+approximation of level $l$. -/
 theorem fullMultigrid_succ (H : Hierarchy) (ν₁ ν₂ γ μ : ℕ) (f : ∀ l, H.Vec l) (l : ℕ) :
     H.fullMultigrid ν₁ ν₂ γ μ f (l + 1)
       = (fun u => H.cycle ν₁ ν₂ γ (l + 1) u (f (l + 1)))^[μ]
@@ -602,24 +782,29 @@ theorem fullMultigrid_succ (H : Hierarchy) (ν₁ ν₂ γ μ : ℕ) (f : ∀ l,
 
 end Hierarchy
 
-/-! ### §13.4.3 The cost of a cycle, (13.44) -/
+/-! ### Section 13.4.3: The cost of a cycle, (13.44) -/
 
-/-- **Saad (13.44)**, the cost of one cycle.  Let `n_l` be the number of unknowns of level
-`l`, so that `n_{l+1} = 2^d n_l` after a coarsening by two in each of `d` dimensions, and let `C l`
-bound the cost of one `γ`-cycle on level `l`: a visit to a level costs `η` per unknown, and the
-level below is visited `γ` times, which is the recurrence `C (l+1) ≤ η n_{l+1} + γ C l`.
+/-- **Equation (13.44)** of [saad2003iterative], the cost of one cycle. Let $\eta \ge 0$,
+$\gamma \ge 0$ and $d \in \mathbb{N}$ with $\gamma < 2^d$. Let $n_l > 0$ be the number of
+unknowns of level $l$, with $n_{l+1} = 2^d n_l$, as after a coarsening by two in each of $d$
+dimensions. Let $C_l$ bound the cost of one $\gamma$-cycle on level $l$, with $C_0 \le \eta n_0$
+and
+$$C_{l+1} \le \eta n_{l+1} + \gamma C_l:$$
+a visit to a level costs $\eta$ per unknown, and the level below is visited $\gamma$ times. Then
+for every $l$
+$$C_l \le \frac{\eta n_l}{1 - \gamma 2^{-d}}.$$
 
-If `γ < 2^d` then the total cost stays proportional to the number of unknowns of the *finest* level,
-`C l ≤ η n_l / (1 - γ 2^{-d})` — Saad's `O(n)`, and his condition "`γ < 2` in 1-D and `γ < 4` in
-2-D".  A V-cycle (`γ = 1`) satisfies it in every dimension, with the constant `2` in one dimension
-and `4/3` in two; a W-cycle (`γ = 2`) satisfies it as soon as `d ≥ 2`, with the constant `2` in
-two dimensions.  The book prints `7/3` for the two-dimensional V-cycle; the geometric series
-it solves, `∑ 4^{-k}`, is `4/3`.  In one dimension the W-cycle is the borderline case
-`γ = 2^d`, where this bound fails and the cost grows like `η n_l log₂ n_l`, Saad's
-`O(n log₂ n)`.
+**Correction.** The book prints the constant $7/3$ for the two-dimensional V-cycle. With
+$\gamma = 1$ and $d = 2$ the geometric series $\sum_k 4^{-k}$ of the recurrence is $4/3$.
 
-This is the only quantitative statement the book makes about the cycles themselves, and the whole
-of it is the geometric series `∑ (γ 2^{-d})^k`. -/
+So the cost is proportional to the number of unknowns of the finest level, which is the $O(n)$
+of the book and its condition "$\gamma < 2$ in one dimension and $\gamma < 4$ in two". A V-cycle
+($\gamma = 1$) satisfies the condition in every dimension, with the constant $2$ in one
+dimension and $4/3$ in two. A W-cycle ($\gamma = 2$) satisfies it for $d \ge 2$, with the
+constant $2$ in two dimensions. In one dimension the W-cycle is the borderline case
+$\gamma = 2^d$, where the bound fails and the cost grows like $\eta n_l \log_2 n_l$, the
+$O(n \log_2 n)$ of the book; this case is not stated here. The proof is the geometric series
+$\sum_k (\gamma 2^{-d})^k$. -/
 theorem equation_13_44 {C nsize : ℕ → ℝ} {η γ : ℝ} {d : ℕ} (hη : 0 ≤ η) (hγ : 0 ≤ γ)
     (hγd : γ < 2 ^ d) (hn : ∀ l, nsize (l + 1) = 2 ^ d * nsize l) (hnpos : ∀ l, 0 < nsize l)
     (hC₀ : C 0 ≤ η * nsize 0) (hrec : ∀ l, C (l + 1) ≤ η * nsize (l + 1) + γ * C l) (l : ℕ) :
@@ -646,10 +831,10 @@ theorem equation_13_44 {C nsize : ℕ → ℝ} {η γ : ℝ} {d : ℕ} (hη : 0 
           field_simp
           ring
 
-/-! ### §13.4.4 Full multigrid, Theorem 13.2 -/
+/-! ### Section 13.4.4: Full multigrid, Theorem 13.2 -/
 
-/-- The `μ` cycles of Algorithm 13.5 contract the error by `ξ^μ` when one cycle contracts it
-by `ξ`. -/
+/-- If a map $F$ satisfies $\|x - F(v)\| \le \xi \|x - v\|$ for all $v$, with $\xi \ge 0$, then
+$\|x - F^\mu(v)\| \le \xi^\mu \|x - v\|$. -/
 private theorem norm_sub_iterate_le {X : Type*} [NormedAddCommGroup X] {F : X → X} {x : X} {ξ : ℝ}
     (hξ : 0 ≤ ξ) (hF : ∀ v, ‖x - F v‖ ≤ ξ * ‖x - v‖) (μ : ℕ) (v : X) :
     ‖x - F^[μ] v‖ ≤ ξ ^ μ * ‖x - v‖ := by
@@ -661,24 +846,31 @@ private theorem norm_sub_iterate_le {X : Type*} [NormedAddCommGroup X] {F : X �
       _ ≤ ξ ^ μ * (ξ * ‖x - v‖) := mul_le_mul_of_nonneg_left (hF v) (pow_nonneg hξ μ)
       _ = ξ ^ (μ + 1) * ‖x - v‖ := by ring
 
-/-- **Theorem 13.2**, the full multigrid error bound.  On a hierarchy whose mesh sizes `h_l` halve
-from one level to the next, let `u l` be the exact solution of the level-`l` system and `ũ l` the
-full multigrid approximation of Algorithm 13.5.  Assume
+/-- **Theorem 13.2** of [saad2003iterative], the full multigrid error bound. Let a multigrid
+hierarchy have mesh sizes $h_l > 0$ with $h_{l+1} = h_l/2$. Let $u^{h_l}$ be vectors of the
+levels, let $f^{h_l}$ be the right-hand sides, and let $\tilde u^{h_l}$ be the full multigrid
+approximation of Algorithm 13.5 with $\mu$ $\gamma$-cycles per level. Let $c_1 \ge 0$,
+$\xi \ge 0$, $c_2$ and $\kappa$ be real numbers. Assume that
+* the coarsest system is solved exactly: $A_{h_0}$ is nonsingular and
+  $A_{h_0} u^{h_0} = f^{h_0}$;
+* (13.49) the interpolation is accurate to the discretization order: $\|u^{h_{l+1}} - \hat I
+  u^{h_l}\| \le c_1 h_{l+1}^\kappa$ for all $l$;
+* (13.50) one cycle contracts the error by $\xi$: $\|u^{h_{l+1}} - \mathrm{MG}(v)\| \le \xi
+  \|u^{h_{l+1}} - v\|$ for all $l$ and all $v$, where $\mathrm{MG}(v)$ is one cycle from $v$
+  with the right-hand side $f^{h_{l+1}}$;
+* (13.51) the interpolations are bounded: $\|\hat I\| \le c_2 2^{-\kappa}$ in the operator norm;
+* (13.52) $c_2 \xi^\mu < 1$.
 
-* the coarsest system is solved exactly, `A_{h_0} u^{h_0} = f^{h_0}` with `A_{h_0}` nonsingular;
-* **(13.49)** the interpolation is accurate to the discretization order,
-  `‖u^{h_{l+1}} - Î u^{h_l}‖ ≤ c₁ h_{l+1}^κ`;
-* **(13.50)** one cycle contracts the error by `ξ`, `‖u^{h_{l+1}} - MG(v)‖ ≤ ξ ‖u^{h_{l+1}} - v‖`,
-  which is what `‖M_h‖ ≤ ξ < 1` says once the exact solution is recognized as a fixed point of the
-  cycle — the book's (13.55) — and is the only form of (13.50) the proof uses;
-* **(13.51)** the interpolations are bounded, `‖Î‖ ≤ c₂ 2^{-κ}`;
-* **(13.52)** `c₂ ξ^μ < 1`.
+Then on every level $l$
+$$\|u^{h_l} - \tilde u^{h_l}\| \le c_3 c_1 h_l^\kappa, \qquad c_3 = \frac{\xi^\mu}{1 -
+  c_2\xi^\mu}.$$
 
-Then the full multigrid approximation is accurate to the discretization order on *every* level,
-`‖u^{h_l} - ũ^{h_l}‖ ≤ c₃ c₁ h_l^κ` with `c₃ = ξ^μ/(1 - c₂ ξ^μ)`.
-
-Saad's assumption (13.48) — that the discrete solution is within `c h^κ` of the sampled continuous
-one — is what motivates (13.49) and is not used by the proof, so it does not appear. -/
+The book states (13.50) as $\|M_h\| \le \xi < 1$; the form here follows from it once the exact
+solution is recognized as a fixed point of the cycle, as in (13.55), and it is the only form
+that the proof uses. The assumption (13.48) of the book, that the discrete solution is within
+$c h^\kappa$ of the sampled continuous solution, motivates (13.49) but is not used in the proof,
+so it does not appear. For $l \ge 1$ the vectors $u^{h_l}$ enter only through (13.49) and
+(13.50). The proof specializes `Multigrid.norm_sub_fullMultigrid_le`. -/
 theorem theorem_13_2 (H : Hierarchy) {ν₁ ν₂ γ μ : ℕ} {f u : ∀ l, H.Vec l} {hmesh : ℕ → ℝ}
     {c₁ c₂ ξ κ : ℝ} (hh : ∀ l, hmesh (l + 1) = hmesh l / 2) (hhpos : ∀ l, 0 < hmesh l)
     (hunit : IsUnit (H.matrix 0)) (hsolve : (H.matrix 0 ⬝ u 0) = f 0) (hc₁ : 0 ≤ c₁) (hξ : 0 ≤ ξ)
@@ -699,29 +891,37 @@ theorem theorem_13_2 (H : Hierarchy) {ν₁ ν₂ γ μ : ℕ} {f u : ∀ l, H.V
   rw [Hierarchy.fullMultigrid_succ]
   exact norm_sub_iterate_le hξ (h1350 l) μ _
 
-/-! ### §13.4.4 Example 13.6: the discretization error of the 1-D model problem -/
+/-! ### Example 13.6: The discretization error of the one-dimensional model problem -/
 
 section DiscretizationError
 
 open Real
 
-/-- Example 13.6: the grid function of a continuous `u`, sampled at the interior points
-`x_i = i h` of `Ω_h`.  Saad writes it `u` again; the `0`-based Lean index `i : Fin n` is the
-book's `i + 1`. -/
+/-- **Example 13.6** of [saad2003iterative], the grid function of a continuous function $u$. It is
+the vector of the values $u(x_i)$ at the interior grid points $x_i = ih$, $i = 1, \dots, n$. The
+book writes it $u$ again.
+
+The $0$-based index `i : Fin n` stands for the book's $i + 1$. -/
 noncomputable def gridSample (n : ℕ) (h : ℝ) (u : ℝ → ℝ) : EuclideanSpace ℝ (Fin n) :=
   WithLp.toLp 2 fun i : Fin n => u ((((i : ℕ) : ℝ) + 1) * h)
 
-/-- The entries of `gridSample`: the value of `u` at the `i`-th interior grid point. -/
+/-- The component $i$ of the grid function of $u$ is the value of $u$ at the interior grid point
+$x_i$. -/
 theorem gridSample_apply (h : ℝ) (u : ℝ → ℝ) (i : Fin n) :
     WithLp.ofLp (gridSample n h u) i = u ((((i : ℕ) : ℝ) + 1) * h) := rfl
 
-/-- Example 13.6: the discrete `L²` norm on `Ω_h`, `‖v‖_h = h^{1/2} ‖v‖₂`. -/
+/-- **Example 13.6** of [saad2003iterative]. The **discrete $L^2$ norm** on the grid with mesh size
+$h$ is
+$$\|v\|_h = h^{1/2} \|v\|_2.$$
+-/
 noncomputable def discreteL2Norm (h : ℝ) (v : EuclideanSpace ℝ (Fin n)) : ℝ := √h * ‖v‖
 
-/-- The Dirichlet extension of a sampled `u` is `u` itself at every grid index `0, …, n + 1`,
-boundary points included: that is exactly what `u(0) = u(1) = 0` buys, and it is what lets the
-rows of the model matrix be read as centered second differences of `u` with no special case at
-the two ends. -/
+/-- **Example 13.6** of [saad2003iterative], the boundary values. Let $h = 1/(n+1)$ and let
+$u(0) = u(1) = 0$. Then the extension of the grid function of $u$ by zero boundary values equals
+$u(kh)$ at every grid index $k = 0, 1, \dots, n + 1$, boundary points included.
+
+So the rows of the model matrix are centred second differences of $u$, with no special case at
+the two ends. The extension is `SaadSparse.Chapter02.dirichletExt`. -/
 theorem dirichletExt_gridSample {h : ℝ} {u : ℝ → ℝ} (hh : h = 1 / ((n : ℝ) + 1))
     (hu0 : u 0 = 0) (hu1 : u 1 = 0) {k : ℕ} (hk : k ≤ n + 1) :
     Chapter02.dirichletExt (WithLp.ofLp (gridSample n h u)) k = u ((k : ℝ) * h) := by
@@ -740,10 +940,15 @@ theorem dirichletExt_gridSample {h : ℝ} {u : ℝ → ℝ} (hh : h = 1 / ((n : 
       push_cast
       rw [hx, hu1]
 
-/-- **Example 13.6, the truncation error**: for `u` of class `C⁴` solving `-u'' = f` with
-homogeneous Dirichlet conditions, every component of `f^h - A_h u` is `(h²/12) u⁴(ξ_i)` for some
-`ξ_i` in `(x_i - h, x_i + h)`, hence bounded by `K h²/12` with `K` a bound on `|u⁴|` over `[0,1]`.
-This is Saad's use of (2.12), `SaadSparse.Chapter02.equation_2_12`. -/
+/-- **Example 13.6** of [saad2003iterative], the truncation error. Let $h = 1/(n+1)$, let $u$ be of
+class $C^4$ with $u(0) = u(1) = 0$, let $f = -u''$, and let $|u^{(4)}(x)| \le K$ for
+$x \in [0, 1]$. Let $A_h = h^{-2}\operatorname{tridiag}(-1, 2, -1)$. Then every component of the
+truncation error satisfies
+$$|(f^h - A_h u)_i| \le \frac{K h^2}{12}.$$
+
+The proof uses (2.12) (`SaadSparse.Chapter02.equation_2_12`), which writes the component as
+$h^2/12$ times a value of $u^{(4)}$ in $(x_i - h, x_i + h)$. The matrix $A_h$ is
+`SaadSparse.Chapter02.laplacian1D n h`. -/
 theorem example_13_6_truncation {h : ℝ} (hh : h = 1 / ((n : ℝ) + 1)) {u f : ℝ → ℝ}
     (hu : ContDiff ℝ 4 u) (hu0 : u 0 = 0) (hu1 : u 1 = 0)
     (hf : ∀ x, f x = -iteratedDeriv 2 u x) {K : ℝ}
@@ -788,16 +993,19 @@ theorem example_13_6_truncation {h : ℝ} (hh : h = 1 / ((n : ℝ) + 1)) {u f : 
   have := hK ξ hmem
   nlinarith [abs_nonneg (iteratedDeriv 4 u ξ), sq_nonneg h]
 
-/-- **Example 13.6**, the discretization error of the one-dimensional model problem:
-`‖u^h - u‖_h ≤ K h⁴/(48 sin²(πh/2))`, where `u^h` solves `A_h u^h = f^h`, `u` is the exact solution
-sampled on the grid and `K` bounds `|u⁴|` on `[0,1]`.
+/-- **Example 13.6** of [saad2003iterative], the discretization error. Let $h = 1/(n+1)$, let $u$ be
+of class $C^4$ with $u(0) = u(1) = 0$, let $f = -u''$, and let $|u^{(4)}(x)| \le K$ for
+$x \in [0, 1]$. Let $u^h$ solve $A_h u^h = f^h$ with
+$A_h = h^{-2}\operatorname{tridiag}(-1, 2, -1)$. Then, with $u$ sampled on the grid,
+$$\|u^h - u\|_h \le \frac{K h^4}{48 \sin^2(\pi h/2)}.$$
+This is (13.48) with $\kappa = 2$.
 
-Saad's chain is `‖u^h - u‖_h = ‖A_h⁻¹(f^h - A_h u)‖_h ≤ ‖A_h⁻¹‖_h ‖f^h - A_h u‖_h`, with
-`‖A_h⁻¹‖_h = 1/λ_min(A_h)` and `λ_min(A_h) = 4 sin²(πh/2)/h²` from (13.7); no inverse appears here,
-because the same bound is `λ_min ‖e‖ ≤ ‖A_h e‖`
-(`LinearMap.IsCoerciveWith.norm_le_norm_apply`) applied to the error `e` directly.  The
-`h^{1/2}` in the discrete `L²` norm is what turns the componentwise bound `K h²/12` into a bound on
-the whole vector without a factor `√n`.  The conclusion is (13.48) with `κ = 2`. -/
+The chain of the book is $\|u^h - u\|_h = \|A_h^{-1}(f^h - A_h u)\|_h \le \|A_h^{-1}\|_h \|f^h -
+A_h u\|_h$, with $\|A_h^{-1}\|_h = 1/\lambda_{\min}(A_h)$ and
+$\lambda_{\min}(A_h) = 4\sin^2(\pi h/2)/h^2$ from (13.7). The proof uses the same bound in the
+form $\lambda_{\min}\|e\| \le \|A_h e\|$ (`LinearMap.IsCoerciveWith.norm_le_norm_apply`) for the
+error $e$, with no inverse. The factor $h^{1/2}$ of the discrete $L^2$ norm turns the
+componentwise bound $Kh^2/12$ into a bound on the whole vector without a factor $\sqrt n$. -/
 theorem example_13_6 {h : ℝ} (hh : h = 1 / ((n : ℝ) + 1)) {u f : ℝ → ℝ}
     (hu : ContDiff ℝ 4 u) (hu0 : u 0 = 0) (hu1 : u 1 = 0)
     (hf : ∀ x, f x = -iteratedDeriv 2 u x) {K : ℝ}
@@ -860,14 +1068,20 @@ theorem example_13_6 {h : ℝ} (hh : h = 1 / ((n : ℝ) + 1)) {u f : ℝ → ℝ
   calc discreteL2Norm h e * (48 * sin (π * h / 2) ^ 2) ≤ 12 * h ^ 2 * (K * h ^ 2 / 12) := hkey
     _ = K * h ^ 4 := by ring
 
-/-- **Example 13.6, Saad's closing display** — with the exponent the derivation requires.  Saad
-bounds `1/λ_min` by `1/(π²(1 - (πh/2)²/6))` and concludes
-`‖u^h - u‖_h ≤ K h²/(12 π² (1 - (πh/2)²/6))`.  That is not what his own step gives: `λ_min` is
-`π² (sin x / x)²` at `x = πh/2`, and `sin x / x ≥ 1 - x²/6` bounds the *square* by `(1 - x²/6)²`,
-not by `1 - x²/6`.  The printed inequality is false: at `h = 1/2` one has
-`(sin x / x)² = 0.8105… < 0.8971… = 1 - x²/6`.  The statement here carries the square, which is
-what the argument proves and is only slightly weaker.  It needs no hypothesis on `h` beyond
-`h = 1/(n+1)`, since `πh/2 ≤ 2` already makes the bracket positive. -/
+/-- **Example 13.6** of [saad2003iterative], the closing display. Under the hypotheses of
+`SaadSparse.Chapter13.example_13_6`,
+$$\|u^h - u\|_h \le \frac{K h^2}{12 \pi^2 \left(1 - (\pi h/2)^2/6\right)^2}.$$
+
+**Correction.** The book bounds $1/\lambda_{\min}$ by $1/(\pi^2(1 - (\pi h/2)^2/6))$ and
+concludes $\|u^h - u\|_h \le K h^2/(12\pi^2(1 - (\pi h/2)^2/6))$. Its own step does not give
+this: $\lambda_{\min} = \pi^2(\sin x/x)^2$ at $x = \pi h/2$, and $\sin x/x \ge 1 - x^2/6$ bounds
+the square by $(1 - x^2/6)^2$, not by $1 - x^2/6$. The printed step is false, because
+$1 - x^2/6$ is not a lower bound for $(\sin x/x)^2$: at $h = 1/2$, $(\sin x/x)^2 = 0.8105\ldots
+< 0.8971\ldots = 1 - x^2/6$. The statement here has the square, which is what the argument
+proves, and is only slightly weaker.
+
+No hypothesis on $h$ beyond $h = 1/(n+1)$ is needed, because $\pi h/2 \le 2$ already makes the
+bracket positive. -/
 theorem example_13_6_le {h : ℝ} (hh : h = 1 / ((n : ℝ) + 1)) {u f : ℝ → ℝ}
     (hu : ContDiff ℝ 4 u) (hu0 : u 0 = 0) (hu1 : u 1 = 0)
     (hf : ∀ x, f x = -iteratedDeriv 2 u x) {K : ℝ}

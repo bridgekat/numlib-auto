@@ -13,33 +13,76 @@ import Numlib.Projection.OneDimensional
 import NumlibSurface.SaadSparse.Chapter05.Section01
 
 /-!
-# Saad §5.3: one-dimensional projection processes
+# Saad, Section 5.3: One-dimensional projection processes
 
-Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM,
-2003, §5.3: the elementary step (5.12), steepest descent (Algorithm 5.2), Kantorovich's inequality
-(Lemma 5.8) and Theorem 5.9, the minimal-residual iteration (Algorithm 5.3) and Theorem 5.10, and
-the residual-norm steepest descent (Algorithm 5.4).
+This module formalizes §5.3 of [saad2003iterative], the projection methods for $Ax = b$ with
+$A \in \mathbb{R}^{n \times n}$ in which $K = \operatorname{span}\{v\}$ and
+$L = \operatorname{span}\{w\}$ are lines. One step from $x$, with residual $r = b - Ax$, is
+$$x \mapsto x + \frac{(w, r)}{(w, Av)} \, v \qquad (5.12).$$
+Steepest descent (Algorithm 5.2) takes $v = w = r$; for symmetric positive definite $A$ it reduces
+the $A$-norm of the error by the factor $(\lambda_{\max} - \lambda_{\min})/(\lambda_{\max} +
+\lambda_{\min})$ at each step (Theorem 5.9), by Kantorovich's inequality (Lemma 5.8). The minimal
+residual iteration (Algorithm 5.3) takes $v = r$, $w = Ar$; for positive definite $A$ it reduces the
+residual norm by the factor $(1 - \mu^2/\sigma^2)^{1/2}$ with $\mu = \lambda_{\min}((A + A^T)/2)$
+and $\sigma = \|A\|_2$ (Theorem 5.10). The residual norm steepest descent (Algorithm 5.4) takes
+$v = A^Tr$, $w = Av$; it is steepest descent for the normal equations $A^TAx = A^Tb$.
 
-All three steps are the backbone's `Projection.step1` for `Matrix.toEuclideanLin A`
-(`step1_eq`, `sdStep_eq`, `mrStep_eq` are `rfl`), so the convergence estimates specialize
-`Numlib/Projection/OneDimensional.lean`.
+The module also proves the exact one-step identities (5.16)–(5.18) and the bound (5.20), the
+convergence factor $\rho = \sup_{x \neq 0} \sin \angle(x, Ax)$ of §5.3.2, Example 5.1, and that
+Algorithms 5.2–5.4 as printed, with a recursively updated residual, compute the projection iterates.
+All three steps are `Projection.step1` of the backbone for `Matrix.toEuclideanLin A`, so the
+estimates specialize `Numlib.Projection.OneDimensional`.
 
-The exact one-step identities specialize the backbone's
-`Projection.norm_residual_minResStep_sq_eq` and `Projection.energyNorm_steepestDescentStep_sq_eq`:
-`equation_5_18` is the book's (5.16)–(5.18), `norm_residual_mrStep_eq_sin` is the `sin ∠` reading
-of (5.18), and `energyNorm_sdStep_sq_eq` is the unnumbered display closing the proof of Theorem
-5.9.  Saad's own (5.20), the alternative residual bound
-`‖r_{k+1}‖₂² ≤ (1 - μ(A) μ(A⁻¹)) ‖r_k‖₂²`, is `equation_5_20`; the convergence factor
-`ρ = sup_{x ≠ 0} sin ∠(x, A x) < 1` that §5.3.2 reads off (5.18) is `sinAngleSup`.
+## Main definitions
 
-Each of Algorithms 5.2–5.4 is printed with a *recursively updated* residual, one matrix–vector
-product per step; `sdAlgStep`, `mrAlgStep` and `rnsdAlgStep` are those state machines and
-`sdAlg_spec`, `mrAlg_spec`, `rnsdAlg_spec` say that the carried vector really is `b - A x_k`, so
-that each algorithm computes the corresponding projection iterate.
+* Equation (5.12), `SaadSparse.Chapter05.step1`: the one-dimensional projection step onto
+  $\operatorname{span}\{v\}$ orthogonally to $\operatorname{span}\{w\}$.
+* Algorithm 5.2, `SaadSparse.Chapter05.sdStep` and `SaadSparse.Chapter05.sdAlgStep`: the steepest
+  descent step, and the algorithm as printed.
+* Algorithm 5.3, `SaadSparse.Chapter05.mrStep` and `SaadSparse.Chapter05.mrAlgStep`: the minimal
+  residual step, and the algorithm as printed.
+* Algorithm 5.4, `SaadSparse.Chapter05.rnsdStep` and `SaadSparse.Chapter05.rnsdAlgStep`: the
+  residual norm steepest descent step, and the algorithm as printed.
+* §5.3.2, `SaadSparse.Chapter05.sinAngleSup`: the convergence factor
+  $\rho = \sup_{x \neq 0} \sin \angle(x, Ax)$.
 
-Example 5.1 is `example_5_1`: the elementary relaxation step at coordinate `i` is the projection
-step onto `span {e_i}` orthogonally to `span {e_i}`, and it annihilates component `i` of the
-residual, which is Saad's (4.6).
+## Main results
+
+* Example 5.1, `SaadSparse.Chapter05.example_5_1`: the projection step onto
+  $K = L = \operatorname{span}\{e_i\}$ is the elementary relaxation step
+  $x \mapsto x + (r_i/a_{ii}) e_i$.
+* Lemma 5.8, `SaadSparse.Chapter05.lemma_5_8`: Kantorovich's inequality.
+* Theorem 5.9, `SaadSparse.Chapter05.theorem_5_9` and `SaadSparse.Chapter05.theorem_5_9_tendsto`:
+  the $A$-norm of the error of steepest descent decreases geometrically, and the iterates converge.
+* Equations (5.16)–(5.18), `SaadSparse.Chapter05.equation_5_18` and
+  `SaadSparse.Chapter05.norm_residual_mrStep_eq_sin`: the exact one-step residual identity of the
+  minimal residual iteration, and its form $\|r_{k+1}\|_2 = \|r_k\|_2 \sin \angle(r_k, Ar_k)$.
+* Theorem 5.10, `SaadSparse.Chapter05.theorem_5_10` and `SaadSparse.Chapter05.theorem_5_10_tendsto`:
+  the residual norm of the minimal residual iteration decreases geometrically, and the iterates
+  converge.
+* Equation (5.20), `SaadSparse.Chapter05.equation_5_20`: $\|r_{k+1}\|_2^2 \le (1 -
+  \mu(A)\mu(A^{-1})) \|r_k\|_2^2$.
+* §5.3.2, `SaadSparse.Chapter05.norm_mrStep_le_sup_sin`: the minimal residual iteration reduces the
+  residual norm by the factor $\rho < 1$.
+* Algorithm 5.4, `SaadSparse.Chapter05.rnsdStep_min` and `SaadSparse.Chapter05.rnsd_tendsto`: each
+  step minimizes the residual norm on its line, and the iterates converge for nonsingular $A$.
+* Algorithms 5.2–5.4, `SaadSparse.Chapter05.sdAlg_spec`, `SaadSparse.Chapter05.mrAlg_spec`,
+  `SaadSparse.Chapter05.rnsdAlg_spec`: the algorithms as printed compute the projection iterates and
+  carry the true residual.
+
+## Implementation notes
+
+* "$A$ is positive definite" is the definition of the book, `Matrix.IsPositiveReal`: $(Au, u) > 0$
+  for every $u \neq 0$, with no symmetry. "Symmetric positive definite" is Mathlib's
+  `Matrix.PosDef`.
+* The smallest and largest eigenvalues $\lambda_{\min}$ and $\lambda_{\max}$ of a symmetric matrix
+  are `SaadSparse.lambdaMin` and `SaadSparse.lambdaMax`, which need $n \ge 1$.
+* The norm $\sigma = \|A\|_2$ is the norm of the scoped instance `Matrix.Norms.L2Operator`. The
+  angle $\angle(x, y)$ is `InnerProductGeometry.angle`.
+* Equation (5.20) of the book is the residual bound `SaadSparse.Chapter05.equation_5_20` of §5.3.2.
+  The exact identity for the $A$-norm of the error of steepest descent,
+  `SaadSparse.Chapter05.energyNorm_sdStep_sq_eq`, is the last display in the proof of Theorem 5.9,
+  which the book does not number.
 -/
 
 open Matrix Module Filter Topology
@@ -49,28 +92,38 @@ namespace SaadSparse.Chapter05
 
 variable {n : ℕ}
 
-/-- Saad Chapter 5 works in `ℝⁿ`. -/
+/-- The notation `E n` stands for `EuclideanSpace ℝ (Fin n)`, the space $\mathbb{R}^n$ of Chapter 5.
+-/
 local notation "E" n => EuclideanSpace ℝ (Fin n)
 
 variable {A : Matrix (Fin n) (Fin n) ℝ} {b x₀ x : E n}
 
 /-! ### The elementary step (5.12) -/
 
-/-- Saad (5.12): the one-dimensional projection step onto `span {v}` orthogonally to
-`span {w}`. -/
+/-- **Equation (5.12)** of [saad2003iterative]. For $A \in \mathbb{R}^{n \times n}$ and
+$b, v, w \in \mathbb{R}^n$, the **one-dimensional projection step** onto
+$\operatorname{span}\{v\}$ orthogonally to $\operatorname{span}\{w\}$ from $x$ is
+$$x \mapsto x + \frac{(w, r)}{(w, Av)} \, v, \qquad r = b - Ax.$$
+
+If $(w, Av) = 0$, the quotient is $0$ in Lean, and the step returns $x$. -/
 noncomputable def step1 (A : Matrix (Fin n) (Fin n) ℝ) (b v w x : E n) : E n :=
   x + (inner ℝ w (b - (A ⬝ x)) / inner ℝ w (A ⬝ v)) • v
 
-/-- Saad (5.12) is the backbone's `Projection.step1`. -/
+/-- The step (5.12) of [saad2003iterative] is `Projection.step1` of the backbone for the operator
+`Matrix.toEuclideanLin A`. -/
 theorem step1_eq (A : Matrix (Fin n) (Fin n) ℝ) (b v w x : E n) :
     step1 A b v w x = Projection.step1 (toEuclideanLin A) b v w x := rfl
 
-/-- Saad (5.12): the step is a projection step onto `span {v}` orthogonally to `span {w}`. -/
+/-- Equation (5.12) of [saad2003iterative]: if $(w, Av) \neq 0$, the step is a projection
+approximation onto $\operatorname{span}\{v\}$ orthogonally to $\operatorname{span}\{w\}$,
+starting from $x$. -/
 theorem step1_isProjectionApprox (v w : E n) (h : inner ℝ w (A ⬝ v) ≠ 0) :
     IsProjectionApprox A b x (ℝ ∙ v) (ℝ ∙ w) (step1 A b v w x) :=
   isProjectionApprox_iff.mpr (Projection.step1_isPetrovGalerkin v w x h)
 
-/-- Saad (5.12): the step is the *unique* such approximation. -/
+/-- Equation (5.12) of [saad2003iterative]: if $(w, Av) \neq 0$, the step is the only projection
+approximation onto $\operatorname{span}\{v\}$ orthogonally to $\operatorname{span}\{w\}$,
+starting from $x$. -/
 theorem isProjectionApprox_span_singleton_iff {v w x' : E n} (h : inner ℝ w (A ⬝ v) ≠ 0) :
     IsProjectionApprox A b x (ℝ ∙ v) (ℝ ∙ w) x' ↔ x' = step1 A b v w x := by
   refine ⟨fun hx' => ?_, fun hx' => hx' ▸ step1_isProjectionApprox v w h⟩
@@ -86,33 +139,45 @@ theorem isProjectionApprox_span_singleton_iff {v w x' : E n} (h : inner ℝ w (A
 
 /-! ### Steepest descent (Algorithm 5.2) and minimal residual (Algorithm 5.3) -/
 
-/-- Saad, Algorithm 5.2: the steepest-descent step `v = w = r`. -/
+/-- **Algorithm 5.2** of [saad2003iterative], the step. The **steepest descent step** from $x$ is
+the step (5.12) with $v = w = r$, where $r = b - Ax$:
+$$x \mapsto x + \frac{(r, r)}{(r, Ar)} \, r.$$
+-/
 noncomputable def sdStep (A : Matrix (Fin n) (Fin n) ℝ) (b x : E n) : E n :=
   step1 A b (b - (A ⬝ x)) (b - (A ⬝ x)) x
 
-/-- Saad, Algorithm 5.3: the minimal-residual step `v = r`, `w = A r`. -/
+/-- **Algorithm 5.3** of [saad2003iterative], the step. The **minimal residual step** from $x$ is
+the step (5.12) with $v = r$ and $w = Ar$, where $r = b - Ax$:
+$$x \mapsto x + \frac{(Ar, r)}{(Ar, Ar)} \, r.$$
+-/
 noncomputable def mrStep (A : Matrix (Fin n) (Fin n) ℝ) (b x : E n) : E n :=
   step1 A b (b - (A ⬝ x)) (A ⬝ (b - (A ⬝ x))) x
 
-/-- Saad, Algorithm 5.4: the residual-norm steepest-descent step `v = Aᵀ r`, `w = A v`. -/
+/-- **Algorithm 5.4** of [saad2003iterative], the step. The **residual norm steepest descent step**
+from $x$ is the step (5.12) with $v = A^Tr$ and $w = Av$, where $r = b - Ax$. -/
 noncomputable def rnsdStep (A : Matrix (Fin n) (Fin n) ℝ) (b x : E n) : E n :=
   step1 A b (Aᵀ ⬝ (b - (A ⬝ x))) (A ⬝ (Aᵀ ⬝ (b - (A ⬝ x)))) x
 
+/-- The steepest descent step is `Projection.steepestDescentStep` of the backbone for the operator
+of $A$. -/
 theorem sdStep_eq (A : Matrix (Fin n) (Fin n) ℝ) (b x : E n) :
     sdStep A b x = Projection.steepestDescentStep (toEuclideanLin A) b x := rfl
 
+/-- The minimal residual step is `Projection.minResStep` of the backbone for the operator of $A$. -/
 theorem mrStep_eq (A : Matrix (Fin n) (Fin n) ℝ) (b x : E n) :
     mrStep A b x = Projection.minResStep (toEuclideanLin A) b x := rfl
 
-/-- Saad, Algorithm 5.2: each steepest-descent step is an orthogonal projection step onto the
-residual direction. -/
+/-- Algorithm 5.2 of [saad2003iterative]: if $A$ is positive definite, each steepest descent step is
+a projection approximation onto $\operatorname{span}\{r\}$ orthogonally to
+$\operatorname{span}\{r\}$, where $r = b - Ax$. -/
 theorem sdStep_isProjectionApprox (hA : A.IsPositiveReal) (b x : E n) :
     IsProjectionApprox A b x (ℝ ∙ (b - (A ⬝ x))) (ℝ ∙ (b - (A ⬝ x))) (sdStep A b x) :=
   isProjectionApprox_iff.mpr
     (Projection.steepestDescentStep_isGalerkin x ((Matrix.isPositiveReal_iff_isCoercive A).mp hA))
 
-/-- Saad, Algorithm 5.2: the steepest-descent step minimizes the energy norm of the error along
-the residual line. -/
+/-- Algorithm 5.2 of [saad2003iterative]: if $A$ is symmetric positive definite and $Ax^* = b$, the
+steepest descent step from $x$ minimizes the error functional $E$ over the line
+$x + \operatorname{span}\{r\}$. -/
 theorem sdStep_min (hA : A.PosDef) {xstar : E n} (hstar : (A ⬝ xstar) = b) (x y : E n)
     (hy : y - x ∈ (ℝ ∙ (b - (A ⬝ x)))) : E_A A xstar (sdStep A b x) ≤ E_A A xstar y := by
   have hpr : A.IsPositiveReal := by
@@ -120,8 +185,8 @@ theorem sdStep_min (hA : A.PosDef) {xstar : E n} (hstar : (A ⬝ xstar) = b) (x 
     exact ((Matrix.posDef_iff_isSymmetricCoercive A).mp hA).isCoercive
   exact ((proposition_5_2 hA hstar).mp (sdStep_isProjectionApprox hpr b x)).2 y hy
 
-/-- Saad, Algorithm 5.3: each minimal-residual step minimizes the residual norm along the
-residual line. -/
+/-- Algorithm 5.3 of [saad2003iterative]: for every $A$, the minimal residual step from $x$
+minimizes the residual norm $\|b - Ay\|_2$ over the line $y \in x + \operatorname{span}\{r\}$. -/
 theorem mrStep_min (b x y : E n)
     (hy : y - x ∈ (ℝ ∙ (b - (A ⬝ x)))) : R_A A b (mrStep A b x) ≤ R_A A b y :=
   (Projection.minResStep_isMinResidual x).min y hy
@@ -130,15 +195,19 @@ theorem mrStep_min (b x y : E n)
 
 variable [NeZero n]
 
-/-- `λ_min` of a symmetric positive definite matrix is positive, every eigenvalue of it being
-positive.  This is the hypothesis all the estimates of §5.3 take. -/
+/-- For a symmetric positive definite $B$, $\lambda_{\min}(B) > 0$, because every eigenvalue of $B$
+is positive. -/
 private theorem lambdaMin_pos {B : Matrix (Fin n) (Fin n) ℝ} (hB : B.PosDef) :
     0 < lambdaMin hB.1 := by
   rw [lambdaMin, Finset.lt_inf'_iff]
   exact fun i _ => Matrix.PosDef.eigenvalues_pos hB i
 
-/-- Saad, Lemma 5.8 (Kantorovich's inequality): for a real SPD `B`,
-`(Bx, x)(B⁻¹x, x) ≤ (λ_max + λ_min)²/(4 λ_max λ_min) (x, x)²`. -/
+/-- **Lemma 5.8** of [saad2003iterative] (Kantorovich inequality). Let
+$B \in \mathbb{R}^{n \times n}$, $n \ge 1$, be symmetric positive definite with smallest and
+largest eigenvalues $\lambda_{\min}$ and $\lambda_{\max}$. Then for every $x \in \mathbb{R}^n$,
+$$(Bx, x)(B^{-1}x, x) \le \frac{(\lambda_{\max} + \lambda_{\min})^2}{4 \lambda_{\max}
+  \lambda_{\min}} (x, x)^2.$$
+-/
 theorem lemma_5_8 {B : Matrix (Fin n) (Fin n) ℝ} (hB : B.PosDef) (x : Fin n → ℝ) :
     ((B *ᵥ x) ⬝ᵥ x) * ((B⁻¹ *ᵥ x) ⬝ᵥ x) ≤
       (lambdaMax hB.1 + lambdaMin hB.1) ^ 2 / (4 * lambdaMax hB.1 * lambdaMin hB.1) *
@@ -163,8 +232,12 @@ theorem lemma_5_8 {B : Matrix (Fin n) (Fin n) ℝ} (hB : B.PosDef) (x : Fin n �
 
 /-! ### Theorem 5.9 -/
 
-/-- Saad, Theorem 5.9: the steepest-descent step contracts the energy norm of the error by the
-factor `(λ_max - λ_min)/(λ_max + λ_min)`. -/
+/-- **Theorem 5.9** of [saad2003iterative], one step. Let $A \in \mathbb{R}^{n \times n}$,
+$n \ge 1$, be symmetric positive definite, and let $Ax^* = b$. Then for every $x$ the steepest
+descent step $x'$ satisfies
+$$E(x') \le \frac{\lambda_{\max} - \lambda_{\min}}{\lambda_{\max} + \lambda_{\min}} \, E(x),$$
+where $E$ is the error functional $E(x) = (A(x^* - x), x^* - x)^{1/2}$ and $\lambda_{\min}$,
+$\lambda_{\max}$ are the extreme eigenvalues of $A$. -/
 theorem theorem_5_9_step (hA : A.PosDef) {xstar : E n} (hstar : (A ⬝ xstar) = b) (x : E n) :
     E_A A xstar (sdStep A b x) ≤
       (lambdaMax hA.1 - lambdaMin hA.1) / (lambdaMax hA.1 + lambdaMin hA.1) *
@@ -172,7 +245,10 @@ theorem theorem_5_9_step (hA : A.PosDef) {xstar : E n} (hstar : (A ⬝ xstar) = 
   Projection.energyNorm_steepestDescentStep_le (lambdaMin_pos hA)
     (isSymmetricBoundedBy_toEuclideanLin hA.1) hstar x
 
-/-- The contraction factor of Theorem 5.9 lies in `[0, 1)`. -/
+/-- **Theorem 5.9** of [saad2003iterative], the factor. For a symmetric positive definite
+$H \in \mathbb{R}^{n \times n}$, $n \ge 1$, the contraction factor satisfies
+$$0 \le \frac{\lambda_{\max} - \lambda_{\min}}{\lambda_{\max} + \lambda_{\min}} < 1.$$
+-/
 theorem theorem_5_9_factor_lt_one {H : Matrix (Fin n) (Fin n) ℝ} (hH : H.PosDef) :
     0 ≤ (lambdaMax hH.1 - lambdaMin hH.1) / (lambdaMax hH.1 + lambdaMin hH.1) ∧
       (lambdaMax hH.1 - lambdaMin hH.1) / (lambdaMax hH.1 + lambdaMin hH.1) < 1 := by
@@ -183,8 +259,13 @@ theorem theorem_5_9_factor_lt_one {H : Matrix (Fin n) (Fin n) ℝ} (hH : H.PosDe
   rw [div_lt_one hsum]
   linarith
 
-/-- Saad, Theorem 5.9: geometric decay of the energy norm of the error along Algorithm 5.2
-(`Projection.energyNorm_iterate_steepestDescentStep_le`). -/
+/-- **Theorem 5.9** of [saad2003iterative]. Let $A \in \mathbb{R}^{n \times n}$, $n \ge 1$, be
+symmetric positive definite, and let $Ax^* = b$. Then for every $x_0$ and $k \ge 0$ the iterates
+$x_k$ of Algorithm 5.2 satisfy
+$$E(x_k) \le \left( \frac{\lambda_{\max} - \lambda_{\min}}{\lambda_{\max} + \lambda_{\min}}
+  \right)^k E(x_0).$$
+
+The proof specializes `Projection.energyNorm_iterate_steepestDescentStep_le`. -/
 theorem theorem_5_9 (hA : A.PosDef) {xstar : E n} (hstar : (A ⬝ xstar) = b) (x₀ : E n) (k : ℕ) :
     E_A A xstar ((sdStep A b)^[k] x₀) ≤
       ((lambdaMax hA.1 - lambdaMin hA.1) / (lambdaMax hA.1 + lambdaMin hA.1)) ^ k *
@@ -192,8 +273,11 @@ theorem theorem_5_9 (hA : A.PosDef) {xstar : E n} (hstar : (A ⬝ xstar) = b) (x
   Projection.energyNorm_iterate_steepestDescentStep_le (lambdaMin_pos hA)
     (isSymmetricBoundedBy_toEuclideanLin hA.1) hstar x₀ k
 
-/-- Saad, Theorem 5.9: Algorithm 5.2 converges to the solution from every starting vector
-(`Projection.tendsto_iterate_steepestDescentStep`). -/
+/-- **Theorem 5.9** of [saad2003iterative], convergence. Let $A \in \mathbb{R}^{n \times n}$,
+$n \ge 1$, be symmetric positive definite, and let $Ax^* = b$. Then the iterates of Algorithm
+5.2 converge to $x^*$ from every starting vector.
+
+The proof specializes `Projection.tendsto_iterate_steepestDescentStep`. -/
 theorem theorem_5_9_tendsto (hA : A.PosDef) {xstar : E n} (hstar : (A ⬝ xstar) = b) (x₀ : E n) :
     Tendsto (fun k => (sdStep A b)^[k] x₀) atTop (𝓝 xstar) :=
   Projection.tendsto_iterate_steepestDescentStep (lambdaMin_pos hA)
@@ -202,7 +286,7 @@ theorem theorem_5_9_tendsto (hA : A.PosDef) {xstar : E n} (hstar : (A ⬝ xstar)
 /-! ### Theorem 5.10 -/
 
 omit [NeZero n] in
-/-- The Hermitian part of a positive real matrix is SPD. -/
+/-- If $A$ is positive definite, its symmetric part $(A + A^T)/2$ is symmetric positive definite. -/
 theorem posDef_hermitianPart (hA : A.IsPositiveReal) : (Matrix.hermitianPart A).PosDef := by
   rw [Matrix.posDef_iff_isSymmetricCoercive]
   obtain ⟨c, hc, hcA⟩ := (Matrix.isPositiveReal_iff_isCoercive A).mp hA
@@ -211,14 +295,18 @@ theorem posDef_hermitianPart (hA : A.IsPositiveReal) : (Matrix.hermitianPart A).
   rw [Matrix.re_inner_hermitianPart A u]
   exact hcA u
 
-/-- Saad, Theorem 5.10: `μ = λ_min((A + Aᵀ)/2) > 0` for a positive real `A`. -/
+/-- Theorem 5.10 of [saad2003iterative]: if $A$ is positive definite and $n \ge 1$, then
+$\mu = \lambda_{\min}((A + A^T)/2) > 0$. -/
 theorem lambdaMin_hermitianPart_pos (hA : A.IsPositiveReal) :
     0 < lambdaMin (Matrix.hermitianPart_isHermitian A) :=
   lambdaMin_pos (posDef_hermitianPart hA)
 
 open scoped Matrix.Norms.L2Operator in
-/-- Saad, Theorem 5.10: the minimal-residual step contracts the residual by the factor
-`(1 - μ²/σ²)^{1/2}` with `μ = λ_min((A + Aᵀ)/2)` and `σ = ‖A‖₂`. -/
+/-- **Theorem 5.10** of [saad2003iterative], one step. Let $A \in \mathbb{R}^{n \times n}$,
+$n \ge 1$, be positive definite, and let $\mu = \lambda_{\min}((A + A^T)/2)$ and
+$\sigma = \|A\|_2$. Then for every $b$ and $x$ the minimal residual step $x'$ satisfies
+$$\|b - Ax'\|_2 \le \left( 1 - \frac{\mu^2}{\sigma^2} \right)^{1/2} \|b - Ax\|_2.$$
+-/
 theorem theorem_5_10_step (hA : A.IsPositiveReal) (b x : E n) :
     ‖b - (A ⬝ mrStep A b x)‖ ≤
       Real.sqrt (1 - lambdaMin (Matrix.hermitianPart_isHermitian A) ^ 2 / ‖A‖ ^ 2) *
@@ -230,9 +318,9 @@ theorem theorem_5_10_step (hA : A.IsPositiveReal) (b x : E n) :
     (A := LinearMap.toContinuousLinearMap (toEuclideanLin A)) hpos hcoer b x
 
 open scoped Matrix.Norms.L2Operator in
-/-- Saad, Theorem 5.10: `μ = λ_min((A + Aᵀ)/2)` never exceeds `σ = ‖A‖₂`, because the coercivity
-constant is a lower bound for `‖A u‖/‖u‖`.  This is what makes the factor of Theorem 5.10 real and
-less than `1`. -/
+/-- Theorem 5.10 of [saad2003iterative]: for every $A \in \mathbb{R}^{n \times n}$ with $n \ge 1$,
+$\mu = \lambda_{\min}((A + A^T)/2) \le \sigma = \|A\|_2$, because $\mu$ is a lower bound of
+$(Au, u)/(u, u) \le \|Au\|_2/\|u\|_2$. So the factor of Theorem 5.10 is real and less than $1$. -/
 theorem lambdaMin_hermitianPart_le_opNorm (A : Matrix (Fin n) (Fin n) ℝ) :
     lambdaMin (Matrix.hermitianPart_isHermitian A) ≤ ‖A‖ := by
   obtain ⟨i⟩ : Nonempty (Fin n) := ⟨⟨0, Nat.pos_of_ne_zero (NeZero.ne n)⟩⟩
@@ -249,7 +337,8 @@ theorem lambdaMin_hermitianPart_le_opNorm (A : Matrix (Fin n) (Fin n) ℝ) :
   linarith
 
 open scoped Matrix.Norms.L2Operator in
-/-- The contraction factor of Theorem 5.10 lies in `[0, 1)`. -/
+/-- Theorem 5.10 of [saad2003iterative]: if $A$ is positive definite and $n \ge 1$, the contraction
+factor satisfies $(1 - \mu^2/\sigma^2)^{1/2} < 1$. -/
 theorem theorem_5_10_factor_lt_one (hA : A.IsPositiveReal) :
     Real.sqrt (1 - lambdaMin (Matrix.hermitianPart_isHermitian A) ^ 2 / ‖A‖ ^ 2) < 1 := by
   have hpos := lambdaMin_hermitianPart_pos hA
@@ -259,8 +348,11 @@ theorem theorem_5_10_factor_lt_one (hA : A.IsPositiveReal) :
   linarith
 
 open scoped Matrix.Norms.L2Operator in
-/-- Saad, Theorem 5.10: geometric decay of the residual along Algorithm 5.3,
-`‖r_k‖₂ ≤ (1 - μ²/σ²)^{k/2} ‖r_0‖₂`. -/
+/-- **Theorem 5.10** of [saad2003iterative]. Let $A \in \mathbb{R}^{n \times n}$, $n \ge 1$, be
+positive definite, and let $\mu = \lambda_{\min}((A + A^T)/2)$ and $\sigma = \|A\|_2$. Then for
+every $b$, $x_0$ and $k \ge 0$ the residuals $r_k = b - Ax_k$ of Algorithm 5.3 satisfy
+$$\|r_k\|_2 \le \left( 1 - \frac{\mu^2}{\sigma^2} \right)^{k/2} \|r_0\|_2.$$
+-/
 theorem theorem_5_10 (hA : A.IsPositiveReal) (b x₀ : E n) (k : ℕ) :
     ‖b - (A ⬝ ((mrStep A b)^[k] x₀))‖ ≤
       Real.sqrt (1 - lambdaMin (Matrix.hermitianPart_isHermitian A) ^ 2 / ‖A‖ ^ 2) ^ k *
@@ -276,9 +368,12 @@ theorem theorem_5_10 (hA : A.IsPositiveReal) (b x₀ : E n) (k : ℕ) :
         ≤ ρ * (ρ ^ k * ‖b - (A ⬝ x₀)‖) := mul_le_mul_of_nonneg_left ih hnn
       _ = ρ ^ k * ρ * ‖b - (A ⬝ x₀)‖ := by ring
 
-/-- Saad, Theorem 5.10: Algorithm 5.3 converges to the solution from every starting vector.  The
-error is controlled by the residual through the coercivity bound `μ ‖x‖₂ ≤ ‖A x‖₂`, so the
-geometric decay of `theorem_5_10` carries over to the iterates themselves. -/
+/-- **Theorem 5.10** of [saad2003iterative], convergence. Let $A \in \mathbb{R}^{n \times n}$,
+$n \ge 1$, be positive definite. Then for every $b$ the iterates of Algorithm 5.3 converge to
+$A^{-1}b$ from every starting vector.
+
+The coercivity bound $\mu \|x\|_2 \le \|Ax\|_2$ controls the error by the residual, so the
+geometric decay of `SaadSparse.Chapter05.theorem_5_10` carries over to the iterates. -/
 theorem theorem_5_10_tendsto (hA : A.IsPositiveReal) (b x₀ : E n) :
     Tendsto (fun k => (mrStep A b)^[k] x₀) atTop (𝓝 (A⁻¹ ⬝ b)) := by
   have hpos := lambdaMin_hermitianPart_pos hA
@@ -299,13 +394,13 @@ theorem theorem_5_10_tendsto (hA : A.IsPositiveReal) (b x₀ : E n) :
 /-! ### Algorithm 5.4 -/
 
 omit [NeZero n] in
-/-- Over `ℝ`, `Aᵀ` is the adjoint of `A`: `(A u, v) = (u, Aᵀ v)`. -/
+/-- Over $\mathbb{R}$, $A^T$ is the adjoint of $A$: $(Au, v) = (u, A^Tv)$. -/
 theorem real_inner_transpose (A : Matrix (Fin n) (Fin n) ℝ) (u v : E n) :
     inner ℝ (A ⬝ u) v = inner ℝ u (Aᵀ ⬝ v) := by
   rw [real_inner_apply, real_inner_toEuclideanLin', dotProduct_mulVec, mulVec_transpose]
 
 omit [NeZero n] in
-/-- Saad §5.3.3: `AᵀA` is SPD for a nonsingular `A`. -/
+/-- §5.3.3 of [saad2003iterative]: if $A$ is nonsingular, $A^TA$ is symmetric positive definite. -/
 theorem posDef_transpose_mul_self (hA : IsUnit A) : (Aᵀ * A).PosDef := by
   have hinj : Function.Injective A.mulVec := mulVec_injective_iff_isUnit.mpr hA
   rw [← Matrix.isSPD_iff_posDef]
@@ -321,15 +416,15 @@ theorem posDef_transpose_mul_self (hA : IsUnit A) : (Aᵀ * A).PosDef := by
       ⟨i, Finset.mem_univ i, mul_self_pos.mpr hi⟩
 
 omit [NeZero n] in
-/-- The normal-equations operator: `AᵀA x` is `Aᵀ (A x)`. -/
+/-- The operator of $A^TA$ is $x \mapsto A^T(Ax)$. -/
 private theorem toEuclideanLin_normal (A : Matrix (Fin n) (Fin n) ℝ) (z : E n) :
     ((Aᵀ * A) ⬝ z) = Aᵀ ⬝ (A ⬝ z) := by
   have h : (Aᵀ * A) *ᵥ WithLp.ofLp z = Aᵀ *ᵥ (A *ᵥ WithLp.ofLp z) := (mulVec_mulVec _ _ _).symm
   exact congrArg (WithLp.toLp 2) h
 
 omit [NeZero n] in
-/-- Saad §5.3.3: Algorithm 5.4 is steepest descent applied to the normal equations
-`AᵀA x = Aᵀ b`. -/
+/-- §5.3.3 of [saad2003iterative]: for every $A$, the residual norm steepest descent step is the
+steepest descent step for the normal equations $A^TAx = A^Tb$. -/
 theorem rnsdStep_eq_sdStep_normal (A : Matrix (Fin n) (Fin n) ℝ) (b x : E n) :
     rnsdStep A b x = sdStep (Aᵀ * A) (Aᵀ ⬝ b) x := by
   have hAA : ∀ z : E n, ((Aᵀ * A) ⬝ z) = Aᵀ ⬝ (A ⬝ z) := by
@@ -350,9 +445,9 @@ theorem rnsdStep_eq_sdStep_normal (A : Matrix (Fin n) (Fin n) ℝ) (b x : E n) :
   rw [hres, hAA, hnum, hden]
 
 omit [NeZero n] in
-/-- Saad §5.3.3: `(A x, A x)` is the `AᵀA`-energy of `x`, so the energy norm of the error of the
-normal equations is the `2`-norm of the residual, `‖x* - x‖_{AᵀA} = ‖b - A x‖₂`.  This is what
-turns Theorem 5.9 for `AᵀA` into a statement about the residuals of Algorithm 5.4. -/
+/-- §5.3.3 of [saad2003iterative]: if $Ax^* = b$, the error functional of the normal equations is
+the residual norm: $\big( A^TA(x^* - x), x^* - x \big)^{1/2} = \|b - Ax\|_2$. This turns Theorem
+5.9 for $A^TA$ into a statement about the residuals of Algorithm 5.4. -/
 theorem energyNorm_normal_eq_norm_residual (A : Matrix (Fin n) (Fin n) ℝ) {b xstar : E n}
     (hstar : (A ⬝ xstar) = b) (x : E n) : E_A (Aᵀ * A) xstar x = ‖b - (A ⬝ x)‖ := by
   have hAA := toEuclideanLin_normal A (xstar - x)
@@ -363,9 +458,13 @@ theorem energyNorm_normal_eq_norm_residual (A : Matrix (Fin n) (Fin n) ℝ) {b x
   rw [E_A, hinner, Real.sqrt_sq (norm_nonneg _)]
 
 omit [NeZero n] in
-/-- Saad, Algorithm 5.4: each RNSD step minimizes the residual norm along the direction
-`-∇f/2 = Aᵀ r`, since it is the projection step onto `span {Aᵀ r}` orthogonally to
-`A span {Aᵀ r}` (Proposition 5.3). -/
+/-- **Algorithm 5.4** of [saad2003iterative], optimality of a step. Let
+$A \in \mathbb{R}^{n \times n}$ be nonsingular. Then the residual norm steepest descent step
+from $x$ minimizes $\|b - Ay\|_2$ over the line $y \in x + \operatorname{span}\{A^Tr\}$, where
+$r = b - Ax$. The direction $A^Tr$ is $-\nabla f/2$ for $f(x) = \|b - Ax\|_2^2$.
+
+The step is the projection step onto $\operatorname{span}\{A^Tr\}$ orthogonally to
+$A \operatorname{span}\{A^Tr\}$, so Proposition 5.3 applies. -/
 theorem rnsdStep_min (hA : IsUnit A) (b x y : E n)
     (hy : y - x ∈ (ℝ ∙ (Aᵀ ⬝ (b - (A ⬝ x))))) : R_A A b (rnsdStep A b x) ≤ R_A A b y := by
   rcases eq_or_ne (Aᵀ ⬝ (b - (A ⬝ x))) 0 with h0 | h0
@@ -385,9 +484,11 @@ theorem rnsdStep_min (hA : IsUnit A) (b x y : E n)
     rw [← hmap] at hproj
     exact (proposition_5_3.mp hproj).2 y hy
 
-/-- Saad §5.3.3: the residuals of Algorithm 5.4 contract by the factor
-`(λ_max(AᵀA) - λ_min(AᵀA))/(λ_max(AᵀA) + λ_min(AᵀA))`, which is Theorem 5.9 for the normal
-equations read through `energyNorm_normal_eq_norm_residual`. -/
+/-- §5.3.3 of [saad2003iterative]: let $A \in \mathbb{R}^{n \times n}$, $n \ge 1$, be nonsingular,
+and let $\lambda_{\min}$, $\lambda_{\max}$ be the extreme eigenvalues of $A^TA$. Then the
+residuals of Algorithm 5.4 satisfy $\|r_k\|_2 \le \big( (\lambda_{\max} -
+\lambda_{\min})/(\lambda_{\max} + \lambda_{\min}) \big)^k \|r_0\|_2$. This is Theorem 5.9 for
+the normal equations, by `SaadSparse.Chapter05.energyNorm_normal_eq_norm_residual`. -/
 theorem rnsd_norm_residual_le (hA : IsUnit A) (b x₀ : E n) (k : ℕ) :
     ‖b - (A ⬝ ((rnsdStep A b)^[k] x₀))‖ ≤
       ((lambdaMax (posDef_transpose_mul_self hA).1 - lambdaMin (posDef_transpose_mul_self hA).1) /
@@ -401,9 +502,12 @@ theorem rnsd_norm_residual_le (hA : IsUnit A) (b x₀ : E n) (k : ℕ) :
   rw [← hfun] at h
   rwa [energyNorm_normal_eq_norm_residual A hstar, energyNorm_normal_eq_norm_residual A hstar] at h
 
-/-- Saad §5.3.3: Algorithm 5.4 converges to the solution from every starting vector whenever `A`
-is nonsingular — it is Algorithm 5.2 for the SPD normal equations `AᵀA x = Aᵀ b`, so Theorem 5.9
-applies. -/
+/-- **Section 5.3.3** of [saad2003iterative], convergence of Algorithm 5.4. Let
+$A \in \mathbb{R}^{n \times n}$, $n \ge 1$, be nonsingular. Then for every $b$ the iterates of
+Algorithm 5.4 converge to $A^{-1}b$ from every starting vector.
+
+Algorithm 5.4 is Algorithm 5.2 for the symmetric positive definite normal equations
+$A^TAx = A^Tb$, so Theorem 5.9 applies. -/
 theorem rnsd_tendsto (hA : IsUnit A) (b x₀ : E n) :
     Tendsto (fun k => (rnsdStep A b)^[k] x₀) atTop (𝓝 (A⁻¹ ⬝ b)) := by
   have hstar : (A ⬝ (A⁻¹ ⬝ b)) = b := toEuclideanLin_mul_nonsing_inv_apply hA b
@@ -416,11 +520,13 @@ theorem rnsd_tendsto (hA : IsUnit A) (b x₀ : E n) :
 /-! ### The exact one-step identities (5.16)–(5.18) and (5.20) -/
 
 omit [NeZero n] in
-/-- Saad (5.16)–(5.18): the exact one-step residual identity of the minimal-residual iteration,
-`‖r_{k+1}‖² = ‖r_k‖² (1 - (A r_k, r_k)² / ((r_k, r_k) (A r_k, A r_k)))`.
+/-- **Equations (5.16)–(5.18)** of [saad2003iterative]. For every $A \in \mathbb{R}^{n \times n}$,
+$b$ and $x$, with $r = b - Ax$, the minimal residual step $x'$ satisfies
+$$\|b - Ax'\|_2^2 = \|r\|_2^2 \left( 1 - \frac{(Ar, r)^2}{\|r\|_2^2 \, \|Ar\|_2^2} \right).$$
 
-No hypothesis is needed: at a breakdown, where `r_k = 0` or `A r_k = 0`, both sides read `‖r_k‖²`,
-because division by zero is zero. -/
+No hypothesis is needed: at a breakdown, where $r = 0$ or $Ar = 0$, both sides are $\|r\|_2^2$,
+because division by zero is zero in Lean. The proof specializes
+`Projection.norm_residual_minResStep_sq_eq`. -/
 theorem equation_5_18 (A : Matrix (Fin n) (Fin n) ℝ) (b x : E n) :
     ‖b - (A ⬝ mrStep A b x)‖ ^ 2 =
       ‖b - (A ⬝ x)‖ ^ 2 *
@@ -431,8 +537,10 @@ theorem equation_5_18 (A : Matrix (Fin n) (Fin n) ℝ) (b x : E n) :
   simpa only [Real.norm_eq_abs, sq_abs] using h
 
 omit [NeZero n] in
-/-- Saad §5.3.2, the geometric reading of (5.18): `‖r_{k+1}‖ = ‖r_k‖ sin ∠(r_k, A r_k)`, where
-`cos ∠(r_k, A r_k) = (A r_k, r_k) / (‖A r_k‖ ‖r_k‖)`. -/
+/-- **Section 5.3.2** of [saad2003iterative], the geometric form of (5.18). For every $A$, $b$ and
+$x$, with $r = b - Ax$, the minimal residual step $x'$ satisfies
+$$\|b - Ax'\|_2 = \|r\|_2 \sin \angle(r, Ar),$$
+where $\cos \angle(r, Ar) = (Ar, r)/(\|Ar\|_2 \|r\|_2)$. -/
 theorem norm_residual_mrStep_eq_sin (A : Matrix (Fin n) (Fin n) ℝ) (b x : E n) :
     ‖b - (A ⬝ mrStep A b x)‖ =
       ‖b - (A ⬝ x)‖ * Real.sin (InnerProductGeometry.angle (b - (A ⬝ x)) (A ⬝ (b - (A ⬝ x)))) := by
@@ -444,12 +552,15 @@ theorem norm_residual_mrStep_eq_sin (A : Matrix (Fin n) (Fin n) ℝ) (b x : E n)
   rw [real_inner_comm (A ⬝ r) r, div_pow, mul_pow]
 
 omit [NeZero n] in
-/-- The exact one-step identity of steepest descent in the `A`-norm,
-`‖d_{k+1}‖_A² = ‖d_k‖_A² (1 - (r_k, r_k)² / ((A r_k, r_k) (A⁻¹ r_k, r_k)))`, from which
-Theorem 5.9 follows by Kantorovich's inequality (Lemma 5.8).
+/-- **Section 5.3.1** of [saad2003iterative], the exact one-step identity of steepest descent. Let
+$A$ be symmetric positive definite, let $Ax^* = b$, and let $r = b - Ax$. Then the steepest
+descent step $x'$ satisfies
+$$E(x')^2 = E(x)^2 \left( 1 - \frac{(r, r)^2}{(Ar, r)(A^{-1}r, r)} \right).$$
+Theorem 5.9 follows from it by Kantorovich's inequality (Lemma 5.8).
 
-This is the last display in the proof of Theorem 5.9 in §5.3.1, which the book leaves unnumbered;
-Saad's (5.20) is the *residual* bound `equation_5_20` of §5.3.2 below. -/
+This is the last display in the proof of Theorem 5.9, which the book does not number. Equation
+(5.20) of the book is the residual bound `SaadSparse.Chapter05.equation_5_20` of §5.3.2. The
+proof specializes `Projection.energyNorm_steepestDescentStep_sq_eq`. -/
 theorem energyNorm_sdStep_sq_eq (hA : A.PosDef) {xstar : E n} (hstar : (A ⬝ xstar) = b) (x : E n) :
     E_A A xstar (sdStep A b x) ^ 2 =
       E_A A xstar x ^ 2 *
@@ -473,8 +584,10 @@ theorem energyNorm_sdStep_sq_eq (hA : A.PosDef) {xstar : E n} (hstar : (A ⬝ xs
   rw [E_A_eq_energyNorm, sdStep_eq, h, ← E_A_eq_energyNorm, henergy, hnorm, RCLike.re_to_real]
 
 omit [NeZero n] in
-/-- Saad §5.3.2, "`A⁻¹` is also positive definite": the inverse of a positive real matrix is
-positive real, since `(A⁻¹ u, u) = (A v, v)` at `v = A⁻¹ u`. -/
+/-- **Section 5.3.2** of [saad2003iterative], "$A^{-1}$ is also positive definite". If $A$ is
+positive definite, then $A^{-1}$ is positive definite.
+
+The reason is that $(A^{-1}u, u) = (Av, v)$ for $v = A^{-1}u$. -/
 theorem isPositiveReal_inv (hA : A.IsPositiveReal) : A⁻¹.IsPositiveReal := by
   intro u hu
   have hv : A *ᵥ (A⁻¹ *ᵥ u) = u := mulVec_nonsing_inv_mulVec (Chapter01.theorem_1_34 hA).1 u
@@ -482,11 +595,14 @@ theorem isPositiveReal_inv (hA : A.IsPositiveReal) : A⁻¹.IsPositiveReal := by
   have h := hA (A⁻¹ *ᵥ u) hne
   rwa [hv, dotProduct_comm] at h
 
-/-- **Saad (5.20)**: the alternative one-step bound of §5.3.2 for the minimal-residual iteration,
-`‖r_{k+1}‖₂² ≤ (1 - μ(A) μ(A⁻¹)) ‖r_k‖₂²` with `μ(B) = λ_min((B + Bᵀ)/2)`.  It bounds the two
-quotients of (5.18) separately: `(A r, r)/(r, r) ≥ μ(A)` is Theorem 1.34, and
-`(A r, r)/(A r, A r) = (A⁻¹ w, w)/(w, w) ≥ μ(A⁻¹)` at `w = A r`, `A⁻¹` being positive real too
-(`isPositiveReal_inv`). -/
+/-- **Equation (5.20)** of [saad2003iterative]. Let $A \in \mathbb{R}^{n \times n}$, $n \ge 1$, be
+positive definite, and let $\mu(B) = \lambda_{\min}((B + B^T)/2)$. Then for every $b$ and $x$
+the minimal residual step $x'$ satisfies
+$$\|b - Ax'\|_2^2 \le \big( 1 - \mu(A) \mu(A^{-1}) \big) \|b - Ax\|_2^2.$$
+
+The proof bounds the two quotients of (5.18) separately: $(Ar, r)/(r, r) \ge \mu(A)$ is Theorem
+1.34, and $(Ar, r)/(Ar, Ar) = (A^{-1}w, w)/(w, w) \ge \mu(A^{-1})$ for $w = Ar$, because
+$A^{-1}$ is also positive definite (`SaadSparse.Chapter05.isPositiveReal_inv`). -/
 theorem equation_5_20 (hA : A.IsPositiveReal) (b x : E n) :
     ‖b - (A ⬝ mrStep A b x)‖ ^ 2 ≤
       (1 - lambdaMin (Matrix.hermitianPart_isHermitian A) *
@@ -521,16 +637,20 @@ theorem equation_5_20 (hA : A.IsPositiveReal) (b x : E n) :
       _ = inner ℝ (A ⬝ r) r ^ 2 := by ring
   nlinarith [hq, hrn]
 
-/-! ### §5.3.2: the convergence factor `ρ = max sin ∠(x, A x)` -/
+/-! ### §5.3.2: The convergence factor $\rho = \max \sin \angle(x, Ax)$ -/
 
-/-- Saad §5.3.2: `ρ = sup_{x ≠ 0} sin ∠(x, A x)`, the convergence factor the book reads off the
-geometric form `‖r_{k+1}‖₂ = ‖r_k‖₂ sin ∠(r_k, A r_k)` of (5.18).  The supremum runs over the
-nonzero vectors, so it is `0` when there are none. -/
+/-- **Section 5.3.2** of [saad2003iterative], the convergence factor. For
+$A \in \mathbb{R}^{n \times n}$, the number
+$$\rho = \sup_{x \neq 0} \sin \angle(x, Ax)$$
+is the convergence factor that the book reads off the geometric form $\|r_{k+1}\|_2 = \|r_k\|_2
+\sin \angle(r_k, Ar_k)$ of (5.18).
+
+The supremum is the real supremum over the nonzero vectors, so it is $0$ when $n = 0$. -/
 noncomputable def sinAngleSup (A : Matrix (Fin n) (Fin n) ℝ) : ℝ :=
   ⨆ v : {v : E n // v ≠ 0}, Real.sin (InnerProductGeometry.angle (v : E n) (A ⬝ (v : E n)))
 
 omit [NeZero n] in
-/-- The sines of the angles are bounded by `1`, so `sinAngleSup` is a genuine supremum. -/
+/-- The sines $\sin \angle(v, Av)$ are bounded by $1$, so they have a supremum. -/
 private theorem bddAbove_sinAngle (A : Matrix (Fin n) (Fin n) ℝ) :
     BddAbove (Set.range fun v : {v : E n // v ≠ 0} =>
       Real.sin (InnerProductGeometry.angle (v : E n) (A ⬝ (v : E n)))) := by
@@ -539,13 +659,14 @@ private theorem bddAbove_sinAngle (A : Matrix (Fin n) (Fin n) ℝ) :
   exact Real.sin_le_one _
 
 omit [NeZero n] in
-/-- Every angle sine is bounded by `sinAngleSup`. -/
+/-- For every $v \neq 0$, $\sin \angle(v, Av) \le \rho$. -/
 theorem sin_angle_le_sinAngleSup (A : Matrix (Fin n) (Fin n) ℝ) {v : E n} (hv : v ≠ 0) :
     Real.sin (InnerProductGeometry.angle v (A ⬝ v)) ≤ sinAngleSup A :=
   le_ciSup (bddAbove_sinAngle A) (⟨v, hv⟩ : {v : E n // v ≠ 0})
 
 omit [NeZero n] in
-/-- Saad §5.3.2: the reduction of one minimal-residual step is at most `ρ = sinAngleSup A`. -/
+/-- §5.3.2 of [saad2003iterative]: for every $A$, $b$ and $x$, the minimal residual step $x'$
+satisfies $\|b - Ax'\|_2 \le \rho \|b - Ax\|_2$. -/
 theorem norm_residual_mrStep_le_sinAngleSup (A : Matrix (Fin n) (Fin n) ℝ) (b x : E n) :
     ‖b - (A ⬝ mrStep A b x)‖ ≤ sinAngleSup A * ‖b - (A ⬝ x)‖ := by
   rcases eq_or_ne (b - (A ⬝ x)) 0 with h0 | h0
@@ -556,10 +677,11 @@ theorem norm_residual_mrStep_le_sinAngleSup (A : Matrix (Fin n) (Fin n) ℝ) (b 
     exact mul_le_mul_of_nonneg_right (sin_angle_le_sinAngleSup A h0) (norm_nonneg _)
 
 open scoped Matrix.Norms.L2Operator in
-/-- Saad §5.3.2: for a positive real `A` the maximal angle between `x` and `A x` is acute, so
-`ρ = sup_{x ≠ 0} sin ∠(x, A x) < 1`.  The uniform bound is Theorem 5.10: taking `b = x` and the
-starting vector `0` makes `x` the residual, and `(5.15)` bounds its angle sine by
-`√(1 - μ²/σ²) < 1`.  No compactness argument is needed. -/
+/-- §5.3.2 of [saad2003iterative]: if $A$ is positive definite and $n \ge 1$, the largest angle
+between $x$ and $Ax$ is acute in the sense that $\rho = \sup_{x \neq 0} \sin \angle(x, Ax) < 1$.
+The uniform bound is Theorem 5.10: for $b = x$ and the starting vector $0$, the residual is $x$,
+and (5.15) bounds its angle sine by $(1 - \mu^2/\sigma^2)^{1/2} < 1$. No compactness argument is
+needed. -/
 theorem sinAngleSup_lt_one (hA : A.IsPositiveReal) : sinAngleSup A < 1 := by
   have hbound : ∀ v : {v : E n // v ≠ 0},
       Real.sin (InnerProductGeometry.angle (v : E n) (A ⬝ (v : E n)))
@@ -573,23 +695,27 @@ theorem sinAngleSup_lt_one (hA : A.IsPositiveReal) : sinAngleSup A < 1 := by
     nlinarith [h2, hvpos]
   exact lt_of_le_of_lt (Real.iSup_le hbound (Real.sqrt_nonneg _)) (theorem_5_10_factor_lt_one hA)
 
-/-- Saad §5.3.2: the minimal-residual iteration contracts the residual by the factor
-`ρ = sup_{x ≠ 0} sin ∠(x, A x)`, and `ρ < 1` for a positive real `A`. -/
+/-- **Section 5.3.2** of [saad2003iterative], convergence of the minimal residual iteration. Let
+$A \in \mathbb{R}^{n \times n}$, $n \ge 1$, be positive definite. Then for every $b$ and $x$ the
+minimal residual step $x'$ satisfies
+$$\|b - Ax'\|_2 \le \rho \, \|b - Ax\|_2, \qquad \rho = \sup_{x \neq 0} \sin \angle(x, Ax) <
+  1.$$
+-/
 theorem norm_mrStep_le_sup_sin (hA : A.IsPositiveReal) (b x : E n) :
     ‖b - (A ⬝ mrStep A b x)‖ ≤ sinAngleSup A * ‖b - (A ⬝ x)‖ ∧ sinAngleSup A < 1 :=
   ⟨norm_residual_mrStep_le_sinAngleSup A b x, sinAngleSup_lt_one hA⟩
 
-/-! ### Example 5.1: a Gauss–Seidel relaxation is a projection step -/
+/-! ### Example 5.1: A Gauss–Seidel relaxation is a projection step -/
 
 omit [NeZero n] in
-/-- Saad's inner product against a coordinate vector reads off a component. -/
+/-- The inner product with the coordinate vector $e_i$ is the component $i$: $(e_i, z) = z_i$. -/
 private theorem real_inner_single_left (i : Fin n) (z : E n) :
     inner ℝ (EuclideanSpace.single i (1 : ℝ) : E n) z = WithLp.ofLp z i := by
   rw [EuclideanSpace.inner_single_left]
   simp
 
 omit [NeZero n] in
-/-- The diagonal entry `a_{ii}` is `(A e_i, e_i)`. -/
+/-- The diagonal entry is $a_{ii} = (e_i, Ae_i)$. -/
 private theorem real_inner_single_apply_single (A : Matrix (Fin n) (Fin n) ℝ) (i : Fin n) :
     inner ℝ (EuclideanSpace.single i (1 : ℝ) : E n) (A ⬝ (EuclideanSpace.single i (1 : ℝ) : E n))
       = A i i := by
@@ -597,8 +723,13 @@ private theorem real_inner_single_apply_single (A : Matrix (Fin n) (Fin n) ℝ) 
   simp
 
 omit [NeZero n] in
-/-- **Example 5.1**: the projection step onto `K = L = span {e_i}` is the elementary relaxation
-step `x ↦ x + (r_i/a_{ii}) e_i` of Saad (4.6), the inner step of the Gauss–Seidel sweep. -/
+/-- **Example 5.1** of [saad2003iterative]. For every $A \in \mathbb{R}^{n \times n}$, $b$, $x$ and
+index $i$, the projection step (5.12) onto $K = L = \operatorname{span}\{e_i\}$ is the
+elementary relaxation step
+$$x \mapsto x + \frac{r_i}{a_{ii}} \, e_i, \qquad r = b - Ax,$$
+the inner step of the Gauss–Seidel sweep (4.6).
+
+If $a_{ii} = 0$, both sides are $x$, because division by zero is zero in Lean. -/
 theorem example_5_1 (A : Matrix (Fin n) (Fin n) ℝ) (b x : E n) (i : Fin n) :
     step1 A b (EuclideanSpace.single i (1 : ℝ)) (EuclideanSpace.single i (1 : ℝ)) x
       = x + (WithLp.ofLp (b - (A ⬝ x)) i / A i i) •
@@ -606,8 +737,9 @@ theorem example_5_1 (A : Matrix (Fin n) (Fin n) ℝ) (b x : E n) (i : Fin n) :
   rw [step1, real_inner_single_left, real_inner_single_apply_single]
 
 omit [NeZero n] in
-/-- **Example 5.1**, the Petrov–Galerkin condition for `L = span {e_i}`: the elementary relaxation
-step annihilates component `i` of the residual.  This is exactly what Saad (4.6) prescribes. -/
+/-- Example 5.1 of [saad2003iterative], the Petrov–Galerkin condition for
+$L = \operatorname{span}\{e_i\}$: if $a_{ii} \neq 0$, the elementary relaxation step annihilates
+component $i$ of the residual, as (4.6) prescribes. -/
 theorem example_5_1_residual (A : Matrix (Fin n) (Fin n) ℝ) (b x : E n) {i : Fin n}
     (hii : A i i ≠ 0) :
     WithLp.ofLp (b - (A ⬝ step1 A b (EuclideanSpace.single i (1 : ℝ))
@@ -621,7 +753,8 @@ theorem example_5_1_residual (A : Matrix (Fin n) (Fin n) ℝ) (b x : E n) {i : F
   rwa [real_inner_single_left] at h
 
 omit [NeZero n] in
-/-- **Example 5.1**: the elementary relaxation step changes only component `i`. -/
+/-- Example 5.1 of [saad2003iterative]: the elementary relaxation step at index $i$ changes only
+component $i$ of $x$. -/
 theorem example_5_1_apply_of_ne (A : Matrix (Fin n) (Fin n) ℝ) (b x : E n) {i j : Fin n}
     (hij : j ≠ i) :
     WithLp.ofLp (step1 A b (EuclideanSpace.single i (1 : ℝ))
@@ -629,43 +762,57 @@ theorem example_5_1_apply_of_ne (A : Matrix (Fin n) (Fin n) ℝ) (b x : E n) {i 
   rw [example_5_1]
   simp [hij]
 
-/-! ### The recursive residual of Algorithms 5.2–5.4
+/-!
+### The recursive residual of Algorithms 5.2–5.4
 
-Each algorithm is printed with the residual *carried forward* rather than recomputed, so that a
-step costs one matrix–vector product.  The state is the pair `(x, r)`, and the specifications
-below say that the carried `r` really is `b - A x` at every step, so that each printed algorithm
-computes the corresponding projection iterate. -/
+Each algorithm is printed with the residual carried forward rather than recomputed, so that a step
+costs one matrix–vector product. The state is the pair $(x, r)$. The results below say that the
+carried $r$ is $b - Ax$ at every step, so that each printed algorithm computes the corresponding
+projection iterate.
+-/
 
-/-- **Algorithm 5.2** (steepest descent) as printed: `p ← A r`, `α ← (r, r)/(p, r)`,
-`x ← x + α r`, `r ← r - α p`. -/
+/-- **Algorithm 5.2** of [saad2003iterative] (steepest descent), as printed. One step on the pair
+$(x, r)$ is
+$$p \leftarrow Ar, \quad \alpha \leftarrow \frac{(r, r)}{(p, r)}, \quad x \leftarrow x + \alpha
+  r, \quad r \leftarrow r - \alpha p.$$
+-/
 noncomputable def sdAlgStep (A : Matrix (Fin n) (Fin n) ℝ) : (E n) × (E n) → (E n) × (E n)
   | (x, r) => (x + (inner ℝ r r / inner ℝ r (A ⬝ r)) • r,
       r - (inner ℝ r r / inner ℝ r (A ⬝ r)) • (A ⬝ r))
 
-/-- **Algorithm 5.3** (minimal residual) as printed: `p ← A r`, `α ← (p, r)/(p, p)`,
-`x ← x + α r`, `r ← r - α p`. -/
+/-- **Algorithm 5.3** of [saad2003iterative] (minimal residual), as printed. One step on the pair
+$(x, r)$ is
+$$p \leftarrow Ar, \quad \alpha \leftarrow \frac{(p, r)}{(p, p)}, \quad x \leftarrow x + \alpha
+  r, \quad r \leftarrow r - \alpha p.$$
+-/
 noncomputable def mrAlgStep (A : Matrix (Fin n) (Fin n) ℝ) : (E n) × (E n) → (E n) × (E n)
   | (x, r) => (x + (inner ℝ (A ⬝ r) r / inner ℝ (A ⬝ r) (A ⬝ r)) • r,
       r - (inner ℝ (A ⬝ r) r / inner ℝ (A ⬝ r) (A ⬝ r)) • (A ⬝ r))
 
-/-- **Algorithm 5.4** (residual-norm steepest descent) as printed: `v ← Aᵀ r`, compute `A v`,
-`α ← ‖v‖₂²/‖A v‖₂²` (5.21), `x ← x + α v`, `r ← r - α A v`. -/
+/-- **Algorithm 5.4** of [saad2003iterative] (residual norm steepest descent), as printed. One step
+on the pair $(x, r)$ is
+$$v \leftarrow A^Tr, \quad \alpha \leftarrow \frac{\|v\|_2^2}{\|Av\|_2^2}, \quad x \leftarrow
+  x + \alpha v, \quad r \leftarrow r - \alpha Av.$$
+
+The step length is written as $(Av, r)/(Av, Av)$, which equals $\|v\|_2^2/\|Av\|_2^2$ (5.21) by
+`SaadSparse.Chapter05.rnsdAlgStep_alpha`. -/
 noncomputable def rnsdAlgStep (A : Matrix (Fin n) (Fin n) ℝ) : (E n) × (E n) → (E n) × (E n)
   | (x, r) =>
       (x + (inner ℝ (A ⬝ (Aᵀ ⬝ r)) r / inner ℝ (A ⬝ (Aᵀ ⬝ r)) (A ⬝ (Aᵀ ⬝ r))) • (Aᵀ ⬝ r),
         r - (inner ℝ (A ⬝ (Aᵀ ⬝ r)) r / inner ℝ (A ⬝ (Aᵀ ⬝ r)) (A ⬝ (Aᵀ ⬝ r))) • (A ⬝ (Aᵀ ⬝ r)))
 
 omit [NeZero n] in
-/-- Saad (5.21): the step length of Algorithm 5.4 is `‖v‖₂²/‖A v‖₂²` with `v = Aᵀ r`, because
-`(A v, r) = (v, v)`. -/
+/-- Equation (5.21) of [saad2003iterative]: with $v = A^Tr$, the step length of Algorithm 5.4 is
+$(Av, r)/(Av, Av) = \|v\|_2^2/\|Av\|_2^2$, because $(Av, r) = (v, v)$. -/
 theorem rnsdAlgStep_alpha (A : Matrix (Fin n) (Fin n) ℝ) (r : E n) :
     inner ℝ (A ⬝ (Aᵀ ⬝ r)) r / inner ℝ (A ⬝ (Aᵀ ⬝ r)) (A ⬝ (Aᵀ ⬝ r))
       = ‖Aᵀ ⬝ r‖ ^ 2 / ‖A ⬝ (Aᵀ ⬝ r)‖ ^ 2 := by
   rw [real_inner_transpose A (Aᵀ ⬝ r) r, real_inner_self_eq_norm_sq, real_inner_self_eq_norm_sq]
 
 omit [NeZero n] in
-/-- **Algorithm 5.2** computes the steepest-descent iterates, and the residual it carries is the
-true residual at every step. -/
+/-- **Algorithm 5.2** of [saad2003iterative], correctness. For every $A$, $b$, $x_0$ and $k \ge 0$,
+the algorithm as printed, started at $(x_0, b - Ax_0)$, reaches after $k$ steps the pair
+$(x_k, b - Ax_k)$, where $x_k$ is the $k$-th steepest descent iterate. -/
 theorem sdAlg_spec (A : Matrix (Fin n) (Fin n) ℝ) (b x₀ : E n) (k : ℕ) :
     (sdAlgStep A)^[k] (x₀, b - (A ⬝ x₀))
       = ((sdStep A b)^[k] x₀, b - (A ⬝ ((sdStep A b)^[k] x₀))) := by
@@ -679,7 +826,9 @@ theorem sdAlg_spec (A : Matrix (Fin n) (Fin n) ℝ) (b x₀ : E n) (k : ℕ) :
     module
 
 omit [NeZero n] in
-/-- **Algorithm 5.3** computes the minimal-residual iterates, with the true residual carried. -/
+/-- **Algorithm 5.3** of [saad2003iterative], correctness. For every $A$, $b$, $x_0$ and $k \ge 0$,
+the algorithm as printed, started at $(x_0, b - Ax_0)$, reaches after $k$ steps the pair
+$(x_k, b - Ax_k)$, where $x_k$ is the $k$-th minimal residual iterate. -/
 theorem mrAlg_spec (A : Matrix (Fin n) (Fin n) ℝ) (b x₀ : E n) (k : ℕ) :
     (mrAlgStep A)^[k] (x₀, b - (A ⬝ x₀))
       = ((mrStep A b)^[k] x₀, b - (A ⬝ ((mrStep A b)^[k] x₀))) := by
@@ -693,8 +842,9 @@ theorem mrAlg_spec (A : Matrix (Fin n) (Fin n) ℝ) (b x₀ : E n) (k : ℕ) :
     module
 
 omit [NeZero n] in
-/-- **Algorithm 5.4** computes the residual-norm steepest-descent iterates, with the true
-residual carried. -/
+/-- **Algorithm 5.4** of [saad2003iterative], correctness. For every $A$, $b$, $x_0$ and $k \ge 0$,
+the algorithm as printed, started at $(x_0, b - Ax_0)$, reaches after $k$ steps the pair
+$(x_k, b - Ax_k)$, where $x_k$ is the $k$-th residual norm steepest descent iterate. -/
 theorem rnsdAlg_spec (A : Matrix (Fin n) (Fin n) ℝ) (b x₀ : E n) (k : ℕ) :
     (rnsdAlgStep A)^[k] (x₀, b - (A ⬝ x₀))
       = ((rnsdStep A b)^[k] x₀, b - (A ⬝ ((rnsdStep A b)^[k] x₀))) := by

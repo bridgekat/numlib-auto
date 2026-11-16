@@ -5,28 +5,54 @@ Released under Apache 2.0 license as described in the file LICENSE.
 import Numlib.Preconditioner.ILU
 
 /-!
-# Saad §10.4: threshold strategies and `ILUT`
+# Saad, Section 10.4: Threshold strategies and ILUT
 
-Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM,
-2003, §10.4.1–10.4.2: the incomplete factorization whose zero pattern is chosen dynamically, by
-dropping the entries that are small, and its existence theorem.
+This module formalizes Sections 10.4.1 and 10.4.2 of [saad2003iterative]: the incomplete
+factorization ILUT, whose zero pattern is chosen during the elimination by dropping small entries,
+and its existence theorem. An $\hat{M}$ matrix (10.25)–(10.27) has positive diagonal entries except
+possibly in the last row, nonpositive off-diagonal entries, and in every row but the last a strictly
+negative sum of the entries to the right of the diagonal. Theorem 10.8 states that if $A$ is a
+diagonally dominant $\hat{M}$ matrix, then the rows produced by the elimination with dropping keep
+the sign pattern of an $\hat{M}$ matrix, have nondecreasing nonnegative row sums and positive
+pivots, provided that the entry of largest modulus to the right of the diagonal is never dropped. So
+ILUT, with this modification of the drop strategy, never meets a zero pivot. The proofs specialize
+`Numlib.Preconditioner.ILU`.
 
-Only Theorem 10.8 has mathematical content in this section. §10.4.3–10.4.6 — the data structures of
-Algorithm 10.6, the column pivoting of `ILUTP`, `ILUS` and Crout `ILU` — are implementations and
-dropping heuristics, and get no declarations.
+## Main definitions
 
-Theorem 10.8 is a statement about the *rows* produced by the elimination with dropping, not about a
-factorization, and it is stated that way: the working row `u^k` of (10.23), the pivot rows `u_{k,*}`
-used at each step, the multipliers `l_{ik}`, the dropped rows `r^k`, and — as a hypothesis — the
-drop-strategy modification of §10.4.2, that the entry of largest modulus to the right of the
-diagonal is never dropped. Writing Algorithm 10.6 down instead would add a heap-based selection rule
-with no mathematical content, and Theorem 10.8 uses none of it.
+* Section 10.4.1, `SaadSparse.Chapter10.rowSum`: the row sum $\mathrm{rs}(h_{i,*}) = \sum_j h_{ij}$.
 
-Saad's `M̂` matrix (10.25)–(10.27) is `Matrix.IsMHat` of
-`Numlib/Preconditioner/ILU.lean`, and his "diagonally dominant `M̂` matrix" is
-`Matrix.IsMHat.IsDiagDominant`. It is genuinely weaker than his M-matrix of Definition 1.30: nothing
-is assumed about nonsingularity or about the sign of the inverse. The book's "row `i` with `i < n`"
-is `i ≠ Fin.last n`, and the backbone states it order-theoretically as `¬ IsMax i`.
+## Main results
+
+* Equations (10.25)–(10.27), `SaadSparse.Chapter10.isMHat_iff`: the conditions of an $\hat{M}$
+  matrix, written out.
+* Section 10.4.1, `SaadSparse.Chapter10.isDiagDominant_iff`: a diagonally dominant $\hat{M}$ matrix
+  is an $\hat{M}$ matrix with nonnegative row sums.
+* Theorem 10.8, `SaadSparse.Chapter10.theorem_10_8`: the rows of the elimination with dropping
+  satisfy (10.28)–(10.30).
+
+## Conventions
+
+* The matrix has order $n + 1$ and is indexed by `Fin (n + 1)`, from $0$. The book's last row, row
+  $n$, is `Fin.last n`, and the book's "row $i$ with $i < n$" is `i ≠ Fin.last n`; the backbone
+  states this as `¬ IsMax i`.
+
+## Implementation notes
+
+* An $\hat{M}$ matrix is `Matrix.IsMHat`, and a diagonally dominant $\hat{M}$ matrix is
+  `Matrix.IsMHat.IsDiagDominant`. This class is weaker than the M-matrices of Definition 1.30: it
+  asks nothing about nonsingularity or about the sign of the inverse.
+* Theorem 10.8 is a statement about the rows produced by the elimination with dropping, not about a
+  factorization, and it is stated in that form. The working row $u^k$ of (10.23), the pivot rows,
+  the multipliers $l_{ik}$ and the dropped rows $r^k$ are arbitrary sequences, and the hypotheses
+  describe one elimination step. Algorithm 10.6 is not written down: it would add a selection rule
+  based on a heap, and Theorem 10.8 uses none of it.
+
+## Not formalized
+
+* **Algorithm 10.6.** Its data structures and selection rule have no mathematical content.
+* **Sections 10.4.3–10.4.6** (the implementation of ILUT, the column pivoting of ILUTP, ILUS and
+  Crout ILU). They are implementations and dropping heuristics.
 -/
 
 open Matrix
@@ -37,22 +63,31 @@ variable {n : ℕ}
 
 /-! ### The row sum, and `M̂` matrices (10.25)–(10.27) -/
 
-/-- **Saad's `rs`**: the row sum `rs(h_{i,*}) = h_{i,*} e = ∑_j h_{ij}` of the `i`-th row. -/
+/-- **Section 10.4.1** of [saad2003iterative]. For $H \in \mathbb{R}^{n \times n}$ and a row index
+$i$, the **row sum** of row $i$ is
+$$\mathrm{rs}(h_{i,*}) = h_{i,*} e = \sum_j h_{ij},$$
+where $e$ is the vector of ones. -/
 def rowSum (H : Matrix (Fin n) (Fin n) ℝ) (i : Fin n) : ℝ := ∑ j, H i j
 
-/-- The row sums are the entries of `H e`, for `e` the vector of ones. -/
+/-- The row sums of $H$ are the entries of $He$, where $e$ is the vector of ones. -/
 theorem rowSum_eq_mulVec_one (H : Matrix (Fin n) (Fin n) ℝ) (i : Fin n) :
     rowSum H i = (H *ᵥ (1 : Fin n → ℝ)) i := by
   simp [rowSum, Matrix.mulVec, dotProduct]
 
-/-- `IsMax` on `Fin (n + 1)` is being the last index, which is the book's `i = n`. -/
+/-- On `Fin (n + 1)`, an index is maximal if and only if it is the last index $n$. -/
 private theorem isMax_iff_eq_last {i : Fin (n + 1)} : IsMax i ↔ i = Fin.last n := by
   rw [isMax_iff_eq_top, Fin.top_eq_last]
 
-/-- **Saad's `M̂` matrix**, (10.25)–(10.27) written out: the diagonal entries are positive except in
-the last row, where only nonnegativity is asked; the off-diagonal entries are nonpositive; and in
-every row but the last, the entries strictly to the right of the diagonal sum to a strictly negative
-number — so each such row has a nonzero entry to the right of its diagonal. -/
+/-- **Equations (10.25)–(10.27)** of [saad2003iterative]. A matrix
+$H \in \mathbb{R}^{(n+1) \times (n+1)}$, indexed from $0$ to $n$, is an **$\hat{M}$ matrix** if
+and only if
+
+* $h_{ii} > 0$ for $i \neq n$ and $h_{nn} \ge 0$;
+* $h_{ij} \le 0$ for $i \neq j$;
+* $\sum_{j > i} h_{ij} < 0$ for $i \neq n$.
+
+The last condition says that every row except the last has a nonzero entry to the right of the
+diagonal. The definition is `Matrix.IsMHat`. -/
 theorem isMHat_iff (H : Matrix (Fin (n + 1)) (Fin (n + 1)) ℝ) :
     H.IsMHat ↔
       ((∀ i, i ≠ Fin.last n → 0 < H i i) ∧ 0 ≤ H (Fin.last n) (Fin.last n)) ∧
@@ -69,33 +104,49 @@ theorem isMHat_iff (H : Matrix (Fin (n + 1)) (Fin (n + 1)) ℝ) :
     rw [isMax_iff_eq_last.1 hi]
     exact hlast
 
-/-- **Saad's diagonally dominant `M̂` matrix** (§10.4.1): an `M̂` matrix every one of whose rows has
-a nonnegative row sum. This is the hypothesis of Theorem 10.8. -/
+/-- **Section 10.4.1** of [saad2003iterative]. A matrix $H \in \mathbb{R}^{n \times n}$ is a
+**diagonally dominant $\hat{M}$ matrix** if and only if it is an $\hat{M}$ matrix and every row
+sum is nonnegative, $\mathrm{rs}(h_{i,*}) \ge 0$ for all $i$. This is the hypothesis of Theorem
+10.8. -/
 theorem isDiagDominant_iff (H : Matrix (Fin n) (Fin n) ℝ) :
     Matrix.IsMHat.IsDiagDominant H ↔ H.IsMHat ∧ ∀ i, 0 ≤ rowSum H i :=
   ⟨fun h => ⟨h.toIsMHat, h.rowSum_nonneg⟩, fun h => ⟨h.1, h.2⟩⟩
 
 /-! ### Theorem 10.8, the existence result for `ILUT` -/
 
-/-- **Saad Theorem 10.8**: if `A` is a diagonally dominant `M̂` matrix, then the rows `u^k` of
-(10.23) — starting from `u^0 = 0` and `u^1 = a_{i,*}`, and updated by
-`u^{k+1} = u^k - l_{ik} u_{k,*} - r^k` — satisfy, for every `k ≥ 1`:
+/-- **Theorem 10.8** of [saad2003iterative]. Let $A \in \mathbb{R}^{(n+1) \times (n+1)}$, indexed
+from $0$ to $n$, be a diagonally dominant $\hat{M}$ matrix, and fix a row index $i$. Let
+$u^k, w^k, r^k \in \mathbb{R}^{n+1}$, $l_k \in \mathbb{R}$ and $p_k \in \{0, \dots, n\}$ for
+$k \in \mathbb{N}$, and assume:
 
-* (10.28) `u^k_j ≤ 0` for `j ≠ i`;
-* (10.29) `rs(u^k) ≥ rs(u^{k-1}) ≥ 0`;
-* (10.30) `u^k_i > 0` when `i ≠ n`, and `u^k_n ≥ 0` in the last row.
+* $u^0 = 0$ and $u^1 = a_{i,*}$;
+* $u^{k+1} = u^k - l_k w^k - r^k$ for $k \ge 1$, as in (10.23);
+* for $k \ge 1$, the pivot row $w^k$ satisfies $w^k_j \le 0$ for $j \neq p_k$ and
+  $\sum_j w^k_j \ge 0$, and its pivot index satisfies $p_k < i$;
+* for $k \ge 1$, the multiplier satisfies $l_k \le 0$ and $l_k w^k_{p_k} = u^k_{p_k}$;
+* for $k \ge 1$ and every $j$, either $r^k_j = 0$ or $r^k_j = u^k_j - l_k w^k_j$, and
+  $r^k_i = 0$;
+* if $i \neq n$, then for every $k \ge 1$ there is a $j_0 > i$ with $r^k_{j_0} = 0$ and
+  $u^k_{j_0} - l_k w^k_{j_0} \le u^k_j - l_k w^k_j$ for all $j > i$.
 
-So the threshold factorization `ILUT`, run with the drop-strategy modification of §10.4.2, never
-meets a zero pivot.
+Then for every $k \ge 1$:
 
-The hypotheses transcribe the elimination step: the pivot row `w k = u_{p k, *}` has the sign
-pattern and the nonnegative row sum of an `M̂` matrix, and its pivot index `p k` lies strictly to
-the left of `i`; the multiplier `l k` is nonpositive and annihilates the pivot entry; each entry
-is either kept whole or dropped whole (`hdrop`), the diagonal entry is never dropped, and — the
-modification of §10.4.2 — some position `j₀` strictly to the right of the diagonal, at which the
-computed value is smallest, is never dropped either. That last hypothesis is available only away
-from the last row, where there is no position to the right of the diagonal, and (10.27) is vacuous
-there for the same reason; that is why the last row keeps only `0 ≤ u^k_n`. -/
+* (10.28) $u^k_j \le 0$ for $j \neq i$;
+* (10.29) $0 \le \mathrm{rs}(u^{k-1}) \le \mathrm{rs}(u^k)$;
+* (10.30) $u^k_i > 0$ if $i \neq n$, and $u^k_i \ge 0$ in every case.
+
+So the threshold factorization ILUT, run with the modification of the drop strategy of Section
+10.4.2, never meets a zero pivot.
+
+The hypotheses describe the elimination step. The pivot row $w^k = u_{p_k,*}$ has the sign
+pattern and the nonnegative row sum of an $\hat{M}$ matrix, and its pivot index lies strictly to
+the left of $i$. The multiplier is nonpositive and eliminates the pivot entry. Each entry is
+either kept whole or dropped whole, and the diagonal entry is never dropped. The last hypothesis
+is the modification of Section 10.4.2: some position $j_0$ to the right of the diagonal at which
+the computed value is smallest, that is, of largest modulus, is never dropped. This hypothesis
+is available only away from the last row, where there is no position to the right of the
+diagonal, and (10.27) is vacuous there for the same reason; that is why the last row gets only
+$u^k_n \ge 0$. -/
 theorem theorem_10_8 {A : Matrix (Fin (n + 1)) (Fin (n + 1)) ℝ}
     (hA : Matrix.IsMHat.IsDiagDominant A) (i : Fin (n + 1))
     (u w : ℕ → Fin (n + 1) → ℝ) (l : ℕ → ℝ) (r : ℕ → Fin (n + 1) → ℝ) (p : ℕ → Fin (n + 1))

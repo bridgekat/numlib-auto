@@ -10,60 +10,130 @@ import NumlibSurface.SaadSparse.Chapter04.Section02
 import NumlibSurface.SaadSparse.Chapter08.Section01
 
 /-!
-# Saad §8.4: saddle-point problems
+# Saad, Section 8.4: Saddle-point problems
 
-Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM,
-2003, §8.4, with P-8.7.
+This module formalizes Section 8.4 of [saad2003iterative], together with Problems P-8.5(b), P-8.6,
+P-8.7 and P-8.12. Let $A \in \mathbb{K}^{n \times n}$ be symmetric positive definite and
+$B \in \mathbb{K}^{n \times m}$. The section studies the minimization of
+$f(x) = \tfrac12 (Ax, x) - (x, b)$ under the constraint $B^H x = c$, and the block system (8.30)
+$$\begin{bmatrix} A & B \\ B^H & 0 \end{bmatrix} \begin{bmatrix} x \\ y \end{bmatrix} =
+  \begin{bmatrix} b \\ c \end{bmatrix}$$
+that characterizes its solution, with the Lagrange multiplier $y$. The solution is the saddle point
+of the Lagrangian $L(x, y) = f(x) + (y, B^H x - c)$. The proofs specialize the Galerkin
+characterization of a minimizer in `Numlib.Projection.Optimality` and the saddle-point matrices of
+`Numlib.LinearAlgebra.Matrix.SchurComplement`.
 
-The block system (8.30) is `saddleMatrix A B D`, `[[A, B], [Bᴴ, D]]`, with `D = 0` the
-saddle-point matrix itself and `D = ρ C` the regularization of Example 8.2;
-`saddleMatrix_mulVec_iff` reads a block equation off as the pair `A x + B y = b`,
-`Bᴴ x + D y = c`.
+Eliminating $x = A^{-1}(b - By)$ leaves the reduced system $Sy = g$ with the Schur complement
+$S = B^H A^{-1} B$ and $g = B^H A^{-1} b - c$. The matrix $S$ is symmetric positive definite when
+$B$ has full column rank. Uzawa's method (Algorithm 8.6) is Richardson's iteration for $Sy = g$, so
+its convergence is that of Example 4.1 applied to $S$ (Corollary 8.1). For $c = 0$ the reduced
+system is the system of normal equations of $\min_y \|b - By\|_{A^{-1}}$. The module also states the
+Arrow–Hurwicz method (Algorithm 8.7), the regularized Schur complement of Example 8.2, the projector
+onto the constraint space of Problem P-8.6, and the indefinite saddle-point matrix of Problem
+P-8.12, on which steepest descent and the minimal residual iteration stall.
 
-Three things carry the section.
+## Main definitions
 
-* `equation_8_30` is the Karush–Kuhn–Tucker statement: for symmetric positive definite `A`, an
-  admissible `x` admits a multiplier `y` with `A x + B y = b` exactly when it minimizes
-  `f(z) = ½(A z, z) - (z, b)` over `{z | Bᴴ z = c}`. Both directions are the Galerkin
-  characterization of the minimizer over the affine space `x + Ker Bᴴ`, whose orthogonal
-  complement is `Ran B` — which is where the multiplier comes from.
-* `schur_posDef`: the Schur complement `S = Bᴴ A⁻¹ B` is symmetric positive definite when `A` is
-  and `B` has full column rank.
-* `equation_8_32`: eliminating `x` from **Algorithm 8.6** (`uzawa`) leaves exactly the Richardson
-  iteration `y_{k+1} = y_k + ω (g - S y_k)` for `S y = g`, `g = Bᴴ A⁻¹ b - c`. `corollary_8_1` is
-  then Example 4.1 applied to `S`: convergence for every right-hand side and every start exactly
-  when `0 < ω < 2/λ_max(S)`, with optimum `2/(λ_min + λ_max)`.
+* Equation (8.30) and Example 8.2, `SaadSparse.Chapter08.saddleMatrix`: the block matrix
+  $\begin{bmatrix} A & B \\ B^H & D \end{bmatrix}$.
+* Equation (8.28), `SaadSparse.Chapter08.saddleObjective`: the objective
+  $f(z) = \tfrac12 (Az, z) - (z, b)$.
+* Equation (8.32) and Corollary 8.1, `SaadSparse.Chapter08.schur`: the Schur complement
+  $S = B^H A^{-1} B$.
+* Equation (8.32), `SaadSparse.Chapter08.schurRhs`: the reduced right-hand side
+  $g = B^H A^{-1} b - c$.
+* Algorithm 8.6, `SaadSparse.Chapter08.uzawa`: Uzawa's method.
+* Algorithm 8.7, `SaadSparse.Chapter08.arrowHurwicz`: the Arrow–Hurwicz method.
+* Example 8.2, `SaadSparse.Chapter08.regularizedSchur`: the regularized Schur complement
+  $\rho B^H B - B^H A^{-1} B$.
+* Section 8.4, `SaadSparse.Chapter08.lagrangian`: the Lagrangian $L(x, y) = f(x) + (y, B^H x - c)$.
+* Problem P-8.6, `SaadSparse.Chapter08.constraintProjector`: the projector
+  $P = I - B (B^H B)^{-1} B^H$.
+* Problem P-8.12, `SaadSparse.Chapter08.blockVec`: the block vector $(u, v)$.
 
-`equation_8_32_isMinResidual` is Saad's reason why the Stokes preconditioners work: for `c = 0` the
-reduced system is the system of normal equations of the least-squares problem
-`min_y ‖b - B y‖_{A⁻¹}`. `arrowHurwicz` is **Algorithm 8.7** and `arrowHurwicz_eq_block` its
-block form; `example_8_2` is the regularized Schur complement `Bᴴ (ρ - A⁻¹) B`.
+## Main results
 
-`lagrangian_isSaddle` is the sentence that names the section: the solution of (8.30) is the saddle
-point of `L(x, y) = ½(A x, x) - (x, b) + (y, Bᴴ x - c)`. `constraintProjector` is the projector
-`P = I - B (Bᴴ B)⁻¹ Bᴴ` of **P-8.6**, `problem_8_6_projector` identifies it with the orthogonal
-projector onto `Ker Bᴴ`, and `equation_8_35` is P-8.6 (b), the reduction of (8.30) with `c = 0` to
-the singular consistent system `P A P x = P b`.
+* Equations (8.28)–(8.30), `SaadSparse.Chapter08.equation_8_30`: an admissible $x$ has a Lagrange
+  multiplier if and only if it minimizes $f$ over the admissible set.
+* Equation (8.30), `SaadSparse.Chapter08.equation_8_30_unique`: the Lagrange multiplier is unique
+  when $B$ has full column rank.
+* Equations (8.31)–(8.32), `SaadSparse.Chapter08.schur_eq`: with $x = A^{-1}(b - By)$, the block
+  system holds if and only if $Sy = g$.
+* Corollary 8.1, `SaadSparse.Chapter08.schur_posDef`: $S$ is positive definite when $A$ is and $B$
+  has full column rank.
+* Section 8.4, `SaadSparse.Chapter08.equation_8_32_isMinResidual`: for $c = 0$ the reduced system is
+  the system of normal equations of $\min_y \|b - By\|_{A^{-1}}$.
+* Equations (8.31)–(8.32), `SaadSparse.Chapter08.equation_8_32`: the $y$-update of Uzawa's method is
+  Richardson's iteration for $Sy = g$.
+* Problem P-8.7, `SaadSparse.Chapter08.uzawa_eq_splitting`: Uzawa's method is the iteration of a
+  splitting of the block system.
+* Section 8.4, `SaadSparse.Chapter08.arrowHurwicz_eq_block`: the block form of the Arrow–Hurwicz
+  method.
+* Example 8.2, `SaadSparse.Chapter08.example_8_2`: the regularized Schur complement is symmetric,
+  positive definite for large $\rho$ and negative definite for small $\rho$.
+* Corollary 8.1, `SaadSparse.Chapter08.corollary_8_1`: $S$ is positive definite, and Richardson's
+  iteration for $S$ converges exactly when $0 < \omega < 2/\lambda_{\max}(S)$, with optimal
+  parameter $2/(\lambda_{\min}(S) + \lambda_{\max}(S))$.
+* Section 8.4, `SaadSparse.Chapter08.lagrangian_isSaddle`: the solution of (8.30) is a saddle point
+  of the Lagrangian.
+* Problem P-8.6(a), `SaadSparse.Chapter08.problem_8_6_projector`: $P$ is the orthogonal projector
+  onto $\operatorname{Ker} B^H$.
+* Problem P-8.6(b) and Equation (8.35), `SaadSparse.Chapter08.equation_8_35`: for $c = 0$ the block
+  system is equivalent to $PAPx = Pb$ for admissible $x$.
+* Problem P-8.6(c), `SaadSparse.Chapter08.conjTranspose_mul_constraintProjector`: $B^H P = 0$.
+* Problem P-8.6(c), `SaadSparse.Chapter08.problem_8_6_cg_subspace`: the Krylov subspaces of $PAP$
+  from $Pb$ lie in $\operatorname{Ker} B^H$.
+* Problem P-8.5(b), `SaadSparse.Chapter08.problem_8_5b`: a solution of the reduced system gives a
+  solution of the block system.
+* Problem P-8.12, `SaadSparse.Chapter08.saddleMatrix_apply_blockVec`: the saddle-point matrix acts
+  on block vectors blockwise.
+* Problem P-8.12, `SaadSparse.Chapter08.inner_blockVec`: the inner product of block vectors is the
+  sum of the block inner products.
+* Problem P-8.12(1), `SaadSparse.Chapter08.problem_8_12_pos`: the quadratic form of the saddle-point
+  matrix is positive on $(u, 0)$ for $u \neq 0$.
+* Problem P-8.12(1), `SaadSparse.Chapter08.problem_8_12_neg`: the quadratic form is negative on
+  $(-A^{-1} B p, p)$ for $p \neq 0$.
+* Problem P-8.12(1), `SaadSparse.Chapter08.problem_8_12_indefinite`: the saddle-point matrix has a
+  positive and a negative eigenvalue.
+* Problem P-8.12(2)–(3), `SaadSparse.Chapter08.inner_saddleMatrix_blockVec_zero`: the quadratic form
+  vanishes on every vector $(0, s)$.
+* Problem P-8.12(2), `SaadSparse.Chapter08.problem_8_12_residual`: the initial guess $(u_0, 0)$ with
+  $Au_0 = f$ has a residual of the form $(0, s_0)$.
+* Problem P-8.12(2), `SaadSparse.Chapter08.problem_8_12_steepestDescent_stalls`: steepest descent
+  from this initial guess does not move.
+* Problem P-8.12(3), `SaadSparse.Chapter08.problem_8_12_minRes_stalls`: the minimal residual
+  iteration from this initial guess does not move.
+* Problem P-8.12(5), `SaadSparse.Chapter08.problem_8_12_reduced`: the iteration of part (5) is
+  steepest descent for the reduced system.
 
-`problem_8_5b` is **P-8.5 (b)**: any solver for the reduced system (8.32) is a solver for (8.30),
-since `x = A⁻¹ (b - B y)` completes a solution `y` of the reduced system to one of the block
-system — for `c = 0` and for `c ≠ 0` alike.
+## Conventions
 
-**P-8.12** is the indefinite saddle-point exercise. `problem_8_12_pos` and `problem_8_12_neg` are
-the two choices of `x` part 1 asks for, and `problem_8_12_indefinite` turns them into eigenvalues
-of both signs; `problem_8_12_residual` is the initial guess of part 2, after which
-`problem_8_12_steepestDescent_stalls` and `problem_8_12_minRes_stalls` are parts 2 and 3 — both
-iterations return their starting point, because `(A r_0, r_0) = 0` for a residual of the shape
-`(0, s_0)` (`inner_saddleMatrix_blockVec_zero`), and that quantity is the steepest-descent
-*denominator* and the minimal-residual *numerator*. `problem_8_12_reduced` is part 5.
+* The scalar field $\mathbb{K}$ is $\mathbb{R}$ or $\mathbb{C}$ (`[RCLike 𝕜]`); Corollary 8.1 is
+  stated over $\mathbb{R}$. Vectors are in `EuclideanSpace 𝕜 (Fin n)`, and a matrix acts on a vector
+  by `Matrix.toEuclideanLin`, written `A ⬝ x`.
+* Mathlib's `inner 𝕜 u v` is the inner product $(v, u)$ of the book. Real-valued quantities such as
+  $f$ and $L$ use the real parts of inner products.
+* "Symmetric positive definite" is `Matrix.PosDef`, and "$B$ has full column rank" is the
+  injectivity of `Matrix.toEuclideanLin B`. "Nonsingular" is `IsUnit`.
 
-Not formalized: **P-8.6 (d)**, which needs a `QR` factorization of a rectangular `B`; the rest of
-**P-8.6 (c)** — running CG on `P A P x = P b` needs a theorem about the conjugate gradient method
-on a symmetric positive *semi*definite consistent system, which the backbone does not have
-(`Numlib/Krylov/Singular.lean` carries the minimal-residual story only), although the question
-"in which subspace are the iterates generated?" is answered by `problem_8_6_cg_subspace`; and
-**P-8.9** (inexact Uzawa), which needs a perturbed-fixed-point theorem; both are recorded in
-`plans/NumlibSurface/SaadSparse/Chapter08/Section04.toml`.
+## Implementation notes
+
+* Block matrices are indexed by `Fin n ⊕ Fin m`. A block vector $(x, y)$ is
+  `Sum.elim (WithLp.ofLp x) (WithLp.ofLp y)` in plain coordinates, or
+  `SaadSparse.Chapter08.blockVec x y` in `EuclideanSpace 𝕜 (Fin n ⊕ Fin m)`.
+* A state of Uzawa's method or of the Arrow–Hurwicz method is a pair $(x_k, y_k)$.
+* Division by zero is $0$ in Lean, and the inverse of a singular matrix is $0$. This makes the
+  stalled steps of Problem P-8.12 the identity.
+
+## Not formalized
+
+* **Problem P-8.6(c)**, the convergence of the conjugate gradient method applied to $PAPx = Pb$. It
+  needs a theorem on the conjugate gradient method for a consistent symmetric positive semidefinite
+  system, which the backbone does not have; `Numlib.Krylov.Singular` treats only minimal residual
+  methods. The question of the subspace in which the iterates lie is answered by
+  `SaadSparse.Chapter08.problem_8_6_cg_subspace`.
+* **Problem P-8.6(d)**. It needs a QR factorization of a rectangular $B$.
+* **Problem P-8.9** (inexact Uzawa). It needs a theorem on perturbed fixed-point iterations.
 -/
 
 open Matrix Filter Topology
@@ -74,17 +144,18 @@ namespace SaadSparse.Chapter08
 
 variable {n m : ℕ} {𝕜 : Type*} [RCLike 𝕜]
 
-/-! ### Moving `B` across the inner product -/
+/-! ### Moving $B$ across the inner product -/
 
-/-- `(B u, w) = (u, Bᴴ w)`, the companion of `SaadSparse.Chapter08.inner_conjTranspose` with the
-rectangular matrix on the left. -/
+/-- For $B \in \mathbb{K}^{n \times m}$, $u \in \mathbb{K}^m$ and $w \in \mathbb{K}^n$,
+$(w, Bu) = (B^H w, u)$. This is the companion of `SaadSparse.Chapter08.inner_conjTranspose` with
+the rectangular matrix on the other side. -/
 theorem inner_mul_conjTranspose (B : Matrix (Fin n) (Fin m) 𝕜) (u : EuclideanSpace 𝕜 (Fin m))
     (w : EuclideanSpace 𝕜 (Fin n)) : inner 𝕜 (B ⬝ u) w = inner 𝕜 u (Bᴴ ⬝ w) := by
   have h := inner_conjTranspose Bᴴ u w
   rwa [Matrix.conjTranspose_conjTranspose] at h
 
-/-- `(Ran B)ᗮ = Ker Bᴴ`: the constraint space of (8.29) is the orthogonal complement of the
-range of `B`. -/
+/-- For $B \in \mathbb{K}^{n \times m}$, $(\operatorname{Ran} B)^\perp = \operatorname{Ker} B^H$:
+the constraint space of (8.29) is the orthogonal complement of the range of $B$. -/
 theorem orthogonal_range_eq_ker (B : Matrix (Fin n) (Fin m) 𝕜) :
     (LinearMap.range (Matrix.toEuclideanLin B))ᗮ = LinearMap.ker (Matrix.toEuclideanLin Bᴴ) := by
   ext z
@@ -100,17 +171,24 @@ theorem orthogonal_range_eq_ker (B : Matrix (Fin n) (Fin m) 𝕜) :
     rw [show (Matrix.toEuclideanLin B) w = (B ⬝ w) from rfl, inner_mul_conjTranspose, hz,
       inner_zero_right]
 
-/-- `(Ker Bᴴ)ᗮ = Ran B`, the form (8.30) needs: a vector orthogonal to every admissible
-direction is `B y` for some `y`, and that `y` is the Lagrange multiplier. -/
+/-- For $B \in \mathbb{K}^{n \times m}$, $(\operatorname{Ker} B^H)^\perp = \operatorname{Ran} B$.
+This is the form that (8.30) needs: a vector orthogonal to every admissible direction is $By$
+for some $y$, and that $y$ is the Lagrange multiplier. -/
 theorem orthogonal_ker_eq_range (B : Matrix (Fin n) (Fin m) 𝕜) :
     (LinearMap.ker (Matrix.toEuclideanLin Bᴴ))ᗮ = LinearMap.range (Matrix.toEuclideanLin B) := by
   rw [← orthogonal_range_eq_ker, Submodule.orthogonal_orthogonal]
 
 /-! ### (8.30): the block system -/
 
-/-- **Saad (8.30)** and **Example 8.2**: the saddle-point block matrix `[[A, B], [Bᴴ, D]]`.
-The block system of §8.4 is `D = 0`; the regularized system of Example 8.2 is `D = ρ C`
-(backbone `Matrix.saddleMatrix`). -/
+/-- **Equation (8.30)** and **Example 8.2** of [saad2003iterative]. For
+$A \in \mathbb{K}^{n \times n}$, $B \in \mathbb{K}^{n \times m}$ and
+$D \in \mathbb{K}^{m \times m}$, the **saddle-point block matrix** is
+$$\begin{bmatrix} A & B \\ B^H & D \end{bmatrix} \in \mathbb{K}^{(n + m) \times (n + m)}.$$
+The block system of Section 8.4 has $D = 0$, and the regularized system of Example 8.2 has
+$D = \rho C$.
+
+The definition is the backbone `Matrix.saddleMatrix`, with rows and columns indexed by
+`Fin n ⊕ Fin m`. -/
 def saddleMatrix (A : Matrix (Fin n) (Fin n) 𝕜) (B : Matrix (Fin n) (Fin m) 𝕜)
     (D : Matrix (Fin m) (Fin m) 𝕜) : Matrix (Fin n ⊕ Fin m) (Fin n ⊕ Fin m) 𝕜 :=
   Matrix.saddleMatrix A B D
@@ -130,8 +208,12 @@ private theorem fromBlocks_mulVec_elim (M₁ : Matrix (Fin n) (Fin n) 𝕜)
     WithLp.ofLp_add]
   rfl
 
-/-- **Saad (8.30)** written out: `(x, y)` solves the block system exactly when
-`A x + B y = b` and `Bᴴ x + D y = c` (backbone `Matrix.saddleMatrix_mulVec_elim`). -/
+/-- **Equation (8.30)** of [saad2003iterative], written out. For $A, B, D$ as in
+`SaadSparse.Chapter08.saddleMatrix` and vectors $x, b \in \mathbb{K}^n$,
+$y, c \in \mathbb{K}^m$, the pair $(x, y)$ solves the block system with right-hand side $(b, c)$
+if and only if
+$$Ax + By = b \quad \text{and} \quad B^H x + Dy = c.$$
+The proof is the backbone `Matrix.saddleMatrix_mulVec_elim`. -/
 theorem saddleMatrix_mulVec_iff (A : Matrix (Fin n) (Fin n) 𝕜) (B : Matrix (Fin n) (Fin m) 𝕜)
     (D : Matrix (Fin m) (Fin m) 𝕜) (x b : EuclideanSpace 𝕜 (Fin n))
     (y c : EuclideanSpace 𝕜 (Fin m)) :
@@ -141,7 +223,8 @@ theorem saddleMatrix_mulVec_iff (A : Matrix (Fin n) (Fin n) 𝕜) (B : Matrix (F
   rw [saddleMatrix, Matrix.saddleMatrix_mulVec_elim]
   exact and_congr (WithLp.ofLp_injective 2).eq_iff (WithLp.ofLp_injective 2).eq_iff
 
-/-- A block identity `M z' = N z + p` read off as its two rows. -/
+/-- A block identity $M z' = N z + p$, for $2 \times 2$ block matrices $M$ and $N$, holds if and
+only if it holds in each of the two block rows. -/
 private theorem fromBlocks_elim_eq_iff
     (M₁ N₁ : Matrix (Fin n) (Fin n) 𝕜) (M₂ N₂ : Matrix (Fin n) (Fin m) 𝕜)
     (M₃ N₃ : Matrix (Fin m) (Fin n) 𝕜) (M₄ N₄ : Matrix (Fin m) (Fin m) 𝕜)
@@ -154,10 +237,15 @@ private theorem fromBlocks_elim_eq_iff
   rw [fromBlocks_mulVec_elim, fromBlocks_mulVec_elim, ← Sum.elim_add_add, Sum.elim_eq_iff]
   exact and_congr (ofLp_eq_add_iff _ _ _) (ofLp_eq_add_iff _ _ _)
 
-/-! ### (8.28)–(8.30): the constrained minimization problem -/
+/-! ### Equations (8.28)–(8.30): the constrained minimization problem -/
 
-/-- **Saad (8.28)**: the quadratic objective `f(z) = ½ (A z, z) - (z, b)` that the saddle-point
-system minimizes under the constraint `Bᴴ z = c`. -/
+/-- **Equation (8.28)** of [saad2003iterative]. For $A \in \mathbb{K}^{n \times n}$ and
+$b \in \mathbb{K}^n$, the **quadratic objective** is the real-valued function
+$$f(z) = \tfrac12 \operatorname{Re} (Az, z) - \operatorname{Re} (z, b).$$
+The saddle-point system minimizes $f$ under the constraint $B^H z = c$.
+
+Over $\mathbb{R}$ this is $\tfrac12 (Az, z) - (z, b)$. Over $\mathbb{C}$ the real parts make $f$
+real-valued. -/
 noncomputable def saddleObjective (A : Matrix (Fin n) (Fin n) 𝕜)
     (b z : EuclideanSpace 𝕜 (Fin n)) : ℝ :=
   RCLike.re (inner 𝕜 (A ⬝ z) z) / 2 - RCLike.re (inner 𝕜 b z)
@@ -166,8 +254,9 @@ section Objective
 
 variable {A : Matrix (Fin n) (Fin n) 𝕜} {b : EuclideanSpace 𝕜 (Fin n)}
 
-/-- Up to an additive constant, `f` is half the squared energy norm of the error. This is what
-makes the constrained minimization of (8.28) a Galerkin problem. -/
+/-- For symmetric positive definite $A$ and $Ax_* = b$, $f(z) = \tfrac12 \|x_* - z\|_A^2 - \tfrac12
+\operatorname{Re}(x_*, b)$: up to an additive constant, $f$ is half the squared energy norm of
+the error. -/
 private theorem saddleObjective_eq (hA : A.PosDef) {xstar : EuclideanSpace 𝕜 (Fin n)}
     (hstar : (A ⬝ xstar) = b) (z : EuclideanSpace 𝕜 (Fin n)) :
     saddleObjective A b z = energyNorm (Matrix.toEuclideanLin A) (xstar - z) ^ 2 / 2
@@ -186,9 +275,12 @@ private theorem saddleObjective_eq (hA : A.PosDef) {xstar : EuclideanSpace 𝕜 
   rw [hre]
   ring
 
-/-- The Galerkin characterization of the minimizer of `f` over an affine subspace: for symmetric
-positive definite `A` the two conditions are the same. This is `IsGalerkin.iff_energyNorm_min`
-read through `saddleObjective_eq`. -/
+/-- Let $A \in \mathbb{K}^{n \times n}$ be symmetric positive definite, $b \in \mathbb{K}^n$, $K$ a
+finite-dimensional subspace and $x_0, x \in \mathbb{K}^n$. Then $x$ is the Galerkin
+approximation from $x_0 + K$ for $Ax = b$ (`IsGalerkin`) if and only if $x - x_0 \in K$ and
+$f(x) \le f(z)$ for every $z$ with $z - x_0 \in K$.
+
+The proof is `IsGalerkin.iff_energyNorm_min`, read through the energy-norm form of $f$. -/
 theorem isGalerkin_iff_saddleObjective_min (hA : A.PosDef)
     {K : Submodule 𝕜 (EuclideanSpace 𝕜 (Fin n))} [FiniteDimensional 𝕜 K]
     (x₀ x : EuclideanSpace 𝕜 (Fin n)) :
@@ -213,11 +305,18 @@ theorem isGalerkin_iff_saddleObjective_min (hA : A.PosDef)
 
 end Objective
 
-/-- **Saad (8.28)–(8.30)**: the Karush–Kuhn–Tucker statement. For symmetric positive definite
-`A`, an admissible `x` carries a Lagrange multiplier `y` — that is, `(x, y)` solves the block
-system (8.30) — exactly when `x` minimizes `f(z) = ½(A z, z) - (z, b)` over the admissible set
-`{z | Bᴴ z = c}`. The multiplier is unique as soon as `B` has full column rank
-(`equation_8_30_unique`). -/
+/-- **Equations (8.28)–(8.30)** of [saad2003iterative], the Karush–Kuhn–Tucker conditions. Let
+$A \in \mathbb{K}^{n \times n}$ be symmetric positive definite, $B \in \mathbb{K}^{n \times m}$,
+$b \in \mathbb{K}^n$ and $c \in \mathbb{K}^m$, and let $x \in \mathbb{K}^n$ be admissible,
+$B^H x = c$. Then there is a Lagrange multiplier $y \in \mathbb{K}^m$ with
+$$Ax + By = b,$$
+that is, a $y$ such that $(x, y)$ solves the block system (8.30), if and only if $f(x) \le f(z)$
+for every $z$ with $B^H z = c$.
+
+The multiplier is unique when $B$ has full column rank
+(`SaadSparse.Chapter08.equation_8_30_unique`). Both directions are the Galerkin characterization
+of the minimizer over the affine space $x + \operatorname{Ker} B^H$, whose orthogonal complement
+is $\operatorname{Ran} B$; this is where the multiplier comes from. -/
 theorem equation_8_30 {A : Matrix (Fin n) (Fin n) 𝕜} (hA : A.PosDef)
     (B : Matrix (Fin n) (Fin m) 𝕜) (b : EuclideanSpace 𝕜 (Fin n))
     (c : EuclideanSpace 𝕜 (Fin m)) (x : EuclideanSpace 𝕜 (Fin n)) (hx : (Bᴴ ⬝ x) = c) :
@@ -248,7 +347,10 @@ theorem equation_8_30 {A : Matrix (Fin n) (Fin n) 𝕜} (hA : A.PosDef)
   simp only [hmem]
   exact ⟨fun h => h.2, fun h => ⟨hx, h⟩⟩
 
-/-- **Saad (8.30)**: the Lagrange multiplier is unique when `B` has full column rank. -/
+/-- **Equation (8.30)** of [saad2003iterative], uniqueness of the multiplier. Let
+$B \in \mathbb{K}^{n \times m}$ have full column rank, and let $A \in \mathbb{K}^{n \times n}$,
+$b, x \in \mathbb{K}^n$ and $y, y' \in \mathbb{K}^m$. If $Ax + By = b$ and $Ax + By' = b$, then
+$y = y'$. -/
 theorem equation_8_30_unique {B : Matrix (Fin n) (Fin m) 𝕜}
     (hB : Function.Injective (Matrix.toEuclideanLin B)) {A : Matrix (Fin n) (Fin n) 𝕜}
     {b x : EuclideanSpace 𝕜 (Fin n)} {y y' : EuclideanSpace 𝕜 (Fin m)}
@@ -256,15 +358,22 @@ theorem equation_8_30_unique {B : Matrix (Fin n) (Fin m) 𝕜}
   hB (by rw [show (Matrix.toEuclideanLin B) y = (B ⬝ y) from rfl,
     show (Matrix.toEuclideanLin B) y' = (B ⬝ y') from rfl, ← add_right_inj (A ⬝ x), hy, hy'])
 
-/-! ### (8.31)–(8.32): the Schur complement -/
+/-! ### Equations (8.31)–(8.32): the Schur complement -/
 
-/-- **Saad (8.32)** and **Corollary 8.1**: the Schur complement `S = Bᴴ A⁻¹ B` of the block
-system (8.30), the coefficient matrix of the system that eliminating `x` leaves. -/
+/-- **Equation (8.32)** and **Corollary 8.1** of [saad2003iterative]. For
+$A \in \mathbb{K}^{n \times n}$ and $B \in \mathbb{K}^{n \times m}$, the **Schur complement** of
+the block system (8.30) is
+$$S = B^H A^{-1} B \in \mathbb{K}^{m \times m}.$$
+It is the coefficient matrix of the system that remains after eliminating $x$. -/
 noncomputable def schur (A : Matrix (Fin n) (Fin n) 𝕜) (B : Matrix (Fin n) (Fin m) 𝕜) :
     Matrix (Fin m) (Fin m) 𝕜 :=
   Bᴴ * A⁻¹ * B
 
-/-- **Saad (8.32)**: the reduced right-hand side `g = Bᴴ A⁻¹ b - c`. -/
+/-- **Equation (8.32)** of [saad2003iterative]. For $A \in \mathbb{K}^{n \times n}$,
+$B \in \mathbb{K}^{n \times m}$, $b \in \mathbb{K}^n$ and $c \in \mathbb{K}^m$, the **reduced
+right-hand side** is
+$$g = B^H A^{-1} b - c.$$
+-/
 noncomputable def schurRhs (A : Matrix (Fin n) (Fin n) 𝕜) (B : Matrix (Fin n) (Fin m) 𝕜)
     (b : EuclideanSpace 𝕜 (Fin n)) (c : EuclideanSpace 𝕜 (Fin m)) :
     EuclideanSpace 𝕜 (Fin m) :=
@@ -272,7 +381,7 @@ noncomputable def schurRhs (A : Matrix (Fin n) (Fin n) 𝕜) (B : Matrix (Fin n)
 
 variable {A : Matrix (Fin n) (Fin n) 𝕜} {B : Matrix (Fin n) (Fin m) 𝕜}
 
-/-- The Schur complement acts as `Bᴴ ∘ A⁻¹ ∘ B`. -/
+/-- The Schur complement acts as $Sy = B^H (A^{-1} (By))$. -/
 theorem schur_apply (y : EuclideanSpace 𝕜 (Fin m)) :
     (schur A B ⬝ y) = (Bᴴ ⬝ (A⁻¹ ⬝ (B ⬝ y))) := by
   rw [schur, Matrix.toEuclideanLin_mul_apply, Matrix.toEuclideanLin_mul_apply]
@@ -286,8 +395,12 @@ private theorem conjTranspose_inv_sub (b : EuclideanSpace 𝕜 (Fin n))
     show (Matrix.toEuclideanLin Bᴴ) ((A⁻¹ ⬝ b) - (A⁻¹ ⬝ (B ⬝ y)))
       = (Bᴴ ⬝ (A⁻¹ ⬝ b)) - (Bᴴ ⬝ (A⁻¹ ⬝ (B ⬝ y))) from map_sub _ _ _]
 
-/-- **Saad (8.31)–(8.32)**: with `x = A⁻¹ (b - B y)` the first block equation holds
-automatically, and the second one is exactly the reduced system `S y = g`. -/
+/-- **Equations (8.31)–(8.32)** of [saad2003iterative]. Let $A \in \mathbb{K}^{n \times n}$ be
+nonsingular, $B \in \mathbb{K}^{n \times m}$, $b \in \mathbb{K}^n$ and $c, y \in \mathbb{K}^m$,
+and let $x = A^{-1}(b - By)$. Then
+$$Sy = g \iff \bigl(Ax + By = b \text{ and } B^H x = c\bigr).$$
+So with this $x$ the first block equation holds, and the second one is the reduced system
+$Sy = g$. -/
 theorem schur_eq (hA : IsUnit A) (b : EuclideanSpace 𝕜 (Fin n)) (c y : EuclideanSpace 𝕜 (Fin m))
     {x : EuclideanSpace 𝕜 (Fin n)} (hx : x = (A⁻¹ ⬝ (b - (B ⬝ y)))) :
     (schur A B ⬝ y) = schurRhs A B b c ↔ ((A ⬝ x) + (B ⬝ y) = b ∧ (Bᴴ ⬝ x) = c) := by
@@ -305,18 +418,27 @@ theorem schur_eq (hA : IsUnit A) (b : EuclideanSpace 𝕜 (Fin n)) (c y : Euclid
     rw [← h3]
     abel
 
-/-- **Saad, Corollary 8.1**, first half: the Schur complement `S = Bᴴ A⁻¹ B` is symmetric
-positive definite whenever `A` is and `B` has full column rank (backbone
-`Matrix.PosDef.conjTranspose_mul_inv_mul`). -/
+/-- **Corollary 8.1** of [saad2003iterative], positive definiteness of $S$. Let
+$A \in \mathbb{K}^{n \times n}$ be symmetric positive definite and let
+$B \in \mathbb{K}^{n \times m}$ have full column rank. Then the Schur complement
+$S = B^H A^{-1} B$ is symmetric positive definite.
+
+The proof is the backbone `Matrix.PosDef.conjTranspose_mul_inv_mul`. -/
 theorem schur_posDef (hA : A.PosDef) (hB : Function.Injective (Matrix.toEuclideanLin B)) :
     (schur A B).PosDef :=
   hA.conjTranspose_mul_inv_mul fun x y hxy =>
     (WithLp.toLp_injective 2) (hB (a₁ := WithLp.toLp 2 x) (a₂ := WithLp.toLp 2 y)
       (WithLp.ofLp_injective 2 hxy))
 
-/-- **Saad §8.4**, the reason the Stokes preconditioners of the section work: for `c = 0` the
-reduced system `S y = Bᴴ A⁻¹ b` is the system of normal equations of the least-squares problem
-`min ‖b - B y‖_{A⁻¹}` in the `A⁻¹` inner product. -/
+/-- **Section 8.4** of [saad2003iterative], the reduced system as normal equations. Let
+$A \in \mathbb{K}^{n \times n}$ be symmetric positive definite, $B \in \mathbb{K}^{n \times m}$,
+$b \in \mathbb{K}^n$ and $y \in \mathbb{K}^m$. Then $Sy = B^H A^{-1} b$ if and only if
+$$\|b - By\|_{A^{-1}} \le \|b - z\|_{A^{-1}} \quad \text{for all } z \in \operatorname{Ran} B.$$
+So for $c = 0$ the reduced system is the system of normal equations of the least-squares problem
+$\min_y \|b - By\|_{A^{-1}}$ in the $A^{-1}$ inner product. This is the reason of the book why
+the preconditioners of the section for the Stokes problem work.
+
+The norm $\|v\|_{A^{-1}} = \sqrt{\operatorname{Re}(A^{-1} v, v)}$ is `energyNorm`. -/
 theorem equation_8_32_isMinResidual (hA : A.PosDef) (b : EuclideanSpace 𝕜 (Fin n))
     (y : EuclideanSpace 𝕜 (Fin m)) :
     (schur A B ⬝ y) = ((Bᴴ * A⁻¹) ⬝ b) ↔
@@ -353,26 +475,40 @@ section Uzawa
 
 variable (A B) (b : EuclideanSpace 𝕜 (Fin n)) (c : EuclideanSpace 𝕜 (Fin m)) (ω : 𝕜)
 
-/-- One pass through **Algorithm 8.6** (Uzawa): `x_{k+1} = A⁻¹ (b - B y_k)` and
-`y_{k+1} = y_k + ω (Bᴴ x_{k+1} - c)`. -/
+/-- One pass through Algorithm 8.6 of [saad2003iterative] (Uzawa's method): the pair $(x_k, y_k)$
+goes to $(x_{k+1}, y_{k+1})$ with
+$$x_{k+1} = A^{-1}(b - By_k), \qquad y_{k+1} = y_k + \omega (B^H x_{k+1} - c).$$
+-/
 noncomputable def uzawaStep (s : EuclideanSpace 𝕜 (Fin n) × EuclideanSpace 𝕜 (Fin m)) :
     EuclideanSpace 𝕜 (Fin n) × EuclideanSpace 𝕜 (Fin m) :=
   (A⁻¹ ⬝ (b - (B ⬝ s.2)), s.2 + ω • ((Bᴴ ⬝ (A⁻¹ ⬝ (b - (B ⬝ s.2)))) - c))
 
-/-- **Algorithm 8.6** (Uzawa) run for `k` steps from the pair `(x_0, y_0)`. -/
+/-- **Algorithm 8.6** of [saad2003iterative] (Uzawa's method). Let $A \in \mathbb{K}^{n \times n}$,
+$B \in \mathbb{K}^{n \times m}$, $b \in \mathbb{K}^n$, $c \in \mathbb{K}^m$ and
+$\omega \in \mathbb{K}$. From a starting pair $(x_0, y_0)$, the state after $k$ steps is
+obtained by $k$ passes of
+$$x_{j+1} = A^{-1}(b - By_j), \qquad y_{j+1} = y_j + \omega (B^H x_{j+1} - c).$$
+
+A pass is `SaadSparse.Chapter08.uzawaStep`. The starting $x_0$ is not used. -/
 noncomputable def uzawa (s₀ : EuclideanSpace 𝕜 (Fin n) × EuclideanSpace 𝕜 (Fin m)) (k : ℕ) :
     EuclideanSpace 𝕜 (Fin n) × EuclideanSpace 𝕜 (Fin m) :=
   (uzawaStep A B b c ω)^[k] s₀
 
-/-- The recurrence: state `k + 1` is one pass of Algorithm 8.6 applied to state `k`. -/
+/-- The state of Algorithm 8.6 after $k + 1$ steps is one pass of the algorithm applied to the state
+after $k$ steps. -/
 theorem uzawa_succ (s₀ : EuclideanSpace 𝕜 (Fin n) × EuclideanSpace 𝕜 (Fin m)) (k : ℕ) :
     uzawa A B b c ω s₀ (k + 1) = uzawaStep A B b c ω (uzawa A B b c ω s₀ k) :=
   Function.iterate_succ_apply' _ _ _
 
 variable {A B b c ω}
 
-/-- **Saad (8.31)–(8.32)**: eliminating `x` from Algorithm 8.6 leaves the Richardson iteration
-`y_{k+1} = y_k + ω (g - S y_k)` for the reduced system `S y = g`. -/
+/-- **Equations (8.31)–(8.32)** of [saad2003iterative], Uzawa's method on the reduced system. For
+$A \in \mathbb{K}^{n \times n}$, $B \in \mathbb{K}^{n \times m}$, $b \in \mathbb{K}^n$,
+$c \in \mathbb{K}^m$, $\omega \in \mathbb{K}$ and every pair $(x_k, y_k)$, the $y$-update of one
+pass of Algorithm 8.6 is
+$$y_{k+1} = y_k + \omega (g - Sy_k).$$
+So eliminating $x$ from Uzawa's method leaves Richardson's iteration for the reduced system
+$Sy = g$. -/
 theorem equation_8_32 (s : EuclideanSpace 𝕜 (Fin n) × EuclideanSpace 𝕜 (Fin m)) :
     (uzawaStep A B b c ω s).2 = s.2 + ω • (schurRhs A B b c - (schur A B ⬝ s.2)) := by
   have h : (Bᴴ ⬝ (A⁻¹ ⬝ (b - (B ⬝ s.2)))) - c = schurRhs A B b c - (schur A B ⬝ s.2) := by
@@ -380,8 +516,15 @@ theorem equation_8_32 (s : EuclideanSpace 𝕜 (Fin n) × EuclideanSpace 𝕜 (F
     abel
   rw [uzawaStep, h]
 
-/-- **P-8.7**: Uzawa's method is the fixed-point iteration of the splitting
-`M = [[A, 0], [-ω Bᴴ, 1]]`, `N = [[0, -B], [0, 1]]` of the saddle-point matrix. -/
+/-- **Problem P-8.7** of [saad2003iterative]. Let $A \in \mathbb{K}^{n \times n}$ be nonsingular,
+and let $B$, $b$, $c$ and $\omega$ be as in Algorithm 8.6. If $(x_{k+1}, y_{k+1})$ is one pass
+of Uzawa's method from $(x_k, y_k)$, then
+$$\begin{bmatrix} A & 0 \\ -\omega B^H & I \end{bmatrix} \begin{bmatrix} x_{k+1} \\ y_{k+1}
+  \end{bmatrix} = \begin{bmatrix} 0 & -B \\ 0 & I \end{bmatrix} \begin{bmatrix} x_k \\ y_k
+  \end{bmatrix} + \begin{bmatrix} b \\ -\omega c \end{bmatrix}.$$
+So Uzawa's method is the fixed-point iteration of the splitting $M - N$ with these two block
+matrices $M$ and $N$. The difference $M - N$ is the saddle-point matrix with its second block
+row multiplied by $-\omega$. -/
 theorem uzawa_eq_splitting (hA : IsUnit A)
     (s : EuclideanSpace 𝕜 (Fin n) × EuclideanSpace 𝕜 (Fin m)) :
     Matrix.fromBlocks A 0 (-(ω • Bᴴ)) 1
@@ -411,21 +554,29 @@ section ArrowHurwicz
 
 variable (A B) (b : EuclideanSpace 𝕜 (Fin n)) (c : EuclideanSpace 𝕜 (Fin m)) (ε ω : 𝕜)
 
-/-- One pass through **Algorithm 8.7** (Arrow–Hurwicz):
-`x_{k+1} = x_k + ε (b - A x_k - B y_k)` and `y_{k+1} = y_k + ω (Bᴴ x_{k+1} - c)`, one gradient
-step in place of the exact solve of Uzawa. -/
+/-- One pass through Algorithm 8.7 of [saad2003iterative] (the Arrow–Hurwicz method): the pair
+$(x_k, y_k)$ goes to $(x_{k+1}, y_{k+1})$ with
+$$x_{k+1} = x_k + \epsilon (b - Ax_k - By_k), \qquad y_{k+1} = y_k + \omega (B^H x_{k+1} - c).$$
+One gradient step replaces the exact solve of Uzawa's method. -/
 noncomputable def arrowHurwiczStep (s : EuclideanSpace 𝕜 (Fin n) × EuclideanSpace 𝕜 (Fin m)) :
     EuclideanSpace 𝕜 (Fin n) × EuclideanSpace 𝕜 (Fin m) :=
   (s.1 + ε • (b - (A ⬝ s.1) - (B ⬝ s.2)),
     s.2 + ω • ((Bᴴ ⬝ (s.1 + ε • (b - (A ⬝ s.1) - (B ⬝ s.2)))) - c))
 
-/-- **Algorithm 8.7** (Arrow–Hurwicz) run for `k` steps from the pair `(x_0, y_0)`. -/
+/-- **Algorithm 8.7** of [saad2003iterative] (the Arrow–Hurwicz method). Let
+$A \in \mathbb{K}^{n \times n}$, $B \in \mathbb{K}^{n \times m}$, $b \in \mathbb{K}^n$,
+$c \in \mathbb{K}^m$ and $\epsilon, \omega \in \mathbb{K}$. From a starting pair $(x_0, y_0)$,
+the state after $k$ steps is obtained by $k$ passes of
+$$x_{j+1} = x_j + \epsilon (b - Ax_j - By_j), \qquad y_{j+1} = y_j + \omega (B^H x_{j+1} - c).$$
+
+A pass is `SaadSparse.Chapter08.arrowHurwiczStep`. -/
 noncomputable def arrowHurwicz
     (s₀ : EuclideanSpace 𝕜 (Fin n) × EuclideanSpace 𝕜 (Fin m)) (k : ℕ) :
     EuclideanSpace 𝕜 (Fin n) × EuclideanSpace 𝕜 (Fin m) :=
   (arrowHurwiczStep A B b c ε ω)^[k] s₀
 
-/-- The recurrence: state `k + 1` is one pass of Algorithm 8.7 applied to state `k`. -/
+/-- The state of Algorithm 8.7 after $k + 1$ steps is one pass of the algorithm applied to the state
+after $k$ steps. -/
 theorem arrowHurwicz_succ (s₀ : EuclideanSpace 𝕜 (Fin n) × EuclideanSpace 𝕜 (Fin m)) (k : ℕ) :
     arrowHurwicz A B b c ε ω s₀ (k + 1)
       = arrowHurwiczStep A B b c ε ω (arrowHurwicz A B b c ε ω s₀ k) :=
@@ -433,9 +584,14 @@ theorem arrowHurwicz_succ (s₀ : EuclideanSpace 𝕜 (Fin n) × EuclideanSpace 
 
 variable {A B b c ε ω}
 
-/-- **Saad §8.4**: the block form of Algorithm 8.7,
-`[[1, 0], [-ω Bᴴ, 1]] (x_{k+1}, y_{k+1}) = [[1 - εA, -εB], [0, 1]] (x_k, y_k) + (ε b, -ω c)`,
-which exhibits the Arrow–Hurwicz method as a stationary iteration. -/
+/-- **Section 8.4** of [saad2003iterative], the block form of Algorithm 8.7. For $A$, $B$, $b$, $c$,
+$\epsilon$ and $\omega$ as in Algorithm 8.7, if $(x_{k+1}, y_{k+1})$ is one pass of the
+Arrow–Hurwicz method from $(x_k, y_k)$, then
+$$\begin{bmatrix} I & 0 \\ -\omega B^H & I \end{bmatrix} \begin{bmatrix} x_{k+1} \\ y_{k+1}
+  \end{bmatrix} = \begin{bmatrix} I - \epsilon A & -\epsilon B \\ 0 & I \end{bmatrix}
+  \begin{bmatrix} x_k \\ y_k \end{bmatrix} + \begin{bmatrix} \epsilon b \\ -\omega c
+  \end{bmatrix}.$$
+This exhibits the Arrow–Hurwicz method as a stationary iteration. -/
 theorem arrowHurwicz_eq_block (s : EuclideanSpace 𝕜 (Fin n) × EuclideanSpace 𝕜 (Fin m)) :
     Matrix.fromBlocks 1 0 (-(ω • Bᴴ)) 1
         *ᵥ Sum.elim (WithLp.ofLp (arrowHurwiczStep A B b c ε ω s).1)
@@ -462,19 +618,24 @@ end ArrowHurwicz
 
 /-! ### Example 8.2: the regularized Schur complement -/
 
-/-- **Example 8.2**: the Schur complement of the regularized system `[[A, B], [Bᴴ, ρ Bᴴ B]]`,
-namely `ρ Bᴴ B - Bᴴ A⁻¹ B = Bᴴ (ρ - A⁻¹) B`. -/
+/-- **Example 8.2** of [saad2003iterative]. For $A \in \mathbb{K}^{n \times n}$,
+$B \in \mathbb{K}^{n \times m}$ and $\rho \in \mathbb{K}$, the **regularized Schur complement**
+is the Schur complement of the regularized system $\begin{bmatrix} A & B \\ B^H & \rho B^H B
+\end{bmatrix}$:
+$$S_\rho = \rho B^H B - B^H A^{-1} B.$$
+It equals $B^H (\rho I - A^{-1}) B$ (`SaadSparse.Chapter08.regularizedSchur_eq`). -/
 noncomputable def regularizedSchur (A : Matrix (Fin n) (Fin n) 𝕜)
     (B : Matrix (Fin n) (Fin m) 𝕜) (ρ : 𝕜) : Matrix (Fin m) (Fin m) 𝕜 :=
   ρ • (Bᴴ * B) - schur A B
 
-/-- **Example 8.2**: the regularized Schur complement is `Bᴴ (ρ - A⁻¹) B`. -/
+/-- **Example 8.2** of [saad2003iterative]. The regularized Schur complement is
+$S_\rho = B^H (\rho I - A^{-1}) B$. -/
 theorem regularizedSchur_eq (ρ : 𝕜) :
     regularizedSchur A B ρ = Bᴴ * (ρ • 1 - A⁻¹) * B := by
   rw [regularizedSchur, schur, Matrix.mul_sub, Matrix.sub_mul, Matrix.mul_smul, Matrix.smul_mul,
     Matrix.mul_one]
 
-/-- The regularized Schur complement acts as `Bᴴ ∘ (ρ - A⁻¹) ∘ B`. -/
+/-- The regularized Schur complement acts as $S_\rho y = B^H (\rho By - A^{-1}(By))$. -/
 theorem regularizedSchur_apply (ρ : 𝕜) (y : EuclideanSpace 𝕜 (Fin m)) :
     (regularizedSchur A B ρ ⬝ y) = (Bᴴ ⬝ (ρ • (B ⬝ y) - (A⁻¹ ⬝ (B ⬝ y)))) := by
   rw [regularizedSchur_eq, Matrix.toEuclideanLin_mul_apply, Matrix.toEuclideanLin_mul_apply]
@@ -482,8 +643,10 @@ theorem regularizedSchur_apply (ρ : 𝕜) (y : EuclideanSpace 𝕜 (Fin m)) :
   rw [map_sub, map_smul, Matrix.toEuclideanLin_one]
   rfl
 
-/-- **Example 8.2**: the quadratic form of the regularized Schur complement is that of
-`ρ - A⁻¹` on the range of `B`. -/
+/-- **Example 8.2** of [saad2003iterative], the quadratic form. For real $\rho$ and
+$y \in \mathbb{K}^m$,
+$$\operatorname{Re}(S_\rho y, y) = \rho \|By\|_2^2 - \operatorname{Re}(A^{-1} By, By).$$
+So the quadratic form of $S_\rho$ is that of $\rho I - A^{-1}$ on the range of $B$. -/
 theorem re_inner_regularizedSchur (ρ : ℝ) (y : EuclideanSpace 𝕜 (Fin m)) :
     RCLike.re (inner 𝕜 (regularizedSchur A B (ρ : 𝕜) ⬝ y) y)
       = ρ * ‖(B ⬝ y)‖ ^ 2 - RCLike.re (inner 𝕜 (A⁻¹ ⬝ (B ⬝ y)) (B ⬝ y)) := by
@@ -495,12 +658,22 @@ theorem re_inner_regularizedSchur (ρ : ℝ) (y : EuclideanSpace 𝕜 (Fin m)) :
     rw [← RCLike.ofReal_pow, ← RCLike.ofReal_mul, RCLike.ofReal_re]
   rw [h]
 
-/-- **Example 8.2**: for the regularization `C = Bᴴ B`, the modified Schur complement
-`S_ρ = Bᴴ (ρ - A⁻¹) B` is symmetric; it is positive definite when `ρ` exceeds every
-quadratic-form value of `A⁻¹` — that is, when `ρ > 1/λ_min(A)` — and negative definite when `ρ`
-falls below all of them, `ρ < 1/λ_max(A)`. The extremes of the quadratic form of `A⁻¹` are
-`1/λ_max(A)` and `1/λ_min(A)`, which is how the book states the two thresholds. The inequalities
-are strict: at `ρ = 1/λ_min(A)` the form `ρ - A⁻¹` is only positive *semi*definite. -/
+/-- **Example 8.2** of [saad2003iterative]. Let $A \in \mathbb{K}^{n \times n}$, let
+$B \in \mathbb{K}^{n \times m}$ have full column rank, and let
+$\mu_{\min}, \mu_{\max} \in \mathbb{R}$ be such that $A^{-1}$ is Hermitian with
+$$\mu_{\min} \|v\|_2^2 \le \operatorname{Re}(A^{-1} v, v) \le \mu_{\max} \|v\|_2^2 \quad
+  \text{for all } v.$$
+Let $\rho \in \mathbb{R}$. Then the regularized Schur complement
+$S_\rho = B^H (\rho I - A^{-1}) B$ is symmetric; it is positive definite if $\rho > \mu_{\max}$;
+and $\operatorname{Re}(S_\rho y, y) < 0$ for every $y \neq 0$ if $\rho < \mu_{\min}$.
+
+When $A$ is symmetric positive definite, the best bounds are $\mu_{\min} = 1/\lambda_{\max}(A)$
+and $\mu_{\max} = 1/\lambda_{\min}(A)$, and the two conditions become
+$\rho > 1/\lambda_{\min}(A)$ and $\rho < 1/\lambda_{\max}(A)$, which is how the book states the
+two thresholds. The inequalities are strict: at $\rho = 1/\lambda_{\min}(A)$ the form of
+$\rho I - A^{-1}$ is only positive semidefinite. The bounds are the hypothesis
+`LinearMap.IsSymmetricBoundedBy`; the statement does not need them to be attained, and it does
+not assume that $A$ is positive definite. -/
 theorem example_8_2 (hB : Function.Injective (Matrix.toEuclideanLin B)) {μmin μmax : ℝ}
     (hbd : (Matrix.toEuclideanLin A⁻¹).IsSymmetricBoundedBy μmin μmax) {ρ : ℝ} :
     (Matrix.toEuclideanLin (regularizedSchur A B (ρ : 𝕜))).IsSymmetric ∧
@@ -540,8 +713,14 @@ section Corollary
 variable {A : Matrix (Fin n) (Fin n) ℝ} {B : Matrix (Fin n) (Fin m) ℝ}
   {b : EuclideanSpace ℝ (Fin n)} {c : EuclideanSpace ℝ (Fin m)} {ω : ℝ}
 
-/-- **Saad (8.32)**: the `y`-component of Uzawa's iteration *is* Richardson's iteration for the
-reduced system `S y = g`, so its convergence is Example 4.1 applied to `S`. -/
+/-- **Equation (8.32)** of [saad2003iterative], Uzawa's method as Richardson's iteration. Over
+$\mathbb{R}$, let $A \in \mathbb{R}^{n \times n}$, $B \in \mathbb{R}^{n \times m}$,
+$b \in \mathbb{R}^n$, $c \in \mathbb{R}^m$ and $\omega \in \mathbb{R}$. For every starting pair
+$(x_0, y_0)$ and every $k$, the $y$-component of the state of Uzawa's method after $k$ steps is
+the $k$-th iterate of Richardson's iteration $y \mapsto y + \omega (g - Sy)$ from $y_0$.
+
+So the convergence of Uzawa's method is Example 4.1 applied to $S$. Richardson's step is
+`SaadSparse.Chapter04.richardsonStep`, in plain coordinates. -/
 theorem uzawa_snd_eq_richardson
     (s₀ : EuclideanSpace ℝ (Fin n) × EuclideanSpace ℝ (Fin m)) (k : ℕ) :
     WithLp.ofLp (uzawa A B b c ω s₀ k).2
@@ -554,12 +733,25 @@ theorem uzawa_snd_eq_richardson
       WithLp.ofLp_add, WithLp.ofLp_smul, WithLp.ofLp_sub]
     rfl
 
-/-- **Saad, Corollary 8.1**: for `A` symmetric positive definite and `B` of full column rank the
-Schur complement `S` is symmetric positive definite; Uzawa's method converges — for every
-right-hand side and every starting pair — exactly when `0 < ω < 2/λ_max(S)`, and the optimal
-parameter is `ω_opt = 2/(λ_min(S) + λ_max(S))`. The last two clauses are Example 4.1 applied to
-`S`, since `equation_8_32` and `uzawa_snd_eq_richardson` make the `y`-iteration Richardson's for
-`S y = g`. -/
+/-- **Corollary 8.1** of [saad2003iterative]. Let $A \in \mathbb{R}^{n \times n}$ be symmetric
+positive definite, let $B \in \mathbb{R}^{n \times m}$ have full column rank, and let
+$S = B^T A^{-1} B$. Let $\lambda_{\min} > 0$ and $\lambda_{\max}$ be eigenvalues of $S$ such
+that the spectrum of $S$ lies in $[\lambda_{\min}, \lambda_{\max}]$, and let $\omega \neq 0$.
+Then:
+
+* $S$ is symmetric positive definite;
+* Richardson's iteration $y_{k+1} = y_k + \omega (g - Sy_k)$ converges for every $g$ and every
+  $y_0$ if and only if $0 < \omega < 2/\lambda_{\max}$;
+* among $\omega > 0$, the spectral radius $\rho(I - \omega S)$ is smallest at
+  $\omega_{\mathrm{opt}} = 2/(\lambda_{\min} + \lambda_{\max})$.
+
+By `SaadSparse.Chapter08.equation_8_32` and `SaadSparse.Chapter08.uzawa_snd_eq_richardson`, the
+$y$-iteration of Uzawa's method is this Richardson iteration with $g = B^T A^{-1} b - c$. So
+Uzawa's method converges for every right-hand side and every starting pair exactly when
+$0 < \omega < 2/\lambda_{\max}(S)$, with the optimal parameter
+$2/(\lambda_{\min}(S) + \lambda_{\max}(S))$. The last two parts are Example 4.1 applied to $S$.
+The hypothesis $\omega \neq 0$ excludes the constant iteration. The spectral radius is
+`Matrix.complexSpectralRadius`. -/
 theorem corollary_8_1 (hA : A.PosDef) (hB : Function.Injective (Matrix.toEuclideanLin B))
     {lmin lmax : ℝ} (hsub : spectrum ℝ (schur A B) ⊆ Set.Icc lmin lmax)
     (hmin : lmin ∈ spectrum ℝ (schur A B)) (hmax : lmax ∈ spectrum ℝ (schur A B))
@@ -576,29 +768,37 @@ theorem corollary_8_1 (hA : A.PosDef) (hB : Function.Injective (Matrix.toEuclide
 
 end Corollary
 
-/-! ### §8.4: the Lagrangian and the saddle point -/
+/-! ### Section 8.4: the Lagrangian and the saddle point -/
 
 section Lagrangian
 
 variable {A : Matrix (Fin n) (Fin n) 𝕜} {B : Matrix (Fin n) (Fin m) 𝕜}
 
-/-- **Saad §8.4**: the Lagrangian `L(x, y) = ½ (A x, x) - (x, b) + (y, Bᴴ x - c)` of the
-constrained problem (8.28)–(8.29), whose stationarity conditions are the block system (8.30). -/
+/-- **Section 8.4** of [saad2003iterative], the Lagrangian. For $A \in \mathbb{K}^{n \times n}$,
+$B \in \mathbb{K}^{n \times m}$, $b \in \mathbb{K}^n$ and $c \in \mathbb{K}^m$, the
+**Lagrangian** of the constrained problem (8.28)–(8.29) is the real-valued function
+$$L(x, y) = f(x) + \operatorname{Re}(y, B^H x - c),$$
+where $f$ is the objective `SaadSparse.Chapter08.saddleObjective`. Its stationarity conditions
+are the block system (8.30). -/
 noncomputable def lagrangian (A : Matrix (Fin n) (Fin n) 𝕜) (B : Matrix (Fin n) (Fin m) 𝕜)
     (b : EuclideanSpace 𝕜 (Fin n)) (c : EuclideanSpace 𝕜 (Fin m))
     (x : EuclideanSpace 𝕜 (Fin n)) (y : EuclideanSpace 𝕜 (Fin m)) : ℝ :=
   saddleObjective A b x + RCLike.re (inner 𝕜 ((Bᴴ ⬝ x) - c) y)
 
-/-- **Saad §8.4**: the sentence that names the section — the solution `(x_*, y_*)` of the block
-system (8.30) is the *saddle point* of the Lagrangian:
-`L(x_*, y) ≤ L(x_*, y_*) ≤ L(x, y_*)` for every `x` and every `y`.
+/-- **Section 8.4** of [saad2003iterative], the saddle point. Let $A \in \mathbb{K}^{n \times n}$ be
+symmetric positive definite, $B \in \mathbb{K}^{n \times m}$, $b \in \mathbb{K}^n$ and
+$c \in \mathbb{K}^m$, and let $(x_*, y_*)$ solve the block system (8.30): $B^H x_* = c$ and
+$Ax_* + By_* = b$. Then for every $x \in \mathbb{K}^n$ and every $y \in \mathbb{K}^m$,
+$$L(x_*, y) \le L(x_*, y_*) \le L(x, y_*).$$
+This is the sentence that names the section: the solution of (8.30) is a saddle point of the
+Lagrangian.
 
-The two halves are of different kinds. On the `y` side the Lagrangian is affine and `x_*` is
-admissible, so `L(x_*, ·)` is *constant* and the inequality is an equality — the saddle point is
-never strict in `y`. On the `x` side, `L(x, y_*) - L(x_*, y_*) = ½ (A (x - x_*), x - x_*)`, which
-positive definiteness of `A` makes nonnegative. Note that the `x` inequality holds for *every*
-`x`, admissible or not: that is what distinguishes the saddle-point statement from the constrained
-minimization of `equation_8_30`. -/
+The two halves are of different kinds. Since $x_*$ is admissible, $L(x_*, \cdot)$ is constant,
+so the first inequality is an equality, and the saddle point is never strict in $y$. On the $x$
+side, $L(x, y_*) - L(x_*, y_*) = \tfrac12 \operatorname{Re}(A(x - x_*), x - x_*)$, which is
+nonnegative because $A$ is positive definite. The second inequality holds for every $x$,
+admissible or not; this distinguishes the saddle-point statement from the constrained
+minimization of `SaadSparse.Chapter08.equation_8_30`. -/
 theorem lagrangian_isSaddle (hA : A.PosDef) (b : EuclideanSpace 𝕜 (Fin n))
     (c : EuclideanSpace 𝕜 (Fin m)) {xstar : EuclideanSpace 𝕜 (Fin n)}
     {ystar : EuclideanSpace 𝕜 (Fin m)} (hx : (Bᴴ ⬝ xstar) = c)
@@ -648,33 +848,39 @@ theorem lagrangian_isSaddle (hA : A.PosDef) (b : EuclideanSpace 𝕜 (Fin n))
 
 end Lagrangian
 
-/-! ### P-8.6: the projector onto the constraint space -/
+/-! ### Problem P-8.6: the projector onto the constraint space -/
 
 section Projector
 
 variable {A : Matrix (Fin n) (Fin n) 𝕜} {B : Matrix (Fin n) (Fin m) 𝕜}
 
-/-- **P-8.6**: the projector `P = I - B (Bᴴ B)⁻¹ Bᴴ` of the null-space method for the
-saddle-point system. -/
+/-- **Problem P-8.6** of [saad2003iterative]. For $B \in \mathbb{K}^{n \times m}$, the **constraint
+projector** of the null-space method for the saddle-point system is
+$$P = I - B (B^H B)^{-1} B^H.$$
+-/
 noncomputable def constraintProjector (B : Matrix (Fin n) (Fin m) 𝕜) :
     Matrix (Fin n) (Fin n) 𝕜 :=
   1 - B * (Bᴴ * B)⁻¹ * Bᴴ
 
-/-- `B` has full column rank as a matrix exactly when it does as an operator on Euclidean
-space. -/
+/-- If $B$ has full column rank as an operator on Euclidean space, then the map $y \mapsto By$ on
+plain coordinate vectors is injective. -/
 private theorem injective_mulVec (hB : Function.Injective (Matrix.toEuclideanLin B)) :
     Function.Injective B.mulVec := fun u v huv =>
   (WithLp.toLp_injective 2) (hB (show (B ⬝ WithLp.toLp 2 u) = (B ⬝ WithLp.toLp 2 v) from
     congrArg (WithLp.toLp 2) huv))
 
-/-- `Bᴴ B` is nonsingular when `B` has full column rank, which is what makes `P` well defined. -/
+/-- If $B$ has full column rank, then $B^H B$ is nonsingular, so $P$ is well defined. -/
 private theorem isUnit_conjTranspose_mul_self
     (hB : Function.Injective (Matrix.toEuclideanLin B)) : IsUnit (Bᴴ * B) :=
   (Matrix.PosDef.conjTranspose_mul_self B (injective_mulVec hB)).isUnit
 
-/-- **P-8.6 (a)**: `P = I - B (Bᴴ B)⁻¹ Bᴴ` is the orthogonal projector onto the constraint space
-`Ker Bᴴ = (Ran B)ᗮ`. Its range and kernel are read off in
-`constraintProjector_apply_eq_self_iff` and `constraintProjector_apply_eq_zero_iff`. -/
+/-- **Problem P-8.6(a)** of [saad2003iterative]. Let $B \in \mathbb{K}^{n \times m}$ have full
+column rank. Then $P = I - B (B^H B)^{-1} B^H$ is the orthogonal projector onto the constraint
+space $\operatorname{Ker} B^H = (\operatorname{Ran} B)^\perp$.
+
+The orthogonal projector is `Submodule.starProjection`. The range and the kernel of $P$ are
+stated in `SaadSparse.Chapter08.constraintProjector_apply_eq_self_iff` and
+`SaadSparse.Chapter08.constraintProjector_apply_eq_zero_iff`. -/
 theorem problem_8_6_projector (hB : Function.Injective (Matrix.toEuclideanLin B)) :
     (Matrix.toEuclideanLin (constraintProjector B) :
         EuclideanSpace 𝕜 (Fin n) →ₗ[𝕜] EuclideanSpace 𝕜 (Fin n))
@@ -705,7 +911,9 @@ theorem problem_8_6_projector (hB : Function.Injective (Matrix.toEuclideanLin B)
     rw [LinearMap.sub_apply, Matrix.toEuclideanLin_one]
     simp
 
-/-- **P-8.6 (a)**: `Ran P = Ker Bᴴ` — a vector is fixed by `P` exactly when it is admissible. -/
+/-- **Problem P-8.6(a)** of [saad2003iterative], the range of $P$. Let
+$B \in \mathbb{K}^{n \times m}$ have full column rank. Then $Pu = u$ if and only if $B^H u = 0$:
+$P$ fixes exactly the admissible directions, so $\operatorname{Ran} P = \operatorname{Ker} B^H$. -/
 theorem constraintProjector_apply_eq_self_iff (hB : Function.Injective (Matrix.toEuclideanLin B))
     (u : EuclideanSpace 𝕜 (Fin n)) : (constraintProjector B ⬝ u) = u ↔ (Bᴴ ⬝ u) = 0 := by
   rw [show (constraintProjector B ⬝ u)
@@ -715,8 +923,10 @@ theorem constraintProjector_apply_eq_self_iff (hB : Function.Injective (Matrix.t
     congrFun (congrArg DFunLike.coe (problem_8_6_projector hB)) u]
   exact Submodule.starProjection_eq_self_iff.trans LinearMap.mem_ker
 
-/-- **P-8.6 (a)**: `Ker P = Ran B` — `P` annihilates exactly the range of `B`, which is where the
-Lagrange multiplier term lives. -/
+/-- **Problem P-8.6(a)** of [saad2003iterative], the kernel of $P$. Let
+$B \in \mathbb{K}^{n \times m}$ have full column rank. Then $Pu = 0$ if and only if
+$u \in \operatorname{Ran} B$. So $\operatorname{Ker} P = \operatorname{Ran} B$, which is where
+the Lagrange multiplier term lies. -/
 theorem constraintProjector_apply_eq_zero_iff (hB : Function.Injective (Matrix.toEuclideanLin B))
     (u : EuclideanSpace 𝕜 (Fin n)) :
     (constraintProjector B ⬝ u) = 0 ↔ u ∈ LinearMap.range (Matrix.toEuclideanLin B) := by
@@ -731,15 +941,18 @@ theorem constraintProjector_apply_eq_zero_iff (hB : Function.Injective (Matrix.t
   · intro h
     exact Submodule.eq_starProjection_of_mem_orthogonal (Submodule.zero_mem _) (by rwa [sub_zero])
 
-/-- **P-8.6 (b)** and **Saad (8.35)**: for `c = 0` and `B` of full column rank, an admissible `x`
-solves the block system (8.30) — that is, carries a Lagrange multiplier — exactly when it solves
-the singular but consistent system `P A P x = P b`.
+/-- **Problem P-8.6(b)** and **Equation (8.35)** of [saad2003iterative]. Let
+$A \in \mathbb{K}^{n \times n}$, let $B \in \mathbb{K}^{n \times m}$ have full column rank, let
+$b \in \mathbb{K}^n$, and let $x \in \mathbb{K}^n$ satisfy $B^H x = 0$. Then there is a $y$ with
+$Ax + By = b$, that is, $(x, y)$ solves the block system (8.30) with $c = 0$, if and only if
+$$PAPx = Pb.$$
 
-Both directions are `constraintProjector_apply_eq_zero_iff`: `P` fixes the admissible `x`, so
-(8.35) says `P (A x - b) = 0`, and the kernel of `P` is `Ran B`, which is precisely where the
-multiplier term `-B y` lives. `P A P` is symmetric positive *semi*definite and singular whenever
-`B ≠ 0`, so parts (c) and (d) of the problem — running CG on it — need the theory of a consistent
-semidefinite system; see the module doc. -/
+Both directions use `SaadSparse.Chapter08.constraintProjector_apply_eq_zero_iff`: $P$ fixes the
+admissible $x$, so (8.35) says $P(Ax - b) = 0$, and the kernel of $P$ is $\operatorname{Ran} B$,
+where the multiplier term $-By$ lies. When $A$ is symmetric positive definite, $PAP$ is
+symmetric positive semidefinite, and it is singular whenever $B \neq 0$. So the convergence of
+the conjugate gradient method on this system needs the theory of a consistent semidefinite
+system, which is not formalized. -/
 theorem equation_8_35 (hB : Function.Injective (Matrix.toEuclideanLin B))
     (b : EuclideanSpace 𝕜 (Fin n)) {x : EuclideanSpace 𝕜 (Fin n)} (hx : (Bᴴ ⬝ x) = 0) :
     (∃ y, (A ⬝ x) + (B ⬝ y) = b) ↔
@@ -761,21 +974,28 @@ theorem equation_8_35 (hB : Function.Injective (Matrix.toEuclideanLin B))
     rw [show (B ⬝ (-y)) = -(B ⬝ y) from map_neg _ _, hy]
     abel
 
-/-! ### P-8.6 (c), first half: the subspace the CG iterates live in -/
+/-! ### Problem P-8.6(c), first half: the subspace of the conjugate gradient iterates -/
 
-/-- `Bᴴ P = 0`: the projector of P-8.6 lands in the constraint space `Ker Bᴴ`. -/
+/-- **Problem P-8.6(c)** of [saad2003iterative], the constraint projector lands in the constraint
+space. Let $B \in \mathbb{K}^{n \times m}$ have full column rank. Then $B^H P = 0$. -/
 theorem conjTranspose_mul_constraintProjector
     (hB : Function.Injective (Matrix.toEuclideanLin B)) : Bᴴ * constraintProjector B = 0 := by
   have hu := (Matrix.isUnit_iff_isUnit_det _).1 (isUnit_conjTranspose_mul_self (B := B) hB)
   rw [constraintProjector, Matrix.mul_sub, Matrix.mul_one, ← Matrix.mul_assoc, ← Matrix.mul_assoc,
     Matrix.mul_nonsing_inv _ hu, Matrix.one_mul, sub_self]
 
-/-- **P-8.6 (c)**, the half that needs no new theory: *in which subspace are the iterates
-generated from CG applied to (8.35)?*  In the constraint space `Ker Bᴴ`.  From `x_0 = 0` the CG
-iterates lie in the Krylov space `𝒦_m(P A P, P b)`, and every generator of that space is a value
-of `P`, which `conjTranspose_mul_constraintProjector` annihilates.  That is what makes the
-singular system harmless: the whole iteration takes place on `Ker Bᴴ`, where `P A P` is positive
-definite. -/
+/-- **Problem P-8.6(c)** of [saad2003iterative], the subspace in which the conjugate gradient
+iterates for (8.35) lie. Let $A \in \mathbb{K}^{n \times n}$, let
+$B \in \mathbb{K}^{n \times m}$ have full column rank, and let $b \in \mathbb{K}^n$. Then for
+every $k$,
+$$\mathcal{K}_k(PAP, Pb) \subseteq \operatorname{Ker} B^H.$$
+
+From $x_0 = 0$ the conjugate gradient iterates lie in this Krylov subspace, so they lie in the
+constraint space. Every generator of the Krylov subspace is a value of $P$, which $B^H$
+annihilates (`SaadSparse.Chapter08.conjTranspose_mul_constraintProjector`). This is why the
+singular system is harmless: when $A$ is symmetric positive definite, the iteration takes place
+in $\operatorname{Ker} B^H$, where $PAP$ is positive definite. The Krylov subspace is the
+backbone `Krylov.subspace`. -/
 theorem problem_8_6_cg_subspace (hB : Function.Injective (Matrix.toEuclideanLin B))
     (b : EuclideanSpace 𝕜 (Fin n)) (k : ℕ) :
     Krylov.subspace
@@ -814,21 +1034,26 @@ theorem problem_8_6_cg_subspace (hB : Function.Injective (Matrix.toEuclideanLin 
 
 end Projector
 
-/-! ### P-8.5 (b): a method for (8.30) through the reduced system -/
+/-! ### Problem P-8.5(b): a method for (8.30) through the reduced system -/
 
 section Problem85b
 
 variable {A : Matrix (Fin n) (Fin n) 𝕜} {B : Matrix (Fin n) (Fin m) 𝕜}
 
-/-- **P-8.5 (b)**: *derive a method for solving the equivalent system (8.30)*.  Any solver for the
-reduced system (8.32) is one: if `y` solves `S y = g` then `x = A⁻¹ (b - B y)` completes it to a
-solution of the block system, for `c = 0` and for `c ≠ 0` alike.
+/-- **Problem P-8.5(b)** of [saad2003iterative]. Let $A \in \mathbb{K}^{n \times n}$ be nonsingular,
+$B \in \mathbb{K}^{n \times m}$, $b \in \mathbb{K}^n$, and let $c, y \in \mathbb{K}^m$ satisfy
+$Sy = g$. Then $(A^{-1}(b - By), y)$ solves the block system (8.30):
+$$\begin{bmatrix} A & B \\ B^H & 0 \end{bmatrix} \begin{bmatrix} A^{-1}(b - By) \\ y
+  \end{bmatrix} = \begin{bmatrix} b \\ c \end{bmatrix}.$$
+So any solver for the reduced system (8.32) is a method for solving (8.30), for $c = 0$ and for
+$c \neq 0$ alike.
 
-For `c = 0` the reduced system is the system of normal equations of `min_y ‖b - B y‖_{A⁻¹}`
-(`equation_8_32_isMinResidual`), so the method P-8.5 (a) asks for is CGNR in the `A⁻¹` inner
-product; forming `S y` costs one solve with `A`, which is what the problem's hint asks for.
-Compared with Uzawa's method (`uzawa`, `uzawa_snd_eq_richardson`), which is Richardson's iteration
-for the same reduced system with a fixed `ω`, this replaces the fixed step length by the conjugate
+For $c = 0$ the reduced system is the system of normal equations of $\min_y \|b - By\|_{A^{-1}}$
+(`SaadSparse.Chapter08.equation_8_32_isMinResidual`), so the method that Problem P-8.5(a) asks
+for is CGNR in the $A^{-1}$ inner product. A product $Sy$ costs one solve with $A$, as the hint
+of the problem asks. Uzawa's method (`SaadSparse.Chapter08.uzawa`,
+`SaadSparse.Chapter08.uzawa_snd_eq_richardson`) is Richardson's iteration for the same reduced
+system with a fixed $\omega$; this method replaces the fixed step length by the conjugate
 gradient one at the same cost per step. -/
 theorem problem_8_5b (hA : IsUnit A) (b : EuclideanSpace 𝕜 (Fin n))
     (c y : EuclideanSpace 𝕜 (Fin m)) (hy : (schur A B ⬝ y) = schurRhs A B b c) :
@@ -842,19 +1067,25 @@ theorem problem_8_5b (hA : IsUnit A) (b : EuclideanSpace 𝕜 (Fin n))
 
 end Problem85b
 
-/-! ### P-8.12: the indefinite saddle-point matrix -/
+/-! ### Problem P-8.12: the indefinite saddle-point matrix -/
 
 section Problem812
 
 variable {A : Matrix (Fin n) (Fin n) 𝕜} {B : Matrix (Fin n) (Fin m) 𝕜}
 
-/-- A vector of `EuclideanSpace 𝕜 (Fin n ⊕ Fin m)` written in blocks: the shape `x = (u, p)` every
-vector of P-8.12 has. -/
+/-- **Problem P-8.12** of [saad2003iterative], block vectors. For $u \in \mathbb{K}^n$ and
+$v \in \mathbb{K}^m$, the **block vector** $(u, v) \in \mathbb{K}^{n + m}$ is the vector whose
+first $n$ entries are those of $u$ and whose last $m$ entries are those of $v$; it is indexed by
+`Fin n ⊕ Fin m`. Every vector of Problem P-8.12 has this form. -/
 noncomputable def blockVec (u : EuclideanSpace 𝕜 (Fin n)) (v : EuclideanSpace 𝕜 (Fin m)) :
     EuclideanSpace 𝕜 (Fin n ⊕ Fin m) :=
   WithLp.toLp 2 (Sum.elim (WithLp.ofLp u) (WithLp.ofLp v))
 
-/-- The saddle-point matrix acts on a block vector blockwise. -/
+/-- **Problem P-8.12** of [saad2003iterative], the action on block vectors. For $A$, $B$, $D$ as in
+`SaadSparse.Chapter08.saddleMatrix` and $u \in \mathbb{K}^n$, $v \in \mathbb{K}^m$,
+$$\begin{bmatrix} A & B \\ B^H & D \end{bmatrix} \begin{bmatrix} u \\ v \end{bmatrix} =
+  \begin{bmatrix} Au + Bv \\ B^H u + Dv \end{bmatrix}.$$
+-/
 theorem saddleMatrix_apply_blockVec (D : Matrix (Fin m) (Fin m) 𝕜)
     (u : EuclideanSpace 𝕜 (Fin n)) (v : EuclideanSpace 𝕜 (Fin m)) :
     (saddleMatrix A B D ⬝ blockVec u v) = blockVec ((A ⬝ u) + (B ⬝ v)) ((Bᴴ ⬝ u) + (D ⬝ v)) := by
@@ -864,13 +1095,19 @@ theorem saddleMatrix_apply_blockVec (D : Matrix (Fin m) (Fin m) 𝕜)
     blockVec, WithLp.ofLp_toLp, saddleMatrix, Matrix.saddleMatrix, fromBlocks_mulVec_elim,
     blockVec, WithLp.ofLp_toLp]
 
-/-- The inner product of two block vectors is the sum of the block inner products. -/
+/-- **Problem P-8.12** of [saad2003iterative], inner products of block vectors. For
+$u, u' \in \mathbb{K}^n$ and $v, v' \in \mathbb{K}^m$, the inner product of $(u, v)$ and
+$(u', v')$ is the sum of the inner products of $u, u'$ and of $v, v'$. -/
 theorem inner_blockVec (u u' : EuclideanSpace 𝕜 (Fin n)) (v v' : EuclideanSpace 𝕜 (Fin m)) :
     inner 𝕜 (blockVec u v) (blockVec u' v') = inner 𝕜 u u' + inner 𝕜 v v' := by
   simp [blockVec, PiLp.inner_apply, Fintype.sum_sum_type]
 
-/-- **P-8.12 (1)**, the positive direction: on a vector `x = (u, 0)` the quadratic form of the
-saddle-point matrix is `(A u, u)`, positive for `u ≠ 0`. -/
+/-- **Problem P-8.12(1)** of [saad2003iterative], the positive direction. Let
+$A \in \mathbb{K}^{n \times n}$ be symmetric positive definite, $B \in \mathbb{K}^{n \times m}$,
+and $u \in \mathbb{K}^n$ with $u \neq 0$. Then the quadratic form of the saddle-point matrix
+$\mathcal{A} = \begin{bmatrix} A & B \\ B^H & 0 \end{bmatrix}$ on $x = (u, 0)$ is positive:
+$$\operatorname{Re}(\mathcal{A} x, x) = \operatorname{Re}(Au, u) > 0.$$
+-/
 theorem problem_8_12_pos (hA : A.PosDef) {u : EuclideanSpace 𝕜 (Fin n)} (hu : u ≠ 0) :
     0 < RCLike.re (inner 𝕜 (blockVec u (0 : EuclideanSpace 𝕜 (Fin m)))
       (saddleMatrix A B 0 ⬝ blockVec u 0)) := by
@@ -878,8 +1115,15 @@ theorem problem_8_12_pos (hA : A.PosDef) {u : EuclideanSpace 𝕜 (Fin n)} (hu :
     inner_blockVec, inner_zero_left, add_zero, ← inner_conj_symm, RCLike.conj_re]
   exact ((Matrix.posDef_iff_isSymmetricCoercive A).1 hA).isCoercive.inner_self_pos hu
 
-/-- **P-8.12 (1)**, the negative direction: on `x = (-A⁻¹ B p, p)` the first block of the product
-vanishes and the form is `-(A⁻¹ B p, B p)`, negative once `B p ≠ 0`. -/
+/-- **Problem P-8.12(1)** of [saad2003iterative], the negative direction. Let
+$A \in \mathbb{K}^{n \times n}$ be symmetric positive definite, let
+$B \in \mathbb{K}^{n \times m}$ have full column rank, and let $p \in \mathbb{K}^m$ with
+$p \neq 0$. Then on $x = (-A^{-1} Bp, p)$ the quadratic form of the saddle-point matrix
+$\mathcal{A}$ is negative:
+$$\operatorname{Re}(\mathcal{A} x, x) < 0.$$
+
+The first block of $\mathcal{A} x$ vanishes, and the form is
+$-\operatorname{Re}(A^{-1} Bp, Bp)$, which is negative since $Bp \neq 0$. -/
 theorem problem_8_12_neg (hA : A.PosDef) (hB : Function.Injective (Matrix.toEuclideanLin B))
     {p : EuclideanSpace 𝕜 (Fin m)} (hp : p ≠ 0) :
     RCLike.re (inner 𝕜 (blockVec (-(A⁻¹ ⬝ (B ⬝ p))) p)
@@ -897,9 +1141,8 @@ theorem problem_8_12_neg (hA : A.PosDef) (hB : Function.Injective (Matrix.toEucl
     inner_neg_right, inner_conjTranspose', map_neg, neg_lt_zero, ← inner_conj_symm, RCLike.conj_re]
   exact hAinv.isCoercive.inner_self_pos hBp
 
-/-- A Hermitian matrix whose real spectrum is nonnegative has a nonnegative quadratic form: the
-bridge from "no negative eigenvalue" to the sign of `(M x, x)`, through Mathlib's
-`Matrix.IsHermitian.posSemidef_iff_eigenvalues_nonneg`. -/
+/-- A Hermitian matrix $M$ whose real spectrum is nonnegative has a nonnegative quadratic form:
+$\operatorname{Re}(Mv, v) \ge 0$ for every $v$. -/
 private theorem re_inner_nonneg_of_spectrum_nonneg {k : Type*} [Fintype k] [DecidableEq k]
     {M : Matrix k k 𝕜} (hM : M.IsHermitian) (hspec : ∀ μ ∈ spectrum ℝ M, 0 ≤ μ)
     (v : EuclideanSpace 𝕜 k) : 0 ≤ RCLike.re (inner 𝕜 v (M ⬝ v)) := by
@@ -912,10 +1155,16 @@ private theorem re_inner_nonneg_of_spectrum_nonneg {k : Type*} [Fintype k] [Deci
     exact dotProduct_comm _ _
   rwa [hval] at h
 
-/-- **P-8.12 (1)**: *the saddle-point matrix has both positive and negative eigenvalues.*  The
-two signs of its quadratic form are `problem_8_12_pos` and `problem_8_12_neg`, exactly the two
-choices of `x` the problem asks for; a Hermitian matrix whose spectrum has one sign has a
-quadratic form of that sign, so each choice forbids the corresponding half-line. -/
+/-- **Problem P-8.12(1)** of [saad2003iterative]. Let $A \in \mathbb{K}^{n \times n}$ be symmetric
+positive definite, let $B \in \mathbb{K}^{n \times m}$ have full column rank, and let there be
+nonzero vectors $u \in \mathbb{K}^n$ and $p \in \mathbb{K}^m$, that is, $n \ge 1$ and $m \ge 1$.
+Then the saddle-point matrix $\mathcal{A} = \begin{bmatrix} A & B \\ B^H & 0 \end{bmatrix}$ has
+a positive real eigenvalue and a negative real eigenvalue.
+
+The two signs of the quadratic form are `SaadSparse.Chapter08.problem_8_12_pos` and
+`SaadSparse.Chapter08.problem_8_12_neg`, the two choices of $x$ that the problem asks for. A
+Hermitian matrix whose spectrum has one sign has a quadratic form of that sign, so each choice
+excludes the corresponding half-line. The eigenvalues are elements of `spectrum ℝ`. -/
 theorem problem_8_12_indefinite (hA : A.PosDef) (hB : Function.Injective (Matrix.toEuclideanLin B))
     {u : EuclideanSpace 𝕜 (Fin n)} (hu : u ≠ 0) {p : EuclideanSpace 𝕜 (Fin m)} (hp : p ≠ 0) :
     (∃ μ ∈ spectrum ℝ (saddleMatrix A B (0 : Matrix (Fin m) (Fin m) 𝕜)), 0 < μ) ∧
@@ -947,9 +1196,12 @@ theorem problem_8_12_indefinite (hA : A.PosDef) (hB : Function.Injective (Matrix
     have h := re_inner_nonneg_of_spectrum_nonneg hherm hcon (blockVec (-(A⁻¹ ⬝ (B ⬝ p))) p)
     exact absurd (problem_8_12_neg hA hB hp) (not_lt.2 h)
 
-/-- **P-8.12 (2)–(3)**, the key computation: the quadratic form of the saddle-point matrix
-vanishes on every vector of the shape `r = (0, s)`, which is the shape the residual of the
-initial guess of P-8.12 (2) has. -/
+/-- **Problem P-8.12(2)–(3)** of [saad2003iterative], the key computation. Let
+$A \in \mathbb{K}^{n \times n}$ and $B \in \mathbb{K}^{n \times m}$. For every
+$s \in \mathbb{K}^m$, the quadratic form of the saddle-point matrix $\mathcal{A} =
+\begin{bmatrix} A & B \\ B^H & 0 \end{bmatrix}$ vanishes on $r = (0, s)$:
+$$(\mathcal{A} r, r) = 0.$$
+The residual of the initial guess of Problem P-8.12(2) has this form. -/
 theorem inner_saddleMatrix_blockVec_zero (s : EuclideanSpace 𝕜 (Fin m)) :
     inner 𝕜 (blockVec (0 : EuclideanSpace 𝕜 (Fin n)) s)
         (saddleMatrix A B (0 : Matrix (Fin m) (Fin m) 𝕜)
@@ -962,9 +1214,13 @@ theorem inner_saddleMatrix_blockVec_zero (s : EuclideanSpace 𝕜 (Fin m)) :
   rw [saddleMatrix_apply_blockVec, h1, h2, inner_blockVec, inner_zero_left, inner_zero_right,
     add_zero]
 
-/-- **P-8.12 (2)**: *how to select an initial guess `x_0 = (u_0, 0)` whose residual is
-`r_0 = (0, s_0)`* — take `u_0` with `A u_0 = f`; then the first block of `r_0` vanishes and
-`s_0 = -Bᴴ u_0`. -/
+/-- **Problem P-8.12(2)** of [saad2003iterative], the initial guess. Let
+$A \in \mathbb{K}^{n \times n}$, $B \in \mathbb{K}^{n \times m}$ and $f \in \mathbb{K}^n$, and
+let $u_0$ satisfy $Au_0 = f$. Then for the right-hand side $(f, 0)$ the initial guess
+$x_0 = (u_0, 0)$ has the residual
+$$r_0 = \begin{bmatrix} f \\ 0 \end{bmatrix} - \mathcal{A} \begin{bmatrix} u_0 \\ 0
+  \end{bmatrix} = \begin{bmatrix} 0 \\ -B^H u_0 \end{bmatrix},$$
+so the first block of $r_0$ vanishes and $s_0 = -B^H u_0$. -/
 theorem problem_8_12_residual (f : EuclideanSpace 𝕜 (Fin n))
     {u₀ : EuclideanSpace 𝕜 (Fin n)} (hu₀ : (A ⬝ u₀) = f) :
     blockVec f (0 : EuclideanSpace 𝕜 (Fin m))
@@ -976,10 +1232,14 @@ theorem problem_8_12_residual (f : EuclideanSpace 𝕜 (Fin n))
     WithLp.ofLp_toLp, ← Sum.elim_sub_sub]
   simp
 
-/-- **P-8.12 (2)**: *what happens if we attempt to use the steepest descent algorithm with this
-initial guess?*  It stalls: the step length `(r_0, r_0)/(A r_0, r_0)` has a vanishing denominator
-because `r_0 = (0, s_0)`, so the iteration never leaves `x_0`.  (Division by zero is `0` in Lean,
-which is what makes the stalled step literally the identity.) -/
+/-- **Problem P-8.12(2)** of [saad2003iterative], steepest descent. Let
+$A \in \mathbb{K}^{n \times n}$, $B \in \mathbb{K}^{n \times m}$ and $f \in \mathbb{K}^n$, and
+let $u_0$ satisfy $Au_0 = f$. Then one step of steepest descent for $\mathcal{A} x = (f, 0)$
+from $x_0 = (u_0, 0)$ returns $x_0$.
+
+The step length $(r_0, r_0)/(\mathcal{A} r_0, r_0)$ has a vanishing denominator because
+$r_0 = (0, s_0)$, and division by zero is $0$ in Lean, so the step is the identity. The step is
+the backbone `Projection.steepestDescentStep`. -/
 theorem problem_8_12_steepestDescent_stalls (f : EuclideanSpace 𝕜 (Fin n))
     {u₀ : EuclideanSpace 𝕜 (Fin n)} (hu₀ : (A ⬝ u₀) = f) :
     Projection.steepestDescentStep
@@ -998,9 +1258,13 @@ theorem problem_8_12_steepestDescent_stalls (f : EuclideanSpace 𝕜 (Fin n))
     inner_saddleMatrix_blockVec_zero (A := A) (B := B) _,
     div_zero, zero_smul, add_zero]
 
-/-- **P-8.12 (3)**: *what happens if the minimal residual iteration is applied with the same
-initial guess?*  It stalls too, and for the same reason: its step length is
-`(A r_0, r_0)/(A r_0, A r_0)`, whose *numerator* is the quantity that vanishes. -/
+/-- **Problem P-8.12(3)** of [saad2003iterative], the minimal residual iteration. Let
+$A \in \mathbb{K}^{n \times n}$, $B \in \mathbb{K}^{n \times m}$ and $f \in \mathbb{K}^n$, and
+let $u_0$ satisfy $Au_0 = f$. Then one step of the minimal residual iteration for
+$\mathcal{A} x = (f, 0)$ from $x_0 = (u_0, 0)$ returns $x_0$.
+
+The step length is $(r_0, \mathcal{A} r_0)/(\mathcal{A} r_0, \mathcal{A} r_0)$, and its
+numerator is the quantity that vanishes. The step is the backbone `Projection.minResStep`. -/
 theorem problem_8_12_minRes_stalls (f : EuclideanSpace 𝕜 (Fin n))
     {u₀ : EuclideanSpace 𝕜 (Fin n)} (hu₀ : (A ⬝ u₀) = f) :
     Projection.minResStep
@@ -1024,11 +1288,19 @@ theorem problem_8_12_minRes_stalls (f : EuclideanSpace 𝕜 (Fin n))
         ⬝ blockVec (0 : EuclideanSpace 𝕜 (Fin n)) (-(Bᴴ ⬝ u₀))) from rfl, hzero, zero_div,
     zero_smul, add_zero]
 
-/-- **P-8.12 (5)**: in the iteration `u_{k+1} = B⁻¹(f - C p_k)`, `p_{k+1} = p_k + α_k Cᵀ u_{k+1}`
-(the book's `B`, `C` are this file's `A`, `B`), the increment `Bᴴ u_{k+1}` *is* the residual
-`s_k = g - S p_k` of `p_k` for the reduced system `S p = g` of P-8.12 (4), so
-`p_{k+1} = p_k + α_k s_k`; and the steepest-descent choice `α_k = (s_k, s_k)/(S s_k, s_k)` makes
-`p_{k+1}` the steepest-descent iterate for that system. -/
+/-- **Problem P-8.12(5)** of [saad2003iterative]. Let $A \in \mathbb{K}^{n \times n}$,
+$B \in \mathbb{K}^{n \times m}$, $f \in \mathbb{K}^n$ and $p \in \mathbb{K}^m$, and let
+$g = B^H A^{-1} f$ and $s = B^H A^{-1}(f - Bp)$. Then
+$$s = g - Sp,$$
+and one step of steepest descent for $Sp = g$ from $p$ is
+$$p + \frac{(s, s)}{(Ss, s)} \, s.$$
+So in the iteration $u_{k+1} = A^{-1}(f - Bp_k)$, $p_{k+1} = p_k + \alpha_k B^H u_{k+1}$, the
+increment $B^H u_{k+1}$ is the residual $s_k$ of $p_k$ for the reduced system $Sp = g$ of
+Problem P-8.12(4), and the choice $\alpha_k = (s_k, s_k)/(Ss_k, s_k)$ makes $p_{k+1}$ the
+steepest-descent iterate for that system.
+
+The book writes this iteration as $u_{k+1} = B^{-1}(f - Cp_k)$,
+$p_{k+1} = p_k + \alpha_k C^T u_{k+1}$: its $B$ and $C$ are $A$ and $B$ here. -/
 theorem problem_8_12_reduced (f : EuclideanSpace 𝕜 (Fin n))
     (p : EuclideanSpace 𝕜 (Fin m)) :
     (Bᴴ ⬝ (A⁻¹ ⬝ (f - (B ⬝ p)))) = schurRhs A B f 0 - (schur A B ⬝ p) ∧

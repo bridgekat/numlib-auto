@@ -8,37 +8,66 @@ import Numlib.Krylov.Subspace
 import NumlibSurface.SaadSparse.Chapter06.Section08
 
 /-!
-# Saad §6.9: GCR, ORTHOMIN and ORTHODIR
+# Saad, Section 6.9: GCR, ORTHOMIN and ORTHODIR
 
-Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM,
-2003, §6.9.
+This module formalizes Section 6.9 of [saad2003iterative]. Lemma 6.21 says that any sequence of
+directions $p_0, \dots, p_{m-1}$ that spans $\mathcal{K}_m(A, r_0)$ and is $A^T A$-orthogonal,
+$(A p_i, A p_l) = 0$ for $i \ne l$, gives the approximation of smallest residual norm in
+$x_0 + \mathcal{K}_m(A, r_0)$ in closed form,
+$$x_m = x_0 + \sum_{i=0}^{m-1} \frac{(r_0, A p_i)}{(A p_i, A p_i)} p_i \quad (6.104), \qquad
+  x_{j+1} = x_j + \frac{(r_j, A p_j)}{(A p_j, A p_j)} p_j \quad (6.105).$$
+The three algorithms of the section are three ways to build such a sequence. GCR (Algorithm 6.21)
+orthogonalizes the new residual against the previous directions, $p_{j+1} = r_{j+1} + \sum_{i=0}^{j}
+\beta_{ij} p_i$ with $\beta_{ij} = -(A r_{j+1}, A p_i)/(A p_i, A p_i)$. ORTHODIR orthogonalizes
+$A p_j$ in the same way (6.107). ORTHOMIN(k) is GCR with the sum truncated to the last $k$
+directions. GCR and ORTHODIR are mathematically equivalent to full GMRES, and ORTHOMIN(k) with
+$k \ge m$ is GCR.
 
-**Lemma 6.21** with (6.104)–(6.105) says that *any* sequence of directions `p_0, …, p_{m-1}`
-that is `AᴴA`-orthogonal and spans `𝒦_m(A, r_0)` produces the minimal-residual approximation by
-the one-line update (6.105); it is `isMinResidualIterate_of_orthogonalDirections` below, a direct
-specialization of the backbone `Krylov.isMinResidualIterate_of_orthogonal_directions`
-(`Numlib/Krylov/CR.lean`), and `equation_6_104` is the resulting closed form.
+The proofs specialize `Krylov.isMinResidualIterate_of_orthogonal_directions` of the backbone module
+`Numlib.Krylov.CR`. The GMRES approximation is that of
+`NumlibSurface.SaadSparse.Chapter06.Section05`.
 
-The section's three algorithms are the three ways the book builds such a sequence:
-**Algorithm 6.21** (GCR) is `gcr`, whose new direction is the residual orthogonalized against
-the previous ones; **ORTHODIR** is `orthodir`, whose new direction is `A p_j` orthogonalized in
-the same way (6.107); **ORTHOMIN(k)** is `orthomin`, GCR with lines 6–7 truncated to the last
-`k` directions. Each carries the triple `(x_j, r_j, p_j)`, and the step is packaged as
-`gcrBody`, `orthodirBody`, `orthominBody` so that the three recursions differ only in that one
-function.
+## Main definitions
 
-The full versions satisfy the minimal-residual specification, so `gcr` and `orthodir` compute
-the GMRES approximation (`gcrX_isMinResidualIterate`, `orthodirX_isMinResidualIterate`,
-`gcrX_eq_gmresFixed`, `orthodirX_eq_gmresFixed`). The truncated and restarted variants
-ORTHOMIN(k) and GCR(m) (`gcrRestarted`, **Algorithm 6.21** with restarts) satisfy no global
-specification and the book proves nothing about them; the one statement it does make,
-"ORTHOMIN(k) with `k ≥ m` is GCR", is `orthomin_eq_gcr`.
+* Algorithm 6.21, `SaadSparse.Chapter06.gcrAux`: the triple $(x_j, r_j, p_j)$ after $j$ steps of
+  GCR.
+* Section 6.9, `SaadSparse.Chapter06.gcrRestarted`: the restarted method GCR(m).
+* Section 6.9, `SaadSparse.Chapter06.orthominAux`: ORTHOMIN(k), GCR truncated to the last $k$
+  directions.
+* Equation (6.107), `SaadSparse.Chapter06.orthodirAux`: ORTHODIR.
 
-Indices are `0`-based, as in the book: `gcrP A b x₀ j` is the book's `p_j`. Division by a
-vanishing quantity is `0` in Lean, which reproduces the book's breakdown behaviour.
+## Main results
 
-Definitions are polymorphic in `𝕜`; the numbered results are stated over `ℝ`, the book's
-generality in §6.9.
+* Lemma 6.21, `SaadSparse.Chapter06.lemma_6_21`: $A^T A$-orthogonal directions that span
+  $\mathcal{K}_m(A, r_0)$ give the minimal-residual approximation by (6.105), in the closed form
+  (6.104).
+* Equation (6.104), `SaadSparse.Chapter06.equation_6_104`: the closed form of the iterate of
+  (6.105).
+* Algorithm 6.21, `SaadSparse.Chapter06.algorithm_6_21_eq_gmres`: GCR is mathematically equivalent
+  to full GMRES.
+* Section 6.9, `SaadSparse.Chapter06.orthomin_eq_gcr`: ORTHOMIN(k) with $k \ge m$ is GCR.
+* Section 6.9, `SaadSparse.Chapter06.orthodir_eq_gmres`: ORTHODIR is mathematically equivalent to
+  full GMRES.
+
+## Implementation notes
+
+* The three algorithms carry the triple $(x_j, r_j, p_j)$. One step is
+  `SaadSparse.Chapter06.gcrBody`, `SaadSparse.Chapter06.orthodirBody` or
+  `SaadSparse.Chapter06.orthominBody`, a function of the whole history of triples, so that the three
+  recursions differ only in this function.
+* The truncated and restarted variants ORTHOMIN(k) and GCR(m) satisfy no global minimization
+  property, and the book proves none.
+* Indices start at $0$, as in the book: `gcrP A b x₀ j` is $p_j$. A quotient with denominator $0$ is
+  $0$ in Lean, which reproduces the breakdown behaviour of the book.
+* The definitions and the general lemmas are over the scalar field $\mathbb{K} = \mathbb{R}$ or
+  $\mathbb{C}$, where $A^T A$-orthogonality becomes $A^H A$-orthogonality. The numbered results are
+  stated over $\mathbb{R}$, the generality of the source.
+
+## Deviations from the source
+
+* **Lemma 6.21** (reading). The source asks that $\{p_0, \dots, p_{j-1}\}$ be a basis of
+  $\mathcal{K}_j(A, r_0)$ for each $j \le m$. The library asks that $p_0, \dots, p_{m-1}$ span
+  $\mathcal{K}_m(A, r_0)$ and that $A p_i \ne 0$. See `SaadSparse.Chapter06.lemma_6_21`.
 -/
 
 open scoped ComplexOrder Matrix
@@ -53,9 +82,9 @@ local notation "𝔼" => EuclideanSpace 𝕜 (Fin n)
 
 variable (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ : EuclideanSpace 𝕜 (Fin n))
 
-/-! ### Krylov glue -/
+/-! ### A lemma on Krylov subspaces -/
 
-/-- The image of a Krylov subspace under `A` sits in the next one. -/
+/-- If $x \in \mathcal{K}_m(A, v)$, then $A x \in \mathcal{K}_{m+1}(A, v)$. -/
 private theorem apply_mem_krylov_succ {v x : 𝔼} {m : ℕ} (h : x ∈ krylov A v m) :
     op A x ∈ krylov A v (m + 1) := by
   rw [krylov_eq] at h
@@ -64,10 +93,11 @@ private theorem apply_mem_krylov_succ {v x : 𝔼} {m : ℕ} (h : x ∈ krylov A
 
 /-! ### Lemma 6.21 and (6.104)–(6.105) -/
 
-/-- **Lemma 6.21** with **(6.105)**: if the directions `p_0, …, p_{m-1}` are `AᴴA`-orthogonal
-with `A p_i ≠ 0` and span `𝒦_m(A, r_0)`, then the sequence produced by the update (6.105)
-`x_{j+1} = x_j + ((r_j, A p_j)/(A p_j, A p_j)) p_j` reaches the minimal-residual approximation
-of `x_0 + 𝒦_m(A, r_0)` at step `m`. -/
+/-- Lemma 6.21 with (6.105), over $\mathbb{K}$: let $p_0, p_1, \dots$ be vectors with
+$(A p_i, A p_l) = 0$ for $i \ne l$ and $A p_i \ne 0$, for $i, l < m$, such that
+$p_0, \dots, p_{m-1}$ span $\mathcal{K}_m(A, r_0)$. If $x_0$ is the initial guess and $x_{j+1} =
+x_j + \frac{(r_j, A p_j)}{(A p_j, A p_j)} p_j$ with $r_j = b - A x_j$ for every $j$, then $x_m$
+minimizes the residual norm over $x_0 + \mathcal{K}_m(A, r_0)$. -/
 theorem isMinResidualIterate_of_orthogonalDirections {m : ℕ} (p : ℕ → 𝔼)
     (horth : ∀ i < m, ∀ l < m, i ≠ l → inner 𝕜 (op A (p i)) (op A (p l)) = 0)
     (hne : ∀ i < m, op A (p i) ≠ 0)
@@ -79,7 +109,8 @@ theorem isMinResidualIterate_of_orthogonalDirections {m : ℕ} (p : ℕ → 𝔼
   rw [krylov_eq] at hspan
   exact Krylov.isMinResidualIterate_of_orthogonal_directions p horth hne hspan x hx0 hstep
 
-/-- The residual of a sequence updated along the directions `p_j` with coefficients `c_j`. -/
+/-- If $x_{j+1} = x_j + c_j p_j$ for every $j$, then $b - A x_j = (b - A x_0) - \sum_{l < j} c_l A
+p_l$. -/
 private theorem residual_eq_sub_sum (p x : ℕ → 𝔼) (c : ℕ → 𝕜)
     (hstep : ∀ j, x (j + 1) = x j + c j • p j) (j : ℕ) :
     b - op A (x j) = (b - op A (x 0)) - ∑ l ∈ Finset.range j, c l • op A (p l) := by
@@ -92,9 +123,15 @@ private theorem residual_eq_sub_sum (p x : ℕ → 𝔼) (c : ℕ → 𝕜)
     rw [h, ih, Finset.sum_range_succ]
     abel
 
-/-- **(6.104)**: the approximation produced by the update (6.105) has the closed form
-`x_m = x_0 + ∑_{i<m} ((r_0, A p_i)/(A p_i, A p_i)) p_i`, because `(r_j, A p_j) = (r_0, A p_j)`
-once the directions are `AᴴA`-orthogonal. -/
+/-- **Equation (6.104)** of [saad2003iterative]. Let $A \in \mathbb{K}^{n \times n}$ and
+$b, x_0 \in \mathbb{K}^n$. Let $p_0, p_1, \dots$ be vectors with $(A p_i, A p_l) = 0$ for
+$i \ne l$, $i, l < m$. Let $x_0, x_1, \dots$ be produced by the update (6.105), $x_{j+1} = x_j +
+\frac{(r_j, A p_j)}{(A p_j, A p_j)} p_j$ with $r_j = b - A x_j$. Then
+$$x_m = x_0 + \sum_{i=0}^{m-1} \frac{(r_0, A p_i)}{(A p_i, A p_i)} p_i.$$
+
+The proof shows $(r_j, A p_j) = (r_0, A p_j)$ from the orthogonality. No hypothesis
+$A p_i \ne 0$ is needed, because a quotient with denominator $0$ is $0$ on both sides. The real
+form is part of `SaadSparse.Chapter06.lemma_6_21`. -/
 theorem equation_6_104 {m : ℕ} (p : ℕ → 𝔼)
     (horth : ∀ i < m, ∀ l < m, i ≠ l → inner 𝕜 (op A (p i)) (op A (p l)) = 0)
     (x : ℕ → 𝔼) (hx0 : x 0 = x₀)
@@ -128,23 +165,26 @@ theorem equation_6_104 {m : ℕ} (p : ℕ → 𝔼)
 
 /-! ### The generic step and the orthogonality it produces -/
 
-/-- Lines 3–5 of **Algorithm 6.21**, shared by GCR, ORTHOMIN(k) and ORTHODIR: the step length
-`α_j = (r_j, A p_j)/(A p_j, A p_j)` on a state `(x_j, r_j, p_j)`. -/
+/-- The step length $\alpha_j = (r_j, A p_j)/(A p_j, A p_j)$ of line 3 of Algorithm 6.21, computed
+from a triple $(x_j, r_j, p_j)$; GCR, ORTHOMIN(k) and ORTHODIR share it. -/
 noncomputable def gcrStepAlpha (A : Matrix (Fin n) (Fin n) 𝕜) (s : 𝔼 × 𝔼 × 𝔼) : 𝕜 :=
   inner 𝕜 (op A s.2.2) s.2.1 / inner 𝕜 (op A s.2.2) (op A s.2.2)
 
-/-- Line 5 of **Algorithm 6.21**, shared by GCR, ORTHOMIN(k) and ORTHODIR: the next residual
-`r_{j+1} = r_j - α_j A p_j` on a state `(x_j, r_j, p_j)`. -/
+/-- The next residual $r_{j+1} = r_j - \alpha_j A p_j$ of line 5 of Algorithm 6.21, computed from a
+triple $(x_j, r_j, p_j)$; GCR, ORTHOMIN(k) and ORTHODIR share it. -/
 noncomputable def gcrStepR (A : Matrix (Fin n) (Fin n) 𝕜) (s : 𝔼 × 𝔼 × 𝔼) : 𝔼 :=
   s.2.1 - gcrStepAlpha A s • op A s.2.2
 
-/-- The coefficient `β_ij = -(A z, A p_i)/(A p_i, A p_i)` used in line 6 of Algorithm 6.21 and
-in (6.107), with `z = r_{j+1}` for GCR and ORTHOMIN(k) and `z = A p_j` for ORTHODIR. -/
+/-- The coefficient $-(A z, A p_i)/(A p_i, A p_i)$ for vectors $p_i$ and $z$. With $z = r_{j+1}$ it
+is the coefficient $\beta_{ij}$ of line 6 of Algorithm 6.21 (GCR and ORTHOMIN(k)), and with
+$z = A p_j$ it is the coefficient of (6.107) (ORTHODIR). -/
 noncomputable def gcrStepBeta (A : Matrix (Fin n) (Fin n) 𝕜) (pi z : 𝔼) : 𝕜 :=
   -(inner 𝕜 (op A pi) (op A z) / inner 𝕜 (op A pi) (op A pi))
 
-/-- Lines 3–7 of **Algorithm 6.21** (GCR) applied to the history `s` of states
-`(x_i, r_i, p_i)`, `i ≤ j`. -/
+/-- Lines 3–7 of Algorithm 6.21 (GCR), applied to the history of triples $(x_i, r_i, p_i)$,
+$i \le j$. The result is $x_{j+1} = x_j + \alpha_j p_j$, $r_{j+1} = r_j - \alpha_j A p_j$ and
+$p_{j+1} = r_{j+1} + \sum_{i=0}^{j} \beta_{ij} p_i$ with $\beta_{ij} = -(A r_{j+1}, A p_i)/(A
+p_i, A p_i)$. -/
 noncomputable def gcrBody (A : Matrix (Fin n) (Fin n) 𝕜) {j : ℕ}
     (s : Fin (j + 1) → 𝔼 × 𝔼 × 𝔼) : 𝔼 × 𝔼 × 𝔼 :=
   ((s (Fin.last j)).1 + gcrStepAlpha A (s (Fin.last j)) • (s (Fin.last j)).2.2,
@@ -153,8 +193,9 @@ noncomputable def gcrBody (A : Matrix (Fin n) (Fin n) 𝕜) {j : ℕ}
       ∑ i : Fin (j + 1),
         gcrStepBeta A (s i).2.2 (gcrStepR A (s (Fin.last j))) • (s i).2.2)
 
-/-- Lines 3–5 of Algorithm 6.21 with the direction update (6.107) of **ORTHODIR**: the new
-direction is `A p_j` orthogonalized against the previous directions. -/
+/-- Lines 3–5 of Algorithm 6.21 with the direction update (6.107) of ORTHODIR, applied to the
+history of triples $(x_i, r_i, p_i)$, $i \le j$. The new direction is $p_{j+1} = A p_j +
+\sum_{i=0}^{j} \beta_{ij} p_i$ with $\beta_{ij} = -(A^2 p_j, A p_i)/(A p_i, A p_i)$. -/
 noncomputable def orthodirBody (A : Matrix (Fin n) (Fin n) 𝕜) {j : ℕ}
     (s : Fin (j + 1) → 𝔼 × 𝔼 × 𝔼) : 𝔼 × 𝔼 × 𝔼 :=
   ((s (Fin.last j)).1 + gcrStepAlpha A (s (Fin.last j)) • (s (Fin.last j)).2.2,
@@ -163,8 +204,9 @@ noncomputable def orthodirBody (A : Matrix (Fin n) (Fin n) 𝕜) {j : ℕ}
       ∑ i : Fin (j + 1),
         gcrStepBeta A (s i).2.2 (op A (s (Fin.last j)).2.2) • (s i).2.2)
 
-/-- Lines 3–5 of Algorithm 6.21 with the truncated lines 6a–7a of **ORTHOMIN(k)**: only the
-directions `p_i` with `j - k + 1 ≤ i ≤ j` are used. -/
+/-- Lines 3–5 of Algorithm 6.21 with the truncated lines 6a–7a of ORTHOMIN(k), applied to the
+history of triples $(x_i, r_i, p_i)$, $i \le j$. The direction update of GCR uses only the
+directions $p_i$ with $j - k + 1 \le i \le j$. -/
 noncomputable def orthominBody (A : Matrix (Fin n) (Fin n) 𝕜) (k : ℕ) {j : ℕ}
     (s : Fin (j + 1) → 𝔼 × 𝔼 × 𝔼) : 𝔼 × 𝔼 × 𝔼 :=
   ((s (Fin.last j)).1 + gcrStepAlpha A (s (Fin.last j)) • (s (Fin.last j)).2.2,
@@ -174,17 +216,17 @@ noncomputable def orthominBody (A : Matrix (Fin n) (Fin n) 𝕜) (k : ℕ) {j : 
         gcrStepBeta A (s i).2.2 (gcrStepR A (s (Fin.last j))) • (s i).2.2
       else 0)
 
-/-- With `k` at least the number of steps performed, ORTHOMIN(k) does not truncate anything. -/
+/-- If $k$ is at least the number $j + 1$ of directions, the step of ORTHOMIN(k) is the step of GCR.
+-/
 private theorem orthominBody_eq_gcrBody {k j : ℕ} (hk : j + 1 ≤ k)
     (s : Fin (j + 1) → 𝔼 × 𝔼 × 𝔼) : orthominBody A k s = gcrBody A s := by
   rw [orthominBody, gcrBody]
   refine congrArg _ (congrArg _ (congrArg _ (Finset.sum_congr rfl fun i _ => ?_)))
   exact ite_eq_left_of_eq_true _ _ (eq_true (by omega))
 
-/-- **The `AᴴA`-orthogonality of Lemma 6.21, produced by construction**: if each new direction
-is a vector `z_j` from which its `A`-projections on the previous directions have been
-subtracted, then the vectors `A p_i` are pairwise orthogonal. GCR takes `z_j = r_{j+1}` and
-ORTHODIR takes `z_j = A p_j`. -/
+/-- If each new direction is a vector $z_j$ minus its $A^H A$-projections on the previous
+directions, and $A p_i \ne 0$, then the vectors $A p_i$ are pairwise orthogonal; GCR takes
+$z_j = r_{j+1}$ and ORTHODIR takes $z_j = A p_j$. -/
 private theorem inner_apply_eq_zero_of_recur (p z : ℕ → 𝔼) {m : ℕ}
     (hrec : ∀ j, p (j + 1) = z j + ∑ i ∈ Finset.range (j + 1), gcrStepBeta A (p i) (z j) • p i)
     (hne : ∀ i < m, op A (p i) ≠ 0) :
@@ -223,7 +265,8 @@ private theorem inner_apply_eq_zero_of_recur (p z : ℕ → 𝔼) {m : ℕ}
       · rw [← inner_conj_symm, hlast l (by omega), map_zero]
   exact key m le_rfl
 
-/-- The directions of a GCR-type recursion stay inside the Krylov subspaces. -/
+/-- The directions of a recursion of the form of GCR stay in the Krylov subspaces:
+$p_j \in \mathcal{K}_{j+1}(A, v)$. -/
 private theorem mem_krylov_of_recur (p z : ℕ → 𝔼) (v : 𝔼) (c : ℕ → ℕ → 𝕜) (hp0 : p 0 = v)
     (hrec : ∀ j, p (j + 1) = z j + ∑ i ∈ Finset.range (j + 1), c i j • p i)
     (hz : ∀ j, (∀ i ≤ j, p i ∈ krylov A v (i + 1)) → z j ∈ krylov A v (j + 2)) (j : ℕ) :
@@ -240,8 +283,8 @@ private theorem mem_krylov_of_recur (p z : ℕ → 𝔼) (v : 𝔼) (c : ℕ →
         (krylov_mono A _ (by have := Finset.mem_range.1 hi; omega) (hp i (by
           have := Finset.mem_range.1 hi; omega)))
 
-/-- `AᴴA`-orthogonal, nonzero directions inside `𝒦_m` span it, provided `m` does not exceed the
-grade of `r_0`. -/
+/-- If $m$ is at most the grade of $r_0$, then $A^H A$-orthogonal directions $p_0, \dots, p_{m-1}$
+with $A p_i \ne 0$ and $p_j \in \mathcal{K}_{j+1}(A, r_0)$ span $\mathcal{K}_m(A, r_0)$. -/
 private theorem span_eq_krylov (p : ℕ → 𝔼) {m : ℕ}
     (horth : ∀ i < m, ∀ l < m, i ≠ l → inner 𝕜 (op A (p i)) (op A (p l)) = 0)
     (hne : ∀ i < m, op A (p i) ≠ 0)
@@ -261,7 +304,7 @@ private theorem span_eq_krylov (p : ℕ → 𝔼) {m : ℕ}
   refine Submodule.eq_of_le_of_finrank_eq hle ?_
   rw [finrank_span_eq_card hindep, finrank_krylov, min_eq_left hm, Fintype.card_fin]
 
-/-- The recurrence residual of a GCR-type algorithm is the true residual. -/
+/-- The residual of a recursion of the form of GCR is the true residual $b - A x_j$. -/
 private theorem residual_eq_of_recur (x r p : ℕ → 𝔼) (c : ℕ → 𝕜) (hr0 : r 0 = b - op A (x 0))
     (hx : ∀ j, x (j + 1) = x j + c j • p j) (hr : ∀ j, r (j + 1) = r j - c j • op A (p j))
     (j : ℕ) : r j = b - op A (x j) := by
@@ -273,55 +316,59 @@ private theorem residual_eq_of_recur (x r p : ℕ → 𝔼) (c : ℕ → 𝕜) (
 
 /-! ### Algorithm 6.21: GCR -/
 
-/-- **Algorithm 6.21** (GCR) run for `j` steps: the triple `(x_j, r_j, p_j)`, started from
-`r_0 = b - A x_0` and `p_0 = r_0`. -/
+/-- **Algorithm 6.21** of [saad2003iterative] (GCR). For $A \in \mathbb{K}^{n \times n}$,
+$b, x_0 \in \mathbb{K}^n$ and $j \ge 0$, this is the triple $(x_j, r_j, p_j)$ after $j$ steps,
+started from $r_0 = b - A x_0$ and $p_0 = r_0$; each step is `SaadSparse.Chapter06.gcrBody`. -/
 noncomputable def gcrAux (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ : 𝔼) : ℕ → 𝔼 × 𝔼 × 𝔼
   | 0 => (x₀, b - op A x₀, b - op A x₀)
   | j + 1 => gcrBody A fun i : Fin (j + 1) => gcrAux A b x₀ (i : ℕ)
   termination_by j => j
   decreasing_by exact i.isLt
 
-/-- The `j`-th GCR iterate `x_j` of Algorithm 6.21. -/
+/-- The iterate $x_j$ of Algorithm 6.21 after $j$ steps. -/
 noncomputable def gcrX (j : ℕ) : 𝔼 := (gcrAux A b x₀ j).1
 
-/-- The `j`-th GCR residual `r_j` of Algorithm 6.21. -/
+/-- The residual $r_j$ of Algorithm 6.21 after $j$ steps. -/
 noncomputable def gcrR (j : ℕ) : 𝔼 := (gcrAux A b x₀ j).2.1
 
-/-- The `j`-th GCR direction `p_j` of Algorithm 6.21. -/
+/-- The direction $p_j$ of Algorithm 6.21 after $j$ steps. -/
 noncomputable def gcrP (j : ℕ) : 𝔼 := (gcrAux A b x₀ j).2.2
 
-/-- The step length `α_j = (r_j, A p_j)/(A p_j, A p_j)` of Algorithm 6.21, line 3. -/
+/-- The step length $\alpha_j = (r_j, A p_j)/(A p_j, A p_j)$ of line 3 of Algorithm 6.21. -/
 noncomputable def gcrAlpha (j : ℕ) : 𝕜 := gcrStepAlpha A (gcrAux A b x₀ j)
 
-/-- The direction coefficient `β_ij = -(A r_{j+1}, A p_i)/(A p_i, A p_i)` of Algorithm 6.21,
-line 6. -/
+/-- The coefficient $\beta_{ij} = -(A r_{j+1}, A p_i)/(A p_i, A p_i)$ of line 6 of Algorithm 6.21.
+-/
 noncomputable def gcrBeta (i j : ℕ) : 𝕜 :=
   gcrStepBeta A (gcrP A b x₀ i) (gcrR A b x₀ (j + 1))
 
+/-- The iterate $x_0$ of Algorithm 6.21 is the initial guess. -/
 @[simp] theorem gcrX_zero : gcrX A b x₀ 0 = x₀ := by rw [gcrX, gcrAux]
 
+/-- The residual $r_0$ of Algorithm 6.21 is $b - A x_0$. -/
 @[simp] theorem gcrR_zero : gcrR A b x₀ 0 = b - op A x₀ := by rw [gcrR, gcrAux]
 
-/-- Algorithm 6.21, line 1: `p_0 = r_0`. -/
+/-- Algorithm 6.21, line 1: $p_0 = r_0$. -/
 @[simp] theorem gcrP_zero : gcrP A b x₀ 0 = gcrR A b x₀ 0 := by rw [gcrP, gcrR, gcrAux]
 
+/-- Algorithm 6.21, line 3: $\alpha_j = (r_j, A p_j)/(A p_j, A p_j)$. -/
 theorem gcrAlpha_eq (j : ℕ) : gcrAlpha A b x₀ j =
     inner 𝕜 (op A (gcrP A b x₀ j)) (gcrR A b x₀ j) /
       inner 𝕜 (op A (gcrP A b x₀ j)) (op A (gcrP A b x₀ j)) := rfl
 
-/-- Algorithm 6.21, line 4: `x_{j+1} = x_j + α_j p_j`. -/
+/-- Algorithm 6.21, line 4: $x_{j+1} = x_j + \alpha_j p_j$. -/
 theorem gcrX_succ (j : ℕ) :
     gcrX A b x₀ (j + 1) = gcrX A b x₀ j + gcrAlpha A b x₀ j • gcrP A b x₀ j := by
   rw [gcrX, gcrAux]
   rfl
 
-/-- Algorithm 6.21, line 5: `r_{j+1} = r_j - α_j A p_j`. -/
+/-- Algorithm 6.21, line 5: $r_{j+1} = r_j - \alpha_j A p_j$. -/
 theorem gcrR_succ (j : ℕ) :
     gcrR A b x₀ (j + 1) = gcrR A b x₀ j - gcrAlpha A b x₀ j • op A (gcrP A b x₀ j) := by
   rw [gcrR, gcrAux]
   rfl
 
-/-- Algorithm 6.21, line 7: `p_{j+1} = r_{j+1} + ∑_{i ≤ j} β_ij p_i`. -/
+/-- Algorithm 6.21, line 7: $p_{j+1} = r_{j+1} + \sum_{i=0}^{j} \beta_{ij} p_i$. -/
 theorem gcrP_succ (j : ℕ) : gcrP A b x₀ (j + 1) =
     gcrR A b x₀ (j + 1) + ∑ i ∈ Finset.range (j + 1), gcrBeta A b x₀ i j • gcrP A b x₀ i := by
   rw [← Fin.sum_univ_eq_sum_range (fun i => gcrBeta A b x₀ i j • gcrP A b x₀ i) (j + 1)]
@@ -329,10 +376,12 @@ theorem gcrP_succ (j : ℕ) : gcrP A b x₀ (j + 1) =
   rw [gcrP, gcrAux]
   rfl
 
+/-- The residual carried by Algorithm 6.21 is the true residual: $r_j = b - A x_j$. -/
 theorem gcrR_eq_residual (j : ℕ) : gcrR A b x₀ j = b - op A (gcrX A b x₀ j) :=
   residual_eq_of_recur A b (gcrX A b x₀) (gcrR A b x₀) (gcrP A b x₀) (gcrAlpha A b x₀)
     (by rw [gcrR_zero, gcrX_zero]) (gcrX_succ A b x₀) (gcrR_succ A b x₀) j
 
+/-- The direction $p_j$ of Algorithm 6.21 lies in $\mathcal{K}_{j+1}(A, r_0)$. -/
 theorem gcrP_mem_krylov (j : ℕ) : gcrP A b x₀ j ∈ krylov A (r₀ A b x₀) (j + 1) := by
   refine mem_krylov_of_recur A (gcrP A b x₀) (fun j => gcrR A b x₀ (j + 1)) (r₀ A b x₀)
     (gcrBeta A b x₀) (by rw [gcrP_zero, gcrR_zero]) (gcrP_succ A b x₀) (fun j hp => ?_) j
@@ -347,13 +396,15 @@ theorem gcrP_mem_krylov (j : ℕ) : gcrP A b x₀ j ∈ krylov A (r₀ A b x₀)
         (Submodule.smul_mem _ _ (apply_mem_krylov_succ A (hp l (by omega))))
   exact hr (j + 1) le_rfl
 
-/-- §6.9: the vectors `A p_i` built by Algorithm 6.21 are orthogonal, which is the hypothesis of
-Lemma 6.21. -/
+/-- Section 6.9: if $A p_i \ne 0$ for every $i < m$, then the vectors $A p_i$, $i < m$, built by
+Algorithm 6.21 are orthogonal. This is the hypothesis of Lemma 6.21. -/
 theorem inner_apply_gcrP_eq_zero {m : ℕ} (hne : ∀ i < m, op A (gcrP A b x₀ i) ≠ 0) :
     ∀ i < m, ∀ l < m, i ≠ l → inner 𝕜 (op A (gcrP A b x₀ i)) (op A (gcrP A b x₀ l)) = 0 :=
   inner_apply_eq_zero_of_recur A (gcrP A b x₀) (fun j => gcrR A b x₀ (j + 1))
     (gcrP_succ A b x₀) hne
 
+/-- If $A p_i \ne 0$ for every $i < m$ and $m$ is at most the grade of $r_0$, then the directions
+$p_0, \dots, p_{m-1}$ of Algorithm 6.21 span $\mathcal{K}_m(A, r_0)$. -/
 theorem span_gcrP_eq {m : ℕ} (hne : ∀ i < m, op A (gcrP A b x₀ i) ≠ 0)
     (hm : m ≤ grade A (r₀ A b x₀)) :
     Submodule.span 𝕜 (Set.range fun i : Fin m => gcrP A b x₀ (i : ℕ))
@@ -361,8 +412,9 @@ theorem span_gcrP_eq {m : ℕ} (hne : ∀ i < m, op A (gcrP A b x₀ i) ≠ 0)
   span_eq_krylov A b x₀ (gcrP A b x₀) (inner_apply_gcrP_eq_zero A b x₀ hne) hne
     (gcrP_mem_krylov A b x₀) hm
 
-/-- **GCR is mathematically equivalent to full GMRES**: Algorithm 6.21 realises the
-minimal-residual specification on `𝒦_m(A, r_0)`, by Lemma 6.21. -/
+/-- GCR is mathematically equivalent to full GMRES: if $A p_i \ne 0$ for every $i < m$ and $m$ is at
+most the grade of $r_0$, then the iterate $x_m$ of Algorithm 6.21 minimizes the residual norm
+over $x_0 + \mathcal{K}_m(A, r_0)$, by Lemma 6.21. -/
 theorem gcrX_isMinResidualIterate {m : ℕ} (hne : ∀ i < m, op A (gcrP A b x₀ i) ≠ 0)
     (hm : m ≤ grade A (r₀ A b x₀)) :
     Krylov.IsMinResidualIterate (op A) b x₀ m (gcrX A b x₀ m) := by
@@ -373,78 +425,90 @@ theorem gcrX_isMinResidualIterate {m : ℕ} (hne : ∀ i < m, op A (gcrP A b x�
 
 /-! ### ORTHODIR -/
 
-/-- **ORTHODIR** run for `j` steps: the triple `(x_j, r_j, p_j)`, with the direction update
-(6.107) `p_{j+1} = A p_j + ∑_{i ≤ j} β_ij p_i` and the iterate update (6.105). -/
+/-- **ORTHODIR** ([saad2003iterative], Section 6.9). For $A \in \mathbb{K}^{n \times n}$,
+$b, x_0 \in \mathbb{K}^n$ and $j \ge 0$, this is the triple $(x_j, r_j, p_j)$ after $j$ steps,
+started from $r_0 = b - A x_0$ and $p_0 = r_0$, with the direction update (6.107), $p_{j+1} = A
+p_j + \sum_{i=0}^{j} \beta_{ij} p_i$, and the iterate update (6.105). -/
 noncomputable def orthodirAux (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ : 𝔼) : ℕ → 𝔼 × 𝔼 × 𝔼
   | 0 => (x₀, b - op A x₀, b - op A x₀)
   | j + 1 => orthodirBody A fun i : Fin (j + 1) => orthodirAux A b x₀ (i : ℕ)
   termination_by j => j
   decreasing_by exact i.isLt
 
-/-- The `j`-th ORTHODIR iterate `x_j`. -/
+/-- The iterate $x_j$ of ORTHODIR after $j$ steps. -/
 noncomputable def orthodirX (j : ℕ) : 𝔼 := (orthodirAux A b x₀ j).1
 
-/-- The `j`-th ORTHODIR residual `r_j`. -/
+/-- The residual $r_j$ of ORTHODIR after $j$ steps. -/
 noncomputable def orthodirR (j : ℕ) : 𝔼 := (orthodirAux A b x₀ j).2.1
 
-/-- The `j`-th ORTHODIR direction `p_j`. -/
+/-- The direction $p_j$ of ORTHODIR after $j$ steps. -/
 noncomputable def orthodirP (j : ℕ) : 𝔼 := (orthodirAux A b x₀ j).2.2
 
-/-- The step length `α_j = (r_j, A p_j)/(A p_j, A p_j)` of (6.105). -/
+/-- The step length $\alpha_j = (r_j, A p_j)/(A p_j, A p_j)$ of (6.105) in ORTHODIR. -/
 noncomputable def orthodirAlpha (j : ℕ) : 𝕜 := gcrStepAlpha A (orthodirAux A b x₀ j)
 
-/-- The direction coefficient `β_ij = -(A² p_j, A p_i)/(A p_i, A p_i)` of (6.107). -/
+/-- The coefficient $\beta_{ij} = -(A^2 p_j, A p_i)/(A p_i, A p_i)$ of (6.107). -/
 noncomputable def orthodirBeta (i j : ℕ) : 𝕜 :=
   gcrStepBeta A (orthodirP A b x₀ i) (op A (orthodirP A b x₀ j))
 
+/-- The iterate $x_0$ of ORTHODIR is the initial guess. -/
 @[simp] theorem orthodirX_zero : orthodirX A b x₀ 0 = x₀ := by rw [orthodirX, orthodirAux]
 
+/-- The residual $r_0$ of ORTHODIR is $b - A x_0$. -/
 @[simp] theorem orthodirR_zero : orthodirR A b x₀ 0 = b - op A x₀ := by
   rw [orthodirR, orthodirAux]
 
+/-- The first direction of ORTHODIR is $p_0 = r_0$. -/
 @[simp] theorem orthodirP_zero : orthodirP A b x₀ 0 = orthodirR A b x₀ 0 := by
   rw [orthodirP, orthodirR, orthodirAux]
 
+/-- The step length of ORTHODIR is $\alpha_j = (r_j, A p_j)/(A p_j, A p_j)$. -/
 theorem orthodirAlpha_eq (j : ℕ) : orthodirAlpha A b x₀ j =
     inner 𝕜 (op A (orthodirP A b x₀ j)) (orthodirR A b x₀ j) /
       inner 𝕜 (op A (orthodirP A b x₀ j)) (op A (orthodirP A b x₀ j)) := rfl
 
-/-- (6.105) for ORTHODIR: `x_{j+1} = x_j + α_j p_j`. -/
+/-- Equation (6.105) for ORTHODIR: $x_{j+1} = x_j + \alpha_j p_j$. -/
 theorem orthodirX_succ (j : ℕ) : orthodirX A b x₀ (j + 1) =
     orthodirX A b x₀ j + orthodirAlpha A b x₀ j • orthodirP A b x₀ j := by
   rw [orthodirX, orthodirAux]
   rfl
 
+/-- The residual update of ORTHODIR: $r_{j+1} = r_j - \alpha_j A p_j$. -/
 theorem orthodirR_succ (j : ℕ) : orthodirR A b x₀ (j + 1) =
     orthodirR A b x₀ j - orthodirAlpha A b x₀ j • op A (orthodirP A b x₀ j) := by
   rw [orthodirR, orthodirAux]
   rfl
 
-/-- (6.107): `p_{j+1} = A p_j + ∑_{i ≤ j} β_ij p_i`. -/
+/-- Equation (6.107): $p_{j+1} = A p_j + \sum_{i=0}^{j} \beta_{ij} p_i$. -/
 theorem orthodirP_succ (j : ℕ) : orthodirP A b x₀ (j + 1) = op A (orthodirP A b x₀ j) +
     ∑ i ∈ Finset.range (j + 1), orthodirBeta A b x₀ i j • orthodirP A b x₀ i := by
   rw [← Fin.sum_univ_eq_sum_range (fun i => orthodirBeta A b x₀ i j • orthodirP A b x₀ i)
     (j + 1), orthodirP, orthodirAux]
   rfl
 
+/-- The residual carried by ORTHODIR is the true residual: $r_j = b - A x_j$. -/
 theorem orthodirR_eq_residual (j : ℕ) : orthodirR A b x₀ j = b - op A (orthodirX A b x₀ j) :=
   residual_eq_of_recur A b (orthodirX A b x₀) (orthodirR A b x₀) (orthodirP A b x₀)
     (orthodirAlpha A b x₀) (by rw [orthodirR_zero, orthodirX_zero]) (orthodirX_succ A b x₀)
     (orthodirR_succ A b x₀) j
 
+/-- The direction $p_j$ of ORTHODIR lies in $\mathcal{K}_{j+1}(A, r_0)$. -/
 theorem orthodirP_mem_krylov (j : ℕ) :
     orthodirP A b x₀ j ∈ krylov A (r₀ A b x₀) (j + 1) :=
   mem_krylov_of_recur A (orthodirP A b x₀) (fun j => op A (orthodirP A b x₀ j)) (r₀ A b x₀)
     (orthodirBeta A b x₀) (by rw [orthodirP_zero, orthodirR_zero]) (orthodirP_succ A b x₀)
     (fun j hp => apply_mem_krylov_succ A (hp j le_rfl)) j
 
-/-- §6.9: ORTHODIR builds an `AᴴA`-orthogonal sequence of directions. -/
+/-- Section 6.9: if $A p_i \ne 0$ for every $i < m$, then ORTHODIR builds $A^H A$-orthogonal
+directions: $(A p_i, A p_l) = 0$ for $i \ne l < m$. -/
 theorem inner_apply_orthodirP_eq_zero {m : ℕ} (hne : ∀ i < m, op A (orthodirP A b x₀ i) ≠ 0) :
     ∀ i < m, ∀ l < m, i ≠ l →
       inner 𝕜 (op A (orthodirP A b x₀ i)) (op A (orthodirP A b x₀ l)) = 0 :=
   inner_apply_eq_zero_of_recur A (orthodirP A b x₀) (fun j => op A (orthodirP A b x₀ j))
     (orthodirP_succ A b x₀) hne
 
+/-- If $A p_i \ne 0$ for every $i < m$ and $m$ is at most the grade of $r_0$, then the directions
+$p_0, \dots, p_{m-1}$ of ORTHODIR span $\mathcal{K}_m(A, r_0)$. -/
 theorem span_orthodirP_eq {m : ℕ} (hne : ∀ i < m, op A (orthodirP A b x₀ i) ≠ 0)
     (hm : m ≤ grade A (r₀ A b x₀)) :
     Submodule.span 𝕜 (Set.range fun i : Fin m => orthodirP A b x₀ (i : ℕ))
@@ -452,7 +516,9 @@ theorem span_orthodirP_eq {m : ℕ} (hne : ∀ i < m, op A (orthodirP A b x₀ i
   span_eq_krylov A b x₀ (orthodirP A b x₀) (inner_apply_orthodirP_eq_zero A b x₀ hne) hne
     (orthodirP_mem_krylov A b x₀) hm
 
-/-- **ORTHODIR is mathematically equivalent to full GMRES**, by Lemma 6.21. -/
+/-- ORTHODIR is mathematically equivalent to full GMRES: if $A p_i \ne 0$ for every $i < m$ and $m$
+is at most the grade of $r_0$, then the iterate $x_m$ of ORTHODIR minimizes the residual norm
+over $x_0 + \mathcal{K}_m(A, r_0)$, by Lemma 6.21. -/
 theorem orthodirX_isMinResidualIterate {m : ℕ} (hne : ∀ i < m, op A (orthodirP A b x₀ i) ≠ 0)
     (hm : m ≤ grade A (r₀ A b x₀)) :
     Krylov.IsMinResidualIterate (op A) b x₀ m (orthodirX A b x₀ m) := by
@@ -463,9 +529,12 @@ theorem orthodirX_isMinResidualIterate {m : ℕ} (hne : ∀ i < m, op A (orthodi
 
 /-! ### ORTHOMIN(k) and GCR(m): the truncated and restarted variants -/
 
-/-- **ORTHOMIN(k)** run for `j` steps: Algorithm 6.21 with lines 6–7 truncated to the last `k`
-directions. Being truncated it satisfies no global minimization property, and the book proves
-none; the only statement about it is `orthomin_eq_gcr`. -/
+/-- **ORTHOMIN(k)** ([saad2003iterative], Section 6.9). For $A \in \mathbb{K}^{n \times n}$,
+$b, x_0 \in \mathbb{K}^n$ and $j \ge 0$, this is the triple $(x_j, r_j, p_j)$ after $j$ steps of
+Algorithm 6.21 with lines 6–7 truncated to the last $k$ directions.
+
+Because of the truncation the method satisfies no global minimization property, and the book
+proves none. The only statement about it is `SaadSparse.Chapter06.orthomin_eq_gcr`. -/
 noncomputable def orthominAux (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ : 𝔼) (k : ℕ) :
     ℕ → 𝔼 × 𝔼 × 𝔼
   | 0 => (x₀, b - op A x₀, b - op A x₀)
@@ -473,26 +542,34 @@ noncomputable def orthominAux (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ : 𝔼) 
   termination_by j => j
   decreasing_by exact i.isLt
 
-/-- The `j`-th ORTHOMIN(k) iterate `x_j`. -/
+/-- The iterate $x_j$ of ORTHOMIN(k) after $j$ steps. -/
 noncomputable def orthominX (k j : ℕ) : 𝔼 := (orthominAux A b x₀ k j).1
 
-/-- The `j`-th ORTHOMIN(k) residual `r_j`. -/
+/-- The residual $r_j$ of ORTHOMIN(k) after $j$ steps. -/
 noncomputable def orthominR (k j : ℕ) : 𝔼 := (orthominAux A b x₀ k j).2.1
 
-/-- The `j`-th ORTHOMIN(k) direction `p_j`. -/
+/-- The direction $p_j$ of ORTHOMIN(k) after $j$ steps. -/
 noncomputable def orthominP (k j : ℕ) : 𝔼 := (orthominAux A b x₀ k j).2.2
 
+/-- The iterate $x_0$ of ORTHOMIN(k) is the initial guess. -/
 @[simp] theorem orthominX_zero (k : ℕ) : orthominX A b x₀ k 0 = x₀ := by
   rw [orthominX, orthominAux]
 
+/-- The residual $r_0$ of ORTHOMIN(k) is $b - A x_0$. -/
 @[simp] theorem orthominR_zero (k : ℕ) : orthominR A b x₀ k 0 = b - op A x₀ := by
   rw [orthominR, orthominAux]
 
+/-- The first direction of ORTHOMIN(k) is $p_0 = r_0$. -/
 @[simp] theorem orthominP_zero (k : ℕ) : orthominP A b x₀ k 0 = orthominR A b x₀ k 0 := by
   rw [orthominP, orthominR, orthominAux]
 
-/-- §6.9: **ORTHOMIN(k) is GCR for `k ≥ m`** — with a window at least as wide as the number of
-steps taken, no direction is dropped. -/
+/-- **Section 6.9** of [saad2003iterative], ORTHOMIN(k) with $k \ge m$ is GCR. Let
+$A \in \mathbb{K}^{n \times n}$, $b, x_0 \in \mathbb{K}^n$ and $k \ge 0$. For every $j \le k$,
+the triple $(x_j, r_j, p_j)$ after $j$ steps of ORTHOMIN(k) is the triple after $j$ steps of GCR
+(Algorithm 6.21).
+
+With a window at least as wide as the number of steps taken, no direction is dropped. The
+statement holds for every matrix $A$. -/
 theorem orthomin_eq_gcr {k : ℕ} : ∀ j ≤ k, orthominAux A b x₀ k j = gcrAux A b x₀ j := by
   intro j
   induction j using Nat.strong_induction_on with
@@ -506,34 +583,45 @@ theorem orthomin_eq_gcr {k : ℕ} : ∀ j ≤ k, orthominAux A b x₀ k j = gcrA
         funext fun i => ih (i : ℕ) (by omega) (by omega)
       rw [orthominAux, gcrAux, hs, orthominBody_eq_gcrBody A hj]
 
+/-- If $m \le k$, the iterate $x_m$ of ORTHOMIN(k) is the iterate $x_m$ of GCR. -/
 theorem orthominX_eq_gcrX {k m : ℕ} (hk : m ≤ k) : orthominX A b x₀ k m = gcrX A b x₀ m := by
   rw [orthominX, gcrX, orthomin_eq_gcr A b x₀ m hk]
 
-/-- One cycle of **GCR(m)**: `m` steps of Algorithm 6.21 from `x_0`. -/
+/-- One cycle of GCR(m): the iterate $x_m$ after $m$ steps of Algorithm 6.21 from the initial guess
+$x_0$. -/
 noncomputable def gcrCycle (A : Matrix (Fin n) (Fin n) 𝕜) (b : 𝔼) (m : ℕ) (x₀ : 𝔼) : 𝔼 :=
   gcrX A b x₀ m
 
-/-- **GCR(m)**: the restarted iterate after `k` cycles of `m` steps. Being restarted it
-satisfies no global minimization property, and the book proves none. -/
+/-- **Section 6.9** of [saad2003iterative], the restarted method GCR(m). For
+$A \in \mathbb{K}^{n \times n}$, $b, x_0 \in \mathbb{K}^n$ and $m, k \ge 0$, this is the iterate
+after $k$ cycles, where each cycle runs $m$ steps of Algorithm 6.21 from the result of the
+previous cycle, and the first cycle starts from $x_0$.
+
+The restarted method satisfies no global minimization property, and the book proves none. One
+cycle is `SaadSparse.Chapter06.gcrCycle`. -/
 noncomputable def gcrRestarted (A : Matrix (Fin n) (Fin n) 𝕜) (b : 𝔼) (m : ℕ) (x₀ : 𝔼)
     (k : ℕ) : 𝔼 :=
   (gcrCycle A b m)^[k] x₀
 
+/-- GCR(m) after $0$ cycles gives the initial guess $x_0$. -/
 @[simp] theorem gcrRestarted_zero (m : ℕ) : gcrRestarted A b m x₀ 0 = x₀ := rfl
 
+/-- GCR(m) after $k + 1$ cycles is one cycle applied to the iterate after $k$ cycles. -/
 theorem gcrRestarted_succ (m k : ℕ) :
     gcrRestarted A b m x₀ (k + 1) = gcrCycle A b m (gcrRestarted A b m x₀ k) :=
   Function.iterate_succ_apply' _ _ _
 
 /-! ### The GMRES approximation -/
 
-/-- The book's grade `μ` of `v_1` is the grade of `r_0`: the two starting vectors are
+/-- The grade $\mu$ of $v_1 = r_0/\|r_0\|_2$ is the grade of $r_0$, because the two vectors are
 proportional. -/
 theorem grade_r₀_eq_grade_v₁ : grade A (r₀ A b x₀) = grade A (v₁ A b x₀) := by
   rw [grade_eq, grade_v₁]
 
-/-- **GCR computes the GMRES approximation** (§6.9: GCR is "mathematically equivalent to the
-full GMRES algorithm"). -/
+/-- GCR computes the GMRES approximation, so it is "mathematically equivalent to the full GMRES
+algorithm" (Section 6.9). If $A$ is nonsingular, $A p_i \ne 0$ for every $i < m$, and $m$ is at
+most the grade of $r_0$, then the iterate $x_m$ of Algorithm 6.21 is the approximation after $m$
+steps of GMRES (Algorithm 6.9). -/
 theorem gcrX_eq_gmresFixed (hA : IsUnit A) {m : ℕ} (hne : ∀ i < m, op A (gcrP A b x₀ i) ≠ 0)
     (hm : m ≤ grade A (r₀ A b x₀)) : gcrX A b x₀ m = gmresFixed A b x₀ m := by
   have hm' : m ≤ grade A (v₁ A b x₀) := by rwa [← grade_r₀_eq_grade_v₁]
@@ -542,7 +630,9 @@ theorem gcrX_eq_gmresFixed (hA : IsUnit A) {m : ℕ} (hne : ∀ i < m, op A (gcr
   rw [hz _ (gcrX_isMinResidualIterate A b x₀ hne hm),
     hz _ (gmresFixed_isMinResidualIterate A b x₀ hm' (isUnit_R_of_isUnit A b x₀ hA hm'))]
 
-/-- **ORTHODIR computes the GMRES approximation** (§6.9). -/
+/-- ORTHODIR computes the GMRES approximation (Section 6.9). If $A$ is nonsingular, $A p_i \ne 0$
+for every $i < m$, and $m$ is at most the grade of $r_0$, then the iterate $x_m$ of ORTHODIR is
+the approximation after $m$ steps of GMRES (Algorithm 6.9). -/
 theorem orthodirX_eq_gmresFixed (hA : IsUnit A) {m : ℕ}
     (hne : ∀ i < m, op A (orthodirP A b x₀ i) ≠ 0) (hm : m ≤ grade A (r₀ A b x₀)) :
     orthodirX A b x₀ m = gmresFixed A b x₀ m := by
@@ -554,18 +644,31 @@ theorem orthodirX_eq_gmresFixed (hA : IsUnit A) {m : ℕ}
 
 end General
 
-/-! ### The results of §6.9, in the book's real setting -/
+/-! ### The results of Section 6.9, over the real numbers -/
 
 section BookResults
 
 variable {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ) (b x₀ : EuclideanSpace ℝ (Fin n))
 
-/-- **Lemma 6.21** with **(6.104)** and **(6.105)**. Let `p_0, p_1, …, p_{m-1}` be a sequence of
-vectors such that `{p_0, …, p_{j-1}}` is a basis of `𝒦_j(A, r_0)` for each `j ≤ m` — here: they
-span `𝒦_m` and are `AᴴA`-orthogonal with `A p_i ≠ 0` — and let `x_j` be the sequence produced by
-`x_{j+1} = x_j + ((r_j, A p_j)/(A p_j, A p_j)) p_j` (6.105) from `x_0`. Then `x_m` minimizes the
-residual norm over `x_0 + 𝒦_m(A, r_0)`, and it is given in closed form by
-`x_m = x_0 + ∑_{i<m} ((r_0, A p_i)/(A p_i, A p_i)) p_i` (6.104). -/
+/-- **Lemma 6.21** of [saad2003iterative], with (6.104) and (6.105). Let
+$A \in \mathbb{R}^{n \times n}$, let $b, x_0 \in \mathbb{R}^n$ and $r_0 = b - A x_0$. Let
+$p_0, \dots, p_{m-1}$ span $\mathcal{K}_m(A, r_0)$, be $A^T A$-orthogonal, $(A p_i, A p_l) = 0$
+for $i \ne l$, and satisfy $A p_i \ne 0$. Let $x_0, x_1, \dots$ be produced by (6.105),
+$$x_{j+1} = x_j + \frac{(r_j, A p_j)}{(A p_j, A p_j)} p_j, \qquad r_j = b - A x_j.$$
+Then $x_m$ has the smallest residual norm in $x_0 + \mathcal{K}_m(A, r_0)$, and
+$$x_m = x_0 + \sum_{i=0}^{m-1} \frac{(r_0, A p_i)}{(A p_i, A p_i)} p_i. \quad (6.104)$$
+
+**Reading.** The source asks that $\{p_0, \dots, p_{j-1}\}$ be a basis of
+$\mathcal{K}_j(A, r_0)$ for each $j \le m$, and its formulas divide by $(A p_i, A p_i)$. The
+statement here asks only that $p_0, \dots, p_{m-1}$ span $\mathcal{K}_m(A, r_0)$, and it makes
+the nonvanishing of the denominators, $A p_i \ne 0$, an explicit hypothesis. With the
+orthogonality these conditions make $p_0, \dots, p_{m-1}$ a basis of $\mathcal{K}_m(A, r_0)$;
+bases of the smaller subspaces $\mathcal{K}_j$ are not needed.
+
+The update (6.105) is assumed for every $j$, and $p_i$ is defined for every $i$; only
+$p_0, \dots, p_{m-1}$ enter the hypotheses. The minimal-residual property is
+`Krylov.IsMinResidualIterate`, and the form over the scalar field `𝕜` is
+`SaadSparse.Chapter06.isMinResidualIterate_of_orthogonalDirections`. -/
 theorem lemma_6_21 {m : ℕ} (p : ℕ → EuclideanSpace ℝ (Fin n))
     (horth : ∀ i < m, ∀ l < m, i ≠ l → inner ℝ (op A (p i)) (op A (p l)) = 0)
     (hne : ∀ i < m, op A (p i) ≠ 0)
@@ -579,9 +682,15 @@ theorem lemma_6_21 {m : ℕ} (p : ℕ → EuclideanSpace ℝ (Fin n))
   ⟨isMinResidualIterate_of_orthogonalDirections A b x₀ p horth hne hspan x hx0 hstep,
     equation_6_104 A b x₀ p horth x hx0 hstep⟩
 
-/-- **§6.9**: **Algorithm 6.21** (GCR) is mathematically equivalent to the full GMRES algorithm
-— its directions are `AᴴA`-orthogonal, its iterate minimizes the residual over
-`x_0 + 𝒦_m(A, r_0)`, and for a nonsingular `A` it equals the GMRES approximation. -/
+/-- **Algorithm 6.21** of [saad2003iterative], GCR is mathematically equivalent to full GMRES. Let
+$A \in \mathbb{R}^{n \times n}$ be nonsingular, let $b, x_0 \in \mathbb{R}^n$, let $m$ be at
+most the grade of $r_0$, and let the directions $p_i$ of Algorithm 6.21 satisfy $A p_i \ne 0$
+for $i < m$. Then the directions are $A^T A$-orthogonal, $(A p_i, A p_l) = 0$ for $i \ne l < m$;
+the iterate $x_m$ minimizes the residual norm over $x_0 + \mathcal{K}_m(A, r_0)$; and $x_m$ is
+the approximation after $m$ steps of GMRES (Algorithm 6.9).
+
+The GMRES approximation is `SaadSparse.Chapter06.gmresFixed`. The nonsingularity of $A$ is used
+only for the last conclusion. -/
 theorem algorithm_6_21_eq_gmres (hA : IsUnit A) {m : ℕ} (hne : ∀ i < m, op A (gcrP A b x₀ i) ≠ 0)
     (hm : m ≤ grade A (r₀ A b x₀)) :
     (∀ i < m, ∀ l < m, i ≠ l → inner ℝ (op A (gcrP A b x₀ i)) (op A (gcrP A b x₀ l)) = 0) ∧
@@ -590,7 +699,11 @@ theorem algorithm_6_21_eq_gmres (hA : IsUnit A) {m : ℕ} (hne : ∀ i < m, op A
   ⟨inner_apply_gcrP_eq_zero A b x₀ hne, gcrX_isMinResidualIterate A b x₀ hne hm,
     gcrX_eq_gmresFixed A b x₀ hA hne hm⟩
 
-/-- **§6.9**: **ORTHODIR** is mathematically equivalent to the full GMRES algorithm. -/
+/-- Section 6.9: ORTHODIR is mathematically equivalent to full GMRES. Let
+$A \in \mathbb{R}^{n \times n}$ be nonsingular, let $m$ be at most the grade of $r_0$, and let
+the ORTHODIR directions satisfy $A p_i \ne 0$ for $i < m$. Then $(A p_i, A p_l) = 0$ for
+$i \ne l < m$, the iterate $x_m$ minimizes the residual norm over $x_0 + \mathcal{K}_m(A, r_0)$,
+and $x_m$ is the approximation after $m$ steps of GMRES. -/
 theorem orthodir_eq_gmres (hA : IsUnit A) {m : ℕ}
     (hne : ∀ i < m, op A (orthodirP A b x₀ i) ≠ 0) (hm : m ≤ grade A (r₀ A b x₀)) :
     (∀ i < m, ∀ l < m, i ≠ l →
@@ -600,8 +713,8 @@ theorem orthodir_eq_gmres (hA : IsUnit A) {m : ℕ}
   ⟨inner_apply_orthodirP_eq_zero A b x₀ hne, orthodirX_isMinResidualIterate A b x₀ hne hm,
     orthodirX_eq_gmresFixed A b x₀ hA hne hm⟩
 
-/-- **§6.9**: **ORTHOMIN(k)** coincides with GCR as long as the window `k` is at least the
-number of steps taken. -/
+/-- Section 6.9: if $m \le k$, the iterate $x_m$ of ORTHOMIN(k) is the iterate $x_m$ of GCR, over
+$\mathbb{R}$. -/
 theorem orthomin_eq_gcr_book {k m : ℕ} (hk : m ≤ k) :
     orthominX A b x₀ k m = gcrX A b x₀ m :=
   orthominX_eq_gcrX A b x₀ hk

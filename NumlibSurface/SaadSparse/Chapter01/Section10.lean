@@ -8,38 +8,93 @@ import Numlib.Stationary.Splitting
 import NumlibSurface.SaadSparse.Common
 
 /-!
-# Saad §1.10: nonnegative matrices, M-matrices
+# Saad, Section 1.10: Nonnegative matrices, M-matrices
 
-Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM,
-2003, §1.10: the entrywise order (Definition 1.23) and its calculus (Proposition 1.24, Proposition
-1.26, Corollary 1.27), the Perron–Frobenius theorem (Theorem 1.25), the monotonicity of the spectral
-radius (Theorem 1.28), the nonnegative Neumann criterion (Theorem 1.29), and M-matrices (Definition
-1.30, Theorems 1.31–1.33).
+This module formalizes §1.10 of [saad2003iterative]: the entrywise order on real matrices
+(Definition 1.23) and its calculus (Proposition 1.24, Proposition 1.26 and Corollary 1.27), the
+Perron–Frobenius theorem (Theorem 1.25), the monotonicity of the spectral radius (Theorem 1.28), the
+criterion for the Neumann series of a nonnegative matrix (Theorem 1.29), and M-matrices (Definition
+1.30 and Theorems 1.31–1.33). For real matrices, $A \le B$ means $a_{ij} \le b_{ij}$ for all $i, j$.
+A matrix $A$ is an M-matrix when $a_{ii} > 0$, $a_{ij} \le 0$ for $i \neq j$, $A$ is nonsingular and
+$A^{-1} \ge 0$.
 
-Saad's `A ≥ O` and `B ≥ A` are the **entrywise** order, `Matrix.EntrywiseNonneg` and
-`Matrix.EntrywiseLE` (notation `≤ₑ`) of `Numlib/LinearAlgebra/Matrix/Order.lean` — not Mathlib's
-`≤` on matrices, which is the Loewner order.  That identification is `definition_1_23`.
-Definition 1.30 is `Matrix.IsMMatrix` of `Numlib/LinearAlgebra/Matrix/MMatrix.lean`, which carries
-the book's clauses (2)–(4); `definition_1_30` puts the book's four clauses back together, clause
-(1) being the derived `Matrix.IsMMatrix.diag_pos`, which is Theorem 1.32.  Saad's `ρ(A)` for a
-real matrix is `Matrix.complexSpectralRadius A`, the spectral radius of the complexification:
-`spectrum ℝ` of a real matrix is not the spectral radius.
+The main results are: an irreducible nonnegative matrix has the eigenvalue $\rho(A)$ with a positive
+eigenvector, and this eigenvalue is simple; $0 \le A \le B$ implies $\rho(A) \le \rho(B)$; for
+$B \ge 0$, $\rho(B) < 1$ if and only if $I - B$ is nonsingular with $(I - B)^{-1} \ge 0$; a matrix
+with positive diagonal and nonpositive off-diagonal entries is an M-matrix exactly when its Jacobi
+iteration matrix $I - D^{-1} A$ has spectral radius less than $1$; and an M-matrix stays an M-matrix
+when its entries increase and its off-diagonal entries stay nonpositive. The proofs specialize the
+backbone modules `Numlib.LinearAlgebra.Matrix.Order`, `Numlib.LinearAlgebra.Matrix.PerronFrobenius`,
+`Numlib.LinearAlgebra.Matrix.MMatrix` and `Numlib.Stationary.Splitting`.
 
-Theorem 1.25 calls the Perron eigenvalue *simple*, and both readings of the word are proved:
-`theorem_1_25_simple` is the one-dimensionality of the eigenspace and `theorem_1_25_algSimple` is
-simplicity as a root of the characteristic polynomial, which is what the book means.
-`theorem_1_25_pos` adds the positivity of `ρ(A)` on two or more indices, which the printed
-statement does not claim.
+## Main definitions
 
-Theorems 1.31–1.33 are stated with the Jacobi iteration matrix written out as `1 - D⁻¹ A`;
-`theorem_1_31_jacobi` identifies it with the iteration operator of the Jacobi splitting of
-`Numlib/Stationary/Splitting.lean`, which is the form §4.1 uses.
+* Definition 1.23, `SaadSparse.Chapter01.definition_1_23`: the entrywise order and nonnegative and
+  negative matrices.
+* Definition 1.30, `SaadSparse.Chapter01.definition_1_30`: `Matrix.IsMMatrix` is equivalent to the
+  four clauses of the book's definition of an M-matrix.
 
-Saad's Problem P-1.33 asks whether clause (4) of Definition 1.30 — the nonnegativity of the
-inverse — is redundant in the way Theorem 1.32 shows clause (1) to be.  It is not, and the answer
-gets no declaration because it is a counterexample rather than a theorem: `!![1, -2; -2, 1]` has
-positive diagonal entries, nonpositive off-diagonal entries and determinant `-3`, and its inverse
-`!![-1/3, -2/3; -2/3, -1/3]` is entrywise negative.
+## Main results
+
+* Proposition 1.24, `SaadSparse.Chapter01.proposition_1_24`: the entrywise order is a partial order,
+  nonnegative matrices are closed under sums, products and powers, the order is preserved by
+  transposition, and $\|\cdot\|_1$ and $\|\cdot\|_\infty$ are monotone on nonnegative matrices.
+* Problem P-1.28, `SaadSparse.Chapter01.problem_1_28`: $\|\cdot\|_2$ is monotone on nonnegative
+  matrices.
+* Theorem 1.25, `SaadSparse.Chapter01.theorem_1_25`: an irreducible nonnegative matrix has the
+  eigenvalue $\rho(A)$ with a positive eigenvector (Perron–Frobenius theorem).
+* Theorem 1.25, `SaadSparse.Chapter01.theorem_1_25_simple`: the eigenspace for $\rho(A)$ has
+  dimension $1$.
+* Theorem 1.25, `SaadSparse.Chapter01.theorem_1_25_algSimple`: $\rho(A)$ is a simple root of the
+  characteristic polynomial.
+* Theorem 1.25, `SaadSparse.Chapter01.theorem_1_25_pos`: $\rho(A) > 0$ for an irreducible matrix of
+  order $n \ge 2$.
+* Proposition 1.26, `SaadSparse.Chapter01.proposition_1_26`: multiplication by a nonnegative matrix
+  on either side preserves the entrywise order.
+* Corollary 1.27, `SaadSparse.Chapter01.corollary_1_27`: $0 \le A \le B$ implies $A^k \le B^k$.
+* Theorem 1.28, `SaadSparse.Chapter01.theorem_1_28`: $0 \le A \le B$ implies $\rho(A) \le \rho(B)$.
+* Theorem 1.29, `SaadSparse.Chapter01.theorem_1_29`: for $B \ge 0$, $\rho(B) < 1$ if and only if
+  $I - B$ is nonsingular with $(I - B)^{-1} \ge 0$.
+* Theorem 1.31, `SaadSparse.Chapter01.theorem_1_31`: a matrix with positive diagonal and nonpositive
+  off-diagonal entries is an M-matrix if and only if $\rho(I - D^{-1} A) < 1$.
+* Theorem 1.31, `SaadSparse.Chapter01.theorem_1_31_jacobi`: $I - D^{-1} A$ is the iteration operator
+  of the Jacobi splitting.
+* Theorem 1.32, `SaadSparse.Chapter01.theorem_1_32`: clause (1) of Definition 1.30 follows from the
+  other three.
+* Theorem 1.33, `SaadSparse.Chapter01.theorem_1_33`: if $A$ is an M-matrix, $A \le B$ and
+  $b_{ij} \le 0$ for $i \neq j$, then $B$ is an M-matrix.
+
+## Conventions
+
+* The book's $A \ge O$ and $B \ge A$ are the entrywise order, `Matrix.EntrywiseNonneg` and
+  `Matrix.EntrywiseLE` (notation `≤ₑ`) of `Numlib.LinearAlgebra.Matrix.Order`. Mathlib's `≤` on
+  matrices is the Loewner order, which is a different relation.
+* The book's $\rho(A)$ for a real matrix is `Matrix.complexSpectralRadius A`, the spectral radius of
+  the complexification. The real spectrum `spectrum ℝ` of a real matrix does not give the spectral
+  radius.
+
+## Implementation notes
+
+* Definition 1.30 is `Matrix.IsMMatrix` of `Numlib.LinearAlgebra.Matrix.MMatrix`, which has only the
+  clauses (2)–(4) of the book. Clause (1) follows from them; this is Theorem 1.32 of the book,
+  `Matrix.IsMMatrix.diag_pos`.
+* Theorem 1.25 calls the Perron eigenvalue *simple*, and both readings of the word are proved:
+  `SaadSparse.Chapter01.theorem_1_25_simple` states that the eigenspace has dimension one, and
+  `SaadSparse.Chapter01.theorem_1_25_algSimple` states that $\rho(A)$ is a simple root of the
+  characteristic polynomial, which is what the book means. `SaadSparse.Chapter01.theorem_1_25_pos`
+  adds the positivity of $\rho(A)$ for $n \ge 2$, which the book does not state.
+* Theorems 1.31–1.33 write the Jacobi iteration matrix out as $I - D^{-1} A$.
+  `SaadSparse.Chapter01.theorem_1_31_jacobi` identifies it with the iteration operator of the Jacobi
+  splitting of `Numlib.Stationary.Splitting`, which is the form that §4.1 uses.
+
+## Not formalized
+
+* **Problem P-1.33.** The problem asks whether clause (4) of Definition 1.30, the nonnegativity of
+  the inverse, is redundant in the way that Theorem 1.32 shows clause (1) to be. It is not, and the
+  answer is a counterexample rather than a theorem, so it has no declaration: the matrix
+  $\begin{bmatrix} 1 & -2 \\ -2 & 1 \end{bmatrix}$ has positive diagonal entries, nonpositive
+  off-diagonal entries and determinant $-3$, and its inverse $\begin{bmatrix} -1/3 & -2/3 \\ -2/3 &
+  -1/3 \end{bmatrix}$ is entrywise negative.
 -/
 
 open Matrix
@@ -52,19 +107,23 @@ variable {n : ℕ}
 
 /-! ### The entrywise order (Definition 1.23, Propositions 1.24 and 1.26, Corollary 1.27) -/
 
-/-- **Saad Definition 1.23**: for two `n × m` real matrices, `A ≤ B` means `a_ij ≤ b_ij` for
-every entry, `A` is *nonnegative* when `A ≥ O` and *negative* when `A ≤ O`, and the relation is a
-partial order rather than a total one.
+/-- **Definition 1.23** of [saad2003iterative]. Let $A, B \in \mathbb{R}^{m \times k}$. Then
+$A \le B$ means $a_{ij} \le b_{ij}$ for all $i, j$; the matrix $A$ is **nonnegative** when
+$O \le A$, that is $a_{ij} \ge 0$ for all $i, j$; and $A$ is **negative** in the sense of the
+book when $A \le O$, that is $-A$ is nonnegative. Moreover, $A \le B$ if and only if
+$-B \le -A$.
 
-The order is the **entrywise** one, `Matrix.EntrywiseLE` (notation `≤ₑ`) of
-`Numlib/LinearAlgebra/Matrix/Order.lean`, and `A ≥ O` is `Matrix.EntrywiseNonneg` — not Mathlib's
-`≤` on matrices, which is the Loewner order.  The clauses below are, in order: the order unfolded;
-nonnegativity as `O ≤ A`; nonnegativity unfolded; the mirror definition for "negative"; and the
-mirror symmetry of the order itself.
+The order is the entrywise order `Matrix.EntrywiseLE` (notation `≤ₑ`) of
+`Numlib.LinearAlgebra.Matrix.Order`. Nonnegativity is `Matrix.EntrywiseNonneg`. Mathlib's `≤` on
+matrices is the Loewner order. The five clauses of the statement are, in order: the order
+unfolded; nonnegativity as $O \le A$; nonnegativity unfolded; the definition of "negative"; and
+the reversal of the order under negation. The book remarks that $\le$ is a partial order and not
+a total one; the axioms of a partial order are clause 1 of
+`SaadSparse.Chapter01.proposition_1_24`.
 
-Saad's remaining word, *positive* for `A > O`, is left to be read off the partial order and is
-never used in that form: what §1.10 and Theorem 1.25 need is entrywise strict positivity,
-`∀ i j, 0 < A i j`, which is written out where it occurs. -/
+The remaining word of the book, *positive* for $A > O$, is not defined here and is never used in
+that form. What §1.10 and Theorem 1.25 need is entrywise strict positivity, $a_{ij} > 0$ for all
+$i, j$, which is written out where it occurs. -/
 theorem definition_1_23 {m k : ℕ} (A B : Matrix (Fin m) (Fin k) ℝ) :
     (A ≤ₑ B ↔ ∀ i j, A i j ≤ B i j) ∧
       (A.EntrywiseNonneg ↔ (0 : Matrix (Fin m) (Fin k) ℝ) ≤ₑ A) ∧
@@ -78,17 +137,21 @@ theorem definition_1_23 {m k : ℕ} (A B : Matrix (Fin m) (Fin k) ℝ) :
       rw [Matrix.neg_apply, Matrix.neg_apply, neg_le_neg_iff]
 
 open scoped Matrix.Norms.Operator in
-/-- **Saad Proposition 1.24**, the calculus of the entrywise order of Definition 1.23, in the
-book's five clauses: (1) the order is reflexive, antisymmetric and transitive; (2) sums and
-products of nonnegative matrices are nonnegative; (3) so are powers; (4) the order is preserved by
-transposition; and (5) the induced norms `‖·‖₁` (the maximum absolute column sum, so the
-`Matrix.Norms.Operator` norm of the transpose) and `‖·‖_∞` (the maximum absolute row sum) are
-monotone on nonnegative matrices.
+/-- **Proposition 1.24** of [saad2003iterative]. For matrices in $\mathbb{R}^{n \times n}$ and the
+entrywise order:
 
-Every clause is a restatement of `Numlib/LinearAlgebra/Matrix/Order.lean` or of
-`Numlib/LinearAlgebra/Matrix/PerronFrobenius.lean`, except clause (4), which is one line.  The
-`2`-norm form of clause (5) is Problem P-1.28, stated separately as `problem_1_28` because the
-Euclidean operator norm is a *different* scoped instance on the same type. -/
+1. the order is reflexive, antisymmetric and transitive;
+2. if $A, B \ge O$, then $A + B \ge O$ and $AB \ge O$;
+3. if $A \ge O$, then $A^k \ge O$ for every $k \ge 0$;
+4. if $A \le B$, then $A^T \le B^T$;
+5. if $O \le A \le B$, then $\|A\|_1 \le \|B\|_1$ and $\|A\|_\infty \le \|B\|_\infty$.
+
+The norm $\|\cdot\|_\infty$, the maximum absolute row sum, is the scoped instance
+`Matrix.Norms.Operator`, and $\|A\|_1$, the maximum absolute column sum, is written as
+$\|A^T\|_\infty$. Every clause restates a result of `Numlib.LinearAlgebra.Matrix.Order` or
+`Numlib.LinearAlgebra.Matrix.PerronFrobenius`, except clause 4, which has a one-line proof. The
+$2$-norm form of clause 5 is Problem P-1.28, `SaadSparse.Chapter01.problem_1_28`, stated
+separately because the Euclidean operator norm is a different scoped instance on the same type. -/
 theorem proposition_1_24 :
     (∀ A : Matrix (Fin n) (Fin n) ℝ, A ≤ₑ A) ∧
       (∀ A B : Matrix (Fin n) (Fin n) ℝ, A ≤ₑ B → B ≤ₑ A → A = B) ∧
@@ -109,39 +172,51 @@ theorem proposition_1_24 :
       EntrywiseLE.linfty_opNorm_le hA hAB⟩⟩
 
 open scoped Matrix.Norms.L2Operator in
-/-- **Saad Problem P-1.28**: the Euclidean operator norm is monotone on nonnegative matrices too,
-`O ≤ A ≤ B → ‖A‖₂ ≤ ‖B‖₂`.  This is the `2`-norm clause of Proposition 1.24;
-`Matrix.EntrywiseLE.l2_opNorm_le` of `Numlib/LinearAlgebra/Matrix/PerronFrobenius.lean`. -/
+/-- **Problem P-1.28** of [saad2003iterative]. Let $A, B \in \mathbb{R}^{n \times n}$ with
+$O \le A \le B$ entrywise. Then $\|A\|_2 \le \|B\|_2$.
+
+This is the $2$-norm form of clause 5 of Proposition 1.24. The norm is the scoped instance
+`Matrix.Norms.L2Operator`, and the proof is `Matrix.EntrywiseLE.l2_opNorm_le` of
+`Numlib.LinearAlgebra.Matrix.PerronFrobenius`. -/
 theorem problem_1_28 {A B : Matrix (Fin n) (Fin n) ℝ} (hA : A.EntrywiseNonneg) (hAB : A ≤ₑ B) :
     ‖A‖ ≤ ‖B‖ :=
   EntrywiseLE.l2_opNorm_le hA hAB
 
-/-- **Saad Proposition 1.26**: the entrywise order is compatible with multiplication by a
-nonnegative matrix on either side.  `Matrix.EntrywiseLE.mul_of_entrywiseNonneg_left` and its
-right twin. -/
+/-- **Proposition 1.26** of [saad2003iterative]. Let $A, B, C \in \mathbb{R}^{n \times n}$ with
+$C \ge O$ and $A \le B$ entrywise. Then
+$$CA \le CB \quad \text{and} \quad AC \le BC.$$
+
+The proof uses `Matrix.EntrywiseLE.mul_of_entrywiseNonneg_left` and its counterpart for the
+right side. -/
 theorem proposition_1_26 {A B C : Matrix (Fin n) (Fin n) ℝ} (hC : C.EntrywiseNonneg)
     (hAB : A ≤ₑ B) : C * A ≤ₑ C * B ∧ A * C ≤ₑ B * C :=
   ⟨EntrywiseLE.mul_of_entrywiseNonneg_left hC hAB,
     EntrywiseLE.mul_of_entrywiseNonneg_right hC hAB⟩
 
-/-- **Saad Corollary 1.27**, (1.42): powers are monotone on nonnegative matrices,
-`O ≤ A ≤ B → A ^ k ≤ B ^ k`.  `Matrix.EntrywiseLE.pow`, whose proof is the book's induction
-(1.43)–(1.44). -/
+/-- **Corollary 1.27** of [saad2003iterative], equation (1.42). Let
+$A, B \in \mathbb{R}^{n \times n}$ with $O \le A \le B$ entrywise. Then $A^k \le B^k$ for every
+$k \ge 0$.
+
+The proof is `Matrix.EntrywiseLE.pow`, which is the induction (1.43)–(1.44) of the book. -/
 theorem corollary_1_27 {A B : Matrix (Fin n) (Fin n) ℝ} (hA : A.EntrywiseNonneg) (hAB : A ≤ₑ B)
     (k : ℕ) : A ^ k ≤ₑ B ^ k :=
   EntrywiseLE.pow hA hAB k
 
 /-! ### The Perron–Frobenius theorem (Theorem 1.25) -/
 
-/-- **Saad Theorem 1.25**, the Perron–Frobenius theorem, which the book states without proof: an
-entrywise nonnegative irreducible real matrix has `ρ(A)` as an eigenvalue, with an eigenvector all
-of whose entries are positive.  This is
-`Matrix.IsIrreducible.exists_pos_hasEigenvector_complexSpectralRadius` of
-`Numlib/LinearAlgebra/Matrix/PerronFrobenius.lean`.
+/-- **Theorem 1.25** of [saad2003iterative] (Perron–Frobenius theorem). Let
+$A \in \mathbb{R}^{n \times n}$ with $n \ge 1$ be nonnegative and irreducible. Then $\rho(A)$ is
+an eigenvalue of $A$, with an eigenvector $x \in \mathbb{R}^n$ all of whose entries are
+positive:
+$$Ax = \rho(A) x, \qquad x_i > 0 \text{ for all } i.$$
 
-Irreducibility is Mathlib's `Matrix.IsIrreducible`: entrywise nonnegative, with the quiver of the
-positive entries strongly connected, which is Saad's §1.10 notion read through the adjacency graph
-of §3.3.4.  The simplicity clause is `theorem_1_25_simple`. -/
+The book states the theorem without proof. The proof is
+`Matrix.IsIrreducible.exists_pos_hasEigenvector_complexSpectralRadius` of
+`Numlib.LinearAlgebra.Matrix.PerronFrobenius`. Irreducibility is Mathlib's
+`Matrix.IsIrreducible`: the matrix is entrywise nonnegative and the directed graph of its
+positive entries is strongly connected. This is the notion of the book in §1.10, read through
+the adjacency graph of §3.3.4. The simplicity clause is
+`SaadSparse.Chapter01.theorem_1_25_simple`. -/
 theorem theorem_1_25 [NeZero n] {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsIrreducible) :
     Module.End.HasEigenvalue A.mulVecLin A.complexSpectralRadius.toReal ∧
       ∃ x : Fin n → ℝ, (∀ i, 0 < x i) ∧ A *ᵥ x = A.complexSpectralRadius.toReal • x := by
@@ -152,28 +227,34 @@ theorem theorem_1_25 [NeZero n] {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsIrred
   · intro h
     exact absurd (congrFun h (Classical.arbitrary (Fin n))) (hpos _).ne'
 
-/-- **Saad Theorem 1.25**, the simplicity clause, in its geometric form: the Perron eigenvalue of
-an irreducible nonnegative matrix has a one-dimensional eigenspace.
-`Matrix.IsIrreducible.finrank_eigenspace_complexSpectralRadius_eq_one`. -/
+/-- **Theorem 1.25** of [saad2003iterative], simplicity in the geometric sense. Let
+$A \in \mathbb{R}^{n \times n}$ with $n \ge 1$ be nonnegative and irreducible. Then the
+eigenspace of $A$ for the eigenvalue $\rho(A)$ has dimension $1$.
+
+The proof is `Matrix.IsIrreducible.finrank_eigenspace_complexSpectralRadius_eq_one`. -/
 theorem theorem_1_25_simple [NeZero n] {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsIrreducible) :
     Module.finrank ℝ
         (Module.End.eigenspace A.mulVecLin A.complexSpectralRadius.toReal) = 1 :=
   hA.finrank_eigenspace_complexSpectralRadius_eq_one
 
-/-- **Saad Theorem 1.25**, the simplicity clause in the sense the word carries in the book:
-`ρ(A)` is an *algebraically* simple eigenvalue, a simple root of the characteristic polynomial.
-`Matrix.IsIrreducible.rootMultiplicity_charpoly_complexSpectralRadius`, which gets there from the
-geometric statement by ruling out a Jordan chain of length two with the positive left Perron
-eigenvector. -/
+/-- **Theorem 1.25** of [saad2003iterative], simplicity in the algebraic sense, which is the sense
+of the word in the book. Let $A \in \mathbb{R}^{n \times n}$ with $n \ge 1$ be nonnegative and
+irreducible. Then $\rho(A)$ is a simple root of the characteristic polynomial of $A$.
+
+The proof is `Matrix.IsIrreducible.rootMultiplicity_charpoly_complexSpectralRadius`. It derives
+the statement from the geometric simplicity: the positive left Perron eigenvector rules out a
+Jordan chain of length two. -/
 theorem theorem_1_25_algSimple [NeZero n] {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsIrreducible) :
     A.charpoly.rootMultiplicity A.complexSpectralRadius.toReal = 1 :=
   hA.rootMultiplicity_charpoly_complexSpectralRadius
 
-/-- The Perron eigenvalue of an irreducible matrix on two or more indices is **positive**.  The
-book does not print this clause in Theorem 1.25, but it is the reason the theorem is worth
-anything for an irreducible matrix that happens to have a zero diagonal, and §1.10's applications
-to M-matrices use it.  `Matrix.IsIrreducible.complexSpectralRadius_pos`: `ρ(A) = 0` would make the
-positive Perron vector a null vector, forcing `A = O`, which is reducible on two indices. -/
+/-- **Theorem 1.25** of [saad2003iterative], positivity. Let $A \in \mathbb{R}^{n \times n}$ with
+$n \ge 2$ be nonnegative and irreducible. Then $\rho(A) > 0$.
+
+The book does not print this clause in Theorem 1.25. It is what makes the theorem useful for an
+irreducible matrix with a zero diagonal, and the applications of §1.10 to M-matrices use it. The
+proof is `Matrix.IsIrreducible.complexSpectralRadius_pos`: if $\rho(A) = 0$, the positive Perron
+vector would be a null vector of $A$, which forces $A = O$, and $O$ is reducible for $n \ge 2$. -/
 theorem theorem_1_25_pos {A : Matrix (Fin n) (Fin n) ℝ} (hn : 2 ≤ n) (hA : A.IsIrreducible) :
     0 < A.complexSpectralRadius.toReal :=
   haveI : Nontrivial (Fin n) := Fin.nontrivial_iff_two_le.2 hn
@@ -181,18 +262,21 @@ theorem theorem_1_25_pos {A : Matrix (Fin n) (Fin n) ℝ} (hn : 2 ≤ n) (hA : A
 
 /-! ### The spectral radius of a nonnegative matrix (Theorems 1.28 and 1.29) -/
 
-/-- **Saad Theorem 1.28**, (1.45)–(1.46): the spectral radius is monotone on nonnegative
-matrices, `O ≤ A ≤ B → ρ(A) ≤ ρ(B)`.  `Matrix.complexSpectralRadius_le_of_entrywiseLE`, whose
-proof is the book's: Gelfand's formula applied to Corollary 1.27 and clause (5) of Proposition
-1.24. -/
+/-- **Theorem 1.28** of [saad2003iterative], equations (1.45)–(1.46). Let
+$A, B \in \mathbb{R}^{n \times n}$ with $O \le A \le B$ entrywise. Then $\rho(A) \le \rho(B)$.
+
+The proof is `Matrix.complexSpectralRadius_le_of_entrywiseLE`, which is the proof of the book:
+Gelfand's formula applied to Corollary 1.27 and clause 5 of Proposition 1.24. -/
 theorem theorem_1_28 {A B : Matrix (Fin n) (Fin n) ℝ} (hA : A.EntrywiseNonneg) (hAB : A ≤ₑ B) :
     A.complexSpectralRadius ≤ B.complexSpectralRadius :=
   complexSpectralRadius_le_of_entrywiseLE hA hAB
 
-/-- **Saad Theorem 1.29**, with (1.47): for an entrywise nonnegative `B`, `ρ(B) < 1` if and only
-if `I - B` is nonsingular with an entrywise nonnegative inverse.
-`Matrix.EntrywiseNonneg.complexSpectralRadius_lt_one_iff`.  This is the theorem Theorem 4.4 and
-the M-matrix characterizations below rest on. -/
+/-- **Theorem 1.29** of [saad2003iterative], with (1.47). Let $B \in \mathbb{R}^{n \times n}$ be
+nonnegative. Then $\rho(B) < 1$ if and only if $I - B$ is nonsingular and $(I - B)^{-1}$ is
+nonnegative.
+
+The proof is `Matrix.EntrywiseNonneg.complexSpectralRadius_lt_one_iff`. Theorem 4.4 and the
+characterizations of M-matrices below rest on this theorem. -/
 theorem theorem_1_29 {B : Matrix (Fin n) (Fin n) ℝ} (hB : B.EntrywiseNonneg) :
     B.complexSpectralRadius < 1 ↔ IsUnit (1 - B) ∧ (1 - B)⁻¹.EntrywiseNonneg :=
   hB.complexSpectralRadius_lt_one_iff
@@ -203,19 +287,20 @@ section MMatrix
 
 variable {A : Matrix (Fin n) (Fin n) ℝ}
 
-/-- **Saad Definition 1.30**: `A` is an *M-matrix* when (1) `a_ii > 0`, (2) `a_ij ≤ 0` for
-`i ≠ j`, (3) `A` is nonsingular and (4) `A⁻¹ ≥ 0`.
+/-- **Definition 1.30** of [saad2003iterative]. A matrix $A \in \mathbb{R}^{n \times n}$ is an
+**M-matrix** if (1) $a_{ii} > 0$ for all $i$, (2) $a_{ij} \le 0$ for $i \neq j$, (3) $A$ is
+nonsingular, and (4) $A^{-1} \ge O$ entrywise. The theorem states that `Matrix.IsMMatrix` holds
+for $A$ if and only if these four clauses hold.
 
-This is `Matrix.IsMMatrix` of `Numlib/LinearAlgebra/Matrix/MMatrix.lean`, which carries clauses
-(2)–(4) only: clause (1) follows from them, and that is the book's own Theorem 1.32, here
-`Matrix.IsMMatrix.diag_pos`.  So the four clauses of the definition and the three of `IsMMatrix`
-define the same class, which is what this states. -/
+`Matrix.IsMMatrix` of `Numlib.LinearAlgebra.Matrix.MMatrix` has only the clauses (2)–(4). Clause
+(1) follows from them; this is Theorem 1.32 of the book, `Matrix.IsMMatrix.diag_pos`. So the
+four clauses of the book and the three of `Matrix.IsMMatrix` define the same class. -/
 theorem definition_1_30 : A.IsMMatrix ↔
     (∀ i, 0 < A i i) ∧ (∀ i j, i ≠ j → A i j ≤ 0) ∧ IsUnit A ∧ A⁻¹.EntrywiseNonneg :=
   ⟨fun hA => ⟨hA.diag_pos, hA.offDiag_nonpos, hA.isUnit, hA.inv_entrywiseNonneg⟩,
     fun ⟨_, h2, h3, h4⟩ => ⟨h2, h3, h4⟩⟩
 
-/-- A diagonal matrix with nonnegative diagonal is entrywise nonnegative. -/
+/-- A diagonal matrix with nonnegative diagonal entries is entrywise nonnegative. -/
 private theorem entrywiseNonneg_diagonal {d : Fin n → ℝ} (hd : ∀ i, 0 ≤ d i) :
     (diagonal d).EntrywiseNonneg := by
   refine entrywiseNonneg_iff.2 fun i j => ?_
@@ -223,9 +308,8 @@ private theorem entrywiseNonneg_diagonal {d : Fin n → ℝ} (hd : ∀ i, 0 ≤ 
   · subst h; rw [diagonal_apply_eq]; exact hd i
   · rw [diagonal_apply_ne _ h]
 
-/-- The inverse of the diagonal part, entry by entry.  `Matrix.inv_diagonal` inverts the diagonal
-in the Pi ring and is useless without `IsUnit`, so the inverse is identified by exhibiting a right
-inverse instead. -/
+/-- If every diagonal entry of $A$ is nonzero, the inverse of the diagonal part $D$ of $A$ is the
+diagonal matrix with entries $a_{ii}^{-1}$. -/
 private theorem inv_diagPart_eq (hd : ∀ i, A i i ≠ 0) :
     (diagPart A)⁻¹ = diagonal fun i => (A i i)⁻¹ := by
   have hD : diagPart A = diagonal A.diag := rfl
@@ -234,13 +318,14 @@ private theorem inv_diagPart_eq (hd : ∀ i, A i i ≠ 0) :
   refine congrArg diagonal (funext fun i => ?_)
   simpa only [Pi.mul_apply, Pi.one_apply, diag_apply] using mul_inv_cancel₀ (hd i)
 
-/-- The entries of the Jacobi iteration matrix `B = I - D⁻¹ A`. -/
+/-- If every diagonal entry of $A$ is nonzero, the entries of the Jacobi iteration matrix
+$I - D^{-1} A$ are $\delta_{ij} - a_{ij} / a_{ii}$. -/
 private theorem jacobiMatrix_apply (hd : ∀ i, A i i ≠ 0) (i j : Fin n) :
     (1 - (diagPart A)⁻¹ * A) i j = (if i = j then 1 else 0) - (A i i)⁻¹ * A i j := by
   rw [Matrix.sub_apply, Matrix.one_apply, inv_diagPart_eq hd, diagonal_mul]
 
-/-- The Jacobi iteration matrix of a matrix with positive diagonal and nonpositive off-diagonal
-entries is entrywise nonnegative: this is what makes Theorem 1.29 applicable to it. -/
+/-- If $A$ has positive diagonal and nonpositive off-diagonal entries, its Jacobi iteration matrix
+$I - D^{-1} A$ is entrywise nonnegative, so Theorem 1.29 applies to it. -/
 private theorem entrywiseNonneg_jacobiMatrix (hd : ∀ i, 0 < A i i)
     (hoff : ∀ i j, i ≠ j → A i j ≤ 0) : (1 - (diagPart A)⁻¹ * A).EntrywiseNonneg := by
   refine entrywiseNonneg_iff.2 fun i j => ?_
@@ -251,13 +336,15 @@ private theorem entrywiseNonneg_jacobiMatrix (hd : ∀ i, 0 < A i i)
   · rw [ite_eq_right h, zero_sub, neg_nonneg]
     exact mul_nonpos_of_nonneg_of_nonpos (inv_nonneg.2 (hd i).le) (hoff i j h)
 
-/-- **Saad Theorem 1.31**: a real matrix with positive diagonal and nonpositive off-diagonal
-entries is an M-matrix exactly when its Jacobi iteration matrix `B = I - D⁻¹ A` has spectral
-radius below `1`.
+/-- **Theorem 1.31** of [saad2003iterative]. Let $A \in \mathbb{R}^{n \times n}$ with $a_{ii} > 0$
+for all $i$ and $a_{ij} \le 0$ for $i \neq j$, and let $D$ be the diagonal part of $A$. Then $A$
+is an M-matrix if and only if the Jacobi iteration matrix $B = I - D^{-1} A$ satisfies
+$$\rho(B) < 1.$$
 
-The proof is the book's.  Those two sign conditions are exactly what makes `B` entrywise
-nonnegative, so Theorem 1.29 applies to it, and `I - B = D⁻¹ A` factors `A = D (I - B)` with `D`
-and `D⁻¹` nonnegative: `A` is nonsingular with a nonnegative inverse if and only if `I - B` is. -/
+The proof is the proof of the book. The two sign conditions make $B$ entrywise nonnegative, so
+Theorem 1.29 applies to it. The relation $I - B = D^{-1} A$ gives $A = D(I - B)$ with $D$ and
+$D^{-1}$ nonnegative, so $A$ is nonsingular with a nonnegative inverse if and only if $I - B$
+is. -/
 theorem theorem_1_31 (hd : ∀ i, 0 < A i i) (hoff : ∀ i j, i ≠ j → A i j ≤ 0) :
     A.IsMMatrix ↔ (1 - (diagPart A)⁻¹ * A).complexSpectralRadius < 1 := by
   have hdne : ∀ i, A i i ≠ 0 := fun i => (hd i).ne'
@@ -287,36 +374,42 @@ theorem theorem_1_31 (hd : ∀ i, 0 < A i i) (hoff : ∀ i j, i ≠ j → A i j 
     rw [hAinv]
     exact hnn.mul hDinvnn
 
-/-- The matrix `I - D⁻¹ A` of Theorem 1.31 is the iteration operator of the Jacobi splitting
-`A = D - (E + F)` of `Numlib/Stationary/Splitting.lean`, which is the form §4.1 uses.
-Read with `Matrix.jacobiSplitting_iterationOperator`, this makes the M-matrix hypothesis of
-Chapter 4 checkable from the sign pattern of `A` alone. -/
+/-- **Theorem 1.31** of [saad2003iterative], the Jacobi splitting. Let
+$A \in \mathbb{R}^{n \times n}$ have a nonsingular diagonal part $D$. Then the iteration
+operator of the Jacobi splitting $A = D - (E + F)$ of `Numlib.Stationary.Splitting` is
+$I - D^{-1} A$, the matrix of Theorem 1.31.
+
+This is the form that §4.1 uses. With `Matrix.jacobiSplitting_iterationOperator`, it makes the
+M-matrix hypothesis of Chapter 4 checkable from the sign pattern of $A$ alone. -/
 theorem theorem_1_31_jacobi (h : IsUnit (diagPart A)) :
     (jacobiSplitting A h).iterationOperator = 1 - (diagPart A)⁻¹ * A := by
   have hm : (jacobiSplitting A h).m = diagPart A := rfl
   rw [Stationary.Splitting.iterationOperator, hm, ← nonsing_inv_eq_ringInverse]
 
-/-- **Saad Theorem 1.32**: clause (1) of Definition 1.30 follows from the other three.  A
-nonsingular real matrix with nonpositive off-diagonal entries and an entrywise nonnegative inverse
-has positive diagonal entries, is therefore an M-matrix, and therefore has a convergent Jacobi
-iteration matrix.
+/-- **Theorem 1.32** of [saad2003iterative]. Let $A \in \mathbb{R}^{n \times n}$ be nonsingular,
+with $a_{ij} \le 0$ for $i \neq j$ and $A^{-1} \ge O$ entrywise. Then $a_{ii} > 0$ for all $i$,
+so $A$ is an M-matrix, and the Jacobi iteration matrix satisfies $\rho(I - D^{-1} A) < 1$, where
+$D$ is the diagonal part of $A$. Thus clause (1) of Definition 1.30 follows from the other three
+clauses.
 
-The diagonal clause is `Matrix.IsMMatrix.diag_pos`, whose proof is the book's: reading
-`(A A⁻¹) i i = 1` entrywise, every off-diagonal term is nonpositive, so `A i i * A⁻¹ i i ≥ 1` and
-both factors are positive. -/
+The diagonal clause is `Matrix.IsMMatrix.diag_pos`, whose proof is the proof of the book: in the
+entry $(AA^{-1})_{ii} = 1$ every off-diagonal term is nonpositive, so
+$a_{ii} (A^{-1})_{ii} \ge 1$ and both factors are positive. -/
 theorem theorem_1_32 (hoff : ∀ i j, i ≠ j → A i j ≤ 0) (hu : IsUnit A)
     (hinv : A⁻¹.EntrywiseNonneg) :
     (∀ i, 0 < A i i) ∧ A.IsMMatrix ∧ (1 - (diagPart A)⁻¹ * A).complexSpectralRadius < 1 :=
   have hA : A.IsMMatrix := ⟨hoff, hu, hinv⟩
   ⟨hA.diag_pos, hA, (theorem_1_31 hA.diag_pos hoff).1 hA⟩
 
-/-- **Saad Theorem 1.33**: an M-matrix stays an M-matrix when its entries are increased, as long
-as the off-diagonal entries stay nonpositive.
+/-- **Theorem 1.33** of [saad2003iterative]. Let $A, B \in \mathbb{R}^{n \times n}$, let $A$ be an
+M-matrix, let $A \le B$ entrywise, and let $b_{ij} \le 0$ for $i \neq j$. Then $B$ is an
+M-matrix.
 
-The book's chain of entrywise inequalities between the two Jacobi matrices,
-`I - D_B⁻¹ B ≤ I - D_A⁻¹ A`, holds entry by entry because `A i j ≤ B i j ≤ 0` off the diagonal
-while `0 < A i i ≤ B i i` on it, so the reciprocals go the other way.  Theorem 1.28 then compares
-the spectral radii and Theorem 1.31 is applied twice. -/
+The chain of entrywise inequalities of the book between the two Jacobi matrices,
+$I - D_B^{-1} B \le I - D_A^{-1} A$, holds entry by entry: off the diagonal
+$a_{ij} \le b_{ij} \le 0$, and on the diagonal $0 < a_{ii} \le b_{ii}$, so the reciprocals are
+in the opposite order. Theorem 1.28 then compares the spectral radii, and Theorem 1.31 is
+applied twice. -/
 theorem theorem_1_33 {B : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsMMatrix) (hAB : A ≤ₑ B)
     (hoff : ∀ i j, i ≠ j → B i j ≤ 0) : B.IsMMatrix := by
   have hdA : ∀ i, 0 < A i i := hA.diag_pos

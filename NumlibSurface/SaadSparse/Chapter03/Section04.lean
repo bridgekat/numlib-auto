@@ -5,45 +5,80 @@ Released under Apache 2.0 license as described in the file LICENSE.
 import NumlibSurface.SaadSparse.Common
 
 /-!
-# Saad §3.4: storage schemes
+# Saad, Section 3.4: Storage schemes
 
-Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM,
-2003, §3.4: the coordinate format, compressed sparse row and column, the modified sparse row
-format, the diagonal format and Ellpack-Itpack.
+This module formalizes §3.4 of [saad2003iterative]: the coordinate format, the compressed sparse row
+format, the modified sparse row format, the diagonal format and the Ellpack-Itpack format. The
+section states no theorem and no numbered definition. Its mathematical content is three worked
+examples, and each writes one small matrix out in one layout. Each example is stated here as the
+round trip that its layout promises: the arrays decode to the matrix that they came from. For the
+diagonal format the decoding is the defining relation $\mathrm{DIAG}(i, j) = a_{i, i +
+\mathrm{IOFF}(j)}$ of the source, and for the Ellpack-Itpack format it is the identity that makes
+the matrix-by-vector product of Algorithm 11.5 correct. The proofs are computations on the given
+arrays.
 
-The section states no theorem, proposition, lemma, corollary or numbered definition: it is
-data-structure description, and its content is three worked examples, which is what this file
-carries.  Each of them writes one small matrix out in one layout, and each is stated here as the
-*round trip* the layout promises — the arrays decode to the matrix they came from:
+## Main definitions
 
-* `example_3_7` is the coordinate format of Example 3.7, `example_3_7_csr` the compressed sparse
-  row form of the same matrix and `example_3_7_msr` the modified sparse row form, the two layouts
-  §3.4 goes on to write out for "the above matrix".
-* `example_3_8` is the diagonal format, stated through the book's own defining relation
-  `DIAG(i, j) = a_{i, i + ioff(j)}`.
-* `example_3_9` is Ellpack-Itpack, stated as the identity that makes Algorithm 11.5 correct.
+* Example 3.7, `SaadSparse.Chapter03.matrix_3_7`: the $5 \times 5$ matrix with the twelve nonzero
+  entries $1$ to $12$.
+* Example 3.7, `SaadSparse.Chapter03.cooAA`, `SaadSparse.Chapter03.cooJR` and
+  `SaadSparse.Chapter03.cooJC`: the values, row indices and column indices of its coordinate format.
+* §3.4, `SaadSparse.Chapter03.csrAA`, `SaadSparse.Chapter03.csrJA` and `SaadSparse.Chapter03.csrIA`:
+  the values, column indices and row pointers of its compressed sparse row format.
+* §3.4, `SaadSparse.Chapter03.msrAA`, `SaadSparse.Chapter03.msrJA` and
+  `SaadSparse.Chapter03.msrPtr`: the two arrays of its modified sparse row format and the row
+  pointers in the second one.
+* Example 3.8, `SaadSparse.Chapter03.matrix_3_8`: the $5 \times 5$ matrix whose nonzero entries lie
+  on the diagonals with offsets $-1$, $0$ and $2$.
+* Example 3.8, `SaadSparse.Chapter03.ioff_3_8` and `SaadSparse.Chapter03.diag_3_8`: the offsets and
+  the stored diagonals of its diagonal format.
+* Example 3.9, `SaadSparse.Chapter03.coef_3_9` and `SaadSparse.Chapter03.jcoef_3_9`: the values and
+  column positions of its Ellpack-Itpack format.
+
+## Main results
+
+* Example 3.7, `SaadSparse.Chapter03.example_3_7`: the coordinate arrays represent the matrix, store
+  only nonzero values, and store no position twice.
+* §3.4, `SaadSparse.Chapter03.example_3_7_csr`: the compressed sparse row arrays represent the
+  matrix of Example 3.7.
+* §3.4, `SaadSparse.Chapter03.example_3_7_msr`: the modified sparse row arrays represent the matrix
+  of Example 3.7.
+* Example 3.8, `SaadSparse.Chapter03.example_3_8`: the diagonal-format arrays represent the matrix,
+  and the positions marked $*$ are those that fall outside the matrix.
+* Example 3.9, `SaadSparse.Chapter03.example_3_9`: the Ellpack-Itpack arrays represent the matrix of
+  Example 3.8 and compute its matrix-by-vector product.
 
 ## Conventions
 
-Saad indexes his arrays from `1`; here they are `0`-based, so the book's `IA(1) = 1` is
-`csrIA 0 = 0` and a column number `j` of the book is `j - 1`.  The lengths are the book's: twelve
-stored values in Example 3.7, `n + 1 + 7 = 13` positions in the modified sparse row arrays, and
-`n × Nd = 5 × 3` in the diagonal and Ellpack-Itpack ones.
+* The source indexes its arrays from $1$. Here they are indexed from $0$, so $\mathrm{IA}(1) = 1$ of
+  the source is `SaadSparse.Chapter03.csrIA 0 = 0`, and a column number $j$ of the source is $j - 1$
+  here.
+* The array lengths are those of the source: twelve stored values in Example 3.7, $n + 1 + 7 = 13$
+  positions in the modified sparse row arrays, and $n \times N_d = 5 \times 3$ in the diagonal and
+  Ellpack-Itpack arrays.
+* The positions that the source marks $*$ are unused. The two definitions that contain such a
+  position take its value as a parameter, and the statements about them hold for every value, so no
+  proof can depend on it.
 
-The positions the book marks `*` are genuinely unused, and that is how they are stated: the two
-declarations that meet one quantify over its value, so no proof can depend on it.
+## Implementation notes
 
-A "round trip" statement is a single equation `A i j = (what the arrays say about entry (i, j))`.
-It is stronger than the two containments read separately: it says that every stored value is an
-entry of `A`, that every nonzero entry is stored, and that nothing is stored twice in a way that
-would change the sum.  For the coordinate format the further claim that the twelve triples are
-*distinct*, so that the array length really is `Nz`, is stated on its own.
+* A round-trip statement is a single equation: $a_{ij}$ equals what the arrays say about the entry
+  $(i, j)$, as a sum of the stored values for that position. It is stronger than the two
+  containments read separately: every stored value is an entry of the matrix, every nonzero entry is
+  stored, and no position is stored twice in a way that changes the sum. For the coordinate format,
+  the further claim that the twelve stored positions are distinct, so that the array length is the
+  number $N_z$ of nonzeros, is a separate clause.
 
 ## Not formalized
 
-The two matrix-by-vector code fragments of §3.5 and the compressed sparse column variant, which the
-section names but does not write out.  `plans/NumlibSurface/SaadSparse/Chapter03.toml` records the
-rest of the chapter's exclusions.
+* **The compressed sparse column format** of §3.4, which the section names but does not write out.
+* **§3.5, the code fragments for the matrix-by-vector product.** They state nothing, and the
+  correctness of a sparse matrix-by-vector product against `Matrix.mulVec` is a specification that
+  the source does not state.
+* **§3.6, sparse direct solution methods.** Minimum degree and nested dissection are described as
+  algorithms, and this edition states no complexity or fill-in result. The separator property of the
+  level sets is in §3.3.3, as `SaadSparse.Chapter03.levelSet_blockTridiagonal`.
+* **§3.7, test problems**, which is descriptive.
 -/
 
 open Finset Matrix
@@ -52,7 +87,10 @@ namespace SaadSparse.Chapter03
 
 /-! ### Example 3.7: the coordinate, compressed sparse row and modified sparse row formats -/
 
-/-- The `5 × 5` matrix of Example 3.7, with the twelve nonzero entries `1.` to `12.`. -/
+/-- **Example 3.7** of [saad2003iterative], the matrix. It is the $5 \times 5$ matrix
+$$\begin{bmatrix} 1 & 0 & 0 & 2 & 0 \\ 3 & 4 & 0 & 5 & 0 \\ 6 & 0 & 7 & 8 & 9 \\ 0 & 0 & 10 & 11
+  & 0 \\ 0 & 0 & 0 & 0 & 12 \end{bmatrix},$$
+whose twelve nonzero entries are $1$ to $12$. -/
 def matrix_3_7 : Matrix (Fin 5) (Fin 5) ℝ :=
   !![1, 0, 0, 2, 0;
      3, 4, 0, 5, 0;
@@ -60,22 +98,31 @@ def matrix_3_7 : Matrix (Fin 5) (Fin 5) ℝ :=
      0, 0, 10, 11, 0;
      0, 0, 0, 0, 12]
 
-/-- The array `AA` of Example 3.7's coordinate format: the twelve nonzero values, in the arbitrary
-order the book lists them in. -/
+/-- **Example 3.7** of [saad2003iterative], the array $\mathrm{AA}$ of the coordinate format: the
+twelve nonzero values $12, 9, 7, 5, 1, 2, 11, 3, 6, 4, 8, 10$, in the arbitrary order in which
+the source lists them. -/
 def cooAA : Fin 12 → ℝ := ![12, 9, 7, 5, 1, 2, 11, 3, 6, 4, 8, 10]
 
-/-- The array `JR` of Example 3.7: the row index of each stored value, `0`-based. -/
+/-- **Example 3.7** of [saad2003iterative], the array $\mathrm{JR}$ of the coordinate format: the
+row index of each stored value, $0$-based. -/
 def cooJR : Fin 12 → Fin 5 := ![4, 2, 2, 1, 0, 0, 3, 1, 2, 1, 2, 3]
 
-/-- The array `JC` of Example 3.7: the column index of each stored value, `0`-based. -/
+/-- **Example 3.7** of [saad2003iterative], the array $\mathrm{JC}$ of the coordinate format: the
+column index of each stored value, $0$-based. -/
 def cooJC : Fin 12 → Fin 5 := ![4, 4, 2, 3, 0, 3, 3, 0, 0, 1, 3, 2]
 
-/-- **Saad Example 3.7**, the coordinate format: the arrays `AA`, `JR`, `JC` represent the matrix.
+/-- **Example 3.7** of [saad2003iterative], the coordinate format. Let $A$ be the matrix of Example
+3.7, and let $\mathrm{AA}$, $\mathrm{JR}$ and $\mathrm{JC}$ be the arrays of its coordinate
+format, of length $12$. Then the following hold.
 
-The first clause is the round trip — entry `(i, j)` of the matrix is the sum of the stored values
-whose row and column indices are `i` and `j` — the second says that only nonzero values are
-stored, and the third that the twelve triples are pairwise distinct, so that the arrays have the
-book's length `Nz = 12` and the sum of the first clause has at most one term. -/
+* For all $i, j$, $$a_{ij} = \sum_{k \,:\, \mathrm{JR}(k) = i,\ \mathrm{JC}(k) = j}
+  \mathrm{AA}(k).$$
+* $\mathrm{AA}(k) \neq 0$ for every $k$, so only nonzero values are stored.
+* If $\mathrm{JR}(k) = \mathrm{JR}(l)$ and $\mathrm{JC}(k) = \mathrm{JC}(l)$, then $k = l$.
+
+The first clause is the round trip. The third says that the twelve stored positions are
+distinct, so that the arrays have the length $N_z = 12$ of the source and each sum in the first
+clause has at most one term. -/
 theorem example_3_7 :
     (∀ i j, matrix_3_7 i j = ∑ k : Fin 12, if cooJR k = i ∧ cooJC k = j then cooAA k else 0) ∧
       (∀ k, cooAA k ≠ 0) ∧
@@ -84,24 +131,35 @@ theorem example_3_7 :
   · fin_cases i <;> fin_cases j <;> simp [matrix_3_7, cooAA, cooJR, cooJC, Fin.sum_univ_succ]
   · fin_cases k <;> norm_num [cooAA]
 
-/-- The array `AA` of the compressed sparse row form of Example 3.7's matrix: the nonzero values,
-row by row. -/
+/-- **Section 3.4** of [saad2003iterative], the array $\mathrm{AA}$ of the compressed sparse row
+format of the matrix of Example 3.7: the nonzero values $1, \dots, 12$, row by row. -/
 def csrAA : Fin 12 → ℝ := ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
 
-/-- The array `JA` of the compressed sparse row form: the column index of each stored value. -/
+/-- **Section 3.4** of [saad2003iterative], the array $\mathrm{JA}$ of the compressed sparse row
+format of the matrix of Example 3.7: the column index of each stored value, $0$-based. -/
 def csrJA : Fin 12 → Fin 5 := ![0, 3, 0, 1, 3, 0, 2, 3, 4, 2, 3, 4]
 
-/-- The array `IA` of the compressed sparse row form: the position at which each row starts, with
-the extra entry `IA(n + 1) = IA(1) + Nz` at the end. -/
+/-- **Section 3.4** of [saad2003iterative], the array $\mathrm{IA}$ of the compressed sparse row
+format of the matrix of Example 3.7: the position at which each row starts, $0$-based, followed
+by the extra entry $\mathrm{IA}(n + 1) = \mathrm{IA}(1) + N_z$. -/
 def csrIA : Fin 6 → ℕ := ![0, 2, 5, 9, 11, 12]
 
-/-- **Saad §3.4**, the compressed sparse row form of the matrix of Example 3.7: the arrays `AA`,
-`JA`, `IA` represent it.
+/-- **Section 3.4** of [saad2003iterative], the compressed sparse row format of the matrix of
+Example 3.7. Let $A$ be this matrix, and let $\mathrm{AA}$, $\mathrm{JA}$ and $\mathrm{IA}$ be
+the arrays of its compressed sparse row format. Then the following hold.
 
-The first clause is the round trip, restricted for each row `i` to the block
-`IA(i) ≤ p < IA(i + 1)` of positions the pointer array assigns to it; the second is the book's
-remark that `IA(n + 1)` is `IA(1) + Nz`, and the third that `IA` is non-decreasing, so the blocks it
-cuts out are consecutive and disjoint — which is what makes a pointer array a pointer array. -/
+* For all $i, j$, $$a_{ij} = \sum_{p \,:\, \mathrm{IA}(i) \le p < \mathrm{IA}(i + 1),\
+  \mathrm{JA}(p) = j} \mathrm{AA}(p).$$
+* $\mathrm{IA}(n + 1) = \mathrm{IA}(1) + 12$.
+* $\mathrm{IA}(i) \le \mathrm{IA}(i + 1)$ for every row $i$.
+
+The first clause is the round trip, restricted for each row $i$ to the block of positions that
+the pointer array assigns to it. The second is the remark of the source that
+$\mathrm{IA}(n + 1) = \mathrm{IA}(1) + N_z$. The third says that $\mathrm{IA}$ is nondecreasing,
+so the blocks that it cuts out are consecutive and disjoint.
+
+All arrays are $0$-based: row $i$ of the formula is `i.castSucc` in
+`SaadSparse.Chapter03.csrIA`, and row $i + 1$ is `i.succ`. -/
 theorem example_3_7_csr :
     (∀ i j, matrix_3_7 i j =
         ∑ p : Fin 12, if csrIA i.castSucc ≤ (p : ℕ) ∧ (p : ℕ) < csrIA i.succ ∧ csrJA p = j
@@ -111,28 +169,40 @@ theorem example_3_7_csr :
   refine ⟨fun i j => ?_, by decide, by decide⟩
   fin_cases i <;> fin_cases j <;> simp [matrix_3_7, csrAA, csrJA, csrIA, Fin.sum_univ_succ]
 
-/-- The array `AA` of the modified sparse row form of Example 3.7's matrix: the five diagonal
-entries, the unused position `n + 1` the book marks `*`, and then the off-diagonal entries row by
-row.  The unused position is a parameter, so that nothing can depend on it. -/
+/-- **Section 3.4** of [saad2003iterative], the array $\mathrm{AA}$ of the modified sparse row
+format of the matrix of Example 3.7: the five diagonal entries, then the unused position $n + 1$
+that the source marks $*$, then the off-diagonal entries row by row. The value $*$ at the unused
+position is a parameter. -/
 def msrAA (star : ℝ) : Fin 13 → ℝ := ![1, 4, 7, 11, 12, star, 2, 3, 5, 6, 8, 9, 10]
 
-/-- The array `JA` of the modified sparse row form: the `n + 1` row pointers first, then the column
-index of each stored off-diagonal entry.  The book's positions are `1`-based, so its `JA(1) = 7`
-is `msrJA 0 = 6` here. -/
+/-- **Section 3.4** of [saad2003iterative], the array $\mathrm{JA}$ of the modified sparse row
+format of the matrix of Example 3.7: the $n + 1$ row pointers, then the column index of each
+stored off-diagonal entry, all $0$-based. The source counts positions from $1$, so its
+$\mathrm{JA}(1) = 7$ is `SaadSparse.Chapter03.msrJA 0 = 6` here. -/
 def msrJA : Fin 13 → ℕ := ![6, 7, 9, 12, 13, 13, 3, 0, 3, 0, 3, 4, 2]
 
-/-- The row pointers of the modified sparse row form, the first `n + 1` entries of `JA`. -/
+/-- The row pointers of the modified sparse row format of Example 3.7: the first $n + 1 = 6$ entries
+of the array $\mathrm{JA}$. -/
 def msrPtr (i : Fin 6) : ℕ := msrJA (Fin.castLE (by norm_num) i)
 
-/-- **Saad §3.4**, the modified sparse row form of the matrix of Example 3.7: the two arrays `AA`
-and `JA` represent it.
+/-- **Section 3.4** of [saad2003iterative], the modified sparse row format of the matrix of Example
+3.7. Let $A$ be this matrix, let $\mathrm{AA}$ and $\mathrm{JA}$ be the two arrays of its
+modified sparse row format, with an arbitrary value $*$ at the unused position $n + 1$ of
+$\mathrm{AA}$, and let $\mathrm{JA}(1), \dots, \mathrm{JA}(n + 1)$ be the row pointers. Then the
+following hold.
 
-The first clause is the book's "the first `n` positions in `AA` contain the diagonal elements of
-the matrix in order"; the second is the round trip for the off-diagonal entries, each row `i`
-reading the block `JA(i) ≤ p < JA(i + 1)`; and the third is the book's own closing observation,
-`JA(n) = JA(n + 1) = 14`, which says that the last row is a zero row once the diagonal element has
-been removed.  Nothing depends on the value at the unused position `n + 1` of `AA`, which is
-universally quantified. -/
+* $\mathrm{AA}(i) = a_{ii}$ for $i = 1, \dots, 5$: the first $n$ positions of $\mathrm{AA}$
+  contain the diagonal elements of the matrix in order.
+* For all $i \neq j$, $$a_{ij} = \sum_{p \,:\, \mathrm{JA}(i) \le p < \mathrm{JA}(i + 1),\
+  \mathrm{JA}(p) = j} \mathrm{AA}(p).$$
+* $\mathrm{JA}(n) = \mathrm{JA}(n + 1) = 14$, in the $1$-based counting of the source.
+
+The second clause is the round trip for the off-diagonal entries. The third is the closing
+observation of the source, and says that the last row is a zero row after its diagonal element
+is removed. The statement holds for every value of $*$.
+
+All arrays are $0$-based here, so the third clause reads `msrPtr 4 = 13 ∧ msrPtr 5 = 13`, and a
+column $j$ in the second clause is compared with `msrJA p` as a natural number. -/
 theorem example_3_7_msr (star : ℝ) :
     (∀ i : Fin 5, msrAA star (Fin.castLE (by norm_num) i) = matrix_3_7 i i) ∧
       (∀ i j : Fin 5, i ≠ j → matrix_3_7 i j =
@@ -146,8 +216,11 @@ theorem example_3_7_msr (star : ℝ) :
 
 /-! ### Examples 3.8 and 3.9: the diagonal and Ellpack-Itpack formats -/
 
-/-- The `5 × 5` matrix of Example 3.8, whose nonzero entries lie on the three diagonals with
-offsets `-1`, `0` and `2`.  Example 3.9 and Example 11.1 use the same matrix. -/
+/-- **Example 3.8** of [saad2003iterative], the matrix. It is the $5 \times 5$ matrix
+$$\begin{bmatrix} 1 & 0 & 2 & 0 & 0 \\ 3 & 4 & 0 & 5 & 0 \\ 0 & 6 & 7 & 0 & 8 \\ 0 & 0 & 9 & 10
+  & 0 \\ 0 & 0 & 0 & 11 & 12 \end{bmatrix},$$
+whose nonzero entries lie on the three diagonals with offsets $-1$, $0$ and $2$. Example 3.9 and
+Example 11.1 use the same matrix. -/
 def matrix_3_8 : Matrix (Fin 5) (Fin 5) ℝ :=
   !![1, 0, 2, 0, 0;
      3, 4, 0, 5, 0;
@@ -155,12 +228,14 @@ def matrix_3_8 : Matrix (Fin 5) (Fin 5) ℝ :=
      0, 0, 9, 10, 0;
      0, 0, 0, 11, 12]
 
-/-- The array `IOFF` of Example 3.8: the offsets of the three stored diagonals. -/
+/-- **Example 3.8** of [saad2003iterative], the array $\mathrm{IOFF}$ of the diagonal format: the
+offsets $-1$, $0$ and $2$ of the three stored diagonals. -/
 def ioff_3_8 : Fin 3 → ℤ := ![-1, 0, 2]
 
-/-- The array `DIAG` of Example 3.8, the three diagonals stored as the columns of an `n × Nd`
-array.  The three positions the book marks `*` fall off the ends of the sub- and super-diagonal
-and are a parameter, so that nothing can depend on them. -/
+/-- **Example 3.8** of [saad2003iterative], the array $\mathrm{DIAG}$ of the diagonal format: the
+three diagonals with offsets $-1$, $0$ and $2$, stored as the columns of an
+$n \times N_d = 5 \times 3$ array. The three positions that the source marks $*$ fall off the
+ends of the subdiagonal and the superdiagonal, and their value $*$ is a parameter. -/
 def diag_3_8 (star : ℝ) : Matrix (Fin 5) (Fin 3) ℝ :=
   !![star, 1, 2;
      3, 4, 5;
@@ -168,15 +243,23 @@ def diag_3_8 (star : ℝ) : Matrix (Fin 5) (Fin 3) ℝ :=
      9, 10, star;
      11, 12, star]
 
-/-- **Saad Example 3.8**, the diagonal format: the arrays `DIAG` and `IOFF` represent the matrix.
+/-- **Example 3.8** of [saad2003iterative], the diagonal format. Let $A$ be the matrix of Example
+3.8, and let $\mathrm{DIAG}$ and $\mathrm{IOFF}$ be the arrays of its diagonal format, with an
+arbitrary value $*$ at the unused positions. Then the following hold.
 
-The first clause is the round trip, read through the book's own defining relation
-`DIAG(i, j) = a_{i, i + ioff(j)}`: entry `(i, c)` of the matrix is what `DIAG` holds on the
-diagonal through it, and `0` when no stored diagonal passes through `(i, c)`.  The second is the
-hypothesis of the format, that every nonzero entry does lie on one of the three stored diagonals,
-and follows from the first.  The third identifies the positions of `DIAG` the book marks `*`: they
-are the ones where `i + ioff(j)` is not a column of the matrix, they carry no information, and
-their value is universally quantified so that nothing can depend on it. -/
+* For all $i, c$, $$a_{ic} = \sum_{j \,:\, c = i + \mathrm{IOFF}(j)} \mathrm{DIAG}(i, j).$$
+* If $a_{ic} \neq 0$, then $c = i + \mathrm{IOFF}(j)$ for some $j$.
+* If $i + \mathrm{IOFF}(j)$ is not a column index of $A$, then $\mathrm{DIAG}(i, j) = *$.
+
+The first clause is the round trip, read through the defining relation $\mathrm{DIAG}(i, j) =
+a_{i, i + \mathrm{IOFF}(j)}$ of the source: $a_{ic}$ is the value that $\mathrm{DIAG}$ holds on
+the stored diagonal through $(i, c)$, and $0$ when no stored diagonal passes through $(i, c)$.
+The second is the hypothesis of the format, that every nonzero entry lies on a stored diagonal,
+and it follows from the first. The third identifies the positions marked $*$: they are those
+where $i + \mathrm{IOFF}(j)$ is not a column of the matrix, and they carry no information. The
+statement holds for every value of $*$.
+
+The column $i + \mathrm{IOFF}(j)$ is computed in $\mathbb{Z}$, with $0$-based indices. -/
 theorem example_3_8 (star : ℝ) :
     (∀ i c : Fin 5, matrix_3_8 i c =
         ∑ j : Fin 3, if (c : ℤ) = (i : ℤ) + ioff_3_8 j then diag_3_8 star i j else 0) ∧
@@ -198,7 +281,8 @@ theorem example_3_8 (star : ℝ) :
         | (exact absurd h (by decide))
         | simp [diag_3_8]
 
-/-- The array `COEF` of Example 3.9: the nonzero entries of each row, the short rows completed by
+/-- **Example 3.9** of [saad2003iterative], the array $\mathrm{COEF}$ of the Ellpack-Itpack format
+of the matrix of Example 3.8: the nonzero entries of each row, with the short rows completed by
 zeros. -/
 def coef_3_9 : Matrix (Fin 5) (Fin 3) ℝ :=
   !![1, 2, 0;
@@ -207,10 +291,12 @@ def coef_3_9 : Matrix (Fin 5) (Fin 3) ℝ :=
      9, 10, 0;
      11, 12, 0]
 
-/-- The array `JCOEF` of Example 3.9: the column position of each entry of `COEF`.  The columns
-chosen for the padding zeros of the short rows 1, 4 and 5 are the row numbers, as the book says;
-any column between `1` and `n` would do, and the statement of `example_3_9` holds for the choice
-made here because the padded entries of `COEF` are zero. -/
+/-- **Example 3.9** of [saad2003iterative], the array $\mathrm{JCOEF}$ of the Ellpack-Itpack format:
+the column position of each entry of $\mathrm{COEF}$, $0$-based.
+
+The columns of the padding zeros of the short rows 1, 4 and 5 are the row numbers, as the source
+says. Any column would do, and `SaadSparse.Chapter03.example_3_9` holds for this choice because
+the padding entries of $\mathrm{COEF}$ are zero. -/
 def jcoef_3_9 : Matrix (Fin 5) (Fin 3) (Fin 5) :=
   !![0, 2, 0;
      0, 1, 3;
@@ -218,14 +304,21 @@ def jcoef_3_9 : Matrix (Fin 5) (Fin 3) (Fin 5) :=
      2, 3, 3;
      3, 4, 4]
 
-/-- **Saad Example 3.9**, the Ellpack-Itpack format: the arrays `COEF` and `JCOEF` represent the
-matrix of Example 3.8.
+/-- **Example 3.9** of [saad2003iterative], the Ellpack-Itpack format. Let $A$ be the matrix of
+Example 3.8, and let $\mathrm{COEF}$ and $\mathrm{JCOEF}$ be the arrays of its Ellpack-Itpack
+format, with three positions in each row. Then the following hold.
 
-The first clause is the round trip, and the second is what the format is for: the matrix-by-vector
-product is the row-wise sum `y_i = ∑_j COEF(i, j) x(JCOEF(i, j))`, which is the inner loop of
-Algorithm 11.5.  The padded zeros are harmless exactly because they are zero: their column numbers
-are chosen arbitrarily, and here they repeat a column that is already used, so the *pointwise*
-reading `COEF(i, j) = a_{i, JCOEF(i, j)}` would be false while these two are true. -/
+* For all $i, j$, $$a_{ij} = \sum_{p \,:\, \mathrm{JCOEF}(i, p) = j} \mathrm{COEF}(i, p).$$
+* For every $x \in \mathbb{R}^5$ and every row $i$, $$(Ax)_i = \sum_{p = 1}^{3} \mathrm{COEF}(i,
+  p)\, x_{\mathrm{JCOEF}(i, p)}.$$
+
+The first clause is the round trip. The second is the purpose of the format: it is the inner
+loop of the matrix-by-vector product of Algorithm 11.5.
+
+The padding zeros are harmless because they are zero. Their column numbers are chosen
+arbitrarily, and here they repeat a column that is already used, so the pointwise reading
+$\mathrm{COEF}(i, j) = a_{i, \mathrm{JCOEF}(i, j)}$ is false, while the two clauses above are
+true. The product $Ax$ is `matrix_3_8 *ᵥ x`. -/
 theorem example_3_9 :
     (∀ i j : Fin 5, matrix_3_8 i j =
         ∑ p : Fin 3, if jcoef_3_9 i p = j then coef_3_9 i p else 0) ∧

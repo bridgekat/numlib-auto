@@ -8,44 +8,75 @@ import Numlib.Stationary.ADI
 import NumlibSurface.SaadSparse.Chapter02.Section02
 
 /-!
-# Saad §4.3: alternating direction methods
+# Saad, Section 4.3: Alternating direction methods
 
-Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM,
-2003, §4.3: the splitting `A = H + V` (4.49) of a discretized elliptic operator into its horizontal
-and vertical three-point differences, Algorithm 4.3 (Peaceman–Rachford), the identities
-(4.50)–(4.52) with Problem P-4.5, and the convergence claim the section asserts in prose.
+This module formalizes §4.3 of [saad2003iterative], the alternating direction implicit (ADI) method
+of Peaceman and Rachford. The matrix of a discretized elliptic operator is split as $A = H + V$
+(4.49), with $H$ and $V$ the horizontal and the vertical three-point differences. One sweep of
+Algorithm 4.3 with parameter $r$ solves the two half-steps
+$$(H + rI) u_{k+1/2} = (rI - V) u_k + b, \qquad (V + rI) u_{k+1} = (rI - H) u_{k+1/2} + b.$$
+The sweep is the affine map $u \mapsto G_r u + f_r$ of (4.50)–(4.51), and it is the stationary
+iteration of the splitting $A = M - N$ with $M = (H + rI)(V + rI)/(2r)$ of (4.52); Problem P-4.5
+gives the closed form $f_r = 2r(V + rI)^{-1}(H + rI)^{-1}b$. These identities are matrix algebra and
+hold for every $H$, $V$ and $r$.
 
-The section states no numbered result. One sweep of Algorithm 4.3 is `adiStep`, with
-`adiHalfStep` for the intermediate vector; `equation_4_50` identifies it with the affine map
-`x ↦ G_adi x + f_adi` of (4.50)–(4.51), and `adiSplitting` with `equation_4_52`,
-`adiSplitting_iterationOperator` and `f_adi_eq` are the splitting `A = M - N` of (4.52) together
-with the closed form of `f = M⁻¹ b` that Problem P-4.5 asks for. All of that is matrix algebra
-and holds for every `H`, `V` and `r`.
+The section states no numbered result. It claims in prose that the sweep converges when $H$ and $V$
+are symmetric positive definite and $r > 0$ is a constant. The module proves this claim, from every
+starting vector and for every right-hand side, without any assumption that $H$ and $V$ commute, and
+applies it to the five-point matrix of §2.2.5. The proofs specialize `Numlib.Stationary.ADI` through
+`Matrix.toEuclideanCLM`.
 
-The one theorem is `adi_converges`: for symmetric positive definite `H` and `V` and a positive
-constant `r` the sweep converges, from every starting vector and for every right-hand side, to
-the solution of `(H + V) x = b`, and `adi_complexSpectralRadius_lt_one` gives `ρ(G_r) < 1`. Both
-specialize `Numlib/Stationary/ADI.lean` through `Matrix.toEuclideanCLM`, which
-carries `G_adi` to `Stationary.peacemanRachford` (`toEuclideanCLM_G_adi`). Commutativity of `H`
-and `V` is neither needed nor assumed: it belongs to the theory of the optimal parameter
-*sequence*, which the book only cites.
+## Main definitions
 
-Everything is indexed by an arbitrary finite type rather than by `Fin n`, because the model
-problem needs the product index `Fin n₁ × Fin n₂`: `adi_model_problem` reads the five-point
-matrix of §2.2.5 as `H + V` with `H` the horizontal and `V` the vertical one-dimensional
-Laplacean, each positive definite, and applies `adi_converges` to it. That identity is
-`SaadSparse.Chapter02.laplacian2D_eq_kroneckerSum` read as a sum of its two Kronecker factors, and
-it is the only discretization this section needs.
+* Algorithm 4.3, `SaadSparse.Chapter04.adiHalfStep` and `SaadSparse.Chapter04.adiStep`: the
+  intermediate vector and one sweep of the Peaceman–Rachford method.
+* Equations (4.50)–(4.51), `SaadSparse.Chapter04.G_adi` and `SaadSparse.Chapter04.f_adi`: the
+  iteration matrix $G_r$ and the affine part $f_r$ of one sweep.
+* Equation (4.52), `SaadSparse.Chapter04.adiSplitting`: the splitting of $H + V$ with
+  $M = (H + rI)(V + rI)/(2r)$.
+* Equation (4.49), `SaadSparse.Chapter04.modelH` and `SaadSparse.Chapter04.modelV`: the horizontal
+  and vertical parts of the five-point matrix of the model problem.
 
-Not formalized, with reasons. The optimal parameter `r` and the cyclic parameter sequences: the
-book states no formula, no bound and no theorem, and cites a theory that exists only when `H` and
-`V` commute. The claim that ADI with the optimal `r` has the asymptotic rate of SSOR with the
-optimal `ω` on the model problem: an asymptotic remark with no constant and no proof. The
-`O(n² log n)` operation count. The parabolic formulation (4.53)–(4.56) and the time-stepping pair
-after it, which is a semi-discretization of a partial differential equation and is not the image
-of Algorithm 4.3 under `r = 2/Δt`, the sign patterns differing. And the line-ordering remark that
-each half-step decouples into independent tridiagonal systems, which is about a data layout and
-not about the iteration.
+## Main results
+
+* Equations (4.50)–(4.51), `SaadSparse.Chapter04.equation_4_50`: one sweep is
+  $u \mapsto G_r u + f_r$.
+* Equation (4.52), `SaadSparse.Chapter04.equation_4_52` and
+  `SaadSparse.Chapter04.adiSplitting_iterationOperator`: the splitting has
+  $N = (H - rI)(V - rI)/(2r)$ and iteration matrix $G_r$.
+* Problem P-4.5, `SaadSparse.Chapter04.f_adi_eq` and `SaadSparse.Chapter04.f_adi_eq_m_inv_mulVec`:
+  $f_r = 2r(V + rI)^{-1}(H + rI)^{-1}b = M^{-1}b$.
+* §4.3, `SaadSparse.Chapter04.adi_complexSpectralRadius_lt_one`: for symmetric positive definite
+  $H$, $V$ and $r > 0$, $\rho(G_r) < 1$.
+* §4.3, `SaadSparse.Chapter04.adi_converges`: for symmetric positive definite $H$, $V$ and $r > 0$,
+  the sweeps converge to the solution of $(H + V)x = b$.
+* Equation (4.49), `SaadSparse.Chapter04.laplacian2D_eq_modelH_add_modelV` and
+  `SaadSparse.Chapter04.adi_model_problem`: the five-point matrix is $H + V$, and ADI converges on
+  it for every $r > 0$.
+
+## Implementation notes
+
+* All matrices are indexed by an arbitrary finite type, not by `Fin n`, because the model problem
+  needs the product index `Fin n₁ × Fin n₂`.
+* The model splitting is `SaadSparse.Chapter02.laplacian2D_eq_kroneckerSum` read as the sum of its
+  two Kronecker factors: $H = T_1 \otimes I$ and $V = I \otimes T_2$, with $T_1$ and $T_2$ the
+  one-dimensional Laplacians. This is the only discretization that this section needs.
+* The commutativity of $H$ and $V$ belongs to the theory of the optimal parameter sequence, which
+  the book only cites. It is not needed for the convergence with a constant parameter, and it is not
+  assumed.
+
+## Not formalized
+
+* **The optimal parameter $r$ and the cyclic parameter sequences.** The book states no formula,
+  bound or theorem for them, and cites a theory that exists only when $H$ and $V$ commute.
+* **The claim that ADI with the optimal $r$ has the asymptotic rate of SSOR with the optimal
+  $\omega$ on the model problem.** It is an asymptotic remark with no constant and no proof.
+* **The operation count $O(n^2 \log n)$.**
+* **The parabolic formulation (4.53)–(4.56) and the time-stepping pair after it.** It is a
+  semi-discretization of a partial differential equation, and it is not the image of Algorithm 4.3
+  under $r = 2/\Delta t$, because the sign patterns differ.
+* **The remark that each half-step decouples into independent tridiagonal systems in the line
+  ordering.** It is about a data layout, not about the iteration.
 -/
 
 open Filter Matrix Stationary Topology
@@ -67,42 +98,61 @@ private theorem splitting_n_eq {R : Type*} [Ring R] {a : R} (s : Stationary.Spli
 
 /-! ### Algorithm 4.3 -/
 
-/-- Saad, Algorithm 4.3: the intermediate vector `u_{k+1/2}` of one Peaceman–Rachford sweep with
-parameter `r`, the solution of `(H + r I) u_{k+1/2} = (r I - V) u_k + b`. -/
+/-- **Algorithm 4.3** of [saad2003iterative], the half-step. For
+$H, V \in \mathbb{R}^{\iota \times \iota}$ and $r \in \mathbb{R}$, the **intermediate vector**
+of one Peaceman–Rachford sweep from $u_k$ is
+$$u_{k+1/2} = (H + rI)^{-1} \big( (rI - V) u_k + b \big),$$
+the solution of $(H + rI) u_{k+1/2} = (rI - V) u_k + b$ when $H + rI$ is nonsingular. -/
 noncomputable def adiHalfStep (H V : Matrix ι ι ℝ) (r : ℝ) (b x : ι → ℝ) : ι → ℝ :=
   (H + r • 1)⁻¹ *ᵥ ((r • 1 - V) *ᵥ x + b)
 
-/-- Saad, Algorithm 4.3: one Peaceman–Rachford sweep with parameter `r`, the horizontal
-half-step `(H + r I) u_{k+1/2} = (r I - V) u_k + b` followed by the vertical one
-`(V + r I) u_{k+1} = (r I - H) u_{k+1/2} + b`. -/
+/-- **Algorithm 4.3** of [saad2003iterative] (Peaceman–Rachford). One **ADI sweep** with parameter
+$r$ from $u_k$ is the horizontal half-step $(H + rI) u_{k+1/2} = (rI - V) u_k + b$ followed by
+the vertical half-step
+$$(V + rI) u_{k+1} = (rI - H) u_{k+1/2} + b.$$
+
+Both half-steps are written with the matrix inverse, which is $0$ at a singular matrix. -/
 noncomputable def adiStep (H V : Matrix ι ι ℝ) (r : ℝ) (b x : ι → ℝ) : ι → ℝ :=
   (V + r • 1)⁻¹ *ᵥ ((r • 1 - H) *ᵥ adiHalfStep H V r b x + b)
 
-/-- Saad, Algorithm 4.3, first half-step: `(H + r I) u_{k+1/2} = (r I - V) u_k + b`. -/
+/-- **Algorithm 4.3** of [saad2003iterative], first half-step. If $H + rI$ is nonsingular, the
+intermediate vector satisfies
+$$(H + rI) u_{k+1/2} = (rI - V) u_k + b.$$
+-/
 theorem adiHalfStep_spec (hH : IsUnit (H + r • (1 : Matrix ι ι ℝ))) (b x : ι → ℝ) :
     (H + r • 1) *ᵥ adiHalfStep H V r b x = (r • 1 - V) *ᵥ x + b :=
   mulVec_nonsing_inv_mulVec hH _
 
-/-- Saad, Algorithm 4.3, second half-step: `(V + r I) u_{k+1} = (r I - H) u_{k+1/2} + b`. -/
+/-- **Algorithm 4.3** of [saad2003iterative], second half-step. If $V + rI$ is nonsingular, the
+sweep satisfies
+$$(V + rI) u_{k+1} = (rI - H) u_{k+1/2} + b.$$
+-/
 theorem adiStep_spec (hV : IsUnit (V + r • (1 : Matrix ι ι ℝ))) (b x : ι → ℝ) :
     (V + r • 1) *ᵥ adiStep H V r b x = (r • 1 - H) *ᵥ adiHalfStep H V r b x + b :=
   mulVec_nonsing_inv_mulVec hV _
 
 /-! ### The affine form (4.50)–(4.51) -/
 
-/-- Saad (4.50): the iteration matrix `G_r = (V + r)⁻¹ (H - r) (H + r)⁻¹ (V - r)` of one
-Peaceman–Rachford sweep. -/
+/-- **Equation (4.50)** of [saad2003iterative]. The **iteration matrix** of one Peaceman–Rachford
+sweep with parameter $r$ is
+$$G_r = (V + rI)^{-1} (H - rI) (H + rI)^{-1} (V - rI).$$
+-/
 noncomputable def G_adi (H V : Matrix ι ι ℝ) (r : ℝ) : Matrix ι ι ℝ :=
   (V + r • 1)⁻¹ * (H - r • 1) * (H + r • 1)⁻¹ * (V - r • 1)
 
-/-- Saad (4.51): the affine part `f_r = (V + r)⁻¹ (I - (H - r) (H + r)⁻¹) b` of one
-Peaceman–Rachford sweep. -/
+/-- **Equation (4.51)** of [saad2003iterative]. The **affine part** of one Peaceman–Rachford sweep
+with parameter $r$ is
+$$f_r = (V + rI)^{-1} \big( I - (H - rI)(H + rI)^{-1} \big) b.$$
+-/
 noncomputable def f_adi (H V : Matrix ι ι ℝ) (r : ℝ) (b : ι → ℝ) : ι → ℝ :=
   (V + r • 1)⁻¹ *ᵥ ((1 - (H - r • 1) * (H + r • 1)⁻¹) *ᵥ b)
 
-/-- Saad (4.50)–(4.51): one sweep of Algorithm 4.3 is the affine map `x ↦ G_r x + f_r`.  This is
-matrix algebra alone; no nonsingularity is used, both sides being read with Mathlib's junk value
-for the inverse of a singular matrix. -/
+/-- **Equations (4.50)–(4.51)** of [saad2003iterative]. For all $H$, $V$, $r$, $b$ and $u$, one
+sweep of Algorithm 4.3 is
+$$u \mapsto G_r u + f_r.$$
+
+The identity is matrix algebra and needs no nonsingularity: both sides use the value $0$ of the
+inverse of a singular matrix. -/
 theorem equation_4_50 (H V : Matrix ι ι ℝ) (r : ℝ) (b x : ι → ℝ) :
     adiStep H V r b x = G_adi H V r *ᵥ x + f_adi H V r b := by
   simp only [adiStep, adiHalfStep, G_adi, f_adi, ← mulVec_mulVec, mulVec_add, sub_mulVec,
@@ -111,8 +161,11 @@ theorem equation_4_50 (H V : Matrix ι ι ℝ) (r : ℝ) (b x : ι → ℝ) :
 
 /-! ### The bridge to the backbone -/
 
-/-- Saad (4.50): the iteration matrix of Algorithm 4.3 is the Peaceman–Rachford operator of
-`Numlib/Stationary/ADI.lean`, read through `Matrix.toEuclideanCLM`. -/
+/-- **Equation (4.50)** of [saad2003iterative], the backbone form. If $H + rI$ and $V + rI$ are
+nonsingular, the operator of $G_r$ on the Euclidean space is the Peaceman–Rachford operator
+`Stationary.peacemanRachford` of the operators of $H$ and $V$.
+
+The operators are taken with `Matrix.toEuclideanCLM`. -/
 theorem toEuclideanCLM_G_adi (hH : IsUnit (H + r • (1 : Matrix ι ι ℝ)))
     (hV : IsUnit (V + r • (1 : Matrix ι ι ℝ))) :
     toEuclideanCLM (𝕜 := ℝ) (G_adi H V r)
@@ -122,7 +175,9 @@ theorem toEuclideanCLM_G_adi (hH : IsUnit (H + r • (1 : Matrix ι ι ℝ)))
     toEuclideanCLM_sub_smul_one, toEuclideanCLM_sub_smul_one]
   norm_num
 
-/-- Saad (4.51): the affine part of Algorithm 4.3 is `Stationary.peacemanRachfordConst`. -/
+/-- **Equation (4.51)** of [saad2003iterative], the backbone form. If $H + rI$ and $V + rI$ are
+nonsingular, the vector $f_r$ is `Stationary.peacemanRachfordConst` of the operators of $H$ and
+$V$, applied to $b$. -/
 theorem toLp_f_adi (hH : IsUnit (H + r • (1 : Matrix ι ι ℝ)))
     (hV : IsUnit (V + r • (1 : Matrix ι ι ℝ))) (b : ι → ℝ) :
     (WithLp.toLp 2 (f_adi H V r b) : EuclideanSpace ℝ ι)
@@ -140,15 +195,18 @@ theorem toLp_f_adi (hH : IsUnit (H + r • (1 : Matrix ι ι ℝ)))
 
 /-! ### The splitting (4.52) and Problem P-4.5 -/
 
-/-- Saad (4.52): the splitting `A = M - N` of `A = H + V` behind Algorithm 4.3, given by
-`M = (H + r)(V + r) / (2r)`. -/
+/-- **Equation (4.52)** of [saad2003iterative], the splitting. Let $r \neq 0$, and let $H + rI$ and
+$V + rI$ be nonsingular. The **ADI splitting** of $A = H + V$ is the splitting $A = M - N$ with
+$$M = \frac{1}{2r} (H + rI)(V + rI).$$
+-/
 noncomputable def adiSplitting (H V : Matrix ι ι ℝ) {r : ℝ} (hr : r ≠ 0)
     (hH : IsUnit (H + r • (1 : Matrix ι ι ℝ))) (hV : IsUnit (V + r • (1 : Matrix ι ι ℝ))) :
     Stationary.Splitting (H + V) :=
   ⟨(2 * r)⁻¹ • ((H + r • 1) * (V + r • 1)),
     isUnit_smul_matrix (inv_ne_zero (mul_ne_zero two_ne_zero hr)) (hH.mul hV)⟩
 
-/-- Saad (4.52): the preconditioner of the splitting is `M = (H + r)(V + r) / (2r)`. -/
+/-- **Equation (4.52)** of [saad2003iterative]. The matrix of the ADI splitting is
+$M = (H + rI)(V + rI)/(2r)$. -/
 theorem adiSplitting_m {hr : r ≠ 0} {hH : IsUnit (H + r • (1 : Matrix ι ι ℝ))}
     {hV : IsUnit (V + r • (1 : Matrix ι ι ℝ))} :
     (adiSplitting H V hr hH hV).m = (2 * r)⁻¹ • ((H + r • 1) * (V + r • 1)) := rfl
@@ -169,9 +227,11 @@ private theorem toEuclideanCLM_adiSplitting_n {hr : r ≠ 0}
           (isUnit_toEuclideanCLM_add_smul_one hH) (isUnit_toEuclideanCLM_add_smul_one hV)).n := by
   rw [splitting_n_eq, splitting_n_eq, map_sub, toEuclideanCLM_adiSplitting_m, map_add]
 
-/-- Saad (4.52): the complementary part of the splitting is `N = (H - r)(V - r) / (2r)`, so that
-`M - N = H + V`.  The `H V` terms cancel, which is why the identity needs no commutativity of
-`H` and `V`. -/
+/-- **Equation (4.52)** of [saad2003iterative], the complementary part. The ADI splitting has
+$$N = \frac{1}{2r} (H - rI)(V - rI),$$
+so that $M - N = H + V$.
+
+The products $HV$ cancel in $M - N$, so the identity needs no commutativity of $H$ and $V$. -/
 theorem equation_4_52 {hr : r ≠ 0} {hH : IsUnit (H + r • (1 : Matrix ι ι ℝ))}
     {hV : IsUnit (V + r • (1 : Matrix ι ι ℝ))} :
     (adiSplitting H V hr hH hV).n = (2 * r)⁻¹ • ((H - r • 1) * (V - r • 1)) := by
@@ -180,7 +240,8 @@ theorem equation_4_52 {hr : r ≠ 0} {hH : IsUnit (H + r • (1 : Matrix ι ι �
     toEuclideanCLM_sub_smul_one, toEuclideanCLM_sub_smul_one]
   norm_num
 
-/-- Saad (4.52): the iteration matrix of the splitting is the `G_r` of (4.50). -/
+/-- **Equation (4.52)** of [saad2003iterative], the iteration matrix. The iteration matrix
+$I - M^{-1}A$ of the ADI splitting is the matrix $G_r$ of (4.50). -/
 theorem adiSplitting_iterationOperator {hr : r ≠ 0}
     {hH : IsUnit (H + r • (1 : Matrix ι ι ℝ))} {hV : IsUnit (V + r • (1 : Matrix ι ι ℝ))} :
     (adiSplitting H V hr hH hV).iterationOperator = G_adi H V r := by
@@ -192,8 +253,10 @@ theorem adiSplitting_iterationOperator {hr : r ≠ 0}
     map_one, map_mul, toEuclideanCLM_ringInverse (adiSplitting H V hr hH hV).isUnit,
     toEuclideanCLM_adiSplitting_m, map_add]
 
-/-- Saad, Problem P-4.5: the affine part (4.51) of the sweep is the simpler
-`2 r (V + r)⁻¹ (H + r)⁻¹ b`. -/
+/-- **Problem P-4.5** of [saad2003iterative], the closed form. If $H + rI$ is nonsingular, the
+affine part (4.51) of the sweep is
+$$f_r = 2r (V + rI)^{-1} (H + rI)^{-1} b.$$
+-/
 theorem f_adi_eq (hH : IsUnit (H + r • (1 : Matrix ι ι ℝ))) (b : ι → ℝ) :
     f_adi H V r b = (2 * r) • ((V + r • 1)⁻¹ *ᵥ ((H + r • 1)⁻¹ *ᵥ b)) := by
   have hkey : (1 : Matrix ι ι ℝ) - (H - r • 1) * (H + r • 1)⁻¹
@@ -205,9 +268,9 @@ theorem f_adi_eq (hH : IsUnit (H + r • (1 : Matrix ι ι ℝ))) (b : ι → �
     rwa [sub_mul, mul_nonsing_inv _ ((isUnit_iff_isUnit_det _).mp hH)] at h2
   rw [f_adi, hkey, smul_mulVec, mulVec_smul]
 
-/-- Saad, Problem P-4.5: the affine part (4.51) is `M⁻¹ b` for the preconditioner `M` of the
-splitting (4.52), so that one sweep of Algorithm 4.3 really is the stationary iteration of that
-splitting. -/
+/-- **Problem P-4.5** of [saad2003iterative], the splitting form. Let $r \neq 0$, and let $H + rI$
+and $V + rI$ be nonsingular. The affine part (4.51) is $f_r = M^{-1}b$ for the matrix $M$ of the
+splitting (4.52). So one sweep of Algorithm 4.3 is the stationary iteration of that splitting. -/
 theorem f_adi_eq_m_inv_mulVec {hr : r ≠ 0} {hH : IsUnit (H + r • (1 : Matrix ι ι ℝ))}
     {hV : IsUnit (V + r • (1 : Matrix ι ι ℝ))} (b : ι → ℝ) :
     f_adi H V r b = (adiSplitting H V hr hH hV).m⁻¹ *ᵥ b := by
@@ -218,25 +281,33 @@ theorem f_adi_eq_m_inv_mulVec {hr : r ≠ 0} {hH : IsUnit (H + r • (1 : Matrix
 
 /-! ### Convergence -/
 
-/-- For a symmetric positive definite `H` and `r > 0` the matrix `H + r I` of a half-step of
-Algorithm 4.3 is nonsingular, so the sweep is well defined. -/
+/-- If $H \in \mathbb{R}^{\iota \times \iota}$ is symmetric positive definite and $r > 0$, then
+$H + rI$ is nonsingular, so the half-steps of Algorithm 4.3 are well defined. It supports the
+convergence claim of §4.3 of [saad2003iterative]. -/
 theorem isUnit_add_smul_one_of_posDef (hH : H.PosDef) (hr : 0 < r) :
     IsUnit (H + r • (1 : Matrix ι ι ℝ)) :=
   (hH.add (PosDef.one.smul hr)).isUnit
 
-/-- Saad §4.3: for symmetric positive definite `H` and `V` and a positive parameter `r`, the
-iteration matrix (4.50) of Algorithm 4.3 has spectral radius below one (backbone
-`Matrix.PosDef.complexSpectralRadius_peacemanRachford_lt_one`).  The Euclidean operator norm of
-`G_r` itself need not be below one; what is below one is the norm of its conjugate by `V + r`,
-the product of the two Cayley transforms, and similarity preserves the spectrum. -/
+/-- **Section 4.3** of [saad2003iterative], the spectral radius. Let
+$H, V \in \mathbb{R}^{\iota \times \iota}$ be symmetric positive definite and let $r > 0$. Then
+the iteration matrix (4.50) satisfies
+$$\rho(G_r) < 1.$$
+
+The proof specializes `Matrix.PosDef.complexSpectralRadius_peacemanRachford_lt_one`. The
+Euclidean operator norm of $G_r$ need not be less than $1$. What is less than $1$ is the norm of
+its conjugate by $V + rI$, which is the product of two Cayley transforms, and a similarity
+preserves the spectrum. -/
 theorem adi_complexSpectralRadius_lt_one (hH : H.PosDef) (hV : V.PosDef) (hr : 0 < r) :
     complexSpectralRadius (G_adi H V r) < 1 :=
   hH.complexSpectralRadius_peacemanRachford_lt_one hV hr
 
-/-- **The convergence claim of Saad §4.3**, which the book asserts without proof: when `H` and
-`V` are symmetric positive definite and the parameter `r` is a positive constant, the iterates of
-Algorithm 4.3 converge, from every starting vector and for every right-hand side, to the solution
-of `(H + V) x = b`.  Commutativity of `H` and `V` is not needed and is not assumed. -/
+/-- **Section 4.3** of [saad2003iterative], the convergence claim, which the book states without
+proof. Let $H, V \in \mathbb{R}^{\iota \times \iota}$ be symmetric positive definite, let
+$r > 0$, and let $x$ solve $(H + V)x = b$. Then for every starting vector $u_0$ the iterates of
+Algorithm 4.3 satisfy
+$$u_k \to x.$$
+
+The commutativity of $H$ and $V$ is not needed, and it is not assumed. -/
 theorem adi_converges (hH : H.PosDef) (hV : V.PosDef) (hr : 0 < r) (b x₀ : ι → ℝ) {x : ι → ℝ}
     (hx : (H + V) *ᵥ x = b) :
     Tendsto (fun k => (adiStep H V r b)^[k] x₀) atTop (𝓝 x) := by
@@ -275,9 +346,12 @@ theorem adi_converges (hH : H.PosDef) (hV : V.PosDef) (hr : 0 < r) (b x₀ : ι 
   refine Filter.Tendsto.congr (fun k => ?_) hconv
   simp only [Function.comp_apply, ← hiter k, WithLp.ofLp_toLp]
 
-/-- Saad §4.3, `adi_converges` in the form that names the limit: since `H + V` is symmetric
-positive definite the system always has a solution, and the iterates of Algorithm 4.3 converge to
-it from every starting vector. -/
+/-- **Section 4.3** of [saad2003iterative], the convergence claim with the limit named. Let
+$H, V \in \mathbb{R}^{\iota \times \iota}$ be symmetric positive definite and let $r > 0$. Then
+for every $b$ and every starting vector $u_0$ the iterates of Algorithm 4.3 converge to
+$(H + V)^{-1} b$.
+
+The matrix $H + V$ is symmetric positive definite, so the system always has a solution. -/
 theorem adi_tendsto_inv_mulVec (hH : H.PosDef) (hV : V.PosDef) (hr : 0 < r) (b x₀ : ι → ℝ) :
     Tendsto (fun k => (adiStep H V r b)^[k] x₀) atTop (𝓝 ((H + V)⁻¹ *ᵥ b)) :=
   adi_converges hH hV hr b x₀
@@ -289,19 +363,28 @@ section ModelProblem
 
 open SaadSparse.Chapter02
 
-/-- Saad (4.49) for the model problem: the horizontal part of the five-point matrix, the
-one-dimensional Laplacean in the first coordinate. -/
+/-- **Equation (4.49)** of [saad2003iterative], the horizontal part for the model problem. For mesh
+sizes $n_1, n_2$ and spacing $h_1$, the matrix $H = T_1 \otimes I_{n_2}$, where $T_1 = h_1^{-2}
+\operatorname{tridiag}(-1, 2, -1)$ of order $n_1$ is the one-dimensional Laplacian in the first
+coordinate.
+
+$T_1$ is `SaadSparse.Chapter02.laplacian1D n₁ h₁`. -/
 noncomputable def modelH (n₁ n₂ : ℕ) (h₁ : ℝ) : Matrix (Fin n₁ × Fin n₂) (Fin n₁ × Fin n₂) ℝ :=
   laplacian1D n₁ h₁ ⊗ₖ (1 : Matrix (Fin n₂) (Fin n₂) ℝ)
 
-/-- Saad (4.49) for the model problem: the vertical part of the five-point matrix, the
-one-dimensional Laplacean in the second coordinate. -/
+/-- **Equation (4.49)** of [saad2003iterative], the vertical part for the model problem. For mesh
+sizes $n_1, n_2$ and spacing $h_2$, the matrix $V = I_{n_1} \otimes T_2$, where $T_2 = h_2^{-2}
+\operatorname{tridiag}(-1, 2, -1)$ of order $n_2$ is the one-dimensional Laplacian in the second
+coordinate. -/
 noncomputable def modelV (n₁ n₂ : ℕ) (h₂ : ℝ) : Matrix (Fin n₁ × Fin n₂) (Fin n₁ × Fin n₂) ℝ :=
   (1 : Matrix (Fin n₁) (Fin n₁) ℝ) ⊗ₖ laplacian1D n₂ h₂
 
-/-- Saad (4.49): the two-dimensional five-point matrix of §2.2.5 is `H + V`, with `H` and `V` the
-horizontal and vertical one-dimensional Laplaceans.  This is
-`SaadSparse.Chapter02.laplacian2D_eq_kroneckerSum` read as a sum of its two Kronecker factors. -/
+/-- **Equation (4.49)** of [saad2003iterative], for the model problem. The five-point matrix of
+§2.2.5 on an $n_1 \times n_2$ grid with spacings $h_1$, $h_2$ is $H + V$, with $H$ and $V$ the
+horizontal and vertical one-dimensional Laplacians.
+
+The five-point matrix is `SaadSparse.Chapter02.laplacian2D`. The identity is
+`SaadSparse.Chapter02.laplacian2D_eq_kroneckerSum` read as the sum of its two Kronecker factors. -/
 theorem laplacian2D_eq_modelH_add_modelV (n₁ n₂ : ℕ) (h₁ h₂ : ℝ) :
     laplacian2D n₁ n₂ h₁ h₂ = modelH n₁ n₂ h₁ + modelV n₁ n₂ h₂ :=
   laplacian2D_eq_kroneckerSum n₁ n₂ h₁ h₂
@@ -332,17 +415,20 @@ private theorem posDef_one_kronecker {m p : ℕ} {B : Matrix (Fin p) (Fin p) ℝ
   have h := isCoerciveWith_kroneckerSum hz hcw
   rwa [zero_add] at h
 
-/-- The horizontal part of the model problem is symmetric positive definite. -/
+/-- For $h_1 \neq 0$, the horizontal part $H$ of the model problem is symmetric positive definite.
+It supports `SaadSparse.Chapter04.adi_model_problem`. -/
 theorem modelH_posDef (n₁ n₂ : ℕ) {h₁ : ℝ} (h₁0 : h₁ ≠ 0) : (modelH n₁ n₂ h₁).PosDef :=
   posDef_kronecker_one (laplacian1D_posDef n₁ h₁0)
 
-/-- The vertical part of the model problem is symmetric positive definite. -/
+/-- For $h_2 \neq 0$, the vertical part $V$ of the model problem is symmetric positive definite. It
+supports `SaadSparse.Chapter04.adi_model_problem`. -/
 theorem modelV_posDef (n₁ n₂ : ℕ) {h₂ : ℝ} (h₂0 : h₂ ≠ 0) : (modelV n₁ n₂ h₂).PosDef :=
   posDef_one_kronecker (laplacian1D_posDef n₂ h₂0)
 
-/-- Saad §4.3 for the model problem: Algorithm 4.3 applied to the five-point matrix of §2.2.5,
-split as the horizontal plus the vertical one-dimensional Laplacean, converges for every
-parameter `r > 0`. -/
+/-- **Section 4.3** of [saad2003iterative], the model problem. Let $h_1, h_2 \neq 0$, let $r > 0$,
+and let $x$ solve $Ax = b$ for the five-point matrix $A$ of §2.2.5 on an $n_1 \times n_2$ grid.
+Then Algorithm 4.3 for the splitting $A = H + V$ into the horizontal and vertical
+one-dimensional Laplacians converges to $x$ from every starting vector. -/
 theorem adi_model_problem (n₁ n₂ : ℕ) {h₁ h₂ : ℝ} (h₁0 : h₁ ≠ 0) (h₂0 : h₂ ≠ 0) {r : ℝ}
     (hr : 0 < r) (b x₀ : Fin n₁ × Fin n₂ → ℝ) {x : Fin n₁ × Fin n₂ → ℝ}
     (hx : laplacian2D n₁ n₂ h₁ h₂ *ᵥ x = b) :

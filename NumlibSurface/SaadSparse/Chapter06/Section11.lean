@@ -16,75 +16,159 @@ import NumlibSurface.SaadSparse.Chapter06.Section05
 import NumlibSurface.SaadSparse.Chapter06.Section07
 
 /-!
-# Saad §6.11: convergence analysis
+# Saad, Section 6.11: Convergence analysis
 
-Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM,
-2003, §6.11, in three parts.
+This module formalizes Section 6.11 of [saad2003iterative], which bounds the error of the conjugate
+gradient method and the residual of GMRES by min–max problems over polynomials, and solves these
+problems with Chebyshev polynomials. Sections 6.11.1–6.11.2 treat the real Chebyshev polynomials
+$C_k$ of (6.109)–(6.112), the shifted and normalized polynomial $\hat C_k$ of (6.113) on an interval
+$[\alpha, \beta]$ and its min–max property (Theorem 6.25), and the complex Chebyshev polynomials on
+an ellipse $E(c, d, a)$ (Lemma 6.26, Theorem 6.27, (6.118)–(6.120)). Section 6.11.3 proves that the
+conjugate gradient iterates satisfy
+$$\|x_* - x_m\|_A \le \frac{\|x_* - x_0\|_A}{C_m(1 + 2\eta)} \quad\text{and}\quad \|x_* - x_m\|_A
+  \le 2 \left(\frac{\sqrt{\kappa} - 1}{\sqrt{\kappa} + 1}\right)^m \|x_* - x_0\|_A$$
+for a symmetric positive definite $A$, with $\eta = \lambda_{\min} / (\lambda_{\max} -
+\lambda_{\min})$ and $\kappa = \lambda_{\max} / \lambda_{\min}$ (Theorem 6.29 and (6.128)). Section
+6.11.4 proves that restarted GMRES converges for a positive definite $A$ (Theorem 6.30) and bounds
+the GMRES residual for a diagonalizable $A$ (Proposition 6.32 and Corollary 6.33).
 
-## §6.11.1–6.11.2: Chebyshev polynomials and the min–max property
+Every result specializes the backbone. The Chebyshev results come from
+`Numlib.RingTheory.Polynomial.ChebyshevMinimax` and `Numlib.RingTheory.Polynomial.ChebyshevEllipse`.
+The conjugate gradient bounds come from `Krylov.IsGalerkinIterate.energyNorm_error_le_div_eval_T`
+and `Krylov.IsGalerkinIterate.energyNorm_error_le` of `Numlib.Krylov.Convergence.CG`, applied to
+`SaadSparse.Chapter06.cgX_isGalerkinIterate`. Theorem 6.30 is `Krylov.restarted_minRes_tendsto`, and
+Lemma 6.31 is `Krylov.IsMinResidualIterate.norm_residual_le_norm_aeval` applied to
+`SaadSparse.Chapter06.gmresFixed_isMinResidualIterate`.
 
-`C k` is the book's `C_k`, the degree-`k` Chebyshev polynomial of the first kind of (6.109), which
-is Mathlib's `Polynomial.Chebyshev.T ℝ k`; `Chat k α β γ` is the shifted and normalized polynomial
-`Ĉ_k` of (6.113). The backbone's normalized polynomial `Polynomial.Chebyshev.shifted`
-(`Numlib/RingTheory/Polynomial/ChebyshevMinimax.lean`) uses the affine map
-`t ↦ (β + α - 2t)/(β - α)` where the book uses `t ↦ 1 + 2(t - β)/(β - α)`; the two differ by a
-sign, which cancels in the quotient (`Chat_eq_shifted`), and every result of this part is read
-off from the backbone through that identity: (6.109)–(6.112) from the closed forms, Theorem 6.25
-from the backbone min–max pair `one_div_eval_T_le_sSup_abs_eval` / `sSup_abs_eval_shifted`.
+## Main definitions
 
-Mathlib's `Polynomial.Chebyshev.T` is written out in full in this part, because the book's own
-`T_m` — the tridiagonal Lanczos matrix of `Chapter06/Section06.lean` — is `SaadSparse.Chapter06.T`
-and takes precedence over an `open` inside the namespace.
+* Equation (6.109), `SaadSparse.Chapter06.C`: the Chebyshev polynomial $C_k$ of the first kind of
+  degree $k$.
+* Equation (6.113), `SaadSparse.Chapter06.Chat`: the Chebyshev polynomial $\hat C_k$ of
+  $[\alpha, \beta]$, normalized to $1$ at $\gamma$.
+* Equation (6.114), `SaadSparse.Chapter06.Ccomplex`: the Chebyshev polynomials of the first kind
+  over $\mathbb{C}$.
+* Equation (6.118), `SaadSparse.Chapter06.ellipse`: the ellipse $E(c, d, a)$, parameterized by the
+  Joukowski radius $\rho$.
+* Section 6.11.2, `SaadSparse.Chapter06.filledEllipse`: the closed region that the ellipse
+  $E(c, d, a)$ encloses.
+* Equation (6.119), `SaadSparse.Chapter06.ChatComplex`: the Chebyshev polynomial $\hat C_k$ of the
+  ellipse $E(c, d, a)$, normalized to $1$ at $\gamma$.
+* Equation (6.122), `SaadSparse.Chapter06.η`: $\eta = \lambda_{\min} / (\lambda_{\max} -
+  \lambda_{\min})$.
+* Section 6.11.3, `SaadSparse.Chapter06.κ`, `SaadSparse.Chapter06.anorm`: the condition number
+  $\kappa = \lambda_{\max} / \lambda_{\min}$ and the $A$-norm $\|x\|_A$.
+* Theorem 6.30, `SaadSparse.Chapter06.symmPart`: the symmetric part $(A + A^T)/2$.
+* Proposition 6.32, `SaadSparse.Chapter06.epsMin`: $\varepsilon^{(m)} = \min_{p \in \mathbb{P}_m,\,
+  p(0) = 1} \max_i |p(\lambda_i)|$.
 
-## §6.11.2: the complex ellipse
+## Main results
 
-The results on `E(c, d, a)` specialize `Numlib/RingTheory/Polynomial/ChebyshevEllipse.lean`:
-Lemma 6.26 is `Polynomial.zarantonello`, Theorem 6.27 with (6.117) is
-`Polynomial.Chebyshev.ellipse_minimax_bounds`, and (6.119)–(6.120) is
-`Polynomial.Chebyshev.sSup_norm_eval_shiftedComplex_ellipse`.
+* Equation (6.109), `SaadSparse.Chapter06.equation_6_109`: $C_k(t) = \cos(k \cos^{-1} t)$ for
+  $t \in [-1, 1]$.
+* Section 6.11.1, `SaadSparse.Chapter06.C_rec`: the three-term recurrence
+  $C_{k+2} = 2t C_{k+1} - C_k$.
+* Equations (6.110)–(6.112), `SaadSparse.Chapter06.equation_6_110`,
+  `SaadSparse.Chapter06.equation_6_111`, `SaadSparse.Chapter06.equation_6_112`: the closed forms of
+  $C_k(t)$ for $t \ge 1$, and the lower bound $\frac12 (t + \sqrt{t^2 - 1})^k \le C_k(t)$.
+* Theorem 6.25, `SaadSparse.Chapter06.theorem_6_25`, `SaadSparse.Chapter06.theorem_6_25_value`,
+  `SaadSparse.Chapter06.theorem_6_25_value_mid`: among the polynomials $p$ of degree at most $k$
+  with $p(\gamma) = 1$, $\hat C_k$ minimizes $\max_{t \in [\alpha, \beta]} |p(t)|$, and the minimum
+  is $1 / |C_k(1 + 2(\gamma - \beta)/(\beta - \alpha))|$.
+* Lemma 6.26, `SaadSparse.Chapter06.lemma_6_26` (Zarantonello): on the circle of radius $\rho$ about
+  $0$, the min–max value for $p(\gamma) = 1$ is $(\rho / |\gamma|)^k$.
+* Theorem 6.27, `SaadSparse.Chapter06.theorem_6_27`: the two-sided bound (6.117) on the min–max
+  value on the ellipse $E_\rho$.
+* Equations (6.119)–(6.120), `SaadSparse.Chapter06.ellipse_max_Chat`: the maximum of $|\hat C_k|$ on
+  $E(c, d, a)$ is $C_k(a/d) / |C_k((c - \gamma)/d)|$.
+* Lemma 6.28, `SaadSparse.Chapter06.lemma_6_28`: the CG iterate is $x_m = x_0 + q_m(A) r_0$, and
+  $q_m$ minimizes $\|(I - A q(A)) d_0\|_A$ over the polynomials of degree less than $m$.
+* Theorem 6.29, `SaadSparse.Chapter06.theorem_6_29`: the CG error bound (6.123), $\|x_* - x_m\|_A
+  \le \|x_* - x_0\|_A / C_m(1 + 2\eta)$.
+* Equations (6.124)–(6.127), `SaadSparse.Chapter06.equation_6_124`,
+  `SaadSparse.Chapter06.equation_6_125`, `SaadSparse.Chapter06.equation_6_126`,
+  `SaadSparse.Chapter06.equation_6_127`: the chain of real identities and estimates for the
+  Chebyshev argument $1 + 2\eta$.
+* Equation (6.128), `SaadSparse.Chapter06.equation_6_128`: $\|x_* - x_m\|_A \le 2 ((\sqrt\kappa -
+  1)/(\sqrt\kappa + 1))^m \|x_* - x_0\|_A$.
+* Theorem 6.30, `SaadSparse.Chapter06.theorem_6_30`, `SaadSparse.Chapter06.theorem_6_30_rate`: for a
+  positive definite $A$, each cycle of GMRES(m) reduces the residual by the factor
+  $\sqrt{1 - \mu^2/\sigma^2}$, and GMRES(m) converges for every $m \ge 1$.
+* Lemma 6.31, `SaadSparse.Chapter06.lemma_6_31`: the GMRES iterate is $x_m = x_0 + q_m(A) r_0$, and
+  $q_m$ minimizes $\|(I - A q(A)) r_0\|_2$ over the polynomials of degree less than $m$.
+* Proposition 6.32, `SaadSparse.Chapter06.proposition_6_32`: for $A = X \Lambda X^{-1}$, the GMRES
+  residual satisfies $\|r_m\|_2 \le \kappa_2(X) \varepsilon^{(m)} \|r_0\|_2$.
+* Corollary 6.33, `SaadSparse.Chapter06.corollary_6_33`: if moreover the eigenvalues lie in an
+  ellipse $E(c, d, a)$ that excludes the origin, then $\|r_m\|_2 \le \kappa_2(X) (C_m(a/d) /
+  |C_m(c/d)|) \|r_0\|_2$.
 
-`ellipse c d ρ` is the backbone's `Set.ellipse`, parameterized by the Joukowski radius `ρ` rather
-than by the semi-major axis `a`: `a = d (ρ + ρ⁻¹)/2` is not invertible without an `arcosh`, and
-every estimate of the section is a function of `ρ`. The book's `C_k(a/d)` survives verbatim,
-because `a/d` *is* `(ρ + ρ⁻¹)/2`.
+## Conventions
 
-Corollary 6.33 needs one step the book leaves implicit: its hypothesis places the spectrum
-*inside* the ellipse, while (6.119)–(6.120) bounds `|Ĉ_m|` *on* it. That step is the maximum
-modulus principle on a filled ellipse, `Polynomial.norm_eval_le_of_forall_mem_ellipse`, whose
-proof is not the disc principle but the annulus one — the Joukowski map identifies `w` with
-`w⁻¹`, so the filled ellipse is the image of a closed annulus and the symmetry `Ĉ_m(J w) =
-Ĉ_m(J w⁻¹)` folds its inner boundary circle onto the outer one.
+* $C_k$ is Mathlib's `Polynomial.Chebyshev.T ℝ k`, and its complex counterpart is
+  `Polynomial.Chebyshev.T ℂ k`.
+* The extreme eigenvalues $\lambda_{\min}$ and $\lambda_{\max}$ of a symmetric matrix are the
+  infimum and the supremum of `Matrix.IsHermitian.eigenvalues`.
+* The $A$-norm is the backbone's `energyNorm` (`SaadSparse.Chapter06.anorm_eq`), and $\|A\|_2$ is
+  the operator norm of `Matrix.Norms.L2Operator`.
+* The GMRES iterate with exactly $m$ Arnoldi steps is `SaadSparse.Chapter06.gmresFixed`, and the
+  iterate of GMRES(m) after $k$ cycles is `SaadSparse.Chapter06.gmresRestarted`.
 
-## §6.11.3–6.11.4: convergence of the conjugate gradient method and of GMRES
+## Implementation notes
 
-The quantities of §6.11.3–6.11.4 are `η` (6.122), the condition number `κ`, the `A`-norm `anorm`
-(the backbone's `energyNorm`, `Numlib/Analysis/InnerProductSpace/Energy.lean`) and `ε^{(m)}`
-(`epsMin`, Proposition 6.32).
+* The backbone's normalized polynomial `Polynomial.Chebyshev.shifted` uses the affine map $t \mapsto
+  (\beta + \alpha - 2t)/(\beta - \alpha)$, where the book uses
+  $t \mapsto 1 + 2(t - \beta)/(\beta - \alpha)$. The two maps differ by a sign, which cancels in the
+  quotient (`SaadSparse.Chapter06.Chat_eq_shifted`). The results on the interval follow from the
+  backbone through this identity: (6.109)–(6.112) from the closed forms, and Theorem 6.25 from
+  `Polynomial.Chebyshev.one_div_eval_T_le_sSup_abs_eval` and
+  `Polynomial.Chebyshev.sSup_abs_eval_shifted`.
+* Mathlib's `Polynomial.Chebyshev.T` is written in full in this module, because the tridiagonal
+  Lanczos matrix $T_m$ of Section 6.6 is `SaadSparse.Chapter06.T`, and inside the namespace that
+  name takes precedence.
+* The results on the ellipse specialize `Numlib.RingTheory.Polynomial.ChebyshevEllipse`: Lemma 6.26
+  is `Polynomial.zarantonello`, Theorem 6.27 is `Polynomial.Chebyshev.ellipse_minimax_bounds`, and
+  (6.119)–(6.120) is `Polynomial.Chebyshev.sSup_norm_eval_shiftedComplex_ellipse`.
+* The ellipse is parameterized by the Joukowski radius $\rho$, not by the semi-major axis $a$. The
+  two are related by $a = d(\rho + \rho^{-1})/2$, but solving for $\rho$ needs
+  $\operatorname{arcosh}$, and every estimate of Section 6.11.2 is a function of $\rho$. The
+  argument $a/d$ of $C_k$ in the book stays as it is, because $a/d = (\rho + \rho^{-1})/2$.
+* Corollary 6.33 needs one step that the book leaves implicit: its hypothesis places the spectrum
+  inside the ellipse, while (6.119)–(6.120) bounds $|\hat C_m|$ on the ellipse. The step is the
+  maximum modulus principle on the filled ellipse, `Polynomial.norm_eval_le_of_forall_mem_ellipse`.
+  Its proof uses an annulus, not a disc: the Joukowski map identifies $w$ with $w^{-1}$, so the
+  filled ellipse is the image of a closed annulus, and the symmetry
+  $\hat C_m(J(w)) = \hat C_m(J(w^{-1}))$ folds the inner boundary circle onto the outer one.
+* The conjugate gradient bounds take the spectral hypothesis in the form of quadratic-form bounds,
+  `LinearMap.IsSymmetricBoundedBy`, which `Matrix.IsHermitian.isSymmetricBoundedBy_toEuclideanLin`
+  derives from the extreme eigenvalues. The backbone proof uses a compression of $A$ to the Krylov
+  subspace, so no diagonalization of $A$ is needed.
+* For Theorem 6.30, the work here is to show that a cycle of GMRES(m) is a minimal-residual iterate
+  (`SaadSparse.Chapter06.gmres_isMinResidualIterate`), and to identify the constants
+  $\mu = \lambda_{\min}((A + A^T)/2)$ and $\sigma = \|A\|_2$ of the book with the coercivity
+  constant and the operator norm of the backbone.
+* Proposition 6.32 adds the bound `SaadSparse.Chapter06.norm_aeval_diagonal_mulVec_le` for a
+  diagonalizable complex matrix, since the backbone's `norm_aeval_apply_le_of_conj` covers only a
+  symmetric diagonal factor.
 
-Everything here is a specialization of the backbone:
+## Deviations from the source
 
-* Lemma 6.28, Theorem 6.29 with (6.123), and (6.128) come from
-  `Krylov.IsGalerkinIterate.energyNorm_error_le_div_eval_T` and
-  `Krylov.IsGalerkinIterate.energyNorm_error_le` (`Numlib/Krylov/Convergence/CG.lean`) applied to
-  `cgX_isGalerkinIterate` of `Chapter06/Section07.lean`. The backbone's hypothesis is the
-  quadratic-form bound `LinearMap.IsSymmetricBoundedBy lmin lmax`, matched to the book's extreme
-  eigenvalues by `Matrix.IsHermitian.isSymmetricBoundedBy_toEuclideanLin`; its proof uses the
-  compression trick rather than a functional calculus, so no diagonalization of `A` is needed.
-* (6.124)–(6.127) are the book's chain of real identities for the Chebyshev argument `1 + 2η`.
-* Theorem 6.30 is `Krylov.restarted_minRes_tendsto`: the work here is only to show that a cycle
-  of GMRES(m) satisfies the backbone's per-cycle minimal-residual specification
-  (`gmres_isMinResidualIterate`), and to identify the book's constants `μ = λ_min((A + Aᵀ)/2)` and
-  `σ = ‖A‖₂` with the backbone's coercivity constant and operator norm.
-* Lemma 6.31 is `Krylov.IsMinResidualIterate.norm_residual_le_norm_aeval` through the GMRES
-  identification `gmresFixed_isMinResidualIterate` of `Chapter06/Section05.lean`, and Proposition
-  6.32 adds the surface bound `norm_aeval_diagonal_mulVec_le` for a diagonalizable complex matrix.
+* **Equation (6.112)** (reading). The book writes the growth estimate as an approximation
+  $C_k(t) \gtrsim \frac12 (t + \sqrt{t^2 - 1})^k$. It is stated as the inequality
+  $\frac12 (t + \sqrt{t^2 - 1})^k \le C_k(t)$ for $t \ge 1$. See
+  `SaadSparse.Chapter06.equation_6_112`.
+* **Theorem 6.25** (reading). The book says "non-empty interval $[\alpha, \beta]$". This is read as
+  nondegenerate, $\alpha < \beta$, since (6.113) divides by $\beta - \alpha$. See
+  `SaadSparse.Chapter06.theorem_6_25`.
+* **Theorem 6.29** (reading). The book's $\eta$ is infinite when $\lambda_{\min} = \lambda_{\max}$,
+  so the bound (6.123) tacitly assumes $\lambda_{\min} < \lambda_{\max}$. This hypothesis is
+  explicit. See `SaadSparse.Chapter06.theorem_6_29`.
 -/
 
 open scoped Polynomial
 
 namespace SaadSparse.Chapter06
 
-/-! ## §6.11.1–6.11.2: Chebyshev polynomials and the min–max property -/
+/-! ### Sections 6.11.1–6.11.2: Chebyshev polynomials and the min–max property -/
 
 section ChebyshevMinimax
 
@@ -96,16 +180,23 @@ variable {t α β γ : ℝ}
 
 /-! ### (6.109)–(6.112): the real Chebyshev polynomials -/
 
-/-- **(6.109)**: the Chebyshev polynomial `C_k` of the first kind of degree `k`, Mathlib's
-`Polynomial.Chebyshev.T ℝ k`. -/
+/-- **Equation (6.109)** of [saad2003iterative]. The **Chebyshev polynomial of the first kind**
+$C_k$ of degree $k$, a real polynomial.
+
+This is Mathlib's `Polynomial.Chebyshev.T ℝ k`. -/
 noncomputable abbrev C (k : ℕ) : ℝ[X] := Polynomial.Chebyshev.T ℝ (k : ℤ)
 
-/-- **(6.114)**: the Chebyshev polynomials of the first kind over `ℂ`. They are used only by the
-complex-ellipse results of §6.11.2 below — Lemma 6.26, Theorem 6.27 with (6.117), and
-(6.119)–(6.120) — and by Corollary 6.33, which normalizes `C_m` at `c/d`. -/
+/-- **Equation (6.114)** of [saad2003iterative]. The Chebyshev polynomial of the first kind $C_k$ of
+degree $k$, as a complex polynomial.
+
+This is Mathlib's `Polynomial.Chebyshev.T ℂ k`. It is used only by the results on the ellipse in
+Section 6.11.2 (Lemma 6.26, Theorem 6.27 with (6.117), and (6.119)–(6.120)) and by Corollary
+6.33, which evaluates $C_m$ at $c/d$. -/
 noncomputable abbrev Ccomplex (k : ℕ) : ℂ[X] := Polynomial.Chebyshev.T ℂ (k : ℤ)
 
-/-- **(6.109)**: `C_k(t) = cos(k cos⁻¹ t)` on `[-1, 1]`. -/
+/-- **Equation (6.109)** of [saad2003iterative]. For every $k \in \mathbb{N}$ and $t \in [-1, 1]$,
+$$C_k(t) = \cos(k \cos^{-1} t).$$
+-/
 theorem equation_6_109 (k : ℕ) (ht : t ∈ Set.Icc (-1 : ℝ) 1) :
     (C k).eval t = Real.cos (k * Real.arccos t) := by
   have h : Real.cos (Real.arccos t) = t := Real.cos_arccos ht.1 ht.2
@@ -113,7 +204,10 @@ theorem equation_6_109 (k : ℕ) (ht : t ∈ Set.Icc (-1 : ℝ) 1) :
   rw [h] at hT
   exact hT.trans (by norm_cast)
 
-/-- The three-term recurrence of §6.11.1: `C_{k+2} = 2 t C_{k+1} - C_k`. -/
+/-- **Section 6.11.1** of [saad2003iterative], the three-term recurrence. For every
+$k \in \mathbb{N}$,
+$$C_{k+2}(t) = 2t\, C_{k+1}(t) - C_k(t).$$
+-/
 theorem C_rec (k : ℕ) : C (k + 2) = 2 * Polynomial.X * C (k + 1) - C k := by
   have h := T_add_two (R := ℝ) (n := (k : ℤ))
   have h1 : ((k + 2 : ℕ) : ℤ) = (k : ℤ) + 2 := by push_cast; ring
@@ -121,42 +215,57 @@ theorem C_rec (k : ℕ) : C (k + 2) = 2 * Polynomial.X * C (k + 1) - C k := by
   rw [show C (k + 2) = Polynomial.Chebyshev.T ℝ (((k + 2 : ℕ) : ℤ)) from rfl, h1, h,
     show C (k + 1) = Polynomial.Chebyshev.T ℝ (((k + 1 : ℕ) : ℤ)) from rfl, h2]
 
-/-- `C_0 = 1`. -/
+/-- $C_0 = 1$. -/
 theorem C_zero : C 0 = 1 := Polynomial.Chebyshev.T_zero ℝ
 
-/-- `C_1 = t`. -/
+/-- $C_1(t) = t$. -/
 theorem C_one : C 1 = Polynomial.X := Polynomial.Chebyshev.T_one ℝ
 
-/-- **(6.110)**: `C_k(t) = cosh(k cosh⁻¹ t)` for `t ≥ 1`. -/
+/-- **Equation (6.110)** of [saad2003iterative]. For every $k \in \mathbb{N}$ and $t \ge 1$,
+$$C_k(t) = \cosh(k \cosh^{-1} t).$$
+-/
 theorem equation_6_110 (k : ℕ) (ht : 1 ≤ t) : (C k).eval t = Real.cosh (k * Real.arcosh t) := by
   have h : Real.cosh (Real.arcosh t) = t := Real.cosh_arcosh ht
   have hT := T_real_cosh (Real.arcosh t) (k : ℤ)
   rw [h] at hT
   exact hT.trans (by norm_cast)
 
-/-- **(6.111)**: `C_k(t) = ½[(t + √(t²-1))^k + (t + √(t²-1))^{-k}]` for `t ≥ 1`. -/
+/-- **Equation (6.111)** of [saad2003iterative]. For every $k \in \mathbb{N}$ and $t \ge 1$,
+$$C_k(t) = \frac12 \left[ \left(t + \sqrt{t^2 - 1}\right)^k + \left(t + \sqrt{t^2 -
+  1}\right)^{-k} \right].$$
+-/
 theorem equation_6_111 (k : ℕ) (ht : 1 ≤ t) :
     (C k).eval t =
       ((t + Real.sqrt (t ^ 2 - 1)) ^ k + ((t + Real.sqrt (t ^ 2 - 1))⁻¹) ^ k) / 2 := by
   rw [Real.add_sqrt_self_sq_sub_one_inv ht]
   exact eval_T_eq_half_add_pow ht k
 
-/-- **(6.112)**: `½ (t + √(t²-1))^k ≤ C_k(t)` for `t ≥ 1`; the book writes this growth estimate
-as the approximation `C_k(t) ≳ ½ (t + √(t²-1))^k`. -/
+/-- **Equation (6.112)** of [saad2003iterative]. For every $k \in \mathbb{N}$ and $t \ge 1$,
+$$\frac12 \left(t + \sqrt{t^2 - 1}\right)^k \le C_k(t).$$
+
+**Reading.** The book writes this growth estimate as the approximation
+$C_k(t) \gtrsim \frac12 (t + \sqrt{t^2 - 1})^k$. It is stated here as an inequality, which
+follows from (6.111). -/
 theorem equation_6_112 (k : ℕ) (ht : 1 ≤ t) :
     (t + Real.sqrt (t ^ 2 - 1)) ^ k / 2 ≤ (C k).eval t :=
   half_pow_le_eval_T ht k
 
 /-! ### (6.113): the shifted and normalized Chebyshev polynomial -/
 
-/-- **(6.113)**: `Ĉ_k(t) = C_k(1 + 2(t - β)/(β - α)) / C_k(1 + 2(γ - β)/(β - α))`, the Chebyshev
-polynomial of `[α, β]` normalized to `1` at `γ`. -/
+/-- **Equation (6.113)** of [saad2003iterative]. For reals $\alpha$, $\beta$, $\gamma$ and
+$k \in \mathbb{N}$, the **shifted and normalized Chebyshev polynomial** of $[\alpha, \beta]$ is
+$$\hat C_k(t) = \frac{C_k\left(1 + 2 \frac{t - \beta}{\beta - \alpha}\right)}{C_k\left(1 + 2
+  \frac{\gamma - \beta}{\beta - \alpha}\right)},$$
+which takes the value $1$ at $\gamma$.
+
+The definition is meant for $\alpha < \beta$ and $\gamma \notin [\alpha, \beta]$, where the
+denominator is nonzero. Otherwise the divisions by zero give $0$ in Lean. -/
 noncomputable def Chat (k : ℕ) (α β γ : ℝ) : ℝ[X] :=
   Polynomial.C (1 / (C k).eval (1 + 2 * (γ - β) / (β - α))) *
     (C k).comp (Polynomial.C (1 - 2 * β / (β - α)) + Polynomial.C (2 / (β - α)) * Polynomial.X)
 
-/-- The book's affine map is the negative of the backbone's: `1 + 2(x - β)/(β - α)` is
-`-((β + α - 2x)/(β - α))`. -/
+/-- For $\alpha < \beta$, the affine map of the book is the negative of that of the backbone: $1 +
+2(x - \beta)/(\beta - \alpha) = -(\beta + \alpha - 2x)/(\beta - \alpha)$. -/
 private theorem shift_neg (hαβ : α < β) (x : ℝ) :
     1 + 2 * (x - β) / (β - α) = -((β + α - 2 * x) / (β - α)) := by
   have h : β - α ≠ 0 := sub_ne_zero.mpr hαβ.ne'
@@ -187,28 +296,33 @@ private theorem eval_shifted (k : ℕ) (hαβ : α < β) (γ t : ℝ) :
 private theorem cast_negOnePow_ne_zero (m : ℤ) : ((m.negOnePow : ℤ) : ℝ) ≠ 0 := by
   rcases Int.isUnit_iff.1 (Units.isUnit m.negOnePow) with h | h <;> rw [h] <;> norm_num
 
-/-- **The bridge to the backbone**: the book's `Ĉ_k` of (6.113) is the backbone's
-`Polynomial.Chebyshev.shifted`. The two affine maps differ by a sign and `T_k(-x)` is
-`(-1)^k T_k(x)`, so the sign cancels in the quotient. -/
+/-- For $\alpha < \beta$ and every $\gamma$, the polynomial $\hat C_k$ of (6.113) equals the
+backbone's `Polynomial.Chebyshev.shifted k α β γ`. The two affine maps differ by a sign and
+$C_k(-x) = (-1)^k C_k(x)$, so the sign cancels in the quotient. -/
 theorem Chat_eq_shifted (k : ℕ) (hαβ : α < β) (γ : ℝ) : Chat k α β γ = shifted k α β γ := by
   refine Polynomial.funext fun t => ?_
   rw [eval_Chat k hαβ γ t, eval_shifted k hαβ γ t, shift_neg hαβ t, shift_neg hαβ γ,
     T_eval_neg, T_eval_neg]
   exact mul_div_mul_left _ _ (cast_negOnePow_ne_zero _)
 
-/-- **(6.113)**: `Ĉ_k(t) = C_k(1 + 2(t - β)/(β - α)) / C_k(1 + 2(γ - β)/(β - α))`. -/
+/-- **Equation (6.113)** of [saad2003iterative], evaluated. For $\alpha < \beta$ and all reals
+$\gamma$, $t$,
+$$\hat C_k(t) = \frac{C_k(1 + 2(t - \beta)/(\beta - \alpha))}{C_k(1 + 2(\gamma - \beta)/(\beta -
+  \alpha))}.$$
+-/
 theorem Chat_eval (k : ℕ) (hαβ : α < β) (γ t : ℝ) :
     (Chat k α β γ).eval t =
       (C k).eval (1 + 2 * (t - β) / (β - α)) / (C k).eval (1 + 2 * (γ - β) / (β - α)) :=
   eval_Chat k hαβ γ t
 
-/-- `Ĉ_k` has degree at most `k`, so it is a competitor in the min–max problem of Theorem
-6.25. -/
+/-- For $\alpha < \beta$, the polynomial $\hat C_k$ has degree at most $k$, so it is a competitor in
+the min–max problem of Theorem 6.25. -/
 theorem Chat_degree_le (k : ℕ) (hαβ : α < β) (γ : ℝ) : (Chat k α β γ).degree ≤ k := by
   rw [Chat_eq_shifted k hαβ γ]
   exact shifted_degree_le k α β γ
 
-/-- `Ĉ_k(γ) = 1`: the normalization of (6.113). -/
+/-- For $\alpha < \beta$ and $\gamma \notin [\alpha, \beta]$, $\hat C_k(\gamma) = 1$: the
+normalization of (6.113). -/
 theorem Chat_eval_gamma (k : ℕ) (hαβ : α < β) (hγ : γ ∉ Set.Icc α β) :
     (Chat k α β γ).eval γ = 1 := by
   rw [Chat_eq_shifted k hαβ γ]
@@ -216,12 +330,18 @@ theorem Chat_eval_gamma (k : ℕ) (hαβ : α < β) (hγ : γ ∉ Set.Icc α β)
 
 /-! ### Theorem 6.25: the Chebyshev min–max property -/
 
-/-- **Theorem 6.25**: for a nondegenerate interval `[α, β]` and `γ ∉ [α, β]`, the minimum of
-`max_{t ∈ [α, β]} |p(t)|` over the polynomials `p` of degree at most `k` with `p(γ) = 1` is
-attained by `Ĉ_k` of (6.113).
+/-- **Theorem 6.25** of [saad2003iterative]. Let $[\alpha, \beta]$ be a nondegenerate real interval,
+$\alpha < \beta$, let $\gamma \notin [\alpha, \beta]$, and let $k \in \mathbb{N}$. Then the
+minimum
+$$\min_{p \in \mathbb{P}_k,\ p(\gamma) = 1} \ \max_{t \in [\alpha, \beta]} |p(t)|$$
+over the real polynomials $p$ of degree at most $k$ with $p(\gamma) = 1$ is attained by the
+polynomial $\hat C_k$ of (6.113).
 
-The book says "non-empty interval `[α, β]`", read here as nondegenerate (`α < β`), since (6.113)
-divides by `β - α`. -/
+**Reading.** The book says "non-empty interval $[\alpha, \beta]$". This is read as
+nondegenerate, $\alpha < \beta$, since (6.113) divides by $\beta - \alpha$.
+
+The statement is that $\max_{t \in [\alpha, \beta]} |\hat C_k(t)|$ is the least element of the
+set of values $\max_{t \in [\alpha, \beta]} |p(t)|$, written with `IsLeast` and `sSup`. -/
 theorem theorem_6_25 (k : ℕ) (hαβ : α < β) (hγ : γ ∉ Set.Icc α β) :
     IsLeast {M : ℝ | ∃ p : ℝ[X], p.degree ≤ k ∧ p.eval γ = 1 ∧
         M = sSup ((fun t => |p.eval t|) '' Set.Icc α β)}
@@ -231,7 +351,11 @@ theorem theorem_6_25 (k : ℕ) (hαβ : α < β) (hγ : γ ∉ Set.Icc α β) :
   rw [Chat_eq_shifted k hαβ γ, sSup_abs_eval_shifted k hαβ hγ]
   exact one_div_eval_T_le_sSup_abs_eval k hαβ hγ p hp hpγ
 
-/-- **Theorem 6.25**, the value of the minimum: `1 / |C_k(1 + 2(γ - β)/(β - α))|`. -/
+/-- **Theorem 6.25** of [saad2003iterative], the value of the minimum. For $\alpha < \beta$ and
+$\gamma \notin [\alpha, \beta]$,
+$$\max_{t \in [\alpha, \beta]} |\hat C_k(t)| = \frac{1}{\left|C_k\left(1 + 2 \frac{\gamma -
+  \beta}{\beta - \alpha}\right)\right|}.$$
+-/
 theorem theorem_6_25_value (k : ℕ) (hαβ : α < β) (hγ : γ ∉ Set.Icc α β) :
     sSup ((fun t => |(Chat k α β γ).eval t|) '' Set.Icc α β) =
       1 / |(C k).eval (1 + 2 * (γ - β) / (β - α))| := by
@@ -239,8 +363,11 @@ theorem theorem_6_25_value (k : ℕ) (hαβ : α < β) (hγ : γ ∉ Set.Icc α 
     show (1 : ℝ) + 2 * (γ - β) / (β - α) = -((β + α - 2 * γ) / (β - α)) from shift_neg hαβ γ,
     Polynomial.Chebyshev.abs_eval_T_neg]
 
-/-- **Theorem 6.25**, the corollary formula: with `μ = (α + β)/2` the midpoint of the interval,
-the minimum is `1 / |C_k(2(γ - μ)/(β - α))|`. -/
+/-- **Theorem 6.25** of [saad2003iterative], the value of the minimum in terms of the midpoint
+$\mu = (\alpha + \beta)/2$. For $\alpha < \beta$ and $\gamma \notin [\alpha, \beta]$,
+$$\max_{t \in [\alpha, \beta]} |\hat C_k(t)| = \frac{1}{\left|C_k\left(2 \frac{\gamma -
+  \mu}{\beta - \alpha}\right)\right|}.$$
+-/
 theorem theorem_6_25_value_mid (k : ℕ) (hαβ : α < β) (hγ : γ ∉ Set.Icc α β) :
     sSup ((fun t => |(Chat k α β γ).eval t|) '' Set.Icc α β) =
       1 / |(C k).eval (2 * (γ - (α + β) / 2) / (β - α))| := by
@@ -250,48 +377,78 @@ theorem theorem_6_25_value_mid (k : ℕ) (hαβ : α < β) (hγ : γ ∉ Set.Icc
 
 end ChebyshevMinimax
 
-/-! ## §6.11.2: the complex ellipse `E(c, d, a)` and the min–max estimates on it -/
+/-! ### Section 6.11.2: the complex ellipse $E(c, d, a)$ and the min–max estimates on it -/
 
 section ComplexEllipse
 
-/-- **(6.118)**: the ellipse `E(c, d, a)` with centre `c`, focal semi-distance `d` and semi-major
-axis `a`, as the image `{c + d J(w) : |w| = ρ}` of the circle `C(0, ρ)` under the Joukowski map
-`J(w) = (w + w⁻¹)/2` of (6.115)–(6.116); this is the backbone's `Set.ellipse`, and `E_ρ` of
-§6.11.2 is `ellipse 0 1 ρ`.
+/-- **Equation (6.118)** of [saad2003iterative]. For $c, d \in \mathbb{C}$ and
+$\rho \in \mathbb{R}$, the **ellipse** $E(c, d, a)$ is the image
+$$\{c + d\, J(w) : |w| = \rho\}$$
+of the circle $C(0, \rho)$ under $w \mapsto c + d\, J(w)$, where $J(w) = (w + w^{-1})/2$ is the
+Joukowski map of (6.115)–(6.116). For $d \neq 0$ and $\rho \ge 1$ it has centre $c$, foci
+$c \pm d$, and semi-major axis $a = d(\rho + \rho^{-1})/2$. The ellipse $E_\rho$ of Section
+6.11.2 is `SaadSparse.Chapter06.ellipse 0 1 ρ`.
 
-The parameter is the Joukowski radius `ρ`, not the semi-major axis `a`. The two determine each
-other through `a = d (ρ + ρ⁻¹)/2` and `b = d (ρ - ρ⁻¹)/2`, but solving for `ρ` needs an `arcosh`,
-and every estimate of §6.11.2 is a function of `ρ`. The book's argument `a/d` of `C_k` survives
-verbatim, because `a/d` *is* `(ρ + ρ⁻¹)/2`. -/
+This is the backbone's `Set.ellipse`. The parameter is the Joukowski radius $\rho$, not the
+semi-major axis $a$. The two determine each other through $a = d(\rho + \rho^{-1})/2$ and
+$b = d(\rho - \rho^{-1})/2$, but solving for $\rho$ needs $\operatorname{arcosh}$, and every
+estimate of Section 6.11.2 is a function of $\rho$. The argument $a/d$ of $C_k$ in the book
+stays as it is, because $a/d = (\rho + \rho^{-1})/2$. -/
 noncomputable abbrev ellipse (c d : ℂ) (ρ : ℝ) : Set ℂ := Set.ellipse c d ρ
 
-/-- §6.11.2: the region enclosed by the ellipse `E(c, d, a)`, the ellipse itself included. This
-is the book's "the spectrum is enclosed in the ellipse" of Corollary 6.33; it is the union of the
-confocal ellipses `ellipse c d s` with `1 ≤ s ≤ ρ`
-(`Set.filledEllipse_eq_biUnion`). -/
+/-- **Section 6.11.2** of [saad2003iterative], the region enclosed by the ellipse. For
+$c, d \in \mathbb{C}$ and $\rho \in \mathbb{R}$, this is the image of the closed annulus
+$\rho^{-1} \le |w| \le \rho$ under $w \mapsto c + d\, J(w)$. For $\rho \ge 1$ it is the union of
+the confocal ellipses `SaadSparse.Chapter06.ellipse c d s` with $1 \le s \le \rho$, that is, the
+ellipse $E(c, d, a)$ together with its interior.
+
+This is the backbone's `Set.filledEllipse`; the description as a union is
+`Set.filledEllipse_eq_biUnion`. It gives meaning to "the spectrum is enclosed in the ellipse" in
+Corollary 6.33. -/
 noncomputable abbrev filledEllipse (c d : ℂ) (ρ : ℝ) : Set ℂ := Set.filledEllipse c d ρ
 
-/-- **(6.119)**: `Ĉ_k(z) = C_k((c - z)/d) / C_k((c - γ)/d)`, the complex counterpart of (6.113):
-the Chebyshev polynomial of the ellipse `E(c, d, a)`, normalized to `1` at `γ`. -/
+/-- **Equation (6.119)** of [saad2003iterative]. For $k \in \mathbb{N}$ and
+$c, d, \gamma \in \mathbb{C}$, the Chebyshev polynomial of the ellipse $E(c, d, a)$, normalized
+to $1$ at $\gamma$:
+$$\hat C_k(z) = \frac{C_k((c - z)/d)}{C_k((c - \gamma)/d)}.$$
+It is the complex counterpart of (6.113).
+
+This is the backbone's `Polynomial.Chebyshev.shiftedComplex`. If the denominator is $0$, the
+polynomial is $0$, by division by zero in Lean. -/
 noncomputable abbrev ChatComplex (k : ℕ) (c d gam : ℂ) : ℂ[X] :=
   Polynomial.Chebyshev.shiftedComplex k c d gam
 
-/-- **Lemma 6.26** (Zarantonello). Let `C(0, ρ)` be a circle of centre the origin and radius `ρ`,
-and let `γ` be any point outside it. Then
-`min_{p ∈ P_k, p(γ) = 1} max_{z ∈ C(0, ρ)} |p(z)| = (ρ/|γ|)^k`,
-and the minimum is attained by `(z/γ)^k`. -/
+/-- **Lemma 6.26** of [saad2003iterative] (Zarantonello). Let $C(0, \rho)$ be the circle with centre
+the origin and radius $\rho > 0$, let $\gamma \in \mathbb{C}$ with $|\gamma| > \rho$, and let
+$k \in \mathbb{N}$. Then
+$$\min_{p \in \mathbb{P}_k,\ p(\gamma) = 1} \ \max_{z \in C(0, \rho)} |p(z)| =
+  \left(\frac{\rho}{|\gamma|}\right)^k,$$
+where $p$ ranges over the complex polynomials of degree at most $k$, and the minimum is
+attained.
+
+The statement is that $(\rho/|\gamma|)^k$ is the least element of the set of values, written
+with `IsLeast` and `sSup`. It does not name the minimizer, which in the book is $(z/\gamma)^k$.
+This is the backbone's `Polynomial.zarantonello`. -/
 theorem lemma_6_26 (k : ℕ) {ρ : ℝ} (hρ : 0 < ρ) {gam : ℂ} (hgam : ρ < ‖gam‖) :
     IsLeast {M : ℝ | ∃ p : ℂ[X], p.degree ≤ k ∧ p.eval gam = 1 ∧
         M = sSup ((fun z => ‖p.eval z‖) '' Metric.sphere 0 ρ)} ((ρ / ‖gam‖) ^ k) :=
   Polynomial.zarantonello k hρ hgam
 
-/-- **Theorem 6.27**, **(6.117)**: let `E_ρ` be the ellipse of centre the origin, foci `±1` and
-semi-major axis `(ρ + ρ⁻¹)/2`, and let `γ = J(w_γ)` be a point it does not enclose, so that
-`|w_γ| > ρ`. Then
-`ρ^k/|w_γ|^k ≤ min_{p ∈ P_k, p(γ) = 1} max_{z ∈ E_ρ} |p(z)| ≤ (ρ^k + ρ^{-k})/|w_γ^k + w_γ^{-k}|`.
+/-- **Theorem 6.27** of [saad2003iterative], with **equation (6.117)**. Let $\rho \ge 1$, and let
+$E_\rho$ be the ellipse with centre the origin, foci $\pm 1$ and semi-major axis
+$(\rho + \rho^{-1})/2$. Let $w_\gamma \in \mathbb{C}$ with $|w_\gamma| > \rho$, so that
+$\gamma = J(w_\gamma)$ is a point that $E_\rho$ does not enclose, and let $k \in \mathbb{N}$.
+Then
+$$\frac{\rho^k}{|w_\gamma|^k}
+  \le \inf_{p \in \mathbb{P}_k,\ p(\gamma) = 1} \ \max_{z \in E_\rho} |p(z)|
+  \le \frac{\rho^k + \rho^{-k}}{|w_\gamma^k + w_\gamma^{-k}|},$$
+where $p$ ranges over the complex polynomials of degree at most $k$.
 
-The lower bound is Lemma 6.26 applied to the polynomial `w ↦ w^k p(J(w))` of degree `2k`; the
-upper bound is the value attained by the normalized Chebyshev polynomial `C_k(z)/C_k(γ)`. -/
+The point $\gamma$ is given by its preimage $w_\gamma$ under the Joukowski map
+`Complex.joukowski`. The ellipse `SaadSparse.Chapter06.ellipse 0 1 ρ` is $E_\rho$. The lower
+bound is Lemma 6.26 applied to the polynomial $w \mapsto w^k p(J(w))$ of degree $2k$. The upper
+bound is the value of the normalized Chebyshev polynomial $C_k(z)/C_k(\gamma)$. This is the
+backbone's `Polynomial.Chebyshev.ellipse_minimax_bounds`. -/
 theorem theorem_6_27 (k : ℕ) {ρ : ℝ} (hρ : 1 ≤ ρ) {wgam : ℂ} (hw : ρ < ‖wgam‖) :
     (ρ / ‖wgam‖) ^ k ≤
         sInf {M : ℝ | ∃ p : ℂ[X], p.degree ≤ k ∧ p.eval (Complex.joukowski wgam) = 1 ∧
@@ -302,8 +459,13 @@ theorem theorem_6_27 (k : ℕ) {ρ : ℝ} (hρ : 1 ≤ ρ) {wgam : ℂ} (hw : ρ
   obtain ⟨hlow, hmem⟩ := Polynomial.Chebyshev.ellipse_minimax_bounds k hρ hw
   exact ⟨le_csInf ⟨_, hmem⟩ hlow, csInf_le ⟨_, hlow⟩ hmem⟩
 
-/-- **(6.119)–(6.120)**: the maximum of the normalized Chebyshev polynomial `Ĉ_k` of (6.119) on
-the ellipse `E(c, d, a)` is `C_k(a/d) / |C_k((c - γ)/d)|`, where `a/d = (ρ + ρ⁻¹)/2`. -/
+/-- **Equations (6.119)–(6.120)** of [saad2003iterative]. Let $k \in \mathbb{N}$, $\rho \ge 1$, and
+$c, d, \gamma \in \mathbb{C}$ with $d \neq 0$ and $C_k((c - \gamma)/d) \neq 0$. Then the maximum
+of the normalized Chebyshev polynomial $\hat C_k$ of (6.119) on the ellipse $E(c, d, a)$ is
+$$\max_{z \in E(c, d, a)} |\hat C_k(z)| = \frac{C_k(a/d)}{|C_k((c - \gamma)/d)|}, \qquad
+  \frac{a}{d} = \frac{\rho + \rho^{-1}}{2}.$$
+
+This is the backbone's `Polynomial.Chebyshev.sSup_norm_eval_shiftedComplex_ellipse`. -/
 theorem ellipse_max_Chat (k : ℕ) {ρ : ℝ} (hρ : 1 ≤ ρ) {c d gam : ℂ} (hd : d ≠ 0)
     (hgam : (Ccomplex k).eval ((c - gam) / d) ≠ 0) :
     sSup ((fun z => ‖(ChatComplex k c d gam).eval z‖) '' ellipse c d ρ) =
@@ -312,7 +474,7 @@ theorem ellipse_max_Chat (k : ℕ) {ρ : ℝ} (hρ : 1 ≤ ρ) {c d gam : ℂ} (
 
 end ComplexEllipse
 
-/-! ## §6.11.3–6.11.4: convergence of the conjugate gradient method and of GMRES -/
+/-! ### Sections 6.11.3–6.11.4: convergence of the conjugate gradient method and of GMRES -/
 
 /-! ### The quantities of §6.11.3 -/
 
@@ -322,21 +484,32 @@ variable {n : ℕ} {𝕜 : Type*} [RCLike 𝕜]
 
 local notation "𝔼" => EuclideanSpace 𝕜 (Fin n)
 
-/-- **(6.122)**: `η = λ_min / (λ_max - λ_min)`. -/
+/-- **Equation (6.122)** of [saad2003iterative]. For reals $\lambda_{\min}$ and $\lambda_{\max}$,
+$$\eta = \frac{\lambda_{\min}}{\lambda_{\max} - \lambda_{\min}}.$$
+
+If $\lambda_{\max} = \lambda_{\min}$, the value is $0$, by division by zero in Lean, while the
+book's $\eta$ is then infinite. -/
 noncomputable def η (lmin lmax : ℝ) : ℝ := lmin / (lmax - lmin)
 
-/-- The spectral condition number `κ = λ_max / λ_min` of §6.11.3. -/
+/-- **Section 6.11.3** of [saad2003iterative], the spectral condition number
+$\kappa = \lambda_{\max} / \lambda_{\min}$. It is $0$ if $\lambda_{\min} = 0$. -/
 noncomputable def κ (lmin lmax : ℝ) : ℝ := lmax / lmin
 
-/-- The `A`-norm `‖x‖_A = √((A x, x))` of §6.11.3. -/
+/-- **Section 6.11.3** of [saad2003iterative], the **$A$-norm** $\|x\|_A = \sqrt{(Ax, x)}$, for an
+$n \times n$ matrix $A$ and $x \in \mathbb{K}^n$.
+
+The value is $\sqrt{\operatorname{Re}(Ax, x)}$, which is $0$ when
+$\operatorname{Re}(Ax, x) < 0$. For a positive definite $A$ it is the usual $A$-norm. -/
 noncomputable def anorm (A : Matrix (Fin n) (Fin n) 𝕜) (x : 𝔼) : ℝ :=
   Real.sqrt (RCLike.re (inner 𝕜 (op A x) x))
 
-/-- The book's `A`-norm is the backbone's energy norm. -/
+/-- The $A$-norm of the book is the backbone's energy norm: $\|x\|_A$ =
+`energyNorm (SaadSparse.Chapter06.op A) x`. -/
 theorem anorm_eq (A : Matrix (Fin n) (Fin n) 𝕜) (x : 𝔼) : anorm A x = energyNorm (op A) x := rfl
 
-/-- The Chebyshev argument of (6.123) written with the extreme eigenvalues:
-`1 + 2η = (λ_max + λ_min)/(λ_max - λ_min)`. -/
+/-- If $\lambda_{\min} \neq \lambda_{\max}$, the Chebyshev argument of (6.123) is
+$$1 + 2\eta = \frac{\lambda_{\max} + \lambda_{\min}}{\lambda_{\max} - \lambda_{\min}}.$$
+-/
 theorem one_add_two_mul_η {lmin lmax : ℝ} (h : lmin ≠ lmax) :
     1 + 2 * η lmin lmax = (lmax + lmin) / (lmax - lmin) := by
   have hd : lmax - lmin ≠ 0 := sub_ne_zero.mpr (Ne.symm h)
@@ -344,7 +517,7 @@ theorem one_add_two_mul_η {lmin lmax : ℝ} (h : lmin ≠ lmax) :
   field_simp
   ring
 
-/-- Polynomials in `A` commute with `A`. -/
+/-- Polynomials in $A$ commute with $A$. -/
 private theorem aeval_apply_comm (A : Matrix (Fin n) (Fin n) 𝕜) (p : 𝕜[X]) (u : 𝔼) :
     Polynomial.aeval (op A) p (op A u) = op A (Polynomial.aeval (op A) p u) := by
   have h1 : Polynomial.aeval (op A) p (op A u) = (Polynomial.aeval (op A) p * op A) u := rfl
@@ -358,10 +531,12 @@ private theorem aeval_apply_comm (A : Matrix (Fin n) (Fin n) 𝕜) (p : 𝕜[X])
 
 end Quantities
 
-/-! ### Extreme values of a finite family of reals
+/-!
+### Extreme values of a finite family of reals
 
-The book's `λ_min` and `λ_max` are the `⨅` and `⨆` of the eigenvalue family; these are the facts
-about them that the specializations need. -/
+The book's $\lambda_{\min}$ and $\lambda_{\max}$ are the infimum and the supremum of the family of
+eigenvalues. These are the facts about them that the specializations need.
+-/
 
 section Extremes
 
@@ -381,7 +556,7 @@ section Infimum
 
 variable {ι : Type*} [Nonempty ι] {f : ι → ℝ}
 
-/-- `L ≤ c ⨅ f` from `L ≤ c f i` for every `i`, with `c ≥ 0`. -/
+/-- If $c \ge 0$ and $L \le c f(i)$ for every $i$, then $L \le c \inf_i f(i)$. -/
 private theorem le_mul_ciInf {L c : ℝ} (hc : 0 ≤ c) (h : ∀ i, L ≤ c * f i) :
     L ≤ c * ⨅ i, f i := by
   rcases hc.eq_or_lt with h0 | h0
@@ -402,8 +577,8 @@ variable {n : ℕ} {A : Matrix (Fin n) (Fin n) ℝ} {b x₀ xstar : EuclideanSpa
 
 local notation "𝔼" => EuclideanSpace ℝ (Fin n)
 
-/-- `(I - A q(A)) d_0 = x_* - (x_0 + q(A) r_0)`: the book's two ways of writing the error of a
-Krylov iterate, related by `r_0 = A d_0`. -/
+/-- The two ways of writing the error of a Krylov iterate agree: if $Ax_* = b$, then
+$(I - A q(A)) d_0 = x_* - (x_0 + q(A) r_0)$ with $d_0 = x_* - x_0$, because $r_0 = A d_0$. -/
 private theorem error_eq (hstar : op A xstar = b) (q : ℝ[X]) :
     ((1 : 𝔼 →ₗ[ℝ] 𝔼) - op A ∘ₗ Polynomial.aeval (op A) q) (xstar - x₀) =
       xstar - (x₀ + Polynomial.aeval (op A) q (r₀ A b x₀)) := by
@@ -412,8 +587,14 @@ private theorem error_eq (hstar : op A xstar = b) (q : ℝ[X]) :
   simp only [LinearMap.sub_apply, Module.End.one_apply, LinearMap.comp_apply]
   abel
 
-/-- **Lemma 6.28**: the `m`-th conjugate gradient iterate is `x_m = x_0 + q_m(A) r_0` with
-`deg q_m < m`, and `q_m` minimizes `‖(I - A q(A)) d_0‖_A` over the polynomials of degree `< m`. -/
+/-- **Lemma 6.28** of [saad2003iterative]. Let $A$ be a real symmetric positive definite
+$n \times n$ matrix, let $b, x_0, x_* \in \mathbb{R}^n$ with $Ax_* = b$, let $d_0 = x_* - x_0$
+and $r_0 = b - Ax_0$, and let $m \in \mathbb{N}$. Then there is a polynomial $q_m$ of degree
+less than $m$ such that the $m$-th conjugate gradient iterate is
+$$x_m = x_0 + q_m(A) r_0,$$
+and $q_m$ minimizes $\|(I - A q(A)) d_0\|_A$ over all polynomials $q$ of degree less than $m$.
+
+The iterate $x_m$ is `SaadSparse.Chapter06.cgX`, from Algorithm 6.18. -/
 theorem lemma_6_28 (hA : A.PosDef) (hstar : op A xstar = b) (m : ℕ) :
     ∃ q : ℝ[X], q.degree < m ∧ cgX A b x₀ m = x₀ + Polynomial.aeval (op A) q (r₀ A b x₀) ∧
       ∀ q' : ℝ[X], q'.degree < m →
@@ -433,9 +614,7 @@ theorem lemma_6_28 (hA : A.PosDef) (hstar : op A xstar = b) (m : ℕ) :
   rw [anorm_eq, anorm_eq, error_eq hstar q, error_eq hstar q', ← hxeq]
   exact IsGalerkin.energyNorm_le hAc hgal hstar hy
 
-/-- The eigenvalues of a positive definite matrix are positive: the backbone's
-`LinearMap.IsSymmetricCoercive.re_pos_of_hasEigenvalue` read through the eigenvalue bridge
-`Matrix.IsHermitian.hasEigenvalue_toEuclideanLin_iff`. -/
+/-- The eigenvalues of a real positive definite matrix are positive. -/
 private theorem eigenvalues_pos_of_posDef (hA : A.PosDef) (hH : A.IsHermitian) (i : Fin n) :
     0 < hH.eigenvalues i := by
   have hAc : (op A).IsSymmetricCoercive := isSymmetricCoercive_op_of_posDef hA
@@ -445,19 +624,25 @@ private theorem eigenvalues_pos_of_posDef (hA : A.PosDef) (hH : A.IsHermitian) (
 
 variable (A)
 
-/-- The quadratic-form bounds of a positive definite matrix are its extreme eigenvalues; this is
-the form in which the backbone's Chebyshev bounds take the book's spectral hypothesis. -/
+/-- Let $A$ be a real positive definite $n \times n$ matrix with $n \ge 1$. Then $x \mapsto Ax$ is
+symmetric and
+$$\lambda_{\min} \|x\|^2 \le (Ax, x) \le \lambda_{\max} \|x\|^2$$
+for every $x$, where $\lambda_{\min}$ and $\lambda_{\max}$ are the smallest and the largest
+eigenvalue of $A$. This is the form in which the backbone's Chebyshev bounds take the spectral
+hypothesis of the book. -/
 theorem isSymmetricBoundedBy_op [NeZero n] (hA : A.PosDef) :
     (op A).IsSymmetricBoundedBy (⨅ i, hA.1.eigenvalues i) (⨆ i, hA.1.eigenvalues i) :=
   Matrix.IsHermitian.isSymmetricBoundedBy_toEuclideanLin hA.1
     fun i => ⟨ciInf_le' i, le_ciSup' i⟩
 
-/-- `0 < λ_min` for a positive definite matrix. -/
+/-- The smallest eigenvalue $\lambda_{\min}$ of a real positive definite $n \times n$ matrix with
+$n \ge 1$ is positive. -/
 theorem iInf_eigenvalues_pos [NeZero n] (hA : A.PosDef) : 0 < ⨅ i, hA.1.eigenvalues i := by
   have : Nonempty (Fin n) := Fin.pos_iff_nonempty.1 (Nat.pos_of_ne_zero (NeZero.ne n))
   exact lt_ciInf_of_forall fun i => eigenvalues_pos_of_posDef hA hA.1 i
 
-/-- `λ_min ≤ λ_max`. -/
+/-- For a real positive definite $n \times n$ matrix with $n \ge 1$,
+$\lambda_{\min} \le \lambda_{\max}$. -/
 theorem iInf_eigenvalues_le_iSup [NeZero n] (hA : A.PosDef) :
     ⨅ i, hA.1.eigenvalues i ≤ ⨆ i, hA.1.eigenvalues i := by
   obtain ⟨i⟩ : Nonempty (Fin n) := Fin.pos_iff_nonempty.1 (Nat.pos_of_ne_zero (NeZero.ne n))
@@ -465,12 +650,19 @@ theorem iInf_eigenvalues_le_iSup [NeZero n] (hA : A.PosDef) :
 
 variable {A}
 
-/-- **Theorem 6.29**, **(6.123)**: for a symmetric positive definite `A` with extreme eigenvalues
-`λ_min < λ_max` and `η = λ_min/(λ_max - λ_min)`,
-`‖x_* - x_m‖_A ≤ ‖x_* - x_0‖_A / C_m(1 + 2η)`.
+/-- **Theorem 6.29** of [saad2003iterative], with **equation (6.123)**. Let $A$ be a real symmetric
+positive definite $n \times n$ matrix with $n \ge 1$, whose extreme eigenvalues satisfy
+$\lambda_{\min} < \lambda_{\max}$, and let $\eta = \lambda_{\min}/(\lambda_{\max} -
+\lambda_{\min})$. Let $b, x_0, x_* \in \mathbb{R}^n$ with $Ax_* = b$. Then for every
+$m \in \mathbb{N}$ the $m$-th conjugate gradient iterate $x_m$ satisfies
+$$\|x_* - x_m\|_A \le \frac{\|x_* - x_0\|_A}{C_m(1 + 2\eta)}.$$
 
-The book's `η` is `+∞` when `λ_min = λ_max`, so the hypothesis `hl` — at least two distinct
-extreme eigenvalues — is the book's tacit assumption; without it use (6.128), `equation_6_128`. -/
+**Reading.** The book's $\eta$ is infinite when $\lambda_{\min} = \lambda_{\max}$, so the
+hypothesis $\lambda_{\min} < \lambda_{\max}$ is a tacit assumption of the book. Without it,
+(6.128) holds; see `SaadSparse.Chapter06.equation_6_128`.
+
+The iterate $x_m$ is `SaadSparse.Chapter06.cgX`. The proof specializes
+`Krylov.IsGalerkinIterate.energyNorm_error_le_div_eval_T`. -/
 theorem theorem_6_29 [NeZero n] (hA : A.PosDef) (hstar : op A xstar = b)
     (hl : ⨅ i, hA.1.eigenvalues i < ⨆ i, hA.1.eigenvalues i) (m : ℕ) :
     anorm A (xstar - cgX A b x₀ m) ≤
@@ -480,7 +672,10 @@ theorem theorem_6_29 [NeZero n] (hA : A.PosDef) (hstar : op A xstar = b)
   exact Krylov.IsGalerkinIterate.energyNorm_error_le_div_eval_T (iInf_eigenvalues_pos A hA) hl
     (isSymmetricBoundedBy_op A hA) (cgX_isGalerkinIterate hA m) hstar
 
-/-- **(6.124)**: `½ (1 + 2η + √((1+2η)² - 1))^m ≤ C_m(1 + 2η)`. -/
+/-- **Equation (6.124)** of [saad2003iterative]. Let $0 < \lambda_{\min} < \lambda_{\max}$ and
+$\eta = \lambda_{\min}/(\lambda_{\max} - \lambda_{\min})$. Then for every $m \in \mathbb{N}$,
+$$\frac12 \left(1 + 2\eta + \sqrt{(1 + 2\eta)^2 - 1}\right)^m \le C_m(1 + 2\eta).$$
+-/
 theorem equation_6_124 {lmin lmax : ℝ} (hl : 0 < lmin) (hll : lmin < lmax) (m : ℕ) :
     (1 + 2 * η lmin lmax + Real.sqrt ((1 + 2 * η lmin lmax) ^ 2 - 1)) ^ m / 2 ≤
       (C m).eval (1 + 2 * η lmin lmax) := by
@@ -488,7 +683,10 @@ theorem equation_6_124 {lmin lmax : ℝ} (hl : 0 < lmin) (hll : lmin < lmax) (m 
   rw [one_add_two_mul_η hll.ne, le_div_iff₀ (by linarith)]
   linarith
 
-/-- **(6.125)**: `√((1 + 2η)² - 1) = 2√(η(η+1))`. -/
+/-- **Equation (6.125)** of [saad2003iterative]. Let $0 < \lambda_{\min} < \lambda_{\max}$ and
+$\eta = \lambda_{\min}/(\lambda_{\max} - \lambda_{\min})$. Then
+$$\sqrt{(1 + 2\eta)^2 - 1} = 2 \sqrt{\eta(\eta + 1)}.$$
+-/
 theorem equation_6_125 {lmin lmax : ℝ} (hl : 0 < lmin) (hll : lmin < lmax) :
     Real.sqrt ((1 + 2 * η lmin lmax) ^ 2 - 1) =
       2 * Real.sqrt (η lmin lmax * (η lmin lmax + 1)) := by
@@ -496,7 +694,10 @@ theorem equation_6_125 {lmin lmax : ℝ} (hl : 0 < lmin) (hll : lmin < lmax) :
   rw [show (1 + 2 * η lmin lmax) ^ 2 - 1 = 2 ^ 2 * (η lmin lmax * (η lmin lmax + 1)) by ring,
     Real.sqrt_mul (by positivity), Real.sqrt_sq (by norm_num)]
 
-/-- **(6.126)**: `1 + 2η + 2√(η(η+1)) = (√η + √(η+1))²`. -/
+/-- **Equation (6.126)** of [saad2003iterative]. Let $0 < \lambda_{\min} < \lambda_{\max}$ and
+$\eta = \lambda_{\min}/(\lambda_{\max} - \lambda_{\min})$. Then
+$$1 + 2\eta + 2\sqrt{\eta(\eta + 1)} = \left(\sqrt{\eta} + \sqrt{\eta + 1}\right)^2.$$
+-/
 theorem equation_6_126 {lmin lmax : ℝ} (hl : 0 < lmin) (hll : lmin < lmax) :
     1 + 2 * η lmin lmax + 2 * Real.sqrt (η lmin lmax * (η lmin lmax + 1)) =
       (Real.sqrt (η lmin lmax) + Real.sqrt (η lmin lmax + 1)) ^ 2 := by
@@ -506,7 +707,11 @@ theorem equation_6_126 {lmin lmax : ℝ} (hl : 0 < lmin) (hll : lmin < lmax) :
   rw [add_sq, Real.sq_sqrt hη, Real.sq_sqrt (by linarith), hs]
   ring
 
-/-- **(6.127)**: `(√η + √(η+1))² = (√κ + 1)/(√κ - 1)`, with `κ = λ_max/λ_min`. -/
+/-- **Equation (6.127)** of [saad2003iterative]. Let $0 < \lambda_{\min} < \lambda_{\max}$, $\eta =
+\lambda_{\min}/(\lambda_{\max} - \lambda_{\min})$ and $\kappa = \lambda_{\max}/\lambda_{\min}$.
+Then
+$$\left(\sqrt{\eta} + \sqrt{\eta + 1}\right)^2 = \frac{\sqrt{\kappa} + 1}{\sqrt{\kappa} - 1}.$$
+-/
 theorem equation_6_127 {lmin lmax : ℝ} (hl : 0 < lmin) (hll : lmin < lmax) :
     (Real.sqrt (η lmin lmax) + Real.sqrt (η lmin lmax + 1)) ^ 2 =
       (Real.sqrt (κ lmin lmax) + 1) / (Real.sqrt (κ lmin lmax) - 1) := by
@@ -533,8 +738,15 @@ theorem equation_6_127 {lmin lmax : ℝ} (hl : 0 < lmin) (hll : lmin < lmax) :
   exact key _ _ _ (Real.sqrt_pos.2 hl) (Real.sqrt_pos.2 hd) (Real.sqrt_lt_sqrt hl.le hll)
     (by rw [Real.sq_sqrt hd.le, Real.sq_sqrt hmax.le, Real.sq_sqrt hl.le])
 
-/-- **(6.128)**: `‖x_* - x_m‖_A ≤ 2 ((√κ - 1)/(√κ + 1))^m ‖x_* - x_0‖_A`, `κ = λ_max/λ_min`.
-Unlike (6.123) this needs no strict spectral gap. -/
+/-- **Equation (6.128)** of [saad2003iterative]. Let $A$ be a real symmetric positive definite
+$n \times n$ matrix with $n \ge 1$, let $\kappa = \lambda_{\max}/\lambda_{\min}$, and let
+$b, x_0, x_* \in \mathbb{R}^n$ with $Ax_* = b$. Then for every $m \in \mathbb{N}$ the $m$-th
+conjugate gradient iterate $x_m$ satisfies
+$$\|x_* - x_m\|_A \le 2 \left(\frac{\sqrt{\kappa} - 1}{\sqrt{\kappa} + 1}\right)^m \|x_* -
+  x_0\|_A.$$
+
+Unlike (6.123), this bound does not need $\lambda_{\min} < \lambda_{\max}$. The proof
+specializes `Krylov.IsGalerkinIterate.energyNorm_error_le`. -/
 theorem equation_6_128 [NeZero n] (hA : A.PosDef) (hstar : op A xstar = b) (m : ℕ) :
     anorm A (xstar - cgX A b x₀ m) ≤
       2 * ((Real.sqrt (κ (⨅ i, hA.1.eigenvalues i) (⨆ i, hA.1.eigenvalues i)) - 1) /
@@ -557,11 +769,12 @@ local notation "𝔼" => EuclideanSpace ℝ (Fin n)
 
 open scoped Matrix Matrix.Norms.L2Operator
 
-/-- The symmetric part `(A + Aᵀ)/2` of Theorem 6.30. -/
+/-- **Theorem 6.30** of [saad2003iterative], the symmetric part $(A + A^T)/2$ of a real square
+matrix $A$. -/
 noncomputable def symmPart (A : Matrix (Fin n) (Fin n) ℝ) : Matrix (Fin n) (Fin n) ℝ :=
   (2⁻¹ : ℝ) • (A + Aᵀ)
 
-/-- `(A + Aᵀ)/2` is symmetric. -/
+/-- The symmetric part $(A + A^T)/2$ of a real square matrix is symmetric. -/
 theorem symmPart_isHermitian (A : Matrix (Fin n) (Fin n) ℝ) : (symmPart A).IsHermitian := by
   rw [Matrix.isHermitian_iff_isSymm, Matrix.IsSymm, symmPart]
   simp [Matrix.transpose_add, add_comm]
@@ -575,15 +788,17 @@ private theorem op_symmPart (A : Matrix (Fin n) (Fin n) ℝ) :
     (Matrix.conjTranspose_eq_transpose_of_trivial A).symm]
   exact h
 
-/-- The book's hypothesis `(A x, x) > 0` only sees the symmetric part of `A`. -/
+/-- The quadratic form of $A$ equals that of its symmetric part: $((A + A^T)/2\, x, x) = (Ax, x)$.
+-/
 private theorem inner_op_symmPart (A : Matrix (Fin n) (Fin n) ℝ) (x : 𝔼) :
     inner ℝ (op (symmPart A) x) x = inner ℝ (op A x) x := by
   rw [op_symmPart, LinearMap.smul_apply, LinearMap.add_apply, real_inner_smul_left,
     inner_add_left, LinearMap.adjoint_inner_left, real_inner_comm x (op A x)]
   ring
 
-/-- Theorem 6.30's hypothesis, "`A` is positive definite" in the book's sense
-(`(A x, x) > 0` for real `x ≠ 0`), makes `(A + Aᵀ)/2` a positive definite matrix. -/
+/-- If $(Ax, x) > 0$ for every nonzero real vector $x$, which is the hypothesis "$A$ is positive
+definite" of Theorem 6.30 in the sense of the book, then $(A + A^T)/2$ is a positive definite
+matrix. -/
 theorem symmPart_posDef (hA : ∀ x : 𝔼, x ≠ 0 → 0 < inner ℝ (op A x) x) :
     (symmPart A).PosDef := by
   rw [Matrix.posDef_iff_isSymmetricCoercive]
@@ -594,8 +809,9 @@ theorem symmPart_posDef (hA : ∀ x : 𝔼, x ≠ 0 → 0 < inner ℝ (op A x) x
 
 variable (A)
 
-/-- The coercivity constant of Theorem 6.30 is `μ = λ_min((A + Aᵀ)/2)`: the quadratic form of `A`
-is that of its symmetric part, whose smallest eigenvalue bounds it below. -/
+/-- For a real $n \times n$ matrix $A$ with $n \ge 1$, let $\mu = \lambda_{\min}((A + A^T)/2)$. Then
+$(Ax, x) \ge \mu \|x\|^2$ for every $x$. So $\mu$ is a coercivity constant of $A$, the constant
+of Theorem 6.30. -/
 theorem isCoerciveWith_op [NeZero n] :
     (op A).IsCoerciveWith (⨅ i, (symmPart_isHermitian A).eigenvalues i) := by
   have hbdd := Matrix.IsHermitian.isSymmetricBoundedBy_toEuclideanLin (symmPart_isHermitian A)
@@ -604,7 +820,8 @@ theorem isCoerciveWith_op [NeZero n] :
   intro x
   simpa [inner_op_symmPart] using hbdd.le_re_inner x
 
-/-- `0 < μ`: the coercivity constant of Theorem 6.30 is positive. -/
+/-- If $n \ge 1$ and $(Ax, x) > 0$ for every nonzero real vector $x$, then the coercivity constant
+$\mu = \lambda_{\min}((A + A^T)/2)$ of Theorem 6.30 is positive. -/
 theorem iInf_eigenvalues_symmPart_pos [NeZero n]
     (hA : ∀ x : 𝔼, x ≠ 0 → 0 < inner ℝ (op A x) x) :
     0 < ⨅ i, (symmPart_isHermitian A).eigenvalues i := by
@@ -612,7 +829,7 @@ theorem iInf_eigenvalues_symmPart_pos [NeZero n]
   exact lt_ciInf_of_forall fun i =>
     eigenvalues_pos_of_posDef (symmPart_posDef hA) (symmPart_isHermitian A) i
 
-/-- A matrix positive definite in the book's sense is nonsingular. -/
+/-- A real square matrix $A$ with $(Ax, x) > 0$ for every nonzero $x$ is nonsingular. -/
 theorem isUnit_of_forall_inner_pos (hA : ∀ x : 𝔼, x ≠ 0 → 0 < inner ℝ (op A x) x) : IsUnit A := by
   have hco : (op A).IsCoercive := by
     rw [LinearMap.isCoercive_iff_forall_pos]
@@ -627,9 +844,14 @@ theorem isUnit_of_forall_inner_pos (hA : ∀ x : 𝔼, x ≠ 0 → 0 < inner ℝ
 
 variable {A}
 
-/-- The residual after one cycle of GMRES(m) is the minimal one over `x + 𝒦_m`: the book's rule
-"if `h_{j+1,j} = 0` then set `m := j`" stops the Arnoldi process only once `𝒦_m` has been
-exhausted, so the truncated cycle still minimizes over the whole of `𝒦_m`. -/
+/-- Let $A$ be a nonsingular real matrix, and let $b, y \in \mathbb{R}^n$ and $m \in \mathbb{N}$.
+Then the GMRES iterate with starting vector $y$ and at most $m$ steps minimizes the residual
+norm $\|b - Ax\|_2$ over $x \in y + \mathcal{K}_m(A, b - Ay)$.
+
+The iterate is `SaadSparse.Chapter06.gmres`, which follows the rule of the book "if
+$h_{j+1,j} = 0$ then set $m := j$". This rule stops the Arnoldi process only after
+$\mathcal{K}_m$ is exhausted, so the truncated iterate still minimizes over all of
+$\mathcal{K}_m$. -/
 theorem gmres_isMinResidualIterate (hAu : IsUnit A) (b y : 𝔼) (m : ℕ) :
     Krylov.IsMinResidualIterate (op A) b y m (gmres A b y m) := by
   have hsub : Krylov.subspace (op A) (b - op A y) (mEff A b y m) =
@@ -644,8 +866,7 @@ theorem gmres_isMinResidualIterate (hAu : IsUnit A) (b y : 𝔼) (m : ℕ) :
   rw [hg]
   exact ⟨hsub ▸ h.mem, fun z hz => h.min z (hsub ▸ hz)⟩
 
-/-- The coercivity inequality `c ‖x‖ ≤ ‖A x‖`, which turns a residual bound into an error
-bound. -/
+/-- If $c$ is a coercivity constant of $A$, then $c \|z\| \le \|Az\|$ for every $z$. -/
 private theorem mul_norm_le_norm_op {c : ℝ} (hc : (op A).IsCoerciveWith c) (z : 𝔼) :
     c * ‖z‖ ≤ ‖op A z‖ := by
   have h1 : c * ‖z‖ ^ 2 ≤ inner ℝ (op A z) z := by simpa using hc z
@@ -655,7 +876,8 @@ private theorem mul_norm_le_norm_op {c : ℝ} (hc : (op A).IsCoerciveWith c) (z 
     exact norm_nonneg _
   · exact le_of_mul_le_mul_right (by nlinarith) h
 
-/-- Each cycle of GMRES(m) is a minimal-residual iterate over `𝒦_m` from the previous one. -/
+/-- Each cycle of GMRES(m) is a minimal-residual iterate over $\mathcal{K}_m$ from the previous
+iterate. -/
 private theorem restarted_isMinResidualIterate (hAu : IsUnit A) (b x₀ : 𝔼) (m k : ℕ) :
     Krylov.IsMinResidualIterate (op A) b (gmresRestarted A b m x₀ k) m
       (gmresRestarted A b m x₀ (k + 1)) := by
@@ -664,9 +886,14 @@ private theorem restarted_isMinResidualIterate (hAu : IsUnit A) (b x₀ : 𝔼) 
   rw [h]
   exact gmres_isMinResidualIterate hAu b _ m
 
-/-- **Theorem 6.30**, the rate: each cycle of GMRES(m) reduces the residual by at least the
-factor `√(1 - μ²/σ²)`, with `μ = λ_min((A + Aᵀ)/2)` and `σ = ‖A‖₂` — the book's (5.15), since one
-cycle is at least as good as one minimal-residual step. -/
+/-- **Theorem 6.30** of [saad2003iterative], the rate. Let $A$ be a real $n \times n$ matrix with
+$n \ge 1$ such that $(Ax, x) > 0$ for every nonzero $x \in \mathbb{R}^n$. Let
+$\mu = \lambda_{\min}((A + A^T)/2)$ and $\sigma = \|A\|_2$, let $b, x_0 \in \mathbb{R}^n$, and
+let $m \ge 1$. If $x_k$ is the iterate of GMRES(m) after $k$ cycles, then for every $k$
+$$\|b - Ax_{k+1}\|_2 \le \sqrt{1 - \frac{\mu^2}{\sigma^2}}\ \|b - Ax_k\|_2.$$
+
+The factor is that of (5.15) of the book, since one cycle of GMRES(m) is at least as good as one
+minimal-residual step. -/
 theorem theorem_6_30_rate [NeZero n] (hA : ∀ x : 𝔼, x ≠ 0 → 0 < inner ℝ (op A x) x) (b x₀ : 𝔼)
     {m : ℕ} (hm : 1 ≤ m) (k : ℕ) :
     ‖b - op A (gmresRestarted A b m x₀ (k + 1))‖ ≤
@@ -678,13 +905,15 @@ theorem theorem_6_30_rate [NeZero n] (hA : ∀ x : 𝔼, x ≠ 0 → 0 < inner �
     (restarted_isMinResidualIterate (isUnit_of_forall_inner_pos A hA) b x₀ m k)
   rwa [Matrix.l2_opNorm_eq_norm_toEuclideanLin A]
 
-/-- **Theorem 6.30**: if `A` is positive definite in the book's sense — `(A x, x) > 0` for every
-real `x ≠ 0`, equivalently `(A + Aᵀ)/2` symmetric positive definite — then GMRES(m) converges to
-the solution for every `m ≥ 1`.
+/-- **Theorem 6.30** of [saad2003iterative]. Let $A$ be a real $n \times n$ matrix with $n \ge 1$
+that is positive definite in the sense of the book: $(Ax, x) > 0$ for every nonzero
+$x \in \mathbb{R}^n$, or equivalently $(A + A^T)/2$ is symmetric positive definite. Let
+$b, x_0, x_* \in \mathbb{R}^n$ with $Ax_* = b$, and let $m \ge 1$. Then the iterates $x_k$ of
+GMRES(m) (Algorithm 6.11) after $k$ cycles converge to $x_*$ as $k \to \infty$.
 
-This is the backbone's `Krylov.restarted_minRes_tendsto`: a cycle of Algorithm 6.11 satisfies the
-per-cycle minimal-residual specification (`gmres_isMinResidualIterate`), and coercivity turns the
-convergence of the residuals into convergence of the iterates. -/
+This is the backbone's `Krylov.restarted_minRes_tendsto`. A cycle of Algorithm 6.11 is a
+minimal-residual iterate (`SaadSparse.Chapter06.gmres_isMinResidualIterate`), and coercivity
+turns the convergence of the residuals into convergence of the iterates. -/
 theorem theorem_6_30 [NeZero n] (hA : ∀ x : 𝔼, x ≠ 0 → 0 < inner ℝ (op A x) x) (b x₀ xstar : 𝔼)
     (hstar : op A xstar = b) {m : ℕ} (hm : 1 ≤ m) :
     Filter.Tendsto (fun k => gmresRestarted A b m x₀ k) Filter.atTop (nhds xstar) := by
@@ -707,9 +936,18 @@ theorem theorem_6_30 [NeZero n] (hA : ∀ x : 𝔼, x ≠ 0 → 0 < inner ℝ (o
   exact tendsto_iff_norm_sub_tendsto_zero.2 (squeeze_zero (fun k => norm_nonneg _) hbound
     (by simpa using hres.div_const (⨅ i, (symmPart_isHermitian A).eigenvalues i)))
 
-/-- **Lemma 6.31**: the `m`-th GMRES iterate is `x_m = x_0 + q_m(A) r_0` with `deg q_m < m`, its
-residual is `(I - A q_m(A)) r_0`, and `q_m` minimizes `‖(I - A q(A)) r_0‖₂` over the polynomials
-of degree `< m`. -/
+/-- **Lemma 6.31** of [saad2003iterative]. Let $A$ be a real $n \times n$ matrix, let
+$b, x_0 \in \mathbb{R}^n$ with $r_0 = b - Ax_0$, and let $m$ be at most the grade of
+$v_1 = r_0/\|r_0\|$, with the triangular factor $R_m$ of the Givens QR factorization of
+$\bar H_m$ nonsingular. Then there is a polynomial $q_m$ of degree less than $m$ such that the
+$m$-th GMRES iterate is
+$$x_m = x_0 + q_m(A) r_0, \qquad b - Ax_m = (I - A q_m(A)) r_0,$$
+and $q_m$ minimizes $\|(I - A q(A)) r_0\|_2$ over all polynomials $q$ of degree less than $m$.
+
+The iterate $x_m$ is `SaadSparse.Chapter06.gmresFixed`, the GMRES iterate after exactly $m$
+Arnoldi steps, and $R_m$ is `SaadSparse.Chapter06.R`. The two hypotheses make $x_m$ well
+defined: the $m$ Arnoldi steps are completed, and the least-squares problem is solved by
+$y_m = R_m^{-1} g_m$. -/
 theorem lemma_6_31 (b x₀ : 𝔼) {m : ℕ} (hm : m ≤ grade A (v₁ A b x₀))
     (hR : IsUnit (R (arnoldiCoeff A (v₁ A b x₀)) m)) :
     ∃ q : ℝ[X], q.degree < m ∧
@@ -747,7 +985,13 @@ local notation "𝔼" => EuclideanSpace ℂ (Fin n)
 
 open scoped Matrix Matrix.Norms.L2Operator
 
-/-- `ε^{(m)} = min_{p ∈ P_m, p(0) = 1} max_i |p(λ_i)|` of Proposition 6.32. -/
+/-- **Proposition 6.32** of [saad2003iterative], the quantity
+$$\varepsilon^{(m)} = \min_{p \in \mathbb{P}_m,\ p(0) = 1} \ \max_{i} |p(\lambda_i)|$$
+for complex numbers $\lambda_1, \dots, \lambda_n$, where $p$ ranges over the complex polynomials
+of degree at most $m$ with $p(0) = 1$.
+
+The minimum is an infimum. For $n = 0$ the maximum over the empty family is $0$, so
+$\varepsilon^{(m)} = 0$. -/
 noncomputable def epsMin (lam : Fin n → ℂ) (m : ℕ) : ℝ :=
   ⨅ p : {p : ℂ[X] // p.degree ≤ m ∧ p.eval 0 = 1}, ⨆ i, ‖p.1.eval (lam i)‖
 
@@ -795,10 +1039,14 @@ private theorem norm_le_iSup (d : Fin n → ℂ) : ‖d‖ ≤ ⨆ i, ‖d i‖ 
   (pi_norm_le_iff_of_nonneg (Real.iSup_nonneg fun i => norm_nonneg (d i))).2
     fun i => le_ciSup (Finite.bddAbove_range fun j => ‖d j‖) i
 
-/-- The surface ingredient of Proposition 6.32: for `A = X Λ X⁻¹` with `Λ` diagonal,
-`‖p(A) y‖₂ ≤ κ₂(X) max_i |p(λ_i)| ‖y‖₂`. The backbone's `norm_aeval_apply_le_of_conj`
-(`Numlib/Krylov/Convergence/Polynomial.lean`) covers the case of a real spectrum; here `Λ` is
-complex, and `p(Λ)` is the diagonal matrix with entries `p(λ_i)`. -/
+/-- Let $A = X \Lambda X^{-1}$ be a complex $n \times n$ matrix with $X$ nonsingular and $\Lambda =
+\operatorname{diag}(\lambda_1, \dots, \lambda_n)$. Then for every polynomial $p$ and every
+$y \in \mathbb{C}^n$,
+$$\|p(A) y\|_2 \le \|X\|_2 \|X^{-1}\|_2 \max_i |p(\lambda_i)|\ \|y\|_2.$$
+
+This is the surface ingredient of Proposition 6.32. The backbone's `norm_aeval_apply_le_of_conj`
+covers the case of a symmetric diagonal factor; here $\Lambda$ is complex, and $p(\Lambda)$ is
+the diagonal matrix with entries $p(\lambda_i)$. -/
 theorem norm_aeval_diagonal_mulVec_le {A : Matrix (Fin n) (Fin n) ℂ}
     (X : Matrix (Fin n) (Fin n) ℂ) (hX : IsUnit X) (lam : Fin n → ℂ)
     (hA : A = X * Matrix.diagonal lam * X⁻¹) (p : ℂ[X]) (y : 𝔼) :
@@ -822,8 +1070,16 @@ theorem norm_aeval_diagonal_mulVec_le {A : Matrix (Fin n) (Fin n) ℂ}
         mul_le_mul_of_nonneg_right hsub (norm_nonneg _)
     _ = ‖X‖ * ‖X⁻¹‖ * (⨆ i, ‖p.eval (lam i)‖) * ‖y‖ := by ring
 
-/-- **Proposition 6.32**: for a diagonalizable `A = X Λ X⁻¹` with `Λ = diag(λ_1, …, λ_n)`, the
-`m`-th GMRES residual satisfies `‖r_m‖₂ ≤ κ₂(X) ε^{(m)} ‖r_0‖₂`, `κ₂(X) = ‖X‖₂ ‖X⁻¹‖₂`. -/
+/-- **Proposition 6.32** of [saad2003iterative]. Let $A = X \Lambda X^{-1}$ be a complex
+$n \times n$ matrix with $X$ nonsingular and $\Lambda = \operatorname{diag}(\lambda_1, \dots,
+\lambda_n)$. Let $b, x_0 \in \mathbb{C}^n$ with $r_0 = b - Ax_0$, and let $m$ be at most the
+grade of $v_1 = r_0/\|r_0\|$, with the triangular factor $R_m$ of the Givens QR factorization of
+$\bar H_m$ nonsingular. Then the residual of the $m$-th GMRES iterate $x_m$ satisfies
+$$\|b - Ax_m\|_2 \le \kappa_2(X)\, \varepsilon^{(m)} \|r_0\|_2, \qquad \kappa_2(X) = \|X\|_2
+  \|X^{-1}\|_2.$$
+
+The iterate $x_m$ is `SaadSparse.Chapter06.gmresFixed`, and the hypotheses on $m$ and $R_m$ are
+those of `SaadSparse.Chapter06.lemma_6_31`. -/
 theorem proposition_6_32 {A : Matrix (Fin n) (Fin n) ℂ} (b x₀ : 𝔼) (X : Matrix (Fin n) (Fin n) ℂ)
     (hX : IsUnit X) (lam : Fin n → ℂ) (hA : A = X * Matrix.diagonal lam * X⁻¹) {m : ℕ}
     (hm : m ≤ grade A (v₁ A b x₀)) (hR : IsUnit (R (arnoldiCoeff A (v₁ A b x₀)) m)) :
@@ -842,15 +1098,21 @@ theorem proposition_6_32 {A : Matrix (Fin n) (Fin n) ℂ} (b x₀ : 𝔼) (X : M
       ‖X‖ * ‖X⁻¹‖ * ‖r₀ A b x₀‖ * epsMin lam m := le_mul_ciInf (by positivity) key
   exact hgoal.trans_eq (by rw [epsMin]; ring)
 
-/-- **Corollary 6.33**: assume that `A` is diagonalizable, `A = X Λ X⁻¹`, and that all its
-eigenvalues are enclosed in the ellipse `E(c, d, a)`, which excludes the origin. Then the `m`-th
-GMRES residual satisfies `‖r_m‖₂ ≤ κ₂(X) (C_m(a/d)/|C_m(c/d)|) ‖r_0‖₂`, with
-`a/d = (ρ + ρ⁻¹)/2`.
+/-- **Corollary 6.33** of [saad2003iterative]. Let $A = X \Lambda X^{-1}$ be a complex $n \times n$
+matrix with $X$ nonsingular and $\Lambda = \operatorname{diag}(\lambda_1, \dots, \lambda_n)$.
+Let $c, d \in \mathbb{C}$ with $d \neq 0$ and $\rho \ge 1$, and assume that all eigenvalues
+$\lambda_i$ are enclosed in the ellipse $E(c, d, a)$ and that the region it encloses excludes
+the origin. Let $b, x_0 \in \mathbb{C}^n$ with $r_0 = b - Ax_0$, and let $m$ be at most the
+grade of $v_1 = r_0/\|r_0\|$, with $R_m$ nonsingular. Then the residual of the $m$-th GMRES
+iterate $x_m$ satisfies
+$$\|b - Ax_m\|_2 \le \kappa_2(X)\, \frac{C_m(a/d)}{|C_m(c/d)|}\, \|r_0\|_2, \qquad \frac{a}{d} =
+  \frac{\rho + \rho^{-1}}{2}.$$
 
-The book takes the spectrum to lie *inside* the ellipse while (6.119)–(6.120) bound `|Ĉ_m|` *on*
-it; the step between the two is the maximum modulus principle on the filled ellipse,
-`Polynomial.norm_eval_le_of_forall_mem_ellipse`. The hypothesis that the origin is outside is
-what makes `C_m(c/d) ≠ 0`, so that `Ĉ_m` is a competitor in `ε^{(m)}` at all. -/
+The region is `SaadSparse.Chapter06.filledEllipse c d ρ`. The book takes the spectrum inside the
+ellipse, while (6.119)–(6.120) bound $|\hat C_m|$ on the ellipse. The step between the two,
+which the book leaves implicit, is the maximum modulus principle on the filled ellipse,
+`Polynomial.norm_eval_le_of_forall_mem_ellipse`. The hypothesis that the origin is outside makes
+$C_m(c/d) \neq 0$, so that $\hat C_m$ with $\gamma = 0$ is a competitor in $\varepsilon^{(m)}$. -/
 theorem corollary_6_33 {A : Matrix (Fin n) (Fin n) ℂ} (b x₀ : 𝔼) (X : Matrix (Fin n) (Fin n) ℂ)
     (hX : IsUnit X) (lam : Fin n → ℂ) (hA : A = X * Matrix.diagonal lam * X⁻¹) {c d : ℂ}
     (hd : d ≠ 0) {ρ : ℝ} (hρ : 1 ≤ ρ) (hlam : ∀ i, lam i ∈ filledEllipse c d ρ)

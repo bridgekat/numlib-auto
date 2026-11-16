@@ -8,29 +8,55 @@ import NumlibSurface.SaadSparse.Chapter01.Section13
 import NumlibSurface.SaadSparse.Common
 
 /-!
-# Saad §8.1: the normal equations
+# Saad, Section 8.1: The normal equations
 
-Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM,
-2003, §8.1, with P-8.1.
+This module formalizes Section 8.1 of [saad2003iterative], together with exercises P-8.1 and P-8.10.
+Let $A \in \mathbb{K}^{n \times m}$ be a rectangular matrix. The normal equations of the first kind,
+$A^H A x = A^H b$ (8.1), characterize the solutions of the least-squares problem (8.2),
+$\min_x \|b - Ax\|_2$. Both directions of this equivalence say that the best approximation to $b$
+from $\operatorname{Ran} A$ is the point whose error is orthogonal to $\operatorname{Ran} A$. The
+normal equations of the second kind, $A A^H u = b$ (8.3), solve $Ax = b$ through $x = A^H u$, and
+this $x$ is the solution of least norm, which is (8.4), $\min_u \|x_* - A^H u\|_2$. The module also
+states the augmented system (8.5) and the identity (8.8), $\kappa_2(A^H A) = \kappa_2(A)^2$, which
+is the reason of the chapter for preferring methods that never form the normal equations. The proofs
+use the projection specifications of `Numlib.Projection.Basic` and the condition number of
+`Numlib.Analysis.Matrix.OperatorNorm`.
 
-A rectangular `A : Matrix (Fin n) (Fin m) 𝕜` has two systems of normal equations. The system of
-the *first* kind, `Aᴴ A x = Aᴴ b` (8.1), characterizes the least-squares solutions of (8.2),
-`min ‖b - A x‖₂`: that is `equation_8_1`, and both of its directions are the statement that a
-best approximation from `Ran A` is the point whose error is orthogonal to `Ran A`. The system of
-the *second* kind, `A Aᴴ u = b` (8.3), solves `A x = b` through `x = Aᴴ u` and does so with the
-least `‖·‖₂`: that is `equation_8_3`, whose last clause is (8.4), `minimize ‖x_* - Aᴴ u‖₂`,
-stated as `IsMinError` over `Ran Aᴴ` — the form §8.3 needs for CGNE.
-The augmented system (8.5) is `equation_8_5`, and
-`equation_8_8` is `κ₂(Aᴴ A) = κ₂(A)²`, the chapter's reason for preferring methods that never
-form the normal equations.
+## Main results
 
-The eigenvalue claim of §8.1 — that the spectrum of `[[0, A], [Aᴴ, 0]]` is `±σ_i(A)` — and P-8.4
-need a singular value decomposition, which Mathlib does not have, as
-`plans/NumlibSurface/SaadSparse/Chapter08/Section01.toml` records.
+* Equations (8.1)–(8.2), `SaadSparse.Chapter08.equation_8_1`: $A^H A x = A^H b$ if and only if $x$
+  minimizes $\|b - Ax\|_2$.
+* Equation (8.1), `SaadSparse.Chapter08.isSymmetricCoercive_conjTranspose_mul_self`: if the columns
+  of $A$ are independent, then $A^H A$ is symmetric positive definite.
+* Equations (8.3)–(8.4), `SaadSparse.Chapter08.equation_8_3`: if $A A^H u = b$, then $x = A^H u$ is
+  the solution of $Ax = b$ of least norm.
+* Equations (8.5)–(8.7) and exercise P-8.1, `SaadSparse.Chapter08.equation_8_5`: the augmented
+  system holds if and only if $r = b - Ax$ and $x$ solves the least-squares problem.
+* Equation (8.8), `SaadSparse.Chapter08.equation_8_8`: $\kappa_2(A^H A) = \kappa_2(A)^2$.
+* Exercise P-8.10, `SaadSparse.Chapter08.problem_8_10` and
+  `SaadSparse.Chapter08.problem_8_10_residual`: replacing $b$ by $b + \alpha r$, with $r$ the
+  least-squares residual, does not change the minimizers.
 
-Vectors are `EuclideanSpace 𝕜 (Fin n)` and `A ⬝ x` is `Matrix.toEuclideanLin A x`, as everywhere
-in this library; (8.5) alone is stated on the plain function types with `*ᵥ`, since its
-coefficient matrix is indexed by `Fin n ⊕ Fin m`.
+## Implementation notes
+
+* Vectors are `EuclideanSpace 𝕜 (Fin n)`, and $Ax$ is `A ⬝ x`, that is `Matrix.toEuclideanLin A x`,
+  as everywhere in this library. Only (8.5) is stated on the plain function types with `*ᵥ`, because
+  its coefficient matrix is indexed by `Fin n ⊕ Fin m`.
+* Equation (8.4) is stated as `IsMinError` over $\operatorname{Ran} A^H$, which is the form that
+  Section 8.3 needs for CGNE.
+
+## Deviations from the source
+
+* **Equation (8.8)** (generalization). The source states the identity for a nonsingular $A$. It
+  holds for every square $A$, because Lean's inverse of a singular matrix is $0$ and both sides
+  vanish. See `SaadSparse.Chapter08.equation_8_8`.
+
+## Not formalized
+
+* **The eigenvalues of the augmented matrix** $\begin{bmatrix} 0 & A \\ A^H & 0 \end{bmatrix}$,
+  which the section gives as $\pm\sigma_i(A)$. The statement needs a singular value decomposition,
+  which Mathlib does not have.
+* **Exercise P-8.4.** It needs a singular value decomposition, which Mathlib does not have.
 -/
 
 open Matrix
@@ -41,19 +67,23 @@ namespace SaadSparse.Chapter08
 
 variable {n m : ℕ} {𝕜 : Type*} [RCLike 𝕜]
 
-/-! ### Moving `A` across the inner product -/
+/-! ### Moving $A$ across the inner product -/
 
-/-- `(Aᴴ u, v) = (u, A v)`: the conjugate transpose acts as the adjoint. -/
+/-- Let $A \in \mathbb{K}^{n \times m}$, $u \in \mathbb{K}^n$ and $v \in \mathbb{K}^m$. In Mathlib's
+inner product $\langle x, y \rangle = \sum_i \bar x_i y_i$, $\langle A^H u, v \rangle = \langle
+u, Av \rangle$: the conjugate transpose acts as the adjoint. -/
 theorem inner_conjTranspose (A : Matrix (Fin n) (Fin m) 𝕜) (u : EuclideanSpace 𝕜 (Fin n))
     (v : EuclideanSpace 𝕜 (Fin m)) : inner 𝕜 (Aᴴ ⬝ u) v = inner 𝕜 u (A ⬝ v) :=
   Matrix.toEuclideanLin_conjTranspose_inner_left A v u
 
-/-- `(v, Aᴴ u) = (A v, u)`, the companion of `SaadSparse.Chapter08.inner_conjTranspose`. -/
+/-- Let $A \in \mathbb{K}^{n \times m}$, $u \in \mathbb{K}^n$ and $v \in \mathbb{K}^m$. In Mathlib's
+inner product, $\langle v, A^H u \rangle = \langle Av, u \rangle$, the companion of
+`SaadSparse.Chapter08.inner_conjTranspose`. -/
 theorem inner_conjTranspose' (A : Matrix (Fin n) (Fin m) 𝕜) (u : EuclideanSpace 𝕜 (Fin n))
     (v : EuclideanSpace 𝕜 (Fin m)) : inner 𝕜 v (Aᴴ ⬝ u) = inner 𝕜 (A ⬝ v) u :=
   Matrix.toEuclideanLin_conjTranspose_inner_right A v u
 
-/-- The range of `A`: the space over which `min ‖b - A x‖₂` searches. -/
+/-- The range of $A$, the space over which the least-squares problem searches. -/
 private def ran (A : Matrix (Fin n) (Fin m) 𝕜) : Submodule 𝕜 (EuclideanSpace 𝕜 (Fin n)) :=
   LinearMap.range (toEuclideanLin A)
 
@@ -62,7 +92,7 @@ private theorem mem_ran (A : Matrix (Fin n) (Fin m) 𝕜) (z : EuclideanSpace �
 
 /-! ### (8.1)–(8.2): the normal equations of the least-squares problem -/
 
-/-- `Aᴴ w = 0` says exactly that `w` is orthogonal to the range of `A`. -/
+/-- $A^H w = 0$ if and only if $w$ is orthogonal to the range of $A$. -/
 private theorem conjTranspose_apply_eq_zero_iff (A : Matrix (Fin n) (Fin m) 𝕜)
     (w : EuclideanSpace 𝕜 (Fin n)) : (Aᴴ ⬝ w) = 0 ↔ ∀ z, inner 𝕜 w (A ⬝ z) = (0 : 𝕜) := by
   constructor
@@ -71,11 +101,16 @@ private theorem conjTranspose_apply_eq_zero_iff (A : Matrix (Fin n) (Fin m) 𝕜
   · intro h
     rw [← inner_self_eq_zero (𝕜 := 𝕜), ← inner_conj_symm, inner_conjTranspose, h, map_zero]
 
-/-- **Saad (8.1)–(8.2)**: `x` solves the normal equations `Aᴴ A x = Aᴴ b` if and only if it
-minimizes `‖b - A x‖₂`. Both directions are the characterization of a best approximation from
-`Ran A` by orthogonality of its error, so no rank assumption on `A` is needed; when the columns
-of `A` are independent, `Aᴴ A` is in addition symmetric positive definite
-(`SaadSparse.Chapter08.isSymmetricCoercive_conjTranspose_mul_self`) and the minimizer is unique. -/
+/-- **Equations (8.1)–(8.2)** of [saad2003iterative]. Let $A \in \mathbb{K}^{n \times m}$,
+$b \in \mathbb{K}^n$ and $x \in \mathbb{K}^m$. Then $x$ solves the normal equations if and only
+if it solves the least-squares problem: $$A^H A x = A^H b \iff \|b - Ax\|_2 \le \|b - Ay\|_2
+\text{ for all } y \in \mathbb{K}^m.$$
+
+Both directions are the characterization of a best approximation from $\operatorname{Ran} A$ by
+the orthogonality of its error, so no rank assumption on $A$ is needed. When the columns of $A$
+are independent, $A^H A$ is in addition symmetric positive definite
+(`SaadSparse.Chapter08.isSymmetricCoercive_conjTranspose_mul_self`), and the minimizer is
+unique. -/
 theorem equation_8_1 (A : Matrix (Fin n) (Fin m) 𝕜) (b : EuclideanSpace 𝕜 (Fin n))
     (x : EuclideanSpace 𝕜 (Fin m)) :
     ((Aᴴ * A) ⬝ x) = (Aᴴ ⬝ b) ↔ ∀ y, ‖b - (A ⬝ x)‖ ≤ ‖b - (A ⬝ y)‖ := by
@@ -93,9 +128,14 @@ theorem equation_8_1 (A : Matrix (Fin n) (Fin m) 𝕜) (b : EuclideanSpace 𝕜 
     exact Submodule.inner_eq_zero_of_forall_norm_sub_le (K := ran A) (mem_ran A x)
       (by rintro _ ⟨y, rfl⟩; exact h y) (mem_ran A z)
 
-/-- **Saad (8.1)**: `Aᴴ A` is symmetric positive definite as soon as the columns of `A` are
-independent, so the normal equations then have a unique solution. This is the hypothesis under
-which CGNR (§8.3) is well defined. -/
+/-- **Equation (8.1)** of [saad2003iterative], positive definiteness of $A^H A$. Let
+$A \in \mathbb{K}^{n \times m}$ have independent columns, that is, let $x \mapsto Ax$ be
+injective. Then $A^H A$ is Hermitian, and there is $c > 0$ with $$c \|x\|_2^2 \le
+\operatorname{Re} \, (A^H A x, x) \quad\text{for all } x \in \mathbb{K}^m.$$ Hence the normal
+equations have a unique solution. This is the hypothesis under which CGNR (Section 8.3) is well
+defined.
+
+The conclusion is `LinearMap.IsSymmetricCoercive` for the operator of $A^H A$. -/
 theorem isSymmetricCoercive_conjTranspose_mul_self (A : Matrix (Fin n) (Fin m) 𝕜)
     (hA : Function.Injective (toEuclideanLin A)) :
     (toEuclideanLin (Aᴴ * A)).IsSymmetricCoercive where
@@ -107,23 +147,27 @@ theorem isSymmetricCoercive_conjTranspose_mul_self (A : Matrix (Fin n) (Fin m) �
     have hAx : (A ⬝ x) ≠ 0 := fun h => hx (hA (by rw [h, map_zero]))
     simpa using by positivity
 
-/-- **P-8.10**: the residual of `x_*` for the perturbed right-hand side `b + α r` is `(1 + α) r`,
-where `r = b - A x_*` is the residual of `x_*` for `b`. -/
+/-- **Exercise P-8.10** of [saad2003iterative], the residual. Let $A \in \mathbb{K}^{n \times m}$,
+$b \in \mathbb{K}^n$, $x_* \in \mathbb{K}^m$ and $\alpha \in \mathbb{K}$, and let
+$r = b - Ax_*$. Then the residual of $x_*$ for the right-hand side $b + \alpha r$ is
+$(b + \alpha r) - Ax_* = (1 + \alpha) r$. -/
 theorem problem_8_10_residual (A : Matrix (Fin n) (Fin m) 𝕜) (b : EuclideanSpace 𝕜 (Fin n))
     (xstar : EuclideanSpace 𝕜 (Fin m)) (α : 𝕜) :
     (b + α • (b - (A ⬝ xstar))) - (A ⬝ xstar) = (1 + α) • (b - (A ⬝ xstar)) := by
   rw [add_smul, one_smul]
   abel
 
-/-- **P-8.10**: perturbing the right-hand side by a multiple of the residual does not move the
-least-squares problem. If `x_*` minimizes `‖b - A x‖₂` and `r = b - A x_*`, then the minimizers of
-`‖(b + α r) - A x‖₂` are exactly the minimizers of `‖b - A x‖₂` — in particular `x_*` itself, whose
-residual is merely scaled to `(1 + α) r` (`problem_8_10_residual`).
+/-- **Exercise P-8.10** of [saad2003iterative]. Let $A \in \mathbb{K}^{n \times m}$ and
+$b \in \mathbb{K}^n$, let $x_* \in \mathbb{K}^m$ minimize $\|b - Ax\|_2$, let $r = b - Ax_*$,
+and let $\alpha \in \mathbb{K}$. Then for every $x \in \mathbb{K}^m$, $$x \text{ minimizes }
+\|(b + \alpha r) - Ax\|_2 \iff x \text{ minimizes } \|b - Ax\|_2.$$ In particular $x_*$
+minimizes the perturbed problem, and its residual is $(1 + \alpha) r$
+(`SaadSparse.Chapter08.problem_8_10_residual`).
 
-The reason is (8.1): `r` is orthogonal to `Ran A`, so `Aᴴ (b + α r) = Aᴴ b` and the two problems
-have the *same* normal equations. No rank assumption is needed, and the answer is `x_*`, not
-`(1 + α) x_*`: scaling the minimizer would scale `A x` but not the component of `b` orthogonal to
-`Ran A`. -/
+The reason is (8.1): $r$ is orthogonal to $\operatorname{Ran} A$, so
+$A^H (b + \alpha r) = A^H b$, and the two problems have the same normal equations. No rank
+assumption is needed. The answer is $x_*$ and not $(1 + \alpha) x_*$: a scaling of the minimizer
+would scale $Ax$, but not the component of $b$ orthogonal to $\operatorname{Ran} A$. -/
 theorem problem_8_10 (A : Matrix (Fin n) (Fin m) 𝕜) (b : EuclideanSpace 𝕜 (Fin n))
     {xstar : EuclideanSpace 𝕜 (Fin m)} (hstar : ∀ y, ‖b - (A ⬝ xstar)‖ ≤ ‖b - (A ⬝ y)‖) (α : 𝕜)
     (x : EuclideanSpace 𝕜 (Fin m)) :
@@ -138,10 +182,18 @@ theorem problem_8_10 (A : Matrix (Fin n) (Fin m) 𝕜) (b : EuclideanSpace 𝕜 
 
 /-! ### (8.3)–(8.4): the normal equations of the second kind -/
 
-/-- **Saad (8.3)–(8.4)**: if `A Aᴴ u = b` then `x = Aᴴ u` solves `A x = b`, and it is the
-solution of least Euclidean norm. Equivalently — the form §8.3 uses for CGNE — `x` is the best
-approximation to *any* solution `x_*` from `Ran Aᴴ`, so which solution is taken does not change
-the minimizer. -/
+/-- **Equations (8.3)–(8.4)** of [saad2003iterative]. Let $A \in \mathbb{K}^{n \times m}$ and
+$b, u \in \mathbb{K}^n$ with $A A^H u = b$, and let $x = A^H u$. Then:
+
+* $Ax = b$;
+* $\|x\|_2 \le \|y\|_2$ for every $y \in \mathbb{K}^m$ with $Ay = b$, so $x$ is the solution of
+  least Euclidean norm;
+* for every solution $x_*$ of $Ax_* = b$, $x$ minimizes $\|x_* - z\|_2$ over
+  $z \in \operatorname{Ran} A^H$, which is (8.4).
+
+The third clause is the form that Section 8.3 uses for CGNE. It shows that the choice of the
+solution $x_*$ does not change the minimizer. The minimization is `IsMinError xstar 0` over the
+range of $A^H$. -/
 theorem equation_8_3 (A : Matrix (Fin n) (Fin m) 𝕜) {b u : EuclideanSpace 𝕜 (Fin n)}
     (hu : ((A * Aᴴ) ⬝ u) = b) :
     (A ⬝ (Aᴴ ⬝ u)) = b ∧ (∀ y, (A ⬝ y) = b → ‖(Aᴴ ⬝ u)‖ ≤ ‖y‖) ∧
@@ -168,10 +220,17 @@ theorem equation_8_3 (A : Matrix (Fin n) (Fin m) 𝕜) {b u : EuclideanSpace �
 
 /-! ### (8.5)–(8.7): the augmented system -/
 
-/-- **Saad (8.5)–(8.7)** and **P-8.1**: the pair `(r, x)` solves the augmented system
-`[[1, A], [Aᴴ, 0]] (r, x) = (b, 0)` exactly when `r` is the residual `b - A x` and `x` solves the
-least-squares problem (8.2). The second block equation `Aᴴ r = 0` is the constraint of
-"minimize `½‖r - b‖₂²` subject to `Aᴴ r = 0`", and `x` is its vector of Lagrange multipliers. -/
+/-- **Equations (8.5)–(8.7)** and **exercise P-8.1** of [saad2003iterative]. Let
+$A \in \mathbb{K}^{n \times m}$, $b, r \in \mathbb{K}^n$ and $x \in \mathbb{K}^m$. Then
+$$\begin{bmatrix} I & A \\ A^H & 0 \end{bmatrix} \begin{bmatrix} r \\ x \end{bmatrix} =
+\begin{bmatrix} b \\ 0 \end{bmatrix}$$ if and only if $r = b - Ax$ and $x$ solves the
+least-squares problem (8.2), that is, $\|b - Ax\|_2 \le \|b - Ay\|_2$ for all
+$y \in \mathbb{K}^m$. The second block equation $A^H r = 0$ is the constraint of the problem
+"minimize $\frac{1}{2} \|r - b\|_2^2$ subject to $A^H r = 0$", and $x$ is its vector of Lagrange
+multipliers.
+
+The block matrix is `Matrix.fromBlocks 1 A Aᴴ 0`, indexed by `Fin n ⊕ Fin m`, and the pair
+$(r, x)$ is `Sum.elim` of the two coordinate vectors. -/
 theorem equation_8_5 (A : Matrix (Fin n) (Fin m) 𝕜) (b r : EuclideanSpace 𝕜 (Fin n))
     (x : EuclideanSpace 𝕜 (Fin m)) :
     Matrix.fromBlocks 1 A Aᴴ 0 *ᵥ Sum.elim (WithLp.ofLp r) (WithLp.ofLp x)
@@ -199,7 +258,7 @@ theorem equation_8_5 (A : Matrix (Fin n) (Fin m) 𝕜) (b r : EuclideanSpace �
 /-! ### (8.8): the squared condition number -/
 
 open scoped Matrix.Norms.L2Operator in
-/-- `‖B Bᴴ‖₂ = ‖B‖₂²`, the companion of Mathlib's
+/-- In the spectral norm, $\|B B^H\|_2 = \|B\|_2^2$, the companion of Mathlib's
 `Matrix.l2_opNorm_conjTranspose_mul_self`. -/
 private theorem l2_opNorm_self_mul_conjTranspose (B : Matrix (Fin n) (Fin m) 𝕜) :
     ‖B * Bᴴ‖ = ‖B‖ * ‖B‖ := by
@@ -207,10 +266,16 @@ private theorem l2_opNorm_self_mul_conjTranspose (B : Matrix (Fin n) (Fin m) �
   rwa [Matrix.conjTranspose_conjTranspose, Matrix.l2_opNorm_conjTranspose] at h
 
 open scoped Matrix.Norms.L2Operator in
-/-- **Saad (8.8)**: `κ₂(Aᴴ A) = κ₂(A)²`. Passing to the normal equations squares the condition
-number, which is the chapter's reason for the row projection methods of §8.2 and for running CG
-on `Aᴴ A` without ever forming it (§8.3). The book states it for nonsingular `A`; no hypothesis
-is needed, because a singular `A` inverts to `0` and both sides vanish. -/
+/-- **Equation (8.8)** of [saad2003iterative]. For every $A \in \mathbb{K}^{n \times n}$,
+$$\kappa_2(A^H A) = \kappa_2(A)^2,$$ where $\kappa_2(B) = \|B\|_2 \|B^{-1}\|_2$. Passing to the
+normal equations squares the condition number. This is the reason of the chapter for the row
+projection methods of Section 8.2, and for running CG on $A^H A$ without forming this matrix
+(Section 8.3).
+
+**Generalization.** The source states the identity for a nonsingular $A$. Here there is no
+hypothesis: for a singular $A$, Lean's inverse is $0$, so both sides are $0$.
+
+The condition number is `Matrix.condNumberLp 2`. -/
 theorem equation_8_8 (A : Matrix (Fin n) (Fin n) 𝕜) :
     Matrix.condNumberLp 2 (Aᴴ * A) = Matrix.condNumberLp 2 A ^ 2 := by
   have hinv : (Aᴴ * A)⁻¹ = A⁻¹ * (A⁻¹)ᴴ := by

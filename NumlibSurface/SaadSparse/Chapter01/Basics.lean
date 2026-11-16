@@ -7,38 +7,82 @@ import Numlib.Analysis.Matrix.OperatorNorm
 import NumlibSurface.SaadSparse.Common
 
 /-!
-# Saad §1.1–1.6: matrices, eigenvalues, types of matrices, norms, subspaces
+# Saad, Sections 1.1–1.6: Matrices, eigenvalues, types of matrices, norms and subspaces
 
-Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM,
-2003, §1.1–1.6: matrices and their determinants, eigenvalues, the standard classes of matrices,
-inner products and vector norms, matrix norms, and subspaces with the range and the kernel.
+This module formalizes §1.1–1.6 of [saad2003iterative]: square matrices and their determinants,
+eigenvalues and the spectrum, the standard classes of matrices, inner products and vector norms,
+matrix norms, and subspaces with the range and the kernel. For $A \in \mathbb{C}^{n \times n}$, a
+scalar $\lambda$ is an eigenvalue when $Au = \lambda u$ for some $u \neq 0$, and the set of
+eigenvalues is the spectrum $\sigma(A)$. The module proves that $A$ is nonsingular exactly when it
+is invertible, that the trace and the determinant are the sum and the product of the eigenvalues,
+that unitary matrices preserve the inner product, the Cauchy–Schwarz inequality, the formulas for
+$\|A\|_\infty$, $\|A\|_1$, $\|A\|_2$ and $\|A\|_F$, that the spectral radius is not a norm, and the
+decomposition $\mathbb{C}^n = \operatorname{Ran}(A) \oplus \operatorname{Null}(A^H)$.
 
-Almost all of this chapter is Mathlib restated in the book's notation, and the file is
-correspondingly thin.  Definition 1.1 is `definition_1_1`, which is the book's name for Mathlib's
-`spectrum ℂ A`: it says that `λ ∈ σ(A)` exactly when `A u = λ u` for a nonzero `u`.  The following
-carry no declaration of their own, because Mathlib's is the statement: the definitions of §1.1 and
-§1.3 (`Matrix.transpose`, `Matrix.conjTranspose`, `Matrix.IsSymm`, `Matrix.IsHermitian`,
-`IsStarNormal`, `Matrix.IsDiag`, `Matrix.BlockTriangular`, `Matrix.unitaryGroup`, and
-`Matrix.IsTridiagonal`, `Matrix.IsUpperHessenberg` of
-`Numlib/LinearAlgebra/Matrix/Hessenberg`); the determinant properties of §1.2; the inner-product
-and norm axioms of §1.4 (`InnerProductSpace`, `Norm`); the `p`-norms (1.6) (`PiLp`); and §1.6 in
-full (`Submodule.span`, `LinearMap.range`, `LinearMap.ker`, `IsCompl` and
-`Module.End.eigenspace`, an eigenspace being invariant by `Module.End.mem_eigenspace_iff`).
+Almost all of these sections is Mathlib restated in the notation of the book, so the module is thin.
+The proofs use Mathlib and the backbone module `Numlib.Analysis.Matrix.OperatorNorm`.
 
-Two warnings about the book.  In §1.3 Saad calls a matrix *orthogonal* when `Qᴴ Q` is merely
-**diagonal** rather than the identity, which no other source uses; `Matrix.unitaryGroup` is the
-standard notion and is what Proposition 1.4 is about.  And the book prints (1.18) as
-`ℂⁿ = Ran(A) ⊕ Null(Aᵀ)` in a complex setting, where `Aᴴ` is meant; that is how
-`SaadSparse.Chapter01.equation_1_18` states it.
+## Main definitions
 
-The matrix norms of §1.5 use Mathlib's scoped instances, one per norm, opened declaration by
-declaration: `Matrix.Norms.Operator` for `‖·‖_∞`, `Matrix.Norms.L2Operator` for `‖·‖₂` and
-`Matrix.Norms.Frobenius` for `‖·‖_F`.  The remaining induced norms `‖·‖_p` of (1.7) are the
-backbone's `Matrix.lpOpNorm p` of `Numlib/Analysis/Matrix/OperatorNorm`, the operator norm of
-`Matrix.lpCLM p A : PiLp p _ →L[𝕜] PiLp p _`; the column-sum formula (1.13) for `‖·‖₁` is its
-`Matrix.lpOpNorm_one_eq_sup_sum_norm`, the remark of §1.5 that a consistent norm dominates the
-spectral radius is its `Matrix.complexSpectralRadius_le_lpOpNorm`, and §1.13.2 builds the
-condition number `κ_p(A) = ‖A‖_p ‖A⁻¹‖_p` (`Matrix.condNumberLp`) on top of them.
+* Definition 1.1, `SaadSparse.Chapter01.definition_1_1`: $\lambda$ is an eigenvalue of $A$, that is
+  $Au = \lambda u$ for some $u \neq 0$, if and only if $\lambda$ is in Mathlib's spectrum of $A$.
+
+## Main results
+
+* Proposition 1.2, `SaadSparse.Chapter01.proposition_1_2`: $\det A \neq 0$ if and only if $A$ has a
+  two-sided inverse.
+* §1.2, `SaadSparse.Chapter01.trace_eq_sum_eigenvalues`: the trace and the determinant of a complex
+  matrix are the sum and the product of its eigenvalues, counted with algebraic multiplicity.
+* Proposition 1.3, `SaadSparse.Chapter01.proposition_1_3`: $\sigma(A^H) = \overline{\sigma(A)}$, and
+  an eigenvector of $A^H$ for $\bar\mu$ is a left eigenvector of $A$ for $\mu$.
+* Proposition 1.4, `SaadSparse.Chapter01.proposition_1_4`: a unitary matrix preserves the Euclidean
+  inner product and the Euclidean norm.
+* Equation (1.2), `SaadSparse.Chapter01.equation_1_2`: the Cauchy–Schwarz inequality
+  $|(x, y)| \le \|x\| \|y\|$.
+* Equations (1.4)–(1.5), `SaadSparse.Chapter01.equation_1_5`: $(Ax, y) = (x, A^H y)$.
+* Equations (1.13)–(1.14), `SaadSparse.Chapter01.equation_1_14`: $\|A\|_\infty$ is the largest
+  absolute row sum, and $\|A\|_1 = \|A^T\|_\infty$.
+* Equation (1.15), `SaadSparse.Chapter01.equation_1_15`: $\|A\|_2^2 = \rho(A^H A) = \rho(A A^H)$.
+* Equation (1.15), `SaadSparse.Chapter01.spectralRadius_eq_l2_opNNNorm_of_isHermitian`: for a
+  Hermitian matrix, $\rho(A) = \|A\|_2$.
+* Equations (1.12) and (1.16), `SaadSparse.Chapter01.equation_1_16`: $\|A\|_F^2 = \sum_{i,j}
+  |a_{ij}|^2 = \operatorname{tr}(A^H A) = \operatorname{tr}(A A^H)$.
+* Example 1.1, `SaadSparse.Chapter01.example_1_1`: the spectral radius vanishes on a nonzero matrix
+  and is not subadditive, so it is not a matrix norm.
+* Equation (1.18), `SaadSparse.Chapter01.equation_1_18`: $\mathbb{C}^n = \operatorname{Ran}(A)
+  \oplus \operatorname{Null}(A^H)$, and the same with $A$ and $A^H$ exchanged.
+
+## Conventions
+
+* The book calls a matrix *orthogonal* when $Q^H Q$ is diagonal, not necessarily the identity. No
+  other source uses this notion. The library uses the standard notion of a unitary matrix,
+  `Matrix.unitaryGroup`, which is what Proposition 1.4 is about.
+
+## Implementation notes
+
+* The following items of the book have no declaration of their own, because a Mathlib or backbone
+  declaration is the statement: the definitions of §1.1 and §1.3 (`Matrix.transpose`,
+  `Matrix.conjTranspose`, `Matrix.IsSymm`, `Matrix.IsHermitian`, `IsStarNormal`, `Matrix.IsDiag`,
+  `Matrix.BlockTriangular`, `Matrix.unitaryGroup`, and `Matrix.IsTridiagonal` and
+  `Matrix.IsUpperHessenberg` of `Numlib.LinearAlgebra.Matrix.Hessenberg`); the properties of the
+  determinant in §1.2; the axioms of inner products and norms in §1.4 (`InnerProductSpace`, `Norm`);
+  the $p$-norms (1.6) (`PiLp`); and all of §1.6 (`Submodule.span`, `LinearMap.range`,
+  `LinearMap.ker`, `IsCompl` and `Module.End.eigenspace`; an eigenspace is invariant by
+  `Module.End.mem_eigenspace_iff`).
+* The matrix norms of §1.5 are Mathlib's scoped instances, one for each norm, opened for each
+  declaration. The instances `Matrix.Norms.Operator`, `Matrix.Norms.L2Operator` and
+  `Matrix.Norms.Frobenius` give the norms $\|\cdot\|_\infty$, $\|\cdot\|_2$ and $\|\cdot\|_F$.
+* The other induced norms $\|\cdot\|_p$ of (1.7) are `Matrix.lpOpNorm p`, the operator norm of
+  `Matrix.lpCLM p A` on `PiLp p`. The column-sum formula (1.13) for $\|\cdot\|_1$ is
+  `Matrix.lpOpNorm_one_eq_sup_sum_norm`. The remark of §1.5 that a consistent norm dominates the
+  spectral radius is `Matrix.complexSpectralRadius_le_lpOpNorm`. §1.13.2 defines the condition
+  number $\kappa_p(A) = \|A\|_p \|A^{-1}\|_p$ (`Matrix.condNumberLp`) from these norms.
+
+## Deviations from the source
+
+* **Equation (1.18)** (typo). The book prints $\mathbb{C}^n = \operatorname{Ran}(A) \oplus
+  \operatorname{Null}(A^T)$ in a complex setting, where $A^H$ is meant. See
+  `SaadSparse.Chapter01.equation_1_18`.
 -/
 
 open Matrix Finset Polynomial
@@ -51,29 +95,38 @@ variable {𝕜 : Type*} [RCLike 𝕜] {n : ℕ}
 
 /-! ### §1.1–1.2 Matrices, determinants and eigenvalues -/
 
-/-- **Saad Proposition 1.2**: a square matrix is nonsingular — its determinant does not
-vanish — exactly when it has a two-sided inverse.  The inverse is then `A⁻¹`, by
-`Matrix.nonsing_inv_mul` and `Matrix.mul_nonsing_inv`. -/
+/-- **Proposition 1.2** of [saad2003iterative]. Let $A \in \mathbb{K}^{n \times n}$, where
+$\mathbb{K}$ is $\mathbb{R}$ or $\mathbb{C}$. Then $\det A \neq 0$ if and only if there is a
+matrix $B$ with $AB = I$ and $BA = I$.
+
+The inverse is then `A⁻¹`, by `Matrix.nonsing_inv_mul` and `Matrix.mul_nonsing_inv`. -/
 theorem proposition_1_2 (A : Matrix (Fin n) (Fin n) 𝕜) :
     A.det ≠ 0 ↔ ∃ B, A * B = 1 ∧ B * A = 1 := by
   rw [← isUnit_iff_ne_zero, ← isUnit_iff_isUnit_det, isUnit_iff_exists]
 
-/-- **Saad §1.2**: the trace of a complex matrix is the sum of its eigenvalues, counted with
-algebraic multiplicity — that is, over the roots of the characteristic polynomial.  The second
-clause here, that the determinant is their product, is the companion fact; the book states it
-nowhere explicitly but uses it from §1.2 on. -/
+/-- **Section 1.2** of [saad2003iterative], trace and determinant. Let
+$A \in \mathbb{C}^{n \times n}$. The trace of $A$ is the sum, and the determinant of $A$ is the
+product, of the roots of the characteristic polynomial of $A$, counted with multiplicity:
+$$\operatorname{tr} A = \sum_i \lambda_i, \qquad \det A = \prod_i \lambda_i.$$
+
+The book states the trace formula. It uses the determinant formula from §1.2 on, but does not
+state it explicitly. The roots are `A.charpoly.roots`, a multiset that counts each eigenvalue
+with its algebraic multiplicity. -/
 theorem trace_eq_sum_eigenvalues (A : Matrix (Fin n) (Fin n) ℂ) :
     A.trace = A.charpoly.roots.sum ∧ A.det = A.charpoly.roots.prod :=
   ⟨A.trace_eq_sum_roots_charpoly, A.det_eq_prod_roots_charpoly⟩
 
-/-- **Saad Definition 1.1**: a complex scalar `λ` is an *eigenvalue* of the square matrix `A`
-when `A u = λ u` for some nonzero `u ∈ ℂⁿ`, and such a `u` is an *eigenvector* of `A` associated
-with `λ`; the set of eigenvalues is the *spectrum* `σ(A)`.
+/-- **Definition 1.1** of [saad2003iterative]. Let $A \in \mathbb{C}^{n \times n}$. A scalar
+$\lambda \in \mathbb{C}$ is an **eigenvalue** of $A$ if $Au = \lambda u$ for some nonzero
+$u \in \mathbb{C}^n$, and such a $u$ is an **eigenvector** of $A$ associated with $\lambda$. The
+set of eigenvalues is the **spectrum** $\sigma(A)$. The theorem states that $\lambda$ is an
+eigenvalue in this sense if and only if $\lambda$ lies in the spectrum of $A$ in the sense of
+Mathlib, `spectrum ℂ A`.
 
-Saad's `σ(A)` is Mathlib's `spectrum ℂ A`, and "`u` is an eigenvector of `A` for `λ`" is
-`u ≠ 0` together with `u ∈ Module.End.eigenspace (Matrix.toEuclideanLin A) λ`, which
-`Module.End.mem_eigenspace_iff` unfolds to `A u = λ u`.  This is the equality of the two, and it
-is what the rest of the library means by an eigenvalue. -/
+The book's $\sigma(A)$ is Mathlib's `spectrum ℂ A`. The statement "$u$ is an eigenvector of $A$
+for $\lambda$" is `u ≠ 0` together with `u ∈ Module.End.eigenspace (Matrix.toEuclideanLin A) λ`,
+which `Module.End.mem_eigenspace_iff` unfolds to $Au = \lambda u$. The rest of the library uses
+`spectrum ℂ A` for the set of eigenvalues. -/
 theorem definition_1_1 (A : Matrix (Fin n) (Fin n) ℂ) (l : ℂ) :
     (∃ u : EuclideanSpace ℂ (Fin n), u ≠ 0 ∧ (A ⬝ u) = l • u) ↔ l ∈ spectrum ℂ A := by
   rw [← Matrix.hasEigenvalue_toEuclideanLin_iff]
@@ -85,10 +138,15 @@ theorem definition_1_1 (A : Matrix (Fin n) (Fin n) ℂ) (l : ℂ) :
     obtain ⟨u, hmem, hu⟩ := h.exists_hasEigenvector
     exact ⟨u, hu, Module.End.mem_eigenspace_iff.1 hmem⟩
 
-/-- **Saad Proposition 1.3**: if `μ` is an eigenvalue of `A` then `conj μ` is an eigenvalue of
-`Aᴴ`, and an eigenvector `v` of `Aᴴ` for `conj μ` is a *left eigenvector* of `A`,
-`star v ᵥ* A = μ • star v`.  The spectra correspond under conjugation because the characteristic
-polynomial of `Aᴴ` is the conjugate of that of `A`. -/
+/-- **Proposition 1.3** of [saad2003iterative]. Let $A \in \mathbb{C}^{n \times n}$. Then the
+spectrum of $A^H$ is the complex conjugate of the spectrum of $A$,
+$\sigma(A^H) = \{\bar\mu : \mu \in \sigma(A)\}$. Moreover, for every $\mu \in \mathbb{C}$ and
+$v \in \mathbb{C}^n$, if $A^H v = \bar\mu v$, then $v$ is a **left eigenvector** of $A$ for
+$\mu$:
+$$v^H A = \mu v^H.$$
+
+The spectra correspond under conjugation because the characteristic polynomial of $A^H$ is the
+conjugate of the characteristic polynomial of $A$. The row vector $v^H A$ is `star v ᵥ* A`. -/
 theorem proposition_1_3 (A : Matrix (Fin n) (Fin n) ℂ) :
     spectrum ℂ Aᴴ = star '' spectrum ℂ A ∧
       ∀ (μ : ℂ) (v : Fin n → ℂ), Aᴴ *ᵥ v = star μ • v → star v ᵥ* A = μ • star v := by
@@ -117,8 +175,13 @@ theorem proposition_1_3 (A : Matrix (Fin n) (Fin n) ℂ) :
 
 /-! ### §1.3 Types of matrices: unitary matrices -/
 
-/-- **Saad Proposition 1.4** and its corollary: a unitary matrix preserves the Euclidean inner
-product, `(Q x, Q y) = (x, y)`, and therefore the Euclidean norm, `‖Q x‖₂ = ‖x‖₂`. -/
+/-- **Proposition 1.4** of [saad2003iterative], with its corollary. Let
+$Q \in \mathbb{K}^{n \times n}$ be unitary, where $\mathbb{K}$ is $\mathbb{R}$ or $\mathbb{C}$.
+Then for all $x, y \in \mathbb{K}^n$,
+$$(Qx, Qy) = (x, y) \quad \text{and} \quad \|Qx\|_2 = \|x\|_2.$$
+
+A unitary matrix is an element of `Matrix.unitaryGroup (Fin n) 𝕜`. The book's inner product
+$(x, y)$ is `inner 𝕜 y x`. -/
 theorem proposition_1_4 {Q : Matrix (Fin n) (Fin n) 𝕜}
     (hQ : Q ∈ Matrix.unitaryGroup (Fin n) 𝕜) (x y : EuclideanSpace 𝕜 (Fin n)) :
     inner 𝕜 (Q ⬝ y) (Q ⬝ x) = inner 𝕜 y x ∧ ‖Q ⬝ x‖ = ‖x‖ :=
@@ -127,16 +190,26 @@ theorem proposition_1_4 {Q : Matrix (Fin n) (Fin n) 𝕜}
 
 /-! ### §1.4 Inner products and vector norms -/
 
-/-- **Saad (1.2)**, the Cauchy–Schwarz inequality: `|(x, y)| ≤ (x, x)^{1/2} (y, y)^{1/2}`, which
-is `‖x‖ ‖y‖` by (1.3).  Stated for an arbitrary inner product space, which is the generality of
-the book's "arbitrary inner product on a complex vector space". -/
+/-- **Equation (1.2)** of [saad2003iterative] (Cauchy–Schwarz inequality). Let $E$ be an inner
+product space over $\mathbb{K}$, where $\mathbb{K}$ is $\mathbb{R}$ or $\mathbb{C}$. Then for
+all $x, y \in E$,
+$$|(x, y)| \le \|x\| \|y\|.$$
+
+The book writes the right-hand side as $(x, x)^{1/2} (y, y)^{1/2}$, which is $\|x\| \|y\|$ by
+(1.3). The statement is for an arbitrary inner product space, which is the generality of the
+book: an arbitrary inner product on a complex vector space. -/
 theorem equation_1_2 {E : Type*} [NormedAddCommGroup E] [InnerProductSpace 𝕜 E] (x y : E) :
     ‖(inner 𝕜 y x : 𝕜)‖ ≤ ‖x‖ * ‖y‖ := by
   rw [mul_comm]
   exact norm_inner_le_norm (𝕜 := 𝕜) y x
 
-/-- **Saad (1.4)–(1.5)**: the Euclidean inner product is `(x, y) = yᴴ x`, which is
-`EuclideanSpace.inner_eq_star_dotProduct`, and the adjoint identity `(A x, y) = (x, Aᴴ y)`. -/
+/-- **Equations (1.4)–(1.5)** of [saad2003iterative]. Let $A \in \mathbb{K}^{n \times n}$, where
+$\mathbb{K}$ is $\mathbb{R}$ or $\mathbb{C}$. For the Euclidean inner product $(x, y) = y^H x$
+and all $x, y \in \mathbb{K}^n$,
+$$(Ax, y) = (x, A^H y).$$
+
+The formula $(x, y) = y^H x$ is `EuclideanSpace.inner_eq_star_dotProduct`. The book's $(x, y)$
+is `inner 𝕜 y x`. -/
 theorem equation_1_5 (A : Matrix (Fin n) (Fin n) 𝕜) (x y : EuclideanSpace 𝕜 (Fin n)) :
     inner 𝕜 y (A ⬝ x) = inner 𝕜 (Aᴴ ⬝ y) x := by
   rw [Matrix.toEuclideanLin_conjTranspose_eq_adjoint]
@@ -148,8 +221,15 @@ section MatrixNorms
 
 open scoped Matrix.Norms.Operator
 
-/-- **Saad (1.13)–(1.14)**: `‖A‖_∞` is the largest absolute row sum and `‖A‖₁` the largest
-absolute column sum, so that `‖A‖₁ = ‖Aᵀ‖_∞`.  The column-sum formula is the backbone's
+/-- **Equations (1.13)–(1.14)** of [saad2003iterative]. Let $A \in \mathbb{K}^{n \times n}$, where
+$\mathbb{K}$ is $\mathbb{R}$ or $\mathbb{C}$. The norm $\|A\|_\infty$ induced by the vector
+$\infty$-norm is the largest absolute row sum, and the induced norm $\|A\|_1$ equals
+$\|A^T\|_\infty$:
+$$\|A\|_\infty = \max_i \sum_j |a_{ij}|, \qquad \|A\|_1 = \|A^T\|_\infty.$$
+Together, $\|A\|_1$ is the largest absolute column sum. For $n = 0$ the maximum is $0$.
+
+The norm $\|\cdot\|_\infty$ is the scoped instance `Matrix.Norms.Operator`, and $\|\cdot\|_1$ is
+`Matrix.lpOpNorm 1`. The proof uses the column-sum formula
 `Matrix.lpOpNorm_one_eq_sup_sum_norm`. -/
 theorem equation_1_14 (A : Matrix (Fin n) (Fin n) 𝕜) :
     ‖A‖ = ↑(univ.sup fun i => ∑ j, ‖A i j‖₊) ∧ Matrix.lpOpNorm 1 A = ‖Aᵀ‖ := by
@@ -163,10 +243,15 @@ section L2
 
 open scoped Matrix.Norms.L2Operator
 
-/-- **Saad (1.15)**: `‖A‖₂² = ρ(Aᴴ A) = ρ(A Aᴴ)`.  The matrices `Aᴴ A` and `A Aᴴ` are
-self-adjoint, so their spectral radii are their norms, and the C⋆-identity turns those into
-`‖A‖₂²`.  The square roots of the eigenvalues of `Aᴴ A` are the singular values of `A`, so this
-says that `‖A‖₂` is the largest singular value. -/
+/-- **Equation (1.15)** of [saad2003iterative]. Let $A \in \mathbb{C}^{n \times n}$. Then
+$$\rho(A^H A) = \|A\|_2^2 = \rho(A A^H).$$
+The square roots of the eigenvalues of $A^H A$ are the singular values of $A$, so $\|A\|_2$ is
+the largest singular value of $A$.
+
+The norm $\|\cdot\|_2$ is the scoped instance `Matrix.Norms.L2Operator`, and $\rho$ is Mathlib's
+`spectralRadius ℂ`, with values in $[0, \infty]$. The matrices $A^H A$ and $A A^H$ are
+self-adjoint, so their spectral radii are their norms, and the C*-identity turns these norms
+into $\|A\|_2^2$. -/
 theorem equation_1_15 (A : Matrix (Fin n) (Fin n) ℂ) :
     spectralRadius ℂ (Aᴴ * A) = (‖A‖₊ : ℝ≥0∞) ^ 2 ∧
       spectralRadius ℂ (A * Aᴴ) = (‖A‖₊ : ℝ≥0∞) ^ 2 := by
@@ -185,8 +270,8 @@ theorem equation_1_15 (A : Matrix (Fin n) (Fin n) ℂ) :
     rw [h, hmul, sq]
     norm_cast
 
-/-- **Saad (1.15)**, the Hermitian case: for a Hermitian matrix the spectral radius *is* the
-`2`-norm. -/
+/-- **Equation (1.15)** of [saad2003iterative], the Hermitian case. Let
+$A \in \mathbb{C}^{n \times n}$ be Hermitian. Then $\rho(A) = \|A\|_2$. -/
 theorem spectralRadius_eq_l2_opNNNorm_of_isHermitian {A : Matrix (Fin n) (Fin n) ℂ}
     (hA : A.IsHermitian) : spectralRadius ℂ A = (‖A‖₊ : ℝ≥0∞) :=
   IsSelfAdjoint.spectralRadius_eq_nnnorm hA
@@ -197,8 +282,13 @@ section Frobenius
 
 open scoped Matrix.Norms.Frobenius
 
-/-- **Saad (1.12) and (1.16)**: the Frobenius norm `‖A‖_F = (∑_{i,j} |a_{ij}|²)^{1/2}` satisfies
-`‖A‖_F² = tr(Aᴴ A) = tr(A Aᴴ)`.  It is consistent (Problem P-1.5) by
+/-- **Equations (1.12) and (1.16)** of [saad2003iterative]. Let $A \in \mathbb{K}^{n \times n}$,
+where $\mathbb{K}$ is $\mathbb{R}$ or $\mathbb{C}$. The Frobenius norm satisfies
+$$\|A\|_F^2 = \sum_{i,j} |a_{ij}|^2, \qquad \|A\|_F^2 = \operatorname{tr}(A^H A) =
+  \operatorname{tr}(A A^H).$$
+
+The norm $\|\cdot\|_F$ is the scoped instance `Matrix.Norms.Frobenius`, and the two trace
+identities are stated in $\mathbb{K}$. The Frobenius norm is consistent (Problem P-1.5) by
 `Matrix.frobenius_norm_mul`. -/
 theorem equation_1_16 (A : Matrix (Fin n) (Fin n) 𝕜) :
     ‖A‖ ^ 2 = ∑ i, ∑ j, ‖A i j‖ ^ 2 ∧
@@ -227,10 +317,13 @@ theorem equation_1_16 (A : Matrix (Fin n) (Fin n) 𝕜) :
 
 end Frobenius
 
-/-- **Saad Example 1.1**: the spectral radius is not a matrix norm.  It vanishes on the nonzero
-matrix `!![0, 1; 0, 0]`, and it is not subadditive, since that matrix and its transpose both have
-spectral radius `0` while their sum has spectral radius `1`.  This is why every convergence
-statement of Chapter 4 is about `ρ` and not about a norm. -/
+/-- **Example 1.1** of [saad2003iterative]. The spectral radius is not a matrix norm. Let
+$$A = \begin{bmatrix} 0 & 1 \\ 0 & 0 \end{bmatrix}.$$
+Then $A \neq 0$ and $\rho(A) = 0$. Moreover $\rho(A^T) = 0$, while $\rho(A + A^T) = 1$, so
+$\rho$ is not subadditive.
+
+This is why every convergence statement of Chapter 4 is about $\rho$ and not about a norm. The
+spectral radius of a real matrix is `Matrix.complexSpectralRadius`. -/
 theorem example_1_1 :
     (!![0, 1; 0, 0] : Matrix (Fin 2) (Fin 2) ℝ) ≠ 0 ∧
       (!![0, 1; 0, 0] : Matrix (Fin 2) (Fin 2) ℝ).complexSpectralRadius = 0 ∧
@@ -283,10 +376,16 @@ theorem example_1_1 :
 
 /-! ### §1.6 Subspaces, range and kernel -/
 
-/-- **Saad (1.18)**: `ℂⁿ` is the direct sum of the range of `A` and the kernel of `Aᴴ`, and
-likewise with `A` and `Aᴴ` exchanged.  The kernel of the adjoint is the orthogonal complement of
-the range, and a subspace and its orthogonal complement are complementary.  The book prints `Aᵀ`
-where `Aᴴ` is meant. -/
+/-- **Equation (1.18)** of [saad2003iterative]. Let $A \in \mathbb{K}^{n \times n}$, where
+$\mathbb{K}$ is $\mathbb{R}$ or $\mathbb{C}$. Then $\mathbb{K}^n$ is the direct sum of the range
+of $A$ and the kernel of $A^H$, and also of the range of $A^H$ and the kernel of $A$:
+$$\mathbb{K}^n = \operatorname{Ran}(A) \oplus \operatorname{Null}(A^H) = \operatorname{Ran}(A^H)
+  \oplus \operatorname{Null}(A).$$
+
+**Typo.** The book prints $\operatorname{Null}(A^T)$ in a complex setting, where $A^H$ is meant.
+
+The direct sums are `IsCompl` of subspaces. The kernel of the adjoint is the orthogonal
+complement of the range, and a subspace and its orthogonal complement are complementary. -/
 theorem equation_1_18 (A : Matrix (Fin n) (Fin n) 𝕜) :
     IsCompl (LinearMap.range (toEuclideanLin A)) (LinearMap.ker (toEuclideanLin Aᴴ)) ∧
       IsCompl (LinearMap.range (toEuclideanLin Aᴴ)) (LinearMap.ker (toEuclideanLin A)) := by

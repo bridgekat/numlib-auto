@@ -7,46 +7,71 @@ import NumlibSurface.SaadSparse.Chapter01.Section11
 import NumlibSurface.SaadSparse.Chapter09.Section02
 
 /-!
-# Saad §9.6: the Concus–Golub–Widlund algorithm
+# Saad, Section 9.6: The Concus–Golub–Widlund algorithm
 
-Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM,
-2003, §9.6.
+This module formalizes Section 9.6 of [saad2003iterative]. For a nearly symmetric matrix $A$, the
+preconditioner is its Hermitian part $M = (A + A^H)/2$, and $A = M - N$ with the skew-Hermitian
+matrix $N = M - A = (A^H - A)/2$. Then $M^{-1} A = I - M^{-1} N$, and $M^{-1} N$ is skew-adjoint for
+the $M$-inner product $(x, y)_M = (Mx, y)$. So the adjoint of $M^{-1} A$ for that inner product is
+$2I - M^{-1} A$.
 
-For a nearly symmetric `A`, precondition with its Hermitian part `M = (A + Aᴴ)/2` (`cgwM`) and
-write `A = M - N` with `N = M - A = (Aᴴ - A)/2` (`cgwN`) skew-Hermitian.  Then
-`M⁻¹ A = I - M⁻¹ N` where `M⁻¹ N` is *skew*-adjoint for the `M`-inner product
-(`isSkewAdjoint_energy`), so the adjoint of `M⁻¹ A` in that inner product is `2 I - M⁻¹ A`
-(`adjoint_energyEnd`).
+Two consequences give the algorithm a short recurrence. The Arnoldi process for $M^{-1} A$ in the
+$M$-inner product has a tridiagonal Hessenberg matrix, because $2v - M^{-1} A v$ lies in
+$\operatorname{span}\{v, M^{-1} A v\}$. Its entries satisfy
+$h_{ij} + \overline{h_{ji}} = 2 (v_j, v_i)_M$, so the diagonal is $1$ and the two off-diagonals are
+$\eta_{j+1}$ and $-\overline{\eta_{j+1}}$; this is (9.29). The resulting algorithm is Algorithm 9.1
+with the sign of $\beta_j$ reversed. Over $\mathbb{R}$, its iterate is the Galerkin iterate of
+$M^{-1} A x = M^{-1} b$ in the $M$-inner product. This is its only optimality property: it minimizes
+nothing, because $M^{-1} A$ is not self-adjoint for the $M$-inner product. The proofs specialize the
+backbone recurrence `CGW.iterate` of `Numlib.Krylov.CGW` for an operator of the form identity plus a
+skew-adjoint operator.
 
-Two consequences make the algorithm short-recurrence.  The Arnoldi process for `M⁻¹ A` in the
-`M`-inner product has a *tridiagonal* Hessenberg matrix — that is
-`Arnoldi.coeff_eq_zero_of_adjoint_mem` with `s = 2`, since `2 v - M⁻¹ A v` lies in
-`span {v, M⁻¹ A v}` — and its entries satisfy `h_ij + conj h_ji = 2 (v_i, v_j)_M`, so the
-diagonal is `1` and the two off-diagonals are `η_{j+1}` and `-conj η_{j+1}`.  That is (9.29),
-`equation_9_29`.
+## Main definitions
 
-`cgw` is the resulting algorithm: Algorithm 9.1 with the sign of `β_j` reversed
-(`cgw_alpha`).
+* Section 9.6, `SaadSparse.Chapter09.cgwM`: the preconditioner $M = (A + A^H)/2$.
+* Section 9.6, `SaadSparse.Chapter09.cgwN`: the skew-Hermitian part $N = M - A$.
+* Section 9.6, `SaadSparse.Chapter09.cgw`: the Concus–Golub–Widlund algorithm.
 
-`cgw_isGalerkinIterate` is the only optimality property the algorithm has: the iterate is the
-Galerkin (FOM) iterate of `M⁻¹ A x = M⁻¹ b` in the `M`-inner product.  It comes from the backbone
-recurrence `Numlib/Krylov/CGW.lean` for an operator of the shape "identity plus skew-adjoint",
-through the bridge `cgw_eq_CGW_iterate`; the hypothesis that backbone theory needs is exactly
-`adjoint_energyEnd`, here `isShiftedSkewAdjoint_energyEnd`.  No minimization is claimed, because
-`M⁻¹ A` is not `M`-self-adjoint.
+## Main results
 
-## The real field
+* Section 9.6, `SaadSparse.Chapter09.cgwM_sub_cgwN`: $A = M - N$.
+* Section 9.6, `SaadSparse.Chapter09.cgwM_isHermitian`: $M$ is Hermitian.
+* Section 9.6, `SaadSparse.Chapter09.cgwN_conjTranspose`: $N$ is skew-Hermitian.
+* Section 9.6, `SaadSparse.Chapter09.isSkewAdjoint_energy`: $M^{-1} N$ is skew-adjoint for the
+  $M$-inner product.
+* Section 9.6, `SaadSparse.Chapter09.adjoint_energyEnd`: the adjoint of $M^{-1} A$ for the $M$-inner
+  product is $2I - M^{-1} A$.
+* Equation (9.29), `SaadSparse.Chapter09.equation_9_29`: the Hessenberg matrix of the $M$-orthogonal
+  Arnoldi process is tridiagonal, with unit diagonal and opposite conjugate off-diagonals.
+* Section 9.6, `SaadSparse.Chapter09.cgw_residual_eq`: the residual of the algorithm is the true
+  residual.
+* Section 9.6, `SaadSparse.Chapter09.cgw_alpha`: the step length is that of Algorithm 9.1, and
+  $\beta_j$ is the negative of that of Algorithm 9.1.
+* Section 9.6, `SaadSparse.Chapter09.isShiftedSkewAdjoint_energyEnd`: over $\mathbb{R}$, $M^{-1} A$
+  is shifted skew-adjoint for the $M$-inner product.
+* Section 9.6, `SaadSparse.Chapter09.cgw_eq_CGW_iterate`: over $\mathbb{R}$, the algorithm is the
+  backbone recurrence `CGW.iterate`.
+* Section 9.6, `SaadSparse.Chapter09.cgw_isGalerkinIterate`: over $\mathbb{R}$, the iterate is the
+  Galerkin iterate over $x_0 + \mathcal{K}_j(M^{-1} A, M^{-1} r_0)$.
 
-The Galerkin property is stated over `ℝ`, and over `ℂ` it is false: the step length `α_j` is then
-genuinely complex — the quadratic form of a skew-adjoint operator is purely imaginary rather than
-zero — and the cancellation that makes the search directions `M⁻¹A`-conjugate already fails at
-`j = 1`.  The rest of the section, including (9.29), holds over any `RCLike` field.  See the module
-documentation of `Numlib/Krylov/CGW.lean`.
+## Implementation notes
 
-## Not formalized here
+* The Galerkin property, and the two results that lead to it, are stated over $\mathbb{R}$. Over
+  $\mathbb{C}$ the Galerkin property is false: the quadratic form of a skew-adjoint operator is
+  purely imaginary rather than zero, so the step length $\alpha_j$ is complex, and the cancellation
+  that makes the search directions $M^{-1} A$-conjugate fails already at $j = 1$. The rest of the
+  module, including (9.29), holds over $\mathbb{R}$ and over $\mathbb{C}$. The module doc comment of
+  `Numlib.Krylov.CGW` gives the details.
+* The hypothesis that $M$ is positive definite is `Krylov.IsPreconditioner (op (cgwM A)) (op (cgwM
+  A)⁻¹)`.
+* The state of the algorithm is the triple $(x_j, r_j, p_j)$, and indices are $0$-based. The step
+  reuses the step length and the coefficient of Algorithm 9.1 (`SaadSparse.Chapter09.pcgStepAlpha`
+  and `SaadSparse.Chapter09.pcgStepBeta`).
 
-The inner-outer variants of Golub and Overton mentioned in the notes of §9.6 carry no statement
-in the book and are not formalized.
+## Not formalized
+
+* The inner-outer variants of Golub and Overton, which the notes of Section 9.6 mention. The book
+  states no result about them.
 -/
 
 open Matrix
@@ -61,47 +86,60 @@ variable {n : ℕ} {𝕜 : Type*} [RCLike 𝕜]
 
 local notation "𝔼" => EuclideanSpace 𝕜 (Fin n)
 
-/-! ### §9.6: the splitting `A = M - N` -/
+/-! ### Section 9.6: the splitting $A = M - N$ -/
 
-/-- §9.6: the preconditioner of the Concus–Golub–Widlund algorithm, the Hermitian part
-`M = (A + Aᴴ)/2` of a nearly symmetric `A`. -/
+/-- **Section 9.6** of [saad2003iterative], the preconditioner. For $A \in \mathbb{K}^{n \times n}$,
+the preconditioner of the Concus–Golub–Widlund algorithm is the **Hermitian part** of $A$,
+$$M = \tfrac{1}{2}(A + A^H).$$
+
+The definition is Mathlib's `Matrix.hermitianPart`. -/
 noncomputable def cgwM (A : Matrix (Fin n) (Fin n) 𝕜) : Matrix (Fin n) (Fin n) 𝕜 :=
   Matrix.hermitianPart A
 
-/-- §9.6: the skew-Hermitian part `N = M - A = (Aᴴ - A)/2` of the splitting `A = M - N`. -/
+/-- **Section 9.6** of [saad2003iterative], the skew-Hermitian part. For
+$A \in \mathbb{K}^{n \times n}$, the matrix $N$ of the splitting $A = M - N$ is
+$$N = M - A = \tfrac{1}{2}(A^H - A).$$
+The second form is `SaadSparse.Chapter09.cgwN_eq`. -/
 noncomputable def cgwN (A : Matrix (Fin n) (Fin n) 𝕜) : Matrix (Fin n) (Fin n) 𝕜 :=
   cgwM A - A
 
 variable {A : Matrix (Fin n) (Fin n) 𝕜}
 
-/-- §9.6: `A = M - N`. -/
+/-- **Section 9.6** of [saad2003iterative], the splitting. For every
+$A \in \mathbb{K}^{n \times n}$, $A = M - N$ with $M = (A + A^H)/2$ and $N = M - A$. -/
 theorem cgwM_sub_cgwN (A : Matrix (Fin n) (Fin n) 𝕜) : cgwM A - cgwN A = A := by
   rw [cgwN, sub_sub_cancel]
 
-/-- The preconditioner of §9.6 is Hermitian. -/
+/-- **Section 9.6** of [saad2003iterative]. For every $A \in \mathbb{K}^{n \times n}$, the
+preconditioner $M = (A + A^H)/2$ is Hermitian. -/
 theorem cgwM_isHermitian (A : Matrix (Fin n) (Fin n) 𝕜) : (cgwM A).IsHermitian :=
   Matrix.hermitianPart_isHermitian A
 
-/-- `N = (Aᴴ - A)/2`. -/
+/-- For every $A \in \mathbb{K}^{n \times n}$, $N = \frac{1}{2}(A^H - A)$. -/
 theorem cgwN_eq (A : Matrix (Fin n) (Fin n) 𝕜) : cgwN A = (2⁻¹ : 𝕜) • (Aᴴ - A) := by
   have h : cgwM A = (2⁻¹ : 𝕜) • (A + Aᴴ) := rfl
   rw [cgwN, h]
   match_scalars <;> ring
 
-/-- §9.6: `N` is skew-Hermitian, `Nᴴ = -N`. -/
+/-- **Section 9.6** of [saad2003iterative]. For every $A \in \mathbb{K}^{n \times n}$, the matrix
+$N = M - A$ is skew-Hermitian: $N^H = -N$. -/
 theorem cgwN_conjTranspose (A : Matrix (Fin n) (Fin n) 𝕜) : (cgwN A)ᴴ = -cgwN A := by
   rw [cgwN_eq, Matrix.conjTranspose_smul, Matrix.conjTranspose_sub,
     Matrix.conjTranspose_conjTranspose, ← neg_sub Aᴴ A, smul_neg,
     show star (2⁻¹ : 𝕜) = 2⁻¹ by simp]
 
-/-! ### §9.6: skew-adjointness in the `M`-inner product -/
+/-! ### Section 9.6: skew-adjointness in the $M$-inner product -/
 
 section Energy
 
 variable {M : Matrix (Fin n) (Fin n) 𝕜}
 
-/-- §9.6: for a skew-Hermitian `N`, `M⁻¹ N` is skew-adjoint for the `M`-inner product,
-`(M⁻¹ N x, y)_M = -(x, M⁻¹ N y)_M`. -/
+/-- **Section 9.6** of [saad2003iterative], skew-adjointness of $M^{-1} N$. Let
+$N \in \mathbb{K}^{n \times n}$ be skew-Hermitian, $N^H = -N$, and let $M$ be a preconditioner.
+Then $M^{-1} N$ is skew-adjoint for the $M$-inner product:
+$$(M^{-1} N u, v)_M = -(u, M^{-1} N v)_M \quad \text{for all } u, v.$$
+
+The vectors $u$ and $v$ are elements of the space with the $M$-inner product, `hM.EnergySpace`. -/
 theorem isSkewAdjoint_energy {N : Matrix (Fin n) (Fin n) 𝕜} (hN : Nᴴ = -N)
     (hM : Krylov.IsPreconditioner (op M) (op M⁻¹)) (u v : hM.EnergySpace) :
     inner 𝕜 (hM.energyEnd (op M⁻¹ ∘ₗ op N) u) v
@@ -113,7 +151,8 @@ theorem isSkewAdjoint_energy {N : Matrix (Fin n) (Fin n) 𝕜} (hN : Nᴴ = -N)
   have hneg : (op (-N) : 𝔼 →ₗ[𝕜] 𝔼) = -op N := map_neg Matrix.toEuclideanLin N
   rw [hneg, LinearMap.neg_apply, inner_neg_right]
 
-/-- §9.6: `M⁻¹ A = I - M⁻¹ N`, read in the `M`-inner product. -/
+/-- Let the Hermitian part $M$ of $A$ be a preconditioner. Then $M^{-1} A u = u - M^{-1} N u$ for
+every $u$, in the space with the $M$-inner product. -/
 theorem energyEnd_eq_one_sub (hM : Krylov.IsPreconditioner (op (cgwM A)) (op (cgwM A)⁻¹))
     (u : hM.EnergySpace) :
     hM.energyEnd (op (cgwM A)⁻¹ ∘ₗ op A) u
@@ -126,8 +165,12 @@ theorem energyEnd_eq_one_sub (hM : Krylov.IsPreconditioner (op (cgwM A)) (op (cg
   congr 1
   rw [LinearMap.comp_apply, LinearMap.comp_apply, hA, map_sub, hM.inv_apply]
 
-/-- §9.6: the adjoint of `M⁻¹ A` in the `M`-inner product is `2 I - M⁻¹ A`.  This is the one
-fact the whole section rests on: it is what makes the Hessenberg matrix of the `M`-orthogonal
+/-- **Section 9.6** of [saad2003iterative], the adjoint of $M^{-1} A$. Let
+$A \in \mathbb{K}^{n \times n}$, and let its Hermitian part $M$ be a preconditioner (positive
+definite). Then the adjoint of $M^{-1} A$ for the $M$-inner product is $2I - M^{-1} A$:
+$$(M^{-1} A u, v)_M = (u, 2v - M^{-1} A v)_M \quad \text{for all } u, v.$$
+
+The whole section rests on this fact: it makes the Hessenberg matrix of the $M$-orthogonal
 Arnoldi process tridiagonal. -/
 theorem adjoint_energyEnd (hM : Krylov.IsPreconditioner (op (cgwM A)) (op (cgwM A)⁻¹))
     (u v : hM.EnergySpace) :
@@ -144,17 +187,21 @@ theorem adjoint_energyEnd (hM : Krylov.IsPreconditioner (op (cgwM A)) (op (cgwM 
 
 end Energy
 
-/-! ### (9.29): the tridiagonal Hessenberg matrix of the `M`-orthogonal Arnoldi process -/
+/-! ### Equation (9.29): the tridiagonal Hessenberg matrix of the $M$-orthogonal Arnoldi process -/
 
-/-- **(9.29)**: the Hessenberg matrix of the Arnoldi process for `M⁻¹ A` in the `M`-inner
-product is tridiagonal with unit diagonal.
+/-- **Equation (9.29)** of [saad2003iterative]. Let $A \in \mathbb{K}^{n \times n}$, and let its
+Hermitian part $M$ be a preconditioner. Let $v_0, v_1, \ldots$ be the Arnoldi vectors of
+$B = M^{-1} A$ in the $M$-inner product, started from a vector $b$, and let
+$h_{ij} = (B v_j, v_i)_M$ be the Hessenberg coefficients. Then:
+* $h_{ij} = 0$ whenever $j \ge i + 2$; with the Hessenberg structure, only the three central
+  diagonals remain, so the Hessenberg matrix is tridiagonal;
+* $h_{ij} + \overline{h_{ji}} = 2 (v_j, v_i)_M$ for all $i, j$, so the superdiagonal entry is
+  $-\overline{\eta_{j+1}}$ when the subdiagonal entry is $\eta_{j+1}$;
+* $\operatorname{Re} h_{ii} = 1$ for every $i$ less than the grade of $b$ with respect to $B$.
 
-* the first clause is tridiagonality — `h_ij = 0` whenever `j ≥ i + 2`, which with the
-  Hessenberg structure leaves only the three central diagonals;
-* the second is `h_ij + conj h_ji = 2 (v_i, v_j)_M`, so the superdiagonal entry is minus the
-  conjugate of the subdiagonal one, `-conj η_{j+1}` against `η_{j+1}`;
-* the third is the unit diagonal `re h_ii = 1` for the vectors the process actually
-  produces — over `ℝ` that is Saad's `h_ii = 1`. -/
+Over $\mathbb{R}$ the third clause is the statement $h_{ii} = 1$ of the book. The Arnoldi
+vectors and coefficients are the backbone `Arnoldi.vec` and `Arnoldi.coeff`, with $0$-based
+indices; the vectors are the normalized Gram–Schmidt vectors of the sequence $B^i b$. -/
 theorem equation_9_29 (hM : Krylov.IsPreconditioner (op (cgwM A)) (op (cgwM A)⁻¹))
     (b : hM.EnergySpace) :
     (∀ i j : ℕ, i + 2 ≤ j →
@@ -217,57 +264,67 @@ section Algorithm
 
 variable (A M : Matrix (Fin n) (Fin n) 𝕜)
 
-/-- One pass through the Concus–Golub–Widlund recurrence: **Algorithm 9.1** with the sign of
-`β_j` reversed, `p_{j+1} = z_{j+1} - β_j p_j`. -/
+/-- One step of the Concus–Golub–Widlund recurrence: Algorithm 9.1 of [saad2003iterative] with the
+sign of $\beta_j$ reversed. It maps the state $(x_j, r_j, p_j)$ to $(x_j + \alpha_j p_j, \;
+r_{j+1}, \; z_{j+1} - \beta_j p_j)$, where $\alpha_j$, $r_{j+1}$, $z_{j+1} = M^{-1} r_{j+1}$ and
+$\beta_j$ are as in Algorithm 9.1. -/
 noncomputable def cgwStep (s : 𝔼 × 𝔼 × 𝔼) : 𝔼 × 𝔼 × 𝔼 :=
   (s.1 + pcgStepAlpha A M s • s.2.2, pcgStepR A M s,
     op M⁻¹ (pcgStepR A M s) - pcgStepBeta A M s • s.2.2)
 
 variable (b x₀ : EuclideanSpace 𝕜 (Fin n))
 
-/-- **The Concus–Golub–Widlund algorithm** run for `j` steps, preconditioned by the Hermitian
-part `M = (A + Aᴴ)/2` of `A`: the triple `(x_j, r_j, p_j)`, started from `r_0 = b - A x_0` and
-`p_0 = z_0 = M⁻¹ r_0`. -/
+/-- **Section 9.6** of [saad2003iterative], the Concus–Golub–Widlund algorithm. Let
+$A \in \mathbb{K}^{n \times n}$ with Hermitian part $M = (A + A^H)/2$, and let
+$b, x_0 \in \mathbb{K}^n$. Set $r_0 = b - A x_0$ and $p_0 = z_0 = M^{-1} r_0$. For
+$j = 0, 1, \ldots$ compute
+$$\alpha_j = \frac{(r_j, z_j)}{(A p_j, p_j)}, \quad x_{j+1} = x_j + \alpha_j p_j, \quad
+  r_{j+1} = r_j - \alpha_j A p_j,$$
+$$z_{j+1} = M^{-1} r_{j+1}, \quad \beta_j = -\frac{(r_{j+1}, z_{j+1})}{(r_j, z_j)}, \quad
+  p_{j+1} = z_{j+1} + \beta_j p_j.$$
+The value at $j$ is the triple $(x_j, r_j, p_j)$ after $j$ steps. -/
 noncomputable def cgw (j : ℕ) : 𝔼 × 𝔼 × 𝔼 :=
   (cgwStep A (cgwM A))^[j] (x₀, b - op A x₀, op (cgwM A)⁻¹ (b - op A x₀))
 
-/-- The `j`-th CGW iterate `x_j`. -/
+/-- The iterate $x_j$ of the Concus–Golub–Widlund algorithm. -/
 noncomputable def cgwX (j : ℕ) : 𝔼 := (cgw A b x₀ j).1
 
-/-- The `j`-th CGW residual `r_j`. -/
+/-- The residual $r_j$ of the Concus–Golub–Widlund algorithm, as computed by the recurrence. -/
 noncomputable def cgwR (j : ℕ) : 𝔼 := (cgw A b x₀ j).2.1
 
-/-- The `j`-th CGW search direction `p_j`. -/
+/-- The search direction $p_j$ of the Concus–Golub–Widlund algorithm. -/
 noncomputable def cgwP (j : ℕ) : 𝔼 := (cgw A b x₀ j).2.2
 
-/-- The `j`-th preconditioned CGW residual `z_j = M⁻¹ r_j`. -/
+/-- The preconditioned residual $z_j = M^{-1} r_j$ of the Concus–Golub–Widlund algorithm. -/
 noncomputable def cgwZ (j : ℕ) : 𝔼 := op (cgwM A)⁻¹ (cgwR A b x₀ j)
 
-/-- The CGW step length `α_j`. -/
+/-- The step length $\alpha_j$ of the Concus–Golub–Widlund algorithm. -/
 noncomputable def cgwAlpha (j : ℕ) : 𝕜 := pcgStepAlpha A (cgwM A) (cgw A b x₀ j)
 
-/-- The CGW direction coefficient `β_j`, the negative of Algorithm 9.1's. -/
+/-- The direction coefficient $\beta_j$ of the Concus–Golub–Widlund algorithm, the negative of the
+coefficient of Algorithm 9.1. -/
 noncomputable def cgwBeta (j : ℕ) : 𝕜 := -pcgStepBeta A (cgwM A) (cgw A b x₀ j)
 
-/-- The recurrence: state `j + 1` is one pass of the CGW step applied to state `j`. -/
+/-- The state of the Concus–Golub–Widlund algorithm after $j + 1$ steps is one step applied to the
+state after $j$ steps. -/
 theorem cgw_succ (j : ℕ) : cgw A b x₀ (j + 1) = cgwStep A (cgwM A) (cgw A b x₀ j) :=
   Function.iterate_succ_apply' _ _ _
 
-/-- The iteration starts at `x_0`. -/
+/-- The Concus–Golub–Widlund algorithm starts at $x_0$. -/
 @[simp] theorem cgwX_zero : cgwX A b x₀ 0 = x₀ := rfl
 
-/-- `r_0 = b - A x_0`. -/
+/-- The initial residual of the Concus–Golub–Widlund algorithm is $r_0 = b - A x_0$. -/
 @[simp] theorem cgwR_zero : cgwR A b x₀ 0 = b - op A x₀ := rfl
 
-/-- `p_0 = z_0 = M⁻¹ r_0`. -/
+/-- The initial direction of the Concus–Golub–Widlund algorithm is $p_0 = z_0 = M^{-1} r_0$. -/
 @[simp] theorem cgwP_zero : cgwP A b x₀ 0 = cgwZ A b x₀ 0 := rfl
 
-/-- The CGW iterate update `x_{j+1} = x_j + α_j p_j`. -/
+/-- The iterate update of the Concus–Golub–Widlund algorithm: $x_{j+1} = x_j + \alpha_j p_j$. -/
 theorem cgwX_succ (j : ℕ) :
     cgwX A b x₀ (j + 1) = cgwX A b x₀ j + cgwAlpha A b x₀ j • cgwP A b x₀ j := by
   rw [cgwX, cgw_succ]; rfl
 
-/-- The CGW residual update `r_{j+1} = r_j - α_j A p_j`. -/
+/-- The residual update of the Concus–Golub–Widlund algorithm: $r_{j+1} = r_j - \alpha_j A p_j$. -/
 theorem cgwR_succ (j : ℕ) :
     cgwR A b x₀ (j + 1) = cgwR A b x₀ j - cgwAlpha A b x₀ j • op A (cgwP A b x₀ j) := by
   rw [cgwR, cgw_succ]; rfl
@@ -276,15 +333,17 @@ private theorem cgwR_succ_eq (j : ℕ) :
     cgwR A b x₀ (j + 1) = pcgStepR A (cgwM A) (cgw A b x₀ j) := by
   rw [cgwR, cgw_succ]; rfl
 
-/-- The CGW direction update `p_{j+1} = z_{j+1} + β_j p_j`, with `β_j` the *negative* of the
-coefficient of Algorithm 9.1. -/
+/-- The direction update of the Concus–Golub–Widlund algorithm: $p_{j+1} = z_{j+1} + \beta_j p_j$,
+with $\beta_j$ the negative of the coefficient of Algorithm 9.1. -/
 theorem cgwP_succ (j : ℕ) :
     cgwP A b x₀ (j + 1) = cgwZ A b x₀ (j + 1) + cgwBeta A b x₀ j • cgwP A b x₀ j := by
   rw [cgwBeta, neg_smul, ← sub_eq_add_neg, cgwZ, cgwR_succ_eq, cgwP, cgw_succ]
   rfl
 
-/-- The CGW state's residual field is the true residual `b - A x_j`.  This is the first step of
-the induction that would identify the CGW iterate with the Galerkin iterate. -/
+/-- **Section 9.6** of [saad2003iterative], the residual. For all $A$, $b$, $x_0$ and $j$, the
+residual of the Concus–Golub–Widlund algorithm is the true residual: $r_j = b - A x_j$.
+
+This is the first step towards the identification of the iterate with the Galerkin iterate. -/
 theorem cgw_residual_eq (j : ℕ) : cgwR A b x₀ j = b - op A (cgwX A b x₀ j) := by
   induction j with
   | zero => rfl
@@ -292,10 +351,14 @@ theorem cgw_residual_eq (j : ℕ) : cgwR A b x₀ j = b - op A (cgwX A b x₀ j)
       rw [cgwR_succ, cgwX_succ, ih, map_add, map_smul]
       abel
 
-/-- **§9.6**: the coefficients of the Concus–Golub–Widlund algorithm.  The step length is that
-of Algorithm 9.1, `α_j = (r_j, z_j)/(A p_j, p_j)`, and the direction coefficient is its
-negative, `β_j = -(z_{j+1}, r_{j+1})/(z_j, r_j)`; the sign is the one skew-adjointness of
-`M⁻¹ N` forces, through `(M⁻¹ A z_{j+1}, p_j)_M = -(z_{j+1}, M⁻¹ A p_j)_M`. -/
+/-- **Section 9.6** of [saad2003iterative], the coefficients of the Concus–Golub–Widlund algorithm.
+For all $A$, $b$, $x_0$ and $j$,
+$$\alpha_j = \frac{(r_j, z_j)}{(A p_j, p_j)}, \qquad \beta_j = -\frac{(r_{j+1}, z_{j+1})}{(r_j,
+  z_j)}.$$
+The step length is that of Algorithm 9.1, and the direction coefficient is its negative.
+
+The sign comes from the skew-adjointness of $M^{-1} N$, through $(M^{-1} A z_{j+1}, p_j)_M =
+-(z_{j+1}, M^{-1} A p_j)_M$ for the relevant vectors. -/
 theorem cgw_alpha (j : ℕ) :
     cgwAlpha A b x₀ j
         = inner 𝕜 (cgwZ A b x₀ j) (cgwR A b x₀ j)
@@ -315,8 +378,13 @@ section Galerkin
 
 variable {n : ℕ} {A : Matrix (Fin n) (Fin n) ℝ}
 
-/-- **§9.6 read as the hypothesis of the backbone recurrence**: in the `M`-inner product `M⁻¹ A` is
-*shifted skew-adjoint*, `B + B* = 2`.  This is `adjoint_energyEnd` over the reals. -/
+/-- **Section 9.6** of [saad2003iterative], the hypothesis of the backbone recurrence. Let
+$A \in \mathbb{R}^{n \times n}$, and let its symmetric part $M$ be a preconditioner. Then
+$B = M^{-1} A$ is shifted skew-adjoint for the $M$-inner product: $B + B^* = 2I$, where $B^*$ is
+the adjoint for the $M$-inner product.
+
+This is `SaadSparse.Chapter09.adjoint_energyEnd` over $\mathbb{R}$, in the form
+`LinearMap.IsShiftedSkewAdjoint` that `CGW.iterate` needs. -/
 theorem isShiftedSkewAdjoint_energyEnd
     (hM : Krylov.IsPreconditioner (op (cgwM A)) (op (cgwM A)⁻¹)) :
     (hM.energyEnd (op (cgwM A)⁻¹ ∘ₗ op A)).IsShiftedSkewAdjoint := by
@@ -325,9 +393,16 @@ theorem isShiftedSkewAdjoint_energyEnd
   rw [inner_sub_right, real_inner_smul_right] at h
   linarith
 
-/-- **The Concus–Golub–Widlund recurrence is the backbone `CGW.iterate`** of `M⁻¹ A` in the
-`M`-inner product: the iterate and the search direction transport unchanged, and what plays the
-part of the backbone residual is the *preconditioned* residual `z_j = M⁻¹ r_j`. -/
+/-- **Section 9.6** of [saad2003iterative], the algorithm as a backbone recurrence. Let
+$A \in \mathbb{R}^{n \times n}$, and let its symmetric part $M$ be a preconditioner. Let
+$(\xi_j, \rho_j, \pi_j)$ be the iterate, the residual and the search direction of the backbone
+recurrence `CGW.iterate` for $M^{-1} A$ on the space with the $M$-inner product, with right-hand
+side $M^{-1} b$ and initial guess $x_0$. Then for all $j$,
+$$x_j = \xi_j, \qquad z_j = \rho_j, \qquad p_j = \pi_j.$$
+
+The iterate and the search direction carry over unchanged. The preconditioned residual
+$z_j = M^{-1} r_j$ plays the part of the backbone residual. Each vector is moved to the
+$M$-inner product space by `hM.toEnergy`. -/
 theorem cgw_eq_CGW_iterate (hM : Krylov.IsPreconditioner (op (cgwM A)) (op (cgwM A)⁻¹))
     (b x₀ : EuclideanSpace ℝ (Fin n)) (j : ℕ) :
     hM.toEnergy (cgwX A b x₀ j)
@@ -382,15 +457,20 @@ theorem cgw_eq_CGW_iterate (hM : Krylov.IsPreconditioner (op (cgwM A)) (op (cgwM
     · rw [CGW.iterate_succ_x, ← hx, ← hp, ← halpha, cgwX_succ, map_add, map_smul]
     · rw [CGW.iterate_succ_p, ← hr', ← hp, ← hbeta, cgwP_succ, map_add, map_smul]
 
-/-- **The Concus–Golub–Widlund iterate is a Galerkin iterate**: it lies in
-`x₀ + 𝒦_j(M⁻¹ A, M⁻¹ r₀)` and its residual is `M`-orthogonal to that space, so §9.6 is a
-projection method for the preconditioned system `M⁻¹ A x = M⁻¹ b` in the `M`-inner product.  This
-is the only optimality the algorithm has: no minimization comes with it, because `M⁻¹ A` is not
-`M`-self-adjoint.
+/-- **Section 9.6** of [saad2003iterative], the Galerkin property. Let
+$A \in \mathbb{R}^{n \times n}$, and let its symmetric part $M$ be a preconditioner. Then for
+all $b, x_0$ and $j$, the iterate $x_j$ of the Concus–Golub–Widlund algorithm is the Galerkin
+iterate of $Ax = b$ over $x_0 + \mathcal{K}_j(M^{-1} A, M^{-1} r_0)$, with $r_0 = b - A x_0$:
+$$x_j - x_0 \in \mathcal{K}_j(M^{-1} A, M^{-1} r_0), \qquad b - A x_j \perp \mathcal{K}_j(M^{-1}
+  A, M^{-1} r_0).$$
+Equivalently, the preconditioned residual $M^{-1}(b - A x_j)$ is $M$-orthogonal to that space,
+so the algorithm is a projection method for $M^{-1} A x = M^{-1} b$ in the $M$-inner product.
 
-Over the reals only.  Over `ℂ` the recurrence is not a projection method — see the module
-documentation of `Numlib/Krylov/CGW.lean`: the step length `α_j` is then genuinely complex and the
-cancellation that makes the directions `B`-conjugate fails already at `j = 1`. -/
+This is the only optimality property of the algorithm. It comes with no minimization, because
+$M^{-1} A$ is not self-adjoint for the $M$-inner product. The statement holds over $\mathbb{R}$
+only. Over $\mathbb{C}$ the recurrence is not a projection method: the step length $\alpha_j$ is
+complex, and the cancellation that makes the directions $M^{-1} A$-conjugate fails already at
+$j = 1$; see the module doc comment of `Numlib.Krylov.CGW`. -/
 theorem cgw_isGalerkinIterate (hM : Krylov.IsPreconditioner (op (cgwM A)) (op (cgwM A)⁻¹))
     (b x₀ : EuclideanSpace ℝ (Fin n)) (j : ℕ) :
     IsGalerkin (op A) b x₀

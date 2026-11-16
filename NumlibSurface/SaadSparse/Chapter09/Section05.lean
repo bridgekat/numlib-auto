@@ -8,47 +8,82 @@ import NumlibSurface.SaadSparse.Chapter08.Section03
 import NumlibSurface.SaadSparse.Chapter09.Section02
 
 /-!
-# Saad §9.5: preconditioned CG for the normal equations
+# Saad, Section 9.5: Preconditioned CG for the normal equations
 
-Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM,
-2003, §9.5.
+This module formalizes Section 9.5 of [saad2003iterative], with Problems P-9.4 and P-9.5. Both
+algorithms of the section are Algorithm 9.1 run on a normal-equations system and rearranged so that
+only products with $A$ and $A^H$ and solves with $M$ occur; neither $A^H A$ nor $A A^H$ is formed.
+Algorithm 9.7 (left-preconditioned CGNR) is Algorithm 9.1 for $A^H A x = A^H b$, and Algorithm 9.8
+(left-preconditioned CGNE) is Algorithm 9.1 for $A A^H u = b$, read through $x = A^H u$. They are
+CGNR and CGNE of Section 8.3 (Algorithms 8.4 and 8.5) with $M^{-1}$ inserted, with the same two
+rearrangements: the residual carried is the true residual $r_j = b - A x_j$, and the direction
+vectors of Algorithm 9.8 carry an extra factor $A^H$.
 
-Both algorithms are Algorithm 9.1 (`pcg`) run on a normal-equations system and rearranged so
-that only products with `A` and `Aᴴ` and solves with `M` occur, and neither `Aᴴ A` nor `A Aᴴ`
-is ever formed. **Algorithm 9.7** (left-preconditioned CGNR) is `pcgnr` and **Algorithm 9.8**
-(left-preconditioned CGNE) is `pcgne`; `pcgnr_eq` and `pcgne_eq` identify them with `pcg` for
-`Aᴴ A x = Aᴴ b` and for `A Aᴴ u = b` read through `x = Aᴴ u`. They are §8.3's `cgnr` and
-`cgne` (Algorithms 8.4 and 8.5) with `M⁻¹` inserted, and the two rearrangements — the residual
-carried is the true residual `r_j = b - A x_j`, and the direction vectors of Algorithm 9.8
-carry an extra `Aᴴ` — are the same ones.
+Algorithm 9.7 minimizes $\|b - Ax\|_2$ over $x_0 + \mathcal{K}_m(M^{-1} A^H A, M^{-1} A^H r_0)$, and
+Algorithm 9.8 minimizes $\|x_* - x\|_2$ over $x_0 + \mathcal{K}_m(A^H M^{-1} A, A^H M^{-1} r_0)$.
+Unlike in the unpreconditioned case, the two spaces differ; at $M = I$ both are the space
+$x_0 + \mathcal{K}_m(A^H A, A^H r_0)$ of Section 8.3. Problem P-9.4 asks for the right- and
+split-preconditioned versions of the two algorithms; they are the methods of Section 9.2 applied to
+the normal-equations matrices, and each gives the iterates of Algorithm 9.7 or 9.8 after a change of
+variables. Problem P-9.5 treats the centred systems $A^H M^{-1} A x = A^H M^{-1} b$ and
+$A M^{-1} A^H u = b$ with $x = M^{-1} A^H u$, whose coefficient matrices are symmetric. The proofs
+use `NumlibSurface.SaadSparse.Chapter09.Section02` and `Numlib.Krylov.NormalEquations`.
 
-The two optimality properties are `pcgnr_isMinResidual` and `pcgne_isMinError`: Algorithm 9.1 is a
-Galerkin method over the preconditioned Krylov space (`pcg_isGalerkinIterate`), and the two
-readings of that condition through the adjoint are
-`isGalerkin_adjoint_comp_iff_isMinResidual` and `isMinError_of_isGalerkin_comp_adjoint`, the
-general-subspace forms of what `Numlib/Krylov/NormalEquations` proves for the unpreconditioned
-Krylov space. Unlike the unpreconditioned case, the two search spaces now *differ*: Algorithm
-9.7 minimizes `‖b - A x‖₂` over `x₀ + 𝒦_m(M⁻¹ Aᴴ A, M⁻¹ Aᴴ r₀)` while Algorithm 9.8 minimizes
-`‖x_* - x‖₂` over `x₀ + 𝒦_m(Aᴴ M⁻¹ A, Aᴴ M⁻¹ r₀)`; at `M = I` both are the single space
-`x₀ + 𝒦_m(Aᴴ A, Aᴴ r₀)` of §8.3 (`Chapter08.subspace_adjoint_eq`).
+## Main definitions
 
-**P-9.4** asks for the right- and split-preconditioned versions of the two algorithms, which the
-book leaves out. They need no new pseudo-code: they are §9.2's `rightPcg` and `splitPcg` run at
-the normal-equations operators, and `rightPcgnr_eq`, `splitPcgnr_eq`, `rightPcgne_eq` and
-`splitPcgne_eq` say that each produces the iterates of Algorithm 9.7 or 9.8 after the stated
-change of variables — `x = M⁻¹ u` on the right, `x = L⁻ᴴ u` split, composed with `x = Aᴴ u` in
-the CGNE case.
+* Algorithm 9.7, `SaadSparse.Chapter09.pcgnr`: left-preconditioned CGNR.
+* Algorithm 9.8, `SaadSparse.Chapter09.pcgne`: left-preconditioned CGNE.
+* Problem P-9.5, `SaadSparse.Chapter09.centredPcgnr`: the conjugate gradient method for the centred
+  system $A^H M^{-1} A x = A^H M^{-1} b$.
+* Problem P-9.5, `SaadSparse.Chapter09.centredPcgne`: the conjugate gradient method for the centred
+  system $A M^{-1} A^H u = b$.
+* Problem P-9.5, `SaadSparse.Chapter09.centredPcgneX`: the iterate
+  $x_j = x_0 + M^{-1} A^H (u_j - u_0)$ of the centred CGNE.
 
-**P-9.5** is the *centred* pair `A M⁻¹ Aᴴ u = b` with `x = M⁻¹ Aᴴ u` and `Aᴴ M⁻¹ A x = Aᴴ M⁻¹ b`.
-These are not rearrangements of Algorithm 9.1: `Aᴴ M⁻¹ A` is a different operator from
-`M⁻¹ Aᴴ A`. `isSymmetric_centredNR` and `isSymmetric_centredNE` are the claim the book makes
-("the coefficient matrices in the above systems are all symmetric"), `centredPcgnr` and
-`centredPcgne` are the adapted algorithms with `op_centredNR_apply` / `op_centredNE_apply` as
-their operation lists, `centredPcgne_eq` carries out the change of variables, and
-`centredPcgnr_isGalerkinIterate` is the optimality that `isSymmetricCoercive_centredNR` unlocks.
+## Main results
 
-Indices are `0`-based, and division by a vanishing quantity is `0`, which reproduces the book's
-breakdown behaviour.
+* Algorithm 9.7, `SaadSparse.Chapter09.pcgnr_eq`: Algorithm 9.7 is Algorithm 9.1 for
+  $A^H A x = A^H b$.
+* Section 9.5, `SaadSparse.Chapter09.pcgnr_isMinResidual`: Algorithm 9.7 minimizes $\|b - Ax\|_2$
+  over $x_0 + \mathcal{K}_m(M^{-1} A^H A, M^{-1} A^H r_0)$.
+* Algorithm 9.8, `SaadSparse.Chapter09.pcgne_eq`: Algorithm 9.8 is Algorithm 9.1 for $A A^H u = b$,
+  read through $x = A^H u$.
+* Section 9.5, `SaadSparse.Chapter09.pcgne_isMinError`: Algorithm 9.8 minimizes $\|x_* - x\|_2$ over
+  $x_0 + \mathcal{K}_m(A^H M^{-1} A, A^H M^{-1} r_0)$.
+* Problem P-9.4, `SaadSparse.Chapter09.rightPcgnr_eq`: right-preconditioned CGNR is Algorithm 9.7
+  after $x = M^{-1} u$.
+* Problem P-9.4, `SaadSparse.Chapter09.splitPcgnr_eq`: split-preconditioned CGNR is Algorithm 9.7.
+* Problem P-9.4, `SaadSparse.Chapter09.rightPcgne_eq`: right-preconditioned CGNE is Algorithm 9.8
+  after $x = A^H M^{-1} w$.
+* Problem P-9.4, `SaadSparse.Chapter09.splitPcgne_eq`: split-preconditioned CGNE is Algorithm 9.8
+  after $x = A^H u$.
+* Problem P-9.5, `SaadSparse.Chapter09.isSymmetric_centredNR`: $A^H M^{-1} A$ is symmetric when
+  $M^{-1}$ is.
+* Problem P-9.5, `SaadSparse.Chapter09.isSymmetric_centredNE`: $A M^{-1} A^H$ is symmetric when
+  $M^{-1}$ is.
+* Problem P-9.5, `SaadSparse.Chapter09.op_centredNR_apply`: $A^H M^{-1} A y = A^H(M^{-1}(Ay))$.
+* Problem P-9.5, `SaadSparse.Chapter09.op_centredNE_apply`: $A M^{-1} A^H y = A(M^{-1}(A^H y))$.
+* Problem P-9.5, `SaadSparse.Chapter09.centredPcgnr_residual_eq`: the residual of the centred CGNR
+  is $A^H M^{-1}(b - A x_j)$.
+* Problem P-9.5, `SaadSparse.Chapter09.centredPcgne_eq`: the residual of the centred CGNE is the
+  true residual $b - A x_j$.
+* Problem P-9.5, `SaadSparse.Chapter09.isSymmetricCoercive_centredNR`: $A^H M^{-1} A$ is symmetric
+  positive definite for nonsingular $A$ and symmetric positive definite $M^{-1}$.
+* Problem P-9.5, `SaadSparse.Chapter09.centredPcgnr_isGalerkinIterate`: the centred CGNR iterate is
+  the Galerkin iterate over $x_0 + \mathcal{K}_m(A^H M^{-1} A, A^H M^{-1} r_0)$.
+
+## Implementation notes
+
+* The states of Algorithms 9.7 and 9.8 are `Krylov.CGNR.State` and `Krylov.CGNE.State`, with fields
+  `x`, `r` and `p`. The vectors $\tilde r_j = A^H r_j$, $z_j$ and $w_j = A p_j$ are recomputed and
+  not stored.
+* Indices are $0$-based. Division by a vanishing quantity is $0$, which reproduces the breakdown
+  behaviour of the book.
+* The two optimality readings of Section 8.3 are restated for an arbitrary subspace $K$, because
+  preconditioning replaces the Krylov space of the backbone by another one.
+* The right- and split-preconditioned variants of Problem P-9.4 need no new algorithm: they are
+  `SaadSparse.Chapter09.rightPcg` and `SaadSparse.Chapter09.splitPcg` applied to $A^H A$ and
+  $A A^H$.
 -/
 
 open Matrix
@@ -65,37 +100,38 @@ local notation "𝔼" => EuclideanSpace 𝕜 (Fin n)
 
 /-! ### Preliminaries: the two normal-equations operators -/
 
-/-- `Aᴴ A` is a symmetric operator, whatever `A` is: it is the coefficient operator of the
-system Algorithm 9.7 preconditions. -/
+/-- For every $A \in \mathbb{K}^{n \times n}$, the operator of $A^H A$ is symmetric. It is the
+coefficient operator of the system that Algorithm 9.7 of [saad2003iterative] preconditions. -/
 theorem isSymmetric_conjTranspose_mul (A : Matrix (Fin n) (Fin n) 𝕜) :
     (op (Aᴴ * A)).IsSymmetric := by
   intro x y
   simp only [op_mul_apply]
   rw [Chapter08.inner_op_conjTranspose, Chapter07.inner_op_conjTranspose]
 
-/-- `A Aᴴ` is a symmetric operator: the coefficient operator of the system Algorithm 9.8
-preconditions. -/
+/-- For every $A \in \mathbb{K}^{n \times n}$, the operator of $A A^H$ is symmetric. It is the
+coefficient operator of the system that Algorithm 9.8 of [saad2003iterative] preconditions. -/
 theorem isSymmetric_mul_conjTranspose (A : Matrix (Fin n) (Fin n) 𝕜) :
     (op (A * Aᴴ)).IsSymmetric := by
   intro x y
   simp only [op_mul_apply]
   rw [Chapter07.inner_op_conjTranspose, Chapter08.inner_op_conjTranspose]
 
-/-- `(Aᴴ A p, p) = ‖A p‖₂²`: the denominator of Algorithm 9.7, line 4, is the one Algorithm 9.1
-would form. -/
+/-- $(A^H A p, p) = \|Ap\|_2^2$: the denominator in line 4 of Algorithm 9.7 is the one that
+Algorithm 9.1 forms. -/
 private theorem inner_conjTranspose_mul_self (A : Matrix (Fin n) (Fin n) 𝕜) (p : 𝔼) :
     inner 𝕜 p (op (Aᴴ * A) p) = (‖op A p‖ : 𝕜) ^ 2 := by
   rw [op_mul_apply, ← Chapter07.inner_op_conjTranspose, inner_self_eq_norm_sq_to_K]
 
-/-- `(A Aᴴ q, q) = (Aᴴ q, Aᴴ q)`: the denominator of Algorithm 9.8, line 4, is the one
-Algorithm 9.1 would form, read through `p = Aᴴ q`. -/
+/-- $(A^H q, A^H q) = (A A^H q, q)$: the denominator in line 4 of Algorithm 9.8 is the one that
+Algorithm 9.1 forms, read through $p = A^H q$. -/
 private theorem inner_mul_conjTranspose_self (A : Matrix (Fin n) (Fin n) 𝕜) (q : 𝔼) :
     inner 𝕜 (op Aᴴ q) (op Aᴴ q) = inner 𝕜 q (op (A * Aᴴ) q) := by
   rw [op_mul_apply, Chapter08.inner_op_conjTranspose]
 
-/-- `Aᴴ` carries the Krylov space of `M⁻¹ A Aᴴ` to the Krylov space of `Aᴴ M⁻¹ A`:
-`Aᴴ 𝒦_m(M⁻¹ A Aᴴ, v) = 𝒦_m(Aᴴ M⁻¹ A, Aᴴ v)`. This is the change of variables `x = Aᴴ u` of
-Algorithm 9.8, and it is what names the affine space that algorithm searches. -/
+/-- For $A, M \in \mathbb{K}^{n \times n}$, $v \in \mathbb{K}^n$ and $m \in \mathbb{N}$,
+$$A^H \mathcal{K}_m(M^{-1} A A^H, v) = \mathcal{K}_m(A^H M^{-1} A, A^H v).$$
+This is the change of variables $x = A^H u$ of Algorithm 9.8 of [saad2003iterative], and it
+identifies the affine space that the algorithm searches. -/
 theorem map_krylov_conjTranspose (A M : Matrix (Fin n) (Fin n) 𝕜)
     (v : EuclideanSpace 𝕜 (Fin n)) (m : ℕ) :
     (Chapter06.krylov (M⁻¹ * (A * Aᴴ)) v m).map (op Aᴴ)
@@ -104,18 +140,23 @@ theorem map_krylov_conjTranspose (A M : Matrix (Fin n) (Fin n) 𝕜)
     op_mul Aᴴ (M⁻¹ * A), op_mul M⁻¹ A]
   exact Krylov.map_subspace_comp (op M⁻¹ ∘ₗ op A) (op Aᴴ) v m
 
-/-! ### The two optimality readings, over an arbitrary subspace
+/-!
+### The two optimality readings, over an arbitrary subspace
 
-`Numlib/Krylov/NormalEquations` states both readings for the *unpreconditioned* Krylov space
-`𝒦_m(Aᴴ A, Aᴴ r₀)`, which is all §8.3 needs. Preconditioning replaces that space by another
-one, and nothing in either argument uses the shape of the space, so both are restated here for
-an arbitrary subspace `K`. -/
+The backbone module `Numlib.Krylov.NormalEquations` states both readings for the unpreconditioned
+Krylov space $\mathcal{K}_m(A^H A, A^H r_0)$, which is all that Section 8.3 needs. Preconditioning
+replaces that space by another one. Neither argument uses the form of the space, so both are
+restated here for an arbitrary subspace $K$.
+-/
 
-/-- **CGNR's optimality over an arbitrary subspace.** A Galerkin iterate for the normal
-equations `Aᴴ A x = Aᴴ b` over `x₀ + K` is exactly a minimal-residual iterate for `A x = b`
-over `x₀ + K`: both say that `b - A x ⟂ A K`. This is
-`Krylov.isGalerkinIterate_adjoint_comp_iff_isMinResidual` with the Krylov subspace it is stated for
-replaced by an arbitrary `K`. -/
+/-- **Optimality of CGNR over an arbitrary subspace.** Let $A \in \mathbb{K}^{n \times n}$,
+$b, x_0, x \in \mathbb{K}^n$ and $K$ a subspace of $\mathbb{K}^n$. Then $x$ is a Galerkin
+iterate of the normal equations $A^H A x = A^H b$ over $x_0 + K$ if and only if $x$ is a
+minimal-residual iterate of $Ax = b$ over $x_0 + K$. Both conditions say that $x - x_0 \in K$
+and $b - Ax \perp AK$.
+
+This is `Krylov.isGalerkinIterate_adjoint_comp_iff_isMinResidual` with the Krylov subspace
+replaced by an arbitrary $K$. -/
 theorem isGalerkin_adjoint_comp_iff_isMinResidual (A : Matrix (Fin n) (Fin n) 𝕜)
     (b x₀ : EuclideanSpace 𝕜 (Fin n)) (K : Submodule 𝕜 (EuclideanSpace 𝕜 (Fin n)))
     (x : EuclideanSpace 𝕜 (Fin n)) :
@@ -132,11 +173,14 @@ theorem isGalerkin_adjoint_comp_iff_isMinResidual (A : Matrix (Fin n) (Fin n) �
     rwa [LinearMap.comp_apply, ← map_sub,
       ← Chapter07.inner_op_conjTranspose A]
 
-/-- **CGNE's optimality over an arbitrary subspace.** If `u` is a Galerkin iterate for
-`A Aᴴ u = b` over `u₀ + K` and `x = x₀ + Aᴴ (u - u₀)`, then `x` minimizes the *error*
-`‖x_* - y‖` over `y ∈ x₀ + Aᴴ K`. This is
-`Krylov.isMinError_of_isGalerkinIterate_comp_adjoint` with the Krylov subspace it is stated for
-replaced by an arbitrary `K`. -/
+/-- **Optimality of CGNE over an arbitrary subspace.** Let $A \in \mathbb{K}^{n \times n}$,
+$b, u_0, u, x_* \in \mathbb{K}^n$ and $K$ a subspace of $\mathbb{K}^n$, with $A x_* = b$. Let
+$x_0 = A^H u_0$, and let $u$ be a Galerkin iterate of $A A^H u = b$ over $u_0 + K$. Then
+$x = x_0 + A^H(u - u_0)$ satisfies $x - x_0 \in A^H K$ and
+$$\|x_* - x\|_2 \le \|x_* - y\|_2 \quad \text{for all } y \in x_0 + A^H K.$$
+
+This is `Krylov.isMinError_of_isGalerkinIterate_comp_adjoint` with the Krylov subspace replaced
+by an arbitrary $K$. -/
 theorem isMinError_of_isGalerkin_comp_adjoint (A : Matrix (Fin n) (Fin n) 𝕜)
     {b x₀ u₀ u xstar : EuclideanSpace 𝕜 (Fin n)}
     {K : Submodule 𝕜 (EuclideanSpace 𝕜 (Fin n))} (hx₀ : x₀ = op Aᴴ u₀)
@@ -164,61 +208,73 @@ section CGNR
 
 variable (A M : Matrix (Fin n) (Fin n) 𝕜)
 
-/-- **Algorithm 9.7**, line 4: `α_j = (z_j, r̃_j)/‖w_j‖₂²`, with `r̃_j = Aᴴ r_j`,
-`z_j = M⁻¹ r̃_j` and `w_j = A p_j` recomputed rather than stored. -/
+/-- Line 4 of Algorithm 9.7 of [saad2003iterative]: the step length
+$\alpha_j = (z_j, \tilde r_j)/\|w_j\|_2^2$ on a state $(x_j, r_j, p_j)$, with
+$\tilde r_j = A^H r_j$, $z_j = M^{-1} \tilde r_j$ and $w_j = A p_j$ recomputed and not stored. -/
 noncomputable def pcgnrStepAlpha (s : Krylov.CGNR.State 𝔼 𝔼) : 𝕜 :=
   inner 𝕜 (op Aᴴ s.r) (op M⁻¹ (op Aᴴ s.r)) / (‖op A s.p‖ : 𝕜) ^ 2
 
-/-- **Algorithm 9.7**, line 6: `r_{j+1} = r_j - α_j w_j`. -/
+/-- Line 6 of Algorithm 9.7 of [saad2003iterative]: the next residual
+$r_{j+1} = r_j - \alpha_j w_j$, with $w_j = A p_j$. -/
 noncomputable def pcgnrStepR (s : Krylov.CGNR.State 𝔼 𝔼) : 𝔼 :=
   s.r - pcgnrStepAlpha A M s • op A s.p
 
-/-- **Algorithm 9.7**, line 9: `β_j = (z_{j+1}, r̃_{j+1})/(z_j, r̃_j)`. -/
+/-- Line 9 of Algorithm 9.7 of [saad2003iterative]: the coefficient $\beta_j = (z_{j+1}, \tilde
+r_{j+1})/(z_j, \tilde r_j)$. -/
 noncomputable def pcgnrStepBeta (s : Krylov.CGNR.State 𝔼 𝔼) : 𝕜 :=
   inner 𝕜 (op Aᴴ (pcgnrStepR A M s)) (op M⁻¹ (op Aᴴ (pcgnrStepR A M s))) /
     inner 𝕜 (op Aᴴ s.r) (op M⁻¹ (op Aᴴ s.r))
 
-/-- One pass through lines 3–10 of **Algorithm 9.7**, on the triple `(x_j, r_j, p_j)`. -/
+/-- One pass through lines 3–10 of Algorithm 9.7 of [saad2003iterative]. It maps the state
+$(x_j, r_j, p_j)$ to $(x_j + \alpha_j p_j, \; r_{j+1}, \; z_{j+1} + \beta_j p_j)$, with
+$z_{j+1} = M^{-1} A^H r_{j+1}$. -/
 noncomputable def pcgnrStep (s : Krylov.CGNR.State 𝔼 𝔼) : Krylov.CGNR.State 𝔼 𝔼 :=
   { x := s.x + pcgnrStepAlpha A M s • s.p
     r := pcgnrStepR A M s
     p := op M⁻¹ (op Aᴴ (pcgnrStepR A M s)) + pcgnrStepBeta A M s • s.p }
 
-/-- **Algorithm 9.7** (left-preconditioned CGNR) run for `j` steps, started from
-`r_0 = b - A x_0` and `p_0 = z_0 = M⁻¹ Aᴴ r_0`. -/
+/-- **Algorithm 9.7** of [saad2003iterative] (left-preconditioned CGNR). Let
+$A, M \in \mathbb{K}^{n \times n}$ and $b, x_0 \in \mathbb{K}^n$. Set $r_0 = b - A x_0$,
+$\tilde r_0 = A^H r_0$ and $p_0 = z_0 = M^{-1} \tilde r_0$. For $j = 0, 1, \ldots$ compute
+$$w_j = A p_j, \quad \alpha_j = \frac{(z_j, \tilde r_j)}{\|w_j\|_2^2}, \quad x_{j+1} = x_j +
+  \alpha_j p_j, \quad r_{j+1} = r_j - \alpha_j w_j,$$
+$$\tilde r_{j+1} = A^H r_{j+1}, \quad z_{j+1} = M^{-1} \tilde r_{j+1}, \quad \beta_j =
+  \frac{(z_{j+1}, \tilde r_{j+1})}{(z_j, \tilde r_j)}, \quad p_{j+1} = z_{j+1} + \beta_j p_j.$$
+The value at $j$ is the state $(x_j, r_j, p_j)$ after $j$ steps. -/
 noncomputable def pcgnr (b x₀ : EuclideanSpace 𝕜 (Fin n)) (j : ℕ) : Krylov.CGNR.State 𝔼 𝔼 :=
   (pcgnrStep A M)^[j] { x := x₀, r := b - op A x₀, p := op M⁻¹ (op Aᴴ (b - op A x₀)) }
 
-/-- Algorithm 9.7, line 5: `x_{j+1} = x_j + α_j p_j`. -/
+/-- Line 5 of Algorithm 9.7: $x_{j+1} = x_j + \alpha_j p_j$. -/
 theorem pcgnrStep_x (s : Krylov.CGNR.State 𝔼 𝔼) :
     (pcgnrStep A M s).x = s.x + pcgnrStepAlpha A M s • s.p := rfl
 
-/-- Algorithm 9.7, line 6: `r_{j+1} = r_j - α_j w_j`. -/
+/-- Line 6 of Algorithm 9.7: $r_{j+1} = r_j - \alpha_j w_j$. -/
 theorem pcgnrStep_r (s : Krylov.CGNR.State 𝔼 𝔼) : (pcgnrStep A M s).r = pcgnrStepR A M s := rfl
 
-/-- Algorithm 9.7, line 10: `p_{j+1} = z_{j+1} + β_j p_j`. -/
+/-- Line 10 of Algorithm 9.7: $p_{j+1} = z_{j+1} + \beta_j p_j$. -/
 theorem pcgnrStep_p (s : Krylov.CGNR.State 𝔼 𝔼) :
     (pcgnrStep A M s).p
       = op M⁻¹ (op Aᴴ (pcgnrStepR A M s)) + pcgnrStepBeta A M s • s.p := rfl
 
-/-- The recurrence: state `j + 1` is one pass of Algorithm 9.7 applied to state `j`. -/
+/-- The state of Algorithm 9.7 after $j + 1$ steps is one step applied to the state after $j$ steps.
+-/
 theorem pcgnr_succ (b x₀ : EuclideanSpace 𝕜 (Fin n)) (j : ℕ) :
     pcgnr A M b x₀ (j + 1) = pcgnrStep A M (pcgnr A M b x₀ j) :=
   Function.iterate_succ_apply' _ _ _
 
-/-- Algorithm 9.7, line 1: the iteration starts at `x_0`. -/
+/-- Line 1 of Algorithm 9.7: the iteration starts at $x_0$. -/
 @[simp] theorem pcgnr_zero_x (b x₀ : EuclideanSpace 𝕜 (Fin n)) : (pcgnr A M b x₀ 0).x = x₀ := rfl
 
-/-- Algorithm 9.7, line 1: `r_0 = b - A x_0`. -/
+/-- Line 1 of Algorithm 9.7: $r_0 = b - A x_0$. -/
 @[simp] theorem pcgnr_zero_r (b x₀ : EuclideanSpace 𝕜 (Fin n)) :
     (pcgnr A M b x₀ 0).r = b - op A x₀ := rfl
 
-/-- Algorithm 9.7, line 1: `p_0 = z_0 = M⁻¹ Aᴴ r_0`. -/
+/-- Line 1 of Algorithm 9.7: $p_0 = z_0 = M^{-1} A^H r_0$. -/
 @[simp] theorem pcgnr_zero_p (b x₀ : EuclideanSpace 𝕜 (Fin n)) :
     (pcgnr A M b x₀ 0).p = op M⁻¹ (op Aᴴ (b - op A x₀)) := rfl
 
-/-- The `r` field of Algorithm 9.7 is the true residual `b - A x_j`; the normal-equations
-residual `r̃_j = Aᴴ r_j` is the one the preconditioner is applied to. -/
+/-- The residual $r_j$ of Algorithm 9.7 is the true residual $b - A x_j$. The preconditioner is
+applied to the normal-equations residual $\tilde r_j = A^H r_j$. -/
 theorem pcgnr_residual_eq (b x₀ : EuclideanSpace 𝕜 (Fin n)) (j : ℕ) :
     (pcgnr A M b x₀ j).r = b - op A (pcgnr A M b x₀ j).x := by
   induction j with
@@ -226,7 +282,7 @@ theorem pcgnr_residual_eq (b x₀ : EuclideanSpace 𝕜 (Fin n)) (j : ℕ) :
   | succ j ih =>
     rw [pcgnr_succ, pcgnrStep_r, pcgnrStep_x, pcgnrStepR, ih, map_add, map_smul, sub_sub]
 
-/-! #### The bridge to Algorithm 9.1 -/
+/-! ### The bridge to Algorithm 9.1 -/
 
 variable {A M}
 
@@ -250,11 +306,14 @@ private theorem pcgnrStep_eq (hMinv : (op M⁻¹).IsSymmetric) (s : Krylov.CGNR.
   rw [pcgnrStep_x, pcgnrStep_r, pcgnrStep_p, pcgStep, pcgnrStepAlpha_eq hMinv,
     pcgnrStepBeta_eq hMinv, ← pcgnrStepR_eq hMinv]
 
-/-- **Algorithm 9.7 is Algorithm 9.1 for the normal equations.** The triple
-`(x_j, Aᴴ r_j, p_j)` of Algorithm 9.7 is the triple of Algorithm 9.1 applied to
-`Aᴴ A x = Aᴴ b` with the preconditioner `M`: the residual Algorithm 9.1 would carry is the
-normal-equations residual `r̃_j = Aᴴ r_j`, and its denominator `(Aᴴ A p_j, p_j)` is `‖w_j‖₂²`.
-Only the symmetry of `M⁻¹` is needed, to move it across the inner products of lines 4 and 9. -/
+/-- **Algorithm 9.7** of [saad2003iterative] as Algorithm 9.1 for the normal equations. Let
+$A, M \in \mathbb{K}^{n \times n}$ with $M^{-1}$ symmetric. Then for all $b, x_0$ and all $j$,
+the triple $(x_j, A^H r_j, p_j)$ of Algorithm 9.7 is the triple $(x_j, r_j, p_j)$ of Algorithm
+9.1 for $A^H A x = A^H b$ with the preconditioner $M$.
+
+The residual of Algorithm 9.1 is the normal-equations residual $\tilde r_j = A^H r_j$, and its
+denominator $(A^H A p_j, p_j)$ is $\|w_j\|_2^2$. The symmetry of $M^{-1}$ moves it across the
+inner products of lines 4 and 9. -/
 theorem pcgnr_eq (hMinv : (op M⁻¹).IsSymmetric) (b x₀ : EuclideanSpace 𝕜 (Fin n)) (j : ℕ) :
     ((pcgnr A M b x₀ j).x, op Aᴴ (pcgnr A M b x₀ j).r, (pcgnr A M b x₀ j).p)
       = pcg (Aᴴ * A) M (op Aᴴ b) x₀ j := by
@@ -264,17 +323,22 @@ theorem pcgnr_eq (hMinv : (op M⁻¹).IsSymmetric) (b x₀ : EuclideanSpace 𝕜
   | zero => exact (congrArg (fun z : 𝔼 => (x₀, z, op M⁻¹ z)) hinit).symm
   | succ j ih => rw [pcgnr_succ, pcg_succ, ← ih, pcgnrStep_eq hMinv]
 
-/-- The iterate of Algorithm 9.7 is the iterate of Algorithm 9.1 on the normal equations. -/
+/-- Let $M^{-1}$ be symmetric. The iterate $x_j$ of Algorithm 9.7 is the iterate of Algorithm 9.1
+for $A^H A x = A^H b$. -/
 theorem pcgnrX_eq (hMinv : (op M⁻¹).IsSymmetric) (b x₀ : EuclideanSpace 𝕜 (Fin n)) (j : ℕ) :
     (pcgnr A M b x₀ j).x = pcgX (Aᴴ * A) M (op Aᴴ b) x₀ j := by
   rw [pcgX, ← pcgnr_eq hMinv b x₀ j]
 
-/-- **Saad §9.5, the optimality of Algorithm 9.7**: `x_m` minimizes the true residual
-`‖b - A x‖₂` over the preconditioned affine space `x_0 + 𝒦_m(M⁻¹ Aᴴ A, M⁻¹ Aᴴ r_0)`.
+/-- **Section 9.5** of [saad2003iterative], optimality of Algorithm 9.7. Let $M$ be a
+preconditioner, and let $A \in \mathbb{K}^{n \times n}$ satisfy $c\,(Mx, x) \le \|Ax\|_2^2$ for
+all $x$, for some $c > 0$. Then for all $b, x_0$ and $m$, the iterate $x_m$ of Algorithm 9.7
+satisfies $x_m - x_0 \in \mathcal{K}_m(M^{-1} A^H A, M^{-1} A^H r_0)$ and
+$$\|b - A x_m\|_2 \le \|b - Ax\|_2 \quad \text{for all } x \in x_0 + \mathcal{K}_m(M^{-1} A^H A,
+  M^{-1} A^H r_0).$$
 
-The coercivity hypothesis is the generalized eigenvalue bound `c (M x, x) ≤ ‖A x‖₂²` that makes
-`M⁻¹ Aᴴ A` symmetric coercive in the `M`-inner product; for a nonsingular `A` and a symmetric
-positive definite `M` it holds with `c = σ_min(A)²/λ_max(M)`. -/
+The hypothesis is the generalized eigenvalue bound that makes $M^{-1} A^H A$ symmetric and
+coercive in the $M$-inner product. For a nonsingular $A$ and a symmetric positive definite $M$
+it holds with $c = \sigma_{\min}(A)^2/\lambda_{\max}(M)$. -/
 theorem pcgnr_isMinResidual (hM : Krylov.IsPreconditioner (op M) (op M⁻¹)) {c : ℝ} (hc : 0 < c)
     (hcoer : ∀ x : 𝔼, c * RCLike.re (inner 𝕜 (op M x) x) ≤ ‖op A x‖ ^ 2)
     (b x₀ : EuclideanSpace 𝕜 (Fin n)) (m : ℕ) :
@@ -303,60 +367,72 @@ section CGNE
 
 variable (A M : Matrix (Fin n) (Fin n) 𝕜)
 
-/-- **Algorithm 9.8**, line 4: `α_j = (z_j, r_j)/(p_j, p_j)`, with `z_j = M⁻¹ r_j` recomputed
-rather than stored. The direction `p_j` is the direction `q_j` of Algorithm 9.1 for
-`A Aᴴ u = b` premultiplied by `Aᴴ`, so `(p_j, p_j)` is that algorithm's `(A Aᴴ q_j, q_j)`. -/
+/-- Line 4 of Algorithm 9.8 of [saad2003iterative]: the step length
+$\alpha_j = (z_j, r_j)/(p_j, p_j)$ on a state $(x_j, r_j, p_j)$, with $z_j = M^{-1} r_j$
+recomputed and not stored. The direction $p_j$ is $A^H q_j$ for the direction $q_j$ of Algorithm
+9.1 for $A A^H u = b$, so $(p_j, p_j)$ is the quantity $(A A^H q_j, q_j)$ of that algorithm. -/
 noncomputable def pcgneStepAlpha (s : Krylov.CGNE.State 𝔼 𝔼) : 𝕜 :=
   inner 𝕜 s.r (op M⁻¹ s.r) / inner 𝕜 s.p s.p
 
-/-- **Algorithm 9.8**, line 6: `r_{j+1} = r_j - α_j w_j` with `w_j = A p_j`. -/
+/-- Line 6 of Algorithm 9.8 of [saad2003iterative]: the next residual
+$r_{j+1} = r_j - \alpha_j w_j$, with $w_j = A p_j$. -/
 noncomputable def pcgneStepR (s : Krylov.CGNE.State 𝔼 𝔼) : 𝔼 :=
   s.r - pcgneStepAlpha M s • op A s.p
 
-/-- **Algorithm 9.8**, line 8: `β_j = (z_{j+1}, r_{j+1})/(z_j, r_j)`. -/
+/-- Line 8 of Algorithm 9.8 of [saad2003iterative]: the coefficient
+$\beta_j = (z_{j+1}, r_{j+1})/(z_j, r_j)$. -/
 noncomputable def pcgneStepBeta (s : Krylov.CGNE.State 𝔼 𝔼) : 𝕜 :=
   inner 𝕜 (pcgneStepR A M s) (op M⁻¹ (pcgneStepR A M s)) / inner 𝕜 s.r (op M⁻¹ s.r)
 
-/-- One pass through lines 3–9 of **Algorithm 9.8**, on the triple `(x_j, r_j, p_j)`. -/
+/-- One pass through lines 3–9 of Algorithm 9.8 of [saad2003iterative]. It maps the state
+$(x_j, r_j, p_j)$ to $(x_j + \alpha_j p_j, \; r_{j+1}, \; A^H z_{j+1} + \beta_j p_j)$, with
+$z_{j+1} = M^{-1} r_{j+1}$. -/
 noncomputable def pcgneStep (s : Krylov.CGNE.State 𝔼 𝔼) : Krylov.CGNE.State 𝔼 𝔼 :=
   { x := s.x + pcgneStepAlpha M s • s.p
     r := pcgneStepR A M s
     p := op Aᴴ (op M⁻¹ (pcgneStepR A M s)) + pcgneStepBeta A M s • s.p }
 
-/-- **Algorithm 9.8** (left-preconditioned CGNE) run for `j` steps, started from
-`r_0 = b - A x_0` and `p_0 = Aᴴ z_0 = Aᴴ M⁻¹ r_0`. -/
+/-- **Algorithm 9.8** of [saad2003iterative] (left-preconditioned CGNE). Let
+$A, M \in \mathbb{K}^{n \times n}$ and $b, x_0 \in \mathbb{K}^n$. Set $r_0 = b - A x_0$,
+$z_0 = M^{-1} r_0$ and $p_0 = A^H z_0$. For $j = 0, 1, \ldots$ compute
+$$w_j = A p_j, \quad \alpha_j = \frac{(z_j, r_j)}{(p_j, p_j)}, \quad x_{j+1} = x_j + \alpha_j
+  p_j, \quad r_{j+1} = r_j - \alpha_j w_j,$$
+$$z_{j+1} = M^{-1} r_{j+1}, \quad \beta_j = \frac{(z_{j+1}, r_{j+1})}{(z_j, r_j)}, \quad
+  p_{j+1} = A^H z_{j+1} + \beta_j p_j.$$
+The value at $j$ is the state $(x_j, r_j, p_j)$ after $j$ steps. -/
 noncomputable def pcgne (b x₀ : EuclideanSpace 𝕜 (Fin n)) (j : ℕ) : Krylov.CGNE.State 𝔼 𝔼 :=
   (pcgneStep A M)^[j] { x := x₀, r := b - op A x₀, p := op Aᴴ (op M⁻¹ (b - op A x₀)) }
 
-/-- Algorithm 9.8, line 5: `x_{j+1} = x_j + α_j p_j`. -/
+/-- Line 5 of Algorithm 9.8: $x_{j+1} = x_j + \alpha_j p_j$. -/
 theorem pcgneStep_x (s : Krylov.CGNE.State 𝔼 𝔼) :
     (pcgneStep A M s).x = s.x + pcgneStepAlpha M s • s.p := rfl
 
-/-- Algorithm 9.8, line 6: `r_{j+1} = r_j - α_j w_j`. -/
+/-- Line 6 of Algorithm 9.8: $r_{j+1} = r_j - \alpha_j w_j$. -/
 theorem pcgneStep_r (s : Krylov.CGNE.State 𝔼 𝔼) : (pcgneStep A M s).r = pcgneStepR A M s := rfl
 
-/-- Algorithm 9.8, line 9: `p_{j+1} = Aᴴ z_{j+1} + β_j p_j`. -/
+/-- Line 9 of Algorithm 9.8: $p_{j+1} = A^H z_{j+1} + \beta_j p_j$. -/
 theorem pcgneStep_p (s : Krylov.CGNE.State 𝔼 𝔼) :
     (pcgneStep A M s).p
       = op Aᴴ (op M⁻¹ (pcgneStepR A M s)) + pcgneStepBeta A M s • s.p := rfl
 
-/-- The recurrence: state `j + 1` is one pass of Algorithm 9.8 applied to state `j`. -/
+/-- The state of Algorithm 9.8 after $j + 1$ steps is one step applied to the state after $j$ steps.
+-/
 theorem pcgne_succ (b x₀ : EuclideanSpace 𝕜 (Fin n)) (j : ℕ) :
     pcgne A M b x₀ (j + 1) = pcgneStep A M (pcgne A M b x₀ j) :=
   Function.iterate_succ_apply' _ _ _
 
-/-- Algorithm 9.8, line 1: the iteration starts at `x_0`. -/
+/-- Line 1 of Algorithm 9.8: the iteration starts at $x_0$. -/
 @[simp] theorem pcgne_zero_x (b x₀ : EuclideanSpace 𝕜 (Fin n)) : (pcgne A M b x₀ 0).x = x₀ := rfl
 
-/-- Algorithm 9.8, line 1: `r_0 = b - A x_0`. -/
+/-- Line 1 of Algorithm 9.8: $r_0 = b - A x_0$. -/
 @[simp] theorem pcgne_zero_r (b x₀ : EuclideanSpace 𝕜 (Fin n)) :
     (pcgne A M b x₀ 0).r = b - op A x₀ := rfl
 
-/-- Algorithm 9.8, line 1: `p_0 = Aᴴ z_0 = Aᴴ M⁻¹ r_0`. -/
+/-- Line 1 of Algorithm 9.8: $p_0 = A^H z_0 = A^H M^{-1} r_0$. -/
 @[simp] theorem pcgne_zero_p (b x₀ : EuclideanSpace 𝕜 (Fin n)) :
     (pcgne A M b x₀ 0).p = op Aᴴ (op M⁻¹ (b - op A x₀)) := rfl
 
-/-- The `r` field of Algorithm 9.8 is the true residual `b - A x_j`. -/
+/-- The residual $r_j$ of Algorithm 9.8 is the true residual $b - A x_j$. -/
 theorem pcgne_residual_eq (b x₀ : EuclideanSpace 𝕜 (Fin n)) (j : ℕ) :
     (pcgne A M b x₀ j).r = b - op A (pcgne A M b x₀ j).x := by
   induction j with
@@ -364,15 +440,19 @@ theorem pcgne_residual_eq (b x₀ : EuclideanSpace 𝕜 (Fin n)) (j : ℕ) :
   | succ j ih =>
     rw [pcgne_succ, pcgneStep_r, pcgneStep_x, pcgneStepR, ih, map_add, map_smul, sub_sub]
 
-/-! #### The bridge to Algorithm 9.1 -/
+/-! ### The bridge to Algorithm 9.1 -/
 
 variable {A M}
 
-/-- **Algorithm 9.8 is Algorithm 9.1 for `A Aᴴ u = b`, read in `x = Aᴴ u`.** For any `u_0` with
-`Aᴴ u_0 = x_0` the iterate is `x_j = x_0 + Aᴴ (u_j - u_0)`, the search direction is `Aᴴ` of the
-direction of Algorithm 9.1, and the two residuals agree — so no vector of the `u`-iteration is
-ever formed. Only the symmetry of `M⁻¹` is needed, to move it across the inner products of
-lines 4 and 8. -/
+/-- **Algorithm 9.8** of [saad2003iterative] as Algorithm 9.1 for $A A^H u = b$, read in
+$x = A^H u$. Let $A, M \in \mathbb{K}^{n \times n}$ with $M^{-1}$ symmetric, and let $u_0$
+satisfy $A^H u_0 = x_0$. Let $(u_j, r_j', q_j)$ be the state of Algorithm 9.1 for $A A^H u = b$
+with the preconditioner $M$, started at $u_0$. Then the state $(x_j, r_j, p_j)$ of Algorithm 9.8
+satisfies, for all $j$,
+$$x_j = x_0 + A^H(u_j - u_0), \qquad r_j = r_j', \qquad p_j = A^H q_j.$$
+
+So no vector of the $u$-iteration has to be formed. The symmetry of $M^{-1}$ moves it across the
+inner products of lines 4 and 8. -/
 theorem pcgne_eq (hMinv : (op M⁻¹).IsSymmetric) (b x₀ : EuclideanSpace 𝕜 (Fin n))
     {u₀ : EuclideanSpace 𝕜 (Fin n)} (hu₀ : op Aᴴ u₀ = x₀) (j : ℕ) :
     (pcgne A M b x₀ j).x = x₀ + op Aᴴ (pcgX (A * Aᴴ) M b u₀ j - u₀) ∧
@@ -405,18 +485,26 @@ theorem pcgne_eq (hMinv : (op M⁻¹).IsSymmetric) (b x₀ : EuclideanSpace 𝕜
       exact hrstep
     · rw [pcgne_succ, pcgneStep_p, pcgP_succ, pcgZ, hrstep, hbeta, hp, map_add, map_smul]
 
-/-- The iterate of Algorithm 9.8, written through the change of variables `x = Aᴴ u`. -/
+/-- Let $M^{-1}$ be symmetric and $A^H u_0 = x_0$. The iterate of Algorithm 9.8 is
+$x_j = x_0 + A^H(u_j - u_0)$, where $u_j$ is the iterate of Algorithm 9.1 for $A A^H u = b$
+started at $u_0$. -/
 theorem pcgneX_eq (hMinv : (op M⁻¹).IsSymmetric) (b x₀ : EuclideanSpace 𝕜 (Fin n))
     {u₀ : EuclideanSpace 𝕜 (Fin n)} (hu₀ : op Aᴴ u₀ = x₀) (j : ℕ) :
     (pcgne A M b x₀ j).x = x₀ + op Aᴴ (pcgX (A * Aᴴ) M b u₀ j - u₀) :=
   (pcgne_eq hMinv b x₀ hu₀ j).1
 
-/-- **Saad §9.5, the optimality of Algorithm 9.8**: `x_m` minimizes the *error* `‖x_* - x‖₂`
-over the affine space `x_0 + 𝒦_m(Aᴴ M⁻¹ A, Aᴴ M⁻¹ r_0)`.
+/-- **Section 9.5** of [saad2003iterative], optimality of Algorithm 9.8. Let $M$ be a
+preconditioner, and let $A \in \mathbb{K}^{n \times n}$ satisfy $c\,(Mx, x) \le \|A^H x\|_2^2$
+for all $x$, for some $c > 0$. Let $b, x_0 \in \mathbb{K}^n$, let $x_0 = A^H u_0$ for some
+$u_0$, and let $A x_* = b$. Then for every $m$, the iterate $x_m$ of Algorithm 9.8 satisfies
+$x_m - x_0 \in \mathcal{K}_m(A^H M^{-1} A, A^H M^{-1} r_0)$ and
+$$\|x_* - x_m\|_2 \le \|x_* - x\|_2 \quad \text{for all } x \in x_0 + \mathcal{K}_m(A^H M^{-1}
+  A, A^H M^{-1} r_0).$$
 
-That space is not the one Algorithm 9.7 searches: preconditioning separates the two normal
-equations, and only at `M = I` do `𝒦_m(M⁻¹ Aᴴ A, M⁻¹ Aᴴ r_0)` and `𝒦_m(Aᴴ M⁻¹ A, Aᴴ M⁻¹ r_0)`
-coincide (`Chapter08.subspace_adjoint_eq`). -/
+This space is not the one that Algorithm 9.7 searches: preconditioning separates the two normal
+equations. Only at $M = I$ do $\mathcal{K}_m(M^{-1} A^H A, M^{-1} A^H r_0)$ and
+$\mathcal{K}_m(A^H M^{-1} A, A^H M^{-1} r_0)$ coincide
+(`SaadSparse.Chapter08.subspace_adjoint_eq`). -/
 theorem pcgne_isMinError (hM : Krylov.IsPreconditioner (op M) (op M⁻¹)) {c : ℝ} (hc : 0 < c)
     (hcoer : ∀ x : 𝔼, c * RCLike.re (inner 𝕜 (op M x) x) ≤ ‖op Aᴴ x‖ ^ 2)
     (b x₀ : EuclideanSpace 𝕜 (Fin n)) {u₀ xstar : EuclideanSpace 𝕜 (Fin n)}
@@ -440,26 +528,33 @@ theorem pcgne_isMinError (hM : Krylov.IsPreconditioner (op M) (op M⁻¹)) {c : 
 
 end CGNE
 
-/-! ### P-9.4: the right- and split-preconditioned CGNR and CGNE
+/-!
+### Problem P-9.4: the right- and split-preconditioned CGNR and CGNE
 
-Saad leaves these four variants to Exercise 4 ("Right and split preconditioner versions of
-Algorithms 9.7 and 9.8 are not shown here"). Their content is that each is the *same* method as
-the left-preconditioned one after a change of variables, and §9.2 already proves the two
-rearrangements that do the work, `rightPcg_eq_pcg` and `splitPcg_eq_pcg`. So no new pseudo-code
-is needed: the algorithms are `rightPcg` and `splitPcg` of §9.2 run at the normal-equations
-operators `Aᴴ A` and `A Aᴴ`, and each theorem below is one of those two rearrangements composed
-with `pcgnr_eq` or `pcgne_eq`. -/
+The book leaves these four variants to Problem P-9.4 ("Right and split preconditioner versions of
+Algorithms 9.7 and 9.8 are not shown here"). Each is the same method as the left-preconditioned one
+after a change of variables, and Section 9.2 already proves the two rearrangements that do the work,
+`SaadSparse.Chapter09.rightPcg_eq_pcg` and `SaadSparse.Chapter09.splitPcg_eq_pcg`. So no new
+algorithm is needed. The algorithms are `SaadSparse.Chapter09.rightPcg` and
+`SaadSparse.Chapter09.splitPcg` applied to the normal-equations matrices $A^H A$ and $A A^H$, and
+each theorem below composes one of these two rearrangements with `SaadSparse.Chapter09.pcgnr_eq` or
+`SaadSparse.Chapter09.pcgne_eq`.
+-/
 
 section Variants
 
 variable {A M L : Matrix (Fin n) (Fin n) 𝕜}
 
-/-- **P-9.4, right-preconditioned CGNR.** The system preconditioned is the normal equations
-`Aᴴ A x = Aᴴ b` with `M` on the right, `(Aᴴ A) M⁻¹ u = Aᴴ b`, and the conjugate gradient method
-for it is run in the `M⁻¹`-inner product, which is what keeps `(Aᴴ A) M⁻¹` self-adjoint. Read
-through the change of variables `x = M⁻¹ u`, it is **Algorithm 9.7** started at `x_0 = M⁻¹ u_0`:
-`M⁻¹ u_j` is that algorithm's iterate `x_j`, the residual `ρ_j` it carries is the
-normal-equations residual `Aᴴ r_j`, and `M⁻¹ q_j` is its direction `p_j`. -/
+/-- **Problem P-9.4** of [saad2003iterative], right-preconditioned CGNR. Let
+$A, M \in \mathbb{K}^{n \times n}$ with $M^{-1}$ symmetric. Let $(u_j, \rho_j, q_j)$ be the
+state of the conjugate gradient method for the right-preconditioned normal equations
+$(A^H A) M^{-1} u = A^H b$ in the $M^{-1}$-inner product, started at $u_0$. Then, for all $j$,
+$$(M^{-1} u_j, \; \rho_j, \; M^{-1} q_j) = (x_j, \; A^H r_j, \; p_j),$$
+where $(x_j, r_j, p_j)$ is the state of Algorithm 9.7 started at $x_0 = M^{-1} u_0$.
+
+The $M^{-1}$-inner product keeps $(A^H A) M^{-1}$ self-adjoint. So in the variable
+$x = M^{-1} u$ the method is Algorithm 9.7, and the residual $\rho_j$ that it carries is the
+normal-equations residual $A^H r_j$. -/
 theorem rightPcgnr_eq (hMinv : (op M⁻¹).IsSymmetric) (b u₀ : EuclideanSpace 𝕜 (Fin n)) (j : ℕ) :
     (op M⁻¹ (rightPcg (Aᴴ * A) M (op Aᴴ b) u₀ j).1,
         (rightPcg (Aᴴ * A) M (op Aᴴ b) u₀ j).2.1,
@@ -469,23 +564,32 @@ theorem rightPcgnr_eq (hMinv : (op M⁻¹).IsSymmetric) (b u₀ : EuclideanSpace
   (rightPcg_eq_pcg (isSymmetric_conjTranspose_mul A) hMinv (op Aᴴ b) u₀ j).trans
     (pcgnr_eq hMinv b (op M⁻¹ u₀) j).symm
 
-/-- **P-9.4, split-preconditioned CGNR.** The system preconditioned is again the normal equations
-`Aᴴ A x = Aᴴ b`, now split as `L⁻¹ Aᴴ A L⁻ᴴ u = L⁻¹ Aᴴ b` with `M = L Lᴴ` and `x = L⁻ᴴ u`;
-**Algorithm 9.2** run on it already carries that change of variables out, so its first field is
-`x_j` and not `u_j`. It is **Algorithm 9.7**: identical iterates and identical directions from
-the same `x_0`, with the split residual `r̂_j = L⁻¹ Aᴴ r_j` in place of `Aᴴ r_j`. -/
+/-- **Problem P-9.4** of [saad2003iterative], split-preconditioned CGNR. Let
+$A, L \in \mathbb{K}^{n \times n}$ and $M = L L^H$, with $M^{-1}$ symmetric. Then for all
+$b, x_0$ and $j$, the state of Algorithm 9.2 for the normal equations $A^H A x = A^H b$ with the
+factor $L$ is
+$$(x_j, \; L^{-1} A^H r_j, \; p_j),$$
+where $(x_j, r_j, p_j)$ is the state of Algorithm 9.7 started at $x_0$.
+
+Algorithm 9.2 runs the conjugate gradient method for $L^{-1} A^H A L^{-H} u = L^{-1} A^H b$ and
+already carries out the change of variables $x = L^{-H} u$, so its first component is $x_j$ and
+not $u_j$. The two algorithms have the same iterates and the same directions, and the split
+residual $\hat r_j = L^{-1} A^H r_j$ replaces $A^H r_j$. -/
 theorem splitPcgnr_eq (hMinv : (op M⁻¹).IsSymmetric) (hM : M = L * Lᴴ)
     (b x₀ : EuclideanSpace 𝕜 (Fin n)) (j : ℕ) :
     splitPcg (Aᴴ * A) L (op Aᴴ b) x₀ j
       = ((pcgnr A M b x₀ j).x, op L⁻¹ (op Aᴴ (pcgnr A M b x₀ j).r), (pcgnr A M b x₀ j).p) := by
   rw [splitPcg_eq_pcg hM, ← pcgnr_eq hMinv]
 
-/-- **P-9.4, right-preconditioned CGNE.** The system preconditioned is `A Aᴴ u = b` with `M` on
-the right, `(A Aᴴ) M⁻¹ w = b`, and the conjugate gradient method for it is run in the
-`M⁻¹`-inner product. Two changes of variables stack: `u = M⁻¹ w` undoes the right
-preconditioning and `x = Aᴴ u` undoes the normal equations, so the iterate of **Algorithm 9.8**
-started at `x_0 = Aᴴ M⁻¹ w_0` is `x_j = x_0 + Aᴴ M⁻¹ (w_j - w_0)`; its residual is the residual
-`ρ_j` carried by the `w`-iteration, and its direction is `Aᴴ M⁻¹ q_j`. -/
+/-- **Problem P-9.4** of [saad2003iterative], right-preconditioned CGNE. Let
+$A, M \in \mathbb{K}^{n \times n}$ with $M^{-1}$ symmetric, and let $w_0$ satisfy
+$A^H M^{-1} w_0 = x_0$. Let $(w_j, \rho_j, q_j)$ be the state of the conjugate gradient method
+for $(A A^H) M^{-1} w = b$ in the $M^{-1}$-inner product, started at $w_0$. Then the state
+$(x_j, r_j, p_j)$ of Algorithm 9.8 satisfies, for all $j$,
+$$x_j = x_0 + A^H M^{-1}(w_j - w_0), \qquad r_j = \rho_j, \qquad p_j = A^H M^{-1} q_j.$$
+
+Two changes of variables are combined: $u = M^{-1} w$ undoes the right preconditioning, and
+$x = A^H u$ undoes the normal equations. -/
 theorem rightPcgne_eq (hMinv : (op M⁻¹).IsSymmetric) (b x₀ : EuclideanSpace 𝕜 (Fin n))
     {w₀ : EuclideanSpace 𝕜 (Fin n)} (hw₀ : op Aᴴ (op M⁻¹ w₀) = x₀) (j : ℕ) :
     (pcgne A M b x₀ j).x
@@ -507,12 +611,16 @@ theorem rightPcgne_eq (hMinv : (op M⁻¹).IsSymmetric) (b x₀ : EuclideanSpace
   · rw [hr]; exact h₂.symm
   · rw [h₃]; exact hp
 
-/-- **P-9.4, split-preconditioned CGNE.** The system preconditioned is `A Aᴴ u = b`, split as
-`L⁻¹ A Aᴴ L⁻ᴴ v = L⁻¹ b` with `M = L Lᴴ` and `u = L⁻ᴴ v`; **Algorithm 9.2** run on it carries
-that change of variables out, so its first field is `u_j`, and the remaining change of variables
-`x = Aᴴ u` recovers the iterate of **Algorithm 9.8**, `x_j = x_0 + Aᴴ (u_j - u_0)`. The split
-residual it carries is `L⁻¹` of the residual of Algorithm 9.8, and `Aᴴ` of its direction is the
-direction of Algorithm 9.8. -/
+/-- **Problem P-9.4** of [saad2003iterative], split-preconditioned CGNE. Let
+$A, L \in \mathbb{K}^{n \times n}$ and $M = L L^H$, with $M^{-1}$ symmetric, and let $u_0$
+satisfy $A^H u_0 = x_0$. Let $(u_j, \hat r_j, q_j)$ be the state of Algorithm 9.2 for
+$A A^H u = b$ with the factor $L$, started at $u_0$. Then the state $(x_j, r_j, p_j)$ of
+Algorithm 9.8 satisfies, for all $j$,
+$$x_j = x_0 + A^H(u_j - u_0), \qquad L^{-1} r_j = \hat r_j, \qquad p_j = A^H q_j.$$
+
+Algorithm 9.2 runs the conjugate gradient method for $L^{-1} A A^H L^{-H} v = L^{-1} b$ and
+carries out the change of variables $u = L^{-H} v$, so its first component is $u_j$. The
+remaining change of variables $x = A^H u$ gives the iterate of Algorithm 9.8. -/
 theorem splitPcgne_eq (hMinv : (op M⁻¹).IsSymmetric) (hM : M = L * Lᴴ)
     (b x₀ : EuclideanSpace 𝕜 (Fin n)) {u₀ : EuclideanSpace 𝕜 (Fin n)} (hu₀ : op Aᴴ u₀ = x₀)
     (j : ℕ) :
@@ -528,40 +636,51 @@ theorem splitPcgne_eq (hMinv : (op M⁻¹).IsSymmetric) (hM : M = L * Lᴴ)
 
 end Variants
 
-/-! ### P-9.5: the centred variants
+/-!
+### Problem P-9.5: the centred variants
 
-Saad's P-9.5 replaces the two one-sided systems of §9.5 by the *centred* ones
-`A M⁻¹ Aᴴ u = b` with `x = M⁻¹ Aᴴ u` (the NE form) and `Aᴴ M⁻¹ A x = Aᴴ M⁻¹ b` (the NR form),
-observes that "the coefficient matrices in the above systems are all symmetric", and asks for the
-adapted conjugate gradient algorithms. These are not rearrangements of Algorithm 9.1:
-`Aᴴ M⁻¹ A` is a different operator from `M⁻¹ Aᴴ A`, and its Krylov space
-`𝒦_m(Aᴴ M⁻¹ A, Aᴴ M⁻¹ r_0)` — Algorithm 9.8's space, not Algorithm 9.7's — differs from
-Algorithm 9.7's `𝒦_m(M⁻¹ Aᴴ A, M⁻¹ Aᴴ r_0)` as soon as `M ≠ I`. -/
+Problem P-9.5 of [saad2003iterative] replaces the two one-sided systems of Section 9.5 by the
+centred systems $A M^{-1} A^H u = b$ with $x = M^{-1} A^H u$ (the NE form) and
+$A^H M^{-1} A x = A^H M^{-1} b$ (the NR form). It observes that "the coefficient matrices in the
+above systems are all symmetric", and asks for the adapted conjugate gradient algorithms. These are
+not rearrangements of Algorithm 9.1: $A^H M^{-1} A$ is a different matrix from $M^{-1} A^H A$. Its
+Krylov space $\mathcal{K}_m(A^H M^{-1} A, A^H M^{-1} r_0)$ is the space of Algorithm 9.8, and it
+differs from the space $\mathcal{K}_m(M^{-1} A^H A, M^{-1} A^H r_0)$ of Algorithm 9.7 in general
+when $M \neq I$.
+-/
 
-/-- **P-9.5**: `Aᴴ M⁻¹ A` is symmetric whenever `M⁻¹` is, whatever `A` is. This is the
-coefficient operator of the centred NR system `Aᴴ M⁻¹ A x = Aᴴ M⁻¹ b`. -/
+/-- **Problem P-9.5** of [saad2003iterative], symmetry of the centred NR matrix. Let
+$A, M \in \mathbb{K}^{n \times n}$ with $M^{-1}$ symmetric. Then $A^H M^{-1} A$ is symmetric,
+for every $A$. It is the coefficient matrix of the centred NR system
+$A^H M^{-1} A x = A^H M^{-1} b$. -/
 theorem isSymmetric_centredNR (A : Matrix (Fin n) (Fin n) 𝕜) {M : Matrix (Fin n) (Fin n) 𝕜}
     (hMinv : (op M⁻¹).IsSymmetric) : (op (Aᴴ * (M⁻¹ * A))).IsSymmetric := by
   intro x y
   simp only [op_mul_apply]
   rw [Chapter08.inner_op_conjTranspose, hMinv, Chapter07.inner_op_conjTranspose]
 
-/-- **P-9.5**: `A M⁻¹ Aᴴ` is symmetric whenever `M⁻¹` is. This is the coefficient operator of the
-centred NE system `A M⁻¹ Aᴴ u = b`. -/
+/-- **Problem P-9.5** of [saad2003iterative], symmetry of the centred NE matrix. Let
+$A, M \in \mathbb{K}^{n \times n}$ with $M^{-1}$ symmetric. Then $A M^{-1} A^H$ is symmetric. It
+is the coefficient matrix of the centred NE system $A M^{-1} A^H u = b$. -/
 theorem isSymmetric_centredNE (A : Matrix (Fin n) (Fin n) 𝕜) {M : Matrix (Fin n) (Fin n) 𝕜}
     (hMinv : (op M⁻¹).IsSymmetric) : (op (A * (M⁻¹ * Aᴴ))).IsSymmetric := by
   intro x y
   simp only [op_mul_apply]
   rw [Chapter07.inner_op_conjTranspose, hMinv, Chapter08.inner_op_conjTranspose]
 
-/-- The operation list of the centred NR step: `Aᴴ M⁻¹ A p` is one product with `A`, one solve
-with `M` and one product with `Aᴴ`; neither `Aᴴ M⁻¹ A` nor `M⁻¹` is ever formed. -/
+/-- **Problem P-9.5** of [saad2003iterative], the product in the centred NR step. For
+$A, M \in \mathbb{K}^{n \times n}$ and $y \in \mathbb{K}^n$,
+$$A^H M^{-1} A y = A^H (M^{-1} (A y)).$$
+So the product is one product with $A$, one solve with $M$ and one product with $A^H$; neither
+$A^H M^{-1} A$ nor $M^{-1}$ is formed. -/
 theorem op_centredNR_apply (A M : Matrix (Fin n) (Fin n) 𝕜) (y : EuclideanSpace 𝕜 (Fin n)) :
     op (Aᴴ * (M⁻¹ * A)) y = op Aᴴ (op M⁻¹ (op A y)) := by
   rw [op_mul_apply, op_mul_apply]
 
-/-- The operation list of the centred NE step: `A M⁻¹ Aᴴ q` is one product with `Aᴴ`, one solve
-with `M` and one product with `A`. -/
+/-- **Problem P-9.5** of [saad2003iterative], the product in the centred NE step. For
+$A, M \in \mathbb{K}^{n \times n}$ and $y \in \mathbb{K}^n$,
+$$A M^{-1} A^H y = A (M^{-1} (A^H y)).$$
+So the product is one product with $A^H$, one solve with $M$ and one product with $A$. -/
 theorem op_centredNE_apply (A M : Matrix (Fin n) (Fin n) 𝕜) (y : EuclideanSpace 𝕜 (Fin n)) :
     op (A * (M⁻¹ * Aᴴ)) y = op A (op M⁻¹ (op Aᴴ y)) := by
   rw [op_mul_apply, op_mul_apply]
@@ -570,38 +689,59 @@ section Centred
 
 variable (A M : Matrix (Fin n) (Fin n) 𝕜)
 
-/-- **P-9.5, the centred CGNR**: the conjugate gradient method for `Aᴴ M⁻¹ A x = Aᴴ M⁻¹ b`. Its
-coefficient operator is symmetric (`isSymmetric_centredNR`), so the conjugate gradient
-recurrence applies verbatim; the adaptation is that the matrix-vector product of each step is
-the three operations of `op_centredNR_apply`, and that the solution variable is `x` itself, so
-no change of variables is needed. -/
+/-- **Problem P-9.5** of [saad2003iterative], the centred CGNR. Let
+$A, M \in \mathbb{K}^{n \times n}$ and $b, x_0 \in \mathbb{K}^n$. The centred CGNR is the
+conjugate gradient method for $A^H M^{-1} A x = A^H M^{-1} b$ started at $x_0$; its value at $j$
+is the state after $j$ steps.
+
+The coefficient matrix is symmetric (`SaadSparse.Chapter09.isSymmetric_centredNR`), so the
+conjugate gradient recurrence applies unchanged. The adaptation is that the matrix-vector
+product of each step is the three operations of `SaadSparse.Chapter09.op_centredNR_apply`. The
+unknown is $x$ itself, so no change of variables is needed. The recurrence is the backbone
+`CG.iterate`. -/
 noncomputable def centredPcgnr (b x₀ : EuclideanSpace 𝕜 (Fin n)) (j : ℕ) : CG.State 𝔼 :=
   CG.iterate (op (Aᴴ * (M⁻¹ * A))) (op Aᴴ (op M⁻¹ b)) x₀ j
 
-/-- **P-9.5, the centred CGNE**: the conjugate gradient method for `A M⁻¹ Aᴴ u = b`. Its
-coefficient operator is symmetric (`isSymmetric_centredNE`), the matrix-vector product of each
-step is the three operations of `op_centredNE_apply`, and the solution of `A x = b` is recovered
-by the change of variables `x = M⁻¹ Aᴴ u` (`centredPcgneX`). -/
+/-- **Problem P-9.5** of [saad2003iterative], the centred CGNE. Let
+$A, M \in \mathbb{K}^{n \times n}$ and $b, u_0 \in \mathbb{K}^n$. The centred CGNE is the
+conjugate gradient method for $A M^{-1} A^H u = b$ started at $u_0$; its value at $j$ is the
+state after $j$ steps.
+
+The coefficient matrix is symmetric (`SaadSparse.Chapter09.isSymmetric_centredNE`), and the
+matrix-vector product of each step is the three operations of
+`SaadSparse.Chapter09.op_centredNE_apply`. The solution of $Ax = b$ is recovered by the change
+of variables $x = M^{-1} A^H u$ (`SaadSparse.Chapter09.centredPcgneX`). -/
 noncomputable def centredPcgne (b u₀ : EuclideanSpace 𝕜 (Fin n)) (j : ℕ) : CG.State 𝔼 :=
   CG.iterate (op (A * (M⁻¹ * Aᴴ))) b u₀ j
 
-/-- **P-9.5**, the change of variables `x = M⁻¹ Aᴴ u` of the centred CGNE, in the incremental
-form `x_j = x_0 + M⁻¹ Aᴴ (u_j - u_0)` that keeps `x_0` exactly as given. -/
+/-- **Problem P-9.5** of [saad2003iterative], the change of variables $x = M^{-1} A^H u$ of the
+centred CGNE. For $b, u_0, x_0 \in \mathbb{K}^n$ the iterate is
+$$x_j = x_0 + M^{-1} A^H (u_j - u_0),$$
+where $u_j$ is the iterate of the centred CGNE started at $u_0$. This incremental form keeps
+$x_0$ as given. -/
 noncomputable def centredPcgneX (b u₀ x₀ : EuclideanSpace 𝕜 (Fin n)) (j : ℕ) : 𝔼 :=
   x₀ + op M⁻¹ (op Aᴴ ((centredPcgne A M b u₀ j).x - u₀))
 
-/-- The residual carried by the centred CGNR is the *preconditioned normal-equations* residual
-`Aᴴ M⁻¹ (b - A x_j)`, so the true residual `b - A x_j` is not available for free: that is the
-price of centring, and one reason Algorithm 9.7 is the form the book prints. -/
+/-- **Problem P-9.5** of [saad2003iterative], the residual of the centred CGNR. For all $b, x_0$ and
+$j$, the residual carried by the centred CGNR is the preconditioned normal-equations residual
+$$r_j = A^H M^{-1} (b - A x_j).$$
+
+So the true residual $b - A x_j$ is not available without extra work. This is the cost of
+centring, and one reason why the book prints Algorithm 9.7. -/
 theorem centredPcgnr_residual_eq (b x₀ : EuclideanSpace 𝕜 (Fin n)) (j : ℕ) :
     (centredPcgnr A M b x₀ j).r
       = op Aᴴ (op M⁻¹ (b - op A (centredPcgnr A M b x₀ j).x)) := by
   rw [centredPcgnr, CG.residual_eq, op_centredNR_apply, map_sub, map_sub]
 
-/-- **P-9.5, the centred CGNE read in `x`.** With `x_0 = M⁻¹ Aᴴ u_0`, the change of variables
-`x = M⁻¹ Aᴴ u` takes the `u`-iteration to `x_j = x_0 + M⁻¹ Aᴴ (u_j - u_0)`; then
-`A x_j = (A M⁻¹ Aᴴ) u_j`, so the residual carried by the `u`-iteration is the *true* residual
-`b - A x_j` of `A x = b`. This is for the centred system what `pcgne_eq` is for `A Aᴴ u = b`. -/
+/-- **Problem P-9.5** of [saad2003iterative], the centred CGNE read in $x$. Let
+$b, u_0, x_0 \in \mathbb{K}^n$ with $x_0 = M^{-1} A^H u_0$, and let $u_j$ and $\rho_j$ be the
+iterate and the residual of the centred CGNE started at $u_0$. Then the iterate $x_j$ of
+`SaadSparse.Chapter09.centredPcgneX` satisfies, for all $j$,
+$$x_j = x_0 + M^{-1} A^H (u_j - u_0), \qquad A x_j = (A M^{-1} A^H) u_j, \qquad \rho_j = b - A
+  x_j.$$
+So the residual carried by the $u$-iteration is the true residual of $Ax = b$.
+
+This is for the centred system what `SaadSparse.Chapter09.pcgne_eq` is for $A A^H u = b$. -/
 theorem centredPcgne_eq (b u₀ x₀ : EuclideanSpace 𝕜 (Fin n)) (hx₀ : op M⁻¹ (op Aᴴ u₀) = x₀)
     (j : ℕ) :
     centredPcgneX A M b u₀ x₀ j = x₀ + op M⁻¹ (op Aᴴ ((centredPcgne A M b u₀ j).x - u₀)) ∧
@@ -617,10 +757,14 @@ theorem centredPcgne_eq (b u₀ x₀ : EuclideanSpace 𝕜 (Fin n)) (hx₀ : op 
 
 end Centred
 
-/-- **P-9.5**: `Aᴴ M⁻¹ A` is symmetric *positive definite* as soon as `A` is nonsingular and
-`M⁻¹` is symmetric positive definite, since `(Aᴴ M⁻¹ A x, x) = (M⁻¹ A x, A x) > 0` off the
-origin. This is the hypothesis under which the centred NR system is well posed and the
-conjugate gradient method for it is defined. -/
+/-- **Problem P-9.5** of [saad2003iterative], positive definiteness of the centred NR matrix. Let
+$A, M \in \mathbb{K}^{n \times n}$, let $A$ be nonsingular, and let $M^{-1}$ be symmetric
+positive definite. Then $A^H M^{-1} A$ is symmetric positive definite, since
+$(A^H M^{-1} A x, x) = (M^{-1} A x, A x) > 0$ for $x \neq 0$.
+
+This is the hypothesis under which the centred NR system is well posed and the conjugate
+gradient method for it applies. In Lean, "nonsingular" is the injectivity of the operator of
+$A$, and "symmetric positive definite" is `LinearMap.IsSymmetricCoercive`. -/
 theorem isSymmetricCoercive_centredNR {A M : Matrix (Fin n) (Fin n) 𝕜}
     (hMinv : (op M⁻¹).IsSymmetricCoercive) (hA : Function.Injective (op A)) :
     (op (Aᴴ * (M⁻¹ * A))).IsSymmetricCoercive where
@@ -630,10 +774,14 @@ theorem isSymmetricCoercive_centredNR {A M : Matrix (Fin n) (Fin n) 𝕜}
     exact LinearMap.IsCoercive.inner_self_pos hMinv.isCoercive
       fun h => hx (hA (by rw [h, map_zero]))
 
-/-- **P-9.5, the optimality of the centred CGNR**: its iterate is the Galerkin iterate of the
-centred system `Aᴴ M⁻¹ A x = Aᴴ M⁻¹ b` over `x_0 + 𝒦_m(Aᴴ M⁻¹ A, Aᴴ M⁻¹ r_0)`, hence minimizes
-the `Aᴴ M⁻¹ A`-energy norm of the error over that space. The space is Algorithm 9.8's, not
-Algorithm 9.7's. -/
+/-- **Problem P-9.5** of [saad2003iterative], optimality of the centred CGNR. Let
+$A, M \in \mathbb{K}^{n \times n}$, let $A$ be nonsingular, and let $M^{-1}$ be symmetric
+positive definite. Then for all $b, x_0$ and $m$, the iterate $x_m$ of the centred CGNR is the
+Galerkin iterate of $A^H M^{-1} A x = A^H M^{-1} b$ over $x_0 + \mathcal{K}_m(A^H M^{-1} A, A^H
+M^{-1} r_0)$, with $r_0 = b - A x_0$.
+
+Hence $x_m$ minimizes the $A^H M^{-1} A$-norm of the error over that space. The space is the one
+of Algorithm 9.8, not of Algorithm 9.7. -/
 theorem centredPcgnr_isGalerkinIterate {A M : Matrix (Fin n) (Fin n) 𝕜}
     (hMinv : (op M⁻¹).IsSymmetricCoercive) (hA : Function.Injective (op A))
     (b x₀ : EuclideanSpace 𝕜 (Fin n)) (m : ℕ) :

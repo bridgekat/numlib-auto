@@ -8,16 +8,72 @@ import Numlib.Projection.Basic
 import NumlibSurface.SaadSparse.Common
 
 /-!
-# Saad §1.12: projection operators
+# Saad, Section 1.12: Projection operators
 
-Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM,
-2003, §1.12: projectors (1.58), the projector onto `M` orthogonally to `L` (1.59)–(1.62), its matrix
-representations (1.63)–(1.66), orthogonal projectors (1.67)–(1.72), Lemma 1.36, Proposition 1.37,
-Theorem 1.38 and Corollary 1.39.
+This module formalizes §1.12 of [saad2003iterative]: projectors (1.58), the projector onto a
+subspace $M$ orthogonally to a subspace $L$ (1.59)–(1.62), its matrix representations (1.63)–(1.66),
+and orthogonal projectors (1.67)–(1.72), with Lemma 1.36, Proposition 1.37, Theorem 1.38 and
+Corollary 1.39. A projector is a matrix $P \in \mathbb{K}^{n \times n}$ with $P^2 = P$, where
+$\mathbb{K}$ is $\mathbb{R}$ or $\mathbb{C}$. For subspaces $M$ and $L$ of $\mathbb{K}^n$ of the
+same dimension, the projection of $x$ onto $M$ orthogonally to $L$ is the vector $u$ with
+$$u \in M, \qquad x - u \perp L.$$
 
-A projector in the book's sense is an idempotent matrix; the backbone counterparts are
-`IsIdempotentElem` on `EuclideanSpace 𝕜 (Fin n) →ₗ[𝕜] EuclideanSpace 𝕜 (Fin n)`,
-`LinearMap.obliqueProjectionOfBases` and `Submodule.starProjection`.
+The module proves that this $u$ exists and is unique exactly when no nonzero vector of $M$ is
+orthogonal to $L$ (Lemma 1.36). For bases $V$ of $M$ and $W$ of $L$, the projector is
+$P = V(W^H V)^{-1} W^H$, and $P = V W^H$ when $W^H V = I$. A projector is orthogonal exactly when it
+is Hermitian (Proposition 1.37), and the orthogonal projector onto $M$ gives the best approximation
+of $x$ from $M$ (Theorem 1.38 and Corollary 1.39). The proofs specialize the backbone modules
+`Numlib.Analysis.InnerProductSpace.Projection.ObliqueProjection` and `Numlib.Projection.Basic`.
+
+## Main definitions
+
+* §1.12.1, `Matrix.IsProjector`: a projector is an idempotent matrix, $P^2 = P$.
+* Equation (1.67), `Matrix.IsOrthogonalProjector`: a projector whose null space is the orthogonal
+  complement of its range.
+* §1.12.3, `Matrix.cols`: the columns of a matrix as vectors of $\mathbb{K}^n$.
+* §1.12.3, `Matrix.IsBasisOf`: the columns of $V$ form a basis of the subspace $M$.
+* Equation (1.63), `Matrix.IsBiorthogonal`: $W^H V = I$.
+* Equation (1.66), `Matrix.obliqueProj`: the matrix $V(W^H V)^{-1} W^H$.
+* Equations (1.59)–(1.60), `SaadSparse.IsProjOnto`: $u \in M$ and $x - u \perp L$.
+* §1.12.2, `SaadSparse.obliqueProjection`: the projector onto $M$ orthogonally to $L$.
+
+## Main results
+
+* Lemma 1.36, `SaadSparse.Chapter01.lemma_1_36`: for $\dim M = \dim L$, no nonzero vector of $M$ is
+  orthogonal to $L$ if and only if every $x$ has a unique projection onto $M$ orthogonally to $L$.
+* Equation (1.65), `SaadSparse.Chapter01.obliqueProj_of_biorthogonal`: for biorthogonal bases,
+  $P = V W^H$.
+* Equation (1.66), `SaadSparse.Chapter01.obliqueProj_isProjOnto`: $V(W^H V)^{-1} W^H$ is the
+  projector onto $M$ orthogonally to $L$.
+* Equations (1.68)–(1.70), `SaadSparse.Chapter01.isProjector_conjTranspose`,
+  `SaadSparse.Chapter01.ker_conjTranspose_eq_orthogonal_range` and
+  `SaadSparse.Chapter01.ker_eq_orthogonal_range_conjTranspose`: $P^H$ is a projector,
+  $\operatorname{Null}(P^H) = \operatorname{Ran}(P)^\perp$ and $\operatorname{Null}(P) =
+  \operatorname{Ran}(P^H)^\perp$.
+* Proposition 1.37, `SaadSparse.Chapter01.proposition_1_37`: a projector is orthogonal if and only
+  if it is Hermitian.
+* Equation (1.71), `SaadSparse.Chapter01.toEuclideanLin_mul_conjTranspose`: for $V$ with orthonormal
+  columns spanning $M$, $V V^H$ is the orthogonal projector onto $M$.
+* Theorem 1.38, `SaadSparse.Chapter01.theorem_1_38`: $\min_{y \in M} \|x - y\|_2 = \|x - Px\|_2$ for
+  the orthogonal projector $P$ onto $M$.
+* Corollary 1.39, `SaadSparse.Chapter01.corollary_1_39`: for $y \in M$, $\|x - y\|_2$ is minimal
+  over $M$ if and only if $x - y \perp M$.
+
+## Implementation notes
+
+* The backbone counterparts of the projectors of the book are `IsIdempotentElem` on the linear maps
+  of `EuclideanSpace 𝕜 (Fin n)`, `LinearMap.obliqueProjectionOfBases` and
+  `Submodule.starProjection`.
+
+## Deviations from the source
+
+* **§1.12.4, $\|P\|_2 = 1$ for an orthogonal projector** (reading). The claim needs $P \neq 0$,
+  because the zero matrix is the orthogonal projector onto $\{0\}$. The module states the bound
+  $\|Px\|_2 \le \|x\|_2$, which holds for every orthogonal projector. See
+  `SaadSparse.Chapter01.norm_apply_le`.
+* **Corollary 1.39** (reading). The book's "$\min_{y \in M}$" is read with $y$ ranging over $M$, so
+  $y \in M$ is a hypothesis and the statement is about the least element of the set of distances.
+  See `SaadSparse.Chapter01.corollary_1_39`.
 -/
 
 open Module Submodule
@@ -30,10 +86,12 @@ variable {𝕜 : Type*} [RCLike 𝕜] {n m : ℕ}
 
 /-! ### Projectors (1.58) and orthogonal projectors (1.67) -/
 
-/-- Saad §1.12.1: a *projector* is an idempotent matrix, `P² = P`. -/
+/-- **Section 1.12.1** of [saad2003iterative], projectors. A matrix $P \in \mathbb{K}^{n \times n}$
+is a **projector** if it is idempotent, $P^2 = P$. -/
 abbrev IsProjector (P : Matrix (Fin n) (Fin n) 𝕜) : Prop := IsIdempotentElem P
 
-/-- A matrix is a projector iff the operator it defines on `ℂⁿ` is idempotent. -/
+/-- A matrix $P$ is a projector if and only if the operator $x \mapsto Px$ on $\mathbb{K}^n$ is
+idempotent. -/
 theorem isProjector_iff_isIdempotentElem_toEuclideanLin (P : Matrix (Fin n) (Fin n) 𝕜) :
     P.IsProjector ↔ IsIdempotentElem (toEuclideanLin P) := by
   constructor
@@ -45,24 +103,31 @@ theorem isProjector_iff_isIdempotentElem_toEuclideanLin (P : Matrix (Fin n) (Fin
     rw [toEuclideanLin_mul]
     exact h
 
-/-- Saad (1.67): `P` is an *orthogonal projector* if it is a projector whose null space is the
-orthogonal complement of its range. -/
+/-- **Equation (1.67)** of [saad2003iterative]. A matrix $P \in \mathbb{K}^{n \times n}$ is an
+**orthogonal projector** if it is a projector and its null space is the orthogonal complement of
+its range:
+$$P^2 = P, \qquad \operatorname{Null}(P) = \operatorname{Ran}(P)^\perp.$$
+-/
 def IsOrthogonalProjector (P : Matrix (Fin n) (Fin n) 𝕜) : Prop :=
   IsIdempotentElem P ∧
     LinearMap.ker (toEuclideanLin P) = (LinearMap.range (toEuclideanLin P))ᗮ
 
 /-! ### Bases and matrix representations (1.63)–(1.66) -/
 
-/-- The columns of an `n × m` matrix, as a family of vectors of `ℂⁿ`. -/
+/-- The columns $v_1, \dots, v_m$ of a matrix $V \in \mathbb{K}^{n \times m}$, as a family of
+vectors of $\mathbb{K}^n$. -/
 def cols (V : Matrix (Fin n) (Fin m) 𝕜) : Fin m → EuclideanSpace 𝕜 (Fin n) :=
   fun j => WithLp.toLp 2 (Vᵀ j)
 
 omit [RCLike 𝕜] in
+/-- Entry $i$ of column $j$ of $V$ is $v_{ij}$. -/
 @[simp]
 theorem ofLp_cols_apply (V : Matrix (Fin n) (Fin m) 𝕜) (j : Fin m) (i : Fin n) :
     WithLp.ofLp (V.cols j) i = V i j := rfl
 
-/-- Saad §1.12.3: `V = [v₁, …, v_m]` is a basis of the subspace `M`. -/
+/-- **Section 1.12.3** of [saad2003iterative], bases of a subspace. The matrix $V = [v_1, \dots,
+v_m] \in \mathbb{K}^{n \times m}$ is a **basis** of the subspace $M$ of $\mathbb{K}^n$ if its
+columns are linearly independent and span $M$. -/
 structure IsBasisOf (V : Matrix (Fin n) (Fin m) 𝕜) (M : Submodule 𝕜 (EuclideanSpace 𝕜 (Fin n))) :
     Prop where
   /-- The columns of `V` are linearly independent. -/
@@ -70,41 +135,50 @@ structure IsBasisOf (V : Matrix (Fin n) (Fin m) 𝕜) (M : Submodule 𝕜 (Eucli
   /-- The columns of `V` span `M`. -/
   span_eq : Submodule.span 𝕜 (Set.range V.cols) = M
 
-/-- The `Module.Basis` of `M` given by the columns of `V`, for use with the backbone statements
-phrased with `Module.Basis`. -/
+/-- The basis of the subspace $M$ given by the columns of $V$, as a `Module.Basis`, for use with the
+backbone statements that are phrased with `Module.Basis`. -/
 noncomputable def IsBasisOf.toBasis {V : Matrix (Fin n) (Fin m) 𝕜}
     {M : Submodule 𝕜 (EuclideanSpace 𝕜 (Fin n))} (hV : V.IsBasisOf M) :
     Module.Basis (Fin m) 𝕜 M :=
   (Module.Basis.span hV.linearIndependent).map (LinearEquiv.ofEq _ _ hV.span_eq)
 
+/-- The vectors of the basis `Matrix.IsBasisOf.toBasis` are the columns of $V$. -/
 @[simp]
 theorem IsBasisOf.coe_toBasis_apply {V : Matrix (Fin n) (Fin m) 𝕜}
     {M : Submodule 𝕜 (EuclideanSpace 𝕜 (Fin n))} (hV : V.IsBasisOf M) (j : Fin m) :
     (hV.toBasis j : EuclideanSpace 𝕜 (Fin n)) = V.cols j := by
   simp [IsBasisOf.toBasis]
 
-/-- Saad §1.12.3: `V` and `W` are biorthogonal when `Wᴴ V = I` (1.63). -/
+/-- **Equation (1.63)** of [saad2003iterative]. Two matrices $V, W \in \mathbb{K}^{n \times m}$ are
+**biorthogonal** if $W^H V = I$. -/
 def IsBiorthogonal (V W : Matrix (Fin n) (Fin m) 𝕜) : Prop := Wᴴ * V = 1
 
-/-- Saad (1.66): the projector `P = V (Wᴴ V)⁻¹ Wᴴ` onto `span V` orthogonally to `span W`. -/
+/-- **Equation (1.66)** of [saad2003iterative]. For $V, W \in \mathbb{K}^{n \times m}$, the matrix
+$$P = V (W^H V)^{-1} W^H.$$
+When the columns of $V$ and $W$ are bases of $M$ and $L$ and $W^H V$ is nonsingular, $P$ is the
+projector onto $M$ orthogonally to $L$ (`SaadSparse.Chapter01.obliqueProj_isProjOnto`).
+
+If $W^H V$ is singular, the inverse is Mathlib's `Matrix.inv`, which is $0$. -/
 noncomputable def obliqueProj (V W : Matrix (Fin n) (Fin m) 𝕜) : Matrix (Fin n) (Fin n) 𝕜 :=
   V * (Wᴴ * V)⁻¹ * Wᴴ
 
-/-- The backbone's cross-Gram matrix of the columns of `V` and `W` is `Wᴴ V`. -/
+/-- The backbone's cross-Gram matrix of the columns of $V$ and $W$ is $W^H V$. -/
 theorem crossGram_cols (V W : Matrix (Fin n) (Fin m) 𝕜) :
     LinearMap.crossGram 𝕜 V.cols W.cols = Wᴴ * V := by
   ext i j
   simp [LinearMap.crossGram, EuclideanSpace.inner_eq_star_dotProduct, Matrix.mul_apply, dotProduct,
     mul_comm]
 
-/-- The book's `Wᴴ x` is the family of inner products `(x, w_i)` used by the backbone. -/
+/-- For $W \in \mathbb{K}^{n \times m}$ and $x \in \mathbb{K}^n$, the vector $W^H x$ has entries
+$(x, w_i)$, the inner products that the backbone uses. -/
 theorem conjTranspose_mulVec_eq_inner (W : Matrix (Fin n) (Fin m) 𝕜)
     (x : EuclideanSpace 𝕜 (Fin n)) :
     (Wᴴ *ᵥ WithLp.ofLp x) = fun i => inner 𝕜 (W.cols i) x := by
   funext i
   simp [EuclideanSpace.inner_eq_star_dotProduct, mulVec, dotProduct, mul_comm]
 
-/-- Saad (1.66) is the backbone's `LinearMap.obliqueProjectionOfBases`. -/
+/-- The operator of the matrix $V(W^H V)^{-1} W^H$ of (1.66) is the backbone's
+`LinearMap.obliqueProjectionOfBases` for the columns of $V$ and $W$. -/
 theorem toEuclideanLin_obliqueProj (V W : Matrix (Fin n) (Fin m) 𝕜) :
     toEuclideanLin (obliqueProj V W) = LinearMap.obliqueProjectionOfBases 𝕜 V.cols W.cols := by
   refine LinearMap.ext fun x => ?_
@@ -127,16 +201,20 @@ namespace SaadSparse
 
 variable {𝕜 : Type*} [RCLike 𝕜] {n m : ℕ}
 
-/-! ### The projector onto `M` orthogonal to `L` (1.59)–(1.62) -/
+/-! ### The projector onto $M$ orthogonally to $L$ (1.59)–(1.62) -/
 
-/-- Saad (1.59)–(1.60): `u` is *the* projection of `x` onto `M` orthogonally to `L` when `u ∈ M`
-and `x - u ⟂ L`. -/
+/-- **Equations (1.59)–(1.60)** of [saad2003iterative]. For subspaces $M$ and $L$ of $\mathbb{K}^n$
+and $x, u \in \mathbb{K}^n$, the vector $u$ is a **projection of $x$ onto $M$ orthogonally to
+$L$** if
+$$u \in M, \qquad x - u \perp L.$$
+-/
 def IsProjOnto (M L : Submodule 𝕜 (EuclideanSpace 𝕜 (Fin n))) (x u : EuclideanSpace 𝕜 (Fin n)) :
     Prop := u ∈ M ∧ x - u ∈ Lᗮ
 
-/-- The projector onto `M` orthogonally to `L`: the unique idempotent with range `M` and kernel
-`Lᗮ`, which exists as soon as `dim M = dim L` and no nonzero vector of `M` is orthogonal to
-`L` (Saad §1.12.2). -/
+/-- **Section 1.12.2** of [saad2003iterative], the projector onto $M$ orthogonally to $L$. Let $M$
+and $L$ be subspaces of $\mathbb{K}^n$ with $\dim M = \dim L$ and $M \cap L^\perp = \{0\}$, that
+is no nonzero vector of $M$ is orthogonal to $L$. Then there is a unique idempotent linear map
+$P$ on $\mathbb{K}^n$ with range $M$ and null space $L^\perp$, and this definition is that map. -/
 noncomputable def obliqueProjection (M L : Submodule 𝕜 (EuclideanSpace 𝕜 (Fin n)))
     (hd : finrank 𝕜 M = finrank 𝕜 L) (h : M ⊓ Lᗮ = ⊥) :
     EuclideanSpace 𝕜 (Fin n) →ₗ[𝕜] EuclideanSpace 𝕜 (Fin n) :=
@@ -144,37 +222,47 @@ noncomputable def obliqueProjection (M L : Submodule 𝕜 (EuclideanSpace 𝕜 (
 
 variable {M L : Submodule 𝕜 (EuclideanSpace 𝕜 (Fin n))}
 
+/-- The projector onto $M$ orthogonally to $L$ is idempotent, its range is $M$, and its null space
+is $L^\perp$. -/
 theorem obliqueProjection_spec (hd : finrank 𝕜 M = finrank 𝕜 L) (h : M ⊓ Lᗮ = ⊥) :
     IsIdempotentElem (obliqueProjection M L hd h) ∧
       LinearMap.range (obliqueProjection M L hd h) = M ∧
       LinearMap.ker (obliqueProjection M L hd h) = Lᗮ :=
   (LinearMap.existsUnique_isIdempotentElem_of_inf_orthogonal_eq_bot hd h).exists.choose_spec
 
-/-- Saad (1.62): the range of the projector onto `M` orthogonally to `L` is `M`. -/
+/-- **Equation (1.62)** of [saad2003iterative], range. The range of the projector onto $M$
+orthogonally to $L$ is $M$. -/
 theorem range_obliqueProjection (hd : finrank 𝕜 M = finrank 𝕜 L) (h : M ⊓ Lᗮ = ⊥) :
     LinearMap.range (obliqueProjection M L hd h) = M := (obliqueProjection_spec hd h).2.1
 
-/-- Saad (1.62): the null space of the projector onto `M` orthogonally to `L` is `Lᗮ`. -/
+/-- **Equation (1.62)** of [saad2003iterative], null space. The null space of the projector onto $M$
+orthogonally to $L$ is $L^\perp$. -/
 theorem ker_obliqueProjection (hd : finrank 𝕜 M = finrank 𝕜 L) (h : M ⊓ Lᗮ = ⊥) :
     LinearMap.ker (obliqueProjection M L hd h) = Lᗮ := (obliqueProjection_spec hd h).2.2
 
-/-- The defining property (1.59)–(1.60) of the projector: `P x = u` iff `u ∈ M` and `x - u ⟂ L`. -/
+/-- **Equations (1.59)–(1.60)** of [saad2003iterative], the defining property. Let $P$ be the
+projector onto $M$ orthogonally to $L$. Then for $x, u \in \mathbb{K}^n$, $Px = u$ if and only
+if $u \in M$ and $x - u \perp L$. -/
 theorem isProjOnto_iff_eq_obliqueProjection (hd : finrank 𝕜 M = finrank 𝕜 L) (h : M ⊓ Lᗮ = ⊥)
     (x u : EuclideanSpace 𝕜 (Fin n)) :
     IsProjOnto M L x u ↔ obliqueProjection M L hd h x = u :=
   (LinearMap.IsIdempotentElem.apply_eq_iff (obliqueProjection_spec hd h).1
     (range_obliqueProjection hd h) (ker_obliqueProjection hd h) x u).symm
 
+/-- For the projector $P$ onto $M$ orthogonally to $L$ and every $x$, the vector $Px$ is a
+projection of $x$ onto $M$ orthogonally to $L$: $Px \in M$ and $x - Px \perp L$. -/
 theorem isProjOnto_obliqueProjection (hd : finrank 𝕜 M = finrank 𝕜 L) (h : M ⊓ Lᗮ = ⊥)
     (x : EuclideanSpace 𝕜 (Fin n)) : IsProjOnto M L x (obliqueProjection M L hd h x) :=
   (isProjOnto_iff_eq_obliqueProjection hd h x _).mpr rfl
 
-/-- Saad (1.62): `P x = 0` iff `x ⟂ L`. -/
+/-- **Equation (1.62)** of [saad2003iterative]. For the projector $P$ onto $M$ orthogonally to $L$,
+$Px = 0$ if and only if $x \perp L$. -/
 theorem obliqueProjection_eq_zero_iff (hd : finrank 𝕜 M = finrank 𝕜 L) (h : M ⊓ Lᗮ = ⊥)
     (x : EuclideanSpace 𝕜 (Fin n)) : obliqueProjection M L hd h x = 0 ↔ x ∈ Lᗮ := by
   rw [← LinearMap.mem_ker, ker_obliqueProjection]
 
-/-- The orthogonal case `L = M` of (1.59)–(1.60) is Mathlib's `Submodule.starProjection`. -/
+/-- The orthogonal case $L = M$ of (1.59)–(1.60): $u \in M$ and $x - u \perp M$ if and only if $u$
+is the orthogonal projection of $x$ onto $M$, Mathlib's `Submodule.starProjection`. -/
 theorem isProjOnto_self_iff_eq_starProjection (x u : EuclideanSpace 𝕜 (Fin n)) :
     IsProjOnto M M x u ↔ u = M.starProjection x := by
   refine ⟨fun h => (Submodule.eq_starProjection_of_mem_orthogonal h.1 h.2).symm, ?_⟩
@@ -190,13 +278,15 @@ open Matrix
 variable {𝕜 : Type*} [RCLike 𝕜] {n m : ℕ}
 variable {M L : Submodule 𝕜 (EuclideanSpace 𝕜 (Fin n))}
 
-/-! ### Projector basics (1.58) -/
+/-! ### Basic properties of projectors (1.58) -/
 
-/-- Saad §1.12.1: `I - P` is a projector whenever `P` is. -/
+/-- **Section 1.12.1** of [saad2003iterative]. If $P$ is a projector, then $I - P$ is a projector.
+-/
 theorem isProjector_one_sub {P : Matrix (Fin n) (Fin n) 𝕜} (hP : P.IsProjector) :
     (1 - P).IsProjector := hP.one_sub
 
-/-- Saad §1.12.1: `Null P = Ran (I - P)`. -/
+/-- **Section 1.12.1** of [saad2003iterative]. If $P$ is a projector, then $\operatorname{Null}(P) =
+\operatorname{Ran}(I - P)$. -/
 theorem ker_eq_range_one_sub {P : Matrix (Fin n) (Fin n) 𝕜} (hP : P.IsProjector) :
     LinearMap.ker (toEuclideanLin P) = LinearMap.range (toEuclideanLin (1 - P)) := by
   have hidem : IsIdempotentElem (toEuclideanLin P) :=
@@ -206,14 +296,16 @@ theorem ker_eq_range_one_sub {P : Matrix (Fin n) (Fin n) 𝕜} (hP : P.IsProject
   rw [h1]
   exact LinearMap.IsIdempotentElem.ker_eq_range_one_sub hidem
 
-/-- Saad §1.12.1: `ℂⁿ = Ran P ⊕ Null P`, in particular `Null P ∩ Ran P = {0}`. -/
+/-- **Section 1.12.1** of [saad2003iterative]. If $P$ is a projector, then $\mathbb{K}^n =
+\operatorname{Ran}(P) \oplus \operatorname{Null}(P)$; in particular $\operatorname{Null}(P) \cap
+\operatorname{Ran}(P) = \{0\}$. -/
 theorem isCompl_range_ker {P : Matrix (Fin n) (Fin n) 𝕜} (hP : P.IsProjector) :
     IsCompl (LinearMap.range (toEuclideanLin P)) (LinearMap.ker (toEuclideanLin P)) :=
   LinearMap.IsIdempotentElem.isCompl
     ((isProjector_iff_isIdempotentElem_toEuclideanLin P).mp hP)
 
-/-- Saad §1.12.1: every pair of complementary subspaces `(M, S)` is the range/null-space pair of
-a unique projector. -/
+/-- **Section 1.12.1** of [saad2003iterative]. If $M$ and $L$ are complementary subspaces of
+$\mathbb{K}^n$, there is a unique projector with range $M$ and null space $L$. -/
 theorem existsUnique_projector (h : IsCompl M L) :
     ∃! P : EuclideanSpace 𝕜 (Fin n) →ₗ[𝕜] EuclideanSpace 𝕜 (Fin n),
       IsIdempotentElem P ∧ LinearMap.range P = M ∧ LinearMap.ker P = L := by
@@ -225,7 +317,9 @@ theorem existsUnique_projector (h : IsCompl M L) :
     (hQr.trans (Submodule.range_projection h).symm)
     (hQk.trans (Submodule.ker_projection h).symm)
 
-/-- Saad §1.12.1: `rank P = m` gives `dim Ran (I - P) = n - m`. -/
+/-- **Section 1.12.1** of [saad2003iterative]. If $P$ is a projector, then $\dim
+\operatorname{Ran}(I - P) + \dim \operatorname{Ran}(P) = n$. So if $P$ has rank $m$, then
+$\operatorname{Ran}(I - P)$ has dimension $n - m$. -/
 theorem finrank_range_one_sub_add {P : Matrix (Fin n) (Fin n) 𝕜} (hP : P.IsProjector) :
     finrank 𝕜 (LinearMap.range (toEuclideanLin (1 - P)))
       + finrank 𝕜 (LinearMap.range (toEuclideanLin P)) = n := by
@@ -235,9 +329,11 @@ theorem finrank_range_one_sub_add {P : Matrix (Fin n) (Fin n) 𝕜} (hP : P.IsPr
 
 /-! ### Lemma 1.36 -/
 
-/-- **Lemma 1.36**.  For subspaces `M`, `L` of the same dimension: no nonzero vector of `M` is
-orthogonal to `L` if and only if for every `x` there is a unique `u` with `u ∈ M` and
-`x - u ⟂ L`. -/
+/-- **Lemma 1.36** of [saad2003iterative]. Let $M$ and $L$ be subspaces of $\mathbb{K}^n$ of the
+same dimension. Then no nonzero vector of $M$ is orthogonal to $L$ if and only if for every
+$x \in \mathbb{K}^n$ there is a unique $u$ with
+$$u \in M, \qquad x - u \perp L.$$
+-/
 theorem lemma_1_36 (hd : finrank 𝕜 M = finrank 𝕜 L) :
     (∀ v ∈ M, v ∈ Lᗮ → v = 0) ↔ ∀ x, ∃! u, IsProjOnto M L x u := by
   constructor
@@ -259,19 +355,22 @@ section Bases
 
 variable {V W : Matrix (Fin n) (Fin m) 𝕜}
 
-/-- Saad (1.65): with biorthogonal bases, `P = V Wᴴ`. -/
+/-- **Equation (1.65)** of [saad2003iterative]. Let $V, W \in \mathbb{K}^{n \times m}$ be
+biorthogonal, $W^H V = I$. Then $V(W^H V)^{-1} W^H = V W^H$. -/
 theorem obliqueProj_of_biorthogonal (h : IsBiorthogonal V W) : obliqueProj V W = V * Wᴴ := by
   rw [obliqueProj, show Wᴴ * V = 1 from h, inv_one]
   simp
 
-/-- Saad §1.12.3: `Wᴴ z = 0` exactly when `z ⟂ L`, for `W` a basis of `L`. -/
+/-- **Section 1.12.3** of [saad2003iterative]. Let $W \in \mathbb{K}^{n \times m}$ be a basis of
+$L$. Then for $z \in \mathbb{K}^n$, $W^H z = 0$ if and only if $z \perp L$. -/
 theorem conjTranspose_mulVec_eq_zero_iff (hW : W.IsBasisOf L) (z : EuclideanSpace 𝕜 (Fin n)) :
     Wᴴ *ᵥ WithLp.ofLp z = 0 ↔ z ∈ Lᗮ := by
   rw [Matrix.conjTranspose_mulVec_eq_zero_iff, ← hW.span_eq, Submodule.mem_orthogonal_span,
     Set.forall_mem_range]
   rfl
 
-/-- `V y` lies in the span of the columns of `V`. -/
+/-- For $V \in \mathbb{K}^{n \times m}$ and $y \in \mathbb{K}^m$, the vector $Vy$ lies in the span
+of the columns of $V$. -/
 theorem toEuclideanLin_mem_span (V : Matrix (Fin n) (Fin m) 𝕜)
     (y : EuclideanSpace 𝕜 (Fin m)) : (V ⬝ y) ∈ Submodule.span 𝕜 (Set.range V.cols) := by
   rw [show (V ⬝ y) = toEuclideanLin V (WithLp.toLp 2 (WithLp.ofLp y)) from rfl,
@@ -279,7 +378,11 @@ theorem toEuclideanLin_mem_span (V : Matrix (Fin n) (Fin m) 𝕜)
   exact Submodule.sum_mem _ fun j _ =>
     Submodule.smul_mem _ _ (Submodule.subset_span (Set.mem_range_self j))
 
-/-- Saad (1.64): `P x = V y` iff `Wᴴ (x - V y) = 0`. -/
+/-- **Equation (1.64)** of [saad2003iterative]. Let $V$ be a basis of $M$ and $W$ a basis of $L$,
+both in $\mathbb{K}^{n \times m}$. Then for $x \in \mathbb{K}^n$ and $y \in \mathbb{K}^m$, the
+vector $Vy$ is the projection of $x$ onto $M$ orthogonally to $L$ if and only if
+$$W^H (x - Vy) = 0.$$
+-/
 theorem isProjOnto_iff_conjTranspose_mulVec_eq_zero (hV : V.IsBasisOf M) (hW : W.IsBasisOf L)
     (x : EuclideanSpace 𝕜 (Fin n)) (y : EuclideanSpace 𝕜 (Fin m)) :
     IsProjOnto M L x (V ⬝ y) ↔ Wᴴ *ᵥ (WithLp.ofLp x - V *ᵥ WithLp.ofLp y) = 0 := by
@@ -288,8 +391,9 @@ theorem isProjOnto_iff_conjTranspose_mulVec_eq_zero (hV : V.IsBasisOf M) (hW : W
   rw [IsProjOnto, ← conjTranspose_mulVec_eq_zero_iff hW (x - (V ⬝ y)), hsub]
   simp [hmem]
 
-/-- Saad §1.12.3: `Wᴴ V` is nonsingular iff no nonzero vector of `M` is orthogonal to `L`
-(the hypothesis of Lemma 1.36). -/
+/-- **Section 1.12.3** of [saad2003iterative]. Let $V$ be a basis of $M$ and $W$ a basis of $L$,
+both in $\mathbb{K}^{n \times m}$. Then $W^H V$ is nonsingular if and only if no nonzero vector
+of $M$ is orthogonal to $L$, which is the hypothesis of Lemma 1.36. -/
 theorem isUnit_conjTranspose_mul_iff (hV : V.IsBasisOf M) (hW : W.IsBasisOf L) :
     IsUnit (Wᴴ * V) ↔ ∀ v ∈ M, v ∈ Lᗮ → v = 0 := by
   have hzero : ∀ y : Fin m → 𝕜, (Wᴴ * V) *ᵥ y = 0 ↔
@@ -321,7 +425,10 @@ theorem isUnit_conjTranspose_mul_iff (hV : V.IsBasisOf M) (hW : W.IsBasisOf L) :
     have hi := hli i
     rwa [Pi.sub_apply, sub_eq_zero] at hi
 
-/-- Saad (1.66): `P = V (Wᴴ V)⁻¹ Wᴴ` is the projector onto `M` orthogonally to `L`. -/
+/-- **Equation (1.66)** of [saad2003iterative]. Let $V$ be a basis of $M$ and $W$ a basis of $L$,
+both in $\mathbb{K}^{n \times m}$, with $W^H V$ nonsingular. Then for every
+$x \in \mathbb{K}^n$, the vector $Px$ with $P = V(W^H V)^{-1} W^H$ is the projection of $x$ onto
+$M$ orthogonally to $L$. -/
 theorem obliqueProj_isProjOnto (hV : V.IsBasisOf M) (hW : W.IsBasisOf L) (h : IsUnit (Wᴴ * V))
     (x : EuclideanSpace 𝕜 (Fin n)) : IsProjOnto M L x (obliqueProj V W ⬝ x) := by
   have h' : IsUnit (LinearMap.crossGram 𝕜 V.cols W.cols) := by rw [crossGram_cols]; exact h
@@ -334,20 +441,22 @@ theorem obliqueProj_isProjOnto (hV : V.IsBasisOf M) (hW : W.IsBasisOf L) (h : Is
 
 end Bases
 
-/-! ### Adjoint projector (1.68)–(1.70) -/
+/-! ### The adjoint projector (1.68)–(1.70) -/
 
-/-- Saad (1.68): `Pᴴ` is a projector. -/
+/-- **Equation (1.68)** of [saad2003iterative]. If $P$ is a projector, then $P^H$ is a projector. -/
 theorem isProjector_conjTranspose {P : Matrix (Fin n) (Fin n) 𝕜} (hP : P.IsProjector) :
     Pᴴ.IsProjector := by
   change Pᴴ * Pᴴ = Pᴴ
   rw [← conjTranspose_mul, show P * P = P from hP]
 
-/-- Saad (1.69): `Null Pᴴ = (Ran P)ᗮ`. -/
+/-- **Equation (1.69)** of [saad2003iterative]. For every $P \in \mathbb{K}^{n \times n}$,
+$\operatorname{Null}(P^H) = \operatorname{Ran}(P)^\perp$. -/
 theorem ker_conjTranspose_eq_orthogonal_range (P : Matrix (Fin n) (Fin n) 𝕜) :
     LinearMap.ker (toEuclideanLin Pᴴ) = (LinearMap.range (toEuclideanLin P))ᗮ := by
   rw [toEuclideanLin_conjTranspose_eq_adjoint, LinearMap.orthogonal_range]
 
-/-- Saad (1.70): `Null P = (Ran Pᴴ)ᗮ`. -/
+/-- **Equation (1.70)** of [saad2003iterative]. For every $P \in \mathbb{K}^{n \times n}$,
+$\operatorname{Null}(P) = \operatorname{Ran}(P^H)^\perp$. -/
 theorem ker_eq_orthogonal_range_conjTranspose (P : Matrix (Fin n) (Fin n) 𝕜) :
     LinearMap.ker (toEuclideanLin P) = (LinearMap.range (toEuclideanLin Pᴴ))ᗮ := by
   rw [toEuclideanLin_conjTranspose_eq_adjoint, LinearMap.orthogonal_range,
@@ -355,7 +464,8 @@ theorem ker_eq_orthogonal_range_conjTranspose (P : Matrix (Fin n) (Fin n) 𝕜) 
 
 /-! ### Proposition 1.37 -/
 
-/-- **Proposition 1.37**.  A projector is orthogonal if and only if it is Hermitian. -/
+/-- **Proposition 1.37** of [saad2003iterative]. Let $P \in \mathbb{K}^{n \times n}$ be a projector.
+Then $P$ is an orthogonal projector if and only if $P$ is Hermitian, $P^H = P$. -/
 theorem proposition_1_37 {P : Matrix (Fin n) (Fin n) 𝕜} (hP : P.IsProjector) :
     P.IsOrthogonalProjector ↔ P.IsHermitian := by
   have hidem : IsIdempotentElem (toEuclideanLin P) :=
@@ -364,7 +474,8 @@ theorem proposition_1_37 {P : Matrix (Fin n) (Fin n) 𝕜} (hP : P.IsProjector) 
     LinearMap.IsIdempotentElem.isSymmetric_iff_orthogonal_range hidem]
   exact ⟨fun h => h.2.symm, fun h => ⟨hP, h.symm⟩⟩
 
-/-- An orthogonal projector is the orthogonal projection onto its range. -/
+/-- An orthogonal projector $P$ acts as the orthogonal projection onto its range, Mathlib's
+`Submodule.starProjection`. -/
 theorem toEuclideanLin_eq_starProjection {P : Matrix (Fin n) (Fin n) 𝕜}
     (hP : P.IsOrthogonalProjector) :
     toEuclideanLin P = ((LinearMap.range (toEuclideanLin P)).starProjection :
@@ -376,13 +487,14 @@ theorem toEuclideanLin_eq_starProjection {P : Matrix (Fin n) (Fin n) 𝕜}
   · rw [← hP.2, LinearMap.mem_ker, map_sub,
       (LinearMap.IsIdempotentElem.mem_range_iff hidem).mp (LinearMap.mem_range_self _ x), sub_self]
 
-/-! ### `P = V Vᴴ` (1.71)–(1.72) -/
+/-! ### The representation $P = V V^H$ (1.71)–(1.72) -/
 
 section Orthonormal
 
 variable {V : Matrix (Fin n) (Fin m) 𝕜}
 
-/-- `Vᴴ V = I` says exactly that the columns of `V` are orthonormal. -/
+/-- For $V \in \mathbb{K}^{n \times m}$, $V^H V = I$ if and only if the columns of $V$ are
+orthonormal. -/
 theorem conjTranspose_mul_self_eq_one_iff (V : Matrix (Fin n) (Fin m) 𝕜) :
     Vᴴ * V = 1 ↔ Orthonormal 𝕜 V.cols := by
   rw [orthonormal_iff_ite, ← crossGram_cols V V]
@@ -396,8 +508,9 @@ theorem conjTranspose_mul_self_eq_one_iff (V : Matrix (Fin n) (Fin m) 𝕜) :
     rw [Matrix.one_apply]
     simpa [LinearMap.crossGram] using h i j
 
-/-- Saad (1.71): with orthonormal columns spanning `M`, `P = V Vᴴ` is the orthogonal projector
-onto `M`. -/
+/-- **Equation (1.71)** of [saad2003iterative]. Let $V \in \mathbb{K}^{n \times m}$ have orthonormal
+columns, $V^H V = I$, that form a basis of $M$. Then $P = V V^H$ is the orthogonal projector
+onto $M$. -/
 theorem toEuclideanLin_mul_conjTranspose (hV : Vᴴ * V = 1) (hVM : V.IsBasisOf M) :
     toEuclideanLin (V * Vᴴ) = (M.starProjection : EuclideanSpace 𝕜 (Fin n) →ₗ[𝕜] _) := by
   obtain ⟨hli, rfl⟩ := hVM
@@ -408,8 +521,9 @@ theorem toEuclideanLin_mul_conjTranspose (hV : Vᴴ * V = 1) (hVM : V.IsBasisOf 
   rw [← hproj, toEuclideanLin_obliqueProj,
     LinearMap.obliqueProjectionOfBases_self_eq_starProjection V.cols horth]
 
-/-- Saad §1.12.3: `V₁ V₁ᴴ = V₂ V₂ᴴ` for any two orthonormal bases of the same subspace
-(Exercise P-1.30). -/
+/-- **Section 1.12.3** of [saad2003iterative] (Problem P-1.30). Let
+$V_1, V_2 \in \mathbb{K}^{n \times m}$ both have orthonormal columns that form a basis of the
+same subspace $M$. Then $V_1 V_1^H = V_2 V_2^H$. -/
 theorem mul_conjTranspose_eq_of_isBasisOf {V₁ V₂ : Matrix (Fin n) (Fin m) 𝕜}
     (hV₁ : V₁ᴴ * V₁ = 1) (hV₂ : V₂ᴴ * V₂ = 1) (h₁ : V₁.IsBasisOf M) (h₂ : V₂.IsBasisOf M) :
     V₁ * V₁ᴴ = V₂ * V₂ᴴ :=
@@ -420,7 +534,10 @@ end Orthonormal
 
 /-! ### Properties of orthogonal projectors (§1.12.4) -/
 
-/-- Saad §1.12.4: `‖x‖₂² = ‖P x‖₂² + ‖(I - P) x‖₂²`. -/
+/-- **Section 1.12.4** of [saad2003iterative]. Let $P$ be an orthogonal projector. Then for every
+$x \in \mathbb{K}^n$,
+$$\|x\|_2^2 = \|Px\|_2^2 + \|(I - P)x\|_2^2.$$
+-/
 theorem norm_sq_eq_add {P : Matrix (Fin n) (Fin n) 𝕜} (hP : P.IsOrthogonalProjector)
     (x : EuclideanSpace 𝕜 (Fin n)) : ‖x‖ ^ 2 = ‖P ⬝ x‖ ^ 2 + ‖(1 - P) ⬝ x‖ ^ 2 := by
   have hPx : (P ⬝ x) = (LinearMap.range (toEuclideanLin P)).starProjection x :=
@@ -437,13 +554,20 @@ theorem norm_sq_eq_add {P : Matrix (Fin n) (Fin n) 𝕜} (hP : P.IsOrthogonalPro
   rw [hPx, hQx]
   exact (LinearMap.range (toEuclideanLin P)).norm_sq_eq_add_norm_sq_starProjection x
 
-/-- Saad §1.12.4: an orthogonal projector is a contraction, `‖P x‖₂ ≤ ‖x‖₂`. -/
+/-- **Section 1.12.4** of [saad2003iterative]. An orthogonal projector $P$ is a contraction:
+$\|Px\|_2 \le \|x\|_2$ for every $x$.
+
+**Reading.** The book states $\|P\|_2 = 1$ for every orthogonal projector $P$. This needs
+$P \neq 0$: the zero matrix is the orthogonal projector onto $\{0\}$, and its norm is $0$. The
+statement here is the bound $\|P\|_2 \le 1$, in the form $\|Px\|_2 \le \|x\|_2$, which holds
+with no condition on $P$. -/
 theorem norm_apply_le {P : Matrix (Fin n) (Fin n) 𝕜} (hP : P.IsOrthogonalProjector)
     (x : EuclideanSpace 𝕜 (Fin n)) : ‖P ⬝ x‖ ≤ ‖x‖ := by
   have h := norm_sq_eq_add hP x
   nlinarith [norm_nonneg ((1 - P) ⬝ x), norm_nonneg (P ⬝ x), norm_nonneg x]
 
-/-- Saad §1.12.4: the eigenvalues of a projector are `0` and `1`. -/
+/-- **Section 1.12.4** of [saad2003iterative]. The eigenvalues of a projector
+$P \in \mathbb{C}^{n \times n}$ are in $\{0, 1\}$. -/
 theorem spectrum_subset_pair {P : Matrix (Fin n) (Fin n) ℂ} (hP : P.IsProjector) :
     spectrum ℂ P ⊆ {0, 1} := by
   intro μ hμ
@@ -468,8 +592,8 @@ theorem spectrum_subset_pair {P : Matrix (Fin n) (Fin n) ℂ} (hP : P.IsProjecto
       have : μ * μ = μ * 1 := by rw [mul_one]; exact hμ2
       simpa using mul_left_cancel₀ h0 this)
 
-/-- Saad §1.12.4: `x` is in the range of a projector iff it is fixed by it (an eigenvector for
-the eigenvalue `1`). -/
+/-- **Section 1.12.4** of [saad2003iterative]. Let $P$ be a projector. Then $x$ is in the range of
+$P$ if and only if $Px = x$, that is $x$ is fixed by $P$. -/
 theorem mem_range_iff_eigen_one {P : Matrix (Fin n) (Fin n) 𝕜} (hP : P.IsProjector)
     (x : EuclideanSpace 𝕜 (Fin n)) :
     x ∈ LinearMap.range (toEuclideanLin P) ↔ (P ⬝ x) = x :=
@@ -478,8 +602,12 @@ theorem mem_range_iff_eigen_one {P : Matrix (Fin n) (Fin n) 𝕜} (hP : P.IsProj
 
 /-! ### Theorem 1.38 and Corollary 1.39 -/
 
-/-- **Theorem 1.38**.  For a subspace `M` and `x ∈ ℂⁿ`, `min_{y ∈ M} ‖x - y‖₂ = ‖x - P x‖₂` with
-`P` the orthogonal projector onto `M`. -/
+/-- **Theorem 1.38** of [saad2003iterative]. Let $M$ be a subspace of $\mathbb{K}^n$, let $P$ be the
+orthogonal projector onto $M$, and let $x \in \mathbb{K}^n$. Then
+$$\min_{y \in M} \|x - y\|_2 = \|x - Px\|_2.$$
+
+The minimum is the least element of the set $\{\|x - y\|_2 : y \in M\}$, and $P$ is Mathlib's
+`Submodule.starProjection`. -/
 theorem theorem_1_38 (M : Submodule 𝕜 (EuclideanSpace 𝕜 (Fin n))) (x : EuclideanSpace 𝕜 (Fin n)) :
     IsLeast ((fun y => ‖x - y‖) '' (M : Set (EuclideanSpace 𝕜 (Fin n))))
       ‖x - M.starProjection x‖ := by
@@ -488,9 +616,13 @@ theorem theorem_1_38 (M : Submodule 𝕜 (EuclideanSpace 𝕜 (Fin n))) (x : Euc
   exact Submodule.norm_sub_le_of_forall_inner_eq_zero (M.starProjection_apply_mem x)
     (fun w hw => M.starProjection_inner_eq_zero x w hw) hy
 
-/-- **Corollary 1.39**.  For `y ∈ M`, the distance `‖x - y‖₂` is minimal over `M` if and only if
-`x - y ⟂ M`.  (The book's "`min_{y ∈ M}`" is read as ranging over `M`, so membership is a
-hypothesis rather than part of the conclusion.) -/
+/-- **Corollary 1.39** of [saad2003iterative]. Let $M$ be a subspace of $\mathbb{K}^n$, let
+$x \in \mathbb{K}^n$, and let $y \in M$. Then $\|x - y\|_2$ is the least element of
+$\{\|x - z\|_2 : z \in M\}$ if and only if $x - y \perp M$.
+
+**Reading.** The book's "$\min_{y \in M}$" is read with $y$ ranging over $M$, so membership
+$y \in M$ is a hypothesis and not part of the conclusion. A vector $y \notin M$ at the same
+distance from $x$ would break the literal equivalence. -/
 theorem corollary_1_39 (M : Submodule 𝕜 (EuclideanSpace 𝕜 (Fin n)))
     {x y : EuclideanSpace 𝕜 (Fin n)} (hy : y ∈ M) :
     IsLeast ((fun z => ‖x - z‖) '' (M : Set (EuclideanSpace 𝕜 (Fin n)))) ‖x - y‖ ↔

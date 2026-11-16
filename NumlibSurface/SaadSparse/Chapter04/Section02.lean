@@ -20,57 +20,142 @@ import NumlibSurface.SaadSparse.Chapter01.Section13
 import NumlibSurface.SaadSparse.Chapter04.Section01
 
 /-!
-# Saad §4.2: convergence of the basic iterative methods
+# Saad, Section 4.2: Convergence
 
-Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM,
-2003, §4.2, in three parts.
+This module formalizes §4.2 of [saad2003iterative], the convergence theory of the basic iterative
+methods. For $G \in \mathbb{R}^{n \times n}$ and $f \in \mathbb{R}^n$, the affine iteration
+$x_{k+1} = Gx_k + f$ (4.28) converges for every $f$ and every $x_0$ if and only if the spectral
+radius satisfies $\rho(G) < 1$ (Theorem 4.1), and $\|G\| < 1$ in a consistent matrix norm is
+sufficient (Corollary 4.2). Example 4.1 applies this to Richardson's iteration
+$x_{k+1} = x_k + \alpha(b - Ax_k)$. Regular splittings (Definition 4.3) converge exactly when
+$A^{-1} \ge 0$ (Theorem 4.4).
 
-**§4.2–4.2.2, the affine iteration** `x_{k+1} = G x_k + f` (4.28)–(4.30): Theorem 4.1 (`ρ(G) < 1`
-characterizes convergence), Corollary 4.2 (`‖G‖ < 1` suffices), the remark `|λ| ≤ ‖A‖` before
-Theorem 4.6, and Example 4.1 (Richardson). The proofs specialize the backbone's spectral-radius
-theory (`Numlib/LinearAlgebra/Matrix/Complexify.lean`,
-`Numlib/Analysis/Normed/Algebra/SpectralRadius.lean`, `Numlib/Stationary/Basic.lean`) to
-real matrices acting on `Fin n → ℝ`.
+For diagonally dominant matrices (§4.2.3), the module proves Gershgorin's theorem (Theorem 4.6) and
+its refinement for irreducible matrices (Theorem 4.7), the nonsingularity of strictly and
+irreducibly diagonally dominant matrices (Corollary 4.8), and the convergence of the Jacobi and
+Gauss–Seidel iterations for them (Theorem 4.9). For symmetric positive definite matrices and Young's
+theory (§4.2.4–4.2.5), it proves that SOR with $0 < \omega < 2$ converges exactly for positive
+definite $A$ (Theorem 4.10), treats Property A, consistent orderings and T-matrices (Definitions
+4.11 and 4.13, Propositions 4.12, 4.14 and 4.15), the relation between the eigenvalues of the SOR
+and Jacobi iteration matrices (Theorem 4.16), and the optimal relaxation parameter (4.47). The
+proofs specialize `Numlib.LinearAlgebra.Matrix.Complexify`, `Numlib.Stationary.DiagDominant`,
+`Numlib.Stationary.RegularSplitting`, `Numlib.Stationary.SPD` and
+`Numlib.Stationary.ConsistentlyOrdered`.
 
-**§4.2.3, diagonally dominant matrices**: Definition 4.5, Gershgorin's theorem (Theorem 4.6) in its
-row and column forms, the nonsingularity of strictly diagonally dominant matrices (Corollary 4.8),
-and the convergence of the Jacobi and Gauss–Seidel iterations for such matrices (Theorem 4.9).
-Saad's Definition 4.5 as printed uses column sums for all three dominance conditions, while the
-proofs of Theorems 4.6 and 4.9 use row sums; both forms are stated here, following the backbone's
-`Matrix.IsStrictDiagDominant` (rows) and `Matrix.IsStrictColDiagDominant` (columns). The three
-conditions the definition names are `definition_4_5`, `definition_4_5_strict` and
-`definition_4_5_irreducible`, written in the book's column form, and `definition_4_5_iff` reads them
-back as the backbone's predicates at `Aᵀ`.
+## Main definitions
 
-The third condition of Definition 4.5, *irreducible* diagonal dominance, carries a clause that is
-easy to drop and that both Corollary 4.8 and Theorem 4.9 need: weak dominance at every index **and
-strict dominance at at least one**. The backbone's `Matrix.IsIrreduciblyDiagDominant` keeps it as
-the field `exists_strict` (in the row form, as above). Without it both results are false:
-`!![1, -1; -1, 1]` is irreducible and weakly diagonally dominant yet singular, and its Jacobi
-iteration matrix `!![0, 1; 1, 0]` has spectral radius `1`.
+* Definition 4.3, `SaadSparse.Chapter04.IsRegularSplitting`: $A = M - N$ with $M$ nonsingular,
+  $M^{-1} \ge 0$ and $N \ge 0$.
+* Definition 4.5, `SaadSparse.Chapter04.definition_4_5`,
+  `SaadSparse.Chapter04.definition_4_5_strict`, `SaadSparse.Chapter04.definition_4_5_irreducible`:
+  weak, strict and irreducible diagonal dominance, by columns as printed.
+* Example 4.1, `SaadSparse.Chapter04.richardsonStep`: the Richardson step
+  $x \mapsto x + \alpha(b - Ax)$.
+* Definition 4.11, `SaadSparse.Chapter04.HasPropertyA`: Property A.
+* Proposition 4.12, `SaadSparse.Chapter04.antiDiag`: the block anti-diagonal matrix $B$, with its
+  parts `SaadSparse.Chapter04.antiDiagL` and `SaadSparse.Chapter04.antiDiagU`.
+* Definition 4.13, `SaadSparse.Chapter04.IsConsistentlyOrdered`: a consistent ordering, as a
+  labelling of the indices.
+* §4.2.5, `SaadSparse.Chapter04.IsTMatrix`: T-matrices, the block tridiagonal form (4.44) with
+  diagonal diagonal blocks.
 
-**§4.2.4–4.2.5, symmetric positive definite matrices and Young's theory**: Proposition 4.12, by the
-similarity argument the book uses — for a block anti-diagonal `B` the spectrum is symmetric under
-negation, and the spectrum of `B(α) = α L + α⁻¹ U` does not depend on `α ≠ 0`; Theorem 4.10 (SOR
-converges exactly for positive definite `A`), Definitions 4.11 and 4.13 (Property A, consistent
-orderings, T-matrices), Propositions 4.14–4.15, Theorem 4.16 and the optimal relaxation parameter
-(4.47).
+## Main results
 
-Saad's Definition 4.13 is a *labelling* of the indices, and it is the labelling that the surface
-takes as `SaadSparse.Chapter04.IsConsistentlyOrdered`; the backbone's `Matrix.IsConsistentlyOrdered`
-is Kress's spectral property, which Young's theory actually uses, and
-`SaadSparse.Chapter04.IsConsistentlyOrdered.matrix_isConsistentlyOrdered` is the implication between
-them — Saad's Proposition 4.15.
+* Theorem 4.1, `SaadSparse.Chapter04.theorem_4_1`: the iteration (4.28) converges for every $f$ and
+  $x_0$ if and only if $\rho(G) < 1$.
+* Corollary 4.2, `SaadSparse.Chapter04.corollary_4_2` and `SaadSparse.Chapter04.corollary_4_2_lp`:
+  if $\|G\| < 1$ for a consistent matrix norm, or for an induced $p$-norm, then (4.28) converges to
+  $(I - G)^{-1}f$.
+* Example 4.1, `SaadSparse.Chapter04.example_4_1_tendsto_iff` and
+  `SaadSparse.Chapter04.example_4_1_opt`: for symmetric positive definite $A$, Richardson's
+  iteration converges exactly when $0 < \alpha < 2/\lambda_{\max}$, and $\alpha_{opt} =
+  2/(\lambda_{\min} + \lambda_{\max})$.
+* Theorem 4.4, `SaadSparse.Chapter04.theorem_4_4`: a regular splitting has $\rho(M^{-1}N) < 1$ if
+  and only if $A$ is nonsingular with $A^{-1} \ge 0$.
+* Definition 4.5, `SaadSparse.Chapter04.definition_4_5_iff`: the column conditions of Definition 4.5
+  are the row conditions of the backbone at $A^T$.
+* Theorem 4.6, `SaadSparse.Chapter04.theorem_4_6` and `SaadSparse.Chapter04.theorem_4_6_col`: every
+  eigenvalue lies in a Gershgorin disc of the rows, and in one of the columns.
+* Theorem 4.7, `SaadSparse.Chapter04.theorem_4_7`: for an irreducible matrix, an eigenvalue on the
+  boundary of the union of the discs lies on the boundary of every disc.
+* Corollary 4.8, `SaadSparse.Chapter04.corollary_4_8_strict`,
+  `SaadSparse.Chapter04.corollary_4_8_col`, `SaadSparse.Chapter04.corollary_4_8_irred`,
+  `SaadSparse.Chapter04.corollary_4_8_irred_col`: strictly or irreducibly diagonally dominant
+  matrices are nonsingular.
+* Theorem 4.9, `SaadSparse.Chapter04.theorem_4_9_jacobi`, `SaadSparse.Chapter04.theorem_4_9_gs` and
+  their irreducible and column forms: for such matrices the Jacobi and Gauss–Seidel iterations
+  converge.
+* Theorem 4.10, `SaadSparse.Chapter04.theorem_4_10` and `SaadSparse.Chapter04.theorem_4_10_tendsto`:
+  for symmetric $A$ with positive diagonal and $0 < \omega < 2$, SOR converges if and only if $A$ is
+  positive definite.
+* Proposition 4.12, `SaadSparse.Chapter04.proposition_4_12_neg` and
+  `SaadSparse.Chapter04.proposition_4_12_alpha`: the spectrum of a block anti-diagonal matrix is
+  symmetric about $0$, and the spectrum of $\alpha L + \alpha^{-1}U$ does not depend on
+  $\alpha \neq 0$.
+* Equation (4.42), `SaadSparse.Chapter04.hasPropertyA_iff_toBlocks_isDiag`: Property A is the block
+  form with diagonal diagonal blocks.
+* Proposition 4.14, `SaadSparse.Chapter04.proposition_4_14`: a consistently ordered matrix is
+  permuted to a T-matrix, and the permutation commutes with the strict triangular parts.
+* Proposition 4.15, `SaadSparse.Chapter04.proposition_4_15`: for a consistently ordered matrix, the
+  spectrum of $\alpha L + \alpha^{-1}U$ does not depend on $\alpha \neq 0$.
+* §4.2.5, `SaadSparse.Chapter04.hasPropertyA_iff_exists_isConsistentlyOrdered`: $A$ has Property A
+  if and only if some symmetric permutation of $A$ is consistently ordered.
+* Theorem 4.16, `SaadSparse.Chapter04.theorem_4_16_mp` and `SaadSparse.Chapter04.theorem_4_16_mpr`:
+  the relation $(\lambda + \omega - 1)^2 = \lambda \omega^2 \mu^2$ between the eigenvalues of the
+  SOR and Jacobi iteration matrices.
+* Equation (4.47), `SaadSparse.Chapter04.equation_4_47`: the optimal relaxation parameter
+  $\omega_{opt} = 2/(1 + \sqrt{1 - \rho(B)^2})$, at which $\rho = \omega_{opt} - 1$.
 
-Left out of the plan: the *specific* convergence factor of §4.2.1 for a generic `d₀`, which the book
-derives heuristically from the Jordan form.
+## Conventions
+
+* $\rho(G)$ of a real matrix is `Matrix.complexSpectralRadius G`, the spectral radius of $G$ as a
+  complex matrix, a value in $[0, \infty]$.
+* The induced norm $\|G\|_p$ is `Matrix.lpOpNorm p G`, for $1 \le p \le \infty$. A consistent matrix
+  norm is an `AlgebraNorm ℝ` on the matrices.
+* Strict row diagonal dominance is `Matrix.IsStrictDiagDominant`, strict column dominance is
+  `Matrix.IsStrictColDiagDominant`, and irreducible diagonal dominance by rows and by columns is
+  `Matrix.IsIrreduciblyDiagDominant` and `Matrix.IsIrreduciblyColDiagDominant`. Irreducibility is
+  `Matrix.IsPatternIrreducible`.
+
+## Implementation notes
+
+* The irreducible clause of Definition 4.5 asks for weak dominance at every index and strict
+  dominance at one index or more. Corollary 4.8 and Theorem 4.9 are false without the second
+  condition: the matrix $\begin{bmatrix} 1 & -1 \\ -1 & 1 \end{bmatrix}$ is irreducible and weakly
+  diagonally dominant, but singular, and its Jacobi iteration matrix
+  $\begin{bmatrix} 0 & 1 \\ 1 & 0 \end{bmatrix}$ has spectral radius $1$. The backbone keeps this
+  condition as the field `Matrix.IsIrreduciblyDiagDominant.exists_strict`.
+* Definition 4.13 is a labelling of the indices, and the surface takes it as
+  `SaadSparse.Chapter04.IsConsistentlyOrdered`. The backbone predicate
+  `Matrix.IsConsistentlyOrdered` is the spectral property that Young's theory uses (the definition
+  of Kress). Proposition 4.15,
+  `SaadSparse.Chapter04.IsConsistentlyOrdered.matrix_isConsistentlyOrdered`, is the implication
+  between them.
+* Proposition 4.12 is proved by the similarity argument of the book: conjugation by
+  $\operatorname{diag}(I, -I)$ maps $B$ to $-B$, and conjugation by
+  $\operatorname{diag}(I, \alpha I)$ maps $B$ to $\alpha L + \alpha^{-1}U$.
+* The matrices of Young's theory (from Definition 4.11 on) are complex.
+
+## Deviations from the source
+
+* **Definition 4.5** (reading). The book prints all three conditions with column sums, while the
+  proofs of Theorems 4.6 and 4.9 use row sums. Both forms are stated. See
+  `SaadSparse.Chapter04.definition_4_5_iff`.
+* **Theorem 4.16** (reading). The book uses the name $M_{SOR}$ for the SOR iteration matrix, while
+  (4.26) uses it for the preconditioner. The two are named apart. See
+  `SaadSparse.Chapter04.theorem_4_16_mp`.
+
+## Not formalized
+
+* **The specific convergence factor of §4.2.1 for a general $d_0$.** The book derives it
+  heuristically from the Jordan form.
 -/
 
 open Matrix
 
 namespace SaadSparse.Chapter04
 
-/-! ### §4.2–4.2.2 The affine iteration and its convergence -/
+/-! ### §4.2–4.2.2: The affine iteration and its convergence -/
 
 section AffineIteration
 
@@ -82,7 +167,7 @@ variable {n : ℕ} {A G : Matrix (Fin n) (Fin n) ℝ}
 
 /-! ### Elementary limits of matrices and matrix–vector products -/
 
-/-- Entrywise convergence of matrices to `0` is convergence in the product topology. -/
+/-- If every entry of a sequence of matrices $M_k$ tends to $0$, then $M_k \to 0$. -/
 theorem tendsto_zero_of_entries {M : ℕ → Matrix (Fin n) (Fin n) ℝ}
     (h : ∀ i j, Tendsto (fun k => M k i j) atTop (𝓝 0)) : Tendsto M atTop (𝓝 0) := by
   have key : Tendsto (fun k => (fun i j => M k i j : Fin n → Fin n → ℝ)) atTop
@@ -90,31 +175,33 @@ theorem tendsto_zero_of_entries {M : ℕ → Matrix (Fin n) (Fin n) ℝ}
     tendsto_pi_nhds.mpr fun i => tendsto_pi_nhds.mpr fun j => h i j
   exact key
 
-/-- If `M k → 0` then `M k v → 0` for every fixed `v` (backbone
-`Matrix.tendsto_zero_iff_forall_mulVec_tendsto_zero`). -/
+/-- If $M_k \to 0$, then $M_k v \to 0$ for every fixed vector $v$. This specializes
+`Matrix.tendsto_zero_iff_forall_mulVec_tendsto_zero`. -/
 theorem tendsto_mulVec_zero {M : ℕ → Matrix (Fin n) (Fin n) ℝ} (h : Tendsto M atTop (𝓝 0))
     (v : Fin n → ℝ) : Tendsto (fun k => M k *ᵥ v) atTop (𝓝 0) :=
   Matrix.tendsto_zero_iff_forall_mulVec_tendsto_zero.mp h v
 
-/-- Conversely, if `M k v → 0` for every `v` then `M k → 0` (backbone
-`Matrix.tendsto_zero_iff_forall_mulVec_tendsto_zero`). -/
+/-- If $M_k v \to 0$ for every vector $v$, then $M_k \to 0$. This specializes
+`Matrix.tendsto_zero_iff_forall_mulVec_tendsto_zero`. -/
 theorem tendsto_zero_of_forall_mulVec {M : ℕ → Matrix (Fin n) (Fin n) ℝ}
     (h : ∀ v, Tendsto (fun k => M k *ᵥ v) atTop (𝓝 0)) : Tendsto M atTop (𝓝 0) :=
   Matrix.tendsto_zero_iff_forall_mulVec_tendsto_zero.mpr h
 
 /-! ### The affine iteration (4.28)–(4.30) -/
 
-/-- The affine step is continuous. -/
+/-- The affine step $x \mapsto Gx + f$ is continuous. -/
 theorem continuous_affineStep (G : Matrix (Fin n) (Fin n) ℝ) (f : Fin n → ℝ) :
     Continuous (affineStep G f) :=
   (Continuous.matrix_mulVec continuous_const continuous_id).add continuous_const
 
-/-- Saad (4.29): `x` is a fixed point of `x ↦ G x + f` iff `(I - G) x = f`. -/
+/-- Equation (4.29) of [saad2003iterative]: $x$ is a fixed point of $x \mapsto Gx + f$ if and only
+if $(I - G)x = f$. -/
 theorem affineStep_fixed_iff (G : Matrix (Fin n) (Fin n) ℝ) (f x : Fin n → ℝ) :
     affineStep G f x = x ↔ (1 - G) *ᵥ x = f := by
   rw [affineStep, sub_mulVec, one_mulVec, sub_eq_iff_eq_add', eq_comm]
 
-/-- Saad (4.29): the limit of a convergent affine iteration is a fixed point. -/
+/-- Equation (4.29) of [saad2003iterative]: if the iterates of $x \mapsto Gx + f$ from $x_0$
+converge to $x$, then $x$ is a fixed point. -/
 theorem tendsto_affineStep_fixed {G : Matrix (Fin n) (Fin n) ℝ} {f x₀ x : Fin n → ℝ}
     (h : Tendsto (fun k => (affineStep G f)^[k] x₀) atTop (𝓝 x)) : affineStep G f x = x := by
   have h1 : Tendsto (fun k => (affineStep G f)^[k + 1] x₀) atTop (𝓝 x) := by
@@ -124,12 +211,14 @@ theorem tendsto_affineStep_fixed {G : Matrix (Fin n) (Fin n) ℝ} {f x₀ x : Fi
       ((continuous_affineStep G f).tendsto x).comp h
   exact tendsto_nhds_unique h2 h1
 
-/-- Saad (4.29): the limit of a convergent splitting iteration solves `A x = b`. -/
+/-- Equation (4.29) of [saad2003iterative]: if the iterates of the step of a splitting $A = M - N$
+from $x_0$ converge to $x$, then $Ax = b$. -/
 theorem tendsto_step_solves (s : Splitting A) {b x₀ x : Fin n → ℝ}
     (h : Tendsto (fun k => (Splitting.step s b)^[k] x₀) atTop (𝓝 x)) : A *ᵥ x = b :=
   (step_fixed_iff s b x).mp (tendsto_affineStep_fixed h)
 
-/-- Saad (4.30): the error recursion `x_k - x* = G^k (x₀ - x*)`. -/
+/-- Equation (4.30) of [saad2003iterative]: if $x^*$ is a fixed point of $x \mapsto Gx + f$, the
+iterates from $x_0$ satisfy $x_k - x^* = G^k (x_0 - x^*)$. -/
 theorem affineStep_iterate_sub {G : Matrix (Fin n) (Fin n) ℝ} {f x' : Fin n → ℝ}
     (hfix : affineStep G f x' = x') (x₀ : Fin n → ℝ) (k : ℕ) :
     (affineStep G f)^[k] x₀ - x' = (G ^ k) *ᵥ (x₀ - x') := by
@@ -143,7 +232,8 @@ theorem affineStep_iterate_sub {G : Matrix (Fin n) (Fin n) ℝ} {f x' : Fin n �
   | zero => simp
   | succ k ih => rw [Function.iterate_succ_apply', key, ih, pow_succ', ← mulVec_mulVec]
 
-/-- Saad (4.30): the increment recursion `x_{k+1} - x_k = G^k (f - (I - G) x₀)`. -/
+/-- Equation (4.30) of [saad2003iterative]: the iterates of $x \mapsto Gx + f$ from $x_0$ satisfy
+$x_{k+1} - x_k = G^k (f - (I - G)x_0)$. -/
 theorem affineStep_iterate_succ_sub (G : Matrix (Fin n) (Fin n) ℝ) (f x₀ : Fin n → ℝ) (k : ℕ) :
     (affineStep G f)^[k + 1] x₀ - (affineStep G f)^[k] x₀ = (G ^ k) *ᵥ (f - (1 - G) *ᵥ x₀) := by
   have key : ∀ a c : Fin n → ℝ, affineStep G f a - affineStep G f c = G *ᵥ (a - c) := by
@@ -165,7 +255,8 @@ theorem affineStep_iterate_succ_sub (G : Matrix (Fin n) (Fin n) ℝ) (f x₀ : F
 
 /-! ### Theorem 4.1 -/
 
-/-- Saad, Thm 4.1 (⇒): if `ρ(G) < 1` the iteration converges to any fixed point. -/
+/-- If $\rho(G) < 1$, the iterates of $x \mapsto Gx + f$ converge from every $x_0$ to every fixed
+point $x^*$ of the map. This is the first half of Theorem 4.1 of [saad2003iterative]. -/
 theorem tendsto_affineStep_of_complexSpectralRadius_lt_one (hG : complexSpectralRadius G < 1)
     (f x₀ : Fin n → ℝ) {x' : Fin n → ℝ} (hfix : affineStep G f x' = x') :
     Tendsto (fun k => (affineStep G f)^[k] x₀) atTop (𝓝 x') := by
@@ -174,8 +265,12 @@ theorem tendsto_affineStep_of_complexSpectralRadius_lt_one (hG : complexSpectral
   rw [← tendsto_sub_nhds_zero_iff]
   simpa only [affineStep_iterate_sub hfix] using tendsto_mulVec_zero hpow (x₀ - x')
 
-/-- Saad, Theorem 4.1 (⇒): `ρ(G) < 1` implies that `I - G` is nonsingular and that (4.28) converges
-to `(I - G)⁻¹ f` for every `f` and every `x₀`. -/
+/-- **Theorem 4.1** of [saad2003iterative], forward direction. Let $G \in \mathbb{R}^{n \times n}$
+with $\rho(G) < 1$. Then $I - G$ is nonsingular, and for every $f, x_0 \in \mathbb{R}^n$ the
+iterates $x_{k+1} = Gx_k + f$ of (4.28) satisfy
+$$x_k \to (I - G)^{-1} f.$$
+
+Here $\rho(G)$ is `Matrix.complexSpectralRadius G`. -/
 theorem theorem_4_1_mp (hG : complexSpectralRadius G < 1) :
     IsUnit (1 - G) ∧ ∀ f x₀ : Fin n → ℝ,
       Tendsto (fun k => (affineStep G f)^[k] x₀) atTop (𝓝 ((1 - G)⁻¹ *ᵥ f)) := by
@@ -184,7 +279,9 @@ theorem theorem_4_1_mp (hG : complexSpectralRadius G < 1) :
   rw [affineStep_fixed_iff]
   exact mulVec_nonsing_inv_mulVec hu f
 
-/-- Saad, Theorem 4.1 (⇐): if (4.28) converges for every `f` and every `x₀` then `ρ(G) < 1`. -/
+/-- **Theorem 4.1** of [saad2003iterative], converse direction. Let $G \in \mathbb{R}^{n \times n}$.
+If for every $f, x_0 \in \mathbb{R}^n$ the iterates $x_{k+1} = Gx_k + f$ of (4.28) converge,
+then $\rho(G) < 1$. -/
 theorem theorem_4_1_mpr (h : ∀ f x₀ : Fin n → ℝ,
     ∃ x, Tendsto (fun k => (affineStep G f)^[k] x₀) atTop (𝓝 x)) :
     complexSpectralRadius G < 1 := by
@@ -198,8 +295,9 @@ theorem theorem_4_1_mpr (h : ∀ f x₀ : Fin n → ℝ,
     simpa using hx1.sub hx
   simpa only [affineStep_iterate_succ_sub, mulVec_zero, sub_zero] using hd
 
-/-- Saad, Theorem 4.1: the iteration (4.28) converges for every `f` and every `x₀` iff `ρ(G) < 1`.
--/
+/-- **Theorem 4.1** of [saad2003iterative]. Let $G \in \mathbb{R}^{n \times n}$. The iterates
+$x_{k+1} = Gx_k + f$ of (4.28) converge for every $f \in \mathbb{R}^n$ and every
+$x_0 \in \mathbb{R}^n$ if and only if $\rho(G) < 1$. -/
 theorem theorem_4_1 (G : Matrix (Fin n) (Fin n) ℝ) :
     (∀ f x₀ : Fin n → ℝ, ∃ x, Tendsto (fun k => (affineStep G f)^[k] x₀) atTop (𝓝 x)) ↔
       complexSpectralRadius G < 1 :=
@@ -211,13 +309,15 @@ section Lp
 
 variable (p : ℝ≥0∞) [Fact (1 ≤ p)]
 
-/-- `lpCLM` is multiplicative on powers. -/
+/-- The operator `Matrix.lpCLM p` is multiplicative on powers: the operator of $A^k$ is the $k$-th
+power of the operator of $A$. -/
 theorem lpCLM_pow (A : Matrix (Fin n) (Fin n) ℝ) (k : ℕ) : lpCLM p (A ^ k) = lpCLM p A ^ k := by
   induction k with
   | zero => simpa using lpCLM_one p
   | succ k ih => rw [pow_succ, pow_succ, lpCLM_mul, ih]
 
-/-- Submultiplicativity of the induced `p`-norm on powers, including `k = 0`. -/
+/-- For every $k \ge 0$, including $k = 0$, the induced $p$-norm satisfies
+$\|A^k\|_p \le \|A\|_p^k$. -/
 theorem lpOpNorm_pow_le (A : Matrix (Fin n) (Fin n) ℝ) (k : ℕ) :
     lpOpNorm p (A ^ k) ≤ lpOpNorm p A ^ k := by
   simp only [lpOpNorm, lpCLM_pow]
@@ -229,8 +329,8 @@ theorem lpOpNorm_pow_le (A : Matrix (Fin n) (Fin n) ℝ) (k : ℕ) :
     rw [pow_succ, pow_succ]
     exact (norm_mul_le _ _).trans (mul_le_mul_of_nonneg_right ih (norm_nonneg _))
 
-/-- Saad, Corollary 4.2, for the norm `‖·‖_p` induced by a vector `p`-norm: `‖G‖_p < 1` forces `ρ(G)
-< 1`. -/
+/-- Corollary 4.2 of [saad2003iterative] for an induced norm: if $\|G\|_p < 1$ for some
+$1 \le p \le \infty$, then $\rho(G) < 1$. -/
 theorem complexSpectralRadius_lt_one_of_lpOpNorm_lt_one {G : Matrix (Fin n) (Fin n) ℝ}
     (hG : lpOpNorm p G < 1) : complexSpectralRadius G < 1 := by
   have hnn : (0 : ℝ) ≤ lpOpNorm p G := norm_nonneg _
@@ -253,14 +353,18 @@ theorem complexSpectralRadius_lt_one_of_lpOpNorm_lt_one {G : Matrix (Fin n) (Fin
     PiLp.continuous_ofLp p _
   simpa [Function.comp_def] using (hc.tendsto 0).comp hL
 
-/-- Saad, Corollary 4.2 for `‖·‖_p`. -/
+/-- **Corollary 4.2** of [saad2003iterative], for the norm induced by a vector $p$-norm. Let
+$G \in \mathbb{R}^{n \times n}$ and $1 \le p \le \infty$ with $\|G\|_p < 1$. Then $I - G$ is
+nonsingular, and for every $f, x_0$ the iterates of (4.28) converge to $(I - G)^{-1} f$.
+
+The norm $\|G\|_p$ is `Matrix.lpOpNorm p G`. -/
 theorem corollary_4_2_lp {G : Matrix (Fin n) (Fin n) ℝ} (hG : lpOpNorm p G < 1) :
     IsUnit (1 - G) ∧ ∀ f x₀ : Fin n → ℝ,
       Tendsto (fun k => (affineStep G f)^[k] x₀) atTop (𝓝 ((1 - G)⁻¹ *ᵥ f)) :=
   theorem_4_1_mp (complexSpectralRadius_lt_one_of_lpOpNorm_lt_one p hG)
 
-/-- Saad §4.2, the remark before Theorem 4.6: every eigenvalue is bounded by any induced matrix
-norm, `|λ| ≤ ‖A‖_p`. -/
+/-- §4.2 of [saad2003iterative], the remark before Theorem 4.6: for $A \in \mathbb{C}^{n \times n}$
+and $1 \le p \le \infty$, every eigenvalue $\lambda$ of $A$ satisfies $|\lambda| \le \|A\|_p$. -/
 theorem norm_le_lpOpNorm_of_mem_spectrum (A : Matrix (Fin n) (Fin n) ℂ) {μ : ℂ}
     (hμ : μ ∈ spectrum ℂ A) : ‖μ‖ ≤ lpOpNorm p A := by
   rw [← Matrix.spectrum_toLin'] at hμ
@@ -285,18 +389,21 @@ end Lp
 
 /-! ### Example 4.1: Richardson's iteration -/
 
-/-- Saad, Example 4.1: the Richardson step `x ↦ x + α (b - A x)`. -/
+/-- Example 4.1 of [saad2003iterative]: the **Richardson step** with parameter $\alpha$ is
+$x \mapsto x + \alpha(b - Ax)$. -/
 def richardsonStep (A : Matrix (Fin n) (Fin n) ℝ) (α : ℝ) (b x : Fin n → ℝ) : Fin n → ℝ :=
   x + α • (b - A *ᵥ x)
 
-/-- Saad, Example 4.1: the Richardson iteration matrix is `G_α = I - α A`. -/
+/-- Example 4.1 of [saad2003iterative]: the Richardson step is the affine map
+$x \mapsto G_\alpha x + \alpha b$ with iteration matrix $G_\alpha = I - \alpha A$. -/
 theorem richardsonStep_eq_affine (A : Matrix (Fin n) (Fin n) ℝ) (α : ℝ) (b : Fin n → ℝ) :
     richardsonStep A α b = affineStep (1 - α • A) (α • b) := by
   funext x
   rw [richardsonStep, affineStep, sub_mulVec, one_mulVec, smul_mulVec, smul_sub]
   abel
 
-/-- Saad, Example 4.1: Richardson's iteration is the splitting with `M = α⁻¹ I`. -/
+/-- Example 4.1 of [saad2003iterative]: for $\alpha \neq 0$, the Richardson step is the step of the
+splitting with $M = \alpha^{-1} I$, `Stationary.Splitting.richardson`. -/
 theorem richardsonStep_eq (A : Matrix (Fin n) (Fin n) ℝ) {α : ℝ} (hα : α ≠ 0) (b : Fin n → ℝ) :
     richardsonStep A α b = Splitting.step (Stationary.Splitting.richardson A hα) b := by
   funext x
@@ -306,8 +413,8 @@ theorem richardsonStep_eq (A : Matrix (Fin n) (Fin n) ℝ) {α : ℝ} (hα : α 
     rw [richardsonStep]; abel
   rw [hm, hx, smul_mulVec, one_mulVec, smul_smul, inv_mul_cancel₀ hα, one_smul]
 
-/-- Saad, Example 4.1: Richardson's iteration converges for every `b` and `x₀` iff `ρ(I - α A) < 1`.
--/
+/-- Example 4.1 of [saad2003iterative]: for $\alpha \neq 0$, Richardson's iteration converges for
+every $b$ and every $x_0$ if and only if $\rho(I - \alpha A) < 1$. -/
 theorem richardson_tendsto_iff (A : Matrix (Fin n) (Fin n) ℝ) {α : ℝ} (hα : α ≠ 0) :
     (∀ b x₀ : Fin n → ℝ, ∃ x, Tendsto (fun k => (richardsonStep A α b)^[k] x₀) atTop (𝓝 x)) ↔
       complexSpectralRadius (1 - α • A) < 1 := by
@@ -324,7 +431,7 @@ theorem richardson_tendsto_iff (A : Matrix (Fin n) (Fin n) ℝ) {α : ℝ} (hα 
 
 end AffineIteration
 
-/-! ### §4.2.3 Diagonally dominant matrices -/
+/-! ### §4.2.3: Diagonally dominant matrices -/
 
 section DiagonallyDominant
 
@@ -336,36 +443,54 @@ variable {n : ℕ}
 
 /-! ### Definition 4.5 -/
 
-/-- **Definition 4.5**, first clause: `A` is *(weakly) diagonally dominant* when
-`|a_jj| ≥ ∑_{i ≠ j} |a_ij|` for `j = 1, …, n`.
+/-- **Definition 4.5** of [saad2003iterative], first condition. A matrix
+$A \in \mathbb{K}^{n \times n}$, with $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, is **weakly
+diagonally dominant** if
+$$|a_{jj}| \ge \sum_{i \neq j} |a_{ij}|, \qquad j = 1, \dots, n.$$
 
-The sum runs down the *column* `j`, which is how the book prints all three clauses of the
-definition, while the proofs of Theorems 4.6 and 4.9 use the row form; both are carried in this
-file.  Weak dominance is the clause with no name of its own in the backbone: it is the `dominant`
-field of `Matrix.IsIrreduciblyDiagDominant`, and is written out wherever else it is needed. -/
+The sum runs down column $j$. This is how the book prints all three conditions of the
+definition, while the proofs of Theorems 4.6 and 4.9 use the row form; both forms are stated in
+this module. The backbone has no separate predicate for weak dominance: it is the field
+`Matrix.IsIrreduciblyDiagDominant.dominant`. -/
 def definition_4_5 {𝕜 : Type*} [RCLike 𝕜] (A : Matrix (Fin n) (Fin n) 𝕜) : Prop :=
   ∀ j, ∑ i ∈ univ.erase j, ‖A i j‖ ≤ ‖A j j‖
 
-/-- **Definition 4.5**, second clause: `A` is *strictly diagonally dominant* when
-`|a_jj| > ∑_{i ≠ j} |a_ij|` for `j = 1, …, n`. -/
+/-- **Definition 4.5** of [saad2003iterative], second condition. A matrix
+$A \in \mathbb{K}^{n \times n}$ is **strictly diagonally dominant** if
+$$|a_{jj}| > \sum_{i \neq j} |a_{ij}|, \qquad j = 1, \dots, n.$$
+-/
 def definition_4_5_strict {𝕜 : Type*} [RCLike 𝕜] (A : Matrix (Fin n) (Fin n) 𝕜) : Prop :=
   ∀ j, ∑ i ∈ univ.erase j, ‖A i j‖ < ‖A j j‖
 
-/-- **Definition 4.5**, third clause: `A` is *irreducibly diagonally dominant* when `A` is
-irreducible — §3.3.4's `Matrix.IsPatternIrreducible` — and weakly diagonally dominant, with strict
-inequality for at least one `j`.
+/-- **Definition 4.5** of [saad2003iterative], third condition. A matrix
+$A \in \mathbb{K}^{n \times n}$ is **irreducibly diagonally dominant** if $A$ is irreducible,
+$A$ is weakly diagonally dominant, and
+$$|a_{jj}| > \sum_{i \neq j} |a_{ij}|$$
+for at least one $j$.
 
-The last conjunct is easy to lose sight of and neither Corollary 4.8 nor Theorem 4.9 holds without
-it: `!![1, -1; -1, 1]` is irreducible and weakly diagonally dominant yet singular. -/
+Irreducibility is `Matrix.IsPatternIrreducible` of §3.3.4. Neither Corollary 4.8 nor Theorem 4.9
+holds without the strict inequality at one $j$: the matrix
+$\begin{bmatrix} 1 & -1 \\ -1 & 1 \end{bmatrix}$ is irreducible and weakly diagonally dominant,
+but singular. -/
 def definition_4_5_irreducible {𝕜 : Type*} [RCLike 𝕜] (A : Matrix (Fin n) (Fin n) 𝕜) : Prop :=
   A.IsPatternIrreducible ∧ definition_4_5 A ∧ ∃ j, ∑ i ∈ univ.erase j, ‖A i j‖ < ‖A j j‖
 
-/-- Definition 4.5 read back as the backbone's predicates.  The book's three conditions are column
-conditions on `A`, hence row conditions on `Aᵀ`: weak dominance is the `dominant` field of
-`Matrix.IsIrreduciblyDiagDominant` at `Aᵀ`, and the strict and irreducible clauses are
-`Matrix.IsStrictColDiagDominant` and `Matrix.IsIrreduciblyColDiagDominant`, which are the row
-predicates of the backbone read at `Aᵀ` by definition.  Corollary 4.8 and Theorem 4.9 below are
-stated in those predicates, in both the row and the column form. -/
+/-- **Definition 4.5** of [saad2003iterative], read as the predicates of the backbone. For
+$A \in \mathbb{K}^{n \times n}$:
+* $A$ is weakly diagonally dominant by columns if and only if
+  $\sum_{j \neq i} |(A^T)_{ij}| \le |(A^T)_{ii}|$ for every $i$;
+* $A$ is strictly diagonally dominant by columns if and only if
+  `Matrix.IsStrictColDiagDominant A`;
+* $A$ is irreducibly diagonally dominant by columns if and only if
+  `Matrix.IsIrreduciblyColDiagDominant A`.
+
+**Reading.** The book prints the three conditions with column sums, while the proofs of Theorems
+4.6 and 4.9 use row sums. This module states both forms: the row forms are
+`Matrix.IsStrictDiagDominant` and `Matrix.IsIrreduciblyDiagDominant`, and Corollary 4.8 and
+Theorem 4.9 are stated for each.
+
+The column predicates of the backbone are the row predicates at $A^T$ by definition, and weak
+dominance is the field `Matrix.IsIrreduciblyDiagDominant.dominant` at $A^T$. -/
 theorem definition_4_5_iff {𝕜 : Type*} [RCLike 𝕜] (A : Matrix (Fin n) (Fin n) 𝕜) :
     (definition_4_5 A ↔ ∀ i, ∑ j ∈ univ.erase i, ‖Aᵀ i j‖ ≤ ‖Aᵀ i i‖) ∧
       (definition_4_5_strict A ↔ A.IsStrictColDiagDominant) ∧
@@ -376,20 +501,28 @@ theorem definition_4_5_iff {𝕜 : Type*} [RCLike 𝕜] (A : Matrix (Fin n) (Fin
 
 /-! ### Theorem 4.6 (Gershgorin) -/
 
-/-- Saad, Theorem 4.6 (rows): every eigenvalue lies in one of the discs `|λ - a_ii| ≤ ∑_{j ≠ i}
-|a_ij|`. -/
+/-- **Theorem 4.6** of [saad2003iterative] (Gershgorin), row form. Let
+$A \in \mathbb{C}^{n \times n}$. Every eigenvalue $\lambda$ of $A$ lies in one of the discs
+$$|\lambda - a_{ii}| \le \sum_{j \neq i} |a_{ij}|, \qquad i = 1, \dots, n.$$
+-/
 theorem theorem_4_6 (A : Matrix (Fin n) (Fin n) ℂ) {μ : ℂ} (hμ : μ ∈ spectrum ℂ A) :
     ∃ i, ‖μ - A i i‖ ≤ ∑ j ∈ univ.erase i, ‖A i j‖ := by
   obtain ⟨i, hi⟩ := Set.mem_iUnion.mp (spectrum_subset_iUnion_closedBall A hμ)
   exact ⟨i, by simpa [Metric.mem_closedBall, dist_eq_norm] using hi⟩
 
-/-- Transposing does not change the spectrum.  This is Mathlib's `Matrix.spectrum_transpose`,
-restated at `ℂ` because it is the step that turns the row form of Gershgorin's theorem into the
-column form. -/
+/-- For $A \in \mathbb{C}^{n \times n}$, the spectrum of $A^T$ is the spectrum of $A$. It supports
+the column form of Theorem 4.6.
+
+This is `Matrix.spectrum_transpose` of Mathlib, stated at $\mathbb{C}$ because it is the step
+from the row form of Gershgorin's theorem to the column form. -/
 theorem spectrum_transpose (A : Matrix (Fin n) (Fin n) ℂ) : spectrum ℂ Aᵀ = spectrum ℂ A :=
   Matrix.spectrum_transpose A
 
-/-- Saad, Theorem 4.6 (columns): the same statement for the column sums, obtained by transposing. -/
+/-- **Theorem 4.6** of [saad2003iterative] (Gershgorin), column form. Let
+$A \in \mathbb{C}^{n \times n}$. Every eigenvalue $\lambda$ of $A$ lies in one of the discs
+$$|\lambda - a_{jj}| \le \sum_{i \neq j} |a_{ij}|, \qquad j = 1, \dots, n.$$
+
+The proof applies the row form to $A^T$. -/
 theorem theorem_4_6_col (A : Matrix (Fin n) (Fin n) ℂ) {μ : ℂ} (hμ : μ ∈ spectrum ℂ A) :
     ∃ j, ‖μ - A j j‖ ≤ ∑ i ∈ univ.erase j, ‖A i j‖ := by
   obtain ⟨j, hj⟩ := theorem_4_6 Aᵀ (by rwa [spectrum_transpose])
@@ -397,13 +530,16 @@ theorem theorem_4_6_col (A : Matrix (Fin n) (Fin n) ℂ) {μ : ℂ} (hμ : μ �
 
 /-! ### Corollary 4.8 -/
 
-/-- Saad, Corollary 4.8 (strict row dominance): a strictly diagonally dominant matrix is
-nonsingular. -/
+/-- **Corollary 4.8** of [saad2003iterative], strict dominance by rows. Let
+$A \in \mathbb{K}^{n \times n}$ satisfy $|a_{ii}| > \sum_{j \neq i} |a_{ij}|$ for every $i$.
+Then $A$ is nonsingular. -/
 theorem corollary_4_8_strict {𝕜 : Type*} [RCLike 𝕜] {A : Matrix (Fin n) (Fin n) 𝕜}
     (h : A.IsStrictDiagDominant) : IsUnit A :=
   h.isUnit
 
-/-- Saad, Corollary 4.8 (strict column dominance). -/
+/-- **Corollary 4.8** of [saad2003iterative], strict dominance by columns. Let
+$A \in \mathbb{K}^{n \times n}$ satisfy $|a_{jj}| > \sum_{i \neq j} |a_{ij}|$ for every $j$.
+Then $A$ is nonsingular. -/
 theorem corollary_4_8_col {𝕜 : Type*} [RCLike 𝕜] {A : Matrix (Fin n) (Fin n) 𝕜}
     (h : A.IsStrictColDiagDominant) : IsUnit A := by
   have hT : IsUnit Aᵀ := ((IsStrictColDiagDominant.transpose_iff A).mpr h).isUnit
@@ -413,8 +549,9 @@ theorem corollary_4_8_col {𝕜 : Type*} [RCLike 𝕜] {A : Matrix (Fin n) (Fin 
 
 variable {A : Matrix (Fin n) (Fin n) ℝ}
 
-/-- Saad, Theorem 4.9 (Jacobi): for a strictly diagonally dominant `A` the Jacobi iteration
-converges to the solution from every starting vector. -/
+/-- **Theorem 4.9** of [saad2003iterative], Jacobi, strict dominance by rows. Let
+$A \in \mathbb{R}^{n \times n}$ be strictly diagonally dominant by rows. Then for every $b$ and
+every $x_0$ the Jacobi iterates converge to the solution $A^{-1}b$. -/
 theorem theorem_4_9_jacobi (h : A.IsStrictDiagDominant) (b x₀ : Fin n → ℝ) :
     Tendsto (fun k => (jacobiStep A b)^[k] x₀) atTop (𝓝 (A⁻¹ *ᵥ b)) := by
   have hd := h.isUnit_diagPart
@@ -422,8 +559,9 @@ theorem theorem_4_9_jacobi (h : A.IsStrictDiagDominant) (b x₀ : Fin n → ℝ)
   exact Stationary.Splitting.tendsto_iterate_of_complexSpectralRadius_lt_one _
     (jacobi_complexSpectralRadius_lt_one h hd) b x₀
 
-/-- Saad, Theorem 4.9 (Gauss–Seidel): for a strictly diagonally dominant `A` the Gauss–Seidel
-iteration converges to the solution from every starting vector. -/
+/-- **Theorem 4.9** of [saad2003iterative], Gauss–Seidel, strict dominance by rows. Let
+$A \in \mathbb{R}^{n \times n}$ be strictly diagonally dominant by rows. Then for every $b$ and
+every $x_0$ the Gauss–Seidel iterates converge to the solution $A^{-1}b$. -/
 theorem theorem_4_9_gs (h : A.IsStrictDiagDominant) (b x₀ : Fin n → ℝ) :
     Tendsto (fun k => (gsStep A b)^[k] x₀) atTop (𝓝 (A⁻¹ *ᵥ b)) := by
   have hd := h.isUnit_diagPart
@@ -431,7 +569,12 @@ theorem theorem_4_9_gs (h : A.IsStrictDiagDominant) (b x₀ : Fin n → ℝ) :
   exact Stationary.Splitting.tendsto_iterate_of_complexSpectralRadius_lt_one _
     (gaussSeidel_complexSpectralRadius_lt_one h hd) b x₀
 
-/-- Saad, Theorem 4.9 (Jacobi, strict column dominance): Kress's variant, from
+/-- **Theorem 4.9** of [saad2003iterative], Jacobi, strict dominance by columns. Let
+$A \in \mathbb{R}^{n \times n}$ be strictly diagonally dominant by columns, with nonsingular
+diagonal $D$. Then for every $b$ and every $x_0$ the Jacobi iterates converge to the solution
+$A^{-1}b$.
+
+This is the variant of Kress. The proof specializes
 `Matrix.jacobi_spectralRadius_lt_one_of_col`. -/
 theorem theorem_4_9_jacobi_col (h : A.IsStrictColDiagDominant) (hd : IsUnit (diagPart A))
     (b x₀ : Fin n → ℝ) : Tendsto (fun k => (jacobiStep A b)^[k] x₀) atTop (𝓝 (A⁻¹ *ᵥ b)) := by
@@ -441,53 +584,61 @@ theorem theorem_4_9_jacobi_col (h : A.IsStrictColDiagDominant) (hd : IsUnit (dia
 
 end DiagonallyDominant
 
-/-! ### §4.2.4–4.2.5 Symmetric positive definite matrices and Young's theory -/
+/-! ### §4.2.4–4.2.5: Symmetric positive definite matrices and Young's theory -/
 
 section SymmetricPositiveDefinite
 
-/-- `I n₁, n₂` abbreviates `Fin n₁ ⊕ Fin n₂`, the index type of the two-block partition that
-Proposition 4.12 is stated over. -/
+/-- `I n₁, n₂` abbreviates `Fin n₁ ⊕ Fin n₂`, the index type of the partition into two blocks over
+which Proposition 4.12 is stated. -/
 local notation "I" n₁ ", " n₂ => Fin n₁ ⊕ Fin n₂
 
 variable {n₁ n₂ : ℕ}
 
-/-- Saad, Proposition 4.12: the block anti-diagonal matrix `B = [[0, B₁₂], [B₂₁, 0]]`. -/
+/-- **Proposition 4.12** of [saad2003iterative], the matrix. For
+$B_{12} \in \mathbb{C}^{n_1 \times n_2}$ and $B_{21} \in \mathbb{C}^{n_2 \times n_1}$, the
+**block anti-diagonal matrix** is
+$$B = \begin{bmatrix} 0 & B_{12} \\ B_{21} & 0 \end{bmatrix}.$$
+-/
 def antiDiag (B₁₂ : Matrix (Fin n₁) (Fin n₂) ℂ) (B₂₁ : Matrix (Fin n₂) (Fin n₁) ℂ) :
     Matrix (I n₁, n₂) (I n₁, n₂) ℂ :=
   fromBlocks 0 B₁₂ B₂₁ 0
 
-/-- The strictly lower block of `B`. -/
+/-- **Proposition 4.12** of [saad2003iterative], the strictly lower block $L = \begin{bmatrix} 0 & 0
+\\ B_{21} & 0 \end{bmatrix}$ of $B$. -/
 def antiDiagL (B₂₁ : Matrix (Fin n₂) (Fin n₁) ℂ) : Matrix (I n₁, n₂) (I n₁, n₂) ℂ :=
   fromBlocks 0 0 B₂₁ 0
 
-/-- The strictly upper block of `B`. -/
+/-- **Proposition 4.12** of [saad2003iterative], the strictly upper block $U = \begin{bmatrix} 0 &
+B_{12} \\ 0 & 0 \end{bmatrix}$ of $B$. -/
 def antiDiagU (B₁₂ : Matrix (Fin n₁) (Fin n₂) ℂ) : Matrix (I n₁, n₂) (I n₁, n₂) ℂ :=
   fromBlocks 0 B₁₂ 0 0
 
-/-- `B = L + U`: a block anti-diagonal matrix is the sum of its strictly lower and strictly upper
-blocks, so the family `B(α) = α L + α⁻¹ U` of `proposition_4_12_alpha` passes through `B` at `α =
-1`. -/
+/-- A block anti-diagonal matrix is the sum $B = L + U$ of its strictly lower and strictly upper
+blocks. It supports Proposition 4.12: the family $B(\alpha) = \alpha L + \alpha^{-1}U$ of
+`SaadSparse.Chapter04.proposition_4_12_alpha` passes through $B$ at $\alpha = 1$. -/
 theorem antiDiag_eq_add (B₁₂ : Matrix (Fin n₁) (Fin n₂) ℂ) (B₂₁ : Matrix (Fin n₂) (Fin n₁) ℂ) :
     antiDiag B₁₂ B₂₁ = antiDiagL B₂₁ + antiDiagU B₁₂ := by
   rw [antiDiag, antiDiagL, antiDiagU, fromBlocks_add]
   simp
 
-/-- The sign-flip similarity `diag(I, -I)`, an involution. -/
+/-- The sign-flip matrix $\operatorname{diag}(I, -I)$, an involution. -/
 private def signFlip (n₁ n₂ : ℕ) : Matrix (I n₁, n₂) (I n₁, n₂) ℂ := fromBlocks 1 0 0 (-1)
 
 private theorem signFlip_mul_self (n₁ n₂ : ℕ) : signFlip n₁ n₂ * signFlip n₁ n₂ = 1 := by
   rw [signFlip, fromBlocks_multiply]
   simp [← fromBlocks_one]
 
-/-- `diag(I, -I)` as a unit. -/
+/-- The matrix $\operatorname{diag}(I, -I)$ as a unit. -/
 private def signFlipUnit (n₁ n₂ : ℕ) : (Matrix (I n₁, n₂) (I n₁, n₂) ℂ)ˣ where
   val := signFlip n₁ n₂
   inv := signFlip n₁ n₂
   val_inv := signFlip_mul_self n₁ n₂
   inv_val := signFlip_mul_self n₁ n₂
 
-/-- Saad, Proposition 4.12 (1): the spectrum of a block anti-diagonal matrix is symmetric under
-negation. -/
+/-- **Proposition 4.12** of [saad2003iterative], first part. Let $B$ be block anti-diagonal. If
+$\mu$ is an eigenvalue of $B$, then $-\mu$ is an eigenvalue of $B$.
+
+The proof conjugates $B$ by $\operatorname{diag}(I, -I)$, which maps $B$ to $-B$. -/
 theorem proposition_4_12_neg (B₁₂ : Matrix (Fin n₁) (Fin n₂) ℂ) (B₂₁ : Matrix (Fin n₂) (Fin n₁) ℂ)
     {μ : ℂ} (hμ : μ ∈ spectrum ℂ (antiDiag B₁₂ B₂₁)) :
     -μ ∈ spectrum ℂ (antiDiag B₁₂ B₂₁) := by
@@ -506,7 +657,7 @@ theorem proposition_4_12_neg (B₁₂ : Matrix (Fin n₁) (Fin n₂) ℂ) (B₂�
   rw [← hneg, Set.mem_neg, neg_neg]
   exact hμ
 
-/-- The scaling similarity `diag(I, α I)`. -/
+/-- The scaling matrix $\operatorname{diag}(I, \alpha I)$. -/
 private def scaleBlock (n₁ n₂ : ℕ) (α : ℂ) : Matrix (I n₁, n₂) (I n₁, n₂) ℂ :=
   fromBlocks 1 0 0 (α • 1)
 
@@ -515,7 +666,7 @@ private theorem scaleBlock_mul_inv (n₁ n₂ : ℕ) {α : ℂ} (hα : α ≠ 0)
   rw [scaleBlock, scaleBlock, fromBlocks_multiply]
   simp [smul_smul, inv_mul_cancel₀ hα, ← fromBlocks_one]
 
-/-- `diag(I, α I)` as a unit, for `α ≠ 0`. -/
+/-- The matrix $\operatorname{diag}(I, \alpha I)$ as a unit, for $\alpha \neq 0$. -/
 private noncomputable def scaleBlockUnit (n₁ n₂ : ℕ) {α : ℂ} (hα : α ≠ 0) :
     (Matrix (I n₁, n₂) (I n₁, n₂) ℂ)ˣ where
   val := scaleBlock n₁ n₂ α
@@ -525,7 +676,11 @@ private noncomputable def scaleBlockUnit (n₁ n₂ : ℕ) {α : ℂ} (hα : α 
     have h := scaleBlock_mul_inv n₁ n₂ (α := α⁻¹) (inv_ne_zero hα)
     rwa [inv_inv] at h
 
-/-- Saad, Proposition 4.12 (2): the eigenvalues of `B(α) = α L + α⁻¹ U` do not depend on `α ≠ 0`. -/
+/-- **Proposition 4.12** of [saad2003iterative], second part. Let $B = L + U$ be block anti-diagonal
+and let $\alpha \in \mathbb{C}$ with $\alpha \neq 0$. Then
+$$\sigma(\alpha L + \alpha^{-1} U) = \sigma(B).$$
+
+The proof conjugates by $\operatorname{diag}(I, \alpha I)$. -/
 theorem proposition_4_12_alpha (B₁₂ : Matrix (Fin n₁) (Fin n₂) ℂ) (B₂₁ : Matrix (Fin n₂) (Fin n₁) ℂ)
     {α : ℂ} (hα : α ≠ 0) :
     spectrum ℂ (α • antiDiagL B₂₁ + α⁻¹ • antiDiagU B₁₂) =
@@ -544,7 +699,7 @@ theorem proposition_4_12_alpha (B₁₂ : Matrix (Fin n₁) (Fin n₂) ℂ) (B�
 
 end SymmetricPositiveDefinite
 
-/-! ### §4.2.1 The convergence factors, and Corollary 4.2 for a general matrix norm -/
+/-! ### §4.2.1: The convergence factors, and Corollary 4.2 for a general matrix norm -/
 
 section Factors
 
@@ -554,9 +709,12 @@ open scoped SaadSparse ENNReal NNReal
 
 variable {n : ℕ}
 
-/-- Saad §1.5/§4.2: the spectral radius is at most any *consistent* matrix norm, that is any
-submultiplicative, absolutely homogeneous, positive definite `N`.  This is the remark `|λ| ≤ ‖A‖`
-before Theorem 4.6, for a norm that need not be one of the induced `p`-norms. -/
+/-- §1.5 and §4.2 of [saad2003iterative]: let $N$ be a consistent matrix norm on
+$\mathbb{R}^{n \times n}$, that is a norm that is submultiplicative, absolutely homogeneous and
+positive definite. Then $\rho(G) \le N(G)$ for every $G$. This is the remark
+$|\lambda| \le \|A\|$ before Theorem 4.6, for a norm that need not be an induced $p$-norm.
+
+The norm $N$ is an `AlgebraNorm ℝ` on `Matrix (Fin n) (Fin n) ℝ`. -/
 theorem complexSpectralRadius_le_algebraNorm (N : AlgebraNorm ℝ (Matrix (Fin n) (Fin n) ℝ))
     (G : Matrix (Fin n) (Fin n) ℝ) : complexSpectralRadius G ≤ ENNReal.ofReal (N G) := by
   have hnn : ∀ B : Matrix (Fin n) (Fin n) ℝ, 0 ≤ N B := fun B => apply_nonneg N B
@@ -578,9 +736,12 @@ theorem complexSpectralRadius_le_algebraNorm (N : AlgebraNorm ℝ (Matrix (Fin n
   rw [ENNReal.ofReal_eq_coe_nnreal (hnn G)]
   exact Matrix.complexSpectralRadius_le_of_norm f G hmul hsmul hzero
 
-/-- Saad, Corollary 4.2: if `N G < 1` for some consistent matrix norm `N`, then `I - G` is
-nonsingular and the iteration (4.28) converges for every `f` and every `x₀`.  The induced-norm
-instances are `corollary_4_2_lp`. -/
+/-- **Corollary 4.2** of [saad2003iterative]. Let $N$ be a consistent matrix norm on
+$\mathbb{R}^{n \times n}$, and let $G \in \mathbb{R}^{n \times n}$ with $N(G) < 1$. Then $I - G$
+is nonsingular, and for every $f, x_0$ the iterates of (4.28) converge to $(I - G)^{-1} f$.
+
+The norm $N$ is an `AlgebraNorm ℝ`. The case of an induced $p$-norm is
+`SaadSparse.Chapter04.corollary_4_2_lp`. -/
 theorem corollary_4_2 (N : AlgebraNorm ℝ (Matrix (Fin n) (Fin n) ℝ))
     {G : Matrix (Fin n) (Fin n) ℝ} (hG : N G < 1) :
     IsUnit (1 - G) ∧ ∀ f x₀ : Fin n → ℝ,
@@ -588,8 +749,11 @@ theorem corollary_4_2 (N : AlgebraNorm ℝ (Matrix (Fin n) (Fin n) ℝ))
   refine theorem_4_1_mp ((complexSpectralRadius_le_algebraNorm N G).trans_lt ?_)
   exact ENNReal.ofReal_lt_one.mpr hG
 
-/-- Saad §4.2.1: the general convergence factor is *attained* — some initial error `d₀` decays
-exactly at the rate `ρ(G)`. -/
+/-- **Section 4.2.1** of [saad2003iterative], the general convergence factor. Let
+$G \in \mathbb{R}^{n \times n}$ with $n \ge 1$. Some initial error $d_0 \neq 0$ has the specific
+convergence factor $\rho(G)$:
+$$\limsup_{k \to \infty} \left( \frac{\|G^k d_0\|_2}{\|d_0\|_2} \right)^{1/k} = \rho(G).$$
+So the general convergence factor $\rho(G)$ is attained. -/
 theorem exists_specific_eq [NeZero n] (G : Matrix (Fin n) (Fin n) ℝ) :
     ∃ d₀ : Fin n → ℝ, d₀ ≠ 0 ∧
       limsup (fun k : ℕ => (‖(WithLp.toLp 2 ((G ^ k) *ᵥ d₀) : EuclideanSpace ℝ (Fin n))‖ /
@@ -599,7 +763,7 @@ theorem exists_specific_eq [NeZero n] (G : Matrix (Fin n) (Fin n) ℝ) :
 
 end Factors
 
-/-! ### Example 4.1: the spectral analysis of Richardson's iteration -/
+/-! ### Example 4.1: The spectral analysis of Richardson's iteration -/
 
 section Richardson
 
@@ -609,16 +773,25 @@ open scoped SaadSparse ENNReal
 
 variable {n : ℕ} {A : Matrix (Fin n) (Fin n) ℝ} {lmin lmax : ℝ}
 
-/-- Saad, Example 4.1: for a symmetric `A` whose eigenvalues fill `[λmin, λmax]`, the spectral
-radius of the Richardson iteration matrix `G_α = I - α A` is `max |1 - α λmin| |1 - α λmax|`. -/
+/-- **Example 4.1** of [saad2003iterative], the spectral radius. Let $A \in \mathbb{R}^{n \times n}$
+be symmetric, and let $\lambda_{\min}$ and $\lambda_{\max}$ be eigenvalues of $A$ such that
+every eigenvalue of $A$ lies in $[\lambda_{\min}, \lambda_{\max}]$. Then for $\alpha \neq 0$ the
+iteration matrix $G_\alpha = I - \alpha A$ of Richardson's iteration has
+$$\rho(G_\alpha) = \max\{|1 - \alpha \lambda_{\min}|, |1 - \alpha \lambda_{\max}|\}.$$
+-/
 theorem example_4_1_spectralRadius (hA : A.IsHermitian) (hsub : spectrum ℝ A ⊆ Set.Icc lmin lmax)
     (hmin : lmin ∈ spectrum ℝ A) (hmax : lmax ∈ spectrum ℝ A) {α : ℝ} (hα : α ≠ 0) :
     complexSpectralRadius (1 - α • A) = ENNReal.ofReal (max |1 - α * lmin| |1 - α * lmax|) := by
   rw [← Splitting.richardson_iterationOperator A hα]
   exact Splitting.richardson_complexSpectralRadius_eq hA hsub hmin hmax hα
 
-/-- Saad, Example 4.1: for a symmetric positive definite `A`, Richardson's iteration converges for
-every right-hand side and every starting vector exactly when `0 < α < 2/λmax`. -/
+/-- **Example 4.1** of [saad2003iterative], convergence. Let $A \in \mathbb{R}^{n \times n}$ be
+symmetric with smallest and largest eigenvalues $\lambda_{\min}$ and $\lambda_{\max}$, as in
+`SaadSparse.Chapter04.example_4_1_spectralRadius`, and let $\lambda_{\min} > 0$. For
+$\alpha \neq 0$, Richardson's iteration converges for every right-hand side $b$ and every
+starting vector $x_0$ if and only if
+$$0 < \alpha < \frac{2}{\lambda_{\max}}.$$
+-/
 theorem example_4_1_tendsto_iff (hA : A.IsHermitian) (hsub : spectrum ℝ A ⊆ Set.Icc lmin lmax)
     (hmin : lmin ∈ spectrum ℝ A) (hmax : lmax ∈ spectrum ℝ A) (hpos : 0 < lmin) {α : ℝ}
     (hα : α ≠ 0) :
@@ -627,8 +800,10 @@ theorem example_4_1_tendsto_iff (hA : A.IsHermitian) (hsub : spectrum ℝ A ⊆ 
   rw [richardson_tendsto_iff A hα, ← Splitting.richardson_iterationOperator A hα]
   exact Splitting.richardson_complexSpectralRadius_lt_one_iff hA hsub hmin hmax hpos hα
 
-/-- Saad, Example 4.1: when `A` has eigenvalues of both signs, Richardson's iteration diverges for
-some right-hand side and some starting vector, whatever the parameter `α ≠ 0`. -/
+/-- **Example 4.1** of [saad2003iterative], indefinite case. Let $A \in \mathbb{R}^{n \times n}$ be
+symmetric with smallest and largest eigenvalues $\lambda_{\min} < 0 < \lambda_{\max}$. Then for
+every $\alpha \neq 0$ there are a right-hand side $b$ and a starting vector $x_0$ for which
+Richardson's iteration does not converge. -/
 theorem example_4_1_diverges (hA : A.IsHermitian) (hsub : spectrum ℝ A ⊆ Set.Icc lmin lmax)
     (hmin : lmin ∈ spectrum ℝ A) (hmax : lmax ∈ spectrum ℝ A) (hneg : lmin < 0) (hpos : 0 < lmax)
     {α : ℝ} (hα : α ≠ 0) :
@@ -648,8 +823,13 @@ theorem example_4_1_diverges (hA : A.IsHermitian) (hsub : spectrum ℝ A ⊆ Set
   push Not at hcon
   exact hρ ((richardson_tendsto_iff A hα).mp fun b x₀ => hcon b x₀)
 
-/-- Saad, Example 4.1: the optimal Richardson parameter is `α_opt = 2/(λmin + λmax)`, where the
-spectral radius is `(λmax - λmin)/(λmax + λmin)`. -/
+/-- **Example 4.1** of [saad2003iterative], the optimal parameter. Let
+$A \in \mathbb{R}^{n \times n}$ be symmetric with smallest and largest eigenvalues
+$0 < \lambda_{\min} \le \lambda_{\max}$. Over $\alpha > 0$, the spectral radius
+$\rho(I - \alpha A)$ is smallest at $\alpha_{opt} = 2/(\lambda_{\min} + \lambda_{\max})$, and
+$$\rho(I - \alpha_{opt} A) = \frac{\lambda_{\max} - \lambda_{\min}}{\lambda_{\max} +
+  \lambda_{\min}}.$$
+-/
 theorem example_4_1_opt (hA : A.IsHermitian) (hsub : spectrum ℝ A ⊆ Set.Icc lmin lmax)
     (hmin : lmin ∈ spectrum ℝ A) (hmax : lmax ∈ spectrum ℝ A) (hpos : 0 < lmin) :
     IsMinOn (fun α : ℝ => complexSpectralRadius (1 - α • A)) (Set.Ioi 0)
@@ -661,7 +841,7 @@ theorem example_4_1_opt (hA : A.IsHermitian) (hsub : spectrum ℝ A ⊆ Set.Icc 
 
 end Richardson
 
-/-! ### Definition 4.3 and Theorem 4.4: regular splittings -/
+/-! ### Definition 4.3 and Theorem 4.4: Regular splittings -/
 
 section Regular
 
@@ -671,20 +851,23 @@ open scoped SaadSparse ENNReal
 
 variable {n : ℕ} {A M N : Matrix (Fin n) (Fin n) ℝ}
 
-/-- Saad, Definition 4.3: `A = M - N` is a *regular splitting* of `A` when `M` is nonsingular with
-`M⁻¹ ≥ 0` and `N ≥ 0`. -/
+/-- **Definition 4.3** of [saad2003iterative]. For $A, M, N \in \mathbb{R}^{n \times n}$, the
+decomposition $A = M - N$ is a **regular splitting** of $A$ if $M$ is nonsingular, $M^{-1}$ is
+entrywise nonnegative and $N$ is entrywise nonnegative. -/
 def IsRegularSplitting (A M N : Matrix (Fin n) (Fin n) ℝ) : Prop :=
   A = M - N ∧ IsUnit M ∧ (∀ i j, 0 ≤ M⁻¹ i j) ∧ ∀ i j, 0 ≤ N i j
 
-/-- The complementary part of the splitting determined by `M` is `N`. -/
+/-- For a regular splitting $A = M - N$, the complementary part of the splitting
+`Stationary.Splitting A` with matrix $M$ is $N$. -/
 theorem splitting_n_eq (h : IsRegularSplitting A M N) :
     (⟨M, h.2.1⟩ : Splitting A).n = N := by
   have h1 : (⟨M, h.2.1⟩ : Splitting A).n = M - A := rfl
   rw [h1, h.1]
   abel
 
-/-- Saad, Definition 4.3 is the backbone's `Stationary.Splitting.IsRegular` for the splitting
-determined by `M`. -/
+/-- **Definition 4.3** of [saad2003iterative], as the backbone predicate. If $A = M - N$ and $M$ is
+nonsingular, then $A = M - N$ is a regular splitting if and only if the splitting with matrix
+$M$ satisfies `Stationary.Splitting.IsRegular`. -/
 theorem isRegularSplitting_iff (hMN : A = M - N) (hM : IsUnit M) :
     IsRegularSplitting A M N ↔ (⟨M, hM⟩ : Splitting A).IsRegular := by
   have hn : (⟨M, hM⟩ : Splitting A).n = N := by
@@ -696,8 +879,9 @@ theorem isRegularSplitting_iff (hMN : A = M - N) (hM : IsUnit M) :
   simp only [Matrix.entrywiseNonneg_iff, IsRegularSplitting]
   exact ⟨fun h => ⟨h.2.2.1, h.2.2.2⟩, fun h => ⟨hMN, hM, h.1, h.2⟩⟩
 
-/-- **Saad, Theorem 4.4**: a regular splitting converges exactly when `A` is nonsingular with a
-nonnegative inverse. -/
+/-- **Theorem 4.4** of [saad2003iterative]. Let $A = M - N$ be a regular splitting of
+$A \in \mathbb{R}^{n \times n}$. Then $\rho(M^{-1}N) < 1$ if and only if $A$ is nonsingular and
+$A^{-1}$ is entrywise nonnegative. -/
 theorem theorem_4_4 (h : IsRegularSplitting A M N) :
     complexSpectralRadius (M⁻¹ * N) < 1 ↔ IsUnit A ∧ ∀ i j, 0 ≤ A⁻¹ i j := by
   have hreg : (⟨M, h.2.1⟩ : Splitting A).IsRegular :=
@@ -708,8 +892,11 @@ theorem theorem_4_4 (h : IsRegularSplitting A M N) :
   rw [← hiter, hreg.complexSpectralRadius_lt_one_iff]
   simp [Matrix.entrywiseNonneg_iff]
 
-/-- Saad, the remark after Theorem 4.4: the iteration (4.34) of *every* regular splitting of an
-M-matrix converges to the solution, from every starting vector. -/
+/-- **Theorem 4.4** of [saad2003iterative], the remark after it. Let $A \in \mathbb{R}^{n \times n}$
+be an M-matrix and let $A = M - N$ be a regular splitting. Then for every $b$ and every $x_0$
+the iterates of (4.34), $x_{k+1} = M^{-1}Nx_k + M^{-1}b$, converge to $A^{-1}b$.
+
+The M-matrix is `Matrix.IsMMatrix`. -/
 theorem theorem_4_4_mmatrix (h : IsRegularSplitting A M N) (hA : A.IsMMatrix) (b x₀ : Fin n → ℝ) :
     Tendsto (fun k => (affineStep (M⁻¹ * N) (M⁻¹ *ᵥ b))^[k] x₀) atTop (𝓝 (A⁻¹ *ᵥ b)) := by
   have hreg : (⟨M, h.2.1⟩ : Splitting A).IsRegular :=
@@ -725,7 +912,7 @@ theorem theorem_4_4_mmatrix (h : IsRegularSplitting A M N) (hA : A.IsMMatrix) (b
 
 end Regular
 
-/-! ### Theorem 4.7 and the irreducible halves of Corollary 4.8 and Theorem 4.9 -/
+/-! ### Theorem 4.7, and the irreducible parts of Corollary 4.8 and Theorem 4.9 -/
 
 section Irreducible
 
@@ -735,22 +922,28 @@ open scoped SaadSparse
 
 variable {n : ℕ}
 
-/-- **Saad, Theorem 4.7**: for an irreducible matrix, an eigenvalue on the boundary of the union of
-the Gershgorin discs lies on the boundary of *every* disc. -/
+/-- **Theorem 4.7** of [saad2003iterative]. Let $A \in \mathbb{C}^{n \times n}$ be irreducible, and
+let $\lambda$ be an eigenvalue of $A$ on the boundary of the union of the Gershgorin discs $\{z
+: |z - a_{ii}| \le \sum_{j \neq i} |a_{ij}|\}$. Then $\lambda$ lies on the boundary of every
+disc:
+$$|\lambda - a_{ii}| = \sum_{j \neq i} |a_{ij}|, \qquad i = 1, \dots, n.$$
+-/
 theorem theorem_4_7 {A : Matrix (Fin n) (Fin n) ℂ} (hA : A.IsPatternIrreducible) {μ : ℂ}
     (hμ : μ ∈ spectrum ℂ A)
     (hfr : μ ∈ frontier (⋃ i, Metric.closedBall (A i i) (∑ j ∈ univ.erase i, ‖A i j‖)))
     (i : Fin n) : ‖μ - A i i‖ = ∑ j ∈ univ.erase i, ‖A i j‖ :=
   hA.norm_sub_eq_of_mem_frontier hμ hfr i
 
-/-- Saad, Corollary 4.8, the irreducibly diagonally dominant half: an irreducibly diagonally
-dominant matrix is nonsingular. -/
+/-- **Corollary 4.8** of [saad2003iterative], irreducible dominance by rows. Let
+$A \in \mathbb{K}^{n \times n}$ be irreducibly diagonally dominant by rows. Then $A$ is
+nonsingular. -/
 theorem corollary_4_8_irred {𝕜 : Type*} [RCLike 𝕜] {A : Matrix (Fin n) (Fin n) 𝕜}
     (h : A.IsIrreduciblyDiagDominant) : IsUnit A :=
   h.isUnit
 
-/-- Saad, Corollary 4.8 for irreducible dominance by *columns*, the reading of Definition 4.5 as
-printed. -/
+/-- **Corollary 4.8** of [saad2003iterative], irreducible dominance by columns, the reading of
+Definition 4.5 as printed. Let $A \in \mathbb{K}^{n \times n}$ be irreducibly diagonally
+dominant by columns. Then $A$ is nonsingular. -/
 theorem corollary_4_8_irred_col {𝕜 : Type*} [RCLike 𝕜] {A : Matrix (Fin n) (Fin n) 𝕜}
     (h : A.IsIrreduciblyColDiagDominant) : IsUnit A := by
   have hT : IsUnit Aᵀ := Matrix.IsIrreduciblyDiagDominant.isUnit h
@@ -758,23 +951,28 @@ theorem corollary_4_8_irred_col {𝕜 : Type*} [RCLike 𝕜] {A : Matrix (Fin n)
 
 variable {A : Matrix (Fin n) (Fin n) ℝ}
 
-/-- **Saad, Theorem 4.9** (Jacobi), the irreducibly diagonally dominant half: the Jacobi iteration
-converges to the solution from every starting vector. -/
+/-- **Theorem 4.9** of [saad2003iterative], Jacobi, irreducible dominance by rows. Let
+$A \in \mathbb{R}^{n \times n}$ be irreducibly diagonally dominant by rows. Then for every $b$
+and every $x_0$ the Jacobi iterates converge to the solution $A^{-1}b$. -/
 theorem theorem_4_9_jacobi_irred (h : A.IsIrreduciblyDiagDominant) (b x₀ : Fin n → ℝ) :
     Tendsto (fun k => (jacobiStep A b)^[k] x₀) atTop (𝓝 (A⁻¹ *ᵥ b)) := by
   rw [jacobiStep_eq h.isUnit_diagPart]
   exact Stationary.Splitting.tendsto_iterate_of_complexSpectralRadius_lt_one _
     (h.jacobi_complexSpectralRadius_lt_one h.isUnit_diagPart) b x₀
 
-/-- **Saad, Theorem 4.9** (Gauss–Seidel), the irreducibly diagonally dominant half. -/
+/-- **Theorem 4.9** of [saad2003iterative], Gauss–Seidel, irreducible dominance by rows. Let
+$A \in \mathbb{R}^{n \times n}$ be irreducibly diagonally dominant by rows. Then for every $b$
+and every $x_0$ the Gauss–Seidel iterates converge to the solution $A^{-1}b$. -/
 theorem theorem_4_9_gs_irred (h : A.IsIrreduciblyDiagDominant) (b x₀ : Fin n → ℝ) :
     Tendsto (fun k => (gsStep A b)^[k] x₀) atTop (𝓝 (A⁻¹ *ᵥ b)) := by
   rw [gsStep_eq h.isUnit_diagPart]
   exact Stationary.Splitting.tendsto_iterate_of_complexSpectralRadius_lt_one _
     (h.gaussSeidel_complexSpectralRadius_lt_one h.isUnit_diagPart) b x₀
 
-/-- Saad, Theorem 4.9 (Gauss–Seidel) under strict *column* diagonal dominance, the reading of
-Definition 4.5 as printed. -/
+/-- **Theorem 4.9** of [saad2003iterative], Gauss–Seidel, strict dominance by columns, the reading
+of Definition 4.5 as printed. Let $A \in \mathbb{R}^{n \times n}$ be strictly diagonally
+dominant by columns, with nonsingular diagonal $D$. Then for every $b$ and every $x_0$ the
+Gauss–Seidel iterates converge to the solution $A^{-1}b$. -/
 theorem theorem_4_9_gs_col (h : A.IsStrictColDiagDominant) (hd : IsUnit (diagPart A))
     (b x₀ : Fin n → ℝ) : Tendsto (fun k => (gsStep A b)^[k] x₀) atTop (𝓝 (A⁻¹ *ᵥ b)) := by
   rw [gsStep_eq hd]
@@ -793,18 +991,25 @@ open scoped SaadSparse
 
 variable {n : ℕ} {A : Matrix (Fin n) (Fin n) ℝ}
 
-/-- **Saad, Theorem 4.10**: for a real symmetric `A` with positive diagonal and `0 < ω < 2`, the SOR
-iteration matrix has spectral radius `< 1` exactly when `A` is positive definite. -/
+/-- **Theorem 4.10** of [saad2003iterative], spectral form. Let $A \in \mathbb{R}^{n \times n}$ be
+symmetric with positive diagonal entries, and let $0 < \omega < 2$. Then the SOR iteration
+matrix $G_\omega$ satisfies $\rho(G_\omega) < 1$ if and only if $A$ is positive definite.
+
+The iteration matrix is the iteration operator of `Matrix.sorSplitting`. The positive diagonal
+is stated twice in Lean, as $a_{ii} > 0$ and as the nonsingularity of $D$. -/
 theorem theorem_4_10 (hA : A.IsSymm) (hd : ∀ i, 0 < A i i) (h : IsUnit (diagPart A)) {ω : ℝ}
     (hω0 : 0 < ω) (hω2 : ω < 2) :
     complexSpectralRadius (A.sorSplitting h hω0.ne').iterationOperator < 1 ↔ A.PosDef :=
   Matrix.sorSplitting_complexSpectralRadius_lt_one_iff_posDef
     (Matrix.isHermitian_iff_isSymm.2 hA) hd h hω0 hω2
 
-/-- **Saad, Theorem 4.10** in the book's words, read through Theorem 4.1: SOR converges for every
-right-hand side and every starting vector exactly when `A` is positive definite.  The quantifier
-over the right-hand side cannot be dropped: for a singular positive semidefinite `A` and `b = 0` the
-iterates converge for every `x₀`. -/
+/-- **Theorem 4.10** of [saad2003iterative]. Let $A \in \mathbb{R}^{n \times n}$ be symmetric with
+positive diagonal entries, and let $0 < \omega < 2$. Then SOR converges for every right-hand
+side $b$ and every starting vector $x_0$ if and only if $A$ is positive definite.
+
+The proof combines `SaadSparse.Chapter04.theorem_4_10` with Theorem 4.1. The quantifier over $b$
+cannot be dropped: for a singular positive semidefinite $A$ and $b = 0$, the iterates converge
+for every $x_0$. -/
 theorem theorem_4_10_tendsto (hA : A.IsSymm) (hd : ∀ i, 0 < A i i) (h : IsUnit (diagPart A))
     {ω : ℝ} (hω0 : 0 < ω) (hω2 : ω < 2) :
     (∀ b x₀ : Fin n → ℝ, ∃ x, Tendsto (fun k => (sorStep A ω b)^[k] x₀) atTop (𝓝 x)) ↔
@@ -824,7 +1029,7 @@ theorem theorem_4_10_tendsto (hA : A.IsSymm) (hd : ∀ i, 0 < A i i) (h : IsUnit
 
 end SOR
 
-/-! ### §4.2.5 Property A, consistent orderings and Young's theory -/
+/-! ### §4.2.5: Property A, consistent orderings and Young's theory -/
 
 section Young
 
@@ -834,16 +1039,22 @@ open scoped SaadSparse ENNReal
 
 variable {n : ℕ}
 
-/-! #### Definition 4.11: Property A -/
+/-! ### Definition 4.11: Property A -/
 
-/-- **Saad, Definition 4.11**: `A` has *Property A* when the index set splits into two parts `S` and
-its complement in such a way that every nonzero off-diagonal entry couples the two parts. -/
+/-- **Definition 4.11** of [saad2003iterative]. A matrix $A \in \mathbb{C}^{n \times n}$ has
+**Property A** if there is a set $S \subseteq \{1, \dots, n\}$ such that every nonzero
+off-diagonal entry $a_{ij}$ couples $S$ and its complement: $a_{ij} \neq 0$ and $i \neq j$ imply
+that exactly one of $i$, $j$ is in $S$. -/
 def HasPropertyA (A : Matrix (Fin n) (Fin n) ℂ) : Prop :=
   ∃ S : Finset (Fin n), ∀ i j, A i j ≠ 0 → i ≠ j → (i ∈ S ↔ j ∉ S)
 
-/-- Saad (4.42): Property A says exactly that the symmetric permutation listing `S` before its
-complement brings `A` to the two-by-two block form whose diagonal blocks `D₁` and `D₂` are
-*diagonal* matrices. -/
+/-- **Equation (4.42)** of [saad2003iterative]. A matrix $A \in \mathbb{C}^{n \times n}$ has
+Property A if and only if there is a set $S$ such that the symmetric permutation that lists $S$
+before its complement brings $A$ to the form
+$$\begin{bmatrix} D_1 & A_{12} \\ A_{21} & D_2 \end{bmatrix}$$
+with diagonal matrices $D_1$ and $D_2$.
+
+The permutation is `Equiv.sumCompl` for the predicate of membership in $S$. -/
 theorem hasPropertyA_iff_toBlocks_isDiag (A : Matrix (Fin n) (Fin n) ℂ) :
     HasPropertyA A ↔ ∃ S : Finset (Fin n),
       Matrix.IsDiag (A.submatrix (Equiv.sumCompl (· ∈ S))
@@ -880,7 +1091,9 @@ theorem hasPropertyA_iff_toBlocks_isDiag (A : Matrix (Fin n) (Fin n) ℂ) :
       rw [← hb₂ S ⟨i, hi⟩ ⟨j, hj⟩]
       exact h₂ fun h => hij (congrArg Subtype.val h)
 
-/-- Property A is invariant under symmetric permutations of the indices. -/
+/-- Property A is invariant under symmetric permutations: for every permutation $\sigma$, the matrix
+$P^TAP$ with entries $a_{\sigma(i)\sigma(j)}$ has Property A if and only if $A$ has it. It
+supports §4.2.5 of [saad2003iterative]. -/
 theorem hasPropertyA_reindex (A : Matrix (Fin n) (Fin n) ℂ) (σ : Equiv.Perm (Fin n)) :
     HasPropertyA (A.submatrix σ σ) ↔ HasPropertyA A := by
   constructor
@@ -894,23 +1107,33 @@ theorem hasPropertyA_reindex (A : Matrix (Fin n) (Fin n) ℂ) (σ : Equiv.Perm (
     have h := hS (σ i) (σ j) hA fun h => hij (σ.injective h)
     simpa [Finset.mem_map_equiv] using h
 
-/-! #### Definition 4.13: consistent orderings and T-matrices -/
+/-! ### Definition 4.13: Consistent orderings and T-matrices -/
 
-/-- **Saad, Definition 4.13**: `A` is *consistently ordered* when the indices carry a labelling `c`
-— Saad's partition into the sets `S_k = c⁻¹ {k}` — such that `c j = c i - 1` for every nonzero entry
-`a_ij` below the diagonal and `c j = c i + 1` for every nonzero entry above it. -/
+/-- **Definition 4.13** of [saad2003iterative]. A matrix $A \in \mathbb{C}^{n \times n}$ is
+**consistently ordered** if there is a labelling $c : \{1, \dots, n\} \to \mathbb{N}$ of the
+indices such that
+$$a_{ij} \neq 0,\ j < i \implies c(j) = c(i) - 1, \qquad a_{ij} \neq 0,\ i < j \implies c(j) =
+  c(i) + 1.$$
+The sets $S_k = c^{-1}(k)$ are the partition of the book.
+
+The first condition is written $c(i) = c(j) + 1$, so that no subtraction of natural numbers
+occurs. -/
 def IsConsistentlyOrdered (A : Matrix (Fin n) (Fin n) ℂ) : Prop :=
   ∃ c : Fin n → ℕ, (∀ i j, j < i → A i j ≠ 0 → c i = c j + 1) ∧
     ∀ i j, i < j → A i j ≠ 0 → c j = c i + 1
 
-/-- **Saad §4.2.5**: `A` is a *T-matrix* — the block tridiagonal form (4.44), whose diagonal blocks
-are diagonal matrices — when the indices carry a *nondecreasing* block labelling under which every
-nonzero off-diagonal entry joins two neighbouring blocks. -/
+/-- **Section 4.2.5** of [saad2003iterative], T-matrices. A matrix $A \in \mathbb{C}^{n \times n}$
+is a **T-matrix**, that is of the block tridiagonal form (4.44) with diagonal matrices as
+diagonal blocks, if there is a nondecreasing labelling $c : \{1, \dots, n\} \to \mathbb{N}$ such
+that every nonzero off-diagonal entry $a_{ij}$ joins two neighbouring blocks: $c(i) = c(j) + 1$
+or $c(j) = c(i) + 1$. -/
 def IsTMatrix (A : Matrix (Fin n) (Fin n) ℂ) : Prop :=
   ∃ c : Fin n → ℕ, Monotone c ∧ ∀ i j, i ≠ j → A i j ≠ 0 → c i = c j + 1 ∨ c j = c i + 1
 
-/-- Saad §4.2.5: a T-matrix is consistently ordered — its block labelling is a consistent ordering,
-precisely because it is nondecreasing along the index order. -/
+/-- **Section 4.2.5** of [saad2003iterative]. Every T-matrix is consistently ordered.
+
+The block labelling of a T-matrix is a consistent ordering, because it is nondecreasing along
+the order of the indices. -/
 theorem isConsistentlyOrdered_of_isTMatrix {A : Matrix (Fin n) (Fin n) ℂ} (h : IsTMatrix A) :
     IsConsistentlyOrdered A := by
   obtain ⟨c, hmono, hstep⟩ := h
@@ -924,8 +1147,10 @@ theorem isConsistentlyOrdered_of_isTMatrix {A : Matrix (Fin n) (Fin n) ℂ} (h :
     · omega
     · exact h1
 
-/-- Saad §4.2.5: a consistently ordered matrix has Property A — the labelling splits the indices by
-the parity of `c`, and a nonzero off-diagonal entry changes `c` by one. -/
+/-- **Section 4.2.5** of [saad2003iterative]. Every consistently ordered matrix has Property A.
+
+The set $S$ is the set of indices with even label $c$; a nonzero off-diagonal entry changes $c$
+by one. -/
 theorem hasPropertyA_of_isConsistentlyOrdered {A : Matrix (Fin n) (Fin n) ℂ}
     (h : IsConsistentlyOrdered A) : HasPropertyA A := by
   classical
@@ -937,15 +1162,15 @@ theorem hasPropertyA_of_isConsistentlyOrdered {A : Matrix (Fin n) (Fin n) ℂ}
     tauto
   · rw [hlow i j hgt hA, Nat.even_add_one]
 
-/-- **Saad §4.2.5** (the second bullet after Proposition 4.15, repeated as Problem P-4.6): `A` has
-Property A *if and only if* some symmetric permutation `PᵀAP` of it is consistently ordered.
+/-- **Section 4.2.5** of [saad2003iterative], the second item after Proposition 4.15, repeated as
+Problem P-4.6. A matrix $A \in \mathbb{C}^{n \times n}$ has Property A if and only if some
+symmetric permutation $P^TAP$ of $A$ is consistently ordered.
 
-For `⇐` the permuted matrix has Property A by the previous result, and Property A is invariant
-under symmetric permutations.  For `⇒`, order the set `S` of Definition 4.11 before its complement:
-the stable sort of the two-valued labelling `c i = if i ∈ S then 0 else 1` does that, and `c`
-composed with it is the consistent ordering.  A nonzero off-diagonal entry joins the two parts, so
-the two labels differ, and they are `0` then `1` in the direction Definition 4.13 demands because
-the sorted labelling is nondecreasing. -/
+For the converse direction, the permuted matrix has Property A by
+`SaadSparse.Chapter04.hasPropertyA_of_isConsistentlyOrdered`, and Property A is invariant under
+symmetric permutations. For the forward direction, a stable sort of the labelling $c(i) = 0$ for
+$i \in S$ and $c(i) = 1$ otherwise puts $S$ before its complement, and the sorted labelling is a
+consistent ordering. -/
 theorem hasPropertyA_iff_exists_isConsistentlyOrdered (A : Matrix (Fin n) (Fin n) ℂ) :
     HasPropertyA A ↔ ∃ σ : Equiv.Perm (Fin n), IsConsistentlyOrdered (A.submatrix σ σ) := by
   classical
@@ -969,16 +1194,24 @@ theorem hasPropertyA_iff_exists_isConsistentlyOrdered (A : Matrix (Fin n) (Fin n
   · rintro ⟨σ, hσ⟩
     exact (hasPropertyA_reindex A σ).mp (hasPropertyA_of_isConsistentlyOrdered hσ)
 
-/-- **Saad, Proposition 4.15**: the book's labelling definition of a consistent ordering implies the
-spectral one that Young's theory uses — the spectrum of `α L + α⁻¹ U` does not depend on `α ≠ 0`,
-`L` and `U` being the strict parts of the Jacobi iteration matrix. -/
+/-- **Proposition 4.15** of [saad2003iterative], the backbone form. Let
+$A \in \mathbb{C}^{n \times n}$ be consistently ordered with nonsingular diagonal $D$. Then $A$
+has the spectral property `Matrix.IsConsistentlyOrdered` that Young's theory uses: the spectrum
+of $\alpha L + \alpha^{-1}U$ does not depend on $\alpha \neq 0$, where $L = D^{-1}E$ and
+$U = D^{-1}F$ are the strict parts of the Jacobi iteration matrix. -/
 theorem IsConsistentlyOrdered.matrix_isConsistentlyOrdered {A : Matrix (Fin n) (Fin n) ℂ}
     (h : IsConsistentlyOrdered A) (hd : IsUnit (diagPart A)) : A.IsConsistentlyOrdered := by
   obtain ⟨c, hlow, hupp⟩ := h
   exact Matrix.isConsistentlyOrdered_of_labelling hd c hlow hupp
 
-/-- **Saad, Proposition 4.15**: for a consistently ordered `A` with nonzero diagonal the eigenvalues
-of `B(α) = α L + α⁻¹ U` do not depend on `α ≠ 0`. -/
+/-- **Proposition 4.15** of [saad2003iterative]. Let $A \in \mathbb{C}^{n \times n}$ be consistently
+ordered with nonsingular diagonal $D$, and let $L = D^{-1}E$ and $U = D^{-1}F$, so that
+$B = L + U$ is the Jacobi iteration matrix. Then for every $\alpha \in \mathbb{C}$ with
+$\alpha \neq 0$,
+$$\sigma(\alpha L + \alpha^{-1} U) = \sigma(B).$$
+
+The matrices $L$ and $U$ are `Matrix.jacobiLower A` and `Matrix.jacobiUpper A`, and $B$ is the
+iteration operator of `Matrix.jacobiSplitting`. -/
 theorem proposition_4_15 {A : Matrix (Fin n) (Fin n) ℂ} (h : IsConsistentlyOrdered A)
     (hd : IsUnit (diagPart A)) {α : ℂ} (hα : α ≠ 0) :
     spectrum ℂ (α • Matrix.jacobiLower A + α⁻¹ • Matrix.jacobiUpper A) =
@@ -987,13 +1220,15 @@ theorem proposition_4_15 {A : Matrix (Fin n) (Fin n) ℂ} (h : IsConsistentlyOrd
   rw [← Matrix.jacobiLower_add_jacobiUpper A hd]
   exact hCO α hα
 
-/-- **Saad, Proposition 4.14**: a consistently ordered matrix is brought to a T-matrix by the
-*stable* sort of the indices by their label, and that permutation commutes with taking the strict
-triangular parts: `(PᵀAP)_L = Pᵀ A_L P` and `(PᵀAP)_U = Pᵀ A_U P`.
+/-- **Proposition 4.14** of [saad2003iterative]. Let $A \in \mathbb{C}^{n \times n}$ be consistently
+ordered. Then there is a permutation $\sigma$ such that $P^TAP$, the matrix with entries
+$a_{\sigma(i)\sigma(j)}$, is a T-matrix, and the permutation commutes with taking the strict
+triangular parts:
+$$(P^TAP)_L = P^T A_L P, \qquad (P^TAP)_U = P^T A_U P.$$
 
-The sort is `Tuple.sort`, which is stable; the two commutation identities hold because an entry that
-the sort would move across the diagonal joins two blocks in the wrong order, which the monotonicity
-of the sorted labelling forbids. -/
+The permutation is the stable sort `Tuple.sort` of the indices by their label. The two
+identities hold because an entry that the sort moves across the diagonal would join two blocks
+in the wrong order, which the monotonicity of the sorted labelling forbids. -/
 theorem proposition_4_14 {A : Matrix (Fin n) (Fin n) ℂ} (h : IsConsistentlyOrdered A) :
     ∃ σ : Equiv.Perm (Fin n), IsTMatrix (A.submatrix σ σ) ∧
       strictLower (A.submatrix σ σ) = (strictLower A).submatrix σ σ ∧
@@ -1055,12 +1290,20 @@ theorem proposition_4_14 {A : Matrix (Fin n) (Fin n) ℂ} (h : IsConsistentlyOrd
         simp [asymm hji, hσ, hz]
       · simp [asymm hji, hσ]
 
-/-! #### Theorem 4.16 and the optimal relaxation parameter (4.47) -/
+/-! ### Theorem 4.16 and the optimal relaxation parameter (4.47) -/
 
 variable {A : Matrix (Fin n) (Fin n) ℂ}
 
-/-- **Saad, Theorem 4.16** (⇒): if `λ ≠ 0` is an eigenvalue of the SOR iteration matrix and `(λ + ω
-- 1)² = λ ω² μ²`, then `μ` is an eigenvalue of the Jacobi iteration matrix. -/
+/-- **Theorem 4.16** of [saad2003iterative], first direction. Let $A \in \mathbb{C}^{n \times n}$ be
+consistently ordered with nonsingular diagonal, and let $\omega \neq 0$. Let $\lambda \neq 0$
+and $\mu$ satisfy
+$$(\lambda + \omega - 1)^2 = \lambda \omega^2 \mu^2.$$
+If $\lambda$ is an eigenvalue of the SOR iteration matrix, then $\mu$ is an eigenvalue of the
+Jacobi iteration matrix $B$.
+
+**Reading.** The book writes $M_{SOR}$ for the SOR iteration matrix, while (4.26) uses that name
+for the SOR preconditioner. Here the iteration matrix is the iteration operator of
+`Matrix.sorSplitting`, and the preconditioner is `SaadSparse.Chapter04.M_sor`. -/
 theorem theorem_4_16_mp (h : IsConsistentlyOrdered A) (hd : IsUnit (diagPart A)) {ω : ℂ}
     (hω : ω ≠ 0) {l μ : ℂ} (hl : l ≠ 0) (hrel : (l + ω - 1) ^ 2 = l * ω ^ 2 * μ ^ 2)
     (hlG : l ∈ spectrum ℂ (Matrix.sorSplitting A hd hω).iterationOperator) :
@@ -1068,8 +1311,13 @@ theorem theorem_4_16_mp (h : IsConsistentlyOrdered A) (hd : IsUnit (diagPart A))
   ((IsConsistentlyOrdered.matrix_isConsistentlyOrdered h hd).mem_spectrum_jacobi_iff_sor hd hω hl
     hrel).mpr hlG
 
-/-- **Saad, Theorem 4.16** (⇐): if `μ` is an eigenvalue of the Jacobi iteration matrix and `λ ≠ 0`
-satisfies `(λ + ω - 1)² = λ ω² μ²`, then `λ` is an eigenvalue of the SOR iteration matrix. -/
+/-- **Theorem 4.16** of [saad2003iterative], second direction. Let $A \in \mathbb{C}^{n \times n}$
+be consistently ordered with nonsingular diagonal, and let $\omega \neq 0$. Let $\lambda \neq 0$
+and $\mu$ satisfy $(\lambda + \omega - 1)^2 = \lambda \omega^2 \mu^2$. If $\mu$ is an eigenvalue
+of the Jacobi iteration matrix $B$, then $\lambda$ is an eigenvalue of the SOR iteration matrix.
+
+The iteration matrices are the iteration operators of `Matrix.jacobiSplitting` and
+`Matrix.sorSplitting`. -/
 theorem theorem_4_16_mpr (h : IsConsistentlyOrdered A) (hd : IsUnit (diagPart A)) {ω : ℂ}
     (hω : ω ≠ 0) {l μ : ℂ} (hl : l ≠ 0) (hrel : (l + ω - 1) ^ 2 = l * ω ^ 2 * μ ^ 2)
     (hμB : μ ∈ spectrum ℂ (Matrix.jacobiSplitting A hd).iterationOperator) :
@@ -1077,9 +1325,15 @@ theorem theorem_4_16_mpr (h : IsConsistentlyOrdered A) (hd : IsUnit (diagPart A)
   ((IsConsistentlyOrdered.matrix_isConsistentlyOrdered h hd).mem_spectrum_jacobi_iff_sor hd hω hl
     hrel).mp hμB
 
-/-- **Saad (4.47)**: for a consistently ordered `A` whose Jacobi iteration matrix has real
-eigenvalues and spectral radius `ρ(B) < 1`, the relaxation parameter `ω_opt = 2/(1 + √(1 - ρ(B)²))`
-minimizes the SOR spectral radius over `0 < ω < 2`, and the value there is `ω_opt - 1`. -/
+/-- **Equation (4.47)** of [saad2003iterative]. Let $A \in \mathbb{C}^{n \times n}$, $n \ge 1$, be
+consistently ordered with nonsingular diagonal, and let the Jacobi iteration matrix $B$ have
+real eigenvalues and $\rho(B) < 1$. Then over $0 < \omega < 2$ the spectral radius of the SOR
+iteration matrix is smallest at
+$$\omega_{opt} = \frac{2}{1 + \sqrt{1 - \rho(B)^2}},$$
+and its value there is $\omega_{opt} - 1$.
+
+The SOR iteration matrix for a real $\omega$ is `Matrix.sorIterationMatrix A ω`, and the
+spectral radii are values of `spectralRadius ℂ` in $[0, \infty]$. -/
 theorem equation_4_47 [NeZero n] (h : IsConsistentlyOrdered A) (hd : IsUnit (diagPart A))
     (hreal : ∀ μ ∈ spectrum ℂ (Matrix.jacobiSplitting A hd).iterationOperator, μ.im = 0)
     (hlt : spectralRadius ℂ (Matrix.jacobiSplitting A hd).iterationOperator < 1) :

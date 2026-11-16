@@ -9,56 +9,91 @@ import Numlib.Krylov.Subspace
 import NumlibSurface.SaadSparse.Chapter06.Section09
 
 /-!
-# Saad §6.10: optimality and the Faber–Manteuffel condition
+# Saad, Section 6.10: Optimality and the Faber–Manteuffel condition
 
-Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM,
-2003, §6.10.
+This module formalizes Section 6.10 of [saad2003iterative], which asks for which matrices $A$ the
+Arnoldi process is a short recurrence. Proposition 6.22 shows that if
+$A^T v \in \mathcal{K}_s(A, v)$ for every vector $v$, then the Arnoldi coefficients satisfy the band
+condition (6.108), $h_{ij} = 0$ for $i + s \le j$. Then the incomplete orthogonalization process of
+Algorithm 6.6 with window $s$ drops nothing, and IOM(s) and DIOM(s) compute the FOM approximation.
+The section then introduces $\nu(A)$, the least degree of a polynomial $q$ with $A^H = q(A)$, and
+the class $CG(s)$ of Faber and Manteuffel: the matrices for which the Arnoldi process is an $s$-term
+recurrence for every starting vector. A matrix with $A^H = q(A)$ is normal, and conversely every
+normal matrix has such a $q$. Lemma 6.23 (Faber and Manteuffel) states that
+$A^H v \in \mathcal{K}_s(A, v)$ for every $v$ if and only if $A$ is normal and $\nu(A) \le s - 1$.
+Theorem 6.24 characterizes $CG(s)$; only its sufficiency half is formalized here.
 
-**Proposition 6.22** says that when `Aᵀ v ∈ 𝒦_s(A, v)` for every `v`, the Arnoldi coefficients
-obey the band condition `h_{ij} = 0` for `i + s ≤ j` (6.108), so that the incomplete
-orthogonalization process of Algorithm 6.6 with a window of `s` drops nothing and DIOM(s)
-computes the FOM approximation. The band condition itself is the backbone's
-`Arnoldi.coeff_eq_zero_of_adjoint_mem` (`Numlib/Krylov/Arnoldi.lean`); the algorithmic
-consequence is `iop_eq_arnoldiMGS_of_band` (IOP(s) is Algorithm 6.2) together with
-`iomFixed_eq_fomFixed_of_band` and `diom_eq_fomFixed_of_band`, which use the IOP/DIOM layer of
-`Chapter06/Section04.lean`.
+The band condition is the backbone theorem `Arnoldi.coeff_eq_zero_of_adjoint_mem` of
+`Numlib.Krylov.Arnoldi`. The algorithms IOP, IOM and DIOM are those of
+`NumlibSurface.SaadSparse.Chapter06.Section04`. The facts about normal matrices specialize
+`Numlib.Eigen.Normal`.
 
-The section's two objects are here: `ν A`, the least degree of a polynomial `q` with
-`A^H = q(A)`, and `IsCGs A s`, Faber and Manteuffel's class `CG(s)` of matrices for which the
-Arnoldi process is an `s`-term recurrence for every starting vector. The text's two remarks
-about normality are `isStarNormal_of_exists_aeval` (if `A^H = q(A)` then `A` is normal, since
-`A` commutes with every polynomial in `A`) and `exists_aeval_eq_conjTranspose` (the converse).
+## Main definitions
 
-The converse is the backbone's `Matrix.IsStarNormal.exists_aeval_eq_conjTranspose`
-(`Numlib/Eigen/Normal.lean`): a normal operator is diagonalizable and shares its eigenvectors
-with its adjoint, so Lagrange interpolation of `z ↦ conj z` at its eigenvalues produces `q`.
+* Section 6.10, `SaadSparse.Chapter06.ν`: $\nu(A)$, the least degree of a polynomial $q$ with
+  $q(A) = A^H$.
+* Section 6.10, `SaadSparse.Chapter06.IsCGs`: the class $CG(s)$ of matrices whose Arnoldi
+  coefficients vanish outside a band of width $s$, up to the grade of every unit starting vector.
 
-**Lemma 6.23** (Faber and Manteuffel) is `lemma_6_23`: `A^H v ∈ 𝒦_s(A, v)` for every `v` iff `A`
-is normal with `ν(A) ≤ s - 1`. Its proof departs from the book's twice, and both departures are
-recorded on the declaration: the eigenvector-sum argument replaces the book's maximal vector, and
-the book's nonsingularity hypothesis is not needed, while a missing `0 < s` is.
+## Main results
 
-**Theorem 6.24** (Faber–Manteuffel: `A ∈ CG(s)` iff the minimal polynomial of `A` has degree
-`≤ s`, or `A` is normal with `ν(A) ≤ s - 1`) is here only in the direction the book's own material
-proves. `isCGs_of_natDegree_minpoly_le` (the condition is vacuous, since every starting vector then
-has grade at most `s`), `isCGs_of_isStarNormal` (Lemma 6.23 followed by (6.108)) and their
-disjunction `isCGs_of_natDegree_minpoly_le_or_isStarNormal` are the *sufficiency* half. The
-converse — that an `s`-term recurrence for every starting vector forces one of the two conditions —
-is the Faber–Manteuffel theorem proper, which [saad2003iterative] states without proof; the known
-proofs (Faber–Manteuffel 1984, Liesen–Strakoš 2008) are research papers, not textbook arguments,
-so it is deliberately left unwritten rather than weakened, as
-`plans/NumlibSurface/SaadSparse/Chapter06/Section10.toml` records. No `sorry` stands in for it.
+* Proposition 6.22, `SaadSparse.Chapter06.proposition_6_22`: if $A^T v \in \mathcal{K}_s(A, v)$ for
+  every $v$, then (6.108) holds, IOP(s) is the full Arnoldi process, and IOM(s) and DIOM(s) compute
+  the FOM iterate.
+* Section 6.10, `SaadSparse.Chapter06.isStarNormal_of_exists_aeval`: if $A^H = q(A)$ for a
+  polynomial $q$, then $A$ is normal.
+* Section 6.10, `SaadSparse.Chapter06.exists_aeval_eq_conjTranspose`: a normal $A$ satisfies
+  $A^H = q(A)$ for a polynomial $q$ of degree at most $n - 1$.
+* Lemma 6.23, `SaadSparse.Chapter06.lemma_6_23`: for $s \ge 1$, $A^H v \in \mathcal{K}_s(A, v)$ for
+  every $v$ if and only if $A$ is normal and $\nu(A) \le s - 1$.
+* Theorem 6.24, `SaadSparse.Chapter06.isCGs_of_natDegree_minpoly_le_or_isStarNormal`: if the minimal
+  polynomial of $A$ has degree at most $s$, or $A$ is normal with $\nu(A) \le s - 1$, then
+  $A \in CG(s)$.
+* Section 6.10, `SaadSparse.Chapter06.nu_le_one_iff`: a normal $A$ has $\nu(A) \le 1$ if and only if
+  $A$ is a scalar matrix, or Hermitian, or of the form $e^{i\theta}(\rho I + B)$ with $\theta, \rho$
+  real and $B$ skew-Hermitian.
 
-The section's closing remark, the case `ν(A) ≤ 1` of the Conjugate Gradient method, is
-`nu_le_one_iff`: for a normal `A`, `ν(A) ≤ 1` exactly when `A` is a scalar matrix, or Hermitian, or
-`e^{iθ}(ρ I + B)` with `θ`, `ρ` real and `B` skew-Hermitian. Normality has to be assumed and is not
-a consequence: `ν` is a `sInf` over a set that is empty for a non-normal `A`, and `sInf ∅ = 0`.
-The three cases are the book's and are not disjoint — the third already contains the other two, and
-the backbone's `Matrix.exists_natDegree_le_one_aeval_eq_conjTranspose_iff`
-(`Numlib/Eigen/Normal.lean`) is that sharper, hypothesis-free equivalence.
+## Proof outline
 
-Proposition 6.22 is stated over `ℝ` with `Aᵀ`, and §6.10's normality material over `ℂ` with
-`A^H`, following the book. The band lemmas are polymorphic in `𝕜`.
+For Lemma 6.23, an eigenvector $v$ of $A$ has $\mathcal{K}_s(A, v) \subseteq
+\operatorname{span}\{v\}$, so $v$ is also an eigenvector of $A^H$, and $A$ is normal by Lemma 1.15.
+Then a sum $w$ of one eigenvector from each eigenspace gives a polynomial $q$ of degree at most
+$s - 1$ with $q(\lambda) = \bar\lambda$ at every eigenvalue $\lambda$, and hence $q(A) = A^H$. The
+converse of the normality remark builds $q$ by Lagrange interpolation of $z \mapsto \bar z$ at the
+eigenvalues, and reduces it modulo the characteristic polynomial.
+
+## Conventions
+
+* Proposition 6.22 is stated over $\mathbb{R}$ with $A^T$, and the material on normality is stated
+  over $\mathbb{C}$ with $A^H$, as in the book. The lemmas on the band condition hold over any
+  `RCLike` field.
+* The Arnoldi vectors and coefficients are indexed from $0$:
+  `SaadSparse.Chapter06.arnoldiCoeff A v i j` is the book's $h_{i+1,j+1}$. The band condition
+  $i + s \le j$ reads the same in both indexings.
+
+## Implementation notes
+
+* $\nu(A)$ is an infimum of a set of natural numbers. The set is empty when no polynomial in $A$
+  equals $A^H$, that is, when $A$ is not normal, and then $\nu(A) = 0$. For this reason the results
+  about $\nu(A)$ assume that $A$ is normal.
+* The three cases of `SaadSparse.Chapter06.nu_le_one_iff` are those of the book, and they are not
+  disjoint: the third contains the other two. The backbone theorem
+  `Matrix.exists_natDegree_le_one_aeval_eq_conjTranspose_iff` gives the sharper equivalence with no
+  normality hypothesis.
+
+## Deviations from the source
+
+* **Lemma 6.23** (generalization). The book assumes that $A$ is nonsingular. The proof here does not
+  use this, and the hypothesis is omitted. See `SaadSparse.Chapter06.lemma_6_23`.
+* **Lemma 6.23** (reading). The book leaves $s \ge 1$ implicit. The statement assumes $0 < s$, which
+  is necessary because $s - 1$ is truncated subtraction of natural numbers. See
+  `SaadSparse.Chapter06.lemma_6_23`.
+
+## Not formalized
+
+* **Theorem 6.24, necessity.** The direction that $A \in CG(s)$ forces one of the two conditions is
+  the Faber–Manteuffel theorem proper. The book states it without proof, and the known proofs (Faber
+  and Manteuffel, 1984; Liesen and Strakoš, 2008) are research papers, not textbook arguments.
 -/
 
 open Polynomial
@@ -75,11 +110,17 @@ local notation "𝔼" => EuclideanSpace 𝕜 (Fin n)
 
 variable (A : Matrix (Fin n) (Fin n) 𝕜) (v : EuclideanSpace 𝕜 (Fin n))
 
-/-! ### (6.108): the band structure of the Arnoldi coefficients -/
+/-! ### Equation (6.108): the band structure of the Arnoldi coefficients -/
 
-/-- **(6.108)**: if `A^H v ∈ 𝒦_s(A, v)` for every `v`, the Arnoldi coefficients vanish outside a
-band of width `s`. This is the backbone's `Arnoldi.coeff_eq_zero_of_adjoint_mem`, whose `s = 2`
-case is the tridiagonality of the symmetric Lanczos process. -/
+/-- **Equation (6.108)** of [saad2003iterative]. Let $A$ be an $n \times n$ matrix, let
+$s \in \mathbb{N}$, and suppose that $A^H w \in \mathcal{K}_s(A, w)$ for every vector $w$. Let
+$v$ be a unit vector. Then the Arnoldi coefficients of $A$ with starting vector $v$ satisfy
+$h_{ij} = 0$ whenever $i + s \le j$.
+
+Here $A^H$ is the adjoint `LinearMap.adjoint (SaadSparse.Chapter06.op A)`, and the coefficients
+are `SaadSparse.Chapter06.arnoldiCoeff`. This is the backbone theorem
+`Arnoldi.coeff_eq_zero_of_adjoint_mem`. Its case $s = 2$ is the tridiagonality of the symmetric
+Lanczos process. -/
 theorem arnoldiCoeff_eq_zero_of_adjoint_mem {s : ℕ}
     (hs : ∀ w : 𝔼, LinearMap.adjoint (op A) w ∈ krylov A w s) (hv : ‖v‖ = 1) {i j : ℕ}
     (h : i + s ≤ j) : arnoldiCoeff A v i j = 0 := by
@@ -91,9 +132,9 @@ theorem arnoldiCoeff_eq_zero_of_adjoint_mem {s : ℕ}
 
 /-! ### The truncated inner loop of Algorithm 6.6 under a band condition -/
 
-/-- The modified Gram–Schmidt loop written with its own running coefficients, so that no
-orthogonality of the `u_i` is needed; this is the form the band argument below uses, where
-`mgsW_eq_sub_sum` of `Chapter06/Section03.lean` would ask for more than is available. -/
+/-- The modified Gram–Schmidt loop subtracts, at step $i$, the projection of the current vector on
+$u_i$ with its running coefficient; this form needs no orthogonality of the $u_i$, unlike
+`SaadSparse.Chapter06.mgsW_eq_sub_sum`. -/
 private theorem mgsW_eq_sub_sum' (u : ℕ → 𝔼) (w₀ : 𝔼) (k : ℕ) :
     mgsW u w₀ k = w₀ - ∑ i ∈ Finset.range k, inner 𝕜 (u i) (mgsW u w₀ i) • u i := by
   induction k with
@@ -103,8 +144,8 @@ private theorem mgsW_eq_sub_sum' (u : ℕ → 𝔼) (w₀ : 𝔼) (k : ℕ) :
     nth_rewrite 1 [ih]
     abel
 
-/-- The truncated loop of Algorithm 6.6 agrees with the full loop of Algorithm 6.2 as soon as
-the coefficients it skips vanish. -/
+/-- The truncated loop of Algorithm 6.6 equals the full loop of Algorithm 6.2 when all the
+coefficients that it skips vanish. -/
 private theorem iopW_eq_mgsW_of_band {u : ℕ → 𝔼} {lo : ℕ} (w₀ : 𝔼)
     (h : ∀ i < lo, inner 𝕜 (u i) (mgsW u w₀ i) = 0) (N : ℕ) :
     iopW u lo w₀ N = mgsW u w₀ N := by
@@ -130,9 +171,11 @@ private theorem inner_mgsW_arnoldiMGS_eq_zero {s : ℕ} (hv : ‖v‖ = 1)
   rw [inner_mgsW_self ho, arnoldiMGS_eq_arnoldiCGS A v hv, arnoldiMGS_eq_arnoldiCGS A v hv]
   exact hband i j (by omega)
 
-/-- **The algorithmic content of Proposition 6.22**: under the band condition (6.108) the
-incomplete orthogonalization process of **Algorithm 6.6** with window `s` is the full modified
-Gram–Schmidt Arnoldi process of **Algorithm 6.2** — the terms it drops are zero. -/
+/-- Let $v$ be a unit vector, and suppose that the Arnoldi coefficients of $A$ with starting vector
+$v$ satisfy the band condition (6.108), $h_{ij} = 0$ for $i + s \le j$. Then the incomplete
+orthogonalization process of Algorithm 6.6 with window $s$ produces the same vectors as the
+modified Gram–Schmidt Arnoldi process of Algorithm 6.2, because the terms that it drops are
+zero. This is the algorithmic content of Proposition 6.22 of [saad2003iterative]. -/
 theorem iop_eq_arnoldiMGS_of_band {s : ℕ} (hv : ‖v‖ = 1)
     (hband : ∀ i j : ℕ, i + s ≤ j → arnoldiCoeff A v i j = 0) (j : ℕ) :
     iop A v s j = arnoldiMGS A v j := by
@@ -154,7 +197,10 @@ private theorem iop_eq_arnoldiMGS_fun {s : ℕ} (hv : ‖v‖ = 1)
     iop A v s = arnoldiMGS A v :=
   funext (iop_eq_arnoldiMGS_of_band hv hband)
 
-/-- Under the band condition the coefficients of Algorithm 6.6 are the Arnoldi coefficients. -/
+/-- Let $v$ be a unit vector, and suppose that the Arnoldi coefficients of $A$ with starting vector
+$v$ satisfy $h_{ij} = 0$ for $i + s \le j$. Then the coefficients
+`SaadSparse.Chapter06.iopCoeff A v s i j` of Algorithm 6.6 with window $s$ equal the Arnoldi
+coefficients $h_{ij}$ for all $i$ and $j$. -/
 theorem iopCoeff_eq_arnoldiCoeff_of_band {s : ℕ} (hv : ‖v‖ = 1)
     (hband : ∀ i j : ℕ, i + s ≤ j → arnoldiCoeff A v i j = 0) (i j : ℕ) :
     iopCoeff A v s i j = arnoldiCoeff A v i j := by
@@ -181,29 +227,43 @@ variable {n : ℕ} {𝕜 : Type*} [RCLike 𝕜]
 
 variable {A : Matrix (Fin n) (Fin n) 𝕜} {b x₀ : EuclideanSpace 𝕜 (Fin n)} {s : ℕ}
 
-/-- Under the band condition, Algorithm 6.6 and Algorithm 6.1 build the same basis. -/
+/-- Suppose that $\|v_1\| = 1$ and that the Arnoldi coefficients of $A$ with starting vector
+$v_1 = r_0 / \|r_0\|$ satisfy $h_{ij} = 0$ for $i + s \le j$. Then Algorithm 6.6 with window $s$
+and Algorithm 6.1 build the same basis matrix $V_m$, for every $m$. -/
 theorem VI_eq_V (hv : ‖v₁ A b x₀‖ = 1)
     (hband : ∀ i j : ℕ, i + s ≤ j → arnoldiCoeff A (v₁ A b x₀) i j = 0) (m : ℕ) :
     VI A (v₁ A b x₀) s m = V A (v₁ A b x₀) m := by
   rw [VI, V, iop_eq_arnoldiMGS_fun hv hband,
     funext fun l => arnoldiMGS_eq_arnoldiCGS A (v₁ A b x₀) hv l]
 
-/-- Under the band condition, Algorithm 6.6 and Algorithm 6.1 build the same `H_m`. -/
+/-- Suppose that $\|v_1\| = 1$ and that the Arnoldi coefficients of $A$ with starting vector
+$v_1 = r_0 / \|r_0\|$ satisfy $h_{ij} = 0$ for $i + s \le j$. Then Algorithm 6.6 with window $s$
+and Algorithm 6.1 build the same Hessenberg matrix $H_m$, for every $m$. -/
 theorem HI_eq_H (hv : ‖v₁ A b x₀‖ = 1)
     (hband : ∀ i j : ℕ, i + s ≤ j → arnoldiCoeff A (v₁ A b x₀) i j = 0) (m : ℕ) :
     HI A (v₁ A b x₀) s m = H A (v₁ A b x₀) m := by
   ext i j
   rw [HI_apply, H_apply, iopCoeff_eq_arnoldiCoeff_of_band hv hband]
 
-/-- **IOM(s) is FOM** under the band condition (6.108): Algorithm 6.7 and Algorithm 6.4 solve
-the same system in the same basis. -/
+/-- **IOM(s) is FOM** under the band condition. Suppose that $\|v_1\| = 1$ and that the Arnoldi
+coefficients of $A$ with starting vector $v_1 = r_0 / \|r_0\|$ satisfy $h_{ij} = 0$ for
+$i + s \le j$. Then, for every $m$, the iterate $x_m$ of IOM(s) (Algorithm 6.7) equals the
+iterate $x_m$ of FOM (Algorithm 6.4), both with exactly $m$ steps: the two methods solve the
+same system in the same basis. -/
 theorem iomFixed_eq_fomFixed_of_band (hv : ‖v₁ A b x₀‖ = 1)
     (hband : ∀ i j : ℕ, i + s ≤ j → arnoldiCoeff A (v₁ A b x₀) i j = 0) (m : ℕ) :
     iomFixed A b x₀ s m = fomFixed A b x₀ m := by
   rw [iomFixed, fomFixed, iomY, fomY, HI_eq_H hv hband, VI_eq_V hv hband]
 
-/-- **DIOM(s) is mathematically equivalent to FOM** under the band condition (6.108), which is
-the conclusion of Proposition 6.22. -/
+/-- **DIOM(s) is mathematically equivalent to FOM** under the band condition. Suppose that
+$\|v_1\| = 1$, that the Arnoldi coefficients of $A$ with starting vector $v_1 = r_0 / \|r_0\|$
+satisfy $h_{ij} = 0$ for $i + s \le j$, and that the first $m$ pivots $u_{ll}$, $l < m$, of the
+LU factorization of the Hessenberg matrix of Algorithm 6.6 are nonzero. Then the iterate $x_m$
+of DIOM(s) (Algorithm 6.8) equals the iterate $x_m$ of FOM with exactly $m$ steps. This is the
+conclusion of Proposition 6.22 of [saad2003iterative].
+
+The pivots are `SaadSparse.Chapter06.dioU`. DIOM divides by them, so the algorithm is defined
+only when they are nonzero. -/
 theorem diom_eq_fomFixed_of_band (hv : ‖v₁ A b x₀‖ = 1)
     (hband : ∀ i j : ℕ, i + s ≤ j → arnoldiCoeff A (v₁ A b x₀) i j = 0) {m : ℕ}
     (hpiv : ∀ l, l < m → dioU (iopCoeff A (v₁ A b x₀) s) l l ≠ 0) :
@@ -212,23 +272,37 @@ theorem diom_eq_fomFixed_of_band (hv : ‖v₁ A b x₀‖ = 1)
 
 end BandFOM
 
-/-! ### Proposition 6.22, in the book's real setting -/
+/-! ### Proposition 6.22, in the real setting of the book -/
 
 section BookResults
 
 variable {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ)
 
-/-- Over `ℝ` the transpose induces the adjoint of `op A`. -/
+/-- Over $\mathbb{R}$, the adjoint of $x \mapsto Ax$ is $x \mapsto A^T x$. -/
 private theorem adjoint_op_eq :
     LinearMap.adjoint (op A) = op Aᵀ := by
   rw [← Matrix.toEuclideanLin_conjTranspose_eq_adjoint A,
     Matrix.conjTranspose_eq_transpose_of_trivial]
 
-/-- **Proposition 6.22**. Assume that `A` is such that `Aᵀ v ∈ 𝒦_s(A, v)` for every vector `v`.
-Then DIOM(s) is mathematically equivalent to FOM: the Arnoldi coefficients satisfy
-`h_{ij} = 0` for `i + s ≤ j` (6.108), so the incomplete orthogonalization process of Algorithm
-6.6 with window `s` coincides with the full process of Algorithm 6.2, IOM(s) computes the FOM
-iterate, and so does DIOM(s). -/
+/-- **Proposition 6.22** of [saad2003iterative]. Let $A$ be a real $n \times n$ matrix and
+$s \in \mathbb{N}$, and assume that $A^T v \in \mathcal{K}_s(A, v)$ for every vector
+$v \in \mathbb{R}^n$. Then DIOM(s) is mathematically equivalent to FOM. In detail:
+
+1. for every unit vector $v$, the Arnoldi coefficients with starting vector $v$ satisfy (6.108),
+   $h_{ij} = 0$ for $i + s \le j$;
+2. for every unit vector $v$, the incomplete orthogonalization process of Algorithm 6.6 with
+   window $s$ produces the same vectors as the modified Gram–Schmidt Arnoldi process of
+   Algorithm 6.2;
+3. for $b, x_0 \in \mathbb{R}^n$ with $r_0 = b - Ax_0 \neq 0$, and $m \in \mathbb{N}$ such that
+   the first $m$ pivots of the LU factorization of the Hessenberg matrix of Algorithm 6.6 are
+   nonzero, the iterates $x_m$ of IOM(s) and of DIOM(s) both equal the iterate $x_m$ of FOM with
+   exactly $m$ steps.
+
+The hypothesis $r_0 \neq 0$ makes $v_1 = r_0 / \|r_0\|$ a unit vector. The pivots are
+`SaadSparse.Chapter06.dioU`, by which DIOM divides; the book does not mention them. The proof
+applies `SaadSparse.Chapter06.arnoldiCoeff_eq_zero_of_adjoint_mem`,
+`SaadSparse.Chapter06.iomFixed_eq_fomFixed_of_band` and
+`SaadSparse.Chapter06.diom_eq_fomFixed_of_band`. -/
 theorem proposition_6_22 {s : ℕ} (hs : ∀ w : EuclideanSpace ℝ (Fin n), op Aᵀ w ∈ krylov A w s)
     (b x₀ : EuclideanSpace ℝ (Fin n)) (hr : r₀ A b x₀ ≠ 0) {m : ℕ}
     (hpiv : ∀ l, l < m → dioU (iopCoeff A (v₁ A b x₀) s) l l ≠ 0) :
@@ -250,7 +324,7 @@ theorem proposition_6_22 {s : ℕ} (hs : ∀ w : EuclideanSpace ℝ (Fin n), op 
 
 end BookResults
 
-/-! ### §6.10: `ν(A)`, the class `CG(s)`, and normality -/
+/-! ### Section 6.10: $\nu(A)$, the class $CG(s)$, and normality -/
 
 section Normal
 
@@ -258,20 +332,27 @@ variable {n : ℕ}
 
 local notation "ℂ𝔼" => EuclideanSpace ℂ (Fin n)
 
-/-- `ν(A)` (§6.10): the least degree of a polynomial `q` with `A^H = q(A)`. The set of such
-degrees is empty exactly when no polynomial in `A` equals `A^H`, in which case `ν(A) = 0` by
-Lean's `sInf ∅ = 0`; by the text this happens only for non-normal `A`
-(`isStarNormal_of_exists_aeval`). -/
+/-- **Section 6.10** of [saad2003iterative], definition of $\nu(A)$. For a complex $n \times n$
+matrix $A$, $\nu(A)$ is the least degree of a polynomial $q$ with $q(A) = A^H$.
+
+If no polynomial in $A$ equals $A^H$, the set of degrees is empty and $\nu(A) = 0$, because the
+infimum of the empty set of natural numbers is $0$ in Lean. This happens exactly when $A$ is not
+normal (`SaadSparse.Chapter06.isStarNormal_of_exists_aeval` and
+`SaadSparse.Chapter06.exists_aeval_eq_conjTranspose`). -/
 noncomputable def ν (A : Matrix (Fin n) (Fin n) ℂ) : ℕ :=
   sInf {d : ℕ | ∃ q : ℂ[X], q.natDegree = d ∧ aeval A q = Aᴴ}
 
-/-- Faber and Manteuffel's class **`CG(s)`** (§6.10): `A ∈ CG(s)` when, for every unit starting
-vector `v_1`, the Arnoldi coefficients satisfy `h_{ij} = 0` for `i + s ≤ j ≤ μ(v_1) - 1`, so
-that the Arnoldi process is an `s`-term recurrence up to the grade `μ(v_1)` of `v_1`. -/
+/-- **Section 6.10** of [saad2003iterative], the class $CG(s)$ of Faber and Manteuffel. A complex
+$n \times n$ matrix $A$ is **in $CG(s)$** if, for every unit starting vector $v_1$, the Arnoldi
+coefficients satisfy $h_{ij} = 0$ for all $i + s \le j \le \mu - 1$, where $\mu$ is the grade of
+$v_1$ with respect to $A$. Then the Arnoldi process is an $s$-term recurrence up to the grade of
+$v_1$.
+
+The indices are $0$-based, and the grade is `SaadSparse.Chapter06.grade`. -/
 def IsCGs (A : Matrix (Fin n) (Fin n) ℂ) (s : ℕ) : Prop :=
   ∀ v₁ : ℂ𝔼, ‖v₁‖ = 1 → ∀ i j : ℕ, i + s ≤ j → j + 1 ≤ grade A v₁ → arnoldiCoeff A v₁ i j = 0
 
-/-- Every polynomial in `A` commutes with `A`. -/
+/-- Every polynomial in $A$ commutes with $A$. -/
 private theorem commute_aeval_self (A : Matrix (Fin n) (Fin n) ℂ) (q : ℂ[X]) :
     Commute (aeval A q) A := by
   induction q using Polynomial.induction_on' with
@@ -281,8 +362,10 @@ private theorem commute_aeval_self (A : Matrix (Fin n) (Fin n) ℂ) (q : ℂ[X])
     have h1 : Commute (algebraMap ℂ (Matrix (Fin n) (Fin n) ℂ) c) A := Algebra.commutes c A
     exact Commute.mul_left h1 ((Commute.refl A).pow_left k)
 
-/-- **§6.10**: if `A^H = q(A)` for some polynomial `q`, then `A` is normal, because `A` commutes
-with every polynomial in itself. -/
+/-- **Section 6.10** of [saad2003iterative], first remark on normality. Let $A$ be a complex
+$n \times n$ matrix. If $A^H = q(A)$ for some polynomial $q$, then $A$ is normal.
+
+The reason is that $A$ commutes with every polynomial in $A$, and so with $A^H$. -/
 theorem isStarNormal_of_exists_aeval {A : Matrix (Fin n) (Fin n) ℂ}
     (h : ∃ q : ℂ[X], aeval A q = Aᴴ) : IsStarNormal A := by
   obtain ⟨q, hq⟩ := h
@@ -290,18 +373,24 @@ theorem isStarNormal_of_exists_aeval {A : Matrix (Fin n) (Fin n) ℂ}
   rw [Matrix.star_eq_conjTranspose, ← hq]
   exact commute_aeval_self A q
 
-/-- **§6.10**: conversely, a normal `A` satisfies `A^H = q(A)` for some polynomial `q`: writing
-`A = Q Λ Q^H`, any `q` with `q(λ_j) = conj λ_j` at the eigenvalues does. This is the backbone's
-`Matrix.IsStarNormal.exists_aeval_eq_conjTranspose`, which builds `q` by Lagrange interpolation
-of `z ↦ conj z` at the eigenvalues without ever forming `Q`. -/
+/-- **Section 6.10** of [saad2003iterative], converse of the remark on normality. Every normal
+complex $n \times n$ matrix $A$ satisfies $A^H = q(A)$ for some polynomial $q$.
+
+This is the backbone theorem `Matrix.IsStarNormal.exists_aeval_eq_conjTranspose`. It builds $q$
+by Lagrange interpolation of $z \mapsto \bar z$ at the eigenvalues of $A$, so that
+$q(\lambda_j) = \bar\lambda_j$, without the unitary diagonalization $A = Q \Lambda Q^H$. -/
 theorem exists_aeval_eq_conjTranspose_of_isStarNormal {A : Matrix (Fin n) (Fin n) ℂ}
     (hA : IsStarNormal A) : ∃ q : ℂ[X], aeval A q = Aᴴ :=
   Matrix.IsStarNormal.exists_aeval_eq_conjTranspose hA
 
-/-- **§6.10**: a normal `A` satisfies `A^H = q(A)` for a polynomial `q` of degree at most
-`n - 1`. Reducing any polynomial with `q(A) = A^H` modulo the characteristic polynomial, which
-is monic of degree `n` and annihilates `A` by the Cayley–Hamilton theorem, lowers its degree
-below `n` without changing `q(A)`. -/
+/-- **Section 6.10** of [saad2003iterative], second remark on normality. Every normal complex
+$n \times n$ matrix $A$ satisfies $A^H = q(A)$ for some polynomial $q$ of degree at most
+$n - 1$.
+
+The degree bound comes from reducing any polynomial with $q(A) = A^H$ modulo the characteristic
+polynomial of $A$. That polynomial is monic of degree $n$ and annihilates $A$ by the
+Cayley–Hamilton theorem, so the reduction does not change $q(A)$. For $n = 0$ the bound $n - 1$
+is $0$, by truncated subtraction. -/
 theorem exists_aeval_eq_conjTranspose {A : Matrix (Fin n) (Fin n) ℂ} (hA : IsStarNormal A) :
     ∃ q : ℂ[X], q.natDegree ≤ n - 1 ∧ aeval A q = Aᴴ := by
   obtain ⟨q, hq⟩ := exists_aeval_eq_conjTranspose_of_isStarNormal hA
@@ -320,8 +409,8 @@ theorem exists_aeval_eq_conjTranspose {A : Matrix (Fin n) (Fin n) ℂ} (hA : IsS
 
 /-! ### Lemma 6.23 -/
 
-/-- For a normal `A` the set of degrees whose infimum is `ν(A)` is nonempty, so the infimum is
-attained: some `q` of degree exactly `ν(A)` satisfies `q(A) = A^H`. -/
+/-- For a normal complex matrix $A$, the infimum that defines $\nu(A)$ is attained: some polynomial
+$q$ of degree exactly $\nu(A)$ satisfies $q(A) = A^H$. -/
 theorem exists_natDegree_eq_nu {A : Matrix (Fin n) (Fin n) ℂ} (hA : IsStarNormal A) :
     ∃ q : ℂ[X], q.natDegree = ν A ∧ aeval A q = Aᴴ := by
   have hne : {d : ℕ | ∃ q : ℂ[X], q.natDegree = d ∧ aeval A q = Aᴴ}.Nonempty := by
@@ -329,28 +418,33 @@ theorem exists_natDegree_eq_nu {A : Matrix (Fin n) (Fin n) ℂ} (hA : IsStarNorm
     exact ⟨q.natDegree, q, rfl, hq⟩
   exact Nat.sInf_mem hne
 
-/-- `ν(A)` is a lower bound: any `q` with `q(A) = A^H` has degree at least `ν(A)`. -/
+/-- Every polynomial $q$ with $q(A) = A^H$ has degree at least $\nu(A)$. -/
 theorem nu_le_natDegree {A : Matrix (Fin n) (Fin n) ℂ} {q : ℂ[X]} (hq : aeval A q = Aᴴ) :
     ν A ≤ q.natDegree :=
   Nat.sInf_le ⟨q, rfl, hq⟩
 
-/-- **Lemma 6.23** (Faber and Manteuffel). `A` satisfies `A^H v ∈ 𝒦_s(A, v)` for every vector `v`
-if and only if `A` is normal and `ν(A) ≤ s - 1`.
+/-- **Lemma 6.23** of [saad2003iterative] (Faber and Manteuffel). Let $A$ be a complex $n \times n$
+matrix and let $s \ge 1$. Then $A^H v \in \mathcal{K}_s(A, v)$ for every vector
+$v \in \mathbb{C}^n$ if and only if $A$ is normal and $\nu(A) \le s - 1$.
 
-The proof of `→` is not the book's. At an eigenvector `v` of `A` the subspace `𝒦_s(A, v)` sits
-inside `span {v}`, so `A^H v` is a multiple of `v`: every eigenvector of `A` is an eigenvector of
-`A^H`, and `A` is normal by Saad's Lemma 1.15
-(`LinearMap.isStarNormal_of_adjoint_apply_eq_smul`). Where the book then takes a vector `w` whose
-grade is the degree `μ` of the minimal polynomial and argues that `μ ≤ s`, we take
-`w = ∑ x_i` with one nonzero `x_i` from each eigenspace: the `x_i` are pairwise orthogonal, so the
-polynomial `q` of degree `≤ s - 1` supplied by `A^H w ∈ 𝒦_s(A, w)` must satisfy
-`q(λ_i) = conj λ_i` at every eigenvalue, whence `q(A) = A^H` and `ν(A) ≤ s - 1`. That route needs
-neither a maximal vector nor the identity `deg (minpoly A)` = number of distinct eigenvalues, and
-it does not use the book's hypothesis that `A` is nonsingular, which is therefore omitted.
+**Generalization.** The book assumes that $A$ is nonsingular. The proof here does not use this,
+so the hypothesis is omitted.
 
-The hypothesis `0 < s` is not in the book, and is not optional: `ℕ` truncates `s - 1`, so at
-`s = 0` the right-hand side holds for `A = 1` (`ν(1) = 0`) while the left-hand side fails
-(`𝒦_0(A, v) = ⊥`). -/
+**Reading.** The book leaves $s \ge 1$ implicit. The statement assumes $0 < s$, and the
+assumption is necessary: $s - 1$ is truncated subtraction of natural numbers, so for $s = 0$ the
+right-hand side holds for $A = I$ (where $\nu(I) = 0$), while for $n \ge 1$ the left-hand side
+fails because $\mathcal{K}_0(A, v) = \{0\}$.
+
+The proof of the forward direction differs from that of the book. At an eigenvector $v$ of $A$,
+the subspace $\mathcal{K}_s(A, v)$ lies in $\operatorname{span}\{v\}$, so $A^H v$ is a multiple
+of $v$. Thus every eigenvector of $A$ is an eigenvector of $A^H$, and $A$ is normal by Lemma
+1.15 of the book (`LinearMap.isStarNormal_of_adjoint_apply_eq_smul`). The book then takes a
+vector whose grade is the degree of the minimal polynomial of $A$. Here, instead,
+$w = \sum_i x_i$ with one nonzero $x_i$ from each eigenspace. The $x_i$ are pairwise orthogonal,
+so the polynomial $q$ of degree at most $s - 1$ given by $A^H w \in \mathcal{K}_s(A, w)$
+satisfies $q(\lambda_i) = \bar\lambda_i$ at every eigenvalue, hence $q(A) = A^H$ and
+$\nu(A) \le s - 1$. This route needs neither a maximal vector nor the equality of the degree of
+the minimal polynomial with the number of distinct eigenvalues. -/
 theorem lemma_6_23 {A : Matrix (Fin n) (Fin n) ℂ} {s : ℕ} (hs : 0 < s) :
     (∀ v : ℂ𝔼, op Aᴴ v ∈ krylov A v s) ↔ IsStarNormal A ∧ ν A ≤ s - 1 := by
   have hadj : op Aᴴ = LinearMap.adjoint (op A) := Matrix.toEuclideanLin_conjTranspose_eq_adjoint A
@@ -418,11 +512,13 @@ theorem lemma_6_23 {A : Matrix (Fin n) (Fin n) ℂ} {s : ℕ} (hs : 0 < s) :
     rw [← hq, op_aeval]
     exact aeval_mem_krylov A v hdeg
 
-/-! ### Theorem 6.24, the direction the book's own material proves -/
+/-! ### Theorem 6.24, the direction that the material of the book proves -/
 
-/-- **Theorem 6.24, sufficiency, first case**: if the minimal polynomial of `A` has degree `≤ s`
-then `A ∈ CG(s)`, vacuously — every starting vector has grade at most `deg (minpoly A) ≤ s`, so
-there is no pair `i + s ≤ j ≤ μ(v_1) - 1` to constrain. -/
+/-- **Theorem 6.24** of [saad2003iterative], sufficiency, first case. Let $A$ be a complex
+$n \times n$ matrix whose minimal polynomial has degree at most $s$. Then $A \in CG(s)$.
+
+The condition of $CG(s)$ is vacuous here: every starting vector has grade at most the degree of
+the minimal polynomial, so no pair $i + s \le j \le \mu - 1$ exists. -/
 theorem isCGs_of_natDegree_minpoly_le {A : Matrix (Fin n) (Fin n) ℂ} {s : ℕ}
     (h : (minpoly ℂ A).natDegree ≤ s) : IsCGs A s := by
   intro v₁ _ i j hij hjg
@@ -432,9 +528,11 @@ theorem isCGs_of_natDegree_minpoly_le {A : Matrix (Fin n) (Fin n) ℂ} {s : ℕ}
       (by rw [minpoly.aeval]; simp)
   omega
 
-/-- **Theorem 6.24, sufficiency, second case**: a normal `A` with `ν(A) ≤ s - 1` is in `CG(s)`.
-Lemma 6.23 turns the hypothesis into `A^H v ∈ 𝒦_s(A, v)` for every `v`, and (6.108) is then the
-band condition, without the restriction `j + 1 ≤ μ(v_1)` that `CG(s)` allows. -/
+/-- **Theorem 6.24** of [saad2003iterative], sufficiency, second case. Let $A$ be a normal complex
+$n \times n$ matrix and $s \ge 1$ with $\nu(A) \le s - 1$. Then $A \in CG(s)$.
+
+Lemma 6.23 gives $A^H v \in \mathcal{K}_s(A, v)$ for every $v$, and (6.108) then gives the band
+condition for all $j$, without the restriction $j \le \mu - 1$ that $CG(s)$ allows. -/
 theorem isCGs_of_isStarNormal {A : Matrix (Fin n) (Fin n) ℂ} {s : ℕ} (hs : 0 < s)
     (hA : IsStarNormal A) (hν : ν A ≤ s - 1) : IsCGs A s := by
   have hmem : ∀ w : EuclideanSpace ℂ (Fin n), LinearMap.adjoint (op A) w ∈ krylov A w s := by
@@ -443,11 +541,12 @@ theorem isCGs_of_isStarNormal {A : Matrix (Fin n) (Fin n) ℂ} {s : ℕ} (hs : 0
     exact (lemma_6_23 hs).2 ⟨hA, hν⟩ w
   exact fun v₁ hv _ _ hij _ => arnoldiCoeff_eq_zero_of_adjoint_mem A v₁ hmem hv hij
 
-/-- **Theorem 6.24, the direction that follows from Lemma 6.23**: each of the book's two
-conditions is sufficient for `A ∈ CG(s)`.
+/-- **Theorem 6.24** of [saad2003iterative], sufficiency. Let $A$ be a complex $n \times n$ matrix
+and $s \ge 1$. If the minimal polynomial of $A$ has degree at most $s$, or $A$ is normal and
+$\nu(A) \le s - 1$, then $A \in CG(s)$.
 
-The converse — that `A ∈ CG(s)` forces one of them — is the Faber–Manteuffel theorem, which
-[saad2003iterative] states without proof; see the module doc comment. -/
+The converse, that $A \in CG(s)$ implies one of the two conditions, is the Faber–Manteuffel
+theorem proper. The book states it without proof, and it is not formalized. -/
 theorem isCGs_of_natDegree_minpoly_le_or_isStarNormal {A : Matrix (Fin n) (Fin n) ℂ} {s : ℕ}
     (hs : 0 < s) (h : (minpoly ℂ A).natDegree ≤ s ∨ (IsStarNormal A ∧ ν A ≤ s - 1)) :
     IsCGs A s := by
@@ -455,18 +554,22 @@ theorem isCGs_of_natDegree_minpoly_le_or_isStarNormal {A : Matrix (Fin n) (Fin n
   · exact isCGs_of_natDegree_minpoly_le h
   · exact isCGs_of_isStarNormal hs hA hν
 
-/-! ### §6.10, the closing remark: the case `ν(A) ≤ 1` -/
+/-! ### Section 6.10, the closing remark: the case $\nu(A) \le 1$ -/
 
-/-- **§6.10, the closing remark**: `ν(A) ≤ 1` — the case of the Conjugate Gradient method — holds
-exactly when `A` has minimal degree `≤ 1` (a scalar matrix), or is Hermitian, or is of the form
-`A = e^{iθ}(ρ I + B)` with `θ`, `ρ` real and `B` skew-Hermitian.
+/-- **Section 6.10** of [saad2003iterative], closing remark. Let $A$ be a normal complex
+$n \times n$ matrix. Then $\nu(A) \le 1$, the case of the Conjugate Gradient method, holds if
+and only if one of the following holds:
 
-Normality is a hypothesis and not a consequence: `ν` is a `sInf` over a set of degrees that is
-empty for a non-normal `A`, and Lean's `sInf ∅ = 0` would then make `ν(A) ≤ 1` vacuously true.
+1. $A = cI$ for some $c \in \mathbb{C}$;
+2. $A$ is Hermitian;
+3. $A = e^{i\theta}(\rho I + B)$ for some $\theta, \rho \in \mathbb{R}$ and a skew-Hermitian
+   matrix $B$, that is, $B^H = -B$.
 
-The three cases are the book's, and they are not disjoint: the third already contains the other
-two — a scalar matrix is `e^{i arg c}(|c| I + 0)`, and a Hermitian `A` is `e^{iπ/2}(0 I + (-i)A)`
-with `-iA` skew-Hermitian. The backbone's
+Normality is a hypothesis, not a consequence: for a non-normal $A$ the set of degrees that
+defines $\nu(A)$ is empty, so $\nu(A) = 0 \le 1$ although none of the three cases need hold. The
+three cases are those of the book, and they are not disjoint: the third contains the other two.
+A scalar matrix $cI$ is $e^{i \arg c}(|c| I + 0)$, and a Hermitian $A$ is
+$e^{i\pi/2}(0 \cdot I + (-iA))$ with $-iA$ skew-Hermitian. The backbone theorem
 `Matrix.exists_natDegree_le_one_aeval_eq_conjTranspose_iff` is that sharper equivalence. -/
 theorem nu_le_one_iff {A : Matrix (Fin n) (Fin n) ℂ} (hA : IsStarNormal A) :
     ν A ≤ 1 ↔

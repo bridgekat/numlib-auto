@@ -6,62 +6,119 @@ import Numlib.Krylov.TransposeFree
 import NumlibSurface.SaadSparse.Chapter07.Section03
 
 /-!
-# Saad §7.4: transpose-free variants
+# Saad, Section 7.4: Transpose-free variants
 
-Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM,
-2003, §7.4.
+This module formalizes Section 7.4 of [saad2003iterative], which presents three methods derived from
+BCG that need no products with $A^H$: CGS (Algorithm 7.6, Sonneveld), BICGSTAB (Algorithm 7.7, van
+der Vorst) and TFQMR (Algorithm 7.8, Freund). The section proves no numbered result about them. What
+gives each method its meaning is a polynomial identity, and these identities are what the module
+states. Let $\varphi_j$ and $\pi_j$ be the BCG residual and direction polynomials of (7.32)–(7.33),
+so that BCG has $r_j = \varphi_j(A) r_0$ and $p_j = \pi_j(A) r_0$. Then CGS computes
+$r_j = \varphi_j^2(A) r_0$ (equations (7.40)–(7.45)), and BICGSTAB computes
+$r_j = \psi_j(A) \varphi_j(A) r_0$ with $\psi_{j+1}(t) = (1 - \omega_j t) \psi_j(t)$ (equations
+(7.46)–(7.52)). The BCG coefficients can be computed from the BICGSTAB vectors (equations
+(7.53)–(7.54)).
 
-The section presents three algorithms and proves no numbered result about any of them. What is
-theorem content, and what this file states, is the polynomial identification that gives each method
-its meaning.
+TFQMR runs on the CGS vectors with doubled indices (equations (7.56)–(7.65)). They satisfy
+$Au_j = (w_j - w_{j+1})/\alpha_j$, a Hessenberg relation with two families of vectors and a
+bidiagonal coefficient matrix $\bar H_m$ (equations (7.68)–(7.73)). The module shows that Algorithm
+7.8 computes the quasi-minimal residual iterate of this relation, and it proves the bound (7.83),
+$\|b - Ax_m\|_2 \le \sqrt{m+1} \, \tau_m$. The proofs specialize `Numlib.Krylov.TransposeFree`,
+`Numlib.Krylov.BiLanczos` and `Numlib.Krylov.QuasiMinRes`.
 
-`bcgResidualPoly` and `bcgDirectionPoly` are the polynomials `φ_j`, `π_j` of (7.32)–(7.33), defined
-by the recurrences (7.35)–(7.36) from the coefficients of the run of Algorithm 7.3 itself;
-`bcg_residual_eq_aeval` is (7.32)–(7.33) together with the observation that the starred recurrences
-are the unstarred ones with `A` replaced by `Aᴴ`, so that `r*_j = φ̄_j(Aᴴ) r*_0`. Every scalar of
-the section is then computed by moving a polynomial across the inner product, which is
-`BiLanczos.inner_aeval_map_eq`.
+## Main definitions
 
-**Algorithm 7.6** (CGS, Sonneveld) is `cgs`, and `cgs_residual_eq` is (7.40)–(7.45): its vectors are
-`r_j = φ_j²(A) r_0`, `p_j = π_j²(A) r_0`, `u_j = φ_j(A) π_j(A) r_0` and `q_j = φ_{j+1}(A) π_j(A)
-r_0` for the BCG polynomials of the *same* run, and its `α_j`, `β_j` are the BCG ones. No
-hypothesis is needed: the squared polynomials are computed without ever touching `Aᴴ`, which is the
-whole point of the method.
+* Equations (7.32)–(7.36), `SaadSparse.Chapter07.bcgResidualPoly` and
+  `SaadSparse.Chapter07.bcgDirectionPoly`: the BCG residual polynomial $\varphi_j$ and direction
+  polynomial $\pi_j$.
+* Algorithm 7.6, `SaadSparse.Chapter07.cgs`: the conjugate gradient squared method (CGS), with the
+  state `SaadSparse.Chapter07.CGSState` and the auxiliary vector `SaadSparse.Chapter07.cgsQ`.
+* Algorithm 7.7, `SaadSparse.Chapter07.bicgstab`: BICGSTAB, with the state
+  `SaadSparse.Chapter07.BICGSTABState`, the half-step residual `SaadSparse.Chapter07.bicgstabS` and
+  the step length `SaadSparse.Chapter07.bicgstabOmega`.
+* Equation (7.47), `SaadSparse.Chapter07.bicgstabPoly`: the stabilizing polynomial $\psi_j$.
+* Algorithm 7.8, `SaadSparse.Chapter07.tfqmr`: the transpose-free QMR method (TFQMR), with the state
+  `SaadSparse.Chapter07.TFQMRState`.
+* Equations (7.66)–(7.67), `SaadSparse.Chapter07.cgsHalfIterate`: the CGS iterates extended to
+  half-steps.
+* Equations (7.72) and (7.81), `SaadSparse.Chapter07.tfqmrCoeff`: the bidiagonal coefficient array
+  $\bar H_m = \Delta_{m+1} \bar B_m$.
+* Equation (7.73), `SaadSparse.Chapter07.tfqmrDelta`: the column scaling $\delta_i = \|w_i\|_2$.
+* `SaadSparse.Chapter07.TFQMRNoSeriousBreakdown` and `SaadSparse.Chapter07.TFQMRNoBreakdown`: the
+  two no-breakdown hypotheses of TFQMR.
 
-**Algorithm 7.7** (BICGSTAB, van der Vorst) is `bicgstab`, with the stabilizing polynomial `ψ_j` of
-(7.47) as `bicgstabPoly`; `bicgstab_residual_eq` is (7.46) and (7.52), and `equation_7_53` is
-(7.53)–(7.54), the formulas that make the BCG coefficients computable from the BICGSTAB vectors.
-Here hypotheses are needed, and they are exactly the two the book's leading-coefficient argument
-uses: Algorithm 7.3 has not broken down, so that `γ_1^{(j)} ≠ 0`, and no `ω_i` has vanished, so
-that `η_1^{(j)} ≠ 0`. `equation_7_55` is the steepest-descent characterization of `ω_j`: the
-BICGSTAB half-step is `Projection.minResStep` along `s_j`.
+## Main results
 
-**Algorithm 7.8** (TFQMR, Freund) is `tfqmr`, on the doubled-index vectors of (7.65);
-`tfqmr_eq_cgs` is (7.56)–(7.62), that the even-indexed state is the CGS state, and
-`cgsHalfIterate_two_mul` is (7.63)–(7.64), that the half-step iterates interleave the CGS ones.
-`equation_7_70` is (7.68)–(7.73): `A u_j = (w_j - w_{j+1})/α_j` is a `Krylov.HessenbergRelation₂`
-for the *two* families `u` and `w` — the iterates live in the span of the `u`-vectors and the
-residuals in the span of the `w`-vectors — with the bidiagonal coefficient array `H̄_m = Δ_{m+1}
-B̄_m` of (7.72) and (7.81). It is stated for an arbitrary column scaling `Δ_{m+1}`, which is what
-P-7.9 asks about; `equation_7_76` is the FOM formula for the CGS iterates, likewise for an
-arbitrary scaling. With the scaling `δ_i = ‖w_i‖₂` of (7.73) the residual basis has unit columns,
-and `tfqmr_isQuasiMinResidualIterate` identifies Algorithm 7.8's `θ, c, τ, η, d` recurrence with the
-quasi-minimal-residual iterate of that relation — it is Algorithm 6.13 with `k = 1`, because `H̄_m`
-is bidiagonal — whence (7.83), `‖b - A x_m‖₂ ≤ √(m+1) τ_m`, as `equation_7_83`.
-Two hypotheses appear there, and both are bounded or conditional, because `∀ m, α_m ≠ 0` is
-unsatisfiable in finite dimension — Algorithm 7.3 terminates, and `ρ_j = 0` from the grade on, so a
-theorem assuming it would say nothing. `TFQMRNoBreakdown … m` asks that no `α_i` and no `w_i`
-vanish *through step `m`*, which is what the first `m` rotations need; `TFQMRNoSeriousBreakdown`
-asks that a vanishing `α_m` come with `A u_m = 0`, which is what (7.70) needs and what a regular
-termination gives — the analogue of `NoSeriousBreakdown` for Algorithm 7.1.
+* Equations (7.32)–(7.33), `SaadSparse.Chapter07.bcg_residual_eq_aeval`: $r_j = \varphi_j(A) r_0$,
+  $p_j = \pi_j(A) r_0$, and the conjugate polynomials at $A^H$ give $r^*_j$ and $p^*_j$.
+* `SaadSparse.Chapter07.inner_aeval_conjTranspose_aeval`:
+  $(p(A) v, \bar q(A^H) w) = (q(A) p(A) v, w)$, the step that removes the transpose.
+* Equations (7.40)–(7.45), `SaadSparse.Chapter07.cgs_residual_eq`: the CGS vectors are the squared
+  BCG polynomials applied to $r_0$, and the CGS coefficients are the BCG coefficients.
+* Equations (7.46) and (7.52), `SaadSparse.Chapter07.bicgstab_residual_eq`:
+  $r_j = \psi_j(A) \varphi_j(A) r_0$ and $p_j = \psi_j(A) \pi_j(A) r_0$.
+* Equations (7.53)–(7.54), `SaadSparse.Chapter07.equation_7_53`: the BCG coefficients in terms of
+  the BICGSTAB vectors.
+* Equation (7.55), `SaadSparse.Chapter07.equation_7_55`: $\omega_j$ minimizes
+  $\|(I - \omega A) s_j\|_2$.
+* Equations (7.56)–(7.62), `SaadSparse.Chapter07.tfqmr_eq_cgs`: the even half-steps of Algorithm 7.8
+  carry the CGS state.
+* Equations (7.63)–(7.64), `SaadSparse.Chapter07.cgsHalfIterate_two_mul`: the even half-step
+  iterates are the CGS iterates.
+* Equations (7.68)–(7.73), `SaadSparse.Chapter07.equation_7_70`: $Au_i = (w_i - w_{i+1})/\alpha_i$
+  is a two-family Hessenberg relation with the bidiagonal $\bar H_m$.
+* Equations (7.74)–(7.76) and exercise P-7.9, `SaadSparse.Chapter07.equation_7_76`: the FOM formula
+  for the extended CGS iterates, for every column scaling.
+* `SaadSparse.Chapter07.tfqmr_eq_dqgmres`, `SaadSparse.Chapter07.tfqmr_eq_qgmres` and
+  `SaadSparse.Chapter07.tfqmr_isQuasiMinResidualIterate`: Algorithm 7.8 is Algorithm 6.13 with
+  $k = 1$, hence Algorithm 6.12, hence the quasi-minimal residual iterate.
+* Equation (7.83), `SaadSparse.Chapter07.equation_7_83`: $\|b - Ax_m\|_2 \le \sqrt{m+1} \, \tau_m$.
+* Section 7.4.3, `SaadSparse.Chapter07.norm_gamma_eq_tfqmrTau`: the quasi-residual scalar has
+  modulus $\tau_m$.
 
-Over `ℂ` the book's real recurrence for `θ_m`, `c_m` and `τ_m` still computes the right thing:
-`τ_m = |γ_m|` is the modulus of the backbone `Krylov.gamma`, and `η_{m+1} = c_{m+1}² α_m` is
-exactly `g_m / ρ_m`, the phase of `α_m` entering through `η` alone.
+## Proof outline
 
-Indices are `0`-based as in the rest of the chapter: `cgs A b x₀ rs₀ j` is the book's state after
-`j` steps, `tfqmr A b x₀ rs₀ m` its state after `m` half-steps, and `bcgResidualPoly A b x₀ rs₀ j`
-its `φ_j`.
+Every scalar of the section is computed by moving a polynomial across the inner product,
+`BiLanczos.inner_aeval_map_eq`. For (7.53)–(7.54), the proof replaces $\psi_j(A^H) r^*_0$ and
+$\varphi_j(A^H) r^*_0$ by their leading terms and compares the leading coefficients
+$\eta_1^{(j+1)} = -\omega_j \eta_1^{(j)}$ of $\psi$ and
+$\gamma_1^{(j+1)} = -\alpha_j \gamma_1^{(j)}$ of $\varphi$. For TFQMR, the scaling
+$\delta_i = \|w_i\|_2$ of (7.73) gives the residual basis unit columns. The $\theta$, $c$, $\tau$,
+$\eta$, $d$ recurrence of Algorithm 7.8 is Algorithm 6.13 (DQGMRES) with $k = 1$, which loses
+nothing because $\bar H_m$ is bidiagonal, so it computes the quasi-minimal residual iterate of
+Algorithm 6.12. The bound (7.83) then follows as Proposition 7.3 does.
+
+## Conventions
+
+* Indices are $0$-based as in the rest of the chapter: `cgs A b x₀ rs₀ j` is the state of the book
+  after $j$ steps, `tfqmr A b x₀ rs₀ m` is its state after $m$ half-steps, and
+  `bcgResidualPoly A b x₀ rs₀ j` is its $\varphi_j$.
+* The polynomials $\varphi_j$ and $\pi_j$ are defined from the coefficients
+  `SaadSparse.Chapter07.bcgAlpha` and `SaadSparse.Chapter07.bcgBeta` of the run of Algorithm 7.3 for
+  the same $A$, $b$, $x_0$ and $r^*_0$.
+* Over $\mathbb{C}$, the starred BCG vectors carry the conjugate polynomials:
+  $r^*_j = \bar\varphi_j(A^H) r^*_0$. Over $\mathbb{R}$ this is the book's
+  $r^*_j = \varphi_j(A^T) r^*_0$.
+
+## Implementation notes
+
+* CGS needs no hypothesis: the squared polynomials are computed without any product with $A^H$,
+  which is the purpose of the method. BICGSTAB needs the two hypotheses of the leading-coefficient
+  argument of the book: Algorithm 7.3 has not broken down, so that $\gamma_1^{(j)} \neq 0$, and no
+  $\omega_i$ has vanished, so that $\eta_1^{(j)} \neq 0$.
+* The TFQMR hypotheses are bounded or conditional, because $\alpha_m \neq 0$ for all $m$ cannot hold
+  in finite dimension: Algorithm 7.3 terminates, and $\rho_j = 0$ from the grade on, so a theorem
+  with that hypothesis would say nothing. `SaadSparse.Chapter07.TFQMRNoBreakdown` asks that no
+  $\alpha_i$ and no $w_i$ vanish through step $m$, which is what the first $m$ rotations need.
+  `SaadSparse.Chapter07.TFQMRNoSeriousBreakdown` asks that $\alpha_m = 0$ imply $Au_m = 0$, which is
+  what (7.70) needs and what a regular termination gives. It is the analogue of
+  `SaadSparse.Chapter07.NoSeriousBreakdown` for Algorithm 7.1.
+* Over $\mathbb{C}$ the real recurrence of the book for $\theta_m$, $c_m$ and $\tau_m$ still
+  computes the right quantities. The value $\tau_m$ is the modulus of the backbone scalar
+  `Krylov.gamma`, and $\eta_{m+1} = c_{m+1}^2 \alpha_m$ is exactly the DQGMRES step length
+  $g_m/\rho_m$, so the phase of $\alpha_m$ enters only through $\eta$.
+* `SaadSparse.Chapter07.equation_7_70` and `SaadSparse.Chapter07.equation_7_76` hold for an
+  arbitrary column scaling $\Delta_{m+1}$, which is what exercise P-7.9 asks about.
 -/
 
 open Matrix Polynomial
@@ -82,60 +139,76 @@ section BCGPolynomials
 
 variable (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ rs₀ : EuclideanSpace 𝕜 (Fin n))
 
-/-- (7.32), (7.35): the **BCG residual polynomial** `φ_j`, the polynomial of degree at most `j` with
-`φ_j(0) = 1` and `r_j = φ_j(A) r_0`, defined from the coefficients of Algorithm 7.3 by `φ_0 = 1`,
-`φ_{j+1} = φ_j - α_j t π_j`.  Its degree is exactly `j` while no `α_i` vanishes.  Backbone
-`BCG.residualPoly` at the pair `(A, Aᴴ)`. -/
+/-- **Equations (7.32) and (7.35)** of [saad2003iterative]. Let $A \in \mathbb{K}^{n \times n}$ and
+$b, x_0, r^*_0 \in \mathbb{K}^n$. The **BCG residual polynomial** $\varphi_j$ is defined from
+the coefficients $\alpha_j$ of Algorithm 7.3 by $$\varphi_0 = 1, \qquad \varphi_{j+1}(t) =
+\varphi_j(t) - \alpha_j t \, \pi_j(t),$$ where $\pi_j$ is the BCG direction polynomial. It has
+degree at most $j$, it satisfies $\varphi_j(0) = 1$, and the BCG residual is
+$r_j = \varphi_j(A) r_0$ (`SaadSparse.Chapter07.bcg_residual_eq_aeval`). Its degree is exactly
+$j$ while no $\alpha_i$ vanishes.
+
+The definition is the backbone `BCG.residualPoly` for the operators $A$ and $A^H$. -/
 noncomputable def bcgResidualPoly (j : ℕ) : 𝕜[X] := BCG.residualPoly (op A) (op Aᴴ) b x₀ rs₀ j
 
-/-- (7.33), (7.36): the **BCG direction polynomial** `π_j`, the polynomial of degree at most `j`
-with `p_j = π_j(A) r_0`, defined by `π_0 = 1`, `π_{j+1} = φ_{j+1} + β_j π_j`.  Backbone
-`BCG.directionPoly`. -/
+/-- **Equations (7.33) and (7.36)** of [saad2003iterative]. Let $A \in \mathbb{K}^{n \times n}$ and
+$b, x_0, r^*_0 \in \mathbb{K}^n$. The **BCG direction polynomial** $\pi_j$ is defined from the
+coefficients $\beta_j$ of Algorithm 7.3 by $$\pi_0 = 1, \qquad \pi_{j+1} = \varphi_{j+1} +
+\beta_j \pi_j.$$ It has degree at most $j$, and the BCG direction is $p_j = \pi_j(A) r_0$.
+
+The definition is the backbone `BCG.directionPoly` for the operators $A$ and $A^H$. -/
 noncomputable def bcgDirectionPoly (j : ℕ) : 𝕜[X] := BCG.directionPoly (op A) (op Aᴴ) b x₀ rs₀ j
 
+/-- The BCG residual polynomial starts with $\varphi_0 = 1$. -/
 @[simp] theorem bcgResidualPoly_zero : bcgResidualPoly A b x₀ rs₀ 0 = 1 := rfl
 
+/-- The BCG direction polynomial starts with $\pi_0 = 1$. -/
 @[simp] theorem bcgDirectionPoly_zero : bcgDirectionPoly A b x₀ rs₀ 0 = 1 := rfl
 
-/-- (7.35): `φ_{j+1} = φ_j - α_j t π_j`. -/
+/-- Equation (7.35): $\varphi_{j+1}(t) = \varphi_j(t) - \alpha_j t \, \pi_j(t)$. -/
 theorem bcgResidualPoly_succ (j : ℕ) : bcgResidualPoly A b x₀ rs₀ (j + 1) =
     bcgResidualPoly A b x₀ rs₀ j
       - C (bcgAlpha A b x₀ rs₀ j) * (X * bcgDirectionPoly A b x₀ rs₀ j) :=
   BCG.residualPoly_succ _ _ _ _ _ j
 
-/-- (7.36): `π_{j+1} = φ_{j+1} + β_j π_j`. -/
+/-- Equation (7.36): $\pi_{j+1} = \varphi_{j+1} + \beta_j \pi_j$. -/
 theorem bcgDirectionPoly_succ (j : ℕ) : bcgDirectionPoly A b x₀ rs₀ (j + 1) =
     bcgResidualPoly A b x₀ rs₀ (j + 1)
       + C (bcgBeta A b x₀ rs₀ j) * bcgDirectionPoly A b x₀ rs₀ j :=
   BCG.directionPoly_succ _ _ _ _ _ j
 
-/-- The residual polynomials are *consistent*: `φ_j(0) = 1` for every `j`, which is what makes
-`φ_j(A) r_0` a residual. -/
+/-- The residual polynomials are consistent: $\varphi_j(0) = 1$ for every $j$, which makes
+$\varphi_j(A) r_0$ a residual. -/
 @[simp] theorem bcgResidualPoly_eval_zero (j : ℕ) :
     (bcgResidualPoly A b x₀ rs₀ j).eval 0 = 1 :=
   BCG.residualPoly_eval_zero _ _ _ _ _ j
 
+/-- The BCG residual polynomial $\varphi_j$ has degree at most $j$. -/
 theorem bcgResidualPoly_natDegree_le (j : ℕ) : (bcgResidualPoly A b x₀ rs₀ j).natDegree ≤ j :=
   BCG.residualPoly_natDegree_le _ _ _ _ _ j
 
+/-- The BCG direction polynomial $\pi_j$ has degree at most $j$. -/
 theorem bcgDirectionPoly_natDegree_le (j : ℕ) : (bcgDirectionPoly A b x₀ rs₀ j).natDegree ≤ j :=
   BCG.directionPoly_natDegree_le _ _ _ _ _ j
 
-/-- The two polynomials of a step have the same leading coefficient, `π_{j+1}` differing from
-`φ_{j+1}` only by a multiple of the lower-degree `π_j`.  This is the "the leading coefficients for
-`φ_j(Aᴴ) r*_0` and `π_j(Aᴴ) r*_0` are identical" of the derivation of (7.54). -/
+/-- The coefficients of $t^j$ in $\pi_j$ and in $\varphi_j$ are equal, because $\pi_j$ differs from
+$\varphi_j$ only by a multiple of $\pi_{j-1}$, which has lower degree. This is the statement, in
+the derivation of (7.54), that the leading coefficients of $\varphi_j(A^H) r^*_0$ and
+$\pi_j(A^H) r^*_0$ are identical. -/
 theorem bcgDirectionPoly_coeff_self (j : ℕ) :
     (bcgDirectionPoly A b x₀ rs₀ j).coeff j = (bcgResidualPoly A b x₀ rs₀ j).coeff j :=
   BCG.directionPoly_coeff_self _ _ _ _ _ j
 
-/-- The leading coefficients obey `γ_1^{(j+1)} = -α_j γ_1^{(j)}`, the first of the two relations
-the derivation of (7.53) compares. -/
+/-- The coefficients $\gamma_1^{(j)}$ of $t^j$ in $\varphi_j$ satisfy
+$\gamma_1^{(j+1)} = -\alpha_j \gamma_1^{(j)}$. This is the first of the two relations that the
+derivation of (7.53) compares. -/
 theorem bcgResidualPoly_coeff_succ (j : ℕ) :
     (bcgResidualPoly A b x₀ rs₀ (j + 1)).coeff (j + 1) =
       -bcgAlpha A b x₀ rs₀ j * (bcgResidualPoly A b x₀ rs₀ j).coeff j :=
   BCG.residualPoly_coeff_succ _ _ _ _ _ j
 
-/-- The recurrences of **Algorithm 7.3** in the book's own notation, lines 6, 7, 9 and 10. -/
+/-- Lines 6, 7, 9 and 10 of Algorithm 7.3, in the notation of the book:
+$r_{j+1} = r_j - \alpha_j A p_j$, $r^*_{j+1} = r^*_j - \bar\alpha_j A^H p^*_j$,
+$p_{j+1} = r_{j+1} + \beta_j p_j$ and $p^*_{j+1} = r^*_{j+1} + \bar\beta_j p^*_j$. -/
 theorem bcg_succ (j : ℕ) :
     (bcg A b x₀ rs₀ (j + 1)).r
         = (bcg A b x₀ rs₀ j).r - bcgAlpha A b x₀ rs₀ j • op A (bcg A b x₀ rs₀ j).p ∧
@@ -151,11 +224,17 @@ theorem bcg_succ (j : ℕ) :
   exact ⟨BCG.residual_succ _ _ _ _ _ j, BCG.dualResidual_succ _ _ _ _ _ j,
     BCG.direction_succ _ _ _ _ _ j, BCG.dualDirection_succ _ _ _ _ _ j⟩
 
-/-- **(7.32)–(7.33)**: the four BCG sequences are the two polynomials evaluated at `A` on `r_0` and
-at `Aᴴ` on `r*_0`.  The starred recurrences are the unstarred ones with `A` replaced by `Aᴴ` and
-every coefficient conjugated, so the starred vectors carry the *conjugate* polynomials — over `ℝ`,
-where the book works, `φ̄_j = φ_j` and this is the book's `r*_j = φ_j(Aᵀ) r*_0`.  Backbone
-`BCG.residual_eq_aeval`. -/
+/-- **Equations (7.32)–(7.33)** of [saad2003iterative]. Let $A \in \mathbb{K}^{n \times n}$ and
+$b, x_0, r^*_0 \in \mathbb{K}^n$, and let $r_0 = b - Ax_0$. For every $j$, the vectors of
+Algorithm 7.3 are $$r_j = \varphi_j(A) r_0, \quad p_j = \pi_j(A) r_0, \quad r^*_j =
+\bar\varphi_j(A^H) r^*_0, \quad p^*_j = \bar\pi_j(A^H) r^*_0,$$ where $\bar\varphi_j$ and
+$\bar\pi_j$ are $\varphi_j$ and $\pi_j$ with conjugated coefficients. Over $\mathbb{R}$, where
+the book works, $\bar\varphi_j = \varphi_j$, and the third identity is the book's
+$r^*_j = \varphi_j(A^T) r^*_0$.
+
+The starred recurrences are the unstarred ones with $A$ replaced by $A^H$ and every coefficient
+conjugated, and this gives the conjugate polynomials. No hypothesis is needed. The proof
+specializes `BCG.residual_eq_aeval`. -/
 theorem bcg_residual_eq_aeval (j : ℕ) :
     (bcg A b x₀ rs₀ j).r = aeval (op A) (bcgResidualPoly A b x₀ rs₀ j) (b - op A x₀) ∧
       (bcg A b x₀ rs₀ j).p = aeval (op A) (bcgDirectionPoly A b x₀ rs₀ j) (b - op A x₀) ∧
@@ -172,11 +251,17 @@ end BCGPolynomials
 
 section CGS
 
-/-- The state `(x_j, r_j, u_j, p_j)` of **Algorithm 7.6**; the auxiliary `q_j` of line 5 is read off
-it by `cgsQ`.  The backbone record `CGS.State` carries exactly that data. -/
+/-- **Algorithm 7.6** of [saad2003iterative], the state of CGS: the vectors $(x_j, r_j, u_j, p_j)$.
+The auxiliary vector $q_j$ of line 5 is computed from the state by `SaadSparse.Chapter07.cgsQ`.
+
+This is the backbone record `CGS.State`. -/
 abbrev CGSState (E : Type*) := CGS.State E
 
-/-- One pass through lines 4–10 of **Algorithm 7.6**, on the state `(x_j, r_j, u_j, p_j)`. -/
+/-- One pass through lines 4–10 of Algorithm 7.6 (CGS). From the state $(x_j, r_j, u_j, p_j)$ it
+computes $\alpha_j = (r_j, r^*_0)/(Ap_j, r^*_0)$, $q_j = u_j - \alpha_j A p_j$,
+$x_{j+1} = x_j + \alpha_j (u_j + q_j)$, $r_{j+1} = r_j - \alpha_j A (u_j + q_j)$,
+$\beta_j = (r_{j+1}, r^*_0)/(r_j, r^*_0)$, $u_{j+1} = r_{j+1} + \beta_j q_j$ and $p_{j+1} =
+u_{j+1} + \beta_j (q_j + \beta_j p_j)$. A division by zero gives $0$. -/
 noncomputable def cgsStep (A : Matrix (Fin n) (Fin n) 𝕜) (rs₀ : EuclideanSpace 𝕜 (Fin n))
     (s : CGSState (EuclideanSpace 𝕜 (Fin n))) : CGSState (EuclideanSpace 𝕜 (Fin n)) :=
   let α : 𝕜 := inner 𝕜 rs₀ s.r / inner 𝕜 rs₀ (op A s.p)
@@ -186,8 +271,11 @@ noncomputable def cgsStep (A : Matrix (Fin n) (Fin n) 𝕜) (rs₀ : EuclideanSp
   let u : EuclideanSpace 𝕜 (Fin n) := r + β • q
   { x := s.x + α • (s.u + q), r := r, u := u, p := u + β • (q + β • s.p) }
 
-/-- **Algorithm 7.6** (CGS, Sonneveld) run for `k` steps from `x_0`, with the shadow residual `r*_0`
-initialized to an arbitrary `rs₀`.  Lines 1 and 2 set `p_0 = u_0 = r_0 = b - A x_0`. -/
+/-- **Algorithm 7.6** of [saad2003iterative] (CGS, Sonneveld). Let $A \in \mathbb{K}^{n \times n}$
+and $b, x_0, r^*_0 \in \mathbb{K}^n$, with $r^*_0$ arbitrary. The state after $0$ steps is
+$(x_0, r_0, r_0, r_0)$ with $r_0 = b - Ax_0$, which is $p_0 = u_0 = r_0$ of lines 1 and 2. The
+state after $k + 1$ steps is `SaadSparse.Chapter07.cgsStep` applied to the state after $k$
+steps. -/
 noncomputable def cgs (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ rs₀ : EuclideanSpace 𝕜 (Fin n)) :
     ℕ → CGSState (EuclideanSpace 𝕜 (Fin n))
   | 0 => { x := x₀, r := b - op A x₀, u := b - op A x₀, p := b - op A x₀ }
@@ -195,81 +283,98 @@ noncomputable def cgs (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ rs₀ : Euclidea
 
 variable (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ rs₀ : EuclideanSpace 𝕜 (Fin n))
 
-/-- **Algorithm 7.6**, lines 1 and 2. -/
+/-- Lines 1 and 2 of Algorithm 7.6: the initial state of CGS is $(x_0, r_0, r_0, r_0)$ with
+$r_0 = b - Ax_0$. -/
 @[simp] theorem cgs_zero :
     cgs A b x₀ rs₀ 0 = { x := x₀, r := b - op A x₀, u := b - op A x₀, p := b - op A x₀ } := rfl
 
-/-- One pass of **Algorithm 7.6**. -/
+/-- Each step of Algorithm 7.6 is one application of `SaadSparse.Chapter07.cgsStep`. -/
 theorem cgs_succ (k : ℕ) : cgs A b x₀ rs₀ (k + 1) = cgsStep A rs₀ (cgs A b x₀ rs₀ k) := rfl
 
-/-- **The bridge to the backbone**: the book's Algorithm 7.6 computes `CGS.iterate` of `op A`. -/
+/-- Algorithm 7.6 is the backbone CGS iteration: for every $k$, the state
+`SaadSparse.Chapter07.cgs A b x₀ rs₀ k` equals `CGS.iterate (op A) b x₀ rs₀ k`. -/
 theorem cgs_eq (k : ℕ) : cgs A b x₀ rs₀ k = CGS.iterate (op A) b x₀ rs₀ k := by
   induction k with
   | zero => rfl
   | succ k ih => rw [cgs_succ, ih, CGS.iterate_succ]; rfl
 
-/-- **Algorithm 7.6**, line 4: `α_j = (r_j, r*_0)/(A p_j, r*_0)`. -/
+/-- Line 4 of Algorithm 7.6: the step length $\alpha_j = (r_j, r^*_0)/(Ap_j, r^*_0)$, computed from
+the state of CGS after $j$ steps. -/
 noncomputable def cgsAlpha (j : ℕ) : 𝕜 :=
   inner 𝕜 rs₀ (cgs A b x₀ rs₀ j).r / inner 𝕜 rs₀ (op A (cgs A b x₀ rs₀ j).p)
 
-/-- **Algorithm 7.6**, line 8: `β_j = (r_{j+1}, r*_0)/(r_j, r*_0)`. -/
+/-- Line 8 of Algorithm 7.6: the coefficient $\beta_j = (r_{j+1}, r^*_0)/(r_j, r^*_0)$, computed
+from the states of CGS after $j$ and $j + 1$ steps. -/
 noncomputable def cgsBeta (j : ℕ) : 𝕜 :=
   inner 𝕜 rs₀ (cgs A b x₀ rs₀ (j + 1)).r / inner 𝕜 rs₀ (cgs A b x₀ rs₀ j).r
 
-/-- **Algorithm 7.6**, line 5: `q_j = u_j - α_j A p_j`. -/
+/-- **Algorithm 7.6** of [saad2003iterative], line 5: the auxiliary vector $$q_j = u_j - \alpha_j A
+p_j.$$
+-/
 noncomputable def cgsQ (j : ℕ) : EuclideanSpace 𝕜 (Fin n) :=
   (cgs A b x₀ rs₀ j).u - cgsAlpha A b x₀ rs₀ j • op A (cgs A b x₀ rs₀ j).p
 
+/-- The step length $\alpha_j$ of Algorithm 7.6 is the backbone `CGS.alpha`. -/
 theorem cgsAlpha_eq (j : ℕ) : cgsAlpha A b x₀ rs₀ j = CGS.alpha (op A) b x₀ rs₀ j := by
   rw [cgsAlpha, CGS.alpha, cgs_eq]
 
+/-- The coefficient $\beta_j$ of Algorithm 7.6 is the backbone `CGS.beta`. -/
 theorem cgsBeta_eq (j : ℕ) : cgsBeta A b x₀ rs₀ j = CGS.beta (op A) b x₀ rs₀ j := by
   rw [cgsBeta, CGS.beta, cgs_eq, cgs_eq]
 
+/-- The auxiliary vector $q_j$ of Algorithm 7.6 is the backbone `CGS.q`. -/
 theorem cgsQ_eq (j : ℕ) : cgsQ A b x₀ rs₀ j = CGS.q (op A) b x₀ rs₀ j := by
   rw [cgsQ, CGS.q, cgsAlpha_eq, cgs_eq]
 
-/-- **Algorithm 7.6**, line 6: `x_{j+1} = x_j + α_j (u_j + q_j)`. -/
+/-- Line 6 of Algorithm 7.6: $x_{j+1} = x_j + \alpha_j (u_j + q_j)$. -/
 theorem cgs_succ_x (j : ℕ) : (cgs A b x₀ rs₀ (j + 1)).x =
     (cgs A b x₀ rs₀ j).x
       + cgsAlpha A b x₀ rs₀ j • ((cgs A b x₀ rs₀ j).u + cgsQ A b x₀ rs₀ j) := rfl
 
-/-- **Algorithm 7.6**, line 7: `r_{j+1} = r_j - α_j A (u_j + q_j)`. -/
+/-- Line 7 of Algorithm 7.6: $r_{j+1} = r_j - \alpha_j A (u_j + q_j)$. -/
 theorem cgs_succ_r (j : ℕ) : (cgs A b x₀ rs₀ (j + 1)).r =
     (cgs A b x₀ rs₀ j).r
       - cgsAlpha A b x₀ rs₀ j • op A ((cgs A b x₀ rs₀ j).u + cgsQ A b x₀ rs₀ j) := rfl
 
-/-- **Algorithm 7.6**, line 9: `u_{j+1} = r_{j+1} + β_j q_j`. -/
+/-- Line 9 of Algorithm 7.6: $u_{j+1} = r_{j+1} + \beta_j q_j$. -/
 theorem cgs_succ_u (j : ℕ) : (cgs A b x₀ rs₀ (j + 1)).u =
     (cgs A b x₀ rs₀ (j + 1)).r + cgsBeta A b x₀ rs₀ j • cgsQ A b x₀ rs₀ j := rfl
 
-/-- **Algorithm 7.6**, line 10: `p_{j+1} = u_{j+1} + β_j (q_j + β_j p_j)`. -/
+/-- Line 10 of Algorithm 7.6: $p_{j+1} = u_{j+1} + \beta_j (q_j + \beta_j p_j)$. -/
 theorem cgs_succ_p (j : ℕ) : (cgs A b x₀ rs₀ (j + 1)).p =
     (cgs A b x₀ rs₀ (j + 1)).u
       + cgsBeta A b x₀ rs₀ j • (cgsQ A b x₀ rs₀ j + cgsBeta A b x₀ rs₀ j • (cgs A b x₀ rs₀ j).p) :=
   rfl
 
-/-- The CGS residual is the true residual of the CGS iterate. -/
+/-- The vector $r_j$ of Algorithm 7.6 is the true residual $b - Ax_j$ of its iterate $x_j$. -/
 theorem cgs_residual (j : ℕ) : (cgs A b x₀ rs₀ j).r = b - op A (cgs A b x₀ rs₀ j).x := by
   rw [cgs_eq]
   exact CGS.r_eq_sub_apply_x (op A) b x₀ rs₀ j
 
-/-- **The step that removes the transpose**: a bilinear expression in `p(A) r_0` and `q̄(Aᴴ) r*_0`
-is one in `(q p)(A) r_0` and `r*_0`.  This is `BiLanczos.inner_aeval_map_eq` at the pair `(op A, op
-Aᴴ)`, and it is what turns `α_j = (φ_j(A) r_0, φ_j(Aᴴ) r*_0)/(A π_j(A) r_0, π_j(Aᴴ) r*_0)` into
-`(φ_j²(A) r_0, r*_0)/(A π_j²(A) r_0, r*_0)`. -/
+/-- Let $A \in \mathbb{K}^{n \times n}$, let $p$ and $q$ be polynomials, and let
+$v, w \in \mathbb{K}^n$. Then $$(p(A) v, \bar q(A^H) w) = ((qp)(A) v, w),$$ where $\bar q$ is
+$q$ with conjugated coefficients. This is the step that removes the transpose from the BCG
+coefficients: it turns $\alpha_j = (\varphi_j(A) r_0, \varphi_j(A^H) r^*_0)/(A \pi_j(A) r_0,
+\pi_j(A^H) r^*_0)$ into $(\varphi_j^2(A) r_0, r^*_0)/(A \pi_j^2(A) r_0, r^*_0)$.
+
+The proof specializes `BiLanczos.inner_aeval_map_eq` for the operators $A$ and $A^H$. -/
 theorem inner_aeval_conjTranspose_aeval (p q : 𝕜[X]) (v w : EuclideanSpace 𝕜 (Fin n)) :
     inner 𝕜 (aeval (op Aᴴ) (q.map (starRingEnd 𝕜)) w) (aeval (op A) p v)
       = inner 𝕜 w (aeval (op A) (q * p) v) := by
   rw [BiLanczos.inner_aeval_map_eq (LinearMap.isAdjointPair_inner_iff'.2 (inner_op_conjTranspose A))
     q, map_mul, Module.End.mul_apply]
 
-/-- **(7.40)–(7.45)**: Algorithm 7.6 computes the *squared* BCG polynomials.  Its vectors are
-`r_j = φ_j²(A) r_0`, `p_j = π_j²(A) r_0`, `u_j = φ_j(A) π_j(A) r_0` and `q_j = φ_{j+1}(A) π_j(A)
-r_0` for the BCG polynomials of the same run, and its `α_j` and `β_j` are the BCG ones.  This is
-what makes Algorithm 7.6 a method: it delivers the residual `φ_j²(A) r_0` of (7.34) without ever
-applying `Aᴴ`.  No hypothesis is needed — the coefficients agree even where both are `0 / 0`.
-Backbone `CGS.residual_eq_aeval_sq`. -/
+/-- **Equations (7.40)–(7.45)** of [saad2003iterative]: Algorithm 7.6 computes the squared BCG
+polynomials. Let $A \in \mathbb{K}^{n \times n}$ and $b, x_0, r^*_0 \in \mathbb{K}^n$, and let
+$\varphi_j$, $\pi_j$, $\alpha_j$ and $\beta_j$ be the BCG polynomials and coefficients for the
+same data. Then for every $j$ the vectors of Algorithm 7.6 are $$r_j = \varphi_j^2(A) r_0, \quad
+p_j = \pi_j^2(A) r_0, \quad u_j = \varphi_j(A) \pi_j(A) r_0, \quad q_j = \varphi_{j+1}(A)
+\pi_j(A) r_0,$$ and the coefficients $\alpha_j$ and $\beta_j$ of Algorithm 7.6 are the BCG
+coefficients. Thus Algorithm 7.6 gives the residual $\varphi_j^2(A) r_0$ of (7.34) without any
+product with $A^H$.
+
+No hypothesis is needed: the coefficients agree also where both are $0/0$, which Lean evaluates
+to $0$. The proof specializes `CGS.residual_eq_aeval_sq`. -/
 theorem cgs_residual_eq (j : ℕ) :
     (cgs A b x₀ rs₀ j).r = aeval (op A) (bcgResidualPoly A b x₀ rs₀ j ^ 2) (b - op A x₀) ∧
       (cgs A b x₀ rs₀ j).p = aeval (op A) (bcgDirectionPoly A b x₀ rs₀ j ^ 2) (b - op A x₀) ∧
@@ -290,11 +395,19 @@ end CGS
 
 section BICGSTAB
 
-/-- The state `(x_j, r_j, p_j)` of **Algorithm 7.7**; the half-step residual `s_j` of line 5 is read
-off it by `bicgstabS`.  The backbone record `BiCGSTAB.State` carries exactly that data. -/
+/-- **Algorithm 7.7** of [saad2003iterative], the state of BICGSTAB: the vectors $(x_j, r_j, p_j)$.
+The half-step residual $s_j$ of line 5 is computed from the state by
+`SaadSparse.Chapter07.bicgstabS`.
+
+This is the backbone record `BiCGSTAB.State`. -/
 abbrev BICGSTABState (E : Type*) := BiCGSTAB.State E
 
-/-- One pass through lines 4–10 of **Algorithm 7.7**, on the state `(x_j, r_j, p_j)`. -/
+/-- One pass through lines 4–10 of Algorithm 7.7 (BICGSTAB). From the state $(x_j, r_j, p_j)$ it
+computes $\alpha_j = (r_j, r^*_0)/(Ap_j, r^*_0)$, $s_j = r_j - \alpha_j A p_j$,
+$\omega_j = (s_j, As_j)/(As_j, As_j)$, $x_{j+1} = x_j + \alpha_j p_j + \omega_j s_j$,
+$r_{j+1} = s_j - \omega_j A s_j$, $\beta_j = ((r_{j+1}, r^*_0)/(r_j, r^*_0))
+(\alpha_j/\omega_j)$ and $p_{j+1} = r_{j+1} + \beta_j (p_j - \omega_j A p_j)$. A division by
+zero gives $0$. -/
 noncomputable def bicgstabStep (A : Matrix (Fin n) (Fin n) 𝕜) (rs₀ : EuclideanSpace 𝕜 (Fin n))
     (s : BICGSTABState (EuclideanSpace 𝕜 (Fin n))) : BICGSTABState (EuclideanSpace 𝕜 (Fin n)) :=
   let α : 𝕜 := inner 𝕜 rs₀ s.r / inner 𝕜 rs₀ (op A s.p)
@@ -304,8 +417,11 @@ noncomputable def bicgstabStep (A : Matrix (Fin n) (Fin n) 𝕜) (rs₀ : Euclid
   let β : 𝕜 := inner 𝕜 rs₀ r / inner 𝕜 rs₀ s.r * (α / ω)
   { x := s.x + α • s.p + ω • sv, r := r, p := r + β • (s.p - ω • op A s.p) }
 
-/-- **Algorithm 7.7** (BICGSTAB, van der Vorst) run for `k` steps from `x_0`, with the shadow
-residual `r*_0` initialized to an arbitrary `rs₀`.  Lines 1 and 2 set `p_0 = r_0 = b - A x_0`. -/
+/-- **Algorithm 7.7** of [saad2003iterative] (BICGSTAB, van der Vorst). Let
+$A \in \mathbb{K}^{n \times n}$ and $b, x_0, r^*_0 \in \mathbb{K}^n$, with $r^*_0$ arbitrary.
+The state after $0$ steps is $(x_0, r_0, r_0)$ with $r_0 = b - Ax_0$, which is $p_0 = r_0$ of
+lines 1 and 2. The state after $k + 1$ steps is `SaadSparse.Chapter07.bicgstabStep` applied to
+the state after $k$ steps. -/
 noncomputable def bicgstab (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ rs₀ : EuclideanSpace 𝕜 (Fin n)) :
     ℕ → BICGSTABState (EuclideanSpace 𝕜 (Fin n))
   | 0 => { x := x₀, r := b - op A x₀, p := b - op A x₀ }
@@ -313,96 +429,117 @@ noncomputable def bicgstab (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ rs₀ : Euc
 
 variable (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ rs₀ : EuclideanSpace 𝕜 (Fin n))
 
-/-- **Algorithm 7.7**, lines 1 and 2. -/
+/-- Lines 1 and 2 of Algorithm 7.7: the initial state of BICGSTAB is $(x_0, r_0, r_0)$ with
+$r_0 = b - Ax_0$. -/
 @[simp] theorem bicgstab_zero :
     bicgstab A b x₀ rs₀ 0 = { x := x₀, r := b - op A x₀, p := b - op A x₀ } := rfl
 
-/-- One pass of **Algorithm 7.7**. -/
+/-- Each step of Algorithm 7.7 is one application of `SaadSparse.Chapter07.bicgstabStep`. -/
 theorem bicgstab_succ (k : ℕ) :
     bicgstab A b x₀ rs₀ (k + 1) = bicgstabStep A rs₀ (bicgstab A b x₀ rs₀ k) := rfl
 
-/-- **The bridge to the backbone**: the book's Algorithm 7.7 computes `BiCGSTAB.iterate` of
-`op A`. -/
+/-- Algorithm 7.7 is the backbone BICGSTAB iteration: for every $k$, the state
+`SaadSparse.Chapter07.bicgstab A b x₀ rs₀ k` equals `BiCGSTAB.iterate (op A) b x₀ rs₀ k`. -/
 theorem bicgstab_eq (k : ℕ) : bicgstab A b x₀ rs₀ k = BiCGSTAB.iterate (op A) b x₀ rs₀ k := by
   induction k with
   | zero => rfl
   | succ k ih => rw [bicgstab_succ, ih, BiCGSTAB.iterate_succ]; rfl
 
-/-- **Algorithm 7.7**, line 4: `α_j = (r_j, r*_0)/(A p_j, r*_0)`. -/
+/-- Line 4 of Algorithm 7.7: the step length $\alpha_j = (r_j, r^*_0)/(Ap_j, r^*_0)$, computed from
+the state of BICGSTAB after $j$ steps. -/
 noncomputable def bicgstabAlpha (j : ℕ) : 𝕜 :=
   inner 𝕜 rs₀ (bicgstab A b x₀ rs₀ j).r / inner 𝕜 rs₀ (op A (bicgstab A b x₀ rs₀ j).p)
 
-/-- **Algorithm 7.7**, line 5: `s_j = r_j - α_j A p_j`. -/
+/-- **Algorithm 7.7** of [saad2003iterative], line 5: the half-step residual $$s_j = r_j - \alpha_j
+A p_j.$$
+-/
 noncomputable def bicgstabS (j : ℕ) : EuclideanSpace 𝕜 (Fin n) :=
   (bicgstab A b x₀ rs₀ j).r - bicgstabAlpha A b x₀ rs₀ j • op A (bicgstab A b x₀ rs₀ j).p
 
-/-- **Algorithm 7.7**, line 6: `ω_j = (A s_j, s_j)/(A s_j, A s_j)`. -/
+/-- **Algorithm 7.7** of [saad2003iterative], line 6: the stabilizing step length $$\omega_j =
+\frac{(s_j, As_j)}{(As_j, As_j)}.$$ Over $\mathbb{R}$ this is the formula
+$(As_j, s_j)/(As_j, As_j)$ of the book. Over $\mathbb{C}$ the order of the numerator is the one
+for which $\omega_j$ minimizes $\|s_j - \omega A s_j\|_2$
+(`SaadSparse.Chapter07.equation_7_55`).
+
+The numerator is `inner 𝕜 (A s) s`, which in the inner product $(x, y) = \sum_i x_i \bar y_i$ of
+the book is $(s_j, As_j)$. When $As_j = 0$, Lean's division by zero gives $\omega_j = 0$. -/
 noncomputable def bicgstabOmega (j : ℕ) : 𝕜 :=
   inner 𝕜 (op A (bicgstabS A b x₀ rs₀ j)) (bicgstabS A b x₀ rs₀ j) /
     inner 𝕜 (op A (bicgstabS A b x₀ rs₀ j)) (op A (bicgstabS A b x₀ rs₀ j))
 
-/-- **Algorithm 7.7**, line 9: `β_j = ((r_{j+1}, r*_0)/(r_j, r*_0)) (α_j/ω_j)`. -/
+/-- Line 9 of Algorithm 7.7: the coefficient $\beta_j = ((r_{j+1}, r^*_0)/(r_j, r^*_0))
+(\alpha_j/\omega_j)$. -/
 noncomputable def bicgstabBeta (j : ℕ) : 𝕜 :=
   inner 𝕜 rs₀ (bicgstab A b x₀ rs₀ (j + 1)).r / inner 𝕜 rs₀ (bicgstab A b x₀ rs₀ j).r
     * (bicgstabAlpha A b x₀ rs₀ j / bicgstabOmega A b x₀ rs₀ j)
 
+/-- The step length $\alpha_j$ of Algorithm 7.7 is the backbone `BiCGSTAB.alpha`. -/
 theorem bicgstabAlpha_eq (j : ℕ) :
     bicgstabAlpha A b x₀ rs₀ j = BiCGSTAB.alpha (op A) b x₀ rs₀ j := by
   rw [bicgstabAlpha, BiCGSTAB.alpha, bicgstab_eq]
 
+/-- The half-step residual $s_j$ of Algorithm 7.7 is the backbone `BiCGSTAB.s`. -/
 theorem bicgstabS_eq (j : ℕ) : bicgstabS A b x₀ rs₀ j = BiCGSTAB.s (op A) b x₀ rs₀ j := by
   rw [bicgstabS, BiCGSTAB.s, bicgstabAlpha_eq, bicgstab_eq]
 
+/-- The step length $\omega_j$ of Algorithm 7.7 is the backbone `BiCGSTAB.omega`. -/
 theorem bicgstabOmega_eq (j : ℕ) :
     bicgstabOmega A b x₀ rs₀ j = BiCGSTAB.omega (op A) b x₀ rs₀ j := by
   rw [bicgstabOmega, BiCGSTAB.omega, bicgstabS_eq]
 
-/-- **Algorithm 7.7**, line 7: `x_{j+1} = x_j + α_j p_j + ω_j s_j`. -/
+/-- Line 7 of Algorithm 7.7: $x_{j+1} = x_j + \alpha_j p_j + \omega_j s_j$. -/
 theorem bicgstab_succ_x (j : ℕ) : (bicgstab A b x₀ rs₀ (j + 1)).x =
     (bicgstab A b x₀ rs₀ j).x + bicgstabAlpha A b x₀ rs₀ j • (bicgstab A b x₀ rs₀ j).p
       + bicgstabOmega A b x₀ rs₀ j • bicgstabS A b x₀ rs₀ j := rfl
 
-/-- **Algorithm 7.7**, line 8: `r_{j+1} = s_j - ω_j A s_j`. -/
+/-- Line 8 of Algorithm 7.7: $r_{j+1} = s_j - \omega_j A s_j$. -/
 theorem bicgstab_succ_r (j : ℕ) : (bicgstab A b x₀ rs₀ (j + 1)).r =
     bicgstabS A b x₀ rs₀ j - bicgstabOmega A b x₀ rs₀ j • op A (bicgstabS A b x₀ rs₀ j) := rfl
 
-/-- **Algorithm 7.7**, line 10: `p_{j+1} = r_{j+1} + β_j (p_j - ω_j A p_j)`. -/
+/-- Line 10 of Algorithm 7.7: $p_{j+1} = r_{j+1} + \beta_j (p_j - \omega_j A p_j)$. -/
 theorem bicgstab_succ_p (j : ℕ) : (bicgstab A b x₀ rs₀ (j + 1)).p =
     (bicgstab A b x₀ rs₀ (j + 1)).r + bicgstabBeta A b x₀ rs₀ j •
       ((bicgstab A b x₀ rs₀ j).p
         - bicgstabOmega A b x₀ rs₀ j • op A (bicgstab A b x₀ rs₀ j).p) := rfl
 
-/-- The BICGSTAB residual is the true residual of the BICGSTAB iterate. -/
+/-- The vector $r_j$ of Algorithm 7.7 is the true residual $b - Ax_j$ of its iterate $x_j$. -/
 theorem bicgstab_residual (j : ℕ) :
     (bicgstab A b x₀ rs₀ j).r = b - op A (bicgstab A b x₀ rs₀ j).x := by
   rw [bicgstab_eq]
   exact BiCGSTAB.r_eq_sub_apply_x (op A) b x₀ rs₀ j
 
-/-- (7.47): the **stabilizing polynomial** `ψ_j` of BICGSTAB, `ψ_0 = 1` and
-`ψ_{j+1} = (1 - ω_j t) ψ_j` for the `ω_j` that Algorithm 7.7 computes.  Backbone
-`BiCGSTAB.stabPoly`. -/
+/-- **Equation (7.47)** of [saad2003iterative]. Let $A \in \mathbb{K}^{n \times n}$ and
+$b, x_0, r^*_0 \in \mathbb{K}^n$. The **stabilizing polynomial** $\psi_j$ of BICGSTAB is defined
+by $$\psi_0 = 1, \qquad \psi_{j+1}(t) = (1 - \omega_j t) \, \psi_j(t),$$ where $\omega_j$ are
+the step lengths that Algorithm 7.7 computes.
+
+The definition is the backbone `BiCGSTAB.stabPoly`. -/
 noncomputable def bicgstabPoly (j : ℕ) : 𝕜[X] := BiCGSTAB.stabPoly (op A) b x₀ rs₀ j
 
+/-- The stabilizing polynomial starts with $\psi_0 = 1$. -/
 @[simp] theorem bicgstabPoly_zero : bicgstabPoly A b x₀ rs₀ 0 = 1 := rfl
 
-/-- (7.47): `ψ_{j+1} = (1 - ω_j t) ψ_j`. -/
+/-- Equation (7.47): $\psi_{j+1}(t) = (1 - \omega_j t) \, \psi_j(t)$. -/
 theorem bicgstabPoly_succ (j : ℕ) : bicgstabPoly A b x₀ rs₀ (j + 1) =
     (1 - C (bicgstabOmega A b x₀ rs₀ j) * X) * bicgstabPoly A b x₀ rs₀ j := by
   rw [bicgstabPoly, bicgstabPoly, BiCGSTAB.stabPoly_succ, bicgstabOmega_eq]
 
-/-- `deg ψ_j ≤ j`. -/
+/-- The stabilizing polynomial $\psi_j$ has degree at most $j$. -/
 theorem bicgstabPoly_natDegree_le (j : ℕ) : (bicgstabPoly A b x₀ rs₀ j).natDegree ≤ j :=
   BiCGSTAB.stabPoly_natDegree_le _ _ _ _ j
 
-/-- The leading coefficients obey `η_1^{(j+1)} = -ω_j η_1^{(j)}`, the second of the two relations
-the derivation of (7.53) compares. -/
+/-- The coefficients $\eta_1^{(j)}$ of $t^j$ in $\psi_j$ satisfy
+$\eta_1^{(j+1)} = -\omega_j \eta_1^{(j)}$. This is the second of the two relations that the
+derivation of (7.53) compares. -/
 theorem bicgstabPoly_coeff_succ (j : ℕ) :
     (bicgstabPoly A b x₀ rs₀ (j + 1)).coeff (j + 1) =
       -bicgstabOmega A b x₀ rs₀ j * (bicgstabPoly A b x₀ rs₀ j).coeff j := by
   rw [bicgstabOmega_eq]
   exact BiCGSTAB.stabPoly_coeff_succ _ _ _ _ j
 
-/-- `η_1^{(j)} = ∏_{i<j} (-ω_i)` does not vanish while no `ω_i` does. -/
+/-- If $\omega_i \neq 0$ for every $i < j$, then the coefficient
+$\eta_1^{(j)} = \prod_{i<j} (-\omega_i)$ of $t^j$ in $\psi_j$ is nonzero. -/
 theorem bicgstabPoly_coeff_ne_zero {j : ℕ}
     (hω : ∀ i < j, bicgstabOmega A b x₀ rs₀ i ≠ 0) :
     (bicgstabPoly A b x₀ rs₀ j).coeff j ≠ 0 :=
@@ -410,9 +547,15 @@ theorem bicgstabPoly_coeff_ne_zero {j : ℕ}
 
 variable {A b x₀ rs₀}
 
-/-- (7.46), (7.52): the BICGSTAB vectors carry the stabilized BCG polynomials.  The induction
-carries the coefficient identities with it, because the polynomials `φ_{j+1}` and `π_{j+1}` are
-built from the BCG coefficients while the algorithm computes its own.  Backbone
+/-- **Equations (7.46) and (7.52)** of [saad2003iterative]. Let $A \in \mathbb{K}^{n \times n}$ and
+$b, x_0, r^*_0 \in \mathbb{K}^n$. Assume that Algorithm 7.3 does not break down before step $m$
+and that $\omega_i \neq 0$ for every $i < m$. Then for every $j \le m$ the vectors of Algorithm
+7.7 are $$r_j = \psi_j(A) \varphi_j(A) r_0 \quad\text{and}\quad p_j = \psi_j(A) \pi_j(A) r_0,$$
+where $\varphi_j$ and $\pi_j$ are the BCG polynomials for the same data.
+
+The proof is an induction that carries the identities of the coefficients
+(`SaadSparse.Chapter07.equation_7_53`) with it, because $\varphi_{j+1}$ and $\pi_{j+1}$ are
+built from the BCG coefficients while Algorithm 7.7 computes its own. It specializes
 `BiCGSTAB.residual_eq`. -/
 theorem bicgstab_residual_eq {m : ℕ} (h : BCGNoBreakdown A b x₀ rs₀ m)
     (hω : ∀ i < m, bicgstabOmega A b x₀ rs₀ i ≠ 0) :
@@ -426,12 +569,19 @@ theorem bicgstab_residual_eq {m : ℕ} (h : BCGNoBreakdown A b x₀ rs₀ m)
   exact BiCGSTAB.residual_eq h.toBCG
     (fun i hi => bicgstabOmega_eq A b x₀ rs₀ i ▸ hω i hi) hj
 
-/-- **(7.53)–(7.54)**: the BCG coefficients are computable from the BICGSTAB vectors alone,
-`α_j = ρ̃_j/(A p_j, r*_0)` and `β_j = (ρ̃_{j+1}/ρ̃_j)(α_j/ω_j)` with `ρ̃_j = (r_j, r*_0)`.
-The proof replaces `ψ_j(Aᴴ) r*_0` and `φ_j(Aᴴ) r*_0` by their leading terms — legitimate because
-`r_j^{BCG}` and `A p_j^{BCG}` are orthogonal to `(Aᴴ)^k r*_0` for `k < j` — and compares the two
-leading coefficients, `η_1^{(j+1)} = -ω_j η_1^{(j)}` against `γ_1^{(j+1)} = -α_j γ_1^{(j)}`.
-Backbone `BiCGSTAB.alpha_eq`, `BiCGSTAB.beta_eq`. -/
+/-- **Equations (7.53)–(7.54)** of [saad2003iterative]: the BCG coefficients can be computed from
+the BICGSTAB vectors. Let $A \in \mathbb{K}^{n \times n}$ and $b, x_0, r^*_0 \in \mathbb{K}^n$.
+Assume that Algorithm 7.3 does not break down before step $m$ and that $\omega_i \neq 0$ for
+every $i < m$, and let $j < m$. Let $\tilde\rho_j = (r_j, r^*_0)$, where $r_j$ and $p_j$ are the
+vectors of Algorithm 7.7. Then the BCG coefficients are $$\alpha_j = \frac{\tilde\rho_j}{(Ap_j,
+r^*_0)} \quad\text{and}\quad \beta_j = \frac{\tilde\rho_{j+1}}{\tilde\rho_j} \cdot
+\frac{\alpha_j}{\omega_j}.$$
+
+The proof replaces $\psi_j(A^H) r^*_0$ and $\varphi_j(A^H) r^*_0$ by their leading terms. This
+is correct because the BCG vectors $r_j$ and $Ap_j$ are orthogonal to $(A^H)^k r^*_0$ for
+$k < j$. It then compares the two leading coefficients,
+$\eta_1^{(j+1)} = -\omega_j \eta_1^{(j)}$ and $\gamma_1^{(j+1)} = -\alpha_j \gamma_1^{(j)}$. The
+proof specializes `BiCGSTAB.alpha_eq` and `BiCGSTAB.beta_eq`. -/
 theorem equation_7_53 {m : ℕ} (h : BCGNoBreakdown A b x₀ rs₀ m)
     (hω : ∀ i < m, bicgstabOmega A b x₀ rs₀ i ≠ 0) {j : ℕ} (hj : j < m) :
     bcgAlpha A b x₀ rs₀ j
@@ -451,10 +601,15 @@ theorem equation_7_53 {m : ℕ} (h : BCGNoBreakdown A b x₀ rs₀ m)
 
 variable (A b x₀ rs₀)
 
-/-- **(7.55)**: `ω_j = (A s_j, s_j)/(A s_j, A s_j)` is the steepest-descent step in the residual
-direction: the second half of the BICGSTAB update is `Projection.minResStep` from the half-step
-iterate `x_j + α_j p_j`, whose residual is exactly `s_j`, and it minimizes `‖(I - ω A) s_j‖₂` over
-`ω`. -/
+/-- **Equation (7.55)** of [saad2003iterative]: $\omega_j$ is a steepest-descent step along the
+residual. Let $A \in \mathbb{K}^{n \times n}$ and $b, x_0, r^*_0 \in \mathbb{K}^n$, and let
+$x_{j+1/2} = x_j + \alpha_j p_j$ be the half-step iterate of Algorithm 7.7, whose residual is
+$s_j$. Then for every $j$, $x_{j+1}$ is the minimal residual step from $x_{j+1/2}$, and
+$x_{j+1}$ minimizes $\|b - Ax\|_2$ over $x \in x_{j+1/2} + \operatorname{span}\{s_j\}$.
+Equivalently, $\omega_j$ minimizes $\|(I - \omega A) s_j\|_2$ over $\omega \in \mathbb{K}$.
+
+The minimal residual step is `Projection.minResStep`, the one-dimensional projection step along
+the residual $r = b - Ax$ orthogonally to $Ar$. The minimization is `IsMinResidual`. -/
 theorem equation_7_55 (j : ℕ) :
     (bicgstab A b x₀ rs₀ (j + 1)).x
         = Projection.minResStep (op A) b
@@ -482,48 +637,61 @@ end BICGSTAB
 
 section TFQMR
 
-/-- The state of **Algorithm 7.8** after `m` half-steps.  The vectors `v_m` and the scalars `ρ_m`,
-`β_m` of the book are defined only at even `m`, so the corresponding fields carry the value from the
-last even index; `α` carries `α_{m-1}`, which by (7.65) is `α_m` when `m` is odd. -/
+/-- **Algorithm 7.8** of [saad2003iterative], the state of TFQMR after $m$ half-steps. It consists
+of the vectors $x_m$, $w_m$, $u_m$, $v$ and $d_m$ and the scalars $\tau_m$, $\theta_m$,
+$\eta_m$, $\rho$ and $\alpha$. The book defines $v_m$, $\rho_m$ and $\beta_m$ only at even $m$,
+so the fields `v` and `ρ` carry the value from the last even index. The field `α` carries
+$\alpha_{m-1}$, which by (7.65) is $\alpha_m$ when $m$ is odd. -/
 structure TFQMRState (𝕜 E : Type*) where
-  /-- The iterate `x_m`. -/
+  /-- The iterate $x_m$. -/
   x : E
-  /-- The auxiliary residual `w_m`, the CGS residual `r_m` of the doubled-index notation. -/
+  /-- The auxiliary residual $w_m$, which is the CGS residual $r_m$ in the doubled-index notation.
+  -/
   w : E
-  /-- The direction `u_m` of (7.65). -/
+  /-- The direction $u_m$ of (7.65). -/
   u : E
-  /-- `v_{2j} = A p_{2j}`, carried unchanged through the odd steps. -/
+  /-- The vector $v_{2j} = Ap_{2j}$ at the last even index $2j \le m$; the odd steps leave it
+  unchanged. -/
   v : E
-  /-- The search direction `d_m` of (7.78). -/
+  /-- The search direction $d_m$ of (7.78). -/
   d : E
-  /-- `τ_m`, the quasi-residual norm of (7.82). -/
+  /-- The quasi-residual norm $\tau_m$ of (7.82). -/
   τ : ℝ
-  /-- `θ_m`, the tangent of the rotation angle. -/
+  /-- The tangent $\theta_m$ of the rotation angle. -/
   θ : ℝ
-  /-- `η_m = c_m² α_{m-1}` of (7.78). -/
+  /-- The scalar $\eta_m = c_m^2 \alpha_{m-1}$ of (7.78). -/
   η : 𝕜
-  /-- `ρ_{2j} = (w_{2j}, r*_0)`, carried unchanged through the odd steps. -/
+  /-- The scalar $\rho_{2j} = (w_{2j}, r^*_0)$ at the last even index $2j \le m$; the odd steps
+  leave it unchanged. -/
   ρ : 𝕜
-  /-- `α_{m-1}`. -/
+  /-- The step length $\alpha_{m-1}$. -/
   α : 𝕜
 
-/-- **Algorithm 7.8**, line 5: `α_m = ρ_m/(v_m, r*_0)` at even `m`, and `α_m = α_{m-1}` at odd `m`,
-which is (7.65). -/
+/-- Line 5 of Algorithm 7.8 and (7.65): the step length $\alpha_m = \rho_m/(v_m, r^*_0)$ at even
+$m$, and $\alpha_m = \alpha_{m-1}$ at odd $m$. -/
 noncomputable def tfqmrStepAlpha (rs₀ : EuclideanSpace 𝕜 (Fin n)) (m : ℕ)
     (s : TFQMRState 𝕜 (EuclideanSpace 𝕜 (Fin n))) : 𝕜 :=
   if Even m then s.ρ / inner 𝕜 rs₀ s.v else s.α
 
-/-- **Algorithm 7.8**, line 8: `w_{m+1} = w_m - α_m A u_m`. -/
+/-- Line 8 of Algorithm 7.8: $w_{m+1} = w_m - \alpha_m A u_m$. -/
 noncomputable def tfqmrStepW (A : Matrix (Fin n) (Fin n) 𝕜) (rs₀ : EuclideanSpace 𝕜 (Fin n))
     (m : ℕ) (s : TFQMRState 𝕜 (EuclideanSpace 𝕜 (Fin n))) : EuclideanSpace 𝕜 (Fin n) :=
   s.w - tfqmrStepAlpha rs₀ m s • op A s.u
 
-/-- **Algorithm 7.8**, line 15: `β_{m-1} = ρ_{m+1}/ρ_{m-1}`, used at odd `m` only. -/
+/-- Line 15 of Algorithm 7.8: $\beta_{m-1} = \rho_{m+1}/\rho_{m-1}$ with
+$\rho_{m+1} = (w_{m+1}, r^*_0)$, used at odd $m$ only. -/
 noncomputable def tfqmrStepBeta (A : Matrix (Fin n) (Fin n) 𝕜) (rs₀ : EuclideanSpace 𝕜 (Fin n))
     (m : ℕ) (s : TFQMRState 𝕜 (EuclideanSpace 𝕜 (Fin n))) : 𝕜 :=
   inner 𝕜 rs₀ (tfqmrStepW A rs₀ m s) / s.ρ
 
-/-- One pass through the loop of **Algorithm 7.8**, at step `m`. -/
+/-- One pass through the loop of Algorithm 7.8 at step $m$. It computes $\alpha_m$,
+$w_{m+1} = w_m - \alpha_m A u_m$, $d_{m+1} = u_m + (\theta_m^2/\alpha_m) \eta_m d_m$,
+$\theta_{m+1} = \|w_{m+1}\|_2/\tau_m$, $c_{m+1} = (1 + \theta_{m+1}^2)^{-1/2}$,
+$\tau_{m+1} = \tau_m \theta_{m+1} c_{m+1}$, $\eta_{m+1} = c_{m+1}^2 \alpha_m$ and
+$x_{m+1} = x_m + \eta_{m+1} d_{m+1}$. At even $m$ it sets $u_{m+1} = u_m - \alpha_m v_m$. At odd
+$m$ it sets $\rho_{m+1} = (w_{m+1}, r^*_0)$, $\beta_{m-1} = \rho_{m+1}/\rho_{m-1}$,
+$u_{m+1} = w_{m+1} + \beta_{m-1} u_m$ and $v_{m+1} = Au_{m+1} + \beta_{m-1}(Au_m + \beta_{m-1}
+v_{m-1})$. A division by zero gives $0$. -/
 noncomputable def tfqmrStep (A : Matrix (Fin n) (Fin n) 𝕜) (rs₀ : EuclideanSpace 𝕜 (Fin n))
     (m : ℕ) (s : TFQMRState 𝕜 (EuclideanSpace 𝕜 (Fin n))) :
     TFQMRState 𝕜 (EuclideanSpace 𝕜 (Fin n)) :=
@@ -544,9 +712,13 @@ noncomputable def tfqmrStep (A : Matrix (Fin n) (Fin n) 𝕜) (rs₀ : Euclidean
     ρ := if Even m then s.ρ else inner 𝕜 rs₀ w
     α := α }
 
-/-- **Algorithm 7.8** (TFQMR, Freund) after `m` half-steps, from `x_0` and an arbitrary shadow
-residual `r*_0`.  Lines 1–3 set `w_0 = u_0 = r_0 = b - A x_0`, `v_0 = A u_0`, `d_0 = 0`,
-`τ_0 = ‖r_0‖₂` and `θ_0 = η_0 = 0`. -/
+/-- **Algorithm 7.8** of [saad2003iterative] (TFQMR, Freund), the state after $m$ half-steps. Let
+$A \in \mathbb{K}^{n \times n}$ and $b, x_0, r^*_0 \in \mathbb{K}^n$, with $r^*_0$ arbitrary.
+Lines 1–3 set $w_0 = u_0 = r_0 = b - Ax_0$, $v_0 = Au_0$, $d_0 = 0$, $\tau_0 = \|r_0\|_2$,
+$\theta_0 = \eta_0 = 0$ and $\rho_0 = (r_0, r^*_0)$. Each half-step is one application of
+`SaadSparse.Chapter07.tfqmrStep`.
+
+The field `α` of the initial state is $0$. -/
 noncomputable def tfqmr (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ rs₀ : EuclideanSpace 𝕜 (Fin n)) :
     ℕ → TFQMRState 𝕜 (EuclideanSpace 𝕜 (Fin n))
   | 0 =>
@@ -556,99 +728,102 @@ noncomputable def tfqmr (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ rs₀ : Euclid
 
 variable (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ rs₀ : EuclideanSpace 𝕜 (Fin n))
 
-/-- **Algorithm 7.8**, lines 1–3. -/
+/-- Lines 1–3 of Algorithm 7.8: the initial state of TFQMR. -/
 @[simp] theorem tfqmr_zero :
     tfqmr A b x₀ rs₀ 0 =
       { x := x₀, w := b - op A x₀, u := b - op A x₀, v := op A (b - op A x₀), d := 0,
         τ := ‖b - op A x₀‖, θ := 0, η := 0, ρ := inner 𝕜 rs₀ (b - op A x₀), α := 0 } := rfl
 
-/-- One pass of **Algorithm 7.8**. -/
+/-- Each half-step of Algorithm 7.8 is one application of `SaadSparse.Chapter07.tfqmrStep`. -/
 theorem tfqmr_succ (m : ℕ) :
     tfqmr A b x₀ rs₀ (m + 1) = tfqmrStep A rs₀ m (tfqmr A b x₀ rs₀ m) := rfl
 
-/-- The vector `u_m` of (7.65). -/
+/-- The vector $u_m$ of (7.65), from the state of Algorithm 7.8 after $m$ half-steps. -/
 noncomputable abbrev tfqmrU (m : ℕ) : EuclideanSpace 𝕜 (Fin n) := (tfqmr A b x₀ rs₀ m).u
 
-/-- The vector `w_m`, which is the CGS residual `r_m` of the doubled-index notation. -/
+/-- The vector $w_m$ of Algorithm 7.8, which is the CGS residual $r_m$ in the doubled-index
+notation. -/
 noncomputable abbrev tfqmrW (m : ℕ) : EuclideanSpace 𝕜 (Fin n) := (tfqmr A b x₀ rs₀ m).w
 
-/-- The scalar `α_m` of (7.65). -/
+/-- The step length $\alpha_m$ of (7.65), stored in the state of Algorithm 7.8 after $m + 1$
+half-steps. -/
 noncomputable abbrev tfqmrAlpha (m : ℕ) : 𝕜 := (tfqmr A b x₀ rs₀ (m + 1)).α
 
-/-- The scalar `τ_m` of (7.82), the running quasi-residual estimate. -/
+/-- The scalar $\tau_m$ of (7.82), the running estimate of the quasi-residual norm. -/
 noncomputable abbrev tfqmrTau (m : ℕ) : ℝ := (tfqmr A b x₀ rs₀ m).τ
 
-/-- The scalar `θ_m` of (7.82). -/
+/-- The scalar $\theta_m$ of (7.82). -/
 noncomputable abbrev tfqmrTheta (m : ℕ) : ℝ := (tfqmr A b x₀ rs₀ m).θ
 
-/-- The scalar `c_m = (1 + θ_m²)^{-1/2}` of (7.82). -/
+/-- The scalar $c_m = (1 + \theta_m^2)^{-1/2}$ of (7.82). -/
 noncomputable abbrev tfqmrC (m : ℕ) : ℝ :=
   (Real.sqrt (1 + tfqmrTheta A b x₀ rs₀ m ^ 2))⁻¹
 
-/-- The scalar `η_m = c_m² α_{m-1}` of (7.78). -/
+/-- The scalar $\eta_m = c_m^2 \alpha_{m-1}$ of (7.78). -/
 noncomputable abbrev tfqmrEta (m : ℕ) : 𝕜 := (tfqmr A b x₀ rs₀ m).η
 
-/-- The direction `d_m` of (7.78). -/
+/-- The direction $d_m$ of (7.78). -/
 noncomputable abbrev tfqmrD (m : ℕ) : EuclideanSpace 𝕜 (Fin n) := (tfqmr A b x₀ rs₀ m).d
 
-/-- **Algorithm 7.8**, line 8: `w_{m+1} = w_m - α_m A u_m`. -/
+/-- Line 8 of Algorithm 7.8: $w_{m+1} = w_m - \alpha_m A u_m$. -/
 theorem tfqmr_succ_w (m : ℕ) : tfqmrW A b x₀ rs₀ (m + 1) =
     tfqmrW A b x₀ rs₀ m - tfqmrAlpha A b x₀ rs₀ m • op A (tfqmrU A b x₀ rs₀ m) := rfl
 
-/-- **Algorithm 7.8**, line 9: `d_{m+1} = u_m + (θ_m²/α_m) η_m d_m`. -/
+/-- Line 9 of Algorithm 7.8: $d_{m+1} = u_m + (\theta_m^2/\alpha_m) \eta_m d_m$. -/
 theorem tfqmr_succ_d (m : ℕ) : tfqmrD A b x₀ rs₀ (m + 1) =
     tfqmrU A b x₀ rs₀ m
       + (((tfqmrTheta A b x₀ rs₀ m ^ 2 : ℝ) : 𝕜) / tfqmrAlpha A b x₀ rs₀ m
         * tfqmrEta A b x₀ rs₀ m) • tfqmrD A b x₀ rs₀ m := rfl
 
-/-- **Algorithm 7.8**, line 10: `θ_{m+1} = ‖w_{m+1}‖₂/τ_m`. -/
+/-- Line 10 of Algorithm 7.8: $\theta_{m+1} = \|w_{m+1}\|_2/\tau_m$. -/
 theorem tfqmr_succ_theta (m : ℕ) : tfqmrTheta A b x₀ rs₀ (m + 1) =
     ‖tfqmrW A b x₀ rs₀ (m + 1)‖ / tfqmrTau A b x₀ rs₀ m := rfl
 
-/-- **Algorithm 7.8**, line 11: `τ_{m+1} = τ_m θ_{m+1} c_{m+1}`. -/
+/-- Line 11 of Algorithm 7.8: $\tau_{m+1} = \tau_m \theta_{m+1} c_{m+1}$. -/
 theorem tfqmr_succ_tau (m : ℕ) : tfqmrTau A b x₀ rs₀ (m + 1) =
     tfqmrTau A b x₀ rs₀ m * tfqmrTheta A b x₀ rs₀ (m + 1) * tfqmrC A b x₀ rs₀ (m + 1) := rfl
 
-/-- **Algorithm 7.8**, line 11: `η_{m+1} = c_{m+1}² α_m`. -/
+/-- Line 11 of Algorithm 7.8: $\eta_{m+1} = c_{m+1}^2 \alpha_m$. -/
 theorem tfqmr_succ_eta (m : ℕ) : tfqmrEta A b x₀ rs₀ (m + 1) =
     ((tfqmrC A b x₀ rs₀ (m + 1) ^ 2 : ℝ) : 𝕜) * tfqmrAlpha A b x₀ rs₀ m := rfl
 
-/-- **Algorithm 7.8**, line 12: `x_{m+1} = x_m + η_{m+1} d_{m+1}`. -/
+/-- Line 12 of Algorithm 7.8: $x_{m+1} = x_m + \eta_{m+1} d_{m+1}$. -/
 theorem tfqmr_succ_x (m : ℕ) : (tfqmr A b x₀ rs₀ (m + 1)).x =
     (tfqmr A b x₀ rs₀ m).x + tfqmrEta A b x₀ rs₀ (m + 1) • tfqmrD A b x₀ rs₀ (m + 1) := rfl
 
-/-- **Algorithm 7.8**, line 5, at even `m`. -/
+/-- Line 5 of Algorithm 7.8 at even $m$: $\alpha_m = \rho_m/(v_m, r^*_0)$. -/
 theorem tfqmr_alpha_even {m : ℕ} (hm : Even m) : tfqmrAlpha A b x₀ rs₀ m =
     (tfqmr A b x₀ rs₀ m).ρ / inner 𝕜 rs₀ (tfqmr A b x₀ rs₀ m).v := ite_eq_left hm
 
-/-- (7.65) at odd `m`: `α_m = α_{m-1}`. -/
+/-- Equation (7.65) at odd $m$: $\alpha_m = \alpha_{m-1}$. -/
 theorem tfqmr_alpha_odd {m : ℕ} (hm : ¬ Even m) :
     tfqmrAlpha A b x₀ rs₀ m = (tfqmr A b x₀ rs₀ m).α := ite_eq_right hm
 
-/-- **Algorithm 7.8**, line 6, at even `m`: `u_{m+1} = u_m - α_m v_m`. -/
+/-- Line 6 of Algorithm 7.8 at even $m$: $u_{m+1} = u_m - \alpha_m v_m$. -/
 theorem tfqmr_succ_u_even {m : ℕ} (hm : Even m) : tfqmrU A b x₀ rs₀ (m + 1) =
     tfqmrU A b x₀ rs₀ m - tfqmrAlpha A b x₀ rs₀ m • (tfqmr A b x₀ rs₀ m).v := ite_eq_left hm
 
-/-- `v` is untouched at even `m`. -/
+/-- At even $m$, a step of Algorithm 7.8 leaves the vector $v$ unchanged. -/
 theorem tfqmr_succ_v_even {m : ℕ} (hm : Even m) :
     (tfqmr A b x₀ rs₀ (m + 1)).v = (tfqmr A b x₀ rs₀ m).v := ite_eq_left hm
 
-/-- `ρ` is untouched at even `m`. -/
+/-- At even $m$, a step of Algorithm 7.8 leaves the scalar $\rho$ unchanged. -/
 theorem tfqmr_succ_rho_even {m : ℕ} (hm : Even m) :
     (tfqmr A b x₀ rs₀ (m + 1)).ρ = (tfqmr A b x₀ rs₀ m).ρ := ite_eq_left hm
 
-/-- **Algorithm 7.8**, line 14, at odd `m`: `ρ_{m+1} = (w_{m+1}, r*_0)`. -/
+/-- Line 14 of Algorithm 7.8 at odd $m$: $\rho_{m+1} = (w_{m+1}, r^*_0)$. -/
 theorem tfqmr_succ_rho_odd {m : ℕ} (hm : ¬ Even m) :
     (tfqmr A b x₀ rs₀ (m + 1)).ρ = inner 𝕜 rs₀ (tfqmrW A b x₀ rs₀ (m + 1)) := ite_eq_right hm
 
-/-- **Algorithm 7.8**, line 16, at odd `m`: `u_{m+1} = w_{m+1} + β_{m-1} u_m`. -/
+/-- Line 16 of Algorithm 7.8 at odd $m$: $u_{m+1} = w_{m+1} + \beta_{m-1} u_m$, with
+$\beta_{m-1} = \rho_{m+1}/\rho_{m-1}$. -/
 theorem tfqmr_succ_u_odd {m : ℕ} (hm : ¬ Even m) : tfqmrU A b x₀ rs₀ (m + 1) =
     tfqmrW A b x₀ rs₀ (m + 1)
       + (inner 𝕜 rs₀ (tfqmrW A b x₀ rs₀ (m + 1)) / (tfqmr A b x₀ rs₀ m).ρ)
         • tfqmrU A b x₀ rs₀ m := ite_eq_right hm
 
-/-- **Algorithm 7.8**, line 17, at odd `m`:
-`v_{m+1} = A u_{m+1} + β_{m-1}(A u_m + β_{m-1} v_{m-1})`. -/
+/-- Line 17 of Algorithm 7.8 at odd $m$: $v_{m+1} = Au_{m+1} + \beta_{m-1}(Au_m + \beta_{m-1}
+v_{m-1})$, with $\beta_{m-1} = \rho_{m+1}/\rho_{m-1}$. -/
 theorem tfqmr_succ_v_odd {m : ℕ} (hm : ¬ Even m) : (tfqmr A b x₀ rs₀ (m + 1)).v =
     op A (tfqmrU A b x₀ rs₀ (m + 1))
       + (inner 𝕜 rs₀ (tfqmrW A b x₀ rs₀ (m + 1)) / (tfqmr A b x₀ rs₀ m).ρ)
@@ -658,7 +833,8 @@ theorem tfqmr_succ_v_odd {m : ℕ} (hm : ¬ Even m) : (tfqmr A b x₀ rs₀ (m +
   rw [tfqmr_succ_u_odd A b x₀ rs₀ hm]
   exact ite_eq_right hm
 
-/-- The even half-steps of Algorithm 7.8 carry the CGS state of Algorithm 7.6. -/
+/-- The even half-steps of Algorithm 7.8 carry the state of Algorithm 7.6: $w_{2j} = r_j$,
+$u_{2j} = u_j$, $v_{2j} = Ap_j$ and $\rho_{2j} = (r_j, r^*_0)$. -/
 private theorem tfqmr_even_state (j : ℕ) :
     tfqmrW A b x₀ rs₀ (2 * j) = (cgs A b x₀ rs₀ j).r ∧
       tfqmrU A b x₀ rs₀ (2 * j) = (cgs A b x₀ rs₀ j).u ∧
@@ -696,10 +872,13 @@ private theorem tfqmr_even_state (j : ℕ) :
       simp only [cgs_succ_p, map_add, map_smul]
     · rw [hidx, tfqmr_succ_rho_odd A b x₀ rs₀ hod, hw2]
 
-/-- **(7.56)–(7.62)**: doubling the subscripts of Algorithm 7.6 gives Algorithm 7.8.  The even
-half-steps carry the CGS state — `w_{2j} = r_j`, `u_{2j} = u_j`, `v_{2j} = A p_j`,
-`ρ_{2j} = (r_j, r*_0)` — the odd ones carry `u_{2j+1} = q_j` of (7.57), and the step lengths agree,
-`α_{2j} = α_{2j+1} = α_j`, which is (7.65). -/
+/-- **Equations (7.56)–(7.62)** of [saad2003iterative]: doubling the indices of Algorithm 7.6 gives
+Algorithm 7.8. Let $A \in \mathbb{K}^{n \times n}$ and $b, x_0, r^*_0 \in \mathbb{K}^n$. For
+every $j$, the state of Algorithm 7.8 after $2j$ half-steps carries the state of Algorithm 7.6
+after $j$ steps, $$w_{2j} = r_j, \quad u_{2j} = u_j, \quad v_{2j} = Ap_j, \quad \rho_{2j} =
+(r_j, r^*_0).$$ The odd half-step carries $u_{2j+1} = q_j$ of (7.57), and the step lengths
+agree, $\alpha_{2j} = \alpha_{2j+1} = \alpha_j$, which is (7.65). On the right-hand sides,
+$r_j$, $u_j$, $p_j$, $q_j$ and $\alpha_j$ are the quantities of Algorithm 7.6. -/
 theorem tfqmr_eq_cgs (j : ℕ) :
     tfqmrW A b x₀ rs₀ (2 * j) = (cgs A b x₀ rs₀ j).r ∧
       tfqmrU A b x₀ rs₀ (2 * j) = (cgs A b x₀ rs₀ j).u ∧
@@ -717,20 +896,25 @@ theorem tfqmr_eq_cgs (j : ℕ) :
   · rw [tfqmr_alpha_odd A b x₀ rs₀ hod]; exact hα
   · rw [tfqmr_succ_u_even A b x₀ rs₀ hev, hu, hv, hα, cgsQ]
 
-/-- (7.66)–(7.67): the CGS iterates extended to half steps, `x̃_m = x_0 + U_m z_m` with
-`z_m = (α_0, …, α_{m-1})ᵀ`.  For even `m` these are the iterates of Algorithm 7.6
-(`cgsHalfIterate_two_mul`); the odd ones are the intermediate iterates
-`x_{j+1/2} = x_j + α_j u_j` that Algorithm 7.6 does not name. -/
+/-- **Equations (7.66)–(7.67)** of [saad2003iterative]: the CGS iterates extended to half-steps. Let
+$A \in \mathbb{K}^{n \times n}$ and $b, x_0, r^*_0 \in \mathbb{K}^n$. With the vectors $u_i$ and
+the step lengths $\alpha_i$ of Algorithm 7.8, $$\tilde x_m = x_0 + U_m z_m = x_0 +
+\sum_{i=0}^{m-1} \alpha_i u_i, \qquad z_m = (\alpha_0, \dots, \alpha_{m-1})^T.$$ For even $m$
+these are the iterates of Algorithm 7.6 (`SaadSparse.Chapter07.cgsHalfIterate_two_mul`). The odd
+ones are the intermediate iterates $x_{j+1/2} = x_j + \alpha_j u_j$, which Algorithm 7.6 does
+not name. -/
 noncomputable def cgsHalfIterate (m : ℕ) : EuclideanSpace 𝕜 (Fin n) :=
   x₀ + ∑ i ∈ Finset.range m, tfqmrAlpha A b x₀ rs₀ i • tfqmrU A b x₀ rs₀ i
 
-/-- (7.67): `x̃_m = x̃_{m-1} + α_{m-1} u_{m-1}`. -/
+/-- Equation (7.67): $\tilde x_{m+1} = \tilde x_m + \alpha_m u_m$. -/
 theorem cgsHalfIterate_succ (m : ℕ) : cgsHalfIterate A b x₀ rs₀ (m + 1) =
     cgsHalfIterate A b x₀ rs₀ m + tfqmrAlpha A b x₀ rs₀ m • tfqmrU A b x₀ rs₀ m := by
   rw [cgsHalfIterate, cgsHalfIterate, Finset.sum_range_succ, add_assoc]
 
-/-- **(7.63)–(7.64)**: the two half-steps of `x_{2j} → x_{2j+2}` compose to the CGS step, so the
-even-indexed half iterates are the iterates of Algorithm 7.6. -/
+/-- **Equations (7.63)–(7.64)** of [saad2003iterative]. Let $A \in \mathbb{K}^{n \times n}$ and
+$b, x_0, r^*_0 \in \mathbb{K}^n$. For every $j$, $$\tilde x_{2j} = x_j,$$ the iterate of
+Algorithm 7.6 after $j$ steps: the two half-steps from $\tilde x_{2j}$ to $\tilde x_{2j+2}$
+compose to one step of CGS. -/
 theorem cgsHalfIterate_two_mul (j : ℕ) :
     cgsHalfIterate A b x₀ rs₀ (2 * j) = (cgs A b x₀ rs₀ j).x := by
   induction j with
@@ -741,21 +925,27 @@ theorem cgsHalfIterate_two_mul (j : ℕ) :
     rw [hidx, cgsHalfIterate_succ, cgsHalfIterate_succ, ih, hu, hu1, hα, hα1, cgs_succ_x,
       smul_add, add_assoc]
 
-/-! #### (7.68)–(7.76): the two-family Hessenberg relation -/
+/-! ### (7.68)–(7.76): the two-family Hessenberg relation -/
 
-/-- (7.72), (7.81): the bidiagonal coefficient array `H̄_m = Δ_{m+1} B̄_m`, with `δ_j/α_j` on the
-diagonal and `-δ_{j+1}/α_j` below it, for a step-length sequence `α` and a column scaling `δ`. -/
+/-- **Equations (7.72) and (7.81)** of [saad2003iterative]. For a sequence of step lengths
+$\alpha_j$ and a column scaling $\delta_j$, this is the bidiagonal coefficient array
+$\bar H_m = \Delta_{m+1} \bar B_m$. In $0$-based indices its entry $(i, j)$ is
+$\delta_j/\alpha_j$ if $i = j$, $-\delta_{j+1}/\alpha_j$ if $i = j + 1$, and $0$ otherwise. A
+division by zero gives $0$. -/
 noncomputable def tfqmrCoeff (α δ : ℕ → 𝕜) : ℕ → ℕ → 𝕜 := fun i j =>
   if i = j then δ j / α j else if i = j + 1 then -(δ i / α j) else 0
 
 variable (α δ : ℕ → 𝕜)
 
+/-- The diagonal entry $(j, j)$ of $\bar H_m$ is $\delta_j/\alpha_j$. -/
 @[simp] theorem tfqmrCoeff_self (j : ℕ) : tfqmrCoeff α δ j j = δ j / α j := ite_eq_left rfl
 
+/-- The subdiagonal entry $(j + 1, j)$ of $\bar H_m$ is $-\delta_{j+1}/\alpha_j$. -/
 @[simp] theorem tfqmrCoeff_succ_self (j : ℕ) :
     tfqmrCoeff α δ (j + 1) j = -(δ (j + 1) / α j) := by
   rw [tfqmrCoeff, ite_eq_right (Nat.succ_ne_self j), ite_eq_left rfl]
 
+/-- The entries of $\bar H_m$ off the diagonal and the subdiagonal are zero. -/
 theorem tfqmrCoeff_eq_zero {i j : ℕ} (h₁ : i ≠ j) (h₂ : i ≠ j + 1) : tfqmrCoeff α δ i j = 0 := by
   rw [tfqmrCoeff, ite_eq_right h₁, ite_eq_right h₂]
 
@@ -763,32 +953,43 @@ variable {α δ}
 
 variable {A b x₀ rs₀}
 
-/-- (7.69): `α_m A u_m = w_m - w_{m+1}`, the only relation Algorithm 7.8 needs between the two
-families. -/
+/-- Equation (7.69): $\alpha_m A u_m = w_m - w_{m+1}$, the only relation between the two families of
+vectors that Algorithm 7.8 needs. -/
 theorem tfqmr_smul_apply_u (m : ℕ) :
     tfqmrAlpha A b x₀ rs₀ m • op A (tfqmrU A b x₀ rs₀ m)
       = tfqmrW A b x₀ rs₀ m - tfqmrW A b x₀ rs₀ (m + 1) := by
   rw [tfqmr_succ_w]
   abel
 
-/-- **Algorithm 7.8 has not broken down seriously**: wherever a step length vanishes, so does
-`A u_m`.  This is exactly what (7.69) needs at a *regular* termination — once `w_M = 0` the
-algorithm produces `u_m = 0` and `α_m = 0` for every `m ≥ M`, and `A u_m = (w_m - w_{m+1})/α_m`
-survives with both sides `0` — while it excludes a genuine breakdown, where `ρ_{2j}` vanishes with
-`w_{2j} ≠ 0`.  It is the analogue of `NoSeriousBreakdown` for Algorithm 7.1, and like it it is a
-*conditional* hypothesis: `∀ m, α_m ≠ 0` is unsatisfiable in finite dimension, because Algorithm
-7.3 terminates. -/
+/-- Algorithm 7.8 of [saad2003iterative] has **no serious breakdown**: for every $m$, if
+$\alpha_m = 0$ then $Au_m = 0$. This is what (7.69) needs at a regular termination: once
+$w_M = 0$, the algorithm produces $u_m = 0$ and $\alpha_m = 0$ for every $m \ge M$, and
+$Au_m = (w_m - w_{m+1})/\alpha_m$ holds with both sides $0$. The condition excludes a genuine
+breakdown, where $\rho_{2j}$ vanishes with $w_{2j} \neq 0$.
+
+This is the analogue of `SaadSparse.Chapter07.NoSeriousBreakdown` for Algorithm 7.1. Like that
+structure, it is a conditional hypothesis, because $\alpha_m \neq 0$ for all $m$ cannot hold in
+finite dimension: Algorithm 7.3 terminates. -/
 structure TFQMRNoSeriousBreakdown (A : Matrix (Fin n) (Fin n) 𝕜)
     (b x₀ rs₀ : EuclideanSpace 𝕜 (Fin n)) : Prop where
-  /-- At a vanishing step length the direction is annihilated by `A`. -/
+  /-- If the step length $\alpha_m$ is zero, then $Au_m = 0$. -/
   apply_u_eq_zero : ∀ m, tfqmrAlpha A b x₀ rs₀ m = 0 → op A (tfqmrU A b x₀ rs₀ m) = 0
 
-/-- **(7.68)–(7.73)**: `A u_i = (w_i - w_{i+1})/α_i`, which in matrix form is `A U_m = R_{m+1} B̄_m`
-of (7.70); after the column scaling `R_{m+1} Δ_{m+1}⁻¹` of (7.73) it is a *two-family* Hessenberg
-relation `Krylov.HessenbergRelation₂` — the iterates expand in the `u`-vectors, the residuals in the
-`w`-vectors — with the bidiagonal `H̄_m = Δ_{m+1} B̄_m`.  The scaling `δ` is arbitrary, which is
-what P-7.9 asks about; it is asked only to vanish where the column it scales does, which a nonzero
-scaling satisfies vacuously and the normalization `δ_i = ‖w_i‖₂` of (7.73) satisfies exactly. -/
+/-- **Equations (7.68)–(7.73)** of [saad2003iterative]. Let $A \in \mathbb{K}^{n \times n}$ and
+$b, x_0, r^*_0 \in \mathbb{K}^n$, and assume that Algorithm 7.8 has no serious breakdown. Let
+$\delta_0, \delta_1, \dots$ be a column scaling such that $w_i = 0$ whenever $\delta_i = 0$.
+Then $$Au_i = \frac{1}{\alpha_i} (w_i - w_{i+1}) \quad\text{for every } i,$$ and the vectors
+$u_j$ and the scaled vectors $\delta_i^{-1} w_i$ satisfy the two-family Hessenberg relation
+$$Au_j = \sum_{i=0}^{j+1} h_{ij} \, \delta_i^{-1} w_i \quad\text{for every } j,$$ with the
+bidiagonal coefficients $h_{ij}$ of $\bar H_m = \Delta_{m+1} \bar B_m$. In matrix form the first
+identity is $AU_m = R_{m+1} \bar B_m$ of (7.70), and the second is that identity after the
+column scaling $R_{m+1} \Delta_{m+1}^{-1}$ of (7.73).
+
+The iterates expand in the vectors $u_j$ and the residuals in the vectors $w_i$, so the relation
+has two families of vectors: it is `Krylov.HessenbergRelation₂`, with the coefficients
+`SaadSparse.Chapter07.tfqmrCoeff`. The scaling is arbitrary, which is what exercise P-7.9 asks
+about. The condition on $\delta$ holds for every nonzero scaling and for the normalization
+$\delta_i = \|w_i\|_2$ of (7.73). Lean's inverse gives $0^{-1} = 0$. -/
 theorem equation_7_70 {δ : ℕ → 𝕜} (h : TFQMRNoSeriousBreakdown A b x₀ rs₀)
     (hδ : ∀ i, δ i = 0 → tfqmrW A b x₀ rs₀ i = 0) :
     (∀ i, op A (tfqmrU A b x₀ rs₀ i)
@@ -817,7 +1018,8 @@ theorem equation_7_70 {δ : ℕ → 𝕜} (h : TFQMRNoSeriousBreakdown A b x₀ 
     zero_add, tfqmrCoeff_self, tfqmrCoeff_succ_self, key, neg_smul, key, hAu j, smul_sub,
     sub_eq_add_neg]
 
-/-- The bidiagonal `H_m` is lower triangular with nonzero diagonal, hence nonsingular. -/
+/-- If no $\alpha_i$ and no $\delta_i$ with $i < m$ vanishes, then the bidiagonal $H_m$ is lower
+triangular with nonzero diagonal, hence nonsingular. -/
 private theorem isUnit_hessenbergSqOf_tfqmrCoeff {α δ : ℕ → 𝕜} (m : ℕ) (hα : ∀ i < m, α i ≠ 0)
     (hδ : ∀ i < m, δ i ≠ 0) : IsUnit (Krylov.hessenbergSqOf (tfqmrCoeff α δ) m) := by
   have hlow : (Krylov.hessenbergSqOf (tfqmrCoeff α δ) m).IsLowerTriangular := by
@@ -831,10 +1033,19 @@ private theorem isUnit_hessenbergSqOf_tfqmrCoeff {α δ : ℕ → 𝕜} (m : ℕ
   rw [tfqmrCoeff_self]
   exact div_ne_zero (hδ _ i.isLt) (hα _ i.isLt)
 
-/-- **(7.74)–(7.76)** and **P-7.9**: the CGS iterates, extended to half steps, satisfy the FOM
-formula `x_m = x_0 + U_m H_m⁻¹(δ_0 e_1)` for the relation (7.70), because the vector of step lengths
-`z_m = (α_0, …, α_{m-1})ᵀ` solves `H_m z_m = δ_0 e_1` — the two entries of each row of the
-bidiagonal `H_m` cancel.  The identity holds for every scaling `Δ_{m+1}`, which answers P-7.9. -/
+/-- **Equations (7.74)–(7.76)** and **exercise P-7.9** of [saad2003iterative]. Let
+$A \in \mathbb{K}^{n \times n}$ and $b, x_0, r^*_0 \in \mathbb{K}^n$, let
+$\delta_0, \delta_1, \dots$ be a column scaling, and assume $\alpha_i \neq 0$ and
+$\delta_i \neq 0$ for every $i < m$. Let $H_m$ be the leading $m \times m$ block of
+$\bar H_m = \Delta_{m+1} \bar B_m$. Then the vector of step lengths
+$z_m = (\alpha_0, \dots, \alpha_{m-1})^T$ solves $$H_m z_m = \delta_0 e_1,$$ the matrix $H_m$ is
+nonsingular, and the extended CGS iterate is given by the FOM formula for the relation (7.70),
+$$\tilde x_m = x_0 + U_m H_m^{-1} (\delta_0 e_1).$$ The identity holds for every scaling
+$\Delta_{m+1}$, which answers exercise P-7.9.
+
+In each row $i \ge 1$ of $H_m z_m$, the two products $h_{i,i-1} \alpha_{i-1} = -\delta_i$ and
+$h_{ii} \alpha_i = \delta_i$ cancel. The matrix $H_m$ is `Krylov.hessenbergSqOf` of
+`SaadSparse.Chapter07.tfqmrCoeff`. -/
 theorem equation_7_76 {δ : ℕ → 𝕜} (m : ℕ) (hα : ∀ i < m, tfqmrAlpha A b x₀ rs₀ i ≠ 0)
     (hδ : ∀ i < m, δ i ≠ 0) :
     Krylov.hessenbergSqOf (tfqmrCoeff (tfqmrAlpha A b x₀ rs₀) δ) m
@@ -888,20 +1099,26 @@ theorem equation_7_76 {δ : ℕ → 𝕜} (m : ℕ) (hα : ∀ i < m, tfqmrAlpha
   rw [hinv, cgsHalfIterate, Fin.sum_univ_eq_sum_range
     (fun i => tfqmrAlpha A b x₀ rs₀ i • tfqmrU A b x₀ rs₀ i) m]
 
-/-! #### (7.77)–(7.83): the rotations and the quasi-minimal-residual property -/
+/-! ### (7.77)–(7.83): the rotations and the quasi-minimal residual property -/
 
-/-- **Algorithm 7.8** has not broken down through step `m`: no step length vanishes — equivalently
-no `ρ_{2j}` does, which is the book's condition on `r*_0` propagated — and no `w_i` does, so that
-the columns of `R_{m+1}` can be normalized.  The bound is not decoration: `∀ i, α_i ≠ 0` is
-unsatisfiable in finite dimension, Algorithm 7.3 terminating with `ρ_j = 0` from the grade on. -/
+/-- Algorithm 7.8 of [saad2003iterative] does not break down through step $m$: for every $i \le m$,
+$\alpha_i \neq 0$ and $w_i \neq 0$. Since $\alpha_{2j} = \alpha_{2j+1} = \rho_{2j}/(v_{2j},
+r^*_0)$, and Lean's division by zero gives $0$, the first condition says that no $\rho_{2j}$ and
+no denominator $(v_{2j}, r^*_0)$ of line 5 vanishes; the condition $\rho_{2j} \neq 0$ is the
+condition of the book on $r^*_0$ carried along the iteration. The second condition makes it
+possible to normalize the columns of $R_{m+1}$.
+
+The bound $m$ is necessary: $\alpha_i \neq 0$ for all $i$ cannot hold in finite dimension,
+because Algorithm 7.3 terminates with $\rho_j = 0$ from the grade on. -/
 structure TFQMRNoBreakdown (A : Matrix (Fin n) (Fin n) 𝕜)
     (b x₀ rs₀ : EuclideanSpace 𝕜 (Fin n)) (m : ℕ) : Prop where
-  /-- No step length vanishes through step `m`. -/
+  /-- For every $i \le m$, the step length $\alpha_i$ is nonzero. -/
   alpha_ne_zero : ∀ i ≤ m, tfqmrAlpha A b x₀ rs₀ i ≠ 0
-  /-- No auxiliary residual vanishes through step `m`, so `δ_i = ‖w_i‖₂ ≠ 0`. -/
+  /-- For every $i \le m$, $w_i \neq 0$, so that $\delta_i = \|w_i\|_2 \neq 0$. -/
   w_ne_zero : ∀ i ≤ m, tfqmrW A b x₀ rs₀ i ≠ 0
 
-/-- Running `m` steps without breakdown entails running `k ≤ m` steps without breakdown. -/
+/-- If Algorithm 7.8 does not break down through step $m$, then it does not break down through step
+$k$ for every $k \le m$. -/
 theorem TFQMRNoBreakdown.mono {A : Matrix (Fin n) (Fin n) 𝕜}
     {b x₀ rs₀ : EuclideanSpace 𝕜 (Fin n)} {m k : ℕ}
     (h : TFQMRNoBreakdown A b x₀ rs₀ m) (hk : k ≤ m) : TFQMRNoBreakdown A b x₀ rs₀ k :=
@@ -909,47 +1126,51 @@ theorem TFQMRNoBreakdown.mono {A : Matrix (Fin n) (Fin n) 𝕜}
 
 variable (A b x₀ rs₀)
 
-/-- (7.73): the column scaling `δ_i = ‖w_i‖₂` that makes the residual basis `R_{m+1} Δ_{m+1}⁻¹`
-have unit columns. -/
+/-- **Equation (7.73)** of [saad2003iterative]: the column scaling $\delta_i = \|w_i\|_2$, seen as a
+scalar. It gives the residual basis $R_{m+1} \Delta_{m+1}^{-1}$ unit columns. -/
 noncomputable def tfqmrDelta (i : ℕ) : 𝕜 := ((‖tfqmrW A b x₀ rs₀ i‖ : ℝ) : 𝕜)
 
-/-- (7.81): the bidiagonal `H̄_m = Δ_{m+1} B̄_m` at the normalization `δ_i = ‖w_i‖₂`. -/
+/-- Equation (7.81): the bidiagonal coefficient array $\bar H_m = \Delta_{m+1} \bar B_m$ for the
+step lengths of Algorithm 7.8 and the scaling $\delta_i = \|w_i\|_2$. -/
 noncomputable abbrev tfqmrH : ℕ → ℕ → 𝕜 :=
   tfqmrCoeff (tfqmrAlpha A b x₀ rs₀) (tfqmrDelta A b x₀ rs₀)
 
+/-- The scaling satisfies $|\delta_i| = \|w_i\|_2$. -/
 theorem norm_tfqmrDelta (i : ℕ) : ‖tfqmrDelta A b x₀ rs₀ i‖ = ‖tfqmrW A b x₀ rs₀ i‖ := by
   rw [tfqmrDelta, RCLike.norm_ofReal, abs_of_nonneg (norm_nonneg _)]
 
-/-- `H̄_m` vanishes strictly above the diagonal. -/
+/-- The entries of $\bar H_m$ above the diagonal are zero. -/
 theorem tfqmrH_eq_zero_of_lt {i j : ℕ} (hij : i < j) : tfqmrH A b x₀ rs₀ i j = 0 :=
   tfqmrCoeff_eq_zero _ _ (by omega) (by omega)
 
-/-- The diagonal of `H̄_m` is `δ_j/α_j`. -/
+/-- The diagonal entry $(j, j)$ of $\bar H_m$ is $\delta_j/\alpha_j$. -/
 theorem tfqmrH_self (j : ℕ) :
     tfqmrH A b x₀ rs₀ j j = tfqmrDelta A b x₀ rs₀ j / tfqmrAlpha A b x₀ rs₀ j :=
   tfqmrCoeff_self _ _ j
 
-/-- The subdiagonal of `H̄_m` is `-δ_{j+1}/α_j`. -/
+/-- The subdiagonal entry $(j + 1, j)$ of $\bar H_m$ is $-\delta_{j+1}/\alpha_j$. -/
 theorem tfqmrH_succ_self (j : ℕ) :
     tfqmrH A b x₀ rs₀ (j + 1) j = -(tfqmrDelta A b x₀ rs₀ (j + 1) / tfqmrAlpha A b x₀ rs₀ j) :=
   tfqmrCoeff_succ_self _ _ j
 
-/-- `H̄_m` is upper Hessenberg, trivially: it is bidiagonal. -/
+/-- The entries of $\bar H_m$ below the subdiagonal are zero, so $\bar H_m$ is upper Hessenberg. -/
 theorem tfqmrH_eq_zero_of_succ_lt {i j : ℕ} (hij : j + 1 < i) : tfqmrH A b x₀ rs₀ i j = 0 :=
   tfqmrCoeff_eq_zero _ _ (by omega) (by omega)
 
 variable {A b x₀ rs₀}
 
+/-- If Algorithm 7.8 does not break down through step $m$, then $\delta_i \neq 0$ for every
+$i \le m$. -/
 theorem TFQMRNoBreakdown.delta_ne_zero {m : ℕ} (h : TFQMRNoBreakdown A b x₀ rs₀ m) {i : ℕ}
     (hi : i ≤ m) : tfqmrDelta A b x₀ rs₀ i ≠ 0 := by
   rw [← norm_ne_zero_iff, norm_tfqmrDelta]
   exact norm_ne_zero_iff.2 (h.w_ne_zero i hi)
 
-/-- `c_m > 0`: the cosine of Algorithm 7.8 is a positive real by construction. -/
+/-- The cosine $c_m$ of Algorithm 7.8 is a positive real number. -/
 private theorem tfqmrC_pos (m : ℕ) : 0 < tfqmrC A b x₀ rs₀ m :=
   inv_pos.2 (Real.sqrt_pos.2 (by positivity))
 
-/-- `τ_m > 0` while no `w_m` vanishes. -/
+/-- If Algorithm 7.8 does not break down through step $m$, then $\tau_m > 0$. -/
 private theorem tfqmrTau_pos : ∀ (m : ℕ), TFQMRNoBreakdown A b x₀ rs₀ m →
     0 < tfqmrTau A b x₀ rs₀ m := by
   intro m
@@ -962,7 +1183,8 @@ private theorem tfqmrTau_pos : ∀ (m : ℕ), TFQMRNoBreakdown A b x₀ rs₀ m 
     exact mul_pos (mul_pos ihm (div_pos (norm_pos_iff.2 (h.w_ne_zero (m + 1) le_rfl)) ihm))
       (tfqmrC_pos (m + 1))
 
-/-- The scalar identity behind `c_{m+1} = τ_m/√(τ_m² + δ_{m+1}²)`. -/
+/-- For $t > 0$, $\sqrt{1 + (d/t)^2} = \sqrt{t^2 + d^2}/t$, which gives $c_{m+1} =
+\tau_m/\sqrt{\tau_m^2 + \delta_{m+1}^2}$. -/
 private theorem sqrt_one_add_div_sq {t d : ℝ} (ht : 0 < t) :
     Real.sqrt (1 + (d / t) ^ 2) = Real.sqrt (t ^ 2 + d ^ 2) / t := by
   rw [eq_div_iff ht.ne']
@@ -973,13 +1195,15 @@ private theorem sqrt_one_add_div_sq {t d : ℝ} (ht : 0 < t) :
   congr 1
   field_simp
 
-/-- (7.82): `c_{m+1} = τ_m/√(τ_m² + δ_{m+1}²)`. -/
+/-- Equation (7.82): if Algorithm 7.8 does not break down through step $m$, then $c_{m+1} =
+\tau_m/\sqrt{\tau_m^2 + \delta_{m+1}^2}$. -/
 private theorem tfqmrC_succ_eq (m : ℕ) (h : TFQMRNoBreakdown A b x₀ rs₀ m) :
     tfqmrC A b x₀ rs₀ (m + 1) = tfqmrTau A b x₀ rs₀ m
       / Real.sqrt (tfqmrTau A b x₀ rs₀ m ^ 2 + ‖tfqmrW A b x₀ rs₀ (m + 1)‖ ^ 2) := by
   rw [tfqmrC, tfqmr_succ_theta, sqrt_one_add_div_sq (tfqmrTau_pos m h), inv_div]
 
-/-- (7.82): `τ_{m+1} = τ_m δ_{m+1}/√(τ_m² + δ_{m+1}²)`. -/
+/-- Equation (7.82): if Algorithm 7.8 does not break down through step $m$, then $\tau_{m+1} =
+\tau_m \delta_{m+1}/\sqrt{\tau_m^2 + \delta_{m+1}^2}$. -/
 private theorem tfqmrTau_succ_eq (m : ℕ) (h : TFQMRNoBreakdown A b x₀ rs₀ m) :
     tfqmrTau A b x₀ rs₀ (m + 1) = tfqmrTau A b x₀ rs₀ m * ‖tfqmrW A b x₀ rs₀ (m + 1)‖
       / Real.sqrt (tfqmrTau A b x₀ rs₀ m ^ 2 + ‖tfqmrW A b x₀ rs₀ (m + 1)‖ ^ 2) := by
@@ -987,14 +1211,16 @@ private theorem tfqmrTau_succ_eq (m : ℕ) (h : TFQMRNoBreakdown A b x₀ rs₀ 
   rw [tfqmr_succ_tau, tfqmr_succ_theta, tfqmrC_succ_eq m h]
   field_simp
 
-/-- The subdiagonal entry of column `m` is untouched by the first `m` rotations. -/
+/-- The first $m$ rotations leave the subdiagonal entry $-\delta_{m+1}/\alpha_m$ of column $m$
+unchanged. -/
 private theorem rotated_succ_col (m : ℕ) :
     Krylov.rotated (tfqmrH A b x₀ rs₀) m (m + 1) m
       = -(tfqmrDelta A b x₀ rs₀ (m + 1) / tfqmrAlpha A b x₀ rs₀ m) := by
   rw [Krylov.rotated_eq_of_le _ m (m + 1) m le_rfl]
   exact tfqmrCoeff_succ_self _ _ m
 
-/-- The new diagonal entry after rotation `m`: `r_{m+1,m+1} = c_m δ_{m+1}/α_{m+1}`. -/
+/-- After rotation $m$, the diagonal entry of column $m + 1$ is $c \, \delta_{m+1}/\alpha_{m+1}$,
+where $c$ is the cosine of rotation $m$. -/
 private theorem rotated_succ_diag (m : ℕ) :
     Krylov.rotated (tfqmrH A b x₀ rs₀) (m + 1) (m + 1) (m + 1)
       = Krylov.givensC (tfqmrH A b x₀ rs₀) m
@@ -1005,7 +1231,8 @@ private theorem rotated_succ_diag (m : ℕ) :
     Krylov.rotated_eq_of_le _ m (m + 1) (m + 1) le_rfl, tfqmrH_self A b x₀ rs₀ (m + 1),
     mul_zero, zero_add]
 
-/-- The entry rotation `m` puts one row above the diagonal of column `m+1`. -/
+/-- Rotation $m$ puts the entry $\bar s \, \delta_{m+1}/\alpha_{m+1}$ one row above the diagonal of
+column $m + 1$, where $s$ is the sine of rotation $m$. -/
 private theorem rotated_above_diag (m : ℕ) :
     Krylov.rotated (tfqmrH A b x₀ rs₀) (m + 1 + 1) m (m + 1)
       = starRingEnd 𝕜 (Krylov.givensS (tfqmrH A b x₀ rs₀) m)
@@ -1017,7 +1244,7 @@ private theorem rotated_above_diag (m : ℕ) :
     Krylov.rotated_eq_of_le _ m (m + 1) (m + 1) le_rfl, tfqmrH_self A b x₀ rs₀ (m + 1),
     mul_zero, zero_add]
 
-/-- `√(x/a²) = √x/a` for `a > 0`. -/
+/-- For $x \ge 0$ and $a > 0$, $\sqrt{x/a^2} = \sqrt{x}/a$. -/
 private theorem sqrt_div_sq {x a : ℝ} (hx : 0 ≤ x) (ha : 0 < a) :
     Real.sqrt (x / a ^ 2) = Real.sqrt x / a := by
   rw [eq_div_iff ha.ne']
@@ -1028,8 +1255,8 @@ private theorem sqrt_div_sq {x a : ℝ} (hx : 0 ≤ x) (ha : 0 < a) :
 
 variable (A b x₀ rs₀)
 
-/-- The unimodular factor that the book's real recurrence for `τ_m` does not see: `σ_m = ∏_{i<m}
-|α_i|/α_i`, which is `1` over `ℝ`, where the book works. -/
+/-- The unimodular factor $\sigma_m = \prod_{i<m} |\alpha_i|/\alpha_i$, which the real recurrence of
+the book for $\tau_m$ does not see; over $\mathbb{R}$ it is $\pm 1$. -/
 private noncomputable def tfqmrPhase (m : ℕ) : 𝕜 :=
   ∏ i ∈ Finset.range m, ((‖tfqmrAlpha A b x₀ rs₀ i‖ : ℝ) : 𝕜) / tfqmrAlpha A b x₀ rs₀ i
 
@@ -1051,7 +1278,8 @@ private theorem norm_tfqmrPhase (m : ℕ) (h : TFQMRNoBreakdown A b x₀ rs₀ m
   rw [norm_div, RCLike.norm_ofReal, abs_of_nonneg (norm_nonneg _),
     div_self (norm_ne_zero_iff.2 (h.alpha_ne_zero i (by omega)))]
 
-/-- `ρ_m = √(τ_m² + δ_{m+1}²)/|α_m|`, once the diagonal entry is known. -/
+/-- If the diagonal entry left by the first $m$ rotations is $\tau_m \sigma_m/\alpha_m$, then the
+denominator of rotation $m$ is $\sqrt{\tau_m^2 + \delta_{m+1}^2}/|\alpha_m|$. -/
 private theorem givensRho_eq_aux (m : ℕ) (h : TFQMRNoBreakdown A b x₀ rs₀ m)
     (hrot : Krylov.rotated (tfqmrH A b x₀ rs₀) m m m
       = ((tfqmrTau A b x₀ rs₀ m : ℝ) : 𝕜) * tfqmrPhase A b x₀ rs₀ m
@@ -1070,10 +1298,10 @@ private theorem givensRho_eq_aux (m : ℕ) (h : TFQMRNoBreakdown A b x₀ rs₀ 
           / ‖tfqmrAlpha A b x₀ rs₀ m‖ ^ 2 from by field_simp,
     sqrt_div_sq (by positivity) hna]
 
-/-- **The rotations of Algorithm 6.12 on the bidiagonal `H̄_m`**: the quasi-residual scalar `γ_m` is
-the book's `τ_m` times a unimodular factor, and the diagonal entry left by rotation `m` is that
-divided by `α_m`.  Over `ℝ` the factor is `1` and this is `γ_{m+1} = τ_m` of the text after (7.83).
--/
+/-- If Algorithm 7.8 does not break down through step $m$, then the Givens rotations of Algorithm
+6.12 on the bidiagonal $\bar H_m$ give the quasi-residual scalar $\gamma_m = \tau_m \sigma_m$,
+and the diagonal entry left by rotation $m$ is $\tau_m \sigma_m/\alpha_m$, so that
+$|\gamma_m| = \tau_m$ as in the text after (7.83). -/
 private theorem tfqmr_rotation : ∀ (m : ℕ), TFQMRNoBreakdown A b x₀ rs₀ m →
     Krylov.gamma (tfqmrH A b x₀ rs₀) (tfqmrDelta A b x₀ rs₀ 0) m
         = ((tfqmrTau A b x₀ rs₀ m : ℝ) : 𝕜) * tfqmrPhase A b x₀ rs₀ m ∧
@@ -1116,7 +1344,8 @@ private theorem tfqmr_rotation : ∀ (m : ℕ), TFQMRNoBreakdown A b x₀ rs₀ 
       push_cast
       field_simp
 
-/-- `ρ_m = √(τ_m² + δ_{m+1}²)/|α_m|`, and in particular `ρ_m > 0`. -/
+/-- If Algorithm 7.8 does not break down through step $m$, then the denominator of rotation $m$ is
+$\sqrt{\tau_m^2 + \delta_{m+1}^2}/|\alpha_m|$, in particular positive. -/
 private theorem givensRho_eq (m : ℕ) (h : TFQMRNoBreakdown A b x₀ rs₀ m) :
     Krylov.givensRho (tfqmrH A b x₀ rs₀) m
       = Real.sqrt (tfqmrTau A b x₀ rs₀ m ^ 2 + ‖tfqmrW A b x₀ rs₀ (m + 1)‖ ^ 2)
@@ -1132,13 +1361,23 @@ private theorem givensRho_pos (m : ℕ) (h : TFQMRNoBreakdown A b x₀ rs₀ m) 
     Real.sqrt_pos.2 (by positivity)
   positivity
 
-/-- The text after (7.83): `γ_{m+1} = τ_m`, in modulus. -/
+/-- **Section 7.4.3** of [saad2003iterative], the identity after (7.83). Let
+$A \in \mathbb{K}^{n \times n}$ and $b, x_0, r^*_0 \in \mathbb{K}^n$, and assume that Algorithm
+7.8 does not break down through step $m$. Then the quasi-residual scalar $\gamma_{m+1}$ of the
+Givens rotations of $\bar H_m$ of (7.81), with the right-hand side $\delta_0 e_1$, has the
+modulus $$|\gamma_{m+1}| = \tau_m.$$
+
+The identity holds in modulus: the backbone rotations differ from those of Algorithm 7.8 by the
+unimodular factor $\prod_{i<m} |\alpha_i|/\alpha_i$. The scalar $\gamma_{m+1}$ is `Krylov.gamma`
+at index `m`. -/
 theorem norm_gamma_eq_tfqmrTau (m : ℕ) (h : TFQMRNoBreakdown A b x₀ rs₀ m) :
     ‖Krylov.gamma (tfqmrH A b x₀ rs₀) (tfqmrDelta A b x₀ rs₀ 0) m‖ = tfqmrTau A b x₀ rs₀ m := by
   rw [(tfqmr_rotation m h).1, norm_mul, RCLike.norm_ofReal, abs_of_pos (tfqmrTau_pos m h),
     norm_tfqmrPhase m h, mul_one]
 
-/-- `g_m = c̄_m γ_m = τ_m²/(ᾱ_m ρ_m)`: the unimodular factor cancels against its conjugate. -/
+/-- The entry $g_m$ of the rotated right-hand side is $\tau_m^2/(\bar\alpha_m \rho_m)$, where
+$\rho_m$ is the denominator of rotation $m$, because the unimodular factor cancels against its
+conjugate. -/
 private theorem gvec_eq (m : ℕ) (h : TFQMRNoBreakdown A b x₀ rs₀ m) :
     Krylov.gvec (tfqmrH A b x₀ rs₀) (tfqmrDelta A b x₀ rs₀ 0) m
       = ((tfqmrTau A b x₀ rs₀ m : ℝ) : 𝕜) ^ 2
@@ -1160,7 +1399,8 @@ private theorem gvec_eq (m : ℕ) (h : TFQMRNoBreakdown A b x₀ rs₀ m) :
   simp only [map_div₀, map_mul, RCLike.conj_ofReal, hσinv]
   field_simp
 
-/-- **(7.78)**: `η_{m+1} = c_{m+1}² α_m` is exactly `g_m/ρ_m`, the DQGMRES step length. -/
+/-- Equation (7.78): $g_m = \rho_m \eta_{m+1}$, so that $\eta_{m+1} = c_{m+1}^2 \alpha_m$ is the
+DQGMRES step length $g_m/\rho_m$. -/
 private theorem gvec_eq_givensRho_mul_eta (m : ℕ) (h : TFQMRNoBreakdown A b x₀ rs₀ m) :
     Krylov.gvec (tfqmrH A b x₀ rs₀) (tfqmrDelta A b x₀ rs₀ 0) m
       = ((Krylov.givensRho (tfqmrH A b x₀ rs₀) m : ℝ) : 𝕜) * tfqmrEta A b x₀ rs₀ (m + 1) := by
@@ -1180,9 +1420,9 @@ private theorem gvec_eq_givensRho_mul_eta (m : ℕ) (h : TFQMRNoBreakdown A b x�
   push_cast
   field_simp
 
-/-- **(7.79)**: the entry rotation `m` puts above the diagonal of column `m+1` is
-`-(θ_{m+1}²/α_{m+1}) g_m`, which is what makes the `d`-recurrence of Algorithm 7.8 the
-back-substitution of Algorithm 6.13. -/
+/-- Equation (7.79): if Algorithm 7.8 does not break down through step $m + 1$, then the entry that
+rotation $m$ puts above the diagonal of column $m + 1$ is $-(\theta_{m+1}^2/\alpha_{m+1}) g_m$,
+which makes the recurrence for $d$ of Algorithm 7.8 the back-substitution of Algorithm 6.13. -/
 private theorem rotated_above_diag_eq (m : ℕ) (h : TFQMRNoBreakdown A b x₀ rs₀ (m + 1)) :
     Krylov.rotated (tfqmrH A b x₀ rs₀) (m + 1 + 1) m (m + 1)
       = -(((tfqmrTheta A b x₀ rs₀ (m + 1) ^ 2 : ℝ) : 𝕜) / tfqmrAlpha A b x₀ rs₀ (m + 1))
@@ -1201,8 +1441,9 @@ private theorem rotated_above_diag_eq (m : ℕ) (h : TFQMRNoBreakdown A b x₀ r
   push_cast
   field_simp
 
-/-- Algorithm 6.13 with `k = 1` never truncates anything here: column `m+1` of the triangular
-factor has only the two entries `(m, m+1)` and `(m+1, m+1)`. -/
+/-- The first direction of Algorithm 6.13 with $k = 1$ on $\bar H_m$ is $u_0$ divided by the rotated
+diagonal entry; nothing is truncated, because each column of the triangular factor has only its
+diagonal entry and the entry above it. -/
 private theorem dqgmresP_zero_eq :
     Chapter06.dqgmresP (tfqmrU A b x₀ rs₀) (tfqmrH A b x₀ rs₀) 1 0
       = (Krylov.rotated (tfqmrH A b x₀ rs₀) 1 0 0)⁻¹ • tfqmrU A b x₀ rs₀ 0 := by
@@ -1223,9 +1464,8 @@ private theorem dqgmresP_succ_eq (m : ℕ) :
       rw [ite_eq_right (by omega), zero_smul]
   rw [Chapter06.dqgmresP_eq, Finset.sum_range_succ, hz, zero_add, ite_eq_left (by omega)]
 
-/-- **The hinge of §7.4.3**: Algorithm 7.8's update `η_{m+1} d_{m+1}` is the update `g_m p_m` of
-Algorithm 6.13 with `k = 1`.  The two ingredients are `η_{m+1} = g_m/ρ_m` and the identification of
-the above-diagonal entry with `-(θ_m²/α_m) g_{m-1}`. -/
+/-- If Algorithm 7.8 does not break down through step $m$, then its update $\eta_{m+1} d_{m+1}$ is
+the update $g_m p_m$ of Algorithm 6.13 with $k = 1$. -/
 private theorem tfqmr_eta_smul_d : ∀ (m : ℕ), TFQMRNoBreakdown A b x₀ rs₀ m →
     tfqmrEta A b x₀ rs₀ (m + 1) • tfqmrD A b x₀ rs₀ (m + 1)
       = Krylov.gvec (tfqmrH A b x₀ rs₀) (tfqmrDelta A b x₀ rs₀ 0) m
@@ -1272,8 +1512,15 @@ private theorem tfqmr_eta_smul_d : ∀ (m : ℕ), TFQMRNoBreakdown A b x₀ rs�
     rw [tfqmr_succ_d, dqgmresP_succ_eq, Krylov.rotated_succ_self, smul_smul, hsc, smul_add,
       smul_sub, smul_smul, smul_smul, hkey, neg_smul, sub_eq_add_neg]
 
-/-- **Algorithm 7.8 is Algorithm 6.13 with `k = 1`** on the bidiagonal `H̄_m` of (7.81): the
-`θ, c, τ, η, d` recurrence is the DQGMRES back-substitution. -/
+/-- Algorithm 7.8 of [saad2003iterative] is Algorithm 6.13 (DQGMRES) with $k = 1$. Let
+$A \in \mathbb{K}^{n \times n}$ and $b, x_0, r^*_0 \in \mathbb{K}^n$, and assume that Algorithm
+7.8 does not break down through step $m$. Then its iterate $x_m$ is the iterate of Algorithm
+6.13 with $k = 1$ for the vectors $u_j$, the bidiagonal coefficients $\bar H_m$ of (7.81) and
+the right-hand side $\delta_0 e_1$, where $\delta_0 = \|r_0\|_2$. That is, the $\theta$, $c$,
+$\tau$, $\eta$, $d$ recurrence of Algorithm 7.8 is the back-substitution of DQGMRES.
+
+The proof uses $\eta_{m+1} = g_m/\rho_m$ and the identification of the entry above the diagonal
+with $-(\theta_m^2/\alpha_m) g_{m-1}$. DQGMRES is `SaadSparse.Chapter06.dqgmres`. -/
 theorem tfqmr_eq_dqgmres : ∀ (m : ℕ), TFQMRNoBreakdown A b x₀ rs₀ m →
     (tfqmr A b x₀ rs₀ m).x
       = Chapter06.dqgmres x₀ (tfqmrU A b x₀ rs₀) (tfqmrH A b x₀ rs₀)
@@ -1286,7 +1533,7 @@ theorem tfqmr_eq_dqgmres : ∀ (m : ℕ), TFQMRNoBreakdown A b x₀ rs₀ m →
     rw [tfqmr_succ_x, ih (h.mono (Nat.le_succ m)), Chapter06.dqgmres,
       tfqmr_eta_smul_d m (h.mono (Nat.le_succ m))]
 
-/-- Column `j` of the triangular factor is fixed once rotation `j` has been applied. -/
+/-- Column $j$ of the triangular factor does not change after rotation $j$. -/
 private theorem rotated_of_col_lt {j : ℕ} : ∀ M, j + 1 ≤ M → ∀ i,
     Krylov.rotated (tfqmrH A b x₀ rs₀) M i j
       = Krylov.rotated (tfqmrH A b x₀ rs₀) (j + 1) i j := by
@@ -1304,8 +1551,8 @@ private theorem rotated_of_col_lt {j : ℕ} : ∀ M, j + 1 ≤ M → ∀ i,
       subst hMj
       rfl
 
-/-- `P_m R_m = U_m`: the truncated recurrence with `k = 1` is the full back-substitution for the
-bidiagonal triangular factor. -/
+/-- If Algorithm 7.8 does not break down through step $m$, then $P_m R_m = U_m$: with $k = 1$ the
+truncated recurrence is the full back-substitution for the bidiagonal triangular factor. -/
 private theorem sum_R_smul_dqgmresP {m : ℕ} (h : TFQMRNoBreakdown A b x₀ rs₀ m) (j : Fin m) :
     ∑ i : Fin m, Chapter06.R (tfqmrH A b x₀ rs₀) m i j
         • Chapter06.dqgmresP (tfqmrU A b x₀ rs₀) (tfqmrH A b x₀ rs₀) 1 (i : ℕ)
@@ -1350,8 +1597,14 @@ private theorem sum_R_smul_dqgmresP {m : ℕ} (h : TFQMRNoBreakdown A b x₀ rs�
     smul_smul, mul_inv_cancel₀ hd, one_smul]
   abel
 
-/-- Algorithm 7.8 computes the QGMRES iterate of the relation (7.70): with `H̄_m` bidiagonal the
-truncated Algorithm 6.13 loses nothing. -/
+/-- Let $A \in \mathbb{K}^{n \times n}$ and $b, x_0, r^*_0 \in \mathbb{K}^n$, and assume that
+Algorithm 7.8 of [saad2003iterative] does not break down through step $m$. Then its iterate
+$x_m$ is the iterate $x_0 + U_m R_m^{-1} g_m$ of Algorithm 6.12 (QGMRES) for the relation
+(7.70), with the vectors $u_j$, the bidiagonal coefficients $\bar H_m$ of (7.81) and the
+right-hand side $\delta_0 e_1$. Because $\bar H_m$ is bidiagonal, the truncated Algorithm 6.13
+loses nothing.
+
+QGMRES is `SaadSparse.Chapter06.qgmres`. -/
 theorem tfqmr_eq_qgmres (m : ℕ) (h : TFQMRNoBreakdown A b x₀ rs₀ m) :
     (tfqmr A b x₀ rs₀ m).x
       = Chapter06.qgmres x₀ (tfqmrU A b x₀ rs₀) (tfqmrH A b x₀ rs₀)
@@ -1386,9 +1639,14 @@ theorem tfqmr_eq_qgmres (m : ℕ) (h : TFQMRNoBreakdown A b x₀ rs₀ m) :
           • tfqmrU A b x₀ rs₀ (j : ℕ) :=
         Finset.sum_congr rfl fun j _ => by rw [sum_R_smul_dqgmresP h j]
 
-/-- **Algorithm 7.8 computes the quasi-minimal-residual iterate of the relation (7.70)**: `x_m =
-x_0 + U_m y` with `y` minimizing `‖δ_0 e_1 - H̄_m y‖₂`.  This is Algorithm 6.12 on the two-family
-data of `equation_7_70`, reached through Algorithm 6.13 with `k = 1`. -/
+/-- **Section 7.4.3** of [saad2003iterative], the quasi-minimal residual property of TFQMR. Let
+$A \in \mathbb{K}^{n \times n}$ and $b, x_0, r^*_0 \in \mathbb{K}^n$, and assume that Algorithm
+7.8 does not break down through step $m$. Then its iterate is $$x_m = x_0 + U_m y$$ for a vector
+$y \in \mathbb{K}^m$ that minimizes the quasi-residual norm $\|\delta_0 e_1 - \bar H_m y\|_2$
+over all of $\mathbb{K}^m$, with $\bar H_m$ of (7.81).
+
+This is Algorithm 6.12 on the two-family data of `SaadSparse.Chapter07.equation_7_70`, reached
+through Algorithm 6.13 with $k = 1$. The conclusion is `Krylov.IsQuasiMinResidualIterate`. -/
 theorem tfqmr_isQuasiMinResidualIterate (m : ℕ) (h : TFQMRNoBreakdown A b x₀ rs₀ m) :
     Krylov.IsQuasiMinResidualIterate (tfqmrU A b x₀ rs₀) (tfqmrH A b x₀ rs₀)
       (tfqmrDelta A b x₀ rs₀ 0) x₀ m (tfqmr A b x₀ rs₀ m).x := by
@@ -1398,9 +1656,14 @@ theorem tfqmr_isQuasiMinResidualIterate (m : ℕ) (h : TFQMRNoBreakdown A b x₀
     (Chapter06.isUnit_R _ (fun i j hij => tfqmrH_eq_zero_of_succ_lt A b x₀ rs₀ hij)
       fun k hk => (givensRho_pos k (h.mono (le_of_lt hk))).ne')
 
-/-- **(7.83)**: `‖b - A x_m‖₂ ≤ √(m+1) τ_m`.  The residual basis `R_{m+1} Δ_{m+1}⁻¹` has unit
-columns, so the constant of `Krylov.IsQuasiMinResidualIterate.norm_residual_le` is `√(m+1)`, and the
-quasi-residual is `‖γ_m‖ = τ_m`. -/
+/-- **Equation (7.83)** of [saad2003iterative]. Let $A \in \mathbb{K}^{n \times n}$ and
+$b, x_0, r^*_0 \in \mathbb{K}^n$, and assume that Algorithm 7.8 does not break down through step
+$m$ and has no serious breakdown. Then its iterate satisfies $$\|b - Ax_m\|_2 \le \sqrt{m+1} \,
+\tau_m.$$
+
+The residual basis $R_{m+1} \Delta_{m+1}^{-1}$ has unit columns, so the constant of
+`Krylov.IsQuasiMinResidualIterate.norm_residual_le` is $\sqrt{m+1}$, and the quasi-residual norm
+is $|\gamma_{m+1}| = \tau_m$. -/
 theorem equation_7_83 (m : ℕ) (h : TFQMRNoBreakdown A b x₀ rs₀ m)
     (hs : TFQMRNoSeriousBreakdown A b x₀ rs₀) :
     ‖b - op A (tfqmr A b x₀ rs₀ m).x‖

@@ -6,53 +6,130 @@ import NumlibSurface.SaadSparse.Chapter06.Section05
 import NumlibSurface.SaadSparse.Chapter07.Section02
 
 /-!
-# Saad §7.3: BCG and QMR
+# Saad, Section 7.3: BCG and QMR
 
-Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM,
-2003, §7.3.
+This module formalizes Section 7.3 of [saad2003iterative], which derives two solvers for a
+nonsymmetric system $Ax = b$ from the Lanczos biorthogonalization of Section 7.1. Write
+$r_0 = b - Ax_0$, $\beta = \|r_0\|_2$ and $v_1 = r_0/\beta$. The biconjugate gradient method (BCG,
+Algorithm 7.3) runs the recurrence on $(x_j, r_j, r^*_j, p_j, p^*_j)$ with
+$\alpha_j = (r_j, r^*_j)/(Ap_j, p^*_j)$ and $\beta_j = (r_{j+1}, r^*_{j+1})/(r_j, r^*_j)$. Its
+residuals are biorthogonal and its directions are $A$-biconjugate (Proposition 7.2), its iterate is
+the Petrov–Galerkin approximation onto $\mathcal{K}_m(A, r_0)$ orthogonally to
+$\mathcal{K}_m(A^H, r^*_0)$, and it computes the iterate $x_m = x_0 + V_m T_m^{-1}(\beta e_1)$ of
+Algorithm 7.2, equations (7.10)–(7.12). The proofs specialize the backbone BCG of
+`Numlib.Krylov.BiLanczos`.
 
-**Algorithm 7.3** (BCG) is `bcg`, the five-vector recurrence `(x, r, r*, p, p*)` with
-`α_j = (r_j, r*_j)/(A p_j, p*_j)` and `β_j = (r_{j+1}, r*_{j+1})/(r_j, r*_j)`, the two coefficients
-being `bcgAlpha` and `bcgBeta` (used again by the transpose-free variants of §7.4); `bcg_eq`
-identifies it with the backbone `BCG.iterate`, so that Proposition 7.2 (`proposition_7_2`) and the
-Petrov–Galerkin identification (`bcg_isPetrovGalerkin`) are read off `Numlib/Krylov/BiLanczos.lean`.
-`problem_7_7` and `problem_7_7_direction` are the two three-term recurrences P-7.7 asks for: they
-come from eliminating the directions, resp. the residuals, between lines 5, 6 and 9, and only the
-residual one divides by `α_j`.
-`bcg_eq_lanczosSolve` is the content of (7.10)–(7.12): BCG computes the Algorithm 7.2 iterate.
-The book gets there through the `LDU` factorization `T_m = L_m U_m` and the direction matrices
-`P_m = V_m U_m⁻¹`, `P*_m = W_m L_m⁻ᴴ`; here it is one line, because both iterates are
-Petrov–Galerkin approximations on the same pair of spaces and `T_m` nonsingular is exactly the
-nondegeneracy that makes such an approximation unique.
+The quasi-minimal residual method (QMR, Algorithm 7.4) chooses $x^Q_m = x_0 + V_m y$ so that $y$
+minimizes the quasi-residual norm $\|\beta e_1 - \bar T_m y\|_2$ of (7.17). Its quasi-residual norm
+is $\rho^Q_m = |\gamma_{m+1}| = |s_1 \cdots s_m| \, \|r_0\|_2$, where $c_i$ and $s_i$ are the Givens
+rotations that reduce $\bar T_m$ to triangular form. With $\rho_m$ the residual norm of the
+Algorithm 7.2 iterate $x_m$, the module proves $\rho^Q_m = |c_m| \rho_m$, the bound of Proposition
+7.3, the comparison with GMRES of Theorem 7.4, the harmonic relations (7.23)–(7.24), Proposition
+7.5, and the smoothing relations (7.26)–(7.30). The last of these says that QMR is the quasi-minimal
+residual smoothing (Algorithm 7.5) of the Algorithm 7.2 iterates. These proofs specialize
+`Numlib.Krylov.QuasiMinRes`.
 
-**Algorithm 7.4** (QMR) is `qmr`, and it is not a new algorithm: it is Algorithm 6.12 run on the
-two-sided Lanczos basis, so the whole QGMRES layer of `Chapter06/Section05.lean` applies at
-`u := bilanczosV`, `h := bilanczosCoeff`. `qmr_isQuasiMinResidualIterate` is that instantiation, and
-after it (7.16)–(7.31) are the backbone quasi-minimal-residual theorems of
-`Numlib/Krylov/QuasiMinRes.lean` read through it: Proposition 7.3 is
+## Main definitions
+
+* Algorithm 7.3, `SaadSparse.Chapter07.bcg`: the biconjugate gradient method (BCG), with the
+  coefficients `SaadSparse.Chapter07.bcgAlpha` and `SaadSparse.Chapter07.bcgBeta`.
+* `SaadSparse.Chapter07.BCGNoBreakdown`: neither denominator of Algorithm 7.3 vanishes before step
+  $m$.
+* Algorithm 7.4, `SaadSparse.Chapter07.qmr`: the quasi-minimal residual method (QMR), which is
+  Algorithm 6.12 (QGMRES) on the two-sided Lanczos basis.
+* Algorithm 7.5, `SaadSparse.Chapter07.qmrSmoothing`: the quasi-minimal residual smoothing of an
+  arbitrary sequence of iterates.
+
+## Main results
+
+* `SaadSparse.Chapter07.bcg_eq`: Algorithm 7.3 is the backbone BCG iteration for $A$ and $A^H$.
+* Proposition 7.2, `SaadSparse.Chapter07.proposition_7_2`: $(r_i, r^*_j) = 0$ and
+  $(Ap_i, p^*_j) = 0$ for $i \neq j$.
+* Section 7.3.1, `SaadSparse.Chapter07.bcg_isPetrovGalerkin`: the BCG iterate is a Petrov–Galerkin
+  approximation onto $\mathcal{K}_m(A, r_0)$ orthogonally to $\mathcal{K}_m(A^H, r^*_0)$.
+* Equations (7.10)–(7.12), `SaadSparse.Chapter07.bcg_eq_lanczosSolve`: BCG computes the iterate of
+  Algorithm 7.2.
+* Section 7.3.2, `SaadSparse.Chapter07.qmr_isQuasiMinResidualIterate`: the QMR iterate minimizes the
+  quasi-residual norm.
+* Equation (7.16), `SaadSparse.Chapter07.equation_7_16`: $b - A(x_0 + V_m y) = V_{m+1}(\beta e_1 -
+  \bar T_m y)$.
+* Equation (7.18), `SaadSparse.Chapter07.equation_7_18`: $\rho^Q_m = |s_1 \cdots s_m| \, \|r_0\|_2$.
+* Equation (7.19), `SaadSparse.Chapter07.equation_7_19`: $\gamma_{m+1} v_{m+1} = c_m r_m$.
+* Equation (7.20), `SaadSparse.Chapter07.equation_7_20`: $\rho^Q_m = |c_m| \rho_m$ for unit Lanczos
+  vectors.
+* Proposition 7.3, `SaadSparse.Chapter07.proposition_7_3` and
+  `SaadSparse.Chapter07.proposition_7_3_sqrt`: $\|b - Ax^Q_m\|_2 \le \|V_{m+1}\|_2 \, |s_1 \cdots
+  s_m| \, \|r_0\|_2$, and $\|V_{m+1}\|_2 \le \sqrt{m+1}$ for unit Lanczos vectors.
+* Theorem 7.4, `SaadSparse.Chapter07.theorem_7_4`: $\|r^Q_m\|_2 \le \kappa_2(V_{m+1}) \|r^G_m\|_2$.
+* Equation (7.23), `SaadSparse.Chapter07.equation_7_23`: $1/(\rho^Q_{m+1})^2 = 1/(\rho^Q_m)^2 +
+  1/\rho_{m+1}^2$.
+* Equation (7.24), `SaadSparse.Chapter07.equation_7_24`:
+  $1/(\rho^Q_m)^2 = \sum_{i=0}^{m} 1/\rho_i^2$.
+* Proposition 7.5, `SaadSparse.Chapter07.proposition_7_5`: $\rho^Q_m \le \min_{i \le m} \rho_i \le
+  \sqrt{m+1} \, \rho^Q_m$.
+* Equations (7.26)–(7.27), `SaadSparse.Chapter07.equation_7_26`: $b - Ax^Q_m = \gamma_{m+1} z_{m+1}$
+  and the recurrence for $z_{m+1}$.
+* Equation (7.28), `SaadSparse.Chapter07.equation_7_28`: $r^Q_{m+1} = |s_{m+1}|^2 r^Q_m + \bar
+  c_{m+1} \gamma_{m+2} v_{m+2}$.
+* Equation (7.29), `SaadSparse.Chapter07.equation_7_29`: $r^Q_{m+1} = |s_{m+1}|^2 r^Q_m +
+  |c_{m+1}|^2 r_{m+1}$.
+* Equation (7.30), `SaadSparse.Chapter07.equation_7_30`: $x^Q_{m+1} = |s_{m+1}|^2 x^Q_m +
+  |c_{m+1}|^2 x_{m+1}$.
+* Algorithm 7.5, `SaadSparse.Chapter07.qmrSmoothing_eq_qmr`: Algorithm 7.5 applied to the Algorithm
+  7.2 iterates reproduces QMR.
+* Exercise P-7.7, `SaadSparse.Chapter07.problem_7_7`, `SaadSparse.Chapter07.problem_7_7_direction`
+  and `SaadSparse.Chapter07.problem_7_7_start`: the three-term recurrences of the BCG residuals and
+  of the BCG directions, and their first terms.
+
+## Proof outline
+
+The book derives (7.10)–(7.12) from the factorization $T_m = L_m U_m$ and the direction matrices
+$P_m = V_m U_m^{-1}$ and $P^*_m = W_m L_m^{-H}$. Here both the BCG iterate and the Algorithm 7.2
+iterate are Petrov–Galerkin approximations onto $\mathcal{K}_m(A, r_0)$ orthogonally to
+$\mathcal{K}_m(A^H, r^*_0)$, and a nonsingular $T_m$ makes such an approximation unique. For QMR,
+`SaadSparse.Chapter07.qmr_isQuasiMinResidualIterate` identifies the iterate with the backbone
+quasi-minimal residual specification, and the results from (7.16) on are theorems of
+`Numlib.Krylov.QuasiMinRes` read through it. Proposition 7.3 is
 `Krylov.IsQuasiMinResidualIterate.norm_residual_le`, Theorem 7.4 is
-`Krylov.IsQuasiMinResidualIterate.norm_residual_le_mul` — the same theorem as Saad's Theorem 6.11 —
-and (7.23), (7.24), Proposition 7.5 are `Krylov.inv_sq_norm_gamma`,
-`Krylov.inv_sq_norm_gamma_eq_sum` and `Krylov.exists_norm_gamma_div_givensC_le`.
+`Krylov.IsQuasiMinResidualIterate.norm_residual_le_mul`, and (7.23), (7.24) and Proposition 7.5 are
+`Krylov.inv_sq_norm_gamma`, `Krylov.inv_sq_norm_gamma_eq_sum` and
+`Krylov.exists_norm_gamma_div_givensC_le`.
 
-The conditioning `κ₂(V_{m+1})` of Theorem 7.4 enters as the ratio `C/c` of a two-sided bound
-`c ‖y‖₂ ≤ ‖V_{m+1} y‖₂ ≤ C ‖y‖₂` on the coordinate map; such a `c > 0` exists because `V_{m+1}`
-has full rank (`problem_7_2`), which is why the full-rank hypothesis the book has to assume in
-Theorem 6.11 can be dropped here.
+## Conventions
 
-From (7.18) on the book normalizes the Lanczos vectors to unit 2-norm — a different scaling from
-Algorithm 7.1, admissible by (7.1). That is the hypothesis `∀ j, ‖v_j‖₂ = 1` carried by
-`equation_7_20` and everything after it; `equation_7_1_norm` is what makes it a scaling of
-Algorithm 7.1 rather than a new assumption, since `δ_{j+1} = ‖v̂_{j+1}‖₂` satisfies the constraint
-(7.1) and produces a unit primal vector without disturbing `(v_j, w_j) = 1`.
+* The scalar field $\mathbb{K}$ is $\mathbb{R}$ or $\mathbb{C}$ (`𝕜` with `[RCLike 𝕜]`). Algorithm
+  7.5 and its relation to QMR are stated over $\mathbb{R}$.
+* Indices are $0$-based as in `SaadSparse.Chapter07.bilanczosV`. The BCG iterates are $0$-based
+  in the book already. The other quantities correspond as follows.
+  * The book's $v_{j+1}$ is `qmrV A b x₀ w₁ j`.
+  * The book's $\gamma_{m+1}$ is `SaadSparse.Chapter06.γ h β m`.
+  * The book's $c_{m+1}$ is `SaadSparse.Chapter06.c h m`.
+  * The book's $s_{m+1}$ is `SaadSparse.Chapter06.s h m`.
+  * The quasi-residual norm $\rho^Q_m = |\gamma_{m+1}|$ is
+    `SaadSparse.Chapter06.quasiResidualNorm h β m`.
+* "Algorithm 7.1 has no serious breakdown" is `SaadSparse.Chapter07.NoSeriousBreakdown`: whenever
+  $(\hat v_{j+1}, \hat w_{j+1}) = 0$, also $\hat v_{j+1} = 0$.
+* From (7.18) on, the book normalizes the Lanczos vectors to $\|v_j\|_2 = 1$. This is a different
+  scaling from Algorithm 7.1, admissible by (7.1). It is the hypothesis $\|v_j\|_2 = 1$ for all $j$
+  of `SaadSparse.Chapter07.equation_7_20` and the results after it. By
+  `SaadSparse.Chapter07.equation_7_1_norm`, the choice $\delta_{j+1} = \|\hat v_{j+1}\|_2$ satisfies
+  the constraint (7.1) and gives a unit primal vector without changing $(v_j, w_j) = 1$, so the
+  hypothesis is a scaling of Algorithm 7.1 and not a new assumption.
 
-The closing identities (7.28)–(7.31) are the smoothing relations: `equation_7_28` expands (7.26)
-through (7.27), `equation_7_29` turns its last term into the BCG residual through (7.19), and
-`equation_7_30` is the iterate form the book reads off (7.29) — which is what Algorithm 7.5
-implements.
+## Implementation notes
 
-Indices are `0`-based as in `Chapter07/Section01.lean`: `qmrV A b x₀ w₁ j` is the book's
-`v_{j+1}`, `Chapter06.γ h β m` its `γ_{m+1}` and `Chapter06.c h m` its `c_{m+1}`.
+* QMR is Algorithm 6.12 run on the two-sided Lanczos basis: `SaadSparse.Chapter07.qmr` is
+  `SaadSparse.Chapter06.qgmres` at the basis `SaadSparse.Chapter07.qmrV` and the coefficients
+  `SaadSparse.Chapter07.qmrCoeff`. The quantities $c_i$, $s_i$, $\gamma_i$, $z_i$ and $\rho^Q_m$ are
+  those of `NumlibSurface.SaadSparse.Chapter06.Section05`.
+* The condition number $\kappa_2(V_{m+1})$ of Theorem 7.4 enters as the ratio $C/c$ of a two-sided
+  bound $c\|y\|_2 \le \|V_{m+1}y\|_2 \le C\|y\|_2$. Such a $c > 0$ exists because $V_{m+1}$ has full
+  rank (`SaadSparse.Chapter07.problem_7_2`). For this reason the full-rank hypothesis that the book
+  assumes in Theorem 6.11 is not needed here.
+* Only the residual recurrence of exercise P-7.7 divides by $\alpha_j$, so only it needs a
+  no-breakdown hypothesis.
+* The coefficients `SaadSparse.Chapter07.bcgAlpha` and `SaadSparse.Chapter07.bcgBeta` are used again
+  by the transpose-free variants of Section 7.4.
 -/
 
 open Matrix
@@ -71,8 +148,12 @@ section BCG
 
 variable (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ rs₀ : EuclideanSpace 𝕜 (Fin n))
 
-/-- One pass through lines 4–10 of **Algorithm 7.3**, on the state `(x_j, r_j, r*_j, p_j, p*_j)`.
-The backbone record `BCG.State` carries exactly that data. -/
+/-- One pass through lines 4–10 of Algorithm 7.3 (BCG). From the state
+$(x_j, r_j, r^*_j, p_j, p^*_j)$ it computes $\alpha_j = (r_j, r^*_j)/(Ap_j, p^*_j)$,
+$x_{j+1} = x_j + \alpha_j p_j$, $r_{j+1} = r_j - \alpha_j Ap_j$,
+$r^*_{j+1} = r^*_j - \bar\alpha_j A^H p^*_j$, $\beta_j = (r_{j+1}, r^*_{j+1})/(r_j, r^*_j)$,
+$p_{j+1} = r_{j+1} + \beta_j p_j$ and $p^*_{j+1} = r^*_{j+1} + \bar\beta_j p^*_j$. A division by
+zero gives $0$. The state is the backbone record `BCG.State`. -/
 noncomputable def bcgStep (s : BCG.State (EuclideanSpace 𝕜 (Fin n))) :
     BCG.State (EuclideanSpace 𝕜 (Fin n)) :=
   let α : 𝕜 := inner 𝕜 s.rs s.r / inner 𝕜 s.ps (op A s.p)
@@ -85,53 +166,64 @@ noncomputable def bcgStep (s : BCG.State (EuclideanSpace 𝕜 (Fin n))) :
     p := r + β • s.p
     ps := rs + starRingEnd 𝕜 β • s.ps }
 
-/-- **Algorithm 7.3** (BCG) run for `k` steps from `x_0`, with the shadow residual `r*_0`
-initialized to an arbitrary `rs₀` (the book's `r_0^*`, subject only to `(r_0, r_0^*) ≠ 0`). -/
+/-- **Algorithm 7.3** of [saad2003iterative] (BCG). Let $A \in \mathbb{K}^{n \times n}$ and
+$b, x_0, r^*_0 \in \mathbb{K}^n$. The state of BCG after $k$ steps is the result of $k$
+applications of `SaadSparse.Chapter07.bcgStep` to the initial state
+$(x_0, r_0, r^*_0, p_0, p^*_0)$ with $r_0 = p_0 = b - Ax_0$ and $p^*_0 = r^*_0$.
+
+The book requires $(r_0, r^*_0) \neq 0$. The definition accepts any $r^*_0$, and the condition
+is part of the hypothesis `SaadSparse.Chapter07.BCGNoBreakdown` of the theorems below. -/
 noncomputable def bcg (k : ℕ) : BCG.State (EuclideanSpace 𝕜 (Fin n)) :=
   (bcgStep A)^[k] { x := x₀, r := b - op A x₀, rs := rs₀, p := b - op A x₀, ps := rs₀ }
 
 private theorem bcgStep_eq (s : BCG.State (EuclideanSpace 𝕜 (Fin n))) :
     bcgStep A s = BCG.step (op A) (op Aᴴ) s := rfl
 
-/-- **The bridge to the backbone**: the book's Algorithm 7.3 computes `BCG.iterate` of `op A` and
-its adjoint `op Aᴴ`. -/
+/-- Algorithm 7.3 is the backbone BCG iteration: for every $k$, the state
+`SaadSparse.Chapter07.bcg A b x₀ rs₀ k` equals `BCG.iterate (op A) (op Aᴴ) b x₀ rs₀ k`, the
+backbone BCG iteration for the operator $x \mapsto Ax$ and its adjoint $x \mapsto A^H x$. -/
 theorem bcg_eq (k : ℕ) : bcg A b x₀ rs₀ k = BCG.iterate (op A) (op Aᴴ) b x₀ rs₀ k := by
   induction k with
   | zero => rfl
   | succ k ih =>
     rw [bcg, Function.iterate_succ_apply', ← bcg, ih, bcgStep_eq, ← BCG.iterate_succ]
 
-/-- **Algorithm 7.3**, lines 1 and 2: the initial state of BCG. -/
+/-- Lines 1 and 2 of Algorithm 7.3: the initial state of BCG is $(x_0, r_0, r^*_0, r_0, r^*_0)$ with
+$r_0 = b - Ax_0$. -/
 @[simp] theorem bcg_zero :
     bcg A b x₀ rs₀ 0
       = { x := x₀, r := b - op A x₀, rs := rs₀, p := b - op A x₀, ps := rs₀ } := rfl
 
-/-- **Algorithm 7.3**, line 4: the step length `α_j = (r_j, r*_j)/(A p_j, p*_j)`. -/
+/-- Line 4 of Algorithm 7.3: the backbone step length `BCG.alpha` at step $k$ is
+$\alpha_k = (r_k, r^*_k)/(Ap_k, p^*_k)$, computed from the state of BCG after $k$ steps. -/
 theorem bcg_alpha_eq (k : ℕ) : BCG.alpha (op A) (op Aᴴ) b x₀ rs₀ k =
     inner 𝕜 (bcg A b x₀ rs₀ k).rs (bcg A b x₀ rs₀ k).r /
       inner 𝕜 (bcg A b x₀ rs₀ k).ps (op A (bcg A b x₀ rs₀ k).p) := by
   rw [bcg_eq]; rfl
 
-/-- **Algorithm 7.3**, line 8: the direction coefficient
-`β_j = (r_{j+1}, r*_{j+1})/(r_j, r*_j)`. -/
+/-- Line 8 of Algorithm 7.3: the backbone coefficient `BCG.beta` at step $k$ is
+$\beta_k = (r_{k+1}, r^*_{k+1})/(r_k, r^*_k)$, computed from the states of BCG after $k$ and
+$k + 1$ steps. -/
 theorem bcg_beta_eq (k : ℕ) : BCG.beta (op A) (op Aᴴ) b x₀ rs₀ k =
     inner 𝕜 (bcg A b x₀ rs₀ (k + 1)).rs (bcg A b x₀ rs₀ (k + 1)).r /
       inner 𝕜 (bcg A b x₀ rs₀ k).rs (bcg A b x₀ rs₀ k).r := by
   rw [bcg_eq, bcg_eq]; rfl
 
-/-- The step length `α_j` of **Algorithm 7.3**, read off the run of `bcg`. -/
+/-- The step length $\alpha_j$ of Algorithm 7.3: the backbone `BCG.alpha` for the operators $A$ and
+$A^H$. -/
 noncomputable abbrev bcgAlpha (j : ℕ) : 𝕜 := BCG.alpha (op A) (op Aᴴ) b x₀ rs₀ j
 
-/-- The direction coefficient `β_j` of **Algorithm 7.3**, read off the run of `bcg`. -/
+/-- The direction coefficient $\beta_j$ of Algorithm 7.3: the backbone `BCG.beta` for the operators
+$A$ and $A^H$. -/
 noncomputable abbrev bcgBeta (j : ℕ) : 𝕜 := BCG.beta (op A) (op Aᴴ) b x₀ rs₀ j
 
-/-- `α_j = (r_j, r*_j)/(A p_j, p*_j)`, the formula of **Algorithm 7.3**, line 4. -/
+/-- Line 4 of Algorithm 7.3: $\alpha_j = (r_j, r^*_j)/(Ap_j, p^*_j)$. -/
 theorem bcgAlpha_eq (j : ℕ) : bcgAlpha A b x₀ rs₀ j =
     inner 𝕜 (bcg A b x₀ rs₀ j).rs (bcg A b x₀ rs₀ j).r /
       inner 𝕜 (bcg A b x₀ rs₀ j).ps (op A (bcg A b x₀ rs₀ j).p) :=
   bcg_alpha_eq A b x₀ rs₀ j
 
-/-- `β_j = (r_{j+1}, r*_{j+1})/(r_j, r*_j)`, the formula of **Algorithm 7.3**, line 8. -/
+/-- Line 8 of Algorithm 7.3: $\beta_j = (r_{j+1}, r^*_{j+1})/(r_j, r^*_j)$. -/
 theorem bcgBeta_eq (j : ℕ) : bcgBeta A b x₀ rs₀ j =
     inner 𝕜 (bcg A b x₀ rs₀ (j + 1)).rs (bcg A b x₀ rs₀ (j + 1)).r /
       inner 𝕜 (bcg A b x₀ rs₀ j).rs (bcg A b x₀ rs₀ j).r :=
@@ -143,24 +235,32 @@ section BCGBreakdown
 
 variable {A : Matrix (Fin n) (Fin n) 𝕜} {b x₀ rs₀ : EuclideanSpace 𝕜 (Fin n)} {m : ℕ}
 
-/-- **Algorithm 7.3** has not broken down before step `m`: neither of the two denominators of
-lines 4 and 8 vanishes. The adjoint relation `(A x, y) = (x, Aᴴ y)`, which the backbone takes as
-data, is automatic for matrices, so this is the whole of the book's hypothesis. -/
+/-- Algorithm 7.3 of [saad2003iterative] does not break down before step $m$: for every $k < m$,
+$$(r_k, r^*_k) \neq 0 \quad\text{and}\quad (Ap_k, p^*_k) \neq 0.$$ These are the denominators of
+$\beta_k$ (line 8) and of $\alpha_k$ (line 4).
+
+The backbone hypothesis `BCG.NoBreakdown` also contains the adjoint relation
+$(Ax, y) = (x, A^H y)$. This relation holds for every matrix, so this structure is the whole of
+the book's hypothesis, and `SaadSparse.Chapter07.BCGNoBreakdown.toBCG` gives the backbone
+hypothesis. -/
 structure BCGNoBreakdown (A : Matrix (Fin n) (Fin n) 𝕜)
     (b x₀ rs₀ : EuclideanSpace 𝕜 (Fin n)) (m : ℕ) : Prop where
-  /-- The numerator of `α_j`, which is the denominator of `β_j`, does not vanish. -/
+  /-- For every $k < m$, $(r_k, r^*_k) \neq 0$: the numerator of $\alpha_k$ and the denominator of
+  $\beta_k$ do not vanish. -/
   inner_residual_ne_zero : ∀ k < m, inner 𝕜 (bcg A b x₀ rs₀ k).rs (bcg A b x₀ rs₀ k).r ≠ 0
-  /-- The denominator of `α_j` does not vanish. -/
+  /-- For every $k < m$, $(Ap_k, p^*_k) \neq 0$: the denominator of $\alpha_k$ does not vanish. -/
   inner_apply_direction_ne_zero : ∀ k < m,
     inner 𝕜 (bcg A b x₀ rs₀ k).ps (op A (bcg A b x₀ rs₀ k).p) ≠ 0
 
-/-- Running `m` steps without breakdown entails running `k ≤ m` steps without breakdown. -/
+/-- If Algorithm 7.3 does not break down before step $m$, then it does not break down before step
+$k$ for every $k \le m$. -/
 theorem BCGNoBreakdown.mono {k : ℕ} (h : BCGNoBreakdown A b x₀ rs₀ m) (hk : k ≤ m) :
     BCGNoBreakdown A b x₀ rs₀ k :=
   ⟨fun j hj => h.inner_residual_ne_zero j (hj.trans_le hk),
     fun j hj => h.inner_apply_direction_ne_zero j (hj.trans_le hk)⟩
 
-/-- The surface no-breakdown hypothesis is the backbone one. -/
+/-- If Algorithm 7.3 does not break down before step $m$, then the backbone hypothesis
+`BCG.NoBreakdown` holds for the operators $A$ and $A^H$ and the same $m$. -/
 theorem BCGNoBreakdown.toBCG (h : BCGNoBreakdown A b x₀ rs₀ m) :
     BCG.NoBreakdown (op A) (op Aᴴ) b x₀ rs₀ m where
   adjoint := LinearMap.isAdjointPair_inner_iff'.2 (inner_op_conjTranspose A)
@@ -171,8 +271,13 @@ theorem BCGNoBreakdown.toBCG (h : BCGNoBreakdown A b x₀ rs₀ m) :
     have := h.inner_apply_direction_ne_zero k hk
     rwa [bcg_eq] at this
 
-/-- **Proposition 7.2**, (7.13)–(7.14) (also P-7.10): the BCG residuals are biorthogonal,
-`(r_j, r*_i) = 0`, and the BCG directions are `A`-biconjugate, `(A p_j, p*_i) = 0`, for `i ≠ j`. -/
+/-- **Proposition 7.2** of [saad2003iterative], equations (7.13)–(7.14). Let
+$A \in \mathbb{K}^{n \times n}$ and $b, x_0, r^*_0 \in \mathbb{K}^n$, and assume that Algorithm
+7.3 does not break down before step $m$. Then for all $i, j \le m$ with $i \neq j$, $$(r_i,
+r^*_j) = 0 \quad\text{and}\quad (Ap_i, p^*_j) = 0.$$ That is, the BCG residuals are biorthogonal
+and the BCG directions are $A$-biconjugate.
+
+The book asks for the same result in exercise P-7.10. -/
 theorem proposition_7_2 (h : BCGNoBreakdown A b x₀ rs₀ m) {i j : ℕ} (hi : i ≤ m) (hj : j ≤ m)
     (hij : i ≠ j) :
     inner 𝕜 (bcg A b x₀ rs₀ j).rs (bcg A b x₀ rs₀ i).r = 0 ∧
@@ -181,21 +286,33 @@ theorem proposition_7_2 (h : BCGNoBreakdown A b x₀ rs₀ m) {i j : ℕ} (hi : 
   exact ⟨BCG.inner_residual_dualResidual_eq_zero h.toBCG hi hj hij,
     BCG.inner_dualDirection_apply_direction_eq_zero h.toBCG hi hj hij⟩
 
-/-- **Saad §7.3.1**: the BCG iterate is the Petrov–Galerkin approximation onto `𝒦_m(A, r_0)`
-orthogonally to `𝒦_m(Aᴴ, r*_0)` — the projection process the section opens with. -/
+/-- **Section 7.3.1** of [saad2003iterative], BCG as a projection process. Let
+$A \in \mathbb{K}^{n \times n}$ and $b, x_0, r^*_0 \in \mathbb{K}^n$, and assume that Algorithm
+7.3 does not break down before step $m$. Then the BCG iterate $x_m$ is the Petrov–Galerkin
+approximation onto $\mathcal{K}_m(A, r_0)$ orthogonally to $\mathcal{K}_m(A^H, r^*_0)$: $$x_m
+\in x_0 + \mathcal{K}_m(A, r_0) \quad\text{and}\quad b - Ax_m \perp \mathcal{K}_m(A^H, r^*_0).$$
+This is the projection process with which the section opens.
+
+The Krylov subspaces are `SaadSparse.Chapter06.krylov`, and the conclusion is `IsPetrovGalerkin`
+for the operator `op A`. -/
 theorem bcg_isPetrovGalerkin (h : BCGNoBreakdown A b x₀ rs₀ m) :
     IsPetrovGalerkin (op A) b x₀ (Chapter06.krylov A (Chapter06.r₀ A b x₀) m)
       (Chapter06.krylov Aᴴ rs₀ m) (bcg A b x₀ rs₀ m).x := by
   simp only [Chapter06.krylov_eq, bcg_eq]
   exact BCG.isPetrovGalerkin h.toBCG
 
-/-- **P-7.7**: eliminating the direction vectors between lines 5, 6 and 9 of Algorithm 7.3 leaves a
-three-term recurrence for the residuals alone,
-`r_{j+2} = (1 + α_{j+1} β_j/α_j) r_{j+1} - α_{j+1} A r_{j+1} - (α_{j+1} β_j/α_j) r_j`. The division
-by `α_j` is what makes it need a hypothesis; `BCG.alpha_smul_residual_add_two` is the same identity
-cleared of denominators and holds at every step. The two iterates that start it are
-`problem_7_7_start`. The coefficients are named as in the backbone, `BCG.alpha` and `BCG.beta`;
-`bcg_alpha_eq` and `bcg_beta_eq` are the formulas of lines 4 and 8 they stand for. -/
+/-- **Exercise P-7.7** of [saad2003iterative], the residual recurrence. Let
+$A \in \mathbb{K}^{n \times n}$ and $b, x_0, r^*_0 \in \mathbb{K}^n$, assume that Algorithm 7.3
+does not break down before step $m$, and let $k < m$. Then the BCG residuals satisfy $$r_{k+2} =
+\Bigl(1 + \frac{\alpha_{k+1} \beta_k}{\alpha_k}\Bigr) r_{k+1} - \alpha_{k+1} A r_{k+1} -
+\frac{\alpha_{k+1} \beta_k}{\alpha_k} r_k.$$ The recurrence comes from the elimination of the
+direction vectors between lines 5, 6 and 9 of Algorithm 7.3.
+
+The hypothesis is needed because of the division by $\alpha_k$.
+`BCG.alpha_smul_residual_add_two` is the same identity multiplied by $\alpha_k$, and it holds at
+every step. The coefficients are the backbone `BCG.alpha` and `BCG.beta`;
+`SaadSparse.Chapter07.bcg_alpha_eq` and `SaadSparse.Chapter07.bcg_beta_eq` give their formulas
+from lines 4 and 8. `SaadSparse.Chapter07.problem_7_7_start` gives the first two residuals. -/
 theorem problem_7_7 (h : BCGNoBreakdown A b x₀ rs₀ m) {k : ℕ} (hk : k < m) :
     (bcg A b x₀ rs₀ (k + 2)).r
       = (1 + BCG.alpha (op A) (op Aᴴ) b x₀ rs₀ (k + 1) * BCG.beta (op A) (op Aᴴ) b x₀ rs₀ k /
@@ -206,8 +323,13 @@ theorem problem_7_7 (h : BCGNoBreakdown A b x₀ rs₀ m) {k : ℕ} (hk : k < m)
   simp only [bcg_eq]
   exact BCG.residual_add_two (op A) (op Aᴴ) b x₀ rs₀ (h.toBCG.alpha_ne_zero hk)
 
-/-- **P-7.7**, the direction half: `p_{j+2} = (1 + β_{j+1}) p_{j+1} - α_{j+1} A p_{j+1} - β_j p_j`.
-Eliminating the residuals rather than the directions costs no hypothesis at all. -/
+/-- **Exercise P-7.7** of [saad2003iterative], the direction recurrence. Let
+$A \in \mathbb{K}^{n \times n}$ and $b, x_0, r^*_0 \in \mathbb{K}^n$. For every $k \ge 0$, the
+BCG directions satisfy $$p_{k+2} = (1 + \beta_{k+1}) p_{k+1} - \alpha_{k+1} A p_{k+1} - \beta_k
+p_k.$$
+
+The recurrence comes from the elimination of the residuals. It needs no hypothesis, also at a
+breakdown, where Lean's division by zero gives $\alpha_k = 0$ or $\beta_k = 0$. -/
 theorem problem_7_7_direction (A : Matrix (Fin n) (Fin n) 𝕜)
     (b x₀ rs₀ : EuclideanSpace 𝕜 (Fin n)) (k : ℕ) :
     (bcg A b x₀ rs₀ (k + 2)).p
@@ -217,9 +339,12 @@ theorem problem_7_7_direction (A : Matrix (Fin n) (Fin n) 𝕜)
   simp only [bcg_eq]
   exact BCG.direction_add_two (op A) (op Aᴴ) b x₀ rs₀ k
 
-/-- **P-7.7**, the two iterates that start the recurrences of `problem_7_7` and
-`problem_7_7_direction`: `r_0 = p_0 = b - A x_0` (`bcg_zero`), `r_1 = r_0 - α_0 A r_0` and
-`p_1 = (1 + β_0) p_0 - α_0 A p_0`. -/
+/-- **Exercise P-7.7** of [saad2003iterative], the first terms of the two recurrences. Let
+$A \in \mathbb{K}^{n \times n}$ and $b, x_0, r^*_0 \in \mathbb{K}^n$. The first step of BCG
+gives $$r_1 = r_0 - \alpha_0 A r_0 \quad\text{and}\quad p_1 = (1 + \beta_0) p_0 - \alpha_0 A
+p_0.$$ Together with $r_0 = p_0 = b - Ax_0$ (`SaadSparse.Chapter07.bcg_zero`), these start the
+recurrences of `SaadSparse.Chapter07.problem_7_7` and
+`SaadSparse.Chapter07.problem_7_7_direction`. -/
 theorem problem_7_7_start (A : Matrix (Fin n) (Fin n) 𝕜)
     (b x₀ rs₀ : EuclideanSpace 𝕜 (Fin n)) :
     (bcg A b x₀ rs₀ 1).r
@@ -231,7 +356,8 @@ theorem problem_7_7_start (A : Matrix (Fin n) (Fin n) 𝕜)
   simp only [bcg_eq]
   exact ⟨BCG.residual_one (op A) (op Aᴴ) b x₀ rs₀, BCG.direction_one (op A) (op Aᴴ) b x₀ rs₀⟩
 
-/-- **(7.5)** entry by entry: `(A v_j, w_i) = T_{ij}` while Algorithm 7.1 has not broken down. -/
+/-- Equation (7.5) entry by entry: while Algorithm 7.1 does not break down, $(Av_j, w_i)$ is the
+entry $(i, j)$ of the tridiagonal coefficient array, in $0$-based indices. -/
 private theorem inner_bilanczosW_apply_bilanczosV {v w : EuclideanSpace 𝕜 (Fin n)} {k : ℕ}
     (hnb : NoBreakdown A v w k) {i j : ℕ} (hi : i ≤ k) (hj : j + 1 ≤ k) :
     inner 𝕜 (bilanczosW A v w i) (op A (bilanczosV A v w j)) = bilanczosCoeff A v w i j := by
@@ -239,10 +365,9 @@ private theorem inner_bilanczosW_apply_bilanczosV {v w : EuclideanSpace 𝕜 (Fi
   rw [bilanczosW_eq, bilanczosV_eq, bilanczosCoeff_eq]
   exact BiLanczos.inner_dualVec_apply_vec hnb.toBiLanczos hi (by omega)
 
-/-- The Petrov–Galerkin pair `(𝒦_m(A, v_1), 𝒦_m(Aᴴ, w_1))` is nondegenerate exactly when `T_m` is
-nonsingular: if `z` lies in the trial space and `A z` is orthogonal to the test space, then by
-(7.5) the coordinates of `z` solve `T_m y = 0`, so `z = 0`. This is what makes the Algorithm 7.2
-iterate the *unique* Petrov–Galerkin approximation. -/
+/-- If Algorithm 7.1 does not break down before step $m$ and $T_m$ is nonsingular, then every
+$z \in \mathcal{K}_m(A, v_1)$ with $Az \perp \mathcal{K}_m(A^H, w_1)$ is zero, so the
+Petrov–Galerkin approximation of Algorithm 7.2 is unique. -/
 private theorem eq_zero_of_apply_mem_orthogonal {v w : EuclideanSpace 𝕜 (Fin n)}
     (hnb : NoBreakdown A v w m) (hT : IsUnit (T A v w m)) {z : EuclideanSpace 𝕜 (Fin n)}
     (hz : z ∈ Chapter06.krylov A v m) (hAz : op A z ∈ (Chapter06.krylov Aᴴ w m)ᗮ) : z = 0 := by
@@ -269,11 +394,20 @@ private theorem eq_zero_of_apply_mem_orthogonal {v w : EuclideanSpace 𝕜 (Fin 
   rw [← hy, hy0]
   simp
 
-/-- **(7.10)–(7.12)**: BCG computes the Algorithm 7.2 iterate. The book derives this from the
-`LDU` factorization `T_m = L_m U_m` and the direction matrices `P_m = V_m U_m⁻¹`,
-`P*_m = W_m L_m⁻ᴴ`; both iterates are Petrov–Galerkin approximations on `𝒦_m(A, r_0)` against
-`𝒦_m(Aᴴ, r*_0)`, and a nonsingular `T_m` is exactly the nondegeneracy that makes such an
-approximation unique. -/
+/-- **Equations (7.10)–(7.12)** of [saad2003iterative]: BCG computes the iterate of Algorithm 7.2.
+Let $A \in \mathbb{K}^{n \times n}$ and $b, x_0, r^*_0 \in \mathbb{K}^n$, let
+$r_0 = b - Ax_0 \neq 0$ and $v_1 = r_0/\beta$, and assume $(r^*_0, v_1) \neq 0$. Let $w_1$ be
+$r^*_0$ scaled so that $(v_1, w_1) = 1$. Assume that Algorithm 7.3 does not break down before
+step $m$, that Algorithm 7.1 started from $(v_1, w_1)$ does not break down before step $m$, and
+that $T_m$ is nonsingular. Then the BCG iterate after $m$ steps is $$x_m = x_0 + V_m T_m^{-1}
+(\beta e_1),$$ the iterate of Algorithm 7.2.
+
+The book derives this from the factorization $T_m = L_m U_m$ and the direction matrices
+$P_m = V_m U_m^{-1}$ and $P^*_m = W_m L_m^{-H}$. The proof here uses that both iterates are
+Petrov–Galerkin approximations onto $\mathcal{K}_m(A, r_0)$ orthogonally to
+$\mathcal{K}_m(A^H, r^*_0)$, and that a nonsingular $T_m$ makes such an approximation unique.
+The vector $w_1$ is `SaadSparse.Chapter07.w₁ A b x₀ rs₀`, and the iterate of Algorithm 7.2 is
+`SaadSparse.Chapter07.lanczosSolve`. -/
 theorem bcg_eq_lanczosSolve (h : BCGNoBreakdown A b x₀ rs₀ m)
     (hnb : NoBreakdown A (Chapter06.v₁ A b x₀) (w₁ A b x₀ rs₀) m)
     (hT : IsUnit (T A (Chapter06.v₁ A b x₀) (w₁ A b x₀ rs₀) m))
@@ -297,31 +431,41 @@ end BCGBreakdown
 
 section QMR
 
-/-- The basis QMR expands its iterate in: the primal two-sided Lanczos vectors of Algorithm 7.1
-started from `v_1 = r_0/β` and the dual vector `w_1`. -/
+/-- The basis in which QMR expands its iterate: the primal vectors of Algorithm 7.1 started from
+$v_1 = r_0/\beta$ and a dual vector $w_1$. `qmrV A b x₀ w₁ j` is the book's $v_{j+1}$. -/
 noncomputable abbrev qmrV (A : Matrix (Fin n) (Fin n) 𝕜)
     (b x₀ w₁ : EuclideanSpace 𝕜 (Fin n)) : ℕ → EuclideanSpace 𝕜 (Fin n) :=
   bilanczosV A (Chapter06.v₁ A b x₀) w₁
 
-/-- The tridiagonal coefficient array `T̄_m` of (7.15) that QMR rotates, at the starting pair
-`(v_1, w_1) = (r_0/β, w_1)`. -/
+/-- The tridiagonal coefficient array of (7.2) and (7.15), whose leading $(m + 1) \times m$ block is
+$\bar T_m$, for Algorithm 7.1 started from $(v_1, w_1) = (r_0/\beta, w_1)$. QMR applies its
+Givens rotations to this array. -/
 noncomputable abbrev qmrCoeff (A : Matrix (Fin n) (Fin n) 𝕜)
     (b x₀ w₁ : EuclideanSpace 𝕜 (Fin n)) : ℕ → ℕ → 𝕜 :=
   bilanczosCoeff A (Chapter06.v₁ A b x₀) w₁
 
 variable (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ w₁ : EuclideanSpace 𝕜 (Fin n))
 
-/-- **Algorithm 7.4** (QMR): Algorithm 6.12 (QGMRES) run on the two-sided Lanczos basis. The
-minimization of (7.17) is over the *quasi*-residual `‖β e_1 - T̄_m y‖₂`, and its solution is the
-same rotated triangular back-substitution `y_m = R_m⁻¹ g_m` as in GMRES. -/
+/-- **Algorithm 7.4** of [saad2003iterative] (QMR). Let $A \in \mathbb{K}^{n \times n}$ and
+$b, x_0, w_1 \in \mathbb{K}^n$. The QMR iterate after $m$ steps is $$x^Q_m = x_0 + V_m y_m,
+\qquad y_m = R_m^{-1} g_m,$$ where $V_m = [v_1, \dots, v_m]$ is the primal basis of Algorithm
+7.1 started from $v_1 = r_0/\beta$ and $w_1$, and $R_m$ and $g_m$ come from the Givens rotations
+that reduce $\bar T_m$ to triangular form. This is Algorithm 6.12 (QGMRES) applied to the
+two-sided Lanczos basis and coefficients. When $R_m$ is nonsingular, $y_m$ minimizes the
+quasi-residual norm $\|\beta e_1 - \bar T_m y\|_2$ of (7.17)
+(`SaadSparse.Chapter07.qmr_isQuasiMinResidualIterate`).
+
+The definition is `SaadSparse.Chapter06.qgmres` at the basis `SaadSparse.Chapter07.qmrV` and the
+coefficients `SaadSparse.Chapter07.qmrCoeff`. When $R_m$ is singular, Lean's matrix inverse is
+$0$, so $y_m = 0$. -/
 noncomputable def qmr (m : ℕ) : EuclideanSpace 𝕜 (Fin n) :=
   Chapter06.qgmres x₀ (qmrV A b x₀ w₁) (qmrCoeff A b x₀ w₁) (Chapter06.β A b x₀ : 𝕜) m
 
-/-- The starting relation `r_0 = β v_1` in the form the backbone consumes. -/
+/-- The starting relation $r_0 = \beta v_1$. -/
 private theorem smul_qmrV_zero :
     b - op A x₀ = (Chapter06.β A b x₀ : 𝕜) • qmrV A b x₀ w₁ 0 := (smul_v₁_eq_r₀ A b x₀).symm
 
-/-- `ρ^Q_m` is the norm of the backbone's `γ_m`; the unfolding `rw` cannot do by itself. -/
+/-- The quasi-residual norm $\rho^Q_m$ is the norm of the backbone scalar `Krylov.gamma h β m`. -/
 private theorem quasiResidualNorm_eq (h : ℕ → ℕ → 𝕜) (β : 𝕜) (m : ℕ) :
     Chapter06.quasiResidualNorm h β m = ‖Krylov.gamma h β m‖ := rfl
 
@@ -334,14 +478,13 @@ private theorem givensC_eq (h : ℕ → ℕ → 𝕜) (m : ℕ) :
 private theorem givensS_eq (h : ℕ → ℕ → 𝕜) (m : ℕ) :
     Chapter06.s h m = Krylov.givensS h m := rfl
 
-/-- `‖β‖ = ‖r_0‖₂`: the scalar `β` is the real number `‖r_0‖` seen in `𝕜`. -/
+/-- $|\beta| = \|r_0\|_2$, where $\beta$ is the real number $\|r_0\|_2$ seen as a scalar. -/
 private theorem norm_beta : ‖(Chapter06.β A b x₀ : 𝕜)‖ = ‖Chapter06.r₀ A b x₀‖ := by
   rw [Chapter06.β_eq_norm_r₀, RCLike.norm_ofReal, abs_of_nonneg (norm_nonneg _)]
 
-/-- **(7.19) at the level of the rotations**: when the Galerkin system `H_{m+1} y = β e_1` is
-solvable, `γ_{m+2} = c_{m+1}(-h_{m+2,m+1} y_m)` — the quasi-residual scalar is `c` times the
-Galerkin residual scalar. No hypothesis is needed at a degenerate rotation, where both sides
-vanish. -/
+/-- Equation (7.19) at the level of the rotations: if the square Hessenberg system
+$H_{m+1} y = \beta e_1$ has a solution $y$, then $\gamma_{m+2} = -c_{m+1} h_{m+2,m+1} \eta$ with
+$\eta$ the last component of $y$, also at a degenerate rotation, where both sides vanish. -/
 private theorem gamma_succ_eq_givensC_mul {h : ℕ → ℕ → 𝕜}
     (hh : ∀ i j : ℕ, j + 1 < i → h i j = 0) (β : 𝕜) {m : ℕ} {y : Fin (m + 1) → 𝕜}
     (hy : (Krylov.hessenbergSqOf h (m + 1)).mulVec y = Krylov.firstVec β (m + 1)) :
@@ -352,7 +495,8 @@ private theorem gamma_succ_eq_givensC_mul {h : ℕ → ℕ → 𝕜}
     Krylov.givensS, Krylov.givensC, Krylov.rotated_eq_of_le h m (m + 1) m le_rfl]
   ring
 
-/-- A nonvanishing rotated pivot makes rotation `m` nondegenerate. -/
+/-- If the rotated diagonal entry in position $m$ is nonzero, then the denominator of rotation $m$
+is nonzero. -/
 private theorem givensRho_ne_zero_of_rotated_self (h : ℕ → ℕ → 𝕜) {m : ℕ}
     (hd : Krylov.rotated h m m m ≠ 0) : Krylov.givensRho h m ≠ 0 := by
   intro h0
@@ -362,8 +506,8 @@ private theorem givensRho_ne_zero_of_rotated_self (h : ℕ → ℕ → 𝕜) {m 
     nlinarith [norm_nonneg (Krylov.rotated h m (m + 1) m), sq_nonneg (0 : ℝ)]
   exact hd (norm_eq_zero.1 (pow_eq_zero_iff two_ne_zero |>.1 h1))
 
-/-- If the quasi-residual scalar `γ_{m+1}` does not vanish and the Galerkin system at step `m + 1`
-is solvable, then the rotation cosine `c_{m+1}` does not vanish — the Galerkin iterate exists. -/
+/-- If $\gamma_{m+1} \neq 0$ and the system $H_{m+1} y = \beta e_1$ has a solution, then
+$c_{m+1} \neq 0$, so the Galerkin iterate exists. -/
 private theorem givensC_ne_zero {h : ℕ → ℕ → 𝕜} (hh : ∀ i j : ℕ, j + 1 < i → h i j = 0) (β : 𝕜)
     {m : ℕ} {y : Fin (m + 1) → 𝕜}
     (hy : (Krylov.hessenbergSqOf h (m + 1)).mulVec y = Krylov.firstVec β (m + 1))
@@ -374,7 +518,7 @@ private theorem givensC_ne_zero {h : ℕ → ℕ → 𝕜} (hh : ∀ i j : ℕ, 
         hc, zero_mul])
   exact div_ne_zero hd (RCLike.ofReal_ne_zero.2 (givensRho_ne_zero_of_rotated_self h hd))
 
-/-- The quasi-residual scalars vanish from the first vanishing one onwards. -/
+/-- If one quasi-residual scalar $\gamma_k$ vanishes, then all later ones vanish. -/
 private theorem gamma_eq_zero_of_le (h : ℕ → ℕ → 𝕜) (β : 𝕜) {k m : ℕ} (hk : k ≤ m)
     (hc : Krylov.gamma h β k = 0) : Krylov.gamma h β m = 0 := by
   obtain ⟨d, rfl⟩ := Nat.exists_eq_add_of_le hk
@@ -383,8 +527,9 @@ private theorem gamma_eq_zero_of_le (h : ℕ → ℕ → 𝕜) (β : 𝕜) {k m 
   | succ d ih =>
     rw [← Nat.add_assoc, Krylov.gamma_succ, ih (Nat.le_add_right k d), mul_zero]
 
-/-- The Galerkin residual norms `ρ^F` in the shape the harmonic identities of
-`Numlib/Krylov/QuasiMinRes.lean` take them: `ρ^F_0 = ‖β‖` and `ρ^F_{k+1} = ‖γ_{k+1}‖/|c_k|`. -/
+/-- The Galerkin residual norms in the form that the harmonic identities of
+`Numlib.Krylov.QuasiMinRes` use: $\rho^F_0 = |\beta|$ and
+$\rho^F_{k+1} = |\gamma_{k+2}|/|c_{k+1}|$ in the book's indices. -/
 private noncomputable def rhoF (h : ℕ → ℕ → 𝕜) (β : 𝕜) : ℕ → ℝ
   | 0 => ‖β‖
   | k + 1 => ‖Krylov.gamma h β (k + 1)‖ / ‖Krylov.givensC h k‖
@@ -394,26 +539,37 @@ private theorem rhoF_zero (h : ℕ → ℕ → 𝕜) (β : 𝕜) : rhoF h β 0 =
 private theorem rhoF_succ (h : ℕ → ℕ → 𝕜) (β : 𝕜) (k : ℕ) :
     rhoF h β (k + 1) = ‖Krylov.gamma h β (k + 1)‖ / ‖Krylov.givensC h k‖ := rfl
 
-/-- Nothing happens at step `0`. -/
+/-- QMR after $0$ steps returns $x^Q_0 = x_0$. -/
 @[simp] theorem qmr_zero : qmr A b x₀ w₁ 0 = x₀ := by
   rw [qmr, Chapter06.qgmres, Chapter06.toEuclideanLin_colMatrix_apply]
   simp
 
 variable {A b x₀ w₁}
 
-/-- **The hinge of §7.3.2**: the QMR iterate meets the backbone quasi-minimal-residual
-specification for the two-sided Lanczos data — it is `x_0 + V_m y` with `y` minimizing the
-quasi-residual `‖β e_1 - T̄_m y‖₂`. Everything after (7.17) is this identification plus a
-theorem of `Numlib/Krylov/QuasiMinRes.lean`. -/
+/-- **Section 7.3.2** of [saad2003iterative], the quasi-minimal residual property of QMR. Let
+$A \in \mathbb{K}^{n \times n}$ and $b, x_0, w_1 \in \mathbb{K}^n$, and assume that the
+triangular matrix $R_m$ obtained from $\bar T_m$ by the Givens rotations is nonsingular. Then
+the QMR iterate is $x^Q_m = x_0 + V_m y$ for a vector $y \in \mathbb{K}^m$ that minimizes the
+quasi-residual norm $\|\beta e_1 - \bar T_m y\|_2$ over all of $\mathbb{K}^m$.
+
+The conclusion is the backbone specification `Krylov.IsQuasiMinResidualIterate` for the basis
+`SaadSparse.Chapter07.qmrV` and the coefficients `SaadSparse.Chapter07.qmrCoeff`. The results
+from (7.16) on follow from this identification and theorems of `Numlib.Krylov.QuasiMinRes`. -/
 theorem qmr_isQuasiMinResidualIterate {m : ℕ} (hR : IsUnit (Chapter06.R (qmrCoeff A b x₀ w₁) m)) :
     Krylov.IsQuasiMinResidualIterate (qmrV A b x₀ w₁) (qmrCoeff A b x₀ w₁) (Chapter06.β A b x₀ : 𝕜)
       x₀ m (qmr A b x₀ w₁ m) :=
   Chapter06.qgmres_isQuasiMinResidualIterate x₀ _ _ _
     (fun _ _ hij => bilanczosCoeff_eq_zero_of_lt A _ _ hij) hR
 
-/-- **(7.16)**: `b - A (x_0 + V_m y) = V_{m+1}(β e_1 - T̄_m y)`. Taking norms gives (7.17); were
-the `v_i` orthonormal the right-hand side would be `‖β e_1 - T̄_m y‖₂`, as in GMRES, and the
-quasi-residual would be the residual. -/
+/-- **Equation (7.16)** of [saad2003iterative]. Let $A \in \mathbb{K}^{n \times n}$ and
+$b, x_0, w_1 \in \mathbb{K}^n$, and assume that Algorithm 7.1 started from $(v_1, w_1)$ has no
+serious breakdown. Then for every $m$ and every $y \in \mathbb{K}^m$, $$b - A(x_0 + V_m y) =
+V_{m+1}(\beta e_1 - \bar T_m y).$$ Taking norms gives (7.17). If the $v_i$ were orthonormal, the
+right-hand side would have the norm $\|\beta e_1 - \bar T_m y\|_2$, as in GMRES, and the
+quasi-residual norm would be the residual norm.
+
+The products $V_m y$ and $V_{m+1} u$ are written as the sums $\sum_j y_j v_j$ and
+$\sum_i u_i v_i$. -/
 theorem equation_7_16 (h : NoSeriousBreakdown A (Chapter06.v₁ A b x₀) w₁) (m : ℕ) (y : Fin m → 𝕜) :
     b - op A (x₀ + ∑ j, y j • qmrV A b x₀ w₁ (j : ℕ))
       = ∑ i, (Krylov.firstVec (Chapter06.β A b x₀ : 𝕜) (m + 1)
@@ -421,8 +577,15 @@ theorem equation_7_16 (h : NoSeriousBreakdown A (Chapter06.v₁ A b x₀) w₁) 
   rw [Tbar_eq_hessenbergOf]
   exact (bilanczos_hessenbergRelation h).residual_eq (smul_qmrV_zero A b x₀ w₁) m y
 
-/-- **(7.18)**: the quasi-residual norm is the running product of the sines,
-`ρ^Q_m = |s_1 s_2 ⋯ s_m| ‖r_0‖₂`, hence `ρ^Q_{m+1} = |s_{m+1}| ρ^Q_m`. -/
+/-- **Equation (7.18)** of [saad2003iterative]. Let $A \in \mathbb{K}^{n \times n}$ and
+$b, x_0, w_1 \in \mathbb{K}^n$. For every $m$, the quasi-residual norm
+$\rho^Q_m = |\gamma_{m+1}|$ of QMR is the product of the sines of the Givens rotations,
+$$\rho^Q_m = |s_1 s_2 \cdots s_m| \, \|r_0\|_2, \qquad\text{hence}\qquad \rho^Q_{m+1} =
+|s_{m+1}| \, \rho^Q_m.$$
+
+The norm $\rho^Q_m$ is `SaadSparse.Chapter06.quasiResidualNorm` for
+`SaadSparse.Chapter07.qmrCoeff`, and $s_{k+1}$ is
+`SaadSparse.Chapter06.s (qmrCoeff A b x₀ w₁) k`. -/
 theorem equation_7_18 (m : ℕ) :
     Chapter06.quasiResidualNorm (qmrCoeff A b x₀ w₁) (Chapter06.β A b x₀ : 𝕜) m
         = (∏ k ∈ Finset.range m, ‖Chapter06.s (qmrCoeff A b x₀ w₁) k‖) * ‖Chapter06.r₀ A b x₀‖ ∧
@@ -433,8 +596,14 @@ theorem equation_7_18 (m : ℕ) :
   · rw [quasiResidualNorm_eq, Krylov.norm_gamma_eq_prod, norm_beta]
   · rw [quasiResidualNorm_eq, quasiResidualNorm_eq, Krylov.gamma_succ, norm_mul, norm_neg]
 
-/-- **(7.19)**: `γ_{m+1} v_{m+1} = c_m r_m`, with `r_m` the residual of the Algorithm 7.2 (BCG)
-iterate — the two-sided form of (6.56). Both sides are multiples of `v_{m+1}`, by (7.9). -/
+/-- **Equation (7.19)** of [saad2003iterative]. Let $A \in \mathbb{K}^{n \times n}$ and
+$b, x_0, w_1 \in \mathbb{K}^n$, and assume that Algorithm 7.1 started from $(v_1, w_1)$ has no
+serious breakdown. Let $m \ge 1$ and assume that $T_m$ is nonsingular. Then $$\gamma_{m+1}
+v_{m+1} = c_m r_m,$$ where $r_m = b - Ax_m$ is the residual of the iterate $x_m$ of Algorithm
+7.2 (the BCG iterate). This is the two-sided form of (6.56).
+
+Both sides are multiples of $v_{m+1}$, by (7.9). The Lean statement is written for $m + 1$ with
+$m \ge 0$. -/
 theorem equation_7_19 (h : NoSeriousBreakdown A (Chapter06.v₁ A b x₀) w₁) {m : ℕ}
     (hT : IsUnit (T A (Chapter06.v₁ A b x₀) w₁ (m + 1))) :
     Chapter06.γ (qmrCoeff A b x₀ w₁) (Chapter06.β A b x₀ : 𝕜) (m + 1) • qmrV A b x₀ w₁ (m + 1)
@@ -454,8 +623,13 @@ theorem equation_7_19 (h : NoSeriousBreakdown A (Chapter06.v₁ A b x₀) w₁) 
     gamma_succ_eq_givensC_mul (h := qmrCoeff A b x₀ w₁)
       (fun _ _ hij => bilanczosCoeff_eq_zero_of_lt A _ _ hij) _ hy]
 
-/-- **(7.20)**: `ρ^Q_m = |c_m| ρ_m`, with `ρ_m` the true residual norm of the Algorithm 7.2
-iterate, under the book's normalization `‖v_j‖₂ = 1`. -/
+/-- **Equation (7.20)** of [saad2003iterative]. Let $A \in \mathbb{K}^{n \times n}$ and
+$b, x_0, w_1 \in \mathbb{K}^n$. Assume that Algorithm 7.1 started from $(v_1, w_1)$ has no
+serious breakdown and that its primal vectors have unit norm, $\|v_j\|_2 = 1$ for all $j$. Let
+$m \ge 1$ and assume that $T_m$ is nonsingular. Then $$\rho^Q_m = |c_m| \, \rho_m,$$ where
+$\rho_m = \|b - Ax_m\|_2$ is the residual norm of the iterate $x_m$ of Algorithm 7.2.
+
+The Lean statement is written for $m + 1$ with $m \ge 0$. -/
 theorem equation_7_20 (h : NoSeriousBreakdown A (Chapter06.v₁ A b x₀) w₁)
     (hv : ∀ j, ‖qmrV A b x₀ w₁ j‖ = 1) {m : ℕ}
     (hT : IsUnit (T A (Chapter06.v₁ A b x₀) w₁ (m + 1))) :
@@ -466,8 +640,8 @@ theorem equation_7_20 (h : NoSeriousBreakdown A (Chapter06.v₁ A b x₀) w₁)
   rw [quasiResidualNorm_eq]
   exact hnorm
 
-/-- The Galerkin data of the harmonic identities is the residual sequence of Algorithm 7.2: the
-`ρ^F` of `Numlib/Krylov/QuasiMinRes.lean` are the norms `ρ_i = ‖b - A x_i‖₂`. -/
+/-- The norms $\rho^F_i$ of the harmonic identities, for the two-sided Lanczos data, are the
+residual norms $\rho_i = \|b - Ax_i\|_2$ of Algorithm 7.2. -/
 private theorem rhoF_eq_norm_residual (hs : NoSeriousBreakdown A (Chapter06.v₁ A b x₀) w₁)
     (hv : ∀ j, ‖qmrV A b x₀ w₁ j‖ = 1) (hT : ∀ k, IsUnit (T A (Chapter06.v₁ A b x₀) w₁ k)) {m : ℕ}
     (h0 : Krylov.gamma (qmrCoeff A b x₀ w₁) (Chapter06.β A b x₀ : 𝕜) m ≠ 0) {i : ℕ} (hi : i ≤ m) :
@@ -488,8 +662,8 @@ private theorem rhoF_eq_norm_residual (hs : NoSeriousBreakdown A (Chapter06.v₁
     rw [quasiResidualNorm_eq, givensC_eq] at h20
     rw [rhoF_succ, h20, mul_comm, mul_div_assoc, div_self hcne, mul_one]
 
-/-- As long as no residual of Algorithm 7.2 vanishes, neither does the quasi-residual scalar: by
-(7.20), `ρ^Q_{m+1} = |c_m| ρ_{m+1}`, and `c_m ≠ 0` follows inductively from `γ_m ≠ 0`. -/
+/-- If no residual of Algorithm 7.2 vanishes, then no quasi-residual scalar $\gamma_m$ vanishes, by
+(7.20) and an induction that gives $c_m \neq 0$ from $\gamma_m \neq 0$. -/
 private theorem gamma_ne_zero (hs : NoSeriousBreakdown A (Chapter06.v₁ A b x₀) w₁)
     (hv : ∀ j, ‖qmrV A b x₀ w₁ j‖ = 1) (hT : ∀ k, IsUnit (T A (Chapter06.v₁ A b x₀) w₁ k))
     (hne : ∀ j, b - op A (lanczosSolve A b x₀ w₁ j) ≠ 0) (m : ℕ) :
@@ -513,8 +687,15 @@ private theorem gamma_ne_zero (hs : NoSeriousBreakdown A (Chapter06.v₁ A b x�
     rw [hcc, norm_zero] at h20
     exact mul_ne_zero (norm_ne_zero_iff.2 hc) (norm_ne_zero_iff.2 (hne (k + 1))) h20.symm
 
-/-- **Proposition 7.3**, (7.21): `‖b - A x^Q_m‖₂ ≤ ‖V_{m+1}‖₂ |s_1 ⋯ s_m| ‖r_0‖₂`, where
-`‖V_{m+1}‖₂` enters as any bound `C` on the coordinate map `y ↦ ∑ y_i v_i`. -/
+/-- **Proposition 7.3** of [saad2003iterative], equation (7.21). Let $A \in \mathbb{K}^{n \times n}$
+and $b, x_0, w_1 \in \mathbb{K}^n$. Assume that Algorithm 7.1 started from $(v_1, w_1)$ has no
+serious breakdown and that $R_m$ is nonsingular. Let $C$ be a bound for $V_{m+1}$, that is,
+$\|V_{m+1} u\|_2 \le C \|u\|_2$ for all $u \in \mathbb{K}^{m+1}$. Then the QMR iterate satisfies
+$$\|b - Ax^Q_m\|_2 \le C \, |s_1 \cdots s_m| \, \|r_0\|_2.$$ With $C = \|V_{m+1}\|_2$ this is
+the printed bound.
+
+The product $V_{m+1} u$ is the sum $\sum_i u_i v_i$. The proof specializes
+`Krylov.IsQuasiMinResidualIterate.norm_residual_le`. -/
 theorem proposition_7_3 (h : NoSeriousBreakdown A (Chapter06.v₁ A b x₀) w₁) {m : ℕ}
     (hR : IsUnit (Chapter06.R (qmrCoeff A b x₀ w₁) m)) {C : ℝ}
     (hC : ∀ w : Fin (m + 1) → 𝕜, ‖∑ i, w i • qmrV A b x₀ w₁ (i : ℕ)‖
@@ -530,8 +711,13 @@ theorem proposition_7_3 (h : NoSeriousBreakdown A (Chapter06.v₁ A b x₀) w₁
     ((Chapter06.isUnit_R_iff _ (fun _ _ hij => bilanczosCoeff_eq_zero_of_lt A _ _ hij)).1 hR) hC
     (qmr_isQuasiMinResidualIterate hR)
 
-/-- **Proposition 7.3**, the Cauchy–Schwarz form: for unit Lanczos vectors `‖V_{m+1}‖₂ ≤ √(m+1)`,
-so `‖b - A x^Q_m‖₂ ≤ √(m+1) |s_1 ⋯ s_m| ‖r_0‖₂`. -/
+/-- **Proposition 7.3** of [saad2003iterative], the bound for normalized vectors. Let
+$A \in \mathbb{K}^{n \times n}$ and $b, x_0, w_1 \in \mathbb{K}^n$. Assume that Algorithm 7.1
+started from $(v_1, w_1)$ has no serious breakdown, that $R_m$ is nonsingular, and that
+$\|v_j\|_2 \le 1$ for all $j$. Then $\|V_{m+1}\|_2 \le \sqrt{m+1}$ by the Cauchy–Schwarz
+inequality, and therefore $$\|b - Ax^Q_m\|_2 \le \sqrt{m+1} \, |s_1 \cdots s_m| \, \|r_0\|_2.$$
+
+The bound on $\|V_{m+1}\|_2$ is `Krylov.norm_sum_smul_le_sqrt_mul`. -/
 theorem proposition_7_3_sqrt (h : NoSeriousBreakdown A (Chapter06.v₁ A b x₀) w₁) {m : ℕ}
     (hR : IsUnit (Chapter06.R (qmrCoeff A b x₀ w₁) m)) (hv : ∀ j, ‖qmrV A b x₀ w₁ j‖ ≤ 1) :
     ‖b - op A (qmr A b x₀ w₁ m)‖
@@ -542,10 +728,21 @@ theorem proposition_7_3_sqrt (h : NoSeriousBreakdown A (Chapter06.v₁ A b x₀)
   have := Krylov.norm_sum_smul_le_sqrt_mul (v := qmrV A b x₀ w₁) hv w
   rwa [Nat.cast_add, Nat.cast_one] at this
 
-/-- **Theorem 7.4**: `‖r^Q_m‖₂ ≤ κ₂(V_{m+1}) ‖r^G_m‖₂`, the QMR residual against the GMRES
-residual after `m` steps, with `κ₂(V_{m+1}) = C/c` the conditioning of the Lanczos basis. This is
-the same theorem as Saad's Theorem 6.11; the full-rank hypothesis the book assumes there is
-subsumed in `0 < c`, and here it is a consequence of P-7.2 rather than an assumption. -/
+/-- **Theorem 7.4** of [saad2003iterative]. Let $A \in \mathbb{K}^{n \times n}$ and
+$b, x_0, w_1 \in \mathbb{K}^n$ with $r_0 \neq 0$, and let $m \le \operatorname{grade}(v_1)$.
+Assume that Algorithm 7.1 started from $(v_1, w_1)$ has no serious breakdown and does not break
+down before step $m$, that the matrix $R_m$ of QMR is nonsingular, and that the matrix $R_m$ of
+GMRES, formed from the Arnoldi coefficients, is nonsingular. Let $c > 0$ and $C$ be such that
+$$c \|u\|_2 \le \|V_{m+1} u\|_2 \le C \|u\|_2 \qquad (u \in \mathbb{K}^{m+1}).$$ Then
+$$\|r^Q_m\|_2 \le \frac{C}{c} \, \|r^G_m\|_2,$$ where $r^Q_m = b - Ax^Q_m$ is the residual of
+QMR and $r^G_m$ is the residual of GMRES after $m$ steps. The best constants give
+$C/c = \kappa_2(V_{m+1})$, the condition number of the Lanczos basis.
+
+This is the same theorem as Theorem 6.11 (`SaadSparse.Chapter06.theorem_6_11`). The full-rank
+hypothesis that the book assumes there is contained in $c > 0$, and such a $c$ exists because
+$V_{m+1}$ has full rank (`SaadSparse.Chapter07.problem_7_2`). GMRES is
+`SaadSparse.Chapter06.gmresFixed`. The proof specializes
+`Krylov.IsQuasiMinResidualIterate.norm_residual_le_mul`. -/
 theorem theorem_7_4 (h : NoSeriousBreakdown A (Chapter06.v₁ A b x₀) w₁) {m : ℕ}
     (hnb : NoBreakdown A (Chapter06.v₁ A b x₀) w₁ m) (hr : Chapter06.r₀ A b x₀ ≠ 0)
     (hR : IsUnit (Chapter06.R (qmrCoeff A b x₀ w₁) m))
@@ -564,9 +761,15 @@ theorem theorem_7_4 (h : NoSeriousBreakdown A (Chapter06.v₁ A b x₀) w₁) {m
   exact Chapter06.theorem_6_11 b x₀ (bilanczos_hessenbergRelation h) (smul_qmrV_zero A b x₀ w₁) hR
     hm hRA hspan hc0 hc hC
 
-/-- **(7.23)**: `1/(ρ^Q_{m+1})² = 1/(ρ^Q_m)² + 1/(ρ_{m+1})²`, the harmonic relation between the
-QMR quasi-residual norms and the residual norms of Algorithm 7.2 — the two-sided analogue of
-(6.65). -/
+/-- **Equation (7.23)** of [saad2003iterative]. Let $A \in \mathbb{K}^{n \times n}$ and
+$b, x_0, w_1 \in \mathbb{K}^n$. Assume that Algorithm 7.1 started from $(v_1, w_1)$ has no
+serious breakdown and that its primal vectors have unit norm. Let $m \ge 0$, and assume that
+$T_{m+1}$ is nonsingular and that $\gamma_{m+2} \neq 0$, that is, $\rho^Q_{m+1} \neq 0$. Then
+$$\frac{1}{(\rho^Q_{m+1})^2} = \frac{1}{(\rho^Q_m)^2} + \frac{1}{\rho_{m+1}^2},$$ where
+$\rho_{m+1}$ is the residual norm of the iterate $x_{m+1}$ of Algorithm 7.2. This is the
+two-sided analogue of (6.65).
+
+The proof specializes `Krylov.inv_sq_norm_gamma`. -/
 theorem equation_7_23 (h : NoSeriousBreakdown A (Chapter06.v₁ A b x₀) w₁)
     (hv : ∀ j, ‖qmrV A b x₀ w₁ j‖ = 1) {m : ℕ}
     (hT : IsUnit (T A (Chapter06.v₁ A b x₀) w₁ (m + 1)))
@@ -590,8 +793,14 @@ theorem equation_7_23 (h : NoSeriousBreakdown A (Chapter06.v₁ A b x₀) w₁)
     rw [h20, mul_comm, mul_div_assoc, div_self hcne, mul_one]
   rw [quasiResidualNorm_eq, quasiResidualNorm_eq, Krylov.inv_sq_norm_gamma _ _ h0, hkey]
 
-/-- **(7.24)**: the smoothing property of QMR — the quasi-residual norm is the harmonic average
-`1/(ρ^Q_m)² = ∑_{i ≤ m} 1/(ρ_i)²` of the residual norms of Algorithm 7.2. -/
+/-- **Equation (7.24)** of [saad2003iterative], the smoothing property of QMR. Let
+$A \in \mathbb{K}^{n \times n}$ and $b, x_0, w_1 \in \mathbb{K}^n$. Assume that Algorithm 7.1
+started from $(v_1, w_1)$ has no serious breakdown, that its primal vectors have unit norm, that
+$T_k$ is nonsingular for every $k$, and that $\rho^Q_m \neq 0$. Then the quasi-residual norm is
+the harmonic combination $$\frac{1}{(\rho^Q_m)^2} = \sum_{i=0}^{m} \frac{1}{\rho_i^2}$$ of the
+residual norms $\rho_i = \|b - Ax_i\|_2$ of Algorithm 7.2.
+
+The proof specializes `Krylov.inv_sq_norm_gamma_eq_sum`. -/
 theorem equation_7_24 (h : NoSeriousBreakdown A (Chapter06.v₁ A b x₀) w₁)
     (hv : ∀ j, ‖qmrV A b x₀ w₁ j‖ = 1)
     (hT : ∀ k, IsUnit (T A (Chapter06.v₁ A b x₀) w₁ k)) {m : ℕ}
@@ -603,8 +812,16 @@ theorem equation_7_24 (h : NoSeriousBreakdown A (Chapter06.v₁ A b x₀) w₁)
   exact Finset.sum_congr rfl fun i hi => by
     rw [rhoF_eq_norm_residual h hv hT h0 (Nat.lt_succ_iff.1 (Finset.mem_range.1 hi))]
 
-/-- **Proposition 7.5**, (7.25): `ρ^Q_m ≤ ρ_{m*} ≤ √(m+1) ρ^Q_m`, where `ρ_{m*}` is the smallest
-residual norm of Algorithm 7.2 among the first `m` steps. -/
+/-- **Proposition 7.5** of [saad2003iterative], equation (7.25). Let $A \in \mathbb{K}^{n \times n}$
+and $b, x_0, w_1 \in \mathbb{K}^n$. Assume that Algorithm 7.1 started from $(v_1, w_1)$ has no
+serious breakdown, that its primal vectors have unit norm, that $T_k$ is nonsingular for every
+$k$, that $\rho^Q_m \neq 0$, and that the residual $b - Ax_i$ of Algorithm 7.2 is nonzero for
+every $i \le m$. Let $\rho_{m*} = \min_{0 \le i \le m} \rho_i$ be the smallest residual norm of
+Algorithm 7.2 among $x_0, \dots, x_m$. Then $$\rho^Q_m \le \rho_{m*} \le \sqrt{m+1} \,
+\rho^Q_m.$$
+
+The minimum is `Finset.inf'` over $\{0, \dots, m\}$. The proof specializes
+`Krylov.exists_norm_gamma_div_givensC_le`. -/
 theorem proposition_7_5 (h : NoSeriousBreakdown A (Chapter06.v₁ A b x₀) w₁)
     (hv : ∀ j, ‖qmrV A b x₀ w₁ j‖ = 1)
     (hT : ∀ k, IsUnit (T A (Chapter06.v₁ A b x₀) w₁ k)) {m : ℕ}
@@ -630,8 +847,14 @@ theorem proposition_7_5 (h : NoSeriousBreakdown A (Chapter06.v₁ A b x₀) w₁
     rw [← rhoF_eq_norm_residual h hv hT h0 hi]
     exact hle
 
-/-- **(7.26)–(7.27)**: the QMR residual is `b - A x^Q_m = γ_{m+1} z_{m+1}`, and the auxiliary
-vector obeys `z_{m+2} = -s̄_{m+1} z_{m+1} + c̄_{m+1} v_{m+2}`. -/
+/-- **Equations (7.26)–(7.27)** of [saad2003iterative]. Let $A \in \mathbb{K}^{n \times n}$ and
+$b, x_0, w_1 \in \mathbb{K}^n$. Assume that Algorithm 7.1 started from $(v_1, w_1)$ has no
+serious breakdown and that $R_m$ is nonsingular. Then the QMR residual is $$b - Ax^Q_m =
+\gamma_{m+1} z_{m+1},$$ and the auxiliary vectors satisfy $$z_{m+2} = -\bar s_{m+1} z_{m+1} +
+\bar c_{m+1} v_{m+2}.$$
+
+The vector $z_{m+1}$ is the last column of $Z_{m+1} = V_{m+1} Q_m^H$ of (6.52),
+`SaadSparse.Chapter06.z`. -/
 theorem equation_7_26 (h : NoSeriousBreakdown A (Chapter06.v₁ A b x₀) w₁) {m : ℕ}
     (hR : IsUnit (Chapter06.R (qmrCoeff A b x₀ w₁) m)) :
     b - op A (qmr A b x₀ w₁ m)
@@ -644,10 +867,16 @@ theorem equation_7_26 (h : NoSeriousBreakdown A (Chapter06.v₁ A b x₀) w₁) 
   exact ⟨Chapter06.equation_6_50 (bilanczos_hessenbergRelation h) (smul_qmrV_zero A b x₀ w₁) hR,
     Chapter06.equation_6_53 _ _ m⟩
 
-/-- **(7.28)**: unfolding (7.27) inside (7.26) and using the recurrence `γ_{m+2} = -s_{m+1} γ_{m+1}`
-gives `r^Q_{m+1} = |s_{m+1}|² r^Q_m + c̄_{m+1} γ_{m+2} v_{m+2}`, which over `ℝ` is the book's
-`r^Q_m = s_m² r^Q_{m-1} + c_m γ_{m+1} v_{m+1}`. Nothing here is special to the two-sided Lanczos
-basis, so it is `SaadSparse.Chapter06.equation_6_55` at the Chapter 7 data. -/
+/-- **Equation (7.28)** of [saad2003iterative]. Let $A \in \mathbb{K}^{n \times n}$ and
+$b, x_0, w_1 \in \mathbb{K}^n$. Assume that Algorithm 7.1 started from $(v_1, w_1)$ has no
+serious breakdown and that $R_m$ and $R_{m+1}$ are nonsingular. Then the QMR residuals
+$r^Q_m = b - Ax^Q_m$ satisfy $$r^Q_{m+1} = |s_{m+1}|^2 \, r^Q_m + \bar c_{m+1} \gamma_{m+2} \,
+v_{m+2}.$$ Over $\mathbb{R}$, and with the index shifted by one, this is the printed $r^Q_m =
+s_m^2 r^Q_{m-1} + c_m \gamma_{m+1} v_{m+1}$.
+
+The identity comes from (7.27) inserted into (7.26), with the recurrence
+$\gamma_{m+2} = -s_{m+1} \gamma_{m+1}$. Nothing in it is special to the two-sided Lanczos basis,
+and the proof specializes `SaadSparse.Chapter06.equation_6_55`. -/
 theorem equation_7_28 (h : NoSeriousBreakdown A (Chapter06.v₁ A b x₀) w₁) {m : ℕ}
     (hR : IsUnit (Chapter06.R (qmrCoeff A b x₀ w₁) m))
     (hR' : IsUnit (Chapter06.R (qmrCoeff A b x₀ w₁) (m + 1))) :
@@ -660,11 +889,17 @@ theorem equation_7_28 (h : NoSeriousBreakdown A (Chapter06.v₁ A b x₀) w₁) 
       = (‖Chapter06.s (qmrCoeff A b x₀ w₁) m‖ : 𝕜) ^ 2 by push_cast; ring]
   exact Chapter06.equation_6_55 (bilanczos_hessenbergRelation h) (smul_qmrV_zero A b x₀ w₁) hR hR'
 
-/-- **(7.29)**: combining (7.28) with (7.19) replaces the last term of (7.28) by the Algorithm 7.2
-(BCG) residual, `r^Q_{m+1} = |s_{m+1}|² r^Q_m + |c_{m+1}|² r_{m+1}`. This is the residual form of
-the smoothing relation, and the one behind the observation that peaks of the BCG residual norms
-correspond to plateaus of the QMR quasi-residuals: `s_{m+1}` near `1` — slow BCG progress — leaves
-`r^Q` almost unchanged. -/
+/-- **Equation (7.29)** of [saad2003iterative]. Let $A \in \mathbb{K}^{n \times n}$ and
+$b, x_0, w_1 \in \mathbb{K}^n$. Assume that the first $m + 1$ Givens rotations for the
+coefficients of Algorithm 7.1 are nondegenerate, that $R_m$ and $R_{m+1}$ are nonsingular, and
+that $T_{m+1}$ is nonsingular. Then $$r^Q_{m+1} = |s_{m+1}|^2 \, r^Q_m + |c_{m+1}|^2 \,
+r_{m+1},$$ where $r^Q_m = b - Ax^Q_m$ and $r_{m+1}$ is the residual of the iterate $x_{m+1}$ of
+Algorithm 7.2 (the BCG iterate). This is the residual form of the smoothing relation, and it
+comes from (7.28) and (7.19). It explains why peaks of the BCG residual norms correspond to
+plateaus of the QMR quasi-residual norms: when $|s_{m+1}|$ is near $1$, which means slow
+progress of BCG, $r^Q$ is almost unchanged.
+
+A rotation is nondegenerate when its denominator `Krylov.givensRho` is nonzero. -/
 theorem equation_7_29 {m : ℕ}
     (hρ : ∀ k < m + 1, Krylov.givensRho (qmrCoeff A b x₀ w₁) k ≠ 0)
     (hRm : IsUnit (Chapter06.R (qmrCoeff A b x₀ w₁) m))
@@ -681,11 +916,17 @@ theorem equation_7_29 {m : ℕ}
   rw [← T_eq_hessenbergSqOf]
   exact T_mulVec_lanczosSolveY A b x₀ w₁ hT
 
-/-- **(7.30)**: QMR is a residual smoothing of Algorithm 7.2 with parameter `|c_{m+1}|²`,
-`x^Q_{m+1} = |s_{m+1}|² x^Q_m + |c_{m+1}|² x_{m+1}` — the iterate form of (7.29), which the book
-derives from it. (7.31) rewrites it as `x^Q_{m+1} = x^Q_m + |c_{m+1}|² (x_{m+1} - x^Q_m)`.
-No no-serious-breakdown hypothesis is needed: the identity is one about the rotations and the
-two coordinate systems, not about the basis. -/
+/-- **Equation (7.30)** of [saad2003iterative]: QMR is a residual smoothing of Algorithm 7.2 with
+the parameter $|c_{m+1}|^2$. Let $A \in \mathbb{K}^{n \times n}$ and
+$b, x_0, w_1 \in \mathbb{K}^n$. Assume that the first $m + 1$ Givens rotations for the
+coefficients of Algorithm 7.1 are nondegenerate, that $R_m$ and $R_{m+1}$ are nonsingular, and
+that $T_{m+1}$ is nonsingular. Then $$x^Q_{m+1} = |s_{m+1}|^2 \, x^Q_m + |c_{m+1}|^2 \,
+x_{m+1},$$ where $x_{m+1}$ is the iterate of Algorithm 7.2. This is the iterate form of (7.29),
+from which the book derives it. Equation (7.31) writes it as $x^Q_{m+1} = x^Q_m + |c_{m+1}|^2
+(x_{m+1} - x^Q_m)$.
+
+No hypothesis on serious breakdown is needed: the identity concerns the rotations and the two
+coordinate systems, not the basis. -/
 theorem equation_7_30 {m : ℕ}
     (hρ : ∀ k < m + 1, Krylov.givensRho (qmrCoeff A b x₀ w₁) k ≠ 0)
     (hRm : IsUnit (Chapter06.R (qmrCoeff A b x₀ w₁) m))
@@ -708,10 +949,19 @@ end QMR
 
 section Smoothing
 
-/-- **Algorithm 7.5** (Zhou–Walker quasi-minimal residual smoothing): given any sequence `x_j`
-with residuals `r_j`, set `τ_0 = ‖r_0‖`, `1/τ_j² = 1/τ_{j-1}² + 1/‖r_j‖²`, `η_j = (τ_j/‖r_j‖)²`
-and `x^Q_j = x^Q_{j-1} + η_j (x_j - x^Q_{j-1})`. It is `SaadSparse.Chapter06.qmrs`, the smoothing of
-§6.5.8 written for an arbitrary sequence. -/
+/-- **Algorithm 7.5** of [saad2003iterative] (the quasi-minimal residual smoothing of Zhou and
+Walker). Let $x_0, x_1, \dots \in \mathbb{R}^n$ be any sequence, with given residual vectors
+$r_0, r_1, \dots$. Set $\tau_0 = \|r_0\|_2$, $x^Q_0 = x_0$ and $r^Q_0 = r_0$, and for $j \ge 1$
+$$\frac{1}{\tau_j^2} = \frac{1}{\tau_{j-1}^2} + \frac{1}{\|r_j\|_2^2}, \qquad \eta_j =
+  \frac{\tau_{j-1}^2}{\tau_{j-1}^2 + \|r_j\|_2^2},$$
+$$x^Q_j = x^Q_{j-1} + \eta_j (x_j - x^Q_{j-1}), \qquad r^Q_j = r^Q_{j-1} + \eta_j (r_j -
+  r^Q_{j-1}).$$
+The value at $j$ is the pair $(x^Q_j, r^Q_j)$.
+
+When $\tau_{j-1} \neq 0$ and $r_j \neq 0$, $\eta_j = (\tau_j/\|r_j\|_2)^2$, which is the form of
+the book. The definition is `SaadSparse.Chapter06.qmrs`, the smoothing of Section 6.5.8, applied
+to an arbitrary sequence. Lean's division by zero gives $1/0 = 0$ in the recurrence for
+$\tau_j$; thus if $\tau_{j-1} = 0$ and $r_j \neq 0$, then $\eta_j = 0$ but $\tau_j = \|r_j\|_2$. -/
 noncomputable abbrev qmrSmoothing (xO rO : ℕ → EuclideanSpace ℝ (Fin n)) :
     ℕ → EuclideanSpace ℝ (Fin n) × EuclideanSpace ℝ (Fin n) := Chapter06.qmrs xO rO
 
@@ -728,8 +978,8 @@ private theorem qmrsEta_def (rO : ℕ → EuclideanSpace ℝ (Fin n)) (m : ℕ) 
     Chapter06.qmrsEta rO m
       = Chapter06.qmrsTau rO m ^ 2 / (Chapter06.qmrsTau rO m ^ 2 + ‖rO (m + 1)‖ ^ 2) := rfl
 
-/-- The scalar identity behind Algorithm 7.5: from `ρ^Q_{m+1} = |c| ρ_{m+1}` and the harmonic
-relation (7.23), the smoothing parameter `τ_m²/(τ_m² + ρ_{m+1}²)` of Algorithm 6.14 *is* `|c|²`. -/
+/-- If $P, R > 0$ and $1/(cR)^2 = 1/P^2 + 1/R^2$, then $P^2/(P^2 + R^2) = c^2$: with $P = \rho^Q_m$,
+$R = \rho_{m+1}$ and (7.23), the smoothing parameter of Algorithm 6.14 is $|c_{m+1}|^2$. -/
 private theorem eta_eq_sq (P R c : ℝ) (hP : 0 < P) (hR : 0 < R)
     (h23 : 1 / (c * R) ^ 2 = 1 / P ^ 2 + 1 / R ^ 2) :
     P ^ 2 / (P ^ 2 + R ^ 2) = c ^ 2 := by
@@ -747,8 +997,8 @@ private theorem eta_eq_sq (P R c : ℝ) (hP : 0 < P) (hR : 0 < R)
   rw [div_eq_iff (by positivity)]
   linear_combination hfin
 
-/-- The scale factors of Algorithm 7.5 applied to the Algorithm 7.2 sequence are the
-quasi-residual norms: `τ_m = ρ^Q_m`, by (7.23). -/
+/-- Applied to the iterates of Algorithm 7.2, the scale factors of Algorithm 7.5 are the
+quasi-residual norms of QMR, $\tau_m = \rho^Q_m$, by (7.23). -/
 private theorem qmrsTau_eq (hs : NoSeriousBreakdown A (Chapter06.v₁ A b x₀) w₁)
     (hv : ∀ j, ‖qmrV A b x₀ w₁ j‖ = 1) (hT : ∀ k, IsUnit (T A (Chapter06.v₁ A b x₀) w₁ k))
     (hne : ∀ j, b - op A (lanczosSolve A b x₀ w₁ j) ≠ 0) (m : ℕ) :
@@ -767,8 +1017,8 @@ private theorem qmrsTau_eq (hs : NoSeriousBreakdown A (Chapter06.v₁ A b x₀) 
     rw [qmrsTau_succ, ih, ← h23, one_div_one_div, quasiResidualNorm_eq,
       Real.sqrt_sq (norm_nonneg _)]
 
-/-- The smoothing parameter of Algorithm 7.5 applied to the Algorithm 7.2 sequence is `|c_m|²`,
-which is what makes that algorithm reproduce QMR. -/
+/-- Applied to the iterates of Algorithm 7.2, the smoothing parameter of step $m + 1$ of Algorithm
+7.5 is $|c_{m+1}|^2$, which makes the algorithm reproduce QMR. -/
 private theorem qmrsEta_eq (hs : NoSeriousBreakdown A (Chapter06.v₁ A b x₀) w₁)
     (hv : ∀ j, ‖qmrV A b x₀ w₁ j‖ = 1) (hT : ∀ k, IsUnit (T A (Chapter06.v₁ A b x₀) w₁ k))
     (hne : ∀ j, b - op A (lanczosSolve A b x₀ w₁ j) ≠ 0) (m : ℕ) :
@@ -782,9 +1032,16 @@ private theorem qmrsEta_eq (hs : NoSeriousBreakdown A (Chapter06.v₁ A b x₀) 
   refine eta_eq_sq _ _ _ (norm_pos_iff.2 hpos) (norm_pos_iff.2 (hne (m + 1))) ?_
   rw [← h20, h23, quasiResidualNorm_eq]
 
-/-- The book's remark closing §7.3: applying Algorithm 7.5 to the Algorithm 7.2 (BCG) sequence
-reproduces the QMR iterates, because (7.29) is exactly the smoothing recurrence with
-`η_m = |c_m|² = (ρ^Q_m/ρ_m)²`. -/
+/-- **Algorithm 7.5** of [saad2003iterative], applied to the iterates of Algorithm 7.2. Let
+$A \in \mathbb{R}^{n \times n}$ and $b, x_0, w_1 \in \mathbb{R}^n$. Assume that Algorithm 7.1
+started from $(v_1, w_1)$ has no serious breakdown, that its primal vectors have unit norm, that
+$T_k$ and the QMR matrix $R_k$ are nonsingular for every $k$, and that no residual
+$r_j = b - Ax_j$ of Algorithm 7.2 vanishes. Then Algorithm 7.5 applied to the iterates $x_j$ of
+Algorithm 7.2 (the BCG iterates) and their residuals $r_j$ reproduces the QMR iterates: for
+every $m$, its iterate $x^Q_m$ is the iterate of Algorithm 7.4.
+
+This is the remark of the book that closes Section 7.3. The reason is that (7.29) is the
+smoothing recurrence with $\eta_m = |c_m|^2 = (\rho^Q_m/\rho_m)^2$. -/
 theorem qmrSmoothing_eq_qmr {A : Matrix (Fin n) (Fin n) ℝ}
     {b x₀ w₁ : EuclideanSpace ℝ (Fin n)} (h : NoSeriousBreakdown A (Chapter06.v₁ A b x₀) w₁)
     (hv : ∀ j, ‖qmrV A b x₀ w₁ j‖ = 1)

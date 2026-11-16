@@ -12,23 +12,83 @@ import NumlibSurface.SaadSparse.Chapter01.Section11
 import NumlibSurface.SaadSparse.Chapter01.Section12
 
 /-!
-# Saad §5.1–5.2: projection methods
+# Saad, Sections 5.1–5.2: Projection methods
 
-Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM,
-2003, §5.1–5.2: the general projection step (5.1)–(5.7), the nonsingularity of `WᵀAV` (Example 5.2
-and Proposition 5.1), the optimality characterizations (Propositions 5.2–5.5), the operators `P_K`,
-`Q_K^L`, `A_m` of §5.2.3, Proposition 5.6 and the error identity behind Theorem 5.7.
+This module formalizes §5.1–5.2 of [saad2003iterative], the general projection method for $Ax = b$
+with $A \in \mathbb{R}^{n \times n}$. Given subspaces $K$ and $L$ of $\mathbb{R}^n$ of the same
+dimension $m$ and an initial guess $x_0$, the method finds $\tilde x$ with
+$$\tilde x \in x_0 + K, \qquad b - A\tilde x \perp L \qquad (5.5)\text{–}(5.6).$$
+With bases $V$ of $K$ and $W$ of $L$ this is $\tilde x = x_0 + V(W^TAV)^{-1}W^Tr_0$ (5.7), where
+$r_0 = b - Ax_0$. The case $L = K$ is an orthogonal projection method, and the other cases are
+oblique projection methods.
 
-The book's condition (5.5)–(5.6) is `SaadSparse.Chapter05.IsProjectionApprox`; it is the backbone's
-`IsPetrovGalerkin` for `Matrix.toEuclideanLin A` (`isProjectionApprox_iff`), so that every
-statement below specializes a result of `Numlib/Projection/`.
+The module proves when $W^TAV$ is nonsingular (Example 5.2 and Proposition 5.1), the optimality of
+the approximation in the energy norm for $L = K$ and in the residual norm for $L = AK$ (Propositions
+5.2–5.5), the operators $P_K$, $Q_K^L$ and $A_m = Q_K^L A P_K$ of §5.2.3, the exactness of the
+approximation for an invariant subspace (Proposition 5.6), and the error identity of Theorem 5.7.
+The proofs specialize `Numlib.Projection.Basic` and `Numlib.Projection.Optimality`, through the
+identification of (5.5)–(5.6) with the Petrov–Galerkin condition `IsPetrovGalerkin` of
+`Matrix.toEuclideanLin A`.
 
-The matrix reading of Theorem 5.7 is `theorem_5_7_matrix_eq` and `theorem_5_7_matrix`: with
-`L = K` and an orthonormal basis `V` of `K`, the isometry `‖V y‖₂ = ‖y‖₂` turns (5.11) into
-`‖Vᵀ b - (Vᵀ A V) Vᵀ x*‖₂ ≤ γ ‖(I - P_K) x*‖₂`, the projected system in the coordinates of `V`.
+## Main definitions
 
-Left open here: the additive/multiplicative procedures of §5.4 (phase 2 of the backbone,
-`notes/backbone.md` §2.4.4).
+* Equations (5.5)–(5.6), `SaadSparse.Chapter05.IsProjectionApprox`: $\tilde x - x_0 \in K$ and
+  $b - A\tilde x \perp L$.
+* Equation (5.7) and Algorithm 5.1, `SaadSparse.Chapter05.projStep`: the step
+  $x \mapsto x + V(W^TAV)^{-1}W^T(b - Ax)$.
+* §5.2.1, `SaadSparse.Chapter05.E_A` and `SaadSparse.Chapter05.R_A`: the error functional
+  $E(x) = (A(x^* - x), x^* - x)^{1/2}$ and the residual functional $R(x) = \|b - Ax\|_2$.
+* §5.2.3, `SaadSparse.Chapter05.A_m`: the operator $A_m = Q_K^L A P_K$.
+
+## Main results
+
+* §5.1.2, `SaadSparse.Chapter05.isUnit_transpose_mul_mul_iff`: $W^TAV$ is nonsingular if and only if
+  no nonzero $u \in K$ has $Au \perp L$.
+* Example 5.2, `SaadSparse.Chapter05.example_5_2`: $W^TAV$ can be singular for a nonsingular $A$.
+* Proposition 5.1, `SaadSparse.Chapter05.proposition_5_1_i` and
+  `SaadSparse.Chapter05.proposition_5_1_ii`: the approximation exists and is unique if $A$ is
+  positive definite and $L = K$, or if $A$ is nonsingular and $L = AK$.
+* Proposition 5.2, `SaadSparse.Chapter05.proposition_5_2`: for symmetric positive definite $A$ and
+  $L = K$, the approximation minimizes $E$ over $x_0 + K$.
+* Proposition 5.3, `SaadSparse.Chapter05.proposition_5_3`: for $L = AK$, the approximation minimizes
+  $R$ over $x_0 + K$.
+* Proposition 5.4, `SaadSparse.Chapter05.proposition_5_4`: for $L = AK$, the residual is
+  $(I - P)r_0$ with $P$ the orthogonal projector onto $AK$.
+* Proposition 5.5, `SaadSparse.Chapter05.proposition_5_5_char`: for $L = K$, the error
+  $x^* - \tilde x$ is $A$-orthogonal to $K$.
+* Proposition 5.6, `SaadSparse.Chapter05.proposition_5_6`: if $K$ is invariant under $A$ and
+  $r_0 \in K$, the approximation is exact.
+* Theorem 5.7, `SaadSparse.Chapter05.theorem_5_7`: the identity
+  $b - A_m x^* = Q_K^L A (I - P_K) x^*$.
+* Theorem 5.7, `SaadSparse.Chapter05.theorem_5_7_matrix`: for $L = K$ and an orthonormal basis $V$
+  of $K$, $\|V^Tb - (V^TAV)V^Tx^*\|_2 \le \gamma \|(I - P_K)x^*\|_2$ with
+  $\gamma = \|P_K A (I - P_K)\|_2$.
+
+## Notation
+
+* `E n`: `EuclideanSpace ℝ (Fin n)`, the space $\mathbb{R}^n$.
+
+## Implementation notes
+
+* "$A$ is positive definite" in Proposition 5.1 is the definition of the book,
+  `Matrix.IsPositiveReal`: $(Au, u) > 0$ for every $u \neq 0$, with no symmetry. "Symmetric positive
+  definite" is Mathlib's `Matrix.PosDef`.
+* A basis $V$ of $K$ is a matrix whose columns form a basis of $K$, `Matrix.IsBasisOf`. The operator
+  $Q_K^L$ is `SaadSparse.obliqueProjection K L`, which needs $\dim K = \dim L$ and
+  $K \cap L^\perp = \{0\}$.
+* Theorem 5.7 is stated as the identity from which (5.11) follows by the definition of the operator
+  norm. The bound itself is stated in the matrix form for $L = K$,
+  `SaadSparse.Chapter05.theorem_5_7_matrix`, where the isometry $\|Vy\|_2 = \|y\|_2$ turns it into a
+  statement about the projected system in the coordinates of $V$.
+
+## Deviations from the source
+
+* **§5.1.2** (reading). The book states that $W^TAV$ is nonsingular if and only if no vector of $AK$
+  is orthogonal to $L$; read literally, this fails for $A = 0$. The statement here is that $u \in K$
+  and $u \neq 0$ imply $Au \notin L^\perp$. See `SaadSparse.Chapter05.isUnit_transpose_mul_mul_iff`.
+* **Proposition 5.6** (reading). The statement presupposes that $Q_K^L$ exists, that is
+  $K \cap L^\perp = \{0\}$; without it the statement fails, so the hypothesis is added. See
+  `SaadSparse.Chapter05.proposition_5_6`.
 -/
 
 open Matrix Module Submodule Finset
@@ -38,26 +98,36 @@ namespace SaadSparse.Chapter05
 
 variable {n m : ℕ}
 
-/-- Saad Chapter 5 works in `ℝⁿ`. -/
+/-- The notation `E n` stands for `EuclideanSpace ℝ (Fin n)`, the space $\mathbb{R}^n$ of
+Chapter 5. -/
 local notation "E" n => EuclideanSpace ℝ (Fin n)
 
 /-! ### The projection step (5.1)–(5.7) -/
 
-/-- Saad (5.5)–(5.6): `x` is the approximation produced by a projection method onto `K`
-orthogonally to `L`, starting from `x₀`. -/
+/-- **Equations (5.5)–(5.6)** of [saad2003iterative]. Let $A \in \mathbb{R}^{n \times n}$,
+$b, x_0 \in \mathbb{R}^n$, and let $K$, $L$ be subspaces of $\mathbb{R}^n$. A vector $\tilde x$
+is a **projection approximation** onto $K$ orthogonally to $L$, starting from $x_0$, if
+$$\tilde x - x_0 \in K \qquad \text{and} \qquad (w, b - A\tilde x) = 0 \text{ for every } w \in
+  L.$$
+-/
 def IsProjectionApprox (A : Matrix (Fin n) (Fin n) ℝ) (b x₀ : E n)
     (K L : Submodule ℝ (E n)) (x : E n) : Prop :=
   x - x₀ ∈ K ∧ ∀ w ∈ L, inner ℝ w (b - (A ⬝ x)) = 0
 
 variable {A : Matrix (Fin n) (Fin n) ℝ} {b x₀ x : E n} {K L : Submodule ℝ (E n)}
 
-/-- Saad (5.5)–(5.6) is the backbone's Petrov–Galerkin condition. -/
+/-- Equations (5.5)–(5.6) of [saad2003iterative] are the Petrov–Galerkin condition
+`IsPetrovGalerkin` of the backbone for the operator `Matrix.toEuclideanLin A`. -/
 theorem isProjectionApprox_iff :
     IsProjectionApprox A b x₀ K L x ↔ IsPetrovGalerkin (toEuclideanLin A) b x₀ K L x :=
   ⟨fun h => ⟨h.1, (Submodule.mem_orthogonal _ _).2 h.2⟩,
     fun h => ⟨h.mem, (Submodule.mem_orthogonal _ _).1 h.orth⟩⟩
 
-/-- Saad (5.7)/Algorithm 5.1: the projection step `x ↦ x + V (WᵀAV)⁻¹ Wᵀ r`. -/
+/-- **Equation (5.7)** of [saad2003iterative] and Algorithm 5.1. For $A \in \mathbb{R}^{n \times n}$
+and $V, W \in \mathbb{R}^{n \times m}$, the **projection step** from $x$ is
+$$x \mapsto x + V (W^TAV)^{-1} W^T (b - Ax).$$
+
+If $W^TAV$ is singular, its inverse is $0$ in Lean, and the step returns $x$. -/
 noncomputable def projStep (A : Matrix (Fin n) (Fin n) ℝ) (b : E n)
     (V W : Matrix (Fin n) (Fin m) ℝ) (x : E n) : E n :=
   x + ((V * (Wᵀ * A * V)⁻¹ * Wᵀ) ⬝ (b - (A ⬝ x)))
@@ -66,11 +136,12 @@ section Bases
 
 variable {V W : Matrix (Fin n) (Fin m) ℝ}
 
-/-- Over `ℝ` the conjugate transpose is the transpose. -/
+/-- For a real matrix $V$, the conjugate transpose $V^H$ is the transpose $V^T$. -/
 theorem conjTranspose_eq_transpose (V : Matrix (Fin n) (Fin m) ℝ) : Vᴴ = Vᵀ :=
   conjTranspose_eq_transpose_of_trivial V
 
-/-- The matrix `(⟪w_i, A v_j⟫)` of the backbone's bases form is `Wᵀ A V`. -/
+/-- For $V, W \in \mathbb{R}^{n \times m}$ with columns $v_j$ and $w_i$, the matrix with entries
+$(w_i, Av_j)$ is $W^TAV$. -/
 theorem crossGram_matrix (A : Matrix (Fin n) (Fin n) ℝ) (V W : Matrix (Fin n) (Fin m) ℝ) :
     (Matrix.of fun i j => inner ℝ (W.cols i) (A ⬝ V.cols j)) = Wᵀ * A * V := by
   ext i j
@@ -79,14 +150,18 @@ theorem crossGram_matrix (A : Matrix (Fin n) (Fin n) ℝ) (V W : Matrix (Fin n) 
   rw [Matrix.transpose_apply, ofLp_cols_apply, mul_comm]
   rfl
 
-/-- `x₀ + V y` in the book's notation is the backbone's `x₀ + ∑ j y j • v j`. -/
+/-- For $V \in \mathbb{R}^{n \times m}$ with columns $v_j$ and $y \in \mathbb{R}^m$, the vector
+$x_0 + Vy$ is $x_0 + \sum_j y_j v_j$. -/
 theorem add_toEuclideanLin_eq (V : Matrix (Fin n) (Fin m) ℝ) (x₀ : E n) (y : Fin m → ℝ) :
     x₀ + (V ⬝ (WithLp.toLp 2 y : E m)) = x₀ + ∑ j, y j • V.cols j := by
   rw [toEuclideanLin_apply_eq_sum]
   rfl
 
-/-- Saad (5.7): `x̃ = x₀ + V y` satisfies the Petrov–Galerkin condition iff
-`(WᵀAV) y = Wᵀ r₀`. -/
+/-- Equation (5.7) of [saad2003iterative]: let $V$ be a basis of $K$ and $W$ a basis of $L$. For
+$y \in \mathbb{R}^m$, the vector $x_0 + Vy$ is a projection approximation onto $K$ orthogonally
+to $L$ if and only if
+$$(W^TAV) y = W^T r_0, \qquad r_0 = b - Ax_0.$$
+-/
 theorem isProjectionApprox_add_iff (hV : V.IsBasisOf K) (hW : W.IsBasisOf L) (y : Fin m → ℝ) :
     IsProjectionApprox A b x₀ K L (x₀ + (V ⬝ (WithLp.toLp 2 y : E m))) ↔
       (Wᵀ * A * V) *ᵥ y = Wᵀ *ᵥ WithLp.ofLp (b - (A ⬝ x₀)) := by
@@ -100,7 +175,13 @@ theorem isProjectionApprox_add_iff (hV : V.IsBasisOf K) (hW : W.IsBasisOf L) (y 
   · intro h
     rw [h, ← conjTranspose_eq_transpose, conjTranspose_mulVec_eq_inner]
 
-/-- Saad §5.1: `WᵀAV` is nonsingular iff no nonzero vector `u` of `K` has `A u ⟂ L`. -/
+/-- §5.1.2 of [saad2003iterative]: let $V$ be a basis of $K$ and $W$ a basis of $L$. Then $W^TAV$ is
+nonsingular if and only if every $u \in K$ with $Au \in L^\perp$ is $0$.
+
+**Reading.** The book states that $W^TAV$ is nonsingular if and only if no vector of the
+subspace $AK$ is orthogonal to $L$. Read literally, this fails for $A = 0$. The statement here
+reads it as the nondegeneracy hypothesis of the backbone: $u \in K$ and $u \neq 0$ imply
+$Au \notin L^\perp$. -/
 theorem isUnit_transpose_mul_mul_iff (hV : V.IsBasisOf K) (hW : W.IsBasisOf L) :
     IsUnit (Wᵀ * A * V) ↔ ∀ u ∈ K, (A ⬝ u) ∈ Lᗮ → u = 0 := by
   have hzero : ∀ y : Fin m → ℝ, (Wᵀ * A * V) *ᵥ y = 0 ↔
@@ -137,11 +218,16 @@ end Bases
 
 /-! ### Example 5.2 -/
 
-/-- Saad, Example 5.2 (§5.1.2): the nonsingularity of `WᵀAV` presupposed by (5.7) does not follow
-from that of `A`.  Take `A = [[O, I], [I, I]]` of order `2m` and `V = W = [e₁, …, e_m]`.  The
-columns of `V` are orthonormal, so `V` is a basis of `K = L = span {e₁, …, e_m}`, and `A` is
-nonsingular; yet `VᵀAV` is precisely the `O` block in the upper-left corner of `A`, hence singular.
-In the terms of `isUnit_transpose_mul_mul_iff`, `AV = [e_{m+1}, …, e_{2m}]` is orthogonal to `L`. -/
+/-- **Example 5.2** of [saad2003iterative] (§5.1.2). The nonsingularity of $W^TAV$ that (5.7) needs
+does not follow from the nonsingularity of $A$. Let $m \ge 1$, let
+$$A = \begin{bmatrix} O & I \\ I & I \end{bmatrix} \in \mathbb{R}^{2m \times 2m}, \qquad V = W =
+  \begin{bmatrix} I \\ O \end{bmatrix} = [e_1, \dots, e_m].$$
+Then $A$ is nonsingular and $V^TV = I$, so $V$ is an orthonormal basis of
+$K = L = \operatorname{span}\{e_1, \dots, e_m\}$, but $V^TAV = O$ is singular.
+
+In the terms of `SaadSparse.Chapter05.isUnit_transpose_mul_mul_iff`,
+$AV = [e_{m+1}, \dots, e_{2m}]$ is orthogonal to $L$. The index type of $\mathbb{R}^{2m}$ is
+`Fin m ⊕ Fin m`. -/
 theorem example_5_2 (hm : 0 < m)
     {A : Matrix (Fin m ⊕ Fin m) (Fin m ⊕ Fin m) ℝ} (hA : A = fromBlocks 0 1 1 1)
     {V : Matrix (Fin m ⊕ Fin m) (Fin m) ℝ} (hV : V = fromRows 1 0) :
@@ -165,22 +251,31 @@ theorem example_5_2 (hm : 0 < m)
 
 /-! ### Proposition 5.1 -/
 
-/-- Saad, Proposition 5.1 (i): for positive real `A` and `L = K`, the projected system is
-nonsingular; equivalently the Galerkin approximation exists and is unique. -/
+/-- **Proposition 5.1(i)** of [saad2003iterative]. Let $A \in \mathbb{R}^{n \times n}$ be positive
+definite, that is $(Au, u) > 0$ for every $u \neq 0$, and let $L = K$. Then for every $b$ and
+$x_0$ there is exactly one projection approximation onto $K$ orthogonally to $K$.
+
+The book states that $W^TAV$ is nonsingular for any bases $V$ and $W$ of $K$ and $L$. By
+`SaadSparse.Chapter05.isProjectionApprox_add_iff` this is equivalent to the unique existence of
+the approximation, which is the form stated here. Positive definiteness is
+`Matrix.IsPositiveReal`. -/
 theorem proposition_5_1_i (hA : A.IsPositiveReal) (K : Submodule ℝ (E n)) (b x₀ : E n) :
     ∃! x, IsProjectionApprox A b x₀ K K x := by
   have hc : (toEuclideanLin A).IsCoercive := (Matrix.isPositiveReal_iff_isCoercive A).mp hA
   obtain ⟨x, hx, huniq⟩ := existsUnique_isGalerkin_of_isCoercive (A := toEuclideanLin A) b x₀ K hc
   exact ⟨x, isProjectionApprox_iff.mpr hx, fun y hy => huniq y (isProjectionApprox_iff.mp hy)⟩
 
-/-- `toEuclideanLin A` is injective when `A` is nonsingular. -/
+/-- If $A$ is nonsingular, the operator $x \mapsto Ax$ on $\mathbb{R}^n$ is injective. -/
 theorem injective_toEuclideanLin (hA : IsUnit A) : Function.Injective (toEuclideanLin A) := by
   intro u v huv
   have h1 : A *ᵥ WithLp.ofLp u = A *ᵥ WithLp.ofLp v := congrArg WithLp.ofLp huv
   simpa using congrArg (WithLp.toLp 2) (mulVec_injective_iff_isUnit.mpr hA h1)
 
-/-- Saad, Proposition 5.1 (ii): for nonsingular `A` and `L = A K`, the projected system is
-nonsingular. -/
+/-- **Proposition 5.1(ii)** of [saad2003iterative]. Let $A \in \mathbb{R}^{n \times n}$ be
+nonsingular and let $L = AK$. Then for every $b$ and $x_0$ there is exactly one projection
+approximation onto $K$ orthogonally to $AK$.
+
+As in part (i), the unique existence of the approximation is the nonsingularity of $W^TAV$. -/
 theorem proposition_5_1_ii (hA : IsUnit A) (K : Submodule ℝ (E n)) (b x₀ : E n) :
     ∃! x, IsProjectionApprox A b x₀ K (K.map (toEuclideanLin A)) x := by
   have hinj : Set.InjOn (toEuclideanLin A) K :=
@@ -189,13 +284,15 @@ theorem proposition_5_1_ii (hA : IsUnit A) (K : Submodule ℝ (E n)) (b x₀ : E
   refine ⟨x, isProjectionApprox_iff.mpr hx.isPetrovGalerkin, fun y hy => ?_⟩
   exact huniq y (IsMinResidual.iff_isPetrovGalerkin.mpr (isProjectionApprox_iff.mp hy))
 
-/-- Saad §5.1: `A` symmetric ⇒ the projected matrix `VᵀAV` is symmetric. -/
+/-- §5.1 of [saad2003iterative]: if $A$ is symmetric, the projected matrix $V^TAV$ is symmetric. -/
 theorem isSymm_transpose_mul_mul (hA : A.IsSymm) (V : Matrix (Fin n) (Fin m) ℝ) :
     (Vᵀ * A * V).IsSymm := by
   unfold Matrix.IsSymm
   rw [transpose_mul, transpose_mul, transpose_transpose, hA, Matrix.mul_assoc]
 
-/-- Saad §5.1: `A` SPD ⇒ the projected matrix `VᵀAV` is SPD. -/
+/-- §5.1 of [saad2003iterative]: if $A$ is symmetric positive definite and
+$V \in \mathbb{R}^{n \times m}$ has linearly independent columns, the projected matrix $V^TAV$
+is symmetric positive definite. -/
 theorem posDef_transpose_mul_mul {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosDef)
     {V : Matrix (Fin n) (Fin m) ℝ} (hV : Function.Injective V.mulVec) :
     (Vᵀ * A * V).PosDef := by
@@ -204,21 +301,30 @@ theorem posDef_transpose_mul_mul {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosDef
 
 /-! ### Propositions 5.2–5.5 -/
 
-/-- Saad §5.2.1: the error functional `E(x) = (A(x* - x), x* - x)^{1/2}`, the quantity
-Proposition 5.2 minimizes. -/
+/-- **Section 5.2.1** of [saad2003iterative], the error functional. For
+$A \in \mathbb{R}^{n \times n}$ and the exact solution $x^*$, the **error functional** is
+$$E(x) = \big( A(x^* - x), x^* - x \big)^{1/2},$$
+the quantity that Proposition 5.2 minimizes.
+
+The square root is `Real.sqrt`, which is $0$ at a negative argument. -/
 noncomputable def E_A (A : Matrix (Fin n) (Fin n) ℝ) (xstar x : E n) : ℝ :=
   Real.sqrt (inner ℝ (A ⬝ (xstar - x)) (xstar - x))
 
-/-- Saad §5.2.1: the residual functional `R(x) = ‖b - A x‖₂`, the quantity Proposition 5.3
-minimizes. -/
+/-- **Section 5.2.1** of [saad2003iterative], the residual functional. For
+$A \in \mathbb{R}^{n \times n}$ and $b \in \mathbb{R}^n$, the **residual functional** is
+$R(x) = \|b - Ax\|_2$, the quantity that Proposition 5.3 minimizes. -/
 noncomputable def R_A (A : Matrix (Fin n) (Fin n) ℝ) (b x : E n) : ℝ := ‖b - (A ⬝ x)‖
 
-/-- `E(x)` is the backbone's energy norm of the error. -/
+/-- The error functional $E(x)$ is the energy norm `energyNorm` of the error $x^* - x$ for the
+operator of $A$. -/
 theorem E_A_eq_energyNorm (A : Matrix (Fin n) (Fin n) ℝ) (xstar x : E n) :
     E_A A xstar x = energyNorm (toEuclideanLin A) (xstar - x) := rfl
 
-/-- Saad, Proposition 5.2: for SPD `A` and `L = K`, the projection approximation is exactly the
-minimizer of the energy norm of the error over `x₀ + K`. -/
+/-- **Proposition 5.2** of [saad2003iterative]. Let $A \in \mathbb{R}^{n \times n}$ be symmetric
+positive definite, let $Ax^* = b$, and let $L = K$. Then $\tilde x$ is a projection
+approximation onto $K$ orthogonally to $K$ if and only if $\tilde x \in x_0 + K$ and
+$$E(\tilde x) \le E(y) \qquad \text{for every } y \in x_0 + K.$$
+-/
 theorem proposition_5_2 (hA : A.PosDef) {xstar : E n} (hstar : (A ⬝ xstar) = b) :
     IsProjectionApprox A b x₀ K K x ↔
       (x - x₀ ∈ K ∧ ∀ y, y - x₀ ∈ K → E_A A xstar x ≤ E_A A xstar y) := by
@@ -229,29 +335,41 @@ theorem proposition_5_2 (hA : A.PosDef) {xstar : E n} (hstar : (A ⬝ xstar) = b
     IsGalerkin.iff_energyNorm_min (A := toEuclideanLin A) (b := b) (x₀ := x₀) (K := K) (x := x)
       (xstar := xstar) hsc hstar
 
-/-- Saad, Proposition 5.3: for `L = A K` the projection approximation is exactly the minimizer of
-the residual norm over `x₀ + K`. -/
+/-- **Proposition 5.3** of [saad2003iterative]. Let $A \in \mathbb{R}^{n \times n}$ be arbitrary and
+let $L = AK$. Then $\tilde x$ is a projection approximation onto $K$ orthogonally to $AK$ if and
+only if $\tilde x \in x_0 + K$ and
+$$R(\tilde x) \le R(y) \qquad \text{for every } y \in x_0 + K.$$
+-/
 theorem proposition_5_3 :
     IsProjectionApprox A b x₀ K (K.map (toEuclideanLin A)) x ↔
       (x - x₀ ∈ K ∧ ∀ y, y - x₀ ∈ K → R_A A b x ≤ R_A A b y) := by
   rw [isProjectionApprox_iff, ← IsMinResidual.iff_isPetrovGalerkin]
   exact ⟨fun h => ⟨h.mem, h.min⟩, fun h => ⟨h.1, h.2⟩⟩
 
-/-- Saad, Proposition 5.4: for `L = A K` the residual is `(I - P) r₀` with `P` the orthogonal
-projector onto `A K`. -/
+/-- **Proposition 5.4** of [saad2003iterative]. Let $A \in \mathbb{R}^{n \times n}$ and $L = AK$. If
+$\tilde x$ is a projection approximation onto $K$ orthogonally to $AK$, then its residual is
+$$b - A\tilde x = (I - P) r_0, \qquad r_0 = b - Ax_0,$$
+where $P$ is the orthogonal projector onto $AK$.
+
+The projector $P$ is `Submodule.starProjection` of $AK$. -/
 theorem proposition_5_4 (hx : IsProjectionApprox A b x₀ K (K.map (toEuclideanLin A)) x) :
     b - (A ⬝ x) =
       (b - (A ⬝ x₀)) - (K.map (toEuclideanLin A)).starProjection (b - (A ⬝ x₀)) :=
   (IsMinResidual.iff_isPetrovGalerkin.mpr (isProjectionApprox_iff.mp hx)).residual_eq
 
-/-- Saad §5.2.2: the residual norm does not increase. -/
+/-- §5.2.2 of [saad2003iterative]: for $L = AK$, the residual norm of a projection approximation is
+at most the residual norm of $x_0$. -/
 theorem norm_residual_le (hx : IsProjectionApprox A b x₀ K (K.map (toEuclideanLin A)) x) :
     ‖b - (A ⬝ x)‖ ≤ ‖b - (A ⬝ x₀)‖ :=
   IsMinResidual.norm_residual_le_norm_residual_zero
     (IsMinResidual.iff_isPetrovGalerkin.mpr (isProjectionApprox_iff.mp hx))
 
-/-- Saad, Proposition 5.5 (characterization): for `L = K` the error `x* - x̃` is `A`-orthogonal
-to `K`. -/
+/-- **Proposition 5.5** of [saad2003iterative], the characterization. Let $Ax^* = b$ and $L = K$. If
+$\tilde x$ is a projection approximation onto $K$ orthogonally to $K$, then
+$\tilde x - x_0 \in K$ and the error $x^* - \tilde x$ is $A$-orthogonal to $K$:
+$$\big( A(x^* - \tilde x), w \big) = 0 \qquad \text{for every } w \in K.$$
+
+The $A$-inner product is `Matrix.energyInner`. -/
 theorem proposition_5_5_char {xstar : E n} (hstar : (A ⬝ xstar) = b)
     (hx : IsProjectionApprox A b x₀ K K x) :
     x - x₀ ∈ K ∧ ∀ w ∈ K, A.energyInner (xstar - x) w = 0 := by
@@ -260,21 +378,30 @@ theorem proposition_5_5_char {xstar : E n} (hstar : (A ⬝ xstar) = b)
   rw [h, map_sub, hstar]
   simpa using hx.2 w hw
 
-/-- Saad, Proposition 5.5: the energy norm of the error does not increase. -/
+/-- Proposition 5.5 of [saad2003iterative]: for symmetric positive definite $A$, $Ax^* = b$ and
+$L = K$, a projection approximation $\tilde x$ satisfies $E(\tilde x) \le E(x_0)$. -/
 theorem energyNorm_error_le (hA : A.PosDef) {xstar : E n} (hstar : (A ⬝ xstar) = b)
     (hx : IsProjectionApprox A b x₀ K K x) : E_A A xstar x ≤ E_A A xstar x₀ :=
   IsGalerkin.energyNorm_le ((Matrix.posDef_iff_isSymmetricCoercive A).mp hA)
     (isProjectionApprox_iff.mp hx) hstar (by simp)
 
-/-! ### §5.2.3: `P_K`, `Q_K^L` and `A_m` -/
+/-! ### §5.2.3: The operators $P_K$, $Q_K^L$ and $A_m$ -/
 
-/-- Saad §5.2.3: the operator `A_m = Q_K^L A P_K`. -/
+/-- **Section 5.2.3** of [saad2003iterative], the operator $A_m$. Let $\dim K = \dim L$ and
+$K \cap L^\perp = \{0\}$. The **projected operator** is
+$$A_m = Q_K^L A P_K,$$
+where $P_K$ is the orthogonal projector onto $K$ and $Q_K^L$ is the projector onto $K$
+orthogonally to $L$.
+
+$Q_K^L$ is `SaadSparse.obliqueProjection K L` and $P_K$ is `Submodule.starProjection` of $K$. -/
 noncomputable def A_m (A : Matrix (Fin n) (Fin n) ℝ) (K L : Submodule ℝ (E n))
     (hd : finrank ℝ K = finrank ℝ L) (h : K ⊓ Lᗮ = ⊥) : (E n) →ₗ[ℝ] (E n) :=
   (SaadSparse.obliqueProjection K L hd h).comp
     ((toEuclideanLin A).comp (K.starProjection : (E n) →L[ℝ] (E n)).toLinearMap)
 
-/-- Saad §5.2.3: with `x₀ = 0` the projection condition reads `x ∈ K` and `Q (b - A x) = 0`. -/
+/-- §5.2.3 of [saad2003iterative]: let $\dim K = \dim L$ and $K \cap L^\perp = \{0\}$. With
+$x_0 = 0$, a vector $x$ is a projection approximation onto $K$ orthogonally to $L$ if and only
+if $x \in K$ and $Q_K^L(b - Ax) = 0$. -/
 theorem isProjectionApprox_zero_iff_Q (hd : finrank ℝ K = finrank ℝ L) (h : K ⊓ Lᗮ = ⊥) :
     IsProjectionApprox A b 0 K L x ↔
       x ∈ K ∧ SaadSparse.obliqueProjection K L hd h (b - (A ⬝ x)) = 0 := by
@@ -283,8 +410,9 @@ theorem isProjectionApprox_zero_iff_Q (hd : finrank ℝ K = finrank ℝ L) (h : 
     ← Submodule.mem_orthogonal L (b - (A ⬝ x))]
   simp
 
-/-- Saad §5.2.3: with `x₀ = 0` the projection condition is the projected equation
-`A_m x = Q b`. -/
+/-- §5.2.3 of [saad2003iterative]: let $\dim K = \dim L$ and $K \cap L^\perp = \{0\}$. With
+$x_0 = 0$, a vector $x$ is a projection approximation onto $K$ orthogonally to $L$ if and only
+if $x \in K$ and $A_m x = Q_K^L b$. -/
 theorem isProjectionApprox_zero_iff_A_m (hd : finrank ℝ K = finrank ℝ L) (h : K ⊓ Lᗮ = ⊥) :
     IsProjectionApprox A b 0 K L x ↔
       x ∈ K ∧ A_m A K L hd h x = SaadSparse.obliqueProjection K L hd h b := by
@@ -298,8 +426,13 @@ theorem isProjectionApprox_zero_iff_A_m (hd : finrank ℝ K = finrank ℝ L) (h 
 
 /-! ### Proposition 5.6 -/
 
-/-- Saad, Proposition 5.6: if `K` is invariant under `A`, the initial residual lies in `K` and
-`K ∩ Lᗮ = 0`, then the projection approximation is exact. -/
+/-- **Proposition 5.6** of [saad2003iterative]. Let $K$ be invariant under $A$, let
+$K \cap L^\perp = \{0\}$, and let the initial residual satisfy $b - Ax_0 \in K$. If $\tilde x$
+is a projection approximation onto $K$ orthogonally to $L$, then $A\tilde x = b$.
+
+**Reading.** The book states the result with the projector $Q_K^L$, and so presupposes that it
+exists, that is $K \cap L^\perp = \{0\}$. Without this condition the statement fails, so the
+hypothesis is added. -/
 theorem proposition_5_6 (hK : K ∈ Module.End.invtSubmodule (toEuclideanLin A))
     (hKL : ∀ z ∈ K, z ∈ Lᗮ → z = 0) (hr : b - (A ⬝ x₀) ∈ K)
     (hx : IsProjectionApprox A b x₀ K L x) : (A ⬝ x) = b :=
@@ -307,15 +440,20 @@ theorem proposition_5_6 (hK : K ∈ Module.End.invtSubmodule (toEuclideanLin A))
 
 /-! ### Theorem 5.7 -/
 
-/-- Saad §5.2.4: the distance from any `x ∈ K` to `x*` is at least the distance of `x*` to `K`. -/
+/-- §5.2.4 of [saad2003iterative]: for every $x \in K$, the distance from $x^*$ to $x$ is at least
+the distance from $x^*$ to $K$: $\|x^* - P_K x^*\|_2 \le \|x^* - x\|_2$. -/
 theorem norm_sub_ge_of_mem {xstar : E n} (hx : x ∈ K) :
     ‖xstar - K.starProjection xstar‖ ≤ ‖xstar - x‖ :=
   Submodule.norm_sub_le_of_forall_inner_eq_zero (K.starProjection_apply_mem xstar)
     (fun w hw => K.starProjection_inner_eq_zero xstar w hw) hx
 
-/-- Saad, Theorem 5.7 (the underlying identity): with `b ∈ K` and `x₀ = 0`, the exact solution
-`x*` satisfies `b - A_m x* = Q A (I - P_K) x*`, whence
-`‖b - A_m x*‖ ≤ ‖Q A (I - P_K)‖ ‖(I - P_K) x*‖`. -/
+/-- **Theorem 5.7** of [saad2003iterative], the identity. Let $\dim K = \dim L$,
+$K \cap L^\perp = \{0\}$, $b \in K$ and $Ax^* = b$. Then
+$$b - A_m x^* = Q_K^L A (I - P_K) x^*.$$
+
+With $x_0 = 0$, the bound $\|b - A_m x^*\|_2 \le \|Q_K^L A (I - P_K)\|_2 \|(I - P_K) x^*\|_2$ of
+(5.11) follows from this identity by the definition of the operator norm. The bound is stated in
+the matrix form for $L = K$, `SaadSparse.Chapter05.theorem_5_7_matrix`. -/
 theorem theorem_5_7 (hd : finrank ℝ K = finrank ℝ L) (h : K ⊓ Lᗮ = ⊥) (hb : b ∈ K)
     {xstar : E n} (hstar : (A ⬝ xstar) = b) :
     b - A_m A K L hd h xstar =
@@ -330,8 +468,8 @@ theorem theorem_5_7 (hd : finrank ℝ K = finrank ℝ L) (h : K ⊓ Lᗮ = ⊥) 
 
 /-! ### Theorem 5.7 in matrix form (§5.2.3) -/
 
-/-- Saad §1.12.2: the projector onto `K` orthogonally to `K` itself is the orthogonal
-projector. -/
+/-- §1.12.2 of [saad2003iterative]: if $K \cap K^\perp = \{0\}$, the projector onto $K$ orthogonally
+to $K$ is the orthogonal projector $P_K$. -/
 theorem obliqueProjection_self (h : K ⊓ Kᗮ = ⊥) (z : E n) :
     SaadSparse.obliqueProjection K K rfl h z = K.starProjection z :=
   (SaadSparse.isProjOnto_iff_eq_obliqueProjection rfl h z _).mp
@@ -341,16 +479,19 @@ section MatrixForm
 
 variable {V : Matrix (Fin n) (Fin m) ℝ}
 
-/-- A matrix with orthonormal columns is an isometry: `‖V y‖₂ = ‖y‖₂`.  This is what makes the
-coordinate form of Theorem 5.7 say the same thing as the vector form. -/
+/-- If $V \in \mathbb{R}^{n \times m}$ has orthonormal columns, $V^TV = I$, then
+$\|Vy\|_2 = \|y\|_2$ for every $y$. This isometry is what makes the coordinate form of Theorem
+5.7 equivalent to the vector form. -/
 theorem norm_toEuclideanLin_of_orthonormal (hV : Vᵀ * V = 1) (y : E m) : ‖(V ⬝ y)‖ = ‖y‖ := by
   refine (pow_left_inj₀ (norm_nonneg _) (norm_nonneg _) two_ne_zero).mp ?_
   rw [real_norm_sq_eq_dotProduct, real_norm_sq_eq_dotProduct, Matrix.ofLp_toEuclideanLin,
     dotProduct_mulVec, ← mulVec_transpose, mulVec_mulVec, hV, one_mulVec]
 
-/-- **Theorem 5.7 in matrix form**, the identity behind it: with `L = K` and `V` an orthonormal
-basis of `K`, `V Vᵀ = P_K` and `b = V Vᵀ b`, so
-`V (Vᵀ b - (Vᵀ A V) Vᵀ x) = b - A_m x` and the two residuals have the same norm. -/
+/-- Theorem 5.7 of [saad2003iterative] in matrix form, the identity behind it: let $L = K$, let $V$
+be a basis of $K$ with $V^TV = I$, let $K \cap K^\perp = \{0\}$ and $b \in K$. Then for every
+$x$,
+$$\|V^Tb - (V^TAV)V^Tx\|_2 = \|b - A_m x\|_2.$$
+The reason is that $VV^T = P_K$ and $b = VV^Tb$, so $V(V^Tb - (V^TAV)V^Tx) = b - A_m x$. -/
 theorem theorem_5_7_matrix_eq (hV : Vᵀ * V = 1) (hVK : V.IsBasisOf K) (h : K ⊓ Kᗮ = ⊥)
     (hb : b ∈ K) : ‖(Vᵀ ⬝ b) - ((Vᵀ * A * V) ⬝ (Vᵀ ⬝ x))‖ = ‖b - A_m A K K rfl h x‖ := by
   have hVVt : toEuclideanLin (V * Vᵀ) = (K.starProjection : (E n) →ₗ[ℝ] (E n)) :=
@@ -374,10 +515,16 @@ theorem theorem_5_7_matrix_eq (hV : Vᵀ * V = 1) (hVK : V.IsBasisOf K) (h : K �
     rw [map_sub, h1, h2, hAm, obliqueProjection_self]
   rw [← hkey, norm_toEuclideanLin_of_orthonormal hV]
 
-/-- **Theorem 5.7 in matrix form** (§5.2.3).  With `L = K` and `V` an orthonormal basis of `K`,
-(5.11) reads `‖Vᵀ b - (Vᵀ A V) Vᵀ x*‖₂ ≤ γ ‖(I - P_K) x*‖₂` with `γ = ‖P_K A (I - P_K)‖₂`: the
-error of the projected system, measured in the coordinates of `V`, is controlled by the part of
-the exact solution that `K` fails to capture. -/
+/-- **Theorem 5.7** of [saad2003iterative], matrix form (§5.2.3). Let $L = K$, let $V$ be a basis of
+$K$ with orthonormal columns, $V^TV = I$, let $K \cap K^\perp = \{0\}$, $b \in K$ and
+$Ax^* = b$. Then
+$$\|V^Tb - (V^TAV)V^Tx^*\|_2 \le \gamma \, \|(I - P_K) x^*\|_2, \qquad \gamma = \|P_K A (I -
+  P_K)\|_2.$$
+This is (5.11) in the coordinates of $V$: the residual of the projected system is controlled by
+the part of the exact solution that $K$ does not contain.
+
+The hypothesis $K \cap K^\perp = \{0\}$ always holds; it is the hypothesis of
+`SaadSparse.obliqueProjection` for $L = K$. -/
 theorem theorem_5_7_matrix (hV : Vᵀ * V = 1) (hVK : V.IsBasisOf K) (h : K ⊓ Kᗮ = ⊥) (hb : b ∈ K)
     {xstar : E n} (hstar : (A ⬝ xstar) = b) :
     ‖(Vᵀ ⬝ b) - ((Vᵀ * A * V) ⬝ (Vᵀ ⬝ xstar))‖ ≤

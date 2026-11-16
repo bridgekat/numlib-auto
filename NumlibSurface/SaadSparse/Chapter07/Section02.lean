@@ -5,33 +5,51 @@ Released under Apache 2.0 license as described in the file LICENSE.
 import NumlibSurface.SaadSparse.Chapter07.Section01
 
 /-!
-# Saad §7.2: the two-sided Lanczos algorithm for linear systems
+# Saad, Section 7.2: The two-sided Lanczos algorithm for linear systems
 
-Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM,
-2003, §7.2.
+This module formalizes Section 7.2 of [saad2003iterative]. Algorithm 7.2 runs the Lanczos
+biorthogonalization procedure (Algorithm 7.1) from $v_1 = r_0/\beta$, with $r_0 = b - Ax_0$ and
+$\beta = \|r_0\|_2$, and from a dual starting vector $w_1$, then solves the tridiagonal system
+$T_m y_m = \beta e_1$ and sets $x_m = x_0 + V_m y_m$. It has the form of FOM (Section 6.4), with the
+Arnoldi basis replaced by the biorthogonal basis. The iterate is the Petrov–Galerkin approximation
+onto $\mathcal{K}_m(A, v_1)$ orthogonally to $\mathcal{K}_m(A^H, w_1)$, and by (7.9) its residual is
+a multiple of the next Lanczos vector,
+$$b - Ax_m = -\delta_{m+1} (e_m^T y_m)\, v_{m+1}.$$
+At a lucky breakdown of Algorithm 7.1 the iterate is exact. The proofs use
+`SaadSparse.Chapter07.bilanczos_hessenbergRelation` of
+`NumlibSurface.SaadSparse.Chapter07.Section01`, which gives the backbone
+`Krylov.HessenbergRelation`, so the residual formula is the same lemma that serves FOM.
 
-**Algorithm 7.2** is `lanczosSolve`: run Algorithm 7.1 from `v_1 = r_0/β` and a dual starting
-vector `w_1`, solve the tridiagonal system `T_m y_m = β e_1` and set `x_m = x_0 + V_m y_m`. It has
-the shape of FOM (§6.4) with the Arnoldi basis replaced by the biorthogonal one, and
-`lanczosSolve_isPetrovGalerkin` is the identification the section opens with: `x_m` is the
-Petrov–Galerkin iterate onto `𝒦_m(A, v_1)` orthogonally to `𝒦_m(Aᴴ, w_1)`, the oblique
-projection process §7.3.1 opens with. Only `NoBreakdown` and the nonsingularity of `T_m` are
-needed, since
-the orthogonality is tested against the dual basis directly through (7.5).
+## Main definitions
 
-(7.9) is `equation_7_9`, the analogue of (6.18) and (6.87): the residual is a multiple of the
-next Lanczos vector, `b - A x_m = -δ_{m+1}(e_mᵀ y_m) v_{m+1}`, so its norm costs nothing to
-monitor. The factor `‖v_{m+1}‖₂` — which is `1` in FOM and in the symmetric Lanczos method — is
-what survives when the basis is only biorthogonal. Both statements come from the backbone
-`Krylov.HessenbergRelation` of §7.1 through `bilanczos_hessenbergRelation`, so the residual
-formula is the same lemma that serves FOM.
+* Algorithm 7.2, `SaadSparse.Chapter07.lanczosSolve`: the iterate
+  $x_m = x_0 + V_m T_m^{-1} (\beta e_1)$ of the two-sided Lanczos algorithm for linear systems.
 
-`lanczosSolve_eq_of_bilanczosVhat_eq_zero` is the half of §7.1.2 that belongs here: at a *lucky*
-breakdown, `v̂_{m+1} = 0`, the residual formula makes the iterate exact. The invariance half is in
-`Chapter07/Section01.lean`.
+## Main results
 
-Indices are `0`-based as in `Chapter07/Section01.lean`: `bilanczosV A v₁ w₁ j` is the book's
-`v_{j+1}` and `bilanczosDelta A v₁ w₁ m` its `δ_{m+1}`.
+* Section 7.2, `SaadSparse.Chapter07.lanczosSolve_isPetrovGalerkin`: the iterate of Algorithm 7.2 is
+  the Petrov–Galerkin approximation onto $\mathcal{K}_m(A, v_1)$ orthogonally to
+  $\mathcal{K}_m(A^H, w_1)$.
+* Equation (7.9), `SaadSparse.Chapter07.equation_7_9`: $\|b - Ax_m\|_2 = |\delta_{m+1} (e_m^T
+  y_m)|\, \|v_{m+1}\|_2$.
+* Section 7.1.2, `SaadSparse.Chapter07.lanczosSolve_eq_of_bilanczosVhat_eq_zero`: at a lucky
+  breakdown, the iterate of Algorithm 7.2 is exact.
+
+## Conventions
+
+* Indices are $0$-based, as in `NumlibSurface.SaadSparse.Chapter07.Section01`. The book's $v_{j+1}$
+  is `SaadSparse.Chapter07.bilanczosV A v₁ w₁ j`.
+* The book's $\delta_{m+1}$ is `SaadSparse.Chapter07.bilanczosDelta A v₁ w₁ m`.
+
+## Implementation notes
+
+* The Petrov–Galerkin identification needs only the no-breakdown hypothesis of Section 7.1 and the
+  nonsingularity of $T_m$, since the orthogonality is tested against the dual basis directly through
+  (7.5).
+* The factor $\|v_{m+1}\|_2$ in (7.9), which is $1$ in FOM and in the symmetric Lanczos method, is
+  what remains when the basis is only biorthogonal.
+* The other half of the lucky-breakdown claim of Section 7.1.2, that the Krylov subspace is
+  invariant, is `SaadSparse.Chapter07.krylov_mem_invtSubmodule_of_bilanczosVhat_eq_zero`.
 -/
 
 open Matrix
@@ -46,8 +64,9 @@ variable {n : ℕ} {𝕜 : Type*} [RCLike 𝕜]
 
 /-! ### The starting vector -/
 
-/-- `β v_1 = r_0`: the normalization of Algorithm 6.4, line 1, with no hypothesis, since
-`r_0 = 0` makes both sides vanish. -/
+/-- For every $A$, $b$ and $x_0$, $\beta v_1 = r_0$ with $\beta = \|r_0\|_2$ and $r_0 = b - Ax_0$:
+the normalization of line 1 of Algorithm 6.4. No hypothesis is needed, since $r_0 = 0$ makes
+both sides $0$. -/
 theorem smul_v₁_eq_r₀ (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ : EuclideanSpace 𝕜 (Fin n)) :
     (Chapter06.β A b x₀ : 𝕜) • Chapter06.v₁ A b x₀ = b - op A x₀ := by
   rw [Chapter06.v₁, smul_smul]
@@ -63,32 +82,43 @@ section Algorithm
 
 variable (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ w₁ : EuclideanSpace 𝕜 (Fin n))
 
-/-- The coordinate vector `y_m = T_m⁻¹ (β e_1)` of the last line of Algorithm 7.2.
-`Matrix.inv` is `0` at a singular `T_m`, which is the book's breakdown case. -/
+/-- The coordinate vector $y_m = T_m^{-1} (\beta e_1)$ of the last line of Algorithm 7.2, where
+$T_m$ is the tridiagonal matrix of Algorithm 7.1 started from $v_1 = r_0/\beta$ and $w_1$.
+
+If $T_m$ is singular, which is the breakdown case of the book, `Matrix.inv` gives $0$ and so
+$y_m = 0$. -/
 noncomputable def lanczosSolveY (m : ℕ) : Fin m → 𝕜 :=
   (T A (Chapter06.v₁ A b x₀) w₁ m)⁻¹ *ᵥ ((Chapter06.β A b x₀ : 𝕜) • Chapter06.e₁ m)
 
-/-- **Algorithm 7.2** (the two-sided Lanczos algorithm for linear systems):
-`x_m = x_0 + V_m T_m⁻¹ (β e_1)`, with `V_m` the primal Lanczos basis of Algorithm 7.1 started
-from `v_1 = r_0/β` and the dual vector `w_1`. -/
+/-- **Algorithm 7.2** of [saad2003iterative] (the two-sided Lanczos algorithm for linear systems).
+For $A \in \mathbb{K}^{n \times n}$, $b, x_0, w_1 \in \mathbb{K}^n$ and $m \in \mathbb{N}$, the
+iterate
+$$x_m = x_0 + V_m T_m^{-1} (\beta e_1),$$
+where $V_m$ and $T_m$ are the primal Lanczos basis and the tridiagonal matrix of Algorithm 7.1
+started from $v_1 = r_0/\beta$ and the dual vector $w_1$, with $r_0 = b - Ax_0$ and
+$\beta = \|r_0\|_2$.
+
+If $T_m$ is singular, the inverse is $0$ in Lean and $x_m = x_0$. The dual vector $w_1$ is used
+as given; the normalization $(v_1, w_1) = 1$ is part of the hypothesis
+`SaadSparse.Chapter07.NoBreakdown` of the results below. -/
 noncomputable def lanczosSolve (m : ℕ) : EuclideanSpace 𝕜 (Fin n) :=
   x₀ + Matrix.toEuclideanLin (V A (Chapter06.v₁ A b x₀) w₁ m)
     (WithLp.toLp 2 (lanczosSolveY A b x₀ w₁ m))
 
-/-- `x_m - x_0 = V_m y_m = ∑_j (y_m)_j v_j`, the form the backbone consumes. -/
+/-- The iterate of Algorithm 7.2 is $x_m = x_0 + V_m y_m = x_0 + \sum_j (y_m)_j v_j$. -/
 theorem lanczosSolve_eq_add_sum (m : ℕ) :
     lanczosSolve A b x₀ w₁ m
       = x₀ + ∑ j, lanczosSolveY A b x₀ w₁ m j • bilanczosV A (Chapter06.v₁ A b x₀) w₁ (j : ℕ) :=
   congrArg (fun z => x₀ + z)
     (Chapter06.toEuclideanLin_colMatrix_apply _ (lanczosSolveY A b x₀ w₁ m))
 
-/-- Nothing happens at step `0`. -/
+/-- With $m = 0$ steps, the iterate of Algorithm 7.2 is $x_0$. -/
 @[simp] theorem lanczosSolve_zero : lanczosSolve A b x₀ w₁ 0 = x₀ := by
   rw [lanczosSolve_eq_add_sum]
   simp
 
-/-- `T_m y_m = β e_1` whenever `T_m` is nonsingular: `y_m` really solves the tridiagonal
-system of Algorithm 7.2. -/
+/-- If $T_m$ is nonsingular, then $y_m$ solves the tridiagonal system $T_m y_m = \beta e_1$ of
+Algorithm 7.2. -/
 theorem T_mulVec_lanczosSolveY {m : ℕ} (hT : IsUnit (T A (Chapter06.v₁ A b x₀) w₁ m)) :
     T A (Chapter06.v₁ A b x₀) w₁ m *ᵥ lanczosSolveY A b x₀ w₁ m
       = Krylov.firstVec (Chapter06.β A b x₀ : 𝕜) m := by
@@ -102,7 +132,8 @@ section PetrovGalerkin
 
 variable {A : Matrix (Fin n) (Fin n) 𝕜} {b x₀ w₁ : EuclideanSpace 𝕜 (Fin n)} {m : ℕ}
 
-/-- (7.5) entry by entry: `(A v_j, w_i) = T_{ij}` while the process has not broken down. -/
+/-- Equation (7.5) entry by entry: while Algorithm 7.1 has not broken down, $(Av_j, w_i) = t_{ij}$.
+-/
 private theorem inner_bilanczosW_apply_bilanczosV {v : EuclideanSpace 𝕜 (Fin n)}
     (h : NoBreakdown A v w₁ m) {i j : ℕ} (hi : i ≤ m) (hj : j + 1 ≤ m) :
     inner 𝕜 (bilanczosW A v w₁ i) (op A (bilanczosV A v w₁ j)) = bilanczosCoeff A v w₁ i j := by
@@ -110,10 +141,14 @@ private theorem inner_bilanczosW_apply_bilanczosV {v : EuclideanSpace 𝕜 (Fin 
   rw [bilanczosW_eq, bilanczosV_eq, bilanczosCoeff_eq]
   exact BiLanczos.inner_dualVec_apply_vec h.toBiLanczos hi (by omega)
 
-/-- **Saad §7.2**: the Algorithm 7.2 iterate is the Petrov–Galerkin approximation onto
-`𝒦_m(A, v_1)` orthogonally to `𝒦_m(Aᴴ, w_1)` — the projection process (7.6) the section is
-derived from. Only the no-breakdown hypothesis of §7.1 and the nonsingularity of `T_m` are
-needed. -/
+/-- **Section 7.2** of [saad2003iterative], the iterate of Algorithm 7.2 as a projection. Assume
+that Algorithm 7.1, started from $v_1 = r_0/\beta$ and $w_1$, runs $m$ steps without breakdown,
+and that $T_m$ is nonsingular. Then the iterate $x_m$ of Algorithm 7.2 is the Petrov–Galerkin
+approximation onto $\mathcal{K}_m(A, v_1)$ orthogonally to $\mathcal{K}_m(A^H, w_1)$:
+$$x_m - x_0 \in \mathcal{K}_m(A, v_1), \qquad b - Ax_m \perp \mathcal{K}_m(A^H, w_1).$$
+
+This is the projection process from which the section derives the algorithm. The predicate is
+the backbone `IsPetrovGalerkin`. -/
 theorem lanczosSolve_isPetrovGalerkin (h : NoBreakdown A (Chapter06.v₁ A b x₀) w₁ m)
     (hT : IsUnit (T A (Chapter06.v₁ A b x₀) w₁ m)) :
     IsPetrovGalerkin (op A) b x₀ (Chapter06.krylov A (Chapter06.v₁ A b x₀) m)
@@ -161,8 +196,12 @@ section Residual
 
 variable {A : Matrix (Fin n) (Fin n) 𝕜} {b x₀ w₁ : EuclideanSpace 𝕜 (Fin n)} {m : ℕ}
 
-/-- **Saad (7.9)**, in vector form: the residual of Algorithm 7.2 is a multiple of the next
-Lanczos vector, `b - A x_m = -δ_{m+1} (e_mᵀ y_m) v_{m+1}`. -/
+/-- **Equation (7.9)** of [saad2003iterative], in vector form. Assume that Algorithm 7.1, started
+from $v_1 = r_0/\beta$ and $w_1$, has no serious breakdown, that $m \ge 1$, and that $T_m$ is
+nonsingular. Then the residual of the iterate of Algorithm 7.2 is a multiple of the next Lanczos
+vector:
+$$b - Ax_m = -\delta_{m+1} (e_m^T y_m)\, v_{m+1}.$$
+-/
 theorem residual_lanczosSolve (h : NoSeriousBreakdown A (Chapter06.v₁ A b x₀) w₁)
     (hT : IsUnit (T A (Chapter06.v₁ A b x₀) w₁ m)) (hm : 0 < m) :
     b - op A (lanczosSolve A b x₀ w₁ m)
@@ -184,10 +223,14 @@ theorem residual_lanczosSolve (h : NoSeriousBreakdown A (Chapter06.v₁ A b x₀
   rw [lanczosSolve_eq_add_sum, ← hdelta]
   exact (bilanczos_hessenbergRelation h).residual_eq_of_mulVec_eq hstart hm _ hmul
 
-/-- **Saad (7.9)**: `‖b - A x_m‖₂ = |δ_{m+1} (e_mᵀ y_m)| ‖v_{m+1}‖₂`, so the residual norm of
-Algorithm 7.2 is available without forming the iterate. This is the analogue of (6.18) for FOM
-and of (6.87) for the symmetric Lanczos method; the factor `‖v_{m+1}‖₂`, which is `1` there, is
-what a merely biorthogonal basis leaves behind. -/
+/-- **Equation (7.9)** of [saad2003iterative]. Assume that Algorithm 7.1, started from
+$v_1 = r_0/\beta$ and $w_1$, has no serious breakdown, that $m \ge 1$, and that $T_m$ is
+nonsingular. Then the residual norm of the iterate of Algorithm 7.2 is
+$$\|b - Ax_m\|_2 = |\delta_{m+1} (e_m^T y_m)|\, \|v_{m+1}\|_2,$$
+so it is available without forming the iterate.
+
+This is the analogue of (6.18) for FOM and of (6.87) for the symmetric Lanczos method. The
+factor $\|v_{m+1}\|_2$, which is $1$ there, is what a basis that is only biorthogonal leaves. -/
 theorem equation_7_9 (h : NoSeriousBreakdown A (Chapter06.v₁ A b x₀) w₁)
     (hT : IsUnit (T A (Chapter06.v₁ A b x₀) w₁ m)) (hm : 0 < m) :
     ‖b - op A (lanczosSolve A b x₀ w₁ m)‖
@@ -204,16 +247,19 @@ section LuckyBreakdown
 
 variable {A : Matrix (Fin n) (Fin n) 𝕜} {b x₀ w₁ : EuclideanSpace 𝕜 (Fin n)} {m : ℕ}
 
-/-- **Saad §7.1.2**, the lucky breakdown: when the primal recurrence of Algorithm 7.1 terminates,
-`v̂_{m+1} = 0`, the Algorithm 7.2 iterate is *exact*. By (7.9) the residual is a multiple of
-`δ_{m+1}`, and `δ_{m+1}` vanishes with `v̂_{m+1}`; the other half of the book's claim — that
-`span{V_{m+1}} = 𝒦_{m+1}(A, v_1)` is then `A`-invariant — is
-`SaadSparse.Chapter07.krylov_mem_invtSubmodule_of_bilanczosVhat_eq_zero`. The
-no-serious-breakdown hypothesis that (7.9) carries is free here, by
-`noSeriousBreakdown_of_bilanczosVhat_eq_zero`. Nothing of the sort holds at a *serious* breakdown,
-which is exactly the distinction §7.1.2 draws; and the dual lucky breakdown `ŵ_{m+1} = 0` makes
-`span{W_{m+1}}` invariant and the iterate of the transposed system exact, but says nothing about
-`A x = b`. -/
+/-- **Section 7.1.2** of [saad2003iterative], the lucky breakdown. Let $k = m + 1$. Assume that
+Algorithm 7.1, started from $v_1 = r_0/\beta$ and $w_1$, runs $m$ steps without breakdown, that
+the next unnormalized vector is $\hat v_{k+1} = 0$, and that $T_k$ is nonsingular. Then the
+iterate $x_k$ of Algorithm 7.2 is exact: $b - Ax_k = 0$.
+
+By (7.9) the residual is a multiple of $\delta_{k+1}$, and $\delta_{k+1}$ vanishes with
+$\hat v_{k+1}$. The hypothesis of no serious breakdown that (7.9) needs holds here by
+`SaadSparse.Chapter07.noSeriousBreakdown_of_bilanczosVhat_eq_zero`. The other half of the claim
+of the book, that $\mathcal{K}_k(A, v_1)$ is then invariant under $A$, is
+`SaadSparse.Chapter07.krylov_mem_invtSubmodule_of_bilanczosVhat_eq_zero`. Nothing of this kind
+holds at a serious breakdown, which is the distinction that Section 7.1.2 draws. The dual lucky
+breakdown $\hat w_{k+1} = 0$ makes the span of $w_1, \dots, w_k$ invariant under $A^H$ and the
+iterate of the transposed system exact, but says nothing about $Ax = b$. -/
 theorem lanczosSolve_eq_of_bilanczosVhat_eq_zero (h : NoBreakdown A (Chapter06.v₁ A b x₀) w₁ m)
     (hT : IsUnit (T A (Chapter06.v₁ A b x₀) w₁ (m + 1)))
     (hv : bilanczosVhat A (Chapter06.v₁ A b x₀) w₁ m = 0) :

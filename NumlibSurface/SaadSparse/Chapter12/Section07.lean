@@ -7,29 +7,62 @@ import Mathlib.Tactic.Linarith
 import Numlib.LinearAlgebra.Matrix.Cholesky
 
 /-!
-# Saad §12.7.2: Winget regularization of element matrices
+# Saad, Section 12.7.2: Winget regularization of element matrices
 
-Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM,
-2003, §12.7.2.
+This module formalizes the Winget regularization of Section 12.7.2 of [saad2003iterative] and proves
+that it gives positive definite matrices. The element-by-element preconditioners of the section
+start from the unassembled form $A = \sum_e A^{[e]}$ of a finite element stiffness matrix. They
+scale it by its own diagonal (12.24), $\tilde A = D^{-1/2} A D^{-1/2}$ with
+$D = \operatorname{diag}(A)$, and then regularize each scaled element matrix by forcing its diagonal
+to be the identity (12.25):
+$$\bar A^{[e]} = I + \tilde A^{[e]} - \operatorname{diag}(\tilde A^{[e]}).$$
 
-The element-by-element preconditioners of the section start from the unassembled form
-`A = ∑_e A^[e]` of a finite-element stiffness matrix, scale it by its own diagonal (12.24),
-`Ã = D^{-1/2} A D^{-1/2}` with `D = diag(A)`, and then *regularize* each scaled element matrix by
-forcing its diagonal to be the identity (12.25),
+The book asserts that these matrices are positive definite and refers to Exercise 8 of the chapter,
+which asks why they are positive definite when $\tilde A$ is obtained from $A$ by a diagonal
+scaling. The theorem `SaadSparse.Chapter12.equation_12_25` answers the exercise under the hypotheses
+that the sentence names: each scaled element matrix is positive semidefinite, the assembled matrix
+$\tilde A = \sum_e \tilde A^{[e]}$ is positive definite, and the diagonal of $\tilde A$ is the
+identity. The last hypothesis is what the scaling (12.24) gives, by
+`SaadSparse.Chapter12.diag_diagonalScaled`. The proofs are direct and use only facts about positive
+semidefinite matrices from Mathlib.
 
-`Ā^[e] = I + Ã^[e] - diag(Ã^[e])`.
+## Main definitions
 
-Saad asserts "these matrices are positive definite" and refers the reader to Exercise 8, which
-asks *why* they are positive definite "when the matrix `Ã` is obtained from `A` by a diagonal
-scaling".  `equation_12_25` is that exercise, under the hypotheses the sentence names: each scaled
-element matrix is positive semidefinite (it is a congruence of an element stiffness matrix), the
-assembled matrix `Ã = ∑_e Ã^[e]` is positive definite, and the scaling has made its diagonal the
-identity — which is `diag_diagonalScaled` below.  None of the finite-element apparatus (the
-connectivity matrices `P_e`, the element matrices `A_{K_e}`) is needed: what carries the proof is
-that the diagonals of the summands add up to one.
+* Equation (12.25), `SaadSparse.Chapter12.wingetRegularized`: the Winget regularization
+  $I + M - \operatorname{diag}(M)$ of a square matrix $M$.
 
-The preconditioners themselves, (12.26)–(12.29), are definitions with no property claimed, and the
-rest of §12.7 points back to §10.5 and to Chapter 8.
+## Main results
+
+* Equation (12.24), `SaadSparse.Chapter12.diag_diagonalScaled`: if $A$ has a positive diagonal, then
+  $D^{-1/2} A D^{-1/2}$ has unit diagonal.
+* Equation (12.25), `SaadSparse.Chapter12.equation_12_25`: if the matrices $\tilde A^{[e]}$ are
+  positive semidefinite and their sum is positive definite with unit diagonal, then each
+  $\bar A^{[e]}$ is positive definite.
+
+## Proof outline
+
+The diagonal entries of the matrices $\tilde A^{[e]}$ are nonnegative and add up to $1$, so
+$0 \le \tilde a^{[e]}_{ii} \le 1$. The quadratic form $x^T \bar A^{[e]} x = \sum_i (1 - \tilde
+a^{[e]}_{ii}) x_i^2 + x^T \tilde A^{[e]} x$ is therefore a sum of two nonnegative terms. If it
+vanishes, then at each index $i$ with $x_i \neq 0$ the first term forces $\tilde a^{[e]}_{ii} = 1$,
+hence $\tilde a^{[f]}_{ii} = 0$ for every other element $f$. A positive semidefinite matrix with a
+zero diagonal entry has a zero row there, so $x^T \tilde A^{[f]} x = 0$ for every $f$. Then
+$x^T \tilde A x = 0$, which contradicts the positive definiteness of $\tilde A$ unless $x = 0$.
+
+## Implementation notes
+
+* Matrices are indexed by a finite type `n`, and the elements by a finite type `ι`. The theorem
+  takes the scaled element matrices $\tilde A^{[e]}$ as its data. The connectivity matrices $P_e$
+  and the element matrices $A_{K_e}$ of the book do not appear, because the proof does not need
+  them.
+
+## Not formalized
+
+* **(12.26)–(12.29)**, the element-by-element preconditioners. They are definitions, and the book
+  claims no property of them.
+* **Section 12.7.1.** It is a paragraph that points back to Section 10.5.
+* **Section 12.7.3**, Algorithm 12.8. It is a block form of the Gauss–Seidel iteration for the
+  normal equations, which the material of Chapter 8 covers in general.
 -/
 
 open Matrix
@@ -38,11 +71,16 @@ namespace SaadSparse.Chapter12
 
 variable {n ι : Type*} [Fintype n] [DecidableEq n] [Fintype ι]
 
-/-! ### (12.24): the diagonal scaling -/
+/-! ### Equation (12.24): the diagonal scaling -/
 
-/-- **(12.24)**: the diagonal scaling `Ã = D^{-1/2} A D^{-1/2}`, with `D` the diagonal of `A`, has
-unit diagonal.  This is the hypothesis under which Saad's Exercise 8 asks for the positive
-definiteness of the Winget regularization. -/
+/-- **Equation (12.24)** of [saad2003iterative]. Let $A \in \mathbb{R}^{n \times n}$ have positive
+diagonal entries, $a_{ii} > 0$ for all $i$, and let $D = \operatorname{diag}(A)$. Then the
+scaled matrix $\tilde A = D^{-1/2} A D^{-1/2}$ has unit diagonal: $\tilde a_{ii} = 1$ for every
+$i$.
+
+This is the hypothesis under which Exercise 8 of Chapter 12 asks for the positive definiteness
+of the Winget regularization, see `SaadSparse.Chapter12.equation_12_25`. The matrix $D^{-1/2}$
+is `diagonal (fun j => (Real.sqrt (A j j))⁻¹)`. -/
 theorem diag_diagonalScaled (A : Matrix n n ℝ) (hA : ∀ i, 0 < A i i) (i : n) :
     (diagonal (fun j => (Real.sqrt (A j j))⁻¹) * A * diagonal (fun j => (Real.sqrt (A j j))⁻¹))
       i i = 1 := by
@@ -50,14 +88,18 @@ theorem diag_diagonalScaled (A : Matrix n n ℝ) (hA : ∀ i, 0 < A i i) (i : n)
     mul_comm ((Real.sqrt (A i i))⁻¹) (A i i), mul_assoc, ← mul_inv,
     Real.mul_self_sqrt (hA i).le, mul_inv_cancel₀ (ne_of_gt (hA i))]
 
-/-! ### (12.25): the Winget regularization -/
+/-! ### Equation (12.25): the Winget regularization -/
 
-/-- **(12.25)**: the Winget regularization `Ā^[e] = I + Ã^[e] - diag(Ã^[e])` of a scaled element
-matrix, which replaces its diagonal by the identity and leaves everything else alone. -/
+/-- **Equation (12.25)** of [saad2003iterative]. The **Winget regularization** of a square real
+matrix $M$ is
+$$\bar M = I + M - \operatorname{diag}(M).$$
+It replaces the diagonal of $M$ by the identity and keeps the off-diagonal entries. The book
+applies it to each scaled element matrix $\tilde A^{[e]}$ and obtains $\bar A^{[e]}$. -/
 def wingetRegularized (M : Matrix n n ℝ) : Matrix n n ℝ := 1 + M - diagonal M.diag
 
 omit [Fintype n] in
-/-- The entries of the Winget regularization: the diagonal is `1` and the rest is unchanged. -/
+/-- The entries of the Winget regularization: $\bar M_{ij} = 1$ if $i = j$, and
+$\bar M_{ij} = M_{ij}$ if $i \neq j$. -/
 theorem wingetRegularized_apply (M : Matrix n n ℝ) (i j : n) :
     wingetRegularized M i j = if i = j then 1 else M i j := by
   by_cases h : i = j
@@ -66,16 +108,21 @@ theorem wingetRegularized_apply (M : Matrix n n ℝ) (i j : n) :
   · simp [wingetRegularized, h, Matrix.one_apply_ne h]
 
 set_option linter.unusedFintypeInType false in
-/-- **(12.25) is positive definite** — Saad's Exercise 8 of Chapter 12.  If the scaled element
-matrices `Ã^[e]` are positive semidefinite, their sum `Ã` is positive definite, and the diagonal
-scaling has made every diagonal entry of `Ã` equal to `1`, then every Winget-regularized element
-matrix `Ā^[e] = I + Ã^[e] - diag(Ã^[e])` is positive definite.
+/-- **Equation (12.25)** of [saad2003iterative], positive definiteness (Exercise 8 of Chapter 12).
+Let $\tilde A^{[e]} \in \mathbb{R}^{n \times n}$, for $e$ in a finite index set, be symmetric
+positive semidefinite matrices. Suppose that their sum $\tilde A = \sum_e \tilde A^{[e]}$ is
+positive definite and has unit diagonal, $\tilde a_{ii} = 1$ for all $i$. Then for each $e$ the
+Winget-regularized matrix
+$$\bar A^{[e]} = I + \tilde A^{[e]} - \operatorname{diag}(\tilde A^{[e]})$$
+is positive definite.
 
-The quadratic form is `xᵀ Ā^[e] x = ∑_i (1 - Ã^[e]_ii) x_i² + xᵀ Ã^[e] x`, a sum of two nonnegative
-terms, so it vanishes only if both do.  At an index `i` with `x_i ≠ 0` the first forces
-`Ã^[e]_ii = 1`, hence `Ã^[f]_ii = 0` for every other element `f`, hence — the summands being
-positive semidefinite — the whole `i`-th row of `Ã^[f]` vanishes.  Then `xᵀ Ã^[f] x = 0` for every
-`f`, so `xᵀ Ã x = 0`, contradicting the positive definiteness of the assembled matrix. -/
+The book states only that these matrices are positive definite and leaves the reason to the
+exercise. The hypotheses are the ones that its sentence names: a scaled element matrix is a
+congruence of an element stiffness matrix and is therefore positive semidefinite, and the
+scaling (12.24) makes the diagonal of $\tilde A$ the identity
+(`SaadSparse.Chapter12.diag_diagonalScaled`). The proof writes the quadratic form of
+$\bar A^{[e]}$ as a sum of two nonnegative terms, and shows that if both vanish at $x$, then
+$x^T \tilde A x = 0$. -/
 theorem equation_12_25 (Atilde : ι → Matrix n n ℝ) (hpsd : ∀ e, (Atilde e).PosSemidef)
     (hpd : (∑ e, Atilde e).PosDef) (hdiag : ∀ i, (∑ e, Atilde e) i i = 1) (e : ι) :
     (wingetRegularized (Atilde e)).PosDef := by

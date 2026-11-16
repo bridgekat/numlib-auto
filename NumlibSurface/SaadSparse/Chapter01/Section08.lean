@@ -16,46 +16,81 @@ import Numlib.LinearAlgebra.Matrix.Schur
 import Numlib.LinearAlgebra.Matrix.Similar
 
 /-!
-# Saad §1.8: canonical forms of matrices
+# Saad, Section 1.8: Canonical forms of matrices
 
-Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM,
-2003, §1.8: similarity and the canonical forms — diagonal (§1.8.1), Jordan (§1.8.2) and Schur
-(§1.8.3) — and the application to powers of matrices (§1.8.4).
+This module formalizes §1.8 of [saad2003iterative]: similarity and the canonical forms of a square
+matrix, namely the diagonal form (§1.8.1), the Jordan form (§1.8.2) and the Schur form (§1.8.3), and
+their application to powers of matrices (§1.8.4). Two matrices $A$ and $B$ are similar when
+$B = X^{-1} A X$ for a nonsingular $X$. The module proves that $A$ is diagonalizable exactly when it
+has $n$ linearly independent eigenvectors, and over $\mathbb{C}$ exactly when every eigenvalue is
+semisimple. It proves the Jordan canonical form with the identification of its block sizes, the
+complex Schur form, the real (quasi-Schur) form, and the three results on powers: $A^k \to 0$ if and
+only if $\rho(A) < 1$, the Neumann series $\sum_k A^k$ converges if and only if $\rho(A) < 1$, and
+Gelfand's formula $\|A^k\|^{1/k} \to \rho(A)$.
 
-§1.8.3 gets both Schur forms: `theorem_1_9` is the complex triangulation and `realSchur` the
-quasi-Schur (real Schur) form, which the book states without proof.
+The proofs specialize the backbone modules `Numlib.LinearAlgebra.Matrix.Similar`,
+`Numlib.LinearAlgebra.Matrix.Jordan`, `Numlib.LinearAlgebra.Matrix.Schur`,
+`Numlib.LinearAlgebra.Matrix.RealSchur`, `Numlib.LinearAlgebra.Matrix.Complexify` and
+`Numlib.Analysis.Normed.Module.NormEquivalence`.
 
-§1.8.2 gets the Jordan canonical form, `theorem_1_8`, from the backbone's
-`Numlib/LinearAlgebra/Matrix/Jordan`, which builds it from scratch: Mathlib has none. The two
-results the book derives from it, Theorems 1.10 and 1.11, are nonetheless proved in
-`Numlib/LinearAlgebra/Matrix/Complexify` from Gelfand's formula instead, which needs less.
+## Main results
 
-Theorem 1.8 states a block structure and then identifies the three numbers in it. `theorem_1_8` is
-the block structure; the identifications are `theorem_1_8_geometricMultiplicity`,
-`theorem_1_8_algebraicMultiplicity` and `theorem_1_8_index`, three separate statements about a
-decomposition of that shape rather than three more clauses of one existential, so that a consumer
-can use the structure without unpacking the arithmetic and the other way round.
+* Theorem 1.6, `SaadSparse.Chapter01.theorem_1_6`: a matrix is diagonalizable if and only if it has
+  $n$ linearly independent eigenvectors.
+* Proposition 1.7, `SaadSparse.Chapter01.diagonalizable_of_injective_eigenvalues`: a matrix with $n$
+  eigenvectors for $n$ distinct eigenvalues is diagonalizable.
+* Proposition 1.7, `SaadSparse.Chapter01.proposition_1_7`: a complex matrix is diagonalizable if and
+  only if every eigenvalue is semisimple.
+* Theorem 1.8, `SaadSparse.Chapter01.theorem_1_8`: every complex matrix is similar to a block
+  diagonal matrix of Jordan blocks, grouped by the distinct eigenvalues.
+* Theorem 1.8, `SaadSparse.Chapter01.theorem_1_8_geometricMultiplicity`: the number of Jordan blocks
+  for an eigenvalue is its geometric multiplicity.
+* Theorem 1.8, `SaadSparse.Chapter01.theorem_1_8_algebraicMultiplicity`: the total size of the
+  Jordan blocks for an eigenvalue is its algebraic multiplicity.
+* Theorem 1.8, `SaadSparse.Chapter01.theorem_1_8_index`: the Jordan blocks for an eigenvalue have
+  size at most its index, and the index is at most the algebraic multiplicity.
+* Theorem 1.9, `SaadSparse.Chapter01.theorem_1_9`: every complex matrix is unitarily similar to an
+  upper triangular matrix, whose diagonal carries the eigenvalues.
+* Theorem 1.9, `SaadSparse.Chapter01.theorem_1_9_partial`: the span of the first $k$ Schur vectors
+  is invariant under $A$.
+* §1.8.3, `SaadSparse.Chapter01.realSchur`: every real matrix is orthogonally similar to a block
+  upper triangular matrix with diagonal blocks of size $1 \times 1$ or $2 \times 2$.
+* Theorem 1.10, `SaadSparse.Chapter01.theorem_1_10`: $A^k \to 0$ if and only if $\rho(A) < 1$.
+* Theorem 1.11, `SaadSparse.Chapter01.theorem_1_11`: the series $\sum_k A^k$ converges if and only
+  if $\rho(A) < 1$.
+* Theorem 1.11, `SaadSparse.Chapter01.theorem_1_11_isUnit`: if $\rho(A) < 1$, then $I - A$ is
+  nonsingular.
+* Theorem 1.12, `SaadSparse.Chapter01.theorem_1_12`: Gelfand's formula
+  $\|A^k\|_2^{1/k} \to \rho(A)$.
+* Theorem 1.12, `SaadSparse.Chapter01.theorem_1_12_norm`: Gelfand's formula for an arbitrary matrix
+  norm.
 
-The multiplicity vocabulary the section introduces around them — algebraic and geometric
-multiplicity, simple, semisimple, defective, derogatory — is Mathlib's `Module.End.eigenspace`,
-`Module.End.maxGenEigenspace` and `Polynomial.rootMultiplicity` of the characteristic polynomial,
-and gets no definition here; the index of an eigenvalue is spelled out where it is used, as the
-least `k` at which `Null (A - λ I)^k` stops growing.
+## Implementation notes
 
-Similarity is the backbone's `Matrix.IsSimilar` of `Numlib/LinearAlgebra/Matrix/Similar`,
-`B = C⁻¹ A C` with `C` nonsingular, which is the book's `A = X B X⁻¹` with `X = C`
-(Definition 1.5); that it is an equivalence relation, transports eigenvectors and preserves the
-characteristic polynomial (Problem P-1.9) is proved there, as is the diagonalizability criterion
-behind Theorem 1.6.
-
-Theorems 1.10, 1.11 and 1.12 are the backbone's, in stronger form, and are restated here in the
-book's words. Theorem 1.12, Gelfand's formula, comes twice: `theorem_1_12` in the Euclidean
-operator norm, which is the norm the backbone proves it for, and `theorem_1_12_norm` for an
-arbitrary matrix norm, which is what the book states and defers to Problem P-1.10. The second
-follows from the first because all norms on a finite-dimensional space are equivalent and the
-equivalence constants disappear under a `k`-th root
-(`Numlib/Analysis/Normed/Module/NormEquivalence.lean`); no consistency condition on the norm is
-used.
+* Similarity is `Matrix.IsSimilar A B`, which means $B = C^{-1} A C$ for a nonsingular $C$; this is
+  the book's $A = X B X^{-1}$ (Definition 1.5) with $X = C$. The backbone module
+  `Numlib.LinearAlgebra.Matrix.Similar` proves that similarity is an equivalence relation, that it
+  transports eigenvectors and preserves the characteristic polynomial (Problem P-1.9), and the
+  criterion for diagonalizability behind Theorem 1.6.
+* The vocabulary of multiplicities in the section (algebraic and geometric multiplicity, simple,
+  semisimple, defective and derogatory eigenvalues) is Mathlib's `Module.End.eigenspace`,
+  `Module.End.maxGenEigenspace` and `Polynomial.rootMultiplicity` of the characteristic polynomial,
+  and has no definition here. The index of an eigenvalue $\lambda$ is written out where it is used,
+  as the least $k$ at which $\operatorname{Null}((A - \lambda I)^k)$ stops growing.
+* Mathlib has no Jordan form; the backbone module `Numlib.LinearAlgebra.Matrix.Jordan` constructs
+  it. Theorem 1.8 states a block structure and then identifies three numbers in it.
+  `SaadSparse.Chapter01.theorem_1_8` is the block structure. The identifications are three separate
+  statements about a decomposition of that shape, so that a user can use the structure without the
+  arithmetic, and the arithmetic without unpacking the structure.
+* The book derives Theorems 1.10 and 1.11 from the Jordan form. The backbone module
+  `Numlib.LinearAlgebra.Matrix.Complexify` proves them from Gelfand's formula instead, which needs
+  less. Theorems 1.10, 1.11 and 1.12 are backbone results in a stronger form, restated here in the
+  words of the book.
+* Theorem 1.12 has two forms. `SaadSparse.Chapter01.theorem_1_12` uses the Euclidean operator norm,
+  for which the backbone proves it. `SaadSparse.Chapter01.theorem_1_12_norm` holds for an arbitrary
+  matrix norm, as the book states it with the proof deferred to Problem P-1.10. The second form
+  follows from the first because all norms on a finite-dimensional space are equivalent and the
+  equivalence constants disappear under a $k$-th root. No consistency condition on the norm is used.
 -/
 
 open Matrix Filter Topology
@@ -67,10 +102,15 @@ variable {𝕜 : Type*} [RCLike 𝕜] {n : ℕ}
 
 /-! ### §1.8.1 Theorem 1.6: diagonalizability -/
 
-/-- **Saad Theorem 1.6**: a matrix is *diagonalizable* — similar to a diagonal matrix — exactly
-when it has `n` linearly independent eigenvectors. Both directions read the relation `A X = X D`
-column by column: the columns of the transforming matrix `X` are the eigenvectors, and `X` is
-nonsingular exactly when they are independent; this is the backbone's
+/-- **Theorem 1.6** of [saad2003iterative]. Let $A \in \mathbb{K}^{n \times n}$, where $\mathbb{K}$
+is $\mathbb{R}$ or $\mathbb{C}$. Then $A$ is **diagonalizable**, that is similar to a diagonal
+matrix $\operatorname{diag}(d)$ with $d \in \mathbb{K}^n$, if and only if there are
+$d \in \mathbb{K}^n$ and linearly independent vectors $v_1, \dots, v_n \in \mathbb{K}^n$ with
+$$A v_j = d_j v_j \quad \text{for all } j.$$
+
+Both directions read the relation $AX = XD$ column by column: the columns of the transforming
+matrix $X$ are the eigenvectors, and $X$ is nonsingular exactly when they are linearly
+independent. The proof is the backbone's
 `Matrix.isSimilar_diagonal_iff_exists_basis_eigenvectors`. -/
 theorem theorem_1_6 (A : Matrix (Fin n) (Fin n) 𝕜) :
     (∃ d : Fin n → 𝕜, IsSimilar A (Matrix.diagonal d)) ↔
@@ -78,9 +118,14 @@ theorem theorem_1_6 (A : Matrix (Fin n) (Fin n) 𝕜) :
         LinearIndependent 𝕜 v ∧ ∀ j, A *ᵥ v j = d j • v j :=
   Matrix.isSimilar_diagonal_iff_exists_basis_eigenvectors A
 
-/-- Saad's corollary to Proposition 1.7, which is Problem P-1.2: eigenvectors belonging to
-distinct eigenvalues are linearly independent, so a matrix with `n` distinct eigenvalues is
-diagonalizable. -/
+/-- **Proposition 1.7** of [saad2003iterative], corollary (Problem P-1.2). Let
+$A \in \mathbb{K}^{n \times n}$, where $\mathbb{K}$ is $\mathbb{R}$ or $\mathbb{C}$, let
+$d_1, \dots, d_n \in \mathbb{K}$ be pairwise distinct, and let
+$v_1, \dots, v_n \in \mathbb{K}^n$ be nonzero vectors with $A v_j = d_j v_j$ for every $j$. Then
+$A$ is diagonalizable.
+
+Eigenvectors that belong to distinct eigenvalues are linearly independent, so this follows from
+`SaadSparse.Chapter01.theorem_1_6`. -/
 theorem diagonalizable_of_injective_eigenvalues {A : Matrix (Fin n) (Fin n) 𝕜} {d : Fin n → 𝕜}
     (hd : Function.Injective d) {v : Fin n → Fin n → 𝕜} (hv : ∀ j, v j ≠ 0)
     (hAv : ∀ j, A *ᵥ v j = d j • v j) : ∃ e : Fin n → 𝕜, IsSimilar A (Matrix.diagonal e) :=
@@ -89,11 +134,15 @@ theorem diagonalizable_of_injective_eigenvalues {A : Matrix (Fin n) (Fin n) 𝕜
 
 /-! ### §1.8.1 Proposition 1.7: semisimple eigenvalues -/
 
-/-- **Saad Proposition 1.7**: over `ℂ`, a matrix is diagonalizable if and only if every eigenvalue
-is *semisimple* — its eigenspace is already the whole maximal generalized eigenspace, so the
-geometric and algebraic multiplicities agree. One direction is that the generalized eigenspaces
-always span over an algebraically closed field; the other is that a spanning family of eigenspaces
-leaves no room for a defective eigenvalue. Saad's corollary, that `n` distinct eigenvalues force
+/-- **Proposition 1.7** of [saad2003iterative]. Let $A \in \mathbb{C}^{n \times n}$. Then $A$ is
+diagonalizable if and only if every eigenvalue of $A$ is **semisimple**: for every
+$\mu \in \mathbb{C}$, the eigenspace of $A$ for $\mu$ equals the maximal generalized eigenspace
+of $A$ for $\mu$. Equivalently, the geometric and the algebraic multiplicity of every eigenvalue
+agree.
+
+One direction holds because the generalized eigenspaces always span the space over an
+algebraically closed field. The other holds because a spanning family of eigenspaces leaves no
+room for a defective eigenvalue. The corollary of the book, that $n$ distinct eigenvalues force
 diagonalizability, is `SaadSparse.Chapter01.diagonalizable_of_injective_eigenvalues`. -/
 theorem proposition_1_7 (A : Matrix (Fin n) (Fin n) ℂ) :
     (∃ d : Fin n → ℂ, IsSimilar A (Matrix.diagonal d)) ↔
@@ -110,21 +159,28 @@ theorem proposition_1_7 (A : Matrix (Fin n) (Fin n) ℂ) :
 
 /-! ### §1.8.2 Theorem 1.8: the Jordan canonical form -/
 
-/-- **Saad Theorem 1.8**, the Jordan canonical form: every complex square matrix is similar to a
-block diagonal matrix consisting of `p` diagonal blocks, one associated with each distinct
-eigenvalue `lam i`, and each of those blocks has itself a block diagonal structure consisting of
-`γ i` sub-blocks, the Jordan blocks `Matrix.jordanBlock (l i k) (lam i)` — upper bidiagonal, with
-the constant `lam i` on the diagonal and the constant one on the superdiagonal, of positive size.
-The equivalence `σ` names the indices of the block diagonal matrix by `Fin n`; composing with it is
-a permutation similarity, so this is the book's `X⁻¹ A X = J`.
+/-- **Theorem 1.8** of [saad2003iterative] (Jordan canonical form). Let
+$A \in \mathbb{C}^{n \times n}$. Then there are a number $p$, pairwise distinct scalars
+$\lambda_1, \dots, \lambda_p \in \mathbb{C}$, numbers $\gamma_1, \dots, \gamma_p$ and positive
+sizes $l_{ik}$ for $k = 1, \dots, \gamma_i$, such that:
 
-What is proved here is the block structure and that the `lam i` are exactly the distinct
-eigenvalues of `A`. The book's three further identifications of the numbers involved are the three
-statements that follow, each about a decomposition of this shape: `γ i` is the geometric
-multiplicity of `lam i` (`SaadSparse.Chapter01.theorem_1_8_geometricMultiplicity`), the `i`-th
-diagonal block has size the algebraic multiplicity `m i` of `lam i`
-(`SaadSparse.Chapter01.theorem_1_8_algebraicMultiplicity`), and the sub-blocks have size at most
-the index `l i` of `lam i`, which is itself at most `m i`
+* the eigenvalues of $A$ are exactly $\lambda_1, \dots, \lambda_p$;
+* $A$ is similar to the block diagonal matrix $J = \operatorname{diag}(J_1, \dots, J_p)$, where
+  $J_i$ is itself block diagonal with the $\gamma_i$ Jordan blocks $J_{ik}$ of size $l_{ik}$ for
+  $\lambda_i$.
+
+A Jordan block $J_{ik}$ is upper bidiagonal, with the constant $\lambda_i$ on the diagonal and
+the constant $1$ on the superdiagonal. Thus $X^{-1} A X = J$ for a nonsingular $X$.
+
+The block $J_i$ is `Matrix.jordanForm (l i) (fun _ => lam i)`, and its Jordan blocks are
+`Matrix.jordanBlock (l i k) (lam i)`. The equivalence `σ` names the indices of the block
+diagonal matrix by `Fin n`; reindexing by it is a permutation similarity. The further
+identifications of the numbers in the book are three separate statements about a decomposition
+of this shape: $\gamma_i$ is the geometric multiplicity of $\lambda_i$
+(`SaadSparse.Chapter01.theorem_1_8_geometricMultiplicity`), the block $J_i$ has size the
+algebraic multiplicity $m_i$ of $\lambda_i$
+(`SaadSparse.Chapter01.theorem_1_8_algebraicMultiplicity`), and the Jordan blocks have size at
+most the index $l_i$ of $\lambda_i$, which is at most $m_i$
 (`SaadSparse.Chapter01.theorem_1_8_index`). -/
 theorem theorem_1_8 (A : Matrix (Fin n) (Fin n) ℂ) :
     ∃ (p : ℕ) (lam : Fin p → ℂ) (γ : Fin p → ℕ) (l : ∀ i : Fin p, Fin (γ i) → ℕ)
@@ -137,9 +193,10 @@ theorem theorem_1_8 (A : Matrix (Fin n) (Fin n) ℂ) :
     Matrix.exists_conj_blockDiagonal'_jordanForm A
   exact ⟨p, lam, γ, l, σ, hinj, heig, hlpos, P, hP, hPA.symm⟩
 
-/-- For a matrix in the Jordan form of Theorem 1.8, `Null (A - lam i I)^k` has the dimension the
-`i`-th diagonal block gives it: the other diagonal blocks carry other eigenvalues and contribute
-nothing. -/
+/-- If $A$ is similar to a Jordan form as in Theorem 1.8 with pairwise distinct $\lambda_i$, then
+for every $k$ the dimension of $\operatorname{Null}((A - \lambda_i I)^k)$ equals the dimension
+of the kernel of $(J_i - \lambda_i I)^k$, since the other diagonal blocks carry other
+eigenvalues. -/
 private theorem finrank_ker_pow_sub_smul_one_of_jordan {A : Matrix (Fin n) (Fin n) ℂ} {p : ℕ}
     {lam : Fin p → ℂ} {γ : Fin p → ℕ} {l : ∀ i : Fin p, Fin (γ i) → ℕ}
     {σ : ((i : Fin p) × (k : Fin (γ i)) × Fin (l i k)) ≃ Fin n} (hinj : Function.Injective lam)
@@ -166,10 +223,16 @@ private theorem finrank_ker_pow_sub_smul_one_of_jordan {A : Matrix (Fin n) (Fin 
     Matrix.finrank_ker_mulVecLin_jordanForm_sub_smul_one_pow,
     Finset.filter_false_of_mem fun _ _ (h : lam j = lam i) => hj (hinj h), Finset.sum_empty]
 
-/-- **Saad Theorem 1.8, the geometric multiplicity**: in the Jordan form of Theorem 1.8 the number
-`γ i` of sub-blocks of the `i`-th diagonal block is the geometric multiplicity of `lam i`, the
-dimension of its eigenspace. Each Jordan block "corresponds to a different eigenvector associated
-with the eigenvalue", contributing exactly one dimension. -/
+/-- **Theorem 1.8** of [saad2003iterative], geometric multiplicity. Let
+$A \in \mathbb{C}^{n \times n}$ be similar to a Jordan form as in
+`SaadSparse.Chapter01.theorem_1_8`, with pairwise distinct eigenvalues
+$\lambda_1, \dots, \lambda_p$ and Jordan blocks of positive sizes $l_{ik}$. Then for every $i$
+the number $\gamma_i$ of Jordan blocks for $\lambda_i$ is the geometric multiplicity of
+$\lambda_i$:
+$$\dim \operatorname{Null}(A - \lambda_i I) = \gamma_i.$$
+
+Each Jordan block "corresponds to a different eigenvector associated with the eigenvalue" and
+contributes exactly one dimension. -/
 theorem theorem_1_8_geometricMultiplicity {A : Matrix (Fin n) (Fin n) ℂ} {p : ℕ}
     {lam : Fin p → ℂ} {γ : Fin p → ℕ} {l : ∀ i : Fin p, Fin (γ i) → ℕ}
     {σ : ((i : Fin p) × (k : Fin (γ i)) × Fin (l i k)) ≃ Fin n} (hinj : Function.Injective lam)
@@ -185,10 +248,15 @@ theorem theorem_1_8_geometricMultiplicity {A : Matrix (Fin n) (Fin n) ℂ} {p : 
     Matrix.finrank_ker_mulVecLin_jordanForm_sub_smul_one (hlpos i) (fun _ => lam i) (lam i),
     Finset.filter_true_of_mem fun _ _ => rfl, Finset.card_univ, Fintype.card_fin]
 
-/-- **Saad Theorem 1.8, the algebraic multiplicity**: in the Jordan form of Theorem 1.8 the `i`-th
-diagonal block has size `m i`, the algebraic multiplicity of `lam i` — the multiplicity of `lam i`
-as a root of the characteristic polynomial of `A`. Its size is `∑ k, l i k`, the total size of its
-sub-blocks, which is the number of columns of the Jordan submatrix `J i`. -/
+/-- **Theorem 1.8** of [saad2003iterative], algebraic multiplicity. Let
+$A \in \mathbb{C}^{n \times n}$ be similar to a Jordan form as in
+`SaadSparse.Chapter01.theorem_1_8`, with pairwise distinct $\lambda_1, \dots, \lambda_p$. Then
+for every $i$ the block $J_i$ has size the algebraic multiplicity $m_i$ of $\lambda_i$, the
+multiplicity of $\lambda_i$ as a root of the characteristic polynomial of $A$:
+$$m_i = \sum_k l_{ik}.$$
+
+The size of $J_i$ is the total size $\sum_k l_{ik}$ of its Jordan blocks. The statement does not
+need the sizes $l_{ik}$ to be positive. -/
 theorem theorem_1_8_algebraicMultiplicity {A : Matrix (Fin n) (Fin n) ℂ} {p : ℕ}
     {lam : Fin p → ℂ} {γ : Fin p → ℕ} {l : ∀ i : Fin p, Fin (γ i) → ℕ}
     {σ : ((i : Fin p) × (k : Fin (γ i)) × Fin (l i k)) ≃ Fin n} (hinj : Function.Injective lam)
@@ -207,11 +275,16 @@ theorem theorem_1_8_algebraicMultiplicity {A : Matrix (Fin n) (Fin n) ℂ} {p : 
     simp [hinj.eq_iff]
   rw [hcp, Matrix.rootMultiplicity_charpoly_jordanForm, hfilter, Finset.sum_singleton]
 
-/-- **Saad Theorem 1.8, the index**: in the Jordan form of Theorem 1.8 the sub-blocks of the `i`-th
-diagonal block have size at most `L`, the index of `lam i` — the smallest integer with
-`Null (A - lam i I)^(L+1) = Null (A - lam i I)^L` — and `L` is at most the algebraic multiplicity
-`m i = ∑ k, l i k`. This is the book's "of size not exceeding `l i ≤ m i`"; `L` is the size of the
-largest sub-block, and so is attained. -/
+/-- **Theorem 1.8** of [saad2003iterative], index. Let $A \in \mathbb{C}^{n \times n}$ be similar to
+a Jordan form as in `SaadSparse.Chapter01.theorem_1_8`, with pairwise distinct
+$\lambda_1, \dots, \lambda_p$. Then for every $i$ there is a least integer $L \ge 0$ with
+$$\operatorname{Null}((A - \lambda_i I)^{L+1}) = \operatorname{Null}((A - \lambda_i I)^L),$$
+the **index** of $\lambda_i$, and every Jordan block for $\lambda_i$ has size $l_{ik} \le L$,
+and $L \le m_i = \sum_k l_{ik}$.
+
+This is the book's "of size not exceeding $l_i \le m_i$". The index $L$ is in fact the size of
+the largest Jordan block for $\lambda_i$, so the bound is attained; the statement records only
+the bound. -/
 theorem theorem_1_8_index {A : Matrix (Fin n) (Fin n) ℂ} {p : ℕ} {lam : Fin p → ℂ} {γ : Fin p → ℕ}
     {l : ∀ i : Fin p, Fin (γ i) → ℕ}
     {σ : ((i : Fin p) × (k : Fin (γ i)) × Fin (l i k)) ≃ Fin n} (hinj : Function.Injective lam)
@@ -240,22 +313,28 @@ theorem theorem_1_8_index {A : Matrix (Fin n) (Fin n) ℂ} {p : ℕ} {lam : Fin 
 
 /-! ### §1.8.3 Theorem 1.9: the Schur canonical form -/
 
-/-- **Saad Theorem 1.9**, the Schur canonical form: every complex square matrix is unitarily
-similar to an upper triangular matrix, whose diagonal carries the eigenvalues of `A` with their
-algebraic multiplicities. The proof here is the book's induction on the dimension; the alternative
-proof from the Jordan form and a QR factorization (Problem P-1.7) is not carried out. -/
+/-- **Theorem 1.9** of [saad2003iterative] (Schur canonical form). Let
+$A \in \mathbb{C}^{n \times n}$. Then there is a unitary $Q \in \mathbb{C}^{n \times n}$ such
+that $R = Q^H A Q$ is upper triangular, and the diagonal of $R$ carries the eigenvalues of $A$
+with their algebraic multiplicities:
+$$\det(\lambda I - A) = \prod_{i=1}^n (\lambda - r_{ii}).$$
+
+The proof is the induction on the dimension in the book. The alternative proof from the Jordan
+form and a QR factorization (Problem P-1.7) is not carried out. -/
 theorem theorem_1_9 (A : Matrix (Fin n) (Fin n) ℂ) :
     ∃ Q ∈ Matrix.unitaryGroup (Fin n) ℂ,
       (star Q * A * Q).IsUpperTriangular ∧
         A.charpoly = ∏ i, (Polynomial.X - Polynomial.C ((star Q * A * Q) i i)) :=
   Matrix.exists_unitary_conj_upperTriangular A
 
-/-- The consequence Saad draws from Theorem 1.9: the span of the first `k` Schur vectors — the
-first `k` columns of `Q` — is invariant under `A`, which is the *partial* Schur decomposition
-`A Q_k = Q_k R_k`. At `k = 1` it says that `q₁` is an eigenvector of `A`.
+/-- **Theorem 1.9** of [saad2003iterative], partial Schur decomposition. Let
+$A, Q \in \mathbb{C}^{n \times n}$ with $Q$ unitary and $Q^H A Q$ upper triangular, and let
+$k \ge 0$. Then the span of the first $k$ Schur vectors, the first $k$ columns $q_1, \dots, q_k$
+of $Q$, is invariant under $A$: if $v$ is in this span, then so is $Av$. This is the partial
+Schur decomposition $A Q_k = Q_k R_k$. For $k = 1$ it says that $q_1$ is an eigenvector of $A$.
 
-The quasi-Schur (real Schur) form with `2 × 2` diagonal blocks is
-`SaadSparse.Chapter01.realSchur` below. -/
+The quasi-Schur (real Schur) form with $2 \times 2$ diagonal blocks is
+`SaadSparse.Chapter01.realSchur`. -/
 theorem theorem_1_9_partial {A Q : Matrix (Fin n) (Fin n) ℂ}
     (hQ : Q ∈ Matrix.unitaryGroup (Fin n) ℂ) (hR : (star Q * A * Q).IsUpperTriangular) (k : ℕ)
     {v : Fin n → ℂ} (hv : v ∈ Submodule.span ℂ (Q.col '' {i : Fin n | (i : ℕ) < k})) :
@@ -291,62 +370,79 @@ theorem theorem_1_9_partial {A Q : Matrix (Fin n) (Fin n) ℂ}
 
 /-! ### §1.8.4 Theorems 1.10–1.12: powers of a matrix -/
 
-/-- **Saad Theorem 1.10**: `A^k → 0` exactly when the spectral radius of `A` is less than `1`.
-The book proves the hard direction with the Jordan form; the backbone proves it with Gelfand's
-formula, in `Numlib/LinearAlgebra/Matrix/Complexify`. Cited by Theorem 4.1. -/
+/-- **Theorem 1.10** of [saad2003iterative]. Let $A \in \mathbb{R}^{n \times n}$. Then $A^k \to 0$
+as $k \to \infty$ if and only if $\rho(A) < 1$.
+
+The spectral radius is `Matrix.complexSpectralRadius`, computed from the complex eigenvalues of
+$A$. The book proves the difficult direction with the Jordan form. The backbone proves it with
+Gelfand's formula, in `Numlib.LinearAlgebra.Matrix.Complexify`. Theorem 4.1 uses this result. -/
 theorem theorem_1_10 (A : Matrix (Fin n) (Fin n) ℝ) :
     Tendsto (fun k => A ^ k) atTop (𝓝 0) ↔ A.complexSpectralRadius < 1 :=
   Matrix.tendsto_pow_iff_complexSpectralRadius_lt_one A
 
 open scoped Matrix.Norms.L2Operator in
-/-- **Saad Theorem 1.11**: the Neumann series `∑ A^k` converges exactly when the spectral radius
-is less than `1`. Stated over `ℂ` for the Euclidean operator norm, which is where the Banach
-algebra machinery lives. -/
+/-- **Theorem 1.11** of [saad2003iterative]. Let $A \in \mathbb{C}^{n \times n}$ with $n \ge 1$.
+Then the series $\sum_{k=0}^\infty A^k$ converges if and only if $\rho(A) < 1$.
+
+The statement is over $\mathbb{C}$, with the Euclidean operator norm `Matrix.Norms.L2Operator`,
+which is where the Banach algebra results of Mathlib apply. The spectral radius is Mathlib's
+`spectralRadius ℂ A`, and convergence is `Summable`. -/
 theorem theorem_1_11 [NeZero n] (A : Matrix (Fin n) (Fin n) ℂ) :
     (Summable fun k => A ^ k) ↔ spectralRadius ℂ A < 1 :=
   summable_pow_iff_spectralRadius_lt_one A
 
-/-- The second half of **Saad Theorem 1.11**: when the spectral radius is less than `1`, the
-matrix `I - A` is nonsingular. For a real matrix it is the complex spectral radius that decides,
-because `spectrum ℝ` can miss the eigenvalues altogether. Cited by Theorem 1.29 and by §4.1.2. -/
+/-- **Theorem 1.11** of [saad2003iterative], second part. Let $A \in \mathbb{R}^{n \times n}$ with
+$\rho(A) < 1$. Then $I - A$ is nonsingular.
+
+For a real matrix, the spectral radius that decides is the one of the complex eigenvalues,
+`Matrix.complexSpectralRadius`, because `spectrum ℝ` can miss the eigenvalues altogether.
+Theorem 1.29 and §4.1.2 use this result. -/
 theorem theorem_1_11_isUnit {A : Matrix (Fin n) (Fin n) ℝ} (h : A.complexSpectralRadius < 1) :
     IsUnit (1 - A) :=
   Matrix.isUnit_one_sub_of_complexSpectralRadius_lt_one h
 
 open scoped Matrix.Norms.L2Operator in
-/-- **Saad Theorem 1.12**, Gelfand's formula: `‖A^k‖^{1/k} → ρ(A)`. Stated for the Euclidean
-operator norm, which is the one the backbone proves it for; `theorem_1_12_norm` is the book's own
-statement, for an arbitrary matrix norm. Cited by Theorem 1.28 and by §4.2.1. -/
+/-- **Theorem 1.12** of [saad2003iterative] (Gelfand's formula), for the Euclidean operator norm.
+Let $A \in \mathbb{R}^{n \times n}$. Then
+$$\lim_{k \to \infty} \|A^k\|_2^{1/k} = \rho(A).$$
+
+The norm is `Matrix.Norms.L2Operator`, for which the backbone proves the formula. The statement
+of the book, for an arbitrary matrix norm, is `SaadSparse.Chapter01.theorem_1_12_norm`. Theorem
+1.28 and §4.2.1 use this result. -/
 theorem theorem_1_12 (A : Matrix (Fin n) (Fin n) ℝ) :
     Tendsto (fun k : ℕ => ‖A ^ k‖ ^ (1 / k : ℝ)) atTop (𝓝 A.complexSpectralRadius.toReal) :=
   Matrix.tendsto_pow_rpow_complexSpectralRadius A
 
 open scoped Matrix.Norms.L2Operator in
-/-- **Saad Theorem 1.12 for an arbitrary matrix norm**, which is how the book states it, deferring
-the proof to Problem P-1.10: `p(A^k)^{1/k} → ρ(A)` for every norm `p` on the matrices.
+/-- **Theorem 1.12** of [saad2003iterative] (Gelfand's formula), for an arbitrary matrix norm. Let
+$p$ be a norm on $\mathbb{R}^{n \times n}$ and let $A \in \mathbb{R}^{n \times n}$. Then
+$$\lim_{k \to \infty} p(A^k)^{1/k} = \rho(A).$$
+This is the form in which the book states the theorem; it defers the proof to Problem P-1.10.
 
-A matrix norm in the sense of (1.7)–(1.9) is exactly a `Seminorm ℝ` — nonnegative, absolutely
-homogeneous, subadditive — that is definite, and `p` here carries the definiteness as the
-hypothesis `hp`. The consistency condition (1.11) of §1.4 is *not* needed: matrix norms all being
-equivalent, the limit is the same for every one of them, which is
-`Seminorm.tendsto_rpow_one_div`. -/
+A matrix norm in the sense of (1.7)–(1.9) is a `Seminorm ℝ` (nonnegative, absolutely homogeneous
+and subadditive) that is definite, and the hypothesis `hp` gives the definiteness. The
+consistency condition (1.11) is not needed: all matrix norms are equivalent, so the limit is the
+same for each of them, by `Seminorm.tendsto_rpow_one_div`. -/
 theorem theorem_1_12_norm (p : Seminorm ℝ (Matrix (Fin n) (Fin n) ℝ))
     (hp : ∀ M : Matrix (Fin n) (Fin n) ℝ, p M = 0 → M = 0) (A : Matrix (Fin n) (Fin n) ℝ) :
     Tendsto (fun k : ℕ => p (A ^ k) ^ (1 / k : ℝ)) atTop (𝓝 A.complexSpectralRadius.toReal) :=
   p.tendsto_rpow_one_div hp (theorem_1_12 A)
 
-/-- **Saad §1.8.3, the quasi-Schur form**, also called the real Schur form: every *real* square
-matrix is orthogonally similar to a quasi upper triangular matrix — block upper triangular with
-diagonal blocks of size `1 × 1` or `2 × 2`, the `2 × 2` blocks carrying the pairs of complex
-conjugate eigenvalues. The book gives it without proof, as a "slight variation" on Theorem 1.9,
-and illustrates it only by the decimal matrices of Example 1.2.
+/-- **Section 1.8.3** of [saad2003iterative], the quasi-Schur form, also called the real Schur form.
+Let $A \in \mathbb{R}^{n \times n}$. Then there is an orthogonal $Q \in \mathbb{R}^{n \times n}$
+such that $Q^T A Q$ is quasi upper triangular: block upper triangular, with diagonal blocks of
+consecutive indices of size $1 \times 1$ or $2 \times 2$.
 
-The block structure is the monotone index `p : Fin n → ℕ`: `Monotone p` makes each block an
-interval of consecutive indices, the cardinality bound makes every block `1 × 1` or `2 × 2`, and
-`Matrix.BlockTriangular` says that the entries below the blocks vanish. Theorem 1.9 does not
-specialize to this, because over `ℝ` there need be no eigenvector: the induction has to peel off
-an invariant subspace of dimension one *or two*
-(`LinearMap.exists_invariant_finrank_le_two`), and the backbone is
+The book gives this form without proof, as a "slight variation" on Theorem 1.9, and illustrates
+it only by the decimal matrices of Example 1.2. In the book, the $2 \times 2$ blocks carry the
+pairs of complex conjugate eigenvalues; the statement here does not assert this.
+
+The block structure is a monotone index map $p$ from the indices to $\mathbb{N}$: monotonicity
+makes each block an interval of consecutive indices, the bound on the size of each fibre of $p$
+makes every block $1 \times 1$ or $2 \times 2$, and `Matrix.BlockTriangular` says that the
+entries below the blocks vanish. Theorem 1.9 does not specialize to this form, because over
+$\mathbb{R}$ there need be no eigenvector: the induction removes an invariant subspace of
+dimension one or two (`LinearMap.exists_invariant_finrank_le_two`). The proof is the backbone's
 `Matrix.exists_orthogonal_conj_isQuasiUpperTriangular`. -/
 theorem realSchur (A : Matrix (Fin n) (Fin n) ℝ) :
     ∃ Q ∈ Matrix.orthogonalGroup (Fin n) ℝ, ∃ p : Fin n → ℕ, Monotone p ∧

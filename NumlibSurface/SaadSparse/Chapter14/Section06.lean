@@ -8,44 +8,67 @@ import Numlib.Eigen.MinMax
 import NumlibSurface.SaadSparse.Chapter14.Section03
 
 /-!
-# Saad §14.6: graph partitioning
+# Saad, Section 14.6: Graph partitioning
 
-Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM,
-2003, §14.6. Only §14.6.3, spectral bisection, carries a theorem, and it is a short one over
-Mathlib's graph Laplacian; §14.6.1 and §14.6.2 contribute the three definitions the chapter numbers.
+This module formalizes Section 14.6 of [saad2003iterative]. Only Section 14.6.3, spectral bisection,
+carries a theorem, and it is a short one about Mathlib's graph Laplacian $L$. For a partition vector
+$p$ with entries $\pm 1$, the quadratic form $p^T L p$ counts the edges that the partition cuts: it
+is $4 n_c$, where $n_c$ is the number of cut edges. So bisection of a graph is the minimization of a
+quadratic form over the vectors $p \in \{\pm 1\}^n$ with $(p, e) = 0$, where $e$ is the constant
+vector. The continuous relaxation of this problem is a symmetric eigenvalue problem: the minimum of
+the Rayleigh quotient of $L$ over the nonzero vectors orthogonal to $e$ is the second smallest
+eigenvalue of $L$, attained at the Fiedler vector. This is the reason for Algorithm 14.7, whose
+sorting and splitting step turns the minimizer back into a partition.
 
-* `lapMatrix_quadratic_partition` is the identity that makes graph bisection a quadratic
-  minimization: for a partition vector `p` with entries `±1`, the Laplacian quadratic form
-  `pᵀ L p` counts the edges the partition cuts.  The double sum counts each cut edge twice, so the
-  value is `4 n_c` in Saad's notation, where `n_c` is the number of cut edges.
-* `IsMap` and `IsProperMap` are Definition 14.13, the covering family of subsets and the
-  distinction between a proper and an overlapping partition, and `iSup_subdomainSpace_eq_top` is
-  what the definition buys here: the subdomain spaces of a map span the whole space, so a family
-  that is not a map leaves an unknown untouched by every subdomain solve and Assumption 1 of
-  §14.3.4 fails outright.
-* `definition_14_14` and `definition_14_15` are the `k`-ply neighborhood system and the
-  `(α, k)`-overlap graph of §14.6.2, the vocabulary of the geometric separator theorem: `n` closed
-  disks of which no point of `ℝ^d` is strictly interior to more than `k`, and the graph joining
-  two disks that each meet the `α`-dilation of the other.  `definition_14_14_iff` reads "strictly
-  interior" as Mathlib's `interior`, and `definition_14_15_adj` writes the edge set out.
-* `fiedlerVector` is its continuous relaxation, which is the reason for Algorithm 14.7: the
-  minimum of the Rayleigh quotient of `L` over the nonzero vectors orthogonal to the constant
-  vector `e` is the second smallest eigenvalue of `L`, attained at the Fiedler vector.  Minimizing
-  the cut subject to `(p, e) = 0` over `±1` vectors is thereby relaxed to a symmetric eigenvalue
-  problem, and the sorting-and-splitting step of the algorithm turns the minimizer back into a
-  partition.
+Sections 14.6.1 and 14.6.2 contribute the three numbered definitions of the section. Definition
+14.13 is a map of the vertex set, a family of subsets that covers it; its subdomain spaces span the
+whole space, which connects it to the Schwarz procedures of Section 14.3. Definitions 14.14 and
+14.15 are the $k$-ply neighborhood system and the $(\alpha, k)$-overlap graph, the vocabulary of the
+geometric separator theorem.
 
-## Not formalized here
+## Main definitions
 
-Theorem 14.16, the geometric separator theorem of Miller, Teng, Thurston and Vavasis, over the
-`(α, k)`-overlap graphs `definition_14_15` builds.  Saad quotes it without proof, and its proof
-needs stereographic projection into `S^d`, the existence of a centerpoint of a finite set and a
-random-great-circle argument — none of which Mathlib has.  The two definitions it is stated over
-are geometry and are given above; the theorem itself is the piece that is out of reach.
+* Definition 14.13, `SaadSparse.Chapter14.IsMap`: a family of subsets of the vertex set whose union
+  is the whole set.
+* Definition 14.13, `SaadSparse.Chapter14.IsProperMap`: a map whose subsets are pairwise disjoint.
+* Definition 14.14, `SaadSparse.Chapter14.definition_14_14`: a $k$-ply neighborhood system of $n$
+  closed disks in $\mathbb{R}^d$.
+* Definition 14.15, `SaadSparse.Chapter14.definition_14_15`: the $(\alpha, k)$-overlap graph of a
+  family of disks.
 
-The rest of §14.6.2 (coordinate and inertial bisection), §14.6.4 (level-set expansion, the
-pseudo-peripheral node heuristic, recursive graph bisection, multinode expansion) and Algorithms
-14.7–14.10 are heuristics with no claim attached.
+## Main results
+
+* Definition 14.13, `SaadSparse.Chapter14.iSup_subdomainSpace_eq_top`: the subdomain spaces of a map
+  span the whole space.
+* Definition 14.14, `SaadSparse.Chapter14.definition_14_14_iff`: for disks of nonzero radius,
+  "strictly interior" can be read as Mathlib's `interior` of the closed disk.
+* Definition 14.15, `SaadSparse.Chapter14.definition_14_15_adj`: the edges of the overlap graph, as
+  the book writes them.
+* Section 14.6.3, `SaadSparse.Chapter14.lapMatrix_quadratic_partition`: for $p \in \{\pm 1\}^V$,
+  $p^T L p$ is twice the number of ordered adjacent pairs that $p$ separates.
+* Section 14.6.3, `SaadSparse.Chapter14.fiedlerVector`: for a connected graph, the minimum of the
+  Rayleigh quotient of $L$ on the orthogonal complement of $e$ is the second smallest eigenvalue of
+  $L$.
+
+## Implementation notes
+
+* The graph Laplacian is Mathlib's `SimpleGraph.lapMatrix`. As an operator on `EuclideanSpace ℝ V`
+  it is `SaadSparse.Chapter14.lapOperator`.
+* The eigenvalues of `Numlib.Eigen.MinMax` are indexed in decreasing order. So the second smallest
+  of $m + 2$ eigenvalues has the index $m$.
+* The vertex set of Definition 14.13 is the index set of the unknowns, so a map is a condition on
+  the family $S$ of subsets of Section 14.3.1.
+
+## Not formalized
+
+* **Theorem 14.16** (the geometric separator theorem of Miller, Teng, Thurston and Vavasis), stated
+  over the $(\alpha, k)$-overlap graphs of `SaadSparse.Chapter14.definition_14_15`. The book quotes
+  it without proof, and its proof needs stereographic projection into $S^d$, the existence of a
+  centerpoint of a finite set, and an argument with a random great circle, none of which Mathlib
+  has. The two definitions that it is stated over are formalized.
+* **Coordinate and inertial bisection** (the rest of Section 14.6.2), **Section 14.6.4** (level-set
+  expansion, the pseudo-peripheral node heuristic, recursive graph bisection, multinode expansion)
+  and **Algorithms 14.7–14.10**. These are heuristics with no claim attached.
 -/
 
 open Finset Matrix
@@ -60,11 +83,9 @@ section MinMax
 
 variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [FiniteDimensional ℝ E]
 
-/-- The dual of `LinearMap.IsSymmetric.isGreatest_rayleighQuotient_orthogonal`: on the orthogonal
-complement of the *last* eigenvector — the one for the smallest eigenvalue — the Rayleigh quotient
-attains its minimum, and that minimum is the second smallest eigenvalue.  The eigenvalues of
-`Numlib/Eigen/MinMax.lean` are indexed in decreasing order, so the second smallest of `m + 2` of
-them is the one of index `m`. -/
+/-- Let $T$ be a symmetric operator on a real inner product space of dimension $m + 2$. Then on the
+orthogonal complement of the eigenvector for the smallest eigenvalue, the Rayleigh quotient of
+$T$ attains its minimum, and this minimum is the second smallest eigenvalue of $T$. -/
 private theorem isLeast_rayleighQuotient_orthogonal_last {m : ℕ} {T : E →ₗ[ℝ] E}
     (hT : T.IsSymmetric) (hn : Module.finrank ℝ E = m + 2) :
     IsLeast {c : ℝ | ∃ x : E, x ≠ 0 ∧
@@ -94,16 +115,22 @@ private theorem isLeast_rayleighQuotient_orthogonal_last {m : ℕ} {T : E →ₗ
 
 end MinMax
 
-/-! ### §14.6.3: the Laplacian quadratic form of a partition -/
+/-! ### Section 14.6.3: The Laplacian quadratic form of a partition -/
 
 variable {V : Type*} [Fintype V] [DecidableEq V] (G : SimpleGraph V) [DecidableRel G.Adj]
 
-/-- **The Laplacian quadratic form counts the cut** (§14.6.3).  For a partition vector `p` whose
-entries are `±1`, `pᵀ L p` is twice the number of *ordered* pairs of adjacent vertices that the
-partition separates, that is `4 n_c` in Saad's notation, where `n_c` counts the cut edges
-themselves.  Minimizing the number of cut edges subject to `(p, e) = 0` — the constraint that the
-two parts have equal size — is therefore the minimization of a quadratic form over a discrete
-set, whose continuous relaxation is `SaadSparse.Chapter14.fiedlerVector`. -/
+/-- **Section 14.6.3** of [saad2003iterative], the Laplacian quadratic form counts the cut. Let $G$
+be a finite simple graph with Laplacian $L$, and let $p \in \mathbb{R}^V$ have all entries equal
+to $1$ or $-1$. Then
+$$p^T L p = 2 \cdot \#\{(u, v) \in V \times V : u \text{ and } v \text{ are adjacent and } p_u
+  \ne p_v\}.$$
+
+The set counts *ordered* pairs, so each cut edge appears twice, and the value is $4 n_c$ in the
+notation of the book, where $n_c$ is the number of cut edges. The minimization of the number of
+cut edges subject to $(p, e) = 0$, the condition that the two parts have the same size, is
+therefore the minimization of a quadratic form over a discrete set. Its continuous relaxation is
+`SaadSparse.Chapter14.fiedlerVector`. The quadratic form is
+`Matrix.toLinearMap₂' ℝ (G.lapMatrix ℝ) p p`. -/
 theorem lapMatrix_quadratic_partition {p : V → ℝ} (hp : ∀ i, p i = 1 ∨ p i = -1) :
     Matrix.toLinearMap₂' ℝ (G.lapMatrix ℝ) p p
       = 2 * ({q ∈ (Finset.univ : Finset (V × V)) | G.Adj q.1 q.2 ∧ p q.1 ≠ p q.2}.card : ℝ) := by
@@ -133,24 +160,24 @@ theorem lapMatrix_quadratic_partition {p : V → ℝ} (hp : ∀ i, p i = 1 ∨ p
   rw [hsum]
   ring
 
-/-! ### §14.6.3: the Fiedler vector -/
+/-! ### Section 14.6.3: The Fiedler vector -/
 
-/-- The graph Laplacian as a symmetric operator on `EuclideanSpace ℝ V`. -/
+/-- The graph Laplacian $L$ of $G$, as a linear operator on `EuclideanSpace ℝ V`. -/
 noncomputable abbrev lapOperator : EuclideanSpace ℝ V →ₗ[ℝ] EuclideanSpace ℝ V :=
   Matrix.toEuclideanLin (G.lapMatrix ℝ)
 
-/-- The graph Laplacian is a symmetric operator. -/
+/-- The graph Laplacian $L$ is a symmetric operator. -/
 theorem isSymmetric_lapOperator : (lapOperator G).IsSymmetric :=
   Matrix.isSymmetric_toEuclideanLin_iff.2 (G.isHermitian_lapMatrix ℝ)
 
 omit [DecidableEq V] [DecidableRel G.Adj] in
-/-- The constant vector `e` of §14.6.3, whose orthogonal complement is the constraint set of the
-bisection problem. -/
+/-- The constant vector $e = (1, \dots, 1)^T$ of Section 14.6.3 of [saad2003iterative]. Its
+orthogonal complement is the constraint set of the bisection problem. -/
 noncomputable def constVector (V : Type*) [Fintype V] : EuclideanSpace ℝ V :=
   WithLp.toLp 2 fun _ => (1 : ℝ)
 
-/-- §14.6.3: the constant vector spans the kernel direction the bisection constraint removes,
-`L e = 0`. -/
+/-- The constant vector is in the kernel of the graph Laplacian: $Le = 0$. This is the direction
+that the bisection constraint $(p, e) = 0$ removes. -/
 theorem lapOperator_constVector : lapOperator G (constVector V) = 0 := by
   refine WithLp.ofLp_injective 2 ?_
   have hconst : Matrix.mulVec (G.lapMatrix ℝ) (fun _ => (1 : ℝ)) = 0 := by
@@ -159,13 +186,14 @@ theorem lapOperator_constVector : lapOperator G (constVector V) = 0 := by
     simp
   simpa [constVector, Matrix.toLpLin_apply] using hconst
 
-/-- The constant vector of a nonempty vertex set is nonzero. -/
+/-- If the vertex set $V$ is nonempty, then the constant vector $e$ is nonzero. -/
 theorem constVector_ne_zero (V : Type*) [Fintype V] [Nonempty V] : constVector V ≠ 0 := by
   intro h
   have := congrArg (fun z : EuclideanSpace ℝ V => WithLp.ofLp z (Classical.arbitrary V)) h
   simp [constVector] at this
 
-/-- The Laplacian quadratic form is a sum of squares over the edges, hence nonnegative. -/
+/-- For every $x \in \mathbb{R}^V$, the Laplacian quadratic form is nonnegative: $(Lx, x) \ge 0$. It
+is a sum of squares over the edges. -/
 theorem inner_lapOperator_self_nonneg (x : EuclideanSpace ℝ V) :
     0 ≤ inner ℝ (lapOperator G x) x := by
   have h : inner ℝ (lapOperator G x) x
@@ -175,11 +203,16 @@ theorem inner_lapOperator_self_nonneg (x : EuclideanSpace ℝ V) :
   rw [h, SimpleGraph.lapMatrix_toLinearMap₂']
   positivity
 
-/-- **The Fiedler vector** (§14.6.3), the continuous relaxation of graph bisection.  For a
-connected graph on `m + 2` vertices, the minimum of the Rayleigh quotient of the Laplacian over
-the nonzero vectors orthogonal to the constant vector `e` is attained, and equals the second
-smallest eigenvalue of the Laplacian; a minimizer is a Fiedler vector.  This is what Algorithm
-14.7 computes before sorting its entries and splitting at the median. -/
+/-- **Section 14.6.3** of [saad2003iterative], the Fiedler vector. Let $G$ be a connected graph on
+$m + 2$ vertices, with Laplacian $L$ and constant vector $e$. Then the Rayleigh quotient
+$(Lx, x)/(x, x)$ attains its minimum over the nonzero vectors $x$ with $(e, x) = 0$, and
+$$\min_{x \ne 0, \ (e, x) = 0} \frac{(Lx, x)}{(x, x)} = \lambda_2(L),$$
+the second smallest eigenvalue of $L$. A minimizer is a **Fiedler vector**.
+
+This is the continuous relaxation of graph bisection, and Algorithm 14.7 computes it before it
+sorts the entries and splits at the median. The eigenvalues of
+`LinearMap.IsSymmetric.eigenvalues` are in decreasing order, so $\lambda_2(L)$ is the one with
+index $m$. The number of vertices is given as `Module.finrank ℝ (EuclideanSpace ℝ V) = m + 2`. -/
 theorem fiedlerVector (hconn : G.Connected) {m : ℕ}
     (hn : Module.finrank ℝ (EuclideanSpace ℝ V) = m + 2) :
     IsLeast {c : ℝ | ∃ x : EuclideanSpace ℝ V, x ≠ 0 ∧ inner ℝ (constVector V) x = 0 ∧
@@ -243,30 +276,40 @@ theorem fiedlerVector (hconn : G.Connected) {m : ℕ}
   rw [hset]
   exact isLeast_rayleighQuotient_orthogonal_last hL hn
 
-/-! ### §14.6.1: Definition 14.13, a map of the vertex set -/
+/-! ### Section 14.6.1: Definition 14.13, a map of the vertex set -/
 
 section Map
 
 variable {n : ℕ} {ι : Type*}
 
-/-- **Definition 14.13**: a *map* of the vertex set is a family of subsets `V_1, …, V_s` whose
-union is the whole set.  The book's vertex set is the index set of the unknowns, so the family here
-is the family `S` of §14.3.1 and the definition is the covering condition on it. -/
+/-- **Definition 14.13** of [saad2003iterative]. A family $S_i$, $i \in \iota$, of subsets of
+$\{1, \dots, n\}$ is a **map** of the vertex set if its union is the whole set: every $j$ lies
+in some $S_i$.
+
+The vertex set of the book is the index set of the unknowns, so the family is the family $S$ of
+Section 14.3.1, and the definition is the covering condition on it. -/
 def IsMap (S : ι → Finset (Fin n)) : Prop := ∀ j : Fin n, ∃ i, j ∈ S i
 
-/-- **Definition 14.13**, second half: the map is a *proper partition* when the subsets are
-pairwise disjoint, and an *overlapping partition* otherwise.  §14.3's Schwarz procedures are stated
-for the overlapping case, and a proper partition is the block Jacobi / block Gauss–Seidel of
-Chapter 4. -/
+/-- **Definition 14.13** of [saad2003iterative], second part. A map $S_i$, $i \in \iota$, is a
+**proper partition** if its subsets are pairwise disjoint; otherwise it is an overlapping
+partition.
+
+The Schwarz procedures of Section 14.3 are stated for the overlapping case. For a proper
+partition they are block Jacobi and block Gauss–Seidel of Chapter 4. -/
 def IsProperMap (S : ι → Finset (Fin n)) : Prop :=
   IsMap S ∧ ∀ i i', i ≠ i' → Disjoint (S i) (S i')
 
 variable {𝕜 : Type*} [RCLike 𝕜]
 
-/-- **What Definition 14.13 buys**: the subdomain spaces of a map span the whole space.  This is the
-bridge between Saad's combinatorial vocabulary and the analytic hypotheses of §14.3 — a family that
-is not a map leaves some unknown untouched by every subdomain solve, so no Schwarz procedure built
-on it can converge, and Assumption 1 (`IsStableDecomposition`) fails outright. -/
+/-- **Definition 14.13** of [saad2003iterative], consequence. If the family $S_i$ is a map, then the
+subdomain spaces $\operatorname{span}\{e_j : j \in S_i\}$ span $\mathbb{K}^n$:
+$$\sum_i \operatorname{span}\{e_j : j \in S_i\} = \mathbb{K}^n.$$
+
+This connects the combinatorial definition to the analytic hypotheses of Section 14.3. A family
+that is not a map leaves some unknown untouched by every subdomain solve. So no Schwarz
+procedure built on it can converge, and Assumption 1
+(`SaadSparse.Chapter14.IsStableDecomposition`) fails. The subdomain space is
+`SaadSparse.Chapter12.subdomainSpace`. -/
 theorem iSup_subdomainSpace_eq_top {S : ι → Finset (Fin n)} (h : IsMap S) :
     ⨆ i, subdomainSpace 𝕜 (S i) = ⊤ := by
   refine top_unique ?_
@@ -285,24 +328,29 @@ theorem iSup_subdomainSpace_eq_top {S : ι → Finset (Fin n)} (h : IsMap S) :
 
 end Map
 
-/-! ### §14.6.2: Definitions 14.14 and 14.15, neighborhood systems and overlap graphs -/
+/-! ### Section 14.6.2: Definitions 14.14 and 14.15, neighborhood systems and overlap graphs -/
 
 section Overlap
 
 variable {d n : ℕ}
 
-/-- **Definition 14.14**: a *`k`-ply neighborhood system* in `ℝ^d` is a set of `n` closed disks
-`D_1, …, D_n` such that no point of `ℝ^d` is strictly interior to more than `k` of them.
+/-- **Definition 14.14** of [saad2003iterative]. A **$k$-ply neighborhood system** in $\mathbb{R}^d$
+is a set of $n$ closed disks $D_1, \dots, D_n$ such that no point of $\mathbb{R}^d$ is strictly
+interior to more than $k$ of them.
 
-A closed disk is given by its centre `c i` and its radius `r i`, and "strictly interior to `D_i`"
-is membership in the open ball, which is the interior of the closed one — `definition_14_14_iff`.
--/
+The disk $D_i$ is given by its centre $c_i$ and its radius $r_i$. "Strictly interior to $D_i$"
+is membership in the open ball of centre $c_i$ and radius $r_i$, which is the interior of the
+closed disk when $r_i \ne 0$; see `SaadSparse.Chapter14.definition_14_14_iff`. -/
 def definition_14_14 (k : ℕ) (c : Fin n → EuclideanSpace ℝ (Fin d)) (r : Fin n → ℝ) : Prop :=
   ∀ x : EuclideanSpace ℝ (Fin d), {i | x ∈ Metric.ball (c i) (r i)}.ncard ≤ k
 
-/-- Definition 14.14 with "strictly interior" read as Mathlib's `interior`: for disks of nonzero
-radius the open ball is the interior of the closed ball, so the two readings of the condition
-agree. -/
+/-- **Definition 14.14** of [saad2003iterative], with "strictly interior" read as Mathlib's
+`interior`. Let $c_1, \dots, c_n \in \mathbb{R}^d$ and let $r_1, \dots, r_n$ be nonzero. Then
+the disks form a $k$-ply neighborhood system if and only if no point of $\mathbb{R}^d$ lies in
+the interior of more than $k$ of the closed disks $\bar{B}(c_i, r_i)$.
+
+For a disk of nonzero radius, the open ball is the interior of the closed ball, so the two
+readings of the condition agree. -/
 theorem definition_14_14_iff (k : ℕ) (c : Fin n → EuclideanSpace ℝ (Fin d)) {r : Fin n → ℝ}
     (hr : ∀ i, r i ≠ 0) :
     definition_14_14 k c r ↔
@@ -310,24 +358,33 @@ theorem definition_14_14_iff (k : ℕ) (c : Fin n → EuclideanSpace ℝ (Fin d)
         {i | x ∈ interior (Metric.closedBall (c i) (r i))}.ncard ≤ k := by
   simp only [definition_14_14, interior_closedBall _ (hr _)]
 
-/-- **Definition 14.15**: for `α ≥ 1` and a `k`-ply neighborhood system `D_1, …, D_n`, the
-*`(α, k)`-overlap graph* has vertex set `{1, …, n}` and an edge `(i, j)` exactly when
-`D_i ∩ α·D_j ≠ ∅` and `D_j ∩ α·D_i ≠ ∅`, the dilation `α·D` being the disk with the same centre
-and `α` times the radius.
+/-- **Definition 14.15** of [saad2003iterative]. Let $\alpha \in \mathbb{R}$ and let
+$D_1, \dots, D_n$ be closed disks in $\mathbb{R}^d$, with centres $c_i$ and radii $r_i$. The
+**$(\alpha, k)$-overlap graph** has the vertex set $\{1, \dots, n\}$ and an edge $(i, j)$
+exactly when
+$$D_i \cap \alpha \cdot D_j \ne \emptyset \quad \text{and} \quad D_j \cap \alpha \cdot D_i \ne
+  \emptyset,$$
+where the dilation $\alpha \cdot D$ is the disk with the same centre and $\alpha$ times the
+radius.
 
-Neither `1 ≤ α` nor the `k`-ply condition enters the construction: they are the standing hypotheses
-under which Theorem 14.16 bounds the separator, and `definition_14_14` states the second of them.
--/
+The book assumes $\alpha \ge 1$ and that the disks form a $k$-ply neighborhood system. Neither
+condition enters the construction: they are the standing hypotheses under which Theorem 14.16
+bounds the separator, and `SaadSparse.Chapter14.definition_14_14` states the second of them. The
+graph is built with `SimpleGraph.fromRel`, so it has no loops. -/
 def definition_14_15 (α : ℝ) (c : Fin n → EuclideanSpace ℝ (Fin d)) (r : Fin n → ℝ) :
     SimpleGraph (Fin n) :=
   SimpleGraph.fromRel fun i j =>
     (Metric.closedBall (c i) (r i) ∩ Metric.closedBall (c j) (α * r j)).Nonempty ∧
       (Metric.closedBall (c j) (r j) ∩ Metric.closedBall (c i) (α * r i)).Nonempty
 
-/-- The edges of the `(α, k)`-overlap graph, as the book writes them.  The book's edge set is a
-subset of `V × V`, and the condition cutting it out is already symmetric in `i` and `j`; so
-`SimpleGraph.fromRel`, which symmetrizes and drops the loops the condition carries at every `i`
-whose disk is nonempty, adds nothing but the loopless convention of §3.3.2's adjacency graph. -/
+/-- **Definition 14.15** of [saad2003iterative], the edges. Vertices $i$ and $j$ of the
+$(\alpha, k)$-overlap graph are adjacent if and only if $i \ne j$,
+$D_i \cap \alpha \cdot D_j \ne \emptyset$ and $D_j \cap \alpha \cdot D_i \ne \emptyset$.
+
+The edge set of the book is a subset of $V \times V$, and the condition that defines it is
+already symmetric in $i$ and $j$. `SimpleGraph.fromRel` symmetrizes the condition and drops the
+loops that it has at every $i$ whose disk is nonempty. So it adds nothing but the convention of
+Section 3.3.2 that an adjacency graph has no loops. -/
 theorem definition_14_15_adj (α : ℝ) (c : Fin n → EuclideanSpace ℝ (Fin d)) (r : Fin n → ℝ)
     (i j : Fin n) :
     (definition_14_15 α c r).Adj i j ↔ i ≠ j ∧

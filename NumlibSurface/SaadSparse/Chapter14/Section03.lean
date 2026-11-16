@@ -8,56 +8,118 @@ import Numlib.Stationary.Block
 import NumlibSurface.SaadSparse.Chapter12.Section02
 
 /-!
-# Saad §14.3: the Schwarz alternating procedures
+# Saad, Section 14.3: The Schwarz alternating procedures
 
-Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM,
-2003, §14.3.
+This module formalizes Section 14.3 of [saad2003iterative], together with the vertex-based
+partitioning of Section 14.2.3 that Theorem 14.2 needs. The data of Section 14.3 are index sets
+$S_i \subseteq \{1, \dots, n\}$, not necessarily disjoint, the boolean restriction matrices $R_i$ of
+Section 14.3.1, the local matrices $A_i = R_i A R_i^T$, the operators $T_i = R_i^T A_i^{-1} R_i$ of
+(14.31) and $P_i = T_i A$ of (14.24), and the subdomain spaces $\operatorname{Ran}(R_i^T) =
+\operatorname{span}\{e_j : j \in S_i\}$. For a symmetric positive definite $A$, $P_i$ is the
+$A$-orthogonal projector onto $\operatorname{Ran}(R_i^T)$. The module states the multiplicative
+Schwarz procedure (14.25) with its error operator $Q_s$ (14.26), the additive procedure, Proposition
+14.3 and Lemma 14.4, and the convergence theory of Section 14.3.4: the bounds of Theorems 14.5 and
+14.6 on the largest eigenvalue of the additive Schwarz operator $A_J = \sum_i P_i$ (14.37),
+Assumptions 1 and 2, the lower bound $\lambda_{\min}(A_J) \ge 1/K_0$ of Theorem 14.7, and the
+contraction rate of a multiplicative sweep in Lemma 14.8 and Theorem 14.9. The convergence theory
+specializes `Numlib.DomainDecomposition.Schwarz`, whose statements are about orthogonal projectors
+in an inner product space, in the energy inner product of $A$.
 
-The data of the section are index sets `S_i ⊆ {1, …, n}`, not necessarily disjoint, the boolean
-restriction matrices `R_i` of §14.3.1, the local matrices `A_i = R_i A R_iᵀ`, and the operators
-`T_i = R_iᵀ A_i⁻¹ R_i` of (14.31) and `P_i = T_i A` of (14.24).  All five are §12.2's, where the
-book first writes them as `V_i = R_iᵀ` and `A_i = V_iᵀ A V_i`, so they are
-`SaadSparse.Chapter12.restrictSubset`, `localMatrix`, `subdomainInverse`, `subdomainProjector` and
-`subdomainSpace` of `Chapter12/Section02.lean`, and this file opens that namespace.
+Theorem 14.2 concerns the other partitioning of the chapter, the vertex-based one of Section 14.2.3.
+There each of $s$ subdomains owns interior nodes and interface nodes, the local matrices are $A_i =
+\begin{pmatrix} B_i & E_i \\ F_i & C_i \end{pmatrix}$ (14.9), and the interface nodes of different
+subdomains are coupled by blocks $E_{ij}$ (14.10). Elimination of the interior variables gives the
+Schur complement system (14.12)–(14.14). Theorem 14.2 (Chan and Goovaerts) states that the
+multiplicative Schwarz procedure, started from a consistent initial guess, produces on the interface
+the iterates of block Gauss–Seidel on the Schur complement system. The proof rests on the fact that
+the elimination of the interior variables commutes with taking the block-lower triangle.
 
-Everything rests on one identification, `Chapter12.subdomainProjector_eq_energyProjection`: for a
-symmetric positive definite `A`, `P_i` **is** the `A`-orthogonal projector onto
-`Ran(R_iᵀ) = span {e_j : j ∈ S_i}` (`Chapter12.subdomainSpace`).  The whole convergence theory is
-then read off `Numlib/DomainDecomposition/Schwarz.lean`, whose statements are about the
-orthogonal projectors of an inner product space, applied in the energy space of `A`.
+## Main definitions
 
-* §14.3.1–14.3.3: `multiplicativeSweep` is (14.25), `Q_s` its error operator (14.26), and
-  `additiveSweep` the additive procedure.  `error_multiplicativeSweep` is the meaning of `Q_s`,
-  `proposition_14_3` the fixed-point form (14.27)–(14.28), and `lemma_14_4` the recurrences
-  (14.32)–(14.35) that make Algorithms 14.4 and 14.5 run without `A⁻¹`.
-* §14.3.4: `A_J` is the additive Schwarz operator (14.37), `theorem_14_5` and `theorem_14_6` the
-  two upper bounds on `λ_max(A_J)`, `IsStableDecomposition` and `IsStrengthenedCauchySchwarz`
-  Assumptions 1 and 2, `theorem_14_7` the lower bound `λ_min(A_J) ≥ 1/K₀`, `equation_14_39` the
-  telescoping identity of a multiplicative sweep, and `lemma_14_8` and `theorem_14_9` its
-  contraction rate.
+* Section 14.2.3, `SaadSparse.Chapter14.VertexPartitioning`: the data (14.8)–(14.10) of a
+  vertex-based partitioning.
+* Equation (14.8), `SaadSparse.Chapter14.VertexPartitioning.globalMatrix`: the global matrix of the
+  partitioning.
+* Equation (14.9), `SaadSparse.Chapter14.VertexPartitioning.localMatrix`: the local matrix $A_i$.
+* Equation (14.10), `SaadSparse.Chapter14.VertexPartitioning.offDiag`: the interface coupling
+  $E_{ij}$.
+* Equation (14.13), `SaadSparse.Chapter14.VertexPartitioning.localSchur`: the local Schur complement
+  $S_i = C_i - F_i B_i^{-1} E_i$.
+* Equation (14.14), `SaadSparse.Chapter14.VertexPartitioning.schurMatrix`: the Schur complement
+  system $S$.
+* Equation (14.22), `SaadSparse.Chapter14.VertexPartitioning.IsConsistent`: a consistent initial
+  guess.
+* Algorithm 14.3, `SaadSparse.Chapter14.VertexPartitioning.schwarzSweep`: one multiplicative Schwarz
+  sweep on the global matrix.
+* Equation (14.25), `SaadSparse.Chapter14.multiplicativeSweep`: the multiplicative Schwarz
+  procedure.
+* Equation (14.26), `SaadSparse.Chapter14.Q_s`: its error propagation operator
+  $Q_s = (I - P_{s-1}) \cdots (I - P_0)$.
+* Section 14.3.3, `SaadSparse.Chapter14.additiveSweep`: the additive Schwarz procedure.
+* Equation (14.37), `SaadSparse.Chapter14.A_J`: the additive Schwarz operator $A_J = \sum_i P_i$.
+* Assumption 1, `SaadSparse.Chapter14.IsStableDecomposition`: a stable decomposition with constant
+  $K_0$.
+* Assumption 2, `SaadSparse.Chapter14.IsStrengthenedCauchySchwarz`: a strengthened Cauchy–Schwarz
+  inequality with constant $K_1$ (14.40).
 
-Indices are `0`-based: the book's `i = 1, …, s` is `i ∈ Finset.range s`, and Saad's `card` of the
-family is the cutoff `s`.  `(A u, u)` is written `energyInner A u u`, and `‖u‖_A` is
-`energyNorm A u`; over `ℝ` these are Saad's own quantities, and over `ℂ` they are the
-Hermitian ones.
+## Main results
 
-## §14.2.3 and Theorem 14.2
+* Equation (14.14), `SaadSparse.Chapter14.VertexPartitioning.schurMatrix_eq`: $S$ is the Schur
+  complement of the global matrix.
+* Equations (14.11) and (14.12), `SaadSparse.Chapter14.VertexPartitioning.equation_14_11` and
+  `SaadSparse.Chapter14.VertexPartitioning.equation_14_12`: the rows of the global system and of the
+  Schur complement system at subdomain $i$.
+* Equation (14.22), `SaadSparse.Chapter14.VertexPartitioning.isConsistent_iff`: an initial guess is
+  consistent if and only if $x_i = B_i^{-1}(f_i - E_i y_i)$ for every $i$.
+* Theorem 14.2, `SaadSparse.Chapter14.theorem_14_2`: from a consistent initial guess, the interface
+  iterates of Algorithm 14.3 are the iterates of block Gauss–Seidel on the Schur complement system.
+* Proposition 14.3, `SaadSparse.Chapter14.proposition_14_3`: the multiplicative and the additive
+  procedures are fixed-point iterations $x \leftarrow x + M^{-1}(b - Ax)$, with $M^{-1} A = I - Q_s$
+  and $M^{-1} A = A_J$.
+* Lemma 14.4, `SaadSparse.Chapter14.lemma_14_4`: the recurrences (14.32) and (14.33) and the
+  expansion (14.35) of $I - Q_s$.
+* Theorem 14.5, `SaadSparse.Chapter14.theorem_14_5`: $\lambda_{\max}(A_J) \le s$.
+* Theorem 14.6, `SaadSparse.Chapter14.theorem_14_6`: $\lambda_{\max}(A_J)$ is at most the number of
+  colours of a colouring of the subdomains with no coupling inside a colour.
+* Theorem 14.7, `SaadSparse.Chapter14.theorem_14_7`: under Assumption 1,
+  $\lambda_{\min}(A_J) \ge 1/K_0$.
+* Equation (14.39), `SaadSparse.Chapter14.equation_14_39`: $\|Q_s v\|_A^2 = \|v\|_A^2 - \sum_i \|P_i
+  Q_i v\|_A^2$.
+* Lemma 14.8, `SaadSparse.Chapter14.lemma_14_8`: under Assumption 2, $\sum_i \|P_i v\|_A^2 \le (1 +
+  K_1)^2 \sum_i \|P_i Q_i v\|_A^2$.
+* Theorem 14.9, `SaadSparse.Chapter14.theorem_14_9`: under Assumptions 1 and 2, $\|Q_s v\|_A \le
+  \sqrt{1 - 1/(K_0 (1 + K_1)^2)} \, \|v\|_A$.
 
-Theorem 14.2 is about the *other* partitioning of the chapter, the vertex-based one of §14.2.3,
-and its block structure (14.8)–(14.14) is built here as `VertexPartitioning`: `s` subdomains, each
-owning interior nodes and interface nodes, local matrices `A_i = [[B_i, E_i], [F_i, C_i]]` of
-(14.9), off-diagonal blocks `A_ij` whose only nonzero corner is `E_ij` (14.10), and the assembled
-Schur complement system `S` of (14.14).  `schurMatrix_eq` identifies `S` with the Schur complement
-of the global matrix, and `equation_14_11`, `equation_14_12` and `isConsistent_iff` read the
-blocks, the reduced system and the consistency condition (14.22) off it subdomain by subdomain.
+## Conventions
 
-Both iterations are then block Gauss–Seidel sweeps for the labelling of the nodes by their
-subdomain: `schwarzSweep` is Algorithm 14.3 on the global matrix and `schurGaussSeidelSweep` is a
-sweep on (14.12), and `globalLower_eq_blockGaussSeidelSplitting` and
-`schurLower_eq_blockGaussSeidelSplitting` are the identifications with
-`Matrix.blockGaussSeidelSplitting`.  `theorem_14_2` is Theorem 14.2, and it rests on
-`schurComplement_globalLower`: eliminating the interior variables and taking the block-lower
-triangle commute.
+* Indices are $0$-based: the subdomains $i = 1, \dots, s$ of the book are
+  $i \in \{0, \dots, s - 1\}$ (`Finset.range s`), and the number of subdomains is the cutoff $s$.
+* The scalar field is $\mathbb{R}$ or $\mathbb{C}$ (`[RCLike 𝕜]`). The energy inner product
+  $(Au, v)$ is `energyInner (Matrix.toEuclideanLin A) u v` and the energy norm $\|u\|_A$ is
+  `energyNorm (Matrix.toEuclideanLin A) u`. Over $\mathbb{R}$ these are the quantities of the book,
+  and over $\mathbb{C}$ they are the Hermitian ones.
+
+## Implementation notes
+
+* The restriction matrices, the local matrices and the subdomain operators are those of Section
+  12.2, where the book first writes them as $V_i = R_i^T$ and $A_i = V_i^T A V_i$. They are
+  `SaadSparse.Chapter12.restrictSubset`, `SaadSparse.Chapter12.localMatrix`,
+  `SaadSparse.Chapter12.subdomainInverse` ($T_i$), `SaadSparse.Chapter12.subdomainProjector` ($P_i$)
+  and `SaadSparse.Chapter12.subdomainSpace` of `NumlibSurface.SaadSparse.Chapter12.Section02`, and
+  this module opens that namespace.
+* The convergence theory rests on `SaadSparse.Chapter12.subdomainProjector_eq_energyProjection`: for
+  a symmetric positive definite $A$, $P_i$ is the $A$-orthogonal projector onto the subdomain space.
+* In the vertex-based partitioning, the nodes are listed with all interior nodes first and all
+  interface nodes last, as in (14.2). The block structure (14.8) by subdomains is carried by the
+  label function `SaadSparse.Chapter14.nodeLabel`, not by the order of the indices; the two orders
+  differ by a permutation. Both iterations of Theorem 14.2 are block Gauss–Seidel sweeps for this
+  labelling, and they are identified with `Matrix.blockGaussSeidelSplitting`.
+
+## Deviations from the source
+
+* **Theorem 14.6** (correction). The book asks only that subdomains of the same colour have no
+  common nodes. This is not enough; the theorem assumes that subdomains of the same colour have no
+  coupling in $A$. See `SaadSparse.Chapter14.theorem_14_6`.
 -/
 
 open Matrix Finset
@@ -66,53 +128,55 @@ open scoped ComplexOrder SaadSparse
 
 namespace SaadSparse.Chapter14
 
-/-! ### §14.2.3 and §14.3.1: the vertex-based partitioning and Theorem 14.2
+/-!
+### Section 14.2.3 and Section 14.3.1: The vertex-based partitioning and Theorem 14.2
 
-The rest of the file is the *edge-based* picture of §14.3, in which the subdomains are index sets
-`S_i ⊆ {1, …, n}`.  This section is the *vertex-based* picture of §14.2.3, which Theorem 14.2 needs
-and nothing else in §14.3 uses: the nodes carry a subdomain label, and inside each subdomain they
-split into interior nodes and interface nodes.
+The rest of the module treats the *edge-based* picture of Section 14.3, in which the subdomains are
+index sets $S_i \subseteq \{1, \dots, n\}$. This part treats the *vertex-based* picture of Section
+14.2.3, which Theorem 14.2 needs and which nothing else in Section 14.3 uses. The nodes carry a
+subdomain label, and inside each subdomain they split into interior nodes and interface nodes.
 -/
 
 section VertexBased
 
-/-- §14.2.3: the subdomain a node belongs to.  A node is an interior node `⟨i, a⟩` or an interface
-node `⟨i, a⟩` of subdomain `i`, and its label is `i`; this labelling is the `s`-block structure
-(14.8) of the global matrix. -/
+/-- **Equation (14.8)** of [saad2003iterative], the subdomain of a node. A node is an interior node
+$\langle i, a \rangle$ or an interface node $\langle i, a \rangle$ of subdomain $i$, and its
+label is $i$. This labelling is the block structure (14.8) of the global matrix by subdomains. -/
 def nodeLabel {ι : Type*} (P Q : ι → Type*) : ((i : ι) × P i) ⊕ ((i : ι) × Q i) → ι :=
   Sum.elim Sigma.fst Sigma.fst
 
+/-- The label of an interior node $\langle i, a \rangle$ is its subdomain $i$. -/
 @[simp]
 theorem nodeLabel_inl {ι : Type*} (P Q : ι → Type*) (p : (i : ι) × P i) :
     nodeLabel P Q (Sum.inl p) = p.1 := rfl
 
+/-- The label of an interface node $\langle i, a \rangle$ is its subdomain $i$. -/
 @[simp]
 theorem nodeLabel_inr {ι : Type*} (P Q : ι → Type*) (p : (i : ι) × Q i) :
     nodeLabel P Q (Sum.inr p) = p.1 := rfl
 
-/-- **§14.2.3, (14.8)–(14.10)**: a vertex-based partitioning into the subdomains `ι`, subdomain `i`
-owning the interior nodes `P i` and the interface nodes `Q i`.
+/-- **Section 14.2.3** of [saad2003iterative], equations (14.8)–(14.10). A **vertex-based
+partitioning** into the subdomains $i \in \iota$, where subdomain $i$ owns the interior nodes
+$P_i$ and the interface nodes $Q_i$, consists of the four blocks of (14.9): for each $i$, the
+couplings $B_i$ (interior–interior), $E_i$ (interface to interior) and $F_i$ (interior to
+interface) of subdomain $i$, and one matrix $C$ that holds all interface–interface couplings.
+The diagonal block $(i, i)$ of $C$ is $C_i$, and its block $(i, j)$ is $E_{ij}$ of (14.10).
 
-The data are the four blocks of (14.9): `B i`, `E i`, `F i` are the interior–interior,
-interior–interface and interface–interior couplings of subdomain `i`, and the single matrix `C`
-carries all interface–interface couplings at once, its diagonal block being Saad's `C_i` and its
-`(i, j)` block his `E_ij` of (14.10).
-
-Nothing further is assumed, because (14.10) is what the shape of this data says: with the nodes
-listed interiors first and interfaces last, as in (14.2), the interior rows and columns of the
-global matrix are block diagonal over the subdomains, which is exactly the statement that for
-`i ≠ j` the block `A_ij` of (14.8) is zero outside its interface–interface corner. -/
+No further condition is assumed, because (14.10) is what the shape of these data says. With the
+nodes listed interiors first and interfaces last, as in (14.2), the interior rows and columns of
+the global matrix are block diagonal over the subdomains. This is exactly the statement that for
+$i \ne j$ the block $A_{ij}$ of (14.8) is zero outside its interface–interface corner. -/
 structure VertexPartitioning (𝕜 : Type*) {ι : Type*} (P Q : ι → Type*) where
-  /-- `B_i` of (14.9): the coupling between the interior nodes of subdomain `i`. -/
+  /-- The block $B_i$ of (14.9): the coupling between the interior nodes of subdomain $i$. -/
   B : ∀ i, Matrix (P i) (P i) 𝕜
-  /-- `E_i` of (14.9): the coupling from the interface nodes of subdomain `i` to its interior
-  nodes. -/
+  /-- The block $E_i$ of (14.9): the coupling from the interface nodes of subdomain $i$ to its
+  interior nodes. -/
   E : ∀ i, Matrix (P i) (Q i) 𝕜
-  /-- `F_i` of (14.9): the coupling from the interior nodes of subdomain `i` to its interface
-  nodes. -/
+  /-- The block $F_i$ of (14.9): the coupling from the interior nodes of subdomain $i$ to its
+  interface nodes. -/
   F : ∀ i, Matrix (Q i) (P i) 𝕜
-  /-- The interface matrix: its `(i, i)` block is `C_i` of (14.9) and its `(i, j)` block is `E_ij`
-  of (14.10). -/
+  /-- The interface matrix: its block $(i, i)$ is $C_i$ of (14.9), and its block $(i, j)$ is
+  $E_{ij}$ of (14.10). -/
   C : Matrix ((i : ι) × Q i) ((i : ι) × Q i) 𝕜
 
 variable {𝕜 : Type*} [RCLike 𝕜] {ι : Type*} [Fintype ι] [LinearOrder ι]
@@ -125,7 +189,7 @@ namespace VertexPartitioning
 section Plumbing
 
 omit [Fintype ι] in
-/-- The block diagonal filter does nothing to a block diagonal matrix. -/
+/-- On a block diagonal matrix, the filter that keeps the blocks with $i = j$ changes nothing. -/
 private theorem ite_blockDiagonal' {m' n' : ι → Type*} (M : ∀ i, Matrix (m' i) (n' i) 𝕜)
     {i j : ι} (a : m' i) (b : n' j) :
     (if i = j then blockDiagonal' M ⟨i, a⟩ ⟨j, b⟩ else 0) = blockDiagonal' M ⟨i, a⟩ ⟨j, b⟩ := by
@@ -134,8 +198,8 @@ private theorem ite_blockDiagonal' {m' n' : ι → Type*} (M : ∀ i, Matrix (m'
   · rw [blockDiagonal'_apply_ne _ a b h]; simp
 
 omit [Fintype ι] in
-/-- The strict block-lower filter adds nothing to the block diagonal filter on a block diagonal
-matrix. -/
+/-- On a block diagonal matrix, the filter for the strict block-lower part adds nothing to the
+filter for the block diagonal. -/
 private theorem ite_add_ite_blockDiagonal' {m' n' : ι → Type*} (M : ∀ i, Matrix (m' i) (n' i) 𝕜)
     {i j : ι} (a : m' i) (b : n' j) :
     (if i = j then blockDiagonal' M ⟨i, a⟩ ⟨j, b⟩ else 0)
@@ -149,7 +213,8 @@ private theorem ite_add_ite_blockDiagonal' {m' n' : ι → Type*} (M : ∀ i, Ma
 variable {m' n' : ι → Type*}
 
 omit [Fintype ι] [LinearOrder ι] in
-/-- The interior rows of a block matrix acting on a vector. -/
+/-- The interior rows of $\begin{pmatrix} M_{11} & M_{12} \\ M_{21} & M_{22} \end{pmatrix} w$ are
+$M_{11} w_1 + M_{12} w_2$. -/
 private theorem comp_inl_fromBlocks_mulVec {m n : Type*} [Fintype m] [Fintype n]
     (M₁₁ : Matrix m m 𝕜) (M₁₂ : Matrix m n 𝕜) (M₂₁ : Matrix n m 𝕜) (M₂₂ : Matrix n n 𝕜)
     (w : m ⊕ n → 𝕜) :
@@ -158,7 +223,8 @@ private theorem comp_inl_fromBlocks_mulVec {m n : Type*} [Fintype m] [Fintype n]
   rw [fromBlocks_mulVec]; rfl
 
 omit [Fintype ι] [LinearOrder ι] in
-/-- The interface rows of a block matrix acting on a vector. -/
+/-- The interface rows of $\begin{pmatrix} M_{11} & M_{12} \\ M_{21} & M_{22} \end{pmatrix} w$ are
+$M_{21} w_1 + M_{22} w_2$. -/
 private theorem comp_inr_fromBlocks_mulVec {m n : Type*} [Fintype m] [Fintype n]
     (M₁₁ : Matrix m m 𝕜) (M₁₂ : Matrix m n 𝕜) (M₂₁ : Matrix n m 𝕜) (M₂₂ : Matrix n n 𝕜)
     (w : m ⊕ n → 𝕜) :
@@ -167,7 +233,7 @@ private theorem comp_inr_fromBlocks_mulVec {m n : Type*} [Fintype m] [Fintype n]
   rw [fromBlocks_mulVec]; rfl
 
 omit [Fintype ι] [LinearOrder ι] in
-/-- On a vector with vanishing interior part only the `(2,2)` block of the matrix is seen. -/
+/-- On a vector $(0, v)$ with zero interior part, the interface rows of $Mv$ are $M_{22} v$. -/
 private theorem comp_inr_mulVec_elim_zero {m n : Type*} [Fintype m] [Fintype n]
     (M : Matrix (m ⊕ n) (m ⊕ n) 𝕜) (v : n → 𝕜) :
     (M *ᵥ Sum.elim (0 : m → 𝕜) v) ∘ Sum.inr = M.toBlocks₂₂ *ᵥ v := by
@@ -175,7 +241,8 @@ private theorem comp_inr_mulVec_elim_zero {m n : Type*} [Fintype m] [Fintype n]
   rw [comp_inr_fromBlocks_mulVec, Sum.elim_comp_inl, Sum.elim_comp_inr, mulVec_zero, zero_add]
 
 omit [LinearOrder ι] in
-/-- A block diagonal matrix acts on each block separately. -/
+/-- A block diagonal matrix acts on each block separately: block $i$ of $\operatorname{diag}(M_j) v$
+is $M_i v_i$. -/
 private theorem blockDiagonal'_comp_mulVec [DecidableEq ι] [∀ i, Fintype (n' i)]
     (M : ∀ i, Matrix (m' i) (n' i) 𝕜) (v : ((i : ι) × n' i) → 𝕜) (i : ι) :
     (blockDiagonal' M *ᵥ v) ∘ Sigma.mk i = M i *ᵥ (v ∘ Sigma.mk i) := by
@@ -187,7 +254,7 @@ private theorem blockDiagonal'_comp_mulVec [DecidableEq ι] [∀ i, Fintype (n' 
   · exact Finset.sum_congr rfl fun b _ => by rw [blockDiagonal'_apply_eq]
 
 omit [LinearOrder ι] in
-/-- One block row of a matrix–vector product over a `Sigma` index type. -/
+/-- Block row $i$ of a matrix–vector product over a sigma index type is $\sum_j M_{ij} v_j$. -/
 private theorem comp_mulVec_sigma [∀ i, Fintype (n' i)]
     (M : Matrix ((i : ι) × m' i) ((i : ι) × n' i) 𝕜) (v : ((i : ι) × n' i) → 𝕜) (i : ι) :
     (M *ᵥ v) ∘ Sigma.mk i = ∑ j, M.submatrix (Sigma.mk i) (Sigma.mk j) *ᵥ (v ∘ Sigma.mk j) := by
@@ -197,7 +264,7 @@ private theorem comp_mulVec_sigma [∀ i, Fintype (n' i)]
   rfl
 
 omit [Fintype ι] [LinearOrder ι] in
-/-- Solving `M x + c = d` for `x`. -/
+/-- If $M$ is nonsingular, then $Mx + c = d$ if and only if $x = M^{-1}(d - c)$. -/
 private theorem mulVec_add_eq_iff {m : Type*} [Fintype m] [DecidableEq m] {M : Matrix m m 𝕜}
     (hM : IsUnit M) (x c d : m → 𝕜) : M *ᵥ x + c = d ↔ x = M⁻¹ *ᵥ (d - c) := by
   constructor
@@ -209,45 +276,58 @@ private theorem mulVec_add_eq_iff {m : Type*} [Fintype m] [DecidableEq m] {M : M
 
 end Plumbing
 
-/-! #### The blocks (14.8)–(14.14) -/
+/-! ### The blocks (14.8)–(14.14) -/
 
-/-- **(14.8)**: the global matrix of the partitioning, with the nodes listed interiors first and
-interfaces last as in (14.2).  The `s`-block structure of (14.8) is carried by `nodeLabel`, not by
-the order of the indices; the two differ by a permutation only. -/
+/-- **Equation (14.8)** of [saad2003iterative]. The **global matrix** of a vertex-based
+partitioning, with the nodes listed interiors first and interfaces last as in (14.2):
+$$A = \begin{pmatrix} \operatorname{diag}(B_i) & \operatorname{diag}(E_i) \\
+  \operatorname{diag}(F_i) & C \end{pmatrix}.$$
+
+The block structure of (14.8) by subdomains is carried by `SaadSparse.Chapter14.nodeLabel`, not
+by the order of the indices. The two orders differ by a permutation only. -/
 def globalMatrix : Matrix (((i : ι) × P i) ⊕ ((i : ι) × Q i))
     (((i : ι) × P i) ⊕ ((i : ι) × Q i)) 𝕜 :=
   fromBlocks (blockDiagonal' V.B) (blockDiagonal' V.E) (blockDiagonal' V.F) V.C
 
-/-- **(14.9)**: `C_i`, the local part of the interface matrix, the coupling between the interface
-nodes of subdomain `i`. -/
+/-- **Equation (14.9)** of [saad2003iterative]. The block $C_i$, the local part of the interface
+matrix: the coupling between the interface nodes of subdomain $i$. -/
 def localC (i : ι) : Matrix (Q i) (Q i) 𝕜 := V.C.submatrix (Sigma.mk i) (Sigma.mk i)
 
-/-- **(14.9)**: the local matrix `A_i = [[B_i, E_i], [F_i, C_i]]` of subdomain `i`. -/
+/-- **Equation (14.9)** of [saad2003iterative]. The **local matrix** of subdomain $i$,
+$$A_i = \begin{pmatrix} B_i & E_i \\ F_i & C_i \end{pmatrix}.$$
+-/
 def localMatrix (i : ι) : Matrix (P i ⊕ Q i) (P i ⊕ Q i) 𝕜 :=
   fromBlocks (V.B i) (V.E i) (V.F i) (V.localC i)
 
-/-- **(14.10)**: `E_ij`, the only nonzero block of `A_ij` for `i ≠ j`, the coupling from the
-interface nodes of subdomain `j` to those of subdomain `i`.  At `i = j` it is `localC`, Saad's
-`C_i`. -/
+/-- **Equation (14.10)** of [saad2003iterative]. The block $E_{ij}$ of the interface matrix: the
+coupling from the interface nodes of subdomain $j$ to those of subdomain $i$. For $i \ne j$ it
+is the only nonzero block of $A_{ij}$. For $i = j$ it is $C_i$. -/
 def offDiag (i j : ι) : Matrix (Q i) (Q j) 𝕜 := V.C.submatrix (Sigma.mk i) (Sigma.mk j)
 
-/-- **(14.13)**: the local Schur complement `S_i = C_i - F_i B_i⁻¹ E_i` of subdomain `i`. -/
+/-- **Equation (14.13)** of [saad2003iterative]. The **local Schur complement** of subdomain $i$,
+$$S_i = C_i - F_i B_i^{-1} E_i,$$
+the Schur complement `Matrix.schurComplement` of the local matrix $A_i$. -/
 noncomputable def localSchur (i : ι) : Matrix (Q i) (Q i) 𝕜 := (V.localMatrix i).schurComplement
 
 omit [Fintype ι] [LinearOrder ι] [∀ i, Fintype (Q i)] [∀ i, DecidableEq (Q i)] in
-/-- **(14.13)** unfolded. -/
+/-- **Equation (14.13)** of [saad2003iterative]: the local Schur complement is
+$S_i = C_i - F_i B_i^{-1} E_i$. -/
 theorem localSchur_eq (i : ι) :
     V.localSchur i = V.localC i - V.F i * (V.B i)⁻¹ * V.E i := rfl
 
-/-- **(14.14)**: the Schur complement system, assembled from the local Schur complements on the
-diagonal and the interface-to-interface couplings `E_ij` off it. -/
+/-- **Equation (14.14)** of [saad2003iterative]. The **Schur complement system** of the
+partitioning,
+$$S = C - \operatorname{diag}(F_i B_i^{-1} E_i).$$
+Its diagonal blocks are the local Schur complements $S_i$, and its off-diagonal blocks are the
+interface couplings $E_{ij}$. -/
 noncomputable def schurMatrix : Matrix ((i : ι) × Q i) ((i : ι) × Q i) 𝕜 :=
   V.C - blockDiagonal' fun i => V.F i * (V.B i)⁻¹ * V.E i
 
 omit [∀ i, Fintype (Q i)] [∀ i, DecidableEq (Q i)] in
-/-- The Schur complement of a block matrix whose interior rows and columns are the block diagonals
-of the local blocks: the interior variables decouple, so `F B⁻¹ E` is assembled subdomain by
-subdomain. -/
+/-- Let every $B_i$ be nonsingular, and let $X$ be any interface matrix. Then the Schur complement
+of $\begin{pmatrix} \operatorname{diag}(B_i) & \operatorname{diag}(E_i) \\
+\operatorname{diag}(F_i) & X \end{pmatrix}$ is $X - \operatorname{diag}(F_i B_i^{-1} E_i)$: the
+interior variables decouple, so $F B^{-1} E$ is assembled subdomain by subdomain. -/
 theorem schurComplement_fromBlocks_local (hB : ∀ i, IsUnit (V.B i))
     (X : Matrix ((i : ι) × Q i) ((i : ι) × Q i) 𝕜) :
     (fromBlocks (blockDiagonal' V.B) (blockDiagonal' V.E) (blockDiagonal' V.F) X).schurComplement
@@ -256,14 +336,16 @@ theorem schurComplement_fromBlocks_local (hB : ∀ i, IsUnit (V.B i))
     blockDiagonal'_mul]
 
 omit [∀ i, Fintype (Q i)] [∀ i, DecidableEq (Q i)] in
-/-- **(14.14) is (14.5)**: the assembled matrix `S` is the Schur complement of the global matrix
-with respect to the interior variables. -/
+/-- **Equations (14.5) and (14.14)** of [saad2003iterative]. If every $B_i$ is nonsingular, then the
+Schur complement system $S$ of (14.14) is the Schur complement (14.5) of the global matrix with
+respect to the interior variables. -/
 theorem schurMatrix_eq (hB : ∀ i, IsUnit (V.B i)) :
     V.schurMatrix = V.globalMatrix.schurComplement :=
   (V.schurComplement_fromBlocks_local hB V.C).symm
 
 omit [Fintype ι] [∀ i, Fintype (Q i)] [∀ i, DecidableEq (Q i)] in
-/-- **(14.14)**: the diagonal blocks of `S` are the local Schur complements `S_i`. -/
+/-- **Equation (14.14)** of [saad2003iterative]. The diagonal blocks of the Schur complement system
+$S$ are the local Schur complements $S_i$. -/
 theorem blockDiagPart_schurMatrix :
     blockDiagPart Sigma.fst V.schurMatrix = blockDiagonal' V.localSchur := by
   ext ⟨i, a⟩ ⟨j, b⟩
@@ -274,12 +356,12 @@ theorem blockDiagPart_schurMatrix :
     rfl
   · rw [blockDiagonal'_apply_ne _ _ _ h]
 
-/-! #### Faithfulness of the block structure -/
+/-! ### Faithfulness of the block structure -/
 
 omit [Fintype ι] [∀ i, Fintype (P i)] [∀ i, DecidableEq (P i)] [∀ i, Fintype (Q i)]
   [∀ i, DecidableEq (Q i)] in
-/-- **(14.9)**: the local matrix `A_i` is the diagonal block of the global matrix on the nodes of
-subdomain `i`. -/
+/-- **Equation (14.9)** of [saad2003iterative]. The local matrix $A_i$ is the diagonal block of the
+global matrix on the nodes of subdomain $i$. -/
 theorem submatrix_globalMatrix (i : ι) :
     V.globalMatrix.submatrix (Sum.map (Sigma.mk i) (Sigma.mk i))
         (Sum.map (Sigma.mk i) (Sigma.mk i)) = V.localMatrix i := by
@@ -293,8 +375,9 @@ theorem submatrix_globalMatrix (i : ι) :
 
 omit [Fintype ι] [∀ i, Fintype (P i)] [∀ i, DecidableEq (P i)] [∀ i, Fintype (Q i)]
   [∀ i, DecidableEq (Q i)] in
-/-- **(14.10)**: for `i ≠ j` the block `A_ij` of (14.8) has a single nonzero corner, the
-interface–interface one, whose entries are those of `E_ij`. -/
+/-- **Equation (14.10)** of [saad2003iterative]. Let $i \ne j$. Then the block $A_{ij}$ of the
+global matrix (14.8) is zero in its interior–interior, interior–interface and interface–interior
+corners, and its interface–interface corner is $E_{ij}$. -/
 theorem equation_14_10 {i j : ι} (h : i ≠ j) (a : P i) (b : P j) (c : Q i) (d : Q j) :
     V.globalMatrix (Sum.inl ⟨i, a⟩) (Sum.inl ⟨j, b⟩) = 0
       ∧ V.globalMatrix (Sum.inl ⟨i, a⟩) (Sum.inr ⟨j, d⟩) = 0
@@ -304,8 +387,12 @@ theorem equation_14_10 {i j : ι} (h : i ≠ j) (a : P i) (b : P j) (c : Q i) (d
     blockDiagonal'_apply_ne _ c b h, rfl⟩
 
 omit [∀ i, DecidableEq (P i)] [∀ i, DecidableEq (Q i)] in
-/-- **(14.11)**: the two rows of the global system that are local to subdomain `i`, the interior
-one `B_i x_i + E_i y_i` and the interface one `F_i x_i + C_i y_i + ∑_{j ≠ i} E_ij y_j`. -/
+/-- **Equation (14.11)** of [saad2003iterative]. Let $z = (x, y)$ be a vector on all nodes, with
+$x_i$ and $y_i$ its interior and interface parts on subdomain $i$. Then the two rows of the
+global system that belong to subdomain $i$ are
+$$(Az)_{x,i} = B_i x_i + E_i y_i, \qquad (Az)_{y,i} = F_i x_i + C_i y_i + \sum_{j \ne i} E_{ij}
+  y_j.$$
+-/
 theorem equation_14_11 (z : (((i : ι) × P i) ⊕ ((i : ι) × Q i)) → 𝕜) (i : ι) :
     ((V.globalMatrix *ᵥ z) ∘ Sum.inl) ∘ Sigma.mk i
         = V.B i *ᵥ ((z ∘ Sum.inl) ∘ Sigma.mk i) + V.E i *ᵥ ((z ∘ Sum.inr) ∘ Sigma.mk i)
@@ -325,8 +412,10 @@ theorem equation_14_11 (z : (((i : ι) × P i) ⊕ ((i : ι) × Q i)) → 𝕜) 
     rfl
 
 omit [∀ i, DecidableEq (Q i)] in
-/-- **(14.12)**: the block row of the Schur complement system at subdomain `i`,
-`S_i y_i + ∑_{j ≠ i} E_ij y_j`. -/
+/-- **Equation (14.12)** of [saad2003iterative]. For an interface vector $y$, the block row of the
+Schur complement system at subdomain $i$ is
+$$(Sy)_i = S_i y_i + \sum_{j \ne i} E_{ij} y_j.$$
+-/
 theorem equation_14_12 (y : ((i : ι) × Q i) → 𝕜) (i : ι) :
     (V.schurMatrix *ᵥ y) ∘ Sigma.mk i
       = V.localSchur i *ᵥ (y ∘ Sigma.mk i)
@@ -340,12 +429,13 @@ theorem equation_14_12 (y : ((i : ι) × Q i) → 𝕜) (i : ι) :
       blockDiagonal'_apply_ne _ a b (Ne.symm (Finset.ne_of_mem_erase hj)), sub_zero]
     rfl
 
-/-! #### The two block Gauss–Seidel sweeps -/
+/-! ### The two block Gauss–Seidel sweeps -/
 
 omit [Fintype ι] [∀ i, Fintype (P i)] [∀ i, DecidableEq (P i)] [∀ i, Fintype (Q i)]
   [∀ i, DecidableEq (Q i)] in
-/-- `D`, the block diagonal part of the global matrix for the subdomain blocks: the block diagonal
-of the local matrices `A_i`. -/
+/-- The block diagonal part $D$ of the global matrix for the subdomain blocks is the block diagonal
+matrix of the local matrices $A_i$: its interior blocks are those of $A$, and its interface
+block is the block diagonal part of $C$. -/
 theorem blockDiagPart_globalMatrix :
     blockDiagPart (nodeLabel P Q) V.globalMatrix
       = fromBlocks (blockDiagonal' V.B) (blockDiagonal' V.E) (blockDiagonal' V.F)
@@ -359,22 +449,25 @@ theorem blockDiagPart_globalMatrix :
   · exact ite_blockDiagonal' V.F a b
   · rfl
 
-/-- `D - E`, the block-lower factor of the global matrix for the subdomain blocks; one block
-Gauss–Seidel sweep over the subdomains solves with it. -/
+/-- **Algorithm 14.3** of [saad2003iterative]. The block-lower factor $D - E$ of the global matrix
+for the subdomain blocks: the sum of its block diagonal part and its strict block-lower part for
+the labelling `SaadSparse.Chapter14.nodeLabel`. One block Gauss–Seidel sweep over the subdomains
+solves a system with this matrix. -/
 def globalLower : Matrix (((i : ι) × P i) ⊕ ((i : ι) × Q i))
     (((i : ι) × P i) ⊕ ((i : ι) × Q i)) 𝕜 :=
   blockDiagPart (nodeLabel P Q) V.globalMatrix + blockStrictLower (nodeLabel P Q) V.globalMatrix
 
-/-- `D - E`, the block-lower factor of the Schur complement system (14.14) for the subdomain
-blocks. -/
+/-- **Equation (14.14)** of [saad2003iterative]. The block-lower factor $D - E$ of the Schur
+complement system $S$ for the subdomain blocks: the sum of its block diagonal part and its
+strict block-lower part. -/
 noncomputable def schurLower : Matrix ((i : ι) × Q i) ((i : ι) × Q i) 𝕜 :=
   blockDiagPart Sigma.fst V.schurMatrix + blockStrictLower Sigma.fst V.schurMatrix
 
 omit [Fintype ι] [∀ i, Fintype (P i)] [∀ i, DecidableEq (P i)] [∀ i, Fintype (Q i)]
   [∀ i, DecidableEq (Q i)] in
-/-- The block-lower factor of the global matrix differs from the global matrix in the
-interface–interface corner alone: the interior rows and columns of (14.8) already are block
-diagonal, so the sweep does not touch them. -/
+/-- The block-lower factor of the global matrix differs from the global matrix only in the
+interface–interface corner, where it is the block-lower factor of $C$. The interior rows and
+columns of (14.8) are already block diagonal, so the sweep does not change them. -/
 theorem globalLower_eq :
     V.globalLower = fromBlocks (blockDiagonal' V.B) (blockDiagonal' V.E) (blockDiagonal' V.F)
       (blockDiagPart Sigma.fst V.C + blockStrictLower Sigma.fst V.C) := by
@@ -389,10 +482,12 @@ theorem globalLower_eq :
   · rfl
 
 omit [∀ i, Fintype (Q i)] [∀ i, DecidableEq (Q i)] in
-/-- **The key identity**: the Schur complement of the block-lower factor of the global matrix is
-the block-lower factor of the Schur complement system.  Eliminating the interior variables and
-taking the block-lower triangle commute, which is why a Schwarz sweep on (14.8) and a Gauss–Seidel
-sweep on (14.14) are the same iteration. -/
+/-- Let every $B_i$ be nonsingular. Then the Schur complement of the block-lower factor of the
+global matrix is the block-lower factor of the Schur complement system $S$.
+
+So the elimination of the interior variables commutes with taking the block-lower triangle. This
+is why a Schwarz sweep on (14.8) and a Gauss–Seidel sweep on (14.14) are the same iteration, and
+it is the key identity behind `SaadSparse.Chapter14.theorem_14_2`. -/
 theorem schurComplement_globalLower (hB : ∀ i, IsUnit (V.B i)) :
     V.globalLower.schurComplement = V.schurLower := by
   rw [globalLower_eq, V.schurComplement_fromBlocks_local hB, schurLower, schurMatrix,
@@ -400,52 +495,67 @@ theorem schurComplement_globalLower (hB : ∀ i, IsUnit (V.B i)) :
   abel
 
 omit [∀ i, Fintype (Q i)] [∀ i, DecidableEq (Q i)] in
-/-- The same identity for the block diagonal alone. -/
+/-- Let every $B_i$ be nonsingular. Then the Schur complement of the block diagonal part of the
+global matrix is the block diagonal part of the Schur complement system $S$. -/
 theorem schurComplement_blockDiagPart_globalMatrix (hB : ∀ i, IsUnit (V.B i)) :
     (blockDiagPart (nodeLabel P Q) V.globalMatrix).schurComplement
       = blockDiagPart Sigma.fst V.schurMatrix := by
   rw [blockDiagPart_globalMatrix, V.schurComplement_fromBlocks_local hB, schurMatrix,
     blockDiagPart_sub_blockDiagonal']
 
-/-- **(14.12)**, right-hand side: `g_i - F_i B_i⁻¹ f_i`, assembled over the subdomains. -/
+/-- **Equation (14.12)** of [saad2003iterative], right-hand side. For a right-hand side $b = (f, g)$
+on all nodes, the right-hand side of the Schur complement system is
+$$g' = g - \operatorname{diag}(F_i) \operatorname{diag}(B_i)^{-1} f,$$
+with block $g_i - F_i B_i^{-1} f_i$ at subdomain $i$. -/
 noncomputable def reducedRhs (b : (((i : ι) × P i) ⊕ ((i : ι) × Q i)) → 𝕜) :
     ((i : ι) × Q i) → 𝕜 :=
   b ∘ Sum.inr - (blockDiagonal' V.F * (blockDiagonal' V.B)⁻¹) *ᵥ (b ∘ Sum.inl)
 
-/-- **(14.22)**: an initial guess is *consistent* when its interior part solves the interior
-equations of (14.11) exactly, `B_i x_i + E_i y_i = f_i`; equivalently the interior components of
-the global residual vanish. -/
+/-- **Equation (14.22)** of [saad2003iterative]. An initial guess $z = (x, y)$ is **consistent** for
+the right-hand side $b = (f, g)$ if its interior part solves the interior equations of (14.11)
+exactly, $B_i x_i + E_i y_i = f_i$ for every $i$. Equivalently, the interior components of the
+global residual $b - Az$ vanish. -/
 def IsConsistent (b z : (((i : ι) × P i) ⊕ ((i : ι) × Q i)) → 𝕜) : Prop :=
   (V.globalMatrix *ᵥ z) ∘ Sum.inl = b ∘ Sum.inl
 
-/-- **Algorithm 14.3**, the multiplicative Schwarz sweep of §14.3.1 in matrix form: one block
-Gauss–Seidel sweep on the global matrix, the blocks being the subdomains.  Solving `A_i δ_i = r_i`
-in turn, each from the residual the previous solve left behind, accumulates a correction that
-solves the block-lower system `(D - E) δ = b - A z`; this is
+/-- **Algorithm 14.3** of [saad2003iterative], one multiplicative Schwarz sweep in matrix form. For
+the global matrix $A$, the right-hand side $b$ and the current iterate $z$, the sweep returns
+$$z + (D - E)^{-1} (b - Az),$$
+where $D - E$ is the block-lower factor of $A$ for the subdomain blocks.
+
+The algorithm solves $A_i \delta_i = r_i$ for each subdomain in turn, each time from the
+residual that the previous solve left behind. The accumulated correction solves the block-lower
+system $(D - E) \delta = b - Az$; this is
 `Matrix.blockGaussSeidelSplitting_step_eq_multiplicativeStep`. -/
 noncomputable def schwarzSweep (b z : (((i : ι) × P i) ⊕ ((i : ι) × Q i)) → 𝕜) :
     (((i : ι) × P i) ⊕ ((i : ι) × Q i)) → 𝕜 :=
   z + V.globalLower⁻¹ *ᵥ (b - V.globalMatrix *ᵥ z)
 
-/-- One block Gauss–Seidel sweep on the Schur complement system (14.12), the blocks being the
-interface unknowns `y_i` of the subdomains. -/
+/-- One block Gauss–Seidel sweep on the Schur complement system (14.12), with the interface unknowns
+$y_i$ of the subdomains as blocks: for the right-hand side $g$ and the iterate $y$ it returns
+$y + (D_S - E_S)^{-1} (g - Sy)$, where $D_S - E_S$ is the block-lower factor of $S$. -/
 noncomputable def schurGaussSeidelSweep (g y : ((i : ι) × Q i) → 𝕜) : ((i : ι) × Q i) → 𝕜 :=
   y + V.schurLower⁻¹ *ᵥ (g - V.schurMatrix *ᵥ y)
 
-/-- The sweep of Algorithm 14.3 is the step of the block Gauss–Seidel splitting of the global
-matrix for the subdomain labelling. -/
+/-- **Algorithm 14.3** of [saad2003iterative]. If the block diagonal part of the global matrix is
+nonsingular, then the block-lower factor $D - E$ of the sweep is the matrix $M$ of the block
+Gauss–Seidel splitting `Matrix.blockGaussSeidelSplitting` of the global matrix for the subdomain
+labelling. -/
 theorem globalLower_eq_blockGaussSeidelSplitting
     (h : IsUnit (blockDiagPart (nodeLabel P Q) V.globalMatrix)) :
     V.globalLower = (blockGaussSeidelSplitting (nodeLabel P Q) V.globalMatrix h).m := rfl
 
-/-- The sweep on (14.12) is the step of the block Gauss–Seidel splitting of the Schur complement
-system for the subdomain labelling. -/
+/-- **Equation (14.12)** of [saad2003iterative]. If the block diagonal part of $S$ is nonsingular,
+then the block-lower factor $D_S - E_S$ of the Schur complement system is the matrix $M$ of the
+block Gauss–Seidel splitting `Matrix.blockGaussSeidelSplitting` of $S$ for the subdomain
+labelling. -/
 theorem schurLower_eq_blockGaussSeidelSplitting
     (h : IsUnit (blockDiagPart Sigma.fst V.schurMatrix)) :
     V.schurLower = (blockGaussSeidelSplitting Sigma.fst V.schurMatrix h).m := rfl
 
 omit [∀ i, Fintype (Q i)] [∀ i, DecidableEq (Q i)] in
-/-- **(14.12)**, right-hand side, read on subdomain `i`. -/
+/-- **Equation (14.12)** of [saad2003iterative], right-hand side on subdomain $i$. If every $B_i$ is
+nonsingular, then block $i$ of the reduced right-hand side is $g_i - F_i B_i^{-1} f_i$. -/
 theorem reducedRhs_comp (hB : ∀ i, IsUnit (V.B i))
     (b : (((i : ι) × P i) ⊕ ((i : ι) × Q i)) → 𝕜) (i : ι) :
     V.reducedRhs b ∘ Sigma.mk i
@@ -459,7 +569,8 @@ theorem reducedRhs_comp (hB : ∀ i, IsUnit (V.B i))
   rw [blockDiagonal'_comp_mulVec]
 
 omit [∀ i, DecidableEq (P i)] [∀ i, DecidableEq (Q i)] in
-/-- Consistency is the first line of (14.11) holding on every subdomain. -/
+/-- An initial guess $z = (x, y)$ is consistent if and only if $B_i x_i + E_i y_i = f_i$ for every
+subdomain $i$, the first line of (14.11). -/
 theorem isConsistent_iff_local (b z : (((i : ι) × P i) ⊕ ((i : ι) × Q i)) → 𝕜) :
     V.IsConsistent b z ↔ ∀ i, V.B i *ᵥ ((z ∘ Sum.inl) ∘ Sigma.mk i)
         + V.E i *ᵥ ((z ∘ Sum.inr) ∘ Sigma.mk i) = (b ∘ Sum.inl) ∘ Sigma.mk i := by
@@ -472,8 +583,10 @@ theorem isConsistent_iff_local (b z : (((i : ι) × P i) ⊕ ((i : ι) × Q i)) 
     exact congrFun (((V.equation_14_11 z i).1).trans (h i)) a
 
 omit [∀ i, DecidableEq (Q i)] in
-/-- **(14.22)**: consistency says exactly that `x_i^(0) = B_i⁻¹ (f_i - E_i y_i^(0))` on every
-subdomain, which is the hypothesis of Theorem 14.2. -/
+/-- **Equation (14.22)** of [saad2003iterative]. Let every $B_i$ be nonsingular. Then an initial
+guess $z = (x, y)$ is consistent if and only if
+$$x_i = B_i^{-1} (f_i - E_i y_i)$$
+for every subdomain $i$. This is the hypothesis of Theorem 14.2. -/
 theorem isConsistent_iff (hB : ∀ i, IsUnit (V.B i))
     (b z : (((i : ι) × P i) ⊕ ((i : ι) × Q i)) → 𝕜) :
     V.IsConsistent b z ↔ ∀ i, (z ∘ Sum.inl) ∘ Sigma.mk i
@@ -481,16 +594,16 @@ theorem isConsistent_iff (hB : ∀ i, IsUnit (V.B i))
   rw [isConsistent_iff_local V b z]
   exact forall_congr' fun i => mulVec_add_eq_iff (hB i) _ _ _
 
-/-! #### Theorem 14.2 -/
+/-! ### Theorem 14.2 -/
 
-/-- The Schur complement system is nonsingular in the block-lower triangle as soon as every local
-Schur complement `S_i` is. -/
+/-- If every local Schur complement $S_i$ is nonsingular, then the block-lower factor of the Schur
+complement system is nonsingular. -/
 theorem isUnit_schurLower (hS : ∀ i, IsUnit (V.localSchur i)) : IsUnit V.schurLower :=
   isUnit_blockDiagPart_add_blockStrictLower
     (by rw [blockDiagPart_schurMatrix]; exact isUnit_blockDiagonal' _ hS)
 
-/-- The block-lower factor of the global matrix is nonsingular as soon as every `B_i` and every
-local Schur complement `S_i` is: this is Proposition 14.1 (1) applied to it. -/
+/-- If every $B_i$ and every local Schur complement $S_i$ is nonsingular, then the block-lower
+factor of the global matrix is nonsingular. The proof applies Proposition 14.1(1). -/
 theorem isUnit_globalLower (hB : ∀ i, IsUnit (V.B i)) (hS : ∀ i, IsUnit (V.localSchur i)) :
     IsUnit V.globalLower := by
   refine isUnit_of_isUnit_schurComplement ?_ ?_
@@ -499,8 +612,9 @@ theorem isUnit_globalLower (hB : ∀ i, IsUnit (V.B i)) (hS : ∀ i, IsUnit (V.l
   · rw [schurComplement_globalLower V hB]
     exact isUnit_schurLower V hS
 
-/-- Every local matrix `A_i` is nonsingular as soon as every `B_i` and every `S_i` is, which is
-what makes the subdomain solves of Algorithm 14.3 well posed. -/
+/-- If every $B_i$ and every local Schur complement $S_i$ is nonsingular, then the block diagonal
+part of the global matrix, the block diagonal matrix of the local matrices $A_i$, is
+nonsingular. This makes the subdomain solves of Algorithm 14.3 well posed. -/
 theorem isUnit_blockDiagPart_globalMatrix (hB : ∀ i, IsUnit (V.B i))
     (hS : ∀ i, IsUnit (V.localSchur i)) :
     IsUnit (blockDiagPart (nodeLabel P Q) V.globalMatrix) := by
@@ -511,10 +625,13 @@ theorem isUnit_blockDiagPart_globalMatrix (hB : ∀ i, IsUnit (V.B i))
     exact isUnit_blockDiagonal' _ hS
 
 omit [∀ i, DecidableEq (Q i)] in
-/-- **The first half of the proof of Theorem 14.2**: for a consistent iterate the interface
-components of the global residual are the residual of the Schur complement system (14.12) at the
-same `y`.  Substituting `x_i = B_i⁻¹ (f_i - E_i y_i)` into `g_i - F_i x_i - C_i y_i - ∑ E_ij y_j`
-turns `C_i` into `S_i` and `g_i` into `g_i - F_i B_i⁻¹ f_i`. -/
+/-- **Theorem 14.2** of [saad2003iterative], first half of the proof. Let every $B_i$ be
+nonsingular, and let $z = (x, y)$ be consistent for $b = (f, g)$. Then the interface components
+of the global residual are the residual of the Schur complement system (14.12) at the same $y$:
+$$(b - Az)_y = g' - S y.$$
+
+The substitution of $x_i = B_i^{-1}(f_i - E_i y_i)$ into $g_i - F_i x_i - C_i y_i - \sum_{j \ne
+i} E_{ij} y_j$ turns $C_i$ into $S_i$ and $g_i$ into $g_i - F_i B_i^{-1} f_i$. -/
 theorem residual_comp_inr (hB : ∀ i, IsUnit (V.B i))
     {b z : (((i : ι) × P i) ⊕ ((i : ι) × Q i)) → 𝕜} (hc : V.IsConsistent b z) :
     (b - V.globalMatrix *ᵥ z) ∘ Sum.inr
@@ -539,11 +656,15 @@ theorem residual_comp_inr (hB : ∀ i, IsUnit (V.B i))
     Matrix.sub_mulVec]
   abel
 
-/-- **The second half of the proof of Theorem 14.2**: one sweep of Algorithm 14.3 started from a
-consistent iterate moves the interface unknowns exactly as one block Gauss–Seidel sweep on the
-Schur complement system does.  With `r_{x,i} = 0` the subdomain solve `A_i δ_i = (0, r_{y,i})`
-returns `δ_{y,i} = S_i⁻¹ r_{y,i}` by (14.7); assembled over the subdomains that is the statement
-that the `(2,2)` block of `(D - E)⁻¹` is the inverse of the Schur complement of `D - E`. -/
+/-- **Theorem 14.2** of [saad2003iterative], second half of the proof. Let every $B_i$ and every
+$S_i$ be nonsingular, and let $z = (x, y)$ be consistent for $b$. Then the interface part of one
+sweep of Algorithm 14.3 from $z$ is one block Gauss–Seidel sweep on the Schur complement system
+$Sy = g'$ from $y$.
+
+When the interior residuals $r_{x,i}$ vanish, the subdomain solve $A_i \delta_i = (0, r_{y,i})$
+returns $\delta_{y,i} = S_i^{-1} r_{y,i}$ by (14.7). Assembled over the subdomains, this is the
+statement that the $(2,2)$ block of $(D - E)^{-1}$ is the inverse of the Schur complement of
+$D - E$. -/
 theorem comp_inr_schwarzSweep (hB : ∀ i, IsUnit (V.B i)) (hS : ∀ i, IsUnit (V.localSchur i))
     {b z : (((i : ι) × P i) ⊕ ((i : ι) × Q i)) → 𝕜} (hc : V.IsConsistent b z) :
     (V.schwarzSweep b z) ∘ Sum.inr
@@ -565,10 +686,14 @@ theorem comp_inr_schwarzSweep (hB : ∀ i, IsUnit (V.B i)) (hS : ∀ i, IsUnit (
   change z ∘ Sum.inr + (V.globalLower⁻¹ *ᵥ (b - V.globalMatrix *ᵥ z)) ∘ Sum.inr = _
   rw [hstep, residual_comp_inr V hB hc, schurGaussSeidelSweep]
 
-/-- **Consistency is an invariant of Algorithm 14.3**: the sweep changes the residual only in its
-interface components, since the interior rows of the global matrix and of its block-lower factor
-agree.  This is Saad's "because only the `y` components of the residual vector are modified, this
-property remains valid throughout the iterative process". -/
+/-- **Theorem 14.2** of [saad2003iterative], invariance of consistency. Let every $B_i$ and every
+$S_i$ be nonsingular. If $z$ is consistent for $b$, then so is the result of one sweep of
+Algorithm 14.3 from $z$.
+
+The sweep changes the residual only in its interface components, since the interior rows of the
+global matrix and of its block-lower factor agree. This is the book's "because only the $y$
+components of the residual vector are modified, this property remains valid throughout the
+iterative process". -/
 theorem isConsistent_schwarzSweep (hB : ∀ i, IsUnit (V.B i)) (hS : ∀ i, IsUnit (V.localSchur i))
     {b z : (((i : ι) × P i) ⊕ ((i : ι) × Q i)) → 𝕜} (hc : V.IsConsistent b z) :
     V.IsConsistent b (V.schwarzSweep b z) := by
@@ -587,14 +712,17 @@ theorem isConsistent_schwarzSweep (hB : ∀ i, IsUnit (V.B i)) (hS : ∀ i, IsUn
 
 end VertexPartitioning
 
-/-- **Theorem 14.2** (Chan and Goovaerts): if the initial guess of the multiplicative Schwarz
-procedure is consistent, that is `x_i^(0) = B_i⁻¹ (f_i - E_i y_i^(0))` of (14.22), then the `y`
-iterates produced by Algorithm 14.3 are identical to those of a Gauss–Seidel sweep applied to the
-Schur complement system (14.12).
+/-- **Theorem 14.2** of [saad2003iterative] (Chan and Goovaerts). Let $A$ be the global matrix of a
+vertex-based partitioning (14.8), with every $B_i$ and every local Schur complement $S_i$
+nonsingular. Let the initial guess $z = (x^{(0)}, y^{(0)})$ be consistent for $b = (f, g)$, that
+is $x_i^{(0)} = B_i^{-1} (f_i - E_i y_i^{(0)})$ (14.22). Then for every $k \ge 0$, the interface
+part of the $k$-th iterate of the multiplicative Schwarz procedure (Algorithm 14.3) is the
+$k$-th iterate of the block Gauss–Seidel method applied to the Schur complement system (14.12)
+$Sy = g'$ from $y^{(0)}$.
 
-Both hypotheses are the nonsingularity that makes the two iterations defined: every `B_i` so that
-the interior variables can be eliminated, and every local Schur complement `S_i` so that the
-diagonal blocks of (14.14) can be solved with. -/
+The two hypotheses are the nonsingularity that makes the two iterations defined: every $B_i$, so
+that the interior variables can be eliminated, and every $S_i$, so that the diagonal blocks of
+(14.14) can be solved with. -/
 theorem theorem_14_2 (hB : ∀ i, IsUnit (V.B i)) (hS : ∀ i, IsUnit (V.localSchur i))
     {b z : (((i : ι) × P i) ⊕ ((i : ι) × Q i)) → 𝕜} (hc : V.IsConsistent b z) (k : ℕ) :
     ((V.schwarzSweep b)^[k] z) ∘ Sum.inr
@@ -610,78 +738,94 @@ end VertexBased
 
 variable {n : ℕ}
 
-/-! ### §14.3.1: the restriction matrices and the subdomain spaces
+/-!
+### Section 14.3.1: The restriction matrices and the subdomain spaces
 
-Saad introduces `V_i = [e_j : j ∈ S_i]` and `A_i = V_iᵀ A V_i` in §12.2, three chapters earlier,
-and §14.3.1 is the same objects under the names `R_i = V_iᵀ` and `A_i`.  They are therefore
-`SaadSparse.Chapter12.restrictSubset`, `subdomainSpace`, `localMatrix`, `subdomainInverse` and
-`subdomainProjector` of `Chapter12/Section02.lean`, opened here rather than named again; the
-subdomain solve `T_i` of (14.31) is `Chapter12.subdomainInverse` and the projector `P_i` of
-(14.24) is `Chapter12.subdomainProjector`. -/
+The book introduces $V_i = [e_j : j \in S_i]$ and $A_i = V_i^T A V_i$ in Section 12.2, and Section
+14.3.1 uses the same objects under the names $R_i = V_i^T$ and $A_i$. They are therefore
+`SaadSparse.Chapter12.restrictSubset`, `SaadSparse.Chapter12.subdomainSpace`,
+`SaadSparse.Chapter12.localMatrix`, `SaadSparse.Chapter12.subdomainInverse` and
+`SaadSparse.Chapter12.subdomainProjector`, opened here and not defined again. The subdomain solve
+$T_i$ of (14.31) is `SaadSparse.Chapter12.subdomainInverse`, and the projector $P_i$ of (14.24) is
+`SaadSparse.Chapter12.subdomainProjector`.
+-/
 
 open Chapter12
 
 variable {𝕜 : Type*} [RCLike 𝕜] {A : Matrix (Fin n) (Fin n) 𝕜}
 
-/-! ### §14.3.2–14.3.3: the multiplicative and additive procedures -/
+/-! ### Sections 14.3.2 and 14.3.3: The multiplicative and additive procedures -/
 
 section Procedures
 
 variable (A : Matrix (Fin n) (Fin n) 𝕜) (S : ℕ → Finset (Fin n))
 
-/-- **(14.25)**, the multiplicative Schwarz procedure: sweeping over the subdomains
-`S 0, …, S (i-1)` in order, each correction `x ← x + R_jᵀ A_j⁻¹ R_j (b - A x)` being computed
-from the iterate the previous one produced. -/
+/-- **Equation (14.25)** of [saad2003iterative], the **multiplicative Schwarz procedure**. For a
+matrix $A \in \mathbb{K}^{n \times n}$, subdomains $S_0, S_1, \dots$, a right-hand side $b$ and
+a starting vector $x$, the sweep over the subdomains $S_0, \dots, S_{i-1}$ in order is defined
+by
+$$x^{(0)} = x, \qquad x^{(j+1)} = x^{(j)} + T_j (b - A x^{(j)}),$$
+where $T_j = R_j^T A_j^{-1} R_j$. Each correction is computed from the iterate that the previous
+one produced. -/
 noncomputable def multiplicativeSweep (b : EuclideanSpace 𝕜 (Fin n)) :
     ℕ → EuclideanSpace 𝕜 (Fin n) → EuclideanSpace 𝕜 (Fin n)
   | 0, x => x
   | i + 1, x => multiplicativeSweep b i x +
       (subdomainInverse A (S i) ⬝ (b - (A ⬝ multiplicativeSweep b i x)))
 
-/-- A sweep over no subdomains changes nothing. -/
+/-- A sweep over no subdomains does not change the iterate. -/
 @[simp]
 theorem multiplicativeSweep_zero (b x : EuclideanSpace 𝕜 (Fin n)) :
     multiplicativeSweep A S b 0 x = x := rfl
 
-/-- One more subdomain adds one more correction, computed from the current iterate. -/
+/-- One more subdomain adds one more correction $T_i (b - A x^{(i)})$, computed from the current
+iterate. -/
 theorem multiplicativeSweep_succ (b : EuclideanSpace 𝕜 (Fin n)) (i : ℕ)
     (x : EuclideanSpace 𝕜 (Fin n)) :
     multiplicativeSweep A S b (i + 1) x = multiplicativeSweep A S b i x +
       (subdomainInverse A (S i) ⬝ (b - (A ⬝ multiplicativeSweep A S b i x))) := rfl
 
-/-- **§14.3.3**, the additive Schwarz procedure: all `s` corrections are computed from the same
-iterate and added at once, `x ← x + ∑_{i<s} T_i (b - A x)`. -/
+/-- **Section 14.3.3** of [saad2003iterative], the **additive Schwarz procedure**. All $s$
+corrections are computed from the same iterate and added at once:
+$$x \leftarrow x + \sum_{i < s} T_i (b - Ax).$$
+-/
 noncomputable def additiveSweep (s : ℕ) (b x : EuclideanSpace 𝕜 (Fin n)) :
     EuclideanSpace 𝕜 (Fin n) :=
   x + ∑ i ∈ Finset.range s, (subdomainInverse A (S i) ⬝ (b - (A ⬝ x)))
 
-/-- **(14.26)**: the error propagation operator `Q_s = (I - P_{s-1}) ⋯ (I - P_0)` of one
-multiplicative Schwarz sweep. -/
+/-- **Equation (14.26)** of [saad2003iterative]. The **error propagation operator** of one
+multiplicative Schwarz sweep over $S_0, \dots, S_{s-1}$,
+$$Q_s = (I - P_{s-1}) \cdots (I - P_0),$$
+where $P_i = T_i A$. The empty product $Q_0$ is $I$. -/
 noncomputable def Q_s : ℕ → Matrix (Fin n) (Fin n) 𝕜
   | 0 => 1
   | i + 1 => (1 - subdomainProjector A (S i)) * Q_s i
 
-/-- A sweep over no subdomains propagates the error unchanged. -/
+/-- The error propagation operator of a sweep over no subdomains is $Q_0 = I$. -/
 @[simp]
 theorem Q_s_zero : Q_s A S 0 = 1 := rfl
 
-/-- One more subdomain composes one more factor `1 - P_i` on the left. -/
+/-- One more subdomain composes one more factor on the left: $Q_{i+1} = (I - P_i) Q_i$. -/
 theorem Q_s_succ (i : ℕ) :
     Q_s A S (i + 1) = (1 - subdomainProjector A (S i)) * Q_s A S i := rfl
 
-/-- **(14.37)**: the additive Schwarz operator `A_J = ∑_{i<s} P_i`. -/
+/-- **Equation (14.37)** of [saad2003iterative]. The **additive Schwarz operator**
+$$A_J = \sum_{i < s} P_i.$$
+-/
 noncomputable def A_J (s : ℕ) : Matrix (Fin n) (Fin n) 𝕜 :=
   ∑ i ∈ Finset.range s, subdomainProjector A (S i)
 
-/-- The additive Schwarz preconditioner `M⁻¹ = ∑ T_i` satisfies `M⁻¹ A = A_J`. -/
+/-- The additive Schwarz preconditioner $M^{-1} = \sum_{i < s} T_i$ satisfies $M^{-1} A = A_J$. -/
 theorem sum_subdomainInverse_mul (s : ℕ) :
     (∑ i ∈ Finset.range s, subdomainInverse A (S i)) * A = A_J A S s := by
   rw [A_J, Finset.sum_mul]
   exact Finset.sum_congr rfl fun i _ => (subdomainProjector_eq_mul A (S i)).symm
 
-/-- **(14.26)**: `Q_s` is the error propagation operator of the multiplicative sweep — sweeping
-over `S 0, …, S (s-1)` multiplies the error by `Q_s`.  No hypothesis on `A` is needed: this is
-the algebra of the corrections, not their optimality. -/
+/-- **Equation (14.26)** of [saad2003iterative], meaning of $Q_s$. Let $A x_* = b$. Then for every
+starting vector $x$, the error after a multiplicative sweep over $S_0, \dots, S_{s-1}$ is
+$$x_* - x^{(s)} = Q_s (x_* - x).$$
+
+No hypothesis on $A$ is needed: this is the algebra of the corrections, not their optimality. -/
 theorem error_multiplicativeSweep {b xstar : EuclideanSpace 𝕜 (Fin n)}
     (hstar : (A ⬝ xstar) = b) (s : ℕ) (x : EuclideanSpace 𝕜 (Fin n)) :
     xstar - multiplicativeSweep A S b s x = (Q_s A S s ⬝ (xstar - x)) := by
@@ -698,11 +842,14 @@ theorem error_multiplicativeSweep {b xstar : EuclideanSpace 𝕜 (Fin n)}
         abel
       rw [hstep, ih, Q_s_succ, Matrix.toLpLin_mul_same, LinearMap.comp_apply]
 
-/-- **Proposition 14.3**: one multiplicative Schwarz sweep is one step of the fixed-point
-iteration `x ← x + M⁻¹(b - A x)` for the preconditioned system, with `M⁻¹ = (I - Q_s) A⁻¹`
-(14.28) and hence `M⁻¹ A = I - Q_s` (14.27); and one additive Schwarz step is the same iteration
-with `M⁻¹ = ∑ T_i`, whose preconditioned operator `M⁻¹ A` is the additive Schwarz operator
-`A_J` of (14.37). -/
+/-- **Proposition 14.3** of [saad2003iterative]. Let $A$ be Hermitian positive definite and
+$A x_* = b$. Then for every $s$ and every $x$:
+
+* one multiplicative Schwarz sweep is one step of the fixed-point iteration
+  $x \leftarrow x + M^{-1}(b - Ax)$ with $M^{-1} = (I - Q_s) A^{-1}$ (14.28), so that
+  $M^{-1} A = I - Q_s$ (14.27);
+* one additive Schwarz step is the same iteration with $M^{-1} = \sum_{i < s} T_i$;
+* this $M^{-1}$ satisfies $M^{-1} A = A_J$, the additive Schwarz operator (14.37). -/
 theorem proposition_14_3 (hA : A.PosDef) {b xstar : EuclideanSpace 𝕜 (Fin n)}
     (hstar : (A ⬝ xstar) = b) (s : ℕ) (x : EuclideanSpace 𝕜 (Fin n)) :
     multiplicativeSweep A S b s x = x + (((1 - Q_s A S s) * A⁻¹) ⬝ (b - (A ⬝ x)))
@@ -721,13 +868,15 @@ theorem proposition_14_3 (hA : A.PosDef) {b xstar : EuclideanSpace 𝕜 (Fin n)}
 
 end Procedures
 
-/-! ### §14.3.2: Lemma 14.4, the recurrences of Algorithms 14.4 and 14.5 -/
+/-! ### Section 14.3.2: Lemma 14.4, the recurrences of Algorithms 14.4 and 14.5 -/
 
 section Lemma144
 
 variable (A : Matrix (Fin n) (Fin n) 𝕜) (S : ℕ → Finset (Fin n))
 
-/-- **(14.35)**: what a multiplicative sweep adds to the iterate is `∑_{i<s} P_i Q_i`. -/
+/-- **Equation (14.35)** of [saad2003iterative]. What a multiplicative sweep adds to the iterate is
+$$I - Q_s = \sum_{j < s} P_j Q_j.$$
+-/
 theorem one_sub_Q_s_eq_sum (s : ℕ) :
     1 - Q_s A S s = ∑ j ∈ Finset.range s, subdomainProjector A (S j) * Q_s A S j := by
   induction s with
@@ -736,10 +885,13 @@ theorem one_sub_Q_s_eq_sum (s : ℕ) :
       rw [Q_s_succ, Finset.sum_range_succ, ← ih]
       noncomm_ring
 
-/-- **Lemma 14.4**: with `Z_i = I - Q_i`, `M_i = Z_i A⁻¹` and `T_i = R_iᵀ A_i⁻¹ R_i`, the
-recurrences `Z_{i+1} = Z_i + P_i (I - Z_i)` of (14.32) and `M_{i+1} = M_i + T_i (I - A M_i)` of
-(14.33), together with the expansion (14.35) `I - Q_s = ∑_{j<s} P_j Q_{j}`.  The second
-recurrence is Algorithm 14.5: it applies `M⁻¹` without ever forming `A⁻¹`. -/
+/-- **Lemma 14.4** of [saad2003iterative]. Let $A$ be Hermitian positive definite, and let
+$Z_i = I - Q_i$, $M_i = Z_i A^{-1}$ and $T_i = R_i^T A_i^{-1} R_i$. Then for all $i$ and $s$
+$$Z_{i+1} = Z_i + P_i (I - Z_i), \qquad M_{i+1} = M_i + T_i (I - A M_i), \qquad I - Q_s =
+  \sum_{j < s} P_j Q_j.$$
+
+These are the recurrences (14.32) and (14.33) and the expansion (14.35). The second recurrence
+is Algorithm 14.5: it applies $M^{-1}$ without ever forming $A^{-1}$. -/
 theorem lemma_14_4 (hA : A.PosDef) (i s : ℕ) :
     1 - Q_s A S (i + 1)
         = (1 - Q_s A S i) + subdomainProjector A (S i) * (1 - (1 - Q_s A S i))
@@ -768,7 +920,7 @@ theorem lemma_14_4 (hA : A.PosDef) (i s : ℕ) :
 
 end Lemma144
 
-/-! ### §14.3.4: the convergence theory -/
+/-! ### Section 14.3.4: The convergence theory -/
 
 section Convergence
 
@@ -776,12 +928,11 @@ variable {A : Matrix (Fin n) (Fin n) 𝕜} (hA : A.PosDef) (S : ℕ → Finset (
 
 include hA
 
-/-- The energy space of `A`: the same vectors, carrying the inner product `(x, y)_A`. -/
+/-- The energy space of $A$: the same vectors, with the inner product $(x, y)_A$. -/
 private noncomputable abbrev energySpaceType : Type _ :=
   WithEnergy (Matrix.toEuclideanLin A) (isSymmetricCoercive_toEuclideanLin hA)
 
-/-- The subdomain spaces read in the energy inner product, the family the abstract Schwarz
-theory is stated over. -/
+/-- The subdomain spaces as subspaces of the energy space of $A$. -/
 private noncomputable abbrev energySpace (i : ℕ) : Submodule 𝕜 (energySpaceType hA) :=
   WithEnergy.submoduleMap (Matrix.toEuclideanLin A) (isSymmetricCoercive_toEuclideanLin hA)
     (subdomainSpace 𝕜 (S i))
@@ -792,7 +943,7 @@ private theorem energyNorm_eq_norm_equiv (x : EuclideanSpace 𝕜 (Fin n)) :
           (isSymmetricCoercive_toEuclideanLin hA) x‖ :=
   (WithEnergy.norm_equiv _ _ x).symm
 
-/-- The bridge: `P_i` read in the energy space is the orthogonal projector onto `V_i`. -/
+/-- In the energy space, $P_i$ is the orthogonal projector onto the subdomain space $V_i$. -/
 private theorem equiv_subdomainProjector (i : ℕ) (x : EuclideanSpace 𝕜 (Fin n)) :
     WithEnergy.equiv (Matrix.toEuclideanLin A) (isSymmetricCoercive_toEuclideanLin hA)
         (subdomainProjector A (S i) ⬝ x)
@@ -801,7 +952,7 @@ private theorem equiv_subdomainProjector (i : ℕ) (x : EuclideanSpace 𝕜 (Fin
   rw [subdomainProjector_eq_energyProjection hA]
   exact Schwarz.equiv_energyProjection _ _ _ x
 
-/-- The bridge: `Q_s` read in the energy space is `Schwarz.errorOp`. -/
+/-- In the energy space, $Q_s$ is the error operator `Schwarz.errorOp`. -/
 private theorem equiv_Q_s (s : ℕ) (x : EuclideanSpace 𝕜 (Fin n)) :
     WithEnergy.equiv (Matrix.toEuclideanLin A) (isSymmetricCoercive_toEuclideanLin hA)
         (Q_s A S s ⬝ x)
@@ -815,7 +966,7 @@ private theorem equiv_Q_s (s : ℕ) (x : EuclideanSpace 𝕜 (Fin n)) :
       rw [Q_s_succ, Matrix.toLpLin_mul_same, LinearMap.comp_apply, toEuclideanLin_one_sub_apply,
         map_sub, equiv_subdomainProjector hA S, ih, Schwarz.errorOp_succ_apply]
 
-/-- The bridge: `A_J` read in the energy space is `Schwarz.additiveOperator`. -/
+/-- In the energy space, $A_J$ is the additive Schwarz operator `Schwarz.additiveOperator`. -/
 private theorem equiv_A_J (s : ℕ) (x : EuclideanSpace 𝕜 (Fin n)) :
     WithEnergy.equiv (Matrix.toEuclideanLin A) (isSymmetricCoercive_toEuclideanLin hA)
         (A_J A S s ⬝ x)
@@ -827,7 +978,8 @@ private theorem equiv_A_J (s : ℕ) (x : EuclideanSpace 𝕜 (Fin n)) :
   exact Finset.sum_congr rfl fun i _ => equiv_subdomainProjector hA S i x
 
 omit hA in
-/-- Eigenvalues of a symmetric operator whose quadratic form lies in `[a, b]`. -/
+/-- If $T$ is symmetric and $a \|u\|^2 \le \operatorname{Re}(Tu, u) \le b \|u\|^2$ for all $u$, then
+every eigenvalue $\mu$ of $T$ satisfies $a \le \operatorname{Re} \mu \le b$. -/
 private theorem re_mem_Icc_of_hasEigenvalue {H : Type*} [NormedAddCommGroup H]
     [InnerProductSpace 𝕜 H] {T : H →ₗ[𝕜] H} {a b : ℝ} (hsym : T.IsSymmetric)
     (hlo : ∀ u, a * ‖u‖ ^ 2 ≤ RCLike.re (inner 𝕜 (T u) u))
@@ -835,8 +987,8 @@ private theorem re_mem_Icc_of_hasEigenvalue {H : Type*} [NormedAddCommGroup H]
     (hμ : Module.End.HasEigenvalue T μ) : RCLike.re μ ∈ Set.Icc a b :=
   LinearMap.IsSymmetricBoundedBy.re_mem_Icc_of_hasEigenvalue ⟨hsym, hlo, hhi⟩ hμ
 
-/-- An eigenvalue of `A_J` is an eigenvalue of the additive Schwarz operator of the energy
-space: the two are conjugate by `WithEnergy.equiv`. -/
+/-- Every eigenvalue of $A_J$ is an eigenvalue of the additive Schwarz operator of the energy space,
+since the two are conjugate by `WithEnergy.equiv`. -/
 private theorem hasEigenvalue_additiveOperator (s : ℕ) {μ : 𝕜}
     (hμ : Module.End.HasEigenvalue (Matrix.toEuclideanLin (A_J A S s)) μ) :
     Module.End.HasEigenvalue
@@ -850,10 +1002,12 @@ private theorem hasEigenvalue_additiveOperator (s : ℕ) {μ : 𝕜}
   · exact fun h => hx0 ((WithEnergy.equiv (Matrix.toEuclideanLin A)
       (isSymmetricCoercive_toEuclideanLin hA)).map_eq_zero_iff.1 h)
 
-/-! #### Theorem 14.5 and Theorem 14.6: the largest eigenvalue of `A_J` -/
+/-! ### Theorem 14.5 and Theorem 14.6: The largest eigenvalue of $A_J$ -/
 
-/-- **Theorem 14.5** in quadratic-form language: `(A_J u, u)_A ≤ s ‖u‖_A²`, since each `P_i` has
-`A`-norm one. -/
+/-- **Theorem 14.5** of [saad2003iterative], quadratic-form version. Let $A$ be Hermitian positive
+definite. Then for every $s$ and every $u$
+$$\operatorname{Re} (A_J u, u)_A \le s \, \|u\|_A^2,$$
+since each $P_i$ has $A$-norm at most one. -/
 theorem re_energyInner_A_J_le (s : ℕ) (u : EuclideanSpace 𝕜 (Fin n)) :
     RCLike.re (energyInner (Matrix.toEuclideanLin A) (A_J A S s ⬝ u) u)
       ≤ s * energyNorm (Matrix.toEuclideanLin A) u ^ 2 := by
@@ -861,15 +1015,17 @@ theorem re_energyInner_A_J_le (s : ℕ) (u : EuclideanSpace 𝕜 (Fin n)) :
       (isSymmetricCoercive_toEuclideanLin hA), equiv_A_J hA S, energyNorm_eq_norm_equiv hA]
   exact Schwarz.re_inner_additiveOperator_le (energySpace hA S) s _
 
-/-- The additive Schwarz operator is positive semidefinite in the energy inner product. -/
+/-- Let $A$ be Hermitian positive definite. Then the additive Schwarz operator is positive
+semidefinite in the energy inner product: $\operatorname{Re} (A_J u, u)_A \ge 0$ for every $u$. -/
 theorem re_energyInner_A_J_nonneg (s : ℕ) (u : EuclideanSpace 𝕜 (Fin n)) :
     0 ≤ RCLike.re (energyInner (Matrix.toEuclideanLin A) (A_J A S s ⬝ u) u) := by
   rw [← WithEnergy.inner_equiv (Matrix.toEuclideanLin A)
       (isSymmetricCoercive_toEuclideanLin hA), equiv_A_J hA S]
   exact Schwarz.re_inner_additiveOperator_nonneg (energySpace hA S) s _
 
-/-- **(14.37)**: the additive Schwarz operator is self-adjoint for the energy inner product, so
-its eigenvalues are real. -/
+/-- **Equation (14.37)** of [saad2003iterative]. Let $A$ be Hermitian positive definite. Then the
+additive Schwarz operator is self-adjoint for the energy inner product,
+$(A_J u, v)_A = (u, A_J v)_A$, so its eigenvalues are real. -/
 theorem isSymmetric_energyInner_A_J (s : ℕ) (u v : EuclideanSpace 𝕜 (Fin n)) :
     energyInner (Matrix.toEuclideanLin A) (A_J A S s ⬝ u) v
       = energyInner (Matrix.toEuclideanLin A) u (A_J A S s ⬝ v) := by
@@ -878,7 +1034,13 @@ theorem isSymmetric_energyInner_A_J (s : ℕ) (u v : EuclideanSpace 𝕜 (Fin n)
       (isSymmetricCoercive_toEuclideanLin hA), equiv_A_J hA S, equiv_A_J hA S]
   exact Schwarz.additiveOperator_isSymmetric (energySpace hA S) s _ _
 
-/-- **Theorem 14.5**: `λ_max(A_J) ≤ s`, the number of subdomains. -/
+/-- **Theorem 14.5** of [saad2003iterative]. Let $A$ be Hermitian positive definite. Then every
+eigenvalue $\mu$ of the additive Schwarz operator $A_J$ for $s$ subdomains satisfies
+$$\operatorname{Re} \mu \le s.$$
+That is, $\lambda_{\max}(A_J) \le s$.
+
+The eigenvalues of $A_J$ are real by `SaadSparse.Chapter14.isSymmetric_energyInner_A_J`, so the
+statement bounds the real part. -/
 theorem theorem_14_5 (s : ℕ) {μ : 𝕜}
     (hμ : Module.End.HasEigenvalue (Matrix.toEuclideanLin (A_J A S s)) μ) :
     RCLike.re μ ≤ s :=
@@ -888,7 +1050,7 @@ theorem theorem_14_5 (s : ℕ) {μ : 𝕜}
     (fun u => Schwarz.re_inner_additiveOperator_le (energySpace hA S) s u)
     (hasEigenvalue_additiveOperator hA S s hμ)).2
 
-/-- Two subdomains with no coupling in `A` span `A`-orthogonal subspaces. -/
+/-- If two subdomains have no coupling in $A$, then their subdomain spaces are $A$-orthogonal. -/
 private theorem isOrtho_energySpace {i j : ℕ}
     (h : ∀ k ∈ S i, ∀ l ∈ S j, A l k = 0) : energySpace hA S i ⟂ energySpace hA S j := by
   have hgen : ∀ m : ℕ, energySpace hA S m
@@ -913,19 +1075,26 @@ private theorem isOrtho_energySpace {i j : ℕ}
   rw [hval, EuclideanSpace.inner_single_right]
   simp [h (k : Fin n) k.2 (l : Fin n) l.2]
 
-/-- **Theorem 14.6**: if the subdomains are coloured so that two subdomains of the same colour
-have no coupling in `A` — no entry `A_{lk}` with `k` in one and `l` in the other, which for a
-positive definite `A` forces them to be disjoint — then `λ_max(A_J) ≤ c`, the number of
-colours.  Colouring the interaction graph of the subdomains therefore replaces the crude bound
-of Theorem 14.5 by one that does not grow with the number of subdomains.
+/-- **Theorem 14.6** of [saad2003iterative]. Let $A$ be Hermitian positive definite, and let the
+subdomains $S_0, \dots, S_{s-1}$ be coloured by a map into a finite set of $c$ colours, such
+that two different subdomains of the same colour have no coupling in $A$: $a_{lk} = 0$ for $k$
+in one of them and $l$ in the other. Then every eigenvalue $\mu$ of $A_J$ satisfies
+$$\operatorname{Re} \mu \le c.$$
+That is, $\lambda_{\max}(A_J) \le c$.
 
-The book asks only that two subdomains of the same colour "have no common nodes", justifying
-it by "`P_{Θ_i} = ∑_{j ∈ Θ_i} P_j` is again an orthogonal projector".  That step needs the
-ranges to be `A`-orthogonal, which disjointness does not give.  A counterexample: `n = 2`,
-`A = [[2, 1], [1, 2]]`, `S_0 = {0}` and `S_1 = {1}`, disjoint and therefore of one colour.
-Then `P_0 = [[1, ½], [0, 0]]`, `P_1 = [[0, 0], [½, 1]]` and `A_J = [[1, ½], [½, 1]]`, whose
-largest eigenvalue is `3/2 > 1 = c`.  The no-coupling hypothesis used here is what the proof
-needs, and it is what a genuinely decoupled colouring provides. -/
+**Correction.** The book asks only that two subdomains of the same colour "have no common
+nodes", and justifies the bound by "$P_{\Theta_i} = \sum_{j \in \Theta_i} P_j$ is again an
+orthogonal projector". That step needs the ranges to be $A$-orthogonal, which disjointness does
+not give. A counterexample: $n = 2$, $A = \begin{pmatrix} 2 & 1 \\ 1 & 2 \end{pmatrix}$,
+$S_0 = \{0\}$ and $S_1 = \{1\}$, which are disjoint and therefore of one colour. Then $P_0 =
+\begin{pmatrix} 1 & 1/2 \\ 0 & 0 \end{pmatrix}$, $P_1 = \begin{pmatrix} 0 & 0 \\ 1/2 & 1
+\end{pmatrix}$ and $A_J = \begin{pmatrix} 1 & 1/2 \\ 1/2 & 1 \end{pmatrix}$, whose largest
+eigenvalue is $3/2 > 1 = c$. The hypothesis of no coupling is what the proof needs, and a
+decoupled colouring provides it. For a positive definite $A$ it forces the subdomains of one
+colour to be disjoint.
+
+With a colouring of the interaction graph of the subdomains, the bound does not grow with the
+number of subdomains, unlike the bound of Theorem 14.5. -/
 theorem theorem_14_6 {κ : Type*} [Fintype κ] (s : ℕ) (col : ℕ → κ)
     (hcol : ∀ i ∈ Finset.range s, ∀ j ∈ Finset.range s, i ≠ j → col i = col j →
       ∀ k ∈ S i, ∀ l ∈ S j, A l k = 0)
@@ -938,7 +1107,7 @@ theorem theorem_14_6 {κ : Type*} [Fintype κ] (s : ℕ) (col : ℕ → κ)
       (fun i hi j hj hij hc => isOrtho_energySpace hA S (hcol i hi j hj hij hc)) u)
     (hasEigenvalue_additiveOperator hA S s hμ)).2
 
-/-! #### Assumptions 1 and 2 -/
+/-! ### Assumptions 1 and 2 -/
 
 end Convergence
 
@@ -946,9 +1115,13 @@ section Assumptions
 
 variable (A : Matrix (Fin n) (Fin n) 𝕜) (S : ℕ → Finset (Fin n))
 
-/-- **Assumption 1** of §14.3.4: every vector splits over the subdomain spaces with
-`∑ (A u_i, u_i) ≤ K₀ (A u, u)`.  This is the hypothesis that the subdomains cover the domain
-stably; for a finite-element family it is what an overlapping partition of unity provides. -/
+/-- **Assumption 1** of [saad2003iterative], Section 14.3.4. The subdomains $S_0, \dots, S_{s-1}$
+admit a **stable decomposition** with constant $K_0$ if every vector $u$ splits as
+$u = \sum_{i < s} u_i$ with $u_i$ in the subdomain space of $S_i$ and
+$$\sum_{i < s} \|u_i\|_A^2 \le K_0 \|u\|_A^2.$$
+
+This is the hypothesis that the subdomains cover the domain stably. For a family of finite
+elements, an overlapping partition of unity provides it. -/
 def IsStableDecomposition (s : ℕ) (K₀ : ℝ) : Prop :=
   ∀ u : EuclideanSpace 𝕜 (Fin n), ∃ w : ℕ → EuclideanSpace 𝕜 (Fin n),
     (∀ i ∈ Finset.range s, w i ∈ subdomainSpace 𝕜 (S i)) ∧
@@ -956,10 +1129,18 @@ def IsStableDecomposition (s : ℕ) (K₀ : ℝ) : Prop :=
         ∑ i ∈ Finset.range s, energyNorm (Matrix.toEuclideanLin A) (w i) ^ 2
           ≤ K₀ * energyNorm (Matrix.toEuclideanLin A) u ^ 2
 
-/-- **Assumption 2** of §14.3.4, (14.40): a strengthened Cauchy–Schwarz inequality with constant
-`K₁`, measuring how far the subdomain spaces are from being `A`-orthogonal.  Mutually
-`A`-orthogonal subdomains admit `K₁ = 0`, and the plain Cauchy–Schwarz inequality always gives
-`K₁ = s`. -/
+/-- **Assumption 2** of [saad2003iterative], Section 14.3.4, (14.40). The subdomains
+$S_0, \dots, S_{s-1}$ satisfy a **strengthened Cauchy–Schwarz inequality** with constant $K_1$
+if for every set $\Pi$ of pairs $(i, j)$ with $i, j < s$, and all vectors $u_i$ and $v_j$ in the
+subdomain spaces of $S_i$ and $S_j$,
+$$\sum_{(i, j) \in \Pi} \operatorname{Re} (u_i, v_j)_A \le K_1 \Big(\sum_{i < s}
+  \|u_i\|_A^2\Big)^{1/2} \Big(\sum_{j < s} \|v_j\|_A^2\Big)^{1/2}.$$
+
+The constant measures how far the subdomain spaces are from being $A$-orthogonal. The set $\Pi$
+may contain the diagonal pairs $(i, i)$, so $K_1 \ge 1$ whenever one of the subdomain spaces of
+$S_0, \dots, S_{s-1}$ is nonzero. Mutually $A$-orthogonal subdomain spaces admit $K_1 = 1$,
+because then only the diagonal pairs contribute, and the plain Cauchy–Schwarz inequality always
+gives $K_1 = s$. -/
 def IsStrengthenedCauchySchwarz (s : ℕ) (K₁ : ℝ) : Prop :=
   ∀ ps : Finset (ℕ × ℕ), ps ⊆ Finset.range s ×ˢ Finset.range s →
     ∀ u v : ℕ → EuclideanSpace 𝕜 (Fin n),
@@ -1010,9 +1191,13 @@ private theorem isStrengthenedCauchySchwarzWith_of {s : ℕ} {K₁ : ℝ}
       (isSymmetricCoercive_toEuclideanLin hA),
     LinearEquiv.apply_symm_apply] using key
 
-/-- **Theorem 14.7** in quadratic-form language: under Assumption 1, `‖u‖_A²/K₀ ≤ (A_J u, u)_A`.
-With `re_energyInner_A_J_le` this encloses the spectrum of `A_J` in `[1/K₀, s]`, so the
-condition number of the additive Schwarz preconditioned system is at most `s K₀`. -/
+/-- **Theorem 14.7** of [saad2003iterative], quadratic-form version. Let $A$ be Hermitian positive
+definite, and let Assumption 1 hold with constant $K_0$. Then for every $u$
+$$\frac{\|u\|_A^2}{K_0} \le \operatorname{Re} (A_J u, u)_A.$$
+
+With `SaadSparse.Chapter14.re_energyInner_A_J_le`, this encloses the spectrum of $A_J$ in
+$[1/K_0, s]$, so the condition number of the system preconditioned by additive Schwarz is at
+most $s K_0$. -/
 theorem le_re_energyInner_A_J {s : ℕ} {K₀ : ℝ} (hst : IsStableDecomposition A S s K₀)
     (u : EuclideanSpace 𝕜 (Fin n)) :
     energyNorm (Matrix.toEuclideanLin A) u ^ 2 / K₀
@@ -1022,9 +1207,14 @@ theorem le_re_energyInner_A_J {s : ℕ} {K₀ : ℝ} (hst : IsStableDecompositio
   exact Schwarz.le_re_inner_additiveOperator (energySpace hA S)
     (isStableDecompositionWith_of hA S hst) _
 
-/-- **Theorem 14.7**: under Assumption 1, `λ_min(A_J) ≥ 1/K₀`.  With Theorem 14.5 the spectrum
-of the additive Schwarz preconditioned operator lies in `[1/K₀, s]`, so its condition number is
-at most `s K₀` and preconditioned conjugate gradients converge at the corresponding rate. -/
+/-- **Theorem 14.7** of [saad2003iterative]. Let $A$ be Hermitian positive definite, and let
+Assumption 1 hold with constant $K_0$. Then every eigenvalue $\mu$ of $A_J$ satisfies
+$$\frac{1}{K_0} \le \operatorname{Re} \mu.$$
+That is, $\lambda_{\min}(A_J) \ge 1/K_0$.
+
+With Theorem 14.5, the spectrum of the operator preconditioned by additive Schwarz lies in
+$[1/K_0, s]$. So its condition number is at most $s K_0$, and the preconditioned conjugate
+gradient method converges at the corresponding rate. -/
 theorem theorem_14_7 {s : ℕ} {K₀ : ℝ} (hst : IsStableDecomposition A S s K₀) {μ : 𝕜}
     (hμ : Module.End.HasEigenvalue (Matrix.toEuclideanLin (A_J A S s)) μ) :
     1 / K₀ ≤ RCLike.re μ :=
@@ -1036,8 +1226,11 @@ theorem theorem_14_7 {s : ℕ} {K₀ : ℝ} (hst : IsStableDecomposition A S s K
     (fun u => Schwarz.re_inner_additiveOperator_le (energySpace hA S) s u)
     (hasEigenvalue_additiveOperator hA S s hμ)).1
 
-/-- **(14.39)**: `‖Q_s v‖_A² = ‖v‖_A² - ∑_{i<s} ‖P_i Q_i v‖_A²`.  In particular the `A`-norm of
-the error does not increase at any substep of a multiplicative sweep. -/
+/-- **Equation (14.39)** of [saad2003iterative]. Let $A$ be Hermitian positive definite. Then for
+every $s$ and every $v$
+$$\|Q_s v\|_A^2 = \|v\|_A^2 - \sum_{i < s} \|P_i Q_i v\|_A^2.$$
+In particular, the $A$-norm of the error does not increase at any substep of a multiplicative
+sweep. -/
 theorem equation_14_39 (s : ℕ) (v : EuclideanSpace 𝕜 (Fin n)) :
     energyNorm (Matrix.toEuclideanLin A) (Q_s A S s ⬝ v) ^ 2
       = energyNorm (Matrix.toEuclideanLin A) v ^ 2
@@ -1046,9 +1239,10 @@ theorem equation_14_39 (s : ℕ) (v : EuclideanSpace 𝕜 (Fin n)) :
   simp only [energyNorm_eq_norm_equiv hA, equiv_Q_s hA S, equiv_subdomainProjector hA S]
   exact Schwarz.norm_errorOp_sq_eq (energySpace hA S) s _
 
-/-- **Lemma 14.8**, (14.41): under Assumption 2 the projections of a vector are controlled by
-the projections of the partially swept vectors,
-`∑_i ‖P_i v‖_A² ≤ (1 + K₁)² ∑_i ‖P_i Q_i v‖_A²`. -/
+/-- **Lemma 14.8** of [saad2003iterative], (14.41). Let $A$ be Hermitian positive definite, and let
+Assumption 2 hold with constant $K_1$. Then for every $v$
+$$\sum_{i < s} \|P_i v\|_A^2 \le (1 + K_1)^2 \sum_{i < s} \|P_i Q_i v\|_A^2.$$
+So the projections of a vector are controlled by the projections of the partially swept vectors. -/
 theorem lemma_14_8 {s : ℕ} {K₁ : ℝ} (hcs : IsStrengthenedCauchySchwarz A S s K₁)
     (v : EuclideanSpace 𝕜 (Fin n)) :
     ∑ i ∈ Finset.range s, energyNorm (Matrix.toEuclideanLin A)
@@ -1059,9 +1253,12 @@ theorem lemma_14_8 {s : ℕ} {K₁ : ℝ} (hcs : IsStrengthenedCauchySchwarz A S
   exact Schwarz.sum_norm_starProjection_sq_le (energySpace hA S)
     (isStrengthenedCauchySchwarzWith_of hA S hcs) _
 
-/-- **Theorem 14.9**: under Assumptions 1 and 2 one multiplicative Schwarz sweep contracts the
-`A`-norm of the error by `√(1 - 1/(K₀ (1 + K₁)²))`, a rate depending only on the two constants —
-in particular not on the number of subdomains. -/
+/-- **Theorem 14.9** of [saad2003iterative]. Let $A$ be Hermitian positive definite, and let
+Assumptions 1 and 2 hold with constants $K_0 > 0$ and $K_1 \ge 0$. Then one multiplicative
+Schwarz sweep contracts the $A$-norm of the error:
+$$\|Q_s v\|_A \le \sqrt{1 - \frac{1}{K_0 (1 + K_1)^2}} \, \|v\|_A$$
+for every $v$. The rate depends only on the two constants, and in particular not on the number
+of subdomains. -/
 theorem theorem_14_9 {s : ℕ} {K₀ K₁ : ℝ} (hK₀ : 0 < K₀) (hK₁ : 0 ≤ K₁)
     (hst : IsStableDecomposition A S s K₀) (hcs : IsStrengthenedCauchySchwarz A S s K₁)
     (v : EuclideanSpace 𝕜 (Fin n)) :

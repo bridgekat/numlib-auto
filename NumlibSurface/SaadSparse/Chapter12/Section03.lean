@@ -10,33 +10,110 @@ import Numlib.RingTheory.Polynomial.KernelPolynomial
 import NumlibSurface.SaadSparse.Common
 
 /-!
-# Saad §12.3: polynomial preconditioners
+# Saad, Section 12.3: Polynomial preconditioners
 
-Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM,
-2003, §12.3: preconditioners of the form `M⁻¹ = s(A)` for a low-degree polynomial `s`, so that
-applying the preconditioner costs only matrix–vector products. Three ways of choosing `s`: Neumann
-series (§12.3.1), Chebyshev acceleration (§12.3.2, Algorithm 12.1) and least-squares polynomials
-(§12.3.3).
+This module formalizes Section 12.3 of [saad2003iterative]: preconditioners of the form
+$M^{-1} = s(A)$ for a polynomial $s$ of low degree, so that the preconditioner is applied with
+matrix-vector products alone. The section gives three ways to choose $s$: the Neumann series
+(Section 12.3.1), Chebyshev acceleration (Section 12.3.2, Algorithm 12.1) and least-squares
+polynomials (Section 12.3.3). For a symmetric matrix whose quadratic form lies in $[\alpha, \beta]$,
+the preconditioned operator $s(A) A$ differs from the identity by at most $\max_{\lambda \in
+[\alpha, \beta]} |1 - \lambda s(\lambda)|$ (12.5), and the shifted Chebyshev polynomial makes this
+maximum as small as possible (12.4). Chebyshev acceleration produces the residuals
+$r_k = T_k(A) r_0$ with the residual polynomial $T_k(t) = C_k((\theta - t)/\delta) /
+C_k(\theta/\delta)$, $\theta = (\beta + \alpha)/2$, $\delta = (\beta - \alpha)/2$, without computing
+inner products. A least-squares polynomial minimizes a weighted $L^2$ norm of
+$1 - \lambda s(\lambda)$ instead, and the kernel polynomial (12.12) of an orthonormal family is the
+minimizer.
 
-The section carries no numbered result, so the declarations here are named for the book's
-displayed equations. Everything specializes `Numlib/Preconditioner/Polynomial`,
-`Numlib/Preconditioner/Chebyshev` and `Numlib/RingTheory/Polynomial/KernelPolynomial`;
-what the surface adds is the real-matrix reading and the identification of Saad's residual
-polynomial `T_k(t) = C_k((θ - t)/δ)/C_k(θ/δ)` with `Polynomial.Chebyshev.shifted k α β 0`
-(`T_k_eq_shifted`), which is the point at which this chapter meets the Chebyshev min–max theorem
-of §6.11.
+The section has no numbered result, so the declarations are named for the displayed equations. The
+proofs specialize `Numlib.Preconditioner.Polynomial`, `Numlib.Preconditioner.Chebyshev` and
+`Numlib.RingTheory.Polynomial.KernelPolynomial`. The surface adds the real-matrix reading and the
+identification of the residual polynomial $T_k$ with `Polynomial.Chebyshev.shifted k α β 0`
+(`SaadSparse.Chapter12.T_k_eq_shifted`), where this chapter meets the Chebyshev min–max theorem of
+Section 6.11.
 
-The Jacobi weight (12.15) enters through `equation_12_16`, the closed form Saad gives for its
-residual polynomial. That closed form is carried as a *definition* rather than identified with
-`IsLeastSquaresResidual`, because the identification is the one step of §12.3.3 that needs Jacobi
-polynomials with their orthogonality, and Mathlib has none. `example_12_1` is what the book
-computes from it: the table of the eight least-squares polynomials `s_1, …, s_8` for
-`μ = 1/2`, `ν = -1/2`, each identity cleared of the division by `λ`.
+## Main definitions
 
-§12.3.4 — the nonsymmetric case, with Chebyshev polynomials on an ellipse and the Remez algorithm
-on a polygon — is not stated here: its results are Saad Lemma 6.26 and Theorem 6.27, and the
-polygonal case is a numerical procedure with no theorem attached. Example 12.2 is a table of
-measured iteration counts and timings, carries no mathematical claim, and is not tracked.
+* Algorithm 12.1, `SaadSparse.Chapter12.chebyshevIterate`: the state of Chebyshev acceleration after
+  $k$ steps.
+* Equation (12.10), `SaadSparse.Chapter12.bilinFormOfWeight`: the weighted inner product $\langle p,
+  q \rangle_w = \int_\alpha^\beta p q w$.
+* Section 12.3.3, `SaadSparse.Chapter12.IsLeastSquaresResidual`: a least-squares residual polynomial
+  of degree $k$.
+* Equation (12.16), `SaadSparse.Chapter12.kappa_12_16`: the coefficients $\kappa_j^{(k)}$.
+* Equation (12.16), `SaadSparse.Chapter12.equation_12_16`: the closed form of the residual
+  polynomial for the Jacobi weight.
+
+## Main results
+
+* Equation (12.3), `SaadSparse.Chapter12.equation_12_3`: the Neumann preconditioner satisfies
+  $M^{-1} A = \omega^{-1} (I - N^{s+1})$.
+* Section 12.3.1, `SaadSparse.Chapter12.neumann_isSymmetric_withEnergy`: $s(D^{-1} A) D^{-1} A$ is
+  self-adjoint for the $D$-inner product.
+* Equation (12.5), `SaadSparse.Chapter12.equation_12_5`: $\|x - s(A) A x\| \le \max_{[\alpha,
+  \beta]} |1 - \lambda s(\lambda)| \, \|x\|$.
+* Equations (12.4)–(12.5), `SaadSparse.Chapter12.equation_12_4`: the lower bound
+  $1 / C_{k+1}((\beta + \alpha)/(\beta - \alpha))$ for the min–max problem.
+* Section 12.3.2, `SaadSparse.Chapter12.T_k_eq_shifted`: the residual polynomial $T_k$ is the
+  shifted Chebyshev polynomial.
+* Section 12.3.2, `SaadSparse.Chapter12.equation_12_7`: the three-term recurrence of
+  $\sigma_k = C_k(\theta/\delta)$.
+* Equation (12.7), `SaadSparse.Chapter12.equation_12_6`: $\rho_{k+1} = (2 \sigma_1 - \rho_k)^{-1}$.
+* Equation (12.8), `SaadSparse.Chapter12.equation_12_8`: the three-term recurrence of the residual
+  polynomials.
+* Equation (12.9), `SaadSparse.Chapter12.equation_12_9`: the direction recurrence of Algorithm 12.1.
+* Section 12.3.2, `SaadSparse.Chapter12.chebyshev_residual_eq`: $r_k = T_k(A) r_0$.
+* Section 12.3.2, `SaadSparse.Chapter12.norm_chebyshev_residual_le`: $\|r_k\| \le 2
+  ((\sqrt{\kappa} - 1)/(\sqrt{\kappa} + 1))^k \|r_0\|$.
+* Section 12.3.2, `SaadSparse.Chapter12.norm_residual_minRes_le_chebyshev`: a minimal-residual
+  iterate is at least as good as Chebyshev acceleration.
+* Equation (12.10), `SaadSparse.Chapter12.bilinFormOfWeight_isSymm`: the weighted form is symmetric.
+* Section 12.3.3, `SaadSparse.Chapter12.bilinFormOfWeight_le`: $\langle p, p \rangle_w \le
+  (\max_{[\alpha, \beta]} |p|)^2 \langle 1, 1 \rangle_w$.
+* Equation (12.12), `SaadSparse.Chapter12.equation_12_12`: the kernel polynomial is the
+  least-squares residual polynomial.
+* Equations (12.13)–(12.14), `SaadSparse.Chapter12.equation_12_13`: the least-squares polynomial
+  $s_{k-1}$ in closed form.
+* Section 12.3.3, `SaadSparse.Chapter12.leastSquaresResidual_orthogonal`: the residual polynomials
+  are orthogonal for the weight $\lambda w(\lambda)$.
+* Section 12.3.3, `SaadSparse.Chapter12.norm_leastSquaresResidual_le`: the least-squares residual
+  decays geometrically for $0 < \alpha < \beta$.
+* Example 12.1, `SaadSparse.Chapter12.example_12_1`: the table of the least-squares polynomials
+  $s_1, \dots, s_8$.
+
+## Conventions
+
+* Matrices are real, $A \in \mathbb{R}^{n \times n}$, and act on `EuclideanSpace ℝ (Fin n)`. A
+  polynomial $s$ is applied to $A$ through `Polynomial.aeval` of `Matrix.toEuclideanLin A`.
+* "The spectrum of $A$ lies in $[\alpha, \beta]$" is the quadratic-form bound
+  `LinearMap.IsSymmetricBoundedBy α β`: $A$ is symmetric and
+  $\alpha \|x\|^2 \le (Ax, x) \le \beta \|x\|^2$.
+* $C_k$ is the Chebyshev polynomial `Polynomial.Chebyshev.T ℝ k`, and a maximum over
+  $[\alpha, \beta]$ is `sSup` of the image of `Set.Icc α β`.
+
+## Implementation notes
+
+* The closed form (12.16) for the Jacobi weight (12.15) is a definition, and it is not identified
+  with `SaadSparse.Chapter12.IsLeastSquaresResidual`: the identification needs Jacobi polynomials
+  and their orthogonality, which Mathlib does not have. `SaadSparse.Chapter12.example_12_1` is what
+  the book computes from it, the eight least-squares polynomials for $\mu = 1/2$ and $\nu = -1/2$,
+  each identity cleared of the division by $\lambda$.
+* The declaration `SaadSparse.Chapter12.equation_12_6` states (12.7), the recurrence of $\rho_k$;
+  (12.6) is the definition of $\rho_k$, `Preconditioner.Chebyshev.rho`. The declaration
+  `SaadSparse.Chapter12.equation_12_7` states the recurrence of $\sigma_k$, a display before (12.6)
+  that has no number.
+
+## Not formalized
+
+* **Section 12.3.4** (the nonsymmetric case). Its results are Lemma 6.26 and Theorem 6.27, and the
+  case of a polygon is a numerical procedure with no theorem.
+* **Example 12.2.** It is a table of measured iteration counts and timings and carries no
+  mathematical claim.
+* **The identification of (12.16) with the least-squares residual polynomial.** It needs Jacobi
+  polynomials and their orthogonality, which Mathlib does not have.
+* **The case $\alpha = 0$ of the decay of the least-squares residual.** The decay is only $1/k$ with
+  a constant given by Gamma functions of the Jacobi weights, and Mathlib has no Jacobi polynomials.
 -/
 
 open Matrix Polynomial
@@ -46,17 +123,22 @@ namespace SaadSparse.Chapter12
 
 variable {n : ℕ}
 
-/-- Over `ℝ` the scalar map of the backbone's `Polynomial.map (algebraMap ℝ 𝕜)` is the identity. -/
+/-- Over $\mathbb{R}$, mapping a polynomial by `algebraMap ℝ ℝ` does not change it. -/
 private theorem map_algebraMap_real (p : Polynomial ℝ) : p.map (algebraMap ℝ ℝ) = p := by
   simp
 
-/-! ### §12.3.1 Neumann polynomial preconditioners -/
+/-! ### Section 12.3.1: Neumann polynomial preconditioners -/
 
-/-- Saad (12.3): with `N = I - ω D⁻¹ A` the truncated Neumann preconditioner
-`M⁻¹ = (I + N + ⋯ + N^s) D⁻¹` satisfies `M⁻¹ A = ω⁻¹ (I - N^{s+1})`. So a Neumann polynomial
-preconditioner differs from the identity by exactly the `(s+1)`-st power of the iteration matrix
-of the underlying relaxation: it *is* `s + 1` steps of that relaxation, folded into one
-preconditioner. -/
+/-- **Equation (12.3)** of [saad2003iterative]. Let $A, D \in \mathbb{R}^{n \times n}$, let
+$\omega \neq 0$, let $s \in \mathbb{N}$, and let $N = I - \omega D^{-1} A$. Then the truncated
+Neumann preconditioner $M^{-1} = (I + N + \dots + N^s) D^{-1}$ satisfies
+$$M^{-1} A = \omega^{-1} \bigl(I - N^{s+1}\bigr).$$
+So a Neumann polynomial preconditioner differs from the identity by the $(s+1)$-st power of the
+iteration matrix of the underlying relaxation: it is $s + 1$ steps of that relaxation in one
+preconditioner.
+
+The sum $I + N + \dots + N^s$ is `Preconditioner.neumannPolyOf N s`. The inverse $D^{-1}$ is
+Mathlib's matrix inverse, and the identity holds even when $D$ is singular. -/
 theorem equation_12_3 {ω : ℝ} (hω : ω ≠ 0) (A D : Matrix (Fin n) (Fin n) ℝ) (s : ℕ) :
     Preconditioner.neumannPolyOf (1 - ω • (D⁻¹ * A)) s * D⁻¹ * A =
       ω⁻¹ • (1 - (1 - ω • (D⁻¹ * A)) ^ (s + 1)) := by
@@ -64,9 +146,14 @@ theorem equation_12_3 {ω : ℝ} (hω : ω ≠ 0) (A D : Matrix (Fin n) (Fin n) 
   rw [Matrix.smul_mul] at h
   rw [← h, mul_smul_comm, smul_smul, inv_mul_cancel₀ hω, one_smul, Matrix.mul_assoc]
 
-/-- Saad's remark closing §12.3.1, his Exercise 12.1: for symmetric positive definite `A` and `D`
-the preconditioned matrix `s(D⁻¹A) D⁻¹A` is *not* symmetric, but it is self-adjoint for the
-`D`-inner product, so the conjugate gradient method may still be used with it. -/
+/-- **Section 12.3.1** of [saad2003iterative], the closing remark. Let
+$A, D \in \mathbb{R}^{n \times n}$ be symmetric positive definite and let $s$ be a real
+polynomial. Then the preconditioned matrix $s(D^{-1} A) D^{-1} A$ is self-adjoint for the
+$D$-inner product $(x, y)_D = (Dx, y)$, although it is not symmetric in general. So the
+conjugate gradient method can still be used with it.
+
+The book leaves the verification as Exercise 12.1. The $D$-inner product is that of
+`WithEnergy`, and the statement conjugates the operator by `WithEnergy.equiv`. -/
 theorem neumann_isSymmetric_withEnergy {A D : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosDef)
     (hD : D.PosDef) (s : Polynomial ℝ) :
     ((WithEnergy.equiv (Matrix.toEuclideanLin D)
@@ -84,13 +171,14 @@ theorem neumann_isSymmetric_withEnergy {A D : Matrix (Fin n) (Fin n) ℝ} (hA : 
   have h := Preconditioner.isSymmetric_withEnergy_aeval_mul hDc hB s
   rwa [map_algebraMap_real] at h
 
-/-! ### §12.3.2 The optimality criterion (12.4)–(12.5) -/
+/-! ### Section 12.3.2: the optimality criterion (12.4)–(12.5) -/
 
-/-- Saad (12.5): the criterion that selects the polynomial. For a symmetric matrix whose
-quadratic form lies in `[α, β]` — an interval enclosing the spectrum — and any real polynomial
-`s`, the preconditioned operator `s(A) A` differs from the identity by at most
-`max_{λ ∈ [α, β]} |1 - λ s(λ)|`. Making that maximum small is therefore the whole design problem
-of a polynomial preconditioner. -/
+/-- **Equation (12.5)** of [saad2003iterative], the criterion that selects the polynomial. Let
+$A \in \mathbb{R}^{n \times n}$ be symmetric with $\alpha \|x\|^2 \le (Ax, x) \le \beta \|x\|^2$
+for all $x$, so that $[\alpha, \beta]$ contains the spectrum of $A$, and let $s$ be a real
+polynomial. Then for every $x \in \mathbb{R}^n$
+$$\|x - s(A) A x\| \le \max_{\lambda \in [\alpha, \beta]} |1 - \lambda s(\lambda)| \, \|x\|.$$
+So the design problem of a polynomial preconditioner is to make this maximum small. -/
 theorem equation_12_5 {A : Matrix (Fin n) (Fin n) ℝ} {α β : ℝ}
     (hA : (Matrix.toEuclideanLin A).IsSymmetricBoundedBy α β) (s : Polynomial ℝ)
     (x : EuclideanSpace ℝ (Fin n)) :
@@ -99,12 +187,15 @@ theorem equation_12_5 {A : Matrix (Fin n) (Fin n) ℝ} {α β : ℝ}
   have h := Preconditioner.norm_sub_aeval_mul_apply_le hA s x
   rwa [map_algebraMap_real] at h
 
-/-- Saad (12.4)–(12.5), the min–max problem the criterion poses, answered on the enclosing
-interval `E = [α, β]` of (12.5) for `γ = 0`: no
-polynomial `s` of degree at most `k` makes `max_{[α, β]} |1 - λ s(λ)|` smaller than
-`1 / C_{k+1}((β + α)/(β - α))`, the value attained by the shifted Chebyshev polynomial of
-Theorem 6.25. The residual polynomials `1 - λ s(λ)` are exactly the polynomials of degree at most
-`k + 1` taking the value `1` at `0`. -/
+/-- **Equations (12.4)–(12.5)** of [saad2003iterative], the min–max problem on the interval
+$E = [\alpha, \beta]$ of (12.5), with $\gamma = 0$. Let $0 < \alpha < \beta$, let
+$k \in \mathbb{N}$, and let $s$ be a real polynomial of degree at most $k$. Then
+$$\frac{1}{C_{k+1}\bigl((\beta + \alpha)/(\beta - \alpha)\bigr)} \le \max_{\lambda \in [\alpha,
+  \beta]} |1 - \lambda s(\lambda)|.$$
+
+The residual polynomials $1 - \lambda s(\lambda)$ are exactly the polynomials of degree at most
+$k + 1$ with the value $1$ at $0$. The shifted Chebyshev polynomial of Theorem 6.25 attains the
+bound; the formal statement is the lower bound. -/
 theorem equation_12_4 {α β : ℝ} (hα : 0 < α) (hαβ : α < β) {k : ℕ} {s : Polynomial ℝ}
     (hs : s.degree ≤ (k : WithBot ℕ)) :
     1 / eval ((β + α) / (β - α)) (Chebyshev.T ℝ ((k + 1 : ℕ) : ℤ)) ≤
@@ -122,12 +213,17 @@ theorem equation_12_4 {α β : ℝ} (hα : 0 < α) (hαβ : α < β) {k : ℕ} {
     simp
   rwa [himg] at h
 
-/-! ### §12.3.2 Chebyshev acceleration, Algorithm 12.1 -/
+/-! ### Section 12.3.2: Chebyshev acceleration, Algorithm 12.1 -/
 
-/-- Saad's residual polynomial of §12.3.2, `T_k(t) = C_k((θ - t)/δ) / C_k(θ/δ)` with
-`θ = (β + α)/2` and `δ = (β - α)/2`, is the shifted Chebyshev polynomial
-`Polynomial.Chebyshev.shifted k α β 0` of §6.11. This identification is why Chebyshev acceleration
-inherits the min–max optimality already proved for `shifted`. -/
+/-- **Section 12.3.2** of [saad2003iterative], the residual polynomial. Let $\alpha < \beta$, let
+$\theta = (\beta + \alpha)/2$ and $\delta = (\beta - \alpha)/2$, and let $k \in \mathbb{N}$.
+Then the residual polynomial
+$$T_k(t) = \frac{C_k((\theta - t)/\delta)}{C_k(\theta/\delta)}$$
+is the shifted Chebyshev polynomial `Polynomial.Chebyshev.shifted k α β 0` of Section 6.11: the
+two agree at every $t \in \mathbb{R}$.
+
+Through this identification, Chebyshev acceleration inherits the min–max optimality proved for
+the shifted Chebyshev polynomial. -/
 theorem T_k_eq_shifted {α β : ℝ} (hαβ : α < β) (k : ℕ) (t : ℝ) :
     eval t (Chebyshev.shifted k α β 0) =
       eval (((β + α) / 2 - t) / ((β - α) / 2)) (Chebyshev.T ℝ (k : ℤ)) /
@@ -141,39 +237,62 @@ theorem T_k_eq_shifted {α β : ℝ} (hαβ : α < β) (k : ℕ) (t : ℝ) :
   simp only [eval_mul, eval_C, eval_comp, eval_sub, eval_X, mul_zero, sub_zero]
   ring
 
-/-- Saad Algorithm 12.1, Chebyshev acceleration for a real symmetric matrix whose spectrum lies
-in `[α, β]`: the state after `k` steps, carrying the iterate `x_k`, the residual `r_k`, the search
-direction `d_k` and the scalar `ρ_k`. One step costs one matrix–vector product and no inner
-product at all, which is the practical point of the method. It is
-`Preconditioner.Chebyshev.iterate` at `θ = (β + α)/2` and `δ = (β - α)/2`. -/
+/-- **Algorithm 12.1** of [saad2003iterative], Chebyshev acceleration. For
+$A \in \mathbb{R}^{n \times n}$, $b, x_0 \in \mathbb{R}^n$, an interval $[\alpha, \beta]$ that
+contains the spectrum of $A$, and $k \in \mathbb{N}$, this is the state after $k$ steps: the
+iterate $x_k$, the residual $r_k$, the direction $d_k$ and the scalar $\rho_k$. With
+$\theta = (\beta + \alpha)/2$, $\delta = (\beta - \alpha)/2$ and $\sigma_1 = \theta/\delta$, the
+algorithm starts with $r_0 = b - A x_0$, $d_0 = r_0 / \theta$ and $\rho_0 = \delta/\theta$, and
+each step computes
+$$x_{k+1} = x_k + d_k, \quad r_{k+1} = r_k - A d_k, \quad \rho_{k+1} = (2 \sigma_1 -
+  \rho_k)^{-1}, \quad d_{k+1} = \rho_k \rho_{k+1} d_k + \frac{2 \rho_{k+1}}{\delta} r_{k+1}.$$
+One step costs one matrix-vector product and no inner product, which is the practical point of
+the method.
+
+The definition is `Preconditioner.Chebyshev.iterate` with $\theta = (\beta + \alpha)/2$ and
+$\delta = (\beta - \alpha)/2$. It is defined for all $\alpha, \beta$; the results below assume
+$0 < \alpha < \beta$ where they need it. -/
 noncomputable abbrev chebyshevIterate (A : Matrix (Fin n) (Fin n) ℝ)
     (b x₀ : EuclideanSpace ℝ (Fin n)) (α β : ℝ) (k : ℕ) :
     Preconditioner.Chebyshev.State (EuclideanSpace ℝ (Fin n)) :=
   Preconditioner.Chebyshev.iterate (Matrix.toEuclideanLin A) b x₀ ((β + α) / 2) ((β - α) / 2) k
 
-/-- The Chebyshev values `σ_k = C_k(θ/δ)` obey the three-term recurrence of the Chebyshev
-polynomials themselves. This is the display just before Saad (12.6) and carries no number of
-its own; the declaration keeps the name the plan gave it. The numbered (12.7) is the `ρ`
-recurrence, which is `equation_12_6`. -/
+/-- **Section 12.3.2** of [saad2003iterative], the display before (12.6). For
+$\theta, \delta \in \mathbb{R}$ and $k \in \mathbb{N}$, the Chebyshev values
+$\sigma_k = C_k(\theta/\delta)$ satisfy the three-term recurrence of the Chebyshev polynomials,
+$$\sigma_{k+2} = 2 \frac{\theta}{\delta} \sigma_{k+1} - \sigma_k.$$
+
+The display has no number. The equation (12.7) is the recurrence of $\rho_k$,
+`SaadSparse.Chapter12.equation_12_6`. The values $\sigma_k$ are
+`Preconditioner.Chebyshev.sigma`. -/
 theorem equation_12_7 (θ δ : ℝ) (k : ℕ) :
     Preconditioner.Chebyshev.sigma θ δ (k + 2) =
       2 * (θ / δ) * Preconditioner.Chebyshev.sigma θ δ (k + 1) -
         Preconditioner.Chebyshev.sigma θ δ k :=
   Preconditioner.Chebyshev.sigma_add_two θ δ k
 
-/-- **Saad (12.7)**: the scalar `ρ_k = σ_k/σ_{k+1}` of (12.6), which the algorithm carries,
-obeys `ρ_{k+1} = (2 σ₁ - ρ_k)⁻¹` — what removes the Chebyshev values from the implementation.
-(12.6) itself is the definition of `ρ_k`, which is `Preconditioner.Chebyshev.rho`; the
-declaration keeps the name the plan gave it. -/
+/-- **Equation (12.7)** of [saad2003iterative]. Let $0 < \delta < \theta$ and $k \in \mathbb{N}$.
+The scalar $\rho_k = \sigma_k / \sigma_{k+1}$ of (12.6), which the algorithm carries, satisfies
+$$\rho_{k+1} = (2 \sigma_1 - \rho_k)^{-1}, \qquad \sigma_1 = \theta/\delta.$$
+This recurrence removes the Chebyshev values from the implementation.
+
+The equation (12.6) is the definition of $\rho_k$, `Preconditioner.Chebyshev.rho`; the
+recurrence of the values $\sigma_k$ is `SaadSparse.Chapter12.equation_12_7`. -/
 theorem equation_12_6 {θ δ : ℝ} (hδ : 0 < δ) (hθδ : δ < θ) (k : ℕ) :
     Preconditioner.Chebyshev.rho θ δ (k + 1) =
       (2 * (θ / δ) - Preconditioner.Chebyshev.rho θ δ k)⁻¹ :=
   Preconditioner.Chebyshev.rho_succ hδ hθδ k
 
-/-- Saad (12.8): the three-term recurrence of the residual polynomials,
-`T_{k+2} = ρ_{k+1} (2 (σ₁ - t/δ) T_{k+1} - ρ_k T_k)`. It is the Chebyshev recurrence divided by
-`σ_{k+2}`, and it is what makes the vector recurrence of Algorithm 12.1 produce Chebyshev
-residuals. -/
+/-- **Equation (12.8)** of [saad2003iterative]. Let $0 < \delta < \theta$ and $k \in \mathbb{N}$.
+The residual polynomials $T_k(t) = C_k((\theta - t)/\delta) / C_k(\theta/\delta)$ satisfy the
+three-term recurrence
+$$T_{k+2}(t) = \rho_{k+1} \Bigl(2 \Bigl(\sigma_1 - \frac{t}{\delta}\Bigr) T_{k+1}(t) - \rho_k
+  T_k(t)\Bigr).$$
+It is the Chebyshev recurrence divided by $\sigma_{k+2}$, and it makes the vector recurrence of
+Algorithm 12.1 produce the Chebyshev residuals.
+
+The polynomials $T_k$ are `Preconditioner.Chebyshev.resPoly`, and
+$\sigma_1 - t/\delta = (\theta - t)/\delta$ is `Preconditioner.Chebyshev.shift`. -/
 theorem equation_12_8 {θ δ : ℝ} (hδ : 0 < δ) (hθδ : δ < θ) (k : ℕ) :
     Preconditioner.Chebyshev.resPoly θ δ (k + 2) =
       C (2 * Preconditioner.Chebyshev.rho θ δ (k + 1)) *
@@ -182,8 +301,12 @@ theorem equation_12_8 {θ δ : ℝ} (hδ : 0 < δ) (hθδ : δ < θ) (k : ℕ) :
           Preconditioner.Chebyshev.resPoly θ δ k :=
   Preconditioner.Chebyshev.resPoly_add_two hδ hθδ k
 
-/-- Saad (12.9): the direction recurrence of Algorithm 12.1,
-`d_{k+1} = ρ_k ρ_{k+1} d_k + (2 ρ_{k+1}/δ) r_{k+1}`. -/
+/-- **Equation (12.9)** of [saad2003iterative], the direction recurrence of Algorithm 12.1. For
+$A \in \mathbb{R}^{n \times n}$, $b, x_0 \in \mathbb{R}^n$, $\alpha, \beta \in \mathbb{R}$ and
+$k \in \mathbb{N}$,
+$$d_{k+1} = \rho_k \rho_{k+1} d_k + \frac{2 \rho_{k+1}}{\delta} r_{k+1}, \qquad \delta =
+  (\beta - \alpha)/2.$$
+-/
 theorem equation_12_9 (A : Matrix (Fin n) (Fin n) ℝ) (b x₀ : EuclideanSpace ℝ (Fin n))
     (α β : ℝ) (k : ℕ) :
     (chebyshevIterate A b x₀ α β (k + 1)).d =
@@ -194,8 +317,12 @@ theorem equation_12_9 (A : Matrix (Fin n) (Fin n) ℝ) (b x₀ : EuclideanSpace 
   simp only [chebyshevIterate, Preconditioner.Chebyshev.iterate_succ]
   exact Preconditioner.Chebyshev.step_d _
 
-/-- The residual of Saad Algorithm 12.1 is `r_k = T_k(A) r_0`, the shifted Chebyshev polynomial of
-`[α, β]` applied to the initial residual. -/
+/-- **Section 12.3.2** of [saad2003iterative], the residual of Algorithm 12.1. Let
+$A \in \mathbb{R}^{n \times n}$, let $b, x_0 \in \mathbb{R}^n$, let $0 < \alpha < \beta$ and let
+$k \in \mathbb{N}$. Then the residual of Chebyshev acceleration is
+$$r_k = T_k(A) r_0, \qquad r_0 = b - A x_0,$$
+where $T_k$ is the shifted Chebyshev polynomial `Polynomial.Chebyshev.shifted k α β 0` of the
+interval $[\alpha, \beta]$. -/
 theorem chebyshev_residual_eq {A : Matrix (Fin n) (Fin n) ℝ} {b x₀ : EuclideanSpace ℝ (Fin n)}
     {α β : ℝ} (hα : 0 < α) (hαβ : α < β) (k : ℕ) :
     (chebyshevIterate A b x₀ α β k).r =
@@ -204,9 +331,13 @@ theorem chebyshev_residual_eq {A : Matrix (Fin n) (Fin n) ℝ} {b x₀ : Euclide
     (A := Matrix.toEuclideanLin A) (b := b) (x₀ := x₀) hα hαβ k
   rwa [map_algebraMap_real] at h
 
-/-- The convergence rate of Chebyshev acceleration:
-`‖r_k‖ ≤ 2 ((√κ - 1)/(√κ + 1))^k ‖r_0‖` with `κ = β/α` the condition number of the enclosing
-interval. -/
+/-- **Section 12.3.2** of [saad2003iterative], the convergence rate of Chebyshev acceleration. Let
+$A \in \mathbb{R}^{n \times n}$ be symmetric with $\alpha \|x\|^2 \le (Ax, x) \le \beta \|x\|^2$
+for all $x$, where $0 < \alpha < \beta$, and let $b, x_0 \in \mathbb{R}^n$. Then for every
+$k \in \mathbb{N}$
+$$\|r_k\| \le 2 \left(\frac{\sqrt{\kappa} - 1}{\sqrt{\kappa} + 1}\right)^k \|b - A x_0\|, \qquad
+  \kappa = \beta/\alpha,$$
+where $\kappa$ is the condition number of the enclosing interval. -/
 theorem norm_chebyshev_residual_le {A : Matrix (Fin n) (Fin n) ℝ}
     {b x₀ : EuclideanSpace ℝ (Fin n)} {α β : ℝ}
     (hA : (Matrix.toEuclideanLin A).IsSymmetricBoundedBy α β) (hα : 0 < α) (hαβ : α < β) (k : ℕ) :
@@ -214,17 +345,23 @@ theorem norm_chebyshev_residual_le {A : Matrix (Fin n) (Fin n) ℝ}
       2 * ((Real.sqrt (β / α) - 1) / (Real.sqrt (β / α) + 1)) ^ k * ‖b - (A ⬝ x₀)‖ :=
   Preconditioner.Chebyshev.norm_residual_iterate_le_pow hA hα hαβ k
 
-/-- Chebyshev acceleration is not Krylov-optimal: a minimal-residual iterate of the same degree is
-never worse, because the Chebyshev residual polynomial is only one competitor in the minimization.
-This is the comparison that makes CG or GMRES preferable wherever inner products are affordable,
-and Chebyshev acceleration preferable where they are not. -/
+/-- **Section 12.3.2** of [saad2003iterative], Chebyshev acceleration is not optimal among Krylov
+methods. Let $A \in \mathbb{R}^{n \times n}$, let $b, x_0 \in \mathbb{R}^n$, let
+$0 < \alpha < \beta$, and let $y$ be a minimal-residual iterate of step $k$:
+$y \in x_0 + \mathcal{K}_k(A, r_0)$ minimizes $\|b - Ay\|$ there. Then
+$$\|b - Ay\| \le \|r_k\|,$$
+where $r_k$ is the residual of $k$ steps of Chebyshev acceleration for $[\alpha, \beta]$.
+
+The Chebyshev residual polynomial is one competitor in the minimization. This comparison makes
+CG or GMRES preferable wherever inner products are affordable, and Chebyshev acceleration
+preferable where they are not. A minimal-residual iterate is `Krylov.IsMinResidualIterate`. -/
 theorem norm_residual_minRes_le_chebyshev {A : Matrix (Fin n) (Fin n) ℝ}
     {b x₀ y : EuclideanSpace ℝ (Fin n)} {α β : ℝ} (hα : 0 < α) (hαβ : α < β) {k : ℕ}
     (hy : Krylov.IsMinResidualIterate (Matrix.toEuclideanLin A) b x₀ k y) :
     ‖b - (A ⬝ y)‖ ≤ ‖(chebyshevIterate A b x₀ α β k).r‖ :=
   Preconditioner.Chebyshev.norm_residual_minRes_le_norm_residual_iterate hα hαβ hy
 
-/-! ### §12.3.3 Least-squares polynomials -/
+/-! ### Section 12.3.3: least-squares polynomials -/
 
 section LeastSquares
 
@@ -232,11 +369,15 @@ open MeasureTheory
 
 variable {α β : ℝ} {w : ℝ → ℝ}
 
-/-- Saad (12.10): the weighted inner product `⟨p, q⟩_w = ∫_α^β p(λ) q(λ) w(λ) dλ` on the
-polynomials, presented as a bilinear form, which is the shape the backbone statements of
-`Numlib/RingTheory/Polynomial/KernelPolynomial` take. Bilinearity needs only that `w` is
-integrable over the interval; nonnegativity of `w` is used where the form has to be positive
-semidefinite (`bilinFormOfWeight_le`), and nowhere else. -/
+/-- **Equation (12.10)** of [saad2003iterative], the weighted inner product. Let
+$\alpha, \beta \in \mathbb{R}$ and let $w$ be integrable over the interval between $\alpha$ and
+$\beta$. The weighted form on the real polynomials is the bilinear form
+$$\langle p, q \rangle_w = \int_\alpha^\beta p(\lambda) q(\lambda) w(\lambda) \, d\lambda.$$
+
+The form is a `LinearMap.BilinForm`, the shape of the statements of
+`Numlib.RingTheory.Polynomial.KernelPolynomial`. Bilinearity needs only that $w$ is integrable
+over the interval. The nonnegativity of $w$ is needed only where the form must be positive
+semidefinite (`SaadSparse.Chapter12.bilinFormOfWeight_le`). -/
 noncomputable def bilinFormOfWeight (α β : ℝ) (w : ℝ → ℝ)
     (hw : IntervalIntegrable w volume α β) : LinearMap.BilinForm ℝ (Polynomial ℝ) :=
   LinearMap.mk₂ ℝ (fun p q => ∫ t in α..β, p.eval t * q.eval t * w t)
@@ -269,12 +410,14 @@ noncomputable def bilinFormOfWeight (α β : ℝ) (w : ℝ → ℝ)
       simp only [eval_smul, smul_eq_mul]
       ring)
 
-/-- The weighted form of (12.10) evaluated: `⟨p, q⟩_w = ∫_α^β p q w`. -/
+/-- The weighted form of (12.10) evaluated: $\langle p, q \rangle_w = \int_\alpha^\beta p(\lambda)
+q(\lambda) w(\lambda) \, d\lambda$. -/
 @[simp]
 theorem bilinFormOfWeight_apply (hw : IntervalIntegrable w volume α β) (p q : Polynomial ℝ) :
     bilinFormOfWeight α β w hw p q = ∫ t in α..β, p.eval t * q.eval t * w t := rfl
 
-/-- The weighted form of (12.10) is symmetric. -/
+/-- **Equation (12.10)** of [saad2003iterative]. The weighted form $\langle p, q \rangle_w$ is
+symmetric. -/
 theorem bilinFormOfWeight_isSymm (hw : IntervalIntegrable w volume α β) :
     (bilinFormOfWeight α β w hw).IsSymm := by
   refine ⟨fun p q => ?_⟩
@@ -282,8 +425,13 @@ theorem bilinFormOfWeight_isSymm (hw : IntervalIntegrable w volume α β) :
   refine intervalIntegral.integral_congr fun t _ => ?_
   ring
 
-/-- The weighted form of (12.10) is "supported on `[α, β]`" in the sense the geometric bound of
-§12.3.3 needs: for a nonnegative weight, `⟨p, p⟩_w ≤ (max_{[α,β]} |p|)² ⟨1, 1⟩_w`. -/
+/-- **Section 12.3.3** of [saad2003iterative], the bound by the maximum on the interval. Let
+$\alpha \le \beta$ and let $w$ be integrable over $[\alpha, \beta]$ and nonnegative on
+$[\alpha, \beta]$. Then for every real polynomial $p$
+$$\langle p, p \rangle_w \le \Bigl(\max_{\lambda \in [\alpha, \beta]} |p(\lambda)|\Bigr)^2
+  \langle 1, 1 \rangle_w.$$
+This is the sense in which the form is supported on $[\alpha, \beta]$ that the geometric bound
+of Section 12.3.3 needs. -/
 theorem bilinFormOfWeight_le (hw : IntervalIntegrable w volume α β) (hαβ : α ≤ β)
     (hw0 : ∀ t ∈ Set.Icc α β, 0 ≤ w t) (p : Polynomial ℝ) :
     bilinFormOfWeight α β w hw p p ≤
@@ -312,21 +460,30 @@ theorem bilinFormOfWeight_le (hw : IntervalIntegrable w volume α β) (hαβ : �
 
 end LeastSquares
 
-/-- Saad §12.3.3: `R` is a least-squares residual polynomial of degree `k` for the form `B` when
-it is admissible — of degree at most `k` and equal to `1` at `0`, which is exactly what
-`R = 1 - λ s(λ)` with `deg s ≤ k - 1` means — and minimizes `‖R‖_w` among the admissible
-polynomials. Saad's `s_{k-1}` is recovered from `R` as `(1 - R)/λ`. -/
+/-- **Section 12.3.3** of [saad2003iterative], the least-squares residual polynomial. Let $B$ be a
+bilinear form on the real polynomials and let $k \in \mathbb{N}$. A polynomial $R$ is a
+**least-squares residual polynomial of degree $k$** for $B$ if it is admissible, that is,
+$\deg R \le k$ and $R(0) = 1$, and
+$$B(R, R) \le B(p, p) \quad \text{for every admissible } p.$$
+
+An admissible polynomial is one of the form $R(\lambda) = 1 - \lambda s(\lambda)$ with
+$\deg s \le k - 1$, and the book's $s_{k-1}$ is $(1 - R)/\lambda$. For the weighted form of
+(12.10), $B(R, R) = \|R\|_w^2$. -/
 def IsLeastSquaresResidual (B : LinearMap.BilinForm ℝ (Polynomial ℝ)) (k : ℕ)
     (R : Polynomial ℝ) : Prop :=
   R.degree ≤ (k : WithBot ℕ) ∧ R.eval 0 = 1 ∧
     ∀ p : Polynomial ℝ, p.degree ≤ (k : WithBot ℕ) → p.eval 0 = 1 →
       B R R ≤ B p p
 
-/-- Saad (12.12), the kernel polynomial formula: for the polynomials `q_i` orthonormal with
-respect to the weight, `R_k = (∑_{i ≤ k} q_i(0) q_i(λ)) / ∑_{i ≤ k} q_i(0)²` — that is,
-`Polynomial.kernelPolynomial q 0 k` — is the least-squares residual polynomial of degree `k`. The
-normalizing sum must be nonzero, which says exactly that some `q_i` with `i ≤ k` does not vanish
-at the origin. -/
+/-- **Equation (12.12)** of [saad2003iterative], the kernel polynomial formula. Let $B$ be a
+bilinear form on the real polynomials, and let $q_0, q_1, \dots$ be orthonormal for $B$,
+$B(q_i, q_j) = \delta_{ij}$, with $\deg q_i = i$. Let $k \in \mathbb{N}$ with
+$\sum_{i \le k} q_i(0)^2 \neq 0$. Then
+$$R_k(\lambda) = \frac{\sum_{i \le k} q_i(0) q_i(\lambda)}{\sum_{i \le k} q_i(0)^2}$$
+is a least-squares residual polynomial of degree $k$ for $B$.
+
+The hypothesis on the sum says that some $q_i$ with $i \le k$ does not vanish at $0$. The
+polynomial $R_k$ is `Polynomial.kernelPolynomial q 0 k`. -/
 theorem equation_12_12 {B : LinearMap.BilinForm ℝ (Polynomial ℝ)} {q : ℕ → Polynomial ℝ}
     (horth : ∀ i j, B (q i) (q j) = if i = j then 1 else 0) (hdeg : ∀ i, (q i).degree = i)
     {k : ℕ} (hS : ∑ i ∈ Finset.range (k + 1), (q i).eval 0 ^ 2 ≠ 0) :
@@ -335,10 +492,14 @@ theorem equation_12_12 {B : LinearMap.BilinForm ℝ (Polynomial ℝ)} {q : ℕ �
   rw [bilinForm_kernelPolynomial_self horth hS]
   exact (bilinForm_kernelPolynomial_le horth hdeg hS).2 ⟨p, hp, hp0, rfl⟩
 
-/-- Saad (12.13)–(12.14): the least-squares polynomial itself. With
-`t_i(λ) = (q_i(0) - q_i(λ))/λ`, which is the polynomial `-(q_i).divX`, the minimizer is
-`s_{k-1} = (∑_{i ≤ k} q_i(0) t_i) / ∑_{i ≤ k} q_i(0)²` and the residual polynomial of (12.12) is
-`R_k = 1 - λ s_{k-1}(λ)`. -/
+/-- **Equations (12.13)–(12.14)** of [saad2003iterative], the least-squares polynomial. Let
+$q_0, q_1, \dots$ be real polynomials, let $k \in \mathbb{N}$ with
+$\sum_{i \le k} q_i(0)^2 \neq 0$, and let $t_i(\lambda) = (q_i(0) - q_i(\lambda))/\lambda$. Then
+the kernel polynomial $R_k$ of (12.12) is
+$$R_k(\lambda) = 1 - \lambda s_{k-1}(\lambda), \qquad s_{k-1} = \frac{\sum_{i \le k} q_i(0)
+  t_i}{\sum_{i \le k} q_i(0)^2}.$$
+
+The polynomial $t_i$ is `-(q i).divX`. -/
 theorem equation_12_13 (q : ℕ → Polynomial ℝ) (k : ℕ)
     (hS : ∑ i ∈ Finset.range (k + 1), (q i).eval 0 ^ 2 ≠ 0) :
     kernelPolynomial q 0 k =
@@ -365,10 +526,16 @@ theorem equation_12_13 (q : ℕ → Polynomial ℝ) (k : ℕ)
     eval_neg, smul_eq_mul, Finset.mul_sum]
   rw [hrhs, key, mul_sub, inv_mul_cancel₀ hS, sub_sub_cancel, Finset.mul_sum]
 
-/-- Saad's second route to the least-squares polynomial: the residual polynomials are orthogonal
-with respect to the weight `λ w(λ)`. Equivalently, the normal equations
-`⟨1 - λ s_{k-1}(λ), λ Q(λ)⟩_w = 0` hold for every `Q` of degree less than `k` — the admissible
-directions are exactly those preserving both the degree bound and the value `1` at the origin. -/
+/-- **Section 12.3.3** of [saad2003iterative], the orthogonality of the residual polynomials for the
+weight $\lambda w(\lambda)$. Let $B$ be a symmetric bilinear form on the real polynomials, and
+let $q_0, q_1, \dots$ be orthonormal for $B$ with $\deg q_i = i$. Let $k \in \mathbb{N}$ with
+$\sum_{i \le k} q_i(0)^2 \neq 0$, and let $R_k$ be the kernel polynomial of (12.12). Then for
+every polynomial $Q$ of degree less than $k$
+$$B(\lambda Q, R_k) = 0.$$
+
+These are the normal equations $\langle 1 - \lambda s_{k-1}(\lambda), \lambda Q(\lambda)
+\rangle_w = 0$: the admissible directions are exactly those that keep both the degree bound and
+the value $1$ at the origin. This is the second way of the book to the least-squares polynomial. -/
 theorem leastSquaresResidual_orthogonal {B : LinearMap.BilinForm ℝ (Polynomial ℝ)}
     {q : ℕ → Polynomial ℝ} (hsymm : B.IsSymm)
     (horth : ∀ i j, B (q i) (q j) = if i = j then 1 else 0) (hdeg : ∀ i, (q i).degree = i)
@@ -377,13 +544,19 @@ theorem leastSquaresResidual_orthogonal {B : LinearMap.BilinForm ℝ (Polynomial
     B (X * p) (kernelPolynomial q 0 k) = 0 :=
   bilinForm_kernelPolynomial_mul_X hsymm horth hdeg hS hp
 
-/-- The theoretical consideration closing §12.3.3: for `0 < α < β` the least-squares residual
-polynomial decays geometrically, `‖R_k‖_w² ≤ ((β - α)/(β + α))^{2k} ‖1‖_w²`, because
-`(1 - λ/θ)^k` with `θ = (α + β)/2` is an admissible competitor. The hypothesis on `B` is what
-`bilinFormOfWeight_le` supplies for a nonnegative weight supported on `[α, β]`.
+/-- **Section 12.3.3** of [saad2003iterative], the theoretical consideration at the end. Let $B$ be
+a bilinear form on the real polynomials, and let $q_0, q_1, \dots$ be orthonormal for $B$ with
+$\deg q_i = i$. Let $0 < \alpha < \beta$, and assume that $B(p, p) \le (\max_{[\alpha, \beta]}
+|p|)^2 B(1, 1)$ for every polynomial $p$. Let $k \in \mathbb{N}$ with
+$\sum_{i \le k} q_i(0)^2 \neq 0$. Then the kernel polynomial $R_k$ of (12.12) satisfies
+$$B(R_k, R_k) \le \left(\frac{\beta - \alpha}{\beta + \alpha}\right)^{2k} B(1, 1).$$
+So the least-squares residual polynomial decays geometrically, because $(1 - \lambda/\theta)^k$
+with $\theta = (\alpha + \beta)/2$ is an admissible competitor.
 
-The case `α = 0`, where the decay is only `1/k` and the constant is a ratio of Gamma functions of
-the Jacobi weights, is not stated: Mathlib has no Jacobi polynomials. -/
+The hypothesis on $B$ is what `SaadSparse.Chapter12.bilinFormOfWeight_le` gives for a
+nonnegative weight on $[\alpha, \beta]$. The case $\alpha = 0$, where the decay is only $1/k$
+and the constant is a ratio of Gamma functions of the Jacobi weights, is not stated: Mathlib has
+no Jacobi polynomials. -/
 theorem norm_leastSquaresResidual_le {B : LinearMap.BilinForm ℝ (Polynomial ℝ)}
     {q : ℕ → Polynomial ℝ} (horth : ∀ i j, B (q i) (q j) = if i = j then 1 else 0)
     (hdeg : ∀ i, (q i).degree = i) {α β : ℝ} (hα : 0 < α) (hαβ : α < β)
@@ -393,40 +566,55 @@ theorem norm_leastSquaresResidual_le {B : LinearMap.BilinForm ℝ (Polynomial �
       ((β - α) / (β + α)) ^ (2 * k) * B 1 1 :=
   bilinForm_kernelPolynomial_le_pow horth hdeg hα hαβ hB hS
 
-/-! ### §12.3.3 The Jacobi weight (12.15)–(12.16) and Example 12.1 -/
+/-! ### Section 12.3.3: the Jacobi weight (12.15)–(12.16) and Example 12.1 -/
 
-/-- The coefficient `κ_j^{(k)}` of Saad (12.16), for the Jacobi weight (12.15) with exponents
-`μ > 0` and `ν ≥ -1/2`: `κ_j^{(k)} = C(k, j) ∏_{i < j} (k - i + ν)/(i + 1 + μ)`. -/
+/-- **Equation (12.16)** of [saad2003iterative], the coefficients. For $\mu, \nu \in \mathbb{R}$ and
+$j, k \in \mathbb{N}$,
+$$\kappa_j^{(k)} = \binom{k}{j} \prod_{i < j} \frac{k - i + \nu}{i + 1 + \mu}.$$
+
+The book uses them for the Jacobi weight (12.15) with exponents $\mu > 0$ and $\nu \ge -1/2$;
+the definition accepts all real $\mu$ and $\nu$. -/
 noncomputable def kappa_12_16 (mu nu : ℝ) (k j : ℕ) : ℝ :=
   (k.choose j : ℝ) * ∏ i ∈ Finset.range j, ((k : ℝ) - i + nu) / ((i : ℝ) + 1 + mu)
 
-/-- **Saad (12.16)**, the closed form of the least-squares residual polynomial for the Jacobi
-weight (12.15) on `[0, 1]`:
-`R_k(λ) = ∑_{j ≤ k} κ_j^{(k)} (1 - λ)^{k - j} (-λ)^j`.
+/-- **Equation (12.16)** of [saad2003iterative], the closed form of the least-squares residual
+polynomial for the Jacobi weight (12.15) on $[0, 1]$. For $\mu, \nu \in \mathbb{R}$,
+$k \in \mathbb{N}$ and $\lambda \in \mathbb{R}$,
+$$R_k(\lambda) = \sum_{j \le k} \kappa_j^{(k)} (1 - \lambda)^{k - j} (-\lambda)^j.$$
 
-This is a *definition*, not an identification: that this polynomial is the least-squares residual
-polynomial of `IsLeastSquaresResidual` for the Jacobi weight is what Saad says can "be derived
-easily from the explicit expression of the Jacobi polynomials and the fact that `{R_k}` is
-orthogonal with respect to the weight `λ w(λ)`", and it needs Jacobi polynomials with their
-orthogonality, which Mathlib does not have — the same gap
-`plans/NumlibSurface/SaadSparse/Chapter12.toml` records for (12.15)–(12.16). What is stated here is
-what the book computes from the formula, which is Example 12.1. -/
+This is a definition, not an identification. The book says that the formula can "be derived
+easily from the explicit expression of the Jacobi polynomials and the fact that $\{R_k\}$ is
+orthogonal with respect to the weight $\lambda w(\lambda)$". This derivation needs Jacobi
+polynomials and their orthogonality, which Mathlib does not have, so $R_k$ is not shown to
+satisfy `SaadSparse.Chapter12.IsLeastSquaresResidual`. What is stated is what the book computes
+from the formula, Example 12.1. -/
 noncomputable def equation_12_16 (mu nu : ℝ) (k : ℕ) (l : ℝ) : ℝ :=
   ∑ j ∈ Finset.range (k + 1), kappa_12_16 mu nu k j * (1 - l) ^ (k - j) * (-l) ^ j
 
-/-- **Saad Example 12.1**: the least-squares polynomials `s_k` for `k = 1, …, 8` and the Jacobi
-weight with `μ = 1/2`, `ν = -1/2`, as the book tabulates them.
+/-- **Example 12.1** of [saad2003iterative]. For the Jacobi weight with $\mu = 1/2$ and
+$\nu = -1/2$, let $R_k$ be the polynomial (12.16). Then for every $\lambda \in \mathbb{R}$ and
+$k = 1, \dots, 8$
+$$\frac{3 + 2k}{4} \bigl(1 - R_{k+1}(\lambda)\bigr) = \lambda \, s_k(4 \lambda),$$
+where, with $t = 4\lambda$,
+$$\begin{aligned}
+  s_1(t) &= 5 - t, \\
+  s_2(t) &= 14 - 7t + t^2, \\
+  s_3(t) &= 30 - 27t + 9t^2 - t^3, \\
+  s_4(t) &= 55 - 77t + 44t^2 - 11t^3 + t^4, \\
+  s_5(t) &= 91 - 182t + 156t^2 - 65t^3 + 13t^4 - t^5, \\
+  s_6(t) &= 140 - 378t + 450t^2 - 275t^3 + 90t^4 - 15t^5 + t^6, \\
+  s_7(t) &= 204 - 714t + 1122t^2 - 935t^3 + 442t^4 - 119t^5 + 17t^6 - t^7, \\
+  s_8(t) &= 285 - 1254t + 2508t^2 - 2717t^3 + 1729t^4 - 665t^5 + 152t^6 - 19t^7 + t^8.
+\end{aligned}$$
+These are the eight rows of the table of the book.
 
-The table lists the polynomials on `[0, 4]`, "as this leads to integer coefficients", each rescaled
-by `(3 + 2k)/4`; on a general interval `[0, β]` the degree `k` polynomial is `s_k(4λ/β)`, so at
-`β = 1` — the interval the weight (12.15) lives on — the tabulated `s_k` read at `4λ` is
-`(3 + 2k)/4` times `(1 - R_{k+1}(λ))/λ`, with `R_{k+1}` the residual polynomial (12.16). That is the
-eight identities below, cleared of the division by `λ`, so they hold at `λ = 0` too. The
-coefficients are the eight rows of the table, `s_1 = 5 - λ` through
-`s_8 = 285 - 1254 λ + ⋯ + λ⁸`.
-
-The scaling factor is, as Saad says, unimportant for preconditioning; it is carried here because it
-is what makes the printed coefficients integers. -/
+The table lists the polynomials on $[0, 4]$, "as this leads to integer coefficients", each
+scaled by $(3 + 2k)/4$. On an interval $[0, \beta]$ the polynomial of degree $k$ is
+$s_k(4\lambda/\beta)$, so at $\beta = 1$, the interval of the weight (12.15), the tabulated
+$s_k$ at $4\lambda$ is $(3 + 2k)/4$ times $(1 - R_{k+1}(\lambda))/\lambda$. The identities are
+cleared of the division by $\lambda$, so they also hold at $\lambda = 0$. As the book says, the
+scaling factor does not matter for preconditioning; it is kept because it makes the printed
+coefficients integers. -/
 theorem example_12_1 (l : ℝ) :
       (5 / 4) * (1 - equation_12_16 (1 / 2) (-1 / 2) 2 l) =
         l * (5 - (4 * l)) ∧
