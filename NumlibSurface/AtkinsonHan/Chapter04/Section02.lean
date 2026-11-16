@@ -9,72 +9,98 @@ import Mathlib.Analysis.Fourier.LpSpace
 import Mathlib.Analysis.Fourier.RiemannLebesgueLemma
 
 /-!
-# Atkinson–Han §4.2: the Fourier transform
+# Atkinson and Han, Section 4.2: The Fourier transform
 
-Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework*, 3rd edition, Springer, 2009, §4.2.
+This module formalizes Section 4.2 of [han2009theoretical], the Fourier transform on $\mathbb{R}^d$.
+The book's transform (4.2.1) is
+$$\hat f(\xi) = (\mathcal{F} f)(\xi) = (2\pi)^{-d/2} \int_{\mathbb{R}^d} f(x)\, e^{-i x \cdot \xi}
+  \, dx,$$
+and its inverse (4.2.4) has the factor $e^{i x \cdot \xi}$ instead. Mathlib's transform
+`FourierTransform.fourier` uses the character $e^{-2\pi i x \cdot \xi}$ and no prefactor, so the two
+are related by $\hat f(\xi) = (2\pi)^{-d/2} (\mathcal{F}_{\mathrm{Mathlib}} f)((2\pi)^{-1} \xi)$.
+This one identity carries the Mathlib results to the book's normalization: linearity (4.2.5), the
+bound (4.2.6), the differentiation and multiplication rules (4.2.7) and (4.2.8), the multiplication
+formula (4.2.10), the inversion formula (4.2.11), the transform on the Schwartz space and on
+tempered distributions (Definitions 4.2.1–4.2.3), and Plancherel's theorem (Theorem 4.2.4) on the
+Schwartz space and on $L^2(\mathbb{R}^d)$.
 
-Almost everything the section states is in Mathlib, and what is left is a matter of
-*normalisation*. The book's transform (4.2.1) is
-
-`𝓕_book f ξ = (2 π)^{-d/2} ∫ f x exp (-i ⟪x, ξ⟫) dx`,
-
-while Mathlib's `𝓕` uses the analyst's character `exp (-2 π i ⟪x, ξ⟫)` and no prefactor. The two
-are related by `bookFourier_eq_fourier`,
-
-`𝓕_book f ξ = (2 π)^{-d/2} • 𝓕 f ((2 π)⁻¹ • ξ)`,
-
-and that single lemma carries every Mathlib result across. The book's transform is also, exactly,
-Mathlib's `VectorFourier.fourierIntegral` for the *probabilist* character `Real.probChar`
-(`bookFourier_eq_vectorFourier`), which is what the statements not involving inversion use.
-
-Everything is stated over a finite-dimensional real inner product space rather than over
-`EuclideanSpace ℝ (Fin d)` alone, with `d = finrank ℝ V`: that is the same statement for the
-book's `ℝ^d`, and it lets the one-dimensional rules be read off at `V = ℝ`, where Mathlib states
-them.
-
-Definitions 4.2.1, 4.2.2 and 4.2.3 are Mathlib's `SchwartzMap` (`𝓢(E, F)`),
-`TemperedDistribution` (`𝓢'(E, F)`) and the Fourier transform on the latter, so they are stated
-as identifications rather than as new definitions.
+The Schwartz space, the tempered distributions and the Fourier transform on them are Mathlib's
+`SchwartzMap`, `TemperedDistribution` and their Fourier transforms. Definitions 4.2.1–4.2.3 are
+therefore stated as identifications with these objects, not as new definitions.
 
 ## Main definitions
 
-* `bookConst` — the normalising constant `(2 π)^{-d/2}` of (4.2.1), in `d = finrank ℝ V`.
-* `bookFourier`, `bookFourierInv` — the book's transform (4.2.1) and its inverse (4.2.4).
-* `bookFourierCLM` — the same transform as a continuous linear map `𝓢(V, ℂ) →L[ℂ] 𝓢(V, ℂ)`
-  (Definition 4.2.1), and `bookFourierTD` its extension to `𝓢'(V, ℂ)` (Definitions 4.2.2–4.2.3).
+* Equation (4.2.1), `AtkinsonHan.Chapter04.bookConst` and `AtkinsonHan.Chapter04.bookFourier`: the
+  constant $(2\pi)^{-d/2}$ and the book's Fourier transform $\hat f$.
+* Equation (4.2.4), `AtkinsonHan.Chapter04.bookFourierInv`: the book's inverse Fourier transform.
+* Definition 4.2.1 and equation (4.2.9), `AtkinsonHan.Chapter04.bookFourierCLM`: the book's
+  transform as a continuous linear map of the Schwartz space $\mathcal{S}(\mathbb{R}^d)$ into
+  itself.
+* Definition 4.2.2, `AtkinsonHan.Chapter04.definition_4_2_2` and
+  `AtkinsonHan.Chapter04.definition_4_2_2_seq`: a linear functional on $\mathcal{S}(\mathbb{R}^d)$
+  is a tempered distribution if and only if it is continuous, and if and only if it is sequentially
+  continuous.
+* Definition 4.2.3, `AtkinsonHan.Chapter04.bookFourierTD`: the Fourier transform of a tempered
+  distribution, defined by duality.
+* Theorem 4.2.4, `AtkinsonHan.Chapter04.bookFourierSchwartzEquiv` and
+  `AtkinsonHan.Chapter04.bookFourierL2`: the book's transform as a linear bijection of
+  $\mathcal{S}(\mathbb{R}^d)$, and its extension to a linear isometry of $L^2(\mathbb{R}^d)$ onto
+  itself.
 
 ## Main results
 
-* `bookFourier_eq_fourier`, `bookFourier_eq_vectorFourier`, `bookFourierInv_eq_fourierInv` — the
-  normalisation bridges to Mathlib's `𝓕`, `𝓕⁻` and `VectorFourier.fourierIntegral`. Everything
-  below is proved through them.
-* `equation_4_2_5` — (4.2.5), linearity.
-* `equation_4_2_6`, `continuous_bookFourier` — (4.2.6), the transform maps `L¹` into `L^∞` with
-  `‖f̂‖_∞ ≤ (2 π)^{-d/2} ‖f‖_{L¹}`, and its values are continuous.
-* `equation_4_2_7`, `equation_4_2_7_dim_one` — (4.2.7), the differentiation rule
-  `𝓕(∂_v f) ξ = i ⟪v, ξ⟫ 𝓕 f ξ`, and the one-dimensional form `𝓕(f') ξ = i ξ 𝓕 f ξ`.
-* `equation_4_2_8` — (4.2.8) in one dimension, the multiplication rule
-  `𝓕(x f(x)) ξ = i (𝓕 f)' ξ`.
-* `equation_4_2_10` — (4.2.10), the multiplication formula `∫ f̂ g = ∫ f ĝ`.
-* `equation_4_2_11` — (4.2.4) and (4.2.11), the inversion formula.
-* `equation_4_2_12` — (4.2.12), an `L^p` function as a tempered distribution, and the consistency
-  of Definition 4.2.3 with the integral (4.2.3) on `L¹`.
-* `theorem_4_2_4` — Theorem 4.2.4 with (4.2.18), Plancherel's theorem on `𝓢(V, ℂ)`.
-* `bookFourierSchwartzEquiv`, `bookFourierL2`, `theorem_4_2_4_l2` — Theorem 4.2.4 with
-  (4.2.14)–(4.2.18) on `L²(ℝ^d)`: the transform, extended from the Schwartz space, is an isometry
-  of `L²(ℝ^d)` onto itself.
-* `definition_4_2_1`, `definition_4_2_3` — the two bundled transforms agree with `bookFourier`
-  and with the duality formula (4.2.13).
-* `definition_4_2_2`, `definition_4_2_2_seq` — the tempered distributions are exactly the
-  continuous linear functionals on `𝓢(ℝ^d)`, and equivalently the sequentially continuous ones,
-  which is the reading the book gives beside the definition.
+* Equation (4.2.5), `AtkinsonHan.Chapter04.equation_4_2_5`: the transform is linear on integrable
+  functions.
+* Equation (4.2.6), `AtkinsonHan.Chapter04.equation_4_2_6` and
+  `AtkinsonHan.Chapter04.continuous_bookFourier`: $|\hat f(\xi)| \le (2\pi)^{-d/2} \|f\|_{L^1}$, and
+  $\hat f$ is continuous for $f \in L^1$.
+* Equation (4.2.7), `AtkinsonHan.Chapter04.equation_4_2_7` and
+  `AtkinsonHan.Chapter04.equation_4_2_7_dim_one`: the transform of a directional derivative
+  $\partial_v f$ is $i (v \cdot \xi) \hat f(\xi)$, and in one dimension
+  $\widehat{f'}(\xi) = i \xi \hat f(\xi)$.
+* Equation (4.2.8), `AtkinsonHan.Chapter04.equation_4_2_8`: in one dimension, the transform of
+  $x f(x)$ is $i \hat f'(\xi)$.
+* Equation (4.2.10), `AtkinsonHan.Chapter04.equation_4_2_10`: $\int \hat f g = \int f \hat g$ for
+  integrable $f$ and $g$.
+* Equations (4.2.4) and (4.2.11), `AtkinsonHan.Chapter04.equation_4_2_11`: the inversion formula
+  $\mathcal{F}^{-1} \hat f = f$ for continuous integrable $f$ with integrable $\hat f$.
+* Definition 4.2.1, `AtkinsonHan.Chapter04.definition_4_2_1`: the continuous linear map on
+  $\mathcal{S}(\mathbb{R}^d)$ is the book's transform.
+* Equation (4.2.12), `AtkinsonHan.Chapter04.equation_4_2_12`: an $L^p$ function is a tempered
+  distribution through $\langle f, \varphi \rangle = \int f \varphi$, and for $f \in L^1$ its
+  distributional transform is the function $\hat f$.
+* Definition 4.2.3 and equation (4.2.13), `AtkinsonHan.Chapter04.definition_4_2_3`: $\langle \hat u,
+  \varphi \rangle = \langle u, \hat \varphi \rangle$.
+* Theorem 4.2.4 (Plancherel's theorem), `AtkinsonHan.Chapter04.theorem_4_2_4` and
+  `AtkinsonHan.Chapter04.theorem_4_2_4_l2`: the transform preserves the $L^2$ norm of a Schwartz
+  function, and its extension to $L^2(\mathbb{R}^d)$ is an isometry onto $L^2(\mathbb{R}^d)$.
+* `AtkinsonHan.Chapter04.bookFourier_eq_fourier`,
+  `AtkinsonHan.Chapter04.bookFourier_eq_vectorFourier` and
+  `AtkinsonHan.Chapter04.bookFourierInv_eq_fourierInv`: the relations between the book's transforms
+  and Mathlib's.
+
+## Conventions
+
+* The book's $\mathbb{R}^d$ is a finite-dimensional real inner product space $V$, with
+  $d = \dim_{\mathbb{R}} V$ (`Module.finrank ℝ V`) and $x \cdot \xi$ the inner product. For
+  $V = \mathbb{R}^d$ this is the book's statement. At $V = \mathbb{R}$ the one-dimensional rules can
+  be read off directly from Mathlib.
+* Functions are complex valued: $f : V \to \mathbb{C}$, and the Schwartz space is `𝓢(V, ℂ)`.
 
 ## Implementation notes
 
-The prefactor `(2 π)^{-d/2}` is named `bookConst` rather than inlined, so that the two places
-where it has to cancel the Jacobian `(2 π)^d` of the rescaling `ξ ↦ (2 π)⁻¹ • ξ` — the inversion
-formula and Plancherel — can both cite one identity, `bookConst V * (bookConst V * (2 π)^d) = 1`.
+* The prefactor $(2\pi)^{-d/2}$ is the definition `AtkinsonHan.Chapter04.bookConst`, not an inlined
+  expression. The inversion formula and Plancherel's theorem both need the identity
+  $(2\pi)^{-d/2} \cdot (2\pi)^{-d/2} (2\pi)^d = 1$, which cancels the Jacobian $(2\pi)^d$ of the
+  change of variables $\xi = 2\pi u$.
+* The transform `AtkinsonHan.Chapter04.bookFourier` is a Bochner integral, so it is $0$ at every
+  $\xi$ where the integrand is not integrable.
+
+## Not formalized
+
+* Equation (4.2.7) for a multi-index $\alpha$ with $|\alpha| \ge 2$, $\widehat{\partial^\alpha
+  f}(\xi) = (i\xi)^\alpha \hat f(\xi)$. It is the first-order rule iterated $|\alpha|$ times.
+* Equation (4.2.8) in dimension $d \ge 2$.
 -/
 
 namespace AtkinsonHan.Chapter04
@@ -86,36 +112,50 @@ open scoped ENNReal FourierTransform RealInnerProductSpace SchwartzMap
 variable {V : Type*} [NormedAddCommGroup V] [InnerProductSpace ℝ V] [FiniteDimensional ℝ V]
   [MeasurableSpace V] [BorelSpace V]
 
-/-- The book's normalising constant `(2 π)^{-d/2}` in dimension `d = finrank ℝ V`. It is the
-constant that makes the transform an isometry of `L²` (Theorem 4.2.4). -/
+/-- The constant $(2\pi)^{-d/2}$ of (4.2.1) in dimension $d = \dim_{\mathbb{R}} V$, defined as
+$(2\pi)^{-d/2}$ with a real exponent.
+
+It is the constant that makes the Fourier transform an isometry of $L^2$ (Theorem 4.2.4 of
+[han2009theoretical]). It appears in the book's transform `AtkinsonHan.Chapter04.bookFourier`
+and in its inverse `AtkinsonHan.Chapter04.bookFourierInv`. -/
 noncomputable def bookConst (V : Type*) [NormedAddCommGroup V] [InnerProductSpace ℝ V]
     [FiniteDimensional ℝ V] : ℝ :=
   (2 * π) ^ (-(finrank ℝ V : ℝ) / 2)
 
 omit [MeasurableSpace V] [BorelSpace V] in
-/-- The normalising constant of (4.2.1) is positive, so it may be divided by and pulled out of
-a norm. -/
+/-- The constant $(2\pi)^{-d/2}$ is positive. -/
 theorem bookConst_pos : 0 < bookConst V := by
   rw [bookConst]
   positivity
 
-/-- The book's Fourier transform (4.2.1), (4.2.3):
-`𝓕_book f ξ = (2 π)^{-d/2} ∫ f x exp (-i ⟪x, ξ⟫) dx` on a `d`-dimensional real inner product
-space. -/
+/-- **Equations (4.2.1) and (4.2.3)** of [han2009theoretical]. Let $V$ be a real inner product space
+of finite dimension $d$. The **Fourier transform** of $f : V \to \mathbb{C}$ is the function
+$$\hat f(\xi) = (2\pi)^{-d/2} \int_V e^{-i x \cdot \xi} f(x) \, dx, \qquad \xi \in V.$$
+
+The integral is the Bochner integral for the volume measure on $V$. It is $0$ when the integrand
+is not integrable, so $\hat f(\xi) = 0$ for every $\xi$ if $f$ is not integrable. -/
 noncomputable def bookFourier (f : V → ℂ) (ξ : V) : ℂ :=
   (bookConst V : ℝ) • ∫ x : V, Complex.exp (-((⟪x, ξ⟫ : ℝ) : ℂ) * Complex.I) * f x
 
-/-- The book's transform is Mathlib's vector-valued Fourier integral for the probabilist
-character `exp (i t)`, which is the convention without the `2 π` in the exponent. -/
+/-- The book's transform is Mathlib's Fourier integral `VectorFourier.fourierIntegral` for the
+character $t \mapsto e^{it}$ (`Real.probChar`) and the pairing given by the inner product,
+multiplied by $(2\pi)^{-d/2}$: for every $f : V \to \mathbb{C}$ and $\xi \in V$,
+$$\hat f(\xi) = (2\pi)^{-d/2} \int_V e^{-i x \cdot \xi} f(x) \, dx$$
+with the integral written as `VectorFourier.fourierIntegral Real.probChar volume (innerₗ V) f
+ξ`. -/
 theorem bookFourier_eq_vectorFourier (f : V → ℂ) (ξ : V) :
     bookFourier f ξ =
       (bookConst V : ℝ) • fourierIntegral Real.probChar volume (innerₗ V) f ξ := by
   rw [bookFourier, fourierIntegral_probChar]
   simp [smul_eq_mul]
 
-/-- **The normalisation bridge**: the book's transform is Mathlib's `𝓕` rescaled in both the
-value and the argument. Every statement of this section about inversion or about `L²` goes
-through this lemma. -/
+/-- The relation between the book's Fourier transform and Mathlib's transform $\mathcal{F}$, which
+uses the character $e^{-2\pi i x \cdot \xi}$ and no prefactor. For every $f : V \to \mathbb{C}$
+and $\xi \in V$,
+$$\hat f(\xi) = (2\pi)^{-d/2} \, (\mathcal{F} f)\bigl((2\pi)^{-1} \xi\bigr).$$
+
+There is no hypothesis on $f$: when $f$ is not integrable, both sides are $0$. The results of
+this module on inversion and on $L^2$ are proved through this identity. -/
 theorem bookFourier_eq_fourier (f : V → ℂ) (ξ : V) :
     bookFourier f ξ = (bookConst V : ℝ) • 𝓕 f ((2 * π)⁻¹ • ξ) := by
   rw [bookFourier, Real.fourier_eq]
@@ -143,7 +183,10 @@ private theorem integrable_exp_mul {f : V → ℂ} (hf : Integrable f) (ξ : V) 
   Integrable.bdd_mul (c := 1) hf (by fun_prop)
     (Filter.Eventually.of_forall fun x => (norm_exp_neg_inner_mul_I x ξ).le)
 
-/-- (4.2.5): the Fourier transform is linear. -/
+/-- **Equation (4.2.5)** of [han2009theoretical]. Let $f, g : V \to \mathbb{C}$ be integrable, and
+let $a, b \in \mathbb{C}$. Then the Fourier transform is linear:
+$$\widehat{(af + bg)}(\xi) = a \hat f(\xi) + b \hat g(\xi) \qquad \text{for all } \xi \in V.$$
+-/
 theorem equation_4_2_5 {f g : V → ℂ} (hf : Integrable f) (hg : Integrable g) (a b : ℂ) (ξ : V) :
     bookFourier (fun x => a * f x + b * g x) ξ
       = a * bookFourier f ξ + b * bookFourier g ξ := by
@@ -156,7 +199,14 @@ theorem equation_4_2_5 {f g : V → ℂ} (hf : Integrable f) (hg : Integrable g)
     integral_const_mul, integral_const_mul]
   ring
 
-/-- (4.2.6): the Fourier transform maps `L¹` into `L^∞`, with `‖f̂‖_∞ ≤ (2 π)^{-d/2} ‖f‖_{L¹}`. -/
+/-- **Equation (4.2.6)** of [han2009theoretical], the bound. For every function
+$f : V \to \mathbb{C}$ and every $\xi \in V$,
+$$|\hat f(\xi)| \le (2\pi)^{-d/2} \int_V |f(x)| \, dx.$$
+Thus the transform maps $L^1(\mathbb{R}^d)$ into $L^\infty(\mathbb{R}^d)$, with $\|\hat
+f\|_\infty \le (2\pi)^{-d/2} \|f\|_{L^1}$.
+
+The statement has no integrability hypothesis. If $f$ is not integrable, then $\hat f(\xi) = 0$
+and the bound is trivial. -/
 theorem equation_4_2_6 (f : V → ℂ) (ξ : V) :
     ‖bookFourier f ξ‖ ≤ bookConst V * ∫ x : V, ‖f x‖ := by
   rw [bookFourier_eq_vectorFourier, norm_smul, Real.norm_eq_abs,
@@ -164,15 +214,19 @@ theorem equation_4_2_6 (f : V → ℂ) (ξ : V) :
   exact mul_le_mul_of_nonneg_left
     (norm_fourierIntegral_le_integral_norm _ _ _ _ _) bookConst_pos.le
 
-/-- (4.2.6): the Fourier transform of an `L¹` function is continuous. -/
+/-- **Equation (4.2.6)** of [han2009theoretical], continuity. If $f : V \to \mathbb{C}$ is
+integrable, then $\hat f$ is continuous on $V$. -/
 theorem continuous_bookFourier {f : V → ℂ} (hf : Integrable f) : Continuous (bookFourier f) := by
   simp only [funext fun ξ => bookFourier_eq_vectorFourier f ξ]
   exact (fourierIntegral_continuous Real.continuous_probChar continuous_innerₗ
     hf).const_smul (bookConst V)
 
-/-- (4.2.10), the multiplication formula: `∫ f̂ g = ∫ f ĝ`. It is Fubini applied to
-`f x * g ξ * exp (-i ⟪x, ξ⟫)`, and it is what makes Definition 4.2.3 consistent with (4.2.3)
-on `L¹`. -/
+/-- **Equation (4.2.10)** of [han2009theoretical] (the multiplication formula). Let
+$f, g : V \to \mathbb{C}$ be integrable. Then
+$$\int_V \hat f(\xi) \, g(\xi) \, d\xi = \int_V f(x) \, \hat g(x) \, dx.$$
+
+The proof is Fubini's theorem for $f(x) g(\xi) e^{-i x \cdot \xi}$. The formula shows that
+Definition 4.2.3 agrees with (4.2.3) on $L^1$; see `AtkinsonHan.Chapter04.equation_4_2_12`. -/
 theorem equation_4_2_10 {f g : V → ℂ} (hf : Integrable f) (hg : Integrable g) :
     ∫ ξ : V, bookFourier f ξ * g ξ = ∫ x : V, f x * bookFourier g x := by
   have key := integral_fourierIntegral_smul_eq_flip Real.continuous_probChar
@@ -191,12 +245,21 @@ theorem equation_4_2_10 {f g : V → ℂ} (hf : Integrable f) (hg : Integrable g
     exact integral_congr_ae (Filter.Eventually.of_forall fun x => by ring)
   rw [e1, e2, key]
 
-/-- The book's inverse Fourier transform (4.2.4):
-`𝓕⁻¹_book f x = (2 π)^{-d/2} ∫ f ξ exp (i ⟪x, ξ⟫) dξ`. -/
+/-- **Equation (4.2.4)** of [han2009theoretical]. The **inverse Fourier transform** of
+$f : V \to \mathbb{C}$ is the function
+$$(\mathcal{F}^{-1} f)(x) = (2\pi)^{-d/2} \int_V e^{i x \cdot \xi} f(\xi) \, d\xi, \qquad x \in
+  V.$$
+
+As for `AtkinsonHan.Chapter04.bookFourier`, the integral is $0$ when the integrand is not
+integrable. -/
 noncomputable def bookFourierInv (f : V → ℂ) (x : V) : ℂ :=
   (bookConst V : ℝ) • ∫ ξ : V, Complex.exp (((⟪x, ξ⟫ : ℝ) : ℂ) * Complex.I) * f ξ
 
-/-- The bridge for the inverse transform, the mirror of `bookFourier_eq_fourier`. -/
+/-- The relation between the book's inverse transform and Mathlib's inverse transform
+$\mathcal{F}^{-1}$: for every $f : V \to \mathbb{C}$ and $x \in V$,
+$$(\mathcal{F}^{-1}_{\mathrm{book}} f)(x) = (2\pi)^{-d/2} \, (\mathcal{F}^{-1}
+  f)\bigl((2\pi)^{-1} x\bigr).$$
+This is the counterpart of `AtkinsonHan.Chapter04.bookFourier_eq_fourier`. -/
 theorem bookFourierInv_eq_fourierInv (f : V → ℂ) (x : V) :
     bookFourierInv f x = (bookConst V : ℝ) • 𝓕⁻ f ((2 * π)⁻¹ • x) := by
   rw [bookFourierInv, Real.fourierInv_eq]
@@ -210,8 +273,8 @@ theorem bookFourierInv_eq_fourierInv (f : V → ℂ) (x : V) :
   field_simp
 
 omit [MeasurableSpace V] [BorelSpace V] in
-/-- The prefactor squared cancels the Jacobian of the change of variables `ξ = 2 π u`: this is
-the whole reason for the book's normalisation `(2 π)^{-d/2}`. -/
+/-- The identity $(2\pi)^{-d/2} \cdot \bigl((2\pi)^{-d/2} (2\pi)^d\bigr) = 1$, which cancels the
+Jacobian of the change of variables $\xi = 2\pi u$. -/
 private theorem bookConst_sq_mul_pow :
     bookConst V * (bookConst V * (2 * π) ^ finrank ℝ V) = 1 := by
   rw [bookConst, ← Real.rpow_natCast (2 * π) (finrank ℝ V), ← mul_assoc,
@@ -219,8 +282,8 @@ private theorem bookConst_sq_mul_pow :
     show -(finrank ℝ V : ℝ) / 2 + -(finrank ℝ V : ℝ) / 2 + (finrank ℝ V : ℝ) = 0 by ring,
     Real.rpow_zero]
 
-/-- The change of variables `ξ = 2 π u`, whose Jacobian `(2 π)^d` is what the book's prefactor
-`(2 π)^{-d/2}` squares to cancel. -/
+/-- Mathlib's inverse transform of $\hat f$ at $w$ is $(2\pi)^{-d/2} (2\pi)^d$ times Mathlib's
+inverse transform of $\mathcal{F} f$ at $2\pi w$. -/
 private theorem fourierInv_bookFourier (f : V → ℂ) (w : V) :
     𝓕⁻ (bookFourier f) w
       = ((bookConst V * (2 * π) ^ finrank ℝ V : ℝ) : ℂ) * 𝓕⁻ (𝓕 f) ((2 * π) • w) := by
@@ -249,8 +312,15 @@ private theorem fourierInv_bookFourier (f : V → ℂ) (w : V) :
   push_cast
   ring
 
-/-- (4.2.4) and (4.2.11), **the inversion formula**: for `f` continuous and integrable whose
-transform is integrable, `f x = (2 π)^{-d/2} ∫ f̂ ξ exp (i ⟪x, ξ⟫) dξ`. -/
+/-- **Equations (4.2.4) and (4.2.11)** of [han2009theoretical] (the inversion formula). Let
+$f : V \to \mathbb{C}$ be continuous and integrable, and let $\hat f$ be integrable. Then
+$\mathcal{F}^{-1} \hat f = f$, that is,
+$$f(x) = (2\pi)^{-d/2} \int_V e^{i x \cdot \xi} \hat f(\xi) \, d\xi \qquad \text{for all } x \in
+  V.$$
+
+The proof specializes Mathlib's inversion theorem for $\mathcal{F}$ through
+`AtkinsonHan.Chapter04.bookFourier_eq_fourier` and
+`AtkinsonHan.Chapter04.bookFourierInv_eq_fourierInv`. -/
 theorem equation_4_2_11 {f : V → ℂ} (hf : Continuous f) (hfi : Integrable f)
     (hFi : Integrable (bookFourier f)) : bookFourierInv (bookFourier f) = f := by
   have hπ : (2 * π : ℝ) ≠ 0 := by positivity
@@ -268,14 +338,15 @@ theorem equation_4_2_11 {f : V → ℂ} (hf : Continuous f) (hfi : Integrable f)
     one_smul, Complex.real_smul, ← mul_assoc, ← Complex.ofReal_mul, hconst, Complex.ofReal_one,
     one_mul, hf.fourierInv_fourier_eq hfi hFourier]
 
-/-- Theorem 4.2.4 with (4.2.14)-(4.2.18), **Plancherel's theorem**, on the Schwartz space: the
-book's normalisation `(2 π)^{-d/2}` is precisely the one that makes the Fourier transform preserve
-the `L²` norm. The extension to all of `L²(ℝ^d)`, which is (4.2.14)–(4.2.17), is Mathlib's
-`MeasureTheory.Lp.fourierTransformₗᵢ` composed with the `L²` dilation by `2 π`; that dilation is
-`MeasureTheory.Lp.dilationₗᵢ` of `Numlib.Analysis.Wavelet.Haar`, which exists only for
-`Lp ℝ 2 (volume : Measure ℝ)` — real scalars in one real dimension — and generalising it to a Haar
-measure on a finite-dimensional space with complex values is the whole of what the `L²` statement
-still needs. -/
+/-- **Theorem 4.2.4** of [han2009theoretical] (Plancherel's theorem), on the Schwartz space. For
+every Schwartz function $f \in \mathcal{S}(V)$ with values in $\mathbb{C}$,
+$$\int_V |\hat f(\xi)|^2 \, d\xi = \int_V |f(x)|^2 \, dx.$$
+This is (4.2.18) for Schwartz functions: the normalization $(2\pi)^{-d/2}$ is the one for which
+the transform preserves the $L^2$ norm.
+
+The extension of the transform to all of $L^2(\mathbb{R}^d)$, which is (4.2.14)–(4.2.17), is
+`AtkinsonHan.Chapter04.bookFourierL2`, and the full theorem on $L^2(\mathbb{R}^d)$ is
+`AtkinsonHan.Chapter04.theorem_4_2_4_l2`. -/
 theorem theorem_4_2_4 (f : 𝓢(V, ℂ)) :
     ∫ ξ : V, ‖bookFourier f ξ‖ ^ 2 = ∫ x : V, ‖f x‖ ^ 2 := by
   have hπ : ((2 * π)⁻¹ : ℝ) ≠ 0 := by positivity
@@ -290,11 +361,16 @@ theorem theorem_4_2_4 (f : 𝓢(V, ℂ)) :
   rw [integral_congr_ae (Filter.Eventually.of_forall e1), integral_const_mul, hcv, smul_eq_mul,
     ← mul_assoc, h1, one_mul, ← SchwartzMap.fourier_coe f, SchwartzMap.integral_norm_sq_fourier]
 
-/-- **(4.2.7)** in `d` dimensions, at first order: the Fourier transform turns the derivative of
-`f` in a direction `v` into multiplication by `i ⟪v, ξ⟫`. The book states the rule for an
-arbitrary multi-index, `𝓕(∂^α f) ξ = (i ξ)^α 𝓕 f ξ`; the general case is this one iterated
-`|α|` times, and the first-order form is the one the applications to differential equations use.
--/
+/-- **Equation (4.2.7)** of [han2009theoretical], first order. Let $f : V \to \mathbb{C}$ be
+integrable and differentiable, with integrable derivative
+$Df : V \to \mathcal{L}(V, \mathbb{C})$. Then for every direction $v \in V$ the transform of the
+directional derivative $\partial_v f(x) = Df(x) v$ is
+$$\widehat{\partial_v f}(\xi) = i \, (v \cdot \xi) \, \hat f(\xi) \qquad \text{for all } \xi \in
+  V.$$
+
+The book states the rule for a multi-index $\alpha$: $\widehat{\partial^\alpha f}(\xi) =
+(i\xi)^\alpha \hat f(\xi)$. The general case is this first-order rule iterated $|\alpha|$ times,
+and it is not stated here. The derivative is the Fréchet derivative `fderiv ℝ f`. -/
 theorem equation_4_2_7 {f : V → ℂ} (hf : Integrable f) (hf' : Differentiable ℝ f)
     (hfd : Integrable (fderiv ℝ f)) (v ξ : V) :
     bookFourier (fun x => fderiv ℝ f x v) ξ
@@ -312,9 +388,13 @@ theorem equation_4_2_7 {f : V → ℂ} (hf : Integrable f) (hf' : Differentiable
   push_cast
   field_simp
 
-/-- (4.2.7) in one dimension: the Fourier transform turns differentiation into multiplication by
-`i ξ`. At `V = ℝ` the book's normalising constant cancels, so the book's rule and Mathlib's
-`Real.fourier_deriv` differ only by the argument scaling. -/
+/-- **Equation (4.2.7)** of [han2009theoretical], in one dimension. Let
+$f : \mathbb{R} \to \mathbb{C}$ be integrable and differentiable, with integrable derivative
+$f'$. Then
+$$\widehat{f'}(\xi) = i \xi \hat f(\xi) \qquad \text{for all } \xi \in \mathbb{R}.$$
+
+At $V = \mathbb{R}$ the book's rule and Mathlib's `Real.fourier_deriv` differ only by the
+scaling of the argument. -/
 theorem equation_4_2_7_dim_one {f : ℝ → ℂ} (hf : Integrable f) (hf' : Differentiable ℝ f)
     (hfd : Integrable (deriv f)) (ξ : ℝ) :
     bookFourier (deriv f) ξ = Complex.I * ξ * bookFourier f ξ := by
@@ -326,7 +406,8 @@ theorem equation_4_2_7_dim_one {f : ℝ → ℂ} (hf : Integrable f) (hf' : Diff
     field_simp]
   ring
 
-/-- Pulling a constant out of Mathlib's Fourier transform. -/
+/-- Mathlib's transform of $x \mapsto c \, g(x)$ is $c$ times the transform of $g$, for
+$g : \mathbb{R} \to \mathbb{C}$ and $c \in \mathbb{C}$. -/
 private theorem fourier_const_mul (c : ℂ) (g : ℝ → ℂ) (w : ℝ) :
     𝓕 (fun x : ℝ => c * g x) w = c * 𝓕 g w := by
   rw [Real.fourier_eq, Real.fourier_eq, ← integral_const_mul]
@@ -335,11 +416,15 @@ private theorem fourier_const_mul (c : ℂ) (g : ℝ → ℂ) (w : ℝ) :
   rw [Circle.smul_def, Circle.smul_def]
   ring
 
-/-- **(4.2.8)** in one dimension: the Fourier transform turns multiplication by the variable into
-differentiation, `𝓕(x f(x)) ξ = i (𝓕 f)'(ξ)`. This is the rule in which the argument rescaling
-`ξ ↦ (2 π)⁻¹ ξ` of `bookFourier_eq_fourier` contributes a chain-rule factor `(2 π)⁻¹`, and that
-factor is exactly what cancels the `2 π` in the exponent of Mathlib's character; in the book's
-normalisation the constant is a bare `i`. -/
+/-- **Equation (4.2.8)** of [han2009theoretical], in one dimension. Let
+$f : \mathbb{R} \to \mathbb{C}$ be integrable, and let $x \mapsto x f(x)$ be integrable. Then
+$$\widehat{(x f(x))}(\xi) = i \, \frac{d}{d\xi} \hat f(\xi) \qquad \text{for all } \xi \in
+  \mathbb{R}.$$
+
+The proof goes through `AtkinsonHan.Chapter04.bookFourier_eq_fourier`. The rescaling
+$\xi \mapsto (2\pi)^{-1} \xi$ of the argument gives a chain-rule factor $(2\pi)^{-1}$, and this
+factor cancels the $2\pi$ in the exponent of Mathlib's character. Therefore the constant in the
+book's normalization is $i$. -/
 theorem equation_4_2_8 {f : ℝ → ℂ} (hf : Integrable f) (hfx : Integrable fun x : ℝ => x • f x)
     (ξ : ℝ) :
     bookFourier (fun x : ℝ => (x : ℂ) * f x) ξ = Complex.I * deriv (bookFourier f) ξ := by
@@ -371,17 +456,26 @@ theorem equation_4_2_8 {f : ℝ → ℂ} (hf : Integrable f) (hfx : Integrable f
     exact h
   rw [hbook.deriv, ← mul_assoc, mul_neg, Complex.I_mul_I, neg_neg, one_mul]
 
-/-- Definition 4.2.1 and (4.2.9): the book's Fourier transform is a continuous linear map of the
-Schwartz space `𝓢(ℝ^d)` into itself. Mathlib's `SchwartzMap.fourierTransformCLM` says this for
-`𝓕`; the book's transform differs from it by the constant `(2 π)^{-d/2}` and by the dilation
-`ξ ↦ ξ / (2 π)`, which is a continuous linear equivalence and therefore preserves `𝓢`. -/
+/-- **Definition 4.2.1 and equation (4.2.9)** of [han2009theoretical]. The book's Fourier transform
+as a continuous linear map of the Schwartz space $\mathcal{S}(V)$ of complex-valued functions
+into itself. It is defined as
+$$\varphi \mapsto (2\pi)^{-d/2} \, (\mathcal{F} \varphi)\bigl((2\pi)^{-1} \, \cdot\bigr),$$
+where $\mathcal{F}$ is Mathlib's transform on the Schwartz space.
+
+The Schwartz space of Definition 4.2.1 is Mathlib's `SchwartzMap`. Mathlib's
+`SchwartzMap.fourierTransformCLM` gives the statement (4.2.9) for $\mathcal{F}$. The dilation
+$\xi \mapsto (2\pi)^{-1} \xi$ is a continuous linear equivalence of $V$, so composition with it
+preserves $\mathcal{S}(V)$. `AtkinsonHan.Chapter04.definition_4_2_1` shows that the map is
+`AtkinsonHan.Chapter04.bookFourier`. -/
 noncomputable def bookFourierCLM : 𝓢(V, ℂ) →L[ℂ] 𝓢(V, ℂ) :=
   (bookConst V : ℂ) •
     (SchwartzMap.compCLMOfContinuousLinearEquiv ℂ
         (ContinuousLinearEquiv.smulLeft (Units.mk0 ((2 * π)⁻¹ : ℝ) (by positivity)))).comp
       (SchwartzMap.fourierTransformCLM ℂ)
 
-/-- The continuous linear map of Definition 4.2.1 is the book's Fourier transform. -/
+/-- **Definition 4.2.1** of [han2009theoretical]. For every Schwartz function
+$\varphi \in \mathcal{S}(V)$ and every $\xi \in V$, the continuous linear map
+`AtkinsonHan.Chapter04.bookFourierCLM` gives $\hat\varphi(\xi)$, the book's transform (4.2.1). -/
 theorem definition_4_2_1 (f : 𝓢(V, ℂ)) (ξ : V) : bookFourierCLM f ξ = bookFourier f ξ := by
   rw [bookFourier_eq_fourier, Complex.real_smul, bookFourierCLM]
   simp only [ContinuousLinearMap.coe_comp, Function.comp_apply, smul_apply,
@@ -390,13 +484,17 @@ theorem definition_4_2_1 (f : 𝓢(V, ℂ)) (ξ : V) : bookFourierCLM f ξ = boo
   rfl
 
 omit [FiniteDimensional ℝ V] [MeasurableSpace V] [BorelSpace V] in
-/-- **Definition 4.2.2.** The space of tempered distributions `𝒮'(ℝ^d)` is the space of all
-continuous linear functionals on the Schwartz space `𝒮(ℝ^d)`.
+/-- **Definition 4.2.2** of [han2009theoretical]. The space $\mathcal{S}'(\mathbb{R}^d)$ of
+**tempered distributions** is the space of all continuous linear functionals on the Schwartz
+space $\mathcal{S}(\mathbb{R}^d)$. The formal statement: a linear functional $T$ on
+$\mathcal{S}(V)$ agrees with a tempered distribution $u$, that is $u(\varphi) = T(\varphi)$ for
+all $\varphi$, if and only if $T$ is continuous.
 
-This is Mathlib's `TemperedDistribution`, with notation `𝓢'(E, F)`. Because the space *is* the
-dual, the definition is recorded in the shape Chapter 1 gives to a structure carried by a type: the
-linear functionals on `𝓢(ℝ^d)` that come from a tempered distribution are exactly the continuous
-ones. `definition_4_2_2_seq` is the sequential reading the book adds beside the definition. -/
+The space of tempered distributions is Mathlib's `TemperedDistribution`, with notation
+`𝓢'(E, F)`. Because this space is defined as the dual space, the definition is stated as a
+characterization of the linear functionals that come from it. The statement holds for every real
+inner product space $V$, not only for a finite-dimensional one.
+`AtkinsonHan.Chapter04.definition_4_2_2_seq` is the sequential form. -/
 theorem definition_4_2_2 (T : 𝓢(V, ℂ) →ₗ[ℂ] ℂ) :
     (∃ u : 𝓢'(V, ℂ), ∀ φ, u φ = T φ) ↔ Continuous T := by
   constructor
@@ -408,9 +506,15 @@ theorem definition_4_2_2 (T : 𝓢(V, ℂ) →ₗ[ℂ] ℂ) :
     exact ⟨(⟨T, h⟩ : 𝓢(V, ℂ) →L[ℂ] ℂ), fun _ => rfl⟩
 
 omit [FiniteDimensional ℝ V] [MeasurableSpace V] [BorelSpace V] in
-/-- **Definition 4.2.2**, the book's remark: a linear functional `T` on `𝒮(ℝ^d)` is a tempered
-distribution if and only if `φₙ → φ` in `𝒮(ℝ^d)` implies `T φₙ → T φ`. The Schwartz space is
-metrizable, so sequential continuity is continuity. -/
+/-- **Definition 4.2.2** of [han2009theoretical], the sequential form in the remark after the
+definition. A linear functional $T$ on $\mathcal{S}(\mathbb{R}^d)$ is a tempered distribution if
+and only if $\varphi_n \to \varphi$ in $\mathcal{S}(\mathbb{R}^d)$ implies
+$T(\varphi_n) \to T(\varphi)$.
+
+The Schwartz space is metrizable, so sequential continuity is the same as continuity. As in
+`AtkinsonHan.Chapter04.definition_4_2_2`, "is a tempered distribution" means that some
+$u \in \mathcal{S}'(V)$ satisfies $u(\varphi) = T(\varphi)$ for all $\varphi$, and the statement
+holds for every real inner product space $V$. -/
 theorem definition_4_2_2_seq (T : 𝓢(V, ℂ) →ₗ[ℂ] ℂ) :
     (∃ u : 𝓢'(V, ℂ), ∀ φ, u φ = T φ) ↔
       ∀ (φ : ℕ → 𝓢(V, ℂ)) (ψ : 𝓢(V, ℂ)), Filter.Tendsto φ Filter.atTop (nhds ψ) →
@@ -418,22 +522,37 @@ theorem definition_4_2_2_seq (T : 𝓢(V, ℂ) →ₗ[ℂ] ℂ) :
   rw [definition_4_2_2, continuous_iff_seqContinuous]
   exact ⟨fun h φ ψ hφ => h hφ, fun h _ _ hφ => h _ _ hφ⟩
 
-/-- Definition 4.2.3: the book's Fourier transform extends to the tempered distributions by
-duality. -/
+/-- **Definition 4.2.3** of [han2009theoretical]. The **Fourier transform of a tempered
+distribution** $u \in \mathcal{S}'(\mathbb{R}^d)$ is the tempered distribution $\hat u$ defined
+by $\langle \hat u, \varphi \rangle = \langle u, \hat \varphi \rangle$ for
+$\varphi \in \mathcal{S}(\mathbb{R}^d)$. It is a continuous linear map of
+$\mathcal{S}'(\mathbb{R}^d)$ into itself.
+
+The map is precomposition with `AtkinsonHan.Chapter04.bookFourierCLM`, for the topology of
+pointwise convergence on $\mathcal{S}'(V)$. -/
 noncomputable def bookFourierTD : 𝓢'(V, ℂ) →L[ℂ] 𝓢'(V, ℂ) :=
   PointwiseConvergenceCLM.precomp ℂ bookFourierCLM
 
-/-- (4.2.13): the Fourier transform of a tempered distribution is defined by `⟨f̂, φ⟩ = ⟨f, φ̂⟩`. -/
+/-- **Definition 4.2.3 and equation (4.2.13)** of [han2009theoretical]. For every tempered
+distribution $u$ and every Schwartz function $\varphi$,
+$$\langle \hat u, \varphi \rangle = \langle u, \hat\varphi \rangle.$$
+-/
 theorem definition_4_2_3 (u : 𝓢'(V, ℂ)) (φ : 𝓢(V, ℂ)) :
     bookFourierTD u φ = u (bookFourierCLM φ) :=
   rfl
 
-/-- **(4.2.12)**: an `L^p` function `f` is a tempered distribution through the pairing
-`⟨f, φ⟩ = ∫ f φ` — that is Mathlib's `MeasureTheory.Lp.toTemperedDistribution` — and, for
-`f ∈ L¹`, the distributional transform of Definition 4.2.3 is the integral (4.2.3): the two
-readings of `f̂` agree, so Definition 4.2.3 extends the transform of §4.2.1 rather than replacing
-it. The second clause is the book's remark that "this can be verified by applying Fubini's
-theorem", which is the multiplication formula (4.2.10). -/
+/-- **Equation (4.2.12)** of [han2009theoretical]. Let $1 \le p \le \infty$.
+
+1. A function $g \in L^p(V)$ defines a tempered distribution through the pairing $\langle g,
+   \varphi \rangle = \int_V \varphi(x) \, g(x) \, dx$.
+2. For $f \in L^1(V)$, the Fourier transform of $f$ as a tempered distribution (Definition
+   4.2.3) is the function $\hat f$ of (4.2.3): for every Schwartz function $\varphi$,
+$$\langle \hat f, \varphi \rangle = \int_V \varphi(\xi) \, \hat f(\xi) \, d\xi.$$
+
+The second part means that Definition 4.2.3 extends the transform of the integrable functions.
+The book says that this "can be verified by applying Fubini's theorem"; the proof uses the
+multiplication formula (4.2.10), `AtkinsonHan.Chapter04.equation_4_2_10`. The tempered
+distribution of an $L^p$ function is Mathlib's `MeasureTheory.Lp.toTemperedDistribution`. -/
 theorem equation_4_2_12 {p : ℝ≥0∞} [Fact (1 ≤ p)] (g : Lp ℂ p (volume : Measure V))
     (f : Lp ℂ 1 (volume : Measure V)) (φ : 𝓢(V, ℂ)) :
     Lp.toTemperedDistribution g φ = ∫ x : V, φ x * (g : V → ℂ) x ∧
@@ -455,35 +574,41 @@ theorem equation_4_2_12 {p : ℝ≥0∞} [Fact (1 ≤ p)] (g : Lp ℂ p (volume 
 
 /-! ### The transform on `L²` -/
 
-/-- Precomposition with a linear homeomorphism of the underlying space, as a linear equivalence
-of the Schwartz space; Mathlib has it as a continuous linear map only. -/
+/-- Composition with a continuous linear equivalence $e$ of $V$, as a linear equivalence of
+$\mathcal{S}(V)$. -/
 private noncomputable def schwartzCompEquiv (e : V ≃L[ℝ] V) : 𝓢(V, ℂ) ≃ₗ[ℂ] 𝓢(V, ℂ) :=
   LinearEquiv.ofLinearMap
     (SchwartzMap.compCLMOfContinuousLinearEquiv (F := ℂ) ℂ e).toLinearMap
     (SchwartzMap.compCLMOfContinuousLinearEquiv (F := ℂ) ℂ e.symm).toLinearMap
     (by ext φ x; simp) (by ext φ x; simp)
 
-/-- The dilation of the argument by `(2 π)⁻¹`, the change of variables that separates the book's
-transform from Mathlib's. -/
+/-- The dilation $\xi \mapsto (2\pi)^{-1} \xi$ of $V$, as a continuous linear equivalence. -/
 private noncomputable def bookDilation : V ≃L[ℝ] V :=
   ContinuousLinearEquiv.smulLeft (Units.mk0 ((2 * π)⁻¹ : ℝ) (by positivity))
 
-/-- **The book's Fourier transform as a linear equivalence of the Schwartz space.** It is
-Mathlib's, followed by the dilation `ξ ↦ (2 π)⁻¹ ξ` of the argument and the constant
-`(2 π)^{-d/2}`, each of which is invertible; `bookFourierSchwartzEquiv_apply` says it is
-`bookFourier`. -/
+/-- The book's Fourier transform as a **linear bijection of the Schwartz space** $\mathcal{S}(V)$
+onto itself. It is Mathlib's Fourier transform on $\mathcal{S}(V)$, followed by composition with
+the dilation $\xi \mapsto (2\pi)^{-1} \xi$ and by multiplication with the constant
+$(2\pi)^{-d/2}$. Each of these three maps is invertible.
+
+This map supports Theorem 4.2.4 of [han2009theoretical].
+`AtkinsonHan.Chapter04.bookFourierSchwartzEquiv_apply` shows that it is
+`AtkinsonHan.Chapter04.bookFourier` on Schwartz functions. -/
 noncomputable def bookFourierSchwartzEquiv : 𝓢(V, ℂ) ≃ₗ[ℂ] 𝓢(V, ℂ) :=
   (FourierTransform.fourierEquiv ℂ 𝓢(V, ℂ)).trans ((schwartzCompEquiv bookDilation).trans
     (LinearEquiv.smulOfNeZero ℂ 𝓢(V, ℂ) (bookConst V : ℂ)
       (Complex.ofReal_ne_zero.mpr bookConst_pos.ne')))
 
+/-- For every Schwartz function $\varphi$ and every $\xi \in V$, the linear bijection
+`AtkinsonHan.Chapter04.bookFourierSchwartzEquiv` gives $\hat\varphi(\xi)$, the book's transform
+(4.2.1). -/
 @[simp]
 theorem bookFourierSchwartzEquiv_apply (φ : 𝓢(V, ℂ)) (ξ : V) :
     bookFourierSchwartzEquiv φ ξ = bookFourier φ ξ := by
   rw [← definition_4_2_1]
   rfl
 
-/-- The `L²` norm of a Schwartz function, as the integral the book writes. -/
+/-- For a Schwartz function $g$, the square of the $L^2$ norm of $g$ is $\int_V |g(x)|^2 \, dx$. -/
 private theorem norm_toLp_two_sq (g : 𝓢(V, ℂ)) :
     ‖g.toLp 2 (volume : Measure V)‖ ^ 2 = ∫ x : V, ‖g x‖ ^ 2 := by
   have hint : (0 : ℝ) ≤ ∫ x : V, ‖g x‖ ^ (2 : ℝ) :=
@@ -496,8 +621,8 @@ private theorem norm_toLp_two_sq (g : 𝓢(V, ℂ)) :
     show (2 : ℝ)⁻¹ * ((2 : ℕ) : ℝ) = 1 by norm_num, Real.rpow_one]
   exact integral_congr_ae (Filter.Eventually.of_forall hpow)
 
-/-- The book's transform preserves the `L²` norm of a Schwartz function: Theorem 4.2.4 read
-through `SchwartzMap.norm_toLp'`. -/
+/-- The book's transform preserves the $L^2$ norm of a Schwartz function; this is Theorem 4.2.4 in
+the form that the extension to $L^2$ uses. -/
 private theorem norm_toLp_bookFourier_eq (φ : 𝓢(V, ℂ)) :
     ‖(bookFourierSchwartzEquiv φ).toLp 2 (volume : Measure V)‖
       = ‖φ.toLp 2 (volume : Measure V)‖ := by
@@ -511,19 +636,22 @@ private theorem norm_toLp_bookFourier_eq (φ : 𝓢(V, ℂ)) :
   have hnn' := norm_nonneg (φ.toLp 2 (volume : Measure V))
   nlinarith [hsq]
 
-/-- **Theorem 4.2.4** on `L²(ℝ^d)`, with (4.2.14)–(4.2.18): the book's Fourier transform extends
-from the Schwartz space to a linear isometry of `L²(ℝ^d)` *onto* itself.
+/-- **Theorem 4.2.4 and equations (4.2.14)–(4.2.18)** of [han2009theoretical]. The Fourier transform
+on $L^2(\mathbb{R}^d)$: the unique continuous extension of the book's transform from the
+Schwartz space to a linear isometry of $L^2(V)$ onto itself.
 
-The extension is the unique continuous one, since `𝓢(ℝ^d)` is dense in `L²(ℝ^d)`; on `L¹ ∩ L²` it
-is still given by the integral (4.2.16), and in general it is the `L²` limit (4.2.14) of the
-truncated integrals, which is what a continuous extension means.  `theorem_4_2_4_l2` records that
-it agrees with `bookFourier` on the Schwartz space and that it is an isometry, (4.2.18); being an
-equivalence it is onto, and its inverse is the transform of (4.2.15) and (4.2.17).
+Since $\mathcal{S}(V)$ is dense in $L^2(V)$, the continuous extension is unique. On
+$L^1 \cap L^2$ it is still given by the integral (4.2.16). In general it is the $L^2$ limit
+(4.2.14) of the truncated integrals, which is what a continuous extension means.
+`AtkinsonHan.Chapter04.theorem_4_2_4_l2` shows that it agrees with
+`AtkinsonHan.Chapter04.bookFourier` on the Schwartz space and that it is an isometry, (4.2.18).
+Because it is an equivalence, it is onto, and its inverse is the transform of (4.2.15) and
+(4.2.17).
 
-This is Mathlib's `MeasureTheory.Lp.fourierTransformₗᵢ` in the book's normalisation, and is built
-the same way, by extending from the Schwartz space rather than by rescaling that map: the
-rescaling would need the dilation as a linear isometry of `L²(ℝ^d)`, which
-`MeasureTheory.Lp.dilationₗᵢ` supplies only for real scalars in one real dimension. -/
+This is Mathlib's `MeasureTheory.Lp.fourierTransformₗᵢ` in the book's normalization. It is built
+in the same way, by extension from the Schwartz space, and not by rescaling Mathlib's map. A
+rescaling would need the dilation as a linear isometry of $L^2(V)$, and
+`MeasureTheory.Lp.dilationₗᵢ` gives this only for real scalars in one real dimension. -/
 noncomputable def bookFourierL2 : (Lp (α := V) ℂ 2) ≃ₗᵢ[ℂ] (Lp (α := V) ℂ 2) :=
   (bookFourierSchwartzEquiv (V := V)).extendOfIsometry
     (SchwartzMap.toLpCLM ℂ (E := V) ℂ 2 volume) (SchwartzMap.toLpCLM ℂ (E := V) ℂ 2 volume)
@@ -531,9 +659,18 @@ noncomputable def bookFourierL2 : (Lp (α := V) ℂ 2) ≃ₗᵢ[ℂ] (Lp (α :=
     (SchwartzMap.denseRange_toLpCLM ENNReal.ofNat_ne_top)
     norm_toLp_bookFourier_eq
 
-/-- **Theorem 4.2.4** with **(4.2.18)** on `L²(ℝ^d)`: the book's Fourier transform maps `L²(ℝ^d)`
-onto `L²(ℝ^d)` and is an isometry there, and on the Schwartz space it is still the transform
-(4.2.3). -/
+/-- **Theorem 4.2.4 and equation (4.2.18)** of [han2009theoretical] (Plancherel's theorem), on
+$L^2(\mathbb{R}^d)$. The extension $\mathcal{F} : L^2(V) \to L^2(V)$ of the book's transform
+(`AtkinsonHan.Chapter04.bookFourierL2`) has the following properties:
+
+1. it is an isometry: $\|\mathcal{F} f\|_{L^2} = \|f\|_{L^2}$ for all $f \in L^2(V)$;
+2. it maps $L^2(V)$ onto $L^2(V)$;
+3. on the Schwartz space it is the book's transform: for every $\varphi \in \mathcal{S}(V)$,
+   $\mathcal{F}$ maps the class of $\varphi$ in $L^2(V)$ to the class of $\hat\varphi$, where
+   $\hat\varphi$ is computed by `AtkinsonHan.Chapter04.bookFourierSchwartzEquiv`;
+4. for every $\varphi \in \mathcal{S}(V)$ and $\xi \in V$, the value of that Schwartz function
+   at $\xi$ is the integral $\hat\varphi(\xi)$ of (4.2.3), as computed by
+   `AtkinsonHan.Chapter04.bookFourier`. -/
 theorem theorem_4_2_4_l2 :
     (∀ f : Lp (α := V) ℂ 2, ‖bookFourierL2 f‖ = ‖f‖) ∧
       Function.Surjective (bookFourierL2 (V := V)) ∧

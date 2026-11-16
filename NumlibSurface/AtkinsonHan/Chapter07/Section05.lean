@@ -9,127 +9,129 @@ import Numlib.Analysis.Sobolev.Periodic.Smooth
 import Numlib.Approximation.MvPolynomial
 
 /-!
-# Atkinson–Han §7.5: periodic Sobolev spaces
+# Atkinson and Han, Section 7.5: Periodic Sobolev spaces
 
-Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework*, 3rd edition, Springer, 2009, §7.5.1–§7.5.3, together with
-Definition 7.5.8 and the minimax error (7.5.30) of §7.5.5.
+This module formalizes Sections 7.5.1–7.5.3 of [han2009theoretical], together with Definition 7.5.8
+and the minimax error (7.5.30) of Section 7.5.5. The source defines the periodic Sobolev space
+$H^s(2\pi)$, for real $s$, by the decay of Fourier coefficients. A formal series
+$\varphi = \sum_{m \in \mathbb{Z}} a_m \psi_m$ with $\psi_m(x) = (2\pi)^{-1/2} e^{imx}$ belongs to
+$H^s(2\pi)$ when
+$$\|\varphi\|_{*,s}^2 = |a_0|^2 + \sum_{|m| > 0} |m|^{2s} |a_m|^2 < \infty.$$
+So $H^s(2\pi)$ is a weighted $\ell^2(\mathbb{Z})$, and no domain, boundary or weak derivative
+enters. The module proves the characterization of $H^s(2\pi)$ and its equivalence with the classical
+norm for integer $s$, the embedding into continuous functions for $s > 1/2$, the density and
+compactness of the inclusions $H^s(2\pi) \subseteq H^t(2\pi)$ for $s > t$, the error bounds of the
+trapezoidal rule, of Simpson's rule and of trigonometric interpolation, the duality of
+$H^{-t}(2\pi)$ with $H^t(2\pi)$, and the convergence of the best approximation by spherical
+polynomials on the unit sphere of $\mathbb{R}^3$.
 
-§7.5 is the one section of chapter 7 that needs no theory of Sobolev spaces on a domain.  The book
-defines `H^s(2π)` by the decay of the Fourier coefficients: a formal series `φ = ∑_m a_m ψ_m` with
-`ψ_m x = (2π)^{-1/2} e^{i m x}` belongs to it when
+The space $H^s(2\pi)$ is `PeriodicSobolev s` of `Numlib.Analysis.Sobolev.Periodic`. The
+interpolation bound uses the aliasing argument of `Numlib.Analysis.Fourier.Aliasing`, and the
+spherical polynomials use `Numlib.Approximation.MvPolynomial`.
 
-`‖φ‖²_{*,s} = |a₀|² + ∑_{|m| > 0} |m|^{2 s} |a_m|² < ∞`,
+## Main definitions
 
-which is a weighted `ℓ²(ℤ, ℂ)` and nothing more.  That space is `PeriodicSobolev s` in the backbone,
-and this module is the book's numbered statements about it.
-
-## The normalization
-
-The backbone reads a series against the *unnormalized* characters `periodicChar T m x =
-exp (2 π i m x / T)`, whereas the book uses `ψ_m = (2π)^{-1/2} e^{i m x}`.  The two differ by the
-constant `(2π)^{-1/2}`, which the norm `‖·‖_{*,s}` does not see — it is a norm on the coefficient
-sequence — but which every statement about the *function* does.  `AtkinsonHan.Chapter07.eval`
-carries that constant, so `eval φ` is the book's `φ(x)` on the nose, and the bounds below are the
-book's with the book's constants.
+* Equation (7.5.1), `AtkinsonHan.Chapter07.psi` and `AtkinsonHan.Chapter07.eval`: the orthonormal
+  functions $\psi_m(x) = (2\pi)^{-1/2} e^{imx}$ and the sum $\varphi(x) = \sum_m a_m \psi_m(x)$ of a
+  series.
+* Definition 7.5.1, `PeriodicSobolev`, with `AtkinsonHan.Chapter07.definition_7_5_1_norm` and
+  `AtkinsonHan.Chapter07.definition_7_5_1_inner`: the space $H^s(2\pi)$, its norm (7.5.2) and its
+  inner product.
+* Equation (7.5.12), `AtkinsonHan.Chapter07.trapezoid`: the trapezoidal rule
+  $T_k(\varphi) = h \sum_{j=1}^k \varphi(jh)$ with $h = 2\pi / k$.
+* Definition 7.5.8, `AtkinsonHan.Chapter07.definition_7_5_8`: the space $\mathbb{S}_N$ of spherical
+  polynomials of degree at most $N$ on the unit sphere $U \subseteq \mathbb{R}^3$.
+* Equation (7.5.30), `AtkinsonHan.Chapter07.equation_7_5_30`: the minimax error $\rho_N(g) = \inf_{p
+  \in \mathbb{S}_N} \|g - p\|_\infty$ for $g \in C(U)$.
 
 ## Main results
 
-* `definition_7_5_1_norm`, `definition_7_5_1_inner` — (7.5.2) and the inner product that induces it.
-* `theorem_7_5_2` — `H^s(2π)` is exactly the set of series (7.5.1) with `‖φ‖_{*,s} < ∞`.
-* `theorem_7_5_2_norm_equiv` — for an integer `k ≥ 0` the norm `‖·‖_{*,k}` is equivalent to the
-  classical `‖φ‖²_{H^k} = ∑_{j ≤ k} ‖φ^{(j)}‖²_{L²}`, with the constants `1` and `k + 1`;
-  `classicalNormSq_ofSmooth` and `theorem_7_5_2_smooth` are the same statement on the function
-  side, for a `2π`-periodic `C^k` function `f` and its coefficient sequence
-  `PeriodicSobolev.ofSmooth`.
-* `proposition_7_5_4`, `proposition_7_5_4_bound` — the Sobolev embedding for `s > 1/2`: the series
-  converges to a continuous `2π`-periodic function, with (7.5.10) and (7.5.11).
-* `proposition_7_5_5` — for `s > t` the space `H^s(2π)` is dense in `H^t(2π)` and the inclusion is
-  compact.  This is also Exercise 7.5.1, which asks for its proof.
-* `proposition_7_5_6` — **the trapezoidal rule is exponentially accurate on smooth periodic
-  integrands**: `|I(φ) − T_k(φ)| ≤ √(4 π ζ(2 s)) k^{-s} ‖φ‖_{*,s}`, the bound (7.5.13).
-* `theorem_7_5_7` — the trigonometric interpolant `𝓘_n φ` of degree `≤ n` at the `2n + 1`
-  equispaced nodes satisfies `‖φ − 𝓘_n φ‖_{*,r} ≤ √(1 + 2 ζ(2 s)) n^{r − s} ‖φ‖_{*,s}` for
-  `0 ≤ r ≤ s`, `s > 1/2`, the bound (7.5.15) with an explicit constant.
-* `exercise_7_5_2` — the trigonometric polynomials `𝕋` of (7.5.4) are dense in `H^s(2π)` for every
-  real `s`.
-* `exercise_7_5_3` — Simpson's rule obeys the same bound, with the constant `(5/3) √(4 π ζ(2 s))`.
-  The proof is that `S_{2k} = (4 T_{2k} − T_k)/3` on any function, so the two trapezoidal bounds
-  combine.
-* `exercise_7_5_4` — every element of `H^{-t}(2π)` is a bounded linear functional on `H^t(2π)`
-  under the pairing (7.5.6), with `‖ℓ‖ ≤ ‖η‖_{*,-t}`.
+* Theorem 7.5.2, `AtkinsonHan.Chapter07.theorem_7_5_2`: $H^s(2\pi)$ is the set of series (7.5.1)
+  with $\|\varphi\|_{*,s} < \infty$.
+* Theorem 7.5.2, `AtkinsonHan.Chapter07.theorem_7_5_2_norm_equiv` and
+  `AtkinsonHan.Chapter07.theorem_7_5_2_smooth`: for an integer $k \ge 0$, $\|\varphi\|_{*,k}^2 \le
+  \|\varphi\|_{H^k}^2 \le (k + 1) \|\varphi\|_{*,k}^2$, on the coefficient side and for a
+  $2\pi$-periodic $C^k$ function.
+* Proposition 7.5.4, `AtkinsonHan.Chapter07.proposition_7_5_4_bound` and
+  `AtkinsonHan.Chapter07.proposition_7_5_4`: for $s > 1/2$ the series (7.5.1) converges to a
+  continuous $2\pi$-periodic function, with the bounds (7.5.10) and (7.5.11).
+* Proposition 7.5.5, `AtkinsonHan.Chapter07.proposition_7_5_5`: for $s > t$ the inclusion
+  $H^s(2\pi) \to H^t(2\pi)$ has dense range and is compact.
+* Proposition 7.5.6, `AtkinsonHan.Chapter07.proposition_7_5_6`: the trapezoidal rule satisfies
+  $|I(\varphi) - T_k(\varphi)| \le \sqrt{4\pi\zeta(2s)} \, k^{-s} \|\varphi\|_{*,s}$ (7.5.13).
+* Theorem 7.5.7, `AtkinsonHan.Chapter07.theorem_7_5_7`: the trigonometric interpolant satisfies
+  $\|\varphi - \mathcal{I}_n \varphi\|_{*,r} \le \sqrt{1 + 2\zeta(2s)} \, n^{r-s} \|\varphi\|_{*,s}$
+  for $0 \le r \le s$ and $s > 1/2$ (7.5.15).
+* Equation (7.5.30), `AtkinsonHan.Chapter07.equation_7_5_30_tendsto_zero`: $\rho_N(g) \to 0$ for
+  every $g \in C(U)$.
+* Exercise 7.5.1, `AtkinsonHan.Chapter07.exercise_7_5_1`: the proof of Proposition 7.5.5.
+* Exercise 7.5.2, `AtkinsonHan.Chapter07.exercise_7_5_2`: the trigonometric polynomials are dense in
+  $H^s(2\pi)$ for every real $s$.
+* Exercise 7.5.3, `AtkinsonHan.Chapter07.exercise_7_5_3`: Simpson's rule satisfies the bound
+  (7.5.13) with the constant $\frac{5}{3} \sqrt{4\pi\zeta(2s)}$.
+* Exercise 7.5.4, `AtkinsonHan.Chapter07.exercise_7_5_4`: every $\eta \in H^{-t}(2\pi)$ is a bounded
+  linear functional on $H^t(2\pi)$ under the pairing (7.5.6), of norm at most $\|\eta\|_{*,-t}$.
 
-* `definition_7_5_8` — §7.5.5's **spherical polynomials** `𝕊_N`, the restrictions to the unit
-  sphere `U ⊆ ℝ³` of the polynomials in `(x, y, z)` of degree `≤ N`, with `equation_7_5_30`, the
-  minimax error `ρ_N(g)`, and `equation_7_5_30_tendsto_zero`, the book's remark that `ρ_N(g) → 0`
-  by Stone–Weierstraß. Nothing else of §7.5.5 is formalized; see below.
+## Notation
 
-## Not formalized here
+* $a_m$: the $m$-th coefficient `PeriodicSobolev.coeff φ m` of $\varphi \in H^s(2\pi)$.
+* $\zeta(r) = \sum_{n \ge 1} n^{-r}$: the Riemann zeta function on the reals, `zetaReal`.
 
-* **(7.5.3)–(7.5.5), the distributional derivative `𝒟`.**  Its coefficient description `𝒟 φ =
-  i ∑ m a_m ψ_m` is what `theorem_7_5_2_norm_equiv` uses, in the form of the classical norm written
-  on the Fourier side; the operator itself, its norm `1` and its unique extension from `𝕋` are not
-  built, because nothing else here consumes them.
+## Conventions
 
-* **Example 7.5.3, the square wave and its Dirac comb.**  The `2π`-periodic square wave `φ`, equal
-  to `0` on `((2k − 1)π, 2kπ)` and to `1` on `(2kπ, (2k + 1)π)`, has the Fourier series
-  `1/2 − (i/π) ∑_{k ≥ 0} (2k + 1)^{-1} [e^{(2k+1)it} − e^{-(2k+1)it}]`, and its distributional
-  derivative is the Dirac comb `∑_j (−1)^j δ(t − πj)`, where `δ` acts on `H^s(2π)` for `s > 1/2` by
-  `δ[φ] = φ(0)`.  Half of the vocabulary is here: `PeriodicSobolev.dualPairing` reads `H^{-t}(2π)`
-  as functionals on `H^t(2π)` (Exercise 7.5.4 above) and `PeriodicSobolev.eval` gives the point
-  evaluation for `s > 1/2`, so `δ` is representable as the element of `H^{-t}(2π)` all of whose
-  coefficients are `(2π)^{-1/2}`, and the square wave's coefficients come from `fourierCoeffOn` of
-  a step function.  What is missing is the operator `𝒟 : H^s(2π) → H^{s-1}(2π)` of the bullet
-  above and then the identity `𝒟 φ = ∑_j (−1)^j δ(· − πj)` in `H^{-t}(2π)`.  A coefficient-level
-  statement — that `(i m) a_m` is the coefficient sequence of the comb — would be 150–250 lines
-  once `𝒟` exists; the example is illustrative and nothing in the corpus depends on it.  Mathlib's
-  `TemperedDistribution` lives on `ℝ^d` and gives no distributions on the circle.
+* The backbone sums a series against the characters `periodicChar (2 * π) m x` $= e^{imx}$, which
+  are not normalized. The source uses $\psi_m = (2\pi)^{-1/2} e^{imx}$. The norm $\|\cdot\|_{*,s}$
+  is a norm on the coefficient sequence and does not see the factor $(2\pi)^{-1/2}$, but every
+  statement about the function does. `AtkinsonHan.Chapter07.eval` carries this factor, so `eval φ`
+  is the function $\varphi(x)$ of the source, and the bounds have the constants of the source.
+* The inner product of Mathlib is conjugate-linear in its first argument, the opposite of the
+  convention of the source. So the inner product $(\varphi, \rho)_{*,s}$ of the source is
+  `inner ℂ ρ φ`.
 
-* **§7.5.4**, the logarithmic-kernel operator `𝒜` of (7.5.16): the book obtains its symbol
-  `a_m/|m|` from complex function theory that it does not reproduce.
+## Implementation notes
 
-* **Definition 7.5.9, the spherical harmonics, and (7.5.20)–(7.5.22).**  A spherical harmonic of
-  degree `n` is the restriction to `U` of a polynomial in `(x, y, z)` that is harmonic and
-  homogeneous of degree `n`; there are `2n + 1` linearly independent ones, the span `𝕊̂_N` of those
-  of degree `n ≤ N` equals the `𝕊_N` of `definition_7_5_8` (7.5.20), `dim 𝕊_N = (N + 1)²`
-  (7.5.21), and the standard `L²(U)`-orthonormal basis (7.5.22) is `S_n^1 = c_n L_n(cos θ)`,
-  `S_n^{2m} = c_{n,m} L_n^m(cos θ) cos(m φ)` and `S_n^{2m+1} = c_{n,m} L_n^m(cos θ) sin(m φ)`, in
-  terms of the Legendre polynomials `L_n` and the associated Legendre functions `L_n^m`.  The book
-  quotes (7.5.20) and (7.5.21) from MacRobert [161, Chap. 7] without proof.  A faithful statement
-  needs the space of homogeneous harmonic polynomials of degree `n` restricted to the sphere
-  together with its dimension count `2n + 1`, the associated Legendre functions, and a surface
-  measure on `S²` for the `L²(U)` orthonormality.  What exists:
-  `Numlib/Analysis/HarmonicPolynomial` for the harmonic polynomials themselves, and
-  `Numlib/Approximation/OrthogonalPolynomial` with the Legendre polynomials on `[−1, 1]` but no
-  associated Legendre functions; `sphericalHarmonic` has zero occurrences in Mathlib and in
-  `Numlib/`, and there is no surface measure on `S²` anywhere in the corpus — the boundary round's
-  `Numlib/Analysis/Sobolev/Boundary/` builds one on `C¹` graph domains of `ℝ^d` and on polygons,
-  not on a sphere.  That measure with its integration formula, the spherical harmonics and a
-  convolution on the sphere are one shared harmonic-analysis project, two to three thousand lines,
-  which `AtkinsonHan.Chapter14`'s Theorem 14.1.1 waits on as well.
+* `PeriodicSobolev s` is a sequence space, not a space of functions, because for $s < 0$ an element
+  is only a formal series. For $s \le 1/2$ the series need not converge, and
+  `AtkinsonHan.Chapter07.eval` has no meaning there.
+* The polynomial functions on a compact set $D \subseteq \mathbb{R}^\iota$ form a subalgebra of
+  $C(D, \mathbb{R})$ that separates points. This general fact is proved privately in this module,
+  for the use in Section 7.5.5.
+* The library has the harmonic polynomials (`Numlib.Analysis.HarmonicPolynomial`) and the Legendre
+  polynomials on $[-1, 1]$ (`Numlib.Approximation.OrthogonalPolynomial`), but no associated Legendre
+  functions and no surface measure on the sphere $S^2$.
 
-* **Theorem 7.5.10, Ragozin's rate, and (7.5.32)–(7.5.33).**  For `g ∈ C^{k,γ}(U)` there are
-  spherical polynomials `p_N` with `‖g − p_N‖_∞ = ρ_N(g)` and
-  `ρ_N(g) ≤ c_k H_{k,γ}(g) N^{-(k+γ)}` for `N ≥ 1` (7.5.31), the constant `c_k` depending only on
-  `k`; here `H_{k,γ}(g)` is the Hölder constant, uniform over the `k`-th order derivatives of `g`
-  in local surface coordinates.  The `L²(U)` rate (7.5.32) and the uniform rate
-  `‖g − P_N g‖_∞ ≤ c N^{-(k+γ-1/2)}` (7.5.33) follow at once, the latter through the projection
-  norm `‖P_N‖ = (√(8/π) + δ_N) √N` of (7.5.29).  The book states all of this without proof, citing
-  Gronwall [100] for `k = 0` and Ragozin [190, Theorem 3.3] in general.  Beyond Definition 7.5.9 it
-  needs the Hölder spaces `C^{k,γ}(U)` on a sphere, which the corpus does not have either
-  (`Numlib/Analysis/Sobolev/Slobodeckij` is on domains of `ℝ^d`; the local-coordinate setup the
-  book itself declines to write out is Definition 7.2.13's atlas), and then Ragozin's Jackson-type
-  argument, several pages of convolution on the sphere.  What *is* here is the book's own
-  qualitative remark after (7.5.30), `equation_7_5_30_tendsto_zero`: `ρ_N(g) → 0` for every
-  `g ∈ C(U)`, by Stone–Weierstraß.
+## Not formalized
 
-* **The rest of §7.5.5** — the Laplace expansion (7.5.23)–(7.5.28), its orthogonal projection
-  `P_N : L²(U) → 𝕊_N` and the norm (7.5.29), and the Sobolev spaces `H^r(U)` that close the
-  subsection — rests on the same missing surface measure and spherical harmonics.
-
-## References
-
-[han2009theoretical] §7.5.
+* **Equations (7.5.3)–(7.5.5), the distributional derivative $\mathcal{D}$.** Its description
+  $\mathcal{D}\varphi = i \sum_m m a_m \psi_m$ on the coefficients is used, in the form of the
+  classical norm on the Fourier side, but the operator itself, its norm $1$ and its unique extension
+  from the trigonometric polynomials are not built, because nothing else here uses them.
+* **Proposition 7.5.4 for $k > 0$.** Only the case $k = 0$, convergence to a continuous function, is
+  formalized.
+* **Example 7.5.3, the square wave.** The $2\pi$-periodic square wave, equal to $0$ on
+  $((2k-1)\pi, 2k\pi)$ and to $1$ on $(2k\pi, (2k+1)\pi)$, has the Fourier series $\frac{1}{2} -
+  \frac{i}{\pi} \sum_{k \ge 0} (2k+1)^{-1} [e^{(2k+1)it} - e^{-(2k+1)it}]$, and its distributional
+  derivative is the Dirac comb $\sum_j (-1)^j \delta(t - \pi j)$, where
+  $\delta[\varphi] = \varphi(0)$ on $H^s(2\pi)$ for $s > 1/2$. The statement needs the operator
+  $\mathcal{D} : H^s(2\pi) \to H^{s-1}(2\pi)$, and Mathlib has no distributions on the circle.
+* **Section 7.5.4, the operator $\mathcal{A}$ with the logarithmic kernel (7.5.16).** The source
+  obtains its symbol $a_m / |m|$ from complex function theory that it does not reproduce.
+* **Definition 7.5.9, the spherical harmonics, and (7.5.20)–(7.5.22).** These are the identity of
+  the span of the spherical harmonics of degree at most $N$ with $\mathbb{S}_N$ (7.5.20), the
+  dimension $\dim \mathbb{S}_N = (N + 1)^2$ (7.5.21), and the orthonormal basis of $L^2(U)$ in terms
+  of the Legendre polynomials and the associated Legendre functions (7.5.22). The source quotes
+  (7.5.20) and (7.5.21) without proof, and a statement needs the harmonic homogeneous polynomials
+  restricted to the sphere, the associated Legendre functions and a surface measure on $S^2$.
+* **Theorem 7.5.10, Ragozin's rate, and (7.5.31)–(7.5.33).** The rate is $\rho_N(g) \le c_k
+  H_{k,\gamma}(g) N^{-(k+\gamma)}$ for $g \in C^{k,\gamma}(U)$ and $N \ge 1$, where
+  $H_{k,\gamma}(g)$ is the Hölder constant of the derivatives of order $k$ in local surface
+  coordinates; the $L^2(U)$ rate (7.5.32) and the uniform rate
+  $\|g - P_N g\|_\infty \le c N^{-(k+\gamma-1/2)}$ (7.5.33) follow from it. The source quotes these
+  results without proof, and they need the Hölder spaces $C^{k,\gamma}(U)$ on the sphere and the
+  spherical harmonics.
+* **The rest of Section 7.5.5.** The Laplace expansion (7.5.23)–(7.5.28), the orthogonal projection
+  $P_N : L^2(U) \to \mathbb{S}_N$ with its norm $\|P_N\| = (\sqrt{8/\pi} + \delta_N) \sqrt{N}$
+  (7.5.29), and the Sobolev spaces $H^r(U)$ need the same surface measure and spherical harmonics.
 -/
 
 open Filter Metric Set Topology Quadrature
@@ -139,19 +141,26 @@ namespace AtkinsonHan.Chapter07
 
 /-! ### The normalization constant -/
 
-/-- `1 ≤ √(2 π)`, so the book's `ψ_m` are bounded by `1` and the bounds below can be read either
-with or without the normalization. -/
+/-- The constant $\sqrt{2\pi}$ satisfies $1 \le \sqrt{2\pi}$, so the functions $\psi_m$ of the
+source are bounded by $1$. -/
 theorem one_le_sqrt_two_pi : (1 : ℝ) ≤ √(2 * π) := by
   rw [show (1 : ℝ) = √1 by simp]
   exact Real.sqrt_le_sqrt (by nlinarith [Real.two_le_pi])
 
+/-- The constant $\sqrt{2\pi}$ is positive. -/
 theorem sqrt_two_pi_pos : 0 < √(2 * π) := by linarith [one_le_sqrt_two_pi]
 
+/-- The normalization factor satisfies $(2\pi)^{-1/2} \le 1$. -/
 theorem inv_sqrt_two_pi_le_one : (√(2 * π))⁻¹ ≤ 1 := inv_le_one_of_one_le₀ one_le_sqrt_two_pi
 
-/-- The book's orthonormal system `ψ_m x = (2 π)^{-1/2} e^{i m x}`. -/
+/-- **Equation (7.5.1)** of [han2009theoretical], the orthonormal functions. For $m \in \mathbb{Z}$
+and real $x$,
+$$\psi_m(x) = (2\pi)^{-1/2} e^{imx}.$$
+
+The function $e^{imx}$ is the backbone character `periodicChar (2 * π) m x`. -/
 noncomputable def psi (m : ℤ) (x : ℝ) : ℂ := (√(2 * π))⁻¹ * periodicChar (2 * π) m x
 
+/-- Each function $\psi_m$ has the constant modulus $|\psi_m(x)| = (2\pi)^{-1/2}$. -/
 @[simp]
 theorem norm_psi (m : ℤ) (x : ℝ) : ‖psi m x‖ = (√(2 * π))⁻¹ := by
   rw [psi, norm_mul, norm_periodicChar, mul_one, Complex.norm_real,
@@ -159,11 +168,20 @@ theorem norm_psi (m : ℤ) (x : ℝ) : ‖psi m x‖ = (√(2 * π))⁻¹ := by
 
 variable {s t : ℝ}
 
-/-- The sum of the book's series (7.5.1), `φ(x) = ∑_m a_m ψ_m(x)`. -/
+/-- **Equation (7.5.1)** of [han2009theoretical], the sum of a series. For $\varphi \in H^s(2\pi)$
+with coefficients $a_m$ and real $x$,
+$$\varphi(x) = (2\pi)^{-1/2} \sum_{m \in \mathbb{Z}} a_m e^{imx}.$$
+
+This is the backbone sum `PeriodicSobolev.eval (2 * π) φ x` times $(2\pi)^{-1/2}$. The sum is a
+`tsum`, so it is $0$ when the series is not summable; for $s > 1/2$ the series converges
+absolutely. -/
 noncomputable def eval (φ : PeriodicSobolev s) (x : ℝ) : ℂ :=
   (√(2 * π))⁻¹ * PeriodicSobolev.eval (2 * π) φ x
 
-/-- `eval` is the book's series (7.5.1) against the book's orthonormal system. -/
+/-- **Equation (7.5.1)** of [han2009theoretical]. For $\varphi \in H^s(2\pi)$ and real $x$,
+$$\varphi(x) = \sum_{m \in \mathbb{Z}} a_m \psi_m(x),$$
+where $\varphi(x)$ is `AtkinsonHan.Chapter07.eval φ x` and $a_m$ are the coefficients of
+$\varphi$. -/
 theorem eval_eq_tsum (φ : PeriodicSobolev s) (x : ℝ) :
     eval φ x = ∑' m : ℤ, φ.coeff m * psi m x := by
   rw [eval, PeriodicSobolev.eval, ← tsum_mul_left]
@@ -171,7 +189,13 @@ theorem eval_eq_tsum (φ : PeriodicSobolev s) (x : ℝ) :
 
 /-! ### Definition 7.5.1 and Theorem 7.5.2 -/
 
-/-- **Definition 7.5.1, the norm (7.5.2)**: `‖φ‖²_{*,s} = |a₀|² + ∑_{|m| > 0} |m|^{2 s} |a_m|²`. -/
+/-- **Definition 7.5.1** of [han2009theoretical], the norm (7.5.2). For real $s$ and
+$\varphi \in H^s(2\pi)$ with coefficients $a_m$,
+$$\|\varphi\|_{*,s}^2 = |a_0|^2 + \sum_{|m| > 0} |m|^{2s} |a_m|^2,$$
+and the series on the right converges.
+
+The norm $\|\varphi\|_{*,s}$ is the norm of `PeriodicSobolev s`, and the statement is a
+`HasSum`. -/
 theorem definition_7_5_1_norm (s : ℝ) (φ : PeriodicSobolev s) :
     HasSum (fun m : ℤ => if m = 0 then ‖φ.coeff 0‖ ^ 2
       else |(m : ℝ)| ^ (2 * s) * ‖φ.coeff m‖ ^ 2) (‖φ‖ ^ 2) := by
@@ -180,9 +204,12 @@ theorem definition_7_5_1_norm (s : ℝ) (φ : PeriodicSobolev s) :
   · simp
   · rw [ite_eq_right hm, mul_pow, periodicSobolevWeight_sq s hm]
 
-/-- **Definition 7.5.1, the inner product**: `(φ, ρ)_{*,s} = a₀ conj b₀ +
-∑_{|m| > 0} |m|^{2 s} a_m conj b_m`. Mathlib's inner product is conjugate-linear in its *first*
-argument, the opposite of the book's convention, so the book's `(φ, ρ)_{*,s}` is `⟪ρ, φ⟫`. -/
+/-- **Definition 7.5.1** of [han2009theoretical], the inner product. For real $s$ and
+$\varphi, \rho \in H^s(2\pi)$ with coefficients $a_m$ and $b_m$,
+$$(\varphi, \rho)_{*,s} = a_0 \overline{b_0} + \sum_{|m| > 0} |m|^{2s} a_m \overline{b_m}.$$
+
+The inner product of Mathlib is conjugate-linear in its first argument, the opposite of the
+convention of the source, so $(\varphi, \rho)_{*,s}$ is `inner ℂ ρ φ`. -/
 theorem definition_7_5_1_inner (s : ℝ) (φ ρ : PeriodicSobolev s) :
     (inner ℂ ρ φ : ℂ) = ∑' m : ℤ, (if m = 0 then φ.coeff 0 * conj (ρ.coeff 0)
       else (|(m : ℝ)| ^ (2 * s) : ℝ) * (φ.coeff m * conj (ρ.coeff m))) := by
@@ -193,8 +220,13 @@ theorem definition_7_5_1_inner (s : ℝ) (φ ρ : PeriodicSobolev s) :
   · rw [ite_eq_right hm, ← Complex.ofReal_pow, periodicSobolevWeight_sq s hm]
     ring
 
-/-- **Theorem 7.5.2, the characterization**: `H^s(2π)` is exactly the set of formal series (7.5.1)
-whose coefficients make (7.5.2) finite. -/
+/-- **Theorem 7.5.2** of [han2009theoretical], the characterization. Let $s$ be real and let
+$(a_m)_{m \in \mathbb{Z}}$ be complex numbers. There is $\varphi \in H^s(2\pi)$ with the
+coefficients $a_m$ if and only if
+$$|a_0|^2 + \sum_{|m| > 0} |m|^{2s} |a_m|^2 < \infty.$$
+
+The condition is the summability of $(w_s(m) |a_m|)^2$, where $w_s(0) = 1$ and $w_s(m) = |m|^s$
+for $m \neq 0$ is `periodicSobolevWeight s m`. -/
 theorem theorem_7_5_2 (s : ℝ) (a : ℤ → ℂ) :
     (∃ φ : PeriodicSobolev s, φ.coeff = a) ↔
       Summable fun m : ℤ => (periodicSobolevWeight s m * ‖a m‖) ^ 2 := by
@@ -207,15 +239,22 @@ theorem theorem_7_5_2 (s : ℝ) (a : ℤ → ℂ) :
     rw [norm_mul, Complex.norm_real,
       Real.norm_of_nonneg (periodicSobolevWeight_pos s m).le]
 
-/-- The classical Sobolev norm of Definition 7.5.1, `‖φ‖²_{H^k} = ∑_{j ≤ k} ‖φ^{(j)}‖²_{L²}`,
-written on the Fourier side.  Differentiation multiplies the `m`-th coefficient by `i m`, by
-(7.5.3), and Parseval turns each `‖φ^{(j)}‖²_{L²}` into `∑_m |m|^{2 j} |a_m|²`; summing over
-`j ≤ k` gives the expression below. -/
+/-- **Definition 7.5.1** of [han2009theoretical], the classical norm. For an integer $k \ge 0$ and
+$\varphi \in H^k(2\pi)$ with coefficients $a_m$, the square of the classical Sobolev norm is
+$$\|\varphi\|_{H^k}^2 = \sum_{m \in \mathbb{Z}} \Big(\sum_{j=0}^{k} |m|^{2j}\Big) |a_m|^2.$$
+
+This is $\sum_{j \le k} \|\varphi^{(j)}\|_{L^2}^2$ written on the Fourier side: differentiation
+multiplies the $m$-th coefficient by $im$, by (7.5.3), and Parseval's identity turns
+$\|\varphi^{(j)}\|_{L^2}^2$ into $\sum_m |m|^{2j} |a_m|^2$. At $m = 0$ the inner sum is $1$. The
+outer sum is a `tsum`, so it is $0$ when the series is not summable. -/
 noncomputable def classicalNormSq (k : ℕ) (φ : PeriodicSobolev (k : ℝ)) : ℝ :=
   ∑' m : ℤ, (∑ j ∈ Finset.range (k + 1), |(m : ℝ)| ^ (2 * j)) * ‖φ.coeff m‖ ^ 2
 
-/-- The symbol inequality behind the equivalence: `w_k(m)² ≤ ∑_{j ≤ k} |m|^{2 j} ≤ (k+1) w_k(m)²`,
-where `w_k` is the weight of (7.5.2). -/
+/-- For an integer $k \ge 0$ and $m \in \mathbb{Z}$, the weight $w_k$ of (7.5.2) satisfies
+$$w_k(m)^2 \le \sum_{j=0}^{k} |m|^{2j} \le (k + 1) \, w_k(m)^2,$$
+where $w_k(0) = 1$ and $w_k(m) = |m|^k$ for $m \neq 0$.
+
+This symbol inequality gives the norm equivalence of Theorem 7.5.2. -/
 theorem weight_sq_le_sum_le (k : ℕ) (m : ℤ) :
     periodicSobolevWeight (k : ℝ) m ^ 2 ≤ ∑ j ∈ Finset.range (k + 1), |(m : ℝ)| ^ (2 * j) ∧
       ∑ j ∈ Finset.range (k + 1), |(m : ℝ)| ^ (2 * j)
@@ -255,8 +294,12 @@ theorem weight_sq_le_sum_le (k : ℕ) (m : ℤ) :
             push_cast
             ring
 
-/-- **Theorem 7.5.2, the norm equivalence** for an integer `k ≥ 0`: `‖·‖_{*,k}` and the classical
-`‖·‖_{H^k}` are equivalent, with the constants `1` and `k + 1`. -/
+/-- **Theorem 7.5.2** of [han2009theoretical], the norm equivalence. Let $k \ge 0$ be an integer and
+let $\varphi \in H^k(2\pi)$. Then
+$$\|\varphi\|_{*,k}^2 \le \|\varphi\|_{H^k}^2 \le (k + 1) \|\varphi\|_{*,k}^2,$$
+where $\|\varphi\|_{H^k}$ is the classical norm `AtkinsonHan.Chapter07.classicalNormSq`.
+
+The proof sums the inequality `AtkinsonHan.Chapter07.weight_sq_le_sum_le` against $|a_m|^2$. -/
 theorem theorem_7_5_2_norm_equiv (k : ℕ) (φ : PeriodicSobolev (k : ℝ)) :
     ‖φ‖ ^ 2 ≤ classicalNormSq k φ ∧ classicalNormSq k φ ≤ ((k : ℝ) + 1) * ‖φ‖ ^ 2 := by
   have hns := PeriodicSobolev.hasSum_norm_sq φ
@@ -282,11 +325,16 @@ theorem theorem_7_5_2_norm_equiv (k : ℕ) (φ : PeriodicSobolev (k : ℝ)) :
     refine hmid.tsum_le_tsum (fun m => ?_) hupper.summable
     exact mul_le_mul_of_nonneg_right (weight_sq_le_sum_le k m).2 (by positivity)
 
-/-- **The classical norm of a smooth periodic function on the Fourier side.** For a `2π`-periodic
-`f` of class `C^k` with coefficient sequence `φ = PeriodicSobolev.ofSmooth hf hd`, the Fourier-side
-expression `classicalNormSq k φ` is `(1/2π) ∑_{j ≤ k} ‖f^{(j)}‖²_{L²(0,2π)}`: Parseval for each
-derivative, `f̂^{(j)}_m = (i m)^j f̂_m`. The factor `1/2π` is the book's normalization `ψ_m =
-(2π)^{-1/2} e^{imx}`, under which `‖f‖²_{L²} = 2π ∑ |a_m|²`. -/
+/-- Let $f : \mathbb{R} \to \mathbb{C}$ be $2\pi$-periodic and of class $C^k$, and let $\varphi$ be
+its sequence of Fourier coefficients $\hat f_m = \frac{1}{2\pi} \int_0^{2\pi} f(x) e^{-imx} \,
+dx$. Then the classical norm of $\varphi$ on the Fourier side is
+$$\|\varphi\|_{H^k}^2 = \frac{1}{2\pi} \sum_{j=0}^{k} \|f^{(j)}\|_{L^2(0, 2\pi)}^2.$$
+
+This connects `AtkinsonHan.Chapter07.classicalNormSq` with the norm of a function, by Parseval's
+identity for each derivative and $\widehat{f^{(j)}}_m = (im)^j \hat f_m$. The sequence $\varphi$
+is `PeriodicSobolev.ofSmooth hf hd`. Its coefficients are taken against $e^{imx}$ and not
+against $\psi_m$, so $\|f\|_{L^2(0, 2\pi)}^2 = 2\pi \sum_m |\hat f_m|^2$, and this is the source
+of the factor $1/(2\pi)$. -/
 theorem classicalNormSq_ofSmooth {f : ℝ → ℂ} (hf : Function.Periodic f (2 * π)) {k : ℕ}
     (hd : ContDiff ℝ k f) :
     classicalNormSq k (PeriodicSobolev.ofSmooth hf hd)
@@ -294,9 +342,15 @@ theorem classicalNormSq_ofSmooth {f : ℝ → ℂ} (hf : Function.Periodic f (2 
   rw [classicalNormSq, PeriodicSobolev.coeff_ofSmooth]
   exact (PeriodicSobolev.hasSum_sum_abs_pow_mul_norm_fourierCoeff_lift_sq hf hd).tsum_eq
 
-/-- **Theorem 7.5.2 on the function side**: for a `2π`-periodic `f` of class `C^k`, the norm
-`‖·‖_{*,k}` of its coefficient sequence and the classical norm `‖f‖²_{H^k} = ∑_{j ≤ k}
-‖f^{(j)}‖²_{L²(0,2π)}` are equivalent, `‖φ‖²_{*,k} ≤ (1/2π) ‖f‖²_{H^k} ≤ (k + 1) ‖φ‖²_{*,k}`. -/
+/-- **Theorem 7.5.2** of [han2009theoretical], for smooth functions. Let
+$f : \mathbb{R} \to \mathbb{C}$ be $2\pi$-periodic and of class $C^k$, with the classical norm
+$\|f\|_{H^k}^2 = \sum_{j=0}^{k} \|f^{(j)}\|_{L^2(0, 2\pi)}^2$, and let $\varphi$ be its sequence
+of Fourier coefficients $\hat f_m = \frac{1}{2\pi} \int_0^{2\pi} f(x) e^{-imx} \, dx$. Then
+$$\|\varphi\|_{*,k}^2 \le \frac{1}{2\pi} \|f\|_{H^k}^2 \le (k + 1) \|\varphi\|_{*,k}^2.$$
+
+The sequence $\varphi$ is `PeriodicSobolev.ofSmooth hf hd`, and $\|f\|_{H^k}^2$ is
+`PeriodicSobolev.derivNormSq k f`. The factor $1/(2\pi)$ comes from the coefficients against
+$e^{imx}$; see `AtkinsonHan.Chapter07.classicalNormSq_ofSmooth`. -/
 theorem theorem_7_5_2_smooth {f : ℝ → ℂ} (hf : Function.Periodic f (2 * π)) {k : ℕ}
     (hd : ContDiff ℝ k f) :
     ‖PeriodicSobolev.ofSmooth hf hd‖ ^ 2 ≤ (2 * π)⁻¹ * PeriodicSobolev.derivNormSq k f ∧
@@ -305,9 +359,13 @@ theorem theorem_7_5_2_smooth {f : ℝ → ℂ} (hf : Function.Periodic f (2 * π
   rw [← classicalNormSq_ofSmooth hf hd]
   exact theorem_7_5_2_norm_equiv k _
 
-/-! ### §7.5.2, the embedding results -/
+/-! ### Section 7.5.2: the embedding results -/
 
-/-- **The bound (7.5.10)**: `|φ(x)| ≤ |a₀| + √(2 ζ(2 s)) ‖φ‖_{*,s}` for `s > 1/2`. -/
+/-- **Equation (7.5.10)** of [han2009theoretical]. Let $s > 1/2$ and $\varphi \in H^s(2\pi)$ with
+coefficients $a_m$. Then for every real $x$,
+$$|\varphi(x)| \le |a_0| + \sqrt{2\zeta(2s)} \, \|\varphi\|_{*,s}.$$
+
+Here $\varphi(x)$ is `AtkinsonHan.Chapter07.eval φ x`, and `zetaReal` is the function $\zeta$. -/
 theorem proposition_7_5_4_bound (hs : 1 / 2 < s) (φ : PeriodicSobolev s) (x : ℝ) :
     ‖eval φ x‖ ≤ ‖φ.coeff 0‖ + √(2 * zetaReal (2 * s)) * ‖φ‖ := by
   have hb := PeriodicSobolev.norm_eval_le_tsum_norm_coeff hs (2 * π) φ x
@@ -319,8 +377,12 @@ theorem proposition_7_5_4_bound (hs : 1 / 2 < s) (φ : PeriodicSobolev s) (x : �
   rw [one_mul] at h1
   linarith [hb.trans hle]
 
-/-- **Proposition 7.5.4 at `k = 0`, with the bound (7.5.11)**: for `s > 1/2` the series (7.5.1)
-converges to a continuous function of period `2 π`, and `‖φ‖_∞ ≤ [1 + √(2 ζ(2 s))] ‖φ‖_{*,s}`. -/
+/-- **Proposition 7.5.4** of [han2009theoretical], the case $k = 0$, with the bound (7.5.11). Let
+$s > 1/2$ and $\varphi \in H^s(2\pi)$. Then the series (7.5.1) converges to a continuous
+function of period $2\pi$, and for every real $x$,
+$$|\varphi(x)| \le \big[1 + \sqrt{2\zeta(2s)}\big] \|\varphi\|_{*,s}.$$
+
+Here $\varphi(x)$ is `AtkinsonHan.Chapter07.eval φ x`, and `zetaReal` is the function $\zeta$. -/
 theorem proposition_7_5_4 (hs : 1 / 2 < s) (φ : PeriodicSobolev s) :
     Continuous (eval φ) ∧ Function.Periodic (eval φ) (2 * π) ∧
       ∀ x, ‖eval φ x‖ ≤ (1 + √(2 * zetaReal (2 * s))) * ‖φ‖ := by
@@ -333,33 +395,49 @@ theorem proposition_7_5_4 (hs : 1 / 2 < s) (φ : PeriodicSobolev s) :
   rw [one_mul] at h1
   linarith [PeriodicSobolev.norm_eval_le hs (2 * π) φ x]
 
-/-- **Proposition 7.5.5** (= Exercise 7.5.1): for `s > t` the identity map `H^s(2π) → H^t(2π)` has
-dense range and is a compact operator. -/
+/-- **Proposition 7.5.5** of [han2009theoretical]. Let $t < s$ be real. The inclusion
+$H^s(2\pi) \to H^t(2\pi)$ has dense range and is a compact operator.
+
+The inclusion is `PeriodicSobolev.inclL`, which keeps the coefficients. Exercise 7.5.1 asks for
+this proof; see `AtkinsonHan.Chapter07.exercise_7_5_1`. -/
 theorem proposition_7_5_5 (h : t < s) :
     DenseRange (PeriodicSobolev.inclL h.le) ∧
       IsCompactOperator (PeriodicSobolev.inclL h.le) :=
   ⟨PeriodicSobolev.denseRange_inclL h.le, PeriodicSobolev.isCompactOperator_inclL h⟩
 
-/-- **Exercise 7.5.1** asks for the proof of Proposition 7.5.5. -/
+/-- **Exercise 7.5.1** of [han2009theoretical]. Let $t < s$ be real. The inclusion
+$H^s(2\pi) \to H^t(2\pi)$ has dense range and is a compact operator.
+
+The exercise asks for the proof of Proposition 7.5.5, `AtkinsonHan.Chapter07.proposition_7_5_5`. -/
 theorem exercise_7_5_1 (h : t < s) :
     DenseRange (PeriodicSobolev.inclL h.le) ∧
       IsCompactOperator (PeriodicSobolev.inclL h.le) :=
   proposition_7_5_5 h
 
-/-- **Exercise 7.5.2**: the trigonometric polynomials `𝕋` of (7.5.4) — the finite linear
-combinations of the `ψ_m`, equivalently the span of the coordinate series — are dense in
-`H^s(2π)` for every real `s`. -/
+/-- **Exercise 7.5.2** of [han2009theoretical]. For every real $s$, the space $\mathbb{T}$ of
+trigonometric polynomials (7.5.4), the finite linear combinations of the $\psi_m$, is dense in
+$H^s(2\pi)$.
+
+The space $\mathbb{T}$ is the span of the coordinate series `PeriodicSobolev.basisElt s m`,
+whose coefficient is $1$ at $m$ and $0$ elsewhere. -/
 theorem exercise_7_5_2 (s : ℝ) :
     Dense ((Submodule.span ℂ (Set.range (PeriodicSobolev.basisElt s)) :
       Submodule ℂ (PeriodicSobolev s)) : Set (PeriodicSobolev s)) :=
   PeriodicSobolev.dense_span_basisElt s
 
-/-! ### §7.5.3, the approximation results -/
+/-! ### Section 7.5.3: the approximation results -/
 
-/-- `I(φ) = ∫_0^{2π} φ(x) dx`. -/
+/-- **Section 7.5.3** of [han2009theoretical], the integral. For $\varphi \in H^s(2\pi)$,
+$$I(\varphi) = \int_0^{2\pi} \varphi(x) \, dx,$$
+where $\varphi(x)$ is `AtkinsonHan.Chapter07.eval φ x`. -/
 noncomputable def integral (φ : PeriodicSobolev s) : ℂ := ∫ x in (0 : ℝ)..(2 * π), eval φ x
 
-/-- **(7.5.12)**, the trapezoidal rule `T_k(φ) = h ∑_{j=1}^{k} φ(j h)` with `h = 2π/k`. -/
+/-- **Equation (7.5.12)** of [han2009theoretical], the trapezoidal rule. For an integer $k$ and
+$\varphi \in H^s(2\pi)$,
+$$T_k(\varphi) = h \sum_{j=1}^{k} \varphi(jh), \qquad h = \frac{2\pi}{k}.$$
+
+For a periodic integrand the two end points carry the same value, so the half weights at the
+ends merge into one full weight. At $k = 0$ the rule is $0$. -/
 noncomputable def trapezoid (k : ℕ) (φ : PeriodicSobolev s) : ℂ :=
   PeriodicSobolev.trapezoidSum (2 * π) k (eval φ)
 
@@ -369,7 +447,9 @@ private theorem trapezoidSum_const_mul (T : ℝ) (k : ℕ) (c : ℂ) (f : ℝ �
   rw [PeriodicSobolev.trapezoidSum, PeriodicSobolev.trapezoidSum, ← Finset.mul_sum]
   ring
 
-/-- The quadrature error in the book's normalization is `(2 π)^{-1/2}` times the backbone's. -/
+/-- For $\varphi \in H^s(2\pi)$ and an integer $k$, the quadrature error $I(\varphi) - T_k(\varphi)$
+in the normalization of the source is $(2\pi)^{-1/2}$ times the quadrature error of the backbone
+sum `PeriodicSobolev.eval (2 * π) φ`. -/
 theorem integral_sub_trapezoid (φ : PeriodicSobolev s) (k : ℕ) :
     integral φ - trapezoid k φ = (√(2 * π))⁻¹ *
       ((∫ x in (0 : ℝ)..(2 * π), PeriodicSobolev.eval (2 * π) φ x)
@@ -385,12 +465,12 @@ theorem integral_sub_trapezoid (φ : PeriodicSobolev s) (k : ℕ) :
       PeriodicSobolev.eval (2 * π) φ x from rfl, trapezoidSum_const_mul]
   rw [h1, h2, mul_sub]
 
-/-- **Proposition 7.5.6, the bound (7.5.13)**: the trapezoidal rule converges at the rate `k^{-s}`
-on `H^s(2π)`, so for a smooth periodic integrand it is spectrally accurate.
+/-- **Proposition 7.5.6** of [han2009theoretical], the bound (7.5.13). Let $s > 1/2$, let $k \ge 1$
+be an integer and let $\varphi \in H^s(2\pi)$. Then
+$$|I(\varphi) - T_k(\varphi)| \le \sqrt{4\pi\zeta(2s)} \, k^{-s} \|\varphi\|_{*,s}.$$
 
-`|I(φ) − T_k(φ)| ≤ √(4 π ζ(2 s)) k^{-s} ‖φ‖_{*,s}`.
-
-This is the reason the trapezoidal rule is the method of choice for periodic integrands. -/
+So the trapezoidal rule converges at the rate $k^{-s}$ on $H^s(2\pi)$, and it is very accurate
+for a smooth periodic integrand. Here $\zeta$ is `zetaReal`. -/
 theorem proposition_7_5_6 (hs : 1 / 2 < s) {k : ℕ} (hk : 0 < k) (φ : PeriodicSobolev s) :
     ‖integral φ - trapezoid k φ‖ ≤ √(4 * π * zetaReal (2 * s)) * (k : ℝ) ^ (-s) * ‖φ‖ := by
   have hbb := PeriodicSobolev.norm_intervalIntegral_sub_trapezoidSum_le hs
@@ -410,19 +490,21 @@ theorem proposition_7_5_6 (hs : 1 / 2 < s) {k : ℕ} (hk : 0 < k) (φ : Periodic
         rw [inv_mul_cancel_left₀ (ne_of_gt sqrt_two_pi_pos)]
     _ = √(4 * π * zetaReal (2 * s)) * (k : ℝ) ^ (-s) * ‖φ‖ := by rw [h4]; ring
 
-/-- **Theorem 7.5.7, the trigonometric interpolation bound (7.5.15).** For `s > 1/2`,
-`φ ∈ H^s(2π)`, `0 ≤ r ≤ s` and `n ≥ 1`, the trigonometric interpolant `𝓘_n φ` — the
-trigonometric polynomial of degree `≤ n` that agrees with `φ` at the `2n + 1` equispaced nodes
-`t_j = 2πj/(2n+1)` of §3.7, here `PeriodicSobolev.trigInterp r n φ`, read in `H^r(2π)` — satisfies
+/-- **Theorem 7.5.7** of [han2009theoretical], the bound (7.5.15). Let $s > 1/2$, let
+$0 \le r \le s$, let $n \ge 1$ be an integer and let $\varphi \in H^s(2\pi)$. Let
+$\mathcal{I}_n \varphi$ be the trigonometric polynomial of degree at most $n$ that agrees with
+$\varphi$ at the $2n + 1$ nodes $t_j = 2\pi j / (2n + 1)$. Then
+$\mathcal{I}_n \varphi(t_j) = \varphi(t_j)$ for $0 \le j < 2n + 1$, and
+$$\|\varphi - \mathcal{I}_n \varphi\|_{*,r} \le \sqrt{1 + 2\zeta(2s)} \, n^{r-s}
+  \|\varphi\|_{*,s}.$$
 
-`‖φ − 𝓘_n φ‖_{*,r} ≤ c n^{r − s} ‖φ‖_{*,s}` with `c = √(1 + 2 ζ(2 s))`.
-
-The first conjunct is the interpolation property that defines `𝓘_n φ`; the second is (7.5.15).
-The book refers to Kress for the proof, which is the aliasing argument of
-`Numlib/Analysis/Fourier/Aliasing`: the Fourier coefficients of `𝓘_n φ` on the window `-n, …, n`
-are `a_m + ∑_{j ≠ 0} a_{m + j(2n+1)}` and vanish outside it, and Cauchy–Schwarz against
-`∑_{j ≠ 0} |m + j(2n+1)|^{-2s}` bounds the aliasing tails. The book's constant `c` depends on
-`s` and `r` only; ours depends on `s` alone. -/
+The interpolant $\mathcal{I}_n \varphi$ is `PeriodicSobolev.trigInterp r n φ`, an element of
+$H^r(2\pi)$, and $\varphi$ is read in $H^r(2\pi)$ through `PeriodicSobolev.incl`. The source
+refers to Kress for the proof. The proof here is the aliasing argument of
+`Numlib.Analysis.Fourier.Aliasing`: the coefficients of $\mathcal{I}_n \varphi$ on the window
+$-n, \dots, n$ are $a_m + \sum_{j \neq 0} a_{m + j(2n+1)}$, they vanish outside it, and the
+Cauchy–Schwarz inequality against $\sum_{j \neq 0} |m + j(2n+1)|^{-2s}$ bounds the tails. The
+constant of the source depends on $s$ and $r$; the constant here depends on $s$ alone. -/
 theorem theorem_7_5_7 (hs : 1 / 2 < s) {r : ℝ} (hr : 0 ≤ r) (hrs : r ≤ s) {n : ℕ} (hn : 1 ≤ n)
     (φ : PeriodicSobolev s) :
     (∀ j < 2 * n + 1, eval (PeriodicSobolev.trigInterp r n φ) (angleNode (2 * n + 1) j)
@@ -432,10 +514,14 @@ theorem theorem_7_5_7 (hs : 1 / 2 < s) {r : ℝ} (hr : 0 ≤ r) (hrs : r ≤ s) 
   ⟨fun j hj => by rw [eval, eval, PeriodicSobolev.eval_trigInterp_angleNode r n φ hj],
     PeriodicSobolev.norm_incl_sub_trigInterp_le hs hr hrs hn φ⟩
 
-/-- **Simpson's rule** on one period at `2 k` equally spaced points, `h = π / k`:
-`S_{2k}(φ) = (h/3) [4 ∑_{j=1}^{k} φ(x_{2j-1}) + 2 ∑_{j=1}^{k} φ(x_{2j})]` with `x_i = i h`. For a
-periodic integrand the two endpoints coincide, so the end weights `1` merge into the weight `2` at
-`x_{2k}` and the rule is the plain alternating pattern below. -/
+/-- **Simpson's rule** of Exercise 7.5.3 of [han2009theoretical]. For an integer $k$ and
+$\varphi \in H^s(2\pi)$, Simpson's rule on one period with $2k$ subintervals of length
+$h = \pi / k$ and the nodes $x_i = ih$ is
+$$S_{2k}(\varphi) = \frac{h}{3} \Big[4 \sum_{j=1}^{k} \varphi(x_{2j-1}) + 2 \sum_{j=1}^{k}
+  \varphi(x_{2j})\Big].$$
+
+For a periodic integrand the two end points coincide, so the end weights $1$ merge into the
+weight $2$ at $x_{2k}$. -/
 noncomputable def simpson (k : ℕ) (φ : PeriodicSobolev s) : ℂ :=
   ((π / k : ℝ) / 3 : ℝ) *
     (4 * ∑ j ∈ Finset.range k, eval φ ((2 * (j : ℝ) + 1) * (π / k))
@@ -450,9 +536,11 @@ private theorem sum_range_two_mul (f : ℕ → ℂ) (k : ℕ) :
     rw [h, Finset.sum_range_succ, Finset.sum_range_succ, Finset.sum_range_succ, ih]
     ring
 
-/-- Simpson's rule on a period is the Richardson combination `(4 T_{2k} − T_k)/3` of the two
-trapezoidal rules it refines. This identity holds for any function whatever; it is what turns the
-trapezoidal bound (7.5.13) into the Simpson bound. -/
+/-- For an integer $k \ge 1$ and $\varphi \in H^s(2\pi)$, Simpson's rule is the Richardson
+combination $S_{2k}(\varphi) = (4 T_{2k}(\varphi) - T_k(\varphi)) / 3$ of two trapezoidal rules.
+
+The identity holds for any integrand, and it turns the trapezoidal bound (7.5.13) into the bound
+of Exercise 7.5.3. -/
 theorem simpson_eq (k : ℕ) (hk : 0 < k) (φ : PeriodicSobolev s) :
     simpson k φ = (4 * trapezoid (2 * k) φ - trapezoid k φ) / 3 := by
   have hkR : ((k : ℕ) : ℝ) ≠ 0 := Nat.cast_ne_zero.2 hk.ne'
@@ -479,9 +567,13 @@ theorem simpson_eq (k : ℕ) (hk : 0 < k) (φ : PeriodicSobolev s) :
   push_cast
   ring
 
-/-- **Exercise 7.5.3**: Simpson's rule obeys the same `k^{-s}` bound as the trapezoidal rule, with
-the constant `(5/3) √(4 π ζ(2 s))`. Since `S_{2k} = (4 T_{2k} − T_k)/3`, the error is
-`(4 (I − T_{2k}) − (I − T_k))/3`, and `(2k)^{-s} ≤ k^{-s}`. -/
+/-- **Exercise 7.5.3** of [han2009theoretical]. Let $s > 1/2$, let $k \ge 1$ be an integer and let
+$\varphi \in H^s(2\pi)$. Then
+$$|I(\varphi) - S_{2k}(\varphi)| \le \frac{5}{3} \sqrt{4\pi\zeta(2s)} \, k^{-s}
+  \|\varphi\|_{*,s}.$$
+
+Since $S_{2k} = (4 T_{2k} - T_k) / 3$, the error is $(4 (I - T_{2k}) - (I - T_k)) / 3$, and
+$(2k)^{-s} \le k^{-s}$. Here $S_{2k}$ is `AtkinsonHan.Chapter07.simpson k`. -/
 theorem exercise_7_5_3 (hs : 1 / 2 < s) {k : ℕ} (hk : 0 < k) (φ : PeriodicSobolev s) :
     ‖integral φ - simpson k φ‖ ≤ 5 / 3 * √(4 * π * zetaReal (2 * s)) * (k : ℝ) ^ (-s) * ‖φ‖ := by
   have hspos : (0 : ℝ) < s := by linarith
@@ -515,43 +607,43 @@ theorem exercise_7_5_3 (hs : 1 / 2 < s) {k : ℕ} (hk : 0 < k) (φ : PeriodicSob
   rw [div_le_iff₀ (by norm_num : (0 : ℝ) < 3)]
   linarith
 
-/-- **Exercise 7.5.4**: for `t > 0` every element `η` of `H^{-t}(2π)` is a bounded linear functional
-on `H^t(2π)` under the pairing (7.5.6), `ℓ[φ] = ∑_m a_m conj (b_m)`, with `‖ℓ‖ ≤ ‖η‖_{*,-t}`. -/
+/-- **Exercise 7.5.4** of [han2009theoretical]. Let $t$ be real and let $\eta \in H^{-t}(2\pi)$ have
+coefficients $b_m$. The pairing (7.5.6),
+$$\ell[\varphi] = \sum_{m \in \mathbb{Z}} a_m \overline{b_m}$$
+for $\varphi \in H^t(2\pi)$ with coefficients $a_m$, is a bounded linear functional on
+$H^t(2\pi)$ with $\|\ell\| \le \|\eta\|_{*,-t}$.
+
+The functional is `PeriodicSobolev.dualPairing t η`. The statement holds for every real $t$. -/
 theorem exercise_7_5_4 (t : ℝ) (η : PeriodicSobolev (-t)) :
     (∀ φ : PeriodicSobolev t,
         PeriodicSobolev.dualPairing t η φ = ∑' m : ℤ, φ.coeff m * conj (η.coeff m)) ∧
       ‖PeriodicSobolev.dualPairing t η‖ ≤ ‖η‖ :=
   ⟨fun _ => rfl, PeriodicSobolev.norm_dualPairing_le t η⟩
 
-/-! ### §7.5.5: spherical polynomials
+/-!
+### Section 7.5.5: spherical polynomials
 
-Definition 7.5.8 and the minimax error (7.5.30), and nothing else of §7.5.5.  What follows them in
-the book — the spherical harmonics of Definition 7.5.9, the identity `𝕊̂_N = 𝕊_N` (7.5.20), the
-dimension count `dim 𝕊_N = (N + 1)²` (7.5.21), the orthonormal basis (7.5.22) and Ragozin's rate
-(7.5.31) — is **not** formalized; the module doc says what each would need.  What *is* here is the
-definition as the book writes it and the one thing the book proves about it, that `ρ_N(g) → 0` by
-Stone–Weierstraß.
-
-The machinery of that convergence is general — the polynomial functions on a compact `D ⊆ ℝ^ι`
-form a subalgebra of `C(D, ℝ)` separating points — and belongs in
-`Numlib/Approximation/MvPolynomial` beside `Approximation.mvPolyLE`; it is private here because
-§7.5.5 is its only consumer so far.
+This part formalizes Definition 7.5.8, the minimax error (7.5.30), and the convergence
+$\rho_N(g) \to 0$ that the source derives from the Stone–Weierstrass theorem. The rest of Section
+7.5.5 is not formalized; the module doc comment lists it. The convergence uses the fact that the
+polynomial functions on a compact set $D \subseteq \mathbb{R}^\iota$ form a subalgebra of
+$C(D, \mathbb{R})$ that separates points. This general fact belongs beside `Approximation.mvPolyLE`,
+and it is private here because Section 7.5.5 is its only use.
 -/
 
 section StoneWeierstrass
 
 variable {ι : Type*} (D : Set (ι → ℝ))
 
-/-- Restriction to `D` is multiplicative.  `Approximation.toContinuousMapOn` is packaged as a
-linear map, so this is the one algebra fact the subalgebra below needs. -/
+/-- Restriction of polynomials to $D$ is multiplicative: the restriction of $pq$ is the product of
+the restrictions of $p$ and $q$. -/
 private theorem toContinuousMapOn_mul (p q : MvPolynomial ι ℝ) :
     Approximation.toContinuousMapOn D (p * q) =
       Approximation.toContinuousMapOn D p * Approximation.toContinuousMapOn D q := by
   ext x; simp
 
-/-- The polynomial functions on `D` as a subalgebra of `C(D, ℝ)`: the union of the subspaces
-`Approximation.mvPolyLE D N`, which is a subspace because the family is monotone and closed under
-multiplication because `totalDegree (p q) ≤ totalDegree p + totalDegree q`. -/
+/-- The polynomial functions on $D$, the union of the spaces `Approximation.mvPolyLE D N` over $N$,
+form a subalgebra of $C(D, \mathbb{R})$. -/
 private noncomputable def polyAlgebra : Subalgebra ℝ C(D, ℝ) where
   carrier := {f | ∃ N, f ∈ Approximation.mvPolyLE D N}
   mul_mem' := by
@@ -569,8 +661,8 @@ private noncomputable def polyAlgebra : Subalgebra ℝ C(D, ℝ) where
   algebraMap_mem' r := ⟨0, Approximation.mem_mvPolyLE_iff.2
     ⟨MvPolynomial.C r, by simp, by ext x; simp⟩⟩
 
-/-- The polynomial functions separate the points of `D`: two distinct points differ in some
-coordinate, and the coordinate is a polynomial of degree one. -/
+/-- The polynomial functions on $D$ separate the points of $D$, because each coordinate is a
+polynomial of degree one. -/
 private theorem polyAlgebra_separatesPoints : (polyAlgebra D).SeparatesPoints := by
   rintro x y hxy
   have hne : (x : ι → ℝ) ≠ (y : ι → ℝ) := fun h => hxy (Subtype.ext h)
@@ -579,8 +671,9 @@ private theorem polyAlgebra_separatesPoints : (polyAlgebra D).SeparatesPoints :=
   · exact Approximation.mem_mvPolyLE_iff.2 ⟨MvPolynomial.X i, by simp, rfl⟩
   · simpa using hi
 
-/-- **Stone–Weierstraß on a compact `D ⊆ ℝ^ι`**: every continuous function on `D` is uniformly
-within `ε` of a polynomial of some degree. -/
+/-- The Stone–Weierstrass theorem on a compact set $D \subseteq \mathbb{R}^\iota$: every
+$g \in C(D, \mathbb{R})$ is uniformly within $\varepsilon > 0$ of a polynomial function of some
+degree. -/
 private theorem exists_mem_mvPolyLE_near [CompactSpace D] (g : C(D, ℝ)) {ε : ℝ} (hε : 0 < ε) :
     ∃ N, ∃ f ∈ Approximation.mvPolyLE D N, ‖f - g‖ < ε := by
   obtain ⟨f, hf⟩ := ContinuousMap.exists_mem_subalgebra_near_continuousMap_of_separatesPoints
@@ -590,16 +683,22 @@ private theorem exists_mem_mvPolyLE_near [CompactSpace D] (g : C(D, ℝ)) {ε : 
 
 end StoneWeierstrass
 
-/-- The book's unit sphere `U = {(x, y, z) : x² + y² + z² = 1} ⊆ ℝ³` of §7.5.5, written as a set of
-coordinate vectors so that `MvPolynomial.eval` applies to its points directly.  The sup norm of
-`Fin 3 → ℝ` induces the same topology as the Euclidean one, so `C(U, ℝ)` is the book's `C(U)`. -/
+/-- **Section 7.5.5** of [han2009theoretical], the unit sphere
+$$U = \{(x, y, z) \in \mathbb{R}^3 : x^2 + y^2 + z^2 = 1\}.$$
+
+The points are coordinate vectors in `Fin 3 → ℝ`, so that `MvPolynomial.eval` applies to them
+directly. The sup norm of `Fin 3 → ℝ` gives the same topology as the Euclidean norm, so
+`C(unitSphere, ℝ)` is the space $C(U)$ of the source. -/
 def unitSphere : Set (Fin 3 → ℝ) := {x | ∑ i, x i ^ 2 = 1}
 
+/-- A point $x \in \mathbb{R}^3$ lies in $U$ if and only if $x_0^2 + x_1^2 + x_2^2 = 1$. -/
 theorem mem_unitSphere_iff {x : Fin 3 → ℝ} : x ∈ unitSphere ↔ ∑ i, x i ^ 2 = 1 := Iff.rfl
 
+/-- The unit sphere $U$ is closed. -/
 theorem isClosed_unitSphere : IsClosed unitSphere :=
   isClosed_eq (by fun_prop) continuous_const
 
+/-- The unit sphere $U$ is contained in the closed unit ball of the sup norm. -/
 theorem unitSphere_subset_closedBall : unitSphere ⊆ closedBall 0 1 := by
   intro x hx
   have hx' : ∑ j, x j ^ 2 = 1 := hx
@@ -611,7 +710,7 @@ theorem unitSphere_subset_closedBall : unitSphere ⊆ closedBall 0 1 := by
   rw [Real.norm_eq_abs]
   nlinarith [abs_nonneg (x i), sq_abs (x i)]
 
-/-- `U` is compact: it is closed, and contained in the unit cube. -/
+/-- The unit sphere $U$ is compact, because it is closed and contained in the unit cube. -/
 theorem isCompact_unitSphere : IsCompact unitSphere :=
   Metric.isCompact_of_isClosed_isBounded isClosed_unitSphere
     (Metric.isBounded_closedBall.subset unitSphere_subset_closedBall)
@@ -619,25 +718,21 @@ theorem isCompact_unitSphere : IsCompact unitSphere :=
 instance compactSpace_unitSphere : CompactSpace unitSphere :=
   isCompact_iff_compactSpace.1 isCompact_unitSphere
 
-/-- **Definition 7.5.8**: `𝕊_N`, the **spherical polynomials of degree `≤ N`** — the restrictions
-to the unit sphere `U ⊆ ℝ³` of the polynomials (7.5.19) in `(x, y, z)` of total degree at most `N`.
-It is a subspace of `C(U, ℝ)` because restriction is linear, and this is
-`Approximation.mvPolyLE` at `D = U`, the same construction that gives `Π_n^d ⊆ C(D, ℝ)` in
-chapter 14.
+/-- **Definition 7.5.8** of [han2009theoretical]. For an integer $N \ge 0$, the space $\mathbb{S}_N$
+of **spherical polynomials of degree at most $N$** is the set of restrictions to the unit sphere
+$U \subseteq \mathbb{R}^3$ of the polynomials (7.5.19) in $(x, y, z)$ of total degree at most
+$N$. It is a subspace of $C(U)$.
 
-Only the definition and the minimax error (7.5.30) below are formalized.  The rest of §7.5.5 is
-not: **Definition 7.5.9** (the spherical harmonics, the span `𝕊̂_N` of those of degree `≤ N`, the
-identity `𝕊̂_N = 𝕊_N` of (7.5.20) and the count `dim 𝕊_N = (N + 1)²` of (7.5.21), which the book
-quotes from MacRobert without proof) and **Theorem 7.5.10** (Ragozin's rate
-`ρ_N(g) ≤ c_k H_{k,γ}(g) N^{-(k+γ)}`, also quoted without proof).  `finrank_definition_7_5_8_le`
-is therefore an inequality where the book has the equality (7.5.21): the bound is the dimension of
-the polynomials upstairs, and the gap between the two is exactly the harmonic decomposition that
-is missing.  See the module doc. -/
+The definition is `Approximation.mvPolyLE` for $D = U$, the same construction that gives the
+space $\Pi_n^d \subseteq C(D)$ of Chapter 14. The dimension count
+$\dim \mathbb{S}_N = (N + 1)^2$ of (7.5.21) is not formalized;
+`AtkinsonHan.Chapter07.finrank_definition_7_5_8_le` gives an upper bound only. -/
 noncomputable def definition_7_5_8 (N : ℕ) : Submodule ℝ C(unitSphere, ℝ) :=
   Approximation.mvPolyLE unitSphere N
 
-/-- Definition 7.5.8 read out: `f ∈ 𝕊_N` exactly when `f` is the restriction to `U` of a polynomial
-in `(x, y, z)` of total degree at most `N`. -/
+/-- **Definition 7.5.8** of [han2009theoretical], unfolded. A function $f \in C(U)$ lies in
+$\mathbb{S}_N$ if and only if there is a polynomial $p$ in $(x, y, z)$ of total degree at most
+$N$ with $f(x) = p(x)$ for all $x \in U$. -/
 theorem mem_definition_7_5_8 {N : ℕ} {f : C(unitSphere, ℝ)} :
     f ∈ definition_7_5_8 N ↔ ∃ p : MvPolynomial (Fin 3) ℝ, p.totalDegree ≤ N ∧
       ∀ x : unitSphere, f x = MvPolynomial.eval (x : Fin 3 → ℝ) p := by
@@ -648,11 +743,12 @@ theorem mem_definition_7_5_8 {N : ℕ} {f : C(unitSphere, ℝ)} :
   · rintro ⟨p, hp, hf⟩
     exact ⟨p, hp, by ext x; exact (hf x).symm⟩
 
-/-- `𝕊_N ⊆ 𝕊_M` for `N ≤ M`. -/
+/-- The spaces of spherical polynomials increase: $\mathbb{S}_N \subseteq \mathbb{S}_M$ for
+$N \le M$. -/
 theorem definition_7_5_8_mono : Monotone definition_7_5_8 := fun _ _ h =>
   Approximation.mvPolyLE_mono h
 
-/-- The constants belong to every `𝕊_N`, `𝕊_0` being exactly the constants. -/
+/-- Every constant function on $U$ lies in $\mathbb{S}_N$ for every $N$. -/
 theorem const_mem_definition_7_5_8 (c : ℝ) (N : ℕ) :
     ContinuousMap.const unitSphere c ∈ definition_7_5_8 N :=
   mem_definition_7_5_8.2 ⟨MvPolynomial.C c, by simp, by simp⟩
@@ -662,11 +758,15 @@ instance finiteDimensional_definition_7_5_8 (N : ℕ) :
   inferInstanceAs (Module.Finite ℝ ((MvPolynomial.restrictTotalDegree (Fin 3) ℝ N).map
     (Approximation.toContinuousMapOn unitSphere)))
 
-/-- `dim 𝕊_N ≤ C(N + 3, 3)`, the dimension of the polynomials of degree `≤ N` in three variables,
-because `𝕊_N` is their image under restriction.  The book's (7.5.21) is the *equality*
-`dim 𝕊_N = (N + 1)²`, which is smaller — restriction to `U` has a large kernel, by
-`not_injective_toContinuousMapOn_unitSphere` — and is not formalized: it needs the decomposition
-into spherical harmonics of Definition 7.5.9. -/
+/-- For every $N$,
+$$\dim \mathbb{S}_N \le \binom{N + 3}{3},$$
+the dimension of the space of polynomials of degree at most $N$ in three variables, because
+$\mathbb{S}_N$ is the image of this space under restriction.
+
+The source states the equality $\dim \mathbb{S}_N = (N + 1)^2$ (7.5.21), which is smaller,
+because restriction to $U$ has a large kernel
+(`AtkinsonHan.Chapter07.not_injective_toContinuousMapOn_unitSphere`). The equality is not
+formalized; it needs the decomposition into the spherical harmonics of Definition 7.5.9. -/
 theorem finrank_definition_7_5_8_le (N : ℕ) :
     Module.finrank ℝ (definition_7_5_8 N) ≤ (N + 3).choose 3 := by
   have h := Submodule.finrank_map_le (Approximation.toContinuousMapOn unitSphere)
@@ -676,8 +776,9 @@ theorem finrank_definition_7_5_8_le (N : ℕ) :
   rw [he] at h
   exact h
 
-/-- The book's remark after Definition 7.5.8: `x² + y² + z²` reduces to `1` on `U`, so a polynomial
-of degree `N` may restrict to a spherical polynomial of lower degree. -/
+/-- The remark after Definition 7.5.8: the polynomial $x^2 + y^2 + z^2$ restricts to the constant
+$1$ on $U$, so a polynomial of degree $N$ can restrict to a spherical polynomial of lower
+degree. -/
 theorem toContinuousMapOn_normSq_unitSphere :
     Approximation.toContinuousMapOn unitSphere
       (MvPolynomial.X 0 ^ 2 + MvPolynomial.X 1 ^ 2 + MvPolynomial.X 2 ^ 2) = 1 := by
@@ -689,10 +790,11 @@ theorem toContinuousMapOn_normSq_unitSphere :
   simp only [map_add, map_pow, MvPolynomial.eval_X]
   linarith
 
-/-- The same remark as a statement about the map: restriction to `U` is **not** injective, since
-`x² + y² + z² − 1` is a nonzero polynomial that restricts to `0`.  This is why
-`Approximation.finrank_mvPolyLE`, which needs `D` to have nonempty interior, does not apply to `U`
-and why `finrank_definition_7_5_8_le` is an inequality. -/
+/-- Restriction of polynomials in three variables to $U$ is not injective, because
+$x^2 + y^2 + z^2 - 1$ is a nonzero polynomial that restricts to $0$.
+
+So `Approximation.finrank_mvPolyLE`, which needs a set with nonempty interior, does not apply to
+$U$, and `AtkinsonHan.Chapter07.finrank_definition_7_5_8_le` is only an inequality. -/
 theorem not_injective_toContinuousMapOn_unitSphere :
     ¬ Function.Injective (Approximation.toContinuousMapOn unitSphere) := by
   intro h
@@ -705,29 +807,32 @@ theorem not_injective_toContinuousMapOn_unitSphere :
   have h0 := congrArg (MvPolynomial.eval (fun _ => (0 : ℝ))) key
   simp at h0
 
-/-- **(7.5.30)**: the **minimax error** `ρ_N(g) = inf_{p ∈ 𝕊_N} ‖g − p‖_∞` of the approximation of
-`g ∈ C(U)` by spherical polynomials of degree `≤ N`, as the distance from `g` to `𝕊_N` in
-`C(U, ℝ)`. -/
+/-- **Equation (7.5.30)** of [han2009theoretical]. For an integer $N \ge 0$ and $g \in C(U)$, the
+**minimax error** of the approximation of $g$ by spherical polynomials of degree at most $N$ is
+$$\rho_N(g) = \inf_{p \in \mathbb{S}_N} \|g - p\|_\infty.$$
+
+The definition is the distance `Metric.infDist` from $g$ to $\mathbb{S}_N$ in $C(U)$. -/
 noncomputable def equation_7_5_30 (N : ℕ) (g : C(unitSphere, ℝ)) : ℝ :=
   Metric.infDist g (definition_7_5_8 N : Set C(unitSphere, ℝ))
 
+/-- The minimax error is nonnegative: $\rho_N(g) \ge 0$. -/
 theorem equation_7_5_30_nonneg (N : ℕ) (g : C(unitSphere, ℝ)) : 0 ≤ equation_7_5_30 N g :=
   Metric.infDist_nonneg
 
-/-- `ρ_N(g)` decreases in `N`, the spaces `𝕊_N` increasing. -/
+/-- For every $g \in C(U)$, the minimax error $\rho_N(g)$ decreases in $N$, because the spaces
+$\mathbb{S}_N$ increase. -/
 theorem equation_7_5_30_antitone (g : C(unitSphere, ℝ)) :
     Antitone fun N => equation_7_5_30 N g := fun _ _ h =>
   Metric.infDist_le_infDist_of_subset (definition_7_5_8_mono h) ⟨0, Submodule.zero_mem _⟩
 
-/-- **The convergence the book records after (7.5.30)**: `ρ_N(g) → 0` as `N → ∞` for every
-`g ∈ C(U)`, "using the Stone-Weierstraß theorem, Theorem 3.1.2".  The polynomial functions on `U`
-form a subalgebra of `C(U, ℝ)` that contains the constants and separates points, so it is dense;
-each of its elements lies in some `𝕊_N`, and `ρ_N(g)` is antitone.
+/-- **Equation (7.5.30)** of [han2009theoretical], convergence. For every $g \in C(U)$,
+$$\rho_N(g) \to 0 \quad \text{as } N \to \infty.$$
 
-This is the qualitative half of **Theorem 7.5.10**, whose rate `ρ_N(g) ≤ c_k H_{k,γ}(g)
-N^{-(k+γ)}` for `g ∈ C^{k,γ}(U)` is *not* formalized: the book quotes it from Gronwall and Ragozin
-without proof, and it needs both the Hölder spaces `C^{k,γ}(U)` on a sphere and the spherical
-harmonics of Definition 7.5.9.  See the module doc. -/
+The source records this after (7.5.30), with the remark that it follows from the
+Stone–Weierstrass theorem, Theorem 3.1.2. The polynomial functions on $U$ form a subalgebra of
+$C(U)$ that contains the constants and separates points, so it is dense; each of its elements
+lies in some $\mathbb{S}_N$, and $\rho_N(g)$ decreases in $N$. This is the qualitative part of
+Theorem 7.5.10, whose rate is not formalized. -/
 theorem equation_7_5_30_tendsto_zero (g : C(unitSphere, ℝ)) :
     Tendsto (fun N => equation_7_5_30 N g) atTop (𝓝 0) := by
   rw [Metric.tendsto_atTop]

@@ -8,27 +8,63 @@ import Numlib.Variational.Galerkin
 import NumlibSurface.AtkinsonHan.Chapter08.Section07
 
 /-!
-# Atkinson–Han §9.2: the Petrov–Galerkin method
+# Atkinson and Han, Section 9.2: The Petrov–Galerkin method
 
-Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework*, 3rd edition, Springer, 2009, §9.2.
+This module formalizes Section 9.2 of [han2009theoretical]. Let $U$ and $V$ be real inner product
+spaces, $a : U \times V \to \mathbb{R}$ a bilinear form with $|a(u, v)| \le M \|u\| \|v\|$, and
+$\ell \in V'$. The Petrov–Galerkin method (9.2.5) chooses a trial space $U_N \subseteq U$ and a test
+space $V_N \subseteq V$ of the same finite dimension, and asks for $u_N \in U_N$ with
+$a(u_N, v_N) = \ell(v_N)$ for all $v_N \in V_N$. Under the discrete inf–sup condition (9.2.6) with
+constant $\alpha_N > 0$, Babuška's theorem (Theorem 9.2.1) gives a unique $u_N$ and the error bound
+(9.2.7) $$\|u - u_N\| \le \Big(1 + \frac{M}{\alpha_N}\Big) \inf_{w_N \in U_N} \|u - w_N\|.$$ Remark
+9.2.2 improves the constant to $M / \alpha_N$ (Xu and Zikatanov), and Corollary 9.2.3 gives
+convergence under the uniform inf–sup condition (9.2.13). The proofs specialize
+`IsPetrovGalerkinSolution` of `Numlib.Variational.Galerkin`.
 
-The Petrov–Galerkin problem (9.2.5), the discrete inf–sup constant (9.2.6), Babuška's theorem
-(Theorem 9.2.1 with the error bound (9.2.7) and the Galerkin orthogonality (9.2.8)), the
-convergence corollary 9.2.3 (with (9.2.11)–(9.2.12)) and the uniform inf–sup condition
-(9.2.13)–(9.2.14).
+## Main definitions
 
-The book's supremum in (9.2.6) is taken without absolute values; the backbone's
-`ContinuousLinearMap.iSup_apply_div_eq_opNorm` (as in §8.7) identifies it with the norm of the
-functional `a(u_N, ·)` restricted to `V_N`, which is the backbone's
-`IsPetrovGalerkinSolution.DiscreteInfSup`.
+* Equation (9.2.5), `AtkinsonHan.PetrovGalerkinProblem`: $u_N \in U_N$ and $a(u_N, v_N) = \ell(v_N)$
+  for all $v_N \in V_N$.
+* Equation (9.2.6), `AtkinsonHan.DiscreteInfSup`: $\alpha_N \|u_N\| \le \sup_{0 \ne v_N \in V_N}
+  a(u_N, v_N) / \|v_N\|$ for all $u_N \in U_N$.
+* Equation (9.2.13), `AtkinsonHan.InfSupCondition`: the discrete inf–sup condition for every $N$
+  with one constant $\alpha_0$.
+* Equation (9.2.14), `AtkinsonHan.infSupValue`: the number $\inf_{0 \ne u_N} \sup_{0 \ne v_N} a(u_N,
+  v_N) / (\|u_N\| \|v_N\|)$.
 
-Remark 9.2.2 — the Xu–Zikatanov sharpening `‖u − u_N‖ ≤ (M/α_N) inf_{w_N} ‖u − w_N‖` — is
-`remark_9_2_2`, a specialization of the backbone's
-`IsPetrovGalerkinSolution.norm_sub_le_div_mul_infDist`, which builds the Petrov–Galerkin projector
-`P_N : u ↦ u_N` and bounds `‖P_N‖ ≤ M/α_N` by Kato's lemma; the analytic ingredient is recorded
-below as `kato`.  The hypothesis `U_N ≠ ⊥` is not decoration: at `U_N = ⊥` the projector is zero,
-every other hypothesis holds vacuously, and the bound is false.
+## Main results
+
+* Equation (9.2.8), `AtkinsonHan.Chapter09.petrovGalerkin_orthogonality`: $a(u - u_N, v_N) = 0$ for
+  all $v_N \in V_N$.
+* Theorem 9.2.1, `AtkinsonHan.Chapter09.theorem_9_2_1_existsUnique`: the Petrov–Galerkin problem has
+  a unique solution.
+* Theorem 9.2.1, `AtkinsonHan.Chapter09.theorem_9_2_1_le`:
+  $\|u - u_N\| \le (1 + M / \alpha_N) \|u - w_N\|$ for every $w_N \in U_N$.
+* Theorem 9.2.1, `AtkinsonHan.Chapter09.theorem_9_2_1`: the quasi-optimal error bound (9.2.7).
+* Remark 9.2.2, `AtkinsonHan.Chapter09.remark_9_2_2`: for $U_N \ne \{0\}$, the error bound holds
+  with the constant $M / \alpha_N$.
+* Corollary 9.2.3, `AtkinsonHan.Chapter09.corollary_9_2_3`: under a uniform inf–sup condition and
+  for increasing trial spaces with dense union, $u_N \to u$.
+* Equations (9.2.13) and (9.2.14), `AtkinsonHan.Chapter09.discreteInfSup_iff_le_infSupValue`: the
+  discrete inf–sup condition with constant $\alpha_0$ holds if and only if $\alpha_0$ is at most the
+  value (9.2.14).
+
+## Implementation notes
+
+* The form is `AtkinsonHan.BilinForm₂ U V` with the predicate
+  `AtkinsonHan.BilinForm₂.IsBoundedWith`. The spaces $U$ and $V$ need not be complete.
+* The source writes the supremum in (9.2.6) without absolute values, and
+  `AtkinsonHan.DiscreteInfSup` follows it. By `AtkinsonHan.Chapter09.iSup_div_eq_norm_comp`, this
+  supremum is the norm of the functional $a(u_N, \cdot)$ restricted to $V_N$, as in Section 8.7. So
+  the condition is equivalent to the backbone condition `IsPetrovGalerkinSolution.DiscreteInfSup`.
+* The suprema and the infima are `iSup` and `iInf` on $\mathbb{R}$, which take the value $0$ on an
+  empty or unbounded set.
+
+## Deviations from the source
+
+* **Remark 9.2.2** (correction). The bound $\|u - u_N\| \le (M / \alpha_N) \inf_{w_N \in U_N} \|u -
+  w_N\|$ needs $U_N \ne \{0\}$, which the source does not state. See
+  `AtkinsonHan.Chapter09.remark_9_2_2`.
 -/
 
 open Filter Topology
@@ -39,38 +75,56 @@ namespace AtkinsonHan
 variable {U V : Type*} [NormedAddCommGroup U] [InnerProductSpace ℝ U] [NormedAddCommGroup V]
   [InnerProductSpace ℝ V]
 
-/-- The Petrov–Galerkin problem (9.2.5): `u_N ∈ U_N` with `a(u_N, v_N) = ℓ(v_N)` for all
-`v_N ∈ V_N`.  The trial space `U_N ⊂ U` and the test space `V_N ⊂ V` may differ. -/
+/-- **Equation (9.2.5)** of [han2009theoretical]. Let $a : U \times V \to \mathbb{R}$ be bilinear,
+let $\ell \in V'$, and let $U_N \subseteq U$ and $V_N \subseteq V$ be subspaces. An element
+$u_N \in U$ **solves the Petrov–Galerkin problem** if $u_N \in U_N$ and $$a(u_N, v_N) =
+\ell(v_N) \quad \text{for all } v_N \in V_N.$$
+
+The trial space $U_N$ and the test space $V_N$ can be different. -/
 def PetrovGalerkinProblem (a : BilinForm₂ U V) (ℓ : StrongDual ℝ V) (UN : Submodule ℝ U)
     (VN : Submodule ℝ V) (uN : U) : Prop :=
   uN ∈ UN ∧ ∀ v ∈ VN, a uN v = ℓ v
 
-/-- The discrete inf–sup condition (9.2.6) with constant `α_N`:
-`sup_{0 ≠ v_N ∈ V_N} a(u_N, v_N)/‖v_N‖ ≥ α_N ‖u_N‖` for all `u_N ∈ U_N`. -/
+/-- **Equation (9.2.6)** of [han2009theoretical]. The form $a$ satisfies the **discrete inf–sup
+condition** on $U_N \times V_N$ with constant $\alpha_N$ if $$\alpha_N \|u_N\| \le \sup_{0 \ne
+v_N \in V_N} \frac{a(u_N, v_N)}{\|v_N\|} \quad \text{for all } u_N \in U_N.$$
+
+The supremum is `iSup` on $\mathbb{R}$. It is $0$ when $V_N = \{0\}$ or when the quotients are
+unbounded above; for a bounded form they are bounded. -/
 def DiscreteInfSup (a : BilinForm₂ U V) (UN : Submodule ℝ U) (VN : Submodule ℝ V) (αN : ℝ) :
     Prop :=
   ∀ uN ∈ UN, αN * ‖uN‖ ≤ ⨆ vN : {v : VN // v ≠ 0}, a uN ((vN : VN) : V) / ‖((vN : VN) : V)‖
 
-/-- The uniform inf–sup (Babuška–Brezzi) condition (9.2.13): the discrete inf–sup condition holds
-for every `N` with one and the same constant `α₀`. -/
+/-- **Equation (9.2.13)** of [han2009theoretical]. For sequences of subspaces $U_N \subseteq U$ and
+$V_N \subseteq V$, the form $a$ satisfies the **uniform inf–sup condition** (Babuška–Brezzi
+condition) with constant $\alpha_0$ if, for every $N$, it satisfies the discrete inf–sup
+condition (9.2.6) on $U_N \times V_N$ with the constant $\alpha_0$. -/
 def InfSupCondition (a : BilinForm₂ U V) (UN : ℕ → Submodule ℝ U) (VN : ℕ → Submodule ℝ V)
     (α₀ : ℝ) : Prop :=
   ∀ N, DiscreteInfSup a (UN N) (VN N) α₀
 
-/-- The quantity `inf_{0 ≠ u_N} sup_{0 ≠ v_N} a(u_N, v_N)/(‖u_N‖ ‖v_N‖)` of (9.2.14). -/
+/-- **Equation (9.2.14)** of [han2009theoretical]. The **inf–sup value** of $a$ on $U_N \times V_N$
+is $$\inf_{0 \ne u_N \in U_N} \sup_{0 \ne v_N \in V_N} \frac{a(u_N, v_N)}{\|u_N\| \|v_N\|}.$$
+
+The infimum and the supremum are `iInf` and `iSup` on $\mathbb{R}$; in particular the value is
+$0$ when $U_N = \{0\}$. -/
 noncomputable def infSupValue (a : BilinForm₂ U V) (UN : Submodule ℝ U) (VN : Submodule ℝ V) :
     ℝ :=
   ⨅ uN : {u : UN // u ≠ 0}, ⨆ vN : {v : VN // v ≠ 0},
     a ((uN : UN) : U) ((vN : VN) : V) / (‖((uN : UN) : U)‖ * ‖((vN : VN) : V)‖)
 
-/-- The discrete inf–sup condition weakens as the constant decreases. -/
+/-- If $a$ satisfies the discrete inf–sup condition on $U_N \times V_N$ with constant $\alpha_N$ and
+$\alpha_0 \le \alpha_N$, then it satisfies it with constant $\alpha_0$. -/
 theorem DiscreteInfSup.mono {a : BilinForm₂ U V} {UN : Submodule ℝ U} {VN : Submodule ℝ V}
     {αN α₀ : ℝ} (h : DiscreteInfSup a UN VN αN) (hα : α₀ ≤ αN) : DiscreteInfSup a UN VN α₀ :=
   fun w hw => le_trans (mul_le_mul_of_nonneg_right hα (norm_nonneg _)) (h w hw)
 
-/-- (9.2.13): trial/test pairs whose discrete inf–sup constants `α_N` are all at least `α₀`
-satisfy the uniform inf–sup condition with that one constant.  This is how the book's varying
-`α_N ≥ α₀` reduces to `InfSupCondition`. -/
+/-- Equation (9.2.13). If, for every $i$, the form $a$ satisfies the discrete inf–sup condition on
+$U_i \times V_i$ with a constant $\alpha_i \ge \alpha_0$, then it satisfies the uniform inf–sup
+condition with constant $\alpha_0$.
+
+This reduces the varying constants $\alpha_N \ge \alpha_0$ of the source to
+`AtkinsonHan.InfSupCondition`. -/
 theorem infSupCondition_of_forall_le {a : BilinForm₂ U V} {UN : ℕ → Submodule ℝ U}
     {VN : ℕ → Submodule ℝ V} {αN : ℕ → ℝ} {α₀ : ℝ}
     (h : ∀ i, DiscreteInfSup a (UN i) (VN i) (αN i)) (hα : ∀ i, α₀ ≤ αN i) :
@@ -81,33 +135,48 @@ namespace Chapter09
 variable {a : BilinForm₂ U V} {ℓ : StrongDual ℝ V} {M αN α₀ : ℝ} {UN : Submodule ℝ U}
   {VN : Submodule ℝ V} {u uN : U}
 
-/-- The Petrov–Galerkin problem is the backbone's `IsPetrovGalerkinSolution`. -/
+/-- Let $a$ be bounded with constant $M$. Then $u_N$ solves the Petrov–Galerkin problem
+`AtkinsonHan.PetrovGalerkinProblem` if and only if it satisfies the backbone predicate
+`IsPetrovGalerkinSolution` for the bundled form `AtkinsonHan.BilinForm₂.toCLM a hM`. -/
 theorem petrovGalerkinProblem_iff (hM : a.IsBoundedWith M) :
     PetrovGalerkinProblem a ℓ UN VN uN ↔
       IsPetrovGalerkinSolution (a.toCLM hM) ℓ UN VN uN := Iff.rfl
 
-/-- The book's supremum in (9.2.6) is the norm of the functional `a(u_N, ·)` restricted to
-`V_N`. -/
+/-- Let $a$ be bounded with constant $M$, let $w \in U$, and let $V_N \subseteq V$ be a subspace.
+Then the supremum of (9.2.6) is the norm of the functional $a(w, \cdot)$ restricted to $V_N$:
+$$\sup_{0 \ne v_N \in V_N} \frac{a(w, v_N)}{\|v_N\|} = \big\| a(w, \cdot)|_{V_N} \big\|.$$
+
+The supremum has no absolute values, as in the source; it equals the norm because $v_N$ and
+$-v_N$ both lie in $V_N$. -/
 theorem iSup_div_eq_norm_comp (hM : a.IsBoundedWith M) (w : U) (VN : Submodule ℝ V) :
     (⨆ vN : {v : VN // v ≠ 0}, a w ((vN : VN) : V) / ‖((vN : VN) : V)‖)
       = ‖(a.toCLM hM w).comp VN.subtypeL‖ :=
   ((a.toCLM hM w).comp VN.subtypeL).iSup_apply_div_eq_opNorm
 
-/-- (9.2.6) is the backbone's discrete inf–sup condition. -/
+/-- Let $a$ be bounded with constant $M$. Then the discrete inf–sup condition (9.2.6) with constant
+$\alpha_N$ is equivalent to the backbone condition `IsPetrovGalerkinSolution.DiscreteInfSup` for
+the bundled form. -/
 theorem discreteInfSup_iff (hM : a.IsBoundedWith M) :
     DiscreteInfSup a UN VN αN ↔
       IsPetrovGalerkinSolution.DiscreteInfSup (a.toCLM hM) UN VN αN := by
   refine forall_congr' fun w => forall_congr' fun _ => ?_
   rw [iSup_div_eq_norm_comp hM w VN]
 
-/-- (9.2.8), Galerkin orthogonality for the Petrov–Galerkin method. -/
+/-- **Equation (9.2.8)** of [han2009theoretical] (Galerkin orthogonality). Let $u \in U$ satisfy
+$a(u, v) = \ell(v)$ for all $v \in V$, and let $u_N$ solve the Petrov–Galerkin problem (9.2.5).
+Then $a(u - u_N, v_N) = 0$ for all $v_N \in V_N$. -/
 theorem petrovGalerkin_orthogonality (hu : ∀ v, a u v = ℓ v)
     (huN : PetrovGalerkinProblem a ℓ UN VN uN) {v : V} (hv : v ∈ VN) : a (u - uN) v = 0 := by
   rw [map_sub, LinearMap.sub_apply, hu v, huN.2 v hv, sub_self]
 
-/-- Theorem 9.2.1 (Babuška), part 1: with `dim U_N = dim V_N` and the discrete inf–sup condition
-(9.2.6), the Petrov–Galerkin problem (9.2.5) has a unique solution.  Completeness of `U` and `V`
-and the continuous conditions (9.2.3)–(9.2.4) are not used here. -/
+/-- **Theorem 9.2.1** of [han2009theoretical] (Babuška), existence and uniqueness. Let $a$ be
+bounded with constant $M$, let $U_N \subseteq U$ and $V_N \subseteq V$ be finite-dimensional
+with $\dim U_N = \dim V_N$, and let $a$ satisfy the discrete inf–sup condition (9.2.6) with a
+constant $\alpha_N > 0$. Then for every $\ell \in V'$ the Petrov–Galerkin problem (9.2.5) has
+exactly one solution $u_N$.
+
+The proof does not use the completeness of $U$ and $V$, nor the conditions (9.2.3) and (9.2.4)
+on $a$ over the whole spaces. -/
 theorem theorem_9_2_1_existsUnique [FiniteDimensional ℝ UN] [FiniteDimensional ℝ VN]
     (hM : a.IsBoundedWith M) (hdim : Module.finrank ℝ UN = Module.finrank ℝ VN) (hαN : 0 < αN)
     (hinfsup : DiscreteInfSup a UN VN αN) (ℓ : StrongDual ℝ V) :
@@ -115,8 +184,13 @@ theorem theorem_9_2_1_existsUnique [FiniteDimensional ℝ UN] [FiniteDimensional
   IsPetrovGalerkinSolution.existsUnique (a := a.toCLM hM) (ℓ := ℓ) hdim hαN
     ((discreteInfSup_iff hM).mp hinfsup)
 
-/-- Theorem 9.2.1 (Babuška), estimate (9.2.7), pointwise form:
-`‖u − u_N‖ ≤ (1 + M/α_N) ‖u − w_N‖` for every `w_N ∈ U_N`. -/
+/-- **Theorem 9.2.1** of [han2009theoretical] (Babuška), pointwise form of (9.2.7). Let $a$ be
+bounded with constant $M \ge 0$, let $U_N \subseteq U$ and $V_N \subseteq V$ be
+finite-dimensional with $\dim U_N = \dim V_N$, and let $a$ satisfy the discrete inf–sup
+condition (9.2.6) with a constant $\alpha_N > 0$. Let $u_N$ solve the Petrov–Galerkin problem
+(9.2.5), and let $u \in U$ satisfy $a(u, v) = \ell(v)$ for all $v \in V$. Then $$\|u - u_N\| \le
+\Big(1 + \frac{M}{\alpha_N}\Big) \|u - w_N\| \quad \text{for every } w_N \in U_N.$$
+-/
 theorem theorem_9_2_1_le [FiniteDimensional ℝ UN] [FiniteDimensional ℝ VN] (hM0 : 0 ≤ M)
     (hM : a.IsBoundedWith M) (hdim : Module.finrank ℝ UN = Module.finrank ℝ VN) (hαN : 0 < αN)
     (hinfsup : DiscreteInfSup a UN VN αN) (huN : PetrovGalerkinProblem a ℓ UN VN uN)
@@ -125,10 +199,15 @@ theorem theorem_9_2_1_le [FiniteDimensional ℝ UN] [FiniteDimensional ℝ VN] (
   IsPetrovGalerkinSolution.norm_sub_le hdim hαN hM0 (a.isBoundedWith_toCLM hM)
     ((discreteInfSup_iff hM).mp hinfsup) huN hu hw
 
-/-- **Theorem 9.2.1** (Babuška), the quasi-optimal error bound (9.2.7)
-`‖u − u_N‖_U ≤ (1 + M/α_N) inf_{w_N ∈ U_N} ‖u − w_N‖_U`.  Unique solvability of (9.2.5) is the
-companion `theorem_9_2_1_existsUnique`, and `theorem_9_2_1_le` is the same bound against one
-`w_N ∈ U_N` rather than against the infimum. -/
+/-- **Theorem 9.2.1** of [han2009theoretical] (Babuška), the error bound (9.2.7). Let $a$ be bounded
+with constant $M \ge 0$, let $U_N \subseteq U$ and $V_N \subseteq V$ be finite-dimensional with
+$\dim U_N = \dim V_N$, and let $a$ satisfy the discrete inf–sup condition (9.2.6) with a
+constant $\alpha_N > 0$. Let $u_N$ solve the Petrov–Galerkin problem (9.2.5), and let $u \in U$
+satisfy $a(u, v) = \ell(v)$ for all $v \in V$. Then $$\|u - u_N\| \le \Big(1 +
+\frac{M}{\alpha_N}\Big) \inf_{w_N \in U_N} \|u - w_N\|.$$
+
+The unique solvability of (9.2.5) is `AtkinsonHan.Chapter09.theorem_9_2_1_existsUnique`, and
+`AtkinsonHan.Chapter09.theorem_9_2_1_le` is the bound for a single $w_N \in U_N$. -/
 theorem theorem_9_2_1 [FiniteDimensional ℝ UN] [FiniteDimensional ℝ VN] (hM0 : 0 ≤ M)
     (hM : a.IsBoundedWith M) (hdim : Module.finrank ℝ UN = Module.finrank ℝ VN) (hαN : 0 < αN)
     (hinfsup : DiscreteInfSup a UN VN αN) (huN : PetrovGalerkinProblem a ℓ UN VN uN)
@@ -143,9 +222,11 @@ theorem theorem_9_2_1 [FiniteDimensional ℝ UN] [FiniteDimensional ℝ VN] (hM0
   rw [div_le_iff₀ hC] at hle
   linarith [hle]
 
-/-- The remark after Corollary 9.2.3: the constant in (9.2.7) is bounded by
-`(1 + M) max{1, α_N⁻¹}`, so convergence follows as soon as
-`max{1, α_N⁻¹} inf_{w_N} ‖u − w_N‖ → 0`. -/
+/-- The remark after Corollary 9.2.3. For $M \ge 0$ and every real $\alpha_N$, $$1 +
+\frac{M}{\alpha_N} \le (1 + M) \max\{1, \alpha_N^{-1}\}.$$ So the Petrov–Galerkin solutions
+converge as soon as $\max\{1, \alpha_N^{-1}\} \inf_{w_N \in U_N} \|u - w_N\| \to 0$.
+
+For $\alpha_N = 0$ the inequality uses the Lean values $M / 0 = 0$ and $0^{-1} = 0$. -/
 theorem one_add_div_le (hM0 : 0 ≤ M) :
     1 + M / αN ≤ (1 + M) * max 1 αN⁻¹ := by
   have h1 : (1 : ℝ) ≤ max 1 αN⁻¹ := le_max_left _ _
@@ -153,8 +234,16 @@ theorem one_add_div_le (hM0 : 0 ≤ M) :
   have h3 : M / αN = M * αN⁻¹ := div_eq_mul_inv M αN
   nlinarith
 
-/-- Corollary 9.2.3, (9.2.11)–(9.2.12): under a uniform discrete inf–sup condition and with trial
-spaces that increase and have dense union, the Petrov–Galerkin solutions converge. -/
+/-- **Corollary 9.2.3** of [han2009theoretical]. Let $a$ be bounded with constant $M \ge 0$, and let
+$\alpha_0 > 0$. For $i \in \mathbb{N}$ let $U_i \subseteq U$ and $V_i \subseteq V$ be
+finite-dimensional with $\dim U_i = \dim V_i$, and let $a$ satisfy the discrete inf–sup
+condition (9.2.6) on $U_i \times V_i$ with a constant $\alpha_i \ge \alpha_0$. Let
+$U_0 \subseteq U_1 \subseteq \cdots$ have dense union in $U$. Let $u \in U$ satisfy
+$a(u, v) = \ell(v)$ for all $v \in V$, and let $u_i$ solve the Petrov–Galerkin problem (9.2.5)
+on $U_i \times V_i$. Then $$\|u - u_i\| \to 0 \quad \text{as } i \to \infty.$$
+
+The hypotheses are (9.2.11), and the conclusion is (9.2.12). The test spaces $V_i$ need not
+increase. -/
 theorem corollary_9_2_3 (a : BilinForm₂ U V) (ℓ : StrongDual ℝ V) {M α₀ : ℝ} (hM0 : 0 ≤ M)
     (hM : a.IsBoundedWith M) (hα₀ : 0 < α₀) (UN : ℕ → Submodule ℝ U) (VN : ℕ → Submodule ℝ V)
     [∀ i, FiniteDimensional ℝ (UN i)] [∀ i, FiniteDimensional ℝ (VN i)]
@@ -172,7 +261,7 @@ theorem corollary_9_2_3 (a : BilinForm₂ U V) (ℓ : StrongDual ℝ V) {M α₀
   rw [tendsto_iff_norm_sub_tendsto_zero] at h
   simpa only [norm_sub_rev] using h
 
-/-! ### (9.2.13) ⇔ (9.2.14) -/
+/-! ### The equivalence of (9.2.13) and (9.2.14) -/
 
 private theorem iSup_div_mul_eq (a : BilinForm₂ U V) (VN : Submodule ℝ V) {w : U}
     (hw : w ≠ 0) :
@@ -183,8 +272,12 @@ private theorem iSup_div_mul_eq (a : BilinForm₂ U V) (VN : Submodule ℝ V) {w
   refine iSup_congr fun v => ?_
   rw [div_eq_mul_inv, div_eq_mul_inv, mul_inv, mul_comm ‖w‖⁻¹, ← mul_assoc]
 
-/-- (9.2.13) ⇔ (9.2.14): the uniform inf–sup condition with constant `α₀` says exactly that the
-inf–sup values (9.2.14) of the pairs `(U_N, V_N)` are all at least `α₀`. -/
+/-- Equations (9.2.13) and (9.2.14). Let $a$ be bounded with constant $M$, and let $U_N \ne \{0\}$.
+Then $a$ satisfies the discrete inf–sup condition (9.2.6) on $U_N \times V_N$ with constant
+$\alpha_0$ if and only if $\alpha_0$ is at most the inf–sup value (9.2.14) of $U_N \times V_N$.
+
+Applied to each $N$, this says that the uniform inf–sup condition (9.2.13) with constant
+$\alpha_0$ holds if and only if all the values (9.2.14) are at least $\alpha_0$. -/
 theorem discreteInfSup_iff_le_infSupValue (hM : a.IsBoundedWith M) (hUN : UN ≠ ⊥) :
     DiscreteInfSup a UN VN α₀ ↔ α₀ ≤ infSupValue a UN VN := by
   have hnn : ∀ w : U, 0 ≤ ⨆ vN : {v : VN // v ≠ 0}, a w ((vN : VN) : V) / ‖((vN : VN) : V)‖ :=
@@ -214,16 +307,22 @@ theorem discreteInfSup_iff_le_infSupValue (hM : a.IsBoundedWith M) (hUN : UN ≠
       rw [iSup_div_mul_eq a VN hw0, le_div_iff₀ (norm_pos_iff.mpr hw0)] at hx
       exact hx
 
-/-- Remark 9.2.2, (9.2.10), the Xu–Zikatanov sharpening of (9.2.7): the quasi-optimality constant
-`1 + M/α_N` may be replaced by `M/α_N`,
+/-- **Remark 9.2.2** of [han2009theoretical], the sharpening (9.2.10) of (9.2.7) by Xu and
+Zikatanov. Let $a$ be bounded with constant $M \ge 0$, let $U_N \subseteq U$ and
+$V_N \subseteq V$ be finite-dimensional with $\dim U_N = \dim V_N$ and $U_N \ne \{0\}$, and let
+$a$ satisfy the discrete inf–sup condition (9.2.6) with a constant $\alpha_N > 0$. Let $u_N$
+solve the Petrov–Galerkin problem (9.2.5), and let $u \in U$ satisfy $a(u, v) = \ell(v)$ for all
+$v \in V$. Then $$\|u - u_N\| \le \frac{M}{\alpha_N} \inf_{w_N \in U_N} \|u - w_N\|.$$
 
-  `‖u − u_N‖_U ≤ (M/α_N) inf_{w_N ∈ U_N} ‖u − w_N‖_U`.
+**Correction.** The source does not require $U_N \ne \{0\}$, but the bound needs it. For
+$U_N = \{0\}$ the Petrov–Galerkin map $P_N : u \mapsto u_N$ is $0$, so $\|I - P_N\| = 1$ differs
+from $\|P_N\| = 0$, and every other hypothesis can hold while the bound fails: for $a = 0$,
+$M = 0$ and $\alpha_N = 1$ the bound reads $\|u\| \le 0$. The bound (9.2.7) of Theorem 9.2.1
+still holds in this case.
 
-The proof reads the Petrov–Galerkin map `u ↦ u_N` as a bounded idempotent operator and applies
-Kato's lemma to it; both are in the backbone's
-`IsPetrovGalerkinSolution.norm_sub_le_div_mul_infDist`.  The extra hypothesis `U_N ≠ ⊥` is
-necessary: on the trivial trial space the projector is `0`, so `‖I − P_N‖ = 1` rather than
-`‖P_N‖`, and the sharpened bound fails while (9.2.7) still holds. -/
+The proof regards $P_N$ as a bounded idempotent operator and applies Kato's lemma
+`AtkinsonHan.Chapter09.kato` to it. It specializes
+`IsPetrovGalerkinSolution.norm_sub_le_div_mul_infDist`. -/
 theorem remark_9_2_2 [FiniteDimensional ℝ UN] [FiniteDimensional ℝ VN] (hM0 : 0 ≤ M)
     (hM : a.IsBoundedWith M) (hdim : Module.finrank ℝ UN = Module.finrank ℝ VN) (hαN : 0 < αN)
     (hinfsup : DiscreteInfSup a UN VN αN) (hUN : UN ≠ ⊥)
@@ -238,8 +337,9 @@ theorem remark_9_2_2 [FiniteDimensional ℝ UN] [FiniteDimensional ℝ VN] (hM0 
 
 /-! ### Kato's lemma -/
 
-/-- The analytic ingredient of Remark 9.2.2: a bounded idempotent `P ≠ 0, 1` on a Hilbert space
-satisfies `‖P‖ = ‖I − P‖`. -/
+/-- **Kato's lemma**, the analytic tool of Remark 9.2.2. Let $H$ be a real Hilbert space, and let
+$P$ be a bounded linear operator on $H$ with $P^2 = P$, $P \ne 0$ and $P \ne I$. Then
+$\|P\| = \|I - P\|$. -/
 theorem kato {H : Type*} [NormedAddCommGroup H] [InnerProductSpace ℝ H] [CompleteSpace H]
     {P : H →L[ℝ] H} (hP : IsIdempotentElem P) (h0 : P ≠ 0) (h1 : P ≠ 1) : ‖P‖ = ‖1 - P‖ :=
   (ContinuousLinearMap.IsIdempotentElem.norm_one_sub_eq hP h0 h1).symm

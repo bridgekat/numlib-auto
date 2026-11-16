@@ -10,60 +10,100 @@ import Numlib.LinearAlgebra.Matrix.TridiagonalToeplitz
 import NumlibSurface.AtkinsonHan.Chapter06.Section02
 
 /-!
-# Atkinson–Han §6.3: two-level difference schemes
+# Atkinson and Han, Section 6.3: Two-level difference schemes
 
-Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework*, 3rd edition, Springer, 2009, §6.3.
+This module formalizes Section 6.3 of [han2009theoretical]. The section studies the two-level
+recursion (6.3.4)–(6.3.5),
+$$v^{m+1} = Q v^m + h_t g^m, \qquad v^0 = u^0,$$
+whose exact values $u^m$ satisfy the same recursion with an extra local truncation error
+$h_t \tau^m$ (6.3.6). Definition 6.3.1 defines consistency, order, stability and convergence of a
+family of such schemes as the mesh parameters $h_x$ and $h_t$ tend to $0$. Theorem 6.3.2 says that a
+consistent and stable family converges, and that a stable family of order $(p_1, p_2)$ has error
+$O(h_x^{p_1} + h_t^{p_2})$. The general results specialize `FiniteDifference.norm_sub_le_of_stable`
+of `Numlib.FiniteDifference.TwoLevel`.
 
-The section studies the two-level recursion (6.3.4)–(6.3.5)
+Examples 6.3.3 and 6.3.4 apply the theorem to the forward and the backward scheme for the heat
+equation $u_t = \nu u_{xx} + f$ on $(0, \pi) \times (0, T)$ with homogeneous Dirichlet boundary
+values. For an exact solution with $u_{tt}$ and $u_{xxxx}$ continuous on $[0, \pi] \times [0, T]$,
+both schemes have error at most $c (h_x^2 + h_t)$ in the maximum norm and in the weighted discrete
+norm $\|v\|_{2, h_x} = \sqrt{h_x} \|v\|_2$: the forward scheme for $r = \nu h_t / h_x^2 \le 1/2$,
+the backward scheme for every $r$. The stability bounds use the eigenvalues of tridiagonal Toeplitz
+matrices (Exercise 6.3.1) from `Numlib.LinearAlgebra.Matrix.TridiagonalToeplitz`, and the truncation
+errors use Taylor bounds.
 
-  `v^{m+1} = Q v^m + h_t g^m`,  `v^0 = u^0`,
+## Main definitions
 
-whose exact values satisfy the same recursion with an extra local truncation error `h_t τ^m`
-(6.3.6).  Definition 6.3.1 asks for consistency, order, stability and convergence *of a family* of
-such schemes as the two mesh parameters `h_x` and `h_t` are refined, so the definitions below are
-stated for a family indexed by an arbitrary type with a filter along which the mesh is refined;
-that filter is what "as `h_x, h_t → 0`" means.  Theorem 6.3.2 is then one inequality with explicit
-constants, `FiniteDifference.norm_sub_le_of_stable`, together with two limits; its two claims are
-`theorem_6_3_2` (consistency and stability give convergence) and `theorem_6_3_2'` (order `(p₁, p₂)`
-gives the error estimate).
+* Definition 6.3.1, `AtkinsonHan.Chapter06.IsConsistentScheme`: the largest truncation error
+  $\sup_{m h_t \le T} \|\tau^m\|$ tends to $0$ as the mesh is refined.
+* Definition 6.3.1 and (6.3.7), `AtkinsonHan.Chapter06.IsSchemeOfOrder`:
+  $\|\tau^m\| \le c (h_x^{p_1} + h_t^{p_2})$ for every mesh.
+* Definition 6.3.1, `AtkinsonHan.Chapter06.IsStableScheme`: $\|Q^m\| \le M_0$ for $m h_t \le T$,
+  with $M_0$ independent of the mesh.
+* Definition 6.3.1, `AtkinsonHan.Chapter06.IsConvergentScheme`: the largest error
+  $\sup_{m h_t \le T} \|u^m - v^m\|$ tends to $0$ as the mesh is refined.
+* Examples 6.3.3 and 6.3.4, `AtkinsonHan.Chapter06.IsRegularHeatSolution`: a solution of the heat
+  equation with bounded $u_{tt}$ and $u_{xxxx}$ on the closed rectangle, with its derivatives.
+* Examples 6.3.3 and 6.3.4, `AtkinsonHan.Chapter06.gridValues`: the values $u^m_j = u(x_j, t_m)$ of
+  a function on the interior grid points.
 
-The book works in `ℝ^{N_x - 1}` and leaves the norm on it unspecified, saying that it will be
-chosen per example — the two worked examples use the maximum norm and a scaled discrete two-norm
-on the same space and get different stability conditions.  The surface therefore takes an
-arbitrary real normed space, which is more faithful than fixing `EuclideanSpace ℝ (Fin (N_x - 1))`,
-not less.  The truncation error `τ^m` is data of the statement, defined by the relation (6.3.6)
-that the exact values satisfy, rather than a derived quantity.
+## Main results
 
-Exercise 6.3.1, the eigenvalues of a tridiagonal Toeplitz matrix, is `exercise_6_3_1`; it is the
-one piece of the section's concrete material with independent interest, and its content lives in
-the backbone as `Matrix.tridiagonalToeplitz_hasEigenvalue_iff`.
+* Theorem 6.3.2, `AtkinsonHan.Chapter06.theorem_6_3_2`: a consistent and stable family of two-level
+  schemes is convergent.
+* Theorem 6.3.2, `AtkinsonHan.Chapter06.theorem_6_3_2'`: a stable family of order $(p_1, p_2)$ has
+  error at most $M_0 T c (h_x^{p_1} + h_t^{p_2})$.
+* Example 6.3.3, `AtkinsonHan.Chapter06.example_6_3_3`: for $r \le 1/2$ the forward scheme has
+  maximum-norm error at most $(M_{tt}/2 + \nu M_{xxxx}/12) T (h_x^2 + h_t)$.
+* Example 6.3.3, `AtkinsonHan.Chapter06.example_6_3_3_l2`: the same bound, times $\sqrt{\pi}$, in
+  the weighted discrete $2$-norm.
+* Example 6.3.4, `AtkinsonHan.Chapter06.example_6_3_4`: for every $r$ the backward scheme has
+  maximum-norm error at most $(M_{tt}/2 + \nu M_{xxxx}/12) T (h_x^2 + h_t)$.
+* Example 6.3.4, `AtkinsonHan.Chapter06.example_6_3_4_l2`: the same bound, times $\sqrt{\pi}$, in
+  the weighted discrete $2$-norm.
+* Examples 6.3.3 and 6.3.4, `AtkinsonHan.Chapter06.sineSeries_isRegularHeatSolution`: the
+  sine-series solutions (6.2.7) of Example 6.2.4 have the assumed regularity.
+* Examples 6.3.3 and 6.3.4, `AtkinsonHan.Chapter06.example_6_3_3_sineSeries` and
+  `AtkinsonHan.Chapter06.example_6_3_4_sineSeries`: the two error bounds for the sine-series
+  solutions.
+* Exercise 6.3.1, `AtkinsonHan.Chapter06.exercise_6_3_1`: the $N \times N$ tridiagonal Toeplitz
+  matrix with diagonal $a$, subdiagonal $b$ and superdiagonal $c$, $bc \ge 0$, has the eigenvalues
+  $a + 2\sqrt{bc} \cos(j\pi/(N + 1))$, $1 \le j \le N$.
 
-## Examples 6.3.3 and 6.3.4
+## Conventions
 
-The forward and backward schemes for the heat equation `u_t = ν u_xx + f` on `(0, π) × (0, T)`,
-in the maximum norm and in the discrete weighted `2`-norm `‖v‖_{2, h_x} = √h_x ‖v‖₂`. The book
-*assumes* an exact solution with `u_tt` and `u_xxxx` continuous on the closed rectangle; that
-hypothesis is the structure `IsRegularHeatSolution`, which carries the solution with its derivative
-towers in `x` (to order four) and in `t` (to order two), one-sided at the edges, the two bounds
-`M_tt`, `M_xxxx`, the equation and the boundary values. The four nodes `example_6_3_3`,
-`example_6_3_3_l2`, `example_6_3_4`, `example_6_3_4_l2` are the error bounds
-`max_m ‖u^m - v^m‖ ≤ c (h_x² + h_t)` with the explicit constant
-`c = (M_tt / 2 + ν M_xxxx / 12) T` (times `√π` in the weighted `2`-norm), obtained from the
-backbone form `FiniteDifference.norm_sub_le_of_stable` of Theorem 6.3.2 with the horizon cut at
-`N_t`, the Taylor bounds of `Numlib.Analysis.Calculus.Taylor` for the truncation errors, and the
-stability bounds `‖Q‖_∞ ≤ 1`, `‖Q‖₂ ≤ 1` (for `r ≤ 1/2` in the forward case, unconditionally in
-the backward one, where `Q = Q₁⁻¹`). The `2`-norm stability reads the spectrum of Exercise 6.3.1
-through `Matrix.isSymmetricBoundedBy_symmTridiagonalToeplitz_of_mem_Icc`; the backward scheme's
-`‖Q‖_∞ ≤ 1` is the book's diagonal-dominance argument.
+* A family of schemes is indexed by a type `ι`, and "as $h_x, h_t \to 0$" is a limit along a filter
+  `l` on `ι`.
+* The book's $N_x - 1$ interior grid points $x_1, \dots, x_{N_x - 1}$ are indexed by `Fin (N + 1)`
+  from $0$, so $N_x = N + 2$, $h_x = \pi / (N + 2)$ and $x_j = (j + 1) h_x$. The time step is
+  $h_t = T / N_t$ and $t_m = m h_t$.
+* The scheme matrices are `Matrix.symmTridiagonalToeplitz (N + 1) a b`, the matrix
+  $\operatorname{tridiag}(a, b, a)$ with $b$ on the diagonal. The maximum norm is the norm of
+  `Fin (N + 1) → ℝ`.
 
-The sine-series solutions of Example 6.2.4 (`Heat.sineSeries`) have all the regularity assumed,
-with `M_tt = ∑ |b_j| (ν j²)²` and `M_xxxx = ∑ |b_j| j⁴` (`sineSeries_isRegularHeatSolution`), and
-`example_6_3_3_sineSeries`, `example_6_3_4_sineSeries` are the two examples for them.
+## Implementation notes
 
-## Not formalized here
+* The truncation error $\tau^m$ is data of the statements, defined by the relation (6.3.6) that the
+  exact values satisfy.
+* The regularity of the exact solution that Examples 6.3.3 and 6.3.4 assume is the structure
+  `AtkinsonHan.Chapter06.IsRegularHeatSolution`. It carries the derivatives of $u$ in $x$ up to
+  order four and in $t$ up to order two, one-sided at the edges, with the bounds $M_{tt}$ and
+  $M_{xxxx}$. The error bounds hold at the time levels $m \le N_t$, because the solution is assumed
+  regular only on $[0, T]$.
+* The backward scheme $Q_1 v^{m+1} = v^m + h_t f^{m+1}$ is the two-level scheme with $Q = Q_1^{-1}$
+  and $g^m = Q f^{m+1}$.
 
-Exercises 6.3.2–6.3.3 (Crank–Nicolson and the generalized midpoint scheme).
+## Deviations from the source
+
+* **Definition 6.3.1 and Theorem 6.3.2** (generalization). The source works in
+  $\mathbb{R}^{N_x - 1}$ with a norm chosen per example. The library states them for an arbitrary
+  real normed space. See `AtkinsonHan.Chapter06.theorem_6_3_2`.
+* **Definition 6.3.1** (reading). The limit "as $h_x, h_t \to 0$" is a limit along a filter on the
+  index set of the family. See `AtkinsonHan.Chapter06.IsConsistentScheme`.
+
+## Not formalized
+
+* **Exercise 6.3.2** (the Crank–Nicolson scheme).
+* **Exercise 6.3.3** (the generalized midpoint scheme).
 -/
 
 open Filter Set
@@ -73,27 +113,38 @@ namespace AtkinsonHan.Chapter06
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] {ι : Type*}
 
-/-- **Definition 6.3.1, consistency.**  A family of two-level schemes, indexed by `ι` and refined
-along the filter `l`, is *consistent* when the largest local truncation error inside the horizon,
-`sup_{m h_t ≤ T} ‖τ^m‖`, tends to `0` as the mesh is refined. -/
+/-- **Definition 6.3.1** of [han2009theoretical], consistency. Let $E$ be a real normed space and
+let a family of two-level schemes be indexed by $i \in \iota$, with time steps $h_t(i)$ and
+truncation errors $\tau_i^m \in E$, refined along a filter $l$ on $\iota$. The family is
+**consistent** on $[0, T]$ if for every $\varepsilon > 0$, eventually along $l$,
+$\|\tau_i^m\| \le \varepsilon$ for all $m \in \mathbb{N}$ with $m h_t(i) \le T$. That is,
+$\sup_{m h_t \le T} \|\tau^m\| \to 0$ as the mesh is refined. -/
 def IsConsistentScheme (l : Filter ι) (ht : ι → ℝ) (τ : ι → ℕ → E) (T : ℝ) : Prop :=
   ∀ ε > (0 : ℝ), ∀ᶠ i in l, ∀ m : ℕ, (m : ℝ) * ht i ≤ T → ‖τ i m‖ ≤ ε
 
-/-- **Definition 6.3.1, order** (6.3.7).  The family is *of order* `(p₁, p₂)` with constant `c`
-when the local truncation errors inside the horizon satisfy
-`‖τ^m‖ ≤ c (h_x^{p₁} + h_t^{p₂})` for every mesh.  A family of some order is consistent as soon as
-`h_x^{p₁} + h_t^{p₂} → 0` along the refinement. -/
+/-- **Definition 6.3.1** of [han2009theoretical], order, with (6.3.7). A family of two-level schemes
+with mesh parameters $h_x(i)$, $h_t(i)$ and truncation errors $\tau_i^m$ is **of order**
+$(p_1, p_2)$ with constant $c$ on $[0, T]$ if
+$$\|\tau_i^m\| \le c \bigl(h_x(i)^{p_1} + h_t(i)^{p_2}\bigr)$$
+for every $i$ and every $m \in \mathbb{N}$ with $m h_t(i) \le T$.
+
+A family of some order is consistent as soon as $h_x^{p_1} + h_t^{p_2} \to 0$ along the
+refinement. -/
 def IsSchemeOfOrder (hx ht : ι → ℝ) (τ : ι → ℕ → E) (T c : ℝ) (p₁ p₂ : ℕ) : Prop :=
   ∀ (i : ι) (m : ℕ), (m : ℝ) * ht i ≤ T → ‖τ i m‖ ≤ c * (hx i ^ p₁ + ht i ^ p₂)
 
-/-- **Definition 6.3.1, stability.**  The family is *stable* with constant `M₀` when
-`sup_{m h_t ≤ T} ‖Q^m‖ ≤ M₀` for every mesh, the constant being independent of the mesh — which is
-what taking a single `M₀` for all indices says. -/
+/-- **Definition 6.3.1** of [han2009theoretical], stability. A family of two-level schemes with
+iteration operators $Q_i \in \mathcal{L}(E)$ is **stable** on $[0, T]$ with constant $M_0$ if
+$\|Q_i^m\| \le M_0$ for every $i$ and every $m \in \mathbb{N}$ with $m h_t(i) \le T$. The single
+constant $M_0$ for all indices expresses that the bound does not depend on the mesh. -/
 def IsStableScheme (ht : ι → ℝ) (Q : ι → E →L[ℝ] E) (T M₀ : ℝ) : Prop :=
   ∀ (i : ι) (m : ℕ), (m : ℝ) * ht i ≤ T → ‖Q i ^ m‖ ≤ M₀
 
-/-- **Definition 6.3.1, convergence.**  The family is *convergent* when the largest error inside
-the horizon, `sup_{m h_t ≤ T} ‖u^m - v^m‖`, tends to `0` as the mesh is refined. -/
+/-- **Definition 6.3.1** of [han2009theoretical], convergence. A family with exact values $u_i^m$
+and computed values $v_i^m$ is **convergent** on $[0, T]$ along the filter $l$ if for every
+$\varepsilon > 0$, eventually along $l$, $\|u_i^m - v_i^m\| \le \varepsilon$ for all
+$m \in \mathbb{N}$ with $m h_t(i) \le T$. That is, $\sup_{m h_t \le T} \|u^m - v^m\| \to 0$ as
+the mesh is refined. -/
 def IsConvergentScheme (l : Filter ι) (ht : ι → ℝ) (u v : ι → ℕ → E) (T : ℝ) : Prop :=
   ∀ ε > (0 : ℝ), ∀ᶠ i in l, ∀ m : ℕ, (m : ℝ) * ht i ≤ T → ‖u i m - v i m‖ ≤ ε
 
@@ -101,10 +152,8 @@ section Theorem632
 
 variable {ht hx : ι → ℝ} {Q : ι → E →L[ℝ] E} {u v g τ : ι → ℕ → E} {T M₀ : ℝ}
 
-/-- The error bound of Theorem 6.3.2 at one mesh: a bound `δ` on the local truncation errors
-inside the horizon bounds the error by `M₀ T δ`.  This is
-`FiniteDifference.norm_sub_le_of_stable` applied with the horizon cut at the step being estimated,
-which is why no separate count of time levels is needed. -/
+/-- At one mesh $i$ of a stable family, if $\|\tau_i^m\| \le \delta$ whenever $m h_t(i) \le T$, then
+$\|u_i^m - v_i^m\| \le M_0 T \delta$ for every $m$ with $m h_t(i) \le T$. -/
 private theorem error_le (hht : ∀ i, 0 ≤ ht i)
     (hv : ∀ (i : ι) (m : ℕ), v i (m + 1) = Q i (v i m) + ht i • g i m)
     (hu : ∀ (i : ι) (m : ℕ), u i (m + 1) = Q i (u i m) + ht i • g i m + ht i • τ i m)
@@ -117,12 +166,15 @@ private theorem error_le (hht : ∀ i, 0 ≤ ht i)
     (fun k _ => hu i k) (h0 i) (fun k hk => hstab i k (hle k hk))
     (fun k hk => hτ k (hle k hk.le)) le_rfl
 
-/-- **Theorem 6.3.2**, first claim.  A consistent and stable family of two-level schemes is
-convergent, its error inside the horizon obeying
-`sup_{m h_t ≤ T} ‖u^m - v^m‖ ≤ M₀ T sup_{m h_t ≤ T} ‖τ^m‖`.
+/-- **Theorem 6.3.2** of [han2009theoretical], convergence. Let $E$ be a real normed space,
+$T \ge 0$, and let a family of two-level schemes have time steps $h_t(i) \ge 0$, iteration
+operators $Q_i$, data $g_i^m$ and truncation errors $\tau_i^m$. Let the computed values satisfy
+$v_i^{m+1} = Q_i v_i^m + h_t(i) g_i^m$, let the exact values satisfy $u_i^{m+1} = Q_i u_i^m +
+h_t(i) g_i^m + h_t(i) \tau_i^m$, and let $u_i^0 = v_i^0$. If the family is stable with constant
+$M_0$ and consistent along a filter $l$, then it is convergent along $l$.
 
-The exact values `u` and the computed values `v` obey the same two-level recursion, the exact ones
-carrying the local truncation error `h_t τ^m` of (6.3.6), and they start from the same value. -/
+The proof bounds the error at each mesh by $\sup_{m h_t \le T} \|u^m - v^m\| \le M_0 T \sup_{m
+h_t \le T} \|\tau^m\|$, by `FiniteDifference.norm_sub_le_of_stable`. -/
 theorem theorem_6_3_2 {l : Filter ι} (hT : 0 ≤ T) (hht : ∀ i, 0 ≤ ht i)
     (hv : ∀ (i : ι) (m : ℕ), v i (m + 1) = Q i (v i m) + ht i • g i m)
     (hu : ∀ (i : ι) (m : ℕ), u i (m + 1) = Q i (u i m) + ht i • g i m + ht i • τ i m)
@@ -145,9 +197,14 @@ theorem theorem_6_3_2 {l : Filter ι} (hT : 0 ≤ T) (hht : ∀ i, 0 ≤ ht i)
         rw [mul_div_assoc', div_le_iff₀ hden]
         nlinarith [hε.le]
 
-/-- **Theorem 6.3.2**, second claim: a stable family of order `(p₁, p₂)` with constant `c` has
-error at most `M₀ T c (h_x^{p₁} + h_t^{p₂})` inside the horizon.  Consistency is not needed
-separately, being implied by (6.3.7) once the mesh is refined. -/
+/-- **Theorem 6.3.2** of [han2009theoretical], the error estimate. Under the recursions of
+`AtkinsonHan.Chapter06.theorem_6_3_2`, with $T \ge 0$ and $h_t(i) \ge 0$, let the family be
+stable with constant $M_0$ and of order $(p_1, p_2)$ with constant $c$. Then for every mesh $i$
+and every $m$ with $m h_t(i) \le T$,
+$$\|u_i^m - v_i^m\| \le M_0 T c \bigl(h_x(i)^{p_1} + h_t(i)^{p_2}\bigr).$$
+
+Consistency is not a separate hypothesis: the order condition (6.3.7) implies it once the mesh
+is refined. -/
 theorem theorem_6_3_2' (hT : 0 ≤ T) (hht : ∀ i, 0 ≤ ht i)
     (hv : ∀ (i : ι) (m : ℕ), v i (m + 1) = Q i (v i m) + ht i • g i m)
     (hu : ∀ (i : ι) (m : ℕ), u i (m + 1) = Q i (u i m) + ht i • g i m + ht i • τ i m)
@@ -162,19 +219,17 @@ end Theorem632
 
 section Toeplitz
 
-/-- **Exercise 6.3.1**: for `a, b, c ∈ ℝ` with `b c ≥ 0`, the `N × N` tridiagonal Toeplitz matrix
-`Q` with `a` on the diagonal, `b` on the subdiagonal and `c` on the superdiagonal has the `N`
-eigenvalues
+/-- **Exercise 6.3.1** of [han2009theoretical]. Let $N \in \mathbb{N}$ and $a, b, c \in \mathbb{R}$
+with $bc \ge 0$. Let $Q$ be the $N \times N$ tridiagonal Toeplitz matrix with $a$ on the
+diagonal, $b$ on the subdiagonal and $c$ on the superdiagonal. Then $\mu \in \mathbb{R}$ is an
+eigenvalue of $Q$ if and only if
+$$\mu = a + 2\sqrt{bc} \cos\frac{j\pi}{N + 1} \qquad \text{for some } 1 \le j \le N.$$
 
-`λ_j = a + 2 √(b c) cos(jπ / (N + 1))`,  `1 ≤ j ≤ N`
-
-(here indexed by `j : Fin N`, so that the book's `j` is `j + 1`).  This is the backbone's
-`Matrix.tridiagonalToeplitz_hasEigenvalue_iff`, whose argument order is `tridiag(sub, diag, super)`
-rather than the book's `(diag, sub, super)`.
-
-It is the spectral fact behind Examples 6.3.3 and 6.3.4, where the stability of the forward and
-backward schemes for the heat equation is read off the eigenvalues of `tridiag(-1, 2, -1)` — the
-symmetric case `b = c`, which the backbone treats directly. -/
+The index $j$ is `j : Fin N`, so the $j$ of the source is `j + 1`. The matrix is
+`Matrix.tridiagonalToeplitz N b a c`, whose arguments are in the order (subdiagonal, diagonal,
+superdiagonal), while the source lists them as (diagonal, subdiagonal, superdiagonal). The proof
+is `Matrix.tridiagonalToeplitz_hasEigenvalue_iff`. Examples 6.3.3 and 6.3.4 use the symmetric
+case $b = c$ to read the stability of the heat equation schemes off the eigenvalues. -/
 theorem exercise_6_3_1 (N : ℕ) (a b c : ℝ) (hbc : 0 ≤ b * c) (μ : ℝ) :
     Module.End.HasEigenvalue (Matrix.toEuclideanLin (Matrix.tridiagonalToeplitz N b a c)) μ ↔
       ∃ j : Fin N, μ = a + 2 * Real.sqrt (b * c)
@@ -190,35 +245,47 @@ section HeatSchemes
 open Matrix
 open scoped Matrix.Norms.L2Operator
 
-/-- **The regularity assumed in Examples 6.3.3–6.3.4.** A solution `u` of the heat equation
-`u_t = ν u_xx + f` on `[0, π] × [0, T]` with the boundary values `u (0, t) = u (π, t) = 0`,
-given with its derivatives: `ux m` is `∂ₓ^m u` for `m ≤ 4` and `ut m` is `∂ₜ^m u` for `m ≤ 2`,
-each the derivative of the previous one *within* the closed rectangle (one-sided at its edges,
-which is what "`u_tt, u_xxxx ∈ C([0, π] × [0, T])`" gives), and the two bounds
-`|u_tt| ≤ M_tt`, `|u_xxxx| ≤ M_xxxx` on the rectangle, which are the constants the book's `c`
-depends on. The equation is asked for on the closed rectangle, as continuity of the derivatives
-gives it there from the open one. -/
+/-- The regularity assumed in Examples 6.3.3 and 6.3.4 of [han2009theoretical]. Let
+$\nu, T, M_{tt}, M_{xxxx} \in \mathbb{R}$ and $f, u : \mathbb{R}^2 \to \mathbb{R}$. The function
+$u$ is a **regular solution** of the heat equation $u_t = \nu u_{xx} + f$ on
+$[0, \pi] \times [0, T]$, with spatial derivatives $u_x^{(m)}$ for $m \le 4$ and time
+derivatives $u_t^{(m)}$ for $m \le 2$, if the following hold.
+
+1. $u_x^{(0)} = u_t^{(0)} = u$.
+2. On the closed rectangle, $u_x^{(m+1)}$ is the derivative in $x$ of $u_x^{(m)}$ within
+   $[0, \pi]$ for $m < 4$, and $u_t^{(m+1)}$ is the derivative in $t$ of $u_t^{(m)}$ within
+   $[0, T]$ for $m < 2$.
+3. $|u_t^{(2)}| \le M_{tt}$ and $|u_x^{(4)}| \le M_{xxxx}$ on the closed rectangle.
+4. $u_t^{(1)} = \nu u_x^{(2)} + f$ on the closed rectangle.
+5. $u(0, t) = u(\pi, t) = 0$ for $t \in [0, T]$.
+
+The source assumes $u_{tt}$ and $u_{xxxx}$ continuous on the closed rectangle. The derivatives
+within the closed intervals are one-sided at the edges, and the two bounds are the constants
+that the error bounds depend on. The equation is asked for on the closed rectangle, which
+continuity of the derivatives gives from the open one. -/
 structure IsRegularHeatSolution (ν T : ℝ) (f u : ℝ × ℝ → ℝ) (ux ut : ℕ → ℝ × ℝ → ℝ)
     (Mtt Mxxxx : ℝ) : Prop where
-  /-- `ux 0 = u`. -/
+  /-- The derivative of order $0$ in $x$ is $u$. -/
   ux_zero : ux 0 = u
-  /-- `ut 0 = u`. -/
+  /-- The derivative of order $0$ in $t$ is $u$. -/
   ut_zero : ut 0 = u
-  /-- `ux (m + 1)` is the spatial derivative of `ux m`, within `[0, π]`, for `m < 4`. -/
+  /-- For $m < 4$, $u_x^{(m+1)}(x, t)$ is the derivative of $y \mapsto u_x^{(m)}(y, t)$ at $x$
+  within $[0, \pi]$, for all $(x, t) \in [0, \pi] \times [0, T]$. -/
   hasDerivWithinAt_ux : ∀ m < 4, ∀ t ∈ Icc (0 : ℝ) T, ∀ x ∈ Icc (0 : ℝ) π,
     HasDerivWithinAt (fun y => ux m (y, t)) (ux (m + 1) (x, t)) (Icc 0 π) x
-  /-- `ut (m + 1)` is the time derivative of `ut m`, within `[0, T]`, for `m < 2`. -/
+  /-- For $m < 2$, $u_t^{(m+1)}(x, t)$ is the derivative of $s \mapsto u_t^{(m)}(x, s)$ at $t$
+  within $[0, T]$, for all $(x, t) \in [0, \pi] \times [0, T]$. -/
   hasDerivWithinAt_ut : ∀ m < 2, ∀ x ∈ Icc (0 : ℝ) π, ∀ t ∈ Icc (0 : ℝ) T,
     HasDerivWithinAt (fun s => ut m (x, s)) (ut (m + 1) (x, t)) (Icc 0 T) t
-  /-- `|u_tt| ≤ M_tt` on the rectangle. -/
+  /-- The bound $|u_{tt}| \le M_{tt}$ on $[0, \pi] \times [0, T]$. -/
   abs_ut_two_le : ∀ x ∈ Icc (0 : ℝ) π, ∀ t ∈ Icc (0 : ℝ) T, |ut 2 (x, t)| ≤ Mtt
-  /-- `|u_xxxx| ≤ M_xxxx` on the rectangle. -/
+  /-- The bound $|u_{xxxx}| \le M_{xxxx}$ on $[0, \pi] \times [0, T]$. -/
   abs_ux_four_le : ∀ x ∈ Icc (0 : ℝ) π, ∀ t ∈ Icc (0 : ℝ) T, |ux 4 (x, t)| ≤ Mxxxx
-  /-- The heat equation `u_t = ν u_xx + f`. -/
+  /-- The heat equation $u_t = \nu u_{xx} + f$ on $[0, \pi] \times [0, T]$. -/
   equation : ∀ x ∈ Icc (0 : ℝ) π, ∀ t ∈ Icc (0 : ℝ) T, ut 1 (x, t) = ν * ux 2 (x, t) + f (x, t)
-  /-- The boundary value at `x = 0`. -/
+  /-- The boundary value $u(0, t) = 0$ for $t \in [0, T]$. -/
   left : ∀ t ∈ Icc (0 : ℝ) T, u (0, t) = 0
-  /-- The boundary value at `x = π`. -/
+  /-- The boundary value $u(\pi, t) = 0$ for $t \in [0, T]$. -/
   right : ∀ t ∈ Icc (0 : ℝ) T, u (π, t) = 0
 
 variable {ν T : ℝ} {f u : ℝ × ℝ → ℝ} {ux ut : ℕ → ℝ × ℝ → ℝ} {Mtt Mxxxx : ℝ}
@@ -228,7 +295,10 @@ namespace IsRegularHeatSolution
 variable (hu : IsRegularHeatSolution ν T f u ux ut Mtt Mxxxx)
 include hu
 
-/-- The forward Taylor bound in time: `|u (x, t + k) - u (x, t) - k u_t (x, t)| ≤ M_tt k² / 2`. -/
+/-- The forward Taylor bound in time for a regular solution of the heat equation. For
+$x \in [0, \pi]$, $t \in [0, T]$, $k \ge 0$ and $t + k \le T$,
+$$|u(x, t + k) - u(x, t) - k \, u_t(x, t)| \le M_{tt} k^2 / 2.$$
+-/
 theorem abs_sub_forward_time_le {x t k : ℝ} (hx : x ∈ Icc (0 : ℝ) π) (ht : t ∈ Icc (0 : ℝ) T)
     (hk : 0 ≤ k) (htk : t + k ≤ T) :
     |u (x, t + k) - u (x, t) - k * ut 1 (x, t)| ≤ Mtt * k ^ 2 / 2 := by
@@ -243,8 +313,10 @@ theorem abs_sub_forward_time_le {x t k : ℝ} (hx : x ∈ Icc (0 : ℝ) π) (ht 
     (fun s hs => by rw [Real.norm_eq_abs]; exact hu.abs_ut_two_le x hx s (hsub hs))
   simpa [smul_eq_mul, Real.norm_eq_abs] using h
 
-/-- The backward Taylor bound in time:
-`|u (x, t + k) - u (x, t) - k u_t (x, t + k)| ≤ M_tt k² / 2`. -/
+/-- The backward Taylor bound in time for a regular solution of the heat equation. For
+$x \in [0, \pi]$, $t \in [0, T]$, $k \ge 0$ and $t + k \le T$,
+$$|u(x, t + k) - u(x, t) - k \, u_t(x, t + k)| \le M_{tt} k^2 / 2.$$
+-/
 theorem abs_sub_backward_time_le {x t k : ℝ} (hx : x ∈ Icc (0 : ℝ) π) (ht : t ∈ Icc (0 : ℝ) T)
     (hk : 0 ≤ k) (htk : t + k ≤ T) :
     |u (x, t + k) - u (x, t) - k * ut 1 (x, t + k)| ≤ Mtt * k ^ 2 / 2 := by
@@ -263,8 +335,10 @@ theorem abs_sub_backward_time_le {x t k : ℝ} (hx : x ∈ Icc (0 : ℝ) π) (ht
   rw [e, abs_neg]
   exact h
 
-/-- The Taylor bound for the centred second difference in space:
-`|u (x + h, t) - 2 u (x, t) + u (x - h, t) - h² u_xx (x, t)| ≤ M_xxxx h⁴ / 12`. -/
+/-- The Taylor bound for the centred second difference in space, for a regular solution of the heat
+equation. For $h \ge 0$, $x - h, x + h \in [0, \pi]$ and $t \in [0, T]$,
+$$|u(x + h, t) - 2u(x, t) + u(x - h, t) - h^2 u_{xx}(x, t)| \le M_{xxxx} h^4 / 12.$$
+-/
 theorem abs_centred_sub_le {x t h : ℝ} (hxl : x - h ∈ Icc (0 : ℝ) π) (hxr : x + h ∈ Icc (0 : ℝ) π)
     (hh : 0 ≤ h) (ht : t ∈ Icc (0 : ℝ) T) :
     |u (x + h, t) - 2 * u (x, t) + u (x - h, t) - h ^ 2 * ux 2 (x, t)| ≤ Mxxxx * h ^ 4 / 12 := by
@@ -275,21 +349,24 @@ theorem abs_centred_sub_le {x t h : ℝ} (hxl : x - h ∈ Icc (0 : ℝ) π) (hxr
 
 end IsRegularHeatSolution
 
-/-! #### The grid and the two matrices -/
+/-! ### The grid and the two matrices -/
 
-/-- The values of a function of `(x, t)` on the interior grid at time level `m`:
-`u^m_j = u (x_j, t_m)` with `x_j = (j + 1) h_x` and `t_m = m h_t`, for `j : Fin (N + 1)` — so
-the book's `N_x - 1` interior points `x_1, …, x_{N_x - 1}` are indexed from `0`, and
-`N_x = N + 2`. -/
+/-- The values of a function $u$ of $(x, t)$ on the interior grid at time level $m$: the vector
+$u^m \in \mathbb{R}^{N+1}$ with $u^m_j = u(x_j, t_m)$, $x_j = (j + 1) h_x$ and $t_m = m h_t$,
+used in Examples 6.3.3 and 6.3.4.
+
+The index is `j : Fin (N + 1)`, from $0$. So the interior points $x_1, \dots, x_{N_x - 1}$ of
+the source are indexed from $0$, and $N_x = N + 2$. -/
 def gridValues (N : ℕ) (u : ℝ × ℝ → ℝ) (hx ht : ℝ) (m : ℕ) : Fin (N + 1) → ℝ :=
   fun j => u (((j : ℕ) + 1) * hx, m * ht)
 
-/-- The value of `u^m_j`. -/
+/-- The entry $j$ of the grid vector $u^m$ is $u((j + 1) h_x, m h_t)$. -/
 theorem gridValues_apply (N : ℕ) (u : ℝ × ℝ → ℝ) (hx ht : ℝ) (m : ℕ) (j : Fin (N + 1)) :
     gridValues N u hx ht m j = u (((j : ℕ) + 1) * hx, m * ht) := rfl
 
-/-- On the grid values of a function vanishing at `x = 0` and `x = π = (N + 2) h_x`, the row of
-`tridiag(a, b, a)` reads uniformly `a u (x_j - h_x) + b u (x_j) + a u (x_j + h_x)`. -/
+/-- If $h_x = \pi / (N + 2)$ and $u$ vanishes at $x = 0$ and $x = \pi$ at time $t_m$, then row $i$
+of $\operatorname{tridiag}(a, b, a) \, u^m$ is $a u(x_i - h_x, t_m) + b u(x_i, t_m) + a u(x_i +
+h_x, t_m)$. -/
 private theorem symmTridiagonalToeplitz_mulVec_gridValues {N : ℕ} {u : ℝ × ℝ → ℝ} {hx ht : ℝ}
     (hhx : hx = π / (N + 2)) (a b : ℝ) (m : ℕ) (h0 : u (0, m * ht) = 0) (hπ : u (π, m * ht) = 0)
     (i : Fin (N + 1)) :
@@ -314,7 +391,7 @@ private theorem symmTridiagonalToeplitz_mulVec_gridValues {N : ℕ} {u : ℝ × 
     · have : (i : ℕ) = N := by omega
       rw [this, show ((N : ℝ) + 2) * hx = π by rw [hhx]; field_simp, hπ, mul_zero]
 
-/-- A matrix as a bounded operator on `ℝ^{N+1}` with the maximum norm. -/
+/-- A matrix as a bounded operator on $\mathbb{R}^{N+1}$ with the maximum norm. -/
 private noncomputable def toLinfty {N : ℕ} (A : Matrix (Fin (N + 1)) (Fin (N + 1)) ℝ) :
     (Fin (N + 1) → ℝ) →L[ℝ] (Fin (N + 1) → ℝ) :=
   LinearMap.toContinuousLinearMap (Matrix.toLin' A)
@@ -323,8 +400,8 @@ private theorem toLinfty_apply {N : ℕ} (A : Matrix (Fin (N + 1)) (Fin (N + 1))
     (v : Fin (N + 1) → ℝ) : toLinfty A v = A *ᵥ v := by
   rw [toLinfty, LinearMap.coe_toContinuousLinearMap', Matrix.toLin'_apply]
 
-/-- The Euclidean norm of a vector of `ℝ^{N+1}` is at most `√(N + 1)` times its maximum norm
-(`PiLp.norm_toLp_two_le_sqrt_card_mul_norm_toLp_top`). -/
+/-- The Euclidean norm of $v \in \mathbb{R}^{N+1}$ with $|v_j| \le \delta$ for all $j$ is at most
+$\sqrt{N + 1} \, \delta$. -/
 private theorem norm_toLp_le {N : ℕ} (v : Fin (N + 1) → ℝ) {δ : ℝ} (hδ : 0 ≤ δ)
     (hv : ∀ j, |v j| ≤ δ) :
     ‖(WithLp.toLp 2 v : EuclideanSpace ℝ (Fin (N + 1)))‖ ≤ Real.sqrt ((N : ℝ) + 1) * δ := by
@@ -333,15 +410,15 @@ private theorem norm_toLp_le {N : ℕ} (v : Fin (N + 1) → ℝ) {δ : ℝ} (hδ
   exact mul_le_mul_of_nonneg_left ((pi_norm_le_iff_of_nonneg hδ).2 fun j =>
     (Real.norm_eq_abs _).trans_le (hv j)) (Real.sqrt_nonneg _)
 
-/-! #### The forward scheme, Example 6.3.3 -/
+/-! ### The forward scheme, Example 6.3.3 -/
 
 section Forward
 
 variable {N Nt : ℕ} {hx ht r : ℝ} (hν : 0 < ν) (hT : 0 < T) (hNt : 0 < Nt)
   (hhx : hx = π / (N + 2)) (hht : ht = T / Nt) (hr : r = ν * ht / hx ^ 2)
 
-/-- The local truncation error of the forward scheme, defined by (6.3.6): `τ^m` is what has to be
-added to `Q u^m + h_t f^m` to reach `u^{m+1}`, divided by `h_t`. -/
+/-- The local truncation error $\tau^m$ of the forward scheme, defined by (6.3.6) as
+$(u^{m+1} - Q u^m - h_t f^m) / h_t$. -/
 private noncomputable def forwardTrunc (N : ℕ) (u f : ℝ × ℝ → ℝ) (hx ht r : ℝ) (m : ℕ) :
     Fin (N + 1) → ℝ :=
   ht⁻¹ • (gridValues N u hx ht (m + 1) - symmTridiagonalToeplitz (N + 1) r (1 - 2 * r) *ᵥ
@@ -357,9 +434,8 @@ private theorem gridValues_succ_forward (u f : ℝ × ℝ → ℝ) (m : ℕ) :
   abel
 
 include hν hT hNt hhx hht hr in
-/-- **The truncation error of the forward scheme** (Example 6.3.3): by Taylor expansion,
-`|τ^m_j| ≤ (M_tt / 2) h_t + (ν M_xxxx / 12) h_x² ≤ c (h_x² + h_t)` with
-`c = M_tt / 2 + ν M_xxxx / 12`, at every time level `m < N_t`. -/
+/-- The truncation error of the forward scheme in Example 6.3.3 satisfies $|\tau^m_j| \le
+(M_{tt}/2 + \nu M_{xxxx}/12)(h_x^2 + h_t)$ for every time level $m < N_t$. -/
 private theorem abs_forwardTrunc_le (hu : IsRegularHeatSolution ν T f u ux ut Mtt Mxxxx)
     {m : ℕ} (hm : m < Nt) (j : Fin (N + 1)) :
     |forwardTrunc N u f hx ht r m j| ≤ (Mtt / 2 + ν * Mxxxx / 12) * (hx ^ 2 + ht) := by
@@ -448,19 +524,20 @@ private theorem abs_forwardTrunc_le (hu : IsRegularHeatSolution ν T f u ux ut M
   rw [abs_mul, abs_of_pos hht0] at hbound
   exact le_of_mul_le_mul_left hbound hht0
 
-/-- **Example 6.3.3, the maximum norm**: for the forward scheme (6.1.8)–(6.1.10) for
-`u_t = ν u_xx + f` on `(0, π) × (0, T)` with `r = ν h_t / h_x² ≤ 1/2`, and an exact solution with
-`u_tt, u_xxxx` continuous on `[0, π] × [0, T]` (`IsRegularHeatSolution`, with the bounds
-`M_tt`, `M_xxxx`), the error at every time level `m ≤ N_t` satisfies
+/-- **Example 6.3.3** of [han2009theoretical], the maximum norm. Let $\nu > 0$, $T > 0$,
+$N, N_t \in \mathbb{N}$ with $N_t > 0$, $h_x = \pi / (N + 2)$, $h_t = T / N_t$ and
+$r = \nu h_t / h_x^2 \le 1/2$. Let $u$ be a regular solution of $u_t = \nu u_{xx} + f$
+(`AtkinsonHan.Chapter06.IsRegularHeatSolution`) with bounds $M_{tt}$ and $M_{xxxx}$. Let
+$v^0 = u^0$ and let $v$ follow the forward scheme (6.1.8)–(6.1.10),
+$$v^{m+1} = Q v^m + h_t f^m, \qquad Q = \operatorname{tridiag}(r, 1 - 2r, r).$$
+Then for every time level $m \le N_t$,
+$$\max_j |u(x_j, t_m) - v^m_j| \le \Bigl(\frac{M_{tt}}{2} + \frac{\nu M_{xxxx}}{12}\Bigr) T
+  (h_x^2 + h_t).$$
 
-  `max_j |u (x_j, t_m) - v^m_j| ≤ (M_tt / 2 + ν M_xxxx / 12) T (h_x² + h_t)`,
-
-the order-`(2, 1)` estimate of Theorem 6.3.2. The scheme is written as the two-level recursion
-`v^{m+1} = Q v^m + h_t f^m` with the tridiagonal Toeplitz `Q = tridiag(r, 1 - 2r, r)` on the
-`N + 1` interior points (`N_x = N + 2`); its iteration matrix has `‖Q‖_∞ ≤ 1` for `r ≤ 1/2`, so
-the scheme is stable with `M₀ = 1`, and the truncation error is bounded by Taylor expansion.
-The horizon is cut at `N_t`, since the exact solution is only assumed regular on `[0, T]`, so
-the estimate is `FiniteDifference.norm_sub_le_of_stable`, the backbone form of Theorem 6.3.2. -/
+This is the order-$(2, 1)$ estimate of Theorem 6.3.2. For $r \le 1/2$, $\|Q\|_\infty \le 1$, so
+the scheme is stable with $M_0 = 1$, and Taylor expansion bounds the truncation error. The proof
+applies `FiniteDifference.norm_sub_le_of_stable` with the horizon cut at $N_t$, because $u$ is
+assumed regular only on $[0, T]$. -/
 theorem example_6_3_3 (hν : 0 < ν) (hT : 0 < T) {N Nt : ℕ} (hNt : 0 < Nt) {hx ht r : ℝ}
     (hhx : hx = π / (N + 2)) (hht : ht = T / Nt) (hr : r = ν * ht / hx ^ 2) (hr2 : r ≤ 1 / 2)
     (hu : IsRegularHeatSolution ν T f u ux ut Mtt Mxxxx) {v : ℕ → Fin (N + 1) → ℝ}
@@ -499,8 +576,9 @@ theorem example_6_3_3 (hν : 0 < ν) (hT : 0 < T) {N Nt : ℕ} (hNt : 0 < Nt) {h
   calc ‖gridValues N u hx ht m - v m‖ ≤ 1 * T * ((Mtt / 2 + ν * Mxxxx / 12) * (hx ^ 2 + ht)) := h
     _ = (Mtt / 2 + ν * Mxxxx / 12) * T * (hx ^ 2 + ht) := by ring
 
-/-- The eigenvalues `1 - 2r + 2r cos θ_k` of `tridiag(r, 1 - 2r, r)` lie in `[-1, 1]` for
-`0 ≤ r ≤ 1/2`: the quadratic-form bound behind `‖Q‖₂ < 1` of Example 6.3.3. -/
+/-- For $0 \le r \le 1/2$, the eigenvalues $1 - 2r + 2r \cos\theta_k$ of
+$\operatorname{tridiag}(r, 1 - 2r, r)$ lie in $[-1, 1]$, which gives $\|Q\|_2 \le 1$ in Example
+6.3.3. -/
 private theorem isSymmetricBoundedBy_forward {N : ℕ} {r : ℝ} (hr0 : 0 ≤ r) (hr2 : r ≤ 1 / 2) :
     (toEuclideanLin (symmTridiagonalToeplitz (N + 1) r (1 - 2 * r))).IsSymmetricBoundedBy
       (-1) 1 := by
@@ -509,7 +587,8 @@ private theorem isSymmetricBoundedBy_forward {N : ℕ} {r : ℝ} (hr0 : 0 ≤ r)
   have h2 := Real.cos_le_one ((((k : ℕ) : ℝ) + 1) * π / ((N + 1 : ℕ) + 1))
   constructor <;> nlinarith
 
-/-- The `√h_x ‖·‖₂` bound derived from the `ℓ²` bound on `ℝ^{N+1}`: `h_x (N + 1) ≤ π`. -/
+/-- If $h_x = \pi / (N + 2)$ and $\|w\|_2 \le \sqrt{N + 1} \, C$ for $w \in \mathbb{R}^{N+1}$ and
+$C \ge 0$, then $\sqrt{h_x \sum_j w_j^2} \le \sqrt{\pi} \, C$, because $h_x (N + 1) \le \pi$. -/
 private theorem sqrt_mul_sum_sq_le {N : ℕ} {hx : ℝ} (hhx : hx = π / (N + 2)) (w : Fin (N + 1) → ℝ)
     {C : ℝ} (hC : 0 ≤ C)
     (h : ‖(WithLp.toLp 2 w : EuclideanSpace ℝ (Fin (N + 1)))‖ ≤ Real.sqrt ((N : ℝ) + 1) * C) :
@@ -527,13 +606,16 @@ private theorem sqrt_mul_sum_sq_le {N : ℕ} {hx : ℝ} (hhx : hx = π / (N + 2)
     _ = Real.sqrt (hx * ((N : ℝ) + 1)) * C := by rw [Real.sqrt_mul hhx0]; ring
     _ ≤ Real.sqrt π * C := mul_le_mul_of_nonneg_right (Real.sqrt_le_sqrt hN) hC
 
-/-- **Example 6.3.3, the discrete weighted `2`-norm**: under the hypotheses of `example_6_3_3`,
-also `‖u^m - v^m‖_{2, h_x} = √h_x ‖u^m - v^m‖₂ ≤ √π (M_tt / 2 + ν M_xxxx / 12) T (h_x² + h_t)`
-for `m ≤ N_t`. In `‖·‖_{2, h_x}` the induced matrix norm is the spectral norm, and the eigenvalues
-`1 - 4r sin²(jπ / (2 N_x))` of `Q` (Exercise 6.3.1) lie in `[-1, 1]` for `r ≤ 1/2`, so `‖Q‖₂ ≤ 1`
-and the scheme is stable with `M₀ = 1`; the truncation error is the same. The factor `√π`
-bounds `√(h_x (N_x - 1))`, which converts the maximum-norm bound on `τ^m` into the weighted
-`2`-norm one. -/
+/-- **Example 6.3.3** of [han2009theoretical], the weighted discrete $2$-norm. Under the hypotheses
+of `AtkinsonHan.Chapter06.example_6_3_3`, for every time level $m \le N_t$,
+$$\|u^m - v^m\|_{2, h_x} = \sqrt{h_x} \, \|u^m - v^m\|_2 \le \sqrt{\pi} \Bigl(\frac{M_{tt}}{2} +
+  \frac{\nu M_{xxxx}}{12}\Bigr) T (h_x^2 + h_t).$$
+
+In $\|\cdot\|_{2, h_x}$ the induced matrix norm is the spectral norm. The eigenvalues
+$1 - 4r \sin^2(j\pi / (2 N_x))$ of $Q$ (Exercise 6.3.1) lie in $[-1, 1]$ for $r \le 1/2$, so
+$\|Q\|_2 \le 1$ and the scheme is stable with $M_0 = 1$. The factor $\sqrt{\pi}$ bounds
+$\sqrt{h_x (N_x - 1)}$, which converts the maximum-norm bound on $\tau^m$ into a bound in the
+weighted $2$-norm. -/
 theorem example_6_3_3_l2 (hν : 0 < ν) (hT : 0 < T) {N Nt : ℕ} (hNt : 0 < Nt) {hx ht r : ℝ}
     (hhx : hx = π / (N + 2)) (hht : ht = T / Nt) (hr : r = ν * ht / hx ^ 2) (hr2 : r ≤ 1 / 2)
     (hu : IsRegularHeatSolution ν T f u ux ut Mtt Mxxxx) {v : ℕ → Fin (N + 1) → ℝ}
@@ -578,20 +660,20 @@ theorem example_6_3_3_l2 (hν : 0 < ν) (hT : 0 < T) {N Nt : ℕ} (hNt : 0 < Nt)
 
 end Forward
 
-/-! #### The backward scheme, Example 6.3.4 -/
+/-! ### The backward scheme, Example 6.3.4 -/
 
 section Backward
 
 variable {N Nt : ℕ} {hx ht r : ℝ} (hν : 0 < ν) (hT : 0 < T) (hNt : 0 < Nt)
   (hhx : hx = π / (N + 2)) (hht : ht = T / Nt) (hr : r = ν * ht / hx ^ 2)
 
-/-- The matrix `Q₁ = tridiag(-r, 1 + 2r, -r)` of the backward scheme is positive definite, hence
-invertible, for every `r ≥ 0`: it is strictly diagonally dominant. -/
+/-- For $r \ge 0$, the matrix $Q_1 = \operatorname{tridiag}(-r, 1 + 2r, -r)$ of the backward scheme
+is invertible. -/
 private theorem isUnit_backward {r : ℝ} (hr0 : 0 ≤ r) :
     IsUnit (symmTridiagonalToeplitz (N + 1) (-r) (1 + 2 * r)) :=
   (posDef_symmTridiagonalToeplitz (N + 1) (by rw [abs_neg, abs_of_nonneg hr0]; linarith)).isUnit
 
-/-- The eigenvalues `1 + 2r - 2r cos θ_k` of `Q₁` lie in `[1, 1 + 4r]` for `r ≥ 0`. -/
+/-- For $r \ge 0$, the eigenvalues $1 + 2r - 2r \cos\theta_k$ of $Q_1$ lie in $[1, 1 + 4r]$. -/
 private theorem isSymmetricBoundedBy_backward {N : ℕ} {r : ℝ} (hr0 : 0 ≤ r) :
     (toEuclideanLin (symmTridiagonalToeplitz (N + 1) (-r) (1 + 2 * r))).IsSymmetricBoundedBy
       1 (1 + 4 * r) := by
@@ -600,8 +682,8 @@ private theorem isSymmetricBoundedBy_backward {N : ℕ} {r : ℝ} (hr0 : 0 ≤ r
   have h2 := Real.cos_le_one ((((k : ℕ) : ℝ) + 1) * π / ((N + 1 : ℕ) + 1))
   constructor <;> nlinarith
 
-/-- **`‖Q₁⁻¹‖_∞ ≤ 1` by diagonal dominance** (Example 6.3.4): if `Q₁ y = x` then, at every
-index, `(1 + 2r) |y_i| ≤ |x_i| + 2r ‖y‖_∞`, so `‖y‖_∞ ≤ ‖x‖_∞`. -/
+/-- For $r \ge 0$, $\|Q_1^{-1} x\|_\infty \le \|x\|_\infty$ by diagonal dominance: if $Q_1 y = x$,
+then $(1 + 2r) |y_i| \le |x_i| + 2r \|y\|_\infty$ at every index. -/
 private theorem norm_mulVec_inv_backward_le {r : ℝ} (hr0 : 0 ≤ r) (x : Fin (N + 1) → ℝ) :
     ‖(symmTridiagonalToeplitz (N + 1) (-r) (1 + 2 * r))⁻¹ *ᵥ x‖ ≤ ‖x‖ := by
   set y := (symmTridiagonalToeplitz (N + 1) (-r) (1 + 2 * r))⁻¹ *ᵥ x with hy
@@ -640,7 +722,7 @@ private theorem norm_mulVec_inv_backward_le {r : ℝ} (hr0 : 0 ≤ r) (x : Fin (
   rw [le_div_iff₀ h12] at key
   linarith
 
-/-- **`‖Q₁⁻¹‖₂ ≤ 1`** (Example 6.3.4): the eigenvalues of `Q₁` are at least `1`. -/
+/-- For $r \ge 0$, $\|Q_1^{-1}\|_2 \le 1$, because the eigenvalues of $Q_1$ are at least $1$. -/
 private theorem norm_toEuclideanCLM_inv_backward_le {r : ℝ} (hr0 : 0 ≤ r) :
     ‖toEuclideanCLM (𝕜 := ℝ) (symmTridiagonalToeplitz (N + 1) (-r) (1 + 2 * r))⁻¹‖ ≤ 1 := by
   refine ContinuousLinearMap.opNorm_le_bound _ zero_le_one fun z => ?_
@@ -650,8 +732,8 @@ private theorem norm_toEuclideanCLM_inv_backward_le {r : ℝ} (hr0 : 0 ≤ r) :
   rw [one_mul, toEuclideanLin_mul_nonsing_inv_apply (isUnit_backward hr0)] at hb
   exact hb
 
-/-- The local truncation error `τ̄^m` of the backward scheme, defined by the implicit relation
-`Q₁ u^{m+1} = u^m + h_t f^{m+1} + h_t τ̄^m` (Example 6.3.4). -/
+/-- The local truncation error $\bar\tau^m$ of the backward scheme, defined by the implicit relation
+$Q_1 u^{m+1} = u^m + h_t f^{m+1} + h_t \bar\tau^m$. -/
 private noncomputable def backwardTrunc (N : ℕ) (u f : ℝ × ℝ → ℝ) (hx ht r : ℝ) (m : ℕ) :
     Fin (N + 1) → ℝ :=
   ht⁻¹ • (symmTridiagonalToeplitz (N + 1) (-r) (1 + 2 * r) *ᵥ gridValues N u hx ht (m + 1)
@@ -667,9 +749,8 @@ private theorem mulVec_gridValues_succ_backward (u f : ℝ × ℝ → ℝ) (m : 
   abel
 
 include hν hT hNt hhx hht hr in
-/-- **The truncation error of the backward scheme** (Example 6.3.4): by Taylor expansion at
-`(x_j, t_{m+1})`, `|τ̄^m_j| ≤ (M_tt / 2) h_t + (ν M_xxxx / 12) h_x² ≤ c (h_x² + h_t)` with
-`c = M_tt / 2 + ν M_xxxx / 12`, for `m < N_t`. -/
+/-- The truncation error of the backward scheme in Example 6.3.4 satisfies $|\bar\tau^m_j| \le
+(M_{tt}/2 + \nu M_{xxxx}/12)(h_x^2 + h_t)$ for every time level $m < N_t$. -/
 private theorem abs_backwardTrunc_le (hu : IsRegularHeatSolution ν T f u ux ut Mtt Mxxxx)
     {m : ℕ} (hm : m < Nt) (j : Fin (N + 1)) :
     |backwardTrunc N u f hx ht r m j| ≤ (Mtt / 2 + ν * Mxxxx / 12) * (hx ^ 2 + ht) := by
@@ -760,19 +841,21 @@ private theorem abs_backwardTrunc_le (hu : IsRegularHeatSolution ν T f u ux ut 
   rw [abs_mul, abs_of_pos hht0] at hbound
   exact le_of_mul_le_mul_left hbound hht0
 
-/-- **Example 6.3.4, the maximum norm**: for the backward scheme (6.1.12)–(6.1.14) for
-`u_t = ν u_xx + f`, with no condition on `r = ν h_t / h_x²`, and an exact solution with `u_tt`,
-`u_xxxx` continuous on `[0, π] × [0, T]` (`IsRegularHeatSolution`, with the bounds `M_tt`,
-`M_xxxx`), the error at every time level `m ≤ N_t` satisfies
+/-- **Example 6.3.4** of [han2009theoretical], the maximum norm. Let $\nu > 0$, $T > 0$,
+$N, N_t \in \mathbb{N}$ with $N_t > 0$, $h_x = \pi / (N + 2)$, $h_t = T / N_t$ and
+$r = \nu h_t / h_x^2$, with no condition on $r$. Let $u$ be a regular solution of
+$u_t = \nu u_{xx} + f$ (`AtkinsonHan.Chapter06.IsRegularHeatSolution`) with bounds $M_{tt}$ and
+$M_{xxxx}$. Let $v^0 = u^0$ and let $v$ follow the backward scheme (6.1.12)–(6.1.14),
+$$Q_1 v^{m+1} = v^m + h_t f^{m+1}, \qquad Q_1 = \operatorname{tridiag}(-r, 1 + 2r, -r).$$
+Then for every time level $m \le N_t$,
+$$\max_j |u(x_j, t_m) - v^m_j| \le \Bigl(\frac{M_{tt}}{2} + \frac{\nu M_{xxxx}}{12}\Bigr) T
+  (h_x^2 + h_t).$$
 
-  `max_j |u (x_j, t_m) - v^m_j| ≤ (M_tt / 2 + ν M_xxxx / 12) T (h_x² + h_t)`.
-
-The scheme is the implicit relation `Q₁ v^{m+1} = v^m + h_t f^{m+1}` with
-`Q₁ = tridiag(-r, 1 + 2r, -r)`, which is the two-level scheme with `Q = Q₁⁻¹` and
-`g^m = Q f^{m+1}`; diagonal dominance gives `‖Q‖_∞ ≤ 1`, so the scheme is unconditionally
-stable with `M₀ = 1`, and its truncation error `τ^m = Q τ̄^m` satisfies `‖τ^m‖_∞ ≤ ‖τ̄^m‖_∞`
-with `τ̄^m` bounded by Taylor expansion at `(x_j, t_{m+1})`. As in `example_6_3_3` the horizon
-is cut at `N_t`. -/
+The scheme is the two-level scheme with $Q = Q_1^{-1}$ and $g^m = Q f^{m+1}$. Diagonal dominance
+gives $\|Q\|_\infty \le 1$, so the scheme is unconditionally stable with $M_0 = 1$. Its
+truncation error $\tau^m = Q \bar\tau^m$ satisfies
+$\|\tau^m\|_\infty \le \|\bar\tau^m\|_\infty$, and Taylor expansion at $(x_j, t_{m+1})$ bounds
+$\bar\tau^m$. As in `AtkinsonHan.Chapter06.example_6_3_3`, the horizon is cut at $N_t$. -/
 theorem example_6_3_4 (hν : 0 < ν) (hT : 0 < T) {N Nt : ℕ} (hNt : 0 < Nt) {hx ht r : ℝ}
     (hhx : hx = π / (N + 2)) (hht : ht = T / Nt) (hr : r = ν * ht / hx ^ 2)
     (hu : IsRegularHeatSolution ν T f u ux ut Mtt Mxxxx) {v : ℕ → Fin (N + 1) → ℝ}
@@ -817,11 +900,14 @@ theorem example_6_3_4 (hν : 0 < ν) (hT : 0 < T) {N Nt : ℕ} (hNt : 0 < Nt) {h
   calc ‖gridValues N u hx ht m - v m‖ ≤ 1 * T * c := h
     _ = (Mtt / 2 + ν * Mxxxx / 12) * T * (hx ^ 2 + ht) := by rw [hc]; ring
 
-/-- **Example 6.3.4, the discrete weighted `2`-norm**: under the hypotheses of `example_6_3_4`,
-also `√h_x ‖u^m - v^m‖₂ ≤ √π (M_tt / 2 + ν M_xxxx / 12) T (h_x² + h_t)` for `m ≤ N_t`. The
-eigenvalues `1 + 4r cos²(jπ / (2 N_x))` of `Q₁` (Exercise 6.3.1) are at least `1`, so the
-eigenvalues of `Q = Q₁⁻¹` lie in `(0, 1]` and `‖Q‖₂ ≤ 1`: the scheme is unconditionally stable in
-`‖·‖_{2, h_x}` too, and `‖τ^m‖₂ ≤ ‖τ̄^m‖₂`. -/
+/-- **Example 6.3.4** of [han2009theoretical], the weighted discrete $2$-norm. Under the hypotheses
+of `AtkinsonHan.Chapter06.example_6_3_4`, for every time level $m \le N_t$,
+$$\sqrt{h_x} \, \|u^m - v^m\|_2 \le \sqrt{\pi} \Bigl(\frac{M_{tt}}{2} + \frac{\nu
+  M_{xxxx}}{12}\Bigr) T (h_x^2 + h_t).$$
+
+The eigenvalues $1 + 4r \cos^2(j\pi / (2 N_x))$ of $Q_1$ (Exercise 6.3.1) are at least $1$. So
+the eigenvalues of $Q = Q_1^{-1}$ lie in $(0, 1]$, $\|Q\|_2 \le 1$, the scheme is
+unconditionally stable in $\|\cdot\|_{2, h_x}$, and $\|\tau^m\|_2 \le \|\bar\tau^m\|_2$. -/
 theorem example_6_3_4_l2 (hν : 0 < ν) (hT : 0 < T) {N Nt : ℕ} (hNt : 0 < Nt) {hx ht r : ℝ}
     (hhx : hx = π / (N + 2)) (hht : ht = T / Nt) (hr : r = ν * ht / hx ^ 2)
     (hu : IsRegularHeatSolution ν T f u ux ut Mtt Mxxxx) {v : ℕ → Fin (N + 1) → ℝ}
@@ -882,15 +968,18 @@ theorem example_6_3_4_l2 (hν : 0 < ν) (hT : 0 < T) {N Nt : ℕ} (hNt : 0 < Nt)
 
 end Backward
 
-/-! #### The sine-series solutions of Example 6.2.4 satisfy the hypotheses -/
+/-! ### The sine-series solutions of Example 6.2.4 satisfy the hypotheses -/
 
 section SineSeries
 
-/-- **The sine-series solutions have the regularity of Examples 6.3.3–6.3.4**: for
-`u (x, t) = ∑_{j < n} b j exp (-ν (j + 1)² t) sin ((j + 1) x)` (Example 6.2.4, (6.2.7)), which
-solves the homogeneous equation `u_t = ν u_xx` with `u (0, t) = u (π, t) = 0`, the derivative
-towers are `Heat.sineSeriesDerivX` and `Heat.sineSeriesDerivT`, and
-`|u_tt| ≤ ∑ |b j| (ν (j + 1)²)²`, `|u_xxxx| ≤ ∑ |b j| (j + 1)⁴` on `[0, π] × [0, T]`. -/
+/-- The sine-series solutions have the regularity of Examples 6.3.3 and 6.3.4 of
+[han2009theoretical]. Let $\nu > 0$, $T \in \mathbb{R}$, and let
+$$u(x, t) = \sum_{j < n} b_j \, e^{-\nu (j + 1)^2 t} \sin((j + 1) x)$$
+be the solution (6.2.7) of Example 6.2.4. Then $u$ is a regular solution of $u_t = \nu u_{xx}$
+(with $f = 0$) on $[0, \pi] \times [0, T]$, with $M_{tt} = \sum_{j < n} |b_j| (\nu (j + 1)^2)^2$
+and $M_{xxxx} = \sum_{j < n} |b_j| (j + 1)^4$.
+
+The derivatives are `Heat.sineSeriesDerivX` and `Heat.sineSeriesDerivT`. -/
 theorem sineSeries_isRegularHeatSolution (hν : 0 < ν) (T : ℝ) (n : ℕ) (b : ℕ → ℝ) :
     IsRegularHeatSolution ν T 0 (Heat.sineSeries ν n b) (Heat.sineSeriesDerivX ν n b)
       (Heat.sineSeriesDerivT ν n b) (∑ j ∈ Finset.range n, |b j| * (ν * ((j : ℝ) + 1) ^ 2) ^ 2)
@@ -905,9 +994,17 @@ theorem sineSeries_isRegularHeatSolution (hν : 0 < ν) (T : ℝ) (n : ℕ) (b :
   left t _ := Heat.sineSeries_zero_left t
   right t _ := Heat.sineSeries_pi_left t
 
-/-- **Example 6.3.3 for the sine-series solutions** of Example 6.2.4, in both norms: the
-hypotheses on `u_tt` and `u_xxxx` are discharged by `sineSeries_isRegularHeatSolution`, with
-`M_tt = ∑ |b j| (ν (j + 1)²)²` and `M_xxxx = ∑ |b j| (j + 1)⁴`. -/
+/-- **Example 6.3.3** of [han2009theoretical], for the sine-series solutions of Example 6.2.4. Under
+the mesh hypotheses of `AtkinsonHan.Chapter06.example_6_3_3`, with $r \le 1/2$, let $u$ be the
+sine series (6.2.7) and let $v^0 = u^0$ and $v^{m+1} = \operatorname{tridiag}(r, 1 - 2r, r) \,
+v^m$. Then for every $m \le N_t$, with $M_{tt} = \sum_{j < n} |b_j| (\nu (j + 1)^2)^2$ and
+$M_{xxxx} = \sum_{j < n} |b_j| (j + 1)^4$,
+$$\max_j |u^m_j - v^m_j| \le \Bigl(\frac{M_{tt}}{2} + \frac{\nu M_{xxxx}}{12}\Bigr) T (h_x^2 +
+  h_t),$$
+and the same bound times $\sqrt{\pi}$ holds for $\sqrt{h_x} \, \|u^m - v^m\|_2$.
+
+The regularity hypotheses are discharged by
+`AtkinsonHan.Chapter06.sineSeries_isRegularHeatSolution`. -/
 theorem example_6_3_3_sineSeries (hν : 0 < ν) (hT : 0 < T) {N Nt : ℕ} (hNt : 0 < Nt)
     {hx ht r : ℝ} (hhx : hx = π / (N + 2)) (hht : ht = T / Nt) (hr : r = ν * ht / hx ^ 2)
     (hr2 : r ≤ 1 / 2) (n : ℕ) (b : ℕ → ℝ) {v : ℕ → Fin (N + 1) → ℝ}
@@ -928,7 +1025,17 @@ theorem example_6_3_3_sineSeries (hν : 0 < ν) (hT : 0 < T) {N Nt : ℕ} (hNt :
     hm, example_6_3_3_l2 hν hT hNt hhx hht hr hr2 (sineSeries_isRegularHeatSolution hν T n b) hv0
     hv' hm⟩
 
-/-- **Example 6.3.4 for the sine-series solutions** of Example 6.2.4, in both norms. -/
+/-- **Example 6.3.4** of [han2009theoretical], for the sine-series solutions of Example 6.2.4. Under
+the mesh hypotheses of `AtkinsonHan.Chapter06.example_6_3_4`, with no condition on $r$, let $u$
+be the sine series (6.2.7) and let $v^0 = u^0$ and $\operatorname{tridiag}(-r, 1 + 2r, -r) \,
+v^{m+1} = v^m$. Then for every $m \le N_t$, with $M_{tt} = \sum_{j < n} |b_j| (\nu (j + 1)^2)^2$
+and $M_{xxxx} = \sum_{j < n} |b_j| (j + 1)^4$,
+$$\max_j |u^m_j - v^m_j| \le \Bigl(\frac{M_{tt}}{2} + \frac{\nu M_{xxxx}}{12}\Bigr) T (h_x^2 +
+  h_t),$$
+and the same bound times $\sqrt{\pi}$ holds for $\sqrt{h_x} \, \|u^m - v^m\|_2$.
+
+The regularity hypotheses are discharged by
+`AtkinsonHan.Chapter06.sineSeries_isRegularHeatSolution`. -/
 theorem example_6_3_4_sineSeries (hν : 0 < ν) (hT : 0 < T) {N Nt : ℕ} (hNt : 0 < Nt)
     {hx ht r : ℝ} (hhx : hx = π / (N + 2)) (hht : ht = T / Nt) (hr : r = ν * ht / hx ^ 2)
     (n : ℕ) (b : ℕ → ℝ) {v : ℕ → Fin (N + 1) → ℝ}

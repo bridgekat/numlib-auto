@@ -7,71 +7,105 @@ import Numlib.Approximation.DividedDifference
 import Numlib.Approximation.Hermite
 
 /-!
-# Atkinson–Han §3.2: interpolation theory
+# Atkinson and Han, Section 3.2: Interpolation theory
 
-Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework*, 3rd edition, Springer, 2009, §3.2.
+This module formalizes Section 3.2 of [han2009theoretical]. The section first poses the
+interpolation problem abstractly: given an $n$-dimensional subspace $V_n$ of a normed space $V$ and
+bounded linear functionals $L_1, \dots, L_n$ on $V$, find $u_n \in V_n$ with $L_i u_n = b_i$ for
+$i = 1, \dots, n$. The problem has a unique solution for every datum $b$ if and only if the
+functionals are linearly independent over $V_n$, if and only if $\det(L_i v_j) \neq 0$ for a basis
+$v_1, \dots, v_n$ of $V_n$. The section then treats four instances: Lagrange polynomial
+interpolation, with Lagrange's formula and the error formula $f(x) - p_n(x) = \omega_n(x)
+f^{(n+1)}(\xi_x)/(n + 1)!$; Hermite interpolation; piecewise linear interpolation, with the error
+bounds $\omega(f, h)$ and $h^2 \|f''\|_\infty / 8$; and trigonometric interpolation at $2n + 1$
+nodes of a period.
 
-The section poses the interpolation problem abstractly — find `uₙ` in an `n`-dimensional subspace
-`Vₙ` of a normed space with `Lᵢ uₙ = bᵢ` for `n` bounded functionals `Lᵢ` — and then instantiates it
-four times: Lagrange polynomial interpolation, Hermite interpolation, piecewise linear interpolation
-and trigonometric interpolation.
+The abstract problem is the backbone module `Numlib.Approximation.Unisolvent`. Lagrange
+interpolation and piecewise linear interpolation are `Numlib.Approximation.Interpolation`, Hermite
+interpolation is `Numlib.Approximation.Hermite`, and the divided differences are
+`Numlib.Approximation.DividedDifference`.
+
+## Main definitions
+
+* Definition 3.2.1, `AtkinsonHan.Chapter03.definition_3_2_1`: the functionals $L_1, \dots, L_n$ are
+  linearly independent over $V_n$ if and only if the interpolation problem has a unique solution for
+  every datum.
 
 ## Main results
 
-* `definition_3_2_1`, `lemma_3_2_2`, `theorem_3_2_3` — the abstract problem: linear independence of
-  the functionals over `Vₙ`, the determinant criterion `det (Lᵢ vⱼ) ≠ 0`, and the four equivalent
-  forms of unique solvability.
-* `equation_3_2_1`, `equation_3_2_2`, `equation_3_2_3` — Lagrange interpolation: unique solvability
-  in `𝒫ₙ`, the Vandermonde determinant `∏_{j > i} (xⱼ − xᵢ)`, and Lagrange's formula with its
-  cardinal basis `φᵢ (xⱼ) = δᵢⱼ`.
-* `proposition_3_2_4` — the error formula `f(x) − pₙ(x) = ωₙ(x) f⁽ⁿ⁺¹⁾(ξₓ) / (n + 1)!`, and
-  `equation_3_2_5` its divided-difference form `f(x) − pₙ(x) = ωₙ(x) f[x₀, …, xₙ, x]`.
-* `equation_3_2_6`, `exercise_3_2_6`, `equation_3_2_6_general` and
-  `equation_3_2_6_general_error` — Hermite interpolation at simple nodes and with multiplicities,
-  with the error formula in both forms.
-* `equation_3_2_7`, `equation_3_2_8`, `equation_3_2_9` — piecewise linear interpolation: the local
-  formula, the modulus-of-continuity bound `ω(f, h)`, and the bound `h²‖f''‖_∞ / 8`.
-* `equation_3_2_13`, `equation_3_2_16`, `equation_3_2_17` — trigonometric interpolation: `𝕋ₙ` in the
-  book's cosine–sine form, the equispaced nodes `xⱼ = j h` with `h = 2π / (2n + 1)`, and unique
-  solvability at any `2n + 1` distinct nodes of a period.
-* `example_3_2_5` — the function `e^{sin x} sin x` of (3.2.18) and its trigonometric interpolants
-  at the nodes (3.2.16). Table 3.1's computed errors are not part of the statement; the doc comment
-  of `example_3_2_5` says why.
-
-## The backbone behind them
-
-The abstract framework is `Numlib/Approximation/Unisolvent`: the book's "the interpolation problem
-has a unique solution" is `Approximation.IsUnisolvent Vₙ L`, and Definition 3.2.1, Lemma 3.2.2 and
-Theorem 3.2.3 are its `isUnisolvent_iff_linearIndependent`, `isUnisolvent_iff_det_ne_zero` and
-`isUnisolvent_tfae`. Lagrange interpolation and the piecewise linear operator are
-`Numlib/Approximation/Interpolation`, Hermite interpolation is `Numlib/Approximation/Hermite`, and
-trigonometric interpolation is `trigInterpCLM` of the first of those, which gets its unique
-solvability from the Haar condition for `trigPolyLE` — the substitution `z = e^{ix}` of (3.2.15),
-carried out once and for all in `Numlib/Approximation/Chebyshev`.
+* Lemma 3.2.2, `AtkinsonHan.Chapter03.lemma_3_2_2`: the functionals are linearly independent over
+  $V_n$ if and only if $\det(L_i v_j) \neq 0$.
+* Theorem 3.2.3, `AtkinsonHan.Chapter03.theorem_3_2_3`: four equivalent forms of the unique
+  solvability of the interpolation problem.
+* Equation (3.2.1), `AtkinsonHan.Chapter03.equation_3_2_1`: Lagrange interpolation at $n + 1$
+  distinct nodes has a unique solution in $\mathcal{P}_n$.
+* Equation (3.2.2), `AtkinsonHan.Chapter03.equation_3_2_2` and
+  `AtkinsonHan.Chapter03.equation_3_2_2_ne_zero`: the Vandermonde determinant is
+  $\prod_{j > i} (x_j - x_i)$, which is nonzero at distinct nodes.
+* Equation (3.2.3), `AtkinsonHan.Chapter03.equation_3_2_3` and
+  `AtkinsonHan.Chapter03.equation_3_2_3_delta`: Lagrange's formula $p_n = \sum_i f(x_i) \varphi_i$,
+  and $\varphi_i(x_j) = \delta_{ij}$.
+* Proposition 3.2.4, `AtkinsonHan.Chapter03.proposition_3_2_4`: the error formula $f(x) - p_n(x) =
+  \omega_n(x) f^{(n+1)}(\xi_x)/(n + 1)!$.
+* Equation (3.2.5), `AtkinsonHan.Chapter03.equation_3_2_5`: the error formula $f(x) - p_n(x) =
+  \omega_n(x) f[x_0, \dots, x_n, x]$.
+* Equation (3.2.6), `AtkinsonHan.Chapter03.equation_3_2_6`: Hermite interpolation of values and
+  first derivatives at $n$ distinct nodes has a unique solution of degree at most $2n - 1$.
+* Equation (3.2.6), `AtkinsonHan.Chapter03.equation_3_2_6_general` and
+  `AtkinsonHan.Chapter03.equation_3_2_6_general_error`: Hermite interpolation with multiplicities,
+  and its error formula.
+* Equation (3.2.7), `AtkinsonHan.Chapter03.equation_3_2_7` and
+  `AtkinsonHan.Chapter03.equation_3_2_7_unique`: the piecewise linear interpolant is affine on each
+  subinterval, and is the only such continuous interpolant.
+* Equation (3.2.8), `AtkinsonHan.Chapter03.equation_3_2_8`: $|f - \Pi f| \le \omega(f, h)$.
+* Equation (3.2.9), `AtkinsonHan.Chapter03.equation_3_2_9`:
+  $|f - \Pi f| \le h^2 \|f''\|_\infty / 8$.
+* Equation (3.2.13), `AtkinsonHan.Chapter03.equation_3_2_13`: $\mathcal{T}_n$ consists of the
+  functions $a_0 + \sum_{j=1}^n (a_j \cos(jx) + b_j \sin(jx))$.
+* Equation (3.2.16), `AtkinsonHan.Chapter03.equation_3_2_16`: the evenly spaced nodes $x_j = j h$,
+  $h = 2\pi/(2n + 1)$.
+* Equation (3.2.17), `AtkinsonHan.Chapter03.equation_3_2_17` and
+  `AtkinsonHan.Chapter03.equation_3_2_17_equispaced`: trigonometric interpolation at $2n + 1$
+  distinct nodes of a period has a unique solution in $\mathcal{T}_n$.
+* Example 3.2.5, `AtkinsonHan.Chapter03.example_3_2_5`: the function $e^{\sin x} \sin x$ of (3.2.18)
+  and its trigonometric interpolants at the nodes (3.2.16).
+* Exercise 3.2.6, `AtkinsonHan.Chapter03.exercise_3_2_6`: the error formula $f(x) - p(x) =
+  f^{(2n)}(\xi) \prod_i (x - x_i)^2/(2n)!$ for Hermite interpolation.
 
 ## Conventions
 
-* `𝒫ₙ` on a compact `X ⊆ ℝ` is `polyLE X n`, the subspace of `C(X, ℝ)` of restrictions of real
-  polynomials of degree at most `n`; `𝕋ₙ` is `trigPolyLE (2π) n` inside `C_p(2π) = C(AddCircle
-  (2π), ℝ)`, as everywhere in this surface.
-* The book indexes the Lagrange nodes `x₀ < ⋯ < xₙ` from `0` and the Hermite nodes `x₁ < ⋯ < xₙ`
-  from `1`; both are indexed from `0` here, so the `n` nodes of (3.2.6) become `n + 1` nodes and its
-  degree bound `2n − 1` becomes `2(n + 1) − 1`.
-* Where the book writes a maximum over `[a, b]` of `|f − Π f|`, the statements here are pointwise
-  bounds, which is the same thing on a compact interval and does not need a supremum to exist.
+* $\mathcal{P}_n$ on a compact $X \subseteq \mathbb{R}$ is `polyLE X n`, the subspace of `C(X, ℝ)`
+  of the restrictions of real polynomials of degree at most $n$.
+* $C_p(2\pi)$ is `C(AddCircle (2 * π), ℝ)`, as in the rest of the library, and $\mathcal{T}_n$ is
+  its subspace `trigPolyLE (2 * π) n`.
+* The source indexes the Lagrange nodes $x_0 < \cdots < x_n$ from $0$ and the Hermite nodes
+  $x_1 < \cdots < x_n$ from $1$. Both are indexed from $0$ here. So in
+  `AtkinsonHan.Chapter03.exercise_3_2_6` the $n$ nodes of (3.2.6) become $n + 1$ nodes, and the
+  degree bound $2n - 1$ becomes $2(n + 1) - 1$.
+* Where the source bounds the maximum of $|f - \Pi f|$ over $[a, b]$, the statements here give the
+  bound at each point. On a compact interval the two are the same, and the pointwise form needs no
+  supremum.
 
-## Not formalized here
+## Implementation notes
 
-* The `H²(a, b)` estimates (3.2.10)–(3.2.12) for piecewise linear interpolation, which need Sobolev
-  spaces; they are out of scope with the rest of that material.
-* The Newton form of the interpolant, which the book only cites; (3.2.5), the divided-difference
-  form of the error, is `equation_3_2_5` above and rests on `DividedDifference.newton`.
-* Table 3.1, the computed maximum errors of Example 3.2.5 for `n = 1, …, 14`: each entry is a
-  supremum over the circle of a transcendental function, so a rigorous value needs verified
-  numerics the project does not have, and the book draws nothing from the table beyond the
-  convergence §3.7 proves. What the example sets up — the function (3.2.18) as an element of
-  `C_p(2π)` and its interpolants at the nodes (3.2.16) — is `example_3_2_5`.
+* "The interpolation problem has a unique solution" is `Approximation.IsUnisolvent Vₙ L`. Definition
+  3.2.1, Lemma 3.2.2 and Theorem 3.2.3 specialize
+  `Approximation.isUnisolvent_iff_linearIndependent`, `Approximation.isUnisolvent_iff_det_ne_zero`
+  and `Approximation.isUnisolvent_tfae`.
+* Trigonometric interpolation at the evenly spaced nodes is `trigInterpCLM`. Its unique solvability
+  comes from the Haar condition for `trigPolyLE`, which the backbone proves once in
+  `Numlib.Approximation.Chebyshev` by the substitution $z = e^{ix}$ of (3.2.15).
+
+## Not formalized
+
+* **The estimates (3.2.10)–(3.2.12)** for piecewise linear interpolation in $H^2(a, b)$. They need
+  Sobolev spaces.
+* **The Newton form of the interpolant**, which the source only cites. The divided-difference form
+  (3.2.5) of the error is `AtkinsonHan.Chapter03.equation_3_2_5`, from `DividedDifference.newton`.
+* **Table 3.1**, the computed maximum errors of Example 3.2.5 for $n = 1, \dots, 14$. Each entry is
+  a supremum over the circle of a transcendental function, so a rigorous value needs verified
+  numerics, which the project does not have. The source draws nothing from the table beyond the
+  convergence that §3.7 proves.
 -/
 
 open scoped Polynomial Real
@@ -85,10 +119,16 @@ section Abstract
 variable {𝕜 V : Type*} [NontriviallyNormedField 𝕜] [NormedAddCommGroup V] [NormedSpace 𝕜 V]
   {n : ℕ} {Vₙ : Submodule 𝕜 V} {L : Fin n → StrongDual 𝕜 V}
 
-/-- **Definition 3.2.1.** The functionals `L₁, …, Lₙ` are *linearly independent over `Vₙ`* when
-`∑ᵢ cᵢ Lᵢ(v) = 0` for every `v ∈ Vₙ` forces `cᵢ = 0`. For `n` functionals on an `n`-dimensional
-subspace that condition is exactly unique solvability of the interpolation problem, which is the
-backbone's `Approximation.IsUnisolvent`; this is the bridge naming the book's condition. -/
+/-- **Definition 3.2.1** of [han2009theoretical]. Let $V$ be a normed space over a nontrivially
+normed field $\mathbb{K}$, let $V_n$ be a subspace of $V$ with a basis of $n$ elements, and let
+$L_1, \dots, L_n$ be bounded linear functionals on $V$. The functionals are **linearly
+independent over $V_n$** if
+$$\sum_{i=1}^n c_i L_i(v) = 0 \text{ for all } v \in V_n \implies c_1 = \cdots = c_n = 0.$$
+This holds if and only if the interpolation problem $L_i u_n = b_i$, $i = 1, \dots, n$, has
+exactly one solution $u_n \in V_n$ for every $b \in \mathbb{K}^n$.
+
+The unique solvability is the backbone's `Approximation.IsUnisolvent Vₙ L`, and the proof is
+`Approximation.isUnisolvent_iff_linearIndependent`. The basis `v` only fixes $\dim V_n = n$. -/
 theorem definition_3_2_1 (v : Module.Basis (Fin n) 𝕜 Vₙ) :
     Approximation.IsUnisolvent Vₙ L ↔
       ∀ c : Fin n → 𝕜, (∀ w ∈ Vₙ, ∑ i, c i * L i w = 0) → ∀ i, c i = 0 := by
@@ -102,18 +142,29 @@ theorem definition_3_2_1 (v : Module.Basis (Fin n) 𝕜 Vₙ) :
     refine LinearMap.ext fun u => ?_
     simpa using hsum (u : V) u.2
 
-/-- **Lemma 3.2.2.** The functionals `L₁, …, Lₙ` are linearly independent over `Vₙ` if and only if
-`det (Lᵢ vⱼ) ≠ 0` for a basis `v₁, …, vₙ` of `Vₙ`. Since the left-hand side does not mention the
-basis, neither does the nonvanishing of the determinant. -/
+/-- **Lemma 3.2.2** of [han2009theoretical]. Let $V_n$ be a subspace of a normed space $V$ with a
+basis $v_1, \dots, v_n$, and let $L_1, \dots, L_n$ be bounded linear functionals on $V$. Then
+$L_1, \dots, L_n$ are linearly independent over $V_n$ if and only if
+$$\det(L_i v_j)_{i,j=1}^n \neq 0.$$
+Since the left-hand side does not mention the basis, the nonvanishing of the determinant does
+not depend on the basis. -/
 theorem lemma_3_2_2 (v : Module.Basis (Fin n) 𝕜 Vₙ) :
     (∀ c : Fin n → 𝕜, (∀ w ∈ Vₙ, ∑ i, c i * L i w = 0) → ∀ i, c i = 0) ↔
       (Matrix.of fun i j => L i (v j : V)).det ≠ 0 :=
   (definition_3_2_1 v).symm.trans (Approximation.isUnisolvent_iff_det_ne_zero v)
 
-/-- **Theorem 3.2.3.** For `n` bounded functionals on an `n`-dimensional subspace `Vₙ` the following
-are equivalent: the interpolation problem has a unique solution for every datum; the functionals are
-linearly independent over `Vₙ`; the only `uₙ ∈ Vₙ` with `Lᵢ uₙ = 0` for all `i` is `uₙ = 0`; and for
-every datum the problem has at least one solution. -/
+/-- **Theorem 3.2.3** of [han2009theoretical]. Let $V_n$ be a subspace of a normed space $V$ with a
+basis of $n$ elements, and let $L_1, \dots, L_n$ be bounded linear functionals on $V$. The
+following are equivalent:
+
+1. for every $b \in \mathbb{K}^n$ the interpolation problem $L_i u_n = b_i$, $i = 1, \dots, n$,
+   has exactly one solution $u_n \in V_n$;
+2. the functionals are linearly independent over $V_n$;
+3. the only $u_n \in V_n$ with $L_i u_n = 0$ for all $i$ is $u_n = 0$;
+4. for every $b \in \mathbb{K}^n$ the interpolation problem has at least one solution
+   $u_n \in V_n$.
+
+The equivalence is stated as `List.TFAE`. -/
 theorem theorem_3_2_3 (v : Module.Basis (Fin n) 𝕜 Vₙ) :
     List.TFAE
       [∀ b : Fin n → 𝕜, ∃! u : Vₙ, ∀ i, L i (u : V) = b i,
@@ -133,7 +184,8 @@ section Lagrange
 
 variable {a b : ℝ} {n : ℕ}
 
-/-- The Lagrange basis function `φᵢ` of (3.2.3), in the product form the book prints. -/
+/-- The Lagrange basis function $\varphi_i$ of (3.2.3) is $\varphi_i(t) = \prod_{j \neq i} (t -
+x_j)/(x_i - x_j)$. -/
 private theorem basisCM_eq_prod (x : Fin (n + 1) → Set.Icc a b) (i : Fin (n + 1))
     (t : Set.Icc a b) :
     Lagrange.basisCM x i t
@@ -141,16 +193,22 @@ private theorem basisCM_eq_prod (x : Fin (n + 1) → Set.Icc a b) (i : Fin (n + 
   rw [Lagrange.basisCM_apply, Lagrange.basis, Polynomial.eval_prod]
   exact Finset.prod_congr rfl fun j _ => by simp [Lagrange.basisDivisor, div_eq_inv_mul]
 
-/-- **(3.2.1).** The Lagrange interpolation problem — find `pₙ ∈ 𝒫ₙ` with `pₙ(xᵢ) = f(xᵢ)` at
-`n + 1` distinct nodes of `[a, b]` — has exactly one solution. -/
+/-- **Equation (3.2.1)** of [han2009theoretical]. Let $x_0, \dots, x_n$ be distinct nodes in
+$[a, b]$ and let $f \in C[a, b]$. Then there is exactly one $p_n \in \mathcal{P}_n$ with
+$$p_n(x_i) = f(x_i), \qquad i = 0, \dots, n.$$
+
+$\mathcal{P}_n$ is `polyLE (Set.Icc a b) n`, and the distinctness of the nodes is
+`Function.Injective x`. -/
 theorem equation_3_2_1 {x : Fin (n + 1) → Set.Icc a b} (hx : Function.Injective x)
     (f : C(Set.Icc a b, ℝ)) :
     ∃! p : polyLE (Set.Icc a b) n, ∀ i, (p : C(Set.Icc a b, ℝ)) (x i) = f (x i) :=
   Lagrange.isUnisolvent_polyLE hx fun i => f (x i)
 
-/-- **(3.2.2).** In the monomial basis `vⱼ(x) = xʲ` of `𝒫ₙ` the matrix `(Lᵢ vⱼ)` of the Lagrange
-interpolation problem is the Vandermonde matrix of the nodes, whose determinant is
-`∏_{j > i} (xⱼ − xᵢ)`. -/
+/-- **Equation (3.2.2)** of [han2009theoretical]. Let $x_0, \dots, x_n \in \mathbb{R}$. In the
+monomial basis $v_j(x) = x^j$ of $\mathcal{P}_n$, the matrix $(L_i v_j) = (x_i^j)$ of the
+Lagrange interpolation problem is the Vandermonde matrix of the nodes, and
+$$\det\bigl(x_i^j\bigr)_{i,j=0}^n = \prod_{0 \le i < j \le n} (x_j - x_i).$$
+-/
 theorem equation_3_2_2 (x : Fin (n + 1) → ℝ) :
     (Matrix.of fun i j : Fin (n + 1) => ((Polynomial.X : ℝ[X]) ^ (j : ℕ)).eval (x i)).det
       = ∏ i, ∏ j ∈ Finset.Ioi i, (x j - x i) := by
@@ -160,16 +218,23 @@ theorem equation_3_2_2 (x : Fin (n + 1) → ℝ) :
     simp [Matrix.vandermonde]
   rw [h, Matrix.det_vandermonde]
 
-/-- **(3.2.2), the nonvanishing.** At distinct nodes every factor of the Vandermonde determinant is
-nonzero, so the determinant is, and Lemma 3.2.2 gives unique solvability again. -/
+/-- **Equation (3.2.2)** of [han2009theoretical], the nonvanishing. If the nodes
+$x_0, \dots, x_n \in \mathbb{R}$ are distinct, then the Vandermonde determinant $\det(x_i^j)$ is
+nonzero. With Lemma 3.2.2 this gives the unique solvability (3.2.1) again. -/
 theorem equation_3_2_2_ne_zero {x : Fin (n + 1) → ℝ} (hx : Function.Injective x) :
     (Matrix.of fun i j : Fin (n + 1) => ((Polynomial.X : ℝ[X]) ^ (j : ℕ)).eval (x i)).det ≠ 0 := by
   rw [equation_3_2_2]
   refine Finset.prod_ne_zero_iff.mpr fun i _ => Finset.prod_ne_zero_iff.mpr fun j hj => ?_
   exact sub_ne_zero.mpr fun h => absurd (hx h) (Finset.mem_Ioi.mp hj).ne'
 
-/-- **(3.2.3), Lagrange's formula.** The interpolant is `pₙ(x) = ∑ᵢ f(xᵢ) φᵢ(x)` with
-`φᵢ(x) = ∏_{j ≠ i} (x − xⱼ)/(xᵢ − xⱼ)`. -/
+/-- **Equation (3.2.3)** of [han2009theoretical] (Lagrange's formula). Let
+$x_0, \dots, x_n \in [a, b]$ and $f \in C[a, b]$. The Lagrange interpolant of $f$ is
+$$p_n(t) = \sum_{i=0}^n f(x_i) \varphi_i(t), \qquad \varphi_i(t) = \prod_{j \neq i} \frac{t -
+  x_j}{x_i - x_j}.$$
+
+The interpolant is `Lagrange.interpolateCLM x f`. The identity holds for any nodes, with Lean's
+convention that division by $0$ gives $0$. It is the interpolant of (3.2.1) when the nodes are
+distinct. -/
 theorem equation_3_2_3 (x : Fin (n + 1) → Set.Icc a b) (f : C(Set.Icc a b, ℝ))
     (t : Set.Icc a b) :
     Lagrange.interpolateCLM x f t
@@ -178,8 +243,10 @@ theorem equation_3_2_3 (x : Fin (n + 1) → Set.Icc a b) (f : C(Set.Icc a b, ℝ
   rw [Lagrange.interpolateCLM_apply]
   exact Finset.sum_congr rfl fun i _ => by rw [basisCM_eq_prod]
 
-/-- **(3.2.3), the cardinal property.** The Lagrange basis functions satisfy `φᵢ(xⱼ) = δᵢⱼ`, which
-is what makes (3.2.3) an interpolant and the `φᵢ` a basis of `𝒫ₙ`. -/
+/-- **Equation (3.2.3)** of [han2009theoretical], the cardinal property. Let $x_0, \dots, x_n$ be
+distinct nodes in $[a, b]$. Then the Lagrange basis functions satisfy
+$$\varphi_i(x_j) = \delta_{ij}, \qquad i, j = 0, \dots, n.$$
+This makes (3.2.3) an interpolant and the $\varphi_i$ a basis of $\mathcal{P}_n$. -/
 theorem equation_3_2_3_delta {x : Fin (n + 1) → Set.Icc a b} (hx : Function.Injective x)
     (i j : Fin (n + 1)) :
     (∏ k ∈ Finset.univ.erase i, ((x j : ℝ) - (x k : ℝ)) / ((x i : ℝ) - (x k : ℝ)))
@@ -190,15 +257,18 @@ theorem equation_3_2_3_delta {x : Fin (n + 1) → Set.Icc a b} (hx : Function.In
     simp [Lagrange.basisCM_apply_node_self hx]
   · simp [Lagrange.basisCM_apply_node_ne hij, hij]
 
-/-- **Proposition 3.2.4 with (3.2.4).** For `f` of class `C^{n+1}` and increasing nodes
-`x₀ < ⋯ < xₙ`, the error of the Lagrange interpolant at a point `t` is
-`ωₙ(t) f⁽ⁿ⁺¹⁾(ξ)/(n + 1)!` with `ωₙ(t) = ∏ᵢ (t − xᵢ)`, for some `ξ` between `minᵢ {xᵢ, t}` and
-`maxᵢ {xᵢ, t}`.
+/-- **Proposition 3.2.4** of [han2009theoretical], with (3.2.4). Let $f \in C^{n+1}(\mathbb{R})$,
+let $x_0 < x_1 < \cdots < x_n$, let $p_n$ be the Lagrange interpolant of $f$ at these nodes, and
+let $t \in \mathbb{R}$. Then there is a $\xi$ with $\min\{t, x_0\} \le \xi \le \max\{t, x_n\}$
+and
+$$f(t) - p_n(t) = \frac{\omega_n(t)}{(n + 1)!} f^{(n+1)}(\xi), \qquad \omega_n(t) =
+  \prod_{i=0}^n (t - x_i).$$
 
-The backbone `Lagrange.exists_sub_interpolate_eq` places `ξ` strictly inside any interval containing
-the nodes and `t`, so taking that interval to be `[minᵢ {xᵢ, t}, maxᵢ {xᵢ, t}]` gives the book's
-localization. The conclusion is stated with the closed interval because it degenerates to a point
-when `t` is the only node, and there the identity holds with both sides zero. -/
+The interpolant is `Lagrange.interpolate`. The backbone's `Lagrange.exists_sub_interpolate_eq`
+places $\xi$ strictly inside any interval that contains the nodes and $t$; the interval
+$[\min\{t, x_0\}, \max\{t, x_n\}]$ gives the localization of the source. The statement uses the
+closed interval because the interval is a single point when $t$ is the only node, and there both
+sides of the identity are $0$. -/
 theorem proposition_3_2_4 {f : ℝ → ℝ} (hf : ContDiff ℝ ((n + 1 : ℕ) : WithTop ℕ∞) f)
     {x : Fin (n + 1) → ℝ} (hx : StrictMono x) (t : ℝ) :
     ∃ ξ ∈ Set.Icc (min t (x 0)) (max t (x (Fin.last n))),
@@ -226,14 +296,16 @@ theorem proposition_3_2_4 {f : ℝ → ℝ} (hf : ContDiff ℝ ((n + 1 : ℕ) : 
       (by rw [hxt 0, sub_self])]
     simp
 
-/-- **(3.2.5).** The divided-difference form of the Lagrange interpolation error: with `pₙ` the
-interpolant of `f` at the `n + 1` distinct nodes `x₀, …, xₙ` and `x` none of them,
+/-- **Equation (3.2.5)** of [han2009theoretical]. Let $x_0, \dots, x_n$ be distinct nodes, let
+$f : \mathbb{R} \to \mathbb{R}$, let $p_n$ be the Lagrange interpolant of $f$ at the nodes, and
+let $x$ be a point that is not a node. Then
+$$f(x) - p_n(x) = \omega_n(x) \, f[x_0, \dots, x_n, x], \qquad \omega_n(x) = \prod_{i=0}^n (x -
+  x_i),$$
+where $f[x_0, \dots, x_n, x]$ is the Newton divided difference of order $n + 1$.
 
-`f(x) - pₙ(x) = ωₙ(x) f[x₀, …, xₙ, x]`,   `ωₙ(x) = ∏ᵢ (x - xᵢ)`,
-
-with `f[·]` the Newton divided difference of order `n + 1`. Unlike Proposition 3.2.4 it asks nothing
-of `f` beyond its values at the nodes and at `x`; the book states it in passing and uses it for the
-Newton form of the interpolant. -/
+Unlike Proposition 3.2.4, the formula needs nothing of $f$ beyond its values at the nodes and at
+$x$. The source states it in passing and uses it for the Newton form of the interpolant. The
+divided difference is `DividedDifference.newton f (Fin.snoc x t)`. -/
 theorem equation_3_2_5 {f : ℝ → ℝ} {x : Fin (n + 1) → ℝ} (hx : Function.Injective x) {t : ℝ}
     (ht : ∀ i, x i ≠ t) :
     f t - (Lagrange.interpolate Finset.univ x fun i => f (x i)).eval t
@@ -246,11 +318,14 @@ end Lagrange
 
 section Hermite
 
-/-- **(3.2.6).** At `n` distinct nodes there is exactly one polynomial of degree at most `2n − 1`
-matching `f` and `f'` at every node.
+/-- **Equation (3.2.6)** of [han2009theoretical] (Hermite interpolation). Let $x_1, \dots, x_n$ be
+distinct real nodes and let $f : \mathbb{R} \to \mathbb{R}$. Then there is exactly one real
+polynomial $p$ of degree at most $2n - 1$ with
+$$p(x_i) = f(x_i), \qquad p'(x_i) = f'(x_i), \qquad i = 1, \dots, n.$$
 
-No smoothness of `f` is assumed: the statement is about the prescribed data `f(xᵢ)` and `f'(xᵢ)`,
-and holds whatever those numbers are. -/
+The degree bound is `p.degree < 2 * n`, which for $n = 0$ forces $p = 0$. No smoothness of $f$
+is assumed: the statement is about the prescribed numbers $f(x_i)$ and $f'(x_i)$ and holds
+whatever they are. The derivative is `deriv f`, which is $0$ where $f$ is not differentiable. -/
 theorem equation_3_2_6 {n : ℕ} {x : Fin n → ℝ} (hx : Function.Injective x) (f : ℝ → ℝ) :
     ∃! p : ℝ[X], p.degree < ((2 * n : ℕ) : WithBot ℕ) ∧
       (∀ i, p.eval (x i) = f (x i)) ∧
@@ -272,10 +347,14 @@ theorem equation_3_2_6 {n : ℕ} {x : Fin n → ℝ} (hx : Function.Injective x)
       · simpa [iteratedDeriv_one] using h1 i
   simpa only [hiff] using key
 
-/-- **Exercise 3.2.6, the error of (3.2.6).** For `f` of class `C^{2n}` the Hermite interpolant at
-`n` increasing nodes satisfies `f(t) − p(t) = f⁽²ⁿ⁾(ξ) ∏ᵢ (t − xᵢ)² / (2n)!` for some `ξ` between
-`minᵢ {xᵢ, t}` and `maxᵢ {xᵢ, t}`. The nodes are indexed by `Fin (n + 1)`, so the book's `n` is
-`n + 1` here. -/
+/-- **Exercise 3.2.6** of [han2009theoretical], the error of Hermite interpolation (3.2.6). Let
+$x_0 < x_1 < \cdots < x_n$ be $n + 1$ real nodes, let $f \in C^{2(n+1)}(\mathbb{R})$, let $p$ be
+the Hermite interpolant of the values and first derivatives of $f$ at the nodes, and let
+$t \in \mathbb{R}$. Then there is a $\xi$ with $\min\{t, x_0\} \le \xi \le \max\{t, x_n\}$ and
+$$f(t) - p(t) = \frac{f^{(2(n+1))}(\xi)}{(2(n + 1))!} \prod_{i=0}^n (t - x_i)^2.$$
+
+The nodes are indexed by `Fin (n + 1)`, so $n$ of the source is $n + 1$ here. The interpolant is
+`Hermite.interpolate x (fun _ => 1) f`, with multiplicity $1$ at every node. -/
 theorem exercise_3_2_6 {n : ℕ} {f : ℝ → ℝ}
     (hf : ContDiff ℝ ((2 * (n + 1) : ℕ) : WithTop ℕ∞) f) {x : Fin (n + 1) → ℝ}
     (hx : StrictMono x) (t : ℝ) :
@@ -299,17 +378,28 @@ theorem exercise_3_2_6 {n : ℕ} {f : ℝ → ℝ}
   rw [hval, show 2 * n + 1 + 1 = 2 * (n + 1) by ring]
   ring
 
-/-- **The general Hermite interpolation problem.** For distinct nodes `xᵢ` and multiplicities `mᵢ`
-summing to `N + 1 = ∑ᵢ (mᵢ + 1)` there is exactly one `p ∈ 𝒫_N` with `p⁽ʲ⁾(xᵢ) = f⁽ʲ⁾(xᵢ)` for
-`j ≤ mᵢ`. -/
+/-- **The general Hermite interpolation problem**, which extends (3.2.6) of [han2009theoretical] to
+multiplicities. Let $x_1, \dots, x_n$ be distinct real nodes, let $m_1, \dots, m_n \ge 0$ with
+$\sum_i (m_i + 1) = N + 1$, and let $f : \mathbb{R} \to \mathbb{R}$. Then there is exactly one
+$p \in \mathcal{P}_N$ with
+$$p^{(j)}(x_i) = f^{(j)}(x_i), \qquad 0 \le j \le m_i, \quad i = 1, \dots, n.$$
+
+The nodes are indexed from $0$. The derivatives of $f$ are `iteratedDeriv j f`, so, as in
+`AtkinsonHan.Chapter03.equation_3_2_6`, no smoothness of $f$ is assumed. -/
 theorem equation_3_2_6_general {n N : ℕ} {x : Fin n → ℝ} (hx : Function.Injective x)
     {m : Fin n → ℕ} (hN : ∑ i, (m i + 1) = N + 1) (f : ℝ → ℝ) :
     ∃! p : ℝ[X], p.degree < ((N + 1 : ℕ) : WithBot ℕ) ∧
       ∀ i, ∀ j ≤ m i, (Polynomial.derivative^[j] p).eval (x i) = iteratedDeriv j f (x i) :=
   Hermite.isUnisolvent hx hN fun i j => iteratedDeriv j f (x i)
 
-/-- **The error of the general Hermite interpolation problem.** For `f ∈ C^{N+1}[a, b]` the error is
-`f⁽ᴺ⁺¹⁾(ξ) ∏ᵢ (t − xᵢ)^{mᵢ+1} / (N + 1)!` for some `ξ ∈ [a, b]`. -/
+/-- **The error of the general Hermite interpolation problem** of
+`AtkinsonHan.Chapter03.equation_3_2_6_general`. Let $x_1, \dots, x_n$ be distinct nodes in
+$[a, b]$, let $m_1, \dots, m_n \ge 0$ with $\sum_i (m_i + 1) = N + 1$, let
+$f \in C^{N+1}(\mathbb{R})$, let $p$ be its Hermite interpolant, and let $t \in [a, b]$. Then
+there is a $\xi \in [a, b]$ with
+$$f(t) - p(t) = \frac{f^{(N+1)}(\xi)}{(N + 1)!} \prod_{i=1}^n (t - x_i)^{m_i + 1}.$$
+
+The interpolant is `Hermite.interpolate x m f`. -/
 theorem equation_3_2_6_general_error {n N : ℕ} {a b : ℝ} {f : ℝ → ℝ}
     (hf : ContDiff ℝ ((N + 1 : ℕ) : WithTop ℕ∞) f) {x : Fin n → ℝ} (hx : Function.Injective x)
     (hxmem : ∀ i, x i ∈ Set.Icc a b) {m : Fin n → ℕ} (hN : ∑ i, (m i + 1) = N + 1) {t : ℝ}
@@ -327,8 +417,14 @@ section PiecewiseLinear
 
 variable {a b : ℝ} {n : ℕ} {x : ℕ → Set.Icc a b}
 
-/-- **(3.2.7).** On the subinterval `[xⱼ, xⱼ₊₁]` of the partition the piecewise linear interpolant
-is the affine function `((xⱼ₊₁ − t) f(xⱼ) + (t − xⱼ) f(xⱼ₊₁)) / hⱼ` through the two node values. -/
+/-- **Equation (3.2.7)** of [han2009theoretical]. Let $x_0 < x_1 < \cdots < x_{n+1}$ be nodes in
+$[a, b]$, let $f \in C[a, b]$, and let $\Pi f$ be its piecewise linear interpolant. For
+$0 \le j \le n$ and $t \in [x_j, x_{j+1}]$,
+$$\Pi f(t) = \frac{(x_{j+1} - t) f(x_j) + (t - x_j) f(x_{j+1})}{h_j}, \qquad h_j = x_{j+1} -
+  x_j.$$
+
+The interpolant is `piecewiseLinearInterpCLM n x f`. The nodes are a sequence
+`x : ℕ → Set.Icc a b`, of which only $x_0, \dots, x_{n+1}$ are used. -/
 theorem equation_3_2_7 (hstep : ∀ i ≤ n, (x i : ℝ) < (x (i + 1) : ℝ)) (f : C(Set.Icc a b, ℝ))
     {j : ℕ} (hj : j ≤ n) {t : Set.Icc a b} (h1 : (x j : ℝ) ≤ (t : ℝ))
     (h2 : (t : ℝ) ≤ (x (j + 1) : ℝ)) :
@@ -340,9 +436,10 @@ theorem equation_3_2_7 (hstep : ∀ i ≤ n, (x i : ℝ) < (x (i + 1) : ℝ)) (f
   field_simp
   ring
 
-/-- **(3.2.7), uniqueness.** A continuous function that agrees with `f` at every node and is affine
-on every subinterval — in the sense of (3.2.7) applied to itself — is the piecewise linear
-interpolant of `f`. -/
+/-- **Equation (3.2.7)** of [han2009theoretical], uniqueness. Let
+$a = x_0 < x_1 < \cdots < x_{n+1} = b$ and let $f, g \in C[a, b]$. If $g(x_j) = f(x_j)$ for
+$0 \le j \le n + 1$ and $g$ is affine on every subinterval $[x_j, x_{j+1}]$, in the sense that
+(3.2.7) holds for $g$ in place of $\Pi f$, then $g = \Pi f$. -/
 theorem equation_3_2_7_unique (hstep : ∀ i ≤ n, (x i : ℝ) < (x (i + 1) : ℝ))
     (hfirst : (x 0 : ℝ) = a) (hlast : (x (n + 1) : ℝ) = b) (f g : C(Set.Icc a b, ℝ))
     (hnode : ∀ j ≤ n + 1, g (x j) = f (x j))
@@ -355,8 +452,14 @@ theorem equation_3_2_7_unique (hstep : ∀ i ≤ n, (x i : ℝ) < (x (i + 1) : �
   rw [haffine j hj t h1 h2, equation_3_2_7 hstep f hj h1 h2, hnode j (by omega),
     hnode (j + 1) (by omega)]
 
-/-- **(3.2.8).** For a merely continuous `f`, the piecewise linear interpolant on a partition of
-mesh at most `h` differs from `f` by at most the modulus of continuity `ω(f, h)`. -/
+/-- **Equation (3.2.8)** of [han2009theoretical]. Let $a = x_0 < x_1 < \cdots < x_{n+1} = b$ be a
+partition with $x_{j+1} - x_j \le h$ for all $j$, and let $f \in C[a, b]$. Then for every
+$t \in [a, b]$,
+$$|f(t) - \Pi f(t)| \le \omega(f, h),$$
+where $\omega(f, h) = \sup\{|f(u) - f(v)| : u, v \in [a, b], |u - v| \le h\}$ is the modulus of
+continuity of $f$.
+
+The modulus of continuity is `ContinuousMap.modulusOfContinuity f h`. -/
 theorem equation_3_2_8 (hstep : ∀ i ≤ n, (x i : ℝ) < (x (i + 1) : ℝ)) (hfirst : (x 0 : ℝ) = a)
     (hlast : (x (n + 1) : ℝ) = b) (f : C(Set.Icc a b, ℝ)) {h : ℝ}
     (hmesh : ∀ i ≤ n, (x (i + 1) : ℝ) - (x i : ℝ) ≤ h) (t : Set.Icc a b) :
@@ -368,11 +471,14 @@ theorem equation_3_2_8 (hstep : ∀ i ≤ n, (x i : ℝ) < (x (i + 1) : ℝ)) (h
         norm_sub_piecewiseLinearInterpCLM_le_modulus
           ⟨fun i hi => hstep i (by omega), hfirst, hlast⟩ f hmesh
 
-/-- **(3.2.9).** For `f ∈ C²[a, b]` the piecewise linear interpolant on a partition of mesh at most
-`h` differs from `f` by at most `h² max |f''| / 8`.
+/-- **Equation (3.2.9)** of [han2009theoretical]. Let $a = x_0 < x_1 < \cdots < x_{n+1} = b$ be a
+partition with $x_{j+1} - x_j \le h$ for all $j$, and let $f \in C^2[a, b]$ with
+$|f''(t)| \le M$ for all $t \in [a, b]$. Then for every $t \in [a, b]$,
+$$|f(t) - \Pi f(t)| \le \frac{h^2}{8} M.$$
 
-`f` is given as a `C²` map `ℝ → ℝ` agreeing with the continuous function on `[a, b]`, since
-`C([a, b], ℝ)` carries no derivative of its own. -/
+`C([a, b], ℝ)` carries no derivative of its own, so $f$ is given as a $C^2$ function
+$g : \mathbb{R} \to \mathbb{R}$ that agrees with the continuous function on $[a, b]$. The source
+writes $\|f''\|_\infty$ for $M$. -/
 theorem equation_3_2_9 (hstep : ∀ i ≤ n, (x i : ℝ) < (x (i + 1) : ℝ)) (hfirst : (x 0 : ℝ) = a)
     (hlast : (x (n + 1) : ℝ) = b) {g : ℝ → ℝ} (hg : ContDiff ℝ ((2 : ℕ) : WithTop ℕ∞) g)
     {f : C(Set.Icc a b, ℝ)} (hf : ∀ t : Set.Icc a b, f t = g (t : ℝ)) {h M : ℝ}
@@ -392,8 +498,8 @@ end PiecewiseLinear
 
 section Trigonometric
 
-/-- A sum over the symmetric range `Icc (-n) n` in `ℤ`, split into its middle term and the pairs
-`± j`. -/
+/-- A sum over the symmetric range $-n \le m \le n$ of $\mathbb{Z}$ is the middle term plus the sum
+of the pairs $g(j) + g(-j)$, $1 \le j \le n$. -/
 private theorem sum_Icc_neg (g : ℤ → ℝ) (n : ℕ) :
     ∑ m ∈ Finset.Icc (-(n : ℤ)) n, g m = g 0 + ∑ j ∈ Finset.Icc 1 n, (g j + g (-j)) := by
   induction n with
@@ -412,20 +518,22 @@ private theorem sum_Icc_neg (g : ℤ → ℝ) (n : ℕ) :
     push_cast
     abel
 
-/-- On the circle of circumference `2 π` the member of index `j ≥ 1` of the real trigonometric
-system is `√2 cos (j t)`. -/
+/-- On the circle of circumference $2\pi$, the member of index $j \ge 1$ of the real trigonometric
+system is $\sqrt{2} \cos(jt)$. -/
 private theorem trigFun_two_pi_cos {j : ℕ} (hj : 1 ≤ j) (t : ℝ) :
     trigFun (2 * π) (j : ℤ) (↑t : AddCircle (2 * π)) = √2 * Real.cos (j * t) := by
   rw [trigFun_coe_of_pos (by exact_mod_cast hj) t, Int.cast_natCast]
 
-/-- On the circle of circumference `2 π` the member of index `-j` for `j ≥ 1` is `√2 sin (j t)`. -/
+/-- On the circle of circumference $2\pi$, the member of index $-j$, $j \ge 1$, of the real
+trigonometric system is $\sqrt{2} \sin(jt)$. -/
 private theorem trigFun_two_pi_sin {j : ℕ} (hj : 1 ≤ j) (t : ℝ) :
     trigFun (2 * π) (-(j : ℤ)) (↑t : AddCircle (2 * π)) = √2 * Real.sin (j * t) := by
   rw [trigFun_coe_of_neg (by omega) t]
   push_cast
   ring_nf
 
-/-- The value at `↑t` of a combination of the real trigonometric system of degree at most `n`. -/
+/-- The value at $t$ of a combination of the members of index $-n, \dots, n$ of the real
+trigonometric system, written with $\cos(jt)$ and $\sin(jt)$. -/
 private theorem sum_trigFun_two_pi_coe (d : ℤ → ℝ) (n : ℕ) (t : ℝ) :
     (∑ m ∈ Finset.Icc (-(n : ℤ)) n, d m • trigFun (2 * π) m) (↑t : AddCircle (2 * π))
       = d 0 + ∑ j ∈ Finset.Icc 1 n,
@@ -442,8 +550,14 @@ private theorem sum_trigFun_two_pi_coe (d : ℤ → ℝ) (n : ℕ) (t : ℝ) :
     rw [trigFun_two_pi_cos hj1, trigFun_two_pi_sin hj1]
     ring
 
-/-- **(3.2.13).** The trigonometric polynomials of degree at most `n` are exactly the functions
-`a₀ + ∑_{j=1}^{n} (aⱼ cos (j x) + bⱼ sin (j x))`. -/
+/-- **Equation (3.2.13)** of [han2009theoretical]. A function $p \in C_p(2\pi)$ is a trigonometric
+polynomial of degree at most $n$, that is, $p \in \mathcal{T}_n$, if and only if there are real
+coefficients $a_j$ and $b_j$ with
+$$p(x) = a_0 + \sum_{j=1}^n \bigl(a_j \cos(jx) + b_j \sin(jx)\bigr) \quad \text{for all } x \in
+  \mathbb{R}.$$
+
+$\mathcal{T}_n$ is `trigPolyLE (2 * π) n`, the span of the members of index $-n, \dots, n$ of
+`trigFun (2 * π)`. -/
 theorem equation_3_2_13 {n : ℕ} {p : C(AddCircle (2 * π), ℝ)} :
     p ∈ trigPolyLE (2 * π) n ↔
       ∃ a b : ℕ → ℝ, ∀ t : ℝ,
@@ -477,18 +591,23 @@ theorem equation_3_2_13 {n : ℕ} {p : C(AddCircle (2 * π), ℝ)} :
       rw [(hdval j hj1).1, (hdval j hj1).2]
       field_simp
 
-/-- **(3.2.16).** The evenly spaced nodes of a period are `xⱼ = j h` with `h = 2π / (2n + 1)`. -/
+/-- **Equation (3.2.16)** of [han2009theoretical]. The evenly spaced nodes of a period are
+$$x_j = j h, \qquad h = \frac{2\pi}{2n + 1}, \qquad j = 0, \dots, 2n.$$
+
+The nodes are `trigInterpNode (2 * π) n`, as points of `AddCircle (2 * π)`. -/
 theorem equation_3_2_16 (n : ℕ) (j : Fin (2 * n + 1)) :
     trigInterpNode (2 * π) n j
       = (((j : ℕ) * (2 * π / (2 * (n : ℝ) + 1)) : ℝ) : AddCircle (2 * π)) := by
   rw [trigInterpNode, mul_div_assoc]
 
-/-- **(3.2.17).** At `2n + 1` distinct nodes `0 ≤ x₀ < x₁ < ⋯ < x_{2n} < 2π` of a period, the
-trigonometric interpolation problem `pₙ(xⱼ) = fⱼ` has exactly one solution `pₙ ∈ 𝕋ₙ`.
+/-- **Equation (3.2.17)** of [han2009theoretical]. Let $0 \le x_0 < x_1 < \cdots < x_{2n} < 2\pi$
+and let $c_0, \dots, c_{2n} \in \mathbb{R}$. Then there is exactly one $p_n \in \mathcal{T}_n$
+with
+$$p_n(x_j) = c_j, \qquad j = 0, \dots, 2n.$$
 
-This is the substitution `z = e^{ix}` of (3.2.15), which turns the problem into complex Lagrange
-interpolation at the distinct points `zⱼ = e^{ixⱼ}`; the backbone carries it out once, as the Haar
-condition for `trigPolyLE`. -/
+The substitution $z = e^{ix}$ of (3.2.15) turns the problem into complex polynomial
+interpolation at the distinct points $z_j = e^{ix_j}$. The backbone carries this out once, as
+the Haar condition for `trigPolyLE`. -/
 theorem equation_3_2_17 {n : ℕ} {x : Fin (2 * n + 1) → ℝ} (hmono : StrictMono x)
     (hmem : ∀ j, x j ∈ Set.Ico 0 (2 * π)) (c : Fin (2 * n + 1) → ℝ) :
     ∃! p : trigPolyLE (2 * π) n,
@@ -499,24 +618,26 @@ theorem equation_3_2_17 {n : ℕ} {x : Fin (2 * n + 1) → ℝ} (hmono : StrictM
     exact hmono.injective ((AddCircle.coe_eq_coe_iff_of_mem_Ico (hmem' i) (hmem' j)).mp hij)
   exact isUnisolvent_trigPolyLE (2 * π) hinj c
 
-/-- **(3.2.17) at the evenly spaced nodes (3.2.16).** The trigonometric interpolation operator
-`trigInterpCLM` sends a continuous `2π`-periodic `f` to the trigonometric polynomial of degree at
-most `n` agreeing with it at the `2n + 1` evenly spaced nodes. -/
+/-- **Equation (3.2.17)** of [han2009theoretical], at the evenly spaced nodes (3.2.16). For
+$f \in C_p(2\pi)$, the trigonometric interpolant $p_n$ = `trigInterpCLM (2 * π) n f` lies in
+$\mathcal{T}_n$ and satisfies $p_n(x_j) = f(x_j)$ at the $2n + 1$ evenly spaced nodes $x_j$. -/
 theorem equation_3_2_17_equispaced (n : ℕ) (f : C(AddCircle (2 * π), ℝ)) :
     trigInterpCLM (2 * π) n f ∈ trigPolyLE (2 * π) n ∧
       ∀ j, trigInterpCLM (2 * π) n f (trigInterpNode (2 * π) n j)
         = f (trigInterpNode (2 * π) n j) :=
   ⟨trigInterpCLM_mem f, fun j => trigInterpCLM_apply_node f j⟩
 
-/-- **Example 3.2.5.** The function of (3.2.18), `f (x) = e^{sin x} sin x`, is continuous and
-`2π`-periodic, so it is an element of `C_p(2π)` and (3.2.17) applies to it at the evenly spaced
-nodes (3.2.16): for every `n` there is exactly one `pₙ ∈ 𝕋ₙ` taking the values of `f` at those
-nodes, and `trigInterpCLM (2π) n f` is it.
+/-- **Example 3.2.5** of [han2009theoretical]. The function of (3.2.18),
+$$f(x) = e^{\sin x} \sin x,$$
+is continuous and $2\pi$-periodic, so it is an element of $C_p(2\pi)$. For every $n \ge 0$ there
+is exactly one $p_n \in \mathcal{T}_n$ with $p_n(x_j) = f(x_j)$ at the evenly spaced nodes
+(3.2.16), and `trigInterpCLM (2 * π) n f` takes these values.
 
-Table 3.1's maximum errors `‖f − pₙ‖_∞` for `n = 1, …, 14` are computed numbers and are not part of
-the statement: each is a supremum over the circle of a transcendental function, so a rigorous value
-would need verified numerics the project does not have, and the book draws nothing from the table
-beyond the convergence that §3.7 proves. -/
+Table 3.1 of the source, the maximum errors $\|f - p_n\|_\infty$ for $n = 1, \dots, 14$,
+consists of computed numbers and is not part of the statement. Each entry is a supremum over the
+circle of a transcendental function, so a rigorous value would need verified numerics, which the
+project does not have. The source draws nothing from the table beyond the convergence that §3.7
+proves. -/
 theorem example_3_2_5 (n : ℕ) :
     ∃ f : C(AddCircle (2 * π), ℝ),
       (∀ x : ℝ, f ((x : ℝ) : AddCircle (2 * π)) = Real.exp (Real.sin x) * Real.sin x) ∧

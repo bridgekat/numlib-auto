@@ -6,19 +6,48 @@ import Numlib.Variational.Galerkin
 import NumlibSurface.AtkinsonHan.Chapter09.Section01
 
 /-!
-# Atkinson–Han §9.3: the generalized Galerkin method and Strang's first lemma
+# Atkinson and Han, Section 9.3: The generalized Galerkin method
 
-Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework*, 3rd edition, Springer, 2009, §9.3.
+This module formalizes Section 9.3 of [han2009theoretical]. In the generalized Galerkin method the
+discrete space $V_N$ need not be a subspace of $V$, and the form $a$ and the functional $\ell$ are
+replaced by approximations $a_N$ and $\ell_N$. The problem (9.3.1) asks for $u_N \in V_N$ with
+$a_N(u_N, v_N) = \ell_N(v_N)$ for all $v_N \in V_N$. Strang's first lemma (Theorem 9.3.1) bounds the
+error by an approximation term and a consistency term: $$\|u - u_N\|_N \le \Big(1 +
+\frac{M}{\alpha_0}\Big) \inf_{w_N \in V_N} \|u - w_N\|_N + \frac{1}{\alpha_0} \sup_{0 \ne v_N \in
+V_N} \frac{|a_N(u, v_N) - \ell_N(v_N)|}{\|v_N\|_N}.$$ Exercise 9.3.1 recovers an inequality of Céa
+type in the conforming case. The proofs specialize `IsGeneralizedGalerkinSolution` of
+`Numlib.Variational.Galerkin`.
 
-In §9.3 the discrete space `V_N` need no longer be a subspace of `V`, and the form and the
-functional are themselves approximated by `a_N` and `ℓ_N`.  The book carries out the analysis on
-`V + V_N` equipped with the discretization-dependent norm `‖·‖_N`; since the theorem is stated
-for one `N` at a time, that space is here simply an abstract real normed space `W`, which is also
-how the backbone states it.  `theorem_9_3_1` is the error bound (9.3.2) of Theorem 9.3.1 (Strang's
-first lemma) and `theorem_9_3_1_existsUnique` its unique solvability; `theorem_9_3_1'` re-attaches
-the book's data (`V` Hilbert, the exact solution `u ∈ V` of (9.1.1), an injection `ι : V → W`),
-which the proof never uses.
+## Main definitions
+
+* Equation (9.3.1), `AtkinsonHan.GeneralizedGalerkinProblem`: $u_N \in V_N$ and
+  $a_N(u_N, v_N) = \ell_N(v_N)$ for all $v_N \in V_N$.
+* Equation (9.3.2), `AtkinsonHan.Chapter09.consistencyError`: the consistency term $\sup_{0 \ne v_N
+  \in V_N} |a_N(u, v_N) - \ell_N(v_N)| / \|v_N\|$.
+
+## Main results
+
+* Theorem 9.3.1, `AtkinsonHan.Chapter09.theorem_9_3_1_existsUnique`: the problem (9.3.1) has a
+  unique solution.
+* Theorem 9.3.1, `AtkinsonHan.Chapter09.theorem_9_3_1`: the error bound (9.3.2) on an abstract
+  normed space $W$.
+* Theorem 9.3.1, `AtkinsonHan.Chapter09.theorem_9_3_1'`: the error bound (9.3.2) with the data of
+  the source.
+* Exercise 9.3.1, `AtkinsonHan.Chapter09.exercise_9_3_1`: in the conforming case,
+  $\|u - u_N\| \le (1 + M / c_0) \|u - v\|$ for $v \in V_N$.
+
+## Implementation notes
+
+* The source carries out the analysis on $V + V_N$ with a norm $\|\cdot\|_N$ that depends on the
+  discretization. The theorem is for one $N$ at a time, so this space is an abstract real normed
+  space $W$, as in the backbone. The forms $a_N$ and $\ell_N$ are linear maps on $W$, with
+  boundedness and coercivity assumed only on $V_N$.
+* The source states Theorem 9.3.1 with $V$ a Hilbert space, the solution $u \in V$ of (9.1.1) and an
+  injection of $V$ into $W$. The proof uses none of these data.
+  `AtkinsonHan.Chapter09.theorem_9_3_1` is the estimate for an arbitrary $u \in W$, and
+  `AtkinsonHan.Chapter09.theorem_9_3_1'` keeps the unused hypotheses of the source.
+* The supremum in the consistency term is `iSup` on $\mathbb{R}$, which is $0$ on an empty or
+  unbounded set.
 -/
 
 open Filter Topology
@@ -26,8 +55,13 @@ open scoped InnerProductSpace
 
 namespace AtkinsonHan
 
-/-- The generalized Galerkin problem (9.3.1): `u_N ∈ V_N`, `a_N(u_N, v) = ℓ_N(v)` for all
-`v ∈ V_N`, on a space `W` playing the role of `V + V_N` with the norm `‖·‖_N`. -/
+/-- **Equation (9.3.1)** of [han2009theoretical]. Let $W$ be a real normed space, which plays the
+role of $V + V_N$ with the norm $\|\cdot\|_N$. Let $a_N$ be a bilinear form on $W$, $\ell_N$ a
+linear functional on $W$, and $V_N \subseteq W$ a subspace. An element $u_N \in W$ **solves the
+generalized Galerkin problem** if $u_N \in V_N$ and $$a_N(u_N, v_N) = \ell_N(v_N) \quad
+\text{for all } v_N \in V_N.$$
+
+It is `IsGeneralizedGalerkinSolution` of the backbone. -/
 abbrev GeneralizedGalerkinProblem {W : Type*} [NormedAddCommGroup W] [NormedSpace ℝ W]
     (aN : W →ₗ[ℝ] W →ₗ[ℝ] ℝ) (ℓN : W →ₗ[ℝ] ℝ) (VN : Submodule ℝ W) (uN : W) : Prop :=
   IsGeneralizedGalerkinSolution aN ℓN VN uN
@@ -39,13 +73,17 @@ section Strang
 variable {W : Type*} [NormedAddCommGroup W] [NormedSpace ℝ W]
 variable {aN : W →ₗ[ℝ] W →ₗ[ℝ] ℝ} {ℓN : W →ₗ[ℝ] ℝ} {VN : Submodule ℝ W} {M α₀ c₀ : ℝ}
 
-/-- The consistency error of (9.3.2): `sup_{0 ≠ v_N ∈ V_N} |a_N(u, v_N) − ℓ_N(v_N)|/‖v_N‖`. -/
+/-- The consistency term of (9.3.2). For $u \in W$, it is $$\sup_{0 \ne v_N \in V_N} \frac{|a_N(u,
+v_N) - \ell_N(v_N)|}{\|v_N\|}.$$
+
+The supremum is `iSup` on $\mathbb{R}$: it is $0$ when $V_N = \{0\}$ or when the quotients are
+unbounded above. -/
 noncomputable def consistencyError (aN : W →ₗ[ℝ] W →ₗ[ℝ] ℝ) (ℓN : W →ₗ[ℝ] ℝ)
     (VN : Submodule ℝ W) (u : W) : ℝ :=
   ⨆ v : {v : VN // v ≠ 0},
     |aN u ((v : VN) : W) - ℓN ((v : VN) : W)| / ‖((v : VN) : W)‖
 
-/-- The consistency error is nonnegative, being a supremum of quotients of absolute values. -/
+/-- The consistency term is nonnegative. -/
 theorem consistencyError_nonneg (aN : W →ₗ[ℝ] W →ₗ[ℝ] ℝ) (ℓN : W →ₗ[ℝ] ℝ)
     (VN : Submodule ℝ W) (u : W) : 0 ≤ consistencyError aN ℓN VN u :=
   Real.iSup_nonneg fun _ => by positivity
@@ -65,7 +103,10 @@ private theorem bddAbove_consistency (hM : ∀ w, ∀ v ∈ VN, |aN w v| ≤ M *
     _ ≤ M * ‖u‖ * ‖((v : VN) : W)‖ + c₀ * ‖((v : VN) : W)‖ := by gcongr
     _ = (M * ‖u‖ + c₀) * ‖((v : VN) : W)‖ := by ring
 
-/-- The consistency error really does bound the residual of the exact solution on `V_N`. -/
+/-- Let $|a_N(w, v)| \le M \|w\| \|v\|$ for $w \in W$ and $v \in V_N$, and let
+$|\ell_N(v)| \le c_0 \|v\|$ for $v \in V_N$. Then for every $u \in W$ and $w \in V_N$, $$|a_N(u,
+w) - \ell_N(w)| \le E(u) \, \|w\|,$$ where $E(u)$ is the consistency term
+`AtkinsonHan.Chapter09.consistencyError`. -/
 theorem le_consistencyError (hM : ∀ w, ∀ v ∈ VN, |aN w v| ≤ M * ‖w‖ * ‖v‖)
     (hℓ : ∀ v ∈ VN, |ℓN v| ≤ c₀ * ‖v‖) (u : W) {w : W} (hw : w ∈ VN) :
     ‖aN u w - ℓN w‖ ≤ consistencyError aN ℓN VN u * ‖w‖ := by
@@ -75,21 +116,27 @@ theorem le_consistencyError (hM : ∀ w, ∀ v ∈ VN, |aN w v| ≤ M * ‖w‖ 
     exact le_ciSup (bddAbove_consistency hM hℓ u)
       (⟨⟨w, hw⟩, fun h => hw0 (congrArg Subtype.val h)⟩ : {v : VN // v ≠ 0})
 
-/-- Theorem 9.3.1 (Strang's first lemma), unique solvability: (9.3.1) has one solution on a
-finite-dimensional `V_N` on which `a_N` is coercive.  Neither boundedness nor the consistency
-hypothesis is used. -/
+/-- **Theorem 9.3.1** of [han2009theoretical] (Strang's first lemma), existence and uniqueness. Let
+$V_N \subseteq W$ be finite-dimensional, and let $a_N(v, v) \ge \alpha_0 \|v\|^2$ for all
+$v \in V_N$, with $\alpha_0 > 0$. Then the problem (9.3.1) has exactly one solution $u_N$.
+
+The proof uses neither the boundedness of $a_N$ nor the bound on $\ell_N$. -/
 theorem theorem_9_3_1_existsUnique (aN : W →ₗ[ℝ] W →ₗ[ℝ] ℝ) (ℓN : W →ₗ[ℝ] ℝ)
     (VN : Submodule ℝ W) [FiniteDimensional ℝ VN] (hα₀ : 0 < α₀)
     (hcoer : ∀ v ∈ VN, α₀ * ‖v‖ ^ 2 ≤ aN v v) : ∃! uN, GeneralizedGalerkinProblem aN ℓN VN uN :=
   existsUnique_isGeneralizedGalerkinSolution aN ℓN VN hα₀ hcoer
 
-/-- **Theorem 9.3.1** (Strang's first lemma), the error bound (9.3.2)
+/-- **Theorem 9.3.1** of [han2009theoretical] (Strang's first lemma), the error bound (9.3.2). Let
+$W$ be a real normed space, let $V_N \subseteq W$ be finite-dimensional, let $M \ge 0$ and
+$\alpha_0 > 0$, and let $a_N$ and $\ell_N$ satisfy, for all $w \in W$ and $v \in V_N$, $$|a_N(w,
+v)| \le M \|w\| \|v\|, \qquad a_N(v, v) \ge \alpha_0 \|v\|^2, \qquad |\ell_N(v)| \le c_0
+\|v\|.$$ Let $u_N$ solve the problem (9.3.1). Then for every $u \in W$, $$\|u - u_N\| \le
+\Big(1 + \frac{M}{\alpha_0}\Big) \inf_{w_N \in V_N} \|u - w_N\| + \frac{1}{\alpha_0} \sup_{0 \ne
+v_N \in V_N} \frac{|a_N(u, v_N) - \ell_N(v_N)|}{\|v_N\|}.$$
 
-`‖u − u_N‖_N ≤ (1 + M/α₀) inf_{w_N ∈ V_N} ‖u − w_N‖_N + α₀⁻¹ sup_{v_N ∈ V_N}
-  |a_N(u,v_N) − ℓ_N(v_N)|/‖v_N‖_N`,
-
-the sum of an approximation term of Céa type and a consistency term.  Unique solvability of
-(9.3.1) is `theorem_9_3_1_existsUnique`. -/
+The first term is an approximation term of Céa type, and the second is the consistency term
+`AtkinsonHan.Chapter09.consistencyError`. The unique solvability of (9.3.1) is
+`AtkinsonHan.Chapter09.theorem_9_3_1_existsUnique`. -/
 theorem theorem_9_3_1 (aN : W →ₗ[ℝ] W →ₗ[ℝ] ℝ) (ℓN : W →ₗ[ℝ] ℝ) (VN : Submodule ℝ W)
     [FiniteDimensional ℝ VN] (hM0 : 0 ≤ M) (hα₀ : 0 < α₀)
     (hM : ∀ w, ∀ v ∈ VN, |aN w v| ≤ M * ‖w‖ * ‖v‖)
@@ -118,9 +165,18 @@ theorem theorem_9_3_1 (aN : W →ₗ[ℝ] W →ₗ[ℝ] ℝ) (ℓN : W →ₗ[�
   linarith [hle]
 
 set_option linter.unusedVariables false in
-/-- Theorem 9.3.1 in the book's setting: `V` is the Hilbert space of (9.1.1) with its exact
-solution `u`, and `ι` embeds it into the space `W = V + V_N` carrying the norm `‖·‖_N`.  Neither
-`V` nor `ι` enters the proof: the estimate is entirely about `W`. -/
+/-- **Theorem 9.3.1** of [han2009theoretical] (Strang's first lemma), with the data of the source.
+Let $V$ be a real Hilbert space, let $a$ be a bilinear form on $V$, let $\ell \in V'$, and let
+$u \in V$ satisfy $a(u, v) = \ell(v)$ for all $v \in V$. Let $\iota : V \to W$ be an injective
+linear map into a real normed space $W$, which plays the role of $V + V_N$ with the norm
+$\|\cdot\|_N$. Under the hypotheses of `AtkinsonHan.Chapter09.theorem_9_3_1` on $V_N$, $a_N$ and
+$\ell_N$, the error bound (9.3.2) holds for $\iota u$: $$\|\iota u - u_N\| \le \Big(1 +
+\frac{M}{\alpha_0}\Big) \inf_{w_N \in V_N} \|\iota u - w_N\| + \frac{1}{\alpha_0} \sup_{0 \ne
+v_N \in V_N} \frac{|a_N(\iota u, v_N) - \ell_N(v_N)|}{\|v_N\|}.$$
+
+The proof does not use $V$, $a$, $\ell$, the equation for $u$, or the injectivity of $\iota$:
+the estimate is a statement about $W$ alone. These hypotheses are kept as the source states
+them. -/
 theorem theorem_9_3_1' {V : Type*} [NormedAddCommGroup V] [InnerProductSpace ℝ V] [CompleteSpace V]
     (a : BilinForm V) (ℓ : StrongDual ℝ V) {u : V} (hu : ∀ v, a u v = ℓ v)
     (ι : V →ₗ[ℝ] W) (hι : Function.Injective ι) (aN : W →ₗ[ℝ] W →ₗ[ℝ] ℝ) (ℓN : W →ₗ[ℝ] ℝ)
@@ -134,9 +190,14 @@ theorem theorem_9_3_1' {V : Type*} [NormedAddCommGroup V] [InnerProductSpace ℝ
 
 end Strang
 
-/-- Exercise 9.3.1, the conforming case `V_N ⊂ V`, `a_N = a`, `ℓ_N = ℓ`: the consistency term of
-(9.3.2) vanishes, and Strang's estimate becomes an inequality of the form (9.1.11),
-`‖u − u_N‖ ≤ (1 + M/c₀) ‖u − v‖`. -/
+/-- **Exercise 9.3.1** of [han2009theoretical]. Let $V$ be a real inner product space, let $a$ be a
+bilinear form on $V$ that is bounded with constant $M \ge 0$ and $V$-elliptic with constant
+$c_0 > 0$, and let $\ell \in V'$. Let $u \in V$ satisfy $a(u, v) = \ell(v)$ for all $v \in V$,
+and let $u_N$ solve the Galerkin problem (9.1.4) on a subspace $V_N \subseteq V$. Then $$\|u -
+u_N\| \le \Big(1 + \frac{M}{c_0}\Big) \|u - v\| \quad \text{for every } v \in V_N.$$
+
+This is the conforming case $V_N \subseteq V$, $a_N = a$, $\ell_N = \ell$ of Theorem 9.3.1. The
+consistency term of (9.3.2) is $0$, and the estimate has the form of (9.1.11). -/
 theorem exercise_9_3_1 {V : Type*} [NormedAddCommGroup V] [InnerProductSpace ℝ V] (a : BilinForm V)
     (ℓ : StrongDual ℝ V) (VN : Submodule ℝ V) {M c₀ : ℝ} (hM0 : 0 ≤ M) (hc₀ : 0 < c₀)
     (hM : a.IsBoundedWith M) (ha : a.IsEllipticWith c₀) {u uN : V} (hu : ∀ v, a u v = ℓ v)

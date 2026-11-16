@@ -15,32 +15,105 @@ import Numlib.Variational.Galerkin
 import NumlibSurface.AtkinsonHan.Chapter08.Section03
 
 /-!
-# Atkinson–Han §9.1: the Galerkin method
+# Atkinson and Han, Section 9.1: The Galerkin method
 
-Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework*, 3rd edition, Springer, 2009, §9.1.
+This module formalizes Section 9.1 of [han2009theoretical]. Let $V$ be a real inner product space,
+$a$ a bilinear form on $V$, $\ell \in V'$ and $V_N \subseteq V$ a subspace. The form $a$ is bounded
+with constant $M$ if $|a(u, v)| \le M \|u\| \|v\|$, and $V$-elliptic with constant $c_0$ if
+$a(v, v) \ge c_0 \|v\|^2$, for all $u, v \in V$. The problem (9.1.1) asks for $u \in V$ with
+$a(u, v) = \ell(v)$ for all $v \in V$. The Galerkin method (9.1.4) replaces it by the problem of
+finding $u_N \in V_N$ with $a(u_N, v) = \ell(v)$ for all $v \in V_N$. In a basis $\{\phi_i\}$ of
+$V_N$ this is a linear system with the stiffness matrix and the load vector (9.1.5). For a symmetric
+form it is equivalent to the minimization of the energy $E(v) = \frac12 a(v, v) - \ell(v)$ over
+$V_N$ (the Ritz formulation (9.1.6)–(9.1.8)). Céa's inequality (Proposition 9.1.3) bounds the error
+by $\|u - u_N\| \le (M / c_0) \inf_{v \in V_N} \|u - v\|$, and Corollary 9.1.4 gives convergence for
+an increasing sequence of trial spaces with dense union. The abstract results specialize
+`IsGalerkinSolution` of `Numlib.Variational.Galerkin`.
 
-The Galerkin problem (9.1.4) `u_N ∈ V_N`, `a(u_N, v) = ℓ(v) ∀ v ∈ V_N`, its stiffness matrix and
-load vector (9.1.5), the Ritz formulation (9.1.6)–(9.1.8), Céa's inequality (Proposition 9.1.3,
-estimates (9.1.11)–(9.1.12)) with its symmetric sharpening, and the convergence corollary
-(Corollary 9.1.4, (9.1.13)–(9.1.14)).  All of that is the backbone's `IsGalerkinSolution` theory
-read through the definitional bridge `galerkinProblem_iff`.
+Examples 9.1.1 and 9.1.2 apply the method to $-u'' = f$ on $(0, 1)$ with $u(0) = u(1) = 0$, posed
+weakly on $H_0^1(0, 1)$ with $a(u, v) = \int_0^1 u' v' \, dx$ and $\ell(v) = \int_0^1 f v \, dx$.
+Example 9.1.1 uses the trial space $V_N = \operatorname{span}\{x^i (1 - x) : 1 \le i \le N\}$, and
+Example 9.1.2 uses $V_N = \operatorname{span}\{\sin(i \pi x) : 1 \le i \le N\}$, whose basis is
+orthogonal for $a$, so that the Galerkin solution is the kernel approximation (9.1.10). The examples
+use `SobolevIntervalZero` of `Numlib.Analysis.Sobolev.Interval` and `EllipticInterval.form` of
+`Numlib.Variational.EllipticInterval`. The exercises give the stiffness matrix properties (Exercise
+9.1.2), the sine expansion of the Green kernel (Exercise 9.1.3), and a second existence proof for
+(9.1.1) through the Galerkin method (Exercise 9.1.4).
 
-Example 9.1.1 is the concrete instance: `-u'' = f` on `(0, 1)` with `u(0) = u(1) = 0`, weakly
-posed on `H¹₀(0, 1)` — the backbone's `SobolevIntervalZero 0 1` of
-`Numlib/Analysis/Sobolev/Interval.lean` — with the polynomial trial space
-`V_N = span{x^i(1 - x) : 1 ≤ i ≤ N}`, whose stiffness matrix entries the example displays. The
-bilinear form, its boundedness and its coercivity on `H¹₀(0, 1)` are the backbone's
-`EllipticInterval.form` and `EllipticInterval.form_isCoerciveWith_restrict`. Example 9.1.2 is the
-same problem with the trigonometric trial space `span{sin(iπx) : 1 ≤ i ≤ N}`, which is orthogonal
-for the energy inner product, so the Galerkin system is diagonal and the Galerkin solution is the
-kernel approximation (9.1.10).
+## Main definitions
 
-Exercise 9.1.3, the Fourier expansion of the Green kernel of Example 9.1.2, and Exercise 9.1.4,
-which turns the Galerkin method into a second proof that (9.1.1) is solvable, close the section.
-The latter is deliberately independent of `AtkinsonHan.Chapter08.theorem_8_3_4`, so that
-`existsUnique_solution_of_galerkin` is a genuine second proof of Lax–Milgram and not a corollary of
-the first one.
+* Equation (9.1.4), `AtkinsonHan.GalerkinProblem`: $u_N \in V_N$ and $a(u_N, v) = \ell(v)$ for all
+  $v \in V_N$.
+* Equation (9.1.5), `AtkinsonHan.stiffnessMatrix`: the matrix $A = (a(\phi_j, \phi_i))_{i,j}$.
+* Equation (9.1.5), `AtkinsonHan.loadVector`: the vector $b = (\ell(\phi_i))_i$.
+* Example 9.1.1, `AtkinsonHan.Chapter09.dirichletForm`: the form $a(u, v) = \int_0^1 u' v' \, dx$ on
+  $H^1(0, 1)$.
+* Example 9.1.1, `AtkinsonHan.Chapter09.polySpace`: the trial space $\operatorname{span}\{x^i (1 -
+  x) : 1 \le i \le N\}$.
+* Example 9.1.2, `AtkinsonHan.Chapter09.sineSpace`: the trial space $\operatorname{span}\{\sin(i \pi
+  x) : 1 \le i \le N\}$.
+* Example 9.1.2, `AtkinsonHan.Chapter09.sineGalerkin`: the Galerkin solution
+  $u_N = \sum_{j=1}^N \xi_j \sin(j \pi x)$.
+
+## Main results
+
+* Equation (9.1.5), `AtkinsonHan.Chapter09.galerkinProblem_iff_mulVec`: the Galerkin problem for
+  $u_N = \sum_j \xi_j \phi_j$ is the linear system $A \xi = b$.
+* Equation (9.1.8), `AtkinsonHan.Chapter09.galerkinProblem_iff_isMinOn`: for a symmetric
+  $V$-elliptic form, $u_N$ solves the Galerkin problem if and only if it minimizes the energy over
+  $V_N$.
+* Example 9.1.1, `AtkinsonHan.Chapter09.example_9_1_1`: unique solvability of the weak problem and
+  of its Galerkin approximation, and the entries of the stiffness matrix and the load vector.
+* Example 9.1.2, `AtkinsonHan.Chapter09.example_9_1_2`: the sine basis is $a$-orthogonal, the
+  Galerkin solution has explicit coefficients, and it is the kernel approximation (9.1.10).
+* Equation (9.1.12), `AtkinsonHan.Chapter09.galerkin_orthogonality`: $a(u - u_N, v) = 0$ for all
+  $v \in V_N$.
+* Proposition 9.1.3, `AtkinsonHan.Chapter09.proposition_9_1_3_le`:
+  $\|u - u_N\| \le (M / c_0) \|u - v\|$ for every $v \in V_N$.
+* Proposition 9.1.3, `AtkinsonHan.Chapter09.proposition_9_1_3`: Céa's inequality $\|u - u_N\| \le (M
+  / c_0) \inf_{v \in V_N} \|u - v\|$.
+* Remark after Proposition 9.1.3, `AtkinsonHan.Chapter09.galerkin_eq_energyProjection`: for a
+  symmetric form, $u_N$ is the orthogonal projection of $u$ onto $V_N$ in the energy inner product.
+* Remark after Proposition 9.1.3, `AtkinsonHan.Chapter09.proposition_9_1_3_sqrt`: for a symmetric
+  form, the constant $M / c_0$ improves to $\sqrt{M / c_0}$.
+* Corollary 9.1.4, `AtkinsonHan.Chapter09.corollary_9_1_4`: if the trial spaces increase and their
+  union is dense, then $u_N \to u$.
+* Exercise 9.1.2, `AtkinsonHan.Chapter09.stiffnessMatrix_isSymm`: a symmetric form has a symmetric
+  stiffness matrix.
+* Exercise 9.1.3, `AtkinsonHan.Chapter09.exercise_9_1_3`: $\min(x, t) (1 - \max(x, t)) =
+  \frac{2}{\pi^2} \sum_{j \ge 1} \sin(j \pi x) \sin(j \pi t) / j^2$ on $[0, 1]^2$.
+* Exercise 9.1.4(a), `AtkinsonHan.Chapter09.eq_zero_of_galerkinProblem_zero`: for $\ell = 0$ the
+  only Galerkin solution is $0$.
+* Exercise 9.1.4(a), `AtkinsonHan.Chapter09.exercise_9_1_4_a`: the Galerkin problem on a
+  finite-dimensional $V_N$ has a unique solution, without the boundedness of $a$.
+* Exercise 9.1.4(b)–(e), `AtkinsonHan.Chapter09.exercise_9_1_4`: the Galerkin solutions converge to
+  a solution of (9.1.1).
+* Exercise 9.1.4, `AtkinsonHan.Chapter09.existsUnique_solution_of_galerkin`: an increasing sequence
+  of finite-dimensional subspaces with dense union makes (9.1.1) uniquely solvable.
+
+## Implementation notes
+
+* The form is `AtkinsonHan.BilinForm V` with the predicates `AtkinsonHan.BilinForm.IsBoundedWith`
+  and `AtkinsonHan.BilinForm.IsEllipticWith`. The space $V$ is a real inner product space, and it is
+  complete only where a statement assumes `CompleteSpace V`.
+* The unique solvability of (9.1.1) itself is the Lax–Milgram lemma
+  `AtkinsonHan.Chapter08.theorem_8_3_4`, and it is not restated here. The proof of
+  `AtkinsonHan.Chapter09.existsUnique_solution_of_galerkin` does not use it, so that Exercise 9.1.4
+  is a second proof of the Lax–Milgram lemma.
+* In Examples 9.1.1 and 9.1.2 the basis functions are indexed from $0$: the function with index $k$
+  is $x^{k+1} (1 - x)$ in `AtkinsonHan.Chapter09.polyBasis` and $\sin((k+1) \pi x)$ in
+  `AtkinsonHan.Chapter09.sineBasis`.
+
+## Deviations from the source
+
+* **Example 9.1.1** (correction). With the indexing of the source, the displayed formula for the
+  stiffness matrix entries is off by one; it holds for the basis indexed from $0$. See
+  `AtkinsonHan.Chapter09.example_9_1_1`.
+
+## Not formalized
+
+* **Table 9.1.** The condition numbers of the stiffness matrix of Example 9.1.1 are numerical
+  output.
 -/
 
 open Filter Topology
@@ -50,33 +123,51 @@ namespace AtkinsonHan
 
 variable {V : Type*} [NormedAddCommGroup V] [InnerProductSpace ℝ V]
 
-/-- The Galerkin problem (9.1.4): `u_N ∈ V_N` with `a(u_N, v) = ℓ(v)` for all `v ∈ V_N`. -/
+/-- **Equation (9.1.4)** of [han2009theoretical]. Let $a$ be a bilinear form on a real inner product
+space $V$, let $\ell \in V'$, and let $V_N \subseteq V$ be a subspace. An element $u_N \in V$
+**solves the Galerkin problem** if $u_N \in V_N$ and $$a(u_N, v) = \ell(v) \quad \text{for all }
+v \in V_N.$$
+-/
 def GalerkinProblem (a : BilinForm V) (ℓ : StrongDual ℝ V) (VN : Submodule ℝ V) (uN : V) : Prop :=
   uN ∈ VN ∧ ∀ v ∈ VN, a uN v = ℓ v
 
-/-- The stiffness matrix `A = (a(φ_j, φ_i))` of (9.1.5). -/
+/-- **Equation (9.1.5)** of [han2009theoretical], the stiffness matrix. For a bilinear form $a$ on
+$V$ and elements $\phi_1, \dots, \phi_N \in V$, the **stiffness matrix** is the $N \times N$
+matrix $A$ with entries $A_{ij} = a(\phi_j, \phi_i)$.
+
+The indices run over `Fin N`, that is, from $0$ to $N - 1$. -/
 def stiffnessMatrix (a : BilinForm V) {N : ℕ} (φ : Fin N → V) : Matrix (Fin N) (Fin N) ℝ :=
   Matrix.of fun i j => a (φ j) (φ i)
 
-/-- The load vector `b = (ℓ(φ_i))` of (9.1.5). -/
+/-- **Equation (9.1.5)** of [han2009theoretical], the load vector. For $\ell \in V'$ and elements
+$\phi_1, \dots, \phi_N \in V$, the **load vector** is the vector $b \in \mathbb{R}^N$ with
+entries $b_i = \ell(\phi_i)$. -/
 def loadVector (ℓ : StrongDual ℝ V) {N : ℕ} (φ : Fin N → V) : Fin N → ℝ := fun i => ℓ (φ i)
 
 namespace Chapter09
 
 variable {a : BilinForm V} {M α c₀ : ℝ} {ℓ : StrongDual ℝ V} {VN : Submodule ℝ V} {u uN : V}
 
-/-- The Galerkin problem is the backbone's `IsGalerkinSolution` for the bundled form. -/
+/-- Let $a$ be bounded with constant $M$. Then $u_N$ solves the Galerkin problem
+`AtkinsonHan.GalerkinProblem` if and only if it is a Galerkin solution in the sense of the
+backbone predicate `IsGalerkinSolution` for the bundled form `AtkinsonHan.BilinForm.toCLM a hM`. -/
 theorem galerkinProblem_iff (hM : a.IsBoundedWith M) :
     GalerkinProblem a ℓ VN uN ↔ IsGalerkinSolution (a.toCLM hM) ℓ VN uN := Iff.rfl
 
-/-! ### Well-posedness
+/-!
+### Well-posedness
 
-That (9.1.1) itself is uniquely solvable under (9.1.2) and (9.1.3) is Lax–Milgram,
-`Chapter08.theorem_8_3_4`, and is not restated here. -/
+The unique solvability of (9.1.1) under the conditions (9.1.2) and (9.1.3) on $a$ is the Lax–Milgram
+lemma `AtkinsonHan.Chapter08.theorem_8_3_4`, and it is not restated here.
+-/
 
-/-- (9.1.4) is uniquely solvable on any finite-dimensional subspace `V_N`: the form restricted to
-`V_N` is still bounded and `V_N`-elliptic with the same constants, so Lax–Milgram applies there.
-No completeness of `V` is needed, since `V_N` is finite-dimensional. -/
+/-- Let $a$ be bounded with constant $M$ and $V$-elliptic with constant $c_0 > 0$, let
+$\ell \in V'$, and let $V_N \subseteq V$ be a finite-dimensional subspace. Then the Galerkin
+problem (9.1.4) has exactly one solution $u_N$.
+
+The restriction of $a$ to $V_N$ is bounded and $V_N$-elliptic with the same constants, and the
+proof applies the Lax–Milgram lemma on $V_N$. The space $V$ need not be complete, because $V_N$
+is finite-dimensional. -/
 theorem existsUnique_galerkinProblem (hM : a.IsBoundedWith M) (hc₀ : 0 < c₀)
     (ha : a.IsEllipticWith c₀) (ℓ : StrongDual ℝ V) (VN : Submodule ℝ V)
     [FiniteDimensional ℝ VN] : ∃! uN, GalerkinProblem a ℓ VN uN :=
@@ -84,9 +175,11 @@ theorem existsUnique_galerkinProblem (hM : a.IsBoundedWith M) (hc₀ : 0 < c₀)
 
 /-! ### The linear system (9.1.5) -/
 
-/-- (9.1.5): with respect to a basis `{φ_i}` of `V_N`, the Galerkin problem for
-`u_N = ∑ ξ_j φ_j` is the linear system `A ξ = b` with `A` the stiffness matrix and `b` the load
-vector. -/
+/-- **Equation (9.1.5)** of [han2009theoretical]. Let $a$ be bounded with constant $M$, let
+$\ell \in V'$, and let $\phi_1, \dots, \phi_N$ be a basis of the subspace $V_N$. Then
+$u_N = \sum_j \xi_j \phi_j$ solves the Galerkin problem (9.1.4) if and only if $$A \xi = b,$$
+where $A$ is the stiffness matrix `AtkinsonHan.stiffnessMatrix` and $b$ is the load vector
+`AtkinsonHan.loadVector` of the basis. -/
 theorem galerkinProblem_iff_mulVec (hM : a.IsBoundedWith M) (ℓ : StrongDual ℝ V)
     (VN : Submodule ℝ V) {N : ℕ} (φ : Module.Basis (Fin N) ℝ VN) (ξ : Fin N → ℝ) :
     GalerkinProblem a ℓ VN (∑ j, ξ j • (φ j : V)) ↔
@@ -97,23 +190,28 @@ theorem galerkinProblem_iff_mulVec (hM : a.IsBoundedWith M) (ℓ : StrongDual �
 
 /-! ### Exercise 9.1.2: symmetry and positive definiteness of the stiffness matrix -/
 
-/-- The entries of the stiffness matrix, `A_{ij} = a(φ_j, φ_i)`. -/
+/-- The entries of the stiffness matrix are $A_{ij} = a(\phi_j, \phi_i)$. -/
 theorem stiffnessMatrix_apply (a : BilinForm V) {N : ℕ} (φ : Fin N → V) (i j : Fin N) :
     stiffnessMatrix a φ i j = a (φ j) (φ i) := rfl
 
-/-- Exercise 9.1.2: a symmetric form has a symmetric stiffness matrix. -/
+/-- **Exercise 9.1.2** of [han2009theoretical], symmetry. Let $a$ be a symmetric bilinear form on
+$V$, and let $\phi_1, \dots, \phi_N \in V$. Then the stiffness matrix $A = (a(\phi_j, \phi_i))$
+is symmetric: $A^T = A$. -/
 theorem stiffnessMatrix_isSymm (hs : LinearMap.BilinForm.IsSymm a) {N : ℕ} (φ : Fin N → V) :
     (stiffnessMatrix a φ).IsSymm := by
   ext i j
   exact BilinForm.isSymm_iff.mp hs (φ i) (φ j)
 
-/-- Exercise 9.1.2 in Mathlib's spelling: over `ℝ` a symmetric matrix is Hermitian. -/
+/-- Exercise 9.1.2 in the form of Mathlib: if $a$ is symmetric, then the real stiffness matrix of
+any $\phi_1, \dots, \phi_N$ is Hermitian (`Matrix.IsHermitian`). -/
 theorem stiffnessMatrix_isHermitian (hs : LinearMap.BilinForm.IsSymm a) {N : ℕ} (φ : Fin N → V) :
     (stiffnessMatrix a φ).IsHermitian :=
   Matrix.isHermitian_iff_isSymm.2 (stiffnessMatrix_isSymm hs φ)
 
-/-- The quadratic form of the stiffness matrix is the form evaluated at the corresponding
-elements of `V_N`. -/
+/-- For any bilinear form $a$, elements $\phi_1, \dots, \phi_N \in V$ and vectors
+$\xi, \eta \in \mathbb{R}^N$, the stiffness matrix $A$ satisfies $$\eta^T A \xi = a\Big(\sum_j
+\xi_j \phi_j, \sum_i \eta_i \phi_i\Big).$$
+-/
 theorem dotProduct_stiffnessMatrix_mulVec (a : BilinForm V) {N : ℕ} (φ : Fin N → V)
     (ξ η : Fin N → ℝ) :
     η ⬝ᵥ (stiffnessMatrix a φ).mulVec ξ = a (∑ j, ξ j • φ j) (∑ i, η i • φ i) := by
@@ -128,8 +226,11 @@ theorem dotProduct_stiffnessMatrix_mulVec (a : BilinForm V) {N : ℕ} (φ : Fin 
     exact Finset.sum_congr rfl fun i _ => Finset.sum_congr rfl fun j _ => by ring
   rw [hL, hR]
 
-/-- Exercise 9.1.2: a `V`-elliptic form has a positive definite stiffness matrix, in the sense
-that `ξᵀ A ξ > 0` for `ξ ≠ 0`.  Symmetry is not needed for this half. -/
+/-- Exercise 9.1.2, positivity. Let $a$ be $V$-elliptic with constant $\alpha > 0$, and let
+$\phi_1, \dots, \phi_N \in V$ be linearly independent. Then $\xi^T A \xi > 0$ for every
+$\xi \in \mathbb{R}^N$ with $\xi \neq 0$.
+
+This half of the exercise does not need the symmetry of $a$. -/
 theorem stiffnessMatrix_dotProduct_pos (hα : 0 < α) (ha : a.IsEllipticWith α) {N : ℕ}
     {φ : Fin N → V} (hφ : LinearIndependent ℝ φ) {ξ : Fin N → ℝ} (hξ : ξ ≠ 0) :
     0 < ξ ⬝ᵥ (stiffnessMatrix a φ).mulVec ξ := by
@@ -139,8 +240,9 @@ theorem stiffnessMatrix_dotProduct_pos (hα : 0 < α) (ha : a.IsEllipticWith α)
   have hnorm : 0 < ‖(∑ j, ξ j • φ j : V)‖ := norm_pos_iff.mpr hne
   exact lt_of_lt_of_le (mul_pos hα (pow_pos hnorm 2)) (ha _)
 
-/-- Exercise 9.1.2, in Mathlib's bundled form: for a symmetric `V`-elliptic form the stiffness
-matrix is positive definite. -/
+/-- Exercise 9.1.2 in the form of Mathlib: if $a$ is symmetric and $V$-elliptic with constant
+$\alpha > 0$, and $\phi_1, \dots, \phi_N \in V$ are linearly independent, then the stiffness
+matrix is positive definite (`Matrix.PosDef`). -/
 theorem stiffnessMatrix_posDef (hs : LinearMap.BilinForm.IsSymm a) (hα : 0 < α)
     (ha : a.IsEllipticWith α) {N : ℕ} {φ : Fin N → V} (hφ : LinearIndependent ℝ φ) :
     (stiffnessMatrix a φ).PosDef :=
@@ -150,8 +252,14 @@ theorem stiffnessMatrix_posDef (hs : LinearMap.BilinForm.IsSymm a) (hα : 0 < α
 
 /-! ### The Ritz formulation (9.1.6)–(9.1.8) and Exercise 9.1.1 -/
 
-/-- (9.1.8), and Exercise 9.1.1: for a symmetric `V`-elliptic form the Galerkin problem (9.1.4) is
-equivalent to minimizing the energy (9.1.7) over `V_N`; taking `V_N = ⊤` gives (9.1.6). -/
+/-- **Equation (9.1.8)** of [han2009theoretical] and **Exercise 9.1.1**. Let $V$ be a real Hilbert
+space, let $a$ be symmetric, bounded with constant $M$ and $V$-elliptic with constant $c_0 > 0$,
+let $\ell \in V'$, and let $V_N \subseteq V$ be a subspace. Then $u_N$ solves the Galerkin
+problem (9.1.4) if and only if $u_N \in V_N$ and $u_N$ minimizes the energy (9.1.7) $$E(v) =
+\tfrac12 a(v, v) - \ell(v)$$ over $V_N$.
+
+For $V_N = V$ this is the equivalence (9.1.6) of the variational problem with the minimization
+of $E$ over $V$. The energy is `AtkinsonHan.BilinForm.energy`. -/
 theorem galerkinProblem_iff_isMinOn [CompleteSpace V] (hM : a.IsBoundedWith M) (hc₀ : 0 < c₀)
     (ha : a.IsEllipticWith c₀) (hs : LinearMap.BilinForm.IsSymm a) (ℓ : StrongDual ℝ V)
     (VN : Submodule ℝ V) (uN : V) :
@@ -164,27 +272,40 @@ theorem galerkinProblem_iff_isMinOn [CompleteSpace V] (hM : a.IsBoundedWith M) (
 
 /-! ### Céa's inequality (Proposition 9.1.3) -/
 
-/-- (9.1.12), Galerkin orthogonality: the error is `a`-orthogonal to the trial space. -/
+/-- **Equation (9.1.12)** of [han2009theoretical] (Galerkin orthogonality). Let $a$ be bounded with
+constant $M$, let $u \in V$ satisfy $a(u, v) = \ell(v)$ for all $v \in V$, and let $u_N$ solve
+the Galerkin problem (9.1.4) on $V_N$. Then $$a(u - u_N, v) = 0 \quad \text{for all } v \in
+V_N.$$
+-/
 theorem galerkin_orthogonality (hM : a.IsBoundedWith M) (hu : ∀ v, a u v = ℓ v)
     (huN : GalerkinProblem a ℓ VN uN) {v : V} (hv : v ∈ VN) : a (u - uN) v = 0 :=
   IsGalerkinSolution.apply_sub_eq_zero (a := a.toCLM hM) huN hu hv
 
-/-- Céa's inequality (9.1.11), pointwise form: `‖u − u_N‖ ≤ (M/c₀) ‖u − v‖` for every
-`v ∈ V_N`. -/
+/-- **Proposition 9.1.3** of [han2009theoretical] (Céa's inequality), pointwise form. Let $a$ be
+bounded with constant $M$ and $V$-elliptic with constant $c_0 > 0$. Let $u \in V$ satisfy
+$a(u, v) = \ell(v)$ for all $v \in V$, and let $u_N$ solve the Galerkin problem (9.1.4) on
+$V_N$. Then $$\|u - u_N\| \le \frac{M}{c_0} \|u - v\| \quad \text{for every } v \in V_N.$$
+-/
 theorem proposition_9_1_3_le (hM : a.IsBoundedWith M) (hc₀ : 0 < c₀) (ha : a.IsEllipticWith c₀)
     (hu : ∀ v, a u v = ℓ v) (huN : GalerkinProblem a ℓ VN uN) {v : V} (hv : v ∈ VN) :
     ‖u - uN‖ ≤ M / c₀ * ‖u - v‖ :=
   IsGalerkinSolution.norm_sub_le hc₀ (BilinForm.isBoundedWith_toCLM hM) ha huN hu hv
 
-/-- The infimum over a subspace, as the book writes it, is the distance to that subspace: the
-bridge between the `inf_{v ∈ V_N}` of (9.1.11) and the `Metric.infDist` the backbone states its
-quasi-optimality bounds in.  §10.4 uses it again for (10.4.5). -/
+/-- For $u \in V$ and a subspace $K \subseteq V$, the infimum $\inf_{v \in K} \|u - v\|$ equals the
+distance from $u$ to $K$ (`Metric.infDist`).
+
+This connects the infimum of (9.1.11) with the distance in which the backbone states its
+quasi-optimality bounds. Section 10.4 uses it again for (10.4.5). -/
 theorem iInf_norm_sub_eq_infDist (u : V) (K : Submodule ℝ V) :
     (⨅ v : K, ‖u - (v : V)‖) = Metric.infDist u (K : Set V) := by
   simp [Metric.infDist_eq_iInf, dist_eq_norm]
 
-/-- Proposition 9.1.3, Céa's inequality (9.1.11): the Galerkin error is quasi-optimal, with the
-constant `c = M/c₀`.  Neither finite-dimensionality of `V_N` nor completeness of `V` is used. -/
+/-- **Proposition 9.1.3** of [han2009theoretical] (Céa's inequality). Let $a$ be bounded with
+constant $M$ and $V$-elliptic with constant $c_0 > 0$. Let $u \in V$ satisfy $a(u, v) = \ell(v)$
+for all $v \in V$, and let $u_N$ solve the Galerkin problem (9.1.4) on a subspace $V_N$. Then
+(9.1.11) holds: $$\|u - u_N\| \le \frac{M}{c_0} \inf_{v \in V_N} \|u - v\|.$$
+
+The proof uses neither that $V_N$ is finite-dimensional nor that $V$ is complete. -/
 theorem proposition_9_1_3 (hM : a.IsBoundedWith M) (hc₀ : 0 < c₀) (ha : a.IsEllipticWith c₀)
     (hu : ∀ v, a u v = ℓ v) (huN : GalerkinProblem a ℓ VN uN) :
     ‖u - uN‖ ≤ M / c₀ * ⨅ v : VN, ‖u - (v : V)‖ := by
@@ -193,8 +314,13 @@ theorem proposition_9_1_3 (hM : a.IsBoundedWith M) (hc₀ : 0 < c₀) (ha : a.Is
 
 /-! ### The symmetric case: best approximation in the energy norm -/
 
-/-- The remark after Proposition 9.1.3: in the symmetric `V`-elliptic case `u_N` is the best
-approximation to `u` from `V_N` in the energy norm, i.e. the `a`-orthogonal projection. -/
+/-- **Section 9.1** of [han2009theoretical], remark after Proposition 9.1.3. Let $a$ be symmetric,
+bounded with constant $M$ and $V$-elliptic with constant $c_0 > 0$. Let $u \in V$ satisfy
+$a(u, v) = \ell(v)$ for all $v \in V$, and let $u_N$ solve the Galerkin problem (9.1.4) on
+$V_N$. Then, in the energy norm $\|w\|_a = \sqrt{a(w, w)}$, $$\|u - u_N\|_a \le \|u - v\|_a
+\quad \text{for every } v \in V_N.$$
+
+The energy norm is `AtkinsonHan.BilinForm.energyNorm`. -/
 theorem energyNorm_sub_le (hM : a.IsBoundedWith M) (hc₀ : 0 < c₀) (ha : a.IsEllipticWith c₀)
     (hs : LinearMap.BilinForm.IsSymm a) (hu : ∀ v, a u v = ℓ v)
     (huN : GalerkinProblem a ℓ VN uN) {v : V} (hv : v ∈ VN) :
@@ -202,7 +328,8 @@ theorem energyNorm_sub_le (hM : a.IsBoundedWith M) (hc₀ : 0 < c₀) (ha : a.Is
   IsGalerkinSolution.energyNorm_sub_le ((BilinForm.isSymm_iff_isHermitian hM).mp hs)
     (SesqForm.IsCoerciveWith.mono (a.toCLM hM) ha hc₀.le) huN hu hv
 
-/-- The same statement with the infimum: `‖u − u_N‖_a = inf_{v ∈ V_N} ‖u − v‖_a`. -/
+/-- Under the hypotheses of `AtkinsonHan.Chapter09.energyNorm_sub_le`, the Galerkin error is the
+best approximation error in the energy norm: $\|u - u_N\|_a = \inf_{v \in V_N} \|u - v\|_a$. -/
 theorem energyNorm_sub_eq_iInf (hM : a.IsBoundedWith M) (hc₀ : 0 < c₀)
     (ha : a.IsEllipticWith c₀) (hs : LinearMap.BilinForm.IsSymm a) (hu : ∀ v, a u v = ℓ v)
     (huN : GalerkinProblem a ℓ VN uN) :
@@ -213,12 +340,19 @@ theorem energyNorm_sub_eq_iInf (hM : a.IsBoundedWith M) (hc₀ : 0 < c₀)
   refine le_antisymm (le_ciInf fun v => energyNorm_sub_le hM hc₀ ha hs hu huN v.2) ?_
   exact ciInf_le hbdd ⟨uN, huN.1⟩
 
-/-- Céa, symmetric case: the Galerkin solution is the `a`-orthogonal projection of the exact
-solution onto `V_N`, i.e. the orthogonal projection in the energy space `WithEnergy`.  This is the
-statement that makes `energyNorm_sub_eq_iInf` above a best-approximation result.
+/-- **Section 9.1** of [han2009theoretical], remark after Proposition 9.1.3. Let $V$ be a real
+Hilbert space, let $a$ be bounded with constant $M$, and let the operator $A : V \to V$ with
+$(Au, v) = a(u, v)$ be symmetric and coercive. Let $V_N \subseteq V$ be finite-dimensional, let
+$u \in V$ satisfy $a(u, v) = \ell(v)$ for all $v \in V$, and let $u_N$ solve the Galerkin
+problem (9.1.4) on $V_N$. Then $u_N$ is the orthogonal projection of $u$ onto $V_N$ for the
+energy inner product $(v, w)_a = a(v, w)$.
 
-The operator hypothesis is the backbone's `IsSymmetricCoercive` for `A = toOperator a`; §9.4's
-`isSymmetricBoundedBy_toOperator` produces it from boundedness, symmetry and `V`-ellipticity. -/
+The operator $A$ is `AtkinsonHan.BilinForm.toOperator a hM`, and the hypothesis on it is
+`LinearMap.IsSymmetricCoercive`, which `AtkinsonHan.Chapter09.isSymmetricBoundedBy_toOperator`
+of Section 9.4 derives from the boundedness, the symmetry and the $V$-ellipticity of $a$. The
+space $V$ with the energy inner product is `WithEnergy`, and the conclusion is stated with
+`WithEnergy.equiv` and the projection onto `WithEnergy.submoduleMap`. This result makes
+`AtkinsonHan.Chapter09.energyNorm_sub_eq_iInf` a statement on best approximation. -/
 theorem galerkin_eq_energyProjection [CompleteSpace V] (hM : a.IsBoundedWith M)
     (hA : (BilinForm.toOperator a hM : V →ₗ[ℝ] V).IsSymmetricCoercive) [FiniteDimensional ℝ VN]
     (hu : ∀ v, a u v = ℓ v) (huN : GalerkinProblem a ℓ VN uN) :
@@ -238,8 +372,12 @@ theorem galerkin_eq_energyProjection [CompleteSpace V] (hM : a.IsBoundedWith M)
   rw [eq_sub_of_add_eq hsplit, ← herr]
   abel
 
-/-- The symmetric sharpening of Céa's inequality: the constant improves from `M/c₀` to
-`√(M/c₀)`. -/
+/-- **Section 9.1** of [han2009theoretical], the symmetric case of Proposition 9.1.3. Let $a$ be
+symmetric, bounded with constant $M$ and $V$-elliptic with constant $c_0 > 0$. Let $u \in V$
+satisfy $a(u, v) = \ell(v)$ for all $v \in V$, and let $u_N$ solve the Galerkin problem (9.1.4)
+on $V_N$. Then $$\|u - u_N\| \le \sqrt{M / c_0} \, \|u - v\| \quad \text{for every } v \in
+V_N.$$
+-/
 theorem proposition_9_1_3_sqrt (hM : a.IsBoundedWith M) (hc₀ : 0 < c₀) (ha : a.IsEllipticWith c₀)
     (hs : LinearMap.BilinForm.IsSymm a) (hu : ∀ v, a u v = ℓ v)
     (huN : GalerkinProblem a ℓ VN uN) {v : V} (hv : v ∈ VN) :
@@ -249,8 +387,14 @@ theorem proposition_9_1_3_sqrt (hM : a.IsBoundedWith M) (hc₀ : 0 < c₀) (ha :
 
 /-! ### Corollary 9.1.4 -/
 
-/-- Corollary 9.1.4, (9.1.13)–(9.1.14): if the trial spaces increase and their union is dense,
-the Galerkin solutions converge to the exact solution. -/
+/-- **Corollary 9.1.4** of [han2009theoretical]. Let $a$ be bounded with constant $M$ and
+$V$-elliptic with constant $c_0 > 0$, and let $\ell \in V'$. Let
+$V_1 \subseteq V_2 \subseteq \cdots$ be subspaces of $V$ whose union is dense in $V$ (9.1.13).
+Let $u \in V$ satisfy $a(u, v) = \ell(v)$ for all $v \in V$, and let $u_n$ solve the Galerkin
+problem (9.1.4) on $V_n$ for each $n$. Then (9.1.14) holds: $$\|u - u_n\| \to 0 \quad \text{as }
+n \to \infty.$$
+
+The sequence of subspaces is indexed by $n \in \mathbb{N}$, starting at $0$. -/
 theorem corollary_9_1_4 (hM : a.IsBoundedWith M) (hc₀ : 0 < c₀) (ha : a.IsEllipticWith c₀)
     (ℓ : StrongDual ℝ V) (VN : ℕ → Submodule ℝ V) (hmono : Monotone VN)
     (hdense : Dense (⋃ n, (VN n : Set V))) (hu : ∀ v, a u v = ℓ v) (uN : ℕ → V)
@@ -263,16 +407,15 @@ theorem corollary_9_1_4 (hM : a.IsBoundedWith M) (hc₀ : 0 < c₀) (ha : a.IsEl
 
 /-! ### Exercise 9.1.3: the Fourier expansion of the Green kernel -/
 
-/-- The second Bernoulli polynomial over `ℝ`: `B₂(x) = x² − x + 1/6`.  Mathlib returns the sum of
-the cosine series in that shape. -/
+/-- The second Bernoulli polynomial, mapped to $\mathbb{R}$, is $B_2(x) = x^2 - x + 1/6$. -/
 private theorem bernoulli_two_eval (x : ℝ) :
     (Polynomial.map (algebraMap ℚ ℝ) (Polynomial.bernoulli 2)).eval x = x ^ 2 - x + 1 / 6 := by
   simp [Polynomial.bernoulli, Finset.sum_range_succ, bernoulli_eq_bernoulli'_of_ne_one]
   ring
 
-/-- The classical cosine series `∑_{n ≥ 1} cos(nθ)/n² = π²/6 − πθ/2 + θ²/4` for `θ ∈ [0, 2π]`,
-read off Mathlib's Fourier expansion of the Bernoulli polynomials at `k = 1`.  The sum is taken
-over all of `ℕ`, as Mathlib takes it: the `n = 0` term is `cos 0 / 0 = 0`. -/
+/-- For $\theta \in [0, 2\pi]$, $\sum_{n \ge 1} \cos(n \theta) / n^2 = \pi^2 / 6 - \pi \theta / 2 +
+\theta^2 / 4$, with the sum over all $n \in \mathbb{N}$ and the term $n = 0$ equal to
+$\cos 0 / 0 = 0$. -/
 private theorem hasSum_cos_div_sq {θ : ℝ} (hθ : θ ∈ Set.Icc (0 : ℝ) (2 * π)) :
     HasSum (fun n : ℕ => Real.cos (n * θ) / n ^ 2) (π ^ 2 / 6 - π * θ / 2 + θ ^ 2 / 4) := by
   have hpi : (0 : ℝ) < π := Real.pi_pos
@@ -289,9 +432,8 @@ private theorem hasSum_cos_div_sq {θ : ℝ} (hθ : θ ∈ Set.Icc (0 : ℝ) (2 
     field_simp
     ring
 
-/-- Exercise 9.1.3 for `x ≤ t`, where `min(x,t) (1 − max(x,t)) = x (1 − t)`.  The product formula
-`sin(jπx) sin(jπt) = ½ (cos(jπ(t−x)) − cos(jπ(t+x)))` turns the series into the difference of two
-copies of `hasSum_cos_div_sq`, at `θ = π(t−x) ∈ [0, π]` and at `θ = π(t+x) ∈ [0, 2π]`. -/
+/-- For $0 \le x \le t \le 1$, $\frac{2}{\pi^2} \sum_{n} \sin(n \pi x) \sin(n \pi t) / n^2 = x (1 -
+t)$, with the sum over all $n \in \mathbb{N}$. -/
 private theorem hasSum_kernel_aux {x t : ℝ} (hx0 : 0 ≤ x) (hxt : x ≤ t) (ht1 : t ≤ 1) :
     HasSum (fun n : ℕ => 2 / π ^ 2 * (Real.sin (n * π * x) * Real.sin (n * π * t) / n ^ 2))
       (x * (1 - t)) := by
@@ -314,9 +456,8 @@ private theorem hasSum_kernel_aux {x t : ℝ} (hx0 : 0 ≤ x) (hxt : x ≤ t) (h
   rw [funext hfun, hval]
   exact (h1.sub h2).mul_left _
 
-/-- Exercise 9.1.3 with the sum taken over all of `ℕ`; the `j = 0` term vanishes.  Both the
-summand and `min`/`max` are symmetric in `x` and `t`, so the case `t ≤ x` is `hasSum_kernel_aux`
-with the two swapped. -/
+/-- For $x, t \in [0, 1]$, $\frac{2}{\pi^2} \sum_{n} \sin(n \pi x) \sin(n \pi t) / n^2 = \min(x, t)
+(1 - \max(x, t))$, with the sum over all $n \in \mathbb{N}$. -/
 private theorem hasSum_kernel {x t : ℝ} (hx : x ∈ Set.Icc (0 : ℝ) 1) (ht : t ∈ Set.Icc (0 : ℝ) 1) :
     HasSum (fun n : ℕ => 2 / π ^ 2 * (Real.sin (n * π * x) * Real.sin (n * π * t) / n ^ 2))
       (min x t * (1 - max x t)) := by
@@ -329,17 +470,16 @@ private theorem hasSum_kernel {x t : ℝ} (hx : x ∈ Set.Icc (0 : ℝ) 1) (ht :
     rw [funext hcomm]
     exact hasSum_kernel_aux ht.1 h hx.2
 
-/-- Exercise 9.1.3: the Green kernel `K(x,t) = min(x,t) (1 − max(x,t))` of `−u'' = f` on `(0,1)`
-under `u(0) = u(1) = 0`, the kernel of the solution formula (9.1.15) of Example 9.1.2, has the
-expansion
+/-- **Exercise 9.1.3** of [han2009theoretical]. For $x, t \in [0, 1]$, the Green kernel
+$K(x, t) = \min(x, t) (1 - \max(x, t))$ of $-u'' = f$ on $(0, 1)$ with $u(0) = u(1) = 0$, which
+is the kernel of the solution formula (9.1.15), has the expansion $$K(x, t) = \frac{2}{\pi^2}
+\sum_{j=1}^{\infty} \frac{\sin(j \pi x) \sin(j \pi t)}{j^2}.$$
 
-`K(x,t) = (2/π²) ∑_{j ≥ 1} sin(jπx) sin(jπt) / j²`.
-
-The statement is the pointwise one, a `HasSum` at each `x, t ∈ [0,1]`; the series converges
-absolutely, being dominated by `1/j²`.  The kernel `K_N` of (9.1.10) is the `N`-th partial sum, so
-the Galerkin solution of Example 9.1.2 is what (9.1.15) gives after truncating this series — that
-second half of the exercise needs `H¹₀(0,1)` and the weak form of (9.1.9), neither of which the
-project has yet, so only the expansion is stated here. -/
+The statement is pointwise, as a `HasSum` at each pair $(x, t)$, and the summation index is
+shifted to start at $0$. The series converges absolutely, since its terms are bounded by
+$1 / j^2$. The kernel $K_N$ of (9.1.10) is the $N$-th partial sum of this series. That the
+Galerkin solution of Example 9.1.2 is $u_N(x) = \int_0^1 f(t) K_N(x, t) \, dt$ is
+`AtkinsonHan.Chapter09.rep_sineGalerkin`. -/
 theorem exercise_9_1_3 {x t : ℝ} (hx : x ∈ Set.Icc (0 : ℝ) 1) (ht : t ∈ Set.Icc (0 : ℝ) 1) :
     HasSum (fun j : ℕ => 2 / π ^ 2 *
         (Real.sin (((j : ℝ) + 1) * π * x) * Real.sin (((j : ℝ) + 1) * π * t) / ((j : ℝ) + 1) ^ 2))
@@ -361,9 +501,12 @@ theorem exercise_9_1_3 {x t : ℝ} (hx : x ∈ Set.Icc (0 : ℝ) 1) (ht : t ∈ 
 
 /-! ### Exercise 9.1.4: the Galerkin method as a second existence proof -/
 
-/-- Exercise 9.1.4(a): zero is the only solution of the Galerkin system for `ℓ = 0`.  Testing the
-equation against the solution itself and using `V`-ellipticity is all it takes; nothing here needs
-`a` bounded, `V` complete or `V_N` finite-dimensional. -/
+/-- **Exercise 9.1.4(a)** of [han2009theoretical], uniqueness. Let $a$ be $V$-elliptic with constant
+$c_0 > 0$. If $u_N$ solves the Galerkin problem (9.1.4) on $V_N$ with $\ell = 0$, then
+$u_N = 0$.
+
+The proof tests the equation with $u_N$ itself. It needs neither the boundedness of $a$, nor the
+completeness of $V$, nor that $V_N$ is finite-dimensional. -/
 theorem eq_zero_of_galerkinProblem_zero (hc₀ : 0 < c₀) (ha : a.IsEllipticWith c₀)
     (h : GalerkinProblem a (0 : StrongDual ℝ V) VN uN) : uN = 0 := by
   have h0 : a uN uN = 0 := by simpa using h.2 uN h.1
@@ -371,12 +514,15 @@ theorem eq_zero_of_galerkinProblem_zero (hc₀ : 0 < c₀) (ha : a.IsEllipticWit
   have hsq : ‖uN‖ ^ 2 = 0 := le_antisymm (by nlinarith) (sq_nonneg _)
   exact norm_eq_zero.mp (pow_eq_zero_iff two_ne_zero |>.mp hsq)
 
-/-- Exercise 9.1.4(a): the discrete problem (9.1.4) is uniquely solvable on a finite-dimensional
-`V_N`.  This is the book's own argument — the square system is injective by
-`eq_zero_of_galerkinProblem_zero`, hence surjective — rather than
-`existsUnique_galerkinProblem`, which invokes Lax–Milgram on `V_N`.  It therefore assumes neither
-boundedness of `a` nor completeness of `V`, and Exercise 9.1.4 can build on it without becoming a
-corollary of the theorem it is meant to reprove. -/
+/-- **Exercise 9.1.4(a)** of [han2009theoretical]. Let $a$ be $V$-elliptic with constant $c_0 > 0$,
+let $\ell \in V'$, and let $V_N \subseteq V$ be finite-dimensional. Then the Galerkin problem
+(9.1.4) has exactly one solution.
+
+The proof is the argument of the source: the square linear system is injective by
+`AtkinsonHan.Chapter09.eq_zero_of_galerkinProblem_zero`, hence surjective. It does not use the
+Lax–Milgram lemma on $V_N$, as `AtkinsonHan.Chapter09.existsUnique_galerkinProblem` does.
+Therefore it assumes neither the boundedness of $a$ nor the completeness of $V$, and the rest of
+Exercise 9.1.4 does not depend on the Lax–Milgram lemma. -/
 theorem exercise_9_1_4_a (hc₀ : 0 < c₀) (ha : a.IsEllipticWith c₀) (ℓ : StrongDual ℝ V)
     (VN : Submodule ℝ V) [FiniteDimensional ℝ VN] : ∃! uN, GalerkinProblem a ℓ VN uN := by
   obtain ⟨b, hb⟩ : ∃ b : VN →ₗ[ℝ] Module.Dual ℝ VN, ∀ w v : VN, b w v = a (w : V) (v : V) :=
@@ -399,16 +545,23 @@ theorem exercise_9_1_4_a (hc₀ : 0 < c₀) (ha : a.IsEllipticWith c₀) (ℓ : 
     ⟨VN.sub_mem hy.1 z.2, fun v hv => ?_⟩)
   simp [map_sub, LinearMap.sub_apply, hy.2 v hv, hsol v hv]
 
-/-- Exercise 9.1.4, steps (b)–(e): under the hypotheses of Corollary 9.1.4 the Galerkin solutions
-`u_n` themselves produce a solution of (9.1.1).  (b) `V`-ellipticity bounds `‖u_n‖` by `‖ℓ‖/c₀`, so
-some subsequence converges weakly to a `u ∈ V`; (c) for fixed `N` the relation `a(u_n, v) = ℓ(v)`
-holds for every `v ∈ V_N` once `n ≥ N`, and passing to the weak limit gives `a(u, v) = ℓ(v)` there;
-(d) the union of the `V_N` is dense and `v ↦ a(u,v) − ℓ(v)` is continuous, so `u` solves (9.1.1);
-(e) Corollary 9.1.4 then makes the *whole* sequence converge to `u` in norm.
+/-- **Exercise 9.1.4(b)–(e)** of [han2009theoretical]. Let $V$ be a real Hilbert space, let $a$ be
+bounded with constant $M$ and $V$-elliptic with constant $c_0 > 0$, and let $\ell \in V'$. Let
+$V_1 \subseteq V_2 \subseteq \cdots$ be subspaces of $V$ with dense union, and let $u_n$ solve
+the Galerkin problem (9.1.4) on $V_n$ for each $n$. Then there is $u \in V$ with
+$a(u, v) = \ell(v)$ for all $v \in V$ and $$\|u - u_n\| \to 0 \quad \text{as } n \to \infty.$$
 
-The ascending chain `{V_n}` is taken as given data, as the book does — it is what forces `V` to be
-separable, a hypothesis the book notes but never states.  Finite-dimensionality of the `V_n` is not
-needed here: it enters only in producing the `u_n`, which is Exercise 9.1.4(a). -/
+The proof follows the steps of the exercise. (b) The $V$-ellipticity gives
+$\|u_n\| \le \|\ell\| / c_0$, so a subsequence converges weakly to some $u \in V$. (c) For fixed
+$N$, $a(u_n, v) = \ell(v)$ holds for $v \in V_N$ and $n \ge N$, and the weak limit gives
+$a(u, v) = \ell(v)$ for $v \in V_N$. (d) The union of the $V_N$ is dense and
+$v \mapsto a(u, v) - \ell(v)$ is continuous, so $u$ solves (9.1.1). (e) Corollary 9.1.4 makes
+the whole sequence converge to $u$ in norm.
+
+As in the source, the increasing sequence of subspaces is given data. Its existence forces $V$
+to be separable, a hypothesis that the source mentions but does not state. The subspaces need
+not be finite-dimensional here; this enters only in the existence of the $u_n$, which is
+Exercise 9.1.4(a). -/
 theorem exercise_9_1_4 [CompleteSpace V] (hM : a.IsBoundedWith M) (hc₀ : 0 < c₀)
     (ha : a.IsEllipticWith c₀) (ℓ : StrongDual ℝ V) (VN : ℕ → Submodule ℝ V)
     (hmono : Monotone VN) (hdense : Dense (⋃ n, (VN n : Set V))) (uN : ℕ → V)
@@ -455,11 +608,15 @@ theorem exercise_9_1_4 [CompleteSpace V] (hM : a.IsBoundedWith M) (hc₀ : 0 < c
   -- (e) with a solution in hand, Corollary 9.1.4 moves the whole sequence.
   exact ⟨w, hsol, corollary_9_1_4 hM hc₀ ha ℓ VN hmono hdense hsol uN huN⟩
 
-/-- Exercise 9.1.4, the payoff: an ascending chain of finite-dimensional subspaces with dense union
-already forces (9.1.1) to be uniquely solvable.  This is Lax–Milgram again, proved through the
-Galerkin method — the finite-dimensional systems of `exercise_9_1_4_a`, a weakly convergent
-subsequence, and the density (9.1.13) — and it uses `AtkinsonHan.Chapter08.theorem_8_3_4` nowhere.
-Uniqueness is the `ℓ = 0` case of `eq_zero_of_galerkinProblem_zero` on `V_N = ⊤`. -/
+/-- **Exercise 9.1.4** of [han2009theoretical], conclusion. Let $V$ be a real Hilbert space, let $a$
+be bounded with constant $M$ and $V$-elliptic with constant $c_0 > 0$, and let $\ell \in V'$. If
+there are finite-dimensional subspaces $V_1 \subseteq V_2 \subseteq \cdots$ of $V$ with dense
+union, then there is exactly one $u \in V$ with $a(u, v) = \ell(v)$ for all $v \in V$.
+
+This is the Lax–Milgram lemma, proved through the Galerkin method: the finite-dimensional
+problems of `AtkinsonHan.Chapter09.exercise_9_1_4_a`, a weakly convergent subsequence, and the
+density (9.1.13). The proof does not use `AtkinsonHan.Chapter08.theorem_8_3_4`. Uniqueness is
+`AtkinsonHan.Chapter09.eq_zero_of_galerkinProblem_zero` for $\ell = 0$ and $V_N = V$. -/
 theorem existsUnique_solution_of_galerkin [CompleteSpace V] (hM : a.IsBoundedWith M)
     (hc₀ : 0 < c₀) (ha : a.IsEllipticWith c₀) (ℓ : StrongDual ℝ V) (VN : ℕ → Submodule ℝ V)
     [∀ n, FiniteDimensional ℝ (VN n)] (hmono : Monotone VN)
@@ -471,19 +628,14 @@ theorem existsUnique_solution_of_galerkin [CompleteSpace V] (hM : a.IsBoundedWit
     ⟨Submodule.mem_top, fun v _ => ?_⟩)
   simp [map_sub, LinearMap.sub_apply, hy v, hu v]
 
-/-! ### Example 9.1.1: the Galerkin method for `-u'' = f` with the basis `xⁱ(1 - x)`
+/-!
+### Example 9.1.1: the Galerkin method for $-u'' = f$ with the basis $x^i (1 - x)$
 
-The weak problem is `u ∈ H¹₀(0, 1)` with `∫₀¹ u' v' = ∫₀¹ f v` for all `v ∈ H¹₀(0, 1)`, and the
-trial space is `V_N = span{xⁱ(1 - x) : 1 ≤ i ≤ N}`. The exponents are indexed from `0` here, so
-`polyBasis k` is `x^{k+1}(1 - x)` and `polyBasis` over `Fin N` spans exactly the book's `V_N`.
-
-*Erratum.* With the book's own indexing — the basis `xⁱ(1 - x)` for `i = 1, …, N` and the matrix
-entry `A_{ij} = ∫₀¹ [xʲ(1 - x)]' [xⁱ(1 - x)]' dx` — the displayed formula is off by one: at
-`i = j = 1` it gives `2/15` while the integral is `1/3`. The displayed formula is the entry for
-the exponents `i + 1`, `j + 1`, which is what the `0`-based indexing used here makes it, so
-`example_9_1_1` states the book's formula verbatim in `(i : ℝ)` and `(j : ℝ)`.
-
-The condition numbers of Table 9.1 are numerical output and are not formalized. -/
+The weak problem asks for $u \in H_0^1(0, 1)$ with $\int_0^1 u' v' \, dx = \int_0^1 f v \, dx$ for
+all $v \in H_0^1(0, 1)$, and the trial space is $V_N = \operatorname{span}\{x^i (1 - x) : 1 \le i
+\le N\}$. The exponents are indexed from $0$ here: `AtkinsonHan.Chapter09.polyBasis k` is
+$x^{k+1} (1 - x)$, and the family `AtkinsonHan.Chapter09.polyBasis` over `Fin N` spans $V_N$.
+-/
 
 section Example911
 
@@ -492,17 +644,19 @@ open scoped ContDiff
 
 noncomputable section
 
-/-- The basis function `x^{k+1}(1 - x)` of Example 9.1.1. -/
+/-- The basis function $x \mapsto x^{k+1} (1 - x)$ of Example 9.1.1. -/
 def polyBasisFun (k : ℕ) : ℝ → ℝ := fun x => x ^ (k + 1) * (1 - x)
 
+/-- The function $x^{k+1} (1 - x)$ is real analytic on $\mathbb{R}$. -/
 theorem contDiff_polyBasisFun (k : ℕ) : ContDiff ℝ ω (polyBasisFun k) := by
   unfold polyBasisFun; fun_prop
 
+/-- The function $x^{k+1} (1 - x)$ is continuously differentiable on $[0, 1]$. -/
 theorem contDiffOn_polyBasisFun (k : ℕ) :
     ContDiffOn ℝ ((1 : ℕ) : ℕ∞ω) (polyBasisFun k) (Icc (0 : ℝ) 1) :=
   ((contDiff_polyBasisFun k).of_le le_top).contDiffOn
 
-/-- The derivative of `x^{k+1}(1 - x)` is `(k+1) x^k - (k+2) x^{k+1}`. -/
+/-- The derivative of $x^{k+1} (1 - x)$ is $(k+1) x^k - (k+2) x^{k+1}$. -/
 theorem deriv_polyBasisFun (k : ℕ) (x : ℝ) :
     _root_.deriv (polyBasisFun k) x = ((k : ℝ) + 1) * x ^ k - ((k : ℝ) + 2) * x ^ (k + 1) := by
   unfold polyBasisFun
@@ -514,11 +668,13 @@ theorem deriv_polyBasisFun (k : ℕ) (x : ℝ) :
   push_cast
   ring
 
-/-- The basis function `x^{k+1}(1 - x)` as an element of `H¹(0, 1)`. -/
+/-- The basis function $x^{k+1} (1 - x)$ as an element of $H^1(0, 1)$. -/
 def polyBasis (k : ℕ) : SobolevInterval 1 0 1 :=
   ContDiffMapIcc.toSobolevInterval zero_le_one zero_lt_one 1
     (ContDiffMapIcc.ofContDiffOn zero_le_one zero_lt_one (contDiffOn_polyBasisFun k))
 
+/-- The element `AtkinsonHan.Chapter09.polyBasis k` of $H^1(0, 1)$ agrees almost everywhere on
+$(0, 1)$ with the function $x^{k+1} (1 - x)$. -/
 theorem coeFn_deriv_polyBasis_zero (k : ℕ) :
     (SobolevInterval.deriv (polyBasis k) 0 : ℝ → ℝ)
       =ᵐ[volume.restrict (Ioo (0 : ℝ) 1)] polyBasisFun k := by
@@ -527,6 +683,8 @@ theorem coeFn_deriv_polyBasis_zero (k : ℕ) :
   rw [IccExtend_of_mem zero_le_one _ (Ioo_subset_Icc_self hx)]
   rfl
 
+/-- The weak derivative of `AtkinsonHan.Chapter09.polyBasis k` agrees almost everywhere on $(0, 1)$
+with $(k+1) x^k - (k+2) x^{k+1}$. -/
 theorem coeFn_deriv_polyBasis_one (k : ℕ) :
     (SobolevInterval.deriv (polyBasis k) 1 : ℝ → ℝ)
       =ᵐ[volume.restrict (Ioo (0 : ℝ) 1)]
@@ -541,7 +699,7 @@ theorem coeFn_deriv_polyBasis_one (k : ℕ) :
       ((contDiff_polyBasisFun k).contDiffAt.of_le le_top) hx']
   simpa using deriv_polyBasisFun k x
 
-/-- `x^{k+1}(1 - x)` vanishes at both endpoints, so it lies in `H¹₀(0, 1)`. -/
+/-- The function $x^{k+1} (1 - x)$ vanishes at $0$ and at $1$, so it lies in $H_0^1(0, 1)$. -/
 theorem polyBasis_mem (k : ℕ) : polyBasis k ∈ SobolevIntervalZero 0 1 := by
   have hc : ContinuousOn (polyBasisFun k) (Icc (0 : ℝ) 1) :=
     (contDiff_polyBasisFun k).continuous.continuousOn
@@ -550,17 +708,22 @@ theorem polyBasis_mem (k : ℕ) : polyBasis k ∈ SobolevIntervalZero 0 1 := by
     rw [toContinuousMap_eq_of_continuousOn zero_lt_one _ hc (coeFn_deriv_polyBasis_zero k)] <;>
     simp [polyBasisFun]
 
-/-- The constant coefficient `1`, as an element of `L^∞(0, 1)`. -/
+/-- The constant coefficient $1$ as an element of $L^\infty(0, 1)$. -/
 def oneLinf : Lp ℝ ⊤ (volume.restrict (Ioo (0 : ℝ) 1)) :=
   (ContinuousOn.memLp_top_restrict_Ioo (g := fun _ => (1 : ℝ)) continuousOn_const).toLp _
 
+/-- The element `AtkinsonHan.Chapter09.oneLinf` of $L^\infty(0, 1)$ is equal to $1$ almost
+everywhere on $(0, 1)$. -/
 theorem coeFn_oneLinf : (oneLinf : ℝ → ℝ) =ᵐ[volume.restrict (Ioo (0 : ℝ) 1)] fun _ => (1 : ℝ) :=
   MemLp.coeFn_toLp _
 
+/-- The coefficient `AtkinsonHan.Chapter09.oneLinf` is at least $1$ almost everywhere on $(0, 1)$.
+-/
 theorem one_le_oneLinf : ∀ᵐ x ∂(volume.restrict (Ioo (0 : ℝ) 1)), (1 : ℝ) ≤ oneLinf x := by
   filter_upwards [coeFn_oneLinf] with x hx
   rw [hx]
 
+/-- The zero element of $L^\infty(0, 1)$ is nonnegative almost everywhere on $(0, 1)$. -/
 theorem zero_le_zeroLinf :
     ∀ᵐ x ∂(volume.restrict (Ioo (0 : ℝ) 1)),
       (0 : ℝ) ≤ (0 : Lp ℝ ⊤ (volume.restrict (Ioo (0 : ℝ) 1))) x := by
@@ -568,10 +731,13 @@ theorem zero_le_zeroLinf :
   rw [hx]
   rfl
 
-/-- **The bilinear form of (9.1.9)**, `a(u, v) = ∫₀¹ u' v'` on `H¹(0, 1)`: the backbone's
-`EllipticInterval.form` with `α = 1`, `β = γ = 0`. -/
+/-- The bilinear form of (9.1.9), $a(u, v) = \int_0^1 u' v' \, dx$ on $H^1(0, 1)$.
+
+It is `EllipticInterval.form` with the coefficients $\alpha = 1$ and $\beta = \gamma = 0$. -/
 def dirichletForm : SesqForm ℝ (SobolevInterval 1 0 1) := EllipticInterval.form 0 1 oneLinf 0 0
 
+/-- For $u, v \in H^1(0, 1)$, the form of (9.1.9) is $a(u, v) = \int_0^1 u'(x) v'(x) \, dx$, with
+the weak derivatives. -/
 theorem dirichletForm_apply (u v : SobolevInterval 1 0 1) :
     dirichletForm u v = ∫ x in Ioo (0 : ℝ) 1, SobolevInterval.deriv u 1 x *
       SobolevInterval.deriv v 1 x := by
@@ -581,22 +747,30 @@ theorem dirichletForm_apply (u v : SobolevInterval 1 0 1) :
   rw [h1, h0]
   simp
 
-/-- **The trial space `V_N`** of Example 9.1.1, `span{xⁱ(1 - x) : 1 ≤ i ≤ N}`. -/
+/-- The trial space of Example 9.1.1, $V_N = \operatorname{span}\{x^i (1 - x) : 1 \le i \le N\}$, as
+a subspace of $H^1(0, 1)$. -/
 def polySpace (N : ℕ) : Submodule ℝ (SobolevInterval 1 0 1) :=
   Submodule.span ℝ (Set.range fun i : Fin N => polyBasis i)
 
+/-- The trial space $V_N$ of Example 9.1.1 is contained in $H_0^1(0, 1)$. -/
 theorem polySpace_le (N : ℕ) : polySpace N ≤ SobolevIntervalZero 0 1 :=
   Submodule.span_le.2 (by rintro _ ⟨i, rfl⟩; exact polyBasis_mem i)
 
 instance (N : ℕ) : FiniteDimensional ℝ (polySpace N) :=
   FiniteDimensional.span_of_finite ℝ (Set.finite_range _)
 
+/-- For $n \in \mathbb{N}$, $\int_0^1 x^n \, dx = 1 / (n + 1)$. -/
 theorem integral_pow_unit (n : ℕ) : ∫ x in (0 : ℝ)..1, x ^ n = 1 / (n + 1) := by
   rw [integral_pow]; simp
 
-/-- **Unique solvability of the weak problem in any subspace of `H¹₀(0, 1)`**, by Lax–Milgram:
-the form is coercive there by the Poincaré inequality. Taking `K = H¹₀(0, 1)` gives the weak
-problem of Example 9.1.1, and `K = V_N` its Galerkin approximation. -/
+/-- Let $K$ be a complete subspace of $H^1(0, 1)$ with $K \subseteq H_0^1(0, 1)$, and let
+$f \in L^2(0, 1)$. Then there is exactly one $u \in K$ with
+$\int_0^1 u' v' \, dx = \int_0^1 f v \, dx$ for all $v \in K$.
+
+The proof is the Lax–Milgram lemma; the form is coercive on $H_0^1(0, 1)$ by the Poincaré
+inequality. For $K = H_0^1(0, 1)$ this is the weak problem of Example 9.1.1, and for $K = V_N$
+it is its Galerkin approximation. The load $v \mapsto \int_0^1 f v \, dx$ is
+`EllipticInterval.load`. -/
 theorem existsUnique_dirichletGalerkin {K : Submodule ℝ (SobolevInterval 1 0 1)}
     (hK : K ≤ SobolevIntervalZero 0 1) [CompleteSpace K]
     (f : Lp ℝ 2 (volume.restrict (Ioo (0 : ℝ) 1))) :
@@ -615,8 +789,10 @@ theorem existsUnique_dirichletGalerkin {K : Submodule ℝ (SobolevInterval 1 0 1
   rintro y ⟨hyK, hy⟩
   exact congrArg Subtype.val (hwu ⟨y, hyK⟩ fun z => hy (z : SobolevInterval 1 0 1) z.2)
 
-/-- The stiffness matrix entry of Example 9.1.1:
-`∫₀¹ [x^{j+1}(1 - x)]' [x^{i+1}(1 - x)]' dx`, expanded and integrated term by term. -/
+/-- For $i, j \in \mathbb{N}$, the stiffness matrix entry of Example 9.1.1 is $$\int_0^1 [x^{j+1}
+(1 - x)]' [x^{i+1} (1 - x)]' \, dx = \frac{(i+1)(j+1)}{i+j+1} + \frac{(i+2)(j+2)}{i+j+3} -
+\frac{(i+1)(j+2) + (i+2)(j+1)}{i+j+2}.$$
+-/
 theorem dirichletForm_polyBasis (i j : ℕ) :
     dirichletForm (polyBasis j) (polyBasis i)
       = ((i : ℝ) + 1) * ((j : ℝ) + 1) / ((i : ℝ) + (j : ℝ) + 1)
@@ -654,7 +830,8 @@ theorem dirichletForm_polyBasis (i j : ℕ) :
     filter_upwards [coeFn_deriv_polyBasis_one j, coeFn_deriv_polyBasis_one i] with x hj hi
     rw [hj, hi]
 
-/-- The load vector entry of Example 9.1.1, `b_i = ∫₀¹ f(x) x^{i+1}(1 - x) dx`. -/
+/-- For $f \in L^2(0, 1)$ and $i \in \mathbb{N}$, the load vector entry of Example 9.1.1 is
+$b_i = \int_0^1 f(x) x^{i+1} (1 - x) \, dx$. -/
 theorem load_polyBasis (f : Lp ℝ 2 (volume.restrict (Ioo (0 : ℝ) 1))) (i : ℕ) :
     EllipticInterval.load 0 1 f (polyBasis i) = ∫ x in Ioo (0 : ℝ) 1, f x * polyBasisFun i x := by
   rw [EllipticInterval.load_apply]
@@ -662,18 +839,27 @@ theorem load_polyBasis (f : Lp ℝ 2 (volume.restrict (Ioo (0 : ℝ) 1))) (i : �
   filter_upwards [coeFn_deriv_polyBasis_zero i] with x hx
   rw [hx]
 
-/-- **Example 9.1.1.** For `-u'' = f` on `(0, 1)` with `u(0) = u(1) = 0`, weakly posed on
-`V = H¹₀(0, 1)` with `a(u, v) = ∫₀¹ u' v'` and `ℓ(v) = ∫₀¹ f v`:
+/-- **Example 9.1.1** of [han2009theoretical]. Consider $-u'' = f$ on $(0, 1)$ with
+$u(0) = u(1) = 0$ and $f \in L^2(0, 1)$, posed weakly on $V = H_0^1(0, 1)$ with
+$a(u, v) = \int_0^1 u' v' \, dx$ and $\ell(v) = \int_0^1 f v \, dx$. Let $N \in \mathbb{N}$, and
+let $V_N$ be spanned by $\phi_i(x) = x^{i+1} (1 - x)$, $0 \le i \le N - 1$. Then:
 
-* the weak problem has exactly one solution, by Lax–Milgram;
-* so does its Galerkin approximation on `V_N = span{xⁱ(1 - x) : 1 ≤ i ≤ N}`;
-* the stiffness matrix entries are the ones the book displays, and the load vector entries are
-  `b_i = ∫₀¹ f(x) xⁱ(1 - x) dx`.
+* the weak problem has exactly one solution $u \in H_0^1(0, 1)$;
+* the Galerkin problem on $V_N$ has exactly one solution $u_N$;
+* for $0 \le i, j \le N - 1$ the stiffness matrix entries are $$A_{ij} =
+  \frac{(i+1)(j+1)}{i+j+1} + \frac{(i+2)(j+2)}{i+j+3} - \frac{(i+1)(j+2) + (i+2)(j+1)}{i+j+2};$$
+* the load vector entries are $b_i = \int_0^1 f(x) x^{i+1} (1 - x) \, dx$.
 
-The exponents are `0`-indexed here (`polyBasis i` is `x^{i+1}(1 - x)`), which is the indexing
-under which the book's displayed entry formula is correct; see the section's erratum note. Table
-9.1, the condition numbers showing this basis to be a poor one, is numerical output and is not
-formalized. -/
+**Correction.** The source indexes the basis as $x^i (1 - x)$ for $i = 1, \dots, N$, with
+$A_{ij} = \int_0^1 [x^j (1 - x)]' [x^i (1 - x)]' \, dx$, and prints the formula above for this
+$A_{ij}$. With this indexing the formula is off by one: at $i = j = 1$ it gives $2/15$, while
+the integral is $1/3$. The printed formula is the entry for the exponents $i + 1$ and $j + 1$.
+With the basis indexed from $0$, as here, the formula of the source holds without change.
+
+The weak problem and the Galerkin problem are stated with `IsGalerkinSolution` for
+`AtkinsonHan.Chapter09.dirichletForm` and `EllipticInterval.load`, on `SobolevIntervalZero 0 1`
+and on `AtkinsonHan.Chapter09.polySpace N`. The stiffness matrix is that of
+`AtkinsonHan.BilinForm.ofCLM` of the form. -/
 theorem example_9_1_1 (f : Lp ℝ 2 (volume.restrict (Ioo (0 : ℝ) 1))) (N : ℕ) :
     (∃! u, IsGalerkinSolution dirichletForm (EllipticInterval.load 0 1 f)
         (SobolevIntervalZero 0 1) u) ∧
@@ -695,12 +881,15 @@ end
 
 end Example911
 
-/-! ### Example 9.1.2: the same problem with the basis `sin(iπx)`
+/-!
+### Example 9.1.2: the same problem with the basis $\sin(i \pi x)$
 
-The trial space is `V_N = span{sin(iπx) : 1 ≤ i ≤ N}`, indexed from `0` here as in Example 9.1.1,
-so `sineBasis k` is `sin((k+1)πx)`. The basis is orthogonal for `a(u, v) = ∫₀¹ u' v'`, the
-Galerkin system is diagonal, and the Galerkin solution is the kernel approximation (9.1.10) with
-the `N`-term truncation of the Green kernel; the full kernel is `exercise_9_1_3`. -/
+The trial space is $V_N = \operatorname{span}\{\sin(i \pi x) : 1 \le i \le N\}$. As in Example 9.1.1
+the index starts at $0$ here, so `AtkinsonHan.Chapter09.sineBasis k` is $\sin((k+1) \pi x)$. The
+basis is orthogonal for $a(u, v) = \int_0^1 u' v' \, dx$, the Galerkin system is diagonal, and the
+Galerkin solution is the kernel approximation (9.1.10), whose kernel is the $N$-th partial sum of
+the series of Exercise 9.1.3.
+-/
 
 section Example912
 
@@ -709,16 +898,19 @@ open scoped ContDiff
 
 noncomputable section
 
-/-- The basis function `sin((k+1) π x)` of Example 9.1.2. -/
+/-- The basis function $x \mapsto \sin((k+1) \pi x)$ of Example 9.1.2. -/
 def sineBasisFun (k : ℕ) : ℝ → ℝ := fun x => Real.sin (((k : ℝ) + 1) * π * x)
 
+/-- The function $\sin((k+1) \pi x)$ is real analytic on $\mathbb{R}$. -/
 theorem contDiff_sineBasisFun (k : ℕ) : ContDiff ℝ ω (sineBasisFun k) := by
   unfold sineBasisFun; fun_prop
 
+/-- The function $\sin((k+1) \pi x)$ is continuously differentiable on $[0, 1]$. -/
 theorem contDiffOn_sineBasisFun (k : ℕ) :
     ContDiffOn ℝ ((1 : ℕ) : ℕ∞ω) (sineBasisFun k) (Icc (0 : ℝ) 1) :=
   ((contDiff_sineBasisFun k).of_le le_top).contDiffOn
 
+/-- The derivative of $\sin((k+1) \pi x)$ is $(k+1) \pi \cos((k+1) \pi x)$. -/
 theorem deriv_sineBasisFun (k : ℕ) (x : ℝ) :
     _root_.deriv (sineBasisFun k) x
       = ((k : ℝ) + 1) * π * Real.cos (((k : ℝ) + 1) * π * x) := by
@@ -731,11 +923,13 @@ theorem deriv_sineBasisFun (k : ℕ) (x : ℝ) :
   rw [h2.deriv]
   ring
 
-/-- `sin((k+1) π x)` as an element of `H¹(0, 1)`. -/
+/-- The basis function $\sin((k+1) \pi x)$ as an element of $H^1(0, 1)$. -/
 def sineBasis (k : ℕ) : SobolevInterval 1 0 1 :=
   ContDiffMapIcc.toSobolevInterval zero_le_one zero_lt_one 1
     (ContDiffMapIcc.ofContDiffOn zero_le_one zero_lt_one (contDiffOn_sineBasisFun k))
 
+/-- The element `AtkinsonHan.Chapter09.sineBasis k` of $H^1(0, 1)$ agrees almost everywhere on
+$(0, 1)$ with the function $\sin((k+1) \pi x)$. -/
 theorem coeFn_deriv_sineBasis_zero (k : ℕ) :
     (SobolevInterval.deriv (sineBasis k) 0 : ℝ → ℝ)
       =ᵐ[volume.restrict (Ioo (0 : ℝ) 1)] sineBasisFun k := by
@@ -744,6 +938,8 @@ theorem coeFn_deriv_sineBasis_zero (k : ℕ) :
   rw [IccExtend_of_mem zero_le_one _ (Ioo_subset_Icc_self hx)]
   rfl
 
+/-- The weak derivative of `AtkinsonHan.Chapter09.sineBasis k` agrees almost everywhere on $(0, 1)$
+with $(k+1) \pi \cos((k+1) \pi x)$. -/
 theorem coeFn_deriv_sineBasis_one (k : ℕ) :
     (SobolevInterval.deriv (sineBasis k) 1 : ℝ → ℝ)
       =ᵐ[volume.restrict (Ioo (0 : ℝ) 1)]
@@ -758,11 +954,14 @@ theorem coeFn_deriv_sineBasis_one (k : ℕ) :
       ((contDiff_sineBasisFun k).contDiffAt.of_le le_top) hx']
   simpa using deriv_sineBasisFun k x
 
+/-- The continuous representative of `AtkinsonHan.Chapter09.sineBasis k` is $\sin((k+1) \pi x)$ at
+every $x \in [0, 1]$. -/
 theorem rep_sineBasis (k : ℕ) {x : ℝ} (hx : x ∈ Icc (0 : ℝ) 1) :
     SobolevInterval.rep (sineBasis k) x = sineBasisFun k x :=
   rep_eq_of_continuousOn zero_lt_one _ (contDiff_sineBasisFun k).continuous.continuousOn
     (coeFn_deriv_sineBasis_zero k) hx
 
+/-- The function $\sin((k+1) \pi x)$ lies in $H_0^1(0, 1)$. -/
 theorem sineBasis_mem (k : ℕ) : sineBasis k ∈ SobolevIntervalZero 0 1 := by
   have hc : ContinuousOn (sineBasisFun k) (Icc (0 : ℝ) 1) :=
     (contDiff_sineBasisFun k).continuous.continuousOn
@@ -773,8 +972,10 @@ theorem sineBasis_mem (k : ℕ) : sineBasis k ∈ SobolevIntervalZero 0 1 := by
   · have hone : ((k : ℝ) + 1) * π * 1 = ((k + 1 : ℕ) : ℝ) * π := by push_cast; ring
     simp only [sineBasisFun, hone, Real.sin_nat_mul_pi]
 
-/-- **The orthogonality relation of Example 9.1.2**:
-`∫₀¹ (sin jπx)' (sin iπx)' dx = i j π² δ_{ij} / 2`. -/
+/-- The orthogonality relation of Example 9.1.2. For $i, j \in \mathbb{N}$, $$\int_0^1 [\sin((j+1)
+\pi x)]' [\sin((i+1) \pi x)]' \, dx = \begin{cases} (i+1)(j+1) \pi^2 / 2 & \text{if } i = j, \\
+0 & \text{otherwise.} \end{cases}$$
+-/
 theorem dirichletForm_sineBasis (i j : ℕ) :
     dirichletForm (sineBasis j) (sineBasis i)
       = if i = j then ((i : ℝ) + 1) * ((j : ℝ) + 1) * π ^ 2 / 2 else 0 := by
@@ -805,24 +1006,30 @@ theorem dirichletForm_sineBasis (i j : ℕ) :
     filter_upwards [coeFn_deriv_sineBasis_one j, coeFn_deriv_sineBasis_one i] with x hj hi
     rw [hj, hi]
 
-/-- **The trial space of Example 9.1.2**, `V_N = span{sin(iπx) : 1 ≤ i ≤ N}`. -/
+/-- The trial space of Example 9.1.2, $V_N = \operatorname{span}\{\sin(i \pi x) : 1 \le i \le N\}$,
+as a subspace of $H^1(0, 1)$. -/
 def sineSpace (N : ℕ) : Submodule ℝ (SobolevInterval 1 0 1) :=
   Submodule.span ℝ (Set.range fun i : Fin N => sineBasis i)
 
+/-- The trial space $V_N$ of Example 9.1.2 is contained in $H_0^1(0, 1)$. -/
 theorem sineSpace_le (N : ℕ) : sineSpace N ≤ SobolevIntervalZero 0 1 :=
   Submodule.span_le.2 (by rintro _ ⟨i, rfl⟩; exact sineBasis_mem i)
 
 instance (N : ℕ) : FiniteDimensional ℝ (sineSpace N) :=
   FiniteDimensional.span_of_finite ℝ (Set.finite_range _)
 
-/-- **The Galerkin coefficient** `ξ_i = (2 / (π² i²)) ∫₀¹ f(x) sin(iπx) dx` of Example 9.1.2. -/
+/-- The Galerkin coefficient of Example 9.1.2, $\xi_i = \frac{2}{\pi^2 i^2} \int_0^1 f(x) \sin(i \pi
+x) \, dx$, here for $i = k + 1$. -/
 def sineCoeff (f : Lp ℝ 2 (volume.restrict (Ioo (0 : ℝ) 1))) (k : ℕ) : ℝ :=
   2 / (π ^ 2 * ((k : ℝ) + 1) ^ 2) * ∫ x in Ioo (0 : ℝ) 1, f x * sineBasisFun k x
 
-/-- **The Galerkin solution** `u_N = ∑ ξ_j sin(jπx)` of Example 9.1.2. -/
+/-- The Galerkin solution of Example 9.1.2, $u_N = \sum_{j=1}^N \xi_j \sin(j \pi x)$ with the
+coefficients `AtkinsonHan.Chapter09.sineCoeff`. -/
 def sineGalerkin (f : Lp ℝ 2 (volume.restrict (Ioo (0 : ℝ) 1))) (N : ℕ) : SobolevInterval 1 0 1 :=
   ∑ j : Fin N, sineCoeff f j • sineBasis j
 
+/-- For $f \in L^2(0, 1)$ and $i \in \mathbb{N}$, the load vector entry of Example 9.1.2 is
+$\int_0^1 f(x) \sin((i+1) \pi x) \, dx$. -/
 theorem load_sineBasis (f : Lp ℝ 2 (volume.restrict (Ioo (0 : ℝ) 1))) (i : ℕ) :
     EllipticInterval.load 0 1 f (sineBasis i) = ∫ x in Ioo (0 : ℝ) 1, f x * sineBasisFun i x := by
   rw [EllipticInterval.load_apply]
@@ -830,8 +1037,9 @@ theorem load_sineBasis (f : Lp ℝ 2 (volume.restrict (Ioo (0 : ℝ) 1))) (i : �
   filter_upwards [coeFn_deriv_sineBasis_zero i] with x hx
   rw [hx]
 
-/-- The diagonal Galerkin system of Example 9.1.2 is solved by `ξ_i = (2/(π² i²)) ∫₀¹ f sin(iπx)`:
-the coefficients of `sineGalerkin` do solve the Galerkin problem on `V_N`. -/
+/-- For $f \in L^2(0, 1)$, the function $u_N = \sum_{j=1}^N \xi_j \sin(j \pi x)$ with $\xi_i =
+\frac{2}{\pi^2 i^2} \int_0^1 f(x) \sin(i \pi x) \, dx$ solves the Galerkin problem of Example
+9.1.2 on $V_N$. -/
 theorem isGalerkinSolution_sineGalerkin (f : Lp ℝ 2 (volume.restrict (Ioo (0 : ℝ) 1))) (N : ℕ) :
     IsGalerkinSolution dirichletForm (EllipticInterval.load 0 1 f) (sineSpace N)
       (sineGalerkin f N) := by
@@ -861,9 +1069,13 @@ theorem isGalerkinSolution_sineGalerkin (f : Lp ℝ 2 (volume.restrict (Ioo (0 :
   | add x y _ _ ihx ihy => rw [map_add, map_add, ihx, ihy]
   | smul c x _ ih => rw [map_smul, map_smul, ih]
 
-/-- **The kernel form (9.1.10) of the Galerkin solution**: `u_N(x) = ∫₀¹ f(t) K_N(x, t) dt` with
-`K_N(x, t) = (2/π²) ∑_{j ≤ N} sin(jπx) sin(jπt) / j²`, the `N`-term truncation of the Green
-kernel of `exercise_9_1_3`. -/
+/-- The kernel form (9.1.10) of the Galerkin solution of Example 9.1.2. For $f \in L^2(0, 1)$ and
+$x \in [0, 1]$, the continuous representative of $u_N$ satisfies $$u_N(x) = \int_0^1 f(t) K_N(x,
+t) \, dt, \qquad K_N(x, t) = \frac{2}{\pi^2} \sum_{j=1}^N \frac{\sin(j \pi x) \sin(j \pi
+t)}{j^2}.$$
+
+The kernel $K_N$ is the $N$-th partial sum of the expansion of the Green kernel in
+`AtkinsonHan.Chapter09.exercise_9_1_3`. -/
 theorem rep_sineGalerkin (f : Lp ℝ 2 (volume.restrict (Ioo (0 : ℝ) 1))) (N : ℕ) {x : ℝ}
     (hx : x ∈ Icc (0 : ℝ) 1) :
     SobolevInterval.rep (sineGalerkin f N) x
@@ -903,17 +1115,23 @@ theorem rep_sineGalerkin (f : Lp ℝ 2 (volume.restrict (Ioo (0 : ℝ) 1))) (N :
   dsimp only
   rw [Finset.mul_sum, Finset.mul_sum]
 
-/-- **Example 9.1.2.** The same boundary value problem (9.1.9) with the trigonometric trial space
-`V_N = span{sin(iπx) : 1 ≤ i ≤ N}`:
+/-- **Example 9.1.2** of [han2009theoretical]. Consider the boundary value problem (9.1.9),
+$-u'' = f$ on $(0, 1)$ with $u(0) = u(1) = 0$ and $f \in L^2(0, 1)$, with the trial space $V_N =
+\operatorname{span}\{\sin(i \pi x) : 1 \le i \le N\}$. Then:
 
-* the basis is orthogonal for the energy inner product,
-  `∫₀¹ (sin jπx)' (sin iπx)' dx = i j π² δ_{ij} / 2`, so the Galerkin system is diagonal;
-* its unique solution is `u_N = ∑ ξ_j sin(jπx)` with `ξ_i = (2/(π² i²)) ∫₀¹ f(x) sin(iπx) dx`;
-* and `u_N` is the kernel approximation (9.1.10), `u_N(x) = ∫₀¹ f(t) K_N(x, t) dt` with
-  `K_N(x, t) = (2/π²) ∑_{j ≤ N} sin(jπx) sin(jπt)/j²`, the `N`-term truncation of the Green
-  kernel of `exercise_9_1_3`.
+* the basis is orthogonal for the energy inner product, $\int_0^1 [\sin(j \pi x)]' [\sin(i \pi
+  x)]' \, dx = i j \pi^2 \delta_{ij} / 2$ for all $i, j \ge 1$, so the Galerkin system is
+  diagonal;
+* an element $u_N$ solves the Galerkin problem on $V_N$ if and only if
+  $u_N = \sum_{j=1}^N \xi_j \sin(j \pi x)$ with $\xi_i = \frac{2}{\pi^2 i^2} \int_0^1 f(x)
+  \sin(i \pi x) \, dx$;
+* for $x \in [0, 1]$, $u_N(x) = \int_0^1 f(t) K_N(x, t) \, dt$ with $K_N(x, t) = \frac{2}{\pi^2}
+  \sum_{j=1}^N \sin(j \pi x) \sin(j \pi t) / j^2$, which is the kernel approximation (9.1.10).
 
-Exponents are `0`-indexed, `sineBasis k = sin((k+1)πx)`. -/
+The indices are shifted to start at $0$: `AtkinsonHan.Chapter09.sineBasis k` is
+$\sin((k+1) \pi x)$. The value $u_N(x)$ is that of the continuous representative
+`SobolevIntervalLp.rep`. The kernel $K_N$ is the $N$-th partial sum of the expansion of
+`AtkinsonHan.Chapter09.exercise_9_1_3`. -/
 theorem example_9_1_2 (f : Lp ℝ 2 (volume.restrict (Ioo (0 : ℝ) 1))) (N : ℕ) :
     (∀ i j : ℕ, dirichletForm (sineBasis j) (sineBasis i)
         = if i = j then ((i : ℝ) + 1) * ((j : ℝ) + 1) * π ^ 2 / 2 else 0) ∧

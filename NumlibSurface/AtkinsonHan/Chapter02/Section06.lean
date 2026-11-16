@@ -7,50 +7,72 @@ import Mathlib.Analysis.Normed.Module.RCLike.Basic
 import Numlib.IntegralEquations.L2Kernel
 
 /-!
-# Atkinson–Han §2.6: adjoint operators
+# Atkinson and Han, Section 2.6: Adjoint operators
 
-Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework*, 3rd edition, Springer, 2009, §2.6: the adjoint of a bounded operator between
-Hilbert spaces, self-adjoint operators, and the characterisation `‖L‖ = sup_{‖v‖ = 1} |(L v, v)|` of
-the norm of a self-adjoint operator.
+This module formalizes Section 2.6 of [han2009theoretical]. Let $V$ and $W$ be Hilbert spaces. Every
+$L \in \mathcal{L}(V, W)$ has a unique adjoint $L^* \in \mathcal{L}(W, V)$ with
+$$(Lv, w)_W = (v, L^* w)_V \quad \text{for all } v \in V, \ w \in W. \qquad (2.6.1)$$
+The adjoint is involutive, conjugate linear and reverses products, and $\|L^*\| = \|L\|$. An
+operator $L \in \mathcal{L}(V)$ is self-adjoint if $L^* = L$. Real linear combinations, powers and
+real polynomials of self-adjoint operators are self-adjoint, and a product of two self-adjoint
+operators is self-adjoint if and only if they commute. The norm of a self-adjoint operator is
+$$\|L\| = \sup_{\|v\| = 1} |(Lv, v)|.$$
+The example of the section is the integral operator of a square-integrable kernel on $L^2(a, b)$,
+whose adjoint is the integral operator of the transposed kernel.
 
-The book restricts §2.6 to real scalars; the statements below are over `RCLike 𝕜`, because
-Mathlib's `ContinuousLinearMap.adjoint` is, and the real case is the instantiation. The book's
-inner product `(u, v)` is linear in its *first* argument and Mathlib's `⟪u, v⟫` in its second, so
-the book's `(u, v)` is written `inner 𝕜 v u`; that is why the defining relation (2.6.1) reads with
-its arguments reversed below.
+The adjoint is Mathlib's `ContinuousLinearMap.adjoint`. The integral operator is the backbone's
+`IntegralOperator.l2KernelCLM` of `Numlib.IntegralEquations.L2Kernel`.
 
 ## Main results
 
-* `equation_2_6_1` — the adjoint exists and is unique, characterised by `(L v, w) = (v, L* w)`.
-* `equation_2_6_3` — `(L*)* = L`, `(α₁ L₁ + α₂ L₂)* = conj α₁ L₁* + conj α₂ L₂*`,
-  `(L₁ L₂)* = L₂* L₁*`.
-* `equation_2_6_4` — `‖L*‖ = ‖L‖`.
-* `proposition_2_6_2`, `proposition_2_6_3`, `corollary_2_6_4`, `corollary_2_6_4_polynomial` — the
-  self-adjoint operators form a real subspace, a product of self-adjoint operators is self-adjoint
-  exactly when they commute, and every real polynomial in a self-adjoint operator is self-adjoint.
-* `theorem_2_6_5`, `exercise_2_6_3` — `‖L‖ = sup_{‖v‖ = 1} |(L v, v)|` for self-adjoint `L`, and
-  the bound `|(L u, v)| ≤ ‖L‖ ‖u‖ ‖v‖` that goes with it.
-* `example_2_6_1`, `example_2_6_1_apply`, `example_2_6_1_adjoint`,
-  `example_2_6_1_isSelfAdjoint` — the integral operator of a square-integrable kernel on
-  `L²(a, b)`: `‖K‖ ≤ B`, the defining formula, the transposed-kernel adjoint, and
-  self-adjointness exactly for a symmetric kernel.
+* Equation (2.6.1), `AtkinsonHan.Chapter02.equation_2_6_1`: the adjoint exists and is unique.
+* Equation (2.6.3) and Exercise 2.6.1, `AtkinsonHan.Chapter02.equation_2_6_3`: $(L^*)^* = L$,
+  $(\alpha_1 L_1 + \alpha_2 L_2)^* = \bar\alpha_1 L_1^* + \bar\alpha_2 L_2^*$ and
+  $(ML)^* = L^* M^*$.
+* Equations (2.6.2) and (2.6.4), `AtkinsonHan.Chapter02.equation_2_6_4`: $\|L^*\| = \|L\|$.
+* Example 2.6.1, `AtkinsonHan.Chapter02.example_2_6_1`, `AtkinsonHan.Chapter02.example_2_6_1_apply`,
+  `AtkinsonHan.Chapter02.example_2_6_1_adjoint` and
+  `AtkinsonHan.Chapter02.example_2_6_1_isSelfAdjoint`: the integral operator $K$ of a kernel
+  $k \in L^2$ on $L^2(a, b)$ has $\|K\| \le \|k\|_{L^2}$, its adjoint has the transposed kernel, and
+  $K$ is self-adjoint if and only if $k$ is symmetric.
+* Proposition 2.6.2, `AtkinsonHan.Chapter02.proposition_2_6_2`: a real linear combination of
+  self-adjoint operators is self-adjoint.
+* Proposition 2.6.3, `AtkinsonHan.Chapter02.proposition_2_6_3`: a product of two self-adjoint
+  operators is self-adjoint if and only if they commute.
+* Corollary 2.6.4, `AtkinsonHan.Chapter02.corollary_2_6_4` and
+  `AtkinsonHan.Chapter02.corollary_2_6_4_polynomial`: powers and real polynomials of a self-adjoint
+  operator are self-adjoint.
+* Theorem 2.6.5, `AtkinsonHan.Chapter02.theorem_2_6_5`: $\|L\| = \sup_{\|v\| = 1} |(Lv, v)|$ for a
+  self-adjoint $L$, (2.6.5).
+* Exercise 2.6.3, `AtkinsonHan.Chapter02.exercise_2_6_3`: $|(Lu, v)| \le \sup_{\|w\| = 1} |(Lw, w)|
+  \, \|u\| \, \|v\|$ for a self-adjoint $L$.
 
 ## Conventions
 
-Theorem 2.6.5 carries a `[Nontrivial V]` hypothesis: on the zero space the unit sphere is empty and
-the supremum the book writes has no meaning. The quantity `(L v, v)` of the book is real for a
-self-adjoint `L`, and is written `RCLike.re (inner 𝕜 v (L v))` below.
+* The book's inner product $(u, v)$ is linear in its first argument, and Mathlib's `inner 𝕜 u v` is
+  linear in its second argument. Therefore the book's $(u, v)$ is written `inner 𝕜 v u`, and the
+  relation (2.6.1) reads with its arguments reversed.
+* For a self-adjoint $L$ the number $(Lv, v)$ is real. It is written `RCLike.re (inner 𝕜 v (L v))`.
+* Theorem 2.6.5 and Exercise 2.6.3 assume $V \neq \{0\}$, which is `[Nontrivial V]`: on the zero
+  space the unit sphere is empty, and the supremum that the book writes has no meaning.
+* `AtkinsonHan.Chapter02.equation_2_6_1` is the displayed relation (2.6.1), which defines the
+  adjoint in general. It is not Example 2.6.1, and neither it nor
+  `AtkinsonHan.Chapter02.equation_2_6_3` and `AtkinsonHan.Chapter02.equation_2_6_4` concerns
+  integral operators. Example 2.6.1 is the group of declarations
+  `AtkinsonHan.Chapter02.example_2_6_1…`.
 
-## Conventions, continued
+## Implementation notes
 
-`equation_2_6_1` above is the *displayed relation* (2.6.1), `(L v, w) = (v, L* w)`, which defines
-the adjoint in general — it is not Example 2.6.1, and neither it nor `equation_2_6_3` and
-`equation_2_6_4` says anything about integral operators. Example 2.6.1 is the group of
-`example_2_6_1` declarations below, over the backbone module `Numlib/IntegralEquations/L2Kernel`;
-§2.8.3's bound (2.8.16)–(2.8.17) is the same statement under a second number, and
-`example_2_6_1` carries both.
+* The bound of Example 2.6.1 is also (2.8.16)–(2.8.17) of Section 2.8.3, where $\|k\|_{L^2}$ is
+  called the Hilbert–Schmidt norm of $K$. `AtkinsonHan.Chapter02.example_2_6_1` stands for both.
+* In Example 2.6.1, $L^2(a, b)$ is `Lp ℝ 2 (volume.restrict (Icc a b))`, and the kernel is a
+  function on $\mathbb{R}^2$ that is square integrable on $[a, b]^2$.
 
+## Deviations from the source
+
+* **Section 2.6** (generalization). The book restricts the section to real scalars. The statements
+  about the adjoint and about self-adjoint operators hold over $\mathbb{R}$ and over $\mathbb{C}$,
+  because Mathlib's adjoint is defined over both. See `AtkinsonHan.Chapter02.equation_2_6_1`.
 -/
 
 open Metric RCLike Set
@@ -63,18 +85,32 @@ variable {𝕜 V W : Type*} [RCLike 𝕜] [NormedAddCommGroup V] [InnerProductSp
 
 /-! ### (2.6.1)–(2.6.4): the adjoint and its algebra -/
 
-/-- **(2.6.1).** For Hilbert spaces `V`, `W` and `L ∈ 𝓛(V, W)` there is a unique `L* ∈ 𝓛(W, V)`
-with `(L v, w)_W = (v, L* w)_V` for all `v` and `w`. It is Mathlib's
-`ContinuousLinearMap.adjoint`, constructed from the Riesz representation theorem exactly as the
-book constructs it from its Theorem 2.5.5. -/
+/-- **Equation (2.6.1)** of [han2009theoretical]. Let $V$ and $W$ be Hilbert spaces over
+$\mathbb{K}$ and let $L \in \mathcal{L}(V, W)$. Then there is a unique
+$L^* \in \mathcal{L}(W, V)$ with
+$$(Lv, w)_W = (v, L^* w)_V \quad \text{for all } v \in V, \ w \in W.$$
+
+**Generalization.** The book takes real scalars. The statement holds over $\mathbb{R}$ and over
+$\mathbb{C}$.
+
+The book's $(Lv, w)$ is `inner 𝕜 w (L v)`. The operator $L^*$ is Mathlib's
+`ContinuousLinearMap.adjoint`, which is constructed from the Riesz representation theorem,
+Theorem 2.5.8. -/
 theorem equation_2_6_1 (L : V →L[𝕜] W) :
     ∃! M : W →L[𝕜] V, ∀ (v : V) (w : W), inner 𝕜 w (L v) = inner 𝕜 (M w) v := by
   refine ⟨ContinuousLinearMap.adjoint L, fun v w => ?_, fun M hM => ?_⟩
   · exact (ContinuousLinearMap.adjoint_inner_left L v w).symm
   · exact (ContinuousLinearMap.eq_adjoint_iff M L).mpr fun w v => (hM v w).symm
 
-/-- **(2.6.3)** and Exercise 2.6.1, the algebra of adjoints: the adjoint is an involutive,
-conjugate-linear map, and it reverses composition. -/
+/-- **Equation (2.6.3)** and **Exercise 2.6.1** of [han2009theoretical], the algebra of adjoints.
+Let $U$, $V$ and $W$ be Hilbert spaces over $\mathbb{K}$, let
+$L, L_1, L_2 \in \mathcal{L}(V, W)$, let $M \in \mathcal{L}(W, U)$, and let
+$\alpha_1, \alpha_2 \in \mathbb{K}$. Then
+$$(L^*)^* = L, \qquad (\alpha_1 L_1 + \alpha_2 L_2)^* = \bar\alpha_1 L_1^* + \bar\alpha_2 L_2^*,
+  \qquad (ML)^* = L^* M^*.$$
+
+**Generalization.** The book takes real scalars, where $\bar\alpha_i = \alpha_i$. The statement
+holds over $\mathbb{R}$ and over $\mathbb{C}$. -/
 theorem equation_2_6_3 {U : Type*} [NormedAddCommGroup U] [InnerProductSpace 𝕜 U] [CompleteSpace U]
     (L : V →L[𝕜] W) (α₁ α₂ : 𝕜) (L₁ L₂ : V →L[𝕜] W) (M : W →L[𝕜] U) :
     ContinuousLinearMap.adjoint (ContinuousLinearMap.adjoint L) = L ∧
@@ -86,8 +122,10 @@ theorem equation_2_6_3 {U : Type*} [NormedAddCommGroup U] [InnerProductSpace �
   ⟨ContinuousLinearMap.adjoint_adjoint L, by rw [map_add, map_smulₛₗ, map_smulₛₗ],
     ContinuousLinearMap.adjoint_comp M L⟩
 
-/-- **(2.6.2)** and **(2.6.4).** The adjoint preserves the operator norm, `‖L*‖ = ‖L‖`; the book
-proves `‖L*‖ ≤ ‖L‖` and then applies it to `L*` using `(L*)* = L`. -/
+/-- **Equations (2.6.2)** and **(2.6.4)** of [han2009theoretical]. Let $V$ and $W$ be Hilbert spaces
+over $\mathbb{K}$ and let $L \in \mathcal{L}(V, W)$. Then $\|L^*\| = \|L\|$.
+
+The book proves $\|L^*\| \le \|L\|$ and applies this to $L^*$, using $(L^*)^* = L$. -/
 theorem equation_2_6_4 (L : V →L[𝕜] W) : ‖ContinuousLinearMap.adjoint L‖ = ‖L‖ :=
   ContinuousLinearMap.adjoint.norm_map L
 
@@ -96,25 +134,34 @@ theorem equation_2_6_4 (L : V →L[𝕜] W) : ‖ContinuousLinearMap.adjoint L�
 private theorem isSelfAdjoint_ofReal (α : ℝ) : IsSelfAdjoint (α : 𝕜) := by
   simp [isSelfAdjoint_iff, RCLike.star_def]
 
-/-- **Proposition 2.6.2.** A real linear combination of self-adjoint operators is self-adjoint. -/
+/-- **Proposition 2.6.2** of [han2009theoretical]. Let $V$ be a Hilbert space over $\mathbb{K}$, let
+$L_1, L_2 \in \mathcal{L}(V)$ be self-adjoint, and let $\alpha_1, \alpha_2 \in \mathbb{R}$. Then
+$\alpha_1 L_1 + \alpha_2 L_2$ is self-adjoint. -/
 theorem proposition_2_6_2 {L₁ L₂ : V →L[𝕜] V} (h₁ : IsSelfAdjoint L₁) (h₂ : IsSelfAdjoint L₂)
     (α₁ α₂ : ℝ) : IsSelfAdjoint ((α₁ : 𝕜) • L₁ + (α₂ : 𝕜) • L₂) :=
   ((isSelfAdjoint_ofReal α₁).smul h₁).add ((isSelfAdjoint_ofReal α₂).smul h₂)
 
-/-- **Proposition 2.6.3.** For self-adjoint `L₁` and `L₂` the product `L₁ L₂` is self-adjoint if
-and only if `L₁` and `L₂` commute, because `(L₁ L₂)* = L₂ L₁`. -/
+/-- **Proposition 2.6.3** of [han2009theoretical]. Let $V$ be a Hilbert space over $\mathbb{K}$ and
+let $L_1, L_2 \in \mathcal{L}(V)$ be self-adjoint. Then $L_1 L_2$ is self-adjoint if and only if
+$L_1 L_2 = L_2 L_1$.
+
+The proof uses $(L_1 L_2)^* = L_2 L_1$. -/
 theorem proposition_2_6_3 {L₁ L₂ : V →L[𝕜] V} (h₁ : IsSelfAdjoint L₁) (h₂ : IsSelfAdjoint L₂) :
     IsSelfAdjoint (L₁ ∘L L₂) ↔ L₁ ∘L L₂ = L₂ ∘L L₁ := by
   rw [ContinuousLinearMap.isSelfAdjoint_iff', ContinuousLinearMap.adjoint_comp, h₁.adjoint_eq,
     h₂.adjoint_eq]
   exact eq_comm
 
-/-- **Corollary 2.6.4.** Every power of a self-adjoint operator is self-adjoint. -/
+/-- **Corollary 2.6.4** of [han2009theoretical], powers. Let $V$ be a Hilbert space over
+$\mathbb{K}$ and let $L \in \mathcal{L}(V)$ be self-adjoint. Then $L^n$ is self-adjoint for
+every $n \ge 0$. -/
 theorem corollary_2_6_4 {L : V →L[𝕜] V} (hL : IsSelfAdjoint L) (n : ℕ) : IsSelfAdjoint (L ^ n) :=
   hL.pow n
 
-/-- **Corollary 2.6.4**, second half: `p(L)` is self-adjoint for every real polynomial `p`, written
-here as the finite sum `∑ cᵢ Lⁱ` with real coefficients. -/
+/-- **Corollary 2.6.4** of [han2009theoretical], polynomials. Let $V$ be a Hilbert space over
+$\mathbb{K}$, let $L \in \mathcal{L}(V)$ be self-adjoint, and let
+$c_0, \dots, c_{n-1} \in \mathbb{R}$. Then the operator $p(L) = \sum_{i=0}^{n-1} c_i L^i$ is
+self-adjoint. -/
 theorem corollary_2_6_4_polynomial {L : V →L[𝕜] V} (hL : IsSelfAdjoint L) (n : ℕ) (c : ℕ → ℝ) :
     IsSelfAdjoint (∑ i ∈ Finset.range n, (c i : 𝕜) • L ^ i) := by
   refine Finset.sum_induction _ _ (fun a b ha hb => ha.add hb) (IsSelfAdjoint.zero _) ?_
@@ -142,8 +189,12 @@ section Norm
 
 variable [Nontrivial V] {L : V →L[𝕜] V}
 
-/-- **Theorem 2.6.5** with **(2.6.5)**. For a self-adjoint `L ∈ 𝓛(V)` the operator norm is the
-supremum of `|(L v, v)|` over the unit sphere. -/
+/-- **Theorem 2.6.5** of [han2009theoretical], with (2.6.5). Let $V \neq \{0\}$ be a Hilbert space
+over $\mathbb{K}$ and let $L \in \mathcal{L}(V)$ be self-adjoint. Then
+$$\|L\| = \sup_{\|v\| = 1} |(Lv, v)|.$$
+
+The number $(Lv, v)$ is `RCLike.re (inner 𝕜 v (L v))`, which is the whole inner product because
+$L$ is self-adjoint. The supremum is over the unit sphere `Metric.sphere 0 1`. -/
 theorem theorem_2_6_5 (hL : IsSelfAdjoint L) :
     ‖L‖ = ⨆ v : sphere (0 : V) 1, |re (inner 𝕜 (v : V) (L v))| := by
   have hne : Nonempty (sphere (0 : V) 1) := NormedSpace.sphere_nonempty_rclike 𝕜 zero_le_one
@@ -165,8 +216,10 @@ theorem theorem_2_6_5 (hL : IsSelfAdjoint L) :
     rw [abs_re_inner_eq_abs_rayleigh L (mem_sphere_zero_iff_norm.mp v.2)]
     exact L.rayleighQuotient_le_norm (v : V)
 
-/-- **Exercise 2.6.3.** The quantity of Theorem 2.6.5 bounds the whole sesquilinear form:
-`|(L u, v)| ≤ (sup_{‖w‖ = 1} |(L w, w)|) ‖u‖ ‖v‖` for a self-adjoint `L`. -/
+/-- **Exercise 2.6.3** of [han2009theoretical]. Let $V \neq \{0\}$ be a Hilbert space over
+$\mathbb{K}$ and let $L \in \mathcal{L}(V)$ be self-adjoint. Then for all $u, v \in V$,
+$$|(Lu, v)| \le \Big( \sup_{\|w\| = 1} |(Lw, w)| \Big) \|u\| \, \|v\|.$$
+Thus the quantity of Theorem 2.6.5 bounds the whole sesquilinear form $(u, v) \mapsto (Lu, v)$. -/
 theorem exercise_2_6_3 (hL : IsSelfAdjoint L) (u v : V) :
     ‖inner 𝕜 v (L u)‖ ≤ (⨆ w : sphere (0 : V) 1, |re (inner 𝕜 (w : V) (L w))|) * ‖u‖ * ‖v‖ := by
   rw [← theorem_2_6_5 hL]
@@ -187,23 +240,33 @@ variable {a b : ℝ} {k : ℝ × ℝ → ℝ}
 
 include hk
 
-/-- **Example 2.6.1.** For a kernel with
-`B = (∫∫ |k (x, y)|² dx dy)^{1/2} < ∞` the integral operator `K v (x) = ∫ k (x, y) v (y) dy` is
-bounded on `L²(a, b)`, with `‖K‖ ≤ B`. This is also (2.8.16)–(2.8.17) of §2.8.3, where `B` is
-called the Hilbert–Schmidt norm of `K`. -/
+/-- **Example 2.6.1** of [han2009theoretical], the bound. Let $a, b \in \mathbb{R}$ and let $k$ be a
+real function with
+$$B = \Big( \int_a^b \int_a^b |k(x, y)|^2 \, dx \, dy \Big)^{1/2} < \infty.$$
+Then the integral operator $Kv(x) = \int_a^b k(x, y) v(y) \, dy$ is a bounded operator on
+$L^2(a, b)$ with $\|K\| \le B$.
+
+This is also (2.8.16)–(2.8.17) of Section 2.8.3, where $B$ is called the Hilbert–Schmidt norm of
+$K$. The operator is `IntegralOperator.l2KernelCLM`, and the hypothesis $B < \infty$ is
+`MemLp k 2` for the product measure on $[a, b]^2$. -/
 theorem example_2_6_1 : ‖IntegralOperator.l2KernelCLM hk‖ ≤
     √(∫ p, k p ^ 2 ∂((volume.restrict (Icc a b)).prod (volume.restrict (Icc a b)))) :=
   IntegralOperator.norm_l2KernelCLM_le hk
 
-/-- **Example 2.6.1**, the defining formula: `K v (x) = ∫ k (x, y) v (y) dy` for almost every `x`,
-an element of `L²(a, b)` being an almost-everywhere class. -/
+/-- **Example 2.6.1** of [han2009theoretical], the formula. Let $k$ be square integrable on
+$[a, b]^2$ and let $K$ be its integral operator on $L^2(a, b)$. For every $v \in L^2(a, b)$,
+$$Kv(x) = \int_a^b k(x, y) v(y) \, dy \quad \text{for almost every } x \in [a, b].$$
+The equality holds only almost everywhere, because an element of $L^2(a, b)$ is a class of
+functions that agree almost everywhere. -/
 theorem example_2_6_1_apply (v : Lp ℝ 2 (volume.restrict (Icc a b))) :
     IntegralOperator.l2KernelCLM hk v =ᵐ[volume.restrict (Icc a b)]
       fun x => ∫ y, k (x, y) * v y ∂(volume.restrict (Icc a b)) :=
   IntegralOperator.l2KernelCLM_apply_ae hk v
 
-/-- **Example 2.6.1**, the adjoint: `K* v (y) = ∫ k (x, y) v (x) dx`, the integral operator of the
-transposed kernel. -/
+/-- **Example 2.6.1** of [han2009theoretical], the adjoint. Let $k$ be square integrable on
+$[a, b]^2$ and let $K$ be its integral operator on $L^2(a, b)$. For every $v \in L^2(a, b)$,
+$$K^* v(y) = \int_a^b k(x, y) v(x) \, dx \quad \text{for almost every } y \in [a, b].$$
+Thus $K^*$ is the integral operator of the transposed kernel $(y, x) \mapsto k(x, y)$. -/
 theorem example_2_6_1_adjoint (v : Lp ℝ 2 (volume.restrict (Icc a b))) :
     ContinuousLinearMap.adjoint (IntegralOperator.l2KernelCLM hk) v
         =ᵐ[volume.restrict (Icc a b)]
@@ -211,9 +274,12 @@ theorem example_2_6_1_adjoint (v : Lp ℝ 2 (volume.restrict (Icc a b))) :
   rw [IntegralOperator.adjoint_l2KernelCLM hk]
   exact IntegralOperator.l2KernelCLM_apply_ae _ v
 
-/-- **Example 2.6.1**, self-adjointness: `K` is self-adjoint exactly when `k (x, y) = k (y, x)`.
-Almost everywhere, since an element of `L²` is an almost-everywhere class and the kernel of the
-zero operator is null only up to a null set. -/
+/-- **Example 2.6.1** of [han2009theoretical], self-adjointness. Let $k$ be square integrable on
+$[a, b]^2$ and let $K$ be its integral operator on $L^2(a, b)$. Then $K$ is self-adjoint if and
+only if $k(x, y) = k(y, x)$ for almost every $(x, y) \in [a, b]^2$.
+
+The condition holds only almost everywhere, because two kernels that agree almost everywhere
+give the same operator. -/
 theorem example_2_6_1_isSelfAdjoint :
     IsSelfAdjoint (IntegralOperator.l2KernelCLM hk) ↔
       ∀ᵐ p ∂((volume.restrict (Icc a b)).prod (volume.restrict (Icc a b))),

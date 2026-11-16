@@ -12,21 +12,52 @@ import NumlibSurface.AtkinsonHan.Chapter05.Section06
 import NumlibSurface.AtkinsonHan.Chapter09.Section01
 
 /-!
-# Atkinson–Han §9.4: the conjugate gradient method in variational form
+# Atkinson and Han, Section 9.4: The conjugate gradient method in variational form
 
-Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework*, 3rd edition, Springer, 2009, §9.4.
+This module formalizes Section 9.4 of [han2009theoretical]. Let $V$ be a real Hilbert space, let $a$
+be a symmetric bilinear form on $V$ that is bounded with constant $M$ and $V$-elliptic with constant
+$\alpha > 0$, and let $\ell \in V'$. Through the Riesz representation (9.4.5)–(9.4.6), the
+variational problem (9.4.1), find $u \in V$ with $a(u, v) = \ell(v)$ for all $v \in V$, becomes the
+operator equation (9.4.7) $Au = f$, where $(Au, v) = a(u, v)$ and $(f, v) = \ell(v)$. Algorithm 1 of
+the section is the conjugate gradient method for this equation, written with the residual $r_k$,
+defined by $(r_k, v) = \ell(v) - a(u_k, v)$, and the search directions $s_k$: $$u_{k+1} = u_k +
+\alpha_k s_k, \quad \alpha_k = \frac{\|r_k\|^2}{a(s_k, s_k)}, \quad s_{k+1} = r_{k+1} + \beta_k s_k,
+\quad \beta_k = \frac{\|r_{k+1}\|^2}{\|r_k\|^2}.$$ The module proves that Algorithm 1 is the
+conjugate gradient iteration `CG.iterate` of `Numlib.Krylov.CG` for $A$ and $f$. The properties of
+that iteration then hold for Algorithm 1: the orthogonality of the residuals, the $a$-conjugacy of
+the search directions, the Galerkin property on Krylov subspaces, and the convergence rates (5.6.4)
+and (5.6.5) of Theorem 5.6.1 in the energy norm $\|v\|_a = \sqrt{a(v, v)}$.
 
-The variational problem (9.4.1) is turned into the operator equation (9.4.7) `A u = f` through the
-Riesz representation (9.4.5)–(9.4.6), and Algorithm 1 of §9.4 — written here as `cgIterate`,
-directly in the book's variables `u_k`, `r_k`, `s_k`, `α_k`, `β_k` — is shown to be the backbone's
-`CG.iterate` for that operator (`cgIterate_eq`).  All of the algorithm's properties (residual
-orthogonality, `A`-conjugacy of the search directions, the Galerkin/energy-minimization
-characterization, the convergence rates of Theorem 5.6.1) then transfer.
+## Main definitions
 
-Algorithm 2 of §9.4 (nonlinear conjugate gradients for a strictly convex `J`) is **out of scope**:
-the book quotes its convergence without proof, and its line search is an argmin that need not
-exist in general.
+* Section 9.4, `AtkinsonHan.Chapter09.residual`: the residual $r \in V$ with
+  $(r, v) = \ell(v) - a(u, v)$ for all $v$.
+* Algorithm 1, `AtkinsonHan.Chapter09.cgStep`: one step of the conjugate gradient method.
+* Algorithm 1, `AtkinsonHan.Chapter09.cgIterate`: the iterates $(u_k, r_k, s_k)$ started at $u_0$
+  with $s_0 = r_0$.
+
+## Main results
+
+* Section 9.4, `AtkinsonHan.Chapter09.inner_residual`: $(r, v) = \ell(v) - a(u, v)$ for all
+  $v \in V$.
+* Algorithm 1, `AtkinsonHan.Chapter09.cg_energy_rate`: $\|u - u_{k+1}\|_a \le \frac{M - \alpha}{M +
+  \alpha} \|u - u_k\|_a$.
+* Algorithm 1, `AtkinsonHan.Chapter09.cg_energy_bound`: $\|u - u_k\|_a \le 2
+  \big(\frac{\sqrt{\kappa} - 1}{\sqrt{\kappa} + 1}\big)^k \|u - u_0\|_a$ with $\kappa = M / \alpha$.
+* Algorithm 1, `AtkinsonHan.Chapter09.cg_converges`: $u_k \to u$ for $\alpha < M$.
+
+## Implementation notes
+
+* The state of Algorithm 1 is the backbone structure `CG.State`, whose fields `x`, `r` and `p` are
+  $u_k$, $r_k$ and $s_k$. The residual $r_{k+1}$ is computed from its definition at $u_{k+1}$.
+* The operator $A$ is `AtkinsonHan.BilinForm.toOperator`, and $f$ is `SesqForm.rieszRep` of $\ell$.
+* Divisions are those of Lean: $\alpha_k = 0$ if $a(s_k, s_k) = 0$, and $\beta_k = 0$ if $r_k = 0$.
+
+## Not formalized
+
+* **Algorithm 2** (nonlinear conjugate gradient method for a strictly convex functional $J$). The
+  source quotes its convergence without proof, and its line search is a minimization whose minimizer
+  need not exist in general.
 -/
 
 open Filter Topology
@@ -37,18 +68,30 @@ namespace AtkinsonHan.Chapter09
 variable {V : Type*} [NormedAddCommGroup V] [InnerProductSpace ℝ V] [CompleteSpace V]
 variable {a : BilinForm V} {M α : ℝ}
 
-/-- The residual of §9.4: the `r ∈ V` with `(r, v) = ℓ(v) − a(u, v)` for all `v`. -/
+/-- **Section 9.4** of [han2009theoretical], the residual. Let $V$ be a real Hilbert space, let $a$
+be a bilinear form on $V$ that is bounded with constant $M$, and let $\ell \in V'$. The
+**residual** at $u \in V$ is the element $r \in V$ with $$(r, v) = \ell(v) - a(u, v) \quad
+\text{for all } v \in V.$$
+
+It is the Riesz representative `SesqForm.rieszRep` of the functional $\ell - a(u, \cdot)$, so
+its defining property is `AtkinsonHan.Chapter09.inner_residual`. -/
 noncomputable def residual (a : BilinForm V) (hM : a.IsBoundedWith M) (ℓ : StrongDual ℝ V)
     (u : V) : V :=
   SesqForm.rieszRep (ℓ - a.toCLM hM u)
 
-/-- The step length `α_k = ‖r_k‖²/a(s_k, s_k)` of Algorithm 1. -/
+/-- The step length $\alpha_k = \|r_k\|^2 / a(s_k, s_k)$ of Algorithm 1, for a state with residual
+$r_k$ and search direction $s_k$. It is $0$ when $a(s_k, s_k) = 0$. -/
 noncomputable def cgAlpha (a : BilinForm V) (st : CG.State V) : ℝ :=
   ‖st.r‖ ^ 2 / a st.p st.p
 
-/-- One step of Algorithm 1 of §9.4: `u_{k+1} = u_k + α_k s_k`, `r_{k+1}` the residual at
-`u_{k+1}`, `s_{k+1} = r_{k+1} + β_k s_k` with `β_k = ‖r_{k+1}‖²/‖r_k‖²`.  The state is the
-backbone's `CG.State`, whose fields `x`, `r`, `p` are the book's `u_k`, `r_k`, `s_k`. -/
+/-- **Algorithm 1** of [han2009theoretical], Section 9.4, one step. From a state $(u_k, r_k, s_k)$,
+the step computes $$u_{k+1} = u_k + \alpha_k s_k, \qquad r_{k+1} = \text{the residual at }
+u_{k+1}, \qquad s_{k+1} = r_{k+1} + \beta_k s_k,$$ with $\alpha_k = \|r_k\|^2 / a(s_k, s_k)$ and
+$\beta_k = \|r_{k+1}\|^2 / \|r_k\|^2$.
+
+The state is the backbone structure `CG.State`, whose fields `x`, `r` and `p` are $u_k$, $r_k$
+and $s_k$. The residual $r_{k+1}$ is `AtkinsonHan.Chapter09.residual` at $u_{k+1}$. With the
+division of Lean, $\alpha_k = 0$ if $a(s_k, s_k) = 0$, and $\beta_k = 0$ if $r_k = 0$. -/
 noncomputable def cgStep (a : BilinForm V) (hM : a.IsBoundedWith M) (ℓ : StrongDual ℝ V)
     (st : CG.State V) : CG.State V :=
   { x := st.x + cgAlpha a st • st.p
@@ -56,35 +99,42 @@ noncomputable def cgStep (a : BilinForm V) (hM : a.IsBoundedWith M) (ℓ : Stron
     p := residual a hM ℓ (st.x + cgAlpha a st • st.p)
           + (‖residual a hM ℓ (st.x + cgAlpha a st • st.p)‖ ^ 2 / ‖st.r‖ ^ 2) • st.p }
 
-/-- Algorithm 1 of §9.4 started at `u₀` with `s_0 = r_0`. -/
+/-- **Algorithm 1** of [han2009theoretical], Section 9.4. The $k$-th state $(u_k, r_k, s_k)$ of the
+conjugate gradient method started at $u_0 \in V$, with $r_0$ the residual at $u_0$ and
+$s_0 = r_0$. It is the $k$-th iterate of `AtkinsonHan.Chapter09.cgStep`. -/
 noncomputable def cgIterate (a : BilinForm V) (hM : a.IsBoundedWith M) (ℓ : StrongDual ℝ V)
     (u₀ : V) (k : ℕ) : CG.State V :=
   (cgStep a hM ℓ)^[k] ⟨u₀, residual a hM ℓ u₀, residual a hM ℓ u₀⟩
 
 /-! ### The residual -/
 
-/-- The defining property of the residual of §9.4: `(r, v) = ℓ(v) − a(u, v)` for every `v`.  So
-`r` vanishes exactly when `u` solves the variational problem, which is what makes it the right
-stopping criterion for Algorithm 1. -/
+/-- **Section 9.4** of [han2009theoretical], the defining property of the residual. Let $V$ be a
+real Hilbert space, let $a$ be bounded with constant $M$, and let $\ell \in V'$. For all
+$u, v \in V$, the residual $r$ at $u$ satisfies $$(r, v) = \ell(v) - a(u, v).$$
+
+So $r = 0$ exactly when $u$ solves the variational problem (9.4.1). This makes $r_k$ the
+stopping criterion of Algorithm 1. -/
 theorem inner_residual (hM : a.IsBoundedWith M) (ℓ : StrongDual ℝ V) (u v : V) :
     ⟪residual a hM ℓ u, v⟫_ℝ = ℓ v - a u v := by
   rw [residual, SesqForm.inner_rieszRep]
   rfl
 
-/-- The residual is `f − A u` for the operator `A` and right-hand side `f` of (9.4.5)–(9.4.6). -/
+/-- The residual at $u$ is $f - Au$, for the operator $A$ of (9.4.5) and the right-hand side $f$ of
+(9.4.6). -/
 theorem residual_eq (hM : a.IsBoundedWith M) (ℓ : StrongDual ℝ V) (u : V) :
     residual a hM ℓ u = SesqForm.rieszRep ℓ - BilinForm.toOperator a hM u := by
   refine ext_inner_right ℝ fun v => ?_
   rw [inner_residual, inner_sub_left, SesqForm.inner_rieszRep, BilinForm.inner_toOperator]
 
-/-- `r_k = 0` exactly at the solution: the residual is minus the Riesz representative of the
-Gâteaux derivative of the energy (see `hasFDerivAt_energy`). -/
+/-- The residual at $u$ is minus the Riesz representative of the functional $a(u, \cdot) - \ell$.
+This functional is the derivative of the energy at $u$
+(`AtkinsonHan.Chapter09.hasFDerivAt_energy`), so $r_k = 0$ exactly at the solution. -/
 theorem residual_eq_neg_rieszRep (hM : a.IsBoundedWith M) (ℓ : StrongDual ℝ V) (u : V) :
     residual a hM ℓ u = -SesqForm.rieszRep (a.toCLM hM u - ℓ) := by
   rw [residual, show (ℓ - a.toCLM hM u) = -(a.toCLM hM u - ℓ) from by abel, SesqForm.rieszRep,
     SesqForm.rieszRep, map_neg]
 
-/-! ### Algorithm 1 is the backbone's conjugate gradient iteration -/
+/-! ### Algorithm 1 is the conjugate gradient iteration of the backbone -/
 
 private theorem cgAlpha_eq (hM : a.IsBoundedWith M) (st : CG.State V) :
     cgAlpha a st = CG.alpha (BilinForm.toOperator a hM : V →ₗ[ℝ] V) st := by
@@ -108,8 +158,9 @@ private theorem cgStep_eq (hM : a.IsBoundedWith M) (ℓ : StrongDual ℝ V) (st 
   refine ⟨by rw [hα], hr, ?_⟩
   rw [hr, hβ]
 
-/-- Algorithm 1 of §9.4 is the backbone's conjugate gradient iteration for the operator `A` and
-right-hand side `f` of (9.4.5)–(9.4.6). -/
+/-- Algorithm 1 of Section 9.4, started at $u_0$, is the conjugate gradient iteration `CG.iterate`
+of the backbone for the operator $A$ of (9.4.5) and the right-hand side $f$ of (9.4.6): the two
+sequences of states are equal. -/
 theorem cgIterate_eq (hM : a.IsBoundedWith M) (ℓ : StrongDual ℝ V) (u₀ : V) (k : ℕ) :
     cgIterate a hM ℓ u₀ k
       = CG.iterate (BilinForm.toOperator a hM : V →ₗ[ℝ] V) (SesqForm.rieszRep ℓ) u₀ k := by
@@ -124,17 +175,19 @@ theorem cgIterate_eq (hM : a.IsBoundedWith M) (ℓ : StrongDual ℝ V) (u₀ : V
     exact cgStep_eq hM ℓ _
       (CG.residual_eq (BilinForm.toOperator a hM : V →ₗ[ℝ] V) (SesqForm.rieszRep ℓ) u₀ k)
 
-/-! ### Properties of `A` and `f`, and the operator form of the problem -/
+/-! ### Properties of $A$ and $f$, and the operator form of the problem -/
 
-/-- The quadratic form of the operator `A` of (9.4.5) is the form itself, `(A x, x) = a(x,x)`. -/
+/-- The quadratic form of the operator $A$ of (9.4.5) is the bilinear form: $(Ax, x) = a(x, x)$. -/
 private theorem re_inner_toOperator_self (hM : a.IsBoundedWith M) (x : V) :
     RCLike.re (inner ℝ ((BilinForm.toOperator a hM : V →ₗ[ℝ] V) x) x) = a x x := by
   rw [show ((BilinForm.toOperator a hM : V →ₗ[ℝ] V)) x = BilinForm.toOperator a hM x from rfl,
     BilinForm.inner_toOperator hM x x]
   simp
 
-/-- (9.4.2)–(9.4.3): for a bounded symmetric `V`-elliptic form, `A` is symmetric with quadratic
-form between `α ‖v‖²` and `M ‖v‖²`. -/
+/-- Equations (9.4.2)–(9.4.3). Let $a$ be bounded with constant $M$, symmetric, and $V$-elliptic
+with constant $\alpha$. Then the operator $A$ of (9.4.5) is symmetric and satisfies $$\alpha
+\|v\|^2 \le (Av, v) \le M \|v\|^2 \quad \text{for all } v \in V.$$
+-/
 theorem isSymmetricBoundedBy_toOperator (hM : a.IsBoundedWith M)
     (hs : LinearMap.BilinForm.IsSymm a) (ha : a.IsEllipticWith α) :
     (BilinForm.toOperator a hM : V →ₗ[ℝ] V).IsSymmetricBoundedBy α M where
@@ -149,18 +202,24 @@ theorem isSymmetricBoundedBy_toOperator (hM : a.IsBoundedWith M)
       _ ≤ M * ‖x‖ * ‖x‖ := hM x x
       _ = M * ‖x‖ ^ 2 := by ring
 
-/-- The operator form (9.4.7) of the solution `u` of (9.4.4). -/
+/-- The operator form (9.4.7) of the problem. Let $a$ be bounded with constant $M$, and let $u$
+satisfy $a(u, v) = \ell(v)$ for all $v \in V$ (9.4.4). Then $Au = f$. -/
 theorem toOperator_eq_rieszRep (hM : a.IsBoundedWith M) (ℓ : StrongDual ℝ V) {u : V}
     (hu : ∀ v, a u v = ℓ v) :
     (BilinForm.toOperator a hM : V →ₗ[ℝ] V) u = SesqForm.rieszRep ℓ :=
   (BilinForm.toOperator_eq_rieszRep_iff hM ℓ u).mpr hu
 
-/-! ### Properties of Algorithm 1 transported from the backbone -/
+/-! ### Properties of Algorithm 1 from the backbone -/
 
 variable {ℓ : StrongDual ℝ V} {u₀ : V}
 
-/-- The iterates of Algorithm 1 solve the Galerkin problem on the Krylov spaces
-`u₀ + 𝒦_k(A, r₀)`; equivalently they minimize the energy there. -/
+/-- Let $a$ be bounded with constant $M$, symmetric, and $V$-elliptic with constant $\alpha > 0$.
+Then the $k$-th iterate $u_k$ of Algorithm 1 solves the Galerkin problem on the affine Krylov
+space $u_0 + \mathcal{K}_k(A, r_0)$: it lies in this space, and its residual is orthogonal to
+$\mathcal{K}_k(A, r_0)$.
+
+Equivalently, $u_k$ minimizes the energy on $u_0 + \mathcal{K}_k(A, r_0)$. The statement is
+`Krylov.IsGalerkinIterate`. -/
 theorem cg_isGalerkinIterate (hM : a.IsBoundedWith M) (hs : LinearMap.BilinForm.IsSymm a)
     (hα : 0 < α) (ha : a.IsEllipticWith α) (ℓ : StrongDual ℝ V) (u₀ : V) (k : ℕ) :
     Krylov.IsGalerkinIterate (BilinForm.toOperator a hM : V →ₗ[ℝ] V) (SesqForm.rieszRep ℓ) u₀ k
@@ -169,7 +228,8 @@ theorem cg_isGalerkinIterate (hM : a.IsBoundedWith M) (hs : LinearMap.BilinForm.
   exact CG.isGalerkinIterate _ _
     ((isSymmetricBoundedBy_toOperator hM hs ha).isSymmetricCoercive hα) k
 
-/-- Residual orthogonality: `(r_i, r_j) = 0` for `i ≠ j`. -/
+/-- Let $a$ be bounded with constant $M$, symmetric, and $V$-elliptic with constant $\alpha > 0$.
+Then the residuals of Algorithm 1 are orthogonal: $(r_i, r_j) = 0$ for $i \ne j$. -/
 theorem cg_inner_residual_eq_zero (hM : a.IsBoundedWith M) (hs : LinearMap.BilinForm.IsSymm a)
     (hα : 0 < α) (ha : a.IsEllipticWith α) (ℓ : StrongDual ℝ V) (u₀ : V) {i j : ℕ} (h : i ≠ j) :
     ⟪(cgIterate a hM ℓ u₀ i).r, (cgIterate a hM ℓ u₀ j).r⟫_ℝ = 0 := by
@@ -177,7 +237,8 @@ theorem cg_inner_residual_eq_zero (hM : a.IsBoundedWith M) (hs : LinearMap.Bilin
   exact CG.inner_residual_eq_zero _ _
     ((isSymmetricBoundedBy_toOperator hM hs ha).isSymmetricCoercive hα) h
 
-/-- `a`-conjugacy of the search directions: `a(s_i, s_j) = 0` for `i ≠ j`. -/
+/-- Let $a$ be bounded with constant $M$, symmetric, and $V$-elliptic with constant $\alpha > 0$.
+Then the search directions of Algorithm 1 are $a$-conjugate: $a(s_i, s_j) = 0$ for $i \ne j$. -/
 theorem cg_apply_direction_eq_zero (hM : a.IsBoundedWith M) (hs : LinearMap.BilinForm.IsSymm a)
     (hα : 0 < α) (ha : a.IsEllipticWith α) (ℓ : StrongDual ℝ V) (u₀ : V) {i j : ℕ} (h : i ≠ j) :
     a (cgIterate a hM ℓ u₀ i).p (cgIterate a hM ℓ u₀ j).p = 0 := by
@@ -185,7 +246,9 @@ theorem cg_apply_direction_eq_zero (hM : a.IsBoundedWith M) (hs : LinearMap.Bili
   exact CG.inner_apply_direction_eq_zero _ _
     ((isSymmetricBoundedBy_toOperator hM hs ha).isSymmetricCoercive hα) h
 
-/-- The energy norm of the error decreases along Algorithm 1. -/
+/-- Let $a$ be bounded with constant $M$, symmetric, and $V$-elliptic with constant $\alpha > 0$,
+and let $u$ satisfy $a(u, v) = \ell(v)$ for all $v \in V$. Then the energy norm $\|u - u_k\|_a$
+of the error of Algorithm 1 is a decreasing function of $k$. -/
 theorem cg_energyNorm_error_antitone (hM : a.IsBoundedWith M) (hs : LinearMap.BilinForm.IsSymm a)
     (hα : 0 < α) (ha : a.IsEllipticWith α) (ℓ : StrongDual ℝ V) {u : V} (hu : ∀ v, a u v = ℓ v)
     (u₀ : V) : Antitone fun k => a.energyNorm (u - (cgIterate a hM ℓ u₀ k).x) := by
@@ -196,10 +259,17 @@ theorem cg_energyNorm_error_antitone (hM : a.IsBoundedWith M) (hs : LinearMap.Bi
   simp only [BilinForm.energyNorm_eq_energyNorm_toOperator hM, cgIterate_eq hM ℓ u₀]
   exact h hij
 
-/-! ### Convergence (Theorem 5.6.1 transported through `cgIterate_eq`) -/
+/-! ### Convergence: Theorem 5.6.1 for Algorithm 1 -/
 
-/-- (5.6.4) for Algorithm 1: `‖u − u_{k+1}‖_a ≤ ((M − α)/(M + α)) ‖u − u_k‖_a`.  The rate is the
-backbone's `Krylov.IsGalerkinIterate.energyNorm_error_succ_le`, read through `cgIterate_eq`. -/
+/-- **Algorithm 1** of [han2009theoretical], Section 9.4, with the rate (5.6.4) of Theorem 5.6.1.
+Let $V$ be a real Hilbert space, let $a$ be a symmetric bilinear form on $V$ that is bounded
+with constant $M$ and $V$-elliptic with constant $\alpha > 0$, and let $u$ satisfy
+$a(u, v) = \ell(v)$ for all $v \in V$. Then for all $k$, the iterates $u_k$ of Algorithm 1 from
+any $u_0 \in V$ satisfy $$\|u - u_{k+1}\|_a \le \frac{M - \alpha}{M + \alpha} \|u - u_k\|_a.$$
+
+The energy norm is `AtkinsonHan.BilinForm.energyNorm`. The proof transfers
+`Krylov.IsGalerkinIterate.energyNorm_error_succ_le` through
+`AtkinsonHan.Chapter09.cgIterate_eq`. -/
 theorem cg_energy_rate (hM : a.IsBoundedWith M) (hs : LinearMap.BilinForm.IsSymm a) (hα : 0 < α)
     (ha : a.IsEllipticWith α) (ℓ : StrongDual ℝ V) {u : V} (hu : ∀ v, a u v = ℓ v) (u₀ : V)
     (k : ℕ) :
@@ -211,9 +281,15 @@ theorem cg_energy_rate (hM : a.IsBoundedWith M) (hs : LinearMap.BilinForm.IsSymm
     (isSymmetricBoundedBy_toOperator hM hs ha) (CG.isGalerkinIterate _ _ hAc k)
     (CG.isGalerkinIterate _ _ hAc (k + 1)) (toOperator_eq_rieszRep hM ℓ hu)
 
-/-- (5.6.5) for Algorithm 1: `‖u − u_k‖_a ≤ 2 ((√κ − 1)/(√κ + 1))^k ‖u − u_0‖_a` with
-`κ = M/α`.  Stated for `α ≤ M`, as the backbone states it; the strict inequality is needed only
-in `cg_converges` below, where it is what makes the ratio less than one. -/
+/-- **Algorithm 1** of [han2009theoretical], Section 9.4, with the bound (5.6.5) of Theorem 5.6.1.
+Let $V$ be a real Hilbert space, let $a$ be a symmetric bilinear form on $V$ that is bounded
+with constant $M$ and $V$-elliptic with constant $\alpha$, with $0 < \alpha \le M$, and let $u$
+satisfy $a(u, v) = \ell(v)$ for all $v \in V$. Then for all $k$, the iterates $u_k$ of Algorithm
+1 from any $u_0 \in V$ satisfy, with $\kappa = M / \alpha$, $$\|u - u_k\|_a \le 2
+\Big(\frac{\sqrt{\kappa} - 1}{\sqrt{\kappa} + 1}\Big)^k \|u - u_0\|_a.$$
+
+The hypothesis $\alpha \le M$ is that of the backbone. The strict inequality $\alpha < M$ is
+needed only in `AtkinsonHan.Chapter09.cg_converges`. -/
 theorem cg_energy_bound (hM : a.IsBoundedWith M) (hs : LinearMap.BilinForm.IsSymm a) (hα : 0 < α)
     (hαM : α ≤ M) (ha : a.IsEllipticWith α) (ℓ : StrongDual ℝ V) {u : V} (hu : ∀ v, a u v = ℓ v)
     (u₀ : V) (k : ℕ) :
@@ -226,8 +302,14 @@ theorem cg_energy_bound (hM : a.IsBoundedWith M) (hs : LinearMap.BilinForm.IsSym
     (CG.isGalerkinIterate _ _ ((isSymmetricBoundedBy_toOperator hM hs ha).isSymmetricCoercive hα) k)
     (toOperator_eq_rieszRep hM ℓ hu)
 
-/-- Convergence of Algorithm 1: `u_k → u`.  It follows from (5.6.5) together with
-`√α ‖v‖ ≤ ‖v‖_a`. -/
+/-- **Algorithm 1** of [han2009theoretical], Section 9.4, convergence. Let $V$ be a real Hilbert
+space, let $a$ be a symmetric bilinear form on $V$ that is bounded with constant $M$ and
+$V$-elliptic with constant $\alpha$, with $0 < \alpha < M$, and let $u$ satisfy
+$a(u, v) = \ell(v)$ for all $v \in V$. Then the iterates $u_k$ of Algorithm 1 from any
+$u_0 \in V$ converge to $u$ in $V$.
+
+The proof combines the bound (5.6.5) of `AtkinsonHan.Chapter09.cg_energy_bound` with
+$\sqrt{\alpha} \|v\| \le \|v\|_a$. -/
 theorem cg_converges (hM : a.IsBoundedWith M) (hs : LinearMap.BilinForm.IsSymm a) (hα : 0 < α)
     (hαM : α < M) (ha : a.IsEllipticWith α) (ℓ : StrongDual ℝ V) {u : V} (hu : ∀ v, a u v = ℓ v)
     (u₀ : V) : Tendsto (fun k => (cgIterate a hM ℓ u₀ k).x) atTop (𝓝 u) := by
@@ -262,8 +344,10 @@ theorem cg_converges (hM : a.IsBoundedWith M) (hs : LinearMap.BilinForm.IsSymm a
 /-! ### The energy functional and its derivative -/
 
 omit [CompleteSpace V] in
-/-- The Fréchet (hence Gâteaux) derivative of the energy functional (§9.4):
-`⟨E'(u), v⟩ = a(u,v) − ℓ(v)`. -/
+/-- Let $V$ be a real inner product space, and let $a$ be symmetric and bounded with constant
+$M \ge 0$. Then the energy $E(v) = \frac12 a(v, v) - \ell(v)$ has at each $u \in V$ the Fréchet
+derivative $$\langle E'(u), v \rangle = a(u, v) - \ell(v).$$ In particular $E$ is Gâteaux
+differentiable. -/
 theorem hasFDerivAt_energy (hM0 : 0 ≤ M) (hM : a.IsBoundedWith M)
     (hs : LinearMap.BilinForm.IsSymm a) (ℓ : StrongDual ℝ V) (u : V) :
     HasFDerivAt (a.energy ℓ) (a.toCLM hM u - ℓ) u := by
@@ -291,8 +375,8 @@ theorem hasFDerivAt_energy (hM0 : 0 ≤ M) (hM : a.IsBoundedWith M)
   calc (1 / 2 : ℝ) * |a (y - u) (y - u)| ≤ (1 / 2 : ℝ) * (M * ‖y - u‖ * ‖y - u‖) := by linarith
     _ ≤ c * ‖y - u‖ := by nlinarith
 
-/-- The residual is minus the Riesz representative of the derivative of the energy:
-`(r_k, v) = −⟨E'(u_k), v⟩`. -/
+/-- The residual is minus the Riesz representative of the derivative of the energy: $(r, v) =
+-\langle E'(u), v \rangle = -(a(u, v) - \ell(v))$ for all $u, v \in V$. -/
 theorem inner_residual_eq_neg_fderiv (hM : a.IsBoundedWith M) (ℓ : StrongDual ℝ V) (u v : V) :
     ⟪residual a hM ℓ u, v⟫_ℝ = -((a.toCLM hM u - ℓ) v) := by
   rw [inner_residual]
@@ -300,8 +384,9 @@ theorem inner_residual_eq_neg_fderiv (hM : a.IsBoundedWith M) (ℓ : StrongDual 
   rw [h1]
   ring
 
-/-- (9.4.4) is equivalent to minimizing the energy over all of `V` (the case `V_N = ⊤` of
-(9.1.6)). -/
+/-- Let $a$ be symmetric, bounded with constant $M$ and $V$-elliptic with constant $\alpha > 0$.
+Then $u$ minimizes the energy $E(v) = \frac12 a(v, v) - \ell(v)$ over $V$ if and only if
+$a(u, v) = \ell(v)$ for all $v \in V$, which is (9.4.4). This is the case $V_N = V$ of (9.1.6). -/
 theorem energy_isMinOn_iff (hM : a.IsBoundedWith M) (hα : 0 < α) (ha : a.IsEllipticWith α)
     (hs : LinearMap.BilinForm.IsSymm a) (ℓ : StrongDual ℝ V) (u : V) :
     IsMinOn (a.energy ℓ) Set.univ u ↔ ∀ v, a u v = ℓ v := by

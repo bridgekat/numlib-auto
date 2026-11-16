@@ -15,113 +15,123 @@ import NumlibSurface.AtkinsonHan.Chapter10.Section02
 import Numlib.FiniteElement.Interpolation
 
 /-!
-# Atkinson–Han §10.3: local interpolation and regular families
+# Atkinson and Han, Section 10.3: Interpolation error estimates
 
-Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework*, 3rd edition, Springer, 2009, §10.3.
+This module formalizes Section 10.3 of [han2009theoretical]. The section estimates the error of
+finite element interpolation on one element $K = F_K(\hat K)$, the image of a reference element
+$\hat K$ under an affine bijection $F_K(\hat x) = T_K \hat x + b_K$. Interpolation commutes with the
+change of variables (Theorem 10.3.1), the error on $\hat K$ is bounded by $c |\hat v|_{k+1,\hat K}$
+when the local space contains the polynomials of degree at most $k$ (Theorem 10.3.3), and the affine
+change of variables in $H^m$ (Theorem 10.3.4) carries this bound to the local estimate $|v - \Pi_K
+v|_{m,K} \le c h_K^{k+1} \rho_K^{-m} |v|_{k+1,K}$ (Theorem 10.3.5). Here $h_K$ is the diameter of
+$K$ and $\rho_K$ the diameter of a ball inscribed in $K$. On a regular family of partitions
+(Definition 10.3.6) the ratio $h_K / \rho_K$ is bounded, and the estimate becomes $\|v - \Pi_K
+v\|_{m,K} \le c h_K^{k+1-m} |v|_{k+1,K}$ (Corollary 10.3.7). Example 10.3.8 applies this to the
+linear element on triangles, and Theorem 10.3.9 sums the local estimates over a triangulation.
 
-The section estimates the finite element interpolation error on an element by transporting the
-problem to the reference element, and then sums over the elements of a triangulation. The general
-theory is the backbone's `Numlib/FiniteElement/Interpolation.lean`; the numbered results here
-restate it in the book's terms and are proved by delegation. Everything
-is here: Theorem 10.3.1 (the transport of the interpolant), Theorem 10.3.3 (the estimate on
-the reference element), Theorem 10.3.4 (the affine change of variables in `H^m`), Theorem 10.3.5
-(the local estimate), Definition 10.3.6 and Corollary 10.3.7 (regular families), Example
-10.3.8 (the linear element on triangles, and its `Q₁` analogue on the unit square), and Theorem
-10.3.9 (the global estimate on a triangulation). Two of these are not Sobolev statements at all:
-
-* **Theorem 10.3.1**, that nodal interpolation commutes with the affine pullback, is an algebraic
-  identity between two finite sums. It is the backbone's `Approximation.nodalInterp_comp`, and the
-  book's `Π̂` and `Π_K` of (10.3.1) and (10.3.2) are `Approximation.nodalInterp` at the reference
-  nodes and at their images under `F_K`.
-* **Definition 10.3.6**, the regularity of a family of partitions, needs only the diameter of an
-  element and a ball inscribed in it.
+The general theory is in `Numlib.FiniteElement.Interpolation`, and the results here specialize it.
+The Sobolev spaces come from `Numlib.Analysis.Sobolev`, the nodal interpolation operator from
+`Numlib.Approximation.NodalInterpolation`, the triangulations from `Numlib.Geometry.Triangulation`,
+and the geometry of a triangle from `Numlib.Geometry.Euclidean.TriangleShape`.
 
 ## Main definitions
 
-* `meshSize` — the mesh parameter (10.3.9), `h = max_{K ∈ 𝒯_h} h_K`, written as a supremum of
-  diameters so that it is defined for any collection of elements; `diam_le_meshSize` is the
-  maximum property for a finite one.
-* `IsRegularFamily` — Definition 10.3.6: a family of partitions is regular when the ratios
-  `h_K / ρ_K` are bounded uniformly and the mesh parameter tends to `0` along the family.
-* `q1Node`, `q1Shape` — the `Q₁` element on the unit square: the four vertices and the bilinear
-  shape functions of Exercise 10.2.3, on `EuclideanSpace ℝ (Fin 2)`.
+* Equation (10.3.9), `AtkinsonHan.Chapter10.meshSize`: the mesh parameter
+  $h = \max_{K \in \mathcal{T}_h} h_K$, as the supremum of the diameters of the elements.
+* Definition 10.3.6, `AtkinsonHan.Chapter10.IsRegularFamily`: a family of partitions is regular if
+  the ratios $h_K / \rho_K$ are bounded uniformly and the mesh parameter tends to $0$.
 
 ## Main results
 
-* `theorem_10_3_1` — `Π̂ (v ∘ F_K) = (Π_K v) ∘ F_K`.
-* `theorem_10_3_3` — `|v̂ − Π̂ v̂|_{m,K̂} ≤ c |v̂|_{k+1,K̂}` on a reference element `K̂` that is a
-  bounded connected Sobolev extension domain (for every exponent), with `m ≤ k + 1`,
-  `k + 1 > d/2`, shape functions in `H^m(K̂)` and the polynomial invariance `ℙ_k(K̂) ⊆ X̂`: the
-  book's argument through the embedding `H^{k+1}(K̂) ↪ C(K̂̄)` and Corollary 7.3.18.
-* `theorem_10_3_4` — the affine change of variables in `H^m`: `v ∈ H^m(K)` iff `v ∘ F_K ∈ H^m(K̂)`,
-  with the seminorm bounds (10.3.5)–(10.3.6); the general lemmas are
-  `Numlib/Analysis/Sobolev/Affine.lean`.
-* `theorem_10_3_5` — `|v − Π_K v|_{m,K} ≤ c h_K^{k+1} ρ_K^{−m} |v|_{k+1,K}` on every affine image
-  `K = F_K(K̂)`, with `c` depending on `K̂` and `Π̂` only.
-* `corollary_10_3_7` — `‖v − Π_K v‖_{m,K} ≤ c h_K^{k+1−m} |v|_{k+1,K}` on a regular family whose
-  elements have diameter at most `H`.
-* `example_10_3_8` — the book's example: Corollary 10.3.7 for the linear element (`P₁`, the
-  barycentric coordinates as shape functions) on the affine images of the reference triangle,
-  `m ≤ 2`: `‖v − Π_K v‖_{m,K} ≤ c h_K^{2−m} |v|_{2,K}`, (10.3.11).
-* `example_10_3_8_square` — the same for the `Q₁` element on the affine images of the unit
-  square.
-* `theorem_10_3_9` — the global estimate `‖v − Π_h v‖_{m,Ω} ≤ c h^{k+1−m} |v|_{k+1,Ω}`, `m = 0, 1`,
-  on a regular family of triangulations (`Triangulation`, `Numlib/Geometry/Triangulation.lean`)
-  for a conforming element type, and `theorem_10_3_9_linear`, `theorem_10_3_9_lattice`, its
-  instances for the linear element and for the `ℙ_k` Lagrange element on the principal lattice.
-* `example_10_3_2` — the linear element: the barycentric coordinates of a simplex are nodal for its
-  vertices, so `Π_K` is the interpolant through the vertex values, and
-  `nodalInterp_coord_affineMap` says that it reproduces affine functions.
+* Theorem 10.3.1, `AtkinsonHan.Chapter10.theorem_10_3_1`:
+  $\hat\Pi (v \circ F_K) = (\Pi_K v) \circ F_K$.
+* Example 10.3.2, `AtkinsonHan.Chapter10.example_10_3_2`: the barycentric coordinates of a simplex
+  are nodal for its vertices.
+* Example 10.3.2, `AtkinsonHan.Chapter10.nodalInterp_coord_affineMap`: the linear element reproduces
+  affine functions.
+* Theorem 10.3.3, `AtkinsonHan.Chapter10.theorem_10_3_3`: $|\hat v - \hat\Pi \hat v|_{m,\hat K} \le
+  c |\hat v|_{k+1,\hat K}$ on the reference element, if $\hat\Pi$ reproduces the polynomials of
+  degree at most $k$.
+* Theorem 10.3.4, `AtkinsonHan.Chapter10.theorem_10_3_4`: $v \in H^m(K)$ if and only if
+  $v \circ F_K \in H^m(\hat K)$, with the seminorm bounds (10.3.5) and (10.3.6).
+* Theorem 10.3.5, `AtkinsonHan.Chapter10.theorem_10_3_5`: $|v - \Pi_K v|_{m,K} \le c h_K^{k+1}
+  \rho_K^{-m} |v|_{k+1,K}$ on every affine image $K$ of $\hat K$.
+* Corollary 10.3.7, `AtkinsonHan.Chapter10.corollary_10_3_7`: $\|v - \Pi_K v\|_{m,K} \le c
+  h_K^{k+1-m} |v|_{k+1,K}$ on a regular family.
+* Example 10.3.8, `AtkinsonHan.Chapter10.example_10_3_8`: $\|v - \Pi_K v\|_{m,K} \le c h_K^{2-m}
+  |v|_{2,K}$ for the linear element on a regular family of triangles.
+* Example 10.3.8, `AtkinsonHan.Chapter10.example_10_3_8_square`: the same estimate for the $Q_1$
+  element on a regular family of parallelograms.
+* Theorem 10.3.9, `AtkinsonHan.Chapter10.theorem_10_3_9`: $\|v - \Pi_h v\|_{m,\Omega} \le c
+  h^{k+1-m} |v|_{k+1,\Omega}$ for $m = 0, 1$ on a regular family of triangulations.
+* Theorem 10.3.9, `AtkinsonHan.Chapter10.theorem_10_3_9_linear`: the global estimate for the linear
+  element.
+* Theorem 10.3.9, `AtkinsonHan.Chapter10.theorem_10_3_9_lattice`: the global estimate for the
+  $\mathbb{P}_k$ Lagrange element on the principal lattice.
+* Exercise 10.3.3, `AtkinsonHan.Chapter10.exercise_10_3_3`: for a family of triangles,
+  $h_K / \rho_K$ is bounded if and only if the angles are bounded away from $0$.
 
-## Deviations from the book
+## Implementation notes
 
-The book's reference element is a triangle, a Lipschitz domain, and its Theorem 10.3.3 rests on
-Corollary 7.3.18 (Bramble–Hilbert) and the embedding `H^{k+1}(K̂) ↪ C(K̂)` on it. The backbone
-proves both on Sobolev extension domains (`IsSobolevExtensionDomainAll`,
-`Numlib/Analysis/Sobolev/{EmbeddingDomain,DenyLions}.lean`); no general Lipschitz extension
-operator is formalized, so the estimates are stated for a reference element that is an extension
-domain *as a hypothesis*. The reference triangle satisfies it
-(`isSobolevExtensionDomainAll_referenceTriangle`, `Numlib/Analysis/Sobolev/Simplex.lean`: two
-reflections across its legs reach the diamond `|x̂₁| + |x̂₂| < 1`, an affine image of the unit
-square, and being an extension domain is affine-invariant), as does the unit square
-(`isSobolevExtensionDomainAll_unitSquare`, Brezis's Remark 9), so every estimate of the section
-applies to the book's triangles verbatim: `example_10_3_8` is the book's example and
-`example_10_3_8_square` its `Q₁` counterpart. The dimension is general and the hypothesis
-`k + 1 > d/2` is carried explicitly (the book's `k > 0` is its case `d = 2`).
+* $H^m(K)$ is `AtkinsonHan.Chapter07.definition_7_2_2 m 2 K`, that is `MemSobolev v m 2 K volume`.
+  The seminorm $|\cdot|_{m,K}$ is `sobolevSeminorm v m 2 K volume`, the $L^2(K)$ norm of the
+  operator norm of the tensor of weak derivatives of order $m$, and the norm $\|\cdot\|_{m,K}$ is
+  `sobolevNorm`. Both take values in $[0, \infty]$. They are equivalent to the multi-index seminorm
+  and norm of the source, with constants that depend on $d$ and $m$ only
+  (`Numlib.Analysis.Sobolev.SeminormCompare`).
+* An element is an open set (`TopologicalSpace.Opens`), and the closed element of the source is its
+  closure. An element $K = F_K(\hat K)$ is given by $T_K$ as a continuous linear equivalence and
+  $b_K$ as a vector, with the hypothesis that the image of $\hat K$ under
+  $\hat x \mapsto T_K \hat x + b_K$ is $K$.
+* The interpolation operators $\hat\Pi$ of (10.3.1) and $\Pi_K$ of (10.3.2) are
+  `Approximation.nodalInterp`, at the nodes $\hat x_i$ with the shape functions $\hat\varphi_i$, and
+  at the nodes $F_K(\hat x_i)$ with the shape functions $\hat\varphi_i \circ F_K^{-1}$.
+* The polynomial invariance (10.3.4), $\mathbb{P}_k(\hat K) \subseteq \hat X$, is the hypothesis
+  that $\hat\Pi q = q$ on $\hat K$ for every `MvPolynomial` $q$ of total degree at most $k$.
+* The $Q_1$ element on the unit square $(0, 1)^2$, `EuclideanSpace.rect 0 1 0 1`, has the nodes
+  `AtkinsonHan.Chapter10.q1Node` and the shape functions `AtkinsonHan.Chapter10.q1Shape`. These are
+  `AtkinsonHan.Chapter10.bilinearNode` and `AtkinsonHan.Chapter10.bilinearShape` of Exercise 10.2.3,
+  on `EuclideanSpace ℝ (Fin 2)` in place of `ℝ × ℝ`.
+* The reference triangle is `EuclideanSpace.referenceTriangle`, with the vertices
+  `EuclideanSpace.referenceTriangleVertex` and the barycentric coordinates
+  `EuclideanSpace.baryCoord`. A triangulation is a `Triangulation`, and the global interpolant
+  $\Pi_h v$ is `Triangulation.globalInterp`.
 
-`H^m(K)` is `Chapter07.definition_7_2_2 m 2 K` (`MemSobolev v m 2 K volume`), and the seminorm
-`|·|_{m,K}` and norm `‖·‖_{m,K}` are the backbone's tensor `sobolevSeminorm` and `sobolevNorm`,
-equivalent to the book's multi-index ones with constants depending on `d` and `m` only
-(`Numlib/Analysis/Sobolev/SeminormCompare.lean` carries the comparison, used inside
-`theorem_10_3_3`). A function of `H^{k+1}(K)` is read on its continuous representative up to the
-boundary (`ContinuousOn v (closure K)`), which every element has by Theorem 7.3.7 (c); the nodal
-values at vertices, which lie on the boundary of the open element, are then meaningful.
+## Deviations from the source
 
-Corollary 10.3.7 carries a bound `h_K ≤ H` on the diameters of the elements of the family, which
-the book leaves implicit: its constant depends on such a bound through the seminorms of order
-`j < m` (the top-order estimate of Theorem 10.3.5 needs none).
+* **Theorem 10.3.1** (generalization). The identity holds for any shape functions; the nodal
+  property $\hat\varphi_i(\hat x_j) = \delta_{ij}$ is not assumed. See
+  `AtkinsonHan.Chapter10.theorem_10_3_1`.
+* **Example 10.3.2** (generalization). The source takes a triangle in the plane; the statement holds
+  for the barycentric coordinates of any simplex in $\mathbb{R}^d$. See
+  `AtkinsonHan.Chapter10.example_10_3_2`.
+* **Theorems 10.3.3 and 10.3.5, Corollary 10.3.7** (generalization). The source takes a triangle
+  with $k > 0$. The library takes a bounded connected open set in $\mathbb{R}^d$ that is a Sobolev
+  extension domain for every exponent, with $k + 1 > d/2$. The reference triangle and the unit
+  square satisfy this hypothesis. See `AtkinsonHan.Chapter10.theorem_10_3_3`.
+* **Theorems 10.3.3, 10.3.5 and 10.3.9, Corollary 10.3.7, Example 10.3.8** (reading). A function of
+  $H^{k+1}$ is taken on its representative that is continuous up to the boundary, so that its values
+  at the nodes are defined. See `AtkinsonHan.Chapter10.theorem_10_3_3`.
+* **Theorem 10.3.5, Definition 10.3.6** (reading). The source takes $\rho_K$ to be the diameter of
+  the largest ball inscribed in $K$. The library uses the diameter of any inscribed closed ball. See
+  `AtkinsonHan.Chapter10.IsRegularFamily`.
+* **Definition 10.3.6** (reading). The source indexes the family by $h \to 0$. The library indexes
+  it by any type, with a filter along which the mesh parameter tends to $0$, and a partition is a
+  collection of sets. See `AtkinsonHan.Chapter10.IsRegularFamily`.
+* **Corollary 10.3.7, Example 10.3.8, Theorem 10.3.9** (reading). The source leaves implicit a bound
+  $h_K \le H$ on the diameters of the elements, on which its constant depends. The library makes it
+  a hypothesis. See `AtkinsonHan.Chapter10.corollary_10_3_7`.
+* **Example 10.3.8** (generalization). The estimate (10.3.11) is also proved for $m = 2$. See
+  `AtkinsonHan.Chapter10.example_10_3_8`.
+* **Theorem 10.3.9** (reading). The standing assumption $X_h \subseteq C(\overline\Omega)$ of the
+  source is the hypothesis that the element is conforming on each triangulation of the family. See
+  `AtkinsonHan.Chapter10.theorem_10_3_9`.
 
-The book's `ρ_K` is the diameter of the *largest* ball inscribed in `K`, a supremum Mathlib has no
-name for and which need not be attained for a general set. Condition (a) of Definition 10.3.6 uses
-it only through the inequality `h_K ≤ σ ρ_K`, so `IsRegularFamily` asks instead for *some* inscribed
-ball with `h_K ≤ σ · (2 r)`. For a `K` whose largest inscribed ball exists — the book's triangles —
-the two readings agree, and in either reading the condition says the elements do not degenerate.
+## Not formalized
 
-`𝒯_h` is read as a collection of elements, `Set (Set (EuclideanSpace ℝ (Fin d)))`, and the family is
-indexed by an arbitrary type with a filter along which the mesh parameter tends to zero: the book
-indexes by `h` itself and lets `h → 0`. The partition axioms (1)–(4) of §10.2 — that the elements
-are triangles covering `Ω̄` with disjoint interiors and matching faces — play no part in Definition
-10.3.6 and are not formalized; that is why the definition is stated for a family of collections and
-not for a family of triangulations, and why Corollary 10.3.7 quantifies over the elements `K` of the
-family together with the affine map `F_K` carrying the reference element onto each.
-
-## Not formalized here
-
-Exercises 10.3.1, 10.3.2, 10.3.4 and 10.3.7 are not nodes; Exercise 10.3.3
-(`h_K / ρ_K` bounded if and only if the minimal angles are bounded below) is Sobolev-free, and is
-`exercise_10_3_3` below. The remark after Theorem 10.3.9 on the interpolation of discontinuous
-functions by local `L²` projections is a pointer to the literature.
+* **Exercises 10.3.1, 10.3.2, 10.3.4 and 10.3.7.**
+* **The remark after Theorem 10.3.9** on the interpolation of discontinuous functions by local $L^2$
+  projections. It refers to the literature and states no result.
 -/
 
 open Filter Metric Topology
@@ -132,18 +142,23 @@ namespace AtkinsonHan.Chapter10
 
 variable {d : ℕ}
 
-/-- **Theorem 10.3.1.**  Let `F_K` be an affine bijection of the reference element onto `K`, let
-`x̂ᵢ` be the nodal points of the reference element and `φ̂ᵢ` the associated basis functions, and put
-`xᵢᴷ = F_K(x̂ᵢ)` and `φᵢᴷ = φ̂ᵢ ∘ F_K⁻¹` as in (10.2.27). Then the interpolation operators (10.3.1)
-`Π̂ v̂ = Σ v̂(x̂ᵢ) φ̂ᵢ` and (10.3.2) `Π_K v = Σ v(xᵢᴷ) φᵢᴷ` satisfy
+/-- **Theorem 10.3.1** of [han2009theoretical]. Let $F_K$ be an affine bijection of $\mathbb{R}^d$,
+let $\hat x_1, \dots, \hat x_I \in \mathbb{R}^d$ be nodes and
+$\hat\varphi_1, \dots, \hat\varphi_I$ functions on $\mathbb{R}^d$, and put
+$x_i^K = F_K(\hat x_i)$ and $\varphi_i^K = \hat\varphi_i \circ F_K^{-1}$ as in (10.2.27). Then
+for every function $v$ on $\mathbb{R}^d$ the interpolation operators $\hat\Pi \hat v = \sum_i
+\hat v(\hat x_i) \hat\varphi_i$ of (10.3.1) and $\Pi_K v = \sum_i v(x_i^K) \varphi_i^K$ of
+(10.3.2) satisfy
+$$\hat\Pi (v \circ F_K) = (\Pi_K v) \circ F_K.$$
 
-  `Π̂ (v ∘ F_K) = (Π_K v) ∘ F_K`.
+**Generalization.** The source assumes that the $\hat\varphi_i$ are nodal,
+$\hat\varphi_i(\hat x_j) = \delta_{ij}$. The identity does not need this, because
+$v(x_i^K) = (v \circ F_K)(\hat x_i)$ and $\varphi_i^K \circ F_K = \hat\varphi_i$.
 
-The proof is the definition read twice: `v(xᵢᴷ) = v̂(x̂ᵢ)` and `φᵢᴷ ∘ F_K = φ̂ᵢ`. Neither the
-affinity of `F_K` nor the duality `φ̂ᵢ(x̂ⱼ) = δᵢⱼ` is used — only that `F_K` is invertible — so this
-is the backbone's `Approximation.nodalInterp_comp` for the equivalence `F_K`. The nodal property
-survives the transport (`Approximation.IsNodalBasis.comp`), which is the book's display
-`φᵢᴷ(xⱼᴷ) = δᵢⱼ`. -/
+The statement is `Approximation.nodalInterp_comp` for the bijection $F_K$. That lemma holds for
+any map with a left inverse, so the affinity of $F_K$ is not used. The nodal property is
+preserved by the transport (`Approximation.IsNodalBasis.comp`), which is the display
+$\varphi_i^K(x_j^K) = \delta_{ij}$ of the source. -/
 theorem theorem_10_3_1 {I : ℕ} (F : EuclideanSpace ℝ (Fin d) ≃ᵃ[ℝ] EuclideanSpace ℝ (Fin d))
     (x : Fin I → EuclideanSpace ℝ (Fin d)) (φ : Fin I → EuclideanSpace ℝ (Fin d) → ℝ)
     (v : EuclideanSpace ℝ (Fin d) → ℝ) :
@@ -151,24 +166,31 @@ theorem theorem_10_3_1 {I : ℕ} (F : EuclideanSpace ℝ (Fin d) ≃ᵃ[ℝ] Euc
       Approximation.nodalInterp (F ∘ x) (fun i => φ i ∘ F.symm) v ∘ F :=
   (Approximation.nodalInterp_comp x φ v (F := F) (G := F.symm) F.symm_apply_apply).symm
 
-/-- **Example 10.3.2, the linear element.**  On a simplex with vertices `b i` the shape functions of
-the linear element are the barycentric coordinates `λᵢ`, and they are nodal for the vertices:
-`λᵢ(bⱼ) = δᵢⱼ`. So `Approximation.nodalInterp b (fun i => λᵢ)` *is* the operator `Π_K` of (10.3.2)
-for that element — the function agreeing with `v` at each vertex — and Theorem 10.3.1 applies to it,
-the transported shape functions `λᵢ ∘ F_K⁻¹` being the barycentric coordinates of the image simplex.
+/-- **Example 10.3.2** of [han2009theoretical], the linear element. Let $b_0, \dots, b_d$ be an
+affine basis of $\mathbb{R}^d$, the vertices of a simplex, and let $\lambda_i$ be the
+barycentric coordinates with respect to it. Then $\lambda_i(b_j) = \delta_{ij}$, so the
+$\lambda_i$ are nodal for the vertices.
 
-The book writes the reference element as a triangle in the plane; nothing here needs the dimension
-or the number of vertices, and the coordinates are Mathlib's `AffineBasis.coord`. -/
+**Generalization.** The source takes a triangle in the plane. The statement holds in any
+dimension and for any index set of the vertices.
+
+The barycentric coordinates are `AffineBasis.coord`. So `Approximation.nodalInterp b (fun i =>
+b.coord i)` is the operator $\Pi_K$ of (10.3.2) for the linear element, the function that agrees
+with $v$ at each vertex. -/
 theorem example_10_3_2 {ι : Type*} (b : AffineBasis ι ℝ (EuclideanSpace ℝ (Fin d))) :
     Approximation.IsNodalBasis (b : ι → EuclideanSpace ℝ (Fin d))
       (fun i => (b.coord i : EuclideanSpace ℝ (Fin d) → ℝ)) where
   eval_self _ := b.coord_apply_eq _
   eval_of_ne _ _ hij := b.coord_apply_ne hij
 
-/-- **The linear element is exact on affine functions**: `Π_K f = f` for an affine `f`. It is the
-`k = 1` case of the reproduction property that makes the interpolation error estimates of §10.3
-worth having, and it is the identity `f(y) = Σᵢ λᵢ(y) f(bᵢ)`, which is the affine map applied to the
-barycentric representation `y = Σᵢ λᵢ(y) bᵢ`. -/
+/-- The linear element reproduces affine functions. Let $b_0, \dots, b_d$ be an affine basis of
+$\mathbb{R}^d$ with barycentric coordinates $\lambda_i$, and let
+$f : \mathbb{R}^d \to \mathbb{R}$ be affine. Then
+$$\sum_i \lambda_i(y) f(b_i) = f(y) \qquad \text{for all } y \in \mathbb{R}^d,$$
+that is, $\Pi_K f = f$.
+
+This is the case $k = 1$ of the polynomial invariance (10.3.4) for the linear element of Example
+10.3.2. It is $f$ applied to the barycentric representation $y = \sum_i \lambda_i(y) b_i$. -/
 theorem nodalInterp_coord_affineMap {ι : Type*} [Fintype ι]
     (b : AffineBasis ι ℝ (EuclideanSpace ℝ (Fin d))) (f : EuclideanSpace ℝ (Fin d) →ᵃ[ℝ] ℝ) :
     Approximation.nodalInterp (b : ι → EuclideanSpace ℝ (Fin d))
@@ -182,56 +204,78 @@ theorem nodalInterp_coord_affineMap {ι : Type*} [Fintype ι]
   rw [h, Finset.univ.affineCombination_eq_linear_combination _ _ hw]
   rfl
 
-/-- **The mesh parameter (10.3.9)**, `h = max_{K ∈ 𝒯_h} h_K`, of a collection of elements: the
-supremum of their diameters. For a finite collection — the book's partitions are finite — the
-supremum is the maximum, which is `diam_le_meshSize`. -/
+/-- **Equation (10.3.9)** of [han2009theoretical]. The **mesh parameter** of a collection
+$\mathcal{T}_h$ of subsets of $\mathbb{R}^d$ is
+$$h = \sup_{K \in \mathcal{T}_h} \operatorname{diam} K.$$
+
+The source writes a maximum over a finite partition; for a finite collection the supremum is the
+maximum (`AtkinsonHan.Chapter10.diam_le_meshSize`). The value is `sSup` of the set of diameters,
+so it is $0$ for an empty collection and for a collection whose diameters are unbounded. -/
 noncomputable def meshSize (T : Set (Set (EuclideanSpace ℝ (Fin d)))) : ℝ :=
   sSup (Metric.diam '' T)
 
-/-- Every element of a finite collection has diameter at most the mesh parameter. -/
+/-- Let $\mathcal{T}_h$ be a finite collection of subsets of $\mathbb{R}^d$. Every
+$K \in \mathcal{T}_h$ satisfies $\operatorname{diam} K \le h$, where $h$ is the mesh parameter
+`AtkinsonHan.Chapter10.meshSize`. -/
 theorem diam_le_meshSize {T : Set (Set (EuclideanSpace ℝ (Fin d)))} (hT : T.Finite)
     {K : Set (EuclideanSpace ℝ (Fin d))} (hK : K ∈ T) : Metric.diam K ≤ meshSize T :=
   le_csSup (hT.image _).bddAbove (Set.mem_image_of_mem _ hK)
 
-/-- **Definition 10.3.6.**  A family `{𝒯_h}` of finite element partitions is **regular** if
+/-- **Definition 10.3.6** of [han2009theoretical]. Let $\{\mathcal{T}_i\}$ be a family of
+collections of subsets of $\mathbb{R}^d$, indexed by a type with a filter $l$. The family is
+**regular** if
 
-* (a) there is a `σ` with `h_K / ρ_K ≤ σ` for every element `K` of every member of the family, and
-* (b) the mesh parameter `h` tends to `0` along the family.
+* (a) there is a $\sigma \in \mathbb{R}$ such that every element $K$ of every $\mathcal{T}_i$
+  contains a closed ball of some radius $r > 0$ with
+  $\operatorname{diam} K \le \sigma \cdot 2r$, and
+* (b) the mesh parameter of $\mathcal{T}_i$ (`AtkinsonHan.Chapter10.meshSize`) tends to $0$
+  along $l$.
 
-Here `h_K = diam K` and `ρ_K` is the diameter of the largest ball inscribed in `K`; condition (a) is
-written as the existence of an inscribed ball of radius `r` with `h_K ≤ σ (2 r)`, which is what the
-inequality `h_K ≤ σ ρ_K` says whenever the largest inscribed ball exists. Condition (b) is a limit
-along a filter `l` on the index type, the book's `h → 0`.
+**Reading.** The source states (a) as $h_K / \rho_K \le \sigma$, where
+$h_K = \operatorname{diam} K$ and $\rho_K$ is the diameter of the largest ball inscribed in $K$.
+The largest inscribed ball need not exist for a general set, and (a) uses $\rho_K$ only through
+$h_K \le \sigma \rho_K$; so the definition asks for some inscribed ball of diameter $2r$. When
+the largest inscribed ball exists, as for a triangle, the two readings agree. The source indexes
+the family by $h$ and lets $h \to 0$; here the index type and the filter are arbitrary.
 
-Regularity is what turns the element-wise estimate (10.3.7), whose right-hand side carries both
-`h_K` and `ρ_K`, into a bound in `h_K` alone (Corollary 10.3.7). -/
+The partition axioms of Section 10.2 (the elements cover $\overline\Omega$, have disjoint
+interiors and meet face to face) play no part in the definition, so a member of the family is
+any collection of sets. Regularity turns the local estimate (10.3.7), which has both $h_K$ and
+$\rho_K$, into a bound in $h_K$ alone (Corollary 10.3.7). -/
 def IsRegularFamily {ι : Type*} (l : Filter ι)
     (T : ι → Set (Set (EuclideanSpace ℝ (Fin d)))) : Prop :=
   (∃ σ : ℝ, ∀ i, ∀ K ∈ T i, ∃ (c : EuclideanSpace ℝ (Fin d)) (r : ℝ),
       0 < r ∧ Metric.closedBall c r ⊆ K ∧ Metric.diam K ≤ σ * (2 * r)) ∧
     Tendsto (fun i => meshSize (T i)) l (𝓝 0)
 
-/-- The book's regularity of a family is the backbone's `FiniteElement.IsRegularFamily`: the mesh
-parameter `meshSize` is the supremum of the diameters that the backbone writes inline. -/
+/-- A family is regular in the sense of `AtkinsonHan.Chapter10.IsRegularFamily` if and only if it is
+regular in the sense of the backbone, `FiniteElement.IsRegularFamily`. The two definitions
+agree, since `AtkinsonHan.Chapter10.meshSize` is the supremum of the diameters that the backbone
+writes out. -/
 theorem isRegularFamily_iff_isRegularFamily {ι : Type*} {l : Filter ι}
     {T : ι → Set (Set (EuclideanSpace ℝ (Fin d)))} :
     IsRegularFamily l T ↔ FiniteElement.IsRegularFamily l T :=
   Iff.rfl
 
-/-! ### Exercise 10.3.3: regularity against the minimal angle
+/-!
+### Exercise 10.3.3: regularity and the minimal angle
 
-The exercise is about triangles, and `ρ_K` is the diameter `2 ρ` of the inscribed circle, which for
-a triangle is `Affine.Simplex.inradius`. The statement below is therefore condition (a) of
-Definition 10.3.6 read on a family of triangles with the *actual* inradius, rather than through the
-weaker "some inscribed ball" form that `IsRegularFamily` uses for a family of arbitrary sets. The
-geometry is `Numlib.Geometry.Euclidean.TriangleShape`. -/
+The exercise is about triangles. For a triangle, $\rho_K$ is the diameter $2\rho$ of the inscribed
+circle, where $\rho$ is `Affine.Simplex.inradius`. The statement below is therefore condition (a) of
+Definition 10.3.6 for a family of triangles with the actual inradius, in place of the weaker form
+with some inscribed ball that `AtkinsonHan.Chapter10.IsRegularFamily` uses for arbitrary sets.
+-/
 
-/-- **Exercise 10.3.3.** For a family of triangles, condition (a) of Definition 10.3.6 — the ratios
-`h_K / ρ_K` are bounded — holds if and only if the angles of the triangles are bounded away from
-zero.
+/-- **Exercise 10.3.3** of [han2009theoretical]. Let $\{K_t\}$ be a family of triangles in
+$\mathbb{R}^2$, with diameter $h_K$ and inradius $\rho$. There is a $\sigma$ with
+$h_K \le \sigma \cdot 2\rho$ for every triangle of the family if and only if there is an
+$\alpha > 0$ such that every angle of every triangle of the family is at least $\alpha$.
 
-Both directions are quantitative: a bound `h_K ≤ σ ρ_K` gives every angle at least
-`arcsin (1 / (2 σ))`, and a bound `α ≤ θ` on all the angles gives `h_K ≤ (3 / sin² α) ρ_K`. -/
+Both directions are quantitative: a bound $h_K \le \sigma \rho_K$ gives every angle at least
+$\arcsin(1 / (2\sigma))$, and a lower bound $\alpha$ on all angles gives
+$h_K \le (3 / \sin^2 \alpha) \rho_K$. A triangle is an
+`Affine.Simplex ℝ (EuclideanSpace ℝ (Fin 2)) 2`, its diameter is the diameter of its vertex set,
+and its angles are `Affine.Simplex.triangleAngle`. -/
 theorem exercise_10_3_3 {ι : Type*}
     (T : ι → Affine.Simplex ℝ (EuclideanSpace ℝ (Fin 2)) 2) :
     (∃ σ : ℝ, ∀ t, Metric.diam (Set.range (T t).points) ≤ σ * (2 * (T t).inradius))
@@ -273,7 +317,7 @@ theorem exercise_10_3_3 {ι : Type*}
     rw [div_mul_eq_mul_div, le_div_iff₀ (by positivity)]
     nlinarith [h, (T t).inradius_pos]
 
-/-! ### Theorem 10.3.4 -/
+/-! ### Theorem 10.3.4: the affine change of variables -/
 
 section Theorem1034
 
@@ -282,23 +326,25 @@ open scoped ENNReal
 
 local notation "𝔼" => EuclideanSpace ℝ (Fin d)
 
-/-- **Theorem 10.3.4** (affine change of variables in `H^m`). Let `x = T x̂ + b` be a bijection of
-the reference element `K̂` onto the element `K`, both open subsets of `ℝ^d`, and let
-`v̂ = v ∘ F`, `F x̂ = T x̂ + b`. Then `v ∈ H^m(K)` if and only if `v̂ ∈ H^m(K̂)`, and the estimates
-(10.3.5) `|v̂|_{m,K̂} ≤ ‖T‖^m |det T|^{-1/2} |v|_{m,K}` and (10.3.6)
-`|v|_{m,K} ≤ ‖T⁻¹‖^m |det T|^{1/2} |v̂|_{m,K̂}` hold.
+/-- **Theorem 10.3.4** of [han2009theoretical] (affine change of variables in $H^m$). Let
+$\hat K, K \subseteq \mathbb{R}^d$ be open, let $T$ be an invertible linear map of
+$\mathbb{R}^d$ and $b \in \mathbb{R}^d$, and let $F(\hat x) = T\hat x + b$ map $\hat K$ onto
+$K$. Let $m \ge 0$, let $v$ be a function on $\mathbb{R}^d$, and put $\hat v = v \circ F$. Then
+$v \in H^m(K)$ if and only if $\hat v \in H^m(\hat K)$, and if $v \in H^m(K)$, then
+$$|\hat v|_{m,\hat K} \le \|T\|^m |\det T|^{-1/2} |v|_{m,K}, \qquad (10.3.5)$$
+$$|v|_{m,K} \le \|T^{-1}\|^m |\det T|^{1/2} |\hat v|_{m,\hat K}. \qquad (10.3.6)$$
 
-`H^m(K)` is `Chapter07.definition_7_2_2 m 2 K` (the bundled reading of Definition 7.2.2), and the
-seminorm `|·|_{m,K}` is the backbone's `sobolevSeminorm · m 2 K volume`, the `L²(K)` norm of the
-operator norm of the derivative tensor of order `m`. That seminorm is equivalent to the book's
-`(∑_{|α| = m} ‖∂^α v‖²_{L²(K)})^{1/2}` with constants depending on `d` and `m` only (the book's
-`c`, which it does not specify); for the tensor seminorm the constant is exactly `1`, and this is
-what is proved: `∂^m v̂ (x̂) = ∂^m v (F x̂) ∘ (T, …, T)` has operator norm at most
-`‖T‖^m ‖∂^m v (F x̂)‖`, and the change of variables `x = F x̂` in the `L²` integral contributes
-`|det T|^{-1/2}` (`sobolevSeminorm_comp_affine_le`, `eLpNorm_comp_affine`); (10.3.6) is (10.3.5)
-for `F⁻¹`. The membership equivalence is `memSobolev_comp_affine_iff`, from the backbone's
-`HasWeakIteratedFDerivOn.comp_affineEquiv`. `‖T‖` is the operator norm of `T` on Euclidean
-`ℝ^d` and `det T` the determinant of its linear map. -/
+The source has a constant $c$ in both bounds, which it does not specify, for its seminorm built
+from multi-indices. For the tensor seminorm `sobolevSeminorm` the constant is $1$, and this is
+what is proved. The seminorm is the $L^2$ norm of the operator norm of $\partial^m v$, and
+$\partial^m \hat v(\hat x) = \partial^m v(F\hat x) \circ (T, \dots, T)$ has operator norm at
+most $\|T\|^m \|\partial^m v(F\hat x)\|$; the change of variables $x = F\hat x$ in the integral
+gives the factor $|\det T|^{-1/2}$. The bound (10.3.6) is (10.3.5) for $F^{-1}$.
+
+$H^m(K)$ is `AtkinsonHan.Chapter07.definition_7_2_2 m 2 K`. $\|T\|$ is the operator norm on
+Euclidean $\mathbb{R}^d$, and $\det T$ is `LinearMap.det`. The proof uses
+`memSobolev_comp_affine_iff`, `sobolevSeminorm_comp_affine_le_of_image` and
+`sobolevSeminorm_le_comp_affine_of_image`. -/
 theorem theorem_10_3_4 (T : 𝔼 ≃L[ℝ] 𝔼) (b : 𝔼) (Khat K : Opens 𝔼)
     (hK : (fun x ↦ T x + b) '' Khat = K) (m : ℕ) (v : 𝔼 → ℝ) :
     (Chapter07.definition_7_2_2 m 2 K v ↔
@@ -329,34 +375,36 @@ open scoped ENNReal NNReal
 
 variable {d : ℕ}
 
-/-- **Theorem 10.3.3** (the interpolation error estimate on the reference element). Let `K̂ ⊆ ℝ^d`
-be a bounded connected open reference element which is a Sobolev extension domain for every
-exponent, let `k, m` be nonnegative integers with `m ≤ k + 1` and `k + 1 > d/2` (the book's
-`k > 0`, which is this condition for `d = 2`, and the condition the book names for general `d`),
-let `x̂ᵢ ∈ K̂̄` be the nodes and `φ̂ᵢ ∈ H^m(K̂)` the shape functions of the interpolation operator
-`Π̂` of (10.3.1), and assume the polynomial invariance (10.3.4), `Π̂ q = q` on `K̂` for every
-polynomial `q` of degree at most `k` — the hypothesis `ℙ_k(K̂) ⊆ X̂`. Then there is a constant `c`
-with (10.3.3), `|v̂ − Π̂ v̂|_{m,K̂} ≤ c |v̂|_{k+1,K̂}` for every `v̂ ∈ H^{k+1}(K̂)`.
-`H^{k+1}(K̂)` is `Chapter07.definition_7_2_2 (k + 1) 2 K̂`, i.e. `MemSobolev v (k + 1) 2 K̂ volume`,
-and `v̂` is read on its continuous representative up to the boundary
-(`ContinuousOn v (closure K̂)`), which every element has by the embedding `H^{k+1}(K̂) ↪ C(K̂̄)`
-(Theorem 7.3.7 (c), `SobolevEuclidean.exists_isCompactEmbedding_toContinuousMap_of_order`); the
-nodal values `v̂(x̂ᵢ)` are then meaningful even at nodes on the boundary. The seminorms are the
-tensor seminorms `sobolevSeminorm` of Theorem 10.3.4. The proof is the book's: `Π̂` is bounded from
-`H^{k+1}(K̂)` to `H^m(K̂)` through the embedding
-(`FiniteElement.sobolevSeminorm_sum_apply_smul_le`), it fixes `ℙ_k(K̂)`
-(`FiniteElement.sum_apply_smul_ae_eq_fn_of_mem_polynomialSubmodule`), so
-`|v̂ − Π̂ v̂|_{m,K̂} ≤ c inf_{q ∈ ℙ_k} ‖v̂ + q‖_{k+1,K̂}`, and Corollary 7.3.18
-(`SobolevEuclidean.exists_ciInf_norm_add_le_mul_topSeminorm`) bounds the infimum by `|v̂|_{k+1,K̂}`;
-the passage between the tensor seminorm and the book's multi-index seminorm is
-`SobolevMultiIndex.sobolevSeminorm_fn_le` and
-`SobolevMultiIndex.topSeminorm_le_mul_toReal_sobolevSeminorm`.
+/-- **Theorem 10.3.3** of [han2009theoretical] (the interpolation error on the reference element).
+Let $\hat K \subseteq \mathbb{R}^d$ be a bounded, connected open set that is a Sobolev extension
+domain for every exponent. Let $k, m \ge 0$ be integers with $m \le k + 1$ and $k + 1 > d/2$.
+Let $\hat x_1, \dots, \hat x_I \in \overline{\hat K}$ be nodes and $\hat\varphi_1, \dots,
+\hat\varphi_I \in H^m(\hat K)$ shape functions, and let $\hat\Pi$ be the interpolation operator
+(10.3.1). Assume the polynomial invariance (10.3.4): $\hat\Pi q = q$ on $\hat K$ for every
+polynomial $q$ of degree at most $k$. Then there is a constant $c \ge 0$ such that
+$$|\hat v - \hat\Pi \hat v|_{m,\hat K} \le c |\hat v|_{k+1,\hat K} \qquad (10.3.3)$$
+for every $\hat v \in H^{k+1}(\hat K)$ that is continuous on $\overline{\hat K}$.
 
-The book's reference element is a triangle, a Lipschitz domain, which the backbone does not
-know to be an extension domain (no Lipschitz extension operator is formalized); the unit
-square is one (`SobolevEuclidean.exists_extensionL_unitSquare`), so the theorem applies to `Q_k`
-elements on rectangles now and to simplicial elements once a simplex extension operator
-exists. -/
+**Generalization.** The source takes a triangle as the reference element, with $k > 0$, which is
+the condition $k + 1 > d/2$ for $d = 2$. The library proves the estimate on any bounded
+connected Sobolev extension domain in $\mathbb{R}^d$, because no extension operator for a
+general Lipschitz domain is formalized. The reference triangle is one
+(`isSobolevExtensionDomainAll_referenceTriangle`), and so is the unit square
+(`isSobolevExtensionDomainAll_unitSquare`).
+
+**Reading.** The values $\hat v(\hat x_i)$ at nodes on the boundary are defined for the
+representative of $\hat v$ that is continuous up to the boundary. Every element of
+$H^{k+1}(\hat K)$ has one, by the embedding $H^{k+1}(\hat K) \hookrightarrow C(\overline{\hat
+K})$ of Theorem 7.3.7 (c)
+(`SobolevEuclidean.exists_isCompactEmbedding_toContinuousMap_of_order`). The statement takes
+this representative, as the hypothesis `ContinuousOn v (closure Khat)`.
+
+The seminorms are the tensor seminorms `sobolevSeminorm`, as in Theorem 10.3.4. The proof is
+that of the source: $\hat\Pi$ is bounded from $H^{k+1}(\hat K)$ to $H^m(\hat K)$ through the
+embedding and fixes $\mathbb{P}_k$, so $|\hat v - \hat\Pi \hat v|_{m,\hat K} \le c \inf_{q \in
+\mathbb{P}_k} \|\hat v + q\|_{k+1,\hat K}$, and Corollary 7.3.18
+(`SobolevEuclidean.exists_ciInf_norm_add_le_mul_topSeminorm`) bounds the infimum by
+$|\hat v|_{k+1,\hat K}$. The statement is `FiniteElement.sobolevSeminorm_sub_nodalInterp_le`. -/
 theorem theorem_10_3_3 {Khat : Opens (EuclideanSpace ℝ (Fin d))}
     (hΩ : IsSobolevExtensionDomainAll d Khat)
     (hb : Bornology.IsBounded (Khat : Set (EuclideanSpace ℝ (Fin d))))
@@ -388,25 +436,30 @@ variable {d : ℕ}
 
 local notation "𝔼" => EuclideanSpace ℝ (Fin d)
 
-/-- **Theorem 10.3.5** (the local interpolation error estimate, (10.3.7)). Under the hypotheses
-of Theorem 10.3.3 on the reference element `K̂` — a bounded connected extension domain with an
-inscribed ball of diameter `ρ̂`, nodes `x̂ᵢ ∈ K̂̄`, shape functions `φ̂ᵢ ∈ H^m(K̂)`, the polynomial
-invariance `ℙ_k(K̂) ⊆ X̂`, `m ≤ k + 1` and `k + 1 > d/2` — there is a constant `c`, depending only
-on `K̂` and `Π̂`, such that for every element `K = F_K(K̂)`, `F_K x̂ = T_K x̂ + b_K`, with an
-inscribed ball of diameter `ρ_K`, the interpolation operator `Π_K` of (10.3.2) — nodes
-`F_K(x̂ᵢ)`, shape functions `φ̂ᵢ ∘ F_K⁻¹` — satisfies
+/-- **Theorem 10.3.5** of [han2009theoretical] (the local interpolation error estimate (10.3.7)).
+Let the reference element $\hat K$, the integers $k$ and $m$, the nodes $\hat x_i$ and the shape
+functions $\hat\varphi_i$ satisfy the hypotheses of Theorem 10.3.3, and let $\hat K$ contain a
+closed ball of diameter $\hat\rho > 0$. Then there is a constant $c \ge 0$ with the following
+property. Let $K \subseteq \mathbb{R}^d$ be open, let $F_K(\hat x) = T_K \hat x + b_K$ with
+$T_K$ invertible map $\hat K$ onto $K$, and let $K$ contain a closed ball of diameter
+$\rho_K > 0$. Let $\Pi_K$ be the interpolation operator (10.3.2) with the nodes $F_K(\hat x_i)$
+and the shape functions $\hat\varphi_i \circ F_K^{-1}$. Then
+$$|v - \Pi_K v|_{m,K} \le c \, \frac{h_K^{k+1}}{\rho_K^m} \, |v|_{k+1,K}$$
+for every $v \in H^{k+1}(K)$ that is continuous on $\overline K$, where
+$h_K = \operatorname{diam} K$.
 
-  `|v − Π_K v|_{m,K} ≤ c h_K^{k+1} ρ_K^{−m} |v|_{k+1,K}`  for every `v ∈ H^{k+1}(K)`,
+**Reading.** In the source, $\rho_K$ is the diameter of the largest ball inscribed in $K$. Here
+it is the diameter of any inscribed closed ball, which gives the bound for the largest one when
+it exists. As in Theorem 10.3.3, $v$ is taken on its representative that is continuous up to the
+boundary.
 
-with `h_K = diam K`. The proof is the book's: Theorem 10.3.1 (`Approximation.nodalInterp_comp`)
-gives `(v − Π_K v) ∘ F_K = v̂ − Π̂ v̂`, (10.3.6) of Theorem 10.3.4 transports the left-hand side to
-`K̂`, Theorem 10.3.3 bounds it there by `|v̂|_{k+1,K̂}`, (10.3.5) brings that back to `K`, and
-Lemma 10.2.2 bounds `‖T_K‖ ≤ h_K/ρ̂` and `‖T_K⁻¹‖ ≤ ĥ/ρ_K`; the constant is
-`c = c₀ ĥ^m / ρ̂^{k+1}` with the `c₀` of (10.3.3). As in Theorem 10.3.3, `v` is read on its
-continuous representative up to the boundary, `H^{k+1}(K)` is `MemSobolev v (k + 1) 2 K volume`
-and the seminorms are the tensor ones; the extension-domain hypothesis on `K̂` is the backbone's
-stand-in for the book's Lipschitz reference element (the unit square qualifies, the reference
-triangle waits for a Lipschitz extension operator). -/
+The constant $c$ depends only on $\hat K$, $\hat\rho$ and $\hat\Pi$. The proof is that of the
+source: Theorem 10.3.1 gives $(v - \Pi_K v) \circ F_K = \hat v - \hat\Pi \hat v$, the bound
+(10.3.6) carries the left-hand side to $\hat K$, Theorem 10.3.3 bounds it there, (10.3.5)
+carries $|\hat v|_{k+1,\hat K}$ back to $K$, and Lemma 10.2.2 gives $\|T_K\| \le h_K / \hat\rho$
+and $\|T_K^{-1}\| \le \hat h / \rho_K$. The constant is $c = c_0 \hat h^m / \hat\rho^{k+1}$ with
+the $c_0$ of (10.3.3). The statement is
+`FiniteElement.sobolevSeminorm_sub_nodalInterp_comp_affine_le`. -/
 theorem theorem_10_3_5 {Khat : Opens 𝔼} (hΩ : IsSobolevExtensionDomainAll d Khat)
     (hb : Bornology.IsBounded (Khat : Set 𝔼)) (hc : IsPreconnected (Khat : Set 𝔼))
     {chat : 𝔼} {ρhat : ℝ} (hρhat : 0 < ρhat)
@@ -442,27 +495,29 @@ variable {d : ℕ}
 
 local notation "𝔼" => EuclideanSpace ℝ (Fin d)
 
-/-- **Corollary 10.3.7** (the interpolation error on a regular family, (10.3.10)). Under the
-hypotheses of Theorem 10.3.5 on the reference element `K̂` (a bounded connected extension domain
-with an inscribed ball of diameter `ρ̂`, nodes `x̂ᵢ ∈ K̂̄`, shape functions `φ̂ᵢ ∈ H^m(K̂)`, the
-polynomial invariance `ℙ_k(K̂) ⊆ X̂`, `m ≤ k + 1`, `k + 1 > d/2`), let `{𝒯_h}` be a regular family
-of partitions (Definition 10.3.6, `IsRegularFamily`) whose elements have diameter at most `H`.
-Then there is a constant `c` such that for every element `K` of every `𝒯_h`, read as the open set
-`K` which is the affine image `F_K(K̂)` of the reference element,
+/-- **Corollary 10.3.7** of [han2009theoretical] (the interpolation error on a regular family,
+(10.3.10)). Let the reference element $\hat K$, the integers $k$ and $m$, the nodes $\hat x_i$
+and the shape functions $\hat\varphi_i$ satisfy the hypotheses of Theorem 10.3.5, with an
+inscribed closed ball of diameter $\hat\rho > 0$. Let $\{\mathcal{T}_h\}$ be a regular family of
+partitions (Definition 10.3.6) whose elements have diameter at most $H$. Then there is a
+constant $c \ge 0$ with the following property. Let $K$ be an element of some $\mathcal{T}_h$
+that is open and is the image of $\hat K$ under $F_K(\hat x) = T_K \hat x + b_K$, with $T_K$
+invertible, and let $\Pi_K$ be the interpolation operator with the nodes $F_K(\hat x_i)$ and the
+shape functions $\hat\varphi_i \circ F_K^{-1}$. Then
+$$\|v - \Pi_K v\|_{m,K} \le c \, h_K^{k+1-m} \, |v|_{k+1,K}$$
+for every $v \in H^{k+1}(K)$ that is continuous on $\overline K$.
 
-  `‖v − Π_K v‖_{m,K} ≤ c h_K^{k+1−m} |v|_{k+1,K}`  for every `v ∈ H^{k+1}(K)`.
+**Reading.** The source leaves the bound $h_K \le H$ implicit. Its constant depends on such a
+bound through the seminorms of order $j < m$; the estimate for the seminorm of order $m$ alone
+(Theorem 10.3.5) needs none. Every family with $h \to 0$ has such a bound once finitely many
+coarse meshes are left out. As in Theorem 10.3.3, $v$ is taken on its representative that is
+continuous up to the boundary.
 
-Regularity gives `ρ_K ≥ h_K/σ`, which turns the `h_K^{k+1} ρ_K^{−m}` of (10.3.7) into
-`σ^m h_K^{k+1−m}`; the norm `‖·‖_{m,K}` (`sobolevNorm`, the tensor norm of Definition 7.2.2)
-is at most the sum of the seminorms of orders `j ≤ m`
-(`MemSobolev.sobolevNorm_le_sum_sobolevSeminorm`), each bounded by Theorem 10.3.5 at order `j`
-with `h_K^{k+1−j} = h_K^{m−j} h_K^{k+1−m} ≤ H^{m−j} h_K^{k+1−m}`. The bound `h_K ≤ H` on the
-elements is left implicit by the book — its `c` depends on it through the lower-order seminorms
-(for the top seminorm `j = m` alone no such bound is needed, Theorem 10.3.5); it holds for any
-family with `h → 0` once the finitely many
-coarse meshes are accounted for. `v` is read on its continuous representative up to the boundary,
-as in Theorems 10.3.3 and 10.3.5, and `K` is the open element with `closure K` the book's closed
-one. -/
+Regularity gives $\rho_K \ge h_K / \sigma$, which turns the factor $h_K^{k+1} \rho_K^{-m}$ of
+(10.3.7) into $\sigma^m h_K^{k+1-m}$. The norm $\|\cdot\|_{m,K}$ (`sobolevNorm`) is at most the
+sum of the seminorms of orders $j \le m$ (`MemSobolev.sobolevNorm_le_sum_sobolevSeminorm`), and
+Theorem 10.3.5 at order $j$ bounds each, with $h_K^{k+1-j} \le H^{m-j} h_K^{k+1-m}$. The
+statement is `FiniteElement.sobolevNorm_sub_nodalInterp_comp_affine_le`. -/
 theorem corollary_10_3_7 {Khat : Opens 𝔼} (hΩ : IsSobolevExtensionDomainAll d Khat)
     (hb : Bornology.IsBounded (Khat : Set 𝔼)) (hc : IsPreconnected (Khat : Set 𝔼))
     {chat : 𝔼} {ρhat : ℝ} (hρhat : 0 < ρhat)
@@ -488,15 +543,18 @@ theorem corollary_10_3_7 {Khat : Opens 𝔼} (hΩ : IsSobolevExtensionDomainAll 
 
 end Corollary1037
 
-/-! ### Example 10.3.8 on the unit square: `Q₁` elements on parallelograms
+/-!
+### Example 10.3.8 on the unit square: the $Q_1$ element on parallelograms
 
-The book's Example 10.3.8 is the linear element on a *triangle* (`example_10_3_8` below). The
-unit square is an extension domain as well (Brezis's Remark 9,
-`SobolevEuclidean.exists_extensionL_unitSquare`, `isSobolevExtensionDomainAll_unitSquare`), so
-the estimate is instantiated here also for the `Q₁` element on it: nodes the four vertices, shape
-functions the bilinear `(1 ∓ x̂₁)(1 ∓ x̂₂)` of Exercise 10.2.3 (`bilinearShape`, here on
-`EuclideanSpace ℝ (Fin 2)`), local space `Q₁ ⊇ ℙ₁`, and the elements the affine images of the
-square — parallelograms, of which the book's rectangles are the case of a diagonal `T_K`. -/
+Example 10.3.8 of the source is the linear element on triangles
+(`AtkinsonHan.Chapter10.example_10_3_8` below). The unit square $(0, 1)^2$ is a Sobolev extension
+domain as well (Remark 9 in Chapter 9 of [brezis2011functional],
+`SobolevEuclidean.exists_extensionL_unitSquare`, `isSobolevExtensionDomainAll_unitSquare`), so the
+estimate also holds for the $Q_1$ element on it. The nodes are the four vertices, the shape
+functions are the bilinear functions $(1 \mp \hat x_1)(1 \mp \hat x_2)$ of Exercise 10.2.3, the
+local space is $Q_1 \supseteq \mathbb{P}_1$, and the elements are the affine images of the square.
+These are parallelograms; the rectangles are the case of a diagonal $T_K$.
+-/
 
 section Example1038Square
 
@@ -505,12 +563,13 @@ open scoped ENNReal NNReal Topology
 
 local notation "𝔼₂" => EuclideanSpace ℝ (Fin 2)
 
-/-- The unit square is bounded. -/
+/-- The unit square $(0, 1)^2$ is bounded. -/
 theorem isBounded_unitSquare : Bornology.IsBounded (EuclideanSpace.rect 0 1 0 1 : Set 𝔼₂) :=
   Metric.isBounded_closedBall.subset (EuclideanSpace.rect_subset_closedBall 0 1 0 1)
 
-/-- A rectangle is convex: it is the intersection of the preimages of two open intervals under
-the coordinate projections. -/
+/-- The open rectangle $(a_1, b_1) \times (a_2, b_2) \subseteq \mathbb{R}^2$ is convex.
+
+It is the intersection of the preimages of two open intervals under the coordinate projections. -/
 theorem convex_rect (a₁ b₁ a₂ b₂ : ℝ) :
     Convex ℝ (EuclideanSpace.rect a₁ b₁ a₂ b₂ : Set 𝔼₂) := by
   have h0 := (convex_Ioo a₁ b₁).linear_preimage
@@ -522,9 +581,11 @@ theorem convex_rect (a₁ b₁ a₂ b₂ : ℝ) :
   rw [EuclideanSpace.mem_rect]
   simp [and_assoc]
 
-/-- **The closed rectangle lies in the closure of the open one**: a point with
-`a₁ ≤ x₁ ≤ b₁`, `a₂ ≤ x₂ ≤ b₂` is the limit of the points `x + t (c − x)`, `t → 0⁺`, with `c`
-the centre. -/
+/-- Let $a_1 < b_1$ and $a_2 < b_2$. Every point $x \in \mathbb{R}^2$ with $a_1 \le x_1 \le b_1$ and
+$a_2 \le x_2 \le b_2$ lies in the closure of the open rectangle $(a_1, b_1) \times (a_2, b_2)$.
+
+The point $x$ is the limit of $x + t(c - x)$ as $t \to 0^+$, where $c$ is the centre of the
+rectangle. -/
 theorem mem_closure_rect {a₁ b₁ a₂ b₂ : ℝ} (h1 : a₁ < b₁) (h2 : a₂ < b₂) {x : 𝔼₂}
     (hx : a₁ ≤ x 0 ∧ x 0 ≤ b₁ ∧ a₂ ≤ x 1 ∧ x 1 ≤ b₂) :
     x ∈ closure (EuclideanSpace.rect a₁ b₁ a₂ b₂ : Set 𝔼₂) := by
@@ -551,8 +612,8 @@ theorem mem_closure_rect {a₁ b₁ a₂ b₂ : ℝ} (h1 : a₁ < b₁) (h2 : a�
   · nlinarith [mul_nonneg (sub_nonneg.2 ht.2.le) (sub_nonneg.2 hx1'),
       mul_pos ht.1 (by linarith : (0 : ℝ) < b₂ - (a₂ + b₂) / 2)]
 
-/-- The closed ball of radius `1/4` about the centre of the unit square lies in the square: an
-inscribed ball of diameter `ρ̂ = 1/2`. -/
+/-- The closed ball of radius $1/4$ about the centre $(1/2, 1/2)$ lies in the unit square
+$(0, 1)^2$. It is an inscribed ball of diameter $\hat\rho = 1/2$. -/
 theorem closedBall_subset_unitSquare :
     Metric.closedBall (!₂[(1 : ℝ) / 2, 1 / 2] : 𝔼₂) ((1 / 2 : ℝ) / 2)
       ⊆ (EuclideanSpace.rect 0 1 0 1 : Set 𝔼₂) := by
@@ -565,18 +626,23 @@ theorem closedBall_subset_unitSquare :
   rw [EuclideanSpace.mem_rect]
   refine ⟨?_, ?_, ?_, ?_⟩ <;> linarith [h0.1, h0.2, h1.1, h1.2]
 
-/-- **The four vertices of the unit square**, the nodes of the `Q₁` element, in the order of
-`bilinearNode`. -/
+/-- The four vertices $(0, 0)$, $(1, 0)$, $(0, 1)$ and $(1, 1)$ of the unit square, the **nodes of
+the $Q_1$ element**, in the order of `AtkinsonHan.Chapter10.bilinearNode`. -/
 noncomputable def q1Node : Fin 4 → 𝔼₂ := ![!₂[0, 0], !₂[1, 0], !₂[0, 1], !₂[1, 1]]
 
-/-- **The bilinear shape functions** `(1 − x̂₁)(1 − x̂₂)`, `x̂₁(1 − x̂₂)`, `(1 − x̂₁)x̂₂`, `x̂₁x̂₂`
-of the `Q₁` element on the unit square (`bilinearShape` of Exercise 10.2.3, on `ℝ²` as a
-Euclidean space). -/
+/-- The **shape functions of the $Q_1$ element** on the unit square: the bilinear functions
+$(1 - \hat x_1)(1 - \hat x_2)$, $\hat x_1 (1 - \hat x_2)$, $(1 - \hat x_1) \hat x_2$ and
+$\hat x_1 \hat x_2$.
+
+These are `AtkinsonHan.Chapter10.bilinearShape` of Exercise 10.2.3, on
+`EuclideanSpace ℝ (Fin 2)` in place of `ℝ × ℝ`. -/
 noncomputable def q1Shape : Fin 4 → 𝔼₂ → ℝ :=
   ![fun x ↦ (1 - x 0) * (1 - x 1), fun x ↦ x 0 * (1 - x 1), fun x ↦ (1 - x 0) * x 1,
     fun x ↦ x 0 * x 1]
 
-/-- The bilinear shape functions are dual to the vertices. -/
+/-- The bilinear shape functions `AtkinsonHan.Chapter10.q1Shape` are nodal for the vertices
+`AtkinsonHan.Chapter10.q1Node`: the $i$-th shape function is $1$ at the $i$-th vertex and $0$ at
+the other three. -/
 theorem q1Shape_isNodalBasis : Approximation.IsNodalBasis q1Node q1Shape where
   eval_self i := by fin_cases i <;> simp [q1Node, q1Shape]
   eval_of_ne i j hij := by
@@ -585,13 +651,15 @@ theorem q1Shape_isNodalBasis : Approximation.IsNodalBasis q1Node q1Shape where
         | exact absurd rfl hij
         | simp [q1Node, q1Shape]
 
-/-- The vertices lie in the closure of the unit square. -/
+/-- Each vertex `AtkinsonHan.Chapter10.q1Node i` lies in the closure of the unit square $(0, 1)^2$.
+-/
 theorem q1Node_mem_closure (i : Fin 4) :
     q1Node i ∈ closure (EuclideanSpace.rect 0 1 0 1 : Set 𝔼₂) := by
   refine mem_closure_rect zero_lt_one zero_lt_one ?_
   fin_cases i <;> simp [q1Node]
 
-/-- The bilinear shape functions are smooth. -/
+/-- Each bilinear shape function `AtkinsonHan.Chapter10.q1Shape i` is $C^\infty$ on $\mathbb{R}^2$.
+-/
 theorem contDiff_q1Shape (i : Fin 4) : ContDiff ℝ ((⊤ : ℕ∞) : WithTop ℕ∞) (q1Shape i) := by
   have h0 : ContDiff ℝ ((⊤ : ℕ∞) : WithTop ℕ∞) fun x : 𝔼₂ ↦ x 0 :=
     (EuclideanSpace.proj (0 : Fin 2) : 𝔼₂ →L[ℝ] ℝ).contDiff
@@ -603,14 +671,20 @@ theorem contDiff_q1Shape (i : Fin 4) : ContDiff ℝ ((⊤ : ℕ∞) : WithTop �
   · exact (contDiff_const.sub h0).mul h1
   · exact h0.mul h1
 
-/-- The bilinear shape functions lie in `H^m` of the unit square for every `m`. -/
+/-- Each bilinear shape function `AtkinsonHan.Chapter10.q1Shape i` lies in $H^m((0, 1)^2)$ for every
+$m \ge 0$. -/
 theorem memSobolev_q1Shape (m : ℕ) (i : Fin 4) :
     MemSobolev (q1Shape i) m 2 (EuclideanSpace.rect 0 1 0 1) volume :=
   ((contDiff_q1Shape i).of_le (by simp)).memSobolev_of_isBounded isBounded_unitSquare 2
 
-/-- **`Q₁` interpolation reproduces `ℙ₁`**: the polynomial invariance (10.3.4) of the `Q₁`
-element at `k = 1`. A polynomial of total degree at most `1` is `c₀ + c₁ x̂₁ + c₂ x̂₂`, and the
-bilinear interpolant reproduces `1`, `x̂₁` and `x̂₂`, everywhere. -/
+/-- The $Q_1$ interpolant reproduces $\mathbb{P}_1$. Let $q$ be a polynomial in two variables of
+total degree at most $1$, and let $\hat\Pi$ be nodal interpolation at the vertices
+`AtkinsonHan.Chapter10.q1Node` with the shape functions `AtkinsonHan.Chapter10.q1Shape`. Then
+$\hat\Pi q (x) = q(x)$ for every $x \in \mathbb{R}^2$.
+
+This is the polynomial invariance (10.3.4) of the $Q_1$ element with $k = 1$. A polynomial of
+degree at most $1$ is $c_0 + c_1 \hat x_1 + c_2 \hat x_2$, and the interpolant reproduces $1$,
+$\hat x_1$ and $\hat x_2$. -/
 theorem nodalInterp_q1_eval (q : MvPolynomial (Fin 2) ℝ) (hq : q.totalDegree ≤ 1) (x : 𝔼₂) :
     Approximation.nodalInterp q1Node q1Shape (fun y : 𝔼₂ ↦ MvPolynomial.eval (fun i ↦ y i) q) x
       = MvPolynomial.eval (fun i ↦ x i) q := by
@@ -642,20 +716,26 @@ theorem nodalInterp_q1_eval (q : MvPolynomial (Fin 2) ℝ) (hq : q.totalDegree �
     _ = ∑ d ∈ q.support, q.coeff d * ∏ j, x j ^ d j := Finset.sum_congr rfl key
     _ = MvPolynomial.eval (fun i ↦ x i) q := (MvPolynomial.eval_eq' _ _).symm
 
-/-- **Example 10.3.8 on the unit square: the `Q₁` element on a regular family of
-parallelograms.** For a regular family `{𝒯_h}` (Definition 10.3.6) of elements of diameter at
-most `H`, each the affine image `K = F_K(K̂)` of the unit square `K̂ = (0,1)²`, with the four
-vertices `F_K(x̂ᵢ)` as nodes and the transported bilinear shape functions
-`φ̂ᵢ ∘ F_K⁻¹` — the local space `Q₁(K̂) ⊇ ℙ₁(K̂)` of the remark after Theorem 10.3.5 — the
-estimate (10.3.11) holds for `m = 0, 1, 2`:
+/-- **Example 10.3.8** of [han2009theoretical], the $Q_1$ element on parallelograms. Let $m \le 2$,
+and let $\{\mathcal{T}_h\}$ be a regular family (Definition 10.3.6) of collections of subsets of
+$\mathbb{R}^2$ whose elements have diameter at most $H$. Then there is a constant $c \ge 0$ with
+the following property. Let $K$ be an element of some $\mathcal{T}_h$ that is open and is the
+image of the unit square $\hat K = (0, 1)^2$ under $F_K(\hat x) = T_K \hat x + b_K$, with $T_K$
+invertible, and let $\Pi_K$ be the interpolation operator with the nodes $F_K(\hat x_i)$ at the
+four transported vertices and the transported bilinear shape functions
+$\hat\varphi_i \circ F_K^{-1}$. Then
+$$\|v - \Pi_K v\|_{m,K} \le c \, h_K^{2-m} \, |v|_{2,K} \qquad (10.3.11)$$
+for every $v \in H^2(K)$ that is continuous on $\overline K$.
 
-  `‖v − Π_K v‖_{m,K} ≤ c h_K^{2−m} |v|_{2,K}`  for every `v ∈ H²(K)`.
+The source states Example 10.3.8 for the linear element on triangles
+(`AtkinsonHan.Chapter10.example_10_3_8`). This declaration is the same estimate for the local
+space $Q_1(\hat K) \supseteq \mathbb{P}_1(\hat K)$ of the remark after Theorem 10.3.5.
 
-This is Corollary 10.3.7 at `k = 1`, `d = 2` (so `k + 1 = 2 > d/2 = 1`), the reference element
-being an extension domain (`isSobolevExtensionDomainAll_unitSquare`), bounded, convex, with the
-ball of radius `1/4` about its centre inscribed, the vertices in its closure, the shape
-functions smooth, and `Q₁ ⊇ ℙ₁` (`nodalInterp_q1_eval`). The book's example is the linear
-element on triangles, `example_10_3_8`. -/
+This is Corollary 10.3.7 with $k = 1$ and $d = 2$, so that $k + 1 = 2 > d/2$. The unit square is
+a Sobolev extension domain (`isSobolevExtensionDomainAll_unitSquare`), bounded and convex, and
+contains the closed ball of radius $1/4$ about its centre. The vertices lie in its closure, the
+shape functions are smooth, and the interpolant reproduces $\mathbb{P}_1$
+(`AtkinsonHan.Chapter10.nodalInterp_q1_eval`). -/
 theorem example_10_3_8_square {m : ℕ} (hm : m ≤ 2) {ι : Type*} {l : Filter ι}
     {𝒯 : ι → Set (Set 𝔼₂)} (hreg : IsRegularFamily l 𝒯) {H : ℝ}
     (hH : ∀ i, ∀ K ∈ 𝒯 i, Metric.diam K ≤ H) :
@@ -672,16 +752,18 @@ theorem example_10_3_8_square {m : ℕ} (hm : m ≤ 2) {ι : Type*} {l : Filter 
 
 end Example1038Square
 
-/-! ### Example 10.3.8: the linear element on triangles
+/-!
+### Example 10.3.8: the linear element on triangles
 
-The book's example: the reference element is the reference triangle
-`K̂ = {x̂₁, x̂₂ > 0, x̂₁ + x̂₂ < 1}` (`EuclideanSpace.referenceTriangle`), the nodes its three
-vertices, the shape functions the barycentric coordinates `1 − x̂₁ − x̂₂, x̂₁, x̂₂` (Example
-10.3.2, `EuclideanSpace.baryCoord`), the local space `X̂ = ℙ₁(K̂)`, and the elements the affine
-images of `K̂` — every nondegenerate triangle. The reference triangle is a Sobolev extension
-domain for every exponent (`isSobolevExtensionDomainAll_referenceTriangle`,
-`Numlib/Analysis/Sobolev/Simplex.lean`: two reflections and an affine change of variables to the
-unit square), so Corollary 10.3.7 applies to it verbatim. -/
+The reference element is the reference triangle $\hat K = \{\hat x : \hat x_1 > 0, \hat x_2 > 0,
+\hat x_1 + \hat x_2 < 1\}$ (`EuclideanSpace.referenceTriangle`). The nodes are its three vertices,
+the shape functions are the barycentric coordinates $1 - \hat x_1 - \hat x_2$, $\hat x_1$,
+$\hat x_2$ of Example 10.3.2 (`EuclideanSpace.baryCoord`), the local space is
+$\hat X = \mathbb{P}_1(\hat K)$, and the elements are the affine images of $\hat K$, which are the
+nondegenerate triangles. The reference triangle is a Sobolev extension domain for every exponent
+(`isSobolevExtensionDomainAll_referenceTriangle`): two reflections and an affine change of variables
+carry it to the unit square. So Corollary 10.3.7 applies to it.
+-/
 
 section Example1038
 
@@ -690,22 +772,30 @@ open scoped ENNReal NNReal Topology
 
 local notation "𝔼₂" => EuclideanSpace ℝ (Fin 2)
 
-/-- **The barycentric coordinates are nodal for the vertices of the reference triangle**: the
-`P₁` element, Example 10.3.2 with the explicit coordinates of `EuclideanSpace.baryCoord`
-(the backbone's `EuclideanSpace.isNodalBasis_baryCoord`). -/
+/-- The barycentric coordinates `EuclideanSpace.baryCoord` are nodal for the vertices
+`EuclideanSpace.referenceTriangleVertex` of the reference triangle: the $i$-th coordinate is $1$
+at the $i$-th vertex and $0$ at the other two.
+
+This is Example 10.3.2 for the reference triangle, with the explicit coordinates
+$1 - \hat x_1 - \hat x_2$, $\hat x_1$, $\hat x_2$. It is
+`EuclideanSpace.isNodalBasis_baryCoord`. -/
 theorem baryCoord_isNodalBasis :
     Approximation.IsNodalBasis referenceTriangleVertex baryCoord :=
   isNodalBasis_baryCoord
 
-/-- The barycentric coordinates lie in `H^m` of the reference triangle for every `m`. -/
+/-- Each barycentric coordinate `EuclideanSpace.baryCoord i` lies in $H^m(\hat K)$ of the reference
+triangle $\hat K$ for every $m \ge 0$. -/
 theorem memSobolev_baryCoord (m : ℕ) (i : Fin 3) :
     MemSobolev (baryCoord i) m 2 referenceTriangle volume :=
   ((contDiff_baryCoord i).of_le (by simp)).memSobolev_of_isBounded isBounded_referenceTriangle 2
 
-/-- **`P₁` interpolation reproduces `ℙ₁`**: the polynomial invariance (10.3.4) of the linear
-element at `k = 1`. A polynomial of total degree at most `1` is `c₀ + c₁ x̂₁ + c₂ x̂₂`, and the
-barycentric interpolant reproduces `1`, `x̂₁` and `x̂₂`, everywhere — the explicit form of
-`nodalInterp_coord_affineMap` on the reference triangle. -/
+/-- The linear interpolant reproduces $\mathbb{P}_1$. Let $q$ be a polynomial in two variables of
+total degree at most $1$, and let $\hat\Pi$ be nodal interpolation at the vertices of the
+reference triangle with the barycentric coordinates as shape functions. Then
+$\hat\Pi q (x) = q(x)$ for every $x \in \mathbb{R}^2$.
+
+This is the polynomial invariance (10.3.4) of the linear element with $k = 1$, and the explicit
+form of `AtkinsonHan.Chapter10.nodalInterp_coord_affineMap` on the reference triangle. -/
 theorem nodalInterp_baryCoord_eval (q : MvPolynomial (Fin 2) ℝ) (hq : q.totalDegree ≤ 1)
     (x : 𝔼₂) :
     Approximation.nodalInterp referenceTriangleVertex baryCoord
@@ -739,22 +829,29 @@ theorem nodalInterp_baryCoord_eval (q : MvPolynomial (Fin 2) ℝ) (hq : q.totalD
     _ = ∑ d ∈ q.support, q.coeff d * ∏ j, x j ^ d j := Finset.sum_congr rfl key
     _ = MvPolynomial.eval (fun i ↦ x i) q := (MvPolynomial.eval_eq' _ _).symm
 
-/-- **Example 10.3.8: the linear element on a regular family of triangles.** Let `K` be a
-triangle in a regular family of affine finite elements (Definition 10.3.6, `IsRegularFamily`,
-with the elements of diameter at most `H`), each the affine image `K = F_K(K̂)` of the reference
-triangle `K̂`, with the three vertices `F_K(x̂ᵢ)` as nodes, the transported barycentric coordinates
-`λ̂ᵢ ∘ F_K⁻¹` as shape functions and the local space `X_K = ℙ₁(K)`. Then for every `v ∈ H²(K)`
-the estimate (10.3.11) holds,
+/-- **Example 10.3.8** of [han2009theoretical], the linear element on triangles. Let $m \le 2$, and
+let $\{\mathcal{T}_h\}$ be a regular family (Definition 10.3.6) of collections of subsets of
+$\mathbb{R}^2$ whose elements have diameter at most $H$. Then there is a constant $c \ge 0$ with
+the following property. Let $K$ be an element of some $\mathcal{T}_h$ that is open and is the
+image of the reference triangle $\hat K$ under $F_K(\hat x) = T_K \hat x + b_K$, with $T_K$
+invertible, and let $\Pi_K$ be the interpolation operator with the three vertices
+$F_K(\hat x_i)$ as nodes and the transported barycentric coordinates
+$\hat\lambda_i \circ F_K^{-1}$ as shape functions, so that $X_K = \mathbb{P}_1(K)$. Then
+$$\|v - \Pi_K v\|_{m,K} \le c \, h_K^{2-m} \, |v|_{2,K} \qquad (10.3.11)$$
+for every $v \in H^2(K)$ that is continuous on $\overline K$.
 
-  `‖v − Π_K v‖_{m,K} ≤ c h_K^{2−m} |v|_{2,K}`,
+**Generalization.** The source states (10.3.11) for $m = 0, 1$. The declaration also covers
+$m = 2$.
 
-for `m = 0, 1` (and `m = 2`). This is Corollary 10.3.7 (the estimate (10.3.10)) at `k = 1`,
-`d = 2` (so `k + 1 = 2 > d/2 = 1`), the reference triangle being a Sobolev extension domain
-(`isSobolevExtensionDomainAll_referenceTriangle`, the backbone's reading of "Lipschitz"), bounded,
-convex, with the ball of radius `1/8` about `(1/4, 1/4)` inscribed, the vertices in its closure,
-the barycentric coordinates smooth and nodal (Example 10.3.2), and `ℙ₁(K̂) ⊆ X̂`
-(`nodalInterp_baryCoord_eval`). `v` is read on its continuous representative up to the boundary
-and `K` is the open element, as in Corollary 10.3.7. -/
+**Reading.** As in Corollary 10.3.7, $v$ is taken on its representative that is continuous up to
+the boundary, and the bound $h_K \le H$ on the diameters of the elements is a hypothesis.
+
+This is Corollary 10.3.7 with $k = 1$ and $d = 2$, so that $k + 1 = 2 > d/2$. The reference
+triangle is a Sobolev extension domain (`isSobolevExtensionDomainAll_referenceTriangle`),
+bounded and convex, and contains the closed ball of radius $1/8$ about $(1/4, 1/4)$. The
+vertices lie in its closure, the barycentric coordinates are smooth and nodal (Example 10.3.2),
+and the interpolant reproduces $\mathbb{P}_1$
+(`AtkinsonHan.Chapter10.nodalInterp_baryCoord_eval`). -/
 theorem example_10_3_8 {m : ℕ} (hm : m ≤ 2) {ι : Type*} {l : Filter ι}
     {𝒯 : ι → Set (Set 𝔼₂)} (hreg : IsRegularFamily l 𝒯) {H : ℝ}
     (hH : ∀ i, ∀ K ∈ 𝒯 i, Metric.diam K ≤ H) :
@@ -772,20 +869,21 @@ theorem example_10_3_8 {m : ℕ} (hm : m ≤ 2) {ι : Type*} {l : Filter ι}
 
 end Example1038
 
-/-! ### Theorem 10.3.9: the global interpolation error on a triangulation
+/-!
+### Theorem 10.3.9: the global interpolation error on a triangulation
 
-The triangulation is `Triangulation Ω` (`Numlib/Geometry/Triangulation.lean`): a finite set of
-nondegenerate triangles with disjoint interiors, whose closures cover `Ω`, meeting edge to
-edge. Its elements are the affine images `F_K(K̂)` of the reference triangle
-(`Triangulation.image_referenceTriangle`), the local interpolant `Π_K v` is
-`Triangulation.localInterp` ((10.3.2), with the transported nodes and shape functions of
-Corollary 10.3.7) and the global interpolant `Π_h v` is `Triangulation.globalInterp`, glued
-from the local ones (§10.3.4, `Π_h v|_K = Π_K v`). The element type is assumed *conforming*
-(`Triangulation.IsConformingElement`: the local interpolants agree on the common edges, the
-book's standing assumption `X_h ⊆ C(Ω̄)` of §10.2.3, which Example 10.2.3 verifies for the
-linear element); then `Π_h v` is continuous on `Ω̄` and lies in `H¹(Ω)`
-(`Triangulation.memSobolev_globalInterp`, through the weak derivative of a continuous
-piecewise-`C¹` function, `Numlib/Analysis/Sobolev/Triangulation.lean`). -/
+A triangulation of a plane domain $\Omega$ is a `Triangulation Ω`: a finite set of nondegenerate
+triangles with disjoint interiors, whose closures cover $\Omega$, and which meet edge to edge. Its
+elements are the affine images $F_K(\hat K)$ of the reference triangle
+(`Triangulation.image_referenceTriangle`). The local interpolant $\Pi_K v$ of (10.3.2) is
+`Triangulation.localInterp`, with the transported nodes and shape functions of Corollary 10.3.7, and
+the global interpolant $\Pi_h v$ with $\Pi_h v|_K = \Pi_K v$ is `Triangulation.globalInterp`, glued
+from the local ones. The element is assumed to be conforming (`Triangulation.IsConformingElement`):
+the local interpolants agree on common edges. This is the standing assumption
+$X_h \subseteq C(\overline\Omega)$ of Section 10.2.3, which Example 10.2.3 verifies for the linear
+element. Then $\Pi_h v$ is continuous on $\overline\Omega$ and lies in $H^1(\Omega)$
+(`Triangulation.memSobolev_globalInterp`).
+-/
 
 section Theorem1039
 
@@ -794,16 +892,21 @@ open scoped ENNReal NNReal Topology
 
 local notation "𝔼₂" => EuclideanSpace ℝ (Fin 2)
 
-/-- The mesh parameter of a triangulation, read as a collection of elements, is its
+/-- For a triangulation $\mathcal{T}$ of $\Omega$, the mesh parameter
+`AtkinsonHan.Chapter10.meshSize` of the collection of its open elements equals
 `Triangulation.meshSize`. -/
 theorem meshSize_range_K {Ω : Opens 𝔼₂} (𝒯 : Triangulation Ω) :
     meshSize (Set.range 𝒯.K) = 𝒯.meshSize :=
   𝒯.meshSize_eq_sSup_image.symm
 
-/-- **Definition 10.3.6 for a family of triangulations**: the family is regular exactly when
-(a) some `σ` bounds `h_K / ρ_K` for every element of every triangulation — every element
-contains a ball of radius `r` with `h_K ≤ σ (2 r)` — and (b) the mesh parameters
-`Triangulation.meshSize` tend to `0`. -/
+/-- Definition 10.3.6 for a family of triangulations. A family $\{\mathcal{T}_i\}$ of triangulations
+of $\Omega \subseteq \mathbb{R}^2$, indexed by a type with a filter $l$, is regular
+(`AtkinsonHan.Chapter10.IsRegularFamily` for the collections of open elements) if and only if
+
+* (a) there is a $\sigma \in \mathbb{R}$ such that every element $K$ of every $\mathcal{T}_i$
+  contains a closed ball of some radius $r > 0$ with
+  $\operatorname{diam} K \le \sigma \cdot 2r$, and
+* (b) the mesh parameters `Triangulation.meshSize` of the $\mathcal{T}_i$ tend to $0$ along $l$. -/
 theorem isRegularFamily_iff {Ω : Opens 𝔼₂} {ι : Type*} (l : Filter ι) (𝒯 : ι → Triangulation Ω) :
     IsRegularFamily l (fun i ↦ Set.range (𝒯 i).K) ↔
       (∃ σ : ℝ, ∀ i, ∀ T : (𝒯 i).elems, ∃ (c : 𝔼₂) (r : ℝ), 0 < r ∧
@@ -811,21 +914,28 @@ theorem isRegularFamily_iff {Ω : Opens 𝔼₂} {ι : Type*} (l : Filter ι) (�
       Tendsto (fun i ↦ (𝒯 i).meshSize) l (𝓝 0) :=
   FiniteElement.isRegularFamily_range_K_iff l 𝒯
 
-/-- **Theorem 10.3.9** (the global interpolation error, (10.3.13)). Let `{𝒯_h}` be a regular
-family of triangulations of a plane domain `Ω` (Definition 10.3.6, `IsRegularFamily`, with mesh
-parameters at most `H`), and let the reference element be the reference triangle with nodes
-`x̂ᵢ ∈ K̂̄`, `C¹` shape functions `φ̂ᵢ` and the polynomial invariance `ℙ_k(K̂) ⊆ X̂`, `k ≥ 1`, the
-element being conforming on every triangulation of the family. Then there is a constant `c`,
-independent of `h`, such that for every `v ∈ H^{k+1}(Ω)` (read on its continuous representative
-up to the boundary, as in Corollary 10.3.7) and `m = 0, 1`,
+/-- **Theorem 10.3.9** of [han2009theoretical] (the global interpolation error (10.3.13)). Let
+$\Omega \subseteq \mathbb{R}^2$ be open, let $k \ge 1$ and $m \le 1$, and let
+$\{\mathcal{T}_h\}$ be a regular family of triangulations of $\Omega$ (Definition 10.3.6) with
+mesh parameters at most $H$. Let the reference element be the reference triangle $\hat K$, with
+nodes $\hat x_i \in \overline{\hat K}$ and $C^1$ shape functions $\hat\varphi_i$, and assume the
+polynomial invariance $\hat\Pi q = q$ on $\hat K$ for every polynomial $q$ of degree at most
+$k$. Let the element be conforming on every triangulation of the family. Then there is a
+constant $c \ge 0$ such that
+$$\|v - \Pi_h v\|_{m,\Omega} \le c \, h^{k+1-m} \, |v|_{k+1,\Omega}$$
+for every triangulation of the family, with mesh parameter $h$, and every
+$v \in H^{k+1}(\Omega)$ that is continuous on $\overline\Omega$.
 
-  `‖v − Π_h v‖_{m,Ω} ≤ c h^{k+1−m} |v|_{k+1,Ω}`.
+**Reading.** The source assumes $X_h \subseteq C(\overline\Omega)$; here this is the hypothesis
+that the element is conforming (`Triangulation.IsConformingElement`). As in Corollary 10.3.7,
+$v$ is taken on its representative that is continuous up to the boundary, and the bound
+$h \le H$ is a hypothesis.
 
-The proof is the book's: `‖v − Π_h v‖²_{m,Ω} = ∑_K ‖v − Π_K v‖²_{m,K}`
-(`Triangulation.sobolevNorm_rpow_eq_sum`, the additivity of the tensor norm over the elements,
-which needs `v − Π_h v ∈ H^m(Ω)` — for `m = 1` the conformity), each term is bounded by
-Corollary 10.3.7 with `h_K ≤ h`, and `∑_K |v|²_{k+1,K} = |v|²_{k+1,Ω}`. The hypothesis
-`k + 1 > d/2` of Corollary 10.3.7 is `k ≥ 1` in the plane. -/
+The proof is that of the source: $\|v - \Pi_h v\|_{m,\Omega}^2 = \sum_K \|v - \Pi_K v\|_{m,K}^2$
+(`Triangulation.sobolevNorm_rpow_eq_sum`), which needs $v - \Pi_h v \in H^m(\Omega)$ and hence
+conformity for $m = 1$. Corollary 10.3.7 with $h_K \le h$ bounds each term, and
+$\sum_K |v|_{k+1,K}^2 = |v|_{k+1,\Omega}^2$. The hypothesis $k + 1 > d/2$ of Corollary 10.3.7 is
+$k \ge 1$ in the plane. The statement is `Triangulation.sobolevNorm_sub_globalInterp_le`. -/
 theorem theorem_10_3_9 {k m : ℕ} (hm : m ≤ 1) (hk : 1 ≤ k)
     {I : ℕ} (xhat : Fin I → 𝔼₂) (φhat : Fin I → 𝔼₂ → ℝ)
     (hx : ∀ i, xhat i ∈ closure (referenceTriangle : Set 𝔼₂))
@@ -844,12 +954,19 @@ theorem theorem_10_3_9 {k m : ℕ} (hm : m ≤ 1) (hk : 1 ≤ k)
           * sobolevSeminorm v (k + 1) 2 Ω volume :=
   Triangulation.sobolevNorm_sub_globalInterp_le hm hk xhat φhat hx hφ hP hreg hH hconf
 
-/-- **Theorem 10.3.9 for the linear element** of Example 10.3.8: on a regular family of
-triangulations with mesh parameters at most `H`, the continuous piecewise linear interpolant
-`Π_h v` at the vertices satisfies `‖v − Π_h v‖_{m,Ω} ≤ c h^{2−m} |v|_{2,Ω}` for every
-`v ∈ H²(Ω)` and `m = 0, 1`. The linear element is conforming on every triangulation
-(`Triangulation.isConformingElement_linear`, Example 10.2.3), and `ℙ₁(K̂) ⊆ X̂`
-(`nodalInterp_baryCoord_eval`). -/
+/-- **Theorem 10.3.9** of [han2009theoretical] for the linear element of Example 10.3.8. Let
+$\Omega \subseteq \mathbb{R}^2$ be open, let $m \le 1$, and let $\{\mathcal{T}_h\}$ be a regular
+family of triangulations of $\Omega$ with mesh parameters at most $H$. Let $\Pi_h v$ be the
+continuous piecewise linear interpolant of $v$ at the vertices. Then there is a constant
+$c \ge 0$ such that
+$$\|v - \Pi_h v\|_{m,\Omega} \le c \, h^{2-m} \, |v|_{2,\Omega}$$
+for every triangulation of the family, with mesh parameter $h$, and every $v \in H^2(\Omega)$
+that is continuous on $\overline\Omega$.
+
+The linear element is conforming on every triangulation
+(`Triangulation.isConformingElement_linear`, Example 10.2.3), and it reproduces $\mathbb{P}_1$
+(`AtkinsonHan.Chapter10.nodalInterp_baryCoord_eval`), so this is
+`AtkinsonHan.Chapter10.theorem_10_3_9` with $k = 1$. -/
 theorem theorem_10_3_9_linear {m : ℕ} (hm : m ≤ 1) {Ω : Opens 𝔼₂} {ι : Type*} {l : Filter ι}
     {𝒯 : ι → Triangulation Ω} (hreg : IsRegularFamily l fun i ↦ Set.range (𝒯 i).K)
     {H : ℝ} (hH : ∀ i, (𝒯 i).meshSize ≤ H) :
@@ -862,13 +979,19 @@ theorem theorem_10_3_9_linear {m : ℕ} (hm : m ≤ 1) {Ω : Opens 𝔼₂} {ι 
     (fun q hq x _ ↦ nodalInterp_baryCoord_eval q hq x) hreg hH
     fun i ↦ (𝒯 i).isConformingElement_linear
 
-/-- **Theorem 10.3.9 for the `ℙ_k` Lagrange element** on the principal lattice `N̂_k` (10.2.24) —
-the book's "affine-equivalent finite element spaces of piecewise polynomials of degree at most
-`k`": on a regular family of triangulations with mesh parameters at most `H`, the continuous
-piecewise-`ℙ_k` interpolant `Π_h v` at the lattice nodes satisfies
-`‖v − Π_h v‖_{m,Ω} ≤ c h^{k+1−m} |v|_{k+1,Ω}` for every `v ∈ H^{k+1}(Ω)`, `k ≥ 1`, `m = 0, 1`.
-The element is the backbone's `LagrangeElement.node`, `LagrangeElement.shape`, conforming on every
-triangulation and reproducing `ℙ_k` (Proposition 10.2.1); the estimate is
+/-- **Theorem 10.3.9** of [han2009theoretical] for the $\mathbb{P}_k$ Lagrange element on the
+principal lattice $\hat N_k$ of (10.2.24), the affine-equivalent finite element spaces of
+piecewise polynomials of degree at most $k$ in the source. Let $\Omega \subseteq \mathbb{R}^2$
+be open, let $k \ge 1$ and $m \le 1$, and let $\{\mathcal{T}_h\}$ be a regular family of
+triangulations of $\Omega$ with mesh parameters at most $H$. Let $\Pi_h v$ be the continuous
+piecewise $\mathbb{P}_k$ interpolant of $v$ at the lattice nodes. Then there is a constant
+$c \ge 0$ such that
+$$\|v - \Pi_h v\|_{m,\Omega} \le c \, h^{k+1-m} \, |v|_{k+1,\Omega}$$
+for every triangulation of the family, with mesh parameter $h$, and every
+$v \in H^{k+1}(\Omega)$ that is continuous on $\overline\Omega$.
+
+The element is `LagrangeElement.node` and `LagrangeElement.shape`. It is conforming on every
+triangulation and reproduces $\mathbb{P}_k$ (Proposition 10.2.1). The statement is
 `LagrangeElement.sobolevNorm_sub_globalInterp_le`. -/
 theorem theorem_10_3_9_lattice {k m : ℕ} (hm : m ≤ 1) (hk : 1 ≤ k) {Ω : Opens 𝔼₂} {ι : Type*}
     {l : Filter ι} {𝒯 : ι → Triangulation Ω} (hreg : IsRegularFamily l fun i ↦ Set.range (𝒯 i).K)

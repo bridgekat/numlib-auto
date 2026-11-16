@@ -9,44 +9,71 @@ import Numlib.Analysis.Normed.Ring.Inverse
 import Numlib.IntegralEquations.Basic
 
 /-!
-# Atkinson–Han §2.3: the geometric series theorem and its variants
+# Atkinson and Han, Section 2.3: The geometric series theorem and its variants
 
-Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework*, 3rd edition, Springer, 2009, §2.3: the geometric series (Neumann) theorem,
-the second-kind equation `(λI - K)u = f`, the variant under `‖Lᵐ‖ < 1`, the perturbation theorem
-and the consistency-plus-stability criterion (2.3.16). Every proof specializes
-`Numlib.Analysis.Normed.Ring.Inverse` or the Neumann-series API of Mathlib.
+This module formalizes Section 2.3 of [han2009theoretical]. Let $V$ be a Banach space and
+$L \in \mathcal{L}(V)$. The geometric series theorem says that if $\|L\| < 1$, then $I - L$ is a
+bijection of $V$ onto $V$ with bounded inverse
+$$(I - L)^{-1} = \sum_{n=0}^\infty L^n, \qquad \|(I - L)^{-1}\| \le \frac{1}{1 - \|L\|}.$$
+The section applies it to the equation of the second kind $(\lambda I - K) u = f$, extends it to
+operators with $\|L^m\| < 1$ for some $m \ge 1$, and proves the perturbation theorem: an operator
+close enough to an invertible one is invertible. With the perturbation theorem, consistency and
+stability of a sequence of approximating equations give convergence of their solutions (2.3.16). The
+concrete examples are integral equations on $C[a, b]$, among them the equation (2.3.17) with the
+kernel $\sin(xy)$.
 
-The book phrases invertibility as "`L` is a bijection of `V` onto `W` whose inverse is bounded".
-Here that is `∃ e : V ≃L[𝕜] W, (e : V →L[𝕜] W) = L`, and `L⁻¹` is `e.symm`; the bridge to the
-ring-theoretic `IsUnit` used by the backbone is `isUnit_iff_exists_continuousLinearEquiv`.
+The proofs specialize the results on inverses in a normed ring of
+`Numlib.Analysis.Normed.Ring.Inverse`, the Neumann series of Mathlib, and the integral operators of
+`Numlib.IntegralEquations.Basic`.
 
 ## Main results
 
-* `theorem_2_3_1` — geometric series theorem, with `(I - L)⁻¹ = ∑ Lⁿ` and (2.3.2).
-* `equation_2_3_4`, `equation_2_3_5` — stability of, and partial-sum approximation for, `(I - L)u =
-  f`.
-* `example_2_3_2` — the second-kind equation `(λI - K)u = f` (abstract part).
-* `corollary_2_3_3`, `example_2_3_4` — the variants under `‖Lᵐ‖ < 1`.
-* `theorem_2_3_5` — the perturbation theorem, with (2.3.13), (2.3.14), (2.3.15).
-* `equation_2_3_16`, `convergence_of_consistent_stable` — consistency plus stability gives
-  convergence.
-* `example_2_3_2_integral`, `example_2_3_4_volterra` — the concrete halves of the two examples,
-  on `C[a, b]`, using the integral operators of `Numlib/IntegralEquations/Basic.lean` and the
-  norm formula (2.2.8).
-* `example_2_3_6`, `example_2_3_6_norm_sub` — the equation (2.3.17) with kernel `sin (x y)`: its
-  operator norm is `1 - cos 1`, which is (2.3.18) and settles `|λ| > 1 - cos 1` by Example 2.3.2;
-  and the norm `cos 1 - 1/2` of the difference between (2.3.17) and the degenerate-kernel
-  equation (2.3.19), which is the quantity the book's perturbation comparison rests on.
+* Theorem 2.3.1, `AtkinsonHan.Chapter02.theorem_2_3_1`: the geometric series theorem, with (2.3.2).
+* Equations (2.3.4) and (2.3.5), `AtkinsonHan.Chapter02.equation_2_3_4` and
+  `AtkinsonHan.Chapter02.equation_2_3_5`: the solution of $(I - L) u = f$ depends Lipschitz
+  continuously on $f$, and the partial sums of the Neumann series converge to it.
+* Example 2.3.2, `AtkinsonHan.Chapter02.example_2_3_2` and
+  `AtkinsonHan.Chapter02.example_2_3_2_bound`: if $\|K\| < |\lambda|$, then $\lambda I - K$ is
+  invertible and $\|u\| \le \|f\| / (|\lambda| - \|K\|)$.
+* Example 2.3.2, `AtkinsonHan.Chapter02.example_2_3_2_integral`: the same for an integral operator
+  with continuous kernel on $C[a, b]$, with $\|K\|$ given by (2.2.8).
+* Corollary 2.3.3, `AtkinsonHan.Chapter02.corollary_2_3_3`: if $\|L^m\| < 1$ for some $m \ge 1$,
+  then $I - L$ is invertible, with the bound (2.3.11).
+* Example 2.3.4, `AtkinsonHan.Chapter02.example_2_3_4`: if $\|L^k\| \to 0$, then $I - L$ is
+  invertible.
+* Example 2.3.4, `AtkinsonHan.Chapter02.example_2_3_4_volterra`: the Volterra operator $L$ with
+  continuous kernel satisfies $\|L^m\| \le (\|k\|_\infty (b - a))^m / m!$, and $\lambda I - L$ is
+  invertible for every $\lambda \neq 0$.
+* Theorem 2.3.5, `AtkinsonHan.Chapter02.theorem_2_3_5`: the perturbation theorem, with (2.3.13),
+  (2.3.14) and (2.3.15).
+* Equation (2.3.16), `AtkinsonHan.Chapter02.equation_2_3_16` and
+  `AtkinsonHan.Chapter02.convergence_of_consistent_stable`: if $L_n \to L$, the approximating
+  equations are uniquely solvable for large $n$, and consistency with stability gives convergence.
+* Example 2.3.6, `AtkinsonHan.Chapter02.example_2_3_6`: the integral operator with kernel $\sin(xy)$
+  on $C[0, 1]$ has norm $1 - \cos 1$ (2.3.18), so (2.3.17) is uniquely solvable for
+  $|\lambda| > 1 - \cos 1$.
+* Example 2.3.6, `AtkinsonHan.Chapter02.example_2_3_6_norm_sub`: the integral operator with kernel
+  $xy - \sin(xy)$, the difference between (2.3.17) and (2.3.19), has norm $\cos 1 - 1/2$.
 
-## Not formalized here
+## Implementation notes
 
-Of Example 2.3.6, the second half of the analysis: the explicit inverse (2.3.20) of the
-degenerate-kernel equation (2.3.19), the bound `‖L⁻¹‖ ≤ (1/|λ|)(1 + 1/(2|λ - 1/3|))` it gives, and
-the resulting condition (2.3.21) with its numerical root `λ₀ ≈ -0.0881`. The book leaves that
-analysis to the reader as its own Exercise 2.3.5, states the constants only to two decimals, and
-uses none of it later; the two operator norms it turns on, `‖K‖` and `‖L - M‖`, are the theorems
-above.
+* The book says that $L$ is "a bijection of $V$ onto $W$ whose inverse is bounded". In Lean this is
+  `∃ e : V ≃L[𝕜] W, (e : V →L[𝕜] W) = L`, and the inverse of $L$ is `e.symm`. For $V = W$, the
+  theorem `AtkinsonHan.Chapter02.isUnit_iff_exists_continuousLinearEquiv` identifies this with
+  `IsUnit L` in the ring $\mathcal{L}(V)$, which the backbone uses.
+* `AtkinsonHan.Chapter02.corollary_2_3_3` keeps the hypothesis $m \ge 1$ of the book, although the
+  proof does not use it.
+* In the integral examples the kernel is a continuous function on the square, and the kernel of
+  Example 2.3.6 is described by a hypothesis on its values, not constructed.
+
+## Not formalized
+
+* **Example 2.3.6, second half.** The explicit inverse (2.3.20) of the degenerate kernel equation
+  (2.3.19), the bound $\|L^{-1}\| \le \frac{1}{|\lambda|} \big(1 + \frac{1}{2 |\lambda - 1/3|}\big)$
+  that follows from it, and the resulting condition (2.3.21) with its numerical root
+  $\lambda_0 \approx -0.0881$. The book leaves this analysis to the reader as Exercise 2.3.5, gives
+  the constants to two decimals only, and does not use them later. The two operator norms on which
+  the analysis rests, $\|K\|$ and $\|L - M\|$, are formalized.
 -/
 
 open Filter Topology
@@ -58,10 +85,13 @@ variable {𝕜 V W : Type*} [RCLike 𝕜] [NormedAddCommGroup V] [NormedSpace �
 
 section Units
 
-/-- Book-to-backbone bridge for "bijection with a bounded inverse": an operator of a normed space
-into itself is a unit of `V →L[𝕜] V` exactly when it is (the coercion of) a continuous linear
-equivalence. This is what lets the ring-level results of `Numlib.Analysis.Normed.Ring.Inverse`
-prove the statements of Atkinson–Han §2.3. -/
+/-- Let $V$ be a normed space over $\mathbb{K}$ and $L \in \mathcal{L}(V)$. Then $L$ is a unit of
+the ring $\mathcal{L}(V)$ if and only if $L$ is a bijection of $V$ onto $V$ with bounded
+inverse, that is, the underlying operator of a continuous linear equivalence.
+
+With this theorem the results on inverses in a normed ring of
+`Numlib.Analysis.Normed.Ring.Inverse` prove the statements of Section 2.3 of
+[han2009theoretical]. -/
 theorem isUnit_iff_exists_continuousLinearEquiv (L : V →L[𝕜] V) :
     IsUnit L ↔ ∃ e : V ≃L[𝕜] V, (e : V →L[𝕜] V) = L := by
   constructor
@@ -70,16 +100,16 @@ theorem isUnit_iff_exists_continuousLinearEquiv (L : V →L[𝕜] V) :
   · rintro ⟨e, rfl⟩
     exact ⟨ContinuousLinearEquiv.toUnit e, rfl⟩
 
-/-- The form of `isUnit_iff_exists_continuousLinearEquiv` used in proofs: it also identifies the
-inverse of the equivalence with `Ring.inverse`, so backbone bounds on `Ring.inverse` transfer. -/
+/-- A unit $L$ of $\mathcal{L}(V)$ is a continuous linear equivalence $e$ whose inverse $e^{-1}$ is
+`Ring.inverse L`. -/
 private theorem exists_equiv_of_isUnit {L : V →L[𝕜] V} (h : IsUnit L) :
     ∃ e : V ≃L[𝕜] V, (e : V →L[𝕜] V) = L ∧ (e.symm : V →L[𝕜] V) = Ring.inverse L := by
   obtain ⟨u, rfl⟩ := h
   exact ⟨ContinuousLinearEquiv.ofUnit u, ContinuousLinearEquiv.coe_ofUnit u,
     ContinuousLinearEquiv.coe_ofUnit_symm u⟩
 
-/-- Rescaling an invertible operator by a nonzero scalar keeps it invertible, and inverts the
-scalar on the inverse. -/
+/-- If $e$ is a continuous linear equivalence of $V$ and $\lambda \neq 0$, then $\lambda e$ is a
+continuous linear equivalence with inverse $\lambda^{-1} e^{-1}$. -/
 private theorem exists_smul_equiv {lam : 𝕜} (hlam : lam ≠ 0) (e₀ : V ≃L[𝕜] V) :
     ∃ e : V ≃L[𝕜] V, (e : V →L[𝕜] V) = lam • (e₀ : V →L[𝕜] V) ∧
       (e.symm : V →L[𝕜] V) = lam⁻¹ • (e₀.symm : V →L[𝕜] V) := by
@@ -95,8 +125,7 @@ private theorem exists_smul_equiv {lam : 𝕜} (hlam : lam ≠ 0) (e₀ : V ≃L
   · rw [ContinuousLinearEquiv.coe_ofUnit_symm, Ring.inverse_unit]
     rfl
 
-/-- Every operator on a trivial space has norm zero. Used to dispose of the degenerate case in
-which `V →L[𝕜] V` is not `NormOneClass`. -/
+/-- Every operator on the zero space has norm $0$. -/
 private theorem norm_eq_zero_of_subsingleton [Subsingleton V] (T : V →L[𝕜] V) : ‖T‖ = 0 := by
   have : T = 0 := by ext x; exact Subsingleton.elim _ _
   rw [this, norm_zero]
@@ -105,9 +134,12 @@ end Units
 
 /-! ### Theorem 2.3.1 -/
 
-/-- **Geometric series theorem** (Theorem 2.3.1). If `V` is a Banach space and `L ∈ 𝓛(V)` has
-`‖L‖ < 1`, then `I - L` is a bijection of `V` onto `V` with bounded inverse, the inverse is the
-sum of the Neumann series `∑ₙ Lⁿ`, and `‖(I - L)⁻¹‖ ≤ 1 / (1 - ‖L‖)`, which is (2.3.2). -/
+/-- **Theorem 2.3.1** of [han2009theoretical] (geometric series theorem). Let $V$ be a Banach space
+over $\mathbb{K}$ and let $L \in \mathcal{L}(V)$ satisfy $\|L\| < 1$. Then $I - L$ is a
+bijection of $V$ onto $V$ with bounded inverse, the series $\sum_{n \ge 0} L^n$ converges in
+$\mathcal{L}(V)$ to $(I - L)^{-1}$, and
+$$\|(I - L)^{-1}\| \le \frac{1}{1 - \|L\|}. \qquad (2.3.2)$$
+-/
 theorem theorem_2_3_1 [CompleteSpace V] (L : V →L[𝕜] V) (hL : ‖L‖ < 1) :
     ∃ e : V ≃L[𝕜] V, (e : V →L[𝕜] V) = 1 - L ∧
       HasSum (fun n : ℕ => L ^ n) (e.symm : V →L[𝕜] V) ∧
@@ -121,8 +153,11 @@ theorem theorem_2_3_1 [CompleteSpace V] (L : V →L[𝕜] V) (hL : ‖L‖ < 1) 
     have h2 := tsum_geometric_le_of_norm_lt_one L hL
     linarith
 
-/-- Stability of `(I - L)u = f` (the remark (2.3.4) after Theorem 2.3.1): the solution depends
-Lipschitz-continuously on the data, with constant `1 / (1 - ‖L‖)`. -/
+/-- **Equation (2.3.4)** of [han2009theoretical]. Let $V$ be a Banach space over $\mathbb{K}$ and
+let $L \in \mathcal{L}(V)$ satisfy $\|L\| < 1$. If $(I - L) u_1 = f_1$ and $(I - L) u_2 = f_2$,
+then
+$$\|u_1 - u_2\| \le \frac{1}{1 - \|L\|} \|f_1 - f_2\|.$$
+This is the stability of the equation $(I - L) u = f$, from the remark after Theorem 2.3.1. -/
 theorem equation_2_3_4 [CompleteSpace V] (L : V →L[𝕜] V) (hL : ‖L‖ < 1) {u₁ u₂ f₁ f₂ : V}
     (h₁ : (1 - L) u₁ = f₁) (h₂ : (1 - L) u₂ = f₂) :
     ‖u₁ - u₂‖ ≤ 1 / (1 - ‖L‖) * ‖f₁ - f₂‖ := by
@@ -138,8 +173,11 @@ theorem equation_2_3_4 [CompleteSpace V] (L : V →L[𝕜] V) (hL : ‖L‖ < 1)
   exact ((e.symm : V →L[𝕜] V).le_opNorm _).trans
     (mul_le_mul_of_nonneg_right hb (norm_nonneg _))
 
-/-- Approximation of the solution of `(I - L)u = f` by the partial sums of the Neumann series
-(2.3.5): `uₙ = ∑_{j ≤ n} Lʲ f → u`. -/
+/-- **Equation (2.3.5)** of [han2009theoretical]. Let $V$ be a Banach space over $\mathbb{K}$, let
+$L \in \mathcal{L}(V)$ satisfy $\|L\| < 1$, and let $(I - L) u = f$. Then the partial sums of
+the Neumann series converge to the solution:
+$$u_n = \sum_{j=0}^n L^j f \to u \quad (n \to \infty).$$
+-/
 theorem equation_2_3_5 [CompleteSpace V] (L : V →L[𝕜] V) (hL : ‖L‖ < 1) {u f : V}
     (hu : (1 - L) u = f) :
     Tendsto (fun n : ℕ => ∑ j ∈ Finset.range (n + 1), (L ^ j) f) atTop (𝓝 u) := by
@@ -153,10 +191,16 @@ theorem equation_2_3_5 [CompleteSpace V] (L : V →L[𝕜] V) (hL : ‖L‖ < 1)
 
 /-! ### Example 2.3.2 -/
 
-/-- **Second-kind equations** (Example 2.3.2, abstract part). If `‖K‖ < |λ|` then `λI - K` is
-invertible with `‖(λI - K)⁻¹‖ ≤ 1 / (|λ| - ‖K‖)`; consequently the solution of `(λI - K)u = f`
-satisfies `‖u‖ ≤ ‖f‖ / (|λ| - ‖K‖)`. The concrete part of the example, where `K` is an integral
-operator on `C[a, b]` with `‖K‖` given by (2.2.8), is `example_2_3_2_integral` below. -/
+/-- **Example 2.3.2** of [han2009theoretical], abstract part. Let $V$ be a Banach space over
+$\mathbb{K}$, let $K \in \mathcal{L}(V)$ and let $\lambda \in \mathbb{K}$ satisfy
+$\|K\| < |\lambda|$. Then $\lambda I - K$ is a bijection of $V$ onto $V$ with bounded inverse,
+and
+$$\|(\lambda I - K)^{-1}\| \le \frac{1}{|\lambda| - \|K\|}.$$
+
+The resulting bound on the solution of $(\lambda I - K) u = f$ is
+`AtkinsonHan.Chapter02.example_2_3_2_bound`. The concrete part of the example, where $K$ is an
+integral operator on $C[a, b]$ with norm (2.2.8), is
+`AtkinsonHan.Chapter02.example_2_3_2_integral`. -/
 theorem example_2_3_2 [CompleteSpace V] (K : V →L[𝕜] V) {lam : 𝕜} (h : ‖K‖ < ‖lam‖) :
     ∃ e : V ≃L[𝕜] V, (e : V →L[𝕜] V) = lam • (1 : V →L[𝕜] V) - K ∧
       ‖(e.symm : V →L[𝕜] V)‖ ≤ 1 / (‖lam‖ - ‖K‖) := by
@@ -187,7 +231,11 @@ theorem example_2_3_2 [CompleteSpace V] (K : V →L[𝕜] V) {lam : 𝕜} (h : �
           rw [hsplit, one_div_div]
           field_simp
 
-/-- The solution bound of Example 2.3.2: `(λI - K)u = f` forces `‖u‖ ≤ ‖f‖ / (|λ| - ‖K‖)`. -/
+/-- **Example 2.3.2** of [han2009theoretical], the bound on the solution. Let $V$ be a Banach space
+over $\mathbb{K}$, let $K \in \mathcal{L}(V)$ and let $\lambda \in \mathbb{K}$ satisfy
+$\|K\| < |\lambda|$. If $(\lambda I - K) u = f$, then
+$$\|u\| \le \frac{\|f\|}{|\lambda| - \|K\|}.$$
+-/
 theorem example_2_3_2_bound [CompleteSpace V] (K : V →L[𝕜] V) {lam : 𝕜} (h : ‖K‖ < ‖lam‖)
     {u f : V} (hu : (lam • (1 : V →L[𝕜] V) - K) u = f) : ‖u‖ ≤ ‖f‖ / (‖lam‖ - ‖K‖) := by
   obtain ⟨e, he, hb⟩ := example_2_3_2 K h
@@ -200,10 +248,13 @@ theorem example_2_3_2_bound [CompleteSpace V] (K : V →L[𝕜] V) {lam : 𝕜} 
 /-! ### Corollary 2.3.3 -/
 
 set_option linter.unusedVariables false in
-/-- **Corollary 2.3.3.** If `‖Lᵐ‖ < 1` for some `m ≥ 1` (2.3.10), then `I - L` is still a
-bijection with bounded inverse, and `‖(I - L)⁻¹‖ ≤ (∑_{i<m} ‖Lⁱ‖) / (1 - ‖Lᵐ‖)`, which is
-(2.3.11). The hypothesis `1 ≤ m` is kept for faithfulness; the backbone does not need it, since
-`‖L⁰‖ = ‖1‖ < 1` is impossible in a nontrivial space. -/
+/-- **Corollary 2.3.3** of [han2009theoretical]. Let $V$ be a Banach space over $\mathbb{K}$ and let
+$L \in \mathcal{L}(V)$ satisfy $\|L^m\| < 1$ for some integer $m \ge 1$ (2.3.10). Then $I - L$
+is a bijection of $V$ onto $V$ with bounded inverse, and
+$$\|(I - L)^{-1}\| \le \frac{\sum_{i=0}^{m-1} \|L^i\|}{1 - \|L^m\|}. \qquad (2.3.11)$$
+
+The hypothesis $m \ge 1$ is kept as in the book, but the proof does not use it: for $m = 0$ the
+hypothesis $\|L^0\| = \|I\| < 1$ holds only on the zero space, where the conclusion is trivial. -/
 theorem corollary_2_3_3 [CompleteSpace V] (L : V →L[𝕜] V) {m : ℕ} (hm : 1 ≤ m) (hL : ‖L ^ m‖ < 1) :
     ∃ e : V ≃L[𝕜] V, (e : V →L[𝕜] V) = 1 - L ∧
       ‖(e.symm : V →L[𝕜] V)‖ ≤ (∑ i ∈ Finset.range m, ‖L ^ i‖) / (1 - ‖L ^ m‖) := by
@@ -218,9 +269,12 @@ theorem corollary_2_3_3 [CompleteSpace V] (L : V →L[𝕜] V) {m : ℕ} (hm : 1
       exists_equiv_of_isUnit (NormedRing.isUnit_one_sub_of_norm_pow_lt_one hL)
     exact ⟨e, he, hesymm ▸ NormedRing.norm_inverse_one_sub_le_of_norm_pow_lt_one hL⟩
 
-/-- **Example 2.3.4** (abstract part). If `‖Lᵏ‖ → 0` — as happens for the Volterra integral
-operator, whose iterated kernels give `‖Lᵏ‖ ≤ (MB)ᵏ / k!` — then `I - L` is invertible. The
-kernel estimate itself is `example_2_3_4_volterra` below. -/
+/-- **Example 2.3.4** of [han2009theoretical], abstract part. Let $V$ be a Banach space over
+$\mathbb{K}$ and let $L \in \mathcal{L}(V)$ satisfy $\|L^k\| \to 0$ as $k \to \infty$. Then
+$I - L$ is a bijection of $V$ onto $V$ with bounded inverse.
+
+The hypothesis holds for the Volterra integral operator, whose iterated kernels give
+$\|L^k\| \le (MB)^k / k!$. This estimate is `AtkinsonHan.Chapter02.example_2_3_4_volterra`. -/
 theorem example_2_3_4 [CompleteSpace V] (L : V →L[𝕜] V)
     (h : Tendsto (fun k : ℕ => ‖L ^ k‖) atTop (𝓝 0)) :
     ∃ e : V ≃L[𝕜] V, (e : V →L[𝕜] V) = 1 - L := by
@@ -230,17 +284,27 @@ theorem example_2_3_4 [CompleteSpace V] (L : V →L[𝕜] V)
 
 /-! ### Theorem 2.3.5 -/
 
-/-- A continuous linear equivalence transports completeness, so the book's hypothesis "at least
-one of `V`, `W` is complete" in Theorem 2.3.5 is symmetric in the two spaces. -/
+/-- Let $V$ and $W$ be normed spaces over $\mathbb{K}$. If there is a continuous linear equivalence
+of $V$ onto $W$ and $W$ is complete, then $V$ is complete.
+
+Therefore the hypothesis "at least one of $V$, $W$ is complete" of Theorem 2.3.5 of
+[han2009theoretical] is symmetric in the two spaces. -/
 theorem completeSpace_of_equiv (L : V ≃L[𝕜] W) [CompleteSpace W] : CompleteSpace V :=
   (completeSpace_congr (e := L.toLinearEquiv.toEquiv) L.isUniformEmbedding).2 ‹_›
 
-/-- **Perturbation theorem** (Theorem 2.3.5). Let `L ∈ 𝓛(V, W)` be a bijection with bounded
-inverse and let `M ∈ 𝓛(V, W)` satisfy `‖M - L‖ < 1 / ‖L⁻¹‖` (2.3.12). Then `M` is also a
-bijection with bounded inverse, and
-`‖M⁻¹‖ ≤ ‖L⁻¹‖ / (1 - ‖L⁻¹‖ ‖L - M‖)` (2.3.13),
-`‖L⁻¹ - M⁻¹‖ ≤ ‖L⁻¹‖² ‖L - M‖ / (1 - ‖L⁻¹‖ ‖L - M‖)` (2.3.14),
-`‖v₁ - v₂‖ ≤ ‖M⁻¹‖ ‖(L - M) v₁‖` whenever `L v₁ = w = M v₂` (2.3.15). -/
+/-- **Theorem 2.3.5** of [han2009theoretical] (perturbation theorem). Let $V$ and $W$ be normed
+spaces over $\mathbb{K}$, at least one of them complete. Let $L \in \mathcal{L}(V, W)$ be a
+bijection of $V$ onto $W$ with bounded inverse, and let $M \in \mathcal{L}(V, W)$ satisfy
+$$\|M - L\| < \frac{1}{\|L^{-1}\|}. \qquad (2.3.12)$$
+Then $M$ is a bijection of $V$ onto $W$ with bounded inverse,
+$$\|M^{-1}\| \le \frac{\|L^{-1}\|}{1 - \|L^{-1}\| \|L - M\|}, \qquad (2.3.13)$$
+$$\|L^{-1} - M^{-1}\| \le \frac{\|L^{-1}\|^2 \|L - M\|}{1 - \|L^{-1}\| \|L - M\|}, \qquad
+  (2.3.14)$$
+and if $L v_1 = w$ and $M v_2 = w$ for some $w \in W$, then
+$$\|v_1 - v_2\| \le \|M^{-1}\| \, \|(L - M) v_1\|. \qquad (2.3.15)$$
+
+The operator $L$ is given as a continuous linear equivalence, and $L^{-1}$ is its inverse
+`L.symm`. -/
 theorem theorem_2_3_5 (hc : CompleteSpace V ∨ CompleteSpace W) (L : V ≃L[𝕜] W) (M : V →L[𝕜] W)
     (hM : ‖M - (L : V →L[𝕜] W)‖ < 1 / ‖(L.symm : W →L[𝕜] V)‖) :
     ∃ e : V ≃L[𝕜] W, (e : V →L[𝕜] W) = M ∧
@@ -277,12 +341,16 @@ theorem theorem_2_3_5 (hc : CompleteSpace V ∨ CompleteSpace W) (L : V ≃L[�
 
 /-! ### Consistency, stability and convergence (2.3.16) -/
 
-/-- **(2.3.16), first part.** If `Lₙ → L` in `𝓛(V, W)` and `L` is a bijection with bounded
-inverse, then for all large `n` the approximating equation `Lₙ vₙ = w` is uniquely solvable and
-the error obeys `‖v - vₙ‖ ≤ ‖Lₙ⁻¹‖ ‖(L - Lₙ) v‖`.
+/-- **Equation (2.3.16)** of [han2009theoretical], first part. Let $V$ and $W$ be normed spaces over
+$\mathbb{K}$, at least one of them complete. Let $L \in \mathcal{L}(V, W)$ be a bijection of $V$
+onto $W$ with bounded inverse, and let $L_n \in \mathcal{L}(V, W)$ satisfy $\|L - L_n\| \to 0$.
+Then there is an $N$ such that for every $n \ge N$ the operator $L_n$ is a bijection of $V$ onto
+$W$ with bounded inverse, and the solutions of $L v = w$ and $L_n v_n = w$ satisfy
+$$\|v - v_n\| \le \|L_n^{-1}\| \, \|(L - L_n) v\|.$$
 
-The inverses are produced as a family `eₙ`, which is exactly the data
-`convergence_of_consistent_stable` consumes, so the two halves of (2.3.16) compose. -/
+The inverses are given as a family $e_n$ of continuous linear equivalences for $n \ge N$. This
+is the data that `AtkinsonHan.Chapter02.convergence_of_consistent_stable` takes, so that the two
+parts of (2.3.16) compose. -/
 theorem equation_2_3_16 (hc : CompleteSpace V ∨ CompleteSpace W) (L : V ≃L[𝕜] W)
     (Ln : ℕ → V →L[𝕜] W)
     (hLn : Tendsto (fun n => ‖(L : V →L[𝕜] W) - Ln n‖) atTop (𝓝 0)) :
@@ -318,10 +386,15 @@ theorem equation_2_3_16 (hc : CompleteSpace V ∨ CompleteSpace W) (L : V ≃L[�
     obtain ⟨e, he, -, -, hb⟩ := theorem_2_3_5 hc L (Ln n) hlt
     exact ⟨e, he, hb⟩
 
-/-- **(2.3.16), second part.** Consistency (`‖(L - Lₙ) v‖ → 0`) together with stability (a uniform
-bound on `‖Lₙ⁻¹‖`) implies convergence `vₙ → v` of the approximate solutions. The families `eₙ`
-and `vₙ` are only defined for `n ≥ N`, as `equation_2_3_16` provides them, and the conclusion is
-indexed accordingly. -/
+/-- **Equation (2.3.16)** of [han2009theoretical], second part. Let $V$ and $W$ be normed spaces
+over $\mathbb{K}$, at least one of them complete, let $L \in \mathcal{L}(V, W)$ be a bijection
+with bounded inverse, and let $L_n \in \mathcal{L}(V, W)$ be bijections with bounded inverses
+for $n \ge N$. Let $L_n v_n = L v$ for $n \ge N$. Assume consistency, $\|(L - L_n) v\| \to 0$,
+and stability, $\|L_n^{-1}\| \le C$ for all $n \ge N$ and a constant $C$. Then $v_n \to v$.
+
+The families $L_n^{-1}$ and $v_n$ are defined only for $n \ge N$, as
+`AtkinsonHan.Chapter02.equation_2_3_16` gives them, so the conclusion is stated as
+$\|v - v_{k + N}\| \to 0$ as $k \to \infty$. -/
 theorem convergence_of_consistent_stable (hc : CompleteSpace V ∨ CompleteSpace W)
     (L : V ≃L[𝕜] W) (Ln : ℕ → V →L[𝕜] W) (N : ℕ) (en : ∀ n, N ≤ n → (V ≃L[𝕜] W))
     (hen : ∀ n hn, ((en n hn : V ≃L[𝕜] W) : V →L[𝕜] W) = Ln n) {v : V}
@@ -345,7 +418,7 @@ theorem convergence_of_consistent_stable (hc : CompleteSpace V ∨ CompleteSpace
   rw [hen n hn] at hb
   exact hb.trans (mul_le_mul_of_nonneg_right (hC n hn) (norm_nonneg _))
 
-/-! ### The integral-operator instances of Examples 2.3.2 and 2.3.4 -/
+/-! ### The integral operator instances of Examples 2.3.2 and 2.3.4 -/
 
 section IntegralEquations
 
@@ -355,11 +428,16 @@ open scoped Nat
 
 variable {a b : ℝ}
 
-/-- **Example 2.3.2 (ii)**, the concrete instance.  Let `K` be the Fredholm integral operator on
-`C[a, b]` with continuous kernel `k`, so that by (2.2.8) its norm is the largest row integral
-`max_x ∫ₐᵇ |k(x, y)| dy`.  If that number is smaller than `|λ|`, then `λ u - K u = f` is uniquely
-solvable for every `f`, the inverse of `λI - K` is bounded by `1 / (|λ| - ‖K‖)`, and the solution
-obeys `‖u‖ ≤ ‖f‖ / (|λ| - ‖K‖)`. -/
+/-- **Example 2.3.2 (ii)** of [han2009theoretical], the integral equation. Let $a \le b$, let $k$ be
+a real continuous function on $[a, b] \times [a, b]$, and let $K$ be the integral operator
+$Ku(x) = \int_a^b k(x, y) u(y) \, dy$ on $C[a, b]$. Let $\lambda \in \mathbb{R}$ satisfy
+$$\max_{a \le x \le b} \int_a^b |k(x, y)| \, dy < |\lambda|.$$
+Then $\lambda I - K$ is a bijection of $C[a, b]$ onto itself with bounded inverse,
+$$\|(\lambda I - K)^{-1}\| \le \frac{1}{|\lambda| - \|K\|},$$
+and every solution of $\lambda u - K u = f$ satisfies $\|u\| \le \|f\| / (|\lambda| - \|K\|)$.
+
+By (2.2.8) the maximum is $\|K\|$, and the statement writes it in this form. The operator is
+`IntegralOperator.fredholm`. -/
 theorem example_2_3_2_integral (hab : a ≤ b) (k : C(Icc a b × Icc a b, ℝ)) {lam : ℝ}
     (hk : (⨆ x, ∫ y in a..b, |k (x, projIcc a b hab y)|) < |lam|) :
     ∃ e : C(Icc a b, ℝ) ≃L[ℝ] C(Icc a b, ℝ),
@@ -379,10 +457,16 @@ theorem example_2_3_2_integral (hab : a ≤ b) (k : C(Icc a b × Icc a b, ℝ)) 
   have hbound := example_2_3_2_bound (fredholm hab k) hK hu'
   rwa [norm_fredholm hab k, Real.norm_eq_abs] at hbound
 
-/-- **Example 2.3.4**, the concrete instance.  For the linear Volterra operator `L` on `C[a, b]`
-with continuous kernel `k`, the iterated kernels give `‖Lᵐ‖ ≤ (‖k‖ (b - a))ᵐ / m!`, so (2.3.10)
-holds for all large `m` and `λI - L` is invertible for every `λ ≠ 0`: a Volterra equation of the
-second kind is uniquely solvable however large its kernel. -/
+/-- **Example 2.3.4** of [han2009theoretical], the Volterra equation. Let $a \le b$, let $k$ be a
+real continuous function on $[a, b] \times [a, b]$, and let $L$ be the Volterra operator
+$Lu(x) = \int_a^x k(x, y) u(y) \, dy$ on $C[a, b]$. Then for every $m \ge 0$,
+$$\|L^m\| \le \frac{(\|k\|_\infty (b - a))^m}{m!},$$
+and for every real $\lambda \neq 0$ the operator $\lambda I - L$ is a bijection of $C[a, b]$
+onto itself with bounded inverse.
+
+By the bound, (2.3.10) holds for all large $m$. Thus a Volterra equation of the second kind is
+uniquely solvable for every kernel. The operator is `IntegralOperator.volterraCLM`, and
+$\|k\|_\infty$ is the supremum norm of the kernel. -/
 theorem example_2_3_4_volterra (hab : a ≤ b) (k : C(Icc a b × Icc a b, ℝ)) {lam : ℝ}
     (hlam : lam ≠ 0) :
     (∀ m : ℕ, ‖volterraCLM hab k ^ m‖ ≤ (‖k‖ * (b - a)) ^ m / m !) ∧
@@ -411,10 +495,9 @@ section Example236
 
 open Real
 
-/-- The two kernels of Example 2.3.6 are of the form `g (x y)` for a `g` continuous, nonnegative
-and increasing on `[0, 1]`. For such a `g` the largest row integral over `[0, 1]` is attained at
-`x = 1`, because `x y ≤ y` keeps `g (x y) ≤ g y` throughout the square. This computes (2.2.8)'s
-supremum for both. -/
+/-- Let $g$ be continuous, nonnegative and increasing on $[0, 1]$. Then the largest row integral
+$\sup_{x \in [0, 1]} \int_0^1 |g(xy)| \, dy$ is attained at $x = 1$, and it equals
+$\int_0^1 g(y) \, dy$. -/
 private theorem iSup_integral_abs_mul {g : ℝ → ℝ} (hcont : Continuous g)
     (hnonneg : ∀ t ∈ Icc (0 : ℝ) 1, 0 ≤ g t) (hmono : MonotoneOn g (Icc (0 : ℝ) 1)) :
     ⨆ x : Icc (0 : ℝ) 1, (∫ y in (0 : ℝ)..1, |g ((x : ℝ) * y)|) = ∫ y in (0 : ℝ)..1, g y := by
@@ -443,13 +526,13 @@ private theorem iSup_integral_abs_mul {g : ℝ → ℝ} (hcont : Continuous g)
   rw [← hone]
   exact le_ciSup hbdd (⟨1, by norm_num⟩ : Icc (0 : ℝ) 1)
 
-/-- `sin` is increasing on `[0, 1]`, which lies inside `[-π/2, π/2]`. -/
+/-- The sine is increasing on $[0, 1]$. -/
 private theorem monotoneOn_sin_unitInterval : MonotoneOn sin (Icc (0 : ℝ) 1) := by
   refine strictMonoOn_sin.monotoneOn.mono fun t ht => ?_
   have hpi : (1 : ℝ) ≤ π / 2 := by linarith [two_le_pi]
   exact ⟨by linarith [ht.1, pi_pos], ht.2.trans hpi⟩
 
-/-- `t ↦ t - sin t` is increasing, because `sin` is `1`-Lipschitz. -/
+/-- The function $t \mapsto t - \sin t$ is increasing on $[0, 1]$. -/
 private theorem monotoneOn_sub_sin : MonotoneOn (fun t : ℝ => t - sin t) (Icc (0 : ℝ) 1) := by
   intro s _ t _ hst
   have h1 : sin t - sin s ≤ |t - s| := (le_abs_self _).trans (abs_sin_sub_sin_le t s)
@@ -457,14 +540,19 @@ private theorem monotoneOn_sub_sin : MonotoneOn (fun t : ℝ => t - sin t) (Icc 
   simp only
   linarith
 
-/-- **Example 2.3.6**, the part the book settles with Example 2.3.2, namely **(2.3.18)**. The
-operator `K u (x) = ∫₀¹ sin (x y) u (y) dy` of (2.3.17) has norm `∫₀¹ sin y dy = 1 - cos 1`, the row
-integral of (2.2.8) being largest at `x = 1` because `sin (x y) ≤ sin y` on the square; so for every
-`λ` with `|λ| > 1 - cos 1 ≈ 0.4597` the equation `λ u (x) - ∫₀¹ sin (x y) u (y) dy = f (x)` has
-exactly one solution `u ∈ C[0, 1]` for every `f ∈ C[0, 1]`, and `‖u‖ ≤ ‖f‖ / (|λ| - (1 - cos 1))`.
+/-- **Example 2.3.6** of [han2009theoretical], the formula (2.3.18). Let $K$ be the integral
+operator on $C[0, 1]$ with kernel $k(x, y) = \sin(xy)$, as in (2.3.17). Then
+$$\|K\| = \int_0^1 \sin y \, dy = 1 - \cos 1.$$
+Let $\lambda \in \mathbb{R}$ satisfy $|\lambda| > 1 - \cos 1 \approx 0.4597$. Then
+$\lambda I - K$ is a bijection of $C[0, 1]$ onto itself with bounded inverse, $\|(\lambda I -
+K)^{-1}\| \le 1 / (|\lambda| - (1 - \cos 1))$, and every solution $u \in C[0, 1]$ of
+$$\lambda u(x) - \int_0^1 \sin(xy) u(y) \, dy = f(x)$$
+satisfies $\|u\| \le \|f\| / (|\lambda| - (1 - \cos 1))$.
 
-The kernel is described by the hypothesis `hk` rather than constructed, as `example_1_1_12`
-describes its subspace. -/
+This is the part of the example that the book settles with Example 2.3.2. The row integral of
+(2.2.8) is largest at $x = 1$, because $\sin(xy) \le \sin y$ on the square. The kernel is a
+continuous function described by the hypothesis `hk` on its values, as
+`AtkinsonHan.Chapter01.example_1_1_12` describes its subspace. -/
 theorem example_2_3_6 (k : C(Icc (0 : ℝ) 1 × Icc (0 : ℝ) 1, ℝ))
     (hk : ∀ p : Icc (0 : ℝ) 1 × Icc (0 : ℝ) 1, k p = sin ((p.1 : ℝ) * (p.2 : ℝ))) {lam : ℝ}
     (hlam : 1 - cos 1 < |lam|) :
@@ -494,10 +582,15 @@ theorem example_2_3_6 (k : C(Icc (0 : ℝ) 1 × Icc (0 : ℝ) 1, ℝ))
   rw [hsup] at hb hu
   exact ⟨e, he, hb, hu⟩
 
-/-- **Example 2.3.6**, the quantity the book's perturbation comparison rests on: the operator
-`L - M` separating (2.3.17) from the degenerate-kernel equation (2.3.19) is the Fredholm operator
-with kernel `x y - sin (x y)`, and its norm is `∫₀¹ (y - sin y) dy = cos 1 - 1/2 ≈ 0.0403`. Again
-the row integral is largest at `x = 1`, since `t - sin t` is increasing. -/
+/-- **Example 2.3.6** of [han2009theoretical], the norm $\|L - M\|$. Let $K$ be the integral
+operator on $C[0, 1]$ with kernel $k(x, y) = xy - \sin(xy)$. Then
+$$\|K\| = \int_0^1 (y - \sin y) \, dy = \cos 1 - \frac{1}{2} \approx 0.0403.$$
+In the book, $K$ is the difference $L - M$ between the operator $L$ of the equation (2.3.17) and
+the operator $M$ of the degenerate kernel equation (2.3.19), and the perturbation comparison of
+the two equations rests on this number.
+
+The row integral of (2.2.8) is largest at $x = 1$, because $t \mapsto t - \sin t$ is increasing.
+The kernel is described by the hypothesis `hk` on its values. -/
 theorem example_2_3_6_norm_sub (k : C(Icc (0 : ℝ) 1 × Icc (0 : ℝ) 1, ℝ))
     (hk : ∀ p : Icc (0 : ℝ) 1 × Icc (0 : ℝ) 1,
       k p = (p.1 : ℝ) * (p.2 : ℝ) - sin ((p.1 : ℝ) * (p.2 : ℝ))) :

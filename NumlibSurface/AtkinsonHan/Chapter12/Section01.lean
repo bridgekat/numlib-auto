@@ -6,41 +6,82 @@ import Numlib.IntegralEquations.SecondKind
 import NumlibSurface.AtkinsonHan.Chapter03.Section06
 
 /-!
-# Atkinson–Han §12.1: projection methods for equations of the second kind
+# Atkinson and Han, Section 12.1: Projection methods for equations of the second kind
 
-Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework*, 3rd edition, Springer, 2009, §12.1.
+This module formalizes Section 12.1 of [han2009theoretical]. Let $V$ be a Banach space,
+$\lambda \neq 0$ a scalar, $K$ a bounded operator on $V$ and $f \in V$. The section approximates the
+solution of the equation of the second kind $(\lambda - K) u = f$ by the projection method
+(12.1.18): for a bounded projection $P_n$ onto a trial space $V_n$, find $u_n \in V_n$ with
+$P_n (\lambda - K) u_n = P_n f$. Theorem 12.1.2 says that if $\lambda - K$ is invertible and
+$\|K - P_n K\| \to 0$, then $\lambda - P_n K$ is invertible with a uniformly bounded inverse for
+large $n$, and the error satisfies
+$$u - u_n = \lambda (\lambda - P_n K)^{-1} (u - P_n u),$$
+so $\|u - u_n\|$ and $\|u - P_n u\|$ tend to zero at the same rate. Lemma 12.1.4 says that
+$\|K - P_n K\| \to 0$ holds for every compact $K$ when $P_n \to I$ pointwise. Example 12.1.1 is
+collocation by Lagrange interpolation.
 
-The book's data is a Banach space `V`, a scalar `λ ≠ 0`, a bounded operator `K` on `V`, and a
-sequence of bounded projections `P_n` of `V` onto finite-dimensional subspaces `V_n`.  `λ` is
-Lean's lambda binder, so the scalar is written `μ` throughout.  The surface states everything for a
-*single* bounded idempotent `P`, where the book states it for a sequence, and quantifies over `n`
-only where a limit is taken; the finite dimensionality of `V_n` is never used and is not assumed.
+The proofs specialize `Numlib.IntegralEquations.SecondKind` and the projection method
+`IsProjectionMethodSolution` of `Numlib.Variational.ProjectionMethod`.
+
+## Main definitions
+
+* (12.1.18), `AtkinsonHan.Chapter12.IsProjectionSolution`: $u_n \in \operatorname{range} P$ and
+  $P (\lambda - K) u_n = P f$.
 
 ## Main results
 
-* `IsProjectionSolution` — (12.1.18), the projection method for `(λ - K) u = f`, with
-  `isProjectionSolution_iff_smul_sub_comp` for the equivalent form (12.1.19) and
-  `equation_12_1_17` for `‖P‖ ≥ 1`.
-* `lemma_12_1_3`, `lemma_12_1_4` — pointwise convergence of bounded operators is uniform on
-  compact sets, and hence `‖K - P_n K‖ → 0` for a compact `K` and projections converging
-  pointwise to the identity, which is the hypothesis (12.1.21).
-* `theorem_12_1_2` — stability: `(λ - P K)⁻¹` exists, is bounded by (12.1.22), and the projection
-  equations are uniquely solvable.
-* `equation_12_1_23`, `equation_12_1_24` — the error identity and the two-sided estimate, which
-  together say that `‖u - u_n‖` and `‖u - P_n u‖ ` tend to zero at exactly the same rate.
-* `exercise_12_1_3`, `exercise_12_1_4` — the asymptotic constant of the error bound is that of the
-  exact inverse, and the leading term of the error is `λ (λ - K)⁻¹ (u - P_n u)`.
-* `example_12_1_1` — collocation by Lagrange interpolation: (12.1.11), that `P_n g = 0` exactly
-  when `g` vanishes at the nodes, and (12.1.12), that the collocation conditions (12.1.5) are the
-  projection equations at that `P_n`.  `interpolate_eq_zero_iff` is (12.1.11) on its own.
+* Example 12.1.1, `AtkinsonHan.Chapter12.example_12_1_1`: Lagrange interpolation at $n + 1$ distinct
+  nodes is a projection onto the polynomials of degree at most $n$, and the collocation conditions
+  (12.1.5) are the projection equations, (12.1.12).
+* (12.1.11), `AtkinsonHan.Chapter12.interpolate_eq_zero_iff`: the interpolant of $g$ is zero if and
+  only if $g$ vanishes at every node.
+* (12.1.17), `AtkinsonHan.Chapter12.equation_12_1_17`: a nonzero bounded projection has norm at
+  least $1$.
+* (12.1.19), `AtkinsonHan.Chapter12.isProjectionSolution_iff_smul_sub_comp`: for $\lambda \neq 0$
+  the projection equations are $(\lambda - P K) u_n = P f$.
+* Theorem 12.1.2, `AtkinsonHan.Chapter12.theorem_12_1_2`: if
+  $\|(\lambda - K)^{-1}\| \|K - P K\| < 1$, then $\lambda - P K$ is invertible with the bound
+  (12.1.22), and the projection equations are uniquely solvable.
+* Lemma 12.1.3, `AtkinsonHan.Chapter12.lemma_12_1_3`: a pointwise convergent sequence of bounded
+  operators converges uniformly on compact sets.
+* Lemma 12.1.4, `AtkinsonHan.Chapter12.lemma_12_1_4`: if $P_n \to I$ pointwise and $K$ is compact,
+  then $\|K - P_n K\| \to 0$, which is (12.1.21).
+* (12.1.23), `AtkinsonHan.Chapter12.equation_12_1_23`: the error identity $u - u_n = \lambda
+  (\lambda - P K)^{-1} (u - P u)$.
+* (12.1.24), `AtkinsonHan.Chapter12.equation_12_1_24`: the two-sided bound of $\|u - u_n\|$ by
+  $\|u - P u\|$.
+* Exercise 12.1.3, `AtkinsonHan.Chapter12.exercise_12_1_3`: the constant of the upper bound in
+  (12.1.24) can be taken as $|\lambda| (1 + \gamma_n) \|(\lambda - K)^{-1}\|$ with $\gamma_n \to 0$.
+* Exercise 12.1.4, `AtkinsonHan.Chapter12.exercise_12_1_4`: the error is asymptotically its leading
+  term $\lambda (\lambda - K)^{-1} (u - P_n u)$.
 
-## Not formalized here
+## Conventions
 
-The linear systems (12.1.5) and (12.1.14) themselves, written out in a basis `φ₁, …, φ_κ` of the
-trial space, and §12.1.2, the Galerkin method with `V = L²(D)`.  Both are this framework read at a
-concrete projection, and nothing in the rest of the chapter uses the coordinate form; the passage
-from (12.1.5) to `IsProjectionSolution`, which is what §12.1.1 is for, is `example_12_1_1`.
+* The scalar $\lambda$ of the source is `μ`, because `λ` is the lambda binder of Lean. The scalar
+  field is `𝕜` with `[RCLike 𝕜]`.
+* An invertible operator such as $\lambda - K$ is given as a continuous linear equivalence
+  `e : X ≃L[𝕜] X` whose underlying operator is $\lambda - K$. Its inverse $(\lambda - K)^{-1}$ is
+  `e.symm`.
+
+## Deviations from the source
+
+* **Theorem 12.1.2, (12.1.17)–(12.1.24)** (generalization). The source states the results for a
+  sequence of projections $P_n$ onto finite-dimensional subspaces $V_n$. The library states them for
+  a single bounded idempotent $P$, without finite dimension, and uses a sequence only where a limit
+  is taken. See `AtkinsonHan.Chapter12.theorem_12_1_2`.
+* **(12.1.24)** (reading). The source divides by $\|\lambda - P K\|$. The library states the lower
+  bound in product form, so that no quotient by a norm that can vanish occurs. See
+  `AtkinsonHan.Chapter12.equation_12_1_24`.
+
+## Not formalized
+
+* **The linear systems (12.1.5) and (12.1.14) in coordinates**, written in a basis
+  $\varphi_1, \dots, \varphi_\kappa$ of the trial space. They are this framework at a concrete
+  projection, and the rest of the chapter does not use the coordinate form; the passage from
+  (12.1.5) to `AtkinsonHan.Chapter12.IsProjectionSolution` is
+  `AtkinsonHan.Chapter12.example_12_1_1`.
+* **Section 12.1.2**, the Galerkin method with $V = L^2(D)$. It is this framework at a concrete
+  projection, and the rest of the chapter does not use it.
 -/
 
 open Filter Topology
@@ -51,31 +92,36 @@ variable {𝕜 X : Type*} [RCLike 𝕜] [NormedAddCommGroup X] [NormedSpace 𝕜
 
 /-! ### The projection equations -/
 
-/-- **(12.1.18)**, the projection method for the equation of the second kind `(λ - K) u = f`: the
-approximation `u_n` lies in the trial space `range P` and satisfies the *projected* equation
-`P ((λ - K) u_n) = P f`.
+/-- **Equation (12.1.18)** of [han2009theoretical], the projection method. Let $X$ be a normed space
+over $\mathbb{R}$ or $\mathbb{C}$, let $\lambda$ be a scalar, let $K$ and $P$ be bounded
+operators on $X$, and let $f \in X$. Then $u_n$ is a **solution of the projection equations**
+for $(\lambda - K) u = f$ if $u_n$ lies in the trial space $\operatorname{range} P$ and
+$$P (\lambda - K) u_n = P f.$$
 
-This is the backbone `IsProjectionMethodSolution` of the operator `λ - K`
-(`isProjectionSolution_iff`); the equivalent form (12.1.19), in which no membership hypothesis
-appears, is `isProjectionSolution_iff_smul_sub_comp`. -/
+This is the backbone's `IsProjectionMethodSolution` for the operator $\lambda - K$, by
+`AtkinsonHan.Chapter12.isProjectionSolution_iff`. The equivalent form (12.1.19), with no
+membership condition, is `AtkinsonHan.Chapter12.isProjectionSolution_iff_smul_sub_comp`. -/
 def IsProjectionSolution (μ : 𝕜) (K P : X →L[𝕜] X) (f un : X) : Prop :=
   un ∈ LinearMap.range (P : X →ₗ[𝕜] X) ∧ P ((μ • 1 - K : X →L[𝕜] X) un) = P f
 
-/-- (12.1.18) is the backbone's projection method for the operator `λ - K`. -/
+/-- The projection equations (12.1.18) are equivalent to the backbone's `IsProjectionMethodSolution`
+for the operator $\lambda - K$, the datum $f$ and the projection $P$. -/
 theorem isProjectionSolution_iff (μ : 𝕜) (K P : X →L[𝕜] X) (f un : X) :
     IsProjectionSolution μ K P f un ↔
       IsProjectionMethodSolution ((μ • 1 - K : X →L[𝕜] X) : X →ₗ[𝕜] X) f P un :=
   Iff.rfl
 
-/-- A projection solution fixes the projection, `P u_n = u_n`. -/
+/-- If $P$ is idempotent and $u_n$ solves the projection equations, then $P u_n = u_n$. -/
 theorem IsProjectionSolution.apply_eq_self {μ : 𝕜} {K P : X →L[𝕜] X} (hP : IsIdempotentElem P)
     {f un : X} (h : IsProjectionSolution μ K P f un) : P un = un :=
   IsProjectionMethodSolution.apply_eq_self hP h
 
-/-- **(12.1.19)**: for `λ ≠ 0` the projection equations `P ((λ - K) u_n) = P f` on the trial space
-are the same as the equations `(λ - P K) u_n = P f` on the whole space.  The membership
-`u_n ∈ range P` need not be assumed on the right, because `λ u_n = P (f + K u_n)` already forces
-it. -/
+/-- **Equation (12.1.19)** of [han2009theoretical]. Let $\lambda \neq 0$ and let $P$ be a bounded
+idempotent operator. Then $u_n$ solves the projection equations
+$u_n \in \operatorname{range} P$, $P (\lambda - K) u_n = P f$ if and only if
+$$(\lambda - P K) u_n = P f$$
+on the whole space. The membership $u_n \in \operatorname{range} P$ is not needed on the right,
+because $\lambda u_n = P (f + K u_n)$ implies it. -/
 theorem isProjectionSolution_iff_smul_sub_comp {μ : 𝕜} (hμ : μ ≠ 0) {K P : X →L[𝕜] X}
     (hP : IsIdempotentElem P) (f un : X) :
     IsProjectionSolution μ K P f un ↔ (μ • 1 - P ∘L K : X →L[𝕜] X) un = P f := by
@@ -102,11 +148,12 @@ theorem isProjectionSolution_iff_smul_sub_comp {μ : 𝕜} (hμ : μ ≠ 0) {K P
     simp only [sub_apply, smul_apply, one_apply_eq_self, map_sub, map_smul, hPun]
     exact h1
 
-/-- **(12.1.17)**: a nonzero bounded projection has norm at least one, because `‖P‖ = ‖P²‖ ≤ ‖P‖²`.
-The book records it because `‖P_n‖` is the factor that enters the error constants of the projection
-method, in (12.1.24) and in the hypothesis of Theorem 12.1.2; so no choice of `P_n` pushes those
-constants below the value they take at `‖P_n‖ = 1`. It is Exercise 3.6.7,
-`Chapter03.exercise_3_6_7`. -/
+/-- **Equation (12.1.17)** of [han2009theoretical]. A nonzero bounded idempotent operator $P$ on a
+normed space has $\|P\| \ge 1$, because $\|P\| = \|P^2\| \le \|P\|^2$.
+
+The norm $\|P_n\|$ enters the error constants of the projection method, in (12.1.24) and in the
+hypothesis of Theorem 12.1.2, so no choice of $P_n$ makes these constants smaller than their
+values at $\|P_n\| = 1$. This is Exercise 3.6.7, `AtkinsonHan.Chapter03.exercise_3_6_7`. -/
 theorem equation_12_1_17 {P : X →L[𝕜] X} (hP : IsIdempotentElem P) (hP0 : P ≠ 0) : 1 ≤ ‖P‖ :=
   Chapter03.exercise_3_6_7 P hP hP0
 
@@ -116,9 +163,12 @@ section Collocation
 
 variable {a b : ℝ} {n : ℕ} {x : Fin (n + 1) → Set.Icc a b}
 
-/-- **(12.1.11)**: for the interpolatory projection at the nodes `x₀, …, x_n`, `P g = 0` holds
-exactly when `g` vanishes at every node.  It is (12.1.8) read at a node, `P g (x_j) = g (x_j)`,
-in one direction, and the Lagrange form `P g = ∑ g(x_i) ℓ_i` in the other. -/
+/-- **Equation (12.1.11)** of [han2009theoretical]. Let $x_0, \dots, x_n \in [a, b]$ be distinct
+nodes and let $P$ be the interpolatory projection at these nodes on $C[a, b]$. Then for
+$g \in C[a, b]$, $P g = 0$ if and only if $g(x_j) = 0$ for every $j$.
+
+One direction is (12.1.8) at a node, $(P g)(x_j) = g(x_j)$. The other is the Lagrange form
+$P g = \sum_i g(x_i) \ell_i$. -/
 theorem interpolate_eq_zero_iff (hx : Function.Injective x) (g : C(Set.Icc a b, ℝ)) :
     Lagrange.interpolateCLM x g = 0 ↔ ∀ j, g (x j) = 0 := by
   constructor
@@ -129,18 +179,23 @@ theorem interpolate_eq_zero_iff (hx : Function.Injective x) (g : C(Set.Icc a b, 
     rw [ContinuousMap.zero_apply, Lagrange.interpolateCLM_apply]
     exact Finset.sum_eq_zero fun i _ => by rw [h i, zero_mul]
 
-/-- **Example 12.1.1** (§12.1.1).  Take `V = C[a, b]`, `V_n = span {1, x, …, xⁿ}`, and for `P_n`
-the Lagrange interpolatory projection (12.1.10) at `n + 1` distinct nodes `x₀, …, x_n`.  Then:
+/-- **Example 12.1.1** of [han2009theoretical] (collocation with Lagrange interpolation). Let
+$V = C[a, b]$, let $x_0, \dots, x_n \in [a, b]$ be distinct nodes, and let $P_n$ be the Lagrange
+interpolatory projection (12.1.10) at these nodes. Let $\lambda \in \mathbb{R}$, let $K$ be a
+bounded operator on $C[a, b]$, and let $f, u_n \in C[a, b]$. Then:
 
-* `P_n` is a projection of `C[a, b]` onto `V_n`, which is Example 3.6.5;
-* **(12.1.11)** `P_n g = 0` if and only if `g (x_j) = 0` for every `j`;
-* **(12.1.12)** the collocation conditions (12.1.5) — `u_n ∈ V_n` and the residual
-  `r_n = (λ - K) u_n - f` vanishes at every node — say exactly that `u_n` is a solution of the
-  projection equations `P_n (λ - K) u_n = P_n f`.
+* $P_n$ is a projection operator, with range the space $V_n$ of polynomials of degree at most
+  $n$, which is Example 3.6.5;
+* (12.1.11): $P_n g = 0$ if and only if $g(x_j) = 0$ for every $j$;
+* (12.1.12): the collocation conditions (12.1.5), $u_n \in V_n$ and
+  $\bigl((\lambda - K) u_n - f\bigr)(x_j) = 0$ for every $j$, hold if and only if $u_n$ solves
+  the projection equations $P_n (\lambda - K) u_n = P_n f$.
 
-The third clause is what the example is for: it is the passage from the concrete linear system
-(12.1.5) to `IsProjectionSolution`, at which the whole of §12.1.3 applies.  No hypothesis on `λ`
-is needed, because the membership `u_n ∈ V_n` is carried along on both sides. -/
+The third clause is the passage from the linear system (12.1.5) to
+`AtkinsonHan.Chapter12.IsProjectionSolution`, where the general theory of the section applies.
+No hypothesis on $\lambda$ is needed, because the membership $u_n \in V_n$ is on both sides. The
+projection is `Lagrange.interpolateCLM`, the projection property is
+`AtkinsonHan.Chapter03.IsProjectionOperator`, and $V_n$ is `AtkinsonHan.Chapter03.polyLE`. -/
 theorem example_12_1_1 (hx : Function.Injective x) (μ : ℝ)
     (K : C(Set.Icc a b, ℝ) →L[ℝ] C(Set.Icc a b, ℝ)) (f un : C(Set.Icc a b, ℝ)) :
     Chapter03.IsProjectionOperator (Lagrange.interpolateCLM x) ∧
@@ -161,17 +216,21 @@ end Collocation
 
 /-! ### The two convergence lemmas -/
 
-/-- **Lemma 12.1.3**: a pointwise convergent sequence of bounded linear operators on a Banach
-space converges uniformly on every compact subset. -/
+/-- **Lemma 12.1.3** of [han2009theoretical]. Let $X$ be a Banach space and $W$ a normed space, and
+let $A_n, L \colon X \to W$ be bounded linear operators with $A_n x \to L x$ for every
+$x \in X$. Then $A_n \to L$ uniformly on every compact subset of $X$. -/
 theorem lemma_12_1_3 [CompleteSpace X] {W : Type*} [NormedAddCommGroup W] [NormedSpace 𝕜 W]
     {A : ℕ → X →L[𝕜] W} {L : X →L[𝕜] W} (hA : ∀ x, Tendsto (fun n => A n x) atTop (𝓝 (L x)))
     {S : Set X} (hS : IsCompact S) :
     TendstoUniformlyOn (fun n => (A n : X → W)) L atTop S :=
   tendstoUniformlyOn_of_tendsto_of_isCompact hA hS
 
-/-- **Lemma 12.1.4**: if `P_n u → u` for every `u` of a Banach space and `K` is a compact operator,
-then `‖K - P_n K‖ → 0`.  This is the hypothesis (12.1.21) of Theorem 12.1.2, and it holds for
-*every* compact `K` whenever the projections converge pointwise. -/
+/-- **Lemma 12.1.4** of [han2009theoretical]. Let $X$ be a Banach space, let $K$ be a compact
+operator on $X$, and let $P_n$ be bounded operators with $P_n x \to x$ for every $x \in X$. Then
+$$\|K - P_n K\| \to 0.$$
+
+This is the hypothesis (12.1.21) of Theorem 12.1.2, so that hypothesis holds for every compact
+$K$ when the projections converge pointwise. -/
 theorem lemma_12_1_4 [CompleteSpace X] {K : X →L[𝕜] X} (hK : IsCompactOperator K)
     {P : ℕ → X →L[𝕜] X} (hP : ∀ x, Tendsto (fun n => P n x) atTop (𝓝 x)) :
     Tendsto (fun n => ‖K - P n ∘L K‖) atTop (𝓝 0) := by
@@ -188,15 +247,21 @@ theorem lemma_12_1_4 [CompleteSpace X] {K : X →L[𝕜] X} (hK : IsCompactOpera
 
 /-! ### Stability and convergence -/
 
-/-- **Theorem 12.1.2**, the stability half (12.1.22): if `λ - K` is invertible and the projection
-error `‖K - P K‖` satisfies (12.1.25), namely `‖(λ - K)⁻¹‖ ‖K - P K‖ < 1`, then `λ - P K` is
-invertible with
+/-- **Theorem 12.1.2** of [han2009theoretical], stability. Let $X$ be a Banach space,
+$\lambda \neq 0$, $K$ a bounded operator and $P$ a bounded idempotent operator on $X$. Let
+$\lambda - K$ be invertible with bounded inverse, and let $P$ satisfy (12.1.25),
+$\|(\lambda - K)^{-1}\| \|K - P K\| < 1$. Then $\lambda - P K$ is invertible with bounded
+inverse, the bound (12.1.22),
+$$\|(\lambda - P K)^{-1}\| \le \frac{\|(\lambda - K)^{-1}\|}{1 - \|(\lambda - K)^{-1}\| \|K - P
+  K\|},$$
+holds, and for every $f \in X$ the projection equations (12.1.18) have exactly one solution.
 
-`‖(λ - P K)⁻¹‖ ≤ ‖(λ - K)⁻¹‖ / (1 - ‖(λ - K)⁻¹‖ ‖K - P K‖)`,
+**Generalization.** The source states the theorem for a sequence of projections onto
+finite-dimensional subspaces. It is stated here for one bounded idempotent $P$, without finite
+dimension.
 
-and the projection equations (12.1.18) are uniquely solvable for every right-hand side.  By
-Lemma 12.1.4 the hypothesis holds for all large `n` as soon as `K` is compact and `P_n u → u`, so
-the bound is uniform in `n`. -/
+By Lemma 12.1.4 the hypothesis holds for all large $n$ when $K$ is compact and $P_n u \to u$, so
+the bound is uniform in $n$. -/
 theorem theorem_12_1_2 [CompleteSpace X] {μ : 𝕜} (hμ : μ ≠ 0) {K P : X →L[𝕜] X}
     (hP : IsIdempotentElem P) (e : X ≃L[𝕜] X) (he : (e : X →L[𝕜] X) = μ • 1 - K)
     (h : ‖(e.symm : X →L[𝕜] X)‖ * ‖K - P ∘L K‖ < 1) :
@@ -217,8 +282,12 @@ theorem theorem_12_1_2 [CompleteSpace X] {μ : 𝕜} (hμ : μ ≠ 0) {K P : X �
     rw [← he'coe, ContinuousLinearEquiv.coe_coe] at hy
     rw [← hy, e'.symm_apply_apply]
 
-/-- **(12.1.23)**, the error identity of a projection method: `u - u_n = λ (λ - P K)⁻¹ (u - P u)`.
-Everything in the convergence analysis is read off it. -/
+/-- **Equation (12.1.23)** of [han2009theoretical], the error identity. Let $P$ be a bounded
+idempotent operator and let $\lambda - P K$ be invertible with bounded inverse. If
+$(\lambda - K) u = f$ and $u_n$ solves the projection equations (12.1.18), then
+$$u - u_n = \lambda (\lambda - P K)^{-1} (u - P u).$$
+
+The convergence analysis of the projection method follows from this identity. -/
 theorem equation_12_1_23 {μ : 𝕜} {K P : X →L[𝕜] X} (hP : IsIdempotentElem P) {e' : X ≃L[𝕜] X}
     (he' : (e' : X →L[𝕜] X) = μ • 1 - P ∘L K) {f u un : X}
     (hu : (μ • 1 - K : X →L[𝕜] X) u = f) (hun : IsProjectionSolution μ K P f un) :
@@ -226,14 +295,17 @@ theorem equation_12_1_23 {μ : 𝕜} {K P : X →L[𝕜] X} (hP : IsIdempotentEl
   have hkey := SecondKind.sub_projection_eq hP hu hun
   rw [← hkey, ← he', ContinuousLinearEquiv.coe_coe, e'.symm_apply_apply]
 
-/-- **(12.1.24)**, the two-sided estimate for a projection method:
+/-- **Equation (12.1.24)** of [han2009theoretical], the two-sided error bound. Under the hypotheses
+of `AtkinsonHan.Chapter12.equation_12_1_23`,
+$$|\lambda| \|u - P u\| \le \|\lambda - P K\| \|u - u_n\| \qquad \text{and} \qquad \|u - u_n\|
+  \le |\lambda| \|(\lambda - P K)^{-1}\| \|u - P u\|.$$
 
-`|λ| ‖u - P u‖ ≤ ‖λ - P K‖ ‖u - u_n‖` and `‖u - u_n‖ ≤ |λ| ‖(λ - P K)⁻¹‖ ‖u - P u‖`.
+**Reading.** The source divides by $\|\lambda - P K\|$ in the lower bound. The product form is
+stated here, so that no quotient by a norm that can vanish occurs.
 
-The book divides by `‖λ - P K‖`; the equivalent product form is stated here, so that no quotient
-by a possibly vanishing norm occurs.  With the uniform bound of `theorem_12_1_2` the two
-inequalities say that the error of the method and the approximation error of the trial space tend
-to zero at exactly the same rate. -/
+With the uniform bound of `AtkinsonHan.Chapter12.theorem_12_1_2`, the two inequalities say that
+the error of the method and the approximation error of the trial space tend to zero at the same
+rate. -/
 theorem equation_12_1_24 {μ : 𝕜} {K P : X →L[𝕜] X} (hP : IsIdempotentElem P) {e' : X ≃L[𝕜] X}
     (he' : (e' : X →L[𝕜] X) = μ • 1 - P ∘L K) {f u un : X}
     (hu : (μ • 1 - K : X →L[𝕜] X) u = f) (hun : IsProjectionSolution μ K P f un) :
@@ -244,9 +316,8 @@ theorem equation_12_1_24 {μ : 𝕜} {K P : X →L[𝕜] X} (hP : IsIdempotentEl
 
 /-! ### The asymptotic constant -/
 
-/-- The geometric-series bound `A / (1 - A c) ≤ A (1 + 2 A c)`, valid as soon as `A c ≤ 1 / 2`.
-It is what turns the constant of `theorem_12_1_2` into the constant of the exact inverse times
-`1 + γ_n` with `γ_n → 0`. -/
+/-- For $A, c \ge 0$ with $A c \le 1/2$, the geometric-series bound
+$A / (1 - A c) \le A (1 + 2 A c)$ holds. -/
 private theorem div_le_mul_one_add {A c : ℝ} (hA : 0 ≤ A) (hc : 0 ≤ c) (h : A * c ≤ 1 / 2) :
     A / (1 - A * c) ≤ A * (1 + 2 * (A * c)) := by
   have hx : 0 ≤ A * c := mul_nonneg hA hc
@@ -255,10 +326,9 @@ private theorem div_le_mul_one_add {A c : ℝ} (hA : 0 ≤ A) (hc : 0 ≤ c) (h 
   rw [div_le_iff₀ hpos]
   nlinarith [mul_nonneg (mul_nonneg hA hx) h2]
 
-/-- The smallness facts about the projection error that both exercises use: eventually
-`‖(λ - K)⁻¹‖ ‖K - P_n K‖ < 1/2`, and then the inverse `(λ - P_n K)⁻¹` exists and is bounded both by
-`‖(λ - K)⁻¹‖ (1 + γ_n)` with `γ_n = 2 ‖(λ - K)⁻¹‖ ‖K - P_n K‖` and, more crudely, by
-`2 ‖(λ - K)⁻¹‖`. -/
+/-- If $\lambda - K$ is invertible and $\|K - P_n K\| \to 0$, then eventually $\lambda - P_n K$ is
+invertible with $\|(\lambda - P_n K)^{-1}\| \le \|(\lambda - K)^{-1}\| (1 + 2 \|(\lambda -
+K)^{-1}\| \|K - P_n K\|)$ and $\|(\lambda - P_n K)^{-1}\| \le 2 \|(\lambda - K)^{-1}\|$. -/
 private theorem eventually_exists_equiv [CompleteSpace X] {μ : 𝕜} {K : X →L[𝕜] X}
     {P : ℕ → X →L[𝕜] X} {e : X ≃L[𝕜] X} (he : (e : X →L[𝕜] X) = μ • 1 - K)
     (hc : Tendsto (fun n => ‖K - P n ∘L K‖) atTop (𝓝 0)) :
@@ -278,14 +348,16 @@ private theorem eventually_exists_equiv [CompleteSpace X] {μ : 𝕜} {K : X →
   have hbound := he'norm.trans (div_le_mul_one_add hA (norm_nonneg _) hn.le)
   exact ⟨e', he'coe, hbound, hbound.trans (by nlinarith)⟩
 
-/-- **Exercise 12.1.3**: the upper bound of (12.1.24) can be sharpened so that its constant is the
-one built from the *exact* inverse,
+/-- **Exercise 12.1.3** of [han2009theoretical]. Let $X$ be a Banach space, $K$ a bounded operator
+and $P_n$ bounded idempotent operators on $X$, with $\lambda - K$ invertible with bounded
+inverse and $\|K - P_n K\| \to 0$. Then there are $\gamma_n \to 0$ such that, for all large $n$,
+whenever $(\lambda - K) u = f$ and $u_n$ solves the projection equations for $P_n$,
+$$\|u - u_n\| \le |\lambda| (1 + \gamma_n) \|(\lambda - K)^{-1}\| \|u - P_n u\|.$$
 
-`‖u - u_n‖ ≤ |λ| (1 + γ_n) ‖(λ - K)⁻¹‖ ‖u - P_n u‖` with `γ_n → 0`.
-
-The explicit `γ_n` produced here is `2 ‖(λ - K)⁻¹‖ ‖K - P_n K‖`, which tends to zero by the
-hypothesis (12.1.21) — for a compact `K` and pointwise convergent projections, by
-Lemma 12.1.4. -/
+So the constant of the upper bound in (12.1.24) can be taken from the exact inverse. The proof
+takes $\gamma_n = 2 \|(\lambda - K)^{-1}\| \|K - P_n K\|$. The hypothesis $\|K - P_n K\| \to 0$
+is (12.1.21), which holds for a compact $K$ and pointwise convergent projections by Lemma
+12.1.4. -/
 theorem exercise_12_1_3 [CompleteSpace X] {μ : 𝕜} {K : X →L[𝕜] X}
     {P : ℕ → X →L[𝕜] X} (hP : ∀ n, IsIdempotentElem (P n)) {e : X ≃L[𝕜] X}
     (he : (e : X →L[𝕜] X) = μ • 1 - K)
@@ -309,13 +381,17 @@ theorem exercise_12_1_3 [CompleteSpace X] {μ : 𝕜} {K : X →L[𝕜] X}
   rw [h2]
   exact mul_le_mul_of_nonneg_right h1 (norm_nonneg _)
 
-/-- **Exercise 12.1.4**: split the error as `e_n = e_n^{(1)} + e_n^{(2)}` with the leading term
-`e_n^{(1)} = λ (λ - K)⁻¹ (u - P_n u)` built from the *exact* inverse, as in (12.1.31).  Then
+/-- **Exercise 12.1.4** of [han2009theoretical]. Let $X$ be a Banach space, $K$ a bounded operator
+and $P_n$ bounded idempotent operators on $X$, with $\lambda - K$ invertible with bounded
+inverse and $\|K - P_n K\| \to 0$. Split the error as $u - u_n = e_n^{(1)} + e_n^{(2)}$, with
+the leading term $e_n^{(1)} = \lambda (\lambda - K)^{-1} (u - P_n u)$ of (12.1.31). Then there
+are $\delta_n \to 0$ such that, for all large $n$, whenever $(\lambda - K) u = f$ and $u_n$
+solves the projection equations for $P_n$,
+$$\|e_n^{(2)}\| \le \delta_n \|e_n^{(1)}\|.$$
 
-`‖e_n^{(2)}‖ ≤ δ_n ‖e_n^{(1)}‖` with `δ_n → 0`,
-
-so the whole of the error is asymptotically the computable leading term.  The explicit `δ_n` is
-again `2 ‖(λ - K)⁻¹‖ ‖K - P_n K‖`, because `(λ - P_n K) e_n^{(2)} = (P_n K - K) e_n^{(1)}`. -/
+So the error is asymptotically its leading term, which uses the exact inverse. The proof takes
+$\delta_n = 2 \|(\lambda - K)^{-1}\| \|K - P_n K\|$, because $(\lambda - P_n K) e_n^{(2)} = (P_n
+K - K) e_n^{(1)}$. -/
 theorem exercise_12_1_4 [CompleteSpace X] {μ : 𝕜} {K : X →L[𝕜] X}
     {P : ℕ → X →L[𝕜] X} (hP : ∀ n, IsIdempotentElem (P n)) {e : X ≃L[𝕜] X}
     (he : (e : X →L[𝕜] X) = μ • 1 - K)

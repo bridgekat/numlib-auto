@@ -8,58 +8,105 @@ import Numlib.Analysis.Sobolev.MultiIndex
 import Numlib.Analysis.Sobolev.Triangulation
 
 /-!
-# Atkinson–Han §7.1: weak derivatives
+# Atkinson and Han, Section 7.1: Weak derivatives
 
-Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework*, 3rd edition, Springer, 2009, §7.1.
+This module formalizes Section 7.1 of [han2009theoretical]. The section extends the classical
+derivative to the weak derivative on an open set $\Omega \subseteq \mathbb{R}^d$, by turning the
+integration by parts formula (7.1.1) into a definition. A locally integrable function $w$ is the
+weak $\alpha$-th derivative of a locally integrable function $v$ if
+$$\int_\Omega v \, \partial^\alpha \varphi \, dx = (-1)^{|\alpha|} \int_\Omega w \, \varphi \, dx
+  \qquad \text{for all } \varphi \in C_0^\infty(\Omega)$$
+(Definition 7.1.3). The weak derivative is unique up to a null set (Lemma 7.1.4), it extends the
+classical derivative (Lemma 7.1.5), and it is linear (Proposition 7.1.10). It satisfies the product
+rule (Proposition 7.1.11) and the chain rule (Proposition 7.1.12). The examples compute weak
+derivatives in dimension one: $|x|$ has the weak derivative $\operatorname{sgn} x$ (Example 7.1.6),
+a jump has no weak derivative (Example 7.1.7), and a continuous piecewise $C^1$ function has its
+piecewise derivative as weak derivative (Example 7.1.8). Example 7.1.9 treats piecewise smooth
+functions on a triangulated plane domain.
 
-The section extends the classical derivative to the *weak* derivative on an open `Ω ⊆ ℝ^d`, by
-turning the integration by parts formula (7.1.1) into a definition (Definition 7.1.3). Here `Ω` is
-a `TopologicalSpace.Opens (EuclideanSpace ℝ (Fin d))` and the measure is `volume`; the backbone
-predicate `HasWeakIteratedFDerivOn` works over any finite-dimensional real normed space with an
-additive Haar measure.
+The proofs specialize `Numlib.Analysis.Sobolev.MultiIndex`, `Numlib.Analysis.Sobolev.Mollification`
+and `Numlib.Analysis.Sobolev.Triangulation`.
 
-A multi-index `α` with `|α| = n` is represented by a tuple `y : Fin n → ℝ^d` of directions, so that
-`∂^α φ x` is `iteratedFDeriv ℝ n φ x y`; the backbone bundles all the multi-indices of a given
-length into a single `ContinuousMultilinearMap`-valued derivative, and quantifying over all tuples
-is quantifying over all `α` of that length. Test functions are Mathlib's bundled `𝓓(Ω, ℝ)`.
+## Main definitions
 
-Definition 7.1.3 is therefore here twice. `definition_7_1_3` is the bundled reading, one object for
-all the `α` of a given length; `definition_7_1_3_multiIndex` is the book's, one multi-index at a
-time, `α` being read as the tuple `stdBasis` names — the coordinate direction `e_i` repeated `α i`
-times. The bundled reading implies the other, `definition_7_1_3_multiIndex_of_definition_7_1_3`.
-The multi-index reading is what §7.2 needs, because the norm of Definition 7.2.2 sums over the `α`
-separately.
+* Definition 7.1.1, `AtkinsonHan.Chapter07.definition_7_1_1`: the space $L^p_{\mathrm{loc}}(\Omega)$
+  of locally $p$-integrable functions.
+* Definition 7.1.3, `AtkinsonHan.Chapter07.definition_7_1_3`: the weak derivatives of order $n$, for
+  all multi-indices of length $n$ at once.
+* Definition 7.1.3, `AtkinsonHan.Chapter07.definition_7_1_3_multiIndex`: the weak $\alpha$-th
+  derivative, for one multi-index $\alpha$.
 
-Definitions 7.1.1 and 7.1.3, Lemmas 7.1.2, 7.1.4 and 7.1.5 and Proposition 7.1.10 are here, and so
-are Examples 7.1.6, 7.1.7 and 7.1.8, the one-dimensional computations, the last in both of its
-halves (`example_7_1_8` and `example_7_1_8_second_order`). Those live on
-`E1 = EuclideanSpace ℝ (Fin 1)`, which the linear isometry `toE1 : ℝ ≃ₗᵢ[ℝ] E1` identifies with
-`ℝ`: `toE1` is measure preserving, so an integral over `Ω ⊆ ℝ^1` is an integral over
-`toE1 ⁻¹' Ω ⊆ ℝ` and the whole of Definition 7.1.3 in dimension one reduces, by `transport`, to a
-single identity between interval integrals. That identity is in turn a one-dimensional integration
-by parts allowing finitely many exceptional points, `integralByParts`. The second half of
-Example 7.1.8 goes through `secondOrder_bridge`, which reads a second-order weak derivative as a
-first-order weak derivative of the first-order one, and then through the jump obstruction of
-Example 7.1.7 in its general form.
+## Main results
 
-Proposition 7.1.11, the product rule, is here twice: for a *smooth* factor, as
-`proposition_7_1_11_contDiff`, where `g φ` is again a test function and the identity is a direct
-integration by parts; and in the book's own generality, two merely locally integrable factors with
-conjugate exponents, as `proposition_7_1_11`. The second rests on
-`Numlib/Analysis/Sobolev/Mollification.lean`, which supplies the commutation of the weak derivative
-with mollification and the resulting local approximation in `W^{1,p}`. Proposition 7.1.12, the
-chain rule, rests on the same module, with a dominated-convergence passage along an
-almost-everywhere convergent subsequence on top.
+* Lemma 7.1.2, `AtkinsonHan.Chapter07.lemma_7_1_2`: if $v \in L^1_{\mathrm{loc}}(\Omega)$ and
+  $\int_\Omega v \varphi = 0$ for every test function $\varphi$, then $v = 0$ almost everywhere on
+  $\Omega$.
+* Definition 7.1.3, `AtkinsonHan.Chapter07.definition_7_1_3_multiIndex_of_definition_7_1_3`: the
+  weak derivatives of order $n$ give the weak $\alpha$-th derivative for each $\alpha$ with
+  $|\alpha| = n$.
+* Lemma 7.1.4, `AtkinsonHan.Chapter07.lemma_7_1_4`: a weak derivative is unique up to a null set.
+* Lemma 7.1.5, `AtkinsonHan.Chapter07.lemma_7_1_5`: for $v \in C^m(\Omega)$ and $n \le m$, the
+  classical derivative of order $n$ is the weak one.
+* Example 7.1.6, `AtkinsonHan.Chapter07.example_7_1_6`: on an interval that contains $0$, $|x|$ has
+  the weak derivative $\operatorname{sgn} x$.
+* Example 7.1.7, `AtkinsonHan.Chapter07.example_7_1_7`: the step function $\operatorname{sgn} x$ has
+  no weak derivative on $(-1, 1)$.
+* Example 7.1.8, `AtkinsonHan.Chapter07.example_7_1_8`: a continuous piecewise $C^1$ function has
+  its piecewise classical derivative as weak derivative.
+* Example 7.1.8, `AtkinsonHan.Chapter07.example_7_1_8_second_order`: if a continuous piecewise $C^2$
+  function has a second-order weak derivative, its one-sided derivatives agree at the interior
+  nodes.
+* Example 7.1.9, `AtkinsonHan.Chapter07.example_7_1_9`: a $C^k$ function that is $C^{k+1}$ on each
+  triangle of a triangulation has the piecewise derivatives of order $k + 1$ as weak derivatives.
+* Proposition 7.1.10, `AtkinsonHan.Chapter07.proposition_7_1_10`: weak differentiation is linear.
+* Proposition 7.1.11, `AtkinsonHan.Chapter07.proposition_7_1_11_contDiff`: the product rule
+  $\partial^\alpha(ug) = (\partial^\alpha u) g + u \, \partial^\alpha g$ for $|\alpha| = 1$ and a
+  smooth factor $g$.
+* Proposition 7.1.11, `AtkinsonHan.Chapter07.proposition_7_1_11`: the product rule for
+  $|\alpha| = 1$, $u, \partial^\alpha u \in L^p_{\mathrm{loc}}(\Omega)$ and $v, \partial^\alpha v
+  \in L^q_{\mathrm{loc}}(\Omega)$ with conjugate exponents.
+* Proposition 7.1.12, `AtkinsonHan.Chapter07.proposition_7_1_12`: the chain rule $\partial^\alpha (f
+  \circ v) = (f' \circ v) \, \partial^\alpha v$ for $|\alpha| = 1$.
 
-Example 7.1.9, the piecewise smooth functions of the finite element method, is here on a
-triangulated plane domain `𝒯 : Triangulation Ω` (`Numlib/Geometry/Triangulation.lean`): a function
-of class `C^k` on `Ω` and `C^{k+1}` on each element has weak derivatives of order `k + 1`, the
-piecewise classical ones. It is proved without Green's formula, from the backbone's
-`Triangulation.hasWeakFDerivOn_of_piecewise` (`Numlib/Analysis/Sobolev/Triangulation.lean`) — the
-fundamental theorem of calculus on almost every line, the skeleton being a finite union of segments
-— applied to the derivatives of order `k`, and the composition rule
-`HasWeakIteratedLineDerivOn.cons`.
+## Proof outline
+
+The one-dimensional examples are stated on $\mathbb{R}^1$ and proved on $\mathbb{R}$, through the
+volume-preserving linear isometry `AtkinsonHan.Chapter07.toE1`. By
+`AtkinsonHan.Chapter07.transport`, Definition 7.1.3 in dimension one becomes one identity between
+integrals on the line, which is an integration by parts with finitely many exceptional points. The
+second half of Example 7.1.8 reads a second-order weak derivative as a first-order weak derivative
+of the first-order one (`AtkinsonHan.Chapter07.secondOrder_bridge`) and uses the jump obstruction of
+Example 7.1.7 in a general form. The general product rule and the chain rule mollify, apply the
+smooth case on a relatively compact neighbourhood of the support of the test function, and pass to
+the limit. Example 7.1.9 uses the fundamental theorem of calculus on almost every line, not Green's
+formula.
+
+## Implementation notes
+
+* The open set $\Omega$ is `Ω : TopologicalSpace.Opens (EuclideanSpace ℝ (Fin d))`, the measure is
+  `volume`, and test functions are Mathlib's bundled `𝓓(Ω, ℝ)`. The backbone predicates
+  `HasWeakIteratedFDerivOn` and `HasWeakIteratedLineDerivOn` work over any finite-dimensional real
+  normed space, and they include the local integrability of the function and of its weak derivative.
+* A multi-index $\alpha$ with $|\alpha| = n$ is represented by a tuple $y$ of $n$ directions, so
+  that $\partial^\alpha \varphi(x)$ is `iteratedFDeriv ℝ n φ x y`. Definition 7.1.3 is formalized
+  twice. `AtkinsonHan.Chapter07.definition_7_1_3` takes one object for all $\alpha$ of length $n$,
+  with values in the continuous $n$-linear maps. `AtkinsonHan.Chapter07.definition_7_1_3_multiIndex`
+  takes one $\alpha$ at a time, read as the tuple in which $e_i$ is repeated $\alpha_i$ times.
+  Section 7.2 uses the second form, because the norm of Definition 7.2.2 sums over the $\alpha$
+  separately.
+* The one-dimensional examples live on `AtkinsonHan.Chapter07.E1`, the space $\mathbb{R}^1$.
+
+## Deviations from the source
+
+* **Proposition 7.1.12** (generalization). The source assumes $v \in W^{1,p}(\Omega)$ and concludes
+  for every first-order derivative. The library assumes $v, \partial^\alpha v \in L^p(\Omega)$ for
+  one $\alpha$ with $|\alpha| = 1$ and concludes for that $\alpha$. See
+  `AtkinsonHan.Chapter07.proposition_7_1_12`.
+* **Example 7.1.9** (generalization). The source assumes $v \in C^k(\overline\Omega)$; the library
+  assumes $v \in C^k(\Omega)$. See `AtkinsonHan.Chapter07.example_7_1_9`.
+* **Example 7.1.9** (reading). The subdomains $\Omega_n$ are the triangles of a triangulation, and
+  $v|_{\Omega_n} \in C^{k+1}(\overline\Omega_n)$ means that $v$ agrees on the open triangle with a
+  $C^{k+1}$ function on the plane. See `AtkinsonHan.Chapter07.example_7_1_9`.
 -/
 
 open MeasureTheory Module TopologicalSpace Set intervalIntegral
@@ -71,18 +118,25 @@ namespace AtkinsonHan.Chapter07
 variable {d n m : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin d))}
   {u v : EuclideanSpace ℝ (Fin d) → ℝ}
 
-/-- **Definition 7.1.1**: for `1 ≤ p < ∞` a function `v : Ω ⊆ ℝ^d → ℝ` is locally `p`-integrable,
-`v ∈ L^p_loc(Ω)`, when every point of `Ω` has a neighbourhood in `Ω` on which `v` is
-`p`-integrable. The book asks for an open `Ω'` with `closure Ω' ⊆ Ω` and `v ∈ L^p(Ω')`; on an open
-`Ω` that is the same condition, because every point of `Ω` has a ball whose closure is still
-inside `Ω`. -/
+/-- **Definition 7.1.1** of [han2009theoretical]. Let $\Omega \subseteq \mathbb{R}^d$ be open and
+$p \in [1, \infty)$. A function $v : \Omega \to \mathbb{R}$ is **locally $p$-integrable**,
+$v \in L^p_{\mathrm{loc}}(\Omega)$, if every point of $\Omega$ has a neighbourhood in $\Omega$
+on which $v$ is $p$-integrable.
+
+The source asks that $v \in L^p(\Omega')$ for an open $\Omega'$ with
+$\overline{\Omega'} \subseteq \Omega$. On an open $\Omega$ this is the same condition, because
+every point of $\Omega$ has a ball whose closure lies in $\Omega$. The definition is
+`MeasureTheory.LocallyMemLpOn v p Ω volume`, and it accepts every `p : ℝ≥0∞`. -/
 def definition_7_1_1 (p : ℝ≥0∞) (Ω : Opens (EuclideanSpace ℝ (Fin d)))
     (v : EuclideanSpace ℝ (Fin d) → ℝ) : Prop :=
   LocallyMemLpOn v p Ω volume
 
-/-- **Lemma 7.1.2** (generalized variational lemma): if `v ∈ L^1_loc(Ω)` on a nonempty open
-`Ω ⊆ ℝ^d` and `∫_Ω v φ = 0` for every `φ ∈ C_0^∞(Ω)`, then `v = 0` a.e. on `Ω`. The book quotes
-this from the literature without proof; it is Mathlib's
+/-- **Lemma 7.1.2** of [han2009theoretical] (generalized variational lemma). Let
+$\Omega \subseteq \mathbb{R}^d$ be open and let $v \in L^1_{\mathrm{loc}}(\Omega)$. If
+$\int_\Omega v \varphi \, dx = 0$ for every $\varphi \in C_0^\infty(\Omega)$, then $v = 0$
+almost everywhere on $\Omega$.
+
+The source quotes this result from the literature without proof. The proof is Mathlib's
 `IsOpen.ae_eq_zero_of_integral_contDiff_smul_eq_zero`. -/
 theorem lemma_7_1_2 (hv : LocallyIntegrableOn v Ω volume)
     (h : ∀ φ : 𝓓(Ω, ℝ), ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin d))), v x * φ x = 0) :
@@ -94,33 +148,50 @@ theorem lemma_7_1_2 (hv : LocallyIntegrableOn v Ω volume)
         mul_zero]).trans (by simp [smul_eq_mul, mul_comm])
   exact e ▸ h ⟨g, hg, h'g, hgs⟩
 
-/-- **Definition 7.1.3**: for `Ω ⊆ ℝ^d` nonempty open and `v, w ∈ L^1_loc(Ω)`, `w` is a weak
-`α`-th derivative of `v` when `∫_Ω v ∂^α φ = (-1)^{|α|} ∫_Ω w φ` for every `φ ∈ C_0^∞(Ω)`,
-which is (7.1.2). All the multi-indices of length `n` are carried by one object: `w x` is a
-continuous `n`-linear map, its value at a tuple `y` of directions being the weak `∂^α v` for the
-multi-index `α` that `y` names. -/
+/-- **Definition 7.1.3** of [han2009theoretical], with (7.1.2), for all multi-indices of a given
+length. Let $\Omega \subseteq \mathbb{R}^d$ be open and $n \in \mathbb{N}$. A function $w$ on
+$\Omega$ with values in the continuous $n$-linear maps on $\mathbb{R}^d$ is the **weak
+derivative of order $n$** of $v$ if $v$ and $w$ are locally integrable on $\Omega$ and
+$$\int_\Omega \partial^n \varphi(x)(y) \, v(x) \, dx = (-1)^n \int_\Omega \varphi(x) \, w(x)(y)
+  \, dx$$
+for every $\varphi \in C_0^\infty(\Omega)$ and every tuple $y$ of $n$ directions in
+$\mathbb{R}^d$.
+
+A tuple $y$ of directions names a multi-index $\alpha$ with $|\alpha| = n$, and $w(x)(y)$ is
+then the weak $\partial^\alpha v(x)$. The definition is
+`HasWeakIteratedFDerivOn n v w Ω volume`. -/
 def definition_7_1_3 (n : ℕ) (v : EuclideanSpace ℝ (Fin d) → ℝ)
     (w : EuclideanSpace ℝ (Fin d) → EuclideanSpace ℝ (Fin d) [×n]→L[ℝ] ℝ)
     (Ω : Opens (EuclideanSpace ℝ (Fin d))) : Prop :=
   HasWeakIteratedFDerivOn n v w Ω volume
 
-/-- The standard basis `e_1, …, e_d` of `ℝ^d`, in which the multi-index derivatives
-`∂^α = ∂_1^{α_1} ⋯ ∂_d^{α_d}` of this chapter are taken. -/
+/-- The standard basis $e_1, \dots, e_d$ of $\mathbb{R}^d$. The multi-index derivatives
+$\partial^\alpha = \partial_1^{\alpha_1} \cdots \partial_d^{\alpha_d}$ of this chapter are taken
+in this basis. -/
 noncomputable abbrev stdBasis (d : ℕ) : Basis (Fin d) ℝ (EuclideanSpace ℝ (Fin d)) :=
   (EuclideanSpace.basisFun (Fin d) ℝ).toBasis
 
-/-- **Definition 7.1.3**, one multi-index at a time: for `Ω ⊆ ℝ^d` nonempty open and
-`v, w ∈ L^1_loc(Ω)`, `w` is the weak `α`-th derivative of `v` when
-`∫_Ω v ∂^α φ = (-1)^{|α|} ∫_Ω w φ` for every `φ ∈ C_0^∞(Ω)`. The multi-index `α` is read as the
-tuple of `|α| = α_1 + ⋯ + α_d` directions it names, `e_i` repeated `α i` times with the indices in
-increasing order, so that `∂^α φ` is `∂_1^{α_1} ⋯ ∂_d^{α_d} φ`. `definition_7_1_3` is the same
-definition for all the multi-indices of a given length at once. -/
+/-- **Definition 7.1.3** of [han2009theoretical], with (7.1.2), for one multi-index. Let
+$\Omega \subseteq \mathbb{R}^d$ be open and let $\alpha \in \mathbb{N}^d$. A function $w$ is the
+**weak $\alpha$-th derivative** of $v$ if $v$ and $w$ are locally integrable on $\Omega$ and
+$$\int_\Omega v \, \partial^\alpha \varphi \, dx = (-1)^{|\alpha|} \int_\Omega w \, \varphi \,
+  dx \qquad \text{for every } \varphi \in C_0^\infty(\Omega).$$
+
+The multi-index $\alpha$ is read as the tuple of $|\alpha| = \alpha_1 + \dots + \alpha_d$
+directions in which $e_i$ is repeated $\alpha_i$ times, with the indices in increasing order, so
+that $\partial^\alpha \varphi = \partial_1^{\alpha_1} \cdots \partial_d^{\alpha_d} \varphi$. The
+definition is `HasWeakIteratedLineDerivOn` along `multiIndexTuple
+(AtkinsonHan.Chapter07.stdBasis d) α`. `AtkinsonHan.Chapter07.definition_7_1_3` is the same
+definition for all multi-indices of a given length at once. -/
 def definition_7_1_3_multiIndex (α : Fin d → ℕ) (v w : EuclideanSpace ℝ (Fin d) → ℝ)
     (Ω : Opens (EuclideanSpace ℝ (Fin d))) : Prop :=
   HasWeakIteratedLineDerivOn (multiIndexTuple (stdBasis d) α) v w Ω volume
 
-/-- The bundled reading of Definition 7.1.3 gives the multi-index reading: the weak derivative of
-order `|α|`, evaluated at the tuple of directions naming `α`, is the weak `∂^α`. -/
+/-- Let $\alpha \in \mathbb{N}^d$. If $w$ is the weak derivative of order $|\alpha|$ of $v$ on
+$\Omega$ in the sense of `AtkinsonHan.Chapter07.definition_7_1_3`, then
+$x \mapsto w(x)(y_\alpha)$ is the weak $\alpha$-th derivative of $v$ on $\Omega$, where
+$y_\alpha$ is the tuple of directions that names $\alpha$. So the reading of Definition 7.1.3
+for all multi-indices at once implies the reading for one multi-index. -/
 theorem definition_7_1_3_multiIndex_of_definition_7_1_3 (α : Fin d → ℕ)
     {w : EuclideanSpace ℝ (Fin d) →
       EuclideanSpace ℝ (Fin d) [×(∑ i, α i)]→L[ℝ] ℝ}
@@ -128,37 +199,46 @@ theorem definition_7_1_3_multiIndex_of_definition_7_1_3 (α : Fin d → ℕ)
     definition_7_1_3_multiIndex α v (fun x ↦ w x (multiIndexTuple (stdBasis d) α)) Ω :=
   h.lineDeriv _
 
-/-- **Lemma 7.1.4**: a weak derivative, if it exists, is uniquely defined up to a set of measure
-zero. -/
+/-- **Lemma 7.1.4** of [han2009theoretical]. If $w_1$ and $w_2$ are both weak derivatives of order
+$n$ of $v$ on $\Omega$, then $w_1 = w_2$ almost everywhere on $\Omega$. So a weak derivative, if
+it exists, is unique up to a set of measure zero. -/
 theorem lemma_7_1_4 {w₁ w₂ : EuclideanSpace ℝ (Fin d) → EuclideanSpace ℝ (Fin d) [×n]→L[ℝ] ℝ}
     (h₁ : definition_7_1_3 n v w₁ Ω) (h₂ : definition_7_1_3 n v w₂ Ω) :
     ∀ᵐ x, x ∈ (Ω : Set (EuclideanSpace ℝ (Fin d))) → w₁ x = w₂ x :=
   h₁.ae_eq h₂
 
-/-- **Lemma 7.1.5**: if `v ∈ C^m(Ω)` then for each `α` with `|α| ≤ m` the classical partial
-derivative `∂^α v` is also the weak `α`-th derivative of `v`. So the weak derivative extends the
-classical one, and it is natural to use the same notation for both. -/
+/-- **Lemma 7.1.5** of [han2009theoretical]. Let $\Omega \subseteq \mathbb{R}^d$ be open,
+$v \in C^m(\Omega)$ and $n \le m$. Then the classical derivative $\partial^n v$ of order $n$ is
+the weak derivative of order $n$ of $v$ on $\Omega$. So for each $\alpha$ with $|\alpha| \le m$,
+the classical $\partial^\alpha v$ is the weak $\alpha$-th derivative, and the weak derivative
+extends the classical one.
+
+The classical derivative is `iteratedFDeriv ℝ n v`, and $v \in C^m(\Omega)$ is
+`ContDiffOn ℝ m v Ω`. -/
 theorem lemma_7_1_5 (hv : ContDiffOn ℝ m v Ω) (hnm : n ≤ m) :
     definition_7_1_3 n v (iteratedFDeriv ℝ n v) Ω :=
   hv.hasWeakIteratedFDerivOn (by exact_mod_cast hnm)
 
-/-- **Proposition 7.1.10**: weak differentiation is linear. If `∂^α u` and `∂^α v` exist then so
-does `∂^α (c₁ u + c₂ v)`, and it is `c₁ ∂^α u + c₂ ∂^α v`. -/
+/-- **Proposition 7.1.10** of [han2009theoretical]. Let $w_1$ and $w_2$ be weak derivatives of order
+$n$ of $u$ and $v$ on $\Omega$, and let $c_1, c_2 \in \mathbb{R}$. Then $c_1 w_1 + c_2 w_2$ is
+the weak derivative of order $n$ of $c_1 u + c_2 v$. So weak differentiation is linear:
+$\partial^\alpha(c_1 u + c_2 v) = c_1 \partial^\alpha u + c_2 \partial^\alpha v$. -/
 theorem proposition_7_1_10 {w₁ w₂ : EuclideanSpace ℝ (Fin d) → EuclideanSpace ℝ (Fin d) [×n]→L[ℝ] ℝ}
     (h₁ : definition_7_1_3 n u w₁ Ω) (h₂ : definition_7_1_3 n v w₂ Ω) (c₁ c₂ : ℝ) :
     definition_7_1_3 n (c₁ • u + c₂ • v) (c₁ • w₁ + c₂ • w₂) Ω :=
   h₁.const_smul_add_const_smul h₂ c₁ c₂
 
-/-- **Proposition 7.1.11 with one smooth factor** (the product rule): let `α` be a multi-index of
-order one, so that `∂^α` is a single first-order partial derivative `∂_i`. If `∂^α u` exists
-weakly on `Ω` and `g ∈ C^∞(ℝ^d)`, then `∂^α (u g)` exists weakly and equals `(∂^α u) g + u ∂^α g`,
-the second `∂^α g` being the classical derivative of `g`.
+/-- **Proposition 7.1.11** of [han2009theoretical] (product rule), for a smooth factor. Let
+$\alpha \in \mathbb{N}^d$ with $|\alpha| = 1$, so that $\partial^\alpha$ is a first-order
+partial derivative $\partial_i$. If $w$ is the weak $\alpha$-th derivative of $u$ on $\Omega$
+and $g \in C^\infty(\mathbb{R}^d)$, then the weak $\alpha$-th derivative of $ug$ on $\Omega$ is
+$$\partial^\alpha(ug) = w \, g + u \, \partial^\alpha g,$$
+where $\partial^\alpha g$ is the classical derivative of $g$.
 
-The proposition as the book states it allows *both* factors to be merely locally `p`-integrable
-with locally `q`-integrable weak derivatives, for conjugate `p, q ∈ (1, ∞)`; that generality is
-`proposition_7_1_11` and is not proved here. What makes the smooth case elementary is that `g φ`
-is again a test function when `φ` is, so the identity is a direct integration by parts,
-`∫ (∂^α φ) g u = ∫ ∂^α(g φ) u - ∫ φ (∂^α g) u`. -/
+This is a special case of `AtkinsonHan.Chapter07.proposition_7_1_11`, which allows two locally
+integrable factors. The smooth case is elementary, because $g \varphi$ is again a test function
+when $\varphi$ is. The identity is then the integration by parts $\int (\partial^\alpha \varphi)
+g u = \int \partial^\alpha(g \varphi) u - \int \varphi (\partial^\alpha g) u$. -/
 theorem proposition_7_1_11_contDiff {α : Fin d → ℕ} (hα : ∑ i, α i = 1)
     {w : EuclideanSpace ℝ (Fin d) → ℝ} (h : definition_7_1_3_multiIndex α u w Ω)
     {g : EuclideanSpace ℝ (Fin d) → ℝ} (hg : ContDiff ℝ ∞ g) :
@@ -167,17 +247,19 @@ theorem proposition_7_1_11_contDiff {α : Fin d → ℕ} (hα : ∑ i, α i = 1)
         + u x * iteratedFDeriv ℝ (∑ i, α i) g x (multiIndexTuple (stdBasis d) α)) Ω :=
   HasWeakIteratedLineDerivOn.mul_contDiff h hα hg
 
-/-- **Proposition 7.1.11** (the product rule): let `p, q ∈ (1, ∞)` be conjugate,
-`1/p + 1/q = 1`, let `α` be a multi-index of order one, so that `∂^α` is a single first-order
-partial derivative `∂_i`, and suppose `u, ∂^α u ∈ L^p_loc(Ω)` and `v, ∂^α v ∈ L^q_loc(Ω)`. Then
-`∂^α (u v)` exists weakly and equals `(∂^α u) v + u ∂^α v`.
+/-- **Proposition 7.1.11** of [han2009theoretical] (product rule). Let $p, q \in (1, \infty)$ with
+$1/p + 1/q = 1$, and let $\alpha \in \mathbb{N}^d$ with $|\alpha| = 1$, so that
+$\partial^\alpha$ is a first-order partial derivative $\partial_i$. Let $u$ and $v$ have the
+weak $\alpha$-th derivatives $\partial^\alpha u$ and $\partial^\alpha v$ on $\Omega$, with $u,
+\partial^\alpha u \in L^p_{\mathrm{loc}}(\Omega)$ and $v, \partial^\alpha v \in
+L^q_{\mathrm{loc}}(\Omega)$. Then the weak $\alpha$-th derivative of $uv$ on $\Omega$ is
+$$\partial^\alpha(uv) = (\partial^\alpha u) \, v + u \, \partial^\alpha v.$$
 
-The book states this without proof. The proof mollifies `u`, applies the smooth-factor case
-`proposition_7_1_11_contDiff` on a relatively compact open neighbourhood of the support of the test
-function, and passes to the limit under Hölder's inequality; the backbone carries it as
-`HasWeakIteratedLineDerivOn.mul`, on top of the commutation of the weak derivative with
-mollification. The hypothesis `1 < q` is the book's and is kept for alignment, but is redundant:
-it follows from `1 < p` and the conjugacy relation. -/
+The source states this result without proof. The proof mollifies $u$, applies the smooth case
+`AtkinsonHan.Chapter07.proposition_7_1_11_contDiff` on a relatively compact open neighbourhood
+of the support of the test function, and passes to the limit with Hölder's inequality. It
+specializes `HasWeakIteratedLineDerivOn.mul`. The hypothesis $q > 1$ is the source's and is
+kept, but it follows from $p < \infty$ and $1/p + 1/q = 1$. -/
 theorem proposition_7_1_11 {α : Fin d → ℕ} (hα : ∑ i, α i = 1) {p q : ℝ≥0∞}
     (hp : 1 < p) (hp' : p < ⊤) (_hq : 1 < q) (hq' : q < ⊤) (hpq : 1 / p + 1 / q = 1)
     {wu wv : EuclideanSpace ℝ (Fin d) → ℝ}
@@ -189,20 +271,23 @@ theorem proposition_7_1_11 {α : Fin d → ℕ} (hα : ∑ i, α i = 1) {p q : �
     ENNReal.holderConjugate_iff.2 (by simpa only [one_div] using hpq)
   hdu.mul hα hdv hp.le hp'.ne hq'.ne hu hwu hv hwv
 
-/-- **Proposition 7.1.12** (the chain rule): let `f ∈ C^1(ℝ, ℝ)` have bounded derivative, let
-`Ω ⊆ ℝ^d` be open and bounded, let `p ∈ (1, ∞)`, and let `α` be a multi-index of order one, so
-that `∂^α` is a single first-order partial derivative `∂_i`. If `v ∈ L^p(Ω)` and `∂^α v ∈ L^p(Ω)`,
-that is `v ∈ W^{1,p}(Ω)` in the notation of §7.2, then `∂^α (f ∘ v) ∈ L^p(Ω)` and
-`∂^α (f ∘ v) = (f' ∘ v) ∂^α v`.
+/-- **Proposition 7.1.12** of [han2009theoretical] (chain rule). Let $f \in C^1(\mathbb{R})$ with
+$|f'| \le M$ on $\mathbb{R}$, let $\Omega \subseteq \mathbb{R}^d$ be open and bounded, let
+$p \in (1, \infty)$, and let $\alpha \in \mathbb{N}^d$ with $|\alpha| = 1$, so that
+$\partial^\alpha$ is a first-order partial derivative $\partial_i$. If $v \in L^p(\Omega)$ has
+the weak $\alpha$-th derivative $\partial^\alpha v \in L^p(\Omega)$, then $(f' \circ v) \,
+\partial^\alpha v \in L^p(\Omega)$ and it is the weak $\alpha$-th derivative of $f \circ v$:
+$$\partial^\alpha(f \circ v) = (f' \circ v) \, \partial^\alpha v.$$
 
-The book states this without proof. The proof mollifies `v` on a relatively compact open
-neighbourhood of the support of the test function, applies the classical chain rule there, and
-passes to the limit; the backbone carries it as
-`HasWeakIteratedLineDerivOn.contDiff_comp`. Two of the book's hypotheses are weakened. Boundedness
-of `Ω` is kept in the statement for alignment but is not used: the backbone asks only that `v` and
-`∂^α v` be locally `p`-integrable on `Ω`. And the book asks for `v ∈ W^{1,p}(Ω)`, that is for
-*every* first-order derivative to be in `L^p(Ω)`, and concludes for every `i`; here one `α` at a
-time is enough, and quantifying over `α` recovers the book's reading. -/
+**Generalization.** The source assumes $v \in W^{1,p}(\Omega)$, that is, every first-order weak
+derivative of $v$ lies in $L^p(\Omega)$, and concludes for every $i$. Here one $\alpha$ is
+enough, and the statement for all $\alpha$ with $|\alpha| = 1$ gives the reading of the source.
+
+The source states this result without proof. The boundedness of $\Omega$ is the source's
+hypothesis and is kept, but the proof does not use it. The proof mollifies $v$ on a relatively
+compact open neighbourhood of the support of the test function, applies the classical chain
+rule, and passes to the limit along an almost everywhere convergent subsequence by dominated
+convergence. It specializes `HasWeakIteratedLineDerivOn.contDiff_comp`. -/
 theorem proposition_7_1_12 {f : ℝ → ℝ} (hf : ContDiff ℝ 1 f) {M : ℝ}
     (hM : ∀ t, |deriv f t| ≤ M)
     (_hΩ : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin d))))
@@ -228,38 +313,49 @@ theorem proposition_7_1_12 {f : ℝ → ℝ} (hf : ContDiff ℝ 1 f) {M : ℝ}
       (fun x _ ↦ ⟨(Ω : Set (EuclideanSpace ℝ (Fin d))), self_mem_nhdsWithin, hv⟩)
       (fun x _ ↦ ⟨(Ω : Set (EuclideanSpace ℝ (Fin d))), self_mem_nhdsWithin, hw⟩)
 
-/-! ### The line `ℝ^1`
+/-!
+### The line $\mathbb{R}^1$
 
-Examples 7.1.6, 7.1.7 and 7.1.8 are computations in dimension `d = 1`. They are stated on
-`E1 = EuclideanSpace ℝ (Fin 1)`, the `d = 1` case of the ambient space of §7.1, and proved on `ℝ`
-through the linear isometry `toE1`. -/
+Examples 7.1.6, 7.1.7 and 7.1.8 are computations in dimension $d = 1$. They are stated on
+`AtkinsonHan.Chapter07.E1`, the space $\mathbb{R}^1$, and proved on $\mathbb{R}$ through the linear
+isometry `AtkinsonHan.Chapter07.toE1`.
+-/
 
 section OneDimensional
 
-/-- The Euclidean line `ℝ^1`, the `d = 1` case of the ambient space of §7.1. -/
+/-- The Euclidean space $\mathbb{R}^1$, the case $d = 1$ of the ambient space of Section 7.1 of
+[han2009theoretical]. The one-dimensional Examples 7.1.6, 7.1.7 and 7.1.8 are stated on it. -/
 abbrev E1 : Type := EuclideanSpace ℝ (Fin 1)
 
 variable {Ω₁ : Opens E1}
 
-/-- The line `ℝ` as `ℝ^1`, a linear isometry sending `t` to the point with coordinate `t`. Being an
-isometry of finite-dimensional real inner product spaces it preserves the volume, so an integral
-over a subset of `ℝ^1` is an integral over its preimage in `ℝ`. -/
+/-- The linear isometry $\mathbb{R} \to \mathbb{R}^1$ that sends $t$ to the point with coordinate
+$t$. It identifies the line with $\mathbb{R}^1$ in the one-dimensional examples of Section 7.1
+of [han2009theoretical].
+
+An isometry of finite-dimensional real inner product spaces preserves the volume, so an integral
+over a subset of $\mathbb{R}^1$ is an integral over its preimage in $\mathbb{R}$
+(`AtkinsonHan.Chapter07.setIntegral_toE1`). -/
 noncomputable def toE1 : ℝ ≃ₗᵢ[ℝ] E1 where
   toLinearEquiv :=
     (LinearEquiv.funUnique (Fin 1) ℝ ℝ).symm.trans (WithLp.linearEquiv 2 ℝ (Fin 1 → ℝ)).symm
   norm_map' t := by
     simp [EuclideanSpace.norm_eq, LinearEquiv.funUnique, Real.sqrt_sq_eq_abs]
 
+/-- The coordinate of the point `AtkinsonHan.Chapter07.toE1 t` of $\mathbb{R}^1$ is $t$. -/
 @[simp] theorem toE1_apply (t : ℝ) : (toE1 t) 0 = t := rfl
 
+/-- The inverse of `AtkinsonHan.Chapter07.toE1` sends a point of $\mathbb{R}^1$ to its coordinate.
+-/
 @[simp] theorem toE1_symm_apply (x : E1) : toE1.symm x = x 0 := rfl
 
-/-- `toE1 1` is the single vector of the standard basis of `ℝ^1`. -/
+/-- The image of $1$ in $\mathbb{R}^1$ is the single vector $e_1$ of the standard basis. -/
 theorem toE1_one : toE1 1 = stdBasis 1 0 := by
   ext i; fin_cases i; simp [stdBasis]
 
-/-- In dimension one the tuple of directions naming the multi-index `α = (k)` is the constant tuple
-`toE1 1`, of length `k`: `∂^α` is the `k`-th derivative in the single coordinate direction. -/
+/-- In dimension one, the tuple of directions that names the multi-index $\alpha = (k)$ is the
+constant tuple of length $k$ with value $e_1$. So $\partial^\alpha$ is the $k$-th derivative in
+the single coordinate direction. -/
 theorem multiIndexTuple_dimOne (k : ℕ) :
     multiIndexTuple (stdBasis 1) ![k] = fun _ ↦ toE1 1 := by
   have hl : multiIndexDirections (⇑(stdBasis 1)) ![k] = List.replicate k (stdBasis 1 0) := by
@@ -269,16 +365,18 @@ theorem multiIndexTuple_dimOne (k : ℕ) :
   rw [List.get_of_eq hl]
   simp [toE1_one]
 
-/-- Change of variables along `toE1` in a set integral. -/
+/-- For $g : \mathbb{R}^1 \to \mathbb{R}$ and $s \subseteq \mathbb{R}^1$, the integral of $g$ over
+$s$ equals the integral of $t \mapsto g(t)$ over the preimage of $s$ in $\mathbb{R}$. -/
 theorem setIntegral_toE1 (g : E1 → ℝ) (s : Set E1) :
     ∫ t in toE1 ⁻¹' s, g (toE1 t) = ∫ x in s, g x :=
   toE1.measurePreserving.setIntegral_preimage_emb toE1.toHomeomorph.measurableEmbedding g s
 
-/-- A point of `ℝ^1` whose coordinate vanishes is the origin. -/
+/-- A point of $\mathbb{R}^1$ with coordinate $0$ is the origin. -/
 theorem eq_zero_of_apply_zero {x : E1} (h : x 0 = 0) : x = 0 := by
   ext i; fin_cases i; simpa using h
 
-/-- Almost every point of `ℝ^1` has a nonzero coordinate: the origin is a null set. -/
+/-- Almost every point of $\mathbb{R}^1$ has a nonzero coordinate, because the origin is a null set.
+-/
 theorem ae_apply_ne_zero : ∀ᵐ x : E1, x 0 ≠ 0 := by
   have h : {x : E1 | ¬ (x 0 ≠ 0)} = {0} := by
     ext x
@@ -287,11 +385,12 @@ theorem ae_apply_ne_zero : ∀ᵐ x : E1, x 0 ≠ 0 := by
   rw [ae_iff, h]
   simp
 
-/-- A single real number is a null set. -/
+/-- For $c \in \mathbb{R}$, almost every $t \in \mathbb{R}$ satisfies $t \neq c$. -/
 theorem ae_ne_real (c : ℝ) : ∀ᵐ t : ℝ, t ≠ c := by
   rw [ae_iff]; simp
 
-/-- A bounded, a.e. strongly measurable function is locally integrable. -/
+/-- A bounded, almost everywhere strongly measurable function is locally integrable for a locally
+finite measure. -/
 private theorem locallyIntegrable_of_bound {X : Type*} [TopologicalSpace X] [MeasurableSpace X]
     {μ : Measure X} [IsLocallyFiniteMeasure μ] {w : X → ℝ} {C : ℝ}
     (hm : AEStronglyMeasurable w μ) (hb : ∀ᵐ x ∂μ, ‖w x‖ ≤ C) :
@@ -299,55 +398,69 @@ private theorem locallyIntegrable_of_bound {X : Type*} [TopologicalSpace X] [Mea
   (locallyIntegrable_const C).mono hm (by
     filter_upwards [hb] with x hx using hx.trans (le_abs_self C))
 
-/-- A bounded, a.e. strongly measurable function is interval integrable. -/
+/-- A bounded, almost everywhere strongly measurable function on $\mathbb{R}$ is integrable on every
+interval. -/
 private theorem intervalIntegrable_of_bound {f : ℝ → ℝ} {C : ℝ}
     (hm : AEStronglyMeasurable f volume) (hb : ∀ᵐ t : ℝ, ‖f t‖ ≤ C) (a b : ℝ) :
     IntervalIntegrable f volume a b :=
   (intervalIntegrable_const (c := C)).mono_fun' hm.restrict (ae_restrict_of_ae hb)
 
-/-! ### Pulling a test function on `Ω ⊆ ℝ^1` back to `ℝ` -/
+/-! ### Pulling a test function on $\Omega \subseteq \mathbb{R}^1$ back to $\mathbb{R}$ -/
 
-/-- A test function on `Ω ⊆ ℝ^1`, read on the line, is smooth. -/
+/-- A test function on $\Omega \subseteq \mathbb{R}^1$, read as a function on $\mathbb{R}$, is
+smooth. -/
 theorem contDiff_comp_toE1 (φ : 𝓓(Ω₁, ℝ)) : ContDiff ℝ ∞ ((φ : E1 → ℝ) ∘ toE1) :=
   φ.contDiff.comp toE1.toContinuousLinearEquiv.contDiff
 
-/-- A test function on `Ω ⊆ ℝ^1`, read on the line, has compact support. -/
+/-- A test function on $\Omega \subseteq \mathbb{R}^1$, read as a function on $\mathbb{R}$, has
+compact support. -/
 theorem hasCompactSupport_comp_toE1 (φ : 𝓓(Ω₁, ℝ)) :
     HasCompactSupport ((φ : E1 → ℝ) ∘ toE1) :=
   φ.hasCompactSupport.comp_homeomorph toE1.toHomeomorph
 
-/-- A test function on `Ω ⊆ ℝ^1`, read on the line, is supported in the preimage of `Ω`. -/
+/-- A test function on $\Omega \subseteq \mathbb{R}^1$, read as a function on $\mathbb{R}$, has its
+support in the preimage of $\Omega$. -/
 theorem tsupport_comp_toE1 (φ : 𝓓(Ω₁, ℝ)) :
     tsupport ((φ : E1 → ℝ) ∘ toE1) ⊆ toE1 ⁻¹' (Ω₁ : Set E1) := by
   rw [show ((φ : E1 → ℝ) ∘ toE1) = (φ : E1 → ℝ) ∘ toE1.toHomeomorph from rfl,
     tsupport_comp_eq_preimage]
   exact preimage_mono φ.tsupport_subset
 
-/-- The derivative on the line of a test function on `Ω ⊆ ℝ^1` is its partial derivative in the
-single coordinate direction. -/
+/-- For a test function $\varphi$ on $\Omega \subseteq \mathbb{R}^1$, the derivative on $\mathbb{R}$
+of $t \mapsto \varphi(t)$ is the partial derivative of $\varphi$ in the single coordinate
+direction. -/
 theorem deriv_comp_toE1 (φ : 𝓓(Ω₁, ℝ)) (t : ℝ) :
     deriv ((φ : E1 → ℝ) ∘ toE1) t = fderiv ℝ (φ : E1 → ℝ) (toE1 t) (toE1 1) :=
   (((φ.contDiff.differentiable (by simp)).differentiableAt.hasFDerivAt.comp t
     toE1.toContinuousLinearEquiv.hasFDerivAt).hasDerivAt).deriv
 
-/-- An integral over `Ω ⊆ ℝ^1` against a test function, read on the line. -/
+/-- For a test function $\varphi$ on $\Omega \subseteq \mathbb{R}^1$ and
+$g : \mathbb{R}^1 \to \mathbb{R}$, the integral $\int_\Omega \varphi \, g$ equals the integral
+of $t \mapsto \varphi(t) g(t)$ over the preimage of $\Omega$ in $\mathbb{R}$. -/
 theorem integral_testFunction_mul (φ : 𝓓(Ω₁, ℝ)) (g : E1 → ℝ) :
     ∫ x in (Ω₁ : Set E1), φ x • g x ∂volume
       = ∫ t in toE1 ⁻¹' (Ω₁ : Set E1), ((φ : E1 → ℝ) ∘ toE1) t * g (toE1 t) :=
   (setIntegral_toE1 (fun x ↦ φ x • g x) _).symm
 
-/-- An integral over `Ω ⊆ ℝ^1` against the first derivative of a test function, read on the
-line. -/
+/-- For a test function $\varphi$ on $\Omega \subseteq \mathbb{R}^1$ and
+$g : \mathbb{R}^1 \to \mathbb{R}$, the integral $\int_\Omega \varphi' \, g$ equals the integral
+of $t \mapsto \varphi'(t) g(t)$ over the preimage of $\Omega$ in $\mathbb{R}$. -/
 theorem integral_iteratedFDeriv_mul (φ : 𝓓(Ω₁, ℝ)) (g : E1 → ℝ) :
     ∫ x in (Ω₁ : Set E1), iteratedFDeriv ℝ 1 (φ : E1 → ℝ) x (fun _ ↦ toE1 1) • g x ∂volume
       = ∫ t in toE1 ⁻¹' (Ω₁ : Set E1), deriv ((φ : E1 → ℝ) ∘ toE1) t * g (toE1 t) := by
   simp only [iteratedFDeriv_one_apply, deriv_comp_toE1]
   exact (setIntegral_toE1 (fun x ↦ fderiv ℝ (φ : E1 → ℝ) x (toE1 1) • g x) _).symm
 
-/-- **Definition 7.1.3 in dimension one, read on the line**: `w` is the first-order weak derivative
-of `v` on `Ω ⊆ ℝ^1` as soon as both are locally integrable there and the integration by parts
-formula `∫ ψ' v = -∫ ψ w` holds on `toE1 ⁻¹' Ω ⊆ ℝ` for every smooth compactly supported `ψ`
-supported there. -/
+/-- Definition 7.1.3 in dimension one, read on the line. Let $\Omega \subseteq \mathbb{R}^1$ be open
+and let $v, w$ be locally integrable on $\Omega$. Write
+$\Omega_{\mathbb{R}} \subseteq \mathbb{R}$ for the preimage of $\Omega$. If
+$$\int_{\Omega_{\mathbb{R}}} \psi'(t) \, v(t) \, dt = -\int_{\Omega_{\mathbb{R}}} \psi(t) \,
+  w(t) \, dt$$
+for every smooth compactly supported $\psi : \mathbb{R} \to \mathbb{R}$ with support in
+$\Omega_{\mathbb{R}}$, then $w$ is the first-order weak derivative of $v$ on $\Omega$.
+
+The examples of Section 7.1 of [han2009theoretical] in dimension one use this result to reduce
+Definition 7.1.3 to an identity between integrals on $\mathbb{R}$. -/
 theorem transport {v w : E1 → ℝ}
     (hv : LocallyIntegrableOn v Ω₁ volume) (hw : LocallyIntegrableOn w Ω₁ volume)
     (key : ∀ ψ : ℝ → ℝ, ContDiff ℝ ∞ ψ → HasCompactSupport ψ →
@@ -363,9 +476,13 @@ theorem transport {v w : E1 → ℝ}
     key _ (contDiff_comp_toE1 φ) (hasCompactSupport_comp_toE1 φ) (tsupport_comp_toE1 φ)]
   simp
 
-/-- The converse of `transport`: a first-order weak derivative on `Ω ⊆ ℝ^1` gives the integration
-by parts formula on the line, for every smooth compactly supported function supported in
-`toE1 ⁻¹' Ω`. -/
+/-- The converse of `AtkinsonHan.Chapter07.transport`. Let $\Omega \subseteq \mathbb{R}^1$ be open
+and let $w$ be the first-order weak derivative of $v$ on $\Omega$. Write
+$\Omega_{\mathbb{R}} \subseteq \mathbb{R}$ for the preimage of $\Omega$. Then for every smooth
+compactly supported $\psi : \mathbb{R} \to \mathbb{R}$ with support in $\Omega_{\mathbb{R}}$,
+$$\int_{\Omega_{\mathbb{R}}} \psi'(t) \, v(t) \, dt = -\int_{\Omega_{\mathbb{R}}} \psi(t) \,
+  w(t) \, dt.$$
+-/
 theorem transport_symm {v w : E1 → ℝ} (h : definition_7_1_3_multiIndex ![1] v w Ω₁)
     {ψ : ℝ → ℝ} (hψ : ContDiff ℝ ∞ ψ) (hcs : HasCompactSupport ψ)
     (hsupp : tsupport ψ ⊆ toE1 ⁻¹' (Ω₁ : Set E1)) :
@@ -389,11 +506,15 @@ theorem transport_symm {v w : E1 → ℝ} (h : definition_7_1_3_multiIndex ![1] 
   rw [integral_iteratedFDeriv_mul, integral_testFunction_mul, hcoe] at key
   simpa using key
 
-/-- **A second-order weak derivative of `v` is a first-order weak derivative of its first-order
-weak derivative.** In dimension one the multi-index `(2)` names the tuple of two copies of the
-coordinate direction, and for a test function `φ` the derivative `∂^2 φ` along that tuple is
-`∂(∂φ)`, `∂φ` being a test function again; so the second-order identity applied to `φ` is the
-first-order identity applied to `∂φ`. -/
+/-- A second-order weak derivative of $v$ is a first-order weak derivative of its first-order weak
+derivative. Let $\Omega \subseteq \mathbb{R}^1$ be open. If $w$ is the first-order weak
+derivative of $v$ on $\Omega$ and $z$ is the weak derivative of $v$ for the multi-index $(2)$,
+then $z$ is the first-order weak derivative of $w$ on $\Omega$. This result supports the second
+half of Example 7.1.8 of [han2009theoretical].
+
+For a test function $\varphi$, the derivative $\partial^2 \varphi$ is
+$\partial(\partial \varphi)$, and $\partial \varphi$ is again a test function. So the
+second-order identity for $\varphi$ is the first-order identity for $\partial \varphi$. -/
 theorem secondOrder_bridge {v w z : E1 → ℝ}
     (hw : definition_7_1_3_multiIndex ![1] v w Ω₁)
     (hz : definition_7_1_3_multiIndex ![2] v z Ω₁) :
@@ -420,7 +541,8 @@ theorem secondOrder_bridge {v w z : E1 → ℝ}
     neg_mul, neg_neg, one_mul, smul_eq_mul] at h3 ⊢
   linarith [h3]
 
-/-- A test function on `Ω` taking the value `1` at a prescribed point of `Ω`. -/
+/-- For every point $x$ of an open set $\Omega \subseteq \mathbb{R}^1$ there is a test function
+$\varphi$ on $\Omega$ with $\varphi(x) = 1$. -/
 theorem exists_testFunction_eq_one {x : E1} (hx : x ∈ (Ω₁ : Set E1)) :
     ∃ φ : 𝓓(Ω₁, ℝ), φ x = 1 := by
   obtain ⟨f, h1, h2, h3, -, h5⟩ :=
@@ -429,11 +551,9 @@ theorem exists_testFunction_eq_one {x : E1} (hx : x ∈ (Ω₁ : Set E1)) :
 
 /-! ### One-dimensional integration by parts -/
 
-/-- **The fundamental theorem of calculus with finitely many exceptional points**: if `g` is
-continuous on `[a, b]` and has derivative `g'` at every point of `(a, b)` outside a finite set `T`,
-and `g'` is interval integrable, then `∫_a^b g' = g b - g a`. Mathlib's
-`intervalIntegral.integral_eq_sub_of_hasDerivAt_of_le` is the case `T = ∅`; the general case
-follows by splitting the interval at each exceptional point. -/
+/-- The fundamental theorem of calculus with finitely many exceptional points: if $a \le b$, $g$ is
+continuous on $[a, b]$, $g$ has derivative $g'$ at every point of $(a, b)$ outside a finite set,
+and $g'$ is integrable on $[a, b]$, then $\int_a^b g' = g(b) - g(a)$. -/
 private theorem ftcFinite (T : Finset ℝ) : ∀ {a b : ℝ}, a ≤ b → ∀ {g g' : ℝ → ℝ},
     ContinuousOn g (Icc a b) → (∀ t ∈ Ioo a b, t ∉ T → HasDerivAt g (g' t) t) →
     IntervalIntegrable g' volume a b → ∫ t in a..b, g' t = g b - g a := by
@@ -462,10 +582,9 @@ private theorem ftcFinite (T : Finset ℝ) : ∀ {a b : ℝ}, a ≤ b → ∀ {g
     · exact integral_eq_sub_of_hasDerivAt_of_le hab hcont
         (fun t ht ↦ hderiv t ht fun h ↦ hT ⟨t, h, ht⟩) hint
 
-/-- **Integration by parts on `[c, d]` with finitely many exceptional points**: for `ψ` of class
-`C^1`, `v` continuous on `[c, d]` with derivative `w` outside a finite set,
-`∫_c^d ψ' v + ∫_c^d ψ w = ψ(d) v(d) - ψ(c) v(c)`. This is the identity behind Examples 7.1.6 and
-7.1.8: the exceptional points are the points where `v` has a corner. -/
+/-- Integration by parts on $[c, d]$ with finitely many exceptional points: if $\psi \in C^1$, $v$
+is continuous on $[c, d]$ with derivative $w$ on $(c, d)$ outside a finite set, and $w$ is
+integrable on $[c, d]$, then $\int_c^d \psi' v + \int_c^d \psi w = \psi(d) v(d) - \psi(c) v(c)$. -/
 private theorem integralByParts {c d : ℝ} (hcd : c ≤ d) (T : Finset ℝ) {v w ψ : ℝ → ℝ}
     (hv : ContinuousOn v (Icc c d)) (hψ : ContDiff ℝ 1 ψ)
     (hd : ∀ t ∈ Ioo c d, t ∉ T → HasDerivAt v (w t) t)
@@ -482,8 +601,8 @@ private theorem integralByParts {c d : ℝ} (hcd : c ≤ d) (T : Finset ℝ) {v 
   exact ftcFinite T hcd ((hψ.continuous.continuousOn).mul hv)
     (fun t ht htT ↦ (hderivψ t).mul (hd t ht htT)) (h1.add h2)
 
-/-- An integral over `(a, b)` of a function vanishing outside `(p, q) ⊆ (a, b)` is the interval
-integral over `[p, q]`. -/
+/-- If $p \le q$, $(p, q) \subseteq (a, b)$ and $f$ vanishes outside $(p, q)$, then
+$\int_{(a, b)} f = \int_p^q f$. -/
 private theorem setIntegral_Ioo_eq_intervalIntegral {a b p q : ℝ} (hpq : p ≤ q)
     (hsub : Ioo p q ⊆ Ioo a b) {f : ℝ → ℝ} (hf : ∀ t ∉ Ioo p q, f t = 0) :
     ∫ t in Ioo a b, f t = ∫ t in p..q, f t := by
@@ -496,7 +615,8 @@ section Piece
 
 variable {p c : ℝ} {W W₁ Y₁ ψ : ℝ → ℝ}
 
-/-- A function agreeing with `W₁` on `(p, c)` integrates over `[p, c]` like `W₁`. -/
+/-- If $W = W_1$ on $(p, c)$ with $p < c$, then $\int_p^c g \, W = \int_p^c g \, W_1$ for every $g$.
+-/
 private theorem intervalIntegral_congr_piece (hpc : p < c) (heq : ∀ t ∈ Ioo p c, W t = W₁ t)
     {g : ℝ → ℝ} : ∫ t in p..c, g t * W t = ∫ t in p..c, g t * W₁ t := by
   refine intervalIntegral.integral_congr_ae ?_
@@ -504,8 +624,8 @@ private theorem intervalIntegral_congr_piece (hpc : p < c) (heq : ∀ t ∈ Ioo 
   rw [uIoc_of_le hpc.le] at htI
   rw [heq t ⟨htI.1, lt_of_le_of_ne htI.2 ht⟩]
 
-/-- Integration by parts on one piece `[p, c]` of a partition, for a function `W` that agrees on
-the open piece with a `C^1` function `W₁` whose derivative is `Y₁`. -/
+/-- Integration by parts on one piece $[p, c]$ of a partition, for a function $W$ that agrees on
+$(p, c)$ with a $C^1$ function $W_1$ whose derivative is $Y_1$. -/
 private theorem integralByParts_piece (hpc : p < c) (hW₁ : ContinuousOn W₁ (Icc p c))
     (hY₁ : ContinuousOn Y₁ (Icc p c)) (hd : ∀ t ∈ Ioo p c, HasDerivAt W₁ (Y₁ t) t)
     (heq : ∀ t ∈ Ioo p c, W t = W₁ t) (hψ : ContDiff ℝ 1 ψ) :
@@ -514,7 +634,7 @@ private theorem integralByParts_piece (hpc : p < c) (hW₁ : ContinuousOn W₁ (
   exact integralByParts hpc.le ∅ hW₁ hψ (fun t ht _ ↦ hd t ht)
     (hY₁.intervalIntegrable_of_Icc hpc.le)
 
-/-- On one piece the integrand `ψ' W` is interval integrable. -/
+/-- On one piece $[p, c]$ of a partition, the integrand $\psi' W$ is integrable. -/
 private theorem intervalIntegrable_piece (hpc : p < c) (hW₁ : ContinuousOn W₁ (Icc p c))
     (heq : ∀ t ∈ Ioo p c, W t = W₁ t) (hψ : ContDiff ℝ 1 ψ) :
     IntervalIntegrable (fun t ↦ deriv ψ t * W t) volume p c := by
@@ -525,7 +645,7 @@ private theorem intervalIntegrable_piece (hpc : p < c) (hW₁ : ContinuousOn W�
 
 end Piece
 
-/-- An open interval of `ℝ`, read as an open subset of `ℝ^1`. -/
+/-- An open interval $(p, q)$ of $\mathbb{R}$, as an open subset of $\mathbb{R}^1$. -/
 private def opensOfIoo (p q : ℝ) : Opens E1 :=
   ⟨{y : E1 | y 0 ∈ Ioo p q}, isOpen_Ioo.preimage toE1.symm.continuous⟩
 
@@ -534,7 +654,8 @@ private theorem preimage_opensOfIoo (p q : ℝ) :
     toE1 ⁻¹' (opensOfIoo p q : Set E1) = Ioo p q := by
   ext t; simp [opensOfIoo]
 
-/-- A function on `ℝ` integrable over `toE1 ⁻¹' Ω` is locally integrable, read on `Ω ⊆ ℝ^1`. -/
+/-- A function on $\mathbb{R}$ that is integrable on the preimage of $\Omega \subseteq \mathbb{R}^1$
+is locally integrable on $\Omega$, read on $\mathbb{R}^1$. -/
 private theorem locallyIntegrableOn_comp {s : Set ℝ} (hpre : toE1 ⁻¹' (Ω₁ : Set E1) = s)
     {U : ℝ → ℝ} (hU : IntegrableOn U s volume) :
     LocallyIntegrableOn (fun y : E1 ↦ U (y 0)) Ω₁ volume := by
@@ -543,28 +664,32 @@ private theorem locallyIntegrableOn_comp {s : Set ℝ} (hpre : toE1 ⁻¹' (Ω�
     toE1.toHomeomorph.measurableEmbedding, hpre]
   exact hU
 
-/-- An almost-everywhere statement on `ℝ^1`, read on the line. -/
+/-- An almost everywhere statement on $\mathbb{R}^1$ holds almost everywhere on $\mathbb{R}$, read
+through `AtkinsonHan.Chapter07.toE1`. -/
 private theorem ae_comp_toE1 {P : E1 → Prop} (h : ∀ᵐ x : E1, P x) : ∀ᵐ t : ℝ, P (toE1 t) := by
   refine ae_of_ae_map toE1.continuous.measurable.aemeasurable ?_
   rwa [toE1.measurePreserving.map_eq]
 
 /-! ### The jump function of Examples 7.1.6 and 7.1.7 -/
 
-/-- The jump `sgn` on `ℝ^1`: `1` where the coordinate is positive and `-1` elsewhere. It is the
-weak derivative of `|x|` in Example 7.1.6 and the function of Example 7.1.7. -/
+/-- The jump function $\operatorname{sgn}$ on $\mathbb{R}^1$: it is $1$ where the coordinate is
+positive and $-1$ elsewhere. It is the weak derivative of $|x|$ in Example 7.1.6 and the
+function of Example 7.1.7 of [han2009theoretical].
+
+At the origin its value is $-1$. -/
 noncomputable def sgnE1 (x : E1) : ℝ := if 0 < x 0 then 1 else -1
 
-/-- The jump `sgn` on `ℝ^1` is measurable. -/
+/-- The jump function $\operatorname{sgn}$ on $\mathbb{R}^1$ is measurable. -/
 theorem measurable_sgnE1 : Measurable sgnE1 :=
   Measurable.ite (measurableSet_lt measurable_const toE1.symm.continuous.measurable)
     measurable_const measurable_const
 
-/-- The jump `sgn` on `ℝ^1` has absolute value one. -/
+/-- The jump function $\operatorname{sgn}$ on $\mathbb{R}^1$ has absolute value at most $1$. -/
 theorem norm_sgnE1_le (x : E1) : ‖sgnE1 x‖ ≤ 1 := by
   rw [sgnE1]; split_ifs <;> simp
 
-/-- A function on `ℝ^1` agreeing with the jump `sgn` away from the origin — the value at the origin
-being arbitrary — is locally integrable. -/
+/-- A function on $\mathbb{R}^1$ that agrees with $\operatorname{sgn}$ at every point with nonzero
+coordinate is locally integrable. Its value at the origin is arbitrary. -/
 theorem locallyIntegrable_of_eq_sgnE1 {V : E1 → ℝ}
     (hV : ∀ x : E1, x 0 ≠ 0 → V x = sgnE1 x) : LocallyIntegrable V volume := by
   have hae : V =ᵐ[volume] sgnE1 := by
@@ -573,7 +698,8 @@ theorem locallyIntegrable_of_eq_sgnE1 {V : E1 → ℝ}
     (measurable_sgnE1.aestronglyMeasurable.congr hae.symm) ?_
   filter_upwards [hae] with x hx using hx ▸ norm_sgnE1_le x
 
-/-- A function on `ℝ` agreeing with the jump `sgn` away from the origin is interval integrable. -/
+/-- A function on $\mathbb{R}$ that agrees with $\operatorname{sgn}$ at every $t \neq 0$ is
+integrable on every interval. -/
 theorem intervalIntegrable_of_eq_sgnE1 {V : ℝ → ℝ}
     (hV : ∀ t : ℝ, t ≠ 0 → V t = sgnE1 (toE1 t)) (a b : ℝ) :
     IntervalIntegrable V volume a b := by
@@ -583,8 +709,10 @@ theorem intervalIntegrable_of_eq_sgnE1 {V : ℝ → ℝ}
     ((measurable_sgnE1.comp toE1.continuous.measurable).aestronglyMeasurable.congr hae.symm) ?_ a b
   filter_upwards [hae] with t ht using ht ▸ norm_sgnE1_le (toE1 t)
 
-/-- The computation behind Example 7.1.7: against the derivative of a test function on `(-1, 1)`,
-the jump `sgn` integrates to `-2 ψ(0)`. -/
+/-- Let $\psi \in C^1(\mathbb{R})$ with $\psi(-1) = \psi(1) = 0$, and let $V$ agree with
+$\operatorname{sgn}$ at every $t \neq 0$. Then
+$$\int_{(-1, 1)} \psi'(t) \, V(t) \, dt = -2 \psi(0).$$
+This is the computation behind Example 7.1.7 of [han2009theoretical]. -/
 theorem integral_deriv_mul_jump {ψ : ℝ → ℝ} (hψ : ContDiff ℝ 1 ψ)
     (hm : ψ (-1) = 0) (hp : ψ 1 = 0) {V : ℝ → ℝ}
     (hV : ∀ t : ℝ, t ≠ 0 → V t = sgnE1 (toE1 t)) :
@@ -616,11 +744,13 @@ theorem integral_deriv_mul_jump {ψ : ℝ → ℝ} (hψ : ContDiff ℝ 1 ψ)
 
 /-! ### Examples 7.1.6, 7.1.7 and 7.1.8 -/
 
-/-- **Example 7.1.6**: on an interval `(a, b)` containing the origin, the function `v(x) = |x|`,
-which is not differentiable at `0` in the classical sense, has the first-order weak derivative
-`w = 1` for `x > 0` and `w = -1` for `x < 0`. The value of `w` at the origin is arbitrary: the
-hypothesis only constrains `w` off the coordinate hyperplane `x_1 = 0`, which here is the single
-point `0`. -/
+/-- **Example 7.1.6** of [han2009theoretical]. Let $a < 0 < b$ and
+$\Omega = (a, b) \subseteq \mathbb{R}^1$. The function $v(x) = |x|$, which has no classical
+derivative at $0$, has the first-order weak derivative
+$$w(x) = \begin{cases} 1, & x > 0, \\ -1, & x < 0. \end{cases}$$
+
+The value of $w$ at $0$ is arbitrary: the hypothesis constrains $w$ only at points with nonzero
+coordinate. -/
 theorem example_7_1_6 {a b : ℝ} (ha : a < 0) (hb : 0 < b)
     (hΩ : (Ω₁ : Set E1) = {x : E1 | x 0 ∈ Ioo a b})
     {w : E1 → ℝ} (hw : ∀ x : E1, x 0 ≠ 0 → w x = if 0 < x 0 then 1 else -1) :
@@ -651,11 +781,15 @@ theorem example_7_1_6 {a b : ℝ} (ha : a < 0) (hb : 0 < b)
   simp only [toE1_apply]
   linarith [key]
 
-/-- **Example 7.1.7**: the step function `v = -1` on `(-1, 0)` and `v = 1` on `(0, 1)` has no weak
-derivative on `Ω = (-1, 1)`. Integration by parts on each half gives `∫_Ω v ∂φ = -2 φ(0)`, so a
-weak derivative `w` would satisfy `∫_Ω w φ = 2 φ(0)` for every test function; Lemma 7.1.2 applied on
-`Ω \ {0}` then forces `w = 0` a.e. on `Ω`, whence `φ(0) = 0` for every test function, which is
-false. So a jump discontinuity destroys weak differentiability. -/
+/-- **Example 7.1.7** of [han2009theoretical]. Let $\Omega = (-1, 1) \subseteq \mathbb{R}^1$, and
+let $v = -1$ on $(-1, 0)$ and $v = 1$ on $(0, 1)$, with any value at $0$. Then $v$ has no
+first-order weak derivative on $\Omega$. So a jump discontinuity destroys weak
+differentiability.
+
+Integration by parts on each half gives $\int_\Omega v \, \varphi' = -2 \varphi(0)$. So a weak
+derivative $w$ would satisfy $\int_\Omega w \varphi = 2 \varphi(0)$ for every test function.
+Lemma 7.1.2 on $\Omega \setminus \{0\}$ then forces $w = 0$ almost everywhere on $\Omega$, hence
+$\varphi(0) = 0$ for every test function, which is false. -/
 theorem example_7_1_7 (hΩ : (Ω₁ : Set E1) = {x : E1 | x 0 ∈ Ioo (-1) 1})
     {v : E1 → ℝ} (hv : ∀ x : E1, x 0 ≠ 0 → v x = if 0 < x 0 then 1 else -1) :
     ¬ ∃ w : E1 → ℝ, definition_7_1_3_multiIndex ![1] v w Ω₁ := by
@@ -714,8 +848,8 @@ section Partition
 
 variable {N : ℕ} {x : Fin (N + 1) → ℝ} {V W : ℝ → ℝ}
 
-/-- A point of `(x_0, x_N)` other than a node of the partition lies in one of the open
-subintervals `(x_i, x_{i+1})`. -/
+/-- Let $x_0 < x_1 < \dots < x_N$. A point of $(x_0, x_N)$ that is not a node $x_i$ lies in one of
+the open subintervals $(x_i, x_{i+1})$. -/
 theorem exists_mem_Ioo_of_strictMono (hx : StrictMono x) {t : ℝ}
     (ht : t ∈ Ioo (x 0) (x (Fin.last N))) (ht' : ∀ i, t ≠ x i) :
     ∃ i : Fin N, t ∈ Ioo (x i.castSucc) (x i.succ) := by
@@ -741,14 +875,15 @@ theorem exists_mem_Ioo_of_strictMono (hx : StrictMono x) {t : ℝ}
     have : ¬ (x ((⟨j, hjn⟩ : Fin N).succ) < t) := by simpa using hsucc
     exact lt_of_le_of_ne (not_lt.1 this) (ht' _)
 
-/-- Inside a closed interval on which `V` is `C^1`, the classical derivative exists. -/
+/-- If $V$ is $C^1$ on $[c, d]$ and $t \in (c, d)$, then $V$ has the classical derivative $V'(t)$ at
+$t$. -/
 theorem hasDerivAt_of_contDiffOn_Icc {c d : ℝ} (h : ContDiffOn ℝ 1 V (Icc c d))
     {t : ℝ} (ht : t ∈ Ioo c d) : HasDerivAt V (deriv V t) t :=
   ((h.differentiableOn one_ne_zero t (mem_Icc_of_Ioo ht)).differentiableAt
     (Icc_mem_nhds ht.1 ht.2)).hasDerivAt
 
-/-- On a closed interval on which `V` is `C^1`, a function agreeing with `V'` in the interior is
-interval integrable: it agrees a.e. with `derivWithin V`, which is continuous there. -/
+/-- Let $c < d$ and let $V$ be $C^1$ on $[c, d]$. A function $W$ with $W = V'$ on $(c, d)$ is
+integrable on $[c, d]$. -/
 theorem intervalIntegrable_of_eq_deriv {c d : ℝ} (hcd : c < d)
     (h : ContDiffOn ℝ 1 V (Icc c d)) (hW : ∀ t ∈ Ioo c d, W t = deriv V t) :
     IntervalIntegrable W volume c d := by
@@ -758,10 +893,13 @@ theorem intervalIntegrable_of_eq_deriv {c d : ℝ} (hcd : c < d)
   · rw [uIoo_of_le hcd.le] at ht
     rw [derivWithin_of_mem_nhds (Icc_mem_nhds ht.1 ht.2), hW t ht]
 
-/-- **Example 7.1.8**, first order: let `V ∈ C[a, b]` be piecewise continuously differentiable over
-a partition `a = x_0 < x_1 < ⋯ < x_N = b`, so that `V` is `C^1` on each closed subinterval, and let
-`W` be `V'` on each open subinterval (its values at the nodes being arbitrary). Then, read on
-`Ω = (a, b) ⊆ ℝ^1`, `W` is the first-order weak derivative of `V`. -/
+/-- **Example 7.1.8** of [han2009theoretical], first order. Let $a = x_0 < x_1 < \dots < x_N = b$ be
+a partition, let $V \in C[a, b]$ be $C^1$ on each closed subinterval $[x_{i-1}, x_i]$, and let
+$W = V'$ on each open subinterval, with arbitrary values at the nodes. Then, on
+$\Omega = (a, b) \subseteq \mathbb{R}^1$, $W$ is the first-order weak derivative of $V$.
+
+The nodes are a strictly increasing `x : Fin (N + 1) → ℝ`. The functions on $\mathbb{R}^1$ are
+$y \mapsto V(y_0)$ and $y \mapsto W(y_0)$. -/
 theorem example_7_1_8 (hx : StrictMono x)
     (hΩ : (Ω₁ : Set E1) = {y : E1 | y 0 ∈ Ioo (x 0) (x (Fin.last N))})
     (hV : ContinuousOn V (Icc (x 0) (x (Fin.last N))))
@@ -821,31 +959,34 @@ theorem example_7_1_8 (hx : StrictMono x)
 
 end Partition
 
-/-! ### A jump kills weak differentiability
+/-!
+### A jump destroys weak differentiability
 
-The obstruction of Example 7.1.7, in the form needed for the second half of Example 7.1.8: a
-function that is continuously differentiable on `(p, c)` and on `(c, q)` and has a weak derivative
-on an interval containing them takes the same one-sided limit at `c` from either side. -/
+The obstruction of Example 7.1.7, in the form that the second half of Example 7.1.8 needs. Let a
+function be continuously differentiable on $(p, c)$ and on $(c, q)$, and let it have a weak
+derivative on an interval that contains $(p, q)$. Then its one-sided limits at $c$ agree.
+-/
 
 section Jump
 
 variable {a b p c q : ℝ} {W W₁ W₂ Y₁ Y₂ : ℝ → ℝ} {z : E1 → ℝ}
 
-/-- An almost-everywhere statement on an open piece `(p, c)` transfers to `Ι p c`, the two sets
-differing by the single point `c`. -/
+/-- An almost everywhere statement on $(p, c)$ transfers to the interval $(p, c]$, because the two
+sets differ by the single point $c$. -/
 private theorem ae_uIoc_of_ae_Ioo (hpc : p < c) {f g : ℝ → ℝ}
     (h : ∀ᵐ t : ℝ, t ∈ Ioo p c → f t = g t) : ∀ᵐ t : ℝ, t ∈ Ι p c → f t = g t := by
   filter_upwards [h, ae_ne_real c] with t ht htne htI
   rw [uIoc_of_le hpc.le] at htI
   exact ht ⟨htI.1, lt_of_le_of_ne htI.2 htne⟩
 
-/-- The same statement as an almost-everywhere equality for the restricted measure. -/
+/-- An almost everywhere statement on $(p, c)$ gives an almost everywhere equality for the measure
+restricted to $(p, c]$. -/
 private theorem ae_restrict_of_ae_Ioo (hpc : p < c) {f g : ℝ → ℝ}
     (h : ∀ᵐ t : ℝ, t ∈ Ioo p c → f t = g t) : f =ᵐ[volume.restrict (Ι p c)] g :=
   (ae_restrict_iff' measurableSet_uIoc).2 (ae_uIoc_of_ae_Ioo hpc h)
 
-/-- On an open piece on which `W` is classically continuously differentiable, every weak
-derivative of `W` agrees almost everywhere with the classical derivative. -/
+/-- On an open piece $(p, c)$ on which $W$ agrees with a continuously differentiable function $W_1$
+with derivative $Y_1$, every weak derivative of $W$ agrees almost everywhere with $Y_1$. -/
 private theorem ae_eq_of_hasDerivAt_piece (hpc : p < c) (hsub : Ioo p c ⊆ Ioo a b)
     (hΩ : (Ω₁ : Set E1) = {y : E1 | y 0 ∈ Ioo a b})
     (hW₁ : ContinuousOn W₁ (Icc p c)) (hY₁ : ContinuousOn Y₁ (Icc p c))
@@ -880,10 +1021,9 @@ private theorem ae_eq_of_hasDerivAt_piece (hpc : p < c) (hsub : Ioo p c ⊆ Ioo 
   filter_upwards [ae_comp_toE1 hae] with t ht htI
   exact ht htI
 
-/-- **A jump destroys weak differentiability**: if `W` agrees with a continuously differentiable
-`W₁` on `(p, c)` and with a continuously differentiable `W₂` on `(c, q)`, and `W` has a weak
-derivative on `Ω = (a, b) ⊇ (p, q)`, then `W₁(c) = W₂(c)`. Example 7.1.7 is the case
-`W₁ = -1`, `W₂ = 1`. -/
+/-- A jump destroys weak differentiability: if $W$ agrees with a continuously differentiable $W_1$
+on $(p, c)$ and with a continuously differentiable $W_2$ on $(c, q)$, and $W$ has a weak
+derivative on $\Omega = (a, b) \supseteq (p, q)$, then $W_1(c) = W_2(c)$. -/
 private theorem eq_of_hasWeakDeriv_of_jump (hpc : p < c) (hcq : c < q)
     (hsub : Ioo p q ⊆ Ioo a b) (hΩ : (Ω₁ : Set E1) = {y : E1 | y 0 ∈ Ioo a b})
     (hW₁ : ContinuousOn W₁ (Icc p c)) (hY₁ : ContinuousOn Y₁ (Icc p c))
@@ -950,12 +1090,16 @@ section SecondOrder
 
 variable {N : ℕ} {x : Fin (N + 1) → ℝ} {V W : ℝ → ℝ}
 
-/-- **Example 7.1.8**, second order: let `V ∈ C[a, b]` be piecewise twice continuously
-differentiable over a partition `a = x_0 < ⋯ < x_N = b`, and let `W` be `V'` on each open
-subinterval. If `V` has a second-order weak derivative on `Ω = (a, b) ⊆ ℝ^1` then the one-sided
-derivatives of `V` agree at every interior node, `V'(x_i-) = V'(x_i+)`; the one-sided derivatives
-are the `derivWithin` of `V` on the two closed subintervals meeting at the node, and an interior
-node is one carried by two consecutive subintervals `i` and `j`. -/
+/-- **Example 7.1.8** of [han2009theoretical], second order. Let $a = x_0 < x_1 < \dots < x_N = b$
+be a partition, let $V \in C[a, b]$ be $C^2$ on each closed subinterval, and let $W = V'$ on
+each open subinterval. If $V$ has a second-order weak derivative on
+$\Omega = (a, b) \subseteq \mathbb{R}^1$, then the one-sided derivatives of $V$ agree at every
+interior node:
+$$V'(x_i^-) = V'(x_i^+).$$
+
+The one-sided derivatives are `derivWithin` of $V$ on the two closed subintervals that meet at
+the node. An interior node is the common endpoint of two consecutive subintervals `i` and `j`,
+with `i.succ = j.castSucc`. -/
 theorem example_7_1_8_second_order (hx : StrictMono x)
     (hΩ : (Ω₁ : Set E1) = {y : E1 | y 0 ∈ Ioo (x 0) (x (Fin.last N))})
     (hV : ContinuousOn V (Icc (x 0) (x (Fin.last N))))
@@ -1009,25 +1153,31 @@ section Triangulated
 
 local notation "𝔼₂" => EuclideanSpace ℝ (Fin 2)
 
-/-- **Example 7.1.9**, on a triangulated polygon: let `𝒯 : Triangulation Ω` partition the plane
-domain `Ω ⊆ ℝ²` into triangles (the book's `closure Ω = ⋃ₙ closure Ω_n`; a partition into
-quadrilaterals refines to one), let `k ≥ 0`, and let `v ∈ C^k(Ω)` with `v|_{Ω_n} ∈ C^{k+1}(Ω̄_n)`
-for every element — read as: on each open element `K_T`, `v` agrees with a `C^{k+1}` function
-`g T` of the plane. Then the weak partial derivatives of `v` of order `k + 1` exist on `Ω`
-(`definition_7_1_3 (k + 1)`, all the multi-indices of length `k + 1` at once), and the `α`-th
-weak derivative is `∂^α v` computed on the elements, for `x ∈ ⋃ₙ Ω_n`, and arbitrary otherwise:
-every `w` agreeing with `iteratedFDeriv ℝ (k + 1) v` on the open elements is a weak derivative
-of order `k + 1`.
+/-- **Example 7.1.9** of [han2009theoretical], on a triangulated polygon. Let
+$\Omega \subseteq \mathbb{R}^2$ be open with a triangulation $\mathcal{T}$, and let $k \ge 0$.
+Let $v \in C^k(\Omega)$, and for each triangle $K$ of $\mathcal{T}$ let $v$ agree on the open
+triangle $K$ with a function $g_K \in C^{k+1}(\mathbb{R}^2)$. Let $w$ agree with the classical
+derivative $\partial^{k+1} v$ on every open triangle. Then $w$ is the weak derivative of order
+$k + 1$ of $v$ on $\Omega$, for all multi-indices of length $k + 1$ at once.
 
-The book's hypothesis `v ∈ C^k(Ω̄)` is only used on `Ω` (the weak derivatives on `Ω` do not see the
-boundary), so `ContDiffOn ℝ k v Ω` is assumed; at `k = 0` it is the continuity of `v` on `Ω`. The
-proof is not through Green's formula, and no boundary measure enters: for `k = 0` it is the
-backbone's `Triangulation.hasWeakFDerivOn_of_piecewise` — Fubini and the fundamental theorem of
-calculus on almost every line, the skeleton of the triangulation being a finite union of segments —
-and for general `k` the same theorem is applied to the classical derivatives of order `k` of `v`,
-which are continuous on `Ω` and piecewise `C¹`, and composed with them through
-`HasWeakIteratedLineDerivOn.cons`. The version with elementwise `W^{k+1,p}` regularity in place
-of `C^{k+1}` is `example_7_2_7`. -/
+**Generalization.** The source assumes $v \in C^k(\overline\Omega)$. Only $v \in C^k(\Omega)$ is
+used, because the weak derivatives on $\Omega$ do not see the boundary. At $k = 0$ this is the
+continuity of $v$ on $\Omega$.
+
+**Reading.** The source partitions $\overline\Omega$ into subdomains,
+$\overline\Omega = \bigcup_n \overline\Omega_n$, with
+$v|_{\Omega_n} \in C^{k+1}(\overline\Omega_n)$. Here the subdomains are the triangles of a
+triangulation, since a partition into quadrilaterals refines to one, and the condition on
+$\Omega_n$ means agreement on the open triangle with a $C^{k+1}$ function on the plane.
+
+The values of $w$ off the open triangles are arbitrary, since the edges form a null set. The
+proof does not use Green's formula, and no boundary measure enters. For $k = 0$ it is
+`Triangulation.hasWeakFDerivOn_of_piecewise`: Fubini's theorem and the fundamental theorem of
+calculus on almost every line, because the edges of the triangulation form a finite union of
+segments. For general $k$ the same theorem is applied to the classical derivatives of order $k$
+of $v$, which are continuous on $\Omega$ and piecewise $C^1$, and composed with them through
+`HasWeakIteratedLineDerivOn.cons`. The version with elementwise $W^{k+1,p}$ regularity in place
+of $C^{k+1}$ is `AtkinsonHan.Chapter07.example_7_2_7`. -/
 theorem example_7_1_9 {Ω : Opens 𝔼₂} (𝒯 : Triangulation Ω) {k : ℕ} {v : 𝔼₂ → ℝ}
     (hv : ContDiffOn ℝ k v Ω) {g : 𝒯.elems → 𝔼₂ → ℝ} (hg : ∀ T, ContDiff ℝ (k + 1) (g T))
     (hvg : ∀ T, ∀ x ∈ 𝒯.K T, v x = g T x) {w : 𝔼₂ → 𝔼₂ [×(k + 1)]→L[ℝ] ℝ}

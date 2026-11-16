@@ -9,43 +9,89 @@ import Numlib.Variational.Forms
 import Numlib.Variational.LaxMilgram
 
 /-!
-# Atkinson–Han §8.2: general existence and uniqueness for operator equations
+# Atkinson and Han, Section 8.2: Existence and uniqueness for operator equations
 
-Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework*, 3rd edition, Springer, 2009, §8.2.
+This module formalizes Section 8.2 of [han2009theoretical], on the solvability of a linear operator
+equation $Lu = f$ with $L : D(L) \subseteq V \to W$. If $L$ is closed (Definition 8.2.2) and
+satisfies the stability estimate
+$$\|Lv\| \ge c \|v\| \quad \text{for all } v \in D(L) \qquad (8.2.2)$$
+with $c > 0$, then the range $R(L)$ is closed. In Hilbert spaces, $Lu = f$ is then uniquely solvable
+for every $f$ as soon as $R(L)^\perp = \{0\}$ (Theorems 8.2.1 and 8.2.4). The module also proves the
+closed range theorem of Banach (Theorem 8.2.7) for densely defined closed operators between Banach
+spaces, the uniqueness criteria of Theorem 8.2.8 for nonlinear equations, the bijectivity of a
+strongly monotone operator $L : V \to V'$ (Example 8.2.5), and two examples on a bounded open set
+$\Omega \subseteq \mathbb{R}^{d+1}$: the Laplacian $-\Delta$ on $L^2(\Omega)$ as a closed operator
+that is not continuous (Example 8.2.3), and the unique weak solution of the Dirichlet problem
+$-\Delta u = f$ in $\Omega$, $u = 0$ on $\partial\Omega$ (Example 8.2.6).
 
-The section proves that a linear operator `L : D(L) ⊂ V → W` which is closed (Definition 8.2.2)
-and satisfies the a priori stability estimate (8.2.2) `‖L v‖ ≥ c ‖v‖` has closed range, so that
-`L u = f` is uniquely solvable as soon as `R(L)^⊥ = {0}` (Theorems 8.2.1 and 8.2.4).  Partial
-operators are `LinearPMap` (`V →ₗ.[ℝ] W`), whose `domain` is the book's `D(L)`; the book's
-closedness is Mathlib's `LinearPMap.IsClosed` (`isClosed_iff_seq` records the equivalence with the
-book's sequential phrasing) and the stability estimate is used unbundled, exactly as the backbone
-states it.
+The closed range of $L$ comes from `Numlib.Variational.LaxMilgram`, the closed range theorem from
+`Numlib.Analysis.Normed.Operator.Unbounded.ClosedRange` with the Banach adjoint of
+`Numlib.Analysis.Normed.Operator.Unbounded.Adjoint`, and the examples from the Dirichlet Laplacian
+of `Numlib.Analysis.PDE.DirichletLaplacian` and the Dirichlet eigenfunctions of
+`Numlib.Analysis.PDE.Elliptic.Spectral`.
 
-Theorem 8.2.7, Banach's closed range theorem, is `theorem_8_2_7` in the book's generality —
-densely defined closed operators between Banach spaces, with the dual operator
-`LinearPMap.strongDualAdjoint` of `Numlib/Analysis/Normed/Operator/Unbounded/Adjoint.lean` and
-the theorem itself from `Unbounded/ClosedRange.lean`; its Hilbert-space bounded case, which was
-all that could be stated before the Banach adjoint existed, is kept as `theorem_8_2_7_hilbert`.
+## Main definitions
 
-The two examples that name a domain are here as well.  Example 8.2.3, the Laplacian `−Δ` on
-`L²(Ω)` as a closed unbounded operator, is `example_8_2_3` on the backbone's Dirichlet Laplacian
-`dirichletLaplacian Ω` (`Numlib/Analysis/PDE/DirichletLaplacian.lean`), its non-continuity
-witnessed by the Dirichlet eigenfunctions of `Numlib/Analysis/PDE/Elliptic/Spectral.lean`.
-Example 8.2.6, the model Dirichlet problem read through Example 8.2.5, is `example_8_2_6` on the
-operator `modelOperator Ω`, the Dirichlet form `∫_Ω ∇u · ∇v` restricted to
-`V = H¹₀(Ω) = SobolevEuclideanZero (d + 1) 1 2 Ω` as a map into `V' = H^{-1}(Ω)`; the seminorm
-`|·|_{H¹}` the book takes as the norm of `V` is `SobolevMultiIndex.gradNorm`, a norm on `V`
-equivalent to the `H¹` norm by Poincaré's inequality (`Numlib/Analysis/Sobolev/Poincare.lean`).
-Both examples are set on bounded open sets `Ω ⊆ ℝ^{d+1}`; the book's Lipschitz boundary is not
-needed.  The AH surface's own `H¹₀(Ω)` and `H^{-1}(Ω)` (`AtkinsonHan.Chapter07.definition_7_2_9`,
-`definition_7_2_12_hMinusOne`) are the same spaces in the tensor formulation of `W^{1,2}(Ω)`,
-whose norm is equivalent but not equal; the examples are stated on the multi-index formulation,
-where the backbone's Dirichlet form and Poincaré inequality live.
+* Definition 8.2.2, `AtkinsonHan.Chapter08.isClosed_iff_seq`: $L$ is closed if $v_n \in D(L)$,
+  $v_n \to v$ and $L v_n \to w$ imply $v \in D(L)$ and $Lv = w$.
+* Example 8.2.6, `AtkinsonHan.Chapter08.modelOperator`: the operator
+  $L : H_0^1(\Omega) \to H^{-1}(\Omega)$ with $\langle Lu, v \rangle = \int_\Omega \nabla u \cdot
+  \nabla v \, dx$.
 
-Exercise 8.2.1 closes the file with the finite-dimensional instance the book asks for: on
-`ℝ^d = EuclideanSpace ℝ (Fin d)` every range is closed, so Theorem 8.2.1 alone turns uniqueness of
-a solution of `A x = b` into existence for every `b`.
+## Main results
+
+* Theorem 8.2.1, `AtkinsonHan.Chapter08.theorem_8_2_1`: for $L$ into a Hilbert space $W$, $R(L) = W$
+  if and only if $R(L)$ is closed and $R(L)^\perp = \{0\}$.
+* Example 8.2.3, `AtkinsonHan.Chapter08.example_8_2_3`: the Dirichlet Laplacian $-\Delta$ on
+  $L^2(\Omega)$ is closed and not continuous.
+* Theorem 8.2.4, `AtkinsonHan.Chapter08.theorem_8_2_4` and
+  `AtkinsonHan.Chapter08.theorem_8_2_4_continuous`: a closed operator between Hilbert spaces with
+  (8.2.2) and $R(L)^\perp = \{0\}$ is a bijection of $D(L)$ onto $W$.
+* Example 8.2.5, `AtkinsonHan.Chapter08.example_8_2_5`: a strongly monotone
+  $L \in \mathcal{L}(V, V')$ satisfies (8.2.2) and is a bijection of $V$ onto $V'$.
+* Example 8.2.6, `AtkinsonHan.Chapter08.example_8_2_6`: the weak form of $-\Delta u = f$, $u = 0$ on
+  $\partial\Omega$, has exactly one solution $u \in H_0^1(\Omega)$ for every $f \in H^{-1}(\Omega)$.
+* Theorem 8.2.7, `AtkinsonHan.Chapter08.theorem_8_2_7` and
+  `AtkinsonHan.Chapter08.theorem_8_2_7_hilbert`: the closed range theorem for a densely defined
+  closed operator between Banach spaces, and its case of a bounded operator between Hilbert spaces.
+* Theorem 8.2.8(a), `AtkinsonHan.Chapter08.theorem_8_2_8a` and
+  `AtkinsonHan.Chapter08.theorem_8_2_8a_linear`: $\|Tu - Tv\| \ge c \|u - v\|$ with $c > 0$ gives
+  uniqueness of a solution of $Tu = w$; for linear $T$ this is (8.2.2).
+* Theorem 8.2.8(b), `AtkinsonHan.Chapter08.theorem_8_2_8b`: $\|(Tu - u) - (Tv - v)\| < \|u - v\|$
+  for $u \neq v$ gives uniqueness of a solution of $Tu = w$.
+* Exercise 8.2.1, `AtkinsonHan.Chapter08.exercise_8_2_1` and
+  `AtkinsonHan.Chapter08.exercise_8_2_1_stability`: a linear system $Ax = b$ on $\mathbb{R}^d$ has a
+  solution for every $b$ if and only if its solution is unique, and this holds under a stability
+  estimate.
+
+## Implementation notes
+
+* An operator $L : D(L) \subseteq V \to W$ is a `LinearPMap` `V →ₗ.[ℝ] W`, whose `domain` is $D(L)$.
+  Closedness is Mathlib's `LinearPMap.IsClosed`, the closedness of the graph. The stability estimate
+  (8.2.2) is used in the unbundled form `∀ v, c * ‖v‖ ≤ ‖L v‖`, as in the backbone.
+* The dual operator $L^*$ of Theorem 8.2.7 is the Banach adjoint `LinearPMap.strongDualAdjoint`.
+* The examples use $H^1(\Omega)$ and $H_0^1(\Omega)$ in the multi-index formulation of Definition
+  7.2.2, `SobolevEuclidean (d + 1) 1 2 Ω` and `SobolevEuclideanZero (d + 1) 1 2 Ω`, and
+  $H^{-1}(\Omega)$ is the dual `StrongDual`. The spaces `AtkinsonHan.Chapter07.definition_7_2_9` and
+  `AtkinsonHan.Chapter07.definition_7_2_12_hMinusOne` of Section 7.2 are the same closure and the
+  same dual in the tensor formulation of $W^{1,2}(\Omega)$, whose norm is equivalent but not equal.
+  The examples use the multi-index formulation because the Dirichlet form and Poincaré's inequality
+  of the backbone are stated there.
+* The seminorm $|v|_{H^1(\Omega)} = \|\nabla v\|_{L^2(\Omega)}$ is `SobolevMultiIndex.gradNorm`. On
+  $H_0^1(\Omega)$ it is a norm equivalent to the norm of $H^1(\Omega)$, by Poincaré's inequality
+  (`Numlib.Analysis.Sobolev.Poincare`).
+
+## Deviations from the source
+
+* **Examples 8.2.3 and 8.2.6** (generalization). The source assumes a Lipschitz boundary. The
+  statements hold on every bounded open set $\Omega \subseteq \mathbb{R}^{d+1}$, which for Example
+  8.2.3 must be nonempty. See `AtkinsonHan.Chapter08.example_8_2_3` and
+  `AtkinsonHan.Chapter08.example_8_2_6`.
+* **Example 8.2.6** (reading). The source takes the seminorm $|v|_{H^1}$ as the norm of
+  $V = H_0^1(\Omega)$ and states $\|L\| = 1$ and $\langle Lv, v \rangle = \|v\|_V^2$. The type of
+  $V$ carries the norm of $H^1(\Omega)$, so these facts are stated through the seminorm, and the
+  strong monotonicity in the norm of $H^1(\Omega)$ carries the constant of Poincaré's inequality.
+  See `AtkinsonHan.Chapter08.example_8_2_6`.
 -/
 
 open Filter MeasureTheory Metric Set TopologicalSpace Topology
@@ -53,8 +99,8 @@ open scoped ContDiff Distributions ENNReal InnerProductSpace
 
 namespace AtkinsonHan.Chapter08
 
-/-- The uniqueness step of §8.2: the stability estimate applied to a difference of two solutions
-leaves `c ‖v‖ ≤ 0`, and a positive `c` then forces `v = 0`. -/
+/-- A stability estimate applied to a difference of two solutions gives $c \|v\| \le 0$, and with
+$c > 0$ this forces $v = 0$. -/
 private theorem eq_zero_of_mul_norm_nonpos {V : Type*} [NormedAddCommGroup V] {c : ℝ} (hc : 0 < c)
     {v : V} (h : c * ‖v‖ ≤ 0) : v = 0 :=
   norm_le_zero_iff.mp (by nlinarith [norm_nonneg v])
@@ -64,19 +110,22 @@ section Normed
 variable {V W : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V]
   [NormedAddCommGroup W] [NormedSpace ℝ W]
 
-/-- Definition 8.2.2 in the book's sequential form: `T` is closed iff whenever `v_n ∈ D(T)`,
-`v_n → v` and `T v_n → w`, then `v ∈ D(T)` and `T v = w`.  Mathlib's `LinearPMap.IsClosed` is
-closedness of the graph, which on a metric space is the same thing; the backbone's
-`LinearPMap.isClosed_iff_seq` (`Numlib/Analysis/Normed/Operator/Unbounded/Basic.lean`) is the
-statement over any nontrivially normed field. -/
+/-- **Definition 8.2.2** of [han2009theoretical], in the sequential form. Let $V$ and $W$ be real
+normed spaces and let $T : D(T) \subseteq V \to W$ be linear. Then $T$ is closed if and only if
+for all sequences $v_n \in D(T)$ and all $v \in V$, $w \in W$:
+$$v_n \to v \text{ and } T v_n \to w \implies v \in D(T) \text{ and } T v = w.$$
+
+Mathlib's `LinearPMap.IsClosed` is the closedness of the graph, which in a metric space is the
+same property. The backbone statement `LinearPMap.isClosed_iff_seq` holds over any nontrivially
+normed field. -/
 theorem isClosed_iff_seq (T : V →ₗ.[ℝ] W) :
     T.IsClosed ↔ ∀ (v : ℕ → T.domain) (x : V) (w : W),
       Tendsto (fun n => (v n : V)) atTop (𝓝 x) → Tendsto (fun n => T (v n)) atTop (𝓝 w) →
         ∃ hx : x ∈ T.domain, T ⟨x, hx⟩ = w :=
   LinearPMap.isClosed_iff_seq T
 
-/-- The remark after Definition 8.2.2: a continuous linear operator defined on all of `V` is
-closed. -/
+/-- The remark after Definition 8.2.2: a bounded linear operator $f : V \to W$ defined on all of $V$
+is closed. -/
 theorem isClosed_toPMap_top (f : V →L[ℝ] W) : ((f : V →ₗ[ℝ] W).toPMap ⊤).IsClosed := by
   rw [isClosed_iff_seq]
   intro v x w hv hw
@@ -84,9 +133,12 @@ theorem isClosed_toPMap_top (f : V →L[ℝ] W) : ((f : V →ₗ[ℝ] W).toPMap 
   have hfx : Tendsto (fun n => f (v n : V)) atTop (𝓝 (f x)) := (f.continuous.tendsto x).comp hv
   exact tendsto_nhds_unique hfx hw
 
-/-- The stability estimate (8.2.2) `c ‖v‖ ≤ ‖L v‖` is Mathlib's `AntilipschitzWith` with constant
-`c⁻¹`; the equivalence is recorded so that Mathlib's antilipschitz API is available, while the
-backbone's §8.2 theorems take the unbundled form directly. -/
+/-- For a bounded linear operator $L : V \to W$ and $c > 0$, the stability estimate (8.2.2),
+$c \|v\| \le \|Lv\|$ for all $v \in V$, holds if and only if $L$ is antilipschitz with the
+constant $c^{-1}$.
+
+The equivalence makes Mathlib's `AntilipschitzWith` available. The theorems of this section use
+the unbundled estimate. -/
 theorem stabilityEstimate_iff_antilipschitz (L : V →L[ℝ] W) {c : ℝ} (hc : 0 < c) :
     (∀ v, c * ‖v‖ ≤ ‖L v‖) ↔ AntilipschitzWith (Real.toNNReal c⁻¹) L := by
   have hcoe : ((Real.toNNReal c⁻¹ : NNReal) : ℝ) = c⁻¹ := Real.coe_toNNReal _ (by positivity)
@@ -102,7 +154,11 @@ theorem stabilityEstimate_iff_antilipschitz (L : V →L[ℝ] W) {c : ℝ} (hc : 
     rw [inv_mul_eq_div, le_div_iff₀ hc] at hd
     linarith
 
-/-- The linear case of Theorem 8.2.8 (a) *is* the stability estimate (8.2.2). -/
+/-- **Theorem 8.2.8(a)** of [han2009theoretical], the linear case. Let $V$ and $W$ be real normed
+spaces, let $L : V \to W$ be bounded and linear, and let $c$ be real. Then
+$$c \|u - v\| \le \|Lu - Lv\| \text{ for all } u, v \in V \iff c \|v\| \le \|Lv\| \text{ for all
+  } v \in V.$$
+So for a linear operator the hypothesis of Theorem 8.2.8(a) is the stability estimate (8.2.2). -/
 theorem theorem_8_2_8a_linear (L : V →L[ℝ] W) {c : ℝ} :
     (∀ u v : V, c * ‖u - v‖ ≤ ‖L u - L v‖) ↔ ∀ v, c * ‖v‖ ≤ ‖L v‖ := by
   constructor
@@ -118,8 +174,11 @@ section Metric
 
 variable {V W : Type*} [NormedAddCommGroup V] [NormedAddCommGroup W]
 
-/-- Theorem 8.2.8 (a): if `‖T u − T v‖ ≥ c ‖u − v‖` on `D(T)` with `c > 0`, the (possibly
-nonlinear) equation `T u = w` has at most one solution in `D(T)`. -/
+/-- **Theorem 8.2.8(a)** of [han2009theoretical]. Let $V$ and $W$ be normed groups, let
+$D \subseteq V$, let $T : V \to W$ be a map, which need not be linear, and let $c > 0$ with
+$$c \|u - v\| \le \|Tu - Tv\| \quad \text{for all } u, v \in D.$$
+If $u_1, u_2 \in D$ satisfy $T u_1 = w$ and $T u_2 = w$, then $u_1 = u_2$. So the equation
+$Tu = w$ has at most one solution in $D$. -/
 theorem theorem_8_2_8a {D : Set V} (T : V → W) {c : ℝ} (hc : 0 < c)
     (hstab : ∀ u ∈ D, ∀ v ∈ D, c * ‖u - v‖ ≤ ‖T u - T v‖) {w : W} {u₁ u₂ : V} (h₁ : u₁ ∈ D)
     (h₂ : u₂ ∈ D) (hw₁ : T u₁ = w) (hw₂ : T u₂ = w) : u₁ = u₂ := by
@@ -127,8 +186,11 @@ theorem theorem_8_2_8a {D : Set V} (T : V → W) {c : ℝ} (hc : 0 < c)
   rw [hw₁, hw₂, sub_self, norm_zero] at h
   exact sub_eq_zero.mp (eq_zero_of_mul_norm_nonpos hc h)
 
-/-- Theorem 8.2.8 (b): if `‖(T u − u) − (T v − v)‖ < ‖u − v‖` for distinct `u, v ∈ D(T)`, the
-equation `T u = w` has at most one solution in `D(T)`. -/
+/-- **Theorem 8.2.8(b)** of [han2009theoretical]. Let $V$ be a normed group, let $D \subseteq V$,
+and let $T : V \to V$ be a map, which need not be linear, with
+$$\|(Tu - u) - (Tv - v)\| < \|u - v\| \quad \text{for all } u, v \in D \text{ with } u \neq v.$$
+If $u_1, u_2 \in D$ satisfy $T u_1 = w$ and $T u_2 = w$, then $u_1 = u_2$. So the equation
+$Tu = w$ has at most one solution in $D$. -/
 theorem theorem_8_2_8b {D : Set V} (T : V → V)
     (hstab : ∀ u ∈ D, ∀ v ∈ D, u ≠ v → ‖(T u - u) - (T v - v)‖ < ‖u - v‖) {w : V} {u₁ u₂ : V}
     (h₁ : u₁ ∈ D) (h₂ : u₂ ∈ D) (hw₁ : T u₁ = w) (hw₂ : T u₂ = w) : u₁ = u₂ := by
@@ -146,10 +208,12 @@ section Hilbert
 variable {V W : Type*} [NormedAddCommGroup V] [InnerProductSpace ℝ V]
   [NormedAddCommGroup W] [InnerProductSpace ℝ W]
 
-/-- Theorem 8.2.1: for a linear operator into a Hilbert space `W`, the range is all of `W` iff it
-is closed and its orthogonal complement is trivial.  (The book separates the two directions with
-the Hahn–Banach theorem; the proof here uses orthogonal projections, and needs completeness only
-of `W`.) -/
+/-- **Theorem 8.2.1** of [han2009theoretical]. Let $V$ be a real inner product space, let $W$ be a
+real Hilbert space, and let $L : D(L) \subseteq V \to W$ be linear. Then
+$$R(L) = W \iff R(L) \text{ is closed and } R(L)^\perp = \{0\}.$$
+
+The source separates the two directions with the Hahn–Banach theorem. The proof here uses
+orthogonal projections, and it needs the completeness of $W$ only. -/
 theorem theorem_8_2_1 [CompleteSpace W] (L : V →ₗ.[ℝ] W) :
     LinearMap.range L.toFun = ⊤ ↔
       IsClosed (LinearMap.range L.toFun : Set W) ∧ (LinearMap.range L.toFun)ᗮ = ⊥ := by
@@ -161,10 +225,14 @@ theorem theorem_8_2_1 [CompleteSpace W] (L : V →ₗ.[ℝ] W) :
     rw [← hc.submodule_topologicalClosure_eq]
     exact Submodule.topologicalClosure_eq_top_iff.mpr ho
 
-/-- Theorem 8.2.4: a closed operator satisfying the stability estimate (8.2.2) and with dense
-range is uniquely solvable.  The closed-range half is the backbone's
-`LinearPMap.isClosed_range_of_isClosed_of_le_norm`; Theorem 8.2.1 turns it into surjectivity, and
-(8.2.2) gives uniqueness. -/
+/-- **Theorem 8.2.4** of [han2009theoretical]. Let $V$ and $W$ be real Hilbert spaces and let
+$L : D(L) \subseteq V \to W$ be a closed linear operator. Assume the stability estimate (8.2.2),
+$c \|v\| \le \|Lv\|$ for all $v \in D(L)$ with a constant $c > 0$, and $R(L)^\perp = \{0\}$,
+that is, $R(L)$ is dense in $W$. Then for every $f \in W$ there is exactly one $u \in D(L)$ with
+$Lu = f$.
+
+The closed range is the backbone theorem `LinearPMap.isClosed_range_of_isClosed_of_le_norm`.
+Theorem 8.2.1 turns it into surjectivity, and (8.2.2) gives uniqueness. -/
 theorem theorem_8_2_4 [CompleteSpace V] [CompleteSpace W] (L : V →ₗ.[ℝ] W) (hL : L.IsClosed) {c : ℝ}
     (hc : 0 < c) (hstab : ∀ v : L.domain, c * ‖(v : V)‖ ≤ ‖L v‖)
     (horth : (LinearMap.range L.toFun)ᗮ = ⊥) (f : W) : ∃! u : L.domain, L u = f := by
@@ -180,14 +248,20 @@ theorem theorem_8_2_4 [CompleteSpace V] [CompleteSpace W] (L : V →ₗ.[ℝ] W)
   have hz : ((y : V) - (u : V)) = 0 := by simpa using eq_zero_of_mul_norm_nonpos hc h
   exact Subtype.ext (sub_eq_zero.mp hz)
 
-/-- The remark after Theorem 8.2.4: for a *continuous* operator, closedness is automatic, and the
-stability estimate together with dense range gives bijectivity. -/
+/-- **Theorem 8.2.4** of [han2009theoretical], the remark for continuous operators. Let $V$ and $W$
+be real Hilbert spaces and let $L : V \to W$ be bounded and linear. If $c \|v\| \le \|Lv\|$ for
+all $v \in V$ with a constant $c > 0$, and $R(L)^\perp = \{0\}$, then $L$ is a bijection of $V$
+onto $W$.
+
+A bounded operator defined on all of $V$ is closed, so Theorem 8.2.4 applies. -/
 theorem theorem_8_2_4_continuous [CompleteSpace V] [CompleteSpace W] (L : V →L[ℝ] W) {c : ℝ}
     (hc : 0 < c) (hstab : ∀ v, c * ‖v‖ ≤ ‖L v‖)
     (horth : (LinearMap.range (L : V →ₗ[ℝ] W))ᗮ = ⊥) : Function.Bijective L :=
   ContinuousLinearMap.bijective_of_le_norm_of_orthogonal_range_eq_bot L hc hstab horth
 
-/-- The quantitative form of (8.2.2): the solution of `L u = f` obeys `‖u‖ ≤ ‖f‖ / c`. -/
+/-- Let $V$ and $W$ be real Hilbert spaces, let $L : V \to W$ be bounded and linear, and let
+$c \|v\| \le \|Lv\|$ for all $v$ with a constant $c > 0$. If $Lv = w$, then
+$\|v\| \le \|w\| / c$. -/
 theorem norm_le_of_stabilityEstimate [CompleteSpace V] [CompleteSpace W] (L : V →L[ℝ] W) {c : ℝ}
     (hc : 0 < c) (hstab : ∀ v, c * ‖v‖ ≤ ‖L v‖) {v : V} {w : W} (hv : L v = w) :
     ‖v‖ ≤ ‖w‖ / c :=
@@ -199,13 +273,18 @@ section StronglyMonotone
 
 variable {V : Type*} [NormedAddCommGroup V] [InnerProductSpace ℝ V] [CompleteSpace V]
 
-/-- Example 8.2.5: a strongly monotone `L ∈ L(V, V')`, that is one with `⟨L v, v⟩ ≥ c ‖v‖²`,
-satisfies the stability estimate (8.2.2) with the same constant `c`, has `R(L)^⊥ = {0}` in the
-duality sense, and is therefore a bijection of `V` onto `V'`.
+/-- **Example 8.2.5** of [han2009theoretical]. Let $V$ be a real Hilbert space, let $L : V \to V'$
+be bounded and linear, and let $c > 0$ with
+$$\langle Lv, v \rangle \ge c \|v\|^2 \quad \text{for all } v \in V,$$
+that is, $L$ is strongly monotone. Then $L$ satisfies the stability estimate (8.2.2) with the
+same constant, $c \|v\| \le \|Lv\|$ for all $v$; if $\langle Lw, v \rangle = 0$ for all
+$w \in V$, then $v = 0$, so $R(L)^\perp = \{0\}$ in the sense of duality; and $L$ is a bijection
+of $V$ onto $V'$.
 
-Over `ℝ` such an `L` *is* a bounded sesquilinear form, and the hypothesis is the backbone's
-`SesqForm.IsCoerciveWith`, so the three conclusions are `IsCoerciveWith.norm_le_norm_apply`,
-a one-line computation, and `SesqForm.laxMilgram`. -/
+The pairing $\langle Lv, v \rangle$ is `L v v`. Over $\mathbb{R}$ such an operator is a bounded
+bilinear form, and the hypothesis is the backbone predicate `SesqForm.IsCoerciveWith`. The three
+conclusions come from `SesqForm.IsCoerciveWith.norm_le_norm_apply`, a direct computation, and
+`SesqForm.laxMilgram`. -/
 theorem example_8_2_5 (L : V →L[ℝ] StrongDual ℝ V) {c : ℝ} (hc : 0 < c)
     (hmono : ∀ v, c * ‖v‖ ^ 2 ≤ L v v) :
     (∀ v, c * ‖v‖ ≤ ‖L v‖) ∧ (∀ v, (∀ w, L w v = 0) → v = 0) ∧ Function.Bijective L := by
@@ -232,10 +311,15 @@ section ClosedRange
 variable {V W : Type*} [NormedAddCommGroup V] [InnerProductSpace ℝ V] [CompleteSpace V]
   [NormedAddCommGroup W] [InnerProductSpace ℝ W] [CompleteSpace W]
 
-/-- The Hilbert-space, bounded case of Theorem 8.2.7 (the closed range theorem): if `R(T)` is
-closed then `R(T) = N(T*)^⊥`, so `T u = f` is solvable exactly when `f` is orthogonal to the
-kernel of the adjoint.  The book's statement, for densely defined closed operators between
-Banach spaces, is `theorem_8_2_7`. -/
+/-- **Theorem 8.2.7** of [han2009theoretical], bounded operators between Hilbert spaces. Let $V$ and
+$W$ be real Hilbert spaces and let $T : V \to W$ be bounded and linear with closed range $R(T)$.
+Then for every $f \in W$,
+$$f \in R(T) \iff (w, f) = 0 \text{ for every } w \in N(T^*).$$
+So $R(T) = N(T^*)^\perp$, and $Tu = f$ is solvable exactly when $f$ is orthogonal to the kernel
+of the adjoint $T^*$.
+
+The general statement, for densely defined closed operators between Banach spaces, is
+`AtkinsonHan.Chapter08.theorem_8_2_7`. -/
 theorem theorem_8_2_7_hilbert (T : V →L[ℝ] W)
     (hclosed : IsClosed (LinearMap.range (T : V →ₗ[ℝ] W) : Set W)) (f : W) :
     f ∈ LinearMap.range (T : V →ₗ[ℝ] W) ↔
@@ -254,19 +338,24 @@ section ClosedRangeBanach
 variable {V W : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V] [CompleteSpace V]
   [NormedAddCommGroup W] [NormedSpace ℝ W] [CompleteSpace W]
 
-/-- **Theorem 8.2.7** (Banach's closed range theorem), in the book's generality: for Banach
-spaces `V`, `W` and a densely defined closed linear operator `L : D(L) ⊂ V → W` with dual
-operator `L* : D(L*) ⊂ W' → V'`, `⟨L* w*, v⟩ = ⟨w*, L v⟩`, the following are equivalent:
-(a) `R(L)` is closed in `W`; (b) `R(L) = N(L*)^⊥ = {w ∈ W | ⟨w*, w⟩ = 0 ∀ w* ∈ N(L*)}`;
-(c) `R(L*)` is closed in `V'`; (d) `R(L*) = N(L)^⊥ = {v* ∈ V' | ⟨v*, v⟩ = 0 ∀ v ∈ N(L)}`.
+/-- **Theorem 8.2.7** of [han2009theoretical] (the closed range theorem of Banach). Let $V$ and $W$
+be real Banach spaces and let $L : D(L) \subseteq V \to W$ be a densely defined closed linear
+operator, with the dual operator $L^* : D(L^*) \subseteq W' \to V'$, $\langle L^* w^*, v
+\rangle = \langle w^*, Lv \rangle$. Then the following statements are equivalent:
 
-The dual operator is the backbone's Banach adjoint `LinearPMap.strongDualAdjoint`
-(`Numlib/Analysis/Normed/Operator/Unbounded/Adjoint.lean`), and the theorem is
-`LinearPMap.IsClosed.isClosed_range_tfae` of `Unbounded/ClosedRange.lean`, with the two
-annihilators written out as the sets the book displays.  The abstract Fredholm alternative
-the book draws from it, (a) ⇒ (b), is
-`LinearPMap.range_eq_strongDualCoannihilator_ker_strongDualAdjoint_of_isClosed_range`.
-The Hilbert-space bounded case is `theorem_8_2_7_hilbert`. -/
+* (a) $R(L)$ is closed in $W$;
+* (b) $R(L) = N(L^*)^\perp = \{w \in W : \langle w^*, w \rangle = 0 \text{ for all } w^* \in
+  N(L^*)\}$;
+* (c) $R(L^*)$ is closed in $V'$;
+* (d) $R(L^*) = N(L)^\perp = \{v^* \in V' : \langle v^*, v \rangle = 0 \text{ for all } v \in
+  N(L)\}$.
+
+The dual operator is the Banach adjoint `LinearPMap.strongDualAdjoint` of the backbone, and the
+theorem is `LinearPMap.IsClosed.isClosed_range_tfae`, with the two annihilators written out as
+the sets of the source. The abstract Fredholm alternative that the source draws from it, (a)
+implies (b), is
+`LinearPMap.range_eq_strongDualCoannihilator_ker_strongDualAdjoint_of_isClosed_range`. The case
+of a bounded operator between Hilbert spaces is `AtkinsonHan.Chapter08.theorem_8_2_7_hilbert`. -/
 theorem theorem_8_2_7 (L : V →ₗ.[ℝ] W) (hd : Dense (L.domain : Set V)) (hc : L.IsClosed) :
     [IsClosed (LinearMap.range L.toFun : Set W),
       (LinearMap.range L.toFun : Set W) = {w | ∀ w' ∈ L.strongDualAdjoint.ker, w' w = 0},
@@ -302,10 +391,16 @@ section Laplacian
 
 variable {d : ℕ} (Ω : Opens (EuclideanSpace ℝ (Fin (d + 1))))
 
-/-- The Dirichlet eigenfunctions `e_n` of `−Δ` on a bounded nonempty `Ω` (Brezis's Theorem 9.31,
-`Elliptic.dirichletEigenbasis`) lie in the domain of the Dirichlet Laplacian, with
-`(−Δ) e_n = λ_n e_n`: the weak eigenvalue equation `∫ ∇e_n · ∇φ = λ_n ∫ e_n φ` on `H¹₀(Ω)` is the
-defining identity of the domain with the datum `λ_n e_n`. -/
+/-- Let $\Omega \subseteq \mathbb{R}^{d+1}$ be a bounded nonempty open set, and let $e_n$ be the
+Dirichlet eigenfunctions of $-\Delta$ on $\Omega$, with the eigenvalues $\lambda_n$. Then each
+$e_n$ lies in the domain of the Dirichlet Laplacian, and
+$$(-\Delta) e_n = \lambda_n e_n.$$
+
+This supports Example 8.2.3. The functions $e_n$ form the Hilbert basis of $L^2(\Omega)$ of
+Theorem 9.31 of [brezis2011functional], `Elliptic.dirichletEigenbasis`, and $\lambda_n$ is
+`Elliptic.dirichletEigenvalue`. The weak eigenvalue equation $\int_\Omega \nabla e_n \cdot
+\nabla \varphi \, dx = \lambda_n \int_\Omega e_n \varphi \, dx$ for $\varphi \in H_0^1(\Omega)$
+is the defining identity of the domain with the datum $\lambda_n e_n$. -/
 theorem dirichletEigenbasis_mem_dirichletLaplacian_domain
     (hΩ : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
     (hne : (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))).Nonempty) (n : ℕ) :
@@ -320,30 +415,35 @@ theorem dirichletEigenbasis_mem_dirichletLaplacian_domain
     rfl
   exact ⟨⟨u, hu, hfn, _, key⟩, dirichletLaplacian_apply_unique _ hu hfn key⟩
 
-/-- **Example 8.2.3**: the differential operator `L v = −Δv` on `L²(Ω)`, for a bounded nonempty
-open `Ω ⊆ ℝ^{d+1}`, is a closed operator that is not continuous — so the converse of the remark
-after Definition 8.2.2 fails.
+/-- **Example 8.2.3** of [han2009theoretical]. Let $\Omega \subseteq \mathbb{R}^{d+1}$ be a bounded
+nonempty open set, and let $L v = -\Delta v$ be the Dirichlet Laplacian on $L^2(\Omega)$, with
+the domain $D(L) = \{v \in H_0^1(\Omega) : \Delta v \in L^2(\Omega)\}$ and $\Delta v$ in the
+weak sense. Then:
 
-The operator is the backbone's Dirichlet Laplacian `dirichletLaplacian Ω`
-(`Numlib/Analysis/PDE/DirichletLaplacian.lean`), the unbounded operator on `L²(Ω)` with domain
-`{v ∈ H¹₀(Ω) : Δv ∈ L²(Ω)}` and `L v = −Δv` in the weak sense; the four clauses are:
+* $L$ is closed (Definition 8.2.2);
+* every $\varphi \in C_0^\infty(\Omega)$ lies in $D(L)$, and $L\varphi = -\Delta\varphi$ is
+  computed classically;
+* $(Lv, \varphi)_{L^2} = (v, -\Delta\varphi)_{L^2}$ for all $v \in D(L)$ and
+  $\varphi \in C_0^\infty(\Omega)$;
+* $L$ is not continuous: there is no constant $C$ with $\|Lv\|_{L^2} \le C \|v\|_{L^2}$ for all
+  $v \in D(L)$.
 
-* `L` is closed (Definition 8.2.2; `dirichletLaplacian_isClosed`, and `isClosed_iff_seq` turns it
-  into the book's sequential phrasing);
-* every `φ ∈ C₀^∞(Ω)` lies in `D(L)` with `L φ = −Δφ` computed classically
-  (`testFunction_mem_dirichletLaplacianDomain`);
-* the identity `∫_Ω (−Δv) φ = −∫_Ω v Δφ` for `v ∈ D(L)` and `φ ∈ C₀^∞(Ω)` that the book's proof
-  of closedness passes to the limit in — here `⟪L v, φ⟫ = ⟪v, −Δφ⟫`, the symmetry of `L`
-  (`dirichletLaplacian_isFormalAdjoint`);
-* `L` is not continuous: no `C` has `‖L v‖ ≤ C ‖v‖` on `D(L)`.  The book gives no argument for
-  this clause; here the Dirichlet eigenfunctions `e_n` of Brezis's Theorem 9.31
-  (`Elliptic.dirichletEigenbasis`, unit vectors of `L²(Ω)` with `L e_n = λ_n e_n`) witness it,
-  since `λ_n → +∞` (`Elliptic.tendsto_dirichletEigenvalue_atTop`).
+**Generalization.** The source assumes a Lipschitz boundary, which no clause needs.
 
-The book's closedness argument — the limit passage in the distributional identity — is how the
-backbone proves the weak derivative closed under `L^p` limits
-(`hasWeakIteratedLineDerivOn_of_tendsto_eLpNorm`); the closedness of `dirichletLaplacian` itself
-is proved there from its maximal monotonicity, which is the same fact in Hilbert-space dress. -/
+The example shows that the converse of the remark after Definition 8.2.2 fails. The operator is
+the backbone operator `dirichletLaplacian Ω`. Its closedness is `dirichletLaplacian_isClosed`,
+and `AtkinsonHan.Chapter08.isClosed_iff_seq` turns it into the sequential form of the source.
+The second clause is `testFunction_mem_dirichletLaplacianDomain`. The third clause is the
+identity $\int_\Omega (-\Delta v) \varphi = -\int_\Omega v \Delta\varphi$ that the proof of
+closedness in the source passes to the limit in; here it is the symmetry
+`dirichletLaplacian_isFormalAdjoint`. The source gives no argument for the last clause. Here the
+Dirichlet eigenfunctions $e_n$ of Theorem 9.31 of [brezis2011functional] witness it: they are
+unit vectors of $L^2(\Omega)$ with $L e_n = \lambda_n e_n$, and $\lambda_n \to +\infty$
+(`Elliptic.tendsto_dirichletEigenvalue_atTop`). The argument of the source for closedness, the
+limit in the distributional identity, is how the backbone proves that weak derivatives are
+closed under limits in $L^p$ (`hasWeakIteratedLineDerivOn_of_tendsto_eLpNorm`); the closedness
+of `dirichletLaplacian` itself is proved from its maximal monotonicity, which is the same fact
+in a Hilbert space. -/
 theorem example_8_2_3 (hΩ : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
     (hne : (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))).Nonempty) :
     (dirichletLaplacian Ω).IsClosed ∧
@@ -381,50 +481,62 @@ section Model
 
 variable {d : ℕ} (Ω : Opens (EuclideanSpace ℝ (Fin (d + 1))))
 
-/-- **The operator `L : V → V'` of Example 8.2.6**, `⟨L u, v⟩ = ∫_Ω ∇u · ∇v` for
-`u, v ∈ V = H¹₀(Ω)`: the restriction of the backbone's Dirichlet form
-(`Elliptic.dirichletForm`, `Numlib/Analysis/PDE/Elliptic/Dirichlet.lean`) to `H¹₀(Ω)`, read as a
-bounded linear map into the dual `V' = H^{-1}(Ω)`.
+/-- **Example 8.2.6** of [han2009theoretical], the operator. Let $\Omega \subseteq \mathbb{R}^{d+1}$
+be open, $V = H_0^1(\Omega)$ and $V' = H^{-1}(\Omega)$. The operator $L : V \to V'$ is defined
+by
+$$\langle Lu, v \rangle = \int_\Omega \nabla u \cdot \nabla v \, dx \quad \text{for } u, v \in
+  V.$$
 
-The spaces are the backbone's: `V` is `SobolevEuclideanZero (d + 1) 1 2 Ω`, the closure of
-`C₀^∞(Ω)` in `H¹(Ω) = SobolevEuclidean (d + 1) 1 2 Ω` in the multi-index formulation of
-Definition 7.2.2, and `V'` is its `StrongDual`.  The AH surface's own
-`AtkinsonHan.Chapter07.definition_7_2_9 1 2 Ω` (`H¹₀(Ω)`) and `definition_7_2_12_hMinusOne`
-(`H^{-1}(Ω)`) are the same closure and the same dual taken in the tensor formulation
-`Sobolev ℝ 1 2 Ω volume`, whose norm is equivalent but not equal; the Poincaré inequality and
-the Dirichlet form of the backbone are stated on the multi-index space, which is why the
-example is stated there. -/
+$L$ is the restriction of the backbone Dirichlet form `Elliptic.dirichletForm` to
+$H_0^1(\Omega)$, read as a bounded linear map into the dual. $V$ is
+`SobolevEuclideanZero (d + 1) 1 2 Ω`, the closure of $C_0^\infty(\Omega)$ in $H^1(\Omega)$ in
+the multi-index formulation of Definition 7.2.2, and $V'$ is its `StrongDual`. The spaces
+`AtkinsonHan.Chapter07.definition_7_2_9 1 2 Ω` and
+`AtkinsonHan.Chapter07.definition_7_2_12_hMinusOne` of Section 7.2 are the same closure and the
+same dual in the tensor formulation `Sobolev ℝ 1 2 Ω volume`, whose norm is equivalent but not
+equal. The example uses the multi-index formulation because the Poincaré inequality and the
+Dirichlet form of the backbone are stated there. -/
 noncomputable def modelOperator : SobolevEuclideanZero (d + 1) 1 2 Ω →L[ℝ]
     StrongDual ℝ (SobolevEuclideanZero (d + 1) 1 2 Ω) :=
   (Elliptic.dirichletForm Ω).restrict (SobolevEuclideanZero (d + 1) 1 2 Ω)
 
-/-- `⟨L u, v⟩` is the Dirichlet form `∫_Ω ∇u · ∇v`. -/
+/-- **Example 8.2.6** of [han2009theoretical]. For $u, v \in H_0^1(\Omega)$, the pairing
+$\langle Lu, v \rangle$ is the Dirichlet form $\int_\Omega \nabla u \cdot \nabla v \, dx$. -/
 theorem modelOperator_apply (u v : SobolevEuclideanZero (d + 1) 1 2 Ω) :
     modelOperator Ω u v = Elliptic.dirichletForm Ω u v :=
   rfl
 
-/-- **Example 8.2.6**: the weak formulation of the model problem `−Δu = f` in `Ω`, `u = 0` on
-`∂Ω` (8.2.3), on `V = H¹₀(Ω)` with the seminorm `‖v‖_V = |v|_{H¹(Ω)} = ‖∇v‖_{L²(Ω)}` as norm and
-`V' = H^{-1}(Ω)`, for a bounded open `Ω ⊆ B(0, R) ⊆ ℝ^{d+1}`.  The operator
-`L = modelOperator Ω`, `⟨L u, v⟩ = ∫_Ω ∇u · ∇v`, is linear and continuous with `‖L‖ = 1` and
-strongly monotone with `⟨L v, v⟩ = ‖v‖_V²`, so by Example 8.2.5 it is a bijection of `V` onto
-`V'`: for every `f ∈ H^{-1}(Ω)` there is exactly one `u ∈ H¹₀(Ω)` with
-`∫_Ω ∇u · ∇v = ⟨f, v⟩` for all `v ∈ V`, the unique weak solution of (8.2.3).
+/-- **Example 8.2.6** of [han2009theoretical]. Let $R \ge 0$ and let
+$\Omega \subseteq \mathbb{R}^{d+1}$ be an open set contained in the ball $B(0, R)$. Let
+$V = H_0^1(\Omega)$ with the seminorm $|v|_{H^1(\Omega)} = \|\nabla v\|_{L^2(\Omega)}$, let
+$V' = H^{-1}(\Omega)$, and let $L : V \to V'$ be the operator with $\langle Lu, v \rangle =
+\int_\Omega \nabla u \cdot \nabla v \, dx$. Then:
 
-The clauses, in order: the formula `⟨L u, v⟩ = ∫_Ω ∑ᵢ ∂ᵢu ∂ᵢv`; the bound
-`|⟨L u, v⟩| ≤ ‖∇u‖₂ ‖∇v‖₂`, that is `‖L‖ ≤ 1` for the norm `‖·‖_V`, and the identity
-`⟨L v, v⟩ = ‖∇v‖₂² = ‖v‖_V²`, which makes `‖L‖ = 1` exactly; the strong monotonicity
-`⟨L v, v⟩ ≥ c ‖v‖²_{H¹}` with `c = (1 + (2R)²)⁻¹`, which is Poincaré's inequality
-(`Elliptic.dirichletForm_restrict_isCoerciveWith`, from `SobolevEuclideanZero.norm_le_gradNorm`
-of `Numlib/Analysis/Sobolev/Poincare.lean`) and is what makes the seminorm a norm on `V`
-equivalent to the `H¹` norm; the bijectivity of `L` (Example 8.2.5); and the unique weak
-solution for every `f ∈ V'`.
+* $\langle Lu, v \rangle = \int_\Omega \sum_i \partial_i u \, \partial_i v \, dx$ for all
+  $u, v \in V$;
+* $|\langle Lu, v \rangle| \le |u|_{H^1} |v|_{H^1}$ for all $u, v \in V$, so $\|L\| \le 1$ for
+  the seminorm;
+* $\langle Lv, v \rangle = |v|_{H^1}^2$ for all $v \in V$, so $\|L\| = 1$ for the seminorm when
+  $V \neq \{0\}$;
+* $\langle Lv, v \rangle \ge (1 + (2R)^2)^{-1} \|v\|_{H^1(\Omega)}^2$ for all $v \in V$, so $L$
+  is strongly monotone;
+* $L$ is a bijection of $V$ onto $V'$;
+* for every $f \in H^{-1}(\Omega)$ there is exactly one $u \in H_0^1(\Omega)$ with $\int_\Omega
+  \nabla u \cdot \nabla v \, dx = \langle f, v \rangle$ for all $v \in V$.
 
-The book's "`‖L‖ = 1`" and "`⟨L v, v⟩ = ‖v‖_V²`" refer to the seminorm `|·|_{H¹}`, which the
-type `SobolevEuclideanZero (d + 1) 1 2 Ω` does not carry as its norm (its norm is the `H¹` norm);
-they are therefore stated through `SobolevMultiIndex.gradNorm`, and the strong monotonicity in
-the `H¹` norm carries the constant of Poincaré's inequality.  The book asks for a Lipschitz
-boundary, which no clause needs. -/
+**Reading.** The source takes the seminorm $|\cdot|_{H^1}$ as the norm of $V$, and states
+$\|L\| = 1$ and $\langle Lv, v \rangle = \|v\|_V^2$. The type
+`SobolevEuclideanZero (d + 1) 1 2 Ω` carries the norm of $H^1(\Omega)$, so these facts are
+stated through `SobolevMultiIndex.gradNorm`, and the strong monotonicity in the norm of
+$H^1(\Omega)$ carries the constant of Poincaré's inequality.
+
+**Generalization.** The source assumes a Lipschitz boundary, which no clause needs.
+
+The last clause gives the unique weak solution of the model problem $-\Delta u = f$ in $\Omega$,
+$u = 0$ on $\partial\Omega$ (8.2.3). The strong monotonicity is Poincaré's inequality,
+`Elliptic.dirichletForm_restrict_isCoerciveWith`, which comes from
+`SobolevEuclideanZero.norm_le_gradNorm`; it also makes the seminorm a norm on $V$ that is
+equivalent to the norm of $H^1(\Omega)$. The bijectivity is Example 8.2.5. -/
 theorem example_8_2_6 {R : ℝ} (hR : 0 ≤ R)
     (hΩ : (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))) ⊆ ball 0 R) :
     (∀ u v : SobolevEuclideanZero (d + 1) 1 2 Ω,
@@ -455,13 +567,14 @@ end Model
 
 section FiniteDimensional
 
-/-- Exercise 8.2.1: for a linear system `A x = b` on `ℝ^d`, solvability for every right-hand side
-`b` and uniqueness of the solution are equivalent.
+/-- **Exercise 8.2.1** of [han2009theoretical]. Let $A : \mathbb{R}^d \to \mathbb{R}^d$ be linear.
+Then the system $Ax = b$ has at most one solution for each $b$ if and only if it has a solution
+for every $b$; that is, $A$ is injective if and only if it is surjective.
 
-The exercise asks for this to be read off Theorem 8.2.1, and that is how it is proved here: over
-`ℝ^d = EuclideanSpace ℝ (Fin d)` the range of `A` is a finite-dimensional subspace, hence closed,
-and injectivity leaves it no room for a nonzero orthogonal vector, so `R(A)^⊥ = {0}` and Theorem
-8.2.1 gives `R(A) = ℝ^d`.  The converse direction is the rank-nullity theorem. -/
+The exercise asks for a proof from Theorem 8.2.1, and the proof here is that. On $\mathbb{R}^d$,
+`EuclideanSpace ℝ (Fin d)`, the range of $A$ is finite dimensional and hence closed, and
+injectivity gives $R(A)^\perp = \{0\}$, so Theorem 8.2.1 gives $R(A) = \mathbb{R}^d$. The
+converse is the rank-nullity theorem. -/
 theorem exercise_8_2_1 {d : ℕ} (f : EuclideanSpace ℝ (Fin d) →ₗ[ℝ] EuclideanSpace ℝ (Fin d)) :
     Function.Injective f ↔ Function.Surjective f := by
   have hrank := LinearMap.finrank_range_add_finrank_ker f
@@ -485,10 +598,14 @@ theorem exercise_8_2_1 {d : ℕ} (f : EuclideanSpace ℝ (Fin d) →ₗ[ℝ] Euc
     rw [LinearMap.range_eq_top.mpr hsurj, finrank_top] at hrank
     exact LinearMap.ker_eq_bot.mp (Submodule.finrank_eq_zero.mp (by omega))
 
-/-- Exercise 8.2.1, the sufficient condition it asks Theorem 8.2.8 to supply: if `A` obeys the
-stability estimate `c ‖x‖ ≤ ‖A x‖` with `c > 0`, then Theorem 8.2.8 (a) makes the solution of
-`A x = b` unique, and by the equivalence above `A x = b` is then uniquely solvable for every
-`b ∈ ℝ^d`. -/
+/-- **Exercise 8.2.1** of [han2009theoretical], with a stability estimate. Let
+$A : \mathbb{R}^d \to \mathbb{R}^d$ be linear, and let $c \|x\| \le \|Ax\|$ for all $x$ with a
+constant $c > 0$. Then for every $b \in \mathbb{R}^d$ the system $Ax = b$ has exactly one
+solution.
+
+This is the sufficient condition that the exercise asks Theorem 8.2.8 to supply: Theorem
+8.2.8(a) makes the solution unique, and `AtkinsonHan.Chapter08.exercise_8_2_1` then gives
+existence. -/
 theorem exercise_8_2_1_stability {d : ℕ}
     (f : EuclideanSpace ℝ (Fin d) →ₗ[ℝ] EuclideanSpace ℝ (Fin d)) {c : ℝ} (hc : 0 < c)
     (hstab : ∀ v, c * ‖v‖ ≤ ‖f v‖) (b : EuclideanSpace ℝ (Fin d)) : ∃! x, f x = b := by

@@ -7,86 +7,96 @@ import Numlib.Analysis.Normed.Ring.Inverse
 import NumlibSurface.AtkinsonHan.Chapter02.Section03
 
 /-!
-# Atkinson–Han §2.9: the resolvent operator
+# Atkinson and Han, Section 2.9: The resolvent operator
 
-Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework*, 3rd edition, Springer, 2009, §2.9: the resolvent set, the spectrum, the
-perturbation bound (2.9.2) and the Neumann expansion (2.9.3) of the resolvent about a point of the
-resolvent set.
+This module formalizes Section 2.9 of [han2009theoretical]. Let $L$ be a bounded linear operator on
+a normed space $V$. A scalar $\lambda$ is in the resolvent set $\rho(L)$ if $\lambda - L$ has a
+bounded inverse $R(\lambda) = (\lambda - L)^{-1}$, the resolvent operator, and the spectrum
+$\sigma(L)$ is the complement of $\rho(L)$. On a Banach space, $\rho(L)$ is open: if
+$\lambda_0 \in \rho(L)$ and $|\lambda - \lambda_0| \|R(\lambda_0)\| < 1$, then
+$\lambda \in \rho(L)$, the difference $R(\lambda) - R(\lambda_0)$ obeys the bound (2.9.2), and
+$R(\lambda)$ is the sum of the Neumann series (2.9.3) in powers of $\lambda - \lambda_0$. The
+spectrum lies in the closed disc of radius $\|L\|$.
 
-Definition 2.9.1 is Mathlib's `resolventSet`, `spectrum` and `resolvent`, and is restated here
-under the book's number: the book's `R(λ) = (λ I - L)⁻¹` is `resolvent L λ`, defined as
-`Ring.inverse (algebraMap 𝕜 _ λ - L)` in the Banach algebra `𝓛(V) = V →L[𝕜] V`. What the surface
-adds to the qualitative
-`spectrum.isOpen_resolventSet` is the *quantitative* content the book uses: the radius
-`1 / ‖R(λ₀)‖` of the disc that stays inside the resolvent set, the bound (2.9.2) on
-`‖R(λ) - R(λ₀)‖`, and the power series (2.9.3). All three come from the backbone perturbation
-theorems of `Numlib/Analysis/Normed/Ring/Inverse`, which is how the book derives them from its
-Theorem 2.3.5.
+Definition 2.9.1 is Mathlib's `resolventSet`, `spectrum` and `resolvent`, restated under the number
+of the source. The quantitative results, the radius $1/\|R(\lambda_0)\|$, the bound (2.9.2) and the
+series (2.9.3), come from the perturbation theorems for inverses in the backbone module
+`Numlib.Analysis.Normed.Ring.Inverse`, as the source derives them from its Theorem 2.3.5.
 
 ## Main definitions
 
-* `definition_2_9_1` — `λ` belongs to the resolvent set of `L`: `(λ - L)⁻¹` exists as a bounded
-  linear operator.
-* `definition_2_9_1_spectrum` — the spectrum `σ(L) = ℂ ∖ ρ(L)` of clause (b).
+* Definition 2.9.1(a), `AtkinsonHan.Chapter02.definition_2_9_1`: $\lambda \in \rho(L)$ if
+  $\lambda - L$ has a bounded inverse.
+* Definition 2.9.1(b), `AtkinsonHan.Chapter02.definition_2_9_1_spectrum`: the spectrum $\sigma(L)$,
+  the complement of $\rho(L)$.
 
 ## Main results
 
-* `definition_2_9_1_iff`, `definition_2_9_1_spectrum_eq` — the two clauses read back as Mathlib's
-  `resolventSet` and `spectrum`, in which everything below is stated;
-  `definition_2_9_1_resolvent` says that `resolvent L λ` is the inverse the definition asks for.
-* `lemma_2_9_2` — the resolvent set is open, the spectrum is closed, and (2.9.1)–(2.9.2).
-* `equation_2_9_3` — the Neumann series `R(λ) = ∑ₖ (-1)^k (λ - λ₀)^k R(λ₀)^{k+1}`.
-* `spectrum_subset_closedBall` — the spectrum lies in the closed ball of radius `‖L‖`.
-
-The analyticity of `λ ↦ R(λ)` that the book reads off (2.9.3) is Mathlib's
-`spectrum.hasDerivAt_resolvent_const_left`; `equation_2_9_3` records that the series above is its
-Taylor expansion at `λ₀`.
+* Definition 2.9.1(a), `AtkinsonHan.Chapter02.definition_2_9_1_iff` and
+  `AtkinsonHan.Chapter02.definition_2_9_1_resolvent`: the resolvent set is Mathlib's `resolventSet`,
+  and `resolvent L λ` is the inverse of $\lambda - L$.
+* Definition 2.9.1(b), `AtkinsonHan.Chapter02.definition_2_9_1_spectrum_eq`: the spectrum is
+  Mathlib's `spectrum`.
+* Section 2.9, `AtkinsonHan.Chapter02.spectrum_subset_closedBall`: every $\lambda$ with
+  $|\lambda| > \|L\|$ is in $\rho(L)$, so $\sigma(L)$ lies in the closed disc of radius $\|L\|$.
+* Lemma 2.9.2, `AtkinsonHan.Chapter02.lemma_2_9_2`: $\rho(L)$ is open, $\sigma(L)$ is closed, and
+  the perturbation bound (2.9.2) holds.
+* Equation (2.9.3), `AtkinsonHan.Chapter02.equation_2_9_3`: $R(\lambda) = \sum_{k \ge 0} (-1)^k
+  (\lambda - \lambda_0)^k R(\lambda_0)^{k+1}$.
 
 ## Conventions
 
-`lemma_2_9_2` and `spectrum_subset_closedBall` carry `[Nontrivial V]`, which the book assumes
-silently: on the zero space `𝓛(V)` is the zero ring, `‖1‖ = 0`, and the radius `1 / ‖R(λ₀)‖` is
-meaningless. `equation_2_9_3` needs no such hypothesis, and neither does Definition 2.9.1.
+* The scalar $\lambda$ is written `lam`. The space $\mathcal{L}(V)$ of bounded operators is the
+  Banach algebra `V →L[𝕜] V`.
+* The resolvent $R(\lambda) = (\lambda I - L)^{-1}$ of the source is `resolvent L λ`, defined as
+  `Ring.inverse (algebraMap 𝕜 _ λ - L)`.
+* As in Chapter 1, Definition 2.9.1 is a `def … : Prop` in the words of the source, with a companion
+  `…_iff`, and its second clause has a descriptive suffix instead of a letter.
+* "$(\lambda - L)^{-1}$ exists as a bounded linear operator" is written as in §2.3: there is a
+  continuous linear equivalence whose underlying map is $\lambda - L$. The lemma
+  `AtkinsonHan.Chapter02.isUnit_iff_exists_continuousLinearEquiv` of §2.3 is the bridge to
+  `IsUnit`.
+* `AtkinsonHan.Chapter02.lemma_2_9_2` and `AtkinsonHan.Chapter02.spectrum_subset_closedBall` assume
+  `[Nontrivial V]`, which the source assumes implicitly. On the zero space, $\mathcal{L}(V)$ is the
+  zero ring, $\|I\| = 0$, and the radius $1/\|R(\lambda_0)\|$ has no meaning.
+  `AtkinsonHan.Chapter02.equation_2_9_3` and Definition 2.9.1 do not need this hypothesis.
 
-The convention of Chapter 1 continues: Definition 2.9.1 is a `def … : Prop` in the book's words,
-with a companion `…_iff`, and its second clause takes a descriptive suffix rather than a letter.
-"`(λ - L)⁻¹` exists as a bounded linear operator" is spelled as in §2.3, as a continuous linear
-equivalence whose underlying map is `λ - L`, and §2.3's `isUnit_iff_exists_continuousLinearEquiv`
-is the bridge to `IsUnit`.
+## Implementation notes
 
-## Not formalized here
+* The analyticity of $\lambda \mapsto R(\lambda)$, which the source reads off (2.9.3), is Mathlib's
+  `spectrum.hasDerivAt_resolvent_const_left`. The series of `AtkinsonHan.Chapter02.equation_2_9_3`
+  is the Taylor expansion of $R$ at $\lambda_0$.
+* `AtkinsonHan.Chapter02.equation_2_9_3` is the displayed formula (2.9.3), the Neumann expansion of
+  the resolvent. It is not Theorem 2.9.3: the source uses the number for two different items, and no
+  declaration here states the theorem.
 
-* §2.9's classification of the spectrum into point, continuous and residual parts — a definition
-  with no theorem attached in the book.
-* **Theorem 2.9.3**, the Riesz–Dunford calculus. For `f` analytic on a neighbourhood of `σ(L)`
-  the book defines `f_Γ(L) = (2πi)⁻¹ ∮_Γ f(λ) (λ - L)⁻¹ dλ` (2.9.4), over a contour `Γ` winding
-  once around `σ(L)` inside the domain of analyticity, and states that the assignment is
-  multiplicative, `f_Γ(L) g_Γ(L) = (f g)_Γ(L)`, and that it agrees with the obvious meaning of a
-  convergent power series: if `f(λ) = ∑ aₙ λⁿ` on a disc containing `σ(L)` then `f_Γ(L) = ∑ aₙ Lⁿ`.
-  The book gives no proof, citing Dunford–Schwartz. What it needs is a contour integral of
-  `𝓛(V)`-valued functions, which `notes/backbone.md` §1.7 keeps out of scope and Mathlib does not
-  have: Mathlib's Cauchy integral formula is for `ℂ`-valued functions of one variable, and there is
-  no holomorphic functional calculus on this pin. Nothing in `Numlib/` approaches the spectrum
-  through contour integrals — the spectral theory there
-  (`Numlib/Analysis/Normed/Operator/{Riesz,Compact/Banach}`, `…/InnerProductSpace/CompactSpectral`)
-  is for compact and self-adjoint operators and is entirely algebraic. A minimal version —
-  operator-valued circle integrals of the resolvent, with multiplicativity from the resolvent
-  identity — is a project of its own, estimate 800–1200 lines.
-* **Theorem 2.9.4**, the Riesz spectral projection. For a compact `L` and a nonzero eigenvalue
-  `λ₀`, the operator `E(λ₀, L) = (2πi)⁻¹ ∮_{|λ - λ₀| = ε} (λ - L)⁻¹ dλ` (2.9.5), with `ε` smaller
-  than the distance from `λ₀` to the rest of `σ(L)`, is a projection on `V` whose range is the
-  space `N((λ₀ - L)^{ν(λ₀)})` of ordinary and generalized eigenvectors at the Riesz index `ν(λ₀)`.
-  The book again gives no proof, and the obstruction is exactly Theorem 2.9.3's: the
-  operator-valued contour integral. Everything on the algebraic side is in place — the Riesz index
-  and the generalized eigenspaces of `Numlib/Analysis/Normed/Operator/Riesz`, with §2.8's
-  `theorem_2_8_12_3` proved — so what is missing is only the integral definition (2.9.5) itself and
-  the identification of its range; estimate 300–500 lines once the calculus of Theorem 2.9.3
-  exists.
+## Deviations from the source
 
-`equation_2_9_3` above is the *displayed formula* (2.9.3), the Neumann expansion of the resolvent,
-and is not Theorem 2.9.3: the book uses the two numbers for different results, and no declaration
-here states the Theorem.
+* **Definition 2.9.1** (generalization). The source works on a complex Banach space. The definition
+  here allows real or complex scalars and any normed space. See
+  `AtkinsonHan.Chapter02.definition_2_9_1`.
+
+## Not formalized
+
+* **The classification of the spectrum** into point, continuous and residual spectrum, a definition
+  with no theorem attached to it in the source.
+* **Theorem 2.9.3** (the Riesz–Dunford functional calculus). For $f$ analytic on a neighbourhood of
+  $\sigma(L)$ the source defines $f_\Gamma(L) = \frac{1}{2\pi i} \oint_\Gamma f(\lambda) (\lambda -
+  L)^{-1} \, d\lambda$ (2.9.4) over a contour $\Gamma$ that winds once around $\sigma(L)$ inside the
+  domain of analyticity. It states that $f_\Gamma(L) g_\Gamma(L) = (f g)_\Gamma(L)$, and that
+  $f_\Gamma(L) = \sum_n a_n L^n$ if $f(\lambda) = \sum_n a_n \lambda^n$ on a disc that contains
+  $\sigma(L)$. The source gives no proof and cites Dunford and Schwartz. The theorem needs contour
+  integrals of functions with values in $\mathcal{L}(V)$, which Mathlib does not have: its Cauchy
+  integral formula is for functions with values in $\mathbb{C}$, and it has no holomorphic
+  functional calculus.
+* **Theorem 2.9.4** (the Riesz spectral projection). For a compact $L$ and a nonzero eigenvalue
+  $\lambda_0$, the operator $E(\lambda_0, L) = \frac{1}{2\pi i} \oint_{|\lambda - \lambda_0| =
+  \varepsilon} (\lambda - L)^{-1} \, d\lambda$ (2.9.5), with $\varepsilon$ smaller than the distance
+  from $\lambda_0$ to the rest of $\sigma(L)$, is a projection whose range is
+  $\mathcal{N}((\lambda_0 - L)^{\nu(\lambda_0)})$, the space of the generalized eigenvectors at the
+  index $\nu(\lambda_0)$. The source gives no proof. It needs the same contour integrals as Theorem
+  2.9.3; the index and the generalized eigenspaces are in `Numlib.Analysis.Normed.Operator.Riesz`
+  and in `AtkinsonHan.Chapter02.theorem_2_8_12_3`.
 -/
 
 namespace AtkinsonHan.Chapter02
@@ -97,25 +107,33 @@ section Resolvent
 
 variable {𝕜 V : Type*} [RCLike 𝕜] [NormedAddCommGroup V] [NormedSpace 𝕜 V]
 
-/-- **Definition 2.9.1** (a). For a bounded linear operator `L` on a complex Banach space, `λ`
-belongs to the *resolvent set* `ρ(L)` of `L` when `(λ - L)⁻¹` exists as a bounded linear operator
-from `V` to `V`; that operator is then the *resolvent operator*.
+/-- **Definition 2.9.1(a)** of [han2009theoretical]. Let $L$ be a bounded linear operator on a
+normed space $V$ over $\mathbb{K}$. A scalar $\lambda$ is in the **resolvent set** $\rho(L)$ of
+$L$ if $(\lambda - L)^{-1}$ exists as a bounded linear operator from $V$ to $V$, that is, if
+there is a continuous linear equivalence $e : V \to V$ with $e = \lambda - L$. This inverse is
+the **resolvent operator**.
 
-"Exists as a bounded linear operator" is spelled as in §2.3, as a continuous linear equivalence
-whose underlying map is `λ - L`. This is Mathlib's `resolventSet` by `definition_2_9_1_iff`, and
-the resolvent operator is Mathlib's `resolvent` by `definition_2_9_1_resolvent`. -/
+**Generalization.** The source takes a complex Banach space. Here the scalars are real or
+complex and $V$ need not be complete.
+
+By `AtkinsonHan.Chapter02.definition_2_9_1_iff` this is Mathlib's `resolventSet`, and by
+`AtkinsonHan.Chapter02.definition_2_9_1_resolvent` the resolvent operator is Mathlib's
+`resolvent`. -/
 def definition_2_9_1 (𝕜 : Type*) {V : Type*} [RCLike 𝕜] [NormedAddCommGroup V] [NormedSpace 𝕜 V]
     (L : V →L[𝕜] V) (lam : 𝕜) : Prop :=
   ∃ e : V ≃L[𝕜] V, (e : V →L[𝕜] V) = lam • (1 : V →L[𝕜] V) - L
 
-/-- Definition 2.9.1 (a) is Mathlib's `resolventSet`. -/
+/-- **Definition 2.9.1(a)** of [han2009theoretical], identification. A scalar $\lambda$ is in the
+resolvent set of $L$ in the sense of Definition 2.9.1 if and only if `lam ∈ resolventSet 𝕜 L`. -/
 theorem definition_2_9_1_iff (L : V →L[𝕜] V) (lam : 𝕜) :
     definition_2_9_1 𝕜 L lam ↔ lam ∈ resolventSet 𝕜 L := by
   rw [definition_2_9_1, ← isUnit_iff_exists_continuousLinearEquiv,
     spectrum.mem_resolventSet_iff, Algebra.algebraMap_eq_smul_one]
 
-/-- The *resolvent operator* of Definition 2.9.1 (a) is Mathlib's `resolvent`: for `λ ∈ ρ(L)` it is
-a two-sided inverse of `λ - L`. -/
+/-- **Definition 2.9.1(a)** of [han2009theoretical], the resolvent operator. If $\lambda$ is in the
+resolvent set of $L$, then `resolvent L lam` is a two-sided inverse of $\lambda - L$:
+$$(\lambda - L) R(\lambda) = I, \qquad R(\lambda) (\lambda - L) = I.$$
+-/
 theorem definition_2_9_1_resolvent (L : V →L[𝕜] V) {lam : 𝕜} (h : definition_2_9_1 𝕜 L lam) :
     (lam • (1 : V →L[𝕜] V) - L) * resolvent L lam = 1 ∧
       resolvent L lam * (lam • (1 : V →L[𝕜] V) - L) = 1 := by
@@ -127,13 +145,18 @@ theorem definition_2_9_1_resolvent (L : V →L[𝕜] V) {lam : 𝕜} (h : defini
   rw [hres, ← halg]
   exact ⟨Ring.mul_inverse_cancel _ hu, Ring.inverse_mul_cancel _ hu⟩
 
-/-- **Definition 2.9.1** (b). The *spectrum* of `L` is the complement `σ(L) = ℂ ∖ ρ(L)` of the
-resolvent set. This is Mathlib's `spectrum` by `definition_2_9_1_spectrum_eq`. -/
+/-- **Definition 2.9.1(b)** of [han2009theoretical]. The **spectrum** $\sigma(L)$ of a bounded
+linear operator $L$ on $V$ is the set of the scalars $\lambda$ that are not in the resolvent set
+$\rho(L)$.
+
+The source writes $\sigma(L) = \mathbb{C} \setminus \rho(L)$; here the scalars are those of $V$.
+By `AtkinsonHan.Chapter02.definition_2_9_1_spectrum_eq` this is Mathlib's `spectrum`. -/
 def definition_2_9_1_spectrum (𝕜 : Type*) {V : Type*} [RCLike 𝕜] [NormedAddCommGroup V]
     [NormedSpace 𝕜 V] (L : V →L[𝕜] V) : Set 𝕜 :=
   {lam | ¬ definition_2_9_1 𝕜 L lam}
 
-/-- Definition 2.9.1 (b) is Mathlib's `spectrum`. -/
+/-- **Definition 2.9.1(b)** of [han2009theoretical], identification. The spectrum of $L$ in the
+sense of Definition 2.9.1 is `spectrum 𝕜 L`. -/
 theorem definition_2_9_1_spectrum_eq (L : V →L[𝕜] V) :
     definition_2_9_1_spectrum 𝕜 L = spectrum 𝕜 L := by
   ext lam
@@ -145,9 +168,16 @@ end Resolvent
 variable {𝕜 V : Type*} [RCLike 𝕜] [NormedAddCommGroup V] [NormedSpace 𝕜 V] [CompleteSpace V]
   [Nontrivial V]
 
-/-- **Lemma 2.9.2** with **(2.9.1)** and **(2.9.2)**. The resolvent set of a bounded operator is
-open and the spectrum is closed; moreover, if `λ₀ ∈ ρ(L)` and `|λ - λ₀| ‖R(λ₀)‖ < 1` then
-`λ ∈ ρ(L)` and `‖R(λ) - R(λ₀)‖ ≤ ‖R(λ₀)‖² |λ - λ₀| / (1 - ‖R(λ₀)‖ |λ - λ₀|)`. -/
+/-- **Lemma 2.9.2** of [han2009theoretical], with (2.9.1) and (2.9.2). Let $V$ be a nonzero Banach
+space and let $L$ be a bounded linear operator on $V$. Then the resolvent set $\rho(L)$ is open
+and the spectrum $\sigma(L)$ is closed. Moreover, if $\lambda_0 \in \rho(L)$ and
+$$\|R(\lambda_0)\| \, |\lambda - \lambda_0| < 1,$$
+then $\lambda \in \rho(L)$ and
+$$\|R(\lambda) - R(\lambda_0)\| \le \frac{\|R(\lambda_0)\|^2 \, |\lambda - \lambda_0|}{1 -
+  \|R(\lambda_0)\| \, |\lambda - \lambda_0|}.$$
+
+$R(\lambda)$ is `resolvent L lam`. The hypothesis that $V$ is nonzero is `[Nontrivial V]`; see
+the module doc comment. -/
 theorem lemma_2_9_2 (L : V →L[𝕜] V) :
     IsOpen (resolventSet 𝕜 L) ∧ IsClosed (spectrum 𝕜 L) ∧
       ∀ lam₀ ∈ resolventSet 𝕜 L, ∀ lam : 𝕜,
@@ -185,8 +215,13 @@ theorem lemma_2_9_2 (L : V →L[𝕜] V) :
   exact hbound
 
 omit [Nontrivial V] in
-/-- **(2.9.3).** For `|λ - λ₀| ‖R(λ₀)‖ < 1` the resolvent is the convergent power series
-`R(λ) = ∑_{k ≥ 0} (-1)^k (λ - λ₀)^k R(λ₀)^{k+1}`, which is its Taylor expansion at `λ₀`. -/
+/-- **Equation (2.9.3)** of [han2009theoretical]. Let $V$ be a Banach space, let $L$ be a bounded
+linear operator on $V$ and let $\lambda_0 \in \rho(L)$. If
+$\|R(\lambda_0)\| \, |\lambda - \lambda_0| < 1$, then
+$$R(\lambda) = \sum_{k=0}^\infty (-1)^k (\lambda - \lambda_0)^k R(\lambda_0)^{k+1},$$
+with the series convergent in $\mathcal{L}(V)$.
+
+The series is the Taylor expansion of $R$ at $\lambda_0$. The sum is Mathlib's `HasSum`. -/
 theorem equation_2_9_3 (L : V →L[𝕜] V) {lam₀ : 𝕜} (h₀ : lam₀ ∈ resolventSet 𝕜 L) (lam : 𝕜)
     (hlt : ‖resolvent L lam₀‖ * ‖lam - lam₀‖ < 1) :
     HasSum (fun k : ℕ =>
@@ -228,9 +263,11 @@ theorem equation_2_9_3 (L : V →L[𝕜] V) {lam₀ : 𝕜} (h₀ : lam₀ ∈ r
   rw [heq]
   exact (hasSum_geom_series_inverse T hTnorm).mul_right S
 
-/-- The remark before Definition 2.9.1: every `λ` with `‖L‖ < |λ|` lies in the resolvent set, so
-the spectrum is contained in the closed ball of radius `‖L‖`. This is why the resolvent is defined
-near infinity, which §2.9 and Chapter 6 both use. -/
+/-- **Section 2.9** of [han2009theoretical], the remark before Definition 2.9.1. Let $V$ be a
+nonzero Banach space and let $L$ be a bounded linear operator on $V$. Then every $\lambda$ with
+$|\lambda| > \|L\|$ is in the resolvent set $\rho(L)$, and the spectrum lies in the closed disc
+$$\sigma(L) \subseteq \{\lambda : |\lambda| \le \|L\|\}.$$
+So the resolvent is defined near infinity, which §2.9 and Chapter 6 use. -/
 theorem spectrum_subset_closedBall (L : V →L[𝕜] V) :
     {lam : 𝕜 | ‖L‖ < ‖lam‖} ⊆ resolventSet 𝕜 L ∧
       spectrum 𝕜 L ⊆ Metric.closedBall (0 : 𝕜) ‖L‖ :=

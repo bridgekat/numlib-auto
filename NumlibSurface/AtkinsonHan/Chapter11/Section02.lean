@@ -10,61 +10,68 @@ import NumlibSurface.AtkinsonHan.Chapter08.Section03
 import NumlibSurface.AtkinsonHan.Chapter11.Section01
 
 /-!
-# Atkinson–Han §11.2: existence and uniqueness based on convex minimization
+# Atkinson and Han, Section 11.2: Existence and uniqueness based on convex minimization
 
-Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework*, 3rd edition, Springer, 2009, §11.2.
+This module formalizes Section 11.2 of [han2009theoretical]. The section turns a constrained convex
+minimization problem into an elliptic variational inequality and back. Theorem 11.2.1 does this for
+a Gâteaux differentiable convex functional $f$ plus a second convex functional $j$ that need not be
+differentiable: $u \in K$ minimizes $f + j$ over a convex set $K$ if and only if $\langle f'(u), v -
+u \rangle + j(v) - j(u) \ge 0$ for all $v \in K$. Theorem 11.2.2 does this for the energy
+$$E(v) = \tfrac12 a(v, v) + j(v) - \ell(v)$$
+of a bounded, symmetric, $V$-elliptic bilinear form $a$ on a real Hilbert space $V$. There the
+minimizer over a nonempty closed convex set exists and is unique, and it is the solution of the
+variational inequality $a(u, v - u) + j(v) - j(u) \ge \ell(v - u)$ for all $v \in K$. Exercise
+11.2.1 is the same result on a complex Hilbert space.
 
-The section turns a constrained convex minimization problem into an elliptic variational
-inequality and back.  Theorem 11.2.1 does it for a general Gâteaux differentiable convex `f` plus
-a second, possibly non-differentiable convex term `j`; Theorem 11.2.2 does it for the quadratic
-energy `E v = ½ a(v,v) + j(v) - ℓ(v)` of a bounded, symmetric, `V`-elliptic bilinear form on a
-real Hilbert space, where the minimizer also exists and is unique.
-
-Theorem 11.2.1 extends Theorem 5.3.19 of `Chapter05/Section03` by the term `j`, and both are
-specializations of `isMinOn_add_iff_forall_le` of `Numlib/Analysis/Convex/Gateaux`.  Formula
-(11.2.3) — over a subspace and with `j = 0` the variational inequality is the variational equation
-`⟨f'(u), v⟩ = 0` — is `AtkinsonHan.Chapter05.theorem_5_3_19_submodule` and is not restated here.
-
-The variational inequality of Theorem 11.2.2 is written out here in the book's own words, as the
-inequality `a(u, v - u) + j(v) - j(u) ≥ ℓ(v - u)`.  It is the book's (11.3.12), so §11.2 and §11.3
-really do state the same problem; §11.3, which comes later, names it
-`AtkinsonHan.Chapter11.IsVariationalInequalitySolution` at `A = a.toOperator` and `f = rieszRep ℓ`,
-and `AtkinsonHan.Chapter11.isVariationalInequalitySolution_toOperator_iff` is the identification.
-
-## Deviations from the book
-
-The book obtains the minimizer of Theorem 11.2.2 from its Theorem 3.3.12, which needs the
-reflexivity of `V` and weak sequential compactness of its bounded sets.  The proof here stays in
-the Hilbert space: the parallelogram law makes every minimizing sequence Cauchy, which is the
-route of the backbone's `existsUnique_isMinOn_energy_add`.  The statement is the book's.
+Examples 11.2.3 and 11.2.4 apply Theorem 11.2.2 to the obstacle problem and to the simplified
+friction problem of Section 11.1. The abstract results specialize `isMinOn_add_iff_forall_le` of
+`Numlib.Analysis.Convex.Gateaux` and `existsUnique_isMinOn_energy_add` of
+`Numlib.Variational.Inequality.Basic`.
 
 ## Main results
 
-* `theorem_11_2_1` — the minimization problem (11.2.1) and the variational inequality (11.2.2)
-  have the same solutions.
-* `theorem_11_2_2` — the energy of a bounded symmetric `V`-elliptic form has exactly one minimizer
-  on a nonempty closed convex set; `theorem_11_2_2_iff` — its minimizers are the solutions of the
-  variational inequality.
-* `exercise_11_2_1` — both claims at once over a complex Hilbert space, for a Hermitian
-  `V`-elliptic sesquilinear form.  They stay bundled there because the two halves share the
-  passage to the real form `b(u,v) = re a(u,v)` that is the whole of the proof.
+* Theorem 11.2.1, `AtkinsonHan.Chapter11.theorem_11_2_1`: $u$ minimizes $f + j$ over $K$ (11.2.1) if
+  and only if $u$ solves the variational inequality (11.2.2).
+* (11.2.3), `AtkinsonHan.Chapter05.theorem_5_3_19_submodule`: over a subspace and with $j = 0$, the
+  variational inequality is the equation $\langle f'(u), v \rangle = 0$.
+* Theorem 11.2.2, `AtkinsonHan.Chapter11.theorem_11_2_2`: the energy $E$ has exactly one minimizer
+  on a nonempty closed convex set $K$.
+* Theorem 11.2.2, `AtkinsonHan.Chapter11.theorem_11_2_2_iff`: the minimizers of $E$ over $K$ are the
+  solutions of the variational inequality (11.3.12).
+* Theorem 11.2.2 with $j = 0$, `AtkinsonHan.Chapter11.theorem_11_2_2_zero`: exactly one minimizer,
+  and exactly one solution of $a(u, v - u) \ge \ell(v - u)$ for all $v \in K$.
+* Example 11.2.3, `AtkinsonHan.Chapter11.example_11_2_3`: the obstacle problem has a nonempty closed
+  convex admissible set and a strictly convex, coercive, continuous energy, and the minimization
+  problem (11.1.6) and the variational inequality (11.1.7) each have exactly one solution.
+* Example 11.2.4, `AtkinsonHan.Chapter11.example_11_2_4`: the variational inequality (11.1.13) of
+  the simplified friction problem has exactly one solution.
+* Exercise 11.2.1, `AtkinsonHan.Chapter11.exercise_11_2_1`: Theorem 11.2.2 for a Hermitian
+  $V$-elliptic sesquilinear form on a complex Hilbert space.
 
-* `example_11_2_3` — the obstacle problem of §11.1 (`Chapter11/Section01`): the admissible set
-  `K = {v ∈ H¹₀(Ω) | v ≥ ψ a.e.}` is nonempty, closed and convex, the energy
-  `∫_Ω (½ |∇v|² − f v)` is strictly convex, coercive and continuous, and Theorem 11.2.2 gives the
-  minimization problem (11.1.6) and the variational inequality (11.1.7) exactly one solution.
-  The strong convexity of the quadratic energy of a `V`-elliptic symmetric form is the
-  backbone's `SesqForm.strongConvexOn_energy` (`Numlib/Variational/LaxMilgram.lean`) and the
-  coercivity of a continuous strongly convex functional its
-  `StrongConvexOn.isCoerciveFunctionalOn_of_continuous` (`Numlib/Variational/Minimization.lean`);
-  `theorem_11_2_2_zero` is Theorem 11.2.2 at `j = 0`.
+## Implementation notes
 
-* `example_11_2_4` — the simplified friction problem of §11.1 (`Chapter11/Section01`): over the
-  boundary interface `BoundaryData Ω`, `BoundaryData.TraceFamily` (a bounded `C¹` domain or a
-  polygon, the book's Lipschitz domain), the variational inequality (11.1.13) has exactly one
-  solution, by Theorem 11.2.2 on `V = H¹(Ω)` with the convex continuous friction functional
-  `g ∫_Γ |v| ds` (`Chapter11.frictionFunctional`).
+* Theorem 11.2.1 extends Theorem 5.3.19 (`AtkinsonHan.Chapter05.theorem_5_3_19`) by the term $j$.
+  Formula (11.2.3) is `AtkinsonHan.Chapter05.theorem_5_3_19_submodule` and is not restated here.
+* The variational inequality of Theorem 11.2.2 is written out as
+  $a(u, v - u) + j(v) - j(u) \ge \ell(v - u)$. This is the inequality (11.3.12) of Section 11.3,
+  where it is `AtkinsonHan.Chapter11.IsVariationalInequalitySolution` for the operator
+  `AtkinsonHan.BilinForm.toOperator` of $a$ and the Riesz representative `SesqForm.rieszRep` of
+  $\ell$. The identification is
+  `AtkinsonHan.Chapter11.isVariationalInequalitySolution_toOperator_iff`.
+* The source obtains the minimizer of Theorem 11.2.2 from its Theorem 3.3.12, with the reflexivity
+  of $V$. The proof here stays in the Hilbert space: the parallelogram law makes every minimizing
+  sequence a Cauchy sequence. The statement is the one of the source.
+* Exercise 11.2.1 states both claims in one theorem, because the two claims share the passage to the
+  real form $b(u, v) = \operatorname{Re} a(u, v)$, which is the whole proof.
+
+## Deviations from the source
+
+* **Example 11.2.3** (reading). The condition "$\psi \le 0$ on $\Gamma$" on the obstacle is read as:
+  $\max\{\psi, 0\}$ is the function of an element of $H^1_0(\Omega)$. See
+  `AtkinsonHan.Chapter11.example_11_2_3`.
+* **Example 11.2.4** (reading). The Lipschitz domain of the source is a domain with a boundary trace
+  in the sense of `BoundaryData.TraceFamily`, for example a bounded $C^1$ domain or a polygon
+  without slits. See `AtkinsonHan.Chapter11.example_11_2_4`.
 -/
 
 open Filter MeasureTheory Set TopologicalSpace Topology
@@ -79,17 +86,18 @@ section Gateaux
 variable {V : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V]
 variable {K : Set V} {f j : V → ℝ} {f' : V → V →L[ℝ] ℝ}
 
-/-- **Theorem 11.2.1.**  Let `K` be a convex subset of a real normed space, let `f` be convex on
-`K` with Gâteaux derivative `f' u` at every `u ∈ K`, and let `j` be convex on `K`.  Then `u ∈ K`
-minimizes `f + j` over `K` — the book's (11.2.1) — if and only if
+/-- **Theorem 11.2.1** of [han2009theoretical]. Let $V$ be a real normed space and $K \subseteq V$.
+Let $f, j \colon V \to \mathbb{R}$ be convex on $K$, and let $f$ have the Gâteaux derivative
+$f'(u) \in V'$ at every $u \in K$. Then $u \in K$ minimizes $f + j$ over $K$, which is (11.2.1),
+if and only if
+$$\langle f'(u), v - u \rangle + j(v) - j(u) \ge 0 \quad \text{for all } v \in K,$$
+which is (11.2.2).
 
-  `⟨f'(u), v - u⟩ + j(v) - j(u) ≥ 0`  for every `v ∈ K`,
-
-which is (11.2.2).  The convexity of `K` is `hf.1` and is not assumed separately.
-
-The case `j = 0` is `AtkinsonHan.Chapter05.theorem_5_3_19`, and (11.2.3) — over a subspace and with
-`j = 0` the inequality is the equation `⟨f'(u), v⟩ = 0` — is
-`AtkinsonHan.Chapter05.theorem_5_3_19_submodule`. -/
+The convexity of $K$ is part of `ConvexOn ℝ K f` and is not a separate hypothesis. The Gâteaux
+derivative is `AtkinsonHan.Chapter05.HasGateauxDerivAt`. The case $j = 0$ is
+`AtkinsonHan.Chapter05.theorem_5_3_19`, and the case of a subspace with $j = 0$, (11.2.3), is
+`AtkinsonHan.Chapter05.theorem_5_3_19_submodule`. The proof specializes
+`isMinOn_add_iff_forall_le`. -/
 theorem theorem_11_2_1 (hf : ConvexOn ℝ K f) (hj : ConvexOn ℝ K j)
     (hG : ∀ u ∈ K, Chapter05.HasGateauxDerivAt f (f' u) u) {u : V} (hu : u ∈ K) :
     IsMinOn (f + j) K u ↔ ∀ v ∈ K, 0 ≤ f' u (v - u) + j v - j u :=
@@ -104,18 +112,20 @@ section Real
 variable {V : Type*} [NormedAddCommGroup V] [InnerProductSpace ℝ V] [CompleteSpace V]
 variable {a : BilinForm V} {M α : ℝ}
 
-/-- **Theorem 11.2.2.**  Let `V` be a real Hilbert space, `K` a nonempty closed convex subset,
-`a` a bounded symmetric `V`-elliptic bilinear form, `ℓ ∈ V'` and `j` convex and lower
-semicontinuous on `K`.  Then the energy
+/-- **Theorem 11.2.2** of [han2009theoretical], existence and uniqueness. Let $V$ be a real Hilbert
+space and let $K \subseteq V$ be nonempty, closed and convex. Let $a$ be a bilinear form on $V$
+that is bounded with constant $M$, symmetric, and $V$-elliptic with constant $\alpha > 0$. Let
+$\ell \in V'$, and let $j \colon V \to \mathbb{R}$ be convex and lower semicontinuous on $K$.
+Then the energy
+$$E(v) = \tfrac12 a(v, v) + j(v) - \ell(v)$$
+has exactly one minimizer $u \in K$ over $K$.
 
-  `E v = ½ a(v,v) + j(v) - ℓ(v)`
-
-has exactly one minimizer on `K`.  That the minimizers are the solutions of the variational
-inequality (11.3.12) is `theorem_11_2_2_iff`.
-
-The book derives the existence clause from its Theorem 3.3.12, using the reflexivity of `V`; the
-proof used here is the Hilbert-space one, in which the parallelogram law makes every minimizing
-sequence Cauchy and the affine minorant of Lemma 11.3.5 makes the energy bounded below. -/
+The source derives the existence from its Theorem 3.3.12, with the reflexivity of $V$. The proof
+here is the Hilbert-space one: the parallelogram law makes every minimizing sequence a Cauchy
+sequence, and the affine minorant of Lemma 11.3.5 makes the energy bounded below. It specializes
+`existsUnique_isMinOn_energy_add`. The energy $\frac12 a(v, v) - \ell(v)$ is
+`AtkinsonHan.BilinForm.energy`. The characterization of the minimizer by the variational
+inequality is `AtkinsonHan.Chapter11.theorem_11_2_2_iff`. -/
 theorem theorem_11_2_2 (hM : a.IsBoundedWith M) (hα : 0 < α) (ha : a.IsEllipticWith α)
     (hs : LinearMap.BilinForm.IsSymm a) (ℓ : StrongDual ℝ V) {j : V → ℝ} {K : Set V}
     (hKne : K.Nonempty) (hKcl : IsClosed K) (hKcv : Convex ℝ K) (hj : ConvexOn ℝ K j)
@@ -123,14 +133,15 @@ theorem theorem_11_2_2 (hM : a.IsBoundedWith M) (hα : 0 < α) (ha : a.IsEllipti
   existsUnique_isMinOn_energy_add ((BilinForm.isSymm_iff_isHermitian hM).mp hs) hα
     ((BilinForm.isEllipticWith_iff_isCoerciveWith hM).mp ha) ℓ hKne hKcl hKcv hj hjlsc
 
-/-- **Theorem 11.2.2**, characterization: `u ∈ K` minimizes `E v = ½ a(v,v) + j(v) - ℓ(v)` over
-`K` if and only if
+/-- **Theorem 11.2.2** of [han2009theoretical], characterization. Let $V$ be a real Hilbert space
+and let $K \subseteq V$ be convex. Let $a$ be a bilinear form on $V$ that is bounded with
+constant $M$, symmetric, and $V$-elliptic with constant $\alpha > 0$. Let $\ell \in V'$, and let
+$j$ be convex on $K$. Then $u \in K$ minimizes $E(v) = \frac12 a(v, v) + j(v) - \ell(v)$ over
+$K$ if and only if
+$$a(u, v - u) + j(v) - j(u) \ge \ell(v - u) \quad \text{for all } v \in K.$$
 
-  `a(u, v - u) + j(v) - j(u) ≥ ℓ(v - u)`  for every `v ∈ K`,
-
-which is the variational inequality (11.3.12) of §11.3, in the `≥` spelling §11.3 uses throughout.
-Neither closedness of `K` nor lower semicontinuity of `j` is needed here; they are what make a
-minimizer exist. -/
+This is the variational inequality (11.3.12) of Section 11.3. The closedness of $K$ and the
+lower semicontinuity of $j$ are not needed here; they are what make a minimizer exist. -/
 theorem theorem_11_2_2_iff (hM : a.IsBoundedWith M) (hα : 0 < α) (ha : a.IsEllipticWith α)
     (hs : LinearMap.BilinForm.IsSymm a) (ℓ : StrongDual ℝ V) {j : V → ℝ} {K : Set V}
     (hKcv : Convex ℝ K) (hj : ConvexOn ℝ K j) {u : V} (hu : u ∈ K) :
@@ -152,25 +163,24 @@ section Complex
 
 variable {V : Type*} [NormedAddCommGroup V] [InnerProductSpace ℂ V] [CompleteSpace V]
 
-/-- **Exercise 11.2.1**, the complex case of Theorem 11.2.2.  On a complex Hilbert space, for a
-Hermitian `V`-elliptic sesquilinear form `a`, a functional `ℓ ∈ V'` and a `j` convex and lower
-semicontinuous on a nonempty closed convex `K`, the energy
+/-- **Exercise 11.2.1** of [han2009theoretical], the complex case of Theorem 11.2.2. Let $V$ be a
+complex Hilbert space and let $K \subseteq V$ be nonempty, closed and convex. Let $a$ be a
+bounded Hermitian sesquilinear form on $V$ with $\alpha \|v\|^2 \le \operatorname{Re} a(v, v)$
+for all $v$, for some $\alpha > 0$. Let $\ell \in V'$, and let $j \colon V \to \mathbb{R}$ be
+convex and lower semicontinuous on $K$. Then the energy
+$$E(v) = \tfrac12 \operatorname{Re} a(v, v) + j(v) - \operatorname{Re} \ell(v)$$
+has exactly one minimizer on $K$. Moreover, $u \in K$ minimizes $E$ over $K$ if and only if
+$$\operatorname{Re} a(u, v - u) + j(v) - j(u) \ge \operatorname{Re} \ell(v - u) \quad \text{for
+  all } v \in K.$$
 
-  `E v = ½ re a(v,v) + j(v) - re ℓ(v)`
-
-has exactly one minimizer on `K`, and `u ∈ K` minimizes it if and only if
-
-  `re a(u, v - u) + j(v) - j(u) ≥ re ℓ(v - u)`  for every `v ∈ K`.
-
-The real parts are the book's: `a(v,v)` is real for a Hermitian form, and what is minimized is a
-real quantity.  Convexity of `K` is convexity for the real scalars, which is what convexity means
-on a complex vector space.
-
-The proof is Theorem 11.2.2 for the *real* bilinear form `b(u,v) = re a(u,v)`, which is the form
-of the operator of `a` read in the real inner product `⟪·,·⟫_ℝ = re ⟪·,·⟫`: it is Hermitian and
-`V`-elliptic with the same constant, and its energy is that of `a`.  The real inner product
-structure is introduced inside the proof, as `InnerProductSpace.complexToReal` is deliberately not
-an instance. -/
+The real parts are those of the source: $a(v, v)$ is real for a Hermitian form, and the
+minimized quantity is real. The convexity of $K$ is convexity for real scalars, which is what
+convexity means on a complex vector space. The form $a$ is a `SesqForm ℂ V`, which is
+conjugate-linear in its first argument. The proof applies Theorem 11.2.2 to the real bilinear
+form $b(u, v) = \operatorname{Re} a(u, v)$ on $V$ with the real inner product
+$\operatorname{Re} \langle \cdot, \cdot \rangle$. This form is symmetric and $V$-elliptic with
+the same constant, and it has the same energy as $a$. The real inner product structure is
+introduced inside the proof, because `InnerProductSpace.complexToReal` is not an instance. -/
 theorem exercise_11_2_1 {a : SesqForm ℂ V} (ha : a.IsHermitian) {α : ℝ} (hα : 0 < α)
     (hcoer : a.IsCoerciveWith α) (ℓ : V →L[ℂ] ℂ) {j : V → ℝ} {K : Set V} (hKne : K.Nonempty)
     (hKcl : IsClosed K) (hKcv : Convex ℝ K) (hj : ConvexOn ℝ K j)
@@ -219,12 +229,17 @@ section Obstacle
 variable {V : Type*} [NormedAddCommGroup V] [InnerProductSpace ℝ V] [CompleteSpace V]
   {a : BilinForm V} {M α : ℝ}
 
-/-- **Theorem 11.2.2 with `j = 0`**: the energy of a bounded symmetric `V`-elliptic form has
-exactly one minimizer on a nonempty closed convex set, and that minimizer is the unique solution
-of the variational inequality `a(u, v − u) ≥ ℓ(v − u)`, the book's (11.3.13).  The instantiation
-of `theorem_11_2_2` and `theorem_11_2_2_iff` at `j = 0`, kept abstract so that the concrete
-Sobolev instance of Example 11.2.3 is a single application (the typed Sobolev context makes every
-unification step expensive). -/
+/-- **Theorem 11.2.2** of [han2009theoretical] with $j = 0$. Let $V$ be a real Hilbert space and let
+$K \subseteq V$ be nonempty, closed and convex. Let $a$ be a bilinear form on $V$ that is
+bounded with constant $M$, symmetric, and $V$-elliptic with constant $\alpha > 0$, and let
+$\ell \in V'$. Then the energy $E(v) = \frac12 a(v, v) - \ell(v)$ has exactly one minimizer on
+$K$, and the variational inequality
+$$u \in K, \qquad a(u, v - u) \ge \ell(v - u) \quad \text{for all } v \in K,$$
+which is (11.3.13), has exactly one solution.
+
+This combines `AtkinsonHan.Chapter11.theorem_11_2_2` and
+`AtkinsonHan.Chapter11.theorem_11_2_2_iff` at $j = 0$. It is stated for an abstract space so
+that Example 11.2.3 is a single application of it. -/
 theorem theorem_11_2_2_zero (hM : a.IsBoundedWith M) (hα : 0 < α) (ha : a.IsEllipticWith α)
     (hs : LinearMap.BilinForm.IsSymm a) (ℓ : StrongDual ℝ V) {K : Set V}
     (hKne : K.Nonempty) (hKcl : IsClosed K) (hKcv : Convex ℝ K) :
@@ -249,21 +264,33 @@ theorem theorem_11_2_2_zero (hM : a.IsBoundedWith M) (hα : 0 < α) (ha : a.IsEl
 
 variable {d : ℕ} (Ω : Opens (EuclideanSpace ℝ (Fin (d + 1))))
 
-/-- **Example 11.2.3 (the obstacle problem, continued)**: on a bounded open `Ω ⊆ B(0, R)`, for an
-obstacle `ψ ∈ H¹(Ω)` whose positive part `max (ψ, 0)` is the function of an element of `H¹₀(Ω)`
-(the reading of "`ψ ≤ 0` on `Γ`", see `Chapter11/Section01`) and a load `f ∈ L²(Ω)`, the set
-`K = {v ∈ H¹₀(Ω) | v ≥ ψ a.e.}` is nonempty (it contains `max (0, ψ)`), closed and convex, and the
-energy `E(v) = ∫_Ω (½ |∇v|² − f v)` is strictly convex, coercive and continuous on it.  Hence, by
-Theorem 11.2.2, the minimization problem (11.1.6) has exactly one solution `u ∈ K`, and so has the
-equivalent variational inequality (11.1.7),
-`∫_Ω ∇u · ∇(v − u) ≥ ∫_Ω f (v − u)` for all `v ∈ K`.
+/-- **Example 11.2.3** of [han2009theoretical] (the obstacle problem). Let
+$\Omega \subseteq \mathbb{R}^{d+1}$ be open with $\Omega \subseteq B(0, R)$ for some $R \ge 0$.
+Let $\psi \in H^1(\Omega)$ be an obstacle such that $\max\{\psi, 0\}$ is almost everywhere equal
+to the function of an element of $H^1_0(\Omega)$, and let $f \in L^2(\Omega)$. Let
+$$K = \{v \in H^1_0(\Omega) : v \ge \psi \text{ a.e. in } \Omega\}, \qquad E(v) = \int_\Omega
+  \Bigl(\tfrac12 |\nabla v|^2 - f v\Bigr) \, dx.$$
+Then $K$ is nonempty, closed and convex, and $E$ is strictly convex on $K$, coercive on $K$ and
+continuous. The minimization problem (11.1.6) of $E$ over $K$ has exactly one solution
+$u \in K$. The variational inequality (11.1.7),
+$$u \in K, \qquad \int_\Omega \nabla u \cdot \nabla (v - u) \, dx \ge \int_\Omega f (v - u) \,
+  dx \quad \text{for all } v \in K,$$
+also has exactly one solution.
 
-Strict convexity and coercivity come from the strong convexity of the quadratic energy of a
-`V`-elliptic symmetric form (`SesqForm.strongConvexOn_energy`, with Poincaré's constant
-`(1 + (2R)²)⁻¹`), continuity from `SesqForm.continuous_energy`; the minimizer is
-`theorem_11_2_2` at `j = 0` (`theorem_11_2_2_zero`), and the inequality is its
-characterization, Example 11.1.1.  The set-theoretic clauses are `obstacleSet_nonempty`,
-`isClosed_obstacleSet` and `convex_obstacleSet` of `Chapter11/Section01`. -/
+**Reading.** The source asks that $\psi \le 0$ on $\Gamma$. Without a trace, this is read as the
+condition that $\max\{\psi, 0\}$ is the function of an element of $H^1_0(\Omega)$, as in Example
+11.1.1. Then $\max\{\psi, 0\} \in K$.
+
+The set $K$ is `AtkinsonHan.Chapter11.obstacleSet` and the energy is
+`AtkinsonHan.Chapter11.obstacleEnergy`. The coercivity is `IsCoerciveFunctionalOn`:
+$E(v) \to \infty$ as $\|v\| \to \infty$ in $K$. The set-theoretic clauses are
+`AtkinsonHan.Chapter11.obstacleSet_nonempty`, `AtkinsonHan.Chapter11.isClosed_obstacleSet` and
+`AtkinsonHan.Chapter11.convex_obstacleSet`. Strict convexity and coercivity follow from the
+strong convexity of the energy of a symmetric $V$-elliptic form,
+`SesqForm.strongConvexOn_energy`, with the Poincaré constant $(1 + (2R)^2)^{-1}$, and from
+`StrongConvexOn.isCoerciveFunctionalOn_of_continuous`. Continuity is
+`SesqForm.continuous_energy`. The minimizer and the solution of the inequality come from
+`AtkinsonHan.Chapter11.theorem_11_2_2_zero`. -/
 theorem example_11_2_3 {R : ℝ} (hR : 0 ≤ R)
     (hΩ : (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))) ⊆ Metric.ball 0 R)
     {ψ : SobolevEuclidean (d + 1) 1 2 Ω}
@@ -319,24 +346,30 @@ section Friction
 
 variable {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))} (B : BoundaryData Ω) (𝒯 : B.TraceFamily)
 
-/-- `ℝ^N`, locally. -/
+/-- The Euclidean space $\mathbb{R}^N$, as local notation. -/
 local notation "𝔼" => EuclideanSpace ℝ (Fin N)
 
-/-- **Example 11.2.4 (the simplified friction problem, continued)**: over the boundary interface
-`B : BoundaryData Ω`, `𝒯 : B.TraceFamily` of `Numlib/Analysis/Sobolev/Boundary/Data.lean` — a
-bounded `C¹` domain (`IsContDiffDomain.traceFamily`) or a polygon without slits
-(`Triangulation.traceFamily`), the book's Lipschitz domain — for `g > 0` and `f ∈ L²(Ω)`, the
-variational inequality (11.1.13)
+/-- **Example 11.2.4** of [han2009theoretical] (the simplified friction problem). Let
+$\Omega \subseteq \mathbb{R}^N$ be open, with boundary data $B$ (a surface measure $ds$ on
+$\Gamma = \partial\Omega$) and a boundary trace $\gamma$ given by `𝒯 : B.TraceFamily`. Let
+$g > 0$ and $f \in L^2(\Omega)$. Then the variational inequality (11.1.13),
+$$u \in H^1(\Omega), \qquad \int_\Omega \bigl[\nabla u \cdot \nabla (v - u) + u (v - u)\bigr]
+  dx + g \int_\Gamma \bigl(|\gamma v| - |\gamma u|\bigr) ds \ge \int_\Omega f (v - u) \, dx
+  \quad \text{for all } v \in H^1(\Omega),$$
+has exactly one solution.
 
-  `u ∈ V = H¹(Ω)`, `∫_Ω [∇u·∇(v − u) + u (v − u)] + g ∫_Γ (|v| − |u|) ds ≥ ∫_Ω f (v − u)`
-  for all `v ∈ V`
+**Reading.** The source poses the problem on a Lipschitz domain. Here the domain is any open set
+with a boundary trace in the sense of `BoundaryData.TraceFamily`, for example a bounded $C^1$
+domain or a polygon without slits.
 
-has a unique solution. Theorem 11.2.2 on `V` with `K = V`, the form `a(u, v) = ∫_Ω (∇u·∇v + u v)`
-(`Chapter11.frictionBilinForm`: bounded, symmetric and `V`-elliptic with constant `1`, being the
-inner product of `H¹(Ω)`), the load `ℓ(v) = ∫_Ω f v` and the friction functional
-`j(v) = g ∫_Γ |v| ds`, convex and continuous (`Chapter11.convexOn_frictionFunctional`,
-`Chapter11.continuous_frictionFunctional`); the minimizer of the energy (11.1.12) is the
-solution of (11.1.13) by Example 11.1.2 (`Chapter11.example_11_1_2`). -/
+The proof applies Theorem 11.2.2 on $V = H^1(\Omega)$ with $K = V$. The form $a(u, v) =
+\int_\Omega (\nabla u \cdot \nabla v + u v)$ is `AtkinsonHan.Chapter11.frictionBilinForm`; it is
+the inner product of $H^1(\Omega)$, so it is bounded, symmetric and $V$-elliptic with constant
+$1$. The load is $\ell(v) = \int_\Omega f v$. The friction functional
+$j(v) = g \int_\Gamma |\gamma v| \, ds$ is `AtkinsonHan.Chapter11.frictionFunctional`; it is
+convex and continuous by `AtkinsonHan.Chapter11.convexOn_frictionFunctional` and
+`AtkinsonHan.Chapter11.continuous_frictionFunctional`. The minimizer of the energy (11.1.12)
+solves (11.1.13) by `AtkinsonHan.Chapter11.example_11_1_2`. -/
 theorem example_11_2_4 {g : ℝ} (hg : 0 < g) (f : Lp ℝ 2 (volume.restrict (Ω : Set 𝔼))) :
     ∃! u : SobolevEuclidean N 1 2 Ω, ∀ v : SobolevEuclidean N 1 2 Ω,
       ∫ x in (Ω : Set 𝔼), f x * SobolevMultiIndex.fn (v - u) x

@@ -10,48 +10,58 @@ import Mathlib.Analysis.SpecialFunctions.Trigonometric.Basic
 import Mathlib.Analysis.SpecialFunctions.Trigonometric.Deriv
 
 /-!
-# Atkinson–Han §6.1: difference approximations of derivatives
+# Atkinson and Han, Section 6.1: Difference Approximations of Derivatives
 
-Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework*, 3rd edition, Springer, 2009, §6.1.
-
-The section opens with the forward, backward and centred difference quotients (6.1.1)–(6.1.3) and
-the centred second difference (6.1.4), and then uses them to write down the forward-time
-centred-space, backward-time centred-space and Crank–Nicolson schemes for the heat equation
-`u_t = ν u_xx`.
-
-Those four difference formulas are the section's whole mathematical content, and they are the whole
-of this module.
-
-The book writes the error of each formula as `O(h)` or `O(h²)`.  What that abbreviates, and what
-the rest of the chapter uses, is a bound with an explicit constant against a bound on the relevant
-derivative, so that is the form the four statements take here.  The centred formulas need one
-derivative more than a naive count suggests, because the two Taylor expansions cancel to an extra
-order; that cancellation is what makes them second order, and is why the hypotheses are not
-weakened to the next lower derivative.
+This module formalizes Section 6.1 of [han2009theoretical]. The section introduces the forward,
+backward and centred difference quotients (6.1.1)–(6.1.3) for $f'(x)$ and the centred second
+difference (6.1.4) for $f''(x)$,
+$$\frac{f(x + h) - f(x)}{h}, \quad \frac{f(x) - f(x - h)}{h}, \quad \frac{f(x + h) - f(x - h)}{2h},
+  \quad \frac{f(x + h) - 2 f(x) + f(x - h)}{h^2},$$
+with the errors $O(h)$, $O(h)$, $O(h^2)$ and $O(h^2)$. It then uses them in Example 6.1.1 to write
+down the forward-time centred-space, the backward-time centred-space and the Crank–Nicolson schemes
+for the heat equation $u_t = \nu u_{xx}$. The module states the four error estimates, the equivalent
+forms of the three schemes, and the exact solution of the sample problem of the example. The proofs
+use only Mathlib's calculus.
 
 ## Main results
 
-* `equation_6_1_1`, `equation_6_1_2` — the forward and backward difference quotients approximate
-  `f'(x)` to within `(h/2) M`, where `M` bounds `|f''|` on the interval used.
-* `equation_6_1_3` — the centred difference quotient approximates `f'(x)` to within `(h²/6) M`,
-  with `M` a bound for `|f'''|`.
-* `equation_6_1_4` — the centred second difference approximates `f''(x)` to within `(h²/12) M`,
-  with `M` a bound for `|f''''|`.
-* `example_6_1_1` — the three schemes of Example 6.1.1 for the heat equation, each in the two forms
-  the book writes it in: the difference equation (6.1.8), (6.1.12), (6.1.16) and the explicit or
-  tridiagonal row (6.1.11), (6.1.15), (6.1.19) it "can be written as", with `r = ν h_t / h_x²`.
-* `example_6_1_1_exact` — the sample problem of Figures 6.1 and 6.2: `u (x, t) = e^{-t} sin x`
-  solves (6.1.5)–(6.1.7) for `ν = 1`, `f = 0` and `u₀ (x) = sin x`.
+* Equation (6.1.1), `AtkinsonHan.Chapter06.equation_6_1_1`: the forward difference quotient
+  approximates $f'(x)$ to within $(h/2) M$, where $M$ bounds $|f''|$.
+* Equation (6.1.2), `AtkinsonHan.Chapter06.equation_6_1_2`: the backward difference quotient
+  approximates $f'(x)$ to within $(h/2) M$, where $M$ bounds $|f''|$.
+* Equation (6.1.3), `AtkinsonHan.Chapter06.equation_6_1_3`: the centred difference quotient
+  approximates $f'(x)$ to within $(h^2/6) M$, where $M$ bounds $|f'''|$.
+* Equation (6.1.4), `AtkinsonHan.Chapter06.equation_6_1_4`: the centred second difference
+  approximates $f''(x)$ to within $(h^2/12) M$, where $M$ bounds $|f''''|$.
+* Example 6.1.1, `AtkinsonHan.Chapter06.example_6_1_1`: the difference equations (6.1.8), (6.1.12)
+  and (6.1.16) of the three schemes are equivalent to the explicit or tridiagonal forms (6.1.11),
+  (6.1.15) and (6.1.19).
+* Example 6.1.1, `AtkinsonHan.Chapter06.example_6_1_1_exact`: $u(x, t) = e^{-t} \sin x$ solves the
+  sample problem (6.1.5)–(6.1.7) with $\nu = 1$, $f = 0$ and $u_0(x) = \sin x$.
 
-## Not formalized here
+## Conventions
 
-The rest of Example 6.1.1: the grid `x_j = j h_x`, `t_m = m h_t` and the boundary and initial
-conditions (6.1.9)–(6.1.10), (6.1.13)–(6.1.14), (6.1.17)–(6.1.18) are data rather than claims, and
-Figures 6.1–6.2 are plots of computed errors, whose numbers a rigorous statement would have to
-recompute. The section numbers no theorem at all, and nothing downstream needs the four difference
-estimates either: §6.2 and §6.3 take consistency as a hypothesis rather than deriving it from these
-formulas.
+* The book writes the errors as $O(h)$ and $O(h^2)$. The statements give a bound with an explicit
+  constant times a bound on the relevant derivative, which is what the rest of the chapter uses. The
+  centred formulas need one more derivative than a naive count suggests, because terms of the two
+  Taylor expansions cancel; this cancellation is what makes them second order, so the hypotheses are
+  not weakened to the next lower derivative.
+
+## Deviations from the source
+
+* **Example 6.1.1, (6.1.19)** (typo). The book prints $u_{j \pm 1}^{m-1}$ where it means
+  $v_{j \pm 1}^{m-1}$. See `AtkinsonHan.Chapter06.example_6_1_1`.
+
+## Not formalized
+
+* **Example 6.1.1, the grid and the side conditions.** The grid $x_j = j h_x$, $t_m = m h_t$ and the
+  boundary and initial conditions (6.1.9)–(6.1.10), (6.1.13)–(6.1.14) and (6.1.17)–(6.1.18) are
+  data, not claims.
+* **Figures 6.1 and 6.2.** They plot computed errors, whose values a rigorous statement would have
+  to compute again.
+
+The section has no numbered theorem, and no later section uses the four estimates: Sections 6.2 and
+6.3 take consistency as a hypothesis.
 -/
 
 open Set
@@ -62,9 +72,8 @@ section Differences
 
 variable {f f' f'' f''' f'''' : ℝ → ℝ} {x h M : ℝ}
 
-/-- The single estimate behind all four formulas below, applied once for each order of the Taylor
-expansion that has to be undone: a function vanishing at `0` whose derivative on `[0, b]` is
-bounded by `C tⁿ` is itself bounded there by `D t^{n+1}`, where `D (n + 1) = C`. -/
+/-- The estimate behind the four difference formulas: if $g(0) = 0$ and $|g'(t)| \le C t^n$ on
+$[0, b]$ with $D(n + 1) = C$, then $|g(t)| \le D t^{n+1}$ on $[0, b]$. -/
 private theorem abs_le_of_abs_deriv_le_mul_pow {g g' : ℝ → ℝ} {b C D : ℝ} (n : ℕ)
     (hD : D * (n + 1) = C) (hg0 : g 0 = 0)
     (hg : ∀ t ∈ Icc (0 : ℝ) b, HasDerivAt g (g' t) t)
@@ -86,9 +95,10 @@ private theorem abs_le_of_abs_deriv_le_mul_pow {g g' : ℝ → ℝ} {b C D : ℝ
     (fun s hs => by simpa using hC s (Ico_subset_Icc_self hs)) ht
   simpa using hmain
 
-/-- **(6.1.1)**: the *forward* difference quotient approximates `f'(x)` to first order.  If `f` has
-a second derivative bounded by `M` on `[x, x + h]`, then
-`|f'(x) − (f(x + h) − f(x))/h| ≤ (h/2) M`. -/
+/-- **Equation (6.1.1)** of [han2009theoretical], the forward difference quotient. Let $h > 0$, and
+let $f$ have the derivatives $f'$ and $f''$ on $[x, x + h]$ with $|f''(y)| \le M$ there. Then
+$$\left| f'(x) - \frac{f(x + h) - f(x)}{h} \right| \le \frac{h}{2} M.$$
+-/
 theorem equation_6_1_1 (hh : 0 < h) (hf : ∀ y ∈ Icc x (x + h), HasDerivAt f (f' y) y)
     (hf' : ∀ y ∈ Icc x (x + h), HasDerivAt f' (f'' y) y)
     (hM : ∀ y ∈ Icc x (x + h), |f'' y| ≤ M) :
@@ -118,9 +128,10 @@ theorem equation_6_1_1 (hh : 0 < h) (hf : ∀ y ∈ Icc x (x + h), HasDerivAt f 
   calc |f (x + h) - f x - h * f' x| ≤ M / 2 * h ^ 2 := hkey
     _ = h / 2 * M * h := by ring
 
-/-- **(6.1.2)**: the *backward* difference quotient approximates `f'(x)` to first order.  If `f` has
-a second derivative bounded by `M` on `[x − h, x]`, then
-`|f'(x) − (f(x) − f(x − h))/h| ≤ (h/2) M`. -/
+/-- **Equation (6.1.2)** of [han2009theoretical], the backward difference quotient. Let $h > 0$, and
+let $f$ have the derivatives $f'$ and $f''$ on $[x - h, x]$ with $|f''(y)| \le M$ there. Then
+$$\left| f'(x) - \frac{f(x) - f(x - h)}{h} \right| \le \frac{h}{2} M.$$
+-/
 theorem equation_6_1_2 (hh : 0 < h) (hf : ∀ y ∈ Icc (x - h) x, HasDerivAt f (f' y) y)
     (hf' : ∀ y ∈ Icc (x - h) x, HasDerivAt f' (f'' y) y)
     (hM : ∀ y ∈ Icc (x - h) x, |f'' y| ≤ M) :
@@ -152,18 +163,19 @@ theorem equation_6_1_2 (hh : 0 < h) (hf : ∀ y ∈ Icc (x - h) x, HasDerivAt f 
 
 section Centred
 
-/-- The two reflected points `x ± t` lie in the symmetric interval `[x − h, x + h]`. -/
+/-- For $0 \le t \le h$, the two points $x + t$ and $x - t$ lie in $[x - h, x + h]$. -/
 private theorem mem_symm (hh : 0 < h) {t : ℝ} (ht : t ∈ Icc (0 : ℝ) h) :
     x + t ∈ Icc (x - h) (x + h) ∧ x - t ∈ Icc (x - h) (x + h) :=
   ⟨⟨by linarith [ht.1], by linarith [ht.2]⟩, ⟨by linarith [ht.2], by linarith [ht.1]⟩⟩
 
-/-- **(6.1.3)**: the *centred* difference quotient approximates `f'(x)` to second order.  If `f` has
-a third derivative bounded by `M` on `[x − h, x + h]`, then
-`|f'(x) − (f(x + h) − f(x − h))/(2h)| ≤ (h²/6) M`.
+/-- **Equation (6.1.3)** of [han2009theoretical], the centred difference quotient. Let $h > 0$, and
+let $f$ have the derivatives $f'$, $f''$ and $f'''$ on $[x - h, x + h]$ with $|f'''(y)| \le M$
+there. Then
+$$\left| f'(x) - \frac{f(x + h) - f(x - h)}{2h} \right| \le \frac{h^2}{6} M.$$
 
-The third derivative is genuinely needed: the expansions of `f(x + h)` and `f(x − h)` agree in
-their second-order terms, which therefore cancel in the difference, and the leading error is the
-third-order one. -/
+The third derivative is needed: the Taylor expansions of $f(x + h)$ and $f(x - h)$ have the same
+second-order terms, which cancel in the difference, so the leading error is the third-order
+term. -/
 theorem equation_6_1_3 (hh : 0 < h) (hf : ∀ y ∈ Icc (x - h) (x + h), HasDerivAt f (f' y) y)
     (hf' : ∀ y ∈ Icc (x - h) (x + h), HasDerivAt f' (f'' y) y)
     (hf'' : ∀ y ∈ Icc (x - h) (x + h), HasDerivAt f'' (f''' y) y)
@@ -217,12 +229,13 @@ theorem equation_6_1_3 (hh : 0 < h) (hf : ∀ y ∈ Icc (x - h) (x + h), HasDeri
   calc |f (x + h) - f (x - h) - 2 * h * f' x| ≤ M / 3 * h ^ 3 := hkey
     _ = h ^ 2 / 6 * M * (2 * h) := by ring
 
-/-- **(6.1.4)**: the *centred second difference* approximates `f''(x)` to second order.  If `f` has
-a fourth derivative bounded by `M` on `[x − h, x + h]`, then
-`|f''(x) − (f(x + h) − 2 f(x) + f(x − h))/h²| ≤ (h²/12) M`.
+/-- **Equation (6.1.4)** of [han2009theoretical], the centred second difference. Let $h > 0$, and
+let $f$ have the derivatives $f'$, $f''$, $f'''$ and $f''''$ on $[x - h, x + h]$ with
+$|f''''(y)| \le M$ there. Then
+$$\left| f''(x) - \frac{f(x + h) - 2 f(x) + f(x - h)}{h^2} \right| \le \frac{h^2}{12} M.$$
 
-Here it is the odd-order terms of the two expansions that cancel, which is what turns the order `h`
-a naive count would predict into `h²`. -/
+The odd-order terms of the two Taylor expansions cancel, which turns the order $h$ of a naive
+count into $h^2$. -/
 theorem equation_6_1_4 (hh : 0 < h) (hf : ∀ y ∈ Icc (x - h) (x + h), HasDerivAt f (f' y) y)
     (hf' : ∀ y ∈ Icc (x - h) (x + h), HasDerivAt f' (f'' y) y)
     (hf'' : ∀ y ∈ Icc (x - h) (x + h), HasDerivAt f'' (f''' y) y)
@@ -305,17 +318,27 @@ open Real
 
 open scoped Real
 
-/-- **Example 6.1.1**, the three difference equations and the forms the book solves them in. With
-`r = ν h_t / h_x²`, the forward-time centred-space equation (6.1.8) is the explicit update (6.1.11),
-the backward-time centred-space equation (6.1.12) is the tridiagonal row (6.1.15), and the
-Crank–Nicolson equation (6.1.16) is the tridiagonal row (6.1.19). Each clause is an equivalence,
-which is what "can be written as" means in the book, and each is the whole mathematical content of
-the corresponding scheme: the boundary and initial conditions (6.1.9)–(6.1.10), (6.1.13)–(6.1.14)
-and (6.1.17)–(6.1.18) are data rather than claims.
+/-- **Example 6.1.1** of [han2009theoretical], the three schemes for the heat equation. Let
+$h_x \neq 0$, $h_t \neq 0$ and $r = \nu h_t / h_x^2$. Write $v = v_j^m$,
+$v_\pm = v_{j \pm 1}^m$, $\bar v = v_j^{m-1}$, $\bar v_\pm = v_{j \pm 1}^{m-1}$ and
+$w = v_j^{m+1}$, and let $f$ be a real number. The forward-time centred-space equation (6.1.8)
+is equivalent to the explicit update (6.1.11):
+$$\frac{w - v}{h_t} = \nu \frac{v_+ - 2v + v_-}{h_x^2} + f
+  \iff w = (1 - 2r) v + r (v_+ + v_-) + h_t f.$$
+The backward-time centred-space equation (6.1.12) is equivalent to the tridiagonal row (6.1.15):
+$$\frac{v - \bar v}{h_t} = \nu \frac{v_+ - 2v + v_-}{h_x^2} + f
+  \iff (1 + 2r) v - r (v_+ + v_-) = \bar v + h_t f.$$
+The Crank–Nicolson equation (6.1.16) is equivalent to the tridiagonal row (6.1.19):
+$$\frac{v - \bar v}{h_t} = \nu \frac{(v_+ - 2v + v_-) + (\bar v_+ - 2 \bar v + \bar v_-)}{2
+  h_x^2} + f \iff (1 + r) v - \frac{r}{2} (v_+ + v_-) = (1 - r) \bar v + \frac{r}{2} (\bar v_+ +
+  \bar v_-) + h_t f.$$
 
-`w` is `v_j^{m+1}` in the first clause, `v` and `vprev` are `v_j^m` and `v_j^{m-1}`; `vp`, `vm` are
-the space neighbours `v_{j±1}` at the same time level and `vpprev`, `vmprev` those at the previous
-one. (6.1.19) is printed in the book with `u_{j±1}^{m-1}` where it means `v_{j±1}^{m-1}`. -/
+**Typo.** The book prints (6.1.19) with $u_{j \pm 1}^{m-1}$ where it means $v_{j \pm 1}^{m-1}$.
+
+Each equivalence is what "can be written as" means in the book. The Lean variables `vp`, `vm`,
+`vprev`, `vpprev` and `vmprev` stand for $v_+$, $v_-$, $\bar v$, $\bar v_+$ and $\bar v_-$. The
+boundary and initial conditions (6.1.9)–(6.1.10), (6.1.13)–(6.1.14) and (6.1.17)–(6.1.18) are
+data, not claims. -/
 theorem example_6_1_1 {ν hx ht r : ℝ} (hx0 : hx ≠ 0) (ht0 : ht ≠ 0) (hr : r = ν * ht / hx ^ 2)
     (w v vp vm vprev vpprev vmprev f : ℝ) :
     ((w - v) / ht = ν * ((vp - 2 * v + vm) / hx ^ 2) + f ↔
@@ -331,13 +354,15 @@ theorem example_6_1_1 {ν hx ht r : ℝ} (hx0 : hx ≠ 0) (ht0 : ht ≠ 0) (hr :
   refine ⟨?_, ?_, ?_⟩ <;>
     · constructor <;> intro h <;> field_simp at h ⊢ <;> linarith
 
-/-- **Example 6.1.1**, the sample problem of Figures 6.1 and 6.2: for `ν = 1`, `f = 0` and
-`u₀ (x) = sin x`, the solution of (6.1.5)–(6.1.7) is `u (x, t) = e^{-t} sin x`, as the book says can
-be verified. Its time derivative and its second space derivative are both `-e^{-t} sin x`, so it
-solves the heat equation; it vanishes at `x = 0` and `x = π`, and reduces to `sin x` at `t = 0`.
+/-- **Example 6.1.1** of [han2009theoretical], the sample problem of Figures 6.1 and 6.2. For
+$\nu = 1$, $f = 0$ and $u_0(x) = \sin x$, the function $u(x, t) = e^{-t} \sin x$ solves
+(6.1.5)–(6.1.7), as the book says can be verified: $u_t = -e^{-t} \sin x$, $u_x = e^{-t} \cos x$
+and $u_{xx} = -e^{-t} \sin x$, so $u_t = u_{xx}$; moreover $u(0, t) = u(\pi, t) = 0$ for all
+$t$, and $u(x, 0) = \sin x$ for all $x$.
 
-Figures 6.1 and 6.2 plot the errors of the forward and backward schemes against this solution; the
-plotted numbers are not stated. -/
+The statement is the conjunction of these six facts, with each derivative stated by
+`HasDerivAt`. Figures 6.1 and 6.2 plot the errors of the forward and the backward schemes
+against this solution; the plotted values are not stated. -/
 theorem example_6_1_1_exact :
     (∀ x t : ℝ, HasDerivAt (fun s : ℝ => exp (-s) * sin x) (-(exp (-t) * sin x)) t) ∧
       (∀ x t : ℝ, HasDerivAt (fun y : ℝ => exp (-t) * sin y) (exp (-t) * cos x) x) ∧

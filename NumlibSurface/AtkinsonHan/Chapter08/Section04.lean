@@ -5,27 +5,61 @@ Released under Apache 2.0 license as described in the file LICENSE.
 import NumlibSurface.AtkinsonHan.Chapter07.Section03
 
 /-!
-# Atkinson–Han §8.4: weak formulations of linear elliptic boundary value problems
+# Atkinson and Han, Section 8.4: Weak formulations of linear elliptic boundary value problems
 
-Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework*, 3rd edition, Springer, 2009, §8.4.
+This module formalizes the one numbered result of Section 8.4 of [han2009theoretical], Lemma 8.4.1.
+Let $\Omega \subseteq \mathbb{R}^{d+1}$ be a bounded connected domain, and let
+$V = H^1(\Omega)/\mathbb{R}$ be the quotient of $H^1(\Omega)$ by the constant functions, with the
+quotient norm $\|[v]\|_V = \inf_{\alpha \in \mathbb{R}} \|v + \alpha\|_1$. The lemma states that
+this norm is equivalent to the seminorm $|v|_1 = \|\nabla v\|_{L^2(\Omega)}$. This makes the
+bilinear form $\bar a([u], [v]) = \int_\Omega \nabla u \cdot \nabla v \, dx$ of the pure Neumann
+problem (8.4.10) elliptic on $V$.
 
-The section's one numbered result is **Lemma 8.4.1**: on a Lipschitz domain `Ω`, the quotient
-norm `‖[v]‖_V = inf_{α ∈ ℝ} ‖v + α‖_1` of `V = H^1(Ω)/ℝ` is equivalent to the seminorm `|v|_1`,
-which is what makes the bilinear form `ā([u], [v]) = ∫_Ω ∇u · ∇v` of the pure Neumann problem
-(8.4.10) elliptic on `V`. It is here as `lemma_8_4_1`, a special case of Theorem 7.3.17 as the
-book says, proved directly as the Deny–Lions equivalence `theorem_7_3_12` with `k = 1`, `p = 2`
-and the one seminorm `f_1(v) = |∫_Ω v|`: the shift `α = −(∫_Ω v)/|Ω|` kills `f_1`, so
-`inf_α ‖v + α‖_1 ≤ ‖v + α‖_1 ≤ c |v|_1`, and `|v|_1 = |v + α|_1 ≤ ‖v + α‖_1` for every `α`. The
-domain hypothesis is the backbone's — a connected bounded extension domain, which the `C¹`
-domains of Definition 7.2.1 are (`isSobolevExtensionDomainAll_of_definition_7_2_1`) — where the
-book assumes a Lipschitz domain. The constant function `1` is carried by any element `𝟙` of
-`H^1(Ω)` whose function is `1` almost everywhere on `Ω`; `exists_fn_ae_eq_one` supplies one.
+The source calls the lemma a special case of Theorem 7.3.17. Here it is proved from the Deny–Lions
+norm equivalence `AtkinsonHan.Chapter07.theorem_7_3_12` with $k = 1$, $p = 2$ and the one seminorm
+$f_1(v) = |\int_\Omega v \, dx|$. The supporting results below show that the constant function $1$
+is in $H^1(\Omega)$, that $|\cdot|_1$ does not see constants, that $v \mapsto \int_\Omega v \, dx$
+is a bounded linear functional, and that $f_1$ satisfies the hypotheses of Theorem 7.3.12.
 
-The weak formulations (8.4.1)–(8.4.22) themselves — the homogeneous and non-homogeneous
-Dirichlet, Neumann, pure Neumann, mixed and general second-order problems — quantify over the
-trace `γ : H^1(Ω) → H^{1/2}(Γ)` of Theorem 7.3.10 (blocker 2 of `notes/frontier.md`) and are not
-stated; their abstract content is `theorem_8_3_4`.
+## Main results
+
+* Lemma 8.4.1, `AtkinsonHan.Chapter08.lemma_8_4_1`: on a connected bounded extension domain, $c_1
+  |v|_1 \le \inf_{\alpha \in \mathbb{R}} \|v + \alpha\|_1 \le c_2 |v|_1$ for all
+  $v \in H^1(\Omega)$.
+
+## Proof outline
+
+For $v \in H^1(\Omega)$ take $\alpha = -(\int_\Omega v \, dx)/|\Omega|$. Then $f_1(v + \alpha) = 0$,
+and the Deny–Lions inequality gives $\inf_\beta \|v + \beta\|_1 \le \|v + \alpha\|_1 \le c\,|v +
+\alpha|_1 = c\,|v|_1$. The lower bound holds with $c_1 = 1$, because
+$|v|_1 = |v + \beta|_1 \le \|v + \beta\|_1$ for every $\beta$.
+
+## Notation
+
+* `𝟚`: the exponent $p = 2$, written `((2 : ℝ≥0) : ℝ≥0∞)` as the backbone's Rellich–Kondrachov
+  theorem requires.
+
+## Implementation notes
+
+* $H^1(\Omega)$ is `SobolevMultiIndex ℝ (stdBasis (d + 1)) 1 𝟚 Ω volume`, the space of Definition
+  7.2.2 in the multi-index form. The seminorm $|v|_1$ is `SobolevMultiIndex.topSeminorm`.
+* The constant function $1$ is any element `one` of $H^1(\Omega)$ whose function is $1$ almost
+  everywhere on $\Omega$. `AtkinsonHan.Chapter08.exists_fn_ae_eq_one` gives one. The class $[v]$ is
+  not formed: the quotient norm is the infimum $\inf_\alpha \|v + \alpha \cdot 1\|$ over the
+  representatives.
+
+## Deviations from the source
+
+* **Lemma 8.4.1** (generalization). The source assumes a Lipschitz domain. The lemma here assumes a
+  connected bounded $W^{1,2}$-extension domain, which includes the $C^1$ domains of Definition
+  7.2.1. See `AtkinsonHan.Chapter08.lemma_8_4_1`.
+
+## Not formalized
+
+* **The weak formulations (8.4.1)–(8.4.22)** of the homogeneous and non-homogeneous Dirichlet
+  problems, the Neumann and pure Neumann problems, the mixed problem and the general second-order
+  problem. They are stated with the trace $\gamma : H^1(\Omega) \to H^{1/2}(\Gamma)$ of Theorem
+  7.3.10. Their abstract content is the Lax–Milgram lemma `AtkinsonHan.Chapter08.theorem_8_3_4`.
 -/
 
 open Filter MeasureTheory Set TopologicalSpace
@@ -36,18 +70,21 @@ namespace AtkinsonHan.Chapter08
 
 open AtkinsonHan.Chapter07 SobolevMultiIndex
 
-/-- The exponent `p = 2` in the form `((2 : ℝ≥0) : ℝ≥0∞)` of the backbone's Rellich–Kondrachov
-theorem (`Numlib/Analysis/Sobolev/Compactness.lean` takes `p : ℝ≥0`); `H^1(Ω)` is
-`SobolevMultiIndex ℝ (stdBasis (d + 1)) 1 𝟚 Ω volume`, definitionally the space
-`SobolevMultiIndex ℝ (stdBasis (d + 1)) 1 2 Ω volume` of `corollary_7_2_4`; the instance
-`Fact (1 ≤ 𝟚)` is the backbone's `fact_one_le_coe_two_ennreal`. -/
+/-- The exponent $p = 2$ as the element `((2 : ℝ≥0) : ℝ≥0∞)`, in the form that the backbone's
+Rellich–Kondrachov theorem in `Numlib.Analysis.Sobolev.Compactness` takes, since it has
+`p : ℝ≥0`. The space `SobolevMultiIndex ℝ (stdBasis (d + 1)) 1 𝟚 Ω volume` is by definition the
+space $H^1(\Omega)$ of `AtkinsonHan.Chapter07.corollary_7_2_4`, and the instance `Fact (1 ≤ 𝟚)`
+is `fact_one_le_coe_two_ennreal`. -/
 local notation "𝟚" => ((2 : ℝ≥0) : ℝ≥0∞)
 
 variable {d : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
 
-/-- **The constant function `1` lies in `H^1(Ω)`** for a bounded open `Ω`: there is an element
-`𝟙` of `W^{1,2}(Ω)` whose function is `1` almost everywhere on `Ω` — the restriction of a smooth
-compactly supported function equal to `1` on `closure Ω`. -/
+/-- Let $\Omega \subseteq \mathbb{R}^{d+1}$ be a bounded open set. Then the constant function $1$ is
+in $H^1(\Omega)$: there is an element $\mathbb{1} \in H^1(\Omega)$ whose function is equal to
+$1$ almost everywhere on $\Omega$.
+
+The element is the restriction to $\Omega$ of a smooth function with compact support that is
+equal to $1$ on the closure of $\Omega$. -/
 theorem exists_fn_ae_eq_one
     (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) :
     ∃ one : SobolevMultiIndex ℝ (stdBasis (d + 1)) 1 𝟚 Ω volume,
@@ -68,8 +105,9 @@ theorem exists_fn_ae_eq_one
   filter_upwards [ae_restrict_mem Ω.isOpen.measurableSet] with x hx
   exact hφ1 (subset_closure hx)
 
-/-- The top-order derivatives of an element of `H^1(Ω)` with constant function vanish, so its
-seminorm `|·|_1` is zero. -/
+/-- Let $\Omega \subseteq \mathbb{R}^{d+1}$ be open, and let $\mathbb{1} \in H^1(\Omega)$ have the
+function $1$ almost everywhere on $\Omega$. Then all first weak derivatives of $\mathbb{1}$ are
+zero, so $|\mathbb{1}|_1 = 0$. -/
 theorem topSeminorm_eq_zero_of_fn_ae_eq_one
     {one : SobolevMultiIndex ℝ (stdBasis (d + 1)) 1 𝟚 Ω volume}
     (hone : fn one =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))] 1) :
@@ -94,7 +132,11 @@ theorem topSeminorm_eq_zero_of_fn_ae_eq_one
     exact Lp.ext (Filter.EventuallyEq.trans
       ((ae_restrict_iff' Ω.isOpen.measurableSet).2 (h1.ae_eq h2)) (Lp.coeFn_zero ℝ 𝟚 _).symm)
 
-/-- The seminorm `|·|_1` does not see the constants: `|v + α 𝟙|_1 = |v|_1`. -/
+/-- Let $\Omega \subseteq \mathbb{R}^{d+1}$ be open, and let $\mathbb{1} \in H^1(\Omega)$ have the
+function $1$ almost everywhere on $\Omega$. Then the seminorm $|\cdot|_1$ does not see
+constants: for all $v \in H^1(\Omega)$ and $\alpha \in \mathbb{R}$,
+$$|v + \alpha \mathbb{1}|_1 = |v|_1.$$
+-/
 theorem topSeminorm_add_smul_one
     {one : SobolevMultiIndex ℝ (stdBasis (d + 1)) 1 𝟚 Ω volume}
     (hone : fn one =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))] 1)
@@ -104,8 +146,12 @@ theorem topSeminorm_add_smul_one
   (topSeminorm ℝ (stdBasis (d + 1)) 1 𝟚 Ω volume).apply_add_smul_of_eq_zero
     (topSeminorm_eq_zero_of_fn_ae_eq_one hone) v α
 
-/-- **The integral `v ↦ ∫_Ω v` is a bounded linear functional on `H^1(Ω)`** for a bounded `Ω`:
-`L^2(Ω) ⊆ L^1(Ω)` on a set of finite measure, then the Bochner integral. -/
+/-- Let $\Omega \subseteq \mathbb{R}^{d+1}$ be a bounded open set. Then the integral
+$v \mapsto \int_\Omega v \, dx$ is a bounded linear functional on $H^1(\Omega)$: there is
+$\ell \in H^1(\Omega)'$ with $\ell(v) = \int_\Omega v \, dx$ for all $v$.
+
+The proof uses $L^2(\Omega) \subseteq L^1(\Omega)$ on a set of finite measure, and then the
+Bochner integral. -/
 theorem exists_integralCLM (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) :
     ∃ ℓ : SobolevMultiIndex ℝ (stdBasis (d + 1)) 1 𝟚 Ω volume →L[ℝ] ℝ,
       ∀ v, ℓ v = ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))), fn v x := by
@@ -123,8 +169,13 @@ theorem exists_integralCLM (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace �
   refine integral_congr_ae ((hM _).trans ?_)
   exact Eventually.of_forall fun x ↦ by rw [fnL_apply]
 
-/-- **(H2) for the seminorm `|∫_Ω v|`**: an element of `H^1(Ω)` of a nonempty bounded `Ω` which
-is a constant polynomial almost everywhere and has vanishing integral is zero. -/
+/-- Let $\Omega \subseteq \mathbb{R}^{d+1}$ be a nonempty bounded open set. If $v \in H^1(\Omega)$
+is equal almost everywhere on $\Omega$ to a constant polynomial and $\int_\Omega v \, dx = 0$,
+then $v = 0$.
+
+This is hypothesis (H2) of `AtkinsonHan.Chapter07.theorem_7_3_12` with $k = 1$ for the seminorm
+$f_1(v) = |\int_\Omega v \, dx|$. A constant polynomial is an element of
+`MvPolynomial.restrictTotalDegree (Fin (d + 1)) ℝ 0`. -/
 theorem eq_zero_of_integral_eq_zero
     (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
     (hne : (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))).Nonempty)
@@ -152,8 +203,14 @@ theorem eq_zero_of_integral_eq_zero
   rw [hzero]
   exact fn_zero.symm
 
-/-- **The Deny–Lions inequality with the seminorm `|∫_Ω v|`**: on a connected bounded extension
-domain, `‖v‖_1 ≤ C (|v|_1 + |∫_Ω v|)` — `theorem_7_3_12` with `k = 1`, `p = 2` and `J = 1`. -/
+/-- The Deny–Lions inequality with the seminorm $|\int_\Omega v \, dx|$. Let
+$\Omega \subseteq \mathbb{R}^{d+1}$ be a nonempty, bounded and connected $W^{1,2}$-extension
+domain, and let $\ell \in H^1(\Omega)'$ satisfy $\ell(v) = \int_\Omega v \, dx$ for all $v$.
+Then there is $C > 0$ such that for all $v \in H^1(\Omega)$,
+$$\|v\|_1 \le C \left( |v|_1 + |\ell(v)| \right).$$
+
+This is `AtkinsonHan.Chapter07.theorem_7_3_12` with $k = 1$, $p = 2$ and the one seminorm
+$f_1(v) = |\ell(v)|$. Connectedness is the hypothesis `IsPreconnected`. -/
 theorem exists_norm_le_topSeminorm_add_abs_integral (hΩ : IsSobolevExtensionDomain (d + 1) 𝟚 Ω)
     (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
     (hc : IsPreconnected (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
@@ -173,17 +230,28 @@ theorem exists_norm_le_topSeminorm_add_abs_integral (hΩ : IsSobolevExtensionDom
     (N := d + 1) (k := 0) (p := 2) hΩ hμ hc ℓ h2
   exact h
 
-/-- **Lemma 8.4.1**: on a connected bounded extension domain `Ω ⊆ ℝ^{d+1}` (the book's Lipschitz
-domain; the `C¹` domains of Definition 7.2.1 included), for `𝟙 ∈ H^1(Ω)` the constant function
-`1`, the quotient norm `‖[v]‖_V = inf_{α ∈ ℝ} ‖v + α‖_1` of `V = H^1(Ω)/ℝ` is equivalent to the
-seminorm `|v|_1`: `c₁ |v|_1 ≤ inf_α ‖v + α 𝟙‖_1 ≤ c₂ |v|_1` for all `v ∈ H^1(Ω)`, with
-`c₁ = 1`. The book calls it a special case of Theorem 7.3.17; it is the Deny–Lions equivalence
-`theorem_7_3_12` with `k = 1`, `p = 2` and the one seminorm `f_1(v) = |∫_Ω v|`
-(`exists_norm_le_topSeminorm_add_abs_integral`), evaluated at the representative `v + α 𝟙` with
-`α = −(∫_Ω v)/|Ω|`, for which `f_1` vanishes (`Seminorm.ciInf_norm_add_smul_le_mul`); and
-`|v|_1 ≤ ‖v + α 𝟙‖_1` for every `α` because `|𝟙|_1 = 0` (`Seminorm.le_ciInf_norm_add_smul`).
-`H^1(Ω)` is the space of Definition 7.2.2 in the book's own indexing, and `|v|_1` its top-order
-seminorm `SobolevMultiIndex.topSeminorm`, the gradient norm `‖∇v‖_{L²(Ω)}`. -/
+/-- **Lemma 8.4.1** of [han2009theoretical]. Let $\Omega \subseteq \mathbb{R}^{d+1}$ be a nonempty,
+bounded and connected $W^{1,2}$-extension domain, and let $\mathbb{1} \in H^1(\Omega)$ have the
+function $1$ almost everywhere on $\Omega$. Then the quotient norm $\|[v]\|_V = \inf_{\alpha \in
+\mathbb{R}} \|v + \alpha \mathbb{1}\|_1$ of $V = H^1(\Omega)/\mathbb{R}$ is equivalent to the
+seminorm $|v|_1$: there are $c_1, c_2 > 0$ such that for all $v \in H^1(\Omega)$,
+$$c_1 |v|_1 \le \inf_{\alpha \in \mathbb{R}} \|v + \alpha \mathbb{1}\|_1 \le c_2 |v|_1.$$
+
+**Generalization.** The source assumes a Lipschitz domain. The lemma here assumes that $\Omega$
+is a $W^{1,2}$-extension domain (`IsSobolevExtensionDomain`). The $C^1$ domains of Definition
+7.2.1 are extension domains by
+`AtkinsonHan.Chapter07.isSobolevExtensionDomainAll_of_definition_7_2_1`. A Lipschitz domain is
+one by the extension theorems of Stein or Calderón, which are not formalized.
+
+The source calls the lemma a special case of Theorem 7.3.17. The proof here applies the
+Deny–Lions equivalence `AtkinsonHan.Chapter07.theorem_7_3_12` in the form
+`AtkinsonHan.Chapter08.exists_norm_le_topSeminorm_add_abs_integral` to the representative
+$v + \alpha \mathbb{1}$ with $\alpha = -(\int_\Omega v \, dx)/|\Omega|$, where the integral
+vanishes (`Seminorm.ciInf_norm_add_smul_le_mul`). The lower bound holds with $c_1 = 1$, because
+$|\mathbb{1}|_1 = 0$ gives $|v|_1 \le \|v + \alpha \mathbb{1}\|_1$ for every $\alpha$
+(`Seminorm.le_ciInf_norm_add_smul`). $H^1(\Omega)$ is the space of Definition 7.2.2, and $|v|_1$
+is its top-order seminorm `SobolevMultiIndex.topSeminorm`, the norm $\|\nabla v\|_{L^2(\Omega)}$
+of the gradient. -/
 theorem lemma_8_4_1 (hΩ : IsSobolevExtensionDomain (d + 1) 𝟚 Ω)
     (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
     (hc : IsPreconnected (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))

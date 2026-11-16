@@ -9,100 +9,130 @@ import NumlibSurface.AtkinsonHan.Chapter08.Section03
 import NumlibSurface.AtkinsonHan.Chapter11.Section01
 
 /-!
-# Atkinson–Han §11.3: existence and uniqueness for elliptic variational inequalities
+# Atkinson and Han, Section 11.3: Existence and uniqueness for elliptic variational inequalities
 
-Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework*, 3rd edition, Springer, 2009, §11.3.
+This module formalizes Section 11.3 of [han2009theoretical]. Let $V$ be a real Hilbert space,
+$K \subseteq V$ a nonempty closed convex set, $A \colon V \to V$ an operator,
+$j \colon V \to \mathbb{R}$ a convex functional and $f \in V$. The section studies the elliptic
+variational inequality (11.3.3),
+$$u \in K, \qquad (A u, v - u) + j(v) - j(u) \ge (f, v - u) \quad \text{for all } v \in K.$$
+The inequality of the first kind (11.3.8) is the case $j = 0$, and the inequality of the second kind
+(11.3.9) is the case $K = V$. The displays (11.3.12)–(11.3.14) are the same three problems with $A$
+the operator of a bounded $V$-elliptic bilinear form $a$, written
+$a(u, v - u) + j(v) - j(u) \ge \ell(v - u)$. Theorem 11.3.1 says that (11.3.3) has exactly one
+solution when $A$ is strongly monotone and Lipschitz continuous, and that the solution depends
+Lipschitz continuously on $f$. Theorems 11.3.6, 11.3.7 and 11.3.9 are its special cases, and Lemma
+11.3.8 (Minty's lemma) gives an equivalent form with $A$ evaluated at the test point.
 
-The section studies, on a real Hilbert space `V`, the inequality (11.3.3)
+Examples 11.3.10 and 11.3.11 apply Theorem 11.3.9 to the obstacle problem on $H^1_0(\Omega)$ and to
+the simplified friction problem on $H^1(\Omega)$ of Section 11.1. Theorem 11.3.12, the regularity of
+the solution of the obstacle problem, is proved for $p = 2$ and the Laplacian on a $C^2$ domain. The
+abstract results specialize `existsUnique_isVariationalInequalitySolution_on` and
+`IsVariationalInequalitySolution.norm_sub_le` of `Numlib.Variational.Inequality.Basic`, and the
+regularity result specializes `Elliptic.regularity_obstacle_sobolev_two` of
+`Numlib.Analysis.PDE.Elliptic.Obstacle`.
 
-  `u ∈ K`,  `(A u, v - u) + j(v) - j(u) ≥ (f, v - u)`  for all `v ∈ K`,
+## Main definitions
 
-and the five variants the book displays beside it: the inequality *of the first kind* (11.3.8) is
-`j = 0`, the inequality *of the second kind* (11.3.9) is `K = V`, and (11.3.12)–(11.3.14) are the
-same three with `A` the operator of a bounded `V`-elliptic bilinear form.  All six are one
-predicate, `AtkinsonHan.Chapter11.IsVariationalInequalitySolution`, which is the backbone's
-`IsVariationalInequalitySolution` written with the book's `≥`; the identification is
-`isVariationalInequalitySolution_iff`, and the four unfoldings the book uses are
-`isVariationalInequalitySolution_zero_iff`, `..._univ_iff`, `..._univ_zero_iff` and
-`..._toOperator_iff`.
-
-Because the six displays differ only in the arguments of that one predicate,
-**Theorem 11.3.9 is a single theorem covering (11.3.12), (11.3.13) and (11.3.14)**, and
-Theorem 11.3.6 is Theorem 11.3.1 at `j = 0`.
-
-The book's vocabulary is already in this surface: strong monotonicity (11.3.1) is
-`AtkinsonHan.Chapter05.StronglyMonotoneWith`, introduced for Theorem 5.1.4, and the Lipschitz
-condition (11.3.2) crosses to Mathlib's `LipschitzWith` by
-`AtkinsonHan.Chapter05.lipschitzWith_toNNReal_iff`. `V`-ellipticity of a bilinear form is
-`AtkinsonHan.BilinForm.IsEllipticWith` of §8.3.
+* (11.3.3), (11.3.8), (11.3.9) and (11.3.12)–(11.3.14),
+  `AtkinsonHan.Chapter11.IsVariationalInequalitySolution`: $u \in K$ and
+  $(A u, v - u) + j(v) - j(u) \ge (f, v - u)$ for all $v \in K$.
+* Theorem 11.3.12, `AtkinsonHan.Chapter11.obstacleOfH2`: an obstacle in $H^2(\Omega)$, viewed as an
+  element of $H^1(\Omega)$.
 
 ## Main results
 
-* `lemma_11_3_5` — a convex lower semicontinuous functional on a closed convex set has a
-  continuous affine minorant.
-* `theorem_11_3_1` — unique solvability of (11.3.3) and Lipschitz dependence on `f`.
-* `theorem_11_3_6` — Stampacchia's theorem, the inequality of the first kind.
-* `theorem_11_3_7` — the inequality of the second kind.
-* `lemma_11_3_8` — Minty's lemma, the equivalent form (11.3.10) with `A` at the test point.
-* `theorem_11_3_9` — the bilinear-form problems (11.3.12)–(11.3.14).
-* `isBestApprox_energy_of_theorem_11_3_9` — for symmetric `a` and `j = 0` the solution is the best
-  approximation to the solution of the variational equation in the energy norm.
-* `exercise_11_3_1` — Theorem 11.3.1 with (11.3.2) weakened to a *local* Lipschitz condition, and
-  `exercise_11_3_1_growth` for its part (a).
-* `exercise_11_3_2`, `exercise_11_3_3`, `exercise_11_3_10`, `exercise_11_3_13`.
+* Theorem 11.3.1, `AtkinsonHan.Chapter11.theorem_11_3_1`: for a strongly monotone Lipschitz
+  operator, (11.3.3) has exactly one solution for every $f$, and
+  $\|u_1 - u_2\| \le c_0^{-1} \|f_1 - f_2\|$.
+* Lemma 11.3.5, `AtkinsonHan.Chapter11.lemma_11_3_5`: a convex lower semicontinuous functional on a
+  nonempty closed convex set has a continuous affine minorant.
+* Theorem 11.3.6, `AtkinsonHan.Chapter11.theorem_11_3_6` (Stampacchia's theorem): the inequality of
+  the first kind (11.3.8) is uniquely solvable, with Lipschitz dependence on $f$.
+* Theorem 11.3.7, `AtkinsonHan.Chapter11.theorem_11_3_7`: the inequality of the second kind (11.3.9)
+  is uniquely solvable, with Lipschitz dependence on $f$.
+* Lemma 11.3.8, `AtkinsonHan.Chapter11.lemma_11_3_8` (Minty's lemma): for a monotone operator,
+  (11.3.3) is equivalent to (11.3.10), $(A v, v - u) + j(v) - j(u) \ge (f, v - u)$ for all
+  $v \in K$.
+* Theorem 11.3.9, `AtkinsonHan.Chapter11.theorem_11_3_9`: for a bounded $V$-elliptic bilinear form,
+  (11.3.12) is uniquely solvable, with $\|u_1 - u_2\| \le \alpha^{-1} \|\ell_1 - \ell_2\|$; this
+  covers (11.3.13) and (11.3.14).
+* Theorem 11.3.9 with $j = 0$, `AtkinsonHan.Chapter11.theorem_11_3_9_zero_existsUnique` and
+  `AtkinsonHan.Chapter11.theorem_11_3_9_zero_lipschitz`: unique solvability of (11.3.13) and
+  Lipschitz dependence on $\ell$.
+* Example 11.3.10, `AtkinsonHan.Chapter11.example_11_3_10`: the obstacle problem is uniquely
+  solvable for every $f \in L^2(\Omega)$, with Lipschitz dependence on $f$.
+* Example 11.3.11, `AtkinsonHan.Chapter11.example_11_3_11`: the simplified friction problem is
+  uniquely solvable for every $f \in L^2(\Omega)$, with Lipschitz dependence on $f$.
+* Remark after Example 11.3.11, `AtkinsonHan.Chapter11.isBestApprox_energy_of_theorem_11_3_9`: for a
+  symmetric form and $j = 0$, the solution of (11.3.13) is the best approximation in $K$, in the
+  energy norm, to the solution of the variational equation.
+* Theorem 11.3.12, `AtkinsonHan.Chapter11.theorem_11_3_12_two`: for $p = 2$ and the Laplacian on a
+  bounded $C^2$ domain, the solution of the obstacle problem lies in $H^2(\Omega)$, with
+  $\|u\|_{H^2} \le C (\|f\|_{L^2} + \|\psi\|_{H^2})$.
+* Theorem 11.3.12, `AtkinsonHan.Chapter11.isObstacleSolution_of_example_11_3_10` and
+  `AtkinsonHan.Chapter11.norm_le_of_obstacle_solution`: the solution of Example 11.3.10 is an
+  obstacle solution in the sense of the backbone, and it satisfies an a priori $H^1$ bound.
+* Exercise 11.3.1, `AtkinsonHan.Chapter11.exercise_11_3_1`: Theorem 11.3.1 holds with the Lipschitz
+  condition (11.3.2) replaced by a local Lipschitz condition; part (a) is
+  `AtkinsonHan.Chapter11.exercise_11_3_1_growth`.
+* Exercise 11.3.2, `AtkinsonHan.Chapter11.exercise_11_3_2`: the Lax–Milgram lemma as the case
+  $K = V$, $j = 0$ of Theorem 11.3.6.
+* Exercise 11.3.3, `AtkinsonHan.Chapter11.exercise_11_3_3`: on a convex cone, (11.3.13) is
+  equivalent to $a(u, v) \ge \ell(v)$ for all $v \in K$ together with $a(u, u) = \ell(u)$.
+* Exercise 11.3.10, `AtkinsonHan.Chapter11.exercise_11_3_10`: for a positively homogeneous $j$,
+  (11.3.14) is equivalent to $a(u, v) + j(v) \ge \ell(v)$ for all $v$ together with
+  $a(u, u) + j(u) = \ell(u)$.
+* Exercise 11.3.13, `AtkinsonHan.Chapter11.exercise_11_3_13`: the equation $A u = f$ with $A$
+  strongly monotone and Lipschitz is uniquely solvable, with Lipschitz dependence on $f$.
 
-## Deviations from the book
+## Conventions
 
-Minty's lemma is stated with **right-continuity of `A` along the segments of `K` issuing from
-`u`**, which is what the proof consumes, rather than with the book's continuity of `A` on the
-finite-dimensional subspaces of `V`; the latter implies it, because the segment from `u` to `v`
-lies in the span of `u` and `v`.  `continuousWithinAt_segment_of_continuous` records the cheap
-sufficient condition, which already covers the Lipschitz operators of Theorem 11.3.1.
+* Strong monotonicity (11.3.1) is `AtkinsonHan.Chapter05.StronglyMonotoneWith` of Section 5.1. The
+  Lipschitz condition (11.3.2) is written out as $\|A v_1 - A v_2\| \le M \|v_1 - v_2\|$;
+  `AtkinsonHan.Chapter05.lipschitzWith_toNNReal_iff` relates it to Mathlib's `LipschitzWith`. The
+  $V$-ellipticity of a bilinear form is `AtkinsonHan.BilinForm.IsEllipticWith` of Section 8.3.
 
-Exercise 11.3.1 is proved through the backbone's
-`existsUnique_isVariationalInequalitySolution_on`, the form of Theorem 11.3.1 whose hypotheses on
-`A` are required on the constraint set alone.  That form is **Remark 11.3.2**, which the book states
-without proof and which the fixed point argument gives for nothing: every iterate stays in `K`.
+## Implementation notes
 
-* `example_11_3_10` — the obstacle problem of §11.1 (`Chapter11/Section01`) as an inequality of
-  the first kind on `H¹₀(Ω)`: unique solvability for every `f ∈ L²(Ω)` and Lipschitz dependence
-  on `f`, from Theorem 11.3.9 at `j = 0` (`theorem_11_3_9_zero_existsUnique`,
-  `theorem_11_3_9_zero_lipschitz`).
+* All six displays (11.3.3), (11.3.8), (11.3.9) and (11.3.12)–(11.3.14) are the one predicate
+  `AtkinsonHan.Chapter11.IsVariationalInequalitySolution` with different arguments. It is the
+  backbone's `IsVariationalInequalitySolution` written with $\ge$, by
+  `AtkinsonHan.Chapter11.isVariationalInequalitySolution_iff`. Hence Theorem 11.3.9 is one theorem
+  that covers (11.3.12), (11.3.13) and (11.3.14), and Theorem 11.3.6 is Theorem 11.3.1 at $j = 0$.
+* Remark 11.3.2, which the source states without proof, is the backbone theorem
+  `existsUnique_isVariationalInequalitySolution_on`: the hypotheses on $A$ are needed on $K$ only,
+  because every iterate of the fixed-point argument stays in $K$. Exercise 11.3.1 is proved through
+  it.
 
-* `example_11_3_11` — the simplified friction problem of §11.1 (`Chapter11/Section01`) as an
-  inequality of the second kind on `H¹(Ω)`, over the boundary interface `BoundaryData Ω`,
-  `BoundaryData.TraceFamily` (a bounded `C¹` domain or a polygon, the book's Lipschitz domain):
-  unique solvability for every `f ∈ L²(Ω)` and Lipschitz dependence on `f`, from Theorem 11.3.9
-  with the convex continuous friction functional `g ∫_Γ |v| ds` (`Chapter11.frictionFunctional`).
+## Deviations from the source
 
-## Not formalized here
+* **Lemma 11.3.8** (generalization). The source assumes that $A$ is continuous on the
+  finite-dimensional subspaces of $V$. The library assumes only that $A$ is right-continuous along
+  the segments of $K$ that start at $u$, which the continuity of the source implies. See
+  `AtkinsonHan.Chapter11.lemma_11_3_8`.
+* **Example 11.3.10 and Theorem 11.3.12** (reading). The condition "$\psi \le 0$ on $\Gamma$" on the
+  obstacle is read as: $\max\{\psi, 0\}$ is the function of an element of $H^1_0(\Omega)$. See
+  `AtkinsonHan.Chapter11.example_11_3_10`.
+* **Example 11.3.11** (reading). The Lipschitz domain of the source is a domain with a boundary
+  trace in the sense of `BoundaryData.TraceFamily`, for example a bounded $C^1$ domain or a polygon
+  without slits. See `AtkinsonHan.Chapter11.example_11_3_11`.
 
-* **Theorem 11.3.12 in the book's generality.** On a `C^{1,1}` domain `Ω ⊆ ℝ^d`, for
-  `a_ij ∈ C(Ω̄)` uniformly elliptic, `p ∈ [2, ∞)`, `f ∈ L^p(Ω)` and an obstacle
-  `ψ ∈ W^{2,p}(Ω)` with `ψ ≤ 0` on `Γ`, the solution of the obstacle problem on
-  `K = {v ∈ H¹₀(Ω) : v ≥ ψ a.e.}` lies in `W^{2,p}(Ω)` and satisfies
-  `‖u‖_{2,p} ≤ C_p (‖f‖_{0,p} + ‖ψ‖_{2,p})` with `C_p` independent of `u`, `f` and `ψ`. The book
-  quotes it without proof, from Brezis–Stampacchia and Gilbarg–Trudinger Theorem 9.14.
+## Not formalized
 
-  **The `p = 2` case is proved**, as `theorem_11_3_12_two` below: for `a_ij = δ_ij` on a bounded
-  `C²` domain, the solution of the obstacle problem lies in `H²(Ω)` with the corresponding bound.
-  The route is the Lewy–Stampacchia inequality `f ≤ −Δu ≤ max (f, −Δψ)`, which is
-  `Elliptic.IsObstacleSolution.exists_dirichletForm_eq_load` of
-  `Numlib/Analysis/PDE/Elliptic/Obstacle.lean` (proved by the truncation `min (εΦ, u − ψ)` and
-  Hahn–Banach, not by penalization); it gives `−Δu ∈ L²(Ω)` and so reduces the obstacle problem
-  to `Elliptic.regularity_dirichlet`. `Elliptic.regularity_obstacle_sobolev_two` is the backbone
-  form, with the a priori bound `Elliptic.IsObstacleSolution.norm_le` and
-  `‖ψ⁺‖_{H¹} ≤ ‖ψ‖_{H¹} ≤ ‖ψ‖_{H²}`.
-
-  What remains is exactly the book's extra generality, in three independent directions:
-  `W^{2,p}` and `L^p` regularity for `p ≠ 2`, which is Gilbarg–Trudinger Theorem 9.14 and rests
-  on the Calderón–Zygmund theory that neither Mathlib nor `Numlib/` has; general uniformly
-  elliptic `a_ij ∈ C(Ω̄)`, the linear regularity theory `Elliptic.regularity_dirichlet` being for
-  `−Δ + 1` only; and the `C^{1,1}` boundary class in place of `C²`.
-
-* The one-dimensional solution formula following Example 11.3.11, and Exercises 11.3.4–11.3.9,
-  11.3.11 and 11.3.12, all of which name a domain and hence a Sobolev space.
+* **Theorem 11.3.12 in the generality of the source** ($1 < p < \infty$, uniformly elliptic
+  coefficients $a_{ij} \in C(\overline\Omega)$, a $C^{1,1}$ domain). Only the case $p = 2$,
+  $a_{ij} = \delta_{ij}$ on a $C^2$ domain is formalized, as
+  `AtkinsonHan.Chapter11.theorem_11_3_12_two`. The source quotes the theorem without proof from
+  Brezis–Stampacchia and from Theorem 9.14 of Gilbarg–Trudinger. The remaining generality needs
+  $W^{2,p}$ and $L^p$ regularity for $p \neq 2$, which rests on the Calderón–Zygmund theory; the
+  linear regularity theory for general uniformly elliptic coefficients, since
+  `Elliptic.regularity_dirichlet` is for $-\Delta + 1$ only; and the $C^{1,1}$ boundary class in
+  place of $C^2$.
+* **The one-dimensional solution formula after Example 11.3.11.** It names a domain and hence a
+  Sobolev space.
+* **Exercises 11.3.4–11.3.9, 11.3.11 and 11.3.12.** Each of them names a domain and hence a Sobolev
+  space.
 -/
 
 open Filter Set TopologicalSpace Topology
@@ -112,13 +142,16 @@ namespace AtkinsonHan.Chapter11
 
 /-! ### Lemma 11.3.5: the affine minorant -/
 
-/-- **Lemma 11.3.5.**  A convex, lower semicontinuous functional on a nonempty closed convex
-subset `K` of a real normed space is bounded below there by a continuous affine functional,
-`j v ≥ ℓ(v) + c` for all `v ∈ K`.
+/-- **Lemma 11.3.5** of [han2009theoretical]. Let $W$ be a real normed space, let $K \subseteq W$ be
+nonempty and closed, and let $j \colon W \to \mathbb{R}$ be convex and lower semicontinuous on
+$K$. Then there are $\ell \in W'$ and $c \in \mathbb{R}$ with
+$$j(v) \ge \ell(v) + c \quad \text{for all } v \in K.$$
 
-The book proves it by separating the epigraph of `j` from a point below its graph; that separation
-argument is Mathlib's `ConvexOn.exists_affine_le_of_lt`.  The book's `j : V → ℝ ∪ {+∞}` is proper,
-so its effective domain is a set on which it is real-valued, and that set is the `K` here. -/
+The convexity of $K$ is part of `ConvexOn ℝ K j`. The function
+$j \colon V \to \mathbb{R} \cup \{+\infty\}$ of the source is proper, so it is real-valued on
+its effective domain, and that set is the $K$ here. The source proves the lemma by separating
+the epigraph of $j$ from a point below its graph; that separation is Mathlib's
+`ConvexOn.exists_affine_le_of_lt`. -/
 theorem lemma_11_3_5 {W : Type*} [NormedAddCommGroup W] [NormedSpace ℝ W] {K : Set W}
     (hKne : K.Nonempty) (hKcl : IsClosed K) {j : W → ℝ} (hj : ConvexOn ℝ K j)
     (hjlsc : LowerSemicontinuousOn j K) : ∃ (ℓ : W →L[ℝ] ℝ) (c : ℝ), ∀ v ∈ K, ℓ v + c ≤ j v := by
@@ -131,40 +164,45 @@ variable {V : Type*} [NormedAddCommGroup V] [InnerProductSpace ℝ V]
 
 /-! ### The variational inequality (11.3.3) and its five variants -/
 
-/-- **The elliptic variational inequality (11.3.3).**  `u ∈ K` satisfies
+/-- **Equation (11.3.3)** of [han2009theoretical], the elliptic variational inequality. Let $V$ be a
+real inner product space, $A \colon V \to V$, $j \colon V \to \mathbb{R}$, $f \in V$ and
+$K \subseteq V$. A point $u$ is a **solution of the variational inequality** if $u \in K$ and
+$$(A u, v - u) + j(v) - j(u) \ge (f, v - u) \quad \text{for all } v \in K.$$
 
-  `(A u, v - u) + j(v) - j(u) ≥ (f, v - u)`  for every `v ∈ K`.
-
-The inequality of the first kind (11.3.8) is `j = 0`, that of the second kind (11.3.9) is
-`K = Set.univ`, and (11.3.12)–(11.3.14) are the same three with `A` the operator of a bilinear
-form.  This is the backbone's `IsVariationalInequalitySolution`
-(`isVariationalInequalitySolution_iff`); the datum is a vector `f` rather than a functional, which
-is the book's own Remark 11.3.4. -/
+The inequality of the first kind (11.3.8) is the case $j = 0$, and that of the second kind
+(11.3.9) is the case $K = V$, that is `Set.univ`. The displays (11.3.12)–(11.3.14) are the same
+three with $A$ the operator of a bilinear form. The datum is a vector $f$ rather than a
+functional, as in Remark 11.3.4 of the source. This is the backbone's
+`IsVariationalInequalitySolution`, by
+`AtkinsonHan.Chapter11.isVariationalInequalitySolution_iff`. -/
 def IsVariationalInequalitySolution (A : V → V) (j : V → ℝ) (f : V) (K : Set V) (u : V) : Prop :=
   u ∈ K ∧ ∀ v ∈ K, ⟪A u, v - u⟫_ℝ + j v - j u ≥ ⟪f, v - u⟫_ℝ
 
-/-- (11.3.3) is the backbone's variational inequality. -/
+/-- The predicate (11.3.3) is equivalent to the backbone's `IsVariationalInequalitySolution` with
+the same arguments. -/
 theorem isVariationalInequalitySolution_iff (A : V → V) (j : V → ℝ) (f : V) (K : Set V) (u : V) :
     IsVariationalInequalitySolution A j f K u ↔
       _root_.IsVariationalInequalitySolution A j f K u := Iff.rfl
 
-/-- **(11.3.8), the inequality of the first kind.**  With `j = 0` the variational inequality reads
-`(A u, v - u) ≥ (f, v - u)` for all `v ∈ K`. -/
+/-- **Equation (11.3.8)** of [han2009theoretical], the inequality of the first kind. With $j = 0$,
+$u$ solves the variational inequality if and only if $u \in K$ and $(A u, v - u) \ge (f, v - u)$
+for all $v \in K$. -/
 theorem isVariationalInequalitySolution_zero_iff (A : V → V) (f : V) (K : Set V) (u : V) :
     IsVariationalInequalitySolution A 0 f K u ↔
       u ∈ K ∧ ∀ v ∈ K, ⟪A u, v - u⟫_ℝ ≥ ⟪f, v - u⟫_ℝ := by
   simp [IsVariationalInequalitySolution]
 
-/-- **(11.3.9), the inequality of the second kind.**  With `K = V` the membership clause is
-vacuous and the test vectors range over the whole space. -/
+/-- **Equation (11.3.9)** of [han2009theoretical], the inequality of the second kind. With $K = V$,
+$u$ solves the variational inequality if and only if $(A u, v - u) + j(v) - j(u) \ge (f, v - u)$
+for all $v \in V$. -/
 theorem isVariationalInequalitySolution_univ_iff (A : V → V) (j : V → ℝ) (f : V) (u : V) :
     IsVariationalInequalitySolution A j f univ u ↔
       ∀ v, ⟪A u, v - u⟫_ℝ + j v - j u ≥ ⟪f, v - u⟫_ℝ := by
   simp [IsVariationalInequalitySolution]
 
-/-- On the whole space and with `j = 0` the variational inequality degenerates to the equation
-`A u = f`: testing at `u + w` and at `u - w` turns the inequality into an identity.  This is what
-makes Exercises 11.3.2 and 11.3.13 corollaries of Theorem 11.3.6. -/
+/-- With $K = V$ and $j = 0$, $u$ solves the variational inequality if and only if $A u = f$. The
+proof tests the inequality at $u + w$ and at $u - w$. This makes Exercises 11.3.2 and 11.3.13
+corollaries of Theorem 11.3.6. -/
 theorem isVariationalInequalitySolution_univ_zero_iff (A : V → V) (f : V) (u : V) :
     IsVariationalInequalitySolution A 0 f univ u ↔ A u = f := by
   rw [isVariationalInequalitySolution_zero_iff]
@@ -185,14 +223,17 @@ section Existence
 
 variable [CompleteSpace V] {A : V → V} {c₀ M : ℝ} {j : V → ℝ} {K : Set V}
 
-/-- **Theorem 11.3.1.**  Let `K` be a nonempty closed convex subset of a real Hilbert space `V`,
-let `A : V → V` be strongly monotone (11.3.1) with constant `c₀ > 0` and Lipschitz (11.3.2) with
-constant `M ≥ 0`, and let `j : V → ℝ` be convex and lower semicontinuous on `K`.  Then the
-variational inequality (11.3.3) has exactly one solution for every `f ∈ V`, and the solution
-depends Lipschitz continuously on the datum, `‖u₁ - u₂‖ ≤ (1/c₀) ‖f₁ - f₂‖`.
+/-- **Theorem 11.3.1** of [han2009theoretical]. Let $V$ be a real Hilbert space and let
+$K \subseteq V$ be nonempty, closed and convex. Let $A \colon V \to V$ be strongly monotone with
+constant $c_0 > 0$, that is $(A v_1 - A v_2, v_1 - v_2) \ge c_0 \|v_1 - v_2\|^2$ (11.3.1), and
+Lipschitz continuous with constant $M \ge 0$, that is $\|A v_1 - A v_2\| \le M \|v_1 - v_2\|$
+(11.3.2), for all $v_1, v_2 \in V$. Let $j \colon V \to \mathbb{R}$ be convex and lower
+semicontinuous on $K$. Then for every $f \in V$ the variational inequality (11.3.3) has exactly
+one solution. If $u_1$ solves it with datum $f_1$ and $u_2$ with datum $f_2$, then
+$$\|u_1 - u_2\| \le \frac{1}{c_0} \|f_1 - f_2\|.$$
 
-Neither Lipschitz continuity nor convexity of `j` is used for the second clause; that is the
-backbone's `IsVariationalInequalitySolution.norm_sub_le`. -/
+The second claim uses neither the Lipschitz continuity of $A$ nor the convexity of $j$; it is
+the backbone's `IsVariationalInequalitySolution.norm_sub_le`. -/
 theorem theorem_11_3_1 (hKne : K.Nonempty) (hKcl : IsClosed K) (hKcv : Convex ℝ K) (hc₀ : 0 < c₀)
     (hM : 0 ≤ M) (hmono : Chapter05.StronglyMonotoneWith A c₀)
     (hlip : ∀ v₁ v₂ : V, ‖A v₁ - A v₂‖ ≤ M * ‖v₁ - v₂‖) (hj : ConvexOn ℝ K j)
@@ -207,10 +248,17 @@ theorem theorem_11_3_1 (hKne : K.Nonempty) (hKcl : IsClosed K) (hKcv : Convex �
     h₁ h₂
   rwa [one_div, inv_mul_eq_div]
 
-/-- **Theorem 11.3.6, Stampacchia's theorem.**  The inequality of the first kind (11.3.8) — the
-case `j = 0` of (11.3.3) — has exactly one solution for every `f`, depending Lipschitz
-continuously on `f`.  `isVariationalInequalitySolution_zero_iff` unfolds the statement to the
-book's display. -/
+/-- **Theorem 11.3.6** of [han2009theoretical] (Stampacchia's theorem). Let $V$ be a real Hilbert
+space and let $K \subseteq V$ be nonempty, closed and convex. Let $A \colon V \to V$ be strongly
+monotone with constant $c_0 > 0$ and Lipschitz continuous with constant $M \ge 0$. Then for
+every $f \in V$ the inequality of the first kind (11.3.8),
+$$u \in K, \qquad (A u, v - u) \ge (f, v - u) \quad \text{for all } v \in K,$$
+has exactly one solution, and two solutions with data $f_1$, $f_2$ satisfy
+$\|u_1 - u_2\| \le c_0^{-1} \|f_1 - f_2\|$.
+
+This is Theorem 11.3.1 at $j = 0$.
+`AtkinsonHan.Chapter11.isVariationalInequalitySolution_zero_iff` unfolds the statement to the
+display of the source. -/
 theorem theorem_11_3_6 (hKne : K.Nonempty) (hKcl : IsClosed K) (hKcv : Convex ℝ K) (hc₀ : 0 < c₀)
     (hM : 0 ≤ M) (hmono : Chapter05.StronglyMonotoneWith A c₀)
     (hlip : ∀ v₁ v₂ : V, ‖A v₁ - A v₂‖ ≤ M * ‖v₁ - v₂‖) :
@@ -220,13 +268,17 @@ theorem theorem_11_3_6 (hKne : K.Nonempty) (hKcl : IsClosed K) (hKcv : Convex �
   theorem_11_3_1 hKne hKcl hKcv hc₀ hM hmono hlip (convexOn_const 0 hKcv)
     lowerSemicontinuousOn_const
 
-/-- **Theorem 11.3.7.**  The inequality of the second kind (11.3.9) — the case `K = V` of
-(11.3.3), for a `j` convex and lower semicontinuous on the whole space — has exactly one solution
-for every `f`, depending Lipschitz continuously on `f`.
+/-- **Theorem 11.3.7** of [han2009theoretical]. Let $V$ be a real Hilbert space. Let
+$A \colon V \to V$ be strongly monotone with constant $c_0 > 0$ and Lipschitz continuous with
+constant $M \ge 0$, and let $j \colon V \to \mathbb{R}$ be convex and lower semicontinuous on
+$V$. Then for every $f \in V$ the inequality of the second kind (11.3.9),
+$$(A u, v - u) + j(v) - j(u) \ge (f, v - u) \quad \text{for all } v \in V,$$
+has exactly one solution $u \in V$, and two solutions with data $f_1$, $f_2$ satisfy
+$\|u_1 - u_2\| \le c_0^{-1} \|f_1 - f_2\|$.
 
-The book's `j` takes values in `ℝ ∪ {+∞}` and is proper; a real-valued `j` on the whole space is
-that hypothesis with the effective domain equal to `V`, which is what makes `K = Set.univ` the
-right reading. -/
+The function $j$ of the source takes values in $\mathbb{R} \cup \{+\infty\}$ and is proper. A
+real-valued $j$ on the whole space is this hypothesis with effective domain $V$, which is why
+the theorem is stated for $K = V$. -/
 theorem theorem_11_3_7 (hc₀ : 0 < c₀) (hM : 0 ≤ M) (hmono : Chapter05.StronglyMonotoneWith A c₀)
     (hlip : ∀ v₁ v₂ : V, ‖A v₁ - A v₂‖ ≤ M * ‖v₁ - v₂‖) (hj : ConvexOn ℝ univ j)
     (hjlsc : LowerSemicontinuous j) :
@@ -236,9 +288,12 @@ theorem theorem_11_3_7 (hc₀ : 0 < c₀) (hM : 0 ≤ M) (hmono : Chapter05.Stro
   theorem_11_3_1 univ_nonempty isClosed_univ convex_univ hc₀ hM hmono hlip hj
     (hjlsc.lowerSemicontinuousOn univ)
 
-/-- **Exercise 11.3.13.**  For `A` strongly monotone and Lipschitz on a real Hilbert space the
-equation `A u = f` has exactly one solution for every `f`, and it depends Lipschitz continuously
-on `f`.  This is Theorem 11.3.6 at `K = V`, and it is the statement of Theorem 5.1.4. -/
+/-- **Exercise 11.3.13** of [han2009theoretical]. Let $V$ be a real Hilbert space, and let
+$A \colon V \to V$ be strongly monotone with constant $c_0 > 0$ and Lipschitz continuous with
+constant $M \ge 0$. Then for every $f \in V$ the equation $A u = f$ has exactly one solution,
+and two solutions with data $f_1$, $f_2$ satisfy $\|u_1 - u_2\| \le c_0^{-1} \|f_1 - f_2\|$.
+
+This is Theorem 11.3.6 at $K = V$, and it is the statement of Theorem 5.1.4. -/
 theorem exercise_11_3_13 (hc₀ : 0 < c₀) (hM : 0 ≤ M) (hmono : Chapter05.StronglyMonotoneWith A c₀)
     (hlip : ∀ v₁ v₂ : V, ‖A v₁ - A v₂‖ ≤ M * ‖v₁ - v₂‖) :
     (∀ f : V, ∃! u, A u = f) ∧
@@ -250,12 +305,18 @@ theorem exercise_11_3_13 (hc₀ : 0 < c₀) (hM : 0 ≤ M) (hmono : Chapter05.St
   · exact hlipdep f₁ f₂ u₁ u₂ ((isVariationalInequalitySolution_univ_zero_iff A f₁ u₁).2 h₁)
       ((isVariationalInequalitySolution_univ_zero_iff A f₂ u₂).2 h₂)
 
-/-! #### Exercise 11.3.1: a locally Lipschitz operator -/
+/-! ### Exercise 11.3.1: a locally Lipschitz operator -/
 
 omit [CompleteSpace V] in
-/-- **Exercise 11.3.1 (a).**  A locally Lipschitz operator satisfies a growth bound
-`|(A v, w)| ≤ m̃(‖v‖) ‖w‖` with `m̃` non-decreasing: take `m̃(s) = m(s) s + ‖A 0‖` and compare `A v`
-with `A 0` on the ball of radius `‖v‖`. -/
+/-- **Exercise 11.3.1(a)** of [han2009theoretical]. Let $V$ be a real inner product space, and let
+$m \colon \mathbb{R} \to \mathbb{R}$ be nondecreasing and nonnegative. Let $A \colon V \to V$
+satisfy $\|A v_1 - A v_2\| \le m(r) \|v_1 - v_2\|$ for all $r$ and all $v_1, v_2$ with
+$\|v_1\|, \|v_2\| \le r$. Then there is a function $\tilde m$, nondecreasing on $[0, \infty)$,
+with
+$$|(A v, w)| \le \tilde m(\|v\|) \, \|w\| \quad \text{for all } v, w \in V.$$
+
+The proof takes $\tilde m(s) = m(s) s + \|A 0\|$ and compares $A v$ with $A 0$ on the ball of
+radius $\|v\|$. -/
 theorem exercise_11_3_1_growth {m : ℝ → ℝ} (hm : Monotone m) (hm0 : ∀ r, 0 ≤ m r)
     (hlip : ∀ r : ℝ, ∀ v₁ ∈ Metric.closedBall (0 : V) r, ∀ v₂ ∈ Metric.closedBall (0 : V) r,
       ‖A v₁ - A v₂‖ ≤ m r * ‖v₁ - v₂‖) :
@@ -271,13 +332,10 @@ theorem exercise_11_3_1_growth {m : ℝ → ℝ} (hm : Monotone m) (hm0 : ∀ r,
     exact (abs_real_inner_le_norm _ _).trans (mul_le_mul_of_nonneg_right hA (norm_nonneg w))
 
 omit [CompleteSpace V] in
-/-- **Exercise 11.3.1 (c).**  The a priori bound on a solution: a solution of the variational
-inequality over *any* `K' ⊆ K` containing a fixed `u₀ ∈ K` stays within a distance of `u₀` that
-depends on the datum, on `u₀` and on an affine minorant of `j`, but not on `K'`.
-
-Testing at `u₀` and using strong monotonicity gives `c₀ t² ≤ B + C t` for `t = ‖u - u₀‖`, with
-`B = j(u₀) - ℓ(u₀) - c` from the minorant of Lemma 11.3.5 and `C = ‖ℓ‖ + ‖f - A u₀‖`; the bound
-`(B + C)/c₀ + 1` is a number where the quadratic has overtaken the affine side. -/
+/-- The a priori bound of Exercise 11.3.1(c): if $A$ is strongly monotone with constant $c_0 > 0$,
+$\ell(v) + c \le j(v)$ on $K$, $u_0 \in K' \subseteq K$ and $u$ solves (11.3.3) over $K'$ with
+datum $f$, then $\|u - u_0\| < (j(u_0) - \ell(u_0) - c + \|\ell\| + \|f - A u_0\|)/c_0 + 1$, a
+bound that does not depend on $K'$. -/
 private theorem norm_sub_lt_of_isVariationalInequalitySolution (hc₀ : 0 < c₀)
     (hmono : Chapter05.StronglyMonotoneWith A c₀) {ℓ : V →L[ℝ] ℝ} {cmin : ℝ}
     (hmin : ∀ v ∈ K, ℓ v + cmin ≤ j v) {u₀ : V} (hu₀ : u₀ ∈ K) {K' : Set V} (hK' : K' ⊆ K)
@@ -322,21 +380,25 @@ private theorem norm_sub_lt_of_isVariationalInequalitySolution (hc₀ : 0 < c₀
     exact mul_le_mul_of_nonneg_left hcon hc₀.le
   nlinarith [hkey, hct, ht1, hB, hC]
 
-/-- **Exercise 11.3.1.**  Theorem 11.3.1 holds with the Lipschitz condition (11.3.2) weakened to a
-*local* one: `‖A v - A w‖ ≤ m(r) ‖v - w‖` for `v, w` in the ball `V_r = {v : ‖v‖ ≤ r}`.  The
-variational inequality (11.3.3) then still has exactly one solution for every datum, depending
-Lipschitz continuously on it.
+/-- **Exercise 11.3.1** of [han2009theoretical]. Let $V$ be a real Hilbert space and let
+$K \subseteq V$ be nonempty, closed and convex. Let $A \colon V \to V$ be strongly monotone with
+constant $c_0 > 0$, and let $A$ be locally Lipschitz continuous: for a function
+$m \colon \mathbb{R} \to \mathbb{R}$,
+$$\|A v_1 - A v_2\| \le m(r) \|v_1 - v_2\| \quad \text{for all } r \text{ and all } v_1, v_2 \in
+  V_r = \{v : \|v\| \le r\}.$$
+Let $j \colon V \to \mathbb{R}$ be convex and lower semicontinuous on $K$. Then for every
+$f \in V$ the variational inequality (11.3.3) has exactly one solution, and two solutions with
+data $f_1$, $f_2$ satisfy $\|u_1 - u_2\| \le c_0^{-1} \|f_1 - f_2\|$.
 
-The book's proof, and this one: on `K_r = K ∩ V_r` the operator *is* Lipschitz, so Theorem 11.3.1
-applies there — in the form `existsUnique_isVariationalInequalitySolution_on`, whose hypotheses are
-required on the constraint set only (Remark 11.3.2).  Part (c) is
-`norm_sub_lt_of_isVariationalInequalitySolution`: the solution `u_r` satisfies `‖u_r‖ < R₀` for a
-radius `R₀` not depending on `r`.  Part (d) is the segment trick: for `v ∈ K` with `‖v‖ > R₀`, the
-point `v_λ = (1 - λ) u + λ v` with `λ = (R₀ - ‖u‖)/(‖v‖ - ‖u‖)` lies in `K_{R₀}`, and testing there
-gives `λ` times the inequality at `v`, which convexity of `j` lets one divide by `λ > 0`.
-
-Monotonicity of `m` — used in part (a), `exercise_11_3_1_growth` — is not needed here: only the
-existence of a Lipschitz constant on each ball is. -/
+The exercise asks for $m$ nondecreasing. That is used only in part (a),
+`AtkinsonHan.Chapter11.exercise_11_3_1_growth`, and is not a hypothesis here. The proof follows
+the source. On $K_r = K \cap V_r$ the operator is Lipschitz continuous, so Theorem 11.3.1
+applies there in the form of Remark 11.3.2, `existsUnique_isVariationalInequalitySolution_on`,
+whose hypotheses are needed on the constraint set only. By part (c), the solution $u_r$
+satisfies $\|u_r\| < R_0$ for a radius $R_0$ that does not depend on $r$. In part (d), for
+$v \in K$ with $\|v\| > R_0$, the point $(1 - \lambda) u + \lambda v$ with
+$\lambda = (R_0 - \|u\|)/(\|v\| - \|u\|)$ lies in $K_{R_0}$, and the convexity of $j$ turns the
+inequality at that point into the inequality at $v$. -/
 theorem exercise_11_3_1 (hKne : K.Nonempty) (hKcl : IsClosed K) (hKcv : Convex ℝ K) (hc₀ : 0 < c₀)
     (hmono : Chapter05.StronglyMonotoneWith A c₀) {m : ℝ → ℝ}
     (hlip : ∀ r : ℝ, ∀ v₁ ∈ Metric.closedBall (0 : V) r, ∀ v₂ ∈ Metric.closedBall (0 : V) r,
@@ -427,25 +489,34 @@ theorem exercise_11_3_1 (hKne : K.Nonempty) (hKcl : IsClosed K) (hKcv : Convex �
 
 end Existence
 
-/-! ### Lemma 11.3.8, Minty's lemma -/
+/-! ### Lemma 11.3.8: Minty's lemma -/
 
-/-- A continuous operator is right-continuous along every segment, which is the hypothesis of
-Minty's lemma below.  In particular the Lipschitz operators of Theorem 11.3.1 satisfy it. -/
+/-- Let $V$ be a real inner product space and let $A \colon V \to V$ be continuous. Then for all
+$u, v \in V$ the map $t \mapsto A(u + t (v - u))$ is right-continuous at $t = 0$, which is the
+hypothesis of Minty's lemma, `AtkinsonHan.Chapter11.lemma_11_3_8`. In particular, the Lipschitz
+operators of Theorem 11.3.1 satisfy it. -/
 theorem continuousWithinAt_segment_of_continuous {A : V → V} (hA : Continuous A) (u v : V) :
     ContinuousWithinAt (fun t : ℝ => A (u + t • (v - u))) (Ioi 0) 0 :=
   (hA.comp (continuous_const.add (continuous_id.smul continuous_const))).continuousWithinAt
 
-/-- **Lemma 11.3.8, Minty's lemma.**  For a monotone `A` — strong monotonicity (11.3.1) with
-constant `0` — a `j` convex on a convex `K`, and a point `u ∈ K` along whose segments in `K` the
-operator is right-continuous, the variational inequality (11.3.3) is equivalent to the form
-(11.3.10) with `A` evaluated at the test point:
+/-- **Lemma 11.3.8** of [han2009theoretical] (Minty's lemma). Let $V$ be a real inner product space,
+let $K \subseteq V$ be convex, let $j \colon V \to \mathbb{R}$ be convex on $K$, let $f \in V$,
+and let $A \colon V \to V$ be monotone, that is $(A v_1 - A v_2, v_1 - v_2) \ge 0$ for all
+$v_1, v_2$. Let $u \in K$, and assume that for every $v \in K$ the map
+$t \mapsto A(u + t (v - u))$ is right-continuous at $t = 0$. Then $u$ solves the variational
+inequality (11.3.3) if and only if
+$$(A v, v - u) + j(v) - j(u) \ge (f, v - u) \quad \text{for all } v \in K,$$
+which is (11.3.10).
 
-  `(A v, v - u) + j(v) - j(u) ≥ (f, v - u)`  for every `v ∈ K`.
+**Generalization.** The source assumes that $A$ is continuous on the finite-dimensional
+subspaces of $V$. This implies the hypothesis here, because the segment from $u$ to $v$ lies in
+the span of $u$ and $v$. The weaker hypothesis is what the proof uses, and
+`AtkinsonHan.Chapter11.continuousWithinAt_segment_of_continuous` gives it for every continuous
+$A$.
 
-One direction is monotonicity; the other tests at `u + t (v - u)`, uses convexity of `j` and lets
-`t → 0⁺`.  The book asks instead for continuity of `A` on the finite-dimensional subspaces of `V`,
-which implies the hypothesis here because the segment from `u` to `v` lies in the span of `u` and
-`v`; the weaker form is what the proof consumes and what a weak-limit argument can supply. -/
+Monotonicity is `AtkinsonHan.Chapter05.StronglyMonotoneWith A 0`. One direction follows from
+monotonicity. The other tests the inequality at $u + t (v - u)$, uses the convexity of $j$, and
+lets $t \to 0^+$. -/
 theorem lemma_11_3_8 {A : V → V} {j : V → ℝ} {f : V} {K : Set V} (hKcv : Convex ℝ K)
     (hj : ConvexOn ℝ K j) (hmono : Chapter05.StronglyMonotoneWith A 0) {u : V} (hu : u ∈ K)
     (hA : ∀ v ∈ K, ContinuousWithinAt (fun t : ℝ => A (u + t • (v - u))) (Ioi 0) 0) :
@@ -459,9 +530,15 @@ section BilinearForm
 
 variable [CompleteSpace V] {a : BilinForm V} {M α : ℝ}
 
-/-- The variational inequality for the operator of a bilinear form, written with the form and the
-functional themselves: `u ∈ K` and `a(u, v - u) + j(v) - j(u) ≥ ℓ(v - u)` for all `v ∈ K`.  This
-is the book's (11.3.12), and (11.3.13), (11.3.14) are its cases `j = 0` and `K = V`. -/
+/-- Let $a$ be a bilinear form on a real Hilbert space $V$, bounded with constant $M$, let
+$\ell \in V'$, $j \colon V \to \mathbb{R}$ and $K \subseteq V$. Then $u$ solves the variational
+inequality (11.3.3) for the operator $A$ of $a$ and the Riesz representative of $\ell$ if and
+only if $u \in K$ and
+$$a(u, v - u) + j(v) - j(u) \ge \ell(v - u) \quad \text{for all } v \in K.$$
+This is (11.3.12), and (11.3.13) and (11.3.14) are its cases $j = 0$ and $K = V$.
+
+The operator is `AtkinsonHan.BilinForm.toOperator`, with $(A u, v) = a(u, v)$, and the Riesz
+representative is `SesqForm.rieszRep`. -/
 theorem isVariationalInequalitySolution_toOperator_iff (hM : a.IsBoundedWith M) (j : V → ℝ)
     (ℓ : StrongDual ℝ V) (K : Set V) (u : V) :
     IsVariationalInequalitySolution (BilinForm.toOperator a hM) j (SesqForm.rieszRep ℓ) K u ↔
@@ -469,18 +546,17 @@ theorem isVariationalInequalitySolution_toOperator_iff (hM : a.IsBoundedWith M) 
   simp only [IsVariationalInequalitySolution, BilinForm.inner_toOperator,
     BilinForm.inner_rieszRep]
 
-/-- **Theorem 11.3.9.**  For a bounded, `V`-elliptic bilinear form `a` — not assumed symmetric — a
-functional `ℓ ∈ V'`, a nonempty closed convex `K` and a `j` convex and lower semicontinuous on
-`K`, the variational inequality
+/-- **Theorem 11.3.9** of [han2009theoretical]. Let $V$ be a real Hilbert space and let
+$K \subseteq V$ be nonempty, closed and convex. Let $a$ be a bilinear form on $V$, bounded with
+constant $M$ and $V$-elliptic with constant $\alpha > 0$; $a$ need not be symmetric. Let
+$j \colon V \to \mathbb{R}$ be convex and lower semicontinuous on $K$. Then for every
+$\ell \in V'$ the variational inequality (11.3.12),
+$$u \in K, \qquad a(u, v - u) + j(v) - j(u) \ge \ell(v - u) \quad \text{for all } v \in K,$$
+has exactly one solution. If $u_1$ solves it with $\ell_1$ and $u_2$ with $\ell_2$, then
+$$\|u_1 - u_2\| \le \frac{1}{\alpha} \|\ell_1 - \ell_2\|.$$
 
-  `u ∈ K`,  `a(u, v - u) + j(v) - j(u) ≥ ℓ(v - u)`  for all `v ∈ K`
-
-has exactly one solution, and it depends Lipschitz continuously on `ℓ`, `‖u₁ - u₂‖ ≤ (1/α)‖ℓ₁ -
-ℓ₂‖`.
-
-**This one statement is (11.3.12), (11.3.13) and (11.3.14) at once**: those three displays differ
-only in the arguments `j` and `K` of one predicate, the second being the case `j = 0` and the
-third the case `K = V`. -/
+This one statement covers (11.3.12), (11.3.13) and (11.3.14): the three displays differ only in
+$j$ and $K$, and (11.3.13) is the case $j = 0$, (11.3.14) the case $K = V$. -/
 theorem theorem_11_3_9 (hM : a.IsBoundedWith M) (hα : 0 < α) (ha : a.IsEllipticWith α)
     {K : Set V} (hKne : K.Nonempty) (hKcl : IsClosed K) (hKcv : Convex ℝ K) {j : V → ℝ}
     (hj : ConvexOn ℝ K j) (hjlsc : LowerSemicontinuousOn j K) :
@@ -512,12 +588,17 @@ theorem theorem_11_3_9 (hM : a.IsBoundedWith M) (hα : 0 < α) (ha : a.IsEllipti
     rw [hriesz ℓ₁ ℓ₂, SesqForm.norm_rieszRep] at h
     rwa [one_div, inv_mul_eq_div]
 
-/-- **The remark following Example 11.3.11.**  For a symmetric `V`-elliptic form `a` and `j = 0`,
-the solution `u` of (11.3.13) is the best approximation in `K`, measured in the energy norm
-`‖·‖_a`, to the solution `w` of the variational equation `a(w, v) = ℓ(v)`.
+/-- **Section 11.3** of [han2009theoretical], the remark after Example 11.3.11. Let $V$ be a real
+Hilbert space and let $K \subseteq V$ be convex. Let $a$ be a bilinear form on $V$ that is
+bounded with constant $M$, symmetric, and $V$-elliptic with constant $\alpha > 0$, and let
+$\ell \in V'$. Let $w \in V$ solve the variational equation $a(w, v) = \ell(v)$ for all
+$v \in V$, and let $u$ solve (11.3.13), that is $u \in K$ and $a(u, v - u) \ge \ell(v - u)$ for
+all $v \in K$. Then $u$ is a best approximation of $w$ in $K$ in the energy norm
+$\|v\|_a = \sqrt{a(v, v)}$:
+$$\|w - u\|_a \le \|w - v\|_a \quad \text{for all } v \in K.$$
 
-So the inequality can be solved by solving the equation and then projecting onto `K` in the energy
-inner product. -/
+So the inequality can be solved by solving the equation and then projecting onto $K$ in the
+energy inner product. The energy norm is `AtkinsonHan.BilinForm.energyNorm`. -/
 theorem isBestApprox_energy_of_theorem_11_3_9 (hM : a.IsBoundedWith M) (hα : 0 < α)
     (ha : a.IsEllipticWith α) (hs : LinearMap.BilinForm.IsSymm a) (ℓ : StrongDual ℝ V)
     {K : Set V} (hKcv : Convex ℝ K) {w u : V} (hw : ∀ v, a w v = ℓ v)
@@ -537,9 +618,14 @@ theorem isBestApprox_energy_of_theorem_11_3_9 (hM : a.IsBoundedWith M) (hα : 0 
   rw [← map_sub, ← map_sub, WithEnergy.norm_equiv, WithEnergy.norm_equiv] at h
   rwa [a.energyNorm_eq_energyNorm_toOperator hM, a.energyNorm_eq_energyNorm_toOperator hM]
 
-/-- **Exercise 11.3.2.**  Theorem 11.3.6 generalizes the Lax–Milgram lemma: taking `K = V` and `A`
-the operator of a bounded `V`-elliptic bilinear form turns the inequality of the first kind into
-the variational equation `a(u, v) = ℓ(v)`, and its unique solvability is Theorem 8.3.4. -/
+/-- **Exercise 11.3.2** of [han2009theoretical]. Let $V$ be a real Hilbert space, let $a$ be a
+bilinear form on $V$ that is bounded with constant $M$ and $V$-elliptic with constant
+$\alpha > 0$, and let $\ell \in V'$. Then there is exactly one $u \in V$ with
+$$a(u, v) = \ell(v) \quad \text{for all } v \in V.$$
+
+The exercise shows that Theorem 11.3.6 generalizes the Lax–Milgram lemma, Theorem 8.3.4: with
+$K = V$ and $A$ the operator of $a$, the inequality of the first kind becomes the variational
+equation, by `AtkinsonHan.Chapter11.isVariationalInequalitySolution_univ_zero_iff`. -/
 theorem exercise_11_3_2 (hM : a.IsBoundedWith M) (hα : 0 < α) (ha : a.IsEllipticWith α)
     (ℓ : StrongDual ℝ V) : ∃! u, ∀ v, a u v = ℓ v := by
   have hmono : Chapter05.StronglyMonotoneWith (BilinForm.toOperator a hM : V → V) α :=
@@ -557,11 +643,17 @@ theorem exercise_11_3_2 (hM : a.IsBoundedWith M) (hα : 0 < α) (ha : a.IsEllipt
   exact huniq y ((isVariationalInequalitySolution_univ_zero_iff _ _ y).2
     ((BilinForm.toOperator_eq_rieszRep_iff hM ℓ y).2 hy))
 
-/-- **Exercise 11.3.3.**  When `K` is a convex cone, the inequality of the first kind (11.3.13) is
-equivalent to the pair of relations `a(u, v) ≥ ℓ(v)` for all `v ∈ K` and `a(u, u) = ℓ(u)`.
+/-- **Exercise 11.3.3** of [han2009theoretical]. Let $V$ be a real Hilbert space, let $a$ be a
+bilinear form on $V$ that is bounded with constant $M$, and let $\ell \in V'$. Let
+$K \subseteq V$ be a convex cone: $K$ is convex and $t x \in K$ for all $t \ge 0$ and $x \in K$.
+Then for $u \in K$, the inequality of the first kind (11.3.13), $a(u, v - u) \ge \ell(v - u)$
+for all $v \in K$, holds if and only if
+$$a(u, v) \ge \ell(v) \quad \text{for all } v \in K \qquad \text{and} \qquad a(u, u) =
+  \ell(u).$$
 
-Testing at `2u` and at `0` gives the equality and testing at `u + v` the inequality; conversely
-subtracting the equality from the inequality at `v` returns the variational inequality. -/
+The proof tests at $2u$ and at $0$ for the equality, and at $u + v$ for the inequality.
+Conversely, subtracting the equality from the inequality at $v$ gives the variational
+inequality. -/
 theorem exercise_11_3_3 (hM : a.IsBoundedWith M) {K : Set V} (hKcv : Convex ℝ K)
     (hKcone : ∀ t : ℝ, 0 ≤ t → ∀ x ∈ K, t • x ∈ K) (ℓ : StrongDual ℝ V) {u : V} (hu : u ∈ K) :
     (u ∈ K ∧ ∀ v ∈ K, a u (v - u) ≥ ℓ (v - u)) ↔
@@ -575,12 +667,16 @@ theorem exercise_11_3_3 (hM : a.IsBoundedWith M) {K : Set V} (hKcv : Convex ℝ 
   refine hz.symm.trans (hiff.trans ?_)
   simp only [BilinForm.inner_toOperator, BilinForm.inner_rieszRep, ge_iff_le]
 
-/-- **Exercise 11.3.10.**  For an inequality of the second kind (11.3.14) whose `j` is convex and
-positively homogeneous, the inequality is equivalent to `a(u, v) + j(v) ≥ ℓ(v)` for every `v`
-together with `a(u, u) + j(u) = ℓ(u)`.
+/-- **Exercise 11.3.10** of [han2009theoretical]. Let $V$ be a real Hilbert space, let $a$ be a
+bilinear form on $V$ that is bounded with constant $M$, and let $\ell \in V'$. Let
+$j \colon V \to \mathbb{R}$ be convex and positively homogeneous: $j(t v) = t j(v)$ for all
+$t > 0$ and $v \in V$. Then $u \in V$ solves the inequality of the second kind (11.3.14),
+$a(u, v - u) + j(v) - j(u) \ge \ell(v - u)$ for all $v \in V$, if and only if
+$$a(u, v) + j(v) \ge \ell(v) \quad \text{for all } v \in V \qquad \text{and} \qquad a(u, u) +
+  j(u) = \ell(u).$$
 
-Convexity and positive homogeneity make `j` subadditive, which is what turns the test at `u + v`
-into the inequality at `v`. -/
+Convexity and positive homogeneity make $j$ subadditive, and this turns the test at $u + v$ into
+the inequality at $v$. -/
 theorem exercise_11_3_10 (hM : a.IsBoundedWith M) {j : V → ℝ} (hj : ConvexOn ℝ univ j)
     (hhom : ∀ t : ℝ, 0 < t → ∀ v : V, j (t • v) = t * j v) (ℓ : StrongDual ℝ V) {u : V} :
     (∀ v, a u (v - u) + j v - j u ≥ ℓ (v - u)) ↔
@@ -601,9 +697,14 @@ section Obstacle
 variable {V : Type*} [NormedAddCommGroup V] [InnerProductSpace ℝ V] [CompleteSpace V]
   {a : BilinForm V} {M α : ℝ}
 
-/-- **Theorem 11.3.9 with `j = 0`**, the inequality of the first kind (11.3.13): unique
-solvability for every `ℓ ∈ V'`.  Kept abstract so that the concrete Sobolev instance of
-Example 11.3.10 is a single application. -/
+/-- **Theorem 11.3.9** of [han2009theoretical] with $j = 0$, existence and uniqueness. Let $V$ be a
+real Hilbert space and let $K \subseteq V$ be nonempty, closed and convex. Let $a$ be a bilinear
+form on $V$, bounded with constant $M$ and $V$-elliptic with constant $\alpha > 0$, and let
+$\ell \in V'$. Then the inequality of the first kind (11.3.13),
+$$u \in K, \qquad a(u, v - u) \ge \ell(v - u) \quad \text{for all } v \in K,$$
+has exactly one solution.
+
+It is stated for an abstract space so that Example 11.3.10 is a single application of it. -/
 theorem theorem_11_3_9_zero_existsUnique (hM : a.IsBoundedWith M) (hα : 0 < α)
     (ha : a.IsEllipticWith α) {K : Set V} (hKne : K.Nonempty) (hKcl : IsClosed K)
     (hKcv : Convex ℝ K) (ℓ : StrongDual ℝ V) :
@@ -613,9 +714,14 @@ theorem theorem_11_3_9_zero_existsUnique (hM : a.IsBoundedWith M) (hα : 0 < α)
   simp only [add_zero, sub_zero] at h
   exact h
 
-/-- **Theorem 11.3.9 with `j = 0`**: the solution of the inequality of the first kind (11.3.13)
-depends Lipschitz continuously on `ℓ`, with constant `1/α`.  Kept abstract so that the concrete
-Sobolev instance of Example 11.3.10 is a single application. -/
+/-- **Theorem 11.3.9** of [han2009theoretical] with $j = 0$, Lipschitz dependence. Let $V$ be a real
+Hilbert space and let $K \subseteq V$ be nonempty, closed and convex. Let $a$ be a bilinear form
+on $V$, bounded with constant $M$ and $V$-elliptic with constant $\alpha > 0$. If $u_1$ solves
+the inequality of the first kind (11.3.13) with $\ell_1 \in V'$ and $u_2$ solves it with
+$\ell_2 \in V'$, then
+$$\|u_1 - u_2\| \le \frac{1}{\alpha} \|\ell_1 - \ell_2\|.$$
+
+It is stated for an abstract space so that Example 11.3.10 is a single application of it. -/
 theorem theorem_11_3_9_zero_lipschitz (hM : a.IsBoundedWith M) (hα : 0 < α)
     (ha : a.IsEllipticWith α) {K : Set V} (hKne : K.Nonempty) (hKcl : IsClosed K)
     (hKcv : Convex ℝ K) (ℓ₁ ℓ₂ : StrongDual ℝ V) {u₁ u₂ : V}
@@ -629,19 +735,30 @@ theorem theorem_11_3_9_zero_lipschitz (hM : a.IsBoundedWith M) (hα : 0 < α)
 
 variable {d : ℕ} (Ω : Opens (EuclideanSpace ℝ (Fin (d + 1))))
 
-/-- **Example 11.3.10**: the obstacle problem (11.1.7) is an elliptic variational inequality of
-the first kind — (11.3.13) on `V = H¹₀(Ω)` with `K = {v ∈ H¹₀(Ω) | v ≥ ψ a.e.}`, the form
-`a(u, v) = ∫_Ω ∇u · ∇v` and `ℓ(v) = ∫_Ω f v` — so by Theorem 11.3.9 it has a unique solution for
-every `f ∈ L²(Ω)`, and the solution depends Lipschitz continuously on `f`:
-`‖u₁ − u₂‖_{H¹} ≤ (1 + (2R)²) ‖f₁ − f₂‖_{L²}` for a bounded open `Ω ⊆ B(0, R)`.
+/-- **Example 11.3.10** of [han2009theoretical] (the obstacle problem). Let
+$\Omega \subseteq \mathbb{R}^{d+1}$ be open with $\Omega \subseteq B(0, R)$ for some $R \ge 0$.
+Let $\psi \in H^1(\Omega)$ be an obstacle such that $\max\{\psi, 0\}$ is almost everywhere equal
+to the function of an element of $H^1_0(\Omega)$. Let $K = \{v \in H^1_0(\Omega) : v \ge \psi
+\text{ a.e.}\}$, $a(u, v) = \int_\Omega \nabla u \cdot \nabla v \, dx$, and
+$\ell_f(v) = \int_\Omega f v \, dx$ for $f \in L^2(\Omega)$. Then the obstacle problem (11.1.7)
+is the inequality of the first kind (11.3.13) on $V = H^1_0(\Omega)$:
+$$u \in K, \qquad a(u, v - u) \ge \ell_f(v - u) \quad \text{for all } v \in K.$$
+For every $f \in L^2(\Omega)$ it has exactly one solution. If $u_1$ solves it with $f_1$ and
+$u_2$ with $f_2$, then
+$$\|u_1 - u_2\|_{H^1(\Omega)} \le \bigl(1 + (2R)^2\bigr) \|f_1 - f_2\|_{L^2(\Omega)}.$$
 
-The hypotheses of Theorem 11.3.9 are those of Example 11.2.3: `K` is nonempty (it contains
-`max (0, ψ)`, given that the positive part of `ψ ∈ H¹(Ω)` is the function of an element of
-`H¹₀(Ω)` — the reading of "`ψ ≤ 0` on `Γ`"), closed and convex (`Chapter11/Section01`); the form
-is bounded with `M = 1` and `V`-elliptic with `α = (1 + (2R)²)⁻¹` by Poincaré's inequality, which
-is the Lipschitz constant `1/α` of the theorem; and `‖ℓ₁ − ℓ₂‖ ≤ ‖f₁ − f₂‖_{L²}`.  The theorem
-is applied at `j = 0` through `theorem_11_3_9_zero_existsUnique` and
-`theorem_11_3_9_zero_lipschitz`. -/
+**Reading.** The source asks that $\psi \le 0$ on $\Gamma$. Without a trace, this is read as the
+condition that $\max\{\psi, 0\}$ is the function of an element of $H^1_0(\Omega)$, as in Example
+11.1.1.
+
+The hypotheses of Theorem 11.3.9 are those of Example 11.2.3. The set $K$ is
+`AtkinsonHan.Chapter11.obstacleSet`; it contains $\max\{\psi, 0\}$ and is closed and convex. The
+form $a$ is `AtkinsonHan.Chapter11.dirichletBilinForm`; it is bounded with $M = 1$ and
+$V$-elliptic with $\alpha = (1 + (2R)^2)^{-1}$ by the Poincaré inequality, and $1/\alpha$ is the
+Lipschitz constant. The load is `AtkinsonHan.Chapter11.loadZero`, with $\|\ell_{f_1} -
+\ell_{f_2}\| \le \|f_1 - f_2\|_{L^2}$. The proof applies
+`AtkinsonHan.Chapter11.theorem_11_3_9_zero_existsUnique` and
+`AtkinsonHan.Chapter11.theorem_11_3_9_zero_lipschitz`. -/
 theorem example_11_3_10 {R : ℝ} (hR : 0 ≤ R)
     (hΩ : (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))) ⊆ Metric.ball 0 R)
     {ψ : SobolevEuclidean (d + 1) 1 2 Ω}
@@ -675,7 +792,7 @@ theorem example_11_3_10 {R : ℝ} (hR : 0 ≤ R)
 
 end Obstacle
 
-/-! ### Theorem 11.3.12 at `p = 2`: `H²` regularity for the obstacle problem -/
+/-! ### Theorem 11.3.12 for $p = 2$: $H^2$ regularity for the obstacle problem -/
 
 section Regularity
 
@@ -683,8 +800,13 @@ open MeasureTheory SobolevMultiIndex Metric
 
 variable {d : ℕ} (Ω : Opens (EuclideanSpace ℝ (Fin (d + 1))))
 
-/-- The solution of the obstacle problem of Example 11.3.10 is a solution in the sense of the
-backbone's `Elliptic.IsObstacleSolution`. -/
+/-- Let $\Omega \subseteq \mathbb{R}^{d+1}$ be open, $\psi \in H^1(\Omega)$ and $f \in L^2(\Omega)$.
+If $u \in H^1_0(\Omega)$ solves the obstacle problem of Example 11.3.10, then $u$, viewed in
+$H^1(\Omega)$, is a solution in the sense of `Elliptic.IsObstacleSolution`:
+$u \in H^1_0(\Omega)$, $u \ge \psi$ a.e., and $\int_\Omega \nabla u \cdot \nabla (v - u) \ge
+\int_\Omega f (v - u)$ for every $v \in H^1_0(\Omega)$ with $v \ge \psi$ a.e.
+
+This connects Example 11.3.10 to the backbone regularity theory used for Theorem 11.3.12. -/
 theorem isObstacleSolution_of_example_11_3_10 {ψ : SobolevEuclidean (d + 1) 1 2 Ω}
     {f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))}
     {u : SobolevEuclideanZero (d + 1) 1 2 Ω}
@@ -698,11 +820,16 @@ theorem isObstacleSolution_of_example_11_3_10 {ψ : SobolevEuclidean (d + 1) 1 2
     rw [ge_iff_le, dirichletBilinForm_apply] at h
     exact h
 
-/-- **The a priori `H¹` bound for the obstacle problem**: for `Ω ⊆ B(0, R)`, an admissible `w ∈ K`
-and a solution `u` of the variational inequality of Example 11.3.10,
-`‖u‖_{H¹} ≤ 2 (1 + (2R)²) (‖w‖_{H¹} + ‖f‖₂)` (`Elliptic.IsObstacleSolution.norm_le`: testing with
-`v = w` gives `a(u, u) ≤ a(u, w) − ℓ(w) + ℓ(u)`, and `a(u, u) ≥ (1 + (2R)²)⁻¹ ‖u‖²` by Poincaré's
-inequality). -/
+/-- The a priori $H^1$ bound for the obstacle problem. Let $\Omega \subseteq \mathbb{R}^{d+1}$ be
+open with $\Omega \subseteq B(0, R)$ for some $R \ge 0$, let $\psi \in H^1(\Omega)$ and
+$f \in L^2(\Omega)$, and let $w \in K = \{v \in H^1_0(\Omega) : v \ge \psi \text{ a.e.}\}$. If
+$u$ solves the obstacle problem of Example 11.3.10, then
+$$\|u\|_{H^1(\Omega)} \le 2 \bigl(1 + (2R)^2\bigr) \bigl(\|w\|_{H^1(\Omega)} +
+  \|f\|_{L^2(\Omega)}\bigr).$$
+
+This bound is used in the proof of Theorem 11.3.12. It is `Elliptic.IsObstacleSolution.norm_le`.
+Testing with $v = w$ gives $a(u, u) \le a(u, w) - \ell(w) + \ell(u)$, and
+$a(u, u) \ge (1 + (2R)^2)^{-1} \|u\|^2$ by the Poincaré inequality. -/
 theorem norm_le_of_obstacle_solution {R : ℝ} (hR : 0 ≤ R)
     (hΩ : (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))) ⊆ ball 0 R)
     {ψ : SobolevEuclidean (d + 1) 1 2 Ω}
@@ -714,28 +841,43 @@ theorem norm_le_of_obstacle_solution {R : ℝ} (hR : 0 ≤ R)
     ‖u‖ ≤ 2 * (1 + (2 * R) ^ 2) * (‖w‖ + ‖f‖) :=
   (isObstacleSolution_of_example_11_3_10 Ω hu).norm_le hR hΩ w.2 ((mem_obstacleSet_iff Ω).1 hwK)
 
-/-- The obstacle `ψ ∈ H²(Ω)` of Theorem 11.3.12, read in `H¹(Ω)`. -/
+/-- The obstacle $\psi \in H^2(\Omega)$ of Theorem 11.3.12 of [han2009theoretical], viewed as an
+element of $H^1(\Omega)$ through the inclusion $H^2(\Omega) \subseteq H^1(\Omega)$.
+
+The inclusion is `SobolevMultiIndex.toLowerOrder`. -/
 noncomputable abbrev obstacleOfH2 (Ψ : SobolevEuclidean (d + 1) 2 2 Ω) :
     SobolevEuclidean (d + 1) 1 2 Ω :=
   toLowerOrder ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis 2 Ω volume (by norm_num) Ψ
 
-/-- **Theorem 11.3.12 at `p = 2`, for the Laplacian (`a_ij = δ_ij`) on a `C²` domain**
-(Brezis–Stampacchia). Let `Ω ⊆ B(0, R) ⊆ ℝ^{d+1}` be a bounded open set of class `C²`. There is
-a constant `C` such that for every obstacle `ψ ∈ H²(Ω)` with `ψ ≤ 0` on `Γ` — read, as in
-Examples 11.1.1 and 11.3.10, as "`max (ψ, 0)` is the function of an element of `H¹₀(Ω)`" —
-every `f ∈ L²(Ω)` and every solution `u ∈ K = {v ∈ H¹₀(Ω) : v ≥ ψ}` of the obstacle problem
-(11.1.7) (`example_11_3_10` gives existence and uniqueness), `u ∈ H²(Ω)` and every `U ∈ H²(Ω)`
-with function `u` satisfies
+/-- **Theorem 11.3.12** of [han2009theoretical], the case $p = 2$ for the Laplacian
+($a_{ij} = \delta_{ij}$) on a $C^2$ domain. Let $\Omega \subseteq \mathbb{R}^{d+1}$ be an open
+set of class $C^2$ with $\Omega \subseteq B(0, R)$ for some $R \ge 0$. Then there is a constant
+$C \ge 0$ with the following property. Let $\psi \in H^2(\Omega)$ be an obstacle such that
+$\max\{\psi, 0\}$ is almost everywhere equal to the function of an element of $H^1_0(\Omega)$,
+let $f \in L^2(\Omega)$, and let $u \in K = \{v \in H^1_0(\Omega) : v \ge \psi \text{ a.e.}\}$
+solve the obstacle problem (11.1.7). Then $u \in H^2(\Omega)$, and every $U \in H^2(\Omega)$
+whose function equals $u$ almost everywhere satisfies
+$$\|U\|_{H^2(\Omega)} \le C \bigl(\|f\|_{L^2(\Omega)} + \|\psi\|_{H^2(\Omega)}\bigr).$$
 
-`‖U‖_{H²(Ω)} ≤ C (‖f‖_{L²(Ω)} + ‖ψ‖_{H²(Ω)})`.
+**Reading.** The source asks that $\psi \le 0$ on $\Gamma$. This is read as the condition that
+$\max\{\psi, 0\}$ is the function of an element of $H^1_0(\Omega)$, as in Examples 11.1.1 and
+11.3.10.
 
-The book quotes the theorem (for `1 < p < ∞`, `C^{1,1}` domains and general uniformly elliptic
-`a_ij ∈ C(Ω̄)`) from Brezis–Stampacchia and Gilbarg–Trudinger without proof; the `p = 2`
-Laplacian case is proved in the backbone through the Lewy–Stampacchia inequality
-`f ≤ −Δu ≤ max (f, −Δψ)` (`Elliptic.regularity_obstacle_sobolev_two`,
-`Numlib/Analysis/PDE/Elliptic/Obstacle.lean`). The `C^{1,1}` hypothesis of the book is replaced
-by the backbone's `C²` chart domain, and `p ≠ 2` is not formalized; the module doc says what the
-book's generality would need. -/
+The source states the theorem for $1 < p < \infty$, uniformly elliptic coefficients
+$a_{ij} \in C(\overline\Omega)$ and $C^{1,1}$ domains: for $f \in L^p(\Omega)$ and
+$\psi \in W^{2,p}(\Omega)$, the solution lies in $W^{2,p}(\Omega)$ and $\|u\|_{2,p} \le C_p
+(\|f\|_{0,p} + \|\psi\|_{2,p})$, with $C_p$ independent of $u$, $f$ and $\psi$. It quotes the
+theorem without proof from Brezis–Stampacchia and Gilbarg–Trudinger. Only the case stated here
+is formalized; the module documentation says what the general case needs. The class $C^2$ is
+`IsContDiffChartDomain 2`. The constant $C$ depends only on $\Omega$, and
+`AtkinsonHan.Chapter11.example_11_3_10` gives the existence and the uniqueness of $u$. The proof
+specializes `Elliptic.regularity_obstacle_sobolev_two`. Its main step is the Lewy–Stampacchia
+inequality $f \le -\Delta u \le \max\{f, -\Delta\psi\}$,
+`Elliptic.IsObstacleSolution.exists_dirichletForm_eq_load`, which is proved with the truncation
+$\min\{\varepsilon\Phi, u - \psi\}$ and the Hahn–Banach theorem, not by penalization. It gives
+$-\Delta u \in L^2(\Omega)$, so the linear regularity theorem `Elliptic.regularity_dirichlet`
+applies. The bound also uses the a priori estimate `Elliptic.IsObstacleSolution.norm_le` and
+$\|\psi^+\|_{H^1} \le \|\psi\|_{H^1} \le \|\psi\|_{H^2}$. -/
 theorem theorem_11_3_12_two {R : ℝ} (hR : 0 ≤ R)
     (hΩb : (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))) ⊆ ball 0 R)
     (hΩ : IsContDiffChartDomain 2 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) :
@@ -770,23 +912,33 @@ open scoped ENNReal
 
 variable {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))} (B : BoundaryData Ω) (𝒯 : B.TraceFamily)
 
-/-- `ℝ^N`, locally. -/
+/-- The Euclidean space $\mathbb{R}^N$, as local notation. -/
 local notation "𝔼" => EuclideanSpace ℝ (Fin N)
 
-/-- **Example 11.3.11 (the simplified friction problem as an EVI of the second kind)**: Theorem
-11.3.9 applied to the variational inequality (11.1.13) of Example 11.1.2 — over the boundary
-interface `B : BoundaryData Ω`, `𝒯 : B.TraceFamily` (a bounded `C¹` domain or a polygon, the
-book's Lipschitz domain), for `g > 0`, the problem
+/-- **Example 11.3.11** of [han2009theoretical] (the simplified friction problem as an inequality of
+the second kind). Let $\Omega \subseteq \mathbb{R}^N$ be open, with boundary data $B$ (a surface
+measure $ds$ on $\Gamma = \partial\Omega$) and a boundary trace $\gamma$ given by
+`𝒯 : B.TraceFamily`, and let $g > 0$. Let
+$$a(u, v) = \int_\Omega (\nabla u \cdot \nabla v + u v) \, dx, \qquad \ell_f(v) = \int_\Omega f
+  v \, dx, \qquad j(v) = g \int_\Gamma |\gamma v| \, ds.$$
+Then for every $f \in L^2(\Omega)$ the variational inequality (11.1.13),
+$$u \in V = H^1(\Omega), \qquad a(u, v - u) + j(v) - j(u) \ge \ell_f(v - u) \quad \text{for all
+  } v \in V,$$
+has exactly one solution. If $u_1$ solves it with $f_1$ and $u_2$ with $f_2$, then
+$$\|u_1 - u_2\|_{H^1(\Omega)} \le \|f_1 - f_2\|_{L^2(\Omega)}.$$
 
-  `u ∈ V = H¹(Ω)`, `a(u, v − u) + j(v) − j(u) ≥ ℓ(v − u)` for all `v ∈ V`,
+**Reading.** The source poses the problem on a Lipschitz domain. Here the domain is any open set
+with a boundary trace in the sense of `BoundaryData.TraceFamily`, for example a bounded $C^1$
+domain or a polygon without slits.
 
-with `a(u, v) = ∫_Ω (∇u·∇v + u v)`, `ℓ(v) = ∫_Ω f v` and `j(v) = g ∫_Γ |v| ds`, has a unique
-solution for every `f ∈ L²(Ω)`, and the solution depends Lipschitz continuously on `f`:
-`‖u₁ − u₂‖_{H¹} ≤ ‖f₁ − f₂‖_{L²}`. Theorem 11.3.9 on `V` with `K = V`, the form
-`Chapter11.frictionBilinForm` (bounded and `V`-elliptic with constant `1`) and the convex
-continuous `j` (`Chapter11.convexOn_frictionFunctional`, `Chapter11.continuous_frictionFunctional`),
-with `‖ℓ₁ − ℓ₂‖ ≤ ‖f₁ − f₂‖_{L²}` (`Elliptic.norm_load_le`) for the Lipschitz constant `1/α = 1`;
-the same conclusion as Example 11.2.4 by the other route. -/
+The existence clause writes the inequality out with integrals; the Lipschitz clause writes it
+with `Elliptic.laplaceForm`, `Elliptic.load` and `AtkinsonHan.Chapter11.frictionFunctional`. The
+proof applies Theorem 11.3.9 on $V$ with $K = V$. The form is
+`AtkinsonHan.Chapter11.frictionBilinForm`, bounded and $V$-elliptic with constant $1$, and $j$
+is convex and continuous by `AtkinsonHan.Chapter11.convexOn_frictionFunctional` and
+`AtkinsonHan.Chapter11.continuous_frictionFunctional`. The bound $\|\ell_{f_1} - \ell_{f_2}\|
+\le \|f_1 - f_2\|_{L^2}$ is `Elliptic.norm_load_le`. Example 11.2.4 reaches the existence and
+uniqueness by the other route, through minimization. -/
 theorem example_11_3_11 {g : ℝ} (hg : 0 < g) :
     (∀ f : Lp ℝ 2 (volume.restrict (Ω : Set 𝔼)), ∃! u : SobolevEuclidean N 1 2 Ω,
       ∀ v : SobolevEuclidean N 1 2 Ω,

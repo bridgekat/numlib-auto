@@ -8,71 +8,104 @@ import NumlibSurface.AtkinsonHan.Chapter01.Section02
 import NumlibSurface.AtkinsonHan.Chapter02.Section04
 
 /-!
-# Atkinson–Han §4.1: Fourier series
+# Atkinson and Han, Section 4.1: Fourier series
 
-Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework*, 3rd edition, Springer, 2009, §4.1.
+This module formalizes §4.1 of [han2009theoretical]. For a $2\pi$-periodic function $f$ the Fourier
+series is
+$$f(x) \sim \frac{a_0}{2} + \sum_{j=1}^{\infty} (a_j \cos(jx) + b_j \sin(jx)), \qquad
+  a_j = \frac{1}{\pi} \int_{-\pi}^{\pi} f(x) \cos(jx)\, dx, \quad
+  b_j = \frac{1}{\pi} \int_{-\pi}^{\pi} f(x) \sin(jx)\, dx,$$
+and $S_n f$ is its $n$-th partial sum (4.1.1)–(4.1.3). The module relates $a_j$ and $b_j$ to the
+complex coefficients $c_j$ and to the coefficients against an orthonormal system, and states the
+sine and cosine series of odd and even functions. It proves pointwise convergence of $S_n f(x)$ to
+$(f(x-) + f(x+))/2$ where $f$ has one-sided derivatives (Theorem 4.1.1), the criterion for $L^p$
+convergence by uniform boundedness (Theorem 4.1.2), Parseval's equality (4.1.13), and the $L^2$ and
+uniform truncation errors (4.1.14)–(4.1.15). Examples 4.1.3–4.1.5 compute three Fourier series in
+closed form.
 
-The book works on `(-π, π)` and always means the `2 π`-periodic extension: the coefficients
-(4.1.2)–(4.1.3), the partial sums (4.1.1) and Parseval's equality (4.1.13) are statements about
-periodic functions.  So `L^p(-π, π)` is read here as `L^p` of the circle `AddCircle (2 π)` with its
-probability Haar measure, and a function on the circle is turned into a `2 π`-periodic function on
-`ℝ` by `fun x : ℝ => g ↑x`.  The two readings differ only by the normalising factor `2 π` of the
-measure, which is `integral_intervalIntegral_eq` below.
-
-The book's `a_j` and `b_j` of (4.1.2)–(4.1.3) are the backbone `fourierCoeffCos` and
-`fourierCoeffSin` verbatim, and its `S_N` of (4.1.1) is `fourierPartialSum`; no surface definition
-of them is needed, contrary to what the plan for this section supposed.  What the surface adds is
-the dictionary between those and the two coefficient families the backbone and Mathlib use for
-`L²` theory — `realFourierCoeff` against the orthonormal system `trigFun`, and Mathlib's complex
-`fourierCoeff`.
+The proofs specialize the Dirichlet kernel theory of `Numlib.Analysis.Fourier.Dirichlet` and the
+real trigonometric system of `Numlib.Analysis.Fourier.TrigonometricBasis`.
 
 ## Main results
 
-* `equation_4_1_3_const`, `equation_4_1_3_cos`, `equation_4_1_3_sin` — the book's `a_0`, `a_j`,
-  `b_j` are `2`, `√2` and `√2` times the coefficients against the orthonormal system.
-* `equation_4_1_5`, `equation_4_1_6_const`, `equation_4_1_6_cos`, `equation_4_1_6_sin` — the
-  complex form: `c_j = (2 π)⁻¹ ∫ f (x) e^{-i j x} dx`, `a_0 = 2 c_0`, `a_j = 2 Re c_j`,
-  `b_j = -2 Im c_j`.
-* `equation_4_1_10_odd`, `equation_4_1_10_even` — an odd function has a sine series and an even
-  function a cosine series, with the coefficients as integrals over `(0, π)`.
-* `theorem_4_1_1`, `theorem_4_1_1_continuous` — pointwise convergence to the mean of the one-sided
-  limits, and to `f x` where `f` is differentiable.
-* `theorem_4_1_2` — `L^p` convergence of a sequence of partial-sum operators holds for every `f` if
-  and only if the operators are uniformly bounded.
-* `equation_4_1_13` — Parseval's equality in the book's normalisation.
-* `equation_4_1_14`, `equation_4_1_15` — the `L²` and the uniform truncation error of the partial
-  sums, both as tails of the coefficient series.
-* `example_4_1_3`, `example_4_1_4`, `example_4_1_5` — the three worked Fourier series of the
-  section: the step function, `|x|/π` and `(π² - x²)²/π⁴`, each with its coefficients, the closed
-  form of its partial sums, and the limit of those sums at every point.
+* Equation (4.1.2), `AtkinsonHan.Chapter04.equation_4_1_3_const` and
+  `AtkinsonHan.Chapter04.equation_4_1_3_cos`: $a_0$ and $a_j$ are $2$ and $\sqrt 2$ times the
+  coefficients against the orthonormal system.
+* Equation (4.1.3), `AtkinsonHan.Chapter04.equation_4_1_3_sin`: $b_j$ is $\sqrt 2$ times the
+  coefficient against the orthonormal system.
+* Equation (4.1.5), `AtkinsonHan.Chapter04.equation_4_1_5`: $c_j = (2\pi)^{-1} \int_{-\pi}^{\pi}
+  f(x) e^{-ijx}\, dx$.
+* Equation (4.1.6), `AtkinsonHan.Chapter04.equation_4_1_6_const`,
+  `AtkinsonHan.Chapter04.equation_4_1_6_cos` and `AtkinsonHan.Chapter04.equation_4_1_6_sin`:
+  $a_0 = 2 \operatorname{Re} c_0$, $a_j = 2 \operatorname{Re} c_j$ and
+  $b_j = -2 \operatorname{Im} c_j$.
+* Equations (4.1.7)–(4.1.10), `AtkinsonHan.Chapter04.equation_4_1_10_odd` and
+  `AtkinsonHan.Chapter04.equation_4_1_10_even`: an odd function has a sine series and an even
+  function has a cosine series.
+* Theorem 4.1.1, `AtkinsonHan.Chapter04.theorem_4_1_1` and
+  `AtkinsonHan.Chapter04.theorem_4_1_1_continuous`: $S_n f(x)$ converges to the mean of the
+  one-sided limits, and to $f(x)$ where $f$ is differentiable.
+* Theorem 4.1.2, `AtkinsonHan.Chapter04.theorem_4_1_2`: a sequence of bounded operators on $L^p$
+  that converges to the identity on trigonometric polynomials converges to the identity on $L^p$ if
+  and only if it is uniformly bounded.
+* Equation (4.1.13), `AtkinsonHan.Chapter04.equation_4_1_13`: Parseval's equality
+  $\|f\|^2_{L^2(-\pi, \pi)} = \pi (a_0^2/2 + \sum_{j \ge 1} (a_j^2 + b_j^2))$.
+* Example 4.1.3, `AtkinsonHan.Chapter04.example_4_1_3`: the Fourier series of a step function.
+* Example 4.1.4, `AtkinsonHan.Chapter04.example_4_1_4`: the Fourier series of $|x|/\pi$.
+* Example 4.1.5, `AtkinsonHan.Chapter04.example_4_1_5`: the Fourier series of
+  $(\pi^2 - x^2)^2/\pi^4$.
+* Equation (4.1.14), `AtkinsonHan.Chapter04.equation_4_1_14`: $\|f - S_n f\|^2_{L^2(-\pi, \pi)} =
+  \pi \sum_{j > n} (a_j^2 + b_j^2)$.
+* Equation (4.1.15), `AtkinsonHan.Chapter04.equation_4_1_15`: $|f(x) - S_n f(x)| \le \sum_{j > n}
+  (|a_j| + |b_j|)$ for an absolutely convergent Fourier series.
 
-## The three examples
+## Conventions
 
-Each of Examples 4.1.3–4.1.5 is about the `2 π`-periodic extension of a function given on one
-period, so its `f` is described by hypotheses — `Function.Periodic f (2 π)` together with the
-book's formula on `[-π, 0)` and `[0, π)`, or on `[-π, π]` — rather than written out as a closed
-term.  Those hypotheses determine `f` everywhere, and the coefficients depend only on the values
-over one period.
+* The book works on $(-\pi, \pi)$ and always means the $2\pi$-periodic extension. So
+  $L^p(-\pi, \pi)$ is $L^p$ of the circle `AddCircle (2 * π)` with its probability Haar measure
+  `AddCircle.haarAddCircle`, and a function `g` on the circle is the $2\pi$-periodic function
+  `fun x : ℝ => g ↑x` on $\mathbb{R}$. The integrals for the two measures differ by the factor
+  $2\pi$ (`AtkinsonHan.Chapter04.integral_intervalIntegral_eq`).
+* The coefficients $a_j$ and $b_j$ of (4.1.2)–(4.1.3) are the backbone's `fourierCoeffCos f j` and
+  `fourierCoeffSin f j`, and $S_n f(x)$ of (4.1.1) is `fourierPartialSum f n x`.
+* The names `AtkinsonHan.Chapter04.equation_4_1_3_const`, `AtkinsonHan.Chapter04.equation_4_1_3_cos`
+  and `AtkinsonHan.Chapter04.equation_4_1_3_sin` cover both displays (4.1.2) and (4.1.3).
 
-The book's series `F x` is stated as the convergence of its terms in the sense of Definition
-1.2.17, the ordered form `∑_{i < n} v i → s`.  Mathlib's `HasSum` would be the wrong statement:
-the series of Example 4.1.3 is only conditionally convergent, so it has no unordered sum.  The
-convergence itself is Theorem 4.1.1 in each case, never reproved: the extensions are locally
-constant off the jumps (4.1.3), or differentiable off the corners with matching one-sided
-difference quotients at them (4.1.4, 4.1.5).
+## Implementation notes
 
-## Not formalized here
+* The surface adds the relation between the book's $a_j$, $b_j$ and the two coefficient families
+  used for the $L^2$ theory: `realFourierCoeff` against the orthonormal system `trigFun`, and
+  Mathlib's complex `fourierCoeff`.
+* Each of Examples 4.1.3–4.1.5 is about the $2\pi$-periodic extension of a function given on one
+  period. So its $f$ is described by hypotheses, `Function.Periodic f (2 * π)` together with the
+  book's formula on $[-\pi, 0)$ and $[0, \pi)$ or on $[-\pi, \pi]$, rather than written as a closed
+  term. These hypotheses determine $f$ everywhere.
+* In the examples, the convergence of the book's series is stated as the ordered convergence
+  $\sum_{i < n} v_i \to s$ of Definition 1.2.17 (`AtkinsonHan.Chapter01.definition_1_2_17`).
+  Mathlib's `HasSum` would be the wrong statement, because the series of Example 4.1.3 converges
+  only conditionally and so has no unordered sum. The convergence itself is always Theorem 4.1.1.
 
-The Gibbs phenomenon that the book discusses beside Example 4.1.3.  Its overshoot span
-`(2/π) Si(π) |f (x+) - f (x-)|`, with `(2/π) Si(π) ≈ 1.17898`, is asserted without proof and
-referred out, and it is the one part of that example `example_4_1_3` does not state.
+## Deviations from the source
 
-The `L^p` boundedness (4.1.12) for `1 < p < ∞`, which is the M. Riesz theorem and is not in
-Mathlib.  The partial-sum operators of Theorem 4.1.2 are therefore *given* as
-a sequence of bounded operators fixing the trigonometric polynomials in the limit, rather than
-constructed on `L^p`; at `p = 2` they are the truncations of `hasSum_trigSeries`, whose uniform
-bound is Bessel's inequality, and the conclusion there is `equation_4_1_13`.
+* **Theorem 4.1.1** (generalization). The book assumes $f$ piecewise continuous. The library assumes
+  only that $f$ is integrable over one period, which is all the proof uses. See
+  `AtkinsonHan.Chapter04.theorem_4_1_1`.
+* **Theorem 4.1.2** (generalization). The book states the theorem for the Fourier partial sum
+  operators $S_N$ on $L^p$. The library states it for any sequence of bounded operators on $L^p$
+  that converges to the identity on trigonometric polynomials. See
+  `AtkinsonHan.Chapter04.theorem_4_1_2`.
+* **(4.1.15)** (reading). The book's hypotheses "the Fourier series is absolutely convergent" and
+  "$f$ is continuous after a change on a set of measure zero" are read as summability of
+  $|a_j| + |b_j|$ and convergence of $S_n f(x)$ to $f(x)$ at every $x$. See
+  `AtkinsonHan.Chapter04.equation_4_1_15`.
+
+## Not formalized
+
+* **The Gibbs phenomenon beside Example 4.1.3.** The book asserts the overshoot
+  $(2/\pi) \operatorname{Si}(\pi) |f(x+) - f(x-)|$, with
+  $(2/\pi) \operatorname{Si}(\pi) \approx 1.17898$, without proof and refers the reader elsewhere.
+* **The $L^p$ boundedness (4.1.12) of the partial sum operators for $1 < p < \infty$.** It is the M.
+  Riesz theorem, which is not in Mathlib. For this reason Theorem 4.1.2 takes the operators as data.
 -/
 
 open Filter MeasureTheory Topology
@@ -83,10 +116,12 @@ namespace AtkinsonHan.Chapter04
 
 /-! ### The circle and the interval -/
 
-/-- **The identification of `L^p(-π, π)` with `L^p` of the circle**: the integral of a function on
-`AddCircle (2 π)` against the probability Haar measure is `(2 π)⁻¹` times the integral of the
-associated `2 π`-periodic function over `(-π, π)`.  Every statement of this section that mixes the
-book's normalisation with the backbone's goes through it. -/
+/-- **The identification of $L^p(-\pi, \pi)$ with $L^p$ of the circle.** For every
+$g : \mathbb{R}/2\pi\mathbb{Z} \to \mathbb{R}$, the integral of $g$ for the probability Haar
+measure of the circle is
+$$\int g\, d\mu = \frac{1}{2\pi} \int_{-\pi}^{\pi} g(x)\, dx,$$
+where on the right $g$ is read as a $2\pi$-periodic function on $\mathbb{R}$. All statements of
+this module that mix the book's normalization with the backbone's use this identity. -/
 theorem integral_intervalIntegral_eq (g : AddCircle (2 * π) → ℝ) :
     ∫ b : AddCircle (2 * π), g b ∂AddCircle.haarAddCircle
       = (2 * π)⁻¹ * ∫ x in -π..π, g ↑x := by
@@ -94,7 +129,8 @@ theorem integral_intervalIntegral_eq (g : AddCircle (2 * π) → ℝ) :
     ← AddCircle.intervalIntegral_preimage (2 * π) (-π) g, smul_eq_mul,
     show -π + 2 * π = π by ring]
 
-/-- The real Fourier coefficient of a function on the circle as an integral over `(-π, π)`. -/
+/-- The real Fourier coefficient of $g$ on the circle is $(2\pi)^{-1}$ times the integral of
+$\varphi_n g$ over $(-\pi, \pi)$. -/
 private theorem realFourierCoeff_eq_intervalIntegral (g : AddCircle (2 * π) → ℝ) (n : ℤ) :
     realFourierCoeff g n = (2 * π)⁻¹ * ∫ x in -π..π, trigFun (2 * π) n ↑x * g ↑x := by
   rw [realFourierCoeff_apply]
@@ -102,8 +138,14 @@ private theorem realFourierCoeff_eq_intervalIntegral (g : AddCircle (2 * π) →
 
 /-! ### The real coefficients (4.1.1)–(4.1.3) -/
 
-/-- **(4.1.2) at `j = 0`**: the book's `a_0 = π⁻¹ ∫_{-π}^{π} f` is twice the coefficient of `f`
-against the constant member of the orthonormal system. -/
+/-- **Equation (4.1.2)** of [han2009theoretical], case $j = 0$. Let $g$ be a real function on the
+circle $\mathbb{R}/2\pi\mathbb{Z}$, read as a $2\pi$-periodic function on $\mathbb{R}$. Then the
+book's coefficient $a_0 = \pi^{-1} \int_{-\pi}^{\pi} g(x)\, dx$ is twice the coefficient of $g$
+against the constant member $\varphi_0 = 1$ of the orthonormal system:
+$$a_0 = 2 \int g\, \varphi_0\, d\mu,$$
+for the probability Haar measure $\mu$ of the circle.
+
+The coefficient against $\varphi_m$ is `realFourierCoeff g m`. -/
 theorem equation_4_1_3_const (g : AddCircle (2 * π) → ℝ) :
     fourierCoeffCos (fun x : ℝ => g ↑x) 0 = 2 * realFourierCoeff g 0 := by
   have h1 : ∀ t : ℝ, g ↑t * Real.cos (((0 : ℕ) : ℝ) * t) = g ↑t := by
@@ -116,8 +158,15 @@ theorem equation_4_1_3_const (g : AddCircle (2 * π) → ℝ) :
   have hπ : π ≠ 0 := Real.pi_ne_zero
   field_simp
 
-/-- **(4.1.2)**: the book's cosine coefficient `a_j = π⁻¹ ∫_{-π}^{π} f (x) cos (j x) dx` is `√2`
-times the coefficient of `f` against `trigFun (2 π) j = √2 cos (j x)`. -/
+/-- **Equation (4.1.2)** of [han2009theoretical]. Let $g$ be a real function on the circle
+$\mathbb{R}/2\pi\mathbb{Z}$, read as a $2\pi$-periodic function on $\mathbb{R}$, and let
+$j \ge 1$. Then the book's coefficient $a_j = \pi^{-1} \int_{-\pi}^{\pi} g(x) \cos(jx)\, dx$ is
+$\sqrt 2$ times the coefficient of $g$ against the member $\varphi_j = \sqrt 2 \cos(jx)$ of the
+orthonormal system:
+$$a_j = \sqrt 2 \int g\, \varphi_j\, d\mu,$$
+for the probability Haar measure $\mu$ of the circle.
+
+The member $\varphi_j$ is `trigFun (2 * π) j`. -/
 theorem equation_4_1_3_cos (g : AddCircle (2 * π) → ℝ) {j : ℕ} (hj : 0 < j) :
     fourierCoeffCos (fun x : ℝ => g ↑x) j = √2 * realFourierCoeff g j := by
   have hj' : (0 : ℤ) < (j : ℤ) := by exact_mod_cast hj
@@ -134,8 +183,15 @@ theorem equation_4_1_3_cos (g : AddCircle (2 * π) → ℝ) {j : ℕ} (hj : 0 < 
   field_simp
   rw [Real.sq_sqrt (by norm_num : (0 : ℝ) ≤ 2)]
 
-/-- **(4.1.3)**: the book's sine coefficient `b_j = π⁻¹ ∫_{-π}^{π} f (x) sin (j x) dx` is `√2`
-times the coefficient of `f` against `trigFun (2 π) (-j) = √2 sin (j x)`. -/
+/-- **Equation (4.1.3)** of [han2009theoretical]. Let $g$ be a real function on the circle
+$\mathbb{R}/2\pi\mathbb{Z}$, read as a $2\pi$-periodic function on $\mathbb{R}$, and let
+$j \ge 1$. Then the book's coefficient $b_j = \pi^{-1} \int_{-\pi}^{\pi} g(x) \sin(jx)\, dx$ is
+$\sqrt 2$ times the coefficient of $g$ against the member $\varphi_{-j} = \sqrt 2 \sin(jx)$ of
+the orthonormal system:
+$$b_j = \sqrt 2 \int g\, \varphi_{-j}\, d\mu,$$
+for the probability Haar measure $\mu$ of the circle.
+
+The member $\varphi_{-j}$ is `trigFun (2 * π) (-j)`. -/
 theorem equation_4_1_3_sin (g : AddCircle (2 * π) → ℝ) {j : ℕ} (hj : 0 < j) :
     fourierCoeffSin (fun x : ℝ => g ↑x) j = √2 * realFourierCoeff g (-j) := by
   have hj' : (-(j : ℤ)) < 0 := by exact_mod_cast Int.neg_neg_of_pos (by exact_mod_cast hj)
@@ -155,9 +211,13 @@ theorem equation_4_1_3_sin (g : AddCircle (2 * π) → ℝ) {j : ℕ} (hj : 0 < 
 
 /-! ### The complex form (4.1.4)–(4.1.6) -/
 
-/-- **(4.1.5)**: the complex Fourier coefficient `c_j = (2 π)⁻¹ ∫_{-π}^{π} f (x) e^{-i j x} dx`.
-This is Mathlib's `fourierCoeff` on `AddCircle (2 π)`, whose character `e^{2 π i j x / T}` is
-`e^{i j x}` at `T = 2 π`. -/
+/-- **Equation (4.1.5)** of [han2009theoretical]. Let $g$ be a real function on the circle
+$\mathbb{R}/2\pi\mathbb{Z}$, read as a $2\pi$-periodic function on $\mathbb{R}$, and let
+$j \in \mathbb{Z}$. Then the complex Fourier coefficient of $g$ is
+$$c_j = \frac{1}{2\pi} \int_{-\pi}^{\pi} g(x) e^{-ijx}\, dx.$$
+
+Here $c_j$ is Mathlib's `fourierCoeff` on `AddCircle (2 * π)`, whose character
+$e^{2\pi i j x / T}$ is $e^{ijx}$ at $T = 2\pi$. -/
 theorem equation_4_1_5 (g : AddCircle (2 * π) → ℝ) (j : ℤ) :
     fourierCoeff (fun b => ((g b : ℝ) : ℂ)) j
       = ((2 * π)⁻¹ : ℝ) • ∫ x in -π..π, Complex.exp (-(j * x) * Complex.I) * (g ↑x : ℂ) := by
@@ -172,14 +232,20 @@ theorem equation_4_1_5 (g : AddCircle (2 * π) → ℝ) (j : ℤ) :
   push_cast
   field_simp
 
-/-- **(4.1.6) at `j = 0`**: `a_0 = 2 c_0`. -/
+/-- **Equation (4.1.6)** of [han2009theoretical], case $j = 0$. Let $g$ be a real function on the
+circle $\mathbb{R}/2\pi\mathbb{Z}$ that is integrable for its Haar measure. Then
+$a_0 = 2 \operatorname{Re} c_0$.
+
+The book writes $a_0 = 2 c_0$; the coefficient $c_0$ is real for a real $g$. -/
 theorem equation_4_1_6_const {g : AddCircle (2 * π) → ℝ}
     (hg : Integrable g AddCircle.haarAddCircle) :
     fourierCoeffCos (fun x : ℝ => g ↑x) 0 = 2 * (fourierCoeff (fun b => ((g b : ℝ) : ℂ)) 0).re := by
   rw [equation_4_1_3_const, realFourierCoeff_eq_fourierCoeff hg 0]
   simp
 
-/-- **(4.1.6)**: `a_j = 2 Re c_j`. -/
+/-- **Equation (4.1.6)** of [han2009theoretical], cosine coefficients. Let $g$ be a real function on
+the circle $\mathbb{R}/2\pi\mathbb{Z}$ that is integrable for its Haar measure, and let
+$j \ge 1$. Then $a_j = 2 \operatorname{Re} c_j$. -/
 theorem equation_4_1_6_cos {g : AddCircle (2 * π) → ℝ}
     (hg : Integrable g AddCircle.haarAddCircle) {j : ℕ} (hj : 0 < j) :
     fourierCoeffCos (fun x : ℝ => g ↑x) j = 2 * (fourierCoeff (fun b => ((g b : ℝ) : ℂ)) j).re := by
@@ -187,7 +253,9 @@ theorem equation_4_1_6_cos {g : AddCircle (2 * π) → ℝ}
   rw [equation_4_1_3_cos g hj, realFourierCoeff_of_pos hg hj', ← mul_assoc,
     Real.mul_self_sqrt (by norm_num : (0 : ℝ) ≤ 2)]
 
-/-- **(4.1.6)**: `b_j = -2 Im c_j`. -/
+/-- **Equation (4.1.6)** of [han2009theoretical], sine coefficients. Let $g$ be a real function on
+the circle $\mathbb{R}/2\pi\mathbb{Z}$ that is integrable for its Haar measure, and let
+$j \ge 1$. Then $b_j = -2 \operatorname{Im} c_j$. -/
 theorem equation_4_1_6_sin {g : AddCircle (2 * π) → ℝ}
     (hg : Integrable g AddCircle.haarAddCircle) {j : ℕ} (hj : 0 < j) :
     fourierCoeffSin (fun x : ℝ => g ↑x) j
@@ -199,19 +267,19 @@ theorem equation_4_1_6_sin {g : AddCircle (2 * π) → ℝ}
 
 /-! ### Sine and cosine series (4.1.7)–(4.1.10) -/
 
-/-- The left half of `(-π, π)` is a subinterval of it. -/
+/-- The interval $[-\pi, 0]$ is contained in $[-\pi, \pi]$. -/
 private theorem uIcc_subset_left : Set.uIcc (-π) (0 : ℝ) ⊆ Set.uIcc (-π) π := by
   have hπ : (0 : ℝ) < π := Real.pi_pos
   rw [Set.uIcc_of_le (by linarith), Set.uIcc_of_le (by linarith)]
   exact Set.Icc_subset_Icc le_rfl (by linarith)
 
-/-- The right half of `(-π, π)` is a subinterval of it. -/
+/-- The interval $[0, \pi]$ is contained in $[-\pi, \pi]$. -/
 private theorem uIcc_subset_right : Set.uIcc (0 : ℝ) π ⊆ Set.uIcc (-π) π := by
   have hπ : (0 : ℝ) < π := Real.pi_pos
   rw [Set.uIcc_of_le (by linarith), Set.uIcc_of_le (by linarith)]
   exact Set.Icc_subset_Icc (by linarith) le_rfl
 
-/-- An odd function integrates to zero over `(-π, π)`. -/
+/-- An odd function that is integrable on $[-\pi, \pi]$ has integral $0$ over $[-\pi, \pi]$. -/
 private theorem intervalIntegral_of_odd {g : ℝ → ℝ} (hg : ∀ t, g (-t) = -g t)
     (hgi : IntervalIntegrable g volume (-π) π) : (∫ t in -π..π, g t) = 0 := by
   have hsplit := intervalIntegral.integral_add_adjacent_intervals
@@ -224,7 +292,8 @@ private theorem intervalIntegral_of_odd {g : ℝ → ℝ} (hg : ∀ t, g (-t) = 
   rw [← hsplit, hflip]
   ring
 
-/-- An even function integrates over `(-π, π)` to twice its integral over `(0, π)`. -/
+/-- An even function that is integrable on $[-\pi, \pi]$ has integral over $[-\pi, \pi]$ equal to
+twice its integral over $[0, \pi]$. -/
 private theorem intervalIntegral_of_even {g : ℝ → ℝ} (hg : ∀ t, g (-t) = g t)
     (hgi : IntervalIntegrable g volume (-π) π) :
     (∫ t in -π..π, g t) = 2 * ∫ t in (0 : ℝ)..π, g t := by
@@ -238,9 +307,12 @@ private theorem intervalIntegral_of_even {g : ℝ → ℝ} (hg : ∀ t, g (-t) =
   rw [← hsplit, hsame]
   ring
 
-/-- **(4.1.7)–(4.1.8), Exercise 4.1.2**: the Fourier series of an odd function is a sine series,
-`a_j = 0` and `b_j = (2/π) ∫_0^π f (x) sin (j x) dx`.  With the odd extension of a function given
-on `(0, π)` this is the book's sine series of that function. -/
+/-- **Equations (4.1.7)–(4.1.8)** of [han2009theoretical] (Exercise 4.1.2). Let
+$f : \mathbb{R} \to \mathbb{R}$ be odd and integrable on $[-\pi, \pi]$. Then for every
+$j \ge 0$,
+$$a_j = 0 \quad \text{and} \quad b_j = \frac{2}{\pi} \int_0^\pi f(x) \sin(jx)\, dx.$$
+So the Fourier series of $f$ is a sine series. For the odd extension of a function given on
+$(0, \pi)$, this is the book's sine series of that function. -/
 theorem equation_4_1_10_odd {f : ℝ → ℝ} (hodd : ∀ x, f (-x) = -f x)
     (hfi : IntervalIntegrable f volume (-π) π) (j : ℕ) :
     fourierCoeffCos f j = 0 ∧
@@ -257,8 +329,11 @@ theorem equation_4_1_10_odd {f : ℝ → ℝ} (hodd : ∀ x, f (-x) = -f x)
     simp only [fourierCoeffSin, h0]
     field_simp
 
-/-- **(4.1.9)–(4.1.10), Exercise 4.1.3**: the Fourier series of an even function is a cosine
-series, `b_j = 0` and `a_j = (2/π) ∫_0^π f (x) cos (j x) dx`. -/
+/-- **Equations (4.1.9)–(4.1.10)** of [han2009theoretical] (Exercise 4.1.3). Let
+$f : \mathbb{R} \to \mathbb{R}$ be even and integrable on $[-\pi, \pi]$. Then for every
+$j \ge 0$,
+$$b_j = 0 \quad \text{and} \quad a_j = \frac{2}{\pi} \int_0^\pi f(x) \cos(jx)\, dx.$$
+So the Fourier series of $f$ is a cosine series. -/
 theorem equation_4_1_10_even {f : ℝ → ℝ} (heven : ∀ x, f (-x) = f x)
     (hfi : IntervalIntegrable f volume (-π) π) (j : ℕ) :
     fourierCoeffSin f j = 0 ∧
@@ -277,16 +352,20 @@ theorem equation_4_1_10_even {f : ℝ → ℝ} (heven : ∀ x, f (-x) = f x)
 
 /-! ### Pointwise convergence (Theorem 4.1.1) -/
 
-/-- **Theorem 4.1.1**: at a point `x` where the `2 π`-periodic, interval-integrable `f` has
-one-sided limits `f (x-) = fL` and `f (x+) = fR` *and* one-sided derivatives — both of which are
-packed into the convergence of the one-sided difference quotients — the Fourier partial sums
-converge to the mean `(f (x-) + f (x+)) / 2`.
+/-- **Theorem 4.1.1** of [han2009theoretical]. Let $f : \mathbb{R} \to \mathbb{R}$ be
+$2\pi$-periodic and integrable on $[-\pi, \pi]$, and let $x, f_L, f_R, c_L, c_R \in \mathbb{R}$.
+Assume that, as $t \to 0^+$,
+$$\frac{f(x + t) - f_R}{t} \to c_R \quad \text{and} \quad \frac{f(x - t) - f_L}{t} \to c_L.$$
+Then the Fourier partial sums converge at $x$ to the mean of the one-sided limits:
+$$S_n f(x) \to \frac{f_L + f_R}{2} \quad (n \to \infty).$$
 
-The book's hypothesis "piecewise continuous" is read as interval integrability over one period,
-which is all its proof uses.  The criterion behind it is Dini's,
-`tendsto_fourierPartialSum_of_dini`, and the work here is only to check Dini's integrability
-hypothesis: the symmetrised quotient is `(f (x + t) - fR)/t + (f (x - t) - fL)/t`, which is
-bounded near `0` because each summand converges. -/
+**Generalization.** The book assumes $f$ piecewise continuous. The statement assumes only that
+$f$ is integrable over one period, which is all the book's proof uses.
+
+The two hypotheses say that $f$ has the one-sided limits $f(x-) = f_L$ and $f(x+) = f_R$ and
+one-sided derivatives at $x$. The proof is Dini's criterion `tendsto_fourierPartialSum_of_dini`.
+Its integrability hypothesis holds because the symmetrized quotient
+$(f(x + t) - f_R)/t + (f(x - t) - f_L)/t$ is bounded near $0$. -/
 theorem theorem_4_1_1 {f : ℝ → ℝ} (hf : Function.Periodic f (2 * π))
     (hfi : IntervalIntegrable f volume (-π) π) {x fL fR cL cR : ℝ}
     (hR : Tendsto (fun t : ℝ => (f (x + t) - fR) / t) (𝓝[>] 0) (𝓝 cR))
@@ -346,19 +425,22 @@ theorem theorem_4_1_1 {f : ℝ → ℝ} (hf : Function.Periodic f (2 * π))
     exact (hφ (min (δ / 2) π) π).mul_continuousOn hcont
   exact tendsto_fourierPartialSum_of_dini hf hfi (hq1.trans hq2)
 
-/-- **Theorem 4.1.1**, the second clause: where `f` is differentiable the Fourier partial sums
-converge to `f x`. -/
+/-- **Theorem 4.1.1** of [han2009theoretical], at points of differentiability. Let
+$f : \mathbb{R} \to \mathbb{R}$ be $2\pi$-periodic and integrable on $[-\pi, \pi]$, and let $f$
+be differentiable at $x$. Then $S_n f(x) \to f(x)$ as $n \to \infty$. -/
 theorem theorem_4_1_1_continuous {f : ℝ → ℝ} (hf : Function.Periodic f (2 * π))
     (hfi : IntervalIntegrable f volume (-π) π) {x c : ℝ} (hd : HasDerivAt f c x) :
     Tendsto (fun n : ℕ => fourierPartialSum f n x) atTop (𝓝 (f x)) :=
   tendsto_fourierPartialSum_of_hasDerivAt hf hfi hd
 
-/-! ### `L^p` convergence (Theorem 4.1.2) -/
+/-! ### $L^p$ convergence (Theorem 4.1.2) -/
 
-/-- The trigonometric polynomials are dense in `L^p` of the circle, for `1 ≤ p < ∞`: they are
-dense in `C(AddCircle (2 π), ℝ)` by Corollary 3.1.4 — the backbone's
-`span_trigFun_closure_eq_top`, which the corollary restates — and the continuous functions are
-dense in `L^p`. -/
+/-- Let $1 \le p < \infty$. The trigonometric polynomials are dense in $L^p$ of the circle
+$\mathbb{R}/2\pi\mathbb{Z}$, for its probability Haar measure.
+
+The trigonometric polynomials are dense in $C(\mathbb{R}/2\pi\mathbb{Z})$ by Corollary 3.1.4,
+which is the backbone's `span_trigFun_closure_eq_top`, and the continuous functions are dense in
+$L^p$. -/
 theorem dense_image_toLp_trigSpan {p : ℝ≥0∞} [Fact (1 ≤ p)] (hp : p ≠ ⊤) :
     Dense (ContinuousMap.toLp (E := ℝ) p
         (AddCircle.haarAddCircle : Measure (AddCircle (2 * π))) ℝ ''
@@ -379,17 +461,22 @@ theorem dense_image_toLp_trigSpan {p : ℝ≥0∞} [Fact (1 ≤ p)] (hp : p ≠ 
     trivial
   exact fun x => closure_minimal hsub isClosed_closure (hTd x)
 
-/-- **Theorem 4.1.2** with (4.1.11)–(4.1.12): for `1 ≤ p < ∞`, a sequence of bounded operators on
-`L^p(-π, π)` that converges to the identity on the trigonometric polynomials converges to the
-identity on all of `L^p` **if and only if** it is uniformly bounded.
+/-- **Theorem 4.1.2** of [han2009theoretical], with (4.1.11)–(4.1.12). Let $1 \le p < \infty$, and
+let $S_0, S_1, \ldots$ be bounded linear operators on $L^p(-\pi, \pi)$ such that $S_N q \to q$
+for every trigonometric polynomial $q$. Then $\|S_N f - f\|_{L^p} \to 0$ for every
+$f \in L^p(-\pi, \pi)$ if and only if there is a constant $C$ with $\|S_N\| \le C$ for all $N$.
 
-Forward is the principle of uniform boundedness (Theorem 2.4.4); backward is the density of the
-trigonometric polynomials (Corollary 3.1.4) together with the backbone's density criterion.  The
-book states this for the Fourier partial-sum operators `S_N`, which do converge to the identity on
-trigonometric polynomials — each is fixed by `S_N` for all large `N` — and whose `L^p` boundedness
-for a fixed `N` is elementary; the surface takes the operators as data, since Mathlib has no `L^p`
-partial-sum operator to name.  At `p = 2` the uniform bound holds with constant `1` by Bessel's
-inequality, and the resulting convergence is `equation_4_1_13`. -/
+**Generalization.** The book states the theorem for the Fourier partial sum operators $S_N$.
+These converge to the identity on trigonometric polynomials, because each trigonometric
+polynomial is fixed by $S_N$ for all large $N$, and each $S_N$ is bounded on $L^p$. The
+statement takes the operators as data, since Mathlib has no partial sum operator on $L^p$.
+
+The forward direction is the principle of uniform boundedness (Theorem 2.4.4,
+`AtkinsonHan.Chapter02.theorem_2_4_4`). The backward direction is the density of the
+trigonometric polynomials (Corollary 3.1.4, `AtkinsonHan.Chapter03.corollary_3_1_4`) with the
+backbone's density criterion. At $p = 2$ the uniform bound holds with $C = 1$ by Bessel's
+inequality, and the resulting convergence is `AtkinsonHan.Chapter04.equation_4_1_13`.
+$L^p(-\pi, \pi)$ is $L^p$ of the circle for its probability Haar measure. -/
 theorem theorem_4_1_2 {p : ℝ≥0∞} [Fact (1 ≤ p)] (hp : p ≠ ⊤)
     (S : ℕ → Lp ℝ p (AddCircle.haarAddCircle : Measure (AddCircle (2 * π))) →L[ℝ]
       Lp ℝ p (AddCircle.haarAddCircle : Measure (AddCircle (2 * π))))
@@ -419,9 +506,8 @@ theorem theorem_4_1_2 {p : ℝ≥0∞} [Fact (1 ≤ p)] (hp : p ≠ ⊤)
 
 /-! ### Parseval's equality (4.1.13) -/
 
-/-- Fold an absolutely convergent sum over `ℤ` onto `ℕ` by pairing `n` with `-n`: the `0`-th term
-stays alone and the `j`-th is `c j + c (-j)`.  This is the shape in which the book writes every
-series over the trigonometric system. -/
+/-- An absolutely convergent sum over $\mathbb{Z}$, folded onto $\mathbb{N}$ by pairing $n$ with
+$-n$: the term $0$ stays alone and the $j$-th term is $c_j + c_{-j}$. -/
 private theorem hasSum_int_fold {c : ℤ → ℝ} {S : ℝ} (h : HasSum c S) :
     HasSum (fun j : ℕ => if j = 0 then c 0 else c j + c (-j)) S := by
   have h1 : HasSum (fun n : ℕ => c n + c (-n)) (S + c 0) := h.nat_add_neg
@@ -436,8 +522,8 @@ private theorem hasSum_int_fold {c : ℤ → ℝ} {S : ℝ} (h : HasSum c S) :
   rw [hfun, hval] at h2
   exact h2
 
-/-- The squared `L²` norm for the probability measure of the circle, as the book's integral over
-`(-π, π)`: the two differ by the normalising factor `2 π` of the measure. -/
+/-- The squared $L^2$ norm for the probability Haar measure of the circle is $(2\pi)^{-1}$ times the
+integral of the square over $(-\pi, \pi)$. -/
 private theorem norm_sq_eq_intervalIntegral
     (F : Lp ℝ 2 (AddCircle.haarAddCircle : Measure (AddCircle (2 * π)))) :
     ‖F‖ ^ 2 = (2 * π)⁻¹ * ∫ x in -π..π, (F : AddCircle (2 * π) → ℝ) ↑x ^ 2 := by
@@ -448,27 +534,29 @@ private theorem norm_sq_eq_intervalIntegral
   rw [RCLike.inner_apply]
   simp [sq]
 
-/-- The coefficient dictionary in squared form: the book's `a_j²` is twice the square of the
-coefficient against the orthonormal system. -/
+/-- For $j \ge 1$, the square of the coefficient against $\varphi_j$ is $a_j^2/2$. -/
 private theorem sq_realFourierCoeff_cos (G : AddCircle (2 * π) → ℝ) {j : ℕ} (hj : 0 < j) :
     realFourierCoeff G j ^ 2 = fourierCoeffCos (fun x : ℝ => G ↑x) j ^ 2 / 2 := by
   rw [equation_4_1_3_cos G hj, mul_pow, Real.sq_sqrt (by norm_num : (0 : ℝ) ≤ 2)]
   ring
 
-/-- The coefficient dictionary in squared form, for the sines. -/
+/-- For $j \ge 1$, the square of the coefficient against $\varphi_{-j}$ is $b_j^2/2$. -/
 private theorem sq_realFourierCoeff_sin (G : AddCircle (2 * π) → ℝ) {j : ℕ} (hj : 0 < j) :
     realFourierCoeff G (-j) ^ 2 = fourierCoeffSin (fun x : ℝ => G ↑x) j ^ 2 / 2 := by
   rw [equation_4_1_3_sin G hj, mul_pow, Real.sq_sqrt (by norm_num : (0 : ℝ) ≤ 2)]
   ring
 
-/-- **Parseval's equality (4.1.13)** in the book's normalisation:
+/-- **Equation (4.1.13)** of [han2009theoretical] (Parseval's equality). Let $f \in L^2(-\pi, \pi)$,
+with Fourier coefficients $a_j$ and $b_j$. Then
+$$\int_{-\pi}^{\pi} f(x)^2\, dx = \pi \Bigl( \frac{a_0^2}{2} + \sum_{j=1}^{\infty} (a_j^2 +
+  b_j^2) \Bigr).$$
 
-`‖f‖²_{L²(-π,π)} = π (|a_0|²/2 + ∑_{j ≥ 1} (|a_j|² + |b_j|²))`.
-
-The sum is stated as a `HasSum` over `ℕ` whose `0`-th term is `π |a_0|²/2`, which is the book's
-display read literally.  It is `tsum_sq_realFourierCoeff` — Parseval for the orthonormal system —
-transported by the coefficient dictionary of `equation_4_1_3_*` and the measure normalisation of
-`integral_intervalIntegral_eq`. -/
+The sum is stated as an unordered sum (`HasSum`) over $j \in \mathbb{N}$ whose term $j = 0$ is
+$\pi a_0^2/2$. The proof is `tsum_sq_realFourierCoeff`, Parseval's equality for the orthonormal
+system, transported by the relations `AtkinsonHan.Chapter04.equation_4_1_3_const`,
+`AtkinsonHan.Chapter04.equation_4_1_3_cos` and `AtkinsonHan.Chapter04.equation_4_1_3_sin` and by
+`AtkinsonHan.Chapter04.integral_intervalIntegral_eq`. The function $f$ is a representative of an
+element of $L^2$ of the circle for its probability Haar measure. -/
 theorem equation_4_1_13 (F : Lp ℝ 2 (AddCircle.haarAddCircle : Measure (AddCircle (2 * π)))) :
     HasSum (fun j : ℕ =>
         if j = 0 then π * fourierCoeffCos (fun x : ℝ => (F : AddCircle (2 * π) → ℝ) ↑x) 0 ^ 2 / 2
@@ -525,9 +613,8 @@ theorem equation_4_1_13 (F : Lp ℝ 2 (AddCircle.haarAddCircle : Measure (AddCir
 
 /-! ### Examples 4.1.3–4.1.5: three concrete Fourier series -/
 
-/-- The `n`-th partial sum of a Fourier series is `2 π`-periodic: its terms are `cos (j x)` and
-`sin (j x)` with integer frequencies. Together with the periodicity of `f` this is what carries the
-three examples below from one period to all of `ℝ`. -/
+/-- The partial sum $S_n f$ is $2\pi$-periodic, because its terms are $\cos(jx)$ and $\sin(jx)$ with
+integer $j$. -/
 private theorem fourierPartialSum_periodic (f : ℝ → ℝ) (n : ℕ) :
     Function.Periodic (fourierPartialSum f n) (2 * π) := by
   intro x
@@ -537,7 +624,7 @@ private theorem fourierPartialSum_periodic (f : ℝ → ℝ) (n : ℕ) :
   rw [show (j : ℝ) * (x + 2 * π) = (j : ℝ) * x + (j : ℕ) * (2 * π) by ring,
     Real.cos_add_nat_mul_two_pi, Real.sin_add_nat_mul_two_pi]
 
-/-- Every real number lands in `[-π, π)` after subtracting an integer multiple of `2 π`. -/
+/-- Every real number $x$ has an integer $k$ with $x - 2\pi k \in [-\pi, \pi)$. -/
 private theorem exists_int_sub_mem_Ico (x : ℝ) :
     ∃ k : ℤ, x - k * (2 * π) ∈ Set.Ico (-π) π := by
   refine ⟨toIcoDiv Real.two_pi_pos (-π) x, ?_⟩
@@ -551,7 +638,7 @@ private theorem exists_int_sub_mem_Ico (x : ℝ) :
     linarith
   rwa [hrw] at hmem
 
-/-- `∫_{-π}^{0} cos (j t) dt = 0` for `j ≥ 1`. -/
+/-- For $j \ge 1$, $\int_{-\pi}^{0} \cos(jt)\, dt = 0$. -/
 private theorem integral_cos_neg_pi_zero {j : ℕ} (hj : 0 < j) :
     (∫ t in -π..(0 : ℝ), Real.cos ((j : ℝ) * t)) = 0 := by
   have hj0 : (j : ℝ) ≠ 0 := Nat.cast_ne_zero.mpr hj.ne'
@@ -566,7 +653,7 @@ private theorem integral_cos_neg_pi_zero {j : ℕ} (hj : 0 < j) :
     ((by fun_prop : Continuous fun t : ℝ => Real.cos ((j : ℝ) * t)).intervalIntegrable _ _)]
   simp [mul_neg, Real.sin_nat_mul_pi]
 
-/-- `∫_{-π}^{0} sin (j t) dt = ((-1)^j - 1) / j` for `j ≥ 1`. -/
+/-- For $j \ge 1$, $\int_{-\pi}^{0} \sin(jt)\, dt = ((-1)^j - 1)/j$. -/
 private theorem integral_sin_neg_pi_zero {j : ℕ} (hj : 0 < j) :
     (∫ t in -π..(0 : ℝ), Real.sin ((j : ℝ) * t)) = ((-1 : ℝ) ^ j - 1) / j := by
   have hj0 : (j : ℝ) ≠ 0 := Nat.cast_ne_zero.mpr hj.ne'
@@ -589,8 +676,8 @@ private theorem integral_sin_neg_pi_zero {j : ℕ} (hj : 0 < j) :
   field_simp
   ring
 
-/-- Convergence of the Fourier partial sums at every point of one period carries to all of `ℝ`:
-both `f` and the partial sums are `2 π`-periodic. -/
+/-- If $f$ is $2\pi$-periodic and $S_n f(y) \to f(y)$ for every $y \in [-\pi, \pi)$, then
+$S_n f(x) \to f(x)$ for every $x \in \mathbb{R}$. -/
 private theorem tendsto_fourierPartialSum_of_Ico {f : ℝ → ℝ}
     (hper : Function.Periodic f (2 * π))
     (h : ∀ y ∈ Set.Ico (-π) π, Tendsto (fun n : ℕ => fourierPartialSum f n y) atTop (𝓝 (f y)))
@@ -599,8 +686,8 @@ private theorem tendsto_fourierPartialSum_of_Ico {f : ℝ → ℝ}
   rw [← hper.sub_int_mul_eq (x := x) k]
   exact (h _ hk).congr fun n => (fourierPartialSum_periodic f n).sub_int_mul_eq k
 
-/-- A quotient with an explicit form just to the right of `0` has the corresponding limit there:
-the shape in which the one-sided derivative hypotheses of Theorem 4.1.1 are met. -/
+/-- If $(g(t) - c)/t = q(t)$ for $t \in (0, \pi)$ and $q(t) \to d$ as $t \to 0^+$, then
+$(g(t) - c)/t \to d$ as $t \to 0^+$. -/
 private theorem tendsto_quotient_of_eventually_eq {g q : ℝ → ℝ} {c d : ℝ}
     (h : ∀ t ∈ Set.Ioo (0 : ℝ) π, (g t - c) / t = q t) (hq : Tendsto q (𝓝[>] 0) (𝓝 d)) :
     Tendsto (fun t : ℝ => (g t - c) / t) (𝓝[>] 0) (𝓝 d) := by
@@ -608,20 +695,22 @@ private theorem tendsto_quotient_of_eventually_eq {g q : ℝ → ℝ} {c d : ℝ
   filter_upwards [Ioo_mem_nhdsGT Real.pi_pos] with t ht
   exact (h t ht).symm
 
-/-- The special case of `tendsto_quotient_of_eventually_eq` with a constant quotient. -/
+/-- If $(g(t) - c)/t = d$ for $t \in (0, \pi)$, then $(g(t) - c)/t \to d$ as $t \to 0^+$. -/
 private theorem tendsto_quotient_of_eventually_const {g : ℝ → ℝ} {c d : ℝ}
     (h : ∀ t ∈ Set.Ioo (0 : ℝ) π, (g t - c) / t = d) :
     Tendsto (fun t : ℝ => (g t - c) / t) (𝓝[>] 0) (𝓝 d) :=
   tendsto_quotient_of_eventually_eq h tendsto_const_nhds
 
-/-- A function agreeing on `[-π, π]` with a continuous one is interval-integrable there. -/
+/-- A function that agrees on $[-\pi, \pi]$ with a continuous function is integrable on
+$[-\pi, \pi]$. -/
 private theorem intervalIntegrable_of_eqOn {f F : ℝ → ℝ} (hF : Continuous F)
     (hval : ∀ x ∈ Set.Icc (-π) π, f x = F x) : IntervalIntegrable f volume (-π) π := by
   refine (hF.intervalIntegrable _ _).congr fun t ht => ?_
   rw [Set.uIoc_of_le (by linarith [Real.pi_pos]), Set.mem_Ioc] at ht
   exact (hval t ⟨ht.1.le, ht.2⟩).symm
 
-/-- A function agreeing on `[-π, π]` with another has the same integrals against any weight. -/
+/-- If $f = F$ on $[-\pi, \pi]$, then $\int_{-\pi}^{\pi} f g = \int_{-\pi}^{\pi} F g$ for every $g$.
+-/
 private theorem integral_congr_of_eqOn {f F : ℝ → ℝ}
     (hval : ∀ x ∈ Set.Icc (-π) π, f x = F x) (g : ℝ → ℝ) :
     (∫ t in -π..π, f t * g t) = ∫ t in -π..π, F t * g t := by
@@ -629,10 +718,10 @@ private theorem integral_congr_of_eqOn {f F : ℝ → ℝ}
   rw [Set.uIcc_of_le (by linarith [Real.pi_pos])] at ht
   rw [hval t ht]
 
-/-! #### Example 4.1.3: a step function -/
+/-! ### Example 4.1.3: a step function -/
 
-/-- Against a continuous weight only the left half of the period contributes to the integral of the
-step function of Example 4.1.3, on which the function is `1`. -/
+/-- For the step function of Example 4.1.3 and a continuous $g$, the product $fg$ is integrable on
+$[-\pi, \pi]$ and $\int_{-\pi}^{\pi} f g = \int_{-\pi}^{0} g$. -/
 private theorem step_integral {f : ℝ → ℝ} (hneg : ∀ x ∈ Set.Ico (-π) 0, f x = 1)
     (hpos : ∀ x ∈ Set.Ico (0 : ℝ) π, f x = 0) {g : ℝ → ℝ} (hg : Continuous g) :
     IntervalIntegrable (fun t => f t * g t) volume (-π) π ∧
@@ -655,12 +744,13 @@ private theorem step_integral {f : ℝ → ℝ} (hneg : ∀ x ∈ Set.Ico (-π) 
     ← intervalIntegral.integral_congr_uIoo h1, ← intervalIntegral.integral_congr_uIoo h2]
   simp
 
-/-- The step function of Example 4.1.3 is interval-integrable over a period. -/
+/-- The step function of Example 4.1.3 is integrable on $[-\pi, \pi]$. -/
 private theorem step_intervalIntegrable {f : ℝ → ℝ} (hneg : ∀ x ∈ Set.Ico (-π) 0, f x = 1)
     (hpos : ∀ x ∈ Set.Ico (0 : ℝ) π, f x = 0) : IntervalIntegrable f volume (-π) π := by
   simpa using (step_integral hneg hpos (g := fun _ => (1 : ℝ)) continuous_const).1
 
-/-- The cosine coefficients of the step function: `a_0 = 1` and `a_j = 0` for `j ≥ 1`. -/
+/-- The cosine coefficients of the step function of Example 4.1.3 are $a_0 = 1$ and $a_j = 0$ for
+$j \ge 1$. -/
 private theorem step_fourierCoeffCos {f : ℝ → ℝ} (hneg : ∀ x ∈ Set.Ico (-π) 0, f x = 1)
     (hpos : ∀ x ∈ Set.Ico (0 : ℝ) π, f x = 0) :
     fourierCoeffCos f 0 = 1 ∧ ∀ j : ℕ, 0 < j → fourierCoeffCos f j = 0 := by
@@ -674,7 +764,8 @@ private theorem step_fourierCoeffCos {f : ℝ → ℝ} (hneg : ∀ x ∈ Set.Ico
     rw [fourierCoeffCos, (step_integral hneg hpos (g := fun t => Real.cos ((j : ℝ) * t))
       (by fun_prop)).2, integral_cos_neg_pi_zero hj, mul_zero]
 
-/-- The sine coefficients of the step function: `b_j = -(1 - (-1)^j) / (π j)` for `j ≥ 1`. -/
+/-- The sine coefficients of the step function of Example 4.1.3 are $b_j = -(1 - (-1)^j)/(\pi j)$
+for $j \ge 1$. -/
 private theorem step_fourierCoeffSin {f : ℝ → ℝ} (hneg : ∀ x ∈ Set.Ico (-π) 0, f x = 1)
     (hpos : ∀ x ∈ Set.Ico (0 : ℝ) π, f x = 0) (j : ℕ) (hj : 0 < j) :
     fourierCoeffSin f j = -(1 - (-1 : ℝ) ^ j) / (π * j) := by
@@ -685,9 +776,8 @@ private theorem step_fourierCoeffSin {f : ℝ → ℝ} (hneg : ∀ x ∈ Set.Ico
   field_simp
   ring
 
-/-- The partial sums of the step function's Fourier series in the book's closed form,
-`S_n x = 1/2 - (2/π) ∑_{i < n} sin ((2 i + 1) x) / (2 i + 1)`, the even-indexed coefficients
-being zero. -/
+/-- With the coefficients of the step function of Example 4.1.3, $S_{2n} f(x) = 1/2 - (2/\pi)
+\sum_{i < n} \sin((2i + 1)x)/(2i + 1)$. -/
 private theorem step_fourierPartialSum {f : ℝ → ℝ} (hcos0 : fourierCoeffCos f 0 = 1)
     (hcos : ∀ j : ℕ, 0 < j → fourierCoeffCos f j = 0)
     (hsin : ∀ j : ℕ, 0 < j → fourierCoeffSin f j = -(1 - (-1 : ℝ) ^ j) / (π * j)) (n : ℕ)
@@ -713,8 +803,8 @@ private theorem step_fourierPartialSum {f : ℝ → ℝ} (hcos0 : fourierCoeffCo
       field_simp
       ring
 
-/-- The step function is constant on a neighbourhood of any point that is not a multiple of `π`,
-hence differentiable there with derivative `0`. -/
+/-- The step function of Example 4.1.3 has derivative $0$ at every point that is not a multiple of
+$\pi$. -/
 private theorem step_hasDerivAt {f : ℝ → ℝ} (hper : Function.Periodic f (2 * π))
     (hneg : ∀ x ∈ Set.Ico (-π) 0, f x = 1) (hpos : ∀ x ∈ Set.Ico (0 : ℝ) π, f x = 0) {x : ℝ}
     (hx : ∀ k : ℤ, x ≠ k * π) : HasDerivAt f 0 x := by
@@ -739,8 +829,8 @@ private theorem step_hasDerivAt {f : ℝ → ℝ} (hper : Function.Periodic f (2
       exact (hval t).trans (hpos _ ⟨by linarith [ht.1], by linarith [ht.2]⟩)
     exact (hasDerivAt_const x (0 : ℝ)).congr_of_eventuallyEq hnb
 
-/-- At a multiple of `π` the step function of Example 4.1.3 jumps between `0` and `1`, so its
-Fourier partial sums converge to the mean `1/2` of the one-sided limits. -/
+/-- At every multiple of $\pi$, the Fourier partial sums of the step function of Example 4.1.3
+converge to $1/2$. -/
 private theorem step_tendsto_at_pi {f : ℝ → ℝ} (hper : Function.Periodic f (2 * π))
     (hneg : ∀ x ∈ Set.Ico (-π) 0, f x = 1) (hpos : ∀ x ∈ Set.Ico (0 : ℝ) π, f x = 0) (k : ℤ) :
     Tendsto (fun n : ℕ => fourierPartialSum f n ((k : ℝ) * π)) atTop (𝓝 (1 / 2)) := by
@@ -770,24 +860,29 @@ private theorem step_tendsto_at_pi {f : ℝ → ℝ} (hper : Function.Periodic f
     (tendsto_quotient_of_eventually_const (d := 0)
       fun t ht => by rw [hLval t ht, sub_self, zero_div])
 
-/-- **Example 4.1.3.** The Fourier series of the step function `f x = 1` on `[-π, 0)` and
-`f x = 0` on `[0, π)`, extended `2 π`-periodically. Its coefficients are `a_0 = 1`, `a_j = 0` for
-`j ≥ 1` and `b_j = -(1 - (-1)^j) / (π j)`, so the even harmonics drop out and the partial sums are
-the book's
+/-- **Example 4.1.3** of [han2009theoretical]. Let $f : \mathbb{R} \to \mathbb{R}$ be
+$2\pi$-periodic with $f(x) = 1$ for $x \in [-\pi, 0)$ and $f(x) = 0$ for $x \in [0, \pi)$. Then
 
-`S_n x = 1/2 - (2/π) ∑_{i < n} sin ((2 i + 1) x) / (2 i + 1)`
+* $a_0 = 1$, $a_j = 0$ for $j \ge 1$, and $b_j = -(1 - (-1)^j)/(\pi j)$ for $j \ge 1$;
+* for all $n \ge 0$ and $x \in \mathbb{R}$, $S_{2n} f(x) = \dfrac{1}{2} - \dfrac{2}{\pi}
+  \sum_{i=0}^{n-1} \dfrac{\sin((2i + 1)x)}{2i + 1}$;
+* $S_n f(x) \to f(x)$ at every $x$ that is not a multiple of $\pi$;
+* $S_n f(k\pi) \to 1/2$ for every $k \in \mathbb{Z}$, the mean of the one-sided limits at the
+  jump;
+* at every $x$ that is not a multiple of $\pi$, the series $\sum_{i \ge 0} -\frac{2}{\pi}
+  \frac{\sin((2i + 1)x)}{2i + 1}$ converges to $f(x) - 1/2$.
 
-(the book indexes the sum from `j = 1` to `n` with terms `sin ((2 j - 1) x) / (2 j - 1)`, which is
-the same series reindexed). By Theorem 4.1.1 the Fourier series converges to `f x` at every `x`
-that is not a multiple of `π`, and to `1/2` at every multiple of `π`, the mean of the two one-sided
-limits at the jump; the last clause is the book's `F x = f x`, written as convergence of the series
-`∑_{i ≥ 0} -(2/π) sin ((2 i + 1) x) / (2 i + 1)` to `f x - 1/2` in the sense of Definition 1.2.17.
+The even coefficients $b_{2i}$ vanish, so the partial sums have only odd harmonics. The book
+indexes the sum from $j = 1$ to $n$ with terms $\sin((2j - 1)x)/(2j - 1)$, which is the same
+sum. The last part is the book's $F(x) = f(x)$, with the series convergence of Definition
+1.2.17. The convergence is Theorem 4.1.1.
 
-Not stated: the Gibbs phenomenon that the book discusses beside this example, whose overshoot span
-`(2/π) Si(π) |f (x+) - f (x-)|` with `(2/π) Si(π) ≈ 1.17898` it asserts without proof and refers
-out. Beware the near-match: `equation_4_1_3_const`, `equation_4_1_3_cos` and `equation_4_1_3_sin`
-are the book's *displayed* equations (4.1.3), the real Fourier coefficients, and have nothing to do
-with this example. -/
+The Gibbs phenomenon that the book discusses beside this example is not stated: the book asserts
+the overshoot $(2/\pi) \operatorname{Si}(\pi) |f(x+) - f(x-)|$, with
+$(2/\pi) \operatorname{Si}(\pi) \approx 1.17898$, without proof. Note that
+`AtkinsonHan.Chapter04.equation_4_1_3_const`, `AtkinsonHan.Chapter04.equation_4_1_3_cos` and
+`AtkinsonHan.Chapter04.equation_4_1_3_sin` are the book's displayed equations (4.1.2)–(4.1.3) on
+the real Fourier coefficients, and are not about this example. -/
 theorem example_4_1_3 {f : ℝ → ℝ} (hper : Function.Periodic f (2 * π))
     (hneg : ∀ x ∈ Set.Ico (-π) 0, f x = 1) (hpos : ∀ x ∈ Set.Ico (0 : ℝ) π, f x = 0) :
     fourierCoeffCos f 0 = 1 ∧
@@ -819,9 +914,9 @@ theorem example_4_1_3 {f : ℝ → ℝ} (hper : Function.Periodic f (2 * π))
   rw [← Finset.mul_sum]
   ring
 
-/-! #### Example 4.1.4: `|x| / π` -/
+/-! ### Example 4.1.4: $|x|/\pi$ -/
 
-/-- `∫_0^π t cos (j t) dt = ((-1)^j - 1) / j²` for `j ≥ 1`, by parts. -/
+/-- For $j \ge 1$, $\int_0^\pi t \cos(jt)\, dt = ((-1)^j - 1)/j^2$. -/
 private theorem integral_mul_cos_zero_pi {j : ℕ} (hj : 0 < j) :
     (∫ t in (0 : ℝ)..π, t * Real.cos ((j : ℝ) * t)) = ((-1 : ℝ) ^ j - 1) / j ^ 2 := by
   have hj0 : (j : ℝ) ≠ 0 := Nat.cast_ne_zero.mpr hj.ne'
@@ -851,8 +946,8 @@ private theorem integral_mul_cos_zero_pi {j : ℕ} (hj : 0 < j) :
   simp only [mul_zero, Real.sin_zero, Real.cos_zero, zero_div, zero_add]
   rw [div_sub_div_same]
 
-/-- The Fourier coefficients of `|x| / π`: the sines vanish because the function is even, and
-`a_0 = 1`, `a_j = 2 ((-1)^j - 1) / (π² j²)`. -/
+/-- The Fourier coefficients of $|x|/\pi$ are $b_j = 0$, $a_0 = 1$ and
+$a_j = 2((-1)^j - 1)/(\pi^2 j^2)$ for $j \ge 1$. -/
 private theorem abs_fourierCoeff {f : ℝ → ℝ} (hval : ∀ x ∈ Set.Icc (-π) π, f x = |x| / π) :
     (∀ j : ℕ, fourierCoeffSin f j = 0) ∧ fourierCoeffCos f 0 = 1 ∧
       ∀ j : ℕ, 0 < j → fourierCoeffCos f j = 2 * ((-1 : ℝ) ^ j - 1) / (π ^ 2 * j ^ 2) := by
@@ -895,8 +990,8 @@ private theorem abs_fourierCoeff {f : ℝ → ℝ} (hval : ∀ x ∈ Set.Icc (-�
       integral_mul_cos_zero_pi hj]
     field_simp
 
-/-- The partial sums of the Fourier series of `|x| / π` in the book's closed form,
-`S_n x = 1/2 - (4/π²) ∑_{i < n} cos ((2 i + 1) x) / (2 i + 1)²`. -/
+/-- With the coefficients of $|x|/\pi$, $S_{2n} f(x) = 1/2 - (4/\pi^2) \sum_{i < n} \cos((2i +
+1)x)/(2i + 1)^2$. -/
 private theorem abs_fourierPartialSum {f : ℝ → ℝ} (hsin : ∀ j : ℕ, fourierCoeffSin f j = 0)
     (hcos0 : fourierCoeffCos f 0 = 1)
     (hcos : ∀ j : ℕ, 0 < j → fourierCoeffCos f j = 2 * ((-1 : ℝ) ^ j - 1) / (π ^ 2 * j ^ 2))
@@ -924,9 +1019,8 @@ private theorem abs_fourierPartialSum {f : ℝ → ℝ} (hsin : ∀ j : ℕ, fou
       field_simp
       ring
 
-/-- The Fourier series of `|x| / π` converges to the function at every real point: the periodic
-extension is continuous, differentiable off the multiples of `π`, and has equal one-sided
-difference quotients at the corners `x = 0` and `x = ±π`, so Theorem 4.1.1 applies everywhere. -/
+/-- The Fourier series of the periodic extension of $|x|/\pi$ converges to it at every real point,
+by Theorem 4.1.1. -/
 private theorem abs_tendsto {f : ℝ → ℝ} (hper : Function.Periodic f (2 * π))
     (hval : ∀ x ∈ Set.Icc (-π) π, f x = |x| / π) (x : ℝ) :
     Tendsto (fun n : ℕ => fourierPartialSum f n x) atTop (𝓝 (f x)) := by
@@ -995,20 +1089,23 @@ private theorem abs_tendsto {f : ℝ → ℝ} (hper : Function.Periodic f (2 * �
     have hderiv : HasDerivAt (fun t : ℝ => t / π) (1 / π) y := (hasDerivAt_id y).div_const π
     exact theorem_4_1_1_continuous hper hfi (hderiv.congr_of_eventuallyEq hnb)
 
-/-- **Example 4.1.4.** The Fourier series of `f x = |x| / π` on `[-π, π]`, extended
-`2 π`-periodically — the extension is continuous because `f (-π) = f π`. The function is even, so
-its series carries no sine term; the cosine coefficients are `a_0 = 1` and
-`a_j = 2 ((-1)^j - 1) / (π² j²)`, which vanish for even `j`, so the partial sums are the book's
+/-- **Example 4.1.4** of [han2009theoretical]. Let $f : \mathbb{R} \to \mathbb{R}$ be
+$2\pi$-periodic with $f(x) = |x|/\pi$ for $x \in [-\pi, \pi]$. Then
 
-`S_n x = 1/2 - (4/π²) ∑_{i < n} cos ((2 i + 1) x) / (2 i + 1)²`
+* $b_j = 0$ for all $j$, $a_0 = 1$, and $a_j = 2((-1)^j - 1)/(\pi^2 j^2)$ for $j \ge 1$;
+* for all $n \ge 0$ and $x \in \mathbb{R}$, $S_{2n} f(x) = \dfrac{1}{2} - \dfrac{4}{\pi^2}
+  \sum_{i=0}^{n-1} \dfrac{\cos((2i + 1)x)}{(2i + 1)^2}$;
+* $S_n f(x) \to f(x)$ for every $x \in \mathbb{R}$;
+* for every $x$, the series $\sum_{i \ge 0} -\frac{4}{\pi^2} \frac{\cos((2i + 1)x)}{(2i + 1)^2}$
+  converges to $f(x) - 1/2$.
 
-(the book indexes the sum from `j = 1` to `n` with terms `cos ((2 j - 1) x) / (2 j - 1)²`, the same
-series reindexed). The extension is differentiable off the multiples of `π` and has equal one-sided
-difference quotients at the corners, so by Theorem 4.1.1 the series converges to `f x` at every
-`x`; the last clause is the book's `F x = f x`, written as convergence of the series
-`∑_{i ≥ 0} -(4/π²) cos ((2 i + 1) x) / (2 i + 1)²` to `f x - 1/2` in the sense of Definition
-1.2.17. The book's other assertion here, convergence in `L²(-π, π)`, is `equation_4_1_14` for this
-`f`. -/
+The extension is continuous because $f(-\pi) = f(\pi)$. The function is even, so its series has
+no sine terms, and $a_j = 0$ for even $j \ge 2$. The book indexes the sum from $j = 1$ to $n$
+with terms $\cos((2j - 1)x)/(2j - 1)^2$, which is the same sum. The extension is differentiable
+off the multiples of $\pi$ and has equal one-sided difference quotients at the corners, so the
+series converges everywhere by Theorem 4.1.1. The last part is the book's $F(x) = f(x)$, with
+the series convergence of Definition 1.2.17. The book's other claim here, convergence in
+$L^2(-\pi, \pi)$, is `AtkinsonHan.Chapter04.equation_4_1_14` for this $f$. -/
 theorem example_4_1_4 {f : ℝ → ℝ} (hper : Function.Periodic f (2 * π))
     (hval : ∀ x ∈ Set.Icc (-π) π, f x = |x| / π) :
     (∀ j : ℕ, fourierCoeffSin f j = 0) ∧
@@ -1035,21 +1132,23 @@ theorem example_4_1_4 {f : ℝ → ℝ} (hper : Function.Periodic f (2 * π))
   rw [← Finset.mul_sum]
   ring
 
-/-! #### Example 4.1.5: `(π² - x²)² / π⁴` -/
+/-! ### Example 4.1.5: $(\pi^2 - x^2)^2/\pi^4$ -/
 
-/-- The derivative of `P s * sin (w s)`, the shape the antiderivative below is built from. -/
+/-- The derivative of $s \mapsto P(s) \sin(ws)$ at $t$ is $c \sin(wt) + P(t) w \cos(wt)$, where
+$c = P'(t)$. -/
 private theorem hasDerivAt_mul_sin {P : ℝ → ℝ} {c w t : ℝ} (hP : HasDerivAt P c t) :
     HasDerivAt (fun s => P s * Real.sin (w * s))
       (c * Real.sin (w * t) + P t * (Real.cos (w * t) * w)) t :=
   hP.mul ((Real.hasDerivAt_sin (w * t)).comp t (by simpa using (hasDerivAt_id t).const_mul w))
 
-/-- The derivative of `P s * cos (w s)`. -/
+/-- The derivative of $s \mapsto P(s) \cos(ws)$ at $t$ is $c \cos(wt) - P(t) w \sin(wt)$, where
+$c = P'(t)$. -/
 private theorem hasDerivAt_mul_cos {P : ℝ → ℝ} {c w t : ℝ} (hP : HasDerivAt P c t) :
     HasDerivAt (fun s => P s * Real.cos (w * s))
       (c * Real.cos (w * t) + P t * (-Real.sin (w * t) * w)) t :=
   hP.mul ((Real.hasDerivAt_cos (w * t)).comp t (by simpa using (hasDerivAt_id t).const_mul w))
 
-/-- The derivative of a general quintic. -/
+/-- The derivative of a polynomial of degree at most $5$. -/
 private theorem hasDerivAt_quintic (a b c d e g t : ℝ) :
     HasDerivAt (fun s : ℝ => a * s ^ 5 + b * s ^ 4 + c * s ^ 3 + d * s ^ 2 + e * s + g)
       (5 * a * t ^ 4 + 4 * b * t ^ 3 + 3 * c * t ^ 2 + 2 * d * t + e) t := by
@@ -1060,7 +1159,7 @@ private theorem hasDerivAt_quintic (a b c d e g t : ℝ) :
   push_cast
   ring
 
-/-- The derivative of `(π² - x²)² / π⁴`. -/
+/-- The derivative of $(\pi^2 - x^2)^2/\pi^4$ is $(4x^3 - 4\pi^2 x)/\pi^4$. -/
 private theorem hasDerivAt_quarticNorm (y : ℝ) :
     HasDerivAt (fun t : ℝ => (π ^ 2 - t ^ 2) ^ 2 / π ^ 4)
       ((4 * y ^ 3 - 4 * π ^ 2 * y) / π ^ 4) y := by
@@ -1069,7 +1168,7 @@ private theorem hasDerivAt_quarticNorm (y : ℝ) :
   push_cast
   ring
 
-/-- The second derivative of `(π² - x²)² / π⁴`. -/
+/-- The derivative of $(4x^3 - 4\pi^2 x)/\pi^4$ is $(12x^2 - 4\pi^2)/\pi^4$. -/
 private theorem hasDerivAt_quarticNorm' (y : ℝ) :
     HasDerivAt (fun t : ℝ => (4 * t ^ 3 - 4 * π ^ 2 * t) / π ^ 4)
       ((12 * y ^ 2 - 4 * π ^ 2) / π ^ 4) y := by
@@ -1079,7 +1178,7 @@ private theorem hasDerivAt_quarticNorm' (y : ℝ) :
   push_cast
   ring
 
-/-- `∫_{-π}^{π} (π² - t²)² dt = 16 π⁵ / 15`. -/
+/-- $\int_{-\pi}^{\pi} (\pi^2 - t^2)^2\, dt = 16\pi^5/15$. -/
 private theorem integral_quartic : (∫ t in -π..π, (π ^ 2 - t ^ 2) ^ 2) = 16 * π ^ 5 / 15 := by
   have hd : ∀ t ∈ Set.uIcc (-π) π,
       HasDerivAt (fun s : ℝ => (1 / 5) * s ^ 5 + 0 * s ^ 4 + (-(2 * π ^ 2) / 3) * s ^ 3
@@ -1090,9 +1189,8 @@ private theorem integral_quartic : (∫ t in -π..π, (π ^ 2 - t ^ 2) ^ 2) = 16
     ((by fun_prop : Continuous fun t : ℝ => (π ^ 2 - t ^ 2) ^ 2).intervalIntegrable _ _)]
   ring
 
-/-- `∫_{-π}^{π} (π² - t²)² cos (j t) dt = -48 π (-1)^j / j⁴` for `j ≥ 1`: four integrations by
-parts, packaged as the antiderivative `(R s sin (j s) + T s cos (j s)) / j⁵` with `R` and `T` the
-polynomials `j⁴ p - j² p'' + p''''` and `j³ p' - j p'''` of `p s = (π² - s²)²`. -/
+/-- For $j \ge 1$, $\int_{-\pi}^{\pi} (\pi^2 - t^2)^2 \cos(jt)\, dt = -48\pi (-1)^j / j^4$, by four
+integrations by parts. -/
 private theorem integral_quartic_mul_cos {j : ℕ} (hj : 0 < j) :
     (∫ t in -π..π, (π ^ 2 - t ^ 2) ^ 2 * Real.cos ((j : ℝ) * t))
       = -48 * π * (-1 : ℝ) ^ j / j ^ 4 := by
@@ -1124,8 +1222,8 @@ private theorem integral_quartic_mul_cos {j : ℕ} (hj : 0 < j) :
   field_simp
   ring
 
-/-- The Fourier coefficients of `(π² - x²)² / π⁴`: the sines vanish because the function is even,
-and `a_0 = 16/15`, `a_j = 48 (-1)^{j+1} / (π⁴ j⁴)`. -/
+/-- The Fourier coefficients of $(\pi^2 - x^2)^2/\pi^4$ are $b_j = 0$, $a_0 = 16/15$ and
+$a_j = 48(-1)^{j+1}/(\pi^4 j^4)$ for $j \ge 1$. -/
 private theorem quartic_fourierCoeff {f : ℝ → ℝ}
     (hval : ∀ x ∈ Set.Icc (-π) π, f x = (π ^ 2 - x ^ 2) ^ 2 / π ^ 4) :
     (∀ j : ℕ, fourierCoeffSin f j = 0) ∧ fourierCoeffCos f 0 = 16 / 15 ∧
@@ -1148,8 +1246,8 @@ private theorem quartic_fourierCoeff {f : ℝ → ℝ}
     field_simp
     ring
 
-/-- The partial sums of the Fourier series of `(π² - x²)² / π⁴` in the book's closed form,
-`S_n x = 8/15 + (48/π⁴) ∑_{i < n} (-1)^i cos ((i + 1) x) / (i + 1)⁴`. -/
+/-- With the coefficients of $(\pi^2 - x^2)^2/\pi^4$, $S_n f(x) = 8/15 + (48/\pi^4) \sum_{i < n}
+(-1)^i \cos((i + 1)x)/(i + 1)^4$. -/
 private theorem quartic_fourierPartialSum {f : ℝ → ℝ} (hsin : ∀ j : ℕ, fourierCoeffSin f j = 0)
     (hcos0 : fourierCoeffCos f 0 = 16 / 15)
     (hcos : ∀ j : ℕ, 0 < j → fourierCoeffCos f j = 48 * (-1 : ℝ) ^ (j + 1) / (π ^ 4 * j ^ 4))
@@ -1171,9 +1269,8 @@ private theorem quartic_fourierPartialSum {f : ℝ → ℝ} (hsin : ∀ j : ℕ,
       field_simp
       ring
 
-/-- The Fourier series of `(π² - x²)² / π⁴` converges to the function at every real point: the
-periodic extension is continuously differentiable, being smooth on `(-π, π)` and having matching
-one-sided difference quotients at `±π`, so Theorem 4.1.1 applies everywhere. -/
+/-- The Fourier series of the periodic extension of $(\pi^2 - x^2)^2/\pi^4$ converges to it at every
+real point, by Theorem 4.1.1. -/
 private theorem quartic_tendsto {f : ℝ → ℝ} (hper : Function.Periodic f (2 * π))
     (hval : ∀ x ∈ Set.Icc (-π) π, f x = (π ^ 2 - x ^ 2) ^ 2 / π ^ 4) (x : ℝ) :
     Tendsto (fun n : ℕ => fourierPartialSum f n x) atTop (𝓝 (f x)) := by
@@ -1216,21 +1313,27 @@ private theorem quartic_tendsto {f : ℝ → ℝ} (hper : Function.Periodic f (2
     exact theorem_4_1_1_continuous hper hfi
       ((hasDerivAt_quarticNorm y).congr_of_eventuallyEq hnb)
 
-/-- **Example 4.1.5.** The Fourier series of `f x = (π² - x²)² / π⁴` on `[-π, π]`, extended
-`2 π`-periodically. The endpoint conditions `f⁽ˡ⁾(-π) = f⁽ˡ⁾(π)` hold for `l = 0, 1, 2`, so the
-extension is twice continuously differentiable; the function is even, so its series carries no sine
-term, and `a_0 = 16/15`, `a_j = 48 (-1)^{j+1} / (π⁴ j⁴)`, giving the book's partial sums
+/-- **Example 4.1.5** of [han2009theoretical]. Let $p(x) = (\pi^2 - x^2)^2/\pi^4$, and let
+$f : \mathbb{R} \to \mathbb{R}$ be $2\pi$-periodic with $f(x) = p(x)$ for $x \in [-\pi, \pi]$.
+Then
 
-`S_n x = 8/15 + (48/π⁴) ∑_{j = 1}^{n} (-1)^{j+1} cos (j x) / j⁴`
+* $p^{(l)}(-\pi) = p^{(l)}(\pi)$ for $l = 0, 1, 2$;
+* $b_j = 0$ for all $j$, $a_0 = 16/15$, and $a_j = 48(-1)^{j+1}/(\pi^4 j^4)$ for $j \ge 1$;
+* for all $n \ge 0$ and $x \in \mathbb{R}$, $S_n f(x) = \dfrac{8}{15} + \dfrac{48}{\pi^4}
+  \sum_{j=1}^{n} \dfrac{(-1)^{j+1} \cos(jx)}{j^4}$;
+* $S_n f(x) \to f(x)$ for every $x \in \mathbb{R}$;
+* for every $x$, the series $\sum_{j \ge 1} \frac{48}{\pi^4} \frac{(-1)^{j+1} \cos(jx)}{j^4}$
+  converges to $f(x) - 8/15$.
 
-(written below over `i < n` with `j = i + 1`, so that `(-1)^{j+1}` is `(-1)^i`). The series
-converges to `f x` at every `x` by Theorem 4.1.1, which is the book's "this function is equal to
-its Fourier series pointwise"; the last clause says it in the sense of Definition 1.2.17.
+The endpoint conditions make the extension twice continuously differentiable. The convergence is
+Theorem 4.1.1, and it is the book's statement that this function equals its Fourier series
+pointwise. The last part states it with the series convergence of Definition 1.2.17.
 
-The endpoint conditions are stated for the polynomial `(π² - x²)² / π⁴` itself rather than for the
-extension `f`, which is how the book verifies them; `l = 3` already fails, matching the book's
-`k = 4` for this example. Beware the near-match: `equation_4_1_5` is the book's *displayed*
-equation (4.1.5), the complex Fourier coefficient, and has nothing to do with this example. -/
+The endpoint conditions are stated for the polynomial $p$, which is how the book checks them,
+not for the extension $f$. The condition fails for $l = 3$, which matches the book's $k = 4$ for
+this example. The sums are written over $i < n$ with $j = i + 1$, so that $(-1)^{j+1}$ is
+$(-1)^i$. Note that `AtkinsonHan.Chapter04.equation_4_1_5` is the book's displayed equation
+(4.1.5) on the complex Fourier coefficient, and is not about this example. -/
 theorem example_4_1_5 {f : ℝ → ℝ} (hper : Function.Periodic f (2 * π))
     (hval : ∀ x ∈ Set.Icc (-π) π, f x = (π ^ 2 - x ^ 2) ^ 2 / π ^ 4) :
     (∀ l ≤ 2, iteratedDeriv l (fun x : ℝ => (π ^ 2 - x ^ 2) ^ 2 / π ^ 4) (-π)
@@ -1271,18 +1374,17 @@ theorem example_4_1_5 {f : ℝ → ℝ} (hper : Function.Periodic f (2 * π))
 
 /-! ### The truncation error (4.1.14)–(4.1.15) -/
 
-/-- **(4.1.14)**, the `L²` truncation error of the Fourier series:
+/-- **Equation (4.1.14)** of [han2009theoretical], the $L^2$ truncation error. Let
+$f \in L^2(-\pi, \pi)$ with Fourier coefficients $a_j$ and $b_j$, and let $n \ge 0$. Then
+$$\int_{-\pi}^{\pi} (f - S_n f)(x)^2\, dx = \pi \sum_{j > n} (a_j^2 + b_j^2).$$
 
-`‖f - S_n f‖²_{L²(-π,π)} = π ∑_{j > n} (|a_j|² + |b_j|²)`,
-
-the tail of Parseval's equality (4.1.13), of which `equation_4_1_13` is the case `n = -1`.  It is
-stated as a `HasSum` over `ℕ` whose terms of index at most `n` vanish, the shape in which the book
-writes a series over the trigonometric system.
-
-The book's `S_n` here is the `L²` partial sum, the backbone `trigPartialSum n`: the truncation of
-the Fourier series to the frequencies of absolute value at most `n`, which by the coefficient
-dictionary `equation_4_1_3_const`, `equation_4_1_3_cos` and `equation_4_1_3_sin` is
-`a₀/2 + ∑_{j=1}^{n} (a_j cos (j x) + b_j sin (j x))`. -/
+This is the tail of Parseval's equality (4.1.13), and `AtkinsonHan.Chapter04.equation_4_1_13` is
+the case $n = -1$. The sum is stated as an unordered sum (`HasSum`) over $j \in \mathbb{N}$
+whose terms with $j \le n$ are $0$. Here $S_n f$ is the $L^2$ partial sum `trigPartialSum n f`,
+the truncation of the Fourier series to the frequencies $|m| \le n$. By
+`AtkinsonHan.Chapter04.equation_4_1_3_const`, `AtkinsonHan.Chapter04.equation_4_1_3_cos` and
+`AtkinsonHan.Chapter04.equation_4_1_3_sin`, it is $a_0/2 + \sum_{j=1}^{n} (a_j \cos(jx) + b_j
+\sin(jx))$. -/
 theorem equation_4_1_14 (n : ℕ)
     (F : Lp ℝ 2 (AddCircle.haarAddCircle : Measure (AddCircle (2 * π)))) :
     HasSum (fun j : ℕ =>
@@ -1327,9 +1429,8 @@ theorem equation_4_1_14 (n : ℕ)
     field_simp
   rwa [hval] at hB
 
-/-- The `j`-th term of the real Fourier series of `f` at `x`, with the constant `a_0 / 2` carried
-by the term `j = 0`, so that the `m`-th partial sum of the series is the sum over
-`Finset.range (m + 1)`. -/
+/-- The $j$-th term of the real Fourier series of $f$ at $x$, with $a_0/2$ as the term $j = 0$, so
+that the sum of the terms $j \le m$ is $S_m f(x)$. -/
 private noncomputable def fourierTerm (f : ℝ → ℝ) (x : ℝ) (j : ℕ) : ℝ :=
   if j = 0 then fourierCoeffCos f 0 / 2
   else fourierCoeffCos f j * Real.cos (j * x) + fourierCoeffSin f j * Real.sin (j * x)
@@ -1357,18 +1458,20 @@ private theorem summable_fourierTerm {f : ℝ → ℝ}
   (summable_nat_add_iff 1).mp
     (Summable.of_norm_bounded ((summable_nat_add_iff 1).mpr hs) (norm_fourierTerm_le f x))
 
-/-- **(4.1.15)**, the uniform truncation error: when the Fourier coefficients are absolutely
-summable and the Fourier series converges to `f`, the partial sums satisfy
+/-- **Equation (4.1.15)** of [han2009theoretical], the uniform truncation error. Let
+$f : \mathbb{R} \to \mathbb{R}$ have Fourier coefficients with
+$\sum_j (|a_j| + |b_j|) < \infty$, and assume that $S_m f(y) \to f(y)$ as $m \to \infty$ for
+every $y \in \mathbb{R}$. Then for all $n \ge 0$ and $x \in \mathbb{R}$,
+$$|f(x) - S_n f(x)| \le \sum_{j > n} (|a_j| + |b_j|).$$
+So the maximum of $|f - S_n f|$ over $[-\pi, \pi]$ has the same bound.
 
-`|f x - S_n x| ≤ ∑_{j > n} (|a_j| + |b_j|)`
+**Reading.** The summability hypothesis is the book's "the Fourier series is absolutely
+convergent". The convergence hypothesis stands for the book's "$f$ is continuous after a change
+on a set of measure zero", under which the book's identity $f(x) - S_n f(x) = \sum_{j > n} (a_j
+\cos(jx) + b_j \sin(jx))$ holds.
 
-at every `x`, so in particular the maximum over `[-π, π]` obeys the same bound.
-
-The summability hypothesis is the book's "the Fourier series is absolutely convergent", and it
-cannot be dropped: without it the right-hand side is Mathlib's junk value `0` for a non-summable
-`tsum` and the inequality is false.  The convergence hypothesis is the book's "`f` is continuous
-after possibly being modified on a set of measure zero", under which the display the bound is read
-off, `f x - S_n x = ∑_{j > n} [a_j cos (j x) + b_j sin (j x)]`, holds. -/
+The summability hypothesis cannot be dropped: without it the right side is the value $0$ that
+Mathlib gives a sum that does not converge (`tsum`), and the inequality is false. -/
 theorem equation_4_1_15 {f : ℝ → ℝ}
     (hs : Summable fun j : ℕ => |fourierCoeffCos f j| + |fourierCoeffSin f j|)
     (hconv : ∀ y : ℝ, Tendsto (fun m : ℕ => fourierPartialSum f m y) atTop (𝓝 (f y)))

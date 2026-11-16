@@ -8,55 +8,67 @@ import Mathlib.MeasureTheory.Integral.IntervalIntegral.Periodic
 import NumlibSurface.AtkinsonHan.Chapter12.Section04
 
 /-!
-# Atkinson–Han §12.6: iteration methods for the discretized equations
+# Atkinson and Han, Section 12.6: Iteration methods for the discretized equations
 
-Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework*, 3rd edition, Springer, 2009, §12.6.
+This module formalizes Section 12.6 of [han2009theoretical]. The linear systems that the methods of
+Chapter 12 produce are large and dense, so they are solved by residual correction instead of
+elimination. Section 12.6.2 gives the two-grid iteration for the Nyström method: the residual of the
+fine equation $(\lambda - K_n) u_n = f$ is corrected with the inverse of the coarse operator
+$\lambda - K_m$, and this coarse inverse is the only inverse that the method forms. One step
+multiplies the error by the operator $M_{m,n} = \lambda^{-1} (\lambda - K_m)^{-1} (K_n - K_m) K_n$
+of (12.6.28). Theorem 12.6.1 shows that $\|M_{m,n}\| < 1$ for all large $m$ and all $n \ge m$, so
+the iteration converges. Example 12.6.2 is a test equation with the kernel $k_\gamma$ of (12.6.43),
+whose eigenvalues and eigenfunctions (12.6.44) are known in closed form.
 
-The linear systems produced by the methods of this chapter are large and dense, so they are solved
-by residual correction rather than by elimination.  §12.6.2 is the two-grid iteration for the
-Nyström method: the residual of the *fine* equation `(λ - K_n) u_n = f` is corrected with the
-inverse of the *coarse* operator `λ - K_m`, which is the only inverse ever formed.  As in §12.1 the
-book's scalar `λ` is written `μ`, `λ` being Lean's lambda binder.
+The two-grid iteration and its error operator are the backbone definitions in
+`Numlib.IntegralEquations.SecondKind`. The convergence proof uses the collectively compact framework
+of Section 12.4 (`NumlibSurface.AtkinsonHan.Chapter12.Section04`). The spectrum of $k_\gamma$
+follows from the Poisson integral formula of Mathlib.
+
+## Main definitions
+
+* (12.6.20)–(12.6.22), `AtkinsonHan.Chapter12.twoGridStep`: one step $u \mapsto u + \lambda^{-1}
+  (r + (\lambda - K_m)^{-1} K_n r)$ of the two-grid iteration, with the residual
+  $r = f - (\lambda - K_n) u$.
+* (12.6.28), `AtkinsonHan.Chapter12.twoGridOperator`: the iteration operator $M_{m,n} = \lambda^{-1}
+  (\lambda - K_m)^{-1} (K_n - K_m) K_n$.
+* (12.6.43), `AtkinsonHan.Chapter12.periodicPoissonKernel`: the kernel $k_\gamma(\tau) = (1 -
+  \gamma^2) / (1 + \gamma^2 - 2 \gamma \cos(2 \pi \tau))$.
 
 ## Main results
 
-* `twoGridStep`, `equation_12_6_20` — (12.6.20)–(12.6.22), the residual, the coarse correction and
-  the update, as one step of the residual correction method (12.6.5)–(12.6.6) whose approximate
-  inverse `C_n` is `(λ - K_m)⁻¹`.
-* `twoGridOperator`, `equation_12_6_27` — (12.6.27)–(12.6.28), the error identity
-  `u_n - u_n^{(κ+1)} = M_{m,n} (u_n - u_n^{(κ)})` with
-  `M_{m,n} = (1/λ) (λ - K_m)⁻¹ (K_n - K_m) K_n`, and the geometric bound it gives.
-* `theorem_12_6_1` — for a collectively compact, pointwise convergent family with `λ - K`
-  invertible, every large enough coarse index `m` makes `λ - K_m` invertible and `‖M_{m,n}‖ < 1`
-  for *every* fine index `n ≥ m`, so the two-grid iterates converge to `u_n` from every starting
-  point.
-* `periodicPoissonKernel` and `example_12_6_2` — the kernel `k_γ` of (12.6.43) and its spectrum
-  (12.6.44), `γ^j` on `cos (2 j π x)` and `-γ^j` on `sin (2 j π x)`, which is why the book computes
-  with this equation.
-
-## Not formalized here
-
-§12.6.3, the translation of the operator iteration into the linear system `A_n u_n = f_n`, and
-§12.6.4, the operation count.  Both are implementation, with no theorem content.
-
-Table 12.4 of Example 12.6.2 — the iteration counts, the errors and the empirical convergence
-ratios `ν̃` of the two-grid iteration at `γ = 0.8` — is computed floating-point data and is not
-stated.  Only (12.6.44), the spectrum of the kernel, is; the convergence the table exhibits is
-`theorem_12_6_1`, and the mesh independence principle discussed after it is the limit (12.6.48),
-which the book states without proof.
+* (12.6.20)–(12.6.22), `AtkinsonHan.Chapter12.equation_12_6_20`: the residual and the update of one
+  two-grid step, written out.
+* (12.6.27), `AtkinsonHan.Chapter12.equation_12_6_27`: one step multiplies the error by $M_{m,n}$,
+  so the error after $\kappa$ steps is at most $\|M_{m,n}\|^\kappa$ times the initial error.
+* Theorem 12.6.1, `AtkinsonHan.Chapter12.theorem_12_6_1`: for a collectively compact, pointwise
+  convergent family, $\|M_{m,n}\| < 1$ for all large $m$ and all $n \ge m$, and the two-grid
+  iterates converge.
+* Example 12.6.2, `AtkinsonHan.Chapter12.example_12_6_2`: the spectrum (12.6.44) of the integral
+  operator with kernel $k_\gamma(x + y)$.
 
 ## Conventions
 
-As in §12.4, the book's family `K_n` is `K n` here and its pointwise limit `K` is `L`.
+* The scalar $\lambda$ of the book is the Lean variable `μ`, because `λ` is the lambda binder of
+  Lean. This is the same convention as in Section 12.1.
+* As in Section 12.4, the family $K_n$ of the book is `K n`, and its pointwise limit $K$ is `L`.
+* The coarse operator $\lambda - K_m$ is given as an equivalence `e : X ≃L[𝕜] X` with
+  `↑e = μ • 1 - K m`, so that `e.symm` is its inverse.
 
-The book states Theorem 12.6.1 for the Nyström operators of §12.4 on `C(D)`.  Its proof uses only
-that the family is collectively compact and pointwise convergent — the assumptions A1–A3 of
-`IsCollectivelyCompactFamily` — so that is the form stated here, and the Nyström case is the
-instance.  The two indices both have to be large for a reason that the book's `n, m → ∞` hides:
-`(K_n - K_m) K_n` splits into `(K_n - K) K_n`, which needs `n` large, and `(K - K_m) K_n`, which
-has to be small *uniformly in `n`* and so is not covered by the diagonal estimate
-`lemma_12_4_7_d`.
+## Deviations from the source
+
+* **Theorem 12.6.1** (generalization). The book states the theorem for the Nyström operators of
+  Section 12.4 on $C(D)$. It is stated for every collectively compact family that converges
+  pointwise. See `AtkinsonHan.Chapter12.theorem_12_6_1`.
+
+## Not formalized
+
+* **Section 12.6.3**, the translation of the operator iteration into the linear system
+  $A_n u_n = f_n$. It is implementation, with no theorem content.
+* **Section 12.6.4**, the operation count. It is implementation, with no theorem content.
+* **Table 12.4** of Example 12.6.2, the iteration counts, errors and empirical convergence ratios
+  $\tilde\nu$ at $\gamma = 0.8$. These are computed floating-point data.
+* **The limit (12.6.48)**, the mesh independence principle. The book states it without proof.
 -/
 
 open Filter Topology
@@ -69,40 +81,54 @@ variable {𝕜 X : Type*} [RCLike 𝕜] [NormedAddCommGroup X] [NormedSpace 𝕜
 
 /-! ### The two-grid iteration -/
 
-/-- **(12.6.20)–(12.6.22)**, one step of the two-grid iteration for the fine equation
-`(λ - K_n) u = f`: form the residual `r = f - (λ - K_n) u`, correct it with the *coarse* inverse,
-`δ = (λ - K_m)⁻¹ (K_n r)`, and update `u ↦ u + (r + δ)/λ`.
+/-- **Equations (12.6.20)–(12.6.22)** of [han2009theoretical]. Let $X$ be a normed space over
+$\mathbb{K}$, let $\lambda \in \mathbb{K}$, let $K_n$ be a bounded operator on $X$, and let $e$
+be an invertible bounded operator on $X$, which stands for the coarse operator $\lambda - K_m$.
+For $f, u \in X$, one **two-grid step** for the fine equation $(\lambda - K_n) u = f$ forms the
+residual $r = f - (\lambda - K_n) u$, the coarse correction $\delta = e^{-1} (K_n r)$, and the
+new iterate $$u + \frac{1}{\lambda} (r + \delta).$$
 
-The coarse equivalence is carried as `e : X ≃L[𝕜] X` with `↑e = λ - K_m`, so that `e.symm` is a
-genuine inverse; it is the approximate inverse `C_n` of the residual correction method
-(12.6.5)–(12.6.6), and the only inverse the method ever forms.  This is the backbone
-`SecondKind.twoGridStep`. -/
+The inverse $e^{-1}$ is the approximate inverse $C_n$ of the residual correction method
+(12.6.5)–(12.6.6), and it is the only inverse that the method forms. The definition is
+`SecondKind.twoGridStep`. It does not require `↑e = μ • 1 - K m`; the theorems that use it add
+this hypothesis. -/
 noncomputable abbrev twoGridStep (μ : 𝕜) (e : X ≃L[𝕜] X) (Kn : X →L[𝕜] X) (f u : X) : X :=
   SecondKind.twoGridStep μ e Kn f u
 
-/-- The three displays **(12.6.20)–(12.6.22)** written out: the residual `r_n^{(κ)}`, and the
-update built from it and from the coarse correction. -/
+/-- **Equations (12.6.20)–(12.6.22)** of [han2009theoretical]. Let $\lambda \in \mathbb{K}$, let
+$K_n$ be a bounded operator and let $e$ be an invertible bounded operator on $X$. For
+$f, u \in X$, the residual of the fine equation at $u$ is $$r = f - (\lambda - K_n) u,$$ and the
+two-grid step `AtkinsonHan.Chapter12.twoGridStep` maps $u$ to $$u + \lambda^{-1} \bigl(r +
+e^{-1} (K_n r)\bigr).$$
+
+The residual is `SecondKind.residual`. -/
 theorem equation_12_6_20 (μ : 𝕜) (e : X ≃L[𝕜] X) (Kn : X →L[𝕜] X) (f u : X) :
     SecondKind.residual μ Kn f u = f - (μ • 1 - Kn : X →L[𝕜] X) u ∧
       twoGridStep μ e Kn f u = u + μ⁻¹ • (SecondKind.residual μ Kn f u
         + e.symm (Kn (SecondKind.residual μ Kn f u))) :=
   ⟨rfl, rfl⟩
 
-/-- **(12.6.28)**, the iteration operator `M_{m,n} = (1/λ) (λ - K_m)⁻¹ (K_n - K_m) K_n` of the
-two-grid method, where `e` is the coarse equivalence `↑e = λ - K_m`.  The factor `K_n - K_m`
-appears composed with `K_n`, which is the shape that collective compactness makes small even
-though `‖K_n - K_m‖` does not tend to zero.  This is the backbone
+/-- **Equation (12.6.28)** of [han2009theoretical]. Let $\lambda \in \mathbb{K}$, let $K_m, K_n$ be
+bounded operators and let $e$ be an invertible bounded operator on $X$, which stands for
+$\lambda - K_m$. The **iteration operator** of the two-grid method is $$M_{m,n} =
+\frac{1}{\lambda} \, e^{-1} (K_n - K_m) K_n.$$
+
+The factor $K_n - K_m$ appears composed with $K_n$. Collective compactness makes this product
+small, although $\|K_n - K_m\|$ need not tend to zero. The definition is
 `SecondKind.twoGridOperator`. -/
 noncomputable abbrev twoGridOperator (μ : 𝕜) (e : X ≃L[𝕜] X) (Km Kn : X →L[𝕜] X) : X →L[𝕜] X :=
   SecondKind.twoGridOperator μ e Km Kn
 
-/-- **(12.6.27)** and its consequence: if `u_n` solves the fine equation `(λ - K_n) u_n = f`, then
-one two-grid step multiplies the error by `M_{m,n}`,
+/-- **Equation (12.6.27)** of [han2009theoretical]. Let $\lambda \neq 0$, let $K_m, K_n$ be bounded
+operators on $X$, and let $e$ be an invertible bounded operator with $e = \lambda - K_m$. Let
+$u^* \in X$ solve the fine equation $(\lambda - K_n) u^* = f$, and let $u \in X$. Then one
+two-grid step multiplies the error by $M_{m,n}$: $$u^* - u^{(1)} = M_{m,n} (u^* - u),$$ where
+$u^{(1)}$ is the two-grid step from $u$. Hence, for every $\kappa \ge 0$, the $\kappa$-th
+iterate $u^{(\kappa)}$ satisfies $$\|u^* - u^{(\kappa)}\| \le \|M_{m,n}\|^\kappa \, \|u^* -
+u\|.$$
 
-`u_n - u_n^{(κ+1)} = M_{m,n} (u_n - u_n^{(κ)})`,
-
-and hence `‖u_n - u_n^{(κ)}‖ ≤ ‖M_{m,n}‖^κ ‖u_n - u_n^{(0)}‖`.  The identity is algebra: no
-compactness, no completeness and no bound on `M_{m,n}` is used. -/
+The identity is algebra: it uses no compactness, no completeness and no bound on $M_{m,n}$. The
+book writes the solution of the fine equation as $u_n$; it is `ustar` here. -/
 theorem equation_12_6_27 {μ : 𝕜} (hμ : μ ≠ 0) {e : X ≃L[𝕜] X} {Km Kn : X →L[𝕜] X}
     (he : (e : X →L[𝕜] X) = μ • 1 - Km) {f ustar : X}
     (hstar : (μ • 1 - Kn : X →L[𝕜] X) ustar = f) (u : X) :
@@ -116,20 +142,28 @@ theorem equation_12_6_27 {μ : 𝕜} (hμ : μ ≠ 0) {e : X ≃L[𝕜] X} {Km K
 
 variable {K : ℕ → X →L[𝕜] X} {L : X →L[𝕜] X}
 
-/-- **Theorem 12.6.1**: let `{K_p}` be a collectively compact family converging pointwise to `K`,
-with `λ ≠ 0` and `λ - K` invertible.  Then for every sufficiently large coarse index `m` the
-coarse operator `λ - K_m` is invertible and, for *every* fine index `n ≥ m`,
+/-- **Theorem 12.6.1** of [han2009theoretical]. Let $X$ be a Banach space, let $\{K_n\}$ be a
+collectively compact family of bounded operators on $X$ that converges pointwise to $K$, and let
+$\lambda \neq 0$ with $\lambda - K$ invertible. Then for every sufficiently large coarse index
+$m$ the operator $\lambda - K_m$ is invertible, and for every fine index $n \ge m$:
+$$\|M_{m,n}\| < 1,$$ and for every $f \in X$, every solution $u_n$ of $(\lambda - K_n) u_n = f$
+and every starting point $u^{(0)}$, the two-grid iterates $u^{(\kappa)}$ converge to $u_n$ as
+$\kappa \to \infty$.
 
-`‖M_{m,n}‖ < 1`,
+**Generalization.** The book states the theorem for the Nyström operators of Section 12.4 on
+$C(D)$. The proof uses only the assumptions A1–A3, which are
+`AtkinsonHan.Chapter12.IsCollectivelyCompactFamily`, so the theorem is stated for every such
+family, and the Nyström case is an instance.
 
-so the two-grid iterates converge to the solution `u_n` of `(λ - K_n) u_n = f` from every starting
-point, geometrically by `equation_12_6_27`.
-
-The book states this for the Nyström operators on `C(D)`; the proof uses only the assumptions
-A1–A3, which is `IsCollectivelyCompactFamily`.  Both indices have to be large: `(K_n - K_m) K_n`
-splits into `(K_n - K) K_n`, which `lemma_12_4_7_d` makes small for large `n`, and `(K - K_m) K_n`,
-which must be small uniformly in `n` and is the backbone
-`SecondKind.eventually_forall_opNorm_sub_comp_lt`. -/
+The hypothesis `IsCollectivelyCompactFamily K L` gives the collective compactness and the
+pointwise convergence, and the limit $K$ is the Lean variable `L`. The equivalence `e` with
+`↑e = μ • 1 - L` gives the invertibility of $\lambda - K$.
+The equivalence `em` gives the invertibility of $\lambda - K_m$. Both indices
+have to be large, a fact that the book's "$n, m \to \infty$" hides: $(K_n - K_m) K_n$ splits
+into $(K_n - K) K_n$, which `AtkinsonHan.Chapter12.lemma_12_4_7_d` makes small for large $n$,
+and $(K - K_m) K_n$, which must be small uniformly in $n$; the second bound is
+`SecondKind.eventually_forall_opNorm_sub_comp_lt`. The convergence is geometric, by
+`AtkinsonHan.Chapter12.equation_12_6_27`. -/
 theorem theorem_12_6_1 [CompleteSpace X] {μ : 𝕜} (hμ : μ ≠ 0)
     (h : IsCollectivelyCompactFamily K L) {e : X ≃L[𝕜] X} (he : (e : X →L[𝕜] X) = μ • 1 - L) :
     ∀ᶠ m in atTop, ∃ em : X ≃L[𝕜] X, (em : X →L[𝕜] X) = μ • 1 - K m ∧
@@ -232,43 +266,54 @@ private theorem integral_poisson_sin (hγ0 : 0 ≤ γ) (hγ1 : γ < 1) (j : ℕ)
       = (2 * π) * 0 := by rw [key]
   rwa [← mul_assoc, mul_inv_cancel₀ h2π, one_mul, mul_zero] at h
 
-/-- **The kernel `k_γ` of (12.6.43)**, the Poisson kernel of the unit disk read as a `1`-periodic
-function of the parameter,
+/-- **Equation (12.6.43)** of [han2009theoretical]. For real $\gamma$ and $\tau$, the **kernel**
+$k_\gamma$ of Example 12.6.2 is $$k_\gamma(\tau) = \frac{1 - \gamma^2}{1 + \gamma^2 - 2 \gamma
+\cos(2 \pi \tau)}.$$ It is the Poisson kernel of the unit disk, read as a $1$-periodic function
+of the parameter.
 
-`k_γ(τ) = (1 - γ²) / (1 + γ² - 2 γ cos (2 π τ))`,
-
-for `0 ≤ γ < 1`.  The book writes it also as its Fourier series `1 + 2 ∑_j γ^j cos (2 j π τ)`; that
-expansion is not needed here, because the eigenvalue relations (12.6.44) come from the Poisson
-integral formula directly.
-
-The equation (12.6.43) with this kernel is the reformulation of the Dirichlet problem for Laplace's
-equation on an elliptical region, which is why its spectrum is known in closed form. -/
+The book takes $0 \le \gamma < 1$. The definition is made for every real $\gamma$, and the
+lemmas below add the hypothesis $0 \le \gamma < 1$; where the denominator vanishes, Lean's
+division gives the value $0$. The book also writes $k_\gamma$ as its Fourier series
+$1 + 2 \sum_j \gamma^j \cos(2 j \pi \tau)$. This expansion is not formalized, because the
+eigenvalue relations (12.6.44) follow from the Poisson integral formula directly. The equation
+(12.6.43) with this kernel is a reformulation of the Dirichlet problem for Laplace's equation on
+an elliptical region, which is why its spectrum is known in closed form. -/
 noncomputable def periodicPoissonKernel (γ τ : ℝ) : ℝ :=
   (1 - γ ^ 2) / (1 + γ ^ 2 - 2 * γ * Real.cos (2 * π * τ))
 
-/-- The denominator of `k_γ` never vanishes for `0 ≤ γ < 1`: it is
-`(1 - γ)² + 2 γ (1 - cos (2 π τ)) ≥ (1 - γ)² > 0`. -/
+/-- For $0 \le \gamma < 1$ and every real $\tau$, the denominator of the kernel $k_\gamma$ of
+(12.6.43) is positive: $$1 + \gamma^2 - 2 \gamma \cos(2 \pi \tau) > 0.$$
+
+The proof writes the denominator as $(1 - \gamma)^2 + 2 \gamma (1 - \cos(2 \pi \tau)) \ge (1 -
+\gamma)^2 > 0$. -/
 theorem periodicPoissonKernel_denom_pos (hγ0 : 0 ≤ γ) (hγ1 : γ < 1) (τ : ℝ) :
     0 < 1 + γ ^ 2 - 2 * γ * Real.cos (2 * π * τ) := by
   nlinarith [mul_nonneg hγ0 (sub_nonneg.2 (Real.cos_le_one (2 * π * τ))),
     mul_pos (sub_pos.2 hγ1) (sub_pos.2 hγ1)]
 
-/-- `k_γ` is continuous, its denominator being bounded away from zero. -/
+/-- For $0 \le \gamma < 1$, the kernel $k_\gamma$ of (12.6.43) is continuous on $\mathbb{R}$,
+because its denominator is positive. -/
 theorem continuous_periodicPoissonKernel (hγ0 : 0 ≤ γ) (hγ1 : γ < 1) :
     Continuous (periodicPoissonKernel γ) :=
   continuous_const.div (by fun_prop) fun τ => (periodicPoissonKernel_denom_pos hγ0 hγ1 τ).ne'
 
-/-- `k_γ` has period `1`, which is what lets the operator of (12.6.43) be read on the Fourier modes
-of the interval. -/
+/-- For every real $\gamma$, the kernel $k_\gamma$ of (12.6.43) has period $1$:
+$k_\gamma(\tau + 1) = k_\gamma(\tau)$ for all $\tau$. This lets the operator of Example 12.6.2
+be read on the Fourier modes of the interval $[0, 1]$. -/
 theorem periodic_periodicPoissonKernel (γ : ℝ) :
     Function.Periodic (periodicPoissonKernel γ) 1 := by
   intro τ
   rw [periodicPoissonKernel, periodicPoissonKernel,
     show 2 * π * (τ + 1) = 2 * π * τ + 2 * π by ring, Real.cos_add_two_pi]
 
-/-- The `j`-th cosine coefficient of `k_γ` is `γ^j`.  This is the Poisson integral formula,
-Mathlib's `HarmonicOnNhd.circleAverage_poissonKernel_smul`, at the harmonic function `z ↦ Re (zʲ)`
-and the interior point `γ`, rescaled from `[0, 2π]` to `[0, 1]`. -/
+/-- For $0 \le \gamma < 1$ and $j \in \mathbb{N}$, the $j$-th cosine coefficient of the kernel
+$k_\gamma$ of (12.6.43) is $\gamma^j$: $$\int_0^1 k_\gamma(\tau) \cos(2 j \pi \tau) \, d\tau =
+\gamma^j.$$
+
+This is the Poisson integral formula, Mathlib's
+`HarmonicOnNhd.circleAverage_poissonKernel_smul`, for the harmonic function
+$z \mapsto \operatorname{Re}(z^j)$ at the interior point $\gamma$, rescaled from $[0, 2\pi]$ to
+$[0, 1]$. -/
 theorem integral_periodicPoissonKernel_mul_cos (hγ0 : 0 ≤ γ) (hγ1 : γ < 1) (j : ℕ) :
     (∫ τ in (0 : ℝ)..1, periodicPoissonKernel γ τ * Real.cos (2 * j * π * τ)) = γ ^ j := by
   have h2π : (2 * π : ℝ) ≠ 0 := by positivity
@@ -287,8 +332,11 @@ theorem integral_periodicPoissonKernel_mul_cos (hγ0 : 0 ≤ γ) (hγ1 : γ < 1)
           rw [periodicPoissonKernel, show (j : ℝ) * (2 * π * τ) = 2 * j * π * τ by ring]
     _ = γ ^ j := hcomp
 
-/-- The `j`-th sine coefficient of `k_γ` vanishes: the same Poisson integral formula at
-`z ↦ Im (zʲ)`, whose value at the *real* point `γ` is zero. -/
+/-- For $0 \le \gamma < 1$ and $j \in \mathbb{N}$, the $j$-th sine coefficient of the kernel
+$k_\gamma$ of (12.6.43) vanishes: $$\int_0^1 k_\gamma(\tau) \sin(2 j \pi \tau) \, d\tau = 0.$$
+
+This is the Poisson integral formula for $z \mapsto \operatorname{Im}(z^j)$, whose value at the
+real point $\gamma$ is zero. -/
 theorem integral_periodicPoissonKernel_mul_sin (hγ0 : 0 ≤ γ) (hγ1 : γ < 1) (j : ℕ) :
     (∫ τ in (0 : ℝ)..1, periodicPoissonKernel γ τ * Real.sin (2 * j * π * τ)) = 0 := by
   have h2π : (2 * π : ℝ) ≠ 0 := by positivity
@@ -306,27 +354,23 @@ theorem integral_periodicPoissonKernel_mul_sin (hγ0 : 0 ≤ γ) (hγ1 : γ < 1)
           rw [periodicPoissonKernel, show (j : ℝ) * (2 * π * τ) = 2 * j * π * τ by ring]
     _ = 0 := hcomp
 
-/-- **(12.6.44), the spectrum of the kernel of Example 12.6.2.**  For the integral operator
+/-- **Example 12.6.2** of [han2009theoretical], equation (12.6.44). Let $0 \le \gamma < 1$ and let
+$K$ be the integral operator of (12.6.43), $$K u(x) = \int_0^1 k_\gamma(x + y) \, u(y) \, dy.$$
+Then for every $j \in \mathbb{N}$ and every real $x$, $$K \bigl[\cos(2 j \pi \cdot)\bigr](x) =
+\gamma^j \cos(2 j \pi x), \qquad K \bigl[\sin(2 j \pi \cdot)\bigr](x) = -\gamma^j \sin(2 j \pi
+x).$$ So $\cos(2 j \pi x)$, $j = 0, 1, 2, \dots$, are eigenfunctions with eigenvalues
+$\gamma^j$, and $\sin(2 j \pi x)$, $j = 1, 2, \dots$, are eigenfunctions with eigenvalues
+$-\gamma^j$. This makes the equation a test problem: the exact solution of $(\lambda - K) u = f$
+is known for every trigonometric $f$, and $\lambda$ can be placed anywhere relative to the
+spectrum.
 
-`K u (x) = ∫₀¹ k_γ(x + y) u(y) dy`,  `0 ≤ γ < 1`,
-
-of (12.6.43), the eigenvalues and eigenfunctions are
-
-`γ^j` with `cos (2 j π x)`, `j = 0, 1, 2, …`,  and  `-γ^j` with `sin (2 j π x)`, `j = 1, 2, …`,
-
-which is what makes this equation a test problem: the exact solution of `(λ - K) u = f` is known
-for every trigonometric `f`, and `λ` can be placed anywhere relative to the spectrum.  The `j = 0`
-case of the second display is the trivial `0 = 0`, so both are stated for every `j`.
-
-The proof is the Poisson integral formula: `k_γ` is the Poisson kernel of the unit disk at the
-interior point `γ`, so integrating it against the boundary values of a harmonic function returns
-the value at `γ`, and `cos (2 j π ·)` and `sin (2 j π ·)` are the boundary values of `Re (zʲ)` and
-`Im (zʲ)`.  The shift `x + y` is absorbed by the periodicity of `k_γ`, and the addition formulas
-then split the integral into the two coefficients.
-
-Table 12.4 of the example — the measured iteration counts and error reductions of the two-grid
-iteration at `γ = 0.8` — is not stated: those are computed floating-point numbers.  The convergence
-they illustrate is `theorem_12_6_1`. -/
+The two identities are stated for every $j \in \mathbb{N}$; the case $j = 0$ of the sine
+identity is $0 = 0$. The operator is not formed as a Lean operator: the statement is the two
+integral identities. The proof uses the periodicity of $k_\gamma$ to absorb the shift $x + y$,
+and the addition formulas to split the integral into the cosine and sine coefficients of
+$k_\gamma$. Table 12.4 of the example, with the measured iteration counts and error reductions
+at $\gamma = 0.8$, is not formalized; the convergence it shows is
+`AtkinsonHan.Chapter12.theorem_12_6_1`. -/
 theorem example_12_6_2 (hγ0 : 0 ≤ γ) (hγ1 : γ < 1) (j : ℕ) (x : ℝ) :
     (∫ y in (0 : ℝ)..1, periodicPoissonKernel γ (x + y) * Real.cos (2 * j * π * y))
         = γ ^ j * Real.cos (2 * j * π * x) ∧

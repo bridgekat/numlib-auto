@@ -18,97 +18,145 @@ import Numlib.Analysis.Fourier.TrigonometricBasis
 import Numlib.Analysis.Sobolev.Interval.Higher
 
 /-!
-# Atkinson–Han §1.2: normed spaces
+# Atkinson and Han, Section 1.2: Normed spaces
 
-Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework*, 3rd edition, Springer, 2009, §1.2: normed spaces, convergence, equivalence of
-norms, Banach spaces, the completion of a normed space, and the two facts from measure theory
-(§1.2.3) that the book records for later use.
+This module formalizes §1.2 of [han2009theoretical]: norms and semi-norms, convergence and
+continuity, equivalence of norms, series, density and separability, Cauchy sequences, Banach spaces,
+the completion of a normed space, and the two facts from measure theory (§1.2.3) that the book
+records for later use, the dominated convergence theorem and Fubini's theorem. The examples treat
+the $p$-norms on $\mathbb{R}^d$, the sequence spaces $\ell^p$, the spaces $C[a, b]$ and $C_p(2\pi)$
+with the maximum norm, the failure of completeness of $C[0, 1]$ for the norm
+$\|v\|_p = (\int_0^1 |v|^p)^{1/p}$, and the space $C^m[a, b]$ with two norms. For the norm
+$\sum_{j \le m} \|v^{(j)}\|_\infty$ the space $C^m[a, b]$ is complete. For the norm
+$[\sum_{j \le m} \|v^{(j)}\|_{L^p}^p]^{1/p}$ it is not complete, and its completion is the Sobolev
+space $W^{m,p}(a, b)$.
 
-The definitions of the section — norm, seminorm, ball, open and closed set, convergence,
-continuity, series, dense subset, separability, Schauder basis, Cauchy sequence, completeness — are
-Mathlib's `Norm`, `Seminorm`, `Metric.ball`, `IsOpen`, `IsClosed`, `Filter.Tendsto`,
-`SeqContinuous`, `Dense`, `TopologicalSpace.SeparableSpace`, `SchauderBasis`, `CauchySeq` and
-`CompleteSpace`, and each is restated here under the book's number.
+The definitions of the section are Mathlib's `Norm`, `Seminorm`, `Metric.ball`, `IsOpen`,
+`IsClosed`, `Filter.Tendsto`, `SeqContinuous`, `Dense`, `TopologicalSpace.SeparableSpace`,
+`SchauderBasis`, `CauchySeq` and `CompleteSpace`, and each is restated here under the number of the
+book. The spaces $C^m[a, b]$ and $W^{m,p}(a, b)$ come from the backbone modules
+`Numlib.Analysis.Calculus.ContDiffMapIcc` and `Numlib.Analysis.Sobolev.Interval.Basic`.
 
 ## Main definitions
 
-* `definition_1_2_2` — a semi-norm: a norm without the requirement that `|v| = 0` force `v = 0`.
-* `definition_1_2_8` — convergence `uₙ → u`, spelled `‖uₙ - u‖ → 0`.
-* `definition_1_2_9` — continuity at a point, in the book's sequential form.
-* `definition_1_2_17` — convergence of the series `∑ vᵢ`, through its partial sums.
-* `definition_1_2_18` — `V₁` is dense in `V₂`.
-* `definition_1_2_20`, `definition_1_2_20_schauder` — the two clauses of Definition 1.2.20: a
-  countably-infinite basis, which is what the book calls separability, and a Schauder basis.
-* `definition_1_2_21` — a Cauchy sequence.
-* `ContDiffMapIccSobolevNorm` — `Cᵐ[a, b]` carrying the Sobolev norm of Example 1.2.28 (b), as a
-  type synonym of the backbone's `ContDiffMapIcc`.
+* Definition 1.2.2, `AtkinsonHan.Chapter01.definition_1_2_2`: a semi-norm is a norm without the
+  requirement that $|v| = 0$ imply $v = 0$.
+* Definition 1.2.8, `AtkinsonHan.Chapter01.definition_1_2_8`: $u_n \to u$ means $\|u_n - u\| \to 0$.
+* Definition 1.2.9, `AtkinsonHan.Chapter01.definition_1_2_9`: continuity at a point, in sequential
+  form.
+* Definition 1.2.17, `AtkinsonHan.Chapter01.definition_1_2_17`: convergence of the series
+  $\sum v_i$, through its partial sums.
+* Definition 1.2.18, `AtkinsonHan.Chapter01.definition_1_2_18`: $V_1$ is dense in $V_2$.
+* Definition 1.2.20, `AtkinsonHan.Chapter01.definition_1_2_20` and
+  `AtkinsonHan.Chapter01.definition_1_2_20_schauder`: a countably-infinite basis, which makes the
+  space separable, and a Schauder basis.
+* Definition 1.2.21, `AtkinsonHan.Chapter01.definition_1_2_21`: a Cauchy sequence.
+* Example 1.2.28(b), `AtkinsonHan.Chapter01.ContDiffMapIccSobolevNorm`: the space $C^m[a, b]$ with
+  the norm of $W^{m,p}(a, b)$.
 
 ## Main results
 
-* `definition_1_2_1` — Mathlib's norm satisfies exactly the three axioms the book lists.
-* `definition_1_2_2_iff`, `definition_1_2_8_iff`, `definition_1_2_9_iff`, `definition_1_2_17_iff`,
-  `definition_1_2_18_iff`, `definition_1_2_21_iff` — each restated definition read back as the
-  Mathlib notion; later chapters rewrite along these.
-* `definition_1_2_6`, `definition_1_2_7` — the open and closed balls, and open and closed sets.
-* `definition_1_2_24` — a normed space is complete, that is a Banach space, exactly when every
-  Cauchy sequence in it converges.
-* `proposition_1_2_10` — the norm is a continuous function, in the sequential form of the book.
-* `theorem_1_2_14` — any two norms on a finite-dimensional space are equivalent.
-* `proposition_1_2_23` — a Cauchy sequence with a convergent subsequence converges.
-* `theorem_1_2_25`, `theorem_1_2_25_uniqueness` — the completion of a normed space, and its
-  uniqueness up to a linear isometric isomorphism fixing the embedded copy of `V`.
-* `theorem_1_2_26` — the Lebesgue dominated convergence theorem.
-* `theorem_1_2_27` — Fubini's theorem.
-* `example_1_2_3`, `example_1_2_4`, `example_1_2_5`, `example_1_2_11`, `example_1_2_13`,
-  `example_1_2_15`, `example_1_2_16`, `example_1_2_22`, `example_1_2_22_incomplete` — the
-  illustrations of the section.
-* `example_1_2_28_a`, `example_1_2_28_a_periodic` — Example 1.2.28 (a): `Cᵐ[a, b]` and
-  `C_p^k(2π)` are Banach spaces.
-* `example_1_2_28_b_norm`, `example_1_2_28_b` — Example 1.2.28 (b): `Cᵐ[a, b]` with the norm
-  `‖f‖ = [∑_{j ≤ m} ‖f^{(j)}‖_p^p]^{1/p}` (`ContDiffMapIccSobolevNorm`, the norm pulled back from
-  `W^{m,p}(a, b)` along the inclusion) is not complete, and its completion is `W^{m,p}(a, b)`.
+* Definition 1.2.1, `AtkinsonHan.Chapter01.definition_1_2_1`: a Mathlib norm satisfies the three
+  axioms of a norm.
+* Definitions 1.2.2, 1.2.8, 1.2.9, 1.2.17, 1.2.18 and 1.2.21,
+  `AtkinsonHan.Chapter01.definition_1_2_2_iff`, `AtkinsonHan.Chapter01.definition_1_2_8_iff`,
+  `AtkinsonHan.Chapter01.definition_1_2_9_iff`, `AtkinsonHan.Chapter01.definition_1_2_17_iff`,
+  `AtkinsonHan.Chapter01.definition_1_2_18_iff` and `AtkinsonHan.Chapter01.definition_1_2_21_iff`:
+  each restated definition is the corresponding Mathlib notion.
+* Example 1.2.3, `AtkinsonHan.Chapter01.example_1_2_3`: the $p$-norms and the maximum norm on
+  $\mathbb{R}^d$.
+* Example 1.2.4, `AtkinsonHan.Chapter01.example_1_2_4`: the norms of the sequence spaces $\ell^p$.
+* Example 1.2.5(a), `AtkinsonHan.Chapter01.example_1_2_5`: the maximum norm of $C[a, b]$ and of
+  $C_p(2\pi)$.
+* Definitions 1.2.6 and 1.2.7, `AtkinsonHan.Chapter01.definition_1_2_6` and
+  `AtkinsonHan.Chapter01.definition_1_2_7`: open and closed balls, and open and closed sets.
+* Definition 1.2.8, `AtkinsonHan.Chapter01.definition_1_2_8_unique`: a sequence has at most one
+  limit.
+* Proposition 1.2.10, `AtkinsonHan.Chapter01.proposition_1_2_10`: the norm is continuous.
+* Example 1.2.11, `AtkinsonHan.Chapter01.example_1_2_11`: point evaluation is continuous on
+  $C[0, 1]$.
+* Example 1.2.13, `AtkinsonHan.Chapter01.example_1_2_13`: the inequality (1.2.6), $\|x\|_\infty \le
+  \|x\|_p \le d^{1/p} \|x\|_\infty$ on $\mathbb{R}^d$.
+* Theorem 1.2.14, `AtkinsonHan.Chapter01.theorem_1_2_14`: any two norms on a finite-dimensional
+  space are equivalent in the sense of Definition 1.2.12.
+* Example 1.2.15, `AtkinsonHan.Chapter01.example_1_2_15`: on $C[0, 1]$ the norms $\|\cdot\|_p$ and
+  $\|\cdot\|_\infty$ are not equivalent.
+* Example 1.2.16, `AtkinsonHan.Chapter01.example_1_2_16`: on $C[0, 1]$, $\|v\|_p \le \|v\|_\infty$.
+* Definition 1.2.20, `AtkinsonHan.Chapter01.definition_1_2_20_of_schauder`: a Schauder basis is a
+  countably-infinite basis.
+* Example 1.2.22, `AtkinsonHan.Chapter01.example_1_2_22` and
+  `AtkinsonHan.Chapter01.example_1_2_22_incomplete`: $C(\bar\Omega)$ is complete for the maximum
+  norm, and $C[0, 1]$ is not complete for $\|\cdot\|_p$, $1 \le p < \infty$.
+* Proposition 1.2.23, `AtkinsonHan.Chapter01.proposition_1_2_23`: a Cauchy sequence with a
+  convergent subsequence converges.
+* Definition 1.2.24, `AtkinsonHan.Chapter01.definition_1_2_24`: a normed space is complete if and
+  only if every Cauchy sequence converges.
+* Theorem 1.2.25, `AtkinsonHan.Chapter01.theorem_1_2_25` and
+  `AtkinsonHan.Chapter01.theorem_1_2_25_uniqueness`: every normed space has a completion, unique up
+  to a linear isometric isomorphism that fixes the embedded copy of the space.
+* Theorem 1.2.26, `AtkinsonHan.Chapter01.theorem_1_2_26`: the Lebesgue dominated convergence
+  theorem.
+* Theorem 1.2.27, `AtkinsonHan.Chapter01.theorem_1_2_27`: Fubini's theorem.
+* Example 1.2.28(a), `AtkinsonHan.Chapter01.example_1_2_28_a` and
+  `AtkinsonHan.Chapter01.example_1_2_28_a_periodic`: $C^m[a, b]$ and $C_p^k(2\pi)$ are Banach
+  spaces.
+* Example 1.2.28(b), `AtkinsonHan.Chapter01.example_1_2_28_b_norm` and
+  `AtkinsonHan.Chapter01.example_1_2_28_b`: the formula for the Sobolev norm on $C^m[a, b]$, and the
+  statement that $C^m[a, b]$ with this norm is not complete and has the completion $W^{m,p}(a, b)$.
 
 ## Conventions
 
-The convention of §1.1 continues: a definition naming a property of data is a `def … : Prop` in the
-book's words with a companion `…_iff`, and a definition naming a structure carried by a type — here
-the norm and completeness — is a theorem recording that Mathlib's class satisfies the book's
-axioms.
+* The space $\mathbb{R}^d$ with the norm $\|\cdot\|_p$ is `PiLp p (fun _ : Fin d => ℝ)`, whose case
+  $p = \infty$ carries the maximum norm. The space $\ell^p$ is `lp (fun _ : ℕ => ℝ) p`.
+* The space $C[a, b]$ is `C(Set.Icc a b, ℝ)`, and the space of continuous $2\pi$-periodic
+  functions is `C(AddCircle (2 * π), ℝ)`. Both carry the supremum norm, because their domains are
+  compact.
+* The space $C^m[a, b]$ is the backbone's `ContDiffMapIcc hab m`, with the norm
+  $\sum_{j \le m} \|v^{(j)}\|_\infty$.
+* The norm $\|v\|_p$ on $C[0, 1]$ has no normed-space structure in Mathlib. Where the section uses
+  it (Examples 1.2.15 and 1.2.16, and the second half of Example 1.2.22), it is written out as the
+  interval integral $(\int_0^1 |v(x)|^p \, dx)^{1/p}$, for functions $v : \mathbb{R} \to \mathbb{R}$
+  that are continuous on $[0, 1]$.
 
-`ℝ^d` with `‖·‖_p` is `PiLp p (fun _ : Fin d => ℝ)`, whose `p = ∞` case carries the maximum norm;
-`ℓᵖ` is `lp (fun _ : ℕ => ℝ) p`; `C[a, b]` is `C(Set.Icc a b, ℝ)` and `C_p(2π)` is
-`C(AddCircle (2π), ℝ)`, both normed by the supremum because their domains are compact.
+## Implementation notes
 
-Theorem 1.2.14 is stated in the only shape Lean allows. The book quantifies over two norms on one
-linear space; a Lean type carries one norm, so the statement is about two normed types `V` and `W`
-and a linear equivalence `e : V ≃ₗ[𝕜] W` between them, the two norms being `‖v‖` and `‖e v‖`.
+* As in §1.1, a definition that names a property of data is a `def … : Prop` in the words of the
+  book with a companion theorem `…_iff` that identifies it with the Mathlib notion. A definition
+  that names a structure carried by a type, here the norm and completeness, is a theorem that the
+  Mathlib class satisfies the axioms of the book.
+* Theorem 1.2.14 quantifies over two norms on one linear space. A Lean type carries one norm, so the
+  statement is about two normed types $V$ and $W$ and a linear equivalence $e : V \to W$, and the
+  two norms are $\|v\|$ and $\|e v\|$.
+* The space $C_p^k(2\pi)$ of Example 1.2.28(a) is read on one period, as the subspace
+  `ContDiffMapIcc.periodicBoundary` of $C^k[0, 2\pi]$ on which every derivative of order at most $k$
+  takes the same value at the two ends. The statement identifies it with the $2\pi$-periodic $C^k$
+  functions on $\mathbb{R}$, and at $k = 0$ it agrees with the space `C(AddCircle (2 * π), ℝ)` of
+  Example 1.2.5.
+* In Example 1.2.28(b), $W^{m,p}(a, b)$ is the backbone's `SobolevIntervalLp m p (Opens.Ioo a b)`,
+  and the norm of $C^m[a, b]$ is the norm of $W^{m,p}(a, b)$ pulled back along the injective
+  inclusion `ContDiffMapIcc.toSobolevIntervalLp`. The book's "completion" is read as a dense linear
+  isometry into a Banach space, in the sense of `AtkinsonHan.Chapter01.theorem_1_2_25_uniqueness`.
 
-Theorems 1.2.26 and 1.2.27 are stated over an arbitrary measure space rather than over an open set
-of `ℝ^d`, which is how Mathlib has them and how the book uses them.
+## Deviations from the source
 
-## Not formalized here
+* **Theorem 1.2.26** (generalization). The book states the dominated convergence theorem for
+  Lebesgue measure on an open set of $\mathbb{R}^d$. The statement holds on an arbitrary measure
+  space. See `AtkinsonHan.Chapter01.theorem_1_2_26`.
+* **Theorem 1.2.27** (generalization). The book states Fubini's theorem for Lebesgue measure on open
+  sets of Euclidean spaces. The statement holds for two s-finite measure spaces. See
+  `AtkinsonHan.Chapter01.theorem_1_2_27`.
 
-Example 1.2.5 (b), the norm `‖f‖_{k,∞} = max_{j ≤ k} ‖f⁽ʲ⁾‖_∞` of `Cᵏ[a, b]`, is not restated:
-the space is the backbone's `ContDiffMapIcc` (`Numlib.Analysis.Calculus.ContDiffMapIcc`), which
-carries the equivalent sum `∑_{j ≤ k} ‖f⁽ʲ⁾‖_∞`, and the two-sided bound between the two norms is
-part of the statement of `example_1_2_28_a`. `C_p^k(2π)` is read on one period, as the subspace of
-`Cᵏ[0, 2π]` on which every derivative up to order `k` matches at the two ends; that is
-`example_1_2_28_a_periodic`, whose last two conjuncts identify it with the genuinely `2π`-periodic
-`Cᵏ` functions on `ℝ`, and which agrees at `k = 0` with the `C(AddCircle (2π), ℝ)` of
-Example 1.2.5. Example 1.2.28 (b) reads `W^{m,p}(a, b)` as the backbone's `SobolevIntervalLp`
-(`Numlib/Analysis/Sobolev/Interval/Basic.lean`, the multi-index Sobolev space on `E = ℝ`), and
-the book's norm on `Cᵐ[a, b]` as the norm of `W^{m,p}(a, b)` pulled back along the injective
-inclusion `ContDiffMapIcc.toSobolevIntervalLp` (`ContDiffMapIccSobolevNorm`); the book's
-"completion" is then the dense linear isometry into a Banach space, the sense of
-`theorem_1_2_25_uniqueness`. Example 1.2.19 is Theorem 1.5.6 restated for a bounded `Ω`, and is
-recorded with it in §1.5.
+## Not formalized
 
-The `p`-norm on `C[0, 1]` has no Mathlib normed-space structure to name, so where the section uses
-it — Examples 1.2.15, 1.2.16 and the second half of Example 1.2.22 — it is written out as the
-interval integral `(∫₀¹ |v x|^p)^{1/p}` over functions `v : ℝ → ℝ` continuous on `[0, 1]`, and
-`example_1_2_22_incomplete` negates completeness in the book's own form: a Cauchy sequence with no
-continuous limit.
+* **Example 1.2.5(b)**, the norm $\|f\|_{k,\infty} = \max_{j \le k} \|f^{(j)}\|_\infty$ of
+  $C^k[a, b]$. The backbone's $C^k[a, b]$ carries the equivalent norm
+  $\sum_{j \le k} \|f^{(j)}\|_\infty$, and the two-sided bound between the two norms is part of
+  `AtkinsonHan.Chapter01.example_1_2_28_a`.
+* **Example 1.2.19.** It is Theorem 1.5.6 for a bounded open set $\Omega$, and it is covered by
+  `AtkinsonHan.Chapter01.theorem_1_5_6_open`.
+* **The closing remark of Example 1.2.28(b)**, that for $f \in W^{m,p}(a, b)$ the derivatives
+  $f, \dots, f^{(m-1)}$ are continuous and $f^{(m)} \in L^p(a, b)$. It is the backbone's embedding
+  `SobolevIntervalLp.toContDiffMapIcc` and is not restated.
 -/
 
 open ENNReal Filter MeasureTheory Topology
@@ -121,29 +169,36 @@ section Normed
 
 variable {𝕜 V : Type*} [RCLike 𝕜] [NormedAddCommGroup V] [NormedSpace 𝕜 V]
 
-/-- **Definition 1.2.1.** A *norm* on a linear space `V` is a function `‖·‖ : V → ℝ` such that
-`‖v‖ ≥ 0` with `‖v‖ = 0` if and only if `v = 0`; `‖α v‖ = |α| ‖v‖` (positive homogeneity); and
-`‖u + v‖ ≤ ‖u‖ + ‖v‖` (the triangle inequality). The pair `(V, ‖·‖)` is a *normed space*.
+/-- **Definition 1.2.1** of [han2009theoretical]. A **norm** on a linear space $V$ over $\mathbb{K}$
+is a function $\|\cdot\| : V \to \mathbb{R}$ with three properties: $\|v\| \ge 0$, and
+$\|v\| = 0$ if and only if $v = 0$; $\|\alpha v\| = |\alpha| \, \|v\|$ (positive homogeneity);
+and $\|u + v\| \le \|u\| + \|v\|$ (the triangle inequality). The pair $(V, \|\cdot\|)$ is a
+**normed space**. The theorem states that every normed space over $\mathbb{K}$ in the sense of
+Mathlib has these three properties.
 
-This is Mathlib's `Norm`, bundled as `NormedAddCommGroup V` with `NormedSpace 𝕜 V`, and the
-statement below is that the bundle satisfies exactly the book's three axioms. -/
+A normed space is `NormedAddCommGroup V` with `NormedSpace 𝕜 V`. The scalar field is `𝕜` with
+`RCLike 𝕜`, which is $\mathbb{R}$ or $\mathbb{C}$. -/
 theorem definition_1_2_1 (𝕜 V : Type*) [RCLike 𝕜] [NormedAddCommGroup V] [NormedSpace 𝕜 V] :
     (∀ v : V, 0 ≤ ‖v‖ ∧ (‖v‖ = 0 ↔ v = 0)) ∧
       (∀ (α : 𝕜) (v : V), ‖α • v‖ = ‖α‖ * ‖v‖) ∧
       (∀ u v : V, ‖u + v‖ ≤ ‖u‖ + ‖v‖) :=
   ⟨fun v => ⟨norm_nonneg v, norm_eq_zero⟩, norm_smul, norm_add_le⟩
 
-/-- **Definition 1.2.2.** A *semi-norm* `|·|` on a linear space has the properties of a norm
-(Definition 1.2.1) except that `|v| = 0` need not imply `v = 0`.
+/-- **Definition 1.2.2** of [han2009theoretical]. A **semi-norm** on a linear space $V$ over
+$\mathbb{K}$ is a function $p : V \to \mathbb{R}$ with the properties of a norm (Definition
+1.2.1) except that $p(v) = 0$ need not imply $v = 0$: $p(v) \ge 0$,
+$p(\alpha v) = |\alpha| \, p(v)$ and $p(u + v) \le p(u) + p(v)$.
 
-This is Mathlib's `Seminorm 𝕜 V`; `definition_1_2_2_iff` is the correspondence. The book uses
-semi-norms for the error of polynomial interpolation, which this surface reaches in Chapter 3. -/
+The predicate is stated on a normed space, whose own norm it does not use. It is `Seminorm` by
+`AtkinsonHan.Chapter01.definition_1_2_2_iff`. The book uses semi-norms for the error of
+polynomial interpolation in Chapter 3. -/
 def definition_1_2_2 (𝕜 : Type*) {V : Type*} [RCLike 𝕜] [NormedAddCommGroup V] [NormedSpace 𝕜 V]
     (p : V → ℝ) : Prop :=
   (∀ v : V, 0 ≤ p v) ∧ (∀ (α : 𝕜) (v : V), p (α • v) = ‖α‖ * p v) ∧
     ∀ u v : V, p (u + v) ≤ p u + p v
 
-/-- Definition 1.2.2 is Mathlib's `Seminorm`. -/
+/-- A function $p : V \to \mathbb{R}$ is a semi-norm in the sense of Definition 1.2.2 of
+[han2009theoretical] if and only if it is the function of a Mathlib `Seminorm 𝕜 V`. -/
 theorem definition_1_2_2_iff (p : V → ℝ) :
     definition_1_2_2 𝕜 p ↔ ∃ q : Seminorm 𝕜 V, ⇑q = p := by
   constructor
@@ -155,9 +210,12 @@ theorem definition_1_2_2_iff (p : V → ℝ) :
     exact ⟨fun v => apply_nonneg q v, fun α v => map_smul_eq_mul q α v,
       fun u v => map_add_le_add q u v⟩
 
-/-- **Example 1.2.3.** The `p`-norms (1.2.2)–(1.2.3) on `ℝ^d`: `‖x‖_p = (∑ |xᵢ|^p)^{1/p}` for
-`1 ≤ p < ∞`, and the maximum norm `‖x‖_∞ = maxᵢ |xᵢ|`. In Mathlib these live on `PiLp p`, of which
-`EuclideanSpace ℝ (Fin d)` is the case `p = 2`. -/
+/-- **Example 1.2.3** of [han2009theoretical]. Let $d \in \mathbb{N}$. On $\mathbb{R}^d$, the
+$p$-norm (1.2.2) for $1 \le p < \infty$ is $$\|x\|_p = \Big(\sum_{i=1}^d |x_i|^p\Big)^{1/p},$$
+and the maximum norm (1.2.3) is $\|x\|_\infty = \max_{1 \le i \le d} |x_i|$.
+
+The space is `PiLp p (fun _ : Fin d => ℝ)`, of which `EuclideanSpace ℝ (Fin d)` is the case
+$p = 2$. The maximum is the supremum `⨆ i`, which is $0$ for $d = 0$. -/
 theorem example_1_2_3 (d : ℕ) :
     (∀ (p : ℝ≥0∞) [Fact (1 ≤ p)], p ≠ ∞ → ∀ x : PiLp p fun _ : Fin d => ℝ,
         ‖x‖ = (∑ i, |x i| ^ p.toReal) ^ (1 / p.toReal)) ∧
@@ -168,11 +226,14 @@ theorem example_1_2_3 (d : ℕ) :
   · rw [PiLp.norm_eq_ciSup]
     simp [Real.norm_eq_abs]
 
-/-- **Example 1.2.4.** For `p ∈ [1, ∞]` the sequence space `ℓᵖ` is the set of sequences of finite
-`‖·‖_{ℓᵖ}` norm, `‖v‖_{ℓᵖ} = (∑_{n ≥ 1} |vₙ|^p)^{1/p}` for `p < ∞` and `‖v‖_{ℓ^∞} = sup_n |vₙ|`.
+/-- **Example 1.2.4** of [han2009theoretical]. Let $1 \le p \le \infty$. The space $\ell^p$ consists
+of the real sequences $v = (v_n)$ of finite norm, where $$\|v\|_{\ell^p} = \Big(\sum_n
+|v_n|^p\Big)^{1/p} \quad (p < \infty), \qquad \|v\|_{\ell^\infty} = \sup_n |v_n|.$$ The
+statement gives these formulas for the norm of $\ell^p$.
 
-This is Mathlib's `lp (fun _ : ℕ => ℝ) p`, the subtype of the sequences satisfying `Memℓp`; its
-norm instance carries the triangle inequality that the book defers to Exercise 1.5.11. -/
+The space is `lp (fun _ : ℕ => ℝ) p`, the subtype of the sequences that satisfy `Memℓp`, and
+sequences are indexed from $0$. Its norm instance carries the triangle inequality, which the
+book leaves to Exercise 1.5.11. -/
 theorem example_1_2_4 :
     (∀ (p : ℝ≥0∞) [Fact (1 ≤ p)], p ≠ ∞ → ∀ v : lp (fun _ : ℕ => ℝ) p,
         ‖v‖ = (∑' n, |v n| ^ p.toReal) ^ (1 / p.toReal)) ∧
@@ -185,10 +246,12 @@ theorem example_1_2_4 :
 
 section Periodic
 
-/-- **Example 1.2.5** (a). The standard norm of `C[a, b]` is the maximum norm
-`‖f‖_∞ = max_{a ≤ x ≤ b} |f x|`, and the same formula is the standard norm of `C_p(2π)`, the
-continuous `2π`-periodic functions. Both are Mathlib's supremum norm on `C(X, ℝ)` for a compact
-`X`. -/
+/-- **Example 1.2.5(a)** of [han2009theoretical]. Let $a, b \in \mathbb{R}$. The standard norm of
+$C[a, b]$ is the maximum norm $\|f\|_\infty = \max_{a \le x \le b} |f(x)|$, and the same formula
+gives the standard norm of the space $C_p(2\pi)$ of continuous $2\pi$-periodic functions.
+
+Both norms are the supremum norm of Mathlib on `C(X, ℝ)` for a compact `X`, and the maximum is
+written as the supremum `⨆ x`. If $a > b$, then $[a, b]$ is empty and both sides are $0$. -/
 theorem example_1_2_5 {a b : ℝ} :
     (∀ f : C(Set.Icc a b, ℝ), ‖f‖ = ⨆ x, |f x|) ∧
       (∀ f : C(AddCircle (2 * π), ℝ), ‖f‖ = ⨆ x, |f x|) :=
@@ -197,53 +260,59 @@ theorem example_1_2_5 {a b : ℝ} :
 
 end Periodic
 
-/-- **Definition 1.2.6.** For `v₀` in a normed space and `r > 0`, the *open ball*
-`B(v₀, r) = {v | ‖v - v₀‖ < r}` and the *closed ball* `B̄(v₀, r) = {v | ‖v - v₀‖ ≤ r}`; at `v₀ = 0`
-and `r = 1` these are the unit balls.
-
-These are Mathlib's `Metric.ball` and `Metric.closedBall` for the metric the norm induces. -/
+/-- **Definition 1.2.6** of [han2009theoretical]. Let $V$ be a normed space, $v_0 \in V$ and
+$r > 0$. The **open ball** is $B(v_0, r) = \{v \in V : \|v - v_0\| < r\}$, and the **closed
+ball** is $\bar B(v_0, r) = \{v \in V : \|v - v_0\| \le r\}$. For $v_0 = 0$ and $r = 1$ they are
+the unit balls. The theorem states that `Metric.ball v₀ r` and `Metric.closedBall v₀ r` are
+these sets, for every real $r$. -/
 theorem definition_1_2_6 (v₀ : V) (r : ℝ) :
     Metric.ball v₀ r = {v | ‖v - v₀‖ < r} ∧ Metric.closedBall v₀ r = {v | ‖v - v₀‖ ≤ r} :=
   ⟨by ext v; simp [Metric.mem_ball, dist_eq_norm],
     by ext v; simp [Metric.mem_closedBall, dist_eq_norm]⟩
 
-/-- **Definition 1.2.7.** A set `A` in a normed space is *open* if every `v ∈ A` has a ball
-`B(v, r) ⊆ A`, and *closed* in `V` if its complement `V \ A` is open.
-
-These are Mathlib's `IsOpen` and `IsClosed` for the metric topology the norm induces. -/
+/-- **Definition 1.2.7** of [han2009theoretical]. A set $A$ in a normed space $V$ is **open** if
+every $v \in A$ has a ball $B(v, r) \subseteq A$ with $r > 0$. It is **closed** if its
+complement $V \setminus A$ is open. The theorem states that `IsOpen` and `IsClosed`, for the
+topology of the norm, have these characterizations. -/
 theorem definition_1_2_7 (A : Set V) :
     (IsOpen A ↔ ∀ v ∈ A, ∃ r > 0, Metric.ball v r ⊆ A) ∧ (IsClosed A ↔ IsOpen Aᶜ) :=
   ⟨Metric.isOpen_iff, isOpen_compl_iff.symm⟩
 
-/-- **Definition 1.2.8.** A sequence `{uₙ}` in a normed space *converges* to `u` when
-`‖uₙ - u‖ → 0`; `u` is then the limit of the sequence, and a sequence has at most one limit
-(`definition_1_2_8_unique`).
+/-- **Definition 1.2.8** of [han2009theoretical]. A sequence $\{u_n\}$ in a normed space $V$
+**converges** to $u \in V$ if $\|u_n - u\| \to 0$ as $n \to \infty$. Then $u$ is the **limit**
+of the sequence.
 
-This is Mathlib's `Filter.Tendsto u atTop (𝓝 u₀)` by `definition_1_2_8_iff`. -/
+A sequence has at most one limit by `AtkinsonHan.Chapter01.definition_1_2_8_unique`. The
+predicate is `Filter.Tendsto u atTop (𝓝 v)` by `AtkinsonHan.Chapter01.definition_1_2_8_iff`. -/
 def definition_1_2_8 {V : Type*} [NormedAddCommGroup V] (u : ℕ → V) (v : V) : Prop :=
   Tendsto (fun n => ‖u n - v‖) atTop (𝓝 0)
 
-/-- Definition 1.2.8 is Mathlib's `Filter.Tendsto _ atTop (𝓝 _)`. -/
+/-- A sequence $\{u_n\}$ in a normed space converges to $v$ in the sense of Definition 1.2.8 of
+[han2009theoretical] if and only if $u_n \to v$ in the topology of the norm, which is
+`Filter.Tendsto u atTop (𝓝 v)`. -/
 theorem definition_1_2_8_iff (u : ℕ → V) (v : V) :
     definition_1_2_8 u v ↔ Tendsto u atTop (𝓝 v) :=
   tendsto_iff_norm_sub_tendsto_zero.symm
 
-/-- A sequence in a normed space has at most one limit, as the book records after
+/-- A sequence in a normed space has at most one limit: if $u_n \to v$ and $u_n \to w$ in the sense
+of Definition 1.2.8 of [han2009theoretical], then $v = w$. The book records this after
 Definition 1.2.8. -/
 theorem definition_1_2_8_unique {u : ℕ → V} {v w : V} (hv : definition_1_2_8 u v)
     (hw : definition_1_2_8 u w) : v = w :=
   tendsto_nhds_unique ((definition_1_2_8_iff u v).mp hv) ((definition_1_2_8_iff u w).mp hw)
 
-/-- **Definition 1.2.9.** A function `f : V → ℝ` is *continuous at* `u ∈ V` if `uₙ → u` implies
-`f uₙ → f u`, and *continuous on* `V` if it is continuous at every `u ∈ V`.
+/-- **Definition 1.2.9** of [han2009theoretical]. Let $V$ be a normed space. A function
+$f : V \to \mathbb{R}$ is **continuous at** $u \in V$ if $f(u_n) \to f(u)$ for every sequence
+$u_n \to u$. It is **continuous on** $V$ if it is continuous at every $u \in V$.
 
-The book's sequential form is Mathlib's `SeqContinuous`, which agrees with `Continuous` on a metric
-space; `definition_1_2_9_iff` is the correspondence. -/
+The predicate is continuity at one point. The sequential form of the book is `SeqContinuous`,
+which agrees with `Continuous` on a metric space, and
+`AtkinsonHan.Chapter01.definition_1_2_9_iff` is the correspondence. -/
 def definition_1_2_9 {V : Type*} [NormedAddCommGroup V] (f : V → ℝ) (u : V) : Prop :=
   ∀ v : ℕ → V, definition_1_2_8 v u → definition_1_2_8 (fun n => f (v n)) (f u)
 
-/-- Continuity at every point in the sequential sense of Definition 1.2.9 is Mathlib's
-`Continuous`. -/
+/-- A function $f : V \to \mathbb{R}$ on a normed space is continuous at every point in the sense of
+Definition 1.2.9 of [han2009theoretical] if and only if it is `Continuous`. -/
 theorem definition_1_2_9_iff (f : V → ℝ) : (∀ u, definition_1_2_9 f u) ↔ Continuous f := by
   rw [continuous_iff_seqContinuous]
   constructor
@@ -252,23 +321,32 @@ theorem definition_1_2_9_iff (f : V → ℝ) : (∀ u, definition_1_2_9 f u) ↔
   · intro h u v hv
     exact (definition_1_2_8_iff _ _).mpr (h ((definition_1_2_8_iff _ _).mp hv))
 
-/-- **Proposition 1.2.10.** The norm is a continuous function: if `uₙ → u` then `‖uₙ‖ → ‖u‖`. The
-book's proof is the backward triangle inequality (1.2.5), `|‖u‖ - ‖v‖| ≤ ‖u - v‖`, which is
-Mathlib's `abs_norm_sub_norm_le`. -/
+/-- **Proposition 1.2.10** of [han2009theoretical]. The norm is a continuous function: if
+$u_n \to v$ in a normed space $V$, then $\|u_n\| \to \|v\|$.
+
+The book's proof is the inequality (1.2.5), $\big|\|u\| - \|v\|\big| \le \|u - v\|$, which is
+`abs_norm_sub_norm_le`. -/
 theorem proposition_1_2_10 {u : ℕ → V} {v : V} (h : Tendsto u atTop (𝓝 v)) :
     Tendsto (fun n => ‖u n‖) atTop (𝓝 ‖v‖) :=
   h.norm
 
-/-- **Example 1.2.11.** On `V = C[0, 1]` the point evaluation `ℓ_{x₀} v = v x₀` is continuous, in
-the sense of Definition 1.2.9, because `|ℓ_{x₀} vₙ - ℓ_{x₀} v| ≤ ‖vₙ - v‖_∞`. The book returns to it
-as a linear functional in Chapter 2, where this surface states it again. -/
+/-- **Example 1.2.11** of [han2009theoretical]. Let $x_0 \in [0, 1]$. On $V = C[0, 1]$, the point
+evaluation $\ell_{x_0}(v) = v(x_0)$ is continuous at every $u \in V$ in the sense of Definition
+1.2.9.
+
+The proof is the bound $|\ell_{x_0}(v_n) - \ell_{x_0}(v)| \le \|v_n - v\|_\infty$. The book
+returns to $\ell_{x_0}$ as a linear functional in Chapter 2. -/
 theorem example_1_2_11 (x₀ : Set.Icc (0 : ℝ) 1) (u : C(Set.Icc (0 : ℝ) 1, ℝ)) :
     definition_1_2_9 (fun v : C(Set.Icc (0 : ℝ) 1, ℝ) => v x₀) u :=
   (definition_1_2_9_iff _).mpr (continuous_eval_const x₀) u
 
-/-- **Example 1.2.13**, the inequality (1.2.6): on `ℝ^d`, `‖x‖_∞ ≤ ‖x‖_p ≤ d^{1/p} ‖x‖_∞` for
-`1 ≤ p < ∞`, so all the `p`-norms on `ℝ^d` are equivalent — a special case of
-`theorem_1_2_14`. -/
+/-- **Example 1.2.13** of [han2009theoretical], the inequality (1.2.6). Let $d \in \mathbb{N}$ and
+$1 \le p \le \infty$. Every $x \in \mathbb{R}^d$ satisfies $$\|x\|_\infty \le \|x\|_p \le
+d^{1/p} \|x\|_\infty,$$ with $1/\infty = 0$. Hence all the $p$-norms on $\mathbb{R}^d$ are
+equivalent, a special case of Theorem 1.2.14.
+
+The book states the inequality for $1 \le p < \infty$. The case $p = \infty$ is trivial, because
+the exponent $1/p$ is `1 / p.toReal`, which is $0$ for $p = \infty$. -/
 theorem example_1_2_13 {d : ℕ} (p : ℝ≥0∞) [Fact (1 ≤ p)] (x : Fin d → ℝ) :
     ‖(WithLp.toLp ∞ x : PiLp ∞ fun _ : Fin d => ℝ)‖ ≤
         ‖(WithLp.toLp p x : PiLp p fun _ : Fin d => ℝ)‖ ∧
@@ -287,14 +365,16 @@ theorem example_1_2_13 {d : ℕ} (p : ℝ≥0∞) [Fact (1 ≤ p)] (x : Fin d �
     rw [PiLp.norm_toLp, ← hK]
     exact h
 
-/-- **Example 1.2.15.** On `C[0, 1]` the norms `‖·‖_p`, `1 ≤ p < ∞`, and `‖·‖_∞` are *not*
-equivalent: there is no constant `c` with `‖v‖_∞ ≤ c ‖v‖_p` for every `v`. The statement below is
-that negation in witness form — for every `c` some `v ∈ C[0, 1]` has `‖v‖_∞ = 1` while
-`c ‖v‖_p < 1`.
+/-- **Example 1.2.15** of [han2009theoretical]. On $C[0, 1]$ the norms $\|\cdot\|_p$,
+$1 \le p < \infty$, and $\|\cdot\|_\infty$ are not equivalent: no constant $c$ satisfies
+$\|v\|_\infty \le c \|v\|_p$ for all $v$. Precisely, let $1 \le p < \infty$ and
+$c \in \mathbb{R}$. Then there is a continuous $v : \mathbb{R} \to \mathbb{R}$ with
+$|v(x)| \le 1$ for $x \in [0, 1]$ and $v(0) = 1$, so that $\|v\|_\infty = 1$, and with $$c
+\Big(\int_0^1 |v(x)|^p \, dx\Big)^{1/p} < 1.$$
 
-The book's witnesses are the ramps `uₙ x = max (1 - n x) 0`, of `p`-norm `[n (p + 1)]^{-1/p}`; the
-witnesses below are `vₙ x = (1 - x)ⁿ`, whose `p`-norm `(n p + 1)^{-1/p}` is as easy to compute and
-avoids a piecewise definition. -/
+The book's witnesses are the functions $u_n(x) = \max\{1 - nx, 0\}$, with
+$\|u_n\|_p = [n(p + 1)]^{-1/p}$. The proof uses the functions $v_n(x) = (1 - x)^n$ instead, with
+$\|v_n\|_p = (np + 1)^{-1/p}$, because they need no case distinction. -/
 theorem example_1_2_15 {p : ℝ} (hp : 1 ≤ p) (c : ℝ) :
     ∃ v : ℝ → ℝ, Continuous v ∧ (∀ x ∈ Set.Icc (0 : ℝ) 1, |v x| ≤ 1) ∧ v 0 = 1 ∧
       c * (∫ x in (0 : ℝ)..1, |v x| ^ p) ^ (1 / p) < 1 := by
@@ -343,12 +423,14 @@ theorem example_1_2_15 {p : ℝ} (hp : 1 ≤ p) (c : ℝ) :
           exact mul_lt_mul_of_pos_left hlt hc
       _ = 1 := by field_simp
 
-/-- **Example 1.2.16.** On `C[0, 1]` one has `‖v‖_p ≤ ‖v‖_∞` for every `p ∈ [1, ∞)`, so uniform
-convergence implies convergence in `‖·‖_p` — but not conversely, which is Example 1.2.15.
+/-- **Example 1.2.16** of [han2009theoretical]. Let $1 \le p < \infty$, let $v$ be continuous on
+$[0, 1]$, and let $M \in \mathbb{R}$ satisfy $|v(x)| \le M$ for all $x \in [0, 1]$. Then
+$$\Big(\int_0^1 |v(x)|^p \, dx\Big)^{1/p} \le M.$$ With $M = \|v\|_\infty$ this is
+$\|v\|_p \le \|v\|_\infty$, so uniform convergence implies convergence in $\|\cdot\|_p$. The
+converse fails by Example 1.2.15.
 
-The uniform norm appears as an arbitrary bound `M` on `|v|` over `[0, 1]`, which is what the book's
-`‖v‖_∞` is; the general form of the inequality, the inclusion `L^q ⊆ Lᵖ` with the constant
-`meas(Ω)^{1/p - 1/q}`, is `theorem_1_5_5_c`. -/
+The general form of the inequality, the inclusion $L^q(\Omega) \subseteq L^p(\Omega)$ with the
+constant $\operatorname{meas}(\Omega)^{1/p - 1/q}$, is `AtkinsonHan.Chapter01.theorem_1_5_5_c`. -/
 theorem example_1_2_16 {p : ℝ} (hp : 1 ≤ p) {v : ℝ → ℝ} (hv : ContinuousOn v (Set.Icc 0 1))
     {M : ℝ} (hM : ∀ x ∈ Set.Icc (0 : ℝ) 1, |v x| ≤ M) :
     (∫ x in (0 : ℝ)..1, |v x| ^ p) ^ (1 / p) ≤ M := by
@@ -372,29 +454,35 @@ theorem example_1_2_16 {p : ℝ} (hp : 1 ≤ p) {v : ℝ → ℝ} (hv : Continuo
     _ = M := by
         rw [← Real.rpow_mul hM0, mul_one_div_cancel hp0.ne', Real.rpow_one]
 
-/-- **Definition 1.2.17.** For a sequence `{vₙ}` in a normed space with partial sums
-`sₙ = ∑_{i ≤ n} vᵢ`, the series `∑_{i ≥ 1} vᵢ` *converges to* `s` when `sₙ → s` in `V`.
+/-- **Definition 1.2.17** of [han2009theoretical]. Let $\{v_i\}$ be a sequence in a normed space
+$V$, with partial sums $s_n = \sum_{i < n} v_i$. The series $\sum_i v_i$ **converges** to
+$s \in V$ if $s_n \to s$ in $V$.
 
-This is the ordered form of summation, `Tendsto (fun n => ∑ i ∈ Finset.range n, v i) atTop (𝓝 s)`;
-Mathlib's `HasSum` is the unordered variant, and the two agree for the unconditionally convergent
-series the book meets. -/
+Sequences are indexed from $0$, so $s_n$ is the sum over `Finset.range n`. This is the ordered
+form of summation. Mathlib's `HasSum` is the unordered form, and the two agree for the
+unconditionally convergent series that the book uses. -/
 def definition_1_2_17 {V : Type*} [NormedAddCommGroup V] (v : ℕ → V) (s : V) : Prop :=
   definition_1_2_8 (fun n => ∑ i ∈ Finset.range n, v i) s
 
-/-- Definition 1.2.17 is the convergence of the partial sums. -/
+/-- A series $\sum_i v_i$ in a normed space converges to $s$ in the sense of Definition 1.2.17 of
+[han2009theoretical] if and only if its partial sums $\sum_{i < n} v_i$ tend to $s$ in the
+topology of the norm. -/
 theorem definition_1_2_17_iff (v : ℕ → V) (s : V) :
     definition_1_2_17 v s ↔ Tendsto (fun n => ∑ i ∈ Finset.range n, v i) atTop (𝓝 s) :=
   definition_1_2_8_iff _ _
 
-/-- **Definition 1.2.18.** For subsets `V₁ ⊆ V₂` of a normed space, `V₁` is *dense in* `V₂` when
-every `u ∈ V₂` and every `ε > 0` admit a `v ∈ V₁` with `‖v - u‖ < ε`.
+/-- **Definition 1.2.18** of [han2009theoretical]. Let $V_1 \subseteq V_2$ be subsets of a normed
+space $V$. Then $V_1$ is **dense** in $V_2$ if for every $u \in V_2$ and every $\varepsilon > 0$
+there is a $v \in V_1$ with $\|v - u\| < \varepsilon$.
 
-This is `V₂ ⊆ closure V₁` in Mathlib, and Mathlib's `Dense` when `V₂` is everything;
-`definition_1_2_18_iff` and `definition_1_2_18_iff_dense` are the two correspondences. -/
+The predicate does not require $V_1 \subseteq V_2$. It says that $V_2$ lies in the closure of
+$V_1$, by `AtkinsonHan.Chapter01.definition_1_2_18_iff`, and for $V_2 = V$ it is `Dense V₁`, by
+`AtkinsonHan.Chapter01.definition_1_2_18_iff_dense`. -/
 def definition_1_2_18 {V : Type*} [NormedAddCommGroup V] (V₁ V₂ : Set V) : Prop :=
   ∀ u ∈ V₂, ∀ ε > 0, ∃ v ∈ V₁, ‖v - u‖ < ε
 
-/-- Definition 1.2.18 says exactly that `V₂` lies in the closure of `V₁`. -/
+/-- For subsets $V_1, V_2$ of a normed space, $V_1$ is dense in $V_2$ in the sense of Definition
+1.2.18 of [han2009theoretical] if and only if $V_2$ is contained in the closure of $V_1$. -/
 theorem definition_1_2_18_iff (V₁ V₂ : Set V) :
     definition_1_2_18 V₁ V₂ ↔ V₂ ⊆ closure V₁ := by
   constructor
@@ -407,66 +495,78 @@ theorem definition_1_2_18_iff (V₁ V₂ : Set V) :
     obtain ⟨v, hv, hvu⟩ := Metric.mem_closure_iff.mp (h hu) ε hε
     exact ⟨v, hv, by rwa [dist_eq_norm, norm_sub_rev] at hvu⟩
 
-/-- A subset dense in the whole space in the sense of Definition 1.2.18 is Mathlib's `Dense`. -/
+/-- A subset $V_1$ of a normed space $V$ is dense in $V$ in the sense of Definition 1.2.18 of
+[han2009theoretical] if and only if it is `Dense`. -/
 theorem definition_1_2_18_iff_dense (V₁ : Set V) :
     definition_1_2_18 V₁ Set.univ ↔ Dense V₁ := by
   rw [definition_1_2_18_iff, dense_iff_closure_eq, Set.univ_subset_iff, eq_comm]
 
-/-- **Definition 1.2.20** (a). An infinite dimensional normed space `V` has a
-*countably-infinite basis* `{vᵢ}` when for every `v ∈ V` there are scalars `{α_{n,i}}` with
-`‖v - ∑_{i < n} α_{n,i} vᵢ‖ → 0`; `V` is then also said to be *separable*, and `{vᵢ}` is called a
-basis when each of its finite subfamilies is linearly independent.
+/-- **Definition 1.2.20(a)** of [han2009theoretical]. Let $V$ be an infinite-dimensional normed
+space over $\mathbb{K}$, and let $\{v_i\}_{i \ge 0}$ be a sequence in $V$. Then $\{v_i\}$ is a
+**countably-infinite basis** of $V$ if for every $u \in V$ there are scalars $\alpha_{n,i}$ with
+$$\Big\|u - \sum_{i < n} \alpha_{n,i} v_i\Big\| \to 0 \quad \text{as } n \to \infty.$$ The space
+$V$ is then called **separable**. The book calls $\{v_i\}$ a basis if, in addition, each finite
+subfamily of $\{v_i\}$ is linearly independent.
 
-The approximation property below is what makes `V` separable, Mathlib's
-`TopologicalSpace.SeparableSpace`; the independence rider is Definition 1.1.5. -/
+The predicate is the approximation property alone, which is what makes $V$ separable in the
+sense of `TopologicalSpace.SeparableSpace`. It does not assume that $V$ is infinite dimensional.
+The linear independence of the finite subfamilies is Definition 1.1.5. -/
 def definition_1_2_20 (𝕜 : Type*) {V : Type*} [RCLike 𝕜] [NormedAddCommGroup V] [NormedSpace 𝕜 V]
     (v : ℕ → V) : Prop :=
   ∀ u : V, ∃ α : ℕ → ℕ → 𝕜, definition_1_2_8 (fun n => ∑ i ∈ Finset.range n, α n i • v i) u
 
-/-- **Definition 1.2.20** (b). A normed space `V` has a *Schauder basis* `{vₙ}` when every `v ∈ V`
-is a convergent series `v = ∑_{n ≥ 1} αₙ vₙ` for a unique choice of scalars `{αₙ}`.
+/-- **Definition 1.2.20(b)** of [han2009theoretical]. A sequence $\{v_n\}$ in a normed space $V$
+over $\mathbb{K}$ is a **Schauder basis** of $V$ if every $u \in V$ is the sum
+$u = \sum_n \alpha_n v_n$ of a convergent series (Definition 1.2.17) for a unique sequence of
+scalars $\{\alpha_n\}$.
 
-This is Mathlib's `SchauderBasis 𝕜 V`, an abbreviation for
-`GeneralSchauderBasis ℕ 𝕜 V (SummationFilter.conditional ℕ)`. A Schauder basis is in particular a
-countably-infinite basis in the sense of clause (a). -/
+Mathlib's counterpart is `SchauderBasis 𝕜 V`, an abbreviation for `GeneralSchauderBasis ℕ 𝕜 V
+(SummationFilter.conditional ℕ)`. A Schauder basis is a countably-infinite basis in the sense of
+clause (a), by `AtkinsonHan.Chapter01.definition_1_2_20_of_schauder`. -/
 def definition_1_2_20_schauder (𝕜 : Type*) {V : Type*} [RCLike 𝕜] [NormedAddCommGroup V]
     [NormedSpace 𝕜 V] (v : ℕ → V) : Prop :=
   ∀ u : V, ∃! α : ℕ → 𝕜, definition_1_2_17 (fun n => α n • v n) u
 
-/-- Clause (b) of Definition 1.2.20 implies clause (a): a Schauder basis is a countably-infinite
-basis, taking `α_{n,i} = αᵢ` independent of `n`. -/
+/-- A Schauder basis in the sense of Definition 1.2.20(b) of [han2009theoretical] is a
+countably-infinite basis in the sense of Definition 1.2.20(a): take $\alpha_{n,i} = \alpha_i$
+for all $n$. -/
 theorem definition_1_2_20_of_schauder {v : ℕ → V} (h : definition_1_2_20_schauder 𝕜 v) :
     definition_1_2_20 𝕜 v := by
   intro u
   obtain ⟨α, hα, -⟩ := h u
   exact ⟨fun _ i => α i, hα⟩
 
-/-- **Definition 1.2.21.** A sequence `{uₙ}` in a normed space is a *Cauchy sequence* when
-`‖u_m - uₙ‖ → 0` as `m, n → ∞`.
+/-- **Definition 1.2.21** of [han2009theoretical]. A sequence $\{u_n\}$ in a normed space is a
+**Cauchy sequence** if $\|u_m - u_n\| \to 0$ as $m, n \to \infty$, that is, if for every
+$\varepsilon > 0$ there is an $N$ with $\|u_m - u_n\| < \varepsilon$ for all $m, n \ge N$.
 
-This is Mathlib's `CauchySeq`; `definition_1_2_21_iff` is the correspondence. -/
+The predicate is `CauchySeq` by `AtkinsonHan.Chapter01.definition_1_2_21_iff`. -/
 def definition_1_2_21 {V : Type*} [NormedAddCommGroup V] (u : ℕ → V) : Prop :=
   ∀ ε > 0, ∃ N : ℕ, ∀ m ≥ N, ∀ n ≥ N, ‖u m - u n‖ < ε
 
-/-- Definition 1.2.21 is Mathlib's `CauchySeq`. -/
+/-- A sequence in a normed space is a Cauchy sequence in the sense of Definition 1.2.21 of
+[han2009theoretical] if and only if it is `CauchySeq`. -/
 theorem definition_1_2_21_iff (u : ℕ → V) : definition_1_2_21 u ↔ CauchySeq u := by
   rw [Metric.cauchySeq_iff]
   simp [definition_1_2_21, dist_eq_norm]
 
-/-- **Example 1.2.22**, first half. `C(Ω̄)` with the maximum norm is a Banach space, because a
-uniform limit of continuous functions is continuous. The second half of the example, that `C(Ω̄)`
-with `‖·‖_p` for `1 ≤ p < ∞` is *not* complete, is `example_1_2_22_incomplete`. -/
+/-- **Example 1.2.22** of [han2009theoretical], first half. Let $D \subseteq \mathbb{R}^d$ be
+compact. Then $C(D)$ with the maximum norm is a Banach space, because a uniform limit of
+continuous functions is continuous.
+
+The compact set $D$ stands for the book's $\bar\Omega$. The second half of the example is
+`AtkinsonHan.Chapter01.example_1_2_22_incomplete`. -/
 theorem example_1_2_22 {d : ℕ} {D : Set (EuclideanSpace ℝ (Fin d))} (hD : IsCompact D) :
     CompleteSpace C(D, ℝ) :=
   have : CompactSpace D := isCompact_iff_compactSpace.mp hD
   inferInstance
 
-/-! ### Example 1.2.22, second half: `C[0, 1]` with `‖·‖_p` is not complete -/
+/-! ### Example 1.2.22, second half: $C[0, 1]$ with $\|\cdot\|_p$ is not complete -/
 
 section Incomplete
 
-/-- The ramp of Example 1.2.22: `0` on `[0, 1/2]`, rising linearly to `1` at `1/2 + 1/(n + 1)`,
-and `1` from there on. -/
+/-- The ramp $u_n$ of Example 1.2.22: $u_n(x) = 0$ for $x \le 1/2$, $u_n$ rises linearly to $1$ at
+$x = 1/2 + 1/(n + 1)$, and $u_n(x) = 1$ from there on. -/
 private noncomputable def ramp (n : ℕ) (x : ℝ) : ℝ :=
   min 1 (max 0 (((n : ℝ) + 1) * (x - 1 / 2)))
 
@@ -493,8 +593,8 @@ private theorem ramp_eq_one {n : ℕ} {x : ℝ} (hx : 1 / 2 + 1 / ((n : ℝ) + 1
       _ ≤ ((n : ℝ) + 1) * (x - 1 / 2) := by exact mul_le_mul_of_nonneg_left h1 hn.le
   rw [ramp, max_eq_right (by linarith), min_eq_left h]
 
-/-- A continuous function whose `p`-th power has zero integral over an interval vanishes on the
-interior of that interval: the set where it does not is open and null. -/
+/-- If $p > 0$, $a < b$, $w$ is continuous on $[a, b]$ and $\int_a^b |w(x)|^p \, dx = 0$, then
+$w = 0$ on $(a, b)$. -/
 private theorem eqOn_zero_of_integral_rpow_eq_zero {p a b : ℝ} (hp : 0 < p) (hab : a < b)
     {w : ℝ → ℝ} (hw : ContinuousOn w (Set.Icc a b)) (h : (∫ x in a..b, |w x| ^ p) = 0)
     (x : ℝ) (hx : x ∈ Set.Ioo a b) : w x = 0 := by
@@ -529,13 +629,14 @@ private theorem eqOn_zero_of_integral_rpow_eq_zero {p a b : ℝ} (hp : 0 < p) (h
         (fun y (hy : y ∈ U) => Set.Ioo_subset_Ioc_self hy.1)] at h1
   exact absurd hUnull (ne_of_gt (hUopen.measure_pos volume hUne))
 
-/-- Continuity on `[0, 1]` transported along a sequence inside `[0, 1]`. -/
+/-- If $v$ is continuous on $[0, 1]$ and $s_k \to z$ with $s_k, z \in [0, 1]$, then
+$v(s_k) \to v(z)$. -/
 private theorem tendsto_val_of_continuousOn {v : ℝ → ℝ} (hv : ContinuousOn v (Set.Icc 0 1))
     {z : ℝ} (hz : z ∈ Set.Icc (0 : ℝ) 1) {s : ℕ → ℝ} (hs : ∀ k, s k ∈ Set.Icc (0 : ℝ) 1)
     (hlim : Tendsto s atTop (𝓝 z)) : Tendsto (fun k => v (s k)) atTop (𝓝 (v z)) :=
   Filter.Tendsto.comp (hv z hz) (tendsto_nhdsWithin_iff.2 ⟨hlim, Eventually.of_forall hs⟩)
 
-/-- `1 / (k + 3) → 0`, the modulus with which the two sequences below approach `1/2`. -/
+/-- The sequence $1/(k + 3)$ tends to $0$. -/
 private theorem tendsto_one_div_add_three :
     Tendsto (fun k : ℕ => 1 / ((k : ℝ) + 3)) atTop (𝓝 0) := by
   have h : Tendsto (fun k : ℕ => (k : ℝ) + 3) atTop atTop :=
@@ -543,9 +644,8 @@ private theorem tendsto_one_div_add_three :
   refine h.inv_tendsto_atTop.congr fun k => ?_
   simp [one_div]
 
-/-- Two ramps of index at least `N` differ only on `(1/2, 1/2 + 1/(N + 1))`, where their
-difference is at most `1`, so the `p`-th power of that difference integrates to at most
-`1 / (N + 1)`. -/
+/-- If $p > 0$, $N \ge 1$ and $m, n \ge N$, then $\int_0^1 |u_m(x) - u_n(x)|^p \, dx \le 1/(N + 1)$
+for the ramps $u_m, u_n$. -/
 private theorem integral_ramp_sub_le {p : ℝ} (hp : 0 < p) {N m n : ℕ} (hN : 1 ≤ N) (hm : N ≤ m)
     (hn : N ≤ n) : (∫ x in (0 : ℝ)..1, |ramp m x - ramp n x| ^ p) ≤ 1 / ((N : ℝ) + 1) := by
   have hdc : Continuous fun x => |ramp m x - ramp n x| ^ p :=
@@ -605,20 +705,20 @@ private theorem integral_ramp_sub_le {p : ℝ} (hp : 0 < p) {N m n : ℕ} (hN : 
     intervalIntegral.integral_zero, intervalIntegral.integral_zero, zero_add, add_zero]
   exact hmid
 
-/-- **Example 1.2.22**, second half. `C(Ω̄)` with the `p`-norm (1.2.9) of Example 1.2.5 is *not*
-complete, for any `1 ≤ p < ∞`. On `Ω = (0, 1)` the witness is the book's sequence of ramps, rising
-linearly from `0` to `1` across `x = 1/2` on an interval of width `1/(n + 1)`: they are `‖·‖_p`
-Cauchy, because two of them differ only on an interval of width `1/(N + 1)` on which the difference
-is at most `1`, and no continuous function is their `‖·‖_p` limit, because such a limit would have
-to vanish on `(0, 1/2)` and be `1` on `(1/2, 1)`.
+/-- **Example 1.2.22** of [han2009theoretical], second half. Let $1 \le p < \infty$. The space
+$C[0, 1]$ with the norm $\|v\|_p = (\int_0^1 |v(x)|^p \, dx)^{1/p}$ is not complete: there are
+continuous functions $u_n : \mathbb{R} \to \mathbb{R}$ that form a Cauchy sequence for
+$\|\cdot\|_p$, that is, for every $\varepsilon > 0$ there is an $N$ with
+$\|u_m - u_n\|_p < \varepsilon$ for all $m, n \ge N$, while no function $v$ continuous on
+$[0, 1]$ satisfies $\|u_n - v\|_p \to 0$.
 
-Mathlib has no normed-space structure carrying `‖·‖_p` on `C[0, 1]`, so the norm is written out as
-the interval integral `(∫₀¹ |v x|^p)^{1/p}` — the same reading as in `example_1_2_15` and
-`example_1_2_16` — and completeness is negated in the form the book uses: a Cauchy sequence of
-continuous functions with no continuous limit. An element of `C[0, 1]` is a `v : ℝ → ℝ` continuous
-on `[0, 1]`, which is all the integral sees of it.
-
-The first half, that `C(Ω̄)` with `‖·‖_∞` *is* a Banach space, is `example_1_2_22`. -/
+This is the case $\Omega = (0, 1)$ of the book's statement that $C(\bar\Omega)$ with the norm
+(1.2.9) is not complete. The witnesses are the book's ramps, which rise linearly from $0$ to $1$
+on an interval of width $1/(n + 1)$ to the right of $x = 1/2$. They are Cauchy, because two of
+them with index at least $N$ differ only on an interval of width $1/(N + 1)$, where the
+difference is at most $1$. A continuous limit would vanish on $(0, 1/2)$ and equal $1$ on
+$(1/2, 1)$, which is impossible. An element of $C[0, 1]$ is represented by a function
+$v : \mathbb{R} \to \mathbb{R}$ continuous on $[0, 1]$, which is all that the integral uses. -/
 theorem example_1_2_22_incomplete {p : ℝ} (hp : 1 ≤ p) :
     ∃ u : ℕ → ℝ → ℝ, (∀ n, Continuous (u n)) ∧
       (∀ ε > 0, ∃ N : ℕ, ∀ m ≥ N, ∀ n ≥ N,
@@ -763,26 +863,34 @@ theorem example_1_2_22_incomplete {p : ℝ} (hp : 1 ≤ p) :
 
 end Incomplete
 
-/-- **Proposition 1.2.23.** A Cauchy sequence with a convergent subsequence converges, to the same
-limit. -/
+/-- **Proposition 1.2.23** of [han2009theoretical]. Let $\{u_n\}$ be a Cauchy sequence in a normed
+space $V$, and let $\varphi : \mathbb{N} \to \mathbb{N}$ be strictly increasing. If the
+subsequence $\{u_{\varphi(n)}\}$ converges to $v$, then $u_n \to v$. -/
 theorem proposition_1_2_23 {u : ℕ → V} (hu : CauchySeq u) {φ : ℕ → ℕ} (hφ : StrictMono φ) {v : V}
     (h : Tendsto (u ∘ φ) atTop (𝓝 v)) : Tendsto u atTop (𝓝 v) :=
   tendsto_nhds_of_cauchySeq_of_subseq hu hφ.tendsto_atTop h
 
-/-- **Definition 1.2.24.** A normed space is *complete* when every Cauchy sequence from the space
-converges to an element of the space, and a complete normed space is a *Banach space*.
+/-- **Definition 1.2.24** of [han2009theoretical]. A normed space $V$ is **complete** if every
+Cauchy sequence in $V$ converges to an element of $V$. A complete normed space is a **Banach
+space**. The theorem states that `CompleteSpace V` holds if and only if every Cauchy sequence in
+the sense of Definition 1.2.21 converges in the sense of Definition 1.2.8.
 
-This is Mathlib's `CompleteSpace` beside `NormedAddCommGroup` and `NormedSpace`. Mathlib bundles no
-`BanachSpace`, and that hypothesis triple is what this surface carries throughout. -/
+Mathlib has no bundled Banach space. This library assumes `NormedAddCommGroup`, `NormedSpace`
+and `CompleteSpace` instead. -/
 theorem definition_1_2_24 (V : Type*) [NormedAddCommGroup V] :
     CompleteSpace V ↔ ∀ u : ℕ → V, definition_1_2_21 u → ∃ v : V, definition_1_2_8 u v := by
   simp only [definition_1_2_21_iff, definition_1_2_8_iff]
   exact ⟨fun _ _ hu => cauchySeq_tendsto_of_complete hu, Metric.complete_of_cauchySeq_tendsto⟩
 
-/-- **Theorem 1.2.14.** On a finite-dimensional linear space any two norms are equivalent: for a
-linear equivalence `e : V ≃ₗ[𝕜] W` between normed spaces with `V` finite-dimensional there are
-`c₁, c₂ > 0` with `c₁ ‖v‖ ≤ ‖e v‖ ≤ c₂ ‖v‖`. Both bounds come from the continuity of a linear map
-on a finite-dimensional space, applied to `e` and to `e.symm`. -/
+/-- **Theorem 1.2.14** of [han2009theoretical]. On a finite-dimensional linear space any two norms
+are equivalent. Precisely, let $V$ and $W$ be normed spaces over $\mathbb{K}$ with $V$ finite
+dimensional, and let $e : V \to W$ be a linear bijection. Then there are constants
+$c_1, c_2 > 0$ with $$c_1 \|v\| \le \|e v\| \le c_2 \|v\| \qquad \text{for all } v \in V.$$
+
+A Lean type carries one norm, so the two norms of the book are $\|v\|$ and $\|e v\|$. The
+conclusion is the equivalence of norms of Definition 1.2.12, which is not stated separately.
+Both bounds come from the continuity of a linear map on a finite-dimensional space, applied to
+$e$ and to $e^{-1}$. -/
 theorem theorem_1_2_14 {W : Type*} [NormedAddCommGroup W] [NormedSpace 𝕜 W]
     [FiniteDimensional 𝕜 V] (e : V ≃ₗ[𝕜] W) :
     ∃ c₁ > 0, ∃ c₂ > 0, ∀ v : V, c₁ * ‖v‖ ≤ ‖e v‖ ∧ ‖e v‖ ≤ c₂ * ‖v‖ := by
@@ -799,18 +907,23 @@ theorem theorem_1_2_14 {W : Type*} [NormedAddCommGroup W] [NormedSpace 𝕜 W]
     calc ‖E v‖ ≤ ‖(E : V →L[𝕜] W)‖ * ‖v‖ := (E : V →L[𝕜] W).le_opNorm _
       _ ≤ (‖(E : V →L[𝕜] W)‖ + 1) * ‖v‖ := by nlinarith [norm_nonneg v]
 
-/-- **Theorem 1.2.25** (existence of a completion). Every normed space `V` has a completion: the
-Banach space `UniformSpace.Completion V` together with the linear isometry
-`UniformSpace.Completion.toComplₗᵢ`, whose range is dense. -/
+/-- **Theorem 1.2.25** of [han2009theoretical], existence. Every normed space $V$ has a completion:
+a Banach space $\hat V$ with a linear isometry $V \to \hat V$ whose range is dense in $\hat V$.
+
+The completion is `UniformSpace.Completion V`, and the isometry is
+`UniformSpace.Completion.toComplₗᵢ`. -/
 theorem theorem_1_2_25 :
     CompleteSpace (UniformSpace.Completion V) ∧
       DenseRange (UniformSpace.Completion.toComplₗᵢ : V →ₗᵢ[𝕜] UniformSpace.Completion V) :=
   ⟨inferInstance, UniformSpace.Completion.denseRange_coe⟩
 
-/-- **Theorem 1.2.25** (uniqueness of the completion). Any Banach space `W` carrying a linear
-isometry `I : V →ₗᵢ[𝕜] W` with dense range is a copy of `UniformSpace.Completion V`: there is a
-surjective linear isometry from the completion onto `W` extending `I`. Two completions of `V` are
-therefore isometrically isomorphic by an isomorphism fixing the embedded copy of `V`. -/
+/-- **Theorem 1.2.25** of [han2009theoretical], uniqueness. Let $V$ be a normed space, let $W$ be a
+Banach space, and let $I : V \to W$ be a linear isometry with dense range. Then there is a
+linear isometric isomorphism $e$ from the completion $\hat V$ of $V$ onto $W$ with $e(v) = I(v)$
+for all $v \in V$. Hence any two completions of $V$ are isometrically isomorphic, by an
+isomorphism that fixes the embedded copy of $V$.
+
+The completion is `UniformSpace.Completion V`. -/
 theorem theorem_1_2_25_uniqueness {W : Type*} [NormedAddCommGroup W] [NormedSpace 𝕜 W]
     [CompleteSpace W] (I : V →ₗᵢ[𝕜] W) (hI : DenseRange I) :
     ∃ e : UniformSpace.Completion V ≃ₗᵢ[𝕜] W, ∀ v : V, e v = I v := by
@@ -830,42 +943,37 @@ theorem theorem_1_2_25_uniqueness {W : Type*} [NormedAddCommGroup W] [NormedSpac
       rw [← g.isometry.isClosedEmbedding.isClosed_range.closure_eq, (hI.mono hsub).closure_eq]
   exact ⟨LinearIsometryEquiv.ofSurjective g hsurj, hcoe⟩
 
-/-- **Example 1.2.28** (a), the clause about `Cᵐ[a, b]`: with the norm of Example 1.2.5 (b) it is a
-Banach space.
+/-- **Example 1.2.28(a)** of [han2009theoretical], the space $C^m[a, b]$. Let $a \le b$ and
+$m \in \mathbb{N}$. The space $C^m[a, b]$ with the norm
+$\|v\| = \sum_{j=0}^m \|v^{(j)}\|_\infty$ is a Banach space. This norm is equivalent to the norm
+of Example 1.2.5(b): $$\max_{0 \le j \le m} \|v^{(j)}\|_\infty \le \|v\| \le (m + 1) \max_{0 \le
+j \le m} \|v^{(j)}\|_\infty.$$ So $C^m[a, b]$ is complete for either norm.
 
-The space is the backbone's `ContDiffMapIcc hab m` (`Numlib.Analysis.Calculus.ContDiffMapIcc`),
-which carries the norm `∑_{j ≤ m} ‖v⁽ʲ⁾‖_∞` — the norm the book itself writes as (2.1.2) in §2.1 —
-rather than the maximum `max_{j ≤ m} ‖v⁽ʲ⁾‖_∞` of Example 1.2.5 (b). The first two conjuncts are the
-two-sided bound between the two norms, so the completeness of the third is the book's statement for
-either of them.
-
-The other half of clause (a), that `C_p^k(2π)` is a Banach space, is `example_1_2_28_a_periodic`.
-Clause (b), the incompleteness for the `‖·‖_p`-type norm and the Sobolev completion, is
-`example_1_2_28_b`. -/
+The space is the backbone's `ContDiffMapIcc hab m`, whose norm is the sum, the norm (2.1.2) that
+the book uses in §2.1. The maximum is the supremum `⨆ j`. The clause about $C_p^k(2\pi)$ is
+`AtkinsonHan.Chapter01.example_1_2_28_a_periodic`, and clause (b) is
+`AtkinsonHan.Chapter01.example_1_2_28_b`. -/
 theorem example_1_2_28_a {a b : ℝ} (hab : a ≤ b) (m : ℕ) :
     (∀ v : ContDiffMapIcc hab m, ⨆ j, ‖v.deriv j‖ ≤ ‖v‖) ∧
       (∀ v : ContDiffMapIcc hab m, ‖v‖ ≤ (m + 1) * ⨆ j, ‖v.deriv j‖) ∧
       CompleteSpace (ContDiffMapIcc hab m) :=
   ⟨ContDiffMapIcc.iSup_norm_deriv_le_norm, ContDiffMapIcc.norm_le_iSup_norm_deriv, inferInstance⟩
 
-/-- **Example 1.2.28** (a), the clause about `C_p^k(2π)`: with the norm of Example 1.2.5 (b) it is a
-Banach space.
+/-- **Example 1.2.28(a)** of [han2009theoretical], the space $C_p^k(2\pi)$. Let $k \in \mathbb{N}$,
+and read $C_p^k(2\pi)$ on one period, as the subspace of $C^k[0, 2\pi]$ of the functions $v$
+with $v^{(j)}(0) = v^{(j)}(2\pi)$ for $0 \le j \le k$. With the norm
+$\|v\| = \sum_{j=0}^k \|v^{(j)}\|_\infty$ this space is a Banach space, and $$\max_{0 \le j \le
+k} \|v^{(j)}\|_\infty \le \|v\| \le (k + 1) \max_{0 \le j \le k} \|v^{(j)}\|_\infty.$$ Moreover,
+every element is the restriction to $[0, 2\pi]$ of a $2\pi$-periodic function on $\mathbb{R}$ of
+class $C^k$, and every $2\pi$-periodic function of class $C^k$ on $\mathbb{R}$ restricts to an
+element.
 
-`C_p^k(2π)` is read on one period, as the backbone's
-`ContDiffMapIcc.periodicBoundary (Real.two_pi_pos.le : (0 : ℝ) ≤ 2 * π) k`
-(`Numlib.Analysis.Calculus.ContDiffMapIcc`): the subspace of `Cᵏ[0, 2π]` on which every derivative
-up to order `k` takes the same value at the two endpoints. The last two conjuncts are the
-identification with the book's reading, in both directions — every element is the restriction of a
-genuinely `2π`-periodic `Cᵏ` function on `ℝ`, and every such function restricts to an element — so
-nothing is being weakened by working on one period. At `k = 0` this reading and the
-`C(AddCircle (2π), ℝ)` of `example_1_2_5` agree, a continuous function on the circle being the same
-thing as a continuous function on `[0, 2π]` with equal endpoint values; the two are not in
-conflict, and the circle has no higher-order analogue here because Mathlib carries no differential
-calculus on it.
-
-The first two conjuncts are the two-sided bound between the norm carried here,
-`∑_{j ≤ k} ‖v⁽ʲ⁾‖_∞`, and the maximum `max_{j ≤ k} ‖v⁽ʲ⁾‖_∞` of Example 1.2.5 (b), exactly as in
-`example_1_2_28_a`. -/
+The space is the backbone's `ContDiffMapIcc.periodicBoundary (Real.two_pi_pos.le : (0 : ℝ) ≤ 2 *
+π) k`. The last two conjuncts identify it with the book's space, so nothing is lost by working
+on one period. At $k = 0$ the space agrees with the space `C(AddCircle (2 * π), ℝ)` of
+`AtkinsonHan.Chapter01.example_1_2_5`, because a continuous function on the circle is a
+continuous function on $[0, 2\pi]$ with equal values at the two ends. The circle has no
+higher-order analogue here, because Mathlib has no differential calculus on `AddCircle`. -/
 theorem example_1_2_28_a_periodic (k : ℕ) :
     (∀ v : ContDiffMapIcc.periodicBoundary (Real.two_pi_pos.le : (0 : ℝ) ≤ 2 * π) k,
         ⨆ j, ‖(v : ContDiffMapIcc (Real.two_pi_pos.le : (0 : ℝ) ≤ 2 * π) k).deriv j‖ ≤ ‖v‖) ∧
@@ -895,7 +1003,7 @@ theorem example_1_2_28_a_periodic (k : ℕ) :
 
 end Normed
 
-/-! ### Example 1.2.28 (b): `Cᵐ[a, b]` with the Sobolev norm and its completion `W^{m,p}(a, b)` -/
+/-! ### Example 1.2.28(b): $C^m[a, b]$ with a Sobolev norm, and its completion $W^{m,p}(a, b)$ -/
 
 section Example1228b
 
@@ -905,15 +1013,18 @@ open Set TopologicalSpace
 
 variable {a b : ℝ} {p : ℝ≥0∞} [Fact (1 ≤ p)] {m : ℕ}
 
-/-! #### `Cᵐ[a, b]` with the Sobolev norm -/
+/-! ### The space $C^m[a, b]$ with the Sobolev norm -/
 
-/-- **Example 1.2.28 (b), the space**: `Cᵐ[a, b]` carrying the alternative norm
-`‖f‖ = [∑_{j ≤ m} ‖f^{(j)}‖_p^p]^{1/p}`, as a type synonym of `ContDiffMapIcc hlt.le m`
-(`Numlib/Analysis/Calculus/ContDiffMapIcc.lean`). The norm is pulled back from `W^{m,p}(a, b)`,
-the backbone's `SobolevIntervalLp m p (Opens.Ioo a b)`
-(`Numlib/Analysis/Sobolev/Interval/Basic.lean`), along the injective inclusion
-`ContDiffMapIcc.toSobolevIntervalLp`, whose components are the derivatives `f, f', …, f^{(m)}` in
-`L^p(a, b)`; `example_1_2_28_b_norm` reads it back as the book's formula. -/
+/-- **Example 1.2.28(b)** of [han2009theoretical], the space. Let $a < b$, $m \in \mathbb{N}$ and
+$1 \le p \le \infty$. This is the space $C^m[a, b]$ with the norm of $f$ as an element of the
+Sobolev space $W^{m,p}(a, b)$, which for $p < \infty$ is $$\|f\| = \Big[\sum_{j=0}^m
+\|f^{(j)}\|_{L^p(a, b)}^p\Big]^{1/p}.$$
+
+The type is a synonym of `ContDiffMapIcc hlt.le m`. Its norm is pulled back from
+$W^{m,p}(a, b)$, the backbone's `SobolevIntervalLp m p (Opens.Ioo a b)`, along the injective
+inclusion `ContDiffMapIcc.toSobolevIntervalLp`, whose components are the derivatives
+$f, f', \dots, f^{(m)}$ in $L^p(a, b)$. The formula for the norm is
+`AtkinsonHan.Chapter01.example_1_2_28_b_norm`. -/
 def ContDiffMapIccSobolevNorm (hlt : a < b) (m : ℕ) (_p : ℝ≥0∞) : Type :=
   ContDiffMapIcc hlt.le m
 
@@ -927,31 +1038,34 @@ instance : AddCommGroup (ContDiffMapIccSobolevNorm hlt m p) :=
 instance : Module ℝ (ContDiffMapIccSobolevNorm hlt m p) :=
   inferInstanceAs (Module ℝ (ContDiffMapIcc hlt.le m))
 
-/-- The identity linear equivalence with `Cᵐ[a, b]` carrying the supremum norm. It is not an
-isometry. -/
+/-- The identity map, as a linear equivalence from $C^m[a, b]$ with the Sobolev norm to $C^m[a, b]$
+with the norm $\sum_{j \le m} \|f^{(j)}\|_\infty$. It is not an isometry. -/
 def equiv : ContDiffMapIccSobolevNorm hlt m p ≃ₗ[ℝ] ContDiffMapIcc hlt.le m :=
   LinearEquiv.refl ℝ _
 
 variable [Fact (1 ≤ p)]
 
-/-- The inclusion into `W^{m,p}(a, b)` as a linear map, along which the norm is induced. -/
+/-- The inclusion of $C^m[a, b]$ into $W^{m,p}(a, b)$, as a linear map. The norm of $C^m[a, b]$ is
+induced along it. -/
 def toSobolevₗ : ContDiffMapIccSobolevNorm hlt m p →ₗ[ℝ] SobolevIntervalLp m p (Opens.Ioo a b) :=
   (ContDiffMapIcc.toSobolevIntervalLp p hlt.le hlt m : ContDiffMapIcc hlt.le m →ₗ[ℝ] _).comp
     (equiv hlt m p).toLinearMap
 
 variable {hlt m p} in
+/-- The inclusion `AtkinsonHan.Chapter01.ContDiffMapIccSobolevNorm.toSobolevₗ` sends $f$ to its
+image under `ContDiffMapIcc.toSobolevIntervalLp`. -/
 @[simp]
 theorem toSobolevₗ_apply (f : ContDiffMapIccSobolevNorm hlt m p) :
     toSobolevₗ hlt m p f = ContDiffMapIcc.toSobolevIntervalLp p hlt.le hlt m (equiv hlt m p f) :=
   rfl
 
-/-- The inclusion is injective (`ContDiffMapIcc.toSobolevIntervalLp_injective`), which is what
-lets the norm be induced along it. -/
+/-- The inclusion of $C^m[a, b]$ into $W^{m,p}(a, b)$ is injective, by
+`ContDiffMapIcc.toSobolevIntervalLp_injective`. -/
 theorem toSobolevₗ_injective : Function.Injective (toSobolevₗ hlt m p) :=
   (ContDiffMapIcc.toSobolevIntervalLp_injective (p := p) hlt.le hlt m).comp
     (equiv hlt m p).injective
 
-/-- The norm `‖f‖ = ‖f‖_{W^{m,p}(a, b)}`, induced from `W^{m,p}(a, b)` along the injective
+/-- The norm $\|f\| = \|f\|_{W^{m,p}(a, b)}$, induced from $W^{m,p}(a, b)$ along the injective
 inclusion. -/
 instance : NormedAddCommGroup (ContDiffMapIccSobolevNorm hlt m p) :=
   NormedAddCommGroup.induced (ContDiffMapIccSobolevNorm hlt m p)
@@ -959,36 +1073,40 @@ instance : NormedAddCommGroup (ContDiffMapIccSobolevNorm hlt m p) :=
     (toSobolevₗ_injective hlt m p)
 
 variable {hlt m p} in
-/-- The norm of `f` is the `W^{m,p}` norm of its inclusion, by construction. -/
+/-- The norm of $f$ is the $W^{m,p}(a, b)$ norm of its inclusion. -/
 theorem norm_eq (f : ContDiffMapIccSobolevNorm hlt m p) : ‖f‖ = ‖toSobolevₗ hlt m p f‖ := rfl
 
 instance : NormedSpace ℝ (ContDiffMapIccSobolevNorm hlt m p) where
   norm_smul_le c f := le_of_eq (by rw [norm_eq, norm_eq, map_smul, norm_smul])
 
-/-- The inclusion `Cᵐ[a, b] → W^{m,p}(a, b)` as a linear isometry, again by construction. -/
+/-- The inclusion $C^m[a, b] \to W^{m,p}(a, b)$, as a linear isometry. -/
 def toSobolevₗᵢ : ContDiffMapIccSobolevNorm hlt m p →ₗᵢ[ℝ] SobolevIntervalLp m p (Opens.Ioo a b) :=
   ⟨toSobolevₗ hlt m p, fun _ ↦ rfl⟩
 
 variable {hlt m p} in
+/-- The isometry `AtkinsonHan.Chapter01.ContDiffMapIccSobolevNorm.toSobolevₗᵢ` sends $f$ to its
+image under `ContDiffMapIcc.toSobolevIntervalLp`. -/
 @[simp]
 theorem toSobolevₗᵢ_apply (f : ContDiffMapIccSobolevNorm hlt m p) :
     toSobolevₗᵢ hlt m p f = ContDiffMapIcc.toSobolevIntervalLp p hlt.le hlt m (equiv hlt m p f) :=
   rfl
 
-/-- The inclusion has dense range for `p < ∞` (`ContDiffMapIcc.denseRange_toSobolevIntervalLp`). -/
+/-- For $p < \infty$ the inclusion of $C^m[a, b]$ into $W^{m,p}(a, b)$ has dense range, by
+`ContDiffMapIcc.denseRange_toSobolevIntervalLp`. -/
 theorem denseRange_toSobolevₗᵢ (hp : p ≠ ⊤) : DenseRange (toSobolevₗᵢ hlt m p) :=
   (ContDiffMapIcc.denseRange_toSobolevIntervalLp hlt.le hlt hp m).comp
     (equiv hlt m p).surjective.denseRange (ContDiffMapIcc.toSobolevIntervalLp p _ hlt m).continuous
 
-/-- The inclusion is not surjective (`ContDiffMapIcc.not_surjective_toSobolevIntervalLp`), for
-every `p`. -/
+/-- For every $p$ the inclusion of $C^m[a, b]$ into $W^{m,p}(a, b)$ is not surjective, by
+`ContDiffMapIcc.not_surjective_toSobolevIntervalLp`. -/
 theorem not_surjective_toSobolevₗᵢ : ¬ Function.Surjective (toSobolevₗᵢ hlt m p) := fun h ↦
   ContDiffMapIcc.not_surjective_toSobolevIntervalLp (p := p) hlt m fun u ↦ by
     obtain ⟨f, hf⟩ := h u
     exact ⟨equiv hlt m p f, hf⟩
 
-/-- **`Cᵐ[a, b]` is not complete for the Sobolev norm** when `p < ∞`: it is isometric to a dense
-proper subspace of the Banach space `W^{m,p}(a, b)`, and a complete subspace is closed. -/
+/-- For $p < \infty$, the space $C^m[a, b]$ with the Sobolev norm is not complete: it is isometric
+to a dense proper subspace of the Banach space $W^{m,p}(a, b)$, and a complete subspace is
+closed. -/
 theorem not_completeSpace (hp : p ≠ ⊤) : ¬ CompleteSpace (ContDiffMapIccSobolevNorm hlt m p) := by
   intro h
   refine not_surjective_toSobolevₗᵢ hlt m p (Set.range_eq_univ.1 ?_)
@@ -997,9 +1115,12 @@ theorem not_completeSpace (hp : p ≠ ⊤) : ¬ CompleteSpace (ContDiffMapIccSob
 
 end ContDiffMapIccSobolevNorm
 
-/-- **Example 1.2.28 (b), the norm**: on `Cᵐ[a, b]` with the Sobolev norm, for `1 ≤ p < ∞`,
-`‖f‖ = [∑_{j ≤ m} ‖f^{(j)}‖_p^p]^{1/p}`, the `j`-th derivative `f^{(j)}` being read in `L^p(a, b)`
-as `ContDiffMapIcc.derivLpOf p f j`. -/
+/-- **Example 1.2.28(b)** of [han2009theoretical], the norm. Let $a < b$, $m \in \mathbb{N}$ and
+$1 \le p < \infty$. Every $f \in C^m[a, b]$ has the Sobolev norm $$\|f\| = \Big[\sum_{j=0}^m
+\|f^{(j)}\|_{L^p(a, b)}^p\Big]^{1/p}.$$
+
+The derivative $f^{(j)}$, read in $L^p(a, b)$, is `ContDiffMapIcc.derivLpOf p f j`, applied to
+the image of $f$ under `AtkinsonHan.Chapter01.ContDiffMapIccSobolevNorm.equiv`. -/
 theorem example_1_2_28_b_norm (hlt : a < b) (m : ℕ) (hp : p ≠ ⊤)
     (f : ContDiffMapIccSobolevNorm hlt m p) :
     ‖f‖ = (∑ j : Fin (m + 1),
@@ -1008,18 +1129,21 @@ theorem example_1_2_28_b_norm (hlt : a < b) (m : ℕ) (hp : p ≠ ⊤)
   rw [ContDiffMapIccSobolevNorm.norm_eq, SobolevIntervalLp.norm_eq_sum hp]
   rfl
 
-/-- **Example 1.2.28 (b)**: for `1 ≤ p < ∞` and `m ≥ 0`, the space `Cᵐ[a, b]` with the norm
-`‖f‖ = [∑_{j ≤ m} ‖f^{(j)}‖_p^p]^{1/p}` (`ContDiffMapIccSobolevNorm hlt m p`,
-`example_1_2_28_b_norm`) is *not* complete, and its completion is the Sobolev space
-`W^{m,p}(a, b)`: the inclusion `ContDiffMapIccSobolevNorm.toSobolevₗᵢ` is a linear isometry with
-dense range into the Banach space `W^{m,p}(a, b)`, so, by the uniqueness of the completion
-(`theorem_1_2_25_uniqueness`), there is a linear isometric isomorphism of the abstract completion
-onto `W^{m,p}(a, b)` extending the inclusion.
+/-- **Example 1.2.28(b)** of [han2009theoretical]. Let $a < b$, $m \in \mathbb{N}$ and
+$1 \le p < \infty$. The space $C^m[a, b]$ with the norm $\|f\| = [\sum_{j=0}^m
+\|f^{(j)}\|_{L^p(a, b)}^p]^{1/p}$ is not complete, and its completion is the Sobolev space
+$W^{m,p}(a, b)$. Precisely: $C^m[a, b]$ is not complete for this norm; $W^{m,p}(a, b)$ is
+complete; the inclusion of $C^m[a, b]$ into $W^{m,p}(a, b)$ is a linear isometry with dense
+range; and there is a linear isometric isomorphism from the completion of $C^m[a, b]$ onto
+$W^{m,p}(a, b)$ that extends the inclusion.
 
-The book's closing remark, that `f, f', …, f^{(m-1)}` are continuous and `f^{(m)}` exists almost
-everywhere and lies in `L^p(a, b)` for `f ∈ W^{m,p}(a, b)`, is the backbone's embedding
-`SobolevIntervalLp.toContDiffMapIcc : W^{m,p}(a, b) → C^{m-1}[a, b]`
-(`Numlib/Analysis/Sobolev/Interval/Higher.lean`), and is not restated here. -/
+The space is `AtkinsonHan.Chapter01.ContDiffMapIccSobolevNorm hlt m p`, and the inclusion is
+`AtkinsonHan.Chapter01.ContDiffMapIccSobolevNorm.toSobolevₗᵢ`. The isomorphism comes from the
+uniqueness of the completion, `AtkinsonHan.Chapter01.theorem_1_2_25_uniqueness`. The book's
+closing remark, that for $f \in W^{m,p}(a, b)$ the derivatives $f, f', \dots, f^{(m-1)}$ are
+continuous and $f^{(m)}$ exists almost everywhere and lies in $L^p(a, b)$, is the backbone's
+embedding `SobolevIntervalLp.toContDiffMapIcc` of $W^{m,p}(a, b)$ into $C^{m-1}[a, b]$, and is
+not restated here. -/
 theorem example_1_2_28_b (hlt : a < b) (m : ℕ) (hp : p ≠ ⊤) :
     ¬ CompleteSpace (ContDiffMapIccSobolevNorm hlt m p) ∧
       CompleteSpace (SobolevIntervalLp m p (Opens.Ioo a b)) ∧
@@ -1040,9 +1164,16 @@ section Measure
 
 variable {α : Type*} [MeasurableSpace α] {μ : Measure α}
 
-/-- **Theorem 1.2.26**, the Lebesgue dominated convergence theorem, in the book's statement: if
-`f n → g` almost everywhere and `‖f n‖ ≤ bound` almost everywhere for an integrable `bound`, then
-the limit `g` is integrable and `∫ f n → ∫ g`. -/
+/-- **Theorem 1.2.26** of [han2009theoretical] (Lebesgue dominated convergence theorem). Let
+$(\alpha, \mu)$ be a measure space, and let $f_n, g, F : \alpha \to \mathbb{R}$ with each $f_n$
+almost everywhere strongly measurable and $F$ integrable. Suppose that, for each $n$,
+$|f_n(x)| \le F(x)$ for almost every $x$, and that $f_n(x) \to g(x)$ for almost every $x$. Then
+$g$ is integrable and $$\int f_n \, d\mu \to \int g \, d\mu.$$
+
+**Generalization.** The book states the theorem for Lebesgue measure on an open set of
+$\mathbb{R}^d$. The statement holds on an arbitrary measure space, which is how Mathlib has it.
+
+The dominating function $F$ is `bound`. -/
 theorem theorem_1_2_26 {f : ℕ → α → ℝ} {g : α → ℝ} {bound : α → ℝ}
     (hf : ∀ n, AEStronglyMeasurable (f n) μ) (hbound : Integrable bound μ)
     (hle : ∀ n, ∀ᵐ x ∂μ, ‖f n x‖ ≤ bound x)
@@ -1055,8 +1186,14 @@ theorem theorem_1_2_26 {f : ℕ → α → ℝ} {g : α → ℝ} {bound : α →
   exact ⟨hbound.mono' hgmeas hgle,
     tendsto_integral_of_dominated_convergence bound hf hbound hle hlim⟩
 
-/-- **Theorem 1.2.27**, Fubini's theorem: a function integrable on a product is integrable in each
-variable for almost every value of the other, and its double integrals in the two orders agree. -/
+/-- **Theorem 1.2.27** of [han2009theoretical] (Fubini's theorem). Let $(\alpha, \mu)$ and
+$(\beta, \nu)$ be s-finite measure spaces, and let $f : \alpha \times \beta \to \mathbb{R}$ be
+integrable for the product measure $\mu \times \nu$. Then $f(x, \cdot)$ is $\nu$-integrable for
+$\mu$-almost every $x$, $f(\cdot, y)$ is $\mu$-integrable for $\nu$-almost every $y$, and $$\int
+\Big(\int f(x, y) \, d\nu(y)\Big) d\mu(x) = \int \Big(\int f(x, y) \, d\mu(x)\Big) d\nu(y).$$
+
+**Generalization.** The book states the theorem for Lebesgue measure on open sets of Euclidean
+spaces. The statement holds for two s-finite measure spaces, which is how Mathlib has it. -/
 theorem theorem_1_2_27 {β : Type*} [MeasurableSpace β] {ν : Measure β} [SFinite μ] [SFinite ν]
     {f : α → β → ℝ} (hf : Integrable (Function.uncurry f) (μ.prod ν)) :
     (∀ᵐ x ∂μ, Integrable (f x) ν) ∧ (∀ᵐ y ∂ν, Integrable (fun x => f x y) μ) ∧

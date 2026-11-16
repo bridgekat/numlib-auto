@@ -6,81 +6,98 @@ import Numlib.Analysis.Sobolev.Korn
 import NumlibSurface.AtkinsonHan.Chapter08.Section03
 
 /-!
-# Atkinson–Han §8.5: a boundary value problem of linearized elasticity
+# Atkinson and Han, Section 8.5: A boundary value problem of linearized elasticity
 
-Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework*, 3rd edition, Springer, 2009, §8.5.
+This module formalizes part of Section 8.5 of [han2009theoretical]. The section sets up the problem
+of linearized elasticity (8.5.1)–(8.5.5),
+$$-\operatorname{div} \sigma = f \text{ in } \Omega, \qquad \sigma = C \varepsilon(u), \qquad
+  \varepsilon(u) = \tfrac12 \left( \nabla u + (\nabla u)^T \right),$$
+with the displacement $u = 0$ on $\Gamma_D$ and the traction $\sigma \nu = g$ on $\Gamma_N$. Theorem
+8.5.1, whose proof the source leaves to Exercise 8.5.3, states that the weak formulation (8.5.15) on
+$V = \{ v \in [H^1(\Omega)]^d : v = 0 \text{ on } \Gamma_D \}$ has a unique solution, and that the
+solution is the minimizer of the energy (8.5.17). The $V$-ellipticity of the bilinear form comes
+from Korn's inequality.
 
-The section sets up the linearized elasticity problem `−div σ = f` in `Ω`, `σ = C ε(u)`,
-`ε(u) = ½ (∇u + (∇u)ᵀ)` (8.5.1)–(8.5.5), with the displacement `u = 0` on `Γ_D` and the traction
-`σ ν = g` on `Γ_N`, and proves (Theorem 8.5.1, left to Exercise 8.5.3) that its weak formulation
-(8.5.15) on `V = {v ∈ [H¹(Ω)]^d : v = 0 on Γ_D}` has a unique solution, which is the minimizer
-of the energy (8.5.17), the `V`-ellipticity of the form coming from Korn's inequality.
+Here the theorem is formalized in the pure displacement case $\Gamma_D = \Gamma$, without traction,
+on a bounded open set $\Omega \subseteq B(0, R) \subseteq \mathbb{R}^{d+1}$. Then
+$V = [H^1_0(\Omega)]^{d+1}$, and the inequality needed is Korn's first inequality $\int_\Omega
+|\nabla v|^2 \le 2 \int_\Omega |\varepsilon(v)|^2$, which needs no regularity of $\Omega$. Korn's
+first inequality and the strain come from the backbone module `Numlib.Analysis.Sobolev.Korn`, and
+the proof of the theorem is the Lax–Milgram lemma of Section 8.3 with the energy characterization of
+Theorem 8.3.3.
 
-## What is formalized
+## Main definitions
 
-**The pure displacement case `Γ_D = Γ`**, `g` absent, on a bounded open `Ω ⊆ B(0, R) ⊆ ℝ^{d+1}`
-(the book writes `ℝ^d`; the dimension is `d + 1` because the backbone's Poincaré inequality is).
-Then `V = [H¹₀(Ω)]^{d+1}` is the backbone's `SobolevEuclideanZeroVec (d + 1) Ω`
-(`Numlib/Analysis/Sobolev/Korn.lean`), the strain `ε(v)_{ij}` is
-`SobolevEuclideanZeroVec.strainL i j v ∈ L²(Ω)`, and Korn's inequality is the *first* Korn
-inequality `∫_Ω |∇v|² ≤ 2 ∫_Ω |ε(v)|²` on `[H¹₀(Ω)]^{d+1}` (`SobolevEuclideanZeroVec.korn_first`,
-the identity `∫ |ε(v)|² = ½ ∫ |∇v|² + ½ ∫ (div v)²` by two integrations by parts and density),
-which needs no regularity of `Ω` at all. The elasticity tensor `C_ijkl ∈ L^∞(Ω)` (8.5.6) enters
-as `L^∞` classes, its symmetry (8.5.7) and pointwise stability (8.5.8) as `IsElasticityTensor`.
+* Section 8.5, `AtkinsonHan.Chapter08.elasticityForm`: the bilinear form $a(u, v) = \int_\Omega [C
+  \varepsilon(u)] : \varepsilon(v) \, dx$ on $[H^1_0(\Omega)]^N$.
+* Equations (8.5.6)–(8.5.8), `AtkinsonHan.Chapter08.IsElasticityTensor`: the components
+  $C_{ijkl} \in L^\infty(\Omega)$ have the symmetries (8.5.7) and satisfy the stability condition
+  (8.5.8).
+* Equation (8.5.14), `AtkinsonHan.Chapter08.elasticityLoad`: the load
+  $\ell(v) = \int_\Omega f \cdot v \, dx$ for $f \in [L^2(\Omega)]^{d+1}$.
 
-* `elasticityForm Ω C` is the bilinear form `a(u, v) = ∫_Ω [C ε(u)] : ε(v)` on `V`, bounded
-  (`elasticityForm_isBoundedWith`), symmetric (`elasticityForm_isHermitian`, from
-  `C_ijkl = C_klij`) and `V`-elliptic (`elasticityForm_isCoerciveWith`, from (8.5.8), Korn's
-  inequality and Poincaré's inequality);
-* `elasticityLoad Ω f` is `ℓ(v) = ∫_Ω f · v` for `f ∈ [L²(Ω)]^{d+1}` (8.5.14);
-* `theorem_8_5_1_dirichlet` is **Theorem 8.5.1 in the pure displacement case**: the weak
-  problem (8.5.15) with `Γ_N = ∅` has exactly one solution, and a displacement solves it if and
-  only if it minimizes the energy (8.5.17) over `V` — Lax–Milgram (`theorem_8_3_4`) and
-  Theorem 8.3.3.
+## Main results
 
-## Not formalized here
+* Section 8.5, `AtkinsonHan.Chapter08.elasticityForm_isBoundedWith`,
+  `AtkinsonHan.Chapter08.elasticityForm_isHermitian` and
+  `AtkinsonHan.Chapter08.elasticityForm_isCoerciveWith`: the elasticity form is bounded, symmetric
+  and $V$-elliptic on $[H^1_0(\Omega)]^{d+1}$.
+* Theorem 8.5.1, `AtkinsonHan.Chapter08.theorem_8_5_1_dirichlet`: in the pure displacement case the
+  weak problem (8.5.15) has exactly one solution, and a displacement solves it if and only if it
+  minimizes the energy (8.5.17).
 
-* **Theorem 8.5.1 in the mixed displacement–traction case** `meas(Γ_D) > 0`, `Γ_N ≠ ∅`. On a
-  bounded connected `C¹` domain `Ω ⊆ ℝ^{d+1}` (the book's "Lipschitz"), with the surface measure
-  `σ`, the componentwise trace `γ`, a measurable `Γ_D ⊆ Γ` of positive `σ`-measure,
-  `Γ_N := Γ \ Γ_D`, an elasticity tensor `C` satisfying (8.5.6)–(8.5.8), `f ∈ [L²(Ω)]^{d+1}` and
-  a traction `g ∈ [L²(σ|Γ_N)]^{d+1}` (8.5.14), the weak problem (8.5.15) — find `u ∈ V` with
-  `∫_Ω [C ε(u)] : ε(v) = ∫_Ω f · v + ∫_{Γ_N} g · γv dσ` for every `v ∈ V`, where
-  `V = {v ∈ [H¹(Ω)]^{d+1} : γv = 0 σ-a.e. on Γ_D}` of (8.5.13) — has a unique solution, which is
-  the minimizer of the energy (8.5.17) over `V`.
+## Conventions
 
-  **This is the nearest of the chapter's gaps, and it is blocked on exactly one thing.** Since
-  the boundary round of 2026-09-21 every object in the statement exists: the surface measure is
-  `IsContDiffDomain.boundaryMeasure`, the normal `IsContDiffDomain.outwardNormal` and the trace
-  `IsContDiffDomain.traceFamily` of `Numlib/Analysis/Sobolev/Boundary/ContDiffDomain.lean`, so
-  `V` is a closed subspace of `[H¹(Ω)]^{d+1}`; the form is `elasticityForm Ω C` restricted to
-  `V`, bounded and Hermitian by the lemmas below; and the load is `elasticityLoad Ω f` plus the
-  traction functional `v ↦ ∫_{Γ_N} g · γv dσ`, bounded by `‖g‖_{L²(σ)} ‖γ‖ ‖v‖`. The proof is
-  then Lax–Milgram with the energy characterization — `existsUnique_and_isMinOn_iff`, that is
-  `theorem_8_3_4` and Theorem 8.3.3 — *exactly* as in the pure displacement case
-  `theorem_8_5_1_dirichlet` below. What is missing is the one hypothesis those need: the
-  `V`-ellipticity of `elasticityForm` on `V`. On `V` that is not Korn's *first* inequality (which
-  holds on `[H¹₀]^{d+1}` only) but the mixed-space inequality `‖v‖²_{H¹} ≤ C ‖ε(v)‖²_{L²}` on
-  `V`, and that rests on **Korn's second inequality**
-  `‖v‖²_{H¹} ≤ C (‖v‖²_{L²} + ‖ε(v)‖²_{L²})` on all of `[H¹(Ω)]^{d+1}`. After it, `~200 lines`
-  here.
+* The source works in $\mathbb{R}^d$. The dimension here is $d + 1$, because the backbone's Poincaré
+  inequality is stated in that form. The general constructions of the elasticity form are in
+  dimension $N$.
+* $[H^1_0(\Omega)]^{d+1}$ is the backbone's `SobolevEuclideanZeroVec (d + 1) Ω`, with
+  $\|v\|^2 = \sum_i \|v_i\|_{H^1(\Omega)}^2$. The strain component $\varepsilon(v)_{ij} = \frac12
+  (\partial_j v_i + \partial_i v_j) \in L^2(\Omega)$ is `SobolevEuclideanZeroVec.strainL i j v`.
 
-* **Korn's second inequality itself**, with the space `[H¹(Ω)]^{d+1}` and the `V`-ellipticity
-  statement around it: planned as `Numlib/Analysis/Sobolev/Boundary/KornSecond.lean` and removed
-  unwritten. Its proof (Duvaut–Lions, Nečas) writes `∂ⱼ∂ₖvᵢ = ∂ⱼ εᵢₖ + ∂ₖ εᵢⱼ − ∂ᵢ εⱼₖ` in
-  `H^{−1}(Ω)` and invokes **Lions's lemma**: on a bounded Lipschitz domain a distribution `f`
-  with `f ∈ H^{−1}(Ω)` and `∇f ∈ H^{−1}(Ω)^N` lies in `L²(Ω)`, with
-  `‖f‖_{L²} ≤ C (‖f‖_{H^{−1}} + ‖∇f‖_{H^{−1}})`. That lemma needs Bogovskiĭ's right inverse of
-  the divergence, or the `H^{−1}` Nečas inequality, and neither is in Mathlib or in `Numlib/`; it
-  is research-scale, 2000+ lines. The `V`-ellipticity is then a compactness argument (Rellich,
-  then the kernel of `ε` on a connected domain) whose one delicate step is that a nonzero
-  infinitesimal rigid motion `a + Wx` with `W` skew cannot vanish on a boundary piece of positive
-  surface measure: its zero set is an affine subspace of *even codimension* `≥ 2`, hence `σ`-null
-  on a `C¹` hypersurface — and not merely a hyperplane, which a `C¹` boundary may well contain as
-  a flat face. The full record, with the route and the line estimates, is the
-  `## Not formalized here` section of `Numlib/Analysis/Sobolev/Boundary/ContDiffDomain.lean`;
-  **the trace is not what is missing**.
+## Implementation notes
+
+* The components $C_{ijkl}$ are elements of $L^\infty(\Omega)$. They act on $L^2(\Omega)$ through
+  the multiplication operator `Elliptic.mulL`.
+* The Lax–Milgram lemma with the energy characterization is proved once on an abstract Hilbert
+  space, `AtkinsonHan.Chapter08.existsUnique_and_isMinOn_iff`, so that Theorem 8.5.1 is one
+  application of it.
+* The mixed case of Theorem 8.5.1 needs only one more fact. The surface measure, the outward normal
+  and the trace on a $C^1$ domain exist in `Numlib.Analysis.Sobolev.Boundary.ContDiffDomain`, so $V$
+  is a closed subspace of $[H^1(\Omega)]^{d+1}$, the form is the elasticity form restricted to $V$,
+  and the load is $\ell$ plus the traction functional $v \mapsto \int_{\Gamma_N} g \cdot \gamma v \,
+  d\sigma$, bounded by $\|g\|_{L^2(\sigma)} \|\gamma\| \|v\|$. The missing fact is the
+  $V$-ellipticity of the form on $V$, that is the inequality
+  $\|v\|_{H^1}^2 \le c \|\varepsilon(v)\|_{L^2}^2$ on $V$. It rests on Korn's second inequality
+  $\|v\|_{H^1}^2 \le c (\|v\|_{L^2}^2 + \|\varepsilon(v)\|_{L^2}^2)$ on $[H^1(\Omega)]^{d+1}$,
+  followed by a compactness argument (Rellich's theorem, then the kernel of $\varepsilon$ on a
+  connected domain). In that argument, a nonzero infinitesimal rigid motion $a + Wx$ with $W$ skew
+  cannot vanish on a part of the boundary of positive surface measure: its zero set is an affine
+  subspace of even codimension at least $2$, so it is a null set on a $C^1$ hypersurface, even one
+  with a flat face.
+
+## Deviations from the source
+
+* **Theorem 8.5.1** (generalization). The source assumes a Lipschitz domain. In the pure
+  displacement case the theorem here holds on every bounded open set. See
+  `AtkinsonHan.Chapter08.theorem_8_5_1_dirichlet`.
+
+## Not formalized
+
+* **Theorem 8.5.1 in the mixed displacement–traction case**, with
+  $\operatorname{meas}(\Gamma_D) > 0$ and a traction $g \in [L^2(\Gamma_N)]^{d+1}$ on
+  $\Gamma_N = \Gamma \setminus \Gamma_D$. The weak problem is to find $u \in V = \{ v \in
+  [H^1(\Omega)]^{d+1} : \gamma v = 0 \text{ on } \Gamma_D \}$ (8.5.13) with $\int_\Omega [C
+  \varepsilon(u)] : \varepsilon(v) \, dx = \int_\Omega f \cdot v \, dx + \int_{\Gamma_N} g \cdot
+  \gamma v \, d\sigma$ for all $v \in V$. The $V$-ellipticity of the form on $V$ needs Korn's second
+  inequality, which is not formalized.
+* **Korn's second inequality** on $[H^1(\Omega)]^{d+1}$. Its proof (Duvaut–Lions, Nečas) writes
+  $\partial_j \partial_k v_i = \partial_j \varepsilon_{ik} + \partial_k \varepsilon_{ij} -
+  \partial_i \varepsilon_{jk}$ in $H^{-1}(\Omega)$ and uses Lions's lemma: on a bounded Lipschitz
+  domain, a distribution $f$ with $f \in H^{-1}(\Omega)$ and $\nabla f \in H^{-1}(\Omega)^N$ is in
+  $L^2(\Omega)$, with $\|f\|_{L^2} \le c (\|f\|_{H^{-1}} + \|\nabla f\|_{H^{-1}})$. Lions's lemma
+  needs Bogovskiĭ's right inverse of the divergence or the Nečas inequality in $H^{-1}$, and neither
+  is in Mathlib or in the backbone.
 -/
 
 open Filter MeasureTheory Metric Set TopologicalSpace Topology
@@ -88,9 +105,12 @@ open scoped ENNReal InnerProductSpace
 
 namespace AtkinsonHan.Chapter08
 
-/-! ### Sums and integrals: bookkeeping -/
+/-! ### Finite sums and integrals -/
 
-/-- Four nested finite sums may be permuted pairwise: `∑ᵢⱼₖₗ f = ∑ₖₗᵢⱼ f`. -/
+/-- Four nested finite sums can be reordered in pairs: for $f : \iota^4 \to M$ with values in a
+commutative additive monoid,
+$$\sum_{i, j, k, l} f(i, j, k, l) = \sum_{k, l, i, j} f(i, j, k, l),$$
+where the outer two sums on the right run over $k$ and $l$. -/
 theorem Finset.sum_sum_sum_sum_comm {ι M : Type*} [Fintype ι] [AddCommMonoid M]
     (f : ι → ι → ι → ι → M) :
     ∑ i, ∑ j, ∑ k, ∑ l, f i j k l = ∑ k, ∑ l, ∑ i, ∑ j, f i j k l :=
@@ -101,7 +121,9 @@ theorem Finset.sum_sum_sum_sum_comm {ι M : Type*} [Fintype ι] [AddCommMonoid M
         Finset.sum_congr rfl fun _ _ ↦ Finset.sum_congr rfl fun _ _ ↦ Finset.sum_comm
     _ = ∑ k, ∑ l, ∑ i, ∑ j, f i j k l := Finset.sum_congr rfl fun _ _ ↦ Finset.sum_comm
 
-/-- Four nested sums of integrals of integrable functions are the integral of the sums. -/
+/-- Let $F_{ijkl}$, for $i, j, k, l$ in a finite type, be integrable real functions on a measure
+space. Then the four nested sums of the integrals of $F_{ijkl}$ are the integral of the four
+nested sums of $F_{ijkl}$. -/
 theorem sum_sum_sum_sum_integral_eq {X ι : Type*} [MeasurableSpace X] {μ : Measure X}
     [Fintype ι] {F : ι → ι → ι → ι → X → ℝ} (hF : ∀ i j k l, Integrable (F i j k l) μ) :
     ∑ i, ∑ j, ∑ k, ∑ l, ∫ x, F i j k l x ∂μ = ∫ x, ∑ i, ∑ j, ∑ k, ∑ l, F i j k l x ∂μ := by
@@ -118,7 +140,10 @@ theorem sum_sum_sum_sum_integral_eq {X ι : Type*} [MeasurableSpace X] {μ : Mea
   refine Finset.sum_congr rfl fun k _ ↦ ?_
   rw [integral_finsetSum (f := fun l x ↦ F i j k l x) _ fun l _ ↦ hF i j k l]
 
-/-- The absolute value of four nested sums is at most the four nested sums of absolute values. -/
+/-- For real numbers $f(i, j, k, l)$ indexed by a finite type, the absolute value of the four nested
+sums is at most the four nested sums of the absolute values:
+$$\Big| \sum_{i, j, k, l} f(i, j, k, l) \Big| \le \sum_{i, j, k, l} |f(i, j, k, l)|.$$
+-/
 theorem abs_sum_sum_sum_sum_le {ι : Type*} [Fintype ι] (f : ι → ι → ι → ι → ℝ) :
     |∑ i, ∑ j, ∑ k, ∑ l, f i j k l| ≤ ∑ i, ∑ j, ∑ k, ∑ l, |f i j k l| :=
   (Finset.abs_sum_le_sum_abs _ _).trans (Finset.sum_le_sum fun _ _ ↦
@@ -126,9 +151,12 @@ theorem abs_sum_sum_sum_sum_le {ι : Type*} [Fintype ι] (f : ι → ι → ι �
       (Finset.abs_sum_le_sum_abs _ _).trans (Finset.sum_le_sum fun _ _ ↦
         Finset.abs_sum_le_sum_abs _ _)))
 
-/-- On a Hilbert space, the minimizers of the energy `E(v) = ½ a(v,v) − ℓ(v)` of a bounded,
-symmetric, `V`-elliptic form over the whole space are the solutions of `a(u, v) = ℓ(v)` for all
-`v`: Theorem 8.3.3 on the subspace `K = V`. -/
+/-- Let $V$ be a real Hilbert space, let $a$ be a bilinear form on $V$ that is bounded with constant
+$M$, symmetric, and $V$-elliptic with a constant $\alpha > 0$, and let $\ell \in V'$. Then
+$u \in V$ minimizes the energy $E(v) = \frac12 a(v, v) - \ell(v)$ over $V$ if and only if
+$a(u, v) = \ell(v)$ for all $v \in V$.
+
+This is `AtkinsonHan.Chapter08.theorem_8_3_3_subspace` with $K = V$. -/
 theorem isMinOn_energy_univ_iff {V : Type*} [NormedAddCommGroup V] [InnerProductSpace ℝ V]
     [CompleteSpace V] {a : BilinForm V} {M α : ℝ} (hM : a.IsBoundedWith M) (hα : 0 < α)
     (ha : a.IsEllipticWith α) (hs : LinearMap.BilinForm.IsSymm a) (ℓ : StrongDual ℝ V) (u : V) :
@@ -137,11 +165,14 @@ theorem isMinOn_energy_univ_iff {V : Type*} [NormedAddCommGroup V] [InnerProduct
   rw [Submodule.top_coe] at h
   simpa using h
 
-/-- **The Lax–Milgram lemma with the energy characterization**, for a bounded, Hermitian,
-coercive form `a` on a Hilbert space and `ℓ ∈ V'`: the problem `a(u, v) = ℓ(v)` for all `v` has
-exactly one solution, and `u` solves it if and only if it minimizes `½ a(v, v) − ℓ(v)` over `V`
-(`theorem_8_3_4` and Theorem 8.3.3, on the abstract space, so that a concrete instance is one
-application). -/
+/-- The Lax–Milgram lemma with the energy characterization. Let $V$ be a real Hilbert space, let $a$
+be a bounded sesquilinear form on $V$ (here a real bilinear form) that is bounded with constant
+$M$, Hermitian, and coercive with a constant $c > 0$, and let $\ell \in V'$. Then the problem
+$a(u, v) = \ell(v)$ for all $v \in V$ has exactly one solution, and $u \in V$ solves it if and
+only if $u$ minimizes $\frac12 a(v, v) - \ell(v)$ over $V$.
+
+The proof is `AtkinsonHan.Chapter08.theorem_8_3_4` together with Theorem 8.3.3, on an abstract
+space, so that a concrete problem is one application. -/
 theorem existsUnique_and_isMinOn_iff {V : Type*} [NormedAddCommGroup V]
     [InnerProductSpace ℝ V] [CompleteSpace V] {a : SesqForm ℝ V} {M c : ℝ}
     (hM : a.IsBoundedWith M) (hc : 0 < c) (hcoer : a.IsCoerciveWith c) (hherm : a.IsHermitian)
@@ -161,15 +192,18 @@ theorem existsUnique_and_isMinOn_iff {V : Type*} [NormedAddCommGroup V]
       rwa [conj_trivial] at h
   exact ⟨theorem_8_3_4 hM' hc hα ℓ, fun u ↦ (isMinOn_energy_univ_iff hM' hc hα hs ℓ u).symm⟩
 
-/-! ### The elasticity form `a(u, v) = ∫_Ω [C ε(u)] : ε(v)` -/
+/-! ### The elasticity form $a(u, v) = \int_\Omega [C \varepsilon(u)] : \varepsilon(v) \, dx$ -/
 
 section Elasticity
 
 variable {N : ℕ} (Ω : Opens (EuclideanSpace ℝ (Fin N)))
 
-/-- The pairing `(u, v) ↦ ⟪T ε(u)_{kl}, ε(v)_{ij}⟫_{L²(Ω)}` of two strain components through a
-bounded operator `T` on `L²(Ω)`, as a bounded bilinear form on `[H¹₀(Ω)]^N`; the elasticity form
-is a finite sum of these (compare `Elliptic.pairing`). -/
+/-- Let $\Omega \subseteq \mathbb{R}^N$ be open, let $T$ be a bounded linear operator on
+$L^2(\Omega)$, and let $i, j, k, l$ be indices. The **strain pairing** is the bounded bilinear
+form on $[H^1_0(\Omega)]^N$
+$$(u, v) \mapsto \left( T \varepsilon(u)_{kl}, \varepsilon(v)_{ij} \right)_{L^2(\Omega)}.$$
+
+The elasticity form is a finite sum of such pairings. Compare `Elliptic.pairing`. -/
 noncomputable def strainPairing
     (T : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) →L[ℝ]
       Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))))
@@ -177,7 +211,8 @@ noncomputable def strainPairing
   (((innerSL ℝ).comp (T.comp (SobolevEuclideanZeroVec.strainL k l))).flip.comp
     (SobolevEuclideanZeroVec.strainL i j)).flip
 
-/-- `strainPairing T k l i j u v = ⟪T ε(u)_{kl}, ε(v)_{ij}⟫_{L²(Ω)}`. -/
+/-- The strain pairing of $T$ and $i, j, k, l$ at $u, v$ is $(T \varepsilon(u)_{kl},
+\varepsilon(v)_{ij})_{L^2(\Omega)}$. -/
 theorem strainPairing_apply
     (T : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))) →L[ℝ]
       Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))))
@@ -186,28 +221,44 @@ theorem strainPairing_apply
       = ⟪T (SobolevEuclideanZeroVec.strainL k l u), SobolevEuclideanZeroVec.strainL i j v⟫_ℝ :=
   rfl
 
-/-- **The elasticity form** `a(u, v) = ∫_Ω [C ε(u)] : ε(v) = ∑ᵢⱼₖₗ ∫_Ω C_ijkl ε_kl(u) ε_ij(v)`
-of §8.5 on `[H¹₀(Ω)]^N`, for an elasticity tensor with `L^∞(Ω)` components (8.5.6). -/
+/-- **Section 8.5** of [han2009theoretical], the elasticity form. Let
+$\Omega \subseteq \mathbb{R}^N$ be open, and let $C_{ijkl} \in L^\infty(\Omega)$ for
+$i, j, k, l = 1, \dots, N$ (8.5.6). The **elasticity form** on $[H^1_0(\Omega)]^N$ is
+$$a(u, v) = \int_\Omega [C \varepsilon(u)] : \varepsilon(v) \, dx = \sum_{i, j, k, l}
+  \int_\Omega C_{ijkl} \, \varepsilon_{kl}(u) \, \varepsilon_{ij}(v) \, dx.$$
+
+It is defined as the sum of the strain pairings of the multiplication operators by $C_{ijkl}$.
+The integral form is `AtkinsonHan.Chapter08.elasticityForm_apply`. -/
 noncomputable def elasticityForm
     (C : Fin N → Fin N → Fin N → Fin N →
       Lp ℝ ⊤ (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))) :
     SesqForm ℝ (SobolevEuclideanZeroVec N Ω) :=
   ∑ i, ∑ j, ∑ k, ∑ l, strainPairing Ω (Elliptic.mulL Ω (C i j k l)) k l i j
 
-/-- **The elasticity tensor hypotheses (8.5.6)–(8.5.8)**: components `C_ijkl ∈ L^∞(Ω)` (the type),
-the symmetries `C_ijkl = C_jikl = C_klij`, and the pointwise stability
-`ε : C ε ≥ α |ε|²` for every symmetric `ε ∈ 𝕊^N`, almost everywhere on `Ω`, with `α > 0`. -/
+/-- **Equations (8.5.6)–(8.5.8)** of [han2009theoretical], the hypotheses on the elasticity tensor.
+Let $\Omega \subseteq \mathbb{R}^N$ be open, let $C_{ijkl} \in L^\infty(\Omega)$ (8.5.6), and
+let $\alpha \in \mathbb{R}$. Then $C$ is an **elasticity tensor with stability constant**
+$\alpha$ if it has the symmetries $C_{ijkl} = C_{jikl} = C_{klij}$ (8.5.7), and $\alpha > 0$
+with the stability condition (8.5.8): for almost every $x \in \Omega$ and every symmetric matrix
+$\varepsilon \in \mathbb{S}^N$,
+$$\sum_{i, j, k, l} C_{ijkl}(x) \, \varepsilon_{kl} \, \varepsilon_{ij} \ge \alpha \sum_{i, j}
+  \varepsilon_{ij}^2.$$
+
+The condition (8.5.6) is the type of the components. The symmetry $C_{ijkl} = C_{ijlk}$ follows
+from the two symmetries that are fields. -/
 structure IsElasticityTensor
     (C : Fin N → Fin N → Fin N → Fin N →
       Lp ℝ ⊤ (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))))
     (α : ℝ) : Prop where
-  /-- `C_ijkl = C_jikl` (8.5.7). -/
+  /-- The symmetry $C_{ijkl} = C_{jikl}$ of (8.5.7). -/
   symm_left : ∀ i j k l, C i j k l = C j i k l
-  /-- `C_ijkl = C_klij` (8.5.7). -/
+  /-- The symmetry $C_{ijkl} = C_{klij}$ of (8.5.7). -/
   symm_pair : ∀ i j k l, C i j k l = C k l i j
-  /-- The stability constant is positive. -/
+  /-- The stability constant $\alpha$ is positive. -/
   pos : 0 < α
-  /-- Pointwise stability (8.5.8), almost everywhere on `Ω`, for symmetric `ε`. -/
+  /-- The stability condition (8.5.8): for almost every $x \in \Omega$ and every symmetric
+  $\varepsilon$, $\sum_{i,j,k,l} C_{ijkl}(x) \varepsilon_{kl} \varepsilon_{ij} \ge \alpha
+  \sum_{i,j} \varepsilon_{ij}^2$. -/
   stable : ∀ᵐ x ∂(volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))),
     ∀ ε : Fin N → Fin N → ℝ, (∀ i j, ε i j = ε j i) →
       α * ∑ i, ∑ j, ε i j ^ 2 ≤ ∑ i, ∑ j, ∑ k, ∑ l, C i j k l x * ε k l * ε i j
@@ -215,15 +266,21 @@ structure IsElasticityTensor
 variable (C : Fin N → Fin N → Fin N → Fin N →
   Lp ℝ ⊤ (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))))
 
-/-- The elasticity form as a sum of `L²` inner products of strain components. -/
+/-- The elasticity form is a sum of $L^2(\Omega)$ inner products of strain components:
+$$a(u, v) = \sum_{i, j, k, l} \left( C_{ijkl} \, \varepsilon(u)_{kl}, \varepsilon(v)_{ij}
+  \right)_{L^2(\Omega)}.$$
+-/
 theorem elasticityForm_apply_inner (u v : SobolevEuclideanZeroVec N Ω) :
     elasticityForm Ω C u v = ∑ i, ∑ j, ∑ k, ∑ l,
       ⟪Elliptic.mulL Ω (C i j k l) (SobolevEuclideanZeroVec.strainL k l u),
         SobolevEuclideanZeroVec.strainL i j v⟫_ℝ := by
   simp only [elasticityForm, sum_apply, strainPairing_apply]
 
-/-- **The elasticity form is the integral `∫_Ω [C ε(u)] : ε(v)`**:
-`a(u, v) = ∫_Ω ∑ᵢⱼₖₗ C_ijkl ε_kl(u) ε_ij(v)`. -/
+/-- The elasticity form is the integral of the contracted product of stress and strain: for
+$u, v \in [H^1_0(\Omega)]^N$,
+$$a(u, v) = \int_\Omega \sum_{i, j, k, l} C_{ijkl}(x) \, \varepsilon_{kl}(u)(x) \,
+  \varepsilon_{ij}(v)(x) \, dx.$$
+-/
 theorem elasticityForm_apply (u v : SobolevEuclideanZeroVec N Ω) :
     elasticityForm Ω C u v = ∫ x in (Ω : Set (EuclideanSpace ℝ (Fin N))),
       ∑ i, ∑ j, ∑ k, ∑ l, C i j k l x * SobolevEuclideanZeroVec.strainL k l u x
@@ -232,9 +289,13 @@ theorem elasticityForm_apply (u v : SobolevEuclideanZeroVec N Ω) :
   simp only [Elliptic.inner_mulL_eq_integral]
   exact sum_sum_sum_sum_integral_eq fun i j k l ↦ Elliptic.integrable_mul_mul Ω _ _ _
 
-/-- **The elasticity form is bounded**, with constant `∑ᵢⱼₖₗ ‖C_ijkl‖_∞`: each term is at most
-`‖C_ijkl‖_∞ ‖ε_kl(u)‖₂ ‖ε_ij(v)‖₂`, and `‖ε_ij(v)‖₂ ≤ ‖v‖`
-(`SobolevEuclideanZeroVec.norm_strainL_apply_le`). -/
+/-- The elasticity form is bounded with constant $\sum_{i, j, k, l}
+\|C_{ijkl}\|_{L^\infty(\Omega)}$:
+$$|a(u, v)| \le \Big( \sum_{i, j, k, l} \|C_{ijkl}\|_{L^\infty(\Omega)} \Big) \|u\| \|v\|.$$
+
+Each term is at most $\|C_{ijkl}\|_\infty \|\varepsilon_{kl}(u)\|_{L^2}
+\|\varepsilon_{ij}(v)\|_{L^2}$, and $\|\varepsilon_{ij}(v)\|_{L^2} \le \|v\|$
+(`SobolevEuclideanZeroVec.norm_strainL_apply_le`). No hypothesis on $C$ is needed. -/
 theorem elasticityForm_isBoundedWith :
     (elasticityForm Ω C).IsBoundedWith (∑ i, ∑ j, ∑ k, ∑ l, ‖C i j k l‖) := by
   intro u v
@@ -261,8 +322,12 @@ theorem elasticityForm_isBoundedWith :
     _ = (∑ i, ∑ j, ∑ k, ∑ l, ‖C i j k l‖) * ‖u‖ * ‖v‖ := by
         simp only [Finset.sum_mul]
 
-/-- The quadruple sum `∑ᵢⱼₖₗ ⟪C_ijkl S_kl, S'_ij⟫` is symmetric in `(S, S')` under
-`C_ijkl = C_klij`, by exchanging the index pairs `(i, j)` and `(k, l)`. -/
+/-- Let $C$ be an elasticity tensor with stability constant $\alpha$, and let
+$S_{ij}, S'_{ij} \in L^2(\Omega)$. Then
+$$\sum_{i, j, k, l} (C_{ijkl} S_{kl}, S'_{ij})_{L^2} = \sum_{i, j, k, l} (C_{ijkl} S'_{kl},
+  S_{ij})_{L^2}.$$
+
+The proof exchanges the index pairs $(i, j)$ and $(k, l)$ and uses $C_{ijkl} = C_{klij}$. -/
 theorem sum_inner_mulL_comm {α : ℝ} (hC : IsElasticityTensor Ω C α)
     (S S' : Fin N → Fin N → Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))) :
     ∑ i, ∑ j, ∑ k, ∑ l, ⟪Elliptic.mulL Ω (C i j k l) (S k l), S' i j⟫_ℝ
@@ -275,8 +340,11 @@ theorem sum_inner_mulL_comm {α : ℝ} (hC : IsElasticityTensor Ω C α)
   rw [hC.symm_pair k l i j]
   exact integral_congr_ae (Eventually.of_forall fun x ↦ by ring)
 
-/-- **The elasticity form is symmetric** under `C_ijkl = C_klij`: `a(u, v) = a(v, u)`, by
-exchanging the index pairs `(i, j)` and `(k, l)` in the quadruple sum. -/
+/-- Let $C$ be an elasticity tensor with stability constant $\alpha$. Then the elasticity form is
+symmetric: $a(u, v) = a(v, u)$ for all $u, v \in [H^1_0(\Omega)]^N$.
+
+The proof exchanges the index pairs $(i, j)$ and $(k, l)$ in the sum and uses
+$C_{ijkl} = C_{klij}$. -/
 theorem elasticityForm_comm {α : ℝ} (hC : IsElasticityTensor Ω C α)
     (u v : SobolevEuclideanZeroVec N Ω) :
     elasticityForm Ω C u v = elasticityForm Ω C v u := by
@@ -284,14 +352,18 @@ theorem elasticityForm_comm {α : ℝ} (hC : IsElasticityTensor Ω C α)
   exact sum_inner_mulL_comm Ω C hC (fun i j ↦ SobolevEuclideanZeroVec.strainL i j u)
     (fun i j ↦ SobolevEuclideanZeroVec.strainL i j v)
 
-/-- The elasticity form is Hermitian (over `ℝ`: symmetric) under `C_ijkl = C_klij`. -/
+/-- Let $C$ be an elasticity tensor with stability constant $\alpha$. Then the elasticity form is
+Hermitian in the sense of `SesqForm.IsHermitian`, which over $\mathbb{R}$ is symmetry. -/
 theorem elasticityForm_isHermitian {α : ℝ} (hC : IsElasticityTensor Ω C α) :
     (elasticityForm Ω C).IsHermitian := fun u v ↦ by
   rw [conj_trivial]
   exact elasticityForm_comm Ω C hC u v
 
-/-- **The elasticity form dominates `α ∫_Ω |ε(v)|²`** under the stability condition (8.5.8):
-`a(v, v) ≥ α ∑ᵢⱼ ‖ε_ij(v)‖²₂`, the pointwise inequality applied to the symmetric matrix `ε(v)(x)`
+/-- Let $C$ be an elasticity tensor with stability constant $\alpha$. Then for every
+$v \in [H^1_0(\Omega)]^N$,
+$$a(v, v) \ge \alpha \sum_{i, j} \|\varepsilon_{ij}(v)\|_{L^2(\Omega)}^2.$$
+
+The proof applies the stability condition (8.5.8) to the symmetric matrix $\varepsilon(v)(x)$
 under the integral. -/
 theorem elasticityForm_self_ge {α : ℝ} (hC : IsElasticityTensor Ω C α)
     (v : SobolevEuclideanZeroVec N Ω) :
@@ -334,7 +406,7 @@ theorem elasticityForm_self_ge {α : ℝ} (hC : IsElasticityTensor Ω C α)
 
 end Elasticity
 
-/-! ### Coercivity on a bounded domain, the load, and Theorem 8.5.1 -/
+/-! ### $V$-ellipticity on a bounded domain, the load, and Theorem 8.5.1 -/
 
 section Dirichlet
 
@@ -342,12 +414,20 @@ variable {d : ℕ} (Ω : Opens (EuclideanSpace ℝ (Fin (d + 1))))
   (C : Fin (d + 1) → Fin (d + 1) → Fin (d + 1) → Fin (d + 1) →
     Lp ℝ ⊤ (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))))
 
-/-- **`V`-ellipticity of the elasticity form on `[H¹₀(Ω)]^{d+1}`** for a bounded
-`Ω ⊆ B(0, R)`: `a(v, v) ≥ α / (2 (1 + (2R)²)) ‖v‖²`, from the stability condition (8.5.8)
-(`elasticityForm_self_ge`), Korn's first inequality and Poincaré's inequality
-(`SobolevEuclideanZeroVec.norm_sq_le_sum_norm_strainL_sq`). This is the step of Exercise 8.5.3
-that needs Korn's inequality; on `[H¹₀(Ω)]^{d+1}` the first Korn inequality suffices and no
-regularity of the boundary enters. -/
+/-- **Section 8.5** of [han2009theoretical], $V$-ellipticity of the elasticity form. Let
+$\Omega \subseteq \mathbb{R}^{d+1}$ be open and contained in the ball $B(0, R)$ with $R \ge 0$,
+and let $C$ be an elasticity tensor with stability constant $\alpha$. Then the elasticity form
+is $V$-elliptic on $[H^1_0(\Omega)]^{d+1}$:
+$$a(v, v) \ge \frac{\alpha}{2 (1 + (2R)^2)} \|v\|^2 \quad \text{for all } v \in
+  [H^1_0(\Omega)]^{d+1}.$$
+
+This is the step of Exercise 8.5.3 that needs Korn's inequality. On $[H^1_0(\Omega)]^{d+1}$,
+Korn's first inequality is enough, and no regularity of the boundary enters. The proof combines
+`AtkinsonHan.Chapter08.elasticityForm_self_ge` with Korn's first inequality and the Poincaré
+inequality (`SobolevEuclideanZeroVec.norm_sq_le_sum_norm_strainL_sq`). Korn's first inequality
+`SobolevEuclideanZeroVec.korn_first` comes from the identity $\int_\Omega |\varepsilon(v)|^2 =
+\frac12 \int_\Omega |\nabla v|^2 + \frac12 \int_\Omega (\operatorname{div} v)^2$ on
+$[H^1_0(\Omega)]^{d+1}$, which follows by two integrations by parts and density. -/
 theorem elasticityForm_isCoerciveWith {R : ℝ} (hR : 0 ≤ R)
     (hΩ : (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))) ⊆ ball 0 R) {α : ℝ}
     (hC : IsElasticityTensor Ω C α) :
@@ -366,16 +446,21 @@ theorem elasticityForm_isCoerciveWith {R : ℝ} (hR : 0 ≤ R)
         field_simp
     _ ≤ elasticityForm Ω C v v := h1
 
-/-- **The load `ℓ(v) = ∫_Ω f · v = ∑ᵢ ∫_Ω fᵢ vᵢ`** for a body force `f ∈ [L²(Ω)]^{d+1}` (8.5.14),
-as a continuous linear functional on `[H¹₀(Ω)]^{d+1}`; the traction term `∫_{Γ_N} g · v` is
-absent in the pure displacement case. -/
+/-- **Equation (8.5.14)** of [han2009theoretical], the load. Let $\Omega \subseteq \mathbb{R}^{d+1}$
+be open, and let $f \in [L^2(\Omega)]^{d+1}$ be a body force. The **load** is the bounded linear
+functional on $[H^1_0(\Omega)]^{d+1}$
+$$\ell(v) = \int_\Omega f \cdot v \, dx = \sum_i \int_\Omega f_i v_i \, dx.$$
+
+The traction term $\int_{\Gamma_N} g \cdot v \, ds$ of (8.5.14) is absent in the pure
+displacement case. -/
 noncomputable def elasticityLoad
     (f : Fin (d + 1) → Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))) :
     StrongDual ℝ (SobolevEuclideanZeroVec (d + 1) Ω) :=
   ∑ i, (Elliptic.load Ω (f i)).comp ((SobolevEuclideanZero (d + 1) 1 2 Ω).subtypeL.comp
     (PiLp.proj 2 (fun _ : Fin (d + 1) ↦ SobolevEuclideanZero (d + 1) 1 2 Ω) i))
 
-/-- `ℓ(v) = ∑ᵢ ∫_Ω fᵢ vᵢ`. -/
+/-- The load satisfies $\ell(v) = \sum_i \int_\Omega f_i v_i \, dx$ for every
+$v \in [H^1_0(\Omega)]^{d+1}$. -/
 theorem elasticityLoad_apply
     (f : Fin (d + 1) → Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))))
     (v : SobolevEuclideanZeroVec (d + 1) Ω) :
@@ -386,20 +471,29 @@ theorem elasticityLoad_apply
 
 variable {Ω C}
 
-/-- **Theorem 8.5.1 in the pure displacement case `Γ_D = Γ`**, on a bounded open
-`Ω ⊆ B(0, R) ⊆ ℝ^{d+1}`: for an elasticity tensor satisfying (8.5.6)–(8.5.8) and a body force
-`f ∈ [L²(Ω)]^{d+1}`, the weak problem (8.5.15) with no traction term,
+/-- **Theorem 8.5.1** of [han2009theoretical], the pure displacement case $\Gamma_D = \Gamma$. Let
+$\Omega \subseteq \mathbb{R}^{d+1}$ be open and contained in the ball $B(0, R)$ with $R \ge 0$,
+let $C$ be an elasticity tensor that satisfies (8.5.6)–(8.5.8), and let
+$f \in [L^2(\Omega)]^{d+1}$. Then the weak problem (8.5.15) without traction term, to find
+$u \in [H^1_0(\Omega)]^{d+1}$ with
+$$\int_\Omega [C \varepsilon(u)] : \varepsilon(v) \, dx = \int_\Omega f \cdot v \, dx \quad
+  \text{for all } v \in [H^1_0(\Omega)]^{d+1},$$
+has exactly one solution. Moreover, $u$ solves it if and only if $u$ minimizes the energy
+(8.5.17)
+$$E(v) = \frac12 \int_\Omega [C \varepsilon(v)] : \varepsilon(v) \, dx - \int_\Omega f \cdot v
+  \, dx$$
+over $[H^1_0(\Omega)]^{d+1}$, as in (8.5.16).
 
-`u ∈ [H¹₀(Ω)]^{d+1}`, `∫_Ω [C ε(u)] : ε(v) = ∫_Ω f · v` for all `v ∈ [H¹₀(Ω)]^{d+1}`,
+**Generalization.** The source assumes a Lipschitz domain. In the pure displacement case no
+regularity of the boundary is needed, and the theorem here holds on every bounded open set.
 
-has exactly one solution, and a displacement `u` solves it if and only if it minimizes the
-energy (8.5.17) `E(v) = ½ ∫_Ω [C ε(v)] : ε(v) − ∫_Ω f · v` over `[H¹₀(Ω)]^{d+1}` (8.5.16). The
-form is `elasticityForm Ω C` (`elasticityForm_apply`) and the load `elasticityLoad Ω f`
-(`elasticityLoad_apply`); the proof is the Lax–Milgram lemma `theorem_8_3_4` and Theorem 8.3.3,
-the `V`-ellipticity being `elasticityForm_isCoerciveWith` (Korn's first inequality on
-`[H¹₀(Ω)]^{d+1}`, Poincaré's inequality and (8.5.8)). The mixed boundary conditions of the book's
-statement, `meas(Γ_D) > 0` with a traction `g` on `Γ_N`, are not formalized; the module doc says
-what they would need. -/
+The source also allows mixed boundary conditions, with $\operatorname{meas}(\Gamma_D) > 0$ and a
+traction $g$ on $\Gamma_N$. That case is not formalized; the module doc comment says what it
+needs. The form is `AtkinsonHan.Chapter08.elasticityForm` (see
+`AtkinsonHan.Chapter08.elasticityForm_apply`) and the load is
+`AtkinsonHan.Chapter08.elasticityLoad` (see `AtkinsonHan.Chapter08.elasticityLoad_apply`). The
+proof is the Lax–Milgram lemma `AtkinsonHan.Chapter08.theorem_8_3_4` and Theorem 8.3.3, with the
+$V$-ellipticity of `AtkinsonHan.Chapter08.elasticityForm_isCoerciveWith`. -/
 theorem theorem_8_5_1_dirichlet {R : ℝ} (hR : 0 ≤ R)
     (hΩ : (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))) ⊆ ball 0 R) {α : ℝ}
     (hC : IsElasticityTensor Ω C α)

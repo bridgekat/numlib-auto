@@ -10,65 +10,100 @@ import Numlib.IntegralEquations.Basic
 import NumlibSurface.AtkinsonHan.Chapter12.Section01
 
 /-!
-# Atkinson–Han §12.3: iterated projection methods
+# Atkinson and Han, Section 12.3: Iterated projection methods
 
-Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework*, 3rd edition, Springer, 2009, §12.3.
+This module formalizes Section 12.3 of [han2009theoretical]. Let $u_n$ be a projection solution of
+$(\lambda - K) u = f$. One step of the fixed-point iteration gives the iterated projection solution
+$\hat u_n = (f + K u_n)/\lambda$ of (12.3.1), as observed by Sloan. Its error satisfies $(\lambda -
+K P_n)(u - \hat u_n) = K (I - P_n) u$, so the factor $I - P_n$ appears inside $K$, and $\hat u_n$
+converges faster than $u_n$, whatever the size of $\|K\|$. Jacobson's identity (Lemma 12.3.1) shows
+that $\lambda - K P_n$ is invertible whenever $\lambda - P_n K$ is, with a uniform bound on the
+inverse.
 
-Sloan's observation: one fixed-point sweep applied to a projection solution `u_n` of
-`(λ - K) u = f` produces an approximation `û_n` whose error carries an extra factor `I - P_n`
-inside `K`, and therefore converges faster, whatever the size of `‖K‖`.  As in §12.1 the book's
-scalar `λ` is written `μ`, `λ` being Lean's lambda binder, and the book's sequence of projections
-is a single bounded idempotent `P`.
+The module then proves two instances. For collocation with continuous piecewise quadratic functions
+on a uniform mesh of width $h$ (§12.3.2), $\|u - u_n\|_\infty = O(h^3)$ but
+$\|u - \hat u_n\|_\infty = O(h^4)$, and $u_n$ is also $O(h^4)$ accurate at the mesh points (Theorem
+12.3.3). For the Galerkin method with discontinuous piecewise linear functions applied to
+$50 u - K u = f$ with the kernel $e^{xy}$ (Example 12.3.2), $\|u - u_n\| = O(h^2)$ and
+$\|u - \hat u_n\| = O(h^4)$. The proofs specialize `Numlib.IntegralEquations.SecondKind`,
+`Numlib.Approximation.Interpolation`, `Numlib.Approximation.CompositeQuadrature` and
+`Numlib.Approximation.PiecewiseLinearL2`.
+
+## Main definitions
+
+* Equation (12.3.1), `AtkinsonHan.Chapter12.iteratedSolution`: the iterated projection solution
+  $\hat u_n = (f + K u_n)/\lambda$.
+* Equation (12.3.24), `AtkinsonHan.Chapter12.quadInterpCLM`: interpolation by continuous piecewise
+  quadratic functions on a uniform mesh.
+* Equation (12.3.18), `AtkinsonHan.Chapter12.expKernel` and `AtkinsonHan.Chapter12.expKernelCLM`:
+  the kernel $e^{xy}$ on $[0, 1]^2$ and its integral operator on $L^2(0, 1)$.
+* Example 12.3.2, `AtkinsonHan.Chapter12.discGalerkinProj`: the orthogonal projection onto the
+  discontinuous piecewise linear functions of the uniform mesh of width $1/n$.
 
 ## Main results
 
-* `iteratedSolution` — (12.3.1), the iterated projection solution `û_n = (f + K u_n)/λ`, with
-  `equation_12_3_2` and `equation_12_3_3` for the identities `P û_n = u_n` and
-  `(λ - K P) û_n = f`.
-* `lemma_12_3_1` — Jacobson's identity: `λ - A B` is invertible if and only if `λ - B A` is, and
-  then `(λ - B A)⁻¹ = (1/λ) [I + B (λ - A B)⁻¹ A]`, which is (12.3.9).
-* `lemma_12_3_1_projection` — the instance `A = P`, `B = K` that §12.3 uses: an inverse of
-  `λ - P K`, which `theorem_12_1_2` supplies, produces one of `λ - K P` with the same formula and
-  a bound on its norm.
-* `equation_12_3_11` — the error equation `(λ - K P) (u - û_n) = K (I - P) u` and the resulting
-  bound `‖u - û_n‖ ≤ ‖(λ - K P)⁻¹‖ ‖K (I - P)‖ ‖u - P u‖`, which is Sloan superconvergence: one
-  factor of the approximation error better than the bound (12.1.24) for `u_n` itself.
-* `quadInterpCLM` — the piecewise quadratic interpolatory projection (12.3.24), the degree two
-  case of the backbone `piecewisePolyInterpCLM` on the uniform mesh, with the Lebesgue bound
-  `norm_quadInterpCLM_le` uniform in the mesh and the error bound `norm_sub_quadInterpCLM_le`,
-  which is (12.3.27).
-* `norm_kernelCLM_sub_quadInterpCLM_le` — **(12.3.31)**, `K (I - P_n) u = 𝒪(h⁴)`.
-* `theorem_12_3_3` — the superconvergence of iterated piecewise quadratic collocation:
-  (12.3.32), (12.3.33) and the superconvergence (12.3.34) at the mesh points.
-* `example_12_3_2` — the iterated Galerkin method for `50 u - K u = f` with `k(x, y) = e^{xy}` over
-  the *discontinuous* piecewise linear functions of the uniform mesh of width `h = 1/n`: the rates
-  `‖u - u_n‖ = 𝒪(h²)` (12.3.19) and `‖u - û_n‖ = 𝒪(h⁴)` (12.3.20).  Its two inputs are
-  `norm_sub_comp_expKernelCLM_le`, the `‖(I - P_n) K*‖ = 𝒪(h²)` that the book calls straightforward
-  and does not prove, and `norm_sub_discGalerkinProj_expSolution_le`, which is `‖u - P_n u‖ =
-  𝒪(h²)`; both rest on the backbone `discPiecewiseLinearProjCLM` and its approximation order.
-
-## Not formalized here
-
-The concrete parts of §12.3.2 and the linear system for the iterated collocation solution.
-
-**Table 12.2** of Example 12.3.2, which is measured error data for `n = 2, 4, 8` obtained by running
-the method, not mathematics.  What the table confirms — the pair of rates (12.3.19) and (12.3.20) —
-is `example_12_3_2`, and the constants there are existentially quantified, as the book leaves them
-unspecified too.
+* Equation (12.3.2), `AtkinsonHan.Chapter12.equation_12_3_2`: $P \hat u_n = u_n$.
+* Equation (12.3.3), `AtkinsonHan.Chapter12.equation_12_3_3`: $(\lambda - K P) \hat u_n = f$.
+* Lemma 12.3.1, `AtkinsonHan.Chapter12.lemma_12_3_1`: $\lambda - A B$ is invertible if and only if
+  $\lambda - B A$ is, and then $(\lambda - B A)^{-1} = \lambda^{-1} [I + B (\lambda - A B)^{-1} A]$,
+  which is (12.3.9).
+* Lemma 12.3.1, `AtkinsonHan.Chapter12.lemma_12_3_1_projection`: the case $A = P$, $B = K$, with a
+  bound on $\|(\lambda - K P)^{-1}\|$.
+* Equation (12.3.11), `AtkinsonHan.Chapter12.equation_12_3_11`:
+  $(\lambda - K P)(u - \hat u_n) = K (I - P) u$ and $\|u - \hat u_n\| \le \|(\lambda - K P)^{-1}\|
+  \|K (I - P)\| \|u - P u\|$.
+* Equation (12.3.27), `AtkinsonHan.Chapter12.norm_sub_quadInterpCLM_le`: $\|u - P_n u\|_\infty \le
+  (\sqrt{3}/27) h^3 \|u'''\|_\infty$.
+* Equation (12.3.31), `AtkinsonHan.Chapter12.norm_kernelCLM_sub_quadInterpCLM_le`:
+  $\|K (I - P_n) u\|_\infty = O(h^4)$.
+* Theorem 12.3.3, `AtkinsonHan.Chapter12.theorem_12_3_3`: the bounds (12.3.32), (12.3.33) and
+  (12.3.34) for iterated piecewise quadratic collocation.
+* Example 12.3.2, `AtkinsonHan.Chapter12.example_12_3_2`: the rates (12.3.19) and (12.3.20) of the
+  Galerkin and the iterated Galerkin solutions.
 
 ## Conventions
 
-The book derives the bound of `equation_12_3_11` for an *orthogonal* projection in a Hilbert
-space, from `(I - P_n)² = I - P_n`.  Only that idempotency is used, so the statement here asks
-for nothing but `IsIdempotentElem P` and holds on a Banach space; the Galerkin case is the
-specialization to an orthogonal projection.
+* The scalar $\lambda$ of the source is `μ`, because `λ` is the Lean lambda binder.
+* In the abstract results the sequence of projections $P_n$ of the source is one bounded idempotent
+  operator `P`.
+* The uniform mesh of §12.3.2 has $n = 2(p + 1)$ subintervals of width $h = (b - a)/n$,
+  `AtkinsonHan.Chapter12.quadMesh a b p`, and $p + 1$ panels $[x_{2k}, x_{2k+2}]$. The Lean
+  statements are indexed by $p$.
 
-Theorem 12.3.3 is proved for a kernel *Lipschitz* in `y` rather than the book's continuously
-differentiable one — a weaker hypothesis, which a `C¹` kernel on the compact square satisfies.
-That is what the route to (12.3.31) taken here needs: the book's proof differentiates a Newton
-divided difference in `y`, and `Numlib/Approximation/DividedDifference` has no derivative rule;
-splitting the kernel on each panel replaces that step by the Simpson panel error.
+## Implementation notes
+
+* The route to (12.3.31) differs from the proof in the source, which differentiates a Newton divided
+  difference in $y$; `Numlib.Approximation.DividedDifference` has no derivative rule. Instead the
+  kernel is split on each panel, and the main term is the error of Simpson's rule on the panel. This
+  route needs only a Lipschitz condition on the kernel in $y$.
+* In Example 12.3.2 the hypothesis $\|K - P_n K\| \to 0$ of Theorem 12.1.2 is the explicit bound
+  $\|K - P_n K\| \le e h^2/8$, in place of the compactness argument (12.3.15) of the source. The
+  source states the estimate $\|(I - P_n) K^*\| = O(h^2)$ without proof. The operator $50 - K$ is
+  invertible by the Neumann series, because $\|K\| \le e < 50$.
+* `AtkinsonHan.Chapter12.expKernel` is defined here, in the first section that uses it, and Section
+  12.4 uses it again.
+
+## Deviations from the source
+
+* **Lemma 12.3.1** (generalization). The source states the lemma on a Banach space. Completeness is
+  not used, and the statement holds on every normed space. See `AtkinsonHan.Chapter12.lemma_12_3_1`.
+* **Equation (12.3.11)** (generalization). The source derives the bound for an orthogonal projection
+  on a Hilbert space. Only $P^2 = P$ is used, and the statement holds for every bounded idempotent
+  operator on a normed space. See `AtkinsonHan.Chapter12.equation_12_3_11`.
+* **Equation (12.3.31) and Theorem 12.3.3** (generalization). The source assumes that the kernel is
+  continuously differentiable in $y$. The statements assume only that it is Lipschitz in $y$, which
+  a $C^1$ kernel on the compact square is. See
+  `AtkinsonHan.Chapter12.norm_kernelCLM_sub_quadInterpCLM_le` and
+  `AtkinsonHan.Chapter12.theorem_12_3_3`.
+
+## Not formalized
+
+* **§12.3.2, the concrete computations and the linear system for the iterated collocation
+  solution.**
+* **Table 12.2 of Example 12.3.2.** It contains measured errors for $n = 2, 4, 8$. The rates that it
+  confirms are `AtkinsonHan.Chapter12.example_12_3_2`.
+* **The dimension $d_n = 2n$ of the trial space in Example 12.3.2.** It is a remark on the size of
+  the linear system, and (12.3.19) and (12.3.20) do not use it.
 -/
 
 open Filter Topology
@@ -79,24 +114,32 @@ variable {𝕜 X : Type*} [RCLike 𝕜] [NormedAddCommGroup X] [NormedSpace 𝕜
 
 /-! ### The iterated projection solution -/
 
-/-- **(12.3.1)**, the iterated projection solution `û_n = (f + K u_n)/λ`: one sweep of the fixed
-point iteration `u ↦ (f + K u)/λ` applied to the projection solution `u_n` of (12.1.18).
+/-- **Equation (12.3.1)** of [han2009theoretical]. Let $K$ be a bounded operator, $\lambda$ a scalar
+and $f, u_n$ vectors. The **iterated projection solution** is $$\hat u_n = \frac{1}{\lambda}
+(f + K u_n),$$ one step of the fixed-point iteration $u \mapsto (f + K u)/\lambda$ applied to
+$u_n$.
 
-This is the backbone `SecondKind.iterated`; it is defined for every `u_n`, and the two identities
-`equation_12_3_2` and `equation_12_3_3` are what use that `u_n` is a projection solution. -/
+This is `SecondKind.iterated`. It is defined for every $u_n$; the identities
+`AtkinsonHan.Chapter12.equation_12_3_2` and `AtkinsonHan.Chapter12.equation_12_3_3` use that
+$u_n$ is a projection solution (12.1.18). -/
 noncomputable abbrev iteratedSolution (μ : 𝕜) (K : X →L[𝕜] X) (f un : X) : X :=
   SecondKind.iterated μ K f un
 
-/-- **(12.3.2)**: the iterated solution projects back onto the projection solution,
-`P û_n = u_n`.  So `û_n` is an improvement of `u_n` that costs one application of `K` and loses
-none of its information. -/
+/-- **Equation (12.3.2)** of [han2009theoretical]. Let $\lambda \neq 0$, let $K$ and $P$ be bounded
+operators with $P^2 = P$, and let $u_n$ be a projection solution of $(\lambda - K) u = f$. Then
+the iterated solution satisfies $$P \hat u_n = u_n.$$
+-/
 theorem equation_12_3_2 {μ : 𝕜} (hμ : μ ≠ 0) {K P : X →L[𝕜] X} (hP : IsIdempotentElem P)
     {f un : X} (hun : IsProjectionSolution μ K P f un) :
     P (iteratedSolution μ K f un) = un :=
   SecondKind.apply_iterated hμ hP hun
 
-/-- **(12.3.3)**: the iterated solution satisfies `(λ - K P) û_n = f`, the companion of the
-projection equations `(λ - P K) u_n = P f` under Jacobson's identity `lemma_12_3_1`. -/
+/-- **Equation (12.3.3)** of [han2009theoretical]. Let $\lambda \neq 0$, let $K$ and $P$ be bounded
+operators with $P^2 = P$, and let $u_n$ be a projection solution of $(\lambda - K) u = f$. Then
+the iterated solution satisfies $$(\lambda - K P) \hat u_n = f.$$
+
+This is the counterpart, under Jacobson's identity `AtkinsonHan.Chapter12.lemma_12_3_1`, of the
+projection equations $(\lambda - P K) u_n = P f$. -/
 theorem equation_12_3_3 {μ : 𝕜} (hμ : μ ≠ 0) {K P : X →L[𝕜] X} (hP : IsIdempotentElem P)
     {f un : X} (hun : IsProjectionSolution μ K P f un) :
     (μ • 1 - K ∘L P : X →L[𝕜] X) (iteratedSolution μ K f un) = f :=
@@ -104,13 +147,14 @@ theorem equation_12_3_3 {μ : 𝕜} (hμ : μ ≠ 0) {K P : X →L[𝕜] X} (hP 
 
 /-! ### Jacobson's identity -/
 
-/-- **Lemma 12.3.1**: for bounded operators `A`, `B` on a Banach space and `λ ≠ 0`, the operator
-`λ - A B` is invertible if and only if `λ - B A` is, and then
+/-- **Lemma 12.3.1** of [han2009theoretical] (Jacobson's identity). Let $A$ and $B$ be bounded
+operators on a normed space and let $\lambda \neq 0$. Then $\lambda - A B$ has a bounded inverse
+if and only if $\lambda - B A$ has one. Moreover, if $\lambda - A B$ is invertible, then
+$\lambda - B A$ is invertible with $$(\lambda - B A)^{-1} = \frac{1}{\lambda} \left[I + B
+(\lambda - A B)^{-1} A\right],$$ which is (12.3.9).
 
-`(λ - B A)⁻¹ = (1/λ) [I + B (λ - A B)⁻¹ A]`,
-
-which is **(12.3.9)**.  Neither compactness nor completeness of the space is used: the formula is
-checked by multiplying out, and the inverse produced is a genuine two-sided one. -/
+**Generalization.** The source states the lemma on a Banach space. The proof checks the formula
+by multiplying out, so it uses neither completeness nor compactness. -/
 theorem lemma_12_3_1 {μ : 𝕜} (hμ : μ ≠ 0) (A B : X →L[𝕜] X) :
     (IsUnit (μ • 1 - A ∘L B : X →L[𝕜] X) ↔ IsUnit (μ • 1 - B ∘L A : X →L[𝕜] X)) ∧
       ∀ e : X ≃L[𝕜] X, (e : X →L[𝕜] X) = μ • 1 - A ∘L B →
@@ -119,15 +163,15 @@ theorem lemma_12_3_1 {μ : 𝕜} (hμ : μ ≠ 0) (A B : X →L[𝕜] X) :
   ⟨SecondKind.isUnit_smul_sub_comp_comm hμ A B,
     fun e he => SecondKind.exists_equiv_smul_sub_comp_comm hμ e he⟩
 
-/-- **Lemma 12.3.1 applied to the projection method**, `A = P` and `B = K`: from the inverse of
-`λ - P K` that `theorem_12_1_2` produces, the operator `λ - K P` of (12.3.3) is invertible with
+/-- **Lemma 12.3.1** of [han2009theoretical], applied to the projection method with $A = P$ and
+$B = K$. Let $\lambda \neq 0$, let $K$ and $P$ be bounded operators on a normed space, and let
+$\lambda - P K$ be invertible. Then $\lambda - K P$ is invertible, $$(\lambda - K P)^{-1} =
+\frac{1}{\lambda} \left[I + K (\lambda - P K)^{-1} P\right], \qquad \|(\lambda - K P)^{-1}\| \le
+\frac{1 + \|K\| \|(\lambda - P K)^{-1}\| \|P\|}{|\lambda|}.$$
 
-`(λ - K P)⁻¹ = (1/λ) [I + K (λ - P K)⁻¹ P]` and
-`‖(λ - K P)⁻¹‖ ≤ (1 + ‖K‖ ‖(λ - P K)⁻¹‖ ‖P‖) / |λ|`.
-
-The uniform bound of `theorem_12_1_2` on `‖(λ - P_n K)⁻¹‖` therefore gives a uniform bound on
-`‖(λ - K P_n)⁻¹‖`, which is what makes `equation_12_3_11` an error estimate rather than an
-identity. -/
+A uniform bound on $\|(\lambda - P_n K)^{-1}\|$, which `AtkinsonHan.Chapter12.theorem_12_1_2`
+supplies, therefore gives a uniform bound on $\|(\lambda - K P_n)^{-1}\|$. This makes
+`AtkinsonHan.Chapter12.equation_12_3_11` an error estimate. -/
 theorem lemma_12_3_1_projection {μ : 𝕜} (hμ : μ ≠ 0) (K P : X →L[𝕜] X) {e' : X ≃L[𝕜] X}
     (he' : (e' : X →L[𝕜] X) = μ • 1 - P ∘L K) :
     ∃ e'' : X ≃L[𝕜] X, (e'' : X →L[𝕜] X) = μ • 1 - K ∘L P ∧
@@ -144,18 +188,19 @@ theorem lemma_12_3_1_projection {μ : 𝕜} (hμ : μ ≠ 0) (K P : X →L[𝕜]
 
 /-! ### The error of the iterated solution -/
 
-/-- **(12.3.11)** and Sloan superconvergence: the error of the iterated projection solution
-satisfies
+/-- **Equation (12.3.11)** of [han2009theoretical] (Sloan's superconvergence). Let $\lambda \neq 0$,
+let $K$ and $P$ be bounded operators on a normed space with $P^2 = P$, and let $\lambda - K P$
+be invertible. If $(\lambda - K) u = f$ and $u_n$ is a projection solution, then $$(\lambda - K
+P)(u - \hat u_n) = K (I - P) u, \qquad \|u - \hat u_n\| \le \|(\lambda - K P)^{-1}\| \, \|K (I -
+P)\| \, \|u - P u\|.$$
 
-`(λ - K P) (u - û_n) = K (I - P) u`,
+**Generalization.** The source works on a Hilbert space with an orthogonal projection $P$. The
+proof uses only $(I - P)^2 = I - P$.
 
-and hence `‖u - û_n‖ ≤ ‖(λ - K P)⁻¹‖ ‖K (I - P)‖ ‖u - P u‖`.
-
-The right-hand side of the identity carries the factor `I - P` *inside* `K`, and `I - P` is
-idempotent, so it may be inserted twice: the bound is `‖K (I - P)‖` times the approximation error
-`‖u - P u‖`, one factor better than the bound `‖u - u_n‖ ≤ |λ| ‖(λ - P K)⁻¹‖ ‖u - P u‖` of
-(12.1.24) for `u_n` itself, since `‖K (I - P_n)‖ → 0` for a compact `K`.  The book argues on a
-Hilbert space with `P` an orthogonal projection; only `IsIdempotentElem P` is used. -/
+Because $I - P$ is idempotent, it can be inserted twice, and the bound is $\|K (I - P)\|$ times
+the approximation error $\|u - P u\|$. This is better than the bound $\|u - u_n\| \le |\lambda|
+\|(\lambda - P K)^{-1}\| \|u - P u\|$ of (12.1.24) by the factor $\|K (I - P_n)\|$, which tends
+to $0$ for a compact $K$. -/
 theorem equation_12_3_11 {μ : 𝕜} (hμ : μ ≠ 0) {K P : X →L[𝕜] X} (hP : IsIdempotentElem P)
     {e'' : X ≃L[𝕜] X} (he'' : (e'' : X →L[𝕜] X) = μ • 1 - K ∘L P) {f u un : X}
     (hu : (μ • 1 - K : X →L[𝕜] X) u = f) (hun : IsProjectionSolution μ K P f un) :
@@ -186,12 +231,13 @@ section PiecewiseQuadratic
 
 variable {a b : ℝ}
 
-/-- The `j`-th point `a + j (b - a)/n` of the uniform mesh of `[a, b]` into `n` subintervals, as a
-point of the interval. -/
+/-- The $j$-th point $a + j (b - a)/n$ of the uniform mesh of $[a, b]$ with $n$ subintervals, as a
+point of $[a, b]$. The value is projected onto $[a, b]$ by `Set.projIcc`. For $n = 0$ the step
+$(b - a)/0$ is $0$ in Lean, so every point is $a$. -/
 noncomputable def meshPoint (hab : a ≤ b) (n j : ℕ) : Set.Icc a b :=
   Set.projIcc a b hab (a + (j : ℝ) * ((b - a) / n))
 
-/-- The value of a mesh point of index at most `n`, where the clamping does nothing. -/
+/-- For $n > 0$ and $j \le n$, the mesh point is $a + j (b - a)/n$, without clamping. -/
 theorem coe_meshPoint (hab : a ≤ b) {n j : ℕ} (hn : 0 < n) (hj : j ≤ n) :
     (meshPoint hab n j : ℝ) = a + (j : ℝ) * ((b - a) / n) := by
   have hn' : (0 : ℝ) < n := by exact_mod_cast hn
@@ -205,7 +251,7 @@ theorem coe_meshPoint (hab : a ≤ b) {n j : ℕ} (hn : 0 < n) (hj : j ≤ n) :
     rwa [hcan] at h1
   rw [meshPoint, Set.coe_projIcc, min_eq_right (by linarith), max_eq_right (by linarith)]
 
-/-- Distinct indices at most `n` give distinct mesh points. -/
+/-- For $a < b$, $n > 0$ and $j, k \le n$, equal mesh points have equal indices. -/
 theorem meshPoint_inj (hab : a < b) {n j k : ℕ} (hn : 0 < n) (hj : j ≤ n) (hk : k ≤ n)
     (h : (meshPoint hab.le n j : ℝ) = (meshPoint hab.le n k : ℝ)) : j = k := by
   have hδ : (0 : ℝ) < (b - a) / n := by
@@ -215,28 +261,31 @@ theorem meshPoint_inj (hab : a < b) {n j k : ℕ} (hn : 0 < n) (hj : j ≤ n) (h
   have hmul : (j : ℝ) * ((b - a) / n) = (k : ℝ) * ((b - a) / n) := by linarith
   exact_mod_cast mul_right_cancel₀ (ne_of_gt hδ) hmul
 
-/-- The **mesh size** `h = (b - a)/n` of the piecewise quadratic method of §12.3.2, whose `p + 1`
-panels carry `n = 2 (p + 1)` subintervals of the uniform mesh. -/
+/-- The **mesh size** $h = (b - a)/n$ of the piecewise quadratic method of §12.3.2, with
+$n = 2(p + 1)$ subintervals and $p + 1$ panels. -/
 noncomputable def quadMesh (a b : ℝ) (p : ℕ) : ℝ := (b - a) / (2 * (p + 1))
 
+/-- For $a < b$ the mesh size $h$ is positive. -/
 theorem quadMesh_pos (hab : a < b) (p : ℕ) : 0 < quadMesh a b p :=
   div_pos (sub_pos.mpr hab) (by positivity)
 
-/-- The breakpoints `x_{2k} = a + 2 k h` of the piecewise quadratic trial space of §12.3.2: the
-`p + 1` panels are `[x_0, x_2], …, [x_{n-2}, x_n]` with `n = 2 (p + 1)`. -/
+/-- The breakpoint $x_{2k} = a + 2 k h$ of the piecewise quadratic trial space of §12.3.2. The
+$p + 1$ panels are $[x_0, x_2], \dots, [x_{n-2}, x_n]$ with $n = 2(p + 1)$. -/
 noncomputable def quadBreak (hab : a ≤ b) (p k : ℕ) : Set.Icc a b :=
   meshPoint hab (2 * (p + 1)) (2 * k)
 
-/-- The three interpolation nodes `x_{2k}, x_{2k+1}, x_{2k+2}` of the `k`-th panel. -/
+/-- The three interpolation nodes $x_{2k}, x_{2k+1}, x_{2k+2}$ of the $k$-th panel. -/
 noncomputable def quadNode (hab : a ≤ b) (p k : ℕ) (i : Fin 3) : Set.Icc a b :=
   meshPoint hab (2 * (p + 1)) (2 * k + (i : ℕ))
 
+/-- For $k \le p + 1$ the breakpoint $x_{2k}$ is $a + 2 k h$. -/
 theorem coe_quadBreak (hab : a ≤ b) {p k : ℕ} (hk : k ≤ p + 1) :
     (quadBreak hab p k : ℝ) = a + 2 * (k : ℝ) * quadMesh a b p := by
   rw [quadBreak, coe_meshPoint hab (by omega) (by omega), quadMesh]
   push_cast
   ring
 
+/-- For $k \le p$ and $i \in \{0, 1, 2\}$ the node $x_{2k+i}$ is $a + (2k + i) h$. -/
 theorem coe_quadNode (hab : a ≤ b) {p k : ℕ} (hk : k ≤ p) (i : Fin 3) :
     (quadNode hab p k i : ℝ) = a + (2 * (k : ℝ) + ((i : ℕ) : ℝ)) * quadMesh a b p := by
   have hi := i.isLt
@@ -244,10 +293,10 @@ theorem coe_quadNode (hab : a ≤ b) {p k : ℕ} (hk : k ≤ p) (i : Fin 3) :
   push_cast
   ring
 
-/-- **The nodes of the piecewise quadratic method form a panel node system**: the panels are the
-`p + 1` intervals `[x_{2k}, x_{2k+2}]`, and each carries the three nodes `x_{2k}, x_{2k+1},
-x_{2k+2}`, of which the outer two are the endpoints of the panel — which is what makes the
-interpolant continuous. -/
+/-- For $a < b$, the breakpoints and nodes of the piecewise quadratic method form a panel node
+system (`IsPanelNodes`): the panels $[x_{2k}, x_{2k+2}]$ increase from $a$ to $b$, and each
+carries the three nodes $x_{2k}, x_{2k+1}, x_{2k+2}$, of which the outer two are its endpoints.
+This makes the interpolant continuous. -/
 theorem isPanelNodes_quad (hab : a < b) (p : ℕ) :
     IsPanelNodes p 2 (quadBreak hab.le p) (quadNode hab.le p) := by
   have hδ : 0 < quadMesh a b p := quadMesh_pos hab p
@@ -281,15 +330,15 @@ theorem isPanelNodes_quad (hab : a < b) (p : ℕ) :
       omega
     rw [quadNode, quadBreak, hidx]
 
-/-- The panels of the piecewise quadratic method all have length `2 h`. -/
+/-- For $a < b$ and $k \le p$, the panel $[x_{2k}, x_{2k+2}]$ has length $2h$. -/
 theorem quadBreak_sub (hab : a < b) {p k : ℕ} (hk : k ≤ p) :
     (quadBreak hab.le p (k + 1) : ℝ) - (quadBreak hab.le p k : ℝ) = 2 * quadMesh a b p := by
   rw [coe_quadBreak hab.le (by omega), coe_quadBreak hab.le (by omega)]
   push_cast
   ring
 
-/-- The nodes of one panel are `h` apart, so the crude separation bound applies with `D = 2 h` and
-`d = h`. -/
+/-- For $a < b$ and $k \le p$, two distinct nodes of the $k$-th panel are at distance at least $h$.
+-/
 theorem quadNode_sep (hab : a < b) {p k : ℕ} (hk : k ≤ p) (i i' : Fin 3) (hii : i ≠ i') :
     quadMesh a b p ≤ |((quadNode hab.le p k i : ℝ)) - ((quadNode hab.le p k i' : ℝ))| := by
   have hδ : 0 < quadMesh a b p := quadMesh_pos hab p
@@ -314,8 +363,9 @@ theorem quadNode_sep (hab : a < b) {p k : ℕ} (hk : k ≤ p) (i i' : Fin 3) (hi
   rw [hrw, abs_mul, abs_of_pos hδ]
   nlinarith
 
-/-- **The Lebesgue bound of the piecewise quadratic projection**, uniformly in the mesh: the
-crude bound `(m + 1) (D/d)^m` of `isPanelLebesgueBound_of_sep` with `D = 2 h` and `d = h`. -/
+/-- For $a < b$, the nodes of the piecewise quadratic method have the local Lebesgue bound $12$ on
+every panel (`IsPanelLebesgueBound`), uniformly in the mesh. This is the bound $(m + 1)(D/d)^m$
+of `isPanelLebesgueBound_of_sep` with $m = 2$, $D = 2h$ and $d = h$. -/
 theorem isPanelLebesgueBound_quad (hab : a < b) (p : ℕ) :
     IsPanelLebesgueBound p 2 (quadBreak hab.le p) (quadNode hab.le p) 12 := by
   have hδ : 0 < quadMesh a b p := quadMesh_pos hab p
@@ -325,24 +375,27 @@ theorem isPanelLebesgueBound_quad (hab : a < b) (p : ℕ) :
   have hval : ((2 : ℕ) + 1 : ℝ) * (2 : ℝ) ^ 2 = 12 := by norm_num
   rwa [hval] at h
 
-/-- **The piecewise quadratic interpolatory projection** `P_n` of (12.3.24): the bounded projection
-of `C[a, b]` onto the continuous functions that are quadratic on each panel `[x_{2k}, x_{2k+2}]`,
-interpolating at the `n + 1` mesh points. -/
+/-- **Equation (12.3.24)** of [han2009theoretical]. The **piecewise quadratic interpolatory
+projection** $P_n$ is the bounded operator on $C[a, b]$ that maps $u$ to the continuous function
+that is quadratic on each panel $[x_{2k}, x_{2k+2}]$ and interpolates $u$ at the $n + 1$ mesh
+points, with $n = 2(p + 1)$.
+
+It is `piecewisePolyInterpCLM` with degree $2$ on the uniform mesh. -/
 noncomputable def quadInterpCLM (hab : a ≤ b) (p : ℕ) :
     C(Set.Icc a b, ℝ) →L[ℝ] C(Set.Icc a b, ℝ) :=
   piecewisePolyInterpCLM p 2 (quadBreak hab p) (quadNode hab p)
 
-/-- The piecewise quadratic projection is idempotent. -/
+/-- For $a < b$ the piecewise quadratic interpolation is a projection: $P_n^2 = P_n$. -/
 theorem isIdempotentElem_quadInterpCLM (hab : a < b) (p : ℕ) :
     IsIdempotentElem (quadInterpCLM hab.le p) :=
   isIdempotentElem_piecewisePolyInterpCLM (isPanelNodes_quad hab p)
 
-/-- The norms of the piecewise quadratic projections are bounded uniformly in the mesh. -/
+/-- For $a < b$ the piecewise quadratic interpolation satisfies $\|P_n\| \le 12$, uniformly in the
+mesh. -/
 theorem norm_quadInterpCLM_le (hab : a < b) (p : ℕ) : ‖quadInterpCLM hab.le p‖ ≤ 12 :=
   norm_piecewisePolyInterpCLM_le (isPanelNodes_quad hab p) (isPanelLebesgueBound_quad hab p)
 
-/-- The piecewise quadratic projection reproduces the value at every mesh point; in particular
-`P_n u` and `u` agree at the `n + 1` collocation nodes. -/
+/-- For $a < b$, $P_n u$ and $u$ agree at each of the $n + 1$ mesh points $x_j$, $j \le n$. -/
 theorem quadInterpCLM_apply_meshPoint (hab : a < b) (p : ℕ) (g : C(Set.Icc a b, ℝ)) {j : ℕ}
     (hj : j ≤ 2 * (p + 1)) :
     quadInterpCLM hab.le p g (meshPoint hab.le (2 * (p + 1)) j)
@@ -359,8 +412,8 @@ theorem quadInterpCLM_apply_meshPoint (hab : a < b) (p : ℕ) (g : C(Set.Icc a b
   exact piecewisePolyInterpCLM_apply_node (isPanelNodes_quad hab p) g hk i
 
 open Filter Topology in
-/-- **The piecewise quadratic projections converge pointwise to the identity**, which is what
-Lemma 12.1.4 needs in order to give `‖K - P_n K‖ → 0`. -/
+/-- For $a < b$ and every $v \in C[a, b]$, $P_n v \to v$ in the uniform norm as $p \to \infty$. With
+Lemma 12.1.4 this gives $\|K - P_n K\| \to 0$ for a compact $K$. -/
 theorem tendsto_quadInterpCLM (hab : a < b) (v : C(Set.Icc a b, ℝ)) :
     Tendsto (fun p => quadInterpCLM hab.le p v) atTop (𝓝 v) := by
   refine tendsto_piecewisePolyInterpCLM (hs := fun p => 2 * quadMesh a b p) (Λ := 12)
@@ -385,8 +438,8 @@ open IntegralOperator MeasureTheory
 
 variable {a b : ℝ}
 
-/-- The nodal polynomial of the `k`-th panel of the piecewise quadratic mesh is bounded by
-`2 √3 h³/9` on that panel. -/
+/-- For $a < b$, $k \le p$ and $s$ in the panel $[x_{2k}, x_{2k+2}]$, the nodal polynomial of the
+panel satisfies $\left|\prod_{i=0}^{2} (s - x_{2k+i})\right| \le 2\sqrt{3} h^3 / 9$. -/
 theorem abs_prod_quadNode_le (hab : a < b) {p k : ℕ} (hk : k ≤ p) {s : ℝ}
     (hs : s ∈ Set.Icc ((quadBreak hab.le p k : ℝ)) ((quadBreak hab.le p (k + 1) : ℝ))) :
     |∏ i, (s - ((quadNode hab.le p k i : ℝ)))| ≤ 2 * Real.sqrt 3 * quadMesh a b p ^ 3 / 9 := by
@@ -414,11 +467,12 @@ theorem abs_prod_quadNode_le (hab : a < b) {p k : ℕ} (hk : k ≤ p) {s : ℝ}
   rw [hrw]
   exact abs_add_mul_mul_sub_le hδ hwabs
 
-/-- **(12.3.27)**, the error of piecewise quadratic interpolation:
-`‖u - P_n u‖_∞ ≤ (√3/27) h³ ‖u'''‖_∞`.
+/-- **Equation (12.3.27)** of [han2009theoretical]. Let $a < b$ and let $u \in C[a, b]$ be the
+restriction of a $C^3$ function $G$ with $|G'''| \le M_3$ on $[a, b]$. Then the piecewise
+quadratic interpolation satisfies $$\|u - P_n u\|_\infty \le \frac{\sqrt{3}}{27} h^3 M_3.$$
 
-The panel error formula of `exists_sub_piecewisePolyInterpCLM_apply_eq` divided by `3! = 6`, with
-the extreme value `2 √3 h³/9` of the nodal polynomial. -/
+The proof divides the panel error formula of `exists_sub_piecewisePolyInterpCLM_apply_eq` by
+$3! = 6$ and uses the maximum $2\sqrt{3} h^3/9$ of the nodal polynomial on a panel. -/
 theorem norm_sub_quadInterpCLM_le (hab : a < b) (p : ℕ) {G : ℝ → ℝ}
     (hG : ContDiff ℝ ((3 : ℕ) : WithTop ℕ∞) G) {u : C(Set.Icc a b, ℝ)}
     (hu : ∀ t : Set.Icc a b, u t = G ((t : ℝ))) {M₃ : ℝ}
@@ -442,13 +496,13 @@ open IntegralOperator MeasureTheory
 
 variable {a b : ℝ}
 
-/-- **One panel of (12.3.31).**  On the panel `[x_{2k}, x_{2k+2}]` split the kernel as
-`k (x, y) = k (x, x_{2k}) + (k (x, y) - k (x, x_{2k}))`.  The first part contributes
-`k (x, x_{2k}) ∫ (u - P_n u)`, and the integral of the quadratic interpolant over its own panel is
-Simpson's rule for `u` there, so that integral is exactly the Simpson panel error, of size
-`h⁵ ‖u⁗‖/90`.  The second part is at most `L (2h) ‖u - P_n u‖ (2h)`, so it is `𝒪(h⁵)` as well —
-and it needs only a Lipschitz bound on the kernel, not the book's `C¹` in `y`.  This is the
-backbone's `Quadrature.abs_integral_mul_sub_eval_le`, read on the nodes of the panel. -/
+/-- Let $a < b$, let the kernel satisfy $|k(x, y) - k(x, z)| \le L |y - z|$ with $L \ge 0$, let $u$
+be the restriction of a $C^4$ function $G$ with $|G''''| \le M_4$ on $[a, b]$, and let
+$\|u - P_n u\| \le E$. Then for every $x$ and every panel $[x_{2j}, x_{2j+2}]$ with $j \le p$,
+$$\left| \int_{x_{2j}}^{x_{2j+2}} k(x, y) (u - P_n u)(y)\, dy \right| \le \frac{\|k\|_\infty M_4
+h^5}{90} + 4 L h^2 E.$$ The proof writes $k(x, y) = k(x, x_{2j}) + (k(x, y) - k(x, x_{2j}))$ and
+reads the first part as the error of Simpson's rule on the panel
+(`Quadrature.abs_integral_mul_sub_eval_le`). -/
 private theorem abs_panel_integral_le (hab : a < b) {k : C(Set.Icc a b × Set.Icc a b, ℝ)} {L : ℝ}
     (hL0 : 0 ≤ L) (hL : ∀ x y z : Set.Icc a b, |k (x, y) - k (x, z)| ≤ L * |(y : ℝ) - (z : ℝ)|)
     {G : ℝ → ℝ} (hG : ContDiff ℝ ((4 : ℕ) : WithTop ℕ∞) G) {u : C(Set.Icc a b, ℝ)}
@@ -565,18 +619,22 @@ private theorem abs_panel_integral_le (hab : a < b) {k : C(Set.Icc a b × Set.Ic
   rw [hlen]
   ring
 
-/-- **(12.3.31)**: for a kernel Lipschitz in its second variable and `u ∈ C⁴[a, b]`,
+/-- **Equation (12.3.31)** of [han2009theoretical]. Let $a < b$, let $K$ be the integral operator on
+$C[a, b]$ of a continuous kernel with $|k(x, y) - k(x, z)| \le L |y - z|$ for all $x, y, z$,
+where $L \ge 0$, and let $u$ be the restriction of a $C^4$ function $G$ with $|G'''| \le M_3$
+and $|G''''| \le M_4$ on $[a, b]$. Then $$\|K (I - P_n) u\|_\infty \le (b - a) \left(
+\frac{\|k\|_\infty M_4}{180} + \frac{2\sqrt{3} L M_3}{27} \right) h^4,$$ so
+$K (I - P_n) u = O(h^4)$, one power of $h$ better than $\|(I - P_n) u\| = O(h^3)$.
 
-`‖K (I - P_n) u‖_∞ ≤ (b - a) (‖k‖ ‖u⁗‖/180 + 2 √3 L ‖u'''‖/27) h⁴`,
+**Generalization.** The source assumes that $k$ is continuously differentiable in $y$. Only a
+Lipschitz bound in $y$ is assumed here, and a kernel that is $C^1$ in $y$ satisfies it on the
+compact square.
 
-so `K (I - P_n) u = 𝒪(h⁴)` — one power of `h` better than `‖(I - P_n) u‖ = 𝒪(h³)`.
-
-The book obtains this from the `y`-derivative of a Newton divided difference; the route here is
-the one of `abs_panel_integral_le`, which splits the kernel on each panel and reads the resulting
-main term as the Simpson panel error.  It needs only a Lipschitz bound on `k` in `y`, which the
-book's hypothesis that `k` be continuously differentiable in `y` supplies on the compact square.
-
-Summing the `(b - a)/(2h)` panel bounds `𝒪(h⁵)` gives `𝒪(h⁴)`. -/
+The source differentiates a Newton divided difference in $y$. Here the kernel is split on each
+panel, and the main term is the error of Simpson's rule on that panel, which is $O(h^5)$.
+Summing over the $(b - a)/(2h)$ panels gives $O(h^4)$. The norm $\|k\|_\infty$ is the uniform
+norm of the kernel, and $K$ integrates against Lebesgue measure
+`IntegralOperator.iccMeasure a b`. -/
 theorem norm_kernelCLM_sub_quadInterpCLM_le (hab : a < b)
     {k : C(Set.Icc a b × Set.Icc a b, ℝ)} {L : ℝ} (hL0 : 0 ≤ L)
     (hL : ∀ x y z : Set.Icc a b, |k (x, y) - k (x, z)| ≤ L * |(y : ℝ) - (z : ℝ)|)
@@ -657,22 +715,33 @@ open IntegralOperator MeasureTheory
 
 variable {a b : ℝ}
 
-/-- **Theorem 12.3.3**, the superconvergence of iterated piecewise quadratic collocation.  For the
-integral equation (12.3.23) with a kernel Lipschitz in `y` — which a kernel continuously
-differentiable in `y` is on the compact square — a solution `u ∈ C⁴[a, b]` and the interpolatory
-projection `P_n` onto the continuous piecewise quadratics of the uniform mesh of `n = 2 (p + 1)`
-subintervals, the collocation equations are uniquely solvable for all large `n` with uniformly
-bounded inverses, and
+/-- **Theorem 12.3.3** of [han2009theoretical] (superconvergence of iterated piecewise quadratic
+collocation). Let $a < b$, let $K$ be the integral operator on $C[a, b]$ of a continuous kernel
+with $|k(x, y) - k(x, z)| \le L |y - z|$ for all $x, y, z$, where $L \ge 0$, and let
+$\lambda \neq 0$ be such that $\lambda - K$ is invertible. Let $u$ be the restriction of a $C^4$
+function $G$ with $|G'''| \le M_3$ and $|G''''| \le M_4$ on $[a, b]$, and let
+$f = (\lambda - K) u$, which is (12.3.23). Let $P_n$ be piecewise quadratic interpolation on the
+uniform mesh with $n = 2(p + 1)$ subintervals of width $h$. Then there are constants $M$ and $c$
+such that for all large $n$ the operator $\lambda - P_n K$ is invertible with
+$\|(\lambda - P_n K)^{-1}\| \le M$, the collocation equations have exactly one solution for
+every right-hand side, and the collocation solution $u_n$ for $f$ satisfies
 
-* `‖u - u_n‖_∞ ≤ |λ| M ‖u - P_n u‖_∞ ≤ (√3 |λ| M/27) h³ ‖u'''‖_∞`   (12.3.32),
-* `‖u - û_n‖_∞ ≤ c h⁴`   (12.3.33),
-* `max_j |u(x_j) - u_n(x_j)| ≤ c h⁴`   (12.3.34), the superconvergence at the breakpoints.
+* $\|u - u_n\|_\infty \le |\lambda| M \|u - P_n u\|_\infty \le (\sqrt{3} |\lambda| M / 27)\, h^3
+  M_3$, which is (12.3.32);
+* $\|u - \hat u_n\|_\infty \le c h^4$, which is (12.3.33);
+* $|u(x_j) - u_n(x_j)| \le c h^4$ at each of the $n + 1$ mesh points $x_j$, which is (12.3.34).
 
-The two operator bounds come from `theorem_12_1_2` and `lemma_12_3_1_projection`, the first
-inequality of (12.3.32) from `equation_12_1_24`, the second from `norm_sub_quadInterpCLM_le`, and
-(12.3.33) from the error identity of `equation_12_3_11` together with (12.3.31),
-`norm_kernelCLM_sub_quadInterpCLM_le`.  (12.3.34) is then one line: `P_n û_n = u_n` and the
-projection reproduces the values at the mesh points, so `u_n` and `û_n` agree there. -/
+**Generalization.** The source assumes that the kernel is continuously differentiable in $y$.
+Only a Lipschitz bound in $y$ is assumed here, and a kernel that is $C^1$ in $y$ satisfies it on
+the compact square.
+
+The operator bounds come from `AtkinsonHan.Chapter12.theorem_12_1_2` and
+`AtkinsonHan.Chapter12.lemma_12_3_1_projection`. The first inequality of (12.3.32) is
+`AtkinsonHan.Chapter12.equation_12_1_24`, the second is
+`AtkinsonHan.Chapter12.norm_sub_quadInterpCLM_le`, and (12.3.33) is
+`AtkinsonHan.Chapter12.equation_12_3_11` together with
+`AtkinsonHan.Chapter12.norm_kernelCLM_sub_quadInterpCLM_le`. For (12.3.34), $P_n \hat u_n = u_n$
+and $P_n$ reproduces the values at the mesh points, so $u_n$ and $\hat u_n$ agree there. -/
 theorem theorem_12_3_3 (hab : a < b) {k : C(Set.Icc a b × Set.Icc a b, ℝ)} {L : ℝ} (hL0 : 0 ≤ L)
     (hL : ∀ x y z : Set.Icc a b, |k (x, y) - k (x, z)| ≤ L * |(y : ℝ) - (z : ℝ)|)
     {μ : ℝ} (hμ : μ ≠ 0) {e : C(Set.Icc a b, ℝ) ≃L[ℝ] C(Set.Icc a b, ℝ)}
@@ -829,32 +898,36 @@ open MeasureTheory IntegralOperator
 
 local notation "L²" => Lp ℝ 2 (IntegralOperator.iccMeasure 0 1)
 
-/-- **The kernel `k(x, y) = e^{x y}` on `[0, 1]²`**, the kernel of **(12.3.18)** — and, on `[0, b]`,
-of the equations (12.2.8) and (12.4.7) that Examples 12.2.1 and 12.4.1 compute with as well.  It is
-the book's standard test kernel for the whole chapter: smooth, positive, and of moderate size.
+/-- **Equation (12.3.18)** of [han2009theoretical], the kernel. The kernel $k(x, y) = e^{xy}$ on
+$[0, 1] \times [0, 1]$, as a continuous function.
 
-It is defined here, in the earliest section that uses it, and §12.4 imports it. -/
+The same kernel appears in (12.2.8) and in (12.4.7), the equations of Examples 12.2.1 and
+12.4.1. It is defined here, in the first section that uses it, and Section 12.4 uses it again. -/
 noncomputable def expKernel : C(Set.Icc (0 : ℝ) 1 × Set.Icc (0 : ℝ) 1, ℝ) :=
   ⟨fun p => Real.exp ((p.1 : ℝ) * (p.2 : ℝ)), by fun_prop⟩
 
-/-- The value of the kernel of (12.3.18). -/
+/-- The kernel of (12.3.18) has the value $e^{xy}$ at $(x, y)$. -/
 theorem expKernel_apply (p : Set.Icc (0 : ℝ) 1 × Set.Icc (0 : ℝ) 1) :
     expKernel p = Real.exp ((p.1 : ℝ) * (p.2 : ℝ)) := rfl
 
-/-- `e^{xy} ≤ e` on the unit square. -/
+/-- The kernel of (12.3.18) satisfies $\|k\|_\infty \le e$ on the unit square. -/
 theorem norm_expKernel_le : ‖expKernel‖ ≤ Real.exp 1 := by
   refine (ContinuousMap.norm_le _ (Real.exp_nonneg 1)).2 fun p => ?_
   rw [expKernel_apply, Real.norm_eq_abs, abs_of_pos (Real.exp_pos _)]
   refine Real.exp_le_exp.2 ?_
   nlinarith [p.1.2.1, p.1.2.2, p.2.2.1, p.2.2.2]
 
-/-- The integral operator `K u (x) = ∫_0^1 e^{xy} u(y) dy` of **(12.3.18)**, on `L²(0, 1)`. -/
+/-- **Equation (12.3.18)** of [han2009theoretical], the operator. The integral operator
+$K u(x) = \int_0^1 e^{xy} u(y)\, dy$ on $L^2(0, 1)$.
+
+It is `IntegralOperator.l2KernelCLM` for the kernel `AtkinsonHan.Chapter12.expKernel`. -/
 noncomputable def expKernelCLM : L² →L[ℝ] L² :=
   l2KernelCLM (memLp_prod_iccMeasure expKernel)
 
-/-- `‖K‖ ≤ e`, from the uniform bound on the kernel; in particular `‖K‖ < 50 = λ`, so the
-integral equation (12.3.18) is uniquely solvable by the Neumann series and no compactness argument
-is needed here. -/
+/-- The operator of (12.3.18) satisfies $\|K\| \le e$.
+
+In particular $\|K\| < 50 = \lambda$, so the equation (12.3.18) is uniquely solvable by the
+Neumann series, without a compactness argument. -/
 theorem norm_expKernelCLM_le : ‖expKernelCLM‖ ≤ Real.exp 1 := by
   have h := norm_l2KernelCLM_comp_le (a := 0) (b := 1) zero_le_one
     (memLp_prod_iccMeasure expKernel) (Q := (1 : L² →L[ℝ] L²)) (IsSelfAdjoint.one _)
@@ -869,30 +942,34 @@ theorem norm_expKernelCLM_le : ‖expKernelCLM‖ ≤ Real.exp 1 := by
       (ContinuousMap.norm_le _ (norm_nonneg _)).2 fun t => expKernel.norm_coe_le_norm (z, t)
     simpa using hrow.trans norm_expKernel_le
 
-/-- `‖K‖ < |λ|` at the book's `λ = 50`. -/
+/-- The operator of (12.3.18) satisfies $\|K\| < |\lambda|$ at the value $\lambda = 50$ of the
+source. -/
 theorem norm_expKernelCLM_lt : ‖expKernelCLM‖ < |(50 : ℝ)| := by
   have h := norm_expKernelCLM_le
   have he := Real.exp_one_lt_d9
   rw [abs_of_pos (by norm_num : (0 : ℝ) < 50)]
   linarith
 
-/-- The kernel `e^{xy}` is symmetric, so `K* = K`. -/
+/-- The operator of (12.3.18) is self-adjoint, $K^* = K$, because the kernel $e^{xy}$ is symmetric.
+-/
 theorem isSelfAdjoint_expKernelCLM : IsSelfAdjoint expKernelCLM :=
   isSelfAdjoint_l2KernelCLM _
     (Filter.Eventually.of_forall fun p => by simp [expKernel_apply, mul_comm])
 
-/-- The uniform mesh `x_j = j h`, `h = 1/n`, of `[0, 1]` into `n` subintervals, as used in
-Example 12.3.2.  The partition has `n` panels, so the index that
-`Numlib/Approximation/PiecewiseLinearL2` calls `n` is `n - 1` here. -/
+/-- The uniform mesh $x_j = j h$, $h = 1/n$, of $[0, 1]$ with $n$ subintervals, as used in Example
+12.3.2.
+
+The partition has $n$ panels, so the panel count argument of `discPiecewiseLinearProjCLM`, which
+takes the number of panels minus one, is $n - 1$ here. -/
 noncomputable def unitMesh (n j : ℕ) : Set.Icc (0 : ℝ) 1 := meshPoint zero_le_one n j
 
-/-- The value `j/n` of a mesh point of Example 12.3.2. -/
+/-- For $n > 0$ and $j \le n$, the mesh point is $x_j = j/n$. -/
 theorem coe_unitMesh {n j : ℕ} (hn : 0 < n) (hj : j ≤ n) :
     (unitMesh n j : ℝ) = (j : ℝ) / n := by
   rw [unitMesh, coe_meshPoint zero_le_one hn hj]
   ring
 
-/-- The mesh is increasing. -/
+/-- For $n > 0$ the mesh points $x_0 < x_1 < \dots < x_n$ increase. -/
 theorem unitMesh_step {n : ℕ} (hn : 0 < n) :
     ∀ i ≤ n - 1, (unitMesh n i : ℝ) < (unitMesh n (i + 1) : ℝ) := by
   intro i hi
@@ -901,17 +978,17 @@ theorem unitMesh_step {n : ℕ} (hn : 0 < n) :
   gcongr
   linarith
 
-/-- The mesh starts at `0`. -/
+/-- The mesh starts at $x_0 = 0$. -/
 theorem unitMesh_first (n : ℕ) : (unitMesh n 0 : ℝ) = 0 := by
   rw [unitMesh, meshPoint]
   simp
 
-/-- The mesh ends at `1`. -/
+/-- For $n > 0$ the mesh ends at $x_n = 1$. -/
 theorem unitMesh_last {n : ℕ} (hn : 0 < n) : (unitMesh n (n - 1 + 1) : ℝ) = 1 := by
   rw [show n - 1 + 1 = n by omega, coe_unitMesh hn le_rfl]
   field_simp
 
-/-- Every subinterval of the mesh has length `h = 1/n`. -/
+/-- For $n > 0$ every subinterval of the mesh has length at most $h = 1/n$. -/
 theorem unitMesh_mesh {n : ℕ} (hn : 0 < n) :
     ∀ i ≤ n - 1, (unitMesh n (i + 1) : ℝ) - (unitMesh n i : ℝ) ≤ 1 / n := by
   intro i hi
@@ -921,26 +998,31 @@ theorem unitMesh_mesh {n : ℕ} (hn : 0 < n) :
   field_simp
   linarith
 
-/-- **The projection `P_n` of Example 12.3.2**: the `L²(0, 1)`-orthogonal projection onto the
-functions that are linear on each subinterval of the uniform mesh of width `h = 1/n`, *without*
-the continuity restriction of §12.2.3.  It is the backbone `discPiecewiseLinearProjCLM`.  The
-book's count `d_n = 2 n` for the dimension of the trial space, twice that of the continuous
-piecewise linear space, is not formalized: it is a remark on the size of the linear system, and
-nothing in (12.3.19) or (12.3.20) uses it. -/
+/-- **Example 12.3.2** of [han2009theoretical], the projection. The projection $P_n$ is the
+orthogonal projection of $L^2(0, 1)$ onto the functions that are linear on each subinterval of
+the uniform mesh of width $h = 1/n$, without the continuity condition of §12.2.3.
+
+It is `discPiecewiseLinearProjCLM`. The dimension $d_n = 2n$ of the trial space, which the
+source gives, is not formalized: it concerns the size of the linear system, and (12.3.19) and
+(12.3.20) do not use it. -/
 noncomputable def discGalerkinProj (n : ℕ) : L² →L[ℝ] L² :=
   discPiecewiseLinearProjCLM 0 1 (n - 1) (unitMesh n)
 
-/-- `P_n` is a projection. -/
+/-- **Example 12.3.2** of [han2009theoretical]. The operator $P_n$ is a projection: $P_n^2 = P_n$.
+-/
 theorem isIdempotentElem_discGalerkinProj (n : ℕ) : IsIdempotentElem (discGalerkinProj n) :=
   isIdempotentElem_discPiecewiseLinearProjCLM 0 1 (n - 1) (unitMesh n)
 
-/-- `P_n` is self-adjoint, being orthogonal; this is what (12.3.13) uses. -/
+/-- **Example 12.3.2** of [han2009theoretical]. The operator $P_n$ is self-adjoint, because it is an
+orthogonal projection. Equation (12.3.13) uses this. -/
 theorem isSelfAdjoint_discGalerkinProj (n : ℕ) : IsSelfAdjoint (discGalerkinProj n) :=
   isSelfAdjoint_discPiecewiseLinearProjCLM 0 1 (n - 1) (unitMesh n)
 
-/-- **`‖K (I - P_n)‖ ≤ e h²/8`, the estimate Example 12.3.2 states without proof.**  The rows
-`y ↦ e^{xy}` of the kernel are `C²` with `|∂²_y e^{xy}| = x² e^{xy} ≤ e` on the unit square, so the
-`𝒪(h²)` approximation order of `P_n` applies to them uniformly. -/
+/-- **Example 12.3.2** of [han2009theoretical], the estimate that the source states without proof.
+For $n > 0$ and $h = 1/n$, $$\|K (I - P_n)\| \le \frac{e h^2}{8}.$$
+
+The functions $y \mapsto e^{xy}$ are $C^2$ with $|\partial_y^2 e^{xy}| = x^2 e^{xy} \le e$ on
+the unit square, so the $O(h^2)$ approximation order of $P_n$ applies to them uniformly in $x$. -/
 theorem norm_expKernelCLM_comp_sub_discGalerkinProj_le {n : ℕ} (hn : 0 < n) :
     ‖expKernelCLM ∘L (1 - discGalerkinProj n)‖ ≤ (1 / (n : ℝ)) ^ 2 / 8 * Real.exp 1 := by
   have key := norm_l2KernelCLM_comp_sub_discPiecewiseLinearProjCLM_le (a := 0) (b := 1)
@@ -956,11 +1038,13 @@ theorem norm_expKernelCLM_comp_sub_discGalerkinProj_le {n : ℕ} (hn : 0 < n) :
       Real.exp_le_exp.2 (by nlinarith [z.2.1, z.2.2, ht.1, ht.2])
     nlinarith [Real.exp_pos ((z : ℝ) * t), Real.exp_pos (1 : ℝ), sq_nonneg (z : ℝ)]
 
-/-- **(12.3.13) in this example**: `‖K - P_n K‖ = ‖(I - P_n) K*‖ = ‖K (I - P_n)‖ ≤ e h²/8`.  The
-first equality is the definition, the second is that an operator and its adjoint have the same
-norm together with `isSelfAdjoint_discGalerkinProj`, and the kernel `e^{xy}` being symmetric makes
-`K* = K`, so all three quantities coincide here.  This is the input `theorem_12_1_2` needs, and it
-replaces the compactness argument of (12.3.15). -/
+/-- **Equation (12.3.13)** of [han2009theoretical], in Example 12.3.2. For $n > 0$ and $h = 1/n$,
+$$\|K - P_n K\| \le \frac{e h^2}{8}.$$
+
+Here $\|K - P_n K\| = \|(I - P_n) K^*\| = \|K (I - P_n)\|$, because $K^* = K$ (the kernel is
+symmetric), $P_n$ is self-adjoint, and an operator and its adjoint have the same norm. This
+bound is the hypothesis of `AtkinsonHan.Chapter12.theorem_12_1_2`, and it replaces the
+compactness argument of (12.3.15). -/
 theorem norm_sub_comp_expKernelCLM_le {n : ℕ} (hn : 0 < n) :
     ‖expKernelCLM - discGalerkinProj n ∘L expKernelCLM‖
       ≤ (1 / (n : ℝ)) ^ 2 / 8 * Real.exp 1 := by
@@ -975,8 +1059,8 @@ theorem norm_sub_comp_expKernelCLM_le {n : ℕ} (hn : 0 < n) :
   rw [hsub, ← ContinuousLinearMap.adjoint.norm_map, hadj]
   exact norm_expKernelCLM_comp_sub_discGalerkinProj_le hn
 
-/-- If `‖K‖ < |λ|` then `λ - K` is invertible, by the Neumann series; the quantitative form is
-`ContinuousLinearEquiv.exists_symm_norm_le_of_add`. -/
+/-- If $\lambda \neq 0$ and $\|K\| < |\lambda|$ on a Banach space, then $\lambda - K$ is invertible.
+-/
 private theorem exists_equiv_smul_sub_of_norm_lt {Y : Type*} [NormedAddCommGroup Y]
     [NormedSpace ℝ Y] [CompleteSpace Y] {μ : ℝ} (hμ : μ ≠ 0) {K : Y →L[ℝ] Y} (h : ‖K‖ < |μ|) :
     ∃ e : Y ≃L[ℝ] Y, (e : Y →L[ℝ] Y) = μ • 1 - K := by
@@ -1002,18 +1086,22 @@ private theorem exists_equiv_smul_sub_of_norm_lt {Y : Type*} [NormedAddCommGroup
   obtain ⟨e, he, -, -⟩ := ContinuousLinearEquiv.exists_symm_norm_le_of_add e₀ (-K) hlt
   exact ⟨e, by rw [he, he₀, ← sub_eq_add_neg]⟩
 
-/-- The exact solution `u(x) = e^x` of Example 12.3.2, as a continuous function. -/
+/-- **Example 12.3.2** of [han2009theoretical]. The exact solution $u(x) = e^x$, as a continuous
+function on $[0, 1]$. -/
 noncomputable def expSolutionFun : C(Set.Icc (0 : ℝ) 1, ℝ) := ⟨fun t => Real.exp t, by fun_prop⟩
 
-/-- The exact solution `u(x) = e^x` of Example 12.3.2, as an element of `L²(0, 1)`. -/
+/-- **Example 12.3.2** of [han2009theoretical]. The exact solution $u(x) = e^x$, as an element of
+$L^2(0, 1)$. -/
 noncomputable def expSolution : L² := iccToLp 0 1 expSolutionFun
 
-/-- The right-hand side `f = 50 u - K u` of (12.3.18) at `λ = 50` and `u(x) = e^x`. -/
+/-- **Example 12.3.2** of [han2009theoretical]. The right-hand side $f = 50 u - K u$ of (12.3.18)
+for $\lambda = 50$ and $u(x) = e^x$. -/
 noncomputable def expRhs : L² := ((50 : ℝ) • 1 - expKernelCLM : L² →L[ℝ] L²) expSolution
 
-/-- **`‖u - P_n u‖ ≤ e h²/8`**, the second input of Example 12.3.2: the solution `u(x) = e^x` is
-`C²` with `|u''| ≤ e` on `[0, 1]`, so the `𝒪(h²)` approximation order of the discontinuous
-piecewise linear projection applies to it. -/
+/-- **Example 12.3.2** of [han2009theoretical], the second estimate. For $n > 0$ and $h = 1/n$, the
+solution $u(x) = e^x$ satisfies $$\|u - P_n u\|_{L^2} \le \frac{e h^2}{8}.$$ The function $u$ is
+$C^2$ with $|u''| \le e$ on $[0, 1]$, so the $O(h^2)$ approximation order of the discontinuous
+piecewise linear projection applies. -/
 theorem norm_sub_discGalerkinProj_expSolution_le {n : ℕ} (hn : 0 < n) :
     ‖expSolution - discGalerkinProj n expSolution‖ ≤ (1 / (n : ℝ)) ^ 2 / 8 * Real.exp 1 := by
   have hiter : iteratedDeriv 2 Real.exp = Real.exp := by
@@ -1030,33 +1118,24 @@ theorem norm_sub_discGalerkinProj_expSolution_le {n : ℕ} (hn : 0 < n) :
   rw [show (1 : ℝ) - 0 = 1 by ring, Real.sqrt_one, one_mul]
   exact hinterp
 
-/-- **Example 12.3.2**, the iterated Galerkin method for
+/-- **Example 12.3.2** of [han2009theoretical] (the iterated Galerkin method). Consider the equation
+$$50 u(x) - \int_0^1 e^{xy} u(y)\, dy = f(x), \qquad 0 \le x \le 1,$$ which is (12.3.18), on
+$L^2(0, 1)$, with the exact solution $u(x) = e^x$, and the Galerkin method with the
+discontinuous piecewise linear functions on the uniform mesh of width $h = 1/n$. There are
+constants $c_1$ and $c_2$ such that for all large $n$ the Galerkin equations have exactly one
+solution for every right-hand side, and the Galerkin solution $u_n$ for this $f$ and the
+iterated solution $\hat u_n = (f + K u_n)/50$ satisfy $$\|u - u_n\|_{L^2} \le c_1 h^2 \quad
+(12.3.19), \qquad \|u - \hat u_n\|_{L^2} \le c_2 h^4 \quad (12.3.20).$$
 
-`50 u(x) - ∫_0^1 e^{xy} u(y) dy = f(x)`,   `0 ≤ x ≤ 1`,   **(12.3.18)**
-
-with the exact solution `u(x) = e^x`, over the *discontinuous* piecewise linear functions on the
-uniform mesh of width `h = 1/n`.  For all large `n` the Galerkin equations
-`(50 - P_n K) u_n = P_n f` are uniquely solvable, and
-
-* `‖u - u_n‖_{L²} ≤ c₁ h²`   **(12.3.19)**,
-* `‖u - û_n‖_{L²} ≤ c₂ h⁴`   **(12.3.20)**,
-
-the second being the Sloan superconvergence of the iterated solution `û_n = (f + K u_n)/50`.
-
-The two inputs the book asserts without proof are `norm_sub_comp_expKernelCLM_le`, which is
-`‖(I - P_n) K*‖ = 𝒪(h²)` in the form `‖K - P_n K‖ = 𝒪(h²)` — the same quantity, since `P_n` is
-self-adjoint and the kernel is symmetric — and `norm_sub_discGalerkinProj_expSolution_le`, which
-is `‖u - P_n u‖ = 𝒪(h²)`.  Given those, (12.3.19) is `equation_12_1_24` and (12.3.20) is
-`equation_12_3_11`, whose right-hand side carries the *product* of the two.  Unique solvability
-comes from `theorem_12_1_2`; its hypothesis `‖K - P_n K‖ → 0` is here an explicit `𝒪(h²)` bound
-rather than the compactness argument of (12.3.15), and the invertibility of `50 - K` is the
-Neumann series, since `‖K‖ ≤ e < 50`.
-
-**Table 12.2 is not formalized**: it is measured error data for `n = 2, 4, 8` produced by running
-the method, not mathematics.  What the table confirms is the pair of rates above, and those are
-what is proved here.  The constants `c₁` and `c₂` are existentially quantified, as in
-`equation_12_2_19`; the proof produces `c₁ = 25 e ‖(50 - K)⁻¹‖` and a `c₂` of the same shape,
-which the book does not state either. -/
+The two estimates that the source states without proof are
+`AtkinsonHan.Chapter12.norm_sub_comp_expKernelCLM_le`, $\|K - P_n K\| = O(h^2)$, and
+`AtkinsonHan.Chapter12.norm_sub_discGalerkinProj_expSolution_le`, $\|u - P_n u\| = O(h^2)$. With
+them, (12.3.19) is `AtkinsonHan.Chapter12.equation_12_1_24` and (12.3.20) is
+`AtkinsonHan.Chapter12.equation_12_3_11`, whose right-hand side is the product of the two.
+Unique solvability comes from `AtkinsonHan.Chapter12.theorem_12_1_2`, and $50 - K$ is invertible
+by the Neumann series, because $\|K\| \le e < 50$. The source does not give $c_1$ and $c_2$; the
+proof gives $c_1 = 25 e \|(50 - K)^{-1}\| / 2$ and a $c_2$ of the same form. Table 12.2 of
+measured errors is not formalized. -/
 theorem example_12_3_2 :
     ∃ c₁ c₂ : ℝ, ∀ᶠ n : ℕ in atTop,
       (∀ f : L², ∃! un : L²,

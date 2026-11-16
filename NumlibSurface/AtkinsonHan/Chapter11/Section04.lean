@@ -13,105 +13,114 @@ import NumlibSurface.AtkinsonHan.Chapter10.Section04
 import NumlibSurface.AtkinsonHan.Chapter11.Section03
 
 /-!
-# Atkinson–Han §11.4: numerical approximation of elliptic variational inequalities
+# Atkinson and Han, Section 11.4: Numerical approximation of elliptic variational inequalities
 
-Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework*, 3rd edition, Springer, 2009, §11.4.
+This module formalizes Section 11.4 of [han2009theoretical]. The discrete problem (11.4.3) is the
+variational inequality (11.3.3) of Section 11.3 with the constraint set $K$ replaced by a set $K_h$,
+so it uses the same predicate `AtkinsonHan.Chapter11.IsVariationalInequalitySolution`, and its
+unique solvability is Theorem 11.3.1 again. The section adds the error analysis. With the residual
+of the continuous solution $u$,
+$$R(v, w) = (A u, v - w) + j(v) - j(w) - (f, v - w),$$
+Falk's lemma (Theorem 11.4.2) bounds $\frac{c_0}{2} \|u - u_h\|^2$ by $\inf_{v \in K} R(v, u_h) +
+\inf_{v_h \in K_h} \bigl[R(v_h, u) + \frac{M^2}{2 c_0} \|u - v_h\|^2\bigr]$. Theorem 11.4.1 and
+Exercise 11.4.2 give convergence $u_h \to u$, Theorems 11.4.6 and 11.4.7 treat a discrete functional
+$j_h$ that replaces $j$, and Exercise 11.4.3 bounds the error of a regularized functional.
 
-The discrete problem (11.4.3) is the *same* predicate as the continuous one (11.3.3) with a
-different constraint set, so §11.4 introduces no new notion of discrete solution, and its unique
-solvability is Theorem 11.3.1 again.  What the section adds is the analysis of the error:
+Examples 11.4.3 and 11.4.4 apply Falk's lemma to the obstacle problem and to the simplified friction
+problem, discretized with linear elements on a polygon, and give the estimate
+$\|u - u_h\|_{H^1(\Omega)} \le c h$. Theorem 11.4.5 characterizes the solution of the friction
+problem by a Lagrange multiplier $\lambda \in L^\infty(\Gamma)$ with $|\lambda| \le 1$. The abstract
+results specialize `Numlib.Variational.Inequality.Approximation`, the multiplier specializes
+`Numlib.Variational.Inequality.Multiplier`, and the examples use the linear element of
+`Numlib.Geometry.Triangulation` and Theorem 10.3.9 (`AtkinsonHan.Chapter10.theorem_10_3_9_linear`).
 
-* `theorem_11_4_1` — convergence of the discrete solutions when the constraint sets `K_h`
-  approximate `K`, the general case in which `K_h ⊄ K`;
-* `theorem_11_4_2` — Falk's generalized Céa lemma (11.4.7), and `theorem_11_4_2_of_subset` the
-  internal-approximation form that follows it;
-* `exercise_11_4_2` — convergence of internal approximations, with no weak compactness;
-* `exercise_11_4_3` — the a priori bound (11.4.20) for a regularized functional;
-* `theorem_11_4_6` — convergence of the method of numerical integration (11.4.25), the one result
-  of the section whose discrete functional `j_h` varies with `h`;
-* `theorem_11_4_7` — the error bound (11.4.27) when the discrete functional dominates `j`;
-* `example_11_4_3` — the obstacle problem discretized with linear elements on a polygon: the
-  optimal-order estimate `‖u − u_h‖_{H¹} ≤ c h` from Falk's lemma, with the discrete admissible
-  set `discreteObstacleSet` (`K_h ⊄ K`), `Π_h u ∈ K_h` and `max (u_h, ψ) ∈ K`;
-* `example_11_4_4` — the friction problem (11.1.13) discretized with linear elements on a polygon,
-  the same estimate `‖u − u_h‖_{H¹} ≤ c(u) h` for an *internal* approximation `V_h ⊆ V = H¹(Ω)`:
-  here the residual does not vanish and is integrated by parts on the polygon
-  (`laplaceForm_sub_load_eq_normalTrace_add`, `abs_residual_le`), which brings in the trace and
-  the boundary term `∫_Γ ∂_ν u (γ v_h − γ u) ds`, bounded through the one-dimensional
-  interpolation estimate along each side (`Triangulation.norm_traceL_sub_globalInterp_le` of
-  `Numlib/FiniteElement/BoundaryInterpolation.lean`).
+## Main definitions
 
-`residual` is the book's `R(v, w)` of the display preceding (11.4.7), with the functional at the
-two arguments kept separate so that the same definition serves the `R_h` of (11.4.27).
+* Display before (11.4.7), `AtkinsonHan.Chapter11.residual`: the residual $R(v, w) = (A u, v - w) +
+  j_1(v) - j_2(w) - (f, v - w)$.
+* Example 11.4.3, `AtkinsonHan.Chapter11.discreteObstacleSet`: the continuous piecewise linear
+  $v_h \in H^1_0(\Omega)$ with $v_h \ge \psi$ at every node.
+* Example 11.4.4, `AtkinsonHan.Chapter11.weakLaplacian`,
+  `AtkinsonHan.Chapter11.frictionResidualData` and `AtkinsonHan.Chapter11.normalTraceL`: the weak
+  Laplacian $\Delta u$, the function $-\Delta u + u - f$, and the normal derivative
+  $\partial u / \partial \nu \in L^2(\Gamma)$ of $u \in H^2(\Omega)$.
 
-## Deviations from the book
+## Main results
 
-* **The estimates are squared.**  Falk's lemma is `(c₀/2) ‖u - u_h‖² ≤ R(v, u_h) + R(v_h, u) +
-  (M²/(2c₀)) ‖u - v_h‖²`, which is what its proof establishes; the book's square-rooted form is
-  `theorem_11_4_2_of_subset`, with the constant `max (M/c₀) √(2/c₀)` written out.
-* **The weak-limit hypotheses of Theorems 11.4.1 and 11.4.6 are indexed by an arbitrary reindexing
-  `σ : ℕ → ℕ`**, because the proof runs through `tendsto_of_subseq_tendsto` and so tests the
-  hypothesis along a subsequence.  Boundedness of the discrete solutions is not a separate
-  hypothesis: it falls out of Falk's lemma at `v = u` together with an affine minorant of `j`.
-* **Exercise 11.4.2 asks for the subspaces to be nested.**  "The union of the `V_h` is dense" does
-  not by itself produce, for each `n`, a point of `V_h n` near `u`; monotonicity does, and the
-  approximating sequence is then the sequence of best approximations, whose errors are antitone.
-* **The `liminf` of Theorem 11.4.6 is written as an eventual strict inequality**, `∀ α < j v, the
-  values j_h(v_h) are eventually above α`.  Over `ℝ`, `Filter.liminf` of a sequence unbounded below
-  is junk rather than `-∞`, so the inequality `liminf j_h(v_h) ≥ j(v)` spelled with it would be a
-  different — and, on such a sequence, false — statement; the eventual form is the one the proof
-  uses and the one that carries no hidden boundedness.
-* **Theorem 11.4.6 drops the hypotheses of it that only make the discrete problem solvable**:
-  the finite dimensionality of the `V_h` and the convexity and lower semicontinuity of the `j_h`
-  are what Theorem 11.3.1 needs to produce `u_h`, and the theorem takes the `u_h` as given.
+* Theorem 11.4.1, `AtkinsonHan.Chapter11.theorem_11_4_1`: if the sets $K_h$ approximate $K$, the
+  discrete solutions converge in norm to $u$.
+* Theorem 11.4.2, `AtkinsonHan.Chapter11.theorem_11_4_2` (Falk's lemma): the squared error bound
+  (11.4.7).
+* Theorem 11.4.2, `AtkinsonHan.Chapter11.theorem_11_4_2_of_subset`: for $K_h \subseteq K$, $\|u -
+  u_h\| \le c \inf_{v_h \in K_h} (\|u - v_h\| + |R(v_h, u)|^{1/2})$.
+* Example 11.4.3, `AtkinsonHan.Chapter11.example_11_4_3`: the linear element approximation of the
+  obstacle problem on a polygon has error $\|u - u_h\|_{H^1(\Omega)} \le c h$.
+* Example 11.4.4, `AtkinsonHan.Chapter11.example_11_4_4`: the linear element approximation of the
+  simplified friction problem on a polygon has error $\|u - u_h\|_{H^1(\Omega)} \le c h$.
+* Theorem 11.4.5, `AtkinsonHan.Chapter11.theorem_11_4_5`: $u$ solves the friction problem (11.4.10)
+  if and only if there is a multiplier $\lambda \in L^\infty(\Gamma)$, $|\lambda| \le 1$, with
+  (11.4.21) and (11.4.22).
+* Theorem 11.4.5, `AtkinsonHan.Chapter11.theorem_11_4_5_unique`: the multiplier is unique.
+* Theorem 11.4.6, `AtkinsonHan.Chapter11.theorem_11_4_6`: the method of numerical integration
+  (11.4.25) converges.
+* Theorem 11.4.7, `AtkinsonHan.Chapter11.theorem_11_4_7`: if $j_h \ge j$ on $K_h$, the error bound
+  (11.4.27) holds with the residual measured by $j_h$.
+* Exercise 11.4.2, `AtkinsonHan.Chapter11.exercise_11_4_2`: internal approximations by nested
+  subspaces with dense union converge, without weak compactness.
+* Exercise 11.4.3, `AtkinsonHan.Chapter11.exercise_11_4_3`: the a priori bound (11.4.20) $\|u -
+  u_\varepsilon\| \le \sqrt{2 c_1 \varepsilon / c_0}$ for a regularized functional.
 
-* **Example 11.4.3 reads the data on continuous representatives.** The regularity `u, ψ ∈ H²(Ω)`
-  of the book enters through representatives continuous up to the boundary (as in Theorem
-  10.3.9), the boundary conditions `u = 0`, `ψ ≤ 0` on `Γ` are stated on those representatives (on
-  a polygon they do not follow from `u ∈ H¹₀(Ω)`, the domain not being `C¹`), and `−Δu ∈ L²(Ω)` —
-  the regularity theorem for the obstacle problem on a `C²` domain
-  (`Numlib/Analysis/PDE/Elliptic/Obstacle.lean`) — is the hypothesis `a(u, v) = ∫_Ω g v` for all
-  `v ∈ H¹₀(Ω)`. The polygon enters through `Triangulation.FrontierSubsetEdges` (`∂Ω` is a union of
-  element edges), and the discrete admissible set asks `v_h ≥ ψ` at every vertex (the boundary
-  vertices included, where it holds automatically as `v_h = 0 ≥ ψ`).
+## Implementation notes
 
-## The Lagrange multiplier of the friction problem
+* `AtkinsonHan.Chapter11.residual` keeps the functionals at its two arguments separate, so that it
+  serves both the $R$ of (11.4.7) and the $R_h$ of (11.4.27).
+* The boundedness of the discrete solutions in Theorems 11.4.1 and 11.4.6 is not a hypothesis. It
+  follows from Falk's lemma at $v = u$ together with a continuous affine minorant of $j$.
+* The source extends the functional $\ell - a(u, \cdot)$ in Theorem 11.4.5 from $H^{1/2}(\Gamma)$ to
+  $L^1(\Gamma)$ by the Hahn–Banach theorem, and uses the density of $H^{1/2}(\Gamma)$ in
+  $L^2(\Gamma)$ for the uniqueness. Here the functional is extended from the subspace of traces in
+  $L^1(\Gamma)$, with the Riesz representation $(L^1)' = L^\infty$, and the uniqueness uses the
+  traces of the smooth compactly supported functions. No fractional Sobolev space is used.
+* In Example 11.4.4 each triangulation carries its own surface measure on $\Gamma$,
+  `Triangulation.boundaryMeasure`, and its own trace. Therefore the friction functional and the
+  continuous problem are stated for each mesh.
 
-* `theorem_11_4_5` — the simplified friction problem (11.4.10) is equivalent to the system
-  (11.4.21)–(11.4.22) with a multiplier `λ ∈ Λ = {μ ∈ L^∞(Γ) : |μ| ≤ 1}`, and
-  `theorem_11_4_5_unique` — the multiplier is unique; over the boundary interface
-  `BoundaryData Ω`, `BoundaryData.TraceFamily` of `Numlib/Analysis/Sobolev/Boundary/Data.lean`
-  (a bounded `C¹` domain or a polygon, the book's Lipschitz domain).  The book extends the
-  functional `ℓ − a(u, ·)` from `H^{1/2}(Γ)` to `L¹(Γ)` by Hahn–Banach and uses the density of
-  `H^{1/2}(Γ)` in `L²(Γ)` for the uniqueness; here the functional is extended from the subspace of
-  traces in `L¹(σ)` (`exists_multiplier_of_forall_abs_le` and
-  `forall_le_add_integral_abs_iff_exists_multiplier` of
-  `Numlib/Variational/Inequality/Multiplier.lean`, with the Riesz representation
-  `(L¹)' = L^∞`) and the uniqueness rests on the traces of the smooth compactly supported functions
-  (`ae_eq_zero_of_integral_contDiff_smul_eq_zero`); no fractional space enters.
+## Deviations from the source
 
-## Example 11.4.4 and its hypotheses
-
-The estimate of Example 11.4.4 is stated on a regular family of triangulations of the polygon,
-as Example 11.4.3 is, with the book's regularity `u ∈ H²(Ω)`, `u|_{Γᵢ} ∈ H²(Γᵢ)` made explicit
-(`U₂ : SobolevEuclidean 2 2 2 Ω`, a representative `ũ` continuous on `Ω̄`, and an element of
-`SobolevInterval 2 0 1` for the restriction of `ũ` to each side).  Two hypotheses the book leaves
-implicit are named: that every boundary edge of every mesh lies on one of the finitely many sides
-of the polygon (`hside` — this is what "polygonal domain" means for the boundary bookkeeping, and
-it replaces `Triangulation.FrontierSubsetEdges`, which the proof does not use), and that
-`‖∂u/∂ν‖_{L²(Γ)}` and `√(meas Γ)` are bounded uniformly in `h` (`hMν`, `hMσ`) — each mesh carries
-its own surface measure `Triangulation.boundaryMeasure`, and for a fixed polygon these are the
-same number for every mesh.  For the same reason the friction functional `j` of the variational
-inequality is the one built from the mesh's trace family, so the continuous problem is stated per
-mesh.
+* **Theorem 11.4.2** (reading). Falk's lemma is stated in the squared form
+  $\frac{c_0}{2} \|u - u_h\|^2 \le \dots$ that its proof gives. The square-rooted form is
+  `AtkinsonHan.Chapter11.theorem_11_4_2_of_subset`, with the constant
+  $c = \max\{M/c_0, \sqrt{2/c_0}\}$ written out. See `AtkinsonHan.Chapter11.theorem_11_4_2`.
+* **Theorems 11.4.1 and 11.4.6** (reading). The weak-limit hypotheses are required along every
+  reindexing $\sigma \colon \mathbb{N} \to \mathbb{N}$ of the sequence, because the proof passes to
+  subsequences. See `AtkinsonHan.Chapter11.theorem_11_4_1`.
+* **Theorem 11.4.6** (reading). The condition $\liminf_h j_h(v_h) \ge j(v)$ is stated as: for every
+  $\alpha < j(v)$, eventually $j_h(v_h) > \alpha$. See `AtkinsonHan.Chapter11.theorem_11_4_6`.
+* **Theorem 11.4.6** (generalization). The finite dimension of the spaces $V_h$ and the convexity
+  and lower semicontinuity of the $j_h$, which only make the discrete problems solvable, are not
+  assumed; the discrete solutions are given. See `AtkinsonHan.Chapter11.theorem_11_4_6`.
+* **Exercise 11.4.2** (correction). The source asks only that the union of the subspaces $V_h$ be
+  dense. This does not give a point of every $V_h$ near $u$, so the library also asks that the $V_h$
+  be nested. See `AtkinsonHan.Chapter11.exercise_11_4_2`.
+* **Example 11.4.3** (reading). The regularity $u, \psi \in H^2(\Omega)$, the boundary conditions
+  $u = 0$ and $\psi \le 0$ on $\Gamma$, and $-\Delta u \in L^2(\Omega)$ are hypotheses on
+  representatives continuous on $\overline\Omega$. The polygon is a triangulated domain whose
+  boundary is a union of element edges. See `AtkinsonHan.Chapter11.example_11_4_3`.
+* **Example 11.4.4** (reading). The regularity $u \in H^2(\Omega)$ and
+  $u|_{\Gamma_k} \in H^2(\Gamma_k)$ on every side is stated through explicit representatives. The
+  polygon is stated by the condition that every boundary edge lies on one of finitely many sides,
+  and $\|\partial u/\partial\nu\|_{L^2(\Gamma)}$ and $\sqrt{\operatorname{meas} \Gamma}$ are assumed
+  bounded uniformly in $h$. See `AtkinsonHan.Chapter11.example_11_4_4`.
+* **Theorem 11.4.5** (reading). The Lipschitz domain of the source is a domain with a boundary trace
+  in the sense of `BoundaryData.TraceFamily`, for example a bounded $C^1$ domain or a polygon
+  without slits. See `AtkinsonHan.Chapter11.theorem_11_4_5`.
 
 ## Not formalized
 
-Exercise 11.4.4 (the proof of Theorem 11.4.5 through the regularization (11.4.14)); the analysis
-of (11.4.29), the method of numerical integration for the friction problem, which needs the
-quadrature functional `j_h` on the boundary; Exercises 11.4.1 and 11.4.5, which name a domain as
-well.
+* **Exercise 11.4.4** (the proof of Theorem 11.4.5 through the regularization (11.4.14)).
+* **The analysis of (11.4.29)**, the method of numerical integration for the friction problem. It
+  needs the quadrature functional $j_h$ on the boundary.
+* **Exercises 11.4.1 and 11.4.5.** They name a domain.
 -/
 
 open Filter Set Topology
@@ -121,14 +130,15 @@ namespace AtkinsonHan.Chapter11
 
 variable {V : Type*} [NormedAddCommGroup V] [InnerProductSpace ℝ V] [CompleteSpace V]
 
-/-- **The residual of the continuous solution `u`** at the pair `(v, w)`, measured with the
-functional `j₁` at the first argument and `j₂` at the second:
+/-- **Display before (11.4.7)** of [han2009theoretical], the residual. Let $V$ be a real Hilbert
+space, $A \colon V \to V$, $j_1, j_2 \colon V \to \mathbb{R}$ and $f, u \in V$. The **residual**
+of $u$ at $(v, w)$ is
+$$R(v, w) = (A u, v - w) + j_1(v) - j_2(w) - (f, v - w).$$
 
-  `R(v, w) = (A u, v - w) + j₁(v) - j₂(w) - (f, v - w)`.
-
-The `R` of Atkinson–Han's display preceding (11.4.7) is the case `j₁ = j₂ = j`; the `R_h` of
-(11.4.27) is `j₁ = j_h` and `j₂ = j`.  It vanishes identically for a variational *equation* —
-`j = 0`, `K` a subspace and `v, w ∈ K` — which is what makes Falk's lemma contain Céa's. -/
+The $R$ of the source is the case $j_1 = j_2 = j$, and the $R_h$ of (11.4.27) is the case
+$j_1 = j_h$, $j_2 = j$. For a variational equation, with $j = 0$, $K$ a subspace and
+$v, w \in K$, the residual of the solution vanishes; this is why Falk's lemma contains Céa's
+lemma. -/
 def residual (A : V → V) (j₁ j₂ : V → ℝ) (f u v w : V) : ℝ :=
   ⟪A u, v - w⟫_ℝ + j₁ v - j₂ w - ⟪f, v - w⟫_ℝ
 
@@ -136,15 +146,16 @@ section
 
 variable {A : V → V} {c₀ M : ℝ} {j jh : V → ℝ} {f u uh : V} {K Kh : Set V}
 
-/-- The constant `c` of the square-rooted error bounds (11.4.7) and (11.4.27). -/
+/-- The constant $c = \max\{M/c_0, \sqrt{2/c_0}\}$ of the square-rooted error bounds (11.4.7) and
+(11.4.27). -/
 private noncomputable def falkConst (c₀ M : ℝ) : ℝ := max (M / c₀) (Real.sqrt (2 / c₀))
 
-/-- The constant of the square-rooted error bounds is nonnegative. -/
+/-- The constant $\max\{M/c_0, \sqrt{2/c_0}\}$ is nonnegative for $c_0 > 0$ and $M \ge 0$. -/
 private theorem falkConst_nonneg (hc₀ : 0 < c₀) (hM : 0 ≤ M) : 0 ≤ falkConst c₀ M :=
   le_max_of_le_left (div_nonneg hM hc₀.le)
 
-/-- The scalar step behind the square-rooted form of Falk's lemma: from
-`(c₀/2) e² ≤ R + (M²/(2c₀)) d²` and `0 ≤ e, d` follows `e ≤ c (d + √|R|)`. -/
+/-- If $e, d \ge 0$ and $\frac{c_0}{2} e^2 \le R + \frac{M^2}{2 c_0} d^2$, then
+$e \le c (d + \sqrt{|R|})$ with $c = \max\{M/c_0, \sqrt{2/c_0}\}$. -/
 private theorem norm_le_falkConst (hc₀ : 0 < c₀) (hM : 0 ≤ M) {e d R : ℝ} (he : 0 ≤ e)
     (hd : 0 ≤ d) (h : c₀ / 2 * e ^ 2 ≤ R + M ^ 2 / (2 * c₀) * d ^ 2) :
     e ≤ falkConst c₀ M * (d + Real.sqrt |R|) := by
@@ -181,22 +192,27 @@ private theorem norm_le_falkConst (hc₀ : 0 < c₀) (hM : 0 ≤ M) {e d R : ℝ
 
 /-! ### Theorem 11.4.1: convergence for approximating constraint sets -/
 
-/-- **Theorem 11.4.1.**  Under the hypotheses of Theorem 11.3.1 — `A` strongly monotone with
-constant `c₀ > 0` and Lipschitz with constant `M` — let `j` be convex and continuous on the whole
-space (the book's (11.4.2): `j` is the restriction to `K` of such a functional), let `K` be convex
-and let `{K_h}` be constraint sets such that
+/-- **Theorem 11.4.1** of [han2009theoretical]. Let $V$ be a real Hilbert space and let
+$K \subseteq V$ be convex. Let $A \colon V \to V$ be strongly monotone with constant $c_0 > 0$
+and Lipschitz continuous with constant $M \ge 0$, and let $j \colon V \to \mathbb{R}$ be convex
+and continuous on $V$. Let $(K_n)_{n \in \mathbb{N}}$ be subsets of $V$ such that
 
-* (a) every `v ∈ K` is the limit of a sequence `v_h ∈ K_h`, and
-* (b) a weak limit of elements taken from the `K_h` along any reindexing lies in `K`.
+* (a) every $v \in K$ is the limit of a sequence $w_n \in K_n$, and
+* (b) for every $\sigma \colon \mathbb{N} \to \mathbb{N}$ and every sequence
+  $v_k \in K_{\sigma(k)}$ that converges weakly to $z$, $z \in K$.
 
-Then the solutions `u_h` of the discrete problems (11.4.3) converge to the solution `u` of
-(11.3.3) *in norm*.
+Let $u$ solve the variational inequality (11.3.3) over $K$ with datum $f$, and let $u_n$ solve
+it over $K_n$, which is (11.4.3). Then $u_n \to u$ in norm.
 
-Hypothesis (b) is indexed by an arbitrary `σ : ℕ → ℕ` because the proof passes to a subsequence;
-for an internal approximation, `K_h ⊆ K`, it is automatic, and the whole weak-compactness step is
-unnecessary — that is `exercise_11_4_2`.  The boundedness of the `u_h` that the book obtains
-separately is not a hypothesis here: it follows from Falk's lemma tested at `v = u` together with
-a continuous affine minorant of `j`. -/
+**Reading.** Hypothesis (b) is required along every reindexing $\sigma$, because the proof
+passes to a subsequence.
+
+The source's (11.4.2) asks that $j$ be the restriction to $K$ of a convex continuous functional
+on $V$; here $j$ is that functional. Weak convergence is written as $(v_k, y) \to (z, y)$ for
+every $y \in V$. The source proves separately that the $u_n$ are bounded; here this follows from
+Falk's lemma at $v = u$ and an affine minorant of $j$. For an internal approximation,
+$K_n \subseteq K$, hypothesis (b) holds automatically and no weak compactness is needed; that is
+`AtkinsonHan.Chapter11.exercise_11_4_2`. -/
 theorem theorem_11_4_1 {Kh : ℕ → Set V} {uh : ℕ → V} (hc₀ : 0 < c₀) (hM : 0 ≤ M)
     (hmono : Chapter05.StronglyMonotoneWith A c₀)
     (hlip : ∀ v₁ v₂ : V, ‖A v₁ - A v₂‖ ≤ M * ‖v₁ - v₂‖) (hKcv : Convex ℝ K)
@@ -212,18 +228,24 @@ theorem theorem_11_4_1 {Kh : ℕ → Set V} {uh : ℕ → V} (hc₀ : 0 < c₀) 
 
 /-! ### Theorem 11.4.2: Falk's generalized Céa lemma -/
 
-/-- **Theorem 11.4.2, Falk's generalized Céa lemma**, the book's (11.4.7).  With
-`R(v, w) = (A u, v - w) + j(v) - j(w) - (f, v - w)` the residual of the continuous solution,
+/-- **Theorem 11.4.2** of [han2009theoretical] (Falk's lemma), the estimate (11.4.7). Let $V$ be a
+real Hilbert space and let $K, K_h \subseteq V$. Let $A \colon V \to V$ be strongly monotone
+with constant $c_0 > 0$ and Lipschitz continuous with constant $M \ge 0$, and let
+$j \colon V \to \mathbb{R}$ and $f \in V$. Let $u$ solve the variational inequality (11.3.3)
+over $K$ and $u_h$ solve it over $K_h$. With the residual $R(v, w) = (A u, v - w) + j(v) -
+j(w) - (f, v - w)$,
+$$\frac{c_0}{2} \|u - u_h\|^2 \le \inf_{v \in K} R(v, u_h) + \inf_{v_h \in K_h} \Bigl[R(v_h,
+  u) + \frac{M^2}{2 c_0} \|u - v_h\|^2\Bigr].$$
 
-  `(c₀/2) ‖u - u_h‖² ≤ inf_{v ∈ K} R(v, u_h) + inf_{v_h ∈ K_h} [R(v_h, u) + (M²/(2c₀)) ‖u - v_h‖²]`.
+**Reading.** The estimate is stated in the squared form that its proof gives. The square-rooted
+form for $K_h \subseteq K$ is `AtkinsonHan.Chapter11.theorem_11_4_2_of_subset`.
 
-The estimate is squared, which is the form its proof establishes: it is pure algebra — the two
-variational inequalities added to the strong monotonicity inequality, with the cross term treated
-by Cauchy–Schwarz, the Lipschitz bound and Young's inequality.  No closedness, convexity or
-topology is used, and `K_h` need not meet `K`.
-
-For a variational *equation* — `K` a subspace, `j = 0`, `K_h ⊆ K` — both residuals vanish and this
-is Céa's lemma, which this surface has as `AtkinsonHan.Chapter09.proposition_9_1_3`. -/
+The proof adds the two variational inequalities to the strong monotonicity inequality and treats
+the cross term by the Cauchy–Schwarz inequality, the Lipschitz bound and Young's inequality. It
+uses no closedness, convexity or topology, and $K_h$ need not meet $K$. The infima are taken in
+$\mathbb{R}$ over nonempty sets, and the two variational inequalities bound both sets from
+below. For a variational equation, with $K$ a subspace, $j = 0$ and $K_h \subseteq K$, both
+residuals vanish and the estimate is Céa's lemma, `AtkinsonHan.Chapter09.proposition_9_1_3`. -/
 theorem theorem_11_4_2 (hc₀ : 0 < c₀) (hM : 0 ≤ M) (hmono : Chapter05.StronglyMonotoneWith A c₀)
     (hlip : ∀ v₁ v₂ : V, ‖A v₁ - A v₂‖ ≤ M * ‖v₁ - v₂‖)
     (hu : IsVariationalInequalitySolution A j f K u)
@@ -248,13 +270,14 @@ theorem theorem_11_4_2 (hc₀ : 0 < c₀) (hM : 0 ≤ M) (hmono : Chapter05.Stro
     le_ciInf fun v => by linarith [h₁ v]
   linarith
 
-/-- **Theorem 11.4.2**, the internal-approximation form displayed after it: when `K_h ⊆ K` the
-first residual vanishes, at `v = u_h`, and the estimate can be square-rooted to
+/-- **Theorem 11.4.2** of [han2009theoretical], the internal approximation form after the theorem.
+Under the hypotheses of `AtkinsonHan.Chapter11.theorem_11_4_2`, assume also $K_h \subseteq K$.
+Then
+$$\|u - u_h\| \le c \inf_{v_h \in K_h} \Bigl(\|u - v_h\| + |R(v_h, u)|^{1/2}\Bigr), \qquad c =
+  \max\Bigl\{\frac{M}{c_0}, \sqrt{\frac{2}{c_0}}\Bigr\}.$$
 
-  `‖u - u_h‖ ≤ c inf_{v_h ∈ K_h} (‖u - v_h‖ + |R(v_h, u)|^{1/2})`,  `c = max (M/c₀) √(2/c₀)`.
-
-The book leaves the constant unnamed; it is written out here because the square root of a sum of
-two squares is what fixes it. -/
+The first residual of Falk's lemma vanishes at $v = u_h$. The source leaves the constant
+unnamed; it is written out here because taking the square root of a sum of two squares fixes it. -/
 theorem theorem_11_4_2_of_subset (hc₀ : 0 < c₀) (hM : 0 ≤ M)
     (hmono : Chapter05.StronglyMonotoneWith A c₀)
     (hlip : ∀ v₁ v₂ : V, ‖A v₁ - A v₂‖ ≤ M * ‖v₁ - v₂‖) (hsub : Kh ⊆ K)
@@ -274,18 +297,23 @@ theorem theorem_11_4_2_of_subset (hc₀ : 0 < c₀) (hM : 0 ≤ M)
 
 /-! ### Exercise 11.4.2: internal approximations converge -/
 
-/-- **Exercise 11.4.2.**  Let `V_h` be a nested family of finite-dimensional subspaces of `V` whose
-union is dense, and let `j` be continuous.  Then the solutions `u_h` of the internal problems
-(11.4.12) converge in norm to the solution `u` of (11.3.3) over `K = V`.
+/-- **Exercise 11.4.2** of [han2009theoretical]. Let $V$ be a real Hilbert space, let
+$A \colon V \to V$ be strongly monotone with constant $c_0 > 0$ and Lipschitz continuous with
+constant $M \ge 0$, and let $j \colon V \to \mathbb{R}$ be continuous. Let
+$(V_n)_{n \in \mathbb{N}}$ be finite-dimensional subspaces of $V$ with $V_n \subseteq V_m$ for
+$n \le m$ and with $\bigcup_n V_n$ dense in $V$. Let $u$ solve the variational inequality
+(11.3.3) over $K = V$ with datum $f$, and let $u_n$ solve it over $V_n$, which is (11.4.12).
+Then $u_n \to u$ in norm.
 
-**No weak compactness is used**: the estimate of `theorem_11_4_2_of_subset` at the best
-approximation `w_h` to `u` in `V_h` already tends to zero, because `‖u - w_h‖` does and the
-residual is continuous in its first argument.  This, and not Theorem 11.4.1, is the statement a
-finite element analysis should cite.
+**Correction.** The source asks only that $\bigcup_n V_n$ be dense. This does not give, for
+every $n$, a point of $V_n$ near $u$: if every second $V_n$ is $\{0\}$, then $u_n = 0$ for those
+$n$. With nested subspaces the best approximations of $u$ in $V_n$ have nonincreasing errors,
+and the density makes these errors tend to zero.
 
-The book says only that the union of the `V_h` is dense; nestedness is added because without it
-there need be no point of `V_h n` near `u` for *each* `n`.  With it, the best approximations to
-`u` have antitone errors, and density makes them tend to zero. -/
+No weak compactness is used. The bound of `AtkinsonHan.Chapter11.theorem_11_4_2_of_subset` at
+the best approximation $w_n$ of $u$ in $V_n$ tends to zero, because $\|u - w_n\|$ does and the
+residual is continuous in its first argument. A finite element analysis can cite this result
+instead of Theorem 11.4.1. -/
 theorem exercise_11_4_2 {Vh : ℕ → Submodule ℝ V} [∀ n, FiniteDimensional ℝ (Vh n)]
     {uh : ℕ → V} (hc₀ : 0 < c₀) (hM : 0 ≤ M) (hmono : Chapter05.StronglyMonotoneWith A c₀)
     (hlip : ∀ v₁ v₂ : V, ‖A v₁ - A v₂‖ ≤ M * ‖v₁ - v₂‖) (hVmono : Monotone Vh)
@@ -314,14 +342,17 @@ theorem exercise_11_4_2 {Vh : ℕ → Submodule ℝ V} [∀ n, FiniteDimensional
 /-! ### Exercise 11.4.3: the regularized problem -/
 
 omit [CompleteSpace V] in
-/-- **Exercise 11.4.3**, the a priori bound (11.4.20) with `β = 1/2`.  If the regularization
-satisfies `|j_ε(v) - j(v)| ≤ c₁ ε` for every `v` — the book's (11.4.32) — then the solution `u_ε`
-of the regularized inequality of the second kind is within `√(2 c₁ ε / c₀)` of the solution `u` of
-the original one.
+/-- **Exercise 11.4.3** of [han2009theoretical], the a priori bound (11.4.20) with $\beta = 1/2$.
+Let $V$ be a real inner product space and let $A \colon V \to V$ be strongly monotone with
+constant $c_0 > 0$. Let $j, j_\varepsilon \colon V \to \mathbb{R}$ satisfy
+$|j_\varepsilon(v) - j(v)| \le c_1 \varepsilon$ for every $v \in V$, which is (11.4.32). Let $u$
+solve the variational inequality (11.3.3) over $K = V$ with $j$, and let $u_\varepsilon$ solve
+it over $K = V$ with $j_\varepsilon$, both with datum $f$. Then
+$$\|u - u_\varepsilon\| \le \sqrt{\frac{2 c_1 \varepsilon}{c_0}}.$$
 
-The constant is the sharp one: at `v = u_ε` and `v_h = u` the cross term of the core estimate
-vanishes, so neither the Lipschitz constant nor Young's inequality enters, and going through
-Falk's lemma instead would lose a factor of two. -/
+The constant is sharp for this argument. At $v = u_\varepsilon$ and $v_h = u$ the cross term of
+the core estimate vanishes, so neither a Lipschitz constant nor Young's inequality enters;
+Falk's lemma would lose a factor of two. -/
 theorem exercise_11_4_3 {jeps : V → ℝ} {c₁ ε : ℝ} {ueps : V} (hc₀ : 0 < c₀)
     (hmono : Chapter05.StronglyMonotoneWith A c₀)
     (hu : IsVariationalInequalitySolution A j f univ u)
@@ -331,25 +362,42 @@ theorem exercise_11_4_3 {jeps : V → ℝ} {c₁ ε : ℝ} {ueps : V} (hc₀ : 0
 
 /-! ### Theorem 11.4.6: the method of numerical integration -/
 
-/-- **Theorem 11.4.6**, convergence of the method of numerical integration (11.4.25).  The discrete
-problem is posed on the whole finite element space `V_h` and replaces the non-differentiable term
-`j` of (11.4.11) by a functional `j_h` obtained from a quadrature rule, so the functional varies
-with `h`.  Assume
+/-- **Theorem 11.4.6** of [han2009theoretical], convergence of the method of numerical integration
+(11.4.25). Let $V$ be a real Hilbert space, let $A \colon V \to V$ be strongly monotone with
+constant $c_0 > 0$ and Lipschitz continuous with constant $M \ge 0$, and let
+$j \colon V \to \mathbb{R}$ be convex and lower semicontinuous. Let $(V_n)$ be subspaces of $V$
+and $j_n \colon V \to \mathbb{R}$ functionals such that:
 
-* `{V_h}` are subspaces carrying maps `r_h : U → V_h` on a dense set `U ⊆ V` with `r_h v → v`;
-* the family `{j_h}` is *uniformly proper in h*: there are `ℓ₀ ∈ V'` and `c₁ ∈ ℝ` with
-  `ℓ₀(v_h) + c₁ ≤ j_h(v_h)` for every `v_h ∈ V_h` and every `h`;
-* `v_h ∈ V_h` with `v_h ⇀ v` implies `liminf j_h(v_h) ≥ j(v)`;
-* `j_h(r_h v) → j(v)` for every `v ∈ U`.
+* the $j_n$ are uniformly proper: there are $\ell_0 \in V'$ and $c_1 \in \mathbb{R}$ with
+  $\ell_0(v_n) + c_1 \le j_n(v_n)$ for all $n$ and all $v_n \in V_n$;
+* for every $\sigma \colon \mathbb{N} \to \mathbb{N}$ and every sequence $v_k \in V_{\sigma(k)}$
+  that converges weakly to $v$, and for every $\alpha < j(v)$, eventually
+  $j_{\sigma(k)}(v_k) > \alpha$;
+* there are a dense set $U \subseteq V$ and maps $r_n$ with $r_n v \in V_n$, $r_n v \to v$ and
+  $j_n(r_n v) \to j(v)$ for every $v \in U$.
 
-Then `‖u - u_h‖ → 0`.
+Let $u$ solve the variational inequality (11.3.3) over $K = V$ with $j$, and let $u_n$ solve it
+over $V_n$ with $j_n$, both with datum $f$. Then $u_n \to u$ in norm.
 
-This is `tendsto_of_isVariationalInequalitySolution_of_mosco` at `K = V`: the backbone convergence
-theorem for an internal approximation whose functional varies, whose two hypotheses on the family
-are the weak `liminf` bound above and the recovery sequences `r_h v`, that is, Mosco convergence
-`j_h → j`.  Continuity of `j`, which the backbone theorem uses to pass from the dense set `U` to
-`V`, is not an extra hypothesis: `j` is real-valued, convex and lower semicontinuous on a Hilbert
-space, and `ConvexOn.continuous_of_lowerSemicontinuous` makes those imply it. -/
+**Reading.** The source writes the second condition as $\liminf j_n(v_n) \ge j(v)$ for
+$v_n \rightharpoonup v$. In $\mathbb{R}$, `Filter.liminf` of a sequence that is unbounded below
+is a junk value, not $-\infty$, so the inequality written with it would be a different
+statement, false on such a sequence. The eventual form is the one that the proof uses. The
+condition is also required along every reindexing $\sigma$, because the proof passes to
+subsequences.
+
+**Generalization.** The source assumes that the $V_n$ are finite-dimensional and that the $j_n$
+are convex and lower semicontinuous. These hypotheses only make the discrete problems solvable
+by Theorem 11.3.1, and here the solutions $u_n$ are given.
+
+In the source, the discrete problem is posed on the whole finite element space $V_n$, and it
+replaces the nondifferentiable term $j$ of (11.4.11) by a functional $j_n$ obtained from a
+quadrature rule. This is the one result of the section in which the functional varies with $n$.
+The theorem is `tendsto_of_isVariationalInequalitySolution_of_mosco` at $K = V$: the two
+conditions on the family say that $j_n \to j$ in the sense of Mosco. The continuity of $j$,
+which that theorem uses to pass from $U$ to $V$, follows from the hypotheses by
+`ConvexOn.continuous_of_lowerSemicontinuous`, since $j$ is real-valued, convex and lower
+semicontinuous on a Hilbert space. -/
 theorem theorem_11_4_6 {jh : ℕ → V → ℝ} {uh : ℕ → V} {U : Set V} {Vh : ℕ → Submodule ℝ V}
     {r : ℕ → V → V} (hc₀ : 0 < c₀) (hM : 0 ≤ M) (hmono : Chapter05.StronglyMonotoneWith A c₀)
     (hlip : ∀ v₁ v₂ : V, ‖A v₁ - A v₂‖ ≤ M * ‖v₁ - v₂‖)
@@ -370,18 +418,20 @@ theorem theorem_11_4_6 {jh : ℕ → V → ℝ} {uh : ℕ → V} {U : Set V} {Vh
     hliminf (fun v _ => hU v)
     (fun v hv => ⟨fun n => r n v, fun n => hrmem v hv n, hr v hv, hjr v hv⟩) hu huh
 
-/-! ### Theorem 11.4.7: a discrete functional dominating `j` -/
+/-! ### Theorem 11.4.7: a discrete functional that dominates $j$ -/
 
-/-- **Theorem 11.4.7**, the book's (11.4.27).  A method that replaces the convex term `j` on the
-discrete set by a *larger* functional `j_h` — the book's (11.4.26), which the
-numerical-integration construction (11.4.28) satisfies — obeys the same error bound with the
-residual measured by `j_h`:
+/-- **Theorem 11.4.7** of [han2009theoretical], the estimate (11.4.27). Let $V$ be a real Hilbert
+space, let $A \colon V \to V$ be strongly monotone with constant $c_0 > 0$ and Lipschitz
+continuous with constant $M \ge 0$, let $j, j_h \colon V \to \mathbb{R}$, $f \in V$ and
+$K_h \subseteq V$, and let $j(v_h) \le j_h(v_h)$ for all $v_h \in K_h$, which is (11.4.26). Let
+$u$ solve the variational inequality (11.3.3) over $K = V$ with $j$, and let $u_h$ solve it over
+$K_h$ with $j_h$. Then
+$$\|u - u_h\| \le c \inf_{v_h \in K_h} \Bigl(\|u - v_h\| + |R_h(v_h, u)|^{1/2}\Bigr), \qquad
+  R_h(v_h, u) = (A u, v_h - u) + j_h(v_h) - j(u) - (f, v_h - u),$$
+with $c = \max\{M/c_0, \sqrt{2/c_0}\}$ as in `AtkinsonHan.Chapter11.theorem_11_4_2_of_subset`.
 
-  `‖u - u_h‖ ≤ c inf_{v_h ∈ K_h} (‖u - v_h‖ + |R_h(v_h, u)|^{1/2})`,
-  `R_h(v_h, u) = (A u, v_h - u) + j_h(v_h) - j(u) - (f, v_h - u)`,
-
-with the same constant `c = max (M/c₀) √(2/c₀)` as `theorem_11_4_2_of_subset`.  The algebra is
-Falk's, with the single inequality `j(u_h) ≤ j_h(u_h)` inserted at `v = u_h`. -/
+The numerical-integration construction (11.4.28) satisfies (11.4.26). The proof is that of
+Falk's lemma, with the inequality $j(u_h) \le j_h(u_h)$ inserted at $v = u_h$. -/
 theorem theorem_11_4_7 (hc₀ : 0 < c₀) (hM : 0 ≤ M)
     (hmono : Chapter05.StronglyMonotoneWith A c₀)
     (hlip : ∀ v₁ v₂ : V, ‖A v₁ - A v₂‖ ≤ M * ‖v₁ - v₂‖)
@@ -402,17 +452,17 @@ theorem theorem_11_4_7 (hc₀ : 0 < c₀) (hM : 0 ≤ M)
 end
 
 
-/-! ### Example 11.4.3: the obstacle problem with linear elements
+/-!
+### Example 11.4.3: the obstacle problem with linear elements
 
-The finite element approximation of the obstacle problem of Example 11.1.1 on a polygon, with
-the discrete admissible set `K_h` of continuous piecewise linear functions dominating the
-obstacle at the nodes (`discreteObstacleSet`), and the optimal-order estimate
-`‖u − u_h‖_{H¹} ≤ c h` (`example_11_4_3`) from Falk's lemma. The triangulation scaffold is
-`Numlib/Geometry/Triangulation.lean`, the interpolation estimates are Theorem 10.3.9 for the
-linear element (`Chapter10.theorem_10_3_9_linear`), and the finite element space is
-`Triangulation.polySpaceZero`; the ingredients specific to the example are the monotonicity of
-the linear interpolant (`globalInterp_linear_mono`), the membership `max (u_h, ψ) ∈ K`
-(`exists_max_mem_obstacleSet`) and `Π_h u ∈ K_h` (`exists_globalInterp_mem_discreteObstacleSet`).
+The finite element approximation of the obstacle problem of Example 11.1.1 on a polygon. The
+discrete admissible set $K_h$ consists of the continuous piecewise linear functions that dominate
+the obstacle at the nodes (`AtkinsonHan.Chapter11.discreteObstacleSet`), and Falk's lemma gives the
+estimate $\|u - u_h\|_{H^1} \le c h$ (`AtkinsonHan.Chapter11.example_11_4_3`). The triangulations
+are those of `Numlib.Geometry.Triangulation`, the interpolation estimates are Theorem 10.3.9 for the
+linear element, and the finite element space is `Triangulation.polySpaceZero`. The specific
+ingredients are the monotonicity of the linear interpolant, the membership
+$\max\{u_h, \psi\} \in K$, and $\Pi_h u \in K_h$.
 -/
 
 section Example1143
@@ -422,7 +472,8 @@ open scoped ENNReal
 
 local notation "𝔼₂" => EuclideanSpace ℝ (Fin 2)
 
-/-- The barycentric coordinates are nonnegative on the closed reference triangle. -/
+/-- The barycentric coordinates $\lambda_i$, $i = 0, 1, 2$, are nonnegative on the closed reference
+triangle. -/
 theorem baryCoord_nonneg {x : 𝔼₂} (hx : x ∈ closure (referenceTriangle : Set 𝔼₂)) (i : Fin 3) :
     0 ≤ baryCoord i x := by
   rw [closure_referenceTriangle_eq] at hx
@@ -433,7 +484,8 @@ theorem baryCoord_nonneg {x : 𝔼₂} (hx : x ∈ closure (referenceTriangle : 
   · simpa [baryCoord] using h0
   · simpa [baryCoord] using h1
 
-/-- The barycentric coordinates are polynomials of total degree at most `1`. -/
+/-- Each barycentric coordinate $\lambda_i$ on $\mathbb{R}^2$ is a polynomial of total degree at
+most $1$. -/
 theorem baryCoord_eq_eval (i : Fin 3) : ∃ q : MvPolynomial (Fin 2) ℝ, q.totalDegree ≤ 1 ∧
     ∀ x : 𝔼₂, baryCoord i x = MvPolynomial.eval (fun j ↦ x j) q := by
   fin_cases i
@@ -449,8 +501,12 @@ theorem baryCoord_eq_eval (i : Fin 3) : ∃ q : MvPolynomial (Fin 2) ℝ, q.tota
   · refine ⟨MvPolynomial.X 1, (MvPolynomial.totalDegree_X _).le, fun x ↦ ?_⟩
     simp [baryCoord]
 
-/-- **The linear element is edge unisolvent**: the interpolant is affine along a reference edge
-and vanishes at its two ends, which are nodes. -/
+/-- The linear element on the reference triangle is **edge unisolvent**: for the vertices as nodes
+and the barycentric coordinates as shape functions, the interpolant of a function that vanishes
+at the two ends of an edge vanishes on that whole edge.
+
+This is `EuclideanSpace.IsEdgeUnisolvent` for `EuclideanSpace.referenceTriangleVertex` and
+`EuclideanSpace.baryCoord`. It holds because the interpolant is affine along the edge. -/
 theorem isEdgeUnisolvent_linear : IsEdgeUnisolvent referenceTriangleVertex baryCoord := by
   intro a b hab v hv y hy
   rw [segment_eq_image'] at hy
@@ -475,8 +531,12 @@ theorem isEdgeUnisolvent_linear : IsEdgeUnisolvent referenceTriangleVertex baryC
   rw [hlin, hnode a (by simp), hnode b (by simp)]
   ring
 
-/-- **The linear interpolant is monotone**: if `v ≤ w` at every vertex then `Π_h v ≤ Π_h w` on
-`Ω̄`, the barycentric coordinates being nonnegative on the closed elements. -/
+/-- The linear interpolant is monotone. Let $\mathcal{T}$ be a triangulation of an open set
+$\Omega \subseteq \mathbb{R}^2$ and let $v, w \colon \mathbb{R}^2 \to \mathbb{R}$ with
+$v(x) \le w(x)$ at every vertex $x$ of $\mathcal{T}$. Then $\Pi_h v \le \Pi_h w$ on
+$\overline\Omega$.
+
+The proof uses that the barycentric coordinates are nonnegative on the closed elements. -/
 theorem globalInterp_linear_mono {Ω : Opens 𝔼₂} (𝒯 : Triangulation Ω) {v w : 𝔼₂ → ℝ}
     (hvw : ∀ x ∈ 𝒯.vertices, v x ≤ w x) {x : 𝔼₂} (hx : x ∈ closure (Ω : Set 𝔼₂)) :
     𝒯.globalInterp referenceTriangleVertex baryCoord v x
@@ -495,8 +555,8 @@ theorem globalInterp_linear_mono {Ω : Opens 𝔼₂} (𝒯 : Triangulation Ω) 
   rw [closure_referenceTriangle_eq]
   exact hz
 
-/-- Two functions continuous on `Ω̄` with `v ≤ w` almost everywhere on `Ω` satisfy `v ≤ w` on
-`Ω̄`. -/
+/-- Let $\Omega \subseteq \mathbb{R}^2$ be open, and let $v, w$ be continuous on $\overline\Omega$
+with $v \le w$ almost everywhere on $\Omega$. Then $v \le w$ on $\overline\Omega$. -/
 theorem le_on_closure_of_ae_le {Ω : Opens 𝔼₂} {v w : 𝔼₂ → ℝ}
     (h : ∀ᵐ x ∂(volume.restrict (Ω : Set 𝔼₂)), v x ≤ w x)
     (hv : ContinuousOn v (closure (Ω : Set 𝔼₂))) (hw : ContinuousOn w (closure (Ω : Set 𝔼₂))) :
@@ -511,7 +571,8 @@ theorem le_on_closure_of_ae_le {Ω : Opens 𝔼₂} {v w : 𝔼₂ → ℝ}
   rw [← this]
   exact le_max_left _ _
 
-/-- The `L²(Ω)` norm is at most the tensor Sobolev norm of order `0`. -/
+/-- Let $\Omega \subseteq \mathbb{R}^2$ be open and let $f$ be in the Sobolev space of order $0$
+over $L^2(\Omega)$. Then $\|f\|_{L^2(\Omega)}$ is at most the Sobolev norm of order $0$ of $f$. -/
 theorem eLpNorm_le_sobolevNorm_zero {Ω : Opens 𝔼₂} {f : 𝔼₂ → ℝ}
     (hf : MemSobolev f 0 2 Ω volume) :
     eLpNorm f 2 (volume.restrict (Ω : Set 𝔼₂)) ≤ sobolevNorm f 0 2 Ω volume := by
@@ -527,11 +588,15 @@ theorem eLpNorm_le_sobolevNorm_zero {Ω : Opens 𝔼₂} {f : 𝔼₂ → ℝ}
   exact eLpNorm_weakIteratedFDeriv_le_sobolevNorm one_le_two (by simp) le_rfl
 
 
-/-- **The discrete admissible set `K_h`** of Example 11.4.3 for the linear element on a
-triangulation `𝒯_h`: the continuous piecewise linear functions `v_h ∈ H¹₀(Ω)` (the elements of
-`Triangulation.polySpaceZero 2 1`, through a representative `v` continuous on `Ω̄`, piecewise
-linear, vanishing on `∂Ω`) with `v_h(x) ≥ ψ(x)` at every node `x`, the obstacle `ψ` being read
-on a representative `ψ'`. In general `K_h ⊄ K`. -/
+/-- **Example 11.4.3** of [han2009theoretical], the discrete admissible set $K_h$. Let
+$\mathcal{T}_h$ be a triangulation of an open set $\Omega \subseteq \mathbb{R}^2$ and let
+$\psi' \colon \mathbb{R}^2 \to \mathbb{R}$ represent the obstacle. Then $K_h$ is the set of
+$v_h \in H^1_0(\Omega)$ whose function is almost everywhere equal to a function $v$ that is
+continuous on $\overline\Omega$, linear on every element of $\mathcal{T}_h$, zero on
+$\partial\Omega$, and satisfies $v(x) \ge \psi'(x)$ at every vertex $x$ of $\mathcal{T}_h$.
+
+In general $K_h \not\subseteq K$. The set lies in the finite element space
+`Triangulation.polySpaceZero` by `AtkinsonHan.Chapter11.discreteObstacleSet_subset`. -/
 def discreteObstacleSet {Ω : Opens 𝔼₂} (𝒯 : Triangulation Ω) (ψ' : 𝔼₂ → ℝ) :
     Set (SobolevEuclideanZero 2 1 2 Ω) :=
   {vh | ∃ v : 𝔼₂ → ℝ, ContinuousOn v (closure (Ω : Set 𝔼₂)) ∧ 𝒯.IsPiecewisePoly 1 v ∧
@@ -539,18 +604,23 @@ def discreteObstacleSet {Ω : Opens 𝔼₂} (𝒯 : Triangulation Ω) (ψ' : �
     SobolevMultiIndex.fn (vh : SobolevEuclidean 2 1 2 Ω) =ᵐ[volume.restrict (Ω : Set 𝔼₂)] v ∧
     ∀ x ∈ 𝒯.vertices, ψ' x ≤ v x}
 
-/-- `K_h` lies in the finite element space `V_h` of continuous piecewise linear functions
-vanishing on `∂Ω`. -/
+/-- The discrete admissible set $K_h$ of Example 11.4.3 lies in the finite element space $V_h$ of
+continuous piecewise linear functions in $H^1_0(\Omega)$, `Triangulation.polySpaceZero 2 1`. -/
 theorem discreteObstacleSet_subset {Ω : Opens 𝔼₂} (𝒯 : Triangulation Ω) (ψ' : 𝔼₂ → ℝ) :
     discreteObstacleSet 𝒯 ψ' ⊆ (𝒯.polySpaceZero 2 1 : Set (SobolevEuclideanZero 2 1 2 Ω)) := by
   rintro vh ⟨v, hvc, hvp, hv0, hvh, -⟩
   exact ⟨v, hvc, hvp, hv0, hvh⟩
 
-/-- **`u^{h,*} = max (u_h, ψ)` lies in `K`**: for `u_h ∈ H¹₀(Ω)` with a representative continuous
-on `Ω̄`, in `H¹(Ω)` and vanishing on `∂Ω`, and an obstacle `ψ ∈ H¹(Ω)` with a representative
-continuous on `Ω̄` and `≤ 0` on `∂Ω`, the function `max (u_h, ψ)` is the function of an element
-of the admissible set `K = {v ∈ H¹₀(Ω) : v ≥ ψ}`: it is `u_h + (ψ − u_h)⁺ ∈ H¹(Ω)`, continuous on
-`Ω̄` and vanishing on `∂Ω`, hence in `H¹₀(Ω)` (Theorem 9.17, (i) ⇒ (ii)). -/
+/-- **Example 11.4.3** of [han2009theoretical], the function $u^{h,*} = \max\{u_h, \psi\}$ lies in
+$K$. Let $\Omega \subseteq \mathbb{R}^2$ be open. Let the obstacle $\psi \in H^1(\Omega)$ have a
+representative $\psi'$ that is continuous on $\overline\Omega$, lies in $H^1(\Omega)$ and
+satisfies $\psi' \le 0$ on $\partial\Omega$. Let $v$ be continuous on $\overline\Omega$, in
+$H^1(\Omega)$, and zero on $\partial\Omega$. Then there is $w \in K = \{v \in H^1_0(\Omega) : v
+\ge \psi \text{ a.e.}\}$ whose function is almost everywhere equal to $\max\{v, \psi'\}$.
+
+The function is $v + (\psi' - v)^+ \in H^1(\Omega)$. It is continuous on $\overline\Omega$ and
+zero on $\partial\Omega$, hence in $H^1_0(\Omega)$ by Theorem 9.17 of [brezis2011functional],
+(i) implies (ii). -/
 theorem exists_max_mem_obstacleSet {Ω : Opens 𝔼₂} {ψ : SobolevEuclidean 2 1 2 Ω} {ψ' : 𝔼₂ → ℝ}
     (hψ : SobolevMultiIndex.fn ψ =ᵐ[volume.restrict (Ω : Set 𝔼₂)] ψ')
     (hψc : ContinuousOn ψ' (closure (Ω : Set 𝔼₂))) (hψ1 : MemSobolev ψ' 1 2 Ω volume)
@@ -589,9 +659,15 @@ theorem exists_max_mem_obstacleSet {Ω : Opens 𝔼₂} {ψ : SobolevEuclidean 2
   rw [h1]
   exact (le_max_right _ _).trans_eq h2.symm
 
-/-- The interpolant `Π_h u` of the solution lies in `K_h`: it is a continuous piecewise linear
-function vanishing on `∂Ω` with `u` (`Triangulation.globalInterp_eqOn_frontier`), and at every
-node it takes the value `u(x) ≥ ψ(x)`. -/
+/-- **Example 11.4.3** of [han2009theoretical], the interpolant $\Pi_h u$ lies in $K_h$. Let
+$\mathcal{T}$ be a triangulation of an open set $\Omega \subseteq \mathbb{R}^2$ whose boundary
+$\partial\Omega$ is a union of element edges. Let $\psi', u' \colon \mathbb{R}^2 \to \mathbb{R}$
+with $\psi' \le u'$ on $\overline\Omega$ and $u' = 0$ on $\partial\Omega$. Then there is
+$v_h \in K_h$ whose function is almost everywhere equal to the linear interpolant $\Pi_h u'$.
+
+The interpolant is continuous and piecewise linear, it vanishes on $\partial\Omega$ with $u'$ by
+`Triangulation.globalInterp_eqOn_frontier`, and at every node $x$ it takes the value
+$u'(x) \ge \psi'(x)$. -/
 theorem exists_globalInterp_mem_discreteObstacleSet {Ω : Opens 𝔼₂} (𝒯 : Triangulation Ω)
     (hedge : 𝒯.FrontierSubsetEdges) {ψ' u' : 𝔼₂ → ℝ}
     (hψu : ∀ x ∈ closure (Ω : Set 𝔼₂), ψ' x ≤ u' x) (hu0 : EqOn u' 0 (frontier (Ω : Set 𝔼₂))) :
@@ -612,10 +688,15 @@ theorem exists_globalInterp_mem_discreteObstacleSet {Ω : Opens 𝔼₂} (𝒯 :
   exact hψu _ (𝒯.closedK_subset_closure T (𝒯.vertex_mem_closedK T a))
 
 
-/-- The residual of the obstacle problem's solution in terms of `−Δu`: when
-`a(u, v) = ∫_Ω g v` for all `v ∈ H¹₀(Ω)` (`g = −Δu ∈ L²(Ω)`), the residual
-`R(v, w) = a(u, v − w) − ℓ(v − w)` is `∫_Ω (g − f)(v − w)`, bounded by
-`‖g − f‖_{L²} ‖v − w‖_{L²}`. -/
+/-- **Example 11.4.3** of [han2009theoretical], the residual. Let $\Omega \subseteq \mathbb{R}^2$ be
+open, let $f, g \in L^2(\Omega)$, and let $u \in H^1_0(\Omega)$ satisfy $\int_\Omega \nabla u
+\cdot \nabla v = \int_\Omega g v$ for all $v \in H^1_0(\Omega)$, that is $-\Delta u = g$ weakly.
+Then for every $z \in H^1_0(\Omega)$,
+$$\int_\Omega \nabla u \cdot \nabla z \, dx - \int_\Omega f z \, dx \le \|g - f\|_{L^2(\Omega)}
+  \|z\|_{L^2(\Omega)}.$$
+
+With $z = v - w$, the left side is the residual $R(v, w) = a(u, v - w) - \ell(v - w)$ of the
+obstacle problem, which equals $\int_\Omega (g - f)(v - w)$. -/
 theorem residual_le_of_eq_load {Ω : Opens 𝔼₂}
     (f g : Lp ℝ 2 (volume.restrict (Ω : Set 𝔼₂))) {u : SobolevEuclideanZero 2 1 2 Ω}
     (hΔ : ∀ v : SobolevEuclideanZero 2 1 2 Ω,
@@ -629,13 +710,17 @@ theorem residual_le_of_eq_load {Ω : Opens 𝔼₂}
   rw [Lp.norm_def]
   rfl
 
-/-- Real form of an `ℝ≥0∞` bound `a ≤ ofReal c * S`. -/
+/-- Let $a, S \in [0, \infty]$ with $S \neq \infty$, and let $c \ge 0$ be real. If $a \le c S$ in
+$[0, \infty]$, then the same inequality holds between the real numbers given by
+`ENNReal.toReal`: `a.toReal ≤ c * S.toReal`. -/
 theorem toReal_le_of_le_ofReal_mul {a S : ℝ≥0∞} {c : ℝ} (hc : 0 ≤ c) (hS : S ≠ ⊤)
     (h : a ≤ ENNReal.ofReal c * S) : a.toReal ≤ c * S.toReal := by
   have h' := ENNReal.toReal_mono (ENNReal.mul_ne_top ENNReal.ofReal_ne_top hS) h
   rwa [ENNReal.toReal_mul, ENNReal.toReal_ofReal hc] at h'
 
-/-- `v − Π_h v ∈ L²(Ω)` for `v ∈ H²(Ω)` and the linear interpolant. -/
+/-- Let $\mathcal{T}$ be a triangulation of an open set $\Omega \subseteq \mathbb{R}^2$ and let
+$v \in H^2(\Omega)$. Then $v - \Pi_h v$ lies in the Sobolev space of order $0$ over
+$L^2(\Omega)$, where $\Pi_h$ is the linear interpolant. -/
 theorem memSobolev_sub_globalInterp_linear {Ω : Opens 𝔼₂} (𝒯 : Triangulation Ω) {v : 𝔼₂ → ℝ}
     (hv : MemSobolev v 2 2 Ω volume) :
     MemSobolev (v - 𝒯.globalInterp referenceTriangleVertex baryCoord v) 0 2 Ω volume :=
@@ -643,10 +728,15 @@ theorem memSobolev_sub_globalInterp_linear {Ω : Opens 𝔼₂} (𝒯 : Triangul
     ((𝒯.memSobolev_globalInterp referenceTriangleVertex baryCoord 𝒯.isConformingElement_linear
       (fun j ↦ (contDiff_baryCoord j).of_le (by simp)) v 2).mono_order (by norm_num))
 
-/-- **`‖max (u_h, ψ) − u_h‖₀ ≤ ‖ψ − Π_h ψ‖₀`** for a continuous piecewise linear `u_h` with
-`u_h ≥ ψ` at the vertices: `u_h = Π_h u_h ≥ Π_h ψ` on `Ω̄` by the monotonicity of the linear
-interpolant, so that `0 ≤ ψ − u_h ≤ ψ − Π_h ψ` where `u_h < ψ`, and `max (u_h, ψ) − u_h = 0`
-elsewhere. -/
+/-- **Example 11.4.3** of [han2009theoretical], the bound $\|u^{h,*} - u_h\|_0 \le \|\psi - \Pi_h
+\psi\|_0$. Let $\mathcal{T}$ be a triangulation of an open set $\Omega \subseteq \mathbb{R}^2$,
+let $\psi'$ and $v$ be continuous on $\overline\Omega$, let $v$ be linear on every element, and
+let $v(x) \ge \psi'(x)$ at every vertex $x$. Then
+$$\bigl\|\max\{v, \psi'\} - v\bigr\|_{L^2(\Omega)} \le \|\psi' - \Pi_h \psi'\|_{L^2(\Omega)}.$$
+
+The proof uses $v = \Pi_h v \ge \Pi_h \psi'$ on $\overline\Omega$, by the monotonicity of the
+linear interpolant. So $0 \le \psi' - v \le \psi' - \Pi_h \psi'$ where $v < \psi'$, and
+$\max\{v, \psi'\} - v = 0$ elsewhere. -/
 theorem eLpNorm_max_sub_le {Ω : Opens 𝔼₂} (𝒯 : Triangulation Ω) {ψ' v : 𝔼₂ → ℝ}
     (hψc : ContinuousOn ψ' (closure (Ω : Set 𝔼₂))) (hvc : ContinuousOn v (closure (Ω : Set 𝔼₂)))
     (hvp : 𝒯.IsPiecewisePoly 1 v) (hψv : ∀ x ∈ 𝒯.vertices, ψ' x ≤ v x) :
@@ -679,27 +769,45 @@ theorem eLpNorm_max_sub_le {Ω : Opens 𝔼₂} (𝒯 : Triangulation Ω) {ψ' v
   exact eLpNorm_mono_ae hmeas
     ((ae_restrict_iff' Ω.isOpen.measurableSet).2 (Filter.Eventually.of_forall hpt))
 
-/-- **Example 11.4.3.** Theorem 11.4.2 applied to the obstacle problem (Example 11.1.1,
-Example 11.3.10) on a polygon `Ω ⊆ B(0, R)` (`∂Ω` a union of element edges), discretized with
-linear elements on a regular family of triangulations `{𝒯_h}` with the discrete admissible set
-`K_h = {v_h ∈ V_h : v_h(x) ≥ ψ(x) at every node x}` (`discreteObstacleSet`), which is not
-contained in `K`. Let `f ∈ L²(Ω)`, let the obstacle `ψ ∈ H¹(Ω)` have a representative `ψ'`
-continuous on `Ω̄`, in `H²(Ω)`, with `ψ' ≤ 0` on `∂Ω`, let `u ∈ K` be the solution of the obstacle
-problem with a representative `u'` continuous on `Ω̄`, in `H²(Ω)`, vanishing on `∂Ω`, and with
-`−Δu = g ∈ L²(Ω)` in the weak sense `a(u, v) = ∫_Ω g v` for `v ∈ H¹₀(Ω)` (the book's
-`u ∈ H²(Ω)`; on a `C²` domain this is the regularity theorem for the obstacle problem, on a
-polygon it is a hypothesis), and let `u_h ∈ K_h` be the discrete solutions. Then
+/-- **Example 11.4.3** of [han2009theoretical] (the obstacle problem with linear elements). Let
+$\Omega \subseteq \mathbb{R}^2$ be open with $\Omega \subseteq B(0, R)$ for some $R \ge 0$. Let
+$(\mathcal{T}_i)_{i \in \iota}$ be a regular family of triangulations of $\Omega$ along a filter
+$l$, with mesh sizes $h_i \le H$, such that $\partial\Omega$ is a union of element edges of
+every $\mathcal{T}_i$. Let $f, g \in L^2(\Omega)$. Let the obstacle $\psi \in H^1(\Omega)$ have
+a representative $\psi'$ that is continuous on $\overline\Omega$, lies in $H^2(\Omega)$ and
+satisfies $\psi' \le 0$ on $\partial\Omega$. Let $u \in K = \{v \in H^1_0(\Omega) : v \ge \psi
+\text{ a.e.}\}$ solve the obstacle problem
+$$\int_\Omega \nabla u \cdot \nabla (v - u) \, dx \ge \int_\Omega f (v - u) \, dx \quad
+  \text{for all } v \in K.$$
+Let $u$ have a representative $u'$ that is continuous on $\overline\Omega$, lies in
+$H^2(\Omega)$ and vanishes on $\partial\Omega$, and let $-\Delta u = g$ weakly: $\int_\Omega
+\nabla u \cdot \nabla v = \int_\Omega g v$ for all $v \in H^1_0(\Omega)$. For every $i$, let
+$u_{h,i} \in K_{h,i}$ solve the discrete problem
+$$\int_\Omega \nabla u_{h,i} \cdot \nabla (v_h - u_{h,i}) \, dx \ge \int_\Omega f (v_h -
+  u_{h,i}) \, dx \quad \text{for all } v_h \in K_{h,i},$$
+where $K_{h,i}$ is the discrete admissible set of $\mathcal{T}_i$ for $\psi'$. Then there is a
+constant $c$ with
+$$\|u - u_{h,i}\|_{H^1(\Omega)} \le c h_i \quad \text{for all } i.$$
 
-  `‖u − u_h‖_{H¹(Ω)} ≤ c h`
+**Reading.** The source assumes $u, \psi \in H^2(\Omega)$. Here the regularity is stated on
+representatives continuous on $\overline\Omega$, as in Theorem 10.3.9. The boundary conditions
+$u = 0$ and $\psi \le 0$ on $\Gamma$ are stated on these representatives, because on a polygon
+they do not follow from $u \in H^1_0(\Omega)$. The condition $-\Delta u \in L^2(\Omega)$ is the
+hypothesis on $g$; on a $C^2$ domain it would follow from the regularity theorem for the
+obstacle problem, but on a polygon it is assumed. The discrete set asks $v_h \ge \psi$ at every
+vertex, including the boundary vertices, where it holds because $v_h = 0 \ge \psi$.
 
-for a constant `c` depending on `|u|_{2,Ω}`, `|ψ|_{2,Ω}`, `‖f‖₀` and `‖−Δu‖₀` only. The proof is
-the book's: Falk's lemma (11.4.7) (`norm_sub_le_of_isVariationalInequalitySolution`, the
-pointwise form behind `theorem_11_4_2`) with `v_h = Π_h u ∈ K_h`
-(`exists_globalInterp_mem_discreteObstacleSet`) and `v = u^{h,*} = max (u_h, ψ) ∈ K`
-(`exists_max_mem_obstacleSet`); the residual is `∫_Ω (−Δu − f)(v − w)` (`residual_le_of_eq_load`),
-bounded through the `L²` norms; `‖u − Π_h u‖_{m,Ω} ≤ c h^{2−m} |u|_{2,Ω}` at `m = 0, 1`
-(`Chapter10.theorem_10_3_9_linear`); and `‖u^{h,*} − u_h‖₀ ≤ ‖ψ − Π_h ψ‖₀ ≤ c h² |ψ|_{2,Ω}`
-(`eLpNorm_max_sub_le`). -/
+The discrete admissible set is `AtkinsonHan.Chapter11.discreteObstacleSet`, and the condition on
+$\partial\Omega$ is `Triangulation.FrontierSubsetEdges`. The proof follows the source and gives
+a constant that depends on $|u|_{2,\Omega}$, $|\psi|_{2,\Omega}$, $\|f\|_0$ and $\|g\|_0$. It
+applies Falk's lemma (11.4.7), in the form `norm_sub_le_of_isVariationalInequalitySolution`,
+with $v_h = \Pi_h u \in K_h$
+(`AtkinsonHan.Chapter11.exists_globalInterp_mem_discreteObstacleSet`) and
+$v = \max\{u_h, \psi\} \in K$ (`AtkinsonHan.Chapter11.exists_max_mem_obstacleSet`). The residual
+is bounded by `AtkinsonHan.Chapter11.residual_le_of_eq_load`, the interpolation errors $\|u -
+\Pi_h u\|_{m,\Omega} \le c h^{2-m} |u|_{2,\Omega}$ for $m = 0, 1$ by
+`AtkinsonHan.Chapter10.theorem_10_3_9_linear`, and $\|\max\{u_h, \psi\} - u_h\|_0 \le \|\psi -
+\Pi_h \psi\|_0 \le c h^2 |\psi|_{2,\Omega}$ by `AtkinsonHan.Chapter11.eLpNorm_max_sub_le`. -/
 theorem example_11_4_3 {Ω : Opens 𝔼₂} {ι : Type*} {l : Filter ι} {𝒯 : ι → Triangulation Ω}
     (hreg : Chapter10.IsRegularFamily l fun i ↦ Set.range (𝒯 i).K)
     {H : ℝ} (hH : ∀ i, (𝒯 i).meshSize ≤ H) (hedge : ∀ i, (𝒯 i).FrontierSubsetEdges)
@@ -866,27 +974,32 @@ open scoped ContDiff ENNReal
 
 variable {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))} (B : BoundaryData Ω) (𝒯 : B.TraceFamily)
 
-/-- `ℝ^N`, locally. -/
+/-- The Euclidean space $\mathbb{R}^N$, as local notation. -/
 local notation "𝔼" => EuclideanSpace ℝ (Fin N)
 
-/-- **Theorem 11.4.5 (the Lagrange multiplier of the simplified friction problem)**, over the
-boundary interface `B : BoundaryData Ω`, `𝒯 : B.TraceFamily` of
-`Numlib/Analysis/Sobolev/Boundary/Data.lean` (a bounded `C¹` domain, `IsContDiffDomain.traceFamily`,
-or a polygon without slits, `Triangulation.traceFamily` — the book's Lipschitz domain), with
-`Λ = {μ ∈ L^∞(Γ) : |μ| ≤ 1 a.e. on Γ}`: for `g > 0` and `f ∈ L²(Ω)`, `u ∈ V = H¹(Ω)` solves the
-simplified friction problem (11.4.10) = (11.1.13),
+/-- **Theorem 11.4.5** of [han2009theoretical] (the Lagrange multiplier of the simplified friction
+problem). Let $\Omega \subseteq \mathbb{R}^N$ be open, with boundary data $B$ (a surface measure
+$ds$ on $\Gamma = \partial\Omega$) and a boundary trace $\gamma$ given by `𝒯 : B.TraceFamily`.
+Let $g > 0$, $f \in L^2(\Omega)$ and $u \in V = H^1(\Omega)$. Then $u$ solves the simplified
+friction problem (11.4.10), which is (11.1.13),
+$$\int_\Omega \bigl[\nabla u \cdot \nabla (v - u) + u (v - u)\bigr] dx + g \int_\Gamma
+  \bigl(|\gamma v| - |\gamma u|\bigr) ds \ge \int_\Omega f (v - u) \, dx \quad \text{for all } v
+  \in V,$$
+if and only if there is $\lambda \in L^\infty(\Gamma)$ with $|\lambda| \le 1$ a.e. on $\Gamma$
+such that
+$$\int_\Omega (\nabla u \cdot \nabla v + u v) \, dx + g \int_\Gamma \lambda \, \gamma v \, ds =
+  \int_\Omega f v \, dx \quad \text{for all } v \in V, \tag{11.4.21}$$
+$$\lambda \, \gamma u = |\gamma u| \quad \text{a.e. on } \Gamma. \tag{11.4.22}$$
 
-  `∫_Ω [∇u·∇(v − u) + u (v − u)] + g ∫_Γ (|v| − |u|) ds ≥ ∫_Ω f (v − u)`  for all `v ∈ V`,
+**Reading.** The source poses the problem on a Lipschitz domain. Here the domain is any open set
+with a boundary trace in the sense of `BoundaryData.TraceFamily`, for example a bounded $C^1$
+domain or a polygon without slits.
 
-if and only if there is `λ ∈ Λ` such that
-
-  `∫_Ω (∇u·∇v + u v) dx + g ∫_Γ λ v ds = ∫_Ω f v dx`  for all `v ∈ V`  (11.4.21),
-  `λ u = |u|`  a.e. on `Γ`  (11.4.22);
-
-the multiplier is unique (`theorem_11_4_5_unique`). The proof is the book's, except that the
-extension of `L(v) = ℓ(v) − a(u, v)` from the traces to `L¹(Γ)` by Hahn–Banach and the duality
-`(L¹(Γ))' = L^∞(Γ)` need no fractional space `H^{1/2}(Γ)`: it is the backbone's
-`forall_le_add_integral_abs_iff_exists_multiplier` with `T = γ`, `A = a(u, ·)` and the load. -/
+The multiplier is unique by `AtkinsonHan.Chapter11.theorem_11_4_5_unique`. The proof follows the
+source, except that the extension of $L(v) = \ell(v) - a(u, v)$ from the traces to $L^1(\Gamma)$
+by the Hahn–Banach theorem, and the duality $(L^1(\Gamma))' = L^\infty(\Gamma)$, need no
+fractional space $H^{1/2}(\Gamma)$. It specializes
+`forall_le_add_integral_abs_iff_exists_multiplier` with the trace as the operator. -/
 theorem theorem_11_4_5 {g : ℝ} (hg : 0 < g) (f : Lp ℝ 2 (volume.restrict (Ω : Set 𝔼)))
     (u : SobolevEuclidean N 1 2 Ω) :
     (∀ v : SobolevEuclidean N 1 2 Ω,
@@ -913,12 +1026,17 @@ theorem theorem_11_4_5 {g : ℝ} (hg : 0 < g) (f : Lp ℝ 2 (volume.restrict (Ω
   rw [Elliptic.laplaceForm_apply, Elliptic.load_apply, frictionFunctional_apply,
     frictionFunctional_apply]
 
-/-- **Theorem 11.4.5, uniqueness of the Lagrange multiplier**: two elements of `L^∞(Γ)` both
-satisfying (11.4.21) for the same `u` agree. Their difference `μ` satisfies
-`∫_Γ μ γv ds = 0` for all `v ∈ H¹(Ω)`, in particular against the restrictions of all smooth
-compactly supported functions (whose traces they are, `TraceFamily.traceL_ae_eq`), so `μ = 0`
-`σ`-a.e. by `ae_eq_zero_of_integral_contDiff_smul_eq_zero` — no density of `H^{1/2}(Γ)` in
-`L²(Γ)` is needed. -/
+/-- **Theorem 11.4.5** of [han2009theoretical], uniqueness of the Lagrange multiplier. Under the
+setting of `AtkinsonHan.Chapter11.theorem_11_4_5`, let $g > 0$, $f \in L^2(\Omega)$ and
+$u \in H^1(\Omega)$. If $\lambda, \lambda' \in L^\infty(\Gamma)$ both satisfy (11.4.21) for $u$,
+then $\lambda = \lambda'$.
+
+The difference $\mu = \lambda - \lambda'$ satisfies $\int_\Gamma \mu \, \gamma v \, ds = 0$ for
+all $v \in H^1(\Omega)$. This holds in particular for the restrictions of the smooth compactly
+supported functions, whose traces are their boundary values by
+`BoundaryData.TraceFamily.traceL_ae_eq`, so $\mu = 0$ almost everywhere on $\Gamma$ by
+`ae_eq_zero_of_integral_contDiff_smul_eq_zero`. The density of $H^{1/2}(\Gamma)$ in
+$L^2(\Gamma)$ is not needed. -/
 theorem theorem_11_4_5_unique {g : ℝ} (hg : 0 < g) (f : Lp ℝ 2 (volume.restrict (Ω : Set 𝔼)))
     (u : SobolevEuclidean N 1 2 Ω) {l l' : Lp ℝ ⊤ B.σ}
     (hl : ∀ v : SobolevEuclidean N 1 2 Ω,
@@ -976,13 +1094,15 @@ theorem theorem_11_4_5_unique {g : ℝ} (hg : 0 < g) (f : Lp ℝ 2 (volume.restr
 
 end LagrangeMultiplier
 
-/-! ### Example 11.4.4: the friction problem with linear elements on a polygon
+/-!
+### Example 11.4.4: the friction problem with linear elements on a polygon
 
-The error estimate `‖u − u_h‖_{H¹(Ω)} ≤ c(u) h` for the linear finite element solution of the
-simplified friction problem (11.1.13) = (11.4.10) on a polygon.  The section is in three parts:
-the residual of the continuous solution, read by Green's formula (any `BoundaryData`), the
-`L²(Γ)` error of the linear interpolant on a triangulated polygon (the edge bookkeeping), and the
-assembly through Falk's lemma. -/
+The error estimate $\|u - u_h\|_{H^1(\Omega)} \le c(u) h$ for the linear finite element solution of
+the simplified friction problem (11.1.13), which is (11.4.10), on a polygon. The section has three
+parts: the residual of the continuous solution, computed by Green's formula for any boundary data;
+the $L^2(\Gamma)$ error of the linear interpolant on a triangulated polygon; and the assembly
+through Falk's lemma.
+-/
 
 section Residual
 
@@ -990,29 +1110,37 @@ open MeasureTheory TopologicalSpace SobolevMultiIndex
 
 variable {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))} {B : BoundaryData Ω} (𝒯 : B.TraceFamily)
 
-/-- `ℝ^N`, locally. -/
+/-- The Euclidean space $\mathbb{R}^N$, as local notation. -/
 local notation "𝔼" => EuclideanSpace ℝ (Fin N)
 
-/-- The standard basis of `ℝ^N`, locally. -/
+/-- The standard basis of $\mathbb{R}^N$, as local notation. -/
 local notation "𝔅" => OrthonormalBasis.toBasis (EuclideanSpace.basisFun (Fin N) ℝ)
 
-/-- **The weak Laplacian of an `H²(Ω)` function**, `Δ_w u = ∑ᵢ ∂ᵢ(∂ᵢu) ∈ L²(Ω)`. -/
+/-- **Example 11.4.4** of [han2009theoretical], the weak Laplacian. For $u \in H^2(\Omega)$,
+$\Omega \subseteq \mathbb{R}^N$ open, the **weak Laplacian** is
+$$\Delta u = \sum_{i} \partial_i (\partial_i u) \in L^2(\Omega),$$
+with weak derivatives. -/
 noncomputable def weakLaplacian (U : SobolevEuclidean N 2 2 Ω) :
     Lp ℝ 2 (volume.restrict (Ω : Set 𝔼)) :=
   ∑ i, weakDeriv (partialDerivL ℝ 𝔅 2 Ω volume i U) (MultiIndexLE.single i)
 
-/-- **The datum of the residual of Example 11.4.4**, `−Δu + u − f ∈ L²(Ω)`. -/
+/-- **Example 11.4.4** of [han2009theoretical], the datum of the residual. For $u \in H^2(\Omega)$
+and $f \in L^2(\Omega)$, this is the function $-\Delta u + u - f \in L^2(\Omega)$, with the weak
+Laplacian $\Delta u$. -/
 noncomputable def frictionResidualData (U : SobolevEuclidean N 2 2 Ω)
     (f : Lp ℝ 2 (volume.restrict (Ω : Set 𝔼))) : Lp ℝ 2 (volume.restrict (Ω : Set 𝔼)) :=
   -weakLaplacian U + weakDeriv U 0 - f
 
-/-- **Green's formula as the residual identity** (the display of Example 11.4.4): for `u ∈ H²(Ω)`
-read in `H¹(Ω)` and every `w ∈ H¹(Ω)`,
+/-- **Example 11.4.4** of [han2009theoretical], Green's formula for the residual. Let
+$\Omega \subseteq \mathbb{R}^N$ be open, with boundary data $B$ and a boundary trace $\gamma$
+given by `𝒯 : B.TraceFamily`. Let $u \in H^2(\Omega)$, viewed in $H^1(\Omega)$, and
+$f \in L^2(\Omega)$. Then for every $w \in H^1(\Omega)$,
+$$a(u, w) - \ell(w) = \int_\Gamma \frac{\partial u}{\partial \nu} \, \gamma w \, ds +
+  \int_\Omega (-\Delta u + u - f) \, w \, dx,$$
+where $a(u, w) = \int_\Omega (\nabla u \cdot \nabla w + u w)$ and $\ell(w) = \int_\Omega f w$.
 
-  `a(u, w) − ℓ(w) = ∫_Γ (∂u/∂ν) (γ w) ds + ∫_Ω (−Δu + u − f) w dx`,
-
-the boundary term being the normal trace `BoundaryData.TraceFamily.normalTrace` of
-`Numlib/Analysis/Sobolev/Boundary/Data.lean` (Green's formula for `u ∈ H²`, `w ∈ H¹`). -/
+The normal derivative is `BoundaryData.TraceFamily.normalTrace`. The form is
+`Elliptic.laplaceForm` and the load is `Elliptic.load`. -/
 theorem laplaceForm_sub_load_eq_normalTrace_add (U : SobolevEuclidean N 2 2 Ω)
     (f : Lp ℝ 2 (volume.restrict (Ω : Set 𝔼))) (w : SobolevEuclidean N 1 2 Ω) :
     Elliptic.laplaceForm Ω (toLowerOrderL ℝ 𝔅 2 Ω volume (by norm_num : (1 : ℕ) ≤ 2) U) w
@@ -1087,20 +1215,27 @@ theorem laplaceForm_sub_load_eq_normalTrace_add (U : SobolevEuclidean N 2 2 Ω)
   rw [hlhs, hrhs, Elliptic.load_apply, ← hgreen']
   ring
 
-/-- **The normal derivative of an `H²(Ω)` function as an element of `L²(Γ)`**, so that
-`‖∂u/∂ν‖_{L²(Γ)}` is a norm. -/
+/-- **Example 11.4.4** of [han2009theoretical], the normal derivative $\partial u / \partial \nu$ of
+$u \in H^2(\Omega)$ as an element of $L^2(\Gamma)$, so that
+$\|\partial u / \partial \nu\|_{L^2(\Gamma)}$ is a norm. -/
 noncomputable def normalTraceL (U : SobolevEuclidean N 2 2 Ω) : Lp ℝ 2 B.σ :=
   (𝒯.memLp_normalTrace U).toLp _
 
-/-- **The bound on the residual of Example 11.4.4**: for the solution `u ∈ H²(Ω)` of the friction
-problem and any `v ∈ H¹(Ω)`,
+/-- **Example 11.4.4** of [han2009theoretical], the bound on the residual. Let
+$\Omega \subseteq \mathbb{R}^N$ be open, with boundary data $B$ and a boundary trace $\gamma$
+given by `𝒯 : B.TraceFamily`. Let $g \ge 0$, let $u \in H^1(\Omega)$ be the image of
+$U \in H^2(\Omega)$, and let $f \in L^2(\Omega)$. With $a$, $\ell$ and
+$j(v) = g \int_\Gamma |\gamma v| \, ds$ as in the friction problem, for every
+$v \in H^1(\Omega)$,
+$$|a(u, v - u) + j(v) - j(u) - \ell(v - u)| \le \Bigl(\Bigl\|\frac{\partial u}{\partial
+  \nu}\Bigr\|_{L^2(\Gamma)} + g \sqrt{\operatorname{meas} \Gamma}\Bigr) \|\gamma(v -
+  u)\|_{L^2(\Gamma)} + \|-\Delta u + u - f\|_{L^2(\Omega)} \|v - u\|_{L^2(\Omega)}.$$
 
-  `|R(v, u)| ≤ (‖∂u/∂ν‖_{L²(Γ)} + g √(meas Γ)) ‖γ(v − u)‖_{L²(Γ)}
-      + ‖−Δu + u − f‖_{L²(Ω)} ‖v − u‖_{L²(Ω)}`,
-
-`R(v, u) = a(u, v − u) + j(v) − j(u) − ℓ(v − u)` being the residual of Falk's lemma: the
-integration by parts `laplaceForm_sub_load_eq_normalTrace_add`, Cauchy–Schwarz on `Γ` and on `Ω`,
-and `||γv| − |γu|| ≤ |γ(v − u)|` for the friction term. -/
+The left side is the residual $R(v, u)$ of Falk's lemma. The number
+$\sqrt{\operatorname{meas} \Gamma}$ is the $L^2$ norm of the constant $1$ for the surface
+measure. The proof uses `AtkinsonHan.Chapter11.laplaceForm_sub_load_eq_normalTrace_add`, the
+Cauchy–Schwarz inequality on $\Gamma$ and on $\Omega$, and $\bigl||\gamma v| - |\gamma u|\bigr|
+\le |\gamma (v - u)|$. -/
 theorem abs_residual_le {g : ℝ} (hg : 0 ≤ g) {U : SobolevEuclidean N 2 2 Ω}
     {u : SobolevEuclidean N 1 2 Ω}
     (hU : toLowerOrderL ℝ 𝔅 2 Ω volume (by norm_num : (1 : ℕ) ≤ 2) U = u)
@@ -1179,50 +1314,63 @@ theorem abs_residual_le {g : ℝ} (hg : 0 ≤ g) {U : SobolevEuclidean N 2 2 Ω}
 end Residual
 
 
-/-! #### The error estimate -/
+/-! ### Example 11.4.4: the error estimate -/
 
 section Example1144
 
 open MeasureTheory TopologicalSpace EuclideanSpace SobolevMultiIndex
 
-/-- `ℝ²`, locally. -/
+/-- The Euclidean plane $\mathbb{R}^2$, as local notation. -/
 local notation "𝔼₂" => EuclideanSpace ℝ (Fin 2)
 
-/-- The standard basis of `ℝ²`, locally. -/
+/-- The standard basis of $\mathbb{R}^2$, as local notation. -/
 local notation "𝔅₂" => OrthonormalBasis.toBasis (EuclideanSpace.basisFun (Fin 2) ℝ)
 
-/-- **Example 11.4.4.** Theorem 11.4.2 (Falk's lemma) applied to the simplified friction problem
-(11.1.13) = (11.4.10) of Example 11.1.2 on a polygonal domain `Ω ⊆ ℝ²`, discretized with linear
-elements on a regular family of triangulations `{𝒯_h}` without slits
-(`Triangulation.InteriorEdgesSubset`), with `V = H¹(Ω)` and `V_h = 𝒯_h.polySpace 2 1` the
-continuous piecewise linear functions: for `f ∈ L²(Ω)`, `g > 0`, the solution `u` of (11.4.10)
-and the finite element solutions `u_h ∈ V_h`,
+/-- **Example 11.4.4** of [han2009theoretical] (the friction problem with linear elements). Let
+$\Omega \subseteq \mathbb{R}^2$ be open. Let $(\mathcal{T}_i)_{i \in \iota}$ be a regular family
+of triangulations of $\Omega$ along a filter $l$, without slits, with mesh sizes $h_i \le H$.
+Let $P_k \neq Q_k$, for $k$ in a finite set, be the ends of the sides of the polygon, and let
+every boundary edge of every $\mathcal{T}_i$ lie in one of the segments $[P_k, Q_k]$. Let
+$g > 0$ and $f \in L^2(\Omega)$. Let $u \in H^1(\Omega)$ be the image of $U \in H^2(\Omega)$,
+let $u$ have a representative $\tilde u$ that is continuous on $\overline\Omega$ and lies in
+$H^2(\Omega)$, and for every side let $r \mapsto \tilde u(P_k + r (Q_k - P_k))$ be almost
+everywhere equal on $(0, 1)$ to an element of $H^2(0, 1)$. Let $M_\nu$ and $M_\sigma$ bound
+$\|\partial u / \partial \nu\|_{L^2(\Gamma)}$ and $\sqrt{\operatorname{meas} \Gamma}$ for the
+surface measure of every $\mathcal{T}_i$. Let $u$ solve the friction problem (11.4.10),
+$$a(u, v - u) + j(v) - j(u) \ge \ell(v - u) \quad \text{for all } v \in H^1(\Omega),$$
+with $a(u, v) = \int_\Omega (\nabla u \cdot \nabla v + u v)$, $\ell(v) = \int_\Omega f v$ and
+$j(v) = g \int_\Gamma |\gamma v| \, ds$ for the trace of every $\mathcal{T}_i$. For every $i$,
+let $u_{h,i}$ in the space $V_{h,i} \subseteq H^1(\Omega)$ of continuous piecewise linear
+functions on $\mathcal{T}_i$ solve the same inequality for all $v_h \in V_{h,i}$. Then there is
+a constant $c$ with
+$$\|u - u_{h,i}\|_{H^1(\Omega)} \le c h_i \quad \text{for all } i.$$
 
-  `‖u − u_h‖_{H¹(Ω)} ≤ c(u) h`.
+**Reading.** The source assumes $u \in H^2(\Omega)$ and $u|_{\Gamma_k} \in H^2(\Gamma_k)$ on
+every side; here these are the explicit representatives $U$, $\tilde u$ and the elements of
+$H^2(0, 1)$. The source leaves two hypotheses implicit. The first is that every boundary edge
+lies on one of finitely many sides, which is what a polygonal domain means for the boundary
+terms. This condition takes the place of `Triangulation.FrontierSubsetEdges` of Example 11.4.3,
+which this proof does not use. The second is that $\|\partial u / \partial \nu\|_{L^2(\Gamma)}$
+and $\sqrt{\operatorname{meas} \Gamma}$ are bounded uniformly in $h$: each mesh carries its own
+surface measure, and for a fixed polygon these numbers are the same for every mesh.
 
-The regularity assumed by the book — `u ∈ H²(Ω)` and `u|_{Γᵢ} ∈ H²(Γᵢ)` on every side — is made
-explicit: `U₂ ∈ H²(Ω)` with `toLowerOrderL U₂ = u`, a representative `ũ` continuous on `Ω̄` (the
-hypothesis of Theorem 10.3.9), and for every side `[P k, Q k]` of the polygon an element
-`Us k ∈ H²(0, 1)` representing `r ↦ ũ (P k + r (Q k − P k))`. The polygon enters as `hside`:
-every boundary edge of every `𝒯_h` lies on one of the finitely many sides. The constant is
-`c(u) = √(2 K)` with
-
-  `K = (Mν + g Mσ) √(∑ₖ ‖Q k − P k‖⁻³ |u|²_{H²(Γₖ)}) + ‖−Δu + u − f‖_{L²(Ω)} c₀ |u|_{H²(Ω)}
-      + ½ (C c₁ |u|_{H²(Ω)})²`,
-
-`c₀`, `c₁` the interpolation constants of `Chapter10.theorem_10_3_9_linear` (where the shape
-regularity enters), `C` the norm comparison of `FiniteElement.exists_norm_le_sobolevNorm`, and `Mν`,
-`Mσ` bounds — uniform in `h`, as they are for a fixed polygon — for `‖∂u/∂ν‖_{L²(Γ_h)}` and
-`√(meas Γ_h)`, the surface measure being the one carried by each triangulation.
-
-The proof is the book's: Falk's lemma at `v_h = Π_h ũ`
-(`norm_sub_le_of_isVariationalInequalitySolution_of_subset`, the internal-approximation form
-since `V_h ⊆ V`), the residual integrated by parts
-(`laplaceForm_sub_load_eq_normalTrace_add`, `abs_residual_le`), the interpolation estimates
-`‖u − Π_h u‖_{m,Ω} ≤ c h^{2−m} |u|_{2,Ω}` at `m = 0, 1` (`Chapter10.theorem_10_3_9_linear`), and
-on the boundary `γ(u − Π_h u) = ũ − Π_h ũ` with
-`‖ũ − Π_h ũ‖_{L²(Γ)} ≤ h² √(∑ₖ ‖Q k − P k‖⁻³ |u|²_{H²(Γₖ)})`
-(`Triangulation.norm_traceL_sub_globalInterp_le`, the edge bookkeeping). -/
+The space $V_{h,i}$ is `Triangulation.polySpace 2 1`, "without slits" is
+`Triangulation.InteriorEdgesSubset`, and the boundary data and trace of a mesh are
+`Triangulation.boundaryData` and `Triangulation.traceFamily`. The proof follows the source and
+gives $c = \sqrt{2 K}$ with
+$$K = (M_\nu + g M_\sigma) \Bigl(\sum_k \|Q_k - P_k\|^{-3} |u|^2_{H^2(\Gamma_k)}\Bigr)^{1/2} +
+  \|-\Delta u + u - f\|_{L^2(\Omega)} c_0 |u|_{H^2(\Omega)} + \tfrac12 \bigl(C c_1
+  |u|_{H^2(\Omega)}\bigr)^2,$$
+where $c_0$ and $c_1$ are the interpolation constants of
+`AtkinsonHan.Chapter10.theorem_10_3_9_linear`, in which the shape regularity enters, and $C$ is
+the norm comparison of `FiniteElement.exists_norm_le_sobolevNorm`. It applies Falk's lemma at
+$v_h = \Pi_h \tilde u$, in the internal-approximation form
+`norm_sub_le_of_isVariationalInequalitySolution_of_subset` since $V_h \subseteq V$. The residual
+is bounded by `AtkinsonHan.Chapter11.abs_residual_le`, the interpolation errors $\|u - \Pi_h
+u\|_{m,\Omega} \le c h^{2-m} |u|_{2,\Omega}$ for $m = 0, 1$ by Theorem 10.3.9, and on the
+boundary $\gamma(u - \Pi_h u) = \tilde u - \Pi_h \tilde u$ with $\|\tilde u - \Pi_h \tilde
+u\|_{L^2(\Gamma)} \le h^2 \bigl(\sum_k \|Q_k - P_k\|^{-3} |u|^2_{H^2(\Gamma_k)}\bigr)^{1/2}$ by
+`Triangulation.norm_traceL_sub_globalInterp_le`. -/
 theorem example_11_4_4 {Ω : Opens 𝔼₂} {ι : Type*} {l : Filter ι} {𝒯 : ι → Triangulation Ω}
     (hreg : Chapter10.IsRegularFamily l fun i ↦ Set.range (𝒯 i).K) {H : ℝ}
     (hH : ∀ i, (𝒯 i).meshSize ≤ H) (hIe : ∀ i, (𝒯 i).InteriorEdgesSubset)

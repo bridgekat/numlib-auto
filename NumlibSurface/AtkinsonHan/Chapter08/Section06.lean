@@ -7,65 +7,89 @@ import Numlib.Variational.Minimax
 import NumlibSurface.AtkinsonHan.Chapter03.Section03
 
 /-!
-# Atkinson–Han §8.6: mixed and dual formulations
+# Atkinson and Han, Section 8.6: Mixed and dual formulations
 
-Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework*, 3rd edition, Springer, 2009, §8.6.
+This module formalizes the abstract items of Section 8.6 of [han2009theoretical]. Let $A$ and $B$ be
+sets and $L : A \times B \to \mathbb{R}$. A pair $(u, p) \in A \times B$ is a saddle point of $L$ if
+$L(u, q) \le L(u, p) \le L(v, p)$ for all $(v, q) \in A \times B$ (Definition 8.6.1). Proposition
+8.6.2 states that $(u, p)$ is a saddle point if and only if $u$ solves the primal problem (8.6.12)
+$\inf_{v \in A} \sup_{q \in B} L(v, q)$, $p$ solves the dual problem (8.6.13)
+$\sup_{q \in B} \inf_{v \in A} L(v, q)$, and the two values are equal to $L(u, p)$ (8.6.14). Theorem
+8.6.3, which the source states without proof and attributes to [ekeland1999convex], gives conditions
+for a saddle point to exist when $A$ and $B$ lie in reflexive Banach spaces, and conditions for it
+to be unique.
 
-Almost all of §8.6 is a worked derivation for the model Dirichlet problem for the Poisson
-equation and needs `H¹₀(Ω)`, `L²(Ω)^d` and `H(div; Ω)`; three items are abstract, and they are the
-contents of this file.  `A` and `B` are bare sets and `L` an arbitrary real function, so nothing
-here needs a function space until Theorem 8.6.3, whose `V` and `Q` are reflexive Banach spaces.
+Most of Section 8.6 is a derivation for the Dirichlet problem for the Poisson equation, which needs
+$H^1_0(\Omega)$, $L^2(\Omega)^d$ and $H(\operatorname{div}; \Omega)$. The three abstract items need
+no function space: $A$ and $B$ are sets and $L$ is any real function, until Theorem 8.6.3. The
+existence part of Theorem 8.6.3 specializes `Numlib.Variational.Minimax`, and the saddle points of
+the backbone are those of `Numlib.Analysis.Convex.Saddle.Real`.
+
+## Main definitions
+
+* Definition 8.6.1, `AtkinsonHan.Chapter08.IsSaddlePoint`: the saddle point condition (8.6.10).
+* Equations (8.6.12) and (8.6.13), `AtkinsonHan.Chapter08.primalObjective` and
+  `AtkinsonHan.Chapter08.dualObjective`: the objectives $\sup_{q \in B} L(v, q)$ and
+  $\inf_{v \in A} L(v, q)$.
 
 ## Main results
 
-* `IsSaddlePoint` — Definition 8.6.1, (8.6.10), in the book's own shape
-  `L(u, q) ≤ L(u, p) ≤ L(v, p)`, with `isSaddlePoint_iff` identifying it with the backbone's
-  `ConvexAnalysis.IsSaddlePointOn` and `isSaddlePoint_iff_isSaddlePointOn` with Mathlib's
-  `IsSaddlePointOn`.  The backbone's Rockafellar convention maximizes the first variable and
-  minimizes the second, with an `EReal`-valued kernel, so the book's `(u, p)` on `A × B` is the
-  backbone's `(p, u)` on `B × A` for the transposed kernel `(q, v) ↦ L(v, q)`; Mathlib's
-  `IsSaddlePointOn A B L u p` is the book's convention, `L(u, q) ≤ L(v, p)` for all `v ∈ A`,
-  `q ∈ B`.
-* `primalObjective`, `dualObjective` — the primal problem (8.6.12) `min_{v ∈ A} sup_{q ∈ B} L(v, q)`
-  and the dual problem (8.6.13) `max_{q ∈ B} inf_{v ∈ A} L(v, q)`.
-* `proposition_8_6_2` — (8.6.11): `(u, p)` is a saddle point exactly when `u` solves the primal
-  problem, `p` solves the dual problem, and the common extremal value is `L(u, p)`; the equality
-  of the two extremal values is (8.6.14), which `equation_8_6_14` states on its own.
-* `theorem_8_6_3` — the existence of a saddle point (Ekeland–Temam): `V`, `Q` reflexive, `A`, `B`
-  nonempty closed convex, `L` convex lower semicontinuous in `v` and concave upper semicontinuous
-  in `q`, and the two coercivity conditions (f) and (g).  The uniqueness clauses are
-  `theorem_8_6_3_unique_fst` and `theorem_8_6_3_unique_snd`, and the variants with (f) replaced by
-  (f)' or (g) by (g)' are `theorem_8_6_3_sup` and `theorem_8_6_3_inf`.  All of them are the
-  backbone's `Numlib.Variational.Minimax`: Sion's minimax theorem in the weak topologies of the
-  two spaces, where closed bounded convex sets are compact by Kakutani's theorem, then truncation
-  to a large ball for the coercive cases.
+* Proposition 8.6.2, `AtkinsonHan.Chapter08.proposition_8_6_2`: $(u, p)$ is a saddle point if and
+  only if $u$ and $p$ solve the primal and the dual problem, with common value $L(u, p)$.
+* Equation (8.6.14), `AtkinsonHan.Chapter08.equation_8_6_14`: at a saddle point the primal and the
+  dual problem have the same value.
+* Theorem 8.6.3, `AtkinsonHan.Chapter08.theorem_8_6_3`: under the conditions (a)–(g) a saddle point
+  exists.
+* Theorem 8.6.3, `AtkinsonHan.Chapter08.theorem_8_6_3_sup` and
+  `AtkinsonHan.Chapter08.theorem_8_6_3_inf`: the same with (f) replaced by (f)', or with (g)
+  replaced by (g)'.
+* Theorem 8.6.3, `AtkinsonHan.Chapter08.theorem_8_6_3_unique_fst` and
+  `AtkinsonHan.Chapter08.theorem_8_6_3_unique_snd`: strict convexity or strict concavity makes the
+  corresponding component unique.
 
-The two `BddAbove`/`BddBelow` hypotheses of Proposition 8.6.2 are not decoration: `sSup` and
-`sInf` take junk values on unbounded sets, and without them the extremal problems say nothing.
+## Proof outline
 
-## Theorem 8.6.3
+The existence part of Theorem 8.6.3 applies Sion's minimax theorem in the weak topologies of $V$ and
+$Q$. There the intersections of $A$ and $B$ with a large closed ball are compact (Kakutani's
+theorem), and the semicontinuity hypotheses are kept (Mazur's theorem). The coercivity conditions
+then keep the saddle point of the truncated problem inside the ball, where it is a saddle point of
+the original problem.
 
-The book states the theorem without proof, citing Ekeland–Temam.  Its hypotheses are transcribed
-as printed.  Reflexivity (a) is `NormedSpace.IsReflexive ℝ V`, the book's Definition 2.7.4 by
-`Chapter02.definition_2_7_4_iff_isReflexive`, and "Banach" needs no hypothesis of its own, a
-reflexive space being complete.  The limit in (f), "`L(v, q₀) → ∞` as `‖v‖ → ∞`, `v ∈ A`", is
-`Chapter03.definition_3_3_9 A (L · q₀)`, the book's Definition 3.3.9 of a coercive functional;
-the limit in (g) is the same limit to `-∞`, spelled out with `Filter.atBot`.  The suprema and
-infima of (f)' and (g)' are taken in `EReal`, because `sup_{q ∈ B} L(v, q)` may well be `+∞` for
-some `v` and the book's condition allows it.
+## Implementation notes
 
-The book says "the same conclusions hold when (f) is replaced by (f)' **or** when (g) is replaced
-by (g)'", and the disjunction is essential: with (f)' and (g)' assumed *together* the statement is
-false — `L(v, q) = q - v` on `ℝ × ℝ` has `sup_q L(v, q) = +∞` and `inf_v L(v, q) = -∞` throughout,
-so both limits hold, and no saddle point.
+* The backbone's `ConvexAnalysis.IsSaddlePointOn` follows Rockafellar: it maximizes in the first
+  variable, minimizes in the second, and has an `EReal`-valued function. So the pair $(u, p)$ on
+  $A \times B$ of the source is the pair $(p, u)$ on $B \times A$ of the backbone for the transposed
+  function $(q, v) \mapsto L(v, q)$ (`AtkinsonHan.Chapter08.isSaddlePoint_iff`). Mathlib's
+  `IsSaddlePointOn A B L u p` has the convention of the source
+  (`AtkinsonHan.Chapter08.isSaddlePoint_iff_isSaddlePointOn`).
+* The suprema and infima of the two objectives are `sSup` and `sInf` in $\mathbb{R}$, which have no
+  meaning on unbounded sets. Proposition 8.6.2 and (8.6.14) therefore assume them bounded.
+* In Theorem 8.6.3, reflexivity (a) is `NormedSpace.IsReflexive ℝ V`, which is Definition 2.7.4 by
+  `AtkinsonHan.Chapter02.definition_2_7_4_iff_isReflexive`. A reflexive space is complete, so
+  "Banach" needs no separate hypothesis. The limit in (f) is
+  `AtkinsonHan.Chapter03.definition_3_3_9`, the coercive functional of Definition 3.3.9. The limit
+  in (g) is the same limit to $-\infty$, written with `Filter.atBot`. The suprema and infima of (f)'
+  and (g)' are taken in `EReal`, because $\sup_{q \in B} L(v, q)$ can be $+\infty$, and the
+  condition of the source allows that.
+* The source says that the conclusions hold when (f) is replaced by (f)' or when (g) is replaced by
+  (g)'. The two replacements cannot be made together: for $L(v, q) = q - v$ on
+  $\mathbb{R} \times \mathbb{R}$, $\sup_q L(v, q) = +\infty$ and $\inf_v L(v, q) = -\infty$ for all
+  $v$ and $q$, so (f)' and (g)' hold, but there is no saddle point.
 
-## Not formalized here
+## Deviations from the source
 
-* The abstract mixed formulation (8.6.21)–(8.6.22): the book states the problem and refers to
-  Brezzi for every theorem about it, so there is nothing to formalize.
-* The model-problem computations (8.6.1)–(8.6.20) and Exercises 8.6.1–8.6.4, all of which are
-  about `H¹₀(Ω)`, `H(div; Ω)` or the Stokes equations.
+* **Proposition 8.6.2** (reading). The source does not say whether the suprema and infima are
+  finite. The proposition here assumes that $L(v, \cdot)$ is bounded above on $B$ for each $v \in A$
+  and that $L(\cdot, q)$ is bounded below on $A$ for each $q \in B$. See
+  `AtkinsonHan.Chapter08.proposition_8_6_2`.
+
+## Not formalized
+
+* **The abstract mixed formulation (8.6.21)–(8.6.22).** The source states the problem and refers to
+  Brezzi for every theorem about it.
+* **The model-problem computations (8.6.1)–(8.6.20) and Exercises 8.6.1–8.6.4.** They are about
+  $H^1_0(\Omega)$, $H(\operatorname{div}; \Omega)$ or the Stokes equations.
 -/
 
 open Bornology Filter Topology
@@ -74,22 +98,24 @@ namespace AtkinsonHan.Chapter08
 
 variable {α β : Type*} {L : α → β → ℝ} {A : Set α} {B : Set β} {u : α} {p : β}
 
-/-- **Definition 8.6.1**, (8.6.10).  A pair `(u, p) ∈ A × B` is a *saddle point* of
-`L : A × B → ℝ` when
+/-- **Definition 8.6.1** of [han2009theoretical], equation (8.6.10). Let $A$ and $B$ be sets and
+$L : A \times B \to \mathbb{R}$. A pair $(u, p)$ is a **saddle point** of $L$ on $A \times B$ if
+$u \in A$, $p \in B$ and
+$$L(u, q) \le L(u, p) \le L(v, p) \quad \text{for all } v \in A,\ q \in B.$$
+So $p$ maximizes $L(u, \cdot)$ over $B$, and $u$ minimizes $L(\cdot, p)$ over $A$.
 
-  `L(u, q) ≤ L(u, p) ≤ L(v, p)`  for every `(v, q) ∈ A × B`,
-
-so that `p` maximizes `L(u, ·)` over `B` while `u` minimizes `L(·, p)` over `A`.  The book writes
-the two inequalities as one chain, which is what is transcribed here;
-`isSaddlePoint_iff` splits it into the backbone's four clauses. -/
+The definition keeps the single chain of inequalities of the source.
+`AtkinsonHan.Chapter08.isSaddlePoint_iff` splits it into the four clauses of the backbone. -/
 def IsSaddlePoint (L : α → β → ℝ) (A : Set α) (B : Set β) (u : α) (p : β) : Prop :=
   u ∈ A ∧ p ∈ B ∧ ∀ v ∈ A, ∀ q ∈ B, L u q ≤ L u p ∧ L u p ≤ L v p
 
-/-- Definition 8.6.1 is the backbone's `ConvexAnalysis.IsSaddlePointOn`, for the transposed
-kernel `(q, v) ↦ L(v, q)` read in `EReal`, relative to `B × A`, at the point `(p, u)`: the
-backbone maximizes its first variable and minimizes its second, which is the book's convention
-with the two variables exchanged.  The book's chain quantifies over `v ∈ A` and `q ∈ B` at once;
-splitting it is legitimate because `u ∈ A` and `p ∈ B` make each half instantiable on its own. -/
+/-- A pair $(u, p)$ is a saddle point of $L$ on $A \times B$ if and only if $(p, u)$ is a saddle
+point in the sense of the backbone's `ConvexAnalysis.IsSaddlePointOn` of the transposed function
+$(q, v) \mapsto L(v, q)$, with values in `EReal`, on $B \times A$.
+
+The backbone maximizes in its first variable and minimizes in its second, so the variables of
+the source are exchanged. The chain of the source quantifies over $v \in A$ and $q \in B$
+together. It can be split because $u \in A$ and $p \in B$ make each half hold on its own. -/
 theorem isSaddlePoint_iff :
     IsSaddlePoint L A B u p ↔
       ConvexAnalysis.IsSaddlePointOn (fun q : β × α => ((L q.2 q.1 : ℝ) : EReal)) B A (p, u) := by
@@ -101,10 +127,13 @@ theorem isSaddlePoint_iff :
     exact ⟨hu, hp, fun v hv q hq =>
       ⟨EReal.coe_le_coe_iff.1 (h₁ q hq), EReal.coe_le_coe_iff.1 (h₂ v hv)⟩⟩
 
-/-- Definition 8.6.1 is Mathlib's `IsSaddlePointOn A B L u p` — the single inequality
-`L(u, q) ≤ L(v, p)` for all `v ∈ A`, `q ∈ B`, which does not record `u ∈ A` and `p ∈ B` —
-together with the two memberships.  The book's chain gives the single inequality by transitivity,
-and the single inequality gives the chain by taking `v = u`, respectively `q = p`. -/
+/-- A pair $(u, p)$ is a saddle point of $L$ on $A \times B$ if and only if $u \in A$, $p \in B$,
+and Mathlib's `IsSaddlePointOn A B L u p` holds, that is $L(u, q) \le L(v, p)$ for all $v \in A$
+and $q \in B$.
+
+Mathlib's condition does not include $u \in A$ and $p \in B$. The chain gives the single
+inequality by transitivity, and the single inequality gives the chain with $v = u$ and with
+$q = p$. -/
 theorem isSaddlePoint_iff_isSaddlePointOn :
     IsSaddlePoint L A B u p ↔ u ∈ A ∧ p ∈ B ∧ IsSaddlePointOn A B L u p := by
   constructor
@@ -113,33 +142,48 @@ theorem isSaddlePoint_iff_isSaddlePointOn :
   · rintro ⟨hu, hp, h⟩
     exact ⟨hu, hp, fun v hv q hq => ⟨h u hu q hq, h v hv p hp⟩⟩
 
-/-- The objective of the primal problem (8.6.12): `J(v) = sup_{q ∈ B} L(v, q)`, to be minimized
-over `A`. -/
+/-- **Equation (8.6.12)** of [han2009theoretical], the primal objective. For
+$L : A \times B \to \mathbb{R}$, the **primal objective** is $J(v) = \sup_{q \in B} L(v, q)$.
+The primal problem is to minimize $J$ over $A$.
+
+The supremum is the real `sSup`. It is $0$ when $B$ is empty or when $L(v, \cdot)$ is unbounded
+above on $B$. -/
 noncomputable def primalObjective (L : α → β → ℝ) (B : Set β) (v : α) : ℝ := sSup (L v '' B)
 
-/-- The objective of the dual problem (8.6.13): `G(q) = inf_{v ∈ A} L(v, q)`, to be maximized
-over `B`. -/
+/-- **Equation (8.6.13)** of [han2009theoretical], the dual objective. For
+$L : A \times B \to \mathbb{R}$, the **dual objective** is $G(q) = \inf_{v \in A} L(v, q)$. The
+dual problem is to maximize $G$ over $B$.
+
+The infimum is the real `sInf`. It is $0$ when $A$ is empty or when $L(\cdot, q)$ is unbounded
+below on $A$. -/
 noncomputable def dualObjective (L : α → β → ℝ) (A : Set α) (q : β) : ℝ :=
   sInf ((fun v => L v q) '' A)
 
-/-- At a saddle point the primal objective takes the value `L(u, p)`: `sup_{q ∈ B} L(u, q)` is
-attained at `q = p`. -/
+/-- At a saddle point $(u, p)$, the primal objective at $u$ is $L(u, p)$: the supremum
+$\sup_{q \in B} L(u, q)$ is attained at $q = p$. -/
 theorem primalObjective_eq (h : IsSaddlePoint L A B u p) : primalObjective L B u = L u p :=
   (isSaddlePoint_iff.mp h).sSup_image_coe_eq
 
-/-- At a saddle point the dual objective takes the value `L(u, p)`: `inf_{v ∈ A} L(v, p)` is
-attained at `v = u`. -/
+/-- At a saddle point $(u, p)$, the dual objective at $p$ is $L(u, p)$: the infimum
+$\inf_{v \in A} L(v, p)$ is attained at $v = u$. -/
 theorem dualObjective_eq (h : IsSaddlePoint L A B u p) : dualObjective L A p = L u p :=
   (isSaddlePoint_iff.mp h).sInf_image_coe_eq
 
-/-- **Proposition 8.6.2**, (8.6.11).  A pair `(u, p) ∈ A × B` is a saddle point of `L` if and only
-if `u` solves the primal problem (8.6.12), `p` solves the dual problem (8.6.13), and the common
-extremal value is `L(u, p)`:
+/-- **Proposition 8.6.2** of [han2009theoretical], equation (8.6.11). Let $A$ and $B$ be sets and
+$L : A \times B \to \mathbb{R}$, such that $L(v, \cdot)$ is bounded above on $B$ for every
+$v \in A$ and $L(\cdot, q)$ is bounded below on $A$ for every $q \in B$. Let $u \in A$ and
+$p \in B$. Then $(u, p)$ is a saddle point of $L$ if and only if $u$ solves the primal problem
+(8.6.12), $p$ solves the dual problem (8.6.13), and the common value is $L(u, p)$:
+$$\min_{v \in A} \sup_{q \in B} L(v, q) = \sup_{q \in B} L(u, q) = L(u, p) = \inf_{v \in A} L(v,
+  p) = \max_{q \in B} \inf_{v \in A} L(v, q).$$
 
-  `min_{v ∈ A} sup_{q ∈ B} L(v, q) = L(u, p) = max_{q ∈ B} inf_{v ∈ A} L(v, q)`,
+**Reading.** The source does not say whether the suprema and infima are finite. The two
+boundedness hypotheses make them real numbers. Without them `sSup` and `sInf` have no meaning,
+and the extremal problems say nothing.
 
-the minimum attained at `u` and the maximum at `p`.  The equality of the two extremal values is
-(8.6.14), which is `equation_8_6_14`. -/
+The minimum is stated as `IsLeast` of the image of $A$ under the primal objective, and the
+maximum as `IsGreatest` of the image of $B$ under the dual objective. The equality of the two
+values is (8.6.14), which is `AtkinsonHan.Chapter08.equation_8_6_14`. -/
 theorem proposition_8_6_2 (hu : u ∈ A) (hp : p ∈ B) (hbddA : ∀ v ∈ A, BddAbove (L v '' B))
     (hbddB : ∀ q ∈ B, BddBelow ((fun v => L v q) '' A)) :
     IsSaddlePoint L A B u p ↔
@@ -162,8 +206,13 @@ theorem proposition_8_6_2 (hu : u ∈ A) (hp : p ∈ B) (hbddA : ∀ v ∈ A, Bd
       exact hgreatest
     · exact hleast.csInf_eq.trans hgreatest.csSup_eq.symm
 
-/-- **(8.6.14)**: at a saddle point the primal and the dual problem have the same value, which is
-`L(u, p)`.  There is no duality gap. -/
+/-- **Equation (8.6.14)** of [han2009theoretical]. Let $L : A \times B \to \mathbb{R}$ be such that
+$L(v, \cdot)$ is bounded above on $B$ for every $v \in A$ and $L(\cdot, q)$ is bounded below on
+$A$ for every $q \in B$. If $L$ has a saddle point on $A \times B$, then the primal and the dual
+problem have the same value:
+$$\inf_{v \in A} \sup_{q \in B} L(v, q) = \sup_{q \in B} \inf_{v \in A} L(v, q).$$
+So there is no duality gap, and the common value is $L(u, p)$ by
+`AtkinsonHan.Chapter08.proposition_8_6_2`. -/
 theorem equation_8_6_14 (h : IsSaddlePoint L A B u p) (hbddA : ∀ v ∈ A, BddAbove (L v '' B))
     (hbddB : ∀ q ∈ B, BddBelow ((fun v => L v q) '' A)) :
     sInf (primalObjective L B '' A) = sSup (dualObjective L A '' B) :=
@@ -177,10 +226,13 @@ variable {V Q : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V] [NormedAddComm
   [NormedSpace ℝ Q] {L : V → Q → ℝ} {A : Set V} {B : Set Q}
 
 omit [NormedAddCommGroup Q] [NormedSpace ℝ Q] in
-/-- Condition (f) of Theorem 8.6.3, "`A` is bounded, or `L(v, q₀) → ∞` as `‖v‖ → ∞` in `A` for
-some `q₀ ∈ B`", read as the backbone's hypothesis: some slice `L(·, q₀)` is coercive on `A`, a
-bounded set making every functional coercive vacuously.  `B` must be nonempty for the bounded
-case to name a `q₀`. -/
+/-- Condition (f) of Theorem 8.6.3 of [han2009theoretical] in the form of the backbone. Let $V$ be a
+real normed space, $A \subseteq V$, and $B$ a nonempty set. If $A$ is bounded, or there is
+$q_0 \in B$ with $L(v, q_0) \to \infty$ as $\|v\| \to \infty$ in $A$, then there is $q_0 \in B$
+such that $L(\cdot, q_0)$ is coercive on $A$ in the sense of `IsCoerciveFunctionalOn`.
+
+On a bounded set every functional is coercive, so $B$ must be nonempty to name a $q_0$ in the
+bounded case. -/
 theorem exists_isCoerciveFunctionalOn_of_bounded_or_tendsto (hBne : B.Nonempty)
     (hf : IsBounded A ∨ ∃ q₀ ∈ B, Chapter03.definition_3_3_9 A fun v => L v q₀) :
     ∃ q₀ ∈ B, IsCoerciveFunctionalOn (fun v => L v q₀) A := by
@@ -190,8 +242,10 @@ theorem exists_isCoerciveFunctionalOn_of_bounded_or_tendsto (hBne : B.Nonempty)
   · exact ⟨q₀, hq₀, (Chapter03.definition_3_3_9_iff _ _).1 h⟩
 
 omit [NormedAddCommGroup V] [NormedSpace ℝ V] in
-/-- Condition (g) of Theorem 8.6.3, "`B` is bounded, or `L(v₀, q) → -∞` as `‖q‖ → ∞` in `B` for
-some `v₀ ∈ A`", read as the backbone's hypothesis: some slice `-L(v₀, ·)` is coercive on `B`. -/
+/-- Condition (g) of Theorem 8.6.3 of [han2009theoretical] in the form of the backbone. Let $Q$ be a
+real normed space, $B \subseteq Q$, and $A$ a nonempty set. If $B$ is bounded, or there is
+$v_0 \in A$ with $L(v_0, q) \to -\infty$ as $\|q\| \to \infty$ in $B$, then there is $v_0 \in A$
+such that $-L(v_0, \cdot)$ is coercive on $B$ in the sense of `IsCoerciveFunctionalOn`. -/
 theorem exists_isCoerciveFunctionalOn_neg_of_bounded_or_tendsto (hAne : A.Nonempty)
     (hg : IsBounded B ∨ ∃ v₀ ∈ A, Tendsto (fun q => L v₀ q) (comap norm atTop ⊓ 𝓟 B) atBot) :
     ∃ v₀ ∈ A, IsCoerciveFunctionalOn (fun q => -L v₀ q) B := by
@@ -202,9 +256,10 @@ theorem exists_isCoerciveFunctionalOn_neg_of_bounded_or_tendsto (hAne : A.Nonemp
     exact tendsto_neg_atBot_atTop.comp h
 
 omit [NormedSpace ℝ V] [NormedAddCommGroup Q] [NormedSpace ℝ Q] in
-/-- Condition (f)' of Theorem 8.6.3, "`A` is bounded, or `sup_{q ∈ B} L(v, q) → ∞` as `‖v‖ → ∞`
-in `A`", the supremum taken in `EReal`, read as the backbone's hypothesis: beyond some radius
-every `v ∈ A` has a `q ∈ B` with `L(v, q) ≥ M`. -/
+/-- Condition (f)' of Theorem 8.6.3 of [han2009theoretical] in the form of the backbone. Suppose
+that $A$ is bounded, or that $\sup_{q \in B} L(v, q) \to \infty$ as $\|v\| \to \infty$ in $A$,
+with the supremum taken in the extended reals. Then for every $M \in \mathbb{R}$ there is $R$
+such that every $v \in A$ with $\|v\| \ge R$ has some $q \in B$ with $L(v, q) \ge M$. -/
 theorem forall_exists_le_of_bounded_or_biSup_tendsto
     (hf : IsBounded A ∨
       Tendsto (fun v => ⨆ q ∈ B, (L v q : EReal)) (comap norm atTop ⊓ 𝓟 A) atTop) :
@@ -223,8 +278,10 @@ theorem forall_exists_le_of_bounded_or_biSup_tendsto
     exact ⟨q, hq, hMq.le⟩
 
 omit [NormedAddCommGroup V] [NormedSpace ℝ V] [NormedSpace ℝ Q] in
-/-- Condition (g)' of Theorem 8.6.3, "`B` is bounded, or `inf_{v ∈ A} L(v, q) → -∞` as
-`‖q‖ → ∞` in `B`", the infimum taken in `EReal`, read as the backbone's hypothesis. -/
+/-- Condition (g)' of Theorem 8.6.3 of [han2009theoretical] in the form of the backbone. Suppose
+that $B$ is bounded, or that $\inf_{v \in A} L(v, q) \to -\infty$ as $\|q\| \to \infty$ in $B$,
+with the infimum taken in the extended reals. Then for every $M \in \mathbb{R}$ there is $R$
+such that every $q \in B$ with $\|q\| \ge R$ has some $v \in A$ with $L(v, q) \le M$. -/
 theorem forall_exists_le_of_bounded_or_biInf_tendsto
     (hg : IsBounded B ∨
       Tendsto (fun q => ⨅ v ∈ A, (L v q : EReal)) (comap norm atTop ⊓ 𝓟 B) atBot) :
@@ -244,27 +301,29 @@ theorem forall_exists_le_of_bounded_or_biInf_tendsto
 
 variable [NormedSpace.IsReflexive ℝ V] [NormedSpace.IsReflexive ℝ Q]
 
-/-- **Theorem 8.6.3**, existence.  Assume
+/-- **Theorem 8.6.3** of [han2009theoretical], existence. Let $L : V \times Q \to \mathbb{R}$,
+$A \subseteq V$ and $B \subseteq Q$, and assume:
 
-(a) `V` and `Q` are reflexive Banach spaces (`NormedSpace.IsReflexive ℝ V`, the book's
-    Definition 2.7.4 by `Chapter02.definition_2_7_4_iff_isReflexive`; completeness follows);
-(b) `A ⊆ V` is nonempty, closed and convex;
-(c) `B ⊆ Q` is nonempty, closed and convex;
-(d) for every `q ∈ B`, `v ↦ L(v, q)` is convex and lower semicontinuous on `A`;
-(e) for every `v ∈ A`, `q ↦ L(v, q)` is concave and upper semicontinuous on `B`;
-(f) `A` is bounded, or there is `q₀ ∈ B` with `L(v, q₀) → ∞` as `‖v‖ → ∞`, `v ∈ A`
-    (`Chapter03.definition_3_3_9`);
-(g) `B` is bounded, or there is `v₀ ∈ A` with `L(v₀, q) → -∞` as `‖q‖ → ∞`, `q ∈ B`.
+* (a) $V$ and $Q$ are reflexive Banach spaces;
+* (b) $A$ is nonempty, closed and convex;
+* (c) $B$ is nonempty, closed and convex;
+* (d) for every $q \in B$, $v \mapsto L(v, q)$ is convex and lower semicontinuous on $A$;
+* (e) for every $v \in A$, $q \mapsto L(v, q)$ is concave and upper semicontinuous on $B$;
+* (f) $A$ is bounded, or there is $q_0 \in B$ with $L(v, q_0) \to \infty$ as $\|v\| \to \infty$,
+  $v \in A$;
+* (g) $B$ is bounded, or there is $v_0 \in A$ with $L(v_0, q) \to -\infty$ as
+  $\|q\| \to \infty$, $q \in B$.
 
-Then `L` has a saddle point `(u, p) ∈ A × B`.  The uniqueness clauses are
-`theorem_8_6_3_unique_fst` and `theorem_8_6_3_unique_snd`; (f) may be replaced by (f)'
-(`theorem_8_6_3_sup`) or (g) by (g)' (`theorem_8_6_3_inf`).
+Then $L$ has a saddle point $(u, p) \in A \times B$.
 
-This is the backbone's `exists_isSaddlePointOn_of_isCoerciveFunctionalOn`: Sion's minimax theorem
-applied in the weak topologies of `V` and `Q`, where the truncations of `A` and `B` by a large
-closed ball are compact (Kakutani) and the semicontinuity hypotheses persist (Mazur), followed by
-the observation that the coercivity conditions keep the saddle point of the truncated problem
-strictly inside the ball, where it is a saddle point of the original problem. -/
+Reflexivity is `NormedSpace.IsReflexive ℝ V`, which is Definition 2.7.4 by
+`AtkinsonHan.Chapter02.definition_2_7_4_iff_isReflexive`; completeness follows from it. The
+limit in (f) is `AtkinsonHan.Chapter03.definition_3_3_9`. The uniqueness clauses are
+`AtkinsonHan.Chapter08.theorem_8_6_3_unique_fst` and
+`AtkinsonHan.Chapter08.theorem_8_6_3_unique_snd`, and the variants with (f)' or (g)' are
+`AtkinsonHan.Chapter08.theorem_8_6_3_sup` and `AtkinsonHan.Chapter08.theorem_8_6_3_inf`. The
+proof specializes `exists_isSaddlePointOn_of_isCoerciveFunctionalOn`: Sion's minimax theorem in
+the weak topologies on the intersections with a large closed ball, which are weakly compact. -/
 theorem theorem_8_6_3 (hAne : A.Nonempty) (hAcl : IsClosed A) (hAconv : Convex ℝ A)
     (hBne : B.Nonempty) (hBcl : IsClosed B) (hBconv : Convex ℝ B)
     (hd : ∀ q ∈ B, ConvexOn ℝ A (fun v => L v q) ∧ LowerSemicontinuousOn (fun v => L v q) A)
@@ -278,12 +337,17 @@ theorem theorem_8_6_3 (hAne : A.Nonempty) (hAcl : IsClosed A) (hAconv : Convex �
     (exists_isCoerciveFunctionalOn_neg_of_bounded_or_tendsto hAne hg)
   exact ⟨u, p, isSaddlePoint_iff_isSaddlePointOn.2 ⟨hu, hp, h⟩⟩
 
-/-- **Theorem 8.6.3**, the variant with (f) replaced by (f)': "`A` is bounded, or
-`lim_{‖v‖ → ∞, v ∈ A} sup_{q ∈ B} L(v, q) = ∞`", the supremum taken in `EReal` since it may be
-`+∞`.  Conditions (a)–(e) and (g) are those of `theorem_8_6_3`.  This is the backbone's
-`exists_isSaddlePointOn_of_sup_coercive`: only `A` is truncated, and the bound
-`L(u, q) ≤ L(v₀, p) ≤ max_{q ∈ B} L(v₀, q)` for the truncated saddle point `(u, p)` keeps `u`
-inside a fixed ball. -/
+/-- **Theorem 8.6.3** of [han2009theoretical], with (f) replaced by (f)'. Let $V$, $Q$, $A$, $B$ and
+$L$ satisfy (a)–(e) and (g) of `AtkinsonHan.Chapter08.theorem_8_6_3`, and assume
+
+* (f)' $A$ is bounded, or $\sup_{q \in B} L(v, q) \to \infty$ as $\|v\| \to \infty$, $v \in A$.
+
+Then $L$ has a saddle point $(u, p) \in A \times B$.
+
+The supremum in (f)' is taken in `EReal`, since it can be $+\infty$. The proof specializes
+`exists_isSaddlePointOn_of_sup_coercive`: only $A$ is truncated, and the bound $L(u, q) \le
+L(v_0, p) \le \max_{q \in B} L(v_0, q)$ for the saddle point $(u, p)$ of the truncated problem
+keeps $u$ inside a fixed ball. -/
 theorem theorem_8_6_3_sup (hAne : A.Nonempty) (hAcl : IsClosed A) (hAconv : Convex ℝ A)
     (hBne : B.Nonempty) (hBcl : IsClosed B) (hBconv : Convex ℝ B)
     (hd : ∀ q ∈ B, ConvexOn ℝ A (fun v => L v q) ∧ LowerSemicontinuousOn (fun v => L v q) A)
@@ -298,11 +362,17 @@ theorem theorem_8_6_3_sup (hAne : A.Nonempty) (hAcl : IsClosed A) (hAconv : Conv
     (exists_isCoerciveFunctionalOn_neg_of_bounded_or_tendsto hAne hg)
   exact ⟨u, p, isSaddlePoint_iff_isSaddlePointOn.2 ⟨hu, hp, h⟩⟩
 
-/-- **Theorem 8.6.3**, the variant with (g) replaced by (g)': "`B` is bounded, or
-`lim_{‖q‖ → ∞, q ∈ B} inf_{v ∈ A} L(v, q) = -∞`", the infimum taken in `EReal`.  Conditions
-(a)–(f) are those of `theorem_8_6_3`.  This is the backbone's
-`exists_isSaddlePointOn_of_inf_coercive`, the transposed form of `theorem_8_6_3_sup`.  (f)' and
-(g)' cannot be assumed together: see the module documentation. -/
+/-- **Theorem 8.6.3** of [han2009theoretical], with (g) replaced by (g)'. Let $V$, $Q$, $A$, $B$ and
+$L$ satisfy (a)–(f) of `AtkinsonHan.Chapter08.theorem_8_6_3`, and assume
+
+* (g)' $B$ is bounded, or $\inf_{v \in A} L(v, q) \to -\infty$ as $\|q\| \to \infty$, $q \in B$.
+
+Then $L$ has a saddle point $(u, p) \in A \times B$.
+
+The infimum in (g)' is taken in `EReal`. The proof specializes
+`exists_isSaddlePointOn_of_inf_coercive`, the transposed form of
+`AtkinsonHan.Chapter08.theorem_8_6_3_sup`. The conditions (f)' and (g)' cannot be assumed
+together; the module doc comment gives a counterexample. -/
 theorem theorem_8_6_3_inf (hAne : A.Nonempty) (hAcl : IsClosed A) (hAconv : Convex ℝ A)
     (hBne : B.Nonempty) (hBcl : IsClosed B) (hBconv : Convex ℝ B)
     (hd : ∀ q ∈ B, ConvexOn ℝ A (fun v => L v q) ∧ LowerSemicontinuousOn (fun v => L v q) A)
@@ -325,11 +395,14 @@ variable {V Q : Type*} [AddCommMonoid V] [SMul ℝ V] [AddCommMonoid Q] [SMul �
   {L : V → Q → ℝ} {A : Set V} {B : Set Q} {u u' : V} {p p' : Q}
 
 omit [AddCommMonoid Q] [SMul ℝ Q] in
-/-- **Theorem 8.6.3**, uniqueness of the first component: if the convexity in (d) is strengthened
-to strict convexity — `v ↦ L(v, q)` strictly convex on `A` for every `q ∈ B` — then the first
-component `u` of a saddle point is unique.  Only the strict convexity of `L(·, p)` at the second
-component `p` of one of the two saddle points is used
-(`IsSaddlePointOn.fst_eq_of_strictConvexOn`); no topology enters. -/
+/-- **Theorem 8.6.3** of [han2009theoretical], uniqueness of the first component. Let $V$ be an
+additive commutative monoid with a scalar multiplication by $\mathbb{R}$, let $Q$ be a type, let
+$A \subseteq V$, let $B \subseteq Q$ and let $L : V \times Q \to \mathbb{R}$. If
+$v \mapsto L(v, q)$ is strictly convex on $A$ for every $q \in B$, and $(u, p)$ and $(u', p')$
+are saddle points of $L$ on $A \times B$, then $u = u'$.
+
+The proof uses only the strict convexity of $L(\cdot, p)$
+(`IsSaddlePointOn.fst_eq_of_strictConvexOn`), and no topology. -/
 theorem theorem_8_6_3_unique_fst (hd : ∀ q ∈ B, StrictConvexOn ℝ A fun v => L v q)
     (h : IsSaddlePoint L A B u p) (h' : IsSaddlePoint L A B u' p') : u = u' := by
   obtain ⟨hu, hp, h⟩ := isSaddlePoint_iff_isSaddlePointOn.1 h
@@ -337,9 +410,12 @@ theorem theorem_8_6_3_unique_fst (hd : ∀ q ∈ B, StrictConvexOn ℝ A fun v =
   exact h.fst_eq_of_strictConvexOn (hd p hp) hu hu' hp hp' h'
 
 omit [AddCommMonoid V] [SMul ℝ V] in
-/-- **Theorem 8.6.3**, uniqueness of the second component: if the concavity in (e) is strengthened
-to strict concavity — `q ↦ L(v, q)` strictly concave on `B` for every `v ∈ A` — then the second
-component `p` of a saddle point is unique (`IsSaddlePointOn.snd_eq_of_strictConcaveOn`). -/
+/-- **Theorem 8.6.3** of [han2009theoretical], uniqueness of the second component. Let
+$A \subseteq V$, $B \subseteq Q$ and $L : V \times Q \to \mathbb{R}$. If $q \mapsto L(v, q)$ is
+strictly concave on $B$ for every $v \in A$, and $(u, p)$ and $(u', p')$ are saddle points of
+$L$ on $A \times B$, then $p = p'$.
+
+The proof is `IsSaddlePointOn.snd_eq_of_strictConcaveOn`, and no topology enters. -/
 theorem theorem_8_6_3_unique_snd (he : ∀ v ∈ A, StrictConcaveOn ℝ B (L v))
     (h : IsSaddlePoint L A B u p) (h' : IsSaddlePoint L A B u' p') : p = p' := by
   obtain ⟨hu, hp, h⟩ := isSaddlePoint_iff_isSaddlePointOn.1 h

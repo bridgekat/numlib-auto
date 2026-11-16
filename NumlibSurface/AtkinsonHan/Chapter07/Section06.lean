@@ -7,49 +7,83 @@ import Numlib.Analysis.Sobolev.Boundary.PolygonTrace
 import NumlibSurface.AtkinsonHan.Chapter07.Section03
 
 /-!
-# Atkinson–Han §7.6: integration by parts formulas
+# Atkinson and Han, Section 7.6: Integration by parts formulas
 
-Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework*, 3rd edition, Springer, 2009, §7.6.
+This module formalizes Section 7.6 of [han2009theoretical]. The section proves the Gauss–Green
+formula
+$$\int_\Omega u_{x_i} v \, dx = \int_\Gamma u v \nu_i \, ds - \int_\Omega u v_{x_i} \, dx$$
+on a domain $\Omega$ with boundary $\Gamma$ and outward unit normal $\nu$. The formula holds
+classically for $u, v \in C^1(\bar\Omega)$. A density argument extends it to $u, v \in H^1(\Omega)$
+(Proposition 7.6.1, the formula (7.6.1)), and further to $u \in W^{1,p}(\Omega)$ and
+$v \in W^{1,p^*}(\Omega)$ with $1/p + 1/p^* = 1$ (the formula (7.6.3)). The source derives Green's
+identities from these formulas. For Sobolev functions the boundary term is $\int_\Gamma (\gamma
+u)(\gamma v) \nu_i \, d\sigma$, with the traces $\gamma u$ and $\gamma v$ of Theorem 7.3.10, because
+$u$ and $v$ are defined only almost everywhere in $\Omega$.
 
-The section is the Gauss–Green formula `∫_Ω u_{x_i} v = ∫_Γ u v ν_i ds − ∫_Ω u v_{x_i}` on a
-domain `Ω` with boundary `Γ` and outward unit normal `ν`: the classical formula for
-`u, v ∈ C¹(Ω̄)` (`proposition_7_6_1_classical`), its extension by a density argument to
-`u, v ∈ H¹(Ω)` (**Proposition 7.6.1**, `proposition_7_6_1`) and further to conjugate pairs
-`u ∈ W^{1,p}(Ω)`, `v ∈ W^{1,p^*}(Ω)`, `1/p + 1/p^* = 1` ((7.6.3), `proposition_7_6_1_conj`), from
-which the book derives its Green's identities.
+The source states the section for a Lipschitz domain. The formalization has two readings of it: a
+bounded $C^1$ domain $\Omega \subseteq \mathbb{R}^{d+1}$, and a plane domain triangulated without
+slits. On a $C^1$ domain, `Numlib.Analysis.Sobolev.Boundary.ContDiffDomain` provides the surface
+measure, the outward normal, the divergence theorem and the trace, and the Sobolev formula is proved
+in `Numlib.Analysis.Sobolev.Boundary.Trace`. On a triangulated polygon,
+`Numlib.Analysis.Sobolev.Boundary.Polygon` and `Numlib.Analysis.Sobolev.Boundary.PolygonTrace`
+provide the arclength measure, the outward normal and the trace.
 
-The book states the section for a Lipschitz domain, whose boundary carries a surface measure and
-an outward normal defined almost everywhere. Lipschitz domains are out of scope, as everywhere in
-this chapter; the formalization has the bounded `C¹` domains of Definition 7.2.1
-(`hΩ : IsContDiffDomain 1 Ω`, `hb : Bornology.IsBounded Ω`), on which
-`Numlib/Analysis/Sobolev/Boundary/` provides the surface measure `σ = hΩ.boundaryMeasure hb` on
-`Γ = ∂Ω` (a measure on the ambient space carried by `Γ`), the outward unit normal
-`ν = hΩ.outwardNormal hb` (a function on the ambient space, of norm one `σ`-almost everywhere),
-the divergence theorem for `C¹(Ω̄)` fields (`IsContDiffDomain.integral_div_eq`) and the trace
-`γ_p = hΩ.traceL hb p hp : W^{1,p}(Ω) →L L^p(Γ)` of Theorem 7.3.10. The classical formula is the
-divergence theorem for the field `(u v) e_i` (`BoundaryData.integral_fderiv_mul_add_eq`), and the
-Sobolev formula is the field `green` of the trace family `IsContDiffDomain.traceFamily`, proved in
-`Numlib/Analysis/Sobolev/Boundary/Trace.lean` by the book's density argument: the classical formula
-for the smooth approximants of Theorem 7.3.2, the continuity of the trace (Theorem 7.3.10 (b)) for
-the boundary term, and Hölder's inequality for the interior terms. The boundary term is written
-with the traces, `∫_Γ (γ u)(γ v) ν_i dσ`, since `u` and `v` are defined only almost everywhere
-in `Ω`.
+## Main results
 
-The finite element chapters use the formula on polygons, which are Lipschitz but not `C¹`; the
-formalization's second reading of the book's Lipschitz domain is a plane domain `Ω ⊆ ℝ²` with a
-triangulation `𝒯 : Triangulation Ω` *without slits* (`hI : 𝒯.InteriorEdgesSubset`, the relative
-interior of every interior edge lying in `Ω`), with the arclength measure `σ = 𝒯.boundaryMeasure`
-of the boundary edges, the outward normal `ν = 𝒯.outwardNormal`
-(`Numlib/Analysis/Sobolev/Boundary/Polygon.lean`) and the trace `𝒯.traceL p hp` glued from the
-triangles (`Numlib/Analysis/Sobolev/Boundary/PolygonTrace.lean`, `theorem_7_3_10_polygon`).
-Proposition 7.6.1 and (7.6.3) on such a polygon are `proposition_7_6_1_polygon` and
-`proposition_7_6_1_polygon_conj`, the field `green` of the trace family `Triangulation.traceFamily`:
-not by density on the polygon (which is not known to be an extension domain) but as the sum over
-the elements of the formula on the triangles, the contributions of the interior edges cancelling
-because the one-sided traces agree across an edge lying in `Ω`
-(`Triangulation.traceL_partner_ae_eq`) — which is where the no-slit hypothesis enters: across a
-slit the two one-sided traces differ and the formula with a single trace is false.
+* Section 7.6, `AtkinsonHan.Chapter07.proposition_7_6_1_classical`: the Gauss–Green formula for
+  $u, v \in C^1(\bar\Omega)$ on a bounded $C^1$ domain.
+* Proposition 7.6.1, `AtkinsonHan.Chapter07.proposition_7_6_1`: the formula (7.6.1) for
+  $u, v \in H^1(\Omega)$ on a bounded $C^1$ domain.
+* Equation (7.6.3), `AtkinsonHan.Chapter07.proposition_7_6_1_conj`: the formula for
+  $u \in W^{1,p}(\Omega)$ and $v \in W^{1,p^*}(\Omega)$ on a bounded $C^1$ domain.
+* Proposition 7.6.1, `AtkinsonHan.Chapter07.proposition_7_6_1_polygon`: the formula (7.6.1) for
+  $u, v \in H^1(\Omega)$ on a polygon triangulated without slits.
+* Equation (7.6.3), `AtkinsonHan.Chapter07.proposition_7_6_1_polygon_conj`: the formula (7.6.3) on a
+  polygon triangulated without slits.
+
+## Proof outline
+
+On a $C^1$ domain, the classical formula is the divergence theorem for the field $(uv) e_i$. The
+Sobolev formula follows by the density argument of the source: the classical formula holds for the
+smooth approximations of Theorem 7.3.2, the boundary term passes to the limit by the continuity of
+the trace (Theorem 7.3.10 (b)), and the interior terms pass to the limit by Hölder's inequality. A
+polygon is not known to be an extension domain, so there the formula is the sum over the triangles
+of the formula on each triangle. The terms of the interior edges cancel, because the two one-sided
+traces agree across an edge that lies in $\Omega$.
+
+## Conventions
+
+* The ambient space of a $C^1$ domain is $\mathbb{R}^{d+1}$, as in Definition 7.2.1. A bounded $C^1$
+  domain is given by the hypotheses `hΩ : IsContDiffDomain 1 Ω` and `hb : Bornology.IsBounded Ω`.
+* $H^1(\Omega)$ and $W^{1,p}(\Omega)$ are the spaces of Definition 7.2.2 in the multi-index reading,
+  `SobolevMultiIndex ℝ (AtkinsonHan.Chapter07.stdBasis (d + 1)) 1 p Ω volume`.
+* The weak derivative $u_{x_i}$ is `weakDeriv u (MultiIndexLE.single i)`.
+* The conjugate exponents $p, p^* \in (1, \infty)$ with $1/p + 1/p^* = 1$ are given by
+  `ENNReal.HolderConjugate p q`, `p ≠ ⊤` and `q ≠ ⊤`; see `ENNReal.holderConjugate_iff`.
+
+## Implementation notes
+
+* On a $C^1$ domain, the surface measure $\sigma$ is a measure on the ambient space that is carried
+  by $\Gamma = \partial\Omega$. It is `hΩ.boundaryMeasure hb`.
+* On a $C^1$ domain, the outward unit normal $\nu$ is a function on the ambient space of norm one
+  $\sigma$-almost everywhere. It is `hΩ.outwardNormal hb`.
+* On a $C^1$ domain, the trace $\gamma_p : W^{1,p}(\Omega) \to L^p(\Gamma)$ is `hΩ.traceL hb p hp`.
+* On a triangulated polygon, $\Omega \subseteq \mathbb{R}^2$ comes with a triangulation
+  `𝒯 : Triangulation Ω` without slits, which is the hypothesis `𝒯.InteriorEdgesSubset`: the relative
+  interior of every interior edge lies in $\Omega$. Across a slit the two one-sided traces differ,
+  and the formula with a single trace is false.
+* On a triangulated polygon, the measure $\sigma$ is the arclength measure of the boundary edges and
+  $\nu$ is the outward normal; they are `𝒯.boundaryMeasure` and `𝒯.outwardNormal`.
+* On a triangulated polygon, the trace is `𝒯.traceL p hp` of
+  `AtkinsonHan.Chapter07.theorem_7_3_10_polygon`, glued from the triangles.
+
+## Deviations from the source
+
+* **The classical Gauss–Green formula, Proposition 7.6.1 and (7.6.3)** (reading). The source assumes
+  a Lipschitz domain. The statements assume a bounded $C^1$ domain, or a plane domain triangulated
+  without slits, which is the case that the finite element chapters use. See
+  `AtkinsonHan.Chapter07.proposition_7_6_1_classical`, `AtkinsonHan.Chapter07.proposition_7_6_1` and
+  `AtkinsonHan.Chapter07.proposition_7_6_1_polygon`.
 -/
 
 open Filter MeasureTheory Set TopologicalSpace SobolevMultiIndex
@@ -60,14 +94,22 @@ namespace AtkinsonHan.Chapter07
 
 variable {d : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
 
-/-- **The classical Gauss–Green formula** displayed before Proposition 7.6.1, on a bounded `C¹`
-domain `Ω ⊆ ℝ^{d+1}` with boundary `Γ`, surface measure `σ` and outward unit normal `ν`:
-`∫_Ω u_{x_i} v dx = ∫_Γ u v ν_i ds − ∫_Ω u v_{x_i} dx` for all `u, v ∈ C¹(Ω̄)` — functions
-continuous on `closure Ω` and `C¹` on `Ω` with derivative extending continuously to `closure Ω`
-(`ContDiffOnClosure`). The book calls it Gauss's formula or the divergence theorem; it is the
-backbone's `BoundaryData.integral_fderiv_mul_add_eq`, the divergence theorem
-`IsContDiffDomain.integral_div_eq` applied to the field `(u v) e_i`. The book's Lipschitz domain
-is out of scope and restated as `C¹` (see the module documentation). -/
+/-- **Section 7.6** of [han2009theoretical], the classical Gauss–Green formula. Let
+$\Omega \subseteq \mathbb{R}^{d+1}$ be a bounded $C^1$ domain with boundary $\Gamma$, surface
+measure $\sigma$ and outward unit normal $\nu$. Let $u, v$ be continuous on $\bar\Omega$ and of
+class $C^1$ on $\Omega$, with derivatives that extend continuously to $\bar\Omega$. Then for
+each coordinate index $i$,
+$$\int_\Omega u_{x_i} v \, dx = \int_\Gamma u v \nu_i \, d\sigma - \int_\Omega u v_{x_i} \,
+  dx.$$
+
+**Reading.** The source assumes a Lipschitz domain. The statement assumes a bounded $C^1$
+domain.
+
+The source displays this formula before Proposition 7.6.1 and calls it Gauss's formula, or the
+divergence theorem. The proof is `BoundaryData.integral_fderiv_mul_add_eq`, the divergence
+theorem `IsContDiffDomain.integral_div_eq` for the field $(uv) e_i$. The regularity on the
+closure is `ContDiffOnClosure`, and `fderiv ℝ u x (EuclideanSpace.single i 1)` is the derivative
+$u_{x_i}$. -/
 theorem proposition_7_6_1_classical
     (hΩ : IsContDiffDomain 1 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
     (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
@@ -84,21 +126,26 @@ theorem proposition_7_6_1_classical
           u x * fderiv ℝ v x (EuclideanSpace.single i 1) :=
   eq_sub_of_add_eq ((hΩ.boundaryData hb).integral_fderiv_mul_add_eq hu hu' hv hv' i)
 
-/-- **Proposition 7.6.1**, the formula (7.6.1), on a bounded `C¹` domain `Ω ⊆ ℝ^{d+1}` with
-boundary `Γ`, surface measure `σ`, outward unit normal `ν` and trace `γ : H¹(Ω) → L²(Γ)`
-(Theorem 7.3.10): `∫_Ω u_{x_i} v dx = ∫_Γ u v ν_i ds − ∫_Ω u v_{x_i} dx` for all `u, v ∈ H¹(Ω)`,
-where `u_{x_i} = ∂_i u` is the weak derivative and the boundary term is
-`∫_Γ (γ u)(γ v) ν_i dσ`, the boundary values of `u` and `v` being their traces. `H¹(Ω)` is the
-space of Definition 7.2.2 in the book's own indexing,
-`SobolevMultiIndex ℝ (stdBasis (d + 1)) 1 2 Ω volume`.
+/-- **Proposition 7.6.1** of [han2009theoretical], the formula (7.6.1). Let
+$\Omega \subseteq \mathbb{R}^{d+1}$ be a bounded $C^1$ domain with boundary $\Gamma$, surface
+measure $\sigma$, outward unit normal $\nu$ and trace $\gamma : H^1(\Omega) \to L^2(\Gamma)$ of
+Theorem 7.3.10. Then for all $u, v \in H^1(\Omega)$ and each coordinate index $i$,
+$$\int_\Omega u_{x_i} v \, dx = \int_\Gamma (\gamma u)(\gamma v) \nu_i \, d\sigma - \int_\Omega
+  u v_{x_i} \, dx,$$
+where $u_{x_i}$ and $v_{x_i}$ are weak derivatives.
 
-The book's proof is the density argument: the classical formula (`proposition_7_6_1_classical`)
-for sequences `u_n, v_n ∈ C¹(Ω̄)` converging to `u, v` in `H¹(Ω)` (Theorem 7.3.2), the interior
-terms passing to the limit by the Cauchy–Schwarz inequality and the boundary term by the
-continuity of the trace (Theorem 7.3.10 (b)). This is the field `green` of the backbone's trace
-family (`IsContDiffDomain.green` at `p = q = 2`, `BoundaryData.green_of_hasSmoothDensity` in
-`Numlib/Analysis/Sobolev/Boundary/Trace.lean`). The book's Lipschitz domain is out of scope and
-restated as `C¹`. -/
+**Reading.** The source assumes a Lipschitz domain. The statement assumes a bounded $C^1$
+domain. The boundary values of $u$ and $v$ in the source are read as their traces.
+
+$H^1(\Omega)$ is the space of Definition 7.2.2, `SobolevMultiIndex ℝ
+(AtkinsonHan.Chapter07.stdBasis (d + 1)) 1 2 Ω volume`. The proof of the source is a density
+argument: the classical formula holds for $u_n, v_n \in C^1(\bar\Omega)$ that converge to $u, v$
+in $H^1(\Omega)$ (Theorem 7.3.2), the interior terms pass to the limit by the Cauchy–Schwarz
+inequality, and the boundary term passes to the limit by the continuity of the trace (Theorem
+7.3.10 (b)). The classical formula is `AtkinsonHan.Chapter07.proposition_7_6_1_classical`, and
+the proof here is the field `green` of the trace family of the backbone,
+`IsContDiffDomain.green` for $p = q = 2$, which comes from
+`BoundaryData.green_of_hasSmoothDensity`. -/
 theorem proposition_7_6_1 (hΩ : IsContDiffDomain 1 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
     (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
     (u v : SobolevMultiIndex ℝ (stdBasis (d + 1)) 1 2 Ω volume) (i : Fin (d + 1)) :
@@ -111,16 +158,22 @@ theorem proposition_7_6_1 (hΩ : IsContDiffDomain 1 (Ω : Set (EuclideanSpace �
           * (weakDeriv v (MultiIndexLE.single i) : EuclideanSpace ℝ (Fin (d + 1)) → ℝ) x :=
   eq_sub_of_add_eq (hΩ.green hb 2 2 ENNReal.ofNat_ne_top ENNReal.ofNat_ne_top u v i)
 
-/-- **The formula (7.6.3)**, the extension of Proposition 7.6.1 to conjugate exponents: on a
-bounded `C¹` domain with boundary `Γ`, surface measure `σ`, outward normal `ν` and traces
-`γ_p : W^{1,p}(Ω) → L^p(Γ)`, `γ_{p^*} : W^{1,p^*}(Ω) → L^{p^*}(Γ)` (Theorem 7.3.10),
-`∫_Ω u_{x_i} v dx = ∫_Γ (γ_p u)(γ_{p^*} v) ν_i dσ − ∫_Ω u v_{x_i} dx` for all `u ∈ W^{1,p}(Ω)`
-and `v ∈ W^{1,p^*}(Ω)`, where `p, p^* ∈ (1, ∞)` are conjugate, `1/p + 1/p^* = 1` — the class
-`ENNReal.HolderConjugate p q` (`ENNReal.holderConjugate_iff`), with `p, q ≠ ∞` and `1 ≤ p, q`
-(which conjugacy makes `1 < p, q < ∞`). The same density argument as Proposition 7.6.1 with
-Hölder's inequality in place of Cauchy–Schwarz: the field `green` of the backbone's trace family
-at `(p, p^*)` (`IsContDiffDomain.green`). The book's Lipschitz domain is out of scope and
-restated as `C¹`. -/
+/-- **Equation (7.6.3)** of [han2009theoretical], the extension of Proposition 7.6.1 to conjugate
+exponents. Let $\Omega \subseteq \mathbb{R}^{d+1}$ be a bounded $C^1$ domain with boundary
+$\Gamma$, surface measure $\sigma$ and outward unit normal $\nu$. Let $p, p^* \in (1, \infty)$
+with $1/p + 1/p^* = 1$, and let $\gamma_p : W^{1,p}(\Omega) \to L^p(\Gamma)$ and $\gamma_{p^*} :
+W^{1,p^*}(\Omega) \to L^{p^*}(\Gamma)$ be the traces of Theorem 7.3.10. Then for all
+$u \in W^{1,p}(\Omega)$, $v \in W^{1,p^*}(\Omega)$ and each coordinate index $i$,
+$$\int_\Omega u_{x_i} v \, dx = \int_\Gamma (\gamma_p u)(\gamma_{p^*} v) \nu_i \, d\sigma -
+  \int_\Omega u v_{x_i} \, dx.$$
+
+**Reading.** The source assumes a Lipschitz domain. The statement assumes a bounded $C^1$
+domain.
+
+The proof is the density argument of Proposition 7.6.1 with Hölder's inequality in place of the
+Cauchy–Schwarz inequality: the field `green` of the trace family of the backbone,
+`IsContDiffDomain.green`. The exponents are `p q : ℝ≥0∞` with `ENNReal.HolderConjugate p q`,
+`Fact (1 ≤ p)`, `Fact (1 ≤ q)`, `p ≠ ⊤` and `q ≠ ⊤`; conjugacy then gives $1 < p, q < \infty$. -/
 theorem proposition_7_6_1_conj {p q : ℝ≥0∞} [Fact (1 ≤ p)] [Fact (1 ≤ q)]
     [ENNReal.HolderConjugate p q] (hp : p ≠ ⊤) (hq : q ≠ ⊤)
     (hΩ : IsContDiffDomain 1 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
@@ -140,18 +193,23 @@ theorem proposition_7_6_1_conj {p q : ℝ≥0∞} [Fact (1 ≤ p)] [Fact (1 ≤ 
 
 local notation "𝔼₂" => EuclideanSpace ℝ (Fin 2)
 
-/-- **The formula (7.6.3) on a triangulated polygon**, the extension of Proposition 7.6.1 to
-conjugate exponents: for a plane domain `Ω ⊆ ℝ²` triangulated by `𝒯 : Triangulation Ω` without
-slits (`hI : 𝒯.InteriorEdgesSubset`), with the arclength measure `σ = 𝒯.boundaryMeasure` on
-`Γ = ∂Ω`, the outward normal `ν = 𝒯.outwardNormal` and the traces
-`γ_p = 𝒯.traceL p hp : W^{1,p}(Ω) → L^p(Γ)`, `γ_{p^*} : W^{1,p^*}(Ω) → L^{p^*}(Γ)` of
-`theorem_7_3_10_polygon`, `∫_Ω u_{x_i} v dx = ∫_Γ (γ_p u)(γ_{p^*} v) ν_i dσ − ∫_Ω u v_{x_i} dx`
-for all `u ∈ W^{1,p}(Ω)` and `v ∈ W^{1,p^*}(Ω)`, where `1/p + 1/p^* = 1` is
-`ENNReal.HolderConjugate p q` with `p, q ≠ ∞` (as in `proposition_7_6_1_conj`). The book's
-Lipschitz domain is out of scope; a triangulated polygon is the finite element chapters' instance
-of it, and the formula is the field `green` of `Triangulation.traceFamily` (`Triangulation.green`),
-proved by summing the formula on the triangles rather than by density on the polygon (see the
-module documentation). -/
+/-- **Equation (7.6.3)** of [han2009theoretical], on a triangulated polygon. Let
+$\Omega \subseteq \mathbb{R}^2$ be open with a triangulation $\mathcal{T}$ that has no slits,
+let $\sigma$ be the arclength measure on $\Gamma = \partial\Omega$ and $\nu$ the outward unit
+normal. Let $p, p^* \in (1, \infty)$ with $1/p + 1/p^* = 1$, and let
+$\gamma_p : W^{1,p}(\Omega) \to L^p(\Gamma)$ and $\gamma_{p^*} : W^{1,p^*}(\Omega) \to
+L^{p^*}(\Gamma)$ be the traces of `AtkinsonHan.Chapter07.theorem_7_3_10_polygon`. Then for all
+$u \in W^{1,p}(\Omega)$, $v \in W^{1,p^*}(\Omega)$ and each coordinate index $i$,
+$$\int_\Omega u_{x_i} v \, dx = \int_\Gamma (\gamma_p u)(\gamma_{p^*} v) \nu_i \, d\sigma -
+  \int_\Omega u v_{x_i} \, dx.$$
+
+**Reading.** The source assumes a Lipschitz domain. A polygon triangulated without slits is the
+case of a Lipschitz domain that the finite element chapters use.
+
+The hypothesis without slits is `𝒯.InteriorEdgesSubset`. The exponents are given as in
+`AtkinsonHan.Chapter07.proposition_7_6_1_conj`. The formula is the field `green` of
+`Triangulation.traceFamily`, `Triangulation.green`. It is proved by the sum of the formula over
+the triangles, not by density on the polygon. -/
 theorem proposition_7_6_1_polygon_conj {Ω : Opens 𝔼₂} (𝒯 : Triangulation Ω)
     (hI : 𝒯.InteriorEdgesSubset) {p q : ℝ≥0∞} [Fact (1 ≤ p)] [Fact (1 ≤ q)]
     [ENNReal.HolderConjugate p q] (hp : p ≠ ⊤) (hq : q ≠ ⊤)
@@ -163,14 +221,21 @@ theorem proposition_7_6_1_polygon_conj {Ω : Opens 𝔼₂} (𝒯 : Triangulatio
         - ∫ x in (Ω : Set 𝔼₂), fn u x * (weakDeriv v (MultiIndexLE.single i) : 𝔼₂ → ℝ) x :=
   eq_sub_of_add_eq (𝒯.green hI q hp hq u v i)
 
-/-- **Proposition 7.6.1 on a triangulated polygon**, the formula (7.6.1): for a plane domain
-`Ω ⊆ ℝ²` triangulated by `𝒯 : Triangulation Ω` without slits (`hI : 𝒯.InteriorEdgesSubset`),
-with the arclength measure `σ = 𝒯.boundaryMeasure` on `Γ = ∂Ω`, the outward normal
-`ν = 𝒯.outwardNormal` and the trace `γ = 𝒯.traceL 2 _ : H¹(Ω) → L²(Γ)` of
-`theorem_7_3_10_polygon`, `∫_Ω u_{x_i} v dx = ∫_Γ (γ u)(γ v) ν_i dσ − ∫_Ω u v_{x_i} dx` for all
-`u, v ∈ H¹(Ω)` — the case `p = p^* = 2` of `proposition_7_6_1_polygon_conj`. The book's
-Lipschitz domain is out of scope; a triangulated polygon is the finite element chapters'
-instance of it (`proposition_7_6_1` is the `C¹` instance). -/
+/-- **Proposition 7.6.1** of [han2009theoretical], the formula (7.6.1) on a triangulated polygon.
+Let $\Omega \subseteq \mathbb{R}^2$ be open with a triangulation $\mathcal{T}$ that has no
+slits, let $\sigma$ be the arclength measure on $\Gamma = \partial\Omega$, $\nu$ the outward
+unit normal, and $\gamma : H^1(\Omega) \to L^2(\Gamma)$ the trace of
+`AtkinsonHan.Chapter07.theorem_7_3_10_polygon`. Then for all $u, v \in H^1(\Omega)$ and each
+coordinate index $i$,
+$$\int_\Omega u_{x_i} v \, dx = \int_\Gamma (\gamma u)(\gamma v) \nu_i \, d\sigma - \int_\Omega
+  u v_{x_i} \, dx.$$
+
+**Reading.** The source assumes a Lipschitz domain. A polygon triangulated without slits is the
+case of a Lipschitz domain that the finite element chapters use.
+
+This is the case $p = p^* = 2$ of `AtkinsonHan.Chapter07.proposition_7_6_1_polygon_conj`. The
+hypothesis without slits is `𝒯.InteriorEdgesSubset`. `AtkinsonHan.Chapter07.proposition_7_6_1`
+is the formula on a $C^1$ domain. -/
 theorem proposition_7_6_1_polygon {Ω : Opens 𝔼₂} (𝒯 : Triangulation Ω)
     (hI : 𝒯.InteriorEdgesSubset)
     (u v : SobolevMultiIndex ℝ (stdBasis 2) 1 2 Ω volume) (i : Fin 2) :

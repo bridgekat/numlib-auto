@@ -5,34 +5,51 @@ Released under Apache 2.0 license as described in the file LICENSE.
 import Numlib.Analysis.Fourier.DFT
 
 /-!
-# Atkinson–Han §4.3: the discrete Fourier transform
+# Atkinson and Han, Section 4.3: The discrete Fourier transform
 
-Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework*, 3rd edition, Springer, 2009, §4.3.
+This module formalizes Section 4.3 of [han2009theoretical], the discrete Fourier transform. Let
+$n \ge 1$ and $\omega_n = e^{2\pi i/n}$. The book's matrix $F_n$ of (4.3.2) has the entries
+$(F_n)_{jk} = \omega_n^{jk}$ for $0 \le j, k \le n - 1$, and the discrete Fourier transform of
+$y \in \mathbb{C}^n$ is $\hat y = \overline{F_n}\, y$, that is,
+$$\hat y_k = \sum_{j=0}^{n-1} \omega_n^{-kj} y_j, \qquad 0 \le k \le n - 1.$$
+The module proves the inversion formula $y_j = n^{-1} \sum_k \omega_n^{jk} \hat y_k$, the summation
+formula (4.3.5), the radix-2 splitting on which the fast Fourier transform is built, the discrete
+Parseval equality, and the inversion of the two-dimensional transform.
 
-The book's matrix `F_n` of (4.3.2), with entries `ω_n^{jk}` for `ω_n = e^{2πi/n}`, is the backbone
-`Matrix.dft` (`Numlib/Analysis/Fourier/DFT`), and the book's transform `ŷ = conj(F_n) y` — the
-matrix `F_n` being symmetric — is `(Matrix.dft n)ᴴ *ᵥ y`. Everything of the section is a
-specialization of that module, which is itself Mathlib's `ZMod.dft` in matrix form.
+The matrix $F_n$ is the backbone matrix `Matrix.dft` of `Numlib.Analysis.Fourier.DFT`, which is
+Mathlib's `ZMod.dft` in matrix form. All results of the section specialize that module.
+
+## Main definitions
+
+* Definition 4.3.1, `AtkinsonHan.Chapter04.definition_4_3_1`: the entries of $F_n$, and the formula
+  $\hat y_k = \sum_j \omega_n^{-kj} y_j$ for the transform.
 
 ## Main results
 
-* `definition_4_3_1` — (4.3.1)–(4.3.2): the entries of `F_n`, and the transform
-  `ŷ_k = ∑_j ω_n^{-kj} y_j`.
-* `exercise_4_3_1` — the summation formula (4.3.5), `∑_k ω_n^{kl} ω_n^{-kj} = n δ_{jl}`.
-* `theorem_4_3_2` — (4.3.3)–(4.3.4): `conj(F_n)⁻¹ = F_n / n`, and the inversion formula.
-* `equation_4_3_9` — (4.3.6)–(4.3.9), the radix-2 splitting on which the fast Fourier transform
-  is built.
-* `exercise_4_3_2` — the discrete Parseval equality.
-* `equation_4_3_11` — (4.3.10)–(4.3.11), the two-dimensional transform as iterated
-  one-dimensional transforms, and its inversion.
+* Theorem 4.3.2, `AtkinsonHan.Chapter04.theorem_4_3_2`: $\overline{F_n}^{-1} = n^{-1} F_n$, and the
+  inversion formula.
+* Equations (4.3.6)–(4.3.9), `AtkinsonHan.Chapter04.equation_4_3_9`: the transform of length $2n$ in
+  terms of the two transforms of length $n$ of the even-indexed and the odd-indexed entries.
+* Equations (4.3.10)–(4.3.11), `AtkinsonHan.Chapter04.equation_4_3_11`: the two-dimensional
+  transform is two one-dimensional transforms in succession, and its inversion formula.
+* Exercise 4.3.1, `AtkinsonHan.Chapter04.exercise_4_3_1`: the summation formula (4.3.5), $\sum_k
+  \omega_n^{kl} \omega_n^{-kj} = n \delta_{jl}$.
+* Exercise 4.3.2, `AtkinsonHan.Chapter04.exercise_4_3_2`: the discrete Parseval equality
+  $\sum_k |\hat y_k|^2 = n \sum_j |y_j|^2$.
 
-## Not formalized here
+## Implementation notes
 
-The fast Fourier transform algorithm itself and its `O(n log n)` operation count. There is no
-theorem there: the book's derivation is (4.3.8)–(4.3.9), which is `equation_4_3_9`, plus a cost
-recursion, and a recursive implementation with a complexity bound is out of scope for this project
-by the same rule that excludes storage formats and parallelisation.
+* The book's matrix $\overline{F_n}$ is the conjugate transpose $F_n^H$ (`(Matrix.dft n)ᴴ`). The two
+  agree because $F_n$ is symmetric. So $\hat y$ is `(Matrix.dft n)ᴴ *ᵥ y`.
+* Indices are elements of `Fin n`, that is, $0, \dots, n - 1$, and $\omega_n^{-kj}$ is written as
+  the inverse $(\omega_n^{kj})^{-1}$.
+
+## Not formalized
+
+* The fast Fourier transform as an algorithm, and its operation count $O(n \log n)$. This part is an
+  algorithm with a cost recursion, not a theorem, and operation counts of algorithms are out of
+  scope. The derivation (4.3.8)–(4.3.9) on which the algorithm rests is
+  `AtkinsonHan.Chapter04.equation_4_3_9`.
 -/
 
 open Complex Matrix
@@ -41,10 +58,16 @@ open scoped Real
 
 namespace AtkinsonHan.Chapter04
 
-/-- **Definition 4.3.1**, (4.3.1)–(4.3.2). The book's matrix `F_n` has entries `ω_n^{jk}` for
-`ω_n = e^{2πi/n}`, and the discrete Fourier transform of `y` is `ŷ = conj(F_n) y`, whose entries
-are `ŷ_k = ∑_j ω_n^{-kj} y_j`. Here `F_n` is the backbone `Matrix.dft n`, and `conj(F_n)` is its
-conjugate transpose, the two agreeing because `F_n` is symmetric. -/
+/-- **Definition 4.3.1** and **equations (4.3.1)–(4.3.2)** of [han2009theoretical]. Let
+$n \in \mathbb{N}$, $\omega_n = e^{2\pi i/n}$, and $y \in \mathbb{C}^n$. The matrix $F_n$ has
+the entries
+$$(F_n)_{jk} = \omega_n^{jk}, \qquad 0 \le j, k \le n - 1,$$
+and the discrete Fourier transform $\hat y = \overline{F_n}\, y$ of $y$ has the entries
+$$\hat y_k = \sum_{j=0}^{n-1} \omega_n^{-kj} y_j, \qquad 0 \le k \le n - 1.$$
+
+The matrix $F_n$ is `Matrix.dft n`. The book's $\overline{F_n}$ is its conjugate transpose
+`(Matrix.dft n)ᴴ`; the two agree because $F_n$ is symmetric. The power $\omega_n^{-kj}$ is
+written as $(\omega_n^{kj})^{-1}$. -/
 theorem definition_4_3_1 {n : ℕ} (y : Fin n → ℂ) :
     (∀ j k : Fin n, dft n j k = Complex.exp (2 * π * I / n) ^ ((j : ℕ) * (k : ℕ))) ∧
       ∀ k : Fin n, ((dft n)ᴴ *ᵥ y) k
@@ -53,9 +76,13 @@ theorem definition_4_3_1 {n : ℕ} (y : Fin n → ℂ) :
   rw [conjTranspose_dft_mulVec_apply]
   exact Finset.sum_congr rfl fun j _ => by rw [inv_pow, Nat.mul_comm (k : ℕ) (j : ℕ)]
 
-/-- **Exercise 4.3.1**, the summation formula (4.3.5): `∑_k ω_n^{kl} ω_n^{-kj} = n` when `j = l`
-and `0` otherwise. It is the orthogonality of the columns of `F_n`, from which the inversion
-formula of Theorem 4.3.2 follows. -/
+/-- **Exercise 4.3.1** of [han2009theoretical], the summation formula (4.3.5). Let
+$n \in \mathbb{N}$, $\omega_n = e^{2\pi i/n}$ and $0 \le j, l \le n - 1$. Then
+$$\sum_{k=0}^{n-1} \omega_n^{kl} \, \omega_n^{-kj} = \begin{cases} n, & j = l, \\ 0, & j \ne l.
+  \end{cases}$$
+
+This is the orthogonality of the columns of $F_n$. The inversion formula of Theorem 4.3.2
+follows from it. -/
 theorem exercise_4_3_1 (n : ℕ) (j l : Fin n) :
     ∑ k : Fin n, Complex.exp (2 * π * I / n) ^ ((k : ℕ) * (l : ℕ))
         * (Complex.exp (2 * π * I / n) ^ ((k : ℕ) * (j : ℕ)))⁻¹
@@ -69,9 +96,14 @@ theorem exercise_4_3_1 (n : ℕ) (j l : Fin n) :
   rw [conjTranspose_dft_apply, dft_apply, inv_pow, Nat.mul_comm (j : ℕ) (k : ℕ)]
   exact mul_comm _ _
 
-/-- **Theorem 4.3.2**, (4.3.3)–(4.3.4). The matrix `conj(F_n)` of the discrete Fourier transform is
-invertible with `conj(F_n)⁻¹ = F_n / n`, so the transform is inverted by
-`y_j = n⁻¹ ∑_k ω_n^{jk} ŷ_k`. -/
+/-- **Theorem 4.3.2** and **equations (4.3.3)–(4.3.4)** of [han2009theoretical]. Let $n \ge 1$ and
+$\omega_n = e^{2\pi i/n}$. Then the matrix $\overline{F_n}$ of the discrete Fourier transform is
+invertible, with
+$$\overline{F_n}^{-1} = \frac{1}{n} F_n,$$
+and for every $y \in \mathbb{C}^n$ the transform $\hat y = \overline{F_n}\, y$ is inverted by
+$$y_j = \frac{1}{n} \sum_{k=0}^{n-1} \omega_n^{jk} \hat y_k, \qquad 0 \le j \le n - 1.$$
+
+The matrix $\overline{F_n}$ is `(Matrix.dft n)ᴴ`, and the inverse is the Mathlib matrix inverse. -/
 theorem theorem_4_3_2 {n : ℕ} [NeZero n] :
     ((dft n)ᴴ)⁻¹ = (n : ℂ)⁻¹ • dft n ∧
       ∀ (y : Fin n → ℂ) (j : Fin n), y j = (n : ℂ)⁻¹
@@ -85,11 +117,15 @@ theorem theorem_4_3_2 {n : ℕ} [NeZero n] :
     Finset.sum_congr rfl fun k _ => by rw [dft_apply]
   rw [hsum, h, ← mul_assoc, inv_mul_cancel₀ hn, one_mul]
 
-/-- **(4.3.6)–(4.3.9)**, the radix-2 splitting on which the fast Fourier transform is built: for
-`y` of length `2n`, the transform is assembled from the two length-`n` transforms `E` and `O` of
-the even- and odd-indexed halves of `y` as `ŷ_k = E_k + ω_{2n}^{-k} O_k` and
-`ŷ_{k+n} = E_k - ω_{2n}^{-k} O_k` for `k < n`, at the cost of one multiplication per output
-entry. -/
+/-- **Equations (4.3.6)–(4.3.9)** of [han2009theoretical], the radix-2 splitting on which the fast
+Fourier transform is built. Let $n \in \mathbb{N}$ and $y \in \mathbb{C}^{2n}$. Let $E =
+\overline{F_n}\,(y_0, y_2, \dots, y_{2n-2})$ and $O = \overline{F_n}\,(y_1, y_3, \dots,
+y_{2n-1})$ be the transforms of length $n$ of the even-indexed and the odd-indexed entries of
+$y$. Then for $0 \le k \le n - 1$ the transform $\hat y = \overline{F_{2n}}\, y$ satisfies
+$$\hat y_k = E_k + \omega_{2n}^{-k} O_k, \qquad \hat y_{k+n} = E_k - \omega_{2n}^{-k} O_k.$$
+
+Thus the transform of length $2n$ costs the two transforms of length $n$ and one multiplication
+for each entry. The factor $\omega_{2n}^{-k}$ is written as $(\omega_{2n}^{-1})^k$. -/
 theorem equation_4_3_9 {n : ℕ} (y : Fin (2 * n) → ℂ) (k : Fin n) :
     ((dft (2 * n))ᴴ *ᵥ y) ⟨(k : ℕ), by omega⟩
         = ((dft n)ᴴ *ᵥ fun m : Fin n => y ⟨2 * (m : ℕ), by omega⟩) k
@@ -101,9 +137,13 @@ theorem equation_4_3_9 {n : ℕ} (y : Fin (2 * n) → ℂ) (k : Fin n) :
             * ((dft n)ᴴ *ᵥ fun m : Fin n => y ⟨2 * (m : ℕ) + 1, by omega⟩) k :=
   ⟨dft_radix_two y k, dft_radix_two_add y k⟩
 
-/-- **Exercise 4.3.2**, the discrete Parseval equality: `∑_k |ŷ_k|² = n ∑_j |y_j|²`. The
-transform is `√n` times an isometry, and that is the orthogonality of the rows of `F_n`,
-`F_n conj(F_n)ᵀ = n I`. -/
+/-- **Exercise 4.3.2** of [han2009theoretical], the discrete Parseval equality. For
+$n \in \mathbb{N}$ and $y \in \mathbb{C}^n$, the transform $\hat y = \overline{F_n}\, y$
+satisfies
+$$\sum_{k=0}^{n-1} |\hat y_k|^2 = n \sum_{j=0}^{n-1} |y_j|^2.$$
+
+So the transform is $\sqrt n$ times an isometry. This is the orthogonality of the rows of $F_n$,
+$F_n \overline{F_n}^T = nI$. -/
 theorem exercise_4_3_2 {n : ℕ} (y : Fin n → ℂ) :
     ∑ k : Fin n, ‖((dft n)ᴴ *ᵥ y) k‖ ^ 2 = n * ∑ j : Fin n, ‖y j‖ ^ 2 := by
   have hsq : ∀ v : Fin n → ℂ, ((∑ k : Fin n, ‖v k‖ ^ 2 : ℝ) : ℂ) = star v ⬝ᵥ v := by
@@ -119,14 +159,22 @@ theorem exercise_4_3_2 {n : ℕ} (y : Fin n → ℂ) :
   refine Complex.ofReal_inj.mp ?_
   rw [hsq, Complex.ofReal_mul, Complex.ofReal_natCast, hsq, key]
 
-/-- **(4.3.10)–(4.3.11)**, the two-dimensional discrete Fourier transform. Its defining double sum
-`ŷ_{k₁k₂} = ∑_{j₁,j₂} ω_{n₁}^{-k₁j₁} ω_{n₂}^{-k₂j₂} y_{j₁j₂}` is the composition of two
-one-dimensional transforms, one in each index, and it is inverted by
-`y_{j₁j₂} = (n₁ n₂)⁻¹ ∑_{k₁,k₂} ω_{n₁}^{j₁k₁} ω_{n₂}^{j₂k₂} ŷ_{k₁k₂}`.
+/-- **Equations (4.3.10)–(4.3.11)** of [han2009theoretical], the two-dimensional discrete Fourier
+transform. Let $n_1, n_2 \ge 1$, and let $y$ and $\hat y$ be $n_1 \times n_2$ arrays of complex
+numbers such that
+$$\hat y_{k_1 k_2} = \sum_{j_1=0}^{n_1-1} \sum_{j_2=0}^{n_2-1} \omega_{n_1}^{-k_1 j_1}
+  \omega_{n_2}^{-k_2 j_2} y_{j_1 j_2}$$
+for all $k_1, k_2$. Then:
 
-The book's own remark is that the higher-dimensional transform reduces to the one-dimensional one,
-so the iterated form is the theorem and the inversion (4.3.11) is read off it by applying
-Theorem 4.3.2 in each index; the same argument gives every dimension. -/
+1. $\hat y$ is obtained by the one-dimensional transform $\overline{F_{n_2}}$ in the second
+   index, followed by the one-dimensional transform $\overline{F_{n_1}}$ in the first index;
+2. $y$ is recovered by the inversion formula
+$$y_{j_1 j_2} = \frac{1}{n_1 n_2} \sum_{k_1=0}^{n_1-1} \sum_{k_2=0}^{n_2-1} \omega_{n_1}^{j_1
+  k_1} \omega_{n_2}^{j_2 k_2} \hat y_{k_1 k_2}.$$
+
+The book remarks that the transform in higher dimensions reduces to the one-dimensional
+transform. Therefore the iterated form is the main statement here, and the inversion (4.3.11)
+follows from it by Theorem 4.3.2 in each index. The same argument works in every dimension. -/
 theorem equation_4_3_11 {n₁ n₂ : ℕ} [NeZero n₁] [NeZero n₂] (y : Fin n₁ → Fin n₂ → ℂ)
     (yhat : Fin n₁ → Fin n₂ → ℂ)
     (hy : ∀ k₁ k₂, yhat k₁ k₂ = ∑ j₁ : Fin n₁, ∑ j₂ : Fin n₂,

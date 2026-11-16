@@ -10,43 +10,80 @@ import Numlib.Approximation.Trigonometric
 import NumlibSurface.AtkinsonHan.Chapter03.Section03
 
 /-!
-# Atkinson–Han §3.6: projection operators
+# Atkinson and Han, Section 3.6: Projection operators
 
-Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework*, 3rd edition, Springer, 2009, §3.6.
+This module formalizes §3.6 of [han2009theoretical]. A space $V$ is the direct sum
+$V = V_1 \oplus V_2$ of two subspaces if every $v \in V$ is $v = v_1 + v_2$ with unique
+$v_i \in V_i$. Direct sums correspond to idempotent linear maps $P$, with $V_1 = P(V)$ and
+$V_2 = (I - P)(V)$. A projection operator on a Banach space is a bounded linear $P$ with $P^2 = P$.
+On a Hilbert space it is an orthogonal projection if $(Pv, (I - P)w) = 0$ for all $v$ and $w$
+(3.6.2). An orthogonal projection is self-adjoint, has norm $1$ unless it is $0$, and is determined
+by its closed range $V_1$, and then $V = V_1 \oplus V_1^\perp$.
 
-## Book-specific definitions
+The concrete projections of the section are Lagrange interpolation and piecewise linear
+interpolation on $C[a, b]$, the expansion in a finite orthonormal family, and the Fourier projection
+$\mathcal{F}_n$ on the space $C_p(2\pi)$ of continuous $2\pi$-periodic functions. The proofs
+specialize the oblique projection theory of
+`Numlib.Analysis.InnerProductSpace.Projection.ObliqueProjection`, the interpolation operators of
+`Numlib.Approximation.Interpolation`, and the Fourier projection of
+`Numlib.Approximation.Trigonometric`.
 
-* `IsDirectSum` — Definition 3.6.1, with `isDirectSum_iff_isCompl` identifying it with Mathlib's
-  `IsCompl`.
-* `IsProjectionOperator` — Definition 3.6.3 for Banach spaces: a bounded idempotent. This is
-  definitionally `IsIdempotentElem`, which is the form all the backbone lemmas take.
-* `IsOrthogonalProjectionOperator` — Definition 3.6.3 / (3.6.2) for Hilbert spaces, with
-  `isOrthogonalProjectionOperator_iff` identifying it with Mathlib's
-  `LinearMap.IsSymmetricProjection`.
-* `IsOrthogonalDirectSum` — the orthogonal direct sum of Definition 3.6.1.
-* `IsPeriodicCont`, `PeriodicCont`, `PeriodicCont.ofIsPeriodicCont` — `C_p(2π)`, the continuous
-  `2π`-periodic functions, as the book describes them and as the space `C(ℝ / 2πℤ, ℝ)` on which
-  Example 3.6.8 projects. §3.7 states Jackson's theorem and the Lebesgue-constant bounds over the
-  same space.
+## Main definitions
+
+* Definition 3.6.1, `AtkinsonHan.Chapter03.IsDirectSum`: $V = V_1 \oplus V_2$. It is Mathlib's
+  `IsCompl` by `AtkinsonHan.Chapter03.isDirectSum_iff_isCompl`.
+* Definition 3.6.1, `AtkinsonHan.Chapter03.IsOrthogonalDirectSum`: a direct sum of two mutually
+  orthogonal subspaces.
+* Definition 3.6.3, `AtkinsonHan.Chapter03.IsProjectionOperator`: a bounded linear $P$ on a Banach
+  space with $P^2 = P$. It is Mathlib's `IsIdempotentElem` by definition.
+* Definition 3.6.3 and (3.6.2), `AtkinsonHan.Chapter03.IsOrthogonalProjectionOperator`: a bounded
+  projection with $(Pv, (I - P)w) = 0$ for all $v, w$. It is Mathlib's
+  `LinearMap.IsSymmetricProjection` by `AtkinsonHan.Chapter03.isOrthogonalProjectionOperator_iff`.
+* `AtkinsonHan.Chapter03.IsPeriodicCont` and `AtkinsonHan.Chapter03.PeriodicCont`: the space
+  $C_p(2\pi)$, as continuous $2\pi$-periodic functions on $\mathbb{R}$ and as continuous functions
+  on the circle $\mathbb{R}/2\pi\mathbb{Z}$. §3.7 uses the same space.
 
 ## Main results
 
-* `proposition_3_6_2` — direct sums correspond to idempotent linear maps.
-* `example_3_6_4` — `(v₁, v₂) ↦ (v₁, 0)` is an orthogonal projection of `ℝ²` onto the `x₁`-axis.
-* `example_3_6_7` — `∑ᵢ (·, φᵢ) φᵢ` is an orthogonal projection for an orthonormal family.
-* `proposition_3_6_9_a` … `proposition_3_6_9_e` — the properties of orthogonal projections;
-  `proposition_3_6_9_c'` restates (c) as an orthogonal direct sum.
-* `exercise_3_6_1`, `exercise_3_6_7` — `I − P` is a projection; `‖P‖ ≥ 1` for `P ≠ 0`.
-* `example_3_6_5`, `example_3_6_6`, `example_3_6_8` — the three concrete projection operators of
-  the section: Lagrange interpolation on `C[a, b]`, piecewise-linear interpolation on `C[a, b]`,
-  and the Fourier projection on `C_p(2π)`. `example_3_6_8_l2` is the section's closing remark
-  that the Fourier projection is also the orthogonal projection in `L²`.
+* Proposition 3.6.2, `AtkinsonHan.Chapter03.proposition_3_6_2`: $V = V_1 \oplus V_2$ if and only if
+  there is an idempotent linear map with range $V_1$ whose complement $I - P$ has range $V_2$.
+* Example 3.6.4, `AtkinsonHan.Chapter03.example_3_6_4`: $(v_1, v_2) \mapsto (v_1, 0)$ is an
+  orthogonal projection of $\mathbb{R}^2$ onto the $x_1$-axis.
+* Example 3.6.5, `AtkinsonHan.Chapter03.example_3_6_5`: Lagrange interpolation is a projection of
+  $C[a, b]$ onto $\mathcal{P}_n$, with norm equal to the Lebesgue constant of the nodes.
+* Example 3.6.6, `AtkinsonHan.Chapter03.example_3_6_6`: piecewise linear interpolation is a
+  projection of $C[a, b]$ with norm $1$.
+* Example 3.6.7, `AtkinsonHan.Chapter03.example_3_6_7`: $v \mapsto \sum_i (v, \varphi_i) \varphi_i$
+  is an orthogonal projection for a finite orthonormal family.
+* Example 3.6.8, `AtkinsonHan.Chapter03.example_3_6_8`: the Fourier projection $\mathcal{F}_n$ is a
+  projection of $C_p(2\pi)$ onto $\mathcal{T}_n$, with norm equal to the Lebesgue constant $L_n$.
+* Example 3.6.8, `AtkinsonHan.Chapter03.example_3_6_8_l2`: the error $f - \mathcal{F}_n f$ is
+  $L^2$-orthogonal to $\mathcal{T}_n$.
+* Proposition 3.6.9(a), `AtkinsonHan.Chapter03.proposition_3_6_9_a`: a bounded projection is
+  orthogonal if and only if it is self-adjoint.
+* Proposition 3.6.9(b), `AtkinsonHan.Chapter03.proposition_3_6_9_b`: an orthogonal projection has
+  $\|P\| \le 1$, and $\|P\| = 1$ unless $P = 0$.
+* Proposition 3.6.9(c), `AtkinsonHan.Chapter03.proposition_3_6_9_c` and
+  `AtkinsonHan.Chapter03.proposition_3_6_9_c'`: $H = V_1 \oplus V_1^\perp$ for a closed subspace
+  $V_1$.
+* Proposition 3.6.9(d), `AtkinsonHan.Chapter03.proposition_3_6_9_d`: there is exactly one orthogonal
+  projection with range $V_1$. It realizes the distance to $V_1$, and $I - P$ is the orthogonal
+  projection onto $V_1^\perp$.
+* Proposition 3.6.9(e), `AtkinsonHan.Chapter03.proposition_3_6_9_e`: the range of an orthogonal
+  projection is closed, and $H = P(H) \oplus P(H)^\perp$ with $P(H)^\perp = (I - P)(H)$.
+* Exercise 3.6.1, `AtkinsonHan.Chapter03.exercise_3_6_1`: $I - P$ is a projection whenever $P$ is.
+* Exercise 3.6.7, `AtkinsonHan.Chapter03.exercise_3_6_7`: a nonzero bounded projection has norm at
+  least $1$.
 
-## Not formalized here
+## Deviations from the source
 
-Everything numbered in §3.6 is stated. Example 3.6.4's general `V₁` is a line of `ℝ²` drawn in
-Figure 3.4; `example_3_6_4` states the formula the example displays, for `V₁` the `x₁`-axis.
+* **Example 3.6.4** (reading). The book's $V_1$ is a general line through the origin of
+  $\mathbb{R}^2$, drawn in Figure 3.4. The library states the displayed formula, for $V_1$ the
+  $x_1$-axis. See `AtkinsonHan.Chapter03.example_3_6_4`.
+
+## Not formalized
+
+All numbered items of §3.6 are formalized.
 -/
 
 namespace AtkinsonHan.Chapter03
@@ -57,12 +94,16 @@ section DirectSum
 
 variable {𝕜 V : Type*} [RCLike 𝕜] [NormedAddCommGroup V] [NormedSpace 𝕜 V]
 
-/-- **Direct sum** `V = V₁ ⊕ V₂` (Definition 3.6.1): every `v` decomposes uniquely as
-`v = v₁ + v₂` with `vᵢ ∈ Vᵢ`. -/
+/-- **Definition 3.6.1** of [han2009theoretical]. Let $V_1$ and $V_2$ be subspaces of a normed space
+$V$ over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$. Then $V$ is the **direct sum**
+$V = V_1 \oplus V_2$ if every $v \in V$ can be written in exactly one way as $v = v_1 + v_2$
+with $v_1 \in V_1$ and $v_2 \in V_2$. -/
 def IsDirectSum (V₁ V₂ : Submodule 𝕜 V) : Prop :=
   ∀ v : V, ∃! p : V × V, p.1 ∈ V₁ ∧ p.2 ∈ V₂ ∧ v = p.1 + p.2
 
-/-- The book's direct sum is Mathlib's `IsCompl`. -/
+/-- The direct sum $V = V_1 \oplus V_2$ of Definition 3.6.1 holds if and only if $V_1$ and $V_2$ are
+complements in the lattice of subspaces (Mathlib's `IsCompl`): $V_1 \cap V_2 = \{0\}$ and
+$V_1 + V_2 = V$. -/
 theorem isDirectSum_iff_isCompl (V₁ V₂ : Submodule 𝕜 V) : IsDirectSum V₁ V₂ ↔ IsCompl V₁ V₂ := by
   constructor
   · intro h
@@ -87,8 +128,12 @@ theorem isDirectSum_iff_isCompl (V₁ V₂ : Submodule 𝕜 V) : IsDirectSum V�
     obtain ⟨e₁, e₂⟩ := huniq ⟨w₁, hw₁⟩ ⟨w₂, hw₂⟩ hw.symm
     exact Prod.ext (congrArg Subtype.val e₁) (congrArg Subtype.val e₂)
 
-/-- **Proposition 3.6.2.** `V = V₁ ⊕ V₂` if and only if there is an idempotent linear map `P` with
-range `V₁` and with `I − P` of range `V₂`; then `v₁ = P v` and `v₂ = (I − P) v`. -/
+/-- **Proposition 3.6.2** of [han2009theoretical]. Let $V_1$ and $V_2$ be subspaces of a normed
+space $V$ over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$. Then $V = V_1 \oplus V_2$ if and only
+if there is a linear map $P : V \to V$ with $P^2 = P$, $P(V) = V_1$ and $(I - P)(V) = V_2$.
+
+The statement does not include the book's formulas $v_1 = Pv$ and $v_2 = (I - P)v$ for the
+components of $v$. -/
 theorem proposition_3_6_2 (V₁ V₂ : Submodule 𝕜 V) :
     IsDirectSum V₁ V₂ ↔ ∃ P : V →ₗ[𝕜] V, P ∘ₗ P = P ∧ LinearMap.range P = V₁ ∧
       LinearMap.range (LinearMap.id - P) = V₂ := by
@@ -105,23 +150,28 @@ theorem proposition_3_6_2 (V₁ V₂ : Submodule 𝕜 V) :
       LinearMap.IsProj.isCompl (LinearMap.IsIdempotentElem.isProj_range P hidem)
     rwa [hr, LinearMap.IsIdempotentElem.ker_eq_range hidem, hk] at hc
 
-/-- **Orthogonal direct sum** (Definition 3.6.1 for inner product spaces): a direct sum whose two
-summands are mutually orthogonal. -/
+/-- **Definition 3.6.1** of [han2009theoretical], for inner product spaces. Two subspaces $V_1$ and
+$V_2$ of an inner product space $H$ form an **orthogonal direct sum** if $H = V_1 \oplus V_2$
+and $(v_1, v_2) = 0$ for all $v_1 \in V_1$ and $v_2 \in V_2$. -/
 def IsOrthogonalDirectSum {H : Type*} [NormedAddCommGroup H] [InnerProductSpace 𝕜 H]
     (V₁ V₂ : Submodule 𝕜 H) : Prop :=
   IsDirectSum V₁ V₂ ∧ V₁ ⟂ V₂
 
-/-- **Projection operator** (Definition 3.6.3): a bounded linear `P` on a Banach space with
-`P² = P`. This is definitionally Mathlib's `IsIdempotentElem`, which is the form the backbone's
-projector lemmas take. -/
+/-- **Definition 3.6.3** of [han2009theoretical]. Let $V$ be a Banach space. A bounded linear
+operator $P : V \to V$ is a **projection operator** if $P^2 = P$.
+
+The definition is Mathlib's `IsIdempotentElem P`, which is the form of the backbone's lemmas on
+projections. -/
 def IsProjectionOperator [CompleteSpace V] (P : V →L[𝕜] V) : Prop := IsIdempotentElem P
 
-/-- Definition 3.6.3 is Mathlib's `IsIdempotentElem`, definitionally. -/
+/-- A bounded linear operator on a Banach space is a projection operator in the sense of Definition
+3.6.3 if and only if it is idempotent (`IsIdempotentElem`). The two notions agree by definition. -/
 theorem isProjectionOperator_iff [CompleteSpace V] (P : V →L[𝕜] V) :
     IsProjectionOperator P ↔ IsIdempotentElem P := Iff.rfl
 
-/-- **Exercise 3.6.1.** `I − P` is a projection whenever `P` is, and the two swap range and
-kernel. -/
+/-- **Exercise 3.6.1** of [han2009theoretical]. Let $P$ be a bounded linear operator on a normed
+space $V$ with $P^2 = P$. Then $(I - P)^2 = I - P$, $\ker P = (I - P)(V)$ and
+$P(V) = \ker(I - P)$. -/
 theorem exercise_3_6_1 {P : V →L[𝕜] V} (hP : IsIdempotentElem P) :
     IsIdempotentElem ((1 : V →L[𝕜] V) - P) ∧
       LinearMap.ker (P : V →ₗ[𝕜] V) = LinearMap.range (1 - (P : V →ₗ[𝕜] V)) ∧
@@ -131,7 +181,8 @@ theorem exercise_3_6_1 {P : V →L[𝕜] V} (hP : IsIdempotentElem P) :
   exact ⟨IsIdempotentElem.one_sub hP, LinearMap.IsIdempotentElem.ker_eq_range_one_sub hlin,
     LinearMap.IsIdempotentElem.range_eq_ker_one_sub hlin⟩
 
-/-- **Exercise 3.6.7.** A nonzero bounded projection has norm at least one. -/
+/-- **Exercise 3.6.7** of [han2009theoretical]. Let $P$ be a bounded linear operator on a normed
+space $V$ with $P^2 = P$ and $P \neq 0$. Then $\|P\| \ge 1$. -/
 theorem exercise_3_6_7 (P : V →L[𝕜] V) (hP : IsIdempotentElem P) (h0 : P ≠ 0) : 1 ≤ ‖P‖ :=
   one_le_norm_of_isIdempotentElem hP h0
 
@@ -143,13 +194,20 @@ section Hilbert
 
 variable {𝕜 H : Type*} [RCLike 𝕜] [NormedAddCommGroup H] [InnerProductSpace 𝕜 H]
 
-/-- **Orthogonal projection operator** (Definition 3.6.3 / (3.6.2)): a bounded projection `P`
-with `(P v, (I − P) w) = 0` for all `v, w`. -/
+/-- **Definition 3.6.3** of [han2009theoretical], with (3.6.2). Let $H$ be an inner product space
+over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$. A bounded linear operator $P : H \to H$ is an
+**orthogonal projection operator** if $P^2 = P$ and
+$$(Pv, (I - P)w) = 0 \quad \text{for all } v, w \in H. \qquad (3.6.2)$$
+
+The Lean condition is `inner 𝕜 (P v) ((1 - P) w) = 0`, the complex conjugate of the book's inner
+product, so it is the same condition. -/
 def IsOrthogonalProjectionOperator (P : H →L[𝕜] H) : Prop :=
   IsIdempotentElem P ∧ ∀ v w : H, inner 𝕜 (P v) (((1 : H →L[𝕜] H) - P) w) = 0
 
-/-- **Proposition 3.6.9(a).** A bounded projection is an orthogonal projection in the sense of
-(3.6.2) exactly when it is self-adjoint. -/
+/-- **Proposition 3.6.9(a)** of [han2009theoretical]. Let $H$ be an inner product space over
+$\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, and let $P$ be a bounded linear operator on $H$ with
+$P^2 = P$. Then $P$ satisfies the orthogonality condition (3.6.2) if and only if $P$ is
+self-adjoint: $(Pu, v) = (u, Pv)$ for all $u, v \in H$. -/
 theorem proposition_3_6_9_a (P : H →L[𝕜] H) (hP : IsIdempotentElem P) :
     (∀ v w : H, inner 𝕜 (P v) (((1 : H →L[𝕜] H) - P) w) = 0) ↔ (P : H →ₗ[𝕜] H).IsSymmetric := by
   have hPP : ∀ x : H, P (P x) = P x := fun x => DFunLike.congr_fun hP x
@@ -179,7 +237,9 @@ theorem proposition_3_6_9_a (P : H →L[𝕜] H) (hP : IsIdempotentElem P) :
     simp only [ContinuousLinearMap.coe_coe, hPP] at e₁ e₂
     rw [e₁, ← e₂, sub_self]
 
-/-- The book's orthogonal projection operators are exactly Mathlib's symmetric projections. -/
+/-- A bounded linear operator on an inner product space is an orthogonal projection operator in the
+sense of Definition 3.6.3 if and only if it is a symmetric idempotent map (Mathlib's
+`LinearMap.IsSymmetricProjection`). -/
 theorem isOrthogonalProjectionOperator_iff (P : H →L[𝕜] H) :
     IsOrthogonalProjectionOperator P ↔ (P : H →ₗ[𝕜] H).IsSymmetricProjection := by
   constructor
@@ -189,8 +249,14 @@ theorem isOrthogonalProjectionOperator_iff (P : H →L[𝕜] H) :
     have hP : IsIdempotentElem P := ContinuousLinearMap.isIdempotentElem_toLinearMap_iff.1 hidem
     exact ⟨hP, (proposition_3_6_9_a P hP).2 hsym⟩
 
-/-- **Example 3.6.7.** For a finite orthonormal family `φ₁, …, φₙ`, the operator
-`v ↦ ∑ᵢ (v, φᵢ) φᵢ` is an orthogonal projection. -/
+/-- **Example 3.6.7** of [han2009theoretical]. Let $H$ be a Hilbert space over
+$\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, and let $\varphi_1, \ldots, \varphi_n$ be orthonormal
+in $H$. Then the operator
+$$Pv = \sum_{i=1}^{n} (v, \varphi_i)\, \varphi_i$$
+is an orthogonal projection operator.
+
+The operator is the sum of the rank-one operators `InnerProductSpace.rankOne 𝕜 (u i) (u i)`, and
+the family $\varphi_i$ is `u`. -/
 theorem example_3_6_7 [CompleteSpace H] {n : ℕ} {u : Fin n → H} (hu : Orthonormal 𝕜 u) :
     IsOrthogonalProjectionOperator (∑ i, InnerProductSpace.rankOne 𝕜 (u i) (u i)) := by
   classical
@@ -202,8 +268,11 @@ theorem example_3_6_7 [CompleteSpace H] {n : ℕ} {u : Fin n → H} (hu : Orthon
   rw [← hsp, isOrthogonalProjectionOperator_iff]
   exact Submodule.isSymmetricProjection_starProjection _
 
-/-- **Proposition 3.6.9(b).** An orthogonal projection is bounded with `‖P‖ ≤ 1`, and `‖P‖ = 1`
-unless `P = 0`. -/
+/-- **Proposition 3.6.9(b)** of [han2009theoretical]. Let $P$ be an orthogonal projection operator
+on a Hilbert space $H$ over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$. Then $\|P\| \le 1$, and
+$\|P\| = 1$ if $P \neq 0$.
+
+The boundedness of $P$, which the book also states, is part of its type. -/
 theorem proposition_3_6_9_b [CompleteSpace H] (P : H →L[𝕜] H)
     (hP : IsOrthogonalProjectionOperator P) :
     ‖P‖ ≤ 1 ∧ (P ≠ 0 → ‖P‖ = 1) := by
@@ -215,21 +284,25 @@ theorem proposition_3_6_9_b [CompleteSpace H] (P : H →L[𝕜] H)
   · rw [h0, norm_zero]; norm_num
   · exact (hone h0).le
 
-/-- **Proposition 3.6.9(c).** A closed subspace of a Hilbert space and its orthogonal complement
-form a direct sum. -/
+/-- **Proposition 3.6.9(c)** of [han2009theoretical]. Let $V_1$ be a closed subspace of a Hilbert
+space $H$ over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$. Then $H = V_1 \oplus V_1^\perp$: the
+subspaces $V_1$ and $V_1^\perp$ are complements (`IsCompl`). -/
 theorem proposition_3_6_9_c [CompleteSpace H] (V₁ : Submodule 𝕜 H) (h : IsClosed (V₁ : Set H)) :
     IsCompl V₁ V₁ᗮ :=
   have := h.completeSpace_coe
   Submodule.isCompl_orthogonal V₁
 
-/-- **Proposition 3.6.9(c)**, in the book's vocabulary: `H = V₁ ⊕ V₁ᗮ` is an orthogonal direct
-sum in the sense of Definition 3.6.1. -/
+/-- **Proposition 3.6.9(c)** of [han2009theoretical], as an orthogonal direct sum. Let $V_1$ be a
+closed subspace of a Hilbert space $H$ over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$. Then
+$H = V_1 \oplus V_1^\perp$ is an orthogonal direct sum in the sense of Definition 3.6.1. -/
 theorem proposition_3_6_9_c' [CompleteSpace H] (V₁ : Submodule 𝕜 H) (h : IsClosed (V₁ : Set H)) :
     IsOrthogonalDirectSum V₁ V₁ᗮ :=
   ⟨(isDirectSum_iff_isCompl V₁ V₁ᗮ).2 (proposition_3_6_9_c V₁ h),
     Submodule.isOrtho_orthogonal_right V₁⟩
 
-/-- An orthogonal projection is Mathlib's orthogonal projection onto its range. -/
+/-- Let $V_1$ be a subspace of an inner product space $H$ that has an orthogonal projection, and let
+$P$ be an orthogonal projection operator in the sense of Definition 3.6.3 with range $V_1$. Then
+$P$ is Mathlib's orthogonal projection `V₁.starProjection` onto $V_1$. -/
 theorem eq_starProjection_of_isOrthogonalProjectionOperator (V₁ : Submodule 𝕜 H)
     [V₁.HasOrthogonalProjection] {P : H →L[𝕜] H} (hP : IsOrthogonalProjectionOperator P)
     (hr : LinearMap.range (P : H →ₗ[𝕜] H) = V₁) : P = V₁.starProjection := by
@@ -239,9 +312,14 @@ theorem eq_starProjection_of_isOrthogonalProjectionOperator (V₁ : Submodule �
   ext x
   exact congrFun (congrArg DFunLike.coe hPeq) x
 
-/-- **Proposition 3.6.9(d).** There is exactly one orthogonal projection with a given closed
-range `V₁`; it realizes the distance to `V₁`, and `I − P` is the orthogonal projection onto
-`V₁ᗮ`. -/
+/-- **Proposition 3.6.9(d)** of [han2009theoretical]. Let $V_1$ be a closed subspace of a Hilbert
+space $H$ over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$. Then there is exactly one orthogonal
+projection operator $P$ with $P(H) = V_1$. Moreover, every orthogonal projection operator $P$
+with $P(H) = V_1$ satisfies
+
+* $\|v - Pv\| = \inf_{w \in V_1} \|v - w\|$ for all $v \in H$;
+* $I - P$ is an orthogonal projection operator;
+* $(I - P)(H) = V_1^\perp$. -/
 theorem proposition_3_6_9_d [CompleteSpace H] (V₁ : Submodule 𝕜 H) (h : IsClosed (V₁ : Set H)) :
     (∃! P : H →L[𝕜] H,
         IsOrthogonalProjectionOperator P ∧ LinearMap.range (P : H →ₗ[𝕜] H) = V₁) ∧
@@ -271,8 +349,9 @@ theorem proposition_3_6_9_d [CompleteSpace H] (V₁ : Submodule 𝕜 H) (h : IsC
   · rw [honesub]
     exact V₁ᗮ.range_starProjection
 
-/-- **Proposition 3.6.9(e).** The range of an orthogonal projection is closed, and `V` is the
-orthogonal direct sum of `P(V)` and `(I − P)(V) = P(V)ᗮ`. -/
+/-- **Proposition 3.6.9(e)** of [han2009theoretical]. Let $P$ be an orthogonal projection operator
+on a Hilbert space $H$ over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$. Then the range $P(H)$ is
+closed, $H = P(H) \oplus (I - P)(H)$, and $(I - P)(H) = P(H)^\perp$. -/
 theorem proposition_3_6_9_e [CompleteSpace H] (P : H →L[𝕜] H)
     (hP : IsOrthogonalProjectionOperator P) :
     IsClosed (LinearMap.range (P : H →ₗ[𝕜] H) : Set H) ∧
@@ -293,30 +372,34 @@ theorem proposition_3_6_9_e [CompleteSpace H] (P : H →L[𝕜] H)
 
 end Hilbert
 
-/-! ### `C_p(2π)`, the space Example 3.6.8 projects
+/-!
+### $C_p(2\pi)$, the space of Example 3.6.8
 
-`C_p(2π)` is where the Fourier projection of Example 3.6.8 lives, and where §3.7 states Jackson's
-theorem and the Lebesgue-constant bounds; this is the first module of the surface to need a name
-for it. -/
+$C_p(2\pi)$ is the space of the Fourier projection of Example 3.6.8. §3.7 states Jackson's theorem
+and the bounds on the Lebesgue constants on the same space.
+-/
 
 section Spaces
 
 open Real
 
-/-- `C_p(2π)` as the book describes it: continuous real functions on `ℝ` of period `2π`. -/
+/-- The space $C_p(2\pi)$ of [han2009theoretical], as the book describes it: a function
+$g : \mathbb{R} \to \mathbb{R}$ is in $C_p(2\pi)$ if it is continuous and $2\pi$-periodic. -/
 def IsPeriodicCont (g : ℝ → ℝ) : Prop := Continuous g ∧ Function.Periodic g (2 * π)
 
-/-- `C_p(2π)` as a space: continuous real functions on the circle `ℝ / 2πℤ`. Given
-`Fact (0 < 2 * π)` the circle is compact, so this carries the sup norm `‖·‖_∞` of the book. -/
+/-- The space $C_p(2\pi)$ of [han2009theoretical], as continuous real functions on the circle
+$\mathbb{R}/2\pi\mathbb{Z}$. The circle is compact, so the space carries the uniform norm
+$\|\cdot\|_\infty$ of the book. -/
 abbrev PeriodicCont : Type := C(AddCircle (2 * π), ℝ)
 
-/-- A continuous `2π`-periodic function on `ℝ` is a continuous function on the circle. -/
+/-- A continuous $2\pi$-periodic function $g$ on $\mathbb{R}$, as an element of $C_p(2\pi)$: the
+continuous function on the circle $\mathbb{R}/2\pi\mathbb{Z}$ induced by $g$. -/
 noncomputable def PeriodicCont.ofIsPeriodicCont {g : ℝ → ℝ} (h : IsPeriodicCont g) :
     PeriodicCont :=
   ⟨h.2.lift, continuous_quot_lift _ h.1⟩
 
-/-- `PeriodicCont.ofIsPeriodicCont` undoes the passage to the circle: its value at the class of
-`x` is `g x`. -/
+/-- The function on the circle that `AtkinsonHan.Chapter03.PeriodicCont.ofIsPeriodicCont` makes from
+$g$ takes the value $g(x)$ at the class of $x \in \mathbb{R}$. -/
 @[simp] theorem PeriodicCont.ofIsPeriodicCont_coe {g : ℝ → ℝ} (h : IsPeriodicCont g) (x : ℝ) :
     PeriodicCont.ofIsPeriodicCont h (x : AddCircle (2 * π)) = g x :=
   h.2.lift_coe x
@@ -329,12 +412,15 @@ section Examples
 
 open MeasureTheory Real
 
-/-- **Example 3.6.4.**  Figure 3.4's orthogonal decomposition of a vector of `ℝ²`: the operator
-carrying `v = (v₁, v₂)` to `(v₁, 0)` is an orthogonal projection of `ℝ²` onto the `x₁`-axis, in the
-sense of Definition 3.6.3 and (3.6.2).
+/-- **Example 3.6.4** of [han2009theoretical]. The operator $P$ on $\mathbb{R}^2$ with
+$P(v_1, v_2) = (v_1, 0)$ is an orthogonal projection operator in the sense of Definition 3.6.3
+and (3.6.2). It projects onto the $x_1$-axis.
 
-The book's `V₁` is a general line through the origin and its figure is a picture; what the example
-states is the displayed formula, for `V₁` the `x₁`-axis. -/
+**Reading.** The book's $V_1$ is a general line through the origin, and its Figure 3.4 is a
+picture of the orthogonal decomposition. The statement here is the displayed formula, for $V_1$
+the $x_1$-axis.
+
+The space is `EuclideanSpace ℝ (Fin 2)`, and $v_1$ is the coordinate `v 0`. -/
 theorem example_3_6_4 :
     ∃ P : EuclideanSpace ℝ (Fin 2) →L[ℝ] EuclideanSpace ℝ (Fin 2),
       (∀ v : EuclideanSpace ℝ (Fin 2), P v = EuclideanSpace.single 0 (v 0)) ∧
@@ -356,9 +442,16 @@ theorem example_3_6_4 :
     refine Finset.sum_eq_zero fun i _ => ?_
     fin_cases i <;> simp
 
-/-- **Example 3.6.5.**  Lagrange interpolation at `n + 1` distinct nodes of `[a, b]` is a
-projection operator on `C[a, b]` whose range is `𝒫ₙ`, and whose operator norm is the Lebesgue
-constant of the nodes, the supremum of the Lebesgue function `∑ᵢ |ℓᵢ(t)|`. -/
+/-- **Example 3.6.5** of [han2009theoretical]. Let $x_0, \ldots, x_n$ be $n + 1$ distinct nodes in
+$[a, b]$, and let $\ell_0, \ldots, \ell_n$ be their Lagrange basis polynomials. Then the
+Lagrange interpolation operator $P_n f = \sum_{i=0}^{n} f(x_i)\, \ell_i$ is a projection
+operator on $C[a, b]$ with range $\mathcal{P}_n$, the polynomials of degree at most $n$. Its
+norm is the Lebesgue constant of the nodes,
+$$\|P_n\| = \sup_{t \in [a, b]} \sum_{i=0}^{n} |\ell_i(t)|.$$
+
+The basis polynomial $\ell_i$ is `Lagrange.basisCM x i`, and the operator is
+`Lagrange.interpolateCLM x`. The interval $[a, b]$ is compact and nonempty, so the supremum is
+attained. -/
 theorem example_3_6_5 {a b : ℝ} {n : ℕ} {x : Fin (n + 1) → Set.Icc a b}
     (hx : Function.Injective x) :
     IsProjectionOperator (Lagrange.interpolateCLM x) ∧
@@ -370,10 +463,13 @@ theorem example_3_6_5 {a b : ℝ} {n : ℕ} {x : Fin (n + 1) → Set.Icc a b}
   refine ⟨Lagrange.isIdempotentElem_interpolateCLM hx, ?_, Lagrange.norm_interpolateCLM hx⟩
   rw [Lagrange.range_interpolateCLM hx, polyLE_eq]
 
-/-- **Example 3.6.6.**  Piecewise-linear interpolation on a partition
-`a = x₀ < x₁ < ⋯ < x_{n+1} = b` is a projection operator on `C[a, b]` of norm `1`: on each
-subinterval the interpolant is a convex combination of two values of the function, and it fixes
-the constants. -/
+/-- **Example 3.6.6** of [han2009theoretical]. Let $a = x_0 < x_1 < \cdots < x_{n+1} = b$ be a
+partition of $[a, b]$. Then piecewise linear interpolation at these nodes is a projection
+operator on $C[a, b]$ of norm $1$.
+
+On each subinterval the interpolant is a convex combination of two values of the function, and
+the interpolation of a constant is the constant itself. The operator is
+`piecewiseLinearInterpCLM n x`, where only the first $n + 2$ terms of the sequence `x` are used. -/
 theorem example_3_6_6 {a b : ℝ} {n : ℕ} {x : ℕ → Set.Icc a b}
     (hstep : ∀ i ≤ n, (x i : ℝ) < (x (i + 1) : ℝ)) (hfirst : (x 0 : ℝ) = a)
     (hlast : (x (n + 1) : ℝ) = b) :
@@ -382,9 +478,14 @@ theorem example_3_6_6 {a b : ℝ} {n : ℕ} {x : ℕ → Set.Icc a b}
   ⟨isIdempotentElem_piecewiseLinearInterpCLM ⟨fun i hi => hstep i (by omega), hfirst, hlast⟩,
     norm_piecewiseLinearInterpCLM ⟨fun i hi => hstep i (by omega), hfirst, hlast⟩⟩
 
-/-- **Example 3.6.8.**  The Fourier projection `𝓕ₙ` is a projection operator on `C_p(2π)` whose
-range is the space `𝕋ₙ` of trigonometric polynomials of degree at most `n`, and whose operator
-norm is the `n`-th Lebesgue constant `Lₙ = (1/π) ∫_{-π}^{π} |Dₙ|` of (3.7.9). -/
+/-- **Example 3.6.8** of [han2009theoretical]. The Fourier projection $\mathcal{F}_n$ is a
+projection operator on $C_p(2\pi)$. Its range is the space $\mathcal{T}_n$ of trigonometric
+polynomials of degree at most $n$, and its norm is the $n$-th Lebesgue constant
+$$\|\mathcal{F}_n\| = L_n = \frac{1}{\pi} \int_{-\pi}^{\pi} |D_n(\theta)|\, d\theta$$
+of (3.7.9), where $D_n$ is the Dirichlet kernel.
+
+The operator is `PeriodicCont.fourierProj n`, the integral operator of the Dirichlet kernel, and
+$L_n$ is `PeriodicCont.lebesgueConstant n`. -/
 theorem example_3_6_8 (n : ℕ) :
     IsProjectionOperator (_root_.PeriodicCont.fourierProj n) ∧
       LinearMap.range ((_root_.PeriodicCont.fourierProj n : PeriodicCont →L[ℝ] PeriodicCont) :
@@ -393,13 +494,19 @@ theorem example_3_6_8 (n : ℕ) :
   ⟨_root_.PeriodicCont.isIdempotentElem_fourierProj n, _root_.PeriodicCont.range_fourierProj n,
     _root_.PeriodicCont.norm_fourierProj n⟩
 
-/-- **Example 3.6.8**, the closing remark: `𝓕ₙ` is also the *orthogonal* projection of `L²(0, 2π)`
-onto `𝕋ₙ`.  Read on the continuous functions, that says the error `f − 𝓕ₙ f` is `L²`-orthogonal to
-every member of the real trigonometric system of index at most `n`, hence to all of `𝕋ₙ`.
+/-- **Example 3.6.8** of [han2009theoretical], the closing remark. Let $f \in C_p(2\pi)$ and let
+$\varphi_m$, $|m| \le n$, be the members of the real trigonometric system that span
+$\mathcal{T}_n$. Then
+$$(\varphi_m, f - \mathcal{F}_n f) = 0$$
+in $L^2(0, 2\pi)$. So $f - \mathcal{F}_n f$ is orthogonal to $\mathcal{T}_n$, and
+$\mathcal{F}_n$ is also the orthogonal projection of $L^2(0, 2\pi)$ onto $\mathcal{T}_n$, read
+on the continuous functions.
 
-The Fourier projection is not orthogonal for the *uniform* norm of `C_p(2π)`: its norm is `Lₙ`,
-which grows like `log n` (`PeriodicCont.log_le_lebesgueConstant`), whereas an orthogonal
-projection has norm one by Proposition 3.6.9(b). -/
+The inner product is that of $L^2$ for the probability Haar measure of the circle, and
+$\varphi_m$ is `trigLp (2 * π) m`. The Fourier projection is not orthogonal for the uniform norm
+of $C_p(2\pi)$: its norm is $L_n$, which grows like $\log n$
+(`PeriodicCont.log_le_lebesgueConstant`), whereas an orthogonal projection has norm $1$ by
+Proposition 3.6.9(b). -/
 theorem example_3_6_8_l2 {n : ℕ} (f : PeriodicCont) {m : ℤ} (hm : m.natAbs ≤ n) :
     inner ℝ (trigLp (2 * π) m)
         (ContinuousMap.toLp 2 AddCircle.haarAddCircle ℝ f -

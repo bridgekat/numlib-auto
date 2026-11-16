@@ -9,52 +9,74 @@ import Numlib.Nonlinear.Newton
 import NumlibSurface.AtkinsonHan.Chapter05.Section03
 
 /-!
-# Atkinson–Han §5.4: Newton's method
+# Atkinson and Han, Section 5.4: Newton's Method
 
-Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework*, 3rd edition, Springer, 2009, §5.4: Newton's method for `F(u) = 0` in a
-Banach space, its local quadratic convergence, the Newton–Kantorovich theorem and the modified
-(chord) method.
-
-The book's iteration (5.4.2), `u_{n+1} = u_n - [F'(u_n)]⁻¹ F(u_n)`, is the backbone's
-`Newton.step` / `Newton.iterate` (`Numlib/Nonlinear/Newton.lean`), which uses Mathlib's
-`ContinuousLinearMap.inverse`, so no surface definition of the iteration is needed.
+This module formalizes Section 5.4 of [han2009theoretical]: Newton's method for an equation
+$F(u) = 0$ between Banach spaces, its local quadratic convergence, the Newton–Kantorovich theorem,
+the modified Newton (chord) method, and in Section 5.4.2 the applications to a nonlinear system in
+$\mathbb{R}^d$, to a nonlinear integral equation and to a two-point boundary value problem. Newton's
+method is the iteration (5.4.2),
+$$u_{n+1} = u_n - [F'(u_n)]^{-1} F(u_n),$$
+and the modified method replaces $F'(u_n)$ by one fixed invertible operator. The proofs specialize
+the backbone module `Numlib.Nonlinear.Newton`, with the Taylor estimate of Section 5.3, the
+derivative of the Urysohn operator from `Numlib.IntegralEquations.Basic`, and the Nemytskii operator
+of `Numlib.Nonlinear.Nemytskii`.
 
 ## Main results
 
-* `equation_5_4_2`, `newtonStep_eq_self`, `newtonStep_sub_eq` — (5.4.2), that a root is a fixed
-  point of the step, and the increment form `F'(u_n) δ_n = -F(u_n)` of (5.4.7)/(5.4.9).
-* `exists_equiv_of_norm_lt` — the perturbation criterion (the book's Theorem 2.3.5) that keeps
-  `F'(u_n)` invertible along the iteration.
-* `equation_5_4_5` — the quadratic estimate for one Newton step, from the `L/2` Taylor lemma
-  `norm_sub_sub_fderiv_le_half_mul_sq` of §5.3.
-* `theorem_5_4_1` — Theorem 5.4.1, local quadratic convergence, with (5.4.3) and (5.4.4).
-* `theorem_5_4_2` — Theorem 5.4.2, the **Newton–Kantorovich theorem**, together with the book's
-  three finer clauses: existence localized to `B̄(u₁, t* - b)` (`theorem_5_4_2_step`),
-  uniqueness within `t** = (1 + √(1-2h))/(aL)` of `u₀` (`theorem_5_4_2_unique`) and the sharp a
-  priori bound `[1 - √(1-2h)]^{2ⁿ}/(2ⁿ a L)` (`theorem_5_4_2_sharp`).
-* `equation_5_4_11`, `exercise_5_4_5` — the modified Newton (chord) method with a frozen
-  derivative, whose convergence is linear rather than quadratic.
-* `equation_5_4_7` — Newton's method for a nonlinear system in `ℝᵈ`.
-* `equation_5_4_8`, `equation_5_4_10`, `equation_5_4_12` — §5.4.2 applied to the nonlinear
-  integral equation `u(t) = ∫ₐᵇ k(t, s, u(s)) ds`: the derivative of `F = I − K` is `I` minus a
-  Fredholm operator, so one Newton step is the solution of one *linear* integral equation of the
-  second kind, and the modified method solves it with a kernel frozen at `u₀`.
-* `example_5_4_bvp` — §5.4.2 applied to the two-point boundary value problem
-  `u'' = f(t, u)`, `u(0) = u(1) = 0`: on `U = C²₀[0, 1]` the derivative of
-  `F(u)(t) = u''(t) - f(t, u(t))` is `F'(u)(y)(t) = y''(t) - ∂f/∂u(t, u(t)) y(t)`, so each Newton
-  step solves a linearized two-point boundary value problem.
+* Equation (5.4.2), `AtkinsonHan.Chapter05.equation_5_4_2`: the Newton iterates satisfy
+  $u_{n+1} = T(u_n)$, with $T$ the Newton step.
+* Equation (5.4.5), `AtkinsonHan.Chapter05.equation_5_4_5`: one Newton step squares the error, up to
+  the factor $c_0 L / 2$.
+* Theorem 5.4.1, `AtkinsonHan.Chapter05.theorem_5_4_1`: local quadratic convergence of Newton's
+  method, with the estimates (5.4.3) and (5.4.4).
+* Theorem 5.4.2, `AtkinsonHan.Chapter05.theorem_5_4_2`: the Newton–Kantorovich theorem, existence of
+  a root and convergence of the iterates from hypotheses at the starting point.
+* Theorem 5.4.2, `AtkinsonHan.Chapter05.theorem_5_4_2_step`: the root lies in the ball
+  $\bar B(u_1, t^* - b)$ around the first iterate.
+* Theorem 5.4.2, `AtkinsonHan.Chapter05.theorem_5_4_2_unique`: the root is unique within the
+  distance $t^{**}$ of $u_0$.
+* Theorem 5.4.2, `AtkinsonHan.Chapter05.theorem_5_4_2_sharp`: the a priori error bound
+  $[1 - \sqrt{1 - 2h}]^{2^n} / (2^n a L)$.
+* Equation (5.4.7), `AtkinsonHan.Chapter05.equation_5_4_7`: Newton's method for a nonlinear system
+  in $\mathbb{R}^d$ solves a linear system at each step.
+* Equation (5.4.8), `AtkinsonHan.Chapter05.equation_5_4_8`: the derivative of $F = I - \mathcal{K}$
+  for the Urysohn operator $\mathcal{K}$.
+* Equations (5.4.9)–(5.4.10), `AtkinsonHan.Chapter05.equation_5_4_10`: a Newton step for the
+  nonlinear integral equation solves a linear integral equation of the second kind.
+* Equation (5.4.11), `AtkinsonHan.Chapter05.equation_5_4_11`: the modified Newton method with a
+  fixed operator.
+* Equations (5.4.11)–(5.4.12), `AtkinsonHan.Chapter05.equation_5_4_12`: the modified Newton method
+  for the integral equation uses one kernel at every step.
+* Exercise 5.4.5, `AtkinsonHan.Chapter05.exercise_5_4_5`: the modified Newton method converges
+  linearly.
+* Section 5.4.2, `AtkinsonHan.Chapter05.example_5_4_bvp`: the derivative of the operator of the
+  two-point boundary value problem $u'' = f(t, u)$, $u(0) = u(1) = 0$.
 
 ## Conventions
 
-The uniqueness domain of Theorem 5.4.2 is the **open** ball of radius `t**`, not the closed one as
-the book prints it; `theorem_5_4_2_unique` explains why the closed form is false for `h < ½`.
+* The space $C^2_0[0, 1]$ of Section 5.4.2 is `ContDiffMapIcc.zeroBoundary (zero_le_one : (0 : ℝ)
+  ≤ 1) 2` from `Numlib.Analysis.Calculus.ContDiffMapIcc`: the closed subspace of $C^2[0, 1]$ of the
+  functions that vanish at both endpoints. The norm on $C^k[a, b]$ is
+  $\sum_{j \le k} \|u^{(j)}\|_\infty$, which is the norm (2.1.2) of the book for $k = 1$.
 
-`C²₀[0, 1]` of §5.4.2 is the backbone's
-`ContDiffMapIcc.zeroBoundary (zero_le_one : (0 : ℝ) ≤ 1) 2`
-(`Numlib.Analysis.Calculus.ContDiffMapIcc`), the closed subspace of `C²[0, 1]` of the functions
-vanishing at both endpoints; the norm on `Cᵏ[a, b]` there is `∑_{j ≤ k} ‖u⁽ʲ⁾‖_∞`, which is the
-book's (2.1.2) at `k = 1`.
+## Implementation notes
+
+* The Newton iteration is the backbone's `Newton.step` and `Newton.iterate`, and the modified method
+  is `Newton.chordStep` and `Newton.chordIterate`. `Newton.step` uses Mathlib's
+  `ContinuousLinearMap.inverse`, which is $0$ at an operator that is not invertible. Each theorem
+  that uses the step at a point assumes that $F'$ is invertible there, as an equivalence
+  `e : U ≃L[ℝ] W` with `↑e = F' u`.
+* `AtkinsonHan.Chapter05.newtonStep_eq_self` (a root is a fixed point of the step),
+  `AtkinsonHan.Chapter05.newtonStep_sub_eq` (the increment form $F'(u_n) \delta_n = -F(u_n)$) and
+  `AtkinsonHan.Chapter05.exists_equiv_of_norm_lt` (the perturbation criterion of Theorem 2.3.5 that
+  keeps $F'(u_n)$ invertible) support the numbered results.
+
+## Deviations from the source
+
+* **Theorem 5.4.2, uniqueness** (correction). The book states uniqueness of the root on the closed
+  ball of radius $t^{**} = (1 + \sqrt{1 - 2h})/(aL)$ about $u_0$. This is false for $h < 1/2$; the
+  statement uses the open ball. See `AtkinsonHan.Chapter05.theorem_5_4_2_unique`.
 -/
 
 open Filter Metric Topology
@@ -64,18 +86,25 @@ namespace AtkinsonHan.Chapter05
 variable {U W : Type*} [NormedAddCommGroup U] [NormedSpace ℝ U] [NormedAddCommGroup W]
   [NormedSpace ℝ W]
 
-/-- **(5.4.2)**: one step of Newton's method. -/
+/-- **Equation (5.4.2)** of [han2009theoretical]. The Newton iterates satisfy
+$$u_{n+1} = u_n - [F'(u_n)]^{-1} F(u_n).$$
+
+The iterates are `Newton.iterate F F' u₀`, and the step is `Newton.step`. Where $F'(u_n)$ is not
+invertible, the inverse is $0$ and the step leaves $u_n$ unchanged. -/
 theorem equation_5_4_2 (F : U → W) (F' : U → U →L[ℝ] W) (u₀ : U) (n : ℕ) :
     Newton.iterate F F' u₀ (n + 1) = Newton.step F F' (Newton.iterate F F' u₀ n) :=
   Newton.iterate_succ F F' u₀ n
 
-/-- A root of `F` is a fixed point of the Newton step. -/
+/-- A root of $F$ is a fixed point of the Newton step: if $F(u) = 0$, then
+$u - [F'(u)]^{-1} F(u) = u$. -/
 theorem newtonStep_eq_self {F : U → W} (F' : U → U →L[ℝ] W) {u : U} (hu : F u = 0) :
     Newton.step F F' u = u :=
   Newton.step_eq_self_of_eq_zero F F' hu
 
-/-- The increment form of the Newton step, `F'(u) δ = -F(u)` with `δ = u_{n+1} - u_n`; this is
-how (5.4.7) and (5.4.9) write the iteration in practice. -/
+/-- The increment form of the Newton step. If $F'(u)$ is invertible and
+$u_+ = u - [F'(u)]^{-1} F(u)$ is the Newton step from $u$, then
+$$F'(u)(u_+ - u) = -F(u).$$
+This is the form in which (5.4.7) and (5.4.9) write the iteration. -/
 theorem newtonStep_sub_eq {F : U → W} {F' : U → U →L[ℝ] W} {u : U} (e : U ≃L[ℝ] W)
     (he : (e : U →L[ℝ] W) = F' u) : F' u (Newton.step F F' u - u) = -F u := by
   have hinv : (F' u).inverse = (e.symm : W →L[ℝ] U) := by
@@ -91,10 +120,14 @@ section Complete
 variable [CompleteSpace U] [CompleteSpace W]
 
 omit [CompleteSpace W] in
-/-- Perturbation criterion for the Newton step to be well defined: an operator close enough to an
-invertible one is invertible.  This specializes the backbone's
-`ContinuousLinearEquiv.exists_symm_norm_le_of_add` (`Numlib/Analysis/Normed/Ring/Inverse.lean`,
-the book's Theorem 2.3.5). -/
+/-- The perturbation criterion that keeps the Newton step well defined. Let $U$ be a Banach space,
+let $e : U \to W$ be an invertible bounded linear operator, and let $A \in \mathcal{L}(U, W)$
+with
+$$\|e^{-1}\| \, \|A - e\| < 1.$$
+Then $A$ is invertible.
+
+This specializes `ContinuousLinearEquiv.exists_symm_norm_le_of_add`, which is Theorem 2.3.5 of
+the book. -/
 theorem exists_equiv_of_norm_lt {A : U →L[ℝ] W} (e : U ≃L[ℝ] W)
     (h : ‖(e.symm : W →L[ℝ] U)‖ * ‖A - (e : U →L[ℝ] W)‖ < 1) :
     ∃ e' : U ≃L[ℝ] W, (e' : U →L[ℝ] W) = A := by
@@ -103,9 +136,15 @@ theorem exists_equiv_of_norm_lt {A : U →L[ℝ] W} (e : U ≃L[ℝ] W)
   exact ⟨e', by rw [he']; abel⟩
 
 omit [CompleteSpace U] [CompleteSpace W] in
-/-- **(5.4.5)**: with `T u = u - [F'(u)]⁻¹ F(u)`, `‖T u - u*‖ ≤ (c₀ L / 2) ‖u - u*‖²` where
-`c₀` bounds `‖[F'(u)]⁻¹‖` and `L` is the Lipschitz constant of `F'`.  Proved from the `L/2`
-Taylor estimate `norm_sub_sub_fderiv_le_half_mul_sq` of §5.3. -/
+/-- **Equation (5.4.5)** of [han2009theoretical]. Let $F : U \to W$ with $F(u^*) = 0$. Assume that
+$F$ has the Fréchet derivative $F'(z)$ at every $z$ in the ball $B(u^*, r)$, and that
+$\|F'(z) - F'(w)\| \le L \|z - w\|$ for all $z, w \in B(u^*, r)$. Let $u \in B(u^*, r)$, let
+$F'(u)$ be invertible, and let $\|[F'(u)]^{-1}\| \le c_0$. Then the Newton step
+$T(u) = u - [F'(u)]^{-1} F(u)$ satisfies
+$$\|T(u) - u^*\| \le \frac{c_0 L}{2} \|u - u^*\|^2.$$
+
+The spaces need not be complete. The proof is the Taylor estimate
+`AtkinsonHan.Chapter05.norm_sub_sub_fderiv_le_half_mul_sq` of Section 5.3. -/
 theorem equation_5_4_5 {F : U → W} {F' : U → U →L[ℝ] W} {ustar : U} (hroot : F ustar = 0)
     {r L c₀ : ℝ}
     (hF : ∀ z ∈ ball ustar r, HasFDerivAt F (F' z) z)
@@ -137,13 +176,17 @@ theorem equation_5_4_5 {F : U → W} {F' : U → U →L[ℝ] W} {ustar : U} (hro
     _ = c₀ * L / 2 * ‖u - ustar‖ ^ 2 := by ring
 
 omit [CompleteSpace W] in
-/-- **Theorem 5.4.1** (local convergence of Newton's method).  If `F` is differentiable near a
-root `u*` with `F'(u*)` invertible and `F'` Lipschitz with constant `L` on a ball, then there are
-`δ > 0` and `M > 0` with `M δ < 1` such that from every `u₀` with `‖u₀ - u*‖ ≤ δ` the Newton
-iteration is well defined, converges to `u*`, and satisfies (5.4.3)
-`‖u_{n+1} - u*‖ ≤ M ‖u_n - u*‖²` and (5.4.4) `‖u_n - u*‖ ≤ (M δ)^{2ⁿ}/M`.  The backbone supplies
-the quadratic step estimate (`Newton.exists_ball_norm_step_sub_le`) and the convergence
-(`Newton.tendsto_iterate`); `0 < M` is added so that (5.4.4) is meaningful. -/
+/-- **Theorem 5.4.1** of [han2009theoretical] (local convergence of Newton's method). Let $U$ be a
+Banach space and $F : U \to W$ with $F(u^*) = 0$ and $F'(u^*)$ invertible. Let $r > 0$, let $F$
+have the Fréchet derivative $F'(u)$ at every $u \in B(u^*, r)$, and let
+$\|F'(u) - F'(v)\| \le L \|u - v\|$ for all $u, v \in B(u^*, r)$. Then there are $\delta > 0$
+and $M > 0$ with $M \delta < 1$ such that for every $u_0$ with $\|u_0 - u^*\| \le \delta$: every
+$F'(u_n)$ is invertible, $u_n \to u^*$, and for all $n$
+$$\|u_{n+1} - u^*\| \le M \|u_n - u^*\|^2 \quad (5.4.3), \qquad \|u_n - u^*\| \le \frac{(M
+  \delta)^{2^n}}{M} \quad (5.4.4).$$
+
+The conclusion $M > 0$ makes (5.4.4) meaningful. The backbone supplies the quadratic step
+estimate `Newton.exists_ball_norm_step_sub_le` and the convergence `Newton.tendsto_iterate`. -/
 theorem theorem_5_4_1 {F : U → W} {F' : U → U →L[ℝ] W} {ustar : U} (hroot : F ustar = 0)
     (e : U ≃L[ℝ] W) (he : (e : U →L[ℝ] W) = F' ustar) {r L : ℝ} (hr : 0 < r)
     (hF : ∀ u ∈ ball ustar r, HasFDerivAt F (F' u) u)
@@ -252,15 +295,23 @@ theorem theorem_5_4_1 {F : U → W} {F' : U → U →L[ℝ] W} {ustar : U} (hroo
         _ = (M * δ) ^ 2 ^ (n + 1) / M := h3
 
 set_option linter.unusedSectionVars false in
-/-- **Theorem 5.4.2** (Newton–Kantorovich).  Every hypothesis is checkable at the starting point
-`u₀`: `‖[F'(u₀)]⁻¹‖ ≤ a`, `‖[F'(u₀)]⁻¹ F(u₀)‖ ≤ b`, `F'` is `L`-Lipschitz, and `h = a b L ≤ ½`.
-Then `F` has a root `u*` within `t* = (1 - √(1-2h))/(aL)` of `u₀`, the Newton iterates stay in the
-ball and converge to it, with the a priori bound of the last conjunct.  This is the backbone's
-`Newton.kantorovich` (`Numlib/Nonlinear/Newton.lean`).  The positivity hypotheses `0 < a` and
-`0 < L` are added so that `t*` is not `0/0`.
+/-- **Theorem 5.4.2** of [han2009theoretical] (Newton–Kantorovich theorem). Let $U$ and $W$ be
+Banach spaces and $F : U \to W$, let $F'(u_0)$ be invertible, and let $a > 0$, $b \ge 0$ and
+$L > 0$ satisfy
+$$\|[F'(u_0)]^{-1}\| \le a, \qquad \|[F'(u_0)]^{-1} F(u_0)\| \le b, \qquad h = abL \le
+  \tfrac12.$$
+Let $t^* = (1 - \sqrt{1 - 2h})/(aL) \le r$, let $F$ have the Fréchet derivative $F'(u)$ at every
+$u \in \bar B(u_0, r)$, and let $\|F'(u) - F'(v)\| \le L \|u - v\|$ for all
+$u, v \in \bar B(u_0, r)$. Then there is a root $u^*$ of $F$ with $\|u^* - u_0\| \le t^*$, the
+Newton iterates $u_n$ lie in $\bar B(u_0, r)$ and converge to $u^*$, and if $h > 0$, then for
+all $n$
+$$\|u_n - u^*\| \le \frac{(2h)^{2^n} b}{2^n h}.$$
 
-`[CompleteSpace W]` is kept because the book states the theorem for Banach spaces, although it is
-redundant: `e : U ≃L[ℝ] W` transports completeness from `U`. -/
+The hypotheses $a > 0$ and $L > 0$ make $t^*$ well defined. The completeness of $W$ is kept
+because the book states the theorem for Banach spaces; it follows from the completeness of $U$,
+since $F'(u_0)$ is an isomorphism. The proof is the backbone's `Newton.kantorovich`. The finer
+clauses of the book are `AtkinsonHan.Chapter05.theorem_5_4_2_step`,
+`AtkinsonHan.Chapter05.theorem_5_4_2_unique` and `AtkinsonHan.Chapter05.theorem_5_4_2_sharp`. -/
 theorem theorem_5_4_2 {F : U → W} {F' : U → U →L[ℝ] W} {u₀ : U} {r a b L : ℝ} (ha : 0 < a)
     (hLpos : 0 < L) (hb : 0 ≤ b) (e : U ≃L[ℝ] W) (he : (e : U →L[ℝ] W) = F' u₀)
     (ha' : ‖(e.symm : W →L[ℝ] U)‖ ≤ a) (hb' : ‖e.symm (F u₀)‖ ≤ b)
@@ -279,10 +330,16 @@ theorem theorem_5_4_2 {F : U → W} {F' : U → U →L[ℝ] W} {u₀ : U} {r a b
   rwa [hcomm] at hkey
 
 set_option linter.unusedSectionVars false in
-/-- **Theorem 5.4.2**, the book's localized existence clause: the root is found in
-`B̄(u₁, t* − b)`, the ball around the *first* Newton iterate `u₁ = T u₀`, and the domain of `F`
-need only be a convex set containing `u₀` and that ball.  This is the shape in which the theorem
-is applied when no a priori ball around `u₀` is known. -/
+/-- **Theorem 5.4.2** of [han2009theoretical], existence near the first iterate. Let $U$ and $W$ be
+Banach spaces and $F : U \to W$, let $F'(u_0)$ be invertible, and let $a > 0$, $b \ge 0$ and
+$L > 0$ satisfy $\|[F'(u_0)]^{-1}\| \le a$, $\|[F'(u_0)]^{-1} F(u_0)\| \le b$ and
+$h = abL \le \frac12$. Let $t^* = (1 - \sqrt{1 - 2h})/(aL)$ and let $u_1$ be the first Newton
+iterate. Let $D \subseteq U$ be convex with $u_0 \in D$ and $\bar B(u_1, t^* - b) \subseteq D$,
+let $F$ have the Fréchet derivative $F'(u)$ at every $u \in D$, and let
+$\|F'(u) - F'(v)\| \le L \|u - v\|$ for all $u, v \in D$. Then there is a root $u^*$ of $F$ in
+$\bar B(u_1, t^* - b)$, and the Newton iterates converge to $u^*$.
+
+This is the form in which the theorem is applied when no ball around $u_0$ is known in advance. -/
 theorem theorem_5_4_2_step {F : U → W} {F' : U → U →L[ℝ] W} {u₀ : U} {D : Set U} {a b L : ℝ}
     (ha : 0 < a) (hLpos : 0 < L) (hb : 0 ≤ b) (e : U ≃L[ℝ] W) (he : (e : U →L[ℝ] W) = F' u₀)
     (ha' : ‖(e.symm : W →L[ℝ] U)‖ ≤ a) (hb' : ‖e.symm (F u₀)‖ ≤ b) (hD : Convex ℝ D)
@@ -300,15 +357,20 @@ theorem theorem_5_4_2_step {F : U → W} {F' : U → U →L[ℝ] W} {u₀ : U} {
   rwa [hcomm] at hkey
 
 set_option linter.unusedSectionVars false in
-/-- **Theorem 5.4.2**, the uniqueness clause: the root produced by the Newton–Kantorovich theorem
-is the *only* root of `F` in the domain, within distance `t** = (1 + √(1 − 2h))/(aL)` of `u₀`.
+/-- **Theorem 5.4.2** of [han2009theoretical], uniqueness. Under the hypotheses of
+`AtkinsonHan.Chapter05.theorem_5_4_2`, let the Newton iterates converge to $u^*$. If
+$v \in \bar B(u_0, r)$ is a root of $F$ with
+$$\|v - u_0\| < t^{**} = \frac{1 + \sqrt{1 - 2h}}{aL},$$
+then $v = u^*$.
 
-Statement correction: the book, and the plan taken from it, put uniqueness on the *closed* ball of
-radius `t**`.  That is false whenever `h < ½`.  The scalar majorant `p t = (L/2)t² − t/a + b/a`
-satisfies every hypothesis at `u₀ = 0` and has a second root at distance exactly `t**`, so the
-closed ball of radius `t**` contains a second zero; the open ball is the correct domain, and it is
-what the backbone's `Newton.kantorovich_unique` proves.  (The closed ball of radius `t*` is also a
-uniqueness domain, and that is the form that survives the critical case `h = ½`.) -/
+**Correction.** The book states uniqueness on the closed ball of radius $t^{**}$ about $u_0$.
+This is false whenever $h < \frac12$. The scalar majorant $p(t) = \frac{L}{2} t^2 - t/a + b/a$
+satisfies every hypothesis at $u_0 = 0$, and it has a second root at the distance exactly
+$t^{**}$. The open ball is the correct domain, and the backbone's `Newton.kantorovich_unique`
+proves uniqueness there.
+
+The closed ball of radius $t^*$ is also a domain of uniqueness, and that form remains true in
+the critical case $h = \frac12$. -/
 theorem theorem_5_4_2_unique {F : U → W} {F' : U → U →L[ℝ] W} {u₀ : U} {r a b L : ℝ} (ha : 0 < a)
     (hLpos : 0 < L) (hb : 0 ≤ b) (e : U ≃L[ℝ] W) (he : (e : U →L[ℝ] W) = F' u₀)
     (ha' : ‖(e.symm : W →L[ℝ] U)‖ ≤ a) (hb' : ‖e.symm (F u₀)‖ ≤ b)
@@ -325,13 +387,14 @@ theorem theorem_5_4_2_unique {F : U → W} {F' : U → U →L[ℝ] W} {u₀ : U}
     (by rw [hcomm]; exact hr) hustar hv hvr (by rw [hcomm]; exact hvt)
 
 set_option linter.unusedSectionVars false in
-/-- **Theorem 5.4.2**, the sharp a priori bound: under the hypotheses of the Newton–Kantorovich
-theorem,
+/-- **Theorem 5.4.2** of [han2009theoretical], the sharp a priori bound. Under the hypotheses of
+`AtkinsonHan.Chapter05.theorem_5_4_2`, if the Newton iterates converge to $u^*$, then for all
+$n$
+$$\|u_n - u^*\| \le \frac{[1 - \sqrt{1 - 2h}]^{2^n}}{2^n a L}.$$
 
-  `‖u_n − u*‖ ≤ [1 − √(1 − 2h)]^{2ⁿ} / (2ⁿ a L)`,
-
-which is the book's finer form of the last conjunct of `theorem_5_4_2`.  Together with
-`theorem_5_4_2_step` and `theorem_5_4_2_unique` this is Theorem 5.4.2 as the book states it. -/
+This is the finer form of the last conclusion of `AtkinsonHan.Chapter05.theorem_5_4_2`. With
+`AtkinsonHan.Chapter05.theorem_5_4_2_step` and `AtkinsonHan.Chapter05.theorem_5_4_2_unique`, it
+completes Theorem 5.4.2. -/
 theorem theorem_5_4_2_sharp {F : U → W} {F' : U → U →L[ℝ] W} {u₀ : U} {r a b L : ℝ} (ha : 0 < a)
     (hLpos : 0 < L) (hb : 0 ≤ b) (e : U ≃L[ℝ] W) (he : (e : U →L[ℝ] W) = F' u₀)
     (ha' : ‖(e.symm : W →L[ℝ] U)‖ ≤ a) (hb' : ‖e.symm (F u₀)‖ ≤ b)
@@ -354,20 +417,28 @@ section Chord
 variable {U W : Type*} [NormedAddCommGroup U] [NormedSpace ℝ U] [NormedAddCommGroup W]
   [NormedSpace ℝ W]
 
-/-- **(5.4.11)**: one step of the modified Newton method, in which the derivative is frozen at a
-single invertible operator `A` (in the book, `A = F'(u₀)`): `u_{n+1} = u_n − A⁻¹ F(u_n)`. -/
+/-- **Equation (5.4.11)** of [han2009theoretical]. In the modified Newton method the derivative is
+replaced by one fixed invertible operator $A$ (in the book, $A = F'(u_0)$), and the iterates
+satisfy
+$$u_{n+1} = u_n - A^{-1} F(u_n).$$
+-/
 theorem equation_5_4_11 (F : U → W) (A : U ≃L[ℝ] W) (u₀ : U) (n : ℕ) :
     Newton.chordIterate F A u₀ (n + 1) = Newton.chordStep F A (Newton.chordIterate F A u₀ n) :=
   Newton.chordIterate_succ F A u₀ n
 
-/-- **Exercise 5.4.5**, the modified Newton (chord) method (5.4.11).  If `F` is differentiable near
-a root `u*`, `F'` is Lipschitz there, and the frozen operator `A` is close enough to `F'(u*)` that
-`‖I − A⁻¹ F'(u*)‖ < 1`, then from every sufficiently close start the iteration converges to `u*`,
-*linearly*: `‖u_n − u*‖ ≤ qⁿ ‖u₀ − u*‖` with a rate `q < 1`.  The book's choice `A = F'(u₀)`
-satisfies the hypothesis once `u₀` is close enough to `u*`, by the perturbation theorem.
+/-- **Exercise 5.4.5** of [han2009theoretical], the modified Newton method (5.4.11). Let
+$F : U \to W$ with $F(u^*) = 0$, let $r > 0$, let $F$ have the Fréchet derivative $F'(u)$ at
+every $u \in \bar B(u^*, r)$, and let $\|F'(u) - F'(u^*)\| \le L \|u - u^*\|$ for these $u$. Let
+$A : U \to W$ be an invertible bounded linear operator with
+$$\|I - A^{-1} F'(u^*)\| < 1.$$
+Then there are $\delta > 0$ and $0 \le q < 1$ such that for every $u_0 \in \bar B(u^*, \delta)$
+the iterates of the modified method satisfy $\|u_n - u^*\| \le q^n \|u_0 - u^*\|$ for all $n$,
+and converge to $u^*$.
 
-The rate is linear and not quadratic, which is exactly the point of the exercise: freezing the
-derivative costs an order of convergence. -/
+The convergence is linear and not quadratic: the fixed derivative costs an order of convergence.
+The book's choice $A = F'(u_0)$ satisfies the hypothesis when $u_0$ is close enough to $u^*$, by
+the perturbation theorem. The Lipschitz condition is needed only at the point $u^*$, and the
+spaces need not be complete. -/
 theorem exercise_5_4_5 {F : U → W} {F' : U → U →L[ℝ] W} {ustar : U} (hroot : F ustar = 0)
     {r L : ℝ} (hr : 0 < r) (A : U ≃L[ℝ] W)
     (hF : ∀ u ∈ closedBall ustar r, HasFDerivAt F (F' u) u)
@@ -382,8 +453,11 @@ end Chord
 
 section System
 
-/-- **(5.4.7)**: Newton's method for a nonlinear system `F(x) = 0` in `ℝᵈ`.  Each step solves the
-linear system `F'(x_n) δ_n = -F(x_n)` and sets `x_{n+1} = x_n + δ_n`. -/
+/-- **Equation (5.4.7)** of [han2009theoretical]. Newton's method for a nonlinear system $F(x) = 0$
+in $\mathbb{R}^d$. If $F'(x)$ is invertible and $x_+$ is the Newton step from $x$, then
+$\delta = x_+ - x$ solves the linear system $F'(x) \delta = -F(x)$, and $x_+ = x + \delta$.
+
+The space $\mathbb{R}^d$ is `EuclideanSpace ℝ (Fin d)`. -/
 theorem equation_5_4_7 {d : ℕ} {F : EuclideanSpace ℝ (Fin d) → EuclideanSpace ℝ (Fin d)}
     {F' : EuclideanSpace ℝ (Fin d) → EuclideanSpace ℝ (Fin d) →L[ℝ] EuclideanSpace ℝ (Fin d)}
     {x : EuclideanSpace ℝ (Fin d)} (e : EuclideanSpace ℝ (Fin d) ≃L[ℝ] EuclideanSpace ℝ (Fin d))
@@ -400,36 +474,40 @@ open Set IntegralOperator
 
 variable {a b : ℝ}
 
-/-- **(5.4.8)**: the Fréchet derivative of the operator `F(u) = u − K(u)` of the nonlinear integral
-equation, `K` the Urysohn operator of `k`, is `F'(u) = I − K'(u)` — the identity minus the Fredholm
-operator whose kernel is `∂_u k(t, s, u(s))`.  This is Example 5.3.10 (`example_5_3_10`) together
-with the derivative of the identity. -/
+/-- **Equation (5.4.8)** of [han2009theoretical]. Let $a \le b$, and let $k$ and $k_z$ be continuous
+functions on $[a, b] \times [a, b] \times \mathbb{R}$ such that $k_z(t, s, z)$ is the derivative
+of $z \mapsto k(t, s, z)$. Let $\mathcal{K}$ be the Urysohn operator of $k$ on $C[a, b]$. Then
+the operator $F(v) = v - \mathcal{K}(v)$ has, at every $u \in C[a, b]$, the Fréchet derivative
+$$F'(u) = I - \mathcal{K}'(u),$$
+where $\mathcal{K}'(u)$ is the Fredholm operator with the kernel $k_z(t, s, u(s))$.
+
+This is `AtkinsonHan.Chapter05.example_5_3_10` together with the derivative of the identity. -/
 theorem equation_5_4_8 (hab : a ≤ b) {k kz : C(Icc a b × Icc a b × ℝ, ℝ)}
     (hk : ∀ (x y : Icc a b) (z : ℝ), HasDerivAt (fun t => k (x, y, t)) (kz (x, y, z)) z)
     (u : C(Icc a b, ℝ)) :
     HasFDerivAt (fun v => v - urysohn hab k v) (1 - fredholm hab (urysohnDerivKernel kz u)) u :=
   (hasFDerivAt_id u).sub (example_5_3_10 hab hk u)
 
-/-- `I − K` applied to a function, evaluated at a point: the left-hand side of a linear integral
-equation of the second kind. -/
+/-- The operator $I - \mathcal{K}$, for the Fredholm operator $\mathcal{K}$ of a kernel $K$, maps
+$v$ to $t \mapsto v(t) - \int_a^b K(t, s) v(s)\, ds$. -/
 private theorem one_sub_fredholm_apply (hab : a ≤ b) (K : C(Icc a b × Icc a b, ℝ))
     (v : C(Icc a b, ℝ)) (t : Icc a b) :
     (1 - fredholm hab K) v t
       = v t - ∫ s in a..b, K (t, projIcc a b hab s) * v (projIcc a b hab s) :=
   rfl
 
-/-- **(5.4.9)–(5.4.10)**: Newton's method for the nonlinear integral equation
-`F(u)(t) = u(t) − ∫ₐᵇ k(t, s, u(s)) ds = 0`.  Writing `δ_{n+1} = u_{n+1} − u_n`, the step (5.4.9)
-`F'(u_n) δ_{n+1} = −F(u_n)` is the **linear** integral equation (5.4.10)
+/-- **Equations (5.4.9)–(5.4.10)** of [han2009theoretical]. Let $k$ and $k_z$ be as in
+`AtkinsonHan.Chapter05.equation_5_4_8`, let $F(v) = v - \mathcal{K}(v)$, and let
+$F'(v) = I - \mathcal{K}'(v)$ for all $v \in C[a, b]$. Let $F'(u)$ be invertible, and let
+$\delta = u_+ - u$ be the increment of the Newton step from $u$. Then $\delta$ solves the linear
+integral equation of the second kind
+$$\delta(t) - \int_a^b k_z(t, s, u(s))\, \delta(s)\, ds = -\Bigl(u(t) - \int_a^b k(t, s, u(s))\,
+  ds\Bigr) = -F(u)(t)$$
+for every $t \in [a, b]$. So each Newton step for the nonlinear integral equation costs the
+solution of one linear one.
 
-`δ_{n+1}(t) − ∫ₐᵇ ∂_u k(t, s, u_n(s)) δ_{n+1}(s) ds = −F(u_n)(t)`,
-
-a Fredholm equation of the second kind whose kernel is the partial derivative of `k` along the
-current iterate.  So each Newton step for a nonlinear integral equation costs the solution of one
-linear one.
-
-Invertibility of `F'(u_n)` is a hypothesis in the book too; it is carried here as the equivalence
-`e`, exactly as in `equation_5_4_7`. -/
+The book also assumes that $F'(u_n)$ is invertible. Here this is the equivalence `e`, as in
+`AtkinsonHan.Chapter05.equation_5_4_7`. -/
 theorem equation_5_4_10 (hab : a ≤ b) {k kz : C(Icc a b × Icc a b × ℝ, ℝ)}
     {F : C(Icc a b, ℝ) → C(Icc a b, ℝ)} (hF : ∀ v, F v = v - urysohn hab k v)
     {F' : C(Icc a b, ℝ) → C(Icc a b, ℝ) →L[ℝ] C(Icc a b, ℝ)}
@@ -447,14 +525,13 @@ theorem equation_5_4_10 (hab : a ≤ b) {k kz : C(Icc a b × Icc a b × ℝ, ℝ
     urysohnDerivKernel_apply, urysohn_apply] at h2
   exact h2
 
-/-- **(5.4.11)–(5.4.12)**: the modified Newton method for the same equation freezes the kernel of
-the linearization at the starting function `u₀`, so that every step solves the linear integral
-equation
-
-`δ_{n+1}(t) − ∫ₐᵇ ∂_u k(t, s, u₀(s)) δ_{n+1}(s) ds = −F(u_n)(t)`
-
-with one and the same kernel — which is what makes the modified method cheap, and, by
-`exercise_5_4_5`, only linearly convergent. -/
+/-- **Equations (5.4.11)–(5.4.12)** of [han2009theoretical]. Let $k$, $k_z$ and $F$ be as in
+`AtkinsonHan.Chapter05.equation_5_4_10`, let $u_0 \in C[a, b]$, and let
+$A = I - \mathcal{K}'(u_0)$ be invertible. Let $\delta = u_+ - u$ be the increment of the
+modified Newton step $u_+ = u - A^{-1} F(u)$ from any $u$. Then for every $t \in [a, b]$
+$$\delta(t) - \int_a^b k_z(t, s, u_0(s))\, \delta(s)\, ds = -F(u)(t).$$
+So every step solves a linear integral equation with the same kernel. This makes the modified
+method cheap, and by `AtkinsonHan.Chapter05.exercise_5_4_5` only linearly convergent. -/
 theorem equation_5_4_12 (hab : a ≤ b) {k kz : C(Icc a b × Icc a b × ℝ, ℝ)}
     {F : C(Icc a b, ℝ) → C(Icc a b, ℝ)} (hF : ∀ v, F v = v - urysohn hab k v)
     (u₀ : C(Icc a b, ℝ)) (A : C(Icc a b, ℝ) ≃L[ℝ] C(Icc a b, ℝ))
@@ -484,20 +561,20 @@ local notation "C²" => ContDiffMapIcc (zero_le_one : (0 : ℝ) ≤ 1) 2
 
 local notation "C²₀" => ContDiffMapIcc.zeroBoundary (zero_le_one : (0 : ℝ) ≤ 1) 2
 
-/-- **§5.4.2**, Newton's method for the two-point boundary value problem `u'' = f(t, u)` on
-`(0, 1)` with `u(0) = u(1) = 0`.  Taking `U = C²₀[0, 1]` and `F(u)(t) = u''(t) - f(t, u(t))`, an
-operator from `U` into `C[0, 1]`, the Fréchet derivative of `F` at `u` is
+/-- **Section 5.4.2** of [han2009theoretical], Newton's method for the two-point boundary value
+problem $u'' = f(t, u)$ on $(0, 1)$, $u(0) = u(1) = 0$. Let $f$ and $f_u$ be continuous
+functions on $[0, 1] \times \mathbb{R}$ such that $f_u(t, z)$ is the derivative of
+$z \mapsto f(t, z)$. Let $F : C^2_0[0, 1] \to C[0, 1]$ be $F(v)(t) = v''(t) - f(t, v(t))$. Then
+for every $u \in C^2_0[0, 1]$, $F$ has the Fréchet derivative at $u$ given by
+$$F'(u)(y)(t) = y''(t) - f_u(t, u(t))\, y(t).$$
+So each Newton step (5.4.9) solves a linear two-point boundary value problem, whose coefficient
+$f_u(\cdot, u(\cdot))$ is taken at the current iterate.
 
-`F'(u)(y)(t) = y''(t) - ∂f/∂u(t, u(t)) y(t)`,
-
-so each Newton step (5.4.9) solves a *linear* two-point boundary value problem, with the
-coefficient `∂f/∂u(·, u(·))` frozen at the current iterate.
-
-`C²₀[0, 1]` is the backbone's `ContDiffMapIcc.zeroBoundary (zero_le_one : (0 : ℝ) ≤ 1) 2`
-(`Numlib.Analysis.Calculus.ContDiffMapIcc`), a closed subspace of the Banach space `C²[0, 1]`.  The
-two pieces of the derivative are the bounded linear map `u ↦ u''` and the Nemytskii operator
-`u ↦ f(·, u(·))` (`Numlib.Nonlinear.Nemytskii`), whose derivative is multiplication by
-`∂f/∂u(·, u(·))` — the same argument as in Example 5.3.10. -/
+The space $C^2_0[0, 1]$ is `ContDiffMapIcc.zeroBoundary (zero_le_one : (0 : ℝ) ≤ 1) 2` from
+`Numlib.Analysis.Calculus.ContDiffMapIcc`, a closed subspace of the Banach space $C^2[0, 1]$.
+The derivative has two parts: the bounded linear map $u \mapsto u''$, and the Nemytskii operator
+$u \mapsto f(\cdot, u(\cdot))$ from `Numlib.Nonlinear.Nemytskii`, whose derivative is
+multiplication by $f_u(\cdot, u(\cdot))$. The argument is the same as in Example 5.3.10. -/
 theorem example_5_4_bvp {f fu : C(Set.Icc (0 : ℝ) 1 × ℝ, ℝ)}
     (hf : ∀ (t : Set.Icc (0 : ℝ) 1) (z : ℝ), HasDerivAt (fun s => f (t, s)) (fu (t, z)) z)
     (F : C²₀ → C(Set.Icc (0 : ℝ) 1, ℝ))

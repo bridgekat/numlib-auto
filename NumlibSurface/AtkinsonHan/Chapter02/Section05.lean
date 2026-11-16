@@ -9,47 +9,92 @@ import Numlib.MeasureTheory.Function.LpSpace.Duality
 import Numlib.MeasureTheory.Integral.IntervalIntegral
 
 /-!
-# Atkinson–Han §2.5: linear functionals
+# Atkinson and Han, Section 2.5: Linear functionals
 
-Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework*, 3rd edition, Springer, 2009, §2.5: the book's dual space `V'` of bounded linear
-functionals is Mathlib's `StrongDual 𝕜 V`.
+This module formalizes Section 2.5 of [han2009theoretical]. The dual space $V'$ of a normed space
+$V$ is the space of bounded linear functionals on $V$. The Hahn–Banach theorem extends a bounded
+linear functional from a subspace to the whole space with the same norm, and its generalized form
+extends a linear functional dominated by a sublinear functional. Consequences are the norming
+functionals and the formula
+$$\|v\| = \sup_{\ell \in V', \ \|\ell\| = 1} |\ell(v)|.$$
+On a Hilbert space the Riesz representation theorem writes every $\ell \in V'$ as $\ell(v) = (v, u)$
+with a unique $u$ and $\|\ell\| = \|u\|$. The examples identify $(L^p(\Omega))'$ with
+$L^{p'}(\Omega)$ for $1 \le p < \infty$, show that $(L^\infty(\Omega))'$ is larger than
+$L^1(\Omega)$ by a Hahn–Banach extension of a point evaluation, and compute the Riesz representer of
+a point evaluation on $H^1(a, b)$.
 
-The book's inner product `(u, v)` is linear in its *first* argument while Mathlib's `⟪u, v⟫` is
-linear in its second, so the book's `ℓ(v) = (v, u)` is written `ℓ v = inner 𝕜 u v` below.
+The proofs specialize Mathlib's Hahn–Banach and Riesz theorems, the $L^p$ duality of
+`Numlib.MeasureTheory.Function.LpSpace.Duality`, and the space $H^1(a, b)$ of
+`Numlib.Analysis.Sobolev.Interval`.
+
+## Main definitions
+
+* Example 2.5.3, `AtkinsonHan.Chapter02.cosetLinfty`: the coset $[v] \in L^\infty(0, 1)$ of a
+  function $v \in C[0, 1]$.
+* Example 2.5.3, `AtkinsonHan.Chapter02.contCosets`: the subspace $V_0 \subseteq L^\infty(0, 1)$ of
+  the cosets of continuous functions.
+* Example 2.5.3, `AtkinsonHan.Chapter02.evalCoset`: the point evaluation $\ell_c([v]) = v(c)$ on
+  $V_0$, (2.5.3).
+* Definition 2.5.4, `AtkinsonHan.Chapter02.IsSublinear`: a sublinear functional.
 
 ## Main results
 
-* `IsSublinear`, `isSublinear_iff` — Definition 2.5.4 and its bridge to Mathlib's hypotheses.
-* `theorem_2_5_2`, `theorem_2_5_5` — the Hahn–Banach theorem and its generalized (sublinear) form.
-* `corollary_2_5_6`, `corollary_2_5_7` — norming functionals and the dual description (2.5.4) of
-  the norm.
-* `theorem_2_5_8` — the Riesz representation theorem, (2.5.5) and (2.5.6).
-* `example_2_5_9_l2`, `example_2_5_9` — Example 2.5.9: the identification of `(L²(Ω))'` with
-  `L²(Ω)`, and the representer of point evaluation on `H¹(a, b)`, which solves (2.5.8).
-* `example_2_5_1`, `example_2_5_1_top` — Example 2.5.1: `(Lᵖ(Ω))' = L^{p'}(Ω)` for `1 ≤ p < ∞`
-  through the pairing (2.5.1), and the dual of `L^∞(Ω)` strictly larger than `L¹(Ω)`.
-* `cosetLinfty`, `contCosets`, `evalCoset`, `example_2_5_3` — Example 2.5.3: the point evaluation
-  `ℓ_c([v]) = v(c)` on the cosets of continuous functions in `L^∞(0, 1)`, its Hahn–Banach
-  extension of norm one, and the fact that no such extension is given by an `L¹` function.
+* Example 2.5.1, `AtkinsonHan.Chapter02.example_2_5_1`: for $1 \le p < \infty$, the pairing (2.5.1)
+  identifies $L^{p'}(\Omega)$ isometrically with $(L^p(\Omega))'$.
+* Example 2.5.1, `AtkinsonHan.Chapter02.example_2_5_1_top`: some bounded linear functional on
+  $L^\infty(\Omega)$ is not given by (2.5.1) for any $u \in L^1(\Omega)$.
+* Theorem 2.5.2, `AtkinsonHan.Chapter02.theorem_2_5_2`: the Hahn–Banach theorem.
+* Example 2.5.3, `AtkinsonHan.Chapter02.example_2_5_3`: $\|\ell_c\| = 1$, $\ell_c$ has a Hahn–Banach
+  extension to $L^\infty(0, 1)$ of norm $1$, and no extension is given by an $L^1$ function.
+* Definition 2.5.4, `AtkinsonHan.Chapter02.isSublinear_iff`: Definition 2.5.4 is equivalent to the
+  hypotheses of Mathlib's Hahn–Banach theorem.
+* Theorem 2.5.5, `AtkinsonHan.Chapter02.theorem_2_5_5`: the generalized Hahn–Banach theorem, for a
+  sublinear functional.
+* Corollary 2.5.6, `AtkinsonHan.Chapter02.corollary_2_5_6`: every $v \neq 0$ has a functional $\ell$
+  with $\|\ell\| = 1$ and $\ell(v) = \|v\|$.
+* Corollary 2.5.7, `AtkinsonHan.Chapter02.corollary_2_5_7`: the formula (2.5.4) for $\|v\|$.
+* Theorem 2.5.8, `AtkinsonHan.Chapter02.theorem_2_5_8`: the Riesz representation theorem, with
+  (2.5.5) and (2.5.6).
+* Example 2.5.9, `AtkinsonHan.Chapter02.example_2_5_9_l2`: $(L^2(\Omega))' = L^2(\Omega)$ by the
+  Riesz representation.
+* Example 2.5.9, `AtkinsonHan.Chapter02.example_2_5_9`: the point evaluation $\ell(v) = v(c)$ on
+  $H^1(a, b)$ has a unique Riesz representer, characterized by (2.5.8).
 
-`H¹(a, b)` is the backbone's `SobolevInterval 1 a b`
-(`Numlib/Analysis/Sobolev/Interval.lean`), a Hilbert space whose inner product is
-`(u, v)_{H¹} = ∫_a^b (u' v' + u v)` (`SobolevInterval.inner_eq_intervalIntegral`), and
-point evaluation at `c ∈ [a, b]` is bounded on it because `H¹(a, b)` embeds in `C[a, b]`
-(`SobolevInterval.toContinuousMap`), which is the hint of Exercise 2.5.5.
+## Conventions
 
-## Examples 2.5.1 and 2.5.3
+* The book's inner product $(u, v)$ is linear in its first argument, and Mathlib's `inner 𝕜 u v` is
+  linear in its second argument. Therefore the book's $\ell(v) = (v, u)$ is written
+  `ℓ v = inner 𝕜 u v`.
 
-The `Lᵖ`–`L^{p'}` duality is the backbone's Riesz representation theorem
-`MeasureTheory.Lp.dualEquiv` (`Numlib/MeasureTheory/Function/LpSpace/Duality.lean`), stated on
-any σ-finite measure, so Example 2.5.1 is proved for an arbitrary `Ω ⊆ ℝ^d` rather than the
-book's bounded open set; its `p = ∞` clause is the backbone's
-`MeasureTheory.Lp.not_surjective_toDual_top`. Example 2.5.3 builds the book's `V₀`, `ℓ_c` and
-`ℓ̂_c` explicitly; that `ℓ̂_c` is not an `L¹` function is proved for every extension of `ℓ_c`,
-by the argument of `MeasureTheory.Lp.exists_strongDual_top_apply_eq`
-(`toDual_ne_of_forall_contDiff_apply_eq`). The book's further properties of `ℓ̂_c` (locality and
-the bounds `m ≤ ℓ̂_c([v]) ≤ M`) are stated without proof and are not restated.
+## Implementation notes
+
+* The dual space $V'$ is Mathlib's `StrongDual 𝕜 V`.
+* The space $H^1(a, b)$ is the backbone's `SobolevInterval 1 a b`. It is a Hilbert space with the
+  inner product $(u, v)_{H^1} = \int_a^b (u'v' + uv) \, dx$
+  (`SobolevInterval.inner_eq_intervalIntegral`). Point evaluation at $c \in [a, b]$ is bounded on
+  it, because $H^1(a, b)$ embeds in $C[a, b]$ (`SobolevInterval.toContinuousMap`); this is the hint
+  of Exercise 2.5.5.
+* The duality of $L^p$ and $L^{p'}$ is the backbone's Riesz representation theorem
+  `MeasureTheory.Lp.dualEquiv`, stated for any σ-finite measure. The case $p = \infty$ of Example
+  2.5.1 is the backbone's `MeasureTheory.Lp.not_surjective_toDual_top`.
+* Example 2.5.3 constructs the book's $V_0$, $\ell_c$ and $\hat\ell_c$. That $\hat\ell_c$ is not
+  given by an $L^1$ function is proved for every extension of $\ell_c$, by the argument of
+  `MeasureTheory.Lp.exists_strongDual_top_apply_eq`, through
+  `MeasureTheory.Lp.toDual_ne_of_forall_contDiff_apply_eq`.
+
+## Deviations from the source
+
+* **Example 2.5.1** (generalization). The book takes $\Omega \subseteq \mathbb{R}^d$ bounded and
+  open. The identification $(L^p(\Omega))' = L^{p'}(\Omega)$ for $1 \le p < \infty$ holds for every
+  set $\Omega$. See `AtkinsonHan.Chapter02.example_2_5_1`.
+
+## Not formalized
+
+* **Example 2.5.3, further properties of $\hat\ell_c$.** The book states them without proof: the
+  locality of $\hat\ell_c$, the bounds $m \le \hat\ell_c([v]) \le M$ in terms of the values of $v$
+  in a neighbourhood of $c$, and the value $v(c)$ when $v$ is continuous at $c$.
+* **Example 2.5.9, the boundary value problem.** The book calls the representer $u$ the generalized
+  solution of $-u'' + u = \delta(x - c)$ with $u'(a) = u'(b) = 0$.
 -/
 
 open Filter Topology
@@ -60,23 +105,34 @@ variable {𝕜 V : Type*} [RCLike 𝕜] [NormedAddCommGroup V] [NormedSpace 𝕜
 
 /-! ### Theorem 2.5.2: the Hahn–Banach theorem -/
 
-/-- **Hahn–Banach theorem** (Theorem 2.5.2). A bounded linear functional on a subspace `V₀` of a
-normed space extends to a bounded linear functional on the whole space with the same norm. -/
+/-- **Theorem 2.5.2** of [han2009theoretical] (Hahn–Banach theorem). Let $V$ be a normed space over
+$\mathbb{K}$, let $V_0$ be a subspace of $V$, and let $\ell \in V_0'$. Then there is an
+$\hat\ell \in V'$ with $\hat\ell(v) = \ell(v)$ for all $v \in V_0$ and
+$\|\hat\ell\| = \|\ell\|$. -/
 theorem theorem_2_5_2 (V₀ : Submodule 𝕜 V) (ℓ : StrongDual 𝕜 V₀) :
     ∃ ℓhat : StrongDual 𝕜 V, (∀ v : V₀, ℓhat v = ℓ v) ∧ ‖ℓhat‖ = ‖ℓ‖ :=
   exists_extension_norm_eq V₀ ℓ
 
 /-! ### Definition 2.5.4 and Theorem 2.5.5: the generalized Hahn–Banach theorem -/
 
-/-- **Sublinear functional** (Definition 2.5.4): `p` is subadditive and positively homogeneous.
-The book states positive homogeneity for all `α ≥ 0`; `isSublinear_iff` shows this is the same as
-Mathlib's `α > 0` form. -/
+/-- **Definition 2.5.4** of [han2009theoretical]. Let $E$ be a real linear space. A functional
+$p : E \to \mathbb{R}$ is **sublinear** if
+$$p(u + v) \le p(u) + p(v) \quad \text{and} \quad p(\alpha v) = \alpha \, p(v)$$
+for all $u, v \in E$ and all $\alpha \ge 0$.
+
+The book states positive homogeneity for all $\alpha \ge 0$.
+`AtkinsonHan.Chapter02.isSublinear_iff` shows that this is equivalent to the form for
+$\alpha > 0$ that Mathlib uses. -/
 def IsSublinear {E : Type*} [AddCommGroup E] [Module ℝ E] (p : E → ℝ) : Prop :=
   (∀ u v, p (u + v) ≤ p u + p v) ∧ ∀ (α : ℝ) (v : E), 0 ≤ α → p (α • v) = α * p v
 
-/-- Bridge from Definition 2.5.4 to the hypotheses `N_add` and `N_hom` of Mathlib's
-`exists_extension_of_le_sublinear`: positive homogeneity for `α > 0` already implies it for
-`α = 0`, because `p 0 = p (2 • 0) = 2 p 0`. -/
+/-- Let $E$ be a real linear space and $p : E \to \mathbb{R}$. Then $p$ is sublinear in the sense of
+Definition 2.5.4 of [han2009theoretical] if and only if $p(u + v) \le p(u) + p(v)$ for all
+$u, v$ and $p(cv) = c \, p(v)$ for all $c > 0$ and all $v$.
+
+The right side is the pair of hypotheses `N_add` and `N_hom` of Mathlib's
+`exists_extension_of_le_sublinear`. Homogeneity for $c > 0$ gives the case $c = 0$, because
+$p(0) = p(2 \cdot 0) = 2 p(0)$. -/
 theorem isSublinear_iff {E : Type*} [AddCommGroup E] [Module ℝ E] (p : E → ℝ) :
     IsSublinear p ↔
       (∀ u v, p (u + v) ≤ p u + p v) ∧ ∀ c : ℝ, 0 < c → ∀ v : E, p (c • v) = c * p v := by
@@ -89,9 +145,11 @@ theorem isSublinear_iff {E : Type*} [AddCommGroup E] [Module ℝ E] (p : E → �
       linarith
     rw [← hα', zero_smul, hzero, zero_mul]
 
-/-- **Generalized Hahn–Banach theorem** (Theorem 2.5.5). On a real vector space, a linear
-functional on a subspace dominated by a sublinear functional `p` extends to the whole space,
-still dominated by `p`. -/
+/-- **Theorem 2.5.5** of [han2009theoretical] (generalized Hahn–Banach theorem). Let $E$ be a real
+linear space, let $V_0$ be a subspace of $E$, let $p$ be a sublinear functional on $E$, and let
+$\ell$ be a linear functional on $V_0$ with $\ell(v) \le p(v)$ for all $v \in V_0$. Then there
+is a linear functional $\hat\ell$ on $E$ with $\hat\ell(v) = \ell(v)$ for all $v \in V_0$ and
+$\hat\ell(v) \le p(v)$ for all $v \in E$. -/
 theorem theorem_2_5_5 {E : Type*} [AddCommGroup E] [Module ℝ E] (V₀ : Submodule ℝ E) (p : E → ℝ)
     (hp : IsSublinear p) (ℓ : V₀ →ₗ[ℝ] ℝ) (hℓ : ∀ v : V₀, ℓ v ≤ p v) :
     ∃ ℓhat : E →ₗ[ℝ] ℝ, (∀ v : V₀, ℓhat v = ℓ v) ∧ ∀ v, ℓhat v ≤ p v := by
@@ -100,13 +158,16 @@ theorem theorem_2_5_5 {E : Type*} [AddCommGroup E] [Module ℝ E] (V₀ : Submod
 
 /-! ### Corollaries 2.5.6 and 2.5.7 -/
 
-/-- **Norming functional** (Corollary 2.5.6). For every nonzero `v` there is a functional of norm
-one attaining `‖v‖` at `v`. -/
+/-- **Corollary 2.5.6** of [han2009theoretical]. Let $V$ be a normed space over $\mathbb{K}$ and let
+$v \in V$, $v \neq 0$. Then there is an $\ell \in V'$ with $\|\ell\| = 1$ and $\ell(v) = \|v\|$. -/
 theorem corollary_2_5_6 (v : V) (hv : v ≠ 0) : ∃ ℓ : StrongDual 𝕜 V, ‖ℓ‖ = 1 ∧ ℓ v = ‖v‖ :=
   exists_dual_vector 𝕜 v (norm_ne_zero_iff.mpr hv)
 
-/-- **(2.5.4)** (Corollary 2.5.7): the norm of `v` is the supremum of `|ℓ(v)|` over the unit
-sphere of the dual space. -/
+/-- **Corollary 2.5.7** of [han2009theoretical], formula (2.5.4). Let $V$ be a normed space over
+$\mathbb{K}$ and let $v \in V$. Then
+$$\|v\| = \sup \{ |\ell(v)| : \ell \in V', \ \|\ell\| = 1 \}.$$
+On the zero space no functional has norm $1$, the set is empty, and both sides are $0$, because
+`sSup ∅ = 0`. -/
 theorem corollary_2_5_7 (v : V) :
     ‖v‖ = sSup {r : ℝ | ∃ ℓ : StrongDual 𝕜 V, ‖ℓ‖ = 1 ∧ r = ‖ℓ v‖} := by
   have hbdd : ∀ r ∈ {r : ℝ | ∃ ℓ : StrongDual 𝕜 V, ‖ℓ‖ = 1 ∧ r = ‖ℓ v‖}, r ≤ ‖v‖ := by
@@ -122,9 +183,12 @@ theorem corollary_2_5_7 (v : V) :
 
 /-! ### Theorem 2.5.8: the Riesz representation theorem -/
 
-/-- **Riesz representation theorem** (Theorem 2.5.8). Every bounded linear functional `ℓ` on a
-Hilbert space is `ℓ(v) = (v, u)` for a unique `u` (2.5.5), and `‖ℓ‖ = ‖u‖` (2.5.6). In Mathlib's
-convention the book's `(v, u)` is `inner 𝕜 u v`, and the representer `u` is
+/-- **Theorem 2.5.8** of [han2009theoretical] (Riesz representation theorem). Let $H$ be a Hilbert
+space over $\mathbb{K}$ and let $\ell \in H'$. Then there is a unique $u \in H$ with
+$$\ell(v) = (v, u) \quad \text{for all } v \in H, \qquad (2.5.5)$$
+and $\|\ell\| = \|u\|$ (2.5.6).
+
+The book's $(v, u)$ is `inner 𝕜 u v`. The norm identity is stated for the representer
 `(InnerProductSpace.toDual 𝕜 H).symm ℓ`. -/
 theorem theorem_2_5_8 {H : Type*} [NormedAddCommGroup H] [InnerProductSpace 𝕜 H] [CompleteSpace H]
     (ℓ : StrongDual 𝕜 H) :
@@ -140,7 +204,7 @@ theorem theorem_2_5_8 {H : Type*} [NormedAddCommGroup H] [InnerProductSpace 𝕜
       rw [← this, LinearIsometryEquiv.symm_apply_apply]
   · exact ((InnerProductSpace.toDual 𝕜 H).symm.norm_map ℓ).symm
 
-/-! ### Example 2.5.9: the Riesz representer of point evaluation on `H¹(a, b)` -/
+/-! ### Example 2.5.9: the Riesz representer of point evaluation on $H^1(a, b)$ -/
 
 section Example259
 
@@ -148,22 +212,28 @@ open MeasureTheory Set
 
 variable {a b : ℝ}
 
-/-- **Example 2.5.9**, the `L²` half: for `Ω ⊆ ℝ^d` the Riesz representation theorem puts the
-bounded linear functionals on `L²(Ω)` in one-to-one correspondence with `L²(Ω)` itself through
-(2.5.5), so `(L²(Ω))' = L²(Ω)`. It is `theorem_2_5_8` read on `L²(Ω)`. -/
+/-- **Example 2.5.9** of [han2009theoretical], the space $L^2(\Omega)$. Let
+$\Omega \subseteq \mathbb{R}^d$ and let $\ell$ be a bounded linear functional on the real space
+$L^2(\Omega)$. Then there is a unique $u \in L^2(\Omega)$ with $\ell(v) = (v, u)$ for all
+$v \in L^2(\Omega)$. Thus $(L^2(\Omega))' = L^2(\Omega)$ through (2.5.5).
+
+This is `AtkinsonHan.Chapter02.theorem_2_5_8` for $H = L^2(\Omega)$. The set $\Omega$ is
+arbitrary, and the measure is Lebesgue measure restricted to $\Omega$. -/
 theorem example_2_5_9_l2 {d : ℕ} (Ω : Set (EuclideanSpace ℝ (Fin d)))
     (ℓ : StrongDual ℝ (Lp ℝ 2 (volume.restrict Ω))) :
     ∃! u : Lp ℝ 2 (volume.restrict Ω), ∀ v, ℓ v = inner ℝ u v :=
   (theorem_2_5_8 ℓ).1
 
-/-- **Example 2.5.9**, the `H¹(a, b)` half: for `c ∈ [a, b]` the functional `ℓ(v) = v(c)` of
-(2.5.7) has a unique Riesz representer `u ∈ H¹(a, b)`, characterized by (2.5.8),
+/-- **Example 2.5.9** of [han2009theoretical], the space $H^1(a, b)$. Let $a < b$ and
+$c \in [a, b]$. Then there is a unique $u \in H^1(a, b)$ such that
+$$\int_a^b \big( u'(x) v'(x) + u(x) v(x) \big) \, dx = v(c) \quad \text{for every } v \in H^1(a,
+  b). \qquad (2.5.8)$$
+Thus $u$ is the Riesz representer of the functional $\ell(v) = v(c)$ of (2.5.7).
 
-`∫_a^b (u'(x) v'(x) + u(x) v(x)) dx = v(c)` for every `v ∈ H¹(a, b)`.
-
-Here `v(c)` is the value at `c` of the continuous representative of `v`, the embedding
-`H¹(a, b) ↪ C[a, b]`. The book calls `u` the generalized solution of `-u'' + u = δ(x - c)` with
-`u'(a) = u'(b) = 0`; that boundary value problem is not formalized. -/
+Here $v(c)$ is the value at $c$ of the continuous representative of $v$, given by the embedding
+`SobolevInterval.toContinuousMap` of $H^1(a, b)$ in $C[a, b]$. The book calls $u$ the
+generalized solution of $-u'' + u = \delta(x - c)$ with $u'(a) = u'(b) = 0$. This boundary value
+problem is not formalized. -/
 theorem example_2_5_9 (hab : a < b) (c : Icc a b) :
     ∃! u : SobolevInterval 1 a b, ∀ v : SobolevInterval 1 a b,
       (∫ x in a..b, (SobolevInterval.deriv u 1 x * SobolevInterval.deriv v 1 x
@@ -183,18 +253,27 @@ section Example251
 open MeasureTheory Set
 open scoped ENNReal
 
-/-! ### Example 2.5.1: `(Lᵖ(Ω))' = L^{p'}(Ω)` -/
+/-! ### Example 2.5.1: the dual of $L^p(\Omega)$ -/
 
-/-- **Example 2.5.1**, the identification `(Lᵖ(Ω))' = L^{p'}(Ω)` for `1 ≤ p < ∞` and the conjugate
-exponent `1/p + 1/p' = 1` (`p' = ∞` when `p = 1`): every `ℓ ∈ (Lᵖ(Ω))'` is `ℓ(v) = ∫_Ω u v`
-(2.5.1) for a unique `u ∈ L^{p'}(Ω)`; conversely every `u ∈ L^{p'}(Ω)` defines through (2.5.1) a
-bounded linear functional, of norm `‖u‖_{p'}`; and the identification is a linear isometric
-isomorphism `L^{p'}(Ω) ≃ (Lᵖ(Ω))'`.
+/-- **Example 2.5.1** of [han2009theoretical], the case $1 \le p < \infty$. Let
+$\Omega \subseteq \mathbb{R}^d$, let $1 \le p < \infty$, and let $p'$ be the conjugate exponent,
+$1/p + 1/p' = 1$, with $p' = \infty$ for $p = 1$. For $u \in L^{p'}(\Omega)$ consider the
+functional
+$$\ell(v) = \int_\Omega u(x) v(x) \, dx, \qquad v \in L^p(\Omega). \qquad (2.5.1)$$
+Then:
 
-The book takes `Ω ⊆ ℝ^d` bounded and open; the backbone's Riesz representation theorem
-`MeasureTheory.Lp.dualEquiv` (`Numlib/MeasureTheory/Function/LpSpace/Duality.lean`) needs only a
-σ-finite measure, so `Ω` is any set here. The scalars are `ℝ` or `ℂ`, and the pairing is
-bilinear, `∫ u v` with no conjugate, as in (2.5.1). -/
+* every $\ell \in (L^p(\Omega))'$ has the form (2.5.1) for a unique $u \in L^{p'}(\Omega)$;
+* every $u \in L^{p'}(\Omega)$ defines by (2.5.1) a functional $\ell \in (L^p(\Omega))'$ with
+  $\|\ell\| = \|u\|_{L^{p'}}$;
+* the map $u \mapsto \ell$ is a linear isometric isomorphism of $L^{p'}(\Omega)$ onto
+  $(L^p(\Omega))'$.
+
+**Generalization.** The book takes $\Omega$ bounded and open. The backbone's Riesz
+representation theorem `MeasureTheory.Lp.dualEquiv` needs only a σ-finite measure, so $\Omega$
+is any set here.
+
+The scalars are $\mathbb{R}$ or $\mathbb{C}$, and the pairing is bilinear, $\int_\Omega u v$
+without complex conjugation, as in (2.5.1). -/
 theorem example_2_5_1 {d : ℕ} (Ω : Set (EuclideanSpace ℝ (Fin d))) (p p' : ℝ≥0∞) [Fact (1 ≤ p)]
     [Fact (1 ≤ p')] [p.HolderConjugate p'] (hp : p ≠ ∞) :
     (∀ ℓ : StrongDual 𝕜 (Lp 𝕜 p (volume.restrict Ω)),
@@ -212,10 +291,16 @@ theorem example_2_5_1 {d : ℕ} (Ω : Set (EuclideanSpace ℝ (Fin d))) (p p' : 
     ext v
     rw [Lp.dualEquiv_apply hp u v, hu v]
 
-/-- **Example 2.5.1**, the case `p = ∞`: the dual of `L^∞(Ω)` is strictly larger than `L¹(Ω)`. For
-a nonempty open `Ω ⊆ ℝ^d` (`d ≥ 1`) there is a functional `ℓ ∈ (L^∞(Ω))'` that is not of the form
-(2.5.1) for any `u ∈ L¹(Ω)`: the backbone's `MeasureTheory.Lp.not_surjective_toDual_top`, a
-Hahn–Banach extension of a point evaluation (Example 2.5.3). Real scalars. -/
+/-- **Example 2.5.1** of [han2009theoretical], the case $p = \infty$. Let
+$\Omega \subseteq \mathbb{R}^d$ with $d \ge 1$ be open and nonempty. Then there is a bounded
+linear functional $\ell$ on the real space $L^\infty(\Omega)$ that is not of the form (2.5.1)
+for any $u \in L^1(\Omega)$: for every $u \in L^1(\Omega)$ there is a $v \in L^\infty(\Omega)$
+with $\ell(v) \neq \int_\Omega u v \, dx$. Thus $(L^\infty(\Omega))'$ is larger than
+$L^1(\Omega)$.
+
+The proof is the backbone's `MeasureTheory.Lp.not_surjective_toDual_top`, a Hahn–Banach
+extension of a point evaluation as in Example 2.5.3. The dimension is written $d + 1$ in Lean,
+and the scalars are real. -/
 theorem example_2_5_1_top {d : ℕ} (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))) (hΩ : IsOpen Ω)
     (hne : Ω.Nonempty) :
     ∃ ℓ : StrongDual ℝ (Lp ℝ ∞ (volume.restrict Ω)), ∀ u : Lp ℝ 1 (volume.restrict Ω),
@@ -230,15 +315,16 @@ theorem example_2_5_1_top {d : ℕ} (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))
 
 end Example251
 
-/-! ### Example 2.5.3: point evaluation on `L^∞(0, 1)` -/
+/-! ### Example 2.5.3: point evaluation on $L^\infty(0, 1)$ -/
 
 section Example253
 
 open MeasureTheory Set
 open scoped ENNReal
 
-/-- The coset `[v] ∈ L^∞(0, 1)` of a continuous function `v ∈ C[0, 1]`, Example 2.5.3: the class
-of the extension of `v` by its endpoint values. -/
+/-- **Example 2.5.3** of [han2009theoretical], the coset of a continuous function. For
+$v \in C[0, 1]$, $[v] \in L^\infty(0, 1)$ is the class of the extension of $v$ to $\mathbb{R}$
+by its values at the endpoints. The map $v \mapsto [v]$ is linear. -/
 noncomputable def cosetLinfty : C(Icc (0 : ℝ) 1, ℝ) →ₗ[ℝ] Lp ℝ ∞ (volume.restrict (Ioo (0 : ℝ) 1))
     where
   toFun v := (ContinuousMap.IccExtend zero_le_one v).continuous.continuousOn.memLp_top_restrict_Ioo
@@ -252,15 +338,17 @@ noncomputable def cosetLinfty : C(Icc (0 : ℝ) 1, ℝ) →ₗ[ℝ] Lp ℝ ∞ (
     exact (MemLp.toLp_eq_toLp_iff _ _).2 (Eventually.of_forall fun x ↦ by
       simp [ContinuousMap.coe_IccExtend, IccExtend, Pi.smul_apply])
 
-/-- The coset of `v` is the extension of `v` almost everywhere on `(0, 1)`. -/
+/-- For $v \in C[0, 1]$, the coset $[v]$ agrees almost everywhere on $(0, 1)$ with the extension of
+$v$ by its endpoint values. -/
 theorem coeFn_cosetLinfty (v : C(Icc (0 : ℝ) 1, ℝ)) :
     cosetLinfty v =ᵐ[volume.restrict (Ioo (0 : ℝ) 1)] IccExtend zero_le_one v :=
   MemLp.coeFn_toLp
     (ContinuousMap.IccExtend zero_le_one v).continuous.continuousOn.memLp_top_restrict_Ioo
 
-/-- **The values of a continuous function are bounded by the `L^∞(0, 1)` norm of its coset**,
-the inequality `|v(x)| ≤ ‖[v]‖_∞` for `x ∈ [0, 1]` of Example 2.5.3: the essential supremum over
-`(0, 1)` bounds `|v|` on a dense subset of `[0, 1]`, hence everywhere by continuity. -/
+/-- For $v \in C[0, 1]$ and $x \in [0, 1]$,
+$$|v(x)| \le \|[v]\|_{L^\infty(0, 1)},$$
+as used in Example 2.5.3 of [han2009theoretical]. The essential supremum over $(0, 1)$ bounds
+$|v|$ on a dense subset of $[0, 1]$, and hence everywhere by continuity. -/
 theorem norm_apply_le_norm_cosetLinfty (v : C(Icc (0 : ℝ) 1, ℝ)) (x : Icc (0 : ℝ) 1) :
     ‖v x‖ ≤ ‖cosetLinfty v‖ := by
   have hae : ∀ᵐ t ∂(volume.restrict (Ioo (0 : ℝ) 1)),
@@ -280,9 +368,9 @@ theorem norm_apply_le_norm_cosetLinfty (v : C(Icc (0 : ℝ) 1, ℝ)) (x : Icc (0
   have := hcl x.2
   rwa [mem_ofPred_eq, IccExtend_val] at this
 
-/-- **The `L^∞(0, 1)` norm of the coset of `v ∈ C[0, 1]` is the supremum norm of `v`**: the
-"equivalence" of the norm (2.5.2) restricted to `V₀` with the norm of `C[0, 1]` of Example 2.5.3
-is an equality. -/
+/-- For $v \in C[0, 1]$, the norm of the coset is the maximum norm:
+$\|[v]\|_{L^\infty(0, 1)} = \|v\|_\infty$. Thus the norm (2.5.2) on $V_0$ is not only equivalent
+to the norm of $C[0, 1]$, as Example 2.5.3 of [han2009theoretical] says, but equal to it. -/
 theorem norm_cosetLinfty (v : C(Icc (0 : ℝ) 1, ℝ)) : ‖cosetLinfty v‖ = ‖v‖ := by
   refine le_antisymm ?_ ((ContinuousMap.norm_le _ (norm_nonneg _)).2
     (norm_apply_le_norm_cosetLinfty v))
@@ -292,20 +380,25 @@ theorem norm_cosetLinfty (v : C(Icc (0 : ℝ) 1, ℝ)) : ‖cosetLinfty v‖ = �
   rw [ht, IccExtend_of_mem _ _ (Ioo_subset_Icc_self htI)]
   exact v.norm_coe_le_norm _
 
-/-- The coset map is injective: `V₀` is a copy of `C[0, 1]` inside `L^∞(0, 1)`. -/
+/-- The map $v \mapsto [v]$ from $C[0, 1]$ to $L^\infty(0, 1)$ is injective, so $V_0$ is a copy of
+$C[0, 1]$ inside $L^\infty(0, 1)$. -/
 theorem cosetLinfty_injective : Function.Injective cosetLinfty :=
   (injective_iff_map_eq_zero _).2 fun v hv ↦ by
     have h := norm_cosetLinfty v
     rw [hv, norm_zero] at h
     exact norm_eq_zero.1 h.symm
 
-/-- **`V₀`**, the subspace of `L^∞(0, 1)` of the cosets of continuous functions on `[0, 1]`,
-Example 2.5.3. -/
+/-- **Example 2.5.3** of [han2009theoretical], the subspace $V_0$. The subspace
+$V_0 \subseteq L^\infty(0, 1)$ is the set of the cosets $[v]$ of continuous functions
+$v \in C[0, 1]$. -/
 noncomputable abbrev contCosets : Submodule ℝ (Lp ℝ ∞ (volume.restrict (Ioo (0 : ℝ) 1))) :=
   LinearMap.range cosetLinfty
 
-/-- **The point evaluation `ℓ_c([v]) = v(c)`** (2.5.3) on `V₀`, well defined because the coset map
-is injective, and bounded with `‖ℓ_c‖ ≤ 1` because `|v(c)| ≤ ‖[v]‖_∞`. -/
+/-- **Example 2.5.3** of [han2009theoretical], the functional (2.5.3). For $c \in [0, 1]$, the point
+evaluation on $V_0$ is
+$$\ell_c([v]) = v(c).$$
+It is well defined because the map $v \mapsto [v]$ is injective, and it is bounded with
+$\|\ell_c\| \le 1$ because $|v(c)| \le \|[v]\|_\infty$. -/
 noncomputable def evalCoset (c : Icc (0 : ℝ) 1) : StrongDual ℝ contCosets :=
   LinearMap.mkContinuous
     ((ContinuousMap.evalCLM ℝ c : C(Icc (0 : ℝ) 1, ℝ) →L[ℝ] ℝ).toLinearMap ∘ₗ
@@ -315,11 +408,11 @@ noncomputable def evalCoset (c : Icc (0 : ℝ) 1) : StrongDual ℝ contCosets :=
       rw [LinearMap.comp_apply, LinearEquiv.coe_coe, LinearEquiv.symm_apply_apply, one_mul]
       exact norm_apply_le_norm_cosetLinfty v c
 
-/-- The coset of a continuous function lies in `V₀`. -/
+/-- For $v \in C[0, 1]$, the coset $[v]$ lies in $V_0$. -/
 theorem cosetLinfty_mem_contCosets (v : C(Icc (0 : ℝ) 1, ℝ)) : cosetLinfty v ∈ contCosets :=
   LinearMap.mem_range_self _ v
 
-/-- `ℓ_c` evaluates the coset of `v` to `v(c)`. -/
+/-- For $c \in [0, 1]$ and $v \in C[0, 1]$, $\ell_c([v]) = v(c)$. -/
 @[simp]
 theorem evalCoset_apply (c : Icc (0 : ℝ) 1) (v : C(Icc (0 : ℝ) 1, ℝ)) :
     evalCoset c ⟨cosetLinfty v, cosetLinfty_mem_contCosets v⟩ = v c := by
@@ -333,8 +426,8 @@ theorem evalCoset_apply (c : Icc (0 : ℝ) 1) (v : C(Icc (0 : ℝ) 1, ℝ)) :
   rw [this]
   rfl
 
-/-- `‖ℓ_c‖ = 1`: the bound `|v(c)| ≤ ‖[v]‖_∞` gives `‖ℓ_c‖ ≤ 1`, and the constant function `1`
-gives equality. -/
+/-- For $c \in [0, 1]$, $\|\ell_c\| = 1$. The bound $|v(c)| \le \|[v]\|_\infty$ gives
+$\|\ell_c\| \le 1$, and the constant function $1$ gives equality. -/
 theorem norm_evalCoset (c : Icc (0 : ℝ) 1) : ‖evalCoset c‖ = 1 := by
   refine le_antisymm (LinearMap.mkContinuous_norm_le _ zero_le_one _) ?_
   have h1 := (evalCoset c).le_opNorm ⟨cosetLinfty 1, cosetLinfty_mem_contCosets 1⟩
@@ -343,8 +436,9 @@ theorem norm_evalCoset (c : Icc (0 : ℝ) 1) : ‖evalCoset c‖ = 1 := by
   simp only [norm_cosetLinfty, norm_one, mul_one] at h1
   exact h1
 
-/-- A functional on `L^∞(0, 1)` extending `ℓ_c` is the point evaluation at `c` on the continuous
-functions of the line. -/
+/-- Let $c \in [0, 1]$ and let $\ell$ be a bounded linear functional on $L^\infty(0, 1)$ with
+$\ell([v]) = v(c)$ for every $v \in C[0, 1]$. Let $f : \mathbb{R} \to \mathbb{R}$ be continuous
+and essentially bounded on $(0, 1)$. Then $\ell$ maps the class of $f$ to $f(c)$. -/
 theorem apply_toLp_eq_of_forall_cosetLinfty (c : Icc (0 : ℝ) 1)
     (ℓ : StrongDual ℝ (Lp ℝ ∞ (volume.restrict (Ioo (0 : ℝ) 1))))
     (hℓ : ∀ v : C(Icc (0 : ℝ) 1, ℝ), ℓ (cosetLinfty v) = v c) (f : ℝ → ℝ)
@@ -360,16 +454,24 @@ theorem apply_toLp_eq_of_forall_cosetLinfty (c : Icc (0 : ℝ) 1)
   rw [this, hℓ]
   rfl
 
-/-- **Example 2.5.3**: on the subspace `V₀ ⊆ L^∞(0, 1)` of the cosets of continuous functions
-(`contCosets`), the point evaluation `ℓ_c([v]) = v(c)` (2.5.3) at `c ∈ [0, 1]` is well defined
-and bounded with `‖ℓ_c‖ = 1` (`evalCoset`); the Hahn–Banach theorem (`theorem_2_5_2`) extends it
-to `ℓ̂_c ∈ (L^∞(0, 1))'` with `‖ℓ̂_c‖ = 1` — a point evaluation on merely measurable functions;
-and no such extension is of the form (2.5.1) for a `u ∈ L¹(0, 1)`: the dual of `L^∞(0, 1)` is
-strictly larger than `L¹(0, 1)` (Example 2.5.1), the point of the example.
+/-- **Example 2.5.3** of [han2009theoretical]. Let $c \in [0, 1]$, and let $\ell_c([v]) = v(c)$ be
+the point evaluation (2.5.3) on the subspace $V_0 \subseteq L^\infty(0, 1)$ of the cosets of
+continuous functions. Then:
 
-The book's further properties of `ℓ̂_c` (the bounds `m ≤ ℓ̂_c([v]) ≤ M` from a neighbourhood of
-`c`, the value `v(c)` at a point of continuity of `v`) are stated without proof and are not
-restated. -/
+* $\|\ell_c\| = 1$;
+* there is an $\hat\ell_c \in (L^\infty(0, 1))'$ with $\hat\ell_c([v]) = v(c)$ for all
+  $v \in C[0, 1]$ and $\|\hat\ell_c\| = 1$;
+* no such extension is of the form (2.5.1): for every $\hat\ell_c \in (L^\infty(0, 1))'$ with
+  $\hat\ell_c([v]) = v(c)$ for all $v \in C[0, 1]$, and every $u \in L^1(0, 1)$, there is a
+  $w \in L^\infty(0, 1)$ with $\hat\ell_c(w) \neq \int_0^1 u w \, dx$.
+
+The extension comes from the Hahn–Banach theorem, `AtkinsonHan.Chapter02.theorem_2_5_2`. It is a
+point evaluation on functions that are only measurable, and it shows that the dual of
+$L^\infty(0, 1)$ is larger than $L^1(0, 1)$, as in Example 2.5.1. The subspace $V_0$ is
+`AtkinsonHan.Chapter02.contCosets`, and the point evaluation is
+`AtkinsonHan.Chapter02.evalCoset`. The further properties of $\hat\ell_c$ that the book states
+without proof (the bounds $m \le \hat\ell_c([v]) \le M$ in terms of the values of $v$ in a
+neighbourhood of $c$, and the value $v(c)$ when $v$ is continuous at $c$) are not formalized. -/
 theorem example_2_5_3 (c : Icc (0 : ℝ) 1) :
     ‖evalCoset c‖ = 1 ∧
     (∃ ℓhat : StrongDual ℝ (Lp ℝ ∞ (volume.restrict (Ioo (0 : ℝ) 1))),

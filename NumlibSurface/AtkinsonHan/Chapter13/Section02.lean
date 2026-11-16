@@ -10,124 +10,101 @@ import NumlibSurface.AtkinsonHan.Chapter12.Section04
 import NumlibSurface.AtkinsonHan.Chapter13.Section01
 
 /-!
-# Atkinson–Han §13.2: the Nyström method for the boundary integral equation
+# Atkinson and Han, Section 13.2: The Nyström method for the boundary integral equation
 
-Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework*, 3rd edition, Springer, 2009, §13.2.
+This module formalizes Section 13.2 of [han2009theoretical]. The interior Dirichlet problem for the
+Laplace equation on a planar region with smooth boundary $S$ is reformulated as the boundary
+integral equation of the second kind $$-\pi \rho(P) + \int_S \rho(Q) \frac{\partial}{\partial n_Q}
+\log |P - Q| \, dS_Q = f(P).$$ After a regular $C^2$ parametrization of $S$ by arclength, this is an
+integral equation $(-\pi + K) \rho = f$ on the space $C_p(L)$ of continuous $L$-periodic functions,
+with a continuous kernel: the parametrized double layer kernel
+`AtkinsonHan.Chapter13.doubleLayerKernelCP` of Section 13.1. Its sign is the sign of the book, so
+the row integral $\int_0^L k(t, s) \, ds$ is $-\pi$, and the equations (13.1.32) and (13.2.3) read
+as in the book. The book says that the natural function space setting for (13.2.3) is $C_p(L)$ with
+the uniform norm, and that $(-\pi + K)^{-1}$ exists as a bounded operator on $C_p(L)$; it quotes
+this from the literature without proof, and the invertibility is a hypothesis here, as in the book.
 
-The interior Dirichlet problem for Laplace's equation on a planar region with smooth boundary `S`
-is reformulated as the boundary integral equation of the second kind
+The error analysis of the Nyström method is Theorem 12.4.4 at $\lambda = -\pi$ on $C_p(L)$
+(`AtkinsonHan.Chapter12.theorem_12_4_4`), and the concrete scheme uses the periodic trapezoidal rule
+of `Numlib.Approximation.CompositeQuadrature`. The module also states the kernel identity and the
+peaking factor of Example 13.2.1, the properties of the test solution of Example 13.2.3, and the
+Fourier diagonalization (13.2.32) of the logarithmic single layer operator of Section 13.2.3, from
+`Numlib.Analysis.Fourier.LogSingleLayer`. No Sobolev space occurs; Sobolev spaces are needed only
+for Section 13.2.2, the exterior Neumann problem, and for Section 13.3.
 
-`-π ρ(P) + ∫_S ρ(Q) ∂/∂n_Q log |P - Q| dS_Q = f(P)`,
+## Main definitions
 
-and after a regular `C²` parametrization of `S` by arclength this is an ordinary integral equation
-`(-π + K) ρ = f` on the space `C_p(L)` of continuous `L`-periodic functions, with a *continuous*
-kernel: the parametrized double-layer kernel `Chapter13.doubleLayerKernelCP` extends continuously to
-the diagonal, where by (13.1.34) its value is minus half the signed curvature.  Its sign is the
-book's, so that the row integral `∫_0^L k(t, s) ds` is `-π`; substituting it for the abstract `k`
-below therefore reproduces (13.1.32) and (13.2.3) as the book writes them, `(-π + K) ρ = f`, and not
-their negatives.  The book's own words are that "the natural function space setting for
-studying (13.2.3) is `C_p(L)` with the uniform norm", and that "from this work, `(-π + K)⁻¹` exists
-as a bounded operator from `C_p(L)` to `C_p(L)`" — quoted from the literature, not proved.  The
-invertibility is therefore a hypothesis here, exactly as it is in the book.
-
-`C_p(L)` is `C(AddCircle L, ℝ)`, and the boundary integral `∫_0^L … ds` is integration against the
-Haar measure of `AddCircle L`, so §13.2's error analysis is Theorem 12.4.4 read at `λ = -π` on that
-space.  No Sobolev space occurs anywhere in it; that is needed only for §13.2.2, the exterior
-Neumann problem, and for §13.3.
+* (13.2.9), `AtkinsonHan.Chapter13.ellipseDoubleLayerKernel`: the function $\kappa(\theta) = -a b /
+  (2 (a^2 \sin^2 \theta + b^2 \cos^2 \theta))$ of Example 13.2.1.
 
 ## Main results
 
-* `equation_13_2_6` — the Nyström interpolation formula, which extends the discrete solution off
-  the quadrature nodes.
-* `equation_13_2_7` — unique solvability of the approximating equations for all large `n`,
-  uniformly bounded inverses, and `‖ρ - ρ_n‖_∞ ≤ c ‖K ρ - K_n ρ‖_∞`.
-* `equation_13_2_4` — the same with the concrete periodic trapezoidal rule
-  `h ∑_{j < n} k (t, j h) ρ (j h)`, `h = L / n`, whose two quadrature hypotheses are discharged by
-  `Quadrature.sum_abs_circleTrapezoid` and `Quadrature.tendsto_circleTrapezoid`.
-* `equation_13_2_32` — the Fourier diagonalization of the logarithmic single layer operator of
-  §13.2.3, `A ψ_m = ψ_m / max {1, |m|}`, and `exercise_13_3_1`, the first kind equation it solves.
-* `ellipseDoubleLayerKernel`, `example_13_2_1` and `example_13_2_1_peakingFactor` — (13.2.9), the
-  collapse of the double layer kernel of an ellipse to a function of `(s + t) / 2` alone, and the
-  peaking factor `p(a, b) = (max {a, b} / min {a, b})²` of that function.
-* `example_13_2_3` — that the test solution `u(x, y) = x / (x² + y²)` of Example 13.2.3 is what the
-  example says it is: harmonic away from the origin, and vanishing at infinity, so that it really
-  is a solution of an *exterior* problem.  It is the Kelvin transform of the coordinate `x`.
+* (13.2.4)–(13.2.5), `AtkinsonHan.Chapter13.equation_13_2_4`: the Nyström method with the periodic
+  trapezoidal rule is uniquely solvable for large $n$, with uniformly bounded inverses and $\|\rho -
+  \rho_n\|_\infty \le c \|K \rho - K_n \rho\|_\infty$.
+* (13.2.6), `AtkinsonHan.Chapter13.equation_13_2_6`: the Nyström interpolation formula, which
+  extends the discrete solution off the quadrature nodes.
+* (13.2.7), `AtkinsonHan.Chapter13.equation_13_2_7`: the same error analysis for every convergent
+  quadrature with bounded absolute weight sums.
+* Example 13.2.1, `AtkinsonHan.Chapter13.example_13_2_1`: for the ellipse, the double layer kernel
+  is $k(t, s) = \kappa((s + t)/2)$.
+* Example 13.2.1, `AtkinsonHan.Chapter13.example_13_2_1_peakingFactor`: the peaking factor of the
+  ellipse kernel is $(\max\{a, b\} / \min\{a, b\})^2$.
+* Example 13.2.3, `AtkinsonHan.Chapter13.example_13_2_3`: the test solution
+  $u(x, y) = x / (x^2 + y^2)$ is the Kelvin transform of $x$, harmonic away from the origin, and
+  tends to $0$ at infinity.
+* (13.2.32), `AtkinsonHan.Chapter13.equation_13_2_32`: the logarithmic single layer operator $A$
+  satisfies $A \psi_m = \psi_m / \max\{1, |m|\}$ on the Fourier modes $\psi_m(t) = e^{i m t}$.
+* Exercise 13.3.1, `AtkinsonHan.Chapter13.exercise_13_3_1`: the first kind equation
+  $A \varphi = \cos(k t)$ is solved by $\varphi(t) = \max\{1, k\} \cos(k t)$.
 
-## Not formalized here
+## Conventions
 
-* The identification of `K` with the boundary integral `∫_S ρ(Q) ∂/∂n_Q log |P - Q| dS_Q`, which
-  needs a surface measure and a normal field on `S`; only the parametrized kernel is reachable, and
-  that is `Chapter13/Section01`.
-* The *rate* of the trapezoidal rule — spectral convergence for a smooth periodic integrand —
-  which is Proposition 7.5.6 and needs the periodic Sobolev scale `H^s(2π)`; only the bound is
-  stated.  Its *convergence* for every continuous periodic integrand is no longer a hypothesis:
-  `Quadrature.tendsto_circleTrapezoid` of `Numlib/Approximation/CompositeQuadrature` proves it, and
-  `equation_13_2_4` is the resulting concrete scheme.
-* **(13.2.19)** and, with it, (13.2.14)–(13.2.23), the evaluation of the potential near the
-  boundary: with `u_n` the double layer potential of the Nyström density `ρ_n`,
+* $C_p(L)$ is `C(AddCircle L, ℝ)`, and the integral $\int_0^L \cdots \, ds$ is the integral against
+  the Haar measure `MeasureTheory.volume` of `AddCircle L`.
+* The invertibility of $-\pi + K$ is an equivalence `e` with `↑e = (-π) • 1 + kernelCLM volume k`.
+* The Nyström operator $K_n$ with weights $w_j$ and nodes $x_j$ is
+  `IntegralOperator.nystromCLM w x k`.
 
-  `max_{closure D_i} |u - u_n| ≤ (π + ‖K‖) ‖ρ - ρ_n‖_∞`.
+## Deviations from the source
 
-  The book's derivation is (13.2.16) together with (13.2.17).  `u - u_n` is harmonic on `D_i` and
-  continuous on its closure, so by the maximum principle its supremum is attained on `S`; and on
-  `S` its value is given by the **jump relation**
+* **(13.2.4)–(13.2.7)** (generalization). The book states the error analysis for the double layer
+  kernel. The theorems hold for every continuous kernel on the torus. See
+  `AtkinsonHan.Chapter13.equation_13_2_7`.
 
-  `u(P) - u_n(P) = -π (ρ - ρ_n)(P) + ∫_S (ρ - ρ_n)(Q) ∂/∂n_Q log |P - Q| dS_Q`.
+## Not formalized
 
-  The jump relations (13.1.7)–(13.1.8) are exactly the potential theory the rest of §13.1 is
-  skipped for.  The maximum principle alone is within range of Mathlib's `HarmonicContOnCl`; the
-  jump relation is not.  **There is no singularity subtraction in Atkinson–Han §13.2.1** — an
-  earlier note in the plan described that scheme, which is from Atkinson's own monograph and not
-  from this book, and it is not what (13.2.19) rests on.
-
-  What the boundary round of 2026-09-21 changed: the double layer potential as a function on the
-  region, `u(P) = ∫_S ρ(Q) ∂/∂n_Q log |P - Q| dS_Q`, is now *definable* on a bounded `C¹` plane
-  domain.  The arclength measure `dS` is `IsContDiffDomain.boundaryMeasure` and the normal `n_Q`
-  is `IsContDiffDomain.outwardNormal` (up to the chapter's inner-normal sign; `-ν` is continuous
-  on `S`, `IsContDiffDomain.continuousOn_outwardNormal`), Green's theorem is `theorem_13_1_2` and
-  Green's identities are `BoundaryData.integral_laplacian_mul_add_eq`.  **Nothing of (13.2.19)
-  follows from Green's formula alone**: the jump relation is a singular-integral statement about
-  the principal value of the kernel at a boundary point, and neither Mathlib nor `Numlib/` has
-  it.  Estimate `800+` lines on a `C²` boundary.
-
-* **Exercise 13.2.5 and (13.2.20)**: for a bounded *convex* region with smooth boundary the
-  double layer operator has `‖K‖ = π` exactly, so that `‖(-π + K)⁻¹‖` cannot be obtained from a
-  Neumann series and the compactness argument of chapter 12 is necessary rather than merely
-  convenient.
-
-  `IntegralOperator.norm_kernelCLM` reduces the statement to `sup_t ∫_0^L |k (t, s)| ds = π`, and
-  `Chapter13.doubleLayerKernel_eq_neg_im_div` identifies the integrand: writing the curve as
-  `r(s) = ξ(s) + i η(s)`, off the diagonal `k(t, s) = -Im (r'(s) / (r(s) - r(t)))`, which is minus
-  `d/ds arg (r(s) - r(t))`.  So the row integral is **minus the total turning of the chord
-  direction seen from the boundary point `r(t)`**, hence `-π` for a counterclockwise regular
-  simple closed curve, whose chord direction turns by `+π` — a boundary-point form of Hopf's
-  Umlaufsatz — and the absolute value may be dropped exactly when the region is convex, so that
-  the turning is monotone.
-
-  **Convexity is used for the whole statement, not only for the lower bound.**  It is tempting to
-  say that the `≤ π` half holds for a general smooth curve by the same computation with `|k|`,
-  and to attempt that half first; that is **false**.  For a non-convex smooth curve the chord
-  direction reverses, so `∫_0^L |k (t, s)| ds > |∫_0^L k (t, s) ds| = π` and `‖K‖ > π`.
-
-  What is missing is therefore a continuous argument — a lift along the covering `ℝ → S¹` — for a
-  plane curve, and a turning number; Mathlib has neither, and neither is numerical analysis.
-  `Complex.arg` and the covering are there for the *local* lift; the global lift along a closed
-  curve and the Umlaufsatz at a boundary point are unwritten, `400–600` lines.
-* The bound (13.2.33), `‖A‖_{C_p → C_p} ≤ √(1 + π²/3)`, which the book quotes from Atkinson;
-  only the diagonalization (13.2.32) is proved.
-* The numerical halves of Examples 13.2.1, 13.2.2 and 13.2.3, which are Tables 13.1–13.3 and
-  Figures 13.1–13.5: measured errors of the Nyström method on one curve at a time, and not
-  statements.  Example 13.2.2 is *only* that, and is not tracked; of Examples 13.2.1 and 13.2.3 the
-  claims that are not measured numbers — the kernel identity (13.2.9) with its peaking factor, and
-  the harmonicity and decay of the test solution — are stated.  The method Example 13.2.3
-  illustrates, §13.2.2, rests on the boundary integral equation (13.2.24), which is (13.1.30) of
-  the potential theory §13.1 skips, and on the splitting (13.2.25)–(13.2.30) of its right-hand
-  side into the logarithmic single layer operator `A` — whose diagonalization *is* here,
-  `equation_13_2_32` — and a smooth remainder; the splitting is an identity between integrals over
-  `S`, so it needs the surface measure that `Chapter13/Section01` records as out of reach.  Its
-  error analysis needs in addition the trigonometric interpolation and Euler–Maclaurin rates
-  (13.2.36), (13.2.39), (13.2.41) and (13.2.43).
+* **The identification of $K$ with the boundary integral** $\int_S \rho(Q) \frac{\partial}{\partial
+  n_Q} \log |P - Q| \, dS_Q$. It needs the jump relations of the layer potentials; only the
+  parametrized kernel of Section 13.1 is formalized.
+* **The rate of convergence of the trapezoidal rule**, spectral convergence for a smooth periodic
+  integrand. It is Proposition 7.5.6 and needs the periodic Sobolev scale $H^s(2\pi)$. Only the
+  convergence for every continuous periodic integrand is used, which is
+  `Quadrature.tendsto_circleTrapezoid`.
+* **(13.2.19)**, and with it (13.2.14)–(13.2.23), the evaluation of the potential near the boundary:
+  with $u_n$ the double layer potential of the Nyström density $\rho_n$, $\max_{\bar D_i} |u - u_n|
+  \le (\pi + \|K\|) \|\rho - \rho_n\|_\infty$. The derivation of the book, (13.2.16) with (13.2.17),
+  uses the maximum principle and the jump relation $u(P) - u_n(P) = -\pi (\rho - \rho_n)(P) + \int_S
+  (\rho - \rho_n)(Q) \frac{\partial}{\partial n_Q} \log |P - Q| \, dS_Q$. The jump relations
+  (13.1.7)–(13.1.8) are a singular integral statement about the principal value of the kernel at a
+  boundary point, which neither Mathlib nor the backbone has. The derivation uses no singularity
+  subtraction.
+* **Exercise 13.2.5 and (13.2.20)**, that $\|K\| = \pi$ for a bounded convex region with smooth
+  boundary, so that $(-\pi + K)^{-1}$ cannot be obtained from a Neumann series. By
+  `IntegralOperator.norm_kernelCLM` the statement is $\sup_t \int_0^L |k(t, s)| \, ds = \pi$.
+  Convexity is needed for the whole statement and not only for the lower bound: for a non-convex
+  smooth curve the chord direction reverses, so $\int_0^L |k(t, s)| \, ds > |\int_0^L k(t, s) \,
+  ds| = \pi$ and $\|K\| > \pi$. The two results need a continuous argument along a plane curve and a
+  turning number, which Mathlib does not have.
+* **The bound (13.2.33)**, $\|A\|_{C_p \to C_p} \le \sqrt{1 + \pi^2/3}$. The book quotes it from
+  Atkinson.
+* **The numerical parts of Examples 13.2.1, 13.2.2 and 13.2.3**: Tables 13.1–13.3 and Figures
+  13.1–13.5, which are measured errors. Example 13.2.2 consists only of such data.
+* **Section 13.2.2**, the exterior Neumann problem. Its boundary integral equation (13.2.24) is
+  (13.1.30) of the potential theory of Section 13.1, and the splitting (13.2.25)–(13.2.30) of its
+  right-hand side is an identity between integrals over $S$. Its error analysis also needs the
+  trigonometric interpolation and Euler–Maclaurin rates (13.2.36), (13.2.39), (13.2.41) and
+  (13.2.43).
 -/
 
 open Filter MeasureTheory Topology
@@ -140,14 +117,15 @@ open IntegralOperator
 
 variable {L : ℝ} [Fact (0 < L)]
 
-/-- **(13.2.6), the Nyström interpolation formula.**  A solution of the discrete equations
-`(-π + K_n) ρ_n = f` is determined at *every* point of the boundary by its values at the quadrature
-nodes,
+/-- **Equation (13.2.6)** of [han2009theoretical] (Nyström interpolation formula). Let $L > 0$, let
+$w_1, \dots, w_m \in \mathbb{R}$ be weights and $x_1, \dots, x_m$ nodes on the circle
+$\mathbb{R}/L\mathbb{Z}$, and let $k$ be a continuous kernel on the torus. If
+$\rho_n, f \in C_p(L)$ satisfy the discrete equation $(-\pi + K_n) \rho_n = f$, with
+$K_n \rho(t) = \sum_j w_j k(t, x_j) \rho(x_j)$, then for every point $t$ $$\rho_n(t) =
+\frac{1}{\pi} \Bigl(\sum_j w_j k(t, x_j) \rho_n(x_j) - f(t)\Bigr).$$
 
-`ρ_n(t) = (∑_j w_j k (t, x_j) ρ_n (x_j) - f(t)) / π`,
-
-which is the equation itself solved for `ρ_n(t)`.  This is what makes the Nyström method produce a
-function rather than a table of values. -/
+This is the equation solved for $\rho_n(t)$. It determines $\rho_n$ at every point from its
+values at the nodes, so the Nyström method gives a function and not only a table of values. -/
 theorem equation_13_2_6 {m : ℕ} (w : Fin m → ℝ) (x : Fin m → AddCircle L)
     (k : C(AddCircle L × AddCircle L, ℝ)) (f ρn : C(AddCircle L, ℝ))
     (h : ((-π) • 1 + nystromCLM w x k : C(AddCircle L, ℝ) →L[ℝ] C(AddCircle L, ℝ)) ρn = f)
@@ -159,18 +137,24 @@ theorem equation_13_2_6 {m : ℕ} (w : Fin m → ℝ) (x : Fin m → AddCircle L
   field_simp
   linarith [ht]
 
-/-- **(13.2.4)–(13.2.7), the Nyström method for the boundary integral equation of the second
-kind.**  Let `k` be the continuous parametrized double-layer kernel on `C_p(L) = C(AddCircle L, ℝ)`,
-let the quadrature rules converge at every continuous integrand with uniformly bounded absolute
-weight sums, and assume — as the book does, quoting the literature — that `-π + K` is invertible on
-`C_p(L)`.  Then there is a constant `c` such that, for all large `n`, the approximating equations
-`(-π + K_n) ρ_n = f` are uniquely solvable, `‖(-π + K_n)⁻¹‖ ≤ c`, and
+/-- **Equation (13.2.7)** of [han2009theoretical], with (13.2.4)–(13.2.6). Let $L > 0$ and let $k$
+be a continuous kernel on the torus $\mathbb{R}/L\mathbb{Z} \times \mathbb{R}/L\mathbb{Z}$, with
+the integral operator $K$ on $C_p(L)$. For each $n$ let $K_n$ be the Nyström operator of a
+quadrature rule with weights $w_{n,j}$ and nodes $x_{n,j}$, such that $\sum_j |w_{n,j}| \le W$
+for all $n$ and the rules converge to $\int_0^L v \, ds$ for every $v \in C_p(L)$. Let
+$-\pi + K$ be invertible on $C_p(L)$. Then there is a constant $c$ such that, for all
+sufficiently large $n$, the operator $-\pi + K_n$ is invertible, $\|(-\pi + K_n)^{-1}\| \le c$,
+and whenever $(-\pi + K) \rho = f$ and $(-\pi + K_n) \rho_n = f$, $$\|\rho - \rho_n\|_\infty \le
+c \, \|K \rho - K_n \rho\|_\infty.$$
 
-`‖ρ - ρ_n‖_∞ ≤ c ‖K ρ - K_n ρ‖_∞`.
+**Generalization.** The book states this for the parametrized double layer kernel. The theorem
+holds for every continuous kernel on the torus.
 
-The book says of this that "the error analysis for the above is straightforward from
-Theorem 12.4.4", and so it is: this is `AtkinsonHan.Chapter12.theorem_12_4_4` at `λ = -π`, with the
-sign absorbed by reading it for the kernel `-k`. -/
+The book assumes the invertibility of $-\pi + K$, quoting the literature, and says that the
+error analysis is straightforward from Theorem 12.4.4. The proof is
+`AtkinsonHan.Chapter12.theorem_12_4_4` at $\lambda = -\pi$, read for the kernel $-k$ to absorb
+the sign. The quadrature rule is `Quadrature.functional`, and the integral is
+`IntegralOperator.integralCLM` for the Haar measure of the circle. -/
 theorem equation_13_2_7 (k : C(AddCircle L × AddCircle L, ℝ)) {m : ℕ → ℕ}
     {w : ∀ n, Fin (m n) → ℝ} {x : ∀ n, Fin (m n) → AddCircle L} {W : ℝ}
     (hW : ∀ n, ∑ j, |w n j| ≤ W)
@@ -206,19 +190,21 @@ theorem equation_13_2_7 (k : C(AddCircle L × AddCircle L, ℝ)) {m : ℕ → �
   · rw [neg_apply, neg_apply, ← neg_sub, norm_neg, neg_sub_neg]
   · exact le_trans (norm_nonneg _) hennorm
 
-/-- **(13.2.4)–(13.2.5), the Nyström method with the periodic trapezoidal rule.**  The concrete
-scheme of §13.2: the boundary integral is approximated by
+/-- **Equations (13.2.4)–(13.2.5)** of [han2009theoretical], the Nyström method with the periodic
+trapezoidal rule. Let $L > 0$ and let $k$ be a continuous kernel on the torus
+$\mathbb{R}/L\mathbb{Z} \times \mathbb{R}/L\mathbb{Z}$ with $-\pi + K$ invertible on $C_p(L)$.
+Let $h = L/n$ and $$K_n \rho(t) = h \sum_{j=0}^{n-1} k(t, j h) \, \rho(j h).$$ Then there is a
+constant $c$ such that, for all sufficiently large $n$, the operator $-\pi + K_n$ is invertible,
+$\|(-\pi + K_n)^{-1}\| \le c$, and whenever $(-\pi + K) \rho = f$ and $(-\pi + K_n) \rho_n = f$,
+$$\|\rho - \rho_n\|_\infty \le c \, \|K \rho - K_n \rho\|_\infty.$$
 
-`K_n ρ (t) = h ∑_{j < n} k (t, j h) ρ (j h)`, `h = L / n`,
+**Generalization.** The book uses the parametrized double layer kernel
+`AtkinsonHan.Chapter13.doubleLayerKernelCP`. The theorem holds for every continuous kernel on
+the torus.
 
-the trapezoidal rule on the closed parameter curve, and the discrete equations
-`(-π + K_n) ρ_n = f` are then uniquely solvable for all large `n` with uniformly bounded inverses
-and `‖ρ - ρ_n‖_∞ ≤ c ‖K ρ - K_n ρ‖_∞`.
-
-This is `equation_13_2_7` with its two quadrature hypotheses discharged:
-`Quadrature.sum_abs_circleTrapezoid` bounds the absolute weight sums by `L` and
-`Quadrature.tendsto_circleTrapezoid` is the Riemann sum theorem on the circle.  It is the form the
-book actually computes with, and the kernel it applies to is `doubleLayerKernelCP`. -/
+This is `AtkinsonHan.Chapter13.equation_13_2_7` with its two quadrature hypotheses proved:
+`Quadrature.sum_abs_circleTrapezoid` bounds the absolute weight sums by $L$, and
+`Quadrature.tendsto_circleTrapezoid` is the convergence of Riemann sums on the circle. -/
 theorem equation_13_2_4 (k : C(AddCircle L × AddCircle L, ℝ))
     {e : C(AddCircle L, ℝ) ≃L[ℝ] C(AddCircle L, ℝ)}
     (he : (e : C(AddCircle L, ℝ) →L[ℝ] C(AddCircle L, ℝ))
@@ -242,31 +228,32 @@ theorem equation_13_2_4 (k : C(AddCircle L × AddCircle L, ℝ))
 
 /-! ### Example 13.2.1: the ellipse -/
 
-/-- **(13.2.9)**, the function `κ` of Example 13.2.1:
+/-- **Equation (13.2.9)** of [han2009theoretical]. For real $a$, $b$ and $\theta$, the function
+$\kappa$ of Example 13.2.1 is $$\kappa(\theta) = -\frac{a b}{2 (a^2 \sin^2 \theta + b^2 \cos^2
+\theta)}.$$
 
-`κ(θ) = -a b / (2 (a² sin² θ + b² cos² θ))`.
-
-For the ellipse `r(t) = (a cos t, b sin t)` the parametrized double layer kernel is
-`k(t, s) = κ((s + t) / 2)` (`example_13_2_1`): it depends on the two parameters through their mean
-alone.  On the circle `a = b` it is the constant `-1 / (2 a)`, which for `a = 1` is the `-1/2` of
-`Chapter13.doubleLayerKernel_circle_self`. -/
+For the ellipse $r(t) = (a \cos t, b \sin t)$ the parametrized double layer kernel is
+$k(t, s) = \kappa((s + t)/2)$ (`AtkinsonHan.Chapter13.example_13_2_1`). On the circle $a = b$ it
+is the constant $-1/(2a)$, which for $a = 1$ is the value $-1/2$ of
+`AtkinsonHan.Chapter13.doubleLayerKernel_circle_self`. Where the denominator vanishes, Lean's
+division gives the value $0$. -/
 noncomputable def ellipseDoubleLayerKernel (a b θ : ℝ) : ℝ :=
   -(a * b) / (2 * (a ^ 2 * Real.sin θ ^ 2 + b ^ 2 * Real.cos θ ^ 2))
 
-/-- **Example 13.2.1**, the kernel identity (13.2.9).  For the ellipse `r(t) = (a cos t, b sin t)`
-the double layer kernel (13.1.33) collapses to a function of the mean parameter alone,
+/-- **Example 13.2.1** of [han2009theoretical], the kernel identity (13.2.9). Let
+$a, b \in \mathbb{R}$ and let $r(t) = (a \cos t, b \sin t)$ be the ellipse. Let
+$t, s \in \mathbb{R}$ with $t = s$ or $\sin((t - s)/2) \neq 0$. Then the parametrized double
+layer kernel of $r$ is $$k(t, s) = \kappa\Bigl(\frac{s + t}{2}\Bigr), \qquad \kappa(\theta) =
+-\frac{a b}{2 (a^2 \sin^2 \theta + b^2 \cos^2 \theta)}.$$
 
-`k(t, s) = κ((s + t) / 2)`,  `κ(θ) = -a b / (2 (a² sin² θ + b² cos² θ))`,
-
-which is what makes the integral equation (13.2.10) cheap to assemble: one univariate function
-supplies the whole matrix.  The identity is algebraic — no positivity of `a` or `b` is used — and
-holds on the diagonal too, where it is (13.1.34).
-
-The hypothesis is that `t` and `s` are the *same* parameter or parameters of *distinct* points of
-the ellipse: `sin ((t - s) / 2) = 0` with `t ≠ s` means `s - t` is a nonzero multiple of `2 π`, and
-there `doubleLayerKernel` is `0`, because it divides the vanishing chord by `s - t`.  That is the
-same phenomenon `Chapter13.doubleLayerKernel_add_period` records, and the reason §13.2 works on
-`AddCircle L` rather than on the line. -/
+The identity makes the integral equation (13.2.10) cheap to assemble: one function of one
+variable gives the whole matrix. It is algebraic: it uses no positivity of $a$ or $b$, and it
+holds on the diagonal too, where it is (13.1.34). The hypothesis excludes the case that $s - t$
+is a nonzero multiple of $2\pi$; there `AtkinsonHan.Chapter13.doubleLayerKernel` is $0$, because
+it divides the vanishing chord by $s - t$. This is the fact that
+`AtkinsonHan.Chapter13.doubleLayerKernel_add_period` records, and the reason why Section 13.2
+works on the circle and not on the line. The derivatives are passed as $\xi' = -a \sin$,
+$\eta' = b \cos$, $\xi'' = -a \cos$, $\eta'' = -b \sin$. -/
 theorem example_13_2_1 (a b : ℝ) {t s : ℝ} (hts : t = s ∨ Real.sin ((t - s) / 2) ≠ 0) :
     doubleLayerKernel (fun u => -(a * Real.sin u)) (fun u => b * Real.cos u)
         (fun u => -(a * Real.cos u)) (fun u => -(b * Real.sin u)) t s
@@ -312,15 +299,17 @@ theorem example_13_2_1 (a b : ℝ) {t s : ℝ} (hts : t = s ∨ Real.sin ((t - s
         = 2 * (2 * (a ^ 2 * Real.sin θ ^ 2 + b ^ 2 * Real.cos θ ^ 2)) by ring,
       mul_div_mul_left _ _ two_ne_zero]
 
-/-- **Example 13.2.1**, the peaking factor.  The book measures how hard the equation (13.2.10) is
-to solve by
+/-- **Example 13.2.1** of [han2009theoretical], the peaking factor. Let $a, b > 0$. Then the largest
+value of $|\kappa(\theta)|$ over $\theta \in \mathbb{R}$ is $a b / (2 \min\{a, b\}^2)$, the
+smallest value is $a b / (2 \max\{a, b\}^2)$, and their ratio is the **peaking factor** $$p(a,
+b) = \frac{\max_\theta |\kappa(\theta)|}{\min_\theta |\kappa(\theta)|} = \Bigl(\frac{\max\{a,
+b\}}{\min\{a, b\}}\Bigr)^2.$$
 
-`p(a, b) = max |k(t, s)| / min |k(t, s)| = (max {a, b} / min {a, b})²`,
-
-so `p(1, 2) = 4`, `p(1, 5) = 25` and `p(1, 8) = 64`: the more elongated the ellipse, the more
-peaked the kernel and the larger the `n` needed for a given accuracy, which is what Table 13.1
-shows.  The extremes are attained at `θ = 0` and `θ = π / 2`, the ends of the two axes, because
-`a² sin² θ + b² cos² θ` runs over `[min {a, b}², max {a, b}²]`. -/
+The book measures with $p(a, b)$ how hard the equation (13.2.10) is to solve: $p(1, 2) = 4$,
+$p(1, 5) = 25$ and $p(1, 8) = 64$. The more elongated the ellipse, the more peaked the kernel
+and the larger the $n$ needed for a given accuracy, as Table 13.1 shows. The extremes are
+attained at $\theta = 0$ and $\theta = \pi/2$, because $a^2 \sin^2 \theta + b^2 \cos^2 \theta$
+takes all values in $[\min\{a, b\}^2, \max\{a, b\}^2]$. -/
 theorem example_13_2_1_peakingFactor {a b : ℝ} (ha : 0 < a) (hb : 0 < b) :
     IsGreatest (Set.range fun θ : ℝ => |ellipseDoubleLayerKernel a b θ|)
         (a * b / (2 * min a b ^ 2)) ∧
@@ -372,23 +361,17 @@ theorem example_13_2_1_peakingFactor {a b : ℝ} (ha : 0 < a) (hb : 0 < b) :
 
 /-! ### Example 13.2.3: the test solution of the exterior Neumann problem -/
 
-/-- **Example 13.2.3**, the choice of test solution.  The example solves the exterior Neumann
-problem outside an ellipse with boundary data generated from
+/-- **Example 13.2.3** of [han2009theoretical], the test solution. The example solves the exterior
+Neumann problem outside an ellipse with boundary data from $$u(x, y) = \frac{x}{x^2 + y^2}.$$
+Identifying the plane with $\mathbb{C}$: $u$ is the Kelvin transform of the coordinate function
+$\operatorname{Re}$, that is $u(z) = \operatorname{Re} z / \|z\|^2$ for every $z$; $u$ is
+harmonic at every $z \neq 0$; and $u(z) \to 0$ as $\|z\| \to \infty$.
 
-`u(x, y) = x / (x² + y²)`,
-
-and says of it exactly two things: that it is harmonic, and that it tends to `0` at infinity — the
-condition at infinity an exterior harmonic problem carries.  Both are stated here, together with
-the identification of `u` as the Kelvin transform of the coordinate `x`: `u = kelvin re`, since
-inversion `T z = z / ‖z‖²` sends `z` to `z / (x² + y²)`.  Harmonicity is then §13.1.2's
-`kelvin_harmonic` — the real part of the identity is harmonic and the transform preserves
-harmonicity — which is what the transform is in the book for, and the decay is
-`|x| / (x² + y²) ≤ 1 / ‖(x, y)‖`.
-
-The rest of the example is Table 13.3 and Figure 13.5, measured errors of the Nyström method for
-one ellipse; and the method itself is §13.2.2, whose boundary integral equation is derived from the
-single layer potential and its normal derivative, which is the potential theory this chapter
-skips. -/
+The book says of $u$ that it is harmonic and tends to $0$ at infinity, the condition at infinity
+of an exterior problem. Harmonicity is `AtkinsonHan.Chapter13.kelvin_harmonic` applied to the
+harmonic function $\operatorname{Re}$, and the decay is $|x| / (x^2 + y^2) \le 1 / \|(x, y)\|$.
+At $z = 0$, Lean's division gives $u(0) = 0$. The limit at infinity is along the filter
+`cocompact ℂ`. -/
 theorem example_13_2_3 :
     (∀ z : ℂ, kelvin Complex.re z = z.re / ‖z‖ ^ 2) ∧
       (∀ z : ℂ, z ≠ 0 → InnerProductSpace.HarmonicAt (kelvin Complex.re) z) ∧
@@ -407,22 +390,22 @@ theorem example_13_2_3 :
         mul_le_mul_of_nonneg_right (Complex.abs_re_le_norm z) (norm_nonneg z)
     _ = ‖z‖ ^ 2 := by ring
 
-/-! ### §13.2.3, the first kind equation and the logarithmic single layer operator -/
+/-! ### Section 13.2.3: The first kind equation and the logarithmic single layer operator -/
 
-/-- **(13.2.31)–(13.2.32), the Fourier diagonalization of the logarithmic single layer
-operator.**  The single layer operator of the unit circle, in the arclength parameter,
+/-- **Equation (13.2.32)** of [han2009theoretical], with (13.2.31) and (13.2.37), the Fourier
+diagonalization of the logarithmic single layer operator. Let $$A \varphi(t) = -\frac{1}{\pi}
+\int_0^{2\pi} \varphi(s) \log \bigl|2 e^{-1/2} \sin\bigl(\tfrac{t - s}{2}\bigr)\bigr| \, ds$$ be
+the single layer operator of the unit circle in the arclength parameter. Then for every
+$m \in \mathbb{Z}$ and every real $t$, the Fourier mode $\psi_m(s) = e^{i m s}$ satisfies $$A
+\psi_m(t) = \frac{\psi_m(t)}{\max\{1, |m|\}}.$$
 
-`A φ (t) = -(1 / π) ∫_0^{2 π} φ (s) log |2 e^(-1/2) sin ((t - s) / 2)| ds`,
-
-acts on the Fourier modes `ψ_m (t) = e^(i m t)` by `A ψ_m = ψ_m / max {1, |m|}`, which is (13.2.37)
-and, read off the Fourier expansion of `φ`, is (13.2.32).  It is the reason `A` is a bijection of
-`H^0(2 π)` onto `H^1(2 π)`, and it is what makes the operator algebra of §13.3 elementary.
-
-The book quotes this from Yan and Sloan; the proof here is
-`Numlib/Analysis/Fourier/LogSingleLayer`, where the eigenvalue is the `m`-th Fourier coefficient of
-`u ↦ log |2 e^(-1/2) sin (u / 2)|`.  The companion bound (13.2.33),
-`‖A‖_{C_p → C_p} ≤ √(1 + π²/3)`, is a separate and harder statement, quoted by the book from
-Atkinson, and is not proved here. -/
+This is (13.2.37), and read on the Fourier expansion of $\varphi$ it is (13.2.32). It is the
+reason why $A$ is a bijection of $H^0(2\pi)$ onto $H^1(2\pi)$, and it makes the operator algebra
+of Section 13.3 elementary. The book quotes it from Yan and Sloan. The proof is in
+`Numlib.Analysis.Fourier.LogSingleLayer`, where the eigenvalue is the $m$-th Fourier coefficient
+of $u \mapsto \log |2 e^{-1/2} \sin(u/2)|$. The bound (13.2.33),
+$\|A\|_{C_p \to C_p} \le \sqrt{1 + \pi^2/3}$, which the book quotes from Atkinson, is not
+formalized. -/
 theorem equation_13_2_32 (m : ℤ) (t : ℝ) :
     -(1 / π) * ∫ s in (0 : ℝ)..(2 * π), Complex.exp (m * s * Complex.I)
         * (Real.log |2 * Real.exp (-(1 / 2)) * Real.sin ((t - s) / 2)| : ℂ)
@@ -433,12 +416,12 @@ theorem equation_13_2_32 (m : ℤ) (t : ℝ) :
   push_cast
   ring
 
-/-- **Exercise 13.3.1**: for a non-negative integer `k`, the first kind equation
+/-- **Exercise 13.3.1** of [han2009theoretical]. For every integer $k \ge 0$ and every real $t$, the
+function $\varphi(s) = \max\{1, k\} \cos(k s)$ solves the first kind equation $$-\frac{1}{\pi}
+\int_0^{2\pi} \varphi(s) \log \bigl|2 e^{-1/2} \sin\bigl(\tfrac{t - s}{2}\bigr)\bigr| \, ds =
+\cos(k t).$$ So the solution is $k \cos(k t)$ for $k \ge 1$, and the constant $1$ for $k = 0$.
 
-`-(1 / π) ∫_0^{2 π} φ (s) log |2 e^(-1/2) sin ((t - s) / 2)| ds = cos (k t)`
-
-is solved by `φ (t) = max {1, k} cos (k t)` — that is, by `k cos (k t)` when `k ≥ 1` and by the
-constant `1` when `k = 0`.  A direct reading of `equation_13_2_32` on the real modes. -/
+The proof reads `AtkinsonHan.Chapter13.equation_13_2_32` on the real Fourier modes. -/
 theorem exercise_13_3_1 (k : ℕ) (t : ℝ) :
     -(1 / π) * ∫ s in (0 : ℝ)..(2 * π), ((max 1 k : ℕ) : ℝ) * Real.cos (k * s)
         * Real.log |2 * Real.exp (-(1 / 2)) * Real.sin ((t - s) / 2)|

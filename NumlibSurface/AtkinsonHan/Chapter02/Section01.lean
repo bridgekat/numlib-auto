@@ -8,65 +8,76 @@ import Mathlib.LinearAlgebra.Matrix.Rank
 import Numlib.Analysis.Calculus.ContDiffMapIcc
 
 /-!
-# Atkinson–Han §2.1: operators
+# Atkinson and Han, Section 2.1: Operators
 
-Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework*, 3rd edition, Springer, 2009, §2.1: operators, their domain, range and null set,
-injectivity and surjectivity, continuity and boundedness.
+This module formalizes §2.1 of [han2009theoretical]: operators $T : V \to W$, their domain, range
+and null set, injectivity, surjectivity and bijectivity, the inverse of a bijection, and boundedness
+of a not necessarily linear operator. The examples are the identity operator, matrix operators,
+whose injectivity and surjectivity are rank conditions, and the differentiation operator
+$v \mapsto v'$ on $C^1[0, 1]$. Differentiation maps $C^1[0, 1]$ onto $C[0, 1]$ with the constants as
+null set, the operator $v \mapsto (v', v(0))$ is a bijection onto $C[0, 1] \times \mathbb{R}$, and
+differentiation is not bounded for the maximum norm.
 
 Definition 2.1.1 is Mathlib's `Function.Injective`, `Function.Surjective` and `Function.Bijective`,
-and is restated here under the book's number; the domain, range and null set of an operator are
-`Set.univ`, `Set.range` and `T ⁻¹' {0}`, or for a linear map `LinearMap.range` and `LinearMap.ker`,
-and none of those is restated.
+and it is restated here under the number of the book. The domain, range and null set of an operator
+are `Set.univ`, `Set.range` and `T ⁻¹' {0}`, or `LinearMap.range` and `LinearMap.ker` for a linear
+map, and they are not restated. The space $C^1[0, 1]$ comes from the backbone module
+`Numlib.Analysis.Calculus.ContDiffMapIcc`. For a linear operator, the link between boundedness and
+the estimate $\|Tv\| \le \gamma \|v\|$ is Proposition 2.2.3, in §2.2.
 
 ## Main definitions
 
-* `definition_2_1_1`, `definition_2_1_1_surjective`, `definition_2_1_1_bijection` — the three
-  clauses of Definition 2.1.1: an injective operator, an operator of `V` onto `W`, and a bijection.
-* `IsBoundedOperator` — Definition 2.1.6, the book's boundedness of a not necessarily linear
-  operator: *bounded sets have bounded images*, not "the operator norm is finite". The distinction
-  matters, because the two differ for a nonlinear operator and the point of Theorem 2.2.4 is that
-  for a linear operator they agree.
+* Definition 2.1.1, `AtkinsonHan.Chapter02.definition_2_1_1`,
+  `AtkinsonHan.Chapter02.definition_2_1_1_surjective` and
+  `AtkinsonHan.Chapter02.definition_2_1_1_bijection`: an injective operator, an operator of $V$ onto
+  $W$, and a bijection.
+* Definition 2.1.6, `AtkinsonHan.Chapter02.IsBoundedOperator`: an operator is bounded if it maps
+  bounded sets to bounded sets. For a nonlinear operator this differs from the finiteness of an
+  operator norm, and Theorem 2.2.4 shows that the two agree for a linear operator.
 
 ## Main results
 
-* `definition_2_1_1_iff`, `definition_2_1_1_surjective_iff`, `definition_2_1_1_bijection_iff` —
-  each clause read back as the Mathlib notion; later sections rewrite along these.
-* `definition_2_1_1_inverse` — the book's rule `v = T⁻¹ w ⟺ w = T v` determines exactly one inverse
-  of a bijection.
-* `isBoundedOperator_iff_image_bounded` — the two readings the book gives of Definition 2.1.6.
-* `example_2_1_2` — the identity operator is a bijection whose inverse is again the identity.
-* `example_2_1_3` — a matrix operator is injective exactly when `rank A = n`, and surjective
-  exactly when `rank A = m`.
-* `example_2_1_4`, `example_2_1_5` — the differentiation operator read on `C¹[0, 1]`: `d/dx` is
-  surjective onto `C[0, 1]` and not injective, its null set the constants, and `D : v ↦ (v', v(0))`
-  repairs the injectivity, being a bijection onto `C[0, 1] × ℝ`.
-* `example_2_1_7` — the half of Example 2.1.7 that needs no `C¹[0, 1]`: differentiation is
-  *unbounded* for the sup norm on `C[0, 1]`.
-
-The bridge to the estimate `‖T v‖ ≤ γ ‖v‖` for a *linear* operator is Proposition 2.2.3, and lives
-in §2.2 with the rest of that discussion.
+* Definition 2.1.1, `AtkinsonHan.Chapter02.definition_2_1_1_iff`,
+  `AtkinsonHan.Chapter02.definition_2_1_1_surjective_iff` and
+  `AtkinsonHan.Chapter02.definition_2_1_1_bijection_iff`: each clause is the corresponding Mathlib
+  notion.
+* Definition 2.1.1, `AtkinsonHan.Chapter02.definition_2_1_1_inverse`: the rule
+  $v = T^{-1} w \iff w = Tv$ determines exactly one inverse of a bijection.
+* Example 2.1.2, `AtkinsonHan.Chapter02.example_2_1_2`: the identity operator is a bijection, and
+  its inverse is the identity.
+* Example 2.1.3, `AtkinsonHan.Chapter02.example_2_1_3`: for an $m \times n$ matrix $A$,
+  $v \mapsto Av$ is injective if and only if $\operatorname{rank} A = n$, and surjective if and only
+  if $\operatorname{rank} A = m$.
+* Example 2.1.4, `AtkinsonHan.Chapter02.example_2_1_4`: $d/dx : C^1[0, 1] \to C[0, 1]$ is surjective
+  and not injective, and its null set is the constant functions.
+* Example 2.1.5, `AtkinsonHan.Chapter02.example_2_1_5`: $v \mapsto (v', v(0))$ is a bijection from
+  $C^1[0, 1]$ onto $C[0, 1] \times \mathbb{R}$.
+* Definition 2.1.6, `AtkinsonHan.Chapter02.isBoundedOperator_iff_image_bounded`: the two readings of
+  Definition 2.1.6 agree.
+* Example 2.1.7, `AtkinsonHan.Chapter02.example_2_1_7`: differentiation is not bounded for the
+  maximum norm on $C[0, 1]$.
 
 ## Conventions
 
-The convention of Chapter 1 continues: a numbered definition naming a property of data is a
-`def … : Prop` in the book's own words with a companion `…_iff` reading it back as the Mathlib
-notion, and a further clause of a definition takes a descriptive suffix rather than a letter.
+* The space $C^1[0, 1]$ is the backbone's `ContDiffMapIcc (zero_le_one : (0 : ℝ) ≤ 1) 1`, whose norm
+  is the book's norm (2.1.2), $\|v\|_\infty + \|v'\|_\infty$. The derivative $v'$ is
+  `ContDiffMapIcc.deriv v 1`. The space $C[0, 1]$ is `C(Set.Icc 0 1, ℝ)`, as in §1.2.
 
-Definition 2.1.1 asks nothing of `V` and `W` beyond their being sets, which is how §2.1 opens, so
-its three clauses are stated for bare types. Example 2.1.3 is stated over an arbitrary field, which
-covers both the real matrices the book writes and the complex ones of the remark after it.
+## Implementation notes
 
-`C¹[0, 1]` is the backbone's `ContDiffMapIcc (zero_le_one : (0 : ℝ) ≤ 1) 1`
-(`Numlib.Analysis.Calculus.ContDiffMapIcc`), whose norm is exactly the book's (2.1.2)
-`‖v‖_∞ + ‖v'‖_∞`, and `C[0, 1]` is `C(Set.Icc 0 1, ℝ)` as in §1.2. Its `v'` is
-`ContDiffMapIcc.deriv v 1`.
+* As in Chapter 1, a numbered definition that names a property of data is a `def … : Prop` in the
+  words of the book, with a companion theorem `…_iff` that identifies it with the Mathlib notion. A
+  further clause of a definition takes a descriptive suffix rather than a letter.
+* Definition 2.1.1 asks nothing of $V$ and $W$ beyond being sets, so its three clauses are stated
+  for arbitrary types.
+* Example 2.1.3 is stated over an arbitrary field. This covers the real matrices of the book and the
+  complex matrices of the remark after the example.
 
-## Not formalized here
+## Not formalized
 
-The *bounded* half of Example 2.1.7, that `d/dx : C¹[0, 1] → C[0, 1]` is bounded for the norm
-(2.1.2), is the backbone's `ContDiffMapIcc.derivCLM`, whose operator norm is at most `1`; it is not
-restated here. The *unbounded* half needs no `C¹[0, 1]` and is `example_2_1_7`.
+* **The bounded half of Example 2.1.7**, that $d/dx : C^1[0, 1] \to C[0, 1]$ is bounded for the norm
+  (2.1.2). It is the backbone's `ContDiffMapIcc.derivCLM`, whose operator norm is at most $1$, and
+  it is not restated here.
 -/
 
 open Bornology Metric
@@ -79,45 +90,50 @@ section Bijection
 
 variable {V W : Type*}
 
-/-- **Definition 2.1.1.** An operator `T : V → W` is *one-to-one*, or *injective*, when
-`v₁ ≠ v₂ ⇒ T v₁ ≠ T v₂` (2.1.1).
+/-- **Definition 2.1.1** of [han2009theoretical]. An operator $T : V \to W$ is **one-to-one**, or
+**injective**, if $v_1 \neq v_2$ implies $T v_1 \neq T v_2$ (2.1.1).
 
-This is Mathlib's `Function.Injective`; `definition_2_1_1_iff` is the correspondence. -/
+The predicate is `Function.Injective` by `AtkinsonHan.Chapter02.definition_2_1_1_iff`. -/
 def definition_2_1_1 (T : V → W) : Prop :=
   ∀ v₁ v₂ : V, v₁ ≠ v₂ → T v₁ ≠ T v₂
 
-/-- Definition 2.1.1 is Mathlib's `Function.Injective`. -/
+/-- An operator $T : V \to W$ is injective in the sense of Definition 2.1.1 of [han2009theoretical]
+if and only if it is `Function.Injective`. -/
 theorem definition_2_1_1_iff (T : V → W) : definition_2_1_1 T ↔ Function.Injective T :=
   ⟨fun h v₁ v₂ hv => by_contra fun hne => h v₁ v₂ hne hv, fun h _ _ hne hv => hne (h hv)⟩
 
-/-- **Definition 2.1.1**, second clause. `T` *maps `V` onto `W`*, or is *surjective*, when its
-range is all of `W`: `R(T) = W`.
+/-- **Definition 2.1.1** of [han2009theoretical], second clause. An operator $T : V \to W$ **maps
+$V$ onto $W$**, or is **surjective**, if its range is all of $W$: $R(T) = W$.
 
-This is Mathlib's `Function.Surjective`; `definition_2_1_1_surjective_iff` is the
-correspondence. -/
+The predicate is `Function.Surjective` by
+`AtkinsonHan.Chapter02.definition_2_1_1_surjective_iff`. -/
 def definition_2_1_1_surjective (T : V → W) : Prop :=
   Set.range T = Set.univ
 
-/-- The second clause of Definition 2.1.1 is Mathlib's `Function.Surjective`. -/
+/-- An operator $T : V \to W$ maps $V$ onto $W$ in the sense of the second clause of Definition
+2.1.1 of [han2009theoretical] if and only if it is `Function.Surjective`. -/
 theorem definition_2_1_1_surjective_iff (T : V → W) :
     definition_2_1_1_surjective T ↔ Function.Surjective T :=
   Set.range_eq_univ
 
-/-- **Definition 2.1.1**, third clause. An operator that is both injective and surjective is a
-*bijection* from `V` to `W`.
+/-- **Definition 2.1.1** of [han2009theoretical], third clause. An operator $T : V \to W$ that is
+both injective and surjective is a **bijection** from $V$ to $W$.
 
-This is Mathlib's `Function.Bijective`; `definition_2_1_1_bijection_iff` is the correspondence. -/
+The predicate is `Function.Bijective` by `AtkinsonHan.Chapter02.definition_2_1_1_bijection_iff`. -/
 def definition_2_1_1_bijection (T : V → W) : Prop :=
   definition_2_1_1 T ∧ definition_2_1_1_surjective T
 
-/-- The third clause of Definition 2.1.1 is Mathlib's `Function.Bijective`. -/
+/-- An operator $T : V \to W$ is a bijection in the sense of the third clause of Definition 2.1.1 of
+[han2009theoretical] if and only if it is `Function.Bijective`. -/
 theorem definition_2_1_1_bijection_iff (T : V → W) :
     definition_2_1_1_bijection T ↔ Function.Bijective T := by
   rw [definition_2_1_1_bijection, definition_2_1_1_iff, definition_2_1_1_surjective_iff,
     Function.Bijective]
 
-/-- The inverse of a bijection, as the book defines it right after Definition 2.1.1: exactly one
-`T⁻¹ : W → V` obeys the rule `v = T⁻¹ w ⟺ w = T v`. -/
+/-- The inverse of a bijection, as the book defines it after Definition 2.1.1 of
+[han2009theoretical]. If $T : V \to W$ is a bijection, then exactly one map $T^{-1} : W \to V$
+satisfies $$v = T^{-1} w \iff w = T v \qquad \text{for all } v \in V, \ w \in W.$$
+-/
 theorem definition_2_1_1_inverse {T : V → W} (h : definition_2_1_1_bijection T) :
     ∃! S : W → V, ∀ (v : V) (w : W), v = S w ↔ w = T v := by
   obtain ⟨hinj, hsurj⟩ := (definition_2_1_1_bijection_iff T).mp h
@@ -128,21 +144,26 @@ theorem definition_2_1_1_inverse {T : V → W} (h : definition_2_1_1_bijection T
     exact (hinj (Function.surjInv_eq hsurj (T v))).symm
   · exact ((hS (Function.surjInv hsurj w) w).mpr (Function.surjInv_eq hsurj w).symm).symm
 
-/-- **Example 2.1.2.** The identity operator `I v = v` on a linear space `V` is a bijection from
-`V` to `V`, and its inverse is again the identity operator. -/
+/-- **Example 2.1.2** of [han2009theoretical]. The identity operator $I v = v$ on a set $V$ is a
+bijection from $V$ to $V$, and its inverse is again the identity: every $S : V \to V$ with
+$v = S w \iff w = v$ for all $v, w \in V$ is the identity.
+
+The book takes $V$ to be a linear space; the statement holds for any set. -/
 theorem example_2_1_2 (V : Type*) :
     definition_2_1_1_bijection (id : V → V) ∧
       ∀ S : V → V, (∀ (v w : V), v = S w ↔ w = id v) → S = id :=
   ⟨(definition_2_1_1_bijection_iff _).mpr Function.bijective_id,
     fun _ hS => funext fun w => ((hS w w).mpr rfl).symm⟩
 
-/-- **Example 2.1.3.** For `L v = A v` with `A` an `m × n` matrix, `L` is injective if and only if
-`rank A = n`, and surjective if and only if `rank A = m`.
+/-- **Example 2.1.3** of [han2009theoretical]. Let $A$ be an $m \times n$ matrix over a field
+$\mathbb{K}$, and let $L v = A v$. Then $L$ is injective if and only if
+$\operatorname{rank} A = n$, and $L$ is surjective if and only if $\operatorname{rank} A = m$.
 
-The book states this over `ℝ` and remarks that the same holds over `ℂ`; both are the statement
-below over an arbitrary field, the book's `ℝⁿ` being `Fin n → ℝ`. The rank is Mathlib's
-`Matrix.rank`, the dimension of the range of `v ↦ A v`, which is the book's maximal number of
-independent columns. -/
+The book states the example over $\mathbb{R}$ and remarks that the same holds over $\mathbb{C}$;
+both are cases of the statement over an arbitrary field. The rows and columns are indexed by
+finite types `m` and `n`, the space of column vectors is `n → 𝕜`, and $L$ is `A.mulVec`. The rank
+is `Matrix.rank`, the dimension of the range of $v \mapsto Av$, which is the book's maximal
+number of linearly independent columns. -/
 theorem example_2_1_3 {𝕜 : Type*} [Field 𝕜] {m n : Type*} [Fintype m] [Fintype n]
     (A : Matrix m n 𝕜) :
     (definition_2_1_1 A.mulVec ↔ A.rank = Fintype.card n) ∧
@@ -175,15 +196,20 @@ end Bijection
 
 variable {V W : Type*} [SeminormedAddCommGroup V] [SeminormedAddCommGroup W]
 
-/-- **Definition 2.1.6.** An operator `T : V → W` between normed spaces is *bounded* when it maps
-bounded sets to bounded sets: for every `r > 0` there is an `R` with `‖T v‖ ≤ R` whenever
-`‖v‖ ≤ r`. This is the book's notion, and it is not "the operator norm of `T` is finite": the two
-agree for linear operators (Theorem 2.2.4) and differ in general. -/
+/-- **Definition 2.1.6** of [han2009theoretical]. Let $V$ and $W$ be normed spaces. An operator
+$T : V \to W$, not necessarily linear, is **bounded** if it maps bounded sets to bounded sets:
+for every $r > 0$ there is an $R$ with $\|T v\| \le R$ whenever $\|v\| \le r$.
+
+This is not the condition that the operator norm of $T$ be finite. The two conditions agree for
+linear operators (Theorem 2.2.4) and differ in general. The equivalence with "bounded sets have
+bounded images" is `AtkinsonHan.Chapter02.isBoundedOperator_iff_image_bounded`. The spaces are
+seminormed groups, and no linear structure is used. -/
 def IsBoundedOperator (T : V → W) : Prop :=
   ∀ r > 0, ∃ R : ℝ, ∀ v : V, ‖v‖ ≤ r → ‖T v‖ ≤ R
 
-/-- The two readings the book gives of Definition 2.1.6 agree: `T` is bounded on every ball if and
-only if it maps every bounded set to a bounded set. -/
+/-- An operator $T : V \to W$ between normed spaces is bounded in the sense of Definition 2.1.6 of
+[han2009theoretical] if and only if, for every bounded set $B \subseteq V$, the image $T(B)$ is
+bounded. These are the two readings of the definition that the book gives. -/
 theorem isBoundedOperator_iff_image_bounded (T : V → W) :
     IsBoundedOperator T ↔ ∀ B : Set V, IsBounded B → IsBounded (T '' B) := by
   constructor
@@ -198,15 +224,17 @@ theorem isBoundedOperator_iff_image_bounded (T : V → W) :
       isBounded_iff_forall_norm_le.mp (hT (closedBall 0 r) isBounded_closedBall)
     exact ⟨R, fun v hv => hR _ ⟨v, by simpa using hv, rfl⟩⟩
 
-/-- **Example 2.1.7**, the half that needs no `C¹[0, 1]`: *differentiation is not a bounded
-operator for the sup norm on `C[0, 1]`*. There is no `γ` with `‖v'‖_∞ ≤ γ ‖v‖_∞` for every
-continuously differentiable `v`, and the book's witnesses show it: `v_n (x) = sin (n x)` has
-`‖v_n‖_∞ ≤ 1` while `v_n' (0) = n`.
+/-- **Example 2.1.7** of [han2009theoretical], the unbounded half. Differentiation is not a bounded
+operator for the maximum norm on $C[0, 1]$. Precisely, for every $\gamma \in \mathbb{R}$ there
+is a differentiable function $v : \mathbb{R} \to \mathbb{R}$ with continuous derivative $v'$
+such that $|v(x)| \le 1$ for all $x \in [0, 1]$ and $|v'(x)| > \gamma$ for some $x \in [0, 1]$.
+Hence no $\gamma$ satisfies $\|v'\|_\infty \le \gamma \|v\|_\infty$ for all continuously
+differentiable $v$.
 
-The statement is the negation in witness form — for every `γ` such a `v` exists — because the
-bounded reading of the operator would need `C¹[0, 1]` as a normed space, which Mathlib does not
-have; the other half of the Example, that `d/dx` *is* bounded for `‖v‖_∞ + ‖v'‖_∞`, waits on that
-space. -/
+The book's witnesses are the functions $v_n(x) = \sin(nx)$, with $\|v_n\|_\infty \le 1$ and
+$v_n'(0) = n$. The statement is the negation in witness form and does not use the space
+$C^1[0, 1]$. The bounded half of the example, that $d/dx$ is bounded for the norm
+$\|v\|_\infty + \|v'\|_\infty$, is the backbone's `ContDiffMapIcc.derivCLM`. -/
 theorem example_2_1_7 (γ : ℝ) :
     ∃ v v' : ℝ → ℝ, (∀ x, HasDerivAt v (v' x) x) ∧ Continuous v' ∧
       (∀ x ∈ Set.Icc (0 : ℝ) 1, |v x| ≤ 1) ∧ ∃ x ∈ Set.Icc (0 : ℝ) 1, γ < |v' x| := by
@@ -220,18 +248,19 @@ theorem example_2_1_7 (γ : ℝ) :
     simp only [mul_zero, Real.cos_zero, mul_one]
     rwa [abs_of_pos hn0]
 
-/-! ### Examples 2.1.4 and 2.1.5: the differentiation operator on `C¹[0, 1]` -/
+/-! ### Examples 2.1.4 and 2.1.5: the differentiation operator on $C^1[0, 1]$ -/
 
 section Differentiation
 
 open Set ContDiffMapIcc
 
-/-- **Example 2.1.4.** The differentiation operator `d/dx : v ↦ v'`, with domain the proper
-subspace `C¹[0, 1]` of `C[0, 1]` and values in `C[0, 1]`, is a surjection; it is not injective, and
-its null set is the set of constant functions.
+/-- **Example 2.1.4** of [han2009theoretical]. The differentiation operator $d/dx : v \mapsto v'$,
+with domain the proper subspace $C^1[0, 1]$ of $C[0, 1]$ and values in $C[0, 1]$, is surjective
+and not injective. Its null set is the set of constant functions: $v' = 0$ if and only if $v$ is
+constant on $[0, 1]$.
 
-`C¹[0, 1]` is the backbone's `ContDiffMapIcc (zero_le_one : (0 : ℝ) ≤ 1) 1`, whose norm is the
-book's (2.1.2); `v'` is its first derivative `ContDiffMapIcc.deriv v 1`. -/
+The space $C^1[0, 1]$ is the backbone's `ContDiffMapIcc (zero_le_one : (0 : ℝ) ≤ 1) 1`, whose
+norm is the book's norm (2.1.2), and $v'$ is its first derivative `ContDiffMapIcc.deriv v 1`. -/
 theorem example_2_1_4 :
     Function.Surjective (fun v : ContDiffMapIcc (zero_le_one : (0 : ℝ) ≤ 1) 1 => v.deriv 1) ∧
       ¬Function.Injective (fun v : ContDiffMapIcc (zero_le_one : (0 : ℝ) ≤ 1) 1 => v.deriv 1) ∧
@@ -256,9 +285,10 @@ theorem example_2_1_4 :
     rw [hconst]
     exact ContinuousMap.hasDerivIcc_const zero_le_one c
 
-/-- **Example 2.1.5.** The operator `D : v ↦ (v', v(0))` is a bijection from `C¹[0, 1]` onto
-`C[0, 1] × ℝ`, repairing the non-injectivity of `d/dx` of Example 2.1.4: the inverse sends `(w, c)`
-to the antiderivative of `w` taking the value `c` at `0`. -/
+/-- **Example 2.1.5** of [han2009theoretical]. The operator $D v = (v', v(0))$ is a bijection from
+$C^1[0, 1]$ onto $C[0, 1] \times \mathbb{R}$. It repairs the failure of injectivity of $d/dx$ in
+Example 2.1.4: the inverse sends $(w, c)$ to the antiderivative of $w$ with the value $c$ at
+$0$. -/
 theorem example_2_1_5 :
     Function.Bijective (fun v : ContDiffMapIcc (zero_le_one : (0 : ℝ) ≤ 1) 1 =>
       (v.deriv 1, v ⟨0, left_mem_Icc.2 zero_le_one⟩)) := by

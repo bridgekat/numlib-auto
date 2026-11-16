@@ -10,43 +10,96 @@ import Numlib.Variational.LaxMilgram
 import NumlibSurface.AtkinsonHan.Chapter08.Section02
 
 /-!
-# Atkinson–Han §8.3: the Lax–Milgram lemma
+# Atkinson and Han, Section 8.3: The Lax–Milgram lemma
 
-Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework*, 3rd edition, Springer, 2009, §8.3.
+This module formalizes Section 8.3 of [han2009theoretical]. The data is a real bilinear form
+$a : V \times V \to \mathbb{R}$ on a real normed space $V$, later a Hilbert space, together with
+$\ell \in V'$. The section defines bounded, positive, strictly positive, strongly positive
+($V$-elliptic) and symmetric forms. Theorem 8.3.1 identifies the bounded forms with the operators
+$A \in \mathcal{L}(V, V')$ through $\langle Au, v \rangle = a(u, v)$. Theorems 8.3.2 and 8.3.3 show
+that the energy $E(v) = \frac12 \|v\|^2 - \ell(v)$, and more generally
+$E(v) = \frac12 a(v, v) - \ell(v)$ for a symmetric $V$-elliptic form, has a unique minimizer on a
+nonempty closed convex set $K$, characterized by a variational inequality, and on a subspace by a
+variational equation. Theorem 8.3.4, the Lax–Milgram lemma, states that for a bounded $V$-elliptic
+form on a Hilbert space the problem (8.3.5), to find $u \in V$ with $a(u, v) = \ell(v)$ for all
+$v \in V$, has exactly one solution, with $\|u\| \le \|\ell\|/\alpha$. Example 8.3.5 applies it to
+the Dirichlet problem for $-\Delta u = f$.
 
-The data of §8.3 is a real bilinear form `a : V × V → ℝ` on a real normed (later Hilbert) space
-`V`, together with `ℓ ∈ V'`.  Such a form is a `BilinForm V` (`V →ₗ[ℝ] V →ₗ[ℝ] ℝ`), and the
-book's vocabulary — bounded, positive, strictly positive, strongly positive (= `V`-elliptic),
-symmetric — is the list of predicates below.  §8.7 and the whole of Chapter 9 are stated in that
-vocabulary, so the dictionary lives here in full, including the facts the book records only later
-as (9.1.3), (9.1.7) and (9.4.2)–(9.4.7); §8.3's own second proof of Theorem 8.3.4 already needs
-the operator `A` of (9.4.5).
+Chapter 9 and Section 8.7 use the same vocabulary, so this module also contains the facts that the
+source records only later as (9.1.3), (9.1.7) and (9.4.2)–(9.4.7). The second proof of Theorem 8.3.4
+in the source already uses the operator $A : V \to V$ of (9.4.5). The proofs specialize the backbone
+modules `Numlib.Variational.Forms` and `Numlib.Variational.LaxMilgram`, and Exercise 8.3.1 uses the
+strongly monotone operators of `Numlib.Nonlinear.FixedPoint`.
 
-`BilinForm.toCLM` bundles a bounded form as a `V →L[ℝ] V →L[ℝ] ℝ`, which *is* the backbone's
-`SesqForm ℝ V`, so the `Numlib.Variational` API applies to it verbatim; `BilinForm.ofCLM` is the
-inverse direction and `theorem_8_3_1` packages the two as the one-to-one correspondence of
-Theorem 8.3.1 between `A ∈ L(V, V')` and the bounded bilinear forms on `V`.  On a Hilbert space
-`BilinForm.toOperator` is the Riesz operator `A : V → V` of (9.4.5), with `(A u, v) = a(u,v)`,
-and `BilinForm.energy` is the energy functional `E(v) = ½ a(v,v) − ℓ(v)` of Theorem 8.3.3.
+## Main definitions
+
+* Section 8.3, `AtkinsonHan.BilinForm`: a real bilinear form on $V$.
+* Section 8.3, `AtkinsonHan.BilinForm.IsBoundedWith` and `AtkinsonHan.BilinForm.IsBounded`:
+  $|a(u, v)| \le M \|u\| \|v\|$, for a given $M$ or for some $M > 0$.
+* Section 8.3, `AtkinsonHan.BilinForm.IsPositive` and `AtkinsonHan.BilinForm.IsStrictlyPositive`:
+  $a(v, v) \ge 0$ for all $v$, and $a(v, v) > 0$ for all $v \ne 0$.
+* Section 8.3, `AtkinsonHan.BilinForm.IsEllipticWith` and `AtkinsonHan.BilinForm.IsElliptic`:
+  $a(v, v) \ge \alpha \|v\|^2$, for a given $\alpha$ or for some $\alpha > 0$.
+* Theorem 8.3.1, `AtkinsonHan.BilinForm.toCLM` and `AtkinsonHan.BilinForm.ofCLM`: a bounded form as
+  an operator $A \in \mathcal{L}(V, V')$, and the form $\langle Au, v \rangle$ of an operator.
+* Theorem 8.3.1, `AtkinsonHan.BilinForm.theorem_8_3_1`: the one-to-one correspondence between
+  $\mathcal{L}(V, V')$ and the bounded bilinear forms on $V$.
+* Equation (8.3.2), `AtkinsonHan.BilinForm.energy`: the energy $E(v) = \frac12 a(v, v) - \ell(v)$.
+* Section 8.3, `AtkinsonHan.BilinForm.energyNorm`: the energy norm $\|v\|_a = \sqrt{a(v, v)}$.
+* Equation (9.4.5), `AtkinsonHan.BilinForm.toOperator`: the operator $A : V \to V$ with
+  $(Au, v) = a(u, v)$ on a Hilbert space.
 
 ## Main results
 
-* `theorem_8_3_1` — the one-to-one correspondence between `L(V, V')` and the bounded forms.
-* `theorem_8_3_2` — the minimizer of `E(v) = ½‖v‖² − ℓ(v)` on a nonempty closed convex set, with
-  its variational inequality (`theorem_8_3_2_iff`) and its subspace form
-  (`theorem_8_3_2_subspace`).
-* `theorem_8_3_3` — the same for the energy `E(v) = ½ a(v,v) − ℓ(v)` of a symmetric `V`-elliptic
-  form, with the variational inequality (8.3.3) and the variational equation (8.3.4).
-* `theorem_8_3_4` — the Lax–Milgram lemma, with the stability estimate `‖u‖ ≤ ‖ℓ‖/α`.  Both
-  proofs the book gives are available: the damped fixed-point iteration `P_θ` of the first
-  (`contractingWith_damped_sub_smul`) and the closed-range argument of the second
-  (`isClosed_range_toOperator`, `bijective_toOperator`).
-* `exercise_8_3_1` — Lax–Milgram rederived from the strongly monotone Lipschitz theory of §5.1.
-* `example_8_3_5` — the Lax–Milgram lemma applied to the model Dirichlet problem (8.2.3) on
-  `H¹₀(Ω)` of a bounded open `Ω ⊆ ℝ^{d+1}`, the bilinear form `∫_Ω ∇u · ∇v` being the operator
-  `modelOperator Ω` of Example 8.2.6 (`Chapter08/Section02`) and its `V`-ellipticity Poincaré's
-  inequality.
+* Theorem 8.3.1, `AtkinsonHan.BilinForm.isBoundedWith_opNorm` and
+  `AtkinsonHan.BilinForm.norm_toCLM_le`: $|a(u, v)| \le \|A\| \|u\| \|v\|$, and $\|A\| \le M$.
+* Theorem 8.3.2, `AtkinsonHan.Chapter08.theorem_8_3_2`: $\frac12 \|v\|^2 - \ell(v)$ has a unique
+  minimizer on a nonempty closed convex set.
+* Theorem 8.3.2, `AtkinsonHan.Chapter08.theorem_8_3_2_iff` and
+  `AtkinsonHan.Chapter08.theorem_8_3_2_subspace`: the minimizer is characterized by
+  $(u, v - u) \ge \ell(v - u)$ on $K$, and by $(u, v) = \ell(v)$ on a subspace.
+* Theorem 8.3.3, `AtkinsonHan.Chapter08.theorem_8_3_3`: the energy of a bounded symmetric
+  $V$-elliptic form has a unique minimizer on a nonempty closed convex set.
+* Theorem 8.3.3, `AtkinsonHan.Chapter08.theorem_8_3_3_iff` and
+  `AtkinsonHan.Chapter08.theorem_8_3_3_subspace`: the minimizer is characterized by the variational
+  inequality (8.3.3), and on a subspace by the variational equation (8.3.4).
+* Theorem 8.3.4, `AtkinsonHan.Chapter08.theorem_8_3_4`: the Lax–Milgram lemma, unique solvability of
+  (8.3.5).
+* Theorem 8.3.4, `AtkinsonHan.Chapter08.theorem_8_3_4_norm_le` and
+  `AtkinsonHan.Chapter08.theorem_8_3_4_norm_sub_le`: $\|u\| \le \|\ell\|/\alpha$, and
+  $\|u_1 - u_2\| \le \|\ell_1 - \ell_2\|/\alpha$.
+* Example 8.3.5, `AtkinsonHan.Chapter08.example_8_3_5`: the weak Dirichlet problem for
+  $-\Delta u = f$ on a bounded open set has exactly one solution in $H^1_0(\Omega)$.
+* Exercise 8.3.1, `AtkinsonHan.Chapter08.exercise_8_3_1`: the Lax–Milgram lemma from the theory of
+  strongly monotone Lipschitz operators of Section 5.1.
+
+## Proof outline
+
+The source gives two proofs of Theorem 8.3.4, and both are here. The first shows that
+$P_\theta u = u - \theta (Au - f)$ is a contraction for $0 < \theta < 2\alpha/M^2$, where $f$ is the
+Riesz representative of $\ell$ (`AtkinsonHan.Chapter08.contractingWith_damped_sub_smul`). The second
+shows that $A$ is bounded below, so that its range is closed, and that the orthogonal complement of
+the range is $\{0\}$, so that $A$ is a bijection (`AtkinsonHan.Chapter08.bijective_toOperator`). The
+theorem itself specializes `SesqForm.laxMilgram`.
+
+## Implementation notes
+
+* A form is `AtkinsonHan.BilinForm V`, that is Mathlib's `LinearMap.BilinForm ℝ V`, and the
+  properties of §8.3 are unbundled predicates on it. Symmetry is Mathlib's
+  `LinearMap.BilinForm.IsSymm`.
+* `AtkinsonHan.BilinForm.toCLM` bundles a bounded form as `V →L[ℝ] V →L[ℝ] ℝ`. This type is the
+  backbone's `SesqForm ℝ V`, so the API of `Numlib.Variational` applies with no conversion. The
+  lemmas under "Bridges to the backbone predicates" erase the `RCLike.re` and `starRingEnd`
+  decorations of the general theory over $\mathbb{R}$.
+* On a Hilbert space, `AtkinsonHan.BilinForm.toOperator` is the Riesz representation of the operator
+  of Theorem 8.3.1. The Riesz representative $f$ of $\ell$ in (9.4.6) is `SesqForm.rieszRep ℓ`.
+* A minimizer is stated with Mathlib's `IsMinOn`. `AtkinsonHan.Chapter08.isMinOn_iff_eq_ciInf`
+  converts it to the form $E(u) = \inf_K E$ of the source.
+
+## Deviations from the source
+
+* **Example 8.3.5** (generalization). The source assumes a Lipschitz boundary. The example here
+  holds on every bounded open set. See `AtkinsonHan.Chapter08.example_8_3_5`.
 -/
 
 open Filter Metric MeasureTheory Set TopologicalSpace Topology
@@ -54,9 +107,13 @@ open scoped InnerProductSpace
 
 namespace AtkinsonHan
 
-/-! ### The bilinear forms of §8.3 and the operators they represent -/
+/-! ### The bilinear forms of Section 8.3 and the operators they represent -/
 
-/-- A real bilinear form `a : V × V → ℝ` (Atkinson–Han §8.3). -/
+/-- **Section 8.3** of [han2009theoretical], bilinear forms. A **real bilinear form** on a real
+vector space $V$ is a map $a : V \times V \to \mathbb{R}$ that is linear in each argument.
+
+It is Mathlib's `LinearMap.BilinForm ℝ V`, a linear map from $V$ to the linear functionals on
+$V$. -/
 abbrev BilinForm (V : Type*) [AddCommGroup V] [Module ℝ V] := LinearMap.BilinForm ℝ V
 
 namespace BilinForm
@@ -65,116 +122,161 @@ section Normed
 
 variable {V : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V]
 
-/-- `|a(u,v)| ≤ M ‖u‖ ‖v‖`: the boundedness of §8.3, with an explicit constant. -/
+/-- **Section 8.3** of [han2009theoretical], boundedness with a constant. Let $V$ be a real normed
+space. A bilinear form $a$ on $V$ is **bounded with constant** $M$ if
+$$|a(u, v)| \le M \|u\| \|v\| \quad \text{for all } u, v \in V.$$
+
+The constant is explicit, and no sign condition on $M$ is part of the definition. -/
 def IsBoundedWith (a : BilinForm V) (M : ℝ) : Prop := ∀ u v, |a u v| ≤ M * ‖u‖ * ‖v‖
 
-/-- A bounded bilinear form: `|a(u,v)| ≤ M ‖u‖ ‖v‖` for some `M > 0` (§8.3). -/
+/-- **Section 8.3** of [han2009theoretical], definition of a bounded form. A bilinear form $a$ on a
+real normed space $V$ is **bounded** if there is $M > 0$ with $|a(u, v)| \le M \|u\| \|v\|$ for
+all $u, v \in V$. -/
 def IsBounded (a : BilinForm V) : Prop := ∃ M > 0, a.IsBoundedWith M
 
-/-- `a(v,v) ≥ 0`: the book's "positive" (§8.3).  Unlike Mathlib's `LinearMap.IsPositive`, this
-does not include symmetry. -/
+/-- **Section 8.3** of [han2009theoretical], definition of a positive form. A bilinear form $a$ on a
+real normed space $V$ is **positive** if $a(v, v) \ge 0$ for all $v \in V$.
+
+Unlike Mathlib's `LinearMap.IsPositive`, this does not include symmetry. -/
 def IsPositive (a : BilinForm V) : Prop := ∀ v, 0 ≤ a v v
 
-/-- `a(v,v) > 0` for `v ≠ 0`: the book's "strictly positive" (§8.3). -/
+/-- **Section 8.3** of [han2009theoretical], definition of a strictly positive form. A bilinear form
+$a$ on a real normed space $V$ is **strictly positive** if $a(v, v) > 0$ for all $v \in V$ with
+$v \ne 0$. -/
 def IsStrictlyPositive (a : BilinForm V) : Prop := ∀ v, v ≠ 0 → 0 < a v v
 
-/-- `a(v,v) ≥ α ‖v‖²`: the book's "strongly positive", or `V`-elliptic, with constant `α`
-(§8.3; (9.1.3) with `α = c₀`). -/
+/-- **Section 8.3** of [han2009theoretical], strong positivity with a constant. A bilinear form $a$
+on a real normed space $V$ is **$V$-elliptic** (strongly positive) **with constant** $\alpha$ if
+$$a(v, v) \ge \alpha \|v\|^2 \quad \text{for all } v \in V.$$
+
+This is also (9.1.3) with $\alpha = c_0$. No sign condition on $\alpha$ is part of the
+definition. -/
 def IsEllipticWith (a : BilinForm V) (α : ℝ) : Prop := ∀ v, α * ‖v‖ ^ 2 ≤ a v v
 
-/-- A `V`-elliptic (strongly positive) form: `a(v,v) ≥ α ‖v‖²` for some `α > 0`. -/
+/-- **Section 8.3** of [han2009theoretical], definition of a strongly positive form. A bilinear form
+$a$ on a real normed space $V$ is **$V$-elliptic** (strongly positive) if there is $\alpha > 0$
+with $a(v, v) \ge \alpha \|v\|^2$ for all $v \in V$. -/
 def IsElliptic (a : BilinForm V) : Prop := ∃ α > 0, a.IsEllipticWith α
 
 variable {a : BilinForm V} {M α : ℝ}
 
-/-- A form bounded with a positive constant is bounded. -/
+/-- A bilinear form that is bounded with a constant $M > 0$ is bounded. -/
 theorem IsBoundedWith.isBounded (hM : a.IsBoundedWith M) (hM0 : 0 < M) : a.IsBounded :=
   ⟨M, hM0, hM⟩
 
-/-- A form elliptic with a positive constant is `V`-elliptic. -/
+/-- A bilinear form that is $V$-elliptic with a constant $\alpha > 0$ is $V$-elliptic. -/
 theorem IsEllipticWith.isElliptic (ha : a.IsEllipticWith α) (hα : 0 < α) : a.IsElliptic :=
   ⟨α, hα, ha⟩
 
-/-- Strongly positive implies positive (§8.3). -/
+/-- A bilinear form that is $V$-elliptic with a constant $\alpha \ge 0$ is positive. The source
+notes that strong positivity implies positivity. -/
 theorem IsEllipticWith.isPositive (ha : a.IsEllipticWith α) (hα : 0 ≤ α) : a.IsPositive :=
   fun v => le_trans (by positivity) (ha v)
 
-/-- Strongly positive implies strictly positive (§8.3). -/
+/-- A bilinear form that is $V$-elliptic with a constant $\alpha > 0$ is strictly positive. The
+source notes that strong positivity implies strict positivity. -/
 theorem IsEllipticWith.isStrictlyPositive (ha : a.IsEllipticWith α) (hα : 0 < α) :
     a.IsStrictlyPositive := fun v hv => lt_of_lt_of_le (by positivity) (ha v)
 
-/-- The book's symmetry `a(u,v) = a(v,u)` is Mathlib's `LinearMap.BilinForm.IsSymm`. -/
+/-- A bilinear form $a$ is symmetric in Mathlib's sense `LinearMap.BilinForm.IsSymm` if and only if
+$a(u, v) = a(v, u)$ for all $u, v \in V$, which is the symmetry of the source. -/
 theorem isSymm_iff : LinearMap.BilinForm.IsSymm a ↔ ∀ u v, a u v = a v u :=
   LinearMap.BilinForm.isSymm_def
 
-/-! ### The correspondence `A ↔ a` of Theorem 8.3.1 -/
+/-! ### The correspondence $A \leftrightarrow a$ of Theorem 8.3.1 -/
 
-/-- A bounded bilinear form as an element of `L(V, V')`, that is as a bounded bilinear map
-`V →L[ℝ] V →L[ℝ] ℝ` (Atkinson–Han Theorem 8.3.1).  Over `ℝ` this type *is* the backbone's
-`SesqForm ℝ V`, so every lemma about bounded sesquilinear forms applies to `a.toCLM hM`. -/
+/-- **Theorem 8.3.1** of [han2009theoretical], from forms to operators. Let $V$ be a real normed
+space, and let $a$ be a bilinear form on $V$ that is bounded with constant $M$. The **operator
+of** $a$ is $A \in \mathcal{L}(V, V')$ with $\langle Au, v \rangle = a(u, v)$, that is $a$ as a
+bounded bilinear map `V →L[ℝ] V →L[ℝ] ℝ`.
+
+Over $\mathbb{R}$ this type is the backbone's `SesqForm ℝ V`, so every result on bounded
+sesquilinear forms applies to `a.toCLM hM`. The map is built with `LinearMap.mkContinuous₂` and
+the bound $M$. -/
 noncomputable def toCLM (a : BilinForm V) (hM : a.IsBoundedWith M) : V →L[ℝ] V →L[ℝ] ℝ :=
   LinearMap.mkContinuous₂ a M fun u v => by rw [Real.norm_eq_abs]; exact hM u v
 
-/-- Bundling a bounded form as an element of `L(V, V')` does not change its values: `a.toCLM hM`
-is the same function of `(u, v)` as `a`. -/
+/-- **Theorem 8.3.1** of [han2009theoretical], the defining relation. Let $a$ be a bilinear form on
+a real normed space $V$ that is bounded with constant $M$, and let $A$ be its operator. Then
+$\langle Au, v \rangle = a(u, v)$ for all $u, v \in V$. -/
 @[simp]
 theorem toCLM_apply (hM : a.IsBoundedWith M) (u v : V) : a.toCLM hM u v = a u v := rfl
 
-/-- `‖A‖ ≤ M` in Theorem 8.3.1. -/
+/-- **Theorem 8.3.1** of [han2009theoretical], the bound on the operator. Let $a$ be a bilinear form
+on a real normed space $V$ that is bounded with constant $M \ge 0$, and let $A$ be its operator.
+Then $\|A\| \le M$. -/
 theorem norm_toCLM_le (hM0 : 0 ≤ M) (hM : a.IsBoundedWith M) : ‖a.toCLM hM‖ ≤ M :=
   LinearMap.mkContinuous₂_norm_le _ hM0 _
 
-/-- The bilinear form `a(u,v) = ⟨A u, v⟩` of an operator `A ∈ L(V, V')` (Atkinson–Han
-Theorem 8.3.1). -/
+/-- **Theorem 8.3.1** of [han2009theoretical], from operators to forms. Let $V$ be a real normed
+space and $A \in \mathcal{L}(V, V')$. The **form of** $A$ is the bilinear form
+$a(u, v) = \langle Au, v \rangle$ on $V$. -/
 noncomputable def ofCLM (A : V →L[ℝ] StrongDual ℝ V) : BilinForm V :=
   (ContinuousLinearMap.coeLM ℝ).comp (A : V →ₗ[ℝ] StrongDual ℝ V)
 
-/-- The form attached to an operator is `a(u,v) = ⟨A u, v⟩`, the defining relation of
-Theorem 8.3.1. -/
+/-- **Theorem 8.3.1** of [han2009theoretical], the defining relation. For
+$A \in \mathcal{L}(V, V')$, the form of $A$ satisfies $a(u, v) = \langle Au, v \rangle$ for all
+$u, v \in V$. -/
 @[simp]
 theorem ofCLM_apply (A : V →L[ℝ] StrongDual ℝ V) (u v : V) : ofCLM A u v = A u v := rfl
 
-/-- `|a(u,v)| ≤ ‖A‖ ‖u‖ ‖v‖` in Theorem 8.3.1. -/
+/-- **Theorem 8.3.1** of [han2009theoretical], the bound on the form. For
+$A \in \mathcal{L}(V, V')$, the form of $A$ is bounded with constant $\|A\|$:
+$$|a(u, v)| \le \|A\| \|u\| \|v\| \quad \text{for all } u, v \in V.$$
+-/
 theorem isBoundedWith_opNorm (A : V →L[ℝ] StrongDual ℝ V) : (ofCLM A).IsBoundedWith ‖A‖ :=
   fun u v => by rw [ofCLM_apply, ← Real.norm_eq_abs]; exact A.le_opNorm₂ u v
 
-/-- The form of an operator is bounded; the constant `‖A‖ + 1` is used rather than `‖A‖` so that
-it is positive even for `A = 0`, as `IsBounded` requires. -/
+/-- For $A \in \mathcal{L}(V, V')$, the form of $A$ is bounded.
+
+The proof uses the constant $\|A\| + 1$ instead of $\|A\|$, so that the constant is positive
+also for $A = 0$, as `AtkinsonHan.BilinForm.IsBounded` requires. -/
 theorem isBounded_ofCLM (A : V →L[ℝ] StrongDual ℝ V) : (ofCLM A).IsBounded :=
   ⟨‖A‖ + 1, by positivity, fun u v =>
     (isBoundedWith_opNorm A u v).trans
       (by nlinarith [mul_nonneg (norm_nonneg u) (norm_nonneg v)])⟩
 
-/-- A bounded form is recovered from the operator it induces.  With `toCLM_ofCLM` this is the
-one-to-one correspondence of Theorem 8.3.1; note that the recovered form does not depend on which
-bound `M` was used to bundle it. -/
+/-- **Theorem 8.3.1** of [han2009theoretical], one half of the correspondence. Let $a$ be a bilinear
+form on a real normed space $V$ that is bounded with constant $M$. Then the form of the operator
+of $a$ is $a$.
+
+Together with `AtkinsonHan.BilinForm.toCLM_ofCLM`, this is the one-to-one correspondence of
+Theorem 8.3.1. The recovered form does not depend on the bound $M$ that was used to build the
+operator. -/
 theorem ofCLM_toCLM (hM : a.IsBoundedWith M) : ofCLM (a.toCLM hM) = a := by
   ext u v
   rfl
 
-/-- An operator is recovered from the form it induces: the other half of the correspondence of
-Theorem 8.3.1. -/
+/-- For $A \in \mathcal{L}(V, V')$ and any constant $M$ that bounds the form of $A$, the operator of
+the form of $A$ is $A$. This is the other half of the correspondence of Theorem 8.3.1. -/
 theorem toCLM_ofCLM (A : V →L[ℝ] StrongDual ℝ V) {M : ℝ} (hM : (ofCLM A).IsBoundedWith M) :
     (ofCLM A).toCLM hM = A := by
   ext u v
   rfl
 
-/-- Atkinson–Han Theorem 8.3.1: on a real normed space the operators `A ∈ L(V, V')` correspond
-one-to-one with the bounded bilinear forms on `V`, via `⟨A u, v⟩ = a(u,v)`.  The quantitative half
-of the theorem is `isBoundedWith_opNorm` (`|a(u,v)| ≤ ‖A‖ ‖u‖ ‖v‖`) together with `norm_toCLM_le`
-(`‖A‖ ≤ M`). -/
+/-- **Theorem 8.3.1** of [han2009theoretical]. Let $V$ be a real normed space. The relation
+$\langle Au, v \rangle = a(u, v)$ is a one-to-one correspondence between the operators
+$A \in \mathcal{L}(V, V')$ and the bounded bilinear forms $a$ on $V$.
+
+The quantitative part of the theorem is `AtkinsonHan.BilinForm.isBoundedWith_opNorm`,
+$|a(u, v)| \le \|A\| \|u\| \|v\|$, together with `AtkinsonHan.BilinForm.norm_toCLM_le`,
+$\|A\| \le M$. The correspondence is a Lean equivalence from `V →L[ℝ] StrongDual ℝ V` to the
+subtype of bounded forms. -/
 noncomputable def theorem_8_3_1 : (V →L[ℝ] StrongDual ℝ V) ≃ {a : BilinForm V // a.IsBounded} where
   toFun A := ⟨ofCLM A, isBounded_ofCLM A⟩
   invFun a := a.1.toCLM a.2.choose_spec.2
   left_inv A := toCLM_ofCLM A _
   right_inv _ := Subtype.ext (ofCLM_toCLM _)
 
-/-! ### The dictionary following Theorem 8.3.1
+/-!
+### The properties of a form and of its operator
 
-Each property of the form `a = ofCLM A` is the corresponding property of `A`, read through
-`⟨A v, v⟩ = a(v,v)`; all but the first are definitional. -/
+Each property of the form $a$ of an operator $A$ is the corresponding property of $A$, read through
+$\langle Av, v \rangle = a(v, v)$. All of them except the first hold by definition.
+-/
 
-/-- The form of `A` is bounded with constant `M` exactly when `A` is: `‖A v‖ ≤ M ‖v‖`. -/
+/-- For $A \in \mathcal{L}(V, V')$, the form of $A$ is bounded with constant $M$ if and only if
+$\|Av\| \le M \|v\|$ for all $v \in V$. -/
 theorem isBoundedWith_ofCLM_iff (A : V →L[ℝ] StrongDual ℝ V) :
     (ofCLM A).IsBoundedWith M ↔ ∀ v, ‖A v‖ ≤ M * ‖v‖ := by
   constructor
@@ -192,33 +294,44 @@ theorem isBoundedWith_ofCLM_iff (A : V →L[ℝ] StrongDual ℝ V) :
     calc ‖A u v‖ ≤ ‖A u‖ * ‖v‖ := (A u).le_opNorm v
       _ ≤ M * ‖u‖ * ‖v‖ := by gcongr; exact h u
 
-/-- The form of `A` is positive exactly when `⟨A v, v⟩ ≥ 0`. -/
+/-- For $A \in \mathcal{L}(V, V')$, the form of $A$ is positive if and only if
+$\langle Av, v \rangle \ge 0$ for all $v \in V$. -/
 theorem isPositive_ofCLM_iff (A : V →L[ℝ] StrongDual ℝ V) :
     (ofCLM A).IsPositive ↔ ∀ v, 0 ≤ A v v := Iff.rfl
 
-/-- The form of `A` is strictly positive exactly when `⟨A v, v⟩ > 0` off the origin. -/
+/-- For $A \in \mathcal{L}(V, V')$, the form of $A$ is strictly positive if and only if
+$\langle Av, v \rangle > 0$ for all $v \ne 0$. -/
 theorem isStrictlyPositive_ofCLM_iff (A : V →L[ℝ] StrongDual ℝ V) :
     (ofCLM A).IsStrictlyPositive ↔ ∀ v, v ≠ 0 → 0 < A v v := Iff.rfl
 
-/-- The form of `A` is `V`-elliptic with constant `α` exactly when `A` is strongly monotone with
-that constant, `⟨A v, v⟩ ≥ α ‖v‖²`. -/
+/-- For $A \in \mathcal{L}(V, V')$, the form of $A$ is $V$-elliptic with constant $\alpha$ if and
+only if $A$ is strongly monotone with that constant: $\langle Av, v \rangle \ge \alpha \|v\|^2$
+for all $v \in V$. -/
 theorem isEllipticWith_ofCLM_iff (A : V →L[ℝ] StrongDual ℝ V) :
     (ofCLM A).IsEllipticWith α ↔ ∀ v, α * ‖v‖ ^ 2 ≤ A v v := Iff.rfl
 
-/-- The form of `A` is symmetric exactly when `⟨A u, v⟩ = ⟨A v, u⟩`. -/
+/-- For $A \in \mathcal{L}(V, V')$, the form of $A$ is symmetric if and only if
+$\langle Au, v \rangle = \langle Av, u \rangle$ for all $u, v \in V$. -/
 theorem isSymm_ofCLM_iff (A : V →L[ℝ] StrongDual ℝ V) :
     LinearMap.BilinForm.IsSymm (ofCLM A) ↔ ∀ u v, A u v = A v u := isSymm_iff
 
 /-! ### The energy functional and the energy norm (Theorem 8.3.3, (9.1.7)) -/
 
-/-- The energy functional `E(v) = ½ a(v,v) − ℓ(v)` (Atkinson–Han (8.3.2), (9.1.7)). -/
+/-- **Equation (8.3.2)** of [han2009theoretical], also (9.1.7). Let $a$ be a bilinear form on a real
+normed space $V$, and let $\ell \in V'$. The **energy functional** is
+$$E(v) = \frac12 a(v, v) - \ell(v), \qquad v \in V.$$
+-/
 noncomputable def energy (a : BilinForm V) (ℓ : StrongDual ℝ V) (v : V) : ℝ :=
   (1 / 2 : ℝ) * a v v - ℓ v
 
-/-- The energy norm `‖v‖_a = √(a(v,v))` of a symmetric `V`-elliptic form (§8.3, §9.4). -/
+/-- **Section 8.3** of [han2009theoretical], also Section 9.4. The **energy norm** of a bilinear
+form $a$ on a real normed space $V$ is $\|v\|_a = \sqrt{a(v, v)}$.
+
+It is a norm when $a$ is symmetric and $V$-elliptic. For other forms the definition takes the
+real square root, which is $0$ where $a(v, v) < 0$. -/
 noncomputable def energyNorm (a : BilinForm V) (v : V) : ℝ := Real.sqrt (a v v)
 
-/-- The energy norm is nonnegative, being a square root. -/
+/-- The energy norm is nonnegative: $\|v\|_a \ge 0$ for every $v$. -/
 theorem energyNorm_nonneg (a : BilinForm V) (v : V) : 0 ≤ a.energyNorm v := Real.sqrt_nonneg _
 
 end Normed
@@ -228,27 +341,36 @@ section Inner
 variable {V : Type*} [NormedAddCommGroup V] [InnerProductSpace ℝ V]
 variable {a : BilinForm V} {M α : ℝ}
 
-/-! ### Bridges to the backbone predicates
+/-!
+### Bridges to the backbone predicates
 
-`a.toCLM hM` is literally a `SesqForm ℝ V`; these lemmas record that the book's predicates are
-the backbone's, with the `RCLike.re`/`starRingEnd` decorations of the general theory erased over
-`ℝ` (`SesqForm.isCoerciveWith_real_iff`, `SesqForm.isHermitian_real_iff`). -/
+The operator `a.toCLM hM` of a bounded form is a `SesqForm ℝ V` of the backbone. The results below
+show that the predicates of the source are those of the backbone, with the `RCLike.re` and
+`starRingEnd` decorations of the general theory erased over $\mathbb{R}$
+(`SesqForm.isCoerciveWith_real_iff`, `SesqForm.isHermitian_real_iff`).
+-/
 
-/-- The book's boundedness of `a` is the backbone's boundedness of the bundled form. -/
+/-- Let $V$ be a real inner product space and let $a$ be a bilinear form on $V$ that is bounded with
+constant $M$. For every constant $M'$, $a$ is bounded with constant $M'$ if and only if its
+operator is bounded with constant $M'$ in the sense of `SesqForm.IsBoundedWith`. -/
 theorem isBoundedWith_iff_toCLM {M' : ℝ} (hM : a.IsBoundedWith M) :
     a.IsBoundedWith M' ↔ SesqForm.IsBoundedWith (𝕜 := ℝ) (a.toCLM hM) M' := Iff.rfl
 
-/-- The bound used to bundle a form is a bound for the bundled form. -/
+/-- Let $a$ be a bilinear form on a real inner product space that is bounded with constant $M$. Then
+its operator is bounded with constant $M$ in the sense of `SesqForm.IsBoundedWith`. -/
 theorem isBoundedWith_toCLM (hM : a.IsBoundedWith M) :
     SesqForm.IsBoundedWith (𝕜 := ℝ) (a.toCLM hM) M :=
   (isBoundedWith_iff_toCLM hM).mp hM
 
-/-- `V`-ellipticity is the backbone's coercivity, with the same constant. -/
+/-- Let $a$ be a bilinear form on a real inner product space that is bounded with constant $M$. Then
+$a$ is $V$-elliptic with constant $\alpha$ if and only if its operator is coercive with constant
+$\alpha$ in the sense of `SesqForm.IsCoerciveWith`. -/
 theorem isEllipticWith_iff_isCoerciveWith (hM : a.IsBoundedWith M) :
     a.IsEllipticWith α ↔ SesqForm.IsCoerciveWith (𝕜 := ℝ) (a.toCLM hM) α := Iff.rfl
 
-/-- `V`-ellipticity is Mathlib's `IsCoercive` for the bundled form; the constants differ only by
-the `‖v‖ * ‖v‖` versus `‖v‖ ^ 2` spelling. -/
+/-- Let $a$ be a bilinear form on a real inner product space that is bounded with constant $M$. Then
+$a$ is $V$-elliptic if and only if its operator is coercive in the sense of Mathlib's
+`IsCoercive`, that is $a(v, v) \ge C \|v\| \|v\|$ for some $C > 0$. -/
 theorem isElliptic_iff_isCoercive (hM : a.IsBoundedWith M) :
     a.IsElliptic ↔ IsCoercive (a.toCLM hM) := by
   constructor
@@ -257,26 +379,40 @@ theorem isElliptic_iff_isCoercive (hM : a.IsBoundedWith M) :
   · rintro ⟨C, hC, h⟩
     exact ⟨C, hC, fun v => by simpa [sq, mul_assoc] using h v⟩
 
-/-- Symmetry is the backbone's Hermitian symmetry, since `conj = id` over `ℝ`. -/
+/-- Let $a$ be a bilinear form on a real inner product space that is bounded with constant $M$. Then
+$a$ is symmetric if and only if its operator is Hermitian in the sense of
+`SesqForm.IsHermitian`, since complex conjugation is the identity over $\mathbb{R}$. -/
 theorem isSymm_iff_isHermitian (hM : a.IsBoundedWith M) :
     LinearMap.BilinForm.IsSymm a ↔ SesqForm.IsHermitian (𝕜 := ℝ) (a.toCLM hM) := isSymm_iff
 
-/-- The surface energy functional is the backbone one. -/
+/-- Let $a$ be a bilinear form on a real inner product space that is bounded with constant $M$, and
+let $\ell \in V'$. Then the energy $E(v)$ of $a$ is the backbone's energy `SesqForm.energy` of
+the operator of $a$, for every $v$. -/
 theorem energy_eq (hM : a.IsBoundedWith M) (ℓ : StrongDual ℝ V) (v : V) :
     a.energy ℓ v = SesqForm.energy (a.toCLM hM) ℓ v := rfl
 
-/-- The surface energy norm is the backbone one. -/
+/-- Let $a$ be a bilinear form on a real inner product space that is bounded with constant $M$. Then
+the energy norm $\|v\|_a$ is the backbone's energy norm `SesqForm.energyNorm` of the operator of
+$a$, for every $v$. -/
 theorem energyNorm_eq (hM : a.IsBoundedWith M) (v : V) :
     a.energyNorm v = SesqForm.energyNorm (a.toCLM hM) v := rfl
 
-/-- Lower half of the norm equivalence `c₁ ‖v‖ ≤ ‖v‖_a ≤ c₂ ‖v‖` of Theorem 8.3.3, with
-`c₁ = √α`. -/
+/-- **Theorem 8.3.3** of [han2009theoretical], the lower half of the norm equivalence
+$c_1 \|v\| \le \|v\|_a \le c_2 \|v\|$. Let $a$ be a bilinear form on a real inner product space
+that is bounded with constant $M$ and $V$-elliptic with constant $\alpha \ge 0$. Then for every
+$v$,
+$$\sqrt{\alpha} \, \|v\| \le \|v\|_a.$$
+-/
 theorem sqrt_mul_norm_le_energyNorm (hM : a.IsBoundedWith M) (hα : 0 ≤ α)
     (ha : a.IsEllipticWith α) (v : V) : Real.sqrt α * ‖v‖ ≤ a.energyNorm v := by
   rw [energyNorm_eq hM]
   exact SesqForm.sqrt_mul_norm_le_energyNorm (a.toCLM hM) hα ha v
 
-/-- Upper half of the norm equivalence of Theorem 8.3.3, with `c₂ = √M`. -/
+/-- **Theorem 8.3.3** of [han2009theoretical], the upper half of the norm equivalence. Let $a$ be a
+bilinear form on a real inner product space that is bounded with constant $M$. Then for every
+$v$,
+$$\|v\|_a \le \sqrt{M} \, \|v\|.$$
+-/
 theorem energyNorm_le_sqrt_mul_norm (hM : a.IsBoundedWith M) (v : V) :
     a.energyNorm v ≤ Real.sqrt M * ‖v‖ := by
   rw [energyNorm_eq hM]
@@ -289,34 +425,46 @@ section Hilbert
 variable {V : Type*} [NormedAddCommGroup V] [InnerProductSpace ℝ V] [CompleteSpace V]
 variable {a : BilinForm V} {M α : ℝ}
 
-/-- The operator `A : V → V` of (9.4.5), characterized by `(A u, v) = a(u,v)`: on a Hilbert space
-it is the Riesz representation of the operator `A ∈ L(V, V')` of Theorem 8.3.1. -/
+/-- **Equation (9.4.5)** of [han2009theoretical]. Let $V$ be a real Hilbert space and let $a$ be a
+bilinear form on $V$ that is bounded with constant $M$. The **operator** $A : V \to V$ of $a$ is
+the bounded linear operator with
+$$(Au, v) = a(u, v) \quad \text{for all } u, v \in V.$$
+
+It is the Riesz representation of the operator $A \in \mathcal{L}(V, V')$ of Theorem 8.3.1, and
+it is the backbone's `SesqForm.toOperator`. -/
 noncomputable abbrev toOperator (a : BilinForm V) (hM : a.IsBoundedWith M) : V →L[ℝ] V :=
   SesqForm.toOperator (a.toCLM hM)
 
-/-- (9.4.5): `(A u, v) = a(u,v)`. -/
+/-- **Equation (9.4.5)** of [han2009theoretical]. Let $a$ be a bilinear form on a real Hilbert space
+$V$ that is bounded with constant $M$, and let $A$ be its operator. Then $(Au, v) = a(u, v)$ for
+all $u, v \in V$. -/
 theorem inner_toOperator (hM : a.IsBoundedWith M) (u v : V) :
     ⟪toOperator a hM u, v⟫_ℝ = a u v :=
   SesqForm.inner_toOperator _ u v
 
-/-- (9.4.3): `‖A‖ ≤ M`. -/
+/-- Equation (9.4.3) of [han2009theoretical]: if $a$ is bounded with constant $M \ge 0$, then its
+operator $A : V \to V$ satisfies $\|A\| \le M$. -/
 theorem norm_toOperator_le (hM0 : 0 ≤ M) (hM : a.IsBoundedWith M) : ‖toOperator a hM‖ ≤ M := by
   rw [SesqForm.norm_toOperator]
   exact norm_toCLM_le hM0 hM
 
-/-- (9.4.2): a symmetric form has a self-adjoint operator. -/
+/-- Equation (9.4.2) of [han2009theoretical]: if $a$ is bounded and symmetric, then its operator
+$A : V \to V$ is self-adjoint. -/
 theorem isSelfAdjoint_toOperator (hM : a.IsBoundedWith M) (hs : LinearMap.BilinForm.IsSymm a) :
     IsSelfAdjoint (toOperator a hM) :=
   ContinuousLinearMap.isSelfAdjoint_iff_isSymmetric.mpr
     ((SesqForm.isHermitian_iff_toOperator_isSymmetric _).mp ((isSymm_iff_isHermitian hM).mp hs))
 
-/-- (9.4.3): a `V`-elliptic form has a coercive operator, `(A v, v) ≥ α ‖v‖²`. -/
+/-- Equation (9.4.3) of [han2009theoretical]: if $a$ is bounded and $V$-elliptic with constant
+$\alpha$, then its operator $A : V \to V$ is coercive with constant $\alpha$, that is
+$(Av, v) \ge \alpha \|v\|^2$ for all $v$. -/
 theorem isCoerciveWith_toOperator (hM : a.IsBoundedWith M) (ha : a.IsEllipticWith α) :
     (toOperator a hM : V →ₗ[ℝ] V).IsCoerciveWith α :=
   (SesqForm.isCoerciveWith_iff_toOperator _ α).mp ha
 
-/-- The symmetric `V`-elliptic case: `A` is symmetric and coercive, so the energy inner product
-`(u,v)_a = a(u,v)` of §9.4 really is an inner product. -/
+/-- Let $a$ be a bilinear form on a real Hilbert space that is bounded, symmetric and $V$-elliptic
+with a constant $\alpha > 0$. Then its operator $A : V \to V$ is symmetric and coercive. So the
+energy inner product $(u, v)_a = a(u, v)$ of Section 9.4 is an inner product. -/
 theorem isSymmetricCoercive_toOperator (hM : a.IsBoundedWith M) (hα : 0 < α)
     (ha : a.IsEllipticWith α) (hs : LinearMap.BilinForm.IsSymm a) :
     (toOperator a hM : V →ₗ[ℝ] V).IsSymmetricCoercive where
@@ -324,21 +472,29 @@ theorem isSymmetricCoercive_toOperator (hM : a.IsBoundedWith M) (hα : 0 < α)
     (SesqForm.isHermitian_iff_toOperator_isSymmetric _).mp ((isSymm_iff_isHermitian hM).mp hs)
   isCoercive := ⟨α, hα, isCoerciveWith_toOperator hM ha⟩
 
-/-- The energy norm of the form is the energy norm of its operator. -/
+/-- Let $a$ be a bilinear form on a real Hilbert space that is bounded with constant $M$. Then the
+energy norm $\|v\|_a$ of $a$ is the energy norm $\sqrt{(Av, v)}$ of its operator $A$ (the
+root-namespace `energyNorm`), for every $v$. -/
 theorem energyNorm_eq_energyNorm_toOperator (hM : a.IsBoundedWith M) (v : V) :
     a.energyNorm v = _root_.energyNorm (toOperator a hM : V →ₗ[ℝ] V) v := by
   rw [energyNorm_eq hM]
   exact SesqForm.energyNorm_eq_energyNorm_toOperator _ v
 
-/-- (9.4.6): `f ∈ V` with `(f, v) = ℓ(v)` is the Riesz representative of `ℓ`. -/
+/-- Equation (9.4.6) of [han2009theoretical]: for $\ell \in V'$ on a real Hilbert space $V$, the
+Riesz representative $f$ of $\ell$ satisfies $(f, v) = \ell(v)$ for all $v \in V$. -/
 theorem inner_rieszRep (ℓ : StrongDual ℝ V) (v : V) : ⟪SesqForm.rieszRep ℓ, v⟫_ℝ = ℓ v :=
   SesqForm.inner_rieszRep ℓ v
 
-/-- `‖f‖ = ‖ℓ‖` (§9.4). -/
+/-- Section 9.4 of [han2009theoretical]: for $\ell \in V'$ on a real Hilbert space $V$, the Riesz
+representative $f$ of $\ell$ satisfies $\|f\| = \|\ell\|$. -/
 theorem norm_rieszRep (ℓ : StrongDual ℝ V) : ‖SesqForm.rieszRep (𝕜 := ℝ) (V := V) ℓ‖ = ‖ℓ‖ :=
   SesqForm.norm_rieszRep ℓ
 
-/-- (9.4.7) ⇔ (9.4.4): `A u = f` iff `a(u,v) = ℓ(v)` for all `v`. -/
+/-- **Equations (9.4.4) and (9.4.7)** of [han2009theoretical]. Let $a$ be a bilinear form on a real
+Hilbert space $V$ that is bounded with constant $M$, let $A$ be its operator, let $\ell \in V'$
+and let $f$ be the Riesz representative of $\ell$. Then for every $u \in V$,
+$$Au = f \iff a(u, v) = \ell(v) \text{ for all } v \in V.$$
+-/
 theorem toOperator_eq_rieszRep_iff (hM : a.IsBoundedWith M) (ℓ : StrongDual ℝ V) (u : V) :
     toOperator a hM u = SesqForm.rieszRep ℓ ↔ ∀ v, a u v = ℓ v :=
   (SesqForm.forall_apply_eq_iff_toOperator_eq _ ℓ u).symm
@@ -351,19 +507,21 @@ namespace Chapter08
 
 variable {V : Type*} [NormedAddCommGroup V] [InnerProductSpace ℝ V]
 
-/-- `u ∈ K` minimizes `f` on `K` iff `f u` is the infimum of `f` over `K`: the passage between
-the book's `E(u) = inf_K E` and Mathlib's `IsMinOn`.  The forward direction is Mathlib's
-`IsMinOn.iInf_eq`; only the converse needs `f` bounded below on `K`. -/
+/-- Let $K$ be a set in a type $X$, let $f : X \to \mathbb{R}$ be bounded below on $K$, and let
+$u \in K$. Then $u$ minimizes $f$ on $K$ if and only if $f(u) = \inf_{v \in K} f(v)$.
+
+This converts between the form $E(u) = \inf_K E$ of the source and Mathlib's `IsMinOn`. The
+forward direction is Mathlib's `IsMinOn.iInf_eq`, and only the converse needs $f$ bounded below. -/
 theorem isMinOn_iff_eq_ciInf {X : Type*} {K : Set X} {f : X → ℝ} {u : X} (hu : u ∈ K)
     (hbdd : BddBelow (Set.range fun v : K => f v)) :
     IsMinOn f K u ↔ f u = ⨅ v : K, f v :=
   ⟨fun h => (h.iInf_eq hu).symm,
     fun h => isMinOn_iff.mpr fun v hv => h.trans_le (ciInf_le hbdd ⟨v, hv⟩)⟩
 
-/-! ### Theorem 8.3.2: the energy `E(v) = ½‖v‖² − ℓ(v)` -/
+/-! ### Theorem 8.3.2: the energy $E(v) = \frac12 \|v\|^2 - \ell(v)$ -/
 
-/-- The energy of the inner product itself is the functional `E(v) = ½‖v‖² − ℓ(v)` of
-Theorem 8.3.2. -/
+/-- For $\ell \in V'$ on a real inner product space $V$, the backbone's energy of the inner product
+form is $E(v) = \frac12 \|v\|^2 - \ell(v)$, the functional of Theorem 8.3.2. -/
 theorem energy_innerSL (ℓ : StrongDual ℝ V) (v : V) :
     SesqForm.energy (innerSL ℝ : SesqForm ℝ V) ℓ v = (1 / 2 : ℝ) * ‖v‖ ^ 2 - ℓ v := by
   simp [SesqForm.energy]
@@ -379,8 +537,13 @@ private theorem innerSL_hermitian : SesqForm.IsHermitian (innerSL ℝ : SesqForm
 private theorem innerSL_coercive : SesqForm.IsCoerciveWith (innerSL ℝ : SesqForm ℝ V) 1 :=
   SesqForm.innerSL_isCoerciveWith
 
-/-- Theorem 8.3.2, existence and uniqueness: on a nonempty closed convex subset `K` of a Hilbert
-space the functional `E(v) = ½‖v‖² − ℓ(v)` has a unique minimizer. -/
+/-- **Theorem 8.3.2** of [han2009theoretical], existence and uniqueness. Let $V$ be a real Hilbert
+space, let $K \subseteq V$ be nonempty, closed and convex, and let $\ell \in V'$. Then there is
+exactly one $u \in K$ that minimizes
+$$E(v) = \frac12 \|v\|^2 - \ell(v)$$
+on $K$.
+
+The proof specializes `SesqForm.existsUnique_isMinOn_energy` to the inner product. -/
 theorem theorem_8_3_2 [CompleteSpace V] {K : Set V} (hne : K.Nonempty) (hcl : IsClosed K)
     (hconv : Convex ℝ K) (ℓ : StrongDual ℝ V) :
     ∃! u, u ∈ K ∧ IsMinOn (fun v => (1 / 2 : ℝ) * ‖v‖ ^ 2 - ℓ v) K u := by
@@ -388,9 +551,11 @@ theorem theorem_8_3_2 [CompleteSpace V] {K : Set V} (hne : K.Nonempty) (hcl : Is
   exact SesqForm.existsUnique_isMinOn_energy (innerSL_hermitian (V := V)) ℓ
     one_pos innerSL_coercive hconv hcl hne
 
-/-- Theorem 8.3.2, characterization: `u ∈ K` minimizes `E(v) = ½‖v‖² − ℓ(v)` over the convex set
-`K` exactly when it satisfies the variational inequality `(u, v − u) ≥ ℓ(v − u)` for all
-`v ∈ K`. -/
+/-- **Theorem 8.3.2** of [han2009theoretical], the characterization. Let $V$ be a real Hilbert
+space, let $K \subseteq V$ be convex, let $\ell \in V'$ and let $u \in K$. Then $u$ minimizes
+$E(v) = \frac12 \|v\|^2 - \ell(v)$ on $K$ if and only if
+$$(u, v - u) \ge \ell(v - u) \quad \text{for all } v \in K.$$
+-/
 theorem theorem_8_3_2_iff [CompleteSpace V] {K : Set V} (hconv : Convex ℝ K)
     (ℓ : StrongDual ℝ V) {u : V} (hu : u ∈ K) :
     IsMinOn (fun v => (1 / 2 : ℝ) * ‖v‖ ^ 2 - ℓ v) K u ↔ ∀ v ∈ K, ℓ (v - u) ≤ ⟪u, v - u⟫_ℝ := by
@@ -398,20 +563,29 @@ theorem theorem_8_3_2_iff [CompleteSpace V] {K : Set V} (hconv : Convex ℝ K)
   exact SesqForm.isMinOn_energy_iff_forall_le (innerSL_hermitian (V := V)) ℓ
     one_pos innerSL_coercive hconv hu
 
-/-- Theorem 8.3.2, subspace case: `u ∈ K` minimizes `E(v) = ½‖v‖² − ℓ(v)` over the subspace `K`
-iff `(u, v) = ℓ(v)` for all `v ∈ K`. -/
+/-- **Theorem 8.3.2** of [han2009theoretical], the subspace case. Let $V$ be a real Hilbert space,
+let $K$ be a subspace of $V$, let $\ell \in V'$ and let $u \in K$. Then $u$ minimizes
+$E(v) = \frac12 \|v\|^2 - \ell(v)$ on $K$ if and only if
+$$(u, v) = \ell(v) \quad \text{for all } v \in K.$$
+-/
 theorem theorem_8_3_2_subspace [CompleteSpace V] (K : Submodule ℝ V) (ℓ : StrongDual ℝ V) {u : V}
     (hu : u ∈ K) :
     IsMinOn (fun v => (1 / 2 : ℝ) * ‖v‖ ^ 2 - ℓ v) (K : Set V) u ↔ ∀ v ∈ K, ⟪u, v⟫_ℝ = ℓ v := by
   rw [energy_innerSL_eq]
   exact SesqForm.isMinOn_energy_iff ℓ innerSL_hermitian one_pos innerSL_coercive K hu
 
-/-! ### Theorem 8.3.3: the energy of a symmetric `V`-elliptic form -/
+/-! ### Theorem 8.3.3: the energy of a symmetric $V$-elliptic form -/
 
 variable {a : BilinForm V} {M α : ℝ}
 
-/-- Theorem 8.3.3, existence and uniqueness: the energy `E(v) = ½ a(v,v) − ℓ(v)` of a bounded,
-symmetric, `V`-elliptic form has a unique minimizer on any nonempty closed convex set. -/
+/-- **Theorem 8.3.3** of [han2009theoretical], existence and uniqueness. Let $V$ be a real Hilbert
+space, let $a$ be a bilinear form on $V$ that is bounded with constant $M$, symmetric, and
+$V$-elliptic with a constant $\alpha > 0$, and let $\ell \in V'$. Let $K \subseteq V$ be
+nonempty, closed and convex. Then there is exactly one $u \in K$ that minimizes the energy
+$$E(v) = \frac12 a(v, v) - \ell(v)$$
+on $K$.
+
+The proof specializes `SesqForm.existsUnique_isMinOn_energy`. -/
 theorem theorem_8_3_3 [CompleteSpace V] (hM : a.IsBoundedWith M) (hα : 0 < α)
     (ha : a.IsEllipticWith α) (hs : LinearMap.BilinForm.IsSymm a) (ℓ : StrongDual ℝ V)
     {K : Set V} (hne : K.Nonempty) (hcl : IsClosed K) (hconv : Convex ℝ K) :
@@ -419,8 +593,13 @@ theorem theorem_8_3_3 [CompleteSpace V] (hM : a.IsBoundedWith M) (hα : 0 < α)
   have hh := (BilinForm.isSymm_iff_isHermitian hM).mp hs
   exact SesqForm.existsUnique_isMinOn_energy (a := a.toCLM hM) hh ℓ hα ha hconv hcl hne
 
-/-- Theorem 8.3.3, characterization (8.3.3): on a convex set the minimizer of the energy is the
-solution of the variational inequality `a(u, v − u) ≥ ℓ(v − u)` for all `v ∈ K`. -/
+/-- **Theorem 8.3.3** of [han2009theoretical], the characterization (8.3.3). Let $V$ be a real
+Hilbert space, let $a$ be a bilinear form on $V$ that is bounded with constant $M$, symmetric,
+and $V$-elliptic with a constant $\alpha > 0$, and let $\ell \in V'$. Let $K \subseteq V$ be
+convex and $u \in K$. Then $u$ minimizes the energy $E(v) = \frac12 a(v, v) - \ell(v)$ on $K$ if
+and only if $u$ solves the variational inequality
+$$a(u, v - u) \ge \ell(v - u) \quad \text{for all } v \in K.$$
+-/
 theorem theorem_8_3_3_iff [CompleteSpace V] (hM : a.IsBoundedWith M) (hα : 0 < α)
     (ha : a.IsEllipticWith α) (hs : LinearMap.BilinForm.IsSymm a) (ℓ : StrongDual ℝ V)
     {K : Set V} (hconv : Convex ℝ K) {u : V} (hu : u ∈ K) :
@@ -428,9 +607,14 @@ theorem theorem_8_3_3_iff [CompleteSpace V] (hM : a.IsBoundedWith M) (hα : 0 < 
   have hh := (BilinForm.isSymm_iff_isHermitian hM).mp hs
   exact SesqForm.isMinOn_energy_iff_forall_le (a := a.toCLM hM) hh ℓ hα ha hconv hu
 
-/-- Theorem 8.3.3, characterization (8.3.4): on a subspace the minimizer of the energy is the
-solution of the variational equation `a(u,v) = ℓ(v)` for all `v ∈ K`.  Neither closedness of `K`
-nor finite dimension is needed. -/
+/-- **Theorem 8.3.3** of [han2009theoretical], the characterization (8.3.4). Let $V$ be a real
+Hilbert space, let $a$ be a bilinear form on $V$ that is bounded with constant $M$, symmetric,
+and $V$-elliptic with a constant $\alpha > 0$, and let $\ell \in V'$. Let $K$ be a subspace of
+$V$ and $u \in K$. Then $u$ minimizes the energy $E(v) = \frac12 a(v, v) - \ell(v)$ on $K$ if
+and only if $u$ solves the variational equation
+$$a(u, v) = \ell(v) \quad \text{for all } v \in K.$$
+
+The subspace $K$ need not be closed or finite-dimensional. -/
 theorem theorem_8_3_3_subspace [CompleteSpace V] (hM : a.IsBoundedWith M) (hα : 0 < α)
     (ha : a.IsEllipticWith α) (hs : LinearMap.BilinForm.IsSymm a) (ℓ : StrongDual ℝ V)
     (K : Submodule ℝ V) {u : V} (hu : u ∈ K) :
@@ -438,8 +622,13 @@ theorem theorem_8_3_3_subspace [CompleteSpace V] (hM : a.IsBoundedWith M) (hα :
   have hh := (BilinForm.isSymm_iff_isHermitian hM).mp hs
   exact SesqForm.isMinOn_energy_iff ℓ hh hα ha K hu
 
-/-- The energy identity at the solution: `E(v) − E(u) = ½ ‖v − u‖_a²` (the computation inside the
-proof of Theorem 8.3.3, and (9.1.9)). -/
+/-- Let $V$ be a real Hilbert space, let $a$ be a bilinear form on $V$ that is bounded with constant
+$M$, symmetric, and $V$-elliptic with a constant $\alpha > 0$, and let $\ell \in V'$. If
+$a(u, v) = \ell(v)$ for all $v \in V$, then for every $v \in V$,
+$$E(v) - E(u) = \frac12 \|v - u\|_a^2.$$
+
+This is the computation in the proof of Theorem 8.3.3 of [han2009theoretical], and it is
+(9.1.9). -/
 theorem energy_sub_energy_eq [CompleteSpace V] (hM : a.IsBoundedWith M) (hα : 0 < α)
     (ha : a.IsEllipticWith α) (hs : LinearMap.BilinForm.IsSymm a) (ℓ : StrongDual ℝ V) {u : V}
     (hu : ∀ v, a u v = ℓ v) (v : V) :
@@ -451,29 +640,50 @@ theorem energy_sub_energy_eq [CompleteSpace V] (hM : a.IsBoundedWith M) (hα : 0
 
 /-! ### Theorem 8.3.4: the Lax–Milgram lemma -/
 
-/-- Theorem 8.3.4 (Lax–Milgram): a bounded `V`-elliptic bilinear form on a Hilbert space makes
-the variational problem (8.3.5) `a(u,v) = ℓ(v) ∀ v ∈ V` uniquely solvable. -/
+/-- **Theorem 8.3.4** of [han2009theoretical] (the Lax–Milgram lemma). Let $V$ be a real Hilbert
+space, let $a$ be a bilinear form on $V$ that is bounded with constant $M$ and $V$-elliptic with
+a constant $\alpha > 0$, and let $\ell \in V'$. Then the problem (8.3.5) has exactly one
+solution: there is exactly one $u \in V$ with
+$$a(u, v) = \ell(v) \quad \text{for all } v \in V.$$
+
+The form need not be symmetric. The proof specializes `SesqForm.laxMilgram`. The stability
+estimate is `AtkinsonHan.Chapter08.theorem_8_3_4_norm_le`. -/
 theorem theorem_8_3_4 [CompleteSpace V] (hM : a.IsBoundedWith M) (hα : 0 < α)
     (ha : a.IsEllipticWith α) (ℓ : StrongDual ℝ V) : ∃! u, ∀ v, a u v = ℓ v :=
   SesqForm.laxMilgram (a.toCLM hM) ℓ hα ha
 
-/-- The stability estimate `‖u‖ ≤ ‖ℓ‖ / α` accompanying Theorem 8.3.4; it is the one-space case
-of (8.7.5). -/
+/-- **Theorem 8.3.4** of [han2009theoretical], the stability estimate. Let $V$ be a real Hilbert
+space, let $a$ be a bilinear form on $V$ that is bounded with constant $M$ and $V$-elliptic with
+a constant $\alpha > 0$, and let $\ell \in V'$. If $u \in V$ satisfies $a(u, v) = \ell(v)$ for
+all $v \in V$, then
+$$\|u\| \le \frac{\|\ell\|}{\alpha}.$$
+
+This is the case $U = V$ of (8.7.5). The proof specializes
+`SesqForm.norm_le_of_forall_apply_eq`. -/
 theorem theorem_8_3_4_norm_le [CompleteSpace V] (hM : a.IsBoundedWith M) (hα : 0 < α)
     (ha : a.IsEllipticWith α) (ℓ : StrongDual ℝ V) {u : V} (hu : ∀ v, a u v = ℓ v) :
     ‖u‖ ≤ ‖ℓ‖ / α :=
   SesqForm.norm_le_of_forall_apply_eq (a.toCLM hM) ℓ hα ha hu
 
-/-- The solution depends Lipschitz-continuously on the data, with constant `1/α`. -/
+/-- **Theorem 8.3.4** of [han2009theoretical], continuous dependence on the data. Let $V$ be a real
+Hilbert space, and let $a$ be a bilinear form on $V$ that is bounded with constant $M$ and
+$V$-elliptic with a constant $\alpha > 0$. If $\ell_1, \ell_2 \in V'$ and $u_1, u_2 \in V$
+satisfy $a(u_i, v) = \ell_i(v)$ for all $v \in V$ and $i = 1, 2$, then
+$$\|u_1 - u_2\| \le \frac{\|\ell_1 - \ell_2\|}{\alpha}.$$
+-/
 theorem theorem_8_3_4_norm_sub_le [CompleteSpace V] (hM : a.IsBoundedWith M) (hα : 0 < α)
     (ha : a.IsEllipticWith α) {ℓ₁ ℓ₂ : StrongDual ℝ V} {u₁ u₂ : V} (h₁ : ∀ v, a u₁ v = ℓ₁ v)
     (h₂ : ∀ v, a u₂ v = ℓ₂ v) : ‖u₁ - u₂‖ ≤ ‖ℓ₁ - ℓ₂‖ / α :=
   SesqForm.norm_sub_le_of_forall_apply_eq (a.toCLM hM) hα ha h₁ h₂
 
-/-! ### First proof of Theorem 8.3.4: the damped iteration `P_θ` -/
+/-! ### First proof of Theorem 8.3.4: the iteration $P_\theta$ -/
 
-/-- The estimate `‖(I − θ𝒥A)w‖² ≤ (1 − 2θα + θ²M²)‖w‖²` behind the first proof of
-Theorem 8.3.4. -/
+/-- Let $V$ be a real Hilbert space, let $a$ be a bilinear form on $V$ that is bounded with constant
+$M \ge 0$ and $V$-elliptic with constant $\alpha$, and let $A$ be its operator. Then for every
+$\theta \ge 0$ and $w \in V$,
+$$\|w - \theta A w\|^2 \le (1 - 2\theta\alpha + \theta^2 M^2) \|w\|^2.$$
+
+This is the estimate in the first proof of Theorem 8.3.4 of [han2009theoretical]. -/
 theorem norm_sub_smul_toOperator_sq_le [CompleteSpace V] (hM0 : 0 ≤ M) (hM : a.IsBoundedWith M)
     (ha : a.IsEllipticWith α) {θ : ℝ} (hθ : 0 ≤ θ) (w : V) :
     ‖w - θ • BilinForm.toOperator a hM w‖ ^ 2 ≤ (1 - 2 * θ * α + θ ^ 2 * M ^ 2) * ‖w‖ ^ 2 := by
@@ -485,24 +695,34 @@ theorem norm_sub_smul_toOperator_sq_le [CompleteSpace V] (hM0 : 0 ≤ M) (hM : a
   have hsq : ‖BilinForm.toOperator a hM‖ ^ 2 ≤ M ^ 2 := by nlinarith
   nlinarith [sq_nonneg θ, hsq]
 
-/-- The operator `A = 𝒥 a` of a `V`-elliptic form is strongly monotone (5.1.8) with the same
-constant, which is what the §5.1 theory (`zarantonello`, `contractingWith_damped`) asks for. -/
+/-- Let $V$ be a real Hilbert space, and let $a$ be a bilinear form on $V$ that is bounded with
+constant $M$ and $V$-elliptic with constant $\alpha$. Then its operator $A$ is strongly monotone
+(5.1.8) with constant $\alpha$: $(Au - Av, u - v) \ge \alpha \|u - v\|^2$ for all $u, v$.
+
+This is the hypothesis of the theory of Section 5.1 (`zarantonello`, `contractingWith_damped`). -/
 theorem stronglyMonotone_toOperator [CompleteSpace V] (hM : a.IsBoundedWith M)
     (ha : a.IsEllipticWith α) : IsStronglyMonotoneWith ℝ (BilinForm.toOperator a hM) α := by
   intro x y
   rw [← map_sub]
   exact BilinForm.isCoerciveWith_toOperator hM ha (x - y)
 
-/-- The operator of a bounded form is Lipschitz with the constant of (9.4.3). -/
+/-- Let $V$ be a real Hilbert space, and let $a$ be a bilinear form on $V$ that is bounded with
+constant $M \ge 0$. Then its operator $A$ is Lipschitz continuous with constant $M$, the
+constant of (9.4.3). -/
 theorem lipschitzWith_toOperator [CompleteSpace V] (hM0 : 0 ≤ M) (hM : a.IsBoundedWith M) :
     LipschitzWith (Real.toNNReal M) (BilinForm.toOperator a hM) := by
   refine (BilinForm.toOperator a hM).lipschitzWith.weaken ?_
   rw [← NNReal.coe_le_coe, coe_nnnorm, Real.coe_toNNReal M hM0]
   exact BilinForm.norm_toOperator_le hM0 hM
 
-/-- The map `P_θ u = u − θ (A u − f)` of the first proof of Theorem 8.3.4 is a contraction for
-`0 < θ < 2α/M²` (this forces `α > 0`), so Banach's fixed point theorem produces the solution of
-(8.3.5). -/
+/-- Let $V$ be a real Hilbert space, let $a$ be a bilinear form on $V$ that is bounded with constant
+$M > 0$ and $V$-elliptic with constant $\alpha$, let $A$ be its operator, let $\ell \in V'$ and
+let $f$ be the Riesz representative of $\ell$. If $0 < \theta < 2\alpha/M^2$, then the map
+$$P_\theta u = u - \theta (Au - f)$$
+is a contraction with constant $\sqrt{1 - 2\theta\alpha + \theta^2 M^2}$.
+
+The condition on $\theta$ forces $\alpha > 0$. This is the first proof of Theorem 8.3.4 of
+[han2009theoretical]: the Banach fixed-point theorem gives the solution of (8.3.5). -/
 theorem contractingWith_damped_sub_smul [CompleteSpace V] (hM0 : 0 < M) (hM : a.IsBoundedWith M)
     (ha : a.IsEllipticWith α) (ℓ : StrongDual ℝ V) {θ : ℝ} (hθ : 0 < θ)
     (hθ' : θ < 2 * α / M ^ 2) :
@@ -511,23 +731,34 @@ theorem contractingWith_damped_sub_smul [CompleteSpace V] (hM0 : 0 < M) (hM : a.
   contractingWith_damped (𝕜 := ℝ) hM0 (stronglyMonotone_toOperator hM ha)
     (lipschitzWith_toOperator hM0.le hM) (SesqForm.rieszRep ℓ) hθ hθ'
 
-/-! ### Second proof of Theorem 8.3.4: closed range plus dense range -/
+/-! ### Second proof of Theorem 8.3.4: closed range and dense range -/
 
-/-- `α ‖u‖ ≤ ‖A u‖` for the operator `A = 𝒥 a` of a `V`-elliptic form: the stability estimate
-(8.2.2) that drives the second proof of Theorem 8.3.4. -/
+/-- Let $V$ be a real Hilbert space, and let $a$ be a bilinear form on $V$ that is bounded with
+constant $M$ and $V$-elliptic with constant $\alpha$. Then its operator $A$ satisfies
+$\alpha \|u\| \le \|Au\|$ for every $u \in V$.
+
+This is the stability estimate (8.2.2) on which the second proof of Theorem 8.3.4 of
+[han2009theoretical] rests. -/
 theorem norm_le_norm_toOperator [CompleteSpace V] (hM : a.IsBoundedWith M)
     (ha : a.IsEllipticWith α) (u : V) : α * ‖u‖ ≤ ‖BilinForm.toOperator a hM u‖ := by
   rw [SesqForm.toOperator_apply_eq_rieszRep, SesqForm.norm_rieszRep]
   exact SesqForm.IsCoerciveWith.norm_le_norm_apply (a.toCLM hM) ha u
 
-/-- `R(A)` is closed, by the stability estimate `norm_le_norm_toOperator` and Theorem 8.2.4. -/
+/-- Let $V$ be a real Hilbert space, and let $a$ be a bilinear form on $V$ that is bounded with
+constant $M$ and $V$-elliptic with a constant $\alpha > 0$. Then the range of its operator $A$
+is closed.
+
+The proof uses `AtkinsonHan.Chapter08.norm_le_norm_toOperator` and Theorem 8.2.4. -/
 theorem isClosed_range_toOperator [CompleteSpace V] (hM : a.IsBoundedWith M) (hα : 0 < α)
     (ha : a.IsEllipticWith α) :
     IsClosed (LinearMap.range (BilinForm.toOperator a hM : V →ₗ[ℝ] V) : Set V) :=
   ContinuousLinearMap.isClosed_range_of_le_norm _ hα (norm_le_norm_toOperator hM ha)
 
-/-- `R(A)^⊥ = {0}`: a vector orthogonal to the range is orthogonal to its own image, so
-ellipticity forces it to vanish. -/
+/-- Let $V$ be a real Hilbert space, and let $a$ be a bilinear form on $V$ that is bounded with
+constant $M$ and $V$-elliptic with a constant $\alpha > 0$. Then the orthogonal complement of
+the range of its operator $A$ is $\{0\}$.
+
+A vector $w$ orthogonal to the range is orthogonal to $Aw$, so $\alpha \|w\|^2 \le (Aw, w) = 0$. -/
 theorem orthogonal_range_toOperator [CompleteSpace V] (hM : a.IsBoundedWith M) (hα : 0 < α)
     (ha : a.IsEllipticWith α) :
     (LinearMap.range (BilinForm.toOperator a hM : V →ₗ[ℝ] V))ᗮ = ⊥ := by
@@ -539,8 +770,12 @@ theorem orthogonal_range_toOperator [CompleteSpace V] (hM : a.IsBoundedWith M) (
   have h2 : ‖v‖ ^ 2 ≤ 0 := by nlinarith [sq_nonneg ‖v‖]
   exact norm_eq_zero.mp (pow_eq_zero_iff two_ne_zero |>.mp (le_antisymm h2 (sq_nonneg _)))
 
-/-- The second proof of Theorem 8.3.4: the operator `A = 𝒥 a` is bounded below, hence has closed
-range, and its range is dense, hence `A` is a bijection of `V` (Theorem 8.2.1). -/
+/-- Let $V$ be a real Hilbert space, and let $a$ be a bilinear form on $V$ that is bounded with
+constant $M$ and $V$-elliptic with a constant $\alpha > 0$. Then its operator $A : V \to V$ is a
+bijection.
+
+This is the second proof of Theorem 8.3.4 of [han2009theoretical]: $A$ is bounded below, so its
+range is closed, and the range is dense, so $A$ is a bijection (Theorem 8.2.1). -/
 theorem bijective_toOperator [CompleteSpace V] (hM : a.IsBoundedWith M) (hα : 0 < α)
     (ha : a.IsEllipticWith α) : Function.Bijective (BilinForm.toOperator a hM) :=
   ContinuousLinearMap.bijective_of_le_norm_of_orthogonal_range_eq_bot _ hα
@@ -548,9 +783,14 @@ theorem bijective_toOperator [CompleteSpace V] (hM : a.IsBoundedWith M) (hα : 0
 
 /-! ### Exercise 8.3.1 -/
 
-/-- Exercise 8.3.1: Lax–Milgram follows from the theory of strongly monotone Lipschitz operators
-of §5.1 (the backbone's `zarantonello`), applied to `T = A` with `c₁ = α`, `c₂ = M` and `b = f`
-the Riesz representative of `ℓ`. -/
+/-- **Exercise 8.3.1** of [han2009theoretical]. Let $V$ be a real Hilbert space, let $a$ be a
+bilinear form on $V$ that is bounded with constant $M \ge 0$ and $V$-elliptic with a constant
+$\alpha > 0$, and let $\ell \in V'$. Then there is exactly one $u \in V$ with
+$a(u, v) = \ell(v)$ for all $v \in V$.
+
+The proof derives the Lax–Milgram lemma from the theory of strongly monotone Lipschitz operators
+of Section 5.1, the backbone's `zarantonello`, applied to the operator $A$ of $a$ with constants
+$\alpha$ and $M$ and right side the Riesz representative of $\ell$. -/
 theorem exercise_8_3_1 [CompleteSpace V] (hM0 : 0 ≤ M) (hM : a.IsBoundedWith M) (hα : 0 < α)
     (ha : a.IsEllipticWith α) (ℓ : StrongDual ℝ V) : ∃! u, ∀ v, a u v = ℓ v := by
   obtain ⟨u, hu, huniq⟩ := zarantonello (𝕜 := ℝ) hα (stronglyMonotone_toOperator hM ha)
@@ -560,20 +800,28 @@ theorem exercise_8_3_1 [CompleteSpace V] (hM0 : 0 ≤ M) (hM : a.IsBoundedWith M
 
 /-! ### Example 8.3.5: the model Dirichlet problem -/
 
-/-- **Example 8.3.5**: the Lax–Milgram lemma applied to the boundary value problem (8.2.3),
-`−Δu = f` in `Ω`, `u = 0` on `∂Ω`, on a bounded open `Ω ⊆ B(0, R) ⊆ ℝ^{d+1}`: for every
-`ℓ ∈ H^{-1}(Ω) = (H¹₀(Ω))'` there is exactly one `u ∈ H¹₀(Ω)` with `∫_Ω ∇u · ∇v = ℓ(v)` for all
-`v ∈ H¹₀(Ω)`, the unique weak solution.
+/-- **Example 8.3.5** of [han2009theoretical]. Let $\Omega \subseteq \mathbb{R}^{d+1}$ be open and
+contained in the ball $B(0, R)$ with $R \ge 0$. For every
+$\ell \in H^{-1}(\Omega) = H^1_0(\Omega)'$ there is exactly one $u \in H^1_0(\Omega)$ with
+$$\int_\Omega \nabla u \cdot \nabla v \, dx = \ell(v) \quad \text{for all } v \in
+  H^1_0(\Omega).$$
+This $u$ is the unique weak solution of the boundary value problem (8.2.3), $-\Delta u = f$ in
+$\Omega$ and $u = 0$ on $\partial\Omega$.
 
-The bilinear form `a(u, v) = ∫_Ω ∇u · ∇v = ∑ᵢ ∫_Ω ∂ᵢu ∂ᵢv` is `BilinForm.ofCLM (modelOperator Ω)`,
-the Dirichlet form of Example 8.2.6 read as a form on `V = H¹₀(Ω) = SobolevEuclideanZero (d + 1)
-1 2 Ω`; it is bounded with `M = 1` (`Elliptic.dirichletForm_isBoundedWith`) and `V`-elliptic with
-`α = (1 + (2R)²)⁻¹`, which is Poincaré's inequality
-(`Elliptic.dirichletForm_restrict_isCoerciveWith`), so `theorem_8_3_4` applies.  A datum
-`f ∈ L²(Ω)` enters as `ℓ = (Elliptic.load Ω f).comp V.subtypeL`, `ℓ(v) = ∫_Ω f v`.  The book's
-Lipschitz boundary is not needed; the AH surface's `H¹₀(Ω)` and `H^{-1}(Ω)`
-(`AtkinsonHan.Chapter07.definition_7_2_9`, `definition_7_2_12_hMinusOne`) are the same spaces
-on the tensor formulation of `W^{1,2}(Ω)`, see `modelOperator`. -/
+**Generalization.** The source assumes that $\Omega$ has a Lipschitz boundary. The example here
+holds for every bounded open $\Omega$.
+
+The form $a(u, v) = \int_\Omega \nabla u \cdot \nabla v \, dx = \sum_i \int_\Omega \partial_i u
+\, \partial_i v \, dx$ is `AtkinsonHan.BilinForm.ofCLM (AtkinsonHan.Chapter08.modelOperator Ω)`,
+the Dirichlet form of Example 8.2.6 on $V = H^1_0(\Omega)$, which is
+`SobolevEuclideanZero (d + 1) 1 2 Ω`. It is bounded with $M = 1$
+(`Elliptic.dirichletForm_isBoundedWith`) and $V$-elliptic with $\alpha = (1 + (2R)^2)^{-1}$ by
+the Poincaré inequality (`Elliptic.dirichletForm_restrict_isCoerciveWith`), so
+`AtkinsonHan.Chapter08.theorem_8_3_4` applies. A datum $f \in L^2(\Omega)$ enters as
+$\ell(v) = \int_\Omega f v \, dx$, that is `(Elliptic.load Ω f).comp V.subtypeL`. The spaces
+$H^1_0(\Omega)$ and $H^{-1}(\Omega)$ of Chapter 7 (`AtkinsonHan.Chapter07.definition_7_2_9`,
+`AtkinsonHan.Chapter07.definition_7_2_12_hMinusOne`) are the same spaces in the tensor form of
+$W^{1,2}(\Omega)$; see `AtkinsonHan.Chapter08.modelOperator`. -/
 theorem example_8_3_5 {d : ℕ} (Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))) {R : ℝ} (hR : 0 ≤ R)
     (hΩ : (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))) ⊆ ball 0 R)
     (ℓ : StrongDual ℝ (SobolevEuclideanZero (d + 1) 1 2 Ω)) :

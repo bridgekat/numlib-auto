@@ -14,89 +14,102 @@ import NumlibSurface.AtkinsonHan.Chapter08.Section02
 import NumlibSurface.AtkinsonHan.Chapter08.Section03
 
 /-!
-# Atkinson–Han §11.1: from variational equations to variational inequalities
+# Atkinson and Han, Section 11.1: From variational equations to variational inequalities
 
-Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework*, 3rd edition, Springer, 2009, §11.1.
+This module formalizes Section 11.1 of [han2009theoretical]. The section motivates the chapter with
+two problems. The obstacle problem (Example 11.1.1) minimizes the energy $E(v) = \int_\Omega
+(\frac12 |\nabla v|^2 - f v) \, dx$ over the convex set $K = \{v \in H_0^1(\Omega) : v \ge \psi
+\text{ a.e. in } \Omega\}$, which is not a subspace. A function $u \in K$ is the minimizer if and
+only if it satisfies the variational inequality (11.1.7),
+$$\int_\Omega \nabla u \cdot \nabla(v - u) \, dx \ge \int_\Omega f (v - u) \, dx \qquad \text{for
+  all } v \in K,$$
+and a smooth solution satisfies the complementarity conditions (11.1.9) at each point of $\Omega$.
+The simplified friction problem (Example 11.1.2) minimizes over $H^1(\Omega)$ the energy (11.1.12),
+which has the boundary term $g \int_\Gamma |v| \, ds$ that is not differentiable. Its minimizers are
+the solutions of the variational inequality (11.1.13), and a smooth solution satisfies the boundary
+value problem (11.1.14)–(11.1.15).
 
-The section motivates the chapter with two problems: the obstacle problem (Example 11.1.1), a
-minimization of the Dirichlet energy over a convex set that is not a subspace, and the simplified
-friction problem (Example 11.1.2), a minimization over a space of an energy with a
-non-differentiable boundary term.  Both are here: the friction problem, whose functional
-`g ∫_Γ |v| ds` needs the trace of an `H¹(Ω)` function and the surface measure on `Γ`, is stated
-over the boundary interface `BoundaryData Ω`, `BoundaryData.TraceFamily` of
-`Numlib/Analysis/Sobolev/Boundary/Data.lean` (instances: bounded `C¹` domains,
-`IsContDiffDomain.traceFamily`; polygons without slits, `Triangulation.traceFamily`).
+The obstacle problem uses the Dirichlet form and Poincaré's inequality of
+`Numlib.Analysis.PDE.Elliptic.Dirichlet`. The friction problem uses the surface measure, the outward
+normal and the trace of `Numlib.Analysis.Sobolev.Boundary.Data`, and Theorem 11.2.1 in the form
+`isMinOn_energy_add_iff` of `Numlib.Variational.Inequality.Basic`.
 
-## The obstacle problem
+## Main definitions
 
-The setting is a bounded open `Ω ⊆ B(0, R) ⊆ ℝ^{d+1}`, the space `V = H¹₀(Ω)` of the backbone,
-`SobolevEuclideanZero (d + 1) 1 2 Ω`, an obstacle `ψ ∈ H¹(Ω) = SobolevEuclidean (d + 1) 1 2 Ω`
-and a load `f ∈ L²(Ω)`:
+* (11.1.3), `AtkinsonHan.Chapter11.dirichletBilinForm`: the bilinear form $a(u, v) = \int_\Omega
+  \nabla u \cdot \nabla v \, dx$ on $H_0^1(\Omega)$.
+* (11.1.3), `AtkinsonHan.Chapter11.loadZero`: the linear functional
+  $\ell(v) = \int_\Omega f v \, dx$ on $H_0^1(\Omega)$.
+* (11.1.5), `AtkinsonHan.Chapter11.obstacleEnergy`: the energy $E(v) = \int_\Omega (\frac12 |\nabla
+  v|^2 - f v) \, dx$.
+* Example 11.1.1, `AtkinsonHan.Chapter11.obstacleSet`: the admissible set $K = \{v \in H_0^1(\Omega)
+  : v \ge \psi \text{ a.e. in } \Omega\}$.
+* Example 11.1.2, `AtkinsonHan.Chapter11.frictionFunctional`: the friction functional
+  $j(v) = g \int_\Gamma |v| \, ds$ on $H^1(\Omega)$.
+* (11.1.12), `AtkinsonHan.Chapter11.frictionEnergy`: the energy $E(v) = \int_\Omega (\frac12
+  (|\nabla v|^2 + v^2) - f v) \, dx + j(v)$.
+* Example 11.1.2, `AtkinsonHan.Chapter11.frictionBilinForm`: the bilinear form $a(u, v) =
+  \int_\Omega (\nabla u \cdot \nabla v + u v) \, dx$ on $H^1(\Omega)$.
 
-* `dirichletBilinForm Ω` is the bilinear form `a(u, v) = ∫_Ω ∇u · ∇v` of (11.1.3) on `H¹₀(Ω)`,
-  the operator `modelOperator Ω` of Example 8.2.6 (`Chapter08/Section02`) read as a form of §8.3
-  (`dirichletBilinForm_apply` is its value, the backbone's `Elliptic.dirichletForm`): bounded
-  with `M = 1`, symmetric, and `V`-elliptic with `α = (1 + (2R)²)⁻¹` by Poincaré's inequality
-  (`dirichletBilinForm_isEllipticWith`);
-* `loadZero Ω f` is `ℓ(v) = ∫_Ω f v` on `H¹₀(Ω)`;
-* `obstacleEnergy Ω f` is the energy `E(v) = ∫_Ω (½ |∇v|² − f v)` of (11.1.5), the energy
-  `½ a(v, v) − ℓ(v)` of Theorem 8.3.3 (`obstacleEnergy_apply` is the displayed formula);
-* `obstacleSet Ω ψ` is the admissible set `K = {v ∈ H¹₀(Ω) | v ≥ ψ a.e. in Ω}`, nonempty
-  (`obstacleSet_nonempty`), closed (`isClosed_obstacleSet`) and convex (`convex_obstacleSet`).
+## Main results
 
-`example_11_1_1` is the characterization of the minimizer by the variational inequality (11.1.7),
-`∫_Ω ∇u · ∇(v − u) ≥ ∫_Ω f (v − u)` for all `v ∈ K`, which the book leaves as Exercise 11.1.1 and
-which is Theorem 8.3.3's (8.3.3) on the convex set `K`; `example_11_1_1_pointwise` is its
-pointwise form (11.1.9).  Existence and uniqueness are Example 11.2.3 (`Chapter11/Section02`)
-and Example 11.3.10 (`Chapter11/Section03`).
+* Example 11.1.1, `AtkinsonHan.Chapter11.example_11_1_1`: $u \in K$ minimizes the energy over $K$ if
+  and only if it satisfies the variational inequality (11.1.7).
+* Example 11.1.1, `AtkinsonHan.Chapter11.example_11_1_1_pointwise`: under the regularity (11.1.8),
+  the minimizer satisfies $u \ge \psi$, $-\Delta u \ge f$ and $(u - \psi)(-\Delta u - f) = 0$ in
+  $\Omega$, (11.1.9).
+* Example 11.1.2, `AtkinsonHan.Chapter11.example_11_1_2`: $u$ minimizes the energy (11.1.12) over
+  $H^1(\Omega)$ if and only if it satisfies the variational inequality (11.1.13).
+* Example 11.1.2, `AtkinsonHan.Chapter11.example_11_1_2_pointwise`: a smooth solution of (11.1.13)
+  on a bounded $C^1$ domain satisfies $-\Delta u + u = f$ in $\Omega$, and
+  $|\partial u / \partial\nu| \le g$ and $(\partial u / \partial\nu) u + g |u| = 0$ on $\Gamma$,
+  (11.1.14)–(11.1.15).
 
-## The simplified friction problem
+## Proof outline
 
-For `B : BoundaryData Ω`, `𝒯 : B.TraceFamily` (surface measure `σ = B.σ` on `Γ`, trace
-`γ = 𝒯.traceL 2 : H¹(Ω) →L L²(σ)`), `g > 0` and `f ∈ L²(Ω)`:
+The equivalences of Examples 11.1.1 and 11.1.2, which the source leaves as Exercises 11.1.1 and
+11.1.2, are Theorem 8.3.3 on the convex set $K$ and Theorem 11.2.1 with $K = V$. The pointwise forms
+test the variational inequality with $v = u \pm \varepsilon \varphi$ for smooth $\varphi$, integrate
+by parts, and apply the fundamental lemma of the calculus of variations: in $\Omega$ in its
+inequality form `nonneg_on_of_forall_integral_mul_testFunction_nonneg` and its local form
+`eqOn_zero_of_forall_integral_mul_testFunction_eq_zero`, and on $\Gamma$ through bump functions on
+the boundary (`BoundaryData.exists_bump_lt_integral_mul`).
 
-* `frictionFunctional B 𝒯 g` is `j(v) = g ∫_Γ |v| ds`, convex (`convexOn_frictionFunctional`)
-  and continuous (`continuous_frictionFunctional`), positively homogeneous and subadditive;
-* `frictionEnergy B 𝒯 g f` is the energy (11.1.12), `E(v) = ∫_Ω (½ (|∇v|² + v²) − f v) + j(v)`
-  (`frictionEnergy_apply`), the energy of the form `a(u, v) = ∫_Ω (∇u·∇v + u v)` — the
-  backbone's `Elliptic.laplaceForm Ω` — plus `j`;
-* `example_11_1_2` is the equivalence of the minimization problem (11.1.12) with the variational
-  inequality (11.1.13), `a(u, v − u) + j(v) − j(u) ≥ ℓ(v − u)` for all `v ∈ H¹(Ω)` (Exercise
-  11.1.2; the backbone's `isMinOn_energy_add_iff`, which is Theorem 11.2.1 with `K = V`);
-* `example_11_1_2_pointwise` is the pointwise form (11.1.14)–(11.1.15) of a smooth solution on
-  a bounded `C¹` domain: `−Δu + u = f` a.e. in `Ω`, and `|∂u/∂ν| ≤ g`, `(∂u/∂ν) u + g |u| = 0` at
-  every point of `Γ`, the normal derivative being read through the continuous extension of
-  `∇u` to `Ω̄`.  It rests on Green's formula `BoundaryData.integral_laplacian_mul_add_eq`, the
-  density of smooth functions (`IsContDiffDomain.hasSmoothDensity`), the continuity of the
-  outward normal (`IsContDiffDomain.continuousOn_outwardNormal`) and the positivity of the surface
-  measure on open sets meeting `Γ` (`IsContDiffDomain.boundaryMeasure_pos_of_isOpen`), through
-  bump tests on the boundary (`BoundaryData.exists_bump_lt_integral_mul`).
+## Implementation notes
 
-## Deviations from the book
+* The obstacle problem is posed on a bounded open set $\Omega \subseteq B(0, R) \subseteq
+  \mathbb{R}^{d+1}$. The space $V = H_0^1(\Omega)$ is `SobolevEuclideanZero (d + 1) 1 2 Ω`, the
+  obstacle $\psi$ is an element of $H^1(\Omega)$, `SobolevEuclidean (d + 1) 1 2 Ω`, and
+  $f \in L^2(\Omega)$.
+* The space $H_0^1(\Omega)$ of Definition 7.2.9, `AtkinsonHan.Chapter07.definition_7_2_9`, is the
+  same closure in the tensor formulation `Sobolev ℝ 1 2 Ω volume`. The Dirichlet form and Poincaré's
+  inequality of the backbone are stated in the formulation with multi-indices, so the obstacle
+  problem is posed there (see `AtkinsonHan.Chapter08.modelOperator`).
+* The order $v \ge \psi$ in $K$ is the almost-everywhere order of $L^2(\Omega)$;
+  `AtkinsonHan.Chapter11.mem_obstacleSet_iff` gives it pointwise.
+* The friction problem is posed on an open set $\Omega \subseteq \mathbb{R}^N$ with boundary data
+  `B : BoundaryData Ω` and a trace `𝒯 : B.TraceFamily`. These give the surface measure $\sigma$ on
+  $\Gamma = \partial\Omega$, the outward normal $\nu$, and the trace
+  $\gamma : H^1(\Omega) \to L^2(\sigma)$, `𝒯.traceL 2`. They exist on bounded $C^1$ domains
+  (`IsContDiffDomain.traceFamily`) and on polygons without slits (`Triangulation.traceFamily`).
 
-* The book's "`ψ ≤ 0` on `Γ`", a statement about the trace, enters as the hypothesis that the
-  positive part `max (ψ, 0)` is the function of an element of `H¹₀(Ω)` — exactly what the book
-  uses it for (`max (0, ψ) ∈ K`, Example 11.2.3).  When `ψ` has a representative continuous on
-  `closure Ω` that is `≤ 0` on `∂Ω`, this hypothesis follows from the backbone's Theorem 9.17
-  (`SobolevEuclideanZero.mem_of_continuousOn_closure_of_eqOn_frontier`) applied to `max (ψ, 0)`,
-  which lies in `H¹(Ω)` by `MemSobolevMultiIndex.posPart`.
-* The book's Lipschitz boundary is not needed for the obstacle problem; `Ω` is any bounded open
-  set.  For the friction problem it is the `C¹` (or polygonal) hypothesis behind the boundary
-  interface, and the pointwise form is proved on a bounded `C¹` domain.
-* The pointwise complementarity form (11.1.9) under the regularity (11.1.8) is
-  `example_11_1_1_pointwise`, stated through representatives `f̃`, `ψ̃` continuous on `Ω` and
-  `ũ` of class `C²` on `Ω`; the book's `u ∈ C(Ω̄)` is not needed for the relations in `Ω`.  It
-  runs on the two forms of the fundamental lemma of the calculus of variations of
-  `Numlib/Analysis/Distributions/TestFunctionOps.lean` — the inequality form
-  `nonneg_on_of_forall_integral_mul_testFunction_nonneg` and the localized form
-  `eqOn_zero_of_forall_integral_mul_testFunction_eq_zero` — and the integration by parts
-  `Elliptic.dirichletForm_eq_integral_neg_laplacian_mul` of
-  `Numlib/Analysis/PDE/Elliptic/Dirichlet.lean`.
-* The AH surface's own `H¹₀(Ω)` (`AtkinsonHan.Chapter07.definition_7_2_9`) is the same closure
-  taken in the tensor formulation `Sobolev ℝ 1 2 Ω volume`; the backbone's Dirichlet form and
-  Poincaré inequality are stated on the multi-index formulation, which is why the obstacle
-  problem is set there (see `AtkinsonHan.Chapter08.modelOperator`).
+## Deviations from the source
+
+* **Example 11.1.1** (reading). The condition $\psi \le 0$ on $\Gamma$ is the hypothesis that
+  $\max(\psi, 0)$ is an element of $H_0^1(\Omega)$, which is how the source uses it. See
+  `AtkinsonHan.Chapter11.obstacleSet_nonempty`.
+* **Example 11.1.1** (generalization). The source assumes a Lipschitz boundary; the obstacle problem
+  is stated on every bounded open set. See `AtkinsonHan.Chapter11.example_11_1_1`.
+* **(11.1.9)** (generalization). The regularity (11.1.8) is stated on representatives of $f$, $\psi$
+  and $u$ in $\Omega$, and the condition $u \in C(\overline\Omega)$ of the source is not needed. See
+  `AtkinsonHan.Chapter11.example_11_1_1_pointwise`.
+* **Example 11.1.2** (reading). The Lipschitz boundary of the source is replaced by boundary data
+  with a trace, which exist for a bounded $C^1$ domain and for a polygon without slits. See
+  `AtkinsonHan.Chapter11.example_11_1_2`.
+* **(11.1.14)–(11.1.15)** (reading). The domain is a bounded $C^1$ domain, and a smooth solution is
+  one with a representative in $C^2(\overline\Omega)$ whose gradient extends continuously to
+  $\overline\Omega$. The boundary conditions hold at every point of $\Gamma$, where the source has
+  the points at which the normal is defined. See `AtkinsonHan.Chapter11.example_11_1_2_pointwise`.
 -/
 
 open Filter MeasureTheory Metric Set TopologicalSpace Topology
@@ -108,33 +121,41 @@ variable {d : ℕ} (Ω : Opens (EuclideanSpace ℝ (Fin (d + 1))))
 
 /-! ### The bilinear form, the load and the energy of (11.1.3)–(11.1.5) -/
 
-/-- **The bilinear form `a(u, v) = ∫_Ω ∇u · ∇v` of (11.1.3)** on `H¹₀(Ω)`: the operator
-`modelOperator Ω` of Example 8.2.6 read as a bilinear form of §8.3. -/
+/-- The bilinear form of (11.1.3) of [han2009theoretical] on $H_0^1(\Omega)$, for an open set
+$\Omega \subseteq \mathbb{R}^{d+1}$:
+$$a(u, v) = \int_\Omega \nabla u \cdot \nabla v \, dx.$$
+
+It is the operator `AtkinsonHan.Chapter08.modelOperator` of Example 8.2.6, read as a bilinear
+form of Section 8.3. It is a `def` and not an `abbrev`, so that a rewrite at a value of the form
+does not unfold `AtkinsonHan.Chapter08.modelOperator`. -/
 noncomputable def dirichletBilinForm : BilinForm (SobolevEuclideanZero (d + 1) 1 2 Ω) :=
   BilinForm.ofCLM (Chapter08.modelOperator Ω)
 
-/-- `a(u, v)` is the backbone's Dirichlet form `Elliptic.dirichletForm Ω u v = ∫_Ω ∇u · ∇v`
-(`Elliptic.dirichletForm_apply`). A `def` rather than an `abbrev`, so that rewriting at a value
-of the form never unfolds `modelOperator`. -/
+/-- The form `AtkinsonHan.Chapter11.dirichletBilinForm` agrees with the Dirichlet form
+`Elliptic.dirichletForm` of the backbone, $a(u, v) = \int_\Omega \nabla u \cdot \nabla v \, dx$. -/
 theorem dirichletBilinForm_apply (u v : SobolevEuclideanZero (d + 1) 1 2 Ω) :
     dirichletBilinForm Ω u v = Elliptic.dirichletForm Ω u v :=
   rfl
 
-/-- The form (11.1.3) is bounded with constant `1` (`Elliptic.dirichletForm_isBoundedWith`). -/
+/-- The form (11.1.3) satisfies $|a(u, v)| \le \|u\|_{1,\Omega} \|v\|_{1,\Omega}$, so it is bounded
+with constant $1$. -/
 theorem dirichletBilinForm_isBoundedWith : (dirichletBilinForm Ω).IsBoundedWith 1 := fun u v ↦ by
   rw [dirichletBilinForm_apply, one_mul, ← Real.norm_eq_abs]
   have h := Elliptic.dirichletForm_isBoundedWith Ω u v
   rwa [one_mul] at h
 
-/-- The form (11.1.3) is `V`-elliptic on `H¹₀(Ω)` of a bounded `Ω ⊆ B(0, R)`, with constant
-`(1 + (2R)²)⁻¹`: Poincaré's inequality (`Elliptic.dirichletForm_restrict_isCoerciveWith`). -/
+/-- Let $R \ge 0$ and $\Omega \subseteq B(0, R)$. The form (11.1.3) is $V$-elliptic on
+$H_0^1(\Omega)$:
+$$a(v, v) \ge (1 + (2R)^2)^{-1} \|v\|_{1,\Omega}^2 \qquad \text{for all } v \in H_0^1(\Omega).$$
+
+The bound is Poincaré's inequality, `Elliptic.dirichletForm_restrict_isCoerciveWith`. -/
 theorem dirichletBilinForm_isEllipticWith {R : ℝ} (hR : 0 ≤ R)
     (hΩ : (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))) ⊆ ball 0 R) :
     (dirichletBilinForm Ω).IsEllipticWith (1 + (2 * R) ^ 2)⁻¹ := fun v ↦ by
   rw [dirichletBilinForm_apply]
   exact Elliptic.dirichletForm_restrict_isCoerciveWith Ω hR hΩ v
 
-/-- The form (11.1.3) is symmetric. -/
+/-- The form (11.1.3) is symmetric: $a(u, v) = a(v, u)$. -/
 theorem dirichletBilinForm_isSymm : LinearMap.BilinForm.IsSymm (dirichletBilinForm Ω) := by
   unfold dirichletBilinForm
   rw [BilinForm.isSymm_ofCLM_iff]
@@ -143,14 +164,17 @@ theorem dirichletBilinForm_isSymm : LinearMap.BilinForm.IsSymm (dirichletBilinFo
   rw [conj_trivial] at h
   exact h
 
-/-- **The load `ℓ(v) = ∫_Ω f v` of (11.1.3)** on `H¹₀(Ω)`, for `f ∈ L²(Ω)`: the backbone's
-`Elliptic.load Ω f` restricted to `H¹₀(Ω)`. -/
+/-- The linear functional of (11.1.3) of [han2009theoretical] on $H_0^1(\Omega)$, for
+$f \in L^2(\Omega)$:
+$$\ell(v) = \int_\Omega f v \, dx.$$
+
+It is the functional `Elliptic.load Ω f` on $H^1(\Omega)$ restricted to $H_0^1(\Omega)$. -/
 noncomputable def loadZero
     (f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))) :
     StrongDual ℝ (SobolevEuclideanZero (d + 1) 1 2 Ω) :=
   (Elliptic.load Ω f).comp (SobolevEuclideanZero (d + 1) 1 2 Ω).subtypeL
 
-/-- `loadZero Ω f v = ∫_Ω f v`. -/
+/-- The functional `AtkinsonHan.Chapter11.loadZero Ω f` is $\ell(v) = \int_\Omega f v \, dx$. -/
 theorem loadZero_apply
     (f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))))
     (v : SobolevEuclideanZero (d + 1) 1 2 Ω) :
@@ -158,14 +182,16 @@ theorem loadZero_apply
       f x * SobolevMultiIndex.fn (v : SobolevEuclidean (d + 1) 1 2 Ω) x :=
   Elliptic.load_apply Ω f v
 
-/-- The load is linear in the datum. -/
+/-- The functional $\ell$ is linear in the datum: the functional for $f - g$ is the difference of
+the functionals for $f$ and $g$. -/
 theorem loadZero_sub
     (f g : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))) :
     loadZero Ω (f - g) = loadZero Ω f - loadZero Ω g := by
   ext v
   exact Elliptic.load_sub (Ω := Ω) f g v
 
-/-- `‖loadZero Ω f‖ ≤ ‖f‖_{L²(Ω)}`. -/
+/-- The functional $\ell(v) = \int_\Omega f v \, dx$ on $H_0^1(\Omega)$ has norm at most
+$\|f\|_{L^2(\Omega)}$. -/
 theorem norm_loadZero_le
     (f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))) :
     ‖loadZero Ω f‖ ≤ ‖f‖ :=
@@ -177,21 +203,27 @@ theorem norm_loadZero_le
           · exact Submodule.norm_subtypeL_le _
       _ = ‖f‖ := mul_one _
 
-/-- `‖loadZero Ω f − loadZero Ω g‖ ≤ ‖f − g‖_{L²(Ω)}`. -/
+/-- The functionals for two data $f, g \in L^2(\Omega)$ differ in norm by at most
+$\|f - g\|_{L^2(\Omega)}$. -/
 theorem norm_loadZero_sub_le
     (f g : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))) :
     ‖loadZero Ω f - loadZero Ω g‖ ≤ ‖f - g‖ := by
   rw [← loadZero_sub]
   exact norm_loadZero_le Ω _
 
-/-- **The energy functional (11.1.5)**, `E(v) = ∫_Ω (½ |∇v|² − f v)` on `H¹₀(Ω)`: the energy
-`½ a(v, v) − ℓ(v)` of Theorem 8.3.3 for the form (11.1.3) and the load `∫_Ω f v`. -/
+/-- The energy functional (11.1.5) of [han2009theoretical] on $H_0^1(\Omega)$, for
+$f \in L^2(\Omega)$:
+$$E(v) = \int_\Omega \left( \frac12 |\nabla v|^2 - f v \right) dx.$$
+
+It is the energy $E(v) = \frac12 a(v, v) - \ell(v)$ of Theorem 8.3.3 for the form (11.1.3) and
+the functional $\ell(v) = \int_\Omega f v \, dx$. `AtkinsonHan.Chapter11.obstacleEnergy_apply`
+gives the integral. -/
 noncomputable def obstacleEnergy
     (f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))) :
     SobolevEuclideanZero (d + 1) 1 2 Ω → ℝ :=
   (dirichletBilinForm Ω).energy (loadZero Ω f)
 
-/-- `∑ᵢ (∂ᵢv)²` is integrable on `Ω` for `v ∈ H¹(Ω)`. -/
+/-- For $v \in H^1(\Omega)$, the function $\sum_i (\partial_i v)^2$ is integrable on $\Omega$. -/
 theorem integrable_sum_sq_weakDeriv (v : SobolevEuclidean (d + 1) 1 2 Ω) :
     Integrable (fun x ↦ ∑ i, SobolevMultiIndex.weakDeriv v (MultiIndexLE.single i) x ^ 2)
       (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) := by
@@ -200,7 +232,8 @@ theorem integrable_sum_sq_weakDeriv (v : SobolevEuclidean (d + 1) 1 2 Ω) :
     (SobolevMultiIndex.weakDeriv v (MultiIndexLE.single i))).congr
     (Eventually.of_forall fun x ↦ by simp [sq])
 
-/-- `f v` is integrable on `Ω` for `f ∈ L²(Ω)` and `v ∈ H¹(Ω)`. -/
+/-- For $f \in L^2(\Omega)$ and $v \in H^1(\Omega)$, the function $f v$ is integrable on $\Omega$.
+-/
 theorem integrable_mul_fn
     (f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))))
     (v : SobolevEuclidean (d + 1) 1 2 Ω) :
@@ -212,7 +245,10 @@ theorem integrable_mul_fn
       rw [mul_comm]
       rfl)
 
-/-- **The energy (11.1.5) is the displayed integral**: `E(v) = ∫_Ω (½ ∑ᵢ (∂ᵢv)² − f v)`. -/
+/-- The energy (11.1.5) is the integral
+$$E(v) = \int_\Omega \left( \frac12 \sum_i (\partial_i v)^2 - f v \right) dx \qquad \text{for }
+  v \in H_0^1(\Omega).$$
+-/
 theorem obstacleEnergy_apply
     (f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))))
     (v : SobolevEuclideanZero (d + 1) 1 2 Ω) :
@@ -230,17 +266,21 @@ theorem obstacleEnergy_apply
   change (1 / 2 : ℝ) * dirichletBilinForm Ω v v - loadZero Ω f v = _
   rw [h1, loadZero_apply]
 
-/-! ### The admissible set `K` -/
+/-! ### The admissible set $K$ -/
 
-/-- **The admissible set `K = {v ∈ H¹₀(Ω) | v ≥ ψ a.e. in Ω}`** of the obstacle problem
-(Example 11.1.1), for an obstacle `ψ ∈ H¹(Ω)`: the `v ∈ H¹₀(Ω)` whose function dominates that of
-`ψ` in the almost-everywhere order of `L²(Ω)` (`mem_obstacleSet_iff` is the pointwise reading). -/
+/-- The admissible set of the obstacle problem, Example 11.1.1 of [han2009theoretical]. For an
+obstacle $\psi \in H^1(\Omega)$,
+$$K = \{v \in H_0^1(\Omega) : v \ge \psi \text{ a.e. in } \Omega\}.$$
+
+The order is the almost-everywhere order of the functions of $v$ and $\psi$ in $L^2(\Omega)$.
+`AtkinsonHan.Chapter11.mem_obstacleSet_iff` gives it pointwise. -/
 def obstacleSet (ψ : SobolevEuclidean (d + 1) 1 2 Ω) :
     Set (SobolevEuclideanZero (d + 1) 1 2 Ω) :=
   {v | SobolevMultiIndex.fnL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis 1 2 Ω volume ψ
     ≤ SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis 1 2 Ω volume v}
 
-/-- `v ∈ K` iff `ψ ≤ v` almost everywhere on `Ω`. -/
+/-- An element $v \in H_0^1(\Omega)$ lies in $K$ if and only if $\psi(x) \le v(x)$ for almost every
+$x \in \Omega$. -/
 theorem mem_obstacleSet_iff {ψ : SobolevEuclidean (d + 1) 1 2 Ω}
     {v : SobolevEuclideanZero (d + 1) 1 2 Ω} :
     v ∈ obstacleSet Ω ψ ↔ ∀ᵐ x ∂(volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))),
@@ -249,22 +289,32 @@ theorem mem_obstacleSet_iff {ψ : SobolevEuclidean (d + 1) 1 2 Ω}
   rw [← Lp.coeFn_le, SobolevMultiIndexZero.fnL_apply, SobolevMultiIndex.fnL_apply]
   exact Iff.rfl
 
-/-- **`K` is closed** in `H¹₀(Ω)`: the preimage of the closed order interval `{g | ψ ≤ g}` of
-`L²(Ω)` under the continuous inclusion `H¹₀(Ω) → L²(Ω)`. -/
+/-- The admissible set $K$ is closed in $H_0^1(\Omega)$.
+
+It is the preimage of the closed set $\{w \in L^2(\Omega) : \psi \le w\}$ under the continuous
+inclusion $H_0^1(\Omega) \to L^2(\Omega)$. -/
 theorem isClosed_obstacleSet (ψ : SobolevEuclidean (d + 1) 1 2 Ω) :
     IsClosed (obstacleSet Ω ψ) :=
   isClosed_Ici.preimage (SobolevMultiIndexZero.fnL ℝ _ 1 2 Ω volume).continuous
 
-/-- **`K` is convex**: the preimage of a convex order interval under a linear map. -/
+/-- The admissible set $K$ is convex.
+
+It is the preimage of a convex set under a linear map. -/
 theorem convex_obstacleSet (ψ : SobolevEuclidean (d + 1) 1 2 Ω) : Convex ℝ (obstacleSet Ω ψ) :=
   (Lp.convex_Ici _).linear_preimage
     (SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin (d + 1)) ℝ).toBasis 1 2 Ω volume :
       SobolevEuclideanZero (d + 1) 1 2 Ω →ₗ[ℝ]
         Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))))
 
-/-- **`K` is nonempty: it contains `max (0, ψ)`** (Example 11.2.3), as soon as the positive part
-of the obstacle is the function of an element of `H¹₀(Ω)` — the reading of the book's "`ψ ≤ 0`
-on `Γ`" (see the module docstring). -/
+/-- Let $\psi \in H^1(\Omega)$, and assume that $\max(\psi, 0)$ agrees almost everywhere on $\Omega$
+with an element $w \in H_0^1(\Omega)$. Then $K$ is nonempty: it contains $w$.
+
+**Reading.** The source assumes $\psi \le 0$ on $\Gamma$, a condition on the trace, and uses it
+to show $\max(0, \psi) \in K$ (Example 11.2.3). The hypothesis here is that conclusion. If
+$\psi$ has a representative that is continuous on $\overline\Omega$ and at most $0$ on
+$\partial\Omega$, the hypothesis follows from Theorem 9.17 of [brezis2011functional]
+(`SobolevEuclideanZero.mem_of_continuousOn_closure_of_eqOn_frontier`) applied to
+$\max(\psi, 0)$, which lies in $H^1(\Omega)$ by `MemSobolevMultiIndex.posPart`. -/
 theorem obstacleSet_nonempty {ψ : SobolevEuclidean (d + 1) 1 2 Ω}
     (hψ : ∃ w ∈ SobolevEuclideanZero (d + 1) 1 2 Ω, SobolevMultiIndex.fn w
       =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))]
@@ -279,19 +329,25 @@ theorem obstacleSet_nonempty {ψ : SobolevEuclidean (d + 1) 1 2 Ω}
 
 /-! ### Example 11.1.1: the obstacle problem -/
 
-/-- **Example 11.1.1 (the obstacle problem)**, the variational inequality (11.1.7): on a bounded
-open `Ω ⊆ B(0, R) ⊆ ℝ^{d+1}`, for an obstacle `ψ ∈ H¹(Ω)` and a load `f ∈ L²(Ω)`, a displacement
-`u ∈ K = {v ∈ H¹₀(Ω) | v ≥ ψ a.e.}` minimizes the energy `E(v) = ∫_Ω (½ |∇v|² − f v)` over `K`
-— the minimum-energy principle (11.1.6) — if and only if
+/-- **Example 11.1.1** of [han2009theoretical] (the obstacle problem), the variational inequality
+(11.1.7). Let $\Omega \subseteq B(0, R) \subseteq \mathbb{R}^{d+1}$ be open, with $R \ge 0$, let
+$\psi \in H^1(\Omega)$ and $f \in L^2(\Omega)$, and let $K = \{v \in H_0^1(\Omega) : v \ge \psi
+\text{ a.e. in } \Omega\}$. Let $u \in K$. Then $u$ minimizes the energy $E(v) = \int_\Omega
+(\frac12 |\nabla v|^2 - f v) \, dx$ over $K$, the principle of minimum energy (11.1.6), if and
+only if
+$$\int_\Omega \nabla u \cdot \nabla(v - u) \, dx \ge \int_\Omega f (v - u) \, dx \qquad
+  \text{for all } v \in K.$$
 
-  `∫_Ω ∇u · ∇(v − u) ≥ ∫_Ω f (v − u)`  for every `v ∈ K`.
+**Generalization.** The source assumes a Lipschitz boundary. The statement holds on every
+bounded open set.
 
-The book leaves this to Exercise 11.1.1; it is Theorem 8.3.3's characterization (8.3.3) of the
-minimizer of the energy of a symmetric `V`-elliptic form on a convex set
-(`Chapter08.theorem_8_3_3_iff`), the form being (11.1.3) and its ellipticity Poincaré's
-inequality.  That the minimizer exists and is unique is Example 11.2.3
-(`Chapter11.example_11_2_3`).  The pointwise form (11.1.9) under the regularity (11.1.8) is the
-separate node `example_11_1_1_pointwise`. -/
+The source leaves the equivalence as Exercise 11.1.1. It is the characterization (8.3.3) of
+Theorem 8.3.3 (`AtkinsonHan.Chapter08.theorem_8_3_3_iff`) for the minimizer of the energy of a
+symmetric $V$-elliptic form on a convex set; the form is (11.1.3), and its ellipticity is
+Poincaré's inequality. The existence and uniqueness of the minimizer are Example 11.2.3
+(`AtkinsonHan.Chapter11.example_11_2_3`) and Example 11.3.10
+(`AtkinsonHan.Chapter11.example_11_3_10`). The pointwise form (11.1.9) is
+`AtkinsonHan.Chapter11.example_11_1_1_pointwise`. -/
 theorem example_11_1_1 {R : ℝ} (hR : 0 ≤ R)
     (hΩ : (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))) ⊆ ball 0 R)
     (ψ : SobolevEuclidean (d + 1) 1 2 Ω)
@@ -326,15 +382,19 @@ section Pointwise
 
 variable {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))}
 
-/-- The variational inequality at `v = u + w`: `ℓ(w) ≤ a(u, w)`; abstract. -/
+/-- Let $a$ be a bilinear form and $\ell$ a linear functional on a real inner product space $V$, let
+$K \subseteq V$, and let $u \in V$ satisfy $\ell(v - u) \le a(u, v - u)$ for all $v \in K$. If
+$u + w \in K$, then $\ell(w) \le a(u, w)$. -/
 theorem le_of_forall_sub_le {V : Type*} [NormedAddCommGroup V] [InnerProductSpace ℝ V]
     {a : BilinForm V} {ℓ : StrongDual ℝ V} {K : Set V} {u : V}
     (hvi : ∀ v ∈ K, ℓ (v - u) ≤ a u (v - u)) {w : V} (hw : u + w ∈ K) : ℓ w ≤ a u w := by
   have := hvi (u + w) hw
   rwa [add_sub_cancel_left] at this
 
-/-- Scaling the variational inequality: `ℓ(ε w) ≤ a(u, ε w)` reads `ε ℓ(w) ≤ ε a(u, w)`;
-abstract. -/
+/-- Let $a$ be a bilinear form and $\ell$ a linear functional on a real inner product space $V$, and
+let $u, w \in V$ and $\varepsilon \in \mathbb{R}$. If
+$\ell(\varepsilon w) \le a(u, \varepsilon w)$, then
+$\varepsilon \ell(w) \le \varepsilon a(u, w)$. -/
 theorem smul_le_of_le {V : Type*} [NormedAddCommGroup V] [InnerProductSpace ℝ V]
     {a : BilinForm V} {ℓ : StrongDual ℝ V} {u w : V} {ε : ℝ} (h : ℓ (ε • w) ≤ a u (ε • w)) :
     ε * ℓ w ≤ ε * a u w := by
@@ -347,10 +407,17 @@ section PointwiseMain
 variable {d : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
 
 open Laplacian in
-/-- **The test-function step of Example 11.1.1**: if `u ∈ K` solves the variational inequality
-(11.1.7) (in the form of Theorem 8.3.3) and `u + ε φ` is admissible for a test function `φ`, then
-`ε ∫_Ω f̃ φ ≤ ε ∫_Ω (−Δũ) φ`, by integration by parts
-(`dirichletForm_eq_integral_neg_laplacian_mul`). -/
+/-- The test-function step of Example 11.1.1. Let $\psi \in H^1(\Omega)$ and $f \in L^2(\Omega)$,
+and let $u \in H_0^1(\Omega)$ satisfy the variational inequality $\ell(v - u) \le a(u, v - u)$
+for all $v \in K$. Let $\tilde f$, $\tilde\psi$ and $\tilde u$ be functions that agree almost
+everywhere on $\Omega$ with $f$, $\psi$ and $u$, with $\tilde u$ of class $C^2$ on $\Omega$. Let
+$\varphi \in C_0^\infty(\Omega)$ and $\varepsilon \in \mathbb{R}$ with
+$\tilde\psi \le \tilde u + \varepsilon\varphi$ almost everywhere on $\Omega$. Then
+$$\varepsilon \int_\Omega \tilde f \varphi \, dx \le \varepsilon \int_\Omega (-\Delta\tilde u)
+  \varphi \, dx.$$
+
+The proof tests the inequality with $v = u + \varepsilon\varphi$ and integrates by parts
+(`Elliptic.dirichletForm_eq_integral_neg_laplacian_mul`). -/
 theorem obstacle_testFunction_step (ψ : SobolevEuclidean (d + 1) 1 2 Ω)
     (f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))))
     {u : SobolevEuclideanZero (d + 1) 1 2 Ω}
@@ -392,21 +459,28 @@ theorem obstacle_testFunction_step (ψ : SobolevEuclidean (d + 1) 1 2 Ω)
   exact ((congrArg (fun z ↦ ε * z) hℓ).symm.trans_le h).trans_eq (congrArg (fun z ↦ ε * z) ha)
 
 open Laplacian in
-/-- **Example 11.1.1, the pointwise form (11.1.9)**: under the additional regularity (11.1.8) —
-`f`, `ψ` continuous on `Ω` and the solution `u` of the obstacle problem `C²` on `Ω`, read through
-representatives `f̃`, `ψ̃`, `ũ` — the minimizer `u` of the energy over
-`K = {v ∈ H¹₀(Ω) | v ≥ ψ a.e.}` satisfies at every point of `Ω`
+/-- **Example 11.1.1** of [han2009theoretical], the pointwise form (11.1.9). Let $\Omega \subseteq
+B(0, R) \subseteq \mathbb{R}^{d+1}$ be open, with $R \ge 0$, let $\psi \in H^1(\Omega)$ and
+$f \in L^2(\Omega)$, and let $u \in K$ minimize the energy over $K = \{v \in H_0^1(\Omega) : v
+\ge \psi \text{ a.e. in } \Omega\}$. Assume the regularity (11.1.8) in the following form: $f$,
+$\psi$ and $u$ agree almost everywhere on $\Omega$ with functions $\tilde f$, $\tilde\psi$ and
+$\tilde u$, where $\tilde f$ and $\tilde\psi$ are continuous on $\Omega$ and $\tilde u$ is of
+class $C^2$ on $\Omega$. Then at every point of $\Omega$
+$$\tilde u - \tilde\psi \ge 0, \qquad -\Delta\tilde u - \tilde f \ge 0, \qquad (\tilde u -
+  \tilde\psi)(-\Delta\tilde u - \tilde f) = 0.$$
 
-  `ũ − ψ̃ ≥ 0`,  `−Δũ − f̃ ≥ 0`,  `(ũ − ψ̃)(−Δũ − f̃) = 0`.
+**Generalization.** The source also assumes $u \in C(\overline\Omega)$. The relations in
+$\Omega$ do not need it.
 
-The book's argument: `v = u + φ` with `0 ≤ φ ∈ C₀^∞(Ω)` in the variational inequality (11.1.7)
-and an integration by parts (`dirichletForm_eq_integral_neg_laplacian_mul`) give
-`∫_Ω (−Δũ − f̃) φ ≥ 0`, hence `−Δũ − f̃ ≥ 0` by the fundamental lemma in its inequality form
-(`nonneg_on_of_forall_integral_mul_testFunction_nonneg`); where `ũ(x₀) > ψ̃(x₀)`, both
-`v = u ± δ φ` are admissible for `φ` supported in a neighbourhood `U(x₀)` on which
-`ũ > ψ̃ + δ`, so `∫_Ω (−Δũ − f̃) φ = 0` for those `φ` and `−Δũ − f̃ = 0` on `U(x₀)`
-(`eqOn_zero_of_forall_integral_mul_testFunction_eq_zero`).  The book's `u ∈ C(Ω̄)` is not
-needed for the relations in `Ω`. -/
+The proof is that of the source. The choice $v = u + \varphi$ with
+$0 \le \varphi \in C_0^\infty(\Omega)$ in (11.1.7) and an integration by parts give $\int_\Omega
+(-\Delta\tilde u - \tilde f) \varphi \, dx \ge 0$, hence $-\Delta\tilde u - \tilde f \ge 0$ by
+the fundamental lemma of the calculus of variations
+(`nonneg_on_of_forall_integral_mul_testFunction_nonneg`). Where
+$\tilde u(x_0) > \tilde\psi(x_0)$, both $v = u \pm \delta\varphi$ are admissible for $\varphi$
+supported in a neighbourhood of $x_0$ on which $\tilde u > \tilde\psi + \delta$; so
+$-\Delta\tilde u - \tilde f = 0$ there
+(`eqOn_zero_of_forall_integral_mul_testFunction_eq_zero`). -/
 theorem example_11_1_1_pointwise {R : ℝ} (hR : 0 ≤ R)
     (hΩ : (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))) ⊆ ball 0 R)
     (ψ : SobolevEuclidean (d + 1) 1 2 Ω)
@@ -515,12 +589,15 @@ section Friction
 
 variable {N : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin N))} (B : BoundaryData Ω) (𝒯 : B.TraceFamily)
 
-/-- `ℝ^N`, locally. -/
+/-- The space $\mathbb{R}^N$, as local notation. -/
 local notation "𝔼" => EuclideanSpace ℝ (Fin N)
 
-/-- The `L¹(σ)` norm is bounded by the `L²(σ)` norm on the finite surface measure `σ`:
-`∫ |k| dσ ≤ ‖1‖_{L²(σ)} ‖k‖_{L²(σ)}` (Hölder,
-`MeasureTheory.integral_norm_rpow_sub_one_mul_norm_le` at `p = 2`). -/
+/-- Let $\sigma$ be the surface measure of the boundary data, a finite measure. For
+$k \in L^2(\sigma)$,
+$$\int |k| \, d\sigma \le \|1\|_{L^2(\sigma)} \|k\|_{L^2(\sigma)}.$$
+
+This is Hölder's inequality with $p = 2$
+(`MeasureTheory.integral_norm_rpow_sub_one_mul_norm_le`). -/
 theorem integral_abs_le_mul_norm (k : Lp ℝ 2 B.σ) :
     ∫ x, |k x| ∂B.σ ≤ (eLpNorm (fun _ : 𝔼 ↦ (1 : ℝ)) 2 B.σ).toReal * ‖k‖ := by
   have h := MeasureTheory.integral_norm_rpow_sub_one_mul_norm_le (p := 2) ENNReal.ofNat_ne_top
@@ -530,7 +607,8 @@ theorem integral_abs_le_mul_norm (k : Lp ℝ 2 B.σ) :
   rw [Lp.norm_def, mul_comm]
   exact h
 
-/-- `k ↦ ∫ |k| dσ` is Lipschitz on `L²(σ)`, with constant `‖1‖_{L²(σ)}`. -/
+/-- The map $k \mapsto \int |k| \, d\sigma$ is Lipschitz on $L^2(\sigma)$ with constant
+$\|1\|_{L^2(\sigma)}$. -/
 theorem lipschitzWith_integral_abs :
     LipschitzWith (Real.toNNReal (eLpNorm (fun _ : 𝔼 ↦ (1 : ℝ)) 2 B.σ).toReal)
       (fun k : Lp ℝ 2 B.σ ↦ ∫ x, |k x| ∂B.σ) := by
@@ -548,31 +626,37 @@ theorem lipschitzWith_integral_abs :
         exact abs_abs_sub_abs_le_abs_sub _ _
     _ ≤ _ := integral_abs_le_mul_norm B (k - k')
 
-/-- **The friction functional `j(v) = g ∫_Γ |v| ds`** of Example 11.1.2 on `V = H¹(Ω)`, through
-the trace `γ = 𝒯.traceL 2 : H¹(Ω) →L L²(σ)` of the boundary interface
-`Numlib/Analysis/Sobolev/Boundary/Data.lean` (instances: `IsContDiffDomain.traceFamily` on a
-bounded `C¹` domain, `Triangulation.traceFamily` on a polygon). -/
+/-- The friction functional of Example 11.1.2 of [han2009theoretical] on $V = H^1(\Omega)$, for
+$g \in \mathbb{R}$:
+$$j(v) = g \int_\Gamma |\gamma v| \, d\sigma,$$
+where $\sigma$ is the surface measure on $\Gamma$ and $\gamma : H^1(\Omega) \to L^2(\sigma)$ is
+the trace.
+
+The source writes $g \int_\Gamma |v| \, ds$. The trace is `𝒯.traceL 2` of the boundary data; it
+exists on a bounded $C^1$ domain (`IsContDiffDomain.traceFamily`) and on a polygon without slits
+(`Triangulation.traceFamily`). -/
 noncomputable def frictionFunctional (g : ℝ) (v : SobolevEuclidean N 1 2 Ω) : ℝ :=
   g * ∫ x, |(𝒯.traceL 2 ENNReal.ofNat_ne_top v : 𝔼 → ℝ) x| ∂B.σ
 
-/-- `j(v) = g ∫ |γ v| dσ`. -/
+/-- The friction functional is $j(v) = g \int |\gamma v| \, d\sigma$. -/
 theorem frictionFunctional_apply (g : ℝ) (v : SobolevEuclidean N 1 2 Ω) :
     frictionFunctional B 𝒯 g v = g * ∫ x, |(𝒯.traceL 2 ENNReal.ofNat_ne_top v : 𝔼 → ℝ) x| ∂B.σ :=
   rfl
 
-/-- The friction functional depends on the trace only. -/
+/-- The friction functional depends only on the trace: if $\gamma v = \gamma w$, then $j(v) = j(w)$.
+-/
 theorem frictionFunctional_eq_of_traceL_eq (g : ℝ) {v w : SobolevEuclidean N 1 2 Ω}
     (h : 𝒯.traceL 2 ENNReal.ofNat_ne_top v = 𝒯.traceL 2 ENNReal.ofNat_ne_top w) :
     frictionFunctional B 𝒯 g v = frictionFunctional B 𝒯 g w := by
   simp only [frictionFunctional, h]
 
-/-- `j(0) = 0`. -/
+/-- The friction functional satisfies $j(0) = 0$. -/
 theorem frictionFunctional_zero (g : ℝ) : frictionFunctional B 𝒯 g 0 = 0 := by
   simp only [frictionFunctional, map_zero]
   rw [integral_congr_ae ((Lp.coeFn_zero ℝ 2 B.σ).mono fun x hx ↦ by rw [hx, Pi.zero_apply,
     abs_zero]), integral_zero, mul_zero]
 
-/-- `j(2u) = 2 j(u)`: the friction functional is positively homogeneous. -/
+/-- The friction functional satisfies $j(2u) = 2 j(u)$. -/
 theorem frictionFunctional_two_smul (g : ℝ) (u : SobolevEuclidean N 1 2 Ω) :
     frictionFunctional B 𝒯 g ((2 : ℝ) • u) = 2 * frictionFunctional B 𝒯 g u := by
   simp only [frictionFunctional, map_smul]
@@ -580,7 +664,8 @@ theorem frictionFunctional_two_smul (g : ℝ) (u : SobolevEuclidean N 1 2 Ω) :
     fun x hx ↦ by rw [hx, Pi.smul_apply, smul_eq_mul, abs_mul, abs_two]), integral_const_mul]
   ring
 
-/-- `j(u + w) − j(u) ≤ g ∫ |γ w| dσ`: the friction functional is subadditive. -/
+/-- For $g \ge 0$ and $u, w \in H^1(\Omega)$, the friction functional satisfies $j(u + w) - j(u) \le
+g \int |\gamma w| \, d\sigma$. -/
 theorem frictionFunctional_add_sub_le {g : ℝ} (hg : 0 ≤ g) (u w : SobolevEuclidean N 1 2 Ω) :
     frictionFunctional B 𝒯 g (u + w) - frictionFunctional B 𝒯 g u
       ≤ g * ∫ x, |(𝒯.traceL 2 ENNReal.ofNat_ne_top w : 𝔼 → ℝ) x| ∂B.σ := by
@@ -595,13 +680,16 @@ theorem frictionFunctional_add_sub_le {g : ℝ} (hg : 0 ≤ g) (u w : SobolevEuc
   linarith [abs_add_le ((𝒯.traceL 2 ENNReal.ofNat_ne_top u : 𝔼 → ℝ) x)
     ((𝒯.traceL 2 ENNReal.ofNat_ne_top w : 𝔼 → ℝ) x)]
 
-/-- **The friction functional is continuous** on `H¹(Ω)`: `k ↦ ∫ |k| dσ` is Lipschitz on
-`L²(σ)` and the trace is bounded. -/
+/-- The friction functional is continuous on $H^1(\Omega)$.
+
+The map $k \mapsto \int |k| \, d\sigma$ is Lipschitz on $L^2(\sigma)$, and the trace is bounded. -/
 theorem continuous_frictionFunctional (g : ℝ) : Continuous (frictionFunctional B 𝒯 g) :=
   continuous_const.mul
     ((lipschitzWith_integral_abs B).continuous.comp (𝒯.traceL 2 ENNReal.ofNat_ne_top).continuous)
 
-/-- **The friction functional is convex** for `g ≥ 0`: `|·|` is convex and the trace is linear. -/
+/-- For $g \ge 0$, the friction functional is convex on $H^1(\Omega)$.
+
+The absolute value is convex and the trace is linear. -/
 theorem convexOn_frictionFunctional {g : ℝ} (hg : 0 ≤ g) :
     ConvexOn ℝ univ (frictionFunctional B 𝒯 g) := by
   refine ⟨convex_univ, fun v _ w _ a b ha hb _ ↦ ?_⟩
@@ -627,16 +715,23 @@ theorem convexOn_frictionFunctional {g : ℝ} (hg : 0 ≤ g) :
         mul_le_mul_of_nonneg_left key hg
     _ = _ := by ring
 
-/-- **The energy (11.1.12)** of the simplified friction problem on `V = H¹(Ω)`,
-`E(v) = ∫_Ω (½ (|∇v|² + v²) − f v) + g ∫_Γ |v| ds`: the energy `½ a(v, v) − ℓ(v)` of the form
-`a(u, v) = ∫_Ω (∇u·∇v + u v)` (the backbone's `Elliptic.laplaceForm Ω`) and the load
-`ℓ(v) = ∫_Ω f v`, plus the friction functional `j`. -/
+/-- The energy (11.1.12) of [han2009theoretical] of the simplified friction problem on
+$V = H^1(\Omega)$, for $g \in \mathbb{R}$ and $f \in L^2(\Omega)$:
+$$E(v) = \int_\Omega \left( \frac12 (|\nabla v|^2 + v^2) - f v \right) dx + g \int_\Gamma |v| \,
+  ds.$$
+
+It is the energy $\frac12 a(v, v) - \ell(v)$ of the form $a(u, v) = \int_\Omega (\nabla u \cdot
+\nabla v + u v) \, dx$ (`Elliptic.laplaceForm Ω`) and the functional
+$\ell(v) = \int_\Omega f v \, dx$, plus the friction functional $j$.
+`AtkinsonHan.Chapter11.frictionEnergy_apply` gives the integrals. -/
 noncomputable def frictionEnergy (g : ℝ)
     (f : Lp ℝ 2 (volume.restrict (Ω : Set 𝔼))) : SobolevEuclidean N 1 2 Ω → ℝ :=
   (Elliptic.laplaceForm Ω).energy (Elliptic.load Ω f) + frictionFunctional B 𝒯 g
 
-/-- **The energy (11.1.12) is the displayed formula**:
-`E(v) = ∫_Ω (½ (∑ᵢ (∂ᵢv)² + v²) − f v) + g ∫ |γ v| dσ`. -/
+/-- The energy (11.1.12) is
+$$E(v) = \int_\Omega \left( \frac12 \Big( \sum_i (\partial_i v)^2 + v^2 \Big) - f v \right) dx +
+  g \int |\gamma v| \, d\sigma \qquad \text{for } v \in H^1(\Omega).$$
+-/
 theorem frictionEnergy_apply (g : ℝ) (f : Lp ℝ 2 (volume.restrict (Ω : Set 𝔼)))
     (v : SobolevEuclidean N 1 2 Ω) :
     frictionEnergy B 𝒯 g f v
@@ -660,29 +755,31 @@ theorem frictionEnergy_apply (g : ℝ) (f : Lp ℝ 2 (volume.restrict (Ω : Set 
   refine integral_congr_ae (Eventually.of_forall fun x ↦ ?_)
   simp only [sq]
 
-/-- **The form `a(u, v) = ∫_Ω (∇u·∇v + u v)` of Example 11.1.2 as a bilinear form of §8.3**:
-the backbone's `Elliptic.laplaceForm Ω` read through `BilinForm.ofCLM`, so that Theorems 11.2.2
+/-- The bilinear form of Example 11.1.2 of [han2009theoretical] on $H^1(\Omega)$:
+$$a(u, v) = \int_\Omega (\nabla u \cdot \nabla v + u v) \, dx.$$
+
+It is `Elliptic.laplaceForm Ω` read as a bilinear form of Section 8.3, so that Theorems 11.2.2
 and 11.3.9 apply to the friction problem. -/
 noncomputable def frictionBilinForm : BilinForm (SobolevEuclidean N 1 2 Ω) :=
   BilinForm.ofCLM (Elliptic.laplaceForm Ω)
 
-/-- `a(u, v) = Elliptic.laplaceForm Ω u v`. -/
+/-- The form `AtkinsonHan.Chapter11.frictionBilinForm` is `Elliptic.laplaceForm Ω`. -/
 theorem frictionBilinForm_apply (u v : SobolevEuclidean N 1 2 Ω) :
     frictionBilinForm (Ω := Ω) u v = Elliptic.laplaceForm Ω u v := rfl
 
-/-- The form of Example 11.1.2 is bounded with constant `1`
-(`Elliptic.laplaceForm_isBoundedWith_one`). -/
+/-- The form of Example 11.1.2 satisfies $|a(u, v)| \le \|u\|_{1,\Omega} \|v\|_{1,\Omega}$, so it is
+bounded with constant $1$ (`Elliptic.laplaceForm_isBoundedWith_one`). -/
 theorem frictionBilinForm_isBoundedWith : (frictionBilinForm (Ω := Ω)).IsBoundedWith 1 :=
   fun u v ↦ by
     rw [frictionBilinForm_apply, ← Real.norm_eq_abs]
     exact Elliptic.laplaceForm_isBoundedWith_one Ω u v
 
-/-- The form of Example 11.1.2 is `V`-elliptic with constant `1`: it is the inner product of
-`H¹(Ω)` (`Elliptic.laplaceForm_isCoerciveWith_one`). -/
+/-- The form of Example 11.1.2 is $V$-elliptic with constant $1$: $a(v, v) \ge \|v\|_{1,\Omega}^2$,
+since it is the inner product of $H^1(\Omega)$ (`Elliptic.laplaceForm_isCoerciveWith_one`). -/
 theorem frictionBilinForm_isEllipticWith : (frictionBilinForm (Ω := Ω)).IsEllipticWith 1 :=
   fun v ↦ Elliptic.laplaceForm_isCoerciveWith_one Ω v
 
-/-- The form of Example 11.1.2 is symmetric. -/
+/-- The form of Example 11.1.2 is symmetric: $a(u, v) = a(v, u)$. -/
 theorem frictionBilinForm_isSymm : LinearMap.BilinForm.IsSymm (frictionBilinForm (Ω := Ω)) := by
   unfold frictionBilinForm
   rw [BilinForm.isSymm_ofCLM_iff]
@@ -691,10 +788,12 @@ theorem frictionBilinForm_isSymm : LinearMap.BilinForm.IsSymm (frictionBilinForm
   rw [conj_trivial] at h
   exact h
 
-/-- **The variational inequality (11.1.13) at one test element `v`, in the book's display and
-in the backbone's vocabulary**:
-`∫_Ω f (v − u) ≤ ∫_Ω [∇u·∇(v − u) + u (v − u)] + g ∫_Γ (|v| − |u|) ds` is
-`ℓ(v − u) ≤ a(u, v − u) + j(v) − j(u)`. -/
+/-- The variational inequality (11.1.13) at one element $v$, in two forms. For $g \in \mathbb{R}$,
+$f \in L^2(\Omega)$ and $u, v \in H^1(\Omega)$, the inequality
+$$\int_\Omega f (v - u) \, dx \le \int_\Omega \big( \nabla u \cdot \nabla(v - u) + u (v - u)
+  \big) \, dx + g \int_\Gamma (|v| - |u|) \, ds$$
+holds if and only if $\ell(v - u) \le a(u, v - u) + j(v) - j(u)$. Here the form $a$ is
+`Elliptic.laplaceForm Ω`, and the functional is `Elliptic.load Ω f`. -/
 theorem friction_ineq_iff (g : ℝ) (f : Lp ℝ 2 (volume.restrict (Ω : Set 𝔼)))
     (u v : SobolevEuclidean N 1 2 Ω) :
     (∫ x in (Ω : Set 𝔼), f x * SobolevMultiIndex.fn (v - u) x
@@ -710,23 +809,28 @@ theorem friction_ineq_iff (g : ℝ) (f : Lp ℝ 2 (volume.restrict (Ω : Set �
   rw [Elliptic.laplaceForm_apply, Elliptic.load_apply, frictionFunctional_apply,
     frictionFunctional_apply, add_sub_assoc, ← mul_sub, ← integral_sub (hI _) (hI _)]
 
-/-- **Example 11.1.2 (the simplified friction problem)**, the variational inequality (11.1.13):
-on `V = H¹(Ω)`, over the boundary interface `B : BoundaryData Ω`, `𝒯 : B.TraceFamily` of
-`Numlib/Analysis/Sobolev/Boundary/Data.lean` — the surface measure `σ = B.σ` on `Γ = ∂Ω`, the
-trace `γ = 𝒯.traceL 2 : H¹(Ω) →L L²(σ)`; the instances are `IsContDiffDomain.traceFamily` on a
-bounded `C¹` domain and `Triangulation.traceFamily` on a polygon without slits — for `g > 0` and
-`f ∈ L²(Ω)`, `u` minimizes the energy (11.1.12)
-`E(v) = ∫_Ω (½ (|∇v|² + v²) − f v) + g ∫_Γ |v| ds` over `V` (the minimization problem (11.1.12))
-if and only if it satisfies
+/-- **Example 11.1.2** of [han2009theoretical] (the simplified friction problem), the variational
+inequality (11.1.13). Let $\Omega \subseteq \mathbb{R}^N$ be open with boundary data: a surface
+measure $\sigma$ on $\Gamma = \partial\Omega$ and a trace
+$\gamma : H^1(\Omega) \to L^2(\sigma)$. Let $g > 0$, $f \in L^2(\Omega)$ and
+$u \in V = H^1(\Omega)$. Then $u$ minimizes the energy (11.1.12),
+$$E(v) = \int_\Omega \left( \frac12 (|\nabla v|^2 + v^2) - f v \right) dx + g \int_\Gamma |v| \,
+  ds,$$
+over $V$ if and only if
+$$\int_\Omega \big( \nabla u \cdot \nabla(v - u) + u (v - u) \big) \, dx + g \int_\Gamma (|v| -
+  |u|) \, ds \ge \int_\Omega f (v - u) \, dx \qquad \text{for all } v \in V.$$
 
-  `∫_Ω [∇u·∇(v − u) + u (v − u)] + g ∫_Γ (|v| − |u|) ds ≥ ∫_Ω f (v − u)`  for every `v ∈ V`.
+**Reading.** The source assumes a Lipschitz boundary. Here the boundary enters through the
+boundary data `B : BoundaryData Ω` and the trace `𝒯 : B.TraceFamily`, which exist on a bounded
+$C^1$ domain (`IsContDiffDomain.traceFamily`) and on a polygon without slits
+(`Triangulation.traceFamily`).
 
-The book leaves this to Exercise 11.1.2; it is Theorem 11.2.1 (the backbone's
-`isMinOn_energy_add_iff`) with `K = V`, the Gâteaux differentiable convex part `½ a(v, v) − ℓ(v)`
-of the energy and the convex continuous friction functional `j` (`convexOn_frictionFunctional`,
-`continuous_frictionFunctional`). The book's Lipschitz boundary is the `C¹` or polygonal
-hypothesis behind the two instances. The pointwise formulation (11.1.14)–(11.1.15) on a bounded
-`C¹` domain is `example_11_1_2_pointwise`. -/
+The source leaves the equivalence as Exercise 11.1.2. It is Theorem 11.2.1
+(`isMinOn_energy_add_iff`) with $K = V$, for the differentiable convex part
+$\frac12 a(v, v) - \ell(v)$ of the energy and the convex continuous friction functional $j$
+(`AtkinsonHan.Chapter11.convexOn_frictionFunctional`,
+`AtkinsonHan.Chapter11.continuous_frictionFunctional`). The pointwise form (11.1.14)–(11.1.15)
+is `AtkinsonHan.Chapter11.example_11_1_2_pointwise`. -/
 theorem example_11_1_2 {g : ℝ} (hg : 0 < g) (f : Lp ℝ 2 (volume.restrict (Ω : Set 𝔼)))
     (u : SobolevEuclidean N 1 2 Ω) :
     IsMinOn (frictionEnergy B 𝒯 g f) univ u ↔
@@ -747,10 +851,17 @@ theorem example_11_1_2 {g : ℝ} (hg : 0 < g) (f : Lp ℝ 2 (volume.restrict (Ω
 /-! ### Tools for the pointwise form -/
 
 open Laplacian in
-/-- **The form `a(u, W) = ∫_Ω (∇u·∇W + u W)` of a `C²(Ω̄)` function against a smooth test
-function, with its boundary term**: for `u ∈ H¹(Ω)` with a representative `ũ ∈ C²(Ω̄)` whose
-derivative extends continuously to `Ω̄` as `G` (the boundary values of `∇ũ`), and `W ∈ H¹(Ω)`
-with a `C¹` representative `ψ`, `a(u, W) = ∫_Γ G(ν) ψ dσ + ∫_Ω (−Δũ + ũ) ψ`: Green's formula
+/-- Green's formula for the form of Example 11.1.2. Let $u \in H^1(\Omega)$ agree almost everywhere
+on $\Omega$ with a function $\tilde u$ of class $C^2(\overline\Omega)$, and let $G$ be
+continuous on $\overline\Omega$ and equal to the derivative of $\tilde u$ on $\Omega$. Let
+$W \in H^1(\Omega)$ agree almost everywhere on $\Omega$ with a $C^1$ function $\psi$ on
+$\mathbb{R}^N$. Then
+$$a(u, W) = \int_\Gamma G(\nu) \, \psi \, d\sigma + \int_\Omega (-\Delta\tilde u + \tilde u)
+  \psi \, dx,$$
+where $a(u, W) = \int_\Omega (\nabla u \cdot \nabla W + u W) \, dx$ and $\nu$ is the outward
+normal.
+
+The function $G$ gives the boundary values of $\nabla\tilde u$. The identity is
 `BoundaryData.integral_laplacian_mul_add_eq`. -/
 theorem laplaceForm_eq_integral_add_of_contDiffOnClosure {u : SobolevEuclidean N 1 2 Ω}
     {ũ : 𝔼 → ℝ} (hũ : SobolevMultiIndex.fn u =ᵐ[volume.restrict (Ω : Set 𝔼)] ũ)
@@ -802,11 +913,15 @@ theorem laplaceForm_eq_integral_add_of_contDiffOnClosure {u : SobolevEuclidean N
   rw [hL, hR, integral_neg]
   linarith
 
-/-- **The test-function bound of the friction inequality**: if `u` satisfies
-`0 ≤ ∫_Γ h γ(v − u) dσ + j(v) − j(u)` for all `v ∈ H¹(Ω)`, then `|∫_Γ h ψ dσ| ≤ g ∫_Γ ψ dσ`
-for every smooth compactly supported `ψ ≥ 0` — test with `v = u ± W`, `W` the element with
-function `ψ`, whose trace is `ψ` (`TraceFamily.traceL_ae_eq`), and use the subadditivity of
-`j`. -/
+/-- Let $g \ge 0$ and $h : \mathbb{R}^N \to \mathbb{R}$, and let $u \in H^1(\Omega)$ satisfy
+$$0 \le \int_\Gamma h \, \gamma(v - u) \, d\sigma + j(v) - j(u) \qquad \text{for all } v \in
+  H^1(\Omega).$$
+Then $|\int_\Gamma h \psi \, d\sigma| \le g \int_\Gamma \psi \, d\sigma$ for every smooth,
+compactly supported $\psi \ge 0$ on $\mathbb{R}^N$.
+
+The proof tests with $v = u \pm W$, where $W$ is the element of $H^1(\Omega)$ with function
+$\psi$, whose trace is $\psi$ (`BoundaryData.TraceFamily.traceL_ae_eq`), and uses the bound
+$j(u + w) - j(u) \le g \int |\gamma w| \, d\sigma$. -/
 theorem abs_integral_mul_le_of_forall_le {g : ℝ} (hg : 0 ≤ g) {h : 𝔼 → ℝ}
     {u : SobolevEuclidean N 1 2 Ω}
     (hvi : ∀ v : SobolevEuclidean N 1 2 Ω,
@@ -859,9 +974,15 @@ theorem abs_integral_mul_le_of_forall_le {g : ℝ} (hg : 0 ≤ g) {h : 𝔼 → 
   rw [abs_le]
   constructor <;> linarith
 
-/-- **`|h| ≤ g` on `Γ` from the friction inequality**, for `h` continuous on `Γ` and a surface
-measure charging every open set meeting `Γ`: where `|h x₀| > g` a bump test
-(`BoundaryData.exists_bump_lt_integral_mul`) contradicts `abs_integral_mul_le_of_forall_le`. -/
+/-- Assume that every open set that meets $\Gamma$ has positive surface measure. Let $g \ge 0$, let
+$h$ be continuous on $\Gamma$, and let $u \in H^1(\Omega)$ satisfy
+$$0 \le \int_\Gamma h \, \gamma(v - u) \, d\sigma + j(v) - j(u) \qquad \text{for all } v \in
+  H^1(\Omega).$$
+Then $|h(x)| \le g$ for every $x \in \Gamma$.
+
+Where $|h(x_0)| > g$, a bump function on the boundary
+(`BoundaryData.exists_bump_lt_integral_mul`) contradicts
+`AtkinsonHan.Chapter11.abs_integral_mul_le_of_forall_le`. -/
 theorem abs_le_of_forall_le
     (hpos : ∀ U : Set 𝔼, IsOpen U → (U ∩ frontier (Ω : Set 𝔼)).Nonempty → 0 < B.σ U)
     {g : ℝ} (hg : 0 ≤ g) {h : 𝔼 → ℝ} (hc : ContinuousOn h (frontier (Ω : Set 𝔼)))
@@ -888,11 +1009,17 @@ theorem abs_le_of_forall_le
     rw [abs_le] at this
     linarith [this.2]
 
-/-- **The complementarity clause `h ũ + g |ũ| = 0` on `Γ`** from the friction inequality, for
-`u` with trace `ũ` continuous on `Γ`, `h` continuous on `Γ` with `|h| ≤ g` there, and a surface
-measure charging every open set meeting `Γ`: `v = 0` and `v = 2u` give
-`∫_Γ (h ũ + g |ũ|) dσ = 0`, the integrand is nonnegative (`|h| ≤ g`) and continuous, so it
-vanishes where a bump test would otherwise see it. -/
+/-- Assume that every open set that meets $\Gamma$ has positive surface measure. Let $h$ be
+continuous on $\Gamma$ with $|h| \le g$ on $\Gamma$, let $u \in H^1(\Omega)$ have trace
+$\gamma u = \tilde u$ $\sigma$-almost everywhere for a function $\tilde u$ continuous on
+$\overline\Omega$, and let
+$$0 \le \int_\Gamma h \, \gamma(v - u) \, d\sigma + j(v) - j(u) \qquad \text{for all } v \in
+  H^1(\Omega).$$
+Then $h(x) \tilde u(x) + g |\tilde u(x)| = 0$ for every $x \in \Gamma$.
+
+The choices $v = 0$ and $v = 2u$ give $\int_\Gamma (h\tilde u + g |\tilde u|) \, d\sigma = 0$.
+The integrand is nonnegative because $|h| \le g$, and it is continuous, so a bump function shows
+that it vanishes on $\Gamma$. -/
 theorem mul_add_abs_eq_zero_of_forall_le
     (hpos : ∀ U : Set 𝔼, IsOpen U → (U ∩ frontier (Ω : Set 𝔼)).Nonempty → 0 < B.σ U)
     {g : ℝ} {h : 𝔼 → ℝ} (hc : ContinuousOn h (frontier (Ω : Set 𝔼)))
@@ -968,22 +1095,29 @@ theorem mul_add_abs_eq_zero_of_forall_le
 
 end Friction
 
-/-! ### Example 11.1.2: the pointwise form (11.1.14)–(11.1.15) on a bounded `C¹` domain -/
+/-! ### Example 11.1.2: the pointwise form (11.1.14)–(11.1.15) on a bounded $C^1$ domain -/
 
 section FrictionPointwise
 
 variable {d : ℕ} {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
 
-/-- `ℝ^{d+1}`, locally. -/
+/-- The space $\mathbb{R}^{d+1}$, as local notation. -/
 local notation "𝔼" => EuclideanSpace ℝ (Fin (d + 1))
 
 open Laplacian in
-/-- **The key identity behind (11.1.15)**: for a `C²(Ω̄)` representative `ũ` of `u ∈ H¹(Ω)`
-satisfying `−Δũ + ũ = f` a.e. on `Ω`, with `∇ũ` extending continuously to `Ω̄` as `G`,
-`a(u, W) − ℓ(W) = ∫_Γ (∂ũ/∂ν) γW dσ` for every `W ∈ H¹(Ω)`, on a bounded `C¹` domain:
-Green's formula (`laplaceForm_eq_integral_add_of_contDiffOnClosure`) on the smooth restrictions,
-both sides being continuous in `W` and the smooth restrictions dense
-(`IsContDiffDomain.hasSmoothDensity`). -/
+/-- The identity behind (11.1.15). Let $\Omega \subseteq \mathbb{R}^{d+1}$ be a bounded $C^1$
+domain, with surface measure $\sigma$, outward normal $\nu$ and trace $\gamma$. Let
+$u \in H^1(\Omega)$ agree almost everywhere on $\Omega$ with a function $\tilde u$ of class
+$C^2(\overline\Omega)$, let $G$ be continuous on $\overline\Omega$ and equal to the derivative
+of $\tilde u$ on $\Omega$, and let $-\Delta\tilde u + \tilde u = f$ almost everywhere on
+$\Omega$ for some $f \in L^2(\Omega)$. Then for every $W \in H^1(\Omega)$
+$$a(u, W) - \ell(W) = \int_\Gamma G(\nu) \, \gamma W \, d\sigma,$$
+where $a(u, W) = \int_\Omega (\nabla u \cdot \nabla W + u W) \, dx$ and
+$\ell(W) = \int_\Omega f W \, dx$.
+
+Green's formula (`AtkinsonHan.Chapter11.laplaceForm_eq_integral_add_of_contDiffOnClosure`) gives
+the identity for smooth $W$. Both sides are continuous in $W$, and smooth functions are dense in
+$H^1(\Omega)$ (`IsContDiffDomain.hasSmoothDensity`). -/
 theorem laplaceForm_sub_load_eq_integral (hΩ : IsContDiffDomain 1 (Ω : Set 𝔼))
     (hb : Bornology.IsBounded (Ω : Set 𝔼)) {u : SobolevEuclidean (d + 1) 1 2 Ω}
     {ũ : 𝔼 → ℝ} (hũ : SobolevMultiIndex.fn u =ᵐ[volume.restrict (Ω : Set 𝔼)] ũ)
@@ -1048,32 +1182,36 @@ theorem laplaceForm_sub_load_eq_integral (hΩ : IsContDiffDomain 1 (Ω : Set �
     ((Elliptic.laplaceForm Ω u).continuous.sub (Elliptic.load Ω f).continuous) hcont hsm) W
 
 open Laplacian in
-/-- **Example 11.1.2, the pointwise form (11.1.14)–(11.1.15) of a smooth solution**, on a
-bounded `C¹` domain `Ω ⊆ ℝ^{d+1}` (the book's Lipschitz boundary is restated as `C¹`, the
-hypothesis under which the backbone's surface measure `σ = hΩ.boundaryMeasure hb`, outward
-normal `ν = hΩ.outwardNormal hb` — defined at every point of `Γ` and continuous there — and
-trace exist): for `g > 0`, `f ∈ L²(Ω)`, let `u ∈ H¹(Ω)` solve the variational inequality
-(11.1.13) and have a representative `ũ ∈ C²(Ω̄)` continuous on `Ω̄` whose derivative extends
-continuously to `Ω̄` as `G` (the boundary values of `∇ũ`, so that `∂ũ/∂ν = G(ν)` is meaningful
-on `Γ`; Exercise 11.1.3's "smooth solution"). Then
+/-- **Example 11.1.2** of [han2009theoretical], the pointwise form (11.1.14)–(11.1.15). Let
+$\Omega \subseteq \mathbb{R}^{d+1}$ be a bounded $C^1$ domain, with surface measure $\sigma$ on
+$\Gamma = \partial\Omega$, outward normal $\nu$ and trace $\gamma$. Let $g > 0$ and
+$f \in L^2(\Omega)$, and let $u \in H^1(\Omega)$ satisfy the variational inequality (11.1.13).
+Let $u$ agree almost everywhere on $\Omega$ with a function $\tilde u$ that is continuous on
+$\overline\Omega$ and of class $C^2(\overline\Omega)$, and let $G$ be continuous on
+$\overline\Omega$ and equal to the derivative of $\tilde u$ on $\Omega$, so that
+$\partial\tilde u / \partial\nu = G(\nu)$ is defined on $\Gamma$. Then
+$$-\Delta\tilde u + \tilde u = f \quad \text{a.e. in } \Omega, \qquad (11.1.14)$$
+and at every point of $\Gamma$
+$$\left| \frac{\partial\tilde u}{\partial\nu} \right| \le g, \qquad \frac{\partial\tilde
+  u}{\partial\nu} \, \tilde u + g |\tilde u| = 0. \qquad (11.1.15)$$
 
-  `−Δũ + ũ = f`  a.e. in `Ω`  (11.1.14),
+**Reading.** The source assumes a Lipschitz boundary and a smooth solution (Exercise 11.1.3).
+Here the domain is $C^1$, which is where the library has the surface measure, the outward normal
+and the trace, and a smooth solution is one with the representative $\tilde u$ above. The source
+states (11.1.15) at the points of $\Gamma$ where the outward normal is defined; on a $C^1$
+domain this is every point of $\Gamma$.
 
-and at every point of `Γ`
-
-  `|∂ũ/∂ν| ≤ g`  and  `(∂ũ/∂ν) ũ + g |ũ| = 0`  (11.1.15).
-
-The book's argument: `v = u ± φ` with `φ ∈ C_c^∞(Ω)` (whose trace vanishes,
-`TraceFamily.traceL_eq_zero_of_mem_zero`) gives the weak equation, hence (11.1.14)
-(`Elliptic.laplacian_ae_eq_of_forall_testFunction`); Green's formula turns (11.1.13) into
-`∫_Γ (∂ũ/∂ν)(γv − γu) dσ + g ∫_Γ (|γv| − |γu|) dσ ≥ 0` for all `v ∈ H¹(Ω)`
-(`laplaceForm_sub_load_eq_integral`); with `v = u ± W`, `W` the element of a smooth compactly
-supported `ψ ≥ 0`, `|∫_Γ (∂ũ/∂ν) ψ dσ| ≤ g ∫_Γ ψ dσ`, and since `∂ũ/∂ν` is continuous on `Γ` and
-every open set meeting `Γ` has positive surface measure, `|∂ũ/∂ν| ≤ g` everywhere on `Γ`
-(`abs_le_of_forall_le`); `v = 0` and `v = 2u` give `∫_Γ ((∂ũ/∂ν) ũ + g |ũ|) dσ = 0`, whose
-integrand is nonnegative and continuous on `Γ`, hence zero (`mul_add_abs_eq_zero_of_forall_le`).
-The book's "at those boundary points where the outward normal vector is defined" is every point
-of `Γ` on a `C¹` domain. -/
+The proof is that of the source. The choice $v = u \pm \varphi$ with
+$\varphi \in C_c^\infty(\Omega)$, whose trace vanishes
+(`BoundaryData.TraceFamily.traceL_eq_zero_of_mem_zero`), gives the weak equation and hence
+(11.1.14) (`Elliptic.laplacian_ae_eq_of_forall_testFunction`). Green's formula
+(`AtkinsonHan.Chapter11.laplaceForm_sub_load_eq_integral`) turns (11.1.13) into $\int_\Gamma
+(\partial\tilde u / \partial\nu)(\gamma v - \gamma u) \, d\sigma + g \int_\Gamma (|\gamma v| -
+|\gamma u|) \, d\sigma \ge 0$ for all $v \in H^1(\Omega)$. The normal derivative is continuous
+on $\Gamma$ (`IsContDiffDomain.continuousOn_outwardNormal`) and every open set that meets
+$\Gamma$ has positive surface measure (`IsContDiffDomain.boundaryMeasure_pos_of_isOpen`), so
+`AtkinsonHan.Chapter11.abs_le_of_forall_le` gives the first relation of (11.1.15) and
+`AtkinsonHan.Chapter11.mul_add_abs_eq_zero_of_forall_le` the second. -/
 theorem example_11_1_2_pointwise (hΩ : IsContDiffDomain 1 (Ω : Set 𝔼))
     (hb : Bornology.IsBounded (Ω : Set 𝔼)) {g : ℝ} (hg : 0 < g)
     (f : Lp ℝ 2 (volume.restrict (Ω : Set 𝔼))) {u : SobolevEuclidean (d + 1) 1 2 Ω}

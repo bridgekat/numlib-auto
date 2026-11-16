@@ -16,60 +16,92 @@ import Numlib.Analysis.Convex.Gateaux
 import Numlib.IntegralEquations.Basic
 
 /-!
-# Atkinson–Han §5.3: differential calculus for nonlinear operators
+# Atkinson and Han, Section 5.3: Differential Calculus for Nonlinear Operators
 
-Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework*, 3rd edition, Springer, 2009, §5.3: the Fréchet and Gâteaux derivatives of a
-nonlinear operator between normed spaces, the differentiation rules, the mean value inequality
-and the second-order Taylor remainder, partial derivatives, and §5.3.4 on convex functionals.
+This module formalizes Section 5.3 of [han2009theoretical]: the Fréchet and Gâteaux derivatives of a
+nonlinear operator between real normed spaces, the rules of differentiation, the mean value
+inequality, the second-order Taylor remainder, partial derivatives, and, in Section 5.3.4, convex
+functionals. An operator $f$ has the **Fréchet derivative** $A \in \mathcal{L}(V, W)$ at $u_0$ if
+$f(u_0 + h) = f(u_0) + Ah + o(\|h\|)$, and the **Gâteaux derivative** $A$ at $u_0$ if
+$\lim_{t \to 0} (f(u_0 + th) - f(u_0))/t = Ah$ for every direction $h$. The results on convex
+functionals specialize the backbone module `Numlib.Analysis.Convex.Gateaux`, and the Taylor estimate
+specializes `Numlib.Analysis.Calculus.MeanValue`.
 
-The book's Fréchet derivative (Definition 5.3.1) is Mathlib's `HasFDerivAt`; its "interior point"
-convention `B(u₀, r) ⊆ K` is `K ∈ 𝓝 u₀`, under which `HasFDerivWithinAt` and `HasFDerivAt`
-agree.  So only the Gâteaux derivative needs a definition here.
+## Main definitions
 
-## Book-specific definitions
-
-* `HasGateauxDerivAt` — Definition 5.3.2, built from Mathlib's `HasLineDerivAt`, with
-  `hasGateauxDerivAt_iff_tendsto` for the difference-quotient form and
-  `HasGateauxDerivAt.unique` for uniqueness.
+* Definition 5.3.2, `AtkinsonHan.Chapter05.HasGateauxDerivAt`: $A$ is the Gâteaux derivative of $f$
+  at $u_0$.
 
 ## Main results
 
-* `fderiv_unique`, `hasFDerivAt_iff_isLittleO`, `hasFDerivWithinAt_iff_of_mem_nhds` —
-  Definition 5.3.1: uniqueness of the Fréchet derivative, its little-`o` form (5.3.5), and the
-  interior-point convention.
-* `proposition_5_3_3` — differentiable ⇒ continuous.
-* `HasFDerivAt.hasGateauxDerivAt`, `hasFDerivAt_of_hasGateauxDerivAt_uniform`,
-  `hasFDerivAt_of_hasGateauxDerivAt_continuousAt` — Proposition 5.3.4, Fréchet ⇒ Gâteaux and its
-  two converses (uniformity in the direction; continuity of `u ↦ A u`).
-* `proposition_5_3_5`, `proposition_5_3_6`, `proposition_5_3_7` — the sum, product and chain
-  rules, with `HasGateauxDerivAt.add`, `HasGateauxDerivAt.const_smul` and
-  `HasGateauxDerivAt.comp` (the mixed Gâteaux ∘ Fréchet clause of Proposition 5.3.7) for the
-  Gâteaux versions.
-* `example_5_3_8`, `example_5_3_9`, `example_5_3_10` — the derivative of an affine map, the
-  Jacobian matrix of a map between coordinate spaces, and the derivative of the Urysohn integral
-  operator on `C[a, b]`.
-* `proposition_5_3_11`, `proposition_5_3_11_iSup`, `corollary_5_3_12` — the mean value
-  inequality (5.3.7), in the two forms the book gives, and the vanishing-derivative corollary.
-* `proposition_5_3_13` and `norm_sub_sub_fderiv_le_half_mul_sq` — the second-order Taylor
-  remainder, under a bound on `F''` and under a Lipschitz hypothesis on `F'` respectively. The
-  second is what (5.4.5) and the Newton–Kantorovich theorem of §5.4 rest on.
-* `proposition_5_3_15_fst`, `proposition_5_3_15_snd`, `proposition_5_3_15_of_partial`,
-  `equation_5_3_8` — Definition 5.3.14 and Proposition 5.3.15 on partial derivatives, in both
-  directions, with the total derivative as the sum of the partials; `corollary_5_3_16` is the
-  `C¹` form, an equivalence between differentiability on a neighbourhood with a continuous
-  derivative and continuity of the two partial derivatives there.
-* `theorem_5_3_17`, `theorem_5_3_18`, `theorem_5_3_19`, `theorem_5_3_19_submodule` — §5.3.4:
-  convexity through the tangent plane inequality and through monotonicity of the derivative,
-  their strict versions, and a minimizer characterised by the variational inequality (5.3.10)
-  and, over a subspace, by the variational equation (5.3.11). All four specialize
-  `Numlib.Analysis.Convex.Gateaux`, which owns the general statements and their proofs.
+* Definition 5.3.1, `AtkinsonHan.Chapter05.fderiv_unique`: the Fréchet derivative is unique.
+* Definition 5.3.1, `AtkinsonHan.Chapter05.hasFDerivAt_iff_isLittleO`: the Fréchet derivative in the
+  little-$o$ form (5.3.5).
+* Definition 5.3.1, `AtkinsonHan.Chapter05.hasFDerivWithinAt_iff_of_mem_nhds`: at an interior point
+  of the domain, the derivative within the domain is the derivative at the point.
+* Proposition 5.3.3, `AtkinsonHan.Chapter05.proposition_5_3_3`: a Fréchet differentiable operator is
+  continuous.
+* Proposition 5.3.4(i), `AtkinsonHan.Chapter05.HasFDerivAt.hasGateauxDerivAt`: a Fréchet derivative
+  is a Gâteaux derivative.
+* Proposition 5.3.4(ii), `AtkinsonHan.Chapter05.hasFDerivAt_of_hasGateauxDerivAt_uniform`:
+  difference quotients that converge uniformly over the unit directions give a Fréchet derivative.
+* Proposition 5.3.4(iii), `AtkinsonHan.Chapter05.hasFDerivAt_of_hasGateauxDerivAt_continuousAt`: a
+  Gâteaux derivative that exists near $u_0$ and is continuous at $u_0$ is a Fréchet derivative.
+* Proposition 5.3.5, `AtkinsonHan.Chapter05.proposition_5_3_5`: the sum rule;
+  `AtkinsonHan.Chapter05.HasGateauxDerivAt.add` and
+  `AtkinsonHan.Chapter05.HasGateauxDerivAt.const_smul` are the Gâteaux versions.
+* Proposition 5.3.6, `AtkinsonHan.Chapter05.proposition_5_3_6`: the product rule for a bounded
+  bilinear map.
+* Proposition 5.3.7, `AtkinsonHan.Chapter05.proposition_5_3_7`: the chain rule;
+  `AtkinsonHan.Chapter05.HasGateauxDerivAt.comp` is the clause with a Gâteaux differentiable inner
+  map.
+* Example 5.3.8, `AtkinsonHan.Chapter05.example_5_3_8`: an affine map has a constant derivative.
+* Example 5.3.9, `AtkinsonHan.Chapter05.example_5_3_9`: the derivative of a map from $\mathbb{R}^m$
+  to $\mathbb{R}^n$ is the Jacobian matrix.
+* Example 5.3.10, `AtkinsonHan.Chapter05.example_5_3_10`: the derivative of the Urysohn integral
+  operator on $C[a, b]$ is a Fredholm integral operator.
+* Proposition 5.3.11, `AtkinsonHan.Chapter05.proposition_5_3_11` and
+  `AtkinsonHan.Chapter05.proposition_5_3_11_iSup`: the mean value inequality (5.3.7).
+* Corollary 5.3.12, `AtkinsonHan.Chapter05.corollary_5_3_12`: an operator with zero derivative on a
+  connected open set is constant there.
+* Proposition 5.3.13, `AtkinsonHan.Chapter05.proposition_5_3_13`: the second-order Taylor remainder
+  under a bound on $F''$; `AtkinsonHan.Chapter05.norm_sub_sub_fderiv_le_half_mul_sq` is the form
+  under a Lipschitz bound on $F'$, which Section 5.4 uses.
+* Definition 5.3.14 and Proposition 5.3.15, `AtkinsonHan.Chapter05.proposition_5_3_15_fst` and
+  `AtkinsonHan.Chapter05.proposition_5_3_15_snd`: a Fréchet differentiable map of two variables has
+  partial derivatives.
+* Equation (5.3.8), `AtkinsonHan.Chapter05.equation_5_3_8`: the total derivative is the sum of the
+  partial derivatives.
+* Proposition 5.3.15, `AtkinsonHan.Chapter05.proposition_5_3_15_of_partial`: continuous partial
+  derivatives give a Fréchet derivative.
+* Corollary 5.3.16, `AtkinsonHan.Chapter05.corollary_5_3_16`: $f$ is continuously differentiable
+  near a point if and only if its partial derivatives exist and are continuous there.
+* Theorem 5.3.17, `AtkinsonHan.Chapter05.theorem_5_3_17`: convexity through the tangent plane
+  inequality and through monotonicity of the derivative.
+* Theorem 5.3.18, `AtkinsonHan.Chapter05.theorem_5_3_18`: the strict version of Theorem 5.3.17.
+* Theorem 5.3.19, `AtkinsonHan.Chapter05.theorem_5_3_19` and
+  `AtkinsonHan.Chapter05.theorem_5_3_19_submodule`: a minimizer of a convex functional is
+  characterized by the variational inequality (5.3.10), and over a subspace by the variational
+  equation (5.3.11).
 
-## Not formalized here
+## Implementation notes
 
-The exercises of §5.3, each with its reason on its node in
-`plans/NumlibSurface/AtkinsonHan/Chapter05/Section03.toml`.  Every numbered result of the section
-is stated.
+* The Fréchet derivative of Definition 5.3.1 is Mathlib's `HasFDerivAt`, so only the Gâteaux
+  derivative has a definition here. The book requires $u_0$ to be an interior point of the domain
+  $K$, that is $B(u_0, r) \subseteq K$ for some $r > 0$. This is `K ∈ 𝓝 u₀`, and there
+  `HasFDerivWithinAt` and `HasFDerivAt` agree.
+* `AtkinsonHan.Chapter05.HasGateauxDerivAt` is built from Mathlib's `HasLineDerivAt`, one direction
+  at a time.
+
+## Deviations from the source
+
+* **Theorem 5.3.19** (generalization). The book states that the minimization problem and the
+  variational inequality (5.3.10) are equivalent as problems; here they are equivalent at each point
+  $u \in K$. See `AtkinsonHan.Chapter05.theorem_5_3_19`.
+
+## Not formalized
+
+* The exercises of Section 5.3.
 -/
 
 open Filter Set Topology
@@ -81,37 +113,53 @@ section Frechet
 variable {V₁ V₂ V₃ : Type*} [NormedAddCommGroup V₁] [NormedSpace ℝ V₁]
   [NormedAddCommGroup V₂] [NormedSpace ℝ V₂] [NormedAddCommGroup V₃] [NormedSpace ℝ V₃]
 
-/-- Definition 5.3.1: the Fréchet derivative is unique. -/
+/-- **Definition 5.3.1** of [han2009theoretical], uniqueness. Let $V_1$ and $V_2$ be real normed
+spaces and $f : V_1 \to V_2$. If $A, B \in \mathcal{L}(V_1, V_2)$ are both Fréchet derivatives
+of $f$ at $u_0$, then $A = B$. -/
 theorem fderiv_unique {f : V₁ → V₂} {A B : V₁ →L[ℝ] V₂} {u₀ : V₁} (hA : HasFDerivAt f A u₀)
     (hB : HasFDerivAt f B u₀) : A = B :=
   hA.unique hB
 
-/-- Definition 5.3.1 in the book's little-`o` form (5.3.5):
-`f(u₀ + h) = f(u₀) + A h + o(‖h‖)`. -/
+/-- **Definition 5.3.1** of [han2009theoretical], in the little-$o$ form (5.3.5). Let
+$f : V_1 \to V_2$ and $A \in \mathcal{L}(V_1, V_2)$. Then $A$ is the Fréchet derivative of $f$
+at $u_0$ if and only if
+$$f(u_0 + h) - f(u_0) - Ah = o(\|h\|) \quad \text{as } h \to 0.$$
+-/
 theorem hasFDerivAt_iff_isLittleO {f : V₁ → V₂} {A : V₁ →L[ℝ] V₂} {u₀ : V₁} :
     HasFDerivAt f A u₀ ↔ (fun h => f (u₀ + h) - f u₀ - A h) =o[𝓝 0] fun h => h :=
   hasFDerivAt_iff_isLittleO_nhds_zero
 
-/-- The book requires `u₀` to be an interior point of the domain `K`, i.e. `B(u₀, r) ⊆ K`; this is
-`K ∈ 𝓝 u₀`, and there the derivative within `K` is the derivative at `u₀`. -/
+/-- **Definition 5.3.1** of [han2009theoretical], the interior point condition. Let
+$f : V_1 \to V_2$, $A \in \mathcal{L}(V_1, V_2)$ and $K \subseteq V_1$, and let $u_0$ be an
+interior point of $K$. Then $A$ is the Fréchet derivative of $f$ at $u_0$ relative to $K$ if and
+only if $A$ is the Fréchet derivative of $f$ at $u_0$.
+
+The book requires $B(u_0, r) \subseteq K$ for some $r > 0$. This is the hypothesis `K ∈ 𝓝 u₀`. -/
 theorem hasFDerivWithinAt_iff_of_mem_nhds {f : V₁ → V₂} {A : V₁ →L[ℝ] V₂} {K : Set V₁} {u₀ : V₁}
     (hK : K ∈ 𝓝 u₀) : HasFDerivWithinAt f A K u₀ ↔ HasFDerivAt f A u₀ :=
   ⟨fun h => h.hasFDerivAt hK, fun h => h.hasFDerivWithinAt⟩
 
-/-- **Proposition 5.3.3**: a Fréchet differentiable operator is continuous. -/
+/-- **Proposition 5.3.3** of [han2009theoretical]. If $f : V_1 \to V_2$ has a Fréchet derivative at
+$u_0$, then $f$ is continuous at $u_0$. -/
 theorem proposition_5_3_3 {f : V₁ → V₂} {A : V₁ →L[ℝ] V₂} {u₀ : V₁} (hf : HasFDerivAt f A u₀) :
     ContinuousAt f u₀ :=
   hf.continuousAt
 
-/-- **Proposition 5.3.5** (sum rule) for Fréchet derivatives. -/
+/-- **Proposition 5.3.5** of [han2009theoretical] (sum rule). If $f, g : V_1 \to V_2$ have the
+Fréchet derivatives $A$ and $B$ at $u_0$ and $c \in \mathbb{R}$, then
+$u \mapsto f(u) + c\, g(u)$ has the Fréchet derivative $A + cB$ at $u_0$. -/
 theorem proposition_5_3_5 {f g : V₁ → V₂} {A B : V₁ →L[ℝ] V₂} {u₀ : V₁} (hf : HasFDerivAt f A u₀)
     (hg : HasFDerivAt g B u₀) (c : ℝ) :
     HasFDerivAt (fun u => f u + c • g u) (A + c • B) u₀ :=
   hf.add (hg.const_smul c)
 
-/-- **Proposition 5.3.6** (product rule): if `b` is a bounded bilinear map then
-`B(u) = b(f₁ u, f₂ u)` is differentiable with `B'(u₀) h = b(f₁'(u₀) h, f₂(u₀)) +
-b(f₁(u₀), f₂'(u₀) h)`. -/
+/-- **Proposition 5.3.6** of [han2009theoretical] (product rule). Let $V$, $V_1$, $V_2$ and $W$ be
+real normed spaces and let $b : V_1 \times V_2 \to W$ be a bounded bilinear map. If
+$f_1 : V \to V_1$ and $f_2 : V \to V_2$ have the Fréchet derivatives $A_1$ and $A_2$ at $u_0$,
+then $B(u) = b(f_1(u), f_2(u))$ has a Fréchet derivative at $u_0$, given by
+$$B'(u_0) h = b(A_1 h, f_2(u_0)) + b(f_1(u_0), A_2 h).$$
+
+The bilinear map is `b : V₁ →L[ℝ] V₂ →L[ℝ] W`. -/
 theorem proposition_5_3_6 {V W : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V]
     [NormedAddCommGroup W]
     [NormedSpace ℝ W] (b : V₁ →L[ℝ] V₂ →L[ℝ] W) {f₁ : V → V₁} {f₂ : V → V₂} {A₁ : V →L[ℝ] V₁}
@@ -123,23 +171,33 @@ theorem proposition_5_3_6 {V W : Type*} [NormedAddCommGroup V] [NormedSpace ℝ 
   ext u
   simp [ContinuousLinearMap.precompR, ContinuousLinearMap.precompL, add_comm]
 
-/-- **Proposition 5.3.7** (chain rule). -/
+/-- **Proposition 5.3.7** of [han2009theoretical] (chain rule). Let $f : V_1 \to V_2$ and
+$g : V_2 \to V_3$. If $f$ has the Fréchet derivative $A$ at $u_0$ and $g$ has the Fréchet
+derivative $B$ at $f(u_0)$, then $g \circ f$ has the Fréchet derivative $BA$ at $u_0$.
+
+The clause with a Gâteaux differentiable inner map is
+`AtkinsonHan.Chapter05.HasGateauxDerivAt.comp`. -/
 theorem proposition_5_3_7 {f : V₁ → V₂} {g : V₂ → V₃} {A : V₁ →L[ℝ] V₂} {B : V₂ →L[ℝ] V₃} {u₀ : V₁}
     (hg : HasFDerivAt g B (f u₀)) (hf : HasFDerivAt f A u₀) :
     HasFDerivAt (fun u => g (f u)) (B.comp A) u₀ :=
   hg.comp u₀ hf
 
-/-- **Example 5.3.8**: an affine map `f v = L v + b` has the constant derivative `L`. -/
+/-- **Example 5.3.8** of [han2009theoretical]. Let $L \in \mathcal{L}(V_1, V_2)$ and $b \in V_2$.
+The affine map $f(v) = Lv + b$ has the Fréchet derivative $L$ at every point $u_0$. -/
 theorem example_5_3_8 (L : V₁ →L[ℝ] V₂) (b : V₂) (u₀ : V₁) :
     HasFDerivAt (fun v => L v + b) L u₀ :=
   L.hasFDerivAt.add_const b
 
-/-- **Example 5.3.9**: for `T : K ⊆ ℝᵐ → ℝⁿ` the Fréchet derivative at `v₀` is the `n × m`
-**Jacobian matrix** `(∂Tᵢ/∂xⱼ)(v₀)`: the `(i, j)` entry of the matrix of `T'(v₀)` is the derivative
-of the `i`-th component of `T` along the `j`-th coordinate, the other coordinates held at `v₀`.
+/-- **Example 5.3.9** of [han2009theoretical]. Let $T : \mathbb{R}^m \to \mathbb{R}^n$ have the
+Fréchet derivative $A$ at $v_0$. Then the matrix of $A$ is the **Jacobian matrix** of $T$ at
+$v_0$: for all $i$ and $j$, the function $s \mapsto T_i(v_0 + (s - v_{0,j}) e_j)$ is
+differentiable at $s = v_{0,j}$, and its derivative $(\partial T_i / \partial x_j)(v_0)$ is the
+$(i, j)$ entry of the matrix of $A$.
 
-The partial derivative is written as a genuine `HasDerivAt` of the coordinate section
-`s ↦ Tᵢ(v₀ with its j-th entry replaced by s)`, which is what `∂Tᵢ/∂xⱼ` means. -/
+The partial derivative is a `HasDerivAt` statement for the function
+`s ↦ T (Function.update v₀ j s) i`, which replaces the $j$-th coordinate of $v_0$ by $s$. The
+matrix of $A$ is `LinearMap.toMatrix'`. The coordinates are indexed by `Fin m` and `Fin n`, from
+$0$. -/
 theorem example_5_3_9 {m n : ℕ} {T : (Fin m → ℝ) → (Fin n → ℝ)}
     {A : (Fin m → ℝ) →L[ℝ] (Fin n → ℝ)} {v₀ : Fin m → ℝ} (hT : HasFDerivAt T A v₀)
     (i : Fin n) (j : Fin m) :
@@ -161,9 +219,16 @@ section Urysohn
 
 open IntegralOperator
 
-/-- **Example 5.3.10**: the Fréchet derivative of the Urysohn integral operator
-`u ↦ (x ↦ ∫_a^b k(x, y, u(y)) dy)` on `C[a, b]` is the Fredholm operator with kernel
-`∂_u k(x, y, u(y))`. -/
+/-- **Example 5.3.10** of [han2009theoretical]. Let $a \le b$, and let $k$ and $k_z$ be continuous
+functions on $[a, b] \times [a, b] \times \mathbb{R}$ such that $k_z(x, y, z)$ is the derivative
+of $t \mapsto k(x, y, t)$ at $t = z$. Then the Urysohn integral operator
+$$\mathcal{K}(u)(x) = \int_a^b k(x, y, u(y))\, dy$$
+on $C[a, b]$ has, at every $u \in C[a, b]$, the Fréchet derivative
+$$\mathcal{K}'(u) v(x) = \int_a^b k_z(x, y, u(y))\, v(y)\, dy,$$
+the Fredholm integral operator with the kernel $k_z(x, y, u(y))$.
+
+The operators are `IntegralOperator.urysohn` and `IntegralOperator.fredholm`, and the kernel is
+`IntegralOperator.urysohnDerivKernel`. -/
 theorem example_5_3_10 {a b : ℝ} (hab : a ≤ b) {k kz : C(Icc a b × Icc a b × ℝ, ℝ)}
     (hk : ∀ (x y : Icc a b) (z : ℝ), HasDerivAt (fun t => k (x, y, t)) (kz (x, y, z)) z)
     (u : C(Icc a b, ℝ)) :
@@ -177,54 +242,71 @@ section Gateaux
 variable {V W : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V] [NormedAddCommGroup W]
   [NormedSpace ℝ W]
 
-/-- **Definition 5.3.2**: `A ∈ L(V, W)` is the Gâteaux derivative of `f` at `u₀` when
-`lim_{t → 0} (f(u₀ + t h) - f(u₀))/t = A h` for every direction `h`.  Each of these limits is
-Mathlib's `HasLineDerivAt`. -/
+/-- **Definition 5.3.2** of [han2009theoretical]. Let $V$ and $W$ be real normed spaces,
+$f : V \to W$ and $A \in \mathcal{L}(V, W)$. Then $A$ is the **Gâteaux derivative** of $f$ at
+$u_0$ if
+$$\lim_{t \to 0} \frac{f(u_0 + th) - f(u_0)}{t} = Ah \quad \text{for every } h \in V.$$
+
+Each of these limits is Mathlib's `HasLineDerivAt`. The difference quotient form is
+`AtkinsonHan.Chapter05.hasGateauxDerivAt_iff_tendsto`. -/
 def HasGateauxDerivAt (f : V → W) (A : V →L[ℝ] W) (u₀ : V) : Prop :=
   ∀ h : V, HasLineDerivAt ℝ f (A h) u₀ h
 
-/-- Definition 5.3.2 spelled out as a limit of difference quotients. -/
+/-- The Gâteaux derivative of Definition 5.3.2 as a limit of difference quotients: $A$ is the
+Gâteaux derivative of $f$ at $u_0$ if and only if $t^{-1}(f(u_0 + th) - f(u_0)) \to Ah$ as
+$t \to 0$ with $t \neq 0$, for every $h \in V$. -/
 theorem hasGateauxDerivAt_iff_tendsto {f : V → W} {A : V →L[ℝ] W} {u₀ : V} :
     HasGateauxDerivAt f A u₀ ↔
       ∀ h : V, Tendsto (fun t : ℝ => t⁻¹ • (f (u₀ + t • h) - f u₀)) (𝓝[≠] 0) (𝓝 (A h)) := by
   simp only [HasGateauxDerivAt, hasLineDerivAt_iff_tendsto_slope_zero]
 
-/-- The Gâteaux derivative is unique. -/
+/-- The Gâteaux derivative is unique: if $A$ and $B$ are both Gâteaux derivatives of $f$ at $u_0$,
+then $A = B$. -/
 theorem HasGateauxDerivAt.unique {f : V → W} {A B : V →L[ℝ] W} {u₀ : V}
     (hA : HasGateauxDerivAt f A u₀) (hB : HasGateauxDerivAt f B u₀) : A = B := by
   ext h
   exact (hA h).unique (hB h)
 
-/-- **Proposition 5.3.4**(i): a Fréchet derivative is a Gâteaux derivative. -/
+/-- **Proposition 5.3.4(i)** of [han2009theoretical]. If $A$ is the Fréchet derivative of
+$f : V \to W$ at $u_0$, then $A$ is also the Gâteaux derivative of $f$ at $u_0$. -/
 theorem HasFDerivAt.hasGateauxDerivAt {f : V → W} {A : V →L[ℝ] W} {u₀ : V}
     (hf : HasFDerivAt f A u₀) : HasGateauxDerivAt f A u₀ := fun h => hf.hasLineDerivAt h
 
-/-- **Proposition 5.3.5** (sum rule) for Gâteaux derivatives. -/
+/-- **Proposition 5.3.5** of [han2009theoretical], the sum of two Gâteaux derivatives. If $A$ and
+$B$ are the Gâteaux derivatives of $f$ and $g$ at $u_0$, then $A + B$ is the Gâteaux derivative
+of $f + g$ at $u_0$. -/
 theorem HasGateauxDerivAt.add {f g : V → W} {A B : V →L[ℝ] W} {u₀ : V}
     (hf : HasGateauxDerivAt f A u₀) (hg : HasGateauxDerivAt g B u₀) :
     HasGateauxDerivAt (fun u => f u + g u) (A + B) u₀ := fun h =>
   HasDerivAt.add (hf h) (hg h)
 
-/-- Scalar multiples, the other half of Proposition 5.3.5 for Gâteaux derivatives. -/
+/-- **Proposition 5.3.5** of [han2009theoretical], scalar multiples of a Gâteaux derivative. If $A$
+is the Gâteaux derivative of $f$ at $u_0$ and $c \in \mathbb{R}$, then $cA$ is the Gâteaux
+derivative of $cf$ at $u_0$. -/
 theorem HasGateauxDerivAt.const_smul {f : V → W} {A : V →L[ℝ] W} {u₀ : V}
     (hf : HasGateauxDerivAt f A u₀) (c : ℝ) :
     HasGateauxDerivAt (fun u => c • f u) (c • A) u₀ := fun h =>
   HasDerivAt.const_smul c (hf h)
 
-/-- **Proposition 5.3.7**, second clause (the mixed chain rule): if `f` has a *Gâteaux* derivative
-`A` at `u₀` and `g` a *Fréchet* derivative `B` at `f(u₀)`, then `g ∘ f` has the Gâteaux derivative
-`B A` at `u₀`.  Only the outer map needs to be Fréchet differentiable, because the composite is
-tested one direction at a time and along each direction `g` is composed with a curve.
+/-- **Proposition 5.3.7** of [han2009theoretical], the mixed chain rule. Let $f : V \to W$ and
+$g : W \to X$. If $f$ has the Gâteaux derivative $A$ at $u_0$ and $g$ has the Fréchet derivative
+$B$ at $f(u_0)$, then $g \circ f$ has the Gâteaux derivative $BA$ at $u_0$.
 
-`proposition_5_3_7` is the Fréchet ∘ Fréchet clause of the same proposition. -/
+Only the outer map needs a Fréchet derivative, because the composite is tested one direction at
+a time, and along each direction $g$ is composed with a curve. The clause with two Fréchet
+derivatives is `AtkinsonHan.Chapter05.proposition_5_3_7`. -/
 theorem HasGateauxDerivAt.comp {X : Type*} [NormedAddCommGroup X] [NormedSpace ℝ X] {f : V → W}
     {g : W → X} {A : V →L[ℝ] W} {B : W →L[ℝ] X} {u₀ : V} (hg : HasFDerivAt g B (f u₀))
     (hf : HasGateauxDerivAt f A u₀) : HasGateauxDerivAt (fun u => g (f u)) (B.comp A) u₀ := by
   intro h
   exact hg.comp_hasDerivAt_of_eq 0 (hf h) (by simp)
 
-/-- **Proposition 5.3.4**(ii): if the difference quotients converge *uniformly* over the unit
-sphere of directions, the Gâteaux derivative is a Fréchet derivative. -/
+/-- **Proposition 5.3.4(ii)** of [han2009theoretical]. Let $f : V \to W$ and
+$A \in \mathcal{L}(V, W)$. Assume that the difference quotients converge to $Ah$ uniformly over
+the unit directions: for every $\varepsilon > 0$ there is $\delta > 0$ such that
+$$\left\| \frac{f(u_0 + th) - f(u_0)}{t} - Ah \right\| \le \varepsilon \quad \text{for all } h
+  \text{ with } \|h\| = 1 \text{ and all } 0 < t < \delta.$$
+Then $A$ is the Fréchet derivative of $f$ at $u_0$. -/
 theorem hasFDerivAt_of_hasGateauxDerivAt_uniform {f : V → W} {A : V →L[ℝ] W} {u₀ : V}
     (hunif : ∀ ε > 0, ∃ δ > 0, ∀ h : V, ‖h‖ = 1 → ∀ t : ℝ, 0 < t → t < δ →
       ‖t⁻¹ • (f (u₀ + t • h) - f u₀) - A h‖ ≤ ε) :
@@ -251,19 +333,26 @@ theorem hasFDerivAt_of_hasGateauxDerivAt_uniform {f : V → W} {A : V →L[ℝ] 
         rwa [hsm] at hkey
     _ = ε * ‖h‖ := mul_comm _ _
 
-/-- Definition 5.3.2 gives the derivative of the restriction `s ↦ f (u + s • h)` only at `s = 0`;
-a Gâteaux derivative at the point `u + t • h` gives it at `s = t`, by translating the parameter.
-This is the form in which the mean value theorem is applied below; it is
-`HasLineDerivAt.hasDerivAt_line` applied in the single direction `h`. -/
+/-- A Gâteaux derivative gives the derivative of a restriction to a line at any parameter. If $A$ is
+the Gâteaux derivative of $f$ at $u + th$, then $s \mapsto f(u + sh)$ has the derivative $Ah$ at
+$s = t$.
+
+Definition 5.3.2 gives this derivative only at $s = 0$; a translation of the parameter gives it
+at $s = t$. The mean value argument of
+`AtkinsonHan.Chapter05.hasFDerivAt_of_hasGateauxDerivAt_continuousAt` uses it in this form. It
+is `HasLineDerivAt.hasDerivAt_line` in the single direction $h$. -/
 theorem HasGateauxDerivAt.hasDerivAt_line {f : V → W} {A : V →L[ℝ] W} {u h : V} {t : ℝ}
     (hG : HasGateauxDerivAt f A (u + t • h)) :
     HasDerivAt (fun s : ℝ => f (u + s • h)) (A h) t :=
   (hG h).hasDerivAt_line
 
-/-- **Proposition 5.3.4**(iii): if `f` has a Gâteaux derivative `A u` at every point of a ball
-around `u₀` and `u ↦ A u` is continuous at `u₀`, then `A u₀` is the Fréchet derivative of `f` at
-`u₀`.  The proof is the book's: apply the mean value inequality to
-`s ↦ f (u₀ + s h) - s A(u₀) h` on `[0, 1]`. -/
+/-- **Proposition 5.3.4(iii)** of [han2009theoretical]. Let $f : V \to W$, $u_0 \in V$ and $r > 0$.
+Assume that $f$ has a Gâteaux derivative $A(u)$ at every $u$ in the ball $B(u_0, r)$, and that
+the map $u \mapsto A(u)$ from $V$ to $\mathcal{L}(V, W)$ is continuous at $u_0$. Then $A(u_0)$
+is the Fréchet derivative of $f$ at $u_0$.
+
+The proof is the book's: it applies the mean value inequality to
+$s \mapsto f(u_0 + sh) - s A(u_0) h$ on $[0, 1]$. -/
 theorem hasFDerivAt_of_hasGateauxDerivAt_continuousAt {f : V → W} {A : V → V →L[ℝ] W} {u₀ : V}
     {r : ℝ} (hr : 0 < r) (hG : ∀ u ∈ Metric.ball u₀ r, HasGateauxDerivAt f (A u) u)
     (hA : ContinuousAt A u₀) : HasFDerivAt f (A u₀) u₀ := by
@@ -310,8 +399,11 @@ section MeanValue
 variable {V W : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V] [NormedAddCommGroup W]
   [NormedSpace ℝ W]
 
-/-- **Proposition 5.3.11**, the mean value inequality (5.3.7), with an explicit bound on the
-derivative along the segment: `‖F u - F w‖ ≤ C ‖u - w‖`. -/
+/-- **Proposition 5.3.11** of [han2009theoretical] (mean value inequality (5.3.7)), with an explicit
+bound on the derivative. Let $F : V \to W$ have the Fréchet derivative $F'(z)$ at every point
+$z$ of the segment $[u, w]$, and let $\|F'(z)\| \le C$ for all $z \in [u, w]$. Then
+$$\|F(u) - F(w)\| \le C \|u - w\|.$$
+-/
 theorem proposition_5_3_11 {F : V → W} {F' : V → V →L[ℝ] W} {u w : V} {C : ℝ}
     (hF : ∀ z ∈ segment ℝ u w, HasFDerivAt F (F' z) z)
     (hC : ∀ z ∈ segment ℝ u w, ‖F' z‖ ≤ C) : ‖F u - F w‖ ≤ C * ‖u - w‖ :=
@@ -319,8 +411,14 @@ theorem proposition_5_3_11 {F : V → W} {F' : V → V →L[ℝ] W} {u w : V} {C
     (fun z hz => (hF z hz).hasFDerivWithinAt) hC (right_mem_segment ℝ u w)
     (left_mem_segment ℝ u w)
 
-/-- **Proposition 5.3.11** in the book's form (5.3.7), with the supremum of `‖F'‖` over the
-segment.  Continuity of `F'` (a hypothesis of the book) makes the supremum finite. -/
+/-- **Proposition 5.3.11** of [han2009theoretical] (mean value inequality (5.3.7)), in the book's
+form. Let $F : V \to W$ have the Fréchet derivative $F'(z)$ at every point $z$ of the segment
+$[u, w]$, and let $F' : V \to \mathcal{L}(V, W)$ be continuous. Then
+$$\|F(u) - F(w)\| \le \sup_{0 \le \theta \le 1} \|F'((1 - \theta) u + \theta w)\| \, \|u -
+  w\|.$$
+
+The continuity of $F'$ is a hypothesis of the book. It makes the supremum finite, so that `iSup`
+is a true supremum. -/
 theorem proposition_5_3_11_iSup {F : V → W} {F' : V → V →L[ℝ] W} {u w : V}
     (hF : ∀ z ∈ segment ℝ u w, HasFDerivAt F (F' z) z) (hF' : Continuous F') :
     ‖F u - F w‖ ≤ (⨆ θ : Icc (0 : ℝ) 1, ‖F' ((1 - (θ : ℝ)) • u + (θ : ℝ) • w)‖) * ‖u - w‖ := by
@@ -333,27 +431,35 @@ theorem proposition_5_3_11_iSup {F : V → W} {F' : V → V →L[ℝ] W} {u w : 
   obtain ⟨θ, hθ, rfl⟩ := hz
   exact le_ciSup hbdd ⟨θ, hθ⟩
 
-/-- **Corollary 5.3.12**: an operator with vanishing derivative on a connected open set is
-constant there. -/
+/-- **Corollary 5.3.12** of [han2009theoretical]. Let $K \subseteq V$ be open and connected, and let
+$F : V \to W$ be differentiable on $K$ with $F'(u) = 0$ for all $u \in K$. Then $F$ is constant
+on $K$: $F(u) = F(v)$ for all $u, v \in K$.
+
+The connectedness is `IsPreconnected K`; it differs from connectedness only for the empty set. -/
 theorem corollary_5_3_12 {F : V → W} {K : Set V} (hK : IsOpen K) (hKc : IsPreconnected K)
     (hF : DifferentiableOn ℝ F K) (hF' : K.EqOn (fderiv ℝ F) 0) {u v : V} (hu : u ∈ K)
     (hv : v ∈ K) : F u = F v :=
   hK.is_const_of_fderiv_eq_zero hKc hF hF' hu hv
 
-/-- The `L/2` Taylor estimate for an operator with an `L`-Lipschitz derivative:
-`‖F y - F x - F'(x)(y - x)‖ ≤ (L/2) ‖y - x‖²`.  It is the sharp form of Proposition 5.3.13 and
-the analytic core of (5.4.5) in §5.4.
+/-- The Taylor estimate for an operator with a Lipschitz continuous derivative. Let $s \subseteq V$
+be convex, and let $F : V \to W$ have the Fréchet derivative $F'(z)$ at every $z \in s$, with
+$\|F'(z) - F'(w)\| \le L \|z - w\|$ for all $z, w \in s$. Then for all $x, y \in s$,
+$$\|F(y) - F(x) - F'(x)(y - x)\| \le \frac{L}{2} \|y - x\|^2.$$
 
-This is the backbone's `Convex.norm_image_sub_sub_le_of_norm_hasFDerivAt_sub_le` with the
-two-sided Lipschitz hypothesis the book states, specialised at `w = x`. -/
+This is the sharp form of Proposition 5.3.13, and the estimate (5.4.5) of Section 5.4 rests on
+it. It is `Convex.norm_image_sub_sub_le_of_norm_hasFDerivAt_sub_le` under the two-sided
+Lipschitz condition of the book. -/
 theorem norm_sub_sub_fderiv_le_half_mul_sq {s : Set V} (hs : Convex ℝ s) {F : V → W}
     {F' : V → V →L[ℝ] W} {L : ℝ} (hF : ∀ z ∈ s, HasFDerivAt F (F' z) z)
     (hL : ∀ z ∈ s, ∀ w ∈ s, ‖F' z - F' w‖ ≤ L * ‖z - w‖) {x y : V} (hx : x ∈ s) (hy : y ∈ s) :
     ‖F y - F x - F' x (y - x)‖ ≤ L / 2 * ‖y - x‖ ^ 2 :=
   hs.norm_image_sub_sub_le_of_norm_hasFDerivAt_sub_le hF hx hy fun z hz => hL z hz x hx
 
-/-- **Proposition 5.3.13**: for a twice differentiable `F` with `‖F''‖ ≤ C` on the segment,
-`‖F(u₀ + h) - F(u₀) - F'(u₀) h‖ ≤ ½ C ‖h‖²`. -/
+/-- **Proposition 5.3.13** of [han2009theoretical]. Let $F : V \to W$ have the Fréchet derivative
+$F'(z)$ at every point $z$ of the segment $[u_0, u_0 + h]$, let $F'$ have the Fréchet derivative
+$F''(z)$ there, and let $\|F''(z)\| \le C$ on the segment. Then
+$$\|F(u_0 + h) - F(u_0) - F'(u_0) h\| \le \frac{C}{2} \|h\|^2.$$
+-/
 theorem proposition_5_3_13 {F : V → W} {F' : V → V →L[ℝ] W} {F'' : V → V →L[ℝ] V →L[ℝ] W} {u₀ h : V}
     {C : ℝ} (hF : ∀ z ∈ segment ℝ u₀ (u₀ + h), HasFDerivAt F (F' z) z)
     (hF' : ∀ z ∈ segment ℝ u₀ (u₀ + h), HasFDerivAt F' (F'' z) z)
@@ -375,21 +481,32 @@ section Partial
 variable {U V W : Type*} [NormedAddCommGroup U] [NormedSpace ℝ U] [NormedAddCommGroup V]
   [NormedSpace ℝ V] [NormedAddCommGroup W] [NormedSpace ℝ W]
 
-/-- **Definition 5.3.14** and **Proposition 5.3.15**(⇒): Fréchet differentiability of
-`f : U × V → W` gives the partial derivative in the first variable. -/
+/-- **Definition 5.3.14** and **Proposition 5.3.15** of [han2009theoretical], the partial derivative
+in the first variable. Let $f : U \times V \to W$ have the Fréchet derivative $A$ at
+$p = (u_0, v_0)$. Then $u \mapsto f(u, v_0)$ has the Fréchet derivative $h \mapsto A(h, 0)$ at
+$u_0$. This is the partial derivative $f_u(u_0, v_0)$.
+
+The map $h \mapsto A(h, 0)$ is `A.comp (ContinuousLinearMap.inl ℝ U V)`. -/
 theorem proposition_5_3_15_fst {f : U × V → W} {A : U × V →L[ℝ] W} {p : U × V}
     (hf : HasFDerivAt f A p) :
     HasFDerivAt (fun u => f (u, p.2)) (A.comp (ContinuousLinearMap.inl ℝ U V)) p.1 :=
   hf.comp p.1 (hasFDerivAt_prodMk_left p.1 p.2)
 
-/-- **Definition 5.3.14** and **Proposition 5.3.15**(⇒), second variable. -/
+/-- **Definition 5.3.14** and **Proposition 5.3.15** of [han2009theoretical], the partial derivative
+in the second variable. Let $f : U \times V \to W$ have the Fréchet derivative $A$ at
+$p = (u_0, v_0)$. Then $v \mapsto f(u_0, v)$ has the Fréchet derivative $k \mapsto A(0, k)$ at
+$v_0$. This is the partial derivative $f_v(u_0, v_0)$.
+
+The map $k \mapsto A(0, k)$ is `A.comp (ContinuousLinearMap.inr ℝ U V)`. -/
 theorem proposition_5_3_15_snd {f : U × V → W} {A : U × V →L[ℝ] W} {p : U × V}
     (hf : HasFDerivAt f A p) :
     HasFDerivAt (fun v => f (p.1, v)) (A.comp (ContinuousLinearMap.inr ℝ U V)) p.2 :=
   hf.comp p.2 (hasFDerivAt_prodMk_right p.1 p.2)
 
-/-- **(5.3.8)**: the total derivative is the sum of the two partial derivatives,
-`f'(u₀, v₀)(h, k) = f_u(u₀, v₀) h + f_v(u₀, v₀) k`. -/
+/-- **Equation (5.3.8)** of [han2009theoretical]. The total derivative is the sum of the two partial
+derivatives: for $A \in \mathcal{L}(U \times V, W)$, $h \in U$ and $k \in V$,
+$$A(h, k) = A(h, 0) + A(0, k),$$
+which for $A = f'(u_0, v_0)$ reads $f'(u_0, v_0)(h, k) = f_u(u_0, v_0) h + f_v(u_0, v_0) k$. -/
 theorem equation_5_3_8 (A : U × V →L[ℝ] W) (h : U) (k : V) :
     A (h, k) = A.comp (ContinuousLinearMap.inl ℝ U V) h
       + A.comp (ContinuousLinearMap.inr ℝ U V) k := by
@@ -397,9 +514,14 @@ theorem equation_5_3_8 (A : U × V →L[ℝ] W) (h : U) (k : V) :
   rw [hsum, map_add]
   rfl
 
-/-- **Proposition 5.3.15**(⇐): continuous partial derivatives near `(u₀, v₀)` imply Fréchet
-differentiability, with derivative the coproduct of the partials (Mathlib's
-`hasStrictFDerivAt_uncurry_coprod`). -/
+/-- **Proposition 5.3.15** of [han2009theoretical], the converse. Let $f : U \times V \to W$ and
+$p \in U \times V$. Assume that for all $q$ in a neighbourhood of $p$ the partial derivatives
+$f_u(q)$ and $f_v(q)$ exist, and that $f_u$ and $f_v$ are continuous at $p$. Then $f$ has a
+Fréchet derivative at $p$, given by $(h, k) \mapsto f_u(p) h + f_v(p) k$.
+
+The function $f$ is curried, `f : U → V → W`, and `↿f` is the function on $U \times V$. The
+derivative is `ContinuousLinearMap.coprod` of the partial derivatives. The proof is Mathlib's
+`hasStrictFDerivAt_uncurry_coprod`. -/
 theorem proposition_5_3_15_of_partial {f : U → V → W} {f₁ : U → V → U →L[ℝ] W}
     {f₂ : U → V → V →L[ℝ] W}
     {p : U × V} (df₁ : ∀ᶠ q in 𝓝 p, HasFDerivAt (f · q.2) (↿f₁ q) q.1)
@@ -407,22 +529,24 @@ theorem proposition_5_3_15_of_partial {f : U → V → W} {f₁ : U → V → U 
     (cf₂ : ContinuousAt (↿f₂) p) : HasFDerivAt (↿f) ((↿f₁ p).coprod (↿f₂ p)) p :=
   (hasStrictFDerivAt_uncurry_coprod df₁ df₂ cf₁ cf₂).hasFDerivAt
 
-/-- Post-composition with a fixed continuous linear map is continuous on the space of operators;
-this is what carries continuity of the total derivative to continuity of a partial one and back. -/
+/-- Composition on the right with a fixed $L \in \mathcal{L}(X, Y)$ is a continuous map from
+$\mathcal{L}(Y, Z)$ to $\mathcal{L}(X, Z)$. -/
 private theorem continuous_comp_right {X Y Z : Type*} [NormedAddCommGroup X] [NormedSpace ℝ X]
     [NormedAddCommGroup Y] [NormedSpace ℝ Y] [NormedAddCommGroup Z] [NormedSpace ℝ Z]
     (L : X →L[ℝ] Y) : Continuous fun B : Y →L[ℝ] Z => B.comp L :=
   ((ContinuousLinearMap.compL ℝ X Y Z).flip L).continuous
 
-/-- **Corollary 5.3.16**: `f(u, v)` is continuously Fréchet differentiable in a neighbourhood of
-`(u₀, v₀)` if and only if the partial derivatives `f_u` and `f_v` exist and are continuous in a
-neighbourhood of `(u₀, v₀)`.
+/-- **Corollary 5.3.16** of [han2009theoretical]. Let $f : U \times V \to W$ and $p \in U \times V$.
+Then $f$ is continuously Fréchet differentiable in a neighbourhood of $p$ if and only if there
+is a neighbourhood $s$ of $p$ such that the partial derivatives $f_u(q)$ and $f_v(q)$ exist for
+all $q \in s$ and are continuous on $s$.
 
-`ContDiffAt ℝ 1 (↿f) p` is the left-hand side: being `C¹` *at* a point means, in Mathlib as in the
-book, being differentiable on a neighbourhood with a derivative continuous there.  The forward
-direction is `proposition_5_3_15_fst`/`_snd` at every point of that neighbourhood; the backward
-one is `proposition_5_3_15_of_partial`, applied at every point rather than only at `p`, which is
-what upgrades a single Fréchet derivative to a continuously differentiable one. -/
+The left-hand side is `ContDiffAt ℝ 1 (↿f) p`: in Mathlib, as in the book, $C^1$ at a point
+means differentiable in a neighbourhood with a derivative that is continuous there. The forward
+direction applies `AtkinsonHan.Chapter05.proposition_5_3_15_fst` and
+`AtkinsonHan.Chapter05.proposition_5_3_15_snd` at each point of the neighbourhood. The backward
+direction applies `AtkinsonHan.Chapter05.proposition_5_3_15_of_partial` at each point of the
+neighbourhood. -/
 theorem corollary_5_3_16 {f : U → V → W} {p : U × V} :
     ContDiffAt ℝ 1 (↿f) p ↔
       ∃ (f₁ : U → V → U →L[ℝ] W) (f₂ : U → V → V →L[ℝ] W) (s : Set (U × V)), s ∈ 𝓝 p ∧
@@ -461,36 +585,57 @@ section Convexity
 variable {V : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V]
 variable {K : Set V} {f : V → ℝ} {f' : V → V →L[ℝ] ℝ}
 
-/-- **Theorem 5.3.17**: for a Gâteaux differentiable `f : V → ℝ` on a convex set `K`, the
-following are equivalent: (a) `f` is convex on `K`; (b) `f u + ⟨f'(u), v - u⟩ ≤ f v` for all
-`u, v ∈ K`; (c) the derivative is monotone, `⟨f'(v) - f'(u), v - u⟩ ≥ 0`.  The two equivalences
-are `convexOn_iff_forall_add_lineDeriv_le` and `convexOn_iff_monotone_lineDeriv`, whose hypothesis
-`∀ h, HasLineDerivAt ℝ f (f' u h) u h` is `HasGateauxDerivAt f (f' u) u` by definition. -/
+/-- **Theorem 5.3.17** of [han2009theoretical]. Let $K \subseteq V$ be convex, and let
+$f : V \to \mathbb{R}$ have a Gâteaux derivative $f'(u)$ at every $u \in K$. Then the following
+are equivalent: (a) $f$ is convex on $K$; (b) $f(u) + \langle f'(u), v - u \rangle \le f(v)$ for
+all $u, v \in K$; (c) $\langle f'(v) - f'(u), v - u \rangle \ge 0$ for all $u, v \in K$.
+
+The statement is the conjunction of (a) $\iff$ (b) and (a) $\iff$ (c). These are
+`convexOn_iff_forall_add_lineDeriv_le` and `convexOn_iff_monotone_lineDeriv`, whose hypothesis
+`∀ h, HasLineDerivAt ℝ f (f' u h) u h` is `AtkinsonHan.Chapter05.HasGateauxDerivAt f (f' u) u`
+by definition. -/
 theorem theorem_5_3_17 (hK : Convex ℝ K) (hG : ∀ u ∈ K, HasGateauxDerivAt f (f' u) u) :
     (ConvexOn ℝ K f ↔ ∀ u ∈ K, ∀ v ∈ K, f u + f' u (v - u) ≤ f v) ∧
       (ConvexOn ℝ K f ↔ ∀ u ∈ K, ∀ v ∈ K, 0 ≤ (f' v - f' u) (v - u)) :=
   ⟨convexOn_iff_forall_add_lineDeriv_le hK hG, convexOn_iff_monotone_lineDeriv hK hG⟩
 
-/-- **Theorem 5.3.18**: the strict version of Theorem 5.3.17, from
-`strictConvexOn_iff_forall_add_lineDeriv_lt` and `strictConvexOn_iff_forall_lineDeriv_sub_pos`. -/
+/-- **Theorem 5.3.18** of [han2009theoretical]. Let $K \subseteq V$ be convex, and let
+$f : V \to \mathbb{R}$ have a Gâteaux derivative $f'(u)$ at every $u \in K$. Then $f$ is
+strictly convex on $K$ if and only if $f(u) + \langle f'(u), v - u \rangle < f(v)$ for all
+$u, v \in K$ with $u \neq v$, and if and only if $\langle f'(v) - f'(u), v - u \rangle > 0$ for
+all $u, v \in K$ with $u \neq v$.
+
+The proofs are `strictConvexOn_iff_forall_add_lineDeriv_lt` and
+`strictConvexOn_iff_forall_lineDeriv_sub_pos`. -/
 theorem theorem_5_3_18 (hK : Convex ℝ K) (hG : ∀ u ∈ K, HasGateauxDerivAt f (f' u) u) :
     (StrictConvexOn ℝ K f ↔ ∀ u ∈ K, ∀ v ∈ K, u ≠ v → f u + f' u (v - u) < f v) ∧
       (StrictConvexOn ℝ K f ↔ ∀ u ∈ K, ∀ v ∈ K, u ≠ v → 0 < (f' v - f' u) (v - u)) :=
   ⟨strictConvexOn_iff_forall_add_lineDeriv_lt hK hG,
     strictConvexOn_iff_forall_lineDeriv_sub_pos hK hG⟩
 
-/-- **Theorem 5.3.19**: for a convex Gâteaux differentiable `f` on a convex set `K`, `u` minimizes
-`f` over `K` if and only if it solves the variational inequality (5.3.10),
-`⟨f'(u), v - u⟩ ≥ 0` for all `v ∈ K`.  The book states the two existence problems to be
-equivalent; `isMinOn_iff_forall_lineDeriv_nonneg` gives this stronger pointwise form.  The book's
-separate hypothesis that `K` is convex is `hcvx.1` and is not repeated. -/
+/-- **Theorem 5.3.19** of [han2009theoretical]. Let $K \subseteq V$ be convex, and let
+$f : V \to \mathbb{R}$ be convex on $K$ with a Gâteaux derivative $f'(u)$ at every $u \in K$.
+Then $u \in K$ minimizes $f$ over $K$ if and only if $u$ solves the variational inequality
+(5.3.10):
+$$\langle f'(u), v - u \rangle \ge 0 \quad \text{for all } v \in K.$$
+
+**Generalization.** The book states that the minimization problem and the variational inequality
+are equivalent as problems. This statement gives the equivalence at each point $u \in K$, which
+implies the book's form.
+
+The convexity of $K$ is part of `ConvexOn ℝ K f`, so it is not a separate hypothesis. The proof
+is `isMinOn_iff_forall_lineDeriv_nonneg`. -/
 theorem theorem_5_3_19 (hG : ∀ u ∈ K, HasGateauxDerivAt f (f' u) u) (hcvx : ConvexOn ℝ K f)
     {u : V} (hu : u ∈ K) : IsMinOn f K u ↔ ∀ v ∈ K, 0 ≤ f' u (v - u) :=
   isMinOn_iff_forall_lineDeriv_nonneg hcvx hG hu
 
-/-- **Theorem 5.3.19**, formula (5.3.11): when `K` is a subspace the variational inequality
-becomes the variational equation `⟨f'(u), v⟩ = 0` for all `v ∈ K`.  This is
-`isMinOn_iff_forall_lineDeriv_eq_zero`. -/
+/-- **Theorem 5.3.19** of [han2009theoretical], formula (5.3.11). Let $K$ be a subspace of $V$, and
+let $f : V \to \mathbb{R}$ be convex on $K$ with a Gâteaux derivative $f'(u)$ at every
+$u \in K$. Then $u \in K$ minimizes $f$ over $K$ if and only if $u$ solves the variational
+equation
+$$\langle f'(u), v \rangle = 0 \quad \text{for all } v \in K.$$
+
+The proof is `isMinOn_iff_forall_lineDeriv_eq_zero`. -/
 theorem theorem_5_3_19_submodule (K : Submodule ℝ V)
     (hG : ∀ u ∈ (K : Set V), HasGateauxDerivAt f (f' u) u) (hcvx : ConvexOn ℝ (K : Set V) f)
     {u : V} (hu : u ∈ K) : IsMinOn f (K : Set V) u ↔ ∀ v ∈ K, f' u v = 0 :=

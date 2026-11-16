@@ -12,79 +12,103 @@ import Numlib.Stationary.Splitting
 import NumlibSurface.AtkinsonHan.Chapter05.Section01
 
 /-!
-# Atkinson–Han §5.2: applications of the fixed-point theorem to iterative methods
+# Atkinson and Han, Section 5.2: Applications of the fixed-point theorem to iterative methods
 
-Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework*, 3rd edition, Springer, 2009, §5.2: the four applications the book makes of
-Theorem 5.1.3 — the scalar iteration on an interval, the stationary iterative methods for a
-linear system, the integral equations of the second kind, and the Picard iteration for an initial
-value problem.
+This module formalizes Section 5.2 of [han2009theoretical], four applications of the Banach
+fixed-point theorem (Theorem 5.1.3). The first is the iteration $x_{n+1} = T(x_n)$ for a contractive
+map $T$ of an interval $[a, b]$ into itself (Theorem 5.2.1). The second is the stationary iterative
+methods for a linear system $Ax = b$: for a splitting $A = N - M$ with $N$ nonsingular, the
+iteration $N x_n = M x_{n-1} + b$ converges from every starting point if and only if the spectral
+radius of $N^{-1} M$ is less than $1$. The section also relates the spectral radius $r_\sigma(A)$ to
+matrix norms: $r_\sigma(A) \le \|A\|$, $r_\sigma(A)$ is the infimum of the operator norms of $A$,
+and $\|A^k\|^{1/k} \to r_\sigma(A)$. The third is the integral equations of the second kind: the
+linear Fredholm equation, the nonlinear Urysohn equation (Theorem 5.2.2) and the Volterra equation
+(Theorem 5.2.3). The fourth is the Picard iteration for the initial value problem $u' = f(t, u)$,
+$u(t_0) = z$ (Theorem 5.2.4).
 
-Proofs specialize `Numlib/Stationary/{Basic,Splitting}.lean`,
-`Numlib/LinearAlgebra/Matrix/{Complexify,Hessenberg}.lean`, `Numlib/Nonlinear/FixedPoint.lean`
-and `Numlib/IntegralEquations/Basic.lean`.
+The proofs specialize the backbone modules `Numlib.Stationary.Basic`, `Numlib.Stationary.Splitting`,
+`Numlib.LinearAlgebra.Matrix.Complexify`, `Numlib.LinearAlgebra.Matrix.Hessenberg`,
+`Numlib.Nonlinear.FixedPoint`, `Numlib.IntegralEquations.Basic` and
+`Numlib.Analysis.ODE.PicardLindelof`.
 
-## Book-specific definitions
+## Main definitions
 
-* `mulVecCLM` — a square matrix as a continuous linear map of `ι → ℝ`, the ambient normed space
-  the backbone's `Stationary.step` operates in.
-* `BookSplitting` — §5.2.2, the book's splitting `A = N - M` with `N` nonsingular, together with
-  its iteration matrix `BookSplitting.iterMatrix = N⁻¹ M` and its step
-  `BookSplitting.iterStep`, `N x_n = M x_{n-1} + b`. `BookSplitting.toSplitting` is the
-  corresponding backbone `Stationary.Splitting`, which writes `a = m - n` — so `m = N` and
-  `n = M`, a naming swap the `toSplitting_*` lemmas record.
-* `jacobi`, `gaussSeidel`, `sor` — the three classical splittings of §5.2.2, each identified with
-  its backbone counterpart.
+* Section 5.2.2, `AtkinsonHan.Chapter05.BookSplitting`: a splitting $A = N - M$ of a square matrix
+  with $N$ nonsingular, with its iteration matrix $N^{-1} M$
+  (`AtkinsonHan.Chapter05.BookSplitting.iterMatrix`) and its step
+  $x_n = N^{-1} M x_{n-1} + N^{-1} b$ (`AtkinsonHan.Chapter05.BookSplitting.iterStep`).
+* Section 5.2.2, `AtkinsonHan.Chapter05.jacobi`, `AtkinsonHan.Chapter05.gaussSeidel` and
+  `AtkinsonHan.Chapter05.sor`: the Jacobi, Gauss–Seidel and SOR splittings.
+* `AtkinsonHan.Chapter05.mulVecCLM`: a square matrix as a continuous linear map of $\mathbb{R}^d$
+  with the maximum norm.
 
 ## Main results
 
-* `theorem_5_2_1` — Theorem 5.2.1, the scalar case of Theorem 5.1.3 on `[a, b]`, with
-  `theorem_5_2_1_deriv` for the derivative criterion `sup_{[a,b]} |T'| ≤ α < 1`.
-* `BookSplitting.equation_5_2_5` — the error equation `x - x_n = (N⁻¹M)ⁿ (x - x₀)`.
-* `BookSplitting.tendsto_of_opNorm_lt_one` — §5.2.2(b), convergence when `‖N⁻¹ M‖ < 1`;
-  `complexSpectralRadius_lt_one_of_opNorm_lt_one` is the implication `‖G‖ < 1 ⇒ r_σ(G) < 1`
-  behind it.
-* `complexSpectralRadius_le_opNorm` — §5.2.2, relation 1, `r_σ(A) ≤ ‖A‖`, and
-  `tendsto_pow_rpow_complexSpectralRadius` — relation 3, Gelfand's formula
-  `‖Aᵏ‖^{1/k} → r_σ(A)`; both for the operator norm induced by the maximum norm on `ℝ^d`.
-* `exists_opNorm_le_complexSpectralRadius_add` — §5.2.2, relation 2, the **ε-norm theorem**: a
-  vector norm whose induced operator norm of `A` lies in `[r_σ(A), r_σ(A) + ε]`, so that `r_σ(A)`
-  is the infimum of `‖A‖` over the operator matrix norms.
-* `tendsto_pow_iff_complexSpectralRadius_lt_one` — §5.2.2(c), `Gᵏ → 0` iff `r_σ(G) < 1`.
-* `BookSplitting.forall_tendsto_iff`,
-  `BookSplitting.forall_tendsto_iff_complexSpectralRadius_lt_one` — §5.2.2(d), convergence from
-  every `x₀` iff `(N⁻¹M)ᵏ → 0` iff `r_σ(N⁻¹M) < 1`.
-* `equation_5_2_7` — §5.2.3, the linear Fredholm equation of the second kind, whose
-  contractivity constant is `|λ|⁻¹ ‖K‖` with `‖K‖` the norm formula (2.2.8).
-* `theorem_5_2_2` — the nonlinear Urysohn form (5.2.10).
-* `theorem_5_2_3` — the Volterra equation, where no smallness of the kernel is needed because
-  the factorial estimate on the iterated kernels makes some power of the operator contract and
-  Exercise 5.1.2 applies.
-* `theorem_5_2_4` — §5.2.4, the Picard iteration for the initial value problem, in the weighted
-  (Bielecki) norm in which the Picard operator itself contracts, and `theorem_5_2_4_ode` — the
-  differential form of the same theorem, in a Banach space and on the two-sided interval
-  `[t₀ - a₀, t₀ + a₀]` with `a₀ = min(a, b/M)`: a unique continuously differentiable solution of
-  `u' = f(t, u)`, `u(t₀) = z` with values in `‖u - z‖ ≤ b`.
+* Theorem 5.2.1, `AtkinsonHan.Chapter05.theorem_5_2_1` and
+  `AtkinsonHan.Chapter05.theorem_5_2_1_deriv`: the Banach fixed-point theorem on $[a, b]$, and the
+  criterion $|T'| \le \alpha < 1$ for contractivity.
+* Equation (5.2.5), `AtkinsonHan.Chapter05.BookSplitting.equation_5_2_5`: the error equation
+  $x - x_n = (N^{-1} M)^n (x - x_0)$.
+* Section 5.2.2(b), `AtkinsonHan.Chapter05.BookSplitting.tendsto_of_opNorm_lt_one`: the iteration
+  converges if $\|N^{-1} M\| < 1$.
+* Section 5.2.2, relation 1, `AtkinsonHan.Chapter05.complexSpectralRadius_le_opNorm`:
+  $r_\sigma(A) \le \|A\|$ for the maximum-norm operator norm.
+* Section 5.2.2, relation 2, `AtkinsonHan.Chapter05.exists_opNorm_le_complexSpectralRadius_add`: for
+  every $\varepsilon > 0$ there is a vector norm whose operator norm of $A$ lies in
+  $[r_\sigma(A), r_\sigma(A) + \varepsilon]$.
+* Section 5.2.2, relation 3, `AtkinsonHan.Chapter05.tendsto_pow_rpow_complexSpectralRadius`:
+  Gelfand's formula $\|A^k\|^{1/k} \to r_\sigma(A)$.
+* Section 5.2.2(c), `AtkinsonHan.Chapter05.tendsto_pow_iff_complexSpectralRadius_lt_one`:
+  $G^k \to 0$ if and only if $r_\sigma(G) < 1$.
+* Section 5.2.2(d), `AtkinsonHan.Chapter05.BookSplitting.forall_tendsto_iff` and
+  `AtkinsonHan.Chapter05.BookSplitting.forall_tendsto_iff_complexSpectralRadius_lt_one`: the
+  iteration converges from every $x_0$ if and only if $(N^{-1} M)^k \to 0$, if and only if
+  $r_\sigma(N^{-1} M) < 1$.
+* Equation (5.2.7), `AtkinsonHan.Chapter05.equation_5_2_7`: the linear Fredholm equation of the
+  second kind under the condition (5.2.8).
+* Theorem 5.2.2, `AtkinsonHan.Chapter05.theorem_5_2_2`: the Urysohn equation (5.2.10) with a small
+  Lipschitz constant.
+* Theorem 5.2.3, `AtkinsonHan.Chapter05.theorem_5_2_3`: the Volterra equation (5.2.15), with no
+  smallness condition.
+* Theorem 5.2.4 (Picard–Lindelöf), `AtkinsonHan.Chapter05.theorem_5_2_4` and
+  `AtkinsonHan.Chapter05.theorem_5_2_4_ode`: the Picard iteration is a contraction in a weighted
+  norm, and the initial value problem has a unique continuously differentiable solution on
+  $[t_0 - a_0, t_0 + a_0]$ with $a_0 = \min(a, b/M)$.
 
-## Not formalized here
+## Conventions
 
-* The remark after Theorem 5.2.3, that its hypotheses on `[a, ∞)` give a unique solution in
-  `C[a, ∞)` whose restrictions are the solutions on each `[a, b]`.  The obstruction is the kernel
-  type: `IntegralOperator.volterra` and the whole `C[a, b]` toolkit it belongs to are
-  interval-indexed by construction, so the remark needs a second, `Ici a`-indexed kernel type in
-  the backbone together with the compatibility argument gluing the per-interval solutions, and
-  nothing else in the corpus would use it.  The mathematical content — that the solution on
-  `[a, b']` restricts to the solution on `[a, b]` — is already the uniqueness clause of
-  `theorem_5_2_3` on `[a, b]`.
+* The book writes a splitting as $A = N - M$ with $N$ nonsingular. The backbone
+  `Stationary.Splitting` writes $a = m - n$ with $m$ invertible. So $m = N$ and $n = M$; the lemmas
+  `AtkinsonHan.Chapter05.BookSplitting.toSplitting_m` and
+  `AtkinsonHan.Chapter05.BookSplitting.toSplitting_n` record this.
+* Vectors are elements of `ι → ℝ` with the maximum norm, and the norm of a matrix $G$ is the
+  operator norm of `AtkinsonHan.Chapter05.mulVecCLM G`, the maximum absolute row sum. The spectral
+  radius $r_\sigma(G)$ is computed over $\mathbb{C}$: it is `Matrix.complexSpectralRadius G`, with
+  values in $[0, \infty]$, and finite.
+* A function in $C[a, b]$ is integrated over $[a, b]$ through its extension to $\mathbb{R}$ by
+  `Set.projIcc`.
 
-`theorem_5_2_4` is the book's theorem for the integral equation (the fixed-point form of the initial
-value problem) on an interval to the right of `t₀`, for a scalar equation whose right-hand side is
-globally Lipschitz in `u`; that is the part whose proof is Bielecki's contraction argument.  The
-book's own statement is the differential one, and `theorem_5_2_4_ode` states that, in the book's
-generality, on `Numlib/Analysis/ODE/PicardLindelof.lean`: Mathlib's own
-`IsPicardLindelof.exists_eq_forall_mem_Icc_hasDerivWithinAt` does not say that the solution it
-produces stays inside `‖u - z‖ ≤ b`, which `ODE_solution_unique_of_mem_Icc` needs, and the backbone
-file supplies exactly that containment.
+## Implementation notes
+
+* `AtkinsonHan.Chapter05.theorem_5_2_4_ode` is the book's Theorem 5.2.4 in the book's generality:
+  values in a Banach space, a two-sided interval around $t_0$, and a right-hand side that is defined
+  and Lipschitz only on the box $\{(t, u) : |t - t_0| \le a, \|u - z\| \le b\}$.
+  `AtkinsonHan.Chapter05.theorem_5_2_4` is the convergence of Picard's iteration, the part whose
+  proof is Bielecki's contraction argument. It is stated for a scalar equation whose right-hand side
+  is Lipschitz in $u$ on all of $\mathbb{R}$, on an interval $[t_0, t_1]$ to the right of $t_0$.
+* Mathlib's `IsPicardLindelof.exists_eq_forall_mem_Icc_hasDerivWithinAt` does not say that the
+  solution stays in the ball $\|u - z\| \le b$, which the uniqueness theorem
+  `ODE_solution_unique_of_mem_Icc` needs. The backbone module `Numlib.Analysis.ODE.PicardLindelof`
+  proves this containment.
+
+## Not formalized
+
+* The remark after Theorem 5.2.3: under its hypotheses on $[a, \infty)$, the Volterra equation has a
+  unique solution in $C[a, \infty)$, whose restrictions are the solutions on each $[a, b]$. The
+  backbone Volterra operator `IntegralOperator.volterra` is defined only on a compact interval, so
+  the remark needs a second kernel type on $[a, \infty)$. The fact that the solution on $[a, b']$
+  restricts to the solution on $[a, b]$ follows from the uniqueness part of
+  `AtkinsonHan.Chapter05.theorem_5_2_3` on $[a, b]$.
 -/
 
 open Filter Set Topology
@@ -96,15 +120,23 @@ section Scalar
 
 variable {a b α : ℝ} {T : ℝ → ℝ}
 
-/-- On `ℝ` the norm of Definition 5.1.2 is the absolute value, which is how the book writes
-Theorem 5.2.1. -/
+/-- On $\mathbb{R}$, $T$ is contractive on $K$ with constant $\alpha$ (Definition 5.1.2) if and only
+if $0 \le \alpha < 1$ and $|T(u) - T(v)| \le \alpha |u - v|$ for all $u, v \in K$. This is the
+form in which the book writes Theorem 5.2.1. -/
 theorem contractiveOn_real_iff {K : Set ℝ} :
     ContractiveOn T K α ↔ 0 ≤ α ∧ α < 1 ∧ ∀ u ∈ K, ∀ v ∈ K, |T u - T v| ≤ α * |u - v| := by
   simp only [ContractiveOn, Real.norm_eq_abs]
 
-/-- **Theorem 5.2.1**: the scalar case of the Banach fixed-point theorem.  A contractive
-`T : [a, b] → [a, b]` has a unique fixed point in `[a, b]`, the iteration converges to it from
-every starting point, and the three error bounds (5.1.4)–(5.1.6) hold. -/
+/-- **Theorem 5.2.1** of [han2009theoretical], the Banach fixed-point theorem on an interval. Let
+$a \le b$, and let $T : \mathbb{R} \to \mathbb{R}$ map $[a, b]$ into $[a, b]$ and be contractive
+on $[a, b]$ with constant $\alpha$. Then:
+
+1. $T$ has a unique fixed point $u \in [a, b]$;
+2. for every $u_0 \in [a, b]$, the iterates $u_n = T^n(u_0)$ converge to this fixed point $u$,
+   and for every $n \ge 0$,
+$$|u_n - u| \le \frac{\alpha^n}{1 - \alpha} |u_0 - u_1|, \qquad |u_{n+1} - u| \le
+  \frac{\alpha}{1 - \alpha} |u_n - u_{n+1}|, \qquad |u_{n+1} - u| \le \alpha |u_n - u|.$$
+-/
 theorem theorem_5_2_1 (hab : a ≤ b) (hT : MapsTo T (Icc a b) (Icc a b))
     (hα : ContractiveOn T (Icc a b) α) :
     (∃! u, u ∈ Icc a b ∧ T u = u) ∧
@@ -114,10 +146,13 @@ theorem theorem_5_2_1 (hab : a ≤ b) (hT : MapsTo T (Icc a b) (Icc a b))
         (∀ n, ‖T^[n + 1] u₀ - u‖ ≤ α * ‖T^[n] u₀ - u‖) :=
   theorem_5_1_3 isClosed_Icc (nonempty_Icc.2 hab) hT hα
 
-/-- The derivative criterion accompanying Theorem 5.2.1: if `|T'| ≤ α < 1` on `[a, b]` then `T` is
-contractive there with constant `α`.  This is the scalar case of the backbone's
-`lipschitzOnWith_of_hasFDerivWithinAt` (`Numlib/Nonlinear/FixedPoint.lean`), i.e. Mathlib's
-`Convex.lipschitzOnWith_of_nnnorm_hasDerivWithin_le`. -/
+/-- **Theorem 5.2.1** of [han2009theoretical], the derivative criterion. Let $0 \le \alpha < 1$, and
+let $T : \mathbb{R} \to \mathbb{R}$ have the derivative $T'(x)$ within $[a, b]$ at every
+$x \in [a, b]$, with $|T'(x)| \le \alpha$ there. Then $T$ is contractive on $[a, b]$ with
+constant $\alpha$.
+
+This is the scalar case of the backbone theorem `lipschitzOnWith_of_hasFDerivWithinAt`, that is,
+of Mathlib's `Convex.lipschitzOnWith_of_nnnorm_hasDerivWithin_le`. -/
 theorem theorem_5_2_1_deriv {T' : ℝ → ℝ} (hα0 : 0 ≤ α) (hα1 : α < 1)
     (hT : ∀ x ∈ Icc a b, HasDerivWithinAt T (T' x) (Icc a b) x)
     (hbound : ∀ x ∈ Icc a b, |T' x| ≤ α) : ContractiveOn T (Icc a b) α :=
@@ -130,17 +165,18 @@ section Splittings
 
 variable {ι : Type*} [Fintype ι] [DecidableEq ι]
 
-/-- A square matrix acting on `ι → ℝ` as a continuous linear map; the ambient normed space in
-which the backbone's `Stationary.step` operates. -/
+/-- A square matrix $G$ as a continuous linear map $x \mapsto Gx$ of `ι → ℝ` to itself. The space
+`ι → ℝ` has the maximum norm, and the backbone iteration `Stationary.step` acts in this normed
+space. -/
 noncomputable def mulVecCLM (G : Matrix ι ι ℝ) : (ι → ℝ) →L[ℝ] (ι → ℝ) :=
   LinearMap.toContinuousLinearMap (Matrix.mulVecLin G)
 
 omit [DecidableEq ι] in
-/-- `mulVecCLM G` acts by matrix-vector multiplication. -/
+/-- The map `AtkinsonHan.Chapter05.mulVecCLM G` sends $x$ to $Gx$. -/
 @[simp]
 theorem mulVecCLM_apply (G : Matrix ι ι ℝ) (x : ι → ℝ) : mulVecCLM G x = G *ᵥ x := rfl
 
-/-- Powers of `mulVecCLM G` act by the corresponding matrix power. -/
+/-- The $k$-th power of `AtkinsonHan.Chapter05.mulVecCLM G` sends $x$ to $G^k x$. -/
 theorem mulVecCLM_pow (G : Matrix ι ι ℝ) (k : ℕ) :
     ∀ x : ι → ℝ, (mulVecCLM G ^ k) x = G ^ k *ᵥ x := by
   induction k with
@@ -152,7 +188,7 @@ theorem mulVecCLM_pow (G : Matrix ι ι ℝ) (k : ℕ) :
     rw [mulVecCLM_apply, ih, Matrix.mulVec_mulVec]
 
 omit [DecidableEq ι] in
-/-- Submultiplicativity of the operator norm, in the iterated form `‖G^k‖ ≤ ‖G‖^k`. -/
+/-- The operator norm satisfies $\|G^k\| \le \|G\|^k$. -/
 private theorem norm_mulVecCLM_pow_le (G : Matrix ι ι ℝ) (k : ℕ) :
     ‖mulVecCLM G ^ k‖ ≤ ‖mulVecCLM G‖ ^ k := by
   induction k with
@@ -163,7 +199,7 @@ private theorem norm_mulVecCLM_pow_le (G : Matrix ι ι ℝ) (k : ℕ) :
     rw [pow_succ, pow_succ]
     exact (norm_mul_le _ _).trans (mul_le_mul_of_nonneg_right ih (norm_nonneg _))
 
-/-- Convergence of the matrix powers to `0` is convergence of `Gᵏ v` for every vector `v`. -/
+/-- $G^k \to 0$ if and only if $G^k v \to 0$ for every vector $v$. -/
 private theorem tendsto_pow_zero_iff_mulVec (G : Matrix ι ι ℝ) :
     Tendsto (fun k => G ^ k) atTop (𝓝 0) ↔
       ∀ v : ι → ℝ, Tendsto (fun k => G ^ k *ᵥ v) atTop (𝓝 0) := by
@@ -178,55 +214,54 @@ private theorem tendsto_pow_zero_iff_mulVec (G : Matrix ι ι ℝ) :
     have hj := tendsto_pi_nhds.1 (h (Pi.single j 1)) i
     simpa using hj
 
-/-- §5.2.2: the book's splitting `A = N - M` of a square matrix, with `N` nonsingular. -/
+/-- **Section 5.2.2** of [han2009theoretical], splittings. A **splitting** of a square matrix $A$
+consists of square matrices $N$ and $M$ with $A = N - M$ and $N$ nonsingular. -/
 structure BookSplitting (A : Matrix ι ι ℝ) where
-  /-- The nonsingular part `N`. -/
+  /-- The nonsingular part $N$ of the splitting. -/
   N : Matrix ι ι ℝ
-  /-- The remaining part `M`. -/
+  /-- The second part $M$ of the splitting. -/
   M : Matrix ι ι ℝ
-  /-- The splitting identity `A = N - M`. -/
+  /-- The splitting identity $A = N - M$. -/
   eq : A = N - M
-  /-- `N` is nonsingular. -/
+  /-- The matrix $N$ is nonsingular. -/
   isUnit : IsUnit N
 
 namespace BookSplitting
 
 variable {A : Matrix ι ι ℝ} (s : BookSplitting A)
 
-/-- The iteration matrix `N⁻¹ M` of the splitting. -/
+/-- The **iteration matrix** $N^{-1} M$ of the splitting $A = N - M$. -/
 noncomputable def iterMatrix : Matrix ι ι ℝ := s.N⁻¹ * s.M
 
-/-- One step of the iteration `N x_n = M x_{n-1} + b`, that is
-`x_n = N⁻¹ M x_{n-1} + N⁻¹ b`. -/
+/-- One step of the iteration $N x_n = M x_{n-1} + b$ of the splitting, that is,
+$x_n = N^{-1} M x_{n-1} + N^{-1} b$. -/
 noncomputable def iterStep (b x : ι → ℝ) : ι → ℝ := s.iterMatrix *ᵥ x + s.N⁻¹ *ᵥ b
 
-/-- The corresponding backbone splitting (`Numlib/Stationary/Splitting.lean`).  Note
-the naming swap: the backbone writes `a = m - n` with `m` invertible, the book `A = N - M` with
-`N` nonsingular, so `m = N` and `n = M`. -/
+/-- The backbone splitting `Stationary.Splitting` that corresponds to the splitting $A = N - M$. The
+backbone writes $a = m - n$ with $m$ invertible, so $m = N$ and $n = M$. -/
 def toSplitting : Stationary.Splitting A := ⟨s.N, s.isUnit⟩
 
-/-- The invertible part of the backbone splitting is the book's `N`. -/
+/-- The invertible part $m$ of the backbone splitting is the book's $N$. -/
 @[simp]
 theorem toSplitting_m : s.toSplitting.m = s.N := rfl
 
-/-- The remaining part of the backbone splitting is the book's `M`. -/
+/-- The second part $n$ of the backbone splitting is the book's $M$. -/
 theorem toSplitting_n : s.toSplitting.n = s.M := by
   have h : s.toSplitting.n = s.N - A := rfl
   have h2 : s.N - A = s.N - (s.N - s.M) := by rw [← s.eq]
   rw [h, h2, sub_sub_cancel]
 
-/-- The backbone's iteration operator of the splitting is the book's iteration matrix
-`N⁻¹ M`. -/
+/-- The iteration operator of the backbone splitting is the book's iteration matrix $N^{-1} M$. -/
 theorem toSplitting_iterationOperator : s.toSplitting.iterationOperator = s.iterMatrix := by
   rw [Stationary.Splitting.iterationOperator_eq, toSplitting_n, toSplitting_m, iterMatrix,
     Matrix.nonsing_inv_eq_ringInverse]
 
-/-- The book's iteration is the backbone's affine step
-(`Stationary.step`, `Numlib/Stationary/Basic.lean`). -/
+/-- The book's iteration step $x \mapsto N^{-1} M x + N^{-1} b$ is the backbone's affine step
+`Stationary.step` with the linear part $N^{-1} M$ and the constant part $N^{-1} b$. -/
 theorem iterStep_eq_stationary_step (b : ι → ℝ) :
     s.iterStep b = Stationary.step (mulVecCLM s.iterMatrix) (s.N⁻¹ *ᵥ b) := rfl
 
-/-- The solution of `A x = b` is the fixed point of the iteration. -/
+/-- If $Ax = b$, then $x$ is a fixed point of the iteration: $N^{-1} M x + N^{-1} b = x$. -/
 theorem step_fixed {x b : ι → ℝ} (hx : A *ᵥ x = b) :
     mulVecCLM s.iterMatrix x + s.N⁻¹ *ᵥ b = x := by
   have hdet : IsUnit s.N.det := (Matrix.isUnit_iff_isUnit_det _).mp s.isUnit
@@ -237,7 +272,11 @@ theorem step_fixed {x b : ι → ℝ} (hx : A *ᵥ x = b) :
     rw [h1, Matrix.mulVec_mulVec, hkey, Matrix.sub_mulVec, Matrix.one_mulVec]
   simp [hb]
 
-/-- **(5.2.5)**: the error equation `x - x_n = (N⁻¹M)ⁿ (x - x₀)`. -/
+/-- **Equation (5.2.5)** of [han2009theoretical], the error equation. Let $A = N - M$ be a
+splitting, let $Ax = b$, let $x_0$ be a vector, and let $x_n$ be the iterates of
+$N x_n = M x_{n-1} + b$ from $x_0$. Then for every $n \ge 0$,
+$$x - x_n = (N^{-1} M)^n (x - x_0).$$
+-/
 theorem equation_5_2_5 {x b : ι → ℝ} (hx : A *ᵥ x = b) (x₀ : ι → ℝ) (k : ℕ) :
     x - (s.iterStep b)^[k] x₀ = s.iterMatrix ^ k *ᵥ (x - x₀) := by
   have h := Stationary.step_iterate_sub (mulVecCLM s.iterMatrix) (s.N⁻¹ *ᵥ b) (s.step_fixed hx)
@@ -247,8 +286,11 @@ theorem equation_5_2_5 {x b : ι → ℝ} (hx : A *ᵥ x = b) (x₀ : ι → ℝ
     Matrix.mulVec_sub]
   abel
 
-/-- §5.2.2(b): the iteration converges from every `x₀` whenever the iteration matrix has operator
-norm less than `1`.  This is the backbone's `Stationary.norm_iterate_sub_le`. -/
+/-- **Section 5.2.2(b)** of [han2009theoretical]. Let $A = N - M$ be a splitting, and let the
+iteration matrix satisfy $\|N^{-1} M\| < 1$ in the operator norm of the maximum norm. Let
+$Ax = b$. Then for every $x_0$ the iterates of $N x_n = M x_{n-1} + b$ converge to $x$.
+
+The proof specializes the backbone theorem `Stationary.norm_iterate_sub_le`. -/
 theorem tendsto_of_opNorm_lt_one (hG : ‖mulVecCLM s.iterMatrix‖ < 1) {x b : ι → ℝ}
     (hx : A *ᵥ x = b) (x₀ : ι → ℝ) :
     Tendsto (fun k => (s.iterStep b)^[k] x₀) atTop (𝓝 x) := by
@@ -259,8 +301,9 @@ theorem tendsto_of_opNorm_lt_one (hG : ‖mulVecCLM s.iterMatrix‖ < 1) {x b : 
   simpa using (h1.div_const (1 - ‖mulVecCLM s.iterMatrix‖)).mul_const
     ‖Stationary.step (mulVecCLM s.iterMatrix) (s.N⁻¹ *ᵥ b) x₀ - x₀‖
 
-/-- §5.2.2(d): the iteration converges from *every* starting point exactly when the powers of the
-iteration matrix tend to `0`. -/
+/-- **Section 5.2.2(d)** of [han2009theoretical]. Let $A = N - M$ be a splitting, and let $Ax = b$.
+Then the iterates of $N x_n = M x_{n-1} + b$ converge to $x$ from every starting point $x_0$ if
+and only if $(N^{-1} M)^k \to 0$ as $k \to \infty$. -/
 theorem forall_tendsto_iff {x b : ι → ℝ} (hx : A *ᵥ x = b) :
     (∀ x₀, Tendsto (fun k => (s.iterStep b)^[k] x₀) atTop (𝓝 x)) ↔
       Tendsto (fun k => s.iterMatrix ^ k) atTop (𝓝 0) := by
@@ -284,14 +327,18 @@ theorem forall_tendsto_iff {x b : ι → ℝ} (hx : A *ᵥ x = b) :
 
 end BookSplitting
 
-/-- §5.2.2(c): `Gᵏ → 0` if and only if the spectral radius `r_σ(G)`, computed over `ℂ`, is less
-than `1`.  This is the backbone's `Matrix.tendsto_pow_iff_complexSpectralRadius_lt_one`. -/
+/-- **Section 5.2.2(c)** of [han2009theoretical]. For a real square matrix $G$, $G^k \to 0$ as
+$k \to \infty$ if and only if $r_\sigma(G) < 1$, where $r_\sigma(G)$ is the spectral radius
+computed over $\mathbb{C}$.
+
+This is the backbone theorem `Matrix.tendsto_pow_iff_complexSpectralRadius_lt_one`. -/
 theorem tendsto_pow_iff_complexSpectralRadius_lt_one (G : Matrix ι ι ℝ) :
     Tendsto (fun k => G ^ k) atTop (𝓝 0) ↔ Matrix.complexSpectralRadius G < 1 :=
   Matrix.tendsto_pow_iff_complexSpectralRadius_lt_one G
 
-/-- §5.2.2(c)+(d): the classical criterion — the iteration `N x_n = M x_{n-1} + b` converges for
-every starting point if and only if `r_σ(N⁻¹M) < 1`. -/
+/-- **Section 5.2.2(c) and (d)** of [han2009theoretical], the classical criterion. Let $A = N - M$
+be a splitting, and let $Ax = b$. Then the iterates of $N x_n = M x_{n-1} + b$ converge to $x$
+from every starting point $x_0$ if and only if $r_\sigma(N^{-1} M) < 1$. -/
 theorem BookSplitting.forall_tendsto_iff_complexSpectralRadius_lt_one {A : Matrix ι ι ℝ}
     (s : BookSplitting A) {x b : ι → ℝ} (hx : A *ᵥ x = b) :
     (∀ x₀, Tendsto (fun k => (s.iterStep b)^[k] x₀) atTop (𝓝 x)) ↔
@@ -300,11 +347,13 @@ theorem BookSplitting.forall_tendsto_iff_complexSpectralRadius_lt_one {A : Matri
     (Matrix.tendsto_pow_iff_complexSpectralRadius_lt_one s.iterMatrix)
 
 omit [DecidableEq ι] in
-/-- §5.2.2, relation 1, in the form the book uses it: an operator norm of the iteration matrix
-below `1` forces `r_σ < 1`, hence convergence.  The inequality itself is
-`complexSpectralRadius_le_opNorm` below; the proof here goes through
-`Matrix.tendsto_pow_iff_complexSpectralRadius_lt_one` instead, which needs no matrix norm at
-all. -/
+/-- **Section 5.2.2** of [han2009theoretical], relation 1, in the form in which the book uses it. If
+a real square matrix $G$ satisfies $\|G\| < 1$ in the operator norm of the maximum norm, then
+$r_\sigma(G) < 1$.
+
+The inequality $r_\sigma(G) \le \|G\|$ itself is
+`AtkinsonHan.Chapter05.complexSpectralRadius_le_opNorm`. This proof uses
+`Matrix.tendsto_pow_iff_complexSpectralRadius_lt_one` instead, which needs no matrix norm. -/
 theorem complexSpectralRadius_lt_one_of_opNorm_lt_one {G : Matrix ι ι ℝ}
     (hG : ‖mulVecCLM G‖ < 1) : Matrix.complexSpectralRadius G < 1 := by
   classical
@@ -321,15 +370,18 @@ theorem complexSpectralRadius_lt_one_of_opNorm_lt_one {G : Matrix ι ι ℝ}
 
 open scoped Matrix.Norms.Operator in
 omit [DecidableEq ι] in
-/-- **§5.2.2, relation 1**: `r_σ(A) ≤ ‖A‖` for a matrix operator norm — here the one induced by
-the maximum norm on `ℝ^d`, which is the maximum absolute row sum and is `‖mulVecCLM A‖` by
-Mathlib's `Matrix.linfty_opNorm_eq_opNorm`.  The backbone proves the inequality for an arbitrary
-submultiplicative, absolutely homogeneous, positive definite matrix norm
-(`Matrix.complexSpectralRadius_le_of_norm`); the instance used here is
-`Matrix.complexSpectralRadius_le_linfty_opNNNorm`.
+/-- **Section 5.2.2** of [han2009theoretical], relation 1. For every real square matrix $G$,
+$$r_\sigma(G) \le \|G\|,$$
+where $\|G\|$ is the operator norm induced by the maximum norm on $\mathbb{R}^d$, that is, the
+maximum absolute row sum.
 
-The spectral radius is `ENNReal`-valued, and finite for a matrix over a finite index type
-(`Matrix.complexSpectralRadius_ne_top`), so `toReal` loses nothing. -/
+The operator norm is `‖AtkinsonHan.Chapter05.mulVecCLM G‖`, which equals Mathlib's $\ell^\infty$
+operator norm of the matrix by `Matrix.linfty_opNorm_eq_opNorm`. The backbone proves the
+inequality for every submultiplicative, absolutely homogeneous, positive definite matrix norm
+(`Matrix.complexSpectralRadius_le_of_norm`); the case used here is
+`Matrix.complexSpectralRadius_le_linfty_opNNNorm`. The spectral radius has values in
+$[0, \infty]$ and is finite for a matrix over a finite index type
+(`Matrix.complexSpectralRadius_ne_top`), so its conversion to a real number loses nothing. -/
 theorem complexSpectralRadius_le_opNorm (G : Matrix ι ι ℝ) :
     (Matrix.complexSpectralRadius G).toReal ≤ ‖mulVecCLM G‖ := by
   classical
@@ -341,21 +393,25 @@ theorem complexSpectralRadius_le_opNorm (G : Matrix ι ι ℝ) :
       _ = ‖mulVecCLM G‖ := Matrix.linfty_opNorm_eq_opNorm G
 
 omit [DecidableEq ι] in
-/-- **§5.2.2, relation 2** (the ε-norm theorem): for every `ε > 0` there is a vector norm
-`‖·‖_{A,ε}` on `ℝ^d`, equivalent to the maximum norm, whose induced operator norm of `A` satisfies
-`r_σ(A) ≤ ‖A‖_{A,ε} ≤ r_σ(A) + ε`; hence `r_σ(A)` is the infimum of `‖A‖` over the operator matrix
-norms, relation 1 giving the other inequality for every one of them.
+/-- **Section 5.2.2** of [han2009theoretical], relation 2 (the $\varepsilon$-norm theorem). Let $A$
+be a real square matrix and $\varepsilon > 0$. Then there is a seminorm $p$ on $\mathbb{R}^d$
+such that
 
-The induced operator norm `‖A‖_p` of a vector norm `p` is the least `c ≥ 0` with `p (A x) ≤ c p x`
-for every `x`, so the last two clauses say exactly `‖A‖_p ≤ r_σ(A) + ε` and `r_σ(A) ≤ ‖A‖_p`, with
-no need to name the induced norm.  The first two clauses say that `p` is equivalent to the maximum
-norm, which is what makes it a norm and its induced operator norm finite.
+1. $\|x\|_\infty \le p(x)$ for all $x$;
+2. $p(x) \le C \|x\|_\infty$ for all $x$, for some constant $C$;
+3. $p(Ax) \le (r_\sigma(A) + \varepsilon) \, p(x)$ for all $x$;
+4. if $c \ge 0$ and $p(Ax) \le c \, p(x)$ for all $x$, then $r_\sigma(A) \le c$.
 
-The book quotes this from Ortega and Rheinboldt, whose proof triangularizes `A` and shrinks the
-off-diagonal entries by the scaling `diag(δ, δ², …)`.  The backbone's
-`Matrix.exists_seminorm_forall_mulVec_le` takes the shorter route through Gelfand's formula,
-`p x = ∑_{j<k} c⁻ʲ ‖Aʲ x‖` for `c = r_σ(A) + ε` and `k` with `‖Aᵏ‖ ≤ cᵏ`; the reverse inequality is
-`Matrix.complexSpectralRadius_toReal_le_of_forall_mulVec_le`. -/
+Parts 1 and 2 say that $p$ is a norm equivalent to the maximum norm. The operator norm $\|A\|_p$
+of $A$ induced by $p$ is the least $c \ge 0$ with $p(Ax) \le c \, p(x)$ for all $x$, so parts 3
+and 4 say that $r_\sigma(A) \le \|A\|_p \le r_\sigma(A) + \varepsilon$. With relation 1 for
+every operator norm, it follows that $r_\sigma(A)$ is the infimum of the operator norms of $A$.
+
+The book quotes this result from Ortega and Rheinboldt, whose proof makes $A$ triangular and
+scales the off-diagonal entries by $\operatorname{diag}(\delta, \delta^2, \dots)$. The backbone
+theorem `Matrix.exists_seminorm_forall_mulVec_le` uses Gelfand's formula instead:
+$p(x) = \sum_{j<k} c^{-j} \|A^j x\|$ for $c = r_\sigma(A) + \varepsilon$ and a $k$ with
+$\|A^k\| \le c^k$. Part 4 is `Matrix.complexSpectralRadius_toReal_le_of_forall_mulVec_le`. -/
 theorem exists_opNorm_le_complexSpectralRadius_add (A : Matrix ι ι ℝ) {ε : ℝ} (hε : 0 < ε) :
     ∃ p : Seminorm ℝ (ι → ℝ), (∀ x, ‖x‖ ≤ p x) ∧ (∃ C, ∀ x, p x ≤ C * ‖x‖) ∧
       (∀ x, p (A *ᵥ x) ≤ ((Matrix.complexSpectralRadius A).toReal + ε) * p x) ∧
@@ -368,13 +424,16 @@ theorem exists_opNorm_le_complexSpectralRadius_add (A : Matrix ι ι ℝ) {ε : 
       (by simpa using hlow) hup hc hcA⟩
 
 open scoped Matrix.Norms.Operator in
-/-- **§5.2.2, relation 3** (Gelfand's formula): `‖Aᵏ‖^{1/k} → r_σ(A)`, so the spectral radius is
-the asymptotic rate of the iteration whatever the norm.  Stated for the maximum-absolute-row-sum
-operator norm, which is the one relation 1 above is stated in; the backbone's
-`Matrix.tendsto_pow_rpow_linfty_opNorm` is the same limit written on `Matrix ι ι ℝ` itself.
+/-- **Section 5.2.2** of [han2009theoretical], relation 3 (Gelfand's formula). For every real square
+matrix $G$,
+$$\lim_{k \to \infty} \|G^k\|^{1/k} = r_\sigma(G),$$
+where $\|\cdot\|$ is the operator norm of the maximum norm. So the spectral radius is the
+asymptotic rate of convergence of the iteration.
 
-The book's "any matrix norm, not necessarily induced by a vector norm" is the same limit, since
-two norms on a finite-dimensional space differ by a factor `C` with `C^{1/k} → 1`. -/
+The backbone theorem `Matrix.tendsto_pow_rpow_linfty_opNorm` is the same limit for the norm on
+`Matrix ι ι ℝ`. The book states the formula for any matrix norm, not necessarily induced by a
+vector norm. This is the same limit, because two norms on a finite-dimensional space differ at
+most by a factor $C$, and $C^{1/k} \to 1$. -/
 theorem tendsto_pow_rpow_complexSpectralRadius (G : Matrix ι ι ℝ) :
     Tendsto (fun k : ℕ => ‖mulVecCLM (G ^ k)‖ ^ (1 / k : ℝ)) atTop
       (𝓝 (Matrix.complexSpectralRadius G).toReal) := by
@@ -386,19 +445,26 @@ section Classical
 
 variable [LinearOrder ι]
 
-/-- The Jacobi splitting `N = D`, `M = -(L + U)`, where `A = D + L + U` splits `A` into its
-diagonal, strictly lower and strictly upper parts (§5.2.2). -/
+/-- **Section 5.2.2** of [han2009theoretical], the **Jacobi splitting**. Write $A = D + L + U$ with
+$D$ the diagonal, $L$ the strictly lower triangular and $U$ the strictly upper triangular part
+of $A$, and let $D$ be nonsingular. The Jacobi splitting is $N = D$, $M = -(L + U)$. -/
 noncomputable def jacobi (A : Matrix ι ι ℝ) (h : IsUnit A.diagPart) : BookSplitting A :=
   ⟨A.diagPart, -(A.strictLower + A.strictUpper), by
     rw [sub_neg_eq_add, ← add_assoc, Matrix.diagPart_add_strictLower_add_strictUpper], h⟩
 
-/-- The Gauss–Seidel splitting `N = D + L`, `M = -U` (§5.2.2). -/
+/-- **Section 5.2.2** of [han2009theoretical], the **Gauss–Seidel splitting**. With $A = D + L + U$
+as for the Jacobi splitting and $D$ nonsingular, the Gauss–Seidel splitting is $N = D + L$,
+$M = -U$. -/
 noncomputable def gaussSeidel (A : Matrix ι ι ℝ) (h : IsUnit A.diagPart) : BookSplitting A :=
   ⟨A.diagPart + A.strictLower, -A.strictUpper, by
     rw [sub_neg_eq_add, Matrix.diagPart_add_strictLower_add_strictUpper],
     (Matrix.gaussSeidelSplitting A h).isUnit⟩
 
-/-- The SOR splitting `N = D/ω + L`, `M = N - A = (1/ω - 1) D - U` (§5.2.2). -/
+/-- **Section 5.2.2** of [han2009theoretical], the **SOR splitting**. With $A = D + L + U$ as for
+the Jacobi splitting, $D$ nonsingular, and a relaxation parameter $\omega \ne 0$, the SOR
+splitting is
+$$N = \tfrac{1}{\omega} D + L, \qquad M = N - A = \bigl(\tfrac{1}{\omega} - 1\bigr) D - U.$$
+-/
 noncomputable def sor (A : Matrix ι ι ℝ) (h : IsUnit A.diagPart) {ω : ℝ} (hω : ω ≠ 0) :
     BookSplitting A :=
   ⟨ω⁻¹ • A.diagPart + A.strictLower, (ω⁻¹ - 1) • A.diagPart - A.strictUpper, by
@@ -409,22 +475,25 @@ noncomputable def sor (A : Matrix ι ι ℝ) (h : IsUnit A.diagPart) {ω : ℝ} 
     rw [hsub, Matrix.diagPart_add_strictLower_add_strictUpper],
     (Matrix.sorSplitting A h hω).isUnit⟩
 
-/-- The book's Jacobi splitting is the backbone's. -/
+/-- The book's Jacobi splitting corresponds to the backbone's Jacobi splitting
+`Matrix.jacobiSplitting`. -/
 @[simp]
 theorem jacobi_toSplitting (A : Matrix ι ι ℝ) (h : IsUnit A.diagPart) :
     (jacobi A h).toSplitting = Matrix.jacobiSplitting A h := rfl
 
-/-- The book's Gauss–Seidel splitting is the backbone's. -/
+/-- The book's Gauss–Seidel splitting corresponds to the backbone's Gauss–Seidel splitting
+`Matrix.gaussSeidelSplitting`. -/
 @[simp]
 theorem gaussSeidel_toSplitting (A : Matrix ι ι ℝ) (h : IsUnit A.diagPart) :
     (gaussSeidel A h).toSplitting = Matrix.gaussSeidelSplitting A h := rfl
 
-/-- The book's SOR splitting is the backbone's. -/
+/-- The book's SOR splitting corresponds to the backbone's SOR splitting `Matrix.sorSplitting`. -/
 @[simp]
 theorem sor_toSplitting (A : Matrix ι ι ℝ) (h : IsUnit A.diagPart) {ω : ℝ} (hω : ω ≠ 0) :
     (sor A h hω).toSplitting = Matrix.sorSplitting A h hω := rfl
 
-/-- Gauss–Seidel is SOR with `ω = 1` (§5.2.2). -/
+/-- The Gauss–Seidel splitting is the SOR splitting with $\omega = 1$: the two have the same matrix
+$N = D + L$, and therefore the same $M = N - A$. -/
 theorem sor_one (A : Matrix ι ι ℝ) (h : IsUnit A.diagPart) :
     (sor A h one_ne_zero).N = (gaussSeidel A h).N := by
   change (1 : ℝ)⁻¹ • A.diagPart + A.strictLower = A.diagPart + A.strictLower
@@ -434,7 +503,11 @@ end Classical
 
 end Splittings
 
-/-! ### §5.2.3–5.2.4: integral equations of the second kind and the Picard iteration -/
+/-!
+### Integral equations of the second kind and the Picard iteration
+
+This part covers Sections 5.2.3 and 5.2.4 of [han2009theoretical].
+-/
 
 section IntegralEquations
 
@@ -444,8 +517,8 @@ open scoped NNReal Nat
 
 variable {V : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V] [CompleteSpace V]
 
-/-- Theorem 5.1.3 on the whole space: a contractive self-map of a Banach space has a unique fixed
-point, reached from every starting point, with the error bounds (5.1.4)–(5.1.6). -/
+/-- Theorem 5.1.3 on a whole Banach space: a contractive map $T$ of $V$ has a unique fixed point,
+the iteration converges to it from every starting point, and the bounds (5.1.4)–(5.1.6) hold. -/
 private theorem theorem_5_1_3_univ {T : V → V} {α : ℝ} (hα : ContractiveOn T univ α) :
     (∃! u, T u = u) ∧
       ∀ u₀ : V, ∃ u, T u = u ∧ Tendsto (fun n => T^[n] u₀) atTop (𝓝 u) ∧
@@ -458,7 +531,9 @@ private theorem theorem_5_1_3_univ {T : V → V} {α : ℝ} (hα : ContractiveOn
   obtain ⟨u, -, hfix, hlim, h1, h2, h3⟩ := hconv u₀ (mem_univ u₀)
   exact ⟨u, hfix, hlim, h1, h2, h3⟩
 
-/-- Exercise 5.1.2 on the whole space: it is enough that some power of `T` be contractive. -/
+/-- Exercise 5.1.2 on a whole Banach space: if $T$ is continuous and some iterate $T^m$ with
+$m \ge 1$ is contractive, then $T$ has a unique fixed point and the iteration converges to it
+from every starting point. -/
 private theorem exercise_5_1_2_univ {T : V → V} {α : ℝ} (hc : Continuous T) {m : ℕ} (hm : 0 < m)
     (hα : ContractiveOn T^[m] univ α) :
     (∃! u, T u = u) ∧ ∀ u₀ : V, ∃ u, T u = u ∧ Tendsto (fun n => T^[n] u₀) atTop (𝓝 u) := by
@@ -470,15 +545,14 @@ private theorem exercise_5_1_2_univ {T : V → V} {α : ℝ} (hc : Continuous T)
 
 variable {a b : ℝ}
 
-/-- The kernel that absorbs the inhomogeneity of a Volterra equation of the second kind:
-substituting `v = u - f` turns `u = V u + f`, with `V` the Volterra operator of `k`, into
-`v = V' v` with `V'` the Volterra operator of `shiftKernel k f`. -/
+/-- The kernel $(t, s, z) \mapsto k(t, s, z + f(s))$, which turns the Volterra equation
+$u = \mathcal{V}u + f$ into $v = \mathcal{V}' v$ by the substitution $v = u - f$. -/
 private def shiftKernel (k : C(Icc a b × Icc a b × ℝ, ℝ)) (f : C(Icc a b, ℝ)) :
     C(Icc a b × Icc a b × ℝ, ℝ) :=
   ⟨fun p => k (p.1, p.2.1, p.2.2 + f p.2.1), by fun_prop⟩
 
-/-- Translating the last argument of a kernel by a fixed function preserves its Lipschitz
-constant. -/
+/-- If $z \mapsto k(t, s, z)$ is Lipschitz with constant $M$ for all $t, s$, then so is
+$z \mapsto k(t, s, z + f(s))$. -/
 private theorem lipschitzWith_shiftKernel {k : C(Icc a b × Icc a b × ℝ, ℝ)} {M : ℝ≥0}
     (hk : ∀ t s : Icc a b, LipschitzWith M fun z => k (t, s, z)) (f : C(Icc a b, ℝ))
     (t s : Icc a b) : LipschitzWith M fun z => shiftKernel k f (t, s, z) :=
@@ -487,14 +561,14 @@ private theorem lipschitzWith_shiftKernel {k : C(Icc a b × Icc a b × ℝ, ℝ)
       (hk t s).dist_le_mul _ _
     rwa [dist_add_right] at h
 
-/-- The defining property of `shiftKernel`: its Volterra operator at `u` is the Volterra
-operator of `k` at `u + f`. -/
+/-- The Volterra operator of the shifted kernel at $u$ is the Volterra operator of $k$ at $u + f$.
+-/
 private theorem volterra_shiftKernel (hab : a ≤ b) (k : C(Icc a b × Icc a b × ℝ, ℝ))
     (f u : C(Icc a b, ℝ)) : volterra hab (shiftKernel k f) u = volterra hab k (u + f) :=
   rfl
 
-/-- The inhomogeneous Volterra map `u ↦ V u + f` is conjugate, by the translation `u ↦ u + f`, to
-the Volterra operator of the shifted kernel; so its iterates inherit the factorial estimate. -/
+/-- The iterates of $u \mapsto \mathcal{V}u + f$ are the iterates of the Volterra operator of the
+shifted kernel, conjugated by the translation $u \mapsto u + f$. -/
 private theorem iterate_volterra_add (hab : a ≤ b) (k : C(Icc a b × Icc a b × ℝ, ℝ))
     (f : C(Icc a b, ℝ)) (n : ℕ) (v : C(Icc a b, ℝ)) :
     (fun u => volterra hab k u + f)^[n] v
@@ -505,10 +579,21 @@ private theorem iterate_volterra_add (hab : a ≤ b) (k : C(Icc a b × Icc a b �
     simp only [Function.iterate_succ_apply', ih]
     rw [volterra_shiftKernel]
 
-/-- **§5.2.3, the linear Fredholm equation of the second kind** `λ u(x) - ∫ₐᵇ k(x, y) u(y) dy =
-f(x)`, written as the fixed-point problem `u = λ⁻¹ (K u + f)` of (5.2.7).  Its contractivity
-constant is `α = |λ|⁻¹ max_x ∫ₐᵇ |k(x, y)| dy` by the norm formula (2.2.8), and (5.2.8) `α < 1` is
-exactly what Theorem 5.1.3 asks for. -/
+/-- **Equation (5.2.7)** of [han2009theoretical], the linear Fredholm integral equation of the
+second kind. Let $a \le b$, let $k$ be a continuous function on $[a, b] \times [a, b]$, let
+$f \in C[a, b]$, and let $\lambda \in \mathbb{R}$ satisfy the condition (5.2.8),
+$$\alpha = \frac{1}{|\lambda|} \max_{a \le x \le b} \int_a^b |k(x, y)| \, dy < 1.$$
+Let $T : C[a, b] \to C[a, b]$ be the map
+$$(Tu)(x) = \frac{1}{\lambda} \Bigl( \int_a^b k(x, y) \, u(y) \, dy + f(x) \Bigr),$$
+whose fixed points are the solutions of $\lambda u(x) - \int_a^b k(x, y) u(y) \, dy = f(x)$.
+Then $T$ has a unique fixed point $u$, and for every $u_0 \in C[a, b]$ the iterates $T^n u_0$
+converge to $u$ in the maximum norm, with
+$$\|T^n u_0 - u\|_\infty \le \frac{\alpha^n}{1 - \alpha} \|u_0 - T u_0\|_\infty \qquad \text{for
+  all } n \ge 0.$$
+
+The number $\alpha$ is the contractivity constant of $T$, by the norm formula (2.2.8) for the
+integral operator. The maximum is the supremum `⨆ x`. In Lean $1/0 = 0$, so for $\lambda = 0$
+the map $T$ is $0$ and the statement is trivial. -/
 theorem equation_5_2_7 (hab : a ≤ b) (k : C(Icc a b × Icc a b, ℝ)) (f : C(Icc a b, ℝ))
     {lam : ℝ} (hlam : |lam|⁻¹ * (⨆ x, ∫ y in a..b, |k (x, projIcc a b hab y)|) < 1)
     (T : C(Icc a b, ℝ) → C(Icc a b, ℝ))
@@ -537,11 +622,22 @@ theorem equation_5_2_7 (hab : a ≤ b) (k : C(Icc a b × Icc a b, ℝ)) (f : C(I
   obtain ⟨u, hfix, hlim, h1, -, -⟩ := hconv u₀
   exact ⟨u, hfix, hlim, h1⟩
 
-/-- **Theorem 5.2.2**: the Urysohn integral equation of the second kind
-`u(x) = μ ∫ₐᵇ k(x, y, u(y)) dy + f(x)` (5.2.10).  If the kernel is Lipschitz in its last argument
-with constant `M`, uniformly in the other two (5.2.11)–(5.2.12), and `|μ| M (b - a) < 1`, then the
-equation has a unique solution `u ∈ C[a, b]`, the iteration (5.2.13) converges to it from every
-starting point, and the error bounds (5.1.4)–(5.1.6) hold with `α = |μ| M (b - a)`. -/
+/-- **Theorem 5.2.2** of [han2009theoretical], the Urysohn integral equation of the second kind
+(5.2.10). Let $a \le b$, let $k$ be a continuous function on
+$[a, b] \times [a, b] \times \mathbb{R}$, and let $z \mapsto k(x, y, z)$ be Lipschitz with
+constant $M$ for all $x, y \in [a, b]$ (5.2.11)–(5.2.12). Let $f \in C[a, b]$, and let
+$\mu \in \mathbb{R}$ satisfy $\alpha = |\mu| M (b - a) < 1$. Let $T : C[a, b] \to C[a, b]$ be
+the map
+$$(Tu)(x) = \mu \int_a^b k(x, y, u(y)) \, dy + f(x).$$
+Then:
+
+1. the equation $u = Tu$ has a unique solution $u \in C[a, b]$;
+2. for every $u_0 \in C[a, b]$ the iteration (5.2.13) $u_n = T u_{n-1}$ converges to $u$ in the
+   maximum norm, and for every $n \ge 0$,
+$$\|u_n - u\|_\infty \le \frac{\alpha^n}{1 - \alpha} \|u_0 - u_1\|_\infty, \qquad \|u_{n+1} -
+  u\|_\infty \le \frac{\alpha}{1 - \alpha} \|u_n - u_{n+1}\|_\infty, \qquad \|u_{n+1} -
+  u\|_\infty \le \alpha \|u_n - u\|_\infty.$$
+-/
 theorem theorem_5_2_2 (hab : a ≤ b) {k : C(Icc a b × Icc a b × ℝ, ℝ)} {M : ℝ≥0}
     (hk : ∀ x y : Icc a b, LipschitzWith M fun z => k (x, y, z)) (f : C(Icc a b, ℝ)) {mu : ℝ}
     (hmu : |mu| * ((M : ℝ) * (b - a)) < 1) (T : C(Icc a b, ℝ) → C(Icc a b, ℝ))
@@ -568,12 +664,18 @@ theorem theorem_5_2_2 (hab : a ≤ b) {k : C(Icc a b × Icc a b × ℝ, ℝ)} {M
   rw [hsub, norm_smul, Real.norm_eq_abs, mul_assoc]
   exact mul_le_mul_of_nonneg_left hlip (abs_nonneg _)
 
-/-- **Theorem 5.2.3**: the Volterra integral equation of the second kind
-`u(t) = ∫ₐᵗ k(t, s, u(s)) ds + f(t)` (5.2.15).  However large the Lipschitz constant of the kernel,
-the equation has a unique solution in `C[a, b]` and the iteration (5.2.16) converges to it from
-every starting point: no smallness hypothesis is needed, because the factorial estimate of
-`IntegralOperator.norm_iterate_volterra_sub_le` makes some power of the operator a contraction,
-and Exercise 5.1.2 applies. -/
+/-- **Theorem 5.2.3** of [han2009theoretical], the Volterra integral equation of the second kind
+(5.2.15). Let $a \le b$, let $k$ be a continuous function on
+$[a, b] \times [a, b] \times \mathbb{R}$, and let $z \mapsto k(t, s, z)$ be Lipschitz with some
+constant $M$ for all $t, s \in [a, b]$. Let $f \in C[a, b]$, and let $T : C[a, b] \to C[a, b]$
+be the map
+$$(Tu)(t) = \int_a^t k(t, s, u(s)) \, ds + f(t).$$
+Then the equation $u = Tu$ has a unique solution $u \in C[a, b]$, and for every
+$u_0 \in C[a, b]$ the iteration (5.2.16) $u_n = T u_{n-1}$ converges to $u$ in the maximum norm.
+
+No smallness condition on $M$ is needed. The factorial estimate
+`IntegralOperator.norm_iterate_volterra_sub_le` on the iterated kernels makes some power of $T$
+a contraction, and Exercise 5.1.2 applies. -/
 theorem theorem_5_2_3 (hab : a ≤ b) {k : C(Icc a b × Icc a b × ℝ, ℝ)} {M : ℝ≥0}
     (hk : ∀ t s : Icc a b, LipschitzWith M fun z => k (t, s, z)) (f : C(Icc a b, ℝ))
     (T : C(Icc a b, ℝ) → C(Icc a b, ℝ))
@@ -595,19 +697,31 @@ theorem theorem_5_2_3 (hab : a ≤ b) {k : C(Icc a b × Icc a b × ℝ, ℝ)} {M
   have huv : u - f - (v - f) = u - v := by abel
   rwa [huv] at h
 
-/-- **Theorem 5.2.4** (Picard–Lindelöf), the fixed-point half.  The initial value problem
-`u' = g(t, u)`, `u(t₀) = z` is equivalent to the integral equation
-`u(t) = z + ∫_{t₀}^t g(s, u(s)) ds` (5.2.19), whose right-hand side is a Volterra operator.  If `g`
-is Lipschitz in `u` with constant `L`, then in the **weighted (Bielecki) norm**
-`max_t e^{-β (t - t₀)} |v(t)|` with `β > L` that operator is already a contraction, with constant
-`L / β`; so the equation has a unique solution, Picard's iteration (5.2.20) converges to it from
-every starting function, and the three bounds (5.1.4)–(5.1.6) hold in the weighted norm.  Since
-`IntegralOperator.Bielecki.exp_mul_norm_equiv_le_norm` makes the weighted norm equivalent to the
-supremum norm, that convergence is uniform convergence on `[t₀, t₁]`.
+/-- **Theorem 5.2.4** of [han2009theoretical] (Picard–Lindelöf), the convergence of Picard's
+iteration. Let $t_0 \le t_1$, let $g$ be a continuous function on
+$[t_0, t_1] \times \mathbb{R}$, let $w \mapsto g(s, w)$ be Lipschitz with constant $L$ for every
+$s \in [t_0, t_1]$, let $z \in \mathbb{R}$, and let $\beta > L$. Give $C[t_0, t_1]$ the weighted
+(Bielecki) norm
+$$\|v\|_\beta = \max_{t_0 \le t \le t_1} e^{-\beta (t - t_0)} |v(t)|,$$
+and let $T$ be the map of the integral equation (5.2.19),
+$$(Tu)(t) = z + \int_{t_0}^t g(s, u(s)) \, ds.$$
+Then, with $\alpha = L / \beta$:
 
-The book states the theorem in a Banach space, on a two-sided interval around `t₀`, and for a
-right-hand side defined and Lipschitz only on `{(t, u) : |t - t₀| ≤ a, ‖u - z‖ ≤ b}`; the local
-existence and uniqueness in that generality is Mathlib's `IsPicardLindelof`. -/
+1. $T$ has a unique fixed point $u$;
+2. for every $u_0$ the Picard iteration (5.2.20) $u_n = T^n u_0$ converges to $u$ in the norm
+   $\|\cdot\|_\beta$, and for every $n \ge 0$,
+$$\|u_n - u\|_\beta \le \frac{\alpha^n}{1 - \alpha} \|u_0 - u_1\|_\beta, \qquad \|u_{n+1} -
+  u\|_\beta \le \frac{\alpha}{1 - \alpha} \|u_n - u_{n+1}\|_\beta, \qquad \|u_{n+1} - u\|_\beta
+  \le \alpha \|u_n - u\|_\beta.$$
+
+The fixed points of $T$ are the solutions of the initial value problem $u' = g(t, u)$,
+$u(t_0) = z$ on $[t_0, t_1]$. In the norm $\|\cdot\|_\beta$ the map $T$ is a contraction with
+constant $L/\beta$. This norm is equivalent to the maximum norm
+(`IntegralOperator.Bielecki.exp_mul_norm_equiv_le_norm`), so the convergence is uniform
+convergence on $[t_0, t_1]$. The space with the norm $\|\cdot\|_\beta$ is
+`IntegralOperator.Bielecki t₀ t₁ β`. The book states the theorem in a Banach space, on an
+interval on both sides of $t_0$, and for a right-hand side that is Lipschitz only on a box; that
+form is `AtkinsonHan.Chapter05.theorem_5_2_4_ode`. -/
 theorem theorem_5_2_4 {t₀ t₁ : ℝ} (ht : t₀ ≤ t₁) {g : C(Icc t₀ t₁ × ℝ, ℝ)} {L : ℝ≥0}
     (hg : ∀ s : Icc t₀ t₁, LipschitzWith L fun w => g (s, w)) (z : ℝ) {β : ℝ} (hβ : (L : ℝ) < β)
     (T : Bielecki t₀ t₁ β → Bielecki t₀ t₁ β)
@@ -654,22 +768,30 @@ theorem theorem_5_2_4 {t₀ t₁ : ℝ} (ht : t₀ ≤ t₁) {g : C(Icc t₀ t�
   rw [← map_sub, hcancel]
   exact h
 
-/-- **Theorem 5.2.4** (Picard–Lindelöf), the differential form.  Let `f` be continuous on the box
-`Q_b = {(t, u) : |t - t₀| ≤ a, ‖u - z‖ ≤ b}` of a Banach space, Lipschitz in `u` there with constant
-`L`, let `M` bound `‖f‖` on `Q_b`, and put `a₀ = min(a, b/M)`.  Then the initial value problem
-`u' = f(t, u)`, `u(t₀) = z` has exactly one continuously differentiable solution on
-`[t₀ - a₀, t₀ + a₀]` taking values in `‖u - z‖ ≤ b`.
+/-- **Theorem 5.2.4** of [han2009theoretical] (Picard–Lindelöf), the differential form. Let $E$ be a
+real Banach space, $t_0 \in \mathbb{R}$, $z \in E$ and $a, b, M > 0$. Let
+$f : \mathbb{R} \times E \to E$ be continuous on the box
+$$Q_b = \{(t, u) : |t - t_0| \le a, \ \|u - z\| \le b\},$$
+let $u \mapsto f(t, u)$ be Lipschitz on $\|u - z\| \le b$ with constant $L$ for every $t$ with
+$|t - t_0| \le a$, let $\|f(t, u)\| \le M$ on $Q_b$, and let $a_0 = \min(a, b/M)$. Write
+$I = [t_0 - a_0, t_0 + a_0]$. Then there is a function $u : \mathbb{R} \to E$ such that
 
-Confinement to the ball is not an extra demand but part of the book's statement: `f` is given only
-on `Q_b`, so a solution of the book's problem is by definition one that stays there.  It is also
-what makes uniqueness meaningful — off the box the differential equation says nothing.
-"Continuously differentiable" is the fourth clause: the derivative `t ↦ f(t, u(t))` is continuous.
+1. $u(t_0) = z$;
+2. $\|u(t) - z\| \le b$ for all $t \in I$;
+3. $u'(t) = f(t, u(t))$ for all $t \in I$, with the derivative taken within $I$;
+4. $t \mapsto f(t, u(t))$ is continuous on $I$, so $u$ is continuously differentiable on $I$;
+5. every $v : \mathbb{R} \to E$ with $v(t_0) = z$, $\|v(t) - z\| \le b$ on $I$ and
+   $v'(t) = f(t, v(t))$ on $I$ agrees with $u$ on $I$.
 
-The four constants of the book are exactly the four of Mathlib's `IsPicardLindelof` — `b` its ball
-radius, `M` its bound on the field, `L` its Lipschitz constant, and `a₀` the largest half-length its
-field `mul_max_le` permits — so the proof is
-`IsPicardLindelof.exists_unique_mem_closedBall_hasDerivWithinAt`.  The other half of the book's
-theorem, the convergence of Picard's iteration, is `theorem_5_2_4` above. -/
+The condition $\|u(t) - z\| \le b$ is part of the book's statement, not an extra demand: $f$ is
+given only on $Q_b$, so a solution of the book's problem stays in $Q_b$. It is also what makes
+the uniqueness meaningful, since off the box the differential equation says nothing.
+
+The four constants of the book are the four constants of Mathlib's `IsPicardLindelof`: $b$ is
+its ball radius, $M$ its bound on the field, $L$ its Lipschitz constant, and $a_0$ the largest
+half-length that its condition `mul_max_le` permits. The proof is
+`IsPicardLindelof.exists_unique_mem_closedBall_hasDerivWithinAt`. The convergence of Picard's
+iteration is `AtkinsonHan.Chapter05.theorem_5_2_4`. -/
 theorem theorem_5_2_4_ode {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [CompleteSpace E]
     {f : ℝ → E → E} {t₀ a b M a₀ : ℝ} {L : ℝ≥0} {z : E} (ha : 0 < a) (hb : 0 < b) (hM : 0 < M)
     (hcont : ContinuousOn (fun p : ℝ × E => f p.1 p.2)

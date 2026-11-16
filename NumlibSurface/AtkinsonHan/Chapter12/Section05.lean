@@ -9,101 +9,103 @@ import NumlibSurface.AtkinsonHan.Chapter12.Section01
 import NumlibSurface.AtkinsonHan.Chapter12.Section04
 
 /-!
-# Atkinson–Han §12.5: product integration
+# Atkinson and Han, Section 12.5: Product integration
 
-Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework*, 3rd edition, Springer, 2009, §12.5.
+This module formalizes Section 12.5 of [han2009theoretical]. The equation is $\lambda u - K u = f$
+with a weakly singular kernel $k(x, y) = l(x, y) g(x, y)$, where $l$ is continuous and $g$ is
+singular but satisfies the two conditions (12.5.15) and (12.5.16). The product integration method
+replaces the smooth factor $y \mapsto l(x, y) u(y)$ of the integrand by its piecewise polynomial
+interpolant $[l(x, \cdot) u(\cdot)]_n$ and integrates the singular factor exactly: $$K_n u(x) = \int
+[l(x, \cdot) u(\cdot)]_n(y) \, g(x, y)\, dy.$$ The family $\{K_n\}$ satisfies assumptions A1–A3 of
+Section 12.4, so the theory of collectively compact operators gives $\|u - u_n\|_\infty \le c \|K
+u - K_n u\|_\infty$ (Theorem 12.5.1). Piecewise linear interpolation then gives the rate $O(h^2)$
+for a smooth solution (Example 12.5.2), and interpolation on a graded mesh restores the rate
+$O(n^{-(m+1)})$ for a solution with endpoint singularities (Lemma 12.5.5 and Theorem 12.5.6).
 
-The equation is `λ u - K u = f` with the *weakly singular* kernel `k (x, y) = l (x, y) g (x, y)`,
-`l` continuous and `g` singular but satisfying the two conditions (12.5.15)–(12.5.16) — the
-conditions (A₂) and (A₁) of `IntegralOperator.IsAdmissibleKernel`.  The product integration method
-replaces the smooth factor `y ↦ l (x, y) u (y)` of the integrand by its piecewise polynomial
-interpolant and integrates the singular factor exactly:
-
-`K_n u (x) = ∫ [l (x, ·) u (·)]_n (y) g (x, y) dy`.
-
-The operator itself, for an arbitrary bounded `P` in place of the interpolation, is
-`IntegralOperator.productCLM` of `Numlib/IntegralEquations/ProductIntegration`, and the graded
-meshes of §12.5.3 and §12.5.4 are `Numlib/Approximation/GradedMesh`.  What remains here is the
-book's numbered results, each a specialization of one of those.
+The operator $K_n$, for an arbitrary bounded operator in place of the interpolation, is
+`IntegralOperator.productCLM` of `Numlib.IntegralEquations.ProductIntegration`. The conditions on
+$g$ are `IntegralOperator.IsAdmissibleKernel` of `Numlib.IntegralEquations.WeaklySingular`, and the
+graded meshes of §12.5.3 and §12.5.4 are in `Numlib.Approximation.GradedMesh`. Each result of this
+module specializes one of these.
 
 ## Main results
 
-* `isCollectivelyCompactFamily_productCLM` — assumptions A1–A3 for the product integration family,
-  in the book's form of §12.4.3, so that the framework of that section applies verbatim.  A2 is
-  Exercise 12.5.1 and A3 is the compactness half of the proof of Theorem 12.5.1.
-* `theorem_12_5_1` — for all large `n` the approximating equations are uniquely solvable with
-  uniformly bounded inverses and `‖u - u_n‖_∞ ≤ c ‖K u - K_n u‖_∞`, which is (12.5.17).
-* `example_12_5_2` — the product trapezoidal rate (12.5.18),
-  `‖u - u_n‖_∞ ≤ (c h²/8) max |∂²(l u)/∂y²|`.
-* `lemma_12_5_5` — the interpolation error (12.5.35) `‖u - P_n u‖_∞ ≤ c n^{-(m+1)}` on Rice's
-  graded mesh `x_j = (j/n)^q` of (12.5.30), for a function of type `(γ, m + 1)` and `q ≥ (m+1)/γ`.
-  The book states the lemma without proof; it is `norm_sub_piecewisePolyInterpCLM_le_graded`.
-* `theorem_12_5_6` — the convergence (12.5.41) `‖u - u_n‖_∞ ≤ c n^{-(m+1)}` of graded-mesh
-  product integration on the mesh of the paragraph preceding the theorem, graded towards *both*
-  endpoints, with the regularity of Theorem 12.5.4 taken as a hypothesis, which is what the book's
-  own use of it amounts to.
-* `example_12_5_3` — the factorization behind the splitting (12.5.22) of the kernel of (12.5.21),
-  and the exact solution `u ≡ 1/(1 + π log 2)` the book compares its tables against, from the
-  backbone's row integral `∫₀^π log |cos x - cos y| dy = -π log 2`
-  (`integral_log_abs_cos_sub_cos`, `Numlib/Analysis/SpecialFunctions/Integrals/LogTrigonometric`).
-
-## Not formalized here
-
-* **Theorem 12.5.4**, the regularity of the solution of a weakly singular equation: for (12.5.26)
-  with `g_γ(u) = u^{γ-1}` (`0 < γ < 1`) or `log |u|` (`γ = 1`), a `C^{k+1}` coefficient `l` and
-  data `f` of the stated class, the solution satisfies `u ∈ C^{(0,γ)}[a, b] ∩ C^k(a, b)` with
-  `(x - a)^i (b - x)^i u^{(i)}(x) ∈ C^{(0,γ)}[a, b]` vanishing at the endpoints, and
-  `|u^{(i)}(x)| ≤ c_i (x - a)^{γ-i}` near `a`.  It is the one item of the chapter whose
-  *mathematics*, and not merely whose supporting API, is missing, and the book does not carry it
-  out either: it cites Schneider.
-
-  Two things it is *not* blocked on, both of which an earlier note here got wrong.  The concrete
-  admissible kernels exist: `IntegralOperator.isAdmissibleKernel_abs_sub_rpow` is the kernel
-  `|x - y|^{-γ}`, `0 < γ < 1`, on an interval — the book's `g_γ` up to the naming of the exponent
-  — and `isAdmissibleKernel_of_abs_le_rpow` with `abs_log_le_two_mul_rpow` covers `log |x - y|`,
-  so the interval-integral estimates are done.  And proving 12.5.4 would unlock
-  nothing downstream: `theorem_12_5_6` already carries its conclusion as a hypothesis, which is
-  what the book's own use of it amounts to, so a proof would turn that hypothesis into a
-  consequence and no more.
-
-  What is genuinely missing is two pieces.  (1) **Differentiation under a weakly singular
-  integral sign, with a moving singularity.**  Every step of the bootstrap needs
-  `d/dx ∫_a^b l(x, y) g_γ(x - y) u(y) dy`, and the derivative is *not* the integral of the
-  differentiated integrand: differentiating the kernel in `x` produces `|x - y|^{γ-2}`, which is
-  not integrable, so Mathlib's
-  `intervalIntegral.hasDerivAt_integral_of_dominated_loc_of_deriv_le` cannot apply — its
-  dominating function cannot exist.  The classical fix is the substitution `y = x + s`, splitting
-  the integral at `y = x` and differentiating in the shifted variable, where the `x`-dependence
-  sits in the *limits* as well as in `l`; the endpoint weights `(x - a)^i (b - x)^i` of the
-  conclusion are exactly the boundary terms this produces.  That change of variables for an
-  interval integral with a moving singularity is what the library lacks, and it is the whole of
-  the work: `300-500` lines for it and one differentiation step, `500-800` more for the bootstrap
-  to order `k` with the weights.  (2) **The log-modified Hölder class** `C^{(0,1)}[a, b]` of the
-  paragraph preceding the theorem, with modulus `|x - ξ| log |B / (x - ξ)|` for some `B > b - a`:
-  `AtkinsonHan.Chapter03.HolderClass` covers only `0 < β < 1`, and the `γ = 1` half of the
-  statement needs the modified class.  Cheap — about 50 lines — once the class is defined.
-
-  A worthwhile intermediate target, and the only consequence chapter 12 actually consumes: that
-  `y ↦ l(x, y) u(y)` is of Rice's type `(γ, m + 1)` uniformly in `x` whenever `u` is.  That is
-  the hypothesis `theorem_12_5_6` carries, and deriving it from 12.5.4 needs only the Leibniz
-  rule and the smoothness of `l`.
-* §12.5.2, the generalizations to kernels not of the form `l g`.
-* The numerical half of Example 12.5.3: Table 12.3, the measured errors of the product trapezoidal
-  and product Simpson rules for (12.5.21), and the remark that the first, naive splitting
-  `l = |x - y|^{1/2} log |cos x - cos y|` is continuous without being differentiable — a
-  qualitative statement about a function the section never uses, the whole point of the example
-  being that the splitting (12.5.22) is used instead.  What the example asserts and can be checked
-  is `example_12_5_3`.
+* `AtkinsonHan.Chapter12.isCollectivelyCompactFamily_productCLM`: the product integration operators
+  satisfy A1–A3 of §12.4.3; A2 is Exercise 12.5.1, and A3 is the compactness part of the proof of
+  Theorem 12.5.1.
+* Theorem 12.5.1, `AtkinsonHan.Chapter12.theorem_12_5_1`: for large $n$ the approximating equations
+  are uniquely solvable with uniformly bounded inverses, and $\|u - u_n\|_\infty \le c \|K u - K_n
+  u\|_\infty$, which is (12.5.17).
+* Example 12.5.2, `AtkinsonHan.Chapter12.example_12_5_2`: the rate $\|u - u_n\|_\infty \le c (h^2/8)
+  \max |\partial_y^2 (l u)|$ of the product trapezoidal rule, (12.5.18).
+* Example 12.5.3, `AtkinsonHan.Chapter12.example_12_5_3`: the factorization of the kernel of
+  (12.5.21) that underlies the splitting (12.5.22), and the exact solution
+  $u \equiv 1/(1 + \pi \log 2)$.
+* Lemma 12.5.5, `AtkinsonHan.Chapter12.lemma_12_5_5`: the interpolation error
+  $\|u - P_n u\|_\infty \le C n^{-(m+1)}$ of (12.5.35) on the graded mesh $x_j = (j/n)^q$ of
+  (12.5.30), for a function of type $(\gamma, m + 1)$ and $q \ge (m + 1)/\gamma$.
+* Theorem 12.5.6, `AtkinsonHan.Chapter12.theorem_12_5_6`: the convergence
+  $\|u - u_n\|_\infty \le c n^{-(m+1)}$ of product integration on a mesh graded towards both
+  endpoints, (12.5.41).
 
 ## Conventions
 
-As in §12.1 the book's scalar `λ` is written `μ`, and the measure is therefore written `ν`.  The
-book's domain is `[a, b]`, which is `IntegralOperator.iccMeasure`; the backbone statements the
-results below specialize are for a compact metric space carrying a Borel measure, the generality of
-`Numlib/IntegralEquations/WeaklySingular`.  The interpolation `[·]_n` is any sequence of bounded
-operators converging pointwise to the identity with uniformly bounded norms; the book's piecewise
-linear interpolation is `piecewiseLinearInterpCLM`, whose norm is one.
+* The scalar $\lambda$ of the source is `μ` (in Theorem 12.5.6, `lam`), because `λ` is the Lean
+  lambda binder, and the measure is `ν`.
+* The interval $[a, b]$ carries Lebesgue measure `IntegralOperator.iccMeasure a b`.
+* The kernel $k = l g$ is `fun p => g p * l p`, admissible by
+  `IntegralOperator.IsAdmissibleKernel.mul_continuousMap`, and $K$ is
+  `IntegralOperator.admissibleKernelCLM` of it. The function $y \mapsto l(x, y) u(y)$ is
+  `IntegralOperator.prodFactor l x u`.
+
+## Implementation notes
+
+* The interpolation $[\cdot]_n$ is any sequence of bounded operators $P_n$ on $C(X)$ with uniformly
+  bounded norms that converges pointwise to the identity. The piecewise linear interpolation of the
+  source is `piecewiseLinearInterpCLM`, whose norm is $1$.
+* `IntegralOperator.productCLM` is not a Nyström operator, because the weights
+  $\int g(x, y) \varphi_j(y)\, dy$ depend on $x$.
+* Weakly singular kernels of the forms in Theorem 12.5.4 are admissible:
+  `IntegralOperator.isAdmissibleKernel_abs_sub_rpow` treats $|x - y|^{-\gamma}$ with
+  $0 < \gamma < 1$ on an interval, and `IntegralOperator.isAdmissibleKernel_of_abs_le_rpow` with
+  `abs_log_le_two_mul_rpow` treats $\log |x - y|$.
+* The hypothesis of `AtkinsonHan.Chapter12.theorem_12_5_6` is that $y \mapsto l(x, y) u(y)$ is of
+  type $(\gamma, m + 1)$ uniformly in $x$. This is the only consequence of Theorem 12.5.4 that the
+  chapter uses, and it would follow from the regularity of $u$ by the Leibniz rule and the
+  smoothness of $l$.
+
+## Deviations from the source
+
+* **Theorem 12.5.1** (generalization). The source takes for $[\cdot]_n$ piecewise polynomial
+  interpolation on $[a, b]$. The statement holds for every uniformly bounded sequence of operators
+  that converges pointwise to the identity, on every compact metric space with a measure on its
+  Borel sets. See `AtkinsonHan.Chapter12.theorem_12_5_1`.
+* **Theorem 12.5.6** (reading). The source applies Theorem 12.5.4 to obtain the regularity of the
+  solution. The statement assumes the regularity that the proof uses: each function
+  $y \mapsto l(x, y) u(y)$ is of type $(\gamma, m + 1)$ at both endpoints, with constants
+  independent of $x$, and $0 < \gamma < 1$. See `AtkinsonHan.Chapter12.theorem_12_5_6`.
+
+## Not formalized
+
+* **Theorem 12.5.4** (regularity of the solution of a weakly singular equation). For (12.5.26) with
+  $g_\gamma(u) = u^{\gamma - 1}$, $0 < \gamma < 1$, or $g_\gamma(u) = \log |u|$, $\gamma = 1$, a
+  $C^{k+1}$ coefficient $l$ and data $f$ of the stated class, the solution satisfies
+  $u \in C^{(0,\gamma)}[a, b] \cap C^k(a, b)$, with $(x - a)^i (b - x)^i u^{(i)}(x) \in
+  C^{(0,\gamma)}[a, b]$ vanishing at the endpoints and $|u^{(i)}(x)| \le c_i (x - a)^{\gamma - i}$
+  near $a$. The source cites Schneider and gives no proof. Two pieces are missing. The first is
+  differentiation under a weakly singular integral sign with a moving singularity: the derivative of
+  $\int_a^b l(x, y) g_\gamma(x - y) u(y)\, dy$ is not the integral of the differentiated integrand,
+  because $|x - y|^{\gamma - 2}$ is not integrable, so
+  `intervalIntegral.hasDerivAt_integral_of_dominated_loc_of_deriv_le` does not apply, and the
+  classical substitution $y = x + s$ with the singularity split off is not available. The second is
+  the Hölder class $C^{(0,1)}[a, b]$ with modulus $|x - \xi| \log |B / (x - \xi)|$, $B > b - a$,
+  needed for $\gamma = 1$; `AtkinsonHan.Chapter03.HolderClass` covers only exponents
+  $0 < \beta < 1$.
+* **§12.5.2**, the generalizations to kernels that are not of the form $l g$.
+* **The numerical part of Example 12.5.3.** Table 12.3 contains measured errors of the product
+  trapezoidal and product Simpson rules for (12.5.21). The remark that the first splitting
+  $l = |x - y|^{1/2} \log |\cos x - \cos y|$ is continuous but not differentiable concerns a
+  function that the example replaces by the splitting (12.5.22).
 -/
 
 open Filter Topology
@@ -119,15 +121,19 @@ open IntegralOperator MeasureTheory
 variable {X : Type*} [MetricSpace X] [CompactSpace X] [MeasurableSpace X] [BorelSpace X]
   {ν : Measure X} {g : X × X → ℝ}
 
-/-- **Assumptions A1–A3 for the product integration family** (the proof of Theorem 12.5.1): the
-product operators `K_n` built from approximations `P_n` of uniformly bounded norm converging
-pointwise to the identity are collectively compact and converge pointwise to the integral operator
-of the kernel `l g`.
+/-- Let $X$ be a compact metric space with a measure $\nu$ on its Borel sets, let $g$ be an
+admissible kernel, and let $l$ be a continuous kernel on $X \times X$. Let $P_n$ be bounded
+operators on $C(X)$ with $\|P_n\| \le C_P$ for all $n$ and $P_n v \to v$ for every $v$. Then the
+product integration operators $$K_n u(x) = \int g(x, y) \, P_n\big(l(x, \cdot)
+u(\cdot)\big)(y)\, d\nu(y)$$ satisfy assumptions A1–A3 of §12.4.3 with limit the integral
+operator $K$ of the kernel $l g$. This is the core of the proof of Theorem 12.5.1 of
+[han2009theoretical].
 
-Boundedness (A1) is carried by the type `C(X, ℝ) →L[ℝ] C(X, ℝ)`; A2 is
-`IntegralOperator.tendsto_productCLM` and A3 is
-`IntegralOperator.isCollectivelyCompact_productCLM`, the book's form (12.4.53) of the latter being
-the backbone's by `isCollectivelyCompactFamily_of_isCollectivelyCompact`. -/
+A1 is part of the type of the operators. A2 is `IntegralOperator.tendsto_productCLM`, which is
+Exercise 12.5.1, and A3 is `IntegralOperator.isCollectivelyCompact_productCLM`, translated to
+the form (12.4.53) by
+`AtkinsonHan.Chapter12.isCollectivelyCompactFamily_of_isCollectivelyCompact`. The limit $K$ is
+`productCLM hg l 1`, the case $P_n = I$. -/
 theorem isCollectivelyCompactFamily_productCLM (hg : IsAdmissibleKernel ν g) (l : C(X × X, ℝ))
     {P : ℕ → C(X, ℝ) →L[ℝ] C(X, ℝ)} {Cp : ℝ} (hCp : ∀ n, ‖P n‖ ≤ Cp)
     (hP : ∀ v : C(X, ℝ), Tendsto (fun n => P n v) atTop (𝓝 v)) :
@@ -146,23 +152,29 @@ open IntegralOperator MeasureTheory
 variable {X : Type*} [MetricSpace X] [CompactSpace X] [MeasurableSpace X] [BorelSpace X]
   {ν : Measure X} {g : X × X → ℝ}
 
-/-- **Theorem 12.5.1, the convergence of product integration.**  Let `g` satisfy the two
-weak-singularity conditions (12.5.15)–(12.5.16) — that is, let `g` be an admissible kernel — let
-`l` be continuous, and let `K` be the integral operator of `k = l g`.  Let `λ ≠ 0` be such that
-`λ - K` is invertible, and let `K_n` be the product rule obtained by replacing `l (x, ·) u (·)` by
-`P_n (l (x, ·) u (·))` for a sequence of operators of uniformly bounded norm converging pointwise
-to the identity — the piecewise linear interpolants of (12.5.4), for instance.
+/-- **Theorem 12.5.1** of [han2009theoretical] (convergence of product integration). Let $X$ be a
+compact metric space with a measure $\nu$ on its Borel sets, let $g$ satisfy the weak
+singularity conditions (12.5.15) and (12.5.16), that is, let $g$ be an admissible kernel, let
+$l$ be continuous, and let $K$ be the integral operator on $C(X)$ of the kernel $k = l g$. Let
+$\lambda \neq 0$ be such that $\lambda - K$ is invertible. Let $P_n$ be bounded operators on
+$C(X)$ with $\|P_n\| \le C_P$ for all $n$ and $P_n v \to v$ for every $v$, and let $K_n$ be the
+product rule obtained by replacing $l(x, \cdot) u(\cdot)$ by $P_n (l(x, \cdot) u(\cdot))$. Then
+there is a constant $c$ such that for all large $n$ the operator $\lambda - K_n$ is invertible
+with $\|(\lambda - K_n)^{-1}\| \le c$, so the approximating equations are uniquely solvable, and
+the solutions of $(\lambda - K) u = f$ and $(\lambda - K_n) u_n = f$ satisfy $$\|u -
+u_n\|_\infty \le c \, \|K u - K_n u\|_\infty,$$ which is (12.5.17): the consistency error at the
+exact solution.
 
-Then there is a constant `c` such that for all large `n` the operator `λ - K_n` is invertible with
-`‖(λ - K_n)⁻¹‖ ≤ c`, so the approximating equations are uniquely solvable, and
+**Generalization.** The source takes for $P_n$ piecewise polynomial interpolation on an
+interval, such as the piecewise linear interpolation of (12.5.4). The statement allows any
+uniformly bounded sequence of operators that converges pointwise to the identity, on any compact
+metric space.
 
-`‖u - u_n‖_∞ ≤ c ‖K u - K_n u‖_∞`,   (12.5.17)
-
-the consistency error at the exact solution.
-
-The proof is the book's: `isCollectivelyCompactFamily_productCLM` verifies A1–A3, and the abstract
-`exists_norm_inverse_le_of_isCollectivelyCompactFamily` of §12.4.3 — Lemma 12.4.7 followed by
-Theorem 12.4.4 — does the rest. -/
+The conditions (12.5.15) and (12.5.16) are the conditions (A₂) and (A₁) of
+`IntegralOperator.IsAdmissibleKernel`. The proof follows the source:
+`AtkinsonHan.Chapter12.isCollectivelyCompactFamily_productCLM` verifies A1–A3, and
+`AtkinsonHan.Chapter12.exists_norm_inverse_le_of_isCollectivelyCompactFamily` of §12.4.3, which
+is Lemma 12.4.7 followed by Theorem 12.4.3, gives the rest. -/
 theorem theorem_12_5_1 (hg : IsAdmissibleKernel ν g) (l : C(X × X, ℝ))
     {P : ℕ → C(X, ℝ) →L[ℝ] C(X, ℝ)} {Cp : ℝ} (hCp : ∀ n, ‖P n‖ ≤ Cp)
     (hP : ∀ v : C(X, ℝ), Tendsto (fun n => P n v) atTop (𝓝 v))
@@ -193,18 +205,24 @@ open IntegralOperator MeasureTheory
 
 variable {a b : ℝ}
 
-/-- **Example 12.5.2, the rate of the product trapezoidal rule (12.5.18).**  Take for `P_n` the
-piecewise linear interpolation at the breakpoints of a partition of `[a, b]` whose mesh `h_n` tends
-to zero.  Then Theorem 12.5.1 applies — the interpolation operators have norm one and converge
-pointwise — and, whenever `y ↦ l (x, y) u (y)` is `C²` with second derivative bounded by `M₂`
-uniformly in `x`,
+/-- **Example 12.5.2** of [han2009theoretical] (the product trapezoidal rule, (12.5.18)). Let $g$ be
+an admissible kernel on $[a, b]$, let $l$ be continuous, let $K$ be the integral operator of
+$l g$, and let $\lambda \neq 0$ be such that $\lambda - K$ is invertible. For each $n$ let
+$a = y_{n,0} < \dots < y_{n,N_n+1} = b$ be a partition whose subintervals have length at most
+$h_n$, with $h_n \to 0$, and let $K_n$ be the product rule with piecewise linear interpolation
+at the nodes. Then there is a constant $c$ such that for all large $n$:
 
-`‖u - u_n‖_∞ ≤ c (h_n²/8) M₂`.
+* for every $f$ the equation $(\lambda - K_n) u_n = f$ has exactly one solution;
+* if $(\lambda - K) u = f$, $(\lambda - K_n) u_n = f$, and for every $x$ the function
+  $y \mapsto l(x, y) u(y)$ is the restriction of a $C^2$ function $G_x$ with $|G_x''| \le M_2$
+  on $[a, b]$, then $$\|u - u_n\|_\infty \le c \, \frac{h_n^2}{8} M_2.$$
 
-The interpolation error `‖z - P_n z‖ ≤ h² ‖z''‖/8` is `norm_sub_piecewiseLinearInterpCLM_le`, which
-`norm_admissibleKernelCLM_sub_productCLM_le` turns into the consistency error `‖K u - K_n u‖`, and
-the constant `c` absorbs the uniform bound on `‖(λ - K_n)⁻¹‖` and the row bound `c_g` of the
-singular factor. -/
+Theorem 12.5.1 applies, because the interpolation operators have norm $1$ and converge
+pointwise. The interpolation error $\|z - P_n z\| \le h^2 \|z''\|/8$ is
+`norm_sub_piecewiseLinearInterpCLM_le`, and
+`IntegralOperator.norm_admissibleKernelCLM_sub_productCLM_le` turns it into a bound on the
+consistency error $\|K u - K_n u\|$. The constant $c$ contains the uniform bound on
+$\|(\lambda - K_n)^{-1}\|$ and the bound on $\int |g(x, y)|\, dy$. -/
 theorem example_12_5_2 {g : Set.Icc a b × Set.Icc a b → ℝ}
     (hg : IsAdmissibleKernel (iccMeasure a b) g) (l : C(Set.Icc a b × Set.Icc a b, ℝ))
     {N : ℕ → ℕ} {y : ℕ → ℕ → Set.Icc a b} {h : ℕ → ℝ}
@@ -268,20 +286,19 @@ end Trapezoidal
 
 section GradedMesh
 
-/-- **Lemma 12.5.5**, Rice's graded-mesh interpolation error.  For `0 < γ < 1` let `u` be of
-Rice's type `(γ, m + 1)` on `[0, 1]` — Hölder continuous with exponent `γ`, of class `C^{m+1}` on
-`(0, 1]` and with `|u^{(m+1)}(s)| ≤ c s^{γ - (m+1)}` — and let `P_n` be piecewise polynomial
-interpolation of degree `m` on the graded mesh `x_j = (j/n)^q` of (12.5.30), at nodes placed at
-fixed fractions `0 = μ_0 < ⋯ < μ_m = 1` of each panel, as in (12.5.31)–(12.5.32).  Then for
-`q ≥ (m + 1)/γ`,
+/-- **Lemma 12.5.5** of [han2009theoretical] (interpolation on a graded mesh). Let $0 < \gamma < 1$,
+and let $u \in C[0, 1]$ be of type $(\gamma, m + 1)$: $u$ is the restriction of a function $U$
+with $|U(s) - U(t)| \le H |s - t|^\gamma$ for $s, t \in [0, 1]$, $U$ is $C^{m+1}$ on
+$(0, \infty)$, and $|U^{(m+1)}(s)| \le c\, s^{\gamma - (m+1)}$ for $s \in (0, 1]$. Let
+$0 = \mu_0 < \mu_1 < \dots < \mu_m = 1$, and let $P_n$ be piecewise polynomial interpolation of
+degree $m$ on the graded mesh $x_j = (j/n)^q$, $0 \le j \le n$, of (12.5.30), at the nodes
+$x_j + \mu_i (x_{j+1} - x_j)$ of each panel, as in (12.5.31) and (12.5.32). If
+$q \ge (m + 1)/\gamma$, then there is a constant $C$ with $$\|u - P_n u\|_\infty \le
+\frac{C}{n^{m+1}} \qquad \text{for all } n,$$ which is (12.5.35).
 
-`‖u - P_n u‖_∞ ≤ C n^{-(m+1)}`   (12.5.35)
-
-with `C` independent of `n`.
-
-The book states the lemma without proof, citing Rice and Atkinson; the proof is
-`norm_sub_piecewisePolyInterpCLM_le_graded` of `Numlib/Approximation/GradedMesh`, of which this is
-the verbatim instance. -/
+The source states the lemma without proof and cites Rice and Atkinson. The statement is
+`norm_sub_piecewisePolyInterpCLM_le_graded`. The Lean index $N$ counts $N + 1 = n$ panels, so
+the bound reads $C / (N + 1)^{m+1}$. -/
 theorem lemma_12_5_5 {m : ℕ} {γ q H c : ℝ} (hγ0 : 0 < γ) (hγ1 : γ < 1)
     (hq : ((m : ℝ) + 1) / γ ≤ q) {μ : Fin (m + 1) → ℝ}
     (hμ0 : μ 0 = 0) (hμ1 : μ (Fin.last m) = 1) (hμmono : StrictMono μ)
@@ -306,25 +323,40 @@ section Theorem6
 
 open IntegralOperator MeasureTheory
 
-/-- **Theorem 12.5.6**, the convergence of graded-mesh product integration for a weakly singular
-equation.  Let `g` be an admissible (weakly singular) factor, `l` continuous, `λ ≠ 0` with
-`λ - K` invertible, and let `K_n` be the product rule (12.5.38) obtained by replacing
-`l (x, ·) u (·)` by its piecewise polynomial interpolant of degree `m` on the mesh of the
-paragraph preceding the theorem — graded towards both endpoints with exponent `q ≥ (m + 1)/γ`,
-`n = 2 (p + 1)` panels.  Assume, as Theorem 12.5.4 gives, that every row function
-`y ↦ l (x, y) u (y)` of the exact solution is of Rice's type `(γ, m + 1)` at both endpoints, with
-constants independent of `x`.  Then for all large `n` the approximating equations are uniquely
-solvable and
+/-- **Theorem 12.5.6** of [han2009theoretical] (convergence of product integration on a graded
+mesh). Let $a < b$, $0 < \gamma < 1$, $m \in \mathbb{N}$ and $q \ge (m + 1)/\gamma$. Let $g$ be
+an admissible kernel on $[a, b]$, let $l$ be continuous, let $K$ be the integral operator of
+$l g$, let $\lambda \neq 0$ be such that $\lambda - K$ is invertible, and let
+$(\lambda - K) u = f$. For $p \in \mathbb{N}$ let $n = 2(p + 1)$, and let the mesh be graded
+towards both endpoints: $$x_j = a + \left(\frac{j}{p + 1}\right)^q \frac{b - a}{2}, \qquad
+x_{n - j} = a + b - x_j, \qquad 0 \le j \le p + 1,$$ with the nodes
+$x_j + \mu_i (x_{j+1} - x_j)$ on the left half and the reflected nodes
+$x_j + (1 - \mu_{m-i})(x_{j+1} - x_j)$ on the right half, for fixed
+$0 = \mu_0 < \dots < \mu_m = 1$. Let $K_n$ be the product rule (12.5.38) with piecewise
+polynomial interpolation of degree $m$ on this mesh. Assume that for every $x$ the function
+$y \mapsto l(x, y) u(y)$ is the restriction of a function $W_x$ with
 
-`‖u - u_n‖_∞ ≤ c n^{-(m+1)}`   (12.5.41).
+* $|W_x(s) - W_x(t)| \le H |s - t|^\gamma$ for $s, t \in [a, b]$,
+* $W_x$ of class $C^{m+1}$ on $(a, b)$,
+* $|W_x^{(m+1)}(s)| \le c_R (s - a)^{\gamma - (m+1)}$ for $s \in (a, (a + b)/2]$ and
+  $|W_x^{(m+1)}(s)| \le c_R (b - s)^{\gamma - (m+1)}$ for $s \in [(a + b)/2, b)$,
 
-The proof is the book's: `theorem_12_5_1` gives `‖u - u_n‖ ≤ c ‖K u - K_n u‖`, the consistency
-error is the interpolation error of the row functions integrated against `g`, which is
-`norm_admissibleKernelCLM_sub_productCLM_le`, and
-`norm_sub_piecewisePolyInterpCLM_le_gradedSym` — Lemma 12.5.5 on the two-sided mesh — bounds
-that by `c n^{-(m+1)}` uniformly in the row.  The mesh is `isPanelNodes_gradedSym`, the width of
-its panels `sub_le_gradedSym`, and the Lebesgue bound of its nodes
-`exists_isPanelLebesgueBound_of_affine`. -/
+with $H$ and $c_R$ independent of $x$. Then there is a constant $C$ such that for all large $n$
+the equation $(\lambda - K_n) u_n = h$ has exactly one solution for every $h$, and the solution
+for $f$ satisfies $$\|u - u_n\|_\infty \le \frac{C}{n^{m+1}},$$ which is (12.5.41).
+
+**Reading.** The source obtains the regularity of the functions $y \mapsto l(x, y) u(y)$ from
+Theorem 12.5.4, which is not formalized. The statement assumes this regularity, which is what
+the proof of the source uses, and covers only $0 < \gamma < 1$.
+
+The proof follows the source. `AtkinsonHan.Chapter12.theorem_12_5_1` gives
+$\|u - u_n\| \le c \|K u - K_n u\|$,
+`IntegralOperator.norm_admissibleKernelCLM_sub_productCLM_le` bounds the consistency error by
+the interpolation error of the functions $y \mapsto l(x, y) u(y)$, and
+`norm_sub_piecewisePolyInterpCLM_le_gradedSym`, Lemma 12.5.5 on the two-sided mesh, bounds that
+by $c n^{-(m+1)}$ uniformly in $x$. The mesh facts are `isPanelNodes_gradedSym`,
+`sub_le_gradedSym` and `exists_isPanelLebesgueBound_of_affine`. In Lean the fractions $\mu_i$
+are `ν`, the functions $W_x$ are `W`, and the operator has $2p + 2$ panels. -/
 theorem theorem_12_5_6 {a b : ℝ} (hab : a < b) {m : ℕ} {γ q : ℝ}
     (hγ0 : 0 < γ) (hγ1 : γ < 1) (hq : ((m : ℝ) + 1) / γ ≤ q)
     {ν : Fin (m + 1) → ℝ} (hν0 : ν 0 = 0) (hν1 : ν (Fin.last m) = 1) (hνmono : StrictMono ν)
@@ -482,24 +514,19 @@ open MeasureTheory Set
 
 open scoped Interval Real
 
-/-- **Example 12.5.3.**  The equation the section computes with is (12.5.21),
+/-- **Example 12.5.3** of [han2009theoretical]. The equation of the example is (12.5.21), $$u(x) -
+\int_0^\pi u(y) \log |\cos x - \cos y|\, dy = 1, \qquad 0 \le x \le \pi.$$ For every real $x$:
 
-`u(x) - ∫₀^π u(y) log |cos x - cos y| dy = 1`,  `0 ≤ x ≤ π`.
+* $\log |\cos x - \cos y| = \log |2 \sin((x - y)/2) \sin((x + y)/2)|$ for every real $y$, the
+  first line of (12.5.22);
+* the constant $u \equiv 1/(1 + \pi \log 2) \doteq 0.3147$ satisfies (12.5.21) at $x$.
 
-Two things the example says of it are stated here.
-
-*The factorization of the kernel.*  `log |cos x - cos y| = log |2 sin ((x - y)/2) sin ((x + y)/2)|`
-is the first line of (12.5.22), and it is what the good splitting of the kernel is read off: the
-singularities of the right-hand side are exactly at `y = x`, `y = -x` and `y = 2π - x`, which is
-why (12.5.22) separates `log |x - y|`, `log (x + y)` and `log (2π - x - y)` and leaves an
-infinitely differentiable factor `l₁`.
-
-*The exact solution.*  The constant `u ≡ 1/(1 + π log 2) ≐ 0.3147` solves (12.5.21), because the
-row integral of the kernel is the constant `-π log 2` (`integral_log_abs_cos_sub_cos`).  It is the
-solution the errors of Table 12.3 are measured against.
-
-Table 12.3 itself, and the remark that the naive splitting `l = |x - y|^{1/2} log |cos x - cos y|`
-is continuous without being differentiable, are not stated; see the module doc. -/
+The factorization shows that the singularities of the kernel are at $y = x$, $y = -x$ and
+$y = 2\pi - x$. This is why (12.5.22) separates $\log |x - y|$, $\log(x + y)$ and
+$\log(2\pi - x - y)$ and leaves an infinitely differentiable factor $l_1$. The constant solves
+the equation because $\int_0^\pi \log |\cos x - \cos y|\, dy = -\pi \log 2$ for every $x$
+(`integral_log_abs_cos_sub_cos`). It is the solution against which the source measures the
+errors of Table 12.3. The table and the remark on the first splitting are not formalized. -/
 theorem example_12_5_3 (x : ℝ) :
     (∀ y : ℝ, Real.log |Real.cos x - Real.cos y|
         = Real.log |2 * Real.sin ((x - y) / 2) * Real.sin ((x + y) / 2)|) ∧

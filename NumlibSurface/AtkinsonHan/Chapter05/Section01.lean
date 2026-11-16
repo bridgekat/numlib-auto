@@ -6,47 +6,59 @@ import Numlib.Analysis.InnerProductSpace.Coercive
 import Numlib.Nonlinear.FixedPoint
 
 /-!
-# Atkinson–Han §5.1: the Banach fixed-point theorem
+# Atkinson and Han, Section 5.1: The Banach fixed-point theorem
 
-Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework*, 3rd edition, Springer, 2009, §5.1: contractive mappings, the Banach
-fixed-point theorem with its three error bounds, the variant in which only an iterate contracts,
-and the Zarantonello theorem for a strongly monotone Lipschitz operator on a Hilbert space.
+This module formalizes Section 5.1 of [han2009theoretical]. Let $K$ be a subset of a real Banach
+space $V$ and $T : K \to K$. The map $T$ is contractive on $K$ with constant $\alpha \in [0, 1)$ if
+$\|Tu - Tv\| \le \alpha \|u - v\|$ for all $u, v \in K$. The Banach fixed-point theorem (Theorem
+5.1.3) says that a contractive self-map of a nonempty closed set $K$ has a unique fixed point
+$u \in K$, and that the iteration $u_{n+1} = T u_n$ converges to $u$ from every $u_0 \in K$ with the
+error bounds (5.1.4)–(5.1.6). The module also proves the variant in which only an iterate $T^m$ is
+contractive (Exercise 5.1.2), and Theorem 5.1.4: a strongly monotone Lipschitz operator on a real
+Hilbert space is a bijection with a Lipschitz inverse.
 
-Every proof specializes a declaration of `Numlib/Nonlinear/FixedPoint.lean` or of Mathlib; the
-work of the file is the dictionary between the book's `‖T u - T v‖ ≤ α ‖u - v‖` and Mathlib's
-`LipschitzOnWith`/`ContractingWith`, which is what `contractiveOn_iff`, `lipschitzOn_iff` and
-`ContractiveOn.contractingWith_restrict` supply.
+The proofs specialize `Numlib.Nonlinear.FixedPoint` and Mathlib. The module translates between the
+book's normed form of contractivity and Mathlib's `LipschitzOnWith` and `ContractingWith`.
 
-## Book-specific definitions
+## Main definitions
 
-* `ContractiveOn`, `NonExpansiveOn`, `LipschitzOn` — Definition 5.1.2, in the book's normed
-  form. `ContractiveOn.nonExpansiveOn`, `NonExpansiveOn.lipschitzOn` and
-  `LipschitzOn.continuousOn` are the chain contractive ⇒ non-expansive ⇒ Lipschitz ⇒ continuous
-  that the definition is stated for.
-* `StronglyMonotoneWith` — (5.1.8), the backbone's `IsStronglyMonotoneWith ℝ` by definition;
-  `stronglyMonotoneWith_iff` is the book's own wording of it, and
-  `stronglyMonotoneWith_iff_isCoerciveWith` says that for a bounded *linear* operator it is the
-  backbone's `LinearMap.IsCoerciveWith`.
+* Definition 5.1.2, `AtkinsonHan.Chapter05.ContractiveOn`, `AtkinsonHan.Chapter05.NonExpansiveOn`
+  and `AtkinsonHan.Chapter05.LipschitzOn`: contractive, non-expansive and Lipschitz continuous maps
+  on a set, in the book's normed form.
+* Equation (5.1.8), `AtkinsonHan.Chapter05.StronglyMonotoneWith`:
+  $(Tv_1 - Tv_2, v_1 - v_2) \ge c \|v_1 - v_2\|^2$ for all $v_1, v_2$.
 
 ## Main results
 
-* `example_5_1_1`, `example_5_1_1_tendsto_iff` — Example 5.1.1, the closed form of the affine
-  iteration `x ↦ a x + b` on `ℝ` and its convergence exactly when `|a| < 1`.
-* `theorem_5_1_3` — **Banach fixed-point theorem**, assembled from
-  `theorem_5_1_3_existsUnique`, `theorem_5_1_3_tendsto` and the error bounds `equation_5_1_4`
-  (a priori), `equation_5_1_5` (a posteriori) and `equation_5_1_6` (linear rate).
-* `exercise_5_1_2` — a continuous map one of whose iterates is contractive still has a unique
-  fixed point; this is what Theorem 5.2.3 uses for the Volterra equation.
-* `theorem_5_1_4` — a strongly monotone Lipschitz operator on a real Hilbert space is a
-  bijection, with the stability estimate (5.1.11).
+* Example 5.1.1, `AtkinsonHan.Chapter05.example_5_1_1` and
+  `AtkinsonHan.Chapter05.example_5_1_1_tendsto_iff`: the closed form of the iteration
+  $x \mapsto ax + b$ on $\mathbb{R}$, and its convergence from every starting point if and only if
+  $|a| < 1$.
+* Definition 5.1.2, `AtkinsonHan.Chapter05.ContractiveOn.nonExpansiveOn`,
+  `AtkinsonHan.Chapter05.NonExpansiveOn.lipschitzOn` and
+  `AtkinsonHan.Chapter05.LipschitzOn.continuousOn`: contractive maps are non-expansive,
+  non-expansive maps are Lipschitz, and Lipschitz maps are continuous.
+* Theorem 5.1.3 (Banach fixed-point theorem), `AtkinsonHan.Chapter05.theorem_5_1_3`: existence and
+  uniqueness of the fixed point, convergence of the iteration, and the bounds (5.1.4)–(5.1.6). Its
+  parts are `AtkinsonHan.Chapter05.theorem_5_1_3_existsUnique`,
+  `AtkinsonHan.Chapter05.theorem_5_1_3_tendsto`, `AtkinsonHan.Chapter05.equation_5_1_4` (the a
+  priori bound), `AtkinsonHan.Chapter05.equation_5_1_5` (the a posteriori bound) and
+  `AtkinsonHan.Chapter05.equation_5_1_6` (the linear rate).
+* Theorem 5.1.4, `AtkinsonHan.Chapter05.theorem_5_1_4`: a strongly monotone Lipschitz operator on a
+  real Hilbert space is a bijection, with the stability estimate (5.1.11).
+* Exercise 5.1.2, `AtkinsonHan.Chapter05.exercise_5_1_2`: a continuous map with a contractive
+  iterate has a unique fixed point, and the iteration converges to it. Theorem 5.2.3 uses this
+  result for the Volterra equation.
 
 ## Implementation notes
 
-The book states §5.1 in a Banach space and Theorem 5.1.4 in a Hilbert space, but several of the
-arguments are purely metric and do not touch the vector space structure. The section variables
-carrying it are kept, because they are part of the book's setting, and the unused-section-variable
-linter is turned off for the file rather than the statements being weakened.
+* The book states Section 5.1 in a Banach space and Theorem 5.1.4 in a Hilbert space. Several of the
+  arguments are metric and do not use the vector space structure. The hypotheses on $V$ are kept
+  because they are part of the book's setting, and the linter for unused section variables is turned
+  off for the file.
+* `AtkinsonHan.Chapter05.StronglyMonotoneWith` is the backbone predicate `IsStronglyMonotoneWith ℝ`
+  by definition. For a bounded linear operator it is the coercivity `LinearMap.IsCoerciveWith`
+  (`AtkinsonHan.Chapter05.stronglyMonotoneWith_iff_isCoerciveWith`).
 -/
 
 open Filter Metric Set Topology
@@ -61,18 +73,28 @@ section Banach
 
 variable {V : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V]
 
-/-- Definition 5.1.2: `T` is **contractive** on `K` with contractivity constant `α`, that is
-`0 ≤ α < 1` and `‖T u - T v‖ ≤ α ‖u - v‖` for all `u, v ∈ K`. -/
+/-- **Definition 5.1.2** of [han2009theoretical], contractive maps. Let $V$ be a real normed space,
+$K \subseteq V$, $T : V \to V$ and $\alpha \in \mathbb{R}$. The map $T$ is **contractive** on
+$K$ with **contractivity constant** $\alpha$ if $0 \le \alpha < 1$ and
+$$\|Tu - Tv\| \le \alpha \|u - v\| \qquad \text{for all } u, v \in K.$$
+
+The map is defined on all of $V$, and the condition involves only its values on $K$. That $T$
+maps $K$ into $K$ is a separate hypothesis (`Set.MapsTo T K K`) of the theorems below. -/
 def ContractiveOn (T : V → V) (K : Set V) (α : ℝ) : Prop :=
   0 ≤ α ∧ α < 1 ∧ ∀ u ∈ K, ∀ v ∈ K, ‖T u - T v‖ ≤ α * ‖u - v‖
 
-/-- Definition 5.1.2: `T` is **non-expansive** on `K`, the borderline case `α = 1` of
-contractivity. -/
+/-- **Definition 5.1.2** of [han2009theoretical], non-expansive maps. Let $V$ be a real normed
+space, $K \subseteq V$ and $T : V \to V$. The map $T$ is **non-expansive** on $K$ if
+$$\|Tu - Tv\| \le \|u - v\| \qquad \text{for all } u, v \in K.$$
+This is the case $\alpha = 1$ of the contraction estimate. -/
 def NonExpansiveOn (T : V → V) (K : Set V) : Prop :=
   ∀ u ∈ K, ∀ v ∈ K, ‖T u - T v‖ ≤ ‖u - v‖
 
-/-- Definition 5.1.2: `T` is **Lipschitz** on `K`, that is `‖T u - T v‖ ≤ L ‖u - v‖` for some
-Lipschitz constant `L ≥ 0`. -/
+/-- **Definition 5.1.2** of [han2009theoretical], Lipschitz continuous maps. Let $V$ be a real
+normed space, $K \subseteq V$ and $T : V \to V$. The map $T$ is **Lipschitz continuous** on $K$
+if there is a constant $L \ge 0$ with
+$$\|Tu - Tv\| \le L \|u - v\| \qquad \text{for all } u, v \in K.$$
+-/
 def LipschitzOn (T : V → V) (K : Set V) : Prop :=
   ∃ L : ℝ, 0 ≤ L ∧ ∀ u ∈ K, ∀ v ∈ K, ‖T u - T v‖ ≤ L * ‖u - v‖
 
@@ -80,27 +102,31 @@ variable {T : V → V} {K : Set V} {α : ℝ}
 
 namespace ContractiveOn
 
-/-- A contractivity constant is nonnegative. -/
+/-- A contractivity constant $\alpha$ of a contractive map satisfies $\alpha \ge 0$. -/
 theorem nonneg (h : ContractiveOn T K α) : 0 ≤ α := h.1
 
-/-- A contractivity constant is smaller than `1`. -/
+/-- A contractivity constant $\alpha$ of a contractive map satisfies $\alpha < 1$. -/
 theorem lt_one (h : ContractiveOn T K α) : α < 1 := h.2.1
 
-/-- The contraction estimate `‖T u - T v‖ ≤ α ‖u - v‖` of Definition 5.1.2. -/
+/-- If $T$ is contractive on $K$ with constant $\alpha$ and $u, v \in K$, then
+$\|Tu - Tv\| \le \alpha \|u - v\|$. -/
 theorem norm_sub_le (h : ContractiveOn T K α) {u v : V} (hu : u ∈ K) (hv : v ∈ K) :
     ‖T u - T v‖ ≤ α * ‖u - v‖ := h.2.2 u hu v hv
 
-/-- The contractivity hypothesis in the metric form taken by the backbone
-(`Numlib/Nonlinear/FixedPoint.lean`). -/
+/-- If $T$ is contractive on $K$ with constant $\alpha$, then $d(Tu, Tv) \le \alpha \, d(u, v)$ for
+all $u, v \in K$, with the distance $d$ of the norm. This is the metric form of the hypothesis
+in `Numlib.Nonlinear.FixedPoint`. -/
 theorem dist_le (h : ContractiveOn T K α) :
     ∀ u ∈ K, ∀ v ∈ K, dist (T u) (T v) ≤ α * dist u v := fun _ hu _ hv => by
   simpa only [dist_eq_norm] using h.norm_sub_le hu hv
 
-/-- Contractive maps are non-expansive (Definition 5.1.2). -/
+/-- **Definition 5.1.2** of [han2009theoretical]: a map that is contractive on $K$ is non-expansive
+on $K$. -/
 theorem nonExpansiveOn (h : ContractiveOn T K α) : NonExpansiveOn T K := fun _ hu _ hv =>
   (h.norm_sub_le hu hv).trans (mul_le_of_le_one_left (norm_nonneg _) h.lt_one.le)
 
-/-- Identification with Mathlib's `LipschitzOnWith`. -/
+/-- If $T$ is contractive on $K$ with constant $\alpha$ and maps $K$ into $K$, then its restriction
+$K \to K$ is a contraction with constant $\alpha$ in the sense of Mathlib's `ContractingWith`. -/
 theorem contractingWith_restrict (h : ContractiveOn T K α) (hT : MapsTo T K K) :
     ContractingWith ⟨α, h.nonneg⟩ (hT.restrict T K K) := by
   refine ⟨?_, LipschitzWith.of_dist_le_mul fun x y => ?_⟩
@@ -109,7 +135,9 @@ theorem contractingWith_restrict (h : ContractiveOn T K α) (hT : MapsTo T K K) 
 
 end ContractiveOn
 
-/-- Identification of Definition 5.1.2 with Mathlib's `LipschitzOnWith`. -/
+/-- Let $\alpha \ge 0$. Then $T$ is contractive on $K$ with constant $\alpha$ if and only if
+$\alpha < 1$ and $T$ is Lipschitz continuous on $K$ with constant $\alpha$ in the sense of
+Mathlib's `LipschitzOnWith`. -/
 theorem contractiveOn_iff (hα : 0 ≤ α) :
     ContractiveOn T K α ↔ α < 1 ∧ LipschitzOnWith ⟨α, hα⟩ T K := by
   refine ⟨fun h => ⟨h.lt_one, lipschitzOnWith_iff_norm_sub_le.2 fun _ hx _ hy => ?_⟩,
@@ -117,11 +145,13 @@ theorem contractiveOn_iff (hα : 0 ≤ α) :
   · exact h.norm_sub_le hx hy
   · exact lipschitzOnWith_iff_norm_sub_le.1 h.2 hx hy
 
-/-- Non-expansive maps are Lipschitz (Definition 5.1.2). -/
+/-- **Definition 5.1.2** of [han2009theoretical]: a map that is non-expansive on $K$ is Lipschitz
+continuous on $K$. -/
 theorem NonExpansiveOn.lipschitzOn (h : NonExpansiveOn T K) : LipschitzOn T K :=
   ⟨1, zero_le_one, fun u hu v hv => by simpa using h u hu v hv⟩
 
-/-- Identification of Definition 5.1.2 with Mathlib's `LipschitzOnWith`. -/
+/-- The map $T$ is Lipschitz continuous on $K$ in the sense of Definition 5.1.2 if and only if there
+is a constant $L \ge 0$ such that $T$ is `LipschitzOnWith L` on $K$ in Mathlib's sense. -/
 theorem lipschitzOn_iff : LipschitzOn T K ↔ ∃ L : NNReal, LipschitzOnWith L T K := by
   constructor
   · rintro ⟨L, hL, h⟩
@@ -129,15 +159,19 @@ theorem lipschitzOn_iff : LipschitzOn T K ↔ ∃ L : NNReal, LipschitzOnWith L 
   · rintro ⟨L, h⟩
     exact ⟨L, L.coe_nonneg, fun _ hx _ hy => lipschitzOnWith_iff_norm_sub_le.1 h hx hy⟩
 
-/-- Lipschitz maps are continuous (Definition 5.1.2). -/
+/-- **Definition 5.1.2** of [han2009theoretical]: a map that is Lipschitz continuous on $K$ is
+continuous on $K$. -/
 theorem LipschitzOn.continuousOn (h : LipschitzOn T K) : ContinuousOn T K := by
   obtain ⟨L, hL⟩ := lipschitzOn_iff.1 h
   exact hL.continuousOn
 
 section ScalarExample
 
-/-- Example 5.1.1: the affine iteration `x ↦ a x + b` on `ℝ` has the closed form
-`x_n = aⁿ x₀ + (1 - aⁿ)/(1 - a) b` when `a ≠ 1`. -/
+/-- **Example 5.1.1** of [han2009theoretical], the closed form. Let $a, b, x_0 \in \mathbb{R}$ with
+$a \ne 1$, and let $x_n$ be the iterates of $x \mapsto ax + b$ from $x_0$. Then for every
+$n \ge 0$,
+$$x_n = a^n x_0 + \frac{1 - a^n}{1 - a} \, b.$$
+-/
 theorem example_5_1_1 {a : ℝ} (ha : a ≠ 1) (b x₀ : ℝ) (n : ℕ) :
     (fun x => a * x + b)^[n] x₀ = a ^ n * x₀ + (1 - a ^ n) / (1 - a) * b := by
   have h1 : (1 : ℝ) - a ≠ 0 := sub_ne_zero.2 (Ne.symm ha)
@@ -148,8 +182,9 @@ theorem example_5_1_1 {a : ℝ} (ha : a ≠ 1) (b x₀ : ℝ) (n : ℕ) :
     field_simp
     ring
 
-/-- Example 5.1.1: for `a ≠ 1` the affine iteration converges from every starting point if and
-only if `|a| < 1`. -/
+/-- **Example 5.1.1** of [han2009theoretical], convergence. Let $a, b \in \mathbb{R}$ with
+$a \ne 1$. The iterates of $x \mapsto ax + b$ converge from every starting point
+$x_0 \in \mathbb{R}$ if and only if $|a| < 1$. -/
 theorem example_5_1_1_tendsto_iff {a : ℝ} (ha : a ≠ 1) (b : ℝ) :
     (∀ x₀ : ℝ, ∃ x, Tendsto (fun n => (fun x => a * x + b)^[n] x₀) atTop (𝓝 x)) ↔ |a| < 1 := by
   have h1 : (1 : ℝ) - a ≠ 0 := sub_ne_zero.2 (Ne.symm ha)
@@ -192,20 +227,28 @@ section Complete
 
 variable [CompleteSpace V]
 
-/-- Theorem 5.1.3(a): a contractive self-map of a nonempty closed subset of a Banach space has a
-unique fixed point there. -/
+/-- **Theorem 5.1.3(a)** of [han2009theoretical]. Let $V$ be a real Banach space, let
+$K \subseteq V$ be nonempty and closed, and let $T : V \to V$ map $K$ into $K$ and be
+contractive on $K$ with constant $\alpha$. Then $T$ has a unique fixed point in $K$: there is
+exactly one $u \in K$ with $Tu = u$. -/
 theorem theorem_5_1_3_existsUnique (hK : IsClosed K) (hne : K.Nonempty) (hT : MapsTo T K K)
     (hα : ContractiveOn T K α) : ∃! u, u ∈ K ∧ T u = u :=
   exists_unique_fixedPoint_of_mapsTo hK hne hT hα.nonneg hα.lt_one hα.dist_le
 
-/-- (5.1.4): the a priori bound `‖u_n - u‖ ≤ αⁿ/(1 - α) ‖u₀ - u₁‖`. -/
+/-- **Equation (5.1.4)** of [han2009theoretical], the a priori error bound. Let $V$ be a real Banach
+space, let $K \subseteq V$ be closed, and let $T : V \to V$ map $K$ into $K$ and be contractive
+on $K$ with constant $\alpha$. Let $u \in K$ be a fixed point of $T$, let $u_0 \in K$, and let
+$u_n = T^n u_0$. Then for every $n \ge 0$,
+$$\|u_n - u\| \le \frac{\alpha^n}{1 - \alpha} \, \|u_0 - u_1\|.$$
+-/
 theorem equation_5_1_4 (hK : IsClosed K) (hT : MapsTo T K K) (hα : ContractiveOn T K α) {u : V}
     (hu : u ∈ K) (hfix : T u = u) {u₀ : V} (hu₀ : u₀ ∈ K) (n : ℕ) :
     ‖T^[n] u₀ - u‖ ≤ α ^ n / (1 - α) * ‖u₀ - T u₀‖ := by
   have h := dist_iterate_le_of_mapsTo hK hT hα.nonneg hα.lt_one hα.dist_le hu hfix hu₀ n
   rwa [dist_eq_norm, dist_eq_norm, norm_sub_rev (T u₀)] at h
 
-/-- The one-step form of (5.1.5), stated for a point `a` of `K` with `T a ∈ K`. -/
+/-- For a contractive map $T$ on $K$ with constant $\alpha$, a fixed point $u \in K$, and a point
+$a \in K$ with $Ta \in K$: $\|Ta - u\| \le \frac{\alpha}{1 - \alpha} \|a - Ta\|$. -/
 private theorem norm_step_sub_fixed_le (hα : ContractiveOn T K α) {u : V} (hu : u ∈ K)
     (hfix : T u = u) {a : V} (ha : a ∈ K) (hTa : T a ∈ K) :
     ‖T a - u‖ ≤ α / (1 - α) * ‖a - T a‖ := by
@@ -219,14 +262,24 @@ private theorem norm_step_sub_fixed_le (hα : ContractiveOn T K α) {u : V} (hu 
   rw [div_mul_eq_mul_div, le_div_iff₀ hlt]
   linarith
 
-/-- (5.1.5): the a posteriori bound `‖u_{n+1} - u‖ ≤ α/(1 - α) ‖u_n - u_{n+1}‖`. -/
+/-- **Equation (5.1.5)** of [han2009theoretical], the a posteriori error bound. Let $V$ be a real
+Banach space, let $K \subseteq V$, and let $T : V \to V$ map $K$ into $K$ and be contractive on
+$K$ with constant $\alpha$. Let $u \in K$ be a fixed point of $T$, let $u_0 \in K$, and let
+$u_n = T^n u_0$. Then for every $n \ge 0$,
+$$\|u_{n+1} - u\| \le \frac{\alpha}{1 - \alpha} \, \|u_n - u_{n+1}\|.$$
+-/
 theorem equation_5_1_5 (hT : MapsTo T K K) (hα : ContractiveOn T K α) {u : V} (hu : u ∈ K)
     (hfix : T u = u) {u₀ : V} (hu₀ : u₀ ∈ K) (n : ℕ) :
     ‖T^[n + 1] u₀ - u‖ ≤ α / (1 - α) * ‖T^[n] u₀ - T^[n + 1] u₀‖ := by
   rw [Function.iterate_succ_apply']
   exact norm_step_sub_fixed_le hα hu hfix (hT.iterate n hu₀) (hT (hT.iterate n hu₀))
 
-/-- (5.1.6): the linear rate `‖u_{n+1} - u‖ ≤ α ‖u_n - u‖`. -/
+/-- **Equation (5.1.6)** of [han2009theoretical], the linear rate of convergence. Let $V$ be a real
+Banach space, let $K \subseteq V$, and let $T : V \to V$ map $K$ into $K$ and be contractive on
+$K$ with constant $\alpha$. Let $u \in K$ be a fixed point of $T$, let $u_0 \in K$, and let
+$u_n = T^n u_0$. Then for every $n \ge 0$,
+$$\|u_{n+1} - u\| \le \alpha \, \|u_n - u\|.$$
+-/
 theorem equation_5_1_6 (hT : MapsTo T K K) (hα : ContractiveOn T K α) {u : V} (hu : u ∈ K)
     (hfix : T u = u) {u₀ : V} (hu₀ : u₀ ∈ K) (n : ℕ) :
     ‖T^[n + 1] u₀ - u‖ ≤ α * ‖T^[n] u₀ - u‖ := by
@@ -234,8 +287,10 @@ theorem equation_5_1_6 (hT : MapsTo T K K) (hα : ContractiveOn T K α) {u : V} 
   rw [hfix] at h
   rwa [Function.iterate_succ_apply']
 
-/-- Theorem 5.1.3(b): the fixed-point iteration converges to the fixed point from every starting
-point of `K`. -/
+/-- **Theorem 5.1.3(b)** of [han2009theoretical]. Let $V$ be a real Banach space, let
+$K \subseteq V$ be closed, and let $T : V \to V$ map $K$ into $K$ and be contractive on $K$. Let
+$u \in K$ be a fixed point of $T$. Then for every $u_0 \in K$ the iterates $u_n = T^n u_0$
+converge to $u$. -/
 theorem theorem_5_1_3_tendsto (hK : IsClosed K) (hT : MapsTo T K K) (hα : ContractiveOn T K α)
     {u : V} (hu : u ∈ K) (hfix : T u = u) {u₀ : V} (hu₀ : u₀ ∈ K) :
     Tendsto (fun n => T^[n] u₀) atTop (𝓝 u) := by
@@ -245,10 +300,19 @@ theorem theorem_5_1_3_tendsto (hK : IsClosed K) (hT : MapsTo T K K) (hα : Contr
     tendsto_pow_atTop_nhds_zero_of_lt_one hα.nonneg hα.lt_one
   simpa using (h1.div_const (1 - α)).mul_const ‖u₀ - T u₀‖
 
-/-- **Theorem 5.1.3** (Banach fixed-point theorem).  Let `K` be a nonempty closed subset of a
-Banach space `V` and let `T : K → K` be contractive with constant `α ∈ [0, 1)`.  Then `T` has a
-unique fixed point in `K`, the iteration `u_{n+1} = T u_n` converges to it from every `u₀ ∈ K`,
-and the errors obey (5.1.4), (5.1.5) and (5.1.6). -/
+/-- **Theorem 5.1.3** of [han2009theoretical] (Banach fixed-point theorem). Let $V$ be a real Banach
+space, let $K \subseteq V$ be nonempty and closed, and let $T : V \to V$ map $K$ into $K$ and be
+contractive on $K$ with constant $\alpha \in [0, 1)$. Then:
+
+1. $T$ has a unique fixed point $u \in K$;
+2. for every $u_0 \in K$, the iterates $u_n = T^n u_0$ converge to this fixed point $u$, and for
+   every $n \ge 0$ they satisfy the bounds (5.1.4)–(5.1.6):
+$$\|u_n - u\| \le \frac{\alpha^n}{1 - \alpha} \|u_0 - u_1\|, \qquad \|u_{n+1} - u\| \le
+  \frac{\alpha}{1 - \alpha} \|u_n - u_{n+1}\|, \qquad \|u_{n+1} - u\| \le \alpha \|u_n - u\|.$$
+
+The theorem combines `AtkinsonHan.Chapter05.theorem_5_1_3_existsUnique`,
+`AtkinsonHan.Chapter05.theorem_5_1_3_tendsto`, `AtkinsonHan.Chapter05.equation_5_1_4`,
+`AtkinsonHan.Chapter05.equation_5_1_5` and `AtkinsonHan.Chapter05.equation_5_1_6`. -/
 theorem theorem_5_1_3 (hK : IsClosed K) (hne : K.Nonempty) (hT : MapsTo T K K)
     (hα : ContractiveOn T K α) :
     (∃! u, u ∈ K ∧ T u = u) ∧
@@ -262,9 +326,14 @@ theorem theorem_5_1_3 (hK : IsClosed K) (hne : K.Nonempty) (hT : MapsTo T K K)
       fun n => equation_5_1_4 hK hT hα hu hfix hu₀ n, fun n => equation_5_1_5 hT hα hu hfix hu₀ n,
       fun n => equation_5_1_6 hT hα hu hfix hu₀ n⟩⟩
 
-/-- **Exercise 5.1.2** (cited by Theorem 5.2.3): if `T : K → K` is continuous and some iterate
-`T^[m]`, `m ≥ 1`, is contractive on `K`, then `T` still has a unique fixed point in `K` and
-`u_{n+1} = T u_n` converges to it from every `u₀ ∈ K`. -/
+/-- **Exercise 5.1.2** of [han2009theoretical]. Let $V$ be a real Banach space, let $K \subseteq V$
+be nonempty and closed, and let $T : V \to V$ map $K$ into $K$ and be continuous on $K$. Let
+$m \ge 1$, and let the iterate $T^m$ be contractive on $K$. Then:
+
+1. $T$ has a unique fixed point $u \in K$;
+2. for every $u_0 \in K$, the iterates $T^n u_0$ converge to this fixed point.
+
+Theorem 5.2.3 uses this result for the Volterra integral equation. -/
 theorem exercise_5_1_2 (hK : IsClosed K) (hne : K.Nonempty) (hT : MapsTo T K K)
     (hc : ContinuousOn T K) {m : ℕ} (hm : 0 < m) (hα : ContractiveOn T^[m] K α) :
     (∃! u, u ∈ K ∧ T u = u) ∧
@@ -297,20 +366,26 @@ section Hilbert
 
 variable {V : Type*} [NormedAddCommGroup V] [InnerProductSpace ℝ V] [CompleteSpace V]
 
-/-- (5.1.8): `T` is **strongly monotone** with constant `c`, that is
-`(T v₁ - T v₂, v₁ - v₂) ≥ c ‖v₁ - v₂‖²` on a real Hilbert space. This is the backbone's
-`IsStronglyMonotoneWith ℝ T c` (`Numlib/Nonlinear/FixedPoint.lean`), the hypothesis of
-`zarantonello`; `stronglyMonotoneWith_iff` is the book's wording. -/
+/-- **Equation (5.1.8)** of [han2009theoretical], strongly monotone operators. Let $V$ be a real
+Hilbert space, $T : V \to V$ and $c \in \mathbb{R}$. The operator $T$ is **strongly monotone**
+with constant $c$ if
+$$(Tv_1 - Tv_2, v_1 - v_2) \ge c \, \|v_1 - v_2\|^2 \qquad \text{for all } v_1, v_2 \in V.$$
+
+This is the backbone predicate `IsStronglyMonotoneWith ℝ T c`, which is the hypothesis of the
+backbone theorem `zarantonello`. `AtkinsonHan.Chapter05.stronglyMonotoneWith_iff` states the
+inequality with the real inner product. -/
 def StronglyMonotoneWith (T : V → V) (c : ℝ) : Prop :=
   IsStronglyMonotoneWith ℝ T c
 
-/-- (5.1.8) in the book's own words: the inequality against the real inner product. -/
+/-- **Equation (5.1.8)** of [han2009theoretical], unfolded: $T$ is strongly monotone with constant
+$c$ if and only if $c \|v_1 - v_2\|^2 \le (Tv_1 - Tv_2, v_1 - v_2)$ for all $v_1, v_2 \in V$. -/
 theorem stronglyMonotoneWith_iff {T : V → V} {c : ℝ} :
     StronglyMonotoneWith T c ↔ ∀ v₁ v₂, c * ‖v₁ - v₂‖ ^ 2 ≤ inner ℝ (T v₁ - T v₂) (v₁ - v₂) :=
   isStronglyMonotoneWith_real_iff T c
 
-/-- For a bounded linear operator, strong monotonicity is coercivity
-(`LinearMap.IsCoerciveWith`, `Numlib/Analysis/InnerProductSpace/Coercive.lean`). -/
+/-- Let $A$ be a bounded linear operator on a real Hilbert space $V$. Then $A$ is strongly monotone
+with constant $c$ if and only if $A$ is coercive with constant $c$, that is,
+$c \|v\|^2 \le (Av, v)$ for all $v \in V$ (`LinearMap.IsCoerciveWith`). -/
 theorem stronglyMonotoneWith_iff_isCoerciveWith (A : V →L[ℝ] V) (c : ℝ) :
     StronglyMonotoneWith (A : V → V) c ↔ (A : V →ₗ[ℝ] V).IsCoerciveWith c := by
   constructor
@@ -319,16 +394,27 @@ theorem stronglyMonotoneWith_iff_isCoerciveWith (A : V →L[ℝ] V) (c : ℝ) :
   · intro h v₁ v₂
     simpa only [map_sub, ContinuousLinearMap.coe_coe] using h (v₁ - v₂)
 
-/-- Identification of (5.1.9) with Mathlib's `LipschitzWith`. -/
+/-- **Equation (5.1.9)** of [han2009theoretical], the Lipschitz condition. Let $c \ge 0$. Then
+$\|Tv_1 - Tv_2\| \le c \|v_1 - v_2\|$ for all $v_1, v_2 \in V$ if and only if $T$ is Lipschitz
+continuous with constant $c$ in the sense of Mathlib's `LipschitzWith`. -/
 theorem lipschitzWith_toNNReal_iff {T : V → V} {c : ℝ} (hc : 0 ≤ c) :
     (∀ v₁ v₂, ‖T v₁ - T v₂‖ ≤ c * ‖v₁ - v₂‖) ↔ LipschitzWith (Real.toNNReal c) T := by
   rw [lipschitzWith_iff_norm_sub_le]
   simp [Real.coe_toNNReal _ hc]
 
-/-- **Theorem 5.1.4**.  Let `V` be a real Hilbert space and `T : V → V` strongly monotone (5.1.8)
-with constant `c₁ > 0` and Lipschitz (5.1.9) with constant `c₂ > 0`.  Then `T` is a bijection —
-(5.1.10) `T u = b` has a unique solution for every `b` — and the solution depends Lipschitz
-continuously on the data, (5.1.11) `‖u₁ - u₂‖ ≤ (1/c₁) ‖b₁ - b₂‖`. -/
+/-- **Theorem 5.1.4** of [han2009theoretical]. Let $V$ be a real Hilbert space, and let
+$T : V \to V$ be strongly monotone (5.1.8) with a constant $c_1 > 0$ and Lipschitz continuous
+(5.1.9) with a constant $c_2 > 0$:
+$$(Tv_1 - Tv_2, v_1 - v_2) \ge c_1 \|v_1 - v_2\|^2, \qquad \|Tv_1 - Tv_2\| \le c_2 \|v_1 - v_2\|
+  \qquad \text{for all } v_1, v_2 \in V.$$
+Then:
+
+1. for every $b \in V$ the equation (5.1.10) $Tu = b$ has a unique solution $u \in V$;
+2. the solution depends Lipschitz continuously on the data: if $Tu_1 = b_1$ and $Tu_2 = b_2$,
+   then
+$$\|u_1 - u_2\| \le \frac{1}{c_1} \|b_1 - b_2\|. \qquad (5.1.11)$$
+
+The proof specializes the backbone theorem `zarantonello`. -/
 theorem theorem_5_1_4 {T : V → V} {c₁ c₂ : ℝ} (hc₁ : 0 < c₁) (hc₂ : 0 < c₂)
     (hmono : StronglyMonotoneWith T c₁) (hlip : ∀ v₁ v₂, ‖T v₁ - T v₂‖ ≤ c₂ * ‖v₁ - v₂‖) :
     (∀ b, ∃! u, T u = b) ∧

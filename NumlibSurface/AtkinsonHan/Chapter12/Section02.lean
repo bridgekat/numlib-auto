@@ -12,91 +12,89 @@ import Numlib.IntegralEquations.Basic
 import NumlibSurface.AtkinsonHan.Chapter12.Section01
 
 /-!
-# Atkinson–Han §12.2: examples of the projection method
+# Atkinson and Han, Section 12.2: Examples of projection methods
 
-Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework*, 3rd edition, Springer, 2009, §12.2.
+This module formalizes Section 12.2 of [han2009theoretical]. The section applies the projection
+method of Section 12.1 to the second kind equation $(\lambda - K) u = f$ with four families of
+projections $P_n$: interpolation by continuous piecewise linear functions (§12.2.1), trigonometric
+interpolation (§12.2.2), the $L^2$-orthogonal projection onto the continuous piecewise linear
+functions (§12.2.3), and the truncation of the Fourier series (§12.2.4). For each family the module
+supplies the two inputs of Theorem 12.1.2: the convergence $\|K - P_n K\| \to 0$, and a bound on the
+approximation error $\|u - P_n u\|$, which (12.1.24) turns into a bound on the error $\|u - u_n\|$
+of the projection solution.
 
-The section applies the framework of §12.1 to four concrete trial spaces.  What has to be supplied
-for each is the pair of facts that Theorem 12.1.2 asks for: that the projections are uniformly
-bounded and converge pointwise to the identity, so that `‖K - P_n K‖ → 0` by Lemma 12.1.4, and an
-approximation-theoretic bound on `‖u - P_n u‖`.
-
-All four trial spaces of the section are formalized here.  For §12.2.1 the projections are
-interpolation at the breakpoints of a partition of `[a, b]`, and both facts come from
-`Numlib/Approximation/Interpolation` — `tendsto_piecewiseLinearInterpCLM` for the pointwise
-convergence and `norm_sub_piecewiseLinearInterpCLM_le` for the `h² ‖u''‖ / 8` bound.  Nothing about
-the mesh is assumed beyond `h_n → 0`; the book's uniform mesh `h = (b - a) / n` is the case
-`x_j = a + j h`.
-
-For §12.2.2 and §12.2.4 the projections onto the trigonometric polynomials of degree at most `n`
-are *not* pointwise convergent on `C_p(2π)` — their norms grow like `log n` — so Lemma 12.1.4 is
-unavailable and `‖K - P_n K‖ → 0` has to be proved directly.  What makes it true is the Hölder
-condition (12.2.16) on the kernel: it makes `K u` Hölder continuous with constant `c ‖u‖`, so
-Jackson's theorem bounds the best approximation error of `K u` by `c ‖u‖ (π²/2)^α n^{-α}` and the
-Lebesgue lemma converts that into `‖(I - P_n) K u‖ ≤ (1 + ‖P_n‖) c ‖u‖ (π²/2)^α n^{-α}`.  The two
-projections differ only in the bound on `‖P_n‖`: `norm_trigInterpCLM_le` for interpolation and
-`PeriodicCont.lebesgueConstant_le` for the Fourier truncation.
+For piecewise linear interpolation and for the two orthogonal projections, the $P_n$ are uniformly
+bounded and converge pointwise to the identity, so Lemma 12.1.4 gives $\|K - P_n K\| \to 0$.
+Trigonometric interpolation and the Fourier truncation on $C_p(2\pi)$ are not uniformly bounded:
+their norms grow like $\log n$. There $\|K - P_n K\| \to 0$ comes from the Hölder condition
+(12.2.16) on the kernel. It makes $K u$ Hölder continuous with constant $c \|u\|$, so Jackson's
+theorem bounds the best approximation error of $K u$ by $c \|u\| (\pi^2/2)^\alpha n^{-\alpha}$, and
+the Lebesgue lemma gives $\|(I - P_n) K u\| \le (1 + \|P_n\|) c \|u\| (\pi^2/2)^\alpha n^{-\alpha}$.
+The proofs use `Numlib.Approximation.Interpolation`, `Numlib.Approximation.Jackson`,
+`Numlib.Approximation.TrigonometricInterpolation`, `Numlib.Approximation.PiecewiseLinearL2`,
+`Numlib.Analysis.Fourier.Truncation` and `Numlib.IntegralEquations.Basic`.
 
 ## Main results
 
-* `equation_12_2_5` — for piecewise linear collocation on a sequence of partitions of vanishing
-  mesh, `‖K - P_n K‖ → 0`, the collocation equations are uniquely solvable for all large `n`, and
-  `‖u - u_n‖_∞ ≤ c h_n² ‖u''‖_∞` for a `C²` solution, with a constant independent of `n`.
-* `equation_12_2_17` — for trigonometric collocation with a kernel Hölder continuous of exponent
-  `α` in its first variable uniformly in the second, `‖K - P_n K‖ ≤ c log n / n^α`, so the
-  collocation equations are uniquely solvable for all large `n` and the error is proportional to
-  `‖u - P_n u‖_∞`.
-* `equation_12_2_27` — `‖P_n‖ = O(log n)` for the Fourier truncation read on `C_p(2π)`, together
-  with the fact that the family is *not* uniformly bounded, and then the same complete convergence
-  analysis in the uniform norm for the Fourier–Galerkin method.
-* `equation_12_2_24` — the `L²` truncation error `‖u - P_n u‖_{L²} ≤ ‖u‖_{H^r} / n^r` of the
-  Fourier series of a function of the periodic Sobolev class `H^r(0, 2π)`, and `equation_12_2_25`
-  the resulting rate `‖u - u_n‖_{L²} ≤ |λ| M ‖u‖_{H^r} / n^r` of the Fourier–Galerkin method.
-* `equation_12_2_19` — the piecewise linear Galerkin method.  The trial space and the projection
-  onto it are `piecewiseLinearLp` and `piecewiseLinearProjCLM` of
-  `Numlib/Approximation/PiecewiseLinearL2`, whose `norm_sub_piecewiseLinearProjCLM_le` and
-  `IntegralOperator.norm_iccToLp_le` are the two inequalities of (12.2.18) and whose
-  `tendsto_piecewiseLinearProjCLM` is the pointwise convergence on the whole of `L²`.
-  The theorem itself is `‖K - P_n K‖ → 0`, unique solvability for large `n`, and
-  `‖u - u_n‖_{L²} ≤ |λ| M √(b - a) h_n² ‖u''‖_∞ / 8` for a `C²` solution.
-
-## Not formalized here
-
-The error bound of §12.2.3 is **(12.2.19)** and not (12.2.24), which is in §12.2.4: an earlier
-plan and the chapter audit both mis-numbered it, and stated it in the `L²` norm of `u''`, which
-would have asked for an `L²` interpolation estimate.  The book's own bound goes through the
-*uniform* norm of the interpolation error, so `norm_sub_piecewiseLinearInterpCLM_le` supplies all
-of the approximation theory.
-
-Compactness of the integral operator on `L²` is a *hypothesis* of `equation_12_2_25` rather than a
-consequence: on `C[a, b]` it is `IntegralOperator.isCompactOperator_kernelCLM`, but on `L²` it is
-the Hilbert–Schmidt theorem, and `IntegralOperator.l2KernelCLM` of
-`Numlib/IntegralEquations/L2Kernel` bounds the operator and computes its adjoint without showing it
-compact.  The book takes the same fact from its Chapter 2.  The same holds of `equation_12_2_19`.
-
-Example 12.2.1 is a numerical table and is not tracked.  Every number in it is measured — the nodal
-errors of Table 12.1 and their ratios — and so are the two remarks made about them: that the
-observed rate for `u = √x` beats the approximation error of the trial space, and that the ratio of
-the nodal error to the uniform error tends to zero.  The bound the table illustrates is
-`equation_12_2_5`, and the superconvergence at the nodes that the second remark points at is §12.3.
+* Equation (12.2.5), `AtkinsonHan.Chapter12.equation_12_2_5`: for piecewise linear collocation on
+  partitions of vanishing mesh $h_n$, $\|K - P_n K\| \to 0$, the collocation equations are uniquely
+  solvable for large $n$, and $\|u - u_n\|_\infty \le c h_n^2 \|u''\|_\infty$ for a $C^2$ solution.
+* Equation (12.2.17), `AtkinsonHan.Chapter12.equation_12_2_17`: for trigonometric collocation with a
+  kernel that satisfies the Hölder condition (12.2.16), $\|K - P_n K\| \le c' \log n / n^\alpha$,
+  and the error of the method is proportional to $\|u - P_n u\|_\infty$.
+* Equation (12.2.19), `AtkinsonHan.Chapter12.equation_12_2_19`: for the piecewise linear Galerkin
+  method, $\|K - P_n K\| \to 0$, unique solvability for large $n$, and $\|u - u_n\|_{L^2} \le
+  |\lambda| M \sqrt{b - a}\, h_n^2 \|u''\|_\infty / 8$ for a $C^2$ solution.
+* Equation (12.2.24), `AtkinsonHan.Chapter12.equation_12_2_24`: the truncation error
+  $\|u - P_n u\|_{L^2} \le \|u\|_{H^r} / n^r$ of a Fourier series.
+* Equation (12.2.25), `AtkinsonHan.Chapter12.equation_12_2_25`: the Fourier–Galerkin method in
+  $L^2(0, 2\pi)$ converges at the rate $\|u - u_n\|_{L^2} \le |\lambda| M \|u\|_{H^r} / n^r$.
+* Equation (12.2.27), `AtkinsonHan.Chapter12.equation_12_2_27`: the Fourier truncation on
+  $C_p(2\pi)$ has $\|P_n\| \le 1 + \log(2n + 1)$ and is not uniformly bounded, and the
+  Fourier–Galerkin method still converges in the uniform norm for a Hölder kernel.
 
 ## Conventions
 
-As in §12.1 the book's scalar `λ` is written `μ`, `λ` being Lean's lambda binder.  The book's
-partition is indexed by its number of subintervals; here a sequence `y n : ℕ → Icc a b` of nodes
-and a count `N n` are given, of which only `y n 0, …, y n (N n + 1)` are used, exactly as
-`piecewiseLinearInterpCLM` takes them.
+* The scalar $\lambda$ of the source is `μ`, because `λ` is the Lean lambda binder.
+* A partition of $[a, b]$ is a sequence of nodes `y n : ℕ → Set.Icc a b` together with a count
+  `N n`. Only the nodes `y n 0, …, y n (N n + 1)` are used, as in `piecewiseLinearInterpCLM`, so the
+  partition has $N_n + 1$ subintervals. The mesh $h_n$ is an upper bound for their lengths.
+* $C_p(2\pi)$ is `C(AddCircle (2 * Real.pi), ℝ)`. The integral operator on it integrates against the
+  normalized Haar measure `AddCircle.haarAddCircle`, of total mass $1$ instead of $2\pi$. This
+  rescales the kernel and changes no statement below, because each statement quantifies over an
+  arbitrary constant. The Hölder condition (12.2.16) is stated for representatives
+  $x, \xi \in \mathbb{R}$, as the source writes it.
+* $L^2(0, 2\pi)$ is `Lp ℝ 2 haarAddCircle`, also with the normalized measure. The norm of
+  $H^r(0, 2\pi)$ is the weighted $\ell^2$ norm $\left(|c_0|^2 + \sum_{m \neq 0} |m|^{2r}
+  |c_m|^2\right)^{1/2}$ of the real Fourier coefficients `realFourierCoeff`, with the weight
+  `periodicSobolevWeight`. It is a `HasSum` hypothesis on the coefficients, not membership in the
+  space `PeriodicSobolev r`, which is complex and has no map to `Lp ℝ 2 haarAddCircle`.
 
-`C_p(2π)` is `C(ℝ/2πℤ, ℝ)`, and the integral operator on it is taken against the *normalized* Haar
-measure `haarAddCircle`, whose total mass is one rather than the book's `2π`; the normalization
-rescales the kernel and changes nothing in the statements below, all of which quantify over an
-arbitrary constant.  The Hölder condition (12.2.16) is stated on representatives, that is for
-`x, ξ` ranging over `ℝ`, which is how the book writes it.  `L²(0, 2π)` is likewise
-`Lp ℝ 2 haarAddCircle`, whose measure is normalized; the book's `H^r` norm is the weighted `ℓ²` norm
-of the Fourier coefficients, `periodicSobolevWeight` of `Numlib/Analysis/Sobolev/Periodic`, and is
-written here as a `HasSum` hypothesis on the coefficients rather than through the space
-`PeriodicSobolev r`, which is complex and carries no map to `Lp ℝ 2 haarAddCircle`.
+## Implementation notes
+
+* Compactness of $K$ on $L^2$ is a hypothesis of `AtkinsonHan.Chapter12.equation_12_2_19` and
+  `AtkinsonHan.Chapter12.equation_12_2_25`. On $C[a, b]$ an operator with a continuous kernel is
+  compact by `IntegralOperator.isCompactOperator_fredholm` and
+  `IntegralOperator.isCompactOperator_kernelCLM`. On $L^2$ the fact is the Hilbert–Schmidt theorem,
+  which the library does not have: `IntegralOperator.l2KernelCLM` bounds the operator and computes
+  its adjoint, but does not show that it is compact. The source takes the fact from its Chapter 2.
+* The error bound of §12.2.3 is (12.2.19). As in the source, it goes through the uniform norm of the
+  interpolation error, so `norm_sub_piecewiseLinearInterpCLM_le` supplies all of the approximation
+  theory and no $L^2$ interpolation estimate is needed.
+
+## Deviations from the source
+
+* **Equations (12.2.5) and (12.2.19)** (generalization). The source uses the uniform mesh
+  $h = (b - a)/n$. The statements hold for every sequence of partitions whose mesh tends to zero.
+  See `AtkinsonHan.Chapter12.equation_12_2_5` and `AtkinsonHan.Chapter12.equation_12_2_19`.
+
+## Not formalized
+
+* **Example 12.2.1.** Table 12.1 and the two remarks on it are measured numerical data: the nodal
+  errors and their ratios, the observed rate for $u = \sqrt{x}$, and the ratio of the nodal error to
+  the uniform error. The bound that the table illustrates is
+  `AtkinsonHan.Chapter12.equation_12_2_5`, and the superconvergence at the nodes is the subject of
+  Section 12.3.
 -/
 
 open Filter Topology
@@ -107,20 +105,29 @@ namespace AtkinsonHan.Chapter12
 
 /-! ### Piecewise linear collocation -/
 
-/-- **(12.2.5), the piecewise linear collocation method.**  Let `K` be the Fredholm operator of a
-continuous kernel on `[a, b]`, let `λ ≠ 0` be such that `λ - K` is invertible, and let `P_n` be
-interpolation at the breakpoints of a sequence of partitions of `[a, b]` whose mesh `h_n` tends to
-zero.  Then:
+/-- **Equation (12.2.5)** of [han2009theoretical] (piecewise linear collocation). Let $a \le b$, let
+$k$ be a continuous kernel on $[a, b] \times [a, b]$ with Fredholm operator
+$K u(x) = \int_a^b k(x, y) u(y)\, dy$ on $C[a, b]$, and let $\lambda \neq 0$ be such that
+$\lambda - K$ is invertible. For each $n$ let $a = y_{n,0} < y_{n,1} < \dots < y_{n,N_n+1} = b$
+be a partition whose subintervals have length at most $h_n$, with $h_n \to 0$, and let $P_n$ be
+piecewise linear interpolation at its nodes. Then $\|K - P_n K\| \to 0$, and there is a constant
+$c$ such that for all large $n$:
 
-* `‖K - P_n K‖ → 0`, which is hypothesis (12.1.21);
-* for all large `n` the collocation equations `P_n ((λ - K) u_n) = P_n f` have a unique solution for
-  every right-hand side;
-* and if the exact solution `u` is `C²` with `|u''| ≤ M` on `[a, b]`, then
-  `‖u - u_n‖_∞ ≤ c h_n² M` with `c = |λ| ‖(λ - K)⁻¹‖ / 4` independent of `n`.
+* for every $f \in C[a, b]$ the collocation equations $u_n \in \operatorname{range} P_n$,
+  $P_n (\lambda - K) u_n = P_n f$ have exactly one solution;
+* if $(\lambda - K) u = f$, $u$ is the restriction of a $C^2$ function $g$ with $|g''| \le M$ on
+  $[a, b]$, and $u_n$ solves the collocation equations, then $$\|u - u_n\|_\infty \le c\, h_n^2
+  M.$$
 
-The three ingredients are Lemma 12.1.4 (applied to the compact operator `K`, which is
-`IntegralOperator.isCompactOperator_fredholm`), Theorem 12.1.2, and (12.1.24) combined with the
-interpolation error bound `‖u - P_n u‖ ≤ h_n² M / 8`. -/
+**Generalization.** The source uses the uniform mesh $h = (b - a)/n$, which is the case
+$y_{n,j} = a + j h$.
+
+The convergence $\|K - P_n K\| \to 0$ is hypothesis (12.1.21). It follows from
+`AtkinsonHan.Chapter12.lemma_12_1_4`, since $K$ is compact by
+`IntegralOperator.isCompactOperator_fredholm`. The error bound combines
+`AtkinsonHan.Chapter12.theorem_12_1_2`, (12.1.24) and the interpolation error
+$\|u - P_n u\| \le h_n^2 M / 8$ of `norm_sub_piecewiseLinearInterpCLM_le`. The proof gives
+$c = |\lambda| \|(\lambda - K)^{-1}\| / 4$. -/
 theorem equation_12_2_5 {a b : ℝ} (hab : a ≤ b) {μ : ℝ} (hμ : μ ≠ 0)
     (k : C(Set.Icc a b × Set.Icc a b, ℝ)) {N : ℕ → ℕ} {y : ℕ → ℕ → Set.Icc a b} {h : ℕ → ℝ}
     (hstep : ∀ n, ∀ i ≤ N n, (y n i : ℝ) < (y n (i + 1) : ℝ))
@@ -186,8 +193,9 @@ open scoped Real
 
 local notation "Cₚ" => C(AddCircle (2 * Real.pi), ℝ)
 
-/-- **The Hölder condition (12.2.16) makes every image `K u` Hölder continuous** with constant
-`c ‖u‖`: the hypothesis is uniform in the integration variable, so it survives the integration. -/
+/-- If the kernel satisfies $|k(s, y) - k(t, y)| \le c |s - t|^\alpha$ for all $s, t \in \mathbb{R}$
+and all $y$, with $c \ge 0$, then $|K u(s) - K u(t)| \le c \|u\| |s - t|^\alpha$ for every
+$u \in C_p(2\pi)$. -/
 private theorem holder_kernelCLM_apply {α c : ℝ} (hc : 0 ≤ c)
     {k : C(AddCircle (2 * Real.pi) × AddCircle (2 * Real.pi), ℝ)}
     (hk : ∀ (s t : ℝ) (y : AddCircle (2 * Real.pi)), |k (↑s, y) - k (↑t, y)| ≤ c * |s - t| ^ α)
@@ -218,14 +226,10 @@ private theorem holder_kernelCLM_apply {α c : ℝ} (hc : 0 ≤ c)
         rw [integral_const, probReal_univ, one_smul]
         ring
 
-/-- **The projection error of a Hölder kernel operator**, the heart of both (12.2.17) and the
-uniform analysis of §12.2.4.  If `P` reproduces the trigonometric polynomials of degree at most `n`
-well enough to satisfy the Lebesgue lemma with constant `L`, then
-
-`‖K - P K‖ ≤ L c (π²/2)^α n^{-α}`.
-
-Jackson's theorem supplies the best approximation error of `K u`, which
-`holder_kernelCLM_apply` has just shown to be Hölder of constant `c ‖u‖`. -/
+/-- If the kernel satisfies the Hölder condition (12.2.16) with $0 \le \alpha \le 1$, $n \ge 1$, and
+$P$ is a bounded operator with $\|f - P f\| \le L \operatorname{dist}(f, \mathcal{T}_n)$ for all
+$f$, where $\mathcal{T}_n$ is the space of trigonometric polynomials of degree at most $n$, then
+$\|K - P K\| \le L c (\pi^2/2)^\alpha / n^\alpha$. -/
 private theorem norm_sub_comp_kernelCLM_le {α c : ℝ} (hc : 0 ≤ c) (hα0 : 0 ≤ α) (hα1 : α ≤ 1)
     {k : C(AddCircle (2 * Real.pi) × AddCircle (2 * Real.pi), ℝ)}
     (hk : ∀ (s t : ℝ) (y : AddCircle (2 * Real.pi)), |k (↑s, y) - k (↑t, y)| ≤ c * |s - t| ^ α)
@@ -265,8 +269,8 @@ private theorem norm_sub_comp_kernelCLM_le {α c : ℝ} (hc : 0 ≤ c) (hα0 : 0
     _ = L * (c * (Real.pi ^ 2 / 2) ^ α) / (n : ℝ) ^ α * ‖u‖ := by
         field_simp
 
-/-- `A + B log (2 n + 1) ≤ c log n` for `n ≥ 2`, the step that turns the two Lebesgue constant
-bounds into a clean `𝓞(log n)`. -/
+/-- For $A, B \ge 0$ and $n \ge 2$, $A + B \log(2n + 1) \le (A / \log 2 + B(\log 3 / \log 2 + 1))
+\log n$. -/
 private theorem add_mul_log_le {A B : ℝ} (hA : 0 ≤ A) (hB : 0 ≤ B) {n : ℕ} (hn : 2 ≤ n) :
     A + B * Real.log (2 * (n : ℝ) + 1)
       ≤ (A / Real.log 2 + B * (Real.log 3 / Real.log 2 + 1)) * Real.log n := by
@@ -292,13 +296,14 @@ private theorem add_mul_log_le {A B : ℝ} (hA : 0 ≤ A) (hB : 0 ≤ B) {n : �
     nlinarith [mul_le_mul_of_nonneg_left h2 hB]
   nlinarith
 
-/-- `log n / n^α → 0` for a positive exponent, along the naturals. -/
+/-- For $\alpha > 0$, $\log n / n^\alpha \to 0$ as $n \to \infty$ along the natural numbers. -/
 private theorem tendsto_log_div_rpow {α : ℝ} (hα : 0 < α) :
     Tendsto (fun n : ℕ => Real.log n / (n : ℝ) ^ α) atTop (𝓝 0) :=
   ((isLittleO_log_rpow_atTop hα).tendsto_div_nhds_zero).comp tendsto_natCast_atTop_atTop
 
-/-- The projection equations are uniquely solvable for all large `n` as soon as the projection
-error `‖K - P_n K‖` tends to zero; this is Theorem 12.1.2 read along the filter. -/
+/-- If $P_n$ are bounded projections on a Banach space, $\lambda \neq 0$, $\lambda - K$ is
+invertible and $\|K - P_n K\| \to 0$, then for all large $n$ the projection equations have
+exactly one solution for every right-hand side. -/
 private theorem eventually_existsUnique_projectionSolution {X : Type*} [NormedAddCommGroup X]
     [NormedSpace ℝ X] [CompleteSpace X] {μ : ℝ} (hμ : μ ≠ 0) {K : X →L[ℝ] X} {P : ℕ → X →L[ℝ] X}
     (hP : ∀ n, IsIdempotentElem (P n)) {e : X ≃L[ℝ] X} (he : (e : X →L[ℝ] X) = μ • 1 - K)
@@ -312,27 +317,27 @@ private theorem eventually_existsUnique_projectionSolution {X : Type*} [NormedAd
   obtain ⟨-, -, -, huniq⟩ := theorem_12_1_2 hμ (hP n) e he hn
   exact huniq
 
-/-- **(12.2.17), trigonometric collocation.**  Let `K` be the integral operator on `C_p(2π)` of a
-continuous kernel satisfying the Hölder condition (12.2.16),
+/-- **Equation (12.2.17)** of [han2009theoretical] (trigonometric collocation). Let
+$K u(x) = \int k(x, y) u(y)\, dy$ be the integral operator on $C_p(2\pi)$ of a continuous kernel
+$k$ that satisfies the Hölder condition (12.2.16), $$|k(x, y) - k(\xi, y)| \le c |x -
+\xi|^\alpha \qquad \text{for all } x, \xi \in \mathbb{R} \text{ and all } y,$$ with
+$0 < \alpha \le 1$ and $c \ge 0$. Let $\lambda \neq 0$ be such that $\lambda - K$ is invertible,
+and let $P_n$ be interpolation by trigonometric polynomials of degree at most $n$ at $2n + 1$
+equidistant nodes. Then:
 
-`|k (x, y) - k (ξ, y)| ≤ c |x - ξ|^α`  for all `x, ξ, y`,
+* there is $c' > 0$ with $$\|K - P_n K\| \le c' \frac{\log n}{n^\alpha} \qquad \text{for all } n
+  \ge 2,$$ which is (12.2.17), and hence $\|K - P_n K\| \to 0$, hypothesis (12.1.21) of Theorem
+  12.1.2;
+* there is a sequence $\gamma_n \to 0$ such that for all large $n$ the collocation equations
+  have exactly one solution $u_n$ for every $f$, and $(\lambda - K) u = f$ implies $$\|u -
+  u_n\|_\infty \le |\lambda| (1 + \gamma_n) \|(\lambda - K)^{-1}\| \|u - P_n u\|_\infty.$$
 
-with `0 < α ≤ 1`, let `λ ≠ 0` be such that `λ - K` is invertible, and let `P_n` be interpolation at
-the `2 n + 1` equidistant nodes.  Then:
-
-* `‖K - P_n K‖ ≤ c' log n / n^α` for `n ≥ 2` — this is (12.2.17) — and hence `‖K - P_n K‖ → 0`,
-  which is the hypothesis (12.1.21) of Theorem 12.1.2;
-* for all large `n` the collocation equations `P_n ((λ - K) u_n) = P_n f` are uniquely solvable for
-  every right-hand side, and `‖u - u_n‖_∞ ≤ |λ| (1 + γ_n) ‖(λ - K)⁻¹‖ ‖u - P_n u‖_∞` with
-  `γ_n → 0`.
-
-Lemma 12.1.4 is *not* the route: the Lebesgue constants of trigonometric interpolation grow like
-`log n`, so `P_n u → u` fails for a general continuous `u`.  The estimate is proved directly, from
-Jackson's theorem for the Hölder function `K u` and the Rivlin bound `norm_trigInterpCLM_le` on the
-Lebesgue constants.  The second clause is Theorem 12.1.2 together with Exercise 12.1.3.
-
-The book's two-sided (12.1.24) makes the converse of the error bound true as well, so
-`‖u - u_n‖_∞ → 0` if and only if `‖u - P_n u‖_∞ → 0`, as the book observes. -/
+Lemma 12.1.4 does not apply, because the Lebesgue constants of trigonometric interpolation grow
+like $\log n$ and $P_n u \to u$ fails for some continuous $u$. The estimate is proved directly
+from Jackson's theorem for the Hölder function $K u$ and the bound `norm_trigInterpCLM_le` on
+the Lebesgue constants. The second clause is Theorem 12.1.2 together with Exercise 12.1.3. The
+lower bound of (12.1.24), `AtkinsonHan.Chapter12.equation_12_1_24`, gives the converse, so
+$\|u - u_n\|_\infty \to 0$ if and only if $\|u - P_n u\|_\infty \to 0$, as the source observes. -/
 theorem equation_12_2_17 {α c : ℝ} (hα0 : 0 < α) (hα1 : α ≤ 1) (hc : 0 ≤ c)
     {k : C(AddCircle (2 * Real.pi) × AddCircle (2 * Real.pi), ℝ)}
     (hk : ∀ (s t : ℝ) (y : AddCircle (2 * Real.pi)), |k (↑s, y) - k (↑t, y)| ≤ c * |s - t| ^ α)
@@ -405,21 +410,25 @@ theorem equation_12_2_17 {α c : ℝ} (hα0 : 0 < α) (hα1 : α ≤ 1) (hc : 0 
     htend] with n h1 h2
   exact ⟨h2, h1⟩
 
-/-- **(12.2.27) and the uniform convergence paragraph of §12.2.4.**  Read on the continuous
-periodic functions rather than on `L²`, the Fourier truncation `P_n` is a projection whose norm is
-the `n`-th Lebesgue constant, so
+/-- **Equation (12.2.27)** of [han2009theoretical], with the convergence analysis of §12.2.4 in the
+uniform norm. Let $P_n$ be the truncation of the Fourier series at degree $n$, as an operator on
+$C_p(2\pi)$. Then $$\|P_n\| \le 1 + \log(2n + 1) \qquad \text{for all } n,$$ which is (12.2.27),
+and the norms $\|P_n\|$ are not bounded, so Lemma 12.1.4 does not apply. Let $K$ be the integral
+operator on $C_p(2\pi)$ of a continuous kernel with
+$|k(x, y) - k(\xi, y)| \le c |x - \xi|^\alpha$ for all $x, \xi \in \mathbb{R}$ and all $y$,
+where $0 < \alpha \le 1$ and $c \ge 0$, and let $\lambda \neq 0$ be such that $\lambda - K$ is
+invertible. Then:
 
-`‖P_n‖ ≤ 1 + log (2 n + 1)`,
+* there is $c' > 0$ with $\|K - P_n K\| \le c' \log n / n^\alpha$ for all $n \ge 2$, and hence
+  $\|K - P_n K\| \to 0$;
+* there is a sequence $\gamma_n \to 0$ such that for all large $n$ the Galerkin equations have
+  exactly one solution $u_n$ for every $f$, and $(\lambda - K) u = f$ implies $$\|u -
+  u_n\|_\infty \le |\lambda| (1 + \gamma_n) \|(\lambda - K)^{-1}\| \|u - P_n u\|_\infty.$$
 
-which is (12.2.27); and the family is genuinely unbounded, so Lemma 12.1.4 cannot be applied.
-Nevertheless, for a kernel satisfying the Hölder condition `|k (x, y) - k (ξ, y)| ≤ c |x - ξ|^α`
-the same argument as for trigonometric collocation gives `‖K - P_n K‖ ≤ c' log n / n^α`, hence
-`‖K - P_n K‖ → 0`, and Theorem 12.1.2 yields a complete convergence analysis in the uniform norm:
-for all large `n` the Galerkin equations are uniquely solvable and
-`‖u - u_n‖_∞ ≤ |λ| (1 + γ_n) ‖(λ - K)⁻¹‖ ‖u - P_n u‖_∞` with `γ_n → 0`.
-
-The unboundedness is the lower bound `(4/π²) log n ≤ L_n` of `PeriodicCont.log_le_lebesgueConstant`
-(the book's (3.7.10)), and the upper bound is `PeriodicCont.lebesgueConstant_le`. -/
+The truncation is `PeriodicCont.fourierProj`, whose norm is the $n$-th Lebesgue constant. The
+upper bound is `PeriodicCont.lebesgueConstant_le`, and the unboundedness follows from the lower
+bound $(4/\pi^2) \log n \le L_n$ of `PeriodicCont.log_le_lebesgueConstant`, which is (3.7.10) of
+the source. -/
 theorem equation_12_2_27 {α c : ℝ} (hα0 : 0 < α) (hα1 : α ≤ 1) (hc : 0 ≤ c)
     {k : C(AddCircle (2 * Real.pi) × AddCircle (2 * Real.pi), ℝ)}
     (hk : ∀ (s t : ℝ) (y : AddCircle (2 * Real.pi)), |k (↑s, y) - k (↑t, y)| ≤ c * |s - t| ^ α)
@@ -506,7 +515,7 @@ theorem equation_12_2_27 {α c : ℝ} (hα0 : 0 < α) (hα1 : α ≤ 1) (hc : 0 
 
 end Periodic
 
-/-! ### The Fourier–Galerkin method in `L²` -/
+/-! ### The Fourier–Galerkin method in $L^2$ -/
 
 section Fourier
 
@@ -516,23 +525,18 @@ open scoped Real
 
 local notation "L²p" => Lp ℝ 2 (haarAddCircle (T := 2 * Real.pi))
 
-/-- **(12.2.24), the `L²` truncation error of a Fourier series in the periodic Sobolev scale.**
-If the Fourier coefficients of `u ∈ L²(0, 2π)` satisfy
+/-- **Equation (12.2.24)** of [han2009theoretical]. Let $r \ge 0$, $n \ge 1$ and
+$u \in L^2(0, 2\pi)$, and let $S \ge 0$ satisfy $$\|u\|_{H^r}^2 = |c_0|^2 + \sum_{m \neq 0}
+|m|^{2r} |c_m|^2 = S^2,$$ where $c_m$ are the real Fourier coefficients of $u$. Let $P_n$ be the
+orthogonal projection of $L^2(0, 2\pi)$ onto the trigonometric polynomials of degree at most
+$n$. Then $$\|u - P_n u\|_{L^2} \le \frac{S}{n^r},$$ which is (12.2.24) with the constant $1$.
 
-`‖u‖²_{H^r} = |c₀|² + ∑_{m ≠ 0} |m|^{2r} |c_m|² = S²`,
-
-that is, if `u ∈ H^r(0, 2π)` with `‖u‖_{H^r} = S`, then the Fourier truncation `P_n` of degree `n`
-satisfies
-
-`‖u - P_n u‖_{L²} ≤ S / n^r`,   `n ≥ 1`,
-
-which is (12.2.24) with the constant `c = 1`.
-
-The orthogonal projection is at least as good as the partial sum, whose squared error is the tail
-`∑_{|m| > n} c_m²` of Parseval's identity, and on that tail `|m| ≥ n` makes
-`c_m² ≤ n^{-2r} |m|^{2r} c_m²`.  The Sobolev weight is the `periodicSobolevWeight` of
-`Numlib/Analysis/Sobolev/Periodic`, that is the weight of Definition 7.5.1 of the book, read here
-on the *real* trigonometric system rather than on the complex exponentials. -/
+The orthogonal projection is at least as good as the partial sum of the Fourier series. The
+squared error of the partial sum is the tail $\sum_{|m| > n} c_m^2$ of Parseval's identity, and
+on that tail $c_m^2 \le n^{-2r} |m|^{2r} c_m^2$. The weight is `periodicSobolevWeight`, the
+weight of Definition 7.5.1 of the source, here on the real trigonometric system instead of the
+complex exponentials. The projection is `trigProjCLM` and the coefficients are
+`realFourierCoeff`. -/
 theorem equation_12_2_24 {r : ℝ} (hr : 0 ≤ r) {n : ℕ} (hn : 1 ≤ n) (u : L²p) {S : ℝ}
     (hS0 : 0 ≤ S)
     (hS : HasSum (fun m : ℤ => periodicSobolevWeight r m ^ 2 *
@@ -583,24 +587,20 @@ theorem equation_12_2_24 {r : ℝ} (hr : 0 ≤ r) {n : ℕ} (hn : 1 ≤ n) (u : 
   have h := Real.sqrt_le_sqrt hle
   rwa [Real.sqrt_sq (norm_nonneg _), Real.sqrt_sq (by positivity)] at h
 
-/-- **(12.2.25), the Fourier–Galerkin method in `L²(0, 2π)`.**  Let `K` be a compact operator on
-`L²(0, 2π)` and `λ ≠ 0` with `λ - K` invertible, and let `P_n` be the Fourier truncation.  Then
-there is an `M` such that, for all large `n`, the Galerkin equations `P_n ((λ - K) u_n) = P_n f`
-are uniquely solvable for every right-hand side, and whenever the exact solution lies in
-`H^r(0, 2π)` with `‖u‖_{H^r} = S`,
+/-- **Equation (12.2.25)** of [han2009theoretical] (the Fourier–Galerkin method in $L^2(0, 2\pi)$).
+Let $K$ be a compact operator on $L^2(0, 2\pi)$, let $\lambda \neq 0$ be such that $\lambda - K$
+is invertible, let $r \ge 0$, and let $P_n$ be the truncation of the Fourier series at degree
+$n$. Then there is a constant $M$ such that for all large $n$ the Galerkin equations have
+exactly one solution $u_n$ for every $f$, and if $(\lambda - K) u = f$ with $\|u\|_{H^r} = S$,
+then $$\|u - u_n\|_{L^2} \le |\lambda| M \frac{S}{n^r}.$$
 
-`‖u - u_n‖_{L²} ≤ |λ| M S / n^r`.
-
-The projections are orthogonal, so they are uniformly bounded of norm at most one
-(`norm_trigProjCLM_le_one`) and converge pointwise (`tendsto_trigProjCLM`); Lemma 12.1.4 therefore
-gives `‖K - P_n K‖ → 0` and Theorem 12.1.2 applies.  The rate is `equation_12_2_24` fed into
-(12.1.24).
-
-Compactness of `K` is a hypothesis rather than a consequence: on `C[a, b]` the compactness of a
-continuous-kernel operator is `IntegralOperator.isCompactOperator_kernelCLM`, but on `L²` it is the
-Hilbert–Schmidt theorem, which the library does not have — `IntegralOperator.l2KernelCLM` of
-`Numlib/IntegralEquations/L2Kernel` bounds the operator and computes its adjoint but does not show
-it compact.  The book likewise takes the compactness from its Chapter 2. -/
+The norm $\|u\|_{H^r} = S$ is the hypothesis of `AtkinsonHan.Chapter12.equation_12_2_24`. The
+projections are orthogonal, so $\|P_n\| \le 1$ (`norm_trigProjCLM_le_one`), and they converge
+pointwise (`tendsto_trigProjCLM`). Lemma 12.1.4 therefore gives $\|K - P_n K\| \to 0$, Theorem
+12.1.2 applies, and the rate is `AtkinsonHan.Chapter12.equation_12_2_24` inserted into
+(12.1.24). Compactness of $K$ is a hypothesis: for an operator with a kernel on $L^2$ it is the
+Hilbert–Schmidt theorem, which the library does not have, and the source takes it from its
+Chapter 2. -/
 theorem equation_12_2_25 {K : L²p →L[ℝ] L²p} (hK : IsCompactOperator K) {μ : ℝ} (hμ : μ ≠ 0)
     {e : L²p ≃L[ℝ] L²p} (he : (e : L²p →L[ℝ] L²p) = μ • 1 - K) {r : ℝ} (hr : 0 ≤ r) :
     ∃ M : ℝ, ∀ᶠ n in atTop,
@@ -639,7 +639,7 @@ theorem equation_12_2_25 {K : L²p →L[ℝ] L²p} (hK : IsCompactOperator K) {�
 
 end Fourier
 
-/-! ### The piecewise linear Galerkin method in `L²` -/
+/-! ### The piecewise linear Galerkin method in $L^2$ -/
 
 section Galerkin
 
@@ -647,28 +647,29 @@ open MeasureTheory IntegralOperator
 
 variable {a b : ℝ}
 
-/-- **(12.2.19), the piecewise linear Galerkin method of §12.2.3.**  Let `K` be a compact operator
-on `L²(a, b)`, let `λ ≠ 0` be such that `λ - K` is invertible, and let `P_n` be the `L²`-orthogonal
-projection onto the continuous piecewise linear functions of a sequence of partitions of `[a, b]`
-whose mesh `h_n` tends to zero.  Then:
+/-- **Equation (12.2.19)** of [han2009theoretical] (the piecewise linear Galerkin method of
+§12.2.3). Let $a \le b$, let $K$ be a compact operator on $L^2(a, b)$, and let $\lambda \neq 0$
+be such that $\lambda - K$ is invertible. For each $n$ let
+$a = y_{n,0} < \dots < y_{n,N_n+1} = b$ be a partition whose subintervals have length at most
+$h_n$, with $h_n \to 0$, and let $P_n$ be the $L^2$-orthogonal projection onto the continuous
+functions that are linear on each subinterval. Then $\|K - P_n K\| \to 0$, and there is a
+constant $M$ such that for all large $n$:
 
-* `‖K - P_n K‖ → 0`, which is (12.1.21);
-* for all large `n` the Galerkin equations `P_n ((λ - K) u_n) = P_n f` have a unique solution for
-  every right-hand side;
-* and if the exact solution is (the class of) a `C²` function with `|u''| ≤ M₂` on `[a, b]`, then
+* for every $f \in L^2(a, b)$ the Galerkin equations have exactly one solution $u_n$;
+* if $(\lambda - K) u = f$, where $u$ is the class of a continuous function on $[a, b]$ that is
+  the restriction of a $C^2$ function $g$ with $|g''| \le M_2$ on $[a, b]$, and $u_n$ solves the
+  Galerkin equations, then $$\|u - u_n\|_{L^2} \le |\lambda| M \sqrt{b - a}\, \frac{h_n^2}{8}
+  M_2.$$
 
-  `‖u - u_n‖_{L²} ≤ |λ| M √(b - a) h_n² M₂ / 8`
+**Generalization.** The source uses the uniform mesh $h = (b - a)/n$, which is a special case.
 
-  with `M = 2 ‖(λ - K)⁻¹‖` independent of `n`.
-
-The projections have norm one for free, being orthogonal, and converge pointwise by
-`tendsto_piecewiseLinearProjCLM`, so Lemma 12.1.4 applies; the approximation-theoretic input is
-(12.2.18) followed by `norm_sub_piecewiseLinearInterpCLM_le`, exactly as the book does it — no `L²`
-interpolation estimate is needed.
-
-Compactness of `K` on `L²` is a hypothesis, as it is in `equation_12_2_25`: on `C[a, b]` the
-compactness of a continuous-kernel operator is `IntegralOperator.isCompactOperator_fredholm`, but on
-`L²` it is the Hilbert–Schmidt theorem, which the library does not have. -/
+The projections are orthogonal and converge pointwise by `tendsto_piecewiseLinearProjCLM`, so
+Lemma 12.1.4 applies. The approximation bound is (12.2.18), that is
+`norm_sub_piecewiseLinearProjCLM_le` and `IntegralOperator.norm_iccToLp_le`, followed by the
+uniform interpolation bound `norm_sub_piecewiseLinearInterpCLM_le`, as in the source. The proof
+gives $M = 2 \|(\lambda - K)^{-1}\|$. The measure is `IntegralOperator.iccMeasure a b`, and
+`IntegralOperator.iccToLp` maps a continuous function to its class. Compactness of $K$ is a
+hypothesis, as in `AtkinsonHan.Chapter12.equation_12_2_25`. -/
 theorem equation_12_2_19 (hab : a ≤ b) {μ : ℝ} (hμ : μ ≠ 0)
     {K : Lp ℝ 2 (IntegralOperator.iccMeasure a b) →L[ℝ]
       Lp ℝ 2 (IntegralOperator.iccMeasure a b)} (hK : IsCompactOperator K)

@@ -11,113 +11,124 @@ import Numlib.Approximation.NodalInterpolation
 import Numlib.FiniteElement.Interpolation
 
 /-!
-# Atkinson–Han §10.2: affine-equivalent finite elements
+# Atkinson and Han, Section 10.2: Affine-equivalent finite elements
 
-Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework*, 3rd edition, Springer, 2009, §10.2.
-
-The section builds the finite element machinery on a polygon: triangulations, the local spaces
-`ℙ_k` on a triangle, barycentric coordinates, and the affine map (10.2.25)
-`F_K(x̂) = T_K x̂ + b_K` carrying the reference element `K̂` onto an element `K`. The triangulation
-axioms (1)–(4) are the backbone's `Triangulation` (`Numlib/Geometry/Triangulation.lean`), and the
-linear element space on a triangulation, Example 10.2.3, is `example_10_2_3` at the end of this
-file. The model boundary value problem in `H¹(Ω)` is out of scope — not for want of the space,
-which is `Chapter07.definition_7_2_2_multiIndex`, but for the trace on the boundary of §7.3 that
-its Neumann data need; **the rest of the section is not**, and it is what this file holds.
-
-Lemma 10.2.2's proof uses only two facts about the sets involved: a ball of diameter `ρ̂` sits
-inside `K̂`, and `K` has diameter `h_K`. No triangle, no polynomial space and no Sobolev norm. The
-nodal representation formulas (10.2.23), Exercise 10.2.1 and Exercise 10.2.3 are finite algebraic
-identities on the reference element.
-
-The book's matrix norm is the spectral norm, the operator norm induced by the Euclidean vector
-norm, so `T_K` is read as a continuous linear equivalence of `EuclideanSpace ℝ (Fin d)` and
-`‖T_K‖`, `‖T_K⁻¹‖` are the operator norms of `T_K` and of its inverse.
-
-The quantities `ρ̂` and `ρ_K` — the diameters of the largest inscribed balls — enter the statement
-only through the containment of *one* inscribed ball, so the hypothesis is
-`Metric.closedBall ĉ (ρ̂ / 2) ⊆ K̂` rather than a definition of the inradius, which Mathlib does not
-have. The bound for the largest inscribed ball follows by taking `ρ̂` as large as the containment
-allows.
+This module formalizes Section 10.2 of [han2009theoretical] apart from its model boundary value
+problem. The section builds the finite element setting on a polygon: triangulations, the local
+spaces $\mathbb{P}_k$ on a triangle, barycentric coordinates, and the affine map (10.2.25)
+$F_K(\hat x) = T_K \hat x + b_K$ of the reference element $\hat K$ onto an element $K$. Lemma 10.2.2
+bounds the matrix norms by $\|T_K\| \le h_K / \hat\rho$ and $\|T_K^{-1}\| \le \hat h / \rho_K$,
+where $h_K$ and $\hat h$ are the diameters of $K$ and $\hat K$, and $\rho_K$ and $\hat\rho$ are the
+diameters of balls inscribed in them. On the reference triangle with the barycentric coordinates
+$\hat\lambda_1, \hat\lambda_2, \hat\lambda_3$, a quadratic function is represented by its values at
+the vertices $\hat a_i$ and at the side mid-points $\hat a_{ij}$ (10.2.23): $$\hat v = \sum_{i=1}^3
+\hat v(\hat a_i) \, \hat\lambda_i (2 \hat\lambda_i - 1) + \sum_{1 \le i < j \le 3} 4 \hat v(\hat
+a_{ij}) \, \hat\lambda_i \hat\lambda_j.$$ Exercises 10.2.1 and 10.2.3 give the same kind of
+representation for cubic functions on the principal lattice $\hat N_3$ and for bilinear functions on
+the reference square. Proposition 10.2.1 says that $\mathbb{P}_k$ is unisolvent on the principal
+lattice $\hat N_k$, and Example 10.2.3 builds the continuous piecewise linear element space on a
+triangulation. The results specialize `Numlib.FiniteElement.Interpolation`,
+`Numlib.FiniteElement.LagrangeElement`, `Numlib.Approximation.NodalInterpolation` and
+`Numlib.Analysis.Sobolev.Triangulation`.
 
 ## Main definitions
 
-* `refBary` — the barycentric coordinates `λ̂₁, λ̂₂, λ̂₃` of the reference triangle.
-* `quadraticNode` and `quadraticShape` — the six nodes of (10.2.23), three vertices and three side
-  mid-points, and the six shape functions `λ̂ᵢ(2λ̂ᵢ − 1)` and `4λ̂ᵢλ̂ⱼ` dual to them.
-* `cubicNode` and `cubicShape` — the ten points of the principal lattice `N̂₃` and the ten shape
-  functions of Exercise 10.2.1.
-* `bilinearNode` and `bilinearShape` — the four vertices of the reference square and the four
-  products `(1 ∓ x̂₁)(1 ∓ x̂₂)` of Exercise 10.2.3.
+* Section 10.2, `AtkinsonHan.Chapter10.refBary`: the barycentric coordinates
+  $\hat\lambda_1, \hat\lambda_2, \hat\lambda_3$ of the reference triangle.
+* Equation (10.2.23), `AtkinsonHan.Chapter10.quadraticNode`: the three vertices and the three side
+  mid-points of the reference triangle.
+* Equation (10.2.23), `AtkinsonHan.Chapter10.quadraticShape`: the six shape functions
+  $\hat\lambda_i (2 \hat\lambda_i - 1)$ and $4 \hat\lambda_i \hat\lambda_j$.
+* Exercise 10.2.1, `AtkinsonHan.Chapter10.cubicNode`: the ten points of the principal lattice
+  $\hat N_3$.
+* Exercise 10.2.1, `AtkinsonHan.Chapter10.cubicShape`: the ten cubic shape functions dual to these
+  points.
+* Exercise 10.2.3, `AtkinsonHan.Chapter10.bilinearNode`: the four vertices of the reference square
+  $[0, 1]^2$.
+* Exercise 10.2.3, `AtkinsonHan.Chapter10.bilinearShape`: the four bilinear shape functions
+  $(1 - \hat x_1)(1 - \hat x_2)$, $\hat x_1 (1 - \hat x_2)$, $(1 - \hat x_1) \hat x_2$,
+  $\hat x_1 \hat x_2$.
 
 ## Main results
 
-* `lemma_10_2_2` — the bounds `‖T_K‖ ≤ h_K / ρ̂` and `‖T_K⁻¹‖ ≤ ĥ / ρ_K` for the affine map of an
-  affine-equivalent family: the backbone's `FiniteElement.opNorm_le_diam_div_of_image`.
-* `quadraticShape_isNodalBasis`, `cubicShape_isNodalBasis`, `bilinearShape_isNodalBasis` — each
-  family of shape functions is dual to its nodes. For the quadratic element this is exactly the pair
-  of observations (1) and (2) from which the book derives (10.2.23).
-* `equation_10_2_23`, `exercise_10_2_1`, `exercise_10_2_3` — the nodal representations themselves:
-  interpolation at those nodes with those shape functions reproduces every polynomial of the space.
-* `proposition_10_2_1` — unisolvence of `ℙ_k` on the principal lattice `N̂_k`, for every `k ≥ 1`:
-  the backbone's `LagrangeElement.bijective_latticeEval`.
-* `example_10_2_3` — the linear element space on a triangulation: the representation (10.2.28)
-  in barycentric coordinates, the conformity across the edges, and the global continuity and
-  `H¹`-membership of the glued piecewise linear function.
+* Equation (10.2.23), `AtkinsonHan.Chapter10.quadraticShape_isNodalBasis`: the six quadratic shape
+  functions are dual to the six nodes.
+* Equation (10.2.23), `AtkinsonHan.Chapter10.equation_10_2_23`: the nodal representation of a
+  quadratic function on the reference triangle.
+* Proposition 10.2.1, `AtkinsonHan.Chapter10.proposition_10_2_1`: for $k \ge 1$, a polynomial in
+  $\mathbb{P}_k$ is determined by its values on $\hat N_k$.
+* Lemma 10.2.2, `AtkinsonHan.Chapter10.lemma_10_2_2`: $\|T_K\| \le h_K / \hat\rho$ and
+  $\|T_K^{-1}\| \le \hat h / \rho_K$.
+* Example 10.2.3, `AtkinsonHan.Chapter10.example_10_2_3`: the linear element is conforming, and the
+  glued piecewise linear function is continuous on $\bar\Omega$ and lies in $H^1(\Omega)$.
+* Exercise 10.2.1, `AtkinsonHan.Chapter10.cubicShape_isNodalBasis`: the ten cubic shape functions
+  are dual to the ten nodes.
+* Exercise 10.2.1, `AtkinsonHan.Chapter10.exercise_10_2_1`: the nodal representation of a cubic
+  function on $\hat N_3$.
+* Exercise 10.2.3, `AtkinsonHan.Chapter10.bilinearShape_isNodalBasis`: the four bilinear shape
+  functions are dual to the four vertices.
+* Exercise 10.2.3, `AtkinsonHan.Chapter10.exercise_10_2_3`: the nodal representation of a bilinear
+  function on the reference square.
 
-The `ℙ_k` Lagrange element on the principal lattice, on `EuclideanSpace ℝ (Fin 2)` — nodal,
-reproducing `ℙ_k`, and conforming on every triangulation (the book's remark after Example 10.2.3,
-and Exercise 10.2.4 at `k = 2`) — is the backbone's `LagrangeElement.node`,
-`LagrangeElement.shape`, `LagrangeElement.isConformingElement`
-(`Numlib/FiniteElement/LagrangeElement.lean`).
+## Implementation notes
 
-## Deviations from the book
+* The matrix norm of the source is the spectral norm, the operator norm induced by the Euclidean
+  vector norm. So $T_K$ is a continuous linear equivalence of `EuclideanSpace ℝ (Fin d)`, and
+  $\|T_K\|$ and $\|T_K^{-1}\|$ are operator norms.
+* The proof of Lemma 10.2.2 uses only two facts about the sets: a ball of diameter $\hat\rho$ lies
+  in $\hat K$, and $K$ has diameter $h_K$. So the hypothesis is the inclusion
+  `Metric.closedBall cref (ρref / 2) ⊆ Kref` of one inscribed ball, and no inradius is defined;
+  Mathlib has no inradius. The bound for the largest inscribed ball follows by taking $\hat\rho$ as
+  large as the inclusion permits.
+* The nodal representations are stated on `ℝ × ℝ`, the $\mathbb{R}^2$ of the source, and not on
+  `EuclideanSpace ℝ (Fin 2)`. They are algebraic identities in which no norm, inner product or
+  measure appears. The reference triangle has the vertices $(0, 0)$, $(1, 0)$ and $(0, 1)$, so that
+  $\hat\lambda_1 = 1 - \hat x_1 - \hat x_2$, $\hat\lambda_2 = \hat x_1$ and
+  $\hat\lambda_3 = \hat x_2$. The reference square is $[0, 1]^2$, as in Section 10.3.
+* The triangulation axioms (1)–(4) of the source are the backbone structure `Triangulation`.
+* The $\mathbb{P}_k$ Lagrange element on the principal lattice is nodal, reproduces $\mathbb{P}_k$,
+  and is conforming on every triangulation. This is the remark after Example 10.2.3, and for $k = 2$
+  it is Exercise 10.2.4. It is in the backbone as `LagrangeElement.node`, `LagrangeElement.shape`
+  and `LagrangeElement.isConformingElement`.
+* The $H^1$-conformity of a continuous piecewise $C^1$ function, on which Example 10.2.3 rests, is
+  `Triangulation.memSobolev_of_piecewise`.
+* Proposition 10.2.1 is proved in the backbone as `LagrangeElement.bijective_latticeEval`, with an
+  explicit nodal basis and a count of dimensions. The proof needs neither an induction on $k$ nor
+  the divisibility of a polynomial that vanishes on a line by the affine form of that line. Its
+  cases $k = 2$ and $k = 3$ are `AtkinsonHan.Chapter10.equation_10_2_23` and
+  `AtkinsonHan.Chapter10.exercise_10_2_1`, which are proved independently of it.
 
-The nodal representations are stated on `ℝ × ℝ`, the book's `ℝ²`, rather than on
-`EuclideanSpace ℝ (Fin 2)`: they are affine-algebraic identities in which no norm, inner product or
-measure appears, and the product type is what `ring` reads. The reference triangle is the one with
-vertices `(0,0)`, `(1,0)`, `(0,1)`, so that `λ̂₁ = 1 − x̂₁ − x̂₂`, `λ̂₂ = x̂₁` and `λ̂₃ = x̂₂`; the
-reference square is `[0,1]²`, as in §10.3.
+## Deviations from the source
 
-The book quantifies (10.2.23) over `v̂ ∈ X̂₂`, the space of `ℙ₂(K̂)` functions "determined by" their
-values at the six nodes. `ℙ₂(K̂)` *is* the set of `c₀ + c₁x + c₂y + c₃x² + c₄xy + c₅y²`, so the
-statement is a universally quantified identity in the six coefficients; likewise for the cubic and
-the bilinear case. Stating it so is what makes it independent of Proposition 10.2.1: the
-representation is proved rather than deduced from unisolvence, and unisolvence over the space then
-follows from it.
+* **Equation (10.2.23), Exercises 10.2.1 and 10.2.3** (reading). The source quantifies over the
+  functions of the local space that are "determined by" their values at the nodes. The statements
+  quantify over the coefficients of a general polynomial of the space. See
+  `AtkinsonHan.Chapter10.equation_10_2_23`.
 
-## Not formalized here
+## Not formalized
 
-The model Neumann problem (10.2.4)–(10.2.12), whose boundary term needs the trace on `Γ`;
-Exercise 10.2.5, the `H(div)`-conformity of a piecewise `H¹` vector field (Exercise 10.2.4, the
-`H¹`-conformity of the quadratic element, is the case `k = 2` of the backbone's
-`LagrangeElement.isConformingElement`).
-The `H¹`-conformity of a continuous piecewise-`C¹` function, on which Example 10.2.3 rests, is
-the backbone's `Triangulation.memSobolev_of_piecewise`
-(`Numlib/Analysis/Sobolev/Triangulation.lean`).
-Proposition 10.2.1, the unisolvence of `ℙ_k` on the principal lattice for *every* `k`, is proved in
-the backbone (`LagrangeElement.bijective_latticeEval`). It was planned as the hard item of the
-chapter, on the ground that the classical induction needs the divisibility of a polynomial vanishing
-on a line by the affine form of that line; the proof there uses no divisibility and no induction,
-only the explicit nodal basis and a dimension count. Its cases `k = 2` and `k = 3` are
-`equation_10_2_23` and `exercise_10_2_1`, proved independently of it.
+* **The model Neumann problem (10.2.4)–(10.2.12).** Its boundary term needs the trace on $\Gamma$.
+* **Exercise 10.2.5**, the $H(\operatorname{div})$-conformity of a piecewise $H^1$ vector field.
 -/
 
 namespace AtkinsonHan.Chapter10
 
 variable {d : ℕ}
 
-/-- **Lemma 10.2.2.**  Let `F_K x̂ = T_K x̂ + b_K` be the affine bijection (10.2.25) of the
-reference element `K̂` onto the element `K`, let a ball of diameter `ρ̂` lie in `K̂` and a ball of
-diameter `ρ_K` in `K`, and write `h_K = diam K`, `ĥ = diam K̂`. Then
+/-- **Lemma 10.2.2** of [han2009theoretical]. Let $\hat K, K \subseteq \mathbb{R}^d$ be bounded
+sets, and let $F_K(\hat x) = T_K \hat x + b_K$ be an affine map with $T_K$ a linear isomorphism
+of $\mathbb{R}^d$ and $F_K(\hat K) = K$ (10.2.25). Let $\hat\rho > 0$ and $\rho_K > 0$, and let
+$\hat K$ contain a closed ball of diameter $\hat\rho$ and $K$ a closed ball of diameter
+$\rho_K$. Write $h_K = \operatorname{diam} K$ and $\hat h = \operatorname{diam} \hat K$. Then
+$$\|T_K\| \le \frac{h_K}{\hat\rho} \qquad \text{and} \qquad \|T_K^{-1}\| \le \frac{\hat
+h}{\rho_K}.$$
 
-  `‖T_K‖ ≤ h_K / ρ̂`  and  `‖T_K⁻¹‖ ≤ ĥ / ρ_K`.
-
-The two halves are the same statement with the roles of `K̂` and `K` exchanged, the second applied
-to the inverse map `y ↦ T_K⁻¹ y - T_K⁻¹ b_K`, which is the affine map carrying `K` onto `K̂`.
-
-Both elements are assumed bounded, as the book's elements — closed triangles — are: `Metric.diam`
-of an unbounded set is `0`, and the bounds would then be false rather than vacuous. -/
+The norms are the operator norms induced by the Euclidean norm. The two bounds are the same
+statement with $\hat K$ and $K$ exchanged; the second applies the first to the inverse map
+$y \mapsto T_K^{-1} y - T_K^{-1} b_K$, which carries $K$ onto $\hat K$. Both sets are assumed
+bounded, as the closed triangles of the source are: `Metric.diam` of an unbounded set is $0$,
+and the bounds would then be false. The proof specializes
+`FiniteElement.opNorm_le_diam_div_of_image`. -/
 theorem lemma_10_2_2 {Kref K : Set (EuclideanSpace ℝ (Fin d))}
     {T : EuclideanSpace ℝ (Fin d) ≃L[ℝ] EuclideanSpace ℝ (Fin d)}
     {b cref c : EuclideanSpace ℝ (Fin d)} {ρref ρK : ℝ} (hρref : 0 < ρref) (hρK : 0 < ρK)
@@ -132,21 +143,29 @@ theorem lemma_10_2_2 {Kref K : Set (EuclideanSpace ℝ (Fin d))}
 
 /-! ### Nodal representations on the reference element -/
 
-/-- **The barycentric coordinates of the reference triangle** with vertices `â₁ = (0,0)`,
-`â₂ = (1,0)` and `â₃ = (0,1)`: `λ̂₁ = 1 − x̂₁ − x̂₂`, `λ̂₂ = x̂₁`, `λ̂₃ = x̂₂`. They sum to `1`, are
-affine, and `λ̂ᵢ(âⱼ) = δᵢⱼ`, which is what makes them the shape functions of the linear element
-(`AtkinsonHan.Chapter10.example_10_3_2` states the last property for a general simplex, through
-`AffineBasis.coord`). -/
+/-- **Section 10.2** of [han2009theoretical], the barycentric coordinates of the reference triangle
+with the vertices $\hat a_1 = (0, 0)$, $\hat a_2 = (1, 0)$ and $\hat a_3 = (0, 1)$:
+$$\hat\lambda_1 = 1 - \hat x_1 - \hat x_2, \qquad \hat\lambda_2 = \hat x_1, \qquad
+\hat\lambda_3 = \hat x_2.$$
+
+They are affine, they sum to $1$, and $\hat\lambda_i(\hat a_j) = \delta_{ij}$, so they are the
+shape functions of the linear element. The indices run from $0$ to $2$.
+`AtkinsonHan.Chapter10.example_10_3_2` states the last property for a general simplex, with
+`AffineBasis.coord`. -/
 noncomputable def refBary : Fin 3 → ℝ × ℝ → ℝ :=
   ![fun p => 1 - p.1 - p.2, fun p => p.1, fun p => p.2]
 
-/-- **The six nodes of the quadratic element**: the three vertices `âᵢ` of the reference triangle
-followed by the three side mid-points `âᵢⱼ = (âᵢ + âⱼ)/2`, in the order `â₁₂`, `â₁₃`, `â₂₃`. -/
+/-- **Equation (10.2.23)** of [han2009theoretical], the six nodes of the quadratic element: the
+three vertices $\hat a_1, \hat a_2, \hat a_3$ of the reference triangle, followed by the three
+side mid-points $\hat a_{ij} = (\hat a_i + \hat a_j) / 2$ in the order $\hat a_{12}$,
+$\hat a_{13}$, $\hat a_{23}$. -/
 noncomputable def quadraticNode : Fin 6 → ℝ × ℝ :=
   ![(0, 0), (1, 0), (0, 1), (1 / 2, 0), (0, 1 / 2), (1 / 2, 1 / 2)]
 
-/-- **The six shape functions of (10.2.23)**: `λ̂ᵢ(2λ̂ᵢ − 1)` at the vertices and `4λ̂ᵢλ̂ⱼ` at the
-side mid-points, in the order of `quadraticNode`. -/
+/-- **Equation (10.2.23)** of [han2009theoretical], the six shape functions of the quadratic
+element: $\hat\lambda_i (2 \hat\lambda_i - 1)$ for the vertices $\hat a_i$ and
+$4 \hat\lambda_i \hat\lambda_j$ for the side mid-points $\hat a_{ij}$, in the order of
+`AtkinsonHan.Chapter10.quadraticNode`. -/
 noncomputable def quadraticShape : Fin 6 → ℝ × ℝ → ℝ :=
   ![fun p => refBary 0 p * (2 * refBary 0 p - 1),
     fun p => refBary 1 p * (2 * refBary 1 p - 1),
@@ -155,10 +174,14 @@ noncomputable def quadraticShape : Fin 6 → ℝ × ℝ → ℝ :=
     fun p => 4 * refBary 0 p * refBary 2 p,
     fun p => 4 * refBary 1 p * refBary 2 p]
 
-/-- **The two observations the book derives (10.2.23) from**: `λ̂ᵢ(2λ̂ᵢ − 1)` takes the value `1` at
-`âᵢ` and `0` at the other vertices and at every side mid-point, and `4λ̂ᵢλ̂ⱼ` takes the value `1` at
-`âᵢⱼ` and `0` at every other node. Together they say that the six shape functions are dual to the
-six nodes. -/
+/-- **Equation (10.2.23)** of [han2009theoretical], the two observations from which the source
+derives (10.2.23). The function $\hat\lambda_i (2 \hat\lambda_i - 1)$ is $1$ at $\hat a_i$ and
+$0$ at the other vertices and at every side mid-point. The function
+$4 \hat\lambda_i \hat\lambda_j$ is $1$ at $\hat a_{ij}$ and $0$ at every other node. Together
+they say that the six shape functions are dual to the six nodes:
+$\hat\phi_i(\hat x_j) = \delta_{ij}$.
+
+The statement is `Approximation.IsNodalBasis`. -/
 theorem quadraticShape_isNodalBasis : Approximation.IsNodalBasis quadraticNode quadraticShape where
   eval_self i := by
     fin_cases i <;> simp [quadraticNode, quadraticShape, refBary] <;> norm_num
@@ -168,13 +191,21 @@ theorem quadraticShape_isNodalBasis : Approximation.IsNodalBasis quadraticNode q
         | exact absurd rfl hij
         | (simp [quadraticNode, quadraticShape, refBary] <;> norm_num)
 
-/-- **(10.2.23)**, the nodal representation of a quadratic on the reference triangle:
+/-- **Equation (10.2.23)** of [han2009theoretical], the nodal representation of a quadratic function
+on the reference triangle. For every quadratic function $\hat v(\hat x) = c_0 + c_1 \hat x_1 +
+c_2 \hat x_2 + c_3 \hat x_1^2 + c_4 \hat x_1 \hat x_2 + c_5 \hat x_2^2$, $$\hat v = \sum_{i=1}^3
+\hat v(\hat a_i) \, \hat\lambda_i (2 \hat\lambda_i - 1) + \sum_{1 \le i < j \le 3} 4 \hat v(\hat
+a_{ij}) \, \hat\lambda_i \hat\lambda_j.$$
 
-  `v̂ = Σᵢ v̂(âᵢ) λ̂ᵢ (2λ̂ᵢ − 1) + Σ_{i<j} 4 v̂(âᵢⱼ) λ̂ᵢ λ̂ⱼ`.
+**Reading.** The source states (10.2.23) for $\hat v$ in the space $\hat X_2$ of the functions
+in $\mathbb{P}_2(\hat K)$ that are "determined by" their values at the six nodes. Since
+$\mathbb{P}_2(\hat K)$ is the set of the functions above, the statement is an identity in the
+six free coefficients. In this form it does not depend on Proposition 10.2.1: the representation
+is proved directly, and the unisolvence on the space follows from it.
 
-A quadratic is a `v̂(x̂) = c₀ + c₁x̂₁ + c₂x̂₂ + c₃x̂₁² + c₄x̂₁x̂₂ + c₅x̂₂²`, so the claim is an
-identity between polynomials in `x̂` with the six coefficients free — the `k = 2` case of
-Proposition 10.2.1, proved without it. -/
+The right-hand side is `Approximation.nodalInterp` with the nodes
+`AtkinsonHan.Chapter10.quadraticNode` and the shape functions
+`AtkinsonHan.Chapter10.quadraticShape`. This is the case $k = 2$ of Proposition 10.2.1. -/
 theorem equation_10_2_23 (c₀ c₁ c₂ c₃ c₄ c₅ : ℝ) :
     Approximation.nodalInterp quadraticNode quadraticShape
         (fun p : ℝ × ℝ => c₀ + c₁ * p.1 + c₂ * p.2 + c₃ * p.1 ^ 2 + c₄ * p.1 * p.2 + c₅ * p.2 ^ 2)
@@ -184,16 +215,19 @@ theorem equation_10_2_23 (c₀ c₁ c₂ c₃ c₄ c₅ : ℝ) :
   simp [Approximation.nodalInterp_apply, Fin.sum_univ_succ, quadraticNode, quadraticShape, refBary]
   ring
 
-/-- **The ten points of the principal lattice `N̂₃`** (10.2.24) for `k = 3`: the three vertices, the
-six points dividing the sides in thirds — the point with barycentric coordinates `2/3` at `âᵢ` and
-`1/3` at `âⱼ`, for the ordered pairs `(1,2), (2,1), (1,3), (3,1), (2,3), (3,2)` — and the
-centroid. -/
+/-- **Exercise 10.2.1** of [han2009theoretical], the ten points of the principal lattice $\hat N_3$
+(10.2.24) for $k = 3$. They are the three vertices, the six points that divide the sides into
+thirds, and the centroid. The point on a side is the one with the barycentric coordinate $2/3$
+at $\hat a_i$ and $1/3$ at $\hat a_j$, for the ordered pairs $(i, j) = (1, 2), (2, 1), (1, 3),
+(3, 1), (2, 3), (3, 2)$ in this order. -/
 noncomputable def cubicNode : Fin 10 → ℝ × ℝ :=
   ![(0, 0), (1, 0), (0, 1), (1 / 3, 0), (2 / 3, 0), (0, 1 / 3), (0, 2 / 3), (2 / 3, 1 / 3),
     (1 / 3, 2 / 3), (1 / 3, 1 / 3)]
 
-/-- **The ten cubic shape functions** dual to `cubicNode`: `λ̂ᵢ(3λ̂ᵢ − 1)(3λ̂ᵢ − 2)/2` at the
-vertices, `9 λ̂ᵢ λ̂ⱼ (3λ̂ᵢ − 1)/2` at the side points, and `27 λ̂₁λ̂₂λ̂₃` at the centroid. -/
+/-- **Exercise 10.2.1** of [han2009theoretical], the ten cubic shape functions dual to
+`AtkinsonHan.Chapter10.cubicNode`: $\hat\lambda_i (3 \hat\lambda_i - 1)(3 \hat\lambda_i - 2) /
+2$ for the vertices, $9 \hat\lambda_i \hat\lambda_j (3 \hat\lambda_i - 1) / 2$ for the side
+points, and $27 \hat\lambda_1 \hat\lambda_2 \hat\lambda_3$ for the centroid. -/
 noncomputable def cubicShape : Fin 10 → ℝ × ℝ → ℝ :=
   ![fun p => refBary 0 p * (3 * refBary 0 p - 1) * (3 * refBary 0 p - 2) / 2,
     fun p => refBary 1 p * (3 * refBary 1 p - 1) * (3 * refBary 1 p - 2) / 2,
@@ -208,7 +242,8 @@ noncomputable def cubicShape : Fin 10 → ℝ × ℝ → ℝ :=
 
 set_option maxHeartbeats 1000000 in
 -- the duality is a hundred numeric evaluations, one for each ordered pair of the ten nodes
-/-- The ten cubic shape functions are dual to the ten points of `N̂₃`. -/
+/-- **Exercise 10.2.1** of [han2009theoretical]. The ten cubic shape functions are dual to the ten
+points of $\hat N_3$: $\hat\phi_i(\hat x_j) = \delta_{ij}$. -/
 theorem cubicShape_isNodalBasis : Approximation.IsNodalBasis cubicNode cubicShape where
   eval_self i := by
     fin_cases i <;> simp [cubicNode, cubicShape, refBary] <;> norm_num
@@ -220,9 +255,15 @@ theorem cubicShape_isNodalBasis : Approximation.IsNodalBasis cubicNode cubicShap
 
 set_option maxHeartbeats 1000000 in
 -- `ring` on a cubic identity in two variables with ten free coefficients
-/-- **Exercise 10.2.1.**  A cubic on the reference triangle is represented by its values at the ten
-points of the principal lattice `N̂₃`, through the shape functions `cubicShape`. It is (10.2.23) one
-degree higher, and the `k = 3` case of Proposition 10.2.1. -/
+/-- **Exercise 10.2.1** of [han2009theoretical]. Every cubic function $\hat v$ on the reference
+triangle is represented by its values at the ten points $\hat x_i$ of the principal lattice
+$\hat N_3$: $$\hat v = \sum_{i=1}^{10} \hat v(\hat x_i) \, \hat\phi_i,$$ with the shape
+functions $\hat\phi_i$ of `AtkinsonHan.Chapter10.cubicShape`.
+
+**Reading.** As for (10.2.23), the statement is an identity in the ten coefficients of a general
+cubic $\hat v$.
+
+This is (10.2.23) one degree higher, and the case $k = 3$ of Proposition 10.2.1. -/
 theorem exercise_10_2_1 (c₀ c₁ c₂ c₃ c₄ c₅ c₆ c₇ c₈ c₉ : ℝ) :
     Approximation.nodalInterp cubicNode cubicShape
         (fun p : ℝ × ℝ => c₀ + c₁ * p.1 + c₂ * p.2 + c₃ * p.1 ^ 2 + c₄ * p.1 * p.2 + c₅ * p.2 ^ 2
@@ -233,16 +274,20 @@ theorem exercise_10_2_1 (c₀ c₁ c₂ c₃ c₄ c₅ c₆ c₇ c₈ c₉ : ℝ
   simp [Approximation.nodalInterp_apply, Fin.sum_univ_succ, cubicNode, cubicShape, refBary]
   ring
 
-/-- **The four vertices of the reference square** `[0,1]²`. -/
+/-- **Exercise 10.2.3** of [han2009theoretical], the four vertices $(0, 0)$, $(1, 0)$, $(0, 1)$ and
+$(1, 1)$ of the reference square $[0, 1]^2$. -/
 noncomputable def bilinearNode : Fin 4 → ℝ × ℝ := ![(0, 0), (1, 0), (0, 1), (1, 1)]
 
-/-- **The bilinear nodal basis of `ℚ_{1,1}`** on the reference square: the four products
-`(1 − x̂₁)(1 − x̂₂)`, `x̂₁(1 − x̂₂)`, `(1 − x̂₁)x̂₂`, `x̂₁x̂₂`, in the order of `bilinearNode`. -/
+/-- **Exercise 10.2.3** of [han2009theoretical], the nodal basis of $\mathbb{Q}_{1,1}$ on the
+reference square: the four products $(1 - \hat x_1)(1 - \hat x_2)$, $\hat x_1 (1 - \hat x_2)$,
+$(1 - \hat x_1) \hat x_2$ and $\hat x_1 \hat x_2$, in the order of
+`AtkinsonHan.Chapter10.bilinearNode`. -/
 noncomputable def bilinearShape : Fin 4 → ℝ × ℝ → ℝ :=
   ![fun p => (1 - p.1) * (1 - p.2), fun p => p.1 * (1 - p.2), fun p => (1 - p.1) * p.2,
     fun p => p.1 * p.2]
 
-/-- The four bilinear shape functions are dual to the four vertices of the reference square. -/
+/-- **Exercise 10.2.3** of [han2009theoretical]. The four bilinear shape functions are dual to the
+four vertices of the reference square: $\hat\phi_i(\hat a_j) = \delta_{ij}$. -/
 theorem bilinearShape_isNodalBasis : Approximation.IsNodalBasis bilinearNode bilinearShape where
   eval_self i := by fin_cases i <;> simp [bilinearNode, bilinearShape]
   eval_of_ne i j hij := by
@@ -251,14 +296,17 @@ theorem bilinearShape_isNodalBasis : Approximation.IsNodalBasis bilinearNode bil
         | exact absurd rfl hij
         | simp [bilinearNode, bilinearShape]
 
-/-- **Exercise 10.2.3.**  The nodes and parameters of `ℚ_{1,1}(K̂)` on the reference square are its
-four vertices and the values there, and a bilinear function is represented by
+/-- **Exercise 10.2.3** of [han2009theoretical]. The nodes of $\mathbb{Q}_{1,1}(\hat K)$ on the
+reference square are its four vertices $\hat a_i$, the parameters are the values there, and
+every bilinear function $\hat v(\hat x) = a_0 + a_1 \hat x_1 + a_2 \hat x_2 + a_3 \hat x_1 \hat
+x_2$ is represented by $$\hat v = \sum_{i=1}^4 \hat v(\hat a_i) \, \hat\phi_i,$$ with the
+$\hat\phi_i$ of `AtkinsonHan.Chapter10.bilinearShape`.
 
-  `v̂ = Σ v̂(âᵢ) φ̂ᵢ`
+**Reading.** As for (10.2.23), the statement is an identity in the four coefficients of a
+general bilinear $\hat v$.
 
-with the `φ̂ᵢ` of `bilinearShape`. The quadrilateral counterpart of (10.2.23); the book keeps it
-apart from the triangular case because the reference map of a general quadrilateral is bilinear
-rather than affine. -/
+This is the analogue of (10.2.23) for quadrilaterals. The source treats it apart from the
+triangles because the reference map of a general quadrilateral is bilinear and not affine. -/
 theorem exercise_10_2_3 (a₀ a₁ a₂ a₃ : ℝ) :
     Approximation.nodalInterp bilinearNode bilinearShape
         (fun p : ℝ × ℝ => a₀ + a₁ * p.1 + a₂ * p.2 + a₃ * p.1 * p.2)
@@ -267,26 +315,30 @@ theorem exercise_10_2_3 (a₀ a₁ a₂ a₃ : ℝ) :
   simp [Approximation.nodalInterp_apply, Fin.sum_univ_succ, bilinearNode, bilinearShape]
   ring
 
-/-! ### Proposition 10.2.1: unisolvence of `ℙ_k` on the principal lattice -/
+/-! ### Proposition 10.2.1: unisolvence of $\mathbb{P}_k$ on the principal lattice -/
 
-/-- **Proposition 10.2.1**: a polynomial of total degree at most `k` on a triangle is uniquely
-determined by its values at the `(k+1)(k+2)/2` points of the principal lattice `N̂_k` — that is,
-the interpolation map `p ↦ (p(x̂))_{x̂ ∈ N̂_k}` on `ℙ_k` (`LagrangeElement.latticeEval`) is
-bijective. The book quotes the proposition without proof; the backbone's
-`LagrangeElement.bijective_latticeEval` proves it through Silvester's explicit nodal basis and a
-dimension count. -/
+/-- **Proposition 10.2.1** of [han2009theoretical]. Let $k \ge 1$. A polynomial of total degree at
+most $k$ in two variables is determined by its values at the $(k+1)(k+2)/2$ points of the
+principal lattice $\hat N_k$: the map $p \mapsto (p(\hat x))_{\hat x \in \hat N_k}$ on
+$\mathbb{P}_k$ is bijective.
+
+The map is `LagrangeElement.latticeEval`. The source quotes the proposition without proof. The
+backbone theorem `LagrangeElement.bijective_latticeEval` proves it with Silvester's explicit
+nodal basis and a count of dimensions. -/
 theorem proposition_10_2_1 {k : ℕ} (hk : 0 < k) :
     Function.Bijective (LagrangeElement.latticeEval k) :=
   LagrangeElement.bijective_latticeEval hk
 
-/-! ### Example 10.2.3: the linear element space on a triangulation
+/-!
+### Example 10.2.3: the linear element space on a triangulation
 
-The triangulation is `Triangulation Ω` (`Numlib/Geometry/Triangulation.lean`, the book's
-properties 1–4 of §10.2), the local space `X_K = ℙ₁(K)` is spanned by the barycentric coordinates
-`λᵢ = λ̂ᵢ ∘ F_K⁻¹` of the element, and the local finite element function determined by the values
-at the three vertices is `Triangulation.localInterp` at the vertices of the reference triangle with
-the shape functions `EuclideanSpace.baryCoord` (the `λ̂ᵢ` of `refBary`, on
-`EuclideanSpace ℝ (Fin 2)`). -/
+The triangulation is the backbone structure `Triangulation Ω`, which has the properties 1–4 of the
+source. The local space $X_K = \mathbb{P}_1(K)$ is spanned by the barycentric coordinates
+$\lambda_i = \hat\lambda_i \circ F_K^{-1}$ of the element. The local finite element function that
+the values at the three vertices determine is `Triangulation.localInterp` at the vertices of the
+reference triangle, with the shape functions `EuclideanSpace.baryCoord`, which are the
+$\hat\lambda_i$ of `AtkinsonHan.Chapter10.refBary` on `EuclideanSpace ℝ (Fin 2)`.
+-/
 
 section Example1023
 
@@ -294,25 +346,32 @@ open MeasureTheory TopologicalSpace EuclideanSpace
 
 local notation "𝔼₂" => EuclideanSpace ℝ (Fin 2)
 
-/-- **Example 10.2.3** (the linear element space). Let `𝒯_h` be a triangulation of a plane
-domain `Ω` and let the local function on each element `K` be the `ℙ₁(K)` function determined by
-the values of `v` at the three vertices `aⱼ`. Then
+/-- **Example 10.2.3** of [han2009theoretical] (the linear element space). Let $\mathcal{T}_h$ be a
+triangulation of a plane domain $\Omega$, and let $v : \mathbb{R}^2 \to \mathbb{R}$. On each
+element $K$, let the local function be the $\mathbb{P}_1(K)$ function determined by the values
+of $v$ at the three vertices $a_i$ of $K$. Then:
 
-* (10.2.28): on `K` it is `∑ᵢ v(aᵢ) λᵢ` with `λᵢ = λ̂ᵢ ∘ F_K⁻¹` the barycentric coordinates of
-  `K`;
-* the element is conforming — the local functions of two elements agree at every point of
-  their common closed elements (the condition (10.2.6)): at a common vertex both take the value
-  of `v` there, and along a common edge the difference is a linear function of one variable
-  vanishing at the two end points;
-* so the piecewise linear function `v_h` glued from them (`Triangulation.globalInterp`) is
-  globally continuous, `v_h ∈ C(Ω̄)`, and lies in `H¹(Ω)` (§10.2.3: `X_h ⊆ H¹(Ω)` because
-  `X_h ⊆ C(Ω̄)`).
+* (10.2.28) on $K$, the local function is $\sum_i v(a_i) \lambda_i$, where
+  $\lambda_i = \hat\lambda_i \circ F_K^{-1}$ are the barycentric coordinates of $K$;
+* the element is conforming: the local functions of two elements agree at every point of their
+  common closed elements, which is the condition (10.2.6);
+* the piecewise linear function $v_h$ glued from the local functions is continuous on
+  $\bar\Omega$;
+* $v_h$ lies in $H^1(\Omega)$.
 
-The local space `X_K` "consists of `ℙ₁(K)` functions determined by their values at the three
-vertices": `nodalInterp_coord_affineMap` (§10.3) says that the interpolant reproduces every
-affine function, and `LagrangeElement.latticeShape` at `k = 1` are the shape functions of the
-reference element. The book adds that `ℙ_k` on the nodal set `N_k(K)` of (10.2.29) is conforming
-as well: that is the backbone's `LagrangeElement.isConformingElement`. -/
+At a common vertex, both local functions take the value of $v$ there. Along a common edge, their
+difference is a linear function of one variable that vanishes at the two end points. The last
+two items are the argument of Section 10.2.3: $X_h \subseteq H^1(\Omega)$ because
+$X_h \subseteq C(\bar\Omega)$.
+
+The glued function is `Triangulation.globalInterp`, the inverse $F_K^{-1}$ is
+$x \mapsto T_K^{-1}(x - a_0)$ with $T_K$ = `Triangulation.linearPart`, and membership of
+$H^1(\Omega)$ is `MemSobolev` with $k = 1$ and $p = 2$. That the local space consists of the
+$\mathbb{P}_1(K)$ functions determined by their values at the vertices is
+`AtkinsonHan.Chapter10.nodalInterp_coord_affineMap` of Section 10.3: the interpolant reproduces
+every affine function. The shape functions of the reference element are
+`LagrangeElement.latticeShape` for $k = 1$. The source adds that $\mathbb{P}_k$ on the nodal set
+$N_k(K)$ of (10.2.29) is conforming too; this is `LagrangeElement.isConformingElement`. -/
 theorem example_10_2_3 {Ω : Opens 𝔼₂} (𝒯 : Triangulation Ω) (v : 𝔼₂ → ℝ) :
     (∀ (T : 𝒯.elems) (x : 𝔼₂), 𝒯.localInterp referenceTriangleVertex baryCoord T v x
       = ∑ i, v (T.1 i) * baryCoord i ((𝒯.linearPart T).symm (x - T.1 0))) ∧

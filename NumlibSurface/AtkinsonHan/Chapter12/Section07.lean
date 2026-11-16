@@ -8,45 +8,65 @@ import NumlibSurface.AtkinsonHan.Chapter05.Section05
 import NumlibSurface.AtkinsonHan.Chapter12.Section01
 
 /-!
-# Atkinson–Han §12.7: projection methods for nonlinear equations
+# Atkinson and Han, Section 12.7: Projection methods for nonlinear equations
 
-Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework*, 3rd edition, Springer, 2009, §12.7.
+This module formalizes Section 12.7.1 of [han2009theoretical]. The problem is the fixed point
+equation $u = T u$ for a completely continuous operator $T$ on a Banach space $V$, approximated by
+the projection equations $u_n = P_n T u_n$. Section 12.7.1 linearizes at an isolated fixed point
+$u^*$. The linear theory of Section 12.1, applied to $I - T'(u^*)$, gives a uniformly bounded
+inverse of $I - P_n T'(u^*)$. The second-order Taylor bounds of Lemma 12.7.1 on the remainder
+$R(v; v_0) = T v - T v_0 - T'(v_0)(v - v_0)$ then make the projection equation a contraction of a
+small ball about $u^*$. The result is that, for all large $n$, the projection equation has a unique
+solution $u_n$ near $u^*$, with $\|u^* - u_n\| \le c \|u^* - P_n u^*\|$, and the constant $c$ is
+asymptotically $\|(I - T'(u^*))^{-1}\|$ (12.7.13).
 
-The fixed point problem `u = T u` for a completely continuous `T` on a Banach space, approximated
-by the projection equations `u_n = P_n T u_n`.  §12.7.1 analyses it by linearizing at an isolated
-fixed point `u*`: the linear theory of §12.1 applied to `I - T'(u*)` supplies a uniformly bounded
-inverse of `I - P_n T'(u*)`, and the second-order Taylor bounds of Lemma 12.7.1 turn the
-projection equations into a contraction of a small ball about `u*`.
+The proofs use the linear projection theory of Section 12.1
+(`NumlibSurface.AtkinsonHan.Chapter12.Section01`), Proposition 5.5.5 on the compactness of the
+derivative of a completely continuous operator, the Banach fixed-point theorem of Section 5.1, and
+the second-order mean value inequality of `Numlib.Analysis.Calculus.MeanValue`.
+
+## Main definitions
+
+* (12.7.4), `AtkinsonHan.Chapter12.linearizationRemainder`: the remainder
+  $R(v; v_0) = T v - T v_0 - T'(v_0)(v - v_0)$ of the linearization of $T$ at $v_0$.
 
 ## Main results
 
-* `linearizationRemainder`, `lemma_12_7_1` — the remainder `R(v; v₀) = T v - T v₀ - T'(v₀)(v - v₀)`
-  and its three bounds (12.7.5), (12.7.6) and (12.7.7), the last being Exercise 12.7.1.
-* `exercise_12_7_3` — for all large `n` the projection equation `u_n = P_n T u_n` has a unique
-  solution in a fixed ball about `u*`, and `‖u* - u_n‖ ≤ c ‖u* - P_n u*‖`.
-* `equation_12_7_13` — the same bound with the asymptotically sharp constant,
-  `‖u* - u_n‖ ≤ ‖(I - T'(u*))⁻¹‖ (1 + γ_n) ‖u* - P_n u*‖` with `γ_n → 0`.
-
-## Not formalized here
-
-§12.7.2, the homotopy argument, which computes the index of `Φ_n(v) = v - P_n T v` from that of
-`Φ(v) = v - T v` using the rotation of a completely continuous vector field (properties P1–P5 of
-§5.5.1): Mathlib has no degree theory, and the book quotes those properties without proof.  Also
-§12.7.3, the nonlinear systems (12.7.21) and (12.7.24) for the Urysohn and Hammerstein equations,
-which are implementation; and Exercises 12.7.4–12.7.7.
+* Lemma 12.7.1 and Exercise 12.7.1, `AtkinsonHan.Chapter12.lemma_12_7_1`: the bounds (12.7.5),
+  (12.7.6) and (12.7.7) on $T'$ and on the remainder, for $\|T''\| \le M$ on a convex set.
+* Exercise 12.7.3, `AtkinsonHan.Chapter12.exercise_12_7_3`: for all large $n$, the projection
+  equation has a unique solution $u_n$ in a fixed ball about $u^*$, and
+  $\|u^* - u_n\| \le c \|u^* - P_n u^*\|$.
+* (12.7.13), `AtkinsonHan.Chapter12.equation_12_7_13`: the same bound with the constant
+  $\|(I - T'(u^*))^{-1}\| (1 + \gamma_n)$, where $\gamma_n \to 0$.
 
 ## Conventions
 
-The book asks for `T` to be twice continuously differentiable on an open set `H` and works on a
-closed bounded convex `B ⊆ H`.  Only the derivatives at the points of the convex set and a bound on
-the second derivative there are used, so those are the hypotheses: continuity of `T''` never
-enters, and neither does boundedness of `B`.
+* The derivatives $T'$ and $T''$ are given as functions `T'` and `T''` with `HasFDerivAt` hypotheses
+  at the points where they are used.
+* The invertibility of $I - T'(u^*)$ is an equivalence `e : V ≃L[ℝ] V` with `↑e = 1 - T' ustar`, and
+  the fixed point $u^*$ is `ustar`.
+* The projections $P_n$ are bounded linear operators `P n` with `IsIdempotentElem (P n)`.
 
-Exercise 12.7.3 replaces the sharp constant of (12.7.13) by a fixed one; the contraction constant
-produced is `1/2`, and the error constant is twice the uniform bound on `‖(I - P_n T'(u*))⁻¹‖`.
-Its radius is also reported to be at most the radius `ρ` of differentiability, which is what lets
-`equation_12_7_13` use the second-order bound (12.7.5) at the solutions it produces.
+## Deviations from the source
+
+* **Lemma 12.7.1** (generalization). The book asks for $T$ to be twice continuously differentiable
+  on an open set $H$ and works on a closed bounded convex set $B \subseteq H$. The lemma assumes
+  only derivatives at the points of a convex set and a bound on the second derivative there;
+  continuity of $T''$ and boundedness of $B$ are not used. See `AtkinsonHan.Chapter12.lemma_12_7_1`.
+* **Exercise 12.7.3 and (12.7.13)** (generalization). The differentiability hypotheses are made only
+  on a closed ball about $u^*$, with a bound on $T''$ there. See
+  `AtkinsonHan.Chapter12.exercise_12_7_3`.
+
+## Not formalized
+
+* **Section 12.7.2**, the homotopy argument, which computes the index of $\Phi_n(v) = v - P_n T v$
+  from that of $\Phi(v) = v - T v$ with the rotation of a completely continuous vector field
+  (properties P1–P5 of Section 5.5.1). Mathlib has no degree theory, and the book quotes these
+  properties without proof.
+* **Section 12.7.3**, the nonlinear systems (12.7.21) and (12.7.24) for the Urysohn and the
+  Hammerstein equations. They are implementation.
+* **Exercises 12.7.4–12.7.7.**
 -/
 
 open Filter Topology
@@ -59,27 +79,35 @@ section Linearization
 
 variable {V : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V]
 
-/-- **(12.7.4)**, the remainder of the linearization of `T` at `v₀`,
-`R(v; v₀) = T v - T v₀ - T'(v₀) (v - v₀)`.
+/-- **Equation (12.7.4)** of [han2009theoretical]. Let $V$ be a real normed space, $T : V \to V$,
+and let $T'(v_0)$ be a bounded linear operator for each $v_0 \in V$. The **remainder of the
+linearization** of $T$ at $v_0$ is $$R(v; v_0) = T v - T v_0 - T'(v_0)(v - v_0).$$
 
-The base point is the first argument, so that `linearizationRemainder T T' v₀` is the book's
-function `R(·; v₀)`. -/
+The base point is the first argument, so `linearizationRemainder T T' v₀` is the function
+$R(\cdot\,; v_0)$ of the book. -/
 def linearizationRemainder (T : V → V) (T' : V → V →L[ℝ] V) (v₀ v : V) : V :=
   T v - T v₀ - T' v₀ (v - v₀)
 
-/-- **Lemma 12.7.1** and **Exercise 12.7.1**: let `T` be twice differentiable on a convex set `B`
-with `‖T''‖ ≤ M` there.  Then, for `v₀, v₁, v₂ ∈ B`,
+/-- **Lemma 12.7.1** and **Exercise 12.7.1** of [han2009theoretical]. Let $V$ be a real normed space
+and $B \subseteq V$ convex. Let $T : V \to V$ have the Fréchet derivative $T'(z)$ at every
+$z \in B$, let $T'$ have the Fréchet derivative $T''(z)$ at every $z \in B$, and let
+$\|T''(z)\| \le M$ for $z \in B$. Then for all $v_0, v_1, v_2 \in B$: $$\|T'(v_2) - T'(v_1)\|
+\le M \|v_2 - v_1\| \qquad (12.7.6),$$ $$\|R(v_2; v_1)\| \le \tfrac{1}{2} M \|v_1 - v_2\|^2
+\qquad (12.7.5),$$ $$\|R(v_1; v_0) - R(v_2; v_0)\| \le M \bigl(\|v_1 - v_0\| + \tfrac{1}{2}
+\|v_1 - v_2\|\bigr) \|v_1 - v_2\| \qquad (12.7.7).$$ The bound (12.7.7) is Exercise 12.7.1.
 
-* `‖T'(v₂) - T'(v₁)‖ ≤ M ‖v₂ - v₁‖` — (12.7.6);
-* `‖R(v₂; v₁)‖ ≤ ½ M ‖v₁ - v₂‖²` — (12.7.5);
-* `‖R(v₁; v₀) - R(v₂; v₀)‖ ≤ M (‖v₁ - v₀‖ + ½ ‖v₁ - v₂‖) ‖v₁ - v₂‖` — (12.7.7).
+**Generalization.** The book asks for $T$ to be twice continuously differentiable on an open set
+$H$ and takes $B \subseteq H$ closed, bounded and convex. Only the derivatives at the points of
+$B$ and the bound on $T''$ are used, so continuity of $T''$ and boundedness of $B$ are not
+assumed.
 
-The first is the first-order mean value inequality applied to `T'`; the second is the *sharp*
-second-order inequality `Convex.norm_image_sub_sub_le_of_norm_hasFDerivAt_sub_le`, which keeps the
-constant `½` that Mathlib's `Convex.norm_image_sub_le_of_norm_hasFDerivWithin_le'` loses; the
-third splits `R(v₁; v₀) - R(v₂; v₀) = -R(v₂; v₁) + (T'(v₁) - T'(v₀))(v₁ - v₂)` and applies the
-other two.  It is the third that §12.7.1 uses, because `R(·; u*)` is exactly the nonlinearity the
-projection equations have to contract. -/
+The first bound is the first-order mean value inequality for $T'$. The second is the sharp
+second-order inequality `Convex.norm_image_sub_sub_le_of_norm_hasFDerivAt_sub_le`, which keeps
+the constant $\tfrac{1}{2}$ that Mathlib's
+`Convex.norm_image_sub_le_of_norm_hasFDerivWithin_le'` loses. The third uses the identity
+$R(v_1; v_0) - R(v_2; v_0) = -R(v_2; v_1) + (T'(v_1) - T'(v_0))(v_1 - v_2)$ and the other two
+bounds. Section 12.7.1 uses the third bound, because $R(\cdot\,; u^*)$ is the nonlinearity that
+the projection equations must contract. -/
 theorem lemma_12_7_1 {T : V → V} {T' : V → V →L[ℝ] V} {T'' : V → V →L[ℝ] V →L[ℝ] V} {B : Set V}
     (hB : Convex ℝ B) (hT : ∀ z ∈ B, HasFDerivAt T (T' z) z)
     (hT' : ∀ z ∈ B, HasFDerivAt T' (T'' z) z) {M : ℝ} (hM : ∀ z ∈ B, ‖T'' z‖ ≤ M) :
@@ -123,8 +151,8 @@ end Linearization
 
 /-! ### The projection equations for a nonlinear problem -/
 
-/-- The bound on the perturbed inverse that `theorem_12_1_2` produces, in the crude form the
-linearization argument needs: a denominator above `1/2` costs only a factor two. -/
+/-- For $\Gamma, x, B \in \mathbb{R}$ with $2 \Gamma \le B$, $B > 0$ and $x < 1/2$, the bound
+$\Gamma / (1 - x) \le B$ holds. -/
 private theorem div_le_of_two_mul_le {Γ x B : ℝ} (h2 : 2 * Γ ≤ B) (hB : 0 < B) (hx : x < 1 / 2) :
     Γ / (1 - x) ≤ B := by
   have hpos : (0 : ℝ) < 1 - x := by linarith
@@ -135,15 +163,13 @@ section ProjectionMap
 
 variable {V : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V]
 
-/-- The map `F_n v = v + R_n (P_n T v - v)` of §12.7.1, where `e` carries the inverse
-`R_n = (I - P_n T'(u*))⁻¹`.  Its fixed points are the solutions of the projection equation
-`v = P_n T v`, and its increments are the projected linearization remainders, which is what makes
-it a contraction of a small ball about `u*`. -/
+/-- The map $F_n v = v + R_n (P_n T v - v)$ of Section 12.7.1, where `e` gives the inverse
+$R_n = (I - P_n T'(u^*))^{-1}$. -/
 private noncomputable def projectionMap (e : V ≃L[ℝ] V) (P : V →L[ℝ] V) (T : V → V) (v : V) : V :=
   v + e.symm (P (T v) - v)
 
-/-- The fixed points of `F_n` are exactly the solutions of the projection equation, because
-`R_n` is injective. -/
+/-- The fixed points of $F_n$ are the solutions of the projection equation $v = P_n T v$, because
+$R_n$ is injective. -/
 private theorem projectionMap_eq_self_iff (e : V ≃L[ℝ] V) (P : V →L[ℝ] V) (T : V → V) (u : V) :
     projectionMap e P T u = u ↔ P (T u) = u := by
   have hzero : e.symm (P (T u) - u) = 0 ↔ P (T u) - u = 0 := by
@@ -155,8 +181,8 @@ private theorem projectionMap_eq_self_iff (e : V ≃L[ℝ] V) (P : V →L[ℝ] V
   rw [← sub_eq_zero]
   exact hzero.1 (by simpa using sub_eq_zero_of_eq h)
 
-/-- `F_n v - F_n w = R_n P_n (R(v; u*) - R(w; u*))`: the increment of `F_n` sees the nonlinearity
-only through the linearization remainder at `u*`. -/
+/-- If $e = I - P_n T'(u^*)$, then $F_n v - F_n w = R_n P_n \bigl(T v - T w - T'(u^*)(v - w)\bigr)$,
+which is $R_n P_n (R(v; u^*) - R(w; u^*))$. -/
 private theorem projectionMap_sub (e : V ≃L[ℝ] V) {P : V →L[ℝ] V} {T : V → V}
     {T' : V → V →L[ℝ] V} {u : V} (he : (e : V →L[ℝ] V) = 1 - P ∘L T' u) (v w : V) :
     projectionMap e P T v - projectionMap e P T w
@@ -183,32 +209,33 @@ private theorem projectionMap_sub (e : V ≃L[ℝ] V) {P : V →L[ℝ] V} {T : V
 
 end ProjectionMap
 
-/-- **The linearization analysis of §12.7.1, with the error bound of Exercise 12.7.3.**  Let `T` be
-completely continuous on an open set `H` of a Banach space, twice differentiable on a closed ball
-about a fixed point `u*` with `‖T''‖ ≤ M` there, and let `I - T'(u*)` be invertible.  Let the
-bounded projections `P_n` converge pointwise to the identity.  Then there are `c` and `r > 0` such
-that, for all large `n`, the projection equation
+/-- **Exercise 12.7.3** of [han2009theoretical], with the linearization analysis of Section 12.7.1.
+Let $V$ be a real Banach space, let $H \subseteq V$ be open, and let $T : V \to V$ be completely
+continuous on $H$. Let $u^* \in H$ be a fixed point, $T u^* = u^*$. Let $\rho > 0$, and on the
+closed ball $\bar B(u^*, \rho)$ let $T$ have the Fréchet derivative $T'$, let $T'$ have the
+Fréchet derivative $T''$, and let $\|T''\| \le M$. Let $I - T'(u^*)$ be invertible. Let $P_n$ be
+bounded projections on $V$ with $P_n v \to v$ for every $v \in V$. Then there are
+$c \in \mathbb{R}$ and $r$ with $0 < r \le \rho$ such that, for all sufficiently large $n$, the
+projection equation $$u_n = P_n T u_n$$ has exactly one solution $u_n$ in the closed ball
+$\bar B(u^*, r)$, and every solution $u_n$ in this ball satisfies $$\|u^* - u_n\| \le c \,
+\|u^* - P_n u^*\|.$$
 
-`u_n = P_n T u_n`
+**Generalization.** The book asks for $T$ to be twice continuously differentiable on $H$. Here
+$T$ need only be twice differentiable on the closed ball $\bar B(u^*, \rho)$, with $T''$ bounded
+there.
 
-has exactly one solution in the closed ball of radius `r` about `u*`, and that solution satisfies
-
-`‖u* - u_n‖ ≤ c ‖u* - P_n u*‖`.
-
-The proof is the book's.  `proposition_5_5_5` makes `T'(u*)` a compact operator, so `lemma_12_1_4`
-gives `‖T'(u*) - P_n T'(u*)‖ → 0` and `theorem_12_1_2` makes `I - P_n T'(u*)` invertible with a
-uniformly bounded inverse `R_n`.  The map `F_n v = v + R_n (P_n T v - v)` has the same fixed points
-as the projection equation, because `R_n` is injective, and
-
-`F_n v - F_n w = R_n P_n (R(v; u*) - R(w; u*))`,
-
-so `lemma_12_7_1` makes it a contraction of the ball of radius `r` once `r` is small; it maps that
-ball into itself because `F_n u* - u* = R_n (P_n u* - u*)` is small for large `n`, and
-Theorem 5.1.3 finishes.  The same two estimates give the error bound with `c = 2 ‖R_n‖`.  The
-sharp constant of (12.7.13) is not claimed.
-
-Uniform boundedness of the projections is Banach–Steinhaus, and is where completeness is used a
-second time. -/
+The radius $r$ is at most the radius $\rho$ of differentiability, so that
+`AtkinsonHan.Chapter12.equation_12_7_13` can use (12.7.5) at the solutions that this theorem
+gives. The proof follows the book. `AtkinsonHan.Chapter05.proposition_5_5_5` makes $T'(u^*)$
+compact, so `AtkinsonHan.Chapter12.lemma_12_1_4` gives $\|T'(u^*) - P_n T'(u^*)\| \to 0$, and
+`AtkinsonHan.Chapter12.theorem_12_1_2` makes $I - P_n T'(u^*)$ invertible with a uniformly
+bounded inverse $R_n$. The map $F_n v = v + R_n (P_n T v - v)$ has the same fixed points as the
+projection equation and satisfies $F_n v - F_n w = R_n P_n (R(v; u^*) - R(w; u^*))$, so
+`AtkinsonHan.Chapter12.lemma_12_7_1` makes it a contraction of the ball of radius $r$ for small
+$r$, and the Banach fixed-point theorem (Theorem 5.1.3) gives the solution. The error constant
+is $c = 2 \sup_n \|R_n\|$, and the contraction constant is $1/2$. The uniform boundedness of the
+projections is the Banach–Steinhaus theorem, which uses completeness a second time. The sharp
+constant of (12.7.13) is not claimed here. -/
 theorem exercise_12_7_3 {V : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V] [CompleteSpace V]
     {T : V → V} {T' : V → V →L[ℝ] V} {T'' : V → V →L[ℝ] V →L[ℝ] V}
     {H : Set V} (hH : IsOpen H) (hcc : Chapter05.IsCompletelyContinuousOn T H)
@@ -366,29 +393,26 @@ theorem exercise_12_7_3 {V : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V] [
     have h3 : ‖F ustar - F un‖ ≤ 1 / 2 * ‖ustar - un‖ := hcontract ustar hcen' un hun
     linarith
 
-/-- **(12.7.13), the sharp error bound for the projection method of §12.7.1.**  Under the
-hypotheses of `exercise_12_7_3` there is a sequence `γ_n → 0` and a radius `r > 0` such that, for
-all large `n`, the projection equation `u_n = P_n T u_n` has exactly one solution in the closed
-ball of radius `r` about the fixed point `u*`, and that solution satisfies
+/-- **Equation (12.7.13)** of [han2009theoretical]. Under the hypotheses of
+`AtkinsonHan.Chapter12.exercise_12_7_3`, there are a sequence $\gamma_n \to 0$ and a radius
+$r > 0$ such that, for all sufficiently large $n$, the projection equation $u_n = P_n T u_n$ has
+exactly one solution $u_n$ in the closed ball $\bar B(u^*, r)$, and every solution $u_n$ in this
+ball satisfies $$\|u^* - u_n\| \le \|(I - T'(u^*))^{-1}\| \, (1 + \gamma_n) \, \|u^* - P_n
+u^*\|.$$
 
-`‖u* - u_n‖ ≤ ‖(I - T'(u*))⁻¹‖ (1 + γ_n) ‖u* - P_n u*‖`.
+**Generalization.** As in Exercise 12.7.3, $T$ need only be twice differentiable on the closed
+ball $\bar B(u^*, \rho)$, with $T''$ bounded there.
 
-What is new against `exercise_12_7_3` is the constant: there it is a fixed multiple of the uniform
-bound on the *perturbed* inverses `(I - P_n T'(u*))⁻¹`, here it is asymptotically the norm of the
-*exact* inverse, exactly as in Exercise 12.1.3 for a linear equation.  The book quotes the bound
-from Atkinson's paper without proof; the argument reconstructed here is the linear one with the
-nonlinearity absorbed into `γ_n`.
-
-Subtracting `u_n = P_n T u_n` from `u* = T u*` and inserting the linearization gives the exact
-identity
-
-`(I - P_n T'(u*)) (u* - u_n) = (u* - P_n u*) - P_n R(u_n; u*)`,
-
-so `‖u* - u_n‖ ≤ ‖R_n‖ (‖u* - P_n u*‖ + ‖P_n‖ · ½ M ‖u* - u_n‖²)` by (12.7.5).  The crude bound of
-Exercise 12.7.3 makes `‖u* - u_n‖` itself `𝓞(‖u* - P_n u*‖)`, so the quadratic term is
-`δ_n ‖u* - u_n‖` with `δ_n → 0` and can be moved to the left; and `‖R_n‖ ≤ ‖(I - T'(u*))⁻¹‖ (1 +
-2 ‖(I - T'(u*))⁻¹‖ ‖T'(u*) - P_n T'(u*)‖)` is Theorem 12.1.2.  Both corrections tend to one, which
-is `γ_n`. -/
+The new part, compared with Exercise 12.7.3, is the constant. There it is a fixed multiple of
+the uniform bound on the perturbed inverses $(I - P_n T'(u^*))^{-1}$; here it is asymptotically
+the norm of the exact inverse, as in Exercise 12.1.3 for a linear equation. The book quotes the
+bound from a paper of Atkinson without proof, and the proof here is the linear argument with the
+nonlinearity absorbed into $\gamma_n$. Subtracting $u_n = P_n T u_n$ from $u^* = T u^*$ gives
+$(I - P_n T'(u^*))(u^* - u_n) = (u^* - P_n u^*) - P_n R(u_n; u^*)$, and by (12.7.5) the term
+$P_n R(u_n; u^*)$ is quadratic in $\|u^* - u_n\|$. The crude bound of Exercise 12.7.3 makes it
+$\delta_n \|u^* - u_n\|$ with $\delta_n \to 0$, and Theorem 12.1.2 gives $\|R_n\| \le \|(I -
+T'(u^*))^{-1}\| (1 + 2 \|(I - T'(u^*))^{-1}\| \|T'(u^*) - P_n T'(u^*)\|)$. The inverse
+$(I - T'(u^*))^{-1}$ is `e.symm`. -/
 theorem equation_12_7_13 {V : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V] [CompleteSpace V]
     {T : V → V} {T' : V → V →L[ℝ] V} {T'' : V → V →L[ℝ] V →L[ℝ] V}
     {H : Set V} (hH : IsOpen H) (hcc : Chapter05.IsCompletelyContinuousOn T H)

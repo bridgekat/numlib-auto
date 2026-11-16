@@ -9,91 +9,113 @@ import NumlibSurface.AtkinsonHan.Chapter09.Section01
 import NumlibSurface.AtkinsonHan.Chapter10.Section03
 
 /-!
-# Atkinson–Han §10.4: convergence and error estimates
+# Atkinson and Han, Section 10.4: Convergence and error estimates
 
-Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework*, 3rd edition, Springer, 2009, §10.4.
+This module formalizes Section 10.4 of [han2009theoretical]. The section combines the abstract
+theory of Chapter 9 (the Lax–Milgram lemma and Céa's inequality) with the interpolation estimates of
+Section 10.3, for the finite element method for a second-order elliptic problem on a polygon
+$\Omega \subseteq \mathbb{R}^2$. On a regular family of triangulations with a $\mathbb{P}_k$
+element, the Galerkin solution $u_h$ satisfies $\|u - u_h\|_V \le c h^k |u|_{k+1,\Omega}$ and
+converges to the solution $u$ (Theorem 10.4.1). Example 10.4.2 applies this to the Dirichlet problem
+for the Poisson equation. The Aubin–Nitsche lemma (Theorem 10.4.3) bounds the error in a weaker norm
+through the solutions $\varphi_g$ of a dual problem:
+$$\|u - u_h\|_H \le M \|u - u_h\|_V \sup_{g \ne 0} \frac{1}{\|g\|_H} \inf_{v_h \in V_h}
+  \|\varphi_g - v_h\|_V.$$
+Exercise 10.4.5 writes the Laplacian in polar and in spherical coordinates.
 
-The section applies the abstract theory of Chapter 9 (Lax–Milgram, Céa's inequality) and the
-interpolation estimates of §10.3 to the finite element method for a second-order elliptic
-problem on a polygon: Theorem 10.4.1 (convergence and the error estimate (10.4.4)), Example
-10.4.2 (the Dirichlet problem for the Poisson equation), the Aubin–Nitsche lemma (Theorem
-10.4.3) and Corollary 10.4.4.
+The finite element results specialize `Numlib.FiniteElement.Triangle`, on the triangulations of
+`Numlib.Geometry.Triangulation` and the finite element spaces of
+`Numlib.Analysis.Sobolev.Triangulation`. The Aubin–Nitsche lemma specializes the duality estimates
+of `Numlib.Variational.Galerkin`, and Exercise 10.4.5 specializes
+`Numlib.Analysis.Calculus.CurvilinearLaplacian`.
 
-The book states Theorem 10.4.3 for `V ⊆ H¹(Ω)` and `H = L²(Ω)`; the surface states it for a real
-inner product space `V`, a real inner product space `H`, and a continuous linear `ι : V →L[ℝ] H`
-standing for the embedding, which is the whole of what the proof uses.  The supremum over the data
-`g ∈ H` and the infimum over the finite element space are kept, since they are the book's statement
-(10.4.5); both are junk-free because the quantities involved are nonnegative and bounded, and the
-boundedness comes from the Lax–Milgram bound `norm_le_of_dualProblem` on the dual solution.
+## Main definitions
 
-Theorem 10.4.1 and Example 10.4.2 are stated on the triangulation scaffold of
-`Numlib/Geometry/Triangulation.lean` and `Numlib/Analysis/Sobolev/Triangulation.lean`: a regular
-family of triangulations `𝒯 : ι → Triangulation Ω` (Definition 10.3.6, `IsRegularFamily`), a
-finite element given by reference nodes and shape functions, its global interpolant
-`Triangulation.globalInterp`, and the finite element spaces `Triangulation.polySpace` (`X_h ⊆ H¹`)
-and `Triangulation.polySpaceZero` (`V_h ⊆ H¹₀`, the continuous piecewise polynomials vanishing on
-`∂Ω`). The membership `V_h ⊆ H¹₀(Ω)` needs no trace theorem: a continuous `H¹` function vanishing
-on `∂Ω` lies in `H¹₀(Ω)` on any open set (Brezis's Theorem 9.17, (i) ⇒ (ii)). What a polygon
-contributes is that `∂Ω` is a union of element edges (`Triangulation.FrontierSubsetEdges`, a
-hypothesis), so that an interpolant vanishing at the boundary nodes vanishes on `∂Ω`.
+* Theorem 10.4.3, `AtkinsonHan.DualProblem`: the dual problem, $\varphi \in V$ with
+  $a(v, \varphi) = (\iota v, g)_H$ for all $v \in V$.
+* Example 10.4.2, `AtkinsonHan.Chapter10.poissonForm`: the bilinear form $a(u, v) = \int_\Omega
+  \nabla u \cdot \nabla v \, dx$ on $H_0^1(\Omega)$.
+* Example 10.4.2, `AtkinsonHan.Chapter10.poissonLoad`: the linear functional
+  $\ell(v) = \int_\Omega f v \, dx$ on $H_0^1(\Omega)$.
 
 ## Main results
 
-* `theorem_10_4_1` — the error estimate (10.4.4), `‖u − u_h‖_V ≤ c h^k |u|_{k+1,Ω}`, for a
-  subspace `V ⊆ H¹(Ω)` with a bounded `V`-elliptic form and Galerkin solutions on subspaces
-  `V_h ⊆ V` containing the interpolant `Π_h u`: Céa's inequality with `v_h = Π_h u` and Theorem
-  10.3.9 at `m = 1`; `theorem_10_4_1_tendsto` — the convergence `‖u − u_h‖_V → 0` under the
-  density of `H^{k+1}(Ω) ∩ C(Ω̄)` in `V` with interpolants in the `V_h`.
-* `example_10_4_2` — the Dirichlet problem for the Poisson equation with the `ℙ_k` Lagrange
-  element: the weak problem on `H¹₀(Ω)` and its discretization on `V_h` each have a unique
-  solution, and `‖u − u_h‖_{1,Ω} ≤ c h^k ‖u‖_{k+1,Ω}`; `poissonForm`, `poissonLoad` are the form
-  and the load of the problem.
+* Theorem 10.4.1, `AtkinsonHan.Chapter10.theorem_10_4_1`: the error estimate (10.4.4),
+  $\|u - u_h\|_V \le c h^k |u|_{k+1,\Omega}$.
+* Theorem 10.4.1, `AtkinsonHan.Chapter10.theorem_10_4_1_tendsto`: $\|u - u_h\|_V \to 0$ if smooth
+  functions are dense in $V$.
+* Example 10.4.2, `AtkinsonHan.Chapter10.example_10_4_2`: the Dirichlet problem for the Poisson
+  equation and its finite element approximation have unique solutions, and $\|u - u_h\|_{1,\Omega}
+  \le c h^k \|u\|_{k+1,\Omega}$.
+* Theorem 10.4.3, `AtkinsonHan.Chapter10.theorem_10_4_3`: the Aubin–Nitsche lemma (10.4.5).
+* Theorem 10.4.3, `AtkinsonHan.Chapter10.norm_le_of_dualProblem`: the dual solutions satisfy
+  $\|\varphi_g\|_V \le (\|\iota\| / c_0) \|g\|_H$, so the supremum in (10.4.5) is finite.
+* Corollary 10.4.4, `AtkinsonHan.Chapter10.corollary_10_4_4_abstract`: if for every $g \in H$ some
+  solution $\varphi_g$ of the dual problem lies within $\delta \|g\|_H$ of $V_h$, then
+  $\|u - u_h\|_H \le M \delta \|u - u_h\|_V$.
+* Exercise 10.4.5, `AtkinsonHan.Chapter10.exercise_10_4_5_polar`: the Laplacian in polar coordinates
+  on $\mathbb{R}^2$.
+* Exercise 10.4.5, `AtkinsonHan.Chapter10.exercise_10_4_5_spherical`: the Laplacian in spherical
+  coordinates on $\mathbb{R}^3$.
 
-Theorem 10.4.1 and the error estimate of Example 10.4.2 are restatements of the backbone's
-`Numlib/FiniteElement/Triangle.lean` (`FiniteElement.norm_sub_le_of_isGalerkinSolution`,
-`FiniteElement.tendsto_norm_sub_of_isGalerkinSolution`,
-`FiniteElement.norm_sub_le_of_isGalerkinSolution_dirichletForm`), stated there with the backbone's
-`SesqForm` and `IsGalerkinSolution`; the book's `BilinForm` and `GalerkinProblem` are bridged
-through `BilinForm.toCLM` (`BilinForm.isBoundedWith_toCLM`,
-`BilinForm.isEllipticWith_iff_isCoerciveWith`).
-* `DualProblem` — the dual (adjoint) problem (10.4.4) `a(v, φ_g) = (g, ι v)_H`.
-* `norm_le_of_dualProblem` — its Lax–Milgram stability estimate `‖φ_g‖ ≤ (‖ι‖/c₀) ‖g‖`, which is
-  what makes the supremum in (10.4.5) finite.
-* `theorem_10_4_3` — the Aubin–Nitsche lemma (10.4.5).
-* `corollary_10_4_4_abstract` — Corollary 10.4.4 with its regularity hypothesis made abstract.
-* `exercise_10_4_5_polar` and `exercise_10_4_5_spherical` — Exercise 10.4.5, the Laplacian in
-  polar coordinates on `ℝ²` and in spherical coordinates on `ℝ³`.
+## Implementation notes
 
-## Deviations from the book
+* A triangulation is a `Triangulation Ω`, and a regular family is
+  `AtkinsonHan.Chapter10.IsRegularFamily` for the collections of open elements. A finite element is
+  given by nodes and shape functions on the reference triangle, and $\Pi_h$ is
+  `Triangulation.globalInterp`. The finite element spaces are `Triangulation.polySpace`
+  ($X_h \subseteq H^1(\Omega)$) and `Triangulation.polySpaceZero` ($V_h \subseteq H_0^1(\Omega)$,
+  the continuous piecewise polynomials that vanish on $\partial\Omega$).
+* The membership $V_h \subseteq H_0^1(\Omega)$ needs no trace theorem: a continuous function in
+  $H^1(\Omega)$ that vanishes on $\partial\Omega$ lies in $H_0^1(\Omega)$ on every open set, by
+  Theorem 9.17 of [brezis2011functional], (i) implies (ii). The polygon enters through the
+  hypothesis that $\partial\Omega$ is a union of element edges
+  (`Triangulation.FrontierSubsetEdges`), so that an interpolant that vanishes at the boundary nodes
+  vanishes on $\partial\Omega$.
+* The space $V$ of Theorem 10.4.1 is a subspace of `SobolevEuclidean 2 1 2 Ω`, the space
+  $H^1(\Omega)$ with the norm built from multi-indices. A function $u \in V$ is related to a
+  function $\tilde u$ on $\mathbb{R}^2$ by `SobolevMultiIndex.fn u =ᵐ ũ` on $\Omega$, and the
+  seminorm $|\tilde u|_{k+1,\Omega}$ is the tensor seminorm `sobolevSeminorm` of Section 10.3.
+  `FiniteElement.exists_norm_le_sobolevNorm` compares the two norms on $H^1(\Omega)$.
+* Theorem 10.4.1 and the estimate of Example 10.4.2 are
+  `FiniteElement.norm_sub_le_of_isGalerkinSolution`,
+  `FiniteElement.tendsto_norm_sub_of_isGalerkinSolution` and
+  `FiniteElement.norm_sub_le_of_isGalerkinSolution_dirichletForm`. These are stated for the
+  backbone's `SesqForm` and `IsGalerkinSolution`; the form `AtkinsonHan.BilinForm` and the problem
+  `AtkinsonHan.GalerkinProblem` of the source are connected to them by
+  `AtkinsonHan.BilinForm.toCLM`.
+* In Theorem 10.4.3 the supremum over the data $g \in H$ and the infimum over $V_h$ are those of the
+  source. Both are real suprema and infima: the quantities are nonnegative, and they are bounded
+  above by `AtkinsonHan.Chapter10.norm_le_of_dualProblem`.
 
-Theorem 10.4.1's constant `c` depends on the family of triangulations through an upper bound
-`H` on its mesh parameters (as in Corollary 10.3.7 and Theorem 10.3.9) and is independent of the
-solution `u`; the convergence half takes the density of smooth functions in `V` as a hypothesis
-(`theorem_10_4_1_tendsto`), the book's argument, since for `V = H¹(Ω)` it is Theorem 7.3.2 on an
-extension domain and a polygon is not yet known to be one (every triangle is,
-`isSobolevExtensionDomainAll_referenceTriangle`), while for `V = H¹₀(Ω)` it is the definition.
-In Example 10.4.2 the regularity `u ∈ H^{k+1}(Ω)` is read, as in Theorem 10.3.9, on a
-representative continuous up to the boundary, and the boundary condition `u = 0` on `Γ` on that
-representative: on a `C¹` domain it would follow from `u ∈ H¹₀(Ω)` (Theorem 9.17, (ii) ⇒ (i)), on
-a polygon it is a hypothesis. The domain is assumed bounded, `Ω ⊆ B(0, R)`, for Poincaré's
-inequality (Example 8.3.5), with `R` entering the ellipticity constant.
+## Deviations from the source
 
-## Not formalized here
+* **Theorem 10.4.1** (reading). The constant $c$ depends on an upper bound $H$ on the mesh
+  parameters, as in Corollary 10.3.7, and $u \in H^{k+1}(\Omega)$ is taken on a representative that
+  is continuous up to the boundary. See `AtkinsonHan.Chapter10.theorem_10_4_1`.
+* **Theorem 10.4.1** (generalization). The spaces $V_h$ are any subspaces of $V$ that contain the
+  interpolant $\Pi_h u$, not only the finite element spaces. See
+  `AtkinsonHan.Chapter10.theorem_10_4_1`.
+* **Theorem 10.4.1**, convergence (reading). The density of smooth functions in $V$, which the
+  argument of the source uses, is a hypothesis. See `AtkinsonHan.Chapter10.theorem_10_4_1_tendsto`.
+* **Example 10.4.2** (reading). The regularity $u \in H^{k+1}(\Omega)$ is taken on a representative
+  $\tilde u$ that is continuous up to the boundary, with $\tilde u = 0$ on $\Gamma$ as a hypothesis.
+  The domain is bounded, $\Omega \subseteq B(0, R)$, and $\partial\Omega$ is a union of element
+  edges. See `AtkinsonHan.Chapter10.example_10_4_2`.
+* **Theorem 10.4.3** (generalization). The source takes $V \subseteq H^1(\Omega)$ and
+  $H = L^2(\Omega)$. The library takes real inner product spaces $V$ and $H$ and a continuous linear
+  map $\iota : V \to H$ in place of the embedding. See `AtkinsonHan.Chapter10.theorem_10_4_3`.
+* **Exercise 10.4.5** (reading). The source writes operator identities. The library states them at
+  one point, for a $C^2$ function, with the coordinate derivatives as derivatives along the
+  coordinate curves. See `AtkinsonHan.Chapter10.exercise_10_4_5_polar`.
 
-Corollary 10.4.4 in its stated form, whose hypothesis (10.4.9) is an `H²` elliptic regularity
-bound, and (10.4.11): the regularity of the Dirichlet problem on a convex polygon is
-`notes/frontier.md` blocker 18 (`Elliptic.regularity_dirichlet` proves it on `C²` domains). The
-abstract half of Corollary 10.4.4, in which the approximation power of the dual solutions is a
-hypothesis rather than a consequence of regularity, is `corollary_10_4_4_abstract`.
+## Not formalized
 
-Exercises 10.4.1–4.4 and 10.4.6 all name a domain.
-
-The rest of the chapter is *not* out of scope, and the sections that hold it say what they hold:
-`Chapter10.Section01` (the §10.1 algebra), `Chapter10.Section02` (Lemma 10.2.2, the nodal bases,
-Proposition 10.2.1, Example 10.2.3, the `ℙ_k` Lagrange element on the principal lattice) and
-`Chapter10.Section03` (Theorems 10.3.1, 10.3.3, 10.3.4, 10.3.5, 10.3.9, Corollary 10.3.7, Example
-10.3.2, Definition 10.3.6, Example 10.3.8).
+* **Corollary 10.4.4** in its stated form, with the $H^2$ regularity hypothesis (10.4.9), and
+  **(10.4.11)**. The library does not have the regularity of the Dirichlet problem on a convex
+  polygon; `Elliptic.regularity_dirichlet` proves it on $C^2$ domains. The abstract form is
+  `AtkinsonHan.Chapter10.corollary_10_4_4_abstract`.
+* **Exercises 10.4.1–10.4.4 and 10.4.6.** Each is posed on a specific domain.
 -/
 
 open scoped Laplacian
@@ -103,9 +125,14 @@ namespace AtkinsonHan
 variable {V H : Type*} [NormedAddCommGroup V] [InnerProductSpace ℝ V] [NormedAddCommGroup H]
   [InnerProductSpace ℝ H]
 
-/-- The dual problem (10.4.4) for the datum `g ∈ H`: `φ ∈ V` with `a(v, φ) = (g, ι v)_H` for every
-`v ∈ V`.  It is the variational problem for the adjoint form, so on a `V`-elliptic `a` it is
-uniquely solvable by Lax–Milgram (Theorem 8.3.4) applied to `a(·, ·)ᵀ`. -/
+/-- The **dual problem** of Theorem 10.4.3 of [han2009theoretical]. Let $V$ and $H$ be real inner
+product spaces, let $a$ be a bilinear form on $V$, let $\iota : V \to H$ be continuous and
+linear, and let $g \in H$. An element $\varphi \in V$ solves the dual problem for $g$ if
+$$a(v, \varphi) = (\iota v, g)_H \qquad \text{for all } v \in V.$$
+
+It is the variational problem for the transposed form $a(\cdot, \cdot)^T$. For a bounded,
+$V$-elliptic form on a complete $V$, the Lax–Milgram lemma (Theorem 8.3.4) applied to $a^T$
+gives a unique solution. -/
 def DualProblem (a : BilinForm V) (ι : V →L[ℝ] H) (g : H) (φ : V) : Prop :=
   ∀ v : V, a v φ = inner ℝ (ι v) g
 
@@ -113,14 +140,18 @@ namespace Chapter10
 
 variable {a : BilinForm V} {ℓ : StrongDual ℝ V} {M c₀ δ : ℝ} {Vh : Submodule ℝ V} {u uh : V}
 
-/-- The infimum over a subspace is bounded below by `0`. -/
+/-- For $w \in V$ and a subspace $K \subseteq V$, the distances $\|w - v\|$, $v \in K$, are bounded
+below by $0$. -/
 private theorem bddBelow_norm_sub (w : V) (K : Submodule ℝ V) :
     BddBelow (Set.range fun v : K => ‖w - (v : V)‖) :=
   ⟨0, Set.forall_mem_range.2 fun _ => norm_nonneg _⟩
 
-/-- Lax–Milgram stability for the dual problem (10.4.4): a solution `φ_g` of the dual problem for a
-`V`-elliptic form satisfies `‖φ_g‖ ≤ (‖ι‖/c₀) ‖g‖`.  This is what bounds the supremum in
-(10.4.5). -/
+/-- Let $a$ be a bilinear form on $V$ with $a(v, v) \ge c_0 \|v\|^2$ for all $v$, where $c_0 > 0$,
+let $\iota : V \to H$ be continuous and linear, and let $\varphi_g$ solve the dual problem for
+$g \in H$. Then
+$$\|\varphi_g\| \le \frac{\|\iota\|}{c_0} \|g\|.$$
+
+This bound makes the supremum in (10.4.5) finite. -/
 theorem norm_le_of_dualProblem (hc₀ : 0 < c₀) (ha : a.IsEllipticWith c₀) (ι : V →L[ℝ] H) {g : H}
     {φ : V} (hφ : DualProblem a ι g φ) : ‖φ‖ ≤ ‖ι‖ / c₀ * ‖g‖ := by
   have hkey : c₀ * ‖φ‖ ^ 2 ≤ ‖ι‖ * ‖φ‖ * ‖g‖ := by
@@ -134,8 +165,8 @@ theorem norm_le_of_dualProblem (hc₀ : 0 < c₀) (ha : a.IsEllipticWith c₀) (
   · rw [div_mul_eq_mul_div, le_div_iff₀ hc₀]
     nlinarith [hkey, h0]
 
-/-- The supremum in (10.4.5) is finite: the dual solutions are approximated from `V_h` at least as
-well as by `0`, and their norms are bounded by `(‖ι‖/c₀) ‖g‖`. -/
+/-- The supremum in (10.4.5) is finite: the dual solutions are approximated from $V_h$ at least as
+well as by $0$, and their norms are at most $(\|\iota\| / c_0) \|g\|$. -/
 private theorem bddAbove_dualRatio (hc₀ : 0 < c₀) (ha : a.IsEllipticWith c₀) (ι : V →L[ℝ] H)
     (Vh : Submodule ℝ V) {φ : H → V} (hφ : ∀ g, DualProblem a ι g (φ g)) :
     BddAbove (Set.range fun g : {g : H // g ≠ 0} =>
@@ -148,14 +179,21 @@ private theorem bddAbove_dualRatio (hc₀ : 0 < c₀) (ha : a.IsEllipticWith c�
   rw [div_le_iff₀ hg]
   exact hzero.trans (norm_le_of_dualProblem hc₀ ha ι (hφ (g : H)))
 
-/-- **Theorem 10.4.3**, the Aubin–Nitsche lemma, (10.4.5).  For a bounded, `V`-elliptic form `a`,
-`u` the solution of (10.4.1), `u_h` the Galerkin solution on `V_h ⊆ V`, and `φ_g` a solution of the
-dual problem (10.4.4) for each datum `g ∈ H`,
+/-- **Theorem 10.4.3** of [han2009theoretical] (the Aubin–Nitsche lemma, (10.4.5)). Let $V$ and $H$
+be real inner product spaces and $\iota : V \to H$ continuous and linear. Let $a$ be a bilinear
+form on $V$ with $|a(u, v)| \le M \|u\| \|v\|$ and $a(v, v) \ge c_0 \|v\|^2$ for all $u, v$,
+where $c_0 > 0$, and let $\ell$ be a continuous linear functional on $V$. Let $u \in V$ satisfy
+$a(u, v) = \ell(v)$ for all $v \in V$, let $u_h$ be the Galerkin solution on a subspace
+$V_h \subseteq V$, and for each $g \in H$ let $\varphi_g$ solve the dual problem
+$a(v, \varphi_g) = (\iota v, g)_H$ for all $v \in V$. Then
+$$\|\iota(u - u_h)\|_H \le M \|u - u_h\|_V \sup_{g \in H,\, g \ne 0} \frac{1}{\|g\|_H} \inf_{v_h
+  \in V_h} \|\varphi_g - v_h\|_V.$$
 
-  `‖ι (u − u_h)‖_H ≤ M ‖u − u_h‖_V · sup_{g ≠ 0} (1/‖g‖_H) inf_{v_h ∈ V_h} ‖φ_g − v_h‖_V`.
+**Generalization.** The source takes $V \subseteq H^1(\Omega)$ and $H = L^2(\Omega)$, with
+$\iota$ the embedding. The proof uses only that $\iota$ is continuous and linear.
 
-The duality argument itself is the backbone's `norm_map_sq_le_of_dual`; ellipticity enters only to
-make the supremum finite (`bddAbove_dualRatio`). -/
+The duality argument is `norm_map_sq_le_of_dual`. Ellipticity is used only to show that the
+supremum is finite. If $H = \{0\}$, the supremum is over the empty set and has the value $0$. -/
 theorem theorem_10_4_3 (hM : a.IsBoundedWith M) (hc₀ : 0 < c₀) (ha : a.IsEllipticWith c₀)
     (ι : V →L[ℝ] H) (hu : ∀ v, a u v = ℓ v) (huh : GalerkinProblem a ℓ Vh uh) {φ : H → V}
     (hφ : ∀ g, DualProblem a ι g (φ g)) :
@@ -197,16 +235,18 @@ theorem theorem_10_4_3 (hM : a.IsBoundedWith M) (hc₀ : 0 < c₀) (ha : a.IsEll
   rw [div_le_iff₀ h0] at hratio
   nlinarith [hinf, hratio, hMe0, h0]
 
-/-- **Corollary 10.4.4**, with its regularity hypothesis made abstract: if the dual solutions can
-be approximated from `V_h` to within `δ ‖g‖_H`, then
+/-- **Corollary 10.4.4** of [han2009theoretical], with the regularity hypothesis made abstract. Let
+$V$, $H$, $\iota$, $\ell$, $u$, $V_h$ and $u_h$ be as in Theorem 10.4.3, with
+$|a(u, v)| \le M \|u\| \|v\|$, and let $\delta \ge 0$. Assume that for every $g \in H$ the dual
+problem has a solution $\varphi_g$ with $\operatorname{dist}(\varphi_g, V_h) \le \delta
+\|g\|_H$. Then
+$$\|\iota(u - u_h)\|_H \le M \delta \|u - u_h\|_V.$$
 
-  `‖ι (u − u_h)‖_H ≤ M δ ‖u − u_h‖_V`.
-
-In the book `δ = c h` follows from the `H²` regularity bound (10.4.9) together with the
-interpolation error estimate, neither of which is available here.  The approximation hypothesis is
-stated with `Metric.infDist`, the form the backbone's `norm_map_le_of_dual_approx` takes it in;
-`AtkinsonHan.Chapter09.iInf_norm_sub_eq_infDist` identifies it with the book's
-`inf_{v_h ∈ V_h} ‖φ_g − v_h‖_V`. -/
+In the source, $\delta = c h$ follows from the $H^2$ regularity bound (10.4.9) and the
+interpolation error estimate. The library does not have the regularity bound, so the
+approximation property is the hypothesis. The distance is `Metric.infDist`, as in the backbone's
+`norm_map_le_of_dual_approx`; `AtkinsonHan.Chapter09.iInf_norm_sub_eq_infDist` identifies it
+with $\inf_{v_h \in V_h} \|\varphi_g - v_h\|_V$. Ellipticity is not needed. -/
 theorem corollary_10_4_4_abstract (hM : a.IsBoundedWith M) (hδ : 0 ≤ δ) (ι : V →L[ℝ] H)
     (hu : ∀ v, a u v = ℓ v) (huh : GalerkinProblem a ℓ Vh uh)
     (hdual : ∀ g : H, ∃ φ : V, DualProblem a ι g φ ∧
@@ -216,32 +256,42 @@ theorem corollary_10_4_4_abstract (hM : a.IsBoundedWith M) (hδ : 0 ≤ δ) (ι 
     (fun _ hv => Chapter09.galerkin_orthogonality hM hu huh hv) hdual
 
 
-/-! ### Exercise 10.4.5: the Laplacian in polar and in spherical coordinates
+/-!
+### Exercise 10.4.5: the Laplacian in polar and in spherical coordinates
 
-The exercise is the chain rule on a `C²` function, not a Sobolev statement.  The plane and
-three-space are `EuclideanSpace ℝ (Fin 2)` and `EuclideanSpace ℝ (Fin 3)`, and `Δ` is Mathlib's
-`InnerProductSpace.laplacian`; the identities themselves are
-`Curvilinear.laplacian_eq_polar` and `Curvilinear.laplacian_eq_spherical` of the backbone,
-specialized to the standard orthonormal basis.
+The exercise is the chain rule for a $C^2$ function. The plane and space are
+`EuclideanSpace ℝ (Fin 2)` and `EuclideanSpace ℝ (Fin 3)`, and $\Delta$ is
+`InnerProductSpace.laplacian`. The identities are `Curvilinear.laplacian_eq_polar` and
+`Curvilinear.laplacian_eq_spherical` of the backbone for the standard orthonormal basis.
 
-The book writes the two identities as identities of operators.  Here they are stated pointwise, at
-one point of the domain, with the coordinate derivatives written as derivatives of the composition
-of `f` with the coordinate curve through that point — which is what "`∂/∂r`" means. -/
+The source writes the two identities as identities of operators. Here they hold at one point, and
+each coordinate derivative, such as $\partial / \partial r$, is the derivative of $f$ along the
+coordinate curve through that point.
+-/
 
-/-- The point of `ℝ²` with polar coordinates `(r, θ)`: `x₁ = r cos θ` and `x₂ = r sin θ`. -/
+/-- The point of $\mathbb{R}^2$ with polar coordinates $(r, \theta)$: $x_1 = r \cos\theta$ and
+$x_2 = r \sin\theta$. -/
 noncomputable def polarPt (r θ : ℝ) : EuclideanSpace ℝ (Fin 2) :=
   !₂[r * Real.cos θ, r * Real.sin θ]
 
-/-- The book's polar point is the backbone's `Curvilinear.polarPoint` in the standard frame. -/
+/-- The point `AtkinsonHan.Chapter10.polarPt r θ` is the backbone's `Curvilinear.polarPoint` for the
+standard basis of $\mathbb{R}^2$. -/
 theorem polarPt_eq (r θ : ℝ) :
     polarPt r θ = Curvilinear.polarPoint (EuclideanSpace.basisFun (Fin 2) ℝ) r θ := by
   ext i
   fin_cases i <;> simp [polarPt, Curvilinear.polarPoint, EuclideanSpace.basisFun_apply]
 
-/-- **Exercise 10.4.5** in `ℝ²`: in polar coordinates `x₁ = r cos θ`, `x₂ = r sin θ` the Laplacian
-takes the form
+/-- **Exercise 10.4.5** of [han2009theoretical], in $\mathbb{R}^2$. Let
+$f : \mathbb{R}^2 \to \mathbb{R}$ be $C^2$, and let $x_1 = r \cos\theta$, $x_2 = r \sin\theta$
+with $r \ne 0$. Then
+$$\Delta f = \frac{\partial^2 f}{\partial r^2} + \frac{1}{r} \frac{\partial f}{\partial r} +
+  \frac{1}{r^2} \frac{\partial^2 f}{\partial \theta^2}$$
+at the point $(x_1, x_2)$.
 
-  `Δ = ∂²/∂r² + r⁻¹ ∂/∂r + r⁻² ∂²/∂θ²`. -/
+**Reading.** The source writes an identity of operators. Here it holds at each point, and
+$\partial f / \partial r$ and $\partial f / \partial \theta$ are the derivatives of
+$s \mapsto f(s \cos\theta, s \sin\theta)$ at $r$ and of $\psi \mapsto f(r \cos\psi, r \sin\psi)$
+at $\theta$. -/
 theorem exercise_10_4_5_polar {f : EuclideanSpace ℝ (Fin 2) → ℝ} (hf : ContDiff ℝ 2 f)
     {r : ℝ} (hr : r ≠ 0) (θ : ℝ) :
     Δ f (polarPt r θ)
@@ -251,22 +301,31 @@ theorem exercise_10_4_5_polar {f : EuclideanSpace ℝ (Fin 2) → ℝ} (hf : Con
   simp only [polarPt_eq]
   simpa using Curvilinear.laplacian_eq_polar _ hf hr θ
 
-/-- The point of `ℝ³` with spherical coordinates `(r, θ, φ)`: `x₁ = r cos θ sin φ`,
-`x₂ = r sin θ sin φ` and `x₃ = r cos φ`. -/
+/-- The point of $\mathbb{R}^3$ with spherical coordinates $(r, \theta, \varphi)$:
+$x_1 = r \cos\theta \sin\varphi$, $x_2 = r \sin\theta \sin\varphi$ and $x_3 = r \cos\varphi$. -/
 noncomputable def sphericalPt (r θ φ : ℝ) : EuclideanSpace ℝ (Fin 3) :=
   !₂[r * Real.cos θ * Real.sin φ, r * Real.sin θ * Real.sin φ, r * Real.cos φ]
 
-/-- The book's spherical point is the backbone's `Curvilinear.sphericalPoint` in the standard
-frame. -/
+/-- The point `AtkinsonHan.Chapter10.sphericalPt r θ φ` is the backbone's
+`Curvilinear.sphericalPoint` for the standard basis of $\mathbb{R}^3$. -/
 theorem sphericalPt_eq (r θ φ : ℝ) :
     sphericalPt r θ φ = Curvilinear.sphericalPoint (EuclideanSpace.basisFun (Fin 3) ℝ) r θ φ := by
   ext i
   fin_cases i <;> simp [sphericalPt, Curvilinear.sphericalPoint, EuclideanSpace.basisFun_apply]
 
-/-- **Exercise 10.4.5** in `ℝ³`: in spherical coordinates `x₁ = r cos θ sin φ`,
-`x₂ = r sin θ sin φ`, `x₃ = r cos φ` the Laplacian takes the form
+/-- **Exercise 10.4.5** of [han2009theoretical], in $\mathbb{R}^3$. Let
+$f : \mathbb{R}^3 \to \mathbb{R}$ be $C^2$, and let $x_1 = r \cos\theta \sin\varphi$,
+$x_2 = r \sin\theta \sin\varphi$, $x_3 = r \cos\varphi$ with $r \ne 0$ and $\sin\varphi \ne 0$.
+Then
+$$\Delta f = \frac{\partial^2 f}{\partial r^2} + \frac{2}{r} \frac{\partial f}{\partial r} +
+  \frac{1}{r^2} \left( \frac{1}{\sin^2\varphi} \frac{\partial^2 f}{\partial \theta^2} +
+  \cot\varphi \, \frac{\partial f}{\partial \varphi} + \frac{\partial^2 f}{\partial \varphi^2}
+  \right)$$
+at the point $(x_1, x_2, x_3)$.
 
-  `Δ = ∂²/∂r² + (2/r) ∂/∂r + r⁻² ((sin φ)⁻² ∂²/∂θ² + cot φ ∂/∂φ + ∂²/∂φ²)`. -/
+**Reading.** The source writes an identity of operators. Here it holds at each point, and each
+coordinate derivative is the derivative of $f$ along the coordinate curve through the point. The
+factor $\cot\varphi$ is written $\cos\varphi / \sin\varphi$. -/
 theorem exercise_10_4_5_spherical {f : EuclideanSpace ℝ (Fin 3) → ℝ} (hf : ContDiff ℝ 2 f)
     {r φ : ℝ} (hr : r ≠ 0) (hφ : Real.sin φ ≠ 0) (θ : ℝ) :
     Δ f (sphericalPt r θ φ)
@@ -287,28 +346,38 @@ open Filter MeasureTheory Set TopologicalSpace EuclideanSpace Topology
 open scoped ENNReal
 
 local notation "𝔼₂" => EuclideanSpace ℝ (Fin 2)
-/-- **Theorem 10.4.1**, the error estimate (10.4.4). Let `V ⊆ H¹(Ω)` be a subspace carrying a
-bounded, `V`-elliptic bilinear form `a` (the assumptions of the Lax–Milgram lemma), let `{𝒯_h}`
-be a regular family of triangulations of `Ω` with mesh parameters at most `H`, and let the
-finite element be the reference triangle with nodes `x̂ᵢ ∈ K̂̄`, `C¹` shape functions and the
-polynomial invariance `ℙ_k(K̂) ⊆ X̂`, `k ≥ 1`, conforming on every `𝒯_h` — the affine-equivalent
-finite element spaces of piecewise polynomials of degree at most `k`. Then there is a constant
-`c` such that for every solution `u ∈ V` of (10.4.1) and every family of Galerkin solutions
-`u_h ∈ V_h` of (10.4.2) on subspaces `V_h ⊆ V` containing the interpolants `Π_h u`, if
-`u ∈ H^{k+1}(Ω)` (read on its representative `ũ`, continuous up to the boundary as in Theorem
-10.3.9) then
+/-- **Theorem 10.4.1** of [han2009theoretical], the error estimate (10.4.4). Let
+$\Omega \subseteq \mathbb{R}^2$ be open, and let $V$ be a subspace of $H^1(\Omega)$ with a
+bilinear form $a$ such that $|a(u, v)| \le M \|u\|_V \|v\|_V$ and $a(v, v) \ge c_0 \|v\|_V^2$
+for all $u, v \in V$, where $c_0 > 0$. Let $\{\mathcal{T}_h\}$ be a regular family of
+triangulations of $\Omega$ (Definition 10.3.6) with mesh parameters at most $H$. Let $k \ge 1$,
+and let the finite element have the reference triangle $\hat K$, nodes
+$\hat x_i \in \overline{\hat K}$ and $C^1$ shape functions $\hat\varphi_i$, with $\hat\Pi q = q$
+on $\hat K$ for every polynomial $q$ of degree at most $k$, and let it be conforming on every
+triangulation of the family. Then there is a constant $c \ge 0$ with the following property. Let
+$\ell$ be a continuous linear functional on $V$, let $u \in V$ solve $a(u, v) = \ell(v)$ for all
+$v \in V$ (10.4.1), and let $u_h$ be the Galerkin solution (10.4.2) on a subspace
+$V_h \subseteq V$ for each triangulation. Let $u$ agree almost everywhere on $\Omega$ with a
+function $\tilde u \in H^{k+1}(\Omega)$ that is continuous on $\overline\Omega$, and let each
+$V_h$ contain the interpolant $\Pi_h \tilde u$. Then
+$$\|u - u_h\|_V \le c \, h^k \, |\tilde u|_{k+1,\Omega}$$
+for every triangulation of the family, with mesh parameter $h$.
 
-  `‖u − u_h‖_V ≤ c h^k |u|_{k+1,Ω}`.
+**Reading.** As in Theorem 10.3.9, the constant depends on the bound $H$ on the mesh parameters,
+and $u$ is taken on a representative that is continuous up to the boundary.
 
-The proof is the book's: Céa's inequality (10.4.3) with `v_h = Π_h u`
-(`Chapter09.proposition_9_1_3_le`), then the interpolation estimate (10.3.13) at `m = 1`
-(`theorem_10_3_9`), with the norm of `V ⊆ H¹(Ω)` compared to the tensor norm `‖·‖_{1,Ω}` of §10.3 by
-`FiniteElement.exists_norm_le_sobolevNorm`; it is the backbone's
-`FiniteElement.norm_sub_le_of_isGalerkinSolution` for the form `a.toCLM`. The book's "`V_h` is the
-finite element space" enters only through `Π_h u ∈ V_h`, which for `V = H¹(Ω)` is automatic
-(`V_h = X_h`, the space `Triangulation.polySpace`) and for `V = H¹₀(Ω)` is
-`LagrangeElement.exists_mem_polySpaceZero_globalInterp` (Example 10.4.2); the convergence half of
-the theorem is `theorem_10_4_1_tendsto`. -/
+**Generalization.** The source takes $V_h$ to be the finite element space. The proof uses only
+$\Pi_h u \in V_h$. For $V = H^1(\Omega)$ this holds with $V_h = X_h$, the space
+`Triangulation.polySpace`. For $V = H_0^1(\Omega)$ it is
+`LagrangeElement.exists_mem_polySpaceZero_globalInterp` (Example 10.4.2).
+
+The proof is that of the source: Céa's inequality (10.4.3) with $v_h = \Pi_h u$
+(`AtkinsonHan.Chapter09.proposition_9_1_3_le`), and then the interpolation estimate (10.3.13)
+with $m = 1$ (`AtkinsonHan.Chapter10.theorem_10_3_9`). The norm of $V$ is compared with the
+tensor norm $\|\cdot\|_{1,\Omega}$ of Section 10.3 by
+`FiniteElement.exists_norm_le_sobolevNorm`. The statement is
+`FiniteElement.norm_sub_le_of_isGalerkinSolution` for the form `a.toCLM`. The convergence is
+`AtkinsonHan.Chapter10.theorem_10_4_1_tendsto`. -/
 theorem theorem_10_4_1 {k : ℕ} (hk : 1 ≤ k) {I : ℕ} (xhat : Fin I → 𝔼₂) (φhat : Fin I → 𝔼₂ → ℝ)
     (hx : ∀ i, xhat i ∈ closure (referenceTriangle : Set 𝔼₂))
     (hφ : ∀ i, ContDiff ℝ 1 (φhat i))
@@ -333,16 +402,26 @@ theorem theorem_10_4_1 {k : ℕ} (hk : 1 ≤ k) {I : ℕ} (xhat : Fin I → 𝔼
   FiniteElement.norm_sub_le_of_isGalerkinSolution hk xhat φhat hx hφ hP hreg hH hconf
     (BilinForm.isBoundedWith_toCLM hM) hc₀ ((BilinForm.isEllipticWith_iff_isCoerciveWith hM).1 ha)
 
-/-- **Theorem 10.4.1**, the convergence half: under the assumptions of `theorem_10_4_1`, if the
-solution `u ∈ V` can be approximated in `V` by functions in `H^{k+1}(Ω) ∩ C(Ω̄)` whose
-interpolants lie in the `V_h` ("smooth functions are dense in `V`", the book's argument), then
-the finite element method converges: `‖u − u_h‖_V → 0` as `h → 0` along the family. For
-`u ∈ H¹₀(Ω)` the approximants are the test functions, dense by definition; for `V = H¹(Ω)` on
-an extension domain they are the `C^∞(Ω̄)` functions of `Chapter07.theorem_7_3_2` (a polygon is
-not yet known to be an extension domain, though every triangle is,
-`isSobolevExtensionDomainAll_referenceTriangle`). The abstract convergence statement for a
-monotone sequence of subspaces with dense union is `Chapter09.corollary_9_1_4`; the family
-here is indexed by an arbitrary filter, so the `ε`-argument is redone. -/
+/-- **Theorem 10.4.1** of [han2009theoretical], convergence. Let $\Omega$, $V$, $a$, the family
+$\{\mathcal{T}_h\}$ and the finite element satisfy the hypotheses of
+`AtkinsonHan.Chapter10.theorem_10_4_1`. Let $u \in V$ solve $a(u, v) = \ell(v)$ for all
+$v \in V$, and let $u_h$ be the Galerkin solution on a subspace $V_h \subseteq V$ for each
+triangulation. Assume that for every $\varepsilon > 0$ there is a $w \in V$ with
+$\|u - w\|_V < \varepsilon$ that agrees almost everywhere on $\Omega$ with a function
+$\tilde w \in H^{k+1}(\Omega)$ continuous on $\overline\Omega$, such that every $V_h$ contains
+an element equal to $\Pi_h \tilde w$ almost everywhere on $\Omega$. Then $\|u - u_h\|_V \to 0$
+along the family.
+
+**Reading.** The source argues that smooth functions are dense in $V$. Here this density is the
+hypothesis. For $V = H_0^1(\Omega)$ the approximants can be test functions, which are dense by
+definition. For $V = H^1(\Omega)$ on an extension domain they can be the functions of
+$C^\infty(\overline\Omega)$ of `AtkinsonHan.Chapter07.theorem_7_3_2`; the library does not show
+that a polygon is an extension domain, although every triangle is one
+(`isSobolevExtensionDomainAll_referenceTriangle`).
+
+The convergence for an increasing sequence of subspaces with dense union is
+`AtkinsonHan.Chapter09.corollary_9_1_4`. Here the family is indexed along an arbitrary filter,
+so the $\varepsilon$-argument is done again. -/
 theorem theorem_10_4_1_tendsto {k : ℕ} (hk : 1 ≤ k) {I : ℕ} (xhat : Fin I → 𝔼₂)
     (φhat : Fin I → 𝔼₂ → ℝ) (hx : ∀ i, xhat i ∈ closure (referenceTriangle : Set 𝔼₂))
     (hφ : ∀ i, ContDiff ℝ 1 (φhat i))
@@ -369,15 +448,17 @@ theorem theorem_10_4_1_tendsto {k : ℕ} (hk : 1 ≤ k) {I : ℕ} (xhat : Fin I 
 
 end Theorem1041
 
-/-! ### Example 10.4.2: the Dirichlet problem for the Poisson equation
+/-!
+### Example 10.4.2: the Dirichlet problem for the Poisson equation
 
-The concrete instance of Theorem 10.4.1 on `V = H¹₀(Ω)` with the `ℙ_k` Lagrange element on the
-principal lattice (the backbone's `LagrangeElement.node`, `LagrangeElement.shape`) and the finite
-element space `V_h = {v_h ∈ C(Ω̄) : v_h|_K ∈ ℙ_k(K), v_h|_∂Ω = 0}` (`Triangulation.polySpaceZero`).
-The two ingredients the book leaves implicit are the backbone's: the lattice element is edge
-unisolvent (`LagrangeElement.isEdgeUnisolvent`), so that `Π_h u` vanishes on `∂Ω` when `u` does,
-and its shape functions are polynomials of degree at most `k` (`LagrangeElement.shape_eq_eval`),
-so that `Π_h u` is piecewise polynomial. -/
+This is Theorem 10.4.1 for $V = H_0^1(\Omega)$ with the $\mathbb{P}_k$ Lagrange element on the
+principal lattice (`LagrangeElement.node`, `LagrangeElement.shape`) and the finite element space
+$V_h = \{v_h \in C(\overline\Omega) : v_h|_K \in \mathbb{P}_k(K), \ v_h|_{\partial\Omega} = 0\}$
+(`Triangulation.polySpaceZero`). The source leaves two properties of the element implicit, and the
+backbone proves them. The lattice element is edge unisolvent (`LagrangeElement.isEdgeUnisolvent`),
+so $\Pi_h u$ vanishes on $\partial\Omega$ when $u$ does. Its shape functions are polynomials of
+degree at most $k$ (`LagrangeElement.shape_eq_eval`), so $\Pi_h u$ is piecewise polynomial.
+-/
 
 section Example1042
 
@@ -389,69 +470,93 @@ local notation "𝔼₂" => EuclideanSpace ℝ (Fin 2)
 
 variable (Ω : Opens 𝔼₂)
 
-/-- **The Dirichlet form of the Poisson problem** on `V = H¹₀(Ω)`, `a(u, v) = ∫_Ω ∇u · ∇v`
-(Example 8.3.5's form, as an Atkinson–Han bilinear form): `Chapter08.modelOperator` read as a
-form. -/
+/-- The bilinear form of the Poisson problem on $V = H_0^1(\Omega)$, $\Omega \subseteq \mathbb{R}^2$
+open:
+$$a(u, v) = \int_\Omega \nabla u \cdot \nabla v \, dx.$$
+
+It is the form of Example 8.3.5, `AtkinsonHan.Chapter08.modelOperator` read as an
+`AtkinsonHan.BilinForm`. -/
 noncomputable abbrev poissonForm : BilinForm (SobolevEuclideanZero 2 1 2 Ω) :=
   BilinForm.ofCLM (Chapter08.modelOperator (d := 1) Ω)
 
-/-- `a(u, v) = ∫_Ω ∑ᵢ ∂ᵢu ∂ᵢv`. -/
+/-- The bilinear form `AtkinsonHan.Chapter10.poissonForm` is $a(u, v) = \int_\Omega \sum_i
+\partial_i u \, \partial_i v \, dx$, with the weak derivatives $\partial_i u$ and
+$\partial_i v$. -/
 theorem poissonForm_apply (u v : SobolevEuclideanZero 2 1 2 Ω) :
     poissonForm Ω u v = ∫ x in (Ω : Set 𝔼₂),
       ∑ i, SobolevMultiIndex.weakDeriv (u : SobolevEuclidean 2 1 2 Ω) (MultiIndexLE.single i) x
         * SobolevMultiIndex.weakDeriv (v : SobolevEuclidean 2 1 2 Ω) (MultiIndexLE.single i) x :=
   Elliptic.dirichletForm_apply Ω u v
 
-/-- **The load functional** `ℓ(v) = ∫_Ω f v` on `H¹₀(Ω)`, for `f ∈ L²(Ω)`. -/
+/-- The **load functional** $\ell(v) = \int_\Omega f v \, dx$ on $H_0^1(\Omega)$, for
+$f \in L^2(\Omega)$. -/
 noncomputable def poissonLoad (f : Lp ℝ 2 (volume.restrict (Ω : Set 𝔼₂))) :
     StrongDual ℝ (SobolevEuclideanZero 2 1 2 Ω) :=
   (Elliptic.load Ω f).comp (SobolevEuclideanZero 2 1 2 Ω).subtypeL
 
-/-- `ℓ(v) = ∫_Ω f v`. -/
+/-- The load functional `AtkinsonHan.Chapter10.poissonLoad` is $\ell(v) = \int_\Omega f v \, dx$. -/
 theorem poissonLoad_apply (f : Lp ℝ 2 (volume.restrict (Ω : Set 𝔼₂)))
     (v : SobolevEuclideanZero 2 1 2 Ω) :
     poissonLoad Ω f v = ∫ x in (Ω : Set 𝔼₂),
       f x * SobolevMultiIndex.fn (v : SobolevEuclidean 2 1 2 Ω) x :=
   Elliptic.load_apply Ω f v
 
-/-- The Dirichlet form is bounded with `M = 1`. -/
+/-- The bilinear form `AtkinsonHan.Chapter10.poissonForm` satisfies $|a(u, v)| \le \|u\|_{1,\Omega}
+\|v\|_{1,\Omega}$, so it is bounded with $M = 1$. -/
 theorem poissonForm_isBoundedWith : (poissonForm Ω).IsBoundedWith 1 := fun u v ↦ by
   have h := Elliptic.dirichletForm_isBoundedWith Ω u v
   rw [one_mul] at h ⊢
   exact h
 
-/-- The Dirichlet form is `V`-elliptic on `H¹₀(Ω)` with `α = (1 + (2R)²)⁻¹` for
-`Ω ⊆ B(0, R)`: Poincaré's inequality. -/
+/-- Let $R \ge 0$ and $\Omega \subseteq B(0, R)$. The bilinear form
+`AtkinsonHan.Chapter10.poissonForm` is $V$-elliptic on $H_0^1(\Omega)$:
+$$a(v, v) \ge (1 + (2R)^2)^{-1} \|v\|_{1,\Omega}^2 \qquad \text{for all } v \in H_0^1(\Omega).$$
+
+The bound is Poincaré's inequality. -/
 theorem poissonForm_isEllipticWith {R : ℝ} (hR : 0 ≤ R) (hΩ : (Ω : Set 𝔼₂) ⊆ Metric.ball 0 R) :
     (poissonForm Ω).IsEllipticWith (1 + (2 * R) ^ 2)⁻¹ := fun v ↦
   Elliptic.dirichletForm_restrict_isCoerciveWith (d := 1) Ω hR hΩ v
 
-/-- **Example 10.4.2.** Consider `−Δu = f` in `Ω`, `u = 0` on `Γ = ∂Ω`, on a polygon `Ω ⊆ B(0, R)`
-triangulated by a regular family `{𝒯_h}` (mesh parameters at most `H`, `∂Ω` a union of element
-edges), with `f ∈ L²(Ω)` and the finite element space
+/-- **Example 10.4.2** of [han2009theoretical]. Consider the problem $-\Delta u = f$ in $\Omega$,
+$u = 0$ on $\Gamma = \partial\Omega$, for an open set $\Omega \subseteq B(0, R) \subseteq
+\mathbb{R}^2$ with $R \ge 0$ and $f \in L^2(\Omega)$. Let $k \ge 1$, and let $\{\mathcal{T}_h\}$
+be a regular family of triangulations of $\Omega$ (Definition 10.3.6) with mesh parameters at
+most $H$, such that $\partial\Omega$ is a union of element edges of each triangulation. Let
+$$V_h = \{v_h \in C(\overline\Omega) : v_h|_K \in \mathbb{P}_k(K) \text{ for every } K \in
+  \mathcal{T}_h, \ v_h|_{\partial\Omega} = 0\} \subseteq H_0^1(\Omega).$$
+Then the following hold.
 
-  `V_h = {v_h ∈ C(Ω̄) : v_h|_K ∈ ℙ_k(K) for every K ∈ 𝒯_h, v_h|_∂Ω = 0} ⊆ H¹₀(Ω)`
+1. For every $f$, there is a unique $u \in H_0^1(\Omega)$ with $\int_\Omega \nabla u \cdot
+   \nabla v \, dx = \int_\Omega f v \, dx$ for all $v \in H_0^1(\Omega)$.
+2. For every $f$ and every triangulation of the family, there is a unique $u_h \in V_h$ with
+   $\int_\Omega \nabla u_h \cdot \nabla v_h \, dx = \int_\Omega f v_h \, dx$ for all
+   $v_h \in V_h$.
+3. There is a constant $c \ge 0$ with the following property. Let $u$ and $u_h$ be the solutions
+   of 1 and 2, and let $u$ agree almost everywhere on $\Omega$ with a function
+   $\tilde u \in H^{k+1}(\Omega)$ that is continuous on $\overline\Omega$ and vanishes on
+   $\Gamma$. Then $\|u - u_h\|_{1,\Omega} \le c \, h^k \, \|\tilde u\|_{k+1,\Omega}$ for every
+   triangulation of the family, with mesh parameter $h$.
 
-(`Triangulation.polySpaceZero`, the continuous piecewise polynomials of degree at most `k ≥ 1`
-vanishing on the boundary). Then: the variational problem, `u ∈ H¹₀(Ω)` with
-`∫_Ω ∇u · ∇v = ∫_Ω f v` for all `v ∈ H¹₀(Ω)`, has a unique solution (Example 8.3.5, Lax–Milgram);
-the discrete problem, `u_h ∈ V_h` with `∫_Ω ∇u_h · ∇v_h = ∫_Ω f v_h` for all `v_h ∈ V_h`, has a
-unique solution (`V_h` is finite-dimensional, `Triangulation.finiteDimensional_polySpaceZero`);
-and there is a constant `c` such that, whenever the solution lies in `H^{k+1}(Ω)` — read on a
-representative `ũ` continuous up to the boundary, as in Theorem 10.3.9, with `ũ = 0` on `Γ`, the
-boundary condition of the problem — the error is estimated by
+**Reading.** The regularity $u \in H^{k+1}(\Omega)$ is taken on a representative $\tilde u$ that
+is continuous up to the boundary, as in Theorem 10.3.9, and the boundary condition
+$\tilde u = 0$ on $\Gamma$ is a hypothesis. On a $C^1$ domain it follows from
+$u \in H_0^1(\Omega)$ and the continuity of $\tilde u$, by Theorem 9.17 of
+[brezis2011functional], (ii) implies (i)
+(`SobolevEuclideanZero.eqOn_frontier_of_continuousOn_closure`); a polygon is not a $C^1$ domain.
+The source assumes a polygon; the library assumes that $\Omega$ is bounded, which Poincaré's
+inequality (Example 8.3.5) needs, and that $\partial\Omega$ is a union of element edges
+(`Triangulation.FrontierSubsetEdges`).
 
-  `‖u − u_h‖_{1,Ω} ≤ c h^k ‖u‖_{k+1,Ω}`.
-
-The estimate is `theorem_10_4_1` with the `ℙ_k` Lagrange element on the principal lattice, whose
-interpolant `Π_h ũ` lies in `V_h` because the element is conforming, polynomial and edge unisolvent,
-so that `Π_h ũ` vanishes on `∂Ω` with `ũ` (`LagrangeElement.exists_mem_polySpaceZero_globalInterp`):
-the backbone's `FiniteElement.norm_sub_le_of_isGalerkinSolution_dirichletForm` at `s = k`. It is
-stated with the seminorm `|u|_{k+1,Ω}` replaced by the norm `‖u‖_{k+1,Ω}`, as the book writes it.
-
-The hypothesis "`ũ = 0` on `Γ`" is the book's boundary condition; it would follow from
-`u ∈ H¹₀(Ω)` and the continuity of `ũ` on a `C¹` domain (Theorem 9.17 (ii) ⇒ (i),
-`SobolevEuclideanZero.eqOn_frontier_of_continuousOn_closure`), but a polygon is not `C¹`. -/
+Part 1 is the Lax–Milgram lemma with Example 8.3.5, and part 2 holds because $V_h$
+(`Triangulation.polySpaceZero`) is finite-dimensional
+(`LagrangeElement.finiteDimensional_polySpaceZero`). Part 3 is
+`AtkinsonHan.Chapter10.theorem_10_4_1` with the $\mathbb{P}_k$ Lagrange element on the principal
+lattice. Its interpolant $\Pi_h \tilde u$ lies in $V_h$ because the element is conforming,
+polynomial and edge unisolvent, so that $\Pi_h \tilde u$ vanishes on $\partial\Omega$ with
+$\tilde u$ (`LagrangeElement.exists_mem_polySpaceZero_globalInterp`). The statement is
+`FiniteElement.norm_sub_le_of_isGalerkinSolution_dirichletForm` with $s = k$, and it bounds the
+error by the norm $\|\tilde u\|_{k+1,\Omega}$ (the tensor norm `sobolevNorm`), as the source
+writes it. -/
 theorem example_10_4_2 {k : ℕ} (hk : 1 ≤ k) {ι : Type*} {l : Filter ι}
     {𝒯 : ι → Triangulation Ω} (hreg : IsRegularFamily l fun i ↦ Set.range (𝒯 i).K)
     {H : ℝ} (hH : ∀ i, (𝒯 i).meshSize ≤ H) (hedge : ∀ i, (𝒯 i).FrontierSubsetEdges)

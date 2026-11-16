@@ -10,77 +10,107 @@ import NumlibSurface.AtkinsonHan.Chapter02.Section03
 import NumlibSurface.AtkinsonHan.Chapter12.Section03
 
 /-!
-# Atkinson–Han §12.4: the Nyström method and collectively compact approximation
+# Atkinson and Han, Section 12.4: The Nyström method
 
-Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework*, 3rd edition, Springer, 2009, §12.4.
+This module formalizes Section 12.4 of [han2009theoretical]. The Nyström method replaces the
+integral in $K u(t) = \int_D k(t, s) u(s)\, ds$ by a quadrature rule with weights $w_{n,j}$ and
+nodes $x_{n,j}$, which gives the operator $K_n u(t) = \sum_j w_{n,j} k(t, x_{n,j}) u(x_{n,j})$ of
+(12.4.4), and solves $(\lambda - K_n) u_n = f$. In general $\|K - K_n\|$ does not tend to zero. The
+analysis rests instead on Anselone's perturbation theorem (Theorem 12.4.3), whose hypothesis bounds
+$\|(T - S) S\|$, and on the identities of Lemma 12.4.2, which express $(K - K_n) K$ and
+$(K - K_n) K_n$ through one kernel $e_n$. Theorem 12.4.4 follows: for convergent rules with bounded
+absolute weight sums, $\lambda - K_n$ is invertible for large $n$ with uniformly bounded inverses,
+and $\|u - u_n\|_\infty \le c \|K u - K_n u\|_\infty$.
 
-The section has an abstract half, §12.4.3, and a concrete half: the perturbation theorem whose
-hypothesis constrains `(T - S) S` rather than `T - S`, the assumptions A1–A3 and Lemma 12.4.7 on
-the one side, and on the other the Nyström operators of a quadrature rule, for which those
-assumptions are verified.  Both are formalized here.  The abstract half is the framework which
-makes the Nyström method analysable, and which §12.5 reuses for product integration.
+The module also proves the abstract form of the theory of §12.4.3: assumptions A1–A3 on a family of
+operators (a collectively compact family that converges pointwise), the consequences in Lemma
+12.4.7, and the convergence of the approximate equations, which Section 12.5 reuses for product
+integration. The concrete part treats the equation (12.4.7) of Example 12.4.1, the composite
+trapezoidal rule and its asymptotic error (Example 12.4.5 and (12.4.39)), and the asymptotic error
+expansion of the Nyström solution (Example 12.4.6). The proofs specialize
+`Numlib.IntegralEquations.Nystrom`, `Numlib.IntegralEquations.SecondKind` and
+`Numlib.Approximation.CompositeQuadrature`.
+
+## Main definitions
+
+* Assumptions A1–A3 of §12.4.3, `AtkinsonHan.Chapter12.IsCollectivelyCompactFamily`: a family $K_n$
+  converges pointwise to $K$, and $\{K_n v : n \in \mathbb{N}, \|v\| \le 1\}$ has compact closure
+  (12.4.53).
 
 ## Main results
 
-* `theorem_12_4_3` — Anselone's perturbation theorem, with the inverse bound (12.4.23) and the
-  error bound (12.4.24).
-* `IsCollectivelyCompactFamily` — assumptions A1–A3, with
-  `IsCollectivelyCompactFamily.isCollectivelyCompact` and
-  `isCollectivelyCompactFamily_of_isCollectivelyCompact` identifying the book's condition (12.4.53)
-  on the closed unit ball with the backbone `IsCollectivelyCompact`, which quantifies over some
-  neighbourhood of the origin instead.
-* `lemma_12_4_7_a`–`lemma_12_4_7_d` — the four clauses of Lemma 12.4.7.
-* `exists_norm_inverse_le_of_isCollectivelyCompactFamily` — the abstract half of Theorem 12.4.4:
-  for large `n` the approximate equations are uniquely solvable, the inverses are uniformly
-  bounded, and the error is controlled by the consistency error `‖(K - K_n) u‖` at the exact
-  solution.
-* `isCollectivelyCompactFamily_nystromCLM` — the Nyström operators of a sequence of convergent
-  quadrature rules with uniformly bounded absolute weight sums satisfy A1–A3.
-* `lemma_12_4_2_a`–`lemma_12_4_2_c` — the three clauses of Lemma 12.4.2: the identities
-  (12.4.14)–(12.4.15) expressing `(K - K_n) K` and `(K - K_n) K_n` through the single kernel `e_n`,
-  the norm formulas (12.4.16)–(12.4.17), and (12.4.18), that both norms tend to zero.
-* `theorem_12_4_4` — the Nyström instance of the abstract theorem.
-* `example_12_4_5` — the composite trapezoidal rule error `-h² (b - a) g''(ξ) / 12`, an instance
-  of `Quadrature.sub_composite_trapezoid_eq` in `Numlib/Approximation/CompositeQuadrature`.
-* `equation_12_4_39` — its asymptotic form `-(h²/12) [g'(b) - g'(a)] + O(h⁴)`, the first
-  Euler–Maclaurin term, with the explicit remainder `(b - a) h⁴ ‖g⁗‖_∞ / 720`.  The book quotes
-  this one from the literature; it is `Quadrature.abs_sub_trapezoidSum_add_le`.
-* `equation_12_4_44` — the same expansion for the Nyström *consistency error*, uniformly in the row
-  variable: `‖(K - K_n) u - h² d‖_∞ ≤ (b - a) h⁴ M₄ / 720`.  The hypotheses on the row integrands
-  `y ↦ k (t, y) u (y)` are carried as a family `G t` of `C⁴` functions with a bound on the fourth
-  derivatives that does not depend on `t`, which is what makes the estimate uniform.
-* `example_12_4_6` — the asymptotic error expansion `u - u_n = h² γ + O(h⁴)` of the Nyström
-  solution, with `γ` the solution of the book's auxiliary integral equation, in the two forms
-  described in its doc comment.
-* `norm_fredholm_expKernel` and `example_12_4_1` — the equation (12.4.7) the section
-  computes with, `2 u(x) - ∫₀¹ e^{x y} u(y) dy = f(x)`: its operator has norm exactly `e - 1`, and
-  since `e - 1 < 2` the equation is uniquely solvable for every `f ∈ C[0, 1]`, which is the one
-  claim of Example 12.4.1 that is not a measured number.
-
-## Not formalized here
-
-The numerical half of Example 12.4.1: the nodal errors (12.4.8) and (12.4.9) of the three-point
-Simpson and three-point Gauss–Legendre rules, the comparison of Nyström interpolation with
-quadratic interpolation off the nodes, and Figure 12.1.  They are computed floating-point numbers,
-not statements; only the unique solvability the example opens with is stated, as
-`example_12_4_1`.
-
-Nothing else of §12.4 except the *unconditional* form of the last clause of Example 12.4.6.  The
-book's "by a similar argument, `r_n = O(h⁴)`" needs `‖(K - K_n) γ‖ = O(h²)`, hence the smoothness
-of the solution `γ` of the auxiliary equation, hence differentiation under the integral sign; here
-that bound is a hypothesis of the clause that needs it, and everything else is proved.
+* Example 12.4.1, `AtkinsonHan.Chapter12.norm_fredholm_expKernel`: the operator of (12.4.7) has norm
+  $e - 1$.
+* Example 12.4.1, `AtkinsonHan.Chapter12.example_12_4_1`: the equation (12.4.7) is uniquely solvable
+  for every $f \in C[0, 1]$.
+* Lemma 12.4.2, `AtkinsonHan.Chapter12.lemma_12_4_2_a`: $(K - K_n) K$ is the integral operator of
+  $e_n$, (12.4.14), with norm (12.4.16).
+* Lemma 12.4.2, `AtkinsonHan.Chapter12.lemma_12_4_2_b`: $(K - K_n) K_n$ is the Nyström operator of
+  $e_n$, (12.4.15), with norm (12.4.17).
+* Lemma 12.4.2, `AtkinsonHan.Chapter12.lemma_12_4_2_c`: both norms tend to zero, (12.4.18).
+* Theorem 12.4.3, `AtkinsonHan.Chapter12.theorem_12_4_3`: Anselone's perturbation theorem, with the
+  inverse bound (12.4.23) and the error bound (12.4.24).
+* Theorem 12.4.4, `AtkinsonHan.Chapter12.theorem_12_4_4`: the Nyström equations are uniquely
+  solvable for large $n$, with uniformly bounded inverses (12.4.32), and $\|u - u_n\|_\infty \le c
+  \|K u - K_n u\|_\infty$.
+* Example 12.4.5, `AtkinsonHan.Chapter12.example_12_4_5`: the error $-h^2 (b - a) g''(\xi)/12$ of
+  the composite trapezoidal rule.
+* Equation (12.4.39), `AtkinsonHan.Chapter12.equation_12_4_39`: the asymptotic error
+  $-(h^2/12)[g'(b) - g'(a)] + O(h^4)$ of the composite trapezoidal rule.
+* Equation (12.4.44), `AtkinsonHan.Chapter12.equation_12_4_44`: the expansion
+  $(K - K_n) u = h^2 d + O(h^4)$ of the consistency error, uniformly in the row variable.
+* Example 12.4.6, `AtkinsonHan.Chapter12.example_12_4_6`: the asymptotic error expansion
+  $u - u_n = h^2 \gamma + O(h^4)$ of the Nyström solution.
+* Lemma 12.4.7, `AtkinsonHan.Chapter12.lemma_12_4_7_a`, `AtkinsonHan.Chapter12.lemma_12_4_7_b`,
+  `AtkinsonHan.Chapter12.lemma_12_4_7_c` and `AtkinsonHan.Chapter12.lemma_12_4_7_d`: the limit of a
+  collectively compact family is compact, the family is uniformly bounded, $\|(K - K_n) M\| \to 0$
+  for compact $M$, and $\|(K - K_n) K_n\| \to 0$.
+* Theorem 12.4.4 in the setting of §12.4.3,
+  `AtkinsonHan.Chapter12.exists_norm_inverse_le_of_isCollectivelyCompactFamily`: the conclusion of
+  Theorem 12.4.4 for every family that satisfies A1–A3.
+* `AtkinsonHan.Chapter12.isCollectivelyCompactFamily_nystromCLM`: the Nyström operators of
+  convergent quadrature rules with bounded absolute weight sums satisfy A1–A3.
 
 ## Conventions
 
-As in §12.1 the book's scalar `λ` is written `μ`, `λ` being Lean's lambda binder; the measure of
-the concrete half is therefore written `ν`.  The book's domain is a closed bounded `D` in `ℝ^m`
-with Lebesgue measure, and the statements below are for a compact space with a finite Borel
-measure, the generality at which the backbone `IntegralOperator.kernelCLM` and
-`IntegralOperator.nystromCLM` are written; the book's case is `IntegralOperator.regionMeasure D`.
-The book's family is `K_n` with limit `K`; here the family is `K : ℕ → X →L[𝕜] X` and its limit is
-`L`, so that the family is named once and indexed.  Doc comments below quote the book's `K` and
-`K_n`, which are this file's `L` and `K n`.
+* The scalar $\lambda$ of the source is `μ`, because `λ` is the Lean lambda binder. The measure of
+  the concrete part is therefore `ν`.
+* In the abstract results the family of the source is $K_n$ with limit $K$. In Lean the family is
+  `K : ℕ → X →L[𝕜] X` and its limit is `L`. The doc comments below use the notation of the source,
+  so the $K$ and $K_n$ of a comment are `L` and `K n` in the abstract statements.
+* A quadrature rule is `Quadrature.functional w x`, the functional $v \mapsto \sum_j w_j v(x_j)$,
+  and the Nyström operator is `IntegralOperator.nystromCLM`.
+
+## Implementation notes
+
+* The source formulates assumption A3 on the closed unit ball, as (12.4.53). The backbone notion
+  `IsCollectivelyCompact` uses some neighbourhood of the origin. The two agree by
+  `AtkinsonHan.Chapter12.IsCollectivelyCompactFamily.isCollectivelyCompact` and
+  `AtkinsonHan.Chapter12.isCollectivelyCompactFamily_of_isCollectivelyCompact`.
+* Boundedness of the operators, assumption A1, is part of the type `X →L[𝕜] X`.
+
+## Deviations from the source
+
+* **The domain $D$** (generalization). The source takes a closed bounded set
+  $D \subseteq \mathbb{R}^m$ with Lebesgue measure. The statements hold on every compact space with
+  a finite Borel measure, the generality of `IntegralOperator.kernelCLM` and
+  `IntegralOperator.nystromCLM`; the case of the source is `IntegralOperator.regionMeasure D`. See
+  `AtkinsonHan.Chapter12.theorem_12_4_4`.
+* **Lemma 12.4.7(3)** (generalization). The compact operator $M$ may have any normed space as its
+  domain. See `AtkinsonHan.Chapter12.lemma_12_4_7_c`.
+* **Theorem 12.4.4** (generalization). The source states the convergence for the Nyström operators
+  on $C(D)$. Its proof uses only A1–A3, and the statement holds for every family that satisfies
+  them. See `AtkinsonHan.Chapter12.exists_norm_inverse_le_of_isCollectivelyCompactFamily`.
+
+## Not formalized
+
+* **The numerical part of Example 12.4.1.** The nodal errors (12.4.8) and (12.4.9) of the
+  three-point Simpson and Gauss–Legendre rules, the comparison of Nyström interpolation with
+  quadratic interpolation away from the nodes, and Figure 12.1 are computed floating-point numbers.
+* **The unconditional form of the last clause of Example 12.4.6.** The claim of the source that
+  $r_n = O(h^4)$ "by a similar argument" needs $\|(K - K_n) \gamma\| = O(h^2)$, hence the smoothness
+  of the solution $\gamma$ of the auxiliary equation, hence differentiation under the integral sign.
+  That bound is a hypothesis of the clause that needs it.
 -/
 
 open Filter Topology
@@ -91,22 +121,18 @@ variable {𝕜 X : Type*} [RCLike 𝕜] [NormedAddCommGroup X] [NormedSpace 𝕜
 
 /-! ### Anselone's perturbation theorem -/
 
-/-- **Theorem 12.4.3**: let `S` and `T` be bounded operators on a Banach space with `S` compact,
-let `λ ≠ 0` be such that `λ - T` is invertible, and assume (12.4.22),
+/-- **Theorem 12.4.3** of [han2009theoretical] (Anselone's perturbation theorem). Let $S$ and $T$ be
+bounded operators on a Banach space with $S$ compact, let $\lambda \neq 0$ be such that
+$\lambda - T$ is invertible, and assume (12.4.22), $$\|(\lambda - T)^{-1}\| \, \|(T - S) S\| <
+|\lambda|.$$ Then $\lambda - S$ is invertible with the bound (12.4.23), $$\|(\lambda - S)^{-1}\|
+\le \frac{1 + \|(\lambda - T)^{-1}\| \|S\|}{|\lambda| - \|(\lambda - T)^{-1}\| \|(T - S) S\|},$$
+and the solutions of $(\lambda - T) u = f$ and $(\lambda - S) z = f$ satisfy (12.4.24), $$\|u -
+z\| \le \|(\lambda - S)^{-1}\| \, \|T u - S u\|.$$
 
-`‖(λ - T)⁻¹‖ ‖(T - S) S‖ < |λ|`.
-
-Then `λ - S` is invertible with the bound (12.4.23),
-
-`‖(λ - S)⁻¹‖ ≤ (1 + ‖(λ - T)⁻¹‖ ‖S‖) / (|λ| - ‖(λ - T)⁻¹‖ ‖(T - S) S‖)`,
-
-and the solutions of `(λ - T) u = f` and `(λ - S) z = f` satisfy (12.4.24),
-`‖u - z‖ ≤ ‖(λ - S)⁻¹‖ ‖T u - S u‖`.
-
-The book prints (12.4.22) as `‖(T - S) S‖ < |λ| / ‖(λ - T)⁻¹‖`; the equivalent product form is
-used here, since it divides by nothing.  The hypothesis is on `(T - S) S` and not on `T - S`,
-which is exactly why the theorem applies to quadrature approximations of an integral operator,
-where `‖T - S‖` does not tend to zero. -/
+The source prints (12.4.22) as $\|(T - S) S\| < |\lambda| / \|(\lambda - T)^{-1}\|$. The product
+form is equivalent and divides by nothing. The hypothesis concerns $(T - S) S$ and not $T - S$,
+and this is why the theorem applies to quadrature approximations of an integral operator, where
+$\|T - S\|$ does not tend to zero. -/
 theorem theorem_12_4_3 [CompleteSpace X] {μ : 𝕜} (hμ : μ ≠ 0) {S T : X →L[𝕜] X}
     (hS : IsCompactOperator S) {e : X ≃L[𝕜] X} (he : (e : X →L[𝕜] X) = μ • 1 - T)
     (h : ‖(e.symm : X →L[𝕜] X)‖ * ‖(T - S) ∘L S‖ < ‖μ‖) :
@@ -120,32 +146,30 @@ theorem theorem_12_4_3 [CompleteSpace X] {μ : 𝕜} (hμ : μ ≠ 0) {S T : X �
 
 /-! ### The assumptions A1–A3 -/
 
-/-- **Assumptions A1–A3 of §12.4.3**: on a Banach space, `K` and the `K_n` are bounded linear
-operators (A1), `K_n u → K u` for every `u` (A2), and the set `{K_n v : n ≥ 1, ‖v‖ ≤ 1}` of
-(12.4.53) has compact closure (A3) — a *collectively compact family of pointwise convergent
-operators*.
+/-- **Assumptions A1–A3** of [han2009theoretical], §12.4.3. Let $K_n$, $n \in \mathbb{N}$, and $K$
+be bounded operators on a normed space $X$ (A1). The family is a **collectively compact family
+that converges pointwise to $K$** if $K_n u \to K u$ for every $u \in X$ (A2), and the set
+$$\{K_n v : n \in \mathbb{N}, \ \|v\| \le 1\}$$ of (12.4.53) has compact closure (A3).
 
-Boundedness is carried by the type `X →L[𝕜] X`, so A1 needs no field.  The backbone
-`IsCollectivelyCompact` states A3 for *some* neighbourhood of the origin rather than for the
-closed unit ball; the two agree, by `IsCollectivelyCompactFamily.isCollectivelyCompact` and
-`isCollectivelyCompactFamily_of_isCollectivelyCompact`. -/
+Boundedness (A1) is part of the type `X →L[𝕜] X`, so it needs no field. The limit operator is
+`L` and the family is `K`. -/
 structure IsCollectivelyCompactFamily (K : ℕ → X →L[𝕜] X) (L : X →L[𝕜] X) : Prop where
-  /-- A2: the family converges pointwise to `L`. -/
+  /-- Assumption A2: $K_n u \to K u$ for every $u$. -/
   tendsto : ∀ x, Tendsto (fun n => K n x) atTop (𝓝 (L x))
-  /-- A3, the book's (12.4.53): the union of the images of the closed unit ball is relatively
-  compact. -/
+  /-- Assumption A3, (12.4.53): the union of the images of the closed unit ball under the $K_n$ has
+  compact closure. -/
   isCompact_closure : IsCompact (closure (⋃ n, K n '' Metric.closedBall 0 1))
 
-/-- A3 in the book's form implies the backbone's, since the closed unit ball is a neighbourhood of
-the origin. -/
+/-- A family that satisfies A1–A3 is collectively compact in the sense of `IsCollectivelyCompact`,
+because the closed unit ball is a neighbourhood of the origin. -/
 theorem IsCollectivelyCompactFamily.isCollectivelyCompact {K : ℕ → X →L[𝕜] X} {L : X →L[𝕜] X}
     (h : IsCollectivelyCompactFamily K L) : IsCollectivelyCompact K :=
   ⟨Metric.closedBall 0 1, Metric.closedBall_mem_nhds 0 one_pos, h.isCompact_closure⟩
 
-/-- The converse identification: a pointwise convergent family that is collectively compact in the
-backbone's sense satisfies the book's A1–A3.  A neighbourhood of the origin contains a ball of
-some radius `r`, and scaling by `r / 2` carries the closed unit ball into it, so the two unions of
-images differ by a homeomorphism of the space. -/
+/-- A family that is collectively compact in the sense of `IsCollectivelyCompact` and converges
+pointwise to $K$ satisfies A1–A3. A neighbourhood of the origin contains a ball of some radius
+$r$, and multiplication by $r/2$ maps the closed unit ball into it, so the two unions of images
+differ by a homeomorphism of the space. -/
 theorem isCollectivelyCompactFamily_of_isCollectivelyCompact {K : ℕ → X →L[𝕜] X} {L : X →L[𝕜] X}
     (hK : IsCollectivelyCompact K) (hL : ∀ x, Tendsto (fun n => K n x) atTop (𝓝 (L x))) :
     IsCollectivelyCompactFamily K L := by
@@ -177,17 +201,22 @@ theorem isCollectivelyCompactFamily_of_isCollectivelyCompact {K : ℕ → X →L
 
 variable {K : ℕ → X →L[𝕜] X} {L : X →L[𝕜] X}
 
-/-- **Lemma 12.4.7 (1)**: the pointwise limit of a collectively compact family is compact. -/
+/-- **Lemma 12.4.7(1)** of [han2009theoretical]. If $\{K_n\}$ satisfies A1–A3 with limit $K$, then
+$K$ is compact. -/
 theorem lemma_12_4_7_a (h : IsCollectivelyCompactFamily K L) : IsCompactOperator L :=
   IsCollectivelyCompact.isCompactOperator_of_tendsto h.isCollectivelyCompact h.tendsto
 
-/-- **Lemma 12.4.7 (2)**: a collectively compact family is uniformly bounded in operator norm. -/
+/-- **Lemma 12.4.7(2)** of [han2009theoretical]. If $\{K_n\}$ satisfies A1–A3, then there is a
+constant $C$ with $\|K_n\| \le C$ for all $n$. -/
 theorem lemma_12_4_7_b (h : IsCollectivelyCompactFamily K L) : ∃ C, ∀ n, ‖K n‖ ≤ C :=
   IsCollectivelyCompact.exists_opNorm_le h.isCollectivelyCompact
 
-/-- **Lemma 12.4.7 (3)**: `‖(K - K_n) M‖ → 0` for every compact operator `M`.  Only the pointwise
-convergence A2 is used; the estimate holds for a compact `M` into the space, of whatever
-domain. -/
+/-- **Lemma 12.4.7(3)** of [han2009theoretical]. Let $X$ be a Banach space and let $\{K_n\}$ satisfy
+A1–A3 with limit $K$. If $M : U \to X$ is a compact operator from a normed space $U$, then
+$$\|(K - K_n) M\| \to 0.$$
+
+**Generalization.** The domain $U$ of $M$ is any normed space. The proof uses only the pointwise
+convergence A2. -/
 theorem lemma_12_4_7_c [CompleteSpace X] {U : Type*} [NormedAddCommGroup U] [NormedSpace 𝕜 U]
     (h : IsCollectivelyCompactFamily K L) {M : U →L[𝕜] X} (hM : IsCompactOperator M) :
     Tendsto (fun n => ‖(L - K n) ∘L M‖) atTop (𝓝 0) := by
@@ -197,28 +226,29 @@ theorem lemma_12_4_7_c [CompleteSpace X] {U : Type*} [NormedAddCommGroup U] [Nor
   rw [sub_self] at hx
   simpa using hx
 
-/-- **Lemma 12.4.7 (4)**: `‖(K - K_n) K_n‖ → 0`, although `‖K - K_n‖` need not tend to zero at all.
-This is the hypothesis (12.4.22) of Theorem 12.4.3 for all large `n`, and it is the whole point of
-the collectively compact framework. -/
+/-- **Lemma 12.4.7(4)** of [han2009theoretical]. Let $X$ be a Banach space and let $\{K_n\}$ satisfy
+A1–A3 with limit $K$. Then $$\|(K - K_n) K_n\| \to 0,$$ although $\|K - K_n\|$ need not tend to
+zero.
+
+This gives hypothesis (12.4.22) of Theorem 12.4.3 for all large $n$. -/
 theorem lemma_12_4_7_d [CompleteSpace X] (h : IsCollectivelyCompactFamily K L) :
     Tendsto (fun n => ‖(L - K n) ∘L K n‖) atTop (𝓝 0) :=
   IsCollectivelyCompact.tendsto_opNorm_sub_comp h.isCollectivelyCompact h.tendsto
 
 /-! ### The convergence of the approximate equations -/
 
-/-- **The abstract half of Theorem 12.4.4**: for a collectively compact, pointwise convergent
-family `K_n` on a Banach space and `λ ≠ 0` with `λ - K` invertible, there is a constant `c` such
-that for all large `n` the operator `λ - K_n` is invertible with `‖(λ - K_n)⁻¹‖ ≤ c` (12.4.32),
-and the solutions of `(λ - K) u = f` and `(λ - K_n) u_n = f` satisfy
+/-- **Theorem 12.4.4** of [han2009theoretical], for a family that satisfies A1–A3. Let $X$ be a
+Banach space, let $\{K_n\}$ satisfy A1–A3 with limit $K$, and let $\lambda \neq 0$ be such that
+$\lambda - K$ is invertible. Then there is a constant $c$ such that for all large $n$ the
+operator $\lambda - K_n$ is invertible with $\|(\lambda - K_n)^{-1}\| \le c$, which is
+(12.4.32), and the solutions of $(\lambda - K) u = f$ and $(\lambda - K_n) u_n = f$ satisfy
+$$\|u - u_n\| \le c \, \|K u - K_n u\|,$$ the consistency error at the exact solution.
 
-`‖u - u_n‖ ≤ c ‖(K - K_n) u‖`,
+**Generalization.** The source states this for the Nyström operators on $C(D)$. Its proof is
+Lemma 12.4.7 followed by Theorem 12.4.3 and uses only A1–A3.
 
-the consistency error at the *exact* solution.  The book states this for the Nyström operators on
-`C(D)`; every step of its proof is Lemma 12.4.7 followed by Theorem 12.4.3, so the abstract
-statement is the one worth having.
-
-The constant is `c = 2 (1 + ‖(λ - K)⁻¹‖ C) / |λ|` with `C` the uniform bound of
-`lemma_12_4_7_b`. -/
+The proof gives $c = 2 (1 + \|(\lambda - K)^{-1}\| C) / |\lambda|$, with $C$ the uniform bound
+of `AtkinsonHan.Chapter12.lemma_12_4_7_b`. -/
 theorem exists_norm_inverse_le_of_isCollectivelyCompactFamily [CompleteSpace X] {μ : 𝕜}
     (hμ : μ ≠ 0) (h : IsCollectivelyCompactFamily K L) {e : X ≃L[𝕜] X}
     (he : (e : X →L[𝕜] X) = μ • 1 - L) :
@@ -267,19 +297,16 @@ open IntegralOperator MeasureTheory
 variable {D : Type*} [TopologicalSpace D] [CompactSpace D] [MeasurableSpace D] [BorelSpace D]
   (ν : Measure D) [IsFiniteMeasure ν]
 
-/-- **The Nyström family satisfies A1–A3.**  With `K u (t) = ∫ k (t, s) u (s) dν` the integral
-operator of a continuous kernel and
+/-- Let $D$ be a compact space with a finite Borel measure $\nu$, let $k$ be a continuous kernel on
+$D \times D$ with integral operator $K u(t) = \int k(t, s) u(s)\, d\nu(s)$, and let $K_n u(t) =
+\sum_j w_{n,j} k(t, x_{n,j}) u(x_{n,j})$ be the Nyström operators (12.4.4) of a sequence of
+quadrature rules. If $\sum_j |w_{n,j}| \le W$ for all $n$ and the rules converge to
+$\int v \, d\nu$ for every $v \in C(D)$, as in (12.4.3), then $\{K_n\}$ satisfies A1–A3 with
+limit $K$.
 
-`K_n u (t) = Σ_j w_{n,j} k (t, x_{n,j}) u (x_{n,j})`
-
-the Nyström operators (12.4.4) of a sequence of quadrature rules, the family `{K_n}` converges to
-`K` pointwise on `C(D)` and is collectively compact, as soon as the rules converge at every
-continuous integrand and their absolute weight sums are bounded — the book's (12.4.3).
-
-This is the missing instance of the framework: A2 is
-`IntegralOperator.tendsto_nystromCLM` and A3 is
-`IntegralOperator.isCollectivelyCompact_nystromCLM`, both proved from the uniform convergence of
-the rules on the compact set of row integrands. -/
+A2 is `IntegralOperator.tendsto_nystromCLM` and A3 is
+`IntegralOperator.isCollectivelyCompact_nystromCLM`. Both follow from the uniform convergence of
+the rules on the compact set of functions $s \mapsto k(t, s) u(s)$. -/
 theorem isCollectivelyCompactFamily_nystromCLM (k : C(D × D, ℝ)) {m : ℕ → ℕ}
     {w : ∀ n, Fin (m n) → ℝ} {x : ∀ n, Fin (m n) → D} {W : ℝ} (hW : ∀ n, ∑ j, |w n j| ≤ W)
     (hQ : ∀ v : C(D, ℝ), Tendsto (fun n => Quadrature.functional (w n) (x n) v) atTop
@@ -288,12 +315,14 @@ theorem isCollectivelyCompactFamily_nystromCLM (k : C(D × D, ℝ)) {m : ℕ →
   isCollectivelyCompactFamily_of_isCollectivelyCompact
     (isCollectivelyCompact_nystromCLM k hW) fun u => tendsto_nystromCLM ν hQ u
 
-/-- **Lemma 12.4.2, first clause.**  With
+/-- **Lemma 12.4.2** of [han2009theoretical], first clause. Let $D$ be a nonempty, second countable
+compact space with a finite Borel measure $\nu$, let $k$ be a continuous kernel, and let $w_j$,
+$x_j$ be the weights and nodes of a quadrature rule. Let $$e_n(t, s) = \int k(t, v) k(v, s)\,
+d\nu(v) - \sum_j w_j k(t, x_j) k(x_j, s)$$ be the quadrature error of the composed kernel. Then
+$(K - K_n) K$ is the integral operator of $e_n$, which is (12.4.14), and $$\|(K - K_n) K\| =
+\sup_t \int |e_n(t, s)|\, d\nu(s),$$ which is (12.4.16).
 
-`e_n (t, s) = ∫ k (t, v) k (v, s) dν - Σ_j w_j k (t, x_j) k (x_j, s)`
-
-the quadrature error of the composed kernel, `(K - K_n) K` is the integral operator of `e_n`
-(12.4.14), and hence its norm is the largest row integral of `e_n` (12.4.16). -/
+The kernel $e_n$ is `IntegralOperator.compKernel`. -/
 theorem lemma_12_4_2_a [SecondCountableTopology D] [Nonempty D] {m : ℕ} (w : Fin m → ℝ)
     (x : Fin m → D) (k : C(D × D, ℝ)) :
     (kernelCLM ν k - nystromCLM w x k) ∘L kernelCLM ν k = kernelCLM ν (compKernel ν w x k) ∧
@@ -302,8 +331,11 @@ theorem lemma_12_4_2_a [SecondCountableTopology D] [Nonempty D] {m : ℕ} (w : F
   refine ⟨kernelCLM_sub_nystromCLM_comp_kernelCLM ν w x k, ?_⟩
   rw [kernelCLM_sub_nystromCLM_comp_kernelCLM ν w x k, norm_kernelCLM]
 
-/-- **Lemma 12.4.2, second clause.**  `(K - K_n) K_n` is the *Nyström* operator of the same kernel
-`e_n` (12.4.15), and hence its norm is the largest absolute weight sum of `e_n` (12.4.17). -/
+/-- **Lemma 12.4.2** of [han2009theoretical], second clause. Let $D$ be a nonempty Hausdorff compact
+space with a finite Borel measure $\nu$, let $k$ be a continuous kernel, and let $w_j$ and
+distinct nodes $x_j$ define a quadrature rule. Then $(K - K_n) K_n$ is the Nyström operator of
+the kernel $e_n$ of the first clause, which is (12.4.15), and $$\|(K - K_n) K_n\| = \sup_t
+\sum_j |w_j e_n(t, x_j)|,$$ which is (12.4.17). -/
 theorem lemma_12_4_2_b [T2Space D] [Nonempty D] {m : ℕ} {w : Fin m → ℝ} {x : Fin m → D}
     (hx : Function.Injective x) (k : C(D × D, ℝ)) :
     (kernelCLM ν k - nystromCLM w x k) ∘L nystromCLM w x k
@@ -313,12 +345,15 @@ theorem lemma_12_4_2_b [T2Space D] [Nonempty D] {m : ℕ} {w : Fin m → ℝ} {x
   refine ⟨kernelCLM_sub_nystromCLM_comp_nystromCLM ν w x k, ?_⟩
   rw [kernelCLM_sub_nystromCLM_comp_nystromCLM ν w x k, norm_nystromCLM hx]
 
-/-- **Lemma 12.4.2, third clause (12.4.18)**: for a convergent quadrature rule the composed
-quadrature error tends to zero uniformly, `max_{t,s} |e_n (t, s)| → 0`, and therefore so do both
-operator norms — which is hypothesis (12.4.22) of Theorem 12.4.3 for all large `n`.
+/-- **Lemma 12.4.2** of [han2009theoretical], third clause, (12.4.18). Let $D$ be a second countable
+compact space with a finite Borel measure $\nu$, let $k$ be a continuous kernel, and let a
+sequence of quadrature rules satisfy $\sum_j |w_{n,j}| \le W$ for all $n$ and converge to
+$\int v\, d\nu$ for every $v \in C(D)$. Then $$\|(K - K_n) K\| \to 0 \quad \text{and} \quad
+\|(K - K_n) K_n\| \to 0.$$ This is hypothesis (12.4.22) of Theorem 12.4.3 for all large $n$.
 
-The two bounds are `‖(K - K_n) K‖ ≤ ν(D) ‖e_n‖` and `‖(K - K_n) K_n‖ ≤ W ‖e_n‖`, read off the
-identities of the two clauses above. -/
+The proof shows that $\max_{t, s} |e_n(t, s)| \to 0$ and uses the bounds
+$\|(K - K_n) K\| \le \nu(D) \|e_n\|_\infty$ and $\|(K - K_n) K_n\| \le W \|e_n\|_\infty$, which
+follow from the first two clauses. -/
 theorem lemma_12_4_2_c [SecondCountableTopology D] {m : ℕ → ℕ} {w : ∀ n, Fin (m n) → ℝ}
     {x : ∀ n, Fin (m n) → D} (k : C(D × D, ℝ)) {W : ℝ} (hW : ∀ n, ∑ j, |w n j| ≤ W)
     (hQ : ∀ v : C(D, ℝ), Tendsto (fun n => Quadrature.functional (w n) (x n) v) atTop
@@ -354,19 +389,23 @@ theorem lemma_12_4_2_c [SecondCountableTopology D] {m : ℕ → ℕ} {w : ∀ n,
       _ ≤ W * ‖compKernel ν (w n) (x n) k‖ :=
           mul_le_mul_of_nonneg_right (hW n) (norm_nonneg _)
 
-/-- **Theorem 12.4.4**: let `k` be a continuous kernel on a compact `D` carrying a finite Borel
-measure, let the quadrature rules converge at every continuous integrand with uniformly bounded
-absolute weight sums, and let `λ ≠ 0` be such that `λ - K` is invertible on `C(D)`.  Then there is
-a constant `c` such that, for all large `n`, `λ - K_n` is invertible with `‖(λ - K_n)⁻¹‖ ≤ c`
-(12.4.32) — so the Nyström equations are uniquely solvable — and
+/-- **Theorem 12.4.4** of [han2009theoretical]. Let $D$ be a compact space with a finite Borel
+measure $\nu$, let $k$ be a continuous kernel on $D \times D$ with integral operator $K$ on
+$C(D)$, and let $\lambda \neq 0$ be such that $\lambda - K$ is invertible. Let $K_n$ be the
+Nyström operators of a sequence of quadrature rules with $\sum_j |w_{n,j}| \le W$ for all $n$
+that converge to $\int v\, d\nu$ for every $v \in C(D)$. Then there is a constant $c$ such that
+for all large $n$ the operator $\lambda - K_n$ is invertible with
+$\|(\lambda - K_n)^{-1}\| \le c$, which is (12.4.32), so the Nyström equations are uniquely
+solvable, and the solutions of $(\lambda - K) u = f$ and $(\lambda - K_n) u_n = f$ satisfy
+$$\|u - u_n\|_\infty \le c \, \|K u - K_n u\|_\infty,$$ the consistency error of the quadrature
+rule at the exact solution.
 
-`‖u - u_n‖_∞ ≤ c ‖K u - K_n u‖_∞`,
+**Generalization.** The source takes a closed bounded set $D \subseteq \mathbb{R}^m$ with
+Lebesgue measure, which is the case `IntegralOperator.regionMeasure D`.
 
-the consistency error of the quadrature rule at the *exact* solution.
-
-Every step is `exists_norm_inverse_le_of_isCollectivelyCompactFamily` applied to
-`isCollectivelyCompactFamily_nystromCLM`; the book's bound (12.4.23) is inside
-`theorem_12_4_3`. -/
+The proof applies `AtkinsonHan.Chapter12.exists_norm_inverse_le_of_isCollectivelyCompactFamily`
+to `AtkinsonHan.Chapter12.isCollectivelyCompactFamily_nystromCLM`. The bound (12.4.23) of the
+source is part of `AtkinsonHan.Chapter12.theorem_12_4_3`. -/
 theorem theorem_12_4_4 {μ : ℝ} (hμ : μ ≠ 0) (k : C(D × D, ℝ)) {m : ℕ → ℕ}
     {w : ∀ n, Fin (m n) → ℝ} {x : ∀ n, Fin (m n) → D} {W : ℝ} (hW : ∀ n, ∑ j, |w n j| ≤ W)
     (hQ : ∀ v : C(D, ℝ), Tendsto (fun n => Quadrature.functional (w n) (x n) v) atTop
@@ -390,8 +429,9 @@ section Example
 
 open IntegralOperator MeasureTheory Set
 
-/-- The row integrals of `expKernel` are `∫₀¹ e^{x y} dy`: the kernel is positive, so the absolute
-value does nothing, and on `[0, 1]` the projection `projIcc` is the identity. -/
+/-- **Example 12.4.1** of [han2009theoretical], the rows of the kernel. For $x \in [0, 1]$,
+$$\int_0^1 |e^{xy}|\, dy = \int_0^1 e^{xy}\, dy.$$ The kernel is positive, and on $[0, 1]$ the
+clamping `Set.projIcc` does nothing. -/
 theorem row_expKernel (x : Icc (0 : ℝ) 1) :
     ∫ y in (0 : ℝ)..1, |expKernel (x, projIcc 0 1 zero_le_one y)|
       = ∫ y in (0 : ℝ)..1, Real.exp ((x : ℝ) * y) := by
@@ -400,9 +440,10 @@ theorem row_expKernel (x : Icc (0 : ℝ) 1) :
   rw [expKernel]
   simp [projIcc_of_mem zero_le_one hy]
 
-/-- The largest row integral of `e^{x y}` over `x ∈ [0, 1]` is `e - 1`, attained at `x = 1`: for
-`0 ≤ x ≤ 1` and `0 ≤ y ≤ 1` one has `x y ≤ y`, so every row integral is at most `∫₀¹ e^y = e - 1`,
-with equality in the last row. -/
+/-- **Example 12.4.1** of [han2009theoretical], the largest row integral. The largest value of
+$\int_0^1 e^{xy}\, dy$ over $x \in [0, 1]$ is $e - 1$, attained at $x = 1$: for
+$x, y \in [0, 1]$ one has $xy \le y$, so every row integral is at most
+$\int_0^1 e^y\, dy = e - 1$. -/
 theorem isGreatest_row_expKernel :
     IsGreatest (Set.range fun x : Icc (0 : ℝ) 1 => ∫ y in (0 : ℝ)..1, Real.exp ((x : ℝ) * y))
       (Real.exp 1 - 1) := by
@@ -419,9 +460,12 @@ theorem isGreatest_row_expKernel :
           exact Real.exp_le_exp.2 (by nlinarith [hx.1, hx.2, hy.1, hy.2])
       _ = Real.exp 1 - 1 := by simp [integral_exp]
 
-/-- **`‖K‖ = e − 1`** for the integral operator of (12.4.7), which is the number the book quotes as
-`≐ 1.72`.  This is (2.2.8), the operator-norm formula for a kernel operator on `C[a, b]`, at
-`isGreatest_row_expKernel`. -/
+/-- **Example 12.4.1** of [han2009theoretical], the norm. The integral operator
+$K u(x) = \int_0^1 e^{xy} u(y)\, dy$ of (12.4.7) on $C[0, 1]$ has $$\|K\| = e - 1,$$ the number
+that the source gives as $\doteq 1.72$.
+
+The proof applies the operator norm formula (2.2.8) for an integral operator on $C[a, b]$ to
+`AtkinsonHan.Chapter12.isGreatest_row_expKernel`. -/
 theorem norm_fredholm_expKernel :
     ‖fredholm zero_le_one expKernel‖ = Real.exp 1 - 1 := by
   have hne : Nonempty (Icc (0 : ℝ) 1) := ⟨⟨0, by norm_num⟩⟩
@@ -429,21 +473,17 @@ theorem norm_fredholm_expKernel :
   simp only [row_expKernel]
   exact isGreatest_row_expKernel.isLUB.ciSup_eq
 
-/-- **Example 12.4.1**, the opening claim.  For the equation (12.4.7),
+/-- **Example 12.4.1** of [han2009theoretical]. For the equation (12.4.7), $$2 u(x) - \int_0^1
+e^{xy} u(y)\, dy = f(x), \qquad 0 \le x \le 1,$$ the operator norm is
+$\|K\| = e - 1 \doteq 1.72$. Hence $2 - K$ is invertible on $C[0, 1]$ with $$\|(2 - K)^{-1}\|
+\le \frac{1}{2 - (e - 1)},$$ and every solution satisfies
+$\|u\|_\infty \le \|f\|_\infty / (2 - (e - 1))$.
 
-`2 u(x) - ∫₀¹ e^{y x} u(y) dy = f(x)`,  `0 ≤ x ≤ 1`,
-
-the operator norm is `‖K‖ = e - 1 ≐ 1.72`, so `‖K‖ < |λ| = 2` and the geometric series theorem
-makes the equation uniquely solvable for every `f ∈ C[0, 1]`, with
-`‖(2 - K)⁻¹‖ ≤ 1 / (2 - (e - 1))` and `‖u‖ ≤ ‖f‖ / (2 - (e - 1))`.  That is the book's own reason
-for choosing `λ = 2`, and it is Example 2.3.2 of §2.3 read at this kernel,
-`AtkinsonHan.Chapter02.example_2_3_2_integral`.
-
-The rest of Example 12.4.1 is arithmetic: the nodal errors (12.4.8) and (12.4.9) of the
-three-point Simpson and three-point Gauss–Legendre rules, and the comparison of the Nyström
-interpolation formula (12.4.6) with quadratic interpolation away from the nodes.  Those are
-measured floating-point numbers and are not stated; the general statement they illustrate is
-`theorem_12_4_4`. -/
+Since $\|K\| < |\lambda| = 2$, this is the geometric series theorem, Example 2.3.2 of the source
+at this kernel (`AtkinsonHan.Chapter02.example_2_3_2_integral`). This is the reason that the
+source gives for the choice $\lambda = 2$. The rest of Example 12.4.1 consists of computed
+numbers and is not formalized; the general statement that they illustrate is
+`AtkinsonHan.Chapter12.theorem_12_4_4`. -/
 theorem example_12_4_1 :
     ‖fredholm zero_le_one expKernel‖ = Real.exp 1 - 1 ∧
       ∃ e : C(Icc (0 : ℝ) 1, ℝ) ≃L[ℝ] C(Icc (0 : ℝ) 1, ℝ),
@@ -473,17 +513,15 @@ end Example
 
 /-! ### The composite trapezoidal rule -/
 
-/-- **Example 12.4.5, the composite trapezoidal rule error.**  For `g` of class `C²` on `[a, b]`,
-the uniform mesh `x_j = a + j h` with `h = (b - a)/N` and the composite trapezoidal rule,
+/-- **Example 12.4.5** of [han2009theoretical] (error of the composite trapezoidal rule). Let
+$a < b$, $N > 0$ and $h = (b - a)/N$, and let $g : \mathbb{R} \to \mathbb{R}$ be $C^2$. Then
+there is $\xi \in [a, b]$ with $$\int_a^b g(t)\, dt - h \left[ \frac{g(a) + g(b)}{2} +
+\sum_{j=1}^{N-1} g(a + j h) \right] = -\frac{h^2 (b - a)}{12} g''(\xi).$$
 
-`∫_a^b g - h [g(x_0)/2 + g(x_1) + ⋯ + g(x_{N-1}) + g(x_N)/2] = -h² (b - a) g''(ξ)/12`
-
-for some `ξ` in `[a, b]`.  This is `Quadrature.sub_composite_trapezoid_eq` written with the book's
-displayed sum, which is `Quadrature.trapezoidSum_eq`.
-
-The asymptotic form (12.4.39), `= -(h²/12) [g'(b) - g'(a)] + O(h⁴)` for `g` of class `C⁴`, is a
-different statement: the book quotes it from the literature, it is the first Euler–Maclaurin term,
-and Example 12.4.6 needs that one and not this one. -/
+This is `Quadrature.sub_composite_trapezoid_eq` with the sum written as in the source, which is
+`Quadrature.trapezoidSum_eq`. The asymptotic form (12.4.39),
+`AtkinsonHan.Chapter12.equation_12_4_39`, is a different statement, and Example 12.4.6 uses that
+one. -/
 theorem example_12_4_5 {a b : ℝ} (hab : a < b) {N : ℕ} (hN : 0 < N) {h : ℝ}
     (hh : h = (b - a) / N) {g : ℝ → ℝ} (hg : ContDiff ℝ 2 g) :
     ∃ ξ ∈ Set.Icc a b,
@@ -506,18 +544,17 @@ theorem example_12_4_5 {a b : ℝ} (hab : a < b) {N : ℕ} (hN : 0 < N) {h : ℝ
   refine ⟨ξ, hξ, ?_⟩
   rw [hiter, ← hval, Quadrature.trapezoidSum_eq hN, hxN]
 
-/-- **(12.4.39), the asymptotic form of the composite trapezoidal error.**  For `g` of class `C⁴`
-on `[a, b]` with `|g⁗| ≤ M` there, and the uniform mesh `h = (b - a)/N`,
+/-- **Equation (12.4.39)** of [han2009theoretical] (asymptotic error of the composite trapezoidal
+rule). Let $a < b$, $N > 0$ and $h = (b - a)/N$, and let $g : \mathbb{R} \to \mathbb{R}$ be
+$C^4$ with $|g''''| \le M$ on $[a, b]$. Then $$\left| \int_a^b g(t)\, dt - h \left[ \frac{g(a) +
+g(b)}{2} + \sum_{j=1}^{N-1} g(a + j h) \right] + \frac{h^2}{12} \left[ g'(b) - g'(a) \right]
+\right| \le \frac{(b - a) h^4 M}{720}.$$ So the error is $-(h^2/12)[g'(b) - g'(a)] + O(h^4)$,
+with an explicit remainder.
 
-`∫_a^b g - h [g(x_0)/2 + ⋯ + g(x_N)/2] = -(h²/12) [g'(b) - g'(a)] + O(h⁴)`,
-
-with the explicit remainder bound `(b - a) h⁴ M / 720`.
-
-This is the first Euler–Maclaurin term, and it is a *different* statement from the mean value form
-`example_12_4_5`: it names the leading term, which is what Example 12.4.6 and Richardson
-extrapolation need.  The book quotes it from the literature; it is proved in the backbone as
-`Quadrature.abs_sub_trapezoidSum_add_le`, by two further integrations by parts of the Peano
-identity on each panel followed by a telescoping sum. -/
+This is the first Euler–Maclaurin term. Unlike `AtkinsonHan.Chapter12.example_12_4_5` it names
+the leading term, which Example 12.4.6 and Richardson extrapolation need. The source quotes the
+result from the literature. It is `Quadrature.abs_sub_trapezoidSum_add_le`, proved by two more
+integrations by parts of the Peano identity on each panel and a telescoping sum. -/
 theorem equation_12_4_39 {a b : ℝ} (hab : a < b) {N : ℕ} (hN : 0 < N) {h : ℝ}
     (hh : h = (b - a) / N) {g : ℝ → ℝ} (hg : ContDiff ℝ 4 g) {M : ℝ}
     (hM : ∀ t ∈ Set.Icc a b, |iteratedDeriv 4 g t| ≤ M) :
@@ -551,12 +588,9 @@ section Expansion
 
 open IntegralOperator MeasureTheory
 
-/-- The error identity of a second kind equation, in the form the asymptotic expansion needs: if
-`(λ - K) u = f` and `(λ - K_n) u_n = f` and `(λ - K_n) γ_n = d`, then
-
-`u - u_n - r γ_n = (λ - K_n)⁻¹ [(K - K_n) u - r d]`
-
-for every scalar `r`.  At `r = 0` it is (12.4.45). -/
+/-- Let $(\lambda - K) u = f$, $(\lambda - K_n) u_n = f$ and $(\lambda - K_n) \gamma_n = d$, with
+$\lambda - K_n$ invertible. Then for every scalar $r$, $u - u_n - r \gamma_n = (\lambda -
+K_n)^{-1} [(K - K_n) u - r d]$; at $r = 0$ this is (12.4.45). -/
 private theorem sub_smul_eq_symm {V : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V] {μ : ℝ}
     {K Kn : V →L[ℝ] V} {en : V ≃L[ℝ] V} (hen : (en : V →L[ℝ] V) = μ • 1 - Kn)
     {u un f d γn : V} (hu : (μ • 1 - K : V →L[ℝ] V) u = f)
@@ -570,8 +604,8 @@ private theorem sub_smul_eq_symm {V : Type*} [NormedAddCommGroup V] [NormedSpace
     rw [map_sub, map_smul, hγn, e0]
   rw [← e1, ← hen, ContinuousLinearEquiv.coe_coe, en.symm_apply_apply]
 
-/-- The auxiliary solutions of the exact and of the approximate equation differ by
-`γ_n - γ = (λ - K_n)⁻¹ (K_n - K) γ`, which is what makes `γ_n → γ`. -/
+/-- If $(\lambda - K) \gamma = d$ and $(\lambda - K_n) \gamma_n = d$, with $\lambda - K_n$
+invertible, then $\gamma_n - \gamma = (\lambda - K_n)^{-1} (K_n - K) \gamma$. -/
 private theorem sub_aux_eq_symm {V : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V] {μ : ℝ}
     {K Kn : V →L[ℝ] V} {en : V ≃L[ℝ] V} (hen : (en : V →L[ℝ] V) = μ • 1 - Kn)
     {d γ γn : V} (hγ : (μ • 1 - K : V →L[ℝ] V) γ = d)
@@ -585,22 +619,21 @@ private theorem sub_aux_eq_symm {V : Type*} [NormedAddCommGroup V] [NormedSpace 
 
 variable {a b : ℝ}
 
-/-- **(12.4.44), the asymptotic error formula of the Nyström method with the trapezoidal rule,
-uniformly in the row variable.**  Let `K` be the integral operator of a continuous kernel on
-`[a, b]`, let `K_n` be the Nyström operator of a rule that *is* the composite trapezoidal rule on
-the uniform mesh of `N` panels — that is what `hquad` says — and let the row integrands
-`y ↦ k (t, y) u (y)` be given by a family `G t` of `C⁴` functions on the line with a bound `M₄` on
-the fourth derivatives that is uniform in `t`.  Then
+/-- **Equation (12.4.44)** of [han2009theoretical] (asymptotic error of the Nyström method with the
+trapezoidal rule, uniformly in the row variable). Let $a < b$, let $k$ be a continuous kernel on
+$[a, b] \times [a, b]$ with integral operator $K$, let $N > 0$ and $h = (b - a)/N$, and let
+$K_n$ be the Nyström operator of a quadrature rule that equals the composite trapezoidal rule
+with $N$ panels on every continuous function. Let $u \in C[a, b]$, and let
+$G_t : \mathbb{R} \to \mathbb{R}$, for $t \in [a, b]$, be $C^4$ functions with
+$G_t(y) = k(t, y) u(y)$ for $y \in [a, b]$ and $|G_t''''| \le M_4$ on $[a, b]$, with $M_4$
+independent of $t$. Let $d(t) = -\frac{1}{12} [G_t'(b) - G_t'(a)]$, that is $d(t) =
+-\frac{1}{12} \left[ \partial_y (k(t, y) u(y)) \right]_{y=a}^{y=b}$. Then $$\|(K - K_n) u - h^2
+d\|_\infty \le \frac{(b - a) h^4 M_4}{720},$$ which is (12.4.44) with an explicit remainder.
 
-`‖(K - K_n) u - h² d‖_∞ ≤ (b - a) h⁴ M₄ / 720`,
-`d (t) = -(1/12) [∂_y (k (t, y) u (y))]_{y = a}^{y = b}`,
-
-which is (12.4.44) with the `O(h⁴)` made explicit.
-
-This is `equation_12_4_39` applied at each row `t`; what makes it *uniform* is that the hypotheses
-are carried as a family, so that the constant `M₄` does not depend on `t`.  Everything else is the
-identification of `IntegralOperator.nystromCLM` with `Quadrature.trapezoidSum` on the clamped
-integrand, which `hquad` and `IntegralOperator.nystromCLM_apply_eq_functional` supply. -/
+The proof applies `AtkinsonHan.Chapter12.equation_12_4_39` at each row $t$. The bound is uniform
+because $M_4$ does not depend on $t$. The quadrature hypothesis identifies
+`IntegralOperator.nystromCLM` with `Quadrature.trapezoidSum` on the clamped integrand, with the
+help of `IntegralOperator.nystromCLM_apply_eq_functional`. -/
 theorem equation_12_4_44 (hab : a < b) (k : C(Set.Icc a b × Set.Icc a b, ℝ))
     {N : ℕ} (hN : 0 < N) {h : ℝ} (hh : h = (b - a) / N)
     {m : ℕ} {w : Fin m → ℝ} {x : Fin m → Set.Icc a b}
@@ -663,34 +696,36 @@ theorem equation_12_4_44 (hab : a < b) (k : C(Set.Icc a b × Set.Icc a b, ℝ))
   rw [hval, Real.norm_eq_abs]
   exact equation_12_4_39 hab hN hh (hG t) (hM₄ t)
 
-/-- **Example 12.4.6, the asymptotic error expansion of the Nyström solution.**  In the setting of
-`equation_12_4_44`, let `λ ≠ 0` be such that `λ - K` is invertible and let the quadrature rules
-have uniformly bounded absolute weight sums.  Then the book's auxiliary function `γ`, the solution
-of
+/-- **Example 12.4.6** of [han2009theoretical] (asymptotic error expansion of the Nyström solution).
+Let $a < b$, let $k$ be a continuous kernel on $[a, b] \times [a, b]$ with integral operator
+$K$, and let $\lambda \neq 0$ be such that $\lambda - K$ is invertible. For each $n$ let
+$N_n > 0$ and $h_n = (b - a)/N_n$, with $h_n \to 0$, and let $K_n$ be the Nyström operator of a
+quadrature rule that equals the composite trapezoidal rule with $N_n$ panels, with
+$\sum_j |w_{n,j}| \le W$ for all $n$. Let $u$, $G_t$, $M_4$ and $d$ be as in
+`AtkinsonHan.Chapter12.equation_12_4_44`. Then there are a function $\gamma \in C[a, b]$, the
+solution of the auxiliary equation $$\lambda \gamma(x) - \int_a^b k(x, y) \gamma(y)\, dy =
+-\frac{1}{12} \left[ \partial_y (k(x, y) u(y)) \right]_{y=a}^{y=b},$$ and a constant $c$, such
+that $\|(K - K_n) \gamma\| \to 0$ and, for all large $n$, there is $\gamma_n$ with
+$(\lambda - K_n) \gamma_n = d$ and $\|\gamma_n - \gamma\| \le c \|(K - K_n) \gamma\|$, and,
+whenever $(\lambda - K) u = f$ and $(\lambda - K_n) u_n = f$:
 
-`λ γ (x) - ∫_a^b k (x, y) γ (y) dy = -(1/12) [∂_y (k (x, y) u (y))]_{y = a}^{y = b}`,
+* $\|u - u_n - h_n^2 \gamma_n\|_\infty \le c (b - a) h_n^4 M_4 / 720$, which is (12.4.49) with
+  $\gamma_n$ in place of $\gamma$ and an explicit remainder;
+* for every $c_2$ with $\|(K - K_n) \gamma\| \le c_2 h_n^2$, $$\|u - u_n - h_n^2 \gamma\|_\infty
+  \le c (b - a) h_n^4 M_4 / 720 + c c_2 h_n^4,$$ which is (12.4.49) with $\gamma$ itself.
 
-exists, `‖(K - K_n) γ‖ → 0`, and for all large `n` the same equation with `K` replaced by `K_n` has
-a solution `γ_n` with
+In particular $\gamma_n \to \gamma$ and $u - u_n = h_n^2 \gamma + o(h_n^2)$. The bound
+$\|(K - K_n) \gamma\| \le c_2 h_n^2$ follows from the smoothness of $\gamma$, by (12.4.43)
+applied to the functions $y \mapsto k(x, y) \gamma(y)$ when these are $C^2$ uniformly in $x$. It
+is the claim of the source that "by a similar argument, it can also be shown that
+$r_n = O(h^4)$". A proof would differentiate $\gamma = \lambda^{-1}(d + K \gamma)$ twice under
+the integral sign, which the library cannot do, so this bound is a hypothesis of the last
+clause.
 
-* `‖u - u_n - h_n² γ_n‖_∞ ≤ c (b - a) h_n⁴ M₄ / 720` — this is (12.4.49), with `γ_n` in place of
-  `γ` and the `O(h⁴)` made explicit;
-* `‖γ_n - γ‖ ≤ c ‖(K - K_n) γ‖`, so `γ_n → γ` and `u - u_n = h_n² γ + o(h_n²)`;
-* and, whenever `‖(K - K_n) γ‖ ≤ c₂ h_n²`,
-  `‖u - u_n - h_n² γ‖ ≤ c (b - a) h_n⁴ M₄ / 720 + c c₂ h_n⁴`, which is (12.4.49) with the book's
-  `γ` itself.
-
-The last hypothesis is what the *smoothness of `γ`* buys — (12.4.43) applied to the row integrands
-`k (·, y) γ (y)` gives it as soon as those are `C²` uniformly — and it is the one place where this
-statement is conditional.  It is exactly the book's "by a similar argument, it can also be shown
-that `r_n = O(h⁴)`": proving it outright means differentiating `γ = (1/λ) (d + K γ)` twice under
-the integral sign, for which the library has no machinery.  Everything else — the expansion
-(12.4.44) uniformly in the row variable, the identity (12.4.45) and the convergence `γ_n → γ` — is
-proved here.
-
-The proof replaces the book's `ε_n = (λ - K)⁻¹ (K - K_n) u` by the exactly computable
-`h_n² γ_n = (λ - K_n)⁻¹ (h_n² d)`: then `(λ - K_n)(u - u_n - h_n² γ_n) = (K - K_n) u - h_n² d`,
-whose norm `equation_12_4_44` bounds, and `(λ - K_n)(γ_n - γ) = (K_n - K) γ`. -/
+The proof replaces the $\varepsilon_n = (\lambda - K)^{-1} (K - K_n) u$ of the source by $h_n^2
+\gamma_n = (\lambda - K_n)^{-1} (h_n^2 d)$. Then $(\lambda - K_n)(u - u_n - h_n^2 \gamma_n) =
+(K - K_n) u - h_n^2 d$, whose norm `AtkinsonHan.Chapter12.equation_12_4_44` bounds, and
+$(\lambda - K_n)(\gamma_n - \gamma) = (K_n - K) \gamma$. -/
 theorem example_12_4_6 (hab : a < b) (k : C(Set.Icc a b × Set.Icc a b, ℝ))
     {N : ℕ → ℕ} (hN : ∀ n, 0 < N n) {hs : ℕ → ℝ} (hhs : ∀ n, hs n = (b - a) / N n)
     (hlim : Tendsto hs atTop (𝓝 0))

@@ -6,81 +6,87 @@ import Mathlib.Analysis.InnerProductSpace.l2Space
 import Numlib.Nonlinear.CompletelyContinuous
 
 /-!
-# Atkinson–Han §5.5: completely continuous vector fields
+# Atkinson and Han, Section 5.5: Completely Continuous Vector Fields
 
-Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework*, 3rd edition, Springer, 2009, §5.5.
-
-The section is a summary: Brouwer's theorem (5.5.1), Schauder's theorem (5.5.4), Proposition 5.5.5
-and the properties P1–P5 of the rotation of a completely continuous vector field are all quoted
-without proof, from Krasnosel'skii, *Topological Methods in the Theory of Nonlinear Integral
-Equations*, Krasnosel'skii and Zabreyko, *Geometric Methods of Nonlinear Analysis*, Berger,
-*Nonlinearity and Functional Analysis*, and Kantorovich and Akilov, *Functional Analysis in Normed
-Spaces*. Mathlib has neither Brouwer's theorem nor degree theory, so the two quoted fixed-point
-theorems and the whole of the rotation theory are out; what is formalized is Definition 5.5.3 and
-Proposition 5.5.5, which later chapters use, and the counterexample of Example 5.5.2.
+This module formalizes part of Section 5.5 of [han2009theoretical]. An operator $T$ is completely
+continuous on a set $K$ if it is continuous on $K$ and maps every bounded subset of $K$ to a
+relatively compact set. The section is a summary: it quotes Brouwer's fixed-point theorem (Theorem
+5.5.1), Schauder's fixed-point theorem (Theorem 5.5.4), Proposition 5.5.5 and the properties P1–P5
+of the rotation of a completely continuous vector field without proof, from Krasnosel'skii,
+*Topological Methods in the Theory of Nonlinear Integral Equations*, Krasnosel'skii and Zabreyko,
+*Geometric Methods of Nonlinear Analysis*, Berger, *Nonlinearity and Functional Analysis*, and
+Kantorovich and Akilov, *Functional Analysis in Normed Spaces*. This module states Definition 5.5.3
+and Proposition 5.5.5, which later chapters use, and the counterexample of Example 5.5.2: a
+Lipschitz map of the closed unit ball of a Hilbert space into itself that has no fixed point. The
+proofs specialize the backbone module `Numlib.Nonlinear.CompletelyContinuous`.
 
 ## Main definitions
 
-* `IsCompletelyContinuousOn` — Definition 5.5.3: a compact map that is in addition continuous. The
-  first half is the backbone `IsCompactMap` (`Numlib/Nonlinear/CompletelyContinuous`); the two
-  halves are separate because for a nonlinear map compactness does not imply continuity, unlike
-  for a linear one, where the notion is Mathlib's `IsCompactOperator`.
-* `prepend`, `prependLp` — the unilateral shift on `ℓ²(ℕ, ℝ)` with a prescribed first coordinate,
-  the coordinate form of the map of Example 5.5.2; `shiftMap` transports it to a Hilbert space
-  through `HilbertBasis.repr`.
+* Example 5.5.2, `AtkinsonHan.Chapter05.prepend`, `AtkinsonHan.Chapter05.prependLp` and
+  `AtkinsonHan.Chapter05.shiftMap`: the map $T(v) = t(1 - \|v\|) \varphi_0 + \sum_j (v, \varphi_j)
+  \varphi_{j+1}$ of the example, first in coordinates on $\ell^2$ and then on a Hilbert space.
+* Definition 5.5.3, `AtkinsonHan.Chapter05.IsCompletelyContinuousOn`: a completely continuous
+  operator.
 
 ## Main results
 
-* `proposition_5_5_5` — the Fréchet derivative of a completely continuous operator at an interior
-  point is a compact linear operator, so the Fredholm alternative applies to `I - T'(v₀)`. This is
-  what lets §12.7 linearize a nonlinear fixed point problem into a second-kind linear equation.
-* `example_5_5_2` — Example 5.5.2: for `1 < k` and `0 < t ≤ min(1, √(k² - 1))` the map `shiftMap`
-  sends the closed unit ball into itself, is `k`-Lipschitz, and has no fixed point, which is what
-  shows that the hypotheses of Schauder's theorem cannot be relaxed to a Lipschitz condition.  Its
-  doc comment records that the book's `0 < t ≤ √(k² - 1)` alone does not give `T(K) ⊆ K`.
+* Example 5.5.2, `AtkinsonHan.Chapter05.example_5_5_2`: for $k > 1$ and
+  $0 < t \le \min(1, \sqrt{k^2 - 1})$, the map $T$ sends the closed unit ball into itself, is
+  Lipschitz with the constant $k$, and has no fixed point.
+* Proposition 5.5.5, `AtkinsonHan.Chapter05.proposition_5_5_5`: the Fréchet derivative of a
+  completely continuous operator at an interior point is a compact linear operator.
 
-## Not formalized here
+## Implementation notes
 
-The obstruction below is a missing theory, not a missing proof: the book quotes each of these
-without proof, referring the reader elsewhere for one.
+* Compactness and continuity are separate conditions in
+  `AtkinsonHan.Chapter05.IsCompletelyContinuousOn`. For a nonlinear map, compactness does not imply
+  continuity, unlike for a linear map, where the notion is Mathlib's `IsCompactOperator`. The
+  compactness half is the backbone's `IsCompactMap`.
+* Proposition 5.5.5 lets Section 12.7 linearize a nonlinear fixed-point problem into a linear
+  equation of the second kind, to which the Fredholm alternative applies.
+* Half of the standard proof of Schauder's theorem exists in the backbone:
+  `Continuous.exists_finset_mem_convexHull_norm_sub_lt` approximates a continuous map with totally
+  bounded range, to within any $\varepsilon$, by a continuous map with values in the convex hull of
+  a finite $\varepsilon$-net of its range (the Schauder projection). Schauder's theorem would follow
+  from Brouwer's theorem on that finite-dimensional convex set by the usual limit argument.
 
-* **Theorem 5.5.1**, Brouwer's fixed-point theorem: a continuous `T : K → K` on a bounded, closed
-  and convex `K ⊆ ℝ^d` has at least one fixed point in `K`. Mathlib on this pin has no Brouwer
-  fixed-point theorem — `brouwer` and `Brouwer` match only unrelated order-theoretic files — and
-  none of the machinery a proof of it needs: no simplicial approximation, no Sperner's lemma, no
-  topological degree, no no-retraction theorem. `Numlib/` has none either, as
-  `Numlib/Nonlinear/CompletelyContinuous` records. Proving it from Sperner's lemma, or from the
-  no-retraction theorem through Stokes' theorem, is a project of its own; estimate 1500–3000 lines.
-* **Theorem 5.5.4**, Schauder's fixed-point theorem: for `V` a Banach space and `K ⊆ V` bounded,
-  closed and convex, a completely continuous `T : K → K` has at least one fixed point in `K`. Its
-  only obstruction is Theorem 5.5.1. The other half of the standard proof already exists: the
-  backbone's `Continuous.exists_finset_mem_convexHull_norm_sub_lt`
-  (`Numlib/Nonlinear/CompletelyContinuous`) approximates a continuous map with totally bounded
-  range, to within any `ε`, by a continuous map with values in the convex hull of a finite `ε`-net
-  of its range — the Schauder projection — so Schauder's theorem follows from Brouwer's on the
-  finite-dimensional convex set `conv {x₁, …, xₙ}` by the usual limiting argument; estimate
-  150–250 lines once Brouwer's theorem exists. That the hypotheses of Theorem 5.5.4
-  cannot be relaxed to a Lipschitz condition is `example_5_5_2` below, which *is* formalized.
-* **§5.5.1** in its entirety — the rotation of a completely continuous vector field and its
-  properties P1–P5 — which is degree theory, of which Mathlib has none.
+## Deviations from the source
+
+* **Example 5.5.2** (correction). The book's condition $0 < t \le \sqrt{k^2 - 1}$ does not give
+  $T(K) \subseteq K$; the statement adds $t \le 1$. See `AtkinsonHan.Chapter05.example_5_5_2`.
+
+## Not formalized
+
+* **Theorem 5.5.1** (Brouwer's fixed-point theorem: a continuous map of a bounded, closed and convex
+  set $K \subseteq \mathbb{R}^d$ into itself has a fixed point). Mathlib has neither Brouwer's
+  theorem nor the means to prove it: simplicial approximation, Sperner's lemma, topological degree
+  or the no-retraction theorem.
+* **Theorem 5.5.4** (Schauder's fixed-point theorem: a completely continuous map of a bounded,
+  closed and convex subset $K$ of a Banach space into itself has a fixed point). Its only missing
+  input is Theorem 5.5.1.
+* **Section 5.5.1**, the rotation of a completely continuous vector field and its properties P1–P5.
+  This is degree theory, which Mathlib does not have.
 -/
 
 namespace AtkinsonHan.Chapter05
 
-/-- **Definition 5.5.3.** An operator `T` is **completely continuous** on `K` when it is a compact
-map on `K` — the image of every bounded subset of `K` is relatively compact — and is continuous
-on `K`. -/
+/-- **Definition 5.5.3** of [han2009theoretical]. Let $V$ be a normed space, $W$ a topological
+space, $T : V \to W$ and $K \subseteq V$. Then $T$ is **completely continuous** on $K$ if $T$ is
+a compact map on $K$, which means that the closure of $T(B)$ is compact for every bounded set
+$B \subseteq K$, and $T$ is continuous on $K$.
+
+The compactness condition is the backbone's `IsCompactMap T K`. -/
 def IsCompletelyContinuousOn {V W : Type*} [SeminormedAddCommGroup V] [TopologicalSpace W]
     (T : V → W) (K : Set V) : Prop :=
   IsCompactMap T K ∧ ContinuousOn T K
 
-/-- **Proposition 5.5.5.** Let `T` be completely continuous on an open set `K` of a Banach space
-and Fréchet differentiable at `v₀ ∈ K`. Then the derivative `T'(v₀)` is a compact linear operator,
-and so the Fredholm alternative applies to `I - T'(v₀)`.
+/-- **Proposition 5.5.5** of [han2009theoretical]. Let $V$ and $W$ be real normed spaces with $W$
+complete, let $K \subseteq V$ be open, and let $T : V \to W$ be completely continuous on $K$. If
+$T$ has the Fréchet derivative $A$ at a point $v_0 \in K$, then $A$ is a compact linear
+operator. So the Fredholm alternative applies to $I - T'(v_0)$.
 
-The backbone proves more: continuity of `T` is not used, only differentiability at `v₀` together
-with compactness on bounded sets. -/
+The space $V$ need not be complete. The proof does not use the continuity of $T$: the backbone
+proves the result from differentiability at $v_0$ and compactness on bounded sets alone. -/
 theorem proposition_5_5_5 {V W : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V]
     [NormedAddCommGroup W] [NormedSpace ℝ W] [CompleteSpace W] {T : V → W} {K : Set V}
     (hT : IsCompletelyContinuousOn T K) (hK : IsOpen K) {v₀ : V} (hv₀ : v₀ ∈ K) {A : V →L[ℝ] W}
@@ -94,37 +100,45 @@ section Example552
 open Filter Metric Topology Set
 open scoped ENNReal
 
-/-- Prefixing a real number to a sequence.  On `ℓ²(ℕ, ℝ)` this is the **unilateral shift** together
-with a rank-one correction placing `c` in the first coordinate, which is Example 5.5.2's map read in
-the coordinates of the orthonormal basis. -/
+/-- Prepending a real number $c$ to a sequence $f$ gives the sequence $(c, f_0, f_1, \dots)$. On
+$\ell^2(\mathbb{N}, \mathbb{R})$ this is the **unilateral shift** followed by placing $c$ in the
+first coordinate. It is the map of Example 5.5.2 of [han2009theoretical] in the coordinates of
+an orthonormal basis. -/
 def prepend (c : ℝ) (f : ℕ → ℝ) : ℕ → ℝ
   | 0 => c
   | n + 1 => f n
 
+/-- The first term of $(c, f_0, f_1, \dots)$ is $c$. -/
 @[simp] theorem prepend_zero (c : ℝ) (f : ℕ → ℝ) : prepend c f 0 = c := rfl
 
+/-- The term $n + 1$ of $(c, f_0, f_1, \dots)$ is $f_n$. -/
 @[simp] theorem prepend_succ (c : ℝ) (f : ℕ → ℝ) (n : ℕ) : prepend c f (n + 1) = f n := rfl
 
+/-- Prepending commutes with subtraction: $(c, f_0, f_1, \dots) - (d, g_0, g_1, \dots) = (c - d,
+f_0 - g_0, f_1 - g_1, \dots)$. -/
 theorem prepend_sub (c d : ℝ) (f g : ℕ → ℝ) :
     prepend c f - prepend d g = prepend (c - d) (f - g) := by
   funext n
   cases n <;> simp
 
-/-- Prefixing preserves square-summability: it only moves the terms along by one. -/
+/-- If $f$ is square summable, then so is $(c, f_0, f_1, \dots)$. -/
 theorem memℓp_prepend (c : ℝ) {f : ℕ → ℝ} (hf : Memℓp f 2) : Memℓp (prepend c f) 2 := by
   have hp : (0 : ℝ) < (2 : ℝ≥0∞).toReal := by norm_num
   rw [memℓp_gen_iff hp] at hf ⊢
   exact (summable_nat_add_iff 1).mp (by simpa using hf)
 
-/-- Example 5.5.2's map in coordinates: the unilateral shift on `ℓ²(ℕ, ℝ)` with `c` inserted in the
-first coordinate. -/
+/-- The map of Example 5.5.2 of [han2009theoretical] in coordinates: for $c \in \mathbb{R}$ and
+$f \in \ell^2(\mathbb{N}, \mathbb{R})$, the sequence $(c, f_0, f_1, \dots) \in
+\ell^2(\mathbb{N}, \mathbb{R})$. -/
 noncomputable def prependLp (c : ℝ) (f : lp (fun _ : ℕ => ℝ) 2) : lp (fun _ : ℕ => ℝ) 2 :=
   ⟨prepend c f, memℓp_prepend c f.2⟩
 
+/-- As a sequence, `AtkinsonHan.Chapter05.prependLp c f` is `AtkinsonHan.Chapter05.prepend c f`. -/
 @[simp] theorem prependLp_coe (c : ℝ) (f : lp (fun _ : ℕ => ℝ) 2) :
     ⇑(prependLp c f) = prepend c ⇑f := rfl
 
-/-- `‖(c, f₀, f₁, …)‖² = c² + ‖f‖²`: the inserted coordinate is orthogonal to the shifted ones. -/
+/-- For $c \in \mathbb{R}$ and $f \in \ell^2(\mathbb{N}, \mathbb{R})$,
+$\|(c, f_0, f_1, \dots)\|^2 = c^2 + \|f\|^2$. -/
 theorem norm_prependLp_sq (c : ℝ) (f : lp (fun _ : ℕ => ℝ) 2) :
     ‖prependLp c f‖ ^ 2 = c ^ 2 + ‖f‖ ^ 2 := by
   have hp : (0 : ℝ) < (2 : ℝ≥0∞).toReal := by norm_num
@@ -143,17 +157,22 @@ theorem norm_prependLp_sq (c : ℝ) (f : lp (fun _ : ℕ => ℝ) 2) :
 
 variable {V : Type*} [NormedAddCommGroup V] [InnerProductSpace ℝ V]
 
-/-- **Example 5.5.2**'s map: `T(v) = t(1 - ‖v‖) φ₀ + ∑_j ⟪φ_j, v⟫ φ_{j+1}`, written through the
-coordinate isomorphism `HilbertBasis.repr` of the orthonormal basis `φ`. -/
+/-- The map of **Example 5.5.2** of [han2009theoretical]. Let $V$ be a real Hilbert space with the
+orthonormal basis $\{\varphi_j\}_{j \ge 0}$ and let $t \in \mathbb{R}$. The map is
+$$T(v) = t(1 - \|v\|) \varphi_0 + \sum_{j \ge 0} (v, \varphi_j) \varphi_{j+1}.$$
+
+The map is defined through the coordinate isomorphism `HilbertBasis.repr` of the basis, as
+`AtkinsonHan.Chapter05.prependLp` in coordinates. -/
 noncomputable def shiftMap (b : HilbertBasis ℕ ℝ V) (t : ℝ) (v : V) : V :=
   b.repr.symm (prependLp (t * (1 - ‖v‖)) (b.repr v))
 
-/-- `‖T v‖² = t²(1 - ‖v‖)² + ‖v‖²`. -/
+/-- The map $T$ of Example 5.5.2 satisfies $\|T(v)\|^2 = t^2 (1 - \|v\|)^2 + \|v\|^2$. -/
 theorem norm_shiftMap_sq (b : HilbertBasis ℕ ℝ V) (t : ℝ) (v : V) :
     ‖shiftMap b t v‖ ^ 2 = (t * (1 - ‖v‖)) ^ 2 + ‖v‖ ^ 2 := by
   rw [shiftMap, LinearIsometryEquiv.norm_map, norm_prependLp_sq, LinearIsometryEquiv.norm_map]
 
-/-- `‖T v - T w‖² = t²(‖v‖ - ‖w‖)² + ‖v - w‖²`, the shift being an isometry. -/
+/-- The map $T$ of Example 5.5.2 satisfies $\|T(v) - T(w)\|^2 = t^2 (\|w\| - \|v\|)^2 + \|v -
+w\|^2$, because the shift is an isometry. -/
 theorem norm_shiftMap_sub_sq (b : HilbertBasis ℕ ℝ V) (t : ℝ) (v w : V) :
     ‖shiftMap b t v - shiftMap b t w‖ ^ 2 = (t * (‖w‖ - ‖v‖)) ^ 2 + ‖v - w‖ ^ 2 := by
   have hsub : prependLp (t * (1 - ‖v‖)) (b.repr v) - prependLp (t * (1 - ‖w‖)) (b.repr w)
@@ -169,19 +188,24 @@ theorem norm_shiftMap_sub_sq (b : HilbertBasis ℕ ℝ V) (t : ℝ) (v w : V) :
   rw [shiftMap, shiftMap, ← LinearIsometryEquiv.map_sub, LinearIsometryEquiv.norm_map, hsub,
     norm_prependLp_sq, ← LinearIsometryEquiv.map_sub, LinearIsometryEquiv.norm_map]
 
-/-- **Example 5.5.2.**  On a Hilbert space with orthonormal basis `{φ_j}`, let `K` be the closed
-unit ball and let `T(v) = t(1 - ‖v‖) φ₀ + ∑_j ⟪φ_j, v⟫ φ_{j+1}`.  For `1 < k` and
-`0 < t ≤ min(1, √(k² - 1))` the map `T` sends `K` into `K`, is Lipschitz with constant `k`, and has
-no fixed point — anywhere, not merely in `K`.  This is what shows that the hypotheses of Schauder's
-theorem cannot be relaxed to a Lipschitz condition, and that Theorem 5.1.3 needs its constant to be
-*less* than one.
+/-- **Example 5.5.2** of [han2009theoretical]. Let $V$ be a real Hilbert space with the orthonormal
+basis $\{\varphi_j\}_{j \ge 0}$, let $K$ be the closed unit ball, and let $T(v) = t(1 - \|v\|)
+\varphi_0 + \sum_j (v, \varphi_j) \varphi_{j+1}$. Let $k > 1$ and
+$$0 < t \le \min\bigl(1, \sqrt{k^2 - 1}\bigr).$$
+Then $T$ maps $K$ into $K$, $\|T(v) - T(w)\| \le k \|v - w\|$ for all $v, w \in V$, and
+$T(v) \neq v$ for every $v \in V$. So the hypotheses of Schauder's theorem cannot be weakened to
+a Lipschitz condition, and Theorem 5.1.3 needs a contraction constant less than $1$.
 
-**The book's hypothesis `0 < t ≤ √(k² - 1)` is not enough for `T(K) ⊆ K`, and `t ≤ 1` is added
-here.**  With `k = 2` and `t = √3` the printed condition holds, yet `‖T 0‖² = t² = 3 > 1`.  The
-constraint `t ≤ 1` is exactly what `‖T v‖² = t²(1 - ‖v‖)² + ‖v‖² ≤ 1` for every `‖v‖ ≤ 1` demands,
-as `v = 0` shows; `t ≤ √(k² - 1)` is the separate constraint that makes `√(1 + t²) ≤ k`.  Neither
-implies the other, and the example is unaffected: `t = 1` gives a `√2`-Lipschitz self-map of the
-ball with no fixed point. -/
+**Correction.** The book assumes only $0 < t \le \sqrt{k^2 - 1}$. This does not give
+$T(K) \subseteq K$: for $k = 2$ and $t = \sqrt 3$ the condition holds, but
+$\|T(0)\|^2 = t^2 = 3 > 1$. The condition $t \le 1$ is what
+$\|T(v)\|^2 = t^2 (1 - \|v\|)^2 + \|v\|^2 \le 1$ for all $\|v\| \le 1$ requires, as $v = 0$
+shows. The condition $t \le \sqrt{k^2 - 1}$ is the separate condition that gives
+$\sqrt{1 + t^2} \le k$. Neither condition implies the other, and the example survives: $t = 1$
+gives a $\sqrt 2$-Lipschitz map of the ball into itself with no fixed point.
+
+The map is `AtkinsonHan.Chapter05.shiftMap`. There is no fixed point in all of $V$, not only in
+$K$. -/
 theorem example_5_5_2 (b : HilbertBasis ℕ ℝ V) {t k : ℝ} (ht : 0 < t) (ht1 : t ≤ 1) (hk : 1 < k)
     (htk : t ≤ Real.sqrt (k ^ 2 - 1)) :
     MapsTo (shiftMap b t) (closedBall 0 1) (closedBall 0 1) ∧

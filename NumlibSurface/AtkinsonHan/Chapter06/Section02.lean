@@ -7,96 +7,138 @@ import Numlib.Analysis.PDE.Heat.SineSeries
 import Numlib.FiniteDifference.LaxEquivalence
 
 /-!
-# Atkinson–Han §6.2: the Lax equivalence theorem
+# Atkinson and Han, Section 6.2: The Lax equivalence theorem
 
-Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework*, 3rd edition, Springer, 2009, §6.2.
+This module formalizes Section 6.2 of [han2009theoretical]. The section studies the abstract initial
+value problem $u'(t) = L u(t)$ for $t \in [0, T]$, $u(0) = u_0$, in a Banach space $V$, for a linear
+and generally unbounded operator $L$ defined on a dense subspace $V_0 \subseteq V$. A well-posed
+problem has bounded solution operators $S(t)$ with $S(t) u_0 = u(t)$, and $S(t) u_0$ for
+$u_0 \notin V_0$ is the generalized solution. A difference method is a family of bounded operators
+$C(\Delta t)$, and $C(\Delta t)^m u_0$ approximates $u(m \Delta t)$. The Lax equivalence theorem
+(Theorem 6.2.11) says that a consistent method for a well-posed problem converges if and only if it
+is stable.
 
-The section studies the abstract initial value problem `u' = L u`, `u(0) = u₀`, on `[0, T]` in a
-Banach space `V` over `ℝ` or `ℂ`, for a linear, generally unbounded operator `L` defined on a dense
-subspace `V₀ ⊆ V`.  The surface takes the real scalars and reads `L : V₀ ⊆ V → V` as Mathlib's
-`LinearPMap`, `L : V →ₗ.[ℝ] V` with `Dense (L.domain : Set V)`, as §8.2 of this surface already
-does for closed operators.
+The running example is the heat equation $u_t = \nu u_{xx}$ on $(0, \pi) \times (0, T)$ with
+homogeneous Dirichlet boundary values, in $V = C_0[0, \pi]$ with the maximum norm, with $V_0$ the
+finite sine polynomials (6.2.5) and $L = \nu \, \partial^2 / \partial x^2$ on $V_0$. The problem is
+well posed with $c_0 = 1$ (Example 6.2.4). The forward scheme is consistent and is stable if and
+only if the mesh ratio $r = \nu \Delta t / \Delta x^2$ satisfies $r \le 1/2$, and the backward
+scheme is consistent and stable for every $r$ (Examples 6.2.8 and 6.2.13, Exercise 6.2.3). The
+abstract results specialize `Numlib.FiniteDifference.LaxEquivalence`, and the example uses
+`Numlib.Analysis.PDE.Heat.SineSeries`, `Numlib.Analysis.Fourier.SineBasis` and
+`Numlib.Analysis.Fourier.OddExtension`.
 
-Every result is a specialization of `Numlib/FiniteDifference/LaxEquivalence`, which is stated in
-the same generality.  The surface does work of its own in exactly two places, both of them the
-passage from a limit the book writes with a quotient to the form the backbone takes:
+## Main definitions
 
-* **Definition 6.2.1** is the limit of the difference quotient `(u(s) - u(t))/(s - t)` as `s → t`
-  *within* `[0, T]`, which is the book's one-sided convention at the two endpoints; the backbone
-  writes it as `HasDerivWithinAt`, and `isSolution_iff` is that identification, through Mathlib's
-  `hasDerivWithinAt_iff_tendsto_slope`.
-* **Definition 6.2.7** is `‖(C(Δt) u(t) - u(t + Δt))/Δt‖ ≤ ε` with the division present; the
-  backbone clears it, and `isConsistent_iff` is that identification.
-
-**Definition 6.2.3, the solution operators, is a definition here and an existence theorem there.**
-`FiniteDifference.exists_solutionOperator` produces the family from well-posedness and density —
-the book's appeal to its Theorem 2.4.1, which this surface proves as
-`AtkinsonHan.Chapter02.theorem_2_4_1` — so `solutionOperator` opens that existential once and
-`solutionOperator_zero`, `norm_solutionOperator_le` and `solutionOperator_apply` are its three
-properties.  `solutionOperator L hdense hT hc₀ hwp t u₀` for `u₀ ∉ L.domain` is the book's
-*generalized* solution.
+* Definition 6.2.1, `AtkinsonHan.Chapter06.IsSolution`: $u$ solves $u' = Lu$, $u(0) = u_0$ on
+  $[0, T]$, with the derivative a limit of difference quotients within $[0, T]$.
+* Definition 6.2.2, `AtkinsonHan.Chapter06.IsWellPosed`: existence, uniqueness and the stability
+  bound $\|u(t) - \bar u(t)\| \le c_0 \|u_0 - \bar u_0\|$ (6.2.3).
+* Definition 6.2.3, `AtkinsonHan.Chapter06.solutionOperator`: the bounded solution operators $S(t)$
+  of a well-posed problem with a dense domain.
+* Example 6.2.4, `AtkinsonHan.Chapter06.C₀`: the space $V = C_0[0, \pi]$ of continuous functions on
+  $[0, \pi]$ that vanish at both ends.
+* Example 6.2.4, `AtkinsonHan.Chapter06.sinePolynomials`: the subspace $V_0$ of (6.2.5), spanned by
+  the functions $\sin(jx)$, $j \ge 1$.
+* Example 6.2.4, `AtkinsonHan.Chapter06.heatOperator`: the operator
+  $L = \nu \, \partial^2 / \partial x^2$ with domain $V_0$.
+* Equation (6.2.7), `AtkinsonHan.Chapter06.sineSolution`: the solution
+  $u(t) = \sum_j b_j e^{-\nu j^2 t} \sin(jx)$ for a sine polynomial initial value.
+* Definition 6.2.7, `AtkinsonHan.Chapter06.IsConsistent`: the local truncation error divided by
+  $\Delta t$ tends to $0$ uniformly in $t$, on a dense set of initial values.
+* Example 6.2.8, `AtkinsonHan.Chapter06.forwardScheme`: the forward scheme $C(\Delta t) v = (1 - 2r)
+  v + r [\tilde v(\cdot + \Delta x) + \tilde v(\cdot - \Delta x)]$.
+* Example 6.2.8, `AtkinsonHan.Chapter06.backwardScheme`: the backward scheme
+  $C(\Delta t) = Q_1^{-1}$ with $Q_1 = (1 + 2r) I - r [\tilde v(\cdot + \Delta x) + \tilde v(\cdot -
+  \Delta x)]$.
+* Definition 6.2.9, `AtkinsonHan.Chapter06.IsConvergent`:
+  $\|(C(\Delta t_i)^{m_i} - S(t)) u_0\| \to 0$ whenever $\Delta t_i \to 0$ and
+  $m_i \Delta t_i \to t$.
+* Definition 6.2.10, `AtkinsonHan.Chapter06.IsStable`: the powers $C(\Delta t)^m$ with
+  $m \Delta t \le T$ are uniformly bounded.
 
 ## Main results
 
-* `IsSolution`, `IsWellPosed`, `solutionOperator` — Definitions 6.2.1, 6.2.2, 6.2.3.
-* `proposition_6_2_5` — the generalized solution is continuous in time.
-* `proposition_6_2_6` — the solution operators form a semigroup.
-* `IsConsistent`, `IsConvergent`, `IsStable` — Definitions 6.2.7, 6.2.9, 6.2.10.
-* `theorem_6_2_11` — the Lax equivalence theorem.
-* `corollary_6_2_12` — the order of convergence.
+* Example 6.2.4, `AtkinsonHan.Chapter06.example_6_2_4`: the heat equation is well posed in
+  $C_0[0, \pi]$ with $c_0 = 1$.
+* Example 6.2.4 and Exercise 6.2.1, `AtkinsonHan.Chapter06.example_6_2_4_dense`: the sine
+  polynomials are dense in $C_0[0, \pi]$.
+* Example 6.2.4, `AtkinsonHan.Chapter06.example_6_2_4_norm_solutionOperator_le`: the solution
+  operators of the heat equation satisfy $\|S(t)\| \le 1$.
+* Example 6.2.4, `AtkinsonHan.Chapter06.isSolution_sineSolution`: the curve (6.2.7) is a solution
+  for a sine polynomial initial value.
+* Example 6.2.4, `AtkinsonHan.Chapter06.example_6_2_4_solutionOperator_apply`: the solution
+  operators map a sine polynomial initial value to the curve (6.2.7).
+* Proposition 6.2.5, `AtkinsonHan.Chapter06.proposition_6_2_5`: the generalized solution
+  $t \mapsto S(t) u_0$ is continuous on $[0, T]$ for every $u_0 \in V$.
+* Proposition 6.2.6, `AtkinsonHan.Chapter06.proposition_6_2_6`: the solution operators satisfy
+  $S(t_1 + t_0) = S(t_1) S(t_0)$.
+* Example 6.2.8, `AtkinsonHan.Chapter06.norm_forwardScheme_le`: the bound (6.2.8),
+  $\|C(\Delta t)\| \le |1 - 2r| + 2r$, for the forward scheme.
+* Example 6.2.8, `AtkinsonHan.Chapter06.example_6_2_8`: the forward scheme is consistent on the sine
+  polynomials.
+* Example 6.2.8, `AtkinsonHan.Chapter06.norm_backwardScheme_le`: the backward scheme satisfies
+  $\|C(\Delta t)\| \le 1$ for every $r \ge 0$.
+* Example 6.2.8, `AtkinsonHan.Chapter06.example_6_2_8_backward`: the backward scheme is consistent
+  on the sine polynomials.
+* Theorem 6.2.11, `AtkinsonHan.Chapter06.theorem_6_2_11`: the Lax equivalence theorem, stability is
+  equivalent to convergence.
+* Corollary 6.2.12, `AtkinsonHan.Chapter06.corollary_6_2_12`: a stable method with local error
+  $O(\Delta t^{k+1})$ has global error at most $M_0 t c \Delta t^k$.
+* Example 6.2.13, `AtkinsonHan.Chapter06.example_6_2_13`: for $r \le 1/2$ the forward scheme is
+  stable and convergent.
+* Example 6.2.13, `AtkinsonHan.Chapter06.example_6_2_13_backward`: the backward scheme is stable and
+  convergent for every $r > 0$.
+* Exercise 6.2.3, `AtkinsonHan.Chapter06.norm_forwardScheme_eq`: $\|C(\Delta t)\| = |1 - 2r| + 2r$
+  for the forward scheme when $\Delta x < \pi/2$.
+* Exercise 6.2.3, `AtkinsonHan.Chapter06.not_isStable_forwardScheme`: for $r > 1/2$ the forward
+  scheme is not stable.
 
-## Two readings that the book leaves implicit
+## Implementation notes
 
-**Convergence is restricted to steps within the horizon**, `m Δt ≤ T`.  Outside it the evolution
-family is evaluated where nothing has been assumed about it, so the continuity hypothesis of the
-equivalence theorem says nothing there and the definition would be about junk.
+* The source allows real or complex scalars. This module takes $V$ over $\mathbb{R}$; the backbone
+  `Numlib.FiniteDifference.LaxEquivalence` has the same results over any `RCLike` field.
+* The operator $L : V_0 \subseteq V \to V$ is a `LinearPMap`, `L : V →ₗ.[ℝ] V`, with
+  `Dense (L.domain : Set V)`, as for the closed operators of Section 8.2.
+* Definition 6.2.1 is a limit of the difference quotient $(u(s) - u(t))/(s - t)$ as $s \to t$ within
+  $[0, T]$, and Definition 6.2.7 divides by $\Delta t$. The backbone uses `HasDerivWithinAt` and
+  clears the division. `AtkinsonHan.Chapter06.isSolution_iff` and
+  `AtkinsonHan.Chapter06.isConsistent_iff` identify the two forms.
+* Definition 6.2.3 is an existence statement in the backbone,
+  `FiniteDifference.exists_solutionOperator`, which is the appeal of the source to its Theorem 2.4.1
+  (proved here as `AtkinsonHan.Chapter02.theorem_2_4_1`). `AtkinsonHan.Chapter06.solutionOperator`
+  chooses the family once. Only its three properties `AtkinsonHan.Chapter06.solutionOperator_zero`,
+  `AtkinsonHan.Chapter06.norm_solutionOperator_le` and
+  `AtkinsonHan.Chapter06.solutionOperator_apply` are meaningful, because the choice is not canonical
+  outside $[0, T]$.
+* The Lax equivalence theorem does not use the semigroup property of Proposition 6.2.6.
+* In the heat example, $L$ is defined by its action $\sin(jx) \mapsto -\nu j^2 \sin(jx)$ on the
+  basis of $V_0$, and `AtkinsonHan.Chapter06.heatOperator_apply_eq_laplacian` identifies it with
+  $\nu$ times the second derivative. The maximum principle
+  `Heat.IsClassicalSolution.abs_le_of_eq_zero_frontier` gives the stability bound. The schemes act
+  on the odd $2\pi$-periodic extension $\tilde v$ of $v$, `oddPeriodicExtend`, with the space step
+  $\Delta x = \sqrt{\nu \Delta t / r}$.
 
-**The semigroup property needs well-posedness at every horizon `T' ≤ T`**, not only at `T`:
-translating a solution back by `t₀` produces a solution on `[0, T - t₀]`, and it is uniqueness
-*there* that identifies it with the trajectory started at `S(t₀) u₀`.  `proposition_6_2_6`
-therefore carries that hypothesis.  The Lax equivalence theorem does not use the semigroup
-property at all.
+## Deviations from the source
 
-## The heat equation: Examples 6.2.4, 6.2.8 and 6.2.13
+* **Definition 6.2.7** (reading). The truncation error is tested only at the $t \in [0, T]$ with
+  $t + \Delta t \le T$, where the solution operators are determined. See
+  `AtkinsonHan.Chapter06.IsConsistent`.
+* **Definition 6.2.9** (reading). The limit is taken along every pair of sequences
+  $(\Delta t_i, m_i)$ with $\Delta t_i \to 0$ and $m_i \Delta t_i \to t$, restricted to
+  $m_i \Delta t_i \le T$. See `AtkinsonHan.Chapter06.IsConvergent`.
+* **Proposition 6.2.6** (reading). The statement assumes well-posedness on every horizon $T' \le T$,
+  not only on $T$. See `AtkinsonHan.Chapter06.proposition_6_2_6`.
+* **Theorem 6.2.11** (reading). The uniform bound $\|C(\Delta t)\| \le c_1$, which the source
+  assumes silently when it introduces the family, is an explicit hypothesis. See
+  `AtkinsonHan.Chapter06.theorem_6_2_11`.
+* **Exercise 6.2.3** (correction). The equality $\|C(\Delta t)\| = |1 - 2r| + 2r$ needs a small
+  space step; the library assumes $\Delta x < \pi/2$. See
+  `AtkinsonHan.Chapter06.norm_forwardScheme_eq`.
 
-The book's running example is `u_t = ν u_xx` on `(0, π) × (0, T)` with homogeneous Dirichlet
-boundary values, in `V = C₀[0, π]` (`C₀`, a closed subspace of `C[0, π]` with the maximum norm)
-with `V₀` the finite sine polynomials (`sinePolynomials`, (6.2.5)) and `L = ν ∂²/∂x²` on `V₀`
-(`heatOperator`, presented through its action on the sines and identified with the second
-derivative by `heatOperator_apply_eq_laplacian`).
+## Not formalized
 
-* **Example 6.2.4**: `V₀` is dense (`example_6_2_4_dense`, the book's Exercise 6.2.1, from the
-  uniform density of trigonometric polynomials on the circle applied to the odd periodic extension,
-  `exists_mem_span_sinMap_norm_sub_lt`); for a sine polynomial the solution is the explicit
-  series (6.2.7) (`sineSolution`, `isSolution_sineSolution`); every solution in the sense of
-  Definition 6.2.1 is a classical solution of the heat equation and the maximum principle
-  (`Heat.IsClassicalSolution.abs_le_of_eq_zero_frontier`, Brezis's Theorem 10.6) bounds it by its
-  initial value (`norm_le_of_isSolution`); so the problem is well posed with `c₀ = 1`
-  (`example_6_2_4`) and the solution operators are bounded by `1`
-  (`example_6_2_4_norm_solutionOperator_le`).
-* **Example 6.2.8**: the forward scheme `C (Δt) v = (1 - 2r) v + r [ṽ (· + Δx) + ṽ (· - Δx)]`,
-  on the odd `2π`-periodic extension `ṽ` (`oddPeriodicExtend`,
-  `Numlib.Analysis.PDE.Heat.SineSeries`), as a bounded operator `forwardScheme` with
-  `‖C (Δt)‖ ≤ |1 - 2r| + 2r` (6.2.8) (`norm_forwardScheme_le`); its consistency on `V_c = V₀` by
-  the Taylor expansion of (6.2.7) (`example_6_2_8`); the backward scheme `backwardScheme = Q₁⁻¹`
-  inverted by a Neumann series, with `‖C (Δt)‖ ≤ 1` for every `r` (`norm_backwardScheme_le`)
-  and, the clause the book leaves to the reader, its consistency (`example_6_2_8_backward`).
-* **Example 6.2.13**: the equivalence theorem applied — the forward scheme is stable and
-  convergent for `r ≤ 1/2` (`example_6_2_13`), the backward one unconditionally
-  (`example_6_2_13_backward`); and the book's Exercise 6.2.3 as helpers — the exact norm
-  `‖C (Δt)‖ = |1 - 2r| + 2r` (`norm_forwardScheme_eq`, valid once `Δx < π/2`) and the
-  instability of the forward scheme for `r > 1/2` (`not_isStable_forwardScheme`, from the
-  amplification factor `1 - 2r + 2r cos ((k + 1) Δx)` on the modes `sin ((k + 1) x)`), so that
-  the forward scheme is stable if and only if `r ≤ 1/2`: it is *conditionally* stable.
-
-**The consistency horizon.** Definition 6.2.7 evaluates `S (t + Δt) u₀` for `t ∈ [0, T]`, and the
-solution operators of Definition 6.2.3 are determined only on their own horizon; the book's
-definition is read with the restriction `t + Δt ≤ T`, which is all the proof of Theorem 6.2.11
-uses, so that the consistency and convergence statements take the solution operators on `[0, T]`
-itself and `theorem_6_2_11` applies to them directly.
-
-Not formalized: the book's Exercise 6.2.2 (Crank–Nicolson).
+* **Exercise 6.2.2** (the Crank–Nicolson scheme).
 -/
 
 open Filter Set Topology
@@ -107,39 +149,50 @@ variable {V : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V]
 
 /-! ### The abstract initial value problem -/
 
-/-- **Definition 6.2.1** and (6.2.2).  `u` is a solution of `u' = L u`, `u(0) = u₀`, on `[0, T]`
-when `u(t)` lies in the domain of `L` for every `t ∈ [0, T]` and the difference quotient
-`(u(s) - u(t))/(s - t)` tends to `L u(t)` as `s → t` within `[0, T]` — a limit within the closed
-interval being exactly the book's one-sided convention at the two endpoints. -/
+/-- **Definition 6.2.1** of [han2009theoretical], with (6.2.2). Let $L : V_0 \subseteq V \to V$ be a
+linear operator and let $T \in \mathbb{R}$. A function $u : \mathbb{R} \to V$ is a **solution**
+of $u' = Lu$, $u(0) = u_0$ on $[0, T]$ if $u(0) = u_0$ and, for every $t \in [0, T]$,
+$u(t) \in V_0$ and
+$$\frac{u(s) - u(t)}{s - t} \to L u(t) \qquad \text{as } s \to t,\ s \in [0, T] \setminus
+  \{t\}.$$
+
+The limit within the closed interval is the one-sided derivative of the source at the two
+endpoints. Only the values of $u$ on $[0, T]$ and at $0$ matter. -/
 def IsSolution (L : V →ₗ.[ℝ] V) (T : ℝ) (u₀ : V) (u : ℝ → V) : Prop :=
   u 0 = u₀ ∧ ∀ t ∈ Icc (0 : ℝ) T, ∃ h : u t ∈ L.domain,
     Tendsto (fun s : ℝ => (s - t)⁻¹ • (u s - u t)) (𝓝[Icc 0 T \ {t}] t) (𝓝 (L ⟨u t, h⟩))
 
-/-- The book's difference quotient is Mathlib's `slope`. -/
+/-- The difference quotient $(u(s) - u(t))/(s - t)$ is Mathlib's `slope u t s`. -/
 private theorem slope_eq (u : ℝ → V) (t : ℝ) :
     slope u t = fun s : ℝ => (s - t)⁻¹ • (u s - u t) := rfl
 
-/-- (6.2.2) is the backbone's `HasDerivWithinAt` formulation. -/
+/-- A function $u$ is a solution in the sense of Definition 6.2.1 if and only if it is a solution in
+the sense of the backbone, `FiniteDifference.IsSolution`, where the derivative is
+`HasDerivWithinAt` on $[0, T]$. -/
 theorem isSolution_iff (L : V →ₗ.[ℝ] V) (T : ℝ) (u₀ : V) (u : ℝ → V) :
     IsSolution L T u₀ u ↔ FiniteDifference.IsSolution L T u₀ u := by
   simp only [IsSolution, FiniteDifference.IsSolution, hasDerivWithinAt_iff_tendsto_slope, slope_eq]
 
-/-- **Definition 6.2.2** and (6.2.3).  The initial value problem is *well posed* on `[0, T]` with
-stability constant `c₀` when every initial value in the domain of `L` has a solution, that solution
-is unique on `[0, T]`, and solutions depend continuously on the initial value,
-`‖u(t) - ū(t)‖ ≤ c₀ ‖u₀ - ū₀‖`.
+/-- **Definition 6.2.2** of [han2009theoretical], with (6.2.3). The initial value problem $u' = Lu$,
+$u(0) = u_0$ is **well posed** on $[0, T]$ with stability constant $c_0$ if the following hold.
 
-Uniqueness is stated as `Set.EqOn` on `[0, T]` rather than as `∃!` over all of `ℝ → V`, because the
-book constrains `u` only there.  It is in fact implied by the stability bound at `u₀ = ū₀`
-(`FiniteDifference.IsWellPosed.eqOn`), which is why the backbone predicate has two clauses where
-this one has three; `isWellPosed_iff` records that they agree. -/
+1. For every $u_0 \in V_0$ there is a solution on $[0, T]$.
+2. Two solutions with the same initial value $u_0 \in V_0$ agree on $[0, T]$.
+3. Any two solutions $u$ and $\bar u$ with initial values $u_0$ and $\bar u_0$ satisfy $\|u(t) -
+   \bar u(t)\| \le c_0 \|u_0 - \bar u_0\|$ for all $t \in [0, T]$.
+
+Uniqueness is agreement on $[0, T]$, because the source constrains $u$ only there. It follows
+from the stability bound with $u_0 = \bar u_0$ (`FiniteDifference.IsWellPosed.eqOn`), so the
+backbone predicate has only the clauses 1 and 3; `AtkinsonHan.Chapter06.isWellPosed_iff` shows
+that the two predicates agree. -/
 def IsWellPosed (L : V →ₗ.[ℝ] V) (T c₀ : ℝ) : Prop :=
   (∀ u₀ ∈ L.domain, ∃ u, IsSolution L T u₀ u) ∧
     (∀ u₀ ∈ L.domain, ∀ u ū, IsSolution L T u₀ u → IsSolution L T u₀ ū → EqOn u ū (Icc 0 T)) ∧
       ∀ u₀ ū₀ u ū, IsSolution L T u₀ u → IsSolution L T ū₀ ū →
         ∀ t ∈ Icc (0 : ℝ) T, ‖u t - ū t‖ ≤ c₀ * ‖u₀ - ū₀‖
 
-/-- Definition 6.2.2 is the backbone's well-posedness: its uniqueness clause is redundant. -/
+/-- The problem is well posed in the sense of Definition 6.2.2 if and only if it is well posed in
+the sense of the backbone, `FiniteDifference.IsWellPosed`, which has no uniqueness clause. -/
 theorem isWellPosed_iff (L : V →ₗ.[ℝ] V) (T c₀ : ℝ) :
     IsWellPosed L T c₀ ↔ FiniteDifference.IsWellPosed L T c₀ := by
   constructor
@@ -154,8 +207,7 @@ theorem isWellPosed_iff (L : V →ₗ.[ℝ] V) (T c₀ : ℝ) :
       fun u₀ ū₀ u ū hu hū => hwp.2 u₀ ū₀ u ū ((isSolution_iff L T u₀ u).1 hu)
         ((isSolution_iff L T ū₀ ū).1 hū)⟩
 
-/-- A solution on `[0, T]` restricts to a solution on any shorter horizon: a derivative within a
-set is a derivative within a subset. -/
+/-- A solution on $[0, T]$ is a solution on $[0, T']$ for every $T' \le T$. -/
 private theorem isSolution_mono {L : V →ₗ.[ℝ] V} {T T' : ℝ} {u₀ : V} {u : ℝ → V}
     (hu : FiniteDifference.IsSolution L T u₀ u) (hT' : T' ≤ T) :
     FiniteDifference.IsSolution L T' u₀ u := by
@@ -169,16 +221,21 @@ section SolutionOperator
 
 variable [CompleteSpace V]
 
-/-- **Definition 6.2.3, the solution operators.**  For a well-posed problem with a dense domain
-there is a family of bounded operators `S(t) : V → V` with `S(0) = I`, `‖S(t)‖ ≤ c₀` on `[0, T]`,
-and `S(t) u₀ = u(t)` whenever `u₀` lies in the domain of `L` and `u` is the solution started there.
-Its value at an initial value outside the domain is the book's *generalized* solution.
+/-- **Definition 6.2.3** of [han2009theoretical]. Let $V$ be a Banach space, let
+$L : V_0 \subseteq V \to V$ have a dense domain, let $T \ge 0$ and $c_0 \ge 0$, and let the
+problem be well posed on $[0, T]$ with constant $c_0$. The **solution operators** are a family
+of bounded linear operators $S(t) : V \to V$ with $S(0) = I$, $\|S(t)\| \le c_0$ for
+$t \in [0, T]$, and $S(t) u_0 = u(t)$ for $t \in [0, T]$ whenever $u_0 \in V_0$ and $u$ is the
+solution with initial value $u_0$. For $u_0 \notin V_0$, the function $t \mapsto S(t) u_0$ is
+the **generalized solution**.
 
-The backbone delivers the family as an existential (`FiniteDifference.exists_solutionOperator`,
-which is the book's appeal to its Theorem 2.4.1 on extending a bounded operator from a dense
-subspace), and this definition opens it once.  The three properties are `solutionOperator_zero`,
-`norm_solutionOperator_le` and `solutionOperator_apply`; nothing else about the family should be
-used, since the choice is not canonical outside `[0, T]`. -/
+The backbone gives the family as an existence statement,
+`FiniteDifference.exists_solutionOperator`, which is the appeal of the source to its Theorem
+2.4.1 on the extension of a bounded operator from a dense subspace. This definition chooses one
+such family. Its three properties are `AtkinsonHan.Chapter06.solutionOperator_zero`,
+`AtkinsonHan.Chapter06.norm_solutionOperator_le` and
+`AtkinsonHan.Chapter06.solutionOperator_apply`; no other property should be used, because the
+choice is not canonical outside $[0, T]$. -/
 noncomputable def solutionOperator (L : V →ₗ.[ℝ] V) (hdense : Dense (L.domain : Set V)) {T c₀ : ℝ}
     (hT : 0 ≤ T) (hc₀ : 0 ≤ c₀) (hwp : IsWellPosed L T c₀) : ℝ → V →L[ℝ] V :=
   (FiniteDifference.exists_solutionOperator L hdense hT hc₀
@@ -195,27 +252,28 @@ private theorem solutionOperator_spec :
   (FiniteDifference.exists_solutionOperator L hdense hT hc₀
     ((isWellPosed_iff L T c₀).1 hwp)).choose_spec
 
-/-- `S(0) = I`. -/
+/-- The solution operators satisfy $S(0) = I$. -/
 theorem solutionOperator_zero : solutionOperator L hdense hT hc₀ hwp 0 = 1 :=
   (solutionOperator_spec L hdense hT hc₀ hwp).1
 
-/-- `sup_{0 ≤ t ≤ T} ‖S(t)‖ ≤ c₀`, the stability bound of (6.2.3). -/
+/-- The solution operators satisfy $\|S(t)\| \le c_0$ for every $t \in [0, T]$, the stability bound
+of (6.2.3). -/
 theorem norm_solutionOperator_le :
     ∀ t ∈ Icc (0 : ℝ) T, ‖solutionOperator L hdense hT hc₀ hwp t‖ ≤ c₀ :=
   (solutionOperator_spec L hdense hT hc₀ hwp).2.1
 
-/-- `S(t) u₀ = u(t)` for an initial value in the domain of `L`: the solution operator really does
-carry the solution. -/
+/-- If $t \in [0, T]$, $u_0 \in V_0$ and $u$ is a solution with initial value $u_0$, then
+$S(t) u_0 = u(t)$. -/
 theorem solutionOperator_apply {t : ℝ} (ht : t ∈ Icc (0 : ℝ) T) {u₀ : V} (hu₀ : u₀ ∈ L.domain)
     (u : ℝ → V) (hu : IsSolution L T u₀ u) : solutionOperator L hdense hT hc₀ hwp t u₀ = u t :=
   (solutionOperator_spec L hdense hT hc₀ hwp).2.2 t ht u₀ hu₀ u ((isSolution_iff L T u₀ u).1 hu)
 
-/-- **Proposition 6.2.5.**  For every `u₀ ∈ V` — not only for `u₀` in the domain of `L` — the
-generalized solution `t ↦ S(t) u₀` is continuous on `[0, T]`.
+/-- **Proposition 6.2.5** of [han2009theoretical]. Under the hypotheses of Definition 6.2.3, for
+every $u_0 \in V$ the generalized solution $t \mapsto S(t) u_0$ is continuous on $[0, T]$.
 
-On the dense domain it is a genuine solution, hence differentiable within `[0, T]`, hence
-continuous; the uniform bound `‖S(t)‖ ≤ c₀` then carries continuity to every `u₀` by the
-Banach–Steinhaus density criterion. -/
+For $u_0 \in V_0$ the function is a solution, hence continuous. The uniform bound
+$\|S(t)\| \le c_0$ and the density of $V_0$ extend the continuity to every $u_0$, by the density
+criterion of the Banach–Steinhaus theorem. -/
 theorem proposition_6_2_5 (u₀ : V) :
     ContinuousOn (fun t => solutionOperator L hdense hT hc₀ hwp t u₀) (Icc 0 T) := by
   refine FiniteDifference.continuousOn_of_dense hdense
@@ -227,15 +285,16 @@ theorem proposition_6_2_5 (u₀ : V) :
   obtain ⟨_, hd⟩ := ((isSolution_iff L T v u).1 hu).2 t ht
   exact HasDerivWithinAt.continuousWithinAt hd
 
-/-- **Proposition 6.2.6.**  The solution operators form a semigroup:
-`S(t₁ + t₀) = S(t₁) ∘ S(t₀)` whenever `t₀, t₁ ≥ 0` and `t₁ + t₀ ≤ T`.
+/-- **Proposition 6.2.6** of [han2009theoretical]. Under the hypotheses of Definition 6.2.3, assume
+also that the problem is well posed with constant $c_0$ on every horizon $T' \in [0, T]$. Then
+for $t_0, t_1 \ge 0$ with $t_1 + t_0 \le T$,
+$$S(t_1 + t_0) = S(t_1) S(t_0).$$
 
-Well-posedness is asked for at *every* horizon `T' ≤ T`, not only at `T`.  Translating a solution
-back by `t₀` produces a solution on `[0, T - t₀]`, and it is uniqueness there — a statement about
-curves defined only on the shorter interval — that identifies it with the trajectory started at
-`S(t₀) u₀`.
+**Reading.** The source assumes well-posedness on $[0, T]$ only. The proof translates a solution
+back by $t_0$, which gives a solution on $[0, T - t_0]$, and it needs uniqueness on that shorter
+interval to identify the translate with the solution that starts at $S(t_0) u_0$.
 
-**The Lax equivalence theorem does not use this**; it is recorded because the book states it. -/
+The Lax equivalence theorem `AtkinsonHan.Chapter06.theorem_6_2_11` does not use this result. -/
 theorem proposition_6_2_6 (hwp' : ∀ T' ∈ Icc (0 : ℝ) T, IsWellPosed L T' c₀) {t₀ t₁ : ℝ}
     (ht₀ : 0 ≤ t₀) (ht₁ : 0 ≤ t₁) (hsum : t₁ + t₀ ≤ T) :
     solutionOperator L hdense hT hc₀ hwp (t₁ + t₀)
@@ -254,30 +313,35 @@ end SolutionOperator
 
 /-! ### Consistency, stability and convergence -/
 
-/-- **Definition 6.2.7, consistency.**  The difference method `{C(Δt)}` is consistent with the
-evolution family `S` on `[0, T]`, for step sizes in `(0, Δ₀]` and initial values in the dense set
-`V_c`, when the local truncation error
+/-- **Definition 6.2.7** of [han2009theoretical]. Let $S, C : \mathbb{R} \to \mathcal{L}(V)$, let
+$T, \Delta_0 \in \mathbb{R}$ and let $V_c \subseteq V$. The difference method $\{C(\Delta t)\}$
+is **consistent** with the family $S$ on $[0, T]$, for step sizes in $(0, \Delta_0]$ and initial
+values in $V_c$, if $V_c$ is dense in $V$ and, for every $u_0 \in V_c$ and every
+$\varepsilon > 0$, there is $\delta > 0$ such that
+$$\Big\| \frac{C(\Delta t) u(t) - u(t + \Delta t)}{\Delta t} \Big\| \le \varepsilon, \qquad
+  u(t) = S(t) u_0,$$
+for all $\Delta t \in (0, \Delta_0]$ with $\Delta t < \delta$ and all $t \in [0, T]$ with
+$t + \Delta t \le T$.
 
-  `(C(Δt) u(t) - u(t + Δt)) / Δt`
+**Reading.** The source tests all $t \in [0, T]$. The condition $t + \Delta t \le T$ keeps $S$
+on the horizon $[0, T]$, where the solution operators of Definition 6.2.3 are determined. The
+proof of Theorem 6.2.11 uses the truncation error only at grid points $k \Delta t$ with
+$(k + 1) \Delta t \le T$.
 
-tends to `0` as `Δt → 0`, uniformly in `t ∈ [0, T]`.  Here `u(t) = S(t) u₀`, so the condition is
-tested on the trajectories of the family, and only where the family is known: at the `t` with
-`t + Δt ≤ T` (the solution operators of Definition 6.2.3 exist on their horizon `[0, T]` alone,
-and the proof of Theorem 6.2.11 uses the truncation error at the grid points `k Δt` with
-`(k + 1) Δt ≤ m Δt ≤ T` only).
-
-The division is written out, as the book writes it; the backbone clears it, and
-`isConsistent_iff` is that identification. -/
+The division is written as in the source. The backbone `FiniteDifference.IsConsistent` clears
+it, and `AtkinsonHan.Chapter06.isConsistent_iff` identifies the two forms. -/
 def IsConsistent (S C : ℝ → V →L[ℝ] V) (T Δ₀ : ℝ) (D : Set V) : Prop :=
   Dense D ∧ ∀ u₀ ∈ D, ∀ ε > (0 : ℝ), ∃ δ > (0 : ℝ), ∀ Δt ∈ Ioc (0 : ℝ) Δ₀, Δt < δ →
     ∀ t ∈ Icc (0 : ℝ) T, t + Δt ≤ T → ‖(Δt)⁻¹ • (C Δt (S t u₀) - S (t + Δt) u₀)‖ ≤ ε
 
-/-- Clearing the division in Definition 6.2.7. -/
+/-- For $\Delta t > 0$, $\|x / \Delta t\| \le \varepsilon$ if and only if
+$\|x\| \le \varepsilon \Delta t$. -/
 private theorem norm_inv_smul_le_iff {x : V} {Δt ε : ℝ} (hΔt : 0 < Δt) :
     ‖(Δt)⁻¹ • x‖ ≤ ε ↔ ‖x‖ ≤ ε * Δt := by
   rw [norm_smul, norm_inv, Real.norm_eq_abs, abs_of_pos hΔt, ← div_eq_inv_mul, div_le_iff₀ hΔt]
 
-/-- Definition 6.2.7 is the backbone's consistency, whose statement has the division cleared. -/
+/-- Consistency in the sense of Definition 6.2.7 is equivalent to consistency in the sense of the
+backbone, `FiniteDifference.IsConsistent`, where the division by $\Delta t$ is cleared. -/
 theorem isConsistent_iff (S C : ℝ → V →L[ℝ] V) (T Δ₀ : ℝ) (D : Set V) :
     IsConsistent S C T Δ₀ D ↔ FiniteDifference.IsConsistent S C T Δ₀ D := by
   constructor
@@ -292,32 +356,36 @@ theorem isConsistent_iff (S C : ℝ → V →L[ℝ] V) (T Δ₀ : ℝ) (D : Set 
     exact ⟨δ, hδ, fun Δt hΔt hlt t ht htΔ =>
       (norm_inv_smul_le_iff hΔt.1).2 (hb Δt hΔt hlt t ht htΔ)⟩
 
-/-- **Definition 6.2.9, convergence.**  The method converges to the evolution family when
-`‖(C(Δt_i)^{m_i} - S(t)) u₀‖ → 0` for every `t ∈ [0, T]`, every `u₀ ∈ V` and every refinement:
-every pair of sequences of step sizes `Δt_i ∈ (0, Δ₀]` and step counts `m_i` with `Δt_i → 0` and
-`m_i Δt_i → t`.
+/-- **Definition 6.2.9** of [han2009theoretical]. The difference method $\{C(\Delta t)\}$ is
+**convergent** to the family $S$ on $[0, T]$, for step sizes in $(0, \Delta_0]$, if for every
+$t \in [0, T]$, every $u_0 \in V$, and all sequences $\Delta t_i \in (0, \Delta_0]$ and
+$m_i \in \mathbb{N}$ with $m_i \Delta t_i \le T$, $\Delta t_i \to 0$ and $m_i \Delta t_i \to t$,
+$$\|(C(\Delta t_i)^{m_i} - S(t)) u_0\| \to 0.$$
 
-Two readings the book leaves implicit.  The limit is along *sequences*, because it is not a limit
-along one sequence of step sizes but along every refinement whose discrete time tends to `t`.  And
-the step counts are restricted to the horizon, `m_i Δt_i ≤ T`: outside it the evolution family is
-evaluated where nothing has been assumed about it. -/
+**Reading.** The source does not say how the limit is taken. Here it is taken along every pair
+of sequences whose discrete time tends to $t$. The step counts are restricted to
+$m_i \Delta t_i \le T$, because outside $[0, T]$ nothing is known about the family $S$. -/
 def IsConvergent (S C : ℝ → V →L[ℝ] V) (T Δ₀ : ℝ) : Prop :=
   ∀ t ∈ Icc (0 : ℝ) T, ∀ u₀ : V, ∀ (Δt : ℕ → ℝ) (m : ℕ → ℕ), (∀ i, Δt i ∈ Ioc (0 : ℝ) Δ₀) →
     (∀ i, (m i : ℝ) * Δt i ≤ T) → Tendsto Δt atTop (𝓝 0) →
     Tendsto (fun i => (m i : ℝ) * Δt i) atTop (𝓝 t) →
     Tendsto (fun i => ‖(C (Δt i) ^ m i - S t) u₀‖) atTop (𝓝 0)
 
-/-- Definition 6.2.9 is the backbone's convergence. -/
+/-- Convergence in the sense of Definition 6.2.9 is equivalent to convergence in the sense of the
+backbone, `FiniteDifference.IsConvergent`. -/
 theorem isConvergent_iff (S C : ℝ → V →L[ℝ] V) (T Δ₀ : ℝ) :
     IsConvergent S C T Δ₀ ↔ FiniteDifference.IsConvergent S C T Δ₀ := by
   simp only [IsConvergent, FiniteDifference.IsConvergent, sub_apply]
 
-/-- **Definition 6.2.10, stability.**  The method is stable when the powers `C(Δt)^m` taken within
-the horizon, `m Δt ≤ T` and `0 < Δt ≤ Δ₀`, are bounded in norm uniformly in the step size. -/
+/-- **Definition 6.2.10** of [han2009theoretical]. The difference method $\{C(\Delta t)\}$ is
+**stable** on $[0, T]$, for step sizes in $(0, \Delta_0]$, if there is $M_0$ with
+$\|C(\Delta t)^m\| \le M_0$ for all $\Delta t \in (0, \Delta_0]$ and all $m \in \mathbb{N}$ with
+$m \Delta t \le T$. -/
 def IsStable (C : ℝ → V →L[ℝ] V) (T Δ₀ : ℝ) : Prop :=
   ∃ M₀ : ℝ, ∀ Δt ∈ Ioc (0 : ℝ) Δ₀, ∀ m : ℕ, (m : ℝ) * Δt ≤ T → ‖C Δt ^ m‖ ≤ M₀
 
-/-- Definition 6.2.10 is the backbone's stability, definitionally. -/
+/-- Stability in the sense of Definition 6.2.10 is, by definition, stability in the sense of the
+backbone, `FiniteDifference.IsStable`. -/
 theorem isStable_iff (C : ℝ → V →L[ℝ] V) (T Δ₀ : ℝ) :
     IsStable C T Δ₀ ↔ FiniteDifference.IsStable C T Δ₀ := Iff.rfl
 
@@ -328,14 +396,20 @@ section Equivalence
 variable [CompleteSpace V] (L : V →ₗ.[ℝ] V) (hdense : Dense (L.domain : Set V)) {T c₀ : ℝ}
   (hT : 0 ≤ T) (hc₀ : 0 ≤ c₀) (hwp : IsWellPosed L T c₀)
 
-/-- **Theorem 6.2.11, the Lax equivalence theorem.**  For a well-posed initial value problem and a
-difference method that is uniformly bounded in norm and consistent on a dense set of initial
-values, stability is equivalent to convergence.
+/-- **Theorem 6.2.11** of [han2009theoretical] (Lax equivalence theorem). Let $V$ be a Banach space,
+let $L : V_0 \subseteq V \to V$ have a dense domain, let $T \ge 0$ and $c_0 \ge 0$, let the
+problem be well posed on $[0, T]$ with constant $c_0$, and let $S$ be its solution operators.
+Let $\{C(\Delta t)\}$ be a family of bounded operators with $\|C(\Delta t)\| \le c_1$ for all
+$\Delta t \in (0, \Delta_0]$, consistent with $S$ on a set $V_c$. Then the method is stable if
+and only if it is convergent.
 
-The uniform bound `‖C(Δt)‖ ≤ c₁` is a hypothesis the book makes silently when it introduces the
-family, a page before the theorem, and its proof of the backward direction uses it: without it the
-step `sup_k ‖C(Δt_k)^{m_k}‖ ≤ sup_k ‖C(Δt_k)‖^{m_k} < ∞` for step sizes bounded away from zero is
-unjustified.  The semigroup property of Proposition 6.2.6 is **not** used. -/
+**Reading.** The source assumes the uniform bound $\|C(\Delta t)\| \le c_1$ silently, when it
+introduces the family a page before the theorem. Its proof of the implication from convergence
+to stability uses the bound: without it, the estimate $\sup_k \|C(\Delta t_k)^{m_k}\| \le \sup_k
+\|C(\Delta t_k)\|^{m_k} < \infty$ for step sizes bounded away from zero fails.
+
+The proof specializes `FiniteDifference.isStable_iff_isConvergent`. It does not use the
+semigroup property of Proposition 6.2.6. -/
 theorem theorem_6_2_11 {C : ℝ → V →L[ℝ] V} {Δ₀ c₁ : ℝ} {D : Set V}
     (hC : ∀ Δt ∈ Ioc (0 : ℝ) Δ₀, ‖C Δt‖ ≤ c₁)
     (hcons : IsConsistent (solutionOperator L hdense hT hc₀ hwp) C T Δ₀ D) :
@@ -344,14 +418,19 @@ theorem theorem_6_2_11 {C : ℝ → V →L[ℝ] V} {Δ₀ c₁ : ℝ} {D : Set V
   exact FiniteDifference.isStable_iff_isConvergent hT (solutionOperator_zero L hdense hT hc₀ hwp)
     (proposition_6_2_5 L hdense hT hc₀ hwp) hC ((isConsistent_iff _ _ _ _ _).1 hcons)
 
-/-- **Corollary 6.2.12, the order of convergence.**  If the scheme is stable up to step `m` with
-constant `M₀` and the local error at the initial value `u₀` is `O(Δt^{k+1})` uniformly on `[0, T]`,
-then
+/-- **Corollary 6.2.12** of [han2009theoretical]. Under the hypotheses of Definition 6.2.3, let $S$
+be the solution operators, let $u_0 \in V$, $\Delta t > 0$, $m, k \in \mathbb{N}$, and
+$t = m \Delta t \in [0, T]$. Assume that $\|C(\Delta t)^i\| \le M_0$ for all $i \le m$, and that
+$$\|C(\Delta t) S(s) u_0 - S(s + \Delta t) u_0\| \le c \, \Delta t^{k+1} \qquad \text{for all }
+  s \in [0, T].$$
+Then
+$$\|C(\Delta t)^m u_0 - S(t) u_0\| \le M_0 \, t \, c \, \Delta t^k.$$
 
-  `‖C(Δt)^m u₀ - S(t) u₀‖ ≤ M₀ t c Δt^k`  whenever `m Δt = t`.
-
-No limit is taken, so this is an inequality with explicit constants.  For `u₀` in the domain of `L`
-the right-hand term is the value `u(t)` of the exact solution, by `solutionOperator_apply`. -/
+The statement is for one fixed step size, with explicit constants and no limit. For
+$u_0 \in V_0$, $S(t) u_0$ is the exact solution $u(t)$, by
+`AtkinsonHan.Chapter06.solutionOperator_apply`. The local error hypothesis is asked for every
+$s \in [0, T]$, so also at $s$ with $s + \Delta t > T$. The proof specializes
+`FiniteDifference.norm_iterate_sub_le`. -/
 theorem corollary_6_2_12 {C : ℝ → V →L[ℝ] V} {Δt c M₀ t : ℝ} {k m : ℕ} (u₀ : V) (hΔt : 0 < Δt)
     (hmΔt : (m : ℝ) * Δt = t) (ht : t ∈ Icc (0 : ℝ) T)
     (hstab : ∀ i ≤ m, ‖C Δt ^ i‖ ≤ M₀)
@@ -364,15 +443,16 @@ theorem corollary_6_2_12 {C : ℝ → V →L[ℝ] V} {Δt c M₀ t : ℝ} {k m :
 
 end Equivalence
 
-/-! ### Example 6.2.4: the heat equation on `(0, π)` in `C₀[0, π]` -/
+/-! ### Example 6.2.4: the heat equation on $(0, \pi)$ in $C_0[0, \pi]$ -/
 
 section HeatExample
 
 open Submodule InnerProductSpace Laplacian
 open scoped Real
 
-/-- **Example 6.2.4, the space `V = C₀[0, π]`**: the continuous functions on `[0, π]` vanishing
-at both ends, a closed subspace of `C[0, π]` with the maximum norm, hence a Banach space. -/
+/-- **Example 6.2.4** of [han2009theoretical], the space $V$. The space $V = C_0[0, \pi]$ is the
+subspace of the continuous functions $v$ on $[0, \pi]$ with $v(0) = v(\pi) = 0$. It is a closed
+subspace of $C[0, \pi]$ with the maximum norm, hence a Banach space. -/
 def C₀ : Submodule ℝ C(Icc (0 : ℝ) π, ℝ) where
   carrier := {v | v ⟨0, left_mem_Icc.2 Real.pi_pos.le⟩ = 0 ∧
     v ⟨π, right_mem_Icc.2 Real.pi_pos.le⟩ = 0}
@@ -380,58 +460,71 @@ def C₀ : Submodule ℝ C(Icc (0 : ℝ) π, ℝ) where
   zero_mem' := ⟨rfl, rfl⟩
   smul_mem' c v hv := ⟨by simp [hv.1], by simp [hv.2]⟩
 
-/-- Membership in `C₀[0, π]`: vanishing at both ends. -/
+/-- A function $v \in C[0, \pi]$ lies in $C_0[0, \pi]$ if and only if $v(0) = 0$ and $v(\pi) = 0$.
+-/
 theorem mem_C₀_iff {v : C(Icc (0 : ℝ) π, ℝ)} :
     v ∈ C₀ ↔ v ⟨0, left_mem_Icc.2 Real.pi_pos.le⟩ = 0 ∧
       v ⟨π, right_mem_Icc.2 Real.pi_pos.le⟩ = 0 :=
   Iff.rfl
 
-/-- `C₀[0, π]` is closed in `C[0, π]`: it is cut out by two evaluations. -/
+/-- The subspace $C_0[0, \pi]$ is closed in $C[0, \pi]$. -/
 theorem isClosed_C₀ : IsClosed (C₀ : Set C(Icc (0 : ℝ) π, ℝ)) :=
   (isClosed_eq (continuous_eval_const _) continuous_const).inter
     (isClosed_eq (continuous_eval_const _) continuous_const)
 
-/-- `C₀[0, π]` is a Banach space, being closed in the Banach space `C[0, π]`. -/
+/-- The space $C_0[0, \pi]$ is complete, because it is closed in the Banach space $C[0, \pi]$. -/
 instance : CompleteSpace C₀ := isClosed_C₀.completeSpace_coe
 
-/-- A sine polynomial vanishes at both ends of `[0, π]`. -/
+/-- Every sine polynomial $\sum_{j < n} c_j \sin((j + 1) x)$ lies in $C_0[0, \pi]$. -/
 theorem sinePolynomial_mem_C₀ (n : ℕ) (c : ℕ → ℝ) : sinePolynomial n c ∈ C₀ :=
   ⟨sinePolynomial_zero_apply n c, sinePolynomial_pi_apply n c⟩
 
-/-- The sine `sin ((k + 1) x)` as an element of `C₀[0, π]`. -/
+/-- For $k \in \mathbb{N}$, the function $x \mapsto \sin((k + 1) x)$ as an element of $C_0[0, \pi]$.
+This is the basis of the subspace $V_0$ in Example 6.2.4. -/
 noncomputable def sinV (k : ℕ) : C₀ :=
   ⟨sinMap k, by
     refine ⟨by simp [sinMap_apply], ?_⟩
     rw [sinMap_apply]
     exact_mod_cast Real.sin_nat_mul_pi (k + 1)⟩
 
+/-- As a function in $C[0, \pi]$, `AtkinsonHan.Chapter06.sinV k` is the sine `sinMap k`,
+$x \mapsto \sin((k + 1) x)$. -/
 @[simp]
 theorem coe_sinV (k : ℕ) : (sinV k : C(Icc (0 : ℝ) π, ℝ)) = sinMap k := rfl
 
-/-- **Example 6.2.4, the subspace `V₀`** of (6.2.5): the finite sine polynomials
-`∑_{j = 1}^n a_j sin (j x)`, the span of the sines in `C₀[0, π]`. -/
+/-- **Example 6.2.4** of [han2009theoretical], the subspace $V_0$ of (6.2.5). The subspace
+$V_0 \subseteq C_0[0, \pi]$ is the linear span of the functions $\sin(jx)$, $j \ge 1$: its
+elements are the finite sine polynomials $\sum_{j=1}^n a_j \sin(jx)$. -/
 noncomputable def sinePolynomials : Submodule ℝ C₀ := span ℝ (range sinV)
 
-/-- The sine polynomial `∑ c j sin ((j + 1) x)` as an element of `C₀[0, π]`. -/
+/-- For $n \in \mathbb{N}$ and $c : \mathbb{N} \to \mathbb{R}$, the sine polynomial
+$\sum_{j < n} c_j \sin((j + 1) x)$ as an element of $C_0[0, \pi]$. It describes the elements of
+$V_0$ in Example 6.2.4.
+
+The index starts at $0$, so the coefficient $c_j$ belongs to $\sin((j + 1) x)$. -/
 noncomputable def sinePolyV (n : ℕ) (c : ℕ → ℝ) : C₀ := ∑ j ∈ Finset.range n, c j • sinV j
 
+/-- As a function in $C[0, \pi]$, `AtkinsonHan.Chapter06.sinePolyV n c` is the sine polynomial
+`sinePolynomial n c`. -/
 @[simp]
 theorem coe_sinePolyV (n : ℕ) (c : ℕ → ℝ) :
     (sinePolyV n c : C(Icc (0 : ℝ) π, ℝ)) = sinePolynomial n c := by
   simp [sinePolyV, sinePolynomial]
 
-/-- A sine polynomial lies in `V₀`. -/
+/-- Every sine polynomial $\sum_{j < n} c_j \sin((j + 1) x)$ lies in $V_0$. -/
 theorem sinePolyV_mem (n : ℕ) (c : ℕ → ℝ) : sinePolyV n c ∈ sinePolynomials :=
   Submodule.sum_mem _ fun j _ => Submodule.smul_mem _ _ (subset_span ⟨j, rfl⟩)
 
-/-- Under the inclusion `C₀ ⊆ C[0, π]` the sine polynomials of `C₀` are the span of the sine
-system. -/
+/-- The image of $V_0$ under the inclusion $C_0[0, \pi] \subseteq C[0, \pi]$ is the span of the
+functions $\sin((k + 1) x)$, $k \in \mathbb{N}$, in $C[0, \pi]$. -/
 theorem sinePolynomials_map_subtype :
     sinePolynomials.map C₀.subtype = span ℝ (range sinMap) := by
   rw [sinePolynomials, Submodule.map_span, ← Set.range_comp]
   rfl
 
-/-- The elements of `V₀` are exactly the sine polynomials `sinePolyV n c`. -/
+/-- An element $v \in C_0[0, \pi]$ lies in $V_0$ of Example 6.2.4 if and only if
+$v = \sum_{j < n} c_j \sin((j + 1) x)$ for some $n \in \mathbb{N}$ and some coefficients
+$c : \mathbb{N} \to \mathbb{R}$. -/
 theorem mem_sinePolynomials_iff {v : C₀} :
     v ∈ sinePolynomials ↔ ∃ (n : ℕ) (c : ℕ → ℝ), v = sinePolyV n c := by
   constructor
@@ -444,35 +537,40 @@ theorem mem_sinePolynomials_iff {v : C₀} :
   · rintro ⟨n, c, rfl⟩
     exact sinePolyV_mem n c
 
-/-- The sines are linearly independent in `C₀[0, π]`. -/
+/-- The functions $\sin((k + 1) x)$, $k \in \mathbb{N}$, are linearly independent in $C_0[0, \pi]$.
+-/
 theorem linearIndependent_sinV : LinearIndependent ℝ sinV :=
   LinearIndependent.of_comp C₀.subtype linearIndependent_sinMap
 
-/-- The linear map `sin ((k + 1) x) ↦ -ν (k + 1)² sin ((k + 1) x)` on the sine polynomials, the
-underlying map of `heatOperator`. -/
+/-- The linear map $V_0 \to C_0[0, \pi]$ with $\sin((k + 1) x) \mapsto -\nu (k + 1)^2 \sin((k + 1)
+x)$ on the basis of $V_0$. It is the underlying map of `AtkinsonHan.Chapter06.heatOperator`. -/
 noncomputable def heatOperatorAux (ν : ℝ) : sinePolynomials →ₗ[ℝ] C₀ :=
   (Module.Basis.span linearIndependent_sinV).constr ℝ fun k => (-ν * ((k : ℝ) + 1) ^ 2) • sinV k
 
-/-- **Example 6.2.4, the operator `L`**: `L = ν ∂²/∂x²` with domain `V₀`, the finite sine
-polynomials, as a partially defined linear map `C₀ →ₗ.[ℝ] C₀`.
+/-- **Example 6.2.4** of [han2009theoretical], the operator $L$. For $\nu \in \mathbb{R}$, the
+operator $L = \nu \, \partial^2 / \partial x^2$ with domain $V_0$ is the linear operator
+$L : V_0 \subseteq C_0[0, \pi] \to C_0[0, \pi]$ with
+$$L \sin(jx) = -\nu j^2 \sin(jx), \qquad j \ge 1.$$
 
-It is presented through its action on the basis `sin ((k + 1) x)` of `V₀`, which it multiplies
-by `-ν (k + 1)²`, which is what `ν ∂²/∂x²` does to it; `heatOperator_apply_eq_laplacian` records
-that on every element of `V₀` it is indeed `ν` times the second derivative. The domain is the
-sine polynomials rather than all of `C² ∩ C₀`, because well-posedness (Definition 6.2.2) asks
-for a solution from *every* initial value in the domain, and the book produces one only for
-the sine polynomials, by the explicit formula (6.2.7). -/
+The operator is defined by its action on the basis of $V_0$.
+`AtkinsonHan.Chapter06.heatOperator_apply_eq_laplacian` shows that on every element of $V_0$ it
+is $\nu$ times the second derivative. The domain is $V_0$ and not all of $C^2 \cap C_0$, because
+well-posedness (Definition 6.2.2) asks for a solution from every initial value in the domain,
+and the source gives one only for sine polynomials, by the formula (6.2.7). The operator is a
+`LinearPMap`, `C₀ →ₗ.[ℝ] C₀`. -/
 noncomputable def heatOperator (ν : ℝ) : C₀ →ₗ.[ℝ] C₀ := ⟨sinePolynomials, heatOperatorAux ν⟩
 
 variable {ν : ℝ}
 
+/-- The domain of the operator $L$ of Example 6.2.4 is $V_0$. -/
 @[simp]
 theorem heatOperator_domain : (heatOperator ν).domain = sinePolynomials := rfl
 
-/-- `L` acts through its underlying linear map `heatOperatorAux`. -/
+/-- The operator $L$ of Example 6.2.4 acts on $V_0$ as its underlying linear map
+`AtkinsonHan.Chapter06.heatOperatorAux`. -/
 theorem heatOperator_apply (x : sinePolynomials) : heatOperator ν x = heatOperatorAux ν x := rfl
 
-/-- `L (sin ((k + 1) x)) = -ν (k + 1)² sin ((k + 1) x)`. -/
+/-- The underlying linear map of $L$ sends $\sin((k + 1) x)$ to $-\nu (k + 1)^2 \sin((k + 1) x)$. -/
 theorem heatOperatorAux_sinV (k : ℕ) (hk : sinV k ∈ sinePolynomials) :
     heatOperatorAux ν ⟨sinV k, hk⟩ = (-ν * ((k : ℝ) + 1) ^ 2) • sinV k := by
   have h : (⟨sinV k, hk⟩ : sinePolynomials) = Module.Basis.span linearIndependent_sinV k :=
@@ -481,7 +579,8 @@ theorem heatOperatorAux_sinV (k : ℕ) (hk : sinV k ∈ sinePolynomials) :
   exact Module.Basis.constr_basis (Module.Basis.span linearIndependent_sinV) ℝ
     (fun k => (-ν * ((k : ℝ) + 1) ^ 2) • sinV k) k
 
-/-- `L` on a sine polynomial: `L (∑ c j sin ((j + 1) x)) = ∑ c j (-ν (j + 1)²) sin ((j + 1) x)`. -/
+/-- The underlying linear map of $L$ sends $\sum_{j < n} c_j \sin((j + 1) x)$ to $\sum_{j < n} c_j
+(-\nu (j + 1)^2) \sin((j + 1) x)$. -/
 theorem heatOperatorAux_sinePolyV (n : ℕ) (c : ℕ → ℝ) (h : sinePolyV n c ∈ sinePolynomials) :
     heatOperatorAux ν ⟨sinePolyV n c, h⟩
       = sinePolyV n fun j => c j * (-ν * ((j : ℝ) + 1) ^ 2) := by
@@ -492,20 +591,26 @@ theorem heatOperatorAux_sinePolyV (n : ℕ) (c : ℕ → ℝ) (h : sinePolyV n c
   rw [e, map_sum]
   simp only [map_smul, heatOperatorAux_sinV, sinePolyV, smul_smul]
 
-/-- `L (∑ c j sin ((j + 1) x)) = ∑ c j (-ν (j + 1)²) sin ((j + 1) x)`, for the partial map. -/
+/-- For the operator $L$ of Example 6.2.4 and every sine polynomial,
+$$L \sum_{j < n} c_j \sin((j + 1) x) = \sum_{j < n} c_j \bigl(-\nu (j + 1)^2\bigr) \sin((j + 1)
+  x).$$
+-/
 theorem heatOperator_sinePolyV (n : ℕ) (c : ℕ → ℝ) (h : sinePolyV n c ∈ sinePolynomials) :
     heatOperator ν ⟨sinePolyV n c, h⟩ = sinePolyV n fun j => c j * (-ν * ((j : ℝ) + 1) ^ 2) :=
   heatOperatorAux_sinePolyV n c h
 
-/-- The value of a sine polynomial of `C₀` at a point. -/
+/-- The value of the sine polynomial $\sum_{j < n} c_j \sin((j + 1) x)$ of $C_0[0, \pi]$ at a point
+$x \in [0, \pi]$ is $\sum_{j < n} c_j \sin((j + 1) x)$. -/
 theorem sinePolyV_apply (n : ℕ) (c : ℕ → ℝ) (x : Icc (0 : ℝ) π) :
     (sinePolyV n c : C(Icc (0 : ℝ) π, ℝ)) x
       = ∑ j ∈ Finset.range n, c j * Real.sin (((j : ℝ) + 1) * (x : ℝ)) := by
   rw [coe_sinePolyV, sinePolynomial_apply]
 
-/-- **`L` is `ν ∂²/∂x²`**: on a sine polynomial `v`, `(L v) (x) = ν Δ v (x)` at every interior
-point, the second derivative being that of the (smooth) sine polynomial `v` read as a function
-on the line. -/
+/-- For a sine polynomial $v = \sum_{j < n} c_j \sin((j + 1) x)$ and every $x \in [0, \pi]$, the
+underlying linear map of $L$ satisfies $(Lv)(x) = \nu v''(x)$, where $v''$ is the second
+derivative of $v$ read as a function on $\mathbb{R}$.
+
+The second derivative is Mathlib's Laplacian `Δ` on $\mathbb{R}$. -/
 theorem heatOperatorAux_apply_eq_laplacian (n : ℕ) (c : ℕ → ℝ)
     (h : sinePolyV n c ∈ sinePolynomials) (x : Icc (0 : ℝ) π) :
     (heatOperatorAux ν ⟨sinePolyV n c, h⟩ : C(Icc (0 : ℝ) π, ℝ)) x
@@ -517,35 +622,44 @@ theorem heatOperatorAux_apply_eq_laplacian (n : ℕ) (c : ℕ → ℝ)
   simp only [neg_zero, zero_mul, Real.exp_zero]
   ring
 
-/-- The same for the partial map `L`. -/
+/-- For the operator $L$ of Example 6.2.4, a sine polynomial $v = \sum_{j < n} c_j \sin((j + 1) x)$
+and every $x \in [0, \pi]$,
+$$(Lv)(x) = \nu \, v''(x),$$
+where $v''$ is the second derivative of $v$ read as a function on $\mathbb{R}$. So $L$ is
+$\nu \, \partial^2 / \partial x^2$ on $V_0$.
+
+The second derivative is Mathlib's Laplacian `Δ` on $\mathbb{R}$. -/
 theorem heatOperator_apply_eq_laplacian (n : ℕ) (c : ℕ → ℝ)
     (h : sinePolyV n c ∈ sinePolynomials) (x : Icc (0 : ℝ) π) :
     (heatOperator ν ⟨sinePolyV n c, h⟩ : C(Icc (0 : ℝ) π, ℝ)) x
       = ν * Δ (fun y : ℝ => ∑ j ∈ Finset.range n, c j * Real.sin (((j : ℝ) + 1) * y)) (x : ℝ) :=
   heatOperatorAux_apply_eq_laplacian n c h x
 
-/-! #### The solution (6.2.7) -/
+/-! ### The solution (6.2.7) -/
 
-/-- **(6.2.7), the solution for a sine-polynomial initial value**: for
-`u₀ = ∑_{j < n} b j sin ((j + 1) x)`, the curve
-`u (t) = ∑_{j < n} b j exp (-ν (j + 1)² t) sin ((j + 1) x)` in `C₀[0, π]`. -/
+/-- **Equation (6.2.7)** of [han2009theoretical]. For the initial value
+$u_0 = \sum_{j < n} b_j \sin((j + 1) x)$, the curve $u : \mathbb{R} \to C_0[0, \pi]$ with
+$$u(t) = \sum_{j < n} b_j \, e^{-\nu (j + 1)^2 t} \sin((j + 1) x).$$
+-/
 noncomputable def sineSolution (ν : ℝ) (n : ℕ) (b : ℕ → ℝ) (t : ℝ) : C₀ :=
   sinePolyV n fun j => b j * Real.exp (-ν * ((j : ℝ) + 1) ^ 2 * t)
 
-/-- At `t = 0` the solution (6.2.7) is its initial value `∑ b j sin ((j + 1) x)`. -/
+/-- At $t = 0$ the solution (6.2.7) is its initial value $\sum_{j < n} b_j \sin((j + 1) x)$. -/
 theorem sineSolution_zero (n : ℕ) (b : ℕ → ℝ) : sineSolution ν n b 0 = sinePolyV n b := by
   simp [sineSolution]
 
-/-- The solution (6.2.7) read pointwise is the sine series `Heat.sineSeries`. -/
+/-- The value of the solution (6.2.7) at time $t$ and at $x \in [0, \pi]$ is the finite sine series
+`Heat.sineSeries ν n b (x, t)`. -/
 theorem sineSolution_apply (n : ℕ) (b : ℕ → ℝ) (t : ℝ) (x : Icc (0 : ℝ) π) :
     (sineSolution ν n b t : C(Icc (0 : ℝ) π, ℝ)) x = Heat.sineSeries ν n b ((x : ℝ), t) := by
   rw [sineSolution, sinePolyV_apply, Heat.sineSeries]
 
-/-- The solution (6.2.7) stays in `V₀`. -/
+/-- For every $t$, the solution (6.2.7) at time $t$ lies in $V_0$. -/
 theorem sineSolution_mem (n : ℕ) (b : ℕ → ℝ) (t : ℝ) :
     sineSolution ν n b t ∈ sinePolynomials := sinePolyV_mem _ _
 
-/-- The curve (6.2.7) is differentiable, with derivative `L u (t)`. -/
+/-- The curve (6.2.7) is differentiable on $\mathbb{R}$ in $C_0[0, \pi]$, with derivative
+$u'(t) = L u(t)$. -/
 theorem hasDerivAt_sineSolution (n : ℕ) (b : ℕ → ℝ) (t : ℝ) :
     HasDerivAt (sineSolution ν n b) (heatOperator ν ⟨sineSolution ν n b t, sineSolution_mem n b t⟩)
       t := by
@@ -562,33 +676,32 @@ theorem hasDerivAt_sineSolution (n : ℕ) (b : ℕ → ℝ) (t : ℝ) :
   simp only
   ring_nf
 
-/-- **(6.2.7) solves (6.2.4)**: for the initial value `∑_{j < n} b j sin ((j + 1) x) ∈ V₀`, the
-curve `sineSolution ν n b` is a solution in the sense of Definition 6.2.1, on every horizon. -/
+/-- **Example 6.2.4** of [han2009theoretical], the solution (6.2.7). For every $\nu \in \mathbb{R}$,
+$T \in \mathbb{R}$ and initial value $u_0 = \sum_{j < n} b_j \sin((j + 1) x) \in V_0$, the curve
+(6.2.7) is a solution of $u' = Lu$, $u(0) = u_0$ on $[0, T]$ in the sense of Definition 6.2.1. -/
 theorem isSolution_sineSolution (T : ℝ) (n : ℕ) (b : ℕ → ℝ) :
     IsSolution (heatOperator ν) T (sinePolyV n b) (sineSolution ν n b) := by
   rw [isSolution_iff]
   exact ⟨sineSolution_zero n b, fun t _ =>
     ⟨sineSolution_mem n b t, (hasDerivAt_sineSolution n b t).hasDerivWithinAt⟩⟩
 
-/-! #### The maximum principle and well-posedness -/
+/-! ### The maximum principle and well-posedness -/
 
-/-- A solution of the abstract problem read as a function of `(x, t)`: `U (x, t) = u (t) (x)`,
-the space variable clamped to `[0, π]`. -/
+/-- A curve $u$ in $C_0[0, \pi]$ read as a function of $(x, t)$: $U(x, t) = u(t)(x)$, with $x$
+clamped to $[0, \pi]$. -/
 private noncomputable def spaceTime (u : ℝ → C₀) (p : ℝ × ℝ) : ℝ :=
   (u p.2 : C(Icc (0 : ℝ) π, ℝ)) (projIcc 0 π Real.pi_pos.le p.1)
 
-/-- Evaluation at a point of `[0, π]`, as a bounded linear functional on `C₀`. -/
+/-- Evaluation at a point of $[0, \pi]$, as a bounded linear functional on $C_0[0, \pi]$. -/
 private noncomputable def evalC₀ (x : Icc (0 : ℝ) π) : C₀ →L[ℝ] ℝ :=
   (ContinuousMap.evalCLM ℝ x).comp C₀.subtypeL
 
 private theorem evalC₀_apply (x : Icc (0 : ℝ) π) (v : C₀) :
     evalC₀ x v = (v : C(Icc (0 : ℝ) π, ℝ)) x := rfl
 
-/-- **Every solution with values in `V₀` is a classical solution of the heat equation** on the
-cylinder `(0, π) × (0, T)`, in the sense of `Heat.IsClassicalSolution`: continuity on the closed
-cylinder comes from the continuity of `t ↦ u (t)` in the maximum norm, differentiability in `t`
-from the derivative of Definition 6.2.1 evaluated at `x`, and the equation from
-`L = ν ∂²/∂x²` on the sine polynomials. -/
+/-- A solution of $u' = Lu$ on $[0, T]$ in the sense of the backbone, for the operator $L$ of
+Example 6.2.4, is a classical solution of the heat equation on $(0, \pi) \times (0, T)$ in the
+sense of `Heat.IsClassicalSolution`. -/
 private theorem isClassicalSolution_of_isSolution {T : ℝ} {u₀ : C₀} {u : ℝ → C₀}
     (hu : FiniteDifference.IsSolution (heatOperator ν) T u₀ u) :
     Heat.IsClassicalSolution ν (Ioo 0 π) T (spaceTime u) := by
@@ -644,9 +757,14 @@ private theorem isClassicalSolution_of_isSolution {T : ℝ} {u₀ : C₀} {u : �
     filter_upwards [Icc_mem_nhds hx.1 hx.2] with y hy
     simp only [spaceTime, hc, coe_sinePolyV, projIcc_of_mem _ hy, sinePolynomial_apply]
 
-/-- **The maximum principle for the abstract problem**: every solution of (6.2.4) in the sense
-of Definition 6.2.1, on a horizon `T ≥ 0` and for `ν > 0`, satisfies
-`max_x |u (x, t)| ≤ max_x |u₀ (x)|`, i.e. `‖u (t)‖ ≤ ‖u₀‖`, for `t ∈ [0, T]`. -/
+/-- **The maximum principle** for the problem of Example 6.2.4. Let $\nu > 0$. Every solution $u$ of
+$u' = Lu$, $u(0) = u_0$ on $[0, T]$ in the sense of Definition 6.2.1 satisfies
+$$\|u(t)\| \le \|u_0\|, \quad \text{that is,} \quad \max_x |u(x, t)| \le \max_x |u_0(x)|, \qquad
+  t \in [0, T].$$
+
+The solution is a classical solution of the heat equation, and the proof applies
+`Heat.IsClassicalSolution.abs_le_of_eq_zero_frontier`, the parabolic maximum principle of
+Theorem 10.6 of [brezis2011functional]. -/
 theorem norm_le_of_isSolution (hν : 0 < ν) {T : ℝ} {u₀ : C₀} {u : ℝ → C₀}
     (hu : IsSolution (heatOperator ν) T u₀ u) : ∀ t ∈ Icc (0 : ℝ) T, ‖u t‖ ≤ ‖u₀‖ := by
   rw [isSolution_iff] at hu
@@ -677,13 +795,14 @@ theorem norm_le_of_isSolution (hν : 0 < ν) {T : ℝ} {u₀ : C₀} {u : ℝ �
     rw [spaceTime, hu.1, ← Real.norm_eq_abs, ← Submodule.norm_coe]
     exact ContinuousMap.norm_coe_le_norm _ _
 
-/-- **Example 6.2.4, the well-posedness of the heat equation (6.2.4)** in `V = C₀[0, π]` with
-`L = ν ∂²/∂x²` on the sine polynomials `V₀` (6.2.5): the problem is well posed in the sense of
-Definition 6.2.2, with stability constant `c₀ = 1`. Existence is the explicit solution (6.2.7),
-`isSolution_sineSolution`; uniqueness and the continuous dependence
-`sup_t ‖u (t) - ū (t)‖ ≤ ‖u₀ - ū₀‖` are the maximum principle `norm_le_of_isSolution` applied to
-the difference of two solutions. Consequently the solution operators `S (t) : V₀ ⊆ V → V` are
-bounded by `1` (`example_6_2_4_norm_solutionOperator_le`). -/
+/-- **Example 6.2.4** of [han2009theoretical], well-posedness. Let $\nu > 0$ and $T \in \mathbb{R}$.
+The heat equation problem $u' = Lu$ in $V = C_0[0, \pi]$, with
+$L = \nu \, \partial^2 / \partial x^2$ on the sine polynomials $V_0$ of (6.2.5), is well posed
+on $[0, T]$ in the sense of Definition 6.2.2, with stability constant $c_0 = 1$.
+
+Existence is the explicit solution (6.2.7), `AtkinsonHan.Chapter06.isSolution_sineSolution`.
+Uniqueness and the bound $\|u(t) - \bar u(t)\| \le \|u_0 - \bar u_0\|$ are the maximum principle
+`AtkinsonHan.Chapter06.norm_le_of_isSolution`, applied to the difference of two solutions. -/
 theorem example_6_2_4 (hν : 0 < ν) (T : ℝ) : IsWellPosed (heatOperator ν) T 1 := by
   rw [isWellPosed_iff]
   refine ⟨fun u₀ hu₀ => ?_, fun u₀ ū₀ u ū hu hū t ht => ?_⟩
@@ -692,8 +811,11 @@ theorem example_6_2_4 (hν : 0 < ν) (T : ℝ) : IsWellPosed (heatOperator ν) T
   · have h := norm_le_of_isSolution hν ((isSolution_iff _ _ _ _).2 (hu.sub hū)) t ht
     rwa [one_mul]
 
-/-- **Example 6.2.4, the density of `V₀` in `V`** (the book's Exercise 6.2.1): the finite sine
-polynomials are dense in `C₀[0, π]` for the maximum norm. -/
+/-- **Example 6.2.4** of [han2009theoretical], density of $V_0$, which is **Exercise 6.2.1**. The
+sine polynomials are dense in $C_0[0, \pi]$ with the maximum norm.
+
+The proof approximates the odd $2\pi$-periodic extension uniformly by trigonometric polynomials,
+`exists_mem_span_sinMap_norm_sub_lt`. -/
 theorem example_6_2_4_dense : Dense (sinePolynomials : Set C₀) := by
   refine Metric.dense_iff.2 fun v ε hε => ?_
   obtain ⟨p, hp, hvp⟩ := exists_mem_span_sinMap_norm_sub_lt v.2.1 v.2.2 hε
@@ -703,59 +825,67 @@ theorem example_6_2_4_dense : Dense (sinePolynomials : Set C₀) := by
     norm_sub_rev]
   exact hvp
 
-/-- The domain of `L` is dense in `V`. -/
+/-- For every $\nu$, the domain $V_0$ of the operator $L$ of Example 6.2.4 is dense in
+$C_0[0, \pi]$. -/
 theorem dense_heatOperator_domain : Dense ((heatOperator ν).domain : Set C₀) :=
   example_6_2_4_dense
 
-/-- **Example 6.2.4, the solution operators**: `S (t) = solutionOperator …` of Definition 6.2.3
-for the heat equation satisfies `‖S (t)‖ ≤ 1` on `[0, T]`, the bound
-`max_x |u (x, t)| ≤ max_x |u₀ (x)|` read on the extended operators. -/
+/-- **Example 6.2.4** of [han2009theoretical], the solution operators. Let $\nu > 0$ and $T \ge 0$.
+The solution operators $S(t)$ of Definition 6.2.3 for the heat equation satisfy $\|S(t)\| \le 1$
+for every $t \in [0, T]$. This is the bound $\max_x |u(x, t)| \le \max_x |u_0(x)|$, extended to
+all initial values in $C_0[0, \pi]$. -/
 theorem example_6_2_4_norm_solutionOperator_le (hν : 0 < ν) {T : ℝ} (hT : 0 ≤ T) :
     ∀ t ∈ Icc (0 : ℝ) T, ‖solutionOperator (heatOperator ν) dense_heatOperator_domain hT zero_le_one
       (example_6_2_4 hν T) t‖ ≤ 1 :=
   norm_solutionOperator_le _ _ _ _ _
 
-/-- **Example 6.2.4, (6.2.7) through the solution operators**: for the initial value
-`u₀ = ∑_{j < n} b j sin ((j + 1) x)`, `S (t) u₀` is the sine series (6.2.7). -/
+/-- **Example 6.2.4** of [han2009theoretical], the solution (6.2.7) through the solution operators.
+Let $\nu > 0$, $T \ge 0$ and $t \in [0, T]$. For the initial value
+$u_0 = \sum_{j < n} b_j \sin((j + 1) x)$, the solution operator gives $S(t) u_0 = \sum_{j < n}
+b_j e^{-\nu (j + 1)^2 t} \sin((j + 1) x)$. -/
 theorem example_6_2_4_solutionOperator_apply (hν : 0 < ν) {T : ℝ} (hT : 0 ≤ T) {t : ℝ}
     (ht : t ∈ Icc (0 : ℝ) T) (n : ℕ) (b : ℕ → ℝ) :
     solutionOperator (heatOperator ν) dense_heatOperator_domain hT zero_le_one
       (example_6_2_4 hν T) t (sinePolyV n b) = sineSolution ν n b t :=
   solutionOperator_apply _ _ _ _ _ ht (sinePolyV_mem n b) _ (isSolution_sineSolution T n b)
 
-/-! ### Examples 6.2.8 and 6.2.13: the forward and backward schemes on `C₀[0, π]` -/
+/-! ### Examples 6.2.8 and 6.2.13: the forward and backward schemes on $C_0[0, \pi]$ -/
 
 section Schemes
 
-/-- The odd `2π`-periodic extension of `v ∈ C₀[0, π]`, the `ṽ` of Example 6.2.8. -/
+/-- The odd $2\pi$-periodic extension $\tilde v : \mathbb{R} \to \mathbb{R}$ of $v \in C_0[0, \pi]$,
+used in Example 6.2.8. -/
 noncomputable abbrev ext (v : C₀) : ℝ → ℝ := oddPeriodicExtend (v : C(Icc (0 : ℝ) π, ℝ))
 
-/-- The extension `ṽ` is continuous. -/
+/-- The extension $\tilde v$ is continuous. -/
 theorem continuous_ext (v : C₀) : Continuous (ext v) := continuous_oddPeriodicExtend v.2.1 v.2.2
 
-/-- The extension `ṽ` is odd. -/
+/-- The extension $\tilde v$ is odd: $\tilde v(-x) = -\tilde v(x)$. -/
 theorem ext_neg (v : C₀) (x : ℝ) : ext v (-x) = -ext v x := oddPeriodicExtend_neg v.2.1 v.2.2 x
 
-/-- The extension `ṽ` agrees with `v` on `[0, π]`. -/
+/-- The extension $\tilde v$ agrees with $v$ on $[0, \pi]$. -/
 theorem ext_of_mem (v : C₀) {x : ℝ} (hx : x ∈ Icc (0 : ℝ) π) :
     ext v x = (v : C(Icc (0 : ℝ) π, ℝ)) ⟨x, hx⟩ := oddPeriodicExtend_of_mem v.2.2 hx
 
-/-- The extension `ṽ` is bounded by `‖v‖`. -/
+/-- The extension satisfies $|\tilde v(x)| \le \|v\|$ for every $x \in \mathbb{R}$. -/
 theorem abs_ext_le (v : C₀) (x : ℝ) : |ext v x| ≤ ‖v‖ := abs_oddPeriodicExtend_le _ x
 
-/-- The extension of a sine polynomial is the sine polynomial on the whole line. -/
+/-- The extension of the sine polynomial $\sum_{j < n} c_j \sin((j + 1) x)$ is the same sine
+polynomial on all of $\mathbb{R}$. -/
 theorem ext_sinePolyV (n : ℕ) (c : ℕ → ℝ) (x : ℝ) :
     ext (sinePolyV n c) x = ∑ j ∈ Finset.range n, c j * Real.sin (((j : ℝ) + 1) * x) := by
   rw [ext, coe_sinePolyV, oddPeriodicExtend_sinePolynomial]
 
-/-- The extension of the solution (6.2.7) at time `t` is the sine series `Heat.sineSeries`. -/
+/-- The extension of the solution (6.2.7) at time $t$, evaluated at $x \in \mathbb{R}$, is the
+finite sine series `Heat.sineSeries ν n b (x, t)`. -/
 theorem ext_sineSolution (n : ℕ) (b : ℕ → ℝ) (t x : ℝ) :
     ext (sineSolution ν n b t) x = Heat.sineSeries ν n b (x, t) := by
   rw [sineSolution, ext_sinePolyV, Heat.sineSeries]
 
-/-- The translated sum `v ↦ ṽ (· + Δx) + ṽ (· - Δx)` on `C₀[0, π]`, as a function: the operator
-common to the forward and backward schemes of Example 6.2.8. It maps `C₀` to itself because the
-extension is odd about `0` and about `π`. -/
+/-- For $\Delta x \in \mathbb{R}$, the map $v \mapsto \tilde v(\cdot + \Delta x) + \tilde v(\cdot -
+\Delta x)$ from $C_0[0, \pi]$ to itself, as a function. It is the shift part of both schemes of
+Example 6.2.8. The image lies in $C_0[0, \pi]$ because the extension is odd about $0$ and about
+$\pi$. -/
 noncomputable def translateSumFun (Δx : ℝ) (v : C₀) : C₀ :=
   ⟨⟨fun x => ext v ((x : ℝ) + Δx) + ext v ((x : ℝ) - Δx), by
       have hc := continuous_ext v
@@ -771,12 +901,14 @@ noncomputable def translateSumFun (Δx : ℝ) (v : C₀) : C₀ :=
         rw [ext, ← hp, ← ext, ext_neg]
       rw [h, neg_add_cancel]⟩
 
-/-- The value of the translated sum at a point. -/
+/-- The value of the translated sum at $x \in [0, \pi]$ is $\tilde v(x + \Delta x) + \tilde v(x -
+\Delta x)$. -/
 theorem translateSumFun_apply (Δx : ℝ) (v : C₀) (x : Icc (0 : ℝ) π) :
     (translateSumFun Δx v : C(Icc (0 : ℝ) π, ℝ)) x = ext v ((x : ℝ) + Δx) + ext v ((x : ℝ) - Δx) :=
   rfl
 
-/-- The translated sum is bounded by `2 ‖v‖`. -/
+/-- The translated sum satisfies $\|\tilde v(\cdot + \Delta x) + \tilde v(\cdot - \Delta x)\| \le 2
+\|v\|$. -/
 theorem norm_translateSumFun_le (Δx : ℝ) (v : C₀) : ‖translateSumFun Δx v‖ ≤ 2 * ‖v‖ := by
   rw [← Submodule.norm_coe]
   refine (ContinuousMap.norm_le _ (by positivity)).2 fun x => ?_
@@ -786,8 +918,10 @@ theorem norm_translateSumFun_le (Δx : ℝ) (v : C₀) : ‖translateSumFun Δx 
     _ ≤ ‖v‖ + ‖v‖ := add_le_add (abs_ext_le v _) (abs_ext_le v _)
     _ = 2 * ‖v‖ := by ring
 
-/-- The translated sum `v ↦ ṽ (· + Δx) + ṽ (· - Δx)` as a bounded operator on `C₀[0, π]`, of norm
-at most `2`. -/
+/-- For $\Delta x \in \mathbb{R}$, the bounded linear operator $v \mapsto \tilde v(\cdot + \Delta
+x) + \tilde v(\cdot - \Delta x)$ on $C_0[0, \pi]$, where $\tilde v$ is the odd $2\pi$-periodic
+extension of $v$. It is the shift part of both schemes of Example 6.2.8, and its norm is at most
+$2$. -/
 noncomputable def translateSum (Δx : ℝ) : C₀ →L[ℝ] C₀ :=
   LinearMap.mkContinuous
     { toFun := translateSumFun Δx
@@ -801,23 +935,31 @@ noncomputable def translateSum (Δx : ℝ) : C₀ →L[ℝ] C₀ :=
         ring) }
     2 (norm_translateSumFun_le Δx)
 
-/-- The value of the translated sum at a point. -/
+/-- The value of the translated sum operator at $x \in [0, \pi]$ is $\tilde v(x + \Delta x) + \tilde
+v(x - \Delta x)$. -/
 theorem translateSum_apply (Δx : ℝ) (v : C₀) (x : Icc (0 : ℝ) π) :
     (translateSum Δx v : C(Icc (0 : ℝ) π, ℝ)) x = ext v ((x : ℝ) + Δx) + ext v ((x : ℝ) - Δx) :=
   rfl
 
-/-- `‖ṽ (· + Δx) + ṽ (· - Δx)‖ ≤ 2 ‖v‖`, as an operator norm bound. -/
+/-- The translated sum operator has norm at most $2$. -/
 theorem norm_translateSum_le (Δx : ℝ) : ‖translateSum Δx‖ ≤ 2 :=
   LinearMap.mkContinuous_norm_le _ (by norm_num) _
 
-/-- **Example 6.2.8, the forward scheme as an operator on `C₀[0, π]`**:
-`C (Δt) v (x) = (1 - 2r) v (x) + r [ṽ (x + Δx) + ṽ (x - Δx)]` with `Δx = √(ν Δt / r)` and `ṽ`
-the odd `2π`-periodic extension of `v`; `r = ν Δt / Δx²` is the mesh ratio, held fixed as
-`Δt → 0`. -/
+/-- **Example 6.2.8** of [han2009theoretical], the forward scheme. For
+$\nu, r, \Delta t \in \mathbb{R}$, the forward scheme is the bounded operator $C(\Delta t)$ on
+$C_0[0, \pi]$ with
+$$C(\Delta t) v(x) = (1 - 2r) v(x) + r [\tilde v(x + \Delta x) + \tilde v(x - \Delta x)], \qquad
+  \Delta x = \sqrt{\nu \Delta t / r},$$
+where $\tilde v$ is the odd $2\pi$-periodic extension of $v$. The mesh ratio
+$r = \nu \Delta t / \Delta x^2$ is held fixed as $\Delta t \to 0$.
+
+The space step is `Real.sqrt (ν * Δt / r)`, which is $0$ when $\nu \Delta t / r \le 0$. -/
 noncomputable def forwardScheme (ν r Δt : ℝ) : C₀ →L[ℝ] C₀ :=
   (1 - 2 * r) • (1 : C₀ →L[ℝ] C₀) + r • translateSum (Real.sqrt (ν * Δt / r))
 
-/-- The value of `C (Δt) v` at a point, the formula of Example 6.2.8. -/
+/-- The value of the forward scheme at $x \in [0, \pi]$ is $(1 - 2r) v(x) + r [\tilde v(x + \Delta
+x) + \tilde v(x - \Delta x)]$ with $\Delta x = \sqrt{\nu \Delta t / r}$, the formula of Example
+6.2.8. -/
 theorem forwardScheme_apply (ν r Δt : ℝ) (v : C₀) (x : Icc (0 : ℝ) π) :
     (forwardScheme ν r Δt v : C(Icc (0 : ℝ) π, ℝ)) x
       = (1 - 2 * r) * (v : C(Icc (0 : ℝ) π, ℝ)) x
@@ -827,7 +969,10 @@ theorem forwardScheme_apply (ν r Δt : ℝ) (v : C₀) (x : Icc (0 : ℝ) π) :
     Submodule.coe_smul, ContinuousMap.add_apply, ContinuousMap.smul_apply, smul_eq_mul,
     translateSum_apply]
 
-/-- **(6.2.8)**: `‖C (Δt)‖ ≤ |1 - 2r| + 2r`, so the forward family is uniformly bounded. -/
+/-- **Equation (6.2.8)** of [han2009theoretical]. For $r \ge 0$ and all $\nu, \Delta t$, the forward
+scheme of Example 6.2.8 satisfies
+$$\|C(\Delta t)\| \le |1 - 2r| + 2r.$$
+So the forward family is uniformly bounded. -/
 theorem norm_forwardScheme_le {r : ℝ} (hr : 0 ≤ r) (ν Δt : ℝ) :
     ‖forwardScheme ν r Δt‖ ≤ |1 - 2 * r| + 2 * r := by
   refine (norm_add_le _ _).trans (add_le_add ?_ ?_)
@@ -836,21 +981,24 @@ theorem norm_forwardScheme_le {r : ℝ} (hr : 0 ≤ r) (ν Δt : ℝ) :
   · rw [norm_smul, Real.norm_eq_abs, abs_of_nonneg hr, mul_comm]
     exact mul_le_mul_of_nonneg_right (norm_translateSum_le _) hr
 
-/-- The forward family is uniformly bounded by `|1 - 2r| + 2r` on every range of step sizes. -/
+/-- For $r \ge 0$, the forward scheme satisfies $\|C(\Delta t)\| \le |1 - 2r| + 2r$ for every
+$\Delta t \in (0, \Delta_0]$. -/
 theorem forall_norm_forwardScheme_le {r : ℝ} (hr : 0 ≤ r) (ν Δ₀ : ℝ) :
     ∀ Δt ∈ Ioc (0 : ℝ) Δ₀, ‖forwardScheme ν r Δt‖ ≤ |1 - 2 * r| + 2 * r :=
   fun Δt _ => norm_forwardScheme_le hr ν Δt
 
-/-! #### Consistency of the forward scheme (Example 6.2.8) -/
+/-! ### Consistency of the forward scheme (Example 6.2.8) -/
 
-/-- The Taylor-expansion constant of Example 6.2.8 for the initial value `∑ b j sin ((j + 1) x)`:
-`(∑ |b j| (ν (j + 1)²)²) / 2 + ν² (∑ |b j| (j + 1)⁴) / (12 r)`, the sum of the bounds on
-`u_tt / 2` and on `(ν² / 12 r) u_xxxx`. -/
+/-- The constant of the Taylor expansions of Example 6.2.8 for the initial value
+$\sum_{j < n} b_j \sin((j + 1) x)$:
+$$c = \frac{1}{2} \sum_{j < n} |b_j| \bigl(\nu (j + 1)^2\bigr)^2 + \frac{\nu^2}{12 r} \sum_{j <
+  n} |b_j| (j + 1)^4.$$
+The two terms bound $u_{tt}/2$ and $(\nu^2 / 12 r) \, u_{xxxx}$. -/
 noncomputable def forwardConsistencyConst (ν r : ℝ) (n : ℕ) (b : ℕ → ℝ) : ℝ :=
   (∑ j ∈ Finset.range n, |b j| * (ν * ((j : ℝ) + 1) ^ 2) ^ 2) / 2
     + ν ^ 2 * (∑ j ∈ Finset.range n, |b j| * ((j : ℝ) + 1) ^ 4) / (12 * r)
 
-/-- The consistency constant is nonnegative. -/
+/-- For $r \ge 0$, the consistency constant of Example 6.2.8 is nonnegative. -/
 theorem forwardConsistencyConst_nonneg {ν r : ℝ} (hr : 0 ≤ r) (n : ℕ) (b : ℕ → ℝ) :
     0 ≤ forwardConsistencyConst ν r n b := by
   unfold forwardConsistencyConst
@@ -860,9 +1008,13 @@ theorem forwardConsistencyConst_nonneg {ν r : ℝ} (hr : 0 ≤ r) (n : ℕ) (b 
     Finset.sum_nonneg fun j _ => by positivity
   positivity
 
-/-- **The local truncation error of the forward scheme on the solution (6.2.7)**: by the Taylor
-expansions of Example 6.2.8, `‖C (Δt) u (t) - u (t + Δt)‖ ≤ c Δt²` for `t ≥ 0` and `Δt ≥ 0`,
-with `c = forwardConsistencyConst ν r n b`. -/
+/-- The local truncation error of the forward scheme of Example 6.2.8 on the solution (6.2.7). Let
+$\nu > 0$, $r > 0$, $t \ge 0$ and $\Delta t \ge 0$. For the initial value
+$\sum_{j < n} b_j \sin((j + 1) x)$, the solution $u$ of (6.2.7) satisfies
+$$\|C(\Delta t) u(t) - u(t + \Delta t)\| \le c \, \Delta t^2,$$
+with the constant $c$ of `AtkinsonHan.Chapter06.forwardConsistencyConst`.
+
+The proof uses Taylor expansions of $u$ in $t$ and in $x$. -/
 theorem norm_forwardScheme_sineSolution_sub_le (hν : 0 < ν) {r : ℝ} (hr : 0 < r) (n : ℕ)
     (b : ℕ → ℝ) {t Δt : ℝ} (ht : 0 ≤ t) (hΔt : 0 ≤ Δt) :
     ‖forwardScheme ν r Δt (sineSolution ν n b t) - sineSolution ν n b (t + Δt)‖
@@ -909,13 +1061,14 @@ theorem norm_forwardScheme_sineSolution_sub_le (hν : 0 < ν) {r : ℝ} (hr : 0 
         field_simp
         ring
 
-/-- **Example 6.2.8, consistency of the forward scheme** with `V_c = V₀`: for every sine polynomial
-initial value the local truncation error satisfies `‖[C (Δt) u (t) - u (t + Δt)] / Δt‖ ≤ c Δt`,
-so the forward family is consistent (Definition 6.2.7) with the solution operators of the heat
-equation on `[0, T]`, for step sizes in `(0, Δ₀]`.
+/-- **Example 6.2.8** of [han2009theoretical], consistency of the forward scheme. Let $\nu > 0$,
+$r > 0$, $T \ge 0$ and $\Delta_0 \in \mathbb{R}$. The forward scheme is consistent (Definition
+6.2.7) on $V_c = V_0$ with the solution operators $S$ of the heat equation on $[0, T]$, for step
+sizes in $(0, \Delta_0]$. For each sine polynomial initial value, the truncation error satisfies
+$\|[C(\Delta t) u(t) - u(t + \Delta t)] / \Delta t\| \le c \, \Delta t$.
 
-The family is the solution operators of Definition 6.2.3 on the horizon `[0, T]` itself:
-Definition 6.2.7 evaluates `S (t + Δt)` for `t + Δt ≤ T` only. -/
+The family $S$ is the solution operators of Definition 6.2.3 on $[0, T]$ itself, since
+Definition 6.2.7 evaluates $S(t + \Delta t)$ only for $t + \Delta t \le T$. -/
 theorem example_6_2_8 (hν : 0 < ν) {r : ℝ} (hr : 0 < r) {T Δ₀ : ℝ} (hT : 0 ≤ T) :
     IsConsistent (solutionOperator (heatOperator ν) dense_heatOperator_domain hT zero_le_one
       (example_6_2_4 hν T)) (forwardScheme ν r) T Δ₀ sinePolynomials := by
@@ -938,16 +1091,20 @@ theorem example_6_2_8 (hν : 0 < ν) {r : ℝ} (hr : 0 < r) {T Δ₀ : ℝ} (hT 
               rw [mul_div_assoc', div_le_iff₀ (by positivity)]
               nlinarith
 
-/-! #### The backward scheme (Example 6.2.8, second half) -/
+/-! ### The backward scheme (Example 6.2.8, second half) -/
 
-/-- The operator `Q₁ = (1 + 2r) I - r [ṽ (· + Δx) + ṽ (· - Δx)]` of the backward scheme, the
-left-hand side of the implicit relation
-`(1 + 2r) u (x, t + Δt) - r [u (x - Δx, t + Δt) + u (x + Δx, t + Δt)] = u (x, t)` of Example 6.2.8,
-with `Δx = √(ν Δt / r)`. -/
+/-- For $\nu, r, \Delta t \in \mathbb{R}$, the bounded operator $Q_1 = (1 + 2r) I - r [\tilde
+v(\cdot + \Delta x) + \tilde v(\cdot - \Delta x)]$ on $C_0[0, \pi]$, with
+$\Delta x = \sqrt{\nu \Delta t / r}$. It is the left side of the implicit relation of the
+backward scheme of Example 6.2.8,
+$$(1 + 2r) u(x, t + \Delta t) - r [u(x - \Delta x, t + \Delta t) + u(x + \Delta x, t + \Delta
+  t)] = u(x, t).$$
+-/
 noncomputable def backwardSchemeInv (ν r Δt : ℝ) : C₀ →L[ℝ] C₀ :=
   (1 + 2 * r) • (1 : C₀ →L[ℝ] C₀) - r • translateSum (Real.sqrt (ν * Δt / r))
 
-/-- The value of `Q₁ v` at a point. -/
+/-- The value of $Q_1 v$ at $x \in [0, \pi]$ is $(1 + 2r) v(x) - r [\tilde v(x + \Delta x) + \tilde
+v(x - \Delta x)]$. -/
 theorem backwardSchemeInv_apply (ν r Δt : ℝ) (v : C₀) (x : Icc (0 : ℝ) π) :
     (backwardSchemeInv ν r Δt v : C(Icc (0 : ℝ) π, ℝ)) x
       = (1 + 2 * r) * (v : C(Icc (0 : ℝ) π, ℝ)) x
@@ -957,8 +1114,8 @@ theorem backwardSchemeInv_apply (ν r Δt : ℝ) (v : C₀) (x : Icc (0 : ℝ) �
     Submodule.coe_smul, ContinuousMap.sub_apply, ContinuousMap.smul_apply, smul_eq_mul,
     translateSum_apply]
 
-/-- `Q₁` is invertible for `r ≥ 0`: `Q₁ = (1 + 2r) (I - B)` with `‖B‖ ≤ 2r / (1 + 2r) < 1`, a
-Neumann series. -/
+/-- For $r \ge 0$ the operator $Q_1$ is invertible. The proof writes $Q_1 = (1 + 2r)(I - B)$ with
+$\|B\| \le 2r / (1 + 2r) < 1$ and uses a Neumann series. -/
 theorem isUnit_backwardSchemeInv {r : ℝ} (hr : 0 ≤ r) (ν Δt : ℝ) :
     IsUnit (backwardSchemeInv ν r Δt) := by
   have h12 : (0 : ℝ) < 1 + 2 * r := by linarith
@@ -977,31 +1134,39 @@ theorem isUnit_backwardSchemeInv {r : ℝ} (hr : 0 ≤ r) (ν Δt : ℝ) :
   rw [← Algebra.algebraMap_eq_smul_one]
   exact (algebraMap ℝ (C₀ →L[ℝ] C₀)).isUnit_map (isUnit_iff_ne_zero.2 h12.ne')
 
-/-- **Example 6.2.8, the backward scheme as an operator on `C₀[0, π]`**: `C (Δt) = Q₁⁻¹`, the
-solution operator of the implicit relation
-`(1 + 2r) w (x) - r [w̃ (x - Δx) + w̃ (x + Δx)] = v (x)`. Outside `r ≥ 0` the inverse is Mathlib's
-junk value `Ring.inverse`. -/
+/-- **Example 6.2.8** of [han2009theoretical], the backward scheme. For
+$\nu, r, \Delta t \in \mathbb{R}$, the backward scheme is $C(\Delta t) = Q_1^{-1}$: it maps $v$
+to the solution $w$ of the implicit relation
+$$(1 + 2r) w(x) - r [\tilde w(x - \Delta x) + \tilde w(x + \Delta x)] = v(x), \qquad \Delta x =
+  \sqrt{\nu \Delta t / r}.$$
+
+The inverse is Mathlib's `Ring.inverse`, which is $0$ when $Q_1$ is not invertible. For
+$r \ge 0$, $Q_1$ is invertible by `AtkinsonHan.Chapter06.isUnit_backwardSchemeInv`. -/
 noncomputable def backwardScheme (ν r Δt : ℝ) : C₀ →L[ℝ] C₀ :=
   Ring.inverse (backwardSchemeInv ν r Δt)
 
-/-- `Q₁ C (Δt) = I` for `r ≥ 0`. -/
+/-- For $r \ge 0$, $Q_1 C(\Delta t) = I$ for the backward scheme. -/
 theorem backwardSchemeInv_mul_backwardScheme {r : ℝ} (hr : 0 ≤ r) (ν Δt : ℝ) :
     backwardSchemeInv ν r Δt * backwardScheme ν r Δt = 1 :=
   Ring.mul_inverse_cancel _ (isUnit_backwardSchemeInv hr ν Δt)
 
-/-- `C (Δt) Q₁ = I` for `r ≥ 0`. -/
+/-- For $r \ge 0$, $C(\Delta t) Q_1 = I$ for the backward scheme. -/
 theorem backwardScheme_mul_backwardSchemeInv {r : ℝ} (hr : 0 ≤ r) (ν Δt : ℝ) :
     backwardScheme ν r Δt * backwardSchemeInv ν r Δt = 1 :=
   Ring.inverse_mul_cancel _ (isUnit_backwardSchemeInv hr ν Δt)
 
-/-- `Q₁ (C (Δt) v) = v`: the backward scheme solves its implicit relation. -/
+/-- For $r \ge 0$ and every $v$, $Q_1 (C(\Delta t) v) = v$: the backward scheme solves its implicit
+relation. -/
 theorem backwardSchemeInv_backwardScheme {r : ℝ} (hr : 0 ≤ r) (ν Δt : ℝ) (v : C₀) :
     backwardSchemeInv ν r Δt (backwardScheme ν r Δt v) = v := by
   rw [← mul_apply_eq_comp, backwardSchemeInv_mul_backwardScheme hr, one_apply_eq_self]
 
-/-- **Example 6.2.8, `‖C (Δt)‖ ≤ 1` for the backward scheme, whatever `r ≥ 0`**: the book's
-argument — with `w = C (Δt) v`, `(1 + 2r) w = v + r [w̃ (· - Δx) + w̃ (· + Δx)]` gives
-`(1 + 2r) ‖w‖ ≤ ‖v‖ + 2r ‖w‖`. -/
+/-- **Example 6.2.8** of [han2009theoretical], the bound on the backward scheme. For every $r \ge 0$
+and all $\nu, \Delta t$, the backward scheme satisfies
+$$\|C(\Delta t)\| \le 1.$$
+
+The proof follows the source: with $w = C(\Delta t) v$, the relation $(1 + 2r) w = v + r [\tilde
+w(\cdot - \Delta x) + \tilde w(\cdot + \Delta x)]$ gives $(1 + 2r) \|w\| \le \|v\| + 2r \|w\|$. -/
 theorem norm_backwardScheme_le {r : ℝ} (hr : 0 ≤ r) (ν Δt : ℝ) : ‖backwardScheme ν r Δt‖ ≤ 1 := by
   refine ContinuousLinearMap.opNorm_le_bound _ zero_le_one fun v => ?_
   rw [one_mul]
@@ -1024,15 +1189,21 @@ theorem norm_backwardScheme_le {r : ℝ} (hr : 0 ≤ r) (ν Δt : ℝ) : ‖back
       _ = ‖v‖ + 2 * r * ‖w‖ := by ring
   linarith
 
-/-- The backward family is uniformly bounded by `1` on every range of step sizes. -/
+/-- For $r \ge 0$, the backward scheme satisfies $\|C(\Delta t)\| \le 1$ for every
+$\Delta t \in (0, \Delta_0]$. -/
 theorem forall_norm_backwardScheme_le {r : ℝ} (hr : 0 ≤ r) (ν Δ₀ : ℝ) :
     ∀ Δt ∈ Ioc (0 : ℝ) Δ₀, ‖backwardScheme ν r Δt‖ ≤ 1 :=
   fun Δt _ => norm_backwardScheme_le hr ν Δt
 
-/-- **The local truncation error of the backward scheme on the solution (6.2.7)**: as
-`C (Δt) u (t) - u (t + Δt) = C (Δt) [u (t) - Q₁ u (t + Δt)]` and `‖C (Δt)‖ ≤ 1`, the Taylor
-expansions at `(x, t + Δt)` give `‖C (Δt) u (t) - u (t + Δt)‖ ≤ c Δt²` with the same constant
-`c = forwardConsistencyConst ν r n b` as for the forward scheme. -/
+/-- The local truncation error of the backward scheme of Example 6.2.8 on the solution (6.2.7). Let
+$\nu > 0$, $r > 0$, $t \ge 0$ and $\Delta t \ge 0$. For the initial value
+$\sum_{j < n} b_j \sin((j + 1) x)$, the solution $u$ of (6.2.7) satisfies
+$$\|C(\Delta t) u(t) - u(t + \Delta t)\| \le c \, \Delta t^2,$$
+with the same constant $c$ (`AtkinsonHan.Chapter06.forwardConsistencyConst`) as for the forward
+scheme.
+
+The proof writes $C(\Delta t) u(t) - u(t + \Delta t) = C(\Delta t) [u(t) - Q_1 u(t + \Delta
+t)]$, uses $\|C(\Delta t)\| \le 1$, and expands $u$ by Taylor's formula at $(x, t + \Delta t)$. -/
 theorem norm_backwardScheme_sineSolution_sub_le (hν : 0 < ν) {r : ℝ} (hr : 0 < r) (n : ℕ)
     (b : ℕ → ℝ) {t Δt : ℝ} (ht : 0 ≤ t) (hΔt : 0 ≤ Δt) :
     ‖backwardScheme ν r Δt (sineSolution ν n b t) - sineSolution ν n b (t + Δt)‖
@@ -1088,9 +1259,13 @@ theorem norm_backwardScheme_sineSolution_sub_le (hν : 0 < ν) {r : ℝ} (hr : 0
         field_simp
         ring
 
-/-- **Example 6.2.8, consistency of the backward scheme** with `V_c = V₀` — the clause the book
-says is "more involved" and leaves to the reader: the same statement as `example_6_2_8` for
-`backwardScheme`, from `norm_backwardScheme_sineSolution_sub_le`. -/
+/-- **Example 6.2.8** of [han2009theoretical], consistency of the backward scheme. Let $\nu > 0$,
+$r > 0$, $T \ge 0$ and $\Delta_0 \in \mathbb{R}$. The backward scheme is consistent (Definition
+6.2.7) on $V_c = V_0$ with the solution operators of the heat equation on $[0, T]$, for step
+sizes in $(0, \Delta_0]$.
+
+The source calls this case "more involved" and leaves it to the reader. The proof uses
+`AtkinsonHan.Chapter06.norm_backwardScheme_sineSolution_sub_le`. -/
 theorem example_6_2_8_backward (hν : 0 < ν) {r : ℝ} (hr : 0 < r) {T Δ₀ : ℝ} (hT : 0 ≤ T) :
     IsConsistent (solutionOperator (heatOperator ν) dense_heatOperator_domain hT zero_le_one
       (example_6_2_4 hν T)) (backwardScheme ν r) T Δ₀ sinePolynomials := by
@@ -1113,15 +1288,18 @@ theorem example_6_2_8_backward (hν : 0 < ν) {r : ℝ} (hr : 0 < r) {T Δ₀ : 
               rw [mul_div_assoc', div_le_iff₀ (by positivity)]
               nlinarith
 
-/-! #### Example 6.2.13: the Lax equivalence theorem applied -/
+/-! ### Example 6.2.13: the Lax equivalence theorem applied -/
 
-/-- **Example 6.2.13, the forward scheme**: for `r ≤ 1/2`, `‖C (Δt)‖ ≤ 1` by (6.2.8), hence
-`‖C (Δt)^m‖ ≤ 1` for all `m` — the scheme is stable — and, being consistent, it is convergent
-(6.2.11) by the Lax equivalence theorem: `‖u_{Δt} (·, m_i Δt_i) - u (·, t)‖ → 0` whenever
-`m_i Δt_i → t`, for every initial value in `C₀[0, π]`.
+/-- **Example 6.2.13** of [han2009theoretical], the forward scheme. Let $\nu > 0$, $0 < r \le 1/2$,
+$T \ge 0$ and $\Delta_0 \in \mathbb{R}$. The forward scheme is stable on $[0, T]$ for step sizes
+in $(0, \Delta_0]$, and it is convergent to the solution operators of the heat equation:
+$\|C(\Delta t_i)^{m_i} u_0 - S(t) u_0\| \to 0$ whenever $\Delta t_i \to 0$ and
+$m_i \Delta t_i \to t$, for every $u_0 \in C_0[0, \pi]$.
 
-The evolution family is that of `example_6_2_8`, the solution operators on `[0, T]`, and the
-equivalence theorem is the surface `theorem_6_2_11`. -/
+For $r \le 1/2$ the bound (6.2.8) gives $\|C(\Delta t)\| \le 1$, hence
+$\|C(\Delta t)^m\| \le 1$. Convergence then follows from consistency
+(`AtkinsonHan.Chapter06.example_6_2_8`) and the Lax equivalence theorem
+`AtkinsonHan.Chapter06.theorem_6_2_11`. -/
 theorem example_6_2_13 (hν : 0 < ν) {r : ℝ} (hr : 0 < r) (hr2 : r ≤ 1 / 2) {T Δ₀ : ℝ}
     (hT : 0 ≤ T) :
     IsStable (forwardScheme ν r) T Δ₀ ∧
@@ -1135,8 +1313,13 @@ theorem example_6_2_13 (hν : 0 < ν) {r : ℝ} (hr : 0 < r) (hr2 : r ≤ 1 / 2)
   exact ⟨hstab, (theorem_6_2_11 (heatOperator ν) dense_heatOperator_domain hT zero_le_one
     (example_6_2_4 hν T) hC (example_6_2_8 hν hr hT)).1 hstab⟩
 
-/-- **Example 6.2.13, the backward scheme**: `‖C (Δt)‖ ≤ 1` for every `r`, so the scheme is
-unconditionally stable, and, being consistent, unconditionally convergent. -/
+/-- **Example 6.2.13** of [han2009theoretical], the backward scheme. Let $\nu > 0$, $r > 0$,
+$T \ge 0$ and $\Delta_0 \in \mathbb{R}$. The backward scheme is stable on $[0, T]$ for step
+sizes in $(0, \Delta_0]$, and it is convergent to the solution operators of the heat equation.
+So the backward scheme is unconditionally stable and convergent.
+
+The proof uses $\|C(\Delta t)\| \le 1$, consistency
+(`AtkinsonHan.Chapter06.example_6_2_8_backward`) and the Lax equivalence theorem. -/
 theorem example_6_2_13_backward (hν : 0 < ν) {r : ℝ} (hr : 0 < r) {T Δ₀ : ℝ} (hT : 0 ≤ T) :
     IsStable (backwardScheme ν r) T Δ₀ ∧
       IsConvergent (solutionOperator (heatOperator ν) dense_heatOperator_domain hT zero_le_one
@@ -1146,14 +1329,14 @@ theorem example_6_2_13_backward (hν : 0 < ν) {r : ℝ} (hr : 0 < r) {T Δ₀ :
   exact ⟨hstab, (theorem_6_2_11 (heatOperator ν) dense_heatOperator_domain hT zero_le_one
     (example_6_2_4 hν T) hC (example_6_2_8_backward hν hr hT)).1 hstab⟩
 
-/-! #### Exercise 6.2.3: the exact norm of the forward scheme -/
+/-! ### Exercise 6.2.3: the exact norm of the forward scheme -/
 
 section ExactNorm
 
-/-- The test function of Exercise 6.2.3: on `[0, π]`, the plateau `1` on
-`[π/2 - Δx, π/2 + Δx]` joined linearly to `0` at the ends, minus twice the hat of height `1` and
-half-width `Δx` at `π/2` when `r > 1/2`. It has `|v| ≤ 1`, `v = 1` at `π/2 ± Δx`, and `v = ±1`
-at `π/2`, the sign being that of `1 - 2r`. -/
+/-- The test function of Exercise 6.2.3 on $[0, \pi]$: the plateau $1$ on
+$[\pi/2 - \Delta x, \pi/2 + \Delta x]$, joined linearly to $0$ at the ends, minus twice the hat
+function of height $1$ and half-width $\Delta x$ at $\pi/2$ when $r > 1/2$; it has $|v| \le 1$,
+$v(\pi/2 \pm \Delta x) = 1$, and $v(\pi/2) = \pm 1$ with the sign of $1 - 2r$. -/
 private noncomputable def testFun (r Δx : ℝ) : C(Icc (0 : ℝ) π, ℝ) :=
   ⟨fun x => min 1 (min ((x : ℝ) / (π / 2 - Δx)) ((π - (x : ℝ)) / (π / 2 - Δx)))
     - (if r ≤ 1 / 2 then 0 else 2) * max 0 (1 - |(x : ℝ) - π / 2| / Δx), by fun_prop⟩
@@ -1259,13 +1442,18 @@ private theorem testFun_mid_sub :
   · rw [le_div_iff₀ ha]; linarith
 
 omit hΔx hΔx' in
-/-- **Exercise 6.2.3, the exact norm of the forward scheme**: `‖C (Δt)‖ = |1 - 2r| + 2r` as soon
-as the space step `Δx = √(ν Δt / r)` is smaller than `π / 2`. The bound `≤` is (6.2.8); the test
-function `testFun` has `|v| ≤ 1`, `v (π/2 ± Δx) = 1` and `v (π/2) = sign (1 - 2r)`, so
-`C (Δt) v (π/2) = |1 - 2r| + 2r`.
+/-- **Exercise 6.2.3** of [han2009theoretical], the exact norm of the forward scheme. Let $r > 0$,
+and let the space step $\Delta x = \sqrt{\nu \Delta t / r}$ satisfy $0 < \Delta x < \pi/2$. Then
+the forward scheme of Example 6.2.8 satisfies
+$$\|C(\Delta t)\| = |1 - 2r| + 2r.$$
 
-Some smallness of `Δx` is needed, though the book states none: for `Δx = 2π` the shifts are
-trivial, `C (Δt) = I`, and `‖C (Δt)‖ = 1 < |1 - 2r| + 2r` when `r > 1/2`. -/
+**Correction.** The source states the equality with no condition on $\Delta x$. Some smallness
+of $\Delta x$ is needed: for $\Delta x = 2\pi$ the shifts are trivial, so $C(\Delta t) = I$ and
+$\|C(\Delta t)\| = 1 < |1 - 2r| + 2r$ when $r > 1/2$.
+
+The bound $\le$ is (6.2.8). For $\ge$, a test function $v$ with $|v| \le 1$,
+$v(\pi/2 \pm \Delta x) = 1$ and $v(\pi/2) = \operatorname{sign}(1 - 2r)$ gives
+$C(\Delta t) v(\pi/2) = |1 - 2r| + 2r$. -/
 theorem norm_forwardScheme_eq {ν r Δt : ℝ} (hr : 0 < r) (hΔx : 0 < Real.sqrt (ν * Δt / r))
     (hΔx' : Real.sqrt (ν * Δt / r) < π / 2) :
     ‖forwardScheme ν r Δt‖ = |1 - 2 * r| + 2 * r := by
@@ -1297,12 +1485,12 @@ theorem norm_forwardScheme_eq {ν r Δt : ℝ} (hr : 0 < r) (hΔx : 0 < Real.sqr
 
 end ExactNorm
 
-/-! #### Exercise 6.2.3, second half: the forward scheme is unstable for `r > 1/2` -/
+/-! ### Exercise 6.2.3, second half: the forward scheme is unstable for $r > 1/2$ -/
 
 section Instability
 
-/-- The sines are eigenfunctions of the translated sum:
-`ṽ (x + Δx) + ṽ (x - Δx) = 2 cos ((k + 1) Δx) sin ((k + 1) x)` for `v = sin ((k + 1) x)`. -/
+/-- For $k \in \mathbb{N}$ and $y \in \mathbb{R}$, the odd $2\pi$-periodic extension of
+$\sin((k + 1) x)$ takes the value $\sin((k + 1) y)$ at $y$. -/
 theorem ext_sinV (k : ℕ) (y : ℝ) : ext (sinV k) y = Real.sin (((k : ℝ) + 1) * y) := by
   have h : sinV k = sinePolyV (k + 1) fun j => if j = k then 1 else 0 := by
     apply Subtype.ext
@@ -1315,8 +1503,11 @@ theorem ext_sinV (k : ℕ) (y : ℝ) : ext (sinV k) y = Real.sin (((k : ℝ) + 1
     (fun h => absurd (Finset.mem_range.2 (Nat.lt_succ_self k)) h)]
   simp
 
-/-- **The amplification factor of the forward scheme on the mode `sin ((k + 1) x)`**:
-`C (Δt) sin ((k + 1) x) = (1 - 2r + 2r cos ((k + 1) Δx)) sin ((k + 1) x)`. -/
+/-- The amplification factor of the forward scheme of Example 6.2.8 on the mode $\sin((k + 1) x)$.
+For all $\nu, r, \Delta t$ and $k \in \mathbb{N}$, with $\Delta x = \sqrt{\nu \Delta t / r}$,
+$$C(\Delta t) \sin((k + 1) x) = \bigl(1 - 2r + 2r \cos((k + 1) \Delta x)\bigr) \sin((k + 1)
+  x).$$
+-/
 theorem forwardScheme_sinV (ν r Δt : ℝ) (k : ℕ) :
     forwardScheme ν r Δt (sinV k)
       = (1 - 2 * r + 2 * r * Real.cos (((k : ℝ) + 1) * Real.sqrt (ν * Δt / r))) • sinV k := by
@@ -1327,7 +1518,8 @@ theorem forwardScheme_sinV (ν r Δt : ℝ) (k : ℕ) :
   simp only [mul_add, mul_sub, Real.sin_add, Real.sin_sub]
   ring
 
-/-- The powers of the forward scheme on the mode `sin ((k + 1) x)`. -/
+/-- For $m \in \mathbb{N}$, the power $C(\Delta t)^m$ of the forward scheme maps $\sin((k + 1) x)$
+to $\bigl(1 - 2r + 2r \cos((k + 1) \Delta x)\bigr)^m \sin((k + 1) x)$. -/
 theorem forwardScheme_pow_sinV (ν r Δt : ℝ) (k m : ℕ) :
     (forwardScheme ν r Δt ^ m) (sinV k)
       = (1 - 2 * r + 2 * r * Real.cos (((k : ℝ) + 1) * Real.sqrt (ν * Δt / r))) ^ m • sinV k := by
@@ -1338,7 +1530,8 @@ theorem forwardScheme_pow_sinV (ν r Δt : ℝ) (k m : ℕ) :
     change forwardScheme ν r Δt ((forwardScheme ν r Δt ^ m) (sinV k)) = _
     rw [ih, map_smul, forwardScheme_sinV, smul_smul, pow_succ, mul_comm]
 
-/-- `‖sin ((k + 1) x)‖ = 1` in `C₀[0, π]`: attained at `x = π / (2 (k + 1))`. -/
+/-- The function $\sin((k + 1) x)$ has maximum norm $1$ in $C_0[0, \pi]$. The maximum is attained at
+$x = \pi / (2(k + 1))$. -/
 theorem norm_sinV (k : ℕ) : ‖sinV k‖ = 1 := by
   rw [← Submodule.norm_coe, coe_sinV]
   refine le_antisymm ((ContinuousMap.norm_le _ zero_le_one).2 fun x => by
@@ -1355,7 +1548,8 @@ theorem norm_sinV (k : ℕ) : ‖sinV k‖ = 1 := by
           Real.sin_pi_div_two, abs_one]
     _ ≤ ‖sinMap k‖ := ContinuousMap.norm_coe_le_norm _ _
 
-/-- `‖C (Δt)^m‖ ≥ |1 - 2r + 2r cos ((k + 1) Δx)|^m`, from the mode `sin ((k + 1) x)`. -/
+/-- For all $k, m \in \mathbb{N}$, the forward scheme satisfies $\|C(\Delta t)^m\| \ge |1 - 2r + 2r
+\cos((k + 1) \Delta x)|^m$, by its action on the mode $\sin((k + 1) x)$. -/
 theorem pow_le_norm_forwardScheme_pow (ν r Δt : ℝ) (k m : ℕ) :
     |1 - 2 * r + 2 * r * Real.cos (((k : ℝ) + 1) * Real.sqrt (ν * Δt / r))| ^ m
       ≤ ‖forwardScheme ν r Δt ^ m‖ := by
@@ -1364,12 +1558,15 @@ theorem pow_le_norm_forwardScheme_pow (ν r Δt : ℝ) (k m : ℕ) :
     abs_pow] at h
   exact h
 
-/-- **Exercise 6.2.3, the necessity of `r ≤ 1/2`**: for `r > 1/2` the forward scheme is not
-stable on any horizon `T > 0`, for any range `(0, Δ₀]` of step sizes. On the mode
-`sin ((k + 1) x)` with `(k + 1) Δx` within `Δx` of `π` the amplification factor
-`1 - 2r + 2r cos ((k + 1) Δx)` is at most `-2r` once `Δx² ≤ (2r - 1) / r`, so `‖C (Δt)^m‖ ≥ (2r)^m`
-with `2r > 1`, unbounded as `Δt → 0` and `m Δt ≤ T`. Together with `example_6_2_13`, the forward
-scheme is stable if and only if `r ≤ 1/2`: it is *conditionally* stable. -/
+/-- **Exercise 6.2.3** of [han2009theoretical], the necessity of $r \le 1/2$. Let $\nu > 0$,
+$r > 1/2$, $T > 0$ and $\Delta_0 > 0$. Then the forward scheme of Example 6.2.8 is not stable on
+$[0, T]$ for step sizes in $(0, \Delta_0]$.
+
+With `AtkinsonHan.Chapter06.example_6_2_13`, the forward scheme is stable if and only if
+$r \le 1/2$: it is conditionally stable. On a mode $\sin((k + 1) x)$ with $(k + 1) \Delta x$
+within $\Delta x$ of $\pi$, the amplification factor $1 - 2r + 2r \cos((k + 1) \Delta x)$ is at
+most $-2r$ once $\Delta x^2 \le (2r - 1)/r$. So $\|C(\Delta t)^m\| \ge (2r)^m$ with $2r > 1$,
+which is unbounded as $\Delta t \to 0$ with $m \Delta t \le T$. -/
 theorem not_isStable_forwardScheme (hν : 0 < ν) {r : ℝ} (hr : 1 / 2 < r) {T Δ₀ : ℝ} (hT : 0 < T)
     (hΔ₀ : 0 < Δ₀) : ¬ IsStable (forwardScheme ν r) T Δ₀ := by
   rintro ⟨M₀, hM₀⟩
