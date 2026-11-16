@@ -8,68 +8,105 @@ import NumlibSurface.CartisGouldToint.Chapter02.Section04
 import NumlibSurface.CartisGouldToint.Chapter06.Section01
 
 /-!
-# Cartis–Gould–Toint §6.2: The ARp-CC algorithm and its complexity
+# Cartis, Gould and Toint, Section 6.2: The ARp-CC algorithm and its complexity
 
-Surface file for C. Cartis, N. I. M. Gould and Ph. L. Toint, *Evaluation Complexity of
-Algorithms for Nonconvex Optimization* [cartis2022evaluation], §6.2: adaptive regularization with
-`p`-th order models over a closed convex set `𝒞 ⊆ ℝⁿ` (ARp-CC, Algorithm 6.2.1), its evaluation
-complexity for approximate first- to third-order minimizers (Lemmas 6.2.1–6.2.2, Theorem 6.2.3),
-and the first-order variant ARp1-CC (Algorithm 6.2.2, Lemma 6.2.4, Theorem 6.2.5).
+This module formalizes Section 6.2 of [cartis2022evaluation]: adaptive regularization with $p$-th
+order models over a closed convex set $\mathcal{C} \subseteq \mathbb{R}^n$. The algorithm ARp-CC
+(Algorithm 6.2.1) seeks an approximate minimizer of order $q \in \{1, 2, 3\}$ within $\mathcal{C}$
+in the sense of Section 6.1. At iteration $k$ the model is
+$$m_k(s) = T_{f,p}(x_k, s) + \frac{\sigma_k}{(p+1)!} \|s\|^{p+1} \quad \text{(4.1.2)},$$
+and the step $s_k$ must keep $x_k + s_k$ in $\mathcal{C}$, decrease the model, and make the model
+measures (6.2.3)–(6.2.5) of order at most $q$ small. Lemmas 6.2.1 and 6.2.2 show that a successful
+step either decreases $f$ by a fixed amount or leads to termination, and Theorem 6.2.3 bounds the
+number of evaluations by $O(\max_j \epsilon_j^{-(p+1)/(p-j+1)})$. The first-order variant ARp1-CC
+(Algorithm 6.2.2) replaces the step condition by $\omega_{m_k,\mathcal{M},1}(s_k) \le \theta_1
+\|s_k\|^p$; Lemma 6.2.4 and Theorem 6.2.5 give its complexity $O(\epsilon_1^{-(p+1)/p})$.
 
-The model of iteration `k` is `m_k(s) = T_{f,p}(x_k, s) + σ_k/(p+1)! ‖s‖^{p+1}` (4.1.2),
-`Optimization.regularizedModel (ftaylorSeries ℝ f (x k)) p (σ k)`. Runs are instances of the
-generic adaptive-regularization run `Optimization.IsARRun` (Steps 3–4: acceptance of the trial
-point and the update (2.4.4) of the regularization parameter), with the ratio
-`Optimization.taylorRatio f p x s` of Step 3. The model counterparts (6.2.1)–(6.2.5) of the
-feasible sets and criticality measures of §6.1 are `Optimization.restrictedSteps` and
-`Optimization.formCriticality` of the derivative tensors of the model.
+The model is `Optimization.regularizedModel (ftaylorSeries ℝ f (x k)) p (σ k)`, and runs are
+instances of the generic adaptive-regularization run `Optimization.IsARRun` with the ratio
+`Optimization.taylorRatio`. The model counterparts (6.2.1)–(6.2.5) of the sets and measures of
+Section 6.1 are `Optimization.restrictedSteps` and `Optimization.formCriticality` of the derivative
+tensors of the model.
 
 ## Main definitions
 
-* `AssumptionBbC f C flow`, `AssumptionDpLC f C p L` — f.bB.C and f.DpL.C.
-* `ARpCCParams` — the constants (6.2.7); `ARpCCParams.sigmaMax P L` — `σ_max` of (4.1.19).
-* `modelSteps₀`, `modelSteps₁`, `modelSteps₂` — `𝓜⁰_k(s)`, `𝓜¹_k(s)`, `𝓜²_k(s)` (6.2.1)–(6.2.2).
-* `modelOmega1`, `modelOmega2`, `modelOmega3` — `ω_{m_k,𝓜,j}(s)` (6.2.3)–(6.2.5).
-* `IsARpCCStep` — the Step-2 conditions (6.2.10)–(6.2.12).
-* `algorithm_6_2_1` — Algorithm 6.2.1 (ARp-CC) as a run predicate.
-* `omegaNext2`, `omegaNext3` — the mixed measures `ω_{k+1,2}` (6.2.14), `ω_{k+1,3}` (6.2.16).
-* `kappaCC` — the constants `κ_j^cc` of Lemma 6.2.2; `tolMin`, `kappaSARpCC` — the quantities
-  `min_j ε_j^{(p+1)/(p-j+1)}` and `κ^S_ARpCC` of Theorem 6.2.3.
-* `algorithm_6_2_2` — Algorithm 6.2.2 (ARp1-CC) as a run predicate.
+* Equations (6.2.1)–(6.2.2), `CartisGouldToint.Chapter06.modelSteps₀`,
+  `CartisGouldToint.Chapter06.modelSteps₁`, `CartisGouldToint.Chapter06.modelSteps₂`: the model sets
+  $\mathcal{M}^0_k(s)$, $\mathcal{M}^1_k(s)$ and $\mathcal{M}^2_k(s)$.
+* Equations (6.2.3)–(6.2.5), `CartisGouldToint.Chapter06.modelOmega1`,
+  `CartisGouldToint.Chapter06.modelOmega2`, `CartisGouldToint.Chapter06.modelOmega3`: the model
+  measures $\omega_{m_k,\mathcal{M},j}(s)$ for $j = 1, 2, 3$.
+* Equation (6.2.7), `CartisGouldToint.Chapter06.ARpCCParams`: the algorithmic constants of ARp-CC.
+* Equations (6.2.10)–(6.2.12), `CartisGouldToint.Chapter06.IsARpCCStep`: the conditions of Step 2 of
+  ARp-CC.
+* Algorithm 6.2.1, `CartisGouldToint.Chapter06.algorithm_6_2_1`: a run of ARp-CC.
+* Assumption f.bB.C, `CartisGouldToint.Chapter06.AssumptionBbC`: $f$ is bounded below on
+  $\mathcal{C}$.
+* Assumption f.DpL.C, `CartisGouldToint.Chapter06.AssumptionDpLC`: $f$ is $p$ times continuously
+  differentiable near $\mathcal{C}$, and its $p$-th derivative is Lipschitz on $\mathcal{C}$.
+* Equations (6.2.14) and (6.2.16), `CartisGouldToint.Chapter06.omegaNext2`,
+  `CartisGouldToint.Chapter06.omegaNext3`: the mixed measures $\omega_{k+1,2}$ and $\omega_{k+1,3}$.
+* Lemma 6.2.2, `CartisGouldToint.Chapter06.kappaCC`: the constants $\kappa^{cc}_j$.
+* Theorem 6.2.3, `CartisGouldToint.Chapter06.kappaSARpCC`, `CartisGouldToint.Chapter06.kappaAARpCC`,
+  `CartisGouldToint.Chapter06.kappaCARpCC`, `CartisGouldToint.Chapter06.tolMin`: the constants
+  $\kappa^S$, $\kappa^A$, $\kappa^C$ and the accuracy term $\min_j \epsilon_j^{(p+1)/(p-j+1)}$.
+* Algorithm 6.2.2, `CartisGouldToint.Chapter06.algorithm_6_2_2`: a run of ARp1-CC.
+* Theorem 6.2.5, `CartisGouldToint.Chapter06.kappa1CC`, `CartisGouldToint.Chapter06.kappaSARp1CC`,
+  `CartisGouldToint.Chapter06.kappaAARp1CC`: the constants $\kappa_1$ of (4.1.32), $\kappa^S$ and
+  $\kappa^A$ of ARp1-CC.
 
 ## Main results
 
-* `exists_algorithm_6_2_1_of_forall_exists_step`, `exists_algorithm_6_2_1_one` — existence of
-  ARp-CC runs when Step 2 is always feasible, in particular for `q = 1`;
-  `algorithm_6_2_1_not_exists_step` — Step 2 may be infeasible for `q ≥ 2`.
-* `arpcc_sigma_le`, `arpcc_sub_ge` — "Lemmas 4.1.1 and 4.1.2 continue to hold".
-* `lemma_6_2_1_i` … `lemma_6_2_1_iv` — Lemma 6.2.1.
-* `lemma_6_2_2` — Lemma 6.2.2 (corrected constants).
-* `arpcc_decrease_of_not_test`, `theorem_6_2_3` — Theorem 6.2.3.
-* `exists_algorithm_6_2_2`, `lemma_6_2_4`, `theorem_6_2_5` — §6.2.3.
+* Algorithm 6.2.1, `CartisGouldToint.Chapter06.exists_algorithm_6_2_1_of_forall_exists_step`,
+  `CartisGouldToint.Chapter06.exists_algorithm_6_2_1_one`: ARp-CC runs exist when Step 2 is always
+  feasible, in particular for $q = 1$.
+* Algorithm 6.2.1, `CartisGouldToint.Chapter06.algorithm_6_2_1_not_exists_step`: Step 2 can be
+  infeasible for $q \ge 2$.
+* Section 6.2.2, `CartisGouldToint.Chapter06.arpcc_sigma_le`,
+  `CartisGouldToint.Chapter06.arpcc_sub_ge`: Lemmas 4.1.1 and 4.1.2 continue to hold.
+* Lemma 6.2.1, `CartisGouldToint.Chapter06.lemma_6_2_1_i`,
+  `CartisGouldToint.Chapter06.lemma_6_2_1_ii`, `CartisGouldToint.Chapter06.lemma_6_2_1_iii`,
+  `CartisGouldToint.Chapter06.lemma_6_2_1_iv`: lower bounds on the step length and bounds on the
+  model derivatives on a successful iteration.
+* Lemma 6.2.2, `CartisGouldToint.Chapter06.lemma_6_2_2`: the decrease of $f$ on a successful
+  iteration where an objective measure is large.
+* Theorem 6.2.3, `CartisGouldToint.Chapter06.arpcc_decrease_of_not_test`,
+  `CartisGouldToint.Chapter06.theorem_6_2_3`: the decrease on successful iterations and the
+  evaluation complexity of ARp-CC.
+* Algorithm 6.2.2, `CartisGouldToint.Chapter06.exists_algorithm_6_2_2`: ARp1-CC runs exist.
+* Lemma 6.2.4, `CartisGouldToint.Chapter06.lemma_6_2_4`: the decrease of $f$ on a successful
+  iteration of ARp1-CC.
+* Theorem 6.2.5, `CartisGouldToint.Chapter06.theorem_6_2_5`: the evaluation complexity of ARp1-CC.
 
-## Deviations from the book
+## Conventions
 
-* The book indexes the order of the sought minimizer by which tolerances are infinite
-  (`ε₂ = ε₃ = ∞` for first order, `ε₃ = ∞` for second order). Here the order is an explicit
-  `q ∈ {1, 2, 3}` and all tolerances are finite positive reals; the tests and step conditions of
-  order `> q` are switched off.
-* (6.2.18)–(6.2.19) of Lemma 6.2.1 are stated for `‖d‖ ≤ 1` only: the proof's (6.2.23) holds on
-  the unit ball `𝓑` (the error term scales like `‖d‖^j`). Accordingly, the inclusions
-  `𝒞¹(x_{k+1}, ε₁) ⊆ 𝓜¹_k(s_k)` and `𝒞²(…) ⊆ 𝓜²_k(s_k)` in the proof of Theorem 6.2.3 are used
-  on `𝓑`, which is all that the measures see.
-* Lemma 6.2.2: the prefactor of `κ_j^cc` is `η₁ σ_min/(p+1)!`, not `η₁ σ_min/p!` as printed (the
-  successful decrease is `η₁ σ_min ‖s‖^{p+1}/(p+1)!`, Lemma 4.1.1); Theorem 6.2.3's `κ^S` already
-  uses `(p+1)!`.
-* Third order needs `p ≥ 3` (and second order `p ≥ 2`); all results assume `q ≤ p`.
-* Step 2 of ARp-CC can be infeasible for `q ≥ 2`, even at a strict global minimizer of `f` on `𝒞`
-  (`algorithm_6_2_1_not_exists_step`): the second-order measure ranges over directions with
-  `|∇f(x)[d]| ≤ τ₁ε₁`, including ascent directions, while Step 2 demands a model decrease. The
-  book's remark that the model measures "will all be small in the neighbourhood of any …
-  global minimizer of `m_k`" does not give a step with `m_k(s) < m_k(0)`. Theorem 6.2.3 holds for
-  every run; runs exist for `q = 1`, and for `q ≥ 2` whenever Step 2 is always feasible.
-* f.DpL.C asks for `f` to be `C^p` on an open set `𝒟 ⊇ 𝒞`; only `C^p` at the points of `𝒞` is
-  used by the analysis.
+* The order of the sought minimizer is an explicit $q \in \{1, 2, 3\}$, and all tolerances are
+  finite positive reals. The tests and the step conditions of order greater than $q$ are switched
+  off.
+
+## Deviations from the source
+
+* **Order of the sought minimizer** (reading). The source selects the order by infinite tolerances
+  ($\epsilon_2 = \epsilon_3 = \infty$ for first order, $\epsilon_3 = \infty$ for second order). Here
+  the order is an explicit $q \in \{1, 2, 3\}$. See `CartisGouldToint.Chapter06.algorithm_6_2_1`.
+* **Orders and degree** (reading). Second order needs $p \ge 2$ and third order needs $p \ge 3$; all
+  complexity results assume $q \le p$. See `CartisGouldToint.Chapter06.theorem_6_2_3`.
+* **Algorithm 6.2.1, Step 2** (correction). For $q \ge 2$, Step 2 can be infeasible, even at a
+  strict global minimizer of $f$ on $\mathcal{C}$. Theorem 6.2.3 holds for every run; runs exist for
+  $q = 1$, and for $q \ge 2$ whenever Step 2 is always feasible. See
+  `CartisGouldToint.Chapter06.algorithm_6_2_1_not_exists_step`.
+* **Lemma 6.2.1, (6.2.18)–(6.2.19)** (correction). The bounds are proved only for $\|d\| \le 1$,
+  which is what the proof through (6.2.23) gives and what the measures use. See
+  `CartisGouldToint.Chapter06.lemma_6_2_1_iv`.
+* **Lemma 6.2.2** (typo). The prefactor of $\kappa^{cc}_j$ is $\eta_1 \sigma_{\min} / (p+1)!$, not
+  $\eta_1 \sigma_{\min} / p!$. See `CartisGouldToint.Chapter06.lemma_6_2_2`.
+* **Theorems 6.2.3 and 6.2.5** (generalization). The restriction $\epsilon_j \le 1$ is not needed.
+  See `CartisGouldToint.Chapter06.theorem_6_2_3` and `CartisGouldToint.Chapter06.theorem_6_2_5`.
+* **Existence of runs** (generalization). Assumption f.DpL.C asks for $f$ to be $p$ times
+  continuously differentiable on an open set $\mathcal{D} \supseteq \mathcal{C}$. The existence
+  theorems use only this property at the points of $\mathcal{C}$. See
+  `CartisGouldToint.Chapter06.exists_algorithm_6_2_1_one` and
+  `CartisGouldToint.Chapter06.exists_algorithm_6_2_2`.
 -/
 
 open Set Metric Optimization
@@ -84,182 +121,266 @@ local notation "ℝⁿ" => EuclideanSpace ℝ (Fin n)
 
 /-! ### Assumptions and constants -/
 
-/-- **Assumption f.bB.C** of [cartis2022evaluation], §6.2.2: `f` is bounded below on `𝒞` by
-`flow`. -/
+/-- **Assumption f.bB.C** of [cartis2022evaluation], Section 6.2.2. A function
+$f : \mathbb{R}^n \to \mathbb{R}$ is bounded below on $\mathcal{C}$ by $f_{\mathrm{low}}$ if
+$f(x) \ge f_{\mathrm{low}}$ for all $x \in \mathcal{C}$. -/
 def AssumptionBbC (f : ℝⁿ → ℝ) (C : Set ℝⁿ) (flow : ℝ) : Prop :=
   ∀ x ∈ C, flow ≤ f x
 
+/-- Assumption f.bB.C holds if and only if $f(x) \ge f_{\mathrm{low}}$ for all $x \in \mathcal{C}$.
+-/
 theorem assumptionBbC_iff {f : ℝⁿ → ℝ} {C : Set ℝⁿ} {flow : ℝ} :
     AssumptionBbC f C flow ↔ ∀ x ∈ C, flow ≤ f x := Iff.rfl
 
-/-- **Assumption f.DpL.C** of [cartis2022evaluation], §6.2.2: `f` is `p` times continuously
-differentiable on an open set `𝒟 ⊇ 𝒞`, and its `p`-th derivative tensor is Lipschitz continuous
-on `𝒞` with constant `L ≥ 0` (tensor norm = operator norm, (A.7)). -/
+/-- **Assumption f.DpL.C** of [cartis2022evaluation], Section 6.2.2. Let
+$f : \mathbb{R}^n \to \mathbb{R}$, $\mathcal{C} \subseteq \mathbb{R}^n$, $p \in \mathbb{N}$ and
+$L \in \mathbb{R}$. The assumption holds if $L \ge 0$, $f$ is $p$ times continuously
+differentiable on an open set $\mathcal{D} \supseteq \mathcal{C}$, and the $p$-th derivative
+tensor of $f$ is Lipschitz continuous on $\mathcal{C}$ with constant $L$.
+
+The norm of the derivative tensor is the operator norm, as in (A.7). -/
 structure AssumptionDpLC (f : ℝⁿ → ℝ) (C : Set ℝⁿ) (p : ℕ) (L : ℝ) : Prop where
-  /-- `L_{f,p} ≥ 0`. -/
+  /-- The Lipschitz constant $L_{f,p}$ is nonnegative. -/
   nonneg : 0 ≤ L
-  /-- `f` is `C^p` on an open set containing `𝒞`. -/
+  /-- The function $f$ is $p$ times continuously differentiable on an open set that contains
+  $\mathcal{C}$. -/
   contDiffOn : ∃ D, IsOpen D ∧ C ⊆ D ∧ ContDiffOn ℝ p f D
-  /-- `∇^p f` is `L`-Lipschitz on `𝒞`. -/
+  /-- The $p$-th derivative $\nabla^p f$ is Lipschitz continuous on $\mathcal{C}$ with constant $L$.
+  -/
   lipschitz : IteratedFDerivLipschitzOn f p L C
 
-/-- f.DpL.C is the backbone predicate `IteratedFDerivLipschitzOn f p L C` for a function `C^p` on
-an open neighbourhood of `𝒞`, with `L ≥ 0`. -/
+/-- Assumption f.DpL.C holds if and only if $L \ge 0$, $f$ is $p$ times continuously differentiable
+on an open set that contains $\mathcal{C}$, and $\nabla^p f$ is Lipschitz continuous on
+$\mathcal{C}$ with constant $L$ (`IteratedFDerivLipschitzOn f p L C`). -/
 theorem assumptionDpLC_iff {f : ℝⁿ → ℝ} {C : Set ℝⁿ} {p : ℕ} {L : ℝ} :
     AssumptionDpLC f C p L ↔ 0 ≤ L ∧ (∃ D, IsOpen D ∧ C ⊆ D ∧ ContDiffOn ℝ p f D) ∧
       IteratedFDerivLipschitzOn f p L C :=
   ⟨fun h => ⟨h.nonneg, h.contDiffOn, h.lipschitz⟩, fun ⟨h1, h2, h3⟩ => ⟨h1, h2, h3⟩⟩
 
-/-- Under f.DpL.C, `f` is `C^p` at every point of `𝒞`. -/
+/-- Under f.DpL.C, $f$ is $p$ times continuously differentiable at every point of $\mathcal{C}$. -/
 theorem AssumptionDpLC.contDiffAt {f : ℝⁿ → ℝ} {C : Set ℝⁿ} {p : ℕ} {L : ℝ}
     (h : AssumptionDpLC f C p L) : ∀ y ∈ C, ContDiffAt ℝ p f y := by
   obtain ⟨D, hD, hCD, hf⟩ := h.contDiffOn
   exact fun y hy => hf.contDiffAt (hD.mem_nhds (hCD hy))
 
-/-- The constants (6.2.7) of ARp-CC ([cartis2022evaluation], Algorithm 6.2.1): those of
-adaptive regularization (`σ₀ > 0`, `σ_min ∈ (0, σ₀]`, `0 < η₁ ≤ η₂ < 1`,
-`0 < γ₁ < 1 < γ₂ < γ₃`), together with `θ₁, θ₂, θ₃ ∈ (0,1)`, `τ₁, τ₂ ∈ (0,1)`,
-`(1 + τ₁)/2 ≤ θ₁` and `(1 + τ₂)/2 ≤ θ₂`. -/
+/-- **Equation (6.2.7)** of [cartis2022evaluation], the constants of Algorithm 6.2.1. A set of
+**ARp-CC constants** consists of the constants of adaptive regularization, $\sigma_0 > 0$,
+$\sigma_{\min} \in (0, \sigma_0]$, $0 < \eta_1 \le \eta_2 < 1$ and
+$0 < \gamma_1 < 1 < \gamma_2 < \gamma_3$, together with
+$\theta_1, \theta_2, \theta_3 \in (0, 1)$ and $\tau_1, \tau_2 \in (0, 1)$ such that
+$$\frac{1 + \tau_1}{2} \le \theta_1, \qquad \frac{1 + \tau_2}{2} \le \theta_2.$$
+
+The constants of adaptive regularization are `CartisGouldToint.Chapter02.ARParams`. -/
 structure ARpCCParams extends toChapter02ARParams : Chapter02.ARParams where
-  /-- The first-order model tolerance factor. -/
+  /-- The first-order model tolerance factor $\theta_1$. -/
   θ₁ : ℝ
-  /-- The second-order model tolerance factor. -/
+  /-- The second-order model tolerance factor $\theta_2$. -/
   θ₂ : ℝ
-  /-- The third-order model tolerance factor. -/
+  /-- The third-order model tolerance factor $\theta_3$. -/
   θ₃ : ℝ
-  /-- The first-order restriction factor of (6.1.8). -/
+  /-- The first-order restriction factor $\tau_1$ of (6.1.8). -/
   τ₁ : ℝ
-  /-- The second-order restriction factor of (6.1.10). -/
+  /-- The second-order restriction factor $\tau_2$ of (6.1.10). -/
   τ₂ : ℝ
+  /-- The factor $\theta_1$ is positive. -/
   θ₁_pos : 0 < θ₁
+  /-- The factor $\theta_1$ is less than $1$. -/
   θ₁_lt_one : θ₁ < 1
+  /-- The factor $\theta_2$ is positive. -/
   θ₂_pos : 0 < θ₂
+  /-- The factor $\theta_2$ is less than $1$. -/
   θ₂_lt_one : θ₂ < 1
+  /-- The factor $\theta_3$ is positive. -/
   θ₃_pos : 0 < θ₃
+  /-- The factor $\theta_3$ is less than $1$. -/
   θ₃_lt_one : θ₃ < 1
+  /-- The factor $\tau_1$ is positive. -/
   τ₁_pos : 0 < τ₁
+  /-- The factor $\tau_1$ is less than $1$. -/
   τ₁_lt_one : τ₁ < 1
+  /-- The factor $\tau_2$ is positive. -/
   τ₂_pos : 0 < τ₂
+  /-- The factor $\tau_2$ is less than $1$. -/
   τ₂_lt_one : τ₂ < 1
-  /-- `(1 + τ₁)/2 ≤ θ₁`. -/
+  /-- The inequality $(1 + \tau_1)/2 \le \theta_1$ holds. -/
   τ₁_le_θ₁ : (1 + τ₁) / 2 ≤ θ₁
-  /-- `(1 + τ₂)/2 ≤ θ₂`. -/
+  /-- The inequality $(1 + \tau_2)/2 \le \theta_2$ holds. -/
   τ₂_le_θ₂ : (1 + τ₂) / 2 ≤ θ₂
 
 namespace ARpCCParams
 
 variable (P : ARpCCParams)
 
-/-- The bound `σ_max = max(σ₀, γ₃ L/(1 - η₂))` of (4.1.19) on the regularization parameter. -/
+/-- The bound $\sigma_{\max} = \max(\sigma_0, \gamma_3 L / (1 - \eta_2))$ of (4.1.19) on the
+regularization weight. -/
 noncomputable def sigmaMax (L : ℝ) : ℝ := arSigmaMax P.toARParams L
 
+/-- The bound $\sigma_{\max}$ is positive. -/
 theorem sigmaMax_pos (L : ℝ) : 0 < P.sigmaMax L := arSigmaMax_pos _ L
 
-/-- `1 - θ₁ + τ₁ ≤ θ₁` (from (6.2.7)). -/
+/-- The constants satisfy $1 - \theta_1 + \tau_1 \le \theta_1$, by (6.2.7). -/
 theorem one_sub_θ₁_add_τ₁_le : 1 - P.θ₁ + P.τ₁ ≤ P.θ₁ := by linarith [P.τ₁_le_θ₁]
 
-/-- `1 - θ₂ + τ₂ ≤ θ₂` (from (6.2.7)). -/
+/-- The constants satisfy $1 - \theta_2 + \tau_2 \le \theta_2$, by (6.2.7). -/
 theorem one_sub_θ₂_add_τ₂_le : 1 - P.θ₂ + P.τ₂ ≤ P.θ₂ := by linarith [P.τ₂_le_θ₂]
 
 end ARpCCParams
 
 /-! ### Model measures and the algorithm -/
 
-/-- `𝓜⁰_k(s) = 𝒞(x_k + s)` (6.2.1) of [cartis2022evaluation]. -/
+/-- **Equation (6.2.1)** of [cartis2022evaluation], the set $\mathcal{M}^0_k$. Let
+$\mathcal{C} \subseteq \mathbb{R}^n$ and $x, s \in \mathbb{R}^n$. The set of **feasible model
+steps** at $s$ is $\mathcal{M}^0_k(s) = \mathcal{C}(x + s) = \{d \mid x + s + d \in
+\mathcal{C}\}$. -/
 noncomputable def modelSteps₀ (C : Set ℝⁿ) (x s : ℝⁿ) : Set ℝⁿ := feasibleSteps C (x + s)
 
-/-- `𝓜¹_k(s) = {d ∈ 𝓜⁰_k(s) | |∇_s m_k(s)[d]| ≤ θ₁ε₁}` (6.2.1) of [cartis2022evaluation], for
-the model `m_k = regularizedModel (ftaylorSeries ℝ f x) p σ`. -/
+/-- **Equation (6.2.1)** of [cartis2022evaluation], the set $\mathcal{M}^1_k$. Let
+$f : \mathbb{R}^n \to \mathbb{R}$, $\mathcal{C} \subseteq \mathbb{R}^n$, $p \in \mathbb{N}$,
+$\theta_1, \epsilon_1, \sigma \in \mathbb{R}$ and $x, s \in \mathbb{R}^n$, and let $m_k$ be the
+regularized Taylor model of $f$ at $x$ of degree $p$ with weight $\sigma$. The set of
+**first-order restricted model steps** is
+$$\mathcal{M}^1_k(s) = \{d \in \mathcal{M}^0_k(s) \mid |\nabla_s m_k(s)[d]| \le \theta_1
+  \epsilon_1\}.$$
+
+The model $m_k$ is `Optimization.regularizedModel (ftaylorSeries ℝ f x) p σ`. -/
 noncomputable def modelSteps₁ (f : ℝⁿ → ℝ) (C : Set ℝⁿ) (p : ℕ) (θ₁ ε₁ : ℝ) (x : ℝⁿ) (σ : ℝ)
     (s : ℝⁿ) : Set ℝⁿ :=
   restrictedSteps (iteratedFDeriv ℝ 1 (regularizedModel (ftaylorSeries ℝ f x) p σ) s) (θ₁ * ε₁)
     (modelSteps₀ C x s)
 
-/-- `𝓜²_k(s) = {d ∈ 𝓜¹_k(s) | |∇²_s m_k(s)[d]²| ≤ θ₂ε₂}` (6.2.2) of [cartis2022evaluation]. -/
+/-- **Equation (6.2.2)** of [cartis2022evaluation]. With the notation of (6.2.1) and
+$\theta_2, \epsilon_2 \in \mathbb{R}$, the set of **second-order restricted model steps** is
+$$\mathcal{M}^2_k(s) = \{d \in \mathcal{M}^1_k(s) \mid |\nabla^2_s m_k(s)[d]^2| \le \theta_2
+  \epsilon_2\}.$$
+-/
 noncomputable def modelSteps₂ (f : ℝⁿ → ℝ) (C : Set ℝⁿ) (p : ℕ) (θ₁ θ₂ ε₁ ε₂ : ℝ) (x : ℝⁿ) (σ : ℝ)
     (s : ℝⁿ) : Set ℝⁿ :=
   restrictedSteps (iteratedFDeriv ℝ 2 (regularizedModel (ftaylorSeries ℝ f x) p σ) s) (θ₂ * ε₂)
     (modelSteps₁ f C p θ₁ ε₁ x σ s)
 
-/-- The first-order model measure `ω_{m_k,𝓜,1}(s) = -min_{d ∈ 𝓜⁰_k(s) ∩ 𝓑} ∇_s m_k(s)[d]`
-(6.2.3) of [cartis2022evaluation]. -/
+/-- **Equation (6.2.3)** of [cartis2022evaluation]. With the notation of (6.2.1), the **first-order
+model measure** is
+$$\omega_{m_k,\mathcal{M},1}(s) = -\min_{d \in \mathcal{M}^0_k(s) \cap \mathcal{B}} \nabla_s
+  m_k(s)[d].$$
+
+The minimum is the supremum `Optimization.formCriticality`. -/
 noncomputable def modelOmega1 (f : ℝⁿ → ℝ) (C : Set ℝⁿ) (p : ℕ) (x : ℝⁿ) (σ : ℝ) (s : ℝⁿ) :
     ℝ :=
   formCriticality (iteratedFDeriv ℝ 1 (regularizedModel (ftaylorSeries ℝ f x) p σ) s)
     (modelSteps₀ C x s)
 
-/-- The second-order model measure `ω_{m_k,𝓜,2}(s) = -min_{d ∈ 𝓜¹_k(s) ∩ 𝓑} ∇²_s m_k(s)[d]²`
-(6.2.4) of [cartis2022evaluation]. -/
+/-- **Equation (6.2.4)** of [cartis2022evaluation]. With the notation of (6.2.1), the **second-order
+model measure** is
+$$\omega_{m_k,\mathcal{M},2}(s) = -\min_{d \in \mathcal{M}^1_k(s) \cap \mathcal{B}} \nabla^2_s
+  m_k(s)[d]^2.$$
+-/
 noncomputable def modelOmega2 (f : ℝⁿ → ℝ) (C : Set ℝⁿ) (p : ℕ) (θ₁ ε₁ : ℝ) (x : ℝⁿ) (σ : ℝ)
     (s : ℝⁿ) : ℝ :=
   formCriticality (iteratedFDeriv ℝ 2 (regularizedModel (ftaylorSeries ℝ f x) p σ) s)
     (modelSteps₁ f C p θ₁ ε₁ x σ s)
 
-/-- The third-order model measure `ω_{m_k,𝓜,3}(s) = -min_{d ∈ 𝓜²_k(s) ∩ 𝓑} ∇³_s m_k(s)[d]³`
-(6.2.5) of [cartis2022evaluation]. -/
+/-- **Equation (6.2.5)** of [cartis2022evaluation]. With the notation of (6.2.1) and (6.2.2), the
+**third-order model measure** is
+$$\omega_{m_k,\mathcal{M},3}(s) = -\min_{d \in \mathcal{M}^2_k(s) \cap \mathcal{B}} \nabla^3_s
+  m_k(s)[d]^3.$$
+-/
 noncomputable def modelOmega3 (f : ℝⁿ → ℝ) (C : Set ℝⁿ) (p : ℕ) (θ₁ θ₂ ε₁ ε₂ : ℝ) (x : ℝⁿ)
     (σ : ℝ) (s : ℝⁿ) : ℝ :=
   formCriticality (iteratedFDeriv ℝ 3 (regularizedModel (ftaylorSeries ℝ f x) p σ) s)
     (modelSteps₂ f C p θ₁ θ₂ ε₁ ε₂ x σ s)
 
-/-- **Step 2 of ARp-CC** ([cartis2022evaluation], Algorithm 6.2.1) at `x` with weight `σ`, for
-the `q`-th order version (`q ∈ {1, 2, 3}`): the trial point is feasible, the model decreases,
-and the model measures of order `≤ q` are small, (6.2.10)–(6.2.12). -/
+/-- **Equations (6.2.10)–(6.2.12)** of [cartis2022evaluation], Step 2 of Algorithm 6.2.1. Let
+$f : \mathbb{R}^n \to \mathbb{R}$, $\mathcal{C} \subseteq \mathbb{R}^n$, $p, q \in \mathbb{N}$,
+ARp-CC constants $P$, tolerances $\epsilon_1, \epsilon_2, \epsilon_3$, a point $x$ and a weight
+$\sigma$, and let $m$ be the regularized Taylor model of $f$ at $x$ of degree $p$ with weight
+$\sigma$. A step $s$ satisfies the **Step 2 conditions of ARp-CC** of order $q$ if
+$x + s \in \mathcal{C}$, $m(s) < m(0)$,
+$$\omega_{m,\mathcal{M},1}(s) \le \theta_1 \epsilon_1 \quad \text{(6.2.10)},$$
+$\omega_{m,\mathcal{M},2}(s) \le \theta_2 \epsilon_2$ (6.2.11) if $q \ge 2$, and
+$\omega_{m,\mathcal{M},3}(s) \le \theta_3 \epsilon_3$ (6.2.12) if $q \ge 3$. -/
 structure IsARpCCStep (f : ℝⁿ → ℝ) (C : Set ℝⁿ) (p : ℕ) (P : ARpCCParams) (q : ℕ)
     (ε₁ ε₂ ε₃ : ℝ) (x : ℝⁿ) (σ : ℝ) (s : ℝⁿ) : Prop where
-  /-- `s ∈ 𝒞(x)`. -/
+  /-- The trial point is feasible: $s \in \mathcal{C}(x)$. -/
   mem : x + s ∈ C
-  /-- `m(s) < m(0)`. -/
+  /-- The step decreases the model: $m(s) < m(0)$. -/
   decrease : regularizedModel (ftaylorSeries ℝ f x) p σ s <
     regularizedModel (ftaylorSeries ℝ f x) p σ 0
-  /-- (6.2.10). -/
+  /-- The first-order model measure is small, (6.2.10). -/
   omega1_le : modelOmega1 f C p x σ s ≤ P.θ₁ * ε₁
-  /-- (6.2.11), for `q ≥ 2`. -/
+  /-- For $q \ge 2$, the second-order model measure is small, (6.2.11). -/
   omega2_le : 2 ≤ q → modelOmega2 f C p P.θ₁ ε₁ x σ s ≤ P.θ₂ * ε₂
-  /-- (6.2.12), for `q = 3`. -/
+  /-- For $q \ge 3$, the third-order model measure is small, (6.2.12). -/
   omega3_le : 3 ≤ q → modelOmega3 f C p P.θ₁ P.θ₂ ε₁ ε₂ x σ s ≤ P.θ₃ * ε₃
 
-/-- **Algorithm 6.2.1** (ARp-CC) of [cartis2022evaluation], seeking a `q`-th order approximate
-minimizer (`q ∈ {1, 2, 3}`), as a run predicate on iterates `x`, trial steps `s` and
-regularization parameters `σ`: tolerances `ε₁, ε₂, ε₃ > 0`, `x₀ ∈ 𝒞`, and the generic
-adaptive-regularization run with the Step-1 test "`x_k` is a `q`-th order approximate minimizer
-within `𝒞`" (`IsApproxMinimizerCC`), the Step-2 conditions `IsARpCCStep`, and the ratio of
-Step 3 (`taylorRatio f p`). -/
+/-- **Algorithm 6.2.1** of [cartis2022evaluation] (ARp-CC). Let $f : \mathbb{R}^n \to \mathbb{R}$,
+$\mathcal{C} \subseteq \mathbb{R}^n$, $p, q \in \mathbb{N}$, ARp-CC constants $P$ and
+$\epsilon_1, \epsilon_2, \epsilon_3 \in \mathbb{R}$. Sequences of iterates $x_k$, trial steps
+$s_k$ and regularization weights $\sigma_k$ form a **run of ARp-CC of order $q$** if
+$\epsilon_1, \epsilon_2, \epsilon_3 > 0$, $1 \le q \le 3$, $x_0 \in \mathcal{C}$, and they form
+an adaptive-regularization run in which the Step 1 test is "$x_k$ is an approximate minimizer of
+order $q$ within $\mathcal{C}$", the step $s_k$ satisfies the Step 2 conditions
+(6.2.10)–(6.2.12), and Steps 3–4 use the ratio (4.1.15) and the update of the regularization
+weight.
+
+**Reading.** The source selects the order by infinite tolerances; here $q$ is explicit and the
+tolerances are finite.
+
+The run is `Optimization.IsARRun` with the test `CartisGouldToint.Chapter06.IsApproxMinimizerCC`
+for the factors $\tau_1, \tau_2$ of $P$, the step conditions
+`CartisGouldToint.Chapter06.IsARpCCStep`, and the ratio `Optimization.taylorRatio f p`. -/
 structure algorithm_6_2_1 (f : ℝⁿ → ℝ) (C : Set ℝⁿ) (p : ℕ) (P : ARpCCParams) (q : ℕ)
     (ε₁ ε₂ ε₃ : ℝ) (x s : ℕ → ℝⁿ) (σ : ℕ → ℝ) : Prop where
+  /-- The tolerance $\epsilon_1$ is positive. -/
   ε₁_pos : 0 < ε₁
+  /-- The tolerance $\epsilon_2$ is positive. -/
   ε₂_pos : 0 < ε₂
+  /-- The tolerance $\epsilon_3$ is positive. -/
   ε₃_pos : 0 < ε₃
+  /-- The order satisfies $q \ge 1$. -/
   one_le_q : 1 ≤ q
+  /-- The order satisfies $q \le 3$. -/
   q_le_three : q ≤ 3
-  /-- `x₀ ∈ 𝒞`. -/
+  /-- The initial point $x_0$ lies in $\mathcal{C}$. -/
   mem_zero : x 0 ∈ C
-  /-- Steps 1–4. -/
+  /-- The sequences follow Steps 1–4 of the algorithm. -/
   run : IsARRun P.toARParams (fun k => IsApproxMinimizerCC f C P.τ₁ P.τ₂ q ε₁ ε₂ ε₃ (x k))
     (fun k => IsARpCCStep f C p P q ε₁ ε₂ ε₃ (x k) (σ k) (s k)) (fun _ => False)
     (taylorRatio f p x s) x s σ
 
-/-- **Algorithm 6.2.2** (ARp1-CC) of [cartis2022evaluation]: ARp-CC for a first-order
-approximate minimizer (`ε₂ = ε₃ = ∞`), with the step condition (6.2.10) replaced by (6.2.29),
-`ω_{m_k,𝓜,1}(s_k) ≤ θ₁ ‖s_k‖^p` (`Optimization.IsFirstOrderCCStep`). -/
+/-- **Algorithm 6.2.2** of [cartis2022evaluation] (ARp1-CC). Let $f : \mathbb{R}^n \to \mathbb{R}$,
+$\mathcal{C} \subseteq \mathbb{R}^n$, $p \in \mathbb{N}$, ARp-CC constants $P$ and
+$\epsilon_1 \in \mathbb{R}$. Sequences $x_k$, $s_k$ and $\sigma_k$ form a **run of ARp1-CC** if
+$\epsilon_1 > 0$, $x_0 \in \mathcal{C}$, and they form an adaptive-regularization run with the
+Step 1 test $\omega_{f,\mathcal{C},1}(x_k) \le \epsilon_1$ and the step conditions
+$x_k + s_k \in \mathcal{C}$, $m_k(s_k) < m_k(0)$ and
+$$\omega_{m_k,\mathcal{M},1}(s_k) \le \theta_1 \|s_k\|^p \quad \text{(6.2.29)}.$$
+This is ARp-CC for a first-order minimizer ($\epsilon_2 = \epsilon_3 = \infty$) with the
+condition (6.2.10) replaced by (6.2.29).
+
+The step conditions are `Optimization.IsFirstOrderCCStep`. -/
 structure algorithm_6_2_2 (f : ℝⁿ → ℝ) (C : Set ℝⁿ) (p : ℕ) (P : ARpCCParams) (ε₁ : ℝ)
     (x s : ℕ → ℝⁿ) (σ : ℕ → ℝ) : Prop where
+  /-- The tolerance $\epsilon_1$ is positive. -/
   ε₁_pos : 0 < ε₁
-  /-- `x₀ ∈ 𝒞`. -/
+  /-- The initial point $x_0$ lies in $\mathcal{C}$. -/
   mem_zero : x 0 ∈ C
-  /-- Steps 1–4. -/
+  /-- The sequences follow Steps 1–4 of the algorithm. -/
   run : IsARRun P.toARParams (fun k => omega1 f C (x k) ≤ ε₁)
     (fun k => IsFirstOrderCCStep f C p P.θ₁ (x k) (σ k) (s k)) (fun _ => False)
     (taylorRatio f p x s) x s σ
 
-/-- The mixed measure `ω_{k+1,2} = -min_{d ∈ 𝓜¹_k(s_k) ∩ 𝓑} ∇²f(x_k + s_k)[d]²` (6.2.14) of
-[cartis2022evaluation] (objective tensor, model admissible set). -/
+/-- **Equation (6.2.14)** of [cartis2022evaluation]. With the notation of (6.2.1), the **mixed
+second-order measure** combines the objective tensor at $x + s$ with the model set:
+$$\omega_{k+1,2} = -\min_{d \in \mathcal{M}^1_k(s) \cap \mathcal{B}} \nabla^2 f(x + s)[d]^2.$$
+-/
 noncomputable def omegaNext2 (f : ℝⁿ → ℝ) (C : Set ℝⁿ) (p : ℕ) (θ₁ ε₁ : ℝ) (x : ℝⁿ) (σ : ℝ)
     (s : ℝⁿ) : ℝ :=
   formCriticality (iteratedFDeriv ℝ 2 f (x + s)) (modelSteps₁ f C p θ₁ ε₁ x σ s)
 
-/-- The mixed measure `ω_{k+1,3} = -min_{d ∈ 𝓜²_k(s_k) ∩ 𝓑} ∇³f(x_k + s_k)[d]³` (6.2.16) of
-[cartis2022evaluation]. -/
+/-- **Equation (6.2.16)** of [cartis2022evaluation]. With the notation of (6.2.1) and (6.2.2), the
+**mixed third-order measure** is
+$$\omega_{k+1,3} = -\min_{d \in \mathcal{M}^2_k(s) \cap \mathcal{B}} \nabla^3 f(x + s)[d]^3.$$
+-/
 noncomputable def omegaNext3 (f : ℝⁿ → ℝ) (C : Set ℝⁿ) (p : ℕ) (θ₁ θ₂ ε₁ ε₂ : ℝ) (x : ℝⁿ)
     (σ : ℝ) (s : ℝⁿ) : ℝ :=
   formCriticality (iteratedFDeriv ℝ 3 f (x + s)) (modelSteps₂ f C p θ₁ θ₂ ε₁ ε₂ x σ s)
@@ -268,30 +389,40 @@ section Membership
 
 variable {f : ℝⁿ → ℝ} {C : Set ℝⁿ} {p : ℕ} {θ₁ θ₂ ε₁ ε₂ σ : ℝ} {x s d : ℝⁿ}
 
+/-- A step $d$ lies in $\mathcal{M}^0_k(s)$ if and only if $x + s + d \in \mathcal{C}$. -/
 theorem mem_modelSteps₀ : d ∈ modelSteps₀ C x s ↔ x + s + d ∈ C := Iff.rfl
 
+/-- A step $d$ lies in $\mathcal{M}^1_k(s)$ if and only if $d \in \mathcal{M}^0_k(s)$ and
+$|\nabla_s m_k(s)[d]| \le \theta_1 \epsilon_1$. -/
 theorem mem_modelSteps₁ :
     d ∈ modelSteps₁ f C p θ₁ ε₁ x σ s ↔ d ∈ modelSteps₀ C x s ∧
       |iteratedFDeriv ℝ 1 (regularizedModel (ftaylorSeries ℝ f x) p σ) s (fun _ => d)| ≤
         θ₁ * ε₁ := Iff.rfl
 
+/-- A step $d$ lies in $\mathcal{M}^2_k(s)$ if and only if $d \in \mathcal{M}^1_k(s)$ and
+$|\nabla^2_s m_k(s)[d]^2| \le \theta_2 \epsilon_2$. -/
 theorem mem_modelSteps₂ :
     d ∈ modelSteps₂ f C p θ₁ θ₂ ε₁ ε₂ x σ s ↔ d ∈ modelSteps₁ f C p θ₁ ε₁ x σ s ∧
       |iteratedFDeriv ℝ 2 (regularizedModel (ftaylorSeries ℝ f x) p σ) s (fun _ => d)| ≤
         θ₂ * ε₂ := Iff.rfl
 
+/-- If $x + s \in \mathcal{C}$, then $0 \in \mathcal{M}^0_k(s)$. -/
 theorem zero_mem_modelSteps₀ (h : x + s ∈ C) : 0 ∈ modelSteps₀ C x s := by
   simpa [mem_modelSteps₀] using h
 
+/-- If $x + s \in \mathcal{C}$ and $\theta_1 \epsilon_1 \ge 0$, then $0 \in \mathcal{M}^1_k(s)$. -/
 theorem zero_mem_modelSteps₁ (h : x + s ∈ C) (hε : 0 ≤ θ₁ * ε₁) :
     0 ∈ modelSteps₁ f C p θ₁ ε₁ x σ s :=
   (zero_mem_restrictedSteps le_rfl hε).2 (zero_mem_modelSteps₀ h)
 
+/-- If $x + s \in \mathcal{C}$, $\theta_1 \epsilon_1 \ge 0$ and $\theta_2 \epsilon_2 \ge 0$, then
+$0 \in \mathcal{M}^2_k(s)$. -/
 theorem zero_mem_modelSteps₂ (h : x + s ∈ C) (hε₁ : 0 ≤ θ₁ * ε₁) (hε₂ : 0 ≤ θ₂ * ε₂) :
     0 ∈ modelSteps₂ f C p θ₁ θ₂ ε₁ ε₂ x σ s :=
   (zero_mem_restrictedSteps one_le_two hε₂).2 (zero_mem_modelSteps₁ h hε₁)
 
-/-- `𝓜⁰_k(s_k) = 𝒞(x_{k+1})`, so `ω_{m,𝓜,1}` and `ω_{f,𝒞,1}(x + s)` range over the same set. -/
+/-- The set $\mathcal{M}^0_k(s)$ is the set $\mathcal{C}(x + s)$ of feasible steps at $x + s$, so
+$\omega_{m,\mathcal{M},1}(s)$ and $\omega_{f,\mathcal{C},1}(x + s)$ range over the same set. -/
 theorem modelSteps₀_eq : modelSteps₀ C x s = feasibleSteps C (x + s) := rfl
 
 end Membership
@@ -303,10 +434,16 @@ section Generic
 variable {f : ℝⁿ → ℝ} {C : Set ℝⁿ} {p : ℕ} {L : ℝ} {P : ARpCCParams}
   {test step : ℕ → Prop} {x s : ℕ → ℝⁿ} {σ : ℕ → ℝ}
 
-/-- **"Lemma 4.1.2 continues to hold"** ([cartis2022evaluation], §6.2.2) for ARp-CC, ARp1-CC
-(and every adaptive-regularization run over `𝒞` whose steps keep the trial point feasible and
-decrease the model): under C.CNe and f.DpL.C, up to (and including) the first termination
-index, `x_k ∈ 𝒞` and `σ_min ≤ σ_k ≤ σ_max = max(σ₀, γ₃ L/(1 - η₂))`. -/
+/-- **Section 6.2.2** of [cartis2022evaluation], "Lemma 4.1.2 continues to hold". Let $\mathcal{C}$
+satisfy C.CNe and $f$ satisfy f.DpL.C with constant $L$. Consider an adaptive-regularization run
+with ratio (4.1.15), any termination test and any step conditions, such that
+$x_0 \in \mathcal{C}$ and every step that satisfies the step conditions keeps $x_k + s_k$ in
+$\mathcal{C}$ and decreases the model, $m_k(s_k) < m_k(0)$. If the test fails at all iterations
+$j < k$, then $x_k \in \mathcal{C}$ and
+$$\sigma_{\min} \le \sigma_k \le \sigma_{\max} = \max\left(\sigma_0, \frac{\gamma_3 L}{1 -
+  \eta_2}\right).$$
+
+This covers ARp-CC and ARp1-CC. -/
 theorem arpcc_sigma_le
     (h : IsARRun P.toARParams test step (fun _ => False) (taylorRatio f p x s) x s σ)
     (hC : AssumptionCNe C) (hf : AssumptionDpLC f C p L) (hx0 : x 0 ∈ C)
@@ -318,10 +455,14 @@ theorem arpcc_sigma_le
   h.sigma_le hC.convex hf.contDiffAt hf.lipschitz hx0 (fun k _ hs => hstep k hs) k
     (IsARRun.forall_lt_not_stop_iff.2 hk)
 
-/-- **"Lemma 4.1.1 continues to hold"** ([cartis2022evaluation], §6.2.2) together with the
-decrease (4.1.37) on successful iterations: before termination,
-`T_{f,p}(x_k, 0) - T_{f,p}(x_k, s_k) > σ_k/(p+1)! ‖s_k‖^{p+1}`, and if iteration `k` is
-successful then `x_{k+1} = x_k + s_k` and `f(x_k) - f(x_{k+1}) ≥ η₁ σ_min/(p+1)! ‖s_k‖^{p+1}`. -/
+/-- **Section 6.2.2** of [cartis2022evaluation], "Lemma 4.1.1 continues to hold", with the decrease
+(4.1.37). Consider an adaptive-regularization run with ratio (4.1.15) in which every step that
+satisfies the step conditions decreases the model. If the test fails at all iterations
+$j \le k$, then
+$$T_{f,p}(x_k, 0) - T_{f,p}(x_k, s_k) > \frac{\sigma_k}{(p+1)!} \|s_k\|^{p+1},$$
+and if iteration $k$ is successful, then $x_{k+1} = x_k + s_k$ and
+$$f(x_k) - f(x_{k+1}) \ge \frac{\eta_1 \sigma_{\min}}{(p+1)!} \|s_k\|^{p+1}.$$
+-/
 theorem arpcc_sub_ge
     (h : IsARRun P.toARParams test step (fun _ => False) (taylorRatio f p x s) x s σ)
     (hstep : ∀ k, step k →
@@ -350,9 +491,9 @@ section Estimates
 
 variable {f : ℝⁿ → ℝ} {C : Set ℝⁿ} {p : ℕ} {L : ℝ}
 
-/-- The core of (6.2.13), (6.2.15), (6.2.17): if the model measure of order `j ≤ p` over `T ∋ 0`
-is at most `θ ε` while the objective's exceeds `ε`, then
-`‖s‖^{p-j+1} > (p-j+1)! (1 - θ)/(L + σ_max) ε`. -/
+/-- The core of (6.2.13), (6.2.15) and (6.2.17): if, for $j \le p$, the model measure of order $j$
+over a set $T \ni 0$ is at most $\theta \epsilon$ while the objective measure exceeds
+$\epsilon$, then $\|s\|^{p-j+1} > (p-j+1)! (1 - \theta) \epsilon / (L + \sigma_{\max})$. -/
 private theorem pow_gt_of_lt_formCriticality (hf : AssumptionDpLC f C p L) (hC : Convex ℝ C)
     {x s : ℝⁿ} {σ σmax θ ε : ℝ} (hx : x ∈ C) (hxs : x + s ∈ C) (hσ : 0 ≤ σ)
     (hσmax : σ ≤ σmax) (hpos : 0 < L + σmax) {j : ℕ} (hj : j ≤ p) {T : Set ℝⁿ} (hT : 0 ∈ T)
@@ -372,8 +513,8 @@ private theorem pow_gt_of_lt_formCriticality (hf : AssumptionDpLC f C p L) (hC :
   rw [div_mul_eq_mul_div, div_lt_iff₀ hpos]
   linarith
 
-/-- (6.2.23) on the unit ball, as a bound on the model tensor: for `j ≤ p` and `‖d‖ ≤ 1`,
-`|∇^j m(s)[d]^j| ≤ (L + σ_max)/(p-j+1)! ‖s‖^{p-j+1} + |∇^j f(x+s)[d]^j|`. -/
+/-- The bound (6.2.23) on the unit ball: for $j \le p$ and $\|d\| \le 1$, $|\nabla^j m(s)[d]^j| \le
+(L + \sigma_{\max}) \|s\|^{p-j+1} / (p-j+1)! + |\nabla^j f(x+s)[d]^j|$. -/
 private theorem abs_model_le (hf : AssumptionDpLC f C p L) (hC : Convex ℝ C) {x s : ℝⁿ}
     {σ σmax : ℝ} (hx : x ∈ C) (hxs : x + s ∈ C) (hσ : 0 ≤ σ) (hσmax : σ ≤ σmax) {j : ℕ}
     (hj : j ≤ p) {d : ℝⁿ} (hd : ‖d‖ ≤ 1) :
@@ -390,7 +531,7 @@ private theorem abs_model_le (hf : AssumptionDpLC f C p L) (hC : Convex ℝ C) {
   rw [abs_sub_comm] at h3
   linarith
 
-/-- `(t^m)^{(p+1)/m} = t^{p+1}` for `t ≥ 0`, `m ≠ 0`. -/
+/-- For $t \ge 0$ and $m \ne 0$, $(t^m)^{(p+1)/m} = t^{p+1}$. -/
 private theorem pow_rpow_div {t : ℝ} (ht : 0 ≤ t) {m : ℕ} (hm : m ≠ 0) (p : ℕ) :
     (t ^ m) ^ (((p : ℝ) + 1) / m) = t ^ (p + 1) := by
   have hm' : (m : ℝ) ≠ 0 := by exact_mod_cast hm
@@ -401,8 +542,16 @@ end Estimates
 
 /-! ### Lemmas 6.2.1 and 6.2.2 -/
 
-/-- The constant `κ_j^cc = η₁ σ_min/(p+1)! ((p-j+1)! (1 - θ)/(L + σ_max))^{(p+1)/(p-j+1)}` of
-Lemma 6.2.2 of [cartis2022evaluation] (with the corrected prefactor `1/(p+1)!`), for `θ = θ_j`. -/
+/-- **Lemma 6.2.2** of [cartis2022evaluation], the constants. Let $P$ be ARp-CC constants,
+$L \in \mathbb{R}$, $p, j \in \mathbb{N}$ and $\theta \in \mathbb{R}$. The constant is
+$$\kappa^{cc}_j = \frac{\eta_1 \sigma_{\min}}{(p+1)!} \left(\frac{(p-j+1)! (1 - \theta)}{L +
+  \sigma_{\max}}\right)^{(p+1)/(p-j+1)},$$
+used with $\theta = \theta_j$.
+
+**Typo.** The source prints the prefactor $\eta_1 \sigma_{\min} / p!$. The decrease on a
+successful iteration is $\eta_1 \sigma_{\min} \|s\|^{p+1} / (p+1)!$ (Lemma 4.1.1), so the
+prefactor is $\eta_1 \sigma_{\min} / (p+1)!$; the constant $\kappa^S$ of Theorem 6.2.3 already
+uses $(p+1)!$. -/
 noncomputable def kappaCC (P : ARpCCParams) (L : ℝ) (p j : ℕ) (θ : ℝ) : ℝ :=
   P.η₁ * P.σmin / ((p + 1)! : ℝ) *
     (((p - j + 1)! : ℝ) * (1 - θ) / (L + P.sigmaMax L)) ^ (((p : ℝ) + 1) / ((p : ℝ) - j + 1))
@@ -412,20 +561,25 @@ namespace algorithm_6_2_1
 variable {f : ℝⁿ → ℝ} {C : Set ℝⁿ} {p q : ℕ} {L : ℝ} {P : ARpCCParams} {ε₁ ε₂ ε₃ : ℝ}
   {x s : ℕ → ℝⁿ} {σ : ℕ → ℝ}
 
-/-- The Step-2 conditions of an ARp-CC run hold before termination. -/
+/-- Along a run of ARp-CC, if the test fails at all iterations $j \le k$, then the step $s_k$
+satisfies the Step 2 conditions. -/
 theorem step (h : algorithm_6_2_1 f C p P q ε₁ ε₂ ε₃ x s σ) {k : ℕ}
     (hk : ∀ j ≤ k, ¬ IsApproxMinimizerCC f C P.τ₁ P.τ₂ q ε₁ ε₂ ε₃ (x j)) :
     IsARpCCStep f C p P q ε₁ ε₂ ε₃ (x k) (σ k) (s k) :=
   h.run.step_of_forall_le (IsARRun.forall_le_not_stop_iff.2 hk)
 
-/-- "Lemma 4.1.2 continues to hold" for ARp-CC runs (`arpcc_sigma_le`). -/
+/-- Lemma 4.1.2 for ARp-CC runs (`CartisGouldToint.Chapter06.arpcc_sigma_le`): under C.CNe and
+f.DpL.C, if the test fails at all iterations $j < k$, then $x_k \in \mathcal{C}$ and
+$\sigma_{\min} \le \sigma_k \le \sigma_{\max}$. -/
 theorem sigma_le (h : algorithm_6_2_1 f C p P q ε₁ ε₂ ε₃ x s σ) (hC : AssumptionCNe C)
     (hf : AssumptionDpLC f C p L) (k : ℕ)
     (hk : ∀ j < k, ¬ IsApproxMinimizerCC f C P.τ₁ P.τ₂ q ε₁ ε₂ ε₃ (x j)) :
     x k ∈ C ∧ P.σmin ≤ σ k ∧ σ k ≤ P.sigmaMax L :=
   arpcc_sigma_le h.run hC hf h.mem_zero (fun _ hs => ⟨hs.mem, hs.decrease⟩) k hk
 
-/-- The facts used on a successful iteration before termination. -/
+/-- On a successful iteration before termination, $x_k$ and $x_{k+1} = x_k + s_k$ lie in
+$\mathcal{C}$, $0 \le \sigma_k \le \sigma_{\max}$, and $f(x_k) - f(x_{k+1}) \ge \eta_1
+\sigma_{\min} \|s_k\|^{p+1} / (p+1)!$. -/
 private theorem succ_facts (h : algorithm_6_2_1 f C p P q ε₁ ε₂ ε₃ x s σ) (hC : AssumptionCNe C)
     (hf : AssumptionDpLC f C p L) {k : ℕ}
     (hk : ∀ j ≤ k, ¬ IsApproxMinimizerCC f C P.τ₁ P.τ₂ q ε₁ ε₂ ε₃ (x j))
@@ -437,9 +591,12 @@ private theorem succ_facts (h : algorithm_6_2_1 f C p P q ε₁ ε₂ ε₃ x s 
   obtain ⟨heq, hdec⟩ := hsucc hs
   exact ⟨hx, heq, (h.step hk).mem, P.σmin_nonneg.trans hmin, hmax, hdec⟩
 
-/-- **Lemma 6.2.1**, (6.2.13), of [cartis2022evaluation]: under C.CNe and f.DpL.C, on a
-successful iteration `k` of ARp-CC (before termination, `p ≥ 1`), if
-`ω_{f,𝒞,1}(x_{k+1}) > ε₁` then `‖s_k‖^p > p! (1 - θ₁)/(L + σ_max) ε₁`. -/
+/-- **Lemma 6.2.1** of [cartis2022evaluation], bound (6.2.13). Let $\mathcal{C}$ satisfy C.CNe, let
+$f$ satisfy f.DpL.C with constant $L$, and let $p \ge 1$. Consider a run of ARp-CC, and let $k$
+be a successful iteration such that the test fails at all iterations $j \le k$. If
+$\omega_{f,\mathcal{C},1}(x_{k+1}) > \epsilon_1$, then
+$$\|s_k\|^p > \frac{p! (1 - \theta_1)}{L + \sigma_{\max}} \epsilon_1.$$
+-/
 theorem _root_.CartisGouldToint.Chapter06.lemma_6_2_1_i
     (h : algorithm_6_2_1 f C p P q ε₁ ε₂ ε₃ x s σ) (hC : AssumptionCNe C)
     (hf : AssumptionDpLC f C p L) (hp : 1 ≤ p) {k : ℕ}
@@ -452,8 +609,11 @@ theorem _root_.CartisGouldToint.Chapter06.lemma_6_2_1_i
     (zero_mem_modelSteps₀ hxs) (h.step hk).omega1_le (by rwa [heq] at hω)
   rwa [Nat.sub_add_cancel hp] at this
 
-/-- **Lemma 6.2.1**, (6.2.15), of [cartis2022evaluation]: in the setting of `lemma_6_2_1_i`, for
-`2 ≤ q ≤ p`, if `ω_{k+1,2} > ε₂` then `‖s_k‖^{p-1} > (p-1)! (1 - θ₂)/(L + σ_max) ε₂`. -/
+/-- **Lemma 6.2.1** of [cartis2022evaluation], bound (6.2.15). In the setting of
+`CartisGouldToint.Chapter06.lemma_6_2_1_i`, let $2 \le q \le p$. If
+$\omega_{k+1,2} > \epsilon_2$, then
+$$\|s_k\|^{p-1} > \frac{(p-1)! (1 - \theta_2)}{L + \sigma_{\max}} \epsilon_2.$$
+-/
 theorem _root_.CartisGouldToint.Chapter06.lemma_6_2_1_ii
     (h : algorithm_6_2_1 f C p P q ε₁ ε₂ ε₃ x s σ) (hC : AssumptionCNe C)
     (hf : AssumptionDpLC f C p L) (hq : 2 ≤ q) (hqp : q ≤ p) {k : ℕ}
@@ -468,8 +628,11 @@ theorem _root_.CartisGouldToint.Chapter06.lemma_6_2_1_ii
   have e : p - 2 + 1 = p - 1 := by omega
   rwa [e] at this
 
-/-- **Lemma 6.2.1**, (6.2.17), of [cartis2022evaluation]: in the setting of `lemma_6_2_1_i`, for
-`q = 3 ≤ p`, if `ω_{k+1,3} > ε₃` then `‖s_k‖^{p-2} > (p-2)! (1 - θ₃)/(L + σ_max) ε₃`. -/
+/-- **Lemma 6.2.1** of [cartis2022evaluation], bound (6.2.17). In the setting of
+`CartisGouldToint.Chapter06.lemma_6_2_1_i`, let $3 \le q \le p$. If
+$\omega_{k+1,3} > \epsilon_3$, then
+$$\|s_k\|^{p-2} > \frac{(p-2)! (1 - \theta_3)}{L + \sigma_{\max}} \epsilon_3.$$
+-/
 theorem _root_.CartisGouldToint.Chapter06.lemma_6_2_1_iii
     (h : algorithm_6_2_1 f C p P q ε₁ ε₂ ε₃ x s σ) (hC : AssumptionCNe C)
     (hf : AssumptionDpLC f C p L) (hq : 3 ≤ q) (hqp : q ≤ p) {k : ℕ}
@@ -485,12 +648,21 @@ theorem _root_.CartisGouldToint.Chapter06.lemma_6_2_1_iii
   have e : p - 3 + 1 = p - 2 := by omega
   rwa [e] at this
 
-/-- **Lemma 6.2.1**, (6.2.18)–(6.2.19), of [cartis2022evaluation], **on the unit ball**: on a
-successful iteration `k` before termination, for `d ∈ 𝒞¹(x_{k+1}, ε₁)` with `‖d‖ ≤ 1`,
-`|∇_s m_k(s_k)[d]| ≤ (L + σ_max)/p! ‖s_k‖^p + τ₁ε₁` (`p ≥ 1`), and for
-`d ∈ 𝒞²(x_{k+1}, ε₁, ε₂)` with `‖d‖ ≤ 1`,
-`|∇²_s m_k(s_k)[d]²| ≤ (L + σ_max)/(p-1)! ‖s_k‖^{p-1} + τ₂ε₂` (`p ≥ 2`). (The book states both
-for all `d` in the restricted sets; its proof, through (6.2.23), covers only `‖d‖ ≤ 1`.) -/
+/-- **Lemma 6.2.1** of [cartis2022evaluation], bounds (6.2.18)–(6.2.19). Let $\mathcal{C}$ satisfy
+C.CNe and $f$ satisfy f.DpL.C with constant $L$. Consider a run of ARp-CC, and let $k$ be a
+successful iteration such that the test fails at all iterations $j \le k$. If $p \ge 1$, then
+for every $d \in \mathcal{C}^1(x_{k+1}, \epsilon_1)$ with $\|d\| \le 1$,
+$$|\nabla_s m_k(s_k)[d]| \le \frac{L + \sigma_{\max}}{p!} \|s_k\|^p + \tau_1 \epsilon_1.$$
+If $p \ge 2$, then for every $d \in \mathcal{C}^2(x_{k+1}, \epsilon_1, \epsilon_2)$ with
+$\|d\| \le 1$,
+$$|\nabla^2_s m_k(s_k)[d]^2| \le \frac{L + \sigma_{\max}}{(p-1)!} \|s_k\|^{p-1} + \tau_2
+  \epsilon_2.$$
+
+**Correction.** The source states both bounds for all $d$ in the restricted sets. Its proof,
+through (6.2.23), covers only $\|d\| \le 1$, because the error term scales like $\|d\|^j$.
+Accordingly, the inclusions $\mathcal{C}^1(x_{k+1}, \epsilon_1) \subseteq \mathcal{M}^1_k(s_k)$
+and $\mathcal{C}^2(x_{k+1}, \epsilon_1, \epsilon_2) \subseteq \mathcal{M}^2_k(s_k)$ in the proof
+of Theorem 6.2.3 are used on $\mathcal{B}$, which is all that the measures see. -/
 theorem _root_.CartisGouldToint.Chapter06.lemma_6_2_1_iv
     (h : algorithm_6_2_1 f C p P q ε₁ ε₂ ε₃ x s σ) (hC : AssumptionCNe C)
     (hf : AssumptionDpLC f C p L) {k : ℕ}
@@ -517,8 +689,9 @@ theorem _root_.CartisGouldToint.Chapter06.lemma_6_2_1_iv
     have := hd.2
     linarith
 
-/-- On a successful iteration, `‖s_k‖^m > b ε` (`1 ≤ m ≤ p + 1`, `b, ε ≥ 0`) forces the decrease
-`f(x_k) - f(x_{k+1}) > η₁ σ_min/(p+1)! b^{(p+1)/m} ε^{(p+1)/m}` (proof of Lemma 4.1.4). -/
+/-- On a successful iteration before termination, if $\|s_k\|^m > b \epsilon$ with $m \ne 0$ and
+$b, \epsilon \ge 0$, then $f(x_k) - f(x_{k+1}) > \eta_1 \sigma_{\min} b^{(p+1)/m}
+\epsilon^{(p+1)/m} / (p+1)!$, as in the proof of Lemma 4.1.4. -/
 private theorem decrease_gt (h : algorithm_6_2_1 f C p P q ε₁ ε₂ ε₃ x s σ)
     (hC : AssumptionCNe C) (hf : AssumptionDpLC f C p L) {k : ℕ}
     (hk : ∀ j ≤ k, ¬ IsApproxMinimizerCC f C P.τ₁ P.τ₂ q ε₁ ε₂ ε₃ (x j))
@@ -539,8 +712,9 @@ private theorem decrease_gt (h : algorithm_6_2_1 f C p P q ε₁ ε₂ ε₃ x s
   calc _ < P.η₁ * P.σmin / ((p + 1)! : ℝ) * ‖s k‖ ^ (p + 1) := mul_lt_mul_of_pos_left h1 hc
     _ ≤ _ := hdec
 
-/-- Lemma 6.2.2 for one order `j ∈ [1 : p]`: a long step `‖s_k‖^{p-j+1} > (p-j+1)! (1-θ)/(L +
-σ_max) ε` forces the decrease `f(x_k) - f(x_{k+1}) > κ_j^cc ε^{(p+1)/(p-j+1)}`. -/
+/-- Lemma 6.2.2 for one order $j \le p$: on a successful iteration before termination, if
+$\theta < 1$, $\epsilon \ge 0$ and $\|s_k\|^{p-j+1} > (p-j+1)! (1 - \theta) \epsilon / (L +
+\sigma_{\max})$, then $f(x_k) - f(x_{k+1}) > \kappa^{cc}_j \epsilon^{(p+1)/(p-j+1)}$. -/
 private theorem decrease_gt_kappaCC (h : algorithm_6_2_1 f C p P q ε₁ ε₂ ε₃ x s σ)
     (hC : AssumptionCNe C) (hf : AssumptionDpLC f C p L) {k : ℕ}
     (hk : ∀ j ≤ k, ¬ IsApproxMinimizerCC f C P.τ₁ P.τ₂ q ε₁ ε₂ ε₃ (x j))
@@ -559,13 +733,23 @@ private theorem decrease_gt_kappaCC (h : algorithm_6_2_1 f C p P q ε₁ ε₂ �
   rw [kappaCC, mul_assoc]
   exact this
 
-/-- **Lemma 6.2.2** of [cartis2022evaluation], **with corrected constants**: under C.CNe and
-f.DpL.C, on a successful iteration `k` of ARp-CC before termination, with
-`κ_j^cc = η₁ σ_min/(p+1)! ((p-j+1)! (1-θ_j)/(L + σ_max))^{(p+1)/(p-j+1)}`:
-if `ω_{f,𝒞,1}(x_{k+1}) > ε₁` then `f(x_k) - f(x_{k+1}) > κ_1^cc ε₁^{(p+1)/p}` (`p ≥ 1`);
-if `2 ≤ q ≤ p` and `ω_{k+1,2} > ε₂` then `f(x_k) - f(x_{k+1}) > κ_2^cc ε₂^{(p+1)/(p-1)}`;
-if `3 ≤ q ≤ p` and `ω_{k+1,3} > ε₃` then `f(x_k) - f(x_{k+1}) > κ_3^cc ε₃^{(p+1)/(p-2)}`.
-(The book's prefactor `η₁ σ_min/p!` overstates the decrease by the factor `p + 1`.) -/
+/-- **Lemma 6.2.2** of [cartis2022evaluation]. Let $\mathcal{C}$ satisfy C.CNe and $f$ satisfy
+f.DpL.C with constant $L$. Consider a run of ARp-CC of order $q \le p$, and let $k$ be a
+successful iteration such that the test fails at all iterations $j \le k$. With the constants
+$\kappa^{cc}_j$ for $\theta = \theta_j$:
+* if $\omega_{f,\mathcal{C},1}(x_{k+1}) > \epsilon_1$, then $f(x_k) - f(x_{k+1}) > \kappa^{cc}_1
+  \epsilon_1^{(p+1)/p}$;
+* if $q \ge 2$ and $\omega_{k+1,2} > \epsilon_2$, then $f(x_k) - f(x_{k+1}) > \kappa^{cc}_2
+  \epsilon_2^{(p+1)/(p-1)}$;
+* if $q \ge 3$ and $\omega_{k+1,3} > \epsilon_3$, then $f(x_k) - f(x_{k+1}) > \kappa^{cc}_3
+  \epsilon_3^{(p+1)/(p-2)}$.
+
+**Typo.** The source prints the prefactor $\eta_1 \sigma_{\min} / p!$ in $\kappa^{cc}_j$, which
+overstates the decrease by the factor $p + 1$; the prefactor here is
+$\eta_1 \sigma_{\min} / (p+1)!$.
+
+The constants are `CartisGouldToint.Chapter06.kappaCC`. Since a run has $q \ge 1$, the
+hypothesis $q \le p$ gives $p \ge 1$. -/
 theorem _root_.CartisGouldToint.Chapter06.lemma_6_2_2
     (h : algorithm_6_2_1 f C p P q ε₁ ε₂ ε₃ x s σ) (hC : AssumptionCNe C)
     (hf : AssumptionDpLC f C p L) (hqp : q ≤ p) {k : ℕ}
@@ -602,35 +786,47 @@ end algorithm_6_2_1
 
 /-! ### Theorem 6.2.3 -/
 
-/-- The `j`-th term `((L + σ_max)/((p-j+1)! (1 - θ)))^{(p+1)/(p-j+1)}` of the maximum in the
-constant `κ^S_ARpCC` of Theorem 6.2.3 of [cartis2022evaluation] (for `θ = θ_j`). -/
+/-- The $j$-th term of the maximum in the constant $\kappa^S_{\mathrm{ARpCC}}$ of Theorem 6.2.3 of
+[cartis2022evaluation]: $((L + \sigma_{\max}) / ((p-j+1)! (1 - \theta)))^{(p+1)/(p-j+1)}$, used
+with $\theta = \theta_j$. -/
 noncomputable def ccFactor (P : ARpCCParams) (L : ℝ) (p j : ℕ) (θ : ℝ) : ℝ :=
   ((L + P.sigmaMax L) / (((p - j + 1)! : ℝ) * (1 - θ))) ^ (((p : ℝ) + 1) / ((p : ℝ) - j + 1))
 
-/-- The maximum of `ccFactor` over the orders `j ∈ [1 : q]` (`q ∈ {1, 2, 3}`). -/
+/-- The maximum of the terms `CartisGouldToint.Chapter06.ccFactor` over the orders $j = 1, \dots, q$
+with $\theta = \theta_j$; for $q \le 1$ it is the first term, and for $q \ge 3$ it is the
+maximum of the three terms. -/
 noncomputable def ccMax (P : ARpCCParams) (L : ℝ) (p q : ℕ) : ℝ :=
   if q ≤ 1 then ccFactor P L p 1 P.θ₁
   else if q = 2 then max (ccFactor P L p 1 P.θ₁) (ccFactor P L p 2 P.θ₂)
   else max (max (ccFactor P L p 1 P.θ₁) (ccFactor P L p 2 P.θ₂)) (ccFactor P L p 3 P.θ₃)
 
-/-- The constant `κ^S_ARpCC = (p+1)!/(η₁ σ_min) max_{j ∈ [1:q]} ((L + σ_max)/((p-j+1)! (1 -
-θ_j)))^{(p+1)/(p-j+1)}` of Theorem 6.2.3 of [cartis2022evaluation] (`= 1/min_j κ_j^cc`). -/
+/-- **Theorem 6.2.3** of [cartis2022evaluation], the constant $\kappa^S$. Let $P$ be ARp-CC
+constants, $L \in \mathbb{R}$ and $p, q \in \mathbb{N}$. The constant is
+$$\kappa^S_{\mathrm{ARpCC}} = \frac{(p+1)!}{\eta_1 \sigma_{\min}} \max_{j \in [1 : q]}
+  \left(\frac{L + \sigma_{\max}}{(p-j+1)! (1 - \theta_j)}\right)^{(p+1)/(p-j+1)},$$
+which is $1 / \min_j \kappa^{cc}_j$. -/
 noncomputable def kappaSARpCC (P : ARpCCParams) (L : ℝ) (p q : ℕ) : ℝ :=
   ((p + 1)! : ℝ) / (P.η₁ * P.σmin) * ccMax P L p q
 
-/-- The constant `κ^A_ARpCC = κ^S_ARpCC (1 + |log γ₁|/log γ₂)` of Theorem 6.2.3 of
-[cartis2022evaluation]. -/
+/-- **Theorem 6.2.3** of [cartis2022evaluation], the constant $\kappa^A$. The constant is
+$\kappa^A_{\mathrm{ARpCC}} = \kappa^S_{\mathrm{ARpCC}} (1 + |\log \gamma_1| / \log \gamma_2)$. -/
 noncomputable def kappaAARpCC (P : ARpCCParams) (L : ℝ) (p q : ℕ) : ℝ :=
   kappaSARpCC P L p q * (1 + |Real.log P.γ₁| / Real.log P.γ₂)
 
-/-- The constant `κ^C_ARpCC = (|log γ₁| + log(σ_max/σ₀))/log γ₂ + 2` of Theorem 6.2.3 of
-[cartis2022evaluation] (also `κ^C_ARp` of Theorem 6.2.5, (4.1.46)). -/
+/-- **Theorem 6.2.3** of [cartis2022evaluation], the constant $\kappa^C$. The constant is
+$$\kappa^C_{\mathrm{ARpCC}} = \frac{|\log \gamma_1| + \log(\sigma_{\max} / \sigma_0)}{\log
+  \gamma_2} + 2.$$
+It is also the constant $\kappa^C_{\mathrm{ARp}}$ of (4.1.46) in Theorem 6.2.5. -/
 noncomputable def kappaCARpCC (P : ARpCCParams) (L : ℝ) : ℝ :=
   (|Real.log P.γ₁| + Real.log (P.sigmaMax L / P.σ₀)) / Real.log P.γ₂ + 2
 
-/-- The accuracy term `min_{j ∈ [1:q]} ε_j^{(p+1)/(p-j+1)}` of Theorem 6.2.3 of
-[cartis2022evaluation]: `min[ε₁^{(p+1)/p}, ε₂^{(p+1)/(p-1)}, ε₃^{(p+1)/(p-2)}]` for `q = 3`,
-its first two entries for `q = 2`, and `ε₁^{(p+1)/p}` for `q = 1`. -/
+/-- **Theorem 6.2.3** of [cartis2022evaluation], the accuracy term. Let $p, q \in \mathbb{N}$ and
+$\epsilon_1, \epsilon_2, \epsilon_3 \in \mathbb{R}$. The accuracy term is $\min_{j \in [1 : q]}
+\epsilon_j^{(p+1)/(p-j+1)}$: it is $\epsilon_1^{(p+1)/p}$ for $q \le 1$,
+$\min[\epsilon_1^{(p+1)/p}, \epsilon_2^{(p+1)/(p-1)}]$ for $q = 2$, and
+$\min[\epsilon_1^{(p+1)/p}, \epsilon_2^{(p+1)/(p-1)}, \epsilon_3^{(p+1)/(p-2)}]$ for $q \ge 3$.
+
+The exponents are real quotients; a zero denominator gives the exponent $0$. -/
 noncomputable def tolMin (p q : ℕ) (ε₁ ε₂ ε₃ : ℝ) : ℝ :=
   if q ≤ 1 then ε₁ ^ (((p : ℝ) + 1) / p)
   else if q = 2 then min (ε₁ ^ (((p : ℝ) + 1) / p)) (ε₂ ^ (((p : ℝ) + 1) / ((p : ℝ) - 1)))
@@ -641,12 +837,15 @@ section Constants
 
 variable {P : ARpCCParams} {L : ℝ} {p q : ℕ} {ε₁ ε₂ ε₃ : ℝ}
 
+/-- If $L \ge 0$ and $\theta < 1$, then the term `CartisGouldToint.Chapter06.ccFactor` is positive.
+-/
 theorem ccFactor_pos (hL : 0 ≤ L) {j : ℕ} {θ : ℝ} (hθ : θ < 1) : 0 < ccFactor P L p j θ := by
   have := P.sigmaMax_pos L
   have : 0 < 1 - θ := by linarith
   unfold ccFactor
   positivity
 
+/-- If $L \ge 0$, then the maximum `CartisGouldToint.Chapter06.ccMax` is positive. -/
 theorem ccMax_pos (hL : 0 ≤ L) : 0 < ccMax P L p q := by
   have h1 := ccFactor_pos (P := P) (p := p) (j := 1) hL P.θ₁_lt_one
   unfold ccMax
@@ -655,24 +854,29 @@ theorem ccMax_pos (hL : 0 ≤ L) : 0 < ccMax P L p q := by
   · exact lt_max_of_lt_left h1
   · exact lt_max_of_lt_left (lt_max_of_lt_left h1)
 
+/-- If $L \ge 0$, then $\kappa^S_{\mathrm{ARpCC}} > 0$. -/
 theorem kappaSARpCC_pos (hL : 0 ≤ L) : 0 < kappaSARpCC P L p q := by
   have := P.η₁_pos; have := P.σmin_pos; have := ccMax_pos (P := P) (p := p) (q := q) hL
   unfold kappaSARpCC
   positivity
 
+/-- If $\epsilon_1, \epsilon_2, \epsilon_3 > 0$, then the accuracy term
+$\min_j \epsilon_j^{(p+1)/(p-j+1)}$ is positive. -/
 theorem tolMin_pos (h₁ : 0 < ε₁) (h₂ : 0 < ε₂) (h₃ : 0 < ε₃) : 0 < tolMin p q ε₁ ε₂ ε₃ := by
   unfold tolMin
   split_ifs <;> positivity
 
-/-- `κ_j^cc = η₁ σ_min/(p+1)! / ccFactor_j`. -/
+/-- If $L \ge 0$ and $\theta < 1$, then $\kappa^{cc}_j$ is $\eta_1 \sigma_{\min} / (p+1)!$ divided
+by the $j$-th term `CartisGouldToint.Chapter06.ccFactor` of $\kappa^S_{\mathrm{ARpCC}}$. -/
 theorem kappaCC_eq (hL : 0 ≤ L) {j : ℕ} {θ : ℝ} (hθ : θ < 1) :
     kappaCC P L p j θ = P.η₁ * P.σmin / ((p + 1)! : ℝ) / ccFactor P L p j θ := by
   have := P.sigmaMax_pos L
   have : 0 < 1 - θ := by linarith
   rw [kappaCC, ccFactor, div_eq_mul_inv _ (_ ^ _), ← Real.inv_rpow (by positivity), inv_div]
 
-/-- The bookkeeping of the proof of Theorem 6.2.3: if `ccFactor_j ≤ ccMax` and
-`tolMin ≤ ε^e` then `tolMin/κ^S ≤ κ_j^cc ε^e`. -/
+/-- The bookkeeping of the proof of Theorem 6.2.3: if the $j$-th term is at most the maximum and the
+accuracy term is at most $\epsilon^e$, then the accuracy term divided by
+$\kappa^S_{\mathrm{ARpCC}}$ is at most $\kappa^{cc}_j \epsilon^e$. -/
 private theorem div_kappaS_le (hL : 0 ≤ L) {j : ℕ} {θ ε e : ℝ} (hθ : θ < 1) (hε : 0 ≤ ε)
     (hF : ccFactor P L p j θ ≤ ccMax P L p q) (ht : tolMin p q ε₁ ε₂ ε₃ ≤ ε ^ e) :
     tolMin p q ε₁ ε₂ ε₃ / kappaSARpCC P L p q ≤ kappaCC P L p j θ * ε ^ e := by
@@ -737,7 +941,8 @@ namespace algorithm_6_2_1
 variable {f : ℝⁿ → ℝ} {C : Set ℝⁿ} {p q : ℕ} {L flow : ℝ} {P : ARpCCParams} {ε₁ ε₂ ε₃ : ℝ}
   {x s : ℕ → ℝⁿ} {σ : ℕ → ℝ}
 
-/-- `‖s‖^m ≤ N (1 - θ)/(L + σ_max) ε` and `σ ≤ σ_max` give `(L + σ)/N ‖s‖^m ≤ (1 - θ) ε`. -/
+/-- If $0 \le t \le N (1 - \theta) \epsilon / (L + \sigma_{\max})$ and $\sigma \le \sigma_{\max}$,
+then $(L + \sigma) t / N \le (1 - \theta) \epsilon$. -/
 private theorem err_le {σ σmax N t θ ε : ℝ} (hσ : σ ≤ σmax) (hpos : 0 < L + σmax) (hN : 0 < N)
     (ht0 : 0 ≤ t) (ht : t ≤ N * (1 - θ) / (L + σmax) * ε) :
     (L + σ) / N * t ≤ (1 - θ) * ε := by
@@ -745,14 +950,19 @@ private theorem err_le {σ σmax N t θ ε : ℝ} (hσ : σ ≤ σmax) (hpos : 0
     _ ≤ (L + σmax) / N * (N * (1 - θ) / (L + σmax) * ε) := by gcongr
     _ = (1 - θ) * ε := by field_simp
 
-/-- **The decrease of the proof of Theorem 6.2.3** ([cartis2022evaluation], its version of
-(4.1.44)): under C.CNe and f.DpL.C with `q ≤ p`, on a successful iteration `k` of ARp-CC before
-termination such that `x_{k+1}` fails the termination test,
-`f(x_k) - f(x_{k+1}) ≥ min_j κ_j^cc · min_j ε_j^{(p+1)/(p-j+1)} = tolMin/κ^S_ARpCC`. If the step
-is long ((6.2.27) or, for `q ≥ 2`, (6.2.28) fails) this follows from Lemma 4.1.1; otherwise
-`𝒞¹(x_{k+1}, ε₁) ∩ 𝓑 ⊆ 𝓜¹_k(s_k)` and `𝒞²(x_{k+1}, ε₁, ε₂) ∩ 𝓑 ⊆ 𝓜²_k(s_k)` (Lemma 6.2.1 and
-(6.2.7)), so `ω_{f,𝒞,2}(x_{k+1}, ε₁) ≤ ω_{k+1,2}`, `ω_{f,𝒞,3}(x_{k+1}, ε₁, ε₂) ≤ ω_{k+1,3}`, and
-Lemma 6.2.2 applies to the failing measure. -/
+/-- **Theorem 6.2.3** of [cartis2022evaluation], the decrease of its proof (the version of
+(4.1.44)). Let $\mathcal{C}$ satisfy C.CNe and $f$ satisfy f.DpL.C with constant $L$. Consider a
+run of ARp-CC of order $q \le p$, and let $k$ be a successful iteration such that the test fails
+at all iterations $j \le k$ and also at $x_{k+1}$. Then
+$$f(x_k) - f(x_{k+1}) \ge \frac{\min_j \epsilon_j^{(p+1)/(p-j+1)}}{\kappa^S_{\mathrm{ARpCC}}}.$$
+
+If the step is long, that is, (6.2.27) fails or, for $q \ge 2$, (6.2.28) fails, the bound
+follows from Lemma 4.1.1. Otherwise Lemma 6.2.1 and (6.2.7) give $\mathcal{C}^1(x_{k+1},
+\epsilon_1) \cap \mathcal{B} \subseteq \mathcal{M}^1_k(s_k)$ and $\mathcal{C}^2(x_{k+1},
+\epsilon_1, \epsilon_2) \cap \mathcal{B} \subseteq \mathcal{M}^2_k(s_k)$, so
+$\omega_{f,\mathcal{C},2}(x_{k+1}, \epsilon_1) \le \omega_{k+1,2}$ and
+$\omega_{f,\mathcal{C},3}(x_{k+1}, \epsilon_1, \epsilon_2) \le \omega_{k+1,3}$, and Lemma 6.2.2
+applies to the measure that fails. -/
 theorem _root_.CartisGouldToint.Chapter06.arpcc_decrease_of_not_test
     (h : algorithm_6_2_1 f C p P q ε₁ ε₂ ε₃ x s σ)
     (hC : AssumptionCNe C) (hf : AssumptionDpLC f C p L) (hqp : q ≤ p) {k : ℕ}
@@ -848,14 +1058,24 @@ namespace algorithm_6_2_1
 variable {f : ℝⁿ → ℝ} {C : Set ℝⁿ} {p q : ℕ} {L flow : ℝ} {P : ARpCCParams} {ε₁ ε₂ ε₃ : ℝ}
   {x s : ℕ → ℝⁿ} {σ : ℕ → ℝ}
 
-/-- **Theorem 6.2.3** of [cartis2022evaluation]. Under C.CNe, f.DpL.C and f.bB.C, with
-`1 ≤ q ≤ p`, every ARp-CC run terminates: there is a first iteration `k_ε` at which `x_{k_ε}` is a
-`q`-th order approximate minimizer within `𝒞`, and, with
-`m_ε = min_{j ∈ [1:q]} ε_j^{(p+1)/(p-j+1)}` (`tolMin`), the number of evaluations of `f` is at
-most `κ^A_ARpCC (f(x₀) - f_low)/m_ε + κ^C_ARpCC` and that of derivatives at most
-`κ^S_ARpCC (f(x₀) - f_low)/m_ε + 2` (the book's constants; `σ_max` of (4.1.19)). Hence
-`O(max_j ε_j^{-(p+1)/(p-j+1)})` evaluations. (The book states the case `q = 3`, with `q = 1, 2`
-covered by infinite tolerances; the restriction `ε_j ≤ 1` is not needed.) -/
+/-- **Theorem 6.2.3** of [cartis2022evaluation]. Let $\mathcal{C}$ satisfy C.CNe, let $f$ satisfy
+f.DpL.C with constant $L$ and f.bB.C with $f_{\mathrm{low}}$, and let $q \le p$. Then every run
+of ARp-CC of order $q$ terminates: there is a first iteration $k_\epsilon$ at which
+$x_{k_\epsilon}$ is an approximate minimizer of order $q$ within $\mathcal{C}$. With the
+accuracy term $m_\epsilon = \min_{j \in [1 : q]} \epsilon_j^{(p+1)/(p-j+1)}$, the number of
+evaluations of $f$ is at most
+$$\kappa^A_{\mathrm{ARpCC}} \frac{f(x_0) - f_{\mathrm{low}}}{m_\epsilon} +
+  \kappa^C_{\mathrm{ARpCC}},$$
+and the number of evaluations of the derivatives is at most $\kappa^S_{\mathrm{ARpCC}} (f(x_0) -
+f_{\mathrm{low}}) / m_\epsilon + 2$. Hence the method needs
+$O(\max_j \epsilon_j^{-(p+1)/(p-j+1)})$ evaluations.
+
+**Reading.** The source states the case $q = 3$ and covers $q = 1, 2$ by infinite tolerances.
+
+**Generalization.** The restriction $\epsilon_j \le 1$ of the source is not needed.
+
+The constants are those of the source, with $\sigma_{\max}$ of (4.1.19). The counts are
+`Optimization.funEvalCount` and `Optimization.derivEvalCount` of the successful iterations. -/
 theorem _root_.CartisGouldToint.Chapter06.theorem_6_2_3
     (hC : AssumptionCNe C) (hf : AssumptionDpLC f C p L)
     (hb : AssumptionBbC f C flow) (hqp : q ≤ p) (h : algorithm_6_2_1 f C p P q ε₁ ε₂ ε₃ x s σ) :
@@ -897,10 +1117,14 @@ section Existence
 
 variable {f : ℝⁿ → ℝ} {C : Set ℝⁿ} {p q : ℕ} {P : ARpCCParams} {ε₁ ε₂ ε₃ : ℝ}
 
-/-- **Existence of ARp-CC runs** ([cartis2022evaluation], Algorithm 6.2.1) when Step 2 is always
-feasible: if at every feasible `y` that fails the termination test and for every
-`σ ≥ σ_min` some step `s` satisfies the Step-2 conditions, then a run starts from every
-`x₀ ∈ 𝒞`. (The proviso can fail for `q ≥ 2`: `algorithm_6_2_1_not_exists_step`.) -/
+/-- **Algorithm 6.2.1** of [cartis2022evaluation], existence of runs when Step 2 is always feasible.
+Let $\epsilon_1, \epsilon_2, \epsilon_3 > 0$ and $1 \le q \le 3$. Suppose that at every
+$y \in \mathcal{C}$ that is not an approximate minimizer of order $q$, and for every
+$\sigma \ge \sigma_{\min}$, some step satisfies the Step 2 conditions. Then for every
+$x_0 \in \mathcal{C}$ there is a run of ARp-CC of order $q$ that starts at $x_0$.
+
+The hypothesis can fail for $q \ge 2$
+(`CartisGouldToint.Chapter06.algorithm_6_2_1_not_exists_step`). -/
 theorem exists_algorithm_6_2_1_of_forall_exists_step (h₁ : 0 < ε₁) (h₂ : 0 < ε₂) (h₃ : 0 < ε₃)
     (hq : 1 ≤ q) (hq3 : q ≤ 3)
     (hstep : ∀ y ∈ C, ∀ σ, P.σmin ≤ σ → ¬ IsApproxMinimizerCC f C P.τ₁ P.τ₂ q ε₁ ε₂ ε₃ y →
@@ -916,10 +1140,16 @@ theorem exists_algorithm_6_2_1_of_forall_exists_step (h₁ : 0 < ε₁) (h₂ : 
       exact ⟨s, hs, hs.mem⟩) hx₀
   exact ⟨x, s, σ, hx0, h₁, h₂, h₃, hq, hq3, hx0 ▸ hx₀, hrun⟩
 
-/-- **Existence of first-order ARp-CC runs** ([cartis2022evaluation], Algorithm 6.2.1 with
-`ε₂ = ε₃ = ∞`): under C.CNe, with `f` `C^p` at the points of `𝒞` (`p ≥ 1`), a run of the
-first-order version starts from every `x₀ ∈ 𝒞` (a global minimizer of the model over `𝒞(x_k)`
-satisfies (6.2.10) with model measure `0`, `Optimization.exists_isFirstOrderCCStep`). -/
+/-- **Algorithm 6.2.1** of [cartis2022evaluation], existence of first-order runs. Let $\mathcal{C}$
+satisfy C.CNe, let $f$ be $p$ times continuously differentiable at every point of $\mathcal{C}$
+with $p \ge 1$, and let $\epsilon_1, \epsilon_2, \epsilon_3 > 0$. Then for every
+$x_0 \in \mathcal{C}$ there is a run of ARp-CC of order $q = 1$ that starts at $x_0$.
+
+**Generalization.** Differentiability is assumed only at the points of $\mathcal{C}$, not on an
+open set $\mathcal{D} \supseteq \mathcal{C}$ as in f.DpL.C.
+
+A global minimizer of the model over $\mathcal{C}(x_k)$ satisfies (6.2.10) with model measure
+$0$ (`Optimization.exists_isFirstOrderCCStep`). -/
 theorem exists_algorithm_6_2_1_one (hC : AssumptionCNe C) (hf : ∀ y ∈ C, ContDiffAt ℝ p f y)
     (hp : 1 ≤ p) (h₁ : 0 < ε₁) (h₂ : 0 < ε₂) (h₃ : 0 < ε₃) {x₀ : ℝⁿ} (hx₀ : x₀ ∈ C) :
     ∃ x s σ, x 0 = x₀ ∧ algorithm_6_2_1 f C p P 1 ε₁ ε₂ ε₃ x s σ := by
@@ -940,33 +1170,40 @@ end Existence
 
 /-! ### ARp1-CC: Lemma 6.2.4 and Theorem 6.2.5 -/
 
-/-- The constant `κ₁ = η₁ σ_min/(p+1)! (p!/(L + σ_max + θ₁ p!))^{(p+1)/p}` of (4.1.32), used by
-Lemma 6.2.4 of [cartis2022evaluation]. -/
+/-- **Equation (4.1.32)** of [cartis2022evaluation], the constant used by Lemma 6.2.4. Let $P$ be
+ARp-CC constants, $L \in \mathbb{R}$ and $p \in \mathbb{N}$. The constant is
+$$\kappa_1 = \frac{\eta_1 \sigma_{\min}}{(p+1)!} \left(\frac{p!}{L + \sigma_{\max} + \theta_1
+  p!}\right)^{(p+1)/p}.$$
+-/
 noncomputable def kappa1CC (P : ARpCCParams) (L : ℝ) (p : ℕ) : ℝ :=
   P.η₁ * P.σmin / ((p + 1)! : ℝ) *
     ((p ! : ℝ) / (L + P.sigmaMax L + P.θ₁ * p !)) ^ (((p : ℝ) + 1) / p)
 
+/-- The definition of $\kappa_1$, unfolded. -/
 theorem kappa1CC_def (P : ARpCCParams) (L : ℝ) (p : ℕ) :
     kappa1CC P L p = P.η₁ * P.σmin / ((p + 1)! : ℝ) *
       ((p ! : ℝ) / (L + P.sigmaMax L + P.θ₁ * p !)) ^ (((p : ℝ) + 1) / p) :=
   rfl
 
-/-- The constant `κ^S_ARp1CC = (p+1)!/(η₁ σ_min) ((L + σ_max + θ₁ p!)/p!)^{(p+1)/p}` of
-Theorem 6.2.5 of [cartis2022evaluation] (`= 1/κ₁`). -/
+/-- **Theorem 6.2.5** of [cartis2022evaluation], the constant $\kappa^S$. The constant is
+$$\kappa^S_{\mathrm{ARp1CC}} = \frac{(p+1)!}{\eta_1 \sigma_{\min}} \left(\frac{L +
+  \sigma_{\max} + \theta_1 p!}{p!}\right)^{(p+1)/p},$$
+which is $1 / \kappa_1$ for $L \ge 0$. -/
 noncomputable def kappaSARp1CC (P : ARpCCParams) (L : ℝ) (p : ℕ) : ℝ :=
   ((p + 1)! : ℝ) / (P.η₁ * P.σmin) *
     ((L + P.sigmaMax L + P.θ₁ * p !) / (p ! : ℝ)) ^ (((p : ℝ) + 1) / p)
 
-/-- The constant `κ^A_ARp1CC = κ^S_ARp1CC (1 + |log γ₁|/log γ₂)` of Theorem 6.2.5 of
-[cartis2022evaluation]. -/
+/-- **Theorem 6.2.5** of [cartis2022evaluation], the constant $\kappa^A$. The constant is
+$\kappa^A_{\mathrm{ARp1CC}} = \kappa^S_{\mathrm{ARp1CC}} (1 + |\log \gamma_1| / \log \gamma_2)$. -/
 noncomputable def kappaAARp1CC (P : ARpCCParams) (L : ℝ) (p : ℕ) : ℝ :=
   kappaSARp1CC P L p * (1 + |Real.log P.γ₁| / Real.log P.γ₂)
 
-/-- The constant `κ₁` of (4.1.32) is positive. -/
+/-- If $L \ge 0$, then $\kappa_1 > 0$. -/
 theorem kappa1CC_pos {P : ARpCCParams} {L : ℝ} {p : ℕ} (hL : 0 ≤ L) : 0 < kappa1CC P L p := by
   have := P.η₁_pos; have := P.σmin_pos; have := P.sigmaMax_pos L; have := P.θ₁_pos
   unfold kappa1CC; positivity
 
+/-- If $L \ge 0$, then $\kappa_1 \kappa^S_{\mathrm{ARp1CC}} = 1$. -/
 theorem kappa1CC_mul_kappaSARp1CC {P : ARpCCParams} {L : ℝ} (hL : 0 ≤ L) (p : ℕ) :
     kappa1CC P L p * kappaSARp1CC P L p = 1 := by
   have := P.η₁_pos; have := P.σmin_pos; have := P.sigmaMax_pos L; have := P.θ₁_pos
@@ -981,9 +1218,16 @@ section ARp1CC
 
 variable {f : ℝⁿ → ℝ} {C : Set ℝⁿ} {p : ℕ} {P : ARpCCParams} {ε₁ : ℝ}
 
-/-- **Existence of ARp1-CC runs** ([cartis2022evaluation], Algorithm 6.2.2): under C.CNe, with
-`f` `C^p` at the points of `𝒞` (`p ≥ 1`), a run starts from every `x₀ ∈ 𝒞` (a global minimizer
-of the model over `𝒞(x_k)` satisfies (6.2.29), `Optimization.exists_isFirstOrderCCStep`). -/
+/-- **Algorithm 6.2.2** of [cartis2022evaluation], existence of runs. Let $\mathcal{C}$ satisfy
+C.CNe, let $f$ be $p$ times continuously differentiable at every point of $\mathcal{C}$ with
+$p \ge 1$, and let $\epsilon_1 > 0$. Then for every $x_0 \in \mathcal{C}$ there is a run of
+ARp1-CC that starts at $x_0$.
+
+**Generalization.** Differentiability is assumed only at the points of $\mathcal{C}$, not on an
+open set $\mathcal{D} \supseteq \mathcal{C}$ as in f.DpL.C.
+
+A global minimizer of the model over $\mathcal{C}(x_k)$ satisfies (6.2.29)
+(`Optimization.exists_isFirstOrderCCStep`). -/
 theorem exists_algorithm_6_2_2 (hC : AssumptionCNe C) (hf : ∀ y ∈ C, ContDiffAt ℝ p f y)
     (hp : 1 ≤ p) (h₁ : 0 < ε₁) {x₀ : ℝⁿ} (hx₀ : x₀ ∈ C) :
     ∃ x s σ, x 0 = x₀ ∧ algorithm_6_2_2 f C p P ε₁ x s σ := by
@@ -1000,15 +1244,20 @@ namespace algorithm_6_2_2
 
 variable {x s : ℕ → ℝⁿ} {σ : ℕ → ℝ} {L flow : ℝ}
 
-/-- "Lemma 4.1.2 continues to hold" for ARp1-CC runs (`arpcc_sigma_le`). -/
+/-- Lemma 4.1.2 for ARp1-CC runs (`CartisGouldToint.Chapter06.arpcc_sigma_le`): under C.CNe and
+f.DpL.C, if $\omega_{f,\mathcal{C},1}(x_j) > \epsilon_1$ for all $j < k$, then
+$x_k \in \mathcal{C}$ and $\sigma_{\min} \le \sigma_k \le \sigma_{\max}$. -/
 theorem sigma_le (h : algorithm_6_2_2 f C p P ε₁ x s σ) (hC : AssumptionCNe C)
     (hf : AssumptionDpLC f C p L) (k : ℕ) (hk : ∀ j < k, ¬ omega1 f C (x j) ≤ ε₁) :
     x k ∈ C ∧ P.σmin ≤ σ k ∧ σ k ≤ P.sigmaMax L :=
   arpcc_sigma_le h.run hC hf h.mem_zero (fun _ hs => ⟨hs.mem, hs.decrease⟩) k hk
 
-/-- **Lemma 6.2.4** of [cartis2022evaluation]: under C.CNe and f.DpL.C (`p ≥ 1`), on a
-successful iteration `k` of ARp1-CC before termination,
-`f(x_k) - f(x_{k+1}) ≥ κ₁ ω_{f,𝒞,1}(x_{k+1})^{(p+1)/p}` with `κ₁` of (4.1.32). -/
+/-- **Lemma 6.2.4** of [cartis2022evaluation]. Let $\mathcal{C}$ satisfy C.CNe, let $f$ satisfy
+f.DpL.C with constant $L$, and let $p \ge 1$. Consider a run of ARp1-CC, and let $k$ be a
+successful iteration such that $\omega_{f,\mathcal{C},1}(x_j) > \epsilon_1$ for all $j \le k$.
+Then
+$$f(x_k) - f(x_{k+1}) \ge \kappa_1 \, \omega_{f,\mathcal{C},1}(x_{k+1})^{(p+1)/p},$$
+with $\kappa_1$ of (4.1.32). -/
 theorem _root_.CartisGouldToint.Chapter06.lemma_6_2_4
     (h : algorithm_6_2_2 f C p P ε₁ x s σ) (hC : AssumptionCNe C)
     (hf : AssumptionDpLC f C p L) (hp : 1 ≤ p) {k : ℕ}
@@ -1021,11 +1270,19 @@ theorem _root_.CartisGouldToint.Chapter06.lemma_6_2_4
   exact hstep.sub_ge hC.convex hf.contDiffAt hf.lipschitz hf.nonneg hx hp P.θ₁_pos.le
     P.σmin_nonneg hmin hmax P.η₁_pos hs
 
-/-- **Theorem 6.2.5** of [cartis2022evaluation]. Under C.CNe, f.DpL.C and f.bB.C (`p ≥ 1`),
-every ARp1-CC run terminates at a first iteration `k_ε` with `ω_{f,𝒞,1}(x_{k_ε}) ≤ ε₁`, after at
-most `κ^A_ARp1CC (f(x₀) - f_low)/ε₁^{(p+1)/p} + κ^C_ARp` evaluations of `f` and at most
-`κ^S_ARp1CC (f(x₀) - f_low)/ε₁^{(p+1)/p} + 2` evaluations of derivatives. (The restriction
-`ε₁ ≤ 1` is not needed.) -/
+/-- **Theorem 6.2.5** of [cartis2022evaluation]. Let $\mathcal{C}$ satisfy C.CNe, let $f$ satisfy
+f.DpL.C with constant $L$ and f.bB.C with $f_{\mathrm{low}}$, and let $p \ge 1$. Then every run
+of ARp1-CC terminates at a first iteration $k_\epsilon$ with
+$\omega_{f,\mathcal{C},1}(x_{k_\epsilon}) \le \epsilon_1$. The number of evaluations of $f$ is
+at most
+$$\kappa^A_{\mathrm{ARp1CC}} \frac{f(x_0) - f_{\mathrm{low}}}{\epsilon_1^{(p+1)/p}} +
+  \kappa^C_{\mathrm{ARp}},$$
+and the number of evaluations of the derivatives is at most $\kappa^S_{\mathrm{ARp1CC}}
+(f(x_0) - f_{\mathrm{low}}) / \epsilon_1^{(p+1)/p} + 2$.
+
+**Generalization.** The restriction $\epsilon_1 \le 1$ of the source is not needed.
+
+The constant $\kappa^C_{\mathrm{ARp}}$ is `CartisGouldToint.Chapter06.kappaCARpCC`. -/
 theorem _root_.CartisGouldToint.Chapter06.theorem_6_2_5
     (hC : AssumptionCNe C) (hf : AssumptionDpLC f C p L)
     (hb : AssumptionBbC f C flow) (hp : 1 ≤ p) (h : algorithm_6_2_2 f C p P ε₁ x s σ) :
@@ -1078,7 +1335,7 @@ end ARp1CC
 
 section Counterexample
 
-/-- Derivative of a cubic without constant term. -/
+/-- The derivative of $t \mapsto a t + b t^2 + c t^3$ is $t \mapsto a + 2 b t + 3 c t^2$. -/
 private theorem deriv_cubic (a b c : ℝ) :
     deriv (fun t : ℝ => a * t + b * t ^ 2 + c * t ^ 3) =
       fun t => a + 2 * b * t + 3 * c * t ^ 2 := by
@@ -1087,7 +1344,8 @@ private theorem deriv_cubic (a b c : ℝ) :
     ((hasDerivAt_pow 3 t).const_mul c)
   refine this.deriv.trans ?_; push_cast; ring
 
-/-- The first three derivatives of a cubic without constant term. -/
+/-- The first three derivatives of $t \mapsto a t + b t^2 + c t^3$ at $t$ are $a + 2 b t + 3 c t^2$,
+$2 b + 6 c t$ and $6 c$. -/
 private theorem iteratedDeriv_cubic (a b c t : ℝ) :
     iteratedDeriv 1 (fun t : ℝ => a * t + b * t ^ 2 + c * t ^ 3) t =
         a + 2 * b * t + 3 * c * t ^ 2 ∧
@@ -1109,17 +1367,29 @@ private theorem iteratedDeriv_cubic (a b c t : ℝ) :
   · rw [iteratedDeriv_succ, iteratedDeriv_one, h1, h2]
   · rw [iteratedDeriv_succ, iteratedDeriv_succ, iteratedDeriv_one, h1, h2, h3]
 
-/-- **Step 2 of ARp-CC can be infeasible for `q ≥ 2`** (a gap in [cartis2022evaluation],
-§6.2.1: the book asserts that the model measures (6.2.3)–(6.2.5) "will all be small in the
-neighbourhood of any … global minimizer of `m_k`", but Step 2 also demands
-`m_k(s_k) < m_k(0)`). For all ARp-CC constants and `ε₁, ε₂ > 0`, `q ≥ 2`, take `n = 1`,
-`𝒞 = {x | x₁ ≥ 0}`, `p = 3`, `g = τ₁ε₁`, `K = 2ε₂`, `c = K²/(8g)` and
-`f(x) = g x₁ - K/2 x₁² + c x₁³`. Then C.CNe, f.DpL.C (`L = 0`) and f.bB.C (`f_low = 0`) hold and
-`x = 0` is a strict global minimizer of `f` on `𝒞`; yet `x = 0` fails the second-order test
-(`ω_{f,𝒞,2}(0, ε₁) ≥ K > ε₂`, attained in the ascent direction `d = 1`), and no step satisfies
-the Step-2 conditions at `x = 0` for any `σ ≥ 0`, because
-`m(s) - m(0) = s(g - K s/2 + c s²) + σ s⁴/24 ≥ 0` for `s ≥ 0`. Hence no ARp-CC run starts from
-`x₀ = 0`. -/
+/-- **Algorithm 6.2.1** of [cartis2022evaluation], Step 2 can be infeasible for $q \ge 2$. Let $P$
+be ARp-CC constants, let $\epsilon_1, \epsilon_2 > 0$, let $\epsilon_3 \in \mathbb{R}$, and let
+$q \ge 2$. Then there are a set $\mathcal{C} \subseteq \mathbb{R}^1$ and a function
+$f : \mathbb{R}^1 \to \mathbb{R}$ such that:
+* $\mathcal{C}$ satisfies C.CNe, $f$ satisfies f.DpL.C with $p = 3$ and $L = 0$, and $f$
+  satisfies f.bB.C with $f_{\mathrm{low}} = 0$;
+* $0 \in \mathcal{C}$ and $f(0) < f(y)$ for every $y \in \mathcal{C}$ with $y \ne 0$, so $0$ is
+  a strict global minimizer of $f$ on $\mathcal{C}$;
+* $0$ is not an approximate minimizer of order $q$ within $\mathcal{C}$;
+* for every $\sigma \ge 0$, no step satisfies the Step 2 conditions at $x = 0$ with $p = 3$;
+* no run of ARp-CC with $p = 3$ starts at $x_0 = 0$.
+
+**Correction.** The source asserts in Section 6.2.1 that the model measures (6.2.3)–(6.2.5)
+"will all be small in the neighbourhood of any … global minimizer of $m_k$", but Step 2 also
+demands $m_k(s_k) < m_k(0)$, and this need not be possible. The second-order measure ranges over
+directions with $|\nabla f(x)[d]| \le \tau_1 \epsilon_1$, which include ascent directions.
+Theorem 6.2.3 holds for every run.
+
+The example is $\mathcal{C} = \{x \mid x_1 \ge 0\}$ and
+$f(x) = g x_1 - \frac{K}{2} x_1^2 + c x_1^3$ with $g = \tau_1 \epsilon_1$, $K = 2 \epsilon_2$
+and $c = K^2 / (8 g)$. Then $\omega_{f,\mathcal{C},2}(0, \epsilon_1) \ge K > \epsilon_2$,
+attained in the ascent direction $d = 1$, while $m(s) - m(0) = s(g - K s / 2 + c s^2) + \sigma
+s^4 / 24 \ge 0$ for $s \ge 0$. -/
 theorem algorithm_6_2_1_not_exists_step (P : ARpCCParams) {ε₁ ε₂ ε₃ : ℝ} (h₁ : 0 < ε₁)
     (h₂ : 0 < ε₂) {q : ℕ} (hq : 2 ≤ q) :
     ∃ (C : Set (EuclideanSpace ℝ (Fin 1))) (f : EuclideanSpace ℝ (Fin 1) → ℝ),

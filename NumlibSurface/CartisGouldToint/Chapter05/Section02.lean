@@ -6,55 +6,80 @@ import Mathlib.Analysis.InnerProductSpace.PiL2
 import Numlib.Analysis.Calculus.MultivariateTaylor.LinearComp
 
 /-!
-# Cartis–Gould–Toint §5.2: Partially separable problems
+# Cartis, Gould and Toint, Section 5.2: Partially separable problems
 
-Surface file for C. Cartis, N. I. M. Gould and Ph. L. Toint, *Evaluation Complexity of
-Algorithms for Nonconvex Optimization* [cartis2022evaluation], §5.2. Functions are on
-`ℝⁿ = EuclideanSpace ℝ (Fin n)`; the `n_i × n` matrices `U_i` are continuous linear maps
-`ℝⁿ → ℝ^{n_i}`, and `T_{f,p}(x, s)` is `taylorPolynomial f p x s`.
+This module formalizes the partially separable functions of Section 5.2 of [cartis2022evaluation]. A
+function $f : \mathbb{R}^n \to \mathbb{R}$ is partially separable if
+$f(x) = \sum_{i=1}^m f_i(U_i x)$ for element functions $f_i : \mathbb{R}^{n_i} \to \mathbb{R}$ and
+$n_i \times n$ matrices $U_i$ (5.2.1). The Taylor polynomial of such a function then splits in the
+same way (5.2.2), so that a Taylor model of $f$ is a sum of Taylor models of the element functions.
+The proof uses the Taylor polynomial of a function composed with a linear map from
+`Numlib.Analysis.Calculus.MultivariateTaylor.LinearComp`. The section has no numbered results.
 
-## Main definitions and results
+## Main definitions
 
-* `IsPartiallySeparable` — partial separability (5.2.1), `f(x) = ∑ᵢ fᵢ(Uᵢ x)`.
-* `taylorPolynomial_partiallySeparable` — the decomposition (5.2.2) of the Taylor model,
-  `T_{f,p}(x, s) = ∑ᵢ T_{fᵢ,p}(Uᵢ x, Uᵢ s)`.
+* Equation (5.2.1), `CartisGouldToint.Chapter05.IsPartiallySeparable`: $f(x) = \sum_i f_i(U_i x)$
+  for all $x$.
 
-The section has no numbered results. Its remark that partially separable models can be used in
-trust-region and adaptive-regularization methods without changing their complexity bounds is a
-statement about the inputs of those algorithms, and the structured trust regions and element-wise
-regularizations of the Notes are not formalized.
+## Main results
+
+* Equation (5.2.2), `CartisGouldToint.Chapter05.taylorPolynomial_partiallySeparable`:
+  $T_{f,p}(x, s) = \sum_i T_{f_i,p}(U_i x, U_i s)$.
+
+## Implementation notes
+
+* The space $\mathbb{R}^n$ is `EuclideanSpace ℝ (Fin n)`. The matrices $U_i$ are continuous linear
+  maps from $\mathbb{R}^n$ to $\mathbb{R}^{n_i}$, and $T_{f,p}(x, s)$ is `taylorPolynomial f p x s`.
+
+## Not formalized
+
+* The remark that partially separable models can be used in trust-region and adaptive-regularization
+  methods without a change of their complexity bounds. It is a statement about the inputs of those
+  algorithms.
+* The structured trust regions and the element-wise regularizations of the Notes.
 -/
 
 namespace CartisGouldToint.Chapter05
 
 variable {n m : ℕ} {d : Fin m → ℕ}
 
-/-- `f : ℝⁿ → ℝ` is **partially separable** ([cartis2022evaluation], (5.2.1)) with the element
-functions `fᵢ : ℝ^{dᵢ} → ℝ` and the linear maps (`dᵢ × n` matrices) `Uᵢ : ℝⁿ → ℝ^{dᵢ}`,
-`i = 1, …, m`, when `f(x) = ∑ᵢ fᵢ(Uᵢ x)` for all `x`. -/
+/-- **Equation (5.2.1)** of [cartis2022evaluation]. Let $f : \mathbb{R}^n \to \mathbb{R}$, let
+$f_i : \mathbb{R}^{n_i} \to \mathbb{R}$ for $i = 1, \dots, m$, and let
+$U_i : \mathbb{R}^n \to \mathbb{R}^{n_i}$ be linear maps. The function $f$ is **partially
+separable** with the element functions $f_i$ and the maps $U_i$ if
+$$f(x) = \sum_{i=1}^m f_i(U_i x) \quad \text{for all } x \in \mathbb{R}^n.$$
+
+The book writes $U_i$ as an $n_i \times n$ matrix. Here $U_i$ is a continuous linear map, and
+$n_i$ is `d i`. -/
 def IsPartiallySeparable (f : EuclideanSpace ℝ (Fin n) → ℝ)
     (fᵢ : (i : Fin m) → EuclideanSpace ℝ (Fin (d i)) → ℝ)
     (U : (i : Fin m) → EuclideanSpace ℝ (Fin n) →L[ℝ] EuclideanSpace ℝ (Fin (d i))) : Prop :=
   ∀ x, f x = ∑ i, fᵢ i (U i x)
 
+/-- The function $f$ is partially separable with the element functions $f_i$ and the maps $U_i$ if
+and only if $f(x) = \sum_i f_i(U_i x)$ for all $x \in \mathbb{R}^n$. -/
 theorem isPartiallySeparable_iff {f : EuclideanSpace ℝ (Fin n) → ℝ}
     {fᵢ : (i : Fin m) → EuclideanSpace ℝ (Fin (d i)) → ℝ}
     {U : (i : Fin m) → EuclideanSpace ℝ (Fin n) →L[ℝ] EuclideanSpace ℝ (Fin (d i))} :
     IsPartiallySeparable f fᵢ U ↔ ∀ x, f x = ∑ i, fᵢ i (U i x) :=
   Iff.rfl
 
-/-- A partially separable function is the sum of its element functions composed with the
-linear maps. -/
+/-- If $f$ is partially separable with the element functions $f_i$ and the maps $U_i$, then $f$ is
+the function $x \mapsto \sum_i f_i(U_i x)$. -/
 theorem IsPartiallySeparable.eq {f : EuclideanSpace ℝ (Fin n) → ℝ}
     {fᵢ : (i : Fin m) → EuclideanSpace ℝ (Fin (d i)) → ℝ}
     {U : (i : Fin m) → EuclideanSpace ℝ (Fin n) →L[ℝ] EuclideanSpace ℝ (Fin (d i))}
     (h : IsPartiallySeparable f fᵢ U) : f = fun x => ∑ i, fᵢ i (U i x) :=
   funext h
 
-/-- **(5.2.2)** of [cartis2022evaluation]: the Taylor model of a partially separable function is
-the sum of the Taylor models of its element functions,
-`T_{f,p}(x, s) = ∑ᵢ T_{fᵢ,p}(Uᵢ x, Uᵢ s)`, provided every element function `fᵢ` is `p` times
-continuously differentiable at `Uᵢ x`. -/
+/-- **Equation (5.2.2)** of [cartis2022evaluation]. Let $f : \mathbb{R}^n \to \mathbb{R}$ be
+partially separable with the element functions $f_i$ and the linear maps $U_i$, let
+$p \in \mathbb{N}$ and $x \in \mathbb{R}^n$, and suppose that each $f_i$ is $p$ times
+continuously differentiable at $U_i x$. Then for every $s \in \mathbb{R}^n$ the Taylor
+polynomials of degree $p$ satisfy
+$$T_{f,p}(x, s) = \sum_{i=1}^m T_{f_i,p}(U_i x, U_i s).$$
+
+The Taylor polynomial $T_{f,p}(x, s)$ is `taylorPolynomial f p x s`. -/
 theorem taylorPolynomial_partiallySeparable {f : EuclideanSpace ℝ (Fin n) → ℝ}
     {fᵢ : (i : Fin m) → EuclideanSpace ℝ (Fin (d i)) → ℝ}
     {U : (i : Fin m) → EuclideanSpace ℝ (Fin n) →L[ℝ] EuclideanSpace ℝ (Fin (d i))}

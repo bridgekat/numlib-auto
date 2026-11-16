@@ -9,64 +9,111 @@ import NumlibSurface.CartisGouldToint.Chapter03.Section03
 import NumlibSurface.CartisGouldToint.Chapter03.Section04
 
 /-!
-# Cartis–Gould–Toint §3.5: Optimal complexity for methods using second derivatives
+# Cartis, Gould and Toint, Section 3.5: Optimal complexity for methods using second derivatives
 
-Surface file for C. Cartis, N. I. M. Gould and Ph. L. Toint, *Evaluation Complexity of
-Algorithms for Nonconvex Optimization* [cartis2022evaluation], §§3.5.1–3.5.2 and the
-corresponding proofs of Appendix B (Lemmas 3.5.1–3.5.3, Theorem 3.5.4), and Corollary 3.5.5, on
-`ℝⁿ = EuclideanSpace ℝ (Fin n)`.
+This module formalizes Sections 3.5.1–3.5.2 of [cartis2022evaluation], with the corresponding proofs
+of Appendix B, on $\mathbb{R}^n$. Section 3.5.1 defines the class $\mathcal{M}$ of second-order
+methods. These are deterministic methods whose iterates depend only on the values $f(x_i)$,
+$\nabla f(x_i)$ and $\nabla^2 f(x_i)$ at the earlier iterates, and whose steps $s_k = x_{k+1} - x_k$
+(3.5.1) solve the regularized Newton system
+$$(\nabla^2 f(x_k) + \lambda_k I) s_k = -\nabla f(x_k) + r_k \qquad (3.5.2)$$
+with a small residual $r_k$, a multiplier $\lambda_k \ge 0$ that makes
+$\nabla^2 f(x_k) + \lambda_k I$ positive semidefinite (3.5.3), and the bound (3.5.4) on $\lambda_k$.
+Lemmas 3.5.1–3.5.3 relate the multiplier and the step length to the gradient. Theorem 3.5.4 shows
+that every method in $\mathcal{M}$ can need $\lceil \epsilon_1^{-3/2} \rceil$ iterations to reach
+$\|\nabla f(x_k)\| \le \epsilon_1$, on a one-dimensional function whose smoothness constants do not
+depend on $\epsilon_1$. Corollary 3.5.5 shows that AR2, TRε and iRN attain this bound, so that their
+complexity $O(\epsilon_1^{-3/2})$ is optimal in $\mathcal{M}$.
+
+The methods are the oracle methods `Optimization.OracleMethod` of
+`Numlib.Optimization.Complexity.OracleMethod`. The one-dimensional function interpolates the data
+(3.5.11)–(3.5.12) of `Numlib.Optimization.Complexity.SlowExample.Basic`.
 
 ## Main definitions
 
-* `IsMClassEquation f x s lam r` — the linear system (3.5.2) `(∇²f(x) + λ I) s = -∇f(x) + r`.
-* `IsMClassStepWith f κrg κrs κlam x s lam r`, `IsMClassStep f κrg κrs κlam x s` — the conditions
-  (3.5.2)–(3.5.4) on one step `s ≠ 0` from `x`, with given or existential `λ`, `r`.
-* `IsMClassMethod κrg κrs κlam M f ε` — a deterministic second-order oracle method
-  `M : Optimization.OracleMethod ℝⁿ (Optimization.Jet ℝⁿ 2)` (its iterates are functions of
-  `f(x_i), ∇f(x_i), ∇²f(x_i)` at the previous iterates) is in the class `𝓜` on `f`: every step
-  `s_k = x_{k+1} - x_k` (3.5.1) before the first `k` with `‖∇f(x_k)‖ ≤ ε` satisfies
-  (3.5.2)–(3.5.4).
-* `ridgeJet` — the second-order jet of a ridge function on `ℝ¹` (the data (3.5.11)–(3.5.12) are
-  `Optimization.secondOrderK`, `secondOrderF`, `secondOrderG`, `secondOrderH`).
+* Equations (3.5.1)–(3.5.4), `CartisGouldToint.Chapter03.IsMClassEquation`,
+  `CartisGouldToint.Chapter03.IsMClassStepWith`, `CartisGouldToint.Chapter03.IsMClassStep`: the
+  system (3.5.2) and the conditions (3.5.2)–(3.5.4) on one step.
+* Section 3.5.1, `CartisGouldToint.Chapter03.IsMClassMethod`: a second-order oracle method is in the
+  class $\mathcal{M}$ on $f$.
 
 ## Main results
 
-* `lemma_3_5_1`, `lemma_3_5_2`, `lemma_3_5_2_sqrt`, `lemma_3_5_3` — Lemmas 3.5.1–3.5.3.
-* `exists_slowSecondOrder_ridge` — the one-dimensional function of the proof of Theorem 3.5.4,
-  for arbitrary step factors `θ_k ∈ [a, b]` (also used for Corollary 3.5.5).
-* `theorem_3_5_4` — Theorem 3.5.4: for every method in `𝓜` (from any starting point) there is a
-  function satisfying f.Bb, f.gL and f.HL (constants independent of `ε₁`) on which the method
-  terminates exactly at iteration `⌈ε₁^{-3/2}⌉`.
-* `isMClassStepWith_ridge` — one-dimensional criterion for steps of class `𝓜` on ridge functions.
-* `corollary_3_5_5_i`, `corollary_3_5_5_ii`, `corollary_3_5_5_iii` — Corollary 3.5.5 for AR2, TRε
-  and iRN: runs whose steps are of class `𝓜` (constants independent of `ε₁`) terminating at
-  `⌈ε₁^{-3/2}⌉`, matching the upper bounds of Theorems 3.3.5, 3.4.5, 3.4.11.
+* Lemma 3.5.1, `CartisGouldToint.Chapter03.lemma_3_5_1`: a multiplier
+  $\lambda \le \bar\kappa_\lambda \|s\|$ satisfies (3.5.4) with $\kappa_\lambda = 2
+  \sqrt{\bar\kappa_\lambda (1 + \kappa_{rg})}$.
+* Lemma 3.5.2, `CartisGouldToint.Chapter03.lemma_3_5_2` and
+  `CartisGouldToint.Chapter03.lemma_3_5_2_sqrt`: under Assumption f.HL, $\|s\| \ge \bar\kappa_s
+  \|\nabla f(x + s)\|^{1/2}$.
+* Lemma 3.5.3, `CartisGouldToint.Chapter03.lemma_3_5_3`: if the gradients converge quadratically,
+  then $\|s_k\| \ge \bar\kappa_s \|\nabla f(x_{k+1})\|^{1/2}$.
+* Theorem 3.5.4, `CartisGouldToint.Chapter03.theorem_3_5_4`: for every method in $\mathcal{M}$ there
+  is a function that satisfies Assumptions f.Bb, f.gL and f.HL, with constants independent of
+  $\epsilon_1$, on which the method first reaches $\|\nabla f(x_k)\| \le \epsilon_1$ at
+  $k = \lceil \epsilon_1^{-3/2} \rceil$. The one-dimensional function is
+  `CartisGouldToint.Chapter03.exists_slowSecondOrder_ridge`.
+* Corollary 3.5.5, `CartisGouldToint.Chapter03.corollary_3_5_5_i`,
+  `CartisGouldToint.Chapter03.corollary_3_5_5_ii`, `CartisGouldToint.Chapter03.corollary_3_5_5_iii`:
+  AR2, TRε and iRN have runs with steps of class $\mathcal{M}$ that terminate exactly at
+  $\lceil \epsilon_1^{-3/2} \rceil$, which matches the upper bounds of Theorems 3.3.5, 3.4.5 and
+  3.4.11. The one-dimensional criterion for steps of class $\mathcal{M}$ is
+  `CartisGouldToint.Chapter03.isMClassStepWith_ridge`.
 
-## Fixes and deviations with respect to the book
+## Proof outline
 
-* **Lemma 3.5.1**: the printed constant `κ_λ = 2√(κ_λ(1 + κ_rg))` is self-referential; the proof
-  (Appendix B) gives `κ_λ = 2√(κ̄_λ(1 + κ_rg))`, which is used. The lemma holds without (3.5.3),
-  without `κ_rg < 1` and without `s ≠ 0` (only `κ_rg ≥ 0`, `κ̄_λ ≥ 1` are used).
-* **Lemma 3.5.2**: f.Bb and f.gL are not needed. The proof gives `‖∇f(x⁺)‖ ≤ C ‖s‖²` with
-  `C = L_{f,2}/2 + κ_rs + κ̄_λ`, hence `‖s‖ ≥ C^{-1/2} ‖∇f(x⁺)‖^{1/2}` (`lemma_3_5_2_sqrt`); the
-  printed `κ̄_s = C⁻¹` follows since `C ≥ 1` (`lemma_3_5_2`).
-* **Lemma 3.5.3**: f.Bb, f.HL and (3.5.1) are not needed (the hypotheses are stated about `x_k`,
-  `x_{k+1}` directly).
-* **Theorem 3.5.4**: the bound `|f| ≤ B` holds on all of `ℝ` (the book: `f(x) ∈ [a, b]` for
-  `x ≥ 0`). The proof only uses the part `‖r_k‖ ≤ κ_rg ‖∇f(x_k)‖` of (3.5.2), which gives the step
-  factors `θ_k ∈ [(1 - κ_rg)/κ_λ, 1 + κ_rg]` of (3.5.19) directly; the book's detour through the
-  quadratic inequalities after (3.5.16) and the constant `κ_r` of (3.5.18) are not needed, and
-  (3.5.17) has a sign typo (`s_k = +θ_k ε₁^{1/2}/(2f_k)`). The claim (3.5.13) `f_k ∈ [1/2, 1]` holds
-  for `k < k_ε` only; `f_{k_ε} ∈ (0, 1/2]`, which is what makes `k_ε` the first termination
-  index. Since the function depends on the method, the method's iterates on the data (3.5.12)
-  are computed first (they depend only on the oracle answers), and the step factors are clipped
-  to `[(1 - κ_rg)/κ_λ, 1 + κ_rg]`; for a method in `𝓜` the clipping is inactive.
-* **Corollary 3.5.5**: the AR2 example is that of Theorem 3.3.6 (data of Theorem 12.2.15 with
-  zero Hessians), not (3.5.12). For iRN the ratio (3.4.35) is not scale invariant and the data
-  (3.5.12) are rescaled to `c G(x/c)`, `c = min(1, (2η)^{-1/2})` (which keeps the gradients and the
-  termination index); the book's sketch omits this.
-* The powers `‖∇f(x)‖^{1/2}` are written `√‖∇f(x)‖`; the positive semidefiniteness in (3.5.3) is
-  `∇²f(x)[d, d] + λ ‖d‖² ≥ 0` for all `d`.
+In Theorem 3.5.4 the function must depend on the method. The proof therefore first computes the
+iterates of the method on the data (3.5.12); they depend only on the oracle answers. On these data,
+a step of class $\mathcal{M}$ has the form $s_k = \theta_k \epsilon_1^{1/2} / (2 f_k)$ with a step
+factor $\theta_k \in [(1 - \kappa_{rg}) / \kappa_\lambda, 1 + \kappa_{rg}]$ (3.5.19), and this
+follows directly from the part $\|r_k\| \le \kappa_{rg} \|\nabla f(x_k)\|$ of (3.5.2). The step
+factors of the method are clipped to this interval, and a $C^2$ function interpolates the data at
+the points that the clipped factors give. For a method in $\mathcal{M}$ the clipping is inactive, so
+the method follows these points and first reaches $\|\nabla f(x_k)\| \le \epsilon_1$ at
+$k_\epsilon = \lceil \epsilon_1^{-3/2} \rceil$. The detour of the source through the quadratic
+inequalities after (3.5.16), and the constant $\kappa_r$ of (3.5.18), are not needed.
+
+## Conventions
+
+* The tolerance $\epsilon_1$ is `ε`.
+* The power $\|\nabla f(x)\|^{1/2}$ is `√‖gradient f x‖`.
+* The positive semidefiniteness in (3.5.3) is $\nabla^2 f(x)[d, d] + \lambda \|d\|^2 \ge 0$ for all
+  $d$.
+* The one-dimensional examples live on $\mathbb{R}^1$, which is `EuclideanSpace ℝ (Fin 1)`, and are
+  ridge functions $x \mapsto G(\langle e_0, x \rangle)$ along the unit vector
+  `CartisGouldToint.Chapter02.e₀`.
+
+## Implementation notes
+
+* The class $\mathcal{M}$ is a property of a method on one function $f$ and one tolerance
+  $\epsilon_1$: the conditions (3.5.2)–(3.5.4) are required only for the steps before the first
+  iterate with $\|\nabla f(x_k)\| \le \epsilon_1$.
+* The oracle answers on a ridge function are ridge jets, `CartisGouldToint.Chapter03.ridgeJet`.
+* The AR2 example of Corollary 3.5.5 is that of Theorem 3.3.6 (the data of Theorem 12.2.15 with zero
+  Hessians), not the data (3.5.12).
+
+## Deviations from the source
+
+* **Lemma 3.5.1** (typo). The printed constant $\kappa_\lambda = 2 \sqrt{\kappa_\lambda (1 +
+  \kappa_{rg})}$ is self-referential; the proof gives $\kappa_\lambda = 2 \sqrt{\bar\kappa_\lambda
+  (1 + \kappa_{rg})}$. See `CartisGouldToint.Chapter03.lemma_3_5_1`.
+* **Lemma 3.5.1** (generalization). The lemma holds without (3.5.3), without $\kappa_{rg} < 1$ and
+  without $s \ne 0$. See `CartisGouldToint.Chapter03.lemma_3_5_1`.
+* **Lemma 3.5.2** (generalization). Assumptions f.Bb and f.gL are not needed, and the bound holds
+  with the constant $C^{-1/2}$, which is at least $\bar\kappa_s = C^{-1}$ when
+  $\bar\kappa_\lambda > 1$. See `CartisGouldToint.Chapter03.lemma_3_5_2_sqrt`.
+* **Lemma 3.5.3** (generalization). Assumptions f.Bb and f.HL and the step relation (3.5.1) are not
+  needed. See `CartisGouldToint.Chapter03.lemma_3_5_3`.
+* **Theorem 3.5.4** (generalization). The bound $|f| \le B$ holds on all of $\mathbb{R}$, not only
+  $f(x) \in [a, b]$ for $x \ge 0$. See `CartisGouldToint.Chapter03.theorem_3_5_4`.
+* **Equation (3.5.13)** (correction). The claim $f_k \in [1/2, 1]$ holds only for $k < k_\epsilon$;
+  $f_{k_\epsilon} \in (0, 1/2]$. See `CartisGouldToint.Chapter03.theorem_3_5_4`.
+* **Equation (3.5.17)** (typo). The sign of the step is wrong; the step is
+  $s_k = +\theta_k \epsilon_1^{1/2} / (2 f_k)$. See `CartisGouldToint.Chapter03.theorem_3_5_4`.
+* **Corollary 3.5.5**, iRN (correction). The proof sketch of the source uses the data (3.5.12), on
+  which the ratio (3.4.35) of iRN, which is not scale invariant, can be below $\eta$ when
+  $\eta > 1/2$. The example is rescaled to $c G(x / c)$ with $c = \min(1, (2 \eta)^{-1/2})$, which
+  keeps the gradients at the iterates and the termination index. See
+  `CartisGouldToint.Chapter03.corollary_3_5_5_iii`.
 -/
 
 open Set Finset Optimization
@@ -76,44 +123,68 @@ namespace CartisGouldToint.Chapter03
 
 variable {n : ℕ}
 
-/-! ### The class `𝓜` -/
+/-! ### The class $\mathcal{M}$ -/
 
-/-- The linear system (3.5.2) of [cartis2022evaluation]: `(∇²f(x) + λ I) s = -∇f(x) + r`, i.e.
-`∇²f(x)[s, v] + λ ⟪s, v⟫ = -⟪∇f(x), v⟫ + ⟪r, v⟫` for all `v`. -/
+/-- **Equation (3.5.2)** of [cartis2022evaluation], the linear system. A step $s$ from $x$ with
+multiplier $\lambda$ and residual $r$ satisfies $(\nabla^2 f(x) + \lambda I) s = -\nabla f(x) +
+r$, that is,
+$$\nabla^2 f(x)[s, v] + \lambda \langle s, v \rangle = -\langle \nabla f(x), v \rangle + \langle
+  r, v \rangle \quad \text{for all } v.$$
+-/
 def IsMClassEquation (f : EuclideanSpace ℝ (Fin n) → ℝ) (x s : EuclideanSpace ℝ (Fin n))
     (lam : ℝ) (r : EuclideanSpace ℝ (Fin n)) : Prop :=
   ∀ v, iteratedFDeriv ℝ 2 f x ![s, v] + lam * ⟪s, v⟫ = -⟪gradient f x, v⟫ + ⟪r, v⟫
 
-/-- The conditions (3.5.2)–(3.5.4) of [cartis2022evaluation] on a step `s ≠ 0` from `x`, with
-multiplier `λ` and residual `r`: the system (3.5.2) with
-`‖r‖ ≤ min(κ_rg ‖∇f(x)‖, κ_rs ‖s‖²)`, `λ ≥ 0` and `∇²f(x) + λ I ⪰ 0` (3.5.3), and
-`λ_min[∇²f(x)] + λ ≤ κ_λ max(|λ_min[∇²f(x)]|, ‖∇f(x)‖^{1/2})` (3.5.4). -/
+/-- **Equations (3.5.2)–(3.5.4)** of [cartis2022evaluation]. Let $f : \mathbb{R}^n \to \mathbb{R}$,
+let $x, s, r \in \mathbb{R}^n$ and $\lambda \in \mathbb{R}$, and let
+$\kappa_{rg}, \kappa_{rs}, \kappa_\lambda$ be constants. The step $s$ from $x$ with multiplier
+$\lambda$ and residual $r$ is **of class $\mathcal{M}$** if $s \ne 0$, the system (3.5.2) holds
+with
+$$\|r\| \le \min(\kappa_{rg} \|\nabla f(x)\|, \kappa_{rs} \|s\|^2),$$
+$\lambda \ge 0$ and $\nabla^2 f(x) + \lambda I$ is positive semidefinite (3.5.3), and
+$$\lambda_{\min}[\nabla^2 f(x)] + \lambda \le \kappa_\lambda \max\left(|\lambda_{\min}[\nabla^2
+  f(x)]|, \|\nabla f(x)\|^{1/2}\right). \qquad (3.5.4)$$
+
+Positive semidefiniteness is $\nabla^2 f(x)[d, d] + \lambda \|d\|^2 \ge 0$ for all $d$, and
+$\lambda_{\min}[\nabla^2 f(x)]$ is `CartisGouldToint.Chapter01.hessianMinEig f x`. -/
 structure IsMClassStepWith (f : EuclideanSpace ℝ (Fin n) → ℝ) (κrg κrs κlam : ℝ)
     (x s : EuclideanSpace ℝ (Fin n)) (lam : ℝ) (r : EuclideanSpace ℝ (Fin n)) : Prop where
-  /-- The step is nonzero. -/
+  /-- The step is nonzero: $s \ne 0$. -/
   ne_zero : s ≠ 0
-  /-- The system (3.5.2). -/
+  /-- The system (3.5.2) holds. -/
   equation : IsMClassEquation f x s lam r
-  /-- The residual bound of (3.5.2). -/
+  /-- The residual bound of (3.5.2): $\|r\| \le \min(\kappa_{rg} \|\nabla f(x)\|, \kappa_{rs}
+  \|s\|^2)$. -/
   residual : ‖r‖ ≤ min (κrg * ‖gradient f x‖) (κrs * ‖s‖ ^ 2)
-  /-- `λ ≥ 0` (3.5.3). -/
+  /-- The multiplier is nonnegative: $\lambda \ge 0$ (3.5.3). -/
   nonneg : 0 ≤ lam
-  /-- `∇²f(x) + λ I` is positive semidefinite (3.5.3). -/
+  /-- The matrix $\nabla^2 f(x) + \lambda I$ is positive semidefinite (3.5.3):
+  $\nabla^2 f(x)[d, d] + \lambda \|d\|^2 \ge 0$ for all $d$. -/
   psd : ∀ d, 0 ≤ iteratedFDeriv ℝ 2 f x (fun _ => d) + lam * ‖d‖ ^ 2
-  /-- The bound (3.5.4). -/
+  /-- The bound (3.5.4): $\lambda_{\min}[\nabla^2 f(x)] + \lambda \le \kappa_\lambda
+  \max(|\lambda_{\min}[\nabla^2 f(x)]|, \|\nabla f(x)\|^{1/2})$. -/
   bound : Chapter01.hessianMinEig f x + lam ≤
     κlam * max |Chapter01.hessianMinEig f x| √‖gradient f x‖
 
-/-- A step `s` from `x` is admissible for the class `𝓜` of [cartis2022evaluation] (§3.5.1):
-(3.5.2)–(3.5.4) hold for some multiplier `λ` and residual `r`. -/
+/-- **Equations (3.5.1)–(3.5.4)** of [cartis2022evaluation]. A step $s$ from $x$ is **admissible for
+the class $\mathcal{M}$** with constants $\kappa_{rg}, \kappa_{rs}, \kappa_\lambda$ if there are
+a multiplier $\lambda$ and a residual $r$ such that $s$, $\lambda$ and $r$ satisfy
+(3.5.2)–(3.5.4), as in `CartisGouldToint.Chapter03.IsMClassStepWith`. -/
 def IsMClassStep (f : EuclideanSpace ℝ (Fin n) → ℝ) (κrg κrs κlam : ℝ)
     (x s : EuclideanSpace ℝ (Fin n)) : Prop :=
   ∃ lam r, IsMClassStepWith f κrg κrs κlam x s lam r
 
-/-- A deterministic second-order oracle method `M` is in the **class `𝓜`** of
-[cartis2022evaluation] (§3.5.1) on `f` with constants `κ_rg, κ_rs, κ_λ`: along its iterates
-`x_k = M.iterate (jetOracle f 2) k`, every step `s_k = x_{k+1} - x_k` (3.5.1) taken before the
-first `k` with `‖∇f(x_k)‖ ≤ ε` satisfies (3.5.2)–(3.5.4). -/
+/-- **Section 3.5.1** of [cartis2022evaluation], the class $\mathcal{M}$. Let $M$ be a deterministic
+second-order oracle method on $\mathbb{R}^n$: its iterate $x_{k+1}$ is a function of the values
+$f(x_i)$, $\nabla f(x_i)$ and $\nabla^2 f(x_i)$ at $x_0, \dots, x_k$. The method $M$ is **in the
+class $\mathcal{M}$** on $f$ with constants $\kappa_{rg}, \kappa_{rs}, \kappa_\lambda$ and
+tolerance $\epsilon$ if every step $s_k = x_{k+1} - x_k$ (3.5.1) taken at an iteration $k$ with
+$\|\nabla f(x_j)\| > \epsilon$ for all $j \le k$ is admissible for the class $\mathcal{M}$, that
+is, satisfies (3.5.2)–(3.5.4).
+
+The iterates are `M.iterate (jetOracle f 2) k`, for the method `M : Optimization.OracleMethod ℝⁿ
+(Optimization.Jet ℝⁿ 2)` and the oracle `Optimization.jetOracle`. The class is a property of the
+method on one function and one tolerance. -/
 def IsMClassMethod (κrg κrs κlam : ℝ)
     (M : OracleMethod (EuclideanSpace ℝ (Fin n)) (Jet (EuclideanSpace ℝ (Fin n)) 2))
     (f : EuclideanSpace ℝ (Fin n) → ℝ) (ε : ℝ) : Prop :=
@@ -127,24 +198,37 @@ section Lemmas
 
 variable {f : EuclideanSpace ℝ (Fin n) → ℝ} {x s r : EuclideanSpace ℝ (Fin n)} {lam : ℝ}
 
-/-- `|A[v, w]| ≤ ‖A‖ ‖v‖ ‖w‖` for a bilinear form. -/
+/-- A bilinear form satisfies $|A[v, w]| \le \|A\| \|v\| \|w\|$. -/
 private theorem abs_apply_vec_le
     (A : ContinuousMultilinearMap ℝ (fun _ : Fin 2 => EuclideanSpace ℝ (Fin n)) ℝ)
     (v w : EuclideanSpace ℝ (Fin n)) : |A ![v, w]| ≤ ‖A‖ * ‖v‖ * ‖w‖ := by
   have := A.le_opNorm ![v, w]
   simpa [Fin.prod_univ_two, mul_assoc] using this
 
-/-- The system (3.5.2) tested against `s`: `∇²f(x)[s, s] + λ ‖s‖² = ⟪-∇f(x) + r, s⟫`. -/
+/-- The system (3.5.2) tested against $s$ gives $\nabla^2 f(x)[s, s] + \lambda \|s\|^2 = \langle
+-\nabla f(x) + r, s \rangle$. -/
 private theorem IsMClassEquation.apply_self (h : IsMClassEquation f x s lam r) :
     iteratedFDeriv ℝ 2 f x (fun _ => s) + lam * ‖s‖ ^ 2 = -⟪gradient f x, s⟫ + ⟪r, s⟫ := by
   rw [apply_diag_eq_vec, ← real_inner_self_eq_norm_sq]
   exact h s
 
-/-- **Lemma 3.5.1** of [cartis2022evaluation] (bounded multiplier), with the **corrected
-constant**. If `s, λ, r` satisfy the system (3.5.2) with `‖r‖ ≤ κ_rg ‖∇f(x)‖` (`κ_rg ≥ 0`) and
-`λ ≤ κ̄_λ ‖s‖` (3.5.6) with `κ̄_λ ≥ 1`, then (3.5.4) holds with `κ_λ = 2√(κ̄_λ(1 + κ_rg))`:
-`λ_min[∇²f(x)] + λ ≤ 2√(κ̄_λ(1 + κ_rg)) max(|λ_min[∇²f(x)]|, ‖∇f(x)‖^{1/2})`. (The book prints the
-self-referential `κ_λ = 2√(κ_λ(1 + κ_rg))`; (3.5.3) is not needed.) -/
+/-- **Lemma 3.5.1** of [cartis2022evaluation] (bounded multiplier). Let
+$f : \mathbb{R}^n \to \mathbb{R}$, let $x, s, r \in \mathbb{R}^n$ and $\lambda \in \mathbb{R}$,
+and let $\kappa_{rg} \ge 0$ and $\bar\kappa_\lambda \ge 1$. If $s$, $\lambda$ and $r$ satisfy
+the system (3.5.2) with $\|r\| \le \kappa_{rg} \|\nabla f(x)\|$, and
+$\lambda \le \bar\kappa_\lambda \|s\|$ (3.5.6), then (3.5.4) holds with $\kappa_\lambda = 2
+\sqrt{\bar\kappa_\lambda (1 + \kappa_{rg})}$:
+$$\lambda_{\min}[\nabla^2 f(x)] + \lambda \le 2 \sqrt{\bar\kappa_\lambda (1 + \kappa_{rg})}
+  \max\left(|\lambda_{\min}[\nabla^2 f(x)]|, \|\nabla f(x)\|^{1/2}\right).$$
+
+**Typo.** The source prints the self-referential constant $\kappa_\lambda = 2
+\sqrt{\kappa_\lambda (1 + \kappa_{rg})}$; the proof in Appendix B gives
+$2 \sqrt{\bar\kappa_\lambda (1 + \kappa_{rg})}$, which is used here. **Generalization.** The
+lemma holds without (3.5.3), without $\kappa_{rg} < 1$ and without $s \ne 0$; only
+$\kappa_{rg} \ge 0$ and $\bar\kappa_\lambda \ge 1$ are used.
+
+No differentiability of $f$ is assumed: the proof uses (3.5.2) only as a relation between the
+values $\nabla f(x)$ and $\nabla^2 f(x)$. -/
 theorem lemma_3_5_1 {κrg κbar : ℝ} (hrg : 0 ≤ κrg) (hκ : 1 ≤ κbar)
     (heq : IsMClassEquation f x s lam r) (hr : ‖r‖ ≤ κrg * ‖gradient f x‖)
     (hlam : lam ≤ κbar * ‖s‖) :
@@ -203,8 +287,8 @@ theorem lemma_3_5_1 {κrg κbar : ℝ} (hrg : 0 ≤ κrg) (hκ : 1 ≤ κbar)
     _ ≤ 2 * (√c * max |m| √g) := by linarith
     _ = _ := by ring
 
-/-- The gradient at the trial point for a step solving (3.5.2), under f.HL:
-`‖∇f(x + s)‖ ≤ L/2 ‖s‖² + ‖r - λ s‖`. -/
+/-- Under Assumption f.HL with constant $L$, a step that solves (3.5.2) satisfies $\|\nabla f(x +
+s)\| \le \tfrac{L}{2} \|s\|^2 + \|r - \lambda s\|$. -/
 private theorem norm_gradient_add_le_of_equation {L : ℝ} (hf : AssumptionHL f L)
     (heq : IsMClassEquation f x s lam r) :
     ‖gradient f (x + s)‖ ≤ L / 2 * ‖s‖ ^ 2 + ‖r - lam • s‖ := by
@@ -221,10 +305,18 @@ private theorem norm_gradient_add_le_of_equation {L : ℝ} (hf : AssumptionHL f 
   rw [← hvec]
   exact norm_gradient_add_le hf
 
-/-- **Lemma 3.5.2** of [cartis2022evaluation], sharp form. Under f.HL, if `s, λ, r` satisfy
-(3.5.2) with `‖r‖ ≤ κ_rs ‖s‖²`, `0 ≤ λ ≤ κ̄_λ ‖s‖` (3.5.6), then with
-`C = L_{f,2}/2 + κ_rs + κ̄_λ`: `‖∇f(x + s)‖ ≤ C ‖s‖²` and `‖s‖ ≥ C^{-1/2} ‖∇f(x + s)‖^{1/2}`.
-(f.Bb and f.gL are not needed.) -/
+/-- **Lemma 3.5.2** of [cartis2022evaluation], sharp form. Let $f$ satisfy Assumption f.HL with
+constant $L_{f,2}$, and let $\kappa_{rs} \ge 0$ and $\bar\kappa_\lambda \ge 0$. If $s$,
+$\lambda$ and $r$ satisfy (3.5.2) at $x$ with $\|r\| \le \kappa_{rs} \|s\|^2$ and
+$0 \le \lambda \le \bar\kappa_\lambda \|s\|$ (3.5.6), then, with $C = L_{f,2}/2 + \kappa_{rs} +
+\bar\kappa_\lambda$,
+$$\|\nabla f(x + s)\| \le C \|s\|^2 \quad\text{and}\quad \|s\| \ge C^{-1/2} \|\nabla f(x +
+  s)\|^{1/2}.$$
+
+**Generalization.** The source also assumes Assumptions f.Bb and f.gL; they are not needed. The
+source gives the constant $\bar\kappa_s = C^{-1}$ in (3.5.7). When $C \ge 1$, which holds under
+the hypothesis $\bar\kappa_\lambda > 1$ of the source, $C^{-1/2} \ge C^{-1}$, so the bound here
+is stronger. -/
 theorem lemma_3_5_2_sqrt {L κrs κbar : ℝ} (hf : AssumptionHL f L) (hrs : 0 ≤ κrs)
     (hκ : 0 ≤ κbar) (heq : IsMClassEquation f x s lam r) (hr : ‖r‖ ≤ κrs * ‖s‖ ^ 2)
     (hlam0 : 0 ≤ lam) (hlam : lam ≤ κbar * ‖s‖) :
@@ -244,10 +336,17 @@ theorem lemma_3_5_2_sqrt {L κrs κbar : ℝ} (hf : AssumptionHL f L) (hrs : 0 �
     _ = √(L / 2 + κrs + κbar) * ‖s‖ := by
       rw [Real.sqrt_mul hC.le, Real.sqrt_sq (norm_nonneg _)]
 
-/-- **Lemma 3.5.2** of [cartis2022evaluation] (lower bound on the step), with the printed
-constant. Under f.HL, if `s, λ, r` satisfy (3.5.2) with `‖r‖ ≤ κ_rs ‖s‖²` (`κ_rs ≥ 0`) and
-`0 ≤ λ ≤ κ̄_λ ‖s‖` (3.5.6) with `κ̄_λ > 1`, then `‖s‖ ≥ κ̄_s ‖∇f(x + s)‖^{1/2}` (3.5.7) with
-`κ̄_s = [L_{f,2}/2 + κ_rs + κ̄_λ]⁻¹`. (The sharper `C^{-1/2}` is `lemma_3_5_2_sqrt`.) -/
+/-- **Lemma 3.5.2** of [cartis2022evaluation] (lower bound on the step). Let $f$ satisfy Assumption
+f.HL with constant $L_{f,2}$, and let $\kappa_{rs} \ge 0$ and $\bar\kappa_\lambda > 1$. If $s$,
+$\lambda$ and $r$ satisfy (3.5.2) at $x$ with $\|r\| \le \kappa_{rs} \|s\|^2$ and
+$0 \le \lambda \le \bar\kappa_\lambda \|s\|$ (3.5.6), then
+$$\|s\| \ge \bar\kappa_s \|\nabla f(x + s)\|^{1/2}, \qquad \bar\kappa_s =
+  \left(\frac{L_{f,2}}{2} + \kappa_{rs} + \bar\kappa_\lambda\right)^{-1}. \qquad (3.5.7)$$
+
+**Generalization.** The source also assumes Assumptions f.Bb and f.gL; they are not needed.
+
+The bound follows from `CartisGouldToint.Chapter03.lemma_3_5_2_sqrt`, because $C = L_{f,2}/2 +
+\kappa_{rs} + \bar\kappa_\lambda \ge 1$ gives $C^{-1} \le C^{-1/2}$. -/
 theorem lemma_3_5_2 {L κrs κbar : ℝ} (hf : AssumptionHL f L) (hrs : 0 ≤ κrs)
     (hκ : 1 < κbar) (heq : IsMClassEquation f x s lam r) (hr : ‖r‖ ≤ κrs * ‖s‖ ^ 2)
     (hlam0 : 0 ≤ lam) (hlam : lam ≤ κbar * ‖s‖) :
@@ -260,12 +359,20 @@ theorem lemma_3_5_2 {L κrs κbar : ℝ} (hf : AssumptionHL f L) (hrs : 0 ≤ κ
   refine le_trans ?_ h
   gcongr
 
-/-- **Lemma 3.5.3** of [cartis2022evaluation] (a necessary condition for fast rates). Under f.gL
-with constant `L₁`, if every step `s_k` from `x_k` solves (3.5.2) with `‖r_k‖ ≤ κ_rg ‖∇f(x_k)‖`
-(`κ_rg < 1`) and `0 ≤ λ_k ≤ κ̄_λ` (3.5.8), and the gradients converge quadratically,
-`‖∇f(x_{k+1})‖ ≤ κ_c ‖∇f(x_k)‖²` (3.5.9) with `κ_c > 0`, then (3.5.7) holds:
-`‖s_k‖ ≥ κ̄_s ‖∇f(x_{k+1})‖^{1/2}` with `κ̄_s = (1 - κ_rg)/((L₁ + κ̄_λ) √κ_c)`. (f.Bb, f.HL and
-(3.5.1) are not needed.) -/
+/-- **Lemma 3.5.3** of [cartis2022evaluation] (a necessary condition for fast rates). Let $f$
+satisfy Assumption f.gL with constant $L_1$, and let $\kappa_{rg} < 1$, $\bar\kappa_\lambda$ and
+$\kappa_c > 0$ be constants. Let sequences $x_k, s_k, r_k \in \mathbb{R}^n$ and
+$\lambda_k \in \mathbb{R}$ satisfy, for every $k$, the system (3.5.2) at $x_k$ with
+$\|r_k\| \le \kappa_{rg} \|\nabla f(x_k)\|$, the bounds $0 \le \lambda_k \le \bar\kappa_\lambda$
+(3.5.8), and the quadratic convergence
+$$\|\nabla f(x_{k+1})\| \le \kappa_c \|\nabla f(x_k)\|^2. \qquad (3.5.9)$$
+Then (3.5.7) holds for every $k$:
+$$\|s_k\| \ge \frac{1 - \kappa_{rg}}{(L_1 + \bar\kappa_\lambda) \sqrt{\kappa_c}} \|\nabla
+  f(x_{k+1})\|^{1/2}.$$
+
+**Generalization.** The source also assumes Assumptions f.Bb and f.HL and the step relation
+$s_k = x_{k+1} - x_k$ (3.5.1); they are not needed, because the hypotheses are stated about
+$x_k$ and $x_{k+1}$ directly. -/
 theorem lemma_3_5_3 {L₁ κrg κbar κc : ℝ} (hf : Chapter02.AssumptionGL f L₁) (hrg : κrg < 1)
     (hκc : 0 < κc) {x s r : ℕ → EuclideanSpace ℝ (Fin n)} {lam : ℕ → ℝ}
     (heq : ∀ k, IsMClassEquation f (x k) (s k) (lam k) (r k))
@@ -317,15 +424,18 @@ end Lemmas
 /-! ### The data (3.5.12) and the one-dimensional example -/
 
 
-/-- The second-order jet `(c₀, c₁ ⟪e, ·⟫, c₂ ⟪e, ·⟫⟪e, ·⟫)` with coefficients `c : Fin 3 → ℝ` along
-`e` (the jets of a ridge function `x ↦ G ⟪e, x⟫`, `jetOracle_ridge`). -/
+/-- The second-order jet along $e$ with coefficients $c_0, c_1, c_2$: the constant $c_0$, the linear
+form $c_1 \langle e, \cdot \rangle$ and the bilinear form $c_2 \langle e, \cdot \rangle \langle
+e, \cdot \rangle$. These are the jets of a ridge function $x \mapsto G(\langle e, x \rangle)$;
+see `CartisGouldToint.Chapter03.jetOracle_ridge`. -/
 noncomputable def ridgeJet (e : EuclideanSpace ℝ (Fin n)) (c : Fin 3 → ℝ) :
     Jet (EuclideanSpace ℝ (Fin n)) 2 := fun j =>
   c j • (ContinuousMultilinearMap.mkPiAlgebra ℝ (Fin j) ℝ).compContinuousLinearMap
     fun _ => innerSL ℝ e
 
-/-- The second-order oracle of a ridge function `x ↦ G ⟪e, x⟫` is the ridge jet with
-coefficients `G^{(j)}(⟪e, x⟫)`. -/
+/-- For a $C^2$ function $G : \mathbb{R} \to \mathbb{R}$, the second-order oracle of the ridge
+function $x \mapsto G(\langle e, x \rangle)$ at $x$ is the ridge jet along $e$ with the
+coefficients $G^{(j)}(\langle e, x \rangle)$, $j = 0, 1, 2$. -/
 theorem jetOracle_ridge {G : ℝ → ℝ} (hG : ContDiff ℝ 2 G) (e x : EuclideanSpace ℝ (Fin n)) :
     jetOracle (ridge G e) 2 x = ridgeJet e fun j => iteratedDeriv j G ⟪e, x⟫ := by
   funext j
@@ -334,13 +444,22 @@ theorem jetOracle_ridge {G : ℝ → ℝ} (hG : ContDiff ℝ 2 G) (e x : Euclide
   rw [jetOracle_apply, iteratedFDeriv_ridge_apply hG hj]
   simp [ridgeJet, mul_comm]
 
-/-- **The one-dimensional example of Theorem 3.5.4** ([cartis2022evaluation], (3.5.11)–(3.5.21)
-and its proof in Appendix B). For step factors in `[a, b]` (`0 < a ≤ b`) there are `L₁, L₂ ≥ 1`
-and `B ≥ 0` (depending only on `a, b`) such that for every `ε ∈ (0, 1]`, every `θ` with
-`θ_k ∈ [a, b]` and every sequence of abscissae with `x_{k+1} = x_k + θ_k ε^{1/2}/(2 f_k)`
-(`k < k_ε`), there is a `C²` function `G : ℝ → ℝ` whose ridge `f = ridge G e₀` on `ℝ¹` satisfies
-f.Bb (with `f_low = -B`), f.gL (`L₁`), f.HL (`L₂`), `|f| ≤ B`, and `G` interpolates the data
-(3.5.12) `(f_k, g_k, H_k)` at `x_k` for `k ≤ k_ε`. -/
+/-- **Equations (3.5.11)–(3.5.21)** of [cartis2022evaluation], the one-dimensional example of
+Theorem 3.5.4. Let $0 < a \le b$. There are $L_1 \ge 1$, $L_2 \ge 1$ and $B \ge 0$, which depend
+only on $a$ and $b$, with the following property. Let $\epsilon \in (0, 1]$, let
+$k_\epsilon = \lceil \epsilon^{-3/2} \rceil$, and let the data (3.5.12) be
+$$f_k = 1 - \tfrac12 k \epsilon^{3/2}, \qquad g_k = -2 \epsilon f_k, \qquad H_k = 4
+  \epsilon^{1/2} f_k^2.$$
+For all step factors $\theta_k \in [a, b]$ and all abscissae $x_k$ with $x_{k+1} = x_k +
+\theta_k \epsilon^{1/2} / (2 f_k)$ for $k < k_\epsilon$, there is a $C^2$ function
+$G : \mathbb{R} \to \mathbb{R}$ such that the ridge function $f(x) = G(\langle e_0, x \rangle)$
+on $\mathbb{R}^1$ satisfies Assumption f.Bb with $f_{\mathrm{low}} = -B$, Assumption f.gL with
+$L_1$, Assumption f.HL with $L_2$ and $|f| \le B$, and $G$ interpolates the data:
+$G(x_k) = f_k$, $G'(x_k) = g_k$ and $G''(x_k) = H_k$ for $k \le k_\epsilon$.
+
+The construction follows the proof in Appendix B. The data are `Optimization.secondOrderK`,
+`Optimization.secondOrderF`, `Optimization.secondOrderG` and `Optimization.secondOrderH`. The
+example is also used for Corollary 3.5.5. -/
 theorem exists_slowSecondOrder_ridge {a b : ℝ} (ha : 0 < a) (hab : a ≤ b) :
     ∃ L₁ L₂ B : ℝ, 1 ≤ L₁ ∧ 1 ≤ L₂ ∧ 0 ≤ B ∧ ∀ (ε : ℝ) (θ x : ℕ → ℝ), 0 < ε → ε ≤ 1 →
       (∀ k < secondOrderK ε, θ k ∈ Icc a b) →
@@ -369,36 +488,38 @@ section Theorem354
 
 variable {ε : ℝ}
 
-/-- The data jet `(f_k, g_k e₀, H_k e₀ e₀ᵀ)` of (3.5.12) at the `k`-th iterate. -/
+/-- The data jet $(f_k, g_k e_0, H_k e_0 e_0^T)$ of (3.5.12) at the $k$-th iterate. -/
 private noncomputable def dataJet (ε : ℝ) (k : ℕ) : Jet (EuclideanSpace ℝ (Fin 1)) 2 :=
   ridgeJet Chapter02.e₀ ![secondOrderF ε k, secondOrderG ε k, secondOrderH ε k]
 
-/-- The abscissae of the iterates the method would produce on the data (3.5.12). -/
+/-- The abscissae of the iterates that the method produces on the data (3.5.12). -/
 private noncomputable def dataIter
     (M : OracleMethod (EuclideanSpace ℝ (Fin 1)) (Jet (EuclideanSpace ℝ (Fin 1)) 2)) (ε : ℝ) :
     ℕ → EuclideanSpace ℝ (Fin 1)
   | 0 => M.x₀
   | k + 1 => M.next k fun i => dataJet ε i
 
-/-- `c_k = ε^{1/2}/(2 f_k)`, the reference step at the `k`-th iterate. -/
+/-- The reference step $c_k = \epsilon^{1/2} / (2 f_k)$ at the $k$-th iterate. -/
 private noncomputable def refStep (ε : ℝ) (k : ℕ) : ℝ := ε ^ (1 / 2 : ℝ) / (2 * secondOrderF ε k)
 
-/-- The step factors of the method on the data, clipped to `[a, b]`. -/
+/-- The step factors of the method on the data (3.5.12), clipped to $[a, b]$. -/
 private noncomputable def clipFactor (a b : ℝ)
     (M : OracleMethod (EuclideanSpace ℝ (Fin 1)) (Jet (EuclideanSpace ℝ (Fin 1)) 2)) (ε : ℝ)
     (k : ℕ) : ℝ :=
   max a (min b (⟪Chapter02.e₀, dataIter M ε (k + 1) - dataIter M ε k⟫ / refStep ε k))
 
-/-- The interpolation abscissae `x_{k+1} = x_k + θ_k c_k`, `x_0 = ⟪e₀, M.x₀⟫`. -/
+/-- The interpolation abscissae: the first is $\langle e_0, x_0 \rangle$ for the starting point
+$x_0$ of the method, and the next ones follow $x_{k+1} = x_k + \theta_k c_k$ with the clipped
+step factors $\theta_k$. -/
 private noncomputable def nodes (a b : ℝ)
     (M : OracleMethod (EuclideanSpace ℝ (Fin 1)) (Jet (EuclideanSpace ℝ (Fin 1)) 2)) (ε : ℝ)
     (k : ℕ) : ℝ :=
   ⟪Chapter02.e₀, M.x₀⟫ + ∑ j ∈ range k, clipFactor a b M ε j * refStep ε j
 
-/-- The step-factor bounds (3.5.19) for a step of class `𝓜` on the data (3.5.12): if at a point
-with derivatives `g < 0`, `H > 0` and `H ≥ |g|^{1/2}`, the step `t` satisfies
-`(H + λ) t = -g + ρ` with `λ ≥ 0`, `|ρ| ≤ κ_rg |g|` and `H + λ ≤ κ_λ H`, then
-`t = θ (-g/H)` with `θ ∈ [(1 - κ_rg)/κ_λ, 1 + κ_rg]`. -/
+/-- The step-factor bounds (3.5.19): if $g < 0$, $H > 0$, $\lambda \ge 0$, $\kappa_{rg} \le 1$,
+$(H + \lambda) t = -g + \rho$ with $|\rho| \le \kappa_{rg} |g|$, and
+$H + \lambda \le \kappa_\lambda H$, then $t = \theta (-g / H)$ with $\theta \in [(1 -
+\kappa_{rg}) / \kappa_\lambda, 1 + \kappa_{rg}]$. -/
 private theorem factor_mem {g H lam t ρ κrg κlam : ℝ} (hrg : κrg ≤ 1) (hg : g < 0) (hH : 0 < H)
     (hlam : 0 ≤ lam) (heq : (H + lam) * t = -g + ρ) (hρ : |ρ| ≤ κrg * |g|)
     (hb : H + lam ≤ κlam * H) :
@@ -427,13 +548,28 @@ private theorem factor_mem {g H lam t ρ κrg κlam : ℝ} (hrg : κrg ≤ 1) (h
       nlinarith
     linarith
 
-/-- **Theorem 3.5.4** of [cartis2022evaluation] (a complexity lower bound for methods in `𝓜`).
-For all constants `κ_rg ∈ [0, 1)`, `κ_rs > 0`, `κ_λ > 1` there are `f_low`, `L₁ ≥ 1`, `L₂ ≥ 1` and
-`B` such that for every `ε₁ ∈ (0, 1)` and every second-order oracle method `M` on `ℝ¹` (with any
-starting point `x₀`) there is `f : ℝ¹ → ℝ` satisfying f.Bb, f.gL and f.HL with these constants,
-`|f| ≤ B` and `f(x₀) = 1`, such that, if `M` is in the class `𝓜` on `f`, then the first iterate with
-`‖∇f(x_k)‖ ≤ ε₁` is `x_{k_ε}`, `k_ε = ⌈ε₁^{-3/2}⌉`: the method needs `k_ε + 1` evaluations of `f`,
-`∇f` and `∇²f`. -/
+/-- **Theorem 3.5.4** of [cartis2022evaluation] (a complexity lower bound for methods in
+$\mathcal{M}$). Let $0 \le \kappa_{rg} < 1$, $\kappa_{rs} > 0$ and $\kappa_\lambda > 1$. There
+are $f_{\mathrm{low}}$, $L_1 \ge 1$, $L_2 \ge 1$ and $B$ with the following property. For every
+$\epsilon_1 \in (0, 1)$ and every deterministic second-order oracle method $M$ on
+$\mathbb{R}^1$, with any starting point $x_0$, there is $f : \mathbb{R}^1 \to \mathbb{R}$ that
+satisfies Assumption f.Bb with $f_{\mathrm{low}}$, Assumption f.gL with $L_1$, Assumption f.HL
+with $L_2$, $|f| \le B$ and $f(x_0) = 1$, such that: if $M$ is in the class $\mathcal{M}$ on $f$
+with tolerance $\epsilon_1$, then the first iterate with $\|\nabla f(x_k)\| \le \epsilon_1$ is
+$x_{k_\epsilon}$, where $k_\epsilon = \lceil \epsilon_1^{-3/2} \rceil$. So the method needs
+$k_\epsilon + 1$ evaluations of $f$, $\nabla f$ and $\nabla^2 f$.
+
+**Generalization.** The bound $|f| \le B$ holds on all of $\mathbb{R}$; the source states
+$f(x) \in [a, b]$ for $x \ge 0$. **Correction.** The claim (3.5.13) that $f_k \in [1/2, 1]$
+holds only for $k < k_\epsilon$; at $k_\epsilon$ the value is $f_{k_\epsilon} \in (0, 1/2]$, and
+this makes $k_\epsilon$ the first termination index. **Typo.** In (3.5.17) the sign of the step
+is wrong: the step is $s_k = +\theta_k \epsilon_1^{1/2} / (2 f_k)$.
+
+The hypothesis $\kappa_{rs} > 0$ is not used in the proof. The proof uses only the part
+$\|r_k\| \le \kappa_{rg} \|\nabla f(x_k)\|$ of (3.5.2), which gives the step factors (3.5.19)
+directly. The function is the ridge function of
+`CartisGouldToint.Chapter03.exists_slowSecondOrder_ridge` for the clipped step factors of the
+method. -/
 theorem theorem_3_5_4 {κrg κrs κlam : ℝ} (hrg0 : 0 ≤ κrg) (hrg1 : κrg < 1) (_hrs : 0 < κrs)
     (hlam1 : 1 < κlam) :
     ∃ flow L₁ L₂ B : ℝ, 1 ≤ L₁ ∧ 1 ≤ L₂ ∧ ∀ ε : ℝ, 0 < ε → ε < 1 →
@@ -612,11 +748,15 @@ section RidgeClass
 
 open Chapter02 (e₀ norm_e₀ inner_e₀_smul)
 
-/-- **Steps of class `𝓜` on a ridge function of `ℝ¹`.** At `x` with `a = ⟪e₀, x⟫`, a step
-`t e₀` (`t ≠ 0`) with multiplier `λ ≥ 0` and scalar residual `ρ` satisfies (3.5.2)–(3.5.4) as soon
-as the one-dimensional conditions hold: `(G''(a) + λ) t = -G'(a) + ρ`,
-`|ρ| ≤ min(κ_rg |G'(a)|, κ_rs t²)`, `G''(a) + λ ≥ 0` and
-`G''(a) + λ ≤ κ_λ max(|G''(a)|, |G'(a)|^{1/2})`. -/
+/-- **Steps of class $\mathcal{M}$ on a ridge function**, for Corollary 3.5.5 of
+[cartis2022evaluation]. Let $G : \mathbb{R} \to \mathbb{R}$ be $C^2$, let $x \in \mathbb{R}^1$
+and $a = \langle e_0, x \rangle$, and let $t \ne 0$, $\lambda \ge 0$ and $\rho \in \mathbb{R}$.
+Assume that
+$$(G''(a) + \lambda) t = -G'(a) + \rho, \qquad |\rho| \le \min(\kappa_{rg} |G'(a)|, \kappa_{rs}
+  t^2),$$
+$G''(a) + \lambda \ge 0$ and $G''(a) + \lambda \le \kappa_\lambda \max(|G''(a)|,
+|G'(a)|^{1/2})$. Then the step $t e_0$ with multiplier $\lambda$ and residual $\rho e_0$
+satisfies (3.5.2)–(3.5.4) for the ridge function $f(x) = G(\langle e_0, x \rangle)$. -/
 theorem isMClassStepWith_ridge {G : ℝ → ℝ} (hG : ContDiff ℝ 2 G) (x : EuclideanSpace ℝ (Fin 1))
     {t lam ρ κrg κrs κlam : ℝ} (ht : t ≠ 0) (hlam : 0 ≤ lam)
     (heq : (iteratedDeriv 2 G ⟪e₀, x⟫ + lam) * t = -deriv G ⟪e₀, x⟫ + ρ)
@@ -645,16 +785,30 @@ theorem isMClassStepWith_ridge {G : ℝ → ℝ} (hG : ContDiff ℝ 2 G) (x : Eu
 
 end RidgeClass
 
-/-- **Corollary 3.5.5** of [cartis2022evaluation] for **AR2** (optimal complexity in `𝓜`). For
-all AR2 constants there are `f_low`, `L_{f,1}, L_{f,2} ≥ 1`, `B` and `κ_λ > 1` such that for every
-`ε₁ ∈ (0, 1]` there are `f : ℝ¹ → ℝ` satisfying f.Bb, f.gL, f.HL and `|f| ≤ B` and an AR2 run with
-`ε₂ = +∞` from `x₀ = 0` which terminates exactly at iteration `k_ε = ⌈ε₁^{-3/2}⌉`, whose steps are
-of class `𝓜` (with `κ_rg = 0`, `κ_rs = 1`, `κ_λ`, `λ_k = σ₀ ‖s_k‖/2`), so the lower bound of
-Theorem 3.5.4 is attained by AR2, while the upper bound of Theorem 3.3.5 for this run,
-`κ^A (f(x₀) - f_low)/ε₁^{3/2} + κ^C` with `f(x₀) - f_low ≤ 2B`, is of the same order
-`ε₁^{-3/2}` with constants independent of `ε₁`. The example is that of Theorem 3.3.6 (the data of
-Theorem 12.2.15 with `p = 2`, `q = 1`: zero Hessians at the iterates and exact global model
-minimizers with `σ_k = σ₀`), not the data (3.5.12). -/
+/-- **Corollary 3.5.5** of [cartis2022evaluation], for AR2 (optimal complexity in $\mathcal{M}$).
+For all constants of AR2 there are $f_{\mathrm{low}}$, $L_{f,1} \ge 1$, $L_{f,2} \ge 1$, $B$ and
+$\kappa_\lambda > 1$ with the following property. For every $\epsilon_1 \in (0, 1]$, let
+$k_\epsilon = \lceil \epsilon_1^{-3/2} \rceil$. There are $f : \mathbb{R}^1 \to \mathbb{R}$ that
+satisfies Assumption f.Bb with $f_{\mathrm{low}}$, Assumption f.gL with $L_{f,1}$, Assumption
+f.HL with $L_{f,2}$ and $|f| \le B$, and an AR2 run with $\epsilon_2 = +\infty$ from $x_0 = 0$,
+such that:
+
+* $k_\epsilon$ is the first iteration with $\|\nabla f(x_k)\| \le \epsilon_1$;
+* every step $x_{k+1} - x_k$ with $k < k_\epsilon$ is admissible for the class $\mathcal{M}$
+  with $\kappa_{rg} = 0$, $\kappa_{rs} = 1$ and $\kappa_\lambda$;
+* $f(x_0) - f_{\mathrm{low}} \le 2B$, and
+$$k_\epsilon + 1 \le \kappa^S_{\mathrm{AR2}} \left(1 + \frac{|\log \gamma_1|}{\log
+  \gamma_2}\right) \frac{2B}{\epsilon_1^{3/2}} + \kappa^C_{\mathrm{AR2}}.$$
+
+So AR2 attains the lower bound of Theorem 3.5.4, and the upper bound of Theorem 3.3.5 for this
+run is of the same order $\epsilon_1^{-3/2}$, with constants independent of $\epsilon_1$.
+
+The example is that of Theorem 3.3.6, not the data (3.5.12): the data of Theorem 12.2.15 with
+$p = 2$ and $q = 1$, which have zero Hessians at the iterates, and steps that are exact global
+minimizers of the model with $\sigma_k = \sigma_0$. In the proof,
+$\kappa_\lambda = 1 + \sqrt{\sigma_0 / 2}$ and the multiplier is
+$\lambda_k = \sigma_0 \|s_k\| / 2$. The constants are `CartisGouldToint.Chapter03.kappaSAR2` and
+`CartisGouldToint.Chapter03.kappaCAR2`. -/
 theorem corollary_3_5_5_i (P : AR2Params) :
     ∃ flow L₁ L₂ B κlam : ℝ, 1 ≤ L₁ ∧ 1 ≤ L₂ ∧ 1 < κlam ∧ ∀ ε : ℝ, 0 < ε → ε ≤ 1 →
       ∃ f : EuclideanSpace ℝ (Fin 1) → ℝ, Chapter02.AssumptionBb f flow ∧
@@ -737,14 +891,28 @@ theorem corollary_3_5_5_i (P : AR2Params) :
       positivity
     gcongr
 
-/-- **Corollary 3.5.5** of [cartis2022evaluation] for **TRε** (optimal complexity in `𝓜`). There
-are `f_low`, `L_{f,1}, L_{f,2} ≥ 1` and `B` such that for all TRε constants and every
-`ε₁ ∈ (0, 1)` with `√ε₁ < Δ₀` (TRε requires `Δ₀ > ε_*`) there are `f : ℝ¹ → ℝ` satisfying f.Bb,
-f.gL, f.HL and `|f| ≤ B` and a TRε run with `ε_* = √ε₁`, `ε₂ = +∞` from `x₀ = 0` (interior steps,
-constant radius) which terminates exactly at iteration `k_ε = ⌈ε₁^{-3/2}⌉`, whose steps are of
-class `𝓜` (with `κ_rg = 0`, `κ_rs = 1`, `κ_λ = 2`, `λ_k = ε_*`), while the upper bound of
-Theorem 3.4.5 for this run is `κ^A 2B ε₁^{-3/2} + κ^B |log ε₁| + κ^C`, of the same order up to the
-logarithmic term. -/
+/-- **Corollary 3.5.5** of [cartis2022evaluation], for TRε (optimal complexity in $\mathcal{M}$).
+There are $f_{\mathrm{low}}$, $L_{f,1} \ge 1$, $L_{f,2} \ge 1$ and $B$ with the following
+property. For all TRε constants and every $\epsilon_1 \in (0, 1)$ with
+$\sqrt{\epsilon_1} < \Delta_0$, let $k_\epsilon = \lceil \epsilon_1^{-3/2} \rceil$. There are
+$f : \mathbb{R}^1 \to \mathbb{R}$ that satisfies Assumption f.Bb with $f_{\mathrm{low}}$,
+Assumption f.gL with $L_{f,1}$, Assumption f.HL with $L_{f,2}$ and $|f| \le B$, and a TRε run
+with $\epsilon_* = \sqrt{\epsilon_1}$ and $\epsilon_2 = +\infty$ from $x_0 = 0$, such that:
+
+* $k_\epsilon$ is the first iteration with $\|\nabla f(x_k)\| \le \epsilon_1$;
+* every step $x_{k+1} - x_k$ with $k < k_\epsilon$ is admissible for the class $\mathcal{M}$
+  with $\kappa_{rg} = 0$, $\kappa_{rs} = 1$ and $\kappa_\lambda = 2$;
+* the upper bound of Theorem 3.4.5 for this run holds in the form
+$$k_\epsilon + 1 \le \kappa^A_{\mathrm{TR}\epsilon} \frac{2B}{\epsilon_1^{3/2}} + \frac{|\log
+  \epsilon_1|}{2 |\log \gamma_2|} + \kappa^C_{\mathrm{TR}\epsilon}.$$
+
+So the upper bound of Theorem 3.4.5 has the order of the lower bound of Theorem 3.5.4, up to the
+logarithmic term.
+
+The condition $\sqrt{\epsilon_1} < \Delta_0$ is the condition $\Delta_0 > \epsilon_*$ of TRε.
+The constants $f_{\mathrm{low}}$, $L_{f,1}$, $L_{f,2}$ and $B$ do not depend on the TRε
+constants. In the run the steps are interior, the radius is constant, and the multiplier is
+$\lambda_k = \epsilon_*$. The run is `CartisGouldToint.Chapter03.tre_slow_example`. -/
 theorem corollary_3_5_5_ii :
     ∃ flow L₁ L₂ B : ℝ, 1 ≤ L₁ ∧ 1 ≤ L₂ ∧ ∀ (P : TREpsParams) (ε : ℝ), 0 < ε → ε < 1 →
       √ε < P.Δ₀ → ∃ f : EuclideanSpace ℝ (Fin 1) → ℝ, Chapter02.AssumptionBb f flow ∧
@@ -787,17 +955,31 @@ theorem corollary_3_5_5_ii :
     have hf0 : f (x 0) - -B ≤ 2 * B := by linarith [le_abs_self (f (x 0)), hB (x 0)]
     gcongr
 
-/-- **Corollary 3.5.5** of [cartis2022evaluation] for **iRN** (optimal complexity in `𝓜`),
-**with a rescaled example**. For all iRN constants there are `f_low`, `L_{f,1}, L_{f,2} ≥ 1` and
-`B` such that for every `ε₁ ∈ (0, 1)` there are `f : ℝ¹ → ℝ` satisfying f.Bb, f.gL, f.HL and
-`|f| ≤ B` and an iRN run (`Q_k = I`, `ε₂ = +∞`, `λ_k = σ₀ᵁ ‖s_k‖`) from `x₀ = 0` terminating
-exactly at iteration `k_ε = ⌈ε₁^{-3/2}⌉`, whose steps are of class `𝓜` (with `κ_rg = 0`,
-`κ_rs = 1`, `κ_λ = 2 + σ₀ᵁ`), while the upper bound of Theorem 3.4.11 for this run is
-`κ^A 2B ε₁^{-3/2} + κ^B`. (iRN's ratio (3.4.35) is not scale invariant: on the data (3.5.12) it
-is `4 f_k³/θ_k³ ≥ 1/2`, which may be below `η` when `η > 1/2`; the example is therefore
-`f(x) = c G(x/c)` with `c = min(1, (2η)^{-1/2})`, which leaves the gradients at the iterates, and
-hence the termination index, unchanged and makes the ratio at least `1/(2c²) ≥ η`. The book's
-sketch omits this.) -/
+/-- **Corollary 3.5.5** of [cartis2022evaluation], for iRN (optimal complexity in $\mathcal{M}$).
+For all iRN constants there are $f_{\mathrm{low}}$, $L_{f,1} \ge 1$, $L_{f,2} \ge 1$ and $B$
+with the following property. For every $\epsilon_1 \in (0, 1)$, let
+$k_\epsilon = \lceil \epsilon_1^{-3/2} \rceil$. There are $f : \mathbb{R}^1 \to \mathbb{R}$ that
+satisfies Assumption f.Bb with $f_{\mathrm{low}}$, Assumption f.gL with $L_{f,1}$, Assumption
+f.HL with $L_{f,2}$ and $|f| \le B$, and an iRN run with $\epsilon_2 = +\infty$ and $Q_k = I$
+from $x_0 = 0$, such that:
+
+* $k_\epsilon$ is the first iteration with $\|\nabla f(x_k)\| \le \epsilon_1$;
+* every step $x_{k+1} - x_k$ with $k < k_\epsilon$ is admissible for the class $\mathcal{M}$
+  with $\kappa_{rg} = 0$, $\kappa_{rs} = 1$ and $\kappa_\lambda = 2 + \sigma^U_0$;
+* the upper bound of Theorem 3.4.11 for this run holds in the form
+$$k_\epsilon + 1 \le \kappa^A_{\mathrm{iRN}} \frac{2B}{\epsilon_1^{3/2}} +
+  \kappa^B_{\mathrm{iRN}}.$$
+
+**Correction.** The proof sketch of the source applies iRN to the data (3.5.12). The ratio
+(3.4.35) of iRN is not scale invariant. On the data (3.5.12) it is
+$4 f_k^3 / \theta_k^3 \ge 1/2$, which can be below $\eta$ when $\eta > 1/2$. The example is
+therefore $c G(x / c)$ with $c = \min(1, (2 \eta)^{-1/2})$. This leaves the gradients at the
+iterates, and hence the termination index, unchanged, and it makes the ratio at least
+$1 / (2 c^2) \ge \eta$. The proof sketch of the source omits this rescaling.
+
+In the run the multiplier is $\lambda_k = \sigma^U_0 \|s_k\|$. The run is
+`CartisGouldToint.Chapter03.irn_slow_example`, and the constants are the corrected constants
+`CartisGouldToint.Chapter03.kappaAIRN` and `CartisGouldToint.Chapter03.kappaBIRN`. -/
 theorem corollary_3_5_5_iii (P : IRNParams) :
     ∃ flow L₁ L₂ B : ℝ, 1 ≤ L₁ ∧ 1 ≤ L₂ ∧ ∀ ε : ℝ, 0 < ε → ε < 1 →
       ∃ f : EuclideanSpace ℝ (Fin 1) → ℝ, Chapter02.AssumptionBb f flow ∧

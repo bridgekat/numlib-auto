@@ -7,62 +7,97 @@ import Numlib.Optimization.Subproblem.InverseIteration
 import NumlibSurface.CartisGouldToint.Chapter08.Section03
 
 /-!
-# Cartis–Gould–Toint §9.3: The regularization subproblem
+# Cartis, Gould and Toint, Section 9.3: The regularization subproblem
 
-Surface file for [cartis2022evaluation] §9.3: initial bounds on the multiplier `λ*` of (8.1.3)
-(§9.3.1, (9.3.3)–(9.3.5), generalized Gershgorin bounds (9.3.6)–(9.3.7)), the potential-hard-case
-iteration (Algorithm 9.3.1, Theorem 9.3.1), monotonicity of `𝓛` in `σ` (§9.3.5) and the
-constructive early-termination test (Theorem 9.3.2, (9.3.16)).
+This module formalizes Section 9.3 of [cartis2022evaluation], on the regularization subproblem
+(8.1.3) with $\sigma > 0$ and $r > 2$. Let $\lambda^* = \sigma \|s^*\|_M^{r-2}$ be the multiplier of
+a global minimizer $s^*$, and let $\lambda_1 \le \lambda_n$ be the extreme eigenvalues of the pencil
+$(H, M)$. Section 9.3.1 bounds $\lambda^*$ by the roots of scalar equations (9.3.3)–(9.3.5), and
+bounds $\lambda_1$ and $\lambda_n$ by generalized Gershgorin regions (9.3.6)–(9.3.7) and by matrix
+norms. Algorithm 9.3.1 treats the potential hard case by inverse iteration, and Theorem 9.3.1 shows
+that its shifts converge fast to $-\lambda_1$. Section 9.3.5 shows that $\mathcal{L}$ grows with
+$\sigma$. Section 9.3.6 gives the early-termination requirements (9.3.14) and a test (9.3.15) for
+them on the secular function (Theorem 9.3.2), which for $r = 3$ is the two-sided bound (9.3.16) on
+$\|s(\lambda)\|_M$.
+
+The proofs are in the backbone modules `Numlib.Optimization.Subproblem.InverseIteration`,
+`Numlib.Optimization.Subproblem.Stopping` and `Numlib.Eigen.SymmetricPencil`, reached through the
+$M$-inner product space `Subproblem.ScaledSpace`.
 
 ## Main definitions
 
-* `rightmostPencil hH hM` — the largest pencil eigenvalue `λₙ`.
-* `invIterVec H M λ z i` — `i` normalized inverse iterations `w ← (H + λ M)⁻¹ M w / ‖·‖_M`.
-* `algorithm_9_3_1` — runs of Algorithm 9.3.1.
-* `stoppingRules_9_3_14` — the early-termination requirements (9.3.14).
-* `Matrix.offDiagSum` (backbone) — the off-diagonal row sums `o_kᴬ` of (9.3.6).
-* `etaL`, `etaU` — the factors of (9.3.16).
+* `CartisGouldToint.Chapter09.rightmostPencil`: the rightmost eigenvalue $\lambda_n$ of the pencil
+  $(H, M)$.
+* Algorithm 9.3.1, `CartisGouldToint.Chapter09.algorithm_9_3_1`: a run of the inverse-iteration
+  method for the potential hard case, with inner iterations `CartisGouldToint.Chapter09.invIterVec`.
+* Equation (9.3.14), `CartisGouldToint.Chapter09.stoppingRules_9_3_14`: the early-termination
+  requirements for a step $s$.
+* Equation (9.3.16), `CartisGouldToint.Chapter09.etaL`, `CartisGouldToint.Chapter09.etaU`: the
+  factors $\eta^L$ and $\eta^U$.
 
 ## Main results
 
-* `lambdaStar_bounds_9_3_3` — (9.3.3)–(9.3.5).
-* `pencil_gershgorin_9_3_7` — (9.3.6)–(9.3.7) and the Rayleigh bound `λ₁ ≤ hᵢᵢ/mᵢᵢ`.
-* `abs_eigenvalue_le_frobenius` — `|λᵢ| ≤ ‖H‖_F` (§9.3.1, `M = I`).
-* `opNorm_le_min_linfty_frobenius`, `extremeEigenvalue_bounds_9_3_1` — `‖H‖₂ ≤ min(‖H‖_∞, ‖H‖_F)`
-  and `-min(‖H‖_∞, ‖H‖_F) ≤ -‖H‖₂ ≤ λ₁ ≤ λₙ ≤ ‖H‖₂ ≤ min(‖H‖_∞, ‖H‖_F)` (§9.3.1, `M = I`).
+* Equations (9.3.3)–(9.3.5), `CartisGouldToint.Chapter09.lambdaStar_bounds_9_3_3`: $(\lambda^* +
+  \lambda_1)(\lambda^*)^{1/(r-2)} \le \sigma^{1/(r-2)} \|g\|_{M^{-1}} \le (\lambda^* +
+  \lambda_n)(\lambda^*)^{1/(r-2)}$, and the bracket $\lambda^L \le \lambda^* \le \lambda^U$.
+* Equations (9.3.6)–(9.3.7), `CartisGouldToint.Chapter09.pencil_gershgorin_9_3_7`: the generalized
+  Gershgorin bounds on the pencil eigenvalues, and $\lambda_1 \le \min_i h_{ii}/m_{ii}$.
+* Section 9.3.1, `CartisGouldToint.Chapter09.abs_eigenvalue_le_frobenius`: for $M = I$,
+  $|\lambda_i| \le \|H\|_F$.
+* Section 9.3.1, `CartisGouldToint.Chapter09.opNorm_le_min_linfty_frobenius`:
+  $\|H\|_2 \le \min(\|H\|_\infty, \|H\|_F)$ for symmetric $H$.
+* Section 9.3.1, `CartisGouldToint.Chapter09.extremeEigenvalue_bounds_9_3_1`: for $M = I$,
+  $-\min(\|H\|_\infty, \|H\|_F) \le \lambda_1 \le \lambda_n \le \min(\|H\|_\infty, \|H\|_F)$.
+* Algorithm 9.3.1, `CartisGouldToint.Chapter09.algorithm_9_3_1.isInverseIterationRun`: a run is a
+  run of the backbone inverse iteration for $M^{-1} H$.
+* Theorem 9.3.1, `CartisGouldToint.Chapter09.theorem_9_3_1`: near $-\lambda_1$, the shifts of
+  Algorithm 9.3.1 decrease to $-\lambda_1$ with Q-order $\bar\gamma$.
+* Section 9.3.5, `CartisGouldToint.Chapter09.setL_reg_mono`: $\mathcal{L}$ grows with $\sigma$.
+* Theorem 9.3.2, `CartisGouldToint.Chapter09.theorem_9_3_2`: the conditions (9.3.15) on
+  $\pi(\lambda_c)$ imply the requirements (9.3.14) for $s(\lambda_c)$.
+* Equation (9.3.16), `CartisGouldToint.Chapter09.cubic_termination_9_3_16`: for $r = 3$, (9.3.15) is
+  equivalent to $\eta^L \lambda_c/\sigma \le \|s(\lambda_c)\|_M \le \eta^U \lambda_c/\sigma$.
 
-The spectral norm `‖H‖₂` is `Matrix.lpOpNorm 2 H`. The comparison `‖H‖₂ ≤ ‖H‖_∞` uses the
-symmetry of `H` (`Matrix.IsHermitian.l2_opNorm_le_linfty_opNorm`); for a general `H` only
-`‖H‖₂² ≤ ‖H‖₁ ‖H‖_∞` holds (`Matrix.l2_opNorm_sq_le_lpOpNorm_one_mul_linfty_opNorm`).
-* `algorithm_9_3_1.isInverseIterationRun`, `theorem_9_3_1` — fast convergence in the hard case.
-* `setL_reg_mono` — §9.3.5.
-* `theorem_9_3_2`, `cubic_termination_9_3_16` — §9.3.6.
+## Implementation notes
 
-The safeguarded update (9.3.10)–(9.3.12) and the overall procedure of §9.3.7 combine these
-heuristically and are not separately formalized; their admissible choices are covered by
-`CartisGouldToint.Chapter09.algorithm_9_2_1`.
+* The spectral norm $\|H\|_2$ is `Matrix.lpOpNorm 2 H`, $\|H\|_\infty$ is the largest absolute row
+  sum, and $\|H\|_F = (\sum_{i,j} h_{ij}^2)^{1/2}$. The comparison $\|H\|_2 \le \|H\|_\infty$ uses
+  the symmetry of $H$ (`Matrix.IsHermitian.l2_opNorm_le_linfty_opNorm`). For a general $H$ only
+  $\|H\|_2^2 \le \|H\|_1 \|H\|_\infty$ holds
+  (`Matrix.l2_opNorm_sq_le_lpOpNorm_one_mul_linfty_opNorm`).
+* The off-diagonal absolute row sums $o_k^A = \sum_{i \neq k} |a_{ki}|$ of (9.3.6) are
+  `Matrix.offDiagSum`.
+* The set $\mathcal{N} = (-\infty, \lambda_s]$ and the number $\lambda_s = \max(0, -\lambda_1)$
+  depend only on $H$ and $M$, not on $\sigma$. This is why $\mathcal{N}_+ = \mathcal{N}$ in Section
+  9.3.5.
 
-## Corrections to the source
+## Deviations from the source
 
-* Theorem 9.3.1 omits the hypothesis `z₀ ∈ 𝒵₁` (footnote 64 notes that it is missing from the
-  source paper; it is also missing from the printed theorem), and `𝒵₁` must be read in the
-  `M`-inner product, `⟪z, M v⟫ ≠ 0` for a generalized eigenvector `v` for `λ₁` (the printed
-  Euclidean `⟪z, vᵢ⟫ ≠ 0` is the right condition only for `M = I`; it is the hypothesis `z₀ ∈ 𝒵₁`
-  of `theorem_9_3_1`, equivalent to `z₀` having a nonzero `M`-orthogonal component in the leftmost
-  eigenspace). The parameter sequences `nₖ`, `ωₖ`, `γₖ` are fixed before the closeness `ε`, which
-  depends on them (with `nₖ` eventually constant, as in the book; no single `ε` serves all runs
-  when `n_U = ∞`, see `Subproblem.IsInverseIterationRun.convergence`); the Q-order `γ̄` is stated
-  as two-sided bounds
-  `c eₖ^γ̄ ≤ eₖ₊₁ ≤ C eₖ^γ̄`. Algorithm 9.3.1 assumes `λ₀ᴳ ∈ 𝓖`; only `H + λ₀ᴳ M ≻ 0` is used.
-* Theorem 9.3.2: with the Euclidean `λ_min` in (9.3.14c) the theorem is false for `M ≠ I`, since
-  (9.3.15c) only yields `∇²m^R(s) ⪰ -θ₂ ‖s‖_M M`; (9.3.14) is stated with the `M`-scalings of the
-  primal and dual norms and of `λ_min` (`λ_min[∇²m^R(s), M]`), as the book's phrase "with the
-  appropriate `M`-scalings" suggests.
-* (9.3.6): the book's middle term `|∑_{i≠k} (h_ki - λ m_ki)|` drops the factors `uᵢ/u_k`
-  (`|uᵢ/u_k| ≤ 1`) and is not a valid bound as printed; only the outer inequality
-  `|h_kk - λ m_kk| ≤ o_kᴴ + |λ| o_kᴹ` is stated (`exists_abs_sub_le_of_eigen`, via
-  `Matrix.exists_abs_sub_le_of_mulVec_eq`), which is what (9.3.7) uses.
-* §9.3.5: `𝓝 = (-∞, λₛ]` and `λₛ` depend only on `H` and `M`, not on `σ`, which is why `𝓝₊ = 𝓝`.
+* **Equation (9.3.5)** (generalization). The source takes the rightmost root $\lambda^L$; the bound
+  $\lambda^L \le \lambda^*$ holds for every nonnegative root. See
+  `CartisGouldToint.Chapter09.lambdaStar_bounds_9_3_3`.
+* **Theorem 9.3.1, start condition** (correction). The printed theorem omits the hypothesis
+  $z_0 \in \mathcal{Z}_1$; it is added. See `CartisGouldToint.Chapter09.theorem_9_3_1`.
+* **Theorem 9.3.1, the set $\mathcal{Z}_1$** (reading). The condition is read in the $M$-inner
+  product, $\langle z, M v \rangle \neq 0$ for a generalized eigenvector $v$ for $\lambda_1$. See
+  `CartisGouldToint.Chapter09.theorem_9_3_1`.
+* **Theorem 9.3.1, quantifiers and order** (reading). The parameter sequences are fixed before the
+  radius $\varepsilon$, and the Q-order $\bar\gamma$ is stated as two-sided bounds. See
+  `CartisGouldToint.Chapter09.theorem_9_3_1`.
+* **Algorithm 9.3.1, initial shift** (generalization). The source assumes
+  $\lambda^G_0 \in \mathcal{G}$; only $H + \lambda^G_0 M \succ 0$ is required. See
+  `CartisGouldToint.Chapter09.algorithm_9_3_1`.
+* **Theorem 9.3.2** (correction). With the Euclidean $\lambda_{\min}$ in (9.3.14c) the theorem is
+  false for $M \neq I$; (9.3.14) is stated with the $M$-scalings. See
+  `CartisGouldToint.Chapter09.theorem_9_3_2`.
+* **Equation (9.3.6), middle term** (correction). The middle term is not a valid bound as printed;
+  only the outer inequality is stated. See `CartisGouldToint.Chapter09.exists_abs_sub_le_of_eigen`.
+
+## Not formalized
+
+* **The safeguarded update (9.3.10)–(9.3.12) and the overall procedure of Section 9.3.7.** They
+  combine the results of this module heuristically; their admissible choices are covered by
+  `CartisGouldToint.Chapter09.algorithm_9_2_1`.
 -/
 
 open Matrix Set Filter Topology
@@ -76,25 +111,36 @@ variable {n : ℕ} {g : EuclideanSpace ℝ (Fin n)} {H M : Matrix (Fin n) (Fin n
 
 /-! ### The extreme pencil eigenvalues -/
 
-/-- The **rightmost eigenvalue** `λₙ` of the pencil `(H, M)` (the largest of
-`Matrix.pencilEigenvalues hH hM`; `0` when `n = 0`). -/
+/-- The **rightmost eigenvalue** $\lambda_n$ of the pencil $(H, M)$, for $H$ symmetric and $M$
+symmetric positive definite: the largest of `Matrix.pencilEigenvalues`. It is $0$ when $n = 0$. -/
 noncomputable def rightmostPencil (hH : H.IsHermitian) (hM : M.PosDef) : ℝ :=
   ⨆ i, pencilEigenvalues hH hM i
 
-/-- The rightmost pencil eigenvalue is the rightmost eigenvalue of the scaled operator. -/
+/-- The rightmost eigenvalue of the pencil $(H, M)$ equals the rightmost eigenvalue of the scaled
+operator $M^{-1} H$ on the $M$-inner product space. -/
 theorem rightmostPencil_eq (hH : H.IsHermitian) (hM : M.PosDef) :
     rightmostPencil hH hM = rightmost (isSymmetric_scaledOp (hM := hM) hH) :=
   (rightmost_scaledOp hH).symm
 
-/-! ### Initial bounds on `λ*` (§9.3.1) -/
+/-! ### Initial bounds on $\lambda^*$ (Section 9.3.1) -/
 
-/-- **Bounds on the multiplier, regularization** ([cartis2022evaluation] (9.3.1)–(9.3.5)). Let
-`σ > 0`, `r > 2`, `s*` a global minimizer of (8.1.3), `λ* = σ ‖s*‖_M^{r-2}`, `λ₁ ≤ λₙ` the extreme
-pencil eigenvalues, `p = 1/(r-2)` and `c = σ^p ‖g‖_{M⁻¹}`. Then `λ* ≥ λₛ` and
-`(λ* + λ₁) λ*^p ≤ c ≤ (λ* + λₙ) λ*^p` (9.3.3); the same holds with outer bounds `λ₁ᴸ ≤ λ₁`,
-`λₙᵁ ≥ λₙ` (9.3.4); and if `λᵁ` is the rightmost root on `λ ≥ 0` of `(λ + λ₁ᴸ) λ^p = c` and `λᴸ ≥ 0`
-is a root of `(λ + λₙᵁ) λ^p = c` (9.3.5; the book takes the rightmost one) then
-`λᴸ ≤ λ* ≤ λᵁ` (9.2.1). -/
+/-- **Equations (9.3.1)–(9.3.5)** of [cartis2022evaluation], bounds on the multiplier. Let $H$ be
+symmetric, $M$ symmetric positive definite, $\sigma > 0$ and $r > 2$. Let $s^*$ be a global
+minimizer of the regularization subproblem (8.1.3), $\lambda^* = \sigma \|s^*\|_M^{r-2}$,
+$p = 1/(r-2)$ and $c = \sigma^p \|g\|_{M^{-1}}$. Then $\lambda^* \ge \lambda_s$ and
+$$(\lambda^* + \lambda_1) (\lambda^*)^p \le c \le (\lambda^* + \lambda_n) (\lambda^*)^p. \qquad
+  (9.3.3)$$
+Let $l_1 \le \lambda_1$ and $l_n \ge \lambda_n$. Then (9.3.4) holds: the same two inequalities
+hold with $l_1$ and $l_n$ in place of $\lambda_1$ and $\lambda_n$. Moreover, let $\lambda^U$ be
+the largest $\lambda \ge 0$ with $(\lambda + l_1) \lambda^p = c$, and let $\lambda^L \ge 0$
+satisfy $(\lambda^L + l_n) (\lambda^L)^p = c$ (9.3.5). Then
+$\lambda^L \le \lambda^* \le \lambda^U$, which is the bracket (9.2.1).
+
+**Generalization.** The source takes $\lambda^L$ to be the rightmost root of its equation. The
+statement holds for every nonnegative root.
+
+The powers are real powers, and $\|g\|_{M^{-1}}$ is `CartisGouldToint.Chapter08.mNorm` for
+$M^{-1}$. -/
 theorem lambdaStar_bounds_9_3_3 (hH : H.IsHermitian) (hM : M.PosDef) {σ r : ℝ} (hσ : 0 < σ)
     (hr : 2 < r) {s : EuclideanSpace ℝ (Fin n)} (hs : IsRegularizationSolution g H M σ r s) :
     lambdaS hH hM ≤ σ * mNorm M s ^ (r - 2) ∧
@@ -172,8 +218,16 @@ theorem lambdaStar_bounds_9_3_3 (hH : H.IsHermitian) (hM : M.PosDef) {σ r : ℝ
 
 /-! ### Generalized Gershgorin bounds (9.3.6)–(9.3.7) -/
 
-/-- **Gershgorin for the pencil** ((9.3.6)–(9.3.7)): every generalized eigenvalue `μ` of `(H, M)`
-satisfies `|h_kk - μ m_kk| ≤ o_kᴴ + |μ| o_kᴹ` for some `k`. -/
+/-- **Equation (9.3.6)** of [cartis2022evaluation], Gershgorin regions for the pencil. Let
+$\mu \in \mathbb{R}$ and $u \neq 0$ with $H u = \mu M u$. Then for some $k$,
+$$|h_{kk} - \mu m_{kk}| \le o_k^H + |\mu| \, o_k^M,$$
+where $o_k^A = \sum_{i \neq k} |a_{ki}|$.
+
+**Correction.** The source prints the middle term $|\sum_{i \neq k} (h_{ki} - \mu m_{ki})|$,
+which drops the factors $u_i/u_k$ (with $|u_i/u_k| \le 1$) and is not a valid bound as printed.
+Only the outer inequality is stated, which is what (9.3.7) uses.
+
+The proof specializes `Matrix.exists_abs_sub_le_of_mulVec_eq`. -/
 theorem exists_abs_sub_le_of_eigen {μ : ℝ} {u : EuclideanSpace ℝ (Fin n)} (hu : u ≠ 0)
     (h : toEuclideanLin H u = μ • toEuclideanLin M u) :
     ∃ k, |H k k - μ * M k k| ≤ offDiagSum H k + |μ| * offDiagSum M k := by
@@ -182,14 +236,26 @@ theorem exists_abs_sub_le_of_eigen {μ : ℝ} {u : EuclideanSpace ℝ (Fin n)} (
   have := congrArg WithLp.ofLp h
   simpa only [toEuclideanLin_apply, WithLp.ofLp_smul] using this
 
-/-- **Generalized Gershgorin bounds** ([cartis2022evaluation] (9.3.6)–(9.3.7) and §9.3.1), for
-`n ≥ 1`. Every generalized eigenvalue `μ` of `(H, M)` satisfies `|h_kk - μ m_kk| ≤ o_kᴴ + |μ| o_kᴹ`
-for some `k`; if `M` is strictly diagonally dominant (`o_kᴹ < m_kk`) each such region is the
-interval of `mem_gershgorin_interval` and
-`λ₁ ≥ min_k min((h_kk - o_kᴴ)/(m_kk - o_kᴹ), (h_kk - o_kᴴ)/(m_kk + o_kᴹ))`,
-`λₙ ≤ max_k max((h_kk + o_kᴴ)/(m_kk - o_kᴹ), (h_kk + o_kᴴ)/(m_kk + o_kᴹ))`. Moreover
-`λ₁ ≤ min_i h_ii/m_ii`, and for `M = I` every eigenvalue satisfies `|μ| ≤ ‖H‖₂` and
-`|μ| ≤ ‖H‖_∞ = max_k ∑_j |h_kj|`. -/
+/-- **Equations (9.3.6)–(9.3.7)** of [cartis2022evaluation] and Section 9.3.1, generalized
+Gershgorin bounds. Let $n \ge 1$, $H$ symmetric and $M$ symmetric positive definite, and let
+$o_k^A = \sum_{i \neq k} |a_{ki}|$. Then:
+
+* every generalized eigenvalue $\mu$ of $(H, M)$ satisfies $|h_{kk} - \mu m_{kk}| \le o_k^H +
+  |\mu| \, o_k^M$ for some $k$;
+* if $o_k^M < m_{kk}$ for all $k$, then
+$$\lambda_1 \ge \min_k \min\Bigl(\frac{h_{kk} - o_k^H}{m_{kk} - o_k^M}, \frac{h_{kk} -
+  o_k^H}{m_{kk} + o_k^M}\Bigr), \qquad \lambda_n \le \max_k \max\Bigl(\frac{h_{kk} +
+  o_k^H}{m_{kk} - o_k^M}, \frac{h_{kk} + o_k^H}{m_{kk} + o_k^M}\Bigr);$$
+* $\lambda_1 \le h_{ii}/m_{ii}$ for every $i$;
+* if $M = I$, every eigenvalue $\mu$ of $H$ satisfies $|\mu| \le \|H\|_2$ and $|\mu| \le
+  \|H\|_\infty = \max_k \sum_j |h_{kj}|$.
+
+**Correction.** The middle term of (9.3.6) is not a valid bound as printed (see
+`CartisGouldToint.Chapter09.exists_abs_sub_le_of_eigen`); only the outer inequality is stated.
+
+Each Gershgorin region of the second part is bounded by the interval of
+`Matrix.mem_gershgorin_interval`. Here $\|H\|_2$ is the operator norm of
+`Matrix.toEuclideanLin H`. -/
 theorem pencil_gershgorin_9_3_7 [NeZero n] (hH : H.IsHermitian) (hM : M.PosDef) :
     (∀ (μ : ℝ) (u : EuclideanSpace ℝ (Fin n)), u ≠ 0 →
       toEuclideanLin H u = μ • toEuclideanLin M u →
@@ -244,14 +310,16 @@ theorem pencil_gershgorin_9_3_7 [NeZero n] (hH : H.IsHermitian) (hM : M.PosDef) 
     rw [abs_sub_comm] at this
     linarith
 
-/-- An eigenpair `H u = μ u` of the Euclidean operator gives `H *ᵥ u = μ u` on coordinates. -/
+/-- An eigenpair $H u = \mu u$ of the Euclidean operator gives $u \neq 0$ and $H u = \mu u$ on the
+coordinate vectors. -/
 private theorem mulVec_eq_smul_of_eigen {μ : ℝ} {u : EuclideanSpace ℝ (Fin n)} (hu : u ≠ 0)
     (h : toEuclideanLin H u = μ • u) :
     WithLp.ofLp u ≠ 0 ∧ H *ᵥ WithLp.ofLp u = μ • WithLp.ofLp u :=
   ⟨fun h0 => hu (by simpa using congrArg (WithLp.toLp 2) h0), by
     simpa only [toEuclideanLin_apply, WithLp.ofLp_smul] using congrArg WithLp.ofLp h⟩
 
-/-- Every eigenvalue `μ` of `H` satisfies `|μ| ≤ ‖H‖₂` (`Matrix.lpOpNorm 2 H`). -/
+/-- Let $\mu \in \mathbb{R}$ and $u \neq 0$ with $H u = \mu u$. Then $|\mu| \le \|H\|_2$, the
+spectral norm `Matrix.lpOpNorm 2 H`. -/
 theorem abs_eigenvalue_le_lpOpNorm_two {μ : ℝ} {u : EuclideanSpace ℝ (Fin n)} (hu : u ≠ 0)
     (h : toEuclideanLin H u = μ • u) : |μ| ≤ lpOpNorm 2 H := by
   obtain ⟨h0, h1⟩ := mulVec_eq_smul_of_eigen hu h
@@ -261,7 +329,9 @@ section Frobenius
 
 attribute [local instance] Matrix.frobeniusNormedAddCommGroup
 
-/-- `‖H‖₂ ≤ ‖H‖_F = (∑ᵢⱼ hᵢⱼ²)^{1/2}` (`Matrix.l2_opNorm_le_frobenius_norm`, any square `H`). -/
+/-- Every square matrix $H$ satisfies $\|H\|_2 \le \|H\|_F = (\sum_{i,j} h_{ij}^2)^{1/2}$.
+
+The proof specializes `Matrix.l2_opNorm_le_frobenius_norm`. -/
 theorem lpOpNorm_two_le_frobenius : lpOpNorm 2 H ≤ √(∑ i, ∑ j, H i j ^ 2) := by
   have hF : ‖H‖ = √(∑ i, ∑ j, H i j ^ 2) := by
     rw [frobenius_norm_def, Real.sqrt_eq_rpow]
@@ -272,16 +342,22 @@ theorem lpOpNorm_two_le_frobenius : lpOpNorm 2 H ≤ √(∑ i, ∑ j, H i j ^ 2
 
 end Frobenius
 
-/-- **§9.3.1 of [cartis2022evaluation], `M = I`**: every eigenvalue `μ` of `H` satisfies
-`|μ| ≤ ‖H‖_F = (∑ᵢⱼ hᵢⱼ²)^{1/2}` (via `|μ| ≤ ‖H‖₂ ≤ ‖H‖_F`). -/
+/-- **Section 9.3.1** of [cartis2022evaluation], the Frobenius bound for $M = I$. Let
+$\mu \in \mathbb{R}$ and $u \neq 0$ with $H u = \mu u$. Then
+$$|\mu| \le \|H\|_F = \Bigl(\sum_{i,j} h_{ij}^2\Bigr)^{1/2}.$$
+
+The proof combines $|\mu| \le \|H\|_2$ and $\|H\|_2 \le \|H\|_F$. -/
 theorem abs_eigenvalue_le_frobenius {μ : ℝ} {u : EuclideanSpace ℝ (Fin n)} (hu : u ≠ 0)
     (h : toEuclideanLin H u = μ • u) : |μ| ≤ √(∑ i, ∑ j, H i j ^ 2) :=
   (abs_eigenvalue_le_lpOpNorm_two hu h).trans lpOpNorm_two_le_frobenius
 
-/-! ### Norm comparisons of §9.3.1 -/
+/-! ### Norm comparisons of Section 9.3.1 -/
 
-/-- The `∞`-norm is the largest absolute row sum: `‖H‖_∞ ≤ max_k ∑_j |h_kj|` (with equality,
-`Matrix.sum_norm_le_lpOpNorm_top`). -/
+/-- The norm $\|H\|_\infty$ satisfies $\|H\|_\infty \le \max_k \sum_j |h_{kj}|$, the largest
+absolute row sum.
+
+The reverse inequality, $\sum_j |h_{kj}| \le \|H\|_\infty$ for each row $k$, is
+`Matrix.sum_norm_le_lpOpNorm_top`, so equality holds. -/
 theorem lpOpNorm_top_le_iSup : lpOpNorm ⊤ H ≤ ⨆ k, ∑ j, |H k j| := by
   have hR : 0 ≤ ⨆ k, ∑ j, |H k j| :=
     Real.iSup_nonneg fun k => Finset.sum_nonneg fun j _ => abs_nonneg _
@@ -293,16 +369,22 @@ theorem lpOpNorm_top_le_iSup : lpOpNorm ⊤ H ≤ ⨆ k, ∑ j, |H k j| := by
   simp only [coe_nnnorm, Real.norm_eq_abs]
   exact le_ciSup (f := fun k => ∑ j, |H k j|) (Set.finite_range _).bddAbove i
 
-/-- **The norm comparisons of [cartis2022evaluation] §9.3.1** (`M = I`, symmetric `H`):
-`‖H‖₂ ≤ min(‖H‖_∞, ‖H‖_F)`, with `‖H‖₂ = Matrix.lpOpNorm 2 H` the spectral norm,
-`‖H‖_∞ = max_k ∑_j |h_kj|` and `‖H‖_F = (∑ᵢⱼ hᵢⱼ²)^{1/2}`. -/
+/-- **Section 9.3.1** of [cartis2022evaluation], norm comparisons. Let $H$ be symmetric. Then
+$$\|H\|_2 \le \min(\|H\|_\infty, \|H\|_F),$$
+where $\|H\|_2$ is the spectral norm `Matrix.lpOpNorm 2 H`,
+$\|H\|_\infty = \max_k \sum_j |h_{kj}|$ and $\|H\|_F = (\sum_{i,j} h_{ij}^2)^{1/2}$.
+
+The comparison with $\|H\|_\infty$ uses the symmetry of $H$. -/
 theorem opNorm_le_min_linfty_frobenius (hH : H.IsHermitian) :
     lpOpNorm 2 H ≤ min (⨆ k, ∑ j, |H k j|) (√(∑ i, ∑ j, H i j ^ 2)) :=
   le_min (hH.l2_opNorm_le_linfty_opNorm.trans lpOpNorm_top_le_iSup) lpOpNorm_two_le_frobenius
 
-/-- **Outer bounds on the extreme eigenvalues for `M = I`** ([cartis2022evaluation] §9.3.1,
-`n ≥ 1`, symmetric `H`):
-`-min(‖H‖_∞, ‖H‖_F) ≤ -‖H‖₂ ≤ λ₁ ≤ λₙ ≤ ‖H‖₂ ≤ min(‖H‖_∞, ‖H‖_F)`. -/
+/-- **Section 9.3.1** of [cartis2022evaluation], outer bounds on the extreme eigenvalues for
+$M = I$. Let $n \ge 1$ and $H$ symmetric, with extreme eigenvalues $\lambda_1 \le \lambda_n$.
+Then
+$$-\min(\|H\|_\infty, \|H\|_F) \le -\|H\|_2 \le \lambda_1 \le \lambda_n \le \|H\|_2 \le
+  \min(\|H\|_\infty, \|H\|_F).$$
+-/
 theorem extremeEigenvalue_bounds_9_3_1 [NeZero n] (hH : H.IsHermitian) :
     -min (⨆ k, ∑ j, |H k j|) (√(∑ i, ∑ j, H i j ^ 2)) ≤ -lpOpNorm 2 H ∧
       -lpOpNorm 2 H ≤ leftmostPencil hH PosDef.one ∧
@@ -327,8 +409,13 @@ theorem extremeEigenvalue_bounds_9_3_1 [NeZero n] (hH : H.IsHermitian) :
 
 /-! ### Algorithm 9.3.1 and Theorem 9.3.1 -/
 
-/-- `n` normalized inverse iterations of [cartis2022evaluation] Algorithm 9.3.1 with shift `λ`:
-`w₀ = z` and `wᵢ = vᵢ / ‖vᵢ‖_M` with `vᵢ = (H + λ M)⁻¹ M wᵢ₋₁`. -/
+/-- **Algorithm 9.3.1** of [cartis2022evaluation], the inner iterations. Let
+$\lambda \in \mathbb{R}$ and $z \in \mathbb{R}^n$. The normalized inverse iterations with shift
+$\lambda$ are $w_0 = z$ and $w_i = v_i/\|v_i\|_M$ with $v_i = (H + \lambda M)^{-1} M w_{i-1}$
+for $i \ge 1$.
+
+The inverse is the matrix inverse of Mathlib, which is $0$ for a singular matrix, and division
+by a zero norm gives $0$. -/
 noncomputable def invIterVec (H M : Matrix (Fin n) (Fin n) ℝ) (lam : ℝ)
     (z : EuclideanSpace ℝ (Fin n)) : ℕ → EuclideanSpace ℝ (Fin n)
   | 0 => z
@@ -336,34 +423,54 @@ noncomputable def invIterVec (H M : Matrix (Fin n) (Fin n) ℝ) (lam : ℝ)
     (mNorm M (toEuclideanLin (H + lam • M)⁻¹ (toEuclideanLin M (invIterVec H M lam z i))))⁻¹ •
       toEuclideanLin (H + lam • M)⁻¹ (toEuclideanLin M (invIterVec H M lam z i))
 
-/-- A **run of Algorithm 9.3.1** of [cartis2022evaluation] (potential hard case): constants
-`0 < ω_L ≤ ω_U`, `0 < γ_U ≤ 1`, `1 < γ_L ≤ 2 - γ_U`, `1 ≤ n_U ≤ ∞`; shifts `λᴳₖ` with
-`H + λᴳ₀ M` positive definite (the book's `λᴳ₀ ∈ 𝓖`), unit vectors `zₖ` (`‖z₀‖_M = 1`), and at each
-step `1 ≤ nₖ ≤ n_U` inverse iterations from `zₖ` with shift `λᴳₖ` give `zₖ₊₁`, with Rayleigh
-quotient `ρ = ⟪zₖ₊₁, H zₖ₊₁⟫`, and `λᴳₖ₊₁ = -ρ + ωₖ (λᴳₖ + ρ)^{γₖ}` for some `ωₖ ∈ [ω_L, ω_U]`,
-`γₖ ∈ [γ_L, 2nₖ - γ_U]`. -/
+/-- **Algorithm 9.3.1** of [cartis2022evaluation], a run (the potential hard case). Let $H$ be
+symmetric and $M$ symmetric positive definite. Constants $\omega_L, \omega_U, \gamma_L, \gamma_U
+\in \mathbb{R}$ and $n_U \in \mathbb{N} \cup \{\infty\}$, shifts $\lambda^G_k$, vectors $z_k$,
+iteration counts $n_k$, weights $\omega_k$ and exponents $\gamma_k$ form a **run of Algorithm
+9.3.1** if
+
+* $0 < \omega_L \le \omega_U$, $0 < \gamma_U \le 1$, $1 < \gamma_L \le 2 - \gamma_U$ and
+  $1 \le n_U$;
+* $\|z_0\|_M = 1$ and $H + \lambda^G_0 M$ is positive definite;
+* for every $k$, $1 \le n_k \le n_U$, $\omega_k \in [\omega_L, \omega_U]$ and
+  $\gamma_k \in [\gamma_L, 2 n_k - \gamma_U]$;
+* $z_{k+1}$ is the result of $n_k$ normalized inverse iterations from $z_k$ with shift
+  $\lambda^G_k$;
+* with the Rayleigh quotient $\rho_k = \langle z_{k+1}, H z_{k+1} \rangle$,
+$$\lambda^G_{k+1} = -\rho_k + \omega_k (\lambda^G_k + \rho_k)^{\gamma_k}.$$
+
+**Generalization.** The source assumes $\lambda^G_0 \in \mathcal{G}$. Only the consequence that
+$H + \lambda^G_0 M$ is positive definite is used, and only that is required.
+
+The power is the real power `Real.rpow`. The inner iterations are
+`CartisGouldToint.Chapter09.invIterVec`. -/
 structure algorithm_9_3_1 (hH : H.IsHermitian) (hM : M.PosDef) (ωL ωU γL γU : ℝ) (nU : ℕ∞)
     (lamG : ℕ → ℝ) (z : ℕ → EuclideanSpace ℝ (Fin n)) (nk : ℕ → ℕ) (ω γ : ℕ → ℝ) : Prop where
-  /-- The constants of the algorithm. -/
+  /-- The constants satisfy $0 < \omega_L \le \omega_U$, $0 < \gamma_U \le 1$,
+  $1 < \gamma_L \le 2 - \gamma_U$ and $1 \le n_U$. -/
   constants : 0 < ωL ∧ ωL ≤ ωU ∧ 0 < γU ∧ γU ≤ 1 ∧ 1 < γL ∧ γL ≤ 2 - γU ∧ 1 ≤ nU
-  /-- The initial vector is a unit vector in the `M`-norm. -/
+  /-- The initial vector satisfies $\|z_0\|_M = 1$. -/
   norm_zero : mNorm M (z 0) = 1
-  /-- The initial shift makes `H + λᴳ₀ M` positive definite. -/
+  /-- The initial shift makes $H + \lambda^G_0 M$ positive definite. -/
   start : (H + lamG 0 • M).PosDef
-  /-- The numbers of inverse iterations. -/
+  /-- Each iteration count satisfies $1 \le n_k \le n_U$. -/
   count : ∀ k, 1 ≤ nk k ∧ (nk k : ℕ∞) ≤ nU
-  /-- The weights. -/
+  /-- Each weight satisfies $\omega_k \in [\omega_L, \omega_U]$. -/
   weight_mem : ∀ k, ω k ∈ Icc ωL ωU
-  /-- The exponents. -/
+  /-- Each exponent satisfies $\gamma_k \in [\gamma_L, 2 n_k - \gamma_U]$. -/
   exponent_mem : ∀ k, γ k ∈ Icc γL (2 * nk k - γU)
-  /-- The inverse iterations. -/
+  /-- Each $z_{k+1}$ is the result of $n_k$ normalized inverse iterations from $z_k$ with shift
+  $\lambda^G_k$. -/
   vector_succ : ∀ k, z (k + 1) = invIterVec H M (lamG k) (z k) (nk k)
-  /-- The shift update. -/
+  /-- Each shift is updated by $\lambda^G_{k+1} = -\rho_k + \omega_k (\lambda^G_k +
+  \rho_k)^{\gamma_k}$, with $\rho_k = \langle z_{k+1}, H z_{k+1} \rangle$. -/
   shift_succ : ∀ k, lamG (k + 1) = -⟪z (k + 1), toEuclideanLin H (z (k + 1))⟫ +
     ω k * (lamG k + ⟪z (k + 1), toEuclideanLin H (z (k + 1))⟫) ^ γ k
 
-/-- The inner iterations of Algorithm 9.3.1 are, transported, the normalized powers of the
-inverse of the shifted scaled operator. -/
+/-- Moved to the $M$-inner product space, $i + 1$ normalized inverse iterations from $z$ with shift
+$\lambda$ give $A^{i+1} z / \|A^{i+1} z\|_M$, where $A = (M^{-1} H + \lambda I)^{-1}$.
+
+The inverse is `Ring.inverse`, which is $0$ for a non-invertible operator. -/
 theorem toScaled_invIterVec (hM : M.PosDef) (lam : ℝ) (z : EuclideanSpace ℝ (Fin n)) (i : ℕ) :
     toScaled hM (invIterVec H M lam z (i + 1)) =
       ‖(Ring.inverse (scaledOp H hM + lam • (1 : ScaledSpace hM →L[ℝ] ScaledSpace hM)) ^ (i + 1))
@@ -375,8 +482,10 @@ theorem toScaled_invIterVec (hM : M.PosDef) (lam : ℝ) (z : EuclideanSpace ℝ 
   simp only [invIterVec, map_smul, mNorm_eq_norm_toScaled hM, toScaled_inv_mul_apply,
     NormedSpace.normalize]
 
-/-- **Algorithm 9.3.1 in the scaled setting**: a run of Algorithm 9.3.1 is, transported to the
-`M`-inner product space, a run of `Subproblem.IsInverseIterationRun` for `M⁻¹ H`. -/
+/-- **Algorithm 9.3.1** of [cartis2022evaluation] in the scaled setting. Let $H$ be symmetric and
+$M$ symmetric positive definite. Every run of Algorithm 9.3.1, with its vectors moved to the
+$M$-inner product space, is a run of `Subproblem.IsInverseIterationRun` for the scaled operator
+$M^{-1} H$. -/
 theorem algorithm_9_3_1.isInverseIterationRun (hH : H.IsHermitian) (hM : M.PosDef)
     {ωL ωU γL γU : ℝ} {nU : ℕ∞} {lamG : ℕ → ℝ} {z : ℕ → EuclideanSpace ℝ (Fin n)}
     {nk : ℕ → ℕ} {ω γ : ℕ → ℝ} (h : algorithm_9_3_1 hH hM ωL ωU γL γU nU lamG z nk ω γ) :
@@ -398,9 +507,10 @@ theorem algorithm_9_3_1.isInverseIterationRun (hH : H.IsHermitian) (hM : M.PosDe
     simp only [h.vector_succ k, hm, toScaled_invIterVec hM]
   · simp only [h.shift_succ k, hrq]
 
-/-- The start condition `z₀ ∈ 𝒵₁` in the `M`-inner product, `⟪z₀, M v⟫ ≠ 0` for a generalized
-eigenvector `v` for `λ₁`, says that `z₀` has a nonzero component in the leftmost eigenspace of the
-scaled operator. -/
+/-- Let $H$ be symmetric and $M$ symmetric positive definite. If $\langle z_0, M v \rangle \neq 0$
+for some $v$ with $H v = \lambda_1 M v$ (the condition $z_0 \in \mathcal{Z}_1$ in the $M$-inner
+product), then $z_0$, moved to the $M$-inner product space, has a nonzero orthogonal projection
+onto the leftmost eigenspace of the scaled operator $M^{-1} H$. -/
 theorem starProjection_ne_zero_of_mem_Z₁ (hH : H.IsHermitian) (hM : M.PosDef)
     {z₀ : EuclideanSpace ℝ (Fin n)}
     (hz₀ : ∃ v : EuclideanSpace ℝ (Fin n),
@@ -417,15 +527,36 @@ theorem starProjection_ne_zero_of_mem_Z₁ (hH : H.IsHermitian) (hM : M.PosDef)
   have := Submodule.inner_right_of_mem_orthogonal hmem h0
   rwa [inner_toScaled, real_inner_comm] at this
 
-/-- **Theorem 9.3.1 of [cartis2022evaluation] (Fast convergence in the hard case)**, with the
-missing hypothesis `z₀ ∈ 𝒵₁` read in the `M`-inner product. Let `λ₁` be the leftmost pencil
-eigenvalue, `0 < ω_L`, `0 < γ_U`, `1 < γ_L`, and fix parameter sequences `nₖ`, `ωₖ`, `γₖ` with
-`nₖ = n̄` and `γₖ = γ̄` for all large `k`. Then there is `ε > 0` such that every run of
-Algorithm 9.3.1 with these sequences, `z 0 = z₀` and `λᴳ₀ < -λ₁ + ε` satisfies `λᴳₖ > -λ₁`,
-decreases monotonically and converges to `-λ₁` with Q-order `γ̄`:
-`c (λᴳₖ + λ₁)^γ̄ ≤ λᴳₖ₊₁ + λ₁ ≤ C (λᴳₖ + λ₁)^γ̄` for all large `k`, some `0 < c ≤ C`. The radius
-`ε` depends on `z₀` and on the fixed sequences (through a bound on `nₖ`), but not on `n_U` or on
-the run. The hypothesis `z₀ ∈ 𝒵₁` is `∃ v, H v = λ₁ M v ∧ ⟪z₀, M v⟫ ≠ 0`. -/
+/-- **Theorem 9.3.1** of [cartis2022evaluation] (fast convergence in the hard case). Let $H$ be
+symmetric, $M$ symmetric positive definite, and $\lambda_1$ the leftmost eigenvalue of the
+pencil $(H, M)$. Let $\omega_L > 0$, $\gamma_U > 0$ and $\gamma_L > 1$. Let $z_0$ satisfy
+$z_0 \in \mathcal{Z}_1$, that is, $\langle z_0, M v \rangle \neq 0$ for some $v$ with
+$H v = \lambda_1 M v$. Fix sequences $n_k$, $\omega_k$ and $\gamma_k$ with $n_k = \bar n$ and
+$\gamma_k = \bar\gamma$ for all large $k$. Then there is $\varepsilon > 0$ with the following
+property. Every run of Algorithm 9.3.1 with these sequences, any $n_U$, $z_0$ as initial vector
+and $\lambda^G_0 < -\lambda_1 + \varepsilon$ satisfies $\lambda^G_k > -\lambda_1$ for all $k$,
+the shifts $\lambda^G_k$ decrease and converge to $-\lambda_1$, and there are $0 < c \le C$ with
+$$c \, (\lambda^G_k + \lambda_1)^{\bar\gamma} \le \lambda^G_{k+1} + \lambda_1 \le C \,
+  (\lambda^G_k + \lambda_1)^{\bar\gamma}$$
+for all large $k$. In particular, $\lambda^G_k \to -\lambda_1$ with order $\bar\gamma$.
+
+**Correction.** The printed theorem omits the hypothesis $z_0 \in \mathcal{Z}_1$; footnote 64 of
+the source notes that it is missing from the source paper. It is added here.
+
+**Reading.** The source writes $\mathcal{Z}_1$ with the Euclidean condition
+$\langle z, v_i \rangle \neq 0$, which is the right condition only for $M = I$. The condition is
+read in the $M$-inner product, $\langle z, M v \rangle \neq 0$. It is equivalent to $z_0$ having
+a nonzero $M$-orthogonal component in the leftmost eigenspace
+(`CartisGouldToint.Chapter09.starProjection_ne_zero_of_mem_Z₁`).
+
+**Reading.** The sequences $n_k$, $\omega_k$, $\gamma_k$ are fixed before $\varepsilon$, which
+depends on them through a bound on $n_k$, and on $z_0$, but not on $n_U$ or on the run. No
+single $\varepsilon$ serves all runs when $n_U = \infty$ (see
+`Subproblem.IsInverseIterationRun.convergence`). The Q-order $\bar\gamma$ is stated as the
+two-sided bounds above.
+
+Order of convergence is `ConvergesWithOrder`. The proof specializes
+`Subproblem.IsInverseIterationRun.convergence_of_eventually_const`. -/
 theorem theorem_9_3_1 (hH : H.IsHermitian) (hM : M.PosDef) {ωL ωU γL γU : ℝ} (hωL : 0 < ωL)
     (hγU : 0 < γU) (hγL : 1 < γL) {z₀ : EuclideanSpace ℝ (Fin n)}
     (hz₀ : ∃ v : EuclideanSpace ℝ (Fin n),
@@ -450,12 +581,17 @@ theorem theorem_9_3_1 (hH : H.IsHermitian) (hM : M.PosDef) {ωL ωU γL γU : �
     (by simp only [hz0]) hlt
   exact ⟨h1, h2, h3, (h6 γbar hγ).1, (h6 γbar hγ).2⟩
 
-/-! ### Sequences of problems (§9.3.5) -/
+/-! ### Sequences of problems (Section 9.3.5) -/
 
-/-- **Monotonicity of `𝓛` in `σ`** ([cartis2022evaluation] §9.3.5): for fixed `H`, `g`, `M`, `r`
-and `σ ≤ σ₊`, `𝓛 ⊆ 𝓛₊` (`𝓝 = (-∞, λₛ]` does not depend on `σ`, since `λₛ = max(0, -λ₁)` depends
-only on `H` and `M`); and every sampled `λ₊ > λₛ` with
-`π(λ₊) ≥ (λ₊/σ₊)^{2/(r-2)}` lies in `𝓛₊`. -/
+/-- **Section 9.3.5** of [cartis2022evaluation], monotonicity of $\mathcal{L}$ in $\sigma$. Let $H$
+be symmetric, $M$ symmetric positive definite, $0 < \sigma \le \sigma_+$ and $r > 2$, and let
+$\mathcal{L}$ and $\mathcal{L}_+$ be the regularization sets of Section 8.3.1 for $\sigma$ and
+$\sigma_+$. Then $\mathcal{L} \subseteq \mathcal{L}_+$. Moreover, every $\lambda > \lambda_s$
+with $\pi(\lambda) \ge (\lambda/\sigma_+)^{2/(r-2)}$ lies in $\mathcal{L}_+$.
+
+The set $\mathcal{N} = (-\infty, \lambda_s]$ does not depend on $\sigma$, since
+$\lambda_s = \max(0, -\lambda_1)$ depends only on $H$ and $M$. This is why
+$\mathcal{N}_+ = \mathcal{N}$. -/
 theorem setL_reg_mono (hH : H.IsHermitian) (hM : M.PosDef) {σ σp r : ℝ} (hσ : 0 < σ)
     (hσp : σ ≤ σp) (hr : 2 < r) :
     setL_reg hH hM g σ r ⊆ setL_reg hH hM g σp r ∧
@@ -467,28 +603,44 @@ theorem setL_reg_mono (hH : H.IsHermitian) (hM : M.PosDef) {σ σp r : ℝ} (hσ
   exact Real.rpow_le_rpow (div_nonneg hl (hσ.trans_le hσp).le)
     (div_le_div_of_nonneg_left hl hσ hσp) (one_div_nonneg.2 (sub_pos.2 hr).le)
 
-/-! ### Early termination (§9.3.6) -/
+/-! ### Early termination (Section 9.3.6) -/
 
-/-- The **early-termination requirements** (9.3.14) of [cartis2022evaluation] for a step `s` of the
-regularization subproblem (8.1.3), with the `M`-scalings of the norms, `λ = σ ‖s‖_M^{r-2}` and the
-Hessian `∇²m^R(s) = H + λ M + (r-2) λ (M s)(M s)ᵀ/‖s‖_M²` of (8.2.34):
-(a) `m^R(s) ≤ m^R(0) = 0`;
-(b) `‖g + H s + λ M s‖_{M⁻¹} ≤ ½ θ₁ ‖s‖_M²`;
-(c) `λ_min[∇²m^R(s), M] ≥ -θ₂ ‖s‖_M`, i.e. `⟪w, ∇²m^R(s) w⟫ ≥ -θ₂ ‖s‖_M ⟪w, M w⟫` for all `w`. -/
+/-- **Equation (9.3.14)** of [cartis2022evaluation], the early-termination requirements. Let
+$\sigma, r, \theta_1, \theta_2 \in \mathbb{R}$, let $s$ be a step for the regularization
+subproblem (8.1.3), and let $\lambda = \sigma \|s\|_M^{r-2}$. The step $s$ satisfies the
+**requirements (9.3.14)** if
+
+* (9.3.14a) $m^R(s) \le m^R(0) = 0$;
+* (9.3.14b) $\|g + H s + \lambda M s\|_{M^{-1}} \le \frac12 \theta_1 \|s\|_M^2$;
+* (9.3.14c) for all $w$,
+$$\langle w, H w \rangle + \lambda \langle w, M w \rangle + (r - 2) \sigma \|s\|_M^{r-4} \langle
+  M s, w \rangle^2 \ge -\theta_2 \|s\|_M \langle w, M w \rangle.$$
+
+**Correction.** The source states (9.3.14c) with the Euclidean $\lambda_{\min}$ of the Hessian.
+With it, Theorem 9.3.2 is false for $M \neq I$. The requirements are stated with the
+$M$-scalings of the primal and dual norms and of $\lambda_{\min}$, as the phrase "with the
+appropriate $M$-scalings" of the source suggests.
+
+Condition (9.3.14c) says $\lambda_{\min}[\nabla^2 m^R(s), M] \ge -\theta_2 \|s\|_M$, where
+$\nabla^2 m^R(s) = H + \lambda M + (r - 2) \lambda (M s)(M s)^T/\|s\|_M^2$ is the Hessian
+(8.2.34). The powers are real powers. -/
 structure stoppingRules_9_3_14 (g : EuclideanSpace ℝ (Fin n)) (H M : Matrix (Fin n) (Fin n) ℝ)
     (σ r θ₁ θ₂ : ℝ) (s : EuclideanSpace ℝ (Fin n)) : Prop where
-  /-- (9.3.14a): the model does not increase. -/
+  /-- Requirement (9.3.14a): $m^R(s) \le 0$. -/
   decrease : regModel g H M σ r s ≤ 0
-  /-- (9.3.14b): the gradient is small in the dual norm. -/
+  /-- Requirement (9.3.14b): $\|g + H s + \sigma \|s\|_M^{r-2} M s\|_{M^{-1}} \le \frac12 \theta_1
+  \|s\|_M^2$. -/
   gradient : mNorm M⁻¹ (g + toEuclideanLin H s + (σ * mNorm M s ^ (r - 2)) • toEuclideanLin M s) ≤
     1 / 2 * θ₁ * mNorm M s ^ 2
-  /-- (9.3.14c): the Hessian is almost positive semidefinite, in the `M`-scaling. -/
+  /-- Requirement (9.3.14c), in the $M$-scaling: for all $w$, $\langle w, \nabla^2 m^R(s) w \rangle
+  \ge -\theta_2 \|s\|_M \langle w, M w \rangle$. -/
   curvature : ∀ w, -(θ₂ * mNorm M s) * ⟪w, toEuclideanLin M w⟫ ≤
     ⟪w, toEuclideanLin H w⟫ + σ * mNorm M s ^ (r - 2) * ⟪w, toEuclideanLin M w⟫ +
       (r - 2) * σ * mNorm M s ^ (r - 4) * ⟪toEuclideanLin M s, w⟫ ^ 2
 
-/-- The rules (9.3.14) are the operator rules `Subproblem.RegStoppingRules` in the `M`-inner
-product space. -/
+/-- For $r \neq 0$, a step $s$ satisfies the requirements (9.3.14) if and only if, moved to the
+$M$-inner product space, it satisfies the operator requirements `Subproblem.RegStoppingRules`
+for the scaled gradient $M^{-1} g$ and the scaled operator $M^{-1} H$. -/
 theorem stoppingRules_9_3_14_iff_scaled (hM : M.PosDef) {σ r θ₁ θ₂ : ℝ} (hr : r ≠ 0)
     (s : EuclideanSpace ℝ (Fin n)) :
     stoppingRules_9_3_14 g H M σ r θ₁ θ₂ s ↔
@@ -503,11 +655,19 @@ theorem stoppingRules_9_3_14_iff_scaled (hM : M.PosDef) {σ r θ₁ θ₂ : ℝ}
   rw [← ha]
   exact ⟨fun h => ⟨h.1, h.2, h.3⟩, fun h => ⟨h.1, h.2.1, h.2.2⟩⟩
 
-/-- **Theorem 9.3.2 of [cartis2022evaluation] (Constructive early termination test)**, with the
-`M`-scaled curvature condition. Let `σ > 0`, `r > 2`, `λc ∈ 𝓕` and `π = π(λc)` satisfy
-(9.3.15a) `π ≤ (r/2)^{2/(r-2)} (λc/σ)^{2/(r-2)}`, (9.3.15b) `|π^{(r-2)/2} - λc/σ| ≤ θ₁/(2σ) π^{1/2}`
-and (9.3.15c) `π^{(r-2)/2} - λc/σ ≥ -(θ₂/σ) π^{1/2}`. Then `s = s(λc)` satisfies the stopping rules
-(9.3.14). -/
+/-- **Theorem 9.3.2** of [cartis2022evaluation] (constructive early termination test). Let $H$ be
+symmetric, $M$ symmetric positive definite, $\sigma > 0$, $r > 2$ and
+$\lambda_c \in \mathcal{F}$, and let $\pi = \pi(\lambda_c)$. Suppose that
+$$\pi \le (r/2)^{2/(r-2)} (\lambda_c/\sigma)^{2/(r-2)}, \qquad (9.3.15a)$$
+$$\bigl|\pi^{(r-2)/2} - \lambda_c/\sigma\bigr| \le \frac{\theta_1}{2\sigma} \pi^{1/2}, \qquad
+  (9.3.15b)$$
+$$\pi^{(r-2)/2} - \lambda_c/\sigma \ge -\frac{\theta_2}{\sigma} \pi^{1/2}. \qquad (9.3.15c)$$
+Then $s = s(\lambda_c)$ satisfies the requirements (9.3.14).
+
+**Correction.** With the Euclidean $\lambda_{\min}$ in (9.3.14c), the theorem is false for
+$M \neq I$, since (9.3.15c) only yields $\nabla^2 m^R(s) \succeq -\theta_2 \|s\|_M M$. The
+theorem is stated for the $M$-scaled requirements
+`CartisGouldToint.Chapter09.stoppingRules_9_3_14`. -/
 theorem theorem_9_3_2 (hH : H.IsHermitian) (hM : M.PosDef) {σ r θ₁ θ₂ lamc : ℝ} (hσ : 0 < σ)
     (hr : 2 < r) (hc : lamc ∈ setF_reg hH hM g σ r)
     (ha : secularFn g H M lamc ≤ (r / 2) ^ (2 / (r - 2)) * (lamc / σ) ^ (2 / (r - 2)))
@@ -522,17 +682,23 @@ theorem theorem_9_3_2 (hH : H.IsHermitian) (hM : M.PosDef) {σ r θ₁ θ₂ lam
   rw [stoppingRules_9_3_14_iff_scaled hM (by linarith), toScaled_stepOf hM]
   exact regStoppingRules_step (hH := isSymmetric_scaledOp hH) hσ hr hlam ha hb hcc
 
-/-- The lower factor `ηᴸ(σ, θ₁, θ₂) = max(1/(1 + θ₁/(2σ)), 1/(1 + θ₂/σ))` of (9.3.16). -/
+/-- **Equation (9.3.16)** of [cartis2022evaluation], the lower factor
+$$\eta^L(\sigma, \theta_1, \theta_2) = \max\Bigl(\frac{1}{1 + \theta_1/(2\sigma)}, \frac{1}{1 +
+  \theta_2/\sigma}\Bigr).$$
+-/
 noncomputable def etaL (σ θ₁ θ₂ : ℝ) : ℝ := max (1 / (1 + θ₁ / (2 * σ))) (1 / (1 + θ₂ / σ))
 
-/-- The upper factor `ηᵁ(σ, θ₁) = min(3/2, 1/(1 - θ₁/(2σ)))` of (9.3.16), the second term absent
-when `1 - θ₁/(2σ) ≤ 0`. -/
+/-- **Equation (9.3.16)** of [cartis2022evaluation], the upper factor
+$$\eta^U(\sigma, \theta_1) = \min\Bigl(\frac32, \frac{1}{1 - \theta_1/(2\sigma)}\Bigr)$$
+when $1 - \theta_1/(2\sigma) > 0$, and $\eta^U(\sigma, \theta_1) = 3/2$ otherwise. -/
 noncomputable def etaU (σ θ₁ : ℝ) : ℝ :=
   if 0 < 1 - θ₁ / (2 * σ) then min (3 / 2) (1 / (1 - θ₁ / (2 * σ))) else 3 / 2
 
-/-- The real-variable content of (9.3.16): for `p, x ≥ 0`, `a, b ≥ 0`, the conditions
-`p² ≤ (3/2)² x²`, `|p - x| ≤ a p`, `p - x ≥ -b p` hold iff
-`max(1/(1+a), 1/(1+b)) x ≤ p ≤ ηᵁ x`. -/
+/-- Let $p, x, a, b \ge 0$. Then $p^2 \le (3/2)^2 x^2$, $|p - x| \le a p$ and $p - x \ge -b p$ hold
+if and only if
+$$\max\Bigl(\frac{1}{1 + a}, \frac{1}{1 + b}\Bigr) x \le p \le \eta x,$$
+where $\eta = \min(3/2, 1/(1 - a))$ if $a < 1$ and $\eta = 3/2$ otherwise. This is the
+real-variable content of (9.3.16). -/
 theorem cubic_conditions_iff {p x a b : ℝ} (hp : 0 ≤ p) (hx : 0 ≤ x) (ha : 0 ≤ a)
     (hb : 0 ≤ b) :
     (p ^ 2 ≤ (3 / 2) ^ 2 * x ^ 2 ∧ |p - x| ≤ a * p ∧ p - x ≥ -b * p) ↔
@@ -563,9 +729,13 @@ theorem cubic_conditions_iff {p x a b : ℝ} (hp : 0 ≤ p) (hx : 0 ≤ x) (ha :
       have : (1 - a) * p ≤ 0 := mul_nonpos_of_nonpos_of_nonneg h hp
       exact ⟨h1, ⟨by linarith, by linarith⟩, by linarith⟩
 
-/-- **The cubic case of the termination test** ([cartis2022evaluation] (9.3.16)): for `r = 3`,
-`σ > 0`, `θ₁, θ₂ ≥ 0` and `λc ∈ 𝓕`, the conditions (9.3.15) are equivalent to
-`ηᴸ(σ, θ₁, θ₂) λc/σ ≤ ‖s(λc)‖_M ≤ ηᵁ(σ, θ₁) λc/σ`. -/
+/-- **Equation (9.3.16)** of [cartis2022evaluation], the cubic case of the termination test. Let $H$
+be symmetric, $M$ symmetric positive definite, $r = 3$, $\sigma > 0$, $\theta_1, \theta_2 \ge 0$
+and $\lambda_c \in \mathcal{F}$. Then the conditions (9.3.15a)–(9.3.15c) on $\pi(\lambda_c)$
+hold if and only if
+$$\eta^L(\sigma, \theta_1, \theta_2) \, \frac{\lambda_c}{\sigma} \le \|s(\lambda_c)\|_M \le
+  \eta^U(\sigma, \theta_1) \, \frac{\lambda_c}{\sigma}.$$
+-/
 theorem cubic_termination_9_3_16 (hH : H.IsHermitian) (hM : M.PosDef) {σ r θ₁ θ₂ lamc : ℝ}
     (hσ : 0 < σ) (hr : r = 3) (hθ₁ : 0 ≤ θ₁) (hθ₂ : 0 ≤ θ₂) (hc : lamc ∈ setF_reg hH hM g σ r) :
     (secularFn g H M lamc ≤ (r / 2) ^ (2 / (r - 2)) * (lamc / σ) ^ (2 / (r - 2)) ∧

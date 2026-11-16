@@ -9,63 +9,149 @@ import Numlib.Optimization.Subproblem.Regularization
 import NumlibSurface.CartisGouldToint.Chapter03.Section02
 
 /-!
-# Cartis–Gould–Toint §3.4: More algorithms with `O(ε^{-3/2})` complexity
+# Cartis, Gould and Toint, Section 3.4: More algorithms with $O(\epsilon^{-3/2})$ complexity
 
-Surface file for C. Cartis, N. I. M. Gould and Ph. L. Toint, *Evaluation Complexity of
-Algorithms for Nonconvex Optimization* [cartis2022evaluation], §3.4: the trust-region variant
-TRε with a fixed quadratic regularization (Algorithm 3.4.1) and the inexact regularized Newton
-framework iRN (Algorithm 3.4.2), on `ℝⁿ = EuclideanSpace ℝ (Fin n)`.
+This module formalizes Section 3.4 of [cartis2022evaluation] on $\mathbb{R}^n$. The section presents
+two methods that use second derivatives. The first is the trust-region variant TRε (Algorithm
+3.4.1), whose model (3.4.1) adds the fixed quadratic regularization $\tfrac12 \epsilon_* \|s\|^2$ to
+the quadratic Taylor model $T_{f,2}(x, s)$. The second is the inexact regularized Newton framework
+iRN (Algorithm 3.4.2), whose step $s_k$ solves $(\nabla^2 f(x_k) + \lambda_k I) s = -\nabla f(x_k)$
+approximately, with a multiplier $\lambda_k$ between $\sigma^L_k \|s_k\|$ and $\sigma^U_k \|s_k\|$,
+and is accepted by the ratio (3.4.35) with the predicted decrease $\|s_k\|^3$. Both methods reach
+$\|\nabla f(x)\| \le \epsilon_1$ within $O(\epsilon_1^{-3/2})$ evaluations. With the second-order
+test $\lambda_{\min}[\nabla^2 f(x)] \ge -\epsilon_2$, TRε needs $O(\max(\epsilon_1^{-2} \epsilon_2,
+\epsilon_2^{-3}))$ evaluations, up to a logarithmic term, and iRN needs
+$O(\max(\epsilon_1^{-3/2}, \epsilon_2^{-3}))$. The module proves the lemmas and the complexity
+theorems of the section, and it builds the runs on the one-dimensional data (3.5.12) that Corollary
+3.5.5 uses.
 
-TRε is an instance of the generic trust-region run `Optimization.IsTRRun` (model (3.4.1)
-`treModel`, ratio (3.4.6) `tr2Ratio`); iRN has its own run predicate (ratio (3.4.35) with
-predicted decrease `‖s_k‖³`, the two-sided bounds `σᴸ_k, σᵁ_k` of Step 5). The matrices `Q_k`
-with orthonormal columns of (3.4.32) are represented by their ranges `V_k`, a subspace, and
-`λ_min[Q_kᵀ A Q_k]` by the least curvature of `A` restricted to `V_k` (`minCurvatureOn`).
+TRε is an instance of the generic trust-region run `Optimization.IsTRRun` of
+`Numlib.Optimization.ModelBased.TRRun`. The proofs use the Taylor bounds of
+`Numlib.Optimization.ModelBased.TaylorModel`, the subproblem theory of
+`Numlib.Optimization.Subproblem.Regularization`, and the counting lemmas of
+`Numlib.Optimization.Complexity.Basic`.
 
 ## Main definitions
 
-* `TREpsParams`, `treModel`, `treStep`, `algorithm_3_4_1` — Algorithm 3.4.1 (TRε);
-  `exists_algorithm_3_4_1`.
-* `IRNParams`, `irnGrad`, `irnStep`, `irnRatio`, `irnTest`, `irnUpdate`, `algorithm_3_4_2` —
-  Algorithm 3.4.2 (iRN); `exists_algorithm_3_4_2`.
-* Constants `kappaDeltaF` (3.4.15), `kappaSTREps`, `kappaATREps`, `kappaCTREps` (3.4.20)–(3.4.22),
-  `sigmaUMax` (3.4.38), `irnUnsuccBound` (3.4.42), `kappaSIRN`, `kappaAIRN`, `kappaBIRN`,
-  `kappaTIRN`, `kappaCIRN`, `kappaDIRN` (Appendix B).
+* Algorithm 3.4.1, Step 0, `CartisGouldToint.Chapter03.TREpsParams`: the constants of TRε.
+* Equation (3.4.1), `CartisGouldToint.Chapter03.treModel`: the model $m(s) = T_{f,2}(x, s) +
+  \tfrac12 \epsilon_* \|s\|^2$.
+* Algorithm 3.4.1, `CartisGouldToint.Chapter03.algorithm_3_4_1`: the runs of TRε, with Step 2
+  `CartisGouldToint.Chapter03.treStep`; runs exist by
+  `CartisGouldToint.Chapter03.exists_algorithm_3_4_1`.
+* Equations (3.4.15) and (3.4.20)–(3.4.22), `CartisGouldToint.Chapter03.kappaDeltaF`,
+  `CartisGouldToint.Chapter03.kappaSTREps`, `CartisGouldToint.Chapter03.kappaATREps`,
+  `CartisGouldToint.Chapter03.kappaCTREps`: the constants of the TRε bounds.
+* Algorithm 3.4.2, Step 0, `CartisGouldToint.Chapter03.IRNParams`: the constants of iRN.
+* Algorithm 3.4.2, `CartisGouldToint.Chapter03.algorithm_3_4_2`: the runs of iRN, with Step 2
+  `CartisGouldToint.Chapter03.irnStep`, the ratio (3.4.35) `CartisGouldToint.Chapter03.irnRatio`,
+  the test `CartisGouldToint.Chapter03.irnTest` and Step 5 `CartisGouldToint.Chapter03.irnUpdate`;
+  runs exist by `CartisGouldToint.Chapter03.exists_algorithm_3_4_2`.
+* Equations (3.4.38) and (3.4.42), `CartisGouldToint.Chapter03.sigmaUMax`,
+  `CartisGouldToint.Chapter03.irnUnsuccBound`: the bound $\sigma^U_{\max}$ on $\sigma^U_k$ and the
+  bound $M$ on a block of unsuccessful iterations.
+* Theorems 3.4.11 and 3.4.12, `CartisGouldToint.Chapter03.kappaSIRN`,
+  `CartisGouldToint.Chapter03.kappaAIRN`, `CartisGouldToint.Chapter03.kappaBIRN`,
+  `CartisGouldToint.Chapter03.kappaTIRN`, `CartisGouldToint.Chapter03.kappaCIRN`,
+  `CartisGouldToint.Chapter03.kappaDIRN`: the constants of the iRN bounds.
 
 ## Main results
 
-* `lemma_3_4_1` – `lemma_3_4_4`, `theorem_3_4_5`, `theorem_3_4_6` (TRε).
-* `lemma_3_4_7` – `lemma_3_4_10`, `theorem_3_4_11`, `theorem_3_4_12` (iRN).
-* `tre_slow_example`, `irn_slow_example` — the TRε and iRN runs on the data (3.5.12) used in
-  Corollary 3.5.5.
-* `Optimization.card_successSet_le_two_mul_add_one` — the counting device of the corrected
-  Theorems 3.4.6 and 3.4.12: if every successful iteration lacking the required decrease is
-  followed by a successful iteration with it, then `|𝒮_k| ≤ 2 |𝒢_k| + 1`.
+* Lemma 3.4.1, `CartisGouldToint.Chapter03.lemma_3_4_1`: the predicted decrease of TRε exceeds
+  $\tfrac12 \epsilon_* \|s_k\|^2$.
+* Lemma 3.4.2, `CartisGouldToint.Chapter03.lemma_3_4_2` and
+  `CartisGouldToint.Chapter03.lemma_3_4_2_delta`: a small radius forces a very successful iteration,
+  and the radii stay above $(1 - \eta_2) \gamma_1 \epsilon_* / L_{f,2}$.
+* Lemma 3.4.3, `CartisGouldToint.Chapter03.lemma_3_4_3`: a lower bound on an interior successful
+  step.
+* Lemma 3.4.4, `CartisGouldToint.Chapter03.lemma_3_4_4`: the decrease of $f$ on a successful
+  iteration.
+* Theorem 3.4.5, `CartisGouldToint.Chapter03.theorem_3_4_5`: TRε with
+  $\epsilon_* = \sqrt{\epsilon_1}$ reaches $\|\nabla f\| \le \epsilon_1$ within
+  $O(\epsilon_1^{-3/2})$ evaluations.
+* Theorem 3.4.6, `CartisGouldToint.Chapter03.theorem_3_4_6`: TRε with $\epsilon_* = \epsilon_2$
+  reaches second-order criticality within $O(\max(\epsilon_1^{-2} \epsilon_2, \epsilon_2^{-3}))$
+  evaluations.
+* Lemma 3.4.7, `CartisGouldToint.Chapter03.lemma_3_4_7`: a large multiplier forces a successful iRN
+  iteration.
+* Lemma 3.4.8, `CartisGouldToint.Chapter03.lemma_3_4_8`: $\sigma^U_k \le \sigma^U_{\max}$.
+* Lemma 3.4.9, `CartisGouldToint.Chapter03.lemma_3_4_9` and
+  `CartisGouldToint.Chapter03.lemma_3_4_9_curv`: lower bounds on the iRN step by the next gradient
+  and by the negative curvature.
+* Lemma 3.4.10, `CartisGouldToint.Chapter03.lemma_3_4_10` and
+  `CartisGouldToint.Chapter03.lemma_3_4_10_last`: a block of unsuccessful iRN iterations has at most
+  $M$ elements, or $M + 1$ at the end of the run.
+* Theorem 3.4.11, `CartisGouldToint.Chapter03.theorem_3_4_11`: iRN reaches
+  $\|\nabla f\| \le \epsilon_1$ within $O(\epsilon_1^{-3/2})$ evaluations.
+* Theorem 3.4.12, `CartisGouldToint.Chapter03.theorem_3_4_12`: iRN reaches second-order criticality
+  within $O(\max(\epsilon_1^{-3/2}, \epsilon_2^{-3}))$ evaluations.
+* Equation (3.5.12), `CartisGouldToint.Chapter03.tre_slow_data`,
+  `CartisGouldToint.Chapter03.tre_ridge_run`, `CartisGouldToint.Chapter03.tre_slow_example`,
+  `CartisGouldToint.Chapter03.irn_slow_data`, `CartisGouldToint.Chapter03.irn_ridge_run`,
+  `CartisGouldToint.Chapter03.irn_slow_example`: the TRε and iRN runs on one-dimensional data that
+  need exactly $\lceil \epsilon^{-3/2} \rceil$ iterations, used in Corollary 3.5.5.
 
-## Fixes with respect to the book
+## Proof outline
 
-* Lemma 3.4.3 (proof, before (3.4.12)): the quadratic inequality is misprinted
-  (`½L + θ₁‖s‖²`) and the root is divided by `L_{f,2}` instead of `L_{f,2} + θ₁`; the stated
-  bound (3.4.10) is proved directly from `½(L_{f,2} + θ₁)‖s‖² + ε_*‖s‖ ≥ ‖∇f(x_{k+1})‖`
-  (`le_of_le_quadratic`).
-* Lemma 3.4.4 (proof): the case labels (3.4.13)/(3.4.14) are swapped.
-* Theorem 3.4.6 (proof, before (3.4.26)): the claim "`x_{j+1}` is on the trust-region boundary"
-  is wrong; the boundary step is taken at the next successful iteration. The bounds hold with a
-  factor `2` on the leading terms (and `+2` instead of `+1` for the derivative evaluations).
-* Theorem 3.4.11 (proof in Appendix B): multiplying the number of successful iterations by the
-  bound (3.4.42) does not count the successful iterations themselves nor the final block of
-  unsuccessful iterations; the corrected constants are `κ^A = κ^S (M + 1)`, `κ^B = M + 2`
-  (`M` the bound (3.4.42); with `ε₂ = ∞` the final block is empty).
-* Theorem 3.4.12 (proof in Appendix B): "`‖∇f(x_k)‖ ≤ ε₁` for all `k ≥ k₁`" is unjustified; the
-  bounds hold with a factor `2` on the leading terms and `κ^D = 2M + 3` (the final block of
-  unsuccessful iterations may have `M + 1` elements).
-* Lemma 3.4.7 uses (A.19) (`L/6 ‖s‖³`); the book's `½ L ‖s‖³` is weaker.
-* Lemma 3.4.10 is stated for any block of unsuccessful iterations followed by an iteration before
-  termination; a final block before termination may have one more element
-  (`lemma_3_4_10_last`).
-* Corollary 3.5.5 for iRN: the ratio (3.4.35) is not scale invariant; on the data (3.5.12) it is
-  `4f_k³/θ_k³ > ½`, so for `η > ½` the example is rescaled to `c G(x/c)`,
-  `c = min(1, (2η)^{-1/2})` (`irn_slow_example`), which keeps the gradients at the iterates.
+For TRε, Lemma 3.4.2 bounds the radii from below, so the number of unsuccessful iterations is
+bounded by the number of successful ones and a logarithmic term, and Lemma 3.4.4 bounds the number
+of successful iterations through the decrease of $f$. For iRN, Lemma 3.4.10 bounds each block of
+unsuccessful iterations by $M$, and on each successful iteration the decrease
+$f(x_k) - f(x_{k+1}) \ge \eta \|s_k\|^3$, with the lower bounds of Lemma 3.4.9 on $\|s_k\|$, bounds
+the number of successful iterations. In the second-order Theorems 3.4.6 and 3.4.12, a successful
+iteration without the required decrease is followed by a successful iteration with it. Then
+`Optimization.card_successSet_le_two_mul_add_one` gives $|\mathcal{S}_k| \le 2 |\mathcal{G}_k| + 1$,
+where $\mathcal{S}_k$ is the set of successful iterations up to $k$ and $\mathcal{G}_k$ the set of
+those with the required decrease.
+
+## Conventions
+
+* The tolerance $\epsilon_2 = +\infty$ is `none : Option ℝ`.
+* A finite tolerance $\epsilon_2 = e$ is `some e`.
+* The regularization weight $\epsilon_*$ of TRε is the parameter `εs`.
+* An iteration $k$ is before termination if the termination test fails at all $j \le k$, and it is
+  up to and including termination if the test fails at all $j < k$.
+* The matrix $Q_k$ with orthonormal columns of (3.4.32) is represented by its range, a subspace
+  $V_k$. The number $\lambda_{\min}[Q_k^T A Q_k]$ is `minCurvatureOn A (V k)`, and $Q_k = I$ is
+  $V_k = \top$.
+* The evaluation counts are `Optimization.funEvalCount`, which is $k_\epsilon + 1$, and
+  `Optimization.derivEvalCount` of the successful iterations, which is one more than the number of
+  successful iterations before $k_\epsilon$.
+
+## Implementation notes
+
+* Step 1 of Algorithm 3.4.1 couples the weight to the tolerances: $\epsilon_* = \sqrt{\epsilon_1}$
+  if $\epsilon_2 = +\infty$, and $\epsilon_* = \epsilon_2$ otherwise. The run predicate takes
+  $\epsilon_*$ as a parameter, and the complexity theorems impose the coupling. The condition
+  $\Delta_0 > \epsilon_*$ of Step 0 is part of the run predicate.
+* iRN has its own run predicate. When $\epsilon_2 < \infty$ the termination test depends on $Q_k$,
+  which Step 2 computes, so the run predicate requires Step 2 also at the iteration where the run
+  terminates.
+* The ratio (3.4.35) of iRN is not scale invariant. The iRN example of Corollary 3.5.5 therefore
+  rescales the data (3.5.12) to $c G(x/c)$ with $c = \min(1, (2\eta)^{-1/2})$; see
+  `CartisGouldToint.Chapter03.irn_slow_data` and the deviations of
+  `NumlibSurface.CartisGouldToint.Chapter03.Section05`.
+
+## Deviations from the source
+
+* **Lemma 3.4.1** (generalization). The source states (3.4.7) with $\ge$; the inequality is strict.
+  See `CartisGouldToint.Chapter03.lemma_3_4_1`.
+* **Lemma 3.4.3** (typo). In the proof, the quadratic inequality and its root are misprinted;
+  (3.4.10) is proved directly. See `CartisGouldToint.Chapter03.lemma_3_4_3`.
+* **Lemma 3.4.4** (typo). In the proof, the case labels (3.4.13) and (3.4.14) are swapped. See
+  `CartisGouldToint.Chapter03.lemma_3_4_4`.
+* **Theorem 3.4.6** (correction). The proof does not give the printed bounds; they hold with a
+  factor $2$ on the leading terms and $+2$ in place of $+1$ for the derivative evaluations. See
+  `CartisGouldToint.Chapter03.theorem_3_4_6`.
+* **Lemma 3.4.10** (reading). The bound (3.4.42) is stated for a block of unsuccessful iterations
+  that is followed by an iteration before termination; a final block can have one more element. See
+  `CartisGouldToint.Chapter03.lemma_3_4_10_last`.
+* **Theorem 3.4.11** (correction). The count misses the successful iterations; the constants are
+  $\kappa^A = \kappa^S (M + 1)$ and $\kappa^B = M + 2$. See
+  `CartisGouldToint.Chapter03.theorem_3_4_11`.
+* **Theorem 3.4.12** (correction). The proof's claim that the gradient stays small is unjustified;
+  the bounds hold with a factor $2$ on the leading terms and $\kappa^D = 2M + 3$. See
+  `CartisGouldToint.Chapter03.theorem_3_4_12`.
 -/
 
 open Set Finset Optimization Subproblem
@@ -77,15 +163,24 @@ variable {n : ℕ}
 
 /-! ### The TRε algorithm -/
 
-/-- The constants of Algorithm 3.4.1 (TRε): those of TR1 ((2.3.3)) and `θ₁ > 0`. (The condition
-`Δ₀ > ε_*` is part of the run predicate.) -/
+/-- **Algorithm 3.4.1** of [cartis2022evaluation], Step 0. The constants of TRε consist of the
+constants of TR1 in (2.3.3), that is, an initial radius $\Delta_0 > 0$, thresholds
+$0 < \eta_1 \le \eta_2 < 1$ and radius factors $0 < \gamma_1 \le \gamma_2 < 1 < \gamma_3$,
+together with a tolerance $\theta_1 > 0$ for the step condition (3.4.5).
+
+The condition $\Delta_0 > \epsilon_*$ of Step 0 is part of the run predicate
+`CartisGouldToint.Chapter03.algorithm_3_4_1`, because $\epsilon_*$ is a parameter of the run and
+not a constant of this structure. -/
 structure TREpsParams extends Chapter02.TR1Params where
-  /-- The tolerance of the step condition (3.4.5). -/
+  /-- The tolerance $\theta_1$ of the step condition (3.4.5). -/
   θ₁ : ℝ
-  /-- `θ₁ > 0`. -/
+  /-- The tolerance is positive: $\theta_1 > 0$. -/
   θ₁_pos : 0 < θ₁
 
-/-- The regularized quadratic model (3.4.1) of TRε: `m(s) = T_{f,2}(x, s) + ½ ε_* ‖s‖²`. -/
+/-- The regularized quadratic model (3.4.1) of TRε at $x$ with weight $\epsilon_*$:
+$$m(s) = T_{f,2}(x, s) + \tfrac12 \epsilon_* \|s\|^2,$$
+where $T_{f,2}(x, s) = f(x) + \langle \nabla f(x), s \rangle + \tfrac12 \langle s, \nabla^2 f(x)
+s \rangle$ is `CartisGouldToint.Chapter03.tr2Model`. -/
 noncomputable def treModel (f : EuclideanSpace ℝ (Fin n) → ℝ) (εs : ℝ)
     (x s : EuclideanSpace ℝ (Fin n)) : ℝ :=
   tr2Model f x s + εs / 2 * ‖s‖ ^ 2
@@ -94,20 +189,26 @@ section TREpsModel
 
 variable {f : EuclideanSpace ℝ (Fin n) → ℝ} {εs : ℝ} {x s : EuclideanSpace ℝ (Fin n)}
 
+/-- The model (3.4.1) is $m(s) = T_{f,2}(x, s) + \tfrac12 \epsilon_* \|s\|^2$ by definition. -/
 theorem treModel_def : treModel f εs x s = tr2Model f x s + εs / 2 * ‖s‖ ^ 2 := rfl
 
+/-- The quadratic Taylor model at the zero step is $T_{f,2}(x, 0) = f(x)$. -/
 theorem tr2Model_zero_eq : tr2Model f x 0 = f x := by
   rw [tr2Model_eq, quadModel_zero, add_zero]
 
+/-- The model (3.4.1) at the zero step is $m(0) = f(x)$. -/
 theorem treModel_zero : treModel f εs x 0 = f x := by
   rw [treModel_def, tr2Model_zero_eq, norm_zero]; ring
 
-/-- For `f` `C²` at `x`, the model (3.4.1) is `T_{f,2}(x, s) + ½ ε_* ‖s‖²`. -/
+/-- If $f$ is $C^2$ at $x$, then the model (3.4.1) is $m(s) = T_{f,2}(x, s) + \tfrac12 \epsilon_*
+\|s\|^2$, where $T_{f,2}(x, \cdot)$ is the second-order Taylor polynomial
+`taylorPolynomial f 2 x`. -/
 theorem treModel_eq_taylorPolynomial (hf : ContDiffAt ℝ 2 f x) :
     treModel f εs x s = taylorPolynomial f 2 x s + εs / 2 * ‖s‖ ^ 2 := by
   rw [treModel_def, tr2Model_eq_taylorPolynomial hf]
 
-/-- The gradient of the model (3.4.1): `∇m(s) = ∇f(x) + ∇²f(x) s + ε_* s`. -/
+/-- If $f$ is $C^2$ at $x$, then the model (3.4.1) is differentiable at every step $s$, with
+gradient $\nabla m(s) = \nabla f(x) + \nabla^2 f(x) s + \epsilon_* s$. -/
 theorem hasFDerivAt_treModel (hf : ContDiffAt ℝ 2 f x) (s : EuclideanSpace ℝ (Fin n)) :
     HasFDerivAt (treModel f εs x)
       (innerSL ℝ (gradient f x + hessianOperator f x s + εs • s)) s := by
@@ -121,12 +222,16 @@ theorem hasFDerivAt_treModel (hf : ContDiffAt ℝ 2 f x) (s : EuclideanSpace ℝ
   simp
   ring
 
+/-- If $f$ is $C^2$ at $x$, then the derivative of the model (3.4.1) at $s$ has norm $\|\nabla
+f(x) + \nabla^2 f(x) s + \epsilon_* s\|$. -/
 theorem norm_fderiv_treModel (hf : ContDiffAt ℝ 2 f x) :
     ‖fderiv ℝ (treModel f εs x) s‖ = ‖gradient f x + hessianOperator f x s + εs • s‖ := by
   rw [(hasFDerivAt_treModel hf s).fderiv, innerSL_apply_norm]
 
-/-- The quadratic Taylor model has gradient `∇f(x) + ∇²f(x) s`, so
-`‖∇f(x + s)‖ ≤ L/2 ‖s‖² + ‖∇f(x) + ∇²f(x) s‖` under f.HL ((A.20) with `j = 1`, `p = 2`). -/
+/-- Under Assumption f.HL with constant $L$, for all $x$ and $s$,
+$$\|\nabla f(x + s)\| \le \tfrac{L}{2} \|s\|^2 + \|\nabla f(x) + \nabla^2 f(x) s\|.$$
+This is (A.20) with $j = 1$ and $p = 2$: the gradient of the quadratic Taylor model is
+$\nabla f(x) + \nabla^2 f(x) s$. -/
 theorem norm_gradient_add_le {L : ℝ} (hL : AssumptionHL f L) :
     ‖gradient f (x + s)‖ ≤ L / 2 * ‖s‖ ^ 2 + ‖gradient f x + hessianOperator f x s‖ :=
   norm_gradient_add_le_of_lipschitz convex_univ (fun y _ => hL.contDiffAt y)
@@ -134,37 +239,58 @@ theorem norm_gradient_add_le {L : ℝ} (hL : AssumptionHL f L) :
 
 end TREpsModel
 
-/-- Step 2 of Algorithm 3.4.1 at an iterate `x` with radius `Δ`: `‖s‖ ≤ Δ`, `m(s) < m(0)`, the
-gradient condition (3.4.5) `‖∇m(s)‖ ≤ ½ θ₁ ‖s‖²` when the step is interior (`‖s‖ < Δ`), and, if
-`ε₂ < ∞` and `λ_min[∇²f(x)] < -ε₂`, a step on the boundary `‖s‖ = Δ`. -/
+/-- Step 2 of Algorithm 3.4.1 at an iterate $x$ with radius $\Delta$. A step $s$ is admissible if
+$\|s\| \le \Delta$, the model (3.4.1) decreases, $m(s) < m(0)$, the gradient condition (3.4.5)
+$\|\nabla m(s)\| \le \tfrac12 \theta_1 \|s\|^2$ holds when the step is interior
+($\|s\| < \Delta$), and the step is on the boundary, $\|s\| = \Delta$, when
+$\epsilon_2 < \infty$ and $\lambda_{\min}[\nabla^2 f(x)] < -\epsilon_2$.
+
+The norm $\|\nabla m(s)\|$ is the norm of `fderiv ℝ (treModel f εs x) s`, and
+$\lambda_{\min}[\nabla^2 f(x)]$ is `CartisGouldToint.Chapter01.hessianMinEig f x`. -/
 def treStep (f : EuclideanSpace ℝ (Fin n) → ℝ) (P : TREpsParams) (εs : ℝ) (ε₂ : Option ℝ)
     (x : EuclideanSpace ℝ (Fin n)) (Δ : ℝ) (s : EuclideanSpace ℝ (Fin n)) : Prop :=
   ‖s‖ ≤ Δ ∧ treModel f εs x s < treModel f εs x 0 ∧
     (‖s‖ < Δ → ‖fderiv ℝ (treModel f εs x) s‖ ≤ P.θ₁ / 2 * ‖s‖ ^ 2) ∧
     ∀ e ∈ ε₂, Chapter01.hessianMinEig f x < -e → ‖s‖ = Δ
 
-/-- **Algorithm 3.4.1** (TRε) of [cartis2022evaluation], as a run predicate on iterates `x`, steps
-`s` and radii `Δ`, with regularization weight `ε_* = εs`: `ε₁, ε_* ∈ (0, 1]`, `ε₂ ∈ (0, 1]` if
-finite, `Δ₀ > ε_*`, and the generic trust-region run `Optimization.IsTRRun` with the termination
-test `stopTest f ε₁ ε₂` ((3.4.3)–(3.4.4)), Step 2 `treStep` and the ratio (3.4.6)
-`(f(x_k) - f(x_k + s_k)) / (f(x_k) - T_{f,2}(x_k, s_k))` (`tr2Ratio`). The book couples the
-weight to the tolerances in Step 1 (`ε_* = √ε₁` if `ε₂ = ∞`, `ε_* = ε₂` otherwise); the run
-predicate takes `ε_*` as a parameter and the complexity theorems impose the coupling. -/
+/-- **Algorithm 3.4.1** of [cartis2022evaluation] (TRε). Let $f : \mathbb{R}^n \to \mathbb{R}$, let
+$\epsilon_1 \in (0, 1]$, let $\epsilon_2 \in (0, 1]$ or $\epsilon_2 = +\infty$, and let
+$\epsilon_* \in (0, 1]$ with $\epsilon_* < \Delta_0$. Sequences of iterates $x_k$, steps $s_k$
+and radii $\Delta_k$ form a **TRε run** if the initial radius is $\Delta_0$ and the following
+holds at every iteration $k$ before termination. The step $s_k$ satisfies Step 2
+(`CartisGouldToint.Chapter03.treStep`). With the ratio (3.4.6)
+$$\rho_k = \frac{f(x_k) - f(x_k + s_k)}{T_{f,2}(x_k, 0) - T_{f,2}(x_k, s_k)},$$
+the iteration is successful if $\rho_k \ge \eta_1$; then $x_{k+1} = x_k + s_k$, and otherwise
+$x_{k+1} = x_k$. The radius satisfies $\Delta_{k+1} \in [\Delta_k, \gamma_3 \Delta_k]$ if
+$\rho_k \ge \eta_2$, $\Delta_{k+1} \in [\gamma_2 \Delta_k, \Delta_k]$ if
+$\eta_1 \le \rho_k < \eta_2$, and $\Delta_{k+1} \in [\gamma_1 \Delta_k, \gamma_2 \Delta_k]$ if
+$\rho_k < \eta_1$. The run terminates at the first iteration $k$ with
+$\|\nabla f(x_k)\| \le \epsilon_1$ and, if $\epsilon_2 < \infty$, $\lambda_{\min}[\nabla^2
+f(x_k)] \ge -\epsilon_2$ (the test (3.4.3)–(3.4.4)).
+
+The definition is the generic run `Optimization.IsTRRun` with the test
+`CartisGouldToint.Chapter03.stopTest f ε₁ ε₂`, the step condition
+`CartisGouldToint.Chapter03.treStep` and the ratio `CartisGouldToint.Chapter03.tr2Ratio`. Step 1
+of the source sets $\epsilon_* = \sqrt{\epsilon_1}$ if $\epsilon_2 = +\infty$ and
+$\epsilon_* = \epsilon_2$ otherwise. The run predicate takes $\epsilon_*$ as the parameter `εs`,
+and the complexity theorems impose the coupling. The value `none` of `ε₂` stands for
+$\epsilon_2 = +\infty$. -/
 structure algorithm_3_4_1 (f : EuclideanSpace ℝ (Fin n) → ℝ) (P : TREpsParams) (ε₁ : ℝ)
     (ε₂ : Option ℝ) (εs : ℝ) (x s : ℕ → EuclideanSpace ℝ (Fin n)) (Δ : ℕ → ℝ) : Prop where
-  /-- `ε₁ ∈ (0, 1]`. -/
+  /-- The first-order tolerance is positive: $\epsilon_1 > 0$. -/
   ε₁_pos : 0 < ε₁
-  /-- `ε₁ ≤ 1`. -/
+  /-- The first-order tolerance is at most one: $\epsilon_1 \le 1$. -/
   ε₁_le_one : ε₁ ≤ 1
-  /-- `ε₂ ∈ (0, 1]` if finite. -/
+  /-- If $\epsilon_2$ is finite, then $0 < \epsilon_2 \le 1$. -/
   ε₂_mem : ∀ e ∈ ε₂, 0 < e ∧ e ≤ 1
-  /-- `ε_* > 0`. -/
+  /-- The regularization weight is positive: $\epsilon_* > 0$. -/
   εs_pos : 0 < εs
-  /-- `ε_* ≤ 1`. -/
+  /-- The regularization weight is at most one: $\epsilon_* \le 1$. -/
   εs_le_one : εs ≤ 1
-  /-- `Δ₀ > ε_*`. -/
+  /-- The initial radius exceeds the weight: $\Delta_0 > \epsilon_*$. -/
   εs_lt_Δ₀ : εs < P.Δ₀
-  /-- Steps 1–4. -/
+  /-- Steps 1–4: the iterates, steps and radii form a trust-region run with the TRε test, step
+  condition and ratio. -/
   run : IsTRRun P.toTRParams (fun k => stopTest f ε₁ ε₂ (x k))
     (fun k => treStep f P εs ε₂ (x k) (Δ k) (s k)) (fun k => tr2Ratio f (x k) (s k)) x s Δ
 
@@ -174,7 +300,10 @@ section TREpsExistence
 
 variable {f : EuclideanSpace ℝ (Fin n) → ℝ} {εs : ℝ} {x : EuclideanSpace ℝ (Fin n)}
 
-/-- The model (3.4.1) is the quadratic model with Hessian `∇²f(x) + ε_* I`. -/
+/-- The model (3.4.1) is the quadratic model with Hessian $\nabla^2 f(x) + \epsilon_* I$:
+$$m(s) = f(x) + \langle \nabla f(x), s \rangle + \tfrac12 \langle s, (\nabla^2 f(x) + \epsilon_*
+  I) s \rangle.$$
+-/
 theorem treModel_eq_quadModel (s : EuclideanSpace ℝ (Fin n)) :
     treModel f εs x s = f x + quadModel (gradient f x)
       (hessianOperator f x + εs • (1 : EuclideanSpace ℝ (Fin n) →L[ℝ] EuclideanSpace ℝ (Fin n)))
@@ -184,7 +313,8 @@ theorem treModel_eq_quadModel (s : EuclideanSpace ℝ (Fin n)) :
     one_apply_eq_self, inner_add_right, inner_smul_right, real_inner_self_eq_norm_sq]
   ring
 
-/-- `m(s + v) + m(s - v) - 2 m(s) = ⟪v, ∇²f(x) v⟫ + ε_* ‖v‖²`. -/
+/-- For all steps $s$ and $v$, the model (3.4.1) satisfies $m(s + v) + m(s - v) - 2 m(s) = \langle
+v, \nabla^2 f(x) v \rangle + \epsilon_* \|v\|^2$. -/
 theorem treModel_add_add_sub (s v : EuclideanSpace ℝ (Fin n)) :
     treModel f εs x (s + v) + treModel f εs x (s - v) - 2 * treModel f εs x s =
       ⟪v, hessianOperator f x v⟫ + εs * ‖v‖ ^ 2 := by
@@ -192,9 +322,10 @@ theorem treModel_add_add_sub (s v : EuclideanSpace ℝ (Fin n)) :
     inner_add_right, inner_sub_left, inner_sub_right, norm_add_sq_real, norm_sub_sq_real]
   ring
 
-/-- **A TRε step exists** at every iterate where the test fails, when `f` is `C²` at `x`, `Δ > 0`
-and `ε_* ≤ ε₂` (the book's coupling): the global minimizer of the model (3.4.1) in the trust
-region is admissible (Step 2 of Algorithm 3.4.1). -/
+/-- Let $f$ be $C^2$ at $x$, let $\epsilon_1 \ge 0$, $\epsilon_* > 0$ and $\Delta > 0$, and let
+$\epsilon_* \le \epsilon_2$ if $\epsilon_2$ is finite. If the termination test (3.4.3)–(3.4.4)
+fails at $x$, then some step $s$ satisfies Step 2 of Algorithm 3.4.1 at $x$ with radius
+$\Delta$. A global minimizer of the model (3.4.1) in the trust region is such a step. -/
 theorem exists_treStep (hf : ContDiffAt ℝ 2 f x) (P : TREpsParams) {ε₁ : ℝ} {ε₂ : Option ℝ}
     {Δ : ℝ} (hε₁ : 0 ≤ ε₁) (hεs : 0 < εs) (hε₂ : ∀ e ∈ ε₂, εs ≤ e) (hΔ : 0 < Δ)
     (hnot : ¬ stopTest f ε₁ ε₂ x) : ∃ s, treStep f P εs ε₂ x Δ s := by
@@ -279,9 +410,15 @@ theorem exists_treStep (hf : ContDiffAt ℝ 2 f x) (P : TREpsParams) {ε₁ : �
       mul_neg_of_pos_of_neg (by positivity) hc
     linarith
 
-/-- **Existence of TRε runs** ([cartis2022evaluation], Algorithm 3.4.1): for `C²` `f`, admissible
-tolerances (`ε₁, ε_* ∈ (0, 1]`, `ε₂ ∈ (0, 1]` if finite, `ε_* < Δ₀`) with `ε_* ≤ ε₂` (the book's
-coupling `ε_* = ε₂`), and every starting point, a TRε run exists. -/
+/-- **Algorithm 3.4.1** of [cartis2022evaluation], existence of runs. Let
+$f : \mathbb{R}^n \to \mathbb{R}$ be $C^2$, let $\epsilon_1 \in (0, 1]$, let
+$\epsilon_2 \in (0, 1]$ or $\epsilon_2 = +\infty$, and let $\epsilon_* \in (0, 1]$ with
+$\epsilon_* < \Delta_0$ and, if $\epsilon_2$ is finite, $\epsilon_* \le \epsilon_2$. Then for
+every starting point $x_0$ there is a TRε run from $x_0$.
+
+The condition $\epsilon_* \le \epsilon_2$ contains the coupling $\epsilon_* = \epsilon_2$ of
+Step 1. The steps of the run are global minimizers of the model in the trust region, as in
+`CartisGouldToint.Chapter03.exists_treStep`. -/
 theorem exists_algorithm_3_4_1 (hf : ContDiff ℝ 2 f) (P : TREpsParams) {ε₁ : ℝ}
     {ε₂ : Option ℝ} (hε₁ : 0 < ε₁) (hε₁1 : ε₁ ≤ 1) (hε₂ : ∀ e ∈ ε₂, 0 < e ∧ e ≤ 1)
     (hεs : 0 < εs) (hεs1 : εs ≤ 1) (hΔ₀ : εs < P.Δ₀) (hεs₂ : ∀ e ∈ ε₂, εs ≤ e)
@@ -303,8 +440,11 @@ section TREpsLemmas
 variable {f : EuclideanSpace ℝ (Fin n) → ℝ} {P : TREpsParams} {ε₁ : ℝ} {ε₂ : Option ℝ}
   {εs : ℝ} {x s : ℕ → EuclideanSpace ℝ (Fin n)} {Δ : ℕ → ℝ} {L : ℝ}
 
-/-- **Lemma 3.4.1** of [cartis2022evaluation] ((3.4.7)). At every iteration `k` before
-termination of a TRε run, `T_{f,2}(x_k, 0) - T_{f,2}(x_k, s_k) ≥ ½ ε_* ‖s_k‖²` (in fact `>`). -/
+/-- **Lemma 3.4.1** of [cartis2022evaluation]. At every iteration $k$ before termination of a TRε
+run,
+$$T_{f,2}(x_k, 0) - T_{f,2}(x_k, s_k) > \tfrac12 \epsilon_* \|s_k\|^2.$$
+
+**Generalization.** The source states (3.4.7) with $\ge$. The inequality is strict. -/
 theorem lemma_3_4_1 (h : algorithm_3_4_1 f P ε₁ ε₂ εs x s Δ) {k : ℕ}
     (hk : ∀ j ≤ k, ¬ stopTest f ε₁ ε₂ (x j)) :
     εs / 2 * ‖s k‖ ^ 2 < tr2Model f (x k) 0 - tr2Model f (x k) (s k) := by
@@ -314,14 +454,17 @@ theorem lemma_3_4_1 (h : algorithm_3_4_1 f P ε₁ ε₂ εs x s Δ) {k : ℕ}
 
 namespace algorithm_3_4_1
 
-/-- The predicted decrease of TRε is positive before termination. -/
+/-- Before termination of a TRε run, the predicted decrease is positive:
+$T_{f,2}(x_k, 0) - T_{f,2}(x_k, s_k) > 0$. -/
 theorem pred_pos (h : algorithm_3_4_1 f P ε₁ ε₂ εs x s Δ) {k : ℕ}
     (hk : ∀ j ≤ k, ¬ stopTest f ε₁ ε₂ (x j)) :
     0 < -quadModel (gradient f (x k)) (hessianOperator f (x k)) (s k) := by
   rw [← tr2Model_zero_sub]
   exact lt_of_le_of_lt (by have := h.εs_pos; positivity) (lemma_3_4_1 h hk)
 
-/-- The decrease on successful iterations: `f(x_k) - f(x_{k+1}) ≥ η₁ (T(0) - T(s_k))`. -/
+/-- If iteration $k$ of a TRε run is before termination and successful ($\rho_k \ge \eta_1$), then
+$x_{k+1} = x_k + s_k$ and $f(x_k) - f(x_{k+1}) \ge \eta_1 (T_{f,2}(x_k, 0) - T_{f,2}(x_k,
+s_k))$. -/
 theorem sub_ge (h : algorithm_3_4_1 f P ε₁ ε₂ εs x s Δ) {k : ℕ}
     (hk : ∀ j ≤ k, ¬ stopTest f ε₁ ε₂ (x j)) (hs : P.η₁ ≤ tr2Ratio f (x k) (s k)) :
     x (k + 1) = x k + s k ∧
@@ -331,16 +474,18 @@ theorem sub_ge (h : algorithm_3_4_1 f P ε₁ ε₂ εs x s Δ) {k : ℕ}
     (pred := fun k => -quadModel (gradient f (x k)) (hessianOperator f (x k)) (s k)) hk
     (tr2Ratio_eq _ _ _) (h.pred_pos hk) hs
 
-/-- The objective does not increase before termination. -/
+/-- Before termination of a TRε run, the objective does not increase: $f(x_{k+1}) \le f(x_k)$. -/
 theorem le (h : algorithm_3_4_1 f P ε₁ ε₂ εs x s Δ) {k : ℕ}
     (hk : ∀ j ≤ k, ¬ stopTest f ε₁ ε₂ (x j)) : f (x (k + 1)) ≤ f (x k) :=
   (h.run.accept k hk).le (tr2Ratio_eq _ _ _) (h.pred_pos hk)
 
 end algorithm_3_4_1
 
-/-- **Lemma 3.4.2** of [cartis2022evaluation], first part. Under f.HL, if `k` is before
-termination of a TRε run and `Δ_k < 3(1 - η₂) ε_* / L_{f,2}` (3.4.8), then `ρ_k ≥ η₂`, iteration
-`k` is successful and `Δ_{k+1} ≥ Δ_k`. -/
+/-- **Lemma 3.4.2** of [cartis2022evaluation], first part. Let $f$ satisfy Assumption f.HL with
+constant $L_{f,2}$, and consider a TRε run. If iteration $k$ is before termination and
+$$\Delta_k < \frac{3 (1 - \eta_2) \epsilon_*}{L_{f,2}}, \qquad (3.4.8)$$
+then $\rho_k \ge \eta_2$, so that iteration $k$ is successful ($\rho_k \ge \eta_1$), and
+$\Delta_{k+1} \ge \Delta_k$. -/
 theorem lemma_3_4_2 (hf : AssumptionHL f L) (h : algorithm_3_4_1 f P ε₁ ε₂ εs x s Δ) {k : ℕ}
     (hk : ∀ j ≤ k, ¬ stopTest f ε₁ ε₂ (x j)) (hΔk : Δ k < 3 * (1 - P.η₂) * εs / L) :
     P.η₂ ≤ tr2Ratio f (x k) (s k) ∧ P.η₁ ≤ tr2Ratio f (x k) (s k) ∧ Δ k ≤ Δ (k + 1) := by
@@ -379,7 +524,8 @@ theorem lemma_3_4_2 (hf : AssumptionHL f L) (h : algorithm_3_4_1 f P ε₁ ε₂
   have h2 : P.η₂ ≤ tr2Ratio f (x k) (s k) := by rw [tr2Ratio_eq]; linarith
   exact ⟨h2, P.η₁_le_η₂.trans h2, (h.run.update hk).le_of_very_successful h2⟩
 
-/-- The radius forcing threshold of Lemma 3.4.2 dominates the lower bound (3.4.9). -/
+/-- If $L \ge 1$ and $0 < \epsilon_* < \Delta_0$, then the lower bound (3.4.9) is at most
+$\min(\Delta_0, 3 \gamma_1 (1 - \eta_2) \epsilon_* / L)$. -/
 private theorem tre_min_ge (hL : 1 ≤ L) (hεs : 0 < εs) (hΔ₀ : εs < P.Δ₀) :
     (1 - P.η₂) * P.γ₁ * εs / L ≤ min P.Δ₀ (P.γ₁ * (3 * (1 - P.η₂) * εs / L)) := by
   have h1η : 0 < 1 - P.η₂ := sub_pos.2 P.η₂_lt_one
@@ -395,8 +541,10 @@ private theorem tre_min_ge (hL : 1 ≤ L) (hεs : 0 < εs) (hΔ₀ : εs < P.Δ�
   · rw [mul_div_assoc', div_le_div_iff_of_pos_right hL0]
     nlinarith [mul_pos h1η hγ]
 
-/-- **Lemma 3.4.2** of [cartis2022evaluation], second part ((3.4.9)). Under f.HL, for every `k` up
-to (and including) termination of a TRε run, `Δ_k ≥ (1 - η₂) γ₁ ε_* / L_{f,2}`. -/
+/-- **Lemma 3.4.2** of [cartis2022evaluation], second part. Let $f$ satisfy Assumption f.HL with
+constant $L_{f,2}$. Every iteration $k$ of a TRε run up to and including termination satisfies
+$$\Delta_k \ge \frac{(1 - \eta_2) \gamma_1 \epsilon_*}{L_{f,2}}. \qquad (3.4.9)$$
+-/
 theorem lemma_3_4_2_delta (hf : AssumptionHL f L) (h : algorithm_3_4_1 f P ε₁ ε₂ εs x s Δ)
     {k : ℕ} (hk : ∀ j < k, ¬ stopTest f ε₁ ε₂ (x j)) :
     (1 - P.η₂) * P.γ₁ * εs / L ≤ Δ k :=
@@ -404,8 +552,9 @@ theorem lemma_3_4_2_delta (hf : AssumptionHL f L) (h : algorithm_3_4_1 f P ε₁
     (θ := fun _ => 3 * (1 - P.η₂) * εs / L) hk (fun _ _ => le_rfl)
     (fun _ hj hΔ => (lemma_3_4_2 hf h (fun i hi => hk i (hi.trans_lt hj)) hΔ).1) k le_rfl)
 
-/-- (3.4.9) for the next radius: if the TRε run has not terminated at `k`, then
-`Δ_{k+1} ≥ (1 - η₂) γ₁ ε_* / L_{f,2}`. -/
+/-- Under Assumption f.HL with constant $L_{f,2}$, if iteration $k$ of a TRε run is before
+termination, then the next radius also satisfies (3.4.9): $\Delta_{k+1} \ge (1 - \eta_2)
+\gamma_1 \epsilon_* / L_{f,2}$. -/
 theorem lemma_3_4_2_delta_succ (hf : AssumptionHL f L) (h : algorithm_3_4_1 f P ε₁ ε₂ εs x s Δ)
     {k : ℕ} (hk : ∀ j ≤ k, ¬ stopTest f ε₁ ε₂ (x j)) :
     (1 - P.η₂) * P.γ₁ * εs / L ≤ Δ (k + 1) := by
@@ -415,11 +564,18 @@ theorem lemma_3_4_2_delta_succ (hf : AssumptionHL f L) (h : algorithm_3_4_1 f P 
     (fun j hj hΔ => (lemma_3_4_2 hf h (fun i hi => hk' i (hi.trans_lt hj)) hΔ).1) k
     k.lt_succ_self)
 
-/-- **Lemma 3.4.3** of [cartis2022evaluation] ((3.4.10)). Under f.HL, if iteration `k` of a TRε
-run (before termination) is successful and the step is interior (`‖s_k‖ < Δ_k`), then
-`‖s_k‖ ≥ min(ε_*, ‖∇f(x_{k+1})‖/ε_*)/√(1 + 2(L_{f,2} + θ₁))`. (The printed derivation
-(3.4.11)–(3.4.12) has algebraic misprints; the quadratic inequality is
-`½(L_{f,2} + θ₁)‖s‖² + ε_*‖s‖ ≥ ‖∇f(x_{k+1})‖`.) -/
+/-- **Lemma 3.4.3** of [cartis2022evaluation]. Let $f$ satisfy Assumption f.HL with constant
+$L_{f,2}$. If iteration $k$ of a TRε run is before termination, is successful, and has an
+interior step, $\|s_k\| < \Delta_k$, then
+$$\|s_k\| \ge \frac{1}{\sqrt{1 + 2 (L_{f,2} + \theta_1)}} \min\left(\epsilon_*, \frac{\|\nabla
+  f(x_{k+1})\|}{\epsilon_*}\right). \qquad (3.4.10)$$
+
+**Typo.** In the proof, before (3.4.12), the quadratic inequality is misprinted as
+$\tfrac12 L + \theta_1 \|s\|^2$, and its root is divided by $L_{f,2}$ instead of
+$L_{f,2} + \theta_1$. Here (3.4.10) is proved directly from the quadratic inequality $\tfrac12
+(L_{f,2} + \theta_1) \|s_k\|^2 + \epsilon_* \|s_k\| \ge \|\nabla f(x_{k+1})\|$.
+
+The last step is `le_of_le_quadratic`. -/
 theorem lemma_3_4_3 (hf : AssumptionHL f L) (h : algorithm_3_4_1 f P ε₁ ε₂ εs x s Δ) {k : ℕ}
     (hk : ∀ j ≤ k, ¬ stopTest f ε₁ ε₂ (x j)) (hs : P.η₁ ≤ tr2Ratio f (x k) (s k))
     (hint : ‖s k‖ < Δ k) :
@@ -440,10 +596,14 @@ theorem lemma_3_4_3 (hf : AssumptionHL f L) (h : algorithm_3_4_1 f P ε₁ ε₂
     h.εs_pos (norm_nonneg (s k)) (norm_nonneg (gradient f (x k + s k))) (by linarith)
   rwa [show 1 + 4 * ((L + P.θ₁) / 2) = 1 + 2 * (L + P.θ₁) by ring] at this
 
-/-- The constant `κ_Δf = ½ η₁ min(γ₁²(1 - η₂)²/L², 1/(1 + 2(L + θ₁)))` of (3.4.15). -/
+/-- The constant (3.4.15)
+$$\kappa_{\Delta f} = \tfrac12 \eta_1 \min\left(\frac{\gamma_1^2 (1 - \eta_2)^2}{L^2},
+  \frac{1}{1 + 2 (L + \theta_1)}\right).$$
+-/
 noncomputable def kappaDeltaF (P : TREpsParams) (L : ℝ) : ℝ :=
   P.η₁ / 2 * min (P.γ₁ ^ 2 * (1 - P.η₂) ^ 2 / L ^ 2) (1 / (1 + 2 * (L + P.θ₁)))
 
+/-- If $L > 0$, then the constant (3.4.15) is positive: $\kappa_{\Delta f} > 0$. -/
 theorem kappaDeltaF_pos (P : TREpsParams) {L : ℝ} (hL : 0 < L) : 0 < kappaDeltaF P L := by
   have := P.η₁_pos; have := P.γ₁_pos; have := sub_pos.2 P.η₂_lt_one; have := P.θ₁_pos
   unfold kappaDeltaF
@@ -468,10 +628,17 @@ private theorem mul_min_sq {εs G : ℝ} (hεs : 0 < εs) (hG : 0 ≤ G) :
       rw [div_pow, div_le_iff₀ (by positivity)] at this
       nlinarith
 
-/-- **Lemma 3.4.4** of [cartis2022evaluation]. Under f.HL, on every successful iteration `k`
-(before termination) of a TRε run, `f(x_k) - f(x_{k+1}) ≥ κ_Δf min(ε_*³, ‖∇f(x_{k+1})‖²/ε_*)`
-if the step is interior (3.4.13), and `≥ κ_Δf ε_*³` if it is on the boundary (3.4.14). (The
-proof's case labels "(3.4.13)"/"(3.4.14)" are swapped in the book.) -/
+/-- **Lemma 3.4.4** of [cartis2022evaluation]. Let $f$ satisfy Assumption f.HL with constant
+$L_{f,2}$, and let iteration $k$ of a TRε run be before termination and successful. If the step
+is interior, $\|s_k\| < \Delta_k$, then
+$$f(x_k) - f(x_{k+1}) \ge \kappa_{\Delta f} \min\left(\epsilon_*^3, \frac{\|\nabla
+  f(x_{k+1})\|^2}{\epsilon_*}\right), \qquad (3.4.13)$$
+and if the step is on the boundary, $\|s_k\| = \Delta_k$, then $f(x_k) - f(x_{k+1}) \ge
+\kappa_{\Delta f} \epsilon_*^3$ (3.4.14).
+
+**Typo.** In the proof of the source, the case labels (3.4.13) and (3.4.14) are swapped.
+
+The constant $\kappa_{\Delta f}$ is `CartisGouldToint.Chapter03.kappaDeltaF P L`. -/
 theorem lemma_3_4_4 (hf : AssumptionHL f L) (h : algorithm_3_4_1 f P ε₁ ε₂ εs x s Δ) {k : ℕ}
     (hk : ∀ j ≤ k, ¬ stopTest f ε₁ ε₂ (x j)) (hs : P.η₁ ≤ tr2Ratio f (x k) (s k)) :
     (‖s k‖ < Δ k → kappaDeltaF P L * min (εs ^ 3) (‖gradient f (x (k + 1))‖ ^ 2 / εs) ≤
@@ -529,14 +696,18 @@ end TREpsLemmas
 
 /-! ### Theorems 3.4.5 and 3.4.6 -/
 
-/-- The constant `κ^S_TRε = κ_Δf⁻¹` of (3.4.20). -/
+/-- The constant (3.4.20) $\kappa^S_{\mathrm{TR}\epsilon} = \kappa_{\Delta f}^{-1}$. -/
 noncomputable def kappaSTREps (P : TREpsParams) (L : ℝ) : ℝ := (kappaDeltaF P L)⁻¹
 
-/-- The constant `κ^A_TRε = κ^S_TRε (1 + log γ₃/|log γ₂|)` of (3.4.21). -/
+/-- The constant (3.4.21) $\kappa^A_{\mathrm{TR}\epsilon} = \kappa^S_{\mathrm{TR}\epsilon} (1 + \log
+\gamma_3 / |\log \gamma_2|)$. -/
 noncomputable def kappaATREps (P : TREpsParams) (L : ℝ) : ℝ :=
   kappaSTREps P L * (1 + Real.log P.γ₃ / |Real.log P.γ₂|)
 
-/-- The constant `κ^C_TRε = (log γ₃ + |log((1 - η₂) γ₁/(Δ₀ L))|)/|log γ₂| + 2` of (3.4.22). -/
+/-- The constant (3.4.22)
+$$\kappa^C_{\mathrm{TR}\epsilon} = \frac{\log \gamma_3 + |\log((1 - \eta_2) \gamma_1 / (\Delta_0
+  L))|}{|\log \gamma_2|} + 2.$$
+-/
 noncomputable def kappaCTREps (P : TREpsParams) (L : ℝ) : ℝ :=
   (Real.log P.γ₃ + |Real.log ((1 - P.η₂) * P.γ₁ / (P.Δ₀ * L))|) / |Real.log P.γ₂| + 2
 
@@ -545,9 +716,11 @@ section TREpsTheorems
 variable {f : EuclideanSpace ℝ (Fin n) → ℝ} {P : TREpsParams} {ε₁ : ℝ} {ε₂ : Option ℝ}
   {εs : ℝ} {x s : ℕ → EuclideanSpace ℝ (Fin n)} {Δ : ℕ → ℝ} {L flow : ℝ}
 
-/-- The counting step common to Theorems 3.4.5 and 3.4.6: if `|𝒮_k| ≤ N` before termination, the
-run terminates with `#f ≤ (1 + log γ₃/|log γ₂|) N + (|log c| + |log ε_*|)/|log γ₂| + 1` and
-`#∇f ≤ N + 1`, where `c = (1 - η₂) γ₁/(Δ₀ L)`. -/
+/-- Under Assumption f.HL, if every iteration $k$ before termination of a TRε run has at most $N$
+successful iterations in $[0, k]$, then the run terminates at some $k_\epsilon$ after at most
+$(1 + \log \gamma_3 / |\log \gamma_2|) N + (|\log c| + |\log \epsilon_*|) / |\log \gamma_2| + 1$
+evaluations of $f$ and at most $N + 1$ evaluations of the derivatives, where
+$c = (1 - \eta_2) \gamma_1 / (\Delta_0 L)$. -/
 private theorem tre_count (hf : AssumptionHL f L) (h : algorithm_3_4_1 f P ε₁ ε₂ εs x s Δ)
     {N : ℝ} (hN : 0 ≤ N)
     (hsucc : ∀ k, (∀ j ≤ k, ¬ stopTest f ε₁ ε₂ (x j)) →
@@ -580,11 +753,21 @@ private theorem tre_count (hf : AssumptionHL f L) (h : algorithm_3_4_1 f P ε₁
     div_le_div_of_nonneg_right hlog hlog2.le
   linarith
 
-/-- **Theorem 3.4.5** of [cartis2022evaluation]. Under f.Bb and f.HL, every TRε run with
-`ε_* = √ε₁` and `ε₂ = ∞` terminates at an iteration `k_ε` (`‖∇f(x_{k_ε})‖ ≤ ε₁`) after at most
-`κ^A (f(x₀) - f_low)/ε₁^{3/2} + κ^B |log ε₁| + κ^C` evaluations of `f` and at most
-`κ^S (f(x₀) - f_low)/ε₁^{3/2} + 2` evaluations of `∇f` and `∇²f`, with `κ^S = κ_Δf⁻¹` (3.4.20),
-`κ^A = κ^S (1 + log γ₃/|log γ₂|)`, `κ^B = 1/(2|log γ₂|)` and `κ^C` of (3.4.22). -/
+/-- **Theorem 3.4.5** of [cartis2022evaluation]. Let $f$ satisfy Assumption f.Bb with lower bound
+$f_{\mathrm{low}}$ and Assumption f.HL with constant $L_{f,2}$. Every TRε run with
+$\epsilon_* = \sqrt{\epsilon_1}$ and $\epsilon_2 = +\infty$ terminates at a first iteration
+$k_\epsilon$ with $\|\nabla f(x_{k_\epsilon})\| \le \epsilon_1$. It needs at most
+$$\kappa^A \frac{f(x_0) - f_{\mathrm{low}}}{\epsilon_1^{3/2}} + \kappa^B |\log \epsilon_1| +
+  \kappa^C$$
+evaluations of $f$ and at most
+$$\kappa^S \frac{f(x_0) - f_{\mathrm{low}}}{\epsilon_1^{3/2}} + 2$$
+evaluations of $\nabla f$ and $\nabla^2 f$, where $\kappa^S = \kappa_{\Delta f}^{-1}$ (3.4.20),
+$\kappa^A = \kappa^S (1 + \log \gamma_3 / |\log \gamma_2|)$ (3.4.21),
+$\kappa^B = 1 / (2 |\log \gamma_2|)$ and $\kappa^C$ is (3.4.22).
+
+The run predicate gives $\epsilon_1 \in (0, 1]$. The number of evaluations of $f$ is
+`Optimization.funEvalCount`, and the number of evaluations of the derivatives is
+`Optimization.derivEvalCount` of the successful iterations. -/
 theorem theorem_3_4_5 (hb : Chapter02.AssumptionBb f flow) (hf : AssumptionHL f L)
     (h : algorithm_3_4_1 f P ε₁ none (√ε₁) x s Δ) :
     ∃ kε, IsFirstHit (fun k => ‖gradient f (x k)‖ ≤ ε₁) kε ∧
@@ -651,7 +834,8 @@ theorem theorem_3_4_5 (hb : Chapter02.AssumptionBb f flow) (hf : AssumptionHL f 
     ring
   linarith
 
-/-- The iterate is unchanged between a successful iteration `j` and the next successful one. -/
+/-- Between a successful iteration $j$ of a TRε run and the next successful iteration $j'$, the
+iterate stays equal to $x_{j+1}$. -/
 private theorem tre_x_eq (h : algorithm_3_4_1 f P ε₁ ε₂ εs x s Δ) {j j' : ℕ}
     (hstop : ∀ i < j', ¬ stopTest f ε₁ ε₂ (x i))
     (hnone : ∀ i, j < i → i < j' → ¬ P.η₁ ≤ tr2Ratio f (x i) (s i)) :
@@ -663,15 +847,29 @@ private theorem tre_x_eq (h : algorithm_3_4_1 f P ε₁ ε₂ εs x s Δ) {j j' 
     rw [h.run.eq_of_not_succ (fun i hi => hstop i (by omega)) (not_le.1 (hnone m (by omega)
       (by omega))), ih (by omega)]
 
-/-- **Theorem 3.4.6** of [cartis2022evaluation], **corrected constants**. Under f.Bb and f.HL,
-every TRε run with `ε₁, ε₂ ∈ (0, 1]` and `ε_* = ε₂` terminates at an iteration `k_ε` with
-`‖∇f(x_{k_ε})‖ ≤ ε₁` and `λ_min[∇²f(x_{k_ε})] ≥ -ε₂`, after at most
-`2 κ^A (f(x₀) - f_low)/min(ε₁² ε₂⁻¹, ε₂³) + κ^D |log ε₂| + κ^C` evaluations of `f` and at most
-`2 κ^S (f(x₀) - f_low)/min(ε₁² ε₂⁻¹, ε₂³) + 2` evaluations of `∇f` and `∇²f` (`κ^S, κ^A, κ^C` as
-in Theorem 3.4.5, `κ^D = 1/|log γ₂|`). Correction: the book's proof claims that when
-`λ_min[∇²f(x_{j+1})] < -ε₂` "`x_{j+1}` is on the trust-region boundary"; the boundary step is
-taken at the *next* successful iteration from `x_{j+1}`. A successful iteration without the
-required decrease is followed by one with decrease `≥ κ_Δf ε₂³`, whence the factor `2`. -/
+/-- **Theorem 3.4.6** of [cartis2022evaluation]. Let $f$ satisfy Assumption f.Bb with lower bound
+$f_{\mathrm{low}}$ and Assumption f.HL with constant $L_{f,2}$. Every TRε run with
+$\epsilon_1, \epsilon_2 \in (0, 1]$ and $\epsilon_* = \epsilon_2$ terminates at a first
+iteration $k_\epsilon$ with $\|\nabla f(x_{k_\epsilon})\| \le \epsilon_1$ and
+$\lambda_{\min}[\nabla^2 f(x_{k_\epsilon})] \ge -\epsilon_2$. It needs at most
+$$2 \kappa^A \frac{f(x_0) - f_{\mathrm{low}}}{\min(\epsilon_1^2 \epsilon_2^{-1},
+  \epsilon_2^3)} + \kappa^D |\log \epsilon_2| + \kappa^C$$
+evaluations of $f$ and at most
+$$2 \kappa^S \frac{f(x_0) - f_{\mathrm{low}}}{\min(\epsilon_1^2 \epsilon_2^{-1},
+  \epsilon_2^3)} + 2$$
+evaluations of $\nabla f$ and $\nabla^2 f$, where $\kappa^S$, $\kappa^A$ and $\kappa^C$ are as
+in Theorem 3.4.5 and $\kappa^D = 1 / |\log \gamma_2|$.
+
+**Correction.** The source prints the bounds without the factor $2$ on the leading terms, and
+with $+1$ in place of $+2$ for the derivative evaluations. Its proof claims, before (3.4.26),
+that $x_{j+1}$ is on the trust-region boundary when $\lambda_{\min}[\nabla^2 f(x_{j+1})] <
+-\epsilon_2$. This is wrong: the boundary step is taken at the next successful iteration from
+$x_{j+1}$. So a successful iteration without the required decrease is followed by a successful
+iteration with decrease at least $\kappa_{\Delta f} \epsilon_2^3$, and this gives the factor
+$2$.
+
+The tolerance $\epsilon_2$ is `some e`. The counting step is
+`Optimization.card_successSet_le_two_mul_add_one`. -/
 theorem theorem_3_4_6 (hb : Chapter02.AssumptionBb f flow) (hf : AssumptionHL f L) {e : ℝ}
     (h : algorithm_3_4_1 f P ε₁ (some e) e x s Δ) :
     ∃ kε, IsFirstHit (fun k => stopTest f ε₁ (some e) (x k)) kε ∧
@@ -751,63 +949,77 @@ end TREpsTheorems
 /-! ### The iRN framework -/
 
 
-/-- The constants of Algorithm 3.4.2 (iRN): `0 < σ_min ≤ σ_max`, `0 < η < 1`, `1 < γ₁ ≤ γ₂`,
-`κ₁, κ₂, κ₃, κ₄ > 0` ((3.4.29)–(3.4.32)) and the initial upper bound `σ₀ᵁ ∈ [σ_min, σ_max]`. -/
+/-- **Algorithm 3.4.2** of [cartis2022evaluation], Step 0. The constants of iRN consist of
+regularization bounds $0 < \sigma_{\min} \le \sigma_{\max}$, an acceptance threshold
+$0 < \eta < 1$, increase factors $1 < \gamma_1 \le \gamma_2$, the constants
+$\kappa_1, \kappa_2, \kappa_3, \kappa_4 > 0$ of the step conditions (3.4.29)–(3.4.32), and an
+initial upper bound $\sigma^U_0 \in [\sigma_{\min}, \sigma_{\max}]$. -/
 structure IRNParams where
-  /-- The lower regularization bound. -/
+  /-- The lower regularization bound $\sigma_{\min}$. -/
   σmin : ℝ
-  /-- The upper regularization bound. -/
+  /-- The upper regularization bound $\sigma_{\max}$. -/
   σmax : ℝ
-  /-- The acceptance threshold. -/
+  /-- The acceptance threshold $\eta$. -/
   η : ℝ
-  /-- The lower increase factor. -/
+  /-- The lower increase factor $\gamma_1$. -/
   γ₁ : ℝ
-  /-- The upper increase factor. -/
+  /-- The upper increase factor $\gamma_2$. -/
   γ₂ : ℝ
-  /-- The constant of (3.4.29) (first part). -/
+  /-- The constant $\kappa_1$ of the first inequality of (3.4.29). -/
   κ₁ : ℝ
-  /-- The constant of (3.4.29) (second part). -/
+  /-- The constant $\kappa_2$ of the second inequality of (3.4.29). -/
   κ₂ : ℝ
-  /-- The constant of (3.4.30). -/
+  /-- The constant $\kappa_3$ of (3.4.30). -/
   κ₃ : ℝ
-  /-- The constant of (3.4.32). -/
+  /-- The constant $\kappa_4$ of (3.4.32). -/
   κ₄ : ℝ
-  /-- The initial upper regularization bound `σ₀ᵁ`. -/
+  /-- The initial upper regularization bound $\sigma^U_0$. -/
   σU₀ : ℝ
-  /-- `σ_min > 0`. -/
+  /-- The lower bound is positive: $\sigma_{\min} > 0$. -/
   σmin_pos : 0 < σmin
-  /-- `σ_min ≤ σ_max`. -/
+  /-- The bounds are ordered: $\sigma_{\min} \le \sigma_{\max}$. -/
   σmin_le_σmax : σmin ≤ σmax
-  /-- `η > 0`. -/
+  /-- The threshold is positive: $\eta > 0$. -/
   η_pos : 0 < η
-  /-- `η < 1`. -/
+  /-- The threshold is less than one: $\eta < 1$. -/
   η_lt_one : η < 1
-  /-- `γ₁ > 1`. -/
+  /-- The lower increase factor exceeds one: $\gamma_1 > 1$. -/
   one_lt_γ₁ : 1 < γ₁
-  /-- `γ₁ ≤ γ₂`. -/
+  /-- The increase factors are ordered: $\gamma_1 \le \gamma_2$. -/
   γ₁_le_γ₂ : γ₁ ≤ γ₂
-  /-- `κ₁ > 0`. -/
+  /-- The constant $\kappa_1$ is positive. -/
   κ₁_pos : 0 < κ₁
-  /-- `κ₂ > 0`. -/
+  /-- The constant $\kappa_2$ is positive. -/
   κ₂_pos : 0 < κ₂
-  /-- `κ₃ > 0`. -/
+  /-- The constant $\kappa_3$ is positive. -/
   κ₃_pos : 0 < κ₃
-  /-- `κ₄ > 0`. -/
+  /-- The constant $\kappa_4$ is positive. -/
   κ₄_pos : 0 < κ₄
-  /-- `σ_min ≤ σ₀ᵁ`. -/
+  /-- The initial upper bound is at least the lower bound: $\sigma_{\min} \le \sigma^U_0$. -/
   σmin_le_σU₀ : σmin ≤ σU₀
-  /-- `σ₀ᵁ ≤ σ_max`. -/
+  /-- The initial upper bound is at most the upper bound: $\sigma^U_0 \le \sigma_{\max}$. -/
   σU₀_le_σmax : σU₀ ≤ σmax
 
-/-- The gradient (3.4.31) of the iRN model (3.4.27): `∇m(s) = ∇f(x) + (∇²f(x) + λ I) s`. -/
+/-- The gradient (3.4.31) of the iRN model (3.4.27) at the step $s$ with multiplier $\lambda$:
+$g(s) = \nabla f(x) + (\nabla^2 f(x) + \lambda I) s$. -/
 noncomputable def irnGrad (f : EuclideanSpace ℝ (Fin n) → ℝ) (x : EuclideanSpace ℝ (Fin n))
     (lam : ℝ) (s : EuclideanSpace ℝ (Fin n)) : EuclideanSpace ℝ (Fin n) :=
   gradient f x + hessianOperator f x s + lam • s
 
-/-- Step 2 of Algorithm 3.4.2 at the iterate `x` with bounds `σᴸ, σᵁ`, multiplier `λ` and
-subspace `V` (the range of `Q_k`): (3.4.28) `σᴸ ‖s‖ ≤ λ ≤ σᵁ ‖s‖`, the slope condition (3.4.29),
-the gradient bound (3.4.30) and, if `ε₂ < ∞`, the curvature condition (3.4.32)
-`λ_min[Qᵀ (∇²f(x) + λ I) Q] ≥ -κ₄ ‖s‖`. -/
+/-- Step 2 of Algorithm 3.4.2 at the iterate $x$, with bounds $\sigma^L, \sigma^U$, multiplier
+$\lambda$ and a subspace $V$, the range of a matrix $Q$ with orthonormal columns. Let $g(s) =
+\nabla f(x) + (\nabla^2 f(x) + \lambda I) s$. A step $s$ is admissible if
+$$\sigma^L \|s\| \le \lambda \le \sigma^U \|s\|, \qquad (3.4.28)$$
+the slope condition (3.4.29)
+$$\langle s, g(s) \rangle \le \min\left(\kappa_1 \|s\|^2, \tfrac12 \langle s, (\nabla^2 f(x) +
+  \lambda I) s \rangle + \tfrac12 \kappa_2 \|s\|^3\right)$$
+holds, the gradient bound (3.4.30) $\|g(s)\| \le \lambda \|s\| + \kappa_3 \|s\|^2$ holds, and,
+if $\epsilon_2 < \infty$, the curvature condition (3.4.32) $\lambda_{\min}[Q^T (\nabla^2 f(x) +
+\lambda I) Q] \ge -\kappa_4 \|s\|$ holds.
+
+The gradient $g(s)$ is `CartisGouldToint.Chapter03.irnGrad f x lam s`. The number
+$\lambda_{\min}[Q^T (\nabla^2 f(x) + \lambda I) Q]$ is `minCurvatureOn` of the bilinear form
+`iteratedFDeriv ℝ 2 f x + lam • innerForm` on `V`. -/
 def irnStep (f : EuclideanSpace ℝ (Fin n) → ℝ) (P : IRNParams) (ε₂ : Option ℝ)
     (x : EuclideanSpace ℝ (Fin n)) (σL σU lam : ℝ) (V : Submodule ℝ (EuclideanSpace ℝ (Fin n)))
     (s : EuclideanSpace ℝ (Fin n)) : Prop :=
@@ -817,26 +1029,36 @@ def irnStep (f : EuclideanSpace ℝ (Fin n) → ℝ) (P : IRNParams) (ε₂ : Op
     ‖irnGrad f x lam s‖ ≤ lam * ‖s‖ + P.κ₃ * ‖s‖ ^ 2 ∧
     (ε₂ ≠ none → -(P.κ₄ * ‖s‖) ≤ minCurvatureOn (iteratedFDeriv ℝ 2 f x + lam • innerForm) V)
 
-/-- The ratio (3.4.35) of iRN: `ρ = (f(x) - f(x + s)) / ‖s‖³`. -/
+/-- The ratio (3.4.35) of iRN: $\rho = (f(x) - f(x + s)) / \|s\|^3$. For $s = 0$ the ratio is $0$,
+by the Lean convention for division by zero. -/
 noncomputable def irnRatio (f : EuclideanSpace ℝ (Fin n) → ℝ) (x s : EuclideanSpace ℝ (Fin n)) :
     ℝ :=
   reductionRatio f x s (‖s‖ ^ 3)
 
-/-- The termination test of iRN: `‖∇f(x)‖ ≤ ε₁` and, if `ε₂ < ∞`,
-`λ_min[Qᵀ ∇²f(x) Q] ≥ -ε₂` (3.4.34) (the strict-local-minimizer test of Step 3 implies it). -/
+/-- The termination test of iRN at $x$ with a subspace $V$, the range of a matrix $Q$ with
+orthonormal columns: $\|\nabla f(x)\| \le \epsilon_1$ and, if $\epsilon_2 < \infty$,
+$\lambda_{\min}[Q^T \nabla^2 f(x) Q] \ge -\epsilon_2$ (3.4.34).
+
+The strict-local-minimizer test of Step 3 implies this test. -/
 def irnTest (f : EuclideanSpace ℝ (Fin n) → ℝ) (ε₁ : ℝ) (ε₂ : Option ℝ)
     (x : EuclideanSpace ℝ (Fin n)) (V : Submodule ℝ (EuclideanSpace ℝ (Fin n))) : Prop :=
   ‖gradient f x‖ ≤ ε₁ ∧ ∀ e ∈ ε₂, -e ≤ minCurvatureOn (iteratedFDeriv ℝ 2 f x) V
 
-/-- With `Q = I` (`V = ⊤`) the iRN test is the TR2/AR2 test (3.2.9). -/
+/-- With $Q = I$, that is, with $V$ the whole space, the iRN test is the TR2 and AR2 test (3.2.9),
+`CartisGouldToint.Chapter03.stopTest`. -/
 @[simp]
 theorem irnTest_top {f : EuclideanSpace ℝ (Fin n) → ℝ} {ε₁ : ℝ} {ε₂ : Option ℝ}
     {x : EuclideanSpace ℝ (Fin n)} : irnTest f ε₁ ε₂ x ⊤ ↔ stopTest f ε₁ ε₂ x := by
   rw [irnTest, stopTest_def, minCurvatureOn_top]
   rfl
 
-/-- Step 5 of Algorithm 3.4.2 (the update of `σᴸ, σᵁ`) for the ratio `ρ`, multiplier `λ` and step
-`s`. -/
+/-- Step 5 of Algorithm 3.4.2: the update of the bounds $\sigma^L, \sigma^U$ to
+$\sigma^{L\prime}, \sigma^{U\prime}$ for the ratio $\rho$, the multiplier $\lambda$ and the step
+$s$. If $\rho \ge \eta$, then $\sigma^{L\prime} = 0$ and $\sigma^{U\prime} = \sigma^U$. If
+$\rho < \eta$ and $\lambda < \sigma_{\min} \|s\|$, then $\sigma_{\min} \le \sigma^{L\prime} \le
+\sigma^{U\prime} \le \sigma_{\max}$. If $\rho < \eta$ and $\lambda \ge \sigma_{\min} \|s\|$,
+then $\sigma^{L\prime} = \gamma_1 \lambda / \|s\|$ and
+$\sigma^{U\prime} = \gamma_2 \lambda / \|s\|$. -/
 def irnUpdate (P : IRNParams) (ρ lam : ℝ) (s : EuclideanSpace ℝ (Fin n)) (σU σL' σU' : ℝ) :
     Prop :=
   (P.η ≤ ρ → σL' = 0 ∧ σU' = σU) ∧
@@ -844,33 +1066,52 @@ def irnUpdate (P : IRNParams) (ρ lam : ℝ) (s : EuclideanSpace ℝ (Fin n)) (�
       P.σmin ≤ σL' ∧ σL' ≤ P.σmax ∧ σL' ≤ σU' ∧ σU' ≤ P.σmax) ∧
     (ρ < P.η → P.σmin * ‖s‖ ≤ lam → σL' = P.γ₁ * (lam / ‖s‖) ∧ σU' = P.γ₂ * (lam / ‖s‖))
 
-/-- **Algorithm 3.4.2** (iRN) of [cartis2022evaluation], as a run predicate on iterates `x`,
-steps `s`, multipliers `lam`, bounds `σL, σU` and subspaces `V` (the ranges of the matrices `Q_k`
-with orthonormal columns of (3.4.32); `V k = ⊤` is `Q_k = I`): `ε₁ ∈ (0, 1]`, `ε₂ > 0` if finite,
-`σᴸ_0 = 0`, `σᵁ_0 = σ₀ᵁ`; Step 2 at every iteration reached at which the first-order test of
-Step 1 (only active if `ε₂ = ∞`) fails; and, before termination (test `irnTest`, Steps 1 and 3),
-the acceptance of Step 4 with the ratio (3.4.35) and the update of Step 5. -/
+/-- **Algorithm 3.4.2** of [cartis2022evaluation] (iRN). Let $f : \mathbb{R}^n \to \mathbb{R}$, let
+$\epsilon_1 \in (0, 1]$, and let $\epsilon_2 > 0$ or $\epsilon_2 = +\infty$. Sequences of
+iterates $x_k$, steps $s_k$, multipliers $\lambda_k$, bounds $\sigma^L_k, \sigma^U_k$ and
+subspaces $V_k$ form an **iRN run** if $\sigma^L_0 = 0$, the initial upper bound is the constant
+$\sigma^U_0$, and the following holds.
+
+* Step 2 (`CartisGouldToint.Chapter03.irnStep`) holds at every iteration $k$ such that the
+  termination test fails at all $j < k$ and, if $\epsilon_2 = +\infty$,
+  $\|\nabla f(x_k)\| > \epsilon_1$.
+* At every iteration $k$ before termination, Step 4 sets $x_{k+1} = x_k + s_k$ if the ratio
+  (3.4.35) satisfies $\rho_k \ge \eta$, and $x_{k+1} = x_k$ otherwise.
+* At every iteration $k$ before termination, Step 5 (`CartisGouldToint.Chapter03.irnUpdate`)
+  gives $\sigma^L_{k+1}$ and $\sigma^U_{k+1}$.
+
+The run terminates at the first iteration $k$ at which the test of Steps 1 and 3
+(`CartisGouldToint.Chapter03.irnTest`) holds for $x_k$ and $V_k$.
+
+The subspace $V_k$ is the range of the matrix $Q_k$ with orthonormal columns of (3.4.32), and
+$V_k = \top$ is $Q_k = I$. The first-order test of Step 1 is active only if
+$\epsilon_2 = +\infty$. When $\epsilon_2 < \infty$, the test depends on $Q_k$, which Step 2
+computes, so Step 2 is required also at the iteration where the run terminates. The tolerance
+$\epsilon_2 = +\infty$ is `none`. -/
 structure algorithm_3_4_2 (f : EuclideanSpace ℝ (Fin n) → ℝ) (P : IRNParams) (ε₁ : ℝ)
     (ε₂ : Option ℝ) (x s : ℕ → EuclideanSpace ℝ (Fin n)) (lam σL σU : ℕ → ℝ)
     (V : ℕ → Submodule ℝ (EuclideanSpace ℝ (Fin n))) : Prop where
-  /-- `ε₁ > 0`. -/
+  /-- The first-order tolerance is positive: $\epsilon_1 > 0$. -/
   ε₁_pos : 0 < ε₁
-  /-- `ε₁ ≤ 1`. -/
+  /-- The first-order tolerance is at most one: $\epsilon_1 \le 1$. -/
   ε₁_le_one : ε₁ ≤ 1
-  /-- `ε₂ > 0` if finite. -/
+  /-- If $\epsilon_2$ is finite, then $\epsilon_2 > 0$. -/
   ε₂_pos : ∀ e ∈ ε₂, 0 < e
-  /-- `σᴸ_0 = 0`. -/
+  /-- The initial lower bound is $\sigma^L_0 = 0$. -/
   sigmaL_zero : σL 0 = 0
-  /-- `σᵁ_0 = σ₀ᵁ`. -/
+  /-- The initial upper bound is the constant $\sigma^U_0$. -/
   sigmaU_zero : σU 0 = P.σU₀
-  /-- Step 2. -/
+  /-- Step 2 holds at every iteration $k$ at which the test failed at all $j < k$, unless
+  $\epsilon_2 = +\infty$ and $\|\nabla f(x_k)\| \le \epsilon_1$. -/
   step : ∀ k, (∀ j < k, ¬ irnTest f ε₁ ε₂ (x j) (V j)) →
     (ε₂ = none → ¬ ‖gradient f (x k)‖ ≤ ε₁) →
     irnStep f P ε₂ (x k) (σL k) (σU k) (lam k) (V k) (s k)
-  /-- Step 4. -/
+  /-- Step 4: before termination, the iterate moves to $x_k + s_k$ if $\rho_k \ge \eta$ and stays at
+  $x_k$ otherwise. -/
   accept : UntilHit (fun k => irnTest f ε₁ ε₂ (x k) (V k)) fun k =>
     x (k + 1) = if P.η ≤ irnRatio f (x k) (s k) then x k + s k else x k
-  /-- Step 5. -/
+  /-- Step 5: before termination, the bounds are updated by `CartisGouldToint.Chapter03.irnUpdate`.
+  -/
   update : UntilHit (fun k => irnTest f ε₁ ε₂ (x k) (V k)) fun k =>
     irnUpdate P (irnRatio f (x k) (s k)) (lam k) (s k) (σU k) (σL (k + 1)) (σU (k + 1))
 
@@ -880,13 +1121,14 @@ variable {f : EuclideanSpace ℝ (Fin n) → ℝ} {P : IRNParams} {ε₁ : ℝ} 
   {x s : ℕ → EuclideanSpace ℝ (Fin n)} {lam σL σU : ℕ → ℝ}
   {V : ℕ → Submodule ℝ (EuclideanSpace ℝ (Fin n))}
 
-/-- Step 2 holds at every iteration before termination. -/
+/-- Step 2 holds at every iteration of an iRN run before termination. -/
 theorem step_of_le (h : algorithm_3_4_2 f P ε₁ ε₂ x s lam σL σU V) {k : ℕ}
     (hk : ∀ j ≤ k, ¬ irnTest f ε₁ ε₂ (x j) (V j)) :
     irnStep f P ε₂ (x k) (σL k) (σU k) (lam k) (V k) (s k) :=
   h.step k (fun j hj => hk j hj.le) fun he hg => hk k le_rfl ⟨hg, by simp [he]⟩
 
-/-- Before termination the step is nonzero (a zero step would satisfy the termination test). -/
+/-- Before termination of an iRN run the step is nonzero, because a zero step would satisfy the
+termination test. -/
 theorem s_ne_zero (h : algorithm_3_4_2 f P ε₁ ε₂ x s lam σL σU V) {k : ℕ}
     (hk : ∀ j ≤ k, ¬ irnTest f ε₁ ε₂ (x j) (V j)) : s k ≠ 0 := by
   intro hs0
@@ -899,7 +1141,7 @@ theorem s_ne_zero (h : algorithm_3_4_2 f P ε₁ ε₂ x s lam σL σU V) {k : �
   rw [hs0, hl, norm_zero, mul_zero, neg_zero, zero_smul, add_zero] at this
   linarith [h.ε₂_pos e he]
 
-/-- The lower bounds `σᴸ_k` are nonnegative up to (and including) termination. -/
+/-- Along an iRN run, $\sigma^L_k \ge 0$ at every iteration $k$ up to and including termination. -/
 theorem sigmaL_nonneg (h : algorithm_3_4_2 f P ε₁ ε₂ x s lam σL σU V) :
     ∀ k, (∀ j < k, ¬ irnTest f ε₁ ε₂ (x j) (V j)) → 0 ≤ σL k := by
   intro k
@@ -919,26 +1161,29 @@ theorem sigmaL_nonneg (h : algorithm_3_4_2 f P ε₁ ε₂ x s lam σL σU V) :
         have := P.one_lt_γ₁
         positivity
 
-/-- A successful iteration moves to the trial point. -/
+/-- A successful iteration ($\rho_k \ge \eta$) of an iRN run before termination moves to the trial
+point: $x_{k+1} = x_k + s_k$. -/
 theorem eq_add (h : algorithm_3_4_2 f P ε₁ ε₂ x s lam σL σU V) {k : ℕ}
     (hk : ∀ j ≤ k, ¬ irnTest f ε₁ ε₂ (x j) (V j)) (hs : P.η ≤ irnRatio f (x k) (s k)) :
     x (k + 1) = x k + s k := by
   rw [h.accept k hk, ite_eq_left hs]
 
-/-- An unsuccessful iteration keeps the iterate. -/
+/-- An unsuccessful iteration ($\rho_k < \eta$) of an iRN run before termination keeps the iterate:
+$x_{k+1} = x_k$. -/
 theorem eq_self (h : algorithm_3_4_2 f P ε₁ ε₂ x s lam σL σU V) {k : ℕ}
     (hk : ∀ j ≤ k, ¬ irnTest f ε₁ ε₂ (x j) (V j)) (hs : irnRatio f (x k) (s k) < P.η) :
     x (k + 1) = x k := by
   rw [h.accept k hk, ite_eq_right (not_le.2 hs)]
 
-/-- The decrease on a successful iteration: `f(x_k) - f(x_{k+1}) ≥ η ‖s_k‖³`. -/
+/-- On a successful iteration $k$ of an iRN run before termination,
+$f(x_k) - f(x_{k+1}) \ge \eta \|s_k\|^3$. -/
 theorem sub_ge (h : algorithm_3_4_2 f P ε₁ ε₂ x s lam σL σU V) {k : ℕ}
     (hk : ∀ j ≤ k, ¬ irnTest f ε₁ ε₂ (x j) (V j)) (hs : P.η ≤ irnRatio f (x k) (s k)) :
     P.η * ‖s k‖ ^ 3 ≤ f (x k) - f (x (k + 1)) := by
   rw [h.eq_add hk hs]
   exact sub_le_of_le_reductionRatio (by have := h.s_ne_zero hk; positivity) hs
 
-/-- The objective does not increase before termination. -/
+/-- Before termination of an iRN run, the objective does not increase: $f(x_{k+1}) \le f(x_k)$. -/
 theorem le (h : algorithm_3_4_2 f P ε₁ ε₂ x s lam σL σU V) {k : ℕ}
     (hk : ∀ j ≤ k, ¬ irnTest f ε₁ ε₂ (x j) (V j)) : f (x (k + 1)) ≤ f (x k) := by
   by_cases hs : P.η ≤ irnRatio f (x k) (s k)
@@ -957,9 +1202,12 @@ variable {f : EuclideanSpace ℝ (Fin n) → ℝ} {P : IRNParams} {ε₁ : ℝ} 
   {x s : ℕ → EuclideanSpace ℝ (Fin n)} {lam σL σU : ℕ → ℝ}
   {V : ℕ → Submodule ℝ (EuclideanSpace ℝ (Fin n))} {L : ℝ}
 
-/-- **Lemma 3.4.7** of [cartis2022evaluation] (one iteration). Under f.HL, if the step `s ≠ 0`
-and the multiplier `λ` satisfy (3.4.29) at `x` and `λ ≥ (2η + κ₂ + L_{f,2}) ‖s‖` (3.4.37), then
-`ρ ≥ η` for the ratio (3.4.35). -/
+/-- The one-step form of Lemma 3.4.7. Let $f$ satisfy Assumption f.HL with constant $L_{f,2}$. Let
+$s \ne 0$ and $\lambda$ satisfy the second inequality of (3.4.29) at $y$,
+$$\langle s, g(s) \rangle \le \tfrac12 \langle s, (\nabla^2 f(y) + \lambda I) s \rangle +
+  \tfrac12 \kappa_2 \|s\|^3, \qquad g(s) = \nabla f(y) + (\nabla^2 f(y) + \lambda I) s,$$
+and let $\lambda \ge (2 \eta + \kappa_2 + L_{f,2}) \|s\|$ (3.4.37). Then the ratio (3.4.35)
+satisfies $\rho \ge \eta$. -/
 theorem lemma_3_4_7_step (hf : AssumptionHL f L) {y d : EuclideanSpace ℝ (Fin n)} {l : ℝ}
     (hd : d ≠ 0)
     (h29 : ⟪d, irnGrad f y l d⟫ ≤ 1 / 2 * ⟪d, hessianOperator f y d + l • d⟫ +
@@ -981,26 +1229,36 @@ theorem lemma_3_4_7_step (hf : AssumptionHL f L) {y d : EuclideanSpace ℝ (Fin 
     mul_le_mul_of_nonneg_right hl (sq_nonneg _)
   nlinarith [pow_pos ht 3]
 
-/-- **Lemma 3.4.7** of [cartis2022evaluation]. Under f.HL, if at an iteration `k` before
-termination of an iRN run `λ_k ≥ (2η + κ₂ + L_{f,2}) ‖s_k‖` (3.4.37), then `ρ_k ≥ η` and the
-iteration is successful. -/
+/-- **Lemma 3.4.7** of [cartis2022evaluation]. Let $f$ satisfy Assumption f.HL with constant
+$L_{f,2}$. If iteration $k$ of an iRN run is before termination and
+$$\lambda_k \ge (2 \eta + \kappa_2 + L_{f,2}) \|s_k\|, \qquad (3.4.37)$$
+then $\rho_k \ge \eta$, so that the iteration is successful.
+
+The proof uses the Taylor bound (A.19), $|f(x + s) - T_{f,2}(x, s)| \le \tfrac16 L_{f,2}
+\|s\|^3$; the bound $\tfrac12 L_{f,2} \|s\|^3$ of the source is weaker. The proof specializes
+`CartisGouldToint.Chapter03.lemma_3_4_7_step`. -/
 theorem lemma_3_4_7 (hf : AssumptionHL f L) (h : algorithm_3_4_2 f P ε₁ ε₂ x s lam σL σU V)
     {k : ℕ} (hk : ∀ j ≤ k, ¬ irnTest f ε₁ ε₂ (x j) (V j))
     (hl : (2 * P.η + P.κ₂ + L) * ‖s k‖ ≤ lam k) : P.η ≤ irnRatio f (x k) (s k) :=
   lemma_3_4_7_step hf (h.s_ne_zero hk) ((h.step_of_le hk).2.2.1.trans (min_le_right _ _)) hl
 
-/-- The bound `σ^U_max = max(σ_max, γ₂ (2η + κ₂ + L_{f,2}))` of (3.4.38). -/
+/-- The bound (3.4.38) $\sigma^U_{\max} = \max(\sigma_{\max}, \gamma_2 (2 \eta + \kappa_2 +
+L_{f,2}))$. -/
 noncomputable def sigmaUMax (P : IRNParams) (L : ℝ) : ℝ :=
   max P.σmax (P.γ₂ * (2 * P.η + P.κ₂ + L))
 
+/-- The lower regularization bound is at most the bound (3.4.38):
+$\sigma_{\min} \le \sigma^U_{\max}$. -/
 theorem σmin_le_sigmaUMax (P : IRNParams) (L : ℝ) : P.σmin ≤ sigmaUMax P L :=
   P.σmin_le_σmax.trans (le_max_left _ _)
 
+/-- The bound (3.4.38) is positive: $\sigma^U_{\max} > 0$. -/
 theorem sigmaUMax_pos (P : IRNParams) (L : ℝ) : 0 < sigmaUMax P L :=
   P.σmin_pos.trans_le (σmin_le_sigmaUMax P L)
 
-/-- **Lemma 3.4.8** of [cartis2022evaluation] ((3.4.38)). Under f.HL, for every `k` up to (and
-including) termination of an iRN run, `σᵁ_k ≤ σᵁ_max`. -/
+/-- **Lemma 3.4.8** of [cartis2022evaluation]. Let $f$ satisfy Assumption f.HL with constant
+$L_{f,2}$. Every iteration $k$ of an iRN run up to and including termination satisfies
+$\sigma^U_k \le \sigma^U_{\max}$ (3.4.38). -/
 theorem lemma_3_4_8 (hf : AssumptionHL f L) (h : algorithm_3_4_2 f P ε₁ ε₂ x s lam σL σU V) :
     ∀ k, (∀ j < k, ¬ irnTest f ε₁ ε₂ (x j) (V j)) → σU k ≤ sigmaUMax P L := by
   intro k
@@ -1025,9 +1283,11 @@ theorem lemma_3_4_8 (hf : AssumptionHL f L) (h : algorithm_3_4_2 f P ε₁ ε₂
         refine mul_le_mul_of_nonneg_left ?_ hγ.le
         rw [div_le_iff₀ hpos]; exact hlt.le
 
-/-- **Lemma 3.4.9** of [cartis2022evaluation], first part ((3.4.39)). Under f.HL, if iteration
-`k` (before termination) of an iRN run is successful, then
-`‖s_k‖² ≥ 2/(L_{f,2} + 4 σᵁ_max + 2κ₃) ‖∇f(x_{k+1})‖`. -/
+/-- **Lemma 3.4.9** of [cartis2022evaluation], first part. Let $f$ satisfy Assumption f.HL with
+constant $L_{f,2}$. If iteration $k$ of an iRN run is before termination and successful, then
+$$\|s_k\|^2 \ge \frac{2}{L_{f,2} + 4 \sigma^U_{\max} + 2 \kappa_3} \|\nabla f(x_{k+1})\|. \qquad
+  (3.4.39)$$
+-/
 theorem lemma_3_4_9 (hf : AssumptionHL f L) (h : algorithm_3_4_2 f P ε₁ ε₂ x s lam σL σU V)
     {k : ℕ} (hk : ∀ j ≤ k, ¬ irnTest f ε₁ ε₂ (x j) (V j)) (hs : P.η ≤ irnRatio f (x k) (s k)) :
     2 / (L + 4 * sigmaUMax P L + 2 * P.κ₃) * ‖gradient f (x (k + 1))‖ ≤ ‖s k‖ ^ 2 := by
@@ -1051,9 +1311,14 @@ theorem lemma_3_4_9 (hf : AssumptionHL f L) (h : algorithm_3_4_2 f P ε₁ ε₂
   rw [div_mul_eq_mul_div, div_le_iff₀ hC]
   nlinarith
 
-/-- **Lemma 3.4.9** of [cartis2022evaluation], second part ((3.4.40)). Under f.HL, if (3.4.32)
-holds at iteration `k` (before termination, `ε₂ < ∞`) of an iRN run, then
-`‖s_k‖ ≥ -λ_min[Q_kᵀ ∇²f(x_k) Q_k]/(κ₄ + σᵁ_max)`. -/
+/-- **Lemma 3.4.9** of [cartis2022evaluation], second part. Let $f$ satisfy Assumption f.HL with
+constant $L_{f,2}$, and let $\epsilon_2 < \infty$. If iteration $k$ of an iRN run is before
+termination, then
+$$\|s_k\| \ge \frac{-\lambda_{\min}[Q_k^T \nabla^2 f(x_k) Q_k]}{\kappa_4 + \sigma^U_{\max}}.
+  \qquad (3.4.40)$$
+
+For $\epsilon_2 < \infty$ the curvature condition (3.4.32) is part of Step 2, so it holds at
+iteration $k$. -/
 theorem lemma_3_4_9_curv (hf : AssumptionHL f L)
     (h : algorithm_3_4_2 f P ε₁ ε₂ x s lam σL σU V) (hε₂ : ε₂ ≠ none) {k : ℕ}
     (hk : ∀ j ≤ k, ¬ irnTest f ε₁ ε₂ (x j) (V j)) :
@@ -1075,10 +1340,12 @@ theorem lemma_3_4_9_curv (hf : AssumptionHL f L)
   rw [div_le_iff₀ hc]
   linarith
 
-/-- The constant `log(σᵁ_max/σ_min)/log γ₁ + 1` of (3.4.42). -/
+/-- The bound (3.4.42) $M = \log(\sigma^U_{\max} / \sigma_{\min}) / \log \gamma_1 + 1$ on the length
+of a block of unsuccessful iRN iterations. -/
 noncomputable def irnUnsuccBound (P : IRNParams) (L : ℝ) : ℝ :=
   Real.log (sigmaUMax P L / P.σmin) / Real.log P.γ₁ + 1
 
+/-- The bound (3.4.42) is at least one: $M \ge 1$. -/
 theorem one_le_irnUnsuccBound (P : IRNParams) (L : ℝ) : 1 ≤ irnUnsuccBound P L := by
   have := Real.log_nonneg ((one_le_div P.σmin_pos).2 (σmin_le_sigmaUMax P L))
   have := Real.log_pos P.one_lt_γ₁
@@ -1086,8 +1353,8 @@ theorem one_le_irnUnsuccBound (P : IRNParams) (L : ℝ) : 1 ≤ irnUnsuccBound P
   have : 0 ≤ Real.log (sigmaUMax P L / P.σmin) / Real.log P.γ₁ := by positivity
   linarith
 
-/-- The growth of `σᴸ` along a block of `m ≥ 1` unsuccessful iterations `i, …, i + m - 1` before
-termination: `σᴸ_{i+m} ≥ γ₁^{m-1} σ_min`. -/
+/-- Along a block of $m \ge 1$ unsuccessful iterations $i, \dots, i + m - 1$ of an iRN run before
+termination, $\sigma^L_{i+m} \ge \gamma_1^{m-1} \sigma_{\min}$. -/
 private theorem irn_sigmaL_ge (h : algorithm_3_4_2 f P ε₁ ε₂ x s lam σL σU V) {i : ℕ} :
     ∀ m, 1 ≤ m → (∀ j < i + m, ¬ irnTest f ε₁ ε₂ (x j) (V j)) →
       (∀ l, i ≤ l → l < i + m → irnRatio f (x l) (s l) < P.η) →
@@ -1128,10 +1395,16 @@ private theorem irn_sigmaL_ge (h : algorithm_3_4_2 f P ε₁ ε₂ x s lam σL �
       show m + 1 - 1 = m - 1 + 1 by omega, pow_succ]
     nlinarith [P.σmin_pos]
 
-/-- **Lemma 3.4.10** of [cartis2022evaluation] ((3.4.42)). Under f.HL, a block of `m`
-consecutive unsuccessful iterations `i, …, i + m - 1` of an iRN run which is followed by an
-iteration `i + m` before termination (e.g. the iterations strictly between two consecutive
-successful ones, or before the first one) has `m ≤ log(σᵁ_max/σ_min)/log γ₁ + 1`. -/
+/-- **Lemma 3.4.10** of [cartis2022evaluation]. Let $f$ satisfy Assumption f.HL with constant
+$L_{f,2}$. Let the iterations $i, \dots, i + m - 1$ of an iRN run be unsuccessful, and let the
+termination test fail at all iterations $j \le i + m$. Then
+$$m \le \frac{\log(\sigma^U_{\max} / \sigma_{\min})}{\log \gamma_1} + 1. \qquad (3.4.42)$$
+This applies, for example, to the iterations strictly between two consecutive successful
+iterations, and to the iterations before the first successful iteration.
+
+**Reading.** The bound is stated for a block of unsuccessful iterations that is followed by an
+iteration $i + m$ before termination. A final block before termination can have one more
+element; see `CartisGouldToint.Chapter03.lemma_3_4_10_last`. -/
 theorem lemma_3_4_10 (hf : AssumptionHL f L) (h : algorithm_3_4_2 f P ε₁ ε₂ x s lam σL σU V)
     {i m : ℕ} (hstop : ∀ j ≤ i + m, ¬ irnTest f ε₁ ε₂ (x j) (V j))
     (hfail : ∀ l, i ≤ l → l < i + m → irnRatio f (x l) (s l) < P.η) :
@@ -1157,9 +1430,12 @@ theorem lemma_3_4_10 (hf : AssumptionHL f L) (h : algorithm_3_4_2 f P ε₁ ε�
   rw [this] at hlog
   linarith
 
-/-- The final block of unsuccessful iterations before termination: if iterations
-`i, …, i + m - 1` are unsuccessful and none of the iterations `j < i + m` terminates, then
-`m ≤ log(σᵁ_max/σ_min)/log γ₁ + 2`. -/
+/-- **Lemma 3.4.10** of [cartis2022evaluation], final block. Let $f$ satisfy Assumption f.HL with
+constant $L_{f,2}$. If the iterations $i, \dots, i + m - 1$ of an iRN run are unsuccessful and
+the termination test fails at all iterations $j < i + m$, then
+$$m \le \frac{\log(\sigma^U_{\max} / \sigma_{\min})}{\log \gamma_1} + 2.$$
+
+Here the run may terminate at iteration $i + m$. The bound is one more than (3.4.42). -/
 theorem lemma_3_4_10_last (hf : AssumptionHL f L)
     (h : algorithm_3_4_2 f P ε₁ ε₂ x s lam σL σU V) {i m : ℕ}
     (hstop : ∀ j < i + m, ¬ irnTest f ε₁ ε₂ (x j) (V j))
@@ -1205,7 +1481,8 @@ end IRNLemmas
 
 /-! ### Theorems 3.4.11 and 3.4.12 -/
 
-/-- `t³ ≥ 2√2 ε^{3/2} / C^{3/2}` whenever `t² ≥ 2ε/C` (`t, ε ≥ 0`, `C > 0`). -/
+/-- Let $t, \epsilon \ge 0$ and $C > 0$. If $t^2 \ge 2 \epsilon / C$, then
+$t^3 \ge 2 \sqrt{2} \, \epsilon^{3/2} / C^{3/2}$. -/
 theorem rpow_three_halves_div_le {t C ε : ℝ} (ht : 0 ≤ t) (hC : 0 < C) (hε : 0 ≤ ε)
     (h : 2 / C * ε ≤ t ^ 2) : ε ^ (3 / 2 : ℝ) / (C ^ (3 / 2 : ℝ) / (2 * √2)) ≤ t ^ 3 := by
   have h3 : (t ^ 2) ^ (3 / 2 : ℝ) = t ^ 3 := by
@@ -1220,29 +1497,48 @@ theorem rpow_three_halves_div_le {t C ε : ℝ} (ht : 0 ≤ t) (hC : 0 < C) (hε
       2 * √2 / C ^ (3 / 2 : ℝ) * ε ^ (3 / 2 : ℝ) := by field_simp
     _ ≤ t ^ 3 := hm
 
-/-- The constant `κ^S_iRN = (L_{f,2} + 4 σᵁ_max + 2κ₃)^{3/2}/(2√2 η)` (Appendix B). -/
+/-- The constant $\kappa^S_{\mathrm{iRN}} = (L_{f,2} + 4 \sigma^U_{\max} + 2 \kappa_3)^{3/2} / (2
+\sqrt{2} \, \eta)$ of the proof of Theorem 3.4.11 in Appendix B. -/
 noncomputable def kappaSIRN (P : IRNParams) (L : ℝ) : ℝ :=
   (L + 4 * sigmaUMax P L + 2 * P.κ₃) ^ (3 / 2 : ℝ) / (2 * √2) / P.η
 
-/-- The corrected constant `κ^A_iRN = κ^S_iRN (log(σᵁ_max/σ_min)/log γ₁ + 2)`. -/
+/-- The corrected constant $\kappa^A_{\mathrm{iRN}} = \kappa^S_{\mathrm{iRN}} (M + 1)$ of Theorem
+3.4.11, where $M$ is the bound (3.4.42). So $\kappa^A_{\mathrm{iRN}} = \kappa^S_{\mathrm{iRN}}
+(\log(\sigma^U_{\max} / \sigma_{\min}) / \log \gamma_1 + 2)$. -/
 noncomputable def kappaAIRN (P : IRNParams) (L : ℝ) : ℝ :=
   kappaSIRN P L * (irnUnsuccBound P L + 1)
 
-/-- The corrected constant `κ^B_iRN = M + 2` of Theorem 3.4.11, `M = log(σᵁ_max/σ_min)/log γ₁ + 1`
-the bound (3.4.42) (with `ε₂ = ∞` the run cannot terminate after an unsuccessful iteration). -/
+/-- **Theorem 3.4.11** of [cartis2022evaluation], the constant $\kappa^B$. The corrected constant is
+$\kappa^B_{\mathrm{iRN}} = M + 2$, where $M = \log(\sigma^U_{\max} / \sigma_{\min}) / \log
+\gamma_1 + 1$ is the bound (3.4.42).
+
+**Correction.** The source has $\kappa^B = 2M$, which does not count the successful iterations
+themselves; see `CartisGouldToint.Chapter03.theorem_3_4_11`.
+
+With $\epsilon_2 = +\infty$ the run cannot terminate right after an unsuccessful iteration, so
+the final block of unsuccessful iterations is empty. -/
 noncomputable def kappaBIRN (P : IRNParams) (L : ℝ) : ℝ := irnUnsuccBound P L + 2
 
-/-- The corrected constant `κ^D_iRN = 2M + 3` of Theorem 3.4.12 (the final block of unsuccessful
-iterations may have `M + 1` elements when `ε₂ < ∞`). -/
+/-- **Theorem 3.4.12** of [cartis2022evaluation], the constant $\kappa^D$. The corrected constant is
+$\kappa^D_{\mathrm{iRN}} = 2M + 3$, where $M$ is the bound (3.4.42).
+
+**Correction.** The count of the source does not include the successful iterations and the final
+block of unsuccessful iterations. When $\epsilon_2 < \infty$ the final block can have $M + 1$
+elements (`CartisGouldToint.Chapter03.lemma_3_4_10_last`); see
+`CartisGouldToint.Chapter03.theorem_3_4_12`. -/
 noncomputable def kappaDIRN (P : IRNParams) (L : ℝ) : ℝ := 2 * irnUnsuccBound P L + 3
 
-/-- The constant `κ^T_iRN = η⁻¹ max((L + 4σᵁ_max + 2κ₃)^{3/2}/(2√2), (κ₄ + σᵁ_max)³)`
-(Appendix B). -/
+/-- The constant
+$$\kappa^T_{\mathrm{iRN}} = \eta^{-1} \max\left(\frac{(L_{f,2} + 4 \sigma^U_{\max} + 2
+  \kappa_3)^{3/2}}{2 \sqrt{2}}, (\kappa_4 + \sigma^U_{\max})^3\right)$$
+of the proof of Theorem 3.4.12 in Appendix B. -/
 noncomputable def kappaTIRN (P : IRNParams) (L : ℝ) : ℝ :=
   P.η⁻¹ * max ((L + 4 * sigmaUMax P L + 2 * P.κ₃) ^ (3 / 2 : ℝ) / (2 * √2))
     ((P.κ₄ + sigmaUMax P L) ^ 3)
 
-/-- The corrected constant `κ^C_iRN = κ^T_iRN (log(σᵁ_max/σ_min)/log γ₁ + 2)`. -/
+/-- The corrected constant $\kappa^C_{\mathrm{iRN}} = \kappa^T_{\mathrm{iRN}} (M + 1)$ of Theorem
+3.4.12, where $M$ is the bound (3.4.42). So $\kappa^C_{\mathrm{iRN}} = \kappa^T_{\mathrm{iRN}}
+(\log(\sigma^U_{\max} / \sigma_{\min}) / \log \gamma_1 + 2)$. -/
 noncomputable def kappaCIRN (P : IRNParams) (L : ℝ) : ℝ :=
   kappaTIRN P L * (irnUnsuccBound P L + 1)
 
@@ -1252,7 +1548,8 @@ variable {f : EuclideanSpace ℝ (Fin n) → ℝ} {P : IRNParams} {ε₁ : ℝ} 
   {x s : ℕ → EuclideanSpace ℝ (Fin n)} {lam σL σU : ℕ → ℝ}
   {V : ℕ → Submodule ℝ (EuclideanSpace ℝ (Fin n))} {L flow : ℝ}
 
-/-- The iterate is unchanged between a successful iteration `j` and the next successful one. -/
+/-- Between a successful iteration $j$ of an iRN run and the next successful iteration $j'$, the
+iterate stays equal to $x_{j+1}$. -/
 private theorem irn_x_eq (h : algorithm_3_4_2 f P ε₁ ε₂ x s lam σL σU V) {j j' : ℕ}
     (hstop : ∀ i < j', ¬ irnTest f ε₁ ε₂ (x i) (V i))
     (hnone : ∀ i, j < i → i < j' → ¬ P.η ≤ irnRatio f (x i) (s i)) :
@@ -1264,9 +1561,11 @@ private theorem irn_x_eq (h : algorithm_3_4_2 f P ε₁ ε₂ x s lam σL σU V)
     rw [h.eq_self (fun i hi => hstop i (by omega)) (not_le.1 (hnone m (by omega) (by omega))),
       ih (by omega)]
 
-/-- The counting of iRN iterations: if `|𝒮_k| ≤ N` before termination, then the run terminates
-at some `k_ε` with `#f ≤ (M + 1) N + M + 2` and `#∇f ≤ N + 1`, where `M` is the bound (3.4.42) on
-blocks of unsuccessful iterations (Lemma 3.4.10; the final block may have one more). -/
+/-- Under Assumption f.HL, if every iteration $k$ before termination of an iRN run has at most $N$
+successful iterations in $[0, k]$, then the run terminates at some $k_\epsilon$ after at most
+$(M + 1) N + M + 2$ evaluations of $f$ and at most $N + 1$ evaluations of the derivatives, and
+$k_\epsilon \le (M + 1) N + u$ for the length $u$ of the final block of unsuccessful iterations,
+where $M$ is the bound (3.4.42). -/
 private theorem irn_count (hf : AssumptionHL f L) (h : algorithm_3_4_2 f P ε₁ ε₂ x s lam σL σU V)
     {N : ℝ} (hN : 0 ≤ N)
     (hsucc : ∀ k, (∀ j ≤ k, ¬ irnTest f ε₁ ε₂ (x j) (V j)) →
@@ -1342,15 +1641,23 @@ private theorem irn_count (hf : AssumptionHL f L) (h : algorithm_3_4_2 f P ε₁
   push_cast
   linarith
 
-/-- **Theorem 3.4.11** of [cartis2022evaluation] (proof in Appendix B), **corrected constants**.
-Under f.Bb and f.HL, every iRN run with `ε₂ = ∞` terminates at an iteration `k_ε` with
-`‖∇f(x_{k_ε})‖ ≤ ε₁` after at most `κ^A (f(x₀) - f_low)/ε₁^{3/2} + κ^B` evaluations of `f` and at
-most `κ^S (f(x₀) - f_low)/ε₁^{3/2} + 2` evaluations of `∇f` and `∇²f` (3.4.43)–(3.4.44), with
-`κ^S = (L_{f,2} + 4σᵁ_max + 2κ₃)^{3/2}/(2√2 η)`, `κ^A = κ^S (M + 1)` and `κ^B = M + 2`, where
-`M = log(σᵁ_max/σ_min)/log γ₁ + 1` is the bound (3.4.42). Correction: the appendix multiplies the
-bound on successful iterations by `M`, which does not count the successful iterations themselves;
-the book's `κ^A = κ^S M`, `κ^B = 2M` are replaced accordingly. (With `ε₂ = ∞` the test depends
-only on the iterate, so the run cannot terminate right after an unsuccessful iteration.) -/
+/-- **Theorem 3.4.11** of [cartis2022evaluation]. Let $f$ satisfy Assumption f.Bb with lower bound
+$f_{\mathrm{low}}$ and Assumption f.HL with constant $L_{f,2}$. Every iRN run with
+$\epsilon_2 = +\infty$ terminates at a first iteration $k_\epsilon$ with
+$\|\nabla f(x_{k_\epsilon})\| \le \epsilon_1$. It needs at most
+$$\kappa^A \frac{f(x_0) - f_{\mathrm{low}}}{\epsilon_1^{3/2}} + \kappa^B \qquad (3.4.43)$$
+evaluations of $f$ and at most
+$$\kappa^S \frac{f(x_0) - f_{\mathrm{low}}}{\epsilon_1^{3/2}} + 2 \qquad (3.4.44)$$
+evaluations of $\nabla f$ and $\nabla^2 f$. Here $\kappa^S = (L_{f,2} + 4 \sigma^U_{\max} + 2
+\kappa_3)^{3/2} / (2 \sqrt{2} \, \eta)$, $\kappa^A = \kappa^S (M + 1)$ and $\kappa^B = M + 2$,
+where $M = \log(\sigma^U_{\max} / \sigma_{\min}) / \log \gamma_1 + 1$ is the bound (3.4.42).
+
+**Correction.** The source has $\kappa^A = \kappa^S M$ and $\kappa^B = 2M$. Its proof in
+Appendix B multiplies the bound on the number of successful iterations by $M$. This does not
+count the successful iterations themselves.
+
+The proof is in Appendix B of the source. With $\epsilon_2 = +\infty$ the test depends only on
+the iterate, so the run cannot terminate right after an unsuccessful iteration. -/
 theorem theorem_3_4_11 (hb : Chapter02.AssumptionBb f flow) (hf : AssumptionHL f L)
     (h : algorithm_3_4_2 f P ε₁ none x s lam σL σU V) :
     ∃ kε, IsFirstHit (fun k => ‖gradient f (x k)‖ ≤ ε₁) kε ∧
@@ -1414,18 +1721,28 @@ theorem theorem_3_4_11 (hb : Chapter02.AssumptionBb f flow) (hf : AssumptionHL f
     _ = kappaAIRN P L * (f (x 0) - flow) / ε₁ ^ (3 / 2 : ℝ) + kappaBIRN P L := by
       simp only [kappaAIRN, kappaBIRN, hNe]; ring
 
-/-- **Theorem 3.4.12** of [cartis2022evaluation] (proof in Appendix B), **corrected constants**.
-Under f.Bb and f.HL, every iRN run with `ε₁, ε₂ ∈ (0, 1]` (`ε₂ < ∞`) terminates at an iteration
-`k_ε` with `‖∇f(x_{k_ε})‖ ≤ ε₁` and `λ_min[Q_{k_ε}ᵀ ∇²f(x_{k_ε}) Q_{k_ε}] ≥ -ε₂`, after at most
-`2 κ^C (f(x₀) - f_low)/min(ε₁^{3/2}, ε₂³) + κ^D` evaluations of `f` and at most
-`2 κ^T (f(x₀) - f_low)/min(ε₁^{3/2}, ε₂³) + 2` evaluations of `∇f` and `∇²f`, with `κ^T` as in the
-appendix, `κ^C = κ^T (M + 1)` and `κ^D = kappaDIRN = 2M + 3` (`M` the bound (3.4.42)).
-Corrections: the appendix's claim "`‖∇f(x_k)‖ ≤ ε₁` for all `k ≥ k₁`" is unjustified (the
-gradient may grow again); instead, every successful iteration lacking the required decrease is
-followed by one with decrease `≥ κ₆ ε₂³`, whence the factor `2`; the count of all iterations
-also includes the successful ones and the final block of unsuccessful iterations (which may have
-`M + 1` elements,
-`lemma_3_4_10_last`, as the second-order test also depends on `Q_k`). -/
+/-- **Theorem 3.4.12** of [cartis2022evaluation]. Let $f$ satisfy Assumption f.Bb with lower bound
+$f_{\mathrm{low}}$ and Assumption f.HL with constant $L_{f,2}$. Every iRN run with
+$\epsilon_2 < \infty$ terminates at a first iteration $k_\epsilon$ with
+$\|\nabla f(x_{k_\epsilon})\| \le \epsilon_1$ and $\lambda_{\min}[Q_{k_\epsilon}^T \nabla^2
+f(x_{k_\epsilon}) Q_{k_\epsilon}] \ge -\epsilon_2$. It needs at most
+$$2 \kappa^C \frac{f(x_0) - f_{\mathrm{low}}}{\min(\epsilon_1^{3/2}, \epsilon_2^3)} + \kappa^D$$
+evaluations of $f$ and at most
+$$2 \kappa^T \frac{f(x_0) - f_{\mathrm{low}}}{\min(\epsilon_1^{3/2}, \epsilon_2^3)} + 2$$
+evaluations of $\nabla f$ and $\nabla^2 f$. Here $\kappa^T$ is the constant of Appendix B,
+$\kappa^C = \kappa^T (M + 1)$ and $\kappa^D = 2M + 3$, where $M$ is the bound (3.4.42).
+
+**Correction.** The proof in Appendix B claims that $\|\nabla f(x_k)\| \le \epsilon_1$ for all
+$k \ge k_1$. This is unjustified, because the gradient can grow again. Instead, every successful
+iteration without the required decrease is followed by a successful iteration with decrease at
+least $\kappa_6 \epsilon_2^3$, for a constant $\kappa_6$ of the proof, and this gives the factor
+$2$ on the leading terms. The count of all iterations must also include the successful
+iterations and the final block of unsuccessful iterations. That block can have $M + 1$ elements
+(`CartisGouldToint.Chapter03.lemma_3_4_10_last`), because the second-order test also depends on
+$Q_k$.
+
+The run predicate gives $\epsilon_1 \in (0, 1]$ and $\epsilon_2 > 0$; no bound
+$\epsilon_2 \le 1$ is needed. The tolerance $\epsilon_2$ is `some e`. -/
 theorem theorem_3_4_12 (hb : Chapter02.AssumptionBb f flow) (hf : AssumptionHL f L) {e : ℝ}
     (h : algorithm_3_4_2 f P ε₁ (some e) x s lam σL σU V) :
     ∃ kε, IsFirstHit (fun k => irnTest f ε₁ (some e) (x k) (V k)) kε ∧
@@ -1522,8 +1839,11 @@ section IRNExistence
 
 variable {f : EuclideanSpace ℝ (Fin n) → ℝ} {y : EuclideanSpace ℝ (Fin n)}
 
-/-- A global minimizer `s` of the cubic model `T_{f,2}(y, s) + σ/3 ‖s‖³` (`σ ∈ [σᴸ, σᵁ]`,
-`σ > 0`) with `λ = σ ‖s‖` and `Q = I` (`V = ⊤`) satisfies Step 2 of Algorithm 3.4.2. -/
+/-- Let $f$ be $C^2$ at $y$, and let $\sigma > 0$ with $\sigma^L \le \sigma \le \sigma^U$. If $s$ is
+a global minimizer of the cubic model $\langle \nabla f(y), s \rangle + \tfrac12 \langle s,
+\nabla^2 f(y) s \rangle + \tfrac13 \sigma \|s\|^3$, then $s$ satisfies Step 2 of Algorithm 3.4.2
+with the multiplier $\lambda = \sigma \|s\|$ and $Q = I$, and the model gradient vanishes:
+$\nabla f(y) + (\nabla^2 f(y) + \lambda I) s = 0$. -/
 theorem irnStep_of_isMinOn (hf : ContDiffAt ℝ 2 f y) (P : IRNParams) (ε₂ : Option ℝ)
     {σL σU σ : ℝ} {s : EuclideanSpace ℝ (Fin n)} (hσ : 0 < σ) (hσL : σL ≤ σ) (hσU : σ ≤ σU)
     (hmin : IsMinOn (regModel (gradient f y) (hessianOperator f y) σ 3) univ s) :
@@ -1565,10 +1885,14 @@ theorem irnStep_of_isMinOn (hf : ContDiffAt ℝ 2 f y) (P : IRNParams) (ε₂ : 
       linarith
     linarith
 
-/-- **Existence of iRN runs** ([cartis2022evaluation], Algorithm 3.4.2): for `C²` `f`, every
-`ε₁ ∈ (0, 1]`, `ε₂ > 0` (or `∞`) and every starting point there is an iRN run, with `Q_k = I`
-(`V k = ⊤`), `s_k` a global minimizer of the cubic model `T_{f,2}(x_k, s) + σᵁ_k/3 ‖s‖³` and
-`λ_k = σᵁ_k ‖s_k‖`. -/
+/-- **Algorithm 3.4.2** of [cartis2022evaluation], existence of runs. Let
+$f : \mathbb{R}^n \to \mathbb{R}$ be $C^2$, let $\epsilon_1 \in (0, 1]$, and let
+$\epsilon_2 > 0$ or $\epsilon_2 = +\infty$. Then for every starting point $x_0$ there is an iRN
+run from $x_0$ with $Q_k = I$ for all $k$.
+
+In the construction, $s_k$ is a global minimizer of the cubic model
+$T_{f,2}(x_k, s) + \tfrac13 \sigma^U_k \|s\|^3$ and $\lambda_k = \sigma^U_k \|s_k\|$, as in
+`CartisGouldToint.Chapter03.irnStep_of_isMinOn`. -/
 theorem exists_algorithm_3_4_2 (hf : ContDiff ℝ 2 f) (P : IRNParams) {ε₁ : ℝ} {ε₂ : Option ℝ}
     (hε₁ : 0 < ε₁) (hε₁1 : ε₁ ≤ 1) (hε₂ : ∀ e ∈ ε₂, 0 < e) (x₀ : EuclideanSpace ℝ (Fin n)) :
     ∃ (x s : ℕ → EuclideanSpace ℝ (Fin n)) (lam σL σU : ℕ → ℝ), x 0 = x₀ ∧
@@ -1660,25 +1984,35 @@ open Chapter02 (e₀ norm_e₀ inner_e₀_smul)
 
 variable {G : ℝ → ℝ}
 
+/-- For a $C^2$ function $G : \mathbb{R} \to \mathbb{R}$, the quadratic Taylor model of the ridge
+function $f(x) = G(\langle e_0, x \rangle)$ on $\mathbb{R}^1$ along $e_0$ is $T_{f,2}(y, t
+e_0) = G(a) + G'(a) t + \tfrac12 G''(a) t^2$ with $a = \langle e_0, y \rangle$. -/
 theorem tr2Model_ridge (hG : ContDiff ℝ 2 G) (y : EuclideanSpace ℝ (Fin 1)) (t : ℝ) :
     tr2Model (ridge G e₀) y (t • e₀) =
       G ⟪e₀, y⟫ + deriv G ⟪e₀, y⟫ * t + iteratedDeriv 2 G ⟪e₀, y⟫ * t ^ 2 / 2 := by
   rw [tr2Model_eq_taylorPolynomial (contDiff_ridge hG).contDiffAt, taylorPolynomial_two_ridge hG,
     inner_e₀_smul]
 
+/-- For a $C^2$ function $G : \mathbb{R} \to \mathbb{R}$, the model (3.4.1) of the ridge function
+$f(x) = G(\langle e_0, x \rangle)$ along $e_0$ is $m(t e_0) = G(a) + G'(a) t + \tfrac12 G''(a)
+t^2 + \tfrac12 \epsilon_* t^2$ with $a = \langle e_0, y \rangle$. -/
 theorem treModel_ridge (hG : ContDiff ℝ 2 G) (εs : ℝ) (y : EuclideanSpace ℝ (Fin 1)) (t : ℝ) :
     treModel (ridge G e₀) εs y (t • e₀) =
       G ⟪e₀, y⟫ + deriv G ⟪e₀, y⟫ * t + iteratedDeriv 2 G ⟪e₀, y⟫ * t ^ 2 / 2 +
         εs / 2 * t ^ 2 := by
   rw [treModel_def, tr2Model_ridge hG, norm_smul, norm_e₀, mul_one, Real.norm_eq_abs, sq_abs]
 
+/-- For a $C^2$ function $G : \mathbb{R} \to \mathbb{R}$, the ridge function
+$f(x) = G(\langle e_0, x \rangle)$ on $\mathbb{R}^1$ has
+$\|\nabla f(y)\| = |G'(\langle e_0, y \rangle)|$. -/
 theorem norm_gradient_ridge_e₀ (hG : ContDiff ℝ 2 G) (y : EuclideanSpace ℝ (Fin 1)) :
     ‖gradient (ridge G e₀) y‖ = |deriv G ⟪e₀, y⟫| := by
   rw [gradient_ridge (hG.differentiable (by norm_num)), norm_smul, norm_e₀, mul_one,
     Real.norm_eq_abs]
 
-/-- The model gradient of a ridge function along `e₀`:
-`∇f(y) + (∇²f(y) + λ I)(t e₀) = (G'(a) + (G''(a) + λ) t) e₀`. -/
+/-- For a $C^2$ function $G : \mathbb{R} \to \mathbb{R}$, the iRN model gradient of the ridge
+function $f(x) = G(\langle e_0, x \rangle)$ along $e_0$ is $\nabla f(y) + (\nabla^2 f(y) +
+\lambda I)(t e_0) = (G'(a) + (G''(a) + \lambda) t) e_0$ with $a = \langle e_0, y \rangle$. -/
 theorem irnGrad_ridge (hG : ContDiff ℝ 2 G) (y : EuclideanSpace ℝ (Fin 1)) (l t : ℝ) :
     irnGrad (ridge G e₀) y l (t • e₀) =
       (deriv G ⟪e₀, y⟫ + (iteratedDeriv 2 G ⟪e₀, y⟫ + l) * t) • e₀ := by
@@ -1686,6 +2020,9 @@ theorem irnGrad_ridge (hG : ContDiff ℝ 2 G) (y : EuclideanSpace ℝ (Fin 1)) (
     smul_smul, smul_smul, ← add_smul, ← add_smul]
   ring_nf
 
+/-- For a $C^2$ function $G : \mathbb{R} \to \mathbb{R}$, the derivative of the model (3.4.1) of the
+ridge function $f(x) = G(\langle e_0, x \rangle)$ at $t e_0$ has norm
+$|G'(a) + (G''(a) + \epsilon_*) t|$ with $a = \langle e_0, y \rangle$. -/
 theorem norm_fderiv_treModel_ridge (hG : ContDiff ℝ 2 G) (εs : ℝ) (y : EuclideanSpace ℝ (Fin 1))
     (t : ℝ) : ‖fderiv ℝ (treModel (ridge G e₀) εs y) (t • e₀)‖ =
       |deriv G ⟪e₀, y⟫ + (iteratedDeriv 2 G ⟪e₀, y⟫ + εs) * t| := by
@@ -1694,14 +2031,25 @@ theorem norm_fderiv_treModel_ridge (hG : ContDiff ℝ 2 G) (εs : ℝ) (y : Eucl
   rw [irnGrad] at this
   rw [this, norm_smul, norm_e₀, mul_one, Real.norm_eq_abs]
 
-/-- **The one-dimensional data of the TRε example** ([cartis2022evaluation], (3.5.12)). There
-are `f_low`, `L₁ ≥ 1`, `L₂ ≥ 1` and `B` such that for every `ε ∈ (0, 1)` there are a `C²` function
-`G : ℝ → ℝ` (whose ridge on `ℝ¹` satisfies f.Bb, f.gL, f.HL with these constants and `|·| ≤ B`),
-abscissae `X_k` (`X_0 = 0`) and steps `t_k` such that, with `k_ε = ⌈ε^{-3/2}⌉`: `|G'(X_k)| ≤ ε`
-iff `k = k_ε` (`k ≤ k_ε`), and for `k < k_ε`: `X_{k+1} = X_k + t_k`, `0 < t_k ≤ √ε/2`,
-`G''(X_k) ≥ √ε`, `G'(X_k) + (G''(X_k) + √ε) t_k = 0` (the step minimizes the model (3.4.1) with
-`ε_* = √ε`) and `G(X_k) - G(X_{k+1}) ≥ -(G'(X_k) t_k + G''(X_k) t_k²/2)` (the ratio is `≥ 1`). The
-step factors are `θ_k = 4f_k²/(4f_k² + 1) ∈ [1/2, 1]`. -/
+/-- **Equation (3.5.12)** of [cartis2022evaluation], the one-dimensional data for TRε. There are
+$f_{\mathrm{low}}$, $L_1 \ge 1$, $L_2 \ge 1$ and $B$ with the following property. Let
+$\epsilon \in (0, 1)$ and $k_\epsilon = \lceil \epsilon^{-3/2} \rceil$. Then there are a $C^2$
+function $G : \mathbb{R} \to \mathbb{R}$, abscissae $X_k$ and steps $t_k$ such that:
+
+* the ridge function $f(x) = G(\langle e_0, x \rangle)$ on $\mathbb{R}^1$ satisfies Assumption
+  f.Bb with $f_{\mathrm{low}}$, Assumption f.gL with $L_1$ and Assumption f.HL with $L_2$, and
+  $|f| \le B$;
+* $X_0 = 0$, and for $k \le k_\epsilon$, $|G'(X_k)| \le \epsilon$ holds if and only if
+  $k = k_\epsilon$;
+* for $k < k_\epsilon$, $X_{k+1} = X_k + t_k$, $0 < t_k \le \sqrt{\epsilon} / 2$,
+  $G''(X_k) \ge \sqrt{\epsilon}$,
+$$G'(X_k) + (G''(X_k) + \sqrt{\epsilon}) t_k = 0 \quad\text{and}\quad G(X_k) - G(X_{k+1}) \ge
+  -\left(G'(X_k) t_k + \tfrac12 G''(X_k) t_k^2\right).$$
+
+The equation says that $t_k$ minimizes the model (3.4.1) with $\epsilon_* = \sqrt{\epsilon}$,
+and the last inequality says that the ratio (3.4.6) is at least $1$. In the construction, the
+step factors are $\theta_k = 4 f_k^2 / (4 f_k^2 + 1) \in [1/2, 1]$. The direction $e_0$ is
+`CartisGouldToint.Chapter02.e₀`, and the ridge function is `Optimization.ridge G e₀`. -/
 theorem tre_slow_data :
     ∃ flow L₁ L₂ B : ℝ, 1 ≤ L₁ ∧ 1 ≤ L₂ ∧ ∀ ε : ℝ, 0 < ε → ε < 1 →
       ∃ (G : ℝ → ℝ) (X t : ℕ → ℝ), ContDiff ℝ 2 G ∧
@@ -1785,13 +2133,24 @@ theorem tre_slow_data :
   have := hGB 0 (by norm_num) ⟪e₀, y⟫
   rwa [iteratedDeriv_zero] at this
 
-/-- **TRε runs on one-dimensional data.** Let `G : ℝ → ℝ` be `C²`, `ε ∈ (0, 1]` with
-`√ε < Δ₀`, `X_0 = 0`, and let `|G'(X_k)| ≤ ε` hold (for `k ≤ K`) exactly when `k = K`. If for
-`k < K`: `X_{k+1} = X_k + t_k`, `0 < t_k ≤ √ε/2`, `G''(X_k) ≥ √ε`,
-`G'(X_k) + (G''(X_k) + √ε) t_k = 0` and `G(X_k) - G(X_{k+1}) ≥ -(G'(X_k) t_k + G''(X_k) t_k²/2)`,
-then the points `x_k = X_k e₀` form a TRε run on `ridge G e₀` with `ε_* = √ε`, `ε₂ = ∞`,
-`Δ_k = Δ₀` and interior steps `s_k = t_k e₀` (exact model minimizers, `ρ_k ≥ 1`), terminating
-exactly at `K`. -/
+/-- **TRε runs on one-dimensional data**, for Corollary 3.5.5 of [cartis2022evaluation]. Let
+$G : \mathbb{R} \to \mathbb{R}$ be $C^2$, let $\epsilon \in (0, 1]$ with
+$\sqrt{\epsilon} < \Delta_0$, and let $K \in \mathbb{N}$. Let abscissae $X_k$ with $X_0 = 0$ and
+steps $t_k$ satisfy:
+
+* for $k \le K$, $|G'(X_k)| \le \epsilon$ holds if and only if $k = K$;
+* for $k < K$, $X_{k+1} = X_k + t_k$, $0 < t_k \le \sqrt{\epsilon} / 2$,
+  $G''(X_k) \ge \sqrt{\epsilon}$,
+$$G'(X_k) + (G''(X_k) + \sqrt{\epsilon}) t_k = 0 \quad\text{and}\quad G(X_k) - G(X_{k+1}) \ge
+  -\left(G'(X_k) t_k + \tfrac12 G''(X_k) t_k^2\right).$$
+
+Then there is a TRε run $(x_k, s_k, \Delta_k)$ on the ridge function
+$f(x) = G(\langle e_0, x \rangle)$ with $\epsilon_1 = \epsilon$, $\epsilon_* = \sqrt{\epsilon}$,
+$\epsilon_2 = +\infty$ and $x_k = X_k e_0$ for all $k$, and $K$ is the first iteration with
+$\|\nabla f(x_k)\| \le \epsilon$.
+
+In the construction the radius is constant, $\Delta_k = \Delta_0$, and the steps $s_k = t_k e_0$
+are interior exact minimizers of the model with $\rho_k \ge 1$. -/
 theorem tre_ridge_run (P : TREpsParams) {ε : ℝ} (hε : 0 < ε) (hε1 : ε ≤ 1) (hΔ₀ : √ε < P.Δ₀)
     {G : ℝ → ℝ} (hG : ContDiff ℝ 2 G) {X t : ℕ → ℝ} {K : ℕ} (hX0 : X 0 = 0)
     (htest : ∀ k ≤ K, (|deriv G (X k)| ≤ ε ↔ K ≤ k))
@@ -1865,13 +2224,19 @@ theorem tre_ridge_run (P : TREpsParams) {ε : ℝ} (hε : 0 < ε) (hε1 : ε ≤
     rw [hstepx k hk']
     exact Optimization.trAcceptance_of_one_le P.toTRParams (hρ k hk') _ _ P.Δ₀_pos.le
 
-/-- **The TRε example of Corollary 3.5.5** ([cartis2022evaluation], (3.5.12)): the data
-`tre_slow_data` and the run `tre_ridge_run`. There are `f_low`, `L₁ ≥ 1`, `L₂ ≥ 1` and `B` such
-that for all TRε constants and every `ε ∈ (0, 1)` with `√ε < Δ₀` there are a `C²` function
-`G : ℝ → ℝ`, abscissae `X_k` and steps `t_k > 0` with `X_{k+1} = X_k + t_k`, `G''(X_k) ≥ √ε` and
-`G'(X_k) + (G''(X_k) + √ε) t_k = 0` (`k < ⌈ε^{-3/2}⌉`) such that `f = ridge G e₀` satisfies f.Bb,
-f.gL, f.HL with these constants and `|f| ≤ B`, and the points `x_k = X_k e₀` form a TRε run with
-`ε_* = √ε`, `ε₂ = ∞` from `x₀ = 0` which terminates exactly at iteration `⌈ε^{-3/2}⌉`. -/
+/-- The TRε example of Corollary 3.5.5 of [cartis2022evaluation], on the data (3.5.12). There are
+$f_{\mathrm{low}}$, $L_1 \ge 1$, $L_2 \ge 1$ and $B$ with the following property. For all TRε
+constants and every $\epsilon \in (0, 1)$ with $\sqrt{\epsilon} < \Delta_0$, there are a $C^2$
+function $G : \mathbb{R} \to \mathbb{R}$, abscissae $X_k$ and steps $t_k > 0$ with
+$X_{k+1} = X_k + t_k$, $G''(X_k) \ge \sqrt{\epsilon}$ and
+$G'(X_k) + (G''(X_k) + \sqrt{\epsilon}) t_k = 0$ for $k < \lceil \epsilon^{-3/2} \rceil$, such
+that $f(x) = G(\langle e_0, x \rangle)$ satisfies Assumptions f.Bb, f.gL and f.HL with these
+constants and $|f| \le B$, and the points $x_k = X_k e_0$ form a TRε run from $x_0 = 0$ with
+$\epsilon_1 = \epsilon$, $\epsilon_* = \sqrt{\epsilon}$ and $\epsilon_2 = +\infty$ that
+terminates exactly at iteration $\lceil \epsilon^{-3/2} \rceil$.
+
+The proof combines `CartisGouldToint.Chapter03.tre_slow_data` and
+`CartisGouldToint.Chapter03.tre_ridge_run`. -/
 theorem tre_slow_example :
     ∃ flow L₁ L₂ B : ℝ, 1 ≤ L₁ ∧ 1 ≤ L₂ ∧ ∀ (P : TREpsParams) (ε : ℝ), 0 < ε → ε < 1 →
       √ε < P.Δ₀ → ∃ (G : ℝ → ℝ) (X t : ℕ → ℝ), ContDiff ℝ 2 G ∧
@@ -1924,15 +2289,18 @@ private theorem irn_ratio_alg {c r F θ η : ℝ} (hc : 0 < c) (hr : 0 < r) (hF 
     nlinarith [mul_le_mul_of_nonneg_left h1 (by positivity : (0 : ℝ) ≤ η * c ^ 2)]
   nlinarith [mul_le_mul_of_nonneg_left h2 hc.le]
 
-/-- The scaling factor `c = min(1, (2η)^{-1/2})` of the iRN example: `0 < c ≤ 1` and
-`2 η c² ≤ 1`. -/
+/-- The scaling factor $c = \min(1, (2 \eta)^{-1/2})$ of the iRN example. It satisfies $0 < c \le 1$
+and $2 \eta c^2 \le 1$. -/
 noncomputable def irnScale (P : IRNParams) : ℝ := min 1 (1 / √(2 * P.η))
 
+/-- The scaling factor of the iRN example is positive: $c > 0$. -/
 theorem irnScale_pos (P : IRNParams) : 0 < irnScale P :=
   lt_min one_pos (by have := P.η_pos; positivity)
 
+/-- The scaling factor of the iRN example is at most one: $c \le 1$. -/
 theorem irnScale_le_one (P : IRNParams) : irnScale P ≤ 1 := min_le_left _ _
 
+/-- The scaling factor of the iRN example satisfies $2 \eta c^2 \le 1$. -/
 theorem two_mul_η_mul_irnScale_sq_le (P : IRNParams) : 2 * P.η * irnScale P ^ 2 ≤ 1 := by
   have hη := P.η_pos
   have h1 : irnScale P ^ 2 ≤ (1 / √(2 * P.η)) ^ 2 :=
@@ -1942,8 +2310,8 @@ theorem two_mul_η_mul_irnScale_sq_le (P : IRNParams) : 2 * P.η * irnScale P ^ 
         mul_le_mul_of_nonneg_left h1 (by positivity)
     _ = 1 := by field_simp
 
-/-- The positive root `θ = 2/(1 + √(1 + 4q))` of `θ + q θ² = 1` lies in `[1/(1 + σ), 1]` when
-`0 < q ≤ σ`. -/
+/-- If $0 < q \le \sigma$, then $\theta = 2 / (1 + \sqrt{1 + 4q})$ is the positive root of
+$\theta + q \theta^2 = 1$, and $1 / (1 + \sigma) \le \theta \le 1$. -/
 private theorem quad_root_facts {σ q : ℝ} (hq0 : 0 < q) (hqσ : q ≤ σ) :
     2 / (1 + √(1 + 4 * q)) + q * (2 / (1 + √(1 + 4 * q))) ^ 2 = 1 ∧
       0 < 2 / (1 + √(1 + 4 * q)) ∧ 2 / (1 + √(1 + 4 * q)) ≤ 1 ∧
@@ -1958,16 +2326,26 @@ private theorem quad_root_facts {σ q : ℝ} (hq0 : 0 < q) (hqσ : q ≤ σ) :
   · rw [div_le_one (by linarith)]; linarith
   · rw [div_le_div_iff₀ (by linarith) (by linarith)]; nlinarith
 
-/-- **The one-dimensional data of the iRN example** ([cartis2022evaluation], (3.5.12),
-rescaled). For all iRN constants there are `f_low`, `L₁ ≥ 1`, `L₂ ≥ 1` and `B` such that for every
-`ε ∈ (0, 1)` there are a `C²` function `G : ℝ → ℝ` (whose ridge on `ℝ¹` satisfies f.Bb, f.gL, f.HL
-with these constants and `|·| ≤ B`), abscissae `X_k` (`X_0 = 0`) and steps `t_k` such that, with
-`k_ε = ⌈ε^{-3/2}⌉`: `|G'(X_k)| ≤ ε` iff `k = k_ε` (`k ≤ k_ε`), and for `k < k_ε`:
-`X_{k+1} = X_k + t_k`, `0 < t_k ≤ G''(X_k)`, `G'(X_k) + (G''(X_k) + σ₀ᵁ t_k) t_k = 0` (the step
-minimizes the cubic model with `λ = σ₀ᵁ t_k`) and `η t_k³ ≤ G(X_k) - G(X_{k+1})`. The function is
-`G(u) = c G₀(u/c)` with `G₀` the function of (3.5.12) and `c = irnScale P = min(1, (2η)^{-1/2})`:
-the derivatives `G'(X_k)` are those of (3.5.12), while the ratio (3.4.35), which is not scale
-invariant, becomes `4 f_k³/(c² θ_k³) ≥ 1/(2c²) ≥ η`. -/
+/-- **Equation (3.5.12)** of [cartis2022evaluation], rescaled for iRN. For all iRN constants there
+are $f_{\mathrm{low}}$, $L_1 \ge 1$, $L_2 \ge 1$ and $B$ with the following property. Let
+$\epsilon \in (0, 1)$ and $k_\epsilon = \lceil \epsilon^{-3/2} \rceil$. Then there are a $C^2$
+function $G : \mathbb{R} \to \mathbb{R}$, abscissae $X_k$ and steps $t_k$ such that:
+
+* the ridge function $f(x) = G(\langle e_0, x \rangle)$ on $\mathbb{R}^1$ satisfies Assumption
+  f.Bb with $f_{\mathrm{low}}$, Assumption f.gL with $L_1$ and Assumption f.HL with $L_2$, and
+  $|f| \le B$;
+* $X_0 = 0$, and for $k \le k_\epsilon$, $|G'(X_k)| \le \epsilon$ holds if and only if
+  $k = k_\epsilon$;
+* for $k < k_\epsilon$, $X_{k+1} = X_k + t_k$, $0 < t_k \le G''(X_k)$,
+$$G'(X_k) + (G''(X_k) + \sigma^U_0 t_k) t_k = 0 \quad\text{and}\quad \eta t_k^3 \le G(X_k) -
+  G(X_{k+1}).$$
+
+The equation says that $t_k$ minimizes the cubic model with $\lambda = \sigma^U_0 t_k$, and the
+last inequality says that the ratio (3.4.35) is at least $\eta$. The function is
+$G(u) = c G_0(u / c)$, where $G_0$ is the function of (3.5.12) and
+$c = \min(1, (2 \eta)^{-1/2})$ is `CartisGouldToint.Chapter03.irnScale P`. The derivatives
+$G'(X_k)$ are those of (3.5.12). The ratio (3.4.35) is not scale invariant: it becomes $4 f_k^3
+/ (c^2 \theta_k^3) \ge 1 / (2 c^2) \ge \eta$. -/
 theorem irn_slow_data (P : IRNParams) :
     ∃ flow L₁ L₂ B : ℝ, 1 ≤ L₁ ∧ 1 ≤ L₂ ∧ ∀ ε : ℝ, 0 < ε → ε < 1 →
       ∃ (G : ℝ → ℝ) (X t : ℕ → ℝ), ContDiff ℝ 2 G ∧
@@ -2080,12 +2458,22 @@ theorem irn_slow_data (P : IRNParams) :
   have := hGB' 0 (by norm_num) ⟪e₀, y⟫
   rwa [iteratedDeriv_zero] at this
 
-/-- **iRN runs on one-dimensional data.** Let `G : ℝ → ℝ` be `C²`, `ε ∈ (0, 1]`, `X_0 = 0`, and
-let `|G'(X_k)| ≤ ε` hold (for `k ≤ K`) exactly when `k = K`. If for `k < K`:
-`X_{k+1} = X_k + t_k`, `0 < t_k ≤ G''(X_k)`, `G'(X_k) + (G''(X_k) + σ₀ᵁ t_k) t_k = 0` and
-`η t_k³ ≤ G(X_k) - G(X_{k+1})`, then the points `x_k = X_k e₀` form an iRN run on `ridge G e₀`
-with `ε₂ = ∞`, `Q_k = I`, `σᴸ_k = 0`, `σᵁ_k = σ₀ᵁ`, `λ_k = σ₀ᵁ ‖s_k‖` and steps `s_k = t_k e₀`
-(exact minimizers of the cubic model, all iterations successful), terminating exactly at `K`. -/
+/-- **iRN runs on one-dimensional data**, for Corollary 3.5.5 of [cartis2022evaluation]. Let
+$G : \mathbb{R} \to \mathbb{R}$ be $C^2$, let $\epsilon \in (0, 1]$, and let $K \in \mathbb{N}$.
+Let abscissae $X_k$ with $X_0 = 0$ and steps $t_k$ satisfy:
+
+* for $k \le K$, $|G'(X_k)| \le \epsilon$ holds if and only if $k = K$;
+* for $k < K$, $X_{k+1} = X_k + t_k$, $0 < t_k \le G''(X_k)$,
+$$G'(X_k) + (G''(X_k) + \sigma^U_0 t_k) t_k = 0 \quad\text{and}\quad \eta t_k^3 \le G(X_k) -
+  G(X_{k+1}).$$
+
+Then there is an iRN run on the ridge function $f(x) = G(\langle e_0, x \rangle)$ with
+$\epsilon_1 = \epsilon$, $\epsilon_2 = +\infty$, $Q_k = I$, $x_k = X_k e_0$ and
+$\lambda_k = \sigma^U_0 \|s_k\|$ for all $k$, and $K$ is the first iteration with
+$\|\nabla f(x_k)\| \le \epsilon$.
+
+In the construction $\sigma^L_k = 0$, $\sigma^U_k = \sigma^U_0$, the steps $s_k = t_k e_0$ are
+exact minimizers of the cubic model, and all iterations are successful. -/
 theorem irn_ridge_run (P : IRNParams) {ε : ℝ} (hε : 0 < ε) (hε1 : ε ≤ 1) {G : ℝ → ℝ}
     (hG : ContDiff ℝ 2 G) {X t : ℕ → ℝ} {K : ℕ} (hX0 : X 0 = 0)
     (htest : ∀ k ≤ K, (|deriv G (X k)| ≤ ε ↔ K ≤ k))
@@ -2161,14 +2549,20 @@ theorem irn_ridge_run (P : IRNParams) {ε : ℝ} (hε : 0 < ε) (hε1 : ε ≤ 1
     exact ⟨fun _ => ⟨rfl, rfl⟩, fun h => absurd (hρ k hk') (not_le.2 h),
       fun h => absurd (hρ k hk') (not_le.2 h)⟩
 
-/-- **The iRN example of Corollary 3.5.5** ([cartis2022evaluation], (3.5.12), rescaled): the data
-`irn_slow_data` and the run `irn_ridge_run`. For all iRN constants there are `f_low`, `L₁ ≥ 1`,
-`L₂ ≥ 1` and `B` such that for every `ε ∈ (0, 1)` there are a `C²` function `G`, abscissae `X_k`
-and steps `t_k > 0` (`k < ⌈ε^{-3/2}⌉`) with `X_{k+1} = X_k + t_k`, `t_k ≤ G''(X_k)` and
-`G'(X_k) + (G''(X_k) + σ₀ᵁ t_k) t_k = 0`, such that `f = ridge G e₀` satisfies f.Bb, f.gL, f.HL
-with these constants and `|f| ≤ B`, and the points `x_k = X_k e₀` form an iRN run with `ε₂ = ∞`
-(`Q_k = I`, `σᴸ_k = 0`, `σᵁ_k = σ₀ᵁ`, `λ_k = σ₀ᵁ ‖s_k‖`, all iterations successful) from
-`x₀ = 0`, which terminates exactly at iteration `⌈ε^{-3/2}⌉`. -/
+/-- The iRN example of Corollary 3.5.5 of [cartis2022evaluation], on the rescaled data (3.5.12). For
+all iRN constants there are $f_{\mathrm{low}}$, $L_1 \ge 1$, $L_2 \ge 1$ and $B$ with the
+following property. For every $\epsilon \in (0, 1)$ there are a $C^2$ function
+$G : \mathbb{R} \to \mathbb{R}$, abscissae $X_k$ and steps $t_k > 0$ with $X_{k+1} = X_k + t_k$,
+$t_k \le G''(X_k)$ and $G'(X_k) + (G''(X_k) + \sigma^U_0 t_k) t_k = 0$ for
+$k < \lceil \epsilon^{-3/2} \rceil$, such that $f(x) = G(\langle e_0, x \rangle)$ satisfies
+Assumptions f.Bb, f.gL and f.HL with these constants and $|f| \le B$, and the points
+$x_k = X_k e_0$ form an iRN run from $x_0 = 0$ with $\epsilon_1 = \epsilon$,
+$\epsilon_2 = +\infty$, $Q_k = I$ and $\lambda_k = \sigma^U_0 \|s_k\|$ that terminates exactly
+at iteration $\lceil \epsilon^{-3/2} \rceil$.
+
+The proof combines `CartisGouldToint.Chapter03.irn_slow_data` and
+`CartisGouldToint.Chapter03.irn_ridge_run`. In the run $\sigma^L_k = 0$,
+$\sigma^U_k = \sigma^U_0$, and all iterations are successful. -/
 theorem irn_slow_example (P : IRNParams) :
     ∃ flow L₁ L₂ B : ℝ, 1 ≤ L₁ ∧ 1 ≤ L₂ ∧ ∀ ε : ℝ, 0 < ε → ε < 1 →
       ∃ (G : ℝ → ℝ) (X t : ℕ → ℝ), ContDiff ℝ 2 G ∧

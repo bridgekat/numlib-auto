@@ -7,63 +7,107 @@ import Numlib.Optimization.Complexity.CarmonChain
 import NumlibSurface.CartisGouldToint.Chapter04.Section01
 
 /-!
-# Cartis–Gould–Toint §4.2: A lower complexity bound for finding first-order stationary points
+# Cartis, Gould and Toint, Section 4.2: A lower complexity bound for finding first-order stationary points
 
-Surface file for C. Cartis, N. I. M. Gould and Ph. L. Toint, *Evaluation Complexity of
-Algorithms for Nonconvex Optimization* [cartis2022evaluation], §4.2, after Carmon, Duchi, Hinder
-and Sidford. The content is in the backbone modules `Numlib.Optimization.Complexity.ZeroChain`,
-`ResistingOracle` and `CarmonChain`.
+This module formalizes §4.2 of [cartis2022evaluation], which follows Carmon, Duchi, Hinder and
+Sidford. Let $\mathcal{F}(\Delta, p)$ be the class of smooth functions
+$f : \mathbb{R}^n \to \mathbb{R}$, of any dimension $n$, whose $p$-th derivative is Lipschitz
+continuous and with $f(0) - \inf f \le \Delta$. For a class $\mathcal{M}$ of methods, the complexity
+$$\#_\varepsilon(\mathcal{M}, \mathcal{F}) = \inf_{M \in \mathcal{M}} \sup_{f \in \mathcal{F}}
+  k_\varepsilon(M, f)$$
+of (4.2.2) is the worst-case index of the first iterate with $\|\nabla f(x_k)\| \le \varepsilon$.
+The main result, Theorem 4.2.6, is that every deterministic method of order $p$ that starts at
+$x_0 = 0$ needs a number of iterations of the order of $\varepsilon^{-(p+1)/p}$ on
+$\mathcal{F}(\Delta, p)$. Together with Theorem 4.1.5, this shows that ARp has the optimal order of
+evaluation complexity among these methods.
 
-## Notation
+The proofs are in the backbone modules `Numlib.Optimization.Complexity.ZeroChain`,
+`Numlib.Optimization.Complexity.ResistingOracle` and `Numlib.Optimization.Complexity.CarmonChain`.
 
-Functions are on `ℝⁿ = EuclideanSpace ℝ (Fin n)`, `n` arbitrary; a function of variable dimension
-is a pair `⟨n, f⟩ : Σ n, ℝⁿ → ℝ`. Coordinates are `0`-based: the book's `[x]_j`, `j ∈ [1 : n]`, is
-`x ⟨j - 1, _⟩`, and `e_j` is `EuclideanSpace.single j 1`.
+## Main definitions
 
-* `functionClass Δ L p` — the class `𝓕(Δ, p)` (§4.2.1.1), with the Lipschitz constant `L` of
-  `∇^p f` explicit; its members are `C^∞`, as in the book (footnote 29).
-* `methodClassM p`, `methodClassZR p` — the classes `𝓜(p)` and `𝓜_ZR(p)` (§4.2.1.2, (4.2.1)) of
-  deterministic `p`-th order methods starting at `x₀ = 0` (one method in every dimension, whose
-  iterates are functions of `f(x_i), ∇f(x_i), …, ∇^p f(x_i)` at the previous iterates).
-* `complexity 𝓜 𝓕 ε` — `#_ε(𝓜, 𝓕) = inf_{M ∈ 𝓜} sup_{f ∈ 𝓕} k_ε(M, f)` (4.2.2), in `ℕ∞`, where
-  `k_ε(M, f)` is the index of the first iterate with `‖∇f(x_k)‖ ≤ ε` (`⊤` if there is none).
-* `Optimization.IsZeroChain f p` — the zero-chain property (4.2.4).
-* `hardFunction k̄` — the difficult function `f^D` of (4.2.6), and
-  `Optimization.CarmonChain.lipschitzConst p` the constant `L^D_p` of Lemma 4.2.5 (iv).
+* Section 4.2.1.1, `CartisGouldToint.Chapter04.functionClass`: the class $\mathcal{F}(\Delta, p)$,
+  with the Lipschitz constant $L$ of $\nabla^p f$ explicit.
+* Section 4.2.1.2, `CartisGouldToint.Chapter04.methodClassM`: the class $\mathcal{M}(p)$ of
+  deterministic methods of order $p$ that start at $x_0 = 0$.
+* Section 4.2.1.2, (4.2.1), `CartisGouldToint.Chapter04.methodClassZR`: the class
+  $\mathcal{M}_{ZR}(p)$ of zero-respecting methods.
+* (4.2.2), `CartisGouldToint.Chapter04.complexity`: the complexity
+  $\#_\varepsilon(\mathcal{M}, \mathcal{F})$.
+* (4.2.3), `CartisGouldToint.Chapter04.arpOracleMethod`: ARp, in the first-order case, as a method
+  of $\mathcal{M}(p)$.
+* (4.2.4), `Optimization.IsZeroChain`: the zero-chain property.
+* (4.2.6), `CartisGouldToint.Chapter04.hardFunction`: the difficult function $f^D$.
 
 ## Main results
 
-* `lemma_4_2_1`, `lemma_4_2_2`, `lemma_4_2_3` — zero chains and zero-respecting methods.
-* `theorem_4_2_4_i`, `theorem_4_2_4_ii` — Theorem 4.2.4 (proved in the backbone by a resisting
-  oracle; the book cites Carmon et al. for the proof).
-* `lemma_4_2_5_i` – `lemma_4_2_5_iv`, `lemma_4_2_5_iv_growth` — properties of the difficult
-  function.
-* `theorem_4_2_6_i` — the lower bound (4.2.7).
-* `arpOracleMethod` — ARp (§4.1, first-order mode) as a method of `𝓜(p)`;
-  `complexity_le_arpComplexityBound` — the upper bound (4.2.3); `theorem_4_2_6_ii` — tightness:
-  `#_ε(𝓜(p), 𝓕(Δ, p))` is of exact order `ε^{-(p+1)/p}` as `ε → 0`.
+* Section 4.2.1.1, footnote 30, `CartisGouldToint.Chapter04.comp_adjoint_mem_functionClass`:
+  $\mathcal{F}(\Delta, p)$ is invariant under orthogonal embeddings.
+* (4.2.3), `CartisGouldToint.Chapter04.complexity_le_arpComplexityBound`: ARp gives the upper bound
+  $\#_\varepsilon(\mathcal{M}(p), \mathcal{F}(\Delta, p)) \le \lfloor \kappa^A \Delta
+  \varepsilon^{-(p+1)/p} + \kappa^C \rfloor$.
+* Lemma 4.2.1, `CartisGouldToint.Chapter04.lemma_4_2_1`: zero chains are invariant under scaling.
+* Lemma 4.2.2, `CartisGouldToint.Chapter04.lemma_4_2_2`: on a zero chain, the $k$-th iterate of a
+  zero-respecting method vanishes in the coordinates after the $k$-th.
+* Lemma 4.2.3, `CartisGouldToint.Chapter04.lemma_4_2_3`: zero-respecting methods need at least $n$
+  iterations on a zero chain with large gradients.
+* Theorem 4.2.4, `CartisGouldToint.Chapter04.theorem_4_2_4_i`,
+  `CartisGouldToint.Chapter04.theorem_4_2_4_ii`: lower bounds for zero-respecting methods give lower
+  bounds for all methods of $\mathcal{M}(p)$.
+* Lemma 4.2.5 (i)–(iv), `CartisGouldToint.Chapter04.lemma_4_2_5_i`,
+  `CartisGouldToint.Chapter04.lemma_4_2_5_ii`, `CartisGouldToint.Chapter04.lemma_4_2_5_iii`,
+  `CartisGouldToint.Chapter04.lemma_4_2_5_iv`, `CartisGouldToint.Chapter04.lemma_4_2_5_iv_growth`:
+  $f^D$ is a zero chain with large gradients, bounded below, with a Lipschitz $p$-th derivative.
+* Theorem 4.2.6, `CartisGouldToint.Chapter04.theorem_4_2_6_i`: the lower bound (4.2.7).
+* Theorem 4.2.6, `CartisGouldToint.Chapter04.theorem_4_2_6_ii`: $\#_\varepsilon(\mathcal{M}(p),
+  \mathcal{F}(\Delta, p))$ is of exact order $\varepsilon^{-(p+1)/p}$ as $\varepsilon \to 0$, and
+  ARp attains it.
 
-## Deviations from the book
+## Proof outline
 
-* **(4.2.6)**: the first term of `f^D` is `-Ψ(1) Φ([x]_1)` (as in Carmon et al.), not the printed
-  `-Ψ([x]_1) Φ([x]_1)`, with which `∇f^D(0) = 0` and Lemma 4.2.5 (ii) fails at `x = 0`.
-* **Theorem 4.2.6**: with `k̄ = ⌊Δ/12 (L/L^D_p)^{1/p} ε^{-(p+1)/p}⌋`, the proof gives `#_ε ≥ k̄` for
-  both classes; the book's `#_ε(𝓜(p), 𝓕(Δ, p)) ≥ 2 k̄` does not follow from Theorem 4.2.4. The
-  form `c₀ Δ (L/L^D_p)^{1/p} ε^{-(p+1)/p}` (with `c₀ = 1/24`) needs that quantity to be at least
-  `12`, i.e. `ε` small enough: for large `ε` the complexity is `0`.
-* Lemma 4.2.5 (iv) is proved with an explicit constant `L^D_p` independent of `k̄`, and the growth
-  bound `L^D_p ≤ exp(5/2 p log p + c₁ p)` holds with `c₁ = 20` (`lemma_4_2_5_iv_growth`).
-* **(4.2.3) and tightness**: the upper bound uses the constants of Theorem 4.1.5 (i) with
-  `L_{f,p} = max(1, L)` and is stated with an integer part. The upper bound scales like
-  `Δ L^{(p+1)/p}` and the lower bound (4.2.7) like `Δ L^{1/p}`, so only the order in `ε` is
-  tight; this is what `theorem_4_2_6_ii` states.
-* Theorem 4.2.4 and the orthogonal invariance of `𝓕(Δ, p)` (footnote 30) assume `L ≥ 0`.
-* A zero-respecting method is required to keep `[x_{k+1}]_j = 0` when `e_j` is a null direction
-  of all `∇^q f(x_i)` (the multilinear map vanishes whenever one argument is `e_j`); for the
-  symmetric derivatives of `C^p` functions this is the book's `∇^q f(x_i) e_j = 0`.
-* Lemmas 4.2.2, 4.2.3 and Theorem 4.2.4 are stated without the unused hypotheses `ε > 0`,
-  `p ≥ 1` and (for Lemma 4.2.2) `f ∈ 𝓕(Δ, p)`. Lemma 4.2.3 cites (4.2.3) for `#_ε`; it is
-  (4.2.2).
+A zero chain is a function whose derivatives at a point with vanishing trailing coordinates do not
+involve the next coordinates. A zero-respecting method applied to a zero chain therefore discovers
+at most one new coordinate per iteration, and a rotation of the function reduces a general method to
+a zero-respecting one (Theorem 4.2.4). The difficult function $f^D$ in $\bar k$ variables is a zero
+chain whose gradient is large until all $\bar k$ coordinates are discovered. Scaling $f^D$ to the
+class $\mathcal{F}(\Delta, p)$ gives the lower bound.
+
+## Conventions
+
+* Functions are on $\mathbb{R}^n$ = `EuclideanSpace ℝ (Fin n)`, with $n$ arbitrary. A function of
+  variable dimension is a pair `⟨n, f⟩ : Σ n, EuclideanSpace ℝ (Fin n) → ℝ`.
+* Coordinates are $0$-based in Lean: the coordinate $[x]_j$, $j \in \{1, \dots, n\}$, of the source
+  is `x ⟨j - 1, _⟩`, and the Lean coordinate vector with index `j` is `EuclideanSpace.single j 1`.
+* The index $k_\varepsilon(M, f)$ and the complexities are in `ℕ∞`. The index is `⊤` when no iterate
+  is $\varepsilon$-stationary. Complexities are compared with real numbers in `ℝ≥0∞`.
+
+## Deviations from the source
+
+* **(4.2.6)** (typo). The first term of $f^D$ is $-\Psi(1) \Phi([x]_1)$, as in Carmon et al., not
+  the printed $-\Psi([x]_1) \Phi([x]_1)$, with which Lemma 4.2.5 (ii) fails at $x = 0$. See
+  `CartisGouldToint.Chapter04.hardFunction`.
+* **Theorem 4.2.6** (correction). The proof gives $\#_\varepsilon \ge \bar k$ for both classes, not
+  $\#_\varepsilon(\mathcal{M}(p), \mathcal{F}(\Delta, p)) \ge 2 \bar k$, and the form (4.2.7) with
+  $c_0$ needs $\varepsilon$ small. See `CartisGouldToint.Chapter04.theorem_4_2_6_i`.
+* **Theorem 4.2.6, tightness of (4.2.3)** (reading). Only the order in $\varepsilon$ is tight, and
+  the upper bound uses $L_{f,p} = \max(1, L)$ and an integer part. See
+  `CartisGouldToint.Chapter04.theorem_4_2_6_ii`.
+* **Lemma 4.2.5 (i)** (generalization). The lemma is stated for every $p$, not only for $p \ge 1$.
+  See `CartisGouldToint.Chapter04.lemma_4_2_5_i`.
+* **Lemma 4.2.5 (iv)** (reading). The absolute constant of the growth bound is $c_1 = 20$. See
+  `CartisGouldToint.Chapter04.lemma_4_2_5_iv_growth`.
+* **$\mathcal{F}(\Delta, p)$** (reading). The members are $C^\infty$, as in footnote 29, and the
+  Lipschitz constant is explicit. See `CartisGouldToint.Chapter04.functionClass`.
+* **(4.2.1), zero-respecting methods** (reading). Zero respect is defined through null directions of
+  the derivative tensors. See `CartisGouldToint.Chapter04.methodClassZR`.
+* **Footnote 30 and Theorem 4.2.4** (reading). They assume $L \ge 0$. See
+  `CartisGouldToint.Chapter04.comp_adjoint_mem_functionClass` and
+  `CartisGouldToint.Chapter04.theorem_4_2_4_i`.
+* **Lemmas 4.2.2, 4.2.3 and Theorem 4.2.4** (generalization). The unused hypotheses
+  $\varepsilon > 0$, $p \ge 1$ and, for Lemma 4.2.2, $f \in \mathcal{F}(\Delta, p)$ are dropped. See
+  `CartisGouldToint.Chapter04.lemma_4_2_2`.
+* **Lemma 4.2.3** (typo). The source cites (4.2.3) for $\#_\varepsilon$; the definition is (4.2.2).
+  See `CartisGouldToint.Chapter04.lemma_4_2_3`.
 -/
 
 open Set Optimization
@@ -75,68 +119,132 @@ variable {n p : ℕ}
 
 /-! ### §4.2.1 Problems and methods of interest -/
 
-/-- The function class `𝓕(Δ, p)` of [cartis2022evaluation], §4.2.1.1: infinitely differentiable
-`f : ℝⁿ → ℝ` (any `n`) whose `p`-th derivative is Lipschitz continuous with constant `L` (f.DpL),
-bounded below (f.Bb) with `f(0) - inf f ≤ Δ`. -/
+/-- **Section 4.2.1.1** of [cartis2022evaluation], the function class $\mathcal{F}(\Delta, p)$. Let
+$\Delta, L \in \mathbb{R}$ and $p \in \mathbb{N}$. The class consists of the functions
+$f : \mathbb{R}^n \to \mathbb{R}$, of any dimension $n$, that are infinitely differentiable,
+whose $p$-th derivative is Lipschitz continuous on $\mathbb{R}^n$ with constant $L$ (f.DpL),
+that are bounded below (f.Bb), and that satisfy $f(0) - \inf_x f(x) \le \Delta$.
+
+**Reading.** The members are $C^\infty$, as in footnote 29 of the source, and the Lipschitz
+constant $L$ of $\nabla^p f$ is an explicit parameter of the class.
+
+An element of the class is a pair `⟨n, f⟩ : Σ n, EuclideanSpace ℝ (Fin n) → ℝ`. The class is the
+backbone class `Optimization.smoothClass Δ L p`. Unlike
+`CartisGouldToint.Chapter04.AssumptionDpL`, it does not require $L \ge 1$. -/
 def functionClass (Δ L : ℝ) (p : ℕ) : Set (Σ n, EuclideanSpace ℝ (Fin n) → ℝ) :=
   smoothClass Δ L p
 
+/-- The class $\mathcal{F}(\Delta, p)$ is the backbone class `Optimization.smoothClass Δ L p`. -/
 theorem functionClass_eq (Δ L : ℝ) (p : ℕ) : functionClass Δ L p = smoothClass Δ L p := rfl
 
+/-- A function $f : \mathbb{R}^n \to \mathbb{R}$ is in $\mathcal{F}(\Delta, p)$ if and only if it is
+$C^\infty$, its $p$-th derivative is $L$-Lipschitz on $\mathbb{R}^n$, it is bounded below, and
+$f(0) - \inf_x f(x) \le \Delta$. -/
 theorem mem_functionClass {Δ L : ℝ} {F : Σ n, EuclideanSpace ℝ (Fin n) → ℝ} :
     F ∈ functionClass Δ L p ↔ ContDiff ℝ ∞ F.2 ∧ IteratedFDerivLipschitzOn F.2 p L univ ∧
       BddBelow (range F.2) ∧ F.2 0 - ⨅ x, F.2 x ≤ Δ :=
   Iff.rfl
 
-/-- **Orthogonal invariance of `𝓕(Δ, p)`** ([cartis2022evaluation], §4.2.1.1, footnote 30): for
-`f ∈ 𝓕(Δ, p)` on `ℝⁿ` and `U ∈ O(n̄, n)` (a linear isometry `ℝⁿ → ℝ^n̄`), `f_U = f ∘ Uᵀ` is in
-`𝓕(Δ, p)`. -/
+/-- **Section 4.2.1.1** of [cartis2022evaluation], footnote 30: the class $\mathcal{F}(\Delta, p)$
+is invariant under orthogonal embeddings. Let $L \ge 0$, let $f : \mathbb{R}^n \to \mathbb{R}$
+be in $\mathcal{F}(\Delta, p)$, and let $U \in O(m, n)$, that is, a linear isometry
+$U : \mathbb{R}^n \to \mathbb{R}^m$. Then $f_U = f \circ U^T : \mathbb{R}^m \to \mathbb{R}$ is
+in $\mathcal{F}(\Delta, p)$.
+
+**Reading.** The source does not state the condition $L \ge 0$ on the Lipschitz constant.
+
+The adjoint $U^T$ is `Optimization.isometryAdjoint U`. -/
 theorem comp_adjoint_mem_functionClass {Δ L : ℝ} (hL : 0 ≤ L) {m : ℕ}
     {f : EuclideanSpace ℝ (Fin n) → ℝ} (hf : ⟨n, f⟩ ∈ functionClass Δ L p)
     (U : EuclideanSpace ℝ (Fin n) →ₗᵢ[ℝ] EuclideanSpace ℝ (Fin m)) :
     ⟨m, f ∘ isometryAdjoint U⟩ ∈ functionClass Δ L p :=
   comp_adjoint_mem_smoothClass hL hf U
 
-/-- The class `𝓜(p)` of [cartis2022evaluation], §4.2.1.2: deterministic `p`-th order methods,
-one in every dimension `n`, starting at `x₀ = 0`, whose iterate `x_{k+1}` is a function of
-`f(x_i), ∇f(x_i), …, ∇^p f(x_i)`, `i ≤ k`. -/
+/-- **Section 4.2.1.2** of [cartis2022evaluation], the class $\mathcal{M}(p)$ of deterministic
+methods of order $p$. A method of the class consists of one method in every dimension $n$. It
+starts at $x_0 = 0$, and its iterate $x_{k+1}$ is a function of the values
+$f(x_i), \nabla f(x_i), \dots, \nabla^p f(x_i)$ at the previous iterates $x_i$, $i \le k$.
+
+A method is an element of `Optimization.JetMethod p`, and the class is
+`Optimization.methodClass p`. The iterates of a method $M$ on $f : \mathbb{R}^n \to \mathbb{R}$
+are `M.iter n f`. -/
 abbrev methodClassM (p : ℕ) : Set (JetMethod p) := methodClass p
 
-/-- The class `𝓜_ZR(p)` of zero-respecting methods of [cartis2022evaluation], §4.2.1.2, (4.2.1):
-methods in `𝓜(p)` that, for every function, keep `[x_{k+1}]_j = 0` whenever `e_j` is a null
-direction of `∇^q f(x_i)` for all `q ∈ [1 : p]` and `i ≤ k`. -/
+/-- **Section 4.2.1.2** of [cartis2022evaluation], (4.2.1): the class $\mathcal{M}_{ZR}(p)$ of
+zero-respecting methods. A method of $\mathcal{M}(p)$ is zero-respecting if, for every function
+$f$ in every dimension and every $k$, the coordinate $[x_{k+1}]_j$ is $0$ whenever $e_j$ is a
+null direction of $\nabla^q f(x_i)$ for all $q \in \{1, \dots, p\}$ and all $i \le k$.
+
+**Reading.** A vector $e_j$ is a null direction of a multilinear map if the map vanishes
+whenever one of its arguments is $e_j$. For the symmetric derivatives of a $C^p$ function this
+is the condition $\nabla^q f(x_i) e_j = 0$ of the source.
+
+The class is `Optimization.zeroRespectingClass p`, and null directions are
+`Optimization.IsNullDirection`. -/
 abbrev methodClassZR (p : ℕ) : Set (JetMethod p) := zeroRespectingClass p
 
+/-- Every zero-respecting method is in $\mathcal{M}(p)$:
+$\mathcal{M}_{ZR}(p) \subseteq \mathcal{M}(p)$. -/
 theorem methodClassZR_subset : methodClassZR p ⊆ methodClassM p :=
   zeroRespectingClass_subset_methodClass
 
-/-- The complexity `#_ε(𝓜, 𝓕) = inf_{M ∈ 𝓜} sup_{f ∈ 𝓕} k_ε(M, f)` of a class of methods on a
-class of functions ([cartis2022evaluation], (4.2.2)), where `k_ε(M, f) ∈ ℕ∞` is the index of the
-first iterate of `M` on `f` with `‖∇f(x_k)‖ ≤ ε` (`⊤` if there is none). -/
+/-- **(4.2.2)** of [cartis2022evaluation], the complexity of a class of methods on a class of
+functions. For a method $M$ and a function $f$, let $k_\varepsilon(M, f) \in \mathbb{N} \cup
+\{\infty\}$ be the index of the first iterate $x_k$ of $M$ on $f$ with
+$\|\nabla f(x_k)\| \le \varepsilon$, and $k_\varepsilon(M, f) = \infty$ if there is none. Then
+$$\#_\varepsilon(\mathcal{M}, \mathcal{F}) = \inf_{M \in \mathcal{M}} \sup_{f \in \mathcal{F}}
+  k_\varepsilon(M, f).$$
+
+The definition is `Optimization.classComplexity`, with values in `ℕ∞`, and the index
+$k_\varepsilon(M, f)$ is `Optimization.firstStationaryIndex`. At a point where $f$ is not
+differentiable the derivative is taken to be $0$, so such a point counts as stationary; the
+members of $\mathcal{F}(\Delta, p)$ are differentiable. -/
 noncomputable abbrev complexity (𝓜 : Set (JetMethod p))
     (𝓕 : Set (Σ n, EuclideanSpace ℝ (Fin n) → ℝ)) (ε : ℝ) : ℕ∞ :=
   classComplexity 𝓜 𝓕 ε
 
 /-! ### §4.2.2 Zero chains -/
 
-/-- **Lemma 4.2.1 (scale invariance of zero chains)** of [cartis2022evaluation]. If `f` is a
-`p`-th order zero chain, `μ₁ ∈ ℝ` and `μ₂ ≠ 0`, then `x ↦ μ₁ f(x/μ₂)` is a `p`-th order zero
-chain. -/
+/-- **Lemma 4.2.1** of [cartis2022evaluation] (scale invariance of zero chains). Let
+$f : \mathbb{R}^n \to \mathbb{R}$ be a zero chain of order $p$ (4.2.4), let
+$\mu_1 \in \mathbb{R}$ and let $\mu_2 \neq 0$. Then $x \mapsto \mu_1 f(x/\mu_2)$ is a zero chain
+of order $p$.
+
+A zero chain is `Optimization.IsZeroChain`. With $0$-based indices, it means: if $[x]_i = 0$ for
+all $i \ge j$, then the coordinate vectors $e_i$, $i > j$, are null directions of
+$\nabla^q f(x)$ for every $q \in \{1, \dots, p\}$. -/
 theorem lemma_4_2_1 {f : EuclideanSpace ℝ (Fin n) → ℝ} (hf : IsZeroChain f p) (μ₁ : ℝ) {μ₂ : ℝ}
     (hμ₂ : μ₂ ≠ 0) : IsZeroChain (fun x => μ₁ * f (μ₂⁻¹ • x)) p :=
   hf.comp_smul μ₁ hμ₂
 
-/-- **Lemma 4.2.2 (zero-respecting methods applied to zero chains)** of [cartis2022evaluation].
-If `M ∈ 𝓜_ZR(p)` and `f : ℝⁿ → ℝ` is a `p`-th order zero chain, the iterates of `M` on `f`
-satisfy `[x_k]_j = 0` for all `j ∈ [k + 1 : n]` (`0`-based: all coordinates `j ≥ k`). -/
+/-- **Lemma 4.2.2** of [cartis2022evaluation] (zero-respecting methods applied to zero chains). Let
+$M \in \mathcal{M}_{ZR}(p)$ and let $f : \mathbb{R}^n \to \mathbb{R}$ be a zero chain of order
+$p$. Then the iterates of $M$ on $f$ satisfy $[x_k]_j = 0$ for all $j \in \{k + 1, \dots, n\}$.
+
+**Generalization.** The hypotheses $\varepsilon > 0$, $p \ge 1$ and
+$f \in \mathcal{F}(\Delta, p)$ of the source are not used and are dropped.
+
+With $0$-based indices the conclusion is `M.iter n f k j = 0` for every `j : Fin n` with
+$k \le j$. -/
 theorem lemma_4_2_2 {M : JetMethod p} (hM : M ∈ methodClassZR p)
     {f : EuclideanSpace ℝ (Fin n) → ℝ} (hf : IsZeroChain f p) (k : ℕ) (j : Fin n) (hkj : k ≤ j) :
     M.iter n f k j = 0 :=
   (hM n f).iterate_apply_eq_zero hf k j hkj
 
-/-- **Lemma 4.2.3 (zero-respecting methods are slow on zero chains)** of [cartis2022evaluation].
-Let `⟨n, f⟩ ∈ 𝓕(Δ, p)` be a `p`-th order zero chain with `‖∇f(x)‖ > ε` whenever `[x]_n = 0`
-(4.2.5). Then `#_ε(𝓜_ZR(p), 𝓕(Δ, p)) ≥ #_ε(𝓜_ZR(p), {f}) ≥ n`. -/
+/-- **Lemma 4.2.3** of [cartis2022evaluation] (zero-respecting methods are slow on zero chains). Let
+$f : \mathbb{R}^n \to \mathbb{R}$ be in $\mathcal{F}(\Delta, p)$ and be a zero chain of order
+$p$, and suppose that $\|\nabla f(x)\| > \varepsilon$ for every $x$ with $[x]_n = 0$ (4.2.5).
+Then
+$$\#_\varepsilon(\mathcal{M}_{ZR}(p), \mathcal{F}(\Delta, p)) \ge
+  \#_\varepsilon(\mathcal{M}_{ZR}(p), \{f\}) \ge n.$$
+
+**Generalization.** The hypotheses $\varepsilon > 0$ and $p \ge 1$ of the source are not used
+and are dropped.
+
+**Typo.** The source cites (4.2.3) for $\#_\varepsilon$; the definition is (4.2.2).
+
+The condition $[x]_n = 0$ is `x ⟨n - 1, _⟩ = 0` with $0$-based indices, and the hypothesis on
+the gradient is required only for $n \ge 1$. -/
 theorem lemma_4_2_3 {Δ L ε : ℝ} {f : EuclideanSpace ℝ (Fin n) → ℝ}
     (hF : ⟨n, f⟩ ∈ functionClass Δ L p) (hf : IsZeroChain f p)
     (hgrad : ∀ (hn : 0 < n) (x : EuclideanSpace ℝ (Fin n)), x ⟨n - 1, by omega⟩ = 0 →
@@ -146,23 +254,44 @@ theorem lemma_4_2_3 {Δ L ε : ℝ} {f : EuclideanSpace ℝ (Fin n) → ℝ}
   ⟨classComplexity_mono_right (singleton_subset_iff.2 hF),
     (le_classComplexity_of_isZeroChain hf hgrad hF).1⟩
 
-/-- Members of `𝓕(Δ, p)` are `C^p` and differentiable. -/
+/-- Every member of $\mathcal{F}(\Delta, p)$ is $C^p$ and differentiable. -/
 theorem contDiff_differentiable_of_mem_functionClass {Δ L : ℝ}
     {F : Σ n, EuclideanSpace ℝ (Fin n) → ℝ} (hF : F ∈ functionClass Δ L p) :
     ContDiff ℝ p F.2 ∧ Differentiable ℝ F.2 :=
   ⟨hF.1.of_le (by exact_mod_cast le_top), hF.1.differentiable (by simp)⟩
 
-/-- **Theorem 4.2.4** of [cartis2022evaluation], first part: for every `ε`,
-`#_ε(𝓜(p), 𝓕(Δ, p)) ≥ #_ε(𝓜_ZR(p), 𝓕(Δ, p))`. -/
+/-- **Theorem 4.2.4** of [cartis2022evaluation], first part. Let $L \ge 0$. For every $\varepsilon$,
+$$\#_\varepsilon(\mathcal{M}(p), \mathcal{F}(\Delta, p)) \ge \#_\varepsilon(\mathcal{M}_{ZR}(p),
+  \mathcal{F}(\Delta, p)).$$
+
+**Reading.** The source does not state the condition $L \ge 0$ on the Lipschitz constant.
+
+**Generalization.** The hypotheses $\varepsilon > 0$ and $p \ge 1$ of the source are not used
+and are dropped.
+
+The source cites Carmon et al. for the proof. The backbone proves the theorem with a resisting
+oracle (`Numlib.Optimization.Complexity.ResistingOracle`). -/
 theorem theorem_4_2_4_i {Δ L : ℝ} (hL : 0 ≤ L) (ε : ℝ) :
     complexity (methodClassZR p) (functionClass Δ L p) ε ≤
       complexity (methodClassM p) (functionClass Δ L p) ε :=
   classComplexity_zeroRespecting_le _ (fun _ hF _ U => comp_adjoint_mem_functionClass hL hF U)
     (fun _ hF => contDiff_differentiable_of_mem_functionClass hF) ε
 
-/-- **Theorem 4.2.4** of [cartis2022evaluation], second part: if `⟨n, f⟩ ∈ 𝓕(Δ, p)` and
-`#_ε(𝓜_ZR(p), {f}) ≥ k̄`, then `#_ε(𝓜(p), 𝓕(Δ, p)) ≥ #_ε(𝓜(p), {f_U}) ≥ k̄`, where `{f_U}` is the
-set of all `f_U = f ∘ Uᵀ : ℝ^{n+k̄} → ℝ` with `U ∈ O(n + k̄, n)`. -/
+/-- **Theorem 4.2.4** of [cartis2022evaluation], second part. Let $L \ge 0$, let
+$f : \mathbb{R}^n \to \mathbb{R}$ be in $\mathcal{F}(\Delta, p)$, let $\bar k \in \mathbb{N}$,
+and suppose that $\#_\varepsilon(\mathcal{M}_{ZR}(p), \{f\}) \ge \bar k$. Let $\{f_U\}$ be the
+set of all functions $f_U = f \circ U^T : \mathbb{R}^{n + \bar k} \to \mathbb{R}$ with
+$U \in O(n + \bar k, n)$. Then
+$$\#_\varepsilon(\mathcal{M}(p), \mathcal{F}(\Delta, p)) \ge \#_\varepsilon(\mathcal{M}(p),
+  \{f_U\}) \ge \bar k.$$
+
+**Reading.** The source does not state the condition $L \ge 0$ on the Lipschitz constant.
+
+**Generalization.** The hypotheses $\varepsilon > 0$ and $p \ge 1$ of the source are not used
+and are dropped.
+
+The matrices $U \in O(n + \bar k, n)$ are the linear isometries
+$\mathbb{R}^n \to \mathbb{R}^{n + \bar k}$, and $U^T$ is `Optimization.isometryAdjoint U`. -/
 theorem theorem_4_2_4_ii {Δ L ε : ℝ} (hL : 0 ≤ L) {f : EuclideanSpace ℝ (Fin n) → ℝ}
     (hF : ⟨n, f⟩ ∈ functionClass Δ L p) {k : ℕ}
     (hk : (k : ℕ∞) ≤ complexity (methodClassZR p) {⟨n, f⟩} ε) :
@@ -178,24 +307,41 @@ theorem theorem_4_2_4_ii {Δ L ε : ℝ} (hL : 0 ≤ L) {f : EuclideanSpace ℝ 
 
 /-! ### The difficult function -/
 
-/-- The difficult function `f^D : ℝ^k̄ → ℝ` of [cartis2022evaluation], (4.2.6), with the first
-term corrected to `-Ψ(1) Φ([x]_1)`:
-`f^D(x) = -Ψ(1) Φ([x]_1) + ∑_{i=2}^{k̄} [Ψ(-[x]_{i-1}) Φ(-[x]_i) - Ψ([x]_{i-1}) Φ([x]_i)]`,
-where `Ψ(y) = 0` for `y ≤ 1/2`, `Ψ(y) = exp(1 - (2y - 1)^{-2})` otherwise
-(`Optimization.CarmonChain.psi`), and `Φ(y) = e^{1/2} ∫_{-∞}^y e^{-t²/2} dt`
-(`Optimization.CarmonChain.phi`). -/
+/-- **(4.2.6)** of [cartis2022evaluation], the difficult function
+$f^D : \mathbb{R}^{\bar k} \to \mathbb{R}$:
+$$f^D(x) = -\Psi(1) \Phi([x]_1) + \sum_{i=2}^{\bar k} \left[\Psi(-[x]_{i-1}) \Phi(-[x]_i) -
+  \Psi([x]_{i-1}) \Phi([x]_i)\right],$$
+where $\Psi(y) = 0$ for $y \le 1/2$, $\Psi(y) = \exp(1 - (2y - 1)^{-2})$ for $y > 1/2$, and
+$\Phi(y) = e^{1/2} \int_{-\infty}^y e^{-t^2/2}\, dt$.
+
+**Typo.** The source prints the first term as $-\Psi([x]_1) \Phi([x]_1)$. With that term
+$\nabla f^D(0) = 0$, and Lemma 4.2.5 (ii) fails at $x = 0$. The first term here is
+$-\Psi(1) \Phi([x]_1)$, as in Carmon et al.
+
+The function is `Optimization.CarmonChain.chain`. The function $\Psi$ is
+`Optimization.CarmonChain.psi`, and the function
+$\Phi$ is `Optimization.CarmonChain.phi`. -/
 noncomputable def hardFunction (k : ℕ) : EuclideanSpace ℝ (Fin k) → ℝ :=
   CarmonChain.chain k
 
+/-- The difficult function $f^D$ is the backbone function `Optimization.CarmonChain.chain`. -/
 theorem hardFunction_eq (k : ℕ) : hardFunction k = CarmonChain.chain k := rfl
 
-/-- **Lemma 4.2.5 (i)** of [cartis2022evaluation]: for every `p ≥ 1`, `f^D` is a `p`-th order
-zero chain. (It holds for every `p`.) -/
+/-- **Lemma 4.2.5 (i)** of [cartis2022evaluation]. For every $\bar k$ and every $p$, the difficult
+function $f^D$ is a zero chain of order $p$.
+
+**Generalization.** The source states the lemma for $p \ge 1$. The statement holds for every
+$p$, and it is vacuous for $p = 0$. -/
 theorem lemma_4_2_5_i (k p : ℕ) : IsZeroChain (hardFunction k) p :=
   CarmonChain.isZeroChain_chain p
 
-/-- **Lemma 4.2.5 (ii)** of [cartis2022evaluation]: if `|[x]_i| < 1` for some `i ≤ k̄`, there is
-`j ≤ i` with `|[x]_j| < 1` and `‖∇f^D(x)‖ ≥ |∂f^D/∂[x]_j (x)| > 1`. -/
+/-- **Lemma 4.2.5 (ii)** of [cartis2022evaluation]. Let $x \in \mathbb{R}^{\bar k}$ and suppose that
+$|[x]_i| < 1$ for some $i$. Then there is $j \le i$ with $|[x]_j| < 1$ and
+$$\|\nabla f^D(x)\| \ge \left|\frac{\partial f^D}{\partial [x]_j}(x)\right| > 1.$$
+
+This part needs the corrected first term of (4.2.6) (`CartisGouldToint.Chapter04.hardFunction`).
+The partial derivative is `fderiv ℝ (hardFunction k) x (EuclideanSpace.single j 1)`, and the
+indices are $0$-based. -/
 theorem lemma_4_2_5_ii {k : ℕ} {x : EuclideanSpace ℝ (Fin k)} {i : Fin k} (hi : |x i| < 1) :
     ∃ j : Fin k, j ≤ i ∧ |x j| < 1 ∧
       |fderiv ℝ (hardFunction k) x (EuclideanSpace.single j 1)| ≤
@@ -207,25 +353,36 @@ theorem lemma_4_2_5_ii {k : ℕ} {x : EuclideanSpace ℝ (Fin k)} {i : Fin k} (h
   refine ((fderiv ℝ (hardFunction k) x).le_opNorm _).trans_eq ?_
   simp
 
-/-- **Lemma 4.2.5 (iii)** of [cartis2022evaluation]: `f^D` is bounded below and
-`f^D(0) - f^D_low ≤ 12 k̄`, with `f^D_low = inf f^D`. -/
+/-- **Lemma 4.2.5 (iii)** of [cartis2022evaluation]. For every $\bar k$, the difficult function
+$f^D$ is bounded below on $\mathbb{R}^{\bar k}$, and
+$$f^D(0) - f^D_{\text{low}} \le 12 \bar k, \qquad f^D_{\text{low}} = \inf_x f^D(x).$$
+-/
 theorem lemma_4_2_5_iii (k : ℕ) :
     BddBelow (range (hardFunction k)) ∧ hardFunction k 0 - ⨅ x, hardFunction k x ≤ 12 * k :=
   CarmonChain.chain_zero_sub_iInf_le
 
-/-- **Lemma 4.2.5 (iv)** of [cartis2022evaluation], without the growth estimate: for every
-`p ≥ 1`, `∇^p f^D` is Lipschitz continuous (f.DpL) with a constant
-`L^D_p = Optimization.CarmonChain.lipschitzConst p > 0` that does not depend on `k̄`. -/
+/-- **Lemma 4.2.5 (iv)** of [cartis2022evaluation], without the growth estimate. Let $p \ge 1$.
+There is a constant $L^D_p > 0$, independent of $\bar k$, such that for every $\bar k$ the
+$p$-th derivative of $f^D$ is Lipschitz continuous on $\mathbb{R}^{\bar k}$ with constant
+$L^D_p$ (f.DpL).
+
+The constant is explicit: $L^D_p$ is `Optimization.CarmonChain.lipschitzConst p`, a bound on
+$\|\nabla^{p+1} f^D\|$ that does not depend on $\bar k$. -/
 theorem lemma_4_2_5_iv {p : ℕ} (hp : 1 ≤ p) :
     0 < CarmonChain.lipschitzConst p ∧ ∀ k : ℕ,
       IteratedFDerivLipschitzOn (hardFunction k) p (CarmonChain.lipschitzConst p) univ :=
   ⟨CarmonChain.lipschitzConst_pos p, fun _ => CarmonChain.lipschitzOn_iteratedFDeriv_chain hp⟩
 
-/-- **Lemma 4.2.5 (iv)** of [cartis2022evaluation], with the growth estimate: there is an
-absolute constant `c₁ > 0` such that for every `p ≥ 1`, `∇^p f^D` is Lipschitz continuous
-(f.DpL) with the constant `L^D_p = Optimization.CarmonChain.lipschitzConst p`, independent of
-`k̄`, and `L^D_p ≤ exp(5/2 p log p + c₁ p)`. One may take `c₁ = 20`
-(`Optimization.CarmonChain.lipschitzConst_le_exp_twenty`). -/
+/-- **Lemma 4.2.5 (iv)** of [cartis2022evaluation], with the growth estimate. There is an absolute
+constant $c_1 > 0$ such that for every $p \ge 1$ the following holds: for every $\bar k$ the
+$p$-th derivative of $f^D$ is Lipschitz continuous on $\mathbb{R}^{\bar k}$ with the constant
+$L^D_p$, which does not depend on $\bar k$, and
+$$L^D_p \le \exp\left(\tfrac{5}{2} p \log p + c_1 p\right).$$
+
+**Reading.** The source leaves the absolute constant $c_1$ unspecified. One may take $c_1 = 20$
+(`Optimization.CarmonChain.lipschitzConst_le_exp_twenty`).
+
+The constant $L^D_p$ is `Optimization.CarmonChain.lipschitzConst p`. -/
 theorem lemma_4_2_5_iv_growth :
     ∃ c₁ > 0, ∀ p : ℕ, 1 ≤ p →
       (∀ k : ℕ, IteratedFDerivLipschitzOn (hardFunction k) p (CarmonChain.lipschitzConst p) univ) ∧
@@ -235,18 +392,28 @@ theorem lemma_4_2_5_iv_growth :
 
 /-! ### The lower bound -/
 
-/-- `⌊x⌋ ≥ x / 2` for `x ≥ 1`. -/
+/-- $\lfloor x \rfloor \ge x/2$ for $x \ge 1$. -/
 private theorem div_two_le_floor {x : ℝ} (hx : 1 ≤ x) : x / 2 ≤ ⌊x⌋₊ := by
   have h := Nat.lt_floor_add_one x
   have h1 : (1 : ℝ) ≤ ⌊x⌋₊ := by exact_mod_cast Nat.le_floor (by simpa using hx)
   linarith
 
-/-- **Theorem 4.2.6 (lower complexity bound)** of [cartis2022evaluation], corrected. Let
-`p ≥ 1`, `Δ, L, ε > 0`, `L^D_p = Optimization.CarmonChain.lipschitzConst p` (Lemma 4.2.5 (iv)) and
-`Y = Δ (L/L^D_p)^{1/p} ε^{-(p+1)/p}`. Then
-`#_ε(𝓜(p), 𝓕(Δ, p)) ≥ #_ε(𝓜_ZR(p), 𝓕(Δ, p)) ≥ ⌊Y/12⌋` and `#_ε(𝓜(p), 𝓕(Δ, p)) ≥ ⌊Y/12⌋`;
-consequently, (4.2.7) holds with `c₀ = 1/24` whenever `Y ≥ 12`: both complexities are at least
-`c₀ Y` (compared in `ℝ≥0∞`). -/
+/-- **Theorem 4.2.6** of [cartis2022evaluation] (lower complexity bound). Let $p \ge 1$ and
+$\Delta, L, \varepsilon > 0$, let $L^D_p$ be the constant of Lemma 4.2.5 (iv), and let
+$$Y = \Delta \left(\frac{L}{L^D_p}\right)^{1/p} \varepsilon^{-(p+1)/p}.$$
+Then $\#_\varepsilon(\mathcal{M}(p), \mathcal{F}(\Delta, p)) \ge
+\#_\varepsilon(\mathcal{M}_{ZR}(p), \mathcal{F}(\Delta, p))$, and both complexities are at least
+$\lfloor Y/12 \rfloor$. Consequently, if $Y \ge 12$, then both complexities are at least $c_0 Y$
+with $c_0 = 1/24$; this is (4.2.7).
+
+**Correction.** With $\bar k = \lfloor Y/12 \rfloor$, the source states
+$\#_\varepsilon(\mathcal{M}(p), \mathcal{F}(\Delta, p)) \ge 2 \bar k$. This does not follow from
+Theorem 4.2.4, and the proof gives only $\#_\varepsilon \ge \bar k$ for both classes. The form
+(4.2.7) with $c_0$ needs $Y \ge 12$, that is, $\varepsilon$ small enough: for large
+$\varepsilon$ the complexity is $0$.
+
+The comparison with the real number $c_0 Y$ is made in `ℝ≥0∞`. The constant $L^D_p$ is
+`Optimization.CarmonChain.lipschitzConst p`. -/
 theorem theorem_4_2_6_i (hp : 1 ≤ p) {Δ L ε : ℝ} (hΔ : 0 < Δ) (hL : 0 < L) (hε : 0 < ε) :
     let Y := Δ * (L / CarmonChain.lipschitzConst p) ^ (1 / p : ℝ) * ε ^ (-((p + 1 : ℝ) / p))
     complexity (methodClassZR p) (functionClass Δ L p) ε ≤
@@ -272,15 +439,19 @@ theorem theorem_4_2_6_i (hp : 1 ≤ p) {Δ L ε : ℝ} (hΔ : 0 < Δ) (hL : 0 < 
     linarith
   exact ⟨theorem_4_2_4_i hL.le ε, h1, h2, fun hY12 => ⟨hc _ h1 hY12, hc _ h2 hY12⟩⟩
 
-/-! ### ARp as a method of `𝓜(p)` and the tightness of the lower bound -/
+/-! ### ARp as a method of $\mathcal{M}(p)$ and the tightness of the lower bound -/
 
 namespace ARpOracle
 
+/-- The Taylor polynomial of degree $p$ built from the oracle answer at $x$ is the Taylor polynomial
+of $f$ at $x$. -/
 theorem taylorSum_jetSeries_jetOracle (f : EuclideanSpace ℝ (Fin n) → ℝ)
     (x : EuclideanSpace ℝ (Fin n)) :
     (jetSeries (jetOracle f p x)).taylorSum p = (ftaylorSeries ℝ f x).taylorSum p :=
   FormalMultilinearSeries.taylorSum_congr fun _ hi => jetSeries_jetOracle f x hi
 
+/-- The model (4.1.2) built from the oracle answer at $x$ is the model built from the Taylor series
+of $f$ at $x$. -/
 theorem regularizedModel_jetSeries_jetOracle (f : EuclideanSpace ℝ (Fin n) → ℝ)
     (x : EuclideanSpace ℝ (Fin n)) (σ : ℝ) :
     regularizedModel (jetSeries (jetOracle f p x)) p σ =
@@ -288,65 +459,75 @@ theorem regularizedModel_jetSeries_jetOracle (f : EuclideanSpace ℝ (Fin n) →
   funext s
   rw [regularizedModel_def, regularizedModel_def, taylorSum_jetSeries_jetOracle]
 
+/-- The decrease $T_{f,p}(x, 0) - T_{f,p}(x, s)$ built from the oracle answer at $x$ is the one
+built from the Taylor series of $f$ at $x$. -/
 theorem taylorDecrement_jetSeries_jetOracle (f : EuclideanSpace ℝ (Fin n) → ℝ)
     (x s : EuclideanSpace ℝ (Fin n)) :
     (jetSeries (jetOracle f p x)).taylorDecrement p s =
       (ftaylorSeries ℝ f x).taylorDecrement p s := by
   simp only [FormalMultilinearSeries.taylorDecrement_def, taylorSum_jetSeries_jetOracle]
 
-/-- The first-order termination test (4.1.5) on a jet: `‖J₁‖ ≤ ε`. -/
+/-- The first-order termination test (4.1.5) on an oracle answer $J = (J_0, \dots, J_p)$:
+$\|J_1\| \le \varepsilon$. -/
 def jetTest (ε : ℝ) (J : Jet (EuclideanSpace ℝ (Fin n)) p) : Prop :=
   ‖jetSeries J 1‖ ≤ ε
 
+/-- For $p \ge 1$, the test on the oracle answer at $x$ holds if and only if
+$\|\nabla f(x)\| \le \varepsilon$. -/
 theorem jetTest_jetOracle (hp : 1 ≤ p) {ε : ℝ} (f : EuclideanSpace ℝ (Fin n) → ℝ)
     (x : EuclideanSpace ℝ (Fin n)) :
     jetTest ε (jetOracle f p x) ↔ ‖gradient f x‖ ≤ ε := by
   rw [jetTest, jetSeries_jetOracle f x hp, norm_gradient_eq]
   simp [ftaylorSeries]
 
-/-- The state of ARp: the iterate, the regularization weight and the jet at the iterate. -/
+/-- The state of ARp: the iterate, the regularization weight, and the oracle answer at the iterate.
+-/
 abbrev State (n p : ℕ) :=
   EuclideanSpace ℝ (Fin n) × ℝ × Jet (EuclideanSpace ℝ (Fin n)) p
 
-/-- The step of ARp at a state: a (classically chosen) global minimizer of the model (4.1.2),
-which exists in finite dimension for `σ > 0`, `p ≥ 1` (`0` otherwise). -/
+/-- The step of ARp at a state: a global minimizer of the model (4.1.2), chosen with the axiom of
+choice, which exists in finite dimension for $\sigma > 0$ and $p \ge 1$. In the other cases the
+step is $0$. -/
 noncomputable def step (st : State n p) : EuclideanSpace ℝ (Fin n) :=
   if h : 0 < st.2.1 ∧ 1 ≤ p then
     Classical.choose (exists_isMinOn_regularizedModel (D := jetSeries st.2.2) h.1 h.2)
   else 0
 
+/-- For $\sigma > 0$ and $p \ge 1$, the step of ARp is a global minimizer of the model (4.1.2). -/
 theorem isMinOn_step {st : State n p} (hσ : 0 < st.2.1) (hp : 1 ≤ p) :
     IsMinOn (regularizedModel (jetSeries st.2.2) p st.2.1) univ (step st) := by
   rw [step, dite_eq_left ⟨hσ, hp⟩]
   exact (Classical.choose_spec
     (exists_isMinOn_regularizedModel (D := jetSeries st.2.2) hσ hp)).1
 
-/-- The ratio (4.1.15) computed from the jet at the iterate and the answer `a` at the trial
-point. -/
+/-- The ratio (4.1.15) of ARp, computed from the oracle answer at the iterate $x$ and the answer $a$
+at the trial point $x + s$: $(f(x) - f(x + s))/(T_{f,p}(x, 0) - T_{f,p}(x, s))$. -/
 noncomputable def ratio (st : State n p) (a : Jet (EuclideanSpace ℝ (Fin n)) p) : ℝ :=
   (jetValue st.2.2 - jetValue a) / (jetSeries st.2.2).taylorDecrement p (step st)
 
 open Classical in
-/-- One iteration of ARp, given the answer `a` of the oracle at the trial point: nothing after
-termination; otherwise the trial point and its jet are accepted with the same weight if
-`ρ ≥ η₁`, and rejected with the weight multiplied by `γ₂` otherwise. -/
+/-- One iteration of ARp, given the answer $a$ of the oracle at the trial point. After termination
+the state does not change. Otherwise, if $\rho \ge \eta_1$, the trial point and its answer are
+accepted with the same weight, and if $\rho < \eta_1$, the iterate is kept and the weight is
+multiplied by $\gamma_2$. -/
 noncomputable def update (P : ARpParams) (ε : ℝ) (st : State n p)
     (a : Jet (EuclideanSpace ℝ (Fin n)) p) : State n p :=
   if jetTest ε st.2.2 then st
   else if P.η₁ ≤ ratio st a then (st.1 + step st, st.2.1, a) else (st.1, P.γ₂ * st.2.1, st.2.2)
 
 open Classical in
-/-- The next query of ARp at a state: the trial point `x_k + s_k`, or `x_k` after termination. -/
+/-- The next query of ARp at a state: the trial point $x_k + s_k$, or $x_k$ after termination. -/
 noncomputable def query (ε : ℝ) (st : State n p) : EuclideanSpace ℝ (Fin n) :=
   if jetTest ε st.2.2 then st.1 else st.1 + step st
 
-/-- The states of ARp reconstructed from the sequence of answers `a`: `(0, σ₀, a₀)`, then
-`update`. -/
+/-- The states of ARp reconstructed from a sequence $a$ of oracle answers: the state
+$(0, \sigma_0, a_0)$, followed by the iterations `CartisGouldToint.Chapter04.ARpOracle.update`. -/
 noncomputable def states (P : ARpParams) (ε : ℝ) (a : ℕ → Jet (EuclideanSpace ℝ (Fin n)) p) :
     ℕ → State n p
   | 0 => (0, P.σ₀, a 0)
   | k + 1 => update P ε (states P ε a k) (a (k + 1))
 
+/-- The $k$-th reconstructed state depends only on the answers $a_0, \dots, a_k$. -/
 theorem states_congr (P : ARpParams) (ε : ℝ) {a a' : ℕ → Jet (EuclideanSpace ℝ (Fin n)) p} :
     ∀ k, (∀ i ≤ k, a i = a' i) → states P ε a k = states P ε a' k
   | 0, h => by simp [states, h 0 le_rfl]
@@ -357,20 +538,24 @@ theorem states_congr (P : ARpParams) (ε : ℝ) {a a' : ℕ → Jet (EuclideanSp
 end ARpOracle
 
 open ARpOracle in
-/-- **ARp as a deterministic `p`-th order method** ([cartis2022evaluation], (4.2.3) and
-Theorem 4.2.6), first-order mode with tolerance `ε`: in every dimension, start at `x₀ = 0`;
-the state `(x_k, σ_k, jet at x_k)` is reconstructed from the oracle answers by `states`; the
-next query is the trial point `x_k + s_k`, `s_k` a (classically chosen) global minimizer of the
-model (4.1.2); the trial point is accepted iff `ρ_k ≥ η₁` (4.1.15). Of the admissible updates
-(4.1.16) the method takes `σ_{k+1} = σ_k` after a successful iteration and `σ_{k+1} = γ₂ σ_k` after
-an unsuccessful one; once `‖∇f(x_k)‖ ≤ ε`, it repeats `x_k`. In the oracle model of §4.2 every
-query returns the full jet `f, ∇f, …, ∇^p f` at the trial point (ARp itself needs the derivatives
-only after successful iterations), so the method's iteration count `k` corresponds to `k + 1`
-evaluations of `f`. -/
+/-- **(4.2.3)** of [cartis2022evaluation]: ARp as a deterministic method of order $p$, in the
+first-order case with tolerance $\varepsilon$. In every dimension the method starts at
+$x_0 = 0$. The state $(x_k, \sigma_k, J_k)$, with $J_k$ the oracle answer at $x_k$, is
+reconstructed from the oracle answers. The next query is the trial point $x_k + s_k$, where
+$s_k$ is a global minimizer of the model (4.1.2), and the trial point is accepted if and only if
+$\rho_k \ge \eta_1$ (4.1.15). Of the updates that (4.1.16) admits, the method takes
+$\sigma_{k+1} = \sigma_k$ after a successful iteration and $\sigma_{k+1} = \gamma_2 \sigma_k$
+after an unsuccessful one. Once $\|\nabla f(x_k)\| \le \varepsilon$, the method repeats $x_k$.
+
+In the oracle model of §4.2 every query returns the full answer $f, \nabla f, \dots, \nabla^p f$
+at the trial point, although ARp itself needs the derivatives only after successful iterations.
+So $k$ iterations of the method correspond to $k + 1$ evaluations of $f$. The global minimizer
+is chosen with the axiom of choice (`CartisGouldToint.Chapter04.ARpOracle.step`). -/
 noncomputable def arpOracleMethod (P : ARpParams) (ε : ℝ) : JetMethod p := fun _ =>
   { x₀ := 0
     next := fun k b => query ε (states P ε (fun i => if h : i < k + 1 then b ⟨i, h⟩ else 0) k) }
 
+/-- ARp is a method of the class $\mathcal{M}(p)$. -/
 theorem arpOracleMethod_mem (P : ARpParams) (ε : ℝ) :
     arpOracleMethod (p := p) P ε ∈ methodClassM p :=
   fun _ => rfl
@@ -379,22 +564,25 @@ namespace ARpOracle
 
 variable (P : ARpParams) (ε : ℝ) (f : EuclideanSpace ℝ (Fin n) → ℝ)
 
-/-- The answers of the jet oracle at the queries of `arpOracleMethod`. -/
+/-- The oracle answers at the queries of ARp on $f$. -/
 noncomputable def answers (p : ℕ) (k : ℕ) : Jet (EuclideanSpace ℝ (Fin n)) p :=
   jetOracle f p ((arpOracleMethod (p := p) P ε).iter n f k)
 
+/-- The query $k + 1$ of ARp on $f$ is the query of the $k$-th reconstructed state. -/
 theorem iter_succ (k : ℕ) :
     (arpOracleMethod (p := p) P ε).iter n f (k + 1) = query ε (states P ε (answers P ε f p) k) := by
   rw [JetMethod.iter_eq, OracleMethod.iterate_succ]
   exact congrArg (query ε) (states_congr P ε k fun i hi => by
     rw [dite_eq_left (Nat.lt_succ_of_le hi)]; rfl)
 
+/-- The first query of ARp is $x_0 = 0$. -/
 theorem iter_zero : (arpOracleMethod (p := p) P ε).iter n f 0 = 0 := rfl
 
 variable {P ε f}
 
-/-- The invariant of the reconstruction: the jet of the state is the oracle answer at the
-iterate, the iterate is an earlier query, and the weight stays above `σ_min`. -/
+/-- The invariant of the reconstruction: the answer in the $k$-th state is the oracle answer at its
+iterate, the iterate is one of the queries $0, \dots, k$, and the weight is at least
+$\sigma_{\min}$. -/
 theorem states_spec (k : ℕ) :
     (states P ε (answers P ε f p) k).2.2 = jetOracle f p (states P ε (answers P ε f p) k).1 ∧
       (∃ j ≤ k, (states P ε (answers P ε f p) k).1 = (arpOracleMethod (p := p) P ε).iter n f j) ∧
@@ -413,11 +601,12 @@ theorem states_spec (k : ℕ) :
     · exact ⟨hJ, ⟨j, hj.trans k.le_succ, hx⟩,
         hσ.trans (le_mul_of_one_le_left hσ0 P.toARParams.one_le_γ₂)⟩
 
-/-- **The reconstructed sequences form an ARp run** ([cartis2022evaluation], (4.2.3)): for `f`
-`C^p` (`p ≥ 1`) and `ε > 0`, the iterates `x_k`, steps `s_k` and weights `σ_k` reconstructed by
-`arpOracleMethod` form a run of Algorithm 4.1.1 in first-order mode (`ε₂ = ε₃ = +∞`) from
-`x₀ = 0`, whose queries are the trial points (`y_{k+1} = x_k + s_k` before termination) and whose
-iterates are earlier queries (`x_k = y_j` for some `j ≤ k`). -/
+/-- The reconstructed sequences form an ARp run ([cartis2022evaluation], (4.2.3)). Let $f$ be $C^p$
+with $p \ge 1$, and let $\varepsilon > 0$. Then there is a run $(x_k, s_k, \sigma_k)$ of
+Algorithm 4.1.1 in the first-order case ($\varepsilon_2 = \varepsilon_3 = +\infty$) with
+tolerance $\varepsilon$ from $x_0 = 0$, such that the query $k + 1$ of ARp is $x_k + s_k$ at
+every iteration $k$ at which the test fails, and every iterate $x_k$ is one of the queries
+$0, \dots, k$. -/
 theorem exists_run (hp : 1 ≤ p) (hε : 0 < ε) (hf : ContDiff ℝ p f) :
     ∃ x s σ, x 0 = 0 ∧ algorithm_4_1_1 f p P ε none none x s σ ∧
       (∀ k, ¬ arpTest f p P ε none none x s σ k →
@@ -472,10 +661,12 @@ theorem exists_run (hp : 1 ≤ p) (hε : 0 < ε) (hf : ContDiff ℝ p f) :
 
 end ARpOracle
 
-/-- For `f` satisfying f.Bb and f.DpL, the first `ε`-stationary query of `arpOracleMethod` on `f`
-has index at most some `k` (the termination index of the reconstructed ARp run, every accepted
-iterate being an earlier query) with `k + 1 ≤ κ^A (f(0) - f_low)/ε^{(p+1)/p} + κ^C`
-(Theorem 4.1.5 (i)). -/
+/-- Let $p \ge 1$ and $\varepsilon > 0$, and let $f$ satisfy f.Bb with lower bound $f_{\text{low}}$
+and f.DpL with constant $L_{f,p}$. Then the index of the first query of ARp on $f$ with
+$\|\nabla f\| \le \varepsilon$ is at most some $k$ with
+$$k + 1 \le \kappa^A \frac{f(0) - f_{\text{low}}}{\varepsilon^{(p+1)/p}} + \kappa^C,$$
+where $\kappa^A$ and $\kappa^C$ are the constants of Theorem 4.1.5 in the first-order case. The
+index $k$ is the termination index of the reconstructed ARp run. -/
 theorem firstStationaryIndex_arpOracleMethod_le {p : ℕ} (hp : 1 ≤ p) (P : ARpParams) {ε L flow : ℝ}
     (hε : 0 < ε) {f : EuclideanSpace ℝ (Fin n) → ℝ} (hb : Chapter02.AssumptionBb f flow)
     (hf : AssumptionDpL f p L) :
@@ -489,22 +680,23 @@ theorem firstStationaryIndex_arpOracleMethod_le {p : ℕ} (hp : 1 ≤ p) (P : AR
   · rw [← hxj, ← norm_gradient_eq]; exact hk.test
   · rw [funEvalCount_eq, hx0] at hF; exact_mod_cast hF
 
-/-- The bound `κ^A Δ/ε^{(p+1)/p} + κ^C` of (4.2.3), with the constants of Theorem 4.1.5 (i) for
-`L_{f,p} = max(1, L)`. -/
+/-- The bound $\kappa^A \Delta \varepsilon^{-(p+1)/p} + \kappa^C$ of (4.2.3), with the constants
+$\kappa^A$ and $\kappa^C$ of Theorem 4.1.5 in the first-order case for $L_{f,p} = \max(1, L)$. -/
 noncomputable def arpComplexityBound (P : ARpParams) (p : ℕ) (Δ L ε : ℝ) : ℝ :=
   kappaSARp P p (max 1 L) 1 * (1 + |Real.log P.γ₁| / Real.log P.γ₂) * Δ /
     ε ^ (((p : ℝ) + 1) / p) + kappaCARp P (max 1 L)
 
-/-- The worst case `sup_{f ∈ 𝓕(Δ, p)} k_ε(ARp, f)` of ARp (`arpOracleMethod`) on the class
-`𝓕(Δ, p)`. -/
+/-- The worst case $\sup_{f \in \mathcal{F}(\Delta, p)} k_\varepsilon(\mathrm{ARp}, f)$ of ARp on
+the class $\mathcal{F}(\Delta, p)$, in `ℕ∞`. -/
 noncomputable def arpWorstCase (P : ARpParams) (p : ℕ) (Δ L ε : ℝ) : ℕ∞ :=
   ⨆ F ∈ functionClass Δ L p,
     firstStationaryIndex ((arpOracleMethod (p := p) P ε).iter F.1 F.2) F.2 ε
 
-/-- **ARp attains the upper bound (4.2.3)** ([cartis2022evaluation], §4.2.3): for `p ≥ 1` and
-`ε > 0`, ARp (`arpOracleMethod`, a method of `𝓜(p)`) finds an `ε`-stationary point of every
-`f ∈ 𝓕(Δ, p)` within the first `⌊κ^A Δ ε^{-(p+1)/p} + κ^C⌋` queries (constants of Theorem 4.1.5 (i)
-with `L_{f,p} = max(1, L)`; uniform in the dimension). -/
+/-- ARp attains the upper bound (4.2.3) ([cartis2022evaluation], §4.2.3). For $p \ge 1$ and
+$\varepsilon > 0$ and for every $f \in \mathcal{F}(\Delta, p)$, the index of the first query of
+ARp on $f$ with $\|\nabla f\| \le \varepsilon$ is at most $\lfloor \kappa^A \Delta
+\varepsilon^{-(p+1)/p} + \kappa^C \rfloor$, uniformly in the dimension. The constants are those
+of `CartisGouldToint.Chapter04.arpComplexityBound`. -/
 theorem arpWorstCase_le_arpComplexityBound {p : ℕ} (hp : 1 ≤ p) (P : ARpParams) {Δ L ε : ℝ}
     (hε : 0 < ε) : arpWorstCase P p Δ L ε ≤ ((⌊arpComplexityBound P p Δ L ε⌋₊ : ℕ) : ℕ∞) := by
   refine iSup₂_le fun F hF => ?_
@@ -529,29 +721,46 @@ theorem arpWorstCase_le_arpComplexityBound {p : ℕ} (hp : 1 ≤ p) (P : ARpPara
   rw [arpComplexityBound]
   linarith
 
-/-- The complexity of `𝓜(p)` on `𝓕(Δ, p)` is at most ARp's worst case. -/
+/-- The complexity $\#_\varepsilon(\mathcal{M}(p), \mathcal{F}(\Delta, p))$ is at most the worst
+case of ARp on $\mathcal{F}(\Delta, p)$, because ARp is a method of $\mathcal{M}(p)$. -/
 theorem complexity_le_arpWorstCase (P : ARpParams) {p : ℕ} (Δ L ε : ℝ) :
     complexity (methodClassM p) (functionClass Δ L p) ε ≤ arpWorstCase P p Δ L ε :=
   iInf₂_le (f := fun M (_ : M ∈ methodClassM p) =>
     ⨆ F ∈ functionClass Δ L p, firstStationaryIndex (M.iter F.1 F.2) F.2 ε)
     (arpOracleMethod P ε) (arpOracleMethod_mem P ε)
 
-/-- **The upper bound (4.2.3)** ([cartis2022evaluation], §4.2.3):
-`#_ε(𝓜(p), 𝓕(Δ, p)) ≤ ⌊κ^A Δ ε^{-(p+1)/p} + κ^C⌋`, attained by ARp. -/
+/-- **(4.2.3)** of [cartis2022evaluation], the upper bound. For $p \ge 1$ and $\varepsilon > 0$,
+$$\#_\varepsilon(\mathcal{M}(p), \mathcal{F}(\Delta, p)) \le \lfloor \kappa^A \Delta
+  \varepsilon^{-(p+1)/p} + \kappa^C \rfloor,$$
+and ARp attains this bound. The constants are those of Theorem 4.1.5 in the first-order case for
+$L_{f,p} = \max(1, L)$ (`CartisGouldToint.Chapter04.arpComplexityBound`). -/
 theorem complexity_le_arpComplexityBound {p : ℕ} (hp : 1 ≤ p) (P : ARpParams) {Δ L ε : ℝ}
     (hε : 0 < ε) :
     complexity (methodClassM p) (functionClass Δ L p) ε ≤
       ((⌊arpComplexityBound P p Δ L ε⌋₊ : ℕ) : ℕ∞) :=
   (complexity_le_arpWorstCase P Δ L ε).trans (arpWorstCase_le_arpComplexityBound hp P hε)
 
-/-- **Theorem 4.2.6, tightness** of [cartis2022evaluation] ("the bound (4.2.3) is tight, and ARp
-has the optimal order of evaluation complexity for methods in `𝓜(p)`"). For `p ≥ 1`, ARp
-constants `P` and `Δ, L > 0`: (a) ARp's own worst case on `𝓕(Δ, p)`, hence the complexity of
-`𝓜(p)`, is at most `⌊κ^A Δ ε^{-(p+1)/p} + κ^C⌋` (4.2.3) for every `ε > 0`; (b) together with the
-lower bound of Theorem 4.2.6 (i), there are `c, C > 0` and `ε₀ > 0` with
-`c ε^{-(p+1)/p} ≤ #_ε(𝓜(p), 𝓕(Δ, p)) ≤ sup_f k_ε(ARp, f) ≤ C ε^{-(p+1)/p}` for all
-`ε ∈ (0, ε₀]` (compared in `ℝ≥0∞`): ARp has the optimal order. Only the order in `ε` is tight:
-the upper bound grows like `Δ L^{(p+1)/p}` and the lower bound like `Δ L^{1/p}`. -/
+/-- **Theorem 4.2.6** of [cartis2022evaluation], tightness: the bound (4.2.3) is tight, and ARp has
+the optimal order of evaluation complexity for methods in $\mathcal{M}(p)$. Let $p \ge 1$, let
+the constants of ARp be given, and let $\Delta, L > 0$. Then the following holds.
+
+* For every $\varepsilon > 0$, the worst case of ARp on $\mathcal{F}(\Delta, p)$, and also
+  $\#_\varepsilon(\mathcal{M}(p), \mathcal{F}(\Delta, p))$, is at most $\lfloor \kappa^A \Delta
+  \varepsilon^{-(p+1)/p} + \kappa^C \rfloor$ (4.2.3).
+* There are $c, C, \varepsilon_0 > 0$ such that for all $\varepsilon \in (0, \varepsilon_0]$
+  $$c\, \varepsilon^{-(p+1)/p} \le \#_\varepsilon(\mathcal{M}(p), \mathcal{F}(\Delta, p)) \le
+  \sup_{f \in \mathcal{F}(\Delta, p)} k_\varepsilon(\mathrm{ARp}, f) \le C
+  \varepsilon^{-(p+1)/p}.$$
+
+**Reading.** The source states that the bound (4.2.3) is tight. The upper bound grows like
+$\Delta L^{(p+1)/p}$ and the lower bound (4.2.7) like $\Delta L^{1/p}$, so only the order in
+$\varepsilon$ is tight, and this is what the theorem states. The upper bound uses the constants
+of Theorem 4.1.5 in the first-order case with $L_{f,p} = \max(1, L)$, because f.DpL requires
+$L_{f,p} \ge 1$, and it is stated with an integer part.
+
+The comparisons with real numbers are made in `ℝ≥0∞`. The worst case of ARp is
+`CartisGouldToint.Chapter04.arpWorstCase`, and the bound is
+`CartisGouldToint.Chapter04.arpComplexityBound`. -/
 theorem theorem_4_2_6_ii {p : ℕ} (hp : 1 ≤ p) (P : ARpParams) {Δ L : ℝ} (hΔ : 0 < Δ)
     (hL : 0 < L) :
     (∀ ε, 0 < ε → arpWorstCase P p Δ L ε ≤ ((⌊arpComplexityBound P p Δ L ε⌋₊ : ℕ) : ℕ∞) ∧

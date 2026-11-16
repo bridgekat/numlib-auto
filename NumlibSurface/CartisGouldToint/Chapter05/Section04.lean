@@ -6,56 +6,80 @@ import NumlibSurface.CartisGouldToint.Chapter03.Section03
 import Numlib.Optimization.Complexity.GapRecurrence
 
 /-!
-# Cartis–Gould–Toint §5.4: Phase complexity under strict local convexity
+# Cartis, Gould and Toint, Section 5.4: Phase complexity under strict local convexity
 
-Surface file for C. Cartis, N. I. M. Gould and Ph. L. Toint, *Evaluation Complexity of
-Algorithms for Nonconvex Optimization* [cartis2022evaluation], §5.4. The second-order
-adaptive-regularization algorithm AR2 (`Chapter03.algorithm_3_3_1`, first-order version
-`ε₂ = +∞`) is run with the more stringent model-termination test (5.4.3)
-`‖∇m_k(s_k)‖ ≤ θ₁ min(‖∇f(x_k)‖, ½ ‖s_k‖²)` (`IsAR2StrictRun`). Near a local minimizer `x_*`
-with `λ_* = λ_min[∇²f(x_*)] > 0` the gradient then converges `Q`-quadratically, which gives a
-`log₂ log₂` local iteration count and an additive global bound.
-
-Notation: `L = L_{f,2}` (f.HL, `Chapter03.AssumptionHL f L`), `q_* = λ_*/(4L)` (5.4.1),
-`σ_max = Chapter03.sigmaMaxAR2 P L` (3.3.14), `κ_s = kappaStep P λ_* = 2(1 + θ₁)/λ_*`,
-`ζ_* = zetaStar P L λ_*` (5.4.5) and `𝒬_*¹ = quadRegion f P L x_*` (5.4.6).
+This module formalizes Section 5.4 of [cartis2022evaluation]. The second-order
+adaptive-regularization algorithm AR2 (Algorithm 3.3.1), in its first-order version with
+$\epsilon_2 = +\infty$, is run with the more stringent model-termination test (5.4.3)
+$$\|\nabla m_k(s_k)\| \le \theta_1 \min\left(\|\nabla f(x_k)\|, \tfrac12 \|s_k\|^2\right).$$
+Near a local minimizer $x_*$ with $\lambda_* = \lambda_{\min}[\nabla^2 f(x_*)] > 0$, the gradient
+norms then converge quadratically, $\|\nabla f(x_{k+1})\| \le \|\nabla f(x_k)\|^2/\zeta_*$. This
+gives a local iteration count of order $\log_2 \log_2(\zeta_*/\epsilon_1)$, and a global bound that
+adds this count to the bound of Lemma 3.3.4 for the iterations far from $x_*$. The algorithm is
+`CartisGouldToint.Chapter03.algorithm_3_3_1` with an additional condition on the steps.
 
 ## Main definitions
 
-* `IsAR2StrictRun f P ε₁ x s σ`: AR2 with the model-termination test (5.4.3);
-  `exists_isAR2StrictRun`.
-* `kappaStep`, `zetaStar`, `quadRegion`: the constants and the region of Lemma 5.4.2.
+* Equation (5.4.3), `CartisGouldToint.Chapter05.IsAR2StrictRun`: a run of AR2 with
+  $\epsilon_2 = +\infty$ whose steps satisfy the model-termination test (5.4.3).
+* Equations (5.4.5)–(5.4.6), `CartisGouldToint.Chapter05.zetaStar` and
+  `CartisGouldToint.Chapter05.quadRegion`: the corrected radius $\zeta_*$ of quadratic convergence
+  and the neighbourhood $\mathcal{Q}_*^1$ of $x_*$.
 
 ## Main results
 
-* `lemma_5_4_1`: `λ_min[∇²f(x)] ≥ λ_*/2` on `𝒬_* = {x | ‖x - x_*‖ ≤ q_*}`.
-* `lemma_5_4_2`: quadratic decrease of the gradient (5.4.4) and invariance of `𝒬_*¹`, along which
-  every iteration is very successful.
-* `lemma_5_4_3`: termination within `⌈log₂ log₂(ζ_*/ε)⌉` (successful) iterations once in `𝒬_*¹`.
-* `theorem_5_4_4`: the global bounds (5.4.16)–(5.4.17).
+* Lemma 5.4.1, `CartisGouldToint.Chapter05.lemma_5_4_1`:
+  $\lambda_{\min}[\nabla^2 f(x)] \ge \lambda_*/2$ on the ball $\mathcal{Q}_*$ of radius
+  $q_* = \lambda_*/(4L)$ around $x_*$.
+* Lemma 5.4.2, `CartisGouldToint.Chapter05.lemma_5_4_2`: the quadratic decrease (5.4.4) of the
+  gradient near $x_*$, and the invariance of $\mathcal{Q}_*^1$, in which every iteration is very
+  successful.
+* Lemma 5.4.3, `CartisGouldToint.Chapter05.lemma_5_4_3`: from an iterate in the region (5.4.13), the
+  run terminates within $\lceil \log_2 \log_2(\zeta_*/\epsilon_1) \rceil_+$ further iterations, all
+  very successful.
+* Theorem 5.4.4, `CartisGouldToint.Chapter05.theorem_5_4_4`: the global bounds (5.4.16)–(5.4.17) on
+  the number of successful iterations.
 
-## Fixes with respect to the book
+## Conventions
 
-* **Lemma 5.4.2, step bound (5.4.8).** The book proves
-  `‖s_k‖ ≤ (1 + θ₁)/(λ_* + σ_min/2) ‖∇f(x_k)‖` from
-  `(λ_* + σ_min/2) ‖s_k‖² ≤ ⟨s_k, (∇²f(x_k) + σ_k/2 I) s_k⟩`, which uses
-  `λ_min[∇²f(x_k)] ≥ λ_*` (only `λ_*/2` is available on `𝒬_*`, (5.4.7)) and drops the factor
-  `‖s_k‖` of the regularization term of the model gradient `∇f(x_k) + ∇²f(x_k) s_k +
-  σ_k/2 ‖s_k‖ s_k` (3.3.2). The printed constant is false (e.g. `θ₁ < 1`, `σ_min → 0`,
-  `∇²f(x_k) = (λ_*/2) I` and an exact model minimizer, for which `‖s_k‖ ≈ 2‖∇f(x_k)‖/λ_*`). The
-  correct constant is `κ_s = 2(1 + θ₁)/λ_*` (`norm_step_le_of_strict`); accordingly every factor
-  `(λ_* + σ_min/2)/(1 + θ₁)` of (5.4.5) is `1/κ_s` in `zetaStar`, and the last term of (5.4.5),
-  `λ_*/(4 max(θ₁ - σ_min, 0)) · 1/κ_s`, is absent when `θ₁ ≤ σ_min`.
-* **Lemma 5.4.3, count (5.4.14).** `log₂ log₂(ζ/ε)` is too small by one in the worst case
-  (`‖∇f(x_{k₀})‖ = ζ = ζ_*/2`, `‖∇f(x_{k+1})‖ = ‖∇f(x_k)‖²/ζ_*`, `ε = ζ 2^{-2^m}` needs `m + 1`
-  steps), lacks a ceiling and is undefined for `ε ≥ ζ`; the count here is
-  `⌈log₂ log₂(ζ_*/ε)⌉₊`, also in Theorem 5.4.4.
-* The neighbourhood statements only use `∇f(x_*) = 0` and `λ_* > 0` (Lemma 5.4.1 uses neither);
-  the strong-convexity argument for `x_{k+1} ∈ 𝒬_*` is replaced by the first-order Taylor bound
-  `⟨∇f(y), y - x_*⟩ ≥ ¾ λ_* ‖y - x_*‖²` for `‖y - x_*‖ ≤ 2q_*`
-  (`mul_norm_sub_le_norm_gradient`).
-* Theorem 5.4.4 (ii) is stated, like Lemma 3.3.4, as a bound on `|𝒮_k|` for every iteration `k`
-  before termination, under (5.4.18) restricted to iterations before termination.
+* $L = L_{f,2}$ is the Lipschitz constant of the Hessian in assumption f.HL,
+  `CartisGouldToint.Chapter03.AssumptionHL f L`, which includes $L \ge 1$. Assumption f.Bb is
+  `CartisGouldToint.Chapter02.AssumptionBb f f_low`.
+* $\lambda_{\min}[\nabla^2 f(x)]$ is `CartisGouldToint.Chapter01.hessianMinEig f x`, and
+  $\lambda_* = \lambda_{\min}[\nabla^2 f(x_*)]$.
+* $q_* = \lambda_*/(4L)$ (5.4.1), and $\mathcal{Q}_* = \{x : \|x - x_*\| \le q_*\}$.
+* $\sigma_{\max}$ of (3.3.14) is `CartisGouldToint.Chapter03.sigmaMaxAR2 P L`, and
+  $\kappa^S_{\rm AR2}$ of Lemma 3.3.4 is `CartisGouldToint.Chapter03.kappaSAR2 P L`.
+* $\kappa_s = 2(1 + \theta_1)/\lambda_*$ is `CartisGouldToint.Chapter05.kappaStep P λ_*`, $\zeta_*$
+  of (5.4.5) is `CartisGouldToint.Chapter05.zetaStar P L λ_*`, and $\mathcal{Q}_*^1$ of (5.4.6) is
+  `CartisGouldToint.Chapter05.quadRegion f P L x_*`.
+* $\lceil t \rceil_+$ is the least natural number $n \ge t$. The functions `Nat.ceil` and
+  `Real.logb 2` are $\lceil \cdot \rceil_+$ and $\log_2$.
+
+## Implementation notes
+
+* Runs exist for every twice continuously differentiable $f$, because a global minimizer of the
+  model satisfies (5.4.3): see `CartisGouldToint.Chapter05.exists_isAR2StrictRun`.
+* The statements near $x_*$ use of the local minimizer only $\nabla f(x_*) = 0$ and $\lambda_* > 0$.
+  The book's strong-convexity argument for $x_{k+1} \in \mathcal{Q}_*$ is replaced by a first-order
+  Taylor bound, `CartisGouldToint.Chapter05.mul_norm_sub_le_norm_gradient`.
+
+## Deviations from the source
+
+* **Lemma 5.4.1** (generalization). The book assumes that $x_*$ is a local minimizer with
+  $\lambda_* > 0$. The bound holds for every $x_*$. See `CartisGouldToint.Chapter05.lemma_5_4_1`.
+* **Lemma 5.4.2, step bound (5.4.8)** (correction). The printed constant
+  $(1 + \theta_1)/(\lambda_* + \sigma_{\min}/2)$ is false. The bound holds with
+  $\kappa_s = 2(1 + \theta_1)/\lambda_*$, which changes the radius $\zeta_*$ of (5.4.5). See
+  `CartisGouldToint.Chapter05.norm_step_le_of_strict`, `CartisGouldToint.Chapter05.zetaStar` and
+  `CartisGouldToint.Chapter05.lemma_5_4_2`.
+* **Lemma 5.4.3, count (5.4.14)** (correction). The count $\log_2 \log_2(\zeta/\epsilon)$ is one too
+  small in the worst case, has no ceiling and is undefined for $\epsilon \ge \zeta$. The count is
+  $\lceil \log_2 \log_2(\zeta_*/\epsilon) \rceil_+$, also in Theorem 5.4.4. See
+  `CartisGouldToint.Chapter05.lemma_5_4_3` and `CartisGouldToint.Chapter05.theorem_5_4_4`.
+* **Theorem 5.4.4, second part** (reading). The bound (5.4.17) is stated, like Lemma 3.3.4, for
+  $|\mathcal{S}_k|$ at every iteration $k$ before termination, and the condition (5.4.18) is
+  restricted to the iterations before termination. See `CartisGouldToint.Chapter05.theorem_5_4_4`.
 -/
 
 open Set Finset Optimization Subproblem
@@ -74,9 +98,14 @@ section Model
 
 variable {f : EuclideanSpace ℝ (Fin n) → ℝ} {x : EuclideanSpace ℝ (Fin n)}
 
-/-- **The step bound (5.4.8), corrected** ([cartis2022evaluation], Lemma 5.4.2): if
-`λ_min[∇²f(x)] ≥ μ > 0`, `σ ≥ 0` and the step satisfies `‖∇m(s)‖ ≤ θ ‖∇f(x)‖` (part of (5.4.3)),
-then `‖s‖ ≤ (1 + θ)/μ ‖∇f(x)‖` (`θ ≥ 0`). With `μ = λ_*/2` this is `κ_s = 2(1 + θ₁)/λ_*`. -/
+/-- The corrected step bound (5.4.8) of Lemma 5.4.2 of [cartis2022evaluation], for one step. Let $f$
+be twice continuously differentiable at $x$, let $\sigma \ge 0$, $\theta \ge 0$ and $\mu > 0$,
+and suppose that $\lambda_{\min}[\nabla^2 f(x)] \ge \mu$. Let
+$m(s) = T_{f,2}(x, s) + \frac{\sigma}{6}\|s\|^3$ be the AR2 model at $x$. If a step $s$
+satisfies $\|\nabla m(s)\| \le \theta \|\nabla f(x)\|$, which is part of (5.4.3), then
+$$\|s\| \le \frac{1 + \theta}{\mu} \|\nabla f(x)\|.$$
+With $\mu = \lambda_*/2$ and $\theta = \theta_1$, the factor is
+$\kappa_s = 2(1 + \theta_1)/\lambda_*$. -/
 theorem norm_step_le_of_strict (hf : ContDiffAt ℝ 2 f x) {σ μ θ : ℝ} (hσ : 0 ≤ σ) (hθ : 0 ≤ θ)
     (hμ : 0 < μ)
     (hH : μ ≤ Chapter01.hessianMinEig f x) {s : EuclideanSpace ℝ (Fin n)}
@@ -103,9 +132,12 @@ theorem norm_step_le_of_strict (hf : ContDiffAt ℝ 2 f x) {σ μ θ : ℝ} (hσ
   · rw [div_mul_eq_mul_div, le_div_iff₀ hμ]
     nlinarith
 
-/-- **The model decrease (5.4.10)** ([cartis2022evaluation], proof of Lemma 5.4.2): if
-`λ_min[∇²f(x)] ≥ μ` and `‖∇m(s)‖ ≤ θ/2 ‖s‖²` ((3.3.5), implied by (5.4.3)), then
-`T_{f,2}(x, 0) - T_{f,2}(x, s) ≥ μ/2 ‖s‖² + (σ - θ)/2 ‖s‖³`. -/
+/-- The model decrease (5.4.10) in the proof of Lemma 5.4.2 of [cartis2022evaluation]. Let $f$ be
+twice continuously differentiable at $x$ with $\lambda_{\min}[\nabla^2 f(x)] \ge \mu$, and let
+$m$ be the AR2 model at $x$ with weight $\sigma$. If a step $s$ satisfies
+$\|\nabla m(s)\| \le \frac{\theta}{2}\|s\|^2$, which is (3.3.5) and follows from (5.4.3), then
+$$T_{f,2}(x, 0) - T_{f,2}(x, s) \ge \frac{\mu}{2}\|s\|^2 + \frac{\sigma - \theta}{2}\|s\|^3.$$
+-/
 theorem taylorDecrement_ge_of_ar2Model (hf : ContDiffAt ℝ 2 f x) {σ μ θ : ℝ}
     (hH : μ ≤ Chapter01.hessianMinEig f x) {s : EuclideanSpace ℝ (Fin n)}
     (hm : ‖fderiv ℝ (ar2Model f x σ) s‖ ≤ θ / 2 * ‖s‖ ^ 2) :
@@ -130,8 +162,10 @@ section Convexity
 
 variable {f : EuclideanSpace ℝ (Fin n) → ℝ} {L : ℝ}
 
-/-- The eigenvalue perturbation bound under f.HL ((A.5)):
-`λ_min[∇²f(y)] ≥ λ_min[∇²f(x)] - L ‖y - x‖`. -/
+/-- Under assumption f.HL with constant $L$, for all $x, y \in \mathbb{R}^n$,
+$$\lambda_{\min}[\nabla^2 f(y)] \ge \lambda_{\min}[\nabla^2 f(x)] - L\|y - x\|.$$
+This is the eigenvalue perturbation bound (A.5) of [cartis2022evaluation] applied to the
+Hessian. -/
 theorem hessianMinEig_sub_le (hf : AssumptionHL f L) (x y : EuclideanSpace ℝ (Fin n)) :
     Chapter01.hessianMinEig f x - L * ‖y - x‖ ≤ Chapter01.hessianMinEig f y := by
   have h1 := abs_minCurvature_sub_le (A := iteratedFDeriv ℝ 2 f x) (B := iteratedFDeriv ℝ 2 f y)
@@ -141,10 +175,17 @@ theorem hessianMinEig_sub_le (hf : AssumptionHL f L) (x y : EuclideanSpace ℝ (
   simp only [Chapter01.hessianMinEig_def]
   linarith
 
-/-- **Lemma 5.4.1** of [cartis2022evaluation] (region of local strong convexity). Under f.HL, on
-`𝒬_* = {x | ‖x - x_*‖ ≤ q_*}`, `q_* = λ_*/(4L)` (5.4.1), with `λ_* = λ_min[∇²f(x_*)]`:
-`λ_min[∇²f(x)] ≥ λ_*/2`. (The book assumes `x_*` to be a local minimizer with `λ_* > 0`; the
-bound holds for any `x_*`, `𝒬_*` being empty if `λ_* < 0`.) -/
+/-- **Lemma 5.4.1** of [cartis2022evaluation] (region of local strong convexity). Let $f$ satisfy
+assumption f.HL with constant $L$, let $x_* \in \mathbb{R}^n$, and let
+$\lambda_* = \lambda_{\min}[\nabla^2 f(x_*)]$. If $x$ lies in the region $\mathcal{Q}_*$ of
+(5.4.1), that is, $\|x - x_*\| \le q_* = \lambda_*/(4L)$, then
+$$\lambda_{\min}[\nabla^2 f(x)] \ge \frac{\lambda_*}{2}.$$
+
+**Generalization.** The book assumes that $x_*$ is a local minimizer with $\lambda_* > 0$. The
+bound holds for every $x_*$. If $\lambda_* < 0$, the region $\mathcal{Q}_*$ is empty.
+
+The least eigenvalue $\lambda_{\min}$ is `CartisGouldToint.Chapter01.hessianMinEig`, and f.HL is
+`CartisGouldToint.Chapter03.AssumptionHL`, which includes $L \ge 1$. -/
 theorem lemma_5_4_1 (hf : AssumptionHL f L) {xs x : EuclideanSpace ℝ (Fin n)}
     (hx : ‖x - xs‖ ≤ Chapter01.hessianMinEig f xs / (4 * L)) :
     Chapter01.hessianMinEig f xs / 2 ≤ Chapter01.hessianMinEig f x := by
@@ -157,9 +198,11 @@ theorem lemma_5_4_1 (hf : AssumptionHL f L) {xs x : EuclideanSpace ℝ (Fin n)}
     have := mul_nonneg hL.le (norm_nonneg (x - xs)); linarith
   linarith
 
-/-- **The gradient near a nondegenerate critical point** (replacing the strong-convexity
-argument in the proof of Lemma 5.4.2 of [cartis2022evaluation]): under f.HL, if `∇f(x_*) = 0` and
-`‖y - x_*‖ ≤ 2 q_* = λ_*/(2L)`, then `¾ λ_* ‖y - x_*‖ ≤ ‖∇f(y)‖`. -/
+/-- Let $f$ satisfy assumption f.HL with constant $L$, let $\nabla f(x_*) = 0$, and let
+$\lambda_* = \lambda_{\min}[\nabla^2 f(x_*)]$. If $\|y - x_*\| \le 2q_* = \lambda_*/(2L)$, then
+$$\tfrac34 \lambda_* \|y - x_*\| \le \|\nabla f(y)\|.$$
+The proof of Lemma 5.4.2 of [cartis2022evaluation] uses this bound in place of the book's
+strong-convexity argument. -/
 theorem mul_norm_sub_le_norm_gradient (hf : AssumptionHL f L) {xs y : EuclideanSpace ℝ (Fin n)}
     (hcrit : gradient f xs = 0)
     (hy : ‖y - xs‖ ≤ Chapter01.hessianMinEig f xs / (2 * L)) :
@@ -216,23 +259,37 @@ end Convexity
 
 section Constants
 
-/-- The step-bound constant `κ_s = 2(1 + θ₁)/λ_*` of (5.4.8), corrected
-(`norm_step_le_of_strict` with `μ = λ_*/2`; the book prints `(1 + θ₁)/(λ_* + σ_min/2)`). -/
+/-- The step-bound constant $\kappa_s = 2(1 + \theta_1)/\lambda$ of the corrected bound (5.4.8) of
+[cartis2022evaluation], with $\lambda = \lambda_*$. The book prints
+$(1 + \theta_1)/(\lambda_* + \sigma_{\min}/2)$. The value here is the factor of
+`CartisGouldToint.Chapter05.norm_step_le_of_strict` for $\mu = \lambda_*/2$. -/
 noncomputable def kappaStep (P : AR2Params) (lam : ℝ) : ℝ := 2 * (1 + P.θ₁) / lam
 
+/-- If $\lambda > 0$, then $\kappa_s > 0$. -/
 theorem kappaStep_pos (P : AR2Params) {lam : ℝ} (hlam : 0 < lam) : 0 < kappaStep P lam := by
   have := P.θ₁_pos; unfold kappaStep; positivity
 
-/-- The first four terms of the radius (5.4.5), corrected (factors `1/κ_s`):
-`min [2/((L + θ₁ + σ_max) κ_s²), λ_*/(4L κ_s), λ_*²/(16 L), 3(1 - η₂)λ_*/(4L κ_s)]`. -/
+/-- The first four terms of the corrected radius (5.4.5) of [cartis2022evaluation]:
+$$\min\left[\frac{2}{(L + \theta_1 + \sigma_{\max})\kappa_s^2}, \frac{\lambda}{4L\kappa_s},
+  \frac{\lambda^2}{16L}, \frac{3(1 - \eta_2)\lambda}{4L\kappa_s}\right],$$
+with $\kappa_s$ = `CartisGouldToint.Chapter05.kappaStep P λ` and $\sigma_{\max}$ =
+`CartisGouldToint.Chapter03.sigmaMaxAR2 P L`. -/
 noncomputable def zetaStarBase (P : AR2Params) (L lam : ℝ) : ℝ :=
   min (2 / ((L + P.θ₁ + sigmaMaxAR2 P L) * kappaStep P lam ^ 2))
     (min (lam / (4 * L * kappaStep P lam))
       (min (lam ^ 2 / (16 * L)) (3 * (1 - P.η₂) * lam / (4 * L * kappaStep P lam))))
 
-/-- **The radius `ζ_*` of quadratic convergence** ([cartis2022evaluation], (5.4.5), corrected):
-`zetaStarBase P L λ_*`, further `min`-ed with `λ_*/(4(θ₁ - σ_min) κ_s)` when `σ_min < θ₁` (the
-book's last term `λ_*/(4 max(θ₁ - σ_min, 0)) · …` is absent when `θ₁ ≤ σ_min`). -/
+/-- **Equation (5.4.5)** of [cartis2022evaluation], corrected: the **radius $\zeta_*$ of quadratic
+convergence**. With $\lambda = \lambda_*$, it is the minimum of the first four terms
+(`CartisGouldToint.Chapter05.zetaStarBase P L λ`) if $\theta_1 \le \sigma_{\min}$, and the
+minimum of these terms and $\lambda/(4(\theta_1 - \sigma_{\min})\kappa_s)$ if
+$\sigma_{\min} < \theta_1$.
+
+**Correction.** The printed terms contain the factor
+$(\lambda_* + \sigma_{\min}/2)/(1 + \theta_1)$, which comes from the false step bound (5.4.8).
+Here each such factor is $1/\kappa_s$, with $\kappa_s = 2(1 + \theta_1)/\lambda_*$ (see
+`CartisGouldToint.Chapter05.lemma_5_4_2`). The printed last term $\lambda_*/(4\max(\theta_1 -
+\sigma_{\min}, 0)) \cdot 1/\kappa_s$ is absent when $\theta_1 \le \sigma_{\min}$. -/
 noncomputable def zetaStar (P : AR2Params) (L lam : ℝ) : ℝ :=
   if P.σmin < P.θ₁ then
     min (zetaStarBase P L lam) (lam / (4 * (P.θ₁ - P.σmin) * kappaStep P lam))
@@ -240,9 +297,11 @@ noncomputable def zetaStar (P : AR2Params) (L lam : ℝ) : ℝ :=
 
 variable {P : AR2Params} {L lam : ℝ}
 
+/-- The radius $\zeta_*$ is at most the minimum of the first four terms of (5.4.5). -/
 theorem zetaStar_le_base : zetaStar P L lam ≤ zetaStarBase P L lam := by
   unfold zetaStar; split_ifs <;> simp
 
+/-- If $L > 0$ and $\lambda > 0$, then $\zeta_* > 0$. -/
 theorem zetaStar_pos (hL : 0 < L) (hlam : 0 < lam) : 0 < zetaStar P L lam := by
   have hκ := kappaStep_pos P hlam
   have := P.θ₁_pos; have := arSigmaMax_pos P.ar L; have := P.ar.one_sub_η₂_pos
@@ -257,7 +316,8 @@ theorem zetaStar_pos (hL : 0 < L) (hlam : 0 < lam) : 0 < zetaStar P L lam := by
   · exact lt_min hb (by have : 0 < P.θ₁ - P.σmin := sub_pos.2 h; positivity)
   · exact hb
 
-/-- `ζ_* (L + θ₁ + σ_max) κ_s² ≤ 2` (first term of (5.4.5)). -/
+/-- If $L > 0$ and $\lambda > 0$, then $\zeta_* (L + \theta_1 + \sigma_{\max}) \kappa_s^2 \le 2$.
+This is the first term of (5.4.5). -/
 theorem zetaStar_mul_le_newton (hL : 0 < L) (hlam : 0 < lam) :
     zetaStar P L lam * ((L + P.θ₁ + sigmaMaxAR2 P L) * kappaStep P lam ^ 2) ≤ 2 := by
   have hκ := kappaStep_pos P hlam
@@ -268,7 +328,8 @@ theorem zetaStar_mul_le_newton (hL : 0 < L) (hlam : 0 < lam) :
   rw [← le_div_iff₀ hC]
   exact zetaStar_le_base.trans (min_le_left _ _)
 
-/-- `κ_s ζ_* ≤ λ_*/(4L) = q_*` (second term of (5.4.5)). -/
+/-- If $L > 0$ and $\lambda > 0$, then $\kappa_s \zeta_* \le \lambda/(4L) = q_*$. This is the second
+term of (5.4.5). -/
 theorem kappaStep_mul_zetaStar_le_region (hL : 0 < L) (hlam : 0 < lam) :
     kappaStep P lam * zetaStar P L lam ≤ lam / (4 * L) := by
   have hκ := kappaStep_pos P hlam
@@ -278,11 +339,12 @@ theorem kappaStep_mul_zetaStar_le_region (hL : 0 < L) (hlam : 0 < lam) :
   rw [le_div_iff₀ (by positivity)]
   linarith
 
-/-- `ζ_* ≤ λ_*²/(16 L)` (third term of (5.4.5)). -/
+/-- The radius satisfies $\zeta_* \le \lambda^2/(16L)$. This is the third term of (5.4.5). -/
 theorem zetaStar_le_sq : zetaStar P L lam ≤ lam ^ 2 / (16 * L) :=
   zetaStar_le_base.trans ((min_le_right _ _).trans ((min_le_right _ _).trans (min_le_left _ _)))
 
-/-- `κ_s ζ_* ≤ 3(1 - η₂)λ_*/(4L)` (fourth term of (5.4.5)). -/
+/-- If $L > 0$ and $\lambda > 0$, then $\kappa_s \zeta_* \le 3(1 - \eta_2)\lambda/(4L)$. This is the
+fourth term of (5.4.5). -/
 theorem kappaStep_mul_zetaStar_le_ratio (hL : 0 < L) (hlam : 0 < lam) :
     kappaStep P lam * zetaStar P L lam ≤ 3 * (1 - P.η₂) * lam / (4 * L) := by
   have hκ := kappaStep_pos P hlam
@@ -293,7 +355,8 @@ theorem kappaStep_mul_zetaStar_le_ratio (hL : 0 < L) (hlam : 0 < lam) :
   rw [le_div_iff₀ (by positivity)]
   linarith
 
-/-- `κ_s ζ_* ≤ λ_*/(4(θ₁ - σ_min))` when `σ_min < θ₁` (last term of (5.4.5)). -/
+/-- If $\lambda > 0$ and $\sigma_{\min} < \theta_1$, then $\kappa_s \zeta_* \le
+\lambda/(4(\theta_1 - \sigma_{\min}))$. This is the last term of (5.4.5). -/
 theorem kappaStep_mul_zetaStar_le_reg (hlam : 0 < lam) (h : P.σmin < P.θ₁) :
     kappaStep P lam * zetaStar P L lam ≤ lam / (4 * (P.θ₁ - P.σmin)) := by
   have hκ := kappaStep_pos P hlam
@@ -306,13 +369,18 @@ theorem kappaStep_mul_zetaStar_le_reg (hlam : 0 < lam) (h : P.σmin < P.θ₁) :
 
 end Constants
 
-/-- The neighbourhood `𝒬_*¹ = 𝒬_* ∩ {x | ‖∇f(x)‖ ≤ ζ_*}` of (5.4.6) ([cartis2022evaluation]),
-with `𝒬_* = {x | ‖x - x_*‖ ≤ λ_*/(4L)}` (5.4.1), `λ_* = λ_min[∇²f(x_*)]`. -/
+/-- The neighbourhood (5.4.6) of [cartis2022evaluation]:
+$$\mathcal{Q}_*^1 = \{x : \|x - x_*\| \le \lambda_*/(4L), \ \|\nabla f(x)\| \le \zeta_*\},$$
+the intersection of the region $\mathcal{Q}_*$ of (5.4.1) with the set where the gradient norm
+is at most $\zeta_*$. Here $\lambda_* = \lambda_{\min}[\nabla^2 f(x_*)]$ and $\zeta_*$ =
+`CartisGouldToint.Chapter05.zetaStar P L λ_*`. -/
 def quadRegion (f : EuclideanSpace ℝ (Fin n) → ℝ) (P : AR2Params) (L : ℝ)
     (xs : EuclideanSpace ℝ (Fin n)) : Set (EuclideanSpace ℝ (Fin n)) :=
   {x | ‖x - xs‖ ≤ Chapter01.hessianMinEig f xs / (4 * L) ∧
     ‖gradient f x‖ ≤ zetaStar P L (Chapter01.hessianMinEig f xs)}
 
+/-- A point $x$ lies in $\mathcal{Q}_*^1$ if and only if $\|x - x_*\| \le \lambda_*/(4L)$ and
+$\|\nabla f(x)\| \le \zeta_*$. -/
 theorem mem_quadRegion {f : EuclideanSpace ℝ (Fin n) → ℝ} {P : AR2Params} {L : ℝ}
     {xs x : EuclideanSpace ℝ (Fin n)} :
     x ∈ quadRegion f P L xs ↔ ‖x - xs‖ ≤ Chapter01.hessianMinEig f xs / (4 * L) ∧
@@ -321,20 +389,31 @@ theorem mem_quadRegion {f : EuclideanSpace ℝ (Fin n) → ℝ} {P : AR2Params} 
 
 /-! ### AR2 with the model-termination test (5.4.3) -/
 
-/-- AR2 (`Chapter03.algorithm_3_3_1`, first-order version `ε₂ = +∞`) with the more stringent
-model-termination test (5.4.3) of [cartis2022evaluation]: besides (3.3.5)
-`‖∇m_k(s_k)‖ ≤ θ₁/2 ‖s_k‖²`, every step computed before termination satisfies
-`‖∇m_k(s_k)‖ ≤ θ₁ ‖∇f(x_k)‖`; together, `‖∇m_k(s_k)‖ ≤ θ₁ min(‖∇f(x_k)‖, ½ ‖s_k‖²)`. -/
+/-- **Equation (5.4.3)** of [cartis2022evaluation]: AR2 with the more stringent model-termination
+test. Let $f : \mathbb{R}^n \to \mathbb{R}$, let $P$ be the constants of Algorithm 3.3.1, and
+let $\epsilon_1 \in \mathbb{R}$. Sequences of iterates $x_k$, steps $s_k$ and weights $\sigma_k$
+form a **run of AR2 with the test (5.4.3)** if they form a run of AR2 (Algorithm 3.3.1) with the
+tolerance $\epsilon_1 \in (0, 1]$ and $\epsilon_2 = +\infty$, and if every step $s_k$ computed
+before termination also satisfies $\|\nabla m_k(s_k)\| \le \theta_1 \|\nabla f(x_k)\|$. Together
+with the condition (3.3.5) $\|\nabla m_k(s_k)\| \le \frac{\theta_1}{2}\|s_k\|^2$ of AR2, this is
+(5.4.3):
+$$\|\nabla m_k(s_k)\| \le \theta_1 \min\left(\|\nabla f(x_k)\|, \tfrac12 \|s_k\|^2\right).$$
+
+The run of AR2 is `CartisGouldToint.Chapter03.algorithm_3_3_1 f P ε₁ none x s σ`, where `none`
+stands for $\epsilon_2 = +\infty$. An iteration $k$ is before termination if
+$\|\nabla f(x_j)\| > \epsilon_1$ for all $j \le k$. -/
 structure IsAR2StrictRun (f : EuclideanSpace ℝ (Fin n) → ℝ) (P : AR2Params) (ε₁ : ℝ)
     (x s : ℕ → EuclideanSpace ℝ (Fin n)) (σ : ℕ → ℝ) : Prop where
-  /-- The run is an AR2 run. -/
+  /-- The sequences form a run of AR2 with $\epsilon_2 = +\infty$. -/
   toAlgorithm_3_3_1 : algorithm_3_3_1 f P ε₁ none x s σ
-  /-- The additional part `‖∇m_k(s_k)‖ ≤ θ₁ ‖∇f(x_k)‖` of (5.4.3). -/
+  /-- Every step before termination satisfies $\|\nabla m_k(s_k)\| \le \theta_1 \|\nabla f(x_k)\|$,
+  the additional part of (5.4.3). -/
   strict : ∀ k, (∀ j ≤ k, ¬ stopTest f ε₁ none (x j)) →
     ‖fderiv ℝ (ar2Model f (x k) (σ k)) (s k)‖ ≤ P.θ₁ * ‖gradient f (x k)‖
 
-/-- **Existence of AR2 runs with the test (5.4.3)**: for a `C²` function, every `ε₁ ∈ (0, 1]` and
-every starting point there is such a run (global model minimizers have `∇m_k(s_k) = 0`). -/
+/-- Runs of AR2 with the test (5.4.3) exist. For a twice continuously differentiable $f$, every
+$\epsilon_1 \in (0, 1]$ and every $x_0 \in \mathbb{R}^n$, there is such a run that starts at
+$x_0$. A global minimizer of the model has $\nabla m_k(s_k) = 0$, and it is an admissible step. -/
 theorem exists_isAR2StrictRun {f : EuclideanSpace ℝ (Fin n) → ℝ} (hf : ContDiff ℝ 2 f)
     (P : AR2Params) {ε₁ : ℝ} (hε₁ : 0 < ε₁) (hε₁1 : ε₁ ≤ 1) (x₀ : EuclideanSpace ℝ (Fin n)) :
     ∃ x s σ, x 0 = x₀ ∧ IsAR2StrictRun f P ε₁ x s σ := by
@@ -369,14 +448,17 @@ section Lemma542
 variable {f : EuclideanSpace ℝ (Fin n) → ℝ} {P : AR2Params} {ε₁ L : ℝ}
   {x s : ℕ → EuclideanSpace ℝ (Fin n)} {σ : ℕ → ℝ} {xs : EuclideanSpace ℝ (Fin n)}
 
-/-- A local minimizer is a critical point. -/
+/-- A local minimizer $x_*$ of $f$ satisfies $\nabla f(x_*) = 0$. If $f$ is not differentiable at
+$x_*$, the gradient is $0$ by the convention of `gradient`. -/
 theorem gradient_eq_zero_of_isLocalMin (hmin : IsLocalMin f xs) : gradient f xs = 0 := by
   rw [← norm_eq_zero, norm_gradient_eq, hmin.fderiv_eq_zero, norm_zero]
 
 namespace IsAR2StrictRun
 
-/-- **The step bound (5.4.8)**, corrected, along a run: before termination, if
-`‖x_k - x_*‖ ≤ q_*` then `‖s_k‖ ≤ κ_s ‖∇f(x_k)‖`, `κ_s = 2(1 + θ₁)/λ_*`. -/
+/-- The corrected step bound (5.4.8) along a run. Let $f$ satisfy assumption f.HL with constant $L$,
+let $\lambda_* > 0$, and let $(x_k, s_k, \sigma_k)$ be a run of AR2 with the test (5.4.3). If
+iteration $k$ is before termination and $\|x_k - x_*\| \le q_*$, then
+$\|s_k\| \le \kappa_s \|\nabla f(x_k)\|$ with $\kappa_s = 2(1 + \theta_1)/\lambda_*$. -/
 theorem norm_step_le (hf : AssumptionHL f L) (h : IsAR2StrictRun f P ε₁ x s σ)
     (hlam : 0 < Chapter01.hessianMinEig f xs) {k : ℕ}
     (hk : ∀ j ≤ k, ¬ stopTest f ε₁ none (x j))
@@ -390,9 +472,12 @@ theorem norm_step_le (hf : AssumptionHL f L) (h : IsAR2StrictRun f P ε₁ x s �
     unfold kappaStep; field_simp
   rwa [this] at h1
 
-/-- **Quadratic decrease (5.4.4)** ([cartis2022evaluation], Lemma 5.4.2, first part): under
-f.HL and `λ_* > 0`, if iteration `k` (before termination) is successful and
-`‖x_k - x_*‖ ≤ q_*`, then `‖∇f(x_{k+1})‖ ≤ ‖∇f(x_k)‖²/ζ_*`. -/
+/-- The quadratic decrease (5.4.4), the first part of Lemma 5.4.2 of [cartis2022evaluation]. Let $f$
+satisfy assumption f.HL with constant $L$, let $\lambda_* > 0$, and let $(x_k, s_k, \sigma_k)$
+be a run of AR2 with the test (5.4.3). If iteration $k$ is before termination and successful
+($\rho_k \ge \eta_1$), and $\|x_k - x_*\| \le q_*$, then
+$$\|\nabla f(x_{k+1})\| \le \frac{\|\nabla f(x_k)\|^2}{\zeta_*}.$$
+-/
 theorem norm_gradient_succ_le (hf : AssumptionHL f L) (h : IsAR2StrictRun f P ε₁ x s σ)
     (hlam : 0 < Chapter01.hessianMinEig f xs) {k : ℕ}
     (hk : ∀ j ≤ k, ¬ stopTest f ε₁ none (x j))
@@ -423,9 +508,12 @@ theorem norm_gradient_succ_le (hf : AssumptionHL f L) (h : IsAR2StrictRun f P ε
       _ ≤ 2 * ‖gradient f (x k)‖ ^ 2 := by gcongr
   linarith
 
-/-- **One iteration in `𝒬_*¹`** ([cartis2022evaluation], proof of Lemma 5.4.2): under f.HL,
-`∇f(x_*) = 0` and `λ_* > 0`, if `x_k ∈ 𝒬_*¹` and `k` is before termination, then iteration `k` is
-very successful (`ρ_k ≥ η₂`, via (5.4.9)–(5.4.12)) and `x_{k+1} ∈ 𝒬_*¹`. -/
+/-- One iteration in $\mathcal{Q}_*^1$, from the proof of Lemma 5.4.2 of [cartis2022evaluation]. Let
+$f$ satisfy assumption f.HL with constant $L$, let $\nabla f(x_*) = 0$ and $\lambda_* > 0$, and
+let $(x_k, s_k, \sigma_k)$ be a run of AR2 with the test (5.4.3). If $x_k \in \mathcal{Q}_*^1$
+and iteration $k$ is before termination, then iteration $k$ is very successful,
+$\rho_k \ge \eta_2$, and $x_{k+1} \in \mathcal{Q}_*^1$. The proof uses the bounds
+(5.4.9)–(5.4.12). -/
 theorem succ_mem_quadRegion (hf : AssumptionHL f L) (h : IsAR2StrictRun f P ε₁ x s σ)
     (hcrit : gradient f xs = 0) (hlam : 0 < Chapter01.hessianMinEig f xs) {k : ℕ}
     (hk : ∀ j ≤ k, ¬ stopTest f ε₁ none (x j)) (hx : x k ∈ quadRegion f P L xs) :
@@ -512,8 +600,12 @@ theorem succ_mem_quadRegion (hf : AssumptionHL f L) (h : IsAR2StrictRun f P ε�
   rw [le_div_iff₀ (by positivity)]
   nlinarith [norm_nonneg (x (k + 1) - xs)]
 
-/-- **Invariance of `𝒬_*¹`** ([cartis2022evaluation], Lemma 5.4.2, second part): if
-`x_{k₀} ∈ 𝒬_*¹` then `x_k ∈ 𝒬_*¹` for every `k ≥ k₀` up to (and including) termination. -/
+/-- The invariance of $\mathcal{Q}_*^1$, the second part of Lemma 5.4.2 of [cartis2022evaluation].
+Let $f$ satisfy assumption f.HL with constant $L$, let $\nabla f(x_*) = 0$ and $\lambda_* > 0$,
+and let $(x_k, s_k, \sigma_k)$ be a run of AR2 with the test (5.4.3). If
+$x_{k_0} \in \mathcal{Q}_*^1$, then $x_k \in \mathcal{Q}_*^1$ for every $k \ge k_0$ such that
+the run has not terminated at any iteration $j < k$, that is, up to and including the
+termination index. -/
 theorem mem_quadRegion_of_ge (hf : AssumptionHL f L) (h : IsAR2StrictRun f P ε₁ x s σ)
     (hcrit : gradient f xs = 0) (hlam : 0 < Chapter01.hessianMinEig f xs) {k₀ : ℕ}
     (h₀ : x k₀ ∈ quadRegion f P L xs) :
@@ -528,14 +620,32 @@ theorem mem_quadRegion_of_ge (hf : AssumptionHL f L) (h : IsAR2StrictRun f P ε�
 
 end IsAR2StrictRun
 
-/-- **Lemma 5.4.2** of [cartis2022evaluation] (region of quadratic convergence). Assume f.HL,
-`x_*` a local minimizer of `f` with `λ_* = λ_min[∇²f(x_*)] > 0`, and an AR2 run with the
-model-termination test (5.4.3). Then
-(i) for every successful iteration `k` before termination with `‖x_k - x_*‖ ≤ q_*`,
-`‖∇f(x_{k+1})‖ ≤ ‖∇f(x_k)‖²/ζ_*` (5.4.4);
-(ii) if `x_{k₀} ∈ 𝒬_*¹` (5.4.6), then for every `k ≥ k₀` before termination, `x_k ∈ 𝒬_*¹`,
-iteration `k` is (very) successful and (5.4.4) holds.
-Here `q_* = λ_*/(4L)` and `ζ_* = zetaStar P L λ_*` is the corrected radius (5.4.5). -/
+/-- **Lemma 5.4.2** of [cartis2022evaluation] (region of quadratic convergence). Let $f$ satisfy
+assumption f.HL with constant $L$, let $x_*$ be a local minimizer of $f$ with $\lambda_* =
+\lambda_{\min}[\nabla^2 f(x_*)] > 0$, and let $(x_k, s_k, \sigma_k)$ be a run of AR2 with the
+model-termination test (5.4.3). Let $q_* = \lambda_*/(4L)$, and let $\zeta_*$ be the corrected
+radius (5.4.5). Then two statements hold. First, for every successful iteration $k$ before
+termination with $\|x_k - x_*\| \le q_*$,
+$$\|\nabla f(x_{k+1})\| \le \frac{\|\nabla f(x_k)\|^2}{\zeta_*}. \qquad (5.4.4)$$
+Second, if $x_{k_0} \in \mathcal{Q}_*^1$ (5.4.6), then for every $k \ge k_0$ before termination,
+$x_k \in \mathcal{Q}_*^1$, iteration $k$ is very successful ($\rho_k \ge \eta_2$), and (5.4.4)
+holds.
+
+**Correction.** The book proves the step bound (5.4.8), $\|s_k\| \le \frac{1 +
+\theta_1}{\lambda_* + \sigma_{\min}/2}\|\nabla f(x_k)\|$, from $(\lambda_* +
+\sigma_{\min}/2)\|s_k\|^2 \le \langle s_k, (\nabla^2 f(x_k) + \frac{\sigma_k}{2} I) s_k\rangle$.
+This uses $\lambda_{\min}[\nabla^2 f(x_k)] \ge \lambda_*$, while only $\lambda_*/2$ is available
+on $\mathcal{Q}_*$ (5.4.7). It also drops the factor $\|s_k\|$ of the regularization term of the
+model gradient $\nabla f(x_k) + \nabla^2 f(x_k) s_k + \frac{\sigma_k}{2}\|s_k\| s_k$ (3.3.2).
+The printed constant is false: for $\theta_1 < 1$, $\sigma_{\min} \to 0$,
+$\nabla^2 f(x_k) = \frac{\lambda_*}{2} I$ and an exact model minimizer,
+$\|s_k\| \approx 2\|\nabla f(x_k)\|/\lambda_*$. The correct constant is
+$\kappa_s = 2(1 + \theta_1)/\lambda_*$ (`CartisGouldToint.Chapter05.norm_step_le_of_strict`),
+and the radius $\zeta_*$ of (5.4.5) changes accordingly (`CartisGouldToint.Chapter05.zetaStar`).
+
+The proof uses of the local minimizer only $\nabla f(x_*) = 0$. It replaces the book's
+strong-convexity argument for $x_{k+1} \in \mathcal{Q}_*$ by the bound
+`CartisGouldToint.Chapter05.mul_norm_sub_le_norm_gradient`. -/
 theorem lemma_5_4_2 (hf : AssumptionHL f L) (hmin : IsLocalMin f xs)
     (hlam : 0 < Chapter01.hessianMinEig f xs) (h : IsAR2StrictRun f P ε₁ x s σ) :
     (∀ k, (∀ j ≤ k, ¬ stopTest f ε₁ none (x j)) →
@@ -565,13 +675,21 @@ section Lemma543
 variable {f : EuclideanSpace ℝ (Fin n) → ℝ} {P : AR2Params} {ε₁ L : ℝ}
   {x s : ℕ → EuclideanSpace ℝ (Fin n)} {σ : ℕ → ℝ} {xs : EuclideanSpace ℝ (Fin n)}
 
-/-- **Lemma 5.4.3** of [cartis2022evaluation] (asymptotic evaluation count, corrected). Assume
-f.HL, `x_*` a local minimizer with `λ_* > 0`, an AR2 run with the test (5.4.3) that has not
-terminated before `k₀`, and (5.4.13): `‖x_{k₀} - x_*‖ ≤ q_*` and `‖∇f(x_{k₀})‖ ≤ ζ ≤ ζ_*/2`.
-Then the run terminates (first `j` with `‖∇f(x_j)‖ ≤ ε₁`) at some `j` with
-`k₀ ≤ j ≤ k₀ + ⌈log₂ log₂(ζ_*/ε₁)⌉₊`, every iteration `k₀ ≤ k < j` being (very) successful.
-(The book's count `log₂ log₂(ζ/ε)` (5.4.14) is too small by one in the worst case and lacks the
-ceiling.) -/
+/-- **Lemma 5.4.3** of [cartis2022evaluation] (asymptotic evaluation count). Let $f$ satisfy
+assumption f.HL with constant $L$, let $x_*$ be a local minimizer of $f$ with $\lambda_* > 0$,
+and let $(x_k, s_k, \sigma_k)$ be a run of AR2 with the test (5.4.3) that has not terminated
+before iteration $k_0$. Suppose (5.4.13): $\|x_{k_0} - x_*\| \le q_*$ and
+$\|\nabla f(x_{k_0})\| \le \zeta \le \zeta_*/2$. Then the run terminates at an index $j$, the
+first index with $\|\nabla f(x_j)\| \le \epsilon_1$, such that
+$$k_0 \le j \le k_0 + \left\lceil \log_2 \log_2 \frac{\zeta_*}{\epsilon_1} \right\rceil_+,$$
+and every iteration $k$ with $k_0 \le k < j$ is very successful ($\rho_k \ge \eta_2$).
+
+**Correction.** The book's count (5.4.14) is $\log_2 \log_2(\zeta/\epsilon)$. It is too small by
+one in the worst case: for $\|\nabla f(x_{k_0})\| = \zeta = \zeta_*/2$, $\|\nabla f(x_{k+1})\| =
+\|\nabla f(x_k)\|^2/\zeta_*$ and $\epsilon = \zeta 2^{-2^m}$, the run needs $m + 1$ iterations.
+The printed count also has no ceiling and is undefined for $\epsilon \ge \zeta$.
+
+The functions `Nat.ceil` and `Real.logb 2` are $\lceil \cdot \rceil_+$ and $\log_2$. -/
 theorem lemma_5_4_3 (hf : AssumptionHL f L) (hmin : IsLocalMin f xs)
     (hlam : 0 < Chapter01.hessianMinEig f xs) (h : IsAR2StrictRun f P ε₁ x s σ) {k₀ : ℕ}
     {ζ : ℝ} (hk₀ : ∀ j < k₀, ¬ stopTest f ε₁ none (x j))
@@ -629,10 +747,13 @@ section Theorem544
 variable {f : EuclideanSpace ℝ (Fin n) → ℝ} {P : AR2Params} {ε₁ L flow : ℝ} {ε₂ : Option ℝ}
   {x s : ℕ → EuclideanSpace ℝ (Fin n)} {σ : ℕ → ℝ} {xs : EuclideanSpace ℝ (Fin n)}
 
-/-- **(5.4.16)** ([cartis2022evaluation], Theorem 5.4.4, first part) for any AR2 run (with
-`ε₂ = +∞`) under f.Bb and f.HL, and any `ζ > 0`: at every iteration `k` before termination, the
-number of successful iterations `j ≤ k` with `‖∇f(x_j)‖ > ζ` is at most
-`κ^S_AR2 (f(x₀) - f_low)/ζ^{3/2} + 1`. -/
+/-- The first part (5.4.16) of Theorem 5.4.4 of [cartis2022evaluation], for any AR2 run with
+$\epsilon_2 = +\infty$. Let $f$ satisfy assumption f.Bb with the lower bound $f_{\rm low}$ and
+assumption f.HL with constant $L$, let $(x_k, s_k, \sigma_k)$ be a run of AR2 with
+$\epsilon_2 = +\infty$, and let $\zeta > 0$. At every iteration $k$ before termination, the
+number of successful iterations $j \le k$ with $\|\nabla f(x_j)\| > \zeta$ is at most
+$$\kappa^S_{\rm AR2} \frac{f(x_0) - f_{\rm low}}{\zeta^{3/2}} + 1.$$
+-/
 theorem card_succ_norm_gradient_gt_le (hb : Chapter02.AssumptionBb f flow)
     (hf : AssumptionHL f L) (h : algorithm_3_3_1 f P ε₁ none x s σ) {ζ : ℝ} (hζ : 0 < ζ)
     {k : ℕ} (hk : ∀ j ≤ k, ¬ stopTest f ε₁ none (x j)) :
@@ -666,11 +787,16 @@ theorem card_succ_norm_gradient_gt_le (hb : Chapter02.AssumptionBb f flow)
   rw [← hNδ]
   linarith
 
-/-- **(5.4.17)** ([cartis2022evaluation], Theorem 5.4.4, second part, with the corrected local
-count): under f.Bb, f.HL, `x_*` a local minimizer with `λ_* > 0`, `0 < ζ ≤ ζ_*/2`, and (5.4.18)
-(no iterate before termination with `‖x_k - x_*‖ > q_*` and `ε₁ < ‖∇f(x_k)‖ ≤ ζ`), at every
-iteration `k` before termination
-`|𝒮_k| ≤ κ^S_AR2 (f(x₀) - f_low)/ζ^{3/2} + ⌈log₂ log₂(ζ_*/ε₁)⌉₊ + 1`. -/
+/-- The second part (5.4.17) of Theorem 5.4.4 of [cartis2022evaluation], with the corrected local
+count. Let $f$ satisfy assumptions f.Bb and f.HL, let $x_*$ be a local minimizer of $f$ with
+$\lambda_* > 0$, let $(x_k, s_k, \sigma_k)$ be a run of AR2 with the test (5.4.3), and let
+$0 < \zeta \le \zeta_*/2$. Suppose that every iterate $x_k$ before termination with
+$\|\nabla f(x_k)\| \le \zeta$ satisfies $\|x_k - x_*\| \le q_*$, so that no iterate before
+termination satisfies (5.4.18). Then at every iteration $k$ before termination, the set
+$\mathcal{S}_k$ of successful iterations $j \le k$ satisfies
+$$|\mathcal{S}_k| \le \kappa^S_{\rm AR2} \frac{f(x_0) - f_{\rm low}}{\zeta^{3/2}} + \left\lceil
+  \log_2 \log_2 \frac{\zeta_*}{\epsilon_1} \right\rceil_+ + 1.$$
+-/
 theorem card_successSet_le_of_local (hb : Chapter02.AssumptionBb f flow)
     (hf : AssumptionHL f L) (hmin : IsLocalMin f xs) (hlam : 0 < Chapter01.hessianMinEig f xs)
     (h : IsAR2StrictRun f P ε₁ x s σ) {ζ : ℝ} (hζ : 0 < ζ)
@@ -722,14 +848,29 @@ theorem card_successSet_le_of_local (hb : Chapter02.AssumptionBb f flow)
     linarith
 
 /-- **Theorem 5.4.4** of [cartis2022evaluation] (global complexity bound for locally convex
-functions). Assume f.Bb and f.HL, `x_*` a local minimizer with `λ_* = λ_min[∇²f(x_*)] > 0`, an
-AR2 run with the model-termination test (5.4.3), and `0 < ζ ≤ ζ_*/2`. Then
-(i) (5.4.16) at every iteration `k` before termination, the number of successful iterations
-`j ≤ k` with `‖∇f(x_j)‖ > ζ` is at most `κ^S_AR2 (f(x₀) - f_low)/ζ^{3/2} + 1`;
-(ii) (5.4.17) if no iterate `x_k` before termination satisfies (5.4.18)
-(`‖x_k - x_*‖ > q_*` and `‖∇f(x_k)‖ ≤ ζ`), then at every iteration `k` before termination
-`|𝒮_k| ≤ κ^S_AR2 (f(x₀) - f_low)/ζ^{3/2} + ⌈log₂ log₂(ζ_*/ε₁)⌉₊ + 1`
-(the book's second term `log₂ log₂(ζ/ε)` corrected as in Lemma 5.4.3). -/
+functions). Let $f$ satisfy assumption f.Bb with the lower bound $f_{\rm low}$ and assumption
+f.HL with constant $L$, let $x_*$ be a local minimizer of $f$ with $\lambda_* =
+\lambda_{\min}[\nabla^2 f(x_*)] > 0$, let $(x_k, s_k, \sigma_k)$ be a run of AR2 with the
+model-termination test (5.4.3), and let $0 < \zeta \le \zeta_*/2$. Then two statements hold.
+First, at every iteration $k$ before termination, the number of successful iterations $j \le k$
+with $\|\nabla f(x_j)\| > \zeta$ is at most
+$$\kappa^S_{\rm AR2} \frac{f(x_0) - f_{\rm low}}{\zeta^{3/2}} + 1. \qquad (5.4.16)$$
+Second, suppose that no iterate $x_k$ before termination satisfies (5.4.18), that is,
+$\|x_k - x_*\| > q_*$ and $\|\nabla f(x_k)\| \le \zeta$. Then at every iteration $k$ before
+termination, the set $\mathcal{S}_k$ of successful iterations $j \le k$ satisfies
+$$|\mathcal{S}_k| \le \kappa^S_{\rm AR2} \frac{f(x_0) - f_{\rm low}}{\zeta^{3/2}} + \left\lceil
+  \log_2 \log_2 \frac{\zeta_*}{\epsilon_1} \right\rceil_+ + 1. \qquad (5.4.17)$$
+
+**Correction.** The book's second term in (5.4.17) is $\log_2 \log_2(\zeta/\epsilon)$. It is
+corrected as in Lemma 5.4.3 (see `CartisGouldToint.Chapter05.lemma_5_4_3`).
+
+**Reading.** The second part is stated, like Lemma 3.3.4, as a bound on $|\mathcal{S}_k|$ at
+every iteration $k$ before termination, and the condition (5.4.18) is restricted to the
+iterations before termination.
+
+The constant $\kappa^S_{\rm AR2}$ of Lemma 3.3.4 is `CartisGouldToint.Chapter03.kappaSAR2 P L`.
+The first part is `CartisGouldToint.Chapter05.card_succ_norm_gradient_gt_le`, and the second
+part is `CartisGouldToint.Chapter05.card_successSet_le_of_local`. -/
 theorem theorem_5_4_4 (hb : Chapter02.AssumptionBb f flow) (hf : AssumptionHL f L)
     (hmin : IsLocalMin f xs) (hlam : 0 < Chapter01.hessianMinEig f xs)
     (h : IsAR2StrictRun f P ε₁ x s σ) {ζ : ℝ} (hζ : 0 < ζ)

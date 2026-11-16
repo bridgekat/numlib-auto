@@ -5,35 +5,52 @@ Released under Apache 2.0 license as described in the file LICENSE.
 import NumlibSurface.CartisGouldToint.Chapter05.Section01
 
 /-!
-# Cartis–Gould–Toint, Appendix B: Appendix to Chapter 5
+# Cartis, Gould and Toint, Appendix B: Appendix to Chapter 5
 
-Surface file for C. Cartis, N. I. M. Gould and Ph. L. Toint, *Evaluation Complexity of
-Algorithms for Nonconvex Optimization* [cartis2022evaluation], Appendix B, "Appendix to
-Chapter 5": Lemma B.5.1 on the positivity of the residual exponents
-`ι_j(p, ℓ, i) = (2^i - 1)/2^i - j (ℓ - 1)/(p - j + 1)` of (5.1.21), (5.1.23), (5.1.25)
-(`Chapter05.iota`). The appendix proofs of Lemmas 5.1.3 and 5.1.5 and of Theorems 5.3.3–5.3.9
-are those of the corresponding Chapter 5 results (and of the backbone
-`Optimization.GapRecurrence`).
+This module formalizes the part of Appendix B of [cartis2022evaluation] that belongs to Chapter 5:
+Lemma B.5.1 on the positivity of the exponents
+$$\iota_j(p, \ell, i) = \frac{2^i - 1}{2^i} - \frac{j(\ell - 1)}{p - j + 1}$$
+of (5.1.21), (5.1.23) and (5.1.25), defined in `CartisGouldToint.Chapter05.iota`. The proofs of
+Lemmas 5.1.3 and 5.1.5 and of Theorems 5.3.3–5.3.9 that the book gives in this appendix are the
+proofs of those results in Chapter 5 and in the backbone module
+`Numlib.Optimization.Complexity.GapRecurrence`.
 
 ## Main results
 
-* `lemma_B_5_1` — Lemma B.5.1.
+* Lemma B.5.1, `CartisGouldToint.AppendixB.lemma_B_5_1`: the exponents $\iota_1(p, p, i)$,
+  $\iota_2(p, p/2, i)$ and $\iota_3(p, p/3, i)$ are positive when $i$ is large enough.
 
-## Deviations from the book
+## Deviations from the source
 
-* The statement lists `ι₁, ι₂, ι₁`; the third exponent is `ι₃`. The proof writes `ι₁` for `ι₂`
-  and `ι₃` in its second and third parts.
-* The conditions `i > log₂ p`, `i > log₂ (p - 1)`, `i > log₂ (p - 2)` are written `p < 2^i`,
-  `p - 1 < 2^i`, `p - 2 < 2^i` (equivalent, and meaningful also when the logarithm is not).
+* **Lemma B.5.1** (typo). The statement lists $\iota_1, \iota_2, \iota_1$; the third exponent is
+  $\iota_3$. The proof writes $\iota_1$ for $\iota_2$ and $\iota_3$ in its second and third parts.
+  See `CartisGouldToint.AppendixB.lemma_B_5_1`.
+* **Lemma B.5.1** (reading). The conditions $i > \log_2 p$, $i > \log_2(p - 1)$ and
+  $i > \log_2(p - 2)$ are written $p < 2^i$, $p - 1 < 2^i$ and $p - 2 < 2^i$. These forms are
+  equivalent, and they have a meaning also when the logarithm has none. See
+  `CartisGouldToint.AppendixB.lemma_B_5_1`.
 -/
 
 namespace CartisGouldToint.AppendixB
 
 open CartisGouldToint.Chapter05
 
-/-- **Lemma B.5.1** ([cartis2022evaluation]): `ι₁(p, p, i) > 0` when `p ≥ 1` and `p < 2^i`;
-`ι₂(p, p/2, i) > 0` when `p` is a positive multiple of two and `p - 1 < 2^i`; and
-`ι₃(p, p/3, i) > 0` when `p` is a positive multiple of three and `p - 2 < 2^i`. -/
+/-- **Lemma B.5.1** of [cartis2022evaluation]. Let $p, i \in \mathbb{N}$. Then:
+
+* if $p \ge 1$ and $p < 2^i$, then $\iota_1(p, p, i) > 0$;
+* if $p > 0$ is a multiple of $2$ and $p - 1 < 2^i$, then $\iota_2(p, p/2, i) > 0$;
+* if $p > 0$ is a multiple of $3$ and $p - 2 < 2^i$, then $\iota_3(p, p/3, i) > 0$.
+
+**Typo.** The statement of the book lists the exponents $\iota_1, \iota_2, \iota_1$; the third
+one is $\iota_3$. The proof writes $\iota_1$ for $\iota_2$ and $\iota_3$ in its second and third
+parts.
+
+**Reading.** The book's conditions $i > \log_2 p$, $i > \log_2(p - 1)$ and $i > \log_2(p - 2)$
+are written $p < 2^i$, $p - 1 < 2^i$ and $p - 2 < 2^i$. These forms are equivalent, and they
+have a meaning also when the logarithm has none.
+
+The exponents are `CartisGouldToint.Chapter05.iota`, with $p/2$ and $p/3$ computed in
+$\mathbb{R}$. -/
 theorem lemma_B_5_1 {p i : ℕ} :
     (1 ≤ p → p < 2 ^ i → 0 < iota 1 p p i) ∧
     (0 < p → 2 ∣ p → (p : ℝ) - 1 < 2 ^ i → 0 < iota 2 p ((p : ℝ) / 2) i) ∧

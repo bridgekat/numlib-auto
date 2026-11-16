@@ -6,46 +6,79 @@ import Numlib.Optimization.ModelBased.QuadraticModel
 import NumlibSurface.CartisGouldToint.Chapter09.Section03
 
 /-!
-# Cartis–Gould–Toint §9.4: The trust-region subproblem
+# Cartis, Gould and Toint, Section 9.4: The trust-region subproblem
 
-Surface file for [cartis2022evaluation] §9.4: initial bounds (9.4.1) on the multiplier of the
-trust-region subproblem (8.1.2), and the bounds (9.4.5)–(9.4.7) on its optimal value
-`m_Δ = min_{‖s‖_M ≤ Δ} m(s)` used for early termination of criticality tests. The trust-region
-analogues of Algorithms 9.2.1 and 8.3.2 are `CartisGouldToint.Chapter09.algorithm_9_2_1` (with the
-trust-region sets) and `CartisGouldToint.Chapter08.algorithm_8_3_2`.
+This module formalizes Section 9.4 of [cartis2022evaluation], on the trust-region subproblem
+(8.1.2): minimize $m(s) = \langle g, s \rangle + \frac12 \langle s, H s \rangle$ subject to
+$\|s\|_M \le \Delta$. The bounds (9.4.1) bracket the multiplier $\lambda^*$ of a minimizer on the
+boundary. The optimal value $m_\Delta = \min_{\|s\|_M \le \Delta} m(s)$ decreases with $\Delta$
+(9.4.5), and (9.4.6)–(9.4.7) bound it from points on spheres of other radii. For
+$\lambda > \lambda_s$, the radius $\Delta(\lambda) = \|s(\lambda)\|_M$ has the computable value
+$m_{\Delta(\lambda)} = \frac12 (\langle g, s(\lambda) \rangle - \lambda \Delta(\lambda)^2)$. These
+bounds give sufficient conditions for the early-termination tests (9.4.2)–(9.4.4) of a criticality
+measure $\phi^\Delta_{f,2}(x)$, which equals $-m_\Delta$ for $g = \nabla f(x)$, $H = \nabla^2 f(x)$
+and $M = I$.
+
+The trust-region analogues of Algorithms 9.2.1 and 8.3.2 are
+`CartisGouldToint.Chapter09.algorithm_9_2_1` with the trust-region sets and
+`CartisGouldToint.Chapter08.algorithm_8_3_2`. The proofs use the backbone module
+`Numlib.Optimization.Subproblem.TrustRegion`.
+
+## Main definitions
+
+* Section 9.4.2, `CartisGouldToint.Chapter09.trValue`: the optimal value $m_\Delta$ of the
+  trust-region subproblem.
 
 ## Main results
 
-* `lambdaStar_bounds_9_4_1` — (9.4.1).
-* `optimalValue_bounds_9_4_6` — (9.4.5)–(9.4.7) and `m_{Δ(λ)}` for `λ ∈ 𝓛 ∪ 𝓖`; its parts
-  without symmetry of `H` are `exists_trValue_eq`, `trValue_antitone` and `trValue_le_min`.
-* `trValue_of_posDef` — the interior case `H ≻ 0`, `‖H⁻¹ g‖_M ≤ Δ`.
-* `taylorMeasure_two_eq_neg_trValue_of_contDiffAt`, `test_9_4_2_iff_of_contDiffAt` —
-  `φ^Δ_{f,2}(x) = -m_Δ` for `g = ∇f(x)`, `H = ∇²f(x)`, and the tests (9.4.2) as (9.4.3)–(9.4.4)
-  (`taylorMeasure_two_eq_neg_trValue`, `test_9_4_2_iff` for any `g`, `H` with
-  `T_{f,2}(x, s) = f(x) + m(s)`).
-* `test_9_4_3_of_9_4_6`, `test_9_4_4_of_9_4_6`, `test_9_4_3_of_9_4_7` — sufficient conditions
-  for (9.4.3) (with a feasible exemplar `s`, `m(s) ≤ mᴸ`) and (9.4.4).
-* `tests_9_4_3_9_4_4_of_setL`, `test_9_4_3_of_setG`, `trValue_ge_of_setG` — the same with the
-  radii `Δ(λ)` for `λ ∈ 𝓛` or `λ ∈ 𝓖`, and the bound of footnote 65.
-
-## Corrections to the source
-
-* (9.4.5) claims `m_{Δ₂} ≤ m_{Δ₁}` *if and only if* `Δ₂ ≥ Δ₁`; only the implication holds (for
-  `g = 0`, `H = 0`, `m_Δ = 0` for all `Δ`).
-* (9.4.6), (9.4.7) hold for any `s_{Δ⁺}` (resp. `s_{Δ⁻}`) on the sphere of radius `Δ⁺` (resp.
-  `Δ⁻`), not only for minimizers, and for `Δ ≤ Δ⁺` (resp. `Δ⁻ ≤ Δ`).
+* Equation (9.4.1), `CartisGouldToint.Chapter09.lambdaStar_bounds_9_4_1`: $\|g\|_{M^{-1}}/\Delta -
+  \lambda_n \le \lambda^* \le \|g\|_{M^{-1}}/\Delta - \lambda_1$.
+* Equation (9.4.5), `CartisGouldToint.Chapter09.trValue_antitone`: $m_\Delta$ decreases as
+  $\Delta \ge 0$ grows.
+* Equation (9.4.7), `CartisGouldToint.Chapter09.trValue_le_min`: $m_\Delta \le
+  \min(m((\Delta/\Delta^-) s^-), m_{\Delta^-})$ for $\|s^-\|_M = \Delta^- \le \Delta$.
+* Equations (9.4.5)–(9.4.7), `CartisGouldToint.Chapter09.optimalValue_bounds_9_4_6`: attainment,
+  (9.4.5)–(9.4.7), and the value $m_{\Delta(\lambda)}$ for $\lambda > \lambda_s$.
+* Section 9.4.2, `CartisGouldToint.Chapter09.trValue_of_posDef`: the interior case $H \succ 0$,
+  $\|H^{-1} g\|_M \le \Delta$.
+* Section 9.4.2, `CartisGouldToint.Chapter09.taylorMeasure_two_eq_neg_trValue_of_contDiffAt`:
+  $\phi^\Delta_{f,2}(x) = -m_\Delta$ for $g = \nabla f(x)$, $H = \nabla^2 f(x)$ and $M = I$.
+* Equations (9.4.2)–(9.4.4), `CartisGouldToint.Chapter09.test_9_4_2_iff_of_contDiffAt`: the tests
+  (9.4.2) on $\phi^\Delta_{f,2}(x)$ are the tests (9.4.3)–(9.4.4) on $m_\Delta$.
+* Section 9.4.2, `CartisGouldToint.Chapter09.test_9_4_3_of_9_4_6`,
+  `CartisGouldToint.Chapter09.test_9_4_4_of_9_4_6`,
+  `CartisGouldToint.Chapter09.test_9_4_3_of_9_4_7`: sufficient conditions for (9.4.3) and (9.4.4)
+  from (9.4.6) and (9.4.7).
+* Section 9.4.2, `CartisGouldToint.Chapter09.tests_9_4_3_9_4_4_of_setL`,
+  `CartisGouldToint.Chapter09.test_9_4_3_of_setG`: the same with the radius $\Delta(\lambda)$ for
+  $\lambda \in \mathcal{L}$ or $\lambda \in \mathcal{G}$.
+* Footnote 65, `CartisGouldToint.Chapter09.trValue_ge_of_setG`: for $\lambda \in \mathcal{G}$,
+  $m_{\Delta(\lambda)} \ge \frac12 (\langle g, s(\lambda) \rangle - \lambda \Delta^2)$.
 
 ## Conventions
 
-The measure `φ^Δ_{f,2}(x)` of (9.4.2) is `Optimization.taylorMeasure (ftaylorSeries ℝ f x) 2 Δ univ`
-and uses the Euclidean norm, so it is compared with `m_Δ` for `M = I`; the Hessian matrix
-`∇²f(x)` is `Optimization.hessianMatrix f x`.
+* The measure $\phi^\Delta_{f,2}(x)$ of (9.4.2) is `Optimization.taylorMeasure (ftaylorSeries ℝ f x)
+  2 Δ univ`. It uses the Euclidean norm, so it is compared with $m_\Delta$ for $M = I$.
+* The Hessian matrix $\nabla^2 f(x)$ is `Optimization.hessianMatrix f x`.
+
+## Deviations from the source
+
+* **Equation (9.4.5)** (correction). The source claims $m_{\Delta_2} \le m_{\Delta_1}$ if and only
+  if $\Delta_2 \ge \Delta_1$; only the implication holds. See
+  `CartisGouldToint.Chapter09.trValue_antitone`.
+* **Equations (9.4.6) and (9.4.7)** (generalization). The bounds hold for any point on the sphere of
+  radius $\Delta^+$ (or $\Delta^-$), not only for minimizers, and for $\Delta \le \Delta^+$ (or
+  $\Delta^- \le \Delta$). See `CartisGouldToint.Chapter09.optimalValue_bounds_9_4_6`.
 
 ## Not formalized
 
-The Gertz–Gill approximate-solution criterion (9.4.8) quoted in the notes, and the closing advice
-to stop Algorithm 9.2.1 once (9.4.3) or (9.4.4) holds (a heuristic use of the tests above).
+* **The Gertz–Gill criterion (9.4.8) of the Notes.** The source quotes it without saying what a
+  "suitable approximate solution" is.
+* **The closing advice of Section 9.4.2 to stop Algorithm 9.2.1 as soon as (9.4.3) or (9.4.4)
+  holds.** It is a heuristic use of the tests; the sufficient conditions that it relies on are
+  `CartisGouldToint.Chapter09.test_9_4_3_of_9_4_6`,
+  `CartisGouldToint.Chapter09.test_9_4_4_of_9_4_6`, `CartisGouldToint.Chapter09.test_9_4_3_of_9_4_7`
+  and their forms for $\mathcal{L}$ and $\mathcal{G}$.
 -/
 
 open Matrix Set Metric
@@ -57,10 +90,17 @@ open Subproblem CartisGouldToint.Chapter08
 
 variable {n : ℕ} {g : EuclideanSpace ℝ (Fin n)} {H M : Matrix (Fin n) (Fin n) ℝ}
 
-/-- **Bounds on the multiplier, trust region** ([cartis2022evaluation] (9.4.1)). Let `Δ > 0` and
-`s*` a global minimizer of (8.1.2) on the boundary, `‖s*‖_M = Δ`, with multiplier `λ*`
-(`IsTrustRegionKKT`). Then `‖g‖_{M⁻¹}/Δ - λₙ ≤ λ* ≤ ‖g‖_{M⁻¹}/Δ - λ₁`, and the same with any outer
-bounds `λ₁ᴸ ≤ λ₁`, `λₙᵁ ≥ λₙ`. -/
+/-- **Equation (9.4.1)** of [cartis2022evaluation], bounds on the multiplier. Let $H$ be symmetric,
+$M$ symmetric positive definite and $\Delta > 0$. Let $s^*$ satisfy $\|s^*\|_M = \Delta$, with a
+multiplier $\lambda^*$ in the sense of Theorem 8.2.7, and let $\lambda_1 \le \lambda_n$ be the
+extreme eigenvalues of the pencil $(H, M)$. Then
+$$\frac{\|g\|_{M^{-1}}}{\Delta} - \lambda_n \le \lambda^* \le \frac{\|g\|_{M^{-1}}}{\Delta} -
+  \lambda_1.$$
+The same bounds hold with any $l_1 \le \lambda_1$ in place of $\lambda_1$ and any
+$l_n \ge \lambda_n$ in place of $\lambda_n$.
+
+The multiplier conditions are `CartisGouldToint.Chapter08.IsTrustRegionKKT`. The theorem does
+not need $s^*$ to be a global minimizer. -/
 theorem lambdaStar_bounds_9_4_1 (hH : H.IsHermitian) (hM : M.PosDef) {Δ : ℝ} (hΔ : 0 < Δ)
     {s : EuclideanSpace ℝ (Fin n)} {lamStar : ℝ} (hkkt : IsTrustRegionKKT g H M Δ s lamStar)
     (hsΔ : mNorm M s = Δ) :
@@ -85,13 +125,20 @@ theorem lambdaStar_bounds_9_4_1 (hH : H.IsHermitian) (hM : M.PosDef) {Δ : ℝ} 
     rw [le_sub_iff_add_le, le_div_iff₀ hΔ]; linarith
   exact ⟨hA, hB, fun l₁ lₙ hl₁ hlₙ => ⟨by linarith, by linarith⟩⟩
 
-/-- The **optimal value** `m_Δ = min_{‖s‖_M ≤ Δ} m(s)` of the trust-region subproblem (8.1.2)
-([cartis2022evaluation] §9.4.2). -/
+/-- **Section 9.4.2** of [cartis2022evaluation], the **optimal value** of the trust-region
+subproblem (8.1.2):
+$$m_\Delta = \inf \{ m(s) \mid \|s\|_M \le \Delta \}.$$
+
+The infimum is `sInf` of Mathlib, which is $0$ for the empty set, so $m_\Delta = 0$ for
+$\Delta < 0$. For $\Delta \ge 0$ the infimum is attained
+(`CartisGouldToint.Chapter09.exists_trValue_eq`). -/
 noncomputable def trValue (g : EuclideanSpace ℝ (Fin n)) (H M : Matrix (Fin n) (Fin n) ℝ)
     (Δ : ℝ) : ℝ :=
   sInf (model g H '' {s | mNorm M s ≤ Δ})
 
-/-- The optimal value is that of the operator subproblem in the `M`-inner product space. -/
+/-- The optimal value $m_\Delta$ equals the optimal value `Subproblem.trustRegionValue` of the
+operator subproblem for the scaled gradient $M^{-1} g$ and the scaled operator $M^{-1} H$ on the
+$M$-inner product space. -/
 theorem trValue_eq (hM : M.PosDef) (Δ : ℝ) :
     trValue g H M Δ = trustRegionValue (scaledGrad hM g) (scaledOp H hM) Δ := by
   rw [trValue, trustRegionValue]
@@ -106,8 +153,11 @@ theorem trValue_eq (hM : M.PosDef) (Δ : ℝ) :
     exact ⟨s, by rwa [mem_ofPred_eq, mNorm_eq_norm_toScaled hM, ← mem_closedBall_zero_iff],
       model_eq_quadModel hM s⟩
 
-/-- The optimal value is attained for `Δ ≥ 0`: some global minimizer `s` of (8.1.2) has
-`m(s) = m_Δ`. -/
+/-- **Section 9.4.2** of [cartis2022evaluation], attainment of the optimal value. Let $M$ be
+symmetric positive definite and $\Delta \ge 0$. Then some global minimizer $s$ of the
+trust-region subproblem (8.1.2) has $m(s) = m_\Delta$.
+
+The matrix $H$ need not be symmetric. -/
 theorem exists_trValue_eq (hM : M.PosDef) {Δ : ℝ} (hΔ : 0 ≤ Δ) :
     ∃ s, IsTrustRegionSolution g H M Δ s ∧ model g H s = trValue g H M Δ := by
   obtain ⟨x, hx, hmin⟩ := exists_isMinOn_closedBall (scaledGrad hM g) (scaledOp H hM) hΔ
@@ -115,13 +165,27 @@ theorem exists_trValue_eq (hM : M.PosDef) {Δ : ℝ} (hΔ : 0 ≤ Δ) :
   refine ⟨s, (isTrustRegionSolution_iff_scaled hM).2 ⟨hx, hmin⟩, ?_⟩
   rw [trValue_eq hM, hmin.trustRegionValue_eq hx, model_eq_quadModel hM]
 
-/-- (9.4.5) of [cartis2022evaluation], the valid direction: `m_Δ` is antitone in `Δ ≥ 0`. -/
+/-- **Equation (9.4.5)** of [cartis2022evaluation]. Let $M$ be symmetric positive definite and
+$0 \le \Delta_1 \le \Delta_2$. Then $m_{\Delta_2} \le m_{\Delta_1}$.
+
+**Correction.** The source claims $m_{\Delta_2} \le m_{\Delta_1}$ if and only if
+$\Delta_2 \ge \Delta_1$. Only the implication holds: for $g = 0$ and $H = 0$, $m_\Delta = 0$ for
+all $\Delta$.
+
+The matrix $H$ need not be symmetric. -/
 theorem trValue_antitone (hM : M.PosDef) {Δ₁ Δ₂ : ℝ} (h₁ : 0 ≤ Δ₁) (h : Δ₁ ≤ Δ₂) :
     trValue g H M Δ₂ ≤ trValue g H M Δ₁ := by
   rw [trValue_eq hM, trValue_eq hM]; exact trustRegionValue_antitone h₁ h
 
-/-- (9.4.7) of [cartis2022evaluation]: for `0 ≤ Δ⁻ ≤ Δ` and `‖s⁻‖_M = Δ⁻`,
-`m_Δ ≤ min(m((Δ/Δ⁻) s⁻), m_{Δ⁻})`. -/
+/-- **Equation (9.4.7)** of [cartis2022evaluation]. Let $M$ be symmetric positive definite,
+$0 \le \Delta^- \le \Delta$ and $\|s^-\|_M = \Delta^-$. Then
+$$m_\Delta \le \min\bigl(m((\Delta/\Delta^-) s^-), m_{\Delta^-}\bigr).$$
+
+**Generalization.** The source takes $s^-$ to be a minimizer for the radius $\Delta^-$. The
+bound holds for any $s^-$ on the sphere of radius $\Delta^-$, and for $\Delta^- \le \Delta$.
+
+The matrix $H$ need not be symmetric. For $\Delta^- = 0$ the scale factor $\Delta/\Delta^-$ is
+$0$, by division by zero. -/
 theorem trValue_le_min (hM : M.PosDef) {Δ Δm : ℝ} {sm : EuclideanSpace ℝ (Fin n)}
     (hΔm : 0 ≤ Δm) (h : Δm ≤ Δ) (hsm : mNorm M sm = Δm) :
     trValue g H M Δ ≤ min (model g H ((Δ / Δm) • sm)) (trValue g H M Δm) := by
@@ -129,12 +193,27 @@ theorem trValue_le_min (hM : M.PosDef) {Δ Δm : ℝ} {sm : EuclideanSpace ℝ (
   have := trustRegionValue_le_min (g := scaledGrad hM g) (H := scaledOp H hM) hΔm h hn
   rwa [← trValue_eq hM, ← trValue_eq hM, ← map_smul, ← model_eq_quadModel hM] at this
 
-/-- **Bounds on the optimal value of the trust-region subproblem** ([cartis2022evaluation]
-(9.4.5)–(9.4.7)). For `Δ ≥ 0` the value `m_Δ` is attained and `m_Δ ≤ 0`; (9.4.5) `m_Δ` is
-antitone in `Δ` (the book's converse is false); (9.4.6) for `Δ ≤ Δ⁺` and `‖s_{Δ⁺}‖_M = Δ⁺`,
-`m_{Δ⁺} ≤ m_Δ ≤ m((Δ/Δ⁺) s_{Δ⁺})`; (9.4.7) for `Δ⁻ ≤ Δ` and `‖s_{Δ⁻}‖_M = Δ⁻`,
-`m_Δ ≤ min(m((Δ/Δ⁻) s_{Δ⁻}), m_{Δ⁻})`; and for `λ ∈ 𝓛 ∪ 𝓖` (`λ > λₛ`) with `Δ(λ) = ‖s(λ)‖_M`,
-`m_{Δ(λ)} = ½ (⟪g, s(λ)⟫ - λ Δ(λ)²)`. -/
+/-- **Equations (9.4.5)–(9.4.7)** of [cartis2022evaluation], bounds on the optimal value of the
+trust-region subproblem. Let $H$ be symmetric and $M$ symmetric positive definite. Then:
+
+* for $\Delta \ge 0$, the value $m_\Delta$ is attained by a global minimizer of (8.1.2), and
+  $m_\Delta \le 0$;
+* (9.4.5) for $0 \le \Delta_1 \le \Delta_2$, $m_{\Delta_2} \le m_{\Delta_1}$;
+* (9.4.6) for $0 \le \Delta \le \Delta^+$ and $\|s^+\|_M = \Delta^+$, $m_{\Delta^+} \le m_\Delta
+  \le m((\Delta/\Delta^+) s^+)$;
+* (9.4.7) for $0 \le \Delta^- \le \Delta$ and $\|s^-\|_M = \Delta^-$, $m_\Delta \le
+  \min(m((\Delta/\Delta^-) s^-), m_{\Delta^-})$;
+* for $\lambda > \lambda_s$ (that is, $\lambda \in \mathcal{L} \cup \mathcal{G}$) and
+  $\Delta(\lambda) = \|s(\lambda)\|_M$,
+$$m_{\Delta(\lambda)} = \tfrac12 \bigl(\langle g, s(\lambda) \rangle - \lambda
+  \Delta(\lambda)^2\bigr).$$
+
+**Correction.** The source states (9.4.5) as an equivalence. Its converse is false (see
+`CartisGouldToint.Chapter09.trValue_antitone`).
+
+**Generalization.** The source takes $s^+$ and $s^-$ to be minimizers for the radii $\Delta^+$
+and $\Delta^-$. The bounds (9.4.6) and (9.4.7) hold for any points on these spheres, and for
+$\Delta \le \Delta^+$ and $\Delta^- \le \Delta$. -/
 theorem optimalValue_bounds_9_4_6 (hH : H.IsHermitian) (hM : M.PosDef) :
     (∀ Δ : ℝ, 0 ≤ Δ → (∃ s, IsTrustRegionSolution g H M Δ s ∧ model g H s = trValue g H M Δ) ∧
       trValue g H M Δ ≤ 0) ∧
@@ -176,9 +255,12 @@ theorem optimalValue_bounds_9_4_6 (hH : H.IsHermitian) (hM : M.PosDef) :
 
 /-! ### Early termination: the tests (9.4.2)–(9.4.4) -/
 
-/-- **The value of the trust-region subproblem for a positive definite `H`**
-([cartis2022evaluation] §9.4.2, after (9.4.5)): if `H ≻ 0` and `‖H⁻¹ g‖_M ≤ Δ`, then
-`s_Δ = -H⁻¹ g` is the unique global minimizer of (8.1.2) and `m_Δ = -½ ⟪g, H⁻¹ g⟫`. -/
+/-- **Section 9.4.2** of [cartis2022evaluation], after (9.4.5), the interior case. Let $M$ be
+symmetric positive definite and $H$ positive definite, and suppose that
+$\|H^{-1} g\|_M \le \Delta$. Then $s_\Delta = -H^{-1} g$ is a global minimizer of the
+trust-region subproblem (8.1.2), it is the only one, and
+$$m_\Delta = -\tfrac12 \langle g, H^{-1} g \rangle.$$
+-/
 theorem trValue_of_posDef (hM : M.PosDef) (hpos : H.PosDef) {Δ : ℝ}
     (hs : mNorm M (toEuclideanLin H⁻¹ g) ≤ Δ) :
     IsTrustRegionSolution g H M Δ (-toEuclideanLin H⁻¹ g) ∧
@@ -218,10 +300,15 @@ theorem trValue_of_posDef (hM : M.PosDef) (hpos : H.PosDef) {Δ : ℝ}
         inner_scaledGrad_toScaled, zero_mul, sub_zero, inner_neg_right]
       ring
 
-/-- **The measure `φ^Δ_{f,2}` as an optimal value** ([cartis2022evaluation] §9.4.2, before
-(9.4.2)): if the second-order Taylor model of `f` at `x` is `T_{f,2}(x, s) = f(x) + m(s)` (that
-is, `m` is the model (8.1.1) with `g = ∇f(x)` and `H = ∇²f(x)`), then
-`φ^Δ_{f,2}(x) = f(x) - min_{‖s‖ ≤ Δ} T_{f,2}(x, s) = -m_Δ` with `M = I`. -/
+/-- **Section 9.4.2** of [cartis2022evaluation], before (9.4.2), the measure $\phi^\Delta_{f,2}$ as
+an optimal value. Let $f : \mathbb{R}^n \to \mathbb{R}$ and $x \in \mathbb{R}^n$, and suppose
+that the second-order Taylor polynomial of $f$ at $x$ is $T_{f,2}(x, s) = f(x) + m(s)$ for all
+$s$. Then for every $\Delta$,
+$$\phi^\Delta_{f,2}(x) = f(x) - \min_{\|s\| \le \Delta} T_{f,2}(x, s) = -m_\Delta,$$
+where $m_\Delta$ is taken with $M = I$.
+
+The hypothesis says that $m$ is the model (8.1.1) with $g = \nabla f(x)$ and
+$H = \nabla^2 f(x)$. The measure is `Optimization.taylorMeasure`. -/
 theorem taylorMeasure_two_eq_neg_trValue {f : EuclideanSpace ℝ (Fin n) → ℝ}
     {x : EuclideanSpace ℝ (Fin n)} (hT : ∀ s, taylorPolynomial f 2 x s = f x + model g H s)
     (Δ : ℝ) :
@@ -234,9 +321,12 @@ theorem taylorMeasure_two_eq_neg_trValue {f : EuclideanSpace ℝ (Fin n) → ℝ
   rw [ftaylorSeries_taylorDecrement_eq, hT]
   constructor <;> intro h <;> linarith
 
-/-- **The tests (9.4.2) as (9.4.3)–(9.4.4)** ([cartis2022evaluation] §9.4.2): with
-`T_{f,2}(x, s) = f(x) + m(s)`, `φ^Δ_{f,2}(x) ≥ φᵁ` iff `m_Δ ≤ mᴸ` and `φ^Δ_{f,2}(x) ≤ φᴸ` iff
-`m_Δ ≥ mᵁ`, for `mᴸ = -φᵁ` and `mᵁ = -φᴸ` (and `M = I`). -/
+/-- **Equations (9.4.2)–(9.4.4)** of [cartis2022evaluation]. Let $f : \mathbb{R}^n \to \mathbb{R}$
+and $x \in \mathbb{R}^n$, and suppose that $T_{f,2}(x, s) = f(x) + m(s)$ for all $s$. Then for
+all $\Delta, \phi^L, \phi^U \in \mathbb{R}$, with $m_\Delta$ taken for $M = I$,
+$$\phi^\Delta_{f,2}(x) \ge \phi^U \iff m_\Delta \le -\phi^U, \qquad \phi^\Delta_{f,2}(x) \le
+  \phi^L \iff m_\Delta \ge -\phi^L.$$
+So the tests (9.4.2) are the tests (9.4.3)–(9.4.4) with $m^L = -\phi^U$ and $m^U = -\phi^L$. -/
 theorem test_9_4_2_iff {f : EuclideanSpace ℝ (Fin n) → ℝ} {x : EuclideanSpace ℝ (Fin n)}
     (hT : ∀ s, taylorPolynomial f 2 x s = f x + model g H s) (Δ φL φU : ℝ) :
     (φU ≤ Optimization.taylorMeasure (ftaylorSeries ℝ f x) 2 Δ univ ↔
@@ -246,8 +336,12 @@ theorem test_9_4_2_iff {f : EuclideanSpace ℝ (Fin n) → ℝ} {x : EuclideanSp
   rw [taylorMeasure_two_eq_neg_trValue hT]
   exact ⟨le_neg, neg_le⟩
 
-/-- For `f` twice differentiable at `x`, `T_{f,2}(x, s) = f(x) + m(s)` with `g = ∇f(x)` and
-`H = ∇²f(x)` (the matrix `Optimization.hessianMatrix f x`). -/
+/-- Let $f : \mathbb{R}^n \to \mathbb{R}$ be twice continuously differentiable near $x$. Then
+$T_{f,2}(x, s) = f(x) + m(s)$ for all $s$, where $m$ is the model (8.1.1) with $g = \nabla f(x)$
+and $H = \nabla^2 f(x)$.
+
+The Hessian matrix is `Optimization.hessianMatrix f x`, and the hypothesis on $f$ is
+`ContDiffAt ℝ 2 f x`. -/
 theorem taylorPolynomial_two_eq_model {f : EuclideanSpace ℝ (Fin n) → ℝ}
     {x : EuclideanSpace ℝ (Fin n)} (hf : ContDiffAt ℝ 2 f x) (s : EuclideanSpace ℝ (Fin n)) :
     taylorPolynomial f 2 x s =
@@ -256,18 +350,26 @@ theorem taylorPolynomial_two_eq_model {f : EuclideanSpace ℝ (Fin n) → ℝ}
     Optimization.toEuclideanLin_hessianMatrix hf]
   rfl
 
-/-- **The measure `φ^Δ_{f,2}` as an optimal value** ([cartis2022evaluation] §9.4.2, before
-(9.4.2)), in the book's form: for `f` twice differentiable at `x`,
-`φ^Δ_{f,2}(x) = -min_{‖s‖ ≤ Δ} m(s)` with `g = ∇f(x)`, `H = ∇²f(x)` and `M = I`. -/
+/-- **Section 9.4.2** of [cartis2022evaluation], before (9.4.2), the measure $\phi^\Delta_{f,2}$ as
+an optimal value. Let $f : \mathbb{R}^n \to \mathbb{R}$ be twice continuously differentiable
+near $x$. Then for every $\Delta$,
+$$\phi^\Delta_{f,2}(x) = -\min_{\|s\| \le \Delta} m(s),$$
+where $m$ is the model (8.1.1) with $g = \nabla f(x)$, $H = \nabla^2 f(x)$ and $M = I$.
+
+The hypothesis on $f$ is `ContDiffAt ℝ 2 f x`. -/
 theorem taylorMeasure_two_eq_neg_trValue_of_contDiffAt {f : EuclideanSpace ℝ (Fin n) → ℝ}
     {x : EuclideanSpace ℝ (Fin n)} (hf : ContDiffAt ℝ 2 f x) (Δ : ℝ) :
     Optimization.taylorMeasure (ftaylorSeries ℝ f x) 2 Δ univ =
       -trValue (gradient f x) (Optimization.hessianMatrix f x) 1 Δ :=
   taylorMeasure_two_eq_neg_trValue (taylorPolynomial_two_eq_model hf) Δ
 
-/-- **The tests (9.4.2) as (9.4.3)–(9.4.4)** ([cartis2022evaluation] §9.4.2), in the book's form:
-for `f` twice differentiable at `x`, `g = ∇f(x)`, `H = ∇²f(x)` and `M = I`,
-`φ^Δ_{f,2}(x) ≥ φᵁ` iff `m_Δ ≤ -φᵁ` and `φ^Δ_{f,2}(x) ≤ φᴸ` iff `m_Δ ≥ -φᴸ`. -/
+/-- **Equations (9.4.2)–(9.4.4)** of [cartis2022evaluation], in the form of the source. Let
+$f : \mathbb{R}^n \to \mathbb{R}$ be twice continuously differentiable near $x$, and let
+$m_\Delta$ be the optimal value for $g = \nabla f(x)$, $H = \nabla^2 f(x)$ and $M = I$. Then for
+all $\Delta, \phi^L, \phi^U \in \mathbb{R}$,
+$$\phi^\Delta_{f,2}(x) \ge \phi^U \iff m_\Delta \le -\phi^U, \qquad \phi^\Delta_{f,2}(x) \le
+  \phi^L \iff m_\Delta \ge -\phi^L.$$
+-/
 theorem test_9_4_2_iff_of_contDiffAt {f : EuclideanSpace ℝ (Fin n) → ℝ}
     {x : EuclideanSpace ℝ (Fin n)} (hf : ContDiffAt ℝ 2 f x) (Δ φL φU : ℝ) :
     (φU ≤ Optimization.taylorMeasure (ftaylorSeries ℝ f x) 2 Δ univ ↔
@@ -276,7 +378,12 @@ theorem test_9_4_2_iff_of_contDiffAt {f : EuclideanSpace ℝ (Fin n) → ℝ}
         -φL ≤ trValue (gradient f x) (Optimization.hessianMatrix f x) 1 Δ) :=
   test_9_4_2_iff (taylorPolynomial_two_eq_model hf) Δ φL φU
 
-/-- `‖(Δ/Δ⁺) s⁺‖_M ≤ Δ` when `‖s⁺‖_M = Δ⁺` and `0 ≤ Δ`, `0 ≤ Δ⁺` (equality unless `Δ⁺ = 0`). -/
+/-- **Section 9.4.2** of [cartis2022evaluation], the scaled point is feasible. Let $M$ be symmetric
+positive definite, $\Delta \ge 0$, $\Delta^+ \ge 0$ and $\|s^+\|_M = \Delta^+$. Then
+$\|(\Delta/\Delta^+) s^+\|_M \le \Delta$.
+
+The theorem states only the inequality; equality holds when $\Delta^+ > 0$. For $\Delta^+ = 0$
+the scale factor $\Delta/\Delta^+$ is $0$, by division by zero. -/
 theorem mNorm_div_smul_le (hM : M.PosDef) {Δ Δ' : ℝ} (hΔ : 0 ≤ Δ) (hΔ' : 0 ≤ Δ')
     {s : EuclideanSpace ℝ (Fin n)} (hs : mNorm M s = Δ') : mNorm M ((Δ / Δ') • s) ≤ Δ := by
   rw [mNorm_eq_norm_toScaled hM, map_smul, norm_smul, ← mNorm_eq_norm_toScaled hM, hs,
@@ -285,9 +392,11 @@ theorem mNorm_div_smul_le (hM : M.PosDef) {Δ Δ' : ℝ} (hΔ : 0 ≤ Δ) (hΔ' 
   · simpa using hΔ
   · rw [div_mul_cancel₀ _ hpos.ne']
 
-/-- **Test (9.4.3) from (9.4.6)** ([cartis2022evaluation] §9.4.2): if `0 ≤ Δ ≤ Δ⁺`,
-`‖s⁺‖_M = Δ⁺` and `m(α⁺ s⁺) ≤ mᴸ` with `α⁺ = Δ/Δ⁺`, then `m_Δ ≤ mᴸ`, and `α⁺ s⁺` is a feasible
-exemplar: `‖α⁺ s⁺‖_M ≤ Δ` with `m(α⁺ s⁺) ≤ mᴸ`. -/
+/-- **Section 9.4.2** of [cartis2022evaluation], test (9.4.3) from (9.4.6). Let $M$ be symmetric
+positive definite, $0 \le \Delta \le \Delta^+$ and $\|s^+\|_M = \Delta^+$, and let
+$\alpha^+ = \Delta/\Delta^+$. If $m(\alpha^+ s^+) \le m^L$, then $m_\Delta \le m^L$, and
+$\alpha^+ s^+$ is a feasible exemplar: $\|\alpha^+ s^+\|_M \le \Delta$ and
+$m(\alpha^+ s^+) \le m^L$. -/
 theorem test_9_4_3_of_9_4_6 (hM : M.PosDef) {Δ Δp mL : ℝ} {sp : EuclideanSpace ℝ (Fin n)}
     (hΔ : 0 ≤ Δ) (h : Δ ≤ Δp) (hsp : mNorm M sp = Δp) (hL : model g H ((Δ / Δp) • sp) ≤ mL) :
     trValue g H M Δ ≤ mL ∧ mNorm M ((Δ / Δp) • sp) ≤ Δ := by
@@ -296,15 +405,20 @@ theorem test_9_4_3_of_9_4_6 (hM : M.PosDef) {Δ Δp mL : ℝ} {sp : EuclideanSpa
   rw [← trValue_eq hM, ← map_smul, ← model_eq_quadModel hM] at this
   exact ⟨this.trans hL, mNorm_div_smul_le hM hΔ (hΔ.trans h) hsp⟩
 
-/-- **Test (9.4.4) from (9.4.6)** ([cartis2022evaluation] §9.4.2): if `0 ≤ Δ ≤ Δ⁺` and
-`m_{Δ⁺} ≥ mᵁ`, then `m_Δ ≥ mᵁ`. -/
+/-- **Section 9.4.2** of [cartis2022evaluation], test (9.4.4) from (9.4.6). Let $M$ be symmetric
+positive definite and $0 \le \Delta \le \Delta^+$. If $m_{\Delta^+} \ge m^U$, then
+$m_\Delta \ge m^U$. -/
 theorem test_9_4_4_of_9_4_6 (hM : M.PosDef) {Δ Δp mU : ℝ} (hΔ : 0 ≤ Δ) (h : Δ ≤ Δp)
     (hU : mU ≤ trValue g H M Δp) : mU ≤ trValue g H M Δ :=
   hU.trans (trValue_antitone hM hΔ h)
 
-/-- **Test (9.4.3) from (9.4.7)** ([cartis2022evaluation] §9.4.2): if `0 ≤ Δ⁻ ≤ Δ`,
-`‖s⁻‖_M = Δ⁻` and `min(m(α⁻ s⁻), m_{Δ⁻}) ≤ mᴸ` with `α⁻ = Δ/Δ⁻`, then `m_Δ ≤ mᴸ`, with a feasible
-exemplar `s`, `‖s‖_M ≤ Δ` and `m(s) ≤ mᴸ` (`α⁻ s⁻` or a minimizer for the radius `Δ⁻`). -/
+/-- **Section 9.4.2** of [cartis2022evaluation], test (9.4.3) from (9.4.7). Let $M$ be symmetric
+positive definite, $0 \le \Delta^- \le \Delta$ and $\|s^-\|_M = \Delta^-$, and let
+$\alpha^- = \Delta/\Delta^-$. If $\min(m(\alpha^- s^-), m_{\Delta^-}) \le m^L$, then
+$m_\Delta \le m^L$, and there is a feasible exemplar $s$ with $\|s\|_M \le \Delta$ and
+$m(s) \le m^L$.
+
+The exemplar is $\alpha^- s^-$ or a minimizer for the radius $\Delta^-$. -/
 theorem test_9_4_3_of_9_4_7 (hM : M.PosDef) {Δ Δm mL : ℝ}
     {sm : EuclideanSpace ℝ (Fin n)} (hΔm : 0 ≤ Δm) (h : Δm ≤ Δ) (hsm : mNorm M sm = Δm)
     (hL : min (model g H ((Δ / Δm) • sm)) (trValue g H M Δm) ≤ mL) :
@@ -315,11 +429,20 @@ theorem test_9_4_3_of_9_4_7 (hM : M.PosDef) {Δ Δm mL : ℝ}
   · obtain ⟨s, hs, hval⟩ := exists_trValue_eq (g := g) (H := H) hM hΔm
     exact ⟨s, hs.1.trans h, hval ▸ h2⟩
 
-/-- **The tests from `λ⁺ ∈ 𝓛`** ([cartis2022evaluation] §9.4.2, after (9.4.7)): for
-`λ⁺ ∈ 𝓛`, `Δ⁺ = Δ(λ⁺) = ‖s(λ⁺)‖_M ≥ Δ` is a suitable radius for (9.4.6), with the computable
-value `m_{Δ⁺} = ½ (⟪g, s(λ⁺)⟫ - λ⁺ Δ(λ⁺)²)`: (9.4.3) holds if `m(α⁺ s(λ⁺)) ≤ mᴸ` and (9.4.4)
-holds if `½ (⟪g, s(λ⁺)⟫ - λ⁺ Δ(λ⁺)²) ≥ mᵁ`; in the first case `α⁺ s(λ⁺)` is a feasible
-exemplar with `m ≤ mᴸ`. -/
+/-- **Section 9.4.2** of [cartis2022evaluation], after (9.4.7), the tests from
+$\lambda^+ \in \mathcal{L}$. Let $H$ be symmetric, $M$ symmetric positive definite,
+$\Delta \ge 0$, and let $\lambda^+$ lie in the trust-region set $\mathcal{L}$ for $\Delta$. Let
+$\Delta^+ = \|s(\lambda^+)\|_M$, so that $\Delta^+ \ge \Delta$, and
+$\alpha^+ = \Delta/\Delta^+$. Then:
+
+* if $m(\alpha^+ s(\lambda^+)) \le m^L$, then $m_\Delta \le m^L$, and there is $s$ with
+  $\|s\|_M \le \Delta$ and $m(s) \le m^L$;
+* if $\frac12 (\langle g, s(\lambda^+) \rangle - \lambda^+ (\Delta^+)^2) \ge m^U$, then
+  $m_\Delta \ge m^U$.
+
+The radius $\Delta^+$ is suitable for (9.4.6), with the computable value $m_{\Delta^+} = \frac12
+(\langle g, s(\lambda^+) \rangle - \lambda^+ (\Delta^+)^2)$. In the first case,
+$\alpha^+ s(\lambda^+)$ is a feasible exemplar. -/
 theorem tests_9_4_3_9_4_4_of_setL (hH : H.IsHermitian) (hM : M.PosDef) {Δ lam mL mU : ℝ}
     (hΔ : 0 ≤ Δ) (hlam : lam ∈ setL_tr hH hM g Δ) :
     (model g H ((Δ / mNorm M (stepOf g H M lam)) • stepOf g H M lam) ≤ mL →
@@ -331,10 +454,16 @@ theorem tests_9_4_3_9_4_4_of_setL (hH : H.IsHermitian) (hM : M.PosDef) {Δ lam m
   obtain ⟨h1, h2⟩ := test_9_4_3_of_9_4_6 hM hΔ hlam.2 rfl hL
   exact ⟨h1, _, h2, hL⟩
 
-/-- **Test (9.4.3) from `λ⁻ ∈ 𝓖`** ([cartis2022evaluation] §9.4.2, after (9.4.7)): for
-`λ⁻ ∈ 𝓖`, `Δ⁻ = Δ(λ⁻) = ‖s(λ⁻)‖_M < Δ` is a suitable radius for (9.4.7), and (9.4.3) holds if
-`min(m(α⁻ s(λ⁻)), ½ (⟪g, s(λ⁻)⟫ - λ⁻ Δ(λ⁻)²)) ≤ mᴸ`, with a feasible exemplar `s`,
-`‖s‖_M ≤ Δ` and `m(s) ≤ mᴸ`. -/
+/-- **Section 9.4.2** of [cartis2022evaluation], after (9.4.7), test (9.4.3) from
+$\lambda^- \in \mathcal{G}$. Let $H$ be symmetric, $M$ symmetric positive definite, and let
+$\lambda^-$ lie in the trust-region set $\mathcal{G}$ for $\Delta$. Let
+$\Delta^- = \|s(\lambda^-)\|_M$, so that $\Delta^- < \Delta$, and $\alpha^- = \Delta/\Delta^-$.
+If
+$$\min\Bigl(m(\alpha^- s(\lambda^-)), \tfrac12 \bigl(\langle g, s(\lambda^-) \rangle - \lambda^-
+  (\Delta^-)^2\bigr)\Bigr) \le m^L,$$
+then $m_\Delta \le m^L$, and there is $s$ with $\|s\|_M \le \Delta$ and $m(s) \le m^L$.
+
+The radius $\Delta^-$ is suitable for (9.4.7), with the computable value $m_{\Delta^-}$. -/
 theorem test_9_4_3_of_setG (hH : H.IsHermitian) (hM : M.PosDef) {Δ lam mL : ℝ}
     (hlam : lam ∈ setG_tr hH hM g Δ)
     (hL : min (model g H ((Δ / mNorm M (stepOf g H M lam)) • stepOf g H M lam))
@@ -343,9 +472,14 @@ theorem test_9_4_3_of_setG (hH : H.IsHermitian) (hM : M.PosDef) {Δ lam mL : ℝ
   have hval := (optimalValue_bounds_9_4_6 (g := g) hH hM).2.2.2.2 lam hlam.1
   exact test_9_4_3_of_9_4_7 hM (mNorm_nonneg _ _) hlam.2.le rfl (hval ▸ hL)
 
-/-- **Footnote 65 of [cartis2022evaluation]**: for `λ ∈ 𝓖`,
-`m_{Δ(λ)} ≥ ½ (⟪g, s(λ)⟫ - λ Δ²)` (indeed `m_{Δ(λ)} = ½ (⟪g, s(λ)⟫ - λ Δ(λ)²)` and
-`Δ(λ) < Δ`). -/
+/-- **Footnote 65** of [cartis2022evaluation]. Let $H$ be symmetric, $M$ symmetric positive
+definite, and let $\lambda$ lie in the trust-region set $\mathcal{G}$ for $\Delta$. Then, with
+$\Delta(\lambda) = \|s(\lambda)\|_M$,
+$$m_{\Delta(\lambda)} \ge \tfrac12 \bigl(\langle g, s(\lambda) \rangle - \lambda
+  \Delta^2\bigr).$$
+
+The proof uses $m_{\Delta(\lambda)} = \frac12 (\langle g, s(\lambda) \rangle - \lambda
+\Delta(\lambda)^2)$ and $\Delta(\lambda) < \Delta$. -/
 theorem trValue_ge_of_setG (hH : H.IsHermitian) (hM : M.PosDef) {Δ lam : ℝ}
     (hlam : lam ∈ setG_tr hH hM g Δ) :
     1 / 2 * (⟪g, stepOf g H M lam⟫ - lam * Δ ^ 2) ≤

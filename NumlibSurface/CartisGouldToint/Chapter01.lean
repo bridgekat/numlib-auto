@@ -5,37 +5,21 @@ Released under Apache 2.0 license as described in the file LICENSE.
 import NumlibSurface.CartisGouldToint.Chapter01.Section01
 
 /-!
-# Cartis–Gould–Toint, Chapter 1: Introduction
+# Cartis, Gould and Toint, Chapter 1: Introduction
 
-Surface of [cartis2022evaluation] Chapter 1. Only §1.1, "Nonlinear optimization and optimality
-conditions", has numbered results; §§1.2–1.4 (the history and scope of evaluation complexity)
-contain none. This module imports the section module and adds nothing of its own.
+This module collects the formalization of Chapter 1 of [cartis2022evaluation]. Only §1.1, "Nonlinear
+optimization and optimality conditions", has numbered results: the Lagrangian, active sets, the
+linear independence constraint qualification (LICQ) and KKT pairs, the first-, second- and
+third-order optimality conditions of Theorems 1.1.1–1.1.4, and the criticality measures $\omega_1$
+and $\omega_2$. Each clause of Theorems 1.1.1–1.1.4 is a declaration of its own. The least
+eigenvalue $\lambda_{\min}[\nabla^2 f(x)]$ of the Hessian is
+`CartisGouldToint.Chapter01.hessianMinEig`, which every later chapter uses. Sections 1.2–1.4, on the
+history and the scope of evaluation complexity, contain no numbered results. The module imports the
+section module and adds nothing of its own.
 
-* §1.1, `Chapter01.Section01`: Lagrangian, active sets, LICQ, KKT pairs; Theorems 1.1.1–1.1.4; the
-  measures `ω₁`, `ω₂`
+## Contents
 
-Each clause of Theorems 1.1.1–1.1.4 is a declaration of its own (`theorem_1_1_2_i` …
-`theorem_1_1_2_iv`, and so on). The least Hessian eigenvalue `λ_min[∇²f(x)]` is `hessianMinEig`,
-used by every later chapter.
-
-## Deviations from the book
-
-Kinds (**false**, **gap**, **typo**, **reading**) as in the book index `CartisGouldToint`.
-
-* Theorem 1.1.2, converse: **false** with strict curvature on the radial directions `𝒞(x*)`
-  (`theorem_1_1_2_iv_counterexample`, on `C = {v ≥ u²}`); proved on the tangent cone
-  (`theorem_1_1_2_iv`).
-* (1.1.15), (1.1.18): **typo**, quantified over `d ≠ 0`, as `d = 0` makes the strict inequality
-  unsatisfiable (`theorem_1_1_3_iii`, `theorem_1_1_4_iii`).
-* "A constraint qualification": **reading**, LICQ (`licq`).
-* Theorem 1.1.1, third order: **reading**, the book's `∇²f(x*) d = 0` is written
-  `∀ w, ∇²f(x*)[d, w] = 0` (`theorem_1_1_1_iii`).
-* (1.1.14), (1.1.17): **reading**, proved for every multiplier satisfying the first-order
-  conditions (`theorem_1_1_3_ii`, `theorem_1_1_4_ii`).
-
-## Not formalized
-
-The tensor-product notation (1.1.2); the equivalent "minimum over the unit ball" forms
-(1.1.10)–(1.1.12), (1.1.19); the projection form of (1.1.6); the reduced-Hessian reformulation of
-(1.1.14)–(1.1.15); the hardness remarks.
+| Source | Module | Subject |
+|---|---|---|
+| §1.1 Optimality conditions | `Chapter01.Section01` | LICQ, KKT pairs; Theorems 1.1.1–1.1.4 |
 -/

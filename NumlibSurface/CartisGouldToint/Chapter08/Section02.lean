@@ -7,55 +7,117 @@ import Numlib.Optimization.Subproblem.SecularIteration
 import NumlibSurface.CartisGouldToint.Chapter08.Section01
 
 /-!
-# Cartis–Gould–Toint §8.2: A digression on all things secular
+# Cartis, Gould and Toint, Section 8.2: A digression on all things secular
 
-Surface file for [cartis2022evaluation] §8.2: the secular function of the subproblems (8.1.2) and
-(8.1.3), for a symmetric `H` and a symmetric positive definite `M` on `ℝⁿ`.
+This module formalizes Section 8.2 of [cartis2022evaluation]. Let $g \in \mathbb{R}^n$, let
+$H \in \mathbb{R}^{n \times n}$ be symmetric, and let $M \in \mathbb{R}^{n \times n}$ be symmetric
+positive definite. For a shift $\lambda$ the step $s(\lambda)$ solves $(H + \lambda M) s = -g$
+(8.2.2), and the secular function is $\pi(\lambda) = \|s(\lambda)\|_M^2$ (8.2.4). Let $\lambda_1$ be
+the least eigenvalue of the pencil $(H, M)$ and $\lambda_s = \max(0, -\lambda_1)$. On
+$(\lambda_s, \infty)$ the matrix $H + \lambda M$ is positive definite, and $\pi$ has the spectral
+form (8.2.6)–(8.2.7). The section proves that the secular equation $\pi(\lambda) = \tau(\lambda)$
+has a unique root for suitable targets $\tau$ (Lemma 8.2.1), Taylor bounds for $\pi$ (Theorem
+8.2.2), the signs of the derivatives of the transformed secular function
+$\pi(\lambda; \beta) = \pi(\lambda)^\beta$ and its monotonicity and convexity (Lemma 8.2.3,
+Corollary 8.2.4), first-order Taylor bounds for $\pi(\lambda; \beta)$ (Theorem 8.2.5), a formula for
+the derivatives of $\pi$ (Theorem 8.2.6), and the global optimality conditions of the trust-region
+subproblem (8.1.2) and the regularization subproblem (8.1.3) (Theorems 8.2.7 and 8.2.8).
+
+All proofs transport the operator backbone `Numlib.Optimization.Subproblem` through the $M$-inner
+product space `Subproblem.ScaledSpace`. There, $\pi$ is the operator secular function of $M^{-1} g$
+and $M^{-1} H$ for every $\lambda$ (`CartisGouldToint.Chapter08.secularFn_eq_secular`).
 
 ## Main definitions
 
-* `stepOf g H M λ` — the step `s(λ) = (H + λ M)⁻¹ (-g)` of (8.2.2).
-* `secularFn g H M λ` — the secular function `π(λ) = ⟪s(λ), M s(λ)⟫` (8.2.4); the transformed
-  secular function `π(λ; β)` of (8.2.17) is `secularFn g H M λ ^ β`.
-* `leftmostPencil hH hM` — the leftmost eigenvalue `λ₁` of the pencil `(H, M)`, and
-  `lambdaS hH hM = max 0 (-λ₁)`, the book's `λₛ`.
-* `secularTaylorPoly g H M λc k δ` — the Taylor polynomial `t_k(δ)` (8.2.12).
-* `secularDerivVec g H M λ k`, `alphaCoeff k` — the vectors `s⁽ᵏ⁾(λ)` of (8.2.29) and the
-  coefficients `αₖ` of (8.2.30).
+* Equation (8.2.2), `CartisGouldToint.Chapter08.stepOf`: the step
+  $s(\lambda) = -(H + \lambda M)^{-1} g$.
+* Equation (8.2.4), `CartisGouldToint.Chapter08.secularFn`: the secular function $\pi(\lambda) =
+  \langle s(\lambda), M s(\lambda) \rangle$.
+* Equation (8.2.5), `CartisGouldToint.Chapter08.leftmostPencil`: the least eigenvalue $\lambda_1$ of
+  the pencil $(H, M)$.
+* Lemma 8.2.1, `CartisGouldToint.Chapter08.lambdaS`: the threshold
+  $\lambda_s = \max(0, -\lambda_1)$.
+* Lemma 8.2.1, `CartisGouldToint.Chapter08.IsAdmissibleTarget`: the hypotheses of Lemma 8.2.1 on a
+  target $\tau$.
+* Equation (8.2.12), `CartisGouldToint.Chapter08.secularTaylorPoly`: the Taylor polynomial
+  $t_k(\delta)$ of $\pi$.
+* Equation (8.2.29), `CartisGouldToint.Chapter08.secularDerivVec`: the vectors $s^{(k)}(\lambda)$.
+* Equation (8.2.30), `CartisGouldToint.Chapter08.alphaCoeff`: the coefficients $\alpha_k$.
+* Theorem 8.2.7, `CartisGouldToint.Chapter08.IsTrustRegionKKT`: the multiplier conditions
+  (8.2.31)–(8.2.32) of the trust-region subproblem.
 
 ## Main results
 
-* `secularFn_eq_sum`, `exists_pencil_eigenbasis` — the spectral form (8.2.6)–(8.2.7).
-* `lambdaS_lt_iff` — `λ > λₛ` iff `λ > 0` and `H + λ M ≻ 0`.
-* `lemma_8_2_1`, `IsAdmissibleTarget.lemma_8_2_1` — the root of the secular equation;
-  `tau_admissible_8_2_9` — the targets (8.2.9) are admissible.
-* `theorem_8_2_2`, `theorem_8_2_2_strict` — Taylor bounds (8.2.13)–(8.2.14).
-* `lemma_8_2_3`, `lemma_8_2_3_strict` — signs of the derivatives of `π(λ; β)`.
-* `corollary_8_2_4` — monotonicity and convexity of `π(λ; β)`; `corollary_8_2_4_tendsto_lambdaS` —
-  its right limit at `λₛ`.
-* `theorem_8_2_5`, `theorem_8_2_5_strict` — first-order Taylor bounds (8.2.20)–(8.2.21).
-* `theorem_8_2_6` — derivatives of the secular function (8.2.27)–(8.2.30).
-* `theorem_8_2_7`, `theorem_8_2_8` — global optimality of the two subproblems.
+* Equation (8.2.5), `CartisGouldToint.Chapter08.exists_pencil_eigenbasis`: there are $V$ and
+  $\Lambda$ with $H V = M V \Lambda$ and $V^T M V = I$.
+* Equations (8.2.6)–(8.2.7), `CartisGouldToint.Chapter08.secularFn_eq_sum`: $\pi(\lambda) = \sum_i
+  (\gamma_i / (\lambda + \lambda_i))^2$ with $\gamma = V^T g$.
+* Lemma 8.2.1, `CartisGouldToint.Chapter08.lemma_8_2_1` and
+  `CartisGouldToint.Chapter08.IsAdmissibleTarget.lemma_8_2_1`: the secular equation
+  $\pi(\lambda) = \tau(\lambda)$ has a unique root $\lambda_* > \lambda_s$.
+* Equation (8.2.9), `CartisGouldToint.Chapter08.tau_admissible_8_2_9`: the targets $\Delta^2$ and
+  $(\lambda / \sigma)^{2/(r-2)}$ satisfy the hypotheses of Lemma 8.2.1.
+* Theorem 8.2.2, `CartisGouldToint.Chapter08.theorem_8_2_2` and
+  `CartisGouldToint.Chapter08.theorem_8_2_2_strict`: the Taylor polynomials of $\pi$ are alternately
+  upper and lower bounds (8.2.13)–(8.2.14).
+* Lemma 8.2.3, `CartisGouldToint.Chapter08.lemma_8_2_3` and
+  `CartisGouldToint.Chapter08.lemma_8_2_3_strict`: the signs of the first two derivatives of
+  $\pi(\lambda; \beta)$.
+* Corollary 8.2.4, `CartisGouldToint.Chapter08.corollary_8_2_4` and
+  `CartisGouldToint.Chapter08.corollary_8_2_4_tendsto_lambdaS`: monotonicity, convexity and limits
+  of $\pi(\lambda; \beta)$.
+* Theorem 8.2.5, `CartisGouldToint.Chapter08.theorem_8_2_5` and
+  `CartisGouldToint.Chapter08.theorem_8_2_5_strict`: the first-order Taylor bounds (8.2.20)–(8.2.21)
+  for $\pi(\lambda; \beta)$.
+* Theorem 8.2.6, `CartisGouldToint.Chapter08.theorem_8_2_6`: the derivatives (8.2.27)–(8.2.28) of
+  $\pi$.
+* Theorem 8.2.7, `CartisGouldToint.Chapter08.theorem_8_2_7`: a global minimizer of the trust-region
+  subproblem has a multiplier, and it is unique if $H + \lambda_* M$ is positive definite.
+* Theorem 8.2.8, `CartisGouldToint.Chapter08.theorem_8_2_8`: the same for the regularization
+  subproblem, with $\lambda_* = \sigma \|s_*\|_M^{r-2}$.
+* `CartisGouldToint.Chapter08.lambdaS_lt_iff`: for $n \ge 1$, $\lambda > \lambda_s$ if and only if
+  $\lambda > 0$ and $H + \lambda M$ is positive definite.
+* `CartisGouldToint.Chapter08.isTrustRegionSolution_of_kkt` and
+  `CartisGouldToint.Chapter08.isRegularizationSolution_of_shifted`: the optimality conditions of
+  Theorems 8.2.7 and 8.2.8 are also sufficient.
 
-All proofs transport the backbone `Numlib.Optimization.Subproblem` through the `M`-inner product
-space `Subproblem.ScaledSpace hM`: the secular function is the operator secular function of
-`M⁻¹ g` and `M⁻¹ H` for every `λ` (`secularFn_eq_secular`).
+## Conventions
 
-## Corrections to the source
+* "$H$ is symmetric" is `H.IsHermitian`, and "$M$ is positive definite" is `M.PosDef`.
+* The eigenvalues of the pencil $(H, M)$ are `Matrix.pencilEigenvalues`. A generalized eigenvector
+  $v$ of $(H, M)$ satisfies $H v = c M v$ for some $c \in \mathbb{R}$.
+* The transformed secular function $\pi(\lambda; \beta)$ of (8.2.17) is `secularFn g H M λ ^ β`,
+  with the real power `Real.rpow`.
 
-* Lemma 8.2.1: `π(λₛ) > τ(λₛ)` is read as `π(λ) ≥ c > τ(λₛ)` for `λ` near `λₛ` from the right
-  (`λₛ` may be a pole), and `τ` is assumed right-continuous at `λₛ` (the book assumes continuity
-  only on `(λₛ, ∞)` but uses `τ(λₛ)`).
-* Lemma 8.2.3, Theorem 8.2.5: the strict inequalities need `g ≠ 0`, and for `β = -1/2` they fail
-  exactly when `g = M v` for a generalized eigenvector `v` of `(H, M)` (then `π(λ; -1/2)` is
-  affine: `n = 1`, `H = 0`, `M = 1`, `g = 1` gives `π(λ; -1/2) = λ`); Theorem 8.2.5 also needs
-  `δ ≠ 0` for strictness. Corollary 8.2.4 needs `g ≠ 0` (for `g = 0` the function is constant).
-* Corollary 8.2.4: the starting value "`π(λₛ; β)`" is read as the right limit at `λₛ`
-  (`corollary_8_2_4_tendsto_lambdaS`), which may be `+∞` for `β > 0` when `λₛ = -λ₁` is a pole.
-* Theorem 8.2.2: the book states it for `k > 0`; it holds for every `k`.
-* The convexity of `-λ^γ` (`γ ∈ (0, 1]`) and the concavity of `λ^γ` (`γ < 0`) used for the
-  transformed secular equations are stated on `λ ≥ λₛ`, which may contain `0` when `λ₁ ≥ 0`; they
-  hold on `λ > 0`.
+## Implementation notes
+
+* The step $s(\lambda)$ and $\pi(\lambda)$ are defined for every $\lambda$. Where $H + \lambda M$ is
+  singular, the inverse is $0$ by the Mathlib convention, so that $s(\lambda) = 0$ and
+  $\pi(\lambda) = 0$. These junk values occur at the poles of $\pi$.
+* For $n = 0$ the least pencil eigenvalue $\lambda_1$ is $0$.
+
+## Deviations from the source
+
+* **Lemma 8.2.1** (reading). The hypothesis $\pi(\lambda_s) > \tau(\lambda_s)$ is read as
+  $\pi(\lambda) \ge c > \tau(\lambda_s)$ for $\lambda$ near $\lambda_s$ from the right, and $\tau$
+  is assumed right-continuous at $\lambda_s$. See `CartisGouldToint.Chapter08.lemma_8_2_1`.
+* **Theorem 8.2.2** (generalization). The source states it for $k > 0$. It holds for every
+  $k \ge 0$. See `CartisGouldToint.Chapter08.theorem_8_2_2`.
+* **Lemma 8.2.3** (correction). The strict inequalities fail for $g = 0$, and for $\beta = -1/2$
+  when $g = M v$ for a generalized eigenvector $v$. See
+  `CartisGouldToint.Chapter08.lemma_8_2_3_strict`.
+* **Corollary 8.2.4** (correction). The statement needs $g \neq 0$; for $g = 0$ the function
+  $\pi(\lambda; \beta)$ is constant. See `CartisGouldToint.Chapter08.corollary_8_2_4`.
+* **Corollary 8.2.4** (reading). The starting value "$\pi(\lambda_s; \beta)$" is the right limit at
+  $\lambda_s$, which can be $+\infty$. See
+  `CartisGouldToint.Chapter08.corollary_8_2_4_tendsto_lambdaS`.
+* **Theorem 8.2.5** (correction). The strict inequalities fail for $g = 0$ and for $\delta = 0$, and
+  (8.2.21) is an equality for $\beta = -1/2$ when $g = M v$ for a generalized eigenvector $v$. See
+  `CartisGouldToint.Chapter08.theorem_8_2_5_strict`.
+* **Section 8.2, transformed secular equations** (correction). The source claims the convexity of
+  $-\lambda^\gamma$ for $\gamma \in (0, 1]$ and the concavity of $\lambda^\gamma$ for $\gamma < 0$
+  on $\lambda \ge \lambda_s$. This interval can contain $0$ when $\lambda_1 \ge 0$. The two
+  properties hold on $\lambda > 0$.
 -/
 
 open Matrix Set Filter Topology
@@ -70,93 +132,132 @@ variable {n : ℕ}
 
 /-! ### The step and the secular function -/
 
-/-- The **step** `s(λ) = (H + λ M)⁻¹ (-g)` solving (8.2.2) of [cartis2022evaluation] when
-`H + λ M` is nonsingular (it is `0` otherwise, by the convention `A⁻¹ = 0` for singular `A`). -/
+/-- **Equation (8.2.2)** of [cartis2022evaluation]. Let $g \in \mathbb{R}^n$,
+$H, M \in \mathbb{R}^{n \times n}$ and $\lambda \in \mathbb{R}$. The **step** is
+$$s(\lambda) = (H + \lambda M)^{-1} (-g).$$
+If $H + \lambda M$ is nonsingular, $s(\lambda)$ is the solution of $(H + \lambda M) s = -g$.
+
+If $H + \lambda M$ is singular, the Mathlib convention $A^{-1} = 0$ gives $s(\lambda) = 0$. -/
 noncomputable def stepOf (g : EuclideanSpace ℝ (Fin n)) (H M : Matrix (Fin n) (Fin n) ℝ)
     (lam : ℝ) : EuclideanSpace ℝ (Fin n) :=
   toEuclideanLin (H + lam • M)⁻¹ (-g)
 
+/-- The definition of the step, unfolded: $s(\lambda) = (H + \lambda M)^{-1} (-g)$. -/
 theorem stepOf_def (g : EuclideanSpace ℝ (Fin n)) (H M : Matrix (Fin n) (Fin n) ℝ) (lam : ℝ) :
     stepOf g H M lam = toEuclideanLin (H + lam • M)⁻¹ (-g) :=
   rfl
 
-/-- The **secular function** `π(λ) = ⟪s(λ), M s(λ)⟫ = ‖s(λ)‖_M²` of [cartis2022evaluation]
-(8.2.4). The transformed secular function `π(λ; β)` of (8.2.17) is `secularFn g H M λ ^ β`. -/
+/-- **Equation (8.2.4)** of [cartis2022evaluation]. Let $g \in \mathbb{R}^n$,
+$H, M \in \mathbb{R}^{n \times n}$ and $\lambda \in \mathbb{R}$. The **secular function** is
+$$\pi(\lambda) = \langle s(\lambda), M s(\lambda) \rangle,$$
+which is $\|s(\lambda)\|_M^2$ for a positive definite $M$.
+
+The transformed secular function $\pi(\lambda; \beta)$ of (8.2.17) is
+`CartisGouldToint.Chapter08.secularFn g H M λ ^ β`. Where $H + \lambda M$ is singular,
+$s(\lambda) = 0$ and so $\pi(\lambda) = 0$. -/
 noncomputable def secularFn (g : EuclideanSpace ℝ (Fin n)) (H M : Matrix (Fin n) (Fin n) ℝ)
     (lam : ℝ) : ℝ :=
   ⟪stepOf g H M lam, toEuclideanLin M (stepOf g H M lam)⟫
 
+/-- The definition of the secular function, unfolded: $\pi(\lambda) = \langle s(\lambda), M
+s(\lambda) \rangle$. -/
 theorem secularFn_def (g : EuclideanSpace ℝ (Fin n)) (H M : Matrix (Fin n) (Fin n) ℝ) (lam : ℝ) :
     secularFn g H M lam = ⟪stepOf g H M lam, toEuclideanLin M (stepOf g H M lam)⟫ :=
   rfl
 
-/-- The **leftmost eigenvalue** `λ₁` of the pencil `(H, M)` ([cartis2022evaluation] (8.2.5)):
-the least of `Matrix.pencilEigenvalues hH hM` (and `0` when `n = 0`). -/
+/-- **Equation (8.2.5)** of [cartis2022evaluation], the leftmost eigenvalue. Let $H$ be symmetric
+and $M$ be positive definite. The **leftmost eigenvalue** $\lambda_1$ of the pencil $(H, M)$ is
+the least of the eigenvalues `Matrix.pencilEigenvalues`, that is, the least $\lambda$ with
+$H v = \lambda M v$ for some $v \neq 0$.
+
+For $n = 0$ the value is $0$, the infimum of the empty family in Mathlib. -/
 noncomputable def leftmostPencil {H M : Matrix (Fin n) (Fin n) ℝ} (hH : H.IsHermitian)
     (hM : M.PosDef) : ℝ :=
   ⨅ i, pencilEigenvalues hH hM i
 
-/-- The threshold `λₛ = max(0, -λ₁)` of Lemma 8.2.1 of [cartis2022evaluation]. -/
+/-- **Lemma 8.2.1** of [cartis2022evaluation], the threshold. Let $H$ be symmetric and $M$ be
+positive definite, with leftmost pencil eigenvalue $\lambda_1$. The **threshold** is
+$$\lambda_s = \max(0, -\lambda_1).$$
+-/
 noncomputable def lambdaS {H M : Matrix (Fin n) (Fin n) ℝ} (hH : H.IsHermitian)
     (hM : M.PosDef) : ℝ :=
   max 0 (-leftmostPencil hH hM)
 
+/-- The definition of the threshold, unfolded: $\lambda_s = \max(0, -\lambda_1)$. -/
 theorem lambdaS_def {H M : Matrix (Fin n) (Fin n) ℝ} (hH : H.IsHermitian) (hM : M.PosDef) :
     lambdaS hH hM = max 0 (-leftmostPencil hH hM) :=
   rfl
 
 variable {g : EuclideanSpace ℝ (Fin n)} {H M : Matrix (Fin n) (Fin n) ℝ}
 
-/-- The leftmost pencil eigenvalue is the leftmost eigenvalue of the scaled operator `M⁻¹ H`. -/
+/-- The leftmost eigenvalue of the pencil $(H, M)$ is the leftmost eigenvalue `Subproblem.leftmost`
+of the scaled operator $M^{-1} H$ on the $M$-inner product space. -/
 theorem leftmostPencil_eq (hH : H.IsHermitian) (hM : M.PosDef) :
     leftmostPencil hH hM = leftmost (isSymmetric_scaledOp (hM := hM) hH) :=
   (leftmost_scaledOp hH).symm
 
-/-- `λₛ` is the shift threshold of the scaled operator `M⁻¹ H`. -/
+/-- The threshold $\lambda_s$ is the shift threshold `Subproblem.shiftThreshold` of the scaled
+operator $M^{-1} H$ on the $M$-inner product space. -/
 theorem lambdaS_eq (hH : H.IsHermitian) (hM : M.PosDef) :
     lambdaS hH hM = shiftThreshold (isSymmetric_scaledOp (hM := hM) hH) := by
   rw [lambdaS, shiftThreshold, leftmostPencil_eq]
 
+/-- The threshold is nonnegative: $\lambda_s \ge 0$. -/
 theorem lambdaS_nonneg (hH : H.IsHermitian) (hM : M.PosDef) : 0 ≤ lambdaS hH hM :=
   le_max_left _ _
 
+/-- The threshold is at least $-\lambda_1$: $-\lambda_1 \le \lambda_s$. -/
 theorem neg_leftmostPencil_le_lambdaS (hH : H.IsHermitian) (hM : M.PosDef) :
     -leftmostPencil hH hM ≤ lambdaS hH hM :=
   le_max_right _ _
 
-/-- Above `λₛ` the shift `λ` lies above `-λ₁` of the scaled operator. -/
+/-- If $\lambda > \lambda_s$, then $\lambda > -\lambda_1$, where $\lambda_1$ is the leftmost
+eigenvalue of the scaled operator $M^{-1} H$. -/
 theorem neg_leftmost_lt_of_lambdaS_lt (hH : H.IsHermitian) (hM : M.PosDef) {lam : ℝ}
     (h : lambdaS hH hM < lam) : -leftmost (isSymmetric_scaledOp (hM := hM) hH) < lam := by
   rw [lambdaS_eq] at h
   exact (neg_leftmost_le_shiftThreshold).trans_lt h
 
-/-- `λ > λₛ` iff `λ > 0` and `H + λ M` is positive definite (`n ≥ 1`). -/
+/-- Let $n \ge 1$, let $H$ be symmetric and let $M$ be positive definite. Then for every
+$\lambda \in \mathbb{R}$,
+$$\lambda > \lambda_s \iff \lambda > 0 \text{ and } H + \lambda M \text{ is positive
+  definite}.$$
+-/
 theorem lambdaS_lt_iff [NeZero n] (hH : H.IsHermitian) (hM : M.PosDef) {lam : ℝ} :
     lambdaS hH hM < lam ↔ 0 < lam ∧ (H + lam • M).PosDef := by
   rw [lambdaS, max_lt_iff, (posDef_add_smul_iff_scaled hH lam).2, leftmostPencil_eq]
 
-/-- **The step in the scaled setting**, for every `λ`: `M⁻¹`-transported, `s(λ)` is the operator
-step `step (M⁻¹ g) (M⁻¹ H) λ` (both vanish when `H + λ M` is singular). -/
+/-- Let $M$ be positive definite. For every $\lambda \in \mathbb{R}$, the step $s(\lambda)$, carried
+into the $M$-inner product space, is the operator step `Subproblem.step` of $M^{-1} g$ and
+$M^{-1} H$ at $\lambda$. This holds also where $H + \lambda M$ is singular, since both steps are
+then $0$. -/
 theorem toScaled_stepOf (hM : M.PosDef) (g : EuclideanSpace ℝ (Fin n)) (lam : ℝ) :
     toScaled hM (stepOf g H M lam) = step (scaledGrad hM g) (scaledOp H hM) lam :=
   toScaled_step g lam
 
-/-- **The secular function in the scaled setting**: `π = secular (M⁻¹ g) (M⁻¹ H)` as functions
-of `λ`. -/
+/-- Let $M$ be positive definite. As functions of $\lambda$ on all of $\mathbb{R}$, the secular
+function $\pi$ equals the operator secular function `Subproblem.secular` of $M^{-1} g$ and
+$M^{-1} H$ in the $M$-inner product space.
+
+This is the bridge through which every result of this module is proved from the operator
+backbone. -/
 theorem secularFn_eq_secular (hM : M.PosDef) :
     secularFn g H M = secular (scaledGrad hM g) (scaledOp H hM) := by
   funext lam
   rw [secular_scaled g lam, secularFn, stepOf, real_inner_comm]
 
-/-- `π(λ) = ‖s(λ)‖_M²`. -/
+/-- Let $M$ be positive definite. For every $\lambda$, $\|s(\lambda)\|_M^2 = \pi(\lambda)$. -/
 theorem mNorm_stepOf_sq (hM : M.PosDef) (lam : ℝ) :
     mNorm M (stepOf g H M lam) ^ 2 = secularFn g H M lam :=
   mNorm_sq hM _
 
+/-- Let $M$ be positive definite. Then $\pi(\lambda) \ge 0$ for every $\lambda$. -/
 theorem secularFn_nonneg (hM : M.PosDef) (lam : ℝ) : 0 ≤ secularFn g H M lam := by
   rw [← mNorm_stepOf_sq hM]; positivity
 
-/-- The step solves (8.2.2) above `λₛ`. -/
+/-- Let $H$ be symmetric and $M$ be positive definite. If $\lambda > -\lambda_1$, where $\lambda_1$
+is the leftmost eigenvalue of the scaled operator $M^{-1} H$, then the step solves (8.2.2):
+$(H + \lambda M) s(\lambda) = -g$. -/
 theorem add_smul_stepOf (hH : H.IsHermitian) (hM : M.PosDef) {lam : ℝ}
     (hlam : -leftmost (isSymmetric_scaledOp (hM := hM) hH) < lam) :
     toEuclideanLin (H + lam • M) (stepOf g H M lam) = -g := by
@@ -164,22 +265,31 @@ theorem add_smul_stepOf (hH : H.IsHermitian) (hM : M.PosDef) {lam : ℝ}
   rw [← toScaled_stepOf hM] at this
   exact (add_smul_scaledOp_toScaled_eq_neg_iff lam g _).1 this
 
-/-- On an empty index type every vector vanishes and so does the secular function. -/
+/-- For $n = 0$ the secular function is identically $0$. -/
 theorem secularFn_of_isEmpty [IsEmpty (Fin n)] : secularFn g H M = fun _ => 0 := by
   funext lam
   rw [secularFn, Subsingleton.elim (stepOf g H M lam) 0, inner_zero_left]
 
-/-- Positive definiteness of `H + λ M` is `λ > -λ₁` for the scaled operator (`n ≥ 1`). -/
+/-- Let $n \ge 1$, let $H$ be symmetric and let $M$ be positive definite. If $H + \lambda M$ is
+positive definite, then $\lambda > -\lambda_1$, where $\lambda_1$ is the leftmost eigenvalue of
+the scaled operator $M^{-1} H$. -/
 theorem neg_leftmost_lt_of_posDef [NeZero n] (hH : H.IsHermitian) (hM : M.PosDef) {lam : ℝ}
     (h : (H + lam • M).PosDef) : -leftmost (isSymmetric_scaledOp (hM := hM) hH) < lam :=
   ((posDef_add_smul_iff_scaled hH lam).2).1 h
 
 /-! ### The spectral form (8.2.6)–(8.2.7) -/
 
-/-- **The spectral form of the secular function** ([cartis2022evaluation] (8.2.6)–(8.2.7)). Let
-`V` have `M`-orthonormal generalized eigenvectors of `(H, M)` as columns, `H V = M V Λ` and
-`Vᵀ M V = I` (8.2.5), and let `γ = Vᵀ g`. If `λ ≠ -λᵢ` for all `i` then
-`s_V(λ) = Vᵀ M s(λ) = -(Λ + λ I)⁻¹ γ` and `π(λ) = ∑ᵢ (γᵢ / (λ + λᵢ))²`. -/
+/-- **Equations (8.2.6)–(8.2.7)** of [cartis2022evaluation]. Let $H \in \mathbb{R}^{n \times n}$,
+let $M$ be positive definite, and let $V \in \mathbb{R}^{n \times n}$ and $\mu \in \mathbb{R}^n$
+satisfy
+$$H V = M V \operatorname{diag}(\mu), \qquad V^T M V = I$$
+as in (8.2.5). Let $\gamma = V^T g$. If $\lambda + \mu_i \neq 0$ for every $i$, then
+$$(V^T M s(\lambda))_i = -\frac{\gamma_i}{\lambda + \mu_i} \quad \text{for every } i, \qquad
+  \pi(\lambda) = \sum_i \left(\frac{\gamma_i}{\lambda + \mu_i}\right)^2.$$
+
+The source writes $\Lambda = \operatorname{diag}(\mu)$ and $\lambda_i$ for $\mu_i$. The
+statement does not need $H$ to be symmetric;
+`CartisGouldToint.Chapter08.exists_pencil_eigenbasis` gives $V$ and $\mu$ when it is. -/
 theorem secularFn_eq_sum (hM : M.PosDef) {V : Matrix (Fin n) (Fin n) ℝ} {μ : Fin n → ℝ}
     (hV : H * V = M * V * diagonal μ) (hVM : Vᵀ * M * V = 1) {lam : ℝ}
     (hlam : ∀ i, lam + μ i ≠ 0) :
@@ -225,8 +335,12 @@ theorem secularFn_eq_sum (hM : M.PosDef) {V : Matrix (Fin n) (Fin n) ℝ} {μ : 
   refine Finset.sum_congr rfl fun i _ => ?_
   rw [hyi, real_inner_self_eq_norm_sq, Real.norm_eq_abs, sq_abs, neg_div, neg_sq]
 
-/-- **Existence of the generalized eigenvectors (8.2.5)**: there are `V` and `Λ = diagonal μ` with
-`H V = M V Λ` and `Vᵀ M V = I`, so `secularFn_eq_sum` applies. -/
+/-- **Equation (8.2.5)** of [cartis2022evaluation], existence of the generalized eigenvectors. Let
+$H$ be symmetric and $M$ be positive definite. Then there are $V \in \mathbb{R}^{n \times n}$
+and $\mu \in \mathbb{R}^n$ with
+$$H V = M V \operatorname{diag}(\mu), \qquad V^T M V = I.$$
+
+With these, `CartisGouldToint.Chapter08.secularFn_eq_sum` applies. -/
 theorem exists_pencil_eigenbasis (hH : H.IsHermitian) (hM : M.PosDef) :
     ∃ (V : Matrix (Fin n) (Fin n) ℝ) (μ : Fin n → ℝ),
       H * V = M * V * diagonal μ ∧ Vᵀ * M * V = 1 := by
@@ -243,18 +357,28 @@ theorem exists_pencil_eigenbasis (hH : H.IsHermitian) (hM : M.PosDef) :
     _ = M * V * (Vᵀ * H * V) := by simp only [mul_assoc]
     _ = M * V * diagonal d := by rw [h2]; rfl
 
-/-- `Ioi λₛ` lies above `-λ₁` of the scaled operator. -/
+/-- The interval $(\lambda_s, \infty)$ is contained in $(-\lambda_1, \infty)$, where $\lambda_1$ is
+the leftmost eigenvalue of the scaled operator $M^{-1} H$. -/
 theorem Ioi_lambdaS_subset (hH : H.IsHermitian) (hM : M.PosDef) :
     Ioi (lambdaS hH hM) ⊆ Ioi (-leftmost (isSymmetric_scaledOp (hM := hM) hH)) :=
   fun _ h => neg_leftmost_lt_of_lambdaS_lt hH hM h
 
 /-! ### The root of the secular equation -/
 
-/-- **Lemma 8.2.1 of [cartis2022evaluation] (Root of the secular equation).** Let `τ` be
-nonnegative, monotonically nondecreasing and continuous on `(λₛ, ∞)`, not identically zero there,
-right-continuous at `λₛ` (so the book's `τ(λₛ) ≥ 0` follows), and suppose `π(λₛ) > τ(λₛ)`, read
-as `π(λ) ≥ c` near `λₛ` from the right for some `c > τ(λₛ)` (`λₛ` may be a pole of `π`). Then the
-secular equation `π(λ) = τ(λ)` (8.2.8) has a unique root `λ* > λₛ`. -/
+/-- **Lemma 8.2.1** of [cartis2022evaluation] (root of the secular equation). Let
+$g \in \mathbb{R}^n$, let $H$ be symmetric and let $M$ be positive definite. Let
+$\tau : \mathbb{R} \to \mathbb{R}$ be nonnegative, nondecreasing and continuous on
+$(\lambda_s, \infty)$, not identically zero there, and right-continuous at $\lambda_s$. Suppose
+that there is $c > \tau(\lambda_s)$ with $\pi(\lambda) \ge c$ for all $\lambda > \lambda_s$ near
+$\lambda_s$. Then the secular equation
+$$\pi(\lambda) = \tau(\lambda) \qquad (8.2.8)$$
+has exactly one root $\lambda_* > \lambda_s$.
+
+**Reading.** The source assumes $\pi(\lambda_s) > \tau(\lambda_s)$. Since $\lambda_s$ can be a
+pole of $\pi$, where the value of `CartisGouldToint.Chapter08.secularFn` is a junk value, this
+is read as the bound on $\pi$ near $\lambda_s$ from the right. The source assumes continuity of
+$\tau$ only on $(\lambda_s, \infty)$ but uses $\tau(\lambda_s)$; the statement assumes
+right-continuity at $\lambda_s$, which also gives $\tau(\lambda_s) \ge 0$. -/
 theorem lemma_8_2_1 (hH : H.IsHermitian) (hM : M.PosDef) {τ : ℝ → ℝ}
     (hτ0 : ∀ lam ∈ Ioi (lambdaS hH hM), 0 ≤ τ lam) (hτm : MonotoneOn τ (Ioi (lambdaS hH hM)))
     (hτc : ContinuousOn τ (Ioi (lambdaS hH hM)))
@@ -271,23 +395,30 @@ theorem lemma_8_2_1 (hH : H.IsHermitian) (hM : M.PosDef) {τ : ℝ → ℝ}
   obtain ⟨lamStar, hgt, heq, -, -, huniq⟩ := existsUnique_secular_root hτc hτm hτ0 hτne hleft
   exact ⟨lamStar, ⟨hgt, heq⟩, fun lam h => huniq lam h.1 h.2⟩
 
-/-- The hypotheses of Lemma 8.2.1 on a target `τ` with threshold `a` (the book's `λₛ`), in the form
-used by `IsAdmissibleTarget.lemma_8_2_1`: `τ` is nonnegative, monotonically nondecreasing and
-continuous on the closed half-line `[a, ∞)` (so in particular right-continuous at `a`, as the
-lemma needs), and not identically zero on the open half-line `(a, ∞)`. -/
+/-- The hypotheses of Lemma 8.2.1 on a target $\tau : \mathbb{R} \to \mathbb{R}$ with threshold $a$,
+which stands for $\lambda_s$. The target $\tau$ is **admissible** if it is nonnegative,
+nondecreasing and continuous on $[a, \infty)$, and not identically zero on $(a, \infty)$.
+
+Continuity on the closed half-line contains the right-continuity at $a$ that
+`CartisGouldToint.Chapter08.lemma_8_2_1` needs. The structure is the hypothesis of
+`CartisGouldToint.Chapter08.IsAdmissibleTarget.lemma_8_2_1`. -/
 structure IsAdmissibleTarget (a : ℝ) (τ : ℝ → ℝ) : Prop where
-  /-- The target is nonnegative. -/
+  /-- The target is nonnegative on $[a, \infty)$. -/
   nonneg : ∀ lam ∈ Ici a, 0 ≤ τ lam
-  /-- The target is monotonically nondecreasing. -/
+  /-- The target is nondecreasing on $[a, \infty)$. -/
   monotoneOn : MonotoneOn τ (Ici a)
-  /-- The target is continuous (in particular right-continuous at `a`). -/
+  /-- The target is continuous on $[a, \infty)$, and so right-continuous at $a$. -/
   continuousOn : ContinuousOn τ (Ici a)
-  /-- The target is not identically zero. -/
+  /-- The target is not identically zero on $(a, \infty)$. -/
   exists_ne_zero : ∃ lam ∈ Ioi a, τ lam ≠ 0
 
-/-- **The two targets (8.2.9)** of [cartis2022evaluation], `τ(λ) = Δ²` (trust region, `Δ > 0`) and
-`τ(λ) = (λ/σ)^{2/(r-2)}` (regularization, `σ > 0`, `r > 2`), satisfy the hypotheses of
-Lemma 8.2.1 on `(λₛ, ∞)`. -/
+/-- **Equation (8.2.9)** of [cartis2022evaluation]. Let $H$ be symmetric and $M$ be positive
+definite. For every $\Delta > 0$ the trust-region target $\tau(\lambda) = \Delta^2$, and for
+every $\sigma > 0$ and $r > 2$ the regularization target
+$$\tau(\lambda) = \left(\frac{\lambda}{\sigma}\right)^{2/(r-2)},$$
+are admissible targets with threshold $\lambda_s$
+(`CartisGouldToint.Chapter08.IsAdmissibleTarget`), so that they satisfy the hypotheses of Lemma
+8.2.1. -/
 theorem tau_admissible_8_2_9 (hH : H.IsHermitian) (hM : M.PosDef) :
     (∀ Δ : ℝ, 0 < Δ → IsAdmissibleTarget (lambdaS hH hM) fun _ => Δ ^ 2) ∧
       ∀ σ r : ℝ, 0 < σ → 2 < r →
@@ -301,9 +432,16 @@ theorem tau_admissible_8_2_9 (hH : H.IsHermitian) (hM : M.PosDef) :
     ((continuous_id.div_const σ).rpow_const fun _ => Or.inr hp).continuousOn,
     ⟨lambdaS hH hM + 1, by simp, (Real.rpow_pos_of_pos (by positivity) _).ne'⟩⟩
 
-/-- **Lemma 8.2.1 for an admissible target**: if `τ` satisfies `IsAdmissibleTarget λₛ τ` (for
-instance one of the targets (8.2.9), `tau_admissible_8_2_9`) and `π(λₛ) > τ(λₛ)` (in the sense of
-`lemma_8_2_1`), the secular equation `π(λ) = τ(λ)` has a unique root `λ* > λₛ`. -/
+/-- **Lemma 8.2.1** of [cartis2022evaluation], for an admissible target. Let $g \in \mathbb{R}^n$,
+let $H$ be symmetric and let $M$ be positive definite. Let $\tau$ be an admissible target with
+threshold $\lambda_s$, for example one of the targets (8.2.9). Suppose that there is
+$c > \tau(\lambda_s)$ with $\pi(\lambda) \ge c$ for all $\lambda > \lambda_s$ near $\lambda_s$.
+Then the secular equation $\pi(\lambda) = \tau(\lambda)$ has exactly one root
+$\lambda_* > \lambda_s$.
+
+**Reading.** As in `CartisGouldToint.Chapter08.lemma_8_2_1`, the hypothesis
+$\pi(\lambda_s) > \tau(\lambda_s)$ of the source is read as a bound on $\pi$ near $\lambda_s$
+from the right. -/
 theorem IsAdmissibleTarget.lemma_8_2_1 (hH : H.IsHermitian) (hM : M.PosDef) {τ : ℝ → ℝ}
     (hτ : IsAdmissibleTarget (lambdaS hH hM) τ)
     (hπ : ∃ c > τ (lambdaS hH hM), ∀ᶠ lam in 𝓝[>] (lambdaS hH hM), c ≤ secularFn g H M lam) :
@@ -314,23 +452,35 @@ theorem IsAdmissibleTarget.lemma_8_2_1 (hH : H.IsHermitian) (hM : M.PosDef) {τ 
 
 /-! ### Taylor estimates -/
 
-/-- The `k`-th order **Taylor polynomial of the secular function** at `λc`,
-`t_k(δ) = ∑_{j=0}^k π⁽ʲ⁾(λc)/j! δʲ` ([cartis2022evaluation] (8.2.12)). -/
+/-- **Equation (8.2.12)** of [cartis2022evaluation]. Let $g \in \mathbb{R}^n$,
+$H, M \in \mathbb{R}^{n \times n}$, $k \in \mathbb{N}$ and $\lambda_c \in \mathbb{R}$. The
+$k$-th order **Taylor polynomial of the secular function** at $\lambda_c$ is
+$$t_k(\delta) = \sum_{j=0}^{k} \frac{\pi^{(j)}(\lambda_c)}{j!} \delta^j.$$
+
+The derivatives are `iteratedDeriv` of `CartisGouldToint.Chapter08.secularFn`. -/
 noncomputable def secularTaylorPoly (g : EuclideanSpace ℝ (Fin n))
     (H M : Matrix (Fin n) (Fin n) ℝ) (k : ℕ) (lamc δ : ℝ) : ℝ :=
   ∑ j ∈ range (k + 1), iteratedDeriv j (secularFn g H M) lamc / j ! * δ ^ j
 
-/-- The Taylor polynomial is that of the operator secular function. -/
+/-- Let $M$ be positive definite. The Taylor polynomial $t_k(\delta)$ of $\pi$ is the Taylor
+polynomial `Subproblem.secularTaylor` of the operator secular function of $M^{-1} g$ and
+$M^{-1} H$. -/
 theorem secularTaylorPoly_eq (hM : M.PosDef) (k : ℕ) (lamc δ : ℝ) :
     secularTaylorPoly g H M k lamc δ =
       secularTaylor (scaledGrad hM g) (scaledOp H hM) k lamc δ := by
   rw [secularTaylorPoly, secularTaylor, secularFn_eq_secular hM]
 
-/-- **Theorem 8.2.2 of [cartis2022evaluation] (Lower and upper Taylor estimates of `π`).** Let
-`λc > λₛ`. For every `k` (the book states `k > 0`; `k = 0` holds as well) and `δ > 0`,
-`π(λc + δ) ≤ t_k(δ)` for even `k` and `π(λc + δ) ≥ t_k(δ)` for odd `k` (8.2.13); for `λₛ - λc < δ <
-0`, `π(λc + δ) ≥ t_{k+1}(δ) ≥ t_k(δ)` (8.2.14). The strict versions for `g ≠ 0` are
-`theorem_8_2_2_strict`. -/
+/-- **Theorem 8.2.2** of [cartis2022evaluation] (lower and upper Taylor estimates of $\pi$). Let
+$g \in \mathbb{R}^n$, let $H$ be symmetric, let $M$ be positive definite, let
+$\lambda_c > \lambda_s$, and let $k \in \mathbb{N}$. For every $\delta > 0$,
+$$\pi(\lambda_c + \delta) \le t_k(\delta) \text{ if } k \text{ is even}, \qquad \pi(\lambda_c +
+  \delta) \ge t_k(\delta) \text{ if } k \text{ is odd}. \qquad (8.2.13)$$
+For every $\delta$ with $\lambda_s - \lambda_c < \delta < 0$,
+$$\pi(\lambda_c + \delta) \ge t_{k+1}(\delta) \ge t_k(\delta). \qquad (8.2.14)$$
+
+**Generalization.** The source states the theorem for $k > 0$. It holds for $k = 0$ as well.
+
+The strict form for $g \neq 0$ is `CartisGouldToint.Chapter08.theorem_8_2_2_strict`. -/
 theorem theorem_8_2_2 (hH : H.IsHermitian) (hM : M.PosDef) {lamc : ℝ}
     (hc : lambdaS hH hM < lamc) (k : ℕ) :
     (∀ δ, 0 < δ → (Even k → secularFn g H M (lamc + δ) ≤ secularTaylorPoly g H M k lamc δ) ∧
@@ -342,8 +492,12 @@ theorem theorem_8_2_2 (hH : H.IsHermitian) (hM : M.PosDef) {lamc : ℝ}
   simp only [secularTaylorPoly, secularFn_eq_secular hM]
   exact ⟨h.1, fun δ hδ1 hδ2 => h.2 δ hδ2 (neg_leftmost_lt_of_lambdaS_lt hH hM (by linarith))⟩
 
-/-- **Theorem 8.2.2 of [cartis2022evaluation], strict form**: the inequalities (8.2.13) and
-(8.2.14) are strict when `g ≠ 0`. -/
+/-- **Theorem 8.2.2** of [cartis2022evaluation], strict form. Let $g \neq 0$, let $H$ be symmetric,
+let $M$ be positive definite, let $\lambda_c > \lambda_s$, and let $k \in \mathbb{N}$. Then the
+inequalities (8.2.13) and (8.2.14) are strict: for every $\delta > 0$,
+$\pi(\lambda_c + \delta) < t_k(\delta)$ if $k$ is even and
+$\pi(\lambda_c + \delta) > t_k(\delta)$ if $k$ is odd; for every $\delta$ with
+$\lambda_s - \lambda_c < \delta < 0$, $\pi(\lambda_c + \delta) > t_{k+1}(\delta) > t_k(\delta)$. -/
 theorem theorem_8_2_2_strict (hH : H.IsHermitian) (hM : M.PosDef) (hg : g ≠ 0) {lamc : ℝ}
     (hc : lambdaS hH hM < lamc) (k : ℕ) :
     (∀ δ, 0 < δ → (Even k → secularFn g H M (lamc + δ) < secularTaylorPoly g H M k lamc δ) ∧
@@ -358,9 +512,17 @@ theorem theorem_8_2_2_strict (hH : H.IsHermitian) (hM : M.PosDef) (hg : g ≠ 0)
 
 /-! ### The transformed secular function -/
 
-/-- **Lemma 8.2.3 of [cartis2022evaluation] (Derivatives of `π(λ; β)`).** For `λ > λₛ`:
-(i) `π⁽¹⁾(λ; β) ≤ 0` for `β > 0` and `≥ 0` for `β < 0`; (ii) `π⁽²⁾(λ; β) ≥ 0` for `β > 0` and
-`≤ 0` for `β ∈ [-1/2, 0)`. The strict versions are `lemma_8_2_3_strict`. -/
+/-- **Lemma 8.2.3** of [cartis2022evaluation] (derivatives of $\pi(\lambda; \beta)$). Let
+$g \in \mathbb{R}^n$, let $H$ be symmetric, let $M$ be positive definite, let
+$\lambda > \lambda_s$, and let $\beta \in \mathbb{R}$. Write $\pi^{(j)}(\lambda; \beta)$ for the
+$j$-th derivative of $\pi(\cdot; \beta) = \pi(\cdot)^\beta$. Then:
+
+* (i) $\pi^{(1)}(\lambda; \beta) \le 0$ if $\beta > 0$, and $\pi^{(1)}(\lambda; \beta) \ge 0$ if
+  $\beta < 0$;
+* (ii) $\pi^{(2)}(\lambda; \beta) \ge 0$ if $\beta > 0$, and $\pi^{(2)}(\lambda; \beta) \le 0$
+  if $\beta \in [-1/2, 0)$.
+
+The strict form is `CartisGouldToint.Chapter08.lemma_8_2_3_strict`. -/
 theorem lemma_8_2_3 (hH : H.IsHermitian) (hM : M.PosDef) {lam : ℝ}
     (hlam : lambdaS hH hM < lam) (β : ℝ) :
     (0 < β → deriv (fun t => secularFn g H M t ^ β) lam ≤ 0) ∧
@@ -379,10 +541,21 @@ theorem lemma_8_2_3 (hH : H.IsHermitian) (hM : M.PosDef) {lam : ℝ}
       (neg_leftmost_lt_of_lambdaS_lt hH hM hlam) β
     exact ⟨fun h => (h1 h).le, fun h => (h2 h).le, fun h => (h3 h).le, h4⟩
 
-/-- **Lemma 8.2.3 of [cartis2022evaluation], strict form**, corrected. For `g ≠ 0` and `λ > λₛ`
-the inequalities in (i) and the `β > 0` part of (ii) are strict; for `β ∈ [-1/2, 0)` the second
-derivative is negative unless `β = -1/2` and `g = M v` for a generalized eigenvector `v` of
-`(H, M)`, in which case it vanishes (the book claims strictness whenever `g ≠ 0`). -/
+/-- **Lemma 8.2.3** of [cartis2022evaluation], strict form. Let $g \neq 0$, let $H$ be symmetric,
+let $M$ be positive definite, let $\lambda > \lambda_s$, and let $\beta \in \mathbb{R}$. Then
+$\pi^{(1)}(\lambda; \beta) < 0$ if $\beta > 0$, $\pi^{(1)}(\lambda; \beta) > 0$ if $\beta < 0$,
+and $\pi^{(2)}(\lambda; \beta) > 0$ if $\beta > 0$. For $\beta \in [-1/2, 0)$: if
+$\beta \neq -1/2$, or if there is no generalized eigenvector $v$ of $(H, M)$ with $M v = g$,
+then $\pi^{(2)}(\lambda; \beta) < 0$; if $\beta = -1/2$ and $M v = g$ for a generalized
+eigenvector $v$, then $\pi^{(2)}(\lambda; \beta) = 0$.
+
+**Correction.** The source claims that all the inequalities of the lemma are strict. This fails
+for $g = 0$, where $\pi(\lambda; \beta)$ is constant. It also fails for $\beta = -1/2$ when
+$g = M v$ for a generalized eigenvector $v$ of $(H, M)$, because $\pi(\lambda; -1/2)$ is then
+affine in $\lambda$: for $n = 1$, $H = 0$, $M = 1$ and $g = 1$, $\pi(\lambda; -1/2) = \lambda$.
+The statement excludes these cases and identifies the second one exactly.
+
+A generalized eigenvector is encoded as a vector $v$ and a scalar $c$ with $H v = c M v$. -/
 theorem lemma_8_2_3_strict (hH : H.IsHermitian) (hM : M.PosDef) (hg : g ≠ 0) {lam : ℝ}
     (hlam : lambdaS hH hM < lam) (β : ℝ) :
     (0 < β → deriv (fun t => secularFn g H M t ^ β) lam < 0) ∧
@@ -399,12 +572,23 @@ theorem lemma_8_2_3_strict (hH : H.IsHermitian) (hM : M.PosDef) (hg : g ≠ 0) {
     (neg_leftmost_lt_of_lambdaS_lt hH hM hlam) β
   exact ⟨h1, h2, h3, h5, h6⟩
 
-/-- **Corollary 8.2.4 of [cartis2022evaluation] (Monotonicity of the transformed secular
-function)**, for `g ≠ 0`. On `(λₛ, ∞)`, `π(λ; β)` is strictly decreasing, strictly convex and
-tends to `0` at `+∞` when `β > 0`, and strictly increasing, concave and tends to `+∞` when
-`β ∈ [-1/2, 0)`. (For `g = 0` it is constant.) The book's "from `π(λₛ; β)`" refers to the right
-limit at `λₛ`, which may be infinite (a pole) and need not be `π(λₛ)^β` (the value of `π` at a
-pole is a junk value); it is `corollary_8_2_4_tendsto_lambdaS`. -/
+/-- **Corollary 8.2.4** of [cartis2022evaluation] (monotonicity of the transformed secular
+function). Let $g \neq 0$, let $H$ be symmetric, let $M$ be positive definite, and let
+$\beta \in \mathbb{R}$. On $(\lambda_s, \infty)$:
+
+* if $\beta > 0$, then $\pi(\lambda; \beta)$ is strictly decreasing and strictly convex, and
+  $\pi(\lambda; \beta) \to 0$ as $\lambda \to +\infty$;
+* if $\beta \in [-1/2, 0)$, then $\pi(\lambda; \beta)$ is strictly increasing and concave, and
+  $\pi(\lambda; \beta) \to +\infty$ as $\lambda \to +\infty$.
+
+**Correction.** The source does not assume $g \neq 0$. For $g = 0$ the function
+$\pi(\lambda; \beta)$ is constant, and the strict monotonicity fails.
+
+**Reading.** The source says that $\pi(\lambda; \beta)$ decreases or increases "from
+$\pi(\lambda_s; \beta)$". This value is read as the right limit of $\pi(\lambda; \beta)$ at
+$\lambda_s$, which can be infinite and need not be $\pi(\lambda_s)^\beta$, because the value of
+`CartisGouldToint.Chapter08.secularFn` at a pole is a junk value. The limit is
+`CartisGouldToint.Chapter08.corollary_8_2_4_tendsto_lambdaS`. -/
 theorem corollary_8_2_4 (hH : H.IsHermitian) (hM : M.PosDef) (hg : g ≠ 0) (β : ℝ) :
     (0 < β → StrictAntiOn (fun t => secularFn g H M t ^ β) (Ioi (lambdaS hH hM)) ∧
       StrictConvexOn ℝ (Ioi (lambdaS hH hM)) (fun t => secularFn g H M t ^ β) ∧
@@ -422,19 +606,29 @@ theorem corollary_8_2_4 (hH : H.IsHermitian) (hM : M.PosDef) (hg : g ≠ 0) (β 
   · obtain ⟨h1, h2, h3⟩ := hneg hβ
     exact ⟨h1.mono hsub, h2.subset hsub (convex_Ioi _), h3⟩
 
-/-- **Corollary 8.2.4 of [cartis2022evaluation], the starting values** (for `g ≠ 0`): the value
-"`π(λₛ; β)`" from which `π(λ; β)` decreases (`β > 0`) or increases (`β < 0`) on `(λₛ, ∞)` is its
-right limit at `λₛ`, identified as follows.
-* If `λₛ > -λ₁` (that is, `λ₁ > 0` and `λₛ = 0`), `π` is continuous at `λₛ` and the limit is
-  `π(λₛ)^β`.
-* Either `π(λ)` has a finite positive right limit `L` at `λₛ` and then `π(λ; β) → L^β` for every
-  `β` (always the case when `λₛ > -λ₁`; when `λₛ = -λ₁` this happens exactly when
-  `g ⊥ ker(H + λₛ M)`, i.e. `(H + λₛ M) s = -g` is consistent, and `L` is then the squared
-  `M`-norm of its minimum-`M`-norm solution; see `Subproblem.tendsto_secular_rpow_threshold`),
-* or `λₛ = -λ₁` is a pole: `π(λ) → +∞`, so `π(λ; β) → +∞` for `β > 0` and `π(λ; β) → 0` for
-  `β < 0`.
-When `λₛ = -λ₁` the value `π(λₛ)` itself is a junk value (`H + λₛ M` is singular), so only the
-limit is meaningful there. -/
+/-- **Corollary 8.2.4** of [cartis2022evaluation], the starting values. Let $g \neq 0$, let $H$ be
+symmetric and let $M$ be positive definite. The right limit of $\pi(\lambda; \beta)$ at
+$\lambda_s$ is as follows.
+
+* If $\lambda_s > -\lambda_1$, then for every $\beta$,
+  $\pi(\lambda; \beta) \to \pi(\lambda_s)^\beta$ as $\lambda \to \lambda_s^+$.
+* Either $\pi(\lambda)$ has a finite right limit $L > 0$ at $\lambda_s$, and then
+  $\pi(\lambda; \beta) \to L^\beta$ as $\lambda \to \lambda_s^+$ for every $\beta$; or
+  $\lambda_s = -\lambda_1$ and $\pi(\lambda) \to +\infty$ as $\lambda \to \lambda_s^+$, and then
+  $\pi(\lambda; \beta) \to +\infty$ for $\beta > 0$ and $\pi(\lambda; \beta) \to 0$ for
+  $\beta < 0$.
+
+**Reading.** This identifies the value "$\pi(\lambda_s; \beta)$" of the source, from which
+$\pi(\lambda; \beta)$ decreases ($\beta > 0$) or increases ($\beta < 0$) on
+$(\lambda_s, \infty)$, as a right limit.
+
+The case $\lambda_s > -\lambda_1$ means $\lambda_1 > 0$ and $\lambda_s = 0$; it falls under the
+first alternative. When $\lambda_s = -\lambda_1$, the first alternative occurs exactly when $g$
+is orthogonal to $\ker(H + \lambda_s M)$, that is, when $(H + \lambda_s M) s = -g$ is
+consistent, and $L$ is then the squared $M$-norm of its solution of least $M$-norm; see
+`Subproblem.tendsto_secular_rpow_threshold`. When $\lambda_s = -\lambda_1$ the matrix
+$H + \lambda_s M$ is singular, the value $\pi(\lambda_s)$ is a junk value, and only the limit is
+meaningful. -/
 theorem corollary_8_2_4_tendsto_lambdaS (hH : H.IsHermitian) (hM : M.PosDef) (hg : g ≠ 0) :
     (∀ β : ℝ, -leftmostPencil hH hM < lambdaS hH hM →
       Tendsto (fun t => secularFn g H M t ^ β) (𝓝[>] (lambdaS hH hM))
@@ -472,10 +666,17 @@ theorem corollary_8_2_4_tendsto_lambdaS (hH : H.IsHermitian) (hM : M.PosDef) (hg
   · exact Or.inr ⟨rfl, (tendsto_step_threshold (hH := hT) (g := scaledGrad hM g)).2 hK,
       fun β => (tendsto_secular_rpow_threshold (hH := hT) β).2 hK⟩
 
-/-- **Theorem 8.2.5 of [cartis2022evaluation] (Lower and upper first-order Taylor estimates of
-`π(λ; β)`).** Let `λc > λₛ`, `δ > λₛ - λc` and `t₁(δ; β) = π(λc; β) + π⁽¹⁾(λc; β) δ`. Then
-`π(λc + δ; β) ≥ t₁(δ; β)` for `β > 0` (8.2.20) and `π(λc + δ; β) ≤ t₁(δ; β)` for `β ∈ [-1/2, 0)`
-(8.2.21). The strict versions are `theorem_8_2_5_strict`. -/
+/-- **Theorem 8.2.5** of [cartis2022evaluation] (lower and upper first-order Taylor estimates of
+$\pi(\lambda; \beta)$). Let $g \in \mathbb{R}^n$, let $H$ be symmetric, let $M$ be positive
+definite, let $\lambda_c > \lambda_s$ and $\delta > \lambda_s - \lambda_c$, and let
+$\beta \in \mathbb{R}$. Write $t_1(\delta; \beta) = \pi(\lambda_c; \beta) + \pi^{(1)}(\lambda_c;
+\beta) \delta$. Then
+$$\pi(\lambda_c + \delta; \beta) \ge t_1(\delta; \beta) \text{ if } \beta > 0 \qquad (8.2.20)$$
+and
+$$\pi(\lambda_c + \delta; \beta) \le t_1(\delta; \beta) \text{ if } \beta \in [-1/2, 0). \qquad
+  (8.2.21)$$
+
+The strict form is `CartisGouldToint.Chapter08.theorem_8_2_5_strict`. -/
 theorem theorem_8_2_5 (hH : H.IsHermitian) (hM : M.PosDef) {lamc δ : ℝ}
     (hc : lambdaS hH hM < lamc) (hδ : lambdaS hH hM - lamc < δ) (β : ℝ) :
     (0 < β → secularFn g H M lamc ^ β + deriv (fun t => secularFn g H M t ^ β) lamc * δ ≤
@@ -490,10 +691,17 @@ theorem theorem_8_2_5 (hH : H.IsHermitian) (hM : M.PosDef) {lamc δ : ℝ}
       (neg_leftmost_lt_of_lambdaS_lt hH hM (by linarith)) β
     exact ⟨h1, h3⟩
 
-/-- **Theorem 8.2.5 of [cartis2022evaluation], strict form**, corrected. For `g ≠ 0` and `δ ≠ 0`,
-(8.2.20) is strict, and (8.2.21) is strict unless `β = -1/2` and `g = M v` for a generalized
-eigenvector `v` of `(H, M)`, in which case it is an equality (the book claims strictness whenever
-`g ≠ 0`). -/
+/-- **Theorem 8.2.5** of [cartis2022evaluation], strict form. Let $g \neq 0$, let $H$ be symmetric,
+let $M$ be positive definite, let $\lambda_c > \lambda_s$ and $\delta > \lambda_s - \lambda_c$,
+and let $\beta \in \mathbb{R}$. If $\beta > 0$ and $\delta \neq 0$, then (8.2.20) is strict. If
+$\beta \in [-1/2, 0)$ and $\delta \neq 0$, and either $\beta \neq -1/2$ or there is no
+generalized eigenvector $v$ of $(H, M)$ with $M v = g$, then (8.2.21) is strict. If
+$\beta = -1/2$ and $M v = g$ for a generalized eigenvector $v$, then (8.2.21) is an equality.
+
+**Correction.** The source claims strict inequalities whenever $g \neq 0$. For $\delta = 0$ both
+sides are equal. For $\beta = -1/2$ and $g = M v$ with $v$ a generalized eigenvector,
+$\pi(\lambda; -1/2)$ is affine (see `CartisGouldToint.Chapter08.lemma_8_2_3_strict`), and
+(8.2.21) is an equality. -/
 theorem theorem_8_2_5_strict (hH : H.IsHermitian) (hM : M.PosDef) (hg : g ≠ 0) {lamc δ : ℝ}
     (hc : lambdaS hH hM < lamc) (hδ : lambdaS hH hM - lamc < δ) (β : ℝ) :
     (0 < β → δ ≠ 0 → secularFn g H M lamc ^ β +
@@ -513,39 +721,53 @@ theorem theorem_8_2_5_strict (hH : H.IsHermitian) (hM : M.PosDef) (hg : g ≠ 0)
 
 /-! ### Derivatives of the secular function -/
 
-/-- The **derivative vectors** `s⁽ᵏ⁾(λ)` of [cartis2022evaluation] Theorem 8.2.6:
-`s⁽⁰⁾ = s(λ)` and `(H + λ M) s⁽ᵏ⁺¹⁾ = -(k + 1) M s⁽ᵏ⁾` (8.2.29), solved with `(H + λ M)⁻¹`. They are
-the derivatives of `s(λ)` (`toScaled_secularDerivVec`). -/
+/-- **Equation (8.2.29)** of [cartis2022evaluation]. Let $g \in \mathbb{R}^n$,
+$H, M \in \mathbb{R}^{n \times n}$ and $\lambda \in \mathbb{R}$. The **derivative vectors**
+$s^{(k)}(\lambda)$ are defined by $s^{(0)}(\lambda) = s(\lambda)$ and
+$$(H + \lambda M) s^{(k+1)}(\lambda) = -(k + 1) M s^{(k)}(\lambda),$$
+solved with $(H + \lambda M)^{-1}$.
+
+They are the derivatives of $s(\lambda)$ for $\lambda > -\lambda_1$
+(`CartisGouldToint.Chapter08.toScaled_secularDerivVec`). Where $H + \lambda M$ is singular, the
+Mathlib convention $A^{-1} = 0$ gives $s^{(k)}(\lambda) = 0$. -/
 noncomputable def secularDerivVec (g : EuclideanSpace ℝ (Fin n))
     (H M : Matrix (Fin n) (Fin n) ℝ) (lam : ℝ) : ℕ → EuclideanSpace ℝ (Fin n)
   | 0 => stepOf g H M lam
   | k + 1 => toEuclideanLin (H + lam • M)⁻¹
       (-((k + 1 : ℝ) • toEuclideanLin M (secularDerivVec g H M lam k)))
 
+/-- The derivative vector of order $0$ is the step: $s^{(0)}(\lambda) = s(\lambda)$. -/
 theorem secularDerivVec_zero (g : EuclideanSpace ℝ (Fin n)) (H M : Matrix (Fin n) (Fin n) ℝ)
     (lam : ℝ) : secularDerivVec g H M lam 0 = stepOf g H M lam :=
   rfl
 
+/-- The recursion of the derivative vectors: $s^{(k+1)}(\lambda) = (H + \lambda M)^{-1}
+\bigl(-(k + 1) M s^{(k)}(\lambda)\bigr)$. -/
 theorem secularDerivVec_succ (g : EuclideanSpace ℝ (Fin n)) (H M : Matrix (Fin n) (Fin n) ℝ)
     (lam : ℝ) (k : ℕ) :
     secularDerivVec g H M lam (k + 1) = toEuclideanLin (H + lam • M)⁻¹
       (-((k + 1 : ℝ) • toEuclideanLin M (secularDerivVec g H M lam k))) :=
   rfl
 
-/-- The coefficients `α₀ = 1`, `αₖ₊₁ = 2 (2k + 3)/(k + 1) αₖ` of [cartis2022evaluation]
-(8.2.30). -/
+/-- **Equation (8.2.30)** of [cartis2022evaluation]. The coefficients $\alpha_k$ are defined by
+$$\alpha_0 = 1, \qquad \alpha_{k+1} = \frac{2 (2k + 3)}{k + 1} \alpha_k.$$
+-/
 noncomputable def alphaCoeff : ℕ → ℝ
   | 0 => 1
   | k + 1 => 2 * (2 * k + 3) / (k + 1) * alphaCoeff k
 
-/-- The coefficients (8.2.30) are `αₖ = (2k + 1)!/(k!)²`. -/
+/-- The coefficients (8.2.30) have the closed form $\alpha_k = (2k + 1)! / (k!)^2$, which is
+`Subproblem.secularCoeff k`. -/
 theorem alphaCoeff_eq_secularCoeff (k : ℕ) : alphaCoeff k = secularCoeff k := by
   induction k with
   | zero => simp [alphaCoeff, secularCoeff_zero]
   | succ k ih => rw [alphaCoeff, secularCoeff_succ, ih]
 
-/-- The vectors (8.2.29) are, `M⁻¹`-transported, the derivatives `stepDeriv` of the operator
-step, for `λ > -λ₁`. -/
+/-- Let $H$ be symmetric and $M$ be positive definite, and let $\lambda > -\lambda_1$, where
+$\lambda_1$ is the leftmost eigenvalue of the scaled operator $M^{-1} H$. For every $k$, the
+vector $s^{(k)}(\lambda)$ of (8.2.29), carried into the $M$-inner product space, is the $k$-th
+derivative `Subproblem.stepDeriv` of the operator step of $M^{-1} g$ and $M^{-1} H$ at
+$\lambda$. -/
 theorem toScaled_secularDerivVec (hH : H.IsHermitian) (hM : M.PosDef) {lam : ℝ}
     (hlam : -leftmost (isSymmetric_scaledOp (hM := hM) hH) < lam) (k : ℕ) :
     toScaled hM (secularDerivVec g H M lam k) =
@@ -560,11 +782,15 @@ theorem toScaled_secularDerivVec (hH : H.IsHermitian) (hM : M.PosDef) {lam : ℝ
     rw [secularDerivVec, add_smul_scaledOp_toScaled, toEuclideanLin_mul_nonsing_inv_apply hu,
       map_neg, map_smul, toEuclideanLin_nonsing_inv_mul_apply hM.isUnit, map_neg, map_smul, ih]
 
-/-- **Theorem 8.2.6 of [cartis2022evaluation] (Derivatives of the secular function).** If
-`H + λ M` is positive definite then for `k = 0, 1, …`,
-`π⁽²ᵏ⁺¹⁾(λ) = 2 αₖ ⟪s⁽ᵏ⁾(λ), M s⁽ᵏ⁺¹⁾(λ)⟫` (8.2.27) and
-`π⁽²ᵏ⁺²⁾(λ) = αₖ₊₁ ⟪s⁽ᵏ⁺¹⁾(λ), M s⁽ᵏ⁺¹⁾(λ)⟫` (8.2.28), with `s⁽ᵏ⁾` of (8.2.29) and `αₖ` of
-(8.2.30). -/
+/-- **Theorem 8.2.6** of [cartis2022evaluation] (derivatives of the secular function). Let
+$g \in \mathbb{R}^n$, let $H$ be symmetric, let $M$ be positive definite, and let $\lambda$ be
+such that $H + \lambda M$ is positive definite. Then for every $k = 0, 1, \ldots$,
+$$\pi^{(2k+1)}(\lambda) = 2 \alpha_k \langle s^{(k)}(\lambda), M s^{(k+1)}(\lambda) \rangle
+  \qquad (8.2.27)$$
+and
+$$\pi^{(2k+2)}(\lambda) = \alpha_{k+1} \langle s^{(k+1)}(\lambda), M s^{(k+1)}(\lambda) \rangle,
+  \qquad (8.2.28)$$
+with the vectors $s^{(k)}(\lambda)$ of (8.2.29) and the coefficients $\alpha_k$ of (8.2.30). -/
 theorem theorem_8_2_6 (hH : H.IsHermitian) (hM : M.PosDef) {lam : ℝ}
     (hpd : (H + lam • M).PosDef) (k : ℕ) :
     iteratedDeriv (2 * k + 1) (secularFn g H M) lam = 2 * alphaCoeff k *
@@ -588,7 +814,10 @@ theorem theorem_8_2_6 (hH : H.IsHermitian) (hM : M.PosDef) {lam : ℝ}
 
 /-! ### Global optimality of the subproblems -/
 
-/-- The trust-region multiplier conditions transport to the scaled setting. -/
+/-- Let $M$ be positive definite. A number $\mu$ is a trust-region multiplier
+(`Subproblem.IsTrustRegionMultiplier`) of $s$ for the scaled data $M^{-1} g$, $M^{-1} H$ and
+radius $\Delta$ in the $M$-inner product space if and only if $\mu \ge 0$, $(H + \mu M) s = -g$,
+$H + \mu M$ is positive semidefinite, and $\mu (\|s\|_M - \Delta) = 0$. -/
 theorem isTrustRegionMultiplier_scaled_iff (hM : M.PosDef) {Δ μ : ℝ}
     {s : EuclideanSpace ℝ (Fin n)} :
     IsTrustRegionMultiplier (scaledGrad hM g) (scaledOp H hM) Δ (toScaled hM s) μ ↔
@@ -598,7 +827,10 @@ theorem isTrustRegionMultiplier_scaled_iff (hM : M.PosDef) {Δ μ : ℝ}
     posSemidef_add_smul_iff_isPositive (hM := hM)]
   exact ⟨fun h => ⟨h.1, h.2, h.3, h.4⟩, fun h => ⟨h.1, h.2.1, h.2.2.1, h.2.2.2⟩⟩
 
-/-- Complementarity in squared form: for `Δ > 0`, `μ (‖s‖_M - Δ) = 0 ↔ μ (‖s‖_M² - Δ²) = 0`. -/
+/-- Complementarity in squared form. Let $M \in \mathbb{R}^{n \times n}$ and $\Delta > 0$. For every
+$\mu$ and $s$,
+$$\mu (\|s\|_M - \Delta) = 0 \iff \mu (\|s\|_M^2 - \Delta^2) = 0.$$
+-/
 theorem mul_mNorm_sub_eq_zero_iff (M : Matrix (Fin n) (Fin n) ℝ) {Δ μ : ℝ} (hΔ : 0 < Δ)
     (s : EuclideanSpace ℝ (Fin n)) :
     μ * (mNorm M s - Δ) = 0 ↔ μ * (mNorm M s ^ 2 - Δ ^ 2) = 0 := by
@@ -606,22 +838,29 @@ theorem mul_mNorm_sub_eq_zero_iff (M : Matrix (Fin n) (Fin n) ℝ) {Δ μ : ℝ}
   have hfac : mNorm M s ^ 2 - Δ ^ 2 = (mNorm M s - Δ) * (mNorm M s + Δ) := by ring
   rw [hfac, ← mul_assoc, mul_eq_zero (a := μ * _), or_iff_left (by positivity)]
 
-/-- The **multiplier conditions** of Theorem 8.2.7 of [cartis2022evaluation] for a step `s` of the
-trust-region subproblem (8.1.2) and a multiplier `λ`: `λ ≥ 0`, `(H + λ M) s = -g` (8.2.31),
-`H + λ M` positive semidefinite and `λ (‖s‖_M² - Δ²) = 0` (8.2.32). -/
+/-- **Theorem 8.2.7** of [cartis2022evaluation], the multiplier conditions. Let
+$g \in \mathbb{R}^n$, $H, M \in \mathbb{R}^{n \times n}$, $\Delta \in \mathbb{R}$,
+$s \in \mathbb{R}^n$ and $\lambda \in \mathbb{R}$. Then $\lambda$ is a **multiplier** of the
+step $s$ of the trust-region subproblem (8.1.2) if $\lambda \ge 0$,
+$$(H + \lambda M) s = -g, \qquad (8.2.31)$$
+$H + \lambda M$ is positive semidefinite, and
+$$\lambda (\|s\|_M^2 - \Delta^2) = 0. \qquad (8.2.32)$$
+-/
 structure IsTrustRegionKKT (g : EuclideanSpace ℝ (Fin n)) (H M : Matrix (Fin n) (Fin n) ℝ)
     (Δ : ℝ) (s : EuclideanSpace ℝ (Fin n)) (lam : ℝ) : Prop where
-  /-- The multiplier is nonnegative. -/
+  /-- The multiplier is nonnegative: $\lambda \ge 0$. -/
   nonneg : 0 ≤ lam
-  /-- The step solves the shifted system (8.2.31). -/
+  /-- The step solves the shifted system (8.2.31): $(H + \lambda M) s = -g$. -/
   shifted : toEuclideanLin (H + lam • M) s = -g
-  /-- The shifted matrix is positive semidefinite. -/
+  /-- The shifted matrix $H + \lambda M$ is positive semidefinite. -/
   posSemidef : (H + lam • M).PosSemidef
-  /-- Complementarity (8.2.32). -/
+  /-- Complementarity (8.2.32): $\lambda (\|s\|_M^2 - \Delta^2) = 0$. -/
   complementarity : lam * (mNorm M s ^ 2 - Δ ^ 2) = 0
 
-/-- The multiplier conditions are those of the operator subproblem in the `M`-inner product
-space. -/
+/-- Let $M$ be positive definite and $\Delta > 0$. Then $\mu$ is a multiplier of $s$ in the sense of
+`CartisGouldToint.Chapter08.IsTrustRegionKKT` if and only if $\mu$ is a trust-region multiplier
+(`Subproblem.IsTrustRegionMultiplier`) of $s$ for the scaled data $M^{-1} g$, $M^{-1} H$ and
+radius $\Delta$ in the $M$-inner product space. -/
 theorem isTrustRegionKKT_iff_scaled (hM : M.PosDef) {Δ μ : ℝ} (hΔ : 0 < Δ)
     {s : EuclideanSpace ℝ (Fin n)} :
     IsTrustRegionKKT g H M Δ s μ ↔
@@ -629,11 +868,16 @@ theorem isTrustRegionKKT_iff_scaled (hM : M.PosDef) {Δ μ : ℝ} (hΔ : 0 < Δ)
   rw [isTrustRegionMultiplier_scaled_iff hM, mul_mNorm_sub_eq_zero_iff M hΔ s]
   exact ⟨fun h => ⟨h.1, h.2, h.3, h.4⟩, fun h => ⟨h.1, h.2.1, h.2.2.1, h.2.2.2⟩⟩
 
-/-- **Theorem 8.2.7 of [cartis2022evaluation] (Trust-region subproblem global optimality).** Let
-`Δ > 0`. Any global minimizer `s*` of (8.1.2) satisfies `(H + λ* M) s* = -g` (8.2.31) for some
-`λ* ≥ 0` with `H + λ* M` positive semidefinite and `λ* (‖s*‖_M² - Δ²) = 0` (8.2.32)
-(`IsTrustRegionKKT`); if `H + λ* M` is positive definite then `s*` is the unique global
-minimizer. -/
+/-- **Theorem 8.2.7** of [cartis2022evaluation] (trust-region subproblem global optimality). Let
+$g \in \mathbb{R}^n$, let $H$ be symmetric, let $M$ be positive definite, and let $\Delta > 0$.
+Let $s_*$ be a global minimizer of the trust-region subproblem (8.1.2). Then there is
+$\lambda_*$ such that $\lambda_* \ge 0$,
+$$(H + \lambda_* M) s_* = -g \quad (8.2.31), \qquad \lambda_* (\|s_*\|_M^2 - \Delta^2) = 0 \quad
+  (8.2.32),$$
+and $H + \lambda_* M$ is positive semidefinite. If moreover $H + \lambda_* M$ is positive
+definite, then $s_*$ is the only global minimizer of (8.1.2).
+
+The conditions on $\lambda_*$ are `CartisGouldToint.Chapter08.IsTrustRegionKKT`. -/
 theorem theorem_8_2_7 (hH : H.IsHermitian) (hM : M.PosDef) {Δ : ℝ} (hΔ : 0 < Δ)
     {s : EuclideanSpace ℝ (Fin n)} (hs : IsTrustRegionSolution g H M Δ s) :
     ∃ lamStar, IsTrustRegionKKT g H M Δ s lamStar ∧
@@ -646,10 +890,13 @@ theorem theorem_8_2_7 (hH : H.IsHermitian) (hM : M.PosDef) {Δ : ℝ} (hΔ : 0 <
   have hc := ((posDef_add_smul_iff_isSymmetricCoercive (hM := hM) μ).1 hpd).isCoercive
   exact (toScaled hM).injective (eq_of_isMinOn_closedBall_of_posDef hT hμ hn hc hun humin)
 
-/-- **Theorem 8.2.8 of [cartis2022evaluation] (Regularization subproblem global optimality).**
-Let `σ > 0` and `r > 2`. Any global minimizer `s*` of (8.1.3) satisfies `(H + λ* M) s* = -g`
-(8.2.31) with `λ* = σ ‖s*‖_M^{r-2}` (8.2.33) and `H + λ* M` positive semidefinite; if `H + λ* M` is
-positive definite then `s*` is the unique global minimizer. -/
+/-- **Theorem 8.2.8** of [cartis2022evaluation] (regularization subproblem global optimality). Let
+$g \in \mathbb{R}^n$, let $H$ be symmetric, let $M$ be positive definite, and let $\sigma > 0$
+and $r > 2$. Let $s_*$ be a global minimizer of the regularization subproblem (8.1.3), and let
+$\lambda_* = \sigma \|s_*\|_M^{r-2}$ (8.2.33). Then
+$$(H + \lambda_* M) s_* = -g \qquad (8.2.31)$$
+and $H + \lambda_* M$ is positive semidefinite. If moreover $H + \lambda_* M$ is positive
+definite, then $s_*$ is the only global minimizer of (8.1.3). -/
 theorem theorem_8_2_8 (hH : H.IsHermitian) (hM : M.PosDef) {σ r : ℝ} (hσ : 0 < σ) (hr : 2 < r)
     {s : EuclideanSpace ℝ (Fin n)} (hs : IsRegularizationSolution g H M σ r s) :
     toEuclideanLin (H + (σ * mNorm M s ^ (r - 2)) • M) s = -g ∧
@@ -670,8 +917,10 @@ theorem theorem_8_2_8 (hH : H.IsHermitian) (hM : M.PosDef) {σ r : ℝ} (hσ : 0
 
 section Sufficiency
 
-/-- **Sufficiency of the multiplier conditions** for (8.1.2): a feasible step `s` with a multiplier
-`λ` (`IsTrustRegionKKT`) is a global minimizer of the trust-region subproblem. -/
+/-- Sufficiency of the multiplier conditions for (8.1.2). Let $H$ be symmetric, let $M$ be positive
+definite, and let $\Delta > 0$. If $\lambda$ is a multiplier of $s$
+(`CartisGouldToint.Chapter08.IsTrustRegionKKT`) and $\|s\|_M \le \Delta$, then $s$ is a global
+minimizer of the trust-region subproblem. -/
 theorem isTrustRegionSolution_of_kkt (hH : H.IsHermitian) (hM : M.PosDef) {Δ lam : ℝ}
     (hΔ : 0 < Δ) {s : EuclideanSpace ℝ (Fin n)} (h : IsTrustRegionKKT g H M Δ s lam)
     (hs : mNorm M s ≤ Δ) : IsTrustRegionSolution g H M Δ s := by
@@ -679,9 +928,10 @@ theorem isTrustRegionSolution_of_kkt (hH : H.IsHermitian) (hM : M.PosDef) {Δ la
   rw [mNorm_eq_norm_toScaled hM] at hs
   exact ⟨hs, ((isTrustRegionKKT_iff_scaled hM hΔ).1 h).isMinOn (isSymmetric_scaledOp hH)⟩
 
-/-- **Sufficiency of the optimality conditions** for (8.1.3): if `(H + λ M) s = -g` with
-`λ = σ ‖s‖_M^{r-2}` and `H + λ M ⪰ 0`, then `s` is a global minimizer of the regularization
-subproblem. -/
+/-- Sufficiency of the optimality conditions for (8.1.3). Let $H$ be symmetric, let $M$ be positive
+definite, and let $\sigma > 0$ and $r > 2$. Let $\lambda = \sigma \|s\|_M^{r-2}$. If
+$(H + \lambda M) s = -g$ and $H + \lambda M$ is positive semidefinite, then $s$ is a global
+minimizer of the regularization subproblem. -/
 theorem isRegularizationSolution_of_shifted (hH : H.IsHermitian) (hM : M.PosDef) {σ r : ℝ}
     (hσ : 0 < σ) (hr : 2 < r) {s : EuclideanSpace ℝ (Fin n)}
     (h1 : toEuclideanLin (H + (σ * mNorm M s ^ (r - 2)) • M) s = -g)
@@ -692,8 +942,10 @@ theorem isRegularizationSolution_of_shifted (hH : H.IsHermitian) (hM : M.PosDef)
   exact ⟨(add_smul_scaledOp_toScaled_eq_neg_iff _ g s).2 h1,
     (posSemidef_add_smul_iff_isPositive _).1 h2⟩
 
-/-- A step with a multiplier `λ` for which `H + λ M` is positive definite is the unique global
-minimizer of the trust-region subproblem (8.1.2). -/
+/-- Uniqueness for (8.1.2). Let $H$ be symmetric, let $M$ be positive definite, and let
+$\Delta > 0$. If $\lambda$ is a multiplier of $s$
+(`CartisGouldToint.Chapter08.IsTrustRegionKKT`), $\|s\|_M \le \Delta$ and $H + \lambda M$ is
+positive definite, then every global minimizer $u$ of the trust-region subproblem equals $s$. -/
 theorem eq_of_isTrustRegionKKT_of_posDef (hH : H.IsHermitian) (hM : M.PosDef) {Δ lam : ℝ}
     (hΔ : 0 < Δ) {s : EuclideanSpace ℝ (Fin n)} (h : IsTrustRegionKKT g H M Δ s lam)
     (hs : mNorm M s ≤ Δ) (hpd : (H + lam • M).PosDef) {u : EuclideanSpace ℝ (Fin n)}

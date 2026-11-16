@@ -7,42 +7,65 @@ import Numlib.Analysis.Calculus.LipschitzIteratedFDeriv
 import Numlib.Analysis.Calculus.Taylor
 
 /-!
-# Cartis–Gould–Toint §A.8: Taylor's theorem
+# Cartis, Gould and Toint, Section A.8: Taylor's theorem
 
-Surface file for C. Cartis, N. I. M. Gould and Ph. L. Toint, *Evaluation Complexity of
-Algorithms for Nonconvex Optimization* [cartis2022evaluation], §A.8.
+This module formalizes §A.8 of [cartis2022evaluation]: Taylor's theorem for functions of one
+variable, with the integral and the Lagrange form of the remainder, and the bounds on the Taylor
+remainder of a function of several variables whose $p$-th derivative is Hölder or Lipschitz
+continuous. For $\psi : \mathbb{R} \to \mathbb{R}$ the Taylor approximation of $\psi(t + h)$ is
+$\tau_k(t, h) = \psi(t) + \sum_{i=1}^k \psi^{(i)}(t) h^i / i!$. For
+$f : \mathbb{R}^n \to \mathbb{R}$ the Taylor polynomial (A.10) is $T_{f,p}(x, s) = \sum_{i=0}^p
+\nabla^i f(x)[s]^i / i!$, and the generalized factorial is
+$(k + \beta)! = \prod_{\ell=1}^k (\ell + \beta)$. The proofs specialize the backbone modules
+`Numlib.Analysis.Calculus.Taylor` and `Numlib.Analysis.Calculus.LipschitzIteratedFDeriv`.
 
-Univariate statements use `ψ : ℝ → ℝ` and the Taylor approximation
-`τ_k(t, h) = ψ(t) + ∑_{i=1}^k ψ^{(i)}(t) h^i / i!` (`taylorApprox`), whose derivatives are taken
-within the interval on which `ψ` is assumed smooth (one-sided at its endpoints). Multivariate
-statements are on `ℝⁿ = EuclideanSpace ℝ (Fin n)`: `∇^j f(x)` is `iteratedFDeriv ℝ j f x`, the
-tensor norm (A.7) is the operator norm of multilinear maps, `T_{f,p}(x, s)` of (A.10) is
-`taylorPolynomial f p x s`, `∇^j_s T_{f,p}(x, s)` is
-`iteratedFDeriv ℝ j (taylorPolynomial f p x) s`, and `(k + β)! = ∏_{ℓ=1}^k (ℓ + β)` is
-`holderFactorial k β`.
+## Main definitions
+
+* Theorem A.8.1, `CartisGouldToint.AppendixA.taylorApprox`: the Taylor approximation $\tau_k(t, h)$,
+  with the derivatives taken within a given set.
 
 ## Main results
 
-* `theorem_A_8_1` — Taylor's theorem with integral remainder (A.9).
-* `theorem_A_8_2` — Taylor's theorem with Lagrange remainder.
-* `theorem_A_8_3` — remainder bounds (A.14), (A.15) for a Hölder `p`-th derivative (A.13);
-  `eq_A_16` — the Beta integral (A.16) used in its proof.
-* `corollary_A_8_4` — remainder bounds (A.19), (A.20) for a Lipschitz `p`-th derivative (A.18).
-* `theorem_A_8_5` — `∇^p f` is `L`-Lipschitz iff `‖∇^{p+1} f‖ ≤ L` (A.21).
+* Theorem A.8.1, `CartisGouldToint.AppendixA.theorem_A_8_1`: Taylor's theorem with the integral
+  remainder (A.9).
+* Theorem A.8.2, `CartisGouldToint.AppendixA.theorem_A_8_2`: Taylor's theorem with the Lagrange
+  remainder.
+* Theorem A.8.3, `CartisGouldToint.AppendixA.theorem_A_8_3`: the remainder bounds (A.14) and (A.15)
+  when $\nabla^p f$ is Hölder continuous (A.13).
+* Equation (A.16), `CartisGouldToint.AppendixA.eq_A_16`: the integral $\int_0^1 \xi^\beta (1 -
+  \xi)^{k-1} \, d\xi = (k-1)!/(k+\beta)!$ that the proof of Theorem A.8.3 uses.
+* Corollary A.8.4, `CartisGouldToint.AppendixA.corollary_A_8_4`: the remainder bounds (A.19) and
+  (A.20) when $\nabla^p f$ is Lipschitz continuous (A.18).
+* Theorem A.8.5, `CartisGouldToint.AppendixA.theorem_A_8_5`: on an open convex set, $\nabla^p f$ is
+  $L$-Lipschitz if and only if $\|\nabla^{p+1} f\| \le L$ (A.21).
 
-## Deviations from the book
+## Conventions
 
-* Theorem A.8.5 assumes `L ≥ 0`. The book leaves the sign of the Lipschitz constant implicit; on
-  `ℝ⁰` with `L < 0` the Lipschitz condition holds trivially while (A.21) fails.
-* Theorem A.8.1 is stated for `k ≥ 1` and `h ≥ 0` (the book leaves both implicit: the
-  remainder involves `(k-1)!` and the interval `[t, t + h]`).
-* Theorem A.8.2 gives `ξ` strictly between `t` and `t + h` (`uIoo`), for either sign of `h`;
-  this needs `h ≠ 0` (the open interval is empty when `h = 0`, where the identity holds with
-  `ξ = t`).
-* Theorem A.8.3: the proof of (A.15) displays the constant `(p-j+1)!/(p-j+β)!`; the stated
-  `1/(p-j+β)!` is what is proved. The backbone form also covers `j = 0` and every `β ≥ 0`.
-* (A.12) is stated for `f` merely `n` times differentiable at `x`; the library proves it for `f`
-  of class `C^n` at `x` (`Numlib.Analysis.Calculus.MultivariateTaylor.Peano`).
+* The derivatives $\psi^{(i)}$ of a function of one variable are taken within the interval on which
+  $\psi$ is assumed smooth (`iteratedDerivWithin`), so they are one-sided at the endpoints of the
+  interval.
+* $\mathbb{R}^n$ is `EuclideanSpace ℝ (Fin n)`.
+* $\nabla^j f(x)$ is `iteratedFDeriv ℝ j f x`, and the tensor norm (A.7) is the operator norm of
+  multilinear maps.
+* $T_{f,p}(x, s)$ is `taylorPolynomial f p x s`.
+* $\nabla^j_s T_{f,p}(x, s)$ is `iteratedFDeriv ℝ j (taylorPolynomial f p x) s`.
+* $(k + \beta)!$ is `holderFactorial k β`.
+
+## Deviations from the source
+
+* **Theorem A.8.1** (reading). The conditions $k \ge 1$ and $h \ge 0$, which the book leaves
+  implicit, are hypotheses. See `CartisGouldToint.AppendixA.theorem_A_8_1`.
+* **Theorem A.8.2** (correction). The point $\xi$ lies strictly between $t$ and $t + h$, which needs
+  the added hypothesis $h \neq 0$. See `CartisGouldToint.AppendixA.theorem_A_8_2`.
+* **Theorem A.8.5** (correction). The added hypothesis $L \ge 0$ is needed: on $\mathbb{R}^0$ with
+  $L < 0$ the Lipschitz condition holds and (A.21) fails. See
+  `CartisGouldToint.AppendixA.theorem_A_8_5`.
+
+## Not formalized
+
+* **(A.12)**, the Taylor expansion with the Peano remainder. It is not stated in this module. The
+  backbone module `Numlib.Analysis.Calculus.MultivariateTaylor.Peano` proves it for $f$ of class
+  $C^n$ at $x$, while the book assumes only that $f$ is $n$ times differentiable at $x$.
 -/
 
 open Set
@@ -52,13 +75,19 @@ namespace CartisGouldToint.AppendixA
 
 /-! ### Univariate Taylor theorems -/
 
-/-- The `k`-th degree Taylor approximation `τ_k(t, h) = ψ(t) + ∑_{i=1}^k (1/i!) ψ^{(i)}(t) h^i`
-of `ψ(t + h)` about `t` ([cartis2022evaluation], Theorem A.8.1), the derivatives `ψ^{(i)}` being
-taken within the set `I` (the interval on which `ψ` is smooth). -/
+/-- **Theorem A.8.1** of [cartis2022evaluation], the Taylor approximation. Let
+$\psi : \mathbb{R} \to \mathbb{R}$, $I \subseteq \mathbb{R}$, $k \in \mathbb{N}$ and
+$t, h \in \mathbb{R}$. The **Taylor approximation** of degree $k$ of $\psi(t + h)$ about $t$ is
+$$\tau_k(t, h) = \psi(t) + \sum_{i=1}^k \frac{1}{i!} \psi^{(i)}(t) h^i,$$
+where the derivatives $\psi^{(i)}$ are taken within $I$.
+
+The derivative $\psi^{(i)}(t)$ is `iteratedDerivWithin i ψ I t`. In the theorems of this module,
+$I$ is the interval on which $\psi$ is smooth. -/
 noncomputable def taylorApprox (ψ : ℝ → ℝ) (I : Set ℝ) (k : ℕ) (t h : ℝ) : ℝ :=
   ψ t + ∑ i ∈ Finset.Icc 1 k, (i ! : ℝ)⁻¹ * iteratedDerivWithin i ψ I t * h ^ i
 
-/-- `τ_k(t, h)` is Mathlib's Taylor polynomial `taylorWithinEval ψ k I t` evaluated at `t + h`. -/
+/-- The Taylor approximation $\tau_k(t, h)$ is the Taylor polynomial `taylorWithinEval ψ k I t` of
+Mathlib, evaluated at $t + h$. -/
 theorem taylorApprox_eq_taylorWithinEval (ψ : ℝ → ℝ) (I : Set ℝ) (k : ℕ) (t h : ℝ) :
     taylorApprox ψ I k t h = taylorWithinEval ψ k I t (t + h) := by
   rw [taylor_within_apply, Finset.range_eq_Ico,
@@ -69,9 +98,17 @@ theorem taylorApprox_eq_taylorWithinEval (ψ : ℝ → ℝ) (I : Set ℝ) (k : �
   · simp
   · exact Finset.sum_congr rfl fun i _ => by ring
 
-/-- **Theorem A.8.1 (Taylor's theorem for a univariate function)** of [cartis2022evaluation].
-If `k ≥ 1`, `h ≥ 0` and `ψ` is `k` times continuously differentiable on `[t, t + h]`, then (A.9)
-`ψ(t + h) - τ_k(t, h) = 1/(k-1)! ∫_0^h (h - ξ)^{k-1} (ψ^{(k)}(t + ξ) - ψ^{(k)}(t)) dξ`. -/
+/-- **Theorem A.8.1** of [cartis2022evaluation] (Taylor's theorem for a univariate function). Let
+$\psi : \mathbb{R} \to \mathbb{R}$, let $k \ge 1$, $t \in \mathbb{R}$ and $h \ge 0$, and let
+$\psi$ be $k$ times continuously differentiable on $[t, t + h]$. Then (A.9) holds:
+$$\psi(t + h) - \tau_k(t, h) = \frac{1}{(k-1)!} \int_0^h (h - \xi)^{k-1} \bigl(\psi^{(k)}(t +
+  \xi) - \psi^{(k)}(t)\bigr) \, d\xi.$$
+
+**Reading.** The book leaves the conditions $k \ge 1$ and $h \ge 0$ implicit: the remainder
+contains $(k-1)!$, and the interval is $[t, t + h]$.
+
+The approximation $\tau_k$ is `CartisGouldToint.AppendixA.taylorApprox` with $I = [t, t + h]$.
+All derivatives, also $\psi^{(k)}$ in the integrand, are taken within $[t, t + h]$. -/
 theorem theorem_A_8_1 {ψ : ℝ → ℝ} {k : ℕ} {t h : ℝ} (hk : 1 ≤ k) (hh : 0 ≤ h)
     (hψ : ContDiffOn ℝ k ψ (Icc t (t + h))) :
     ψ (t + h) - taylorApprox ψ (Icc t (t + h)) k t h =
@@ -81,11 +118,19 @@ theorem theorem_A_8_1 {ψ : ℝ → ℝ} {k : ℕ} {t h : ℝ} (hk : 1 ≤ k) (h
   rw [taylorApprox_eq_taylorWithinEval, one_div]
   exact taylor_integral_remainder_sub hk hh hψ
 
-/-- **Theorem A.8.2 (Univariate Taylor's theorem, Lagrange form)** of [cartis2022evaluation].
-If `ψ` is `k + 1` times continuously differentiable on the interval between `t` and `t + h`,
-`h ≠ 0`, then there is `ξ` strictly between `t` and `t + h` with
-`ψ(t + h) - τ_k(t, h) = ψ^{(k+1)}(ξ) h^{k+1}/(k+1)!`. (For `h = 0` both sides vanish with `ξ = t`;
-the hypothesis `h ≠ 0` is needed only for `ξ` to lie in the open interval.) -/
+/-- **Theorem A.8.2** of [cartis2022evaluation] (univariate Taylor's theorem, Lagrange form). Let
+$\psi : \mathbb{R} \to \mathbb{R}$, $k \in \mathbb{N}$, $t \in \mathbb{R}$ and $h \neq 0$, and
+let $\psi$ be $k + 1$ times continuously differentiable on the closed interval between $t$ and
+$t + h$. Then there is $\xi$ strictly between $t$ and $t + h$ with
+$$\psi(t + h) - \tau_k(t, h) = \frac{\psi^{(k+1)}(\xi)}{(k+1)!} h^{k+1}.$$
+
+**Correction.** The book does not require $h \neq 0$. For $h = 0$ the open interval between $t$
+and $t + h$ is empty, so no such $\xi$ exists, although the identity holds with $\xi = t$.
+
+The statement holds for either sign of $h$. The derivative $\psi^{(k+1)}(\xi)$ is the ordinary
+derivative `iteratedDeriv (k + 1) ψ ξ`. In the Lean statement,
+`CartisGouldToint.AppendixA.taylorApprox` takes its derivatives within the closed interval
+`uIcc t (t + h)`, and the point lies in the open interval `uIoo t (t + h)`. -/
 theorem theorem_A_8_2 {ψ : ℝ → ℝ} {k : ℕ} {t h : ℝ} (hh : h ≠ 0)
     (hψ : ContDiffOn ℝ (k + 1) ψ (uIcc t (t + h))) :
     ∃ ξ ∈ uIoo t (t + h), ψ (t + h) - taylorApprox ψ (uIcc t (t + h)) k t h =
@@ -100,18 +145,35 @@ theorem theorem_A_8_2 {ψ : ℝ → ℝ} {k : ℕ} {t h : ℝ} (hh : h ≠ 0)
 
 variable {n : ℕ}
 
-/-- **(A.16)** of [cartis2022evaluation]: for `k ≥ 1` and `β ∈ [0, 1]`,
-`∫_0^1 ξ^β (1 - ξ)^{k-1} dξ = (k-1)!/(k+β)!`. -/
+/-- **Equation (A.16)** of [cartis2022evaluation]. For $k \ge 1$ and $\beta \in [0, 1]$,
+$$\int_0^1 \xi^\beta (1 - \xi)^{k-1} \, d\xi = \frac{(k-1)!}{(k+\beta)!},$$
+where $(k + \beta)! = \prod_{\ell=1}^k (\ell + \beta)$.
+
+The proof of Theorem A.8.3 uses this identity. The factorial $(k + \beta)!$ is
+`holderFactorial k β`. The proof does not use the hypothesis $\beta \le 1$. -/
 theorem eq_A_16 {k : ℕ} (hk : 1 ≤ k) {β : ℝ} (hβ0 : 0 ≤ β) (_hβ1 : β ≤ 1) :
     ∫ ξ in (0 : ℝ)..1, ξ ^ β * (1 - ξ) ^ (k - 1) = ((k - 1)! : ℝ) / holderFactorial k β :=
   integral_rpow_mul_one_sub_pow hk hβ0
 
-/-- **Theorem A.8.3 (Taylor's theorem for a multivariate Hölder function)** of
-[cartis2022evaluation]. Let `C ⊆ ℝⁿ` be convex, `D ⊇ C` open, `f` `p` times continuously
-differentiable on `D`, and let `∇^p f` be Hölder continuous on `C` with constant `H` and
-exponent `β ∈ [0, 1]` (A.13). Then for `x, x + s ∈ C`,
-(A.14) `|f(x + s) - T_{f,p}(x, s)| ≤ H/(p+β)! ‖s‖^{p+β}`, and
-(A.15) `‖∇^j f(x + s) - ∇^j_s T_{f,p}(x, s)‖ ≤ H/(p-j+β)! ‖s‖^{p-j+β}` for `j ∈ [1 : p]`. -/
+/-- **Theorem A.8.3** of [cartis2022evaluation] (Taylor's theorem for a multivariate Hölder
+function). Let $C \subseteq \mathbb{R}^n$ be convex, let $D \supseteq C$ be open, let
+$f : \mathbb{R}^n \to \mathbb{R}$ be $p$ times continuously differentiable on $D$, and let
+$\beta \in [0, 1]$. Assume that $\nabla^p f$ is Hölder continuous on $C$ with constant $H$ and
+exponent $\beta$ (A.13):
+$$\|\nabla^p f(x) - \nabla^p f(y)\| \le H \|x - y\|^\beta \quad \text{for all } x, y \in C.$$
+Then for all $x$ and $s$ with $x, x + s \in C$, the bound (A.14)
+$$|f(x + s) - T_{f,p}(x, s)| \le \frac{H}{(p+\beta)!} \|s\|^{p+\beta}$$
+holds, and for every $j \in \{1, \dots, p\}$ the bound (A.15)
+$$\|\nabla^j f(x + s) - \nabla^j_s T_{f,p}(x, s)\| \le \frac{H}{(p-j+\beta)!}
+  \|s\|^{p-j+\beta}$$
+holds.
+
+The proof of (A.15) in the book displays the constant $(p-j+1)!/(p-j+\beta)!$; the constant
+$1/(p-j+\beta)!$ of the statement is what is proved here. The proof does not use the hypothesis
+$\beta \le 1$, and the backbone form of the result also covers $j = 0$ and every $\beta \ge 0$.
+The Taylor polynomial $T_{f,p}(x, s)$ of (A.10) is `taylorPolynomial f p x s`, its derivative
+$\nabla^j_s T_{f,p}(x, s)$ is `iteratedFDeriv ℝ j (taylorPolynomial f p x) s`, and
+$(k + \beta)!$ is `holderFactorial k β`. -/
 theorem theorem_A_8_3 {C D : Set (EuclideanSpace ℝ (Fin n))} (hC : Convex ℝ C) (hD : IsOpen D)
     (hCD : C ⊆ D) {f : EuclideanSpace ℝ (Fin n) → ℝ} {p : ℕ} (hf : ContDiffOn ℝ p f D)
     {H β : ℝ} (hβ0 : 0 ≤ β) (_hβ1 : β ≤ 1)
@@ -127,12 +189,19 @@ theorem theorem_A_8_3 {C D : Set (EuclideanSpace ℝ (Fin n))} (hC : Convex ℝ 
   exact ⟨abs_sub_taylorPolynomial_le_of_holder hC hf' hβ0 hH' hx hxs, fun _ _ hj =>
     norm_iteratedFDeriv_sub_taylorPolynomial_le_of_holder hC hf' hβ0 hH' hx hxs hj⟩
 
-/-- **Corollary A.8.4 (Taylor's theorem for a multivariate Lipschitz function)** of
-[cartis2022evaluation]. Let `C ⊆ ℝⁿ` be convex, `D ⊇ C` open, `f` `p` times continuously
-differentiable on `D`, and let `∇^p f` be Lipschitz continuous on `C` with constant `L` (A.18).
-Then for `x, x + s ∈ C`,
-(A.19) `|f(x + s) - T_{f,p}(x, s)| ≤ L/(p+1)! ‖s‖^{p+1}`, and
-(A.20) `‖∇^j f(x + s) - ∇^j_s T_{f,p}(x, s)‖ ≤ L/(p-j+1)! ‖s‖^{p-j+1}` for `j ∈ [1 : p]`. -/
+/-- **Corollary A.8.4** of [cartis2022evaluation] (Taylor's theorem for a multivariate Lipschitz
+function). Let $C \subseteq \mathbb{R}^n$ be convex, let $D \supseteq C$ be open, and let
+$f : \mathbb{R}^n \to \mathbb{R}$ be $p$ times continuously differentiable on $D$. Assume that
+$\nabla^p f$ is Lipschitz continuous on $C$ with constant $L$ (A.18):
+$$\|\nabla^p f(x) - \nabla^p f(y)\| \le L \|x - y\| \quad \text{for all } x, y \in C.$$
+Then for all $x$ and $s$ with $x, x + s \in C$, the bound (A.19)
+$$|f(x + s) - T_{f,p}(x, s)| \le \frac{L}{(p+1)!} \|s\|^{p+1}$$
+holds, and for every $j \in \{1, \dots, p\}$ the bound (A.20)
+$$\|\nabla^j f(x + s) - \nabla^j_s T_{f,p}(x, s)\| \le \frac{L}{(p-j+1)!} \|s\|^{p-j+1}$$
+holds.
+
+The Taylor polynomial $T_{f,p}(x, s)$ is `taylorPolynomial f p x s`, and
+$\nabla^j_s T_{f,p}(x, s)$ is `iteratedFDeriv ℝ j (taylorPolynomial f p x) s`. -/
 theorem corollary_A_8_4 {C D : Set (EuclideanSpace ℝ (Fin n))} (hC : Convex ℝ C)
     (hD : IsOpen D) (hCD : C ⊆ D) {f : EuclideanSpace ℝ (Fin n) → ℝ} {p : ℕ}
     (hf : ContDiffOn ℝ p f D) {L : ℝ}
@@ -147,10 +216,15 @@ theorem corollary_A_8_4 {C D : Set (EuclideanSpace ℝ (Fin n))} (hC : Convex �
   exact ⟨abs_sub_taylorPolynomial_le_of_lipschitz hC hf' hL' hx hxs, fun _ _ hj =>
     norm_iteratedFDeriv_sub_taylorPolynomial_le_of_lipschitz hC hf' hL' hx hxs hj⟩
 
-/-- **Theorem A.8.5 (Lipschitz if and only if bounded derivatives)** of [cartis2022evaluation].
-Let `C ⊆ ℝⁿ` be open and convex and `f` `p + 1` times continuously differentiable on `C`. Then
-`∇^p f` is Lipschitz continuous on `C` with constant `L` (A.18) iff `‖∇^{p+1} f(x)‖ ≤ L` for all
-`x ∈ C` (A.21). (The Lipschitz constant is assumed nonnegative.) -/
+/-- **Theorem A.8.5** of [cartis2022evaluation] (Lipschitz if and only if bounded derivatives). Let
+$C \subseteq \mathbb{R}^n$ be open and convex, let $f : \mathbb{R}^n \to \mathbb{R}$ be $p + 1$
+times continuously differentiable on $C$, and let $L \ge 0$. Then $\nabla^p f$ is Lipschitz
+continuous on $C$ with constant $L$ (A.18),
+$$\|\nabla^p f(x) - \nabla^p f(y)\| \le L \|x - y\| \quad \text{for all } x, y \in C,$$
+if and only if (A.21) holds: $\|\nabla^{p+1} f(x)\| \le L$ for all $x \in C$.
+
+**Correction.** The book leaves the sign of $L$ implicit. The hypothesis $L \ge 0$ is needed: on
+$\mathbb{R}^0$ with $L < 0$ the Lipschitz condition holds trivially, while (A.21) fails. -/
 theorem theorem_A_8_5 {C : Set (EuclideanSpace ℝ (Fin n))} (hCo : IsOpen C) (hC : Convex ℝ C)
     {f : EuclideanSpace ℝ (Fin n) → ℝ} {p : ℕ} (hf : ContDiffOn ℝ (p + 1) f C) {L : ℝ}
     (hL : 0 ≤ L) :

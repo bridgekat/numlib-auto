@@ -7,160 +7,37 @@ import NumlibSurface.CartisGouldToint.Chapter14.Section02
 import NumlibSurface.CartisGouldToint.Chapter14.Section03
 
 /-!
-# Cartis–Gould–Toint, Chapter 14: Composite and Constrained Problems
+# Cartis, Gould and Toint, Chapter 14: Composite and Constrained Problems
 
-Surface of [cartis2022evaluation] Chapter 14, the last chapter of Part II: high-order
-approximate minimizers and their evaluation complexity for composite problems
-`min f(x) + h(c(x))` with a nonsmooth `h` (the regularization method ARqpC), for problems with
-simple (inexpensive) constraints `x ∈ X` (the `-SC` variants of the methods of Chapter 12 and
-§14.1), and for problems with nonconvex equality constraints `c(x) = 0`, `x ∈ X` (curve-based
-necessary conditions, the least-norm method LENq-SC and the two-phase method TPqp-GC). This
-module imports the section modules and adds nothing of its own.
-
-* §14.1, `Chapter14.Section01`: the composite problem (14.1.1), assumptions c.D1pL, h.L, h.S0,
-  w.Bb (`AssumptionCD1pL`, `AssumptionHLip`, `AssumptionHS0`, `AssumptionWBb`), ARqpC
-  (Algorithms 14.1.1–14.1.2, `algorithm_14_1_1`, `algorithm_14_1_2`); Lemma 14.1.1, Example
-  14.1.1, Lemmas 14.1.2–14.1.9, Theorem 14.1.10 (`theorem_14_1_10_i`, `theorem_14_1_10_ii`);
-  existence of runs (`exists_algorithm_14_1_1`) and the radius policy (14.1.28) for every run
-  (`algorithm_14_1_1.radius_policy`); Corollary 14.1.11 (`corollary_14_1_11`, with the
-  admissibility of the slow steps for `|c|` that the book does not check). The algorithm (the run
-  predicate `Optimization.IsARqpCRun`) and its analysis are the backbone
-  `Numlib.Optimization.ModelBased.HighOrder.ARqpC` and
-  `Numlib.Optimization.ModelBased.HighOrder.ARqpCComplexity` (normed spaces, anchored
-  assumptions `LipschitzDerivsAnchored` on `f` and `c`), of which the book items are instances
-* §14.2, `Chapter14.Section02`: simple constraints; assumptions X.CNe, f.D1qLaB.X (and
-  variants), f.bB.X; Theorem 14.2.1, Lemma 14.2.5 (sparse first-order measure); the ARqpC-SC,
-  TRq-SC and ARqp-SC rows of Lemmas 14.2.2–14.2.3 and Theorem 14.2.4 (`lemma_14_2_2_arqpc`,
-  `lemma_14_2_2_trq`, `lemma_14_2_2_arqp`, `lemma_14_2_3`, `lemma_14_2_3_trq`,
-  `lemma_14_2_3_arqpc`, `theorem_14_2_4_trq`, `theorem_14_2_4_arqp`, `theorem_14_2_4_arqpc`,
-  `theorem_14_2_4_arqpc_convex`; the ARqp-SC rows in either radii mode, unit radii or (12.2.51)
-  at every order, `Optimization.arqpPiOf`), the TRqIDA-SC, TRqEDA-SC, ARqpIDA-SC and ARqpEDA-SC rows
-  (`lemma_14_2_2_trqida`, …, `theorem_14_2_4_arqpeda`, from the Chapter 13 runs with a feasible
-  set; the regularization rows in either radii mode, unit radii or (12.2.51) at every order,
-  `Optimization.ARqpDARadiiControl`; on `ℝⁿ` with `q ≤ 2` every ARqpIDA-SC run attains the
-  unit-radii bound in either mode, `theorem_14_2_4_arqpida_le_two`); the TRq-SC and ARqp-SC rows
-  also under the anchored f.D1qLaB.X / f.D1pLaB.X (`lemma_14_2_2_trq_anchored`, …,
-  `theorem_14_2_4_arqp_anchored`, from the anchored Chapter 12 analysis), and the
-  dynamic-accuracy rows also under the anchored f.D0qLaB.X / f.D0pLaB.X
-  (`lemma_14_2_2_trqida_anchored`, …, `theorem_14_2_4_arqpeda_anchored`, from the anchored
-  Chapter 13 analysis; the iterates of all four methods stay in the sublevel set `𝓛_f(x₀)`);
-  sharpness of the TRq-SC, ARqp-SC, ARqpC-SC (`q = 1`, convex
-  `h`), TRqIDA-SC and TRqEDA-SC orders, of the ARqp-SC order of the lower-bound mode for every `q`
-  on a closed nonconvex `X ⊂ ℝ` (the "otherwise" entries for `q ≤ 2`), of the ARqpIDA-SC and
-  ARqpEDA-SC orders of the unit-radii mode (`q ≤ 2`), of the ARqpEDA-SC order of the lower-bound
-  mode (every `q`) and of the ARqpIDA-SC order of the lower-bound mode for `q = p ≥ 3` and, on a
-  closed nonconvex `X ⊂ ℝ²`, for every `q` (`theorem_14_2_4_sharp`,
-  `theorem_14_2_4_sharp_arqp`, `theorem_14_2_4_sharp_arqp_otherwise`,
-  `theorem_14_2_4_sharp_trqida`, `theorem_14_2_4_sharp_trqeda`,
-  `theorem_14_2_4_sharp_arqpida`, `theorem_14_2_4_sharp_arqpeda`,
-  `theorem_14_2_4_sharp_arqpeda_otherwise`, `theorem_14_2_4_sharp_arqpida_otherwise`,
-  `theorem_14_2_4_sharp_arqpida_otherwise_constrained`; the slow runs of the dynamic-accuracy
-  methods are the backbone `Numlib.Optimization.Complexity.SlowExample.TRqDARun`,
-  `Numlib.Optimization.Complexity.SlowExample.ARqpDARun` and
-  `Numlib.Optimization.Complexity.SlowExample.ARqpDASlitRun`)
-* §14.3, `Chapter14.Section03`: the problem (14.3.1), X.CQ (`AssumptionXCQ`), Theorems
-  14.3.1–14.3.2, Example 14.3.1; LENq-SC (`algorithm_14_3_1`), Theorems 14.3.3–14.3.4; TPqp-GC
-  (`algorithm_14_3_2`), Lemmas 14.3.5–14.3.8 and Theorem 14.3.9 for an abstract INNER satisfying
-  the contract of Lemma 14.2.2 (`theorem_14_3_9`); existence of runs and Theorem 14.3.9 for runs
-  whose INNER calls are runs of ARqp-SC (`theorem_14_3_9_arqpc`, `theorem_14_3_9_arqp`), of ARqp
-  with unit radii on `ℝⁿ` (`theorem_14_3_9_arqp_unit`) and of TRq-SC (`theorem_14_3_9_trq`); and
-  the counterexamples to the printed statements listed below. Phase 2 of TPqp-GC and its INNER
-  contracts are the backbone `Constrained.IsHighOrderTargetRun` and
-  `Constrained.HighOrderTargetSeq.IsMeritContract`.
-
-The composite Taylor model `T_{f,j}(x, s) + h(T_{c,j}(x, s))` and its measure `φ^δ_{w,j}` (14.1.6)
-are the backbone `Optimization.compositeTaylorDecrement` and
-`Optimization.compositeTaylorMeasure`; ARqpC is the backbone run `Optimization.IsARqpCRun`: the
-ARqp run `Optimization.IsARqpRun` with composite model data `Optimization.ARqpData.ofComposite`
-whose Step 2 is the detailed Step 2, carrying a closed feasible set `X` (`X = univ` is ARqpC, a
-general `X` is ARqpC-SC); with `c = 0`, `h = 0` it is ARqp-SC, the INNER solver of §14.3
+This module collects the formalization of Chapter 14 of [cartis2022evaluation], the last chapter of
+Part II: high-order approximate minimizers and their evaluation complexity for three classes of
+problems. The first class is composite problems $\min f(x) + h(c(x))$ with a nonsmooth $h$, solved
+by the regularization method ARqpC. The second is problems with simple (inexpensive) constraints
+$x \in X$, solved by the "-SC" variants of the methods of Chapters 12–13 and §14.1. The third is
+problems with nonconvex equality constraints $c(x) = 0$, $x \in X$, with necessary conditions along
+curves, the least-norm method LENq-SC and the two-phase method TPqp-GC. The composite Taylor model
+$T_{f,j}(x, s) + h(T_{c,j}(x, s))$ and its measure $\phi^\delta_{w,j}$ (14.1.6) are the backbone
+`Optimization.compositeTaylorDecrement` and `Optimization.compositeTaylorMeasure`. ARqpC is the
+backbone run `Optimization.IsARqpCRun`, analysed in `Numlib.Optimization.ModelBased.HighOrder.ARqpC`
+and `Numlib.Optimization.ModelBased.HighOrder.ARqpCComplexity`: it is the ARqp run
+`Optimization.IsARqpRun` with composite model data and the detailed Step 2, on a closed feasible set
+$X$; with $X = \mathbb{R}^n$ it is ARqpC, with a general $X$ it is ARqpC-SC, and with $c = 0$,
+$h = 0$ it is ARqp-SC, the INNER solver of §14.3
 (`Numlib.Optimization.ModelBased.HighOrder.ARqpCCall`). The constrained measure (14.2.2) is
-`Optimization.taylorMeasure (ftaylorSeries ℝ f x) j δ {d | x + d ∈ X}`; "simple constraints" is
-an oracle-cost convention without a declaration of its own (the evaluation counts never charge
-the subproblems). In §14.3 the Lagrangian is `Constrained.innerLagrangian f c y`
-(`ℒ = f - ⟨y, c⟩`), the Phase-2 residual and merit are `Constrained.targetResidual`,
-`Constrained.targetMerit`; Phase 1 of TPqp-GC is LENq-SC on `c`, and the INNER calls of both
-algorithms are described by cost and decrease contracts (`innerEvalBound`,
-`IsInnerPhaseRunStrong`).
-Appendix B's Chapter 14 part contains only proofs, so there is no `AppendixB.Chapter14`.
+`Optimization.taylorMeasure (ftaylorSeries ℝ f x) j δ {d | x + d ∈ X}`. In §14.3 the Lagrangian
+$f - \langle y, c \rangle$ is `Constrained.innerLagrangian f c y`; Phase 1 of TPqp-GC is LENq-SC on
+$c$; Phase 2 and its INNER contracts are the backbone `Constrained.IsHighOrderTargetRun` and
+`Constrained.HighOrderTargetSeq.IsMeritContract`; and the INNER calls of both algorithms are
+described by contracts on cost and decrease (`CartisGouldToint.Chapter14.innerEvalBound`,
+`CartisGouldToint.Chapter14.IsInnerPhaseRunStrong`). Appendix B contains only proofs for this
+chapter, so there is no `AppendixB.Chapter14`. The module imports the section modules and adds
+nothing of its own.
 
-## Deviations from the book
+## Contents
 
-Kinds (**false**, **gap**, **typo**, **reading**) as in the book index `CartisGouldToint`.
-
-* Lemma 14.1.1: **reading**, needs only a local minimizer and differentiability at `x⋆`
-  (`lemma_14_1_1`).
-* (14.1.2): **gap**, with c.D1pL componentwise as printed the bound carries a factor `√m` that the
-  book drops (`lemma_14_1_1`).
-* Lemma 14.1.3: **gap**, `δ_{s,j} ≥ κ_δ(σ) ε_j` is also needed (and holds) for `j = 1` when `h` or
-  `X` is nonconvex (`lemma_14_1_3`).
-* Lemmas 14.1.7–14.1.9, Theorem 14.1.10: **gap**, Step 1 only certifies `φ_{w,j} > ς ε_j δ^j/j!`,
-  so `(1 - θ)` must be `(ς - θ)` with `θ < ς`; the `‖s_k‖^{p+1}` term of (14.1.30) has a factor
-  `2`, the second case of (14.1.31) misses `ε_j^{(j+1)/(p+1)}`, Lemma 14.1.9 reads `L_{f,p}`, `f`
-  for `L_{w,p}`, `w` and holds at successful iterations not followed by termination, and `3j!`
-  reads `3q!`; the radius policies are proved for every run, part 1 needing `δ_{0,1} = 1`
-  (`lemma_14_1_7`, `theorem_14_1_10_i`, `theorem_14_1_10_ii`).
-* (B.14.6): **typo**, inside the sum over `ℓ` the printed `(p - j + 1)!` and `‖s_k‖^{p-j+1}` read
-  `(p - ℓ + 1)!` and `‖s_k‖^{p-ℓ+1}`, as in (B.14.2), (B.14.4) and (14.1.30) (`lemma_14_1_7`).
-* Theorem 14.2.1: **typo**, the Lipschitz condition is on the closed ball of radius `δ_j`, and
-  `δ^j` of (14.2.6) is `δ_j^j`; (14.2.18)–(14.2.19) print `max ℓ(d)` for the minimum
-  (`theorem_14_2_1`).
-* Theorem 14.2.4: **reading**, the IDA/EDA regularization rows are stated by radii mode; on `ℝⁿ`
-  with `q ≤ 2` every ARqpIDA run attains the unit-radii bound in either mode
-  (`theorem_14_2_4_arqpida_le_two`), so the other bound is not sharp there for `q = 2 < p`.
-* Theorem 14.2.4, sharpness: **gap**, the book's reduction to `X = ℝⁿ` does not reach the
-  "otherwise" entries with `q = 2`, `X ≠ ℝⁿ`; these are shown on closed nonconvex sets
-  (`theorem_14_2_4_sharp_arqp_otherwise`, `theorem_14_2_4_sharp_arqpida_otherwise_constrained`).
-* Theorem 14.3.1: **false** with arcs feasible only for `X` (`X = ℝ²`, `c(x) = x₁² + x₂²`,
-  `f(x) = -x₁`, `x⋆ = 0`); arcs in `X ∩ {c = 0}` (`theorem_14_3_1`). Example 14.3.1: **false**
-  saddle; the origin is a minimizer, with multiplier `y₀ = (-1, 0)` (`example_14_3_1`).
-* Theorem 14.3.2: **typo**, the neighbourhood is the closed ball of radius `δ_j`
-  (`theorem_14_3_2`); Theorem 14.3.3 needs a ceiling (`theorem_14_3_3`).
-* Theorem 14.3.4, Lemma 14.3.7, Theorem 14.3.9: **gap**, `∑_k max_j ≤ max_j ∑_k` is false; the
-  bounds hold with `∑_j` for `max_j` (`theorem_14_3_4`, `lemma_14_3_7`).
-* (14.3.20)–(14.3.21), the multiplicative cost contract: **false** for INNER = ARqp-SC with
-  `q = 1`, `p ≥ 2`, and for any INNER spending at least one evaluation per call when every
-  `π_j < 2` (`exists_algorithm_14_3_1_cost_contract_counterexample`); it holds for ARqp-SC with the
-  ARqpC-SC exponents `j + 1` (`IsARqpSCOutputCost.cost_le_anchored`) and, for LENq-SC calls, with
-  the ARqp-SC exponents `j(p+1)/p` when `q ≥ 2` (`IsARqpSCOutputCost.cost_le_arqp_lenq`,
-  `IsARqpSCOutputCost.cost_le_arqp_anchored`); the additive form holds in all cases and is used
-  (`theorem_14_3_4_add`).
-* Lemma 14.3.5, (14.3.43) and (14.3.46): **false** (`lemma_14_3_5_counterexample`); corrected with
-  terms `(‖∇f‖δ)²/(f(x_ε) - t_ε)` (`lemma_14_3_5`). Lemma 14.3.6: **typo**, (14.3.63) bounds
-  `∇^j μ`.
-* Lemma 14.3.8: **gap**, its decreases do not bound the bad outer iterations
-  (`lemma_14_3_8_proof_gap_counterexample`).
-* Lemma 14.3.8, proof after (B.14.21): **gap** (for `π_l > 1`), the proof bounds
-  `‖r(x_{j,s}, t_j)‖^{π_l-1}` below by `ε₀^{π_l-1}`, while (B.14.20) only gives `(θε₀)^{π_l-1}`;
-  the constant `κ^S = κ_decr⁻¹ (βθ)^{-π_max}` of (14.3.71) still holds, since the INNER
-  tolerance `β ‖r(x_{j,0}, t_j)‖ ε_l` of (B.14.21) is at least `βθε₀ε_l`
-  (`Constrained.IsHighOrderTargetRun.residual_drop`, `lemma_14_3_8`).
-* Theorem 14.3.9, by INNER class:
-  * nonspecific INNER: **false** under the per-call reading of its INNER hypotheses
-    (`theorem_14_3_9_false`), vacuous for `π₁ < 2` under the uniform reading
-    (`theorem_14_3_9_cost_hypothesis_unsatisfiable`); **gap**, proved for INNER satisfying
-    Lemma 14.2.2 as stated (decrease unless INNER's own test holds) with an extra term
-    `O(ε₀^{-1} + max_j (ε₀ ε_j ρ_j^{j-1})^{-1})` (`theorem_14_3_9`);
-  * ARqp-SC: **false** in the printed order for `q = 1`, `p ≥ 4` and `q = 2`, `p ≥ 5` for runs that
-    re-initialise `μ` at Step 2.1 of Algorithm 14.1.2 (`theorem_14_3_9_arqp_printed_false`);
-    proved in the printed order for the exponents `j + 1` and, with `j(p+1)/p`, for `q = p`
-    (`theorem_14_3_9_arqpc`, `theorem_14_3_9_arqp`);
-  * TRq-SC: proved with the exponents `π_j = q + 1` and a factor `1 + |log(ε₀ ε_min)|` on the
-    function evaluations only (`theorem_14_3_9_trq`), which is needed for `q = 1`
-    (`theorem_14_3_9_trq_log_necessary`); the printed order is **false** for every `q ≥ 2` on fixed
-    problems, even with the logarithmic factor (`theorem_14_3_9_trq_printed_false`,
-    `theorem_14_3_9_trq_printed_false_phase2`); the TRq-SC row `j + 1` of (14.2.12) is **false**
-    per iteration for `q = 2` (`lemma_14_2_2_trq_printed_false_uniform`).
-* Algorithm 14.3.2: **reading**, the INNER calls of Phase 2 are described by their iterates; with
-  INNER = ARqp-SC the radii returned at a Step-2 termination certify (14.3.19), which the book's
-  `δ_{s_k}` need not (`IsARqpSCCallOut`).
-
-## Not formalized
-
-* The `O(·)` restatements of Theorems 14.3.4 and 14.3.9 (the bounds are stated with constants
-  chosen before `ε`).
-* Theorem 14.3.9 with INNER = ARqp-SC in the printed order for `q = 1 < p ≤ 3`, `q = 2 < p ≤ 4`,
-  `3 ≤ q < p`, for runs whose `μ` at Step 2.1 is bounded below, and with unit radii for `q < p`;
-  with INNER = TRq-SC, whether the logarithmic factor is needed for `q ≥ 2`; TRqIDA-SC and
-  TRqEDA-SC as INNER.
+| Source | Module | Subject |
+|---|---|---|
+| §14.1 Composite optimization problems | `Chapter14.Section01` | ARqpC; items 14.1.1–14.1.11 |
+| §14.2 Simple constraints | `Chapter14.Section02` | -SC methods; items 14.2.1–14.2.5 |
+| §14.3 Nonconvex constraints | `Chapter14.Section03` | LENq-SC, TPqp-GC; items 14.3.1–14.3.9 |
 -/

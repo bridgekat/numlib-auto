@@ -6,49 +6,97 @@ import NumlibSurface.CartisGouldToint.Chapter03.Section03
 import Numlib.Optimization.ModelBased.PowRegularizedModel
 
 /-!
-# Cartis–Gould–Toint §5.5: Universal regularization methods
+# Cartis, Gould and Toint, Section 5.5: Universal regularization methods
 
-Surface file for C. Cartis, N. I. M. Gould and Ph. L. Toint, *Evaluation Complexity of
-Algorithms for Nonconvex Optimization* [cartis2022evaluation], §5.5: the universal
-adaptive-regularization algorithm ARp-H (Algorithm 5.5.1) on `ℝⁿ = EuclideanSpace ℝ (Fin n)`, with
-the model `m_k(s) = T_p(x_k, s) + σ_k/r! ‖s‖^r` (5.5.1) for a real power `r > p`
-(`Optimization.powRegularizedModel`, generalized factorial `Optimization.realFactorial`), for
-objectives whose `p`-th derivative is Hölder continuous with an exponent `β_p` unknown to the
-algorithm (f.DpH).
+This module formalizes Section 5.5 of [cartis2022evaluation]: the universal adaptive-regularization
+algorithm ARp-H (Algorithm 5.5.1) for objectives $f : \mathbb{R}^n \to \mathbb{R}$ whose $p$-th
+derivative is Hölder continuous with constant $H$ and an exponent $\beta = \beta_p \in [0, 1]$ that
+the algorithm does not know (assumption f.DpH). The model of iteration $k$ is
+$$m_k(s) = T_{f,p}(x_k, s) + \frac{\sigma_k}{r!} \|s\|^r \quad \text{(5.5.1)}$$
+for a real power $r > p$, with the generalized factorial $r!$ of (5.5.2). A step is accepted only if
+the ratio $\rho_k$ is at least $\eta_1$ and the step-length tests $\sigma_k \|s_k\|^{r-1} \ge
+\alpha_1 \|\nabla f(x_k + s_k)\|$ (5.5.10) and $\sigma_k \|s_k\|^{r-2} \ge -\alpha_2
+\lambda_{\min}[\nabla^2 f(x_k + s_k)]$ (5.5.11) hold. Lemmas 5.5.1–5.5.6 bound the step, the
+regularization weight and the decrease, and Theorem 5.5.7 shows that, for $r \ge p + \beta$, ARp-H
+finds an $(\epsilon_1, \epsilon_2)$-approximate minimizer after
+$O(\max[\epsilon_1^{-(p+\beta)/(p+\beta-1)}, \epsilon_2^{-(p+\beta)/(p+\beta-2)}])$ evaluations, up
+to logarithmic terms.
 
-ARp-H is an instance of the generic adaptive-regularization run `Optimization.IsARRun`:
-* termination is tested at `x₀` (Step-1 test `k = 0 ∧ stop(x₀)`) and at every trial point
-  `x_k + s_k` (post-step test), where `stop = Chapter03.stopTest f ε₁ ε₂` (the "strict local
-  minimizer" branch (5.5.8) is subsumed);
-* Step 3–4 are `Optimization.ARAcceptance` with `σ_min = 0` and the *modified ratio*
-  `ρ̃_k = ρ_k` if the step-length tests (5.5.10)–(5.5.11) hold and `ρ̃_k = 0` otherwise; since
-  `η₁ > 0`, iteration `k` is successful (`ρ̃_k ≥ η₁`) iff `ρ_k ≥ η₁` and (5.5.10)–(5.5.11) hold,
-  which encodes Steps 3–4 (with the corrected third case of Step 4, see below).
+The model is `Optimization.powRegularizedModel` with the generalized factorial
+`Optimization.realFactorial`, and a run is an instance of the generic adaptive-regularization run
+`Optimization.IsARRun`.
 
 ## Main definitions
 
-* `AssumptionDpH f p H β` — f.DpH (5.5.3).
-* `ARpHParams r` — the constants of Algorithm 5.5.1; `arpHStep`, `arpHLengthTest`,
-  `arpHRatio`, `arpHStop`; `algorithm_5_5_1` — Algorithm 5.5.1; `exists_algorithm_5_5_1`.
-* `kappaBeta`, `kappaBetaJ`, `sigmaBar`, `sigmaH`, `epsMax`, `deltaEps`, `kappaH` — the constants
-  (5.5.19), (5.5.28), (5.5.30), (5.5.27)/(5.5.29), (5.5.42), (5.5.45).
+* Assumption f.DpH, `CartisGouldToint.Chapter05.AssumptionDpH`: $f$ is $p$ times continuously
+  differentiable and $\nabla^p f$ is Hölder continuous, (5.5.3).
+* Algorithm 5.5.1, `CartisGouldToint.Chapter05.ARpHParams`: the constants of Step 0.
+* Algorithm 5.5.1, `CartisGouldToint.Chapter05.arpHStep`,
+  `CartisGouldToint.Chapter05.arpHLengthTest`, `CartisGouldToint.Chapter05.arpHRatio`,
+  `CartisGouldToint.Chapter05.arpHStop`: the step conditions (5.5.4)–(5.5.6), the step-length tests
+  (5.5.10)–(5.5.11), the modified ratio and the termination test.
+* Algorithm 5.5.1, `CartisGouldToint.Chapter05.algorithm_5_5_1`: a run of ARp-H.
+* Equations (5.5.19), (5.5.27)–(5.5.30), (5.5.41), (5.5.42) and (5.5.45),
+  `CartisGouldToint.Chapter05.kappaBeta`, `CartisGouldToint.Chapter05.kappaBetaJ`,
+  `CartisGouldToint.Chapter05.sigmaBar`, `CartisGouldToint.Chapter05.epsMax`,
+  `CartisGouldToint.Chapter05.sigmaH`, `CartisGouldToint.Chapter05.kappaH`: the constants of the
+  analysis.
 
 ## Main results
 
-Lemmas 5.5.1–5.5.6 and Theorem 5.5.7 (complexity of ARp-H).
+* Algorithm 5.5.1, `CartisGouldToint.Chapter05.exists_algorithm_5_5_1`: ARp-H runs exist from every
+  starting point.
+* Lemma 5.5.1, `CartisGouldToint.Chapter05.lemma_5_5_1`: the Taylor decrease of a step exceeds
+  $\sigma_k \|s_k\|^r / r!$.
+* Lemma 5.5.2, `CartisGouldToint.Chapter05.lemma_5_5_2`: bounds on the gradient and the curvature of
+  $f$ at the trial point in terms of $\|s_k\|$.
+* Lemma 5.5.3, `CartisGouldToint.Chapter05.lemma_5_5_3`: a large weight relative to $\|s_k\|$ makes
+  the iteration very successful.
+* Lemma 5.5.4, `CartisGouldToint.Chapter05.lemma_5_5_4`: a weight above $\bar\sigma$ makes the
+  iteration very successful.
+* Lemma 5.5.5, `CartisGouldToint.Chapter05.lemma_5_5_5`: an upper bound on the weights.
+* Lemma 5.5.6, `CartisGouldToint.Chapter05.lemma_5_5_6`: the decrease of $f$ on successful
+  iterations.
+* Theorem 5.5.7, `CartisGouldToint.Chapter05.theorem_5_5_7`: the evaluation complexity of ARp-H.
 
-## Fixes with respect to the book
+## Conventions
 
-* **Algorithm 5.5.1, Step 4.** The third case reads "`ρ_k < η₁` and (5.5.10) or (5.5.11)
-  fails"; it must be the complement of the first two cases, "`ρ_k < η₁`, or (5.5.10) fails, or
-  (5.5.11) fails" (encoded through `ρ̃_k`).
-* Lemma 5.5.2: the display writes `∇_s m_k(x_k + s_k)` for the model gradient `∇_s m_k(s_k)`.
-* Lemma 5.5.4: in the proof of case (b), the conclusion is `σ_k < κ_{β,2} ε₂^{(p+β-r)/(p+β-2)}`
-  (printed with `ε₁`), contradicting (5.5.29).
-* **Theorem 5.5.7.** `f` and its first (and second) derivatives are evaluated at `x₀` and at
-  every trial point, i.e. `k_ε + 2` times when the run terminates at the trial point of iteration
-  `k_ε` (Lemma 2.4.1 bounds `k_ε + 1`): the constant `κ^C` needs an additional `+ 2`.
-* `p + β_p > 1` is not a hypothesis: it follows from f.DpH (`β₁ > 0` when `p = 1`).
+* $\mathbb{R}^n$ is `EuclideanSpace ℝ (Fin n)`.
+* The tolerance $\epsilon_2$ is an `Option ℝ`: `none` stands for $\epsilon_2 = \infty$, when only
+  first-order points are sought.
+* $\lambda_{\min}[\nabla^2 f(x)]$ is `CartisGouldToint.Chapter01.hessianMinEig f x`, and the least
+  curvature of a model Hessian is `minCurvature`.
+* The generalized factorial $(p + \beta - j)!$ of a Hölder exponent is `holderFactorial (p - j) β`,
+  and $(r - j)!$ is `Optimization.realFactorial (r - j)`.
+
+## Implementation notes
+
+* Termination is tested at $x_0$ (the test of Step 1 is "$k = 0$ and the test holds at $x_0$") and
+  at every trial point $x_k + s_k$ (a test after the step). The test is
+  `CartisGouldToint.Chapter03.stopTest f ε₁ ε₂`, which subsumes the strict local minimizer branch
+  (5.5.8).
+* Steps 3–4 are `Optimization.ARAcceptance` with $\sigma_{\min} = 0$ and the **modified ratio**
+  $\tilde\rho_k$, which is $\rho_k$ if the step-length tests (5.5.10)–(5.5.11) hold and $0$
+  otherwise. Since $\eta_1 > 0$, iteration $k$ is successful ($\tilde\rho_k \ge \eta_1$) if and only
+  if $\rho_k \ge \eta_1$ and (5.5.10)–(5.5.11) hold. This encodes Steps 3–4 with the corrected third
+  case of Step 4.
+* The condition $p + \beta_p > 1$ is not a hypothesis; it follows from f.DpH, which requires
+  $\beta_1 > 0$ when $p = 1$ (`CartisGouldToint.Chapter05.AssumptionDpH.one_lt_add`).
+
+## Deviations from the source
+
+* **Algorithm 5.5.1, Step 4** (typo). The third case reads "$\rho_k < \eta_1$ and (5.5.10) or
+  (5.5.11) fails"; it must be the complement of the first two cases, "$\rho_k < \eta_1$, or (5.5.10)
+  fails, or (5.5.11) fails". See `CartisGouldToint.Chapter05.algorithm_5_5_1`.
+* **Lemma 5.5.2** (typo). The display writes $\nabla_s m_k(x_k + s_k)$ for the model gradient
+  $\nabla_s m_k(s_k)$. See `CartisGouldToint.Chapter05.lemma_5_5_2`.
+* **Lemma 5.5.4** (typo). In the proof of case (b), the conclusion is $\sigma_k < \kappa_{\beta,2}
+  \epsilon_2^{(p+\beta-r)/(p+\beta-2)}$, printed with $\epsilon_1$. See
+  `CartisGouldToint.Chapter05.lemma_5_5_4`.
+* **Theorem 5.5.7** (correction). The function and its derivatives are evaluated at $x_0$ and at
+  every trial point, that is, $k_\epsilon + 2$ times when the run terminates at the trial point of
+  iteration $k_\epsilon$, while Lemma 2.4.1 bounds $k_\epsilon + 1$. The constant $\kappa^C$ needs
+  an additional $+ 2$. See `CartisGouldToint.Chapter05.theorem_5_5_7`.
 -/
 
 open Set Finset Optimization
@@ -63,63 +111,86 @@ variable {n : ℕ}
 
 /-! ### Assumption f.DpH and the algorithm -/
 
-/-- **Assumption f.DpH** of [cartis2022evaluation] (§5.5.1): `f` is `p` times continuously
-differentiable and its `p`-th derivative is Hölder continuous with constant `H = H_{f,p} ≥ 0` and
-exponent `β = β_p ∈ [0, 1]`, `β > 0` if `p = 1`: `‖∇^p f(x) - ∇^p f(y)‖ ≤ H ‖x - y‖^β` (5.5.3). -/
+/-- **Assumption f.DpH** of [cartis2022evaluation], Section 5.5.1. Let
+$f : \mathbb{R}^n \to \mathbb{R}$, $p \in \mathbb{N}$ and $H, \beta \in \mathbb{R}$. The
+assumption holds if $f$ is $p$ times continuously differentiable, $H = H_{f,p} \ge 0$,
+$\beta = \beta_p \in [0, 1]$ with $\beta > 0$ if $p = 1$, and for all $x, y \in \mathbb{R}^n$
+$$\|\nabla^p f(x) - \nabla^p f(y)\| \le H \|x - y\|^\beta \quad \text{(5.5.3)}.$$
+
+The norm of the derivative tensor is the operator norm, and the Hölder condition is
+`IteratedFDerivHolderOn f p H β univ`. -/
 structure AssumptionDpH (f : EuclideanSpace ℝ (Fin n) → ℝ) (p : ℕ) (H β : ℝ) : Prop where
-  /-- `f` is `p` times continuously differentiable. -/
+  /-- The function $f$ is $p$ times continuously differentiable. -/
   contDiff : ContDiff ℝ p f
-  /-- `H ≥ 0`. -/
+  /-- The Hölder constant satisfies $H \ge 0$. -/
   H_nonneg : 0 ≤ H
-  /-- `β ≥ 0`. -/
+  /-- The Hölder exponent satisfies $\beta \ge 0$. -/
   β_nonneg : 0 ≤ β
-  /-- `β ≤ 1`. -/
+  /-- The Hölder exponent satisfies $\beta \le 1$. -/
   β_le_one : β ≤ 1
-  /-- `β > 0` when `p = 1`. -/
+  /-- The Hölder exponent satisfies $\beta > 0$ when $p = 1$. -/
   β_pos_of_eq_one : p = 1 → 0 < β
-  /-- The Hölder condition (5.5.3). -/
+  /-- The $p$-th derivative satisfies the Hölder condition (5.5.3) on $\mathbb{R}^n$. -/
   holder : IteratedFDerivHolderOn f p H β univ
 
-/-- f.DpH is the backbone predicate `IteratedFDerivHolderOn f p H β univ` for a `C^p` function,
-with the ranges of the constants. -/
+/-- Assumption f.DpH holds if and only if $f$ is $p$ times continuously differentiable, $H \ge 0$,
+$\beta \in [0, 1]$, $\beta > 0$ if $p = 1$, and $\nabla^p f$ is Hölder continuous on
+$\mathbb{R}^n$ with constant $H$ and exponent $\beta$. -/
 theorem assumptionDpH_iff {f : EuclideanSpace ℝ (Fin n) → ℝ} {p : ℕ} {H β : ℝ} :
     AssumptionDpH f p H β ↔ ContDiff ℝ p f ∧ 0 ≤ H ∧ β ∈ Set.Icc 0 1 ∧ (p = 1 → 0 < β) ∧
       IteratedFDerivHolderOn f p H β univ :=
   ⟨fun h => ⟨h.contDiff, h.H_nonneg, ⟨h.β_nonneg, h.β_le_one⟩, h.β_pos_of_eq_one, h.holder⟩,
     fun ⟨h1, h2, h3, h4, h5⟩ => ⟨h1, h2, h3.1, h3.2, h4, h5⟩⟩
 
-/-- The constants of Algorithm 5.5.1 ([cartis2022evaluation], Step 0) for the regularization
-power `r`: those of an AR method with `σ_min = 0`, the step accuracies `θ₁, θ₂ ∈ (0, 1]` and the
-step-length constants `α₁ ∈ (0, min(1, (r-1)!)/3]`, `α₂ ∈ (0, min(1, (r-2)!)/3]`. -/
+/-- **Algorithm 5.5.1** of [cartis2022evaluation], the constants of Step 0. Let $r \in \mathbb{R}$
+be the regularization power. A set of **ARp-H constants** consists of the constants of adaptive
+regularization with $\sigma_{\min} = 0$ ($\sigma_0 > 0$, $0 < \eta_1 \le \eta_2 < 1$,
+$0 < \gamma_1 < 1 < \gamma_2 \le \gamma_3$), the step accuracies
+$\theta_1, \theta_2 \in (0, 1]$, and the step-length constants
+$$\alpha_1 \in \left(0, \tfrac{1}{3} \min(1, (r-1)!)\right], \qquad \alpha_2 \in \left(0,
+  \tfrac{1}{3} \min(1, (r-2)!)\right].$$
+
+The constants of adaptive regularization are `Optimization.ARParams`. -/
 structure ARpHParams (r : ℝ) extends Optimization.ARParams where
-  /-- No lower bound on the regularization weight. -/
+  /-- The lower bound on the regularization weight is $\sigma_{\min} = 0$. -/
   σmin_eq_zero : σmin = 0
-  /-- The first-order step accuracy (5.5.5). -/
+  /-- The first-order step accuracy $\theta_1$ of (5.5.5). -/
   θ₁ : ℝ
-  /-- The second-order step accuracy (5.5.6). -/
+  /-- The second-order step accuracy $\theta_2$ of (5.5.6). -/
   θ₂ : ℝ
-  /-- The first-order step-length constant (5.5.10). -/
+  /-- The first-order step-length constant $\alpha_1$ of (5.5.10). -/
   α₁ : ℝ
-  /-- The second-order step-length constant (5.5.11). -/
+  /-- The second-order step-length constant $\alpha_2$ of (5.5.11). -/
   α₂ : ℝ
+  /-- The step accuracy $\theta_1$ is positive. -/
   θ₁_pos : 0 < θ₁
+  /-- The step accuracy $\theta_1$ is at most $1$. -/
   θ₁_le_one : θ₁ ≤ 1
+  /-- The step accuracy $\theta_2$ is positive. -/
   θ₂_pos : 0 < θ₂
+  /-- The step accuracy $\theta_2$ is at most $1$. -/
   θ₂_le_one : θ₂ ≤ 1
+  /-- The step-length constant $\alpha_1$ is positive. -/
   α₁_pos : 0 < α₁
+  /-- The step-length constant satisfies $\alpha_1 \le \min(1, (r-1)!) / 3$. -/
   α₁_le : α₁ ≤ min 1 (realFactorial (r - 1)) / 3
+  /-- The step-length constant $\alpha_2$ is positive. -/
   α₂_pos : 0 < α₂
+  /-- The step-length constant satisfies $\alpha_2 \le \min(1, (r-2)!) / 3$. -/
   α₂_le : α₂ ≤ min 1 (realFactorial (r - 2)) / 3
 
 variable {r : ℝ}
 
-/-- The model (5.5.1) at the iterate `y` with weight `σ`. -/
+/-- **Equation (5.5.1)** of [cartis2022evaluation]. The model of ARp-H at the iterate $y$ with
+weight $\sigma$ is $m(s) = T_{f,p}(y, s) + \sigma \|s\|^r / r!$. -/
 noncomputable abbrev arpHModel (f : EuclideanSpace ℝ (Fin n) → ℝ) (p : ℕ) (r : ℝ)
     (y : EuclideanSpace ℝ (Fin n)) (σ : ℝ) : EuclideanSpace ℝ (Fin n) → ℝ :=
   powRegularizedModel (ftaylorSeries ℝ f y) p σ r
 
-/-- Step 1 of Algorithm 5.5.1: the step decreases the model (5.5.4), satisfies
-`‖∇m(s)‖ ≤ θ₁ ‖s‖^{r-1}` (5.5.5) and, if `ε₂ < ∞`, `λ_min[∇²m(s)] ≥ -θ₂ ‖s‖^{r-2}` (5.5.6). -/
+/-- **Algorithm 5.5.1** of [cartis2022evaluation], Step 1. A step $s$ at $y$ with weight $\sigma$
+satisfies Step 1 if it decreases the model, $m(s) < m(0)$ (5.5.4), satisfies
+$\|\nabla m(s)\| \le \theta_1 \|s\|^{r-1}$ (5.5.5), and, if $\epsilon_2 < \infty$, satisfies
+$\lambda_{\min}[\nabla^2 m(s)] \ge -\theta_2 \|s\|^{r-2}$ (5.5.6). -/
 def arpHStep (f : EuclideanSpace ℝ (Fin n) → ℝ) (p : ℕ) (P : ARpHParams r) (ε₂ : Option ℝ)
     (y : EuclideanSpace ℝ (Fin n)) (σ : ℝ) (s : EuclideanSpace ℝ (Fin n)) : Prop :=
   arpHModel f p r y σ s < arpHModel f p r y σ 0 ∧
@@ -127,54 +198,69 @@ def arpHStep (f : EuclideanSpace ℝ (Fin n) → ℝ) (p : ℕ) (P : ARpHParams 
     (ε₂.isSome →
       -(P.θ₂ * ‖s‖ ^ (r - 2)) ≤ minCurvature (iteratedFDeriv ℝ 2 (arpHModel f p r y σ) s))
 
-/-- The step-length tests of Step 3: `σ ‖s‖^{r-1} ≥ α₁ ‖∇f(y + s)‖` (5.5.10) and, if `ε₂ < ∞`,
-`σ ‖s‖^{r-2} ≥ -α₂ λ_min[∇²f(y + s)]` (5.5.11). -/
+/-- **Algorithm 5.5.1** of [cartis2022evaluation], the step-length tests of Step 3. A step $s$ at
+$y$ with weight $\sigma$ passes the tests if $\sigma \|s\|^{r-1} \ge \alpha_1 \|\nabla f(y +
+s)\|$ (5.5.10) and, if $\epsilon_2 < \infty$, $\sigma \|s\|^{r-2} \ge -\alpha_2
+\lambda_{\min}[\nabla^2 f(y + s)]$ (5.5.11). -/
 def arpHLengthTest (f : EuclideanSpace ℝ (Fin n) → ℝ) (P : ARpHParams r) (ε₂ : Option ℝ)
     (y : EuclideanSpace ℝ (Fin n)) (σ : ℝ) (s : EuclideanSpace ℝ (Fin n)) : Prop :=
   P.α₁ * ‖gradient f (y + s)‖ ≤ σ * ‖s‖ ^ (r - 1) ∧
     (ε₂.isSome → -(P.α₂ * Chapter01.hessianMinEig f (y + s)) ≤ σ * ‖s‖ ^ (r - 2))
 
 open Classical in
-/-- The modified ratio of one iteration: the ratio (5.5.9) if the step-length tests hold, `0`
-otherwise. -/
+/-- The modified ratio of one iteration: the ratio (5.5.9) if the step-length tests
+(5.5.10)–(5.5.11) hold, and $0$ otherwise. -/
 noncomputable def arpHRatioAt (f : EuclideanSpace ℝ (Fin n) → ℝ) (p : ℕ) (P : ARpHParams r)
     (ε₂ : Option ℝ) (y : EuclideanSpace ℝ (Fin n)) (σ : ℝ) (s : EuclideanSpace ℝ (Fin n)) : ℝ :=
   if arpHLengthTest f P ε₂ y σ s then
     reductionRatio f y s ((ftaylorSeries ℝ f y).taylorDecrement p s)
   else 0
 
-/-- The modified ratios `ρ̃_k` of a run. -/
+/-- The modified ratios $\tilde\rho_k$ of a run: the modified ratio of iteration $k$ at $x_k$ with
+weight $\sigma_k$ and step $s_k$. -/
 noncomputable abbrev arpHRatio (f : EuclideanSpace ℝ (Fin n) → ℝ) (p : ℕ) (P : ARpHParams r)
     (ε₂ : Option ℝ) (x s : ℕ → EuclideanSpace ℝ (Fin n)) (σ : ℕ → ℝ) (k : ℕ) : ℝ :=
   arpHRatioAt f p P ε₂ (x k) (σ k) (s k)
 
-/-- The termination test of ARp-H at iteration `k`: the test (5.5.7)–(5.5.8) at `x₀` (`k = 0`)
-or at the trial point `x_k + s_k`. -/
+/-- **Algorithm 5.5.1** of [cartis2022evaluation], the termination test. ARp-H terminates at
+iteration $k$ if $k = 0$ and the test (5.5.7)–(5.5.8) holds at $x_0$, or if the test holds at
+the trial point $x_k + s_k$. -/
 abbrev arpHStop (f : EuclideanSpace ℝ (Fin n) → ℝ) (ε₁ : ℝ) (ε₂ : Option ℝ)
     (x s : ℕ → EuclideanSpace ℝ (Fin n)) : ℕ → Prop :=
   IsARRun.Stop (fun k => k = 0 ∧ stopTest f ε₁ ε₂ (x k)) (fun k => stopTest f ε₁ ε₂ (x k + s k))
 
-/-- **Algorithm 5.5.1** (ARp-H) of [cartis2022evaluation], as a run predicate on iterates `x`,
-steps `s` and weights `σ`: `p ≥ 1` (`p ≥ 2` if `ε₂ < ∞`), `r > p`, `ε₁ ∈ (0, 1]`,
-`ε₂ ∈ (0, 1] ∪ {∞}`, and the generic AR run with termination test at `x₀` and at every trial
-point, Step 1 `arpHStep`, and the modified ratio `arpHRatio` (Steps 3–4, corrected). -/
+/-- **Algorithm 5.5.1** of [cartis2022evaluation] (ARp-H). Let $f : \mathbb{R}^n \to \mathbb{R}$,
+$p \in \mathbb{N}$, ARp-H constants $P$ for the power $r$, and tolerances
+$\epsilon_1 \in \mathbb{R}$ and $\epsilon_2 \in \mathbb{R} \cup \{\infty\}$. Sequences of
+iterates $x_k$, steps $s_k$ and weights $\sigma_k$ form a **run of ARp-H** if $p \ge 1$
+($p \ge 2$ if $\epsilon_2 < \infty$), $r > p$, $\epsilon_1 \in (0, 1]$, $\epsilon_2 \in (0, 1]$
+if it is finite, and they form an adaptive-regularization run with the termination test at $x_0$
+and at every trial point, the Step 1 conditions (5.5.4)–(5.5.6), and Steps 3–4 with the modified
+ratio.
+
+**Typo.** The third case of Step 4 reads "$\rho_k < \eta_1$ and (5.5.10) or (5.5.11) fails". It
+must be the complement of the first two cases: "$\rho_k < \eta_1$, or (5.5.10) fails, or
+(5.5.11) fails". The modified ratio encodes this.
+
+The run is `Optimization.IsARRun` with the Step 1 conditions
+`CartisGouldToint.Chapter05.arpHStep` and the ratio `CartisGouldToint.Chapter05.arpHRatio`. -/
 structure algorithm_5_5_1 (f : EuclideanSpace ℝ (Fin n) → ℝ) (p : ℕ) (P : ARpHParams r)
     (ε₁ : ℝ) (ε₂ : Option ℝ) (x s : ℕ → EuclideanSpace ℝ (Fin n)) (σ : ℕ → ℝ) : Prop where
-  /-- `p ≥ 1`. -/
+  /-- The degree satisfies $p \ge 1$. -/
   one_le_p : 1 ≤ p
-  /-- `p ≥ 2` when second-order points are sought. -/
+  /-- The degree satisfies $p \ge 2$ when second-order points are sought. -/
   two_le_p : ε₂.isSome → 2 ≤ p
-  /-- `r > p`. -/
+  /-- The regularization power satisfies $r > p$. -/
   p_lt_r : (p : ℝ) < r
-  /-- `ε₁ > 0`. -/
+  /-- The tolerance $\epsilon_1$ is positive. -/
   ε₁_pos : 0 < ε₁
-  /-- `ε₁ ≤ 1`. -/
+  /-- The tolerance $\epsilon_1$ is at most $1$. -/
   ε₁_le_one : ε₁ ≤ 1
-  /-- `ε₂ > 0` if finite. -/
+  /-- The tolerance $\epsilon_2$ is positive if it is finite. -/
   ε₂_pos : ∀ e ∈ ε₂, 0 < e
-  /-- `ε₂ ≤ 1` if finite. -/
+  /-- The tolerance $\epsilon_2$ is at most $1$ if it is finite. -/
   ε₂_le_one : ∀ e ∈ ε₂, e ≤ 1
-  /-- Steps 1–4. -/
+  /-- The sequences follow Steps 1–4 of the algorithm. -/
   run : IsARRun P.toARParams (fun k => k = 0 ∧ stopTest f ε₁ ε₂ (x k))
     (fun k => arpHStep f p P ε₂ (x k) (σ k) (s k)) (fun k => stopTest f ε₁ ε₂ (x k + s k))
     (arpHRatio f p P ε₂ x s σ) x s σ
@@ -184,8 +270,8 @@ section Basic
 variable {f : EuclideanSpace ℝ (Fin n) → ℝ} {p : ℕ} {P : ARpHParams r} {ε₂ : Option ℝ}
   {y : EuclideanSpace ℝ (Fin n)} {σ : ℝ} {s : EuclideanSpace ℝ (Fin n)}
 
-/-- An iteration is successful for the modified ratio iff `ρ_k ≥ η₁` and the step-length tests
-hold. -/
+/-- An iteration is successful for the modified ratio, $\tilde\rho_k \ge \eta_1$, if and only if
+$\rho_k \ge \eta_1$ and the step-length tests hold. -/
 theorem le_arpHRatioAt_iff :
     P.η₁ ≤ arpHRatioAt f p P ε₂ y σ s ↔
       P.η₁ ≤ reductionRatio f y s ((ftaylorSeries ℝ f y).taylorDecrement p s) ∧
@@ -195,13 +281,13 @@ theorem le_arpHRatioAt_iff :
   · exact ⟨fun h1 => ⟨h1, h⟩, fun h1 => h1.1⟩
   · exact ⟨fun h1 => absurd h1 (not_le.2 P.η₁_pos), fun h1 => absurd h1.2 h⟩
 
-/-- If the step-length tests hold, the modified ratio is the ratio (5.5.9). -/
+/-- If the step-length tests hold, then the modified ratio is the ratio (5.5.9). -/
 theorem arpHRatioAt_of_lengthTest (h : arpHLengthTest f P ε₂ y σ s) :
     arpHRatioAt f p P ε₂ y σ s = reductionRatio f y s ((ftaylorSeries ℝ f y).taylorDecrement p s) :=
   by unfold arpHRatioAt; simp only [h, ↓reduceIte]
 
-/-- The model derivatives at the zero step are those of `f`: `∇^j m(0) = ∇^j f(y)` for `j ≤ p`,
-`j < r`. -/
+/-- If $f$ is $p$ times continuously differentiable at $y$, then the derivatives of the model at the
+zero step are those of $f$: $\nabla^j m(0) = \nabla^j f(y)$ for $j \le p$ with $j < r$. -/
 theorem iteratedFDeriv_arpHModel_zero (hf : ContDiffAt ℝ p f y) {j : ℕ} (hj : j ≤ p)
     (hjr : (j : ℝ) < r) :
     iteratedFDeriv ℝ j (arpHModel f p r y σ) 0 = iteratedFDeriv ℝ j f y := by
@@ -217,8 +303,10 @@ section Existence
 
 variable {f : EuclideanSpace ℝ (Fin n) → ℝ} {p : ℕ}
 
-/-- At a point where the termination test fails, the global minimizers of the model decrease it
-and satisfy Step 1. -/
+/-- Let $f$ be $p$ times continuously differentiable, $p \ge 1$, $r > p$, $\epsilon_1 > 0$,
+$\epsilon_2 > 0$ if finite, and $p \ge 2$ if $\epsilon_2 < \infty$. At a point $y$ where the
+termination test fails, and for every $\sigma > 0$, some step satisfies Step 1; a global
+minimizer of the model is such a step. -/
 theorem exists_arpHStep (hf : ContDiff ℝ p f) (P : ARpHParams r) (hp : 1 ≤ p)
     (hpr : (p : ℝ) < r) {ε₁ : ℝ} (hε₁ : 0 < ε₁) {ε₂ : Option ℝ} (hε₂ : ∀ e ∈ ε₂, 0 < e)
     (hp2 : ε₂.isSome → 2 ≤ p) {y : EuclideanSpace ℝ (Fin n)} {σ : ℝ} (hσ : 0 < σ)
@@ -258,8 +346,9 @@ theorem exists_arpHStep (hf : ContDiff ℝ p f) (P : ARpHParams r) (hp : 1 ≤ p
     have : 0 ≤ P.θ₂ * ‖s‖ ^ (r - 2) := by positivity
     linarith
 
-/-- In a run of the generic method with the test at the iterates, "no ARp-H termination before
-`k` and no termination at `x₀`" implies that the test fails at all iterates `x_j`, `j ≤ k`. -/
+/-- Consider an adaptive-regularization run whose test is a predicate of the iterates. If the test
+fails at $x_0$ and at the trial points $x_j + s_j$ for all $j < k$, then it fails at all
+iterates $x_j$ with $j \le k$. -/
 theorem not_stopTest_iterate {E : Type*} [Add E] {P : Optimization.ARParams} {test : E → Prop}
     {step : ℕ → Prop} {ρ : ℕ → ℝ} {x s : ℕ → E} {σ : ℕ → ℝ}
     (h : IsARRun P (fun k => test (x k)) step (fun _ => False) ρ x s σ) (h0 : ¬ test (x 0))
@@ -276,9 +365,12 @@ theorem not_stopTest_iterate {E : Type*} [Add E] {P : Optimization.ARParams} {te
       · rw [he]; exact hk j (by omega)
       · rw [he]; exact ih j (by omega) (by omega)
 
-/-- **Existence of ARp-H runs** ([cartis2022evaluation], Algorithm 5.5.1 is well defined): for
-`f` of class `C^p`, all admissible constants and tolerances and every starting point there is an
-ARp-H run (global model minimizers satisfy Step 1). -/
+/-- **Algorithm 5.5.1** of [cartis2022evaluation], existence of runs. Let $f$ be $p$ times
+continuously differentiable, $p \ge 1$, $r > p$, $\epsilon_1 \in (0, 1]$,
+$\epsilon_2 \in (0, 1]$ if finite, and $p \ge 2$ if $\epsilon_2 < \infty$. Then for all ARp-H
+constants and every $x_0 \in \mathbb{R}^n$ there is a run of ARp-H that starts at $x_0$.
+
+Global minimizers of the model satisfy Step 1 (`CartisGouldToint.Chapter05.exists_arpHStep`). -/
 theorem exists_algorithm_5_5_1 (hf : ContDiff ℝ p f) (P : ARpHParams r) (hp : 1 ≤ p)
     (hpr : (p : ℝ) < r) {ε₁ : ℝ} (hε₁ : 0 < ε₁) (hε₁1 : ε₁ ≤ 1) {ε₂ : Option ℝ}
     (hε₂ : ∀ e ∈ ε₂, 0 < e) (hε₂1 : ∀ e ∈ ε₂, e ≤ 1) (hp2 : ε₂.isSome → 2 ≤ p)
@@ -316,26 +408,31 @@ namespace algorithm_5_5_1
 variable (h : algorithm_5_5_1 f p P ε₁ ε₂ x s σ)
 include h
 
+/-- Along a run of ARp-H, $r > 1$. -/
 theorem one_lt_r : 1 < r := by
   have : (1 : ℝ) ≤ p := by exact_mod_cast h.one_le_p
   linarith [h.p_lt_r]
 
+/-- Along a run of ARp-H with $\epsilon_2 < \infty$, $r > 2$. -/
 theorem two_lt_r (hs : ε₂.isSome) : 2 < r := by
   have : (2 : ℝ) ≤ p := by exact_mod_cast h.two_le_p hs
   linarith [h.p_lt_r]
 
-/-- The weights are positive up to termination. -/
+/-- Along a run of ARp-H, the weights are positive up to termination: if the run does not terminate
+at any $j < k$, then $\sigma_k > 0$. -/
 theorem sigma_pos {k : ℕ} (hk : ∀ j < k, ¬ arpHStop f ε₁ ε₂ x s j) : 0 < σ k :=
   h.run.sigma_pos hk k le_rfl
 
-/-- Step 1 holds before termination. -/
+/-- Along a run of ARp-H, if the run does not terminate at any $j \le k$, then the step $s_k$
+satisfies Step 1. -/
 theorem step {k : ℕ} (hk : ∀ j ≤ k, ¬ arpHStop f ε₁ ε₂ x s j) :
     arpHStep f p P ε₂ (x k) (σ k) (s k) :=
   h.run.step_of_forall_le hk
 
 end algorithm_5_5_1
 
-/-- The trial point of an iteration before termination fails the termination test. -/
+/-- Along a run of ARp-H, if the run does not terminate at any $j \le k$, then the trial point
+$x_k + s_k$ fails the termination test. -/
 theorem not_stopTest_trial {k : ℕ} (hk : ∀ j ≤ k, ¬ arpHStop f ε₁ ε₂ x s j) :
     ¬ stopTest f ε₁ ε₂ (x k + s k) :=
   fun ht => hk k le_rfl (Or.inr ht)
@@ -349,14 +446,17 @@ section Lemmas
 variable {f : EuclideanSpace ℝ (Fin n) → ℝ} {p : ℕ} {P : ARpHParams r} {ε₁ H β : ℝ}
   {ε₂ : Option ℝ} {x s : ℕ → EuclideanSpace ℝ (Fin n)} {σ : ℕ → ℝ}
 
-/-- **Lemma 5.5.1** of [cartis2022evaluation] ((5.5.12), sufficient decrease): at every iteration
-`k` before termination of an ARp-H run, `T_p(x_k, 0) - T_p(x_k, s_k) > σ_k/r! ‖s_k‖^r`. -/
+/-- **Lemma 5.5.1** of [cartis2022evaluation], sufficient decrease (5.5.12). Along a run of ARp-H,
+if the run does not terminate at any iteration $j \le k$, then
+$$T_{f,p}(x_k, 0) - T_{f,p}(x_k, s_k) > \frac{\sigma_k}{r!} \|s_k\|^r.$$
+-/
 theorem lemma_5_5_1 (h : algorithm_5_5_1 f p P ε₁ ε₂ x s σ) {k : ℕ}
     (hk : ∀ j ≤ k, ¬ arpHStop f ε₁ ε₂ x s j) :
     σ k / realFactorial r * ‖s k‖ ^ r < (ftaylorSeries ℝ f (x k)).taylorDecrement p (s k) :=
   lt_taylorDecrement_of_powRegularizedModel_lt (by linarith [h.one_lt_r]) (h.step hk).1
 
-/-- The step of an iteration before termination is nonzero. -/
+/-- Along a run of ARp-H, if the run does not terminate at any iteration $j \le k$, then
+$s_k \ne 0$. -/
 theorem algorithm_5_5_1.step_ne_zero (h : algorithm_5_5_1 f p P ε₁ ε₂ x s σ) {k : ℕ}
     (hk : ∀ j ≤ k, ¬ arpHStop f ε₁ ε₂ x s j) : s k ≠ 0 := by
   intro h0
@@ -364,12 +464,20 @@ theorem algorithm_5_5_1.step_ne_zero (h : algorithm_5_5_1 f p P ε₁ ε₂ x s 
   rw [h0] at this
   exact lt_irrefl _ this
 
-/-- **Lemma 5.5.2** of [cartis2022evaluation] (lower bound on the step). Under f.DpH, at every
-iteration `k` before termination:
-(5.5.13) `‖∇f(x_k + s_k)‖ ≤ H/(p+β-1)! ‖s_k‖^{p+β-1} + σ_k/(r-1)! ‖s_k‖^{r-1} + θ₁ ‖s_k‖^{r-1}`;
-(5.5.14) if `ε₂ < ∞`, `-λ_min[∇²f(x_k + s_k)] ≤ H/(p+β-2)! ‖s_k‖^{p+β-2} + σ_k/(r-2)! ‖s_k‖^{r-2} +
-θ₂ ‖s_k‖^{r-2}`,
-with `(p+β-j)! = holderFactorial (p-j) β` and `(r-j)! = realFactorial (r-j)`. -/
+/-- **Lemma 5.5.2** of [cartis2022evaluation], lower bound on the step. Let $f$ satisfy f.DpH with
+constants $H$ and $\beta$. Along a run of ARp-H, if the run does not terminate at any iteration
+$j \le k$, then
+$$\|\nabla f(x_k + s_k)\| \le \frac{H}{(p+\beta-1)!} \|s_k\|^{p+\beta-1} +
+  \frac{\sigma_k}{(r-1)!} \|s_k\|^{r-1} + \theta_1 \|s_k\|^{r-1} \quad \text{(5.5.13)},$$
+and, if $\epsilon_2 < \infty$,
+$$-\lambda_{\min}[\nabla^2 f(x_k + s_k)] \le \frac{H}{(p+\beta-2)!} \|s_k\|^{p+\beta-2} +
+  \frac{\sigma_k}{(r-2)!} \|s_k\|^{r-2} + \theta_2 \|s_k\|^{r-2} \quad \text{(5.5.14)}.$$
+
+**Typo.** The display of the source writes $\nabla_s m_k(x_k + s_k)$ for the model gradient
+$\nabla_s m_k(s_k)$.
+
+The factorial $(p+\beta-j)!$ is `holderFactorial (p - j) β`, and $(r-j)!$ is
+`Optimization.realFactorial (r - j)`. -/
 theorem lemma_5_5_2 (hf : AssumptionDpH f p H β) (h : algorithm_5_5_1 f p P ε₁ ε₂ x s σ)
     {k : ℕ} (hk : ∀ j ≤ k, ¬ arpHStop f ε₁ ε₂ x s j) :
     ‖gradient f (x k + s k)‖ ≤ H / holderFactorial (p - 1) β * ‖s k‖ ^ ((p : ℝ) + β - 1) +
@@ -407,18 +515,28 @@ section Constants
 
 variable (P : ARpHParams r) (p : ℕ) (H β : ℝ)
 
-/-- `κ_β = r! H / ((p+β-1)! (1 - η₂))` ([cartis2022evaluation], (5.5.19)). -/
+/-- **Equation (5.5.19)** of [cartis2022evaluation]. The constant is $\kappa_\beta = r! \, H /
+((p+\beta-1)! (1 - \eta_2))$. -/
 noncomputable def kappaBeta : ℝ :=
   realFactorial r * H / (holderFactorial (p - 1) β * (1 - P.η₂))
 
-/-- `κ_{β,j} = ((r-j)!/3)^{(p+β-r)/(p+β-j)} κ_β^{(r-j)/(p+β-j)}` ([cartis2022evaluation],
-(5.5.28) for `j = 1`, (5.5.30) for `j = 2`). -/
+/-- **Equations (5.5.28) and (5.5.30)** of [cartis2022evaluation]. For $j \in \mathbb{R}$, the
+constant is
+$$\kappa_{\beta,j} = \left(\frac{(r-j)!}{3}\right)^{(p+\beta-r)/(p+\beta-j)}
+  \kappa_\beta^{(r-j)/(p+\beta-j)},$$
+used with $j = 1$ in (5.5.28) and $j = 2$ in (5.5.30). -/
 noncomputable def kappaBetaJ (j : ℝ) : ℝ :=
   (realFactorial (r - j) / 3) ^ (((p : ℝ) + β - r) / ((p : ℝ) + β - j)) *
     kappaBeta P p H β ^ ((r - j) / ((p : ℝ) + β - j))
 
-/-- The threshold `σ̄` above which iterations are very successful ([cartis2022evaluation], the
-right-hand sides of (5.5.27) (`ε₂ = ∞`) and (5.5.29) (`ε₂ < ∞`)). -/
+/-- **Equations (5.5.27) and (5.5.29)** of [cartis2022evaluation], the threshold $\bar\sigma$ above
+which iterations are very successful. For $\epsilon_2 = \infty$ it is $\max[\theta_1 (r-1)!,
+\kappa_{\beta,1} \epsilon_1^{(p+\beta-r)/(p+\beta-1)}]$, the right-hand side of (5.5.27). For
+$\epsilon_2 < \infty$ it is the right-hand side of (5.5.29),
+$$\max\left[\theta_1 (r-1)!, \theta_2 (r-2)!, \kappa_{\beta,1}
+  \epsilon_1^{(p+\beta-r)/(p+\beta-1)}, \kappa_{\beta,2}
+  \epsilon_2^{(p+\beta-r)/(p+\beta-2)}\right].$$
+-/
 noncomputable def sigmaBar (ε₁ : ℝ) : Option ℝ → ℝ
   | none => max (P.θ₁ * realFactorial (r - 1))
       (kappaBetaJ P p H β 1 * ε₁ ^ (((p : ℝ) + β - r) / ((p : ℝ) + β - 1)))
@@ -426,32 +544,41 @@ noncomputable def sigmaBar (ε₁ : ℝ) : Option ℝ → ℝ
       (max (kappaBetaJ P p H β 1 * ε₁ ^ (((p : ℝ) + β - r) / ((p : ℝ) + β - 1)))
         (kappaBetaJ P p H β 2 * e ^ (((p : ℝ) + β - r) / ((p : ℝ) + β - 2))))
 
-/-- `σ_H` ([cartis2022evaluation], (5.5.42), (5.5.55)): `max[σ₀, γ₃θ₁(r-1)!, γ₃θ₂(r-2)!,
-γ₃κ_{β,1}, γ₃κ_{β,2}]` if `ε₂ < ∞`, and `σ_{H,1} = max[σ₀, γ₃θ₁(r-1)!, γ₃κ_{β,1}]` of
-Lemma 5.5.6 (i) if `ε₂ = ∞`. -/
+/-- **Equations (5.5.42) and (5.5.55)** of [cartis2022evaluation], the constant $\sigma_H$. For
+$\epsilon_2 < \infty$ it is $\max[\sigma_0, \gamma_3 \theta_1 (r-1)!, \gamma_3 \theta_2 (r-2)!,
+\gamma_3 \kappa_{\beta,1}, \gamma_3 \kappa_{\beta,2}]$. For $\epsilon_2 = \infty$ it is the
+constant $\sigma_{H,1} = \max[\sigma_0, \gamma_3 \theta_1 (r-1)!, \gamma_3 \kappa_{\beta,1}]$ of
+Lemma 5.5.6 (i). -/
 noncomputable def sigmaH : Option ℝ → ℝ
   | none => max P.σ₀ (max (P.γ₃ * (P.θ₁ * realFactorial (r - 1))) (P.γ₃ * kappaBetaJ P p H β 1))
   | some _ => max P.σ₀ (max (max (P.γ₃ * (P.θ₁ * realFactorial (r - 1)))
       (P.γ₃ * (P.θ₂ * realFactorial (r - 2))))
       (max (P.γ₃ * kappaBetaJ P p H β 1) (P.γ₃ * kappaBetaJ P p H β 2)))
 
-/-- The tolerance factor of (5.5.41): `ε₁^{(p+β-r)/(p+β-1)}` if `ε₂ = ∞`, and
-`max[ε₁^{(p+β-r)/(p+β-1)}, ε₂^{(p+β-r)/(p+β-2)}]` if `ε₂ < ∞`. -/
+/-- **Equation (5.5.41)** of [cartis2022evaluation], the tolerance factor. It is
+$\epsilon_1^{(p+\beta-r)/(p+\beta-1)}$ for $\epsilon_2 = \infty$, and
+$\max[\epsilon_1^{(p+\beta-r)/(p+\beta-1)}, \epsilon_2^{(p+\beta-r)/(p+\beta-2)}]$ for
+$\epsilon_2 < \infty$. -/
 noncomputable def epsMax (r ε₁ : ℝ) : Option ℝ → ℝ
   | none => ε₁ ^ (((p : ℝ) + β - r) / ((p : ℝ) + β - 1))
   | some e => max (ε₁ ^ (((p : ℝ) + β - r) / ((p : ℝ) + β - 1)))
       (e ^ (((p : ℝ) + β - r) / ((p : ℝ) + β - 2)))
 
-/-- The order of the guaranteed decrease (Lemma 5.5.6, Theorem 5.5.7):
-`ε₁^{(p+β)/(p+β-1)}` if `ε₂ = ∞`, `min[ε₁^{(p+β)/(p+β-1)}, ε₂^{(p+β)/(p+β-2)}]` if `ε₂ < ∞`. -/
+/-- The order $\delta_\epsilon$ of the guaranteed decrease in Lemma 5.5.6 and Theorem 5.5.7 of
+[cartis2022evaluation]. It is $\epsilon_1^{(p+\beta)/(p+\beta-1)}$ for $\epsilon_2 = \infty$,
+and $\min[\epsilon_1^{(p+\beta)/(p+\beta-1)}, \epsilon_2^{(p+\beta)/(p+\beta-2)}]$ for
+$\epsilon_2 < \infty$. -/
 noncomputable def deltaEps (ε₁ : ℝ) : Option ℝ → ℝ
   | none => ε₁ ^ (((p : ℝ) + β) / ((p : ℝ) + β - 1))
   | some e => min (ε₁ ^ (((p : ℝ) + β) / ((p : ℝ) + β - 1)))
       (e ^ (((p : ℝ) + β) / ((p : ℝ) + β - 2)))
 
-/-- The decrease constant `κ_{H,1} = η₁/r! (α₁^r/σ_{H,1})^{1/(r-1)}` (Lemma 5.5.6 (i)) and
-`κ_{H,2} = η₁/r! min[(α₁^r/σ_H)^{1/(r-1)}, (α₂^r/σ_H²)^{1/(r-2)}]` ((5.5.45)) of
-[cartis2022evaluation]. -/
+/-- **Equation (5.5.45)** of [cartis2022evaluation] and Lemma 5.5.6 (i), the decrease constant. For
+$\epsilon_2 = \infty$ it is $\kappa_{H,1} = \frac{\eta_1}{r!} (\alpha_1^r /
+\sigma_{H,1})^{1/(r-1)}$. For $\epsilon_2 < \infty$ it is
+$$\kappa_{H,2} = \frac{\eta_1}{r!} \min\left[\left(\frac{\alpha_1^r}{\sigma_H}\right)^{1/(r-1)},
+  \left(\frac{\alpha_2^r}{\sigma_H^2}\right)^{1/(r-2)}\right].$$
+-/
 noncomputable def kappaH : Option ℝ → ℝ
   | none => P.η₁ / realFactorial r * (P.α₁ ^ r / sigmaH P p H β none) ^ (1 / (r - 1))
   | some e => P.η₁ / realFactorial r * min ((P.α₁ ^ r / sigmaH P p H β (some e)) ^ (1 / (r - 1)))
@@ -459,18 +586,21 @@ noncomputable def kappaH : Option ℝ → ℝ
 
 variable {P p H β}
 
+/-- If $H \ge 0$ and $\beta \ge 0$, then $\kappa_\beta \ge 0$. -/
 theorem kappaBeta_nonneg (hH : 0 ≤ H) (hβ : 0 ≤ β) : 0 ≤ kappaBeta P p H β := by
   have := realFactorial_pos r
   have := holderFactorial_pos (p - 1) (by linarith : (-1 : ℝ) < β)
   have := P.one_sub_η₂_pos
   unfold kappaBeta; positivity
 
+/-- If $H \ge 0$ and $\beta \ge 0$, then $\kappa_{\beta,j} \ge 0$ for every $j$. -/
 theorem kappaBetaJ_nonneg (hH : 0 ≤ H) (hβ : 0 ≤ β) (j : ℝ) : 0 ≤ kappaBetaJ P p H β j := by
   have := realFactorial_pos (r - j)
   have := kappaBeta_nonneg (P := P) (p := p) hH hβ
   unfold kappaBetaJ; positivity
 
-/-- `H/(p+β-1)! ≤ κ_β/(r-1)!` ((5.5.24)). -/
+/-- If $H \ge 0$, $\beta \ge 0$ and $r \ge 1$, then $H / (p+\beta-1)! \le \kappa_\beta / (r-1)!$, as
+in (5.5.24). -/
 theorem div_holderFactorial_le_kappaBeta (hH : 0 ≤ H) (hβ : 0 ≤ β) (hr : 1 ≤ r) :
     H / holderFactorial (p - 1) β ≤ kappaBeta P p H β / realFactorial (r - 1) := by
   have hD := holderFactorial_pos (p - 1) (by linarith : (-1 : ℝ) < β)
@@ -485,7 +615,8 @@ theorem div_holderFactorial_le_kappaBeta (hH : 0 ≤ H) (hβ : 0 ≤ β) (hr : 1
   have := mul_le_mul_of_nonneg_left h1 (mul_nonneg hH hD.le)
   nlinarith
 
-/-- `H/(p+β-2)! ≤ κ_β/(r-2)!` for `p ≥ 2`, `p + β ≤ r` ((5.5.26)). -/
+/-- If $H \ge 0$, $\beta \ge 0$, $p \ge 2$ and $p + \beta \le r$, then
+$H / (p+\beta-2)! \le \kappa_\beta / (r-2)!$, as in (5.5.26). -/
 theorem div_holderFactorial_le_kappaBeta_two (hH : 0 ≤ H) (hβ : 0 ≤ β) (hp : 2 ≤ p)
     (hr : (p : ℝ) + β ≤ r) :
     H / holderFactorial (p - 2) β ≤ kappaBeta P p H β / realFactorial (r - 2) := by
@@ -514,8 +645,9 @@ theorem div_holderFactorial_le_kappaBeta_two (hH : 0 ≤ H) (hβ : 0 ≤ β) (hp
 
 end Constants
 
-/-- The three-term bound behind (5.5.23)–(5.5.25): if `G ≤ c T + σ/F U + θ U` with
-`θ F ≤ σ`, `c ≤ κ/F` and `κ T ≤ σ U`, then `G ≤ 3 σ/F U`. -/
+/-- The three-term bound behind (5.5.23)–(5.5.25): let $F > 0$, $T, U \ge 0$,
+$G \le c T + \sigma U / F + \theta U$, $\theta F \le \sigma$, $c \le \kappa / F$ and
+$\kappa T \le \sigma U$. Then $G \le 3 \sigma U / F$. -/
 theorem le_three_mul_of_bound {G c κ F θ σ T U : ℝ} (hG : G ≤ c * T + σ / F * U + θ * U)
     (hF : 0 < F) (hθ : θ * F ≤ σ) (hc : c ≤ κ / F) (hκ : κ * T ≤ σ * U) (hT : 0 ≤ T)
     (hU : 0 ≤ U) : G ≤ 3 * (σ / F * U) := by
@@ -528,7 +660,7 @@ theorem le_three_mul_of_bound {G c κ F θ σ T U : ℝ} (hG : G ≤ c * T + σ 
       _ = σ / F * U := by ring
   linarith
 
-/-- `t^{p+β-r} t^{r-j} = t^{p+β-j}` for `t > 0`. -/
+/-- For $t > 0$ and real $q, r, j$, $t^{q-r} t^{r-j} = t^{q-j}$. -/
 theorem rpow_mul_rpow_sub {t q j : ℝ} (ht : 0 < t) (r : ℝ) :
     t ^ (q - r) * t ^ (r - j) = t ^ (q - j) := by
   rw [← Real.rpow_add ht]; ring_nf
@@ -540,11 +672,15 @@ section Lemma553
 variable {f : EuclideanSpace ℝ (Fin n) → ℝ} {p : ℕ} {P : ARpHParams r} {ε₁ H β : ℝ}
   {ε₂ : Option ℝ} {x s : ℕ → EuclideanSpace ℝ (Fin n)} {σ : ℕ → ℝ}
 
-/-- **Lemma 5.5.3** of [cartis2022evaluation] (successful iterations). Assume f.DpH and
-`r ≥ p + β`. At an iteration `k` before termination, if
-`σ_k ≥ max[θ₁ (r-1)!, κ_β ‖s_k‖^{p+β-r}]` (5.5.18) and, when `ε₂ < ∞`, also
-`σ_k ≥ θ₂ (r-2)!` ((5.5.20)), then `ρ_k ≥ η₂` and the step-length tests (5.5.10)–(5.5.11)
-hold: iteration `k` is very successful. -/
+/-- **Lemma 5.5.3** of [cartis2022evaluation], successful iterations. Let $f$ satisfy f.DpH with
+constants $H$ and $\beta$, and let $r \ge p + \beta$. Along a run of ARp-H, let $k$ be an
+iteration such that the run does not terminate at any $j \le k$. If
+$$\sigma_k \ge \max[\theta_1 (r-1)!, \kappa_\beta \|s_k\|^{p+\beta-r}] \quad \text{(5.5.18)}$$
+and, when $\epsilon_2 < \infty$, also $\sigma_k \ge \theta_2 (r-2)!$ (5.5.20), then
+$\rho_k \ge \eta_2$ and the step-length tests (5.5.10)–(5.5.11) hold, so iteration $k$ is very
+successful.
+
+The ratio $\rho_k$ is `Optimization.taylorRatio f p x s k`. -/
 theorem lemma_5_5_3 (hf : AssumptionDpH f p H β) (h : algorithm_5_5_1 f p P ε₁ ε₂ x s σ)
     (hr : (p : ℝ) + β ≤ r) {k : ℕ} (hk : ∀ j ≤ k, ¬ arpHStop f ε₁ ε₂ x s j)
     (h1 : P.θ₁ * realFactorial (r - 1) ≤ σ k)
@@ -619,7 +755,7 @@ end Lemma553
 
 /-! ### Lemma 5.5.4 -/
 
-/-- f.DpH with `p ≥ 1` gives `p + β > 1`. -/
+/-- If $f$ satisfies f.DpH with exponent $\beta$ and $p \ge 1$, then $p + \beta > 1$. -/
 theorem AssumptionDpH.one_lt_add {f : EuclideanSpace ℝ (Fin n) → ℝ} {p : ℕ} {H β : ℝ}
     (hf : AssumptionDpH f p H β) (hp : 1 ≤ p) : 1 < (p : ℝ) + β := by
   rcases Nat.lt_or_ge p 2 with h2 | h2
@@ -629,8 +765,9 @@ theorem AssumptionDpH.one_lt_add {f : EuclideanSpace ℝ (Fin n) → ℝ} {p : �
   · have : (2 : ℝ) ≤ p := by exact_mod_cast h2
     linarith [hf.β_nonneg]
 
-/-- The real-power step of the proof of Lemma 5.5.4: if `σ t^d < K` and `ε < 3K/F t^a`
-(`a, d > 0`), then `σ < (F/3)^{-d/a} K^{1+d/a} ε^{-d/a}`. -/
+/-- The real-power step of the proof of Lemma 5.5.4: let $\sigma, t, K, F, \epsilon > 0$ and
+$a, d > 0$. If $\sigma t^d < K$ and $\epsilon < 3 K t^a / F$, then $\sigma < (F/3)^{-d/a}
+K^{1+d/a} \epsilon^{-d/a}$. -/
 theorem lt_of_rpow_bounds {σ t K F ε a d : ℝ} (hσ : 0 < σ) (ht : 0 < t) (hK : 0 < K)
     (hF : 0 < F) (hε : 0 < ε) (ha : 0 < a) (hd : 0 < d) (h1 : σ * t ^ d < K)
     (h2 : ε < 3 * K / F * t ^ a) :
@@ -662,11 +799,21 @@ section Lemma554
 variable {f : EuclideanSpace ℝ (Fin n) → ℝ} {p : ℕ} {P : ARpHParams r} {ε₁ H β : ℝ}
   {ε₂ : Option ℝ} {x s : ℕ → EuclideanSpace ℝ (Fin n)} {σ : ℕ → ℝ}
 
-/-- **Lemma 5.5.4** of [cartis2022evaluation] (a lower bound on `σ_k` ensuring success). Assume
-f.DpH, `r ≥ p + β`, and `p + β > 2` if `ε₂ < ∞`. At an iteration `k` before termination (in
-particular the trial point does not terminate), if `σ_k ≥ σ̄` (the right-hand side of (5.5.27),
-resp. (5.5.29)), then (5.5.18) holds, `σ_k ≥ κ_β ‖s_k‖^{p+β-r}`, and iteration `k` is very
-successful (`ρ_k ≥ η₂` and (5.5.10)–(5.5.11) hold). -/
+/-- **Lemma 5.5.4** of [cartis2022evaluation], a lower bound on $\sigma_k$ that ensures success. Let
+$f$ satisfy f.DpH with constants $H$ and $\beta$, let $r \ge p + \beta$, and let $p + \beta > 2$
+if $\epsilon_2 < \infty$. Along a run of ARp-H, let $k$ be an iteration such that the run does
+not terminate at any $j \le k$; in particular, the trial point does not pass the termination
+test. If $\sigma_k \ge \bar\sigma$, the right-hand side of (5.5.27) for $\epsilon_2 = \infty$ or
+of (5.5.29) for $\epsilon_2 < \infty$, then $\sigma_k \ge \kappa_\beta \|s_k\|^{p+\beta-r}$, so
+(5.5.18) holds, and iteration $k$ is very successful: $\rho_k \ge \eta_2$ and (5.5.10)–(5.5.11)
+hold.
+
+**Typo.** In the proof of case (b), the source prints the conclusion $\sigma_k <
+\kappa_{\beta,2} \epsilon_1^{(p+\beta-r)/(p+\beta-2)}$, with $\epsilon_1$ in place of
+$\epsilon_2$. The intended conclusion $\sigma_k < \kappa_{\beta,2}
+\epsilon_2^{(p+\beta-r)/(p+\beta-2)}$ contradicts (5.5.29).
+
+The threshold $\bar\sigma$ is `CartisGouldToint.Chapter05.sigmaBar`. -/
 theorem lemma_5_5_4 (hf : AssumptionDpH f p H β) (h : algorithm_5_5_1 f p P ε₁ ε₂ x s σ)
     (hr : (p : ℝ) + β ≤ r) (hq2 : ε₂.isSome → 2 < (p : ℝ) + β) {k : ℕ}
     (hk : ∀ j ≤ k, ¬ arpHStop f ε₁ ε₂ x s j) (hσ : sigmaBar P p H β ε₁ ε₂ ≤ σ k) :
@@ -806,13 +953,15 @@ section Lemma555
 variable {f : EuclideanSpace ℝ (Fin n) → ℝ} {p : ℕ} {P : ARpHParams r} {ε₁ H β : ℝ}
   {ε₂ : Option ℝ} {x s : ℕ → EuclideanSpace ℝ (Fin n)} {σ : ℕ → ℝ}
 
-/-- `ε^{(p+β-r)/(p+β-j)} ≥ 1` for `ε ∈ (0, 1]`, `r ≥ p + β > j`. -/
+/-- For $\epsilon \in (0, 1]$ and $r \ge q > j$, $\epsilon^{(q-r)/(q-j)} \ge 1$. -/
 theorem one_le_rpow_exponent {ε q j : ℝ} (hε : 0 < ε) (hε1 : ε ≤ 1) (hqj : j < q) (hr : q ≤ r) :
     1 ≤ ε ^ ((q - r) / (q - j)) :=
   Real.one_le_rpow_of_pos_of_le_one_of_nonpos hε hε1
     (div_nonpos_of_nonpos_of_nonneg (by linarith) (by linarith))
 
-/-- `M = epsMax ≥ 1` (the tolerances are at most `1`). -/
+/-- Let $f$ satisfy f.DpH, let $r \ge p + \beta$, and let $p + \beta > 2$ if $\epsilon_2 < \infty$.
+Along a run of ARp-H, the tolerance factor (5.5.41) is at least $1$, because the tolerances are
+at most $1$. -/
 theorem one_le_epsMax (hf : AssumptionDpH f p H β) (h : algorithm_5_5_1 f p P ε₁ ε₂ x s σ)
     (hr : (p : ℝ) + β ≤ r) (hq2 : ε₂.isSome → 2 < (p : ℝ) + β) : 1 ≤ epsMax p β r ε₁ ε₂ := by
   have hq1 := hf.one_lt_add h.one_le_p
@@ -820,11 +969,17 @@ theorem one_le_epsMax (hf : AssumptionDpH f p H β) (h : algorithm_5_5_1 f p P �
   | none => exact one_le_rpow_exponent h.ε₁_pos h.ε₁_le_one hq1 hr
   | some e => exact le_max_of_le_left (one_le_rpow_exponent h.ε₁_pos h.ε₁_le_one hq1 hr)
 
-/-- **Lemma 5.5.5** of [cartis2022evaluation] (an upper bound on `σ_k`). Assume f.DpH,
-`r ≥ p + β`, and `p + β > 2` if `ε₂ < ∞`. For every iteration `k` up to (and including)
-termination, `σ_k ≤ max(σ₀, γ₃ σ̄)` ((5.5.39), (5.5.40), `σ̄ = sigmaBar`), and hence
-`σ_k ≤ σ_H max[ε₁^{(p+β-r)/(p+β-1)}, ε₂^{(p+β-r)/(p+β-2)}]` (5.5.41) (`σ_k ≤ σ_{H,1}
-ε₁^{(p+β-r)/(p+β-1)}` if `ε₂ = ∞`). -/
+/-- **Lemma 5.5.5** of [cartis2022evaluation], an upper bound on $\sigma_k$. Let $f$ satisfy f.DpH
+with constants $H$ and $\beta$, let $r \ge p + \beta$, and let $p + \beta > 2$ if
+$\epsilon_2 < \infty$. Along a run of ARp-H, if the run does not terminate at any iteration
+$j < k$, then $\sigma_k \le \max(\sigma_0, \gamma_3 \bar\sigma)$ by (5.5.39)–(5.5.40), and hence
+$$\sigma_k \le \sigma_H \max\left[\epsilon_1^{(p+\beta-r)/(p+\beta-1)},
+  \epsilon_2^{(p+\beta-r)/(p+\beta-2)}\right] \quad \text{(5.5.41)}.$$
+For $\epsilon_2 = \infty$ the second bound reads $\sigma_k \le \sigma_{H,1}
+\epsilon_1^{(p+\beta-r)/(p+\beta-1)}$.
+
+The bound covers every iteration up to and including termination. The threshold $\bar\sigma$ is
+`CartisGouldToint.Chapter05.sigmaBar`. -/
 theorem lemma_5_5_5 (hf : AssumptionDpH f p H β) (h : algorithm_5_5_1 f p P ε₁ ε₂ x s σ)
     (hr : (p : ℝ) + β ≤ r) (hq2 : ε₂.isSome → 2 < (p : ℝ) + β) {k : ℕ}
     (hk : ∀ j < k, ¬ arpHStop f ε₁ ε₂ x s j) :
@@ -883,9 +1038,9 @@ end Lemma555
 
 /-! ### Lemma 5.5.6 -/
 
-/-- The real-power chain of the proof of Lemma 5.5.6: if the step-length test
-`α g ≤ σ t^m` holds (`0 < m ≤ r`), `σ ≤ S M` and `δ^m M^{r-m} ≤ g^r`, then
-`(α^r/S^{r-m})^{1/m} δ ≤ σ t^r`. -/
+/-- The real-power chain of the proof of Lemma 5.5.6: let $\sigma, \alpha, g, m, S, M > 0$,
+$t, \delta \ge 0$ and $m \le r$. If $\alpha g \le \sigma t^m$, $\sigma \le S M$ and
+$\delta^m M^{r-m} \le g^r$, then $(\alpha^r / S^{r-m})^{1/m} \delta \le \sigma t^r$. -/
 theorem rpow_mul_le_mul_rpow {σ t α g m r S M δ : ℝ} (hσ : 0 < σ) (ht : 0 ≤ t) (hα : 0 < α)
     (hg : 0 < g) (hm : 0 < m) (hmr : m ≤ r) (hS : 0 < S) (hM : 0 < M) (hσS : σ ≤ S * M)
     (hδ : 0 ≤ δ) (hlen : α * g ≤ σ * t ^ m) (hδM : δ ^ m * M ^ (r - m) ≤ g ^ r) :
@@ -929,8 +1084,8 @@ theorem rpow_mul_le_mul_rpow {σ t α g m r S M δ : ℝ} (hσ : 0 < σ) (ht : 0
     _ ≤ _ := h2
     _ ≤ _ := h1
 
-/-- The tolerance algebra of (5.5.48)–(5.5.51), first-order case `ε₂ = ∞`:
-`(ε^{q/(q-1)})^{r-1} ε^{(q-r)/(q-1)} = ε^r`. -/
+/-- The tolerance algebra of (5.5.48)–(5.5.51) for $\epsilon_2 = \infty$: for $\epsilon > 0$ and
+$q > 1$, $(\epsilon^{q/(q-1)})^{r-1} (\epsilon^{(q-r)/(q-1)})^{r-(r-1)} = \epsilon^r$. -/
 theorem rpow_tolerance_eq {ε q r : ℝ} (hε : 0 < ε) (hq : 1 < q) :
     (ε ^ (q / (q - 1))) ^ (r - 1) * (ε ^ ((q - r) / (q - 1))) ^ (r - (r - 1)) = ε ^ r := by
   rw [← Real.rpow_mul hε.le, ← Real.rpow_mul hε.le, ← Real.rpow_add hε]
@@ -938,9 +1093,10 @@ theorem rpow_tolerance_eq {ε q r : ℝ} (hε : 0 < ε) (hq : 1 < q) :
   have : q - 1 ≠ 0 := by linarith
   field_simp; ring
 
-/-- The tolerance algebra of (5.5.48)–(5.5.51) when `ε₂ < ∞`: with
-`δ = min[ε₁^{q/(q-1)}, ε₂^{q/(q-2)}]` and `M = max[ε₁^{(q-r)/(q-1)}, ε₂^{(q-r)/(q-2)}]`
-(`r ≥ q > 2`), `δ^{r-1} M ≤ ε₁^r` and `δ^{r-2} M² ≤ ε₂^r`. -/
+/-- The tolerance algebra of (5.5.48)–(5.5.51) for $\epsilon_2 < \infty$: let
+$\epsilon_1, \epsilon_2 > 0$ and $r \ge q > 2$, and put $\delta = \min[\epsilon_1^{q/(q-1)},
+\epsilon_2^{q/(q-2)}]$ and $M = \max[\epsilon_1^{(q-r)/(q-1)}, \epsilon_2^{(q-r)/(q-2)}]$. Then
+$\delta^{r-1} M \le \epsilon_1^r$ and $\delta^{r-2} M^2 \le \epsilon_2^r$. -/
 theorem rpow_tolerance_le {ε₁ ε₂ q r : ℝ} (hε₁ : 0 < ε₁) (hε₂ : 0 < ε₂) (hq : 2 < q)
     (hr : q ≤ r) :
     (min (ε₁ ^ (q / (q - 1))) (ε₂ ^ (q / (q - 2)))) ^ (r - 1) *
@@ -990,12 +1146,17 @@ section Lemma556
 variable {f : EuclideanSpace ℝ (Fin n) → ℝ} {p : ℕ} {P : ARpHParams r} {ε₁ H β : ℝ}
   {ε₂ : Option ℝ} {x s : ℕ → EuclideanSpace ℝ (Fin n)} {σ : ℕ → ℝ}
 
-/-- **Lemma 5.5.6** of [cartis2022evaluation] (decrease on successful iterations). Assume f.DpH,
-`r ≥ p + β` (`p + β > 1` follows from f.DpH), and `p + β > 2` if `ε₂ < ∞`. On every successful
-iteration `k` before termination,
-(i) if `ε₂ = ∞`: `f(x_k) - f(x_{k+1}) ≥ κ_{H,1} ε₁^{(p+β)/(p+β-1)}`;
-(ii) if `ε₂ < ∞`: `f(x_k) - f(x_{k+1}) ≥ κ_{H,2} min[ε₁^{(p+β)/(p+β-1)}, ε₂^{(p+β)/(p+β-2)}]`
-(5.5.44), with `κ_{H,j} = kappaH` ((5.5.45)). -/
+/-- **Lemma 5.5.6** of [cartis2022evaluation], decrease on successful iterations. Let $f$ satisfy
+f.DpH with constants $H$ and $\beta$, let $r \ge p + \beta$, and let $p + \beta > 2$ if
+$\epsilon_2 < \infty$. Along a run of ARp-H, let $k$ be a successful iteration
+($\tilde\rho_k \ge \eta_1$) such that the run does not terminate at any $j \le k$. Then:
+* (i) if $\epsilon_2 = \infty$, then $f(x_k) - f(x_{k+1}) \ge \kappa_{H,1}
+  \epsilon_1^{(p+\beta)/(p+\beta-1)}$;
+* (ii) if $\epsilon_2 < \infty$, then $f(x_k) - f(x_{k+1}) \ge \kappa_{H,2}
+  \min[\epsilon_1^{(p+\beta)/(p+\beta-1)}, \epsilon_2^{(p+\beta)/(p+\beta-2)}]$ (5.5.44).
+
+The constants $\kappa_{H,1}$ and $\kappa_{H,2}$ are `CartisGouldToint.Chapter05.kappaH` of
+(5.5.45). The condition $p + \beta > 1$ follows from f.DpH. -/
 theorem lemma_5_5_6 (hf : AssumptionDpH f p H β) (h : algorithm_5_5_1 f p P ε₁ ε₂ x s σ)
     (hr : (p : ℝ) + β ≤ r) (hq2 : ε₂.isSome → 2 < (p : ℝ) + β) {k : ℕ}
     (hk : ∀ j ≤ k, ¬ arpHStop f ε₁ ε₂ x s j) (hs : P.η₁ ≤ arpHRatio f p P ε₂ x s σ k) :
@@ -1068,14 +1229,16 @@ end Lemma556
 
 /-! ### Theorem 5.5.7 -/
 
-/-- The logarithmic tolerance terms of (5.5.52), multiplied by `log γ₂`:
-`(r-p-β)/(p+β-1) |log ε₁|`, plus `(r-p-β)/(p+β-2) |log ε₂|` if `ε₂ < ∞`. -/
+/-- The logarithmic tolerance terms of (5.5.52), multiplied by $\log \gamma_2$:
+$\frac{r-p-\beta}{p+\beta-1} |\log \epsilon_1|$, plus
+$\frac{r-p-\beta}{p+\beta-2} |\log \epsilon_2|$ if $\epsilon_2 < \infty$. -/
 noncomputable def epsLogTerm (p : ℕ) (β r ε₁ : ℝ) : Option ℝ → ℝ
   | none => (r - ((p : ℝ) + β)) / ((p : ℝ) + β - 1) * |Real.log ε₁|
   | some e => (r - ((p : ℝ) + β)) / ((p : ℝ) + β - 1) * |Real.log ε₁| +
       (r - ((p : ℝ) + β)) / ((p : ℝ) + β - 2) * |Real.log e|
 
-/-- `log ε^{(q-r)/(q-j)} ≤ (r-q)/(q-j) |log ε|` for `q > j`, `r ≥ q`. -/
+/-- For $\epsilon > 0$ and $r \ge q > j$, $\log \epsilon^{(q-r)/(q-j)} \le \frac{r-q}{q-j} |\log
+\epsilon|$. -/
 theorem log_rpow_exponent_le {ε q j : ℝ} (hε : 0 < ε) (hqj : j < q) (hr : q ≤ r) :
     Real.log (ε ^ ((q - r) / (q - j))) ≤ (r - q) / (q - j) * |Real.log ε| := by
   rw [Real.log_rpow hε]
@@ -1089,6 +1252,7 @@ section Theorem557
 variable {f : EuclideanSpace ℝ (Fin n) → ℝ} {p : ℕ} {P : ARpHParams r} {ε₁ H β flow : ℝ}
   {ε₂ : Option ℝ} {x s : ℕ → EuclideanSpace ℝ (Fin n)} {σ : ℕ → ℝ}
 
+/-- The decrease constant $\kappa_H$ of (5.5.45) is positive. -/
 theorem kappaH_pos :
     0 < kappaH P p H β ε₂ := by
   have := P.η₁_pos; have := realFactorial_pos r; have := P.α₁_pos; have := P.α₂_pos
@@ -1101,6 +1265,7 @@ theorem kappaH_pos :
     simp only [kappaH]
     refine mul_pos (by positivity) (lt_min (by positivity) (by positivity))
 
+/-- Along a run of ARp-H, the decrease order $\delta_\epsilon$ is positive. -/
 theorem deltaEps_pos (h : algorithm_5_5_1 f p P ε₁ ε₂ x s σ) : 0 < deltaEps p β ε₁ ε₂ := by
   have := h.ε₁_pos
   cases ε₂ with
@@ -1109,21 +1274,32 @@ theorem deltaEps_pos (h : algorithm_5_5_1 f p P ε₁ ε₂ x s σ) : 0 < deltaE
     have := h.ε₂_pos e rfl
     simp only [deltaEps]; exact lt_min (by positivity) (by positivity)
 
-/-- **Theorem 5.5.7** of [cartis2022evaluation] (complexity of ARp-H). Assume f.Bb, f.DpH,
-`r ≥ p + β`, and `p + β > 2` if `ε₂ < ∞`. Every ARp-H run terminates at some iteration `k_ε`
-(first index of the test at `x₀` or at a trial point), with an output `x_ε` (`x₀` if `k_ε = 0`
-and the test holds there, else the trial point `x_{k_ε} + s_{k_ε}`) satisfying the termination
-test, and
-* (5.5.52) `k_ε + 2` is at most the bound below; it bounds both the number of evaluations of
-  the first (and second) derivatives needed by the termination test (at `x₀` and at the trial
-  points of iterations `0, …, k_ε`, at most `k_ε + 2`) and the number of evaluations of `f` (at
-  `x₀` and at the trial points of iterations `0, …, k_ε - 1`, at most `k_ε + 1`):
-  `κ^A (f(x₀) - f_low)/δ_ε + (κ^B₁ |log ε₁| + κ^B₂ |log ε₂|) + κ^C`, with
-  `δ_ε = deltaEps` (`min[ε₁^{(p+β)/(p+β-1)}, ε₂^{(p+β)/(p+β-2)}]`), `κ^S = 1/κ_H`,
-  `κ^A = κ^S (1 + |log γ₁|/log γ₂)`, `κ^B_j = (r-p-β)/((p+β-j) log γ₂)` (`epsLogTerm/log γ₂`) and
-  `κ^C = (|log γ₁| + log(σ_H/σ₀))/log γ₂ + 2` (the book's `κ^C` lacks the `+ 2`);
-* the number of evaluations of the derivatives of orders up to `p` (at `x₀` and after each
-  successful iteration) is at most `κ^S (f(x₀) - f_low)/δ_ε + 1`. -/
+/-- **Theorem 5.5.7** of [cartis2022evaluation], complexity of ARp-H. Let $f$ be bounded below by
+$f_{\mathrm{low}}$ (f.Bb), let $f$ satisfy f.DpH with constants $H$ and $\beta$, let
+$r \ge p + \beta$, and let $p + \beta > 2$ if $\epsilon_2 < \infty$. Then every run of ARp-H
+terminates at a first iteration $k_\epsilon$, with an output $x_\epsilon$ that passes the
+termination test and is either $x_0$, with $k_\epsilon = 0$, or the trial point
+$x_{k_\epsilon} + s_{k_\epsilon}$. Moreover, $k_\epsilon + 2$ is at most
+$$\kappa^A \frac{f(x_0) - f_{\mathrm{low}}}{\delta_\epsilon} + \kappa^B_1 |\log \epsilon_1| +
+  \kappa^B_2 |\log \epsilon_2| + \kappa^C \quad \text{(5.5.52)},$$
+where $\delta_\epsilon = \min[\epsilon_1^{(p+\beta)/(p+\beta-1)},
+\epsilon_2^{(p+\beta)/(p+\beta-2)}]$, $\kappa^S = 1 / \kappa_H$, $\kappa^A = \kappa^S (1 + |\log
+\gamma_1| / \log \gamma_2)$, $\kappa^B_j = (r-p-\beta) / ((p+\beta-j) \log \gamma_2)$ and
+$\kappa^C = (|\log \gamma_1| + \log(\sigma_H / \sigma_0)) / \log \gamma_2 + 2$. This bounds the
+number of evaluations of the first (and second) derivatives that the termination test needs, at
+$x_0$ and at the trial points of iterations $0, \dots, k_\epsilon$, which is at most
+$k_\epsilon + 2$. It also bounds the number of evaluations of $f$, at $x_0$ and at the trial
+points of iterations $0, \dots, k_\epsilon - 1$, which is at most $k_\epsilon + 1$. Finally, the
+number of evaluations of the derivatives of orders up to $p$, at $x_0$ and after each successful
+iteration, is at most $\kappa^S (f(x_0) - f_{\mathrm{low}}) / \delta_\epsilon + 1$.
+
+**Correction.** The source counts $k_\epsilon + 1$ evaluations (Lemma 2.4.1), but the function
+and its derivatives are evaluated at $x_0$ and at every trial point, that is, $k_\epsilon + 2$
+times. The constant $\kappa^C$ of the source lacks the term $+ 2$.
+
+For $\epsilon_2 = \infty$ the terms with $\epsilon_2$ are absent. The logarithmic terms are
+`CartisGouldToint.Chapter05.epsLogTerm` divided by $\log \gamma_2$, and the last count is
+`Optimization.derivEvalCount` of the successful iterations. -/
 theorem theorem_5_5_7 (hb : Chapter02.AssumptionBb f flow) (hf : AssumptionDpH f p H β)
     (h : algorithm_5_5_1 f p P ε₁ ε₂ x s σ) (hr : (p : ℝ) + β ≤ r)
     (hq2 : ε₂.isSome → 2 < (p : ℝ) + β) :

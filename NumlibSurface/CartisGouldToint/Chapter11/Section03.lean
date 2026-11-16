@@ -6,22 +6,36 @@ import NumlibSurface.CartisGouldToint.Chapter08.Section03
 import NumlibSurface.CartisGouldToint.Chapter11.Section01
 
 /-!
-# Cartis–Gould–Toint §11.3: Least-squares models
+# Cartis, Gould and Toint, Section 11.3: Least-squares models
 
-Surface file for [cartis2022evaluation] §11.3: the least-squares model
-`m(s) = ½ ‖r + J s‖²` (11.3.1), i.e. the data `g = Jᵀ r`, `H = Jᵀ J`, for which `λₛ = 0` and the
-hard case cannot occur, and the augmented system (11.3.3). The remarks on Krylov and LSQR
-methods are not formalized.
+This module formalizes §11.3 of [cartis2022evaluation]: subproblems whose model comes from a linear
+least-squares problem. For $J \in \mathbb{R}^{m \times n}$ and a residual $r \in \mathbb{R}^m$, the
+model (11.3.1)
+$$\tfrac12 \|r + J s\|^2 = \tfrac12 \langle r, r \rangle + \langle J^T r, s \rangle + \tfrac12
+  \langle s, J^T J s \rangle$$
+is the quadratic model of Chapter 8 with the data $g = J^T r$ and $H = J^T J$, up to a constant.
+Since $J^T J$ is positive semidefinite, $\lambda_{\mathrm{s}} = 0$, and since $J^T r$ lies in the
+range of $J^T J$, the hard case cannot occur: a positive multiplier makes $J^T J + \lambda M$
+positive definite and is the unique root of the secular equation. The shifted system
+$(J^T J + \lambda M) s = -J^T r$ is equivalent to the augmented system (11.3.3). The proofs use the
+subproblem theory of Chapter 8.
 
 ## Main results
 
-* `leastSquares_structure` — (11.3.1)–(11.3.2) and the consequences listed in §11.3.
-* `augmentedSystem_iff` — (11.3.3).
+* (11.3.1)–(11.3.2), `CartisGouldToint.Chapter11.leastSquares_structure`: the identity (11.3.1),
+  $\lambda_{\mathrm{s}} = 0$, and the absence of the hard case for the trust-region and the
+  regularization subproblems, as listed in §11.3.
+* (11.3.3), `CartisGouldToint.Chapter11.augmentedSystem_iff`: the shifted system is equivalent to
+  the augmented system.
 
 ## Implementation notes
 
-The book uses `r` both for the residual vector and for the regularization order; here the
-residual is `r` and the regularization order is `p`.
+* The source uses $r$ both for the residual vector and for the order of the regularization. Here the
+  residual is $r$ and the order of the regularization is $p$.
+
+## Not formalized
+
+* The remarks on Krylov and LSQR methods in §11.3.
 -/
 
 open Matrix Set Filter Topology
@@ -33,12 +47,13 @@ open Subproblem CartisGouldToint.Chapter08 CartisGouldToint.Chapter10
 
 variable {n m : ℕ} {M : Matrix (Fin n) (Fin n) ℝ}
 
-/-- `Jᵀ J` is positive semidefinite. -/
+/-- For every $J \in \mathbb{R}^{m \times n}$, the matrix $J^T J$ is positive semidefinite. -/
 theorem transpose_mul_self_posSemidef (J : Matrix (Fin m) (Fin n) ℝ) : (Jᵀ * J).PosSemidef := by
   simpa [conjTranspose_eq_transpose_of_trivial] using posSemidef_conjTranspose_mul_self J
 
-/-- `Jᵀ r` lies in the range of `Jᵀ J`: with `J x₀` the orthogonal projection of `r` onto the
-range of `J`, `Jᵀ (r - J x₀) = 0`. -/
+/-- For $J \in \mathbb{R}^{m \times n}$ and $r \in \mathbb{R}^m$, the vector $J^T r$ lies in the
+range of $J^T J$: if $J x_0$ is the orthogonal projection of $r$ onto the range of $J$, then
+$J^T (r - J x_0) = 0$. -/
 private theorem exists_transpose_mul_self_eq (J : Matrix (Fin m) (Fin n) ℝ)
     (r : EuclideanSpace ℝ (Fin m)) :
     ∃ x, toEuclideanLin (Jᵀ * J) x = toEuclideanLin Jᵀ r := by
@@ -51,17 +66,32 @@ private theorem exists_transpose_mul_self_eq (J : Matrix (Fin m) (Fin n) ℝ)
   rw [← neg_sub, map_neg, inner_neg_left, neg_eq_zero]
   exact (Submodule.mem_orthogonal' _ _).1 horth _ (LinearMap.mem_range_self _ _)
 
-/-- **Least-squares models** ([cartis2022evaluation] §11.3). Let `J ∈ ℝ^{m×n}`, `r ∈ ℝᵐ`, `M`
-positive definite, `g = Jᵀ r`, `H = Jᵀ J`. Then:
-(i) `½ ‖r + J s‖² = ½ ⟪r, r⟫ + ⟪Jᵀ r, s⟫ + ½ ⟪s, Jᵀ J s⟫` (11.3.1);
-(ii) `Jᵀ J + λ M` is positive semidefinite for `λ ≥ 0`, so `λ₁ ≥ 0` and `λₛ = 0`;
-(iii) `Jᵀ r` lies in the range of `Jᵀ J` (so `(Jᵀ J) s = -Jᵀ r` is solvable and an interior
-trust-region solution with `λ* = 0` is possible), and the hard case cannot occur: a multiplier
-`λ*` of the trust-region subproblem is either `0` or positive, and then `Jᵀ J + λ* M` is positive
-definite, `s* = s(λ*)` and `λ*` is the unique root on `(0, ∞)` of `π(λ) = Δ²`; and if
-`Jᵀ r ≠ 0`, the regularization
-multiplier `λ* = σ ‖s*‖_M^{p-2}` is positive, `Jᵀ J + λ* M` is positive definite, `s* = s(λ*)`, and
-`λ*` is the unique root on `(0, ∞)` of the secular equation `π(λ) = (λ/σ)^{2/(p-2)}`. -/
+/-- **Section 11.3** of [cartis2022evaluation], least-squares models. Let
+$J \in \mathbb{R}^{m \times n}$, $r \in \mathbb{R}^m$ and let $M \in \mathbb{R}^{n \times n}$ be
+positive definite. Take $g = J^T r$ and $H = J^T J$, and let $m(s) = \langle g, s \rangle +
+\frac12 \langle s, H s \rangle$ be the model (8.1.1).
+
+1. For every $s$, $\frac12 \|r + J s\|^2 = \frac12 \langle r, r \rangle + m(s)$ (11.3.1).
+2. For every $\lambda \ge 0$, $J^T J + \lambda M$ is positive semidefinite.
+3. The leftmost eigenvalue of the pencil $(J^T J, M)$ satisfies $\lambda_1 \ge 0$, and
+   $\lambda_{\mathrm{s}} = \max(0, -\lambda_1) = 0$.
+4. $J^T r$ lies in the range of $J^T J$. So $(J^T J) s = -J^T r$ is solvable, and an interior
+   trust-region solution with $\lambda_* = 0$ is possible.
+5. Let $\Delta > 0$, and let $\lambda$ be a Lagrange multiplier of a step $s$ for the
+   trust-region subproblem (8.1.2), in the sense of Theorem 8.2.7. Then either $\lambda = 0$, or
+   $\lambda > 0$, $J^T J + \lambda M$ is positive definite, $s = s(\lambda)$, and $\lambda$ is
+   the unique root on $(0, \infty)$ of $\pi(\lambda) = \Delta^2$.
+6. Let $\sigma > 0$, $p > 2$ and $J^T r \neq 0$, and let $s$ be a global minimizer of the
+   regularization subproblem (8.1.3) of order $p$. Then the multiplier
+   $\lambda_* = \sigma \|s\|_M^{p-2}$ is positive, $J^T J + \lambda_* M$ is positive definite,
+   $s = s(\lambda_*)$, and $\lambda_*$ is the unique root on $(0, \infty)$ of the secular
+   equation $\pi(\lambda) = (\lambda/\sigma)^{2/(p-2)}$.
+
+Here $s(\lambda) = -(H + \lambda M)^{-1} g$ is `CartisGouldToint.Chapter08.stepOf`,
+$\pi(\lambda) = \|s(\lambda)\|_M^2$ is `CartisGouldToint.Chapter08.secularFn`, and $\lambda_1$
+and $\lambda_{\mathrm{s}}$ are `CartisGouldToint.Chapter08.leftmostPencil` and
+`CartisGouldToint.Chapter08.lambdaS`. Part 5 is the absence of the hard case for the
+trust-region subproblem, and part 6 for the regularization subproblem. -/
 theorem leastSquares_structure (J : Matrix (Fin m) (Fin n) ℝ) (r : EuclideanSpace ℝ (Fin m))
     (hM : M.PosDef) :
     (∀ s, 1 / 2 * ‖r + toEuclideanLin J s‖ ^ 2 =
@@ -156,8 +186,15 @@ theorem leastSquares_structure (J : Matrix (Fin m) (Fin n) ℝ) (r : EuclideanSp
     · exact h
     · have := hA hg lam μ hlpos h; have := hT lam μ hlpos h; linarith
 
-/-- **The augmented system** ([cartis2022evaluation] (11.3.3)): `(Jᵀ J + λ M) s = -Jᵀ r` iff there
-is `z` (namely `z = J s + r`) with `[[λ M, Jᵀ], [J, -I]] [s; z] = -[0; r]`. -/
+/-- **Equation (11.3.3)** of [cartis2022evaluation], the augmented system. Let
+$J \in \mathbb{R}^{m \times n}$, $r \in \mathbb{R}^m$, $M \in \mathbb{R}^{n \times n}$,
+$\lambda \in \mathbb{R}$ and $s \in \mathbb{R}^n$. Then $(J^T J + \lambda M) s = -J^T r$ if and
+only if there is $z \in \mathbb{R}^m$ with
+$$\begin{bmatrix} \lambda M & J^T \\ J & -I \end{bmatrix} \begin{bmatrix} s \\ z \end{bmatrix} =
+  -\begin{bmatrix} 0 \\ r \end{bmatrix}.$$
+The vector $z$ is then $z = J s + r$.
+
+The block matrix is `Matrix.fromBlocks`, indexed by `Fin n ⊕ Fin m`. -/
 theorem augmentedSystem_iff (J : Matrix (Fin m) (Fin n) ℝ) (r : Fin m → ℝ)
     (M : Matrix (Fin n) (Fin n) ℝ) (lam : ℝ) (s : Fin n → ℝ) :
     (Jᵀ * J + lam • M) *ᵥ s = -(Jᵀ *ᵥ r) ↔

@@ -5,27 +5,47 @@ Released under Apache 2.0 license as described in the file LICENSE.
 import NumlibSurface.CartisGouldToint.Chapter11.Section01
 
 /-!
-# Cartis–Gould–Toint §11.2: Trust-region radius and regularization weight updates
+# Cartis, Gould and Toint, Section 11.2: Trust-region radius and regularization weight updates
 
-Surface file for [cartis2022evaluation] §11.2. The practical update rules (11.2.1)–(11.2.2) are
-parameter choices for the algorithms of Chapter 3; the formalized content is the asymptotic
-correspondence (11.2.3)–(11.2.6) between trust-region radii and regularization weights.
+This module formalizes §11.2 of [cartis2022evaluation]: the asymptotic correspondence between the
+trust-region radius $\Delta$ and the regularization weight $\sigma$. Let $H$ be symmetric and $M$
+positive definite. If $s(\Delta)$ is a step of the trust-region subproblem (8.1.2) with Lagrange
+multiplier $\lambda(\Delta)$, then $\lambda(\Delta) \Delta \to \|g\|_{M^{-1}}$ as $\Delta \to 0^+$,
+that is, $\lambda \approx \|g\|_{M^{-1}} / \Delta$ (11.2.3). For the regularization subproblem
+(8.1.3) of order $r > 2$, the multiplier $\lambda(\sigma) = \sigma \|s(\sigma)\|_M^{r-2}$ behaves
+like $\sigma^{1/(r-1)} \|g\|_{M^{-1}}^{(r-2)/(r-1)}$ as $\sigma \to \infty$ (11.2.4).
+
+A trust-region step with a positive multiplier $\lambda$ is a regularization step for the weight
+$\sigma(\Delta) = \lambda / \Delta^{r-2}$. This weight satisfies
+$\sigma \approx \|g\|_{M^{-1}} / \Delta^{r-1}$ (11.2.5), and shrinking the radius by a factor
+$\gamma$ multiplies the weight by about $\gamma^{-(r-1)}$, which is the rule (11.2.6). The proofs
+use the multiplier theory of Chapter 8.
 
 ## Main results
 
-* `trMultiplier_asymptotics` — (11.2.3), corrected: `λ(Δ) Δ → ‖g‖_{M⁻¹}` as `Δ → 0⁺`, with the
-  explicit bound `|λ(Δ) Δ - ‖g‖_{M⁻¹}| ≤ ‖M⁻¹H‖ Δ`.
-* `regMultiplier_asymptotics` — (11.2.4): `λ(σ) ~ σ^{1/(r-1)} ‖g‖_{M⁻¹}^{(r-2)/(r-1)}` as
-  `σ → ∞`.
-* `radius_weight_correspondence` — (11.2.5)–(11.2.6), corrected: a trust-region step with
-  multiplier `λ > 0` is the regularization step for `σ(Δ) = λ/Δ^{r-2}`,
-  `σ(Δ) Δ^{r-1}/‖g‖_{M⁻¹} → 1`, and `σ(γΔ)/σ(Δ) → γ^{-(r-1)}`.
+* (11.2.3), `CartisGouldToint.Chapter11.trMultiplier_asymptotics`: $|\lambda(\Delta) \Delta -
+  \|g\|_{M^{-1}}| \le \|M^{-1}H\|_2 \Delta$, where $\|M^{-1}H\|_2$ is the Euclidean operator norm,
+  so $\lambda(\Delta) \Delta \to \|g\|_{M^{-1}}$ as $\Delta \to 0^+$.
+* (11.2.5)–(11.2.6), `CartisGouldToint.Chapter11.radius_weight_correspondence`: a trust-region step
+  with multiplier $\lambda > 0$ is the regularization step for
+  $\sigma(\Delta) = \lambda / \Delta^{r-2}$, $\sigma(\Delta) \Delta^{r-1} / \|g\|_{M^{-1}} \to 1$,
+  and $\sigma(\gamma \Delta)/\sigma(\Delta) \to \gamma^{-(r-1)}$.
+* (11.2.4), `CartisGouldToint.Chapter11.regMultiplier_asymptotics`: $\lambda(\sigma) /
+  (\sigma^{1/(r-1)} \|g\|_{M^{-1}}^{(r-2)/(r-1)}) \to 1$ as $\sigma \to \infty$.
 
-## Corrections to the source
+## Deviations from the source
 
-* (11.2.3) and (11.2.5) are printed inverted: the correct forms are `λ ≈ ‖g‖_{M⁻¹}/Δ` (printed
-  `Δ/‖g‖_{M⁻¹}`) and `σ ≈ ‖g‖_{M⁻¹}/Δ^{r-1}` (printed `Δ^{r-1}/‖g‖_{M⁻¹}`), as confirmed by the
-  derivation, the "fidelity" `σΔ²/‖g‖_{M⁻¹} → 1` of Table 11.2.1 and the rule (11.2.6).
+* **(11.2.3) and (11.2.5)** (typo). Both are printed inverted. The correct forms are
+  $\lambda \approx \|g\|_{M^{-1}} / \Delta$ (printed $\Delta / \|g\|_{M^{-1}}$) and
+  $\sigma \approx \|g\|_{M^{-1}} / \Delta^{r-1}$ (printed $\Delta^{r-1} / \|g\|_{M^{-1}}$), as the
+  derivation, the "fidelity" $\sigma \Delta^2 / \|g\|_{M^{-1}} \to 1$ of Table 11.2.1 and the rule
+  (11.2.6) confirm. See `CartisGouldToint.Chapter11.trMultiplier_asymptotics` and
+  `CartisGouldToint.Chapter11.radius_weight_correspondence`.
+
+## Not formalized
+
+* The practical update rules (11.2.1)–(11.2.2), which are parameter choices for the algorithms of
+  Chapter 3.
 -/
 
 open Matrix Set Filter Topology
@@ -37,7 +57,8 @@ open Subproblem CartisGouldToint.Chapter08 CartisGouldToint.Chapter10
 
 variable {n : ℕ} {H M : Matrix (Fin n) (Fin n) ℝ} {g : EuclideanSpace ℝ (Fin n)}
 
-/-- A function within `C Δ` of `L` for `Δ > 0` tends to `L` as `Δ → 0⁺`. -/
+/-- If $|f(\Delta) - L| \le C \Delta$ for every $\Delta > 0$, then $f(\Delta) \to L$ as
+$\Delta \to 0^+$. -/
 private theorem tendsto_of_abs_sub_le {f : ℝ → ℝ} {L C : ℝ} (h : ∀ Δ, 0 < Δ → |f Δ - L| ≤ C * Δ) :
     Tendsto f (𝓝[>] 0) (𝓝 L) := by
   have hlo : Tendsto (fun Δ => L - C * Δ) (𝓝[>] (0 : ℝ)) (𝓝 L) := by
@@ -54,11 +75,21 @@ private theorem tendsto_of_abs_sub_le {f : ℝ → ℝ} {L C : ℝ} (h : ∀ Δ,
     filter_upwards [self_mem_nhdsWithin] with Δ hΔ <;>
     have := abs_le.1 (h Δ hΔ) <;> linarith [this.1, this.2]
 
-/-- **The trust-region multiplier for small radii** ([cartis2022evaluation] (11.2.3), corrected).
-Let `H` be symmetric, `M` positive definite, and for every `Δ > 0` let `s(Δ)` be a feasible step
-with multiplier `λ(Δ)` for (8.1.2) (e.g. a global solution, Theorem 8.2.7). Then
-`|λ(Δ) Δ - ‖g‖_{M⁻¹}| ≤ ‖M⁻¹H‖ Δ`, so `λ(Δ) Δ → ‖g‖_{M⁻¹}` as `Δ → 0⁺`: `λ ≈ ‖g‖_{M⁻¹}/Δ` (the book
-prints `Δ/‖g‖_{M⁻¹}`). -/
+/-- **Equation (11.2.3)** of [cartis2022evaluation], the trust-region multiplier for small radii.
+Let $H \in \mathbb{R}^{n \times n}$ be symmetric and $M \in \mathbb{R}^{n \times n}$ positive
+definite. For every $\Delta > 0$ let $s(\Delta)$ satisfy $\|s(\Delta)\|_M \le \Delta$, and let
+$\lambda(\Delta)$ be a Lagrange multiplier of $s(\Delta)$ for the trust-region subproblem
+(8.1.2) in the sense of Theorem 8.2.7; for example, $s(\Delta)$ can be a global solution. Then
+for every $\Delta > 0$
+$$\bigl|\lambda(\Delta) \Delta - \|g\|_{M^{-1}}\bigr| \le \|M^{-1}H\|_2 \, \Delta,$$
+and therefore $\lambda(\Delta) \Delta \to \|g\|_{M^{-1}}$ as $\Delta \to 0^+$, that is,
+$\lambda \approx \|g\|_{M^{-1}} / \Delta$.
+
+**Typo.** The source prints $\lambda \approx \Delta / \|g\|_{M^{-1}}$, which is inverted. The
+derivation in the source gives $\|g\|_{M^{-1}} / \Delta$.
+
+The norm $\|M^{-1}H\|_2$ is the Euclidean operator norm of the matrix $M^{-1}H$. The multiplier
+conditions are `CartisGouldToint.Chapter08.IsTrustRegionKKT`. -/
 theorem trMultiplier_asymptotics (hH : H.IsHermitian) (hM : M.PosDef)
     {s : ℝ → EuclideanSpace ℝ (Fin n)} {lam : ℝ → ℝ}
     (hs : ∀ Δ, 0 < Δ → IsTrustRegionKKT g H M Δ (s Δ) (lam Δ) ∧ mNorm M (s Δ) ≤ Δ) :
@@ -98,14 +129,25 @@ theorem trMultiplier_asymptotics (hH : H.IsHermitian) (hM : M.PosDef)
       rw [add_sub_cancel_left]; exact hAS
   exact ⟨hbound, tendsto_of_abs_sub_le hbound⟩
 
-/-- **Radius–weight correspondence** ([cartis2022evaluation] (11.2.5)–(11.2.6), corrected). Let `H`
-be symmetric, `M` positive definite and `r > 2`.
-(i) If `s` is feasible for (8.1.2) with multiplier `λ > 0`, then `s` solves (8.1.3) with
-`σ(Δ) = λ/Δ^{r-2}` (the converse of Theorem 8.2.8).
-(ii) If `g ≠ 0` and `s(Δ)`, `λ(Δ)` are as in `trMultiplier_asymptotics`, then with
-`σ(Δ) = λ(Δ)/Δ^{r-2}`: `σ(Δ) Δ^{r-1}/‖g‖_{M⁻¹} → 1` as `Δ → 0⁺` (the "fidelity" of Table 11.2.1),
-i.e. `σ ≈ ‖g‖_{M⁻¹}/Δ^{r-1}` (the book prints `Δ^{r-1}/‖g‖_{M⁻¹}`); and for every `γ > 0`,
-`σ(γΔ)/σ(Δ) → γ^{-(r-1)}`, which is the rule (11.2.6). -/
+/-- **Equations (11.2.5)–(11.2.6)** of [cartis2022evaluation], the radius–weight correspondence. Let
+$H \in \mathbb{R}^{n \times n}$ be symmetric, $M \in \mathbb{R}^{n \times n}$ positive definite
+and $r > 2$.
+
+1. Let $\Delta > 0$, and let $s$ with $\|s\|_M \le \Delta$ have a Lagrange multiplier
+   $\lambda > 0$ for the trust-region subproblem (8.1.2). Then $s$ is a global minimizer of the
+   regularization subproblem (8.1.3) with the weight $\sigma(\Delta) = \lambda / \Delta^{r-2}$
+   and the order $r$. This is the converse of Theorem 8.2.8.
+2. Let $g \neq 0$, and for every $\Delta > 0$ let $s(\Delta)$ and $\lambda(\Delta)$ be as in
+   `CartisGouldToint.Chapter11.trMultiplier_asymptotics`, with $\sigma(\Delta) = \lambda(\Delta)
+   / \Delta^{r-2}$. Then $\sigma(\Delta) \Delta^{r-1} / \|g\|_{M^{-1}} \to 1$ as
+   $\Delta \to 0^+$, which is the "fidelity" of Table 11.2.1, that is,
+   $\sigma \approx \|g\|_{M^{-1}} / \Delta^{r-1}$. Moreover, for every $\gamma > 0$,
+   $\sigma(\gamma \Delta)/\sigma(\Delta) \to \gamma^{-(r-1)}$ as $\Delta \to 0^+$, which is the
+   rule (11.2.6).
+
+**Typo.** The source prints (11.2.5) as $\sigma \approx \Delta^{r-1} / \|g\|_{M^{-1}}$, which is
+inverted. The derivation, Table 11.2.1 and the rule (11.2.6) all give
+$\|g\|_{M^{-1}} / \Delta^{r-1}$. -/
 theorem radius_weight_correspondence (hH : H.IsHermitian) (hM : M.PosDef) {r : ℝ} (hr : 2 < r) :
     (∀ {Δ lam : ℝ} {s : EuclideanSpace ℝ (Fin n)}, 0 < Δ → IsTrustRegionKKT g H M Δ s lam →
       mNorm M s ≤ Δ → 0 < lam → IsRegularizationSolution g H M (lam / Δ ^ (r - 2)) r s) ∧
@@ -164,17 +206,21 @@ theorem radius_weight_correspondence (hH : H.IsHermitian) (hM : M.PosDef) {r : �
       · simp [h0]
       · field_simp
 
-/-- `t^{r-2} t = t^{r-1}` for `t ≥ 0`, `r > 2`. -/
+/-- For $r > 2$ and $t \ge 0$, $t^{r-2} t = t^{r-1}$. -/
 private theorem rpow_sub_two_mul_self {r t : ℝ} (hr : 2 < r) (ht : 0 ≤ t) :
     t ^ (r - 2) * t = t ^ (r - 1) := by
   rcases eq_or_lt_of_le ht with rfl | ht
   · rw [Real.zero_rpow (by linarith), Real.zero_rpow (by linarith), zero_mul]
   · rw [show r - 1 = (r - 2) + 1 by ring, Real.rpow_add ht, Real.rpow_one]
 
-/-- **The regularization multiplier for large weights** ([cartis2022evaluation] (11.2.4)). Let `H`
-be symmetric, `M` positive definite, `g ≠ 0`, `r > 2`, and for every `σ > 0` let `s(σ)` solve
-(8.1.3), with multiplier `λ(σ) = σ ‖s(σ)‖_M^{r-2}`. Then
-`λ(σ) / (σ^{1/(r-1)} ‖g‖_{M⁻¹}^{(r-2)/(r-1)}) → 1` as `σ → ∞`. -/
+/-- **Equation (11.2.4)** of [cartis2022evaluation], the regularization multiplier for large
+weights. Let $H \in \mathbb{R}^{n \times n}$ be symmetric, $M \in \mathbb{R}^{n \times n}$
+positive definite, $g \neq 0$ and $r > 2$. For every $\sigma > 0$ let $s(\sigma)$ be a global
+minimizer of the regularization subproblem (8.1.3), with the multiplier
+$\lambda(\sigma) = \sigma \|s(\sigma)\|_M^{r-2}$. Then
+$$\frac{\lambda(\sigma)}{\sigma^{1/(r-1)} \|g\|_{M^{-1}}^{(r-2)/(r-1)}} \to 1 \qquad \text{as }
+  \sigma \to \infty.$$
+-/
 theorem regMultiplier_asymptotics (hH : H.IsHermitian) (hM : M.PosDef) (hg : g ≠ 0) {r : ℝ}
     (hr : 2 < r) {s : ℝ → EuclideanSpace ℝ (Fin n)}
     (hs : ∀ σ, 0 < σ → IsRegularizationSolution g H M σ r (s σ)) :

@@ -6,29 +6,35 @@ import Mathlib.Analysis.InnerProductSpace.PiL2
 import Numlib.Optimization.Optimality.HighOrder
 
 /-!
-# Cartis–Gould–Toint, Appendix B: Appendix to Chapter 12
+# Cartis, Gould and Toint, Appendix B: Appendix to Chapter 12
 
-Surface file for C. Cartis, N. I. M. Gould and Ph. L. Toint, *Evaluation Complexity of
-Algorithms for Nonconvex Optimization* [cartis2022evaluation], Appendix B, "Appendix to
-Chapter 12": Lemma B.12.1, which justifies the use of the third-order measure `φ^δ_{f,3}` in
-§12.1.3 (`φ^δ_{f,3}(x) = 0` implies `φ^δ_{f,2}(x) = 0`). The content is the backbone theorem
-`Optimization.taylorMeasure_two_eq_zero_of_three`, stated for arbitrary Taylor data; here it is
-specialized to the data `(g, H, T)` of the book on `ℝⁿ = EuclideanSpace ℝ (Fin n)`, with the
-book's `min` written as `sInf` of the values on the closed ball (the minimum is attained, by
-compactness).
+This module formalizes the part of Appendix B of [cartis2022evaluation] that belongs to Chapter 12:
+Lemma B.12.1, which justifies the use of the third-order measure $\phi^\delta_{f,3}$ in §12.1.3.
+Given $g \in \mathbb{R}^n$, a linear map $H$ and a trilinear form $T$, let $\psi_2(s) = \langle g,
+s\rangle + \frac12 \langle s, Hs\rangle$ and $\psi_3(s) = \psi_2(s) + \frac16 T[s]^3$. The lemma
+says that if the minimum of $\psi_3$ over the ball $\|s\| \le \Delta$ is $0$, then so is the minimum
+of $\psi_2$; thus $\phi^\delta_{f,3}(x) = 0$ implies $\phi^\delta_{f,2}(x) = 0$. The content is the
+backbone theorem `Optimization.taylorMeasure_two_eq_zero_of_three` for arbitrary Taylor data,
+specialized here to the data $(g, H, T)$ of the book. The proofs of Theorems 12.1.7 and 12.2.6 that
+the book gives in this appendix belong to Chapter 12.
 
 ## Main results
 
-* `lemma_B_12_1` — Lemma B.12.1.
+* Lemma B.12.1, `CartisGouldToint.AppendixB.lemma_B_12_1`: if
+  $\min_{\|s\| \le \Delta} \psi_3(s) = 0$, then $\min_{\|s\| \le \Delta} \psi_2(s) = 0$.
 
-## Deviations from the book
+## Implementation notes
 
-* The symmetry of `H` and the cubic symmetry of `T` assumed by the book are not needed: `H` is any
-  linear map and `T` any continuous trilinear form.
-* The radius `Δ` is arbitrary (for `Δ < 0` both minima are over the empty set and the statement is
-  trivial with the convention `sInf ∅ = 0`).
+* $\mathbb{R}^n$ is `EuclideanSpace ℝ (Fin n)`. The book's minimum over the closed ball is written
+  as `sInf` of the values on the ball; for $\Delta \ge 0$ the minimum is attained, by compactness.
 
-The proofs of Theorems 12.1.7 and 12.2.6 that the book gives in this appendix belong to Chapter 12.
+## Deviations from the source
+
+* **Lemma B.12.1** (generalization). The book assumes that $H$ is symmetric and that $T$ is a
+  symmetric trilinear form; neither is needed. See `CartisGouldToint.AppendixB.lemma_B_12_1`.
+* **Lemma B.12.1** (generalization). The radius $\Delta$ is arbitrary. For $\Delta < 0$ both minima
+  are over the empty set, and the statement holds trivially with the convention `sInf ∅ = 0`. See
+  `CartisGouldToint.AppendixB.lemma_B_12_1`.
 -/
 
 open Set Metric
@@ -38,8 +44,9 @@ namespace CartisGouldToint.AppendixB
 
 variable {n : ℕ}
 
-/-- The Taylor data `(g, H, T)` of Lemma B.12.1 as a formal multilinear series: `D₁[s] = ⟨g, s⟩`,
-`D₂[s]² = ⟨s, H s⟩`, `D₃[s]³ = T[s]³`. -/
+/-- The Taylor data $(g, H, T)$ of Lemma B.12.1 as a formal multilinear series: its terms of order
+$1$, $2$ and $3$ are $s \mapsto \langle g, s\rangle$, $s \mapsto \langle s, Hs\rangle$ and $T$,
+and the other terms are $0$. -/
 private noncomputable def lemmaB121Data (g : EuclideanSpace ℝ (Fin n))
     (H : EuclideanSpace ℝ (Fin n) →L[ℝ] EuclideanSpace ℝ (Fin n))
     (T : ContinuousMultilinearMap ℝ (fun _ : Fin 3 => EuclideanSpace ℝ (Fin n)) ℝ) :
@@ -53,9 +60,19 @@ private noncomputable def lemmaB121Data (g : EuclideanSpace ℝ (Fin n))
   | 3 => T
   | _ => 0
 
-/-- **Lemma B.12.1** of [cartis2022evaluation]: given a vector `g`, a matrix `H` and a trilinear
-form `T` on `ℝⁿ`, let `ψ₂(s) = ⟨g, s⟩ + ½ ⟨s, H s⟩` and `ψ₃(s) = ψ₂(s) + (1/6) T[s]³`. If
-`min_{‖s‖ ≤ Δ} ψ₃(s) = 0`, then `min_{‖s‖ ≤ Δ} ψ₂(s) = 0`. -/
+/-- **Lemma B.12.1** of [cartis2022evaluation]. Let $g \in \mathbb{R}^n$, let
+$H : \mathbb{R}^n \to \mathbb{R}^n$ be a continuous linear map, let $T$ be a continuous
+trilinear form on $\mathbb{R}^n$, and let $\Delta \in \mathbb{R}$. Let
+$$\psi_2(s) = \langle g, s\rangle + \tfrac12 \langle s, Hs\rangle \quad \text{and} \quad
+  \psi_3(s) = \psi_2(s) + \tfrac16 T[s]^3.$$
+If $\inf_{\|s\| \le \Delta} \psi_3(s) = 0$, then $\inf_{\|s\| \le \Delta} \psi_2(s) = 0$.
+
+**Generalization.** The book assumes that $H$ is symmetric and that $T$ is symmetric. Neither
+assumption is needed. The radius $\Delta$ is arbitrary: for $\Delta < 0$ both infima are over
+the empty set and are $0$ by the convention `sInf ∅ = 0`.
+
+For $\Delta \ge 0$ the infima are minima, since the closed ball is compact; they are the book's
+minima. The infimum is `sInf` of the image of `Metric.closedBall 0 Δ`. -/
 theorem lemma_B_12_1 (g : EuclideanSpace ℝ (Fin n))
     (H : EuclideanSpace ℝ (Fin n) →L[ℝ] EuclideanSpace ℝ (Fin n))
     (T : ContinuousMultilinearMap ℝ (fun _ : Fin 3 => EuclideanSpace ℝ (Fin n)) ℝ) (Δ : ℝ)

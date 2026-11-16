@@ -7,40 +7,73 @@ import Numlib.Optimization.ModelBased.QuadraticModel
 import NumlibSurface.CartisGouldToint.Chapter02.Section02
 
 /-!
-# Cartis–Gould–Toint §2.4: The adaptive-regularization method
+# Cartis, Gould and Toint, Section 2.4: The adaptive-regularization method
 
-Surface file for C. Cartis, N. I. M. Gould and Ph. L. Toint, *Evaluation Complexity of
-Algorithms for Nonconvex Optimization* [cartis2022evaluation], §2.4: the first-order
-adaptive-regularization algorithm AR1 on `ℝⁿ = EuclideanSpace ℝ (Fin n)`.
+This module formalizes §2.4 of [cartis2022evaluation]: the first-order adaptive-regularization
+algorithm AR1 for the minimization of a function $f : \mathbb{R}^n \to \mathbb{R}$. At iteration $k$
+the method minimizes the regularized model (2.4.1)
+$$m_k(s) = T_{f,1}(x_k, s) + \tfrac12 \sigma_k \|s\|^2 = f(x_k) + \langle \nabla f(x_k), s \rangle +
+  \tfrac12 \sigma_k \|s\|^2,$$
+whose minimizer is $s_k = -\nabla f(x_k)/\sigma_k$. It accepts the trial point when the ratio
+(2.4.3) of achieved to predicted decrease is at least $\eta_1$, and it updates the regularization
+weight $\sigma_k$ by (2.4.4). The method stops at the first iterate with
+$\|\nabla f(x_k)\| \le \epsilon$.
 
-The model (2.4.1) is `m_k(s) = T_{f,1}(x_k, s) + ½ σ_k ‖s‖²`, the regularized Taylor model
-`Optimization.regularizedModel (ftaylorSeries ℝ f x_k) 1 σ_k` (`ar1Model`); the ratio (2.4.3) is
-`Optimization.taylorRatio f 1 x s`. AR1 is an instance of the generic adaptive-regularization
-run `Optimization.IsARRun` (Steps 3–4 being `Optimization.ARAcceptance`, the update (2.4.4)
-`Optimization.ARUpdate`). Section 2.5 contains no numbered results.
+Under f.Bb and f.gL, AR1 stops after $O(\epsilon^{-2})$ evaluations of $f$ and $\nabla f$ (Theorem
+2.4.4), and this order is attained (Theorem 2.4.5). AR1 is an instance of the generic
+adaptive-regularization run of `Numlib.Optimization.ModelBased.ARRun`. Section 2.5 of the source has
+no numbered results.
 
 ## Main definitions
 
-* `ARParams` — the constants (2.4.2) (also used by AR2 and ARp in later chapters).
-* `ar1Model f x σ` — the model (2.4.1).
-* `algorithm_2_4_1 f P ε x s σ` — Algorithm 2.4.1 (AR1); `exists_algorithm_2_4_1`.
-* `sigmaMaxAR1`, `kappaSAR1`, `kappaAAR1`, `kappaCAR1` — the constants of (2.4.9), (2.4.11)
-  and Theorem 2.4.4.
+* (2.4.1), `CartisGouldToint.Chapter02.ar1Model`: the regularized model
+  $m(s) = T_{f,1}(x, s) + \frac12 \sigma \|s\|^2$.
+* (2.4.2), `CartisGouldToint.Chapter02.ARParams`: the constants of adaptive-regularization methods,
+  also used by AR2 and ARp in later chapters.
+* Algorithm 2.4.1, `CartisGouldToint.Chapter02.algorithm_2_4_1`: AR1 as a predicate on the sequences
+  of a run.
+* (2.4.9), `CartisGouldToint.Chapter02.sigmaMaxAR1`: the bound $\sigma_{\max} = \max(\sigma_0,
+  \gamma_3 L / (2(1 - \eta_2)))$ on the regularization weights.
+* (2.4.11), `CartisGouldToint.Chapter02.kappaSAR1`: the constant $\kappa^S_{\mathrm{AR1}}$ of the
+  bound on successful iterations.
+* Theorem 2.4.4, `CartisGouldToint.Chapter02.kappaAAR1` and `CartisGouldToint.Chapter02.kappaCAR1`:
+  the constants $\kappa^A_{\mathrm{AR1}}$ and $\kappa^C_{\mathrm{AR1}}$ of the evaluation bound.
 
 ## Main results
 
-* `ar1_step_eq` — (2.4.5)–(2.4.7): the step is `s = -∇f(x)/σ`, the Taylor decrease is
-  `‖∇f(x)‖²/σ` and `ρ = σ (f(x) - f(x+s))/‖∇f(x)‖²`.
-* `lemma_2_4_1`, `lemma_2_4_2`, `lemma_2_4_3` — Lemmas 2.4.1–2.4.3.
-* `theorem_2_4_4` — Theorem 2.4.4, with the book's constants.
-* `theorem_2_4_5` — Theorem 2.4.5, sharpness.
+* (2.4.5)–(2.4.7), `CartisGouldToint.Chapter02.ar1_step_eq`: the model minimizer is
+  $s = -\nabla f(x)/\sigma$, the Taylor decrease is $\|\nabla f(x)\|^2/\sigma$, and $\rho = \sigma
+  (f(x) - f(x + s))/\|\nabla f(x)\|^2$.
+* `CartisGouldToint.Chapter02.exists_algorithm_2_4_1`: an AR1 run exists from every starting point.
+* Lemma 2.4.1, `CartisGouldToint.Chapter02.lemma_2_4_1`: while $\sigma_k \le \sigma_{\max}$, the
+  number of iterations is bounded by a multiple of the number of successful iterations plus a
+  constant.
+* Lemma 2.4.2, `CartisGouldToint.Chapter02.lemma_2_4_2`: under f.gL, $\sigma_k \le \max(\sigma_0,
+  \gamma_3 L/(2(1 - \eta_2)))$.
+* Lemma 2.4.3, `CartisGouldToint.Chapter02.lemma_2_4_3`: before termination there are at most
+  $\kappa^S_{\mathrm{AR1}} (f(x_0) - f_{\mathrm{low}})/\epsilon^2$ successful iterations.
+* Theorem 2.4.4, `CartisGouldToint.Chapter02.theorem_2_4_4`: AR1 stops after $O(\epsilon^{-2})$
+  evaluations of $f$ and of $\nabla f$.
+* Theorem 2.4.5, `CartisGouldToint.Chapter02.theorem_2_4_5`: there is a one-dimensional example on
+  which AR1 needs exactly $\epsilon^{-2} + 1$ evaluations.
 
-## Notes
+## Conventions
 
-* The "reasonable values" given after Algorithm 2.4.1 (`γ₁ = 2`, `γ₂ = γ₃ = 0.5`) contradict
-  (2.4.2); they are not used.
-* The proof of Lemma 2.4.3 assumes `‖∇f(x_j)‖ > ε` for `j ∈ [1:k]`; `j ∈ [0:k]` is meant (and
-  used here).
+* $\mathbb{R}^n$ is `EuclideanSpace ℝ (Fin n)`.
+* The Taylor model $T_{f,1}(x, \cdot)$ is built from `ftaylorSeries ℝ f x`, and the predicted
+  decrease $T_{f,1}(x, 0) - T_{f,1}(x, s)$ is `FormalMultilinearSeries.taylorDecrement`.
+
+## Implementation notes
+
+* The model is `Optimization.regularizedModel (ftaylorSeries ℝ f x) 1 σ`, and the ratio (2.4.3) is
+  `Optimization.taylorRatio f 1 x s`.
+* An AR1 run is `Optimization.IsARRun`. Steps 3–4 are `Optimization.ARAcceptance`, and the update
+  (2.4.4) is `Optimization.ARUpdate`.
+
+## Deviations from the source
+
+* **"Reasonable values" after Algorithm 2.4.1** (typo). The values $\gamma_1 = 2$,
+  $\gamma_2 = \gamma_3 = 0.5$ contradict (2.4.2). They are not used.
 -/
 
 open Set Finset
@@ -51,15 +84,28 @@ namespace CartisGouldToint.Chapter02
 
 variable {n : ℕ}
 
-/-- The constants of adaptive-regularization methods ([cartis2022evaluation], (2.4.2)):
-`σ₀ > 0`, `σ_min ∈ (0, σ₀]`, `0 < η₁ ≤ η₂ < 1` and `0 < γ₁ < 1 < γ₂ < γ₃`. -/
+/-- **Equation (2.4.2)** of [cartis2022evaluation]. The constants of an adaptive-regularization
+method consist of an initial weight $\sigma_0 > 0$, a lower bound
+$\sigma_{\min} \in (0, \sigma_0]$, acceptance thresholds $0 < \eta_1 \le \eta_2 < 1$ and update
+factors $0 < \gamma_1 < 1 < \gamma_2 < \gamma_3$.
+
+The structure extends `Optimization.ARParams`, which allows $\sigma_{\min} = 0$ and
+$\gamma_2 = \gamma_3$, by the strict inequalities $\sigma_{\min} > 0$ and $\gamma_2 < \gamma_3$.
+The same constants serve AR2 and ARp in later chapters. -/
 structure ARParams extends Optimization.ARParams where
-  /-- `σ_min > 0`. -/
+  /-- The lower bound on the regularization weight satisfies $\sigma_{\min} > 0$. -/
   σmin_pos : 0 < σmin
-  /-- `γ₂ < γ₃`. -/
+  /-- The update factors satisfy $\gamma_2 < \gamma_3$. -/
   γ₂_lt_γ₃ : γ₂ < γ₃
 
-/-- The regularized model (2.4.1) of AR1: `m(s) = T_{f,1}(x, s) + ½ σ ‖s‖²`. -/
+/-- **Equation (2.4.1)** of [cartis2022evaluation]. Let $f : \mathbb{R}^n \to \mathbb{R}$,
+$x \in \mathbb{R}^n$ and $\sigma \in \mathbb{R}$. The **regularized model** of AR1 at $x$ is
+$$m(s) = T_{f,1}(x, s) + \tfrac12 \sigma \|s\|^2,$$
+where $T_{f,1}(x, s) = f(x) + \langle \nabla f(x), s \rangle$ is the first-order Taylor
+polynomial of $f$ at $x$.
+
+The model is `Optimization.regularizedModel` of `ftaylorSeries ℝ f x` with $p = 1$; its explicit
+form is `CartisGouldToint.Chapter02.ar1Model_apply`. -/
 noncomputable def ar1Model (f : EuclideanSpace ℝ (Fin n) → ℝ) (x : EuclideanSpace ℝ (Fin n))
     (σ : ℝ) : EuclideanSpace ℝ (Fin n) → ℝ :=
   regularizedModel (ftaylorSeries ℝ f x) 1 σ
@@ -68,7 +114,7 @@ section Model
 
 variable {f : EuclideanSpace ℝ (Fin n) → ℝ} {x s : EuclideanSpace ℝ (Fin n)} {σ : ℝ}
 
-/-- The model (2.4.1): `m(s) = f(x) + ⟪∇f(x), s⟫ + ½ σ ‖s‖²`. -/
+/-- The AR1 model is $m(s) = f(x) + \langle \nabla f(x), s \rangle + \frac12 \sigma \|s\|^2$. -/
 theorem ar1Model_apply :
     ar1Model f x σ s = f x + ⟪gradient f x, s⟫ + 1 / 2 * σ * ‖s‖ ^ 2 := by
   rw [ar1Model, regularizedModel_def, ← taylorPolynomial_eq_taylorSum,
@@ -76,13 +122,17 @@ theorem ar1Model_apply :
     show ((Nat.factorial (1 + 1) : ℕ) : ℝ) = 2 by norm_num [Nat.factorial]]
   ring
 
-/-- The first-order Taylor decrease: `T_{f,1}(x, 0) - T_{f,1}(x, s) = -⟪∇f(x), s⟫`. -/
+/-- The first-order Taylor decrease is $T_{f,1}(x, 0) - T_{f,1}(x, s) = -\langle \nabla f(x), s
+\rangle$. -/
 theorem taylorDecrement_one :
     (ftaylorSeries ℝ f x).taylorDecrement 1 s = -⟪gradient f x, s⟫ := by
   rw [ftaylorSeries_taylorDecrement_eq, taylorPolynomial_one_eq_inner]
   ring
 
-/-- Completing the square: `m(s) = f(x) - ‖∇f(x)‖²/(2σ) + ½ σ ‖s + σ⁻¹ ∇f(x)‖²`. -/
+/-- Completing the square: for $\sigma \neq 0$,
+$$m(s) = f(x) - \frac{\|\nabla f(x)\|^2}{2\sigma} + \frac12 \sigma \|s + \sigma^{-1} \nabla
+  f(x)\|^2.$$
+-/
 theorem ar1Model_eq_sq (hσ : σ ≠ 0) :
     ar1Model f x σ s = f x - ‖gradient f x‖ ^ 2 / (2 * σ) +
       1 / 2 * σ * ‖s + σ⁻¹ • gradient f x‖ ^ 2 := by
@@ -91,9 +141,18 @@ theorem ar1Model_eq_sq (hσ : σ ≠ 0) :
   field_simp
   ring
 
-/-- **(2.4.5)–(2.4.7)** of [cartis2022evaluation]. For `σ > 0`: the model (2.4.1) has the unique
-global minimizer `s = -∇f(x)/σ`; the Taylor decrease at it is `‖∇f(x)‖²/σ` (2.4.6); and the ratio
-(2.4.3) is `σ (f(x) - f(x+s))/‖∇f(x)‖²` (2.4.7). -/
+/-- **Equations (2.4.5)–(2.4.7)** of [cartis2022evaluation]. Let $f : \mathbb{R}^n \to \mathbb{R}$,
+$x \in \mathbb{R}^n$ and $\sigma > 0$, and let $m$ be the AR1 model at $x$ with weight $\sigma$.
+Then:
+
+* (2.4.5) a step $s$ is a global minimizer of $m$ if and only if $s = -\nabla f(x)/\sigma$;
+* (2.4.6) the Taylor decrease at this step is $T_{f,1}(x, 0) - T_{f,1}(x, -\nabla f(x)/\sigma) =
+  \|\nabla f(x)\|^2/\sigma$;
+* (2.4.7) the ratio of achieved to predicted decrease at this step is
+$$\rho = \frac{\sigma \left( f(x) - f(x - \nabla f(x)/\sigma) \right)}{\|\nabla f(x)\|^2}.$$
+
+The ratio is `Optimization.reductionRatio` with the Taylor decrease as predicted decrease. When
+$\nabla f(x) = 0$, both sides of (2.4.7) are $0$ by Lean's division. -/
 theorem ar1_step_eq (hσ : 0 < σ) :
     (IsMinOn (ar1Model f x σ) univ s ↔ s = -(σ⁻¹ • gradient f x)) ∧
       (ftaylorSeries ℝ f x).taylorDecrement 1 (-(σ⁻¹ • gradient f x)) =
@@ -126,23 +185,40 @@ theorem ar1_step_eq (hσ : 0 < σ) :
 
 end Model
 
-/-- **Algorithm 2.4.1** (AR1) of [cartis2022evaluation], as a run predicate on iterates `x`, trial
-steps `s` and regularization parameters `σ`: `ε > 0`, and the generic adaptive-regularization run
-`Optimization.IsARRun` with the Step-1 test `‖∇f(x_k)‖ ≤ ε`, Step 2 "`s_k` is a global minimizer
-of the model (2.4.1)", no post-step test, and the ratio (2.4.3) `Optimization.taylorRatio f 1`:
-`σ_0 = σ₀` and before termination `x_{k+1} = x_k + s_k` if `ρ_k ≥ η₁`, `x_k` otherwise, and the
-update (2.4.4). -/
+/-- **Algorithm 2.4.1** of [cartis2022evaluation] (AR1). Let $f : \mathbb{R}^n \to \mathbb{R}$, let
+the constants (2.4.2) be given, and let $\epsilon \in \mathbb{R}$. Sequences of iterates $x_k$,
+trial steps $s_k$ and regularization weights $\sigma_k$ form an **AR1 run** if $\epsilon > 0$,
+$\sigma_0$ is the initial weight of the constants, and the following holds at every iteration
+$k$ at which the test $\|\nabla f(x_j)\| \le \epsilon$ has failed for all $j \le k$.
+
+* Step 2: $s_k$ is a global minimizer of the model $m_k$ of (2.4.1).
+* Step 3: $x_{k+1} = x_k + s_k$ if $\rho_k \ge \eta_1$, and $x_{k+1} = x_k$ otherwise, where
+  $\rho_k$ is the ratio (2.4.3) of $f(x_k) - f(x_k + s_k)$ to
+  $T_{f,1}(x_k, 0) - T_{f,1}(x_k, s_k)$.
+* Step 4: the update (2.4.4), that is, $\sigma_{k+1} \in [\max(\sigma_{\min}, \gamma_1
+  \sigma_k), \sigma_k]$ if $\rho_k \ge \eta_2$, $\sigma_{k+1} \in [\sigma_k, \gamma_2 \sigma_k]$
+  if $\eta_1 \le \rho_k < \eta_2$, and $\sigma_{k+1} \in [\gamma_2 \sigma_k, \gamma_3 \sigma_k]$
+  if $\rho_k < \eta_1$.
+
+The run stops at the first $k$ with $\|\nabla f(x_k)\| \le \epsilon$. The structure is the
+generic run `Optimization.IsARRun` with no termination test after the step and the ratio
+`Optimization.taylorRatio f 1`. -/
 structure algorithm_2_4_1 (f : EuclideanSpace ℝ (Fin n) → ℝ) (P : ARParams) (ε : ℝ)
     (x s : ℕ → EuclideanSpace ℝ (Fin n)) (σ : ℕ → ℝ) : Prop where
-  /-- The accuracy level is positive. -/
+  /-- The accuracy level satisfies $\epsilon > 0$. -/
   ε_pos : 0 < ε
-  /-- Steps 1–4. -/
+  /-- Steps 1–4 hold in the form of the generic adaptive-regularization run `Optimization.IsARRun`.
+  -/
   run : IsARRun P.toARParams (fun k => ‖gradient f (x k)‖ ≤ ε)
     (fun k => IsMinOn (ar1Model f (x k) (σ k)) univ (s k)) (fun _ => False)
     (taylorRatio f 1 x s) x s σ
 
-/-- **Existence of AR1 runs** from every starting point (the step `-∇f(x_k)/σ_k`, (2.4.5), and the
-left ends of the intervals of (2.4.4)). -/
+/-- Existence of runs of Algorithm 2.4.1 of [cartis2022evaluation]. Let
+$f : \mathbb{R}^n \to \mathbb{R}$, let the constants (2.4.2) be given, let $\epsilon > 0$, and
+let $x_0 \in \mathbb{R}^n$. Then there is an AR1 run that starts at $x_0$.
+
+The proof takes the step $-\nabla f(x_k)/\sigma_k$ of (2.4.5) and the left ends of the intervals
+of (2.4.4). -/
 theorem exists_algorithm_2_4_1 (f : EuclideanSpace ℝ (Fin n) → ℝ) (P : ARParams) {ε : ℝ}
     (hε : 0 < ε) (x₀ : EuclideanSpace ℝ (Fin n)) :
     ∃ x s σ, x 0 = x₀ ∧ algorithm_2_4_1 f P ε x s σ := by
@@ -158,23 +234,28 @@ namespace algorithm_2_4_1
 variable {f : EuclideanSpace ℝ (Fin n) → ℝ} {P : ARParams} {ε : ℝ}
   {x s : ℕ → EuclideanSpace ℝ (Fin n)} {σ : ℕ → ℝ}
 
+/-- In an AR1 run, if the termination test fails at every iteration $j < k$, then $\sigma_k > 0$. -/
 theorem sigma_pos (h : algorithm_2_4_1 f P ε x s σ) {k : ℕ}
     (hk : ∀ j < k, ¬ ‖gradient f (x j)‖ ≤ ε) : 0 < σ k :=
   h.run.sigma_pos (IsARRun.forall_lt_not_stop_iff.2 hk) k le_rfl
 
-/-- Before termination the AR1 step is `s_k = -∇f(x_k)/σ_k` (2.4.5). -/
+/-- In an AR1 run, at every iteration $k$ before termination, the step is
+$s_k = -\nabla f(x_k)/\sigma_k$, as in (2.4.5). -/
 theorem step_eq (h : algorithm_2_4_1 f P ε x s σ) {k : ℕ}
     (hk : ∀ j ≤ k, ¬ ‖gradient f (x j)‖ ≤ ε) : s k = -((σ k)⁻¹ • gradient f (x k)) :=
   ((ar1_step_eq (h.sigma_pos fun j hj => hk j hj.le)).1).1
     (h.run.step_of_forall_le (IsARRun.forall_le_not_stop_iff.2 hk))
 
-/-- Before termination the Taylor decrease is `‖∇f(x_k)‖²/σ_k` (2.4.6). -/
+/-- In an AR1 run, at every iteration $k$ before termination, the Taylor decrease is
+$T_{f,1}(x_k, 0) - T_{f,1}(x_k, s_k) = \|\nabla f(x_k)\|^2/\sigma_k$, as in (2.4.6). -/
 theorem taylorDecrement_eq (h : algorithm_2_4_1 f P ε x s σ) {k : ℕ}
     (hk : ∀ j ≤ k, ¬ ‖gradient f (x j)‖ ≤ ε) :
     (ftaylorSeries ℝ f (x k)).taylorDecrement 1 (s k) = ‖gradient f (x k)‖ ^ 2 / σ k := by
   rw [h.step_eq hk]
   exact (ar1_step_eq (s := s k) (h.sigma_pos fun j hj => hk j hj.le)).2.1
 
+/-- In an AR1 run, at every iteration $k$ before termination, the Taylor decrease
+$T_{f,1}(x_k, 0) - T_{f,1}(x_k, s_k)$ is positive. -/
 theorem taylorDecrement_pos (h : algorithm_2_4_1 f P ε x s σ) {k : ℕ}
     (hk : ∀ j ≤ k, ¬ ‖gradient f (x j)‖ ≤ ε) :
     0 < (ftaylorSeries ℝ f (x k)).taylorDecrement 1 (s k) := by
@@ -190,10 +271,15 @@ section Lemmas
 variable {f : EuclideanSpace ℝ (Fin n) → ℝ} {P : ARParams} {ε L flow : ℝ}
   {x s : ℕ → EuclideanSpace ℝ (Fin n)} {σ : ℕ → ℝ}
 
-/-- **Lemma 2.4.1** of [cartis2022evaluation] ((2.4.8)). For an AR1 run, if the method has not
-terminated before iteration `k` and `σ_k ≤ σ_max`, then
-`k ≤ |𝒮_k| (1 + |log γ₁|/log γ₂) + log(σ_max/σ₀)/log γ₂`, `𝒮_k = {j ≤ k | ρ_j ≥ η₁}`. Only the
-update (2.4.4) is used. -/
+/-- **Lemma 2.4.1** of [cartis2022evaluation]. Consider an AR1 run, and let $k$ be an iteration with
+$\|\nabla f(x_j)\| > \epsilon$ for all $j < k$. Let $\sigma_{\max} \in \mathbb{R}$ with
+$\sigma_k \le \sigma_{\max}$. Then (2.4.8) holds:
+$$k \le |\mathcal{S}_k| \left( 1 + \frac{|\log \gamma_1|}{\log \gamma_2} \right) +
+  \frac{\log(\sigma_{\max}/\sigma_0)}{\log \gamma_2},$$
+where $\mathcal{S}_k = \{j \le k : \rho_j \ge \eta_1\}$ is the set of successful iterations up
+to $k$.
+
+The proof uses only the update (2.4.4). The set $\mathcal{S}_k$ is `Optimization.successSet`. -/
 theorem lemma_2_4_1 (h : algorithm_2_4_1 f P ε x s σ) {k : ℕ}
     (hk : ∀ j < k, ¬ ‖gradient f (x j)‖ ≤ ε) {σmax : ℝ} (hσ : σ k ≤ σmax) :
     (k : ℝ) ≤ (successSet (fun j => P.η₁ ≤ taylorRatio f 1 x s j) k).card *
@@ -201,21 +287,28 @@ theorem lemma_2_4_1 (h : algorithm_2_4_1 f P ε x s σ) {k : ℕ}
       Real.log (σmax / P.σ₀) / Real.log P.γ₂ :=
   h.run.le_succ_count (IsARRun.forall_lt_not_stop_iff.2 hk) hσ
 
-/-- The bound `σ_max = max(σ₀, γ₃ L/(2(1 - η₂)))` of (2.4.9): the backbone's
-`Optimization.arSigmaMax` with Lipschitz constant `L/2` (`sigmaMaxAR1_eq`). -/
+/-- The bound (2.4.9) of [cartis2022evaluation] on the regularization weights,
+$$\sigma_{\max} = \max\left( \sigma_0, \frac{\gamma_3 L}{2(1 - \eta_2)} \right).$$
+It is `Optimization.arSigmaMax` with the Lipschitz constant $L/2$; the explicit form is
+`CartisGouldToint.Chapter02.sigmaMaxAR1_eq`. -/
 noncomputable def sigmaMaxAR1 (P : ARParams) (L : ℝ) : ℝ :=
   arSigmaMax P.toARParams (L / 2)
 
-/-- The book's formula (2.4.9) for `sigmaMaxAR1`. -/
+/-- The bound $\sigma_{\max}$ of AR1 equals $\max(\sigma_0, \gamma_3 L / (2(1 - \eta_2)))$, the
+formula (2.4.9). -/
 theorem sigmaMaxAR1_eq (P : ARParams) (L : ℝ) :
     sigmaMaxAR1 P L = max P.σ₀ (P.γ₃ * L / (2 * (1 - P.η₂))) := by
   rw [sigmaMaxAR1, arSigmaMax_def, mul_div_assoc', div_div]
 
+/-- The bound $\sigma_{\max}$ of AR1 is positive. -/
 theorem sigmaMaxAR1_pos (P : ARParams) (L : ℝ) : 0 < sigmaMaxAR1 P L :=
   arSigmaMax_pos _ _
 
-/-- **Lemma 2.4.2** of [cartis2022evaluation] ((2.4.9)). Under f.gL, for every iteration `k` of an
-AR1 run up to (and including) termination, `σ_k ≤ max(σ₀, γ₃ L/(2(1 - η₂)))`. -/
+/-- **Lemma 2.4.2** of [cartis2022evaluation]. Assume f.gL with constant $L$ and consider an AR1
+run. Let $k$ be an iteration with $\|\nabla f(x_j)\| > \epsilon$ for all $j < k$. Then (2.4.9)
+holds:
+$$\sigma_k \le \max\left( \sigma_0, \frac{\gamma_3 L}{2(1 - \eta_2)} \right).$$
+So the bound holds at every iteration up to and including the termination index. -/
 theorem lemma_2_4_2 (hf : AssumptionGL f L) (h : algorithm_2_4_1 f P ε x s σ) {k : ℕ}
     (hk : ∀ j < k, ¬ ‖gradient f (x j)‖ ≤ ε) : σ k ≤ sigmaMaxAR1 P L := by
   have hforce : ∀ k, (∀ j ≤ k, ¬ IsARRun.Stop (fun k => ‖gradient f (x k)‖ ≤ ε)
@@ -243,11 +336,15 @@ theorem lemma_2_4_2 (hf : AssumptionGL f L) (h : algorithm_2_4_1 f P ε x s σ) 
   convert this using 2
   ring
 
-/-- The constant `κ^S_AR1 = η₁⁻¹ max(σ₀, γ₃ L/(2(1 - η₂)))` of (2.4.11). -/
+/-- The constant of (2.4.11) of [cartis2022evaluation],
+$$\kappa^S_{\mathrm{AR1}} = \frac{1}{\eta_1} \max\left( \sigma_0, \frac{\gamma_3 L}{2(1 -
+  \eta_2)} \right).$$
+-/
 noncomputable def kappaSAR1 (P : ARParams) (L : ℝ) : ℝ :=
   P.η₁⁻¹ * sigmaMaxAR1 P L
 
-/-- The decrease at a successful AR1 iteration: `f(x_k) - f(x_{k+1}) ≥ η₁ ε²/σ_max`. -/
+/-- Under f.gL, a successful AR1 iteration $k$ before termination decreases $f$ by at least
+$\eta_1 \epsilon^2/\sigma_{\max}$. -/
 private theorem sub_ge_of_succ (hf : AssumptionGL f L) (h : algorithm_2_4_1 f P ε x s σ) {k : ℕ}
     (hk : ∀ j ≤ k, ¬ ‖gradient f (x j)‖ ≤ ε) (hs : P.η₁ ≤ taylorRatio f 1 x s k) :
     P.η₁ * ε ^ 2 / sigmaMaxAR1 P L ≤ f (x k) - f (x (k + 1)) := by
@@ -264,8 +361,15 @@ private theorem sub_ge_of_succ (hf : AssumptionGL f L) (h : algorithm_2_4_1 f P 
   rw [mul_div_assoc]
   linarith
 
-/-- **Lemma 2.4.3** of [cartis2022evaluation] ((2.4.11)). Under f.Bb and f.gL, at every iteration
-`k` before termination of an AR1 run, `|𝒮_k| ≤ κ^S_AR1 (f(x₀) - f_low)/ε²`. -/
+/-- **Lemma 2.4.3** of [cartis2022evaluation]. Assume f.Bb with lower bound $f_{\mathrm{low}}$ and
+f.gL with constant $L$, and consider an AR1 run. Let $k$ be an iteration with
+$\|\nabla f(x_j)\| > \epsilon$ for all $j \le k$. Then the number of successful iterations up to
+$k$ satisfies (2.4.11):
+$$|\mathcal{S}_k| \le \kappa^S_{\mathrm{AR1}} \frac{f(x_0) - f_{\mathrm{low}}}{\epsilon^2}.$$
+
+The proof in the source assumes $\|\nabla f(x_j)\| > \epsilon$ for $j \in [1 : k]$; the range
+$j \in [0 : k]$ is meant, and it is the hypothesis here. The set $\mathcal{S}_k$ is
+`Optimization.successSet`. -/
 theorem lemma_2_4_3 (hb : AssumptionBb f flow) (hf : AssumptionGL f L)
     (h : algorithm_2_4_1 f P ε x s σ) {k : ℕ} (hk : ∀ j ≤ k, ¬ ‖gradient f (x j)‖ ≤ ε) :
     ((successSet (fun j => P.η₁ ≤ taylorRatio f 1 x s j) k).card : ℝ) ≤
@@ -282,25 +386,40 @@ theorem lemma_2_4_3 (hb : AssumptionBb f flow) (hf : AssumptionGL f L)
   rw [kappaSAR1]
   field_simp
 
-/-- The constant `κ^A_AR1 = η₁⁻¹ max(σ₀, γ₃ L/(1 - η₂)) (1 + |log γ₁|/log γ₂)` of
-Theorem 2.4.4 (with `max(σ₀, γ₃ L/(1 - η₂)) = Optimization.arSigmaMax P L`). -/
+/-- The constant $\kappa^A_{\mathrm{AR1}}$ of Theorem 2.4.4 of [cartis2022evaluation],
+$$\kappa^A_{\mathrm{AR1}} = \frac{1}{\eta_1} \max\left( \sigma_0, \frac{\gamma_3 L}{1 - \eta_2}
+  \right) \left( 1 + \frac{|\log \gamma_1|}{\log \gamma_2} \right).$$
+The maximum is `Optimization.arSigmaMax` with the constant $L$. -/
 noncomputable def kappaAAR1 (P : ARParams) (L : ℝ) : ℝ :=
   P.η₁⁻¹ * arSigmaMax P.toARParams L * (1 + |Real.log P.γ₁| / Real.log P.γ₂)
 
-/-- The book's formula for `kappaAAR1`. -/
+/-- The constant $\kappa^A_{\mathrm{AR1}}$ equals $\eta_1^{-1} \max(\sigma_0, \gamma_3 L/(1 -
+\eta_2)) (1 + |\log \gamma_1|/\log \gamma_2)$, the formula of the source. -/
 theorem kappaAAR1_eq (P : ARParams) (L : ℝ) :
     kappaAAR1 P L =
       P.η₁⁻¹ * max P.σ₀ (P.γ₃ * L / (1 - P.η₂)) * (1 + |Real.log P.γ₁| / Real.log P.γ₂) :=
   rfl
 
-/-- The constant `κ^C_AR1 = log(max(1, γ₃ L/(σ₀(1 - η₂))))/log γ₂ + 1` of Theorem 2.4.4. -/
+/-- The constant $\kappa^C_{\mathrm{AR1}}$ of Theorem 2.4.4 of [cartis2022evaluation],
+$$\kappa^C_{\mathrm{AR1}} = \frac{\log \max\left( 1, \frac{\gamma_3 L}{\sigma_0 (1 - \eta_2)}
+  \right)}{\log \gamma_2} + 1.$$
+-/
 noncomputable def kappaCAR1 (P : ARParams) (L : ℝ) : ℝ :=
   Real.log (max 1 (P.γ₃ * L / (P.σ₀ * (1 - P.η₂)))) / Real.log P.γ₂ + 1
 
-/-- **Theorem 2.4.4** of [cartis2022evaluation]. Under f.Bb and f.gL, every AR1 run terminates at
-an iteration `k_ε` after at most `κ^A_AR1 (f(x₀) - f_low)/ε² + κ^C_AR1` evaluations of `f` and at
-most `κ^S_AR1 (f(x₀) - f_low)/ε² + 1` evaluations of `∇f` (one at `x₀` and one per successful
-iteration). -/
+/-- **Theorem 2.4.4** of [cartis2022evaluation]. Assume f.Bb with lower bound $f_{\mathrm{low}}$ and
+f.gL with constant $L$, and consider an AR1 run. Then the run terminates: there is a first
+iteration $k_\epsilon$ with $\|\nabla f(x_{k_\epsilon})\| \le \epsilon$. Up to termination the
+method uses at most
+$$\kappa^A_{\mathrm{AR1}} \frac{f(x_0) - f_{\mathrm{low}}}{\epsilon^2} +
+  \kappa^C_{\mathrm{AR1}}$$
+evaluations of $f$ and at most
+$$\kappa^S_{\mathrm{AR1}} \frac{f(x_0) - f_{\mathrm{low}}}{\epsilon^2} + 1$$
+evaluations of $\nabla f$.
+
+The number of evaluations of $f$ is `Optimization.funEvalCount`, which is $k_\epsilon + 1$. The
+number of evaluations of $\nabla f$ is `Optimization.derivEvalCount`: one at $x_0$ and one after
+each successful iteration before $k_\epsilon$. -/
 theorem theorem_2_4_4 (hb : AssumptionBb f flow) (hf : AssumptionGL f L)
     (h : algorithm_2_4_1 f P ε x s σ) :
     ∃ kε, IsFirstHit (fun k => ‖gradient f (x k)‖ ≤ ε) kε ∧
@@ -366,10 +485,20 @@ end Lemmas
 /-! ### Theorem 2.4.5 -/
 
 /-- **Theorem 2.4.5** of [cartis2022evaluation] (sharpness of AR1). For all AR1 constants there are
-`L ≥ 1` and `f_low` such that for every `ε ∈ (0,1]` with `k_ε = ε⁻²` an integer there are
-`f : ℝ¹ → ℝ` satisfying f.Bb and f.gL and an AR1 run from `x₀ = 0` with `σ_k = σ₀` for all `k`
-and `ρ_k = 1` before termination, which terminates exactly at iteration `k_ε`, after `k_ε + 1`
-evaluations of `f` and of `∇f`. (The data of Theorem 2.2.3 with `t_ini = σ₀⁻¹`.) -/
+$L \ge 1$ and $f_{\mathrm{low}}$ with the following property. Let $\epsilon \in (0, 1]$ be such
+that $k_\epsilon = \epsilon^{-2}$ is an integer. Then there are a function
+$f : \mathbb{R}^1 \to \mathbb{R}$ that satisfies f.Bb with $f_{\mathrm{low}}$ and f.gL with $L$,
+and an AR1 run from $x_0 = 0$, such that:
+
+* $\sigma_k = \sigma_0$ for all $k$;
+* $\rho_k = 1$ for all $k < k_\epsilon$;
+* the run terminates exactly at iteration $k_\epsilon$;
+* the run uses $k_\epsilon + 1$ evaluations of $f$ and $k_\epsilon + 1$ evaluations of
+  $\nabla f$.
+
+The example is that of Theorem 2.2.3 with $t_{\mathrm{ini}} = \sigma_0^{-1}$. The condition that
+$\epsilon^{-2}$ is an integer is stated as $k_\epsilon \epsilon^2 = 1$ for a natural number
+$k_\epsilon$. -/
 theorem theorem_2_4_5 (P : ARParams) :
     ∃ L flow : ℝ, 1 ≤ L ∧ ∀ (ε : ℝ) (kε : ℕ), 0 < ε → ε ≤ 1 → (kε : ℝ) * ε ^ 2 = 1 →
       ∃ f : EuclideanSpace ℝ (Fin 1) → ℝ, AssumptionBb f flow ∧ AssumptionGL f L ∧

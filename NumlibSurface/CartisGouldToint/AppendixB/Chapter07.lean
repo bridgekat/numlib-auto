@@ -5,37 +5,56 @@ Released under Apache 2.0 license as described in the file LICENSE.
 import Numlib.Optimization.Constrained.TargetResidual
 
 /-!
-# Cartis–Gould–Toint, Appendix B: Appendix to Chapter 7
+# Cartis, Gould and Toint, Appendix B: Appendix to Chapter 7
 
-Surface file for C. Cartis, N. I. M. Gould and Ph. L. Toint, *Evaluation Complexity of
-Algorithms for Nonconvex Optimization* [cartis2022evaluation], Appendix B, "Appendix to
-Chapter 7": Lemma B.7.1, the two-variable global minimization used for the target decrease
-(7.2.30) in the proof of Lemma 7.2.3.
+This module formalizes the part of Appendix B of [cartis2022evaluation] that belongs to Chapter 7:
+Lemma B.7.1, a global minimization in two variables that the proof of Lemma 7.2.3 uses for the
+target decrease (7.2.30). For $0 < \omega < \varepsilon$ the function
+$\psi(f, c) = -f + \sqrt{\varepsilon^2 - c^2}$ has the minimum value $\varepsilon - \omega$ on the
+disc $f^2 + c^2 \le \omega^2$ (B.7.1), and $(\omega, 0)$ is the only minimizer. The inequality
+behind the lemma is the backbone theorem `neg_add_sqrt_sq_sub_sq_ge`.
 
-The inequality behind the lemma is the backbone `neg_add_sqrt_sq_sub_sq_ge`, which also covers
-the boundary cases `ω = 0` and `ω = ε` needed in the proof of Lemma 7.2.3 (where `ω ∈ [0, ε₀]`);
-the lemma as printed assumes `0 < ω < ε`. The book's KKT-based proof is replaced by an elementary
-monotonicity argument.
+## Main definitions
+
+* Lemma B.7.1, `CartisGouldToint.AppendixB.psiB71`: the objective $\psi$ of (B.7.1).
 
 ## Main results
 
-* `psiB71` — the objective of (B.7.1);
-* `eq_of_neg_add_sqrt_sq_sub_sq_eq` — the minimum value is attained only at `(ω, 0)`;
-* `lemma_B_7_1` — Lemma B.7.1.
+* Lemma B.7.1, `CartisGouldToint.AppendixB.eq_of_neg_add_sqrt_sq_sub_sq_eq`: the minimum value is
+  attained only at $(\omega, 0)$.
+* Lemma B.7.1, `CartisGouldToint.AppendixB.lemma_B_7_1`: $(\omega, 0)$ is the unique global
+  minimizer, with the value $\varepsilon - \omega$.
 
-## Deviations from the book
+## Proof outline
 
-* The book speaks of "the" global minimizer without proving uniqueness; `lemma_B_7_1` also
-  states and proves that `(ω, 0)` is the only minimizer.
+The book's proof uses the KKT conditions. The proof here is an elementary monotonicity argument.
+
+## Implementation notes
+
+* The backbone inequality `neg_add_sqrt_sq_sub_sq_ge` also covers the boundary cases $\omega = 0$
+  and $\omega = \varepsilon$, which the proof of Lemma 7.2.3 needs, since there
+  $\omega \in [0, \varepsilon_0]$. The lemma as printed assumes $0 < \omega < \varepsilon$.
+
+## Deviations from the source
+
+* **Lemma B.7.1** (generalization). The book speaks of "the" global minimizer without a proof of
+  uniqueness; the uniqueness of the minimizer $(\omega, 0)$ is also proved. See
+  `CartisGouldToint.AppendixB.lemma_B_7_1`.
 -/
 
 namespace CartisGouldToint.AppendixB
 
-/-- The objective `ψ(f, c) = -f + √(ε² - c²)` of (B.7.1). -/
+/-- **Lemma B.7.1** of [cartis2022evaluation], the objective. For $\varepsilon \in \mathbb{R}$, the
+objective of (B.7.1) is $\psi(f, c) = -f + \sqrt{\varepsilon^2 - c^2}$ for
+$(f, c) \in \mathbb{R}^2$.
+
+The square root is the real square root of Mathlib, which is $0$ at negative arguments; on the
+disc of Lemma B.7.1 its argument is positive. -/
 noncomputable def psiB71 (ε : ℝ) (p : ℝ × ℝ) : ℝ := -p.1 + √(ε ^ 2 - p.2 ^ 2)
 
-/-- If `0 ≤ ω < ε`, `u² + v² ≤ ω²` and `-u + √(ε² - v²) = ε - ω`, then `(u, v) = (ω, 0)`: the
-minimum of (B.7.1) is attained only at `(ω, 0)`. -/
+/-- Let $0 \le \omega < \varepsilon$, and let $u, v \in \mathbb{R}$ with $u^2 + v^2 \le \omega^2$
+and $-u + \sqrt{\varepsilon^2 - v^2} = \varepsilon - \omega$. Then $u = \omega$ and $v = 0$.
+This gives the uniqueness of the minimizer in Lemma B.7.1. -/
 theorem eq_of_neg_add_sqrt_sq_sub_sq_eq {ω ε u v : ℝ} (hω : 0 ≤ ω) (hωε : ω < ε)
     (huv : u ^ 2 + v ^ 2 ≤ ω ^ 2) (heq : -u + √(ε ^ 2 - v ^ 2) = ε - ω) : u = ω ∧ v = 0 := by
   set A := √(ε ^ 2 - v ^ 2) with hA
@@ -66,9 +85,16 @@ theorem eq_of_neg_add_sqrt_sq_sub_sq_eq {ω ε u v : ℝ} (hω : 0 ≤ ω) (hω�
   have hAeq : A = ε := by rw [hA]; simp [Real.sqrt_sq (hω.trans hωε.le)]
   exact ⟨by linarith, rfl⟩
 
-/-- **Lemma B.7.1** of [cartis2022evaluation]. For `0 < ω < ε`, the global minimum of
-`ψ(f, c) = -f + √(ε² - c²)` over the disc `f² + c² ≤ ω²` (B.7.1) is attained at `(ω, 0)`, with
-value `ψ(ω, 0) = ε - ω`; moreover `(ω, 0)` is the only minimizer. -/
+/-- **Lemma B.7.1** of [cartis2022evaluation]. Let $0 < \omega < \varepsilon$, let $K = \{(f, c) \in
+\mathbb{R}^2 : f^2 + c^2 \le \omega^2\}$, and let
+$\psi(f, c) = -f + \sqrt{\varepsilon^2 - c^2}$. Then $(\omega, 0) \in K$ is a global minimizer
+of $\psi$ on $K$ (B.7.1), its value is $\psi(\omega, 0) = \varepsilon - \omega$, and every
+$(f, c) \in K$ with $\psi(f, c) = \varepsilon - \omega$ is equal to $(\omega, 0)$.
+
+**Generalization.** The book speaks of "the" global minimizer without a proof of uniqueness. The
+uniqueness of the minimizer is also proved.
+
+The objective is `CartisGouldToint.AppendixB.psiB71 ε`. The minimizer property is `IsMinOn`. -/
 theorem lemma_B_7_1 {ω ε : ℝ} (hω : 0 < ω) (hωε : ω < ε) :
     let K : Set (ℝ × ℝ) := {p | p.1 ^ 2 + p.2 ^ 2 ≤ ω ^ 2}
     (ω, 0) ∈ K ∧ IsMinOn (psiB71 ε) K (ω, 0) ∧ psiB71 ε (ω, 0) = ε - ω ∧

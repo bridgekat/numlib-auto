@@ -6,32 +6,47 @@ import Numlib.Approximation.Hermite
 import Numlib.Approximation.HermiteSpline
 
 /-!
-# Cartis–Gould–Toint §A.9: Polynomial Hermite interpolation
+# Cartis, Gould and Toint, Section A.9: Polynomial Hermite interpolation
 
-Surface file for C. Cartis, N. I. M. Gould and Ph. L. Toint, *Evaluation Complexity of
-Algorithms for Nonconvex Optimization* [cartis2022evaluation], §A.9.
-
-Jets are sequences `f₀ f₁ : ℕ → ℝ` (`f₀ j = f₀^{(j)}`), the `j`-th derivative of a polynomial `π`
-is `derivative^[j] π`, and the `j`-th derivative of the Taylor polynomial of the left jet,
-`T^{(j)}_{f,p}(0, s) = ∑_{i=j}^p f₀^{(i)} s^{i-j}/(i-j)!`, is written out as a sum. The proofs
-specialize `Numlib/Approximation/HermiteSpline`.
+This module formalizes §A.9 of [cartis2022evaluation]: Hermite interpolation of the values and the
+first $p$ derivatives of a function, on one interval and on a sequence of nodes, with constants that
+depend only on $p$ and on a bound $\kappa_f$ for the data. On an interval $[0, s]$ the data are two
+jets $f_0^{(j)}, f_1^{(j)}$ for $j \in \{0, \dots, p\}$, and the interpolant is the polynomial $\pi$
+of degree at most $2p + 1$ with $\pi^{(j)}(0) = f_0^{(j)}$ and $\pi^{(j)}(s) = f_1^{(j)}$ (A.24).
+The hypotheses compare the right jet with the derivatives of the Taylor polynomial of the left jet,
+$$T^{(j)}_{f,p}(0, s) = \sum_{i=j}^p \frac{f_0^{(i)} s^{i-j}}{(i-j)!}.$$
+The proofs specialize the backbone modules `Numlib.Approximation.Hermite` and
+`Numlib.Approximation.HermiteSpline`.
 
 ## Main results
 
-* `theorem_A_9_1` — the Hermite interpolant of degree `2p + 1` on `[0, s]` exists, is unique, has
-  a Lipschitz `p`-th derivative under (A.30), and bounded derivatives under (A.31), with constants
-  depending only on `p` and `κ_f`.
-* `theorem_A_9_2` — a `C^p` interpolant on `ℝ` of jets at nodes `x_0 < ⋯ < x_{k_e}` with
-  Lipschitz `p`-th derivative under (A.32), and bounded derivatives under the additional bounds.
+* Theorem A.9.1, `CartisGouldToint.AppendixA.theorem_A_9_1`: under (A.30) the Hermite interpolant on
+  $[0, s]$ exists and is unique, its $p$-th derivative is Lipschitz continuous, and under (A.31) its
+  derivatives are bounded.
+* Theorem A.9.2, `CartisGouldToint.AppendixA.theorem_A_9_2`: under (A.32) there is a $C^p$ function
+  on $\mathbb{R}$ that interpolates jets at nodes $x_0 < \dots < x_{k_e}$, whose $p$-th derivative
+  is Lipschitz continuous, and whose derivatives are bounded under additional bounds on the data.
 
-In Theorem A.9.2 the same interpolant satisfies both conclusions: it has the Lipschitz constant
-`L` in any case and, when the additional bounds hold, the derivative bound `B`.
+## Conventions
 
-## Deviations from the book
+* A jet is a sequence `f₀ : ℕ → ℝ`, with `f₀ j` the derivative $f_0^{(j)}$. The $j$-th derivative of
+  a polynomial `π` is `derivative^[j] π`, and the derivatives of the Taylor polynomial of a jet are
+  written out as sums.
 
-* Theorem A.9.2 is stated for every `p` (the book assumes `p > 0`, which the proof does not use).
-  The book's hypothesis `s_k > 0` "for `k ∈ [0 : k_e]`" is read for `k < k_e` (the only `s_k`
-  defined by the data), and its bound "for all `x ∈ ℝⁿ`" is for `x ∈ ℝ`.
+## Implementation notes
+
+* In Theorem A.9.2 the same interpolant satisfies both conclusions: it has the Lipschitz constant
+  $L$ in all cases, and the derivative bound $B$ when the additional bounds hold.
+
+## Deviations from the source
+
+* **Theorem A.9.2** (generalization). The book assumes $p > 0$, which the proof does not use; the
+  statement holds for every $p$. See `CartisGouldToint.AppendixA.theorem_A_9_2`.
+* **Theorem A.9.2** (reading). The hypothesis $s_k > 0$ "for $k \in [0 : k_e]$" is read for
+  $k < k_e$, the only $k$ for which the data define $s_k$. See
+  `CartisGouldToint.AppendixA.theorem_A_9_2`.
+* **Theorem A.9.2** (typo). The derivative bound "for all $x \in \mathbb{R}^n$" is for all
+  $x \in \mathbb{R}$. See `CartisGouldToint.AppendixA.theorem_A_9_2`.
 -/
 
 open Polynomial Set
@@ -39,14 +54,24 @@ open scoped Polynomial
 
 namespace CartisGouldToint.AppendixA
 
-/-- **Theorem A.9.1 (General Hermite interpolation on an interval)** of [cartis2022evaluation].
-For every `p` and `κ_f ≥ 0` there are constants `L, B ≥ 0`, depending only on `p` and `κ_f`, such
-that: for `s > 0` and jets `f₀, f₁` satisfying (A.30)
-`|f₁^{(j)} - T^{(j)}_{f,p}(0, s)| ≤ κ_f s^{p-j+1}` (`j ∈ [0 : p]`), the Hermite interpolation
-polynomial `π` of degree `2p + 1` with (A.24) `π^{(j)}(0) = f₀^{(j)}`, `π^{(j)}(s) = f₁^{(j)}`
-exists and is unique; its `p`-th derivative is `L`-Lipschitz on `[0, s]`; and if moreover (A.31)
-`|f₀^{(j)}| ≤ κ_f` (`j ∈ [0 : p]`) and `s ≤ κ_f`, then `|π^{(j)}(τ)| ≤ B` on `[0, s]` for
-`j ∈ [0 : p]`. -/
+/-- **Theorem A.9.1** of [cartis2022evaluation] (general Hermite interpolation on an interval). Let
+$p \in \mathbb{N}$ and $\kappa_f \ge 0$. There are constants $L, B \ge 0$, which depend only on
+$p$ and $\kappa_f$, with the following property. Let $s > 0$, and let $f_0, f_1$ be jets that
+satisfy (A.30):
+$$\Bigl| f_1^{(j)} - \sum_{i=j}^p \frac{f_0^{(i)} s^{i-j}}{(i-j)!} \Bigr| \le \kappa_f s^{p-j+1}
+  \quad \text{for } j \in \{0, \dots, p\}.$$
+Then:
+
+* there is exactly one polynomial $\pi$ of degree at most $2p + 1$ with
+  $\pi^{(j)}(0) = f_0^{(j)}$ and $\pi^{(j)}(s) = f_1^{(j)}$ for $j \in \{0, \dots, p\}$ (A.24);
+* this polynomial satisfies $|\pi^{(p)}(\tau_1) - \pi^{(p)}(\tau_2)| \le L |\tau_1 - \tau_2|$
+  for all $\tau_1, \tau_2 \in [0, s]$;
+* if moreover (A.31) holds, that is $|f_0^{(j)}| \le \kappa_f$ for $j \in \{0, \dots, p\}$ and
+  $s \le \kappa_f$, then $|\pi^{(j)}(\tau)| \le B$ for all $\tau \in [0, s]$ and
+  $j \in \{0, \dots, p\}$.
+
+The jets are `f₀ f₁ : ℕ → ℝ`. The second and third conclusions are stated for every polynomial
+of degree at most $2p + 1$ that satisfies (A.24). -/
 theorem theorem_A_9_1 (p : ℕ) {κ : ℝ} (hκ : 0 ≤ κ) : ∃ L B : ℝ, 0 ≤ L ∧ 0 ≤ B ∧
     ∀ (s : ℝ) (f₀ f₁ : ℕ → ℝ), 0 < s →
       (∀ j ≤ p, |f₁ j - ∑ i ∈ Finset.Icc j p, f₀ i * s ^ (i - j) / (i - j).factorial| ≤
@@ -76,15 +101,30 @@ theorem theorem_A_9_1 (p : ℕ) {κ : ℝ} (hκ : 0 ≤ κ) : ∃ L B : ℝ, 0 �
   obtain rfl := huniq π₁ hdeg₁ h0₁ h1₁
   exact hb₁ j (by omega) τ hτ
 
-/-- **Theorem A.9.2 (General Hermite interpolation)** of [cartis2022evaluation]. For every `p`
-and `κ_f ≥ 0` there are constants `L, B ≥ 0`, depending only on `p` and `κ_f`, such that: for
-`k_e > 0`, nodes `x_0 < x_1 < ⋯ < x_{k_e}` (`s_k = x_{k+1} - x_k > 0`) and data `f_k^{(j)}`
-(`k ∈ [0 : k_e]`, `j ∈ [0 : p]`) satisfying (A.32)
-`|f_{k+1}^{(j)} - T^{(j)}_{k,p}(x_k, s_k)| ≤ κ_f s_k^{p-j+1}` with
-`T_{k,p}(x_k, s) = ∑_{i=0}^p f_k^{(i)} s^i / i!` (`k ∈ [0 : k_e - 1]`), there is a `p` times
-continuously differentiable `f : ℝ → ℝ` with `L`-Lipschitz `p`-th derivative and
-`f^{(j)}(x_k) = f_k^{(j)}` for all `k, j`; if moreover `|f_k^{(j)}| ≤ κ_f` and `s_k ≤ κ_f` for
-`k ∈ [0 : k_e - 1]`, then `|f^{(j)}(x)| ≤ B` for all `x ∈ ℝ` and `j ∈ [0 : p]`. -/
+/-- **Theorem A.9.2** of [cartis2022evaluation] (general Hermite interpolation). Let
+$p \in \mathbb{N}$ and $\kappa_f \ge 0$. There are constants $L, B \ge 0$, which depend only on
+$p$ and $\kappa_f$, with the following property. Let $k_e > 0$, let
+$x_0 < x_1 < \dots < x_{k_e}$ be real nodes with $s_k = x_{k+1} - x_k$, and let $f_k^{(j)}$ for
+$k \in \{0, \dots, k_e\}$ and $j \in \{0, \dots, p\}$ be data that satisfy (A.32):
+$$\Bigl| f_{k+1}^{(j)} - \sum_{i=j}^p \frac{f_k^{(i)} s_k^{i-j}}{(i-j)!} \Bigr| \le \kappa_f
+  s_k^{p-j+1} \quad \text{for } k < k_e \text{ and } j \in \{0, \dots, p\}.$$
+Then there is a $p$ times continuously differentiable function $f : \mathbb{R} \to \mathbb{R}$
+with $|f^{(p)}(t_1) - f^{(p)}(t_2)| \le L |t_1 - t_2|$ for all $t_1, t_2 \in \mathbb{R}$ and
+$f^{(j)}(x_k) = f_k^{(j)}$ for all $k \le k_e$ and $j \le p$. If moreover
+$|f_k^{(j)}| \le \kappa_f$ and $s_k \le \kappa_f$ for all $k < k_e$ and $j \le p$, then
+$|f^{(j)}(t)| \le B$ for all $t \in \mathbb{R}$ and $j \le p$.
+
+**Generalization.** The book assumes $p > 0$, which the proof does not use.
+
+**Reading.** The book requires $s_k > 0$ "for $k \in [0 : k_e]$"; this is read for $k < k_e$,
+the only $k$ for which the data define $s_k$.
+
+**Typo.** The book states the derivative bound "for all $x \in \mathbb{R}^n$"; the function is
+defined on $\mathbb{R}$, and the bound is for all $x \in \mathbb{R}$.
+
+The sum in (A.32) is the $j$-th derivative at $s_k$ of the Taylor polynomial $T_{k,p}(x_k, s) =
+\sum_{i=0}^p f_k^{(i)} s^i / i!$ of the jet at $x_k$. The nodes are `x : ℕ → ℝ` and the data are
+`F : ℕ → ℕ → ℝ`, with `F k j` $= f_k^{(j)}$. -/
 theorem theorem_A_9_2 (p : ℕ) {κ : ℝ} (hκ : 0 ≤ κ) : ∃ L B : ℝ, 0 ≤ L ∧ 0 ≤ B ∧
     ∀ (kₑ : ℕ) (x : ℕ → ℝ) (F : ℕ → ℕ → ℝ), 0 < kₑ → (∀ k < kₑ, x k < x (k + 1)) →
       (∀ k < kₑ, ∀ j ≤ p, |F (k + 1) j - ∑ i ∈ Finset.Icc j p,

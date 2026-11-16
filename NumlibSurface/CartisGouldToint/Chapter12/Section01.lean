@@ -14,65 +14,149 @@ import Numlib.Optimization.Optimality.TaylorStability
 import NumlibSurface.CartisGouldToint.Chapter01.Section01
 
 /-!
-# Cartis–Gould–Toint §12.1: Optimality conditions revisited
+# Cartis, Gould and Toint, Section 12.1: Optimality conditions revisited
 
-Surface file for C. Cartis, N. I. M. Gould and Ph. L. Toint, *Evaluation Complexity of
-Algorithms for Nonconvex Optimization* [cartis2022evaluation], §12.1: curve-based necessary
-conditions of arbitrary order, the Taylor-decrement measure `φ^δ_{f,j}`, `(ε, δ)`-approximate
-minimizers and their stability. Points live in `ℝⁿ = EuclideanSpace ℝ (Fin n)`; the univariate
-examples are stated on `ℝ`. Tensor norms are Mathlib operator norms; `∇^j f(x)[s]^j` is
-`iteratedFDeriv ℝ j f x (fun _ => s)`; `f ∈ C^∞` is `ContDiff ℝ ∞ f`.
+This module formalizes §12.1 of [cartis2022evaluation]: necessary and sufficient optimality
+conditions of arbitrary order for a smooth function $f : \mathbb{R}^n \to \mathbb{R}$, and
+approximate minimizers of high order. Taylor coefficients at a point do not decide local minimality:
+Hancock's and Lewis' examples (Example 12.1.1) and Peano's quartic (Example 12.1.2) show this. The
+curve-based conditions of Theorem 12.1.1 say that, along every polynomial curve
+$x + \sum_i \alpha^i s_i$, the first nonvanishing coefficient (12.1.6) of the expansion of $f$ is
+nonnegative; Theorem 12.1.2 shows that linesearch methods cannot detect them.
+
+The main tool is the Taylor-decrement measure (12.1.10)
+$$\varphi^\delta_{f,j}(x) = f(x) - \min_{\|d\| \le \delta} T_{f,j}(x, d) = \max_{\|d\| \le \delta}
+  \Delta T_{f,j}(x, d),$$
+where $T_{f,j}(x, \cdot)$ is the Taylor polynomial of order $j$ of $f$ at $x$ and
+$\Delta T_{f,j}(x, d) = f(x) - T_{f,j}(x, d)$. The module relates it to the classical first-,
+second- and third-order conditions (Theorem 12.1.3), proves that it vanishes or is small at a local
+minimizer (Theorem 12.1.4), gives a sufficient condition (Theorem 12.1.5, corrected), and defines
+$(\epsilon, \delta)$-approximate $q$-th order minimizers (12.1.25) by $\varphi^{\delta_j}_{f,j}(x)
+\le \epsilon_j \delta_j^j / j!$. Theorems 12.1.6–12.1.8 relate these minimizers to the classical
+conditions, to each other and to the values of $f$ near $x$. The proofs use the backbone modules
+`Numlib.Optimization.Optimality.CurveConditions`, `Numlib.Optimization.Optimality.HighOrder` and
+`Numlib.Optimization.Optimality.TaylorStability`.
 
 ## Main definitions
 
-* `phiMeasure f j δ x = φ^δ_{f,j}(x)` (12.1.10), an abbreviation of `Optimization.taylorMeasure`;
-* `IsQthOrderMinimizer f x q`: the conclusions of Theorem 12.1.1 hold for `j ∈ [1, q]`;
-* `peanoQuartic κ₁ κ₂` (12.1.8), `hancock`, `lewis` ((12.1.2), (12.1.3));
-* `IsEpsDeltaApproxMinimizer f q ε δ x`: Key Definition (12.1.25).
+* (12.1.10), `CartisGouldToint.Chapter12.phiMeasure`: the Taylor-decrement measure
+  $\varphi^\delta_{f,j}(x)$.
+* §12.1.2, `CartisGouldToint.Chapter12.IsQthOrderMinimizer`: the conclusions of Theorem 12.1.1 hold
+  for every order $j \le q$.
+* (12.1.2), `CartisGouldToint.Chapter12.hancock`: Hancock's function $x_2 (x_2 - e^{-1/x_1^2})$.
+* (12.1.3), `CartisGouldToint.Chapter12.lewis`: Lewis' function
+  $x_2 (x_2 - \sin(1/x_1) e^{-1/x_1^2})$.
+* (12.1.8), `CartisGouldToint.Chapter12.peanoQuartic`: Peano's quartic
+  $x_2^2 - \kappa_1 x_1^2 x_2 + \kappa_2 x_1^4$.
+* Theorem 12.1.3 (iii), `CartisGouldToint.Chapter12.nullDirections` and
+  `CartisGouldToint.Chapter12.projectedThirdNorm`: the set $\mathcal{M}(x)$ and the norm of
+  $\nabla^3 f(x)$ restricted to it.
+* (12.1.18), `CartisGouldToint.Chapter12.example1213Model`: the model of Example 12.1.3.
+* (12.1.25), `CartisGouldToint.Chapter12.IsEpsDeltaApproxMinimizer`:
+  $(\epsilon, \delta)$-approximate $q$-th order minimizers.
 
 ## Main results
 
-* `example_12_1_1`, `example_12_1_1_variant`, `example_12_1_2`, `example_12_1_3`,
-  `example_12_1_4`: the examples of §12.1;
-* `theorem_12_1_1` – `theorem_12_1_8`.
+* Theorem 12.1.1, `CartisGouldToint.Chapter12.theorem_12_1_1`: a local minimizer of a $C^q$ function
+  is a $q$-th order minimizer.
+* Example 12.1.1, `CartisGouldToint.Chapter12.example_12_1_1`: Hancock's function is minimal at the
+  origin along every line, but not locally minimal, and has the Taylor coefficients of $x_2^2$.
+* Example 12.1.1, variant (12.1.3), `CartisGouldToint.Chapter12.example_12_1_1_variant`: Lewis'
+  function is not locally minimal at the origin and has no continuous descent curve from it.
+* Example 12.1.2, `CartisGouldToint.Chapter12.example_12_1_2`: the derivatives and the curve
+  coefficients of Peano's quartic, and the saddle for $\kappa_1^2 > 4 \kappa_2 \ge 0$.
+* Theorem 12.1.2, `CartisGouldToint.Chapter12.theorem_12_1_2`: Peano's quartic with $\kappa_1 = 3$,
+  $\kappa_2 = 2$ has no descent line at the origin and is a third-order but not a fourth-order
+  minimizer there.
+* Theorem 12.1.3 (i), `CartisGouldToint.Chapter12.theorem_12_1_3_i`: $\|\nabla f(x)\| =
+  \varphi^\delta_{f,1}(x) / \delta$.
+* Theorem 12.1.3 (ii), `CartisGouldToint.Chapter12.theorem_12_1_3_ii`: $\varphi^\delta_{f,2}(x) = 0$
+  if and only if $\nabla f(x) = 0$ and $\lambda_{\min}[\nabla^2 f(x)] \ge 0$.
+* Theorem 12.1.3 (iii), `CartisGouldToint.Chapter12.theorem_12_1_3_iii`: $\varphi^\delta_{f,3}(x)$
+  bounds the projected norm of $\nabla^3 f(x)$ from above.
+* Theorem 12.1.4, `CartisGouldToint.Chapter12.theorem_12_1_4`: at a local minimizer,
+  $\varphi^\delta_{f,j}(x) = 0$ for $j \le 2$ and $\varphi^\delta_{f,j}(x) / \delta^j \to 0$ for
+  every $j$.
+* Example 12.1.3, `CartisGouldToint.Chapter12.example_12_1_3`: at the global minimizer of the model
+  (12.1.18), $\varphi^1_{m,3}$ can be positive.
+* Theorem 12.1.5, `CartisGouldToint.Chapter12.theorem_12_1_5_counterexample`: the printed statement
+  is false.
+* Theorem 12.1.5, `CartisGouldToint.Chapter12.theorem_12_1_5`: under growth of order $j$ of
+  $T_{f,j}(x, \cdot)$, $x$ is a strict local minimizer of $f$.
+* Theorem 12.1.6 (i), `CartisGouldToint.Chapter12.theorem_12_1_6_i`: $\varphi^{\delta_1}_{f,1}(x)
+  \le \epsilon_1 \delta_1$ implies $\|\nabla f(x)\| \le \epsilon_1$.
+* Theorem 12.1.6 (ii), `CartisGouldToint.Chapter12.theorem_12_1_6_ii`: $\varphi^\delta_{f,2}(x) \le
+  \epsilon_2 \delta^2 / 2$ implies $\lambda_{\min}[\nabla^2 f(x)] \ge -\epsilon_2$ and a bound on
+  $\|\nabla f(x)\|$.
+* Theorem 12.1.7, `CartisGouldToint.Chapter12.theorem_12_1_7`: approximate optimality of order $j$
+  implies approximate optimality of order $j - 1$ for small radii.
+* Example 12.1.4, `CartisGouldToint.Chapter12.example_12_1_4`: for $f(t) = t^4/24$ and the radius
+  $|x|$, no $x \neq 0$ is approximately optimal of order $4$ with $\epsilon_4 < 1$.
+* Theorem 12.1.8, `CartisGouldToint.Chapter12.theorem_12_1_8`: near an approximate minimizer, $f$
+  cannot decrease by more than a multiple of $\epsilon_j \delta_j^j / j!$.
 
-## Deviations from the book
+## Conventions
 
-* **Theorem 12.1.5 is false as printed** (`theorem_12_1_5_counterexample`): an isolated minimizer
-  `s = 0` of `T_{f,j}(x, ·)` need not be uniformly isolated. `theorem_12_1_5` assumes growth of
-  order `j`, `c ‖s‖^j ≤ T_{f,j}(x, s) - f(x)` near `0`.
-* **Example 12.1.2.** The printed choice "`κ₁ = 1`, `κ₂ = 2`" does not give a saddle
-  (`f = (x₂ - x₁²/2)² + 7x₁⁴/4 ≥ 0`); the saddle needs `κ₁² > 4κ₂ ≥ 0`, e.g. `κ₁ = 3`, `κ₂ = 2`
-  (the curve `x₂ = 3x₁²/2` and Figure 12.1.2 use `κ₁ = 3`). Theorem 12.1.2 is stated for
-  `peanoQuartic 3 2`. The tensor entries of the example are stated through the diagonal values
-  `∇^k f(0)[d]^k`, which determine symmetric tensors.
-* **Example 12.1.1.** The printed descent curve `αe₂ + ½exp(-1/2α²)e₁` is garbled; the curve
-  `(t, ½exp(-1/t²))` is used.
-* **Theorem 12.1.1.** The restriction to tuples of nonzero `s_i` is dropped (stronger statement).
-* **Theorems 12.1.3 and 12.1.6.** The identities hold for every `f` (Lean's derivatives are total
-  functions); in (ii) of Theorem 12.1.6 the book's "continuously differentiable" does not even
-  make `∇²f(x)` meaningful. The constant `κ(x)` of Theorem 12.1.6 (ii) is made explicit:
-  `‖∇f(x)‖² ≤ δ² ε₂ max(‖∇²f(x)‖, ε₂)`. The projected norm of Theorem 12.1.3 (iii) is
-  `‖P_M[T]‖ = sup_{d ∈ M, ‖d‖ ≤ 1} |T[d]³|` with `M = ker¹[∇f(x)] ∩ ker²[∇²f(x)]`, for which the
-  first- and second-order hypotheses are not needed.
-* **Theorem 12.1.7.** The condition `δ_j ≤ jε_j/(2‖∇^j f(x)‖)` is written multiplicatively (so
-  that `∇^j f(x) = 0` is allowed). The recursive use after the theorem needs `ε_q ≤ ⋯ ≤ ε_1`
-  (the printed chain is reversed).
-* **Theorem 12.1.8.** The printed `δ^j` in (12.1.35) is `δ_j^j`.
-* **Example 12.1.3.** Part (iv) (vanishing measures for radii `δ ≤ 3‖x*‖/(p-1)`) is stated in one
-  variable. The book's appeal to Lemma B.4.1 for the directions orthogonal to `x*` does not cover
-  mixed directions, and the `n`-dimensional claim fails: for `p = 3`, `σ = p!`, `‖x*‖ = 1` and
-  `δ = 3/2 = 3‖x*‖/(p-1)`, the decrement `ΔT_{m,3}(x*, d)` is about `+0.14` at
-  `d ≈ (-1.12, 0.28, 0.96)`, where (12.1.16) predicts `φ^δ_{m,3}(x*) = 0`
-  (`example1213_taylorDecrement_unit` gives the decrement in every direction).
-  Part (iii) is stated as the book's equality `φ^1_{m,3}(x*) = (p-4)σ/(6(p-1)!)`, proved for
-  all directions.
+* Points lie in $\mathbb{R}^n$, which is `EuclideanSpace ℝ (Fin n)`. The univariate examples are
+  stated on `ℝ`.
+* In $\mathbb{R}^2$, the book's coordinates $x_1$ and $x_2$ are `x 0` and `x 1`.
+* Tensor norms are Mathlib operator norms. The value $\nabla^j f(x)[s]^j$ is
+  `iteratedFDeriv ℝ j f x (fun _ => s)`.
+* The condition $f \in C^\infty$ is `ContDiff ℝ ∞ f`.
+* $\lambda_{\min}[\nabla^2 f(x)]$ is `CartisGouldToint.Chapter01.hessianMinEig f x`, and
+  $T_{f,j}(x, d)$ is `taylorPolynomial f j x d`.
+
+## Implementation notes
+
+* In Example 12.1.2, the tensors $\nabla^k f(0)$ are stated through their diagonal values
+  $\nabla^k f(0)[d]^k$, which determine symmetric tensors.
+* Lean's derivatives are total functions. So the identities of Theorems 12.1.3 and 12.1.6 hold for
+  every $f$, without smoothness hypotheses.
+
+## Deviations from the source
+
+* **Example 12.1.1** (typo). The printed descent curve $\alpha e_2 + \frac12 \exp(-1/2\alpha^2) e_1$
+  is garbled; the curve $(t, \frac12 e^{-1/t^2})$ is used. See
+  `CartisGouldToint.Chapter12.example_12_1_1`.
+* **Theorem 12.1.1** (generalization). The restriction to tuples of nonzero $s_i$ is dropped. See
+  `CartisGouldToint.Chapter12.theorem_12_1_1`.
+* **Example 12.1.2** (typo). The printed choice $\kappa_1 = 1$, $\kappa_2 = 2$ gives no saddle,
+  since then $f = (x_2 - x_1^2/2)^2 + 7 x_1^4/4 \ge 0$. The saddle needs
+  $\kappa_1^2 > 4 \kappa_2 \ge 0$, for example $\kappa_1 = 3$, $\kappa_2 = 2$, which the curve
+  $x_2 = 3 x_1^2 / 2$ and Figure 12.1.2 use. Theorem 12.1.2 is stated for $\kappa_1 = 3$,
+  $\kappa_2 = 2$. See `CartisGouldToint.Chapter12.example_12_1_2` and
+  `CartisGouldToint.Chapter12.theorem_12_1_2`.
+* **Theorem 12.1.3 (iii)** (generalization). The projected norm is $\|P_{\mathcal{M}}[T]\| = \sup_{d
+  \in \mathcal{M}, \|d\| \le 1} |T[d]^3|$ with $\mathcal{M} = \ker^1[\nabla f(x)] \cap
+  \ker^2[\nabla^2 f(x)]$, and for this norm the first- and second-order hypotheses are not needed.
+  See `CartisGouldToint.Chapter12.theorem_12_1_3_iii`.
+* **Example 12.1.3 (iv)** (correction). The claim that the measures vanish for radii
+  $\delta \le 3\|x_*\|/(p-1)$ is false in $n$ variables and is stated in one variable. See
+  `CartisGouldToint.Chapter12.example_12_1_3`.
+* **Theorem 12.1.5** (correction). An isolated minimizer $s = 0$ of $T_{f,j}(x, \cdot)$ need not be
+  uniformly isolated, and the printed statement is false
+  (`CartisGouldToint.Chapter12.theorem_12_1_5_counterexample`). The corrected statement assumes
+  growth of order $j$, $c \|s\|^j \le T_{f,j}(x, s) - f(x)$ near $0$. See
+  `CartisGouldToint.Chapter12.theorem_12_1_5`.
+* **Theorem 12.1.6 (ii)** (correction). The source assumes that $f$ is continuously differentiable,
+  which does not make $\nabla^2 f(x)$ meaningful; the statement needs $C^2$ in classical terms. The
+  constant $\kappa(x)$ is made explicit: $\|\nabla f(x)\|^2 \le \delta^2 \epsilon_2 \max(\|\nabla^2
+  f(x)\|, \epsilon_2)$. See `CartisGouldToint.Chapter12.theorem_12_1_6_ii`.
+* **Theorem 12.1.7** (generalization). The condition $\delta_j \le j \epsilon_j / (2 \|\nabla^j
+  f(x)\|)$ is written multiplicatively, so that $\nabla^j f(x) = 0$ is allowed. See
+  `CartisGouldToint.Chapter12.theorem_12_1_7`.
+* **After Theorem 12.1.7** (typo). The recursive use of the theorem needs
+  $\epsilon_q \le \dots \le \epsilon_1$; the printed chain is reversed.
+* **Theorem 12.1.8** (typo). The printed $\delta^j$ in (12.1.35) is $\delta_j^j$. See
+  `CartisGouldToint.Chapter12.theorem_12_1_8`.
 
 ## Not formalized
 
-The weak approximate minimizers (12.1.40) of the notes, the projected-norm relaxation (12.1.24),
-the asymptotic `O(ε₂)` remark after Theorem 12.1.6 and the discussion of §12.1.6 (approximate
-displacements are in `Optimization.IsApproxMeasureStep`).
+* The weak approximate minimizers (12.1.40) of the notes.
+* The projected-norm relaxation (12.1.24).
+* The asymptotic $O(\epsilon_2)$ remark after Theorem 12.1.6.
+* The discussion of §12.1.6. Approximate optimality displacements are
+  `Optimization.IsApproxMeasureStep`.
 -/
 
 open Set Filter Topology Metric
@@ -80,23 +164,31 @@ open scoped Nat ContDiff RealInnerProductSpace
 
 namespace CartisGouldToint.Chapter12
 
-/-! ### The measure `φ^δ_{f,j}` -/
+/-! ### The measure $\varphi^\delta_{f,j}$ -/
 
 section Measure
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
 
-/-- The measure `φ^δ_{f,j}(x) = f(x) - min_{‖d‖ ≤ δ} T_{f,j}(x, d) = max_{‖d‖ ≤ δ} ΔT_{f,j}(x, d)`
-of [cartis2022evaluation], (12.1.10)–(12.1.11): the largest decrease of the `j`-th order Taylor
-model within distance `δ`. -/
+/-- **Equations (12.1.10)–(12.1.11)** of [cartis2022evaluation]. For $f : E \to \mathbb{R}$,
+$j \in \mathbb{N}$, $\delta \in \mathbb{R}$ and $x \in E$, the **Taylor-decrement measure** is
+$$\varphi^\delta_{f,j}(x) = f(x) - \min_{\|d\| \le \delta} T_{f,j}(x, d) = \max_{\|d\| \le
+  \delta} \Delta T_{f,j}(x, d),$$
+the largest decrease of the Taylor model of order $j$ within distance $\delta$ of $x$.
+
+The measure is `Optimization.taylorMeasure` of the Taylor series `ftaylorSeries ℝ f x` on the
+whole space. For $\delta < 0$ the ball is empty, and the value is $0$. -/
 noncomputable abbrev phiMeasure (f : E → ℝ) (j : ℕ) (δ : ℝ) (x : E) : ℝ :=
   Optimization.taylorMeasure (ftaylorSeries ℝ f x) j δ univ
 
+/-- The measure $\varphi^\delta_{f,j}(x)$ is `Optimization.taylorMeasure` of `ftaylorSeries ℝ f x`
+on the whole space. -/
 theorem phiMeasure_def (f : E → ℝ) (j : ℕ) (δ : ℝ) (x : E) :
     phiMeasure f j δ x = Optimization.taylorMeasure (ftaylorSeries ℝ f x) j δ univ :=
   rfl
 
-/-- (12.1.10): `φ^δ_{f,j}(x) = sup_{‖d‖ ≤ δ} (f(x) - T_{f,j}(x, d))`. -/
+/-- Equation (12.1.10) of [cartis2022evaluation]: $\varphi^\delta_{f,j}(x) = \sup_{\|d\| \le \delta}
+\bigl(f(x) - T_{f,j}(x, d)\bigr)$. -/
 theorem phiMeasure_eq_sSup (f : E → ℝ) (j : ℕ) (δ : ℝ) (x : E) :
     phiMeasure f j δ x = sSup ((fun d => f x - taylorPolynomial f j x d) '' closedBall 0 δ) := by
   rw [phiMeasure, Optimization.taylorMeasure_eq_sSup, inter_univ]
@@ -104,12 +196,12 @@ theorem phiMeasure_eq_sSup (f : E → ℝ) (j : ℕ) (δ : ℝ) (x : E) :
   refine image_congr fun d _ => ?_
   rw [ftaylorSeries_taylorDecrement_eq]
 
-/-- The measure is nonnegative for `δ ≥ 0`. -/
+/-- For $\delta \ge 0$, the measure $\varphi^\delta_{f,j}(x)$ is nonnegative. -/
 theorem phiMeasure_nonneg (f : E → ℝ) (j : ℕ) {δ : ℝ} (hδ : 0 ≤ δ) (x : E) :
     0 ≤ phiMeasure f j δ x :=
   Optimization.taylorMeasure_nonneg _ j (mem_univ 0) hδ
 
-/-- Every model decrease within distance `δ` is at most the measure. -/
+/-- If $\|d\| \le \delta$, then $f(x) - T_{f,j}(x, d) \le \varphi^\delta_{f,j}(x)$. -/
 theorem sub_taylorPolynomial_le_phiMeasure (f : E → ℝ) (j : ℕ) {δ : ℝ} (x : E) {d : E}
     (hd : ‖d‖ ≤ δ) : f x - taylorPolynomial f j x d ≤ phiMeasure f j δ x := by
   have := Optimization.taylorDecrement_le_taylorMeasure (ftaylorSeries ℝ f x) j (S := univ)
@@ -128,23 +220,37 @@ variable {n : ℕ}
 
 local notation "𝔼" => EuclideanSpace ℝ (Fin n)
 
-/-- `x` is a *`q`-th order minimizer* of `f` ([cartis2022evaluation], §12.1.2, after
-Theorem 12.1.1): the conclusions (12.1.6)–(12.1.7) of Theorem 12.1.1 hold for all `j ∈ [1, q]`,
-with the coefficients `Optimization.curveCoeff` built on the index sets `P(j,k)` of (12.1.5). -/
+/-- **Section 12.1.2** of [cartis2022evaluation], after Theorem 12.1.1. A point $x \in \mathbb{R}^n$
+is a **$q$-th order minimizer** of $f$ if the conclusions (12.1.6)–(12.1.7) of Theorem 12.1.1
+hold for every $j \in [1, q]$: for every sequence $s_1, s_2, \dots$ of vectors such that the
+coefficients of orders $1, \dots, j-1$ vanish, the coefficient of order $j$ is nonnegative.
+
+The coefficients are `Optimization.curveCoeff` of `ftaylorSeries ℝ f x`, built on the index sets
+$\mathcal{P}(j, k)$ of (12.1.5); the definition is `Optimization.IsCurveCritical`. -/
 def IsQthOrderMinimizer (f : 𝔼 → ℝ) (x : 𝔼) (q : ℕ) : Prop :=
   Optimization.IsCurveCritical (ftaylorSeries ℝ f x) q
 
+/-- A point $x$ is a $q$-th order minimizer of $f$ if and only if, for every $j \in [1, q]$ and
+every sequence $s$, the vanishing of the curve coefficients of orders $1, \dots, j-1$ implies
+that the coefficient of order $j$ is nonnegative. -/
 theorem isQthOrderMinimizer_iff {f : 𝔼 → ℝ} {x : 𝔼} {q : ℕ} :
     IsQthOrderMinimizer f x q ↔ ∀ j ∈ Finset.Icc 1 q, ∀ s : ℕ → 𝔼,
       (∀ i ∈ Finset.Ico 1 j, Optimization.curveCoeff (ftaylorSeries ℝ f x) s i = 0) →
         0 ≤ Optimization.curveCoeff (ftaylorSeries ℝ f x) s j :=
   Iff.rfl
 
-/-- **Theorem 12.1.1** ([cartis2022evaluation]): if `f` is `C^q` near a local minimizer `x`, then
-for every `j ∈ [1, q]` and every `s_1, s_2, …` such that the coefficients (12.1.7) of orders
-`1, …, j-1` vanish, the coefficient (12.1.6) of order `j`,
-`∑_{k=1}^j (1/k!) ∑_{(ℓ_1,…,ℓ_k) ∈ P(j,k)} ∇^k f(x)[s_{ℓ_1}, …, s_{ℓ_k}]`, is nonnegative: `x` is
-a `q`-th order minimizer. (The book's restriction to nonzero `s_i` is unnecessary.) -/
+/-- **Theorem 12.1.1** of [cartis2022evaluation]. Let $f : \mathbb{R}^n \to \mathbb{R}$ be $C^q$
+near a local minimizer $x$. Then $x$ is a $q$-th order minimizer of $f$: for every
+$j \in [1, q]$ and every $s_1, s_2, \dots \in \mathbb{R}^n$ such that the coefficients (12.1.7)
+of orders $1, \dots, j-1$ vanish, the coefficient (12.1.6) of order $j$,
+$$\sum_{k=1}^{j} \frac{1}{k!} \sum_{(\ell_1, \dots, \ell_k) \in \mathcal{P}(j,k)} \nabla^k
+  f(x)[s_{\ell_1}, \dots, s_{\ell_k}],$$
+is nonnegative.
+
+**Generalization.** The source restricts the statement to tuples of nonzero $s_i$. The
+restriction is not needed.
+
+The hypothesis "$C^q$ near $x$" is `ContDiffAt ℝ q f x`. -/
 theorem theorem_12_1_1 {f : 𝔼 → ℝ} {x : 𝔼} {q : ℕ} (hf : ContDiffAt ℝ q f x)
     (hmin : IsLocalMin f x) : IsQthOrderMinimizer f x q :=
   hmin.isCurveCritical hf
@@ -155,18 +261,23 @@ end Curve
 
 section Plane
 
-/-- Coordinates of `ℝᵐ` are smooth. -/
+/-- For every $i$ and every order $k$, the coordinate function $x \mapsto x_i$ on $\mathbb{R}^m$ is
+$C^k$. -/
 theorem contDiff_coord {m : ℕ} {k : WithTop ℕ∞} (i : Fin m) :
     ContDiff ℝ k fun x : EuclideanSpace ℝ (Fin m) => x i :=
   (EuclideanSpace.proj i : EuclideanSpace ℝ (Fin m) →L[ℝ] ℝ).contDiff
 
-/-! #### Hancock's example -/
+/-! ### Hancock's example -/
 
-/-- Hancock's example ([cartis2022evaluation], (12.1.2)): `f(x) = x₂ (x₂ - exp(-1/x₁²))` for
-`x₁ ≠ 0` and `f(x) = x₂²` for `x₁ = 0`, on `ℝ²` (the book's `x₁, x₂` are `x 0, x 1`). -/
+/-- **Equation (12.1.2)** of [cartis2022evaluation], Hancock's function on $\mathbb{R}^2$:
+$$f(x) = \begin{cases} x_2 \bigl(x_2 - e^{-1/x_1^2}\bigr) & \text{if } x_1 \neq 0, \\ x_2^2 &
+  \text{if } x_1 = 0. \end{cases}$$
+-/
 noncomputable def hancock (x : EuclideanSpace ℝ (Fin 2)) : ℝ :=
   if x 0 ≠ 0 then x 1 * (x 1 - Real.exp (-1 / x 0 ^ 2)) else x 1 ^ 2
 
+/-- Hancock's function satisfies $f(x) = x_2 (x_2 - \psi(x_1^2))$, where $\psi(t) = e^{-1/t}$ for
+$t > 0$ and $\psi(t) = 0$ for $t \le 0$ is `expNegInvGlue`. -/
 theorem hancock_eq (x : EuclideanSpace ℝ (Fin 2)) :
     hancock x = x 1 * (x 1 - expNegInvGlue (x 0 ^ 2)) := by
   unfold hancock
@@ -176,12 +287,21 @@ theorem hancock_eq (x : EuclideanSpace ℝ (Fin 2)) :
   · push Not at h
     simp [h, sq]
 
-/-- **Example 12.1.1** ([cartis2022evaluation], (12.1.2), Hancock). For `f = hancock`:
-(a) `f` is `C^∞`; (b) the origin is a local minimizer of `f` along every line (no line is a
-descent line); (c) along the curve `(t, ½ exp(-1/t²))`,
-`f = -¼ exp(-1/t²)² = -¼ exp(-2/t²) < 0`, so the origin is not a local minimizer; (d) `f` and
-`g(x) = x₂²` have the same derivatives of every order at the origin, while the origin is a global
-minimizer of `g`: no condition on the Taylor coefficients at `0` decides local minimality. -/
+/-- **Example 12.1.1** of [cartis2022evaluation] (Hancock's example, (12.1.2)). Let $f$ be Hancock's
+function. Then:
+
+1. $f$ is $C^\infty$;
+2. for every direction $d$, the function $t \mapsto f(t d)$ has a local minimizer at $t = 0$, so
+   no line through the origin is a descent line;
+3. along the curve $(t, \frac12 e^{-1/t^2})$, $f = -\frac14 (e^{-1/t^2})^2 < 0$ for every
+   $t \neq 0$, so the origin is not a local minimizer of $f$;
+4. $f$ and $g(x) = x_2^2$ have the same derivatives of every order at the origin, and the origin
+   is a global minimizer of $g$.
+
+So no condition on the Taylor coefficients at the origin decides local minimality.
+
+**Typo.** The source prints the descent curve as $\alpha e_2 + \frac12 \exp(-1/2\alpha^2) e_1$,
+which is garbled. The curve $(t, \frac12 e^{-1/t^2})$ is used. -/
 theorem example_12_1_1 :
     ContDiff ℝ ∞ hancock ∧
     (∀ d : EuclideanSpace ℝ (Fin 2), IsLocalMin (fun t : ℝ => hancock (t • d)) 0) ∧
@@ -258,14 +378,19 @@ theorem example_12_1_1 :
       (((contDiff_coord 1).mul hw).contDiffAt.of_le (by exact_mod_cast le_top)),
       norm_eq_zero.1 hflat, sub_zero]
 
-/-! #### Lewis' example -/
+/-! ### Lewis' example -/
 
 
-/-- Lewis' variant of Hancock's example ([cartis2022evaluation], (12.1.3)):
-`f(x) = x₂ (x₂ - sin(1/x₁) exp(-1/x₁²))` for `x₁ ≠ 0` and `f(x) = x₂²` for `x₁ = 0`. -/
+/-- **Equation (12.1.3)** of [cartis2022evaluation], Lewis' variant of Hancock's function on
+$\mathbb{R}^2$:
+$$f(x) = \begin{cases} x_2 \bigl(x_2 - \sin(1/x_1) e^{-1/x_1^2}\bigr) & \text{if } x_1 \neq 0,
+  \\ x_2^2 & \text{if } x_1 = 0. \end{cases}$$
+-/
 noncomputable def lewis (x : EuclideanSpace ℝ (Fin 2)) : ℝ :=
   if x 0 ≠ 0 then x 1 * (x 1 - Real.sin (1 / x 0) * Real.exp (-1 / x 0 ^ 2)) else x 1 ^ 2
 
+/-- Lewis' function satisfies $f(x) = x_2 (x_2 - h(x_1))$, where $h(t) = \sin(1/t) e^{-1/t^2}$ for
+$t \neq 0$ and $h(0) = 0$ is `oscFlat 1 0`. -/
 theorem lewis_eq (x : EuclideanSpace ℝ (Fin 2)) :
     lewis x = x 1 * (x 1 - oscFlat 1 0 (x 0)) := by
   unfold lewis
@@ -275,10 +400,11 @@ theorem lewis_eq (x : EuclideanSpace ℝ (Fin 2)) :
   · push Not at h
     simp [oscFlat_def, h, sq]
 
-/-- **Example 12.1.1, variant (12.1.3)** ([cartis2022evaluation], due to A. Lewis). For
-`f = lewis`: `f` is `C^∞`, the origin is not a local minimizer of `f`, and yet there is no
-continuous descent curve from the origin: no `γ` continuous on `[0, 1]` with `γ(0) = 0` and
-`f(γ(α)) < f(0)` for all `α ∈ (0, 1]`. -/
+/-- **Example 12.1.1** of [cartis2022evaluation], variant (12.1.3), due to A. Lewis. Let $f$ be
+Lewis' function. Then $f$ is $C^\infty$ and the origin is not a local minimizer of $f$, but
+there is no continuous descent curve from the origin: there is no
+$\gamma : [0, 1] \to \mathbb{R}^2$ continuous on $[0, 1]$ with $\gamma(0) = 0$ and
+$f(\gamma(\alpha)) < f(0)$ for every $\alpha \in (0, 1]$. -/
 theorem example_12_1_1_variant :
     ContDiff ℝ ∞ lewis ∧ ¬ IsLocalMin lewis 0 ∧
       ¬ ∃ γ : ℝ → EuclideanSpace ℝ (Fin 2), ContinuousOn γ (Icc 0 1) ∧ γ 0 = 0 ∧
@@ -364,34 +490,39 @@ theorem example_12_1_1_variant :
     · rw [h, inv_neg, inv_inv, Real.sin_neg, Real.sin_nat_mul_pi k, neg_zero]
 
 
-/-! #### Peano's quartic -/
+/-! ### Peano's quartic -/
 
-/-- Peano's quartic ([cartis2022evaluation], (12.1.8)):
-`f(x) = x₂² - κ₁ x₁² x₂ + κ₂ x₁⁴` on `ℝ²` (the book's `x₁, x₂` are `x 0, x 1`). -/
+/-- **Equation (12.1.8)** of [cartis2022evaluation], Peano's quartic on $\mathbb{R}^2$: for
+$\kappa_1, \kappa_2 \in \mathbb{R}$,
+$$f(x) = x_2^2 - \kappa_1 x_1^2 x_2 + \kappa_2 x_1^4.$$
+-/
 def peanoQuartic (κ₁ κ₂ : ℝ) (x : EuclideanSpace ℝ (Fin 2)) : ℝ :=
   x 1 ^ 2 - κ₁ * x 0 ^ 2 * x 1 + κ₂ * x 0 ^ 4
 
+/-- Peano's quartic is $C^k$ for every order $k$. -/
 theorem contDiff_peanoQuartic (κ₁ κ₂ : ℝ) {k : WithTop ℕ∞} :
     ContDiff ℝ k (peanoQuartic κ₁ κ₂) :=
   (((contDiff_coord 1).pow 2).sub ((contDiff_const.mul ((contDiff_coord 0).pow 2)).mul
     (contDiff_coord 1))).add (contDiff_const.mul ((contDiff_coord 0).pow 4))
 
+/-- Peano's quartic vanishes at the origin. -/
 @[simp]
 theorem peanoQuartic_zero (κ₁ κ₂ : ℝ) : peanoQuartic κ₁ κ₂ 0 = 0 := by
   simp [peanoQuartic]
 
-/-- The curve directions `s₁ = e₁`, `s₂ = (κ₁/2) e₂` (and `s_ℓ = 0` for `ℓ ≥ 3`) of
-Example 12.1.2. -/
+/-- The curve directions of Example 12.1.2 of [cartis2022evaluation]: $s_1 = e_1$,
+$s_2 = (\kappa_1/2) e_2$, and $s_\ell = 0$ for every other $\ell$. -/
 noncomputable def peanoDirections (κ₁ : ℝ) (ℓ : ℕ) : EuclideanSpace ℝ (Fin 2) :=
   if ℓ = 1 then !₂[1, 0] else if ℓ = 2 then !₂[0, κ₁ / 2] else 0
 
-/-- Coordinates of a polynomial curve. -/
+/-- The $i$-th coordinate of a polynomial curve $\sum_{\ell=1}^{q} \alpha^\ell s_\ell$ is
+$\sum_{\ell=1}^{q} \alpha^\ell (s_\ell)_i$. -/
 theorem polyCurve_apply {m q : ℕ} (s : ℕ → EuclideanSpace ℝ (Fin m)) (α : ℝ) (i : Fin m) :
     (∑ ℓ ∈ Finset.Icc 1 q, α ^ ℓ • s ℓ) i = ∑ ℓ ∈ Finset.Icc 1 q, α ^ ℓ * s ℓ i := by
   simp [WithLp.ofLp_sum]
 
-/-- The coefficients of Peano's quartic along a polynomial curve of order `2`:
-`c₁ = 0`, `c₂ = (s₁)₂²`. -/
+/-- For every sequence $s$, the curve coefficients (12.1.6) of Peano's quartic at the origin satisfy
+$c_1 = 0$ and $c_2 = ((s_1)_2)^2$. -/
 theorem curveCoeff_peanoQuartic_two (κ₁ κ₂ : ℝ) (s : ℕ → EuclideanSpace ℝ (Fin 2)) :
     Optimization.curveCoeff (ftaylorSeries ℝ (peanoQuartic κ₁ κ₂) 0) s 1 = 0 ∧
       Optimization.curveCoeff (ftaylorSeries ℝ (peanoQuartic κ₁ κ₂) 0) s 2 = s 1 1 ^ 2 := by
@@ -405,8 +536,8 @@ theorem curveCoeff_peanoQuartic_two (κ₁ κ₂ : ℝ) (s : ℕ → EuclideanSp
         ring)
   exact ⟨by simpa using h 1 (by simp), by simpa using h 2 (by simp)⟩
 
-/-- Along a polynomial curve of order `3` with `(s₁)₂ = 0`, the coefficients `c₁, c₂, c₃` of
-Peano's quartic vanish. -/
+/-- If $(s_1)_2 = 0$, the curve coefficients $c_1$, $c_2$ and $c_3$ of Peano's quartic at the origin
+vanish. -/
 theorem curveCoeff_peanoQuartic_three (κ₁ κ₂ : ℝ) (s : ℕ → EuclideanSpace ℝ (Fin 2))
     (hs : s 1 1 = 0) :
     ∀ i ∈ Finset.Icc 1 3,
@@ -422,8 +553,9 @@ theorem curveCoeff_peanoQuartic_three (κ₁ κ₂ : ℝ) (s : ℕ → Euclidean
         ring)
   exact h
 
-/-- The coefficients of Peano's quartic along the curve of `peanoDirections`:
-`(c₁, c₂, c₃, c₄) = (0, 0, 0, κ₂ - κ₁²/4)`. -/
+/-- Along the curve directions $s_1 = e_1$, $s_2 = (\kappa_1/2) e_2$ of Example 12.1.2, the curve
+coefficients of Peano's quartic at the origin are $(c_1, c_2, c_3, c_4) = (0, 0, 0, \kappa_2 -
+\kappa_1^2/4)$. -/
 theorem curveCoeff_peanoDirections (κ₁ κ₂ : ℝ) :
     ∀ i ∈ Finset.Icc 1 4, Optimization.curveCoeff (ftaylorSeries ℝ (peanoQuartic κ₁ κ₂) 0)
       (peanoDirections κ₁) i = [0, 0, 0, 0, κ₂ - κ₁ ^ 2 / 4].getD i 0 :=
@@ -433,18 +565,30 @@ theorem curveCoeff_peanoDirections (κ₁ κ₂ : ℝ) :
       simp [peanoQuartic, peanoDirections]
       ring)
 
-/-- **Example 12.1.2** ([cartis2022evaluation], (12.1.8)–(12.1.9)). For Peano's quartic
-`f = peanoQuartic κ₁ κ₂`:
-* its derivatives at `0` are `∇f(0) = 0`, `∇²f(0)[d]² = 2 d₂²`, `∇³f(0)[d]³ = -6κ₁ d₁² d₂` and
-  `∇⁴f(0)[d]⁴ = 24 κ₂ d₁⁴` (i.e. `∇²f(0) = diag(0, 2)`, the only nonzero third and fourth
-  derivative entries are `-2κ₁` at the permutations of `(1, 1, 2)` and `24κ₂` at `(1, 1, 1, 1)`);
-* along the curve `s₁ = e₁`, `s₂ = (κ₁/2) e₂`, the coefficients (12.1.6) are
-  `c₁ = c₂ = c₃ = 0` and `c₄ = κ₂ - κ₁²/4` ((12.1.9)), and indeed
-  `f(t e₁ + (κ₁/2) t² e₂) = (κ₂ - κ₁²/4) t⁴`;
-* if `κ₂ ≥ 0`, the origin is a local minimizer of `f` along every line;
-* if `κ₁² > 4κ₂`, the origin is not a local minimizer of `f`.
-Hence for `κ₁² > 4κ₂ ≥ 0` (e.g. `κ₁ = 3`, `κ₂ = 2`; the printed `κ₁ = 1`, `κ₂ = 2` does not give
-a saddle) the origin is minimal along every line but is a saddle point. -/
+/-- **Example 12.1.2** of [cartis2022evaluation] ((12.1.8)–(12.1.9)). Let $f$ be Peano's quartic
+with parameters $\kappa_1, \kappa_2 \in \mathbb{R}$. Then:
+
+1. for every $d \in \mathbb{R}^2$, $\nabla f(0)[d] = 0$, $\nabla^2 f(0)[d]^2 = 2 d_2^2$,
+   $\nabla^3 f(0)[d]^3 = -6 \kappa_1 d_1^2 d_2$ and $\nabla^4 f(0)[d]^4 = 24 \kappa_2 d_1^4$;
+2. along the curve directions $s_1 = e_1$, $s_2 = (\kappa_1/2) e_2$, the coefficients (12.1.6)
+   are $c_1 = c_2 = c_3 = 0$ and $c_4 = \kappa_2 - \kappa_1^2/4$ (12.1.9), and $f(t e_1 +
+   (\kappa_1/2) t^2 e_2) = (\kappa_2 - \kappa_1^2/4) t^4$ for every $t$;
+3. if $\kappa_2 \ge 0$, then for every direction $d$ the function $t \mapsto f(t d)$ has a local
+   minimizer at $t = 0$;
+4. if $\kappa_1^2 > 4 \kappa_2$, the origin is not a local minimizer of $f$.
+
+Hence for $\kappa_1^2 > 4 \kappa_2 \ge 0$ the origin is minimal along every line but is a saddle
+point.
+
+**Typo.** The source prints the choice $\kappa_1 = 1$, $\kappa_2 = 2$, which gives no saddle:
+then $f = (x_2 - x_1^2/2)^2 + 7 x_1^4/4 \ge 0$. The saddle needs
+$\kappa_1^2 > 4 \kappa_2 \ge 0$, for example $\kappa_1 = 3$, $\kappa_2 = 2$, which the curve
+$x_2 = 3 x_1^2/2$ and Figure 12.1.2 use.
+
+Part 1 states the tensors through their diagonal values, which determine symmetric tensors:
+$\nabla^2 f(0) = \operatorname{diag}(0, 2)$, the only nonzero entries of $\nabla^3 f(0)$ are
+$-2 \kappa_1$ at the permutations of $(1, 1, 2)$, and the only nonzero entry of $\nabla^4 f(0)$
+is $24 \kappa_2$ at $(1, 1, 1, 1)$. -/
 theorem example_12_1_2 (κ₁ κ₂ : ℝ) :
     (∀ d : EuclideanSpace ℝ (Fin 2),
       iteratedFDeriv ℝ 1 (peanoQuartic κ₁ κ₂) 0 (fun _ => d) = 0 ∧
@@ -503,11 +647,18 @@ theorem example_12_1_2 (κ₁ κ₂ : ℝ) :
       have : 0 < t ^ 4 := by positivity
       nlinarith
 
-/-- **Theorem 12.1.2** ([cartis2022evaluation]): linesearch methods are unsuitable for finding
-high-order minimizers. Its formal content, for Peano's quartic `f = peanoQuartic 3 2`: (i) no
-straight line through the origin is a descent line (a linesearch started at `0` finds no
-decrease along any direction and stops there); (ii) the origin is a third-order minimizer;
-(iii) it is not a fourth-order minimizer; (iv) it is not a local minimizer. -/
+/-- **Theorem 12.1.2** of [cartis2022evaluation]: linesearch methods are unsuitable for finding
+high-order minimizers. Let $f$ be Peano's quartic with $\kappa_1 = 3$ and $\kappa_2 = 2$. Then:
+
+1. no line through the origin is a descent line: for every direction $d$ there is $\tau > 0$
+   with $f(0) \le f(t d)$ for every $t \in [0, \tau]$, so a linesearch started at $0$ finds no
+   decrease and stops there;
+2. the origin is a third-order minimizer of $f$;
+3. the origin is not a fourth-order minimizer of $f$;
+4. the origin is not a local minimizer of $f$.
+
+The statement uses $\kappa_1 = 3$, $\kappa_2 = 2$, because the choice printed in Example 12.1.2
+gives no saddle (see `CartisGouldToint.Chapter12.example_12_1_2`). -/
 theorem theorem_12_1_2 :
     (∀ d : EuclideanSpace ℝ (Fin 2), ∃ τ : ℝ, 0 < τ ∧ ∀ t ∈ Icc (0 : ℝ) τ,
       peanoQuartic 3 2 0 ≤ peanoQuartic 3 2 (t • d)) ∧
@@ -556,8 +707,12 @@ private theorem ftaylorSeries_one_eq_zero_iff (f : 𝔼 → ℝ) (x : 𝔼) :
     ftaylorSeries ℝ f x 1 = 0 ↔ gradient f x = 0 := by
   rw [← norm_eq_zero, norm_ftaylorSeries_one, norm_eq_zero]
 
-/-- **Theorem 12.1.3 (i)** ([cartis2022evaluation], (12.1.12)): for `δ > 0`,
-`‖∇f(x)‖ = φ^δ_{f,1}(x) / δ`; hence `φ^δ_{f,1}(x) = 0` iff `∇f(x) = 0`. -/
+/-- **Theorem 12.1.3 (i)** of [cartis2022evaluation] ((12.1.12)). Let
+$f : \mathbb{R}^n \to \mathbb{R}$, $x \in \mathbb{R}^n$ and $\delta > 0$. Then
+$$\|\nabla f(x)\| = \frac{\varphi^\delta_{f,1}(x)}{\delta},$$
+and hence $\varphi^\delta_{f,1}(x) = 0$ if and only if $\nabla f(x) = 0$.
+
+No smoothness of $f$ is assumed, because Lean's derivatives are total functions. -/
 theorem theorem_12_1_3_i {δ : ℝ} (hδ : 0 < δ) :
     ‖gradient f x‖ = phiMeasure f 1 δ x / δ ∧ (phiMeasure f 1 δ x = 0 ↔ gradient f x = 0) := by
   refine ⟨?_, ?_⟩
@@ -565,27 +720,42 @@ theorem theorem_12_1_3_i {δ : ℝ} (hδ : 0 < δ) :
       mul_div_cancel_left₀ _ hδ.ne']
   · rw [phiMeasure, Optimization.taylorMeasure_one_eq_zero_iff _ hδ, ftaylorSeries_one_eq_zero_iff]
 
-/-- **Theorem 12.1.3 (ii)** ([cartis2022evaluation], (12.1.14)): if `φ^δ_{f,2}(x) = 0` for some
-`δ > 0`, then `∇f(x) = 0` and `λ_min[∇²f(x)] ≥ 0`: `x` is a first- and second-order minimizer.
-(The converse also holds.) -/
+/-- **Theorem 12.1.3 (ii)** of [cartis2022evaluation] ((12.1.14)). Let
+$f : \mathbb{R}^n \to \mathbb{R}$, $x \in \mathbb{R}^n$ and $\delta > 0$. Then
+$\varphi^\delta_{f,2}(x) = 0$ if and only if $\nabla f(x) = 0$ and
+$\lambda_{\min}[\nabla^2 f(x)] \ge 0$, that is, if and only if $x$ is a first- and second-order
+minimizer.
+
+The source states the direction from $\varphi^\delta_{f,2}(x) = 0$; the converse also holds. No
+smoothness of $f$ is assumed, because Lean's derivatives are total functions. -/
 theorem theorem_12_1_3_ii {δ : ℝ} (hδ : 0 < δ) :
     phiMeasure f 2 δ x = 0 ↔ gradient f x = 0 ∧ 0 ≤ Chapter01.hessianMinEig f x := by
   rw [phiMeasure, Optimization.taylorMeasure_two_eq_zero_iff _ hδ, ftaylorSeries_one_eq_zero_iff]
   rfl
 
-/-- The subspace `M(x) = ker¹[∇f(x)] ∩ ker²[∇²f(x)]` of Theorem 12.1.3 (iii): the directions `d`
-with `∇f(x)[d] = 0` and `∇²f(x)[d]² = 0`. -/
+/-- The set $\mathcal{M}(x) = \ker^1[\nabla f(x)] \cap \ker^2[\nabla^2 f(x)]$ of Theorem 12.1.3
+(iii) of [cartis2022evaluation]: the directions $d$ with $\nabla f(x)[d] = 0$ and
+$\nabla^2 f(x)[d]^2 = 0$. -/
 def nullDirections (f : 𝔼 → ℝ) (x : 𝔼) : Set 𝔼 :=
   {d | iteratedFDeriv ℝ 1 f x (fun _ => d) = 0 ∧ iteratedFDeriv ℝ 2 f x (fun _ => d) = 0}
 
-/-- The projected norm `‖P_{M(x)}[∇³f(x)]‖ = sup_{d ∈ M(x), ‖d‖ ≤ 1} |∇³f(x)[d]³|` of
-Theorem 12.1.3 (iii) (the tensor norm (A.7) of the restriction to `M(x)`). -/
+/-- The projected norm of Theorem 12.1.3 (iii) of [cartis2022evaluation]:
+$$\|P_{\mathcal{M}(x)}[\nabla^3 f(x)]\| = \sup_{d \in \mathcal{M}(x), \, \|d\| \le 1} |\nabla^3
+  f(x)[d]^3|,$$
+the tensor norm (A.7) of the restriction of $\nabla^3 f(x)$ to $\mathcal{M}(x)$. -/
 noncomputable def projectedThirdNorm (f : 𝔼 → ℝ) (x : 𝔼) : ℝ :=
   sSup ((fun d => |iteratedFDeriv ℝ 3 f x (fun _ => d)|) '' {d | d ∈ nullDirections f x ∧ ‖d‖ ≤ 1})
 
-/-- **Theorem 12.1.3 (iii)** ([cartis2022evaluation], (12.1.13), (12.1.15)): for every `δ > 0`,
-`(δ³/3!) ‖P_{M(x)}[∇³f(x)]‖ ≤ φ^δ_{f,3}(x)`; consequently, if `φ^δ_{f,3}(x)/δ³ → 0` as `δ → 0⁺`,
-then `∇³f(x)[d]³ = 0` for all `d ∈ M(x)` (the third-order condition of Theorem 1.1.1). -/
+/-- **Theorem 12.1.3 (iii)** of [cartis2022evaluation] ((12.1.13), (12.1.15)). Let
+$f : \mathbb{R}^n \to \mathbb{R}$ and $x \in \mathbb{R}^n$. Then for every $\delta > 0$
+$$\frac{\delta^3}{3!} \|P_{\mathcal{M}(x)}[\nabla^3 f(x)]\| \le \varphi^\delta_{f,3}(x).$$
+Consequently, if $\varphi^\delta_{f,3}(x) / \delta^3 \to 0$ as $\delta \to 0^+$, then
+$\nabla^3 f(x)[d]^3 = 0$ for every $d \in \mathcal{M}(x)$, which is the third-order condition of
+Theorem 1.1.1.
+
+**Generalization.** With the projected norm $\sup_{d \in \mathcal{M}(x), \|d\| \le 1} |\nabla^3
+f(x)[d]^3|$ (`CartisGouldToint.Chapter12.projectedThirdNorm`), the first- and second-order
+hypotheses of the source are not needed. -/
 theorem theorem_12_1_3_iii :
     (∀ δ, 0 < δ → δ ^ 3 / 3! * projectedThirdNorm f x ≤ phiMeasure f 3 δ x) ∧
       (Tendsto (fun δ => phiMeasure f 3 δ x / δ ^ 3) (𝓝[>] 0) (𝓝 0) →
@@ -631,9 +801,12 @@ theorem theorem_12_1_3_iii :
     rw [hscale] at h0'
     exact (mul_eq_zero.1 h0').resolve_left (pow_ne_zero _ hc.ne')
 
-/-- **Theorem 12.1.4** ([cartis2022evaluation]): if `f` is `C^j` near a local minimizer `x`, then
-`φ^δ_{f,j}(x) = 0` for every `δ > 0` when `j ∈ {1, 2}` (12.1.16), and
-`φ^δ_{f,j}(x) / δ^j → 0` as `δ → 0⁺` for every `j` (12.1.17). -/
+/-- **Theorem 12.1.4** of [cartis2022evaluation]. Let $f : \mathbb{R}^n \to \mathbb{R}$ be $C^j$
+near a local minimizer $x$. Then $\varphi^\delta_{f,j}(x) = 0$ for every $\delta > 0$ if
+$j \in \{1, 2\}$ (12.1.16), and for every $j$
+$$\frac{\varphi^\delta_{f,j}(x)}{\delta^j} \to 0 \qquad \text{as } \delta \to 0^+ \quad
+  (12.1.17).$$
+-/
 theorem theorem_12_1_4 {j : ℕ} (hf : ContDiffAt ℝ j f x) (hmin : IsLocalMin f x) :
     (j ∈ Finset.Icc 1 2 → ∀ δ, 0 < δ → phiMeasure f j δ x = 0) ∧
       Tendsto (fun δ => phiMeasure f j δ x / δ ^ j) (𝓝[>] 0) (𝓝 0) :=
@@ -648,14 +821,17 @@ section Example3
 
 variable {n : ℕ}
 
-/-- The model `m(x) = -β ⟪e, x⟫ + σ ‖x‖^{p+1}/(p+1)!` of Example 12.1.3 ([cartis2022evaluation],
-(12.1.18)). -/
+/-- **Equation (12.1.18)** of [cartis2022evaluation], the model of Example 12.1.3: for
+$\beta, \sigma \in \mathbb{R}$, $p \in \mathbb{N}$ and $e \in \mathbb{R}^n$,
+$$m(x) = -\beta \langle e, x \rangle + \frac{\sigma \|x\|^{p+1}}{(p+1)!}.$$
+-/
 noncomputable def example1213Model (β σ : ℝ) (p : ℕ) (e : EuclideanSpace ℝ (Fin n))
     (x : EuclideanSpace ℝ (Fin n)) : ℝ :=
   -β * ⟪e, x⟫ + σ * ‖x‖ ^ (p + 1) / (p + 1)!
 
-/-- The radial profile `g(r) = -β r + σ r^{p+1}/(p+1)!` of the model is strictly convex on
-`[0, ∞)` and minimized at `r* = (β p!/σ)^{1/p}`. -/
+/-- Let $p \ge 1$ and $\beta, \sigma > 0$. The radial profile
+$g(r) = -\beta r + \sigma r^{p+1}/(p+1)!$ of the model of Example 12.1.3 is strictly convex on
+$[0, \infty)$, and it is minimized there at $r_* = (\beta p! / \sigma)^{1/p}$. -/
 theorem example1213_radial {p : ℕ} (hp : 1 ≤ p) {β σ : ℝ} (hβ : 0 < β) (hσ : 0 < σ) :
     StrictConvexOn ℝ (Ici 0) (fun r : ℝ => -β * r + σ * r ^ (p + 1) / (p + 1)!) ∧
       IsMinOn (fun r : ℝ => -β * r + σ * r ^ (p + 1) / (p + 1)!) (Ici 0)
@@ -690,10 +866,14 @@ theorem example1213_radial {p : ℕ} (hp : 1 ≤ p) {β σ : ℝ} (hβ : 0 < β)
       Nat.cast_one, div_one, abs_of_nonneg hr', abs_of_nonneg ht] at this
     exact this
 
-/-- The third-order Taylor decrement of the model of Example 12.1.3 along its minimizer
-((12.1.21)): with `t* = (β p!/σ)^{1/p}` and `p ≥ 2`,
-`ΔT_{m,3}(x*, α x*) = -σα² t*^{p+1}/(2!(p-1)!) - σα³ t*^{p+1}/(3!(p-2)!)`. Along the ray,
-`m((1 + u) x*) = m(x*) + ∑_{i ≥ 2} σ t*^{p+1} u^i/(i!(p+1-i)!)`. -/
+/-- The third-order Taylor decrement of the model of Example 12.1.3 along its minimizer, (12.1.21)
+of [cartis2022evaluation]. Let $p \ge 2$, $\beta, \sigma > 0$, $\|e\| = 1$,
+$t_* = (\beta p! / \sigma)^{1/p}$ and $x_* = t_* e$. Then for every $\alpha \in \mathbb{R}$
+$$\Delta T_{m,3}(x_*, \alpha x_*) = -\frac{\sigma \alpha^2 t_*^{p+1}}{2! \, (p-1)!} -
+  \frac{\sigma \alpha^3 t_*^{p+1}}{3! \, (p-2)!}.$$
+
+The proof uses the expansion $m((1 + u) x_*) = m(x_*) + \sum_{i \ge 2} \sigma t_*^{p+1} u^i /
+(i! \, (p+1-i)!)$ along the ray. -/
 theorem example1213_taylorDecrement {p : ℕ} (hp : 2 ≤ p) {β σ : ℝ} (hβ : 0 < β) (hσ : 0 < σ)
     {e : EuclideanSpace ℝ (Fin n)} (he : ‖e‖ = 1) (α : ℝ) :
     (ftaylorSeries ℝ (example1213Model β σ p e)
@@ -764,10 +944,14 @@ theorem example1213_taylorDecrement {p : ℕ} (hp : 2 ≤ p) {β σ : ℝ} (hβ 
     hc2, hc3]
   ring
 
-/-- The third-order Taylor decrement of the model of Example 12.1.3 at its minimizer `x* = e`
-(the case `‖x*‖ = 1`, i.e. `β = σ/p!`) in an arbitrary direction `d`: with `a = ⟪e, d⟫`,
-`ΔT_{m,3}(e, d) = -σ/(2 p!) (p a² + p(p-1)/3 a³ + (1 + (p-1) a)(‖d‖² - a²))`. Along the ray
-`‖e + t d‖^{p+1} = (1 + 2ta + t²‖d‖²)^{(p+1)/2}`, expanded to third order. -/
+/-- The third-order Taylor decrement of the model of Example 12.1.3 at its minimizer $x_* = e$ in an
+arbitrary direction. Let $\|e\| = 1$ and $\beta = \sigma / p!$, so that $\|x_*\| = 1$, and let
+$a = \langle e, d \rangle$. Then
+$$\Delta T_{m,3}(e, d) = -\frac{\sigma}{2 \, p!} \Bigl(p a^2 + \frac{p(p-1)}{3} a^3 + \bigl(1 +
+  (p-1) a\bigr) \bigl(\|d\|^2 - a^2\bigr)\Bigr).$$
+
+The proof expands $\|e + t d\|^{p+1} = (1 + 2 t a + t^2 \|d\|^2)^{(p+1)/2}$ to third order along
+the ray. -/
 theorem example1213_taylorDecrement_unit {p : ℕ} {σ : ℝ}
     {e : EuclideanSpace ℝ (Fin n)} (he : ‖e‖ = 1) (d : EuclideanSpace ℝ (Fin n)) :
     (ftaylorSeries ℝ (example1213Model (σ / p !) σ p e) e).taylorDecrement 3 d =
@@ -870,8 +1054,10 @@ theorem example1213_taylorDecrement_unit {p : ℕ} {σ : ℝ}
   field_simp
   ring
 
-/-- The elementary inequality behind the value of `φ^1_{m,3}(x*)` in Example 12.1.3: for `P > 4`,
-`a² + t ≤ 1` and `t ≥ 0`, `P a² + P(P-1)/3 a³ + (1 + (P-1)a) t ≥ -P(P-4)/3`. -/
+/-- The elementary inequality behind the value of $\varphi^1_{m,3}(x_*)$ in Example 12.1.3: if
+$P > 4$, $a^2 + t \le 1$ and $t \ge 0$, then
+$$P a^2 + \frac{P(P-1)}{3} a^3 + \bigl(1 + (P-1) a\bigr) t \ge -\frac{P(P-4)}{3}.$$
+-/
 theorem example1213_bound {P a t : ℝ} (hP : 4 < P) (ha : a ^ 2 + t ≤ 1) (ht : 0 ≤ t) :
     -(P * (P - 4) / 3) ≤ P * a ^ 2 + P * (P - 1) / 3 * a ^ 3 + (1 + (P - 1) * a) * t := by
   have ha1 : 0 ≤ a + 1 := by nlinarith [sq_nonneg (a + 1)]
@@ -884,17 +1070,31 @@ theorem example1213_bound {P a t : ℝ} (hP : 4 < P) (ha : a ^ 2 + t ≤ 1) (ht 
     have h1 : (1 + (P - 1) * a) * (1 - a ^ 2) ≤ (1 + (P - 1) * a) * t := by nlinarith
     nlinarith [mul_nonneg (mul_nonneg (by linarith : (0 : ℝ) ≤ P - 1) ha1) hR]
 
-/-- **Example 12.1.3** ([cartis2022evaluation], (12.1.18)–(12.1.21)). Let `p ≥ 1`, `β, σ > 0`,
-`‖e‖ = 1` and `m(x) = -β ⟪e, x⟫ + σ ‖x‖^{p+1}/(p+1)!` on `ℝⁿ`. Then:
-(i) `m` has the unique global minimizer `x* = (β p!/σ)^{1/p} e`, with
-`m(x*) = -p (p!/σ)^{1/p} β^{(p+1)/p}/(p+1)` ((12.1.19)–(12.1.20));
-(ii) for `p ≥ 2`, along `x*`,
-`ΔT_{m,3}(x*, α x*) = -σα²‖x*‖^{p+1}/(2(p-1)!) - σα³‖x*‖^{p+1}/(6(p-2)!)`
-((12.1.21));
-(iii) if `p > 4` and `‖x*‖ = 1`, then `φ^1_{m,3}(x*) = (p-4)σ/(6(p-1)!) > 0` (attained at
-`d = -x*`): (12.1.16) fails for `j = 3` with `δ = 1` although `x*` is the global minimizer;
-(iv) in one variable, `φ^δ_{m,j}(x*) = 0` for all `j ∈ [1, p]` and all radii with
-`(p - 1) δ ≤ 3 |x*|` (no restriction when `j ≤ 2`). -/
+/-- **Example 12.1.3** of [cartis2022evaluation] ((12.1.18)–(12.1.21)). Let $p \ge 1$,
+$\beta, \sigma > 0$, $e \in \mathbb{R}^n$ with $\|e\| = 1$, and $m(x) = -\beta \langle e, x
+\rangle + \sigma \|x\|^{p+1}/(p+1)!$. Let $x_* = (\beta p! / \sigma)^{1/p} e$.
+
+1. $x_*$ is the unique global minimizer of $m$, and $m(x_*) = -p \, (p!/\sigma)^{1/p}
+   \beta^{(p+1)/p} / (p+1)$ ((12.1.19)–(12.1.20)).
+2. If $p \ge 2$, then for every $\alpha \in \mathbb{R}$, $\Delta T_{m,3}(x_*, \alpha x_*) =
+   -\sigma \alpha^2 \|x_*\|^{p+1} / (2 (p-1)!) - \sigma \alpha^3 \|x_*\|^{p+1} / (6 (p-2)!)$
+   (12.1.21).
+3. If $p > 4$ and $\|x_*\| = 1$, then $\varphi^1_{m,3}(x_*) = (p-4) \sigma / (6 (p-1)!) > 0$. So
+   (12.1.16) fails for $j = 3$ and $\delta = 1$, although $x_*$ is the global minimizer.
+4. In one variable, with $m(t) = -\beta t + \sigma |t|^{p+1}/(p+1)!$ and
+   $t_* = (\beta p! / \sigma)^{1/p}$: $\varphi^\delta_{m,j}(t_*) = 0$ for every $j \in [1, p]$
+   and every $\delta$ with $j \le 2$ or $(p-1) \delta \le 3 t_*$.
+
+**Correction.** The source states part 4 in $n$ variables for radii
+$\delta \le 3 \|x_*\|/(p-1)$. Its appeal to Lemma B.4.1 for the directions orthogonal to $x_*$
+does not cover mixed directions, and the $n$-dimensional claim fails. For $p = 3$,
+$\sigma = p!$, $\|x_*\| = 1$ and $\delta = 3/2 = 3 \|x_*\|/(p-1)$, the decrement
+$\Delta T_{m,3}(x_*, d)$ is about $+0.14$ at $d \approx (-1.12, 0.28, 0.96)$, where (12.1.16)
+predicts $\varphi^\delta_{m,3}(x_*) = 0$. The decrement in every direction is
+`CartisGouldToint.Chapter12.example1213_taylorDecrement_unit`.
+
+Part 3 is the equality of the source, proved over all directions; the maximum is attained at
+$d = -x_*$. -/
 theorem example_12_1_3 {p : ℕ} (hp : 1 ≤ p) {β σ : ℝ} (hβ : 0 < β) (hσ : 0 < σ)
     {e : EuclideanSpace ℝ (Fin n)} (he : ‖e‖ = 1) :
     (IsMinOn (example1213Model β σ p e) univ ((β * p ! / σ) ^ (1 / (p : ℝ)) • e) ∧
@@ -1042,14 +1242,22 @@ variable {n : ℕ}
 
 local notation "𝔼" => EuclideanSpace ℝ (Fin n)
 
-/-- **Theorem 12.1.5 is false as printed** ([cartis2022evaluation]). Let
-`f(x) = (x₂ - x₁²)² + x₂⁶ - x₁⁷` on `ℝ²` and `j = 6`, `x = 0`. Then `f` is a polynomial (hence
-`C^∞`, with `‖∇⁷f(0)‖` bounded), `T_{f,6}(0, s) = (s₂ - s₁²)² + s₂⁶` has the isolated (strict,
-even global) minimizer `s = 0`, but `T_{f,7}(0, ·) = f` and `f(t, t²) = t¹² - t⁷ < 0` for
-`t ∈ (0, 1)`: the origin is neither an isolated minimizer of `T_{f,7}(0, ·)` nor a local
-minimizer of `f`. In particular the printed statement fails. (The printed proof chooses `|α|`
-small for each direction separately; the radius is not uniform. `theorem_12_1_5` is the
-corrected statement.) -/
+/-- **Theorem 12.1.5** of [cartis2022evaluation], counterexample: the printed statement is false.
+Let $f(x) = (x_2 - x_1^2)^2 + x_2^6 - x_1^7$ on $\mathbb{R}^2$, $j = 6$ and $x = 0$. Then:
+
+1. $f$ is $C^\infty$, since it is a polynomial;
+2. $T_{f,6}(0, s) = (s_2 - s_1^2)^2 + s_2^6$, and $s = 0$ is a strict local minimizer of
+   $T_{f,6}(0, \cdot)$;
+3. $T_{f,7}(0, \cdot) = f$, and $f(t, t^2) = t^{12} - t^7 < 0$ for every $t \in (0, 1)$;
+4. the origin is not a local minimizer of $f$, so it is not an isolated minimizer of
+   $T_{f,7}(0, \cdot)$ either.
+
+Hence the printed statement fails: it is not true that, for every $C^7$ function $g$ and every
+$L$, if $s = 0$ is a strict local minimizer of $T_{g,6}(0, \cdot)$ and
+$\|\nabla^7 g(0)\| \le L$, then the origin is a local minimizer of $g$.
+
+The printed proof chooses $|\alpha|$ small for each direction separately, so the radius is not
+uniform. The corrected statement is `CartisGouldToint.Chapter12.theorem_12_1_5`. -/
 theorem theorem_12_1_5_counterexample :
     let f : EuclideanSpace ℝ (Fin 2) → ℝ := fun x => (x 1 - x 0 ^ 2) ^ 2 + x 1 ^ 6 - x 0 ^ 7
     ContDiff ℝ ∞ f ∧
@@ -1117,12 +1325,19 @@ theorem theorem_12_1_5_counterexample :
   refine ⟨hf, hT6, hstrict, hT7, hneg, hnotmin, fun h => hnotmin ?_⟩
   exact h f _ (hf.of_le (by simp)) hstrict le_rfl
 
-/-- **Theorem 12.1.5** ([cartis2022evaluation]), corrected. Let `f` be `C^{j+1}` near `x` with
-`‖∇^{j+1} f(x)‖ ≤ L`, and suppose that `s = 0` is a *uniformly* isolated minimizer of
-`T_{f,j}(x, ·)`: `c ‖s‖^j ≤ T_{f,j}(x, s) - f(x)` for `‖s‖ ≤ r`, with `c, r > 0`. Then `s = 0` is
-an isolated (strict) local minimizer of `T_{f,j+1}(x, ·)` and `x` is an isolated local minimizer
-of `f`. (As printed, with "isolated minimizer of `T_{f,j}(x, ·)`" only, the theorem is false:
-`theorem_12_1_5_counterexample`.) -/
+/-- **Theorem 12.1.5** of [cartis2022evaluation]. Let $f : \mathbb{R}^n \to \mathbb{R}$ be $C^{j+1}$
+near $x$ with $\|\nabla^{j+1} f(x)\| \le L$, and suppose that $s = 0$ is a uniformly isolated
+minimizer of $T_{f,j}(x, \cdot)$: there are $c > 0$ and $r > 0$ with
+$$c \|s\|^j \le T_{f,j}(x, s) - f(x) \qquad \text{for every } \|s\| \le r.$$
+Then $s = 0$ is a strict local minimizer of $T_{f,j+1}(x, \cdot)$, and $x$ is a strict local
+minimizer of $f$.
+
+**Correction.** The source assumes only that $s = 0$ is an isolated minimizer of
+$T_{f,j}(x, \cdot)$. With this hypothesis the theorem is false: see
+`CartisGouldToint.Chapter12.theorem_12_1_5_counterexample`. The growth condition of order $j$
+makes the isolation uniform.
+
+A strict local minimizer is `Optimization.IsStrictLocalMinOn` on the whole space. -/
 theorem theorem_12_1_5 {f : 𝔼 → ℝ} {x : 𝔼} {j : ℕ} {L c r : ℝ}
     (hf : ContDiffAt ℝ (j + 1) f x) (hL : ‖iteratedFDeriv ℝ (j + 1) f x‖ ≤ L) (hc : 0 < c)
     (hr : 0 < r) (hgrowth : ∀ s : 𝔼, ‖s‖ ≤ r → c * ‖s‖ ^ j ≤ taylorPolynomial f j x s - f x) :
@@ -1148,22 +1363,32 @@ local notation "𝔼" => EuclideanSpace ℝ (Fin n)
 
 variable {f : EuclideanSpace ℝ (Fin n) → ℝ} {x : EuclideanSpace ℝ (Fin n)}
 
-/-- **Key Definition (12.1.25)** ([cartis2022evaluation]): given tolerances
-`ε = (ε_1, …, ε_q) ∈ (0, 1]^q` and optimality radii `δ = (δ_1, …, δ_q) ∈ (0, 1]^q`, `x` is an
-*`(ε, δ)`-approximate `q`-th order minimizer* of `f` when `φ^{δ_j}_{f,j}(x) ≤ ε_j δ_j^j / j!` for
-all `j ∈ [1, q]`. -/
+/-- **Definition (12.1.25)** of [cartis2022evaluation] (a key definition of the book). Let
+$q \in \mathbb{N}$, let $\epsilon = (\epsilon_1, \dots, \epsilon_q)$ be tolerances and
+$\delta = (\delta_1, \dots, \delta_q)$ optimality radii. A point $x \in \mathbb{R}^n$ is an
+**$(\epsilon, \delta)$-approximate $q$-th order minimizer** of $f$ if $\epsilon_j \in (0, 1]$
+and $\delta_j \in (0, 1]$ for every $j \in [1, q]$, and
+$$\varphi^{\delta_j}_{f,j}(x) \le \frac{\epsilon_j \delta_j^j}{j!} \qquad \text{for every } j
+  \in [1, q].$$
+
+The tolerances and radii are sequences `ε δ : ℕ → ℝ`, of which only the entries $1, \dots, q$
+matter. The condition on the measures is `Optimization.IsEpsDeltaApprox` on the whole space. -/
 def IsEpsDeltaApproxMinimizer (f : 𝔼 → ℝ) (q : ℕ) (ε δ : ℕ → ℝ) (x : 𝔼) : Prop :=
   (∀ j ∈ Finset.Icc 1 q, ε j ∈ Ioc 0 1 ∧ δ j ∈ Ioc 0 1) ∧
     Optimization.IsEpsDeltaApprox (ftaylorSeries ℝ f x) univ q ε δ
 
+/-- A point $x$ is an $(\epsilon, \delta)$-approximate $q$-th order minimizer of $f$ if and only if
+$\epsilon_j, \delta_j \in (0, 1]$ and $\varphi^{\delta_j}_{f,j}(x) \le \epsilon_j \delta_j^j /
+j!$ for every $j \in [1, q]$. -/
 theorem isEpsDeltaApproxMinimizer_iff {q : ℕ} {ε δ : ℕ → ℝ} :
     IsEpsDeltaApproxMinimizer f q ε δ x ↔
       (∀ j ∈ Finset.Icc 1 q, ε j ∈ Ioc 0 1 ∧ δ j ∈ Ioc 0 1) ∧
         ∀ j ∈ Finset.Icc 1 q, phiMeasure f j (δ j) x ≤ ε j * δ j ^ j / j ! := by
   rw [IsEpsDeltaApproxMinimizer, Optimization.isEpsDeltaApprox_iff]
 
-/-- **Nested optimality** ([cartis2022evaluation], after Theorem 12.1.7): an `(ε, δ)`-approximate
-`q`-th order minimizer is an `(ε, δ)`-approximate `q'`-th order minimizer for every `q' ≤ q`. -/
+/-- Nested optimality, after Theorem 12.1.7 of [cartis2022evaluation]: an
+$(\epsilon, \delta)$-approximate $q$-th order minimizer is an $(\epsilon, \delta)$-approximate
+$q'$-th order minimizer for every $q' \le q$. -/
 theorem IsEpsDeltaApproxMinimizer.mono {q q' : ℕ} {ε δ : ℕ → ℝ}
     (h : IsEpsDeltaApproxMinimizer f q ε δ x) (hq : q' ≤ q) :
     IsEpsDeltaApproxMinimizer f q' ε δ x := by
@@ -1171,17 +1396,27 @@ theorem IsEpsDeltaApproxMinimizer.mono {q q' : ℕ} {ε δ : ℕ → ℝ}
   exact ⟨fun j hj => h.1 j (Finset.Icc_subset_Icc_right hq hj),
     fun j hj => h.2 j (Finset.Icc_subset_Icc_right hq hj)⟩
 
-/-- **Theorem 12.1.6 (i)** ([cartis2022evaluation], (12.1.22)): if `δ₁ > 0` and
-`φ^{δ₁}_{f,1}(x) ≤ ε₁ δ₁`, then `‖∇f(x)‖ ≤ ε₁`. -/
+/-- **Theorem 12.1.6 (i)** of [cartis2022evaluation] ((12.1.22)). Let
+$f : \mathbb{R}^n \to \mathbb{R}$, $x \in \mathbb{R}^n$, $\epsilon_1 \in \mathbb{R}$ and
+$\delta_1 > 0$. If $\varphi^{\delta_1}_{f,1}(x) \le \epsilon_1 \delta_1$, then
+$\|\nabla f(x)\| \le \epsilon_1$. -/
 theorem theorem_12_1_6_i {ε₁ δ₁ : ℝ} (hδ : 0 < δ₁) (h : phiMeasure f 1 δ₁ x ≤ ε₁ * δ₁) :
     ‖gradient f x‖ ≤ ε₁ := by
   rw [(theorem_12_1_3_i hδ).1, div_le_iff₀ hδ]
   exact h
 
-/-- **Theorem 12.1.6 (ii)** ([cartis2022evaluation], (12.1.23), (12.1.28)), with an explicit
-constant: if `δ > 0`, `ε₂ ≥ 0` and `φ^δ_{f,2}(x) ≤ ε₂ δ²/2`, then `λ_min[∇²f(x)] ≥ -ε₂` and
-`‖∇f(x)‖² ≤ δ² ε₂ max(‖∇²f(x)‖, ε₂)`; hence, for `ε₂ ≤ 1`, `‖∇f(x)‖ ≤ δ κ(x) √ε₂` with
-`κ(x) = √(max(‖∇²f(x)‖, 1))`. -/
+/-- **Theorem 12.1.6 (ii)** of [cartis2022evaluation] ((12.1.23), (12.1.28)). Let
+$f : \mathbb{R}^n \to \mathbb{R}$, $x \in \mathbb{R}^n$, $\delta > 0$ and $\epsilon_2 \ge 0$. If
+$\varphi^\delta_{f,2}(x) \le \epsilon_2 \delta^2 / 2$, then
+$\lambda_{\min}[\nabla^2 f(x)] \ge -\epsilon_2$ and
+$$\|\nabla f(x)\|^2 \le \delta^2 \epsilon_2 \max\bigl(\|\nabla^2 f(x)\|, \epsilon_2\bigr).$$
+Hence, if also $\epsilon_2 \le 1$, then $\|\nabla f(x)\| \le \delta \, \kappa(x)
+\sqrt{\epsilon_2}$ with $\kappa(x) = \sqrt{\max(\|\nabla^2 f(x)\|, 1)}$.
+
+**Correction.** The source assumes that $f$ is continuously differentiable, which does not make
+$\nabla^2 f(x)$ meaningful; in classical terms the statement needs $f \in C^2$. The source also
+leaves the constant $\kappa(x)$ implicit; it is made explicit here. The formal statement needs
+no smoothness hypothesis, because Lean's derivatives are total functions. -/
 theorem theorem_12_1_6_ii {ε₂ δ : ℝ} (hδ : 0 < δ) (hε : 0 ≤ ε₂)
     (h : phiMeasure f 2 δ x ≤ ε₂ * δ ^ 2 / 2) :
     -ε₂ ≤ Chapter01.hessianMinEig f x ∧
@@ -1200,10 +1435,19 @@ theorem theorem_12_1_6_ii {ε₂ δ : ℝ} (hδ : 0 < δ) (hε : 0 ≤ ε₂)
       _ = _ := by ring
   exact (pow_le_pow_iff_left₀ (norm_nonneg _) (by positivity) two_ne_zero).1 h3
 
-/-- **Theorem 12.1.7** ([cartis2022evaluation], proof in Appendix B): cascading approximate
-optimality. Let `j ≥ 2`, `ε_j, δ_j ∈ (0, 1]`, `ε_j ≤ ε_{j-1}`, `φ^{δ_j}_{f,j}(x) ≤ ε_j δ_j^j/j!`
-(12.1.30) and `2 δ_j ‖∇^j f(x)‖ ≤ j ε_j` (the book's `δ_j ≤ jε_j/(2‖∇^j f(x)‖)`). Then
-`φ^{δ_j}_{f,j-1}(x) ≤ ε_{j-1} δ_j^{j-1}/(j-1)!` (12.1.31). -/
+/-- **Theorem 12.1.7** of [cartis2022evaluation] (cascading approximate optimality; the proof is in
+Appendix B). Let $f : \mathbb{R}^n \to \mathbb{R}$, $x \in \mathbb{R}^n$ and $j \ge 2$. Let
+$\epsilon_j, \delta_j \in (0, 1]$ with $\epsilon_j \le \epsilon_{j-1}$, suppose that
+$\varphi^{\delta_j}_{f,j}(x) \le \epsilon_j \delta_j^j / j!$ (12.1.30), and suppose that
+$2 \delta_j \|\nabla^j f(x)\| \le j \epsilon_j$. Then
+$$\varphi^{\delta_j}_{f,j-1}(x) \le \frac{\epsilon_{j-1} \delta_j^{j-1}}{(j-1)!} \qquad
+  (12.1.31).$$
+
+**Generalization.** The source writes the last hypothesis as $\delta_j \le j \epsilon_j / (2
+\|\nabla^j f(x)\|)$. The multiplicative form also allows $\nabla^j f(x) = 0$.
+
+**Typo.** The recursive use of the theorem after its statement needs
+$\epsilon_q \le \dots \le \epsilon_1$; the printed chain is reversed. -/
 theorem theorem_12_1_7 {j : ℕ} {ε : ℕ → ℝ} {δ : ℝ} (hj : 2 ≤ j) (hε : ε j ∈ Ioc 0 1)
     (hδ : δ ∈ Ioc 0 1) (hεε : ε j ≤ ε (j - 1)) (h : phiMeasure f j δ x ≤ ε j * δ ^ j / j !)
     (hδε : 2 * δ * ‖iteratedFDeriv ℝ j f x‖ ≤ j * ε j) :
@@ -1217,10 +1461,11 @@ theorem theorem_12_1_7 {j : ℕ} {ε : ℕ → ℝ} {δ : ℝ} (hj : 2 ≤ j) (h
   push_cast at hδε
   linarith
 
-/-- **Example 12.1.4** ([cartis2022evaluation]): for `f(t) = t⁴/24` and `x ≠ 0`,
-`φ^{|x|}_{f,4}(x) = x⁴/24` (the optimality displacement is `d = -x`). Hence (12.1.25) at order `4`
-with radius `δ₄ = |x|` holds iff `ε₄ ≥ 1`: with radii shrinking like `|x_k|`, no iterate
-`x_k ≠ 0` is detected as approximately optimal for `ε₄ < 1`. -/
+/-- **Example 12.1.4** of [cartis2022evaluation]. Let $f(t) = t^4/24$ on $\mathbb{R}$ and
+$x \neq 0$. Then $\varphi^{|x|}_{f,4}(x) = x^4/24$, attained at the displacement $d = -x$. Hence
+(12.1.25) at order $4$ with the radius $\delta_4 = |x|$, that is $\varphi^{|x|}_{f,4}(x) \le
+\epsilon_4 |x|^4 / 4!$, holds if and only if $\epsilon_4 \ge 1$. So, with radii that shrink like
+$|x_k|$, no iterate $x_k \neq 0$ is detected as approximately optimal for $\epsilon_4 < 1$. -/
 theorem example_12_1_4 {x : ℝ} (hx : x ≠ 0) :
     phiMeasure (fun t : ℝ => t ^ 4 / 24) 4 |x| x = x ^ 4 / 24 ∧
       ∀ ε₄ : ℝ, (phiMeasure (fun t : ℝ => t ^ 4 / 24) 4 |x| x ≤ ε₄ * |x| ^ 4 / 4! ↔ 1 ≤ ε₄) := by
@@ -1257,12 +1502,19 @@ variable {n : ℕ}
 
 local notation "𝔼" => EuclideanSpace ℝ (Fin n)
 
-/-- **Theorem 12.1.8** ([cartis2022evaluation]): stability of approximate minimizers. Let `f` be
-`C^j` on an open ball `B(x, r)` with `r > δ_j`, `∇^j f` Lipschitz with constant `L ≥ 0` on it,
-and `φ^{δ_j}_{f,j}(x) ≤ ε_j δ_j^j / j!` (12.1.34) (the book's `δ_j, ε_j ∈ (0, 1]` are not
-needed). If `L > 0`, then `f(x + d) ≥ f(x) - 2 ε_j δ_j^j / j!` whenever
-`‖d‖ ≤ min(δ_j, (j+1) ε_j / L)` (12.1.35); if
-`L = 0`, `f(x + d) ≥ f(x) - ε_j δ_j^j / j!` whenever `‖d‖ ≤ δ_j` (12.1.36). -/
+/-- **Theorem 12.1.8** of [cartis2022evaluation] (stability of approximate minimizers). Let
+$f : \mathbb{R}^n \to \mathbb{R}$, $x \in \mathbb{R}^n$, $\delta_j < r$, and let $f$ be $C^j$ on
+the open ball $B(x, r)$ with $\nabla^j f$ Lipschitz continuous on it with constant $L \ge 0$.
+Suppose that $\varphi^{\delta_j}_{f,j}(x) \le \epsilon_j \delta_j^j / j!$ (12.1.34).
+
+1. If $L > 0$, then $f(x + d) \ge f(x) - 2 \epsilon_j \delta_j^j / j!$ for every $d$ with
+   $\|d\| \le \min(\delta_j, (j+1) \epsilon_j / L)$ (12.1.35).
+2. If $L = 0$, then $f(x + d) \ge f(x) - \epsilon_j \delta_j^j / j!$ for every $d$ with
+   $\|d\| \le \delta_j$ (12.1.36).
+
+**Typo.** The source prints $\delta^j$ in (12.1.35); it is $\delta_j^j$.
+
+**Generalization.** The source's hypotheses $\delta_j, \epsilon_j \in (0, 1]$ are not needed. -/
 theorem theorem_12_1_8 {f : 𝔼 → ℝ} {x : 𝔼} {j : ℕ} {r L ε δ : ℝ}
     (hf : ContDiffOn ℝ j f (ball x r)) (hr : δ < r) (hL0 : 0 ≤ L)
     (hL : IteratedFDerivLipschitzOn f j L (ball x r)) (h : phiMeasure f j δ x ≤ ε * δ ^ j / j !) :

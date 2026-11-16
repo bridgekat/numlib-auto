@@ -7,53 +7,96 @@ import Mathlib.Analysis.InnerProductSpace.PiL2
 import Numlib.Optimization.Optimality.ConstrainedMeasure
 
 /-!
-# Cartis–Gould–Toint §6.1: Problems with convex constraints
+# Cartis, Gould and Toint, Section 6.1: Problems with convex constraints
 
-Surface file for C. Cartis, N. I. M. Gould and Ph. L. Toint, *Evaluation Complexity of
-Algorithms for Nonconvex Optimization* [cartis2022evaluation], §6.1: the standing assumption
-C.CNe on the constraint set `𝒞 ⊆ ℝⁿ` (`ℝⁿ = EuclideanSpace ℝ (Fin n)`) of the problem
-`minimize_{x ∈ 𝒞} f(x)` (6.1.1), and the approximate first- to third-order criticality measures
-of §6.1.1.
+This module formalizes Section 6.1 of [cartis2022evaluation]. The problem is
+$\min_{x \in \mathcal{C}} f(x)$ (6.1.1) for a smooth $f : \mathbb{R}^n \to \mathbb{R}$ and a set
+$\mathcal{C} \subseteq \mathbb{R}^n$. The section states the standing assumption C.CNe that
+$\mathcal{C}$ is closed, convex and nonempty, and it defines approximate criticality measures of
+orders one to three. With the feasible steps $\mathcal{C}(x) = \{d \mid x + d \in \mathcal{C}\}$
+(6.1.2) and the Euclidean unit ball $\mathcal{B}$ (6.1.3), the measures are
+$$\omega_{f,\mathcal{C},1}(x) = -\min_{d \in \mathcal{C}(x) \cap \mathcal{B}} \nabla^1 f(x)[d],
+  \qquad \omega_{f,\mathcal{C},2}(x, \alpha) = -\min_{d \in \mathcal{C}^1(x, \alpha) \cap
+  \mathcal{B}} \nabla^2 f(x)[d]^2,$$
+$$\omega_{f,\mathcal{C},3}(x, \alpha_1, \alpha_2) = -\min_{d \in \mathcal{C}^2(x, \alpha_1,
+  \alpha_2) \cap \mathcal{B}} \nabla^3 f(x)[d]^3,$$
+where $\mathcal{C}^1(x, \alpha) = \{d \in \mathcal{C}(x) \mid |\nabla^1 f(x)[d]| \le \tau_1
+\alpha\}$ (6.1.8) and $\mathcal{C}^2(x, \alpha_1, \alpha_2) = \{d \in \mathcal{C}^1(x, \alpha_1)
+\mid |\nabla^2 f(x)[d]^2| \le \tau_2 \alpha_2\}$ (6.1.10). A point $x \in \mathcal{C}$ is an
+approximate minimizer of order $q$ when the first $q$ measures are below the tolerances (6.1.4),
+(6.1.6).
 
-All measures are instances of the backbone `Optimization.formCriticality A T`, the supremum of
-`-A[d]^j` over the displacements `d ∈ T` with `‖d‖ ≤ 1` (the book's `-min_{d ∈ T ∩ 𝓑} A[d]^j`,
-with `𝓑` the Euclidean unit ball (6.1.3)), where `A = ∇^j f(x)` is
-`iteratedFDeriv ℝ j f x`. The feasible steps `𝒞(x)` (6.1.2) are `Optimization.feasibleSteps C x`
-and the restricted sets (6.1.8), (6.1.10) are `Optimization.restrictedSteps`.
+All measures are instances of the backbone `Optimization.formCriticality`, and the restricted sets
+are instances of `Optimization.restrictedSteps` from
+`Numlib.Optimization.Optimality.ConstrainedMeasure`.
 
 ## Main definitions
 
-* `AssumptionCNe C` — C.CNe: `𝒞` is closed, convex and nonempty.
-* `omega1 f C x` — `ω_{f,𝒞,1}(x)` (6.1.5).
-* `restrictedSteps₁ f C τ₁ α x` — `𝒞¹(x, α)` (6.1.8).
-* `omega2 f C τ₁ x α` — `ω_{f,𝒞,2}(x, α)` (6.1.7).
-* `restrictedSteps₂ f C τ₁ τ₂ α₁ α₂ x` — `𝒞²(x, α₁, α₂)` (6.1.10).
-* `omega3 f C τ₁ τ₂ x α₁ α₂` — `ω_{f,𝒞,3}(x, α₁, α₂)` (6.1.9).
-* `IsApproxMinimizerCC f C τ₁ τ₂ q ε₁ ε₂ ε₃ x` — `x` is an approximate `q`-th order minimizer
-  of `f` within `𝒞`, (6.1.4), (6.1.6) and the third-order condition, `q ∈ {1, 2, 3}`.
+* Assumption C.CNe, `CartisGouldToint.Chapter06.AssumptionCNe`: $\mathcal{C}$ is closed, convex and
+  nonempty.
+* Equations (6.1.4) and (6.1.6), `CartisGouldToint.Chapter06.IsApproxMinimizerCC`: $x$ is an
+  approximate minimizer of order $q \in \{1, 2, 3\}$ of $f$ within $\mathcal{C}$.
+* Equation (6.1.5), `CartisGouldToint.Chapter06.omega1`: the first-order measure
+  $\omega_{f,\mathcal{C},1}(x)$.
+* Equation (6.1.7), `CartisGouldToint.Chapter06.omega2`: the second-order measure
+  $\omega_{f,\mathcal{C},2}(x, \alpha)$.
+* Equation (6.1.8), `CartisGouldToint.Chapter06.restrictedSteps₁`: the restricted set
+  $\mathcal{C}^1(x, \alpha)$.
+* Equation (6.1.9), `CartisGouldToint.Chapter06.omega3`: the third-order measure
+  $\omega_{f,\mathcal{C},3}(x, \alpha_1, \alpha_2)$.
+* Equation (6.1.10), `CartisGouldToint.Chapter06.restrictedSteps₂`: the restricted set
+  $\mathcal{C}^2(x, \alpha_1, \alpha_2)$.
 
 ## Main results
 
-* `omega1_nonneg`, `omega2_nonneg`, `omega3_nonneg` — the measures are nonnegative at feasible
-  points (the "`≥ 0`" of (6.1.5), (6.1.7), (6.1.9)).
-* `exists_omega1_eq` — the minimum in (6.1.5) is attained.
-* `omega1_eq_zero_iff` — `ω_{f,𝒞,1}(x) = 0` iff `x` satisfies the first-order condition (1.1.6)
-  of Theorem 1.1.2.
-* `omega1_univ`, `isApproxMinimizerCC_one_univ_iff` — without constraints the first-order measure
-  is `‖∇f(x)‖` and the first-order test is `‖∇f(x)‖ ≤ ε₁`.
-* `not_assumptionCNe_imp_exists_minimizer` — C.CNe alone does not ensure that (6.1.1) has a
-  solution.
+* `CartisGouldToint.Chapter06.not_assumptionCNe_imp_exists_minimizer`: C.CNe alone does not ensure
+  that (6.1.1) has a solution.
+* `CartisGouldToint.Chapter06.omega1_nonneg`, `CartisGouldToint.Chapter06.omega2_nonneg`,
+  `CartisGouldToint.Chapter06.omega3_nonneg`: the three measures are nonnegative at feasible points.
+* `CartisGouldToint.Chapter06.exists_omega1_eq`: under C.CNe the minimum in (6.1.5) is attained.
+* `CartisGouldToint.Chapter06.omega1_eq_zero_iff`: on a convex set,
+  $\omega_{f,\mathcal{C},1}(x) = 0$ if and only if $x$ satisfies the first-order condition (1.1.6).
+* `CartisGouldToint.Chapter06.omega1_univ`,
+  `CartisGouldToint.Chapter06.isApproxMinimizerCC_one_univ_iff`: without constraints the first-order
+  measure is $\|\nabla f(x)\|$, and the first-order test is $\|\nabla f(x)\| \le \epsilon_1$.
 
-## Deviations from the book
+## Conventions
 
-* (6.1.5) and (6.1.9) are printed as `min … ≥ 0` without the leading minus sign; the minus sign
-  is meant (compare (6.1.7), (6.2.3)–(6.2.5) and the claimed nonnegativity) and is used here.
-* The book claims that C.CNe "ensures that (6.1.1) has a solution". This is false without further
-  assumptions on `f` (e.g. `𝒞 = ℝ`, `f(x) = x`): `not_assumptionCNe_imp_exists_minimizer`.
-* The book requires approximate minimizers to lie "within `𝒞`"; this is the explicit condition
-  `x ∈ C` of `IsApproxMinimizerCC` (for `x ∉ C` the measures carry no information).
-* The remarks on the (dis)continuity of `ω_{f,𝒞,2}(x, 0)`, on computational cost and on norms other
-  than the Euclidean one are not formalized.
+* $\mathbb{R}^n$ is `EuclideanSpace ℝ (Fin n)`.
+* $\nabla^j f(x)$ is `iteratedFDeriv ℝ j f x`.
+* The order $q$ of the sought minimizer is explicit, in place of the infinite tolerances of the
+  source: $\epsilon_2 = \epsilon_3 = \infty$ is $q = 1$, and $\epsilon_3 = \infty$ is $q = 2$.
+
+## Implementation notes
+
+* The minimum $-\min_{d \in T \cap \mathcal{B}} A[d]^j$ is `Optimization.formCriticality A T`, the
+  supremum `sSup` in $\mathbb{R}$ of $-A[d]^j$ over $d \in T$ with $\|d\| \le 1$. Under C.CNe the
+  supremum in $\omega_{f,\mathcal{C},1}(x)$ is attained at feasible points
+  (`CartisGouldToint.Chapter06.exists_omega1_eq`). If no $d \in T$ has $\|d\| \le 1$, the value is
+  $0$. For $T = \mathcal{C}(x)$ this happens only for $x \notin \mathcal{C}$, and for the restricted
+  sets also when $\tau_1 \alpha < 0$ or $\tau_2 \alpha_2 < 0$; the measures carry no information in
+  these cases.
+* The feasible steps $\mathcal{C}(x)$ are `Optimization.feasibleSteps C x`.
+
+## Deviations from the source
+
+* **Equations (6.1.5) and (6.1.9)** (typo). The source prints the measures without the leading minus
+  sign; the minus sign is meant and is used here. See `CartisGouldToint.Chapter06.omega1` and
+  `CartisGouldToint.Chapter06.omega3`.
+* **Start of Section 6.1** (correction). The source claims that C.CNe ensures that (6.1.1) has a
+  solution. This is false: $f(x) = x$ on $\mathcal{C} = \mathbb{R}$ has no minimizer. See
+  `CartisGouldToint.Chapter06.not_assumptionCNe_imp_exists_minimizer`.
+* **Equations (6.1.4) and (6.1.6)** (reading). The source asks for approximate minimizers "within
+  $\mathcal{C}$"; this is the explicit condition $x \in \mathcal{C}$. See
+  `CartisGouldToint.Chapter06.IsApproxMinimizerCC`.
+* **Order of the sought minimizer** (reading). An explicit $q \in \{1, 2, 3\}$ replaces the infinite
+  tolerances. See `CartisGouldToint.Chapter06.IsApproxMinimizerCC`.
+
+## Not formalized
+
+* The remarks on the continuity and discontinuity of $\omega_{f,\mathcal{C},2}(x, 0)$.
+* The remarks on computational cost.
+* The remarks on norms other than the Euclidean norm.
 -/
 
 open Set Metric
@@ -66,23 +109,28 @@ variable {n : ℕ}
 set_option hygiene false in
 local notation "ℝⁿ" => EuclideanSpace ℝ (Fin n)
 
-/-- **Assumption C.CNe** of [cartis2022evaluation] (§6.1): the constraint set `𝒞 ⊆ ℝⁿ` is closed,
-convex and nonempty. -/
+/-- **Assumption C.CNe** of [cartis2022evaluation]. A set $\mathcal{C} \subseteq \mathbb{R}^n$
+satisfies C.CNe if it is closed, convex and nonempty. -/
 structure AssumptionCNe (C : Set ℝⁿ) : Prop where
-  /-- `𝒞` is closed. -/
+  /-- The set $\mathcal{C}$ is closed. -/
   isClosed : IsClosed C
-  /-- `𝒞` is convex. -/
+  /-- The set $\mathcal{C}$ is convex. -/
   convex : Convex ℝ C
-  /-- `𝒞` is nonempty. -/
+  /-- The set $\mathcal{C}$ is nonempty. -/
   nonempty : C.Nonempty
 
+/-- A set satisfies C.CNe if and only if it is closed, convex and nonempty. -/
 theorem assumptionCNe_iff {C : Set ℝⁿ} :
     AssumptionCNe C ↔ IsClosed C ∧ Convex ℝ C ∧ C.Nonempty :=
   ⟨fun h => ⟨h.isClosed, h.convex, h.nonempty⟩, fun ⟨h₁, h₂, h₃⟩ => ⟨h₁, h₂, h₃⟩⟩
 
-/-- C.CNe alone does not ensure that the problem (6.1.1) has a solution, contrary to the claim
-at the start of §6.1 of [cartis2022evaluation]: on `𝒞 = ℝ` (which satisfies C.CNe) the smooth
-function `f(x) = x` has no minimizer. -/
+/-- **Section 6.1** of [cartis2022evaluation], claim that C.CNe ensures a solution, refuted. It is
+not true that for every set $\mathcal{C} \subseteq \mathbb{R}^1$ that satisfies C.CNe and every
+infinitely differentiable $f : \mathbb{R}^1 \to \mathbb{R}$ there is $x \in \mathcal{C}$ that
+minimizes $f$ over $\mathcal{C}$.
+
+**Correction.** The source claims at the start of Section 6.1 that C.CNe ensures that (6.1.1)
+has a solution. The counterexample is $\mathcal{C} = \mathbb{R}$ and $f(x) = x$. -/
 theorem not_assumptionCNe_imp_exists_minimizer :
     ¬ ∀ (C : Set (EuclideanSpace ℝ (Fin 1))) (f : EuclideanSpace ℝ (Fin 1) → ℝ),
       AssumptionCNe C → ContDiff ℝ ⊤ f → ∃ x ∈ C, IsMinOn f C x := by
@@ -93,46 +141,95 @@ theorem not_assumptionCNe_imp_exists_minimizer :
   simp at this
   linarith
 
-/-- The first-order criticality measure (6.1.5) of [cartis2022evaluation],
-`ω_{f,𝒞,1}(x) = -min_{d ∈ 𝒞(x) ∩ 𝓑} ⟨d, ∇¹f(x)⟩` (with the minus sign that the book omits). -/
+/-- **Equation (6.1.5)** of [cartis2022evaluation]. Let $f : \mathbb{R}^n \to \mathbb{R}$,
+$\mathcal{C} \subseteq \mathbb{R}^n$ and $x \in \mathbb{R}^n$. The **first-order criticality
+measure** is
+$$\omega_{f,\mathcal{C},1}(x) = -\min_{d \in \mathcal{C}(x) \cap \mathcal{B}} \nabla^1
+  f(x)[d],$$
+where $\mathcal{C}(x) = \{d \mid x + d \in \mathcal{C}\}$ and $\mathcal{B}$ is the closed
+Euclidean unit ball.
+
+**Typo.** The source prints the measure without the leading minus sign. The minus sign is meant,
+as the comparison with (6.1.7) and (6.2.3)–(6.2.5) and the claimed nonnegativity show.
+
+The minimum is the supremum `Optimization.formCriticality` of $-\nabla^1 f(x)[d]$ over
+`Optimization.feasibleSteps C x`; it is $0$ if no feasible step lies in $\mathcal{B}$. -/
 noncomputable def omega1 (f : ℝⁿ → ℝ) (C : Set ℝⁿ) (x : ℝⁿ) : ℝ :=
   Optimization.formCriticality (iteratedFDeriv ℝ 1 f x) (Optimization.feasibleSteps C x)
 
+/-- The measure $\omega_{f,\mathcal{C},1}(x)$ is `Optimization.formCriticality` of $\nabla^1 f(x)$
+over the feasible steps $\mathcal{C}(x)$. -/
 theorem omega1_def (f : ℝⁿ → ℝ) (C : Set ℝⁿ) (x : ℝⁿ) :
     omega1 f C x =
       Optimization.formCriticality (iteratedFDeriv ℝ 1 f x) (Optimization.feasibleSteps C x) :=
   rfl
 
-/-- The set of first-order `α`-restricted feasible steps (6.1.8) of [cartis2022evaluation],
-`𝒞¹(x, α) = {d ∈ 𝒞(x) | |⟨d, ∇¹f(x)⟩| ≤ τ₁ α}`. -/
+/-- **Equation (6.1.8)** of [cartis2022evaluation]. Let $f : \mathbb{R}^n \to \mathbb{R}$,
+$\mathcal{C} \subseteq \mathbb{R}^n$, $\tau_1, \alpha \in \mathbb{R}$ and $x \in \mathbb{R}^n$.
+The set of **first-order $\alpha$-restricted feasible steps** is
+$$\mathcal{C}^1(x, \alpha) = \{d \in \mathcal{C}(x) \mid |\nabla^1 f(x)[d]| \le \tau_1
+  \alpha\}.$$
+-/
 noncomputable def restrictedSteps₁ (f : ℝⁿ → ℝ) (C : Set ℝⁿ) (τ₁ α : ℝ) (x : ℝⁿ) : Set ℝⁿ :=
   Optimization.restrictedSteps (iteratedFDeriv ℝ 1 f x) (τ₁ * α) (Optimization.feasibleSteps C x)
 
-/-- The second-order criticality measure (6.1.7) of [cartis2022evaluation],
-`ω_{f,𝒞,2}(x, α) = -min_{d ∈ 𝒞¹(x, α) ∩ 𝓑} ⟨d, ∇²f(x) d⟩`. -/
+/-- **Equation (6.1.7)** of [cartis2022evaluation]. Let $f : \mathbb{R}^n \to \mathbb{R}$,
+$\mathcal{C} \subseteq \mathbb{R}^n$, $\tau_1, \alpha \in \mathbb{R}$ and $x \in \mathbb{R}^n$.
+The **second-order criticality measure** is
+$$\omega_{f,\mathcal{C},2}(x, \alpha) = -\min_{d \in \mathcal{C}^1(x, \alpha) \cap \mathcal{B}}
+  \nabla^2 f(x)[d]^2,$$
+with the restricted set $\mathcal{C}^1(x, \alpha)$ of (6.1.8).
+
+The minimum is the supremum `Optimization.formCriticality`; it is $0$ if no step of
+$\mathcal{C}^1(x, \alpha)$ lies in $\mathcal{B}$. -/
 noncomputable def omega2 (f : ℝⁿ → ℝ) (C : Set ℝⁿ) (τ₁ : ℝ) (x : ℝⁿ) (α : ℝ) : ℝ :=
   Optimization.formCriticality (iteratedFDeriv ℝ 2 f x) (restrictedSteps₁ f C τ₁ α x)
 
-/-- The set of second-order `(α₁, α₂)`-restricted feasible steps (6.1.10) of
-[cartis2022evaluation], `𝒞²(x, α₁, α₂) = {d ∈ 𝒞¹(x, α₁) | |⟨d, ∇²f(x) d⟩| ≤ τ₂ α₂}`. -/
+/-- **Equation (6.1.10)** of [cartis2022evaluation]. Let $f : \mathbb{R}^n \to \mathbb{R}$,
+$\mathcal{C} \subseteq \mathbb{R}^n$, $\tau_1, \tau_2, \alpha_1, \alpha_2 \in \mathbb{R}$ and
+$x \in \mathbb{R}^n$. The set of **second-order $(\alpha_1, \alpha_2)$-restricted feasible
+steps** is
+$$\mathcal{C}^2(x, \alpha_1, \alpha_2) = \{d \in \mathcal{C}^1(x, \alpha_1) \mid |\nabla^2
+  f(x)[d]^2| \le \tau_2 \alpha_2\}.$$
+-/
 noncomputable def restrictedSteps₂ (f : ℝⁿ → ℝ) (C : Set ℝⁿ) (τ₁ τ₂ α₁ α₂ : ℝ) (x : ℝⁿ) :
     Set ℝⁿ :=
   Optimization.restrictedSteps (iteratedFDeriv ℝ 2 f x) (τ₂ * α₂) (restrictedSteps₁ f C τ₁ α₁ x)
 
-/-- The third-order criticality measure (6.1.9) of [cartis2022evaluation],
-`ω_{f,𝒞,3}(x, α₁, α₂) = -min_{d ∈ 𝒞²(x, α₁, α₂) ∩ 𝓑} ∇³f(x)[d]³` (with the minus sign that the
-book omits). -/
+/-- **Equation (6.1.9)** of [cartis2022evaluation]. Let $f : \mathbb{R}^n \to \mathbb{R}$,
+$\mathcal{C} \subseteq \mathbb{R}^n$, $\tau_1, \tau_2, \alpha_1, \alpha_2 \in \mathbb{R}$ and
+$x \in \mathbb{R}^n$. The **third-order criticality measure** is
+$$\omega_{f,\mathcal{C},3}(x, \alpha_1, \alpha_2) = -\min_{d \in \mathcal{C}^2(x, \alpha_1,
+  \alpha_2) \cap \mathcal{B}} \nabla^3 f(x)[d]^3,$$
+with the restricted set $\mathcal{C}^2(x, \alpha_1, \alpha_2)$ of (6.1.10).
+
+**Typo.** The source prints the measure without the leading minus sign. The minus sign is meant,
+as for (6.1.5).
+
+The minimum is the supremum `Optimization.formCriticality`; it is $0$ if no step of
+$\mathcal{C}^2(x, \alpha_1, \alpha_2)$ lies in $\mathcal{B}$. -/
 noncomputable def omega3 (f : ℝⁿ → ℝ) (C : Set ℝⁿ) (τ₁ τ₂ : ℝ) (x : ℝⁿ) (α₁ α₂ : ℝ) :
     ℝ :=
   Optimization.formCriticality (iteratedFDeriv ℝ 3 f x) (restrictedSteps₂ f C τ₁ τ₂ α₁ α₂ x)
 
-/-- Approximate minimizers within `𝒞` ([cartis2022evaluation], §6.1.1 and Step 1 of
-Algorithm 6.2.1), for `q ∈ {1, 2, 3}`: `x ∈ 𝒞` is an `ε₁`-approximate first-order minimizer if
-`ω_{f,𝒞,1}(x) ≤ ε₁` (6.1.4); an `(ε₁, ε₂)`-approximate second-order minimizer if moreover
-`ω_{f,𝒞,2}(x, ε₁) ≤ ε₂` (6.1.6); and an `(ε₁, ε₂, ε₃)`-approximate third-order minimizer if
-moreover `ω_{f,𝒞,3}(x, ε₁, ε₂) ≤ ε₃`. The book's `ε₂ = ε₃ = ∞` is `q = 1` and `ε₃ = ∞` is
-`q = 2`. Other values of `q` are not used: `q = 0` gives the first-order notion and `q > 3` the
-third-order one. -/
+/-- **Equations (6.1.4) and (6.1.6)** of [cartis2022evaluation], approximate minimizers within
+$\mathcal{C}$. Let $f : \mathbb{R}^n \to \mathbb{R}$, $\mathcal{C} \subseteq \mathbb{R}^n$,
+$\tau_1, \tau_2, \epsilon_1, \epsilon_2, \epsilon_3 \in \mathbb{R}$ and $q \in \mathbb{N}$. A
+point $x$ is an **approximate minimizer of order $q$ of $f$ within $\mathcal{C}$** if
+$x \in \mathcal{C}$ and
+$$\omega_{f,\mathcal{C},1}(x) \le \epsilon_1, \qquad \omega_{f,\mathcal{C},2}(x, \epsilon_1) \le
+  \epsilon_2 \ \text{ if } q \ge 2, \qquad \omega_{f,\mathcal{C},3}(x, \epsilon_1, \epsilon_2)
+  \le \epsilon_3 \ \text{ if } q \ge 3.$$
+For $q = 1$, $2$ and $3$ these are the first-, second- and third-order notions of Section 6.1.1
+and of Step 1 of Algorithm 6.2.1.
+
+**Reading.** The source asks for approximate minimizers "within $\mathcal{C}$"; this is the
+condition $x \in \mathcal{C}$. The source switches off the higher-order tests with
+$\epsilon_2 = \epsilon_3 = \infty$ (first order) or $\epsilon_3 = \infty$ (second order); here
+the order $q$ is explicit instead.
+
+Only $q \in \{1, 2, 3\}$ is used: $q = 0$ gives the first-order notion, and $q > 3$ gives the
+third-order notion. -/
 def IsApproxMinimizerCC (f : ℝⁿ → ℝ) (C : Set ℝⁿ) (τ₁ τ₂ : ℝ) (q : ℕ) (ε₁ ε₂ ε₃ : ℝ)
     (x : ℝⁿ) : Prop :=
   x ∈ C ∧ omega1 f C x ≤ ε₁ ∧ (2 ≤ q → omega2 f C τ₁ x ε₁ ≤ ε₂) ∧
@@ -140,44 +237,59 @@ def IsApproxMinimizerCC (f : ℝⁿ → ℝ) (C : Set ℝⁿ) (τ₁ τ₂ : ℝ
 
 variable {f : ℝⁿ → ℝ} {C : Set ℝⁿ} {x d : ℝⁿ} {τ₁ τ₂ α α₁ α₂ : ℝ}
 
+/-- A step $d$ lies in $\mathcal{C}^1(x, \alpha)$ if and only if $x + d \in \mathcal{C}$ and
+$|\nabla^1 f(x)[d]| \le \tau_1 \alpha$. -/
 theorem mem_restrictedSteps₁ :
     d ∈ restrictedSteps₁ f C τ₁ α x ↔
       x + d ∈ C ∧ |iteratedFDeriv ℝ 1 f x (fun _ => d)| ≤ τ₁ * α :=
   Iff.rfl
 
+/-- A step $d$ lies in $\mathcal{C}^2(x, \alpha_1, \alpha_2)$ if and only if
+$d \in \mathcal{C}^1(x, \alpha_1)$ and $|\nabla^2 f(x)[d]^2| \le \tau_2 \alpha_2$. -/
 theorem mem_restrictedSteps₂ :
     d ∈ restrictedSteps₂ f C τ₁ τ₂ α₁ α₂ x ↔
       d ∈ restrictedSteps₁ f C τ₁ α₁ x ∧ |iteratedFDeriv ℝ 2 f x (fun _ => d)| ≤ τ₂ * α₂ :=
   Iff.rfl
 
+/-- The definition of an approximate minimizer of order $q$ within $\mathcal{C}$, unfolded:
+$x \in \mathcal{C}$, $\omega_{f,\mathcal{C},1}(x) \le \epsilon_1$, $\omega_{f,\mathcal{C},2}(x,
+\epsilon_1) \le \epsilon_2$ if $q \ge 2$, and $\omega_{f,\mathcal{C},3}(x, \epsilon_1,
+\epsilon_2) \le \epsilon_3$ if $q \ge 3$. -/
 theorem isApproxMinimizerCC_iff {q : ℕ} {ε₁ ε₂ ε₃ : ℝ} :
     IsApproxMinimizerCC f C τ₁ τ₂ q ε₁ ε₂ ε₃ x ↔
       x ∈ C ∧ omega1 f C x ≤ ε₁ ∧ (2 ≤ q → omega2 f C τ₁ x ε₁ ≤ ε₂) ∧
         (3 ≤ q → omega3 f C τ₁ τ₂ x ε₁ ε₂ ≤ ε₃) :=
   Iff.rfl
 
+/-- If $x \in \mathcal{C}$ and $\tau_1 \alpha \ge 0$, then $0 \in \mathcal{C}^1(x, \alpha)$. -/
 theorem zero_mem_restrictedSteps₁ (hx : x ∈ C) (hα : 0 ≤ τ₁ * α) :
     0 ∈ restrictedSteps₁ f C τ₁ α x :=
   (Optimization.zero_mem_restrictedSteps le_rfl hα).2 (Optimization.zero_mem_feasibleSteps.2 hx)
 
+/-- If $x \in \mathcal{C}$, $\tau_1 \alpha_1 \ge 0$ and $\tau_2 \alpha_2 \ge 0$, then
+$0 \in \mathcal{C}^2(x, \alpha_1, \alpha_2)$. -/
 theorem zero_mem_restrictedSteps₂ (hx : x ∈ C) (hα₁ : 0 ≤ τ₁ * α₁) (hα₂ : 0 ≤ τ₂ * α₂) :
     0 ∈ restrictedSteps₂ f C τ₁ τ₂ α₁ α₂ x :=
   (Optimization.zero_mem_restrictedSteps one_le_two hα₂).2 (zero_mem_restrictedSteps₁ hx hα₁)
 
-/-- The first-order measure is nonnegative at feasible points ((6.1.5)). -/
+/-- If $x \in \mathcal{C}$, then $\omega_{f,\mathcal{C},1}(x) \ge 0$, as claimed after (6.1.5). -/
 theorem omega1_nonneg (hx : x ∈ C) : 0 ≤ omega1 f C x :=
   Optimization.formCriticality_nonneg _ le_rfl (Optimization.zero_mem_feasibleSteps.2 hx)
 
-/-- The second-order measure is nonnegative at feasible points ((6.1.7)). -/
+/-- If $x \in \mathcal{C}$ and $\tau_1 \alpha \ge 0$, then
+$\omega_{f,\mathcal{C},2}(x, \alpha) \ge 0$, as claimed after (6.1.7). -/
 theorem omega2_nonneg (hx : x ∈ C) (hα : 0 ≤ τ₁ * α) : 0 ≤ omega2 f C τ₁ x α :=
   Optimization.formCriticality_nonneg _ one_le_two (zero_mem_restrictedSteps₁ hx hα)
 
-/-- The third-order measure is nonnegative at feasible points ((6.1.9)). -/
+/-- If $x \in \mathcal{C}$, $\tau_1 \alpha_1 \ge 0$ and $\tau_2 \alpha_2 \ge 0$, then
+$\omega_{f,\mathcal{C},3}(x, \alpha_1, \alpha_2) \ge 0$, as claimed after (6.1.9). -/
 theorem omega3_nonneg (hx : x ∈ C) (hα₁ : 0 ≤ τ₁ * α₁) (hα₂ : 0 ≤ τ₂ * α₂) :
     0 ≤ omega3 f C τ₁ τ₂ x α₁ α₂ :=
   Optimization.formCriticality_nonneg _ (by norm_num) (zero_mem_restrictedSteps₂ hx hα₁ hα₂)
 
-/-- Under C.CNe the minimum in (6.1.5) is attained at every feasible point. -/
+/-- If $\mathcal{C}$ satisfies C.CNe and $x \in \mathcal{C}$, then the minimum in (6.1.5) is
+attained: there is $d \in \mathcal{C}(x)$ with $\|d\| \le 1$ and $-\nabla^1 f(x)[d] =
+\omega_{f,\mathcal{C},1}(x)$. -/
 theorem exists_omega1_eq (hC : AssumptionCNe C) (hx : x ∈ C) :
     ∃ d ∈ Optimization.feasibleSteps C x ∩ closedBall 0 1,
       -iteratedFDeriv ℝ 1 f x (fun _ => d) = omega1 f C x := by
@@ -186,23 +298,30 @@ theorem exists_omega1_eq (hC : AssumptionCNe C) (hx : x ∈ C) :
     ⟨0, mem_closedBall_self zero_le_one, Optimization.zero_mem_feasibleSteps.2 hx⟩
   exact ⟨d, ⟨hd.2, hd.1⟩, h⟩
 
-/-- On a convex set, `ω_{f,𝒞,1}(x) = 0` exactly when `x` satisfies the first-order condition
-`⟨∇f(x), y - x⟩ ≥ 0` for all `y ∈ 𝒞` ((1.1.6) of Theorem 1.1.2 of [cartis2022evaluation]). -/
+/-- Let $\mathcal{C}$ be convex and $x \in \mathcal{C}$. Then $\omega_{f,\mathcal{C},1}(x) = 0$ if
+and only if $x$ satisfies the first-order condition (1.1.6) of Theorem 1.1.2 of
+[cartis2022evaluation],
+$$\langle \nabla f(x), y - x \rangle \ge 0 \quad \text{for all } y \in \mathcal{C}.$$
+
+No differentiability is assumed: $\nabla f(x)$ is `gradient f x`, which is $0$ where $f$ is not
+differentiable, and then both sides hold. -/
 theorem omega1_eq_zero_iff (hC : Convex ℝ C) (hx : x ∈ C) :
     omega1 f C x = 0 ↔ ∀ y ∈ C, 0 ≤ ⟪gradient f x, y - x⟫ := by
   simp only [omega1, Optimization.formCriticality_fderiv_eq_zero_iff hC hx, gradient,
     InnerProductSpace.toDual_symm_apply]
 
-/-- Without constraints the first-order measure is `‖∇f(x)‖` (remark after (6.1.10) of
-[cartis2022evaluation]). -/
+/-- Without constraints the first-order measure is the norm of the gradient:
+$\omega_{f,\mathbb{R}^n,1}(x) = \|\nabla f(x)\|$. This is the remark after (6.1.10) of
+[cartis2022evaluation]. -/
 theorem omega1_univ (f : ℝⁿ → ℝ) (x : ℝⁿ) : omega1 f univ x = ‖gradient f x‖ := by
   have h : Optimization.feasibleSteps (univ : Set ℝⁿ) x = univ := by
     ext; simp [Optimization.mem_feasibleSteps]
   rw [omega1, h, Optimization.formCriticality_iteratedFDeriv_one_univ,
     Optimization.norm_gradient_eq]
 
-/-- Without constraints the first-order condition (6.1.4) is the unconstrained test
-`‖∇f(x)‖ ≤ ε₁` (2.1.2). -/
+/-- Without constraints, $x$ is a first-order approximate minimizer within $\mathbb{R}^n$ in the
+sense of (6.1.4) if and only if $\|\nabla f(x)\| \le \epsilon_1$, the unconstrained test
+(2.1.2). -/
 theorem isApproxMinimizerCC_one_univ_iff {ε₁ ε₂ ε₃ : ℝ} :
     IsApproxMinimizerCC f univ τ₁ τ₂ 1 ε₁ ε₂ ε₃ x ↔ ‖gradient f x‖ ≤ ε₁ := by
   simp [IsApproxMinimizerCC, omega1_univ]

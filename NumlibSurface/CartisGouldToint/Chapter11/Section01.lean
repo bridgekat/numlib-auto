@@ -5,42 +5,75 @@ Released under Apache 2.0 license as described in the file LICENSE.
 import NumlibSurface.CartisGouldToint.Chapter10.Section03
 
 /-!
-# Cartis–Gould–Toint §11.1: Variable scaling
+# Cartis, Gould and Toint, Section 11.1: Variable scaling
 
-Surface file for [cartis2022evaluation] §11.1: the modified absolute value (11.1.4), the ideal
-scaling `M = V |Λ_δ| Vᵀ` (11.1.2)–(11.1.3) and the change of variables to the diagonal problems
-(11.1.5)–(11.1.7), the explicit solutions of the diagonal problems (§11.1.3), and the same
-transformation for a symmetric indefinite factorization (§11.1.4, (11.1.15)).
+This module formalizes §11.1 of [cartis2022evaluation]: the choice of the scaling matrix $M$ in the
+trust-region subproblem (8.1.2) and the regularization subproblem (8.1.3). Let $H = V \Lambda V^T$
+be a spectral decomposition of a symmetric matrix $H$, with $V$ orthogonal and
+$\Lambda = \operatorname{diag}(\lambda_i)$, and let $\delta > 0$. The **modified absolute value**
+(11.1.4) is $|x|_\delta = |x|$ if $|x| \ge \delta$ and $|x|_\delta = \delta$ otherwise. The ideal
+scaling is $M = V |\Lambda_\delta| V^T$ (11.1.2)–(11.1.3). The change of variables
+$s^D = |\Lambda_\delta|^{1/2} V^T s$ turns the two subproblems into problems (11.1.5)–(11.1.6) in
+the Euclidean norm with the diagonal matrix $D = \operatorname{diag}(\lambda_i /
+|\lambda_i|_\delta)$ of (11.1.7), whose entries are $\pm 1$ when every $|\lambda_i| \ge \delta$.
+
+For $D = \operatorname{diag}(d_i)$ with every $d_i = \pm 1$, the module solves the diagonal problems
+explicitly (§11.1.3). The solution is described by the parts $g^D_+$ and $g^D_-$ of $g^D$ on the
+index sets $\mathcal{D}^+ = \{i : d_i = 1\}$ and $\mathcal{D}^- = \{i : d_i = -1\}$, and by a scalar
+secular equation for the multiplier; the hard case occurs when $g^D_- = 0$. The same change of
+variables works for a symmetric indefinite factorization $H = F D^B F^T$ (§11.1.4, (11.1.15)). The
+proofs use the subproblem theory of Chapter 8 and the backbone module
+`Numlib.Optimization.Subproblem.Matrix`.
 
 ## Main definitions
 
-* `modifiedAbs δ x` — the modified absolute value `|x|_δ` of (11.1.4).
-* `partOn d c v` — the part of `v` on the index set `{i | dᵢ = c}`; `plusPart d v`, `minusPart d v`
-  — the parts `g₊ᴰ`, `g₋ᴰ` of a vector on `𝒟⁺ = {i | dᵢ = 1}`, `𝒟⁻ = {i | dᵢ = -1}`.
+* (11.1.4), `CartisGouldToint.Chapter11.modifiedAbs`: the modified absolute value $|x|_\delta$.
+* §11.1.3, `CartisGouldToint.Chapter11.plusPart`: the part $g^D_+$ of a vector on $\mathcal{D}^+$.
+* §11.1.3, `CartisGouldToint.Chapter11.minusPart`: the part $g^D_-$ of a vector on $\mathcal{D}^-$.
 
 ## Main results
 
-* `transform_of_congruence` — a congruence `H = W D Wᵀ`, `M = W Wᵀ` turns (8.1.2)/(8.1.3) into the
-  problems for `(W⁻¹g, D)` in the Euclidean norm.
-* `idealScaling_transform` — (11.1.5)–(11.1.7).
-* `indefiniteFactorization_transform` — §11.1.4.
-* `diagonal_trustRegion_solution`, `diagonal_regularization_solution` — §11.1.3.
-
-## Corrections to the source
-
-* (11.1.6): the regularization term is `σ/r ‖sᴰ‖^r` (printed `‖s‖^r`).
-* (11.1.7): the cases must read `λᵢ ≥ δ` and `λᵢ ≤ -δ` (printed `>`, `<`) to match (11.1.4) at
-  `|λᵢ| = δ`; then `dᵢᵢ = λᵢ/δ ∈ (-1, 1)` in the remaining case.
-* §11.1.3, regularization: the secular equation for `g₋ᴰ ≠ 0` is
-  `‖g₊ᴰ‖²/(λ+1)² + ‖g₋ᴰ‖²/(λ-1)² = (λ/σ)^{2/(r-2)}` (printed `(λ²/σ²)^{2/(r-2)}`); the hard case
-  occurs iff `½‖gᴰ‖ ≤ σ^{-1/(r-2)}` (printed `≥`); and then `∑ αᵢ² = σ^{-2/(r-2)} - ¼‖gᴰ‖²` (printed
-  as a product).
+* §11.1, `CartisGouldToint.Chapter11.transform_of_congruence`: a congruence $H = W D W^T$,
+  $M = W W^T$ turns (8.1.2) and (8.1.3) into the problems for $(W^{-1}g, D)$ in the Euclidean norm.
+* (11.1.1)–(11.1.7), `CartisGouldToint.Chapter11.idealScaling_transform`: the ideal scaling is
+  positive definite and turns (8.1.2) and (8.1.3) into the diagonal problems (11.1.5) and (11.1.6).
+* §11.1.3, `CartisGouldToint.Chapter11.diagonal_trustRegion_solution`: the explicit solution of the
+  diagonal trust-region problem (11.1.8)–(11.1.14).
+* §11.1.3, `CartisGouldToint.Chapter11.diagonal_trustRegion_hardCase`: in the hard case, every
+  vector of the described family solves the diagonal trust-region problem.
+* §11.1.3, `CartisGouldToint.Chapter11.diagonal_regularization_solution`: the explicit solution of
+  the diagonal regularization problem.
+* §11.1.3, `CartisGouldToint.Chapter11.diagonal_regularization_hardCase`: in the hard case, every
+  vector of the described family solves the diagonal regularization problem.
+* §11.1.4, (11.1.15), `CartisGouldToint.Chapter11.indefiniteFactorization_transform`: the scaling
+  $M = F |D^B_\delta| F^T$ from a symmetric indefinite factorization turns (8.1.2) and (8.1.3) into
+  the diagonal problems.
 
 ## Implementation notes
 
-In the trust-region case with `g₋ᴰ = 0` and `½‖gᴰ‖ = Δ` the hard-case family reduces to (11.1.13),
-so the boundary `½‖gᴰ‖ = Δ` belongs to both descriptions; `diagonal_trustRegion_solution` files
-it under (11.1.13).
+* In the trust-region case with $g^D_- = 0$ and $\frac12 \|g^D\| = \Delta$, the hard-case family
+  reduces to the solution (11.1.13). So the boundary $\frac12 \|g^D\| = \Delta$ belongs to both
+  descriptions, and `CartisGouldToint.Chapter11.diagonal_trustRegion_solution` files it under
+  (11.1.13).
+* A diagonal problem in the Euclidean norm is the problem of Chapter 8 with the scaling matrix $I$:
+  `CartisGouldToint.Chapter08.IsTrustRegionSolution g (diagonal d) 1 Δ s` and
+  `CartisGouldToint.Chapter08.IsRegularizationSolution g (diagonal d) 1 σ r s`.
+
+## Deviations from the source
+
+* **(11.1.6)** (typo). The regularization term is $\frac{\sigma}{r} \|s^D\|^r$; the source prints
+  $\|s\|^r$. See `CartisGouldToint.Chapter11.idealScaling_transform`.
+* **(11.1.7)** (typo). The cases must read $\lambda_i \ge \delta$ and $\lambda_i \le -\delta$ (the
+  source prints $>$ and $<$) to agree with (11.1.4) at $|\lambda_i| = \delta$; then
+  $d_{ii} = \lambda_i / \delta \in (-1, 1)$ in the remaining case. See
+  `CartisGouldToint.Chapter11.div_modifiedAbs` and
+  `CartisGouldToint.Chapter11.idealScaling_transform`.
+* **§11.1.3, regularization** (typo). For $g^D_- \neq 0$ the secular equation has the right-hand
+  side $(\lambda/\sigma)^{2/(r-2)}$ (printed $(\lambda^2/\sigma^2)^{2/(r-2)}$); the hard case occurs
+  if and only if $\frac12 \|g^D\| \le \sigma^{-1/(r-2)}$ (printed $\ge$); and then $\sum
+  \alpha_i^2 = \sigma^{-2/(r-2)} - \frac14 \|g^D\|^2$ (printed as a product). See
+  `CartisGouldToint.Chapter11.diagonal_regularization_solution` and
+  `CartisGouldToint.Chapter11.diagonal_regularization_hardCase`.
 -/
 
 open Matrix Set
@@ -54,16 +87,25 @@ variable {n : ℕ}
 
 /-! ### The modified absolute value -/
 
-/-- The **modified absolute value** `|x|_δ` of [cartis2022evaluation] (11.1.4): `|x|` if
-`|x| ≥ δ`, and `δ` otherwise. Applied to the eigenvalues of `H` it gives the ideal scaling
-`M = V |Λ_δ| Vᵀ` (11.1.2)–(11.1.3). -/
+/-- **Equation (11.1.4)** of [cartis2022evaluation]. For $\delta, x \in \mathbb{R}$, the **modified
+absolute value** is
+$$|x|_\delta = \begin{cases} |x| & \text{if } |x| \ge \delta, \\ \delta & \text{otherwise.}
+  \end{cases}$$
+Applied to the eigenvalues of $H$, it gives the ideal scaling $M = V |\Lambda_\delta| V^T$ of
+(11.1.2)–(11.1.3). -/
 noncomputable def modifiedAbs (δ x : ℝ) : ℝ := if δ ≤ |x| then |x| else δ
 
+/-- For $\delta > 0$, the modified absolute value $|x|_\delta$ is positive for every $x$. -/
 theorem modifiedAbs_pos {δ : ℝ} (hδ : 0 < δ) (x : ℝ) : 0 < modifiedAbs δ x := by
   unfold modifiedAbs; split_ifs with h <;> linarith
 
-/-- The diagonal entries (11.1.7): `x/|x|_δ` is `1` if `x ≥ δ`, `-1` if `x ≤ -δ`, and
-`x/δ ∈ (-1, 1)` otherwise. -/
+/-- The diagonal entries (11.1.7) of [cartis2022evaluation]. Let $\delta > 0$ and
+$x \in \mathbb{R}$. Then $x / |x|_\delta = 1$ if $x \ge \delta$, $x / |x|_\delta = -1$ if
+$x \le -\delta$, and $x / |x|_\delta = x / \delta \in (-1, 1)$ if $-\delta < x < \delta$.
+
+**Typo.** The source prints the cases of (11.1.7) as $\lambda_i > \delta$ and
+$\lambda_i < -\delta$. They must read $\ge$ and $\le$ to agree with the definition (11.1.4) of
+$|x|_\delta$ at $|x| = \delta$. -/
 theorem div_modifiedAbs {δ : ℝ} (hδ : 0 < δ) (x : ℝ) :
     (δ ≤ x → x / modifiedAbs δ x = 1) ∧ (x ≤ -δ → x / modifiedAbs δ x = -1) ∧
       (-δ < x → x < δ → x / modifiedAbs δ x = x / δ ∧ x / δ ∈ Ioo (-1) 1) := by
@@ -84,10 +126,18 @@ section Transform
 
 variable {H M W D : Matrix (Fin n) (Fin n) ℝ} {g gD : EuclideanSpace ℝ (Fin n)}
 
-/-- **Change of variables by a congruence.** If `H = W D Wᵀ` and `M = W Wᵀ` with `W` invertible,
-and `W gᴰ = g`, then with `sᴰ = Wᵀ s`: `m(s) = ⟪gᴰ, sᴰ⟫ + ½ ⟪sᴰ, D sᴰ⟫`, `‖s‖_M = ‖sᴰ‖`, and `s`
-solves (8.1.2) (resp. (8.1.3)) iff `sᴰ` solves the trust-region (resp. regularization) problem for
-`(gᴰ, D)` in the Euclidean norm. -/
+/-- **Section 11.1** of [cartis2022evaluation], change of variables by a congruence. Let
+$W, D \in \mathbb{R}^{n \times n}$ with $W$ invertible, let $H = W D W^T$ and $M = W W^T$, and
+let $g^D \in \mathbb{R}^n$ with $W g^D = g$. Write $s^D = W^T s$. Then for every $s$
+$$m(s) = \langle g^D, s^D \rangle + \tfrac12 \langle s^D, D s^D \rangle \quad\text{and}\quad
+  \|s\|_M = \|s^D\|.$$
+Moreover, for every $\Delta$, the vector $s$ is a global solution of the trust-region subproblem
+(8.1.2) if and only if $s^D$ is a global solution of the trust-region problem for $(g^D, D)$ in
+the Euclidean norm. For every $\sigma$ and $r$, the same holds for the regularization subproblem
+(8.1.3).
+
+The matrix $D$ need not be diagonal. The Euclidean problems are those of Chapter 8 with the
+scaling matrix $I$. -/
 theorem transform_of_congruence (hW : IsUnit W) (hH : H = W * D * Wᵀ) (hM : M = W * Wᵀ)
     (hg : toEuclideanLin W gD = g) :
     (∀ s, model g H s = model gD D (toEuclideanLin Wᵀ s)) ∧
@@ -116,19 +166,32 @@ theorem transform_of_congruence (hW : IsUnit W) (hH : H = W * D * Wᵀ) (hM : M 
     obtain ⟨v, rfl⟩ := hsurj u
     exact h v
 
-/-- `√a · √a = a` for a positive vector, as a diagonal identity. -/
+/-- For a vector $a$ with positive entries, $\operatorname{diag}(\sqrt{a_i})
+\operatorname{diag}(\sqrt{a_i}) = \operatorname{diag}(a_i)$. -/
 private theorem diagonal_sqrt_mul_sqrt {a : Fin n → ℝ} (ha : ∀ i, 0 < a i) :
     diagonal (fun i => √(a i)) * diagonal (fun i => √(a i)) = diagonal a := by
   rw [diagonal_mul_diagonal]
   congr 1; funext i; exact Real.mul_self_sqrt (ha i).le
 
-/-- **Scalings by a symmetric indefinite factorization** ([cartis2022evaluation] §11.1.4,
-(11.1.15)). Let `H = F Dᴮ Fᵀ` with `F` invertible and `Dᴮ = diag(β)` (e.g. `F = P L V` from a
-Bunch–Kaufman–Parlett factorization `H = P L B Lᵀ Pᵀ`, `B = V Dᴮ Vᵀ`), `δ > 0` and
-`M = F |Dᴮ_δ| Fᵀ`. Then `M` is positive definite, and the change of variables
-`sᴰ = |Dᴮ_δ|^{1/2} Fᵀ s`, `gᴰ = |Dᴮ_δ|^{-1/2} F⁻¹ g` turns (8.1.2)/(8.1.3) into (11.1.5)/(11.1.6)
-with the diagonal `D = diag(βᵢ/|βᵢ|_δ)` of (11.1.7) (`div_modifiedAbs`): `m(s) = m^D(sᴰ)`,
-`‖s‖_M = ‖sᴰ‖`, solutions correspond, and `s = F⁻ᵀ |Dᴮ_δ|^{-1/2} sᴰ`. -/
+/-- **Section 11.1.4** of [cartis2022evaluation], equation (11.1.15): scalings by a symmetric
+indefinite factorization. Let $F \in \mathbb{R}^{n \times n}$ be invertible,
+$\beta \in \mathbb{R}^n$, $D^B = \operatorname{diag}(\beta)$ and $H = F D^B F^T$. For example,
+$F = P L V$ for a Bunch–Kaufman–Parlett factorization $H = P L B L^T P^T$ with $B = V D^B V^T$.
+Let $\delta > 0$ and $M = F |D^B_\delta| F^T$, where $|D^B_\delta| =
+\operatorname{diag}(|\beta_i|_\delta)$. Then $M$ is positive definite. With
+$$s^D = |D^B_\delta|^{1/2} F^T s, \qquad g^D = |D^B_\delta|^{-1/2} F^{-1} g, \qquad D =
+  \operatorname{diag}(\beta_i / |\beta_i|_\delta),$$
+for every $s$:
+
+1. $m(s) = \langle g^D, s^D \rangle + \frac12 \langle s^D, D s^D \rangle$ and
+   $\|s\|_M = \|s^D\|$;
+2. for every $\Delta$, $s$ is a global solution of (8.1.2) if and only if $s^D$ is a global
+   solution of (11.1.5), and for every $\sigma$ and $r$, $s$ is a global minimizer of (8.1.3) if
+   and only if $s^D$ is a global minimizer of (11.1.6);
+3. $s = F^{-T} |D^B_\delta|^{-1/2} s^D$.
+
+The entries of $D$ are those of (11.1.7), described by
+`CartisGouldToint.Chapter11.div_modifiedAbs`. -/
 theorem indefiniteFactorization_transform {F : Matrix (Fin n) (Fin n) ℝ} (hF : IsUnit F)
     {β : Fin n → ℝ} {δ : ℝ} (hδ : 0 < δ) (hH : H = F * diagonal β * Fᵀ)
     (hM : M = F * diagonal (fun i => modifiedAbs δ (β i)) * Fᵀ) (g : EuclideanSpace ℝ (Fin n)) :
@@ -192,15 +255,31 @@ theorem indefiniteFactorization_transform {F : Matrix (Fin n) (Fin n) ℝ} (hF :
   rw [← toEuclideanLin_mul_apply, Matrix.mul_assoc, ← Matrix.mul_assoc (diagonal _), hdinv',
     Matrix.one_mul, nonsing_inv_mul _ hFtdet, toEuclideanLin_one, LinearMap.id_apply]
 
-/-- **The ideal scaling** ([cartis2022evaluation] (11.1.1)–(11.1.7)). Let `H = V Λ Vᵀ` with `V`
-orthogonal and `Λ = diag(λ)`, `δ > 0`, and `M = V |Λ_δ| Vᵀ` (11.1.2)–(11.1.4). Then `M` is positive
-definite, and with `sᴰ = |Λ_δ|^{1/2} Vᵀ s`, `gᴰ = |Λ_δ|^{-1/2} Vᵀ g` and
-`D = |Λ_δ|^{-1/2} Λ |Λ_δ|^{-1/2}= diag(λᵢ/|λᵢ|_δ)`:
-(i) `dᵢᵢ = 1` if `λᵢ ≥ δ`, `dᵢᵢ = -1` if `λᵢ ≤ -δ`, and `dᵢᵢ = λᵢ/δ ∈ (-1, 1)` otherwise
-((11.1.7), corrected at `|λᵢ| = δ`);
-(ii) `m(s) = ⟪gᴰ, sᴰ⟫ + ½ ⟪sᴰ, D sᴰ⟫` and `‖s‖_M = ‖sᴰ‖`;
-(iii) `s` solves (8.1.2) (resp. (8.1.3)) iff `sᴰ` solves (11.1.5) (resp. (11.1.6)), and
-`s = V |Λ_δ|^{-1/2} sᴰ`. -/
+/-- **Equations (11.1.1)–(11.1.7)** of [cartis2022evaluation], the ideal scaling. Let
+$V \in \mathbb{R}^{n \times n}$ satisfy $V^T V = I$, let $\lambda \in \mathbb{R}^n$,
+$\Lambda = \operatorname{diag}(\lambda)$ and $H = V \Lambda V^T$. Let $\delta > 0$ and
+$M = V |\Lambda_\delta| V^T$ with $|\Lambda_\delta| = \operatorname{diag}(|\lambda_i|_\delta)$
+(11.1.2)–(11.1.4). Then $M$ is positive definite. With
+$$s^D = |\Lambda_\delta|^{1/2} V^T s, \qquad g^D = |\Lambda_\delta|^{-1/2} V^T g, \qquad D =
+  |\Lambda_\delta|^{-1/2} \Lambda |\Lambda_\delta|^{-1/2} = \operatorname{diag}(\lambda_i /
+  |\lambda_i|_\delta),$$
+the following hold.
+
+1. For every $i$: $d_{ii} = 1$ if $\lambda_i \ge \delta$, $d_{ii} = -1$ if
+   $\lambda_i \le -\delta$, and $d_{ii} = \lambda_i / \delta \in (-1, 1)$ if
+   $-\delta < \lambda_i < \delta$ (11.1.7).
+2. For every $s$: $m(s) = \langle g^D, s^D \rangle + \frac12 \langle s^D, D s^D \rangle$ and
+   $\|s\|_M = \|s^D\|$.
+3. For every $\Delta$ and $s$: $s$ is a global solution of (8.1.2) if and only if $s^D$ is a
+   global solution of (11.1.5). For every $\sigma$, $r$ and $s$: $s$ is a global minimizer of
+   (8.1.3) if and only if $s^D$ is a global minimizer of (11.1.6), the problem of minimizing
+   $\langle g^D, s^D \rangle + \frac12 \langle s^D, D s^D \rangle + \frac{\sigma}{r} \|s^D\|^r$.
+4. For every $s$: $s = V |\Lambda_\delta|^{-1/2} s^D$.
+
+**Typo.** In (11.1.6) the source prints the regularization term $\frac{\sigma}{r} \|s\|^r$; the
+term is $\frac{\sigma}{r} \|s^D\|^r$. In (11.1.7) the source prints the cases
+$\lambda_i > \delta$ and $\lambda_i < -\delta$; they must read $\ge$ and $\le$ to agree with
+(11.1.4) at $|\lambda_i| = \delta$. -/
 theorem idealScaling_transform {H M V : Matrix (Fin n) (Fin n) ℝ} (hV : Vᵀ * V = 1)
     {lam : Fin n → ℝ} {δ : ℝ} (hδ : 0 < δ) (hH : H = V * diagonal lam * Vᵀ)
     (hM : M = V * diagonal (fun i => modifiedAbs δ (lam i)) * Vᵀ) (g : EuclideanSpace ℝ (Fin n)) :
@@ -242,21 +321,28 @@ section Diagonal
 
 variable {d : Fin n → ℝ}
 
-/-- The part `∑_{i : dᵢ = c} vᵢ eᵢ` of a vector on the index set `{i | dᵢ = c}`. -/
+/-- For $d, v \in \mathbb{R}^n$ and $c \in \mathbb{R}$, the **part of $v$ on the index set**
+$\{i : d_i = c\}$ is the vector $\sum_{i : d_i = c} v_i e_i$. -/
 noncomputable def partOn (d : Fin n → ℝ) (c : ℝ) (v : EuclideanSpace ℝ (Fin n)) :
     EuclideanSpace ℝ (Fin n) :=
   WithLp.toLp 2 fun i => if d i = c then v i else 0
 
-/-- `g₊ᴰ = ∑_{i ∈ 𝒟⁺} gᵢᴰ eᵢ`, `𝒟⁺ = {i | dᵢᵢ = 1}` ([cartis2022evaluation] §11.1.3). -/
+/-- **Section 11.1.3** of [cartis2022evaluation], the part $g^D_+$. For $d, v \in \mathbb{R}^n$,
+$v_+ = \sum_{i \in \mathcal{D}^+} v_i e_i$ is the part of $v$ on
+$\mathcal{D}^+ = \{i : d_i = 1\}$. -/
 noncomputable abbrev plusPart (d : Fin n → ℝ) (v : EuclideanSpace ℝ (Fin n)) :
     EuclideanSpace ℝ (Fin n) :=
   partOn d 1 v
 
-/-- `g₋ᴰ = ∑_{i ∈ 𝒟⁻} gᵢᴰ eᵢ`, `𝒟⁻ = {i | dᵢᵢ = -1}` ([cartis2022evaluation] §11.1.3). -/
+/-- **Section 11.1.3** of [cartis2022evaluation], the part $g^D_-$. For $d, v \in \mathbb{R}^n$,
+$v_- = \sum_{i \in \mathcal{D}^-} v_i e_i$ is the part of $v$ on
+$\mathcal{D}^- = \{i : d_i = -1\}$. -/
 noncomputable abbrev minusPart (d : Fin n → ℝ) (v : EuclideanSpace ℝ (Fin n)) :
     EuclideanSpace ℝ (Fin n) :=
   partOn d (-1) v
 
+/-- The $i$-th component of the part of $v$ on $\{j : d_j = c\}$ is $v_i$ if $d_i = c$ and $0$
+otherwise. -/
 @[simp]
 theorem partOn_apply (c : ℝ) (v : EuclideanSpace ℝ (Fin n)) (i : Fin n) :
     partOn d c v i = if d i = c then v i else 0 := rfl
@@ -268,12 +354,13 @@ private theorem inner_eq_zero_of_disjoint {v w : EuclideanSpace ℝ (Fin n)}
   rw [PiLp.inner_apply]
   exact Finset.sum_eq_zero fun i _ => by rcases h i with h | h <;> simp [h]
 
-/-- Pythagoras for disjoint supports. -/
+/-- For vectors $v, w$ with disjoint supports, $\|v + w\|^2 = \|v\|^2 + \|w\|^2$. -/
 private theorem norm_add_sq_of_disjoint {v w : EuclideanSpace ℝ (Fin n)}
     (h : ∀ i, v i = 0 ∨ w i = 0) : ‖v + w‖ ^ 2 = ‖v‖ ^ 2 + ‖w‖ ^ 2 := by
   simpa only [sq] using norm_add_sq_eq_norm_sq_add_norm_sq_real (inner_eq_zero_of_disjoint h)
 
-/-- The diagonal shifted system `(D + λ I) s = -g`, componentwise. -/
+/-- For $D = \operatorname{diag}(d)$, the shifted system $(D + \lambda I) s = -g$ holds if and only
+if $(d_i + \lambda) s_i = -g_i$ for every $i$. -/
 theorem diagonal_shifted_iff (lam : ℝ) (s g : EuclideanSpace ℝ (Fin n)) :
     toEuclideanLin (diagonal d + lam • (1 : Matrix (Fin n) (Fin n) ℝ)) s = -g ↔
       ∀ i, (d i + lam) * s i = -g i := by
@@ -288,14 +375,18 @@ theorem diagonal_shifted_iff (lam : ℝ) (s g : EuclideanSpace ℝ (Fin n)) :
     ext i
     simpa [toEuclideanLin_apply, mulVec_diagonal] using h i
 
-/-- `D + λ I ⪰ 0` iff `dᵢ + λ ≥ 0` for all `i`. -/
+/-- For $D = \operatorname{diag}(d)$, the matrix $D + \lambda I$ is positive semidefinite if and
+only if $d_i + \lambda \ge 0$ for every $i$. -/
 theorem diagonal_posSemidef_iff (lam : ℝ) :
     (diagonal d + lam • (1 : Matrix (Fin n) (Fin n) ℝ)).PosSemidef ↔ ∀ i, 0 ≤ d i + lam := by
   have : diagonal d + lam • (1 : Matrix (Fin n) (Fin n) ℝ) = diagonal fun i => d i + lam := by
     ext i j; by_cases h : i = j <;> simp [h]
   rw [this, posSemidef_diagonal_iff]
 
-/-- The multiplier conditions of Theorem 8.2.7 for the diagonal data `(g, D, I)`. -/
+/-- For $D = \operatorname{diag}(d)$, a number $\lambda$ satisfies the multiplier conditions of
+Theorem 8.2.7 for the step $s$ and the data $(g, D, I)$ if and only if $\lambda \ge 0$,
+$(d_i + \lambda) s_i = -g_i$ and $d_i + \lambda \ge 0$ for every $i$, and
+$\lambda (\|s\|^2 - \Delta^2) = 0$. -/
 theorem diagonal_kkt_iff {g s : EuclideanSpace ℝ (Fin n)} {Δ lam : ℝ} :
     IsTrustRegionKKT g (diagonal d) 1 Δ s lam ↔
       0 ≤ lam ∧ (∀ i, (d i + lam) * s i = -g i) ∧ (∀ i, 0 ≤ d i + lam) ∧
@@ -303,14 +394,14 @@ theorem diagonal_kkt_iff {g s : EuclideanSpace ℝ (Fin n)} {Δ lam : ℝ} :
   rw [← diagonal_shifted_iff, ← diagonal_posSemidef_iff, ← mNorm_one]
   exact ⟨fun h => ⟨h.1, h.2, h.3, h.4⟩, fun h => ⟨h.1, h.2.1, h.2.2.1, h.2.2.2⟩⟩
 
-/-- A positive multiplier forces `‖s‖ = Δ`. -/
+/-- If $\Delta > 0$, $\lambda > 0$ and $\lambda (\|s\|^2 - \Delta^2) = 0$, then $\|s\| = \Delta$. -/
 private theorem norm_eq_of_compl {s : EuclideanSpace ℝ (Fin n)} {Δ lam : ℝ} (hΔ : 0 < Δ)
     (hlam : 0 < lam) (h : lam * (‖s‖ ^ 2 - Δ ^ 2) = 0) : ‖s‖ = Δ := by
   have : ‖s‖ ^ 2 = Δ ^ 2 := by
     have := (mul_eq_zero.1 h).resolve_left hlam.ne'; linarith
   exact (sq_eq_sq₀ (norm_nonneg _) hΔ.le).1 this
 
-/-- The components on `𝒟⁺` and `𝒟⁻` are disjoint. -/
+/-- For every $i$, the $i$-th component of $v_+$ or that of $w_-$ is zero. -/
 private theorem plusPart_minusPart_disjoint (v w : EuclideanSpace ℝ (Fin n)) (i : Fin n) :
     plusPart d v i = 0 ∨ minusPart d w i = 0 := by
   simp only [partOn_apply]
@@ -318,19 +409,20 @@ private theorem plusPart_minusPart_disjoint (v w : EuclideanSpace ℝ (Fin n)) (
   · right; rw [ite_eq_right (by rw [h]; norm_num)]
   · left; rw [ite_eq_right h]
 
-/-- `v = v₊ + v₋` when `D = diag(±1)`. -/
+/-- If every $d_i$ is $1$ or $-1$, then every vector satisfies $v = v_+ + v_-$. -/
 theorem plusPart_add_minusPart (hd : ∀ i, d i = 1 ∨ d i = -1) (v : EuclideanSpace ℝ (Fin n)) :
     plusPart d v + minusPart d v = v := by
   ext i
   simp only [PiLp.add_apply, partOn_apply]
   rcases hd i with h | h <;> simp [h, show (1 : ℝ) ≠ -1 by norm_num, show (-1 : ℝ) ≠ 1 by norm_num]
 
-/-- `‖c v‖² = c² ‖v‖²`. -/
+/-- For $c \in \mathbb{R}$, $\|c v\|^2 = c^2 \|v\|^2$. -/
 private theorem norm_smul_sq (c : ℝ) (v : EuclideanSpace ℝ (Fin n)) :
     ‖c • v‖ ^ 2 = c ^ 2 * ‖v‖ ^ 2 := by
   rw [norm_smul, mul_pow, Real.norm_eq_abs, sq_abs]
 
-/-- The function `A/(λ+1)² + B/(λ-1)²` (`A ≥ 0`, `B > 0`) is strictly decreasing on `(1, ∞)`. -/
+/-- For $A \ge 0$ and $B > 0$, the function $\lambda \mapsto A/(\lambda + 1)^2 + B/(\lambda - 1)^2$
+is strictly decreasing on $(1, \infty)$. -/
 private theorem secular_diag_strictAnti {A B a b : ℝ} (hA : 0 ≤ A) (hB : 0 < B) (ha : 1 < a)
     (hab : a < b) :
     A / (b + 1) ^ 2 + B / (b - 1) ^ 2 < A / (a + 1) ^ 2 + B / (a - 1) ^ 2 := by
@@ -341,7 +433,7 @@ private theorem secular_diag_strictAnti {A B a b : ℝ} (hA : 0 ≤ A) (hB : 0 <
       (pow_lt_pow_left₀ (by linarith) (by linarith) two_ne_zero)
   linarith
 
-/-- With `g₋ = 0`, the components of `g` on `𝒟⁻` vanish and `g₊ = g`. -/
+/-- The part $g_-$ is zero if and only if $g_i = 0$ for every $i$ with $d_i = -1$. -/
 private theorem minusPart_eq_zero_iff {g : EuclideanSpace ℝ (Fin n)} :
     minusPart d g = 0 ↔ ∀ i, d i = -1 → g i = 0 := by
   constructor
@@ -354,8 +446,9 @@ private theorem minusPart_eq_zero_iff {g : EuclideanSpace ℝ (Fin n)} :
     · exact h i hi
     · rfl
 
-/-- The solution of `(D + λ I) s = -g` for `λ > 1`: `s = -g₊/(λ+1) - g₋/(λ-1)` (11.1.10), with
-`‖s‖² = ‖g₊‖²/(λ+1)² + ‖g₋‖²/(λ-1)²`. -/
+/-- If every $d_i = \pm 1$, $(d_i + \lambda) s_i = -g_i$ for every $i$, and $\lambda > 1$, then $s =
+-(\lambda + 1)^{-1} g_+ - (\lambda - 1)^{-1} g_-$ (11.1.10) and $\|s\|^2 = \|g_+\|^2/(\lambda +
+1)^2 + \|g_-\|^2/(\lambda - 1)^2$. -/
 private theorem diagonal_step (hd : ∀ i, d i = 1 ∨ d i = -1) {g s : EuclideanSpace ℝ (Fin n)}
     {lam : ℝ}
     (hsh : ∀ i, (d i + lam) * s i = -g i) (hl : 1 < lam) :
@@ -384,7 +477,8 @@ private theorem diagonal_step (hd : ∀ i, d i = 1 ∨ d i = -1) {g s : Euclidea
   rw [hseq, sub_eq_add_neg, norm_add_sq_of_disjoint hdisj, norm_neg, norm_smul_sq, norm_smul_sq]
   field_simp
 
-/-- If `g₋ ≠ 0`, a multiplier `λ ≥ 1` of `(D + λ I) s = -g` is `> 1`. -/
+/-- If $(d_i + \lambda) s_i = -g_i$ for every $i$, $\lambda \ge 1$ and $g_- \neq 0$, then
+$\lambda > 1$. -/
 private theorem one_lt_of_minusPart_ne_zero {g s : EuclideanSpace ℝ (Fin n)} {lam : ℝ}
     (hsh : ∀ i, (d i + lam) * s i = -g i) (hl1 : 1 ≤ lam) (hgm : minusPart d g ≠ 0) :
     1 < lam := by
@@ -397,8 +491,10 @@ private theorem one_lt_of_minusPart_ne_zero {g s : EuclideanSpace ℝ (Fin n)} {
   refine lt_of_le_of_ne hl1 fun h => hj' ?_
   have := hsh j; rw [hdj, ← h] at this; linarith
 
-/-- The case `g₋ = 0`: for `λ > 1`, `s = -g/(λ+1)` and `‖s‖ = ‖g‖/(λ+1)`; for `λ = 1`,
-`s = -½ g + α` with `α` supported on `𝒟⁻` and `‖s‖² = ¼ ‖g‖² + ‖α‖²`. -/
+/-- Let every $d_i = \pm 1$, $(d_i + \lambda) s_i = -g_i$ for every $i$, and $g_- = 0$. If
+$\lambda > 1$, then $s = -g/(\lambda + 1)$ and $\|s\| = \|g\|/(\lambda + 1)$; if $\lambda = 1$,
+then $s = -\frac12 g + \alpha$ with $\alpha$ supported on $\mathcal{D}^-$ and
+$\|s\|^2 = \frac14 \|g\|^2 + \|\alpha\|^2$. -/
 private theorem diagonal_step_of_minusPart_eq_zero (hd : ∀ i, d i = 1 ∨ d i = -1)
     {g s : EuclideanSpace ℝ (Fin n)} {lam : ℝ} (hsh : ∀ i, (d i + lam) * s i = -g i)
     (hgm : minusPart d g = 0) :
@@ -435,13 +531,14 @@ private theorem diagonal_step_of_minusPart_eq_zero (hd : ∀ i, d i = 1 ∨ d i 
       rw [show (-(1 / 2 : ℝ)) • g + (s + (1 / 2 : ℝ) • g) = s by module, norm_smul_sq] at this
       linarith
 
-/-- With `g₋ = 0`, `g₊ = g`. -/
+/-- If every $d_i = \pm 1$ and $g_- = 0$, then $g_+ = g$. -/
 private theorem plusPart_eq_self (hd : ∀ i, d i = 1 ∨ d i = -1) {g : EuclideanSpace ℝ (Fin n)}
     (hgm : minusPart d g = 0) : plusPart d g = g := by
   have := plusPart_add_minusPart hd g
   rwa [hgm, add_zero] at this
 
-/-- `‖-½ g + α‖² = ¼‖g‖² + ‖α‖²` when `g` lives on `𝒟⁺` and `α` on `𝒟⁻`. -/
+/-- If every $d_i = \pm 1$, $g_- = 0$ and $\alpha$ is supported on $\mathcal{D}^-$, then $\|-\frac12
+g + \alpha\|^2 = \frac14 \|g\|^2 + \|\alpha\|^2$. -/
 private theorem norm_hardCase_sq (hd : ∀ i, d i = 1 ∨ d i = -1) {g α : EuclideanSpace ℝ (Fin n)}
     (hgm : minusPart d g = 0) (hα : ∀ i, d i = 1 → α i = 0) :
     ‖-(1 / 2 : ℝ) • g + α‖ ^ 2 = ‖g‖ ^ 2 / 4 + ‖α‖ ^ 2 := by
@@ -452,16 +549,28 @@ private theorem norm_hardCase_sq (hd : ∀ i, d i = 1 ∨ d i = -1) {g α : Eucl
     · left; simp [hg0 i h]
   rw [norm_add_sq_of_disjoint hdisj, norm_smul_sq]; ring
 
-/-- **The diagonal trust-region problem** ([cartis2022evaluation] §11.1.3, (11.1.8)–(11.1.14)).
-Let `D = diag(d)` with `dᵢ = ±1` (`𝒟⁰ = ∅`), `Δ > 0`, and let `sᴰ` solve (11.1.5) with
-multiplier `λ*`. Then:
-(i) if `𝒟⁻ = ∅`: for `‖gᴰ‖ ≤ Δ`, `λ* = 0` and `sᴰ = -gᴰ`; for `‖gᴰ‖ > Δ`, `λ* = ‖gᴰ‖/Δ - 1`
-and `sᴰ = -(Δ/‖gᴰ‖) gᴰ` ((11.1.11)–(11.1.13));
-(ii) if `𝒟⁻ ≠ ∅`: `‖sᴰ‖ = Δ` and `λ* ≥ 1`; if `g₋ᴰ ≠ 0`, then `λ* > 1` is the unique root on
-`(1, ∞)` of (11.1.14) `‖g₊ᴰ‖²/(λ+1)² + ‖g₋ᴰ‖²/(λ-1)² = Δ²` and (11.1.10) holds; if `g₋ᴰ = 0`
-and `½‖gᴰ‖ ≥ Δ`, then (11.1.13) holds with `λ* = ‖gᴰ‖/Δ - 1`; if `g₋ᴰ = 0` and `½‖gᴰ‖ < Δ`
-(the hard case), then `λ* = 1` and `sᴰ = -½ g₊ᴰ + ∑_{i ∈ 𝒟⁻} αᵢ eᵢ` with
-`∑ αᵢ² = Δ² - ¼‖gᴰ‖²` (every such vector is a solution: `diagonal_trustRegion_hardCase`). -/
+/-- **Section 11.1.3** of [cartis2022evaluation], equations (11.1.8)–(11.1.14): the diagonal
+trust-region problem. Let $D = \operatorname{diag}(d)$ with every $d_i \in \{1, -1\}$, so that
+$\mathcal{D}^0 = \emptyset$, let $g \in \mathbb{R}^n$ and $\Delta > 0$, and let $s$ be a global
+solution of (11.1.5) for the data $(g, D)$ with a Lagrange multiplier $\lambda_*$ (Theorem
+8.2.7).
+
+1. If $\mathcal{D}^- = \emptyset$: if $\|g\| \le \Delta$, then $\lambda_* = 0$ and $s = -g$; if
+   $\|g\| > \Delta$, then $\lambda_* = \|g\|/\Delta - 1$ and $s = -(\Delta/\|g\|) g$
+   ((11.1.11)–(11.1.13)).
+2. If $\mathcal{D}^- \neq \emptyset$, then $\|s\| = \Delta$ and $\lambda_* \ge 1$.
+3. If $\mathcal{D}^- \neq \emptyset$ and $g_- \neq 0$, then $\lambda_* > 1$ is the unique root
+   on $(1, \infty)$ of the secular equation (11.1.14), $\|g_+\|^2/(\lambda + 1)^2 +
+   \|g_-\|^2/(\lambda - 1)^2 = \Delta^2$, and $s = -(\lambda_* + 1)^{-1} g_+ - (\lambda_* -
+   1)^{-1} g_-$ (11.1.10).
+4. If $\mathcal{D}^- \neq \emptyset$, $g_- = 0$ and $\frac12 \|g\| \ge \Delta$, then
+   $\lambda_* = \|g\|/\Delta - 1$ and $s = -(\Delta/\|g\|) g$ (11.1.13).
+5. If $\mathcal{D}^- \neq \emptyset$, $g_- = 0$ and $\frac12 \|g\| < \Delta$ (the hard case),
+   then $\lambda_* = 1$ and $s = -\frac12 g_+ + \sum_{i \in \mathcal{D}^-} \alpha_i e_i$ with
+   $\sum_i \alpha_i^2 = \Delta^2 - \frac14 \|g\|^2$.
+
+Here $g$ and $s$ stand for the book's $g^D$ and $s^D$. Conversely, every vector of the hard-case
+family is a solution: `CartisGouldToint.Chapter11.diagonal_trustRegion_hardCase`. -/
 theorem diagonal_trustRegion_solution (hd : ∀ i, d i = 1 ∨ d i = -1)
     {g : EuclideanSpace ℝ (Fin n)} {Δ : ℝ} (hΔ : 0 < Δ) {s : EuclideanSpace ℝ (Fin n)} {lam : ℝ}
     (hs : IsTrustRegionSolution g (diagonal d) 1 Δ s)
@@ -562,8 +671,11 @@ theorem diagonal_trustRegion_solution (hd : ∀ i, d i = 1 ∨ d i = -1)
       rw [hn] at hα
       exact ⟨hl, α, hα1, by linarith, by rw [plusPart_eq_self hd hgm]; exact hs'⟩
 
-/-- **The hard case of the diagonal trust-region problem** ([cartis2022evaluation] §11.1.3): if
-`g₋ᴰ = 0`, every `sᴰ = -½ g₊ᴰ + ∑_{i ∈ 𝒟⁻} αᵢ eᵢ` with `∑ αᵢ² = Δ² - ¼‖gᴰ‖²` solves (11.1.5). -/
+/-- **Section 11.1.3** of [cartis2022evaluation], the hard case of the diagonal trust-region
+problem. Let $D = \operatorname{diag}(d)$ with every $d_i \in \{1, -1\}$, let $\Delta > 0$, and
+let $g_- = 0$. If $\alpha \in \mathbb{R}^n$ satisfies $\alpha_i = 0$ for every
+$i \in \mathcal{D}^+$ and $\|\alpha\|^2 = \Delta^2 - \frac14 \|g\|^2$, then
+$s = -\frac12 g_+ + \alpha$ is a global solution of (11.1.5) for the data $(g, D)$. -/
 theorem diagonal_trustRegion_hardCase (hd : ∀ i, d i = 1 ∨ d i = -1)
     {g : EuclideanSpace ℝ (Fin n)} {Δ : ℝ} (hΔ : 0 < Δ) (hgm : minusPart d g = 0)
     {α : EuclideanSpace ℝ (Fin n)} (hα1 : ∀ i, d i = 1 → α i = 0)
@@ -582,8 +694,9 @@ theorem diagonal_trustRegion_hardCase (hd : ∀ i, d i = 1 ∨ d i = -1)
     · rw [h, hg0 i h]; ring
   · rcases hd i with h | h <;> rw [h] <;> norm_num
 
-/-- The radius `σ^{-1/(r-2)}` of the hard case of the regularization problem: `t ≥ 0` satisfies
-`σ t^{r-2} = 1` iff `t = σ^{-1/(r-2)}`, and `(σ^{-1/(r-2)})² = σ^{-2/(r-2)}`. -/
+/-- For $\sigma > 0$ and $r > 2$: $\sigma^{-1/(r-2)} > 0$, $\sigma (\sigma^{-1/(r-2)})^{r-2} = 1$,
+$(\sigma^{-1/(r-2)})^2 = \sigma^{-2/(r-2)}$, and $t \ge 0$ satisfies $\sigma t^{r-2} = 1$ if and
+only if $t = \sigma^{-1/(r-2)}$. -/
 private theorem hardCase_radius {σ r : ℝ} (hσ : 0 < σ) (hr : 2 < r) :
     0 < σ ^ (-1 / (r - 2)) ∧ σ * (σ ^ (-1 / (r - 2))) ^ (r - 2) = 1 ∧
       (σ ^ (-1 / (r - 2))) ^ 2 = σ ^ (-2 / (r - 2)) ∧
@@ -600,23 +713,41 @@ private theorem hardCase_radius {σ r : ℝ} (hσ : 0 < σ) (hr : 2 < r) :
       ring_nf
     · rintro rfl; rw [hc, mul_inv_cancel₀ hσ.ne']
 
-/-- If `λ = σ t^{r-2}` with `t ≥ 0`, the regularization target (8.2.9) at `λ` is `t²`. -/
+/-- Let $\sigma > 0$, $r > 2$ and $t \ge 0$. If $\lambda = \sigma t^{r-2}$, then the regularization
+target (8.2.9) satisfies $(\lambda/\sigma)^{2/(r-2)} = t^2$. -/
 theorem regTarget_of_eq_mul_rpow {σ r t lam : ℝ} (hσ : 0 < σ) (hr : 2 < r) (ht : 0 ≤ t)
     (h : lam = σ * t ^ (r - 2)) : regTarget σ r lam = t ^ 2 := by
   have hl : 0 ≤ lam := by rw [h]; positivity
   rw [regTarget_eq_sq r hσ hl, h, mul_div_cancel_left₀ _ hσ.ne', one_div,
     Real.rpow_rpow_inv ht (by linarith)]
 
-/-- **The diagonal regularization problem** ([cartis2022evaluation] §11.1.3, corrected). Let
-`D = diag(d)` with `dᵢ = ±1`, `σ > 0`, `r > 2`, and let `sᴰ` solve (11.1.6), with multiplier
-`λ* = σ ‖sᴰ‖^{r-2}`. Then:
-(i) if `𝒟⁻ = ∅`: `sᴰ = -gᴰ/(λ*+1)` (11.1.11) with `λ* ≥ 0` the unique nonnegative root of
-`λ = σ (‖gᴰ‖/(λ+1))^{r-2}`;
-(ii) if `𝒟⁻ ≠ ∅`: `λ* ≥ 1`; if `g₋ᴰ ≠ 0`, then `λ* > 1` is the unique root on `(1, ∞)` of
-`‖g₊ᴰ‖²/(λ+1)² + ‖g₋ᴰ‖²/(λ-1)² = (λ/σ)^{2/(r-2)}` and (11.1.10) holds; if `g₋ᴰ = 0`, the hard
-case `λ* = 1` occurs iff `½‖gᴰ‖ ≤ σ^{-1/(r-2)}`, and then `sᴰ = -½ g₊ᴰ + ∑_{i ∈ 𝒟⁻} αᵢ eᵢ` with
-`∑ αᵢ² = σ^{-2/(r-2)} - ¼‖gᴰ‖²` (every such vector is a solution:
-`diagonal_regularization_hardCase`); otherwise (11.1.10) holds with `g₋ᴰ = 0`. -/
+/-- **Section 11.1.3** of [cartis2022evaluation]: the diagonal regularization problem. Let
+$D = \operatorname{diag}(d)$ with every $d_i \in \{1, -1\}$, let $g \in \mathbb{R}^n$,
+$\sigma > 0$ and $r > 2$, let $s$ be a global minimizer of (11.1.6) for the data $(g, D)$, and
+let $\lambda_* = \sigma \|s\|^{r-2}$.
+
+1. If $\mathcal{D}^- = \emptyset$, then $\lambda_* \ge 0$, $s = -g/(\lambda_* + 1)$ (11.1.11),
+   and $\lambda_*$ is the unique nonnegative root of
+   $\lambda = \sigma (\|g\|/(\lambda + 1))^{r-2}$.
+2. If $\mathcal{D}^- \neq \emptyset$, then $\lambda_* \ge 1$.
+3. If $\mathcal{D}^- \neq \emptyset$ and $g_- \neq 0$, then $\lambda_* > 1$ is the unique root
+   on $(1, \infty)$ of the secular equation $\|g_+\|^2/(\lambda + 1)^2 + \|g_-\|^2/(\lambda -
+   1)^2 = (\lambda/\sigma)^{2/(r-2)}$, and $s = -(\lambda_* + 1)^{-1} g_+ - (\lambda_* - 1)^{-1}
+   g_-$ (11.1.10).
+4. If $\mathcal{D}^- \neq \emptyset$ and $g_- = 0$, then the hard case $\lambda_* = 1$ occurs if
+   and only if $\frac12 \|g\| \le \sigma^{-1/(r-2)}$. In the hard case, $s = -\frac12 g_+ +
+   \sum_{i \in \mathcal{D}^-} \alpha_i e_i$ with $\sum_i \alpha_i^2 = \sigma^{-2/(r-2)} -
+   \frac14 \|g\|^2$. Otherwise $s = -(\lambda_* + 1)^{-1} g_+$, that is, (11.1.10) with
+   $g_- = 0$.
+
+**Typo.** The source prints the right-hand side of the secular equation as
+$(\lambda^2/\sigma^2)^{2/(r-2)}$, the condition for the hard case with $\ge$ in place of $\le$,
+and the sum $\sum_i \alpha_i^2$ as a product. The right-hand side is the regularization target
+$(\lambda/\sigma)^{2/(r-2)}$ of (8.2.9).
+
+Here $g$ and $s$ stand for the book's $g^D$ and $s^D$, and the right-hand side of the secular
+equation is `CartisGouldToint.Chapter08.regTarget`. Conversely, every vector of the hard-case
+family is a minimizer: `CartisGouldToint.Chapter11.diagonal_regularization_hardCase`. -/
 theorem diagonal_regularization_solution (hd : ∀ i, d i = 1 ∨ d i = -1)
     {g : EuclideanSpace ℝ (Fin n)} {σ r : ℝ} (hσ : 0 < σ) (hr : 2 < r)
     {s : EuclideanSpace ℝ (Fin n)} (hs : IsRegularizationSolution g (diagonal d) 1 σ r s)
@@ -717,9 +848,13 @@ theorem diagonal_regularization_solution (hd : ∀ i, d i = 1 ∨ d i = -1)
       rw [plusPart_eq_self hd hgm]
       exact (hgt (lt_of_le_of_ne hl1 (Ne.symm hl))).1
 
-/-- **The hard case of the diagonal regularization problem** ([cartis2022evaluation] §11.1.3,
-corrected): if `g₋ᴰ = 0`, every `sᴰ = -½ g₊ᴰ + ∑_{i ∈ 𝒟⁻} αᵢ eᵢ` with
-`∑ αᵢ² = σ^{-2/(r-2)} - ¼‖gᴰ‖²` solves (11.1.6). -/
+/-- **Section 11.1.3** of [cartis2022evaluation], the hard case of the diagonal regularization
+problem. Let $D = \operatorname{diag}(d)$ with every $d_i \in \{1, -1\}$, let $\sigma > 0$ and
+$r > 2$, and let $g_- = 0$. If $\alpha \in \mathbb{R}^n$ satisfies $\alpha_i = 0$ for every
+$i \in \mathcal{D}^+$ and $\|\alpha\|^2 = \sigma^{-2/(r-2)} - \frac14 \|g\|^2$, then
+$s = -\frac12 g_+ + \alpha$ is a global minimizer of (11.1.6) for the data $(g, D)$.
+
+**Typo.** The source prints the sum $\sum_i \alpha_i^2$ as a product. -/
 theorem diagonal_regularization_hardCase (hd : ∀ i, d i = 1 ∨ d i = -1)
     {g : EuclideanSpace ℝ (Fin n)} {σ r : ℝ} (hσ : 0 < σ) (hr : 2 < r) (hgm : minusPart d g = 0)
     {α : EuclideanSpace ℝ (Fin n)} (hα1 : ∀ i, d i = 1 → α i = 0)

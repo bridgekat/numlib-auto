@@ -6,43 +6,89 @@ import NumlibSurface.CartisGouldToint.Chapter09.Section03
 import NumlibSurface.CartisGouldToint.Chapter10.Section01
 
 /-!
-# Cartis–Gould–Toint §10.2: Computational details for regularization methods
+# Cartis, Gould and Toint, Section 10.2: Computational details for regularization methods
 
-Surface file for [cartis2022evaluation] §10.2: the Krylov subspace solutions `sₖ = Qₖ s̄ₖ` of the
-regularization subproblem, where `s̄ₖ` globally minimizes the reduced problem (10.1.6)
-`γ₁ ⟪e₁, s̄⟫ + ½ ⟪s̄, Tₖ s̄⟫ + (σ/r) ‖s̄‖^r` on `ℝᵏ`.
+This module formalizes §10.2 of [cartis2022evaluation]: the computation of the Krylov subspace
+solutions of the regularization subproblem (8.1.3). Let $H \in \mathbb{R}^{n \times n}$ be
+symmetric, $M \in \mathbb{R}^{n \times n}$ positive definite, $\sigma > 0$ and $r > 2$. On the
+Krylov subspace $\mathcal{K}_k = \mathcal{K}(M^{-1}H, M^{-1}g, k)$ with the Lanczos basis $Q_k$ and
+the Lanczos tridiagonal matrix $T_k$ of §10.1, the subspace solution is $s_k = Q_k \bar{s}_k$, where
+$\bar{s}_k$ globally minimizes the reduced problem (10.1.6)
+$$\min_{\bar{s} \in \mathbb{R}^k} \; \gamma_1 \langle e_1, \bar{s} \rangle + \tfrac12 \langle
+  \bar{s}, T_k \bar{s} \rangle + \tfrac{\sigma}{r} \|\bar{s}\|^r, \qquad \gamma_1 =
+  \|g\|_{M^{-1}}.$$
+
+The module proves that $\bar{s}_k$ solves $(T_k + \lambda_k I_k) \bar{s}_k = -\gamma_1 e_1$ with
+$T_k + \lambda_k I_k$ positive definite, where $\lambda_k = \sigma \|s_k\|_M^{r-2}$. It formalizes
+the factorization and the solve of the shifted tridiagonal system (Algorithms 10.2.1–10.2.2), the
+monotonicity of the multipliers and norms in $k$ (Lemma 10.2.1), the one-dimensional start (10.2.7),
+the bound on the model gradient at $s_k$ in terms of the condition number $\kappa_k$ of
+$T_k + \lambda_k I_k$ (Theorem 10.2.2), and a bound on the number of Lanczos iterations before the
+stopping rule (9.3.14b) holds (Corollary 10.2.3). The proofs use the backbone modules
+`Numlib.Optimization.Subproblem.Krylov`, `Numlib.Optimization.Subproblem.KrylovConvergence` and
+`Numlib.LinearAlgebra.Matrix.TridiagonalLDL`.
 
 ## Main definitions
 
-* `algorithm_10_2_1`, `algorithm_10_2_2` — the factorization of the shifted Lanczos tridiagonal
-  `Tₖ + λ Iₖ` and the solve with its factors.
-* `conditionNumber_10_2_8` — the condition number `κₖ = (θₖ,ₖ + λₖ)/(θ₁,ₖ + λₖ)` (10.2.8);
-  `kappaStar` — `κ* = max_{1 ≤ k ≤ grade} κₖ` (10.2.10).
+* Algorithm 10.2.1, `CartisGouldToint.Chapter10.algorithm_10_2_1`: the factorization
+  $T_k + \lambda I_k = L_k D_k L_k^T$ of a shifted symmetric tridiagonal matrix, or the exit "not
+  positive definite".
+* Algorithm 10.2.2, `CartisGouldToint.Chapter10.algorithm_10_2_2`: the solve of
+  $(T_k + \lambda I_k) x = b$ with the factors of Algorithm 10.2.1.
+* (10.2.8), `CartisGouldToint.Chapter10.conditionNumber_10_2_8`: the condition number $\kappa_k =
+  (\theta_{k,k} + \lambda)/(\theta_{1,k} + \lambda)$ from the extreme Ritz values.
+* (10.2.10), `CartisGouldToint.Chapter10.kappaStar`: the largest condition number $\kappa_* =
+  \max_{1 \le k \le \text{grade}} \kappa_k$.
 
 ## Main results
 
-* `subspace_optimality_10_2_2` — (10.2.2)–(10.2.3): `(Tₖ + λₖ Iₖ) s̄ₖ = -γ₁ e₁` with `Tₖ + λₖ Iₖ`
-  positive definite (no hard case in the subspace).
-* `algorithm_10_2_1_spec`, `algorithm_10_2_2_spec` — correctness of the two algorithms.
-* `lemma_10_2_1` — the multipliers and norms increase with `k`.
-* `start_10_2_3` — the one-dimensional start (10.2.7).
-* `theorem_10_2_2` — the gradient bound (10.2.9).
-* `corollary_10_2_3` — the iteration bound.
+* (10.2.2)–(10.2.3), `CartisGouldToint.Chapter10.subspace_optimality_10_2_2`: $(T_k + \lambda_k I_k)
+  \bar{s}_k = -\gamma_1 e_1$, and $T_k + \lambda_k I_k$ is positive definite, so $\bar{s}_k$ is
+  unique.
+* Algorithm 10.2.1, `CartisGouldToint.Chapter10.algorithm_10_2_1_spec`: the algorithm exits exactly
+  when $T_k + \lambda I_k$ is not positive definite, and otherwise returns an $LDL^T$ factorization
+  with a positive diagonal.
+* Algorithm 10.2.2, `CartisGouldToint.Chapter10.algorithm_10_2_2_spec`: the algorithm solves
+  $(T_k + \lambda I_k) x = b$ (10.2.4).
+* Lemma 10.2.1, `CartisGouldToint.Chapter10.lemma_10_2_1`: the multipliers $\lambda_k$ and the norms
+  $\|s_k\|_M$ increase with $k$ and are bounded by those of the global minimizer.
+* (10.2.7), `CartisGouldToint.Chapter10.start_10_2_3`: for $k = 1$ the multiplier is the unique
+  admissible root of a scalar secular equation.
+* Theorem 10.2.2, `CartisGouldToint.Chapter10.theorem_10_2_2`: the model gradient at $s_k$ decays
+  like $((\sqrt{\kappa_k} - 1)/(\sqrt{\kappa_k} + 1))^{k-1}$ (10.2.9).
+* Corollary 10.2.3, `CartisGouldToint.Chapter10.corollary_10_2_3`: the stopping rule (9.3.14b) holds
+  after a number of iterations of order $\log A / \log((\sqrt{\kappa_*} + 1)/(\sqrt{\kappa_*} -
+  1))$.
+
+## Conventions
+
+* The matrices $Q_k$, $T_k$ and the vector $Q_k^T g$ are `CartisGouldToint.Chapter10.lanczosBasis`,
+  `CartisGouldToint.Chapter10.lanczosTridiag` and `CartisGouldToint.Chapter10.lanczosGrad`. The
+  grade of $M^{-1}H$ with respect to $M^{-1}g$ is `CartisGouldToint.Chapter10.gradeHM`.
+* A global minimizer of the reduced problem (10.1.6) is
+  `CartisGouldToint.Chapter08.IsRegularizationSolution` for the data $Q_k^T g$, $T_k$ and the
+  scaling matrix $I_k$. Below the grade, $Q_k^T g = \gamma_1 e_1$.
+* $\|v\|_M = \sqrt{\langle v, M v \rangle}$ is `CartisGouldToint.Chapter08.mNorm M v`.
 
 ## Implementation notes
 
-`‖M⁻¹H‖` in Theorem 10.2.2 and Corollary 10.2.3 is the operator norm of `M⁻¹H` induced by the
-scaled norm `‖·‖_M` (the norm of `Subproblem.scaledOp H hM` on the `M`-inner product space), which
-equals `‖M^{-1/2} H M^{-1/2}‖₂`; with this reading the identity (B.10.4) holds. It is bounded by
-the Euclidean operator norm of `M⁻¹H` (`Subproblem.norm_scaledOp_le`).
+* The norm $\|M^{-1}H\|$ in Theorem 10.2.2 and Corollary 10.2.3 is the operator norm of $M^{-1}H$
+  induced by the scaled norm $\|\cdot\|_M$, that is, the norm of `Subproblem.scaledOp H hM` on the
+  $M$-inner product space `Subproblem.ScaledSpace`. It equals $\|M^{-1/2} H M^{-1/2}\|_2$, and with
+  this reading the identity (B.10.4) holds. It is bounded by the Euclidean operator norm of
+  $M^{-1}H$ (`Subproblem.norm_scaledOp_le`).
+* The algorithms of §10.2.2 use $0$-based indices: `ρ i` and `γ i` are the book's $\rho_{i+1}$ and
+  $\gamma_{i+1}$.
 
-## Corrections to the source
+## Deviations from the source
 
-* Lemma 10.2.1 refers to "a global minimizer of (8.1.4)"; (8.1.4) is the model, the problem is
-  (8.1.3).
-* Corollary 10.2.3: the printed bound `⌈log A / log((√κ* + 1)/(√κ* - 1))⌉ + 1` is unsatisfiable when
-  `log A < 0` (e.g. for large `θ₁`) and undefined for `κ* = 1`. The ceiling is read as `⌈·⌉₊`, and
-  for `κ* = 1` the test holds at some `k ≤ min(2, grade)`. The hypothesis `g ≠ 0` is needed.
+* **Lemma 10.2.1** (typo). The source refers to "a global minimizer of (8.1.4)"; (8.1.4) is the
+  model, and the problem is (8.1.3). See `CartisGouldToint.Chapter10.lemma_10_2_1`.
+* **Corollary 10.2.3** (correction). The printed bound $\lceil \log A / \log((\sqrt{\kappa_*} +
+  1)/(\sqrt{\kappa_*} - 1)) \rceil + 1$ cannot hold when $\log A < 0$ and is undefined for
+  $\kappa_* = 1$. The ceiling is $\lceil \cdot \rceil_+$, the case $\kappa_* = 1$ gives some
+  $k \le \min(2, \text{grade})$, and the hypothesis $g \neq 0$ is added. See
+  `CartisGouldToint.Chapter10.corollary_10_2_3`.
 -/
 
 open Matrix Set
@@ -58,25 +104,30 @@ variable {n : ℕ} {H M : Matrix (Fin n) (Fin n) ℝ} {g : EuclideanSpace ℝ (F
 
 section Scaled
 
-/-- A positive `k ≤ grade(M⁻¹H, M⁻¹g)` forces `g ≠ 0`. -/
+/-- Let $M$ be positive definite. If $1 \le k \le \operatorname{grade}(M^{-1}H, M^{-1}g)$, then the
+scaled gradient $M^{-1}g$ is nonzero; in particular $g \neq 0$. -/
 theorem ne_zero_of_le_gradeHM (hM : M.PosDef) {k : ℕ} (hk1 : 1 ≤ k) (hk : k ≤ gradeHM H M g) :
     scaledGrad hM g ≠ 0 := fun hb => by
   rw [gradeHM_eq hM, hb, Krylov.grade_zero] at hk
   omega
 
-/-- The Lanczos tridiagonal is symmetric. -/
+/-- For a positive definite $M$, the Lanczos tridiagonal matrix $T_k$ is symmetric. -/
 theorem lanczosTridiag_isHermitian (hM : M.PosDef) (k : ℕ) :
     (lanczosTridiag hM H g k).IsHermitian :=
   Matrix.isHermitian_iff_isSymm.2 (Lanczos.tridiag_isSymm _ _ _)
 
-/-- `Qₖ s̄` lies in `𝒦ₖ`, in the `M`-inner product space. -/
+/-- For a positive definite $M$ and every $y \in \mathbb{R}^k$, the vector $Q_k y$ lies in the
+Krylov subspace $\mathcal{K}_k = \mathcal{K}(M^{-1}H, M^{-1}g, k)$ of the $M$-inner product
+space. -/
 theorem toScaled_lanczosBasis_mem (hM : M.PosDef) {k : ℕ} (y : EuclideanSpace ℝ (Fin k)) :
     toScaled hM (toEuclideanLin (lanczosBasis hM H g k) y) ∈
       Krylov.subspace (scaledOp H hM : ScaledSpace hM →ₗ[ℝ] ScaledSpace hM) (scaledGrad hM g) k :=
   (toScaled_mem_krylov_iff hM).2 (range_lanczosBasis hM ▸ LinearMap.mem_range_self _ y)
 
-/-- A solution `s̄ₖ` of the reduced problem (10.1.6) gives, `M⁻¹`-transported, a minimizer of the
-operator regularized model over the Krylov subspace `𝒦ₖ`. -/
+/-- Let $H$ be symmetric, $M$ positive definite and $k \le \operatorname{grade}(M^{-1}H, M^{-1}g)$.
+If $\bar{s}$ is a global minimizer of the reduced problem (10.1.6), then $Q_k \bar{s}$ minimizes
+the regularized model $\langle M^{-1}g, s \rangle_M + \frac12 \langle s, M^{-1}H s \rangle_M +
+\frac{\sigma}{r} \|s\|_M^r$ of the $M$-inner product space over $\mathcal{K}_k$. -/
 theorem isMinOn_krylov_of_reduced (hH : H.IsHermitian) (hM : M.PosDef) {σ r : ℝ} {k : ℕ}
     (hk : k ≤ gradeHM H M g) {sbar : EuclideanSpace ℝ (Fin k)}
     (hs : IsRegularizationSolution (lanczosGrad hM H g k) (lanczosTridiag hM H g k) 1 σ r sbar) :
@@ -87,7 +138,10 @@ theorem isMinOn_krylov_of_reduced (hH : H.IsHermitian) (hM : M.PosDef) {σ r : �
   ((isRegSubspaceSolution_iff_scaled hM).1
     ((isRegSubspaceSolution_krylov_iff hM hH hk σ r sbar).2 hs)).2
 
-/-- The gradient of the regularized model in the `M`-inner product space. -/
+/-- For a positive definite $M$, every $s \in \mathbb{R}^n$ and every $\lambda \in \mathbb{R}$,
+$$\|g + H s + \lambda M s\|_{M^{-1}} = \|M^{-1}g + M^{-1}H s + \lambda s\|,$$
+where the norm on the right is the norm of the $M$-inner product space. This is the norm of the
+gradient (8.2.34) of the regularized model. -/
 theorem mNorm_inv_gradient (hM : M.PosDef) (s : EuclideanSpace ℝ (Fin n)) (lam : ℝ) :
     mNorm M⁻¹ (g + toEuclideanLin H s + lam • toEuclideanLin M s) =
       ‖scaledGrad hM g + scaledOp H hM (toScaled hM s) + lam • toScaled hM s‖ := by
@@ -98,13 +152,18 @@ end Scaled
 
 /-! ### Optimality of the subspace solution (§10.2.1) -/
 
-/-- **Optimality of the Krylov subspace solution** ([cartis2022evaluation] (10.2.2)–(10.2.3),
-§10.2.1). Let `H` be symmetric, `M` positive definite, `σ > 0`, `r > 2`,
-`1 ≤ k ≤ grade(M⁻¹H, M⁻¹g)`, and let `s̄ₖ` globally minimize the reduced problem (10.1.6). Then
-with `λₖ = σ ‖s̄ₖ‖^{r-2} = σ ‖Qₖ s̄ₖ‖_M^{r-2}`:
-`(Tₖ + λₖ Iₖ) s̄ₖ = -γ₁ e₁` ((10.2.2), `γ₁ = ‖g‖_{M⁻¹}`), and `Tₖ + λₖ Iₖ` is positive definite (the
-hard case cannot occur for the unreduced `Tₖ`); in particular `s̄ₖ` is the unique global
-minimizer. -/
+/-- **Equations (10.2.2)–(10.2.3)** of [cartis2022evaluation]. Let $H \in \mathbb{R}^{n \times n}$
+be symmetric, $M \in \mathbb{R}^{n \times n}$ positive definite, $\sigma > 0$, $r > 2$ and $1
+\le k \le \operatorname{grade}(M^{-1}H, M^{-1}g)$. Let $\bar{s}_k \in \mathbb{R}^k$ be a global
+minimizer of the reduced problem (10.1.6), and let $\lambda_k = \sigma \|\bar{s}_k\|^{r-2}$.
+Then
+$$(T_k + \lambda_k I_k) \bar{s}_k = -\gamma_1 e_1, \qquad \gamma_1 = \|g\|_{M^{-1}},$$
+and $\lambda_k = \sigma \|Q_k \bar{s}_k\|_M^{r-2}$ (10.2.3). Moreover $T_k + \lambda_k I_k$ is
+positive definite, so the hard case cannot occur in the subspace, and $\bar{s}_k$ is the unique
+global minimizer of (10.1.6).
+
+The norm $\|\bar{s}_k\|$ is the Euclidean norm of $\mathbb{R}^k$, and $e_1$ is
+`EuclideanSpace.single ⟨0, hk1⟩ 1`. -/
 theorem subspace_optimality_10_2_2 (hH : H.IsHermitian) (hM : M.PosDef) {σ r : ℝ} (hσ : 0 < σ)
     (hr : 2 < r) {k : ℕ} (hk1 : 1 ≤ k) (hk : k ≤ gradeHM H M g)
     {sbar : EuclideanSpace ℝ (Fin k)}
@@ -135,31 +194,46 @@ section Algorithms
 
 variable (ρ γ : ℕ → ℝ) (lam : ℝ)
 
-/-- The reciprocal pivots `rᵢ(λ)` computed by Algorithm 10.2.1 (`0`-based: `ρ i`, `γ i` are the
-book's `ρᵢ₊₁`, `γᵢ₊₁`): `r₀ = 1/(ρ₀ + λ)`, `rᵢ₊₁ = 1/(ρᵢ₊₁ + λ - γᵢ₊₁ lᵢ₊₁)` with
-`lᵢ₊₁ = γᵢ₊₁ rᵢ`. -/
+/-- The reciprocal pivots $r_i(\lambda)$ of Algorithm 10.2.1 of [cartis2022evaluation]:
+$r_1 = 1/(\rho_1 + \lambda)$ and $r_{i+1} = 1/(\rho_{i+1} + \lambda - \gamma_{i+1} l_{i+1})$
+with $l_{i+1} = \gamma_{i+1} r_i$.
+
+The index is $0$-based: the book's $r_{i+1}$, $\rho_{i+1}$ and $\gamma_{i+1}$ are
+`recipPivot ρ γ lam i`, `ρ i` and `γ i`. A vanishing denominator gives the value $0$, by the Lean
+convention $1/0 = 0$. -/
 noncomputable def recipPivot : ℕ → ℝ
   | 0 => 1 / (ρ 0 + lam)
   | i + 1 => 1 / (ρ (i + 1) + lam - γ (i + 1) * (γ (i + 1) * recipPivot i))
 
-/-- The tests of Algorithm 10.2.1: `ρ₀ + λ > 0`, and `ρᵢ₊₁ + λ > γᵢ₊₁ lᵢ₊₁` for the later rows. -/
+/-- The tests of Algorithm 10.2.1 of [cartis2022evaluation]: $\rho_1 + \lambda > 0$ for the first
+row, and $\rho_{i+1} + \lambda > \gamma_{i+1} l_{i+1}$ with
+$l_{i+1} = \gamma_{i+1} r_i(\lambda)$ for the later rows. The index is $0$-based, as in
+`CartisGouldToint.Chapter10.recipPivot`. -/
 def pivotTest : ℕ → Prop
   | 0 => 0 < ρ 0 + lam
   | i + 1 => γ (i + 1) * (γ (i + 1) * recipPivot ρ γ lam i) < ρ (i + 1) + lam
 
-/-- Extension by zero of a vector on `Fin k` to `ℕ`. -/
+/-- The extension by zero of a vector $v \in \mathbb{R}^k$ to a sequence: the value at $j$ is $v_j$
+for $j < k$ and $0$ otherwise. -/
 def extendFin {k : ℕ} (v : Fin k → ℝ) (j : ℕ) : ℝ := if h : j < k then v ⟨j, h⟩ else 0
 
 omit ρ γ lam in
+/-- The extension by zero `CartisGouldToint.Chapter10.extendFin v` agrees with $v$ at every index
+$i < k$. -/
 @[simp]
 theorem extendFin_val {k : ℕ} (v : Fin k → ℝ) (i : Fin k) : extendFin v i = v i := by
   simp [extendFin]
 
-/-- **Algorithm 10.2.1 of [cartis2022evaluation]** (factorize the shifted Lanczos tridiagonal
-`Tₖ + λ Iₖ`, `Tₖ = symTridiag ρ γ k` with diagonal `ρ₀, …, ρₖ₋₁` and off-diagonal
-`γ₁, …, γₖ₋₁`): it exits with "not positive definite" (`none`) as soon as a test
-`pivotTest` fails, and otherwise returns the multipliers `lᵢ = γᵢ rᵢ₋₁` (`l₀` unused, set to `0`)
-and the reciprocal pivots `rᵢ`. -/
+/-- **Algorithm 10.2.1** of [cartis2022evaluation]. Let $T_k$ be the symmetric tridiagonal matrix
+with diagonal $\rho_1, \dots, \rho_k$ and off-diagonal $\gamma_2, \dots, \gamma_k$, and let
+$\lambda \in \mathbb{R}$. The algorithm factorizes $T_k + \lambda I_k$. It exits with "not
+positive definite" as soon as one of the tests `CartisGouldToint.Chapter10.pivotTest` fails for
+a row $i \le k$. Otherwise it returns the multipliers $l_i = \gamma_i r_{i-1}$ for
+$2 \le i \le k$ and the reciprocal pivots $r_i$ for $1 \le i \le k$.
+
+The exit "not positive definite" is `none`. The matrix $T_k$ is `Matrix.symTridiag ρ γ k`, with
+$0$-based indices: `ρ i` and `γ i` are $\rho_{i+1}$ and $\gamma_{i+1}$. The unused multiplier
+$l_1$ is set to $0$. -/
 noncomputable def algorithm_10_2_1 (k : ℕ) : Option ((Fin k → ℝ) × (Fin k → ℝ)) :=
   open Classical in
   if ∀ i < k, pivotTest ρ γ lam i then
@@ -167,7 +241,8 @@ noncomputable def algorithm_10_2_1 (k : ℕ) : Option ((Fin k → ℝ) × (Fin k
       fun i => recipPivot ρ γ lam i)
   else none
 
-/-- The reciprocal pivots are the reciprocals of the `LDLᵀ` pivots. -/
+/-- The reciprocal pivots of Algorithm 10.2.1 are the reciprocals of the pivots of the $LDL^T$
+factorization of $T_k + \lambda I_k$ (`Matrix.ldlPivot`). -/
 theorem recipPivot_eq (i : ℕ) : recipPivot ρ γ lam i = (ldlPivot ρ γ lam i)⁻¹ := by
   induction i with
   | zero => rw [recipPivot, ldlPivot_zero, one_div]
@@ -176,7 +251,8 @@ theorem recipPivot_eq (i : ℕ) : recipPivot ρ γ lam i = (ldlPivot ρ γ lam i
     congr 1
     ring
 
-/-- The tests of Algorithm 10.2.1 are the positivity of the pivots. -/
+/-- The test of Algorithm 10.2.1 for a row holds if and only if the corresponding pivot of the
+$LDL^T$ factorization of $T_k + \lambda I_k$ (`Matrix.ldlPivot`) is positive. -/
 theorem pivotTest_iff (i : ℕ) : pivotTest ρ γ lam i ↔ 0 < ldlPivot ρ γ lam i := by
   cases i with
   | zero => rfl
@@ -186,12 +262,22 @@ theorem pivotTest_iff (i : ℕ) : pivotTest ρ γ lam i ↔ 0 < ldlPivot ρ γ l
         γ (i + 1) ^ 2 / ldlPivot ρ γ lam i := by ring
     rw [this, sub_pos]
 
-/-- **Correctness of Algorithm 10.2.1** ([cartis2022evaluation] (10.2.5)–(10.2.6), §10.2.1–10.2.2).
-(i) The algorithm exits with "not positive definite" iff `Tₖ + λ Iₖ` is not positive definite.
-(ii) If it returns `(l, r)`, then `Tₖ + λ Iₖ = Lₖ Dₖ Lₖᵀ` with `Lₖ` unit lower bidiagonal with
-subdiagonal entries `lᵢ` and `Dₖ = diag(1/rᵢ)` with positive entries.
-(iii) If `Tₖ + λ Iₖ` is positive definite, then `Tₖ₊₁ + λ Iₖ₊₁` is positive definite iff
-`ρₖ + λ > γₖ² rₖ₋₁(λ)` (book indexing `ρₖ₊₁ + λ > γₖ₊₁² rₖ(λ)`). -/
+/-- **Algorithm 10.2.1** of [cartis2022evaluation], correctness ((10.2.5)–(10.2.6),
+§10.2.1–§10.2.2). Let $T_m$ be the symmetric tridiagonal matrix with diagonal
+$\rho_1, \dots, \rho_m$ and off-diagonal $\gamma_2, \dots, \gamma_m$, and let
+$\lambda \in \mathbb{R}$.
+
+1. Algorithm 10.2.1 exits with "not positive definite" if and only if $T_k + \lambda I_k$ is not
+   positive definite.
+2. If it returns $(l, r)$, then $T_k + \lambda I_k = L_k D_k L_k^T$, where $L_k$ is unit lower
+   bidiagonal with subdiagonal entries $l_2, \dots, l_k$ and
+   $D_k = \operatorname{diag}(1/r_1, \dots, 1/r_k)$, and every entry $1/r_i$ is positive.
+3. For $m \ge 1$, if $T_m + \lambda I_m$ is positive definite, then $T_{m+1} + \lambda I_{m+1}$
+   is positive definite if and only if $\rho_{m+1} + \lambda > \gamma_{m+1}^2 r_m(\lambda)$.
+
+The matrix $L_k$ is `Matrix.lowerBidiagonalOf` of the multipliers extended by zero. In the Lean
+statement, part 3 has $m = k + 1$, and `ρ (k + 1)`, `γ (k + 1)` and `recipPivot ρ γ lam k` are
+$\rho_{m+1}$, $\gamma_{m+1}$ and $r_m(\lambda)$. -/
 theorem algorithm_10_2_1_spec (k : ℕ) :
     (algorithm_10_2_1 ρ γ lam k = none ↔
       ¬ (symTridiag ρ γ k + lam • (1 : Matrix (Fin k) (Fin k) ℝ)).PosDef) ∧
@@ -239,29 +325,37 @@ theorem algorithm_10_2_1_spec (k : ℕ) :
     rw [hL, hD, symTridiag_add_smul_one_eq_ldl ρ γ lam fun i hi => (hd i (by omega)).ne']
   · rw [posDef_symTridiag_succ_add_iff ρ γ lam h, recipPivot_eq, div_eq_mul_inv]
 
-/-- The forward substitution `x₀ = b₀`, `xᵢ₊₁ = bᵢ₊₁ - lᵢ₊₁ xᵢ` of Algorithm 10.2.2. -/
+/-- The forward substitution of Algorithm 10.2.2 of [cartis2022evaluation]: $x_1 = b_1$ and
+$x_{i+1} = b_{i+1} - l_{i+1} x_i$, with $b$ and $l$ extended by zero beyond $k$. The index is
+$0$-based. -/
 noncomputable def solveForward {k : ℕ} (l b : Fin k → ℝ) : ℕ → ℝ
   | 0 => extendFin b 0
   | i + 1 => extendFin b (i + 1) - extendFin l (i + 1) * solveForward l b i
 
-/-- The backward substitution `xₖ₋₁` unchanged, `xᵢ ← xᵢ - lᵢ₊₁ xᵢ₊₁` of Algorithm 10.2.2. -/
+/-- The backward substitution of Algorithm 10.2.2 of [cartis2022evaluation]: the last entry
+$x_k = z_k$ is unchanged, and $x_i = z_i - l_{i+1} x_{i+1}$ for $i < k$. The index is $0$-based,
+and every index $i \ge k - 1$ gives $z_i$. -/
 noncomputable def solveBackward (k : ℕ) (l' z : ℕ → ℝ) (i : ℕ) : ℝ :=
   if i + 1 < k then z i - l' (i + 1) * solveBackward k l' z (i + 1) else z i
 termination_by k - i
 
+/-- The recursion equation of the backward substitution `CartisGouldToint.Chapter10.solveBackward`:
+the value at $i$ is $z_i - l_{i+1} x_{i+1}$ if $i + 1 < k$, and $z_i$ otherwise. -/
 theorem solveBackward_eq (k : ℕ) (l' z : ℕ → ℝ) (i : ℕ) :
     solveBackward k l' z i =
       if i + 1 < k then z i - l' (i + 1) * solveBackward k l' z (i + 1) else z i := by
   rw [solveBackward]
 
-/-- **Algorithm 10.2.2 of [cartis2022evaluation]** (solve `(Tₖ + λ Iₖ) x = b` with the factors
-`l`, `r` of Algorithm 10.2.1): forward substitution `xᵢ = bᵢ - lᵢ xᵢ₋₁`, scaling `xᵢ ← rᵢ xᵢ`,
-backward substitution `xᵢ₋₁ ← xᵢ₋₁ - lᵢ xᵢ`. -/
+/-- **Algorithm 10.2.2** of [cartis2022evaluation]. Given the factors $l$ and $r$ that Algorithm
+10.2.1 returns for $T_k + \lambda I_k$ and a vector $b \in \mathbb{R}^k$, the algorithm computes
+$x$ by the forward substitution $x_i \leftarrow b_i - l_i x_{i-1}$, the scaling
+$x_i \leftarrow r_i x_i$, and the backward substitution $x_{i-1} \leftarrow x_{i-1} - l_i x_i$. -/
 noncomputable def algorithm_10_2_2 {k : ℕ} (l r b : Fin k → ℝ) : Fin k → ℝ :=
   fun i => solveBackward k (extendFin l) (fun j => extendFin r j * solveForward l b j) i
 
-/-- **Correctness of Algorithm 10.2.2** ((10.2.4)): if Algorithm 10.2.1 returns the factors
-`(l, r)` of `Tₖ + λ Iₖ`, then Algorithm 10.2.2 solves `(Tₖ + λ Iₖ) x = b`. -/
+/-- **Algorithm 10.2.2** of [cartis2022evaluation], correctness ((10.2.4)). If Algorithm 10.2.1
+returns the factors $(l, r)$ of $T_k + \lambda I_k$, then for every $b \in \mathbb{R}^k$ the
+output $x$ of Algorithm 10.2.2 satisfies $(T_k + \lambda I_k) x = b$. -/
 theorem algorithm_10_2_2_spec {k : ℕ} {l r : Fin k → ℝ}
     (h : algorithm_10_2_1 ρ γ lam k = some (l, r)) (b : Fin k → ℝ) :
     (symTridiag ρ γ k + lam • (1 : Matrix (Fin k) (Fin k) ℝ)) *ᵥ algorithm_10_2_2 l r b = b := by
@@ -313,12 +407,19 @@ end Algorithms
 
 /-! ### Monotonicity (Lemma 10.2.1) and the start (§10.2.3) -/
 
-/-- **Lemma 10.2.1 of [cartis2022evaluation] (Nested subspace solutions increase in norm).** Let
-`H` be symmetric, `M` positive definite, `σ > 0`, `r > 2`, `1 ≤ k ≤ ℓ ≤ grade(M⁻¹H, M⁻¹g)`; let
-`sₖ = Qₖ s̄ₖ`, `sℓ = Qℓ s̄ℓ` with `s̄ₖ`, `s̄ℓ` global minimizers of (10.1.6), with multipliers
-`λₖ = σ ‖sₖ‖_M^{r-2}`, `λℓ = σ ‖sℓ‖_M^{r-2}` (10.2.3), and let `s*` be a global minimizer of
-(8.1.3) (printed "(8.1.4)") with `λ* = σ ‖s*‖_M^{r-2}`. Then `λₖ ≤ λℓ ≤ λ*` and
-`‖sₖ‖_M ≤ ‖sℓ‖_M ≤ ‖s*‖_M`. -/
+/-- **Lemma 10.2.1** of [cartis2022evaluation] (nested subspace solutions increase in norm). Let
+$H \in \mathbb{R}^{n \times n}$ be symmetric, $M \in \mathbb{R}^{n \times n}$ positive definite,
+$\sigma > 0$, $r > 2$ and $1 \le k \le \ell \le \operatorname{grade}(M^{-1}H, M^{-1}g)$. Let
+$\bar{s}_k$ and $\bar{s}_\ell$ be global minimizers of the reduced problems (10.1.6) of
+dimensions $k$ and $\ell$, let $s_k = Q_k \bar{s}_k$ and $s_\ell = Q_\ell \bar{s}_\ell$, and let
+$s_*$ be a global minimizer of the regularization subproblem (8.1.3). With the multipliers
+$\lambda_k = \sigma \|s_k\|_M^{r-2}$, $\lambda_\ell = \sigma \|s_\ell\|_M^{r-2}$ (10.2.3) and
+$\lambda_* = \sigma \|s_*\|_M^{r-2}$,
+$$\lambda_k \le \lambda_\ell \le \lambda_* \quad\text{and}\quad \|s_k\|_M \le \|s_\ell\|_M \le
+  \|s_*\|_M.$$
+
+**Typo.** The source refers to "a global minimizer of (8.1.4)". (8.1.4) is the regularized
+model; the problem is (8.1.3). -/
 theorem lemma_10_2_1 (hH : H.IsHermitian) (hM : M.PosDef) {σ r : ℝ} (hσ : 0 < σ) (hr : 2 < r)
     {k ℓ : ℕ} (hk : 1 ≤ k) (hkℓ : k ≤ ℓ) (hℓ : ℓ ≤ gradeHM H M g)
     {sbark : EuclideanSpace ℝ (Fin k)} {sbarl : EuclideanSpace ℝ (Fin ℓ)}
@@ -338,12 +439,18 @@ theorem lemma_10_2_1 (hH : H.IsHermitian) (hM : M.PosDef) {σ r : ℝ} (hσ : 0 
     (toScaled_lanczosBasis_mem hM sbarl) (isMinOn_krylov_of_reduced hH hM hℓ hsl)
     ((isRegularizationSolution_iff_scaled hM).1 hstar)
 
-/-- **Starting the Lanczos process** ([cartis2022evaluation] §10.2.3, (10.2.7)). For `k = 1` the
-problem (10.1.6) is `min_{s ∈ ℝ} γ₁ s + ½ ρ₁ s² + (1/r) σ |s|^r`. Let `γ₁ ≠ 0`, `σ > 0`, `r > 2`
-and let `s̄₁` be a global minimizer, with multiplier `λ₁ = σ |s̄₁|^{r-2}`. Then
-`γ₁ + (ρ₁ + λ₁) s̄₁ = 0` (10.2.7), `ρ₁ + λ₁ > 0` and `λ₁ > 0`, and `λ₁` is the unique root on
-`λ > max(0, -ρ₁)` of the rearranged secular equation `λ (ρ₁ + λ)^{r-2} = σ |γ₁|^{r-2}`; for
-`r = 3` it is the larger root `(-ρ₁ + √(ρ₁² + 4σ|γ₁|))/2` of a quadratic. -/
+/-- **Equation (10.2.7)** of [cartis2022evaluation], the start of the Lanczos process (§10.2.3). For
+$k = 1$ the reduced problem (10.1.6) is
+$$\min_{s \in \mathbb{R}} \; \gamma_1 s + \tfrac12 \rho_1 s^2 + \tfrac1r \sigma |s|^r.$$
+Let $\gamma_1, \rho_1 \in \mathbb{R}$ with $\gamma_1 \neq 0$, let $\sigma > 0$ and $r > 2$, and
+let $\bar{s}_1$ be a global minimizer of this problem, with the multiplier
+$\lambda_1 = \sigma |\bar{s}_1|^{r-2}$. Then $\gamma_1 + (\rho_1 + \lambda_1) \bar{s}_1 = 0$
+(10.2.7), $\rho_1 + \lambda_1 > 0$ and $\lambda_1 > 0$. The multiplier $\lambda_1$ satisfies the
+rearranged secular equation
+$$\lambda (\rho_1 + \lambda)^{r-2} = \sigma |\gamma_1|^{r-2},$$
+and it is the only root of this equation with $\lambda > \max(0, -\rho_1)$. For $r = 3$,
+$\lambda_1 = \bigl(-\rho_1 + \sqrt{\rho_1^2 + 4 \sigma |\gamma_1|}\bigr)/2$, the larger root of
+a quadratic. -/
 theorem start_10_2_3 {γ₁ ρ₁ σ r : ℝ} (hγ : γ₁ ≠ 0) (hσ : 0 < σ) (hr : 2 < r) {s : ℝ}
     (hs : ∀ u : ℝ, γ₁ * s + 1 / 2 * ρ₁ * s ^ 2 + 1 / r * σ * |s| ^ r ≤
       γ₁ * u + 1 / 2 * ρ₁ * u ^ 2 + 1 / r * σ * |u| ^ r) :
@@ -406,9 +513,15 @@ theorem start_10_2_3 {γ₁ ρ₁ σ r : ℝ} (hγ : γ₁ ≠ 0) (hσ : 0 < σ)
 
 /-! ### The gradient bound (Theorem 10.2.2) and the iteration bound (Corollary 10.2.3) -/
 
-/-- The **condition number** `κₖ = κ(Tₖ + λ Iₖ) = (θₖ,ₖ + λ)/(θ₁,ₖ + λ)` of
-[cartis2022evaluation] (10.2.8), `θ₁,ₖ ≤ θₖ,ₖ` the extreme Ritz values (eigenvalues of `Tₖ`,
-`Lanczos.ritzValues`); the book evaluates it at the multiplier `λ = λₖ`. -/
+/-- **Equation (10.2.8)** of [cartis2022evaluation]. The **condition number** of $T_k + \lambda I_k$
+is
+$$\kappa_k(\lambda) = \frac{\theta_{k,k} + \lambda}{\theta_{1,k} + \lambda},$$
+where $\theta_{1,k} \le \theta_{k,k}$ are the smallest and the largest Ritz values, that is,
+eigenvalues of $T_k$. The source evaluates it at the multiplier $\lambda = \lambda_k$.
+
+The Ritz values are `Lanczos.ritzValues` of the operator $M^{-1}H$ in the $M$-inner product
+space and the vector $M^{-1}g$. A zero denominator gives the value $0$, by the Lean convention
+for division. For $k = 0$ the empty supremum and infimum are $0$. -/
 noncomputable def conditionNumber_10_2_8 (hM : M.PosDef) (H : Matrix (Fin n) (Fin n) ℝ)
     (g : EuclideanSpace ℝ (Fin n)) (k : ℕ) (lam : ℝ) : ℝ :=
   ((⨆ i, Lanczos.ritzValues (scaledOp H hM : ScaledSpace hM →ₗ[ℝ] ScaledSpace hM)
@@ -416,34 +529,48 @@ noncomputable def conditionNumber_10_2_8 (hM : M.PosDef) (H : Matrix (Fin n) (Fi
     ((⨅ i, Lanczos.ritzValues (scaledOp H hM : ScaledSpace hM →ₗ[ℝ] ScaledSpace hM)
       (scaledGrad hM g) k i) + lam)
 
-/-- The **largest condition number** `κ* = max_{1 ≤ k ≤ grade} κₖ(λₖ)` of [cartis2022evaluation]
-(10.2.10), for multipliers `λₖ = lam k`. -/
+/-- **Equation (10.2.10)** of [cartis2022evaluation]. For multipliers $\lambda_k$, the **largest
+condition number** is
+$$\kappa_* = \max_{1 \le k \le \operatorname{grade}(M^{-1}H, M^{-1}g)} \kappa_k(\lambda_k).$$
+
+The multipliers are a sequence `lam : ℕ → ℝ`. If the grade is $0$, the supremum is over the
+empty set and equals $0$. -/
 noncomputable def kappaStar (hM : M.PosDef) (H : Matrix (Fin n) (Fin n) ℝ)
     (g : EuclideanSpace ℝ (Fin n)) (lam : ℕ → ℝ) : ℝ :=
   ⨆ k : Finset.Icc 1 (gradeHM H M g), conditionNumber_10_2_8 hM H g k (lam k)
 
-/-- Below the grade, `κₖ` is the condition number of the shifted compression of `M⁻¹H` to
-`𝒦ₖ`. -/
+/-- Let $H$ be symmetric and $M$ positive definite. For
+$k \le \operatorname{grade}(M^{-1}H, M^{-1}g)$ and every $\lambda$, the condition number
+$\kappa_k(\lambda)$ of (10.2.8) equals `Subproblem.krylovCond`, the ratio $(\lambda_{\max} +
+\lambda)/(\lambda_{\min} + \lambda)$ for the extreme eigenvalues of the compression of $M^{-1}H$
+to $\mathcal{K}_k$. -/
 theorem conditionNumber_eq_krylovCond (hH : H.IsHermitian) (hM : M.PosDef) {k : ℕ}
     (hk : k ≤ gradeHM H M g) (lam : ℝ) :
     conditionNumber_10_2_8 hM H g k lam =
       krylovCond (isSymmetric_scaledOp hH) (scaledGrad hM g) k lam := by
   rw [krylovCond_eq_ritzValues _ (by rw [← gradeHM_eq hM]; exact hk), conditionNumber_10_2_8]
 
-/-- `κₖ ≤ κ*`. -/
+/-- For every sequence of multipliers $\lambda_k$ and every $1 \le k \le
+\operatorname{grade}(M^{-1}H, M^{-1}g)$, $\kappa_k(\lambda_k) \le \kappa_*$. -/
 theorem le_kappaStar (hM : M.PosDef) (lam : ℕ → ℝ) {k : ℕ} (hk1 : 1 ≤ k)
     (hk : k ≤ gradeHM H M g) :
     conditionNumber_10_2_8 hM H g k (lam k) ≤ kappaStar hM H g lam :=
   le_ciSup (f := fun k : Finset.Icc 1 (gradeHM H M g) => conditionNumber_10_2_8 hM H g k (lam k))
     (Finite.bddAbove_range _) ⟨k, Finset.mem_Icc.2 ⟨hk1, hk⟩⟩
 
-/-- **Theorem 10.2.2 of [cartis2022evaluation] (Bound on the gradient at the subspace
-minimizer).** Let `H` be symmetric, `M` positive definite, `σ > 0`, `r > 2`,
-`1 ≤ k ≤ grade(M⁻¹H, M⁻¹g)`, let `s̄ₖ` globally minimize (10.1.6), `sₖ = Qₖ s̄ₖ`,
-`λₖ = σ ‖sₖ‖_M^{r-2}` (10.2.3) and `κₖ` the condition number (10.2.8). Then the gradient (8.2.34)
-`∇ₛ m^R(sₖ) = g + H sₖ + λₖ M sₖ` satisfies (10.2.9):
-`‖∇ₛ m^R(sₖ)‖_{M⁻¹} ≤ 2 ‖M⁻¹H‖ κₖ (λₖ/σ)^{1/(r-2)} ((√κₖ - 1)/(√κₖ + 1))^{k-1}`,
-`‖M⁻¹H‖` the operator norm induced by `‖·‖_M`. -/
+/-- **Theorem 10.2.2** of [cartis2022evaluation] (bound on the gradient at the subspace minimizer).
+Let $H \in \mathbb{R}^{n \times n}$ be symmetric, $M \in \mathbb{R}^{n \times n}$ positive
+definite, $\sigma > 0$, $r > 2$ and $1 \le k \le \operatorname{grade}(M^{-1}H, M^{-1}g)$. Let
+$\bar{s}_k$ be a global minimizer of the reduced problem (10.1.6), let $s_k = Q_k \bar{s}_k$,
+let $\lambda_k = \sigma \|s_k\|_M^{r-2}$ (10.2.3), and let $\kappa_k = \kappa_k(\lambda_k)$ be
+the condition number (10.2.8). Then the gradient $\nabla_s m^R(s_k) = g + H s_k + \lambda_k M
+s_k$ of (8.2.34) satisfies (10.2.9):
+$$\|\nabla_s m^R(s_k)\|_{M^{-1}} \le 2 \|M^{-1}H\| \, \kappa_k
+  \Bigl(\frac{\lambda_k}{\sigma}\Bigr)^{1/(r-2)} \Bigl(\frac{\sqrt{\kappa_k} -
+  1}{\sqrt{\kappa_k} + 1}\Bigr)^{k-1}.$$
+
+The norm $\|M^{-1}H\|$ is the operator norm induced by $\|\cdot\|_M$, the norm of
+`Subproblem.scaledOp H hM`. -/
 theorem theorem_10_2_2 (hH : H.IsHermitian) (hM : M.PosDef) {σ r : ℝ} (hσ : 0 < σ) (hr : 2 < r)
     {k : ℕ} (hk1 : 1 ≤ k) (hk : k ≤ gradeHM H M g) {sbar : EuclideanSpace ℝ (Fin k)}
     (hs : IsRegularizationSolution (lanczosGrad hM H g k) (lanczosTridiag hM H g k) 1 σ r sbar) :
@@ -467,15 +594,32 @@ theorem theorem_10_2_2 (hH : H.IsHermitian) (hM : M.PosDef) {σ r : ℝ} (hσ : 
   rw [mNorm_inv_gradient hM, mNorm_eq_norm_toScaled hM, conditionNumber_eq_krylovCond hH hM hk]
   exact hbound
 
-/-- **Corollary 10.2.3 of [cartis2022evaluation] (Iteration bound for the subspace
-approximation)**, corrected. Let `H` be symmetric, `M` positive definite, `g ≠ 0`, `σ > 0`,
-`r > 2`, `θ₁ > 0`; for `1 ≤ k ≤ grade(M⁻¹H, M⁻¹g)` let `s̄ₖ` globally minimize (10.1.6),
-`sₖ = Qₖ s̄ₖ`, `λₖ = σ ‖sₖ‖_M^{r-2}`, and let `s*` globally minimize (8.1.3),
-`λ* = σ ‖s*‖_M^{r-2}`. Let `κ*` be (10.2.10), `λ_max[H, M]` the largest pencil eigenvalue and
-`A = (4 ‖M⁻¹H‖_M κ*/θ₁) (λ*/σ)^{1/(r-2)} ((λ_max[H, M] + λ*)/‖g‖_{M⁻¹})²`. Then the stopping rule
-(9.3.14b) `‖g + H sₖ + λₖ M sₖ‖_{M⁻¹} ≤ ½ θ₁ ‖sₖ‖_M²` holds for some
-`1 ≤ k ≤ min(⌈log A / log((√κ* + 1)/(√κ* - 1))⌉₊ + 1, grade)` when `κ* > 1`, and for some
-`1 ≤ k ≤ min(2, grade)` when `κ* = 1`. -/
+/-- **Corollary 10.2.3** of [cartis2022evaluation] (iteration bound for the subspace approximation).
+Let $H \in \mathbb{R}^{n \times n}$ be symmetric, $M \in \mathbb{R}^{n \times n}$ positive
+definite, $g \neq 0$, $\sigma > 0$, $r > 2$ and $\theta_1 > 0$. For every $1 \le k \le
+\operatorname{grade}(M^{-1}H, M^{-1}g)$ let $\bar{s}_k$ be a global minimizer of the reduced
+problem (10.1.6), let $s_k = Q_k \bar{s}_k$ and $\lambda_k = \sigma \|s_k\|_M^{r-2}$. Let $s_*$
+be a global minimizer of the regularization subproblem (8.1.3), and
+$\lambda_* = \sigma \|s_*\|_M^{r-2}$. Let $\kappa_*$ be the largest condition number (10.2.10),
+$\lambda_{\max}[H, M]$ the largest eigenvalue of the pencil $(H, M)$, and
+$$A = \frac{4 \|M^{-1}H\| \kappa_*}{\theta_1} \Bigl(\frac{\lambda_*}{\sigma}\Bigr)^{1/(r-2)}
+  \Bigl(\frac{\lambda_{\max}[H, M] + \lambda_*}{\|g\|_{M^{-1}}}\Bigr)^2.$$
+If $\kappa_* > 1$, the stopping rule (9.3.14b)
+$$\|g + H s_k + \lambda_k M s_k\|_{M^{-1}} \le \tfrac12 \theta_1 \|s_k\|_M^2$$
+holds for some $k$ with
+$$1 \le k \le \min\Bigl(\Bigl\lceil \frac{\log A}{\log((\sqrt{\kappa_*} + 1)/(\sqrt{\kappa_*} -
+  1))} \Bigr\rceil_+ + 1, \; \operatorname{grade}(M^{-1}H, M^{-1}g)\Bigr).$$
+If $\kappa_* = 1$, it holds for some $1 \le k \le \min(2, \operatorname{grade}(M^{-1}H,
+M^{-1}g))$.
+
+**Correction.** The source prints the bound $\lceil \log A / \log((\sqrt{\kappa_*} +
+1)/(\sqrt{\kappa_*} - 1)) \rceil + 1$. This bound cannot be met when $\log A < 0$, for example
+for a large $\theta_1$, and it is undefined for $\kappa_* = 1$. Here the ceiling is
+$\lceil x \rceil_+ = \max(\lceil x \rceil, 0)$, the case $\kappa_* = 1$ is stated separately,
+and the hypothesis $g \neq 0$, which the proof needs, is added.
+
+The norm $\|M^{-1}H\|$ is the operator norm induced by $\|\cdot\|_M$, and $\lambda_{\max}[H, M]$
+is `CartisGouldToint.Chapter09.rightmostPencil`. The logarithm is `Real.log`. -/
 theorem corollary_10_2_3 (hH : H.IsHermitian) (hM : M.PosDef) (hg : g ≠ 0) {σ r θ : ℝ}
     (hσ : 0 < σ) (hr : 2 < r) (hθ : 0 < θ) {sbar : (k : ℕ) → EuclideanSpace ℝ (Fin k)}
     (hs : ∀ k, 1 ≤ k → k ≤ gradeHM H M g →

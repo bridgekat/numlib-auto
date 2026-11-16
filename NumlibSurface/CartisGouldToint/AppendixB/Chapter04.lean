@@ -6,39 +6,57 @@ import Mathlib.Analysis.InnerProductSpace.PiL2
 import Numlib.Analysis.InnerProductSpace.NormPowIteratedFDeriv
 
 /-!
-# Cartis–Gould–Toint, Appendix B: Appendix to Chapter 4
+# Cartis, Gould and Toint, Appendix B: Appendix to Chapter 4
 
-Surface file for C. Cartis, N. I. M. Gould and Ph. L. Toint, *Evaluation Complexity of
-Algorithms for Nonconvex Optimization* [cartis2022evaluation], Appendix B, "Appendix to
-Chapter 4": Lemma B.4.1 on the derivatives of the regularization term `‖s‖^{p+β}`,
-`β ∈ (0, 1]`, on `ℝⁿ = EuclideanSpace ℝ (Fin n)`. The tensor norm (A.7) is the operator norm of
-multilinear maps, `∇^j_s(‖s‖^{p+β})` is `iteratedFDeriv ℝ j (fun s ↦ ‖s‖ ^ (p + β)) s`, and
-`(k + β)! = ∏_{ℓ=1}^k (ℓ + β)` is `holderFactorial k β`. The content is in the backbone module
-`Numlib.Analysis.InnerProductSpace.NormPowIteratedFDeriv` (on any real inner product space).
+This module formalizes the part of Appendix B of [cartis2022evaluation] that belongs to Chapter 4:
+Lemma B.4.1 on the derivatives of the regularization term $s \mapsto \|s\|^{p+\beta}$ on
+$\mathbb{R}^n$, for $\beta \in (0, 1]$. For $j \le p$ the norm of the $j$-th derivative is
+$\frac{(p+\beta)!}{(p-j+\beta)!} \|s\|^{p-j+\beta}$, where
+$(k + \beta)! = \prod_{\ell=1}^k (\ell + \beta)$. The $(p+1)$-st derivative has the norm $(p+1)!$
+for $\beta = 1$; for $\beta < 1$ the book's formula for it gives only its value in the radial
+direction. The content is in the backbone module
+`Numlib.Analysis.InnerProductSpace.NormPowIteratedFDeriv`, which works on any real inner product
+space.
 
 ## Main results
 
-* `lemma_B_4_1_i` — (B.4.1), with the diagonal form `lemma_B_4_1_i_apply_le`.
-* `lemma_B_4_1_ii` — (B.4.2).
-* `lemma_B_4_1_iii` — (B.4.3) for `β = 1`; `lemma_B_4_1_iii_radial` and
-  `lemma_B_4_1_iii_bound` — what remains true for `β ∈ (0, 1)`; `lemma_B_4_1_iii_false` — the
-  printed (B.4.3) is false for `β < 1`.
-* `lemma_B_4_1_iv` — the convexity claims.
+* Lemma B.4.1, (B.4.1), `CartisGouldToint.AppendixB.lemma_B_4_1_i`: the norm of the $j$-th
+  derivative for $j \le p$.
+* Lemma B.4.1, (B.4.1), `CartisGouldToint.AppendixB.lemma_B_4_1_i_apply_le`: the corresponding bound
+  on the $j$-th derivative applied to $[v]^j$.
+* Lemma B.4.1, (B.4.2), `CartisGouldToint.AppendixB.lemma_B_4_1_ii`: the $j$-th derivative applied
+  to $[s]^j$.
+* Lemma B.4.1, (B.4.3), `CartisGouldToint.AppendixB.lemma_B_4_1_iii`: the norm of the $(p+1)$-st
+  derivative for $\beta = 1$.
+* Lemma B.4.1, (B.4.3), `CartisGouldToint.AppendixB.lemma_B_4_1_iii_radial`: the book's value is the
+  radial value of the $(p+1)$-st derivative and a lower bound for its norm.
+* Lemma B.4.1, (B.4.3), `CartisGouldToint.AppendixB.lemma_B_4_1_iii_bound`: the norm of the
+  $(p+1)$-st derivative is $O(\|s\|^{\beta-1})$.
+* Lemma B.4.1, (B.4.3), `CartisGouldToint.AppendixB.lemma_B_4_1_iii_false`: the printed (B.4.3) is
+  false for $\beta < 1$.
+* Lemma B.4.1, convexity, `CartisGouldToint.AppendixB.lemma_B_4_1_iv`: the convexity claims.
 
-## Deviations from the book
+## Conventions
 
-* **(B.4.3) is false for `β ∈ (0, 1)`**: for `n = 2`, `p = 1`, `β = 1/2` and `s = e₁` the norm of
-  `∇²_s ‖s‖^{3/2}` is at least `3/2`, while the book's value is `β (p+β)! ‖s‖^{β-1} = 3/4`
-  (`lemma_B_4_1_iii_false`): the derivative is larger in directions orthogonal to `s`. The book's
-  value is the radial value and a lower bound (`lemma_B_4_1_iii_radial`), and the norm is
-  `O(‖s‖^{β-1})` (`lemma_B_4_1_iii_bound`). For `β = 1`, the only case used in the book, (B.4.3)
-  holds (`lemma_B_4_1_iii`). The counterexample needs `n ≥ 2`: for `n = 1` there is no direction
-  orthogonal to `s` and the radial value is the norm (this case is not formalized separately).
-* (B.4.1) and (B.4.2) hold for every `s`, including `s = 0`, as the book states. The convexity
-  claims are proved for `s ≠ 0` (for `s = 0` only for `j ≤ p`, where the derivative vanishes) and
-  for derivative orders `j ≤ p + 1`, a range the book leaves implicit.
-* The book's proof of (B.4.1) maximizes over the radial direction without justification; the
-  backbone uses an averaging identity over the unit ball instead.
+* $\mathbb{R}^n$ is `EuclideanSpace ℝ (Fin n)`, and the tensor norm (A.7) is the operator norm of
+  multilinear maps.
+* $\nabla^j_s(\|s\|^{p+\beta})$ is `iteratedFDeriv ℝ j (fun s ↦ ‖s‖ ^ (p + β)) s`.
+* $(k + \beta)!$ is `holderFactorial k β`.
+
+## Implementation notes
+
+* (B.4.1) and (B.4.2) hold for every $s$, including $s = 0$, as the book states.
+
+## Deviations from the source
+
+* **Lemma B.4.1, (B.4.3)** (correction). The book's equality is false for $\beta \in (0, 1)$: for
+  $n = 2$, $p = 1$ and $\beta = 1/2$ the norm at $s = e_1$ is at least $3/2$, while the book's value
+  is $3/4$. The book's value is the radial value and a lower bound, and it is correct for
+  $\beta = 1$, the only case that the book uses. See
+  `CartisGouldToint.AppendixB.lemma_B_4_1_iii_false`.
+* **Lemma B.4.1, convexity** (reading). The convexity claims are proved for $s \neq 0$, or for
+  $s = 0$ when $j \le p$, and for derivative orders $j \le p + 1$, a range that the book leaves
+  implicit. See `CartisGouldToint.AppendixB.lemma_B_4_1_iv`.
 -/
 
 open Set
@@ -53,8 +71,14 @@ private theorem natCast_lt_add_of_le {j : ℕ} (hβ : β ∈ Ioc (0 : ℝ) 1) (h
   have : (j : ℝ) ≤ p := by exact_mod_cast hj
   linarith [hβ.1]
 
-/-- **Lemma B.4.1, (B.4.1)** of [cartis2022evaluation]. For `β ∈ (0, 1]`, `j ∈ [0 : p]` and every
-`s ∈ ℝⁿ`, `‖∇^j_s(‖s‖^{p+β})‖ = (p+β)!/(p-j+β)! ‖s‖^{p-j+β}`. -/
+/-- **Lemma B.4.1, (B.4.1)** of [cartis2022evaluation]. Let $\beta \in (0, 1]$, let $j \le p$, and
+let $s \in \mathbb{R}^n$. Then
+$$\bigl\|\nabla^j_s(\|s\|^{p+\beta})\bigr\| = \frac{(p+\beta)!}{(p-j+\beta)!}
+  \|s\|^{p-j+\beta}.$$
+
+The equality holds also at $s = 0$, as the book states. The book's proof maximizes over the
+radial direction without justification; the backbone proof uses an averaging identity over the
+unit ball instead. -/
 theorem lemma_B_4_1_i (hβ : β ∈ Ioc (0 : ℝ) 1) {j : ℕ} (hj : j ≤ p)
     (s : EuclideanSpace ℝ (Fin n)) :
     ‖iteratedFDeriv ℝ j (fun s : EuclideanSpace ℝ (Fin n) ↦ ‖s‖ ^ ((p : ℝ) + β)) s‖ =
@@ -68,9 +92,11 @@ theorem lemma_B_4_1_i (hβ : β ∈ Ioc (0 : ℝ) 1) {j : ℕ} (hj : j ≤ p)
       mul_zero]
   · exact norm_iteratedFDeriv_normRpow hjl.le hs
 
-/-- **Lemma B.4.1, (B.4.1)**, diagonal form ([cartis2022evaluation]): for `β ∈ (0, 1]`,
-`j ∈ [0 : p]` and `s, v ∈ ℝⁿ`,
-`|∇^j_s(‖s‖^{p+β})[v]^j| ≤ (p+β)!/(p-j+β)! ‖s‖^{p-j+β} ‖v‖^j`. -/
+/-- **Lemma B.4.1, (B.4.1)** of [cartis2022evaluation], applied to a vector. Let $\beta \in (0, 1]$,
+let $j \le p$, and let $s, v \in \mathbb{R}^n$. Then
+$$\bigl|\nabla^j_s(\|s\|^{p+\beta})[v]^j\bigr| \le \frac{(p+\beta)!}{(p-j+\beta)!}
+  \|s\|^{p-j+\beta} \|v\|^j.$$
+-/
 theorem lemma_B_4_1_i_apply_le (hβ : β ∈ Ioc (0 : ℝ) 1) {j : ℕ} (hj : j ≤ p)
     (s v : EuclideanSpace ℝ (Fin n)) :
     |iteratedFDeriv ℝ j (fun s : EuclideanSpace ℝ (Fin n) ↦ ‖s‖ ^ ((p : ℝ) + β)) s
@@ -81,8 +107,10 @@ theorem lemma_B_4_1_i_apply_le (hβ : β ∈ Ioc (0 : ℝ) 1) {j : ℕ} (hj : j 
   refine (ContinuousMultilinearMap.le_opNorm _ _).trans_eq ?_
   rw [Finset.prod_const, Finset.card_univ, Fintype.card_fin]
 
-/-- **Lemma B.4.1, (B.4.2)** of [cartis2022evaluation]. For `β ∈ (0, 1]`, `j ∈ [0 : p]` and every
-`s ∈ ℝⁿ`, `∇^j_s(‖s‖^{p+β})[s]^j = (p+β)!/(p-j+β)! ‖s‖^{p+β}`. -/
+/-- **Lemma B.4.1, (B.4.2)** of [cartis2022evaluation]. Let $\beta \in (0, 1]$, let $j \le p$, and
+let $s \in \mathbb{R}^n$. Then
+$$\nabla^j_s(\|s\|^{p+\beta})[s]^j = \frac{(p+\beta)!}{(p-j+\beta)!} \|s\|^{p+\beta}.$$
+-/
 theorem lemma_B_4_1_ii (hβ : β ∈ Ioc (0 : ℝ) 1) {j : ℕ} (hj : j ≤ p)
     (s : EuclideanSpace ℝ (Fin n)) :
     iteratedFDeriv ℝ j (fun s : EuclideanSpace ℝ (Fin n) ↦ ‖s‖ ^ ((p : ℝ) + β)) s (fun _ ↦ s) =
@@ -94,10 +122,13 @@ theorem lemma_B_4_1_ii (hβ : β ∈ Ioc (0 : ℝ) 1) {j : ℕ} (hj : j ≤ p)
     rfl
   · exact iteratedFDeriv_normRpow_apply_self _ j hs
 
-/-- **Lemma B.4.1, (B.4.3)** of [cartis2022evaluation], for `β = 1`: for `s ≠ 0`,
-`‖∇^{p+1}_s(‖s‖^{p+β})‖ = β (p+β)! ‖s‖^{β-1}` with `β = 1`, that is,
-`‖∇^{p+1}_s ‖s‖^{p+1}‖ = (p+1)!`. For `β ∈ (0, 1)` the equality is false
-(`lemma_B_4_1_iii_false`). -/
+/-- **Lemma B.4.1, (B.4.3)** of [cartis2022evaluation], the case $\beta = 1$. Let
+$s \in \mathbb{R}^n$ with $s \neq 0$. Then the norm of $\nabla^{p+1}_s(\|s\|^{p+1})$ equals the
+book's value $\beta (p+\beta)! \|s\|^{\beta-1}$ at $\beta = 1$, that is,
+$$\bigl\|\nabla^{p+1}_s(\|s\|^{p+1})\bigr\| = (p+1)!.$$
+
+For $\beta \in (0, 1)$ the equality (B.4.3) is false; see
+`CartisGouldToint.AppendixB.lemma_B_4_1_iii_false`. -/
 theorem lemma_B_4_1_iii {s : EuclideanSpace ℝ (Fin n)} (hs : s ≠ 0) :
     ‖iteratedFDeriv ℝ (p + 1) (fun s : EuclideanSpace ℝ (Fin n) ↦ ‖s‖ ^ ((p : ℝ) + 1)) s‖ =
         1 * holderFactorial p 1 * ‖s‖ ^ ((1 : ℝ) - 1) ∧
@@ -111,10 +142,15 @@ theorem lemma_B_4_1_iii {s : EuclideanSpace ℝ (Fin n)} (hs : s ≠ 0) :
   refine ⟨h, ?_⟩
   rw [h, sub_self, Real.rpow_zero, mul_one, one_mul, holderFactorial_one_right]
 
-/-- **Lemma B.4.1, (B.4.3)**, what holds for every `β ∈ (0, 1]` ([cartis2022evaluation]): for
-`s ≠ 0`, the book's value `β (p+β)! ‖s‖^{β-1}` is the radial value
-`∇^{p+1}_s(‖s‖^{p+β})[s/‖s‖]^{p+1}`, hence a lower bound for the norm
-`‖∇^{p+1}_s(‖s‖^{p+β})‖`. -/
+/-- **Lemma B.4.1, (B.4.3)** of [cartis2022evaluation], the radial value. Let $\beta \in \mathbb{R}$
+and let $s \in \mathbb{R}^n$ with $s \neq 0$. Then the book's value is the value of the
+$(p+1)$-st derivative in the radial direction,
+$$\nabla^{p+1}_s(\|s\|^{p+\beta})\Bigl[\frac{s}{\|s\|}\Bigr]^{p+1} = \beta (p+\beta)!
+  \|s\|^{\beta-1},$$
+and therefore $\beta (p+\beta)! \|s\|^{\beta-1} \le
+\bigl\|\nabla^{p+1}_s(\|s\|^{p+\beta})\bigr\|$.
+
+This holds for every real $\beta$, without the hypothesis $\beta \in (0, 1]$. -/
 theorem lemma_B_4_1_iii_radial (β : ℝ) {s : EuclideanSpace ℝ (Fin n)} (hs : s ≠ 0) :
     iteratedFDeriv ℝ (p + 1) (fun s : EuclideanSpace ℝ (Fin n) ↦ ‖s‖ ^ ((p : ℝ) + β)) s
         (fun _ ↦ ‖s‖⁻¹ • s) = β * holderFactorial p β * ‖s‖ ^ (β - 1) ∧
@@ -131,9 +167,12 @@ theorem lemma_B_4_1_iii_radial (β : ℝ) {s : EuclideanSpace ℝ (Fin n)} (hs :
   have hnx : 0 < ‖s‖ := norm_pos_iff.2 hs
   simp [norm_smul, inv_mul_cancel₀ hnx.ne']
 
-/-- **Lemma B.4.1, (B.4.3)**, the bound that holds for every `β` ([cartis2022evaluation]): there
-is a constant `C ≥ 0` (depending on `n`, `p`, `β`) with
-`‖∇^{p+1}_s(‖s‖^{p+β})‖ ≤ C ‖s‖^{β-1}` for all `s ≠ 0`. -/
+/-- **Lemma B.4.1, (B.4.3)** of [cartis2022evaluation], the bound that remains true. For all
+$n, p \in \mathbb{N}$ and $\beta \in \mathbb{R}$ there is a constant $C \ge 0$ with
+$$\bigl\|\nabla^{p+1}_s(\|s\|^{p+\beta})\bigr\| \le C \|s\|^{\beta-1} \quad \text{for all } s
+  \in \mathbb{R}^n \setminus \{0\}.$$
+
+The constant depends on $n$, $p$ and $\beta$. -/
 theorem lemma_B_4_1_iii_bound (n p : ℕ) (β : ℝ) :
     ∃ C : ℝ, 0 ≤ C ∧ ∀ s : EuclideanSpace ℝ (Fin n), s ≠ 0 →
       ‖iteratedFDeriv ℝ (p + 1) (fun s : EuclideanSpace ℝ (Fin n) ↦ ‖s‖ ^ ((p : ℝ) + β)) s‖ ≤
@@ -143,9 +182,15 @@ theorem lemma_B_4_1_iii_bound (n p : ℕ) (β : ℝ) :
   have he : (p : ℝ) + β - ((p + 1 : ℕ) : ℝ) = β - 1 := by push_cast; ring
   exact ⟨C, hC0, fun s hs ↦ he ▸ hC s hs⟩
 
-/-- **(B.4.3) of [cartis2022evaluation] is false for `β < 1`.** It is not true that for all `n`,
-`p`, `β ∈ (0, 1]` and `s ≠ 0` in `ℝⁿ`, `‖∇^{p+1}_s(‖s‖^{p+β})‖ = β (p+β)! ‖s‖^{β-1}`: it fails
-for `n = 2`, `p = 1`, `β = 1/2`, `s = e₁`. -/
+/-- **Lemma B.4.1, (B.4.3)** of [cartis2022evaluation] is false for $\beta < 1$. It is not true that
+for all $n, p \in \mathbb{N}$, all $\beta \in (0, 1]$ and all nonzero $s \in \mathbb{R}^n$,
+$$\bigl\|\nabla^{p+1}_s(\|s\|^{p+\beta})\bigr\| = \beta (p+\beta)! \|s\|^{\beta-1}.$$
+
+The equality fails for $n = 2$, $p = 1$, $\beta = 1/2$ and $s = e_1$: the norm is at least
+$3/2$, while the right-hand side is $3/4$, because the derivative is larger in the directions
+orthogonal to $s$. The counterexample needs $n \ge 2$; for $n = 1$ there is no direction
+orthogonal to $s$, and the radial value is the norm. The case $n = 1$ is not formalized
+separately. -/
 theorem lemma_B_4_1_iii_false :
     ¬ ∀ (n p : ℕ) (β : ℝ), β ∈ Ioc (0 : ℝ) 1 → ∀ s : EuclideanSpace ℝ (Fin n), s ≠ 0 →
       ‖iteratedFDeriv ℝ (p + 1) (fun s : EuclideanSpace ℝ (Fin n) ↦ ‖s‖ ^ ((p : ℝ) + β)) s‖ =
@@ -160,9 +205,15 @@ theorem lemma_B_4_1_iii_false :
   rw [h3] at h1
   exact not_norm_iteratedFDeriv_normRpow_eq_radial.ne' h1
 
-/-- **Lemma B.4.1, convexity** ([cartis2022evaluation]). For `β ∈ (0, 1]`, `j ≤ p + 1` and
-`s ≠ 0` (or `j ≤ p`), `d ↦ ∇^j_s(‖s‖^{p+β})[d]^j` is convex on the orthogonal complement of `s`,
-and for even `j`, `t ↦ ∇^j_s(‖s‖^{p+β})[t s]^j` is convex on `ℝ`. -/
+/-- **Lemma B.4.1, convexity** of [cartis2022evaluation]. Let $\beta \in (0, 1]$, let $j \le p + 1$,
+and let $s \in \mathbb{R}^n$ with $s \neq 0$ or $j \le p$. Then the map
+$d \mapsto \nabla^j_s(\|s\|^{p+\beta})[d]^j$ is convex on the orthogonal complement of $s$. If
+moreover $j$ is even, then the map $t \mapsto \nabla^j_s(\|s\|^{p+\beta})[ts]^j$ is convex on
+$\mathbb{R}$.
+
+**Reading.** The book leaves the range of $j$ and the case $s = 0$ implicit. The claims are
+proved for $j \le p + 1$ and $s \neq 0$, and for $s = 0$ only when $j \le p$, where the
+derivative vanishes. -/
 theorem lemma_B_4_1_iv (hβ : β ∈ Ioc (0 : ℝ) 1) {j : ℕ} (hj : j ≤ p + 1)
     {s : EuclideanSpace ℝ (Fin n)} (hs : s ≠ 0 ∨ j ≤ p) :
     ConvexOn ℝ ((ℝ ∙ s)ᗮ : Set (EuclideanSpace ℝ (Fin n)))

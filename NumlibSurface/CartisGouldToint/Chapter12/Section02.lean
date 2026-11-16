@@ -13,111 +13,228 @@ import NumlibSurface.CartisGouldToint.Chapter02.Section01
 import NumlibSurface.CartisGouldToint.Chapter12.Section01
 
 /-!
-# Cartis–Gould–Toint §12.2: Finding approximate minimizers of arbitrary order
+# Cartis, Gould and Toint, Section 12.2: Finding approximate minimizers of arbitrary order
 
-Surface file for C. Cartis, N. I. M. Gould and Ph. L. Toint, *Evaluation Complexity of
-Algorithms for Nonconvex Optimization* [cartis2022evaluation], §12.2: the trust-region method TRq
-(§12.2.1) and the adaptive-regularization method ARqp (§12.2.2) for `(ε, δ)`-approximate
-`q`-th order minimizers (12.1.25), their evaluation complexity and its sharpness.
+This module formalizes Section 12.2 of [cartis2022evaluation]: the trust-region method TRq (Section
+12.2.1) and the adaptive-regularization method ARqp (Section 12.2.2) for
+$(\varepsilon, \delta)$-approximate $q$-th order minimizers (12.1.25), their evaluation complexity,
+and the sharpness of the complexity bounds. At an iterate $x_k$, both methods compare the decreases
+$\Delta T_{f,j}(x_k, d) = T_{f,j}(x_k, 0) - T_{f,j}(x_k, d)$ of the Taylor models of the orders
+$j \in [1:q]$ with the tolerances $\varepsilon_j$. The Step-1 test stops when an approximate
+maximizer $d_{k,j}$ of $\Delta T_{f,j}(x_k, \cdot)$ on the ball of radius $\delta_{k,j}$ gives
+$\Delta T_{f,j}(x_k, d_{k,j}) \le \varsigma \varepsilon_j \delta_{k,j}^j/j!$ for every $j$.
+Otherwise TRq takes a step in a trust region of radius $\Delta_k$ that decreases the Taylor model of
+the first order that fails the test, and ARqp takes a step that approximately minimizes the
+regularized model
+$$m_k(s) = T_{f,p}(x_k, s) + \frac{\sigma_k}{(p+1)!} \|s\|^{p+1}, \qquad p \ge q.$$
+TRq needs a number of evaluations of order $\varepsilon_{\min}^{-(q+1)}$ (Theorem 12.2.5). ARqp
+needs a number of order $\max_j \varepsilon_j^{-\pi_j}$, with $\pi_j = (p+1)/(p-j+1)$ for $q \le 2$
+and $\pi_j = j(p+1)/p$ for $q > 2$ (Theorem 12.2.14). Examples in one variable show that these
+orders are attained (Theorems 12.2.6, 12.2.15 and 12.2.17, Corollary 12.2.16).
 
-The algorithms are the backbone run predicates with exact Taylor data:
-* `algorithm_12_2_1` is `Optimization.IsTRqRun` with `D k = ftaylorSeries ℝ f (x k)` and no
-  constraints (built on the generic trust-region run `Optimization.IsTRRun`);
-* `algorithm_12_2_2` is `Optimization.IsARqpRun` with the model data
-  `Optimization.ARqpData.ofTaylor (ftaylorSeries ℝ f (x k)) p (σ k)` and no constraints (built on
-  the generic adaptive-regularization run `Optimization.IsARRun`);
-* `algorithm_12_2_3` is the instance `J = {j | 3 ≤ j}` of the backbone transition system
-  `Optimization.DetailedStepTrans` (Algorithm 12.2.3, the detailed Step 2).
-
-The definitions are stated on any real inner product space `E`; the complexity theorems on
-`ℝⁿ = EuclideanSpace ℝ (Fin n)`, and the sharpness examples, like the book's, on `ℝ`.
-Evaluation counts: `Optimization.funEvalCount k = k + 1` (one evaluation of `f` per iteration and
-the initial one) and `Optimization.derivEvalCount succ k` (the initial evaluation of the
-derivatives and one per successful iteration before `k`).
-
-The analyses are those of the library, stated once on a feasible set `X` under the anchored
-smoothness assumption `LipschitzDerivsAnchored` (derivatives Lipschitz anchored at the points of a
-set containing the sublevel set `{y ∈ X | f(y) ≤ f(x₀)}`):
-`Numlib.Optimization.ModelBased.HighOrder.TRqComplexity` (TRq: Lemmas 12.2.3–12.2.4, Theorem
-12.2.5), `Numlib.Optimization.ModelBased.HighOrder.ARqpComplexity` (ARqp: Lemmas 12.2.9–12.2.13,
-Theorem 12.2.14, in either radii mode) and
-`Numlib.Optimization.ModelBased.HighOrder.ARqpDetailedStep` (Algorithm 12.2.3 terminates and
-returns admissible steps). The book's statements below are their
-instances with `X = C = A = univ`.
+The algorithms are backbone run predicates with exact Taylor data: Algorithm 12.2.1 is
+`Optimization.IsTRqRun`, Algorithm 12.2.2 is `Optimization.IsARqpRun`, and Algorithm 12.2.3 is an
+instance of the transition system `Optimization.DetailedStepTrans`. The analyses are those of
+`Numlib.Optimization.ModelBased.HighOrder.TRqComplexity` (Lemmas 12.2.3–12.2.4, Theorem 12.2.5),
+`Numlib.Optimization.ModelBased.HighOrder.ARqpComplexity` (Lemmas 12.2.9–12.2.13, Theorem 12.2.14)
+and `Numlib.Optimization.ModelBased.HighOrder.ARqpDetailedStep` (termination of Algorithm 12.2.3).
+The slow examples come from `Numlib.Optimization.Complexity.SlowExample.HighOrder`.
 
 ## Main definitions
 
-* `AssumptionD1pL f p L` — f.D1qL, f.D1pL, f.D1rL (`LipschitzDerivsAnchored` on `C = A = E`
-  with constants at least `1`; the forms on an open convex set or anchored at a set used with
-  feasible sets in §14.2 are `LipschitzDerivsAnchored` itself);
-* `algorithm_12_2_1` (TRq), with its test `trqStop`; `algorithm_12_2_1_feasible` (TRq-SC);
-* `algorithm_12_2_2` (ARqp), with its test `arqpStop`; `algorithm_12_2_2_feasible` (ARqp-SC);
-  `algorithm_12_2_3`;
-* the book's constants `arqpKappaDm` (`κ_{Δm}`), `arqpPi` (`π_j`), `kappaSARqp`, `kappaAARqp`
-  (the radii mode `u = (q ≤ 2)` of the library's `arqpKappaDmOf u`, `arqpPiOf u`, …); the
-  extrema `finMax`, `finMin` and the constants `trqKappaDelta`, `kappaSTRq`, …, `arqpKappaDelta`,
-  `arqpTau`, `arqpKappaHat`, … are the library's (re-exported);
-* `IsARqpGlobalStepRun` — the scenario of Theorem 12.2.15.
+* Assumptions f.D1qL, f.D1pL and f.D1rL, `CartisGouldToint.Chapter12.AssumptionD1pL`: $f$ is $C^p$,
+  and its derivatives of the orders $j \in [1:p]$ are Lipschitz continuous with constants
+  $L_{f,j} \ge 1$.
+* Algorithm 12.2.1, `CartisGouldToint.Chapter12.algorithm_12_2_1`: a run of TRq, with the
+  termination test `CartisGouldToint.Chapter12.trqStop`.
+* Algorithm 12.2.1 with a feasible set, `CartisGouldToint.Chapter12.algorithm_12_2_1_feasible`: a
+  run of TRq-SC (Section 14.2).
+* Algorithm 12.2.2, `CartisGouldToint.Chapter12.algorithm_12_2_2`: a run of ARqp, with the
+  termination test `Optimization.arqpStop`.
+* Algorithm 12.2.2 with a feasible set, `CartisGouldToint.Chapter12.algorithm_12_2_2_feasible`: a
+  run of ARqp-SC (Section 14.2).
+* Algorithm 12.2.3, `CartisGouldToint.Chapter12.algorithm_12_2_3`: an output of the detailed Step 2
+  of ARqp.
+* Lemma 12.2.13, `CartisGouldToint.Chapter12.arqpPi` and `CartisGouldToint.Chapter12.arqpKappaDm`:
+  the exponents $\pi_j$ and the constant $\kappa_{\Delta m}$.
+* Theorem 12.2.14, `CartisGouldToint.Chapter12.kappaSARqp` and
+  `CartisGouldToint.Chapter12.kappaAARqp`: the constants $\kappa^s$ and $\kappa^a$ of the complexity
+  bounds.
+* Theorem 12.2.15, `CartisGouldToint.Chapter12.IsARqpGlobalStepRun`: an ARqp run with all radii $1$
+  whose steps are global minimizers of the model.
+* Equation (12.2.85), `CartisGouldToint.Chapter12.arqpSigmaSharp`: the regularization weight of
+  Theorem 12.2.17.
 
 ## Main results
 
-* TRq: `lemma_12_2_1` – `lemma_12_2_4`, `theorem_12_2_5` (complexity), `theorem_12_2_6`
-  (sharpness);
-* ARqp: `example_12_2_1`, `example_12_2_2`, `lemma_12_2_7` – `lemma_12_2_13`,
-  `theorem_12_2_14_i`, `theorem_12_2_14_ii` (complexity), `theorem_12_2_15`,
-  `theorem_12_2_15_counterexample`, `corollary_12_2_16`, `theorem_12_2_17` (sharpness);
-* `lemma_12_2_9_algorithm` (Algorithm 12.2.3 terminates and returns admissible steps),
-  `algorithm_12_2_2_exists_of_D1pL` (runs with the radii property (12.2.50)),
-  `lemma_12_2_10_le_two`, `isEpsDeltaApproxMinimizer_of_isMinOn_zero`.
+* Algorithm 12.2.1, `CartisGouldToint.Chapter12.algorithm_12_2_1_exists`: in finite dimension, a TRq
+  run exists from every starting point.
+* Lemma 12.2.1, `CartisGouldToint.Chapter12.lemma_12_2_1`: before termination of TRq, the scaled
+  gaps satisfy $\min_{i \le k} \hat\phi_i \ge \varsigma \varepsilon_{\min}$, and the step decreases
+  the model by at least $\hat\phi_k \delta_k^{j_k}/j_k!$.
+* Lemma 12.2.2, `CartisGouldToint.Chapter12.lemma_12_2_2`: a small trust-region radius gives a very
+  successful iteration.
+* Lemma 12.2.3, `CartisGouldToint.Chapter12.lemma_12_2_3`: $\Delta_k \ge \min(\gamma_1 \vartheta,
+  \kappa_\Delta \min_{i \le k} \hat\phi_i)$ before termination.
+* Lemma 12.2.4, `CartisGouldToint.Chapter12.lemma_12_2_4`: each TRq step decreases the model by at
+  least $(\varsigma \kappa_\Delta)^{q+1} \varepsilon_{\min}^{q+1}/q!$.
+* Theorem 12.2.5, `CartisGouldToint.Chapter12.theorem_12_2_5`: TRq finds an
+  $(\varepsilon, \delta)$-approximate $q$-th order minimizer, with explicit bounds of the order
+  $\varepsilon_{\min}^{-(q+1)}$ on the numbers of evaluations.
+* Proofs of Theorems 12.2.6, 12.2.15 and 12.2.17, `CartisGouldToint.Chapter12.assumptionD1pL_real`:
+  a criterion for f.D1rL in one variable.
+* Theorem 12.2.6, `CartisGouldToint.Chapter12.theorem_12_2_6`: TRq can need
+  $\lceil \varepsilon^{-(q+1)} \rceil$ iterations.
+* Algorithm 12.2.2, `CartisGouldToint.Chapter12.algorithm_12_2_2_exists`: in finite dimension, an
+  ARqp run exists from every starting point.
+* Example 12.2.1, `CartisGouldToint.Chapter12.example_12_2_1`: for the model of Example 12.1.3 with
+  $p = 5$, the radius $\delta_{s_k,3} = 1$ is not admissible.
+* Example 12.2.2, `CartisGouldToint.Chapter12.example_12_2_2`: the model $s^2(s - \frac12)^2$ has
+  the global minimizers $0$ and $\frac12$, and its third-order measure at $0$ vanishes exactly for
+  the radii $\delta \le \frac14$.
+* Lemma 12.2.7, `CartisGouldToint.Chapter12.lemma_12_2_7`: smoothness of the model and the bound
+  (12.2.38) on its derivatives.
+* Lemma 12.2.8, `CartisGouldToint.Chapter12.lemma_12_2_8`: a large Taylor decrease of the model
+  gives a large decrease of the model.
+* Lemma 12.2.9, `CartisGouldToint.Chapter12.lemma_12_2_9`: an admissible Step-2 step exists, with
+  the radii bounds (12.2.44)–(12.2.45).
+* Lemma 12.2.9, `CartisGouldToint.Chapter12.lemma_12_2_9_algorithm`: every execution of Algorithm
+  12.2.3 terminates and returns an admissible step with the radii bounds (12.2.44)–(12.2.45).
+* Lemmas 12.2.9–12.2.10, `CartisGouldToint.Chapter12.algorithm_12_2_2_exists_of_D1pL`: ARqp runs
+  with the radii property (12.2.50) exist.
+* Lemma 12.2.10, `CartisGouldToint.Chapter12.isEpsDeltaApproxMinimizer_of_isMinOn_zero`: if $0$
+  globally minimizes the model at $y$, then $y$ is an approximate minimizer.
+* Lemma 12.2.10, `CartisGouldToint.Chapter12.lemma_12_2_10_le_two`: for $q \le 2$, ARqp does not
+  terminate in Step 2.
+* Lemma 12.2.10, `CartisGouldToint.Chapter12.lemma_12_2_10`: termination in Step 2 needs $q \ge 3$
+  and gives an approximate minimizer.
+* Lemma 12.2.11, `CartisGouldToint.Chapter12.lemma_12_2_11`: the inequality (12.2.52) after a
+  successful short step.
+* Lemma 12.2.12, `CartisGouldToint.Chapter12.lemma_12_2_12`: lower bounds on the step length
+  (12.2.57).
+* Lemma 12.2.13, `CartisGouldToint.Chapter12.lemma_12_2_13`: the decreases (12.2.61)–(12.2.62) at
+  successful iterations.
+* Theorem 12.2.14 (1), `CartisGouldToint.Chapter12.theorem_12_2_14_i`: the complexity of ARqp for
+  $q \in \{1, 2\}$.
+* Theorem 12.2.14 (2), `CartisGouldToint.Chapter12.theorem_12_2_14_ii`: the complexity of ARqp for
+  $q > 2$.
+* Theorem 12.2.15, `CartisGouldToint.Chapter12.theorem_12_2_15`: ARqp with global model minimizers
+  as steps can need $\lceil \varepsilon^{-(p+1)/(p-q+1)} \rceil$ iterations.
+* Theorem 12.2.15, `CartisGouldToint.Chapter12.theorem_12_2_15_counterexample`: for $p = q = 3$, the
+  hypothesis "the choice $\delta_{s_k,j} = 1$ is possible" fails for the example of the proof.
+* Corollary 12.2.16, `CartisGouldToint.Chapter12.IsARqpGlobalStepRun.toAlgorithm`: for $q \le 2$, a
+  run with global model minimizers as steps is an ARqp run.
+* Corollary 12.2.16, `CartisGouldToint.Chapter12.corollary_12_2_16`: for $q \in \{1, 2\}$, ARqp can
+  need $\lceil \varepsilon^{-(p+1)/(p-q+1)} \rceil$ iterations.
+* Theorem 12.2.17, `CartisGouldToint.Chapter12.theorem_12_2_17`: ARqp can need
+  $\lceil \varepsilon^{-q(p+1)/p} \rceil$ iterations.
 
-## Deviations from the book
+## Conventions
 
-* **ARqp, Step 1.** The printed test continues when `ΔT_{f,j}(x_k, d_{k,j}) ≥ ς ε_j δ^j/j!`;
-  with `≥` the sharpness examples of the book never stop. The test is normalized to `>` (as in
-  TRq's (12.2.2)), see `Optimization.IsARqpRun`, which also lists the other normalizations
-  (Step-2 termination only at a global model minimizer `0`, as guaranteed by Algorithm 12.2.3;
-  the long-step branch `‖s_k‖ ≥ 1`, printed `‖s_k‖ > 1` in (12.2.28) and `‖s‖ ≥ 1` in
-  Algorithm 12.2.3).
-* **Theorem 12.2.5.** The conclusion `φ^{δ_ε}_{f,q}` is a typo for `φ^{δ_ε}_{f,j}`.
-* **Theorem 12.2.6 (Appendix B).** The printed data decrease `f` by `½ ε^{q+1} c_k` while the
-  Taylor decrease is `ε^{q+1} c_k` (so (B.12.8) fails), `x_k = (k-1)ε` is `kε`, and
-  `ε^{q+1} k_ε ≤ 1` is false (only `ε^{q+1} k_ε ≤ 2` holds); the residuals at orders `1 ≤ j < q`
-  are `2 q!/(q-j)! s_k^{q-j+1}` (the factor `q!/(q-j)!` is missing). The corrected data are
+* $\varepsilon_{\min} = \min(1, \min_{j \in [1:q]} \varepsilon_j)$ is `Optimization.finMin 1 ε q`,
+  and $L_f = \max(1, \max_{j \in [1:p]} L_{f,j})$ is `Optimization.finMax 1 L p` ((12.2.6),
+  (12.2.7), (12.2.25)). For $\varepsilon \in (0, 1]^q$ and $L_{f,j} \ge 1$ these are
+  $\min_j \varepsilon_j$ and $\max_j L_{f,j}$. Likewise $\min_j \varepsilon_j^{\pi_j}$ is
+  `Optimization.finMin 1 (fun j => ε j ^ arqpPi p q j) q`.
+* The tolerances $\varepsilon_j$, the radii $\delta_j$ and the constants $L_{f,j}$ are functions
+  `ℕ → ℝ` of the order $j$. Only the entries for $j \in [1:q]$ (or $[1:p]$) matter.
+* An iteration $k$ is *reached* if the termination test fails at every $i < k$, and it is *before
+  termination* if the test fails at every $i \le k$. The termination index is the first index at
+  which the test holds (`Optimization.IsFirstHit`). An iteration is successful if
+  $\rho_k \ge \eta_1$.
+* The number of evaluations of $f$ up to the termination index $k$ is
+  `Optimization.funEvalCount k = k + 1`. The number of evaluations of the derivatives is
+  `Optimization.derivEvalCount`: the initial evaluation and one for each successful iteration before
+  $k$.
+* The definitions are stated on a real normed space (TRq) or a real inner product space (ARqp) $E$.
+  The complexity theorems are stated on $\mathbb{R}^n$ (`EuclideanSpace ℝ (Fin n)`), and the
+  sharpness examples, as in the source, on $\mathbb{R}$.
+
+## Implementation notes
+
+* The analyses of the backbone are stated once on a feasible set $X$, under the anchored smoothness
+  assumption `LipschitzDerivsAnchored`: the derivatives are Lipschitz continuous with respect to
+  anchors in a set that contains the sublevel set $\{y \in X \mid f(y) \le f(x_0)\}$. The results of
+  this module are their instances with $X = C = A = E$. The forms of f.D1pL on an open convex set,
+  or anchored at a set, that Section 14.2 uses with feasible sets are `LipschitzDerivsAnchored`
+  itself.
+* The constants `CartisGouldToint.Chapter12.arqpKappaDm`, `CartisGouldToint.Chapter12.arqpPi`,
+  `CartisGouldToint.Chapter12.kappaSARqp` and `CartisGouldToint.Chapter12.kappaAARqp` are the radii
+  mode $u = (q \le 2)$ of `Optimization.arqpKappaDmOf`, `Optimization.arqpPiOf`,
+  `Optimization.kappaSARqpOf` and `Optimization.kappaAARqpOf`. The other constants are those of the
+  backbone: `Optimization.trqKappaDelta`, `Optimization.kappaSTRq`, `Optimization.kappaATRq`,
+  `Optimization.kappaBTRq`, `Optimization.kappaCTRq`, `Optimization.arqpKappaDelta`,
+  `Optimization.arqpTau`, `Optimization.arqpKappaHat` and `Optimization.kappaCARqp`.
+* The conditions of Step 0 of the algorithms on $\varepsilon$, $\vartheta$ and $\delta_0$ are
+  hypotheses of the results, not parts of the run predicates.
+* The existence of an admissible Step-2 step is proved twice: directly from a global minimizer of
+  the model in `CartisGouldToint.Chapter12.lemma_12_2_9`, and through the termination of Algorithm
+  12.2.3 in `CartisGouldToint.Chapter12.lemma_12_2_9_algorithm`.
+
+## Deviations from the source
+
+* **Algorithm 12.2.2, Step 1** (typo). The printed test continues when $\Delta T_{f,j}(x_k, d_{k,j})
+  \ge \varsigma \varepsilon_j \delta_{k,j}^j/j!$. With $\ge$, the sharpness examples of the source
+  never stop. The library continues on $>$, as in the test (12.2.2) of TRq. See
+  `CartisGouldToint.Chapter12.algorithm_12_2_2`.
+* **Algorithm 12.2.2, Step 2** (reading). Termination in Step 2 is allowed only when $0$ is a global
+  minimizer of the model, as Algorithm 12.2.3 guarantees. See
+  `CartisGouldToint.Chapter12.algorithm_12_2_2`.
+* **(12.2.28)** (typo). The long-step branch is printed $\|s_k\| > 1$. The library uses
+  $\|s_k\| \ge 1$, as Algorithm 12.2.3 does. See `CartisGouldToint.Chapter12.algorithm_12_2_2`.
+* **Theorem 12.2.5** (typo). The printed conclusion $\phi^{\delta_\varepsilon}_{f,q}$ is
+  $\phi^{\delta_\varepsilon}_{f,j}$. See `CartisGouldToint.Chapter12.theorem_12_2_5`.
+* **Theorem 12.2.6** (correction). The slow data of Appendix B are wrong in four points: they
+  decrease $f$ by $\frac12 \varepsilon^{q+1} c_k$ while the Taylor decrease is
+  $\varepsilon^{q+1} c_k$, so (B.12.8) fails; $x_k = (k-1)\varepsilon$ must be $k\varepsilon$;
+  $\varepsilon^{q+1} k_\varepsilon \le 1$ is false, and only $\varepsilon^{q+1} k_\varepsilon \le 2$
+  holds; and the residuals at the orders $1 \le j < q$ are $2\, q!/(q-j)!\, s_k^{q-j+1}$. The
+  library uses corrected data. See `CartisGouldToint.Chapter12.theorem_12_2_6` and
   `Optimization.exists_slowTRq_interpolant`.
-* **Lemma 12.2.10.** The printed proof applies (12.2.29) to the step `s_k = 0`, which need not be
-  the returned step (Example 12.2.2 allows `s_k = ½`); the statement is proved from the global
-  minimality of `0`, with explicit radii.
-* **Lemma 12.2.11.** A failed Step-1 test only gives `φ > ς ε_j δ^j/j!`: the printed factor
-  `1 - θ` is `ς - θ`, which requires `θ < ς` (the two agree for `ς = 1`). The lemma also needs
-  (12.2.29) (not the long-step branch) at iteration `k`.
-* **Lemma 12.2.12 (`q > 2`).** "The first case implies the second" needs
-  `κ_{δ,min} ≤ τ_q/2`, which fails for `θ` close to `ς`; the constant `κ_{δ,min}` is replaced by
-  `κ̂ = min(κ_{δ,min}, τ_q/2)` (`arqpKappaHat`), also in Lemma 12.2.13 and Theorem 12.2.14 (2).
-* **Lemma 12.2.13.** It needs f.D1pL (printed: f.D1qL), and holds at successful iterations
-  followed by a non-terminating one (printed: every iteration before termination). In (12.2.56)
-  `(p-j+1)!` and `‖s_k‖^{p-j+1}` are typos for `(p-ℓ+1)!` and `‖s_k‖^{p-ℓ+1}`.
-* **Theorem 12.2.14.** The hypotheses `θ < ς` (Lemma 12.2.11) and `σ_min > 0` (the book's Step 0;
-  `Optimization.ARqpParams` only asks `σ_min ≥ 0`) are explicit. In (1) the radii equal to `1` are
-  required of `δ₀` and of every returned step (the book's "the algorithm ensures `δ_{k+1,j} = 1`");
-  in (2) the radii property (12.2.50) is a hypothesis on the run, which runs constructed by
-  `algorithm_12_2_2_exists_of_D1pL` satisfy.
-* **Theorem 12.2.15 for `q ≥ 3`.** Its hypothesis "the choice `δ_{s_k,j} = 1` is possible" fails
-  for its own example, e.g. for `p = q = 3` (`theorem_12_2_15_counterexample`); the theorem is
-  stated for the
-  global-step scenario `IsARqpGlobalStepRun`, which is an ARqp run (`algorithm_12_2_2`) for `q ≤ 2`
-  (`corollary_12_2_16`).
-* **Example 12.2.2.** `s²(s - ½)² = ¼ s²(1 - 4s) + s⁴` (printed: `½ s²(1 - 2s) + s⁴`, which has
-  the unique minimizer `0`); the measure is `φ^1_{m,3}(0) = ¾` and the radius threshold is `¼`.
-* **Theorem 12.2.17.** "`ε` sufficiently small" is `ε ≤ ½`. In (12.2.78) the `q`-th order
-  residual is `ε / k_ε`, not `0`; it still satisfies (A.32).
+* **Lemma 12.2.11** (correction). A failed Step-1 test gives only $\phi^\delta_{f,j}(x_{k+1}) >
+  \varsigma \varepsilon_j \delta^j/j!$, so the printed factor $1 - \theta$ is $\varsigma - \theta$.
+  The lemma also needs (12.2.29) at the iteration $k$, that is, a short step. See
+  `CartisGouldToint.Chapter12.lemma_12_2_11`.
+* **Lemma 12.2.12** for $q > 2$ (correction). The argument "the first case implies the second" needs
+  $\kappa_{\delta,\min} \le \tau_q/2$, which fails for $\theta$ close to $\varsigma$. The constant
+  $\kappa_{\delta,\min}$ is replaced by $\hat\kappa = \min(\kappa_{\delta,\min}, \tau_q/2)$, also in
+  Lemma 12.2.13 and Theorem 12.2.14 (2). See `CartisGouldToint.Chapter12.lemma_12_2_12`.
+* **Lemma 12.2.13** (correction). The lemma needs f.D1pL (printed: f.D1qL), and it holds at
+  successful iterations that are followed by an iteration without termination (printed: at every
+  iteration before termination). See `CartisGouldToint.Chapter12.lemma_12_2_13`.
+* **(12.2.56)** (typo). The printed $(p-j+1)!$ and $\|s_k\|^{p-j+1}$ are $(p-\ell+1)!$ and
+  $\|s_k\|^{p-\ell+1}$. See `CartisGouldToint.Chapter12.lemma_12_2_13`.
+* **Theorem 12.2.14** (correction). The hypothesis $\theta < \varsigma$, which Lemma 12.2.11 needs,
+  is explicit, and the constants have $\varsigma - \theta$ in place of $1 - \theta$ and, in (2),
+  $\hat\kappa$ in place of $\kappa_{\delta,\min}$. See
+  `CartisGouldToint.Chapter12.theorem_12_2_14_i` and
+  `CartisGouldToint.Chapter12.theorem_12_2_14_ii`.
+* **Theorem 12.2.14** (reading). The hypothesis $\sigma_{\min} > 0$ of Step 0 is explicit. In (1),
+  the radii equal to $1$ ("the algorithm ensures $\delta_{k+1,j} = 1$") are a hypothesis on
+  $\delta_0$ and on every returned step. In (2), the radii property (12.2.50) is a hypothesis on the
+  run. See `CartisGouldToint.Chapter12.theorem_12_2_14_i` and
+  `CartisGouldToint.Chapter12.theorem_12_2_14_ii`.
+* **Theorem 12.2.15** for $q \ge 3$ (correction). The hypothesis "the choice $\delta_{s_k,j} = 1$ is
+  possible" fails for the example of the proof, for instance for $p = q = 3$. The theorem is stated
+  for runs whose steps are global model minimizers, which are ARqp runs for $q \le 2$. See
+  `CartisGouldToint.Chapter12.theorem_12_2_15`,
+  `CartisGouldToint.Chapter12.theorem_12_2_15_counterexample` and
+  `CartisGouldToint.Chapter12.corollary_12_2_16`.
+* **Theorem 12.2.15** (generalization). The source takes $\varepsilon \le \frac12$. The library
+  proves the statement for $\varepsilon \in (0, 1]$. See
+  `CartisGouldToint.Chapter12.theorem_12_2_15`.
+* **Example 12.2.2** (typo). The source prints $s^2(s - \frac12)^2 = \frac12 s^2(1 - 2s) + s^4$,
+  which has the unique minimizer $0$. The correct expansion is $\frac14 s^2(1 - 4s) + s^4$, the
+  measure is $\phi^1_{m,3}(0) = \frac34$, and the radius threshold is $\frac14$. See
+  `CartisGouldToint.Chapter12.example_12_2_2`.
+* **Theorem 12.2.17** (reading). "$\varepsilon$ sufficiently small" is $\varepsilon \le \frac12$.
+  See `CartisGouldToint.Chapter12.theorem_12_2_17`.
+* **(12.2.78)** (typo). The residual of order $q$ is $\varepsilon/k_\varepsilon$, not $0$. It still
+  satisfies (A.32). See `CartisGouldToint.Chapter12.theorem_12_2_17`.
 
 ## Not formalized
 
-The `O(·)` restatements and Table 12.2.1, and the claim that every execution of Algorithm 12.2.3
-terminates (the execution started with `μ = 1` is shown to terminate,
-`Optimization.exists_isDetailedStepOutput`). (The existence of an admissible step is proved twice:
-directly from a global model minimizer in `lemma_12_2_9`, and through the termination of
-Algorithm 12.2.3 in `lemma_12_2_9_algorithm`.)
+* The $O(\cdot)$ restatements of the complexity bounds and Table 12.2.1.
 -/
 
 open Set Metric Filter Optimization Topology
@@ -129,13 +246,20 @@ section Assumption
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
 
-/-- **Assumptions f.D1qL / f.D1pL / f.D1rL** of [cartis2022evaluation] (§12.2.1.2, §12.2.2.1,
-§12.2.2.4; the same condition for the orders `q`, `p`, `r`): `f` is `p` times continuously
-differentiable and, for every `j ∈ [1:p]`, its `j`-th derivative is Lipschitz continuous with
-constant `L_{f,j} = L j ≥ 1`. It is stated as the anchored smoothness assumption of orders
-`[1:p]` on the whole space (`C = A = E`) together with `L_{f,j} ≥ 1`; the book's form is
-`AssumptionD1pL.contDiff`, `AssumptionD1pL.lipschitz` and
-`AssumptionD1pL.of_iteratedFDerivLipschitzOn`. -/
+/-- **Assumptions f.D1qL, f.D1pL and f.D1rL** of [cartis2022evaluation] (Sections 12.2.1.2, 12.2.2.1
+and 12.2.2.4; the same condition for the orders $q$, $p$ and $r$). Let $E$ be a real normed
+space, $f : E \to \mathbb{R}$, $p \in \mathbb{N}$, and let $L_{f,j}$ be constants. The function
+$f$ satisfies **f.D1pL** if $f$ is $p$ times continuously differentiable and, for every
+$j \in [1:p]$,
+$$\|\nabla^j f(x) - \nabla^j f(y)\| \le L_{f,j} \|x - y\| \quad \text{for all } x, y \in E,
+  \qquad L_{f,j} \ge 1.$$
+
+The condition is stated as the anchored smoothness assumption `LipschitzDerivsAnchored` of the
+orders $[1:p]$ on the whole space ($C = A = E$), together with $L_{f,j} \ge 1$. The form above
+is given by `CartisGouldToint.Chapter12.AssumptionD1pL.contDiff`,
+`CartisGouldToint.Chapter12.AssumptionD1pL.lipschitz` and
+`CartisGouldToint.Chapter12.AssumptionD1pL.of_iteratedFDerivLipschitzOn`. The constant $L_{f,j}$
+is `L j`. -/
 abbrev AssumptionD1pL (f : E → ℝ) (p : ℕ) (L : ℕ → ℝ) : Prop :=
   LipschitzDerivsAnchored f univ univ 1 p L ∧ ∀ j ∈ Finset.Icc 1 p, 1 ≤ L j
 
@@ -143,37 +267,39 @@ variable {f : E → ℝ} {p : ℕ} {L : ℕ → ℝ}
 
 namespace AssumptionD1pL
 
-/-- Under f.D1pL, `f` is `C^p`. -/
+/-- Under f.D1pL, $f$ is $C^p$. -/
 theorem contDiff (h : AssumptionD1pL f p L) : ContDiff ℝ p f :=
   h.1.contDiff
 
-/-- The constants of f.D1pL are at least `1`. -/
+/-- The constants of f.D1pL satisfy $L_{f,j} \ge 1$ for $j \in [1:p]$. -/
 theorem one_le (h : AssumptionD1pL f p L) : ∀ j ∈ Finset.Icc 1 p, 1 ≤ L j :=
   h.2
 
-/-- Under f.D1pL, the `j`-th derivative is `L_{f,j}`-Lipschitz for `j ∈ [1:p]`. -/
+/-- Under f.D1pL, the $j$-th derivative of $f$ is Lipschitz continuous on $E$ with the constant
+$L_{f,j}$, for $j \in [1:p]$. -/
 theorem lipschitz (h : AssumptionD1pL f p L) : ∀ j ∈ Finset.Icc 1 p,
     IteratedFDerivLipschitzOn f j (L j) univ :=
   fun _ hj => h.1.lipschitzOn hj
 
-/-- f.D1pL from a `C^p` function whose derivatives of orders `j ∈ [1:p]` are `L_{f,j}`-Lipschitz
-on the whole space, with `L_{f,j} ≥ 1`. -/
+/-- A $C^p$ function whose derivatives of the orders $j \in [1:p]$ are Lipschitz continuous on $E$
+with constants $L_{f,j} \ge 1$ satisfies f.D1pL. -/
 theorem of_iteratedFDerivLipschitzOn (hf : ContDiff ℝ p f) (h1 : ∀ j ∈ Finset.Icc 1 p, 1 ≤ L j)
     (hL : ∀ j ∈ Finset.Icc 1 p, IteratedFDerivLipschitzOn f j (L j) univ) :
     AssumptionD1pL f p L :=
   ⟨.of_contDiff hf hL univ, h1⟩
 
-/-- The assumption of order `p` implies the assumption of every lower order. -/
+/-- If $q \le p$, then f.D1pL implies f.D1qL with the same constants. -/
 theorem mono (h : AssumptionD1pL f p L) {q : ℕ} (hq : q ≤ p) : AssumptionD1pL f q L :=
   ⟨h.1.mono le_rfl hq, fun j hj => h.one_le j (Finset.Icc_subset_Icc_right hq hj)⟩
 
-/-- Every derivative of order `j ∈ [1:p]` is `L_f`-Lipschitz. -/
+/-- Under f.D1pL, every derivative of an order $j \in [1:p]$ is Lipschitz continuous on $E$ with the
+constant $L_f = \max(1, \max_{i \in [1:p]} L_{f,i})$. -/
 theorem lipschitz_finMax (h : AssumptionD1pL f p L) {j : ℕ} (hj : j ∈ Finset.Icc 1 p) :
     IteratedFDerivLipschitzOn f j (finMax 1 L p) univ :=
   IteratedFDerivHolderOn.mono_const (h.lipschitz j hj) (le_finMax hj)
 
-/-- **(12.2.24)** of [cartis2022evaluation] (with Theorem A.8.5): `‖∇^j f(x)‖ ≤ L_{f,j-1}` for
-`j ∈ [2:p]`. -/
+/-- **(12.2.24)** of [cartis2022evaluation], with Theorem A.8.5. Under f.D1pL,
+$\|\nabla^j f(x)\| \le L_{f,j-1}$ for all $x \in E$ and $j \in [2:p]$. -/
 theorem norm_iteratedFDeriv_le (h : AssumptionD1pL f p L) {j : ℕ} (hj : j ∈ Finset.Icc 2 p)
     (x : E) : ‖iteratedFDeriv ℝ j f x‖ ≤ L (j - 1) := by
   obtain ⟨hj2, hjp⟩ := Finset.mem_Icc.1 hj
@@ -182,24 +308,28 @@ theorem norm_iteratedFDeriv_le (h : AssumptionD1pL f p L) {j : ℕ} (hj : j ∈ 
   rw [Nat.add_sub_cancel]
   exact h.1.norm_iteratedFDeriv_le hi (zero_le_one.trans (h.one_le i hi)) (mem_univ x)
 
-/-- `‖∇^j f(x)‖ ≤ L_f` for `j ∈ [2:p]`. -/
+/-- Under f.D1pL, $\|\nabla^j f(x)\| \le L_f$ for all $x \in E$ and $j \in [2:p]$, where
+$L_f = \max(1, \max_{i \in [1:p]} L_{f,i})$. -/
 theorem norm_iteratedFDeriv_le_finMax (h : AssumptionD1pL f p L) {j : ℕ}
     (hj : j ∈ Finset.Icc 2 p) (x : E) : ‖iteratedFDeriv ℝ j f x‖ ≤ finMax 1 L p := by
   refine (h.norm_iteratedFDeriv_le hj x).trans (le_finMax ?_)
   obtain ⟨hj2, hjp⟩ := Finset.mem_Icc.1 hj
   exact Finset.mem_Icc.2 ⟨by omega, by omega⟩
 
-/-- f.D1pL gives the anchored assumption on the whole space, for every anchor set. -/
+/-- f.D1pL gives the anchored assumption `LipschitzDerivsAnchored` of the orders $[1:p]$ on the
+whole space, for every set of anchors $A$. -/
 theorem toLipschitzDerivsAnchored (h : AssumptionD1pL f p L) (A : Set E) :
     LipschitzDerivsAnchored f univ A 1 p L :=
   h.1.mono_left (subset_univ A)
 
-/-- f.D1pL at the top order `p` only, the form of the hypotheses of the ARqp analysis. -/
+/-- For $p \ge 1$, f.D1pL gives the anchored assumption `LipschitzDerivsAnchored` of the order $p$
+only, on the whole space and for every set of anchors $A$. This is the form of the hypotheses of
+the ARqp analysis. -/
 theorem toLipschitzDerivsAnchored_top (h : AssumptionD1pL f p L) (hp : 1 ≤ p) (A : Set E) :
     LipschitzDerivsAnchored f univ A p p L :=
   (h.toLipschitzDerivsAnchored A).mono hp le_rfl
 
-/-- The top-order constant is at least `1`. -/
+/-- For $p \ge 1$, the constant of the top order satisfies $L_{f,p} \ge 1$. -/
 theorem one_le_top (h : AssumptionD1pL f p L) (hp : 1 ≤ p) : 1 ≤ L p :=
   h.one_le p (Finset.mem_Icc.2 ⟨hp, le_rfl⟩)
 
@@ -207,39 +337,60 @@ end AssumptionD1pL
 
 end Assumption
 
-/-! ### The TRq algorithm (§12.2.1) -/
+/-! ### The TRq algorithm (Section 12.2.1) -/
 
 section TRq
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
 
-/-- **Algorithm 12.2.1 (TRq)** of [cartis2022evaluation]: a run of the trust-region method for
-`(ε, δ)`-approximate `q`-th order minimizers with constants `P` (`Δ₀`, `Δ_max`, `η₁`, `η₂`, `γ₁`,
-`γ₂`, `γ₃`, `ς`), tolerances `ε` and threshold `ϑ`: iterates `x`, steps `s`, radii `Δ`, orders
-`j_k = jk k` and Step-1 displacements `d k j`, with optimality radius `δ_k = min(Δ_k, ϑ)`. It is
-`Optimization.IsTRqRun` with the exact Taylor data `ftaylorSeries ℝ f (x k)`. (The book's Step 0
-asks `ε ∈ (0, 1]^q` and `ϑ ∈ [ε_min, 1]`; these are hypotheses of the results below.) -/
+/-- **Algorithm 12.2.1** of [cartis2022evaluation] (TRq). Let $E$ be a real normed space and
+$f : E \to \mathbb{R}$. A **run of TRq** with the constants $P$ ($\Delta_0$, $\Delta_{\max}$,
+$\eta_1$, $\eta_2$, $\gamma_1$, $\gamma_2$, $\gamma_3$, $\varsigma$), the order $q$, the
+tolerances $\varepsilon_j$ and the threshold $\vartheta$ consists of iterates $x_k$, steps
+$s_k$, trust-region radii $\Delta_k$, orders $j_k$ and Step-1 displacements $d_{k,j}$, with the
+optimality radius $\delta_k = \min(\Delta_k, \vartheta)$, such that:
+* Step 1: at every iteration $k$ reached, $d_{k,j}$ is a $\varsigma$-approximate optimality
+  displacement of radius $\delta_k$ for $\Delta T_{f,j}(x_k, \cdot)$, $j \in [1:q]$ (12.2.1);
+  the run stops at the first $k$ with $\Delta T_{f,j}(x_k, d_{k,j}) \le \varsigma \varepsilon_j
+  \delta_k^j/j!$ for all $j \in [1:q]$;
+* Step 2: otherwise $j_k$ is the least order that fails this test (12.2.2), and the step
+  satisfies $\|s_k\| \le \Delta_k$ and $\Delta T_{f,j_k}(x_k, s_k) \ge \Delta T_{f,j_k}(x_k,
+  d_{k,j_k})$ (12.2.3);
+* Steps 3–4: the iterate and the radius are updated as in a trust-region method with the ratio
+  $\rho_k = (f(x_k) - f(x_k + s_k))/\Delta T_{f,j_k}(x_k, s_k)$ (12.2.4), and
+  $\Delta_{k+1} \le \Delta_{\max}$ (12.2.5).
+
+The run is `Optimization.IsTRqRun` with the exact Taylor data `ftaylorSeries ℝ f (x k)` and no
+constraints. The trust-region update is that of `Optimization.IsTRRun`. Step 0 of the source
+asks $\varepsilon \in (0, 1]^q$ and $\vartheta \in [\varepsilon_{\min}, 1]$; these conditions
+are hypotheses of the results below. -/
 def algorithm_12_2_1 (f : E → ℝ) (P : TRqParams) (q : ℕ) (ε : ℕ → ℝ) (ϑ : ℝ) (x s : ℕ → E)
     (Δ : ℕ → ℝ) (jk : ℕ → ℕ) (d : ℕ → ℕ → E) : Prop :=
   IsTRqRun f (fun k => ftaylorSeries ℝ f (x k)) (fun _ => univ) P q ε ϑ x s Δ jk d
 
-/-- The termination test of TRq (Step 1) at iteration `k`:
-`ΔT_{f,j}(x_k, d_{k,j}) ≤ ς ε_j δ_k^j/j!` for all `j ∈ [1:q]`, `δ_k = min(Δ_k, ϑ)`. -/
+/-- The termination test of TRq (Step 1) at the iteration $k$: $\Delta T_{f,j}(x_k, d_{k,j}) \le
+\varsigma \varepsilon_j \delta_k^j/j!$ for all $j \in [1:q]$, where
+$\delta_k = \min(\Delta_k, \vartheta)$. -/
 abbrev trqStop (f : E → ℝ) (P : TRqParams) (q : ℕ) (ε : ℕ → ℝ) (ϑ : ℝ) (x : ℕ → E)
     (Δ : ℕ → ℝ) (d : ℕ → ℕ → E) (k : ℕ) : Prop :=
   trqTest (fun k => ftaylorSeries ℝ f (x k)) P q ε ϑ Δ d k
 
-/-- The ratio (12.2.4) of TRq. -/
+/-- The ratio (12.2.4) of TRq: $\rho_k = (f(x_k) - f(x_k + s_k))/\Delta T_{f,j_k}(x_k, s_k)$. -/
 noncomputable abbrev trqRho (f : E → ℝ) (x s : ℕ → E) (jk : ℕ → ℕ) (k : ℕ) : ℝ :=
   trqRatio f (fun k => ftaylorSeries ℝ f (x k)) x s jk k
 
-/-- The scaled approximate criticality gap `φ̂_{f,k}` of (12.2.8). -/
+/-- The scaled approximate criticality gap (12.2.8) of TRq: $\hat\phi_k = j_k!\, \Delta
+T_{f,j_k}(x_k, d_{k,j_k})/\delta_k^{j_k}$, with $\delta_k = \min(\Delta_k, \vartheta)$. -/
 noncomputable abbrev trqGapSeq (f : E → ℝ) (ϑ : ℝ) (x : ℕ → E) (Δ : ℕ → ℝ) (jk : ℕ → ℕ)
     (d : ℕ → ℕ → E) (k : ℕ) : ℝ :=
   trqGap (ftaylorSeries ℝ f (x k)) (jk k) (min (Δ k) ϑ) (d k (jk k))
 
-/-- **Algorithm 12.2.1 is well defined**: in finite dimension, for every `f`, `ϑ ≥ 0` and starting
-point `x₀`, a TRq run from `x₀` exists. -/
+/-- **Algorithm 12.2.1** of [cartis2022evaluation], well-posedness. Let $E$ be a finite-dimensional
+real normed space. For every $f : E \to \mathbb{R}$, all constants $P$, every order $q$, all
+tolerances $\varepsilon_j$, every threshold $\vartheta \ge 0$ and every starting point
+$x_0 \in E$, there is a TRq run that starts at $x_0$.
+
+The proof specializes `Optimization.exists_isTRqRun`. -/
 theorem algorithm_12_2_1_exists [FiniteDimensional ℝ E] (f : E → ℝ) (P : TRqParams) (q : ℕ)
     (ε : ℕ → ℝ) {ϑ : ℝ} (hϑ : 0 ≤ ϑ) (x₀ : E) :
     ∃ (x s : ℕ → E) (Δ : ℕ → ℝ) (jk : ℕ → ℕ) (d : ℕ → ℕ → E), x 0 = x₀ ∧
@@ -250,14 +401,19 @@ theorem algorithm_12_2_1_exists [FiniteDimensional ℝ E] (f : E → ℝ) (P : T
 variable {f : E → ℝ} {P : TRqParams} {q : ℕ} {ε : ℕ → ℝ} {ϑ : ℝ} {x s : ℕ → E}
   {Δ : ℕ → ℝ} {jk : ℕ → ℕ} {d : ℕ → ℕ → E} {L : ℕ → ℝ}
 
-/-- **TRq with a feasible set** (TRq-SC, [cartis2022evaluation] §14.2): the run of
-Algorithm 12.2.1 whose Step-1 displacements and steps are feasible, `x_k + d ∈ X`
-(`Optimization.IsTRqRun` with `S k = {d | x k + d ∈ X}`). With `X = univ` this is
-`algorithm_12_2_1` (`algorithm_12_2_1_iff_feasible`). -/
+/-- **Algorithm 12.2.1** of [cartis2022evaluation] with a feasible set (TRq-SC, Section 14.2). Let
+$X \subseteq E$. A **run of TRq-SC** is a run of Algorithm 12.2.1 whose Step-1 displacements $d$
+and steps $s_k$ are feasible, $x_k + d \in X$ and $x_k + s_k \in X$.
+
+It is `Optimization.IsTRqRun` with the feasible displacements $\{d \mid x_k + d \in X\}$. For
+$X = E$ it is `CartisGouldToint.Chapter12.algorithm_12_2_1`, by
+`CartisGouldToint.Chapter12.algorithm_12_2_1_iff_feasible`. -/
 def algorithm_12_2_1_feasible (f : E → ℝ) (X : Set E) (P : TRqParams) (q : ℕ) (ε : ℕ → ℝ)
     (ϑ : ℝ) (x s : ℕ → E) (Δ : ℕ → ℝ) (jk : ℕ → ℕ) (d : ℕ → ℕ → E) : Prop :=
   IsTRqRun f (fun k => ftaylorSeries ℝ f (x k)) (fun k => {e | x k + e ∈ X}) P q ε ϑ x s Δ jk d
 
+/-- A sequence of iterates, steps, radii, orders and displacements is a TRq run if and only if it is
+a TRq-SC run for the feasible set $X = E$. -/
 theorem algorithm_12_2_1_iff_feasible :
     algorithm_12_2_1 f P q ε ϑ x s Δ jk d ↔
       algorithm_12_2_1_feasible f univ P q ε ϑ x s Δ jk d := by
@@ -265,10 +421,14 @@ theorem algorithm_12_2_1_iff_feasible :
     funext k; ext; simp
   rw [algorithm_12_2_1_feasible, this]; rfl
 
-/-- **Lemma 12.2.1** of [cartis2022evaluation]: at every iteration `k` before termination of a TRq
-run with `ϑ > 0`, with `ε_min = finMin 1 ε q` (the minimum of the tolerances, (12.2.7)),
-`min_{i ∈ [0:k]} φ̂_i ≥ ς ε_min` (12.2.9) and
-`ΔT_{f,j_k}(x_k, s_k) ≥ φ̂_k δ_k^{j_k}/j_k!` (12.2.10). -/
+/-- **Lemma 12.2.1** of [cartis2022evaluation]. Consider a TRq run with $\vartheta > 0$, let
+$\varepsilon_{\min} = \min(1, \min_{j \in [1:q]} \varepsilon_j)$ (12.2.7), and let $\hat\phi_i$
+be the scaled gaps (12.2.8). At every iteration $k$ before termination,
+$$\min_{i \in [0:k]} \hat\phi_i \ge \varsigma \varepsilon_{\min} \quad \text{(12.2.9)} \qquad
+  \text{and} \qquad \Delta T_{f,j_k}(x_k, s_k) \ge \hat\phi_k \frac{\delta_k^{j_k}}{j_k!} \quad
+  \text{(12.2.10)}.$$
+
+The minimum over $[0:k]$ is `Optimization.prefixMin`. -/
 theorem lemma_12_2_1 (h : algorithm_12_2_1 f P q ε ϑ x s Δ jk d) (hϑ : 0 < ϑ) {k : ℕ}
     (hk : ∀ i ≤ k, ¬ trqStop f P q ε ϑ x Δ d i) :
     P.ς * finMin 1 ε q ≤ prefixMin (trqGapSeq f ϑ x Δ jk d) k ∧
@@ -276,17 +436,24 @@ theorem lemma_12_2_1 (h : algorithm_12_2_1 f P q ε ϑ x s Δ jk d) (hϑ : 0 < �
         (ftaylorSeries ℝ f (x k)).taylorDecrement (jk k) (s k) :=
   IsTRqRun.trqGap_ge h hϑ (fun _ hj => finMin_le hj) hk
 
-/-- Model fidelity of TRq under f.D1qL (from (A.19), Corollary A.8.4): before termination,
-`|f(x_k + s_k) - T_{f,j_k}(x_k, s_k)| ≤ L_f ‖s_k‖^{j_k+1}/(j_k+1)!`. -/
+/-- Model fidelity of TRq under f.D1qL, from (A.19) and Corollary A.8.4 of [cartis2022evaluation].
+At every iteration $k$ before termination of a TRq run,
+$$|f(x_k + s_k) - T_{f,j_k}(x_k, s_k)| \le \frac{L_f}{(j_k+1)!} \|s_k\|^{j_k+1},$$
+where $L_f = \max(1, \max_{j \in [1:q]} L_{f,j})$. -/
 theorem trq_fidelity (h : algorithm_12_2_1 f P q ε ϑ x s Δ jk d) (hf : AssumptionD1pL f q L) :
     ∀ k, (∀ i ≤ k, ¬ trqStop f P q ε ϑ x Δ d i) →
       |f (x k + s k) - (f (x k) - (ftaylorSeries ℝ f (x k)).taylorDecrement (jk k) (s k))| ≤
         finMax 1 L q / (jk k + 1)! * ‖s k‖ ^ (jk k + 1) :=
   IsTRqRun.abs_sub_le_of_lipschitz h hf.contDiff fun _ hj => hf.lipschitz_finMax hj
 
-/-- **Lemma 12.2.2** of [cartis2022evaluation]: under f.D1qL, if at an iteration `k` before
-termination `Δ_k ≤ min(ϑ, (1 - η₂) φ̂_k / L_f)` (12.2.11), then `ρ_k ≥ η₂` (the iteration is very
-successful) and `Δ_{k+1} ≥ Δ_k`. -/
+/-- **Lemma 12.2.2** of [cartis2022evaluation]. Assume f.D1qL and consider a TRq run. If at an
+iteration $k$ before termination
+$$\Delta_k \le \min\Big(\vartheta, \frac{(1 - \eta_2) \hat\phi_k}{L_f}\Big) \quad
+  \text{(12.2.11)},$$
+then $\rho_k \ge \eta_2$, that is, the iteration is very successful, and
+$\Delta_{k+1} \ge \Delta_k$.
+
+Here $L_f = \max(1, \max_{j \in [1:q]} L_{f,j})$. -/
 theorem lemma_12_2_2 (h : algorithm_12_2_1 f P q ε ϑ x s Δ jk d) (hf : AssumptionD1pL f q L)
     {k : ℕ} (hk : ∀ i ≤ k, ¬ trqStop f P q ε ϑ x Δ d i)
     (hΔ : Δ k ≤ min ϑ ((1 - P.η₂) * trqGapSeq f ϑ x Δ jk d k / finMax 1 L q)) :
@@ -295,10 +462,17 @@ theorem lemma_12_2_2 (h : algorithm_12_2_1 f P q ε ϑ x s Δ jk d) (hf : Assump
     (zero_lt_one.trans_le one_le_finMax) hk (trq_fidelity h hf k hk) hΔ
   exact ⟨h1, h2⟩
 
-/-- **Lemma 12.2.4** of [cartis2022evaluation]: under f.D1qL, `ε_j ∈ (0, 1]` and
-`ϑ ∈ [ε_min, 1]`, at every iteration `k` before termination
-`ΔT_{f,j_k}(x_k, s_k) ≥ (ς κ_Δ)^{q+1} ε_min^{q+1}/q!` (12.2.18), and if `k` is successful,
-`f(x_k) - f(x_{k+1}) ≥ η₁ (ς κ_Δ)^{q+1} ε_min^{q+1}/q!` (12.2.19). -/
+/-- **Lemma 12.2.4** of [cartis2022evaluation]. Assume f.D1qL, $\varepsilon \in (0, 1]^q$ and
+$\varepsilon_{\min} \le \vartheta \le 1$, and consider a TRq run. At every iteration $k$ before
+termination,
+$$\Delta T_{f,j_k}(x_k, s_k) \ge \frac{(\varsigma \kappa_\Delta)^{q+1}}{q!}
+  \varepsilon_{\min}^{q+1} \quad \text{(12.2.18)},$$
+and if the iteration $k$ is successful, then
+$$f(x_k) - f(x_{k+1}) \ge \eta_1 \frac{(\varsigma \kappa_\Delta)^{q+1}}{q!}
+  \varepsilon_{\min}^{q+1} \quad \text{(12.2.19)}.$$
+
+The constant $\kappa_\Delta$ of (12.2.14) is `Optimization.trqKappaDelta`. It depends on the
+derivatives of $f$ at $x_0$. -/
 theorem lemma_12_2_4 (h : algorithm_12_2_1 f P q ε ϑ x s Δ jk d) (hf : AssumptionD1pL f q L)
     (hε : ∀ j ∈ Finset.Icc 1 q, ε j ∈ Ioc 0 1) (hϑ : finMin 1 ε q ≤ ϑ) (hϑ1 : ϑ ≤ 1) {k : ℕ}
     (hk : ∀ i ≤ k, ¬ trqStop f P q ε ϑ x Δ d i) :
@@ -310,9 +484,15 @@ theorem lemma_12_2_4 (h : algorithm_12_2_1 f P q ε ϑ x s Δ jk d) (hf : Assump
   IsTRqRun.taylorDecrement_ge_of_anchored (X := univ) (algorithm_12_2_1_iff_feasible.1 h)
     (hf.toLipschitzDerivsAnchored univ) subset_rfl (fun _ hy _ => hy) (mem_univ _) hε hϑ hϑ1 hk
 
-/-- **Lemma 12.2.3** of [cartis2022evaluation]: under f.D1qL and `0 < ϑ ≤ 1`, `ε_j ≥ 0`, at every
-iteration `k` before termination, `Δ_k ≥ min(γ₁ ϑ, κ_Δ min_{i ∈ [0:k]} φ̂_i)` (12.2.13), and
-`κ_Δ ∈ (0, 1)` ((12.2.14)). (The bound also holds for `Δ_{k+1}`.) -/
+/-- **Lemma 12.2.3** of [cartis2022evaluation]. Assume f.D1qL, $0 < \vartheta \le 1$ and
+$\varepsilon_j \ge 0$ for $j \in [1:q]$, and consider a TRq run. Then $\kappa_\Delta \in (0, 1)$
+(12.2.14), and at every iteration $k$ before termination,
+$$\Delta_k \ge \min\Big(\gamma_1 \vartheta, \kappa_\Delta \min_{i \in [0:k]} \hat\phi_i\Big)
+  \quad \text{(12.2.13)}.$$
+The same bound holds for $\Delta_{k+1}$.
+
+The constant $\kappa_\Delta$ is `Optimization.trqKappaDelta`. It depends on the derivatives of
+$f$ at $x_0$. -/
 theorem lemma_12_2_3 (h : algorithm_12_2_1 f P q ε ϑ x s Δ jk d) (hf : AssumptionD1pL f q L)
     (hϑ : 0 < ϑ) (hϑ1 : ϑ ≤ 1) (hε : ∀ j ∈ Finset.Icc 1 q, 0 ≤ ε j) {k : ℕ}
     (hk : ∀ i ≤ k, ¬ trqStop f P q ε ϑ x Δ d i) :
@@ -332,15 +512,28 @@ variable {n : ℕ} {f : EuclideanSpace ℝ (Fin n) → ℝ} {flow : ℝ} {P : TR
   {ε : ℕ → ℝ} {ϑ : ℝ} {x s : ℕ → EuclideanSpace ℝ (Fin n)} {Δ : ℕ → ℝ} {jk : ℕ → ℕ}
   {d : ℕ → ℕ → EuclideanSpace ℝ (Fin n)} {L : ℕ → ℝ}
 
-/-- **Theorem 12.2.5** of [cartis2022evaluation] (complexity of TRq). Assume f.Bb and f.D1qL,
-`ε ∈ (0, 1]^q` and `ϑ ∈ [ε_min, 1]`. Every TRq run terminates at some iteration `k_ε`, where
-`x_ε = x_{k_ε}` is an `(ε, δ_ε)`-approximate `q`-th order minimizer with the radius
-`δ_ε = min(Δ_{k_ε}, ϑ) ∈ (0, 1]` (`φ^{δ_ε}_{f,j}(x_ε) ≤ ε_j δ_ε^j/j!` for all `j ∈ [1:q]`; the
-printed `φ_{f,q}` is a typo), after at most
-`κ^A (f(x₀) - f_low)/ε_min^{q+1} + κ^B |log ε_min| + κ^C` evaluations of `f` (12.2.21) and at most
-`κ^S (f(x₀) - f_low)/ε_min^{q+1} + 1` evaluations of the derivatives (12.2.22), with the book's
-constants (`kappaSTRq`, `kappaATRq`, `kappaBTRq`, `kappaCTRq`; `κ_Δ` of (12.2.14) depends on
-`x₀`; if all derivatives vanish at `x₀` the run stops at once). -/
+/-- **Theorem 12.2.5** of [cartis2022evaluation] (complexity of TRq). Let
+$f : \mathbb{R}^n \to \mathbb{R}$ satisfy f.Bb with the lower bound $f_{\mathrm{low}}$ and
+f.D1qL, and let $\varepsilon \in (0, 1]^q$ and $\varepsilon_{\min} \le \vartheta \le 1$. Every
+TRq run terminates at some iteration $k_\varepsilon$. The radius $\delta_\varepsilon =
+\min(\Delta_{k_\varepsilon}, \vartheta)$ lies in $(0, 1]$, and
+$x_\varepsilon = x_{k_\varepsilon}$ is an $(\varepsilon, \delta_\varepsilon)$-approximate $q$-th
+order minimizer, that is, $\phi^{\delta_\varepsilon}_{f,j}(x_\varepsilon) \le \varepsilon_j
+\delta_\varepsilon^j/j!$ for all $j \in [1:q]$. The number of evaluations of $f$ is at most
+$$\kappa^A \frac{f(x_0) - f_{\mathrm{low}}}{\varepsilon_{\min}^{q+1}} + \kappa^B |\log
+  \varepsilon_{\min}| + \kappa^C \quad \text{(12.2.21)},$$
+and the number of evaluations of the derivatives is at most $\kappa^S (f(x_0) -
+f_{\mathrm{low}})/\varepsilon_{\min}^{q+1} + 1$ (12.2.22). Here $\kappa^S = q!/(\eta_1
+(\varsigma \kappa_\Delta)^{q+1})$, $\kappa^A = \kappa^S (1 + \log \gamma_3/|\log \gamma_2|)$,
+$\kappa^B = 1/|\log \gamma_2|$ and $\kappa^C = |\log(\varsigma \kappa_\Delta/\Delta_0)|/|\log
+\gamma_2| + 1$.
+
+**Typo.** The source prints the conclusion with $\phi^{\delta_\varepsilon}_{f,q}$ for every $j$;
+it is $\phi^{\delta_\varepsilon}_{f,j}$.
+
+The constants are `Optimization.kappaATRq`, `Optimization.kappaBTRq`, `Optimization.kappaCTRq`
+and `Optimization.kappaSTRq`. The constant $\kappa_\Delta$ of (12.2.14) depends on $x_0$. If all
+derivatives of $f$ vanish at $x_0$, the run stops at once. -/
 theorem theorem_12_2_5 (hb : Chapter02.AssumptionBb f flow) (hf : AssumptionD1pL f q L)
     (hε : ∀ j ∈ Finset.Icc 1 q, ε j ∈ Ioc 0 1) (hϑ : finMin 1 ε q ≤ ϑ) (hϑ1 : ϑ ≤ 1)
     (h : algorithm_12_2_1 f P q ε ϑ x s Δ jk d) :
@@ -365,9 +558,13 @@ end TRqComplexity
 
 section OneDim
 
-/-- **f.D1rL for functions of one variable**: a `C^r` function with `L`-Lipschitz `r`-th
-derivative and derivatives of orders `0, …, r` bounded by `B` satisfies f.D1rL with the
-constants `max(1, L, B)`. -/
+/-- **f.D1rL for functions of one variable.** Let $G : \mathbb{R} \to \mathbb{R}$ be $C^r$, let its
+$r$-th derivative be Lipschitz continuous with the constant $L$, and let $|G^{(j)}(t)| \le B$
+for all $t$ and $j \in [0:r]$. Then $G$ satisfies f.D1rL with all constants equal to
+$\max(1, L, B)$.
+
+This criterion supports the slow examples of Theorems 12.2.6, 12.2.15 and 12.2.17 of
+[cartis2022evaluation]. -/
 theorem assumptionD1pL_real {G : ℝ → ℝ} {r : ℕ} {L B : ℝ} (hG : ContDiff ℝ r G)
     (hL : ∀ s t, |iteratedDeriv r G s - iteratedDeriv r G t| ≤ L * |s - t|)
     (hB : ∀ j ≤ r, ∀ t, |iteratedDeriv j G t| ≤ B) :
@@ -393,15 +590,35 @@ end OneDim
 
 section TRqSharp
 
-/-- **Theorem 12.2.6** of [cartis2022evaluation] (slow convergence of TRq; proof in Appendix B,
-corrected). For `q ≥ 1` there are `f_low` and `L ≥ 1` depending only on `q` such that, for every
-`ε ∈ (0, 1/q!]` (tolerances `ε_j = j! ε ∈ (0, 1]`) and all TRq constants with `Δ₀ = ε`, there is
-`f : ℝ → ℝ` satisfying f.Bb (`f ≥ f_low`) and f.D1qL (with all `L_{f,j} = L`) and a TRq run with
-`ϑ = 1` from `x₀ = 0` with `x_k = k ε`, `s_k = Δ_k = δ_k = ε` and `ρ_k = 1` before termination,
-whose first termination index is `k_ε = ⌈ε^{-(q+1)}⌉`, where `x_{k_ε}` is an `(ε_j, ε)`-approximate
-`q`-th order minimizer: TRq may need `ε^{-(q+1)}` iterations and at least `ε^{-(q+1)} + 1`
-evaluations of `f` and of its derivatives. (As in the book, the initial radius `Δ₀ = ε` depends on
-`ε`, so the example shows that the order `ε^{-(q+1)}` of Theorem 12.2.5 is attained.) -/
+/-- **Theorem 12.2.6** of [cartis2022evaluation] (slow convergence of TRq). Let $q \ge 1$. There are
+$f_{\mathrm{low}}$ and $L \ge 1$, which depend only on $q$, with the following property. For
+every $\varepsilon \in (0, 1/q!]$ and all TRq constants with $\Delta_0 = \varepsilon$, there is
+$f : \mathbb{R} \to \mathbb{R}$ with $f \ge f_{\mathrm{low}}$ that satisfies f.D1qL with all
+constants $L_{f,j} = L$, and a TRq run for the tolerances $\varepsilon_j = j!\, \varepsilon$ and
+the threshold $\vartheta = 1$, such that:
+* $x_k = k\varepsilon$, $s_k = \Delta_k = \delta_k = \varepsilon$ for all $k$, so that
+  $x_0 = 0$;
+* $\rho_k = 1$ for all $k < k_\varepsilon$, where $k_\varepsilon = \lceil \varepsilon^{-(q+1)}
+  \rceil$;
+* the run terminates at $k_\varepsilon$, and $\phi^{\varepsilon}_{f,j}(x_{k_\varepsilon}) \le
+  \varepsilon_j \varepsilon^j/j! = \varepsilon^{j+1}$ for $j \in [1:q]$;
+* the numbers of evaluations of $f$ and of its derivatives are at least
+  $\varepsilon^{-(q+1)} + 1$.
+
+So TRq can need $\varepsilon^{-(q+1)}$ iterations. As in the source, the initial radius
+$\Delta_0 = \varepsilon$ depends on $\varepsilon$, and the example shows that the order
+$\varepsilon^{-(q+1)}$ of Theorem 12.2.5 is attained.
+
+**Correction.** The proof of the source in Appendix B uses slow data that are wrong. They
+decrease $f$ by $\frac12 \varepsilon^{q+1} c_k$ while the Taylor decrease is
+$\varepsilon^{q+1} c_k$, so (B.12.8) fails; $x_k = (k-1)\varepsilon$ must be $k\varepsilon$;
+$\varepsilon^{q+1} k_\varepsilon \le 1$ is false, and only
+$\varepsilon^{q+1} k_\varepsilon \le 2$ holds; and the residuals at the orders $1 \le j < q$ are
+$2\, q!/(q-j)!\, s_k^{q-j+1}$, where the source omits the factor $q!/(q-j)!$. The proof uses the
+corrected data of `Optimization.exists_slowTRq_interpolant`.
+
+The approximate optimality at $x_{k_\varepsilon}$ is `Optimization.IsEpsDeltaApprox` for the
+radii $\delta_j = \varepsilon$. -/
 theorem theorem_12_2_6 {q : ℕ} (hq : 1 ≤ q) :
     ∃ flow L : ℝ, 1 ≤ L ∧ ∀ ε : ℝ, 0 < ε → ε ≤ 1 / q ! → ∀ P : TRqParams, P.Δ₀ = ε →
       ∃ f : ℝ → ℝ, (∀ t, flow ≤ f t) ∧ AssumptionD1pL f q (fun _ => L) ∧
@@ -580,34 +797,69 @@ theorem theorem_12_2_6 {q : ℕ} (hq : 1 ≤ q) :
 
 end TRqSharp
 
-/-! ### The ARqp algorithm (§12.2.2.1) -/
+/-! ### The ARqp algorithm (Section 12.2.2.1) -/
 
 section ARqp
 
 variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
 
-/-- **ARqp with a feasible set** (ARqp-SC, [cartis2022evaluation] §14.2): the run of
-Algorithm 12.2.2 whose iterates, steps and displacements are feasible for the closed set `X`
-(`Optimization.IsARqpRun f X` with the exact model data). `algorithm_12_2_2` is the case
-`X = univ`. -/
+/-- **Algorithm 12.2.2** of [cartis2022evaluation] with a feasible set (ARqp-SC, Section 14.2). Let
+$X \subseteq E$. A **run of ARqp-SC** is a run of Algorithm 12.2.2 in which $x_0 \in X$, the
+steps satisfy $x_k + s_k \in X$, the Step-1 displacements are taken among the feasible
+displacements $\{d \mid x_k + d \in X\}$, the Step-2 displacements among
+$\{d \mid x_k + s_k + d \in X\}$, and termination in Step 2 needs $0$ to minimize the model over
+the feasible steps.
+
+It is `Optimization.IsARqpRun f X` with the exact model data `Optimization.arqpData`. For
+$X = E$ it is `CartisGouldToint.Chapter12.algorithm_12_2_2`. -/
 def algorithm_12_2_2_feasible (f : E → ℝ) (X : Set E) (P : ARqpParams) (p q : ℕ)
     (ε δ₀ : ℕ → ℝ) (x s : ℕ → E) (σ : ℕ → ℝ) (δ δs : ℕ → ℕ → ℝ) (d dm : ℕ → ℕ → E) : Prop :=
   IsARqpRun f X P q ε δ₀ (arqpData f p x σ) x s σ δ δs d dm
 
-/-- **Algorithm 12.2.2 (ARqp)** of [cartis2022evaluation]: a run of the adaptive-regularization
-method for `(ε, δ)`-approximate `q`-th order minimizers with models of degree `p`, constants `P`
-(`σ₀`, `σ_min`, `η₁`, `η₂`, `γ₁`, `γ₂`, `γ₃`, `θ`, `ς`), tolerances `ε` and initial radii `δ₀`:
-iterates `x`, steps `s`, weights `σ`, Step-1 radii `δ k j` and displacements `d k j`, Step-2 radii
-`δs k j` and displacements `dm k j`. It is `Optimization.IsARqpRun` with the exact model data
-`arqpData`, without constraints. (The book's Step 0 asks `q ≤ p`, `ε ∈ (0, 1)^q`,
-`δ₀ ∈ (0, 1]^q`; these are hypotheses of the results below.) -/
+/-- **Algorithm 12.2.2** of [cartis2022evaluation] (ARqp). Let $E$ be a real inner product space and
+$f : E \to \mathbb{R}$. A **run of ARqp** with the constants $P$ ($\sigma_0$, $\sigma_{\min}$,
+$\eta_1$, $\eta_2$, $\gamma_1$, $\gamma_2$, $\gamma_3$, $\theta$, $\varsigma$), the model degree
+$p$, the order $q$, the tolerances $\varepsilon_j$ and the initial radii $\delta_{0,j}$ consists
+of iterates $x_k$, steps $s_k$, weights $\sigma_k$, Step-1 radii $\delta_{k,j}$ and
+displacements $d_{k,j}$, and Step-2 radii $\delta_{s_k,j}$ and displacements $d^m_{k,j}$, such
+that:
+* Step 1: at every iteration $k$ reached, $d_{k,j}$ is a $\varsigma$-approximate optimality
+  displacement of radius $\delta_{k,j}$ for $\Delta T_{f,j}(x_k, \cdot)$, $j \in [1:q]$
+  (12.2.26); the run stops if $\Delta T_{f,j}(x_k, d_{k,j}) \le \varsigma \varepsilon_j
+  \delta_{k,j}^j/j!$ for all $j \in [1:q]$;
+* Step 2: otherwise the step satisfies $m_k(s_k) \le m_k(0)$ (12.2.27), with the model $m_k(s) =
+  T_{f,p}(x_k, s) + \sigma_k \|s\|^{p+1}/(p+1)!$ of (12.2.23); the run stops if
+  $m_k(s_k) = m_k(0)$, which is allowed only if $0$ is a global minimizer of $m_k$; the radii
+  satisfy $\delta_{s_k,j} \in (0, 1]$; and either $\|s_k\| \ge 1$ (12.2.28), or for every
+  $j \in [1:q]$ the displacement $d^m_{k,j}$ is a $\varsigma$-approximate optimality
+  displacement of radius $\delta_{s_k,j}$ for $\Delta T_{m_k,j}(s_k, \cdot)$ with $\Delta
+  T_{m_k,j}(s_k, d^m_{k,j}) \le \varsigma \theta \varepsilon_j \delta_{s_k,j}^j/j!$ (12.2.29);
+* Steps 3–4: the iterate and the weight are updated as in an adaptive-regularization method with
+  $\sigma_0$ given and the ratio $\rho_k = (f(x_k) - f(x_k + s_k))/\Delta T_{f,p}(x_k, s_k)$
+  (12.2.30); a successful iteration sets $\delta_{k+1} = \delta_{s_k}$, and an unsuccessful one
+  keeps $\delta_{k+1} = \delta_k$ and $d_{k+1} = d_k$.
+
+**Typo.** The source continues in Step 1 when $\Delta T_{f,j}(x_k, d_{k,j}) \ge \varsigma
+\varepsilon_j \delta_{k,j}^j/j!$ for some $j$; with $\ge$ the sharpness examples of the source
+never stop. The test here continues on $>$, as the test (12.2.2) of TRq does. The long-step
+branch, printed $\|s_k\| > 1$ in (12.2.28), is $\|s_k\| \ge 1$, as in Algorithm 12.2.3.
+
+**Reading.** Termination in Step 2 is allowed only when $0$ is a global minimizer of $m_k$, as
+Algorithm 12.2.3 guarantees.
+
+The run is `Optimization.IsARqpRun` with the exact model data `Optimization.arqpData` and no
+constraints, whose Steps 2–4 form the generic run `Optimization.IsARRun`. Step 0 of the source
+asks $q \le p$, $\varepsilon \in (0, 1)^q$ and $\delta_0 \in (0, 1]^q$; these conditions are
+hypotheses of the results below. -/
 def algorithm_12_2_2 (f : E → ℝ) (P : ARqpParams) (p q : ℕ) (ε δ₀ : ℕ → ℝ) (x s : ℕ → E)
     (σ : ℕ → ℝ) (δ δs : ℕ → ℕ → ℝ) (d dm : ℕ → ℕ → E) : Prop :=
   algorithm_12_2_2_feasible f univ P p q ε δ₀ x s σ δ δs d dm
 
-/-- **Algorithm 12.2.2 is well defined** ([cartis2022evaluation], Lemmas 12.2.9 and 12.2.10): in
-finite dimension, for every `f`, `1 ≤ p`, `q ≤ p`, `ε_j > 0` and `δ₀ ∈ (0, 1]^q`, an ARqp run
-from any `x₀` exists, with Step-2 radii `δs_{k,j} = 1` for `j ≤ 2` at every iteration reached. -/
+/-- **Algorithm 12.2.2** of [cartis2022evaluation], well-posedness, with Lemmas 12.2.9 and 12.2.10.
+Let $E$ be a finite-dimensional real inner product space, $f : E \to \mathbb{R}$, $1 \le p$,
+$q \le p$, $\varepsilon_j > 0$ and $\delta_{0,j} \in (0, 1]$ for $j \in [1:q]$. For every
+$x_0 \in E$ there is an ARqp run that starts at $x_0$, whose Step-2 radii satisfy
+$\delta_{s_k,j} = 1$ for $j \in [1:\min(q, 2)]$ at every iteration $k$ reached. -/
 theorem algorithm_12_2_2_exists [FiniteDimensional ℝ E] (f : E → ℝ) (P : ARqpParams) {p q : ℕ}
     (hp : 1 ≤ p) (hq : q ≤ p) {ε δ₀ : ℕ → ℝ} (hε : ∀ j ∈ Finset.Icc 1 q, 0 < ε j)
     (hδ₀ : ∀ j ∈ Finset.Icc 1 q, 0 < δ₀ j ∧ δ₀ j ≤ 1) (x₀ : E) :
@@ -621,13 +873,24 @@ theorem algorithm_12_2_2_exists [FiniteDimensional ℝ E] (f : E → ℝ) (P : A
       (fun _ _ => norm_nonneg _) hi) x₀
   exact ⟨x, s, σ, δ, δs, d, dm, h0, h, fun k hk => (hrad k hk).1⟩
 
-/-- **Example 12.2.1** of [cartis2022evaluation] (with Example 12.1.3). If `f(x_k) = 0`,
-`∇f(x_k) = -β e` (`‖e‖ = 1`) and `∇^j f(x_k) = 0` for `j ∈ [2:p]`, the ARqp model (12.2.23) is the
-model `m(s) = -β ⟨e, s⟩ + σ ‖s‖^{p+1}/(p+1)!` of Example 12.1.3 (whose unique global minimizer
-is `s* = (β p!/σ)^{1/p} e`, `example_12_1_3`). For `p = 5`, `σ = 5!`, `β = 1` (so `s* = e`) and
-`θ ε₃ ≤ 1`, every radius `δ ∈ (15/19, 1]` gives `φ^δ_{m,3}(s*) > θ ε₃ δ³/3!` (along `d = -δ s*`,
-`ΔT_{m,3}(s*, d) = -5δ²/2 + 10δ³/3`), whereas (12.2.29) at order `3` with radius `δ` implies
-`φ^δ_{m,3}(s*) ≤ θ ε₃ δ³/3!`: such radii are not admissible, in particular `δ_{s_k,3} = 1`. -/
+/-- **Example 12.2.1** of [cartis2022evaluation], with Example 12.1.3. Let
+$f : \mathbb{R}^n \to \mathbb{R}$, $x, e \in \mathbb{R}^n$, $\beta, \sigma \in \mathbb{R}$ and
+$p \ge 1$. If $f(x) = 0$, $\nabla f(x)[s] = -\beta \langle e, s \rangle$ for all $s$, and
+$\nabla^j f(x) = 0$ for $j \in [2:p]$, then the ARqp model (12.2.23) at $x$ is the model of
+Example 12.1.3,
+$$m(s) = -\beta \langle e, s \rangle + \frac{\sigma}{(p+1)!} \|s\|^{p+1}.$$
+Moreover, let $\|e\| = 1$, and let $m$ be this model for $p = 5$, $\sigma = 5!$ and $\beta = 1$,
+whose global minimizer is $s^* = e$. For all $\theta, \varepsilon_3$ with
+$\theta \varepsilon_3 \le 1$ and every radius $\delta \in (15/19, 1]$,
+$$\phi^\delta_{m,3}(s^*) > \theta \varepsilon_3 \frac{\delta^3}{3!}.$$
+
+The condition (12.2.29) at the order $3$ with the radius $\delta$ implies
+$\phi^\delta_{m,3}(s_k) \le \theta \varepsilon_3 \delta^3/3!$. So such radii are not admissible
+at $s_k = s^*$; in particular $\delta_{s_k,3} = 1$ is not. Along $d = -\delta s^*$ one has
+$\Delta T_{m,3}(s^*, d) = -5\delta^2/2 + 10\delta^3/3$. The global minimizer
+$s^* = (\beta p!/\sigma)^{1/p} e$ of the model of Example 12.1.3 is given by
+`CartisGouldToint.Chapter12.example_12_1_3`. The ARqp model is `Optimization.regularizedModel`,
+and the model of Example 12.1.3 is `CartisGouldToint.Chapter12.example1213Model`. -/
 theorem example_12_2_1 {n : ℕ} {f : EuclideanSpace ℝ (Fin n) → ℝ} {x e : EuclideanSpace ℝ (Fin n)}
     {β σ : ℝ} {p : ℕ} (hp : 1 ≤ p) (hx : f x = 0)
     (h1 : ∀ s, iteratedFDeriv ℝ 1 f x (fun _ => s) = -β * inner ℝ e s)
@@ -669,13 +932,15 @@ theorem example_12_2_1 {n : ℕ} {f : EuclideanSpace ℝ (Fin n) → ℝ} {x e :
     nlinarith [mul_pos hδpos hδpos,
       mul_le_mul_of_nonneg_right hθε (by positivity : (0 : ℝ) ≤ δ ^ 3)]
 
-/-- The model `m(s) = s²(s - ½)²` of Example 12.2.2. -/
+/-- The model $m(s) = s^2 (s - \frac12)^2$ on $\mathbb{R}$ of Example 12.2.2. -/
 noncomputable def example1222Model (s : ℝ) : ℝ := s ^ 2 * (s - 1 / 2) ^ 2
 
+/-- The model of Example 12.2.2 expands as $s^2 (s - \frac12)^2 = s^4 - s^3 + s^2/4$. -/
 theorem example1222Model_eq (s : ℝ) : example1222Model s = s ^ 4 - s ^ 3 + s ^ 2 / 4 := by
   rw [example1222Model]; ring
 
-/-- The third-order Taylor decrement of `example1222Model` at `0`: `ΔT_{m,3}(0, d) = d³ - d²/4`. -/
+/-- The third-order Taylor decrement of the model of Example 12.2.2 at $0$ is
+$\Delta T_{m,3}(0, d) = d^3 - d^2/4$. -/
 theorem example1222Model_taylorDecrement (d : ℝ) :
     (ftaylorSeries ℝ example1222Model 0).taylorDecrement 3 d = d ^ 3 - d ^ 2 / 4 := by
   have hc : ContDiffAt ℝ 4 example1222Model 0 := by
@@ -694,13 +959,26 @@ theorem example1222Model_taylorDecrement (d : ℝ) :
   simp [ha]
   ring
 
-/-- **Example 12.2.2** of [cartis2022evaluation] (corrected). The function
-`m(s) = s²(s - ½)² = ¼ s²(1 - 4s) + s⁴` on `ℝ` is the ARqp model (12.2.23) with `p = 3`,
-`σ = 4!` for the data `f(x_k) = 0`, `f'(x_k) = 0`, `f''(x_k) = ½`, `f'''(x_k) = -6`. Its global
-minimizers are exactly `0` and `½`. At `0`, `φ^1_{m,3}(0) = ¾ > 0` (so a Step-1 test with radius
-`1` at `x_k` does not stop, although the global model minimizer `s_k = 0` makes the algorithm stop
-in Step 2), while `φ^δ_{m,3}(0) = 0` exactly when `δ ≤ ¼`. (The printed expansion
-`½ s²(1 - 2s) + s⁴`, the value `-½` and the threshold `½` do not match `s²(s - ½)²`.) -/
+/-- **Example 12.2.2** of [cartis2022evaluation]. Let $m(s) = s^2 (s - \frac12)^2 = \frac14 s^2 (1 -
+4s) + s^4$ on $\mathbb{R}$. Then:
+* for every $f : \mathbb{R} \to \mathbb{R}$ and $x \in \mathbb{R}$ with $f(x) = 0$, $f'(x) = 0$,
+  $f''(x) = \frac12$ and $f'''(x) = -6$, the ARqp model (12.2.23) at $x$ with $p = 3$ and
+  $\sigma = 4!$ is $m$;
+* the global minimizers of $m$ are exactly $0$ and $\frac12$;
+* $\phi^1_{m,3}(0) = \frac34$;
+* $\phi^\delta_{m,3}(0) = 0$ for every $\delta \le \frac14$, and $\phi^\delta_{m,3}(0) > 0$ for
+  every $\delta > \frac14$.
+
+So the Step-1 test with radius $1$ at $x_k$ does not stop, although the global model minimizer
+$s_k = 0$ makes the algorithm stop in Step 2.
+
+**Typo.** The source prints the expansion $\frac12 s^2 (1 - 2s) + s^4$, which has the unique
+minimizer $0$, together with the value $-\frac12$ and the threshold $\frac12$. These do not
+match $s^2 (s - \frac12)^2$, whose expansion, measure and threshold are those above.
+
+The model is `CartisGouldToint.Chapter12.example1222Model`, and the measure is
+`CartisGouldToint.Chapter12.phiMeasure`. For $\delta < 0$ the ball of radius $\delta$ is empty,
+and the measure is $0$. -/
 theorem example_12_2_2 :
     (∀ (f : ℝ → ℝ) (x : ℝ), f x = 0 → iteratedDeriv 1 f x = 0 → iteratedDeriv 2 f x = 1 / 2 →
       iteratedDeriv 3 f x = -6 →
@@ -756,23 +1034,39 @@ theorem example_12_2_2 :
     refine lt_of_lt_of_le ?_ this
     nlinarith [mul_pos (by linarith : (0 : ℝ) < δ) (by linarith : (0 : ℝ) < δ)]
 
-/-- **Algorithm 12.2.3** of [cartis2022evaluation] (a detailed Step 2 for ARqp): `(s, δs)` is a
-pair returned by the inner procedure for the model `m` (any `m : E → ℝ`; ARqp uses `m_k`), the
-order `q`, the constants `ς`, `θ` and the tolerances `ε`: Step 2.2 computes `s_μ` with
-`μ (m(0) - m*) ≤ m(0) - m(s_μ)` (12.2.34), Step 2.3 returns long steps `‖s_μ‖ ≥ 1`, Step 2.4
-checks the orders `j = 1, …, q` with approximate optimality displacements (12.2.35), halving the
-radius `δ_{s,j}` (only for `j ≥ 3`) when (12.2.36) fails but (12.2.37) holds, and otherwise
-increasing `μ` to `(1 + μ)/2`. It is the instance `J = {j | 3 ≤ j}`, no constraints, of the
-backbone transition system `Optimization.DetailedStepTrans` (shared with Algorithm 14.1.2). -/
+/-- **Algorithm 12.2.3** of [cartis2022evaluation] (a detailed Step 2 for ARqp). Let
+$m : E \to \mathbb{R}$ be a model with the global minimal value $m^* = \inf_s m(s)$, and let
+$q$, $\varsigma$, $\theta$ and the tolerances $\varepsilon_j$ be given. A pair $(s, \delta_s)$
+is an **output of Algorithm 12.2.3** if some execution started (Step 2.1) with a parameter
+$\mu_0 \in (0, 1]$ and all radii equal to $1$ returns it. An execution repeats the following
+steps, where $\phi^{\delta}_{m,j}(s) = \sup_{\|d\| \le \delta} \Delta T_{m,j}(s, d)$:
+* Step 2.2: compute a step $s_\mu$ with $\mu (m(0) - m^*) \le m(0) - m(s_\mu)$ (12.2.34);
+* Step 2.3: if $\|s_\mu\| \ge 1$, return $(s_\mu, \delta)$; otherwise check the orders
+  $j = 1, \dots, q$ in turn;
+* Step 2.4: at the order $j$, choose $d$ with $\|d\| \le \delta_j$ and $\varsigma
+  \phi^{\delta_j}_{m,j}(s_\mu) \le \Delta T_{m,j}(s_\mu, d)$ (12.2.35). If $\Delta
+  T_{m,j}(s_\mu, d) \le \varsigma \theta \varepsilon_j \delta_j^j/j!$, the order $j$ passes, and
+  $(s_\mu, \delta)$ is returned after the order $q$. Otherwise, if $j \ge 3$ and $m(s_\mu) -
+  m(s_\mu + d) < \varsigma \theta \varepsilon_j \delta_j^j/(2\, j!)$, that is, if (12.2.36)
+  fails but (12.2.37) holds, the radius $\delta_j$ is halved and the order $j$ is checked again.
+  Otherwise $\mu$ is replaced by $(1 + \mu)/2$, and the execution returns to Step 2.2.
+
+The model $m$ is arbitrary; ARqp uses $m_k$. The definition is
+`Optimization.IsDetailedStepOutput` for the instance $J = \{j \mid j \ge 3\}$, without
+constraints, of the transition system `Optimization.DetailedStepTrans`, which Algorithm 14.1.2
+shares. The value $m^*$ is a Lean infimum, which is $0$ if $m$ is unbounded below. -/
 def algorithm_12_2_3 (m : E → ℝ) (q : ℕ) (ς θ : ℝ) (ε : ℕ → ℝ) (s : E) (δs : ℕ → ℝ) : Prop :=
   IsDetailedStepOutput m univ (fun _ => univ)
     (fun j s d => (ftaylorSeries ℝ m s).taylorDecrement j d) q ς θ ε {j | 3 ≤ j} s δs
 
 variable {f : E → ℝ} {p q : ℕ} {L : ℕ → ℝ}
 
-/-- **Lemma 12.2.7** of [cartis2022evaluation]: under f.D1pL, for `σ ≥ 0` the model
-`m = regularizedModel (ftaylorSeries ℝ f x) p σ` is `C^p`, its `p`-th derivative is
-`σ`-Lipschitz, and `‖∇^ℓ m(s)‖ ≤ 3 L_f + σ` for `‖s‖ ≤ 1` and `ℓ ∈ [2:p]` (12.2.38). -/
+/-- **Lemma 12.2.7** of [cartis2022evaluation]. Assume f.D1pL, let $\sigma \ge 0$ and $x \in E$, and
+let $m(s) = T_{f,p}(x, s) + \sigma \|s\|^{p+1}/(p+1)!$. Then $m$ is $C^p$, its $p$-th derivative
+is Lipschitz continuous on $E$ with the constant $\sigma$, and
+$$\|\nabla^\ell m(s)\| \le 3 L_f + \sigma \quad \text{for all } \|s\| \le 1 \text{ and } \ell
+  \in [2:p] \quad \text{(12.2.38)},$$
+where $L_f = \max(1, \max_{j \in [1:p]} L_{f,j})$. -/
 theorem lemma_12_2_7 (hf : AssumptionD1pL f p L) {σ : ℝ} (hσ : 0 ≤ σ) (x : E) :
     ContDiff ℝ p (regularizedModel (ftaylorSeries ℝ f x) p σ) ∧
       IteratedFDerivLipschitzOn (regularizedModel (ftaylorSeries ℝ f x) p σ) p σ univ ∧
@@ -784,9 +1078,15 @@ theorem lemma_12_2_7 (hf : AssumptionD1pL f p L) {σ : ℝ} (hσ : 0 ≤ σ) (x 
       (zero_le_one.trans one_le_finMax)
       (fun _ hi => hf.norm_iteratedFDeriv_le_finMax hi x) hσ hℓ hs⟩
 
-/-- **Lemma 12.2.8** of [cartis2022evaluation]: under f.D1pL, let `σ ≥ 0`, `‖s‖ ≤ 1`, `α ∈ ℝ`,
-`δ ∈ (0, min(1, α/(4(3 L_f + σ)))]` (12.2.41), `‖d‖ ≤ δ` and `j ∈ [1:p]`. If
-`ΔT_{m,j}(s, d) ≥ α δ^j/j!` (12.2.42), then `m(s) - m(s + d) ≥ ½ α δ^j/j!` (12.2.43). -/
+/-- **Lemma 12.2.8** of [cartis2022evaluation]. Assume f.D1pL, let $\sigma \ge 0$ and $x \in E$, and
+let $m(s) = T_{f,p}(x, s) + \sigma \|s\|^{p+1}/(p+1)!$. Let $\|s\| \le 1$,
+$\alpha \in \mathbb{R}$,
+$$0 < \delta \le \min\Big(1, \frac{\alpha}{4 (3 L_f + \sigma)}\Big) \quad \text{(12.2.41)},$$
+$\|d\| \le \delta$ and $j \in [1:p]$. If $\Delta T_{m,j}(s, d) \ge \alpha \delta^j/j!$
+(12.2.42), then
+$$m(s) - m(s + d) \ge \frac12 \alpha \frac{\delta^j}{j!} \quad \text{(12.2.43)}.$$
+
+Here $L_f = \max(1, \max_{j \in [1:p]} L_{f,j})$. -/
 theorem lemma_12_2_8 (hf : AssumptionD1pL f p L) {σ : ℝ} (hσ : 0 ≤ σ) (x : E) {s d : E}
     (hs : ‖s‖ ≤ 1) {α δ : ℝ}
     (hδ : δ ∈ Ioc 0 (min 1 (α / (4 * (3 * finMax 1 L p + σ))))) (hd : ‖d‖ ≤ δ) {j : ℕ}
@@ -808,12 +1108,19 @@ theorem lemma_12_2_8 (hf : AssumptionD1pL f p L) {σ : ℝ} (hσ : 0 ≤ σ) (x 
   calc 1 / 2 * α * δ ^ j / j ! = α / 2 * δ ^ j / j ! := by ring
     _ ≤ _ := this
 
-/-- **Lemma 12.2.9** of [cartis2022evaluation] (existence of a step). Under f.D1pL in finite
-dimension, with `1 ≤ p`, `q ≤ p`, `ε ∈ (0, 1]^q` and `σ > 0`, at any iterate `x` there are a step
-`s`, radii `δs` and displacements `d^m` satisfying the Step-2 conditions of ARqp ((12.2.27), and
-either `‖s‖ ≥ 1` or (12.2.29)), with `δs_j = 1` for `j ∈ [1:min(q, 2)]` (12.2.44) and
-`δs_j ≥ κ_δ(σ) ε_j` for `j ∈ [3:q]` (12.2.45). (The step is a global minimizer of the model,
-which the book notes is always acceptable; the termination of Algorithm 12.2.3 is not used.) -/
+/-- **Lemma 12.2.9** of [cartis2022evaluation] (existence of a step). Let $E$ be a
+finite-dimensional real inner product space, assume f.D1pL, and let $1 \le p$, $q \le p$,
+$\varepsilon \in (0, 1]^q$ and $\sigma > 0$. At every iterate $x \in E$ there are a step $s$,
+radii $\delta_{s,j}$ and displacements $d^m_j$ that satisfy the Step-2 conditions of ARqp for
+the model with the weight $\sigma$ ((12.2.27), and either $\|s\| \ge 1$ or (12.2.29)), with
+$$\delta_{s,j} = 1 \text{ for } j \in [1:\min(q, 2)] \quad \text{(12.2.44)}, \qquad \delta_{s,j}
+  \ge \kappa_\delta(\sigma) \varepsilon_j \text{ for } j \in [3:q] \quad \text{(12.2.45)},$$
+where $\kappa_\delta(\sigma) = \varsigma \theta/(8 (3 L_f + \sigma))$.
+
+The step is a global minimizer of the model, which the source notes is always acceptable. The
+proof does not use the termination of Algorithm 12.2.3; see
+`CartisGouldToint.Chapter12.lemma_12_2_9_algorithm` for that route. The constant $\kappa_\delta$
+is `Optimization.arqpKappaDelta`. -/
 theorem lemma_12_2_9 [FiniteDimensional ℝ E] (hf : AssumptionD1pL f p L) (P : ARqpParams)
     (hp : 1 ≤ p) (hq : q ≤ p) {ε : ℕ → ℝ} (hε : ∀ j ∈ Finset.Icc 1 q, ε j ∈ Ioc 0 1) {σ : ℝ}
     (hσ : 0 < σ) (x : E) :
@@ -842,11 +1149,16 @@ theorem lemma_12_2_9 [FiniteDimensional ℝ E] (hf : AssumptionD1pL f p L) (P : 
       _ ≤ P.ς * P.θ * ε j / (4 * (3 * finMax 1 L p + σ)) :=
         div_le_div_of_nonneg_left (by positivity) (by positivity) (by linarith)
 
-/-- **Runs with the radii property (12.2.50)** ([cartis2022evaluation], Lemmas 12.2.9, 12.2.10):
-under f.D1pL in finite dimension, with `1 ≤ q ≤ p`, `ε ∈ (0, 1]^q` and `δ₀ ∈ (0, 1]^q`, from every
-`x₀` there is an ARqp run whose Step-2 radii are `1` at the orders `j ≤ 2` (12.2.44) and satisfy
-`δs_{k,j} ≥ κ_δ(σ_k) ε_j` for all `j ∈ [1:q]` at every iteration before termination ((12.2.45),
-(12.2.50)); in particular the hypotheses of Theorem 12.2.14 can be met. -/
+/-- **Lemmas 12.2.9 and 12.2.10** of [cartis2022evaluation], runs with the radii property (12.2.50).
+Let $E$ be a finite-dimensional real inner product space, assume f.D1pL, and let
+$1 \le q \le p$, $\varepsilon \in (0, 1]^q$ and $\delta_0 \in (0, 1]^q$. From every $x_0 \in E$
+there is an ARqp run whose Step-2 radii satisfy $\delta_{s_k,j} = 1$ for $j \in [1:\min(q, 2)]$
+at every iteration $k$ reached (12.2.44), and $\delta_{s_k,j} \ge \kappa_\delta(\sigma_k)
+\varepsilon_j$ for all $j \in [1:q]$ at every iteration $k$ before termination ((12.2.45),
+(12.2.50)).
+
+In particular, the hypotheses of Theorem 12.2.14 can be met. The constant $\kappa_\delta$ is
+`Optimization.arqpKappaDelta`. -/
 theorem algorithm_12_2_2_exists_of_D1pL [FiniteDimensional ℝ E] (hf : AssumptionD1pL f p L)
     (P : ARqpParams) (hq : 1 ≤ q) (hqp : q ≤ p) {ε δ₀ : ℕ → ℝ}
     (hε : ∀ j ∈ Finset.Icc 1 q, ε j ∈ Ioc 0 1) (hδ₀ : ∀ j ∈ Finset.Icc 1 q, 0 < δ₀ j ∧ δ₀ j ≤ 1)
@@ -860,13 +1172,21 @@ theorem algorithm_12_2_2_exists_of_D1pL [FiniteDimensional ℝ E] (hf : Assumpti
   exists_isARqpRun_of_anchored (A := univ) (fun _ hj y _ => hf.norm_iteratedFDeriv_le_finMax hj y)
     P hq hqp hε hδ₀ x₀ fun y _ => mem_univ y
 
-/-- **Lemma 12.2.9, algorithmic form** ([cartis2022evaluation], proof of Lemma 12.2.9). Under
-f.D1pL in finite dimension, with `1 ≤ q ≤ p`, `ε ∈ (0, 1]^q` and `σ > 0`, consider Algorithm
-12.2.3 for the model `m = regularizedModel (ftaylorSeries ℝ f x) p σ`, started with
-`μ₀ ∈ (0, 1]`. Every execution returns: there is no infinite sequence of transitions, and every
-reachable state that is not final has a successor. Every returned pair `(s, δs)` satisfies the
-Step-2 conditions of ARqp ((12.2.27)–(12.2.29)), with `δs_j = 1` for `j ≤ 2` (12.2.44) and
-`δs_j ≥ κ_δ(σ) ε_j` for `j ∈ [3:q]` (12.2.45). -/
+/-- **Lemma 12.2.9** of [cartis2022evaluation], algorithmic form (from the proof of the lemma). Let
+$E$ be a finite-dimensional real inner product space, assume f.D1pL, and let $1 \le q \le p$,
+$\varepsilon \in (0, 1]^q$, $\sigma > 0$ and $x \in E$. Consider Algorithm 12.2.3 for the model
+$m(s) = T_{f,p}(x, s) + \sigma \|s\|^{p+1}/(p+1)!$ with the constants $\varsigma$ and $\theta$
+of ARqp. Then:
+* for every $\mu_0 \in (0, 1]$, there is no infinite sequence of transitions from the initial
+  state with the parameter $\mu_0$ and all radii $1$;
+* every state that is reachable from such an initial state and is not final has a successor;
+* every output $(s, \delta_s)$ satisfies the Step-2 conditions of ARqp ((12.2.27)–(12.2.29)) for
+  some displacements $d^m_j$, with $\delta_{s,j} = 1$ for $j \le 2$ (12.2.44) and $\delta_{s,j}
+  \ge \kappa_\delta(\sigma) \varepsilon_j$ for $j \in [3:q]$ (12.2.45).
+
+So every execution of Algorithm 12.2.3 terminates and returns an admissible step. The
+transitions are `Optimization.ARqpDetailedTrans`, and the constant $\kappa_\delta$ is
+`Optimization.arqpKappaDelta`. -/
 theorem lemma_12_2_9_algorithm [FiniteDimensional ℝ E] (hf : AssumptionD1pL f p L)
     (P : ARqpParams) (hq : 1 ≤ q) (hqp : q ≤ p) {ε : ℕ → ℝ}
     (hε : ∀ j ∈ Finset.Icc 1 q, ε j ∈ Ioc 0 1) {σ : ℝ} (hσ : 0 < σ) (x : E) :
@@ -907,13 +1227,20 @@ theorem lemma_12_2_9_algorithm [FiniteDimensional ℝ E] (hf : AssumptionD1pL f 
 variable {P : ARqpParams} {ε δ₀ : ℕ → ℝ} {x s : ℕ → E} {σ : ℕ → ℝ} {δ δs : ℕ → ℕ → ℝ}
   {d dm : ℕ → ℕ → E} {X C A : Set E}
 
-/-- **Lemma 12.2.11** of [cartis2022evaluation] (corrected). Under f.D1pL with `1 ≤ q ≤ p`, let
-iteration `k` of an ARqp run be successful and before termination, with a short step
-`‖s_k‖ < 1` (so that (12.2.29) holds at `k`), and let the Step-1 test fail at `k + 1`. Then for
-some `j ∈ [1:q]`
-`(ς - θ) ε_j δ_{k+1,j}^j/j! < (L_{f,p} + σ_max) ∑_{ℓ=1}^j δ_{k+1,j}^ℓ/ℓ! ‖s_k‖^{p-ℓ+1}` (12.2.52).
-(The printed factor `1 - θ` is valid only for `ς = 1`: the failed Step-1 test only gives
-`φ^{δ}_{f,j}(x_{k+1}) > ς ε_j δ^j/j!`.) -/
+/-- **Lemma 12.2.11** of [cartis2022evaluation]. Assume f.D1pL and $1 \le q \le p$, and consider an
+ARqp run. Let the iteration $k$ be successful and before termination, with a short step
+$\|s_k\| < 1$, and let the Step-1 test fail at $k + 1$. Then for some $j \in [1:q]$
+$$(\varsigma - \theta) \varepsilon_j \frac{\delta_{k+1,j}^j}{j!} < (L_{f,p} + \sigma_{\max})
+  \sum_{\ell=1}^{j} \frac{\delta_{k+1,j}^\ell}{\ell!} \|s_k\|^{p-\ell+1} \quad
+  \text{(12.2.52)},$$
+where $\sigma_{\max} = \max(\sigma_0, \gamma_3 L_{f,p}/(1 - \eta_2))$.
+
+**Correction.** The source prints the factor $1 - \theta$ in place of $\varsigma - \theta$,
+which is valid only for $\varsigma = 1$: a failed Step-1 test gives only
+$\phi^\delta_{f,j}(x_{k+1}) > \varsigma \varepsilon_j \delta^j/j!$. The lemma also needs
+(12.2.29) at the iteration $k$, which is the hypothesis $\|s_k\| < 1$.
+
+The constant $\sigma_{\max}$ is `Optimization.arSigmaMax`. -/
 theorem lemma_12_2_11 (hf : AssumptionD1pL f p L) (hq : 1 ≤ q) (hqp : q ≤ p)
     (h : algorithm_12_2_2 f P p q ε δ₀ x s σ δ δs d dm) {k : ℕ}
     (hk : ∀ i ≤ k, ¬ arqpStop f P p q ε x s σ δ d i) (hs : P.η₁ ≤ arqpRho f p x s σ k)
@@ -932,10 +1259,12 @@ theorem lemma_12_2_11 (hf : AssumptionD1pL f p L) (hq : 1 ≤ q) (hqp : q ≤ p)
     (P.σmin_nonneg.trans hσ.1) hσ.2 hstep hshort
     (h.next_witness hk hs) (h.next_not_measureTestPasses hk hs hk1)
 
-/-- The common core of Lemmas 12.2.12 and 12.2.13 for an ARqp run: at a successful iteration `k`
-before termination after which the Step-1 test fails, under the radii hypotheses of
-Lemma 12.2.12, some order `j ∈ [1:q]` satisfies `τ_j ε_j/2 ≤ ‖s_k‖^{p-j+1}` if `q ≤ 2` and
-`(τ_j/2) κ̂^{j-1} ε_j^j ≤ ‖s_k‖^p` if `q > 2`. -/
+/-- The common core of Lemmas 12.2.12 and 12.2.13 of [cartis2022evaluation]. Assume f.D1pL,
+$1 \le q \le p$, $\theta < \varsigma$ and $\varepsilon \in (0, 1]^q$, and consider an ARqp run,
+a successful iteration $k$ before termination after which the Step-1 test fails, and the radii
+hypotheses of Lemma 12.2.12. Then some order $j \in [1:q]$ satisfies
+$\tau_j \varepsilon_j/2 \le \|s_k\|^{p-j+1}$ if $q \le 2$, and $(\tau_j/2) \hat\kappa^{j-1}
+\varepsilon_j^j \le \|s_k\|^p$ if $q > 2$. -/
 theorem arqp_step_core (hf : AssumptionD1pL f p L) (hq : 1 ≤ q) (hqp : q ≤ p)
     (hθς : P.θ < P.ς) (hε : ∀ j ∈ Finset.Icc 1 q, ε j ∈ Ioc 0 1)
     (h : algorithm_12_2_2 f P p q ε δ₀ x s σ δ δs d dm) {k : ℕ}
@@ -961,17 +1290,26 @@ theorem arqp_step_core (hf : AssumptionD1pL f p L) (hq : 1 ≤ q) (hqp : q ≤ p
     ⟨hrad.1, fun h' => hrad.2 (not_le.1 h')⟩
   exact ⟨j, hj, h1, fun h' => h2 (not_le.2 h')⟩
 
-/-- **Lemma 12.2.12** of [cartis2022evaluation] (corrected). Under f.D1pL with `1 ≤ q ≤ p` and
-`θ < ς`, let iteration `k` of an ARqp run be successful and before termination, and let the
-Step-1 test fail at `k + 1`. Then for some `j ∈ [1:q]`:
-* if `q ≤ 2` and `δ_{k+1,j} = 1` for `j ∈ [1:q]`: `‖s_k‖ ≥ (τ_j ε_j/2)^{1/(p-j+1)}`;
-* if `q > 2` and `‖s_k‖ ≥ 1` or `δ_{k+1,j} ≥ κ_{δ,min} ε_j` for `j ∈ [1:q]` ((12.2.51)):
-  `‖s_k‖ ≥ ((τ_j/2) κ̂^{j-1})^{1/p} ε_j^{j/p}` (12.2.57),
+/-- **Lemma 12.2.12** of [cartis2022evaluation]. Assume f.D1pL, $1 \le q \le p$,
+$\theta < \varsigma$ and $\varepsilon \in (0, 1]^q$, and consider an ARqp run. Let the iteration
+$k$ be successful and before termination, and let the Step-1 test fail at $k + 1$. Then:
+* if $q \le 2$ and $\delta_{k+1,j} = 1$ for $j \in [1:q]$, then some $j \in [1:q]$ has $\|s_k\|
+  \ge (\tau_j \varepsilon_j/2)^{1/(p-j+1)}$;
+* if $q > 2$, and either $\|s_k\| \ge 1$ or $\delta_{k+1,j} \ge \kappa_{\delta,\min}
+  \varepsilon_j$ for all $j \in [1:q]$ (12.2.51), then some $j \in [1:q]$ has
+$$\|s_k\| \ge \Big(\frac{\tau_j}{2} \hat\kappa^{j-1}\Big)^{1/p} \varepsilon_j^{j/p} \quad
+  \text{(12.2.57)}.$$
 
-with `τ_j = (ς - θ)/(j!(L_{f,p} + σ_max))` (`arqpTau`) and `κ̂ = min(κ_{δ,min}, τ_q/2)`
-(`arqpKappaHat`). The printed constant `κ_{δ,min}` in place of `κ̂` relies on "the first case
-implies the second", which needs `κ_{δ,min} ≤ τ_q/2`. (The printed hypothesis `δ_{k+1,j} = 1` for
-`j ≤ 2` is not needed when `q > 2`.) -/
+Here $\tau_j = (\varsigma - \theta)/(j!\, (L_{f,p} + \sigma_{\max}))$, $\kappa_{\delta,\min} =
+\kappa_\delta(\sigma_{\max})$ and $\hat\kappa = \min(\kappa_{\delta,\min}, \tau_q/2)$.
+
+**Correction.** The source uses the constant $\kappa_{\delta,\min}$ in place of $\hat\kappa$.
+This relies on "the first case implies the second", which needs
+$\kappa_{\delta,\min} \le \tau_q/2$ and fails for $\theta$ close to $\varsigma$. The printed
+hypothesis $\delta_{k+1,j} = 1$ for $j \le 2$ is not needed when $q > 2$.
+
+The constants are `Optimization.arqpTau`, `Optimization.arqpKappaDelta` and
+`Optimization.arqpKappaHat`. -/
 theorem lemma_12_2_12 (hf : AssumptionD1pL f p L) (hq : 1 ≤ q) (hqp : q ≤ p)
     (hθς : P.θ < P.ς) (hε : ∀ j ∈ Finset.Icc 1 q, ε j ∈ Ioc 0 1)
     (h : algorithm_12_2_2 f P p q ε δ₀ x s σ δ δs d dm) {k : ℕ}
@@ -1012,45 +1350,69 @@ theorem lemma_12_2_12 (hf : AssumptionD1pL f p L) (hq : 1 ≤ q) (hqp : q ≤ p)
           ring
       _ ≤ ‖s k‖ := rpow_one_div_le_of_le_pow (by omega) (by positivity) (norm_nonneg _) (h2 hq2)
 
-/-- The exponents `π_j` of Lemma 12.2.13 ([cartis2022evaluation]): `(p+1)/(p-j+1)` if
-`q ∈ {1, 2}`, `j(p+1)/p` if `q > 2` (the radii mode `u = (q ≤ 2)` of `arqpPiOf`). -/
+/-- **Lemma 12.2.13** of [cartis2022evaluation], the exponents $\pi_j$: $\pi_j = (p+1)/(p-j+1)$ if
+$q \in \{1, 2\}$, and $\pi_j = j(p+1)/p$ if $q > 2$.
+
+This is the radii mode $u = (q \le 2)$ of `Optimization.arqpPiOf`. The value for $q = 0$ is that
+of $q \le 2$. -/
 noncomputable def arqpPi (p q j : ℕ) : ℝ := arqpPiOf (q ≤ 2) p j
 
-/-- The constant `κ_{Δm}` of Lemma 12.2.13 ([cartis2022evaluation]):
-`σ_min/(p+1)! (τ_q/2)^{(p+1)/(p-q+1)}` if `q ∈ {1, 2}`, and
-`σ_min/(p+1)! ((τ_q/2) κ̂^{q-1})^{q(p+1)/p}` if `q > 2` (with the corrected `κ̂`; the radii mode
-`u = (q ≤ 2)` of `arqpKappaDmOf`). -/
+/-- **Lemma 12.2.13** of [cartis2022evaluation], the constant $\kappa_{\Delta m}$:
+$$\kappa_{\Delta m} = \frac{\sigma_{\min}}{(p+1)!} \Big(\frac{\tau_q}{2}\Big)^{(p+1)/(p-q+1)}
+  \text{ if } q \in \{1, 2\}, \qquad \kappa_{\Delta m} = \frac{\sigma_{\min}}{(p+1)!}
+  \Big(\frac{\tau_q}{2} \hat\kappa^{q-1}\Big)^{q(p+1)/p} \text{ if } q > 2,$$
+with $\tau_q = (\varsigma - \theta)/(q!\, (L_{f,p} + \sigma_{\max}))$ and the corrected constant
+$\hat\kappa = \min(\kappa_{\delta,\min}, \tau_q/2)$.
+
+This is the radii mode $u = (q \le 2)$ of `Optimization.arqpKappaDmOf`. -/
 noncomputable def arqpKappaDm (P : ARqpParams) (L : ℕ → ℝ) (p q : ℕ) : ℝ :=
   arqpKappaDmOf (q ≤ 2) P L p q
 
+/-- For $q \le 2$, $\kappa_{\Delta m} = \sigma_{\min}/(p+1)!\, (\tau_q/2)^{(p+1)/(p-q+1)}$. -/
 theorem arqpKappaDm_of_le_two {P : ARqpParams} {L : ℕ → ℝ} {p q : ℕ} (hq : q ≤ 2) :
     arqpKappaDm P L p q = P.σmin / ((p + 1)! : ℝ) *
       (arqpTau P L p q / 2) ^ (((p + 1 : ℕ) : ℝ) / ((p - q + 1 : ℕ) : ℝ)) :=
   arqpKappaDmOf_of_pos hq P L p q
 
+/-- For $q > 2$, $\kappa_{\Delta m} = \sigma_{\min}/(p+1)!\, ((\tau_q/2)
+\hat\kappa^{q-1})^{q(p+1)/p}$. -/
 theorem arqpKappaDm_of_two_lt {P : ARqpParams} {L : ℕ → ℝ} {p q : ℕ} (hq : 2 < q) :
     arqpKappaDm P L p q = P.σmin / ((p + 1)! : ℝ) *
       (arqpTau P L p q / 2 * arqpKappaHat P L p q ^ (q - 1)) ^ ((q : ℝ) * (p + 1) / p) :=
   arqpKappaDmOf_of_neg (by omega) P L p q
 
+/-- For $q \le 2$, $\pi_j = (p+1)/(p-j+1)$. -/
 theorem arqpPi_of_le_two {p q j : ℕ} (hq : q ≤ 2) :
     arqpPi p q j = ((p + 1 : ℕ) : ℝ) / ((p - j + 1 : ℕ) : ℝ) :=
   arqpPiOf_of_pos hq p j
 
+/-- For $q > 2$, $\pi_j = j(p+1)/p$. -/
 theorem arqpPi_of_two_lt {p q j : ℕ} (hq : 2 < q) : arqpPi p q j = (j : ℝ) * (p + 1) / p :=
   arqpPiOf_of_neg (by omega) p j
 
+/-- If $\theta < \varsigma$ and $L_{f,p} \ge 1$, then $\kappa_{\Delta m} \ge 0$. -/
 theorem arqpKappaDm_nonneg {P : ARqpParams} {L : ℕ → ℝ} {p q : ℕ} (hθς : P.θ < P.ς)
     (hL : 1 ≤ L p) : 0 ≤ arqpKappaDm P L p q :=
   arqpKappaDmOf_nonneg _ hθς hL
 
-/-- **Lemma 12.2.13** of [cartis2022evaluation] (corrected). Under f.D1pL with `1 ≤ q ≤ p`,
-`θ < ς` and `ε ∈ (0, 1]^q`, let iteration `k` of an ARqp run be successful and before
-termination, let the Step-1 test fail at `k + 1`, and assume the radii hypotheses of
-Lemma 12.2.12. Then `ΔT_{f,p}(x_k, s_k) ≥ κ_{Δm} min_{j ∈ [1:q]} ε_j^{π_j}` (12.2.61) and
-`f(x_k) - f(x_{k+1}) ≥ η₁ κ_{Δm} min_j ε_j^{π_j}` (12.2.62) (`arqpKappaDm`, `arqpPi`; the
-minimum is `finMin 1 _ q`). The book assumes only f.D1qL and states the bounds at every iteration
-before termination; the proof needs f.D1pL and the next iteration not to terminate. -/
+/-- **Lemma 12.2.13** of [cartis2022evaluation]. Assume f.D1pL, $1 \le q \le p$,
+$\theta < \varsigma$ and $\varepsilon \in (0, 1]^q$, and consider an ARqp run. Let the iteration
+$k$ be successful and before termination, let the Step-1 test fail at $k + 1$, and assume the
+radii hypotheses of Lemma 12.2.12: if $q \le 2$, then $\delta_{k+1,j} = 1$ for $j \in [1:q]$; if
+$q > 2$, then $\|s_k\| \ge 1$ or $\delta_{k+1,j} \ge \kappa_{\delta,\min} \varepsilon_j$ for all
+$j \in [1:q]$. Then
+$$\Delta T_{f,p}(x_k, s_k) \ge \kappa_{\Delta m} \min_{j \in [1:q]} \varepsilon_j^{\pi_j} \quad
+  \text{(12.2.61)} \qquad \text{and} \qquad f(x_k) - f(x_{k+1}) \ge \eta_1 \kappa_{\Delta m}
+  \min_{j \in [1:q]} \varepsilon_j^{\pi_j} \quad \text{(12.2.62)}.$$
+
+**Correction.** The source assumes only f.D1qL and states the bounds at every iteration before
+termination. The proof needs f.D1pL and an iteration $k + 1$ at which the Step-1 test fails. In
+(12.2.56) of the proof, the printed $(p-j+1)!$ and $\|s_k\|^{p-j+1}$ are typos for $(p-\ell+1)!$
+and $\|s_k\|^{p-\ell+1}$.
+
+The constants are `CartisGouldToint.Chapter12.arqpKappaDm` and
+`CartisGouldToint.Chapter12.arqpPi`. The minimum is `Optimization.finMin 1 _ q`, that is,
+$\min(1, \min_j \varepsilon_j^{\pi_j})$. -/
 theorem lemma_12_2_13 (hf : AssumptionD1pL f p L) (hq : 1 ≤ q) (hqp : q ≤ p)
     (hθς : P.θ < P.ς) (hε : ∀ j ∈ Finset.Icc 1 q, ε j ∈ Ioc 0 1)
     (h : algorithm_12_2_2 f P p q ε δ₀ x s σ δ δs d dm) {k : ℕ}
@@ -1069,31 +1431,44 @@ theorem lemma_12_2_13 (hf : AssumptionD1pL f p L) (hq : 1 ≤ q) (hqp : q ≤ p)
     hk1 (u := q ≤ 2)
     ⟨hrad.1, fun h' => hrad.2 (not_le.1 h')⟩
 
-/-- The constant `κ^s_{ARqp} = 1/(η₁ κ_{Δm})` of Theorem 12.2.14 ([cartis2022evaluation]): for
-`q ∈ {1, 2}` it is `(p+1)!/(η₁ σ_min) (2 q!(L_{f,p} + σ_max)/(ς - θ))^{(p+1)/(p-q+1)}`
-(`κ^{s,1}`), for `q > 2` it is
-`(p+1)!/(η₁ σ_min) (2 q!(L_{f,p} + σ_max)/((ς - θ) κ̂^{q-1}))^{q(p+1)/p}` (`κ^{s,2}`, with the
-corrected `κ̂`); the radii mode `u = (q ≤ 2)` of `kappaSARqpOf`. -/
+/-- **Theorem 12.2.14** of [cartis2022evaluation], the constant
+$\kappa^s = 1/(\eta_1 \kappa_{\Delta m})$. For $q \in \{1, 2\}$ it is
+$$\kappa^{s,1} = \frac{(p+1)!}{\eta_1 \sigma_{\min}} \Big(\frac{2\, q!\, (L_{f,p} +
+  \sigma_{\max})}{\varsigma - \theta}\Big)^{(p+1)/(p-q+1)},$$
+and for $q > 2$ it is
+$$\kappa^{s,2} = \frac{(p+1)!}{\eta_1 \sigma_{\min}} \Big(\frac{2\, q!\, (L_{f,p} +
+  \sigma_{\max})}{(\varsigma - \theta) \hat\kappa^{q-1}}\Big)^{q(p+1)/p},$$
+with the corrected constant $\hat\kappa$.
+
+This is the radii mode $u = (q \le 2)$ of `Optimization.kappaSARqpOf`. -/
 noncomputable def kappaSARqp (P : ARqpParams) (L : ℕ → ℝ) (p q : ℕ) : ℝ :=
   kappaSARqpOf (q ≤ 2) P L p q
 
-/-- The constant `κ^a_{ARqp} = κ^s_{ARqp} (1 + |log γ₁|/log γ₂)` of Theorem 12.2.14 (the radii mode
-`u = (q ≤ 2)` of `kappaAARqpOf`). -/
+/-- The constant $\kappa^a = \kappa^s (1 + |\log \gamma_1|/\log \gamma_2)$ of Theorem 12.2.14 of
+[cartis2022evaluation]. It is the radii mode $u = (q \le 2)$ of `Optimization.kappaAARqpOf`. -/
 noncomputable def kappaAARqp (P : ARqpParams) (L : ℕ → ℝ) (p q : ℕ) : ℝ :=
   kappaAARqpOf (q ≤ 2) P L p q
 
+/-- If $\sigma_{\min} > 0$, $\theta < \varsigma$ and $L_{f,p} \ge 1$, then $\kappa_{\Delta m} > 0$.
+-/
 theorem arqpKappaDm_pos {P : ARqpParams} {L : ℕ → ℝ} {p q : ℕ} (hσmin : 0 < P.σmin)
     (hθς : P.θ < P.ς) (hL : 1 ≤ L p) : 0 < arqpKappaDm P L p q :=
   arqpKappaDmOf_pos _ hσmin hθς hL
 
+/-- If $\sigma_{\min} > 0$, $\theta < \varsigma$ and $L_{f,p} \ge 1$, then $\kappa^s > 0$. -/
 theorem kappaSARqp_pos {P : ARqpParams} {L : ℕ → ℝ} {p q : ℕ} (hσmin : 0 < P.σmin)
     (hθς : P.θ < P.ς) (hL : 1 ≤ L p) : 0 < kappaSARqp P L p q :=
   kappaSARqpOf_pos _ hσmin hθς hL
 
-/-- **Certification at a model minimizer `0`** (the content of Lemma 12.2.10,
-[cartis2022evaluation]): under f.D1pL with `q ≤ p`, `ε ∈ (0, 1]^q` and `σ > 0`, if `0` globally
-minimizes the model `regularizedModel (ftaylorSeries ℝ f y) p σ`, then `y` is an
-`(ε, δ)`-approximate `q`-th order minimizer for `δ_j = min(1, ε_j/(4 (3 L_f + σ)))`. -/
+/-- **Lemma 12.2.10** of [cartis2022evaluation], certification at a model minimizer $0$. Let
+$f : \mathbb{R}^n \to \mathbb{R}$ satisfy f.D1pL, and let $q \le p$, $\varepsilon \in (0, 1]^q$,
+$\sigma > 0$ and $y \in \mathbb{R}^n$. If $0$ is a global minimizer of the model $m(s) =
+T_{f,p}(y, s) + \sigma \|s\|^{p+1}/(p+1)!$, then $y$ is an $(\varepsilon, \delta)$-approximate
+$q$-th order minimizer of $f$ for the radii
+$$\delta_j = \min\Big(1, \frac{\varepsilon_j}{4 (3 L_f + \sigma)}\Big),$$
+where $L_f = \max(1, \max_{j \in [1:p]} L_{f,j})$.
+
+This is the content of Lemma 12.2.10. -/
 theorem isEpsDeltaApproxMinimizer_of_isMinOn_zero {n : ℕ} {f : EuclideanSpace ℝ (Fin n) → ℝ}
     {y : EuclideanSpace ℝ (Fin n)} {σk : ℝ} (hf : AssumptionD1pL f p L) (hqp : q ≤ p)
     (hε : ∀ j ∈ Finset.Icc 1 q, ε j ∈ Ioc 0 1) (hσ : 0 < σk)
@@ -1105,10 +1480,15 @@ theorem isEpsDeltaApproxMinimizer_of_isMinOn_zero {n : ℕ} {f : EuclideanSpace 
   rw [hU] at h2
   exact ⟨fun j hj => ⟨hε j hj, h1 j hj⟩, h2⟩
 
-/-- **Lemma 12.2.10, first part** ([cartis2022evaluation]): for `q ≤ 2`, an ARqp run does not
-terminate in Step 2. If `k` is the termination index and the Step-1 test fails at `k`, then
-`0` minimizes the model, so the model measures of orders `j ≤ 2` vanish at `0`, contradicting the
-failed test. Only the smoothness of `f` at `x_k` is used (as under the anchored assumptions). -/
+/-- **Lemma 12.2.10** of [cartis2022evaluation], no termination in Step 2 for $q \le 2$. Let
+$f : \mathbb{R}^n \to \mathbb{R}$ and consider an ARqp run with $q \le 2$, $q \le p$,
+$\varepsilon \in (0, 1]^q$ and $\delta_0 \in (0, 1]^q$. Let $k$ be the termination index, and
+let $f$ be $C^p$ near $x_k$. Then the Step-1 test passes at $k$, that is, the run does not
+terminate in Step 2.
+
+If the Step-1 test failed at $k$, then $0$ would minimize the model, so the model measures of
+the orders $j \le 2$ would vanish at $0$, which contradicts the failed test. Only the smoothness
+of $f$ at $x_k$ is used, as under the anchored assumptions. -/
 theorem lemma_12_2_10_le_two {n : ℕ} {f : EuclideanSpace ℝ (Fin n) → ℝ}
     {x s : ℕ → EuclideanSpace ℝ (Fin n)} {d dm : ℕ → ℕ → EuclideanSpace ℝ (Fin n)} {k : ℕ}
     (hfk : ContDiffAt ℝ p f (x k)) (hqp : q ≤ p)
@@ -1118,13 +1498,17 @@ theorem lemma_12_2_10_le_two {n : ℕ} {f : EuclideanSpace ℝ (Fin n) → ℝ}
     (h1 : ¬ arqpStop₁ P q ε (arqpData f p x σ) δ d k) (hq2 : q ≤ 2) : False :=
   h1 (IsARqpRun.arqpStop₁_of_isFirstHit_of_le_two h hfk hqp hε hδ₀ hk hq2)
 
-/-- **Lemma 12.2.10** of [cartis2022evaluation] (termination in Step 2). Under f.D1pL with
-`q ≤ p`, `ε ∈ (0, 1]^q` and `δ₀ ∈ (0, 1]^q`, let `k` be the termination index of an ARqp run, with
-termination in Step 2 (the Step-1 test fails at `k`). Then `q ≥ 3`, and `x_k` is an
-`(ε, δ)`-approximate `q`-th order minimizer for the radii
-`δ_j = min(1, ε_j/(4 (3 L_f + σ_k)))`. (The algorithm only stops in Step 2 when `0` globally
-minimizes `m_k`; the printed proof applies (12.2.29) to `s_k = 0`, which need not be the returned
-step.) -/
+/-- **Lemma 12.2.10** of [cartis2022evaluation] (termination in Step 2). Let
+$f : \mathbb{R}^n \to \mathbb{R}$ satisfy f.D1pL, let $q \le p$, $\varepsilon \in (0, 1]^q$ and
+$\delta_0 \in (0, 1]^q$, and consider an ARqp run. Let $k$ be the termination index, and let the
+Step-1 test fail at $k$, so that the run terminates in Step 2. Then $q \ge 3$, and $x_k$ is an
+$(\varepsilon, \delta)$-approximate $q$-th order minimizer of $f$ for the radii
+$$\delta_j = \min\Big(1, \frac{\varepsilon_j}{4 (3 L_f + \sigma_k)}\Big).$$
+
+The algorithm stops in Step 2 only when $0$ globally minimizes $m_k$. The printed proof applies
+(12.2.29) to the step $s_k = 0$, which need not be the returned step (Example 12.2.2 allows
+$s_k = \frac12$). The statement is proved from the global minimality of $0$, with explicit
+radii, by `CartisGouldToint.Chapter12.isEpsDeltaApproxMinimizer_of_isMinOn_zero`. -/
 theorem lemma_12_2_10 {n : ℕ} {f : EuclideanSpace ℝ (Fin n) → ℝ}
     {x s : ℕ → EuclideanSpace ℝ (Fin n)} {d dm : ℕ → ℕ → EuclideanSpace ℝ (Fin n)}
     (hf : AssumptionD1pL f p L) (hqp : q ≤ p)
@@ -1150,14 +1534,29 @@ section ARqpComplexity
 variable {n : ℕ} {f : EuclideanSpace ℝ (Fin n) → ℝ} {flow : ℝ}
   {x s : ℕ → EuclideanSpace ℝ (Fin n)} {d dm : ℕ → ℕ → EuclideanSpace ℝ (Fin n)}
 
-/-- **Theorem 12.2.14 (1)** of [cartis2022evaluation] (complexity of ARqp, `q ∈ {1, 2}`). Assume
-f.Bb and f.D1pL, `1 ≤ q ≤ 2`, `q ≤ p`, `ε ∈ (0, 1]^q`, `σ_min > 0`, `θ < ς`, and an ARqp run with
-`δ₀ = 1` whose steps return radii `δ_{s_k,j} = 1` for `j ∈ [1:q]` (as Lemma 12.2.9 allows). Then
-the run terminates at some iteration `k_ε`, in Step 1 (Lemma 12.2.10), with
-`φ^1_{f,j}(x_{k_ε}) ≤ ε_j/j!` for `j ∈ [1:q]`, after at most
-`κ^{a,1} (f(x₀) - f_low)/min_j ε_j^{(p+1)/(p-j+1)} + κ^c` evaluations of `f` (12.2.63) and
-`κ^{s,1} (f(x₀) - f_low)/min_j ε_j^{(p+1)/(p-j+1)} + 2` evaluations of the derivatives (12.2.64)
-(`kappaAARqp`, `kappaCARqp`, `kappaSARqp`, with `ς - θ` for the printed `1 - θ`). -/
+/-- **Theorem 12.2.14 (1)** of [cartis2022evaluation] (complexity of ARqp for $q \in \{1, 2\}$). Let
+$f : \mathbb{R}^n \to \mathbb{R}$ satisfy f.Bb with the lower bound $f_{\mathrm{low}}$ and
+f.D1pL. Let $1 \le q \le 2$, $q \le p$, $\varepsilon \in (0, 1]^q$, $\sigma_{\min} > 0$ and
+$\theta < \varsigma$. Consider an ARqp run with $\delta_{0,j} = 1$ whose steps have the radii
+$\delta_{s_k,j} = 1$ for $j \in [1:q]$ at every iteration $k$ before termination, as Lemma
+12.2.9 allows. Then the run terminates at some iteration $k_\varepsilon$, in Step 1 (Lemma
+12.2.10), with $\phi^1_{f,j}(x_{k_\varepsilon}) \le \varepsilon_j/j!$ for $j \in [1:q]$, after
+at most
+$$\kappa^{a,1} \frac{f(x_0) - f_{\mathrm{low}}}{\min_j \varepsilon_j^{(p+1)/(p-j+1)}} + \kappa^c
+  \quad \text{(12.2.63)}$$
+evaluations of $f$ and at most $\kappa^{s,1} (f(x_0) - f_{\mathrm{low}})/\min_j
+\varepsilon_j^{(p+1)/(p-j+1)} + 2$ evaluations of the derivatives (12.2.64).
+
+**Correction.** The hypothesis $\theta < \varsigma$ is needed by Lemma 12.2.11, and the
+constants have $\varsigma - \theta$ in place of the printed $1 - \theta$.
+
+**Reading.** The hypothesis $\sigma_{\min} > 0$ comes from Step 0 of the source;
+`Optimization.ARqpParams` asks only $\sigma_{\min} \ge 0$. The radii equal to $1$ ("the
+algorithm ensures $\delta_{k+1,j} = 1$") are a hypothesis on $\delta_0$ and on every returned
+step.
+
+The constants are `CartisGouldToint.Chapter12.kappaAARqp`, `Optimization.kappaCARqp` and
+`CartisGouldToint.Chapter12.kappaSARqp`. -/
 theorem theorem_12_2_14_i (hb : Chapter02.AssumptionBb f flow) (hf : AssumptionD1pL f p L)
     (hq : 1 ≤ q) (hq2 : q ≤ 2) (hqp : q ≤ p) (hσmin : 0 < P.σmin) (hθς : P.θ < P.ς)
     (hε : ∀ j ∈ Finset.Icc 1 q, ε j ∈ Ioc 0 1) (hδ₀ : ∀ j ∈ Finset.Icc 1 q, δ₀ j = 1)
@@ -1191,17 +1590,32 @@ theorem theorem_12_2_14_i (hb : Chapter02.AssumptionBb f flow) (hf : AssumptionD
   rw [hone kε hk.2 j hj, one_pow, mul_one] at this
   exact this
 
-/-- **Theorem 12.2.14 (2)** of [cartis2022evaluation] (complexity of ARqp, `q > 2`, corrected
-constant). Assume f.Bb and f.D1pL, `3 ≤ q ≤ p`, `ε ∈ (0, 1]^q`, `δ₀ ∈ (0, 1]^q`, `σ_min > 0`,
-`θ < ς`, and an ARqp run satisfying the radii property (12.2.50): before termination, a short
-step (`‖s_k‖ < 1`) comes with radii `δ_{s_k,j} ≥ κ_δ(σ_k) ε_j` for `j ∈ [1:q]` (as
-Lemma 12.2.9 allows). Then the run terminates at some iteration `k_ε` where `x_{k_ε}` is an
-`(ε, δ_ε)`-approximate `q`-th order minimizer for some `δ_ε ∈ (0, 1]^q` (Lemma 12.2.10 for a
-termination in Step 2), after at most
-`κ^{a,2} (f(x₀) - f_low)/min_j ε_j^{j(p+1)/p} + κ^c` evaluations of `f` (12.2.65) and
-`κ^{s,2} (f(x₀) - f_low)/min_j ε_j^{j(p+1)/p} + 2` evaluations of the derivatives (12.2.66)
-(`kappaAARqp`, `kappaCARqp`, `kappaSARqp`, with `ς - θ` for `1 - θ` and the corrected
-`κ̂ = min(κ_{δ,min}, τ_q/2)` for `κ_{δ,min}`). -/
+/-- **Theorem 12.2.14 (2)** of [cartis2022evaluation] (complexity of ARqp for $q > 2$). Let
+$f : \mathbb{R}^n \to \mathbb{R}$ satisfy f.Bb with the lower bound $f_{\mathrm{low}}$ and
+f.D1pL. Let $3 \le q \le p$, $\varepsilon \in (0, 1]^q$, $\delta_0 \in (0, 1]^q$,
+$\sigma_{\min} > 0$ and $\theta < \varsigma$. Consider an ARqp run with the radii property
+(12.2.50): at every iteration $k$ before termination with a short step $\|s_k\| < 1$, the radii
+satisfy $\delta_{s_k,j} \ge \kappa_\delta(\sigma_k) \varepsilon_j$ for $j \in [1:q]$, as Lemma
+12.2.9 allows. Then the run terminates at some iteration $k_\varepsilon$ where
+$x_{k_\varepsilon}$ is an $(\varepsilon, \delta_\varepsilon)$-approximate $q$-th order minimizer
+for some $\delta_\varepsilon \in (0, 1]^q$ (by Lemma 12.2.10 for a termination in Step 2), after
+at most
+$$\kappa^{a,2} \frac{f(x_0) - f_{\mathrm{low}}}{\min_j \varepsilon_j^{j(p+1)/p}} + \kappa^c
+  \quad \text{(12.2.65)}$$
+evaluations of $f$ and at most $\kappa^{s,2} (f(x_0) - f_{\mathrm{low}})/\min_j
+\varepsilon_j^{j(p+1)/p} + 2$ evaluations of the derivatives (12.2.66).
+
+**Correction.** The hypothesis $\theta < \varsigma$ is needed by Lemma 12.2.11. The constants
+have $\varsigma - \theta$ in place of $1 - \theta$, and the corrected $\hat\kappa =
+\min(\kappa_{\delta,\min}, \tau_q/2)$ of Lemma 12.2.12 in place of $\kappa_{\delta,\min}$.
+
+**Reading.** The hypothesis $\sigma_{\min} > 0$ comes from Step 0 of the source. The radii
+property (12.2.50) is a hypothesis on the run, which the runs of
+`CartisGouldToint.Chapter12.algorithm_12_2_2_exists_of_D1pL` satisfy.
+
+The constant $\kappa_\delta$ is `Optimization.arqpKappaDelta`, and the other constants are
+`CartisGouldToint.Chapter12.kappaAARqp`, `Optimization.kappaCARqp` and
+`CartisGouldToint.Chapter12.kappaSARqp`. -/
 theorem theorem_12_2_14_ii (hb : Chapter02.AssumptionBb f flow) (hf : AssumptionD1pL f p L)
     (hq : 2 < q) (hqp : q ≤ p) (hσmin : 0 < P.σmin) (hθς : P.θ < P.ς)
     (hε : ∀ j ∈ Finset.Icc 1 q, ε j ∈ Ioc 0 1) (hδ₀ : ∀ j ∈ Finset.Icc 1 q, 0 < δ₀ j ∧ δ₀ j ≤ 1)
@@ -1245,40 +1659,55 @@ end ARqpComplexity
 
 end ARqp
 
-/-! ### Sharpness for ARqp (§12.2.2.4) -/
+/-! ### Sharpness for ARqp (Section 12.2.2.4) -/
 
 section ARqpSharp
 
 variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
 
-/-- The termination test of a global-step ARqp run (radii `1`). -/
+/-- The termination test of a global-step ARqp run, with all Step-1 radii equal to $1$: the Step-1
+test with radii $1$ passes, or $m_k(s_k) = m_k(0)$. -/
 abbrev arqpGlobalStop (f : E → ℝ) (P : ARqpParams) (p q : ℕ) (ε : ℕ → ℝ) (x s : ℕ → E)
     (σ : ℕ → ℝ) (d : ℕ → ℕ → E) (k : ℕ) : Prop :=
   IsARRun.Stop (arqpStop₁ P q ε (arqpData f p x σ) (fun _ _ => 1) d)
     (arqpStop₂ (arqpData f p x σ) s) k
 
-/-- **The scenario of Theorem 12.2.15** of [cartis2022evaluation] ("the choice `δ_{s_k,j} = 1`
-is possible and made", with steps that globally minimize the model): an ARqp run with all radii
-equal to `1` (`δ₀ = 1`, `δ_{s_k} = 1`) whose Step 2 returns a global minimizer `s_k` of the model
-`m_k`, without the requirement (12.2.29). For `q ≤ 2` every such run is an ARqp run
-(`IsARqpGlobalStepRun.toAlgorithm`); for `q ≥ 3` (12.2.29) may fail with radius `1`
-(`theorem_12_2_15_counterexample`). -/
+/-- **Theorem 12.2.15** of [cartis2022evaluation], the scenario of the theorem ("the choice
+$\delta_{s_k,j} = 1$ is possible and made", with steps that globally minimize the model). A
+**global-step ARqp run** is an ARqp run with all radii equal to $1$ ($\delta_0 = 1$ and
+$\delta_{s_k} = 1$) whose Step 2 returns a global minimizer $s_k$ of the model $m_k$, without
+the requirement (12.2.29). That is: Steps 2–4 form an adaptive-regularization run whose steps
+are global model minimizers; at every iteration reached, the Step-1 displacements are
+approximate optimality displacements of radius $1$; and unsuccessful iterations keep the Step-1
+displacements.
+
+For $q \le 2$ every such run is an ARqp run, by
+`CartisGouldToint.Chapter12.IsARqpGlobalStepRun.toAlgorithm`. For $q \ge 3$ the condition
+(12.2.29) may fail with radius $1$, by
+`CartisGouldToint.Chapter12.theorem_12_2_15_counterexample`. -/
 structure IsARqpGlobalStepRun (f : E → ℝ) (P : ARqpParams) (p q : ℕ) (ε : ℕ → ℝ)
     (x s : ℕ → E) (σ : ℕ → ℝ) (d : ℕ → ℕ → E) : Prop where
-  /-- Steps 2–4: an adaptive-regularization run whose steps are global model minimizers. -/
+  /-- Steps 2–4 form an adaptive-regularization run whose steps are global minimizers of the model,
+  with the Step-1 test with radii $1$ and the Step-2 termination test $m_k(s_k) = m_k(0)$. -/
   toIsARRun : IsARRun P.toARParams (arqpStop₁ P q ε (arqpData f p x σ) (fun _ _ => 1) d)
     (fun k => IsMinOn (arqpModel f p x σ k) univ (s k)) (arqpStop₂ (arqpData f p x σ) s)
     (arqpRho f p x s σ) x s σ
-  /-- Step 1: the witnesses are approximate optimality displacements with radius `1`. -/
+  /-- Step 1: at every iteration $k$ reached, $d_{k,j}$ is a $\varsigma$-approximate optimality
+  displacement of radius $1$ for $\Delta T_{f,j}(x_k, \cdot)$, for $j \in [1:q]$. -/
   witness : ∀ k, (∀ i < k, ¬ arqpGlobalStop f P p q ε x s σ d i) → ∀ j ∈ Finset.Icc 1 q,
     IsApproxMeasureStep ((ftaylorSeries ℝ f (x k)).taylorDecrement j) 1 univ P.ς (d k j)
-  /-- Unsuccessful iterations keep the Step-1 witnesses. -/
+  /-- Before termination, an unsuccessful iteration keeps the Step-1 displacements. -/
   keep : UntilHit (arqpGlobalStop f P p q ε x s σ d) fun k =>
     ¬ P.η₁ ≤ arqpRho f p x s σ k → d (k + 1) = d k
 
-/-- **Global-step runs are ARqp runs for `q ≤ 2`** ([cartis2022evaluation], proof of
-Corollary 12.2.16 with Theorem 12.1.4): a global minimizer of the model satisfies (12.2.29) with
-radii `1` at the orders `j ≤ 2` (with `d^m_j = 0`). -/
+/-- **Corollary 12.2.16** of [cartis2022evaluation], global-step runs are ARqp runs for $q \le 2$
+(from the proof of the corollary, with Theorem 12.1.4). Let $q \le 2$, $q \le p$ and
+$\varepsilon_j \ge 0$ for $j \in [1:q]$. Every global-step ARqp run is an ARqp run
+(`CartisGouldToint.Chapter12.algorithm_12_2_2`) with $\delta_0 = 1$, all Step-1 and Step-2 radii
+equal to $1$, and the Step-2 displacements $d^m_{k,j} = 0$.
+
+A global minimizer of the model satisfies (12.2.29) with radii $1$ at the orders $j \le 2$, with
+$d^m_j = 0$. -/
 theorem IsARqpGlobalStepRun.toAlgorithm {f : E → ℝ} {P : ARqpParams} {p q : ℕ} {ε : ℕ → ℝ}
     {x s : ℕ → E} {σ : ℕ → ℝ} {d : ℕ → ℕ → E} (h : IsARqpGlobalStepRun f P p q ε x s σ d)
     (hq2 : q ≤ 2) (hqp : q ≤ p) (hε : ∀ j ∈ Finset.Icc 1 q, 0 ≤ ε j) :
@@ -1314,17 +1743,32 @@ theorem IsARqpGlobalStepRun.toAlgorithm {f : E → ℝ} {P : ARqpParams} {p q : 
   · rw [hU]
     exact h.witness k hk j hj
 
-/-- **Theorem 12.2.15** of [cartis2022evaluation] (slow convergence of ARqp, good case). For
-`1 ≤ q ≤ p` there are `f_low` and `L ≥ 1` depending only on `p, q` such that, for every
-`ε ∈ (0, 1]` (the book takes `ε ≤ ½`; all `ε_j = ε`) and ARqp constants with
-`σ₀ = p!/(q-1)!`, there is `f : ℝ → ℝ` satisfying f.Bb and f.D1pL and a global-step ARqp run
-(radii `1`, steps the global model minimizers (12.2.70)) from `x₀ = 0` with `σ_k = σ₀` and
-`ρ_k = 1`, whose first termination index is `k_ε = ⌈ε^{-(p+1)/(p-q+1)}⌉`, where
-`φ^1_{f,j}(x_{k_ε}) ≤ ε/j!` for `j ∈ [1:q]`, while `φ^1_{f,q}(x_k) > ε/q!` before: ARqp may need
-`ε^{-(p+1)/(p-q+1)}` iterations and evaluations. The run is in the relaxed scenario
-`IsARqpGlobalStepRun`, whose Step 2 does not require (12.2.29); it is an ARqp run
-(`algorithm_12_2_2`) only for `q ≤ 2` (`corollary_12_2_16`), while for `q ≥ 3` (12.2.29) with
-radius `1` may fail, e.g. for `p = q = 3` (`theorem_12_2_15_counterexample`). -/
+/-- **Theorem 12.2.15** of [cartis2022evaluation] (slow convergence of ARqp, good case). Let
+$1 \le q \le p$. There are $f_{\mathrm{low}}$ and $L \ge 1$, which depend only on $p$ and $q$,
+with the following property. For every $\varepsilon \in (0, 1]$ and all ARqp constants with
+$\sigma_0 = p!/(q-1)!$, there is $f : \mathbb{R} \to \mathbb{R}$ with $f \ge f_{\mathrm{low}}$
+that satisfies f.D1pL with all constants $L_{f,j} = L$, and a global-step ARqp run for the
+tolerances $\varepsilon_j = \varepsilon$, with steps the global model minimizers (12.2.70), such
+that:
+* $x_0 = 0$ and $\sigma_k = \sigma_0$ for all $k$;
+* $\rho_k = 1$ for all $k < k_\varepsilon$, where $k_\varepsilon = \lceil
+  \varepsilon^{-(p+1)/(p-q+1)} \rceil$;
+* the run terminates at $k_\varepsilon$, with $\phi^1_{f,j}(x_{k_\varepsilon}) \le
+  \varepsilon/j!$ for $j \in [1:q]$;
+* $\phi^1_{f,q}(x_k) > \varepsilon/q!$ for all $k < k_\varepsilon$.
+
+So ARqp can need $\varepsilon^{-(p+1)/(p-q+1)}$ iterations and evaluations.
+
+**Correction.** The source assumes that "the choice $\delta_{s_k,j} = 1$ is possible". For
+$q \ge 3$ this fails for the example of the proof, for instance for $p = q = 3$
+(`CartisGouldToint.Chapter12.theorem_12_2_15_counterexample`). The theorem is therefore stated
+for the global-step scenario `CartisGouldToint.Chapter12.IsARqpGlobalStepRun`, whose Step 2 does
+not require (12.2.29). This scenario is an ARqp run
+(`CartisGouldToint.Chapter12.algorithm_12_2_2`) only for $q \le 2$
+(`CartisGouldToint.Chapter12.corollary_12_2_16`).
+
+**Generalization.** The source takes $\varepsilon \le \frac12$; the statement holds for every
+$\varepsilon \in (0, 1]$. -/
 theorem theorem_12_2_15 {p q : ℕ} (hq : 1 ≤ q) (hqp : q ≤ p) :
     ∃ flow L : ℝ, 1 ≤ L ∧ ∀ ε : ℝ, 0 < ε → ε ≤ 1 → ∀ P : ARqpParams,
       P.σ₀ = (p ! : ℝ) / (q - 1)! →
@@ -1508,13 +1952,20 @@ theorem theorem_12_2_15 {p q : ℕ} (hq : 1 ≤ q) (hqp : q ≤ p) :
   · rw [phiMeasure_def, hφ_q k hk.le]
     exact div_lt_div_of_pos_right (ha_gt k hk) hqf
 
-/-- **Corollary 12.2.16** of [cartis2022evaluation] (slow convergence of ARqp for `q ∈ {1, 2}`).
-For `q ∈ {1, 2}`, `q ≤ p`, the conclusion of Theorem 12.2.15 holds for an ARqp run
-(`algorithm_12_2_2` with `δ₀ = 1`, all radii `1` and `d^m = 0`): there are `f_low`, `L ≥ 1`
-depending only on `p, q` such that for every `ε ∈ (0, 1]` and `σ₀ = p!/(q-1)!` some `f : ℝ → ℝ`
-with f.Bb and f.D1pL and an ARqp run from `x₀ = 0` first terminate at
-`k_ε = ⌈ε^{-(p+1)/(p-q+1)}⌉`, with `φ^1_{f,j}(x_{k_ε}) ≤ ε/j!` for `j ∈ [1:q]` and
-`φ^1_{f,q}(x_k) > ε/q!` before. So the bound of Theorem 12.2.14 (1) is sharp in order. -/
+/-- **Corollary 12.2.16** of [cartis2022evaluation] (slow convergence of ARqp for $q \in \{1, 2\}$).
+Let $q \in \{1, 2\}$ and $q \le p$. There are $f_{\mathrm{low}}$ and $L \ge 1$, which depend
+only on $p$ and $q$, with the following property. For every $\varepsilon \in (0, 1]$ and all
+ARqp constants with $\sigma_0 = p!/(q-1)!$, there is $f : \mathbb{R} \to \mathbb{R}$ with
+$f \ge f_{\mathrm{low}}$ that satisfies f.D1pL with all constants $L_{f,j} = L$, and an ARqp run
+(`CartisGouldToint.Chapter12.algorithm_12_2_2`) from $x_0 = 0$ for the tolerances
+$\varepsilon_j = \varepsilon$, with $\delta_0 = 1$, all radii $1$ and $d^m = 0$, that terminates
+at $k_\varepsilon = \lceil \varepsilon^{-(p+1)/(p-q+1)} \rceil$, with
+$\phi^1_{f,j}(x_{k_\varepsilon}) \le \varepsilon/j!$ for $j \in [1:q]$ and
+$\phi^1_{f,q}(x_k) > \varepsilon/q!$ for all $k < k_\varepsilon$.
+
+So the bound of Theorem 12.2.14 (1) is sharp in order. The proof combines
+`CartisGouldToint.Chapter12.theorem_12_2_15` with
+`CartisGouldToint.Chapter12.IsARqpGlobalStepRun.toAlgorithm`. -/
 theorem corollary_12_2_16 {p q : ℕ} (hq : 1 ≤ q) (hq2 : q ≤ 2) (hqp : q ≤ p) :
     ∃ flow L : ℝ, 1 ≤ L ∧ ∀ ε : ℝ, 0 < ε → ε ≤ 1 → ∀ P : ARqpParams,
       P.σ₀ = (p ! : ℝ) / (q - 1)! →
@@ -1533,15 +1984,26 @@ theorem corollary_12_2_16 {p q : ℕ} (hq : 1 ≤ q) (hq2 : q ≤ 2) (hqp : q �
   obtain ⟨f, hb, hf, x, s, σ, d, hrun, hx0, -, -, hfirst, hφ1, hφ2⟩ := H ε hε hε1 P hP
   exact ⟨f, hb, hf, x, s, σ, d, hrun.toAlgorithm hq2 hqp fun _ _ => hε.le, hx0, hfirst, hφ1, hφ2⟩
 
-/-- **Theorem 12.2.15 fails for `q ≥ 3`** ([cartis2022evaluation], Theorem 12.2.15 with
-`p = q = 3`). In the example of the proof at `k = 0` (`f'(x₀) = f''(x₀) = 0`,
-`f'''(x₀) = -(ε + ω₀) = -2ε`, `σ₀ = 3!/2!`), the model is
-`m(s) = f(x₀) - 2ε s³/3! + 3 |s|⁴/4!`, globally minimized at `s₀ = 2ε` (12.2.70), and
-`φ^1_{m,3}(s₀) ≥ ΔT_{m,3}(s₀, -1) = 2ε/3 - ε² ≥ ε/6 > θ ε/3!` for `ε < ½`, `θ < 1`. Since
-`‖s₀‖ = 2ε < 1`, the long-step branch is not available, and no displacement satisfies (12.2.29) at
-order `3` with the radius `δ_{s_0,3} = 1`: the hypothesis "`δ_{s_k,j} = 1` is possible" of the
-theorem fails for its own example (as in Example 12.2.1). (At `ε = ½` the step `s₀ = 1` is long
-and is accepted by the long-step branch.) -/
+/-- **Theorem 12.2.15** of [cartis2022evaluation], counterexample for $q \ge 3$. Let
+$0 < \varepsilon < \frac12$, $\theta < 1$ and $\varsigma > 0$, and let
+$G : \mathbb{R} \to \mathbb{R}$ and $y \in \mathbb{R}$ with $G'(y) = G''(y) = 0$ and
+$G'''(y) = -2\varepsilon$. Let
+$$m(s) = T_{G,3}(y, s) + \frac{3!/2!}{4!} |s|^4 = G(y) - \frac{2\varepsilon}{3!} s^3 +
+  \frac{3}{4!} s^4$$
+be the ARqp model with $p = 3$ and $\sigma = 3!/2!$. Then $s_0 = 2\varepsilon$ is a global
+minimizer of $m$ (12.2.70), $|s_0| < 1$, $\phi^1_{m,3}(s_0) > \theta \varepsilon/3!$, and no
+displacement $d$ is a $\varsigma$-approximate optimality displacement of radius $1$ for
+$\Delta T_{m,3}(s_0, \cdot)$ with $\Delta T_{m,3}(s_0, d) \le \varsigma \theta \varepsilon/3!$.
+
+This is the example of the proof of Theorem 12.2.15 for $p = q = 3$ at $k = 0$, where
+$f'(x_0) = f''(x_0) = 0$, $f'''(x_0) = -(\varepsilon + \omega_0) = -2\varepsilon$ and
+$\sigma_0 = 3!/2!$. Since $|s_0| < 1$, the long-step branch is not available, and (12.2.29)
+fails at the order $3$ with the radius $\delta_{s_0,3} = 1$ and the tolerance
+$\varepsilon_3 = \varepsilon$. So the hypothesis "$\delta_{s_k,j} = 1$ is possible" of the
+theorem fails for its own example, as in Example 12.2.1. The bound on the measure comes from
+$\phi^1_{m,3}(s_0) \ge \Delta T_{m,3}(s_0, -1) = 2\varepsilon/3 - \varepsilon^2 \ge
+\varepsilon/6$. At $\varepsilon = \frac12$ the step $s_0 = 1$ is long and is accepted by the
+long-step branch. -/
 theorem theorem_12_2_15_counterexample {ε θ ς : ℝ} (hε : 0 < ε) (hε1 : ε < 1 / 2) (hθ : θ < 1)
     (hς : 0 < ς) {G : ℝ → ℝ} {y : ℝ} (h1 : iteratedDeriv 1 G y = 0)
     (h2 : iteratedDeriv 2 G y = 0) (h3 : iteratedDeriv 3 G y = -(2 * ε)) :
@@ -1611,11 +2073,12 @@ theorem theorem_12_2_15_counterexample {ε θ ς : ℝ} (hε : 0 < ε) (hε1 : �
     have e : ς * θ * ε * 1 ^ 3 / 3 ! = ς * (θ * ε / 3 !) := by ring
     linarith
 
-/-- The regularization weight (12.2.85) of Theorem 12.2.17: `σ = (3/(p-1))^p p!/q!` if `p > 2`,
-`σ = p!` otherwise. -/
+/-- **Equation (12.2.85)** of [cartis2022evaluation], the regularization weight of Theorem 12.2.17:
+$\sigma = (3/(p-1))^p\, p!/q!$ if $p > 2$, and $\sigma = p!$ otherwise. -/
 noncomputable def arqpSigmaSharp (p q : ℕ) : ℝ :=
   if 2 < p then (3 / ((p : ℝ) - 1)) ^ p * p ! / q ! else p !
 
+/-- The weight (12.2.85) is positive. -/
 theorem arqpSigmaSharp_pos (p q : ℕ) : 0 < arqpSigmaSharp p q := by
   unfold arqpSigmaSharp
   split_ifs with hp
@@ -1625,9 +2088,10 @@ theorem arqpSigmaSharp_pos (p q : ℕ) : 0 < arqpSigmaSharp p q := by
     positivity
   · positivity
 
-/-- The admissible radius of Theorem 12.2.17: with the weight (12.2.85), `p > 2`,
-`ε ∈ (0, 1]` and `β ≥ ε^q/q!`, `(p - 1) ε ≤ 3 (β p!/σ)^{1/p}` (so that Example 12.1.3 (iv) gives
-`φ^ε_{m,j}(s*) = 0`). -/
+/-- The admissible radius of Theorem 12.2.17. Let $p > 2$, $q \le p$, $\varepsilon \in (0, 1]$ and
+$\beta \ge \varepsilon^q/q!$, and let $\sigma$ be the weight (12.2.85). Then $(p - 1)
+\varepsilon \le 3 (\beta p!/\sigma)^{1/p}$, so that Example 12.1.3 (iv) gives
+$\phi^\varepsilon_{m,j}(s^*) = 0$. -/
 theorem arqpSigmaSharp_radius {p q : ℕ} (hp : 2 < p) (hqp : q ≤ p) {ε β : ℝ} (hε : 0 < ε)
     (hε1 : ε ≤ 1) (hβ : ε ^ q / q ! ≤ β) :
     ((p : ℝ) - 1) * ε ≤ 3 * (β * p ! / arqpSigmaSharp p q) ^ (1 / (p : ℝ)) := by
@@ -1655,15 +2119,34 @@ theorem arqpSigmaSharp_radius {p q : ℕ} (hp : 2 < p) (hqp : q ≤ p) {ε β : 
     mul_le_mul_of_nonneg_left h1 hp1.le
   linarith
 
-/-- **Theorem 12.2.17** of [cartis2022evaluation] (slow convergence of ARqp, general case). For
-`1 ≤ q ≤ p ≤ r` there are `f_low` and `L ≥ 1` depending only on `p, q, r` such that, for every
-`ε ∈ (0, ½]` (all `ε_j = ε`; the book's "sufficiently small") and ARqp constants with `σ₀` the
-weight (12.2.85), there is `f : ℝ → ℝ` satisfying f.Bb and f.D1rL and an ARqp run
-(`algorithm_12_2_2`) from `x₀ = 0` with `δ₀ = ε`, `σ_k = σ₀`, steps the global model minimizers
-(12.2.88), radii `δ_{s_k} = ε` (12.2.89) (so the radii property (12.2.50) of Theorem 12.2.14 (2)
-holds) and `ρ_k = 1`, whose first termination index is `k_ε = ⌈ε^{-q(p+1)/p}⌉`, where `x_{k_ε}`
-is an `(ε, ε)`-approximate `q`-th order minimizer: ARqp may need `ε^{-q(p+1)/p}` iterations and
-evaluations, even on functions with more Lipschitz derivatives than it uses. -/
+/-- **Theorem 12.2.17** of [cartis2022evaluation] (slow convergence of ARqp, general case). Let
+$1 \le q \le p \le r$. There are $f_{\mathrm{low}}$ and $L \ge 1$, which depend only on $p$, $q$
+and $r$, with the following property. For every $\varepsilon \in (0, \frac12]$ and all ARqp
+constants with $\sigma_0$ the weight (12.2.85), there is $f : \mathbb{R} \to \mathbb{R}$ with
+$f \ge f_{\mathrm{low}}$ that satisfies f.D1rL with all constants $L_{f,j} = L$, and an ARqp run
+(`CartisGouldToint.Chapter12.algorithm_12_2_2`) for the tolerances
+$\varepsilon_j = \varepsilon$, with $\delta_0 = \varepsilon$, all Step-1 and Step-2 radii equal
+to $\varepsilon$ (12.2.89) and $d^m = 0$, such that:
+* $x_0 = 0$ and $\sigma_k = \sigma_0$ for all $k$;
+* $\kappa_\delta(\sigma_k) \varepsilon \le \varepsilon$ for all $k$, so that the radii property
+  (12.2.50) of Theorem 12.2.14 (2) holds;
+* $\rho_k = 1$ for all $k < k_\varepsilon$, where $k_\varepsilon = \lceil
+  \varepsilon^{-q(p+1)/p} \rceil$;
+* the run terminates at $k_\varepsilon$, and $x_{k_\varepsilon}$ is an
+  $(\varepsilon, \varepsilon)$-approximate $q$-th order minimizer:
+  $\phi^{\varepsilon}_{f,j}(x_{k_\varepsilon}) \le \varepsilon^{j+1}/j!$ for $j \in [1:q]$.
+
+So ARqp can need $\varepsilon^{-q(p+1)/p}$ iterations and evaluations, even on functions with
+more Lipschitz continuous derivatives than it uses.
+
+**Reading.** The source asks "$\varepsilon$ sufficiently small"; here $\varepsilon \le \frac12$.
+
+**Typo.** In (12.2.78) the residual of the order $q$ is $\varepsilon/k_\varepsilon$, not $0$. It
+still satisfies (A.32).
+
+In the construction, the steps are the global model minimizers (12.2.88). The approximate
+optimality at $x_{k_\varepsilon}$ is `Optimization.IsEpsDeltaApprox` for the radii
+$\delta_j = \varepsilon$, and $\kappa_\delta$ is `Optimization.arqpKappaDelta`. -/
 theorem theorem_12_2_17 {p q r : ℕ} (hq : 1 ≤ q) (hqp : q ≤ p) (hpr : p ≤ r) :
     ∃ flow L : ℝ, 1 ≤ L ∧ ∀ ε : ℝ, 0 < ε → ε ≤ 1 / 2 → ∀ P : ARqpParams,
       P.σ₀ = arqpSigmaSharp p q →

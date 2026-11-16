@@ -5,45 +5,65 @@ Released under Apache 2.0 license as described in the file LICENSE.
 import NumlibSurface.CartisGouldToint.Chapter12.Section02
 
 /-!
-# Cartis–Gould–Toint §12.3: Inexact global minimization in the ARqp algorithm
+# Cartis, Gould and Toint, Section 12.3: Inexact global minimization in the ARqp algorithm
 
-Surface file for C. Cartis, N. I. M. Gould and Ph. L. Toint, *Evaluation Complexity of
-Algorithms for Nonconvex Optimization* [cartis2022evaluation], §12.3 (no numbered results),
-together with the relaxed Step 2 of the Notes to §12.2.2.
+This module formalizes Section 12.3 of [cartis2022evaluation], which has no numbered results,
+together with the relaxed Step 2 that the Notes to Section 12.2.2 propose. Step 2 of the algorithm
+ARqp (Algorithm 12.2.2) must give a sufficient decrease of the Taylor model at the successful
+iterations. Section 12.3 observes that a step can be accepted, with the model decrease (12.2.27),
+without the check (12.2.29) of approximate model optimality, as soon as it achieves the sufficient
+decrease $\Delta T_{f,p}(x_k, s_k) \ge \kappa_{\mathrm{decr}} \varepsilon_{\min}^{\omega}$ (12.3.1),
+or is long, $\|s_k\| \ge \kappa_{\mathrm{decr}}^{1/(p+1)} \varepsilon_{\min}^{\omega/(p+1)}$
+(12.3.2). For a long step, the sufficient decrease follows from Lemma 4.1.1. The Notes to Section
+12.2.2 propose the same relaxation for long steps and state that "this modification does not affect
+the conclusions of the complexity theorem".
 
-The purpose of Step 2 of ARqp is a sufficient decrease of the Taylor model at successful
-iterations. §12.3 observes that a step may be accepted (with (12.2.27)) without checking the
-approximate model optimality (12.2.29) as soon as it achieves the sufficient decrease (12.3.1),
-or is long, `‖s_k‖ ≥ κ_decr^{1/(p+1)} ε_min^{ω/(p+1)}` (12.3.2) (sufficient decrease then follows
-from Lemma 4.1.1); the Notes to §12.2.2 propose the same relaxation for long steps and state that
-"this modification does not affect the conclusions of the complexity theorem". Here this is made
-precise: `IsARqpSufficientDecreaseRun` is the ARqp run with this relaxed Step 2
-(every ARqp run is one), and `complexity_arqpSufficientDecrease` shows that the bounds of
-Theorem 12.2.14 persist for `ω ≥ π_q` with `κ_{Δm}` replaced by
-`min(κ_{Δm}, κ_decr, σ_min κ_decr/(p+1)!)` and `min_j ε_j^{π_j}` by `ε_min^ω`.
+This module makes that claim precise. ARqp with the relaxed Step 2 is a run predicate, and every
+ARqp run is such a run. For every $\omega \ge \pi_q$, the bounds of Theorem 12.2.14 hold for these
+runs, with $\kappa_{\Delta m}$ replaced by $\min(\kappa_{\Delta m}, \kappa_{\mathrm{decr}},
+\sigma_{\min} \kappa_{\mathrm{decr}}/(p+1)!)$ and $\min_j \varepsilon_j^{\pi_j}$ replaced by
+$\varepsilon_{\min}^{\omega}$. The proofs specialize the analysis of
+`Numlib.Optimization.ModelBased.HighOrder.ARqpComplexity` and the results of
+`NumlibSurface.CartisGouldToint.Chapter12.Section02`.
 
 ## Main definitions
 
-* `ARqpRelaxedStep` — the relaxed Step 2;
-* `IsARqpSufficientDecreaseRun` — ARqp with the relaxed Step 2.
+* Section 12.3, (12.3.1)–(12.3.2), `CartisGouldToint.Chapter12.ARqpRelaxedStep`: the relaxed Step 2,
+  which accepts a step with the Step-2 conditions of ARqp, or with the sufficient decrease (12.3.1),
+  or a long step (12.3.2).
+* Section 12.3, `CartisGouldToint.Chapter12.IsARqpSufficientDecreaseRun`: a run of ARqp with the
+  relaxed Step 2.
 
 ## Main results
 
-* `IsARqpSufficientDecreaseRun.of_algorithm_12_2_2` — every ARqp run is such a run;
-* `complexity_arqpSufficientDecrease` — the complexity bounds of Theorem 12.2.14.
+* Section 12.3, `CartisGouldToint.Chapter12.IsARqpSufficientDecreaseRun.of_algorithm_12_2_2`: every
+  ARqp run is a run with the relaxed Step 2.
+* Notes to Section 12.2.2, `CartisGouldToint.Chapter12.complexity_arqpSufficientDecrease`: the
+  evaluation complexity bounds of Theorem 12.2.14 hold for ARqp with the relaxed Step 2, with
+  $\varepsilon_{\min}^{\omega}$ for every $\omega \ge \pi_q$.
 
-## Deviations from the book
+## Conventions
 
-* (12.3.1) is printed as `ΔT_{f,j}(x_k, s_k) ≥ κ_decr ε_j^ω` "for some `j`"; it is read with the
-  decrease `ΔT_{f,p}(x_k, s_k)` that the ratio and the complexity analysis use, and with
-  `ε_min^ω` (as in (12.3.2)).
-* The complexity bound is stated for every `ω ≥ π_q` (the book's choice is `ω = π_q`, the exponent
-  of Theorem 12.2.14), in terms of `ε_min^ω` instead of `min_j ε_j^{π_j}`.
+* $\varepsilon_{\min} = \min(1, \min_{j \in [1:q]} \varepsilon_j)$ is `Optimization.finMin 1 ε q`.
+  For $\varepsilon \in (0, 1]^q$ it is $\min_j \varepsilon_j$, as in (12.2.7).
+* The other notation is that of `NumlibSurface.CartisGouldToint.Chapter12.Section02`.
+
+## Deviations from the source
+
+* **(12.3.1)** (reading). The source prints $\Delta T_{f,j}(x_k, s_k) \ge \kappa_{\mathrm{decr}}
+  \varepsilon_j^{\omega}$ "for some $j$". The library reads it with the decrease
+  $\Delta T_{f,p}(x_k, s_k)$ that the ratio and the complexity analysis use, and with
+  $\varepsilon_{\min}^{\omega}$ as in (12.3.2). See `CartisGouldToint.Chapter12.ARqpRelaxedStep`.
+* **Complexity of the relaxed method** (reading). The source takes $\omega = \pi_q$ and says only
+  that the conclusions of Theorem 12.2.14 are not affected. The library states the bounds for every
+  $\omega \ge \pi_q$, in terms of $\varepsilon_{\min}^{\omega}$ instead of
+  $\min_j \varepsilon_j^{\pi_j}$. See
+  `CartisGouldToint.Chapter12.complexity_arqpSufficientDecrease`.
 
 ## Not formalized
 
-The qualitative discussion of premature termination of Algorithm 12.2.3 and of the practicality
-of global polynomial minimization.
+* The qualitative discussion of the premature termination of Algorithm 12.2.3 and of the
+  practicality of global polynomial minimization.
 -/
 
 open Set Metric Filter Optimization
@@ -53,11 +73,27 @@ namespace CartisGouldToint.Chapter12
 
 variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
 
-/-- **The relaxed Step 2 of ARqp** ([cartis2022evaluation], §12.3 and the Notes to §12.2.2): the
-step `s` from `x` (model data `M`) satisfies the Step-2 conditions of ARqp, or it does not increase
-the model (with termination only at a global model minimizer `0`), its radii lie in `(0, 1]`, and
-it achieves the sufficient decrease `ΔT_{f,p}(x, s) ≥ κ_decr ε_min^ω` (12.3.1) or is long,
-`‖s‖ ≥ κ_decr^{1/(p+1)} ε_min^{ω/(p+1)}` (12.3.2), with `ε_min = min_j ε_j`. -/
+/-- **Section 12.3** of [cartis2022evaluation], the relaxed Step 2 of ARqp. Let $M$ be the model
+data of one ARqp iteration at the iterate $x$, with the model $m$ and the predicted decrease
+$\Delta T_{f,p}(x, \cdot)$. Let $\kappa_{\mathrm{decr}}, \omega \in \mathbb{R}$ and
+$\varepsilon_{\min} = \min(1, \min_{j \in [1:q]} \varepsilon_j)$. A step $s$ with radii
+$\delta_{s,j}$ and displacements $d^m_j$ satisfies the **relaxed Step 2** if it satisfies the
+Step-2 conditions of ARqp (`Optimization.ARqpStep` with no constraints), or if all of the
+following hold: $m(s) \le m(0)$; $m(s) = m(0)$ only if $0$ is a global minimizer of $m$;
+$\delta_{s,j} \in (0, 1]$ for $j \in [1:q]$; and
+$$\Delta T_{f,p}(x, s) \ge \kappa_{\mathrm{decr}} \varepsilon_{\min}^{\omega} \quad
+  \text{(12.3.1)} \qquad \text{or} \qquad \|s\| \ge \kappa_{\mathrm{decr}}^{1/(p+1)}
+  \varepsilon_{\min}^{\omega/(p+1)} \quad \text{(12.3.2)}.$$
+
+**Reading.** The source prints (12.3.1) as $\Delta T_{f,j}(x_k, s_k) \ge \kappa_{\mathrm{decr}}
+\varepsilon_j^{\omega}$ "for some $j$". Here it is read with the decrease
+$\Delta T_{f,p}(x_k, s_k)$ that the ratio (12.2.30) and the complexity analysis use, and with
+$\varepsilon_{\min}^{\omega}$ as in (12.3.2).
+
+The predicted decrease is the field `Optimization.ARqpData.pred`, which is
+$\Delta T_{f,p}(x, \cdot)$ for the exact model data `Optimization.ARqpData.ofTaylor`. The
+condition that $m(s) = m(0)$ only at a global model minimizer $0$ is the normalization of Step 2
+in `Optimization.IsARqpRun`. -/
 def ARqpRelaxedStep (P : ARqpParams) (p q : ℕ) (ε : ℕ → ℝ) (κdecr ω : ℝ) (M : ARqpData E)
     (x s : E) (δs : ℕ → ℝ) (dm : ℕ → E) : Prop :=
   ARqpStep univ P q ε M x s δs dm ∨
@@ -66,22 +102,37 @@ def ARqpRelaxedStep (P : ARqpParams) (p q : ℕ) (ε : ℕ → ℝ) (κdecr ω :
       (κdecr * finMin 1 ε q ^ ω ≤ M.pred s ∨
         κdecr ^ (1 / ((p + 1 : ℕ) : ℝ)) * finMin 1 ε q ^ (ω / ((p + 1 : ℕ) : ℝ)) ≤ ‖s‖))
 
-/-- **ARqp with the relaxed Step 2** ([cartis2022evaluation], §12.3): the fields of
-`algorithm_12_2_2` (Step 1 with the strict test and witnesses, Steps 3–4, radii inherited at
-successful iterations and kept with the witnesses at unsuccessful ones), with Step 2 replaced by
-`ARqpRelaxedStep` for the constants `κ_decr` and `ω`. -/
+/-- **Section 12.3** of [cartis2022evaluation], ARqp with the relaxed Step 2. A run of ARqp with the
+relaxed Step 2 for $f$, constants $P$, model degree $p$, order $q$, tolerances $\varepsilon$,
+initial radii $\delta_0$ and constants $\kappa_{\mathrm{decr}}$, $\omega$ consists of iterates
+$x_k$, steps $s_k$, weights $\sigma_k$, Step-1 radii $\delta_{k,j}$ and displacements $d_{k,j}$,
+and Step-2 radii $\delta_{s_k,j}$ and displacements $d^m_{k,j}$. It obeys the rules of Algorithm
+12.2.2 (`CartisGouldToint.Chapter12.algorithm_12_2_2`), with Step 2 replaced by the relaxed Step
+2 `CartisGouldToint.Chapter12.ARqpRelaxedStep`: Steps 2–4 form an adaptive-regularization run
+that stops when the Step-1 test passes or $m_k(s_k) = m_k(0)$; the initial radii are $\delta_0$;
+at every iteration reached, $d_{k,j}$ is a $\varsigma$-approximate optimality displacement of
+radius $\delta_{k,j}$ for $j \in [1:q]$; and before termination, a successful iteration sets
+$\delta_{k+1} = \delta_{s_k}$, while an unsuccessful iteration keeps $\delta_{k+1} = \delta_k$
+and $d_{k+1} = d_k$.
+
+The structure has the fields of `Optimization.IsARqpRun` with $X = E$, except that the Step-2
+condition is the relaxed one. -/
 structure IsARqpSufficientDecreaseRun (f : E → ℝ) (P : ARqpParams) (p q : ℕ) (ε δ₀ : ℕ → ℝ)
     (κdecr ω : ℝ) (x s : ℕ → E) (σ : ℕ → ℝ) (δ δs : ℕ → ℕ → ℝ) (d dm : ℕ → ℕ → E) : Prop where
-  /-- Steps 2–4: an adaptive-regularization run with the relaxed Step 2. -/
+  /-- Steps 2–4 form an adaptive-regularization run with the Step-1 test, the relaxed Step 2, and
+  the Step-2 termination test $m_k(s_k) = m_k(0)$. -/
   toIsARRun : IsARRun P.toARParams (arqpStop₁ P q ε (arqpData f p x σ) δ d)
     (fun k => ARqpRelaxedStep P p q ε κdecr ω (arqpData f p x σ k) (x k) (s k) (δs k) (dm k))
     (arqpStop₂ (arqpData f p x σ) s) (arqpRho f p x s σ) x s σ
-  /-- The initial radii. -/
+  /-- The initial radii are $\delta_0$. -/
   delta_zero : δ 0 = δ₀
-  /-- Step 1: approximate optimality displacements at every iteration reached. -/
+  /-- Step 1: at every iteration $k$ reached, $d_{k,j}$ is a $\varsigma$-approximate optimality
+  displacement of radius $\delta_{k,j}$ for the Taylor decrement $\Delta T_{f,j}(x_k, \cdot)$,
+  for $j \in [1:q]$. -/
   witness : ∀ k, (∀ i < k, ¬ arqpStop f P p q ε x s σ δ d i) → ∀ j ∈ Finset.Icc 1 q,
     IsApproxMeasureStep ((ftaylorSeries ℝ f (x k)).taylorDecrement j) (δ k j) univ P.ς (d k j)
-  /-- Step 3: radii and witnesses. -/
+  /-- Step 3: before termination, a successful iteration inherits the Step-2 radii, and an
+  unsuccessful iteration keeps the radii and the Step-1 displacements. -/
   radii : UntilHit (arqpStop f P p q ε x s σ δ d) fun k =>
     (P.η₁ ≤ arqpRho f p x s σ k → δ (k + 1) = δs k) ∧
       (¬ P.η₁ ≤ arqpRho f p x s σ k → δ (k + 1) = δ k ∧ d (k + 1) = d k)
@@ -89,7 +140,10 @@ structure IsARqpSufficientDecreaseRun (f : E → ℝ) (P : ARqpParams) (p q : �
 variable {f : E → ℝ} {P : ARqpParams} {p q : ℕ} {ε δ₀ : ℕ → ℝ} {κdecr ω : ℝ} {x s : ℕ → E}
   {σ : ℕ → ℝ} {δ δs : ℕ → ℕ → ℝ} {d dm : ℕ → ℕ → E} {L : ℕ → ℝ}
 
-/-- **Every ARqp run is a run with the relaxed Step 2** (for any `κ_decr`, `ω`). -/
+/-- **Section 12.3** of [cartis2022evaluation], ARqp runs are relaxed runs. For all
+$\kappa_{\mathrm{decr}}$ and $\omega$, every run of ARqp
+(`CartisGouldToint.Chapter12.algorithm_12_2_2`) is, with the same sequences, a run with the
+relaxed Step 2 (`CartisGouldToint.Chapter12.IsARqpSufficientDecreaseRun`). -/
 theorem IsARqpSufficientDecreaseRun.of_algorithm_12_2_2
     (h : algorithm_12_2_2 f P p q ε δ₀ x s σ δ δs d dm) :
     IsARqpSufficientDecreaseRun f P p q ε δ₀ κdecr ω x s σ δ δs d dm := by
@@ -103,21 +157,24 @@ namespace IsARqpSufficientDecreaseRun
 variable (h : IsARqpSufficientDecreaseRun f P p q ε δ₀ κdecr ω x s σ δ δs d dm)
 include h
 
-/-- The model decreases strictly before termination. -/
+/-- Before termination the model decreases strictly: if the termination test fails at every
+$i \le k$, then $m_k(s_k) < m_k(0)$. -/
 theorem model_lt {k : ℕ} (hk : ∀ i ≤ k, ¬ arqpStop f P p q ε x s σ δ d i) :
     arqpModel f p x σ k (s k) < arqpModel f p x σ k 0 := by
   have hstep := h.toIsARRun.step_of_forall_le hk
   have hle : arqpModel f p x σ k (s k) ≤ arqpModel f p x σ k 0 := hstep.elim (·.model_le) (·.1)
   exact lt_of_le_of_ne hle fun h2 => hk k le_rfl (Or.inr h2)
 
-/-- The radii returned by every step before termination lie in `(0, 1]`. -/
+/-- If the termination test fails at every $i \le k$, the Step-2 radii satisfy
+$\delta_{s_k,j} \in (0, 1]$ for $j \in [1:q]$. -/
 theorem stepRadii_mem {k : ℕ} (hk : ∀ i ≤ k, ¬ arqpStop f P p q ε x s σ δ d i) :
     ∀ j ∈ Finset.Icc 1 q, 0 < δs k j ∧ δs k j ≤ 1 := by
   rcases h.toIsARRun.step_of_forall_le hk with hs | hs
   · exact fun j hj => ⟨hs.radius_pos j hj, hs.radius_le_one j hj⟩
   · exact hs.2.2.1
 
-/-- The radii stay in `(0, 1]` up to termination. -/
+/-- If $\delta_{0,j} \in (0, 1]$ for $j \in [1:q]$, then $\delta_{k,j} \in (0, 1]$ for $j \in [1:q]$
+at every iteration $k$ reached, that is, when the termination test fails at every $i < k$. -/
 theorem delta_mem (hδ₀ : ∀ j ∈ Finset.Icc 1 q, 0 < δ₀ j ∧ δ₀ j ≤ 1) :
     ∀ k, (∀ i < k, ¬ arqpStop f P p q ε x s σ δ d i) →
       ∀ j ∈ Finset.Icc 1 q, 0 < δ k j ∧ δ k j ≤ 1 := by
@@ -132,7 +189,10 @@ theorem delta_mem (hδ₀ : ∀ j ∈ Finset.Icc 1 q, 0 < δ₀ j ∧ δ₀ j �
     · rw [hs hρ]; exact h.stepRadii_mem hk' j hj
     · rw [(hu hρ).1]; exact ih (fun i hi => hk' i hi.le) j hj
 
-/-- Lemma 4.1.2 for the relaxed run: `σ_min ≤ σ_k ≤ σ_max` up to termination. -/
+/-- Under f.D1pL with $p \ge 1$, the weights satisfy $\sigma_{\min} \le \sigma_k \le \sigma_{\max}$
+at every iteration $k$ reached, where $\sigma_{\max} = \max(\sigma_0, \gamma_3 L_{f,p}/(1 -
+\eta_2))$ (`Optimization.arSigmaMax`). This is Lemma 4.1.2 of [cartis2022evaluation] for the
+relaxed run. -/
 theorem sigma_le (hf : AssumptionD1pL f p L) (hp : 1 ≤ p) :
     ∀ k, (∀ i < k, ¬ arqpStop f P p q ε x s σ δ d i) →
       P.σmin ≤ σ k ∧ σ k ≤ arSigmaMax P.toARParams (L p) := by
@@ -142,7 +202,10 @@ theorem sigma_le (hf : AssumptionD1pL f p L) (hp : 1 ≤ p) :
     (mem_univ _) (fun k hk _ => ⟨mem_univ _, h.model_lt hk⟩) k hk
   exact ⟨this.2.1, this.2.2⟩
 
-/-- The Step-1 data at `k + 1` after a successful iteration `k`, in local form. -/
+/-- After a successful iteration $k$ before termination, $x_{k+1} = x_k + s_k$ and
+$\delta_{k+1} = \delta_{s_k}$, and for $j \in [1:q]$ the displacement $d_{k+1,j}$ is a
+$\varsigma$-approximate optimality displacement of radius $\delta_{s_k,j}$ for the Taylor
+decrement $\Delta T_{f,j}(x_k + s_k, \cdot)$. -/
 theorem next {k : ℕ} (hk : ∀ i ≤ k, ¬ arqpStop f P p q ε x s σ δ d i)
     (hs : P.η₁ ≤ arqpRho f p x s σ k) :
     x (k + 1) = x k + s k ∧ δ (k + 1) = δs k ∧
@@ -156,7 +219,8 @@ theorem next {k : ℕ} (hk : ∀ i ≤ k, ¬ arqpStop f P p q ε x s σ δ d i)
 
 end IsARqpSufficientDecreaseRun
 
-/-- `π_j` is nondecreasing in `j ≤ p`. -/
+/-- The exponents $\pi_j$ of Lemma 12.2.13 (`CartisGouldToint.Chapter12.arqpPi`) are nondecreasing
+in the order: $\pi_j \le \pi_{j'}$ for $j \le j' \le p$. -/
 theorem arqpPi_mono {p q j j' : ℕ} (hjj' : j ≤ j') (hj' : j' ≤ p) :
     arqpPi p q j ≤ arqpPi p q j' := by
   unfold arqpPi arqpPiOf
@@ -165,18 +229,40 @@ theorem arqpPi_mono {p q j j' : ℕ} (hjj' : j ≤ j') (hj' : j' ≤ p) :
     exact_mod_cast (show p - j' + 1 ≤ p - j + 1 by omega)
   · gcongr
 
-/-- **Complexity of ARqp with the relaxed Step 2** ([cartis2022evaluation], §12.3 and the Notes to
-§12.2.2: "this modification does not affect the conclusions of the complexity theorem"). Assume
-f.Bb and f.D1pL, `1 ≤ q ≤ p`, `ε ∈ (0, 1]^q`, `δ₀ ∈ (0, 1]^q`, `σ_min > 0`, `θ < ς`, `κ_decr > 0`
-and `ω ≥ π_q` (`ω = π_q` is the book's choice), and the radii hypotheses of Theorem 12.2.14 for the
-steps of the original type (those satisfying the Step-2 conditions of ARqp): if `q ≤ 2`, their
-radii are `1`; if `q > 2`, short ones come with `δ_{s_k,j} ≥ κ_δ(σ_k) ε_j` ((12.2.50)). Then a
-run with the relaxed Step 2 terminates at some `k_ε` where `x_{k_ε}` is an
-`(ε, δ_ε)`-approximate `q`-th order minimizer for some `δ_ε ∈ (0, 1]^q`, after at most
-`κ^a (f(x₀) - f_low)/ε_min^ω + κ^c` evaluations of `f` and
-`κ^s (f(x₀) - f_low)/ε_min^ω + 2` evaluations of the derivatives, where
-`κ^s = 1/(η₁ κ')`, `κ^a = κ^s (1 + |log γ₁|/log γ₂)`, `κ^c` is that of Theorem 12.2.14 and
-`κ' = min(κ_{Δm}, κ_decr, σ_min κ_decr/(p+1)!)`. -/
+/-- **Section 12.3** of [cartis2022evaluation], with the Notes to Section 12.2.2 (complexity of ARqp
+with the relaxed Step 2). Let $f : \mathbb{R}^n \to \mathbb{R}$ satisfy f.Bb with the lower
+bound $f_{\mathrm{low}}$ and f.D1pL with the constants $L_{f,j}$. Let $1 \le q \le p$,
+$\varepsilon \in (0, 1]^q$, $\delta_0 \in (0, 1]^q$, $\sigma_{\min} > 0$, $\theta < \varsigma$,
+$\kappa_{\mathrm{decr}} > 0$ and $\omega \ge \pi_q$. Consider a run of ARqp with the relaxed
+Step 2 that satisfies the radii hypotheses of Theorem 12.2.14 at every iteration $k$ before
+termination whose step satisfies the Step-2 conditions of ARqp: if $q \le 2$, then
+$\delta_{s_k,j} = 1$ for $j \in [1:q]$; if $q > 2$ and $\|s_k\| < 1$, then $\delta_{s_k,j} \ge
+\kappa_\delta(\sigma_k) \varepsilon_j$ for $j \in [1:q]$ (12.2.50). Then the run terminates at
+some iteration $k_\varepsilon$, the point $x_{k_\varepsilon}$ is an
+$(\varepsilon, \delta_\varepsilon)$-approximate $q$-th order minimizer of $f$ for some
+$\delta_\varepsilon \in (0, 1]^q$, and the numbers of evaluations of $f$ and of its derivatives
+are at most
+$$\kappa^a \frac{f(x_0) - f_{\mathrm{low}}}{\varepsilon_{\min}^{\omega}} + \kappa^c \qquad
+  \text{and} \qquad \kappa^s \frac{f(x_0) - f_{\mathrm{low}}}{\varepsilon_{\min}^{\omega}} +
+  2,$$
+where $\kappa' = \min(\kappa_{\Delta m}, \kappa_{\mathrm{decr}}, \sigma_{\min}
+\kappa_{\mathrm{decr}}/(p+1)!)$, $\kappa^s = 1/(\eta_1 \kappa')$, $\kappa^a = \kappa^s (1 +
+|\log \gamma_1|/\log \gamma_2)$, and $\kappa^c$ is the constant of Theorem 12.2.14.
+
+**Reading.** The source takes $\omega = \pi_q$, the exponent of Theorem 12.2.14, and states only
+that the relaxation "does not affect the conclusions of the complexity theorem". The theorem
+states the bounds for every $\omega \ge \pi_q$, with $\varepsilon_{\min}^{\omega}$ in place of
+$\min_j \varepsilon_j^{\pi_j}$ and $\kappa'$ in place of $\kappa_{\Delta m}$.
+
+Here $\kappa_\delta(\sigma) = \varsigma \theta/(8 (3 L_f + \sigma))$, with
+$L_f = \max(1, \max_j L_{f,j})$. The counts are `Optimization.funEvalCount` and
+`Optimization.derivEvalCount` of the successful iterations. A long step (12.3.2) gives the
+decrease $\sigma_{\min} \kappa_{\mathrm{decr}} \varepsilon_{\min}^{\omega}/(p+1)!$ by Lemma 4.1.1.
+The Lean counterparts of the constants are:
+* $\varepsilon_{\min} = \min(1, \min_j \varepsilon_j)$ is `Optimization.finMin 1 ε q`;
+* $\kappa_{\Delta m}$ is `CartisGouldToint.Chapter12.arqpKappaDm`;
+* $\kappa_\delta$ is `Optimization.arqpKappaDelta`;
+* $\kappa^c$ is `Optimization.kappaCARqp`. -/
 theorem complexity_arqpSufficientDecrease {n : ℕ} {f : EuclideanSpace ℝ (Fin n) → ℝ}
     {x s : ℕ → EuclideanSpace ℝ (Fin n)} {d dm : ℕ → ℕ → EuclideanSpace ℝ (Fin n)} {flow : ℝ}
     (hb : Chapter02.AssumptionBb f flow) (hf : AssumptionD1pL f p L) (hq : 1 ≤ q) (hqp : q ≤ p)

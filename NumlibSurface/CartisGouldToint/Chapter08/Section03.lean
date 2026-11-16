@@ -7,56 +7,110 @@ import Numlib.Optimization.Complexity.Existence
 import NumlibSurface.CartisGouldToint.Chapter08.Section02
 
 /-!
-# Cartis–Gould–Toint §8.3: Subproblem solution
+# Cartis, Gould and Toint, Section 8.3: Subproblem solution
 
-Surface file for [cartis2022evaluation] §8.3: the partition of the multiplier line into the sets
-`𝓝`, `𝓛`, `𝓖` for the regularization subproblem (8.1.3) and the trust-region subproblem (8.1.2),
-the iterations of Algorithms 8.3.1 and 8.3.2 from a point of `𝓛`, and the description of all
-global minimizers, hard case included (Corollaries 8.3.1 and 8.3.2).
+This module formalizes Section 8.3 of [cartis2022evaluation]. Let $H \in \mathbb{R}^{n \times n}$ be
+symmetric, $M \in \mathbb{R}^{n \times n}$ symmetric positive definite and $g \in \mathbb{R}^n$. Let
+$\lambda_1$ be the leftmost eigenvalue of the pencil $(H, M)$, let
+$\lambda_s = \max(0, -\lambda_1)$, and let $s(\lambda) = -(H + \lambda M)^{-1} g$ for
+$\lambda > \lambda_s$. The section divides the real line into three sets:
+$\mathcal{N} = (-\infty, \lambda_s]$, the set $\mathcal{L}$ of $\lambda > \lambda_s$ where
+$\|s(\lambda)\|_M$ is at least the target (the radius $\Delta$ of the trust-region subproblem
+(8.1.2), or $(\lambda/\sigma)^{1/(r-2)}$ for the regularization subproblem (8.1.3)), and the set
+$\mathcal{G}$ of $\lambda > \lambda_s$ where it is smaller. If $\lambda^*$ is the multiplier of a
+global minimizer, then $\mathcal{L} = (\lambda_s, \lambda^*]$ and
+$\mathcal{G} = (\lambda^*, \infty)$.
+
+From a point of $\mathcal{L}$, Algorithms 8.3.1 and 8.3.2 take at each iteration the largest of a
+finite set of candidates, built from the Taylor and Newton corrections of Section 8.2. The iterates
+stay in $\mathcal{L}$, increase, and converge to $\lambda^*$, Q-linearly and Q-superlinearly when a
+Newton candidate is used. Corollaries 8.3.1 and 8.3.2 describe all global minimizers of the two
+subproblems, the hard case $\lambda^* = -\lambda_1$ included, by the minimum-norm solution $s_s$ of
+(8.3.2). The proofs are transported to the operator backbone `Numlib.Optimization.Subproblem`.
 
 ## Main definitions
 
-* `setN`, `setL_reg`, `setG_reg`, `setF_reg` — the sets `𝓝 = (-∞, λₛ]`, `𝓛`, `𝓖`, `𝓕 = 𝓛 ∪ 𝓖` of
-  §8.3.1, by their descriptions through `‖s(λ)‖_M`; `setL_tr`, `setG_tr` — those of §8.3.2.
-* `taylorCorrectionFn`, `regNewtonCorrectionFn`, `trNewtonCorrectionFn` — the corrections
-  `δₖᵀ(λc)` (rightmost real root of (8.2.15)), `δᴺ(λc, β)` of (8.2.25) and `δᴺ` of (8.2.24).
-* `algorithm_8_3_1`, `algorithm_8_3_2` — runs of Algorithms 8.3.1 and 8.3.2.
-* `minNormSolution hH hM g λ` — the minimum-`M`-norm solution `-(H + λ M)⁺ g` of (8.3.2).
-* `exitTest` — the exit test of Algorithms 8.3.1 and 8.3.2.
+* Section 8.3.1, `CartisGouldToint.Chapter08.setN`: the set $\mathcal{N} = (-\infty, \lambda_s]$.
+* Section 8.3.1, `CartisGouldToint.Chapter08.setL_reg`, `CartisGouldToint.Chapter08.setG_reg`,
+  `CartisGouldToint.Chapter08.setF_reg`: the sets $\mathcal{L}$, $\mathcal{G}$ and
+  $\mathcal{F} = \mathcal{L} \cup \mathcal{G}$ for the regularization subproblem.
+* Algorithm 8.3.1, `CartisGouldToint.Chapter08.algorithm_8_3_1`: a run of the secular iteration for
+  the regularization subproblem, with candidates `CartisGouldToint.Chapter08.candidates831`.
+* Equation (8.3.2), `CartisGouldToint.Chapter08.minNormSolution`: the minimum-$M$-norm solution
+  $s_s = -(H + \lambda M)^{+} g$.
+* Section 8.3.2, `CartisGouldToint.Chapter08.setL_tr`, `CartisGouldToint.Chapter08.setG_tr`: the
+  sets $\mathcal{L}$ and $\mathcal{G}$ for the trust-region subproblem.
+* Algorithm 8.3.2, `CartisGouldToint.Chapter08.algorithm_8_3_2`: a run of the secular iteration for
+  the trust-region subproblem, with candidates `CartisGouldToint.Chapter08.candidates832`.
+* `CartisGouldToint.Chapter08.taylorCorrectionFn`,
+  `CartisGouldToint.Chapter08.regNewtonCorrectionFn`,
+  `CartisGouldToint.Chapter08.trNewtonCorrectionFn`: the Taylor correction of (8.2.15) and the
+  Newton corrections (8.2.25) and (8.2.24), which the two algorithms use.
+* `CartisGouldToint.Chapter08.exitTest`: the exit test $|\lambda_k - \lambda_{k-1}| \le \varepsilon$
+  of the two algorithms.
 
 ## Main results
 
-* `setF_reg_eq_Ioi`, `setL_tr_union_setG_tr` — `𝓝`, `𝓛`, `𝓖` partition `ℝ`.
-* `setL_reg_eq_Ioc`, `setL_tr_eq_Ioc` — `𝓛 = (λₛ, λ*]` and `𝓖 = (λ*, ∞)`.
-* `algorithm_8_3_1_terminates`, `algorithm_8_3_2_terminates` — from `λ₀ ∈ 𝓛` (easy case
-  `λ* > λₛ`) the iterates stay in `𝓛`, increase to `λ*` (Q-linearly and Q-superlinearly when a
-  Newton correction is among the candidates), every run stays in `𝓛` and increases, and the exit
-  test is met: a run exists.
-* `minNormSolution_spec`, `tendsto_stepOf_minNormSolution` — the minimum-`M`-norm solution and
-  the limit `s(λ) → sₛ` as `λ ↓ -λ₁`.
-* `corollary_8_3_1`, `corollary_8_3_2` — global minimizers and the optimal values (8.3.3),
-  (8.3.5).
+* Section 8.3.1, `CartisGouldToint.Chapter08.setF_reg_eq_Ioi`: for the regularization subproblem,
+  $\mathcal{N}$, $\mathcal{L}$ and $\mathcal{G}$ partition $\mathbb{R}$.
+* Section 8.3.1, `CartisGouldToint.Chapter08.setL_reg_eq_Ioc`:
+  $\mathcal{L} = (\lambda_s, \lambda^*]$ and $\mathcal{G} = (\lambda^*, \infty)$ for the
+  regularization subproblem.
+* Algorithm 8.3.1, `CartisGouldToint.Chapter08.algorithm_8_3_1_terminates`: from
+  $\lambda_0 \in \mathcal{L}$ the iterates increase in $\mathcal{L}$ to $\lambda^*$, and a run
+  exists.
+* Section 8.3.1, `CartisGouldToint.Chapter08.tendsto_stepOf_minNormSolution`: if
+  $g \perp \ker(H - \lambda_1 M)$, then $s(\lambda) \to s_s$ as $\lambda \downarrow -\lambda_1$.
+* Equation (8.3.2), `CartisGouldToint.Chapter08.minNormSolution_spec`: $s_s$ is the solution of
+  $(H + \lambda M) s = -g$ of least $M$-norm.
+* Corollary 8.3.1, `CartisGouldToint.Chapter08.corollary_8_3_1`: the global minimizers of the
+  regularization subproblem and the optimal value (8.3.3).
+* Section 8.3.2, `CartisGouldToint.Chapter08.setL_tr_union_setG_tr`: for the trust-region
+  subproblem, $\mathcal{L}$ and $\mathcal{G}$ partition $(\lambda_s, \infty)$.
+* Section 8.3.2, `CartisGouldToint.Chapter08.setL_tr_eq_Ioc`: $\mathcal{L} = (\lambda_s, \lambda^*]$
+  and $\mathcal{G} = (\lambda^*, \infty)$ for the trust-region subproblem.
+* Algorithm 8.3.2, `CartisGouldToint.Chapter08.algorithm_8_3_2_terminates`: from
+  $\lambda_0 \in \mathcal{L}$ the iterates increase in $\mathcal{L}$ to $\lambda^*$, and a run
+  exists.
+* Corollary 8.3.2, `CartisGouldToint.Chapter08.corollary_8_3_2`: the global minimizers of the
+  trust-region subproblem and the optimal value (8.3.5).
 
-## Corrections to the source
+## Implementation notes
 
-* §8.3.1 describes `𝓝` also as `{λ | H + λ M is not positive definite}`; that set is
-  `(-∞, -λ₁]`, which differs from `(-∞, λₛ]` when `λ₁ > 0`. Likewise the set-builder forms
-  `𝓛 = {λ | H + λ M ≻ 0, ‖s(λ)‖_M ≥ …}`, `𝓖 = {λ | H + λ M ≻ 0, ‖s(λ)‖_M < …}` contain points
-  `λ ∈ (-λ₁, 0]` outside `(λₛ, ∞)` when `λ₁ > 0` (e.g. `H = M = I`, `λ = -1/2`). The interval forms
-  are used: `𝓛`, `𝓖` are defined inside `(λₛ, ∞)` and `𝓝`, `𝓛`, `𝓖` partition `ℝ`
-  (`setF_reg_eq_Ioi`, `setL_tr_union_setG_tr`).
-* §8.3.1 writes the transformed regularization target as `τ(λ; β) = (λ/σ)^{β/(r-2)}`; it is
-  `(λ/σ)^{2β/(r-2)}` (consistent with (8.2.25)), as used by `regSecularFn`. The prose ranges
-  `β ∈ (0, r - 2]` and `β ∈ [-1, 0)` should read `(0, (r-2)/2]` and `[-1/2, 0)`.
-* Algorithm 8.3.1 allows any `β ∈ [-1/2, (r-2)/2]`, but (8.2.25) is undefined at `β = 0`; `β ≠ 0`
-  is assumed.
-* Corollaries 8.3.1/8.3.2: a single fixed eigenvector `v₁` does not parametrize all minimizers
-  when `λ₁` is multiple; the formal statements give `s* = sₛ + α v` for some nonzero generalized
-  eigenvector `v` for `λ₁` (equivalently `s* - sₛ ∈ ker (H + λ* M)`), for `n ≥ 1`. The minimum-norm
-  solution is taken in the `M`-norm, which is the limit of `s(λ)` as `λ ↓ λₛ`.
-* Corollary 8.3.2: when `λ* = 0` (`λ₁ = 0`, interior solutions) the vector `sₛ + α v₁` need not lie
-  on the boundary (`n = 1`, `H = 0`, `g = 0`, `M = 1`, `Δ = 1`, `s* = 0`); the boundary condition
-  `‖sₛ + α v₁‖_M = Δ` is stated for `λ* > 0` only.
+* The sets $\mathcal{L}$ and $\mathcal{G}$ are defined inside $(\lambda_s, \infty)$ by the norm
+  $\|s(\lambda)\|_M$ (`CartisGouldToint.Chapter08.mNorm` of `CartisGouldToint.Chapter08.stepOf`).
+  The lemmas `CartisGouldToint.Chapter08.mem_setL_reg_iff` and its companions restate them by the
+  secular function $\pi(\lambda) = \|s(\lambda)\|_M^2$.
+* An algorithm is a run predicate: a sequence $(\lambda_k)$ and an exit index $K$ that obey the
+  rules of the algorithm up to the first iteration that meets the exit test
+  (`Optimization.IsFirstHit`).
+* Each surface correction equals the corresponding correction of
+  `Numlib.Optimization.Subproblem.SecularIteration` for the scaled operator $M^{-1} H$ and the
+  scaled gradient $M^{-1} g$ on the $M$-inner product space `Subproblem.ScaledSpace`. The lemmas
+  `CartisGouldToint.Chapter08.taylorCorrectionFn_eq` and its companions record this.
+
+## Deviations from the source
+
+* **Section 8.3, the sets $\mathcal{N}$, $\mathcal{L}$, $\mathcal{G}$** (correction). The
+  set-builder descriptions of the source are wrong when $\lambda_1 > 0$; the interval forms, which
+  partition $\mathbb{R}$, are used. See `CartisGouldToint.Chapter08.setN`,
+  `CartisGouldToint.Chapter08.setF_reg_eq_Ioi` and
+  `CartisGouldToint.Chapter08.setL_tr_union_setG_tr`.
+* **Section 8.3.1, the transformed target** (typo). The target is $(\lambda/\sigma)^{2\beta/(r-2)}$,
+  not $(\lambda/\sigma)^{\beta/(r-2)}$, and the ranges of $\beta$ are $(0, (r-2)/2]$ and
+  $[-1/2, 0)$. See `CartisGouldToint.Chapter08.regSecularFn`.
+* **Algorithm 8.3.1** (correction). The Newton correction (8.2.25) is undefined at $\beta = 0$; the
+  exponents satisfy $\beta_j \neq 0$. See `CartisGouldToint.Chapter08.algorithm_8_3_1`.
+* **Corollaries 8.3.1 and 8.3.2** (correction). When $\lambda_1$ is multiple, one fixed eigenvector
+  $v_1$ does not parametrize all minimizers; the statements allow any nonzero generalized
+  eigenvector for $\lambda_1$. See `CartisGouldToint.Chapter08.corollary_8_3_1` and
+  `CartisGouldToint.Chapter08.corollary_8_3_2`.
+* **Equation (8.3.2)** (reading). The minimum-norm solution is taken in the $M$-norm, which makes it
+  the limit of $s(\lambda)$ as $\lambda \downarrow \lambda_s$. See
+  `CartisGouldToint.Chapter08.minNormSolution`.
+* **Corollary 8.3.2, boundary condition** (correction). For $\lambda^* = 0$ the minimizer need not
+  lie on the boundary; $\|s_s + \alpha v\|_M = \Delta$ is stated for $\lambda^* > 0$ only. See
+  `CartisGouldToint.Chapter08.corollary_8_3_2`.
 -/
 
 open Matrix Set Filter Topology
@@ -68,43 +122,89 @@ open Subproblem
 
 variable {n : ℕ} {g : EuclideanSpace ℝ (Fin n)} {H M : Matrix (Fin n) (Fin n) ℝ}
 
-/-! ### The sets `𝓝`, `𝓛`, `𝓖` -/
+/-! ### The sets $\mathcal{N}$, $\mathcal{L}$, $\mathcal{G}$ -/
 
-/-- The set `𝓝 = (-∞, λₛ]` of [cartis2022evaluation] §8.3. -/
+/-- **Section 8.3.1** of [cartis2022evaluation], the set $\mathcal{N}$. Let $H$ be symmetric and $M$
+symmetric positive definite, and let $\lambda_s = \max(0, -\lambda_1)$, where $\lambda_1$ is the
+leftmost eigenvalue of the pencil $(H, M)$. The set $\mathcal{N}$ is the interval
+$(-\infty, \lambda_s]$.
+
+**Correction.** The source also describes $\mathcal{N}$ as $\{\lambda \mid H + \lambda M \text{
+is not positive definite}\}$. That set is $(-\infty, -\lambda_1]$, which differs from
+$(-\infty, \lambda_s]$ when $\lambda_1 > 0$. The interval form is used, so that $\mathcal{N}$,
+$\mathcal{L}$ and $\mathcal{G}$ partition $\mathbb{R}$.
+
+The number $\lambda_s$ is `CartisGouldToint.Chapter08.lambdaS`. -/
 noncomputable def setN (hH : H.IsHermitian) (hM : M.PosDef) : Set ℝ := Iic (lambdaS hH hM)
 
-/-- The set `𝓛` of [cartis2022evaluation] §8.3.1 for the regularization subproblem (8.1.3):
-`λ > λₛ` with `‖s(λ)‖_M ≥ (λ/σ)^{1/(r-2)}`; it is `(λₛ, λ*]` (`setL_reg_eq_Ioc`). -/
+/-- **Section 8.3.1** of [cartis2022evaluation], the set $\mathcal{L}$ for the regularization
+subproblem (8.1.3). Let $\sigma, r \in \mathbb{R}$. The set $\mathcal{L}$ consists of the
+$\lambda > \lambda_s$ with
+$$\|s(\lambda)\|_M \ge (\lambda/\sigma)^{1/(r-2)}.$$
+
+**Correction.** The source describes $\mathcal{L}$ by the conditions $H + \lambda M \succ 0$ and
+$\|s(\lambda)\|_M \ge (\lambda/\sigma)^{1/(r-2)}$. When $\lambda_1 > 0$ this set contains points
+$\lambda \in (-\lambda_1, 0]$ outside $(\lambda_s, \infty)$; the definition requires
+$\lambda > \lambda_s$.
+
+If $s^*$ is a global minimizer with multiplier $\lambda^* = \sigma \|s^*\|_M^{r-2}$, then
+$\mathcal{L} = (\lambda_s, \lambda^*]$ (`CartisGouldToint.Chapter08.setL_reg_eq_Ioc`). The power
+is the real power `Real.rpow`. -/
 def setL_reg (hH : H.IsHermitian) (hM : M.PosDef) (g : EuclideanSpace ℝ (Fin n)) (σ r : ℝ) :
     Set ℝ :=
   {lam | lambdaS hH hM < lam ∧ (lam / σ) ^ (1 / (r - 2)) ≤ mNorm M (stepOf g H M lam)}
 
-/-- The set `𝓖` of [cartis2022evaluation] §8.3.1 for the regularization subproblem (8.1.3):
-`λ > λₛ` with `‖s(λ)‖_M < (λ/σ)^{1/(r-2)}`; it is `(λ*, ∞)` (`setL_reg_eq_Ioc`). -/
+/-- **Section 8.3.1** of [cartis2022evaluation], the set $\mathcal{G}$ for the regularization
+subproblem (8.1.3). Let $\sigma, r \in \mathbb{R}$. The set $\mathcal{G}$ consists of the
+$\lambda > \lambda_s$ with
+$$\|s(\lambda)\|_M < (\lambda/\sigma)^{1/(r-2)}.$$
+
+**Correction.** The source describes $\mathcal{G}$ by the conditions $H + \lambda M \succ 0$ and
+$\|s(\lambda)\|_M < (\lambda/\sigma)^{1/(r-2)}$. When $\lambda_1 > 0$ this set contains points
+outside $(\lambda_s, \infty)$, for example $\lambda = -1/2$ for $H = M = I$; the definition
+requires $\lambda > \lambda_s$.
+
+If $s^*$ is a global minimizer with multiplier $\lambda^*$, then
+$\mathcal{G} = (\lambda^*, \infty)$ (`CartisGouldToint.Chapter08.setL_reg_eq_Ioc`). -/
 def setG_reg (hH : H.IsHermitian) (hM : M.PosDef) (g : EuclideanSpace ℝ (Fin n)) (σ r : ℝ) :
     Set ℝ :=
   {lam | lambdaS hH hM < lam ∧ mNorm M (stepOf g H M lam) < (lam / σ) ^ (1 / (r - 2))}
 
-/-- The set `𝓕 = 𝓛 ∪ 𝓖` of [cartis2022evaluation] §8.3.1. -/
+/-- **Section 8.3.1** of [cartis2022evaluation], the set $\mathcal{F}$. For the regularization
+subproblem (8.1.3), $\mathcal{F} = \mathcal{L} \cup \mathcal{G}$. It is the interval
+$(\lambda_s, \infty)$ (`CartisGouldToint.Chapter08.setF_reg_eq_Ioi`). -/
 def setF_reg (hH : H.IsHermitian) (hM : M.PosDef) (g : EuclideanSpace ℝ (Fin n)) (σ r : ℝ) :
     Set ℝ :=
   setL_reg hH hM g σ r ∪ setG_reg hH hM g σ r
 
-/-- The set `𝓛` of [cartis2022evaluation] §8.3.2 for the trust-region subproblem (8.1.2):
-`λ > λₛ` with `‖s(λ)‖_M ≥ Δ`. -/
+/-- **Section 8.3.2** of [cartis2022evaluation], the set $\mathcal{L}$ for the trust-region
+subproblem (8.1.2). Let $\Delta \in \mathbb{R}$. The set $\mathcal{L}$ consists of the
+$\lambda > \lambda_s$ with $\|s(\lambda)\|_M \ge \Delta$.
+
+**Correction.** As for the regularization subproblem, the set-builder description of the source
+with $H + \lambda M \succ 0$ contains points outside $(\lambda_s, \infty)$ when $\lambda_1 > 0$;
+the definition requires $\lambda > \lambda_s$. -/
 def setL_tr (hH : H.IsHermitian) (hM : M.PosDef) (g : EuclideanSpace ℝ (Fin n)) (Δ : ℝ) :
     Set ℝ :=
   {lam | lambdaS hH hM < lam ∧ Δ ≤ mNorm M (stepOf g H M lam)}
 
-/-- The set `𝓖` of [cartis2022evaluation] §8.3.2 for the trust-region subproblem (8.1.2):
-`λ > λₛ` with `‖s(λ)‖_M < Δ`. -/
+/-- **Section 8.3.2** of [cartis2022evaluation], the set $\mathcal{G}$ for the trust-region
+subproblem (8.1.2). Let $\Delta \in \mathbb{R}$. The set $\mathcal{G}$ consists of the
+$\lambda > \lambda_s$ with $\|s(\lambda)\|_M < \Delta$.
+
+**Correction.** As for the regularization subproblem, the set-builder description of the source
+with $H + \lambda M \succ 0$ contains points outside $(\lambda_s, \infty)$ when $\lambda_1 > 0$;
+the definition requires $\lambda > \lambda_s$. -/
 def setG_tr (hH : H.IsHermitian) (hM : M.PosDef) (g : EuclideanSpace ℝ (Fin n)) (Δ : ℝ) :
     Set ℝ :=
   {lam | lambdaS hH hM < lam ∧ mNorm M (stepOf g H M lam) < Δ}
 
-/-- The regularization target `τ(λ) = (λ/σ)^{2/(r-2)}` of (8.2.9). -/
+/-- The **regularization target** $\tau(\lambda) = (\lambda/\sigma)^{2/(r-2)}$ of (8.2.9) of
+[cartis2022evaluation], with the real power. -/
 noncomputable def regTarget (σ r : ℝ) (lam : ℝ) : ℝ := (lam / σ) ^ (2 / (r - 2))
 
+/-- For $\sigma > 0$ and $\lambda \ge 0$, the regularization target is a square: $\tau(\lambda) =
+\bigl((\lambda/\sigma)^{1/(r-2)}\bigr)^2$. -/
 theorem regTarget_eq_sq {σ lam : ℝ} (r : ℝ) (hσ : 0 < σ) (hlam : 0 ≤ lam) :
     regTarget σ r lam = ((lam / σ) ^ (1 / (r - 2))) ^ 2 := by
   rw [regTarget, ← Real.rpow_natCast, ← Real.rpow_mul (div_nonneg hlam hσ.le)]
@@ -115,6 +215,8 @@ theorem regTarget_eq_sq {σ lam : ℝ} (r : ℝ) (hσ : 0 < σ) (hlam : 0 ≤ la
 variable (hH : H.IsHermitian) (hM : M.PosDef)
 include hH
 
+/-- For $\sigma > 0$, $\lambda$ lies in the regularization set $\mathcal{L}$ if and only if
+$\lambda > \lambda_s$ and $\tau(\lambda) \le \pi(\lambda)$, where $\pi$ is the secular function. -/
 theorem mem_setL_reg_iff {σ r lam : ℝ} (hσ : 0 < σ) :
     lam ∈ setL_reg hH hM g σ r ↔ lambdaS hH hM < lam ∧ regTarget σ r lam ≤ secularFn g H M lam := by
   refine and_congr_right fun hlam => ?_
@@ -123,6 +225,8 @@ theorem mem_setL_reg_iff {σ r lam : ℝ} (hσ : 0 < σ) :
   exact (pow_le_pow_iff_left₀ (Real.rpow_nonneg (div_nonneg hl hσ.le) _) (mNorm_nonneg _ _)
     two_ne_zero).symm
 
+/-- For $\sigma > 0$, $\lambda$ lies in the regularization set $\mathcal{G}$ if and only if
+$\lambda > \lambda_s$ and $\pi(\lambda) < \tau(\lambda)$, where $\pi$ is the secular function. -/
 theorem mem_setG_reg_iff {σ r lam : ℝ} (hσ : 0 < σ) :
     lam ∈ setG_reg hH hM g σ r ↔ lambdaS hH hM < lam ∧ secularFn g H M lam < regTarget σ r lam := by
   refine and_congr_right fun hlam => ?_
@@ -131,20 +235,31 @@ theorem mem_setG_reg_iff {σ r lam : ℝ} (hσ : 0 < σ) :
   exact (pow_lt_pow_iff_left₀ (mNorm_nonneg _ _) (Real.rpow_nonneg (div_nonneg hl hσ.le) _)
     two_ne_zero).symm
 
+/-- For $\Delta > 0$, $\lambda$ lies in the trust-region set $\mathcal{L}$ if and only if
+$\lambda > \lambda_s$ and $\Delta^2 \le \pi(\lambda)$, where $\pi$ is the secular function. -/
 theorem mem_setL_tr_iff {Δ lam : ℝ} (hΔ : 0 < Δ) :
     lam ∈ setL_tr hH hM g Δ ↔ lambdaS hH hM < lam ∧ Δ ^ 2 ≤ secularFn g H M lam := by
   refine and_congr_right fun _ => ?_
   rw [← mNorm_stepOf_sq hM]
   exact (pow_le_pow_iff_left₀ hΔ.le (mNorm_nonneg _ _) two_ne_zero).symm
 
+/-- For $\Delta > 0$, $\lambda$ lies in the trust-region set $\mathcal{G}$ if and only if
+$\lambda > \lambda_s$ and $\pi(\lambda) < \Delta^2$, where $\pi$ is the secular function. -/
 theorem mem_setG_tr_iff {Δ lam : ℝ} (hΔ : 0 < Δ) :
     lam ∈ setG_tr hH hM g Δ ↔ lambdaS hH hM < lam ∧ secularFn g H M lam < Δ ^ 2 := by
   refine and_congr_right fun _ => ?_
   rw [← mNorm_stepOf_sq hM]
   exact (pow_lt_pow_iff_left₀ (mNorm_nonneg _ _) hΔ.le two_ne_zero).symm
 
-/-- **The partition, regularization** ([cartis2022evaluation] §8.3.1): `𝓛 ∩ 𝓖 = ∅` and
-`𝓕 = 𝓛 ∪ 𝓖 = (λₛ, ∞)`, so `𝓝`, `𝓛`, `𝓖` partition `ℝ`. -/
+/-- **Section 8.3.1** of [cartis2022evaluation], the partition for the regularization subproblem.
+Let $H$ be symmetric, $M$ symmetric positive definite, and $\sigma, r \in \mathbb{R}$. Then
+$\mathcal{L} \cap \mathcal{G} = \emptyset$, $\mathcal{F} = \mathcal{L} \cup \mathcal{G} =
+(\lambda_s, \infty)$, $\mathcal{N} \cap \mathcal{F} = \emptyset$ and
+$\mathcal{N} \cup \mathcal{F} = \mathbb{R}$. So $\mathcal{N}$, $\mathcal{L}$ and $\mathcal{G}$
+partition $\mathbb{R}$.
+
+**Correction.** The partition holds for the interval forms of the sets, not for the set-builder
+forms of the source (see `CartisGouldToint.Chapter08.setN`). -/
 theorem setF_reg_eq_Ioi (σ r : ℝ) :
     Disjoint (setL_reg hH hM g σ r) (setG_reg hH hM g σ r) ∧
       setF_reg hH hM g σ r = Ioi (lambdaS hH hM) ∧
@@ -157,8 +272,13 @@ theorem setF_reg_eq_Ioi (σ r : ℝ) :
   · rw [hF]; exact Set.disjoint_left.2 fun lam (h1 : lam ≤ _) (h2 : _ < lam) => not_le.2 h2 h1
   · rw [hF, setN, Iic_union_Ioi]
 
-/-- **The partition, trust region** ([cartis2022evaluation] §8.3.2): `𝓛 ∩ 𝓖 = ∅` and
-`𝓛 ∪ 𝓖 = (λₛ, ∞)`. -/
+/-- **Section 8.3.2** of [cartis2022evaluation], the partition for the trust-region subproblem. Let
+$H$ be symmetric, $M$ symmetric positive definite, and $\Delta \in \mathbb{R}$. Then
+$\mathcal{L} \cap \mathcal{G} = \emptyset$ and $\mathcal{L} \cup \mathcal{G} = (\lambda_s,
+\infty)$.
+
+**Correction.** The partition holds for the interval forms of the sets, not for the set-builder
+forms of the source (see `CartisGouldToint.Chapter08.setN`). -/
 theorem setL_tr_union_setG_tr (Δ : ℝ) :
     Disjoint (setL_tr hH hM g Δ) (setG_tr hH hM g Δ) ∧
       setL_tr hH hM g Δ ∪ setG_tr hH hM g Δ = Ioi (lambdaS hH hM) := by
@@ -167,10 +287,13 @@ theorem setL_tr_union_setG_tr (Δ : ℝ) :
   simp only [setL_tr, setG_tr, mem_union, mem_ofPred_eq, mem_Ioi]
   exact ⟨fun h => h.elim And.left And.left, fun h => (le_or_gt _ _).imp (⟨h, ·⟩) (⟨h, ·⟩)⟩
 
-/-- **`𝓛` and `𝓖` as intervals, regularization** ([cartis2022evaluation] §8.3.1). Let `s*` be a
-global minimizer of (8.1.3) with multiplier `λ* = σ ‖s*‖_M^{r-2}`. Then `λₛ ≤ λ*`,
-`𝓛 = (λₛ, λ*]`, `𝓖 = (λ*, ∞)` and `𝓕 = (λₛ, ∞)`; in particular `𝓛 ≠ ∅` iff `λ* > λₛ` (the easy
-case). -/
+/-- **Section 8.3.1** of [cartis2022evaluation], $\mathcal{L}$ and $\mathcal{G}$ as intervals for
+the regularization subproblem. Let $H$ be symmetric, $M$ symmetric positive definite,
+$\sigma > 0$ and $r > 2$. Let $s^*$ be a global minimizer of the regularization subproblem
+(8.1.3), and let $\lambda^* = \sigma \|s^*\|_M^{r-2}$. Then $\lambda_s \le \lambda^*$,
+$$\mathcal{L} = (\lambda_s, \lambda^*], \qquad \mathcal{G} = (\lambda^*, \infty), \qquad
+  \mathcal{F} = (\lambda_s, \infty),$$
+and $\mathcal{L}$ is nonempty if and only if $\lambda^* > \lambda_s$ (the easy case). -/
 theorem setL_reg_eq_Ioc {σ r : ℝ} (hσ : 0 < σ) (hr : 2 < r) {s : EuclideanSpace ℝ (Fin n)}
     (hs : IsRegularizationSolution g H M σ r s) :
     lambdaS hH hM ≤ σ * mNorm M s ^ (r - 2) ∧
@@ -206,9 +329,15 @@ theorem setL_reg_eq_Ioc {σ r : ℝ} (hσ : 0 < σ) (hr : 2 < r) {s : EuclideanS
   · rw [setF_reg, hL, hG, Ioc_union_Ioi_eq_Ioi hle]
   · rw [hL, nonempty_Ioc]
 
-/-- **`𝓛` and `𝓖` as intervals, trust region** ([cartis2022evaluation] §8.3.2). Let `Δ > 0`, `s*`
-a global minimizer of (8.1.2) with multiplier `λ*` (`IsTrustRegionKKT`). Then `λₛ ≤ λ*`,
-`𝓛 = (λₛ, λ*]`, `𝓖 = (λ*, ∞)`; in particular `𝓛 ≠ ∅` iff `λ* > λₛ`. -/
+/-- **Section 8.3.2** of [cartis2022evaluation], $\mathcal{L}$ and $\mathcal{G}$ as intervals for
+the trust-region subproblem. Let $H$ be symmetric, $M$ symmetric positive definite and
+$\Delta > 0$. Let $s^*$ be a global minimizer of the trust-region subproblem (8.1.2), and let
+$\lambda^*$ be a multiplier for $s^*$ in the sense of Theorem 8.2.7. Then
+$\lambda_s \le \lambda^*$,
+$$\mathcal{L} = (\lambda_s, \lambda^*], \qquad \mathcal{G} = (\lambda^*, \infty),$$
+and $\mathcal{L}$ is nonempty if and only if $\lambda^* > \lambda_s$.
+
+The multiplier conditions are `CartisGouldToint.Chapter08.IsTrustRegionKKT`. -/
 theorem setL_tr_eq_Ioc {Δ : ℝ} (hΔ : 0 < Δ) {s : EuclideanSpace ℝ (Fin n)}
     (hs : IsTrustRegionSolution g H M Δ s) {lamStar : ℝ}
     (hkkt : IsTrustRegionKKT g H M Δ s lamStar) :
@@ -243,45 +372,84 @@ omit hH
 
 /-! ### The corrections -/
 
-/-- The **Taylor correction** `δₖᵀ(λc)` of [cartis2022evaluation] §8.2.1: the rightmost real root
-of `t_k(δ) = τ(λc + δ)` (8.2.15), defined as the supremum of the root set. -/
+/-- **Section 8.2.1** of [cartis2022evaluation], the **Taylor correction**. Let
+$\tau : \mathbb{R} \to \mathbb{R}$ be a target, $k \in \mathbb{N}$ and
+$\lambda_c \in \mathbb{R}$, and let $t_k$ be the Taylor polynomial of order $k$ of the secular
+function $\pi$ at $\lambda_c$. The Taylor correction $\delta^T_k(\lambda_c)$ is the rightmost
+real root $\delta$ of
+$$t_k(\delta) = \tau(\lambda_c + \delta), \qquad (8.2.15)$$
+defined as the supremum of the set of roots.
+
+The supremum is the value `sSup` of Mathlib, which is $0$ when the set of roots is empty or
+unbounded above. For odd $k$ and $\lambda_c \in \mathcal{L}$ the set is nonempty and bounded
+above (`Subproblem.taylorCorrection_mem`). -/
 noncomputable def taylorCorrectionFn (g : EuclideanSpace ℝ (Fin n))
     (H M : Matrix (Fin n) (Fin n) ℝ) (τ : ℝ → ℝ) (k : ℕ) (lamc : ℝ) : ℝ :=
   sSup {δ | secularTaylorPoly g H M k lamc δ = τ (lamc + δ)}
 
-/-- The transformed regularization secular function `θ(λ; β) = π(λ; β) - (λ/σ)^{2β/(r-2)}` of
-[cartis2022evaluation] §8.2.2. -/
+/-- The **transformed regularization secular function** of Section 8.2.2 of [cartis2022evaluation]:
+for $\sigma, r, \beta \in \mathbb{R}$,
+$$\theta(\lambda; \beta) = \pi(\lambda)^{\beta} - (\lambda/\sigma)^{2\beta/(r-2)},$$
+where $\pi$ is the secular function and the powers are real powers.
+
+**Typo.** Section 8.3.1 writes the transformed target as $(\lambda/\sigma)^{\beta/(r-2)}$. It is
+$(\lambda/\sigma)^{2\beta/(r-2)}$, consistent with (8.2.25). For the same reason the prose
+ranges $\beta \in (0, r - 2]$ and $\beta \in [-1, 0)$ should read $(0, (r-2)/2]$ and
+$[-1/2, 0)$. -/
 noncomputable def regSecularFn (g : EuclideanSpace ℝ (Fin n)) (H M : Matrix (Fin n) (Fin n) ℝ)
     (σ r β lam : ℝ) : ℝ :=
   secularFn g H M lam ^ β - (lam / σ) ^ (2 * β / (r - 2))
 
-/-- The **regularization Newton correction** `δᴺ(λc, β) = -θ(λc; β)/θ⁽¹⁾(λc; β)` of
-[cartis2022evaluation] (8.2.25). -/
+/-- **Equation (8.2.25)** of [cartis2022evaluation], the **regularization Newton correction**. For
+$\sigma, r, \beta, \lambda_c \in \mathbb{R}$,
+$$\delta^N(\lambda_c, \beta) = -\frac{\theta(\lambda_c; \beta)}{\theta^{(1)}(\lambda_c;
+  \beta)},$$
+where $\theta$ is the transformed regularization secular function
+`CartisGouldToint.Chapter08.regSecularFn`.
+
+The derivative is `deriv`, which is $0$ where $\theta$ is not differentiable, and division by
+$0$ gives $0$. -/
 noncomputable def regNewtonCorrectionFn (g : EuclideanSpace ℝ (Fin n))
     (H M : Matrix (Fin n) (Fin n) ℝ) (σ r β lamc : ℝ) : ℝ :=
   -regSecularFn g H M σ r β lamc / deriv (regSecularFn g H M σ r β) lamc
 
-/-- The **trust-region Newton correction**
-`δᴺ = 2 π(λc)/π⁽¹⁾(λc) (1 - ‖s(λc)‖_M/Δ)` of [cartis2022evaluation] (8.2.24). -/
+/-- **Equation (8.2.24)** of [cartis2022evaluation], the **trust-region Newton correction**. For
+$\Delta, \lambda_c \in \mathbb{R}$,
+$$\delta^N = \frac{2\pi(\lambda_c)}{\pi^{(1)}(\lambda_c)} \Bigl(1 -
+  \frac{\|s(\lambda_c)\|_M}{\Delta}\Bigr),$$
+where $\pi$ is the secular function.
+
+The derivative is `deriv`, which is $0$ where $\pi$ is not differentiable, and division by $0$
+gives $0$. -/
 noncomputable def trNewtonCorrectionFn (g : EuclideanSpace ℝ (Fin n))
     (H M : Matrix (Fin n) (Fin n) ℝ) (Δ lamc : ℝ) : ℝ :=
   2 * secularFn g H M lamc / deriv (secularFn g H M) lamc * (1 - mNorm M (stepOf g H M lamc) / Δ)
 
+/-- The Taylor correction equals the backbone correction `Subproblem.taylorCorrection` for the
+scaled gradient $M^{-1} g$ and the scaled operator $M^{-1} H$ on the $M$-inner product space. -/
 theorem taylorCorrectionFn_eq (τ : ℝ → ℝ) (k : ℕ) (lamc : ℝ) :
     taylorCorrectionFn g H M τ k lamc =
       taylorCorrection (scaledGrad hM g) (scaledOp H hM) τ k lamc := by
   simp only [taylorCorrectionFn, taylorCorrection, secularTaylorPoly_eq hM]
 
+/-- The transformed regularization secular function equals the backbone function
+`Subproblem.regSecular` for the scaled gradient $M^{-1} g$ and the scaled operator $M^{-1} H$. -/
 theorem regSecularFn_eq (σ r β : ℝ) :
     regSecularFn g H M σ r β = regSecular (scaledGrad hM g) (scaledOp H hM) σ r β := by
   funext lam
   rw [regSecularFn, regSecular, secularFn_eq_secular hM]
 
+/-- The regularization Newton correction equals the backbone correction
+`Subproblem.regNewtonCorrection` for the scaled gradient $M^{-1} g$ and the scaled operator
+$M^{-1} H$. -/
 theorem regNewtonCorrectionFn_eq (σ r β lamc : ℝ) :
     regNewtonCorrectionFn g H M σ r β lamc =
       regNewtonCorrection (scaledGrad hM g) (scaledOp H hM) σ r β lamc := by
   rw [regNewtonCorrectionFn, regNewtonCorrection, regSecularFn_eq hM]
 
+/-- The trust-region Newton correction equals the backbone correction
+`Subproblem.trNewtonCorrection` for the scaled gradient $M^{-1} g$ and the scaled operator
+$M^{-1} H$. -/
 theorem trNewtonCorrectionFn_eq (Δ lamc : ℝ) :
     trNewtonCorrectionFn g H M Δ lamc =
       trNewtonCorrection (scaledGrad hM g) (scaledOp H hM) Δ lamc := by
@@ -290,12 +458,15 @@ theorem trNewtonCorrectionFn_eq (Δ lamc : ℝ) :
 
 /-! ### Runs of the secular iterations -/
 
-/-- The **exit test** of Algorithms 8.3.1 and 8.3.2 of [cartis2022evaluation] at iteration `k`:
-`k ≥ 1` and `|λ k - λ (k - 1)| ≤ ε`. A run stops at the first such `k`
-(`Optimization.IsFirstHit`). -/
+/-- The **exit test** of Algorithms 8.3.1 and 8.3.2 of [cartis2022evaluation]. For
+$\varepsilon \in \mathbb{R}$ and a sequence $(\lambda_k)$, the test holds at iteration $k$ if
+$k \ge 1$ and $|\lambda_k - \lambda_{k-1}| \le \varepsilon$.
+
+A run stops at the first iteration where the test holds (`Optimization.IsFirstHit`). -/
 def exitTest (ε : ℝ) (lam : ℕ → ℝ) (k : ℕ) : Prop := 1 ≤ k ∧ |lam k - lam (k - 1)| ≤ ε
 
-/-- A convergent real sequence meets the exit test. -/
+/-- If a real sequence converges and $\varepsilon > 0$, then the exit test holds at some iteration.
+-/
 theorem exists_exitTest {x : ℕ → ℝ} {L ε : ℝ} (hx : Tendsto x atTop (𝓝 L)) (hε : 0 < ε) :
     ∃ k, exitTest ε x k := by
   have hd : Tendsto (fun k => x (k + 1) - x k) atTop (𝓝 0) := by
@@ -305,8 +476,9 @@ theorem exists_exitTest {x : ℕ → ℝ} {L ε : ℝ} (hx : Tendsto x atTop (�
   rw [Real.dist_eq, sub_zero] at this
   exact ⟨N + 1, by omega, by simpa using this.le⟩
 
-/-- A greatest-candidate sequence exists when the candidate sets are nonempty
-(`Optimization.exists_run_of_forall_exists`). -/
+/-- Let $C(t)$ be a nonempty finite set of reals for each $t \in \mathbb{R}$, and let
+$x_0 \in \mathbb{R}$. Then there is a sequence that starts at $x_0$ in which each $x_{k+1}$ is
+the largest element of $C(x_k)$. -/
 theorem exists_isGreatest_seq (C : ℝ → Finset ℝ) (hC : ∀ t, (C t).Nonempty) (x₀ : ℝ) :
     ∃ x : ℕ → ℝ, x 0 = x₀ ∧ ∀ k, IsGreatest (C (x k) : Set ℝ) (x (k + 1)) := by
   obtain ⟨x, hx0, hx⟩ := Optimization.exists_run_of_forall_exists (init := fun a => a = x₀)
@@ -314,8 +486,9 @@ theorem exists_isGreatest_seq (C : ℝ → Finset ℝ) (hC : ∀ t, (C t).Nonemp
     fun _ a _ => ⟨_, Finset.isGreatest_max' _ (hC a)⟩
   exact ⟨x, hx0, fun k => hx k not_false⟩
 
-/-- A sequence with `x k ≤ x (k + 1) ≤ L` for `k < K` from `x 0 ∈ (a, L]` stays in `(a, L]` up
-to `K`. -/
+/-- Let $x$ be a real sequence, $a, L \in \mathbb{R}$ and $K \in \mathbb{N}$. If $x_0 \in (a, L]$
+and, for each $k < K$, $x_k \in (a, L]$ implies $x_k \le x_{k+1} \le L$, then $x_k \in (a, L]$
+for all $k \le K$. -/
 theorem mem_Ioc_of_le {x : ℕ → ℝ} {a L : ℝ} {K : ℕ} (h0 : x 0 ∈ Ioc a L)
     (hstep : ∀ k < K, x k ∈ Ioc a L → x k ≤ x (k + 1) ∧ x (k + 1) ≤ L) :
     ∀ k ≤ K, x k ∈ Ioc a L := by
@@ -327,7 +500,8 @@ theorem mem_Ioc_of_le {x : ℕ → ℝ} {a L : ℝ} {K : ℕ} (h0 : x 0 ∈ Ioc 
     obtain ⟨h1, h2⟩ := hstep k (by omega) hmem
     exact ⟨hmem.1.trans_le h1, h2⟩
 
-/-- A sequence squeezed by `x k ≤ x (k + 1) ≤ L` from `x 0 ∈ (a, L]` stays in `(a, L]` and is
+/-- Let $x$ be a real sequence and $a, L \in \mathbb{R}$. If $x_0 \in (a, L]$ and, for each $k$,
+$x_k \in (a, L]$ implies $x_k \le x_{k+1} \le L$, then $x_k \in (a, L]$ for all $k$ and $x$ is
 monotone. -/
 theorem mem_Ioc_and_monotone {x : ℕ → ℝ} {a L : ℝ} (h0 : x 0 ∈ Ioc a L)
     (hstep : ∀ k, x k ∈ Ioc a L → x k ≤ x (k + 1) ∧ x (k + 1) ≤ L) :
@@ -338,43 +512,68 @@ theorem mem_Ioc_and_monotone {x : ℕ → ℝ} {a L : ℝ} (h0 : x 0 ∈ Ioc a L
 
 /-! ### Algorithm 8.3.1 -/
 
-/-- The candidates of one iteration of Algorithm 8.3.1 of [cartis2022evaluation] from `λc`:
-`λc + δᵀ_{2i-1}(λc)` for `i = 1, …, i_max` (Taylor corrections of odd order for the target
-`(λ/σ)^{2/(r-2)}`) and `λc + δᴺ(λc, βⱼ)` (8.2.25) for `j = 1, …, j_max`. -/
+/-- **Algorithm 8.3.1** of [cartis2022evaluation], the candidates. Let $\sigma, r \in \mathbb{R}$,
+$i_{\max}, j_{\max} \in \mathbb{N}$, exponents $\beta_1, \dots, \beta_{j_{\max}}$ and
+$\lambda_c \in \mathbb{R}$. The candidates of one iteration from $\lambda_c$ are the finite set
+of the numbers
+$$\lambda_c + \delta^T_{2i-1}(\lambda_c) \quad (i = 1, \dots, i_{\max}), \qquad \lambda_c +
+  \delta^N(\lambda_c, \beta_j) \quad (j = 1, \dots, j_{\max}),$$
+where $\delta^T_{2i-1}$ is the Taylor correction of odd order $2i - 1$ for the target
+$\tau(\lambda) = (\lambda/\sigma)^{2/(r-2)}$, and $\delta^N$ is the Newton correction (8.2.25).
+
+The exponents are indexed by `Fin jMax`, from $0$. -/
 noncomputable def candidates831 (g : EuclideanSpace ℝ (Fin n)) (H M : Matrix (Fin n) (Fin n) ℝ)
     (σ r : ℝ) (iMax jMax : ℕ) (β : Fin jMax → ℝ) (lamc : ℝ) : Finset ℝ :=
   (Finset.Icc 1 iMax).image
       (fun i => lamc + taylorCorrectionFn g H M (regTarget σ r) (2 * i - 1) lamc) ∪
     Finset.univ.image fun j => lamc + regNewtonCorrectionFn g H M σ r (β j) lamc
 
-/-- A **run of Algorithm 8.3.1** of [cartis2022evaluation] (given `λc ∈ 𝓛`, estimate the
-multiplier `λ*` of (8.1.3)): parameters `i_max ≥ 1`, `j_max ≥ 0`, `ε > 0` and
-`βⱼ ∈ [-1/2, (r-2)/2]`, `βⱼ ≠ 0`; iterates `λ 0 ∈ 𝓛` and `λ (k + 1) = λ₊` the largest
-candidate (`candidates831`) from `λ k`, until the first `K` meeting the exit test
-`|λ K - λ (K - 1)| ≤ ε`, `K ≥ 1` (`exitTest`; the output is `λ K`). -/
+/-- **Algorithm 8.3.1** of [cartis2022evaluation], a run. The algorithm estimates the multiplier
+$\lambda^*$ of the regularization subproblem (8.1.3) from a point of $\mathcal{L}$. Let
+$\sigma, r, \varepsilon \in \mathbb{R}$, $i_{\max}, j_{\max} \in \mathbb{N}$ and exponents
+$\beta_1, \dots, \beta_{j_{\max}}$. A sequence $(\lambda_k)$ and an index $K$ form a **run of
+Algorithm 8.3.1** if $i_{\max} \ge 1$, $\varepsilon > 0$, each $\beta_j \in [-1/2, (r-2)/2]$
+with $\beta_j \neq 0$, $\lambda_0 \in \mathcal{L}$, each $\lambda_{k+1}$ with $k < K$ is the
+largest candidate (`CartisGouldToint.Chapter08.candidates831`) from $\lambda_k$, and $K$ is the
+first iteration at which $K \ge 1$ and $|\lambda_K - \lambda_{K-1}| \le \varepsilon$. The output
+is $\lambda_K$.
+
+**Correction.** The source allows any $\beta_j \in [-1/2, (r-2)/2]$, but the Newton correction
+(8.2.25) is undefined at $\beta = 0$. The run requires $\beta_j \neq 0$. -/
 structure algorithm_8_3_1 (hH : H.IsHermitian) (hM : M.PosDef) (g : EuclideanSpace ℝ (Fin n))
     (σ r : ℝ) (iMax jMax : ℕ) (β : Fin jMax → ℝ) (ε : ℝ) (lam : ℕ → ℝ) (K : ℕ) : Prop where
-  /-- At least one Taylor correction is used. -/
+  /-- The number of Taylor corrections satisfies $i_{\max} \ge 1$. -/
   one_le_iMax : 1 ≤ iMax
-  /-- The exit tolerance is positive. -/
+  /-- The exit tolerance satisfies $\varepsilon > 0$. -/
   eps_pos : 0 < ε
-  /-- The exponents are admissible. -/
+  /-- Each exponent satisfies $\beta_j \in [-1/2, (r-2)/2]$ and $\beta_j \neq 0$. -/
   beta_mem : ∀ j, β j ∈ Icc (-1 / 2) ((r - 2) / 2) ∧ β j ≠ 0
-  /-- The initial estimate lies in `𝓛`. -/
+  /-- The initial estimate $\lambda_0$ lies in $\mathcal{L}$. -/
   start : lam 0 ∈ setL_reg hH hM g σ r
-  /-- Each new estimate is the largest candidate. -/
+  /-- For each $k < K$, $\lambda_{k+1}$ is the largest candidate from $\lambda_k$. -/
   step : ∀ k < K, IsGreatest (candidates831 g H M σ r iMax jMax β (lam k) : Set ℝ) (lam (k + 1))
-  /-- The run stops at the first iteration meeting the exit test. -/
+  /-- The index $K$ is the first iteration at which the exit test holds. -/
   exit : Optimization.IsFirstHit (exitTest ε lam) K
 
-/-- **Algorithm 8.3.1 of [cartis2022evaluation] converges and terminates.** Let `σ > 0`, `r > 2`,
-`s*` a global minimizer of (8.1.3) with multiplier `λ* = σ ‖s*‖_M^{r-2}`, and admissible
-parameters. If `λ₀ ∈ 𝓛` (so `λ* > λₛ`, the easy case, `setL_reg_eq_Ioc`), then:
-* every sequence of largest candidates from `λ₀` stays in `𝓛`, increases and converges to `λ*`;
-  when `j_max ≥ 1` the convergence is globally Q-linear (factor `γ < 1`) and Q-superlinear;
-* every run of Algorithm 8.3.1 stays in `𝓛` and increases up to its exit, so its output is
-  `≤ λ*`;
-* a run of Algorithm 8.3.1 from `λ₀` exists (the exit test is met after finitely many steps). -/
+/-- **Algorithm 8.3.1** of [cartis2022evaluation], convergence and termination. Let $H$ be
+symmetric, $M$ symmetric positive definite, $\sigma > 0$ and $r > 2$. Let $s^*$ be a global
+minimizer of the regularization subproblem (8.1.3), and let
+$\lambda^* = \sigma \|s^*\|_M^{r-2}$. Let $i_{\max} \ge 1$, let each
+$\beta_j \in [-1/2, (r-2)/2]$ with $\beta_j \neq 0$, let $\varepsilon > 0$, and let
+$\lambda_0 \in \mathcal{L}$. Then:
+
+* every sequence $(x_k)$ with $x_0 = \lambda_0$ in which each $x_{k+1}$ is the largest candidate
+  from $x_k$ stays in $\mathcal{L}$, is monotone and converges to $\lambda^*$; if moreover
+  $j_{\max} \ge 1$, then there is $\gamma \in [0, 1)$ with $\lambda^* - x_{k+1} \le \gamma
+  (\lambda^* - x_k)$ for all $k$, and the convergence is Q-superlinear;
+* every run $(\lambda_k, K)$ of Algorithm 8.3.1 has $\lambda_k \in \mathcal{L}$ for $k \le K$
+  and $\lambda_k \le \lambda_{k+1}$ for $k < K$, and its output satisfies
+  $\lambda_K \le \lambda^*$;
+* there is a run of Algorithm 8.3.1 with $\lambda_0$ as its first iterate.
+
+The hypothesis $\lambda_0 \in \mathcal{L}$ implies the easy case $\lambda^* > \lambda_s$
+(`CartisGouldToint.Chapter08.setL_reg_eq_Ioc`). Q-superlinear convergence is
+`ConvergesSuperlinearly`. -/
 theorem algorithm_8_3_1_terminates (hH : H.IsHermitian) (hM : M.PosDef) {σ r : ℝ} (hσ : 0 < σ)
     (hr : 2 < r) {s : EuclideanSpace ℝ (Fin n)} (hs : IsRegularizationSolution g H M σ r s)
     {iMax jMax : ℕ} (hi : 1 ≤ iMax) {β : Fin jMax → ℝ}
@@ -470,36 +669,57 @@ theorem algorithm_8_3_1_terminates (hH : H.IsHermitian) (hM : M.PosDef) {σ r : 
 
 /-! ### Algorithm 8.3.2 -/
 
-/-- The candidates of one iteration of Algorithm 8.3.2 of [cartis2022evaluation] from `λc`:
-`λc + δᵀ_{2i-1}(λc)` for `i = 1, …, i_max` (Taylor corrections for the target `Δ²`) and the Newton
-candidate `λc + δᴺ` with `δᴺ` of (8.2.24). -/
+/-- **Algorithm 8.3.2** of [cartis2022evaluation], the candidates. Let $\Delta \in \mathbb{R}$,
+$i_{\max} \in \mathbb{N}$ and $\lambda_c \in \mathbb{R}$. The candidates of one iteration from
+$\lambda_c$ are the finite set of the numbers
+$$\lambda_c + \delta^T_{2i-1}(\lambda_c) \quad (i = 1, \dots, i_{\max}), \qquad \lambda_c +
+  \delta^N,$$
+where $\delta^T_{2i-1}$ is the Taylor correction of odd order $2i - 1$ for the constant target
+$\Delta^2$, and $\delta^N$ is the Newton correction (8.2.24). -/
 noncomputable def candidates832 (g : EuclideanSpace ℝ (Fin n)) (H M : Matrix (Fin n) (Fin n) ℝ)
     (Δ : ℝ) (iMax : ℕ) (lamc : ℝ) : Finset ℝ :=
   insert (lamc + trNewtonCorrectionFn g H M Δ lamc)
     ((Finset.Icc 1 iMax).image fun i => lamc + taylorCorrectionFn g H M (fun _ => Δ ^ 2)
       (2 * i - 1) lamc)
 
-/-- A **run of Algorithm 8.3.2** of [cartis2022evaluation] (given `λc ∈ 𝓛`, estimate the
-multiplier `λ*` of (8.1.2)): as Algorithm 8.3.1 with the trust-region set `𝓛`, the target `Δ²`,
-`j_max = 1` and the Newton candidate (8.2.24) (`candidates832`). -/
+/-- **Algorithm 8.3.2** of [cartis2022evaluation], a run. The algorithm estimates the multiplier
+$\lambda^*$ of the trust-region subproblem (8.1.2) from a point of $\mathcal{L}$. Let
+$\Delta, \varepsilon \in \mathbb{R}$ and $i_{\max} \in \mathbb{N}$. A sequence $(\lambda_k)$ and
+an index $K$ form a **run of Algorithm 8.3.2** if $i_{\max} \ge 1$, $\varepsilon > 0$,
+$\lambda_0$ lies in the trust-region set $\mathcal{L}$, each $\lambda_{k+1}$ with $k < K$ is the
+largest candidate (`CartisGouldToint.Chapter08.candidates832`) from $\lambda_k$, and $K$ is the
+first iteration at which $K \ge 1$ and $|\lambda_K - \lambda_{K-1}| \le \varepsilon$. The output
+is $\lambda_K$. -/
 structure algorithm_8_3_2 (hH : H.IsHermitian) (hM : M.PosDef) (g : EuclideanSpace ℝ (Fin n))
     (Δ : ℝ) (iMax : ℕ) (ε : ℝ) (lam : ℕ → ℝ) (K : ℕ) : Prop where
-  /-- At least one Taylor correction is used. -/
+  /-- The number of Taylor corrections satisfies $i_{\max} \ge 1$. -/
   one_le_iMax : 1 ≤ iMax
-  /-- The exit tolerance is positive. -/
+  /-- The exit tolerance satisfies $\varepsilon > 0$. -/
   eps_pos : 0 < ε
-  /-- The initial estimate lies in `𝓛`. -/
+  /-- The initial estimate $\lambda_0$ lies in the trust-region set $\mathcal{L}$. -/
   start : lam 0 ∈ setL_tr hH hM g Δ
-  /-- Each new estimate is the largest candidate. -/
+  /-- For each $k < K$, $\lambda_{k+1}$ is the largest candidate from $\lambda_k$. -/
   step : ∀ k < K, IsGreatest (candidates832 g H M Δ iMax (lam k) : Set ℝ) (lam (k + 1))
-  /-- The run stops at the first iteration meeting the exit test. -/
+  /-- The index $K$ is the first iteration at which the exit test holds. -/
   exit : Optimization.IsFirstHit (exitTest ε lam) K
 
-/-- **Algorithm 8.3.2 of [cartis2022evaluation] converges and terminates.** Let `Δ > 0`, `s*` a
-global minimizer of (8.1.2) with multiplier `λ*`. If `λ₀ ∈ 𝓛` (so `λ* > λₛ`, the easy case), every
-sequence of largest candidates from `λ₀` stays in `𝓛`, increases and converges to `λ*` globally
-Q-linearly and Q-superlinearly; every run stays in `𝓛` and increases up to its exit; and a run of
-Algorithm 8.3.2 from `λ₀` exists. -/
+/-- **Algorithm 8.3.2** of [cartis2022evaluation], convergence and termination. Let $H$ be
+symmetric, $M$ symmetric positive definite and $\Delta > 0$. Let $s^*$ be a global minimizer of
+the trust-region subproblem (8.1.2), and let $\lambda^*$ be a multiplier for $s^*$ in the sense
+of Theorem 8.2.7. Let $i_{\max} \ge 1$, $\varepsilon > 0$ and $\lambda_0 \in \mathcal{L}$. Then:
+
+* every sequence $(x_k)$ with $x_0 = \lambda_0$ in which each $x_{k+1}$ is the largest candidate
+  from $x_k$ stays in $\mathcal{L}$, is monotone and converges to $\lambda^*$; there is
+  $\gamma \in [0, 1)$ with $\lambda^* - x_{k+1} \le \gamma (\lambda^* - x_k)$ for all $k$, and
+  the convergence is Q-superlinear;
+* every run $(\lambda_k, K)$ of Algorithm 8.3.2 has $\lambda_k \in \mathcal{L}$ for $k \le K$
+  and $\lambda_k \le \lambda_{k+1}$ for $k < K$, and its output satisfies
+  $\lambda_K \le \lambda^*$;
+* there is a run of Algorithm 8.3.2 with $\lambda_0$ as its first iterate.
+
+The hypothesis $\lambda_0 \in \mathcal{L}$ implies the easy case $\lambda^* > \lambda_s$
+(`CartisGouldToint.Chapter08.setL_tr_eq_Ioc`). The multiplier conditions are
+`CartisGouldToint.Chapter08.IsTrustRegionKKT`. -/
 theorem algorithm_8_3_2_terminates (hH : H.IsHermitian) (hM : M.PosDef) {Δ : ℝ} (hΔ : 0 < Δ)
     {s : EuclideanSpace ℝ (Fin n)} (hs : IsTrustRegionSolution g H M Δ s) {lamStar : ℝ}
     (hkkt : IsTrustRegionKKT g H M Δ s lamStar) {iMax : ℕ} (hi : 1 ≤ iMax) {ε : ℝ} (hε : 0 < ε)
@@ -576,22 +796,43 @@ theorem algorithm_8_3_2_terminates (hH : H.IsHermitian) (hM : M.PosDef) {Δ : �
 
 /-! ### Global minimizers -/
 
-/-- The **minimum-`M`-norm solution** `sₛ = -(H + λ M)⁺ g` of [cartis2022evaluation] (8.3.2): when
-`g ⊥ ker (H + λ M)`, the solution of `(H + λ M) x = -g` that is `M`-orthogonal to
-`ker (H + λ M)`, equivalently of least `M`-norm (`minNormSolution_spec`); it is the limit of
-`s(λ')` as `λ' ↓ λ = -λ₁` (`Subproblem.tendsto_step_threshold`). -/
+/-- **Equation (8.3.2)** of [cartis2022evaluation], the **minimum-$M$-norm solution**. Let $H$ be
+symmetric, $M$ symmetric positive definite and $\lambda \in \mathbb{R}$. Let $b_1, \dots, b_n$
+be generalized eigenvectors of the pencil $(H, M)$, orthonormal in the $M$-inner product, with
+eigenvalues $\lambda_1, \dots, \lambda_n$. Then
+$$s_s = -(H + \lambda M)^{+} g = -\sum_{i \,:\, \lambda + \lambda_i \neq 0} \frac{b_i^T
+  g}{\lambda + \lambda_i} \, b_i.$$
+Here $(H + \lambda M)^{+}$ is the pseudoinverse with respect to the $M$-inner product. When
+$g \perp \ker(H + \lambda M)$, $s_s$ is the solution of $(H + \lambda M) x = -g$ that is
+$M$-orthogonal to $\ker(H + \lambda M)$, and the solution of least $M$-norm
+(`CartisGouldToint.Chapter08.minNormSolution_spec`).
+
+**Reading.** The source does not say in which norm the solution is minimal. The $M$-norm is
+used, because with it $s_s$ is the limit of $s(\lambda')$ as $\lambda' \downarrow -\lambda_1$
+(`CartisGouldToint.Chapter08.tendsto_stepOf_minNormSolution`).
+
+The definition transports `Subproblem.particular` for the scaled operator $M^{-1} H$ back from
+the $M$-inner product space. -/
 noncomputable def minNormSolution (hH : H.IsHermitian) (hM : M.PosDef)
     (g : EuclideanSpace ℝ (Fin n)) (lam : ℝ) : EuclideanSpace ℝ (Fin n) :=
   (toScaled hM).symm (particular (isSymmetric_scaledOp hH) (scaledGrad hM g) lam)
 
+/-- The minimum-$M$-norm solution, moved to the $M$-inner product space, is the backbone solution
+`Subproblem.particular` for the scaled operator $M^{-1} H$ and the scaled gradient $M^{-1} g$. -/
 theorem toScaled_minNormSolution (hH : H.IsHermitian) (hM : M.PosDef) (lam : ℝ) :
     toScaled hM (minNormSolution hH hM g lam) =
       particular (isSymmetric_scaledOp hH) (scaledGrad hM g) lam :=
   (toScaled hM).apply_symm_apply _
 
-/-- **Characterization of the minimum-`M`-norm solution** (8.3.2): if `g ⊥ ker (H + λ M)` then `sₛ`
-solves `(H + λ M) sₛ = -g`, is `M`-orthogonal to `ker (H + λ M)`, and has the least `M`-norm among
-the solutions; it is the only `M`-orthogonal solution. -/
+/-- **Equation (8.3.2)** of [cartis2022evaluation], characterization of the minimum-$M$-norm
+solution. Let $H$ be symmetric, $M$ symmetric positive definite and $\lambda \in \mathbb{R}$,
+and suppose that $g \perp \ker(H + \lambda M)$. Then $s_s$ solves $(H + \lambda M) s_s = -g$,
+satisfies $\langle M s_s, v \rangle = 0$ for every $v \in \ker(H + \lambda M)$, and has
+$\|s_s\|_M \le \|y\|_M$ for every solution $y$ of $(H + \lambda M) y = -g$. Moreover, $s_s$ is
+the only solution $x$ of $(H + \lambda M) x = -g$ with $\langle M x, v \rangle = 0$ for all
+$v \in \ker(H + \lambda M)$.
+
+The orthogonality $g \perp \ker(H + \lambda M)$ is in the Euclidean inner product. -/
 theorem minNormSolution_spec (hH : H.IsHermitian) (hM : M.PosDef) {lam : ℝ}
     (hg : g ∈ (LinearMap.ker (toEuclideanLin (H + lam • M)))ᗮ) :
     toEuclideanLin (H + lam • M) (minNormSolution hH hM g lam) = -g ∧
@@ -612,8 +853,14 @@ theorem minNormSolution_spec (hH : H.IsHermitian) (hM : M.PosDef) {lam : ℝ}
     exact hmin _ ((add_smul_scaledOp_toScaled_eq_neg_iff lam g y).2 hy)
   · exact (toScaled hM).injective ((hiff x).2 hx |>.trans (toScaled_minNormSolution hH hM lam).symm)
 
-/-- **The limit of the step at the threshold** ([cartis2022evaluation] §8.3.1): if
-`g ⊥ ker (H - λ₁ M)` then `s(λ) → sₛ = minNormSolution hH hM g (-λ₁)` as `λ ↓ -λ₁`. -/
+/-- **Section 8.3.1** of [cartis2022evaluation], the limit of the step at the threshold. Let $H$ be
+symmetric and $M$ symmetric positive definite, and suppose that $g \perp \ker(H - \lambda_1 M)$.
+Then
+$$s(\lambda) \to s_s \quad \text{as } \lambda \downarrow -\lambda_1,$$
+where $s_s$ is the minimum-$M$-norm solution (8.3.2) at $\lambda = -\lambda_1$.
+
+The orthogonality is in the Euclidean inner product. The proof specializes
+`Subproblem.tendsto_step_threshold`. -/
 theorem tendsto_stepOf_minNormSolution (hH : H.IsHermitian) (hM : M.PosDef)
     (hg : g ∈ (LinearMap.ker (toEuclideanLin (H + (-leftmostPencil hH hM) • M)))ᗮ) :
     Tendsto (stepOf g H M) (𝓝[>] (-leftmostPencil hH hM))
@@ -628,8 +875,14 @@ theorem tendsto_stepOf_minNormSolution (hH : H.IsHermitian) (hM : M.PosDef)
   refine this.congr fun lam => ?_
   simp only [Function.comp_apply, ← toScaled_stepOf hM, LinearEquiv.symm_apply_apply]
 
-/-- In the hard case `λ* = -λ₁`, a vector of `ker (M⁻¹ H - λ₁)` is, transported back, `α v` for a
-**nonzero** generalized eigenvector `v` of `(H, M)` for `λ₁` (`n ≥ 1`). -/
+/-- Let $n \ge 1$, $H$ symmetric and $M$ symmetric positive definite, and let $\mu = -\lambda_1$,
+where $\lambda_1$ is the leftmost eigenvalue of the scaled operator $M^{-1} H$. Every vector $w$
+of $\ker(M^{-1} H + \mu I)$ on the $M$-inner product space is, moved back to $\mathbb{R}^n$, of
+the form $\alpha v$ for some $\alpha \in \mathbb{R}$ and some nonzero $v$ with
+$H v = \lambda_1 M v$.
+
+This is the form of the minimizers in the hard case $\lambda^* = -\lambda_1$ of Corollaries
+8.3.1 and 8.3.2. -/
 theorem exists_eigen_smul_of_mem_ker [NeZero n] (hH : H.IsHermitian) (hM : M.PosDef) {μ : ℝ}
     (hμ : μ = -leftmost (isSymmetric_scaledOp (hM := hM) hH)) {w : ScaledSpace hM}
     (hw : w ∈ LinearMap.ker ((scaledOp H hM + μ • 1 : ScaledSpace hM →L[ℝ] ScaledSpace hM) :
@@ -645,13 +898,29 @@ theorem exists_eigen_smul_of_mem_ker [NeZero n] (hH : H.IsHermitian) (hM : M.Pos
   · refine ⟨(toScaled hM).symm w, by simpa using hw0, 1, ?_, (one_smul _ _).symm⟩
     rw [eigen_of_mem_ker hw, hμ, neg_neg, leftmostPencil_eq]
 
-/-- **Corollary 8.3.1 of [cartis2022evaluation] (Global minimizers of the regularization
-subproblem).** Let `n ≥ 1`, `r > 2`, `σ > 0`, `s*` a global minimizer of (8.1.3),
-`λ* = σ ‖s*‖_M^{r-2}`, `sₛ = minNormSolution hH hM g λ*` (8.3.2) and `λ₁` the leftmost pencil
-eigenvalue. Then `λ* ≥ -λ₁`, and (8.3.1): if `λ* > -λ₁` then `s* = sₛ`, the unique global
-minimizer; if `λ* = -λ₁` then `s* = sₛ + α v` for a (nonzero) generalized eigenvector `v` of
-`(H, M)` for `λ₁` and a root `α` of `‖sₛ + α v‖_M = (λ*/σ)^{1/(r-2)}`. In all cases the optimal
-value is (8.3.3): `m^R(s*) = ½ (⟪g, sₛ⟫ - (r-2)/r λ* (λ*/σ)^{2/(r-2)})`. -/
+/-- **Corollary 8.3.1** of [cartis2022evaluation] (global minimizers of the regularization
+subproblem). Let $n \ge 1$, $H$ symmetric, $M$ symmetric positive definite, $\sigma > 0$ and
+$r > 2$. Let $s^*$ be a global minimizer of the regularization subproblem (8.1.3), let
+$\lambda^* = \sigma \|s^*\|_M^{r-2}$, let $s_s$ be the minimum-$M$-norm solution (8.3.2) at
+$\lambda^*$, and let $\lambda_1$ be the leftmost eigenvalue of the pencil $(H, M)$. Then
+$\lambda^* \ge -\lambda_1$, and (8.3.1) holds:
+
+* if $\lambda^* > -\lambda_1$, then $s^* = s_s$, and $s^*$ is the only global minimizer;
+* if $\lambda^* = -\lambda_1$, then $s^* = s_s + \alpha v$ for some nonzero $v$ with
+  $H v = \lambda_1 M v$ and some $\alpha \in \mathbb{R}$ with $\|s_s + \alpha v\|_M =
+  (\lambda^*/\sigma)^{1/(r-2)}$.
+
+In all cases the optimal value (8.3.3) is
+$$m^R(s^*) = \tfrac12 \Bigl(\langle g, s_s \rangle - \frac{r-2}{r} \lambda^*
+  (\lambda^*/\sigma)^{2/(r-2)}\Bigr).$$
+
+**Correction.** The source writes $s^* = s_s + \alpha v_1$ for a fixed eigenvector $v_1$ for
+$\lambda_1$. When $\lambda_1$ is multiple, one fixed eigenvector does not parametrize all
+minimizers. The statement gives some nonzero generalized eigenvector $v$ for $\lambda_1$, which
+is equivalent to $s^* - s_s \in \ker(H + \lambda^* M)$.
+
+The regularized model $m^R$ is `CartisGouldToint.Chapter08.regModel`, and $\lambda_1$ is
+`CartisGouldToint.Chapter08.leftmostPencil`. -/
 theorem corollary_8_3_1 [NeZero n] (hH : H.IsHermitian) (hM : M.PosDef) {σ r : ℝ} (hσ : 0 < σ)
     (hr : 2 < r) {s : EuclideanSpace ℝ (Fin n)} (hs : IsRegularizationSolution g H M σ r s) :
     -leftmostPencil hH hM ≤ σ * mNorm M s ^ (r - 2) ∧
@@ -691,13 +960,33 @@ theorem corollary_8_3_1 [NeZero n] (hH : H.IsHermitian) (hM : M.PosDef) {σ r : 
   · rw [regModel_eq_regModel hM, optimalValue_eq_of_regularization (hH := hT) hσ hr hmin,
       ← toScaled_minNormSolution hH hM, inner_scaledGrad_toScaled]
 
-/-- **Corollary 8.3.2 of [cartis2022evaluation] (Global minimizers of the trust-region
-subproblem)**, corrected. Let `n ≥ 1`, `Δ > 0`, `s*` a global minimizer of (8.1.2) with multiplier
-`λ*` (`IsTrustRegionKKT`: `λ* ≥ 0`, `λ* (‖s*‖_M² - Δ²) = 0`), `sₛ = minNormSolution hH hM g λ*`.
-Then `λ* ≥ -λ₁`; if `λ* > -λ₁` then `s* = sₛ`, the unique global minimizer; if `λ* = -λ₁` then
-`s* = sₛ + α v` for a (nonzero) generalized eigenvector `v` for `λ₁` with `‖sₛ + α v‖_M ≤ Δ`, and
-`‖sₛ + α v‖_M = Δ` when `λ* > 0` (the book's boundary condition fails for `λ* = 0`). The optimal
-value is (8.3.5): `m(s*) = ½ (⟪g, sₛ⟫ - λ* Δ²)`. -/
+/-- **Corollary 8.3.2** of [cartis2022evaluation] (global minimizers of the trust-region
+subproblem). Let $n \ge 1$, $H$ symmetric, $M$ symmetric positive definite and $\Delta > 0$. Let
+$s^*$ be a global minimizer of the trust-region subproblem (8.1.2) with multiplier $\lambda^*$
+in the sense of Theorem 8.2.7, so that $\lambda^* \ge 0$ and
+$\lambda^* (\|s^*\|_M^2 - \Delta^2) = 0$. Let $s_s$ be the minimum-$M$-norm solution (8.3.2) at
+$\lambda^*$, and let $\lambda_1$ be the leftmost eigenvalue of the pencil $(H, M)$. Then
+$\lambda^* \ge -\lambda_1$, and:
+
+* if $\lambda^* > -\lambda_1$, then $s^* = s_s$, and $s^*$ is the only global minimizer;
+* if $\lambda^* = -\lambda_1$, then $s^* = s_s + \alpha v$ for some nonzero $v$ with
+  $H v = \lambda_1 M v$ and some $\alpha \in \mathbb{R}$ with $\|s_s + \alpha v\|_M \le \Delta$,
+  and $\|s_s + \alpha v\|_M = \Delta$ if $\lambda^* > 0$.
+
+In all cases the optimal value (8.3.5) is
+$$m(s^*) = \tfrac12 \bigl(\langle g, s_s \rangle - \lambda^* \Delta^2\bigr).$$
+
+**Correction.** The source writes $s^* = s_s + \alpha v_1$ for a fixed eigenvector $v_1$ for
+$\lambda_1$. When $\lambda_1$ is multiple, one fixed eigenvector does not parametrize all
+minimizers; the statement gives some nonzero generalized eigenvector $v$ for $\lambda_1$.
+
+**Correction.** The source requires $\|s_s + \alpha v_1\|_M = \Delta$. When $\lambda^* = 0$ (so
+$\lambda_1 = 0$, an interior solution) this fails: for $n = 1$, $H = 0$, $g = 0$, $M = 1$ and
+$\Delta = 1$, the minimizer $s^* = 0$ is not on the boundary. The boundary condition is stated
+for $\lambda^* > 0$ only.
+
+The model $m$ is `CartisGouldToint.Chapter08.model`, and the multiplier conditions are
+`CartisGouldToint.Chapter08.IsTrustRegionKKT`. -/
 theorem corollary_8_3_2 [NeZero n] (hH : H.IsHermitian) (hM : M.PosDef) {Δ : ℝ} (hΔ : 0 < Δ)
     {s : EuclideanSpace ℝ (Fin n)} (hs : IsTrustRegionSolution g H M Δ s) {lamStar : ℝ}
     (hkkt : IsTrustRegionKKT g H M Δ s lamStar) :
