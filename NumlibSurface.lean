@@ -535,55 +535,53 @@ import NumlibSurface.SaadSparse.Common
 /-!
 # NumlibSurface
 
-The surface layer of the numerical-analysis library: one directory per textbook, aligned to that
-text section by section. The backbone it stands on is `Numlib`, a separate library.
+`NumlibSurface` is the surface layer of a Lean library of numerical analysis. It has one library for
+each of ten source texts, and each library restates the numbered results of its source in the
+wording, notation and numbering of that source. Each formalized theorem, lemma, algorithm or
+displayed equation of the source has a declaration whose name gives its kind and number. The general
+definitions and the proofs are in the backbone `Numlib`, which is organized by subject. A surface
+declaration mostly specializes a backbone result to the hypotheses of the source, so each surface
+library tests the backbone against a published account of its subject.
 
-A surface proves almost nothing of its own. Each declaration instantiates a backbone result at the
-book's own hypotheses, so a surface reads as an integration test of the backbone against a published
-account of the subject. If a surface result does not specialize something, that is a demand on the
-backbone rather than licence to do new mathematics here. Citing a book by number is correct in this
-layer and wrong outside it, where a doc comment names its source in full.
+The backbone and the surface are two separate Lake libraries. A surface library imports the
+backbone, and the backbone imports no surface module. Within a surface library, later chapters use
+the restatements of earlier chapters. This module imports all modules of the ten libraries and adds
+no declaration.
 
-The dependency runs one way, and the split into two Lake libraries is what enforces it: a surface
-imports the backbone, the backbone imports no surface, and nothing can quietly reverse that.
+## Contents
 
-## The books
+| Source | Module | Subject and coverage |
+|---|---|---|
+| Atkinson and Han, *Theoretical Numerical Analysis* [han2009theoretical] | `AtkinsonHan` | functional analysis; Chapters 1–14 |
+| Benzi, Golub and Liesen, *Numerical solution of saddle point problems* [benzi2005numerical] | `BenziGolubLiesen` | saddle-point linear systems; all 13 numbered results |
+| Brezis, *Functional Analysis, Sobolev Spaces and Partial Differential Equations* [brezis2011functional] | `Brezis` | functional analysis, Sobolev spaces, PDE; Chapters 1–11 |
+| Cartis, Gould and Toint, *Evaluation Complexity of Algorithms for Nonconvex Optimization* [cartis2022evaluation] | `CartisGouldToint` | evaluation complexity of nonconvex optimization; Chapters 1–14, Appendices A–B |
+| Conn, Gould and Toint, *Trust-Region Methods* [conn2000trust] | `ConnGouldToint` | trust-region methods; Chapters 2–17 |
+| Fong and Saunders, *CG versus MINRES: an empirical comparison* [fong2012cg] | `FongSaunders` | CG and MINRES on symmetric positive definite systems; all six theorems |
+| Golub and Van Loan, *Matrix Computations* [golub2013matrix] | `GolubVanLoan` | numerical linear algebra; all twelve chapters |
+| Quarteroni, Sacco and Saleri, *Numerical Mathematics* [quarteroni2000numerical] | `QuarteroniSaccoSaleri` | numerical analysis; all thirteen chapters |
+| Rockafellar, *Convex Analysis* [rockafellar1970convex] | `Rockafellar` | convex sets and functions in $\mathbb{R}^n$; 466 of the 471 numbered results |
+| Saad, *Iterative Methods for Sparse Linear Systems* [saad2003iterative] | `SaadSparse` | iterative methods and preconditioning; every chapter with a numbered result |
 
-`NumlibSurface.SaadSparse` is Y. Saad, *Iterative Methods for Sparse Linear Systems* (SIAM, 2nd
-ed., 2003) in fifty-seven modules, reaching every chapter of it that states a numbered result.
-`NumlibSurface.FongSaunders` is D. C.-L. Fong and M. A. Saunders, *CG versus MINRES: an empirical
-comparison* (2012), complete, in five. `NumlibSurface.AtkinsonHan` is K. Atkinson and W. Han,
-*Theoretical Numerical Analysis: A Functional Analysis Framework* (Springer, 3rd ed., 2009) in
-fifty, covering Chapters 1 to 6 and 8 to 12 apart from what needs Sobolev spaces on a domain.
-`NumlibSurface.Rockafellar` is R. T. Rockafellar, *Convex Analysis* (Princeton University Press,
-1970), all thirty-nine sections in thirty-nine modules, over `Numlib.Analysis.Convex`. Each book's
-root module is its index: the section-by-section outline, the ambient conventions, what is
-deferred, and the places where formalizing the book corrected it.
+The module names are relative to `NumlibSurface`. The index module of each library, such as
+`NumlibSurface.SaadSparse`, gives the full citation and edition of its source, the coverage, a table
+of its modules, its conventions, every deviation of a formal statement from the printed one, and the
+items that are not formalized.
 
-## How it is organized
+## Conventions
 
-One module is one section of its book, at the book's own numbering: `SaadSparse.Chapter06.Section05`
-is Saad §6.5. A module named `Common` is not a section but the vocabulary its siblings share.
-
-**Surface declarations are named for the results they state**, so the name is the index:
-`theorem_6_29` is Saad's Theorem 6.29 and `equation_6_43` is his (6.43). Where one numbered result
-needs several declarations — its clauses, its CG and its MINRES form, a strict beside a nonstrict
-version — a trailing word distinguishes them, as in `theorem_2_2_a` and `theorem_3_1_minres`. A
-book's declarations sit in the namespace of its chapter, `<Book>.ChapterNN`, spelled as the module
-path spells it.
-
-Each book's reasoning — its conventions, how each book-specific definition maps to the backbone,
-what was deferred and why — is in the plan groups under `plans/NumlibSurface/`, one file per
-section: every numbered result of every book is a node there, carrying its source and, when it is
-not formalized, the obstruction that stopped it. What the books themselves get wrong or print
-ambiguously is collected separately, in `notes/book-errata.md`.
-
-## References
-
-* K. Atkinson and W. Han, *Theoretical Numerical Analysis: A Functional Analysis Framework*, 3rd
-  edition, Springer, 2009.
-* D. C.-L. Fong and M. A. Saunders, *CG versus MINRES: an empirical comparison*, SQU Journal for
-  Science 17 (2012) 44–62.
-* R. T. Rockafellar, *Convex Analysis*, Princeton University Press, 1970.
-* Y. Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM, 2003.
+* A module of a surface library corresponds to a unit of its source, usually a section, at the
+  numbering of the source: `NumlibSurface.SaadSparse.Chapter06.Section05` is §6.5 of
+  [saad2003iterative]. A module named `Common` is not a unit of the source; it holds the vocabulary
+  that its sibling modules share.
+* A declaration that states a numbered result is named after the kind and the number of the result:
+  `SaadSparse.Chapter06.theorem_6_29` is Theorem 6.29 of [saad2003iterative], and
+  `SaadSparse.Chapter06.equation_6_43` is its equation (6.43). Where one item needs several
+  declarations (its clauses, its CG and its MINRES form, a strict beside a nonstrict version), a
+  suffix tells them apart, as in `FongSaunders.theorem_2_2_a` and `FongSaunders.theorem_3_1_minres`.
+* The declarations of a library are in a namespace named after its source, such as `Rockafellar`,
+  and in most libraries in a sub-namespace for each chapter, such as `SaadSparse.Chapter06`. The
+  index module of each library gives its exact rule.
+* A surface declaration starts its doc comment with the label of the item, such as **Theorem 6.29**
+  of [saad2003iterative]. A backbone declaration has no such label.
 -/
