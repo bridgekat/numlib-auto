@@ -5,27 +5,86 @@ Released under Apache 2.0 license as described in the file LICENSE.
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter06.Section02
 
 /-!
-# Quarteroni–Sacco–Saleri §6.3: fixed-point iterations for nonlinear equations
+# Quarteroni, Sacco and Saleri, Section 6.3: Fixed-Point Iterations for Nonlinear Equations
 
-Surface file for Alfio Quarteroni, Riccardo Sacco and Fausto Saleri, *Numerical Mathematics*
-[quarteroni2000numerical], §6.3: the fixed-point iteration `x^{(k+1)} = φ(x^{(k)})` — which is
-`φ^[k] x₀` and needs no definition — with Theorem 6.1 and its limit (6.18), the asymptotic
-convergence rate (6.20), Ostrowski's Property 6.3, Remark 6.2, Example 6.6 and Property 6.4, and
-§6.3.1's application to the chord and Newton methods of `Section02`, including the multiple-root
-formula (6.22), the modified Newton method (6.23) and Exercise 6.2. The backbone is
-`Numlib/Nonlinear/{FixedPoint, Order, ScalarNewton}`.
+This module formalizes Section 6.3 of [quarteroni2000numerical]. A root of a scalar equation is
+computed as a fixed point $\alpha = \varphi(\alpha)$ of an iteration function
+$\varphi : \mathbb{R} \to \mathbb{R}$, through the iteration $x^{(k+1)} = \varphi(x^{(k)})$. The
+module states the convergence theorem for contractive iteration functions on an interval (Theorem
+6.1) with the limit (6.18) of the error ratios, the asymptotic convergence rate (6.20), the local
+convergence theorem of Ostrowski (Property 6.3), divergence when $|\varphi'(\alpha)| > 1$ (Remark
+6.2), the undecided case $|\varphi'(\alpha)| = 1$ (Example 6.6), and the order of convergence
+$p + 1$ when the first $p$ derivatives of $\varphi$ vanish at $\alpha$ (Property 6.4).
 
-## Readings
+Section 6.3.1 applies these results to the chord method and to Newton's method of Section 6.2: the
+derivative of the chord iteration function and the linear convergence of the chord method, the order
+$2$ of Newton's method at a simple root, the linear convergence of Newton's method at a multiple
+root (6.22), and the modified Newton method (6.23) with Exercise 6.2. The proofs specialize
+`Numlib.Nonlinear.FixedPoint`, `Numlib.Nonlinear.Order` and `Numlib.Nonlinear.ScalarNewton`.
 
-* Theorem 6.1's `φ ∈ C¹[a, b]` is carried for fidelity; the backbone needs only the derivative
-  bound within the interval. Every error-ratio limit ((6.18), (6.21), (6.22)) needs the orbit to
-  avoid the fixed point, which the book never says: a term equal to `α` makes the quotient `0/0`.
-* (6.20) prints `R = -log(1 / |φ'(α)|)`, which is `≤ 0` for a convergent method; by analogy with
-  (4.5) the intended rate is `R = -log|φ'(α)|` (`notes/book-errata.md`).
-* Property 6.4's range `0 ≤ i ≤ p` must read `1 ≤ i ≤ p`, and the property presupposes
-  convergence: for `p = 0` only the limit (6.21) holds, for `p ≥ 1` the order `p + 1` follows.
-* Newton's order 2 and its constant `f''(α) / (2 f'(α))` are proved under `f ∈ C²`, where reading
-  them off `φ''_Newt(α) = f''(α) / f'(α)` through Property 6.4 would need `C³`.
+## Main definitions
+
+* Equation (6.20), `QuarteroniSaccoSaleri.Chapter06.equation_6_20`: the asymptotic convergence rate
+  $R = -\log|\varphi'(\alpha)|$.
+* Section 6.3.1, `QuarteroniSaccoSaleri.Chapter06.chordIterationFunction`: the iteration function
+  $\varphi_{\mathrm{chord}}$ of the chord method.
+* Equation (6.23), `QuarteroniSaccoSaleri.Chapter06.equation_6_23`: the modified Newton method for a
+  root of known multiplicity $m$.
+
+## Main results
+
+* Theorem 6.1, `QuarteroniSaccoSaleri.Chapter06.theorem_6_1`: a $C^1$ self-map of $[a, b]$ with
+  $|\varphi'| \le K < 1$ has a unique fixed point, and every orbit in $[a, b]$ converges to it.
+* Theorem 6.1, `QuarteroniSaccoSaleri.Chapter06.theorem_6_1_limit`: the limit (6.18) of the error
+  ratios is $\varphi'(\alpha)$.
+* Property 6.3, `QuarteroniSaccoSaleri.Chapter06.property_6_3`: if $|\varphi'(\alpha)| < 1$, the
+  iteration converges from every starting point close to $\alpha$.
+* Remark 6.2, `QuarteroniSaccoSaleri.Chapter06.remark_6_2`: if $|\varphi'(\alpha)| > 1$, no orbit
+  that avoids $\alpha$ converges to $\alpha$.
+* Example 6.6, `QuarteroniSaccoSaleri.Chapter06.example_6_6_tendsto`: the iteration of $x - x^3$
+  converges to $0$ from every point of $[-1, 1]$.
+* Example 6.6, `QuarteroniSaccoSaleri.Chapter06.example_6_6_not_tendsto`: the iteration of $x + x^3$
+  converges to $0$ from no point $x^{(0)} \neq 0$.
+* Property 6.4, `QuarteroniSaccoSaleri.Chapter06.property_6_4`: if $\varphi^{(i)}(\alpha) = 0$ for
+  $1 \le i \le p$, the method has order $p + 1$ and the limit (6.21) holds.
+* Section 6.3.1, `QuarteroniSaccoSaleri.Chapter06.chordIterationFunction_deriv`:
+  $\varphi_{\mathrm{chord}}'(\alpha) = 1 - f'(\alpha)/q$, and its modulus is less than $1$ if and
+  only if $0 < f'(\alpha)/q < 2$.
+* Section 6.3.1, `QuarteroniSaccoSaleri.Chapter06.chord_tendsto`: under this condition the chord
+  method converges linearly.
+* Section 6.3.1, `QuarteroniSaccoSaleri.Chapter06.newtonIterationFunction_deriv`: at a simple root,
+  $\varphi_{\mathrm{Newt}}'(\alpha) = 0$ and $\varphi_{\mathrm{Newt}}''(\alpha) =
+  f''(\alpha)/f'(\alpha)$.
+* Section 6.3.1, `QuarteroniSaccoSaleri.Chapter06.newton_order_two`: Newton's method has order $2$
+  at a simple root.
+* Equation (6.22), `QuarteroniSaccoSaleri.Chapter06.equation_6_22`: at a root of multiplicity
+  $m > 1$, Newton's method converges linearly with factor $1 - 1/m$.
+* Exercise 6.2, `QuarteroniSaccoSaleri.Chapter06.exercise_6_2`: the limit (6.22) holds for
+  $m \ge 1$, and the modified Newton method (6.23) has order $2$.
+
+## Implementation notes
+
+* The fixed-point iteration is `φ^[k] x₀`, the $k$-th iterate of `φ`, and needs no definition of its
+  own.
+* An order of convergence is `QuarteroniSaccoSaleri.Chapter06.definition_6_1`, the sense of
+  Definition 6.1.
+* The hypothesis $\varphi \in C^1[a, b]$ of Theorem 6.1 is kept in the statement to match the
+  source. The proof uses only the bound on the derivative within the interval.
+
+## Deviations from the source
+
+* **Theorem 6.1, limit (6.18)** (reading). The limit of the error ratios is stated for orbits that
+  never equal $\alpha$. See `QuarteroniSaccoSaleri.Chapter06.theorem_6_1_limit`.
+* **Equation (6.20)** (typo). The source prints $R = -\log(1/|\varphi'(\alpha)|)$; the rate is
+  $R = -\log|\varphi'(\alpha)|$. See `QuarteroniSaccoSaleri.Chapter06.equation_6_20`.
+* **Property 6.4** (typo). The source prints the range $0 \le i \le p$ for the vanishing
+  derivatives; the range is $1 \le i \le p$. See `QuarteroniSaccoSaleri.Chapter06.property_6_4`.
+* **Property 6.4** (reading). The property presupposes convergence. For $p = 0$ only the limit
+  (6.21) along a convergent orbit is stated, and the limit is stated for orbits that never equal
+  $\alpha$. See `QuarteroniSaccoSaleri.Chapter06.property_6_4`.
+* **Section 6.3.1, order of Newton's method** (generalization). The order $2$ and its constant
+  $f''(\alpha)/(2 f'(\alpha))$ are proved for $f \in C^2$; the derivation through Property 6.4 needs
+  $f \in C^3$. See `QuarteroniSaccoSaleri.Chapter06.newton_order_two`.
 -/
 
 open Filter Set Topology
@@ -42,9 +101,16 @@ variable {φ φ' : ℝ → ℝ} {a b : ℝ}
 -- uses only the derivative bound within the interval
 -- (`exists_unique_fixedPoint_Icc_of_abs_deriv_le`).
 set_option linter.unusedVariables false in
-/-- **Theorem 6.1 (convergence of fixed-point iterations).** Let `φ : [a, b] → [a, b]` be `C¹`
-with `|φ'(x)| ≤ K < 1` on `[a, b]`. Then `φ` has a unique fixed point `α ∈ [a, b]`, and the
-sequence `x^{(k+1)} = φ(x^{(k)})` converges to `α` for any `x^{(0)} ∈ [a, b]`.
+/-- **Theorem 6.1** of [quarteroni2000numerical] (convergence of fixed-point iterations). Let
+$a \le b$, and let $\varphi : \mathbb{R} \to \mathbb{R}$ map $[a, b]$ into itself. Suppose that
+$\varphi$ has at each $x \in [a, b]$ the derivative $\varphi'(x)$ within $[a, b]$, that
+$\varphi'$ is continuous on $[a, b]$, and that there is $K < 1$ with $|\varphi'(x)| \le K$ for
+all $x \in [a, b]$. Then $\varphi$ has exactly one fixed point $\alpha \in [a, b]$, and for
+every $x^{(0)} \in [a, b]$ the sequence $x^{(k+1)} = \varphi(x^{(k)})$ converges to $\alpha$.
+
+The second part is stated for every fixed point $\alpha \in [a, b]$, which by the first part is
+the unique one. The continuity of $\varphi'$ is the hypothesis $\varphi \in C^1[a, b]$ of the
+source; the proof does not use it. The proof specializes
 `exists_unique_fixedPoint_Icc_of_abs_deriv_le` and `tendsto_iterate_Icc_of_abs_deriv_le`. -/
 theorem theorem_6_1 (hab : a ≤ b) (hmaps : MapsTo φ (Icc a b) (Icc a b))
     (hφ : ∀ x ∈ Icc a b, HasDerivWithinAt φ (φ' x) (Icc a b) x) (hφ' : ContinuousOn φ' (Icc a b))
@@ -55,11 +121,16 @@ theorem theorem_6_1 (hab : a ≤ b) (hmaps : MapsTo φ (Icc a b) (Icc a b))
   exact ⟨exists_unique_fixedPoint_Icc_of_abs_deriv_le hab hmaps hφ hK hK1,
     fun α hα hfix x₀ hx₀ => tendsto_iterate_Icc_of_abs_deriv_le hmaps hφ hK hK1 hα hfix hx₀⟩
 
-/-- **Theorem 6.1, the limit (6.18).** Under the hypotheses of `theorem_6_1`, for the fixed point
-`α` and every `x^{(0)} ∈ [a, b]` whose orbit never equals `α`,
-`(x^{(k+1)} - α) / (x^{(k)} - α) → φ'(α)`. The book omits the "never equals `α`" clause, without
-which the quotient is `0/0` from some index on; at an endpoint `α ∈ {a, b}` the orbit approaches
-`α` from inside `[a, b]`, and the one-sided derivative is what is used. -/
+/-- **Theorem 6.1** of [quarteroni2000numerical], the limit (6.18). Under the hypotheses of
+`QuarteroniSaccoSaleri.Chapter06.theorem_6_1`, let $\alpha \in [a, b]$ be the fixed point of
+$\varphi$, and let $x^{(0)} \in [a, b]$ be such that $x^{(k)} \neq \alpha$ for all $k$. Then
+$$\lim_{k \to \infty} \frac{x^{(k+1)} - \alpha}{x^{(k)} - \alpha} = \varphi'(\alpha).$$
+
+**Reading.** The source does not require that the orbit avoids $\alpha$. Without this condition
+the quotient is $0/0$ from some index on.
+
+At an endpoint $\alpha \in \{a, b\}$ the orbit approaches $\alpha$ from inside $[a, b]$, and
+$\varphi'(\alpha)$ is the one-sided derivative within $[a, b]$. -/
 theorem theorem_6_1_limit (hab : a ≤ b) (hmaps : MapsTo φ (Icc a b) (Icc a b))
     (hφ : ∀ x ∈ Icc a b, HasDerivWithinAt φ (φ' x) (Icc a b) x) (hφ' : ContinuousOn φ' (Icc a b))
     (hK : ∃ K < 1, ∀ x ∈ Icc a b, |φ' x| ≤ K) {α : ℝ} (hα : α ∈ Icc a b) (hfix : φ α = α)
@@ -69,10 +140,16 @@ theorem theorem_6_1_limit (hab : a ≤ b) (hmaps : MapsTo φ (Icc a b) (Icc a b)
     (fun k => Function.iterate_succ_apply' φ k x₀) (fun k => hmaps.iterate k hx₀) hne
     ((theorem_6_1 hab hmaps hφ hφ' hK).2 α hα hfix x₀ hx₀)
 
-/-- **(6.20), the asymptotic convergence rate** `R = -log|φ'(α)|`, with `|φ'(α)|` the asymptotic
-convergence factor of the fixed-point method. The book prints `R = -log(1 / |φ'(α)|)`, which is
-`≤ 0` for a convergent method; the intended quantity, by analogy with (4.5) `R(B) = -log ρ(B)`,
-is `-log|φ'(α)|`. -/
+/-- **Equation (6.20)** of [quarteroni2000numerical]. The **asymptotic convergence rate** of the
+fixed-point iteration with the asymptotic convergence factor $|\varphi'(\alpha)|$ is
+$$R = -\log|\varphi'(\alpha)|.$$
+
+**Typo.** The source prints $R = -\log(1/|\varphi'(\alpha)|)$, which is $\le 0$ for a convergent
+method. The intended quantity, by analogy with the rate $R(B) = -\log \rho(B)$ of (4.5), is
+$-\log|\varphi'(\alpha)|$.
+
+The definition takes the derivative $\varphi'$ as a function. If $\varphi'(\alpha) = 0$, the
+value is $0$, because `Real.log 0 = 0`. -/
 noncomputable def equation_6_20 (φ' : ℝ → ℝ) (α : ℝ) : ℝ := -Real.log |φ' α|
 
 end Theorem61
@@ -81,18 +158,28 @@ section Ostrowski
 
 variable {φ : ℝ → ℝ} {α : ℝ}
 
-/-- **Property 6.3 (Ostrowski's theorem).** Let `α` be a fixed point of `φ`, continuous and
-differentiable in a neighbourhood of `α`. If `|φ'(α)| < 1` then there is `δ > 0` such that
-`x^{(k)} → α` for every `x^{(0)}` with `|x^{(0)} - α| < δ`. `tendsto_iterate_of_abs_deriv_lt_one`,
-which needs only differentiability at `α`. -/
+/-- **Property 6.3** of [quarteroni2000numerical] (Ostrowski's theorem). Let $\alpha$ be a fixed
+point of $\varphi : \mathbb{R} \to \mathbb{R}$, let $\varphi$ be differentiable at every point
+of a neighbourhood of $\alpha$, and let $|\varphi'(\alpha)| < 1$. Then there is $\delta > 0$
+such that $x^{(k)} = \varphi^k(x^{(0)}) \to \alpha$ for every $x^{(0)}$ with
+$|x^{(0)} - \alpha| < \delta$.
+
+The source also assumes that $\varphi$ is continuous near $\alpha$, which follows from
+differentiability. The proof specializes `tendsto_iterate_of_abs_deriv_lt_one`, which needs
+differentiability at $\alpha$ only. -/
 theorem property_6_3 (hα : φ α = α) (hJ : ∀ᶠ x in 𝓝 α, DifferentiableAt ℝ φ x)
     (h : |deriv φ α| < 1) :
     ∃ δ > 0, ∀ x₀, |x₀ - α| < δ → Tendsto (fun k => φ^[k] x₀) atTop (𝓝 α) :=
   tendsto_iterate_of_abs_deriv_lt_one hα hJ.self_of_nhds.hasDerivAt h
 
-/-- **Remark 6.2.** If `|φ'(α)| > 1` then no orbit `x^{(k+1)} = φ(x^{(k)})` that never lands on the
-fixed point `α` can converge to it: near `α` the error grows at every step. The case
-`|φ'(α)| = 1` is undecided (Example 6.6). `not_tendsto_iterate_of_one_lt_abs_deriv`. -/
+/-- **Remark 6.2** of [quarteroni2000numerical]. Let $\alpha$ be a fixed point of
+$\varphi : \mathbb{R} \to \mathbb{R}$, let $\varphi$ be differentiable at $\alpha$ with
+$|\varphi'(\alpha)| > 1$, and let $x^{(0)}$ be such that the orbit
+$x^{(k+1)} = \varphi(x^{(k)})$ satisfies $x^{(k)} \neq \alpha$ for all $k$. Then $x^{(k)}$ does
+not converge to $\alpha$.
+
+Near $\alpha$ the error grows at every step. The case $|\varphi'(\alpha)| = 1$ is undecided, as
+Example 6.6 shows. The proof specializes `not_tendsto_iterate_of_one_lt_abs_deriv`. -/
 theorem remark_6_2 (hα : φ α = α) (hφ : DifferentiableAt ℝ φ α) (h : 1 < |deriv φ α|) {x₀ : ℝ}
     (hne : ∀ k, φ^[k] x₀ ≠ α) : ¬ Tendsto (fun k => φ^[k] x₀) atTop (𝓝 α) :=
   not_tendsto_iterate_of_one_lt_abs_deriv hα hφ.hasDerivAt h
@@ -100,16 +187,21 @@ theorem remark_6_2 (hα : φ α = α) (hφ : DifferentiableAt ℝ φ α) (h : 1 
 
 end Ostrowski
 
-/-! ### Example 6.6: `x - x³` and `x + x³` at the fixed point `0`, where `φ'(0) = 1` -/
+/-!
+### Example 6.6: the case $|\varphi'(\alpha)| = 1$
+
+The iteration functions $x - x^3$ and $x + x^3$ both have the fixed point $0$ with
+$\varphi'(0) = 1$. The first iteration converges to $0$ and the second does not.
+-/
 
 section Example66
 
-/-- The step `y ↦ y - y³` on `[0, 1]` stays in `[0, 1]` and does not increase. -/
+/-- The map $y \mapsto y - y^3$ maps $[0, 1]$ into $[0, 1]$. -/
 private theorem sub_cube_mem_Icc {y : ℝ} (hy : y ∈ Icc (0 : ℝ) 1) : y - y ^ 3 ∈ Icc (0 : ℝ) 1 := by
   obtain ⟨h0, h1⟩ := hy
   constructor <;> nlinarith [pow_le_one₀ h0 h1 (n := 2), pow_nonneg h0 2, pow_nonneg h0 3]
 
-/-- `|x - x³| = |x| - |x|³` for `|x| ≤ 1`. -/
+/-- For $|x| \le 1$, $|x - x^3| = |x| - |x|^3$. -/
 private theorem abs_sub_cube {x : ℝ} (hx : |x| ≤ 1) : |x - x ^ 3| = |x| - |x| ^ 3 := by
   have h3 : |x| ^ 3 = |x ^ 3| := (abs_pow x 3).symm
   have h : x - x ^ 3 = x * (1 - x ^ 2) := by ring
@@ -119,11 +211,14 @@ private theorem abs_sub_cube {x : ℝ} (hx : |x| ≤ 1) : |x - x ^ 3| = |x| - |x
   rw [h, abs_mul, abs_of_nonneg (by linarith : (0 : ℝ) ≤ 1 - x ^ 2)]
   nlinarith [sq_abs x]
 
-/-- **Example 6.6, first half.** For `φ(x) = x - x³`, with the fixed point `α = 0` and
-`φ'(0) = 1`, every orbit started in `[-1, 1]` lies in `(-1, 1)` from the first step on and
-converges (very slowly) to `0`; for `x^{(0)} = ±1` the orbit is `0` from the first step on.
-The absolute values `y_k = |x^{(k)}|` satisfy `y_{k+1} = y_k - y_k³ ∈ [0, 1]`, decrease to a limit
-`L` with `L = L - L³`, hence `L = 0`. -/
+/-- **Example 6.6** of [quarteroni2000numerical], first half. Let $\varphi(x) = x - x^3$, which has
+the fixed point $\alpha = 0$ with $\varphi'(0) = 1$. For every $x^{(0)} \in [-1, 1]$, the orbit
+$x^{(k)} = \varphi^k(x^{(0)})$ satisfies $x^{(k)} \in (-1, 1)$ for all $k \ge 1$, and
+$x^{(k)} \to 0$.
+
+For $x^{(0)} = \pm 1$ the orbit is $0$ from the first step on. In general the convergence is
+very slow. The absolute values $y_k = |x^{(k)}|$ satisfy $y_{k+1} = y_k - y_k^3 \in [0, 1]$, so
+they decrease to a limit $L$ with $L = L - L^3$, hence $L = 0$. -/
 theorem example_6_6_tendsto {x₀ : ℝ} (hx₀ : x₀ ∈ Icc (-1 : ℝ) 1) :
     (∀ k, 1 ≤ k → (fun x : ℝ => x - x ^ 3)^[k] x₀ ∈ Ioo (-1 : ℝ) 1) ∧
       Tendsto (fun k => (fun x : ℝ => x - x ^ 3)^[k] x₀) atTop (𝓝 0) := by
@@ -176,9 +271,12 @@ theorem example_6_6_tendsto {x₀ : ℝ} (hx₀ : x₀ ∈ Icc (-1 : ℝ) 1) :
     exact ⟨this.1, this.2⟩
   · exact tendsto_iff_norm_sub_tendsto_zero.2 (by simpa [hy] using hlimL)
 
-/-- **Example 6.6, second half.** For `φ(x) = x + x³`, with the fixed point `α = 0` and
-`φ'(0) = 1`, no orbit started at `x^{(0)} ≠ 0` converges to `0`: `|x + x³| ≥ |x|`, so
-`|x^{(k)}| ≥ |x^{(0)}| > 0` for all `k` (in fact the orbit diverges). -/
+/-- **Example 6.6** of [quarteroni2000numerical], second half. Let $\varphi(x) = x + x^3$, which has
+the fixed point $\alpha = 0$ with $\varphi'(0) = 1$. For every $x^{(0)} \neq 0$, the orbit
+$x^{(k)} = \varphi^k(x^{(0)})$ does not converge to $0$.
+
+Since $|x + x^3| \ge |x|$, the orbit satisfies $|x^{(k)}| \ge |x^{(0)}| > 0$ for all $k$. In
+fact the orbit diverges. -/
 theorem example_6_6_not_tendsto {x₀ : ℝ} (hx₀ : x₀ ≠ 0) :
     ¬ Tendsto (fun k => (fun x : ℝ => x + x ^ 3)^[k] x₀) atTop (𝓝 0) := by
   set φ : ℝ → ℝ := fun x => x + x ^ 3 with hφ
@@ -211,12 +309,29 @@ variable {φ : ℝ → ℝ} {α : ℝ}
 -- `φ^{(p+1)}(α) ≠ 0` is part of the book's statement; it makes the order exactly `p + 1` and is
 -- not needed for the order bound or the limit.
 set_option linter.unusedVariables false in
-/-- **Property 6.4.** Let `φ ∈ C^{p+1}(J)` on a neighbourhood of a fixed point `α`, with
-`φ^{(i)}(α) = 0` for `1 ≤ i ≤ p` (the book's `0 ≤ i ≤ p` is a misprint) and
-`φ^{(p+1)}(α) ≠ 0`. Then, for `p ≥ 1`, the fixed-point method has order `p + 1`, and along every
-orbit converging to `α` without reaching it the limit (6.21) holds:
-`(x^{(k+1)} - α) / (x^{(k)} - α)^{p+1} → φ^{(p+1)}(α) / (p + 1)!`. For `p = 0` only the limit
-holds, convergence having to be assumed as the proof's first line does.
+/-- **Property 6.4** of [quarteroni2000numerical]. Let $p \in \mathbb{N}$, let $\alpha$ be a fixed
+point of $\varphi : \mathbb{R} \to \mathbb{R}$, let $\varphi$ be of class $C^{p+1}$ on a
+neighbourhood of $\alpha$, and let $\varphi^{(i)}(\alpha) = 0$ for $1 \le i \le p$ and
+$\varphi^{(p+1)}(\alpha) \neq 0$. Then:
+
+* if $p \ge 1$, there is $\varepsilon > 0$ such that for every $x^{(0)}$ with
+  $|x^{(0)} - \alpha| < \varepsilon$ the orbit $x^{(k)} = \varphi^k(x^{(0)})$ converges to
+  $\alpha$ with order $p + 1$ in the sense of Definition 6.1;
+* for every $x^{(0)}$ whose orbit converges to $\alpha$ and satisfies $x^{(k)} \neq \alpha$ for
+  all $k$, the limit (6.21) holds: $$\lim_{k \to \infty} \frac{x^{(k+1)} - \alpha}{(x^{(k)} -
+  \alpha)^{p+1}} = \frac{\varphi^{(p+1)}(\alpha)}{(p + 1)!}.$$
+
+**Typo.** The source prints the range $0 \le i \le p$. The case $i = 0$ would require
+$\varphi(\alpha) = 0$, so the range is $1 \le i \le p$.
+
+**Reading.** The property presupposes that the method converges. For $p \ge 1$ convergence near
+$\alpha$ is proved. For $p = 0$ only the limit is stated, and convergence is assumed, as in the
+first line of the proof of the source. The limit needs an orbit that never equals $\alpha$,
+which the source does not say.
+
+The hypothesis $\varphi^{(p+1)}(\alpha) \neq 0$ is part of the statement of the source. It makes
+the order exactly $p + 1$, and the proof of the order bound and of the limit does not use it.
+The order is `QuarteroniSaccoSaleri.Chapter06.definition_6_1`. The proof specializes
 `hasIterationOrder_of_iteratedDeriv_eq_zero` and `tendsto_sub_div_pow_of_iteratedDeriv_eq_zero`. -/
 theorem property_6_4 {p : ℕ} (hφ : ContDiffAt ℝ (p + 1 : ℕ) φ α) (hα : φ α = α)
     (hzero : ∀ i, 1 ≤ i → i ≤ p → iteratedDeriv i φ α = 0) (hp' : iteratedDeriv (p + 1) φ α ≠ 0) :
@@ -236,34 +351,48 @@ theorem property_6_4 {p : ℕ} (hφ : ContDiffAt ℝ (p + 1 : ℕ) φ α) (hα :
 
 end Property64
 
-/-! ### §6.3.1 Convergence results for some fixed-point methods -/
+/-! ### Section 6.3.1: Convergence results for some fixed-point methods -/
 
 section Chord631
 
 variable {f : ℝ → ℝ} {a b α f' : ℝ}
 
-/-- **The iteration function of the chord method**, `φ_chord(x) = x - (b - a) / (f(b) - f(a)) f(x)`,
-whose iteration is `chord f a b`. -/
+/-- **Section 6.3.1** of [quarteroni2000numerical], the iteration function of the chord method. For
+$f : \mathbb{R} \to \mathbb{R}$ and $a, b \in \mathbb{R}$, it is
+$$\varphi_{\mathrm{chord}}(x) = x - \frac{b - a}{f(b) - f(a)} f(x).$$
+
+Its iteration is the chord method `QuarteroniSaccoSaleri.Chapter06.chord`. If $f(b) = f(a)$, the
+quotient is $0$ and $\varphi_{\mathrm{chord}}$ is the identity. -/
 noncomputable def chordIterationFunction (f : ℝ → ℝ) (a b : ℝ) (x : ℝ) : ℝ :=
   x - (b - a) / (f b - f a) * f x
 
-/-- `φ_chord` is the backbone's `Chord.step` with the slope `q = (f(b) - f(a)) / (b - a)`. -/
+/-- The chord iteration function $\varphi_{\mathrm{chord}}$ is the backbone step `Chord.step`
+$x \mapsto x - f(x)/q$ with the slope $q = (f(b) - f(a))/(b - a)$. -/
 theorem chordIterationFunction_eq (f : ℝ → ℝ) (a b : ℝ) :
     chordIterationFunction f a b = Chord.step f ((f b - f a) / (b - a)) := by
   funext x
   simp only [chordIterationFunction, Chord.step, div_div_eq_mul_div]
   ring
 
-/-- The chord method is the fixed-point iteration of `φ_chord`. -/
+/-- The chord method is the fixed-point iteration of $\varphi_{\mathrm{chord}}$: for every $x^{(0)}$
+and $k$, the $k$-th chord iterate `QuarteroniSaccoSaleri.Chapter06.chord` from $x^{(0)}$ is
+$\varphi_{\mathrm{chord}}^k(x^{(0)})$. -/
 theorem chord_eq_iterate (f : ℝ → ℝ) (a b x₀ : ℝ) (k : ℕ) :
     chord f a b x₀ k = (chordIterationFunction f a b)^[k] x₀ := by
   rw [chord, chordIterationFunction_eq]
 
-/-- **§6.3.1, the chord method.** With `q = (f(b) - f(a)) / (b - a)` and `f'(α)` the derivative
-of `f` at the root, `φ_chord'(α) = 1 - f'(α) / q` — so `φ_chord'(α) = 1` when `f'(α) = 0` — and
-`|φ_chord'(α)| < 1` iff `0 < f'(α) / q < 2`, i.e. `q` has the sign of `f'(α)` and
-`(b - a) < 2 (f(b) - f(a)) / f'(α)`. `Chord.hasDerivAt_step`, `Chord.abs_one_sub_div_lt_one_iff`.
--/
+/-- **Section 6.3.1** of [quarteroni2000numerical], the chord method. Let
+$f : \mathbb{R} \to \mathbb{R}$ have the derivative $f'(\alpha)$ at a point $\alpha$, and let
+$q = (f(b) - f(a))/(b - a)$. Then
+
+* $\varphi_{\mathrm{chord}}$ has the derivative $\varphi_{\mathrm{chord}}'(\alpha) = 1 -
+  f'(\alpha)/q$ at $\alpha$;
+* if $f'(\alpha) = 0$, then $\varphi_{\mathrm{chord}}'(\alpha) = 1$;
+* $|1 - f'(\alpha)/q| < 1$ if and only if $0 < f'(\alpha)/q < 2$.
+
+The last condition says that $q$ has the sign of $f'(\alpha)$ and $|q| > |f'(\alpha)|/2$. In the
+source $\alpha$ is the root of $f$; the statement holds at every point. The proof specializes
+`Chord.hasDerivAt_step` and `Chord.abs_one_sub_div_lt_one_iff`. -/
 theorem chordIterationFunction_deriv (hf : HasDerivAt f f' α) :
     HasDerivAt (chordIterationFunction f a b) (1 - f' / ((f b - f a) / (b - a))) α ∧
       (f' = 0 → 1 - f' / ((f b - f a) / (b - a)) = 1) ∧
@@ -272,12 +401,19 @@ theorem chordIterationFunction_deriv (hf : HasDerivAt f f' α) :
   rw [chordIterationFunction_eq]
   exact ⟨Chord.hasDerivAt_step hf, fun h => by simp [h], Chord.abs_one_sub_div_lt_one_iff⟩
 
-/-- **§6.3.1: the chord method converges linearly** when `0 < f'(α) / q < 2`,
-`q = (f(b) - f(a)) / (b - a)`: from every `x^{(0)}` close enough to the root `α` the chord
-iterates converge to `α` with order `1` in the sense of Definition 6.1, and along an orbit
-avoiding `α` the error ratios tend to `1 - f'(α) / q` — the convergence factor `|1 - f'(α) / q|`,
-which is `0` in the "lucky case" `f'(α) = q`. Ostrowski's theorem for `φ_chord`
-(`Chord.tendsto_iterate`, `Chord.tendsto_sub_div_sub`). -/
+/-- **Section 6.3.1** of [quarteroni2000numerical], linear convergence of the chord method. Let
+$f(\alpha) = 0$, let $f$ have the derivative $f'(\alpha)$ at $\alpha$, let
+$q = (f(b) - f(a))/(b - a)$, and let $0 < f'(\alpha)/q < 2$. Then there is $\delta > 0$ such
+that for every $x^{(0)}$ with $|x^{(0)} - \alpha| < \delta$ the chord iterates $x^{(k)}$:
+
+* converge to $\alpha$;
+* converge to $\alpha$ with order $1$ in the sense of Definition 6.1;
+* satisfy, if $x^{(k)} \neq \alpha$ for all $k$, $$\lim_{k \to \infty} \frac{x^{(k+1)} -
+  \alpha}{x^{(k)} - \alpha} = 1 - \frac{f'(\alpha)}{q}.$$
+
+The convergence factor $|1 - f'(\alpha)/q|$ is $0$ in the case $f'(\alpha) = q$. The theorem is
+Ostrowski's theorem for $\varphi_{\mathrm{chord}}$; the proof specializes
+`Chord.tendsto_iterate` and `Chord.tendsto_sub_div_sub`. -/
 theorem chord_tendsto (hα : f α = 0) (hf : HasDerivAt f f' α)
     (h0 : 0 < f' / ((f b - f a) / (b - a))) (h2 : f' / ((f b - f a) / (b - a)) < 2) :
     ∃ δ > 0, ∀ x₀, |x₀ - α| < δ →
@@ -306,9 +442,15 @@ section Newton631
 
 variable {f : ℝ → ℝ} {α : ℝ}
 
-/-- **§6.3.1, Newton's method at a simple root.** For `φ_Newt(x) = x - f(x) / f'(x)` with `f α = 0`,
-`f ∈ C²` near `α` and `f'(α) ≠ 0`: `φ_Newt'(α) = 0`; and for `f ∈ C³`,
-`φ_Newt''(α) = f''(α) / f'(α)`. `Newton.hasDerivAt_scalarStep`, `Newton.deriv2_scalarStep_root`. -/
+/-- **Section 6.3.1** of [quarteroni2000numerical], Newton's method at a simple root. Let
+$f(\alpha) = 0$, let $f$ be of class $C^2$ on a neighbourhood of $\alpha$, and let
+$f'(\alpha) \neq 0$. Let $\varphi_{\mathrm{Newt}}(x) = x - f(x)/f'(x)$. Then
+$\varphi_{\mathrm{Newt}}$ has the derivative $\varphi_{\mathrm{Newt}}'(\alpha) = 0$ at $\alpha$.
+If moreover $f$ is of class $C^3$ on a neighbourhood of $\alpha$, then
+$$\varphi_{\mathrm{Newt}}''(\alpha) = \frac{f''(\alpha)}{f'(\alpha)}.$$
+
+The iteration function $\varphi_{\mathrm{Newt}}$ is `Newton.scalarStep f (deriv f)`. The proof
+specializes `Newton.hasDerivAt_scalarStep` and `Newton.deriv2_scalarStep_root`. -/
 theorem newtonIterationFunction_deriv (hα : f α = 0) (hf : ContDiffAt ℝ 2 f α)
     (hf' : deriv f α ≠ 0) :
     HasDerivAt (Newton.scalarStep f (deriv f)) 0 α ∧
@@ -319,12 +461,24 @@ theorem newtonIterationFunction_deriv (hα : f α = 0) (hf : ContDiffAt ℝ 2 f 
     (hasDerivAt_deriv_of_contDiffAt_two hf) hf'
   rwa [hα, zero_mul, zero_div] at h
 
-/-- **Newton's method is of order 2** (§6.2.2, "see Section 6.3.1"): for `f α = 0`, `f ∈ C²`
-near `α` and `f'(α) ≠ 0`, from every `x^{(0)}` close enough to `α` the Newton iterates converge
-to `α` with order `2`, and along an orbit avoiding `α`,
-`(x^{(k+1)} - α) / (x^{(k)} - α)² → f''(α) / (2 f'(α))` — the constant `φ''_Newt(α) / 2!` of
-Property 6.4 with `p = 1`, obtained here under `C²` alone.
-`Newton.hasIterationOrder_scalarStep_two`, `Newton.tendsto_scalarStep_sub_div_sq`. -/
+/-- **Section 6.2.2** of [quarteroni2000numerical], the order of Newton's method, which the source
+proves in Section 6.3.1. Let $f(\alpha) = 0$, let $f$ be of class $C^2$ on a neighbourhood of
+$\alpha$, and let $f'(\alpha) \neq 0$. Then:
+
+* there is $\varepsilon > 0$ such that for every $x^{(0)}$ with
+  $|x^{(0)} - \alpha| < \varepsilon$ the Newton iterates converge to $\alpha$ with order $2$ in
+  the sense of Definition 6.1;
+* for every $x^{(0)}$ whose Newton iterates converge to $\alpha$ and satisfy
+  $x^{(k)} \neq \alpha$ for all $k$, $$\lim_{k \to \infty} \frac{x^{(k+1)} - \alpha}{(x^{(k)} -
+  \alpha)^2} = \frac{f''(\alpha)}{2 f'(\alpha)}.$$
+
+**Generalization.** The source obtains the order and the constant
+$\varphi_{\mathrm{Newt}}''(\alpha)/2!$ from Property 6.4 with $p = 1$, which needs $f \in C^3$.
+Here $f \in C^2$ is enough.
+
+The Newton iterates are `QuarteroniSaccoSaleri.Chapter06.newton f (deriv f)`. The proof
+specializes `Newton.hasIterationOrder_scalarStep_two` and
+`Newton.tendsto_scalarStep_sub_div_sq`. -/
 theorem newton_order_two (hα : f α = 0) (hf : ContDiffAt ℝ 2 f α) (hf' : deriv f α ≠ 0) :
     (∃ ε > 0, ∀ x₀ ∈ Metric.ball α ε, definition_6_1 (newton f (deriv f) x₀) α 2) ∧
       ∀ x₀, (∀ k, newton f (deriv f) x₀ k ≠ α) → Tendsto (newton f (deriv f) x₀) atTop (𝓝 α) →
@@ -338,10 +492,20 @@ theorem newton_order_two (hα : f α = 0) (hf : ContDiffAt ℝ 2 f α) (hf' : de
     refine this.congr fun k => ?_
     simp [Function.comp, newton, Function.iterate_succ_apply']
 
-/-- **(6.22).** If `α` is a root of `f` of multiplicity `m > 1` (`f ∈ C^{m+1}` near `α`), then
-`φ_Newt'(α) = 1 - 1/m` in the sense `(φ_Newt(x) - α) / (x - α) → 1 - 1/m` as `x → α`, `x ≠ α`;
-consequently Newton's method is no longer second-order convergent, but converges linearly with
-factor `1 - 1/m`. `Newton.tendsto_scalarStep_sub_div_of_isRootOfMultiplicity`,
+/-- **Equation (6.22)** of [quarteroni2000numerical]. Let $m > 1$, let $f$ be of class $C^{m+1}$ on
+a neighbourhood of $\alpha$, and let $\alpha$ be a root of $f$ of multiplicity $m$. Let
+$\varphi_{\mathrm{Newt}}(x) = x - f(x)/f'(x)$. Then
+$$\lim_{x \to \alpha,\ x \neq \alpha} \frac{\varphi_{\mathrm{Newt}}(x) - \alpha}{x - \alpha} =
+  1 - \frac{1}{m},$$
+and there is $\varepsilon > 0$ such that for every $x^{(0)}$ with
+$|x^{(0)} - \alpha| < \varepsilon$ the Newton iterates converge to $\alpha$ with order $1$ in
+the sense of Definition 6.1.
+
+The limit is the meaning of $\varphi_{\mathrm{Newt}}'(\alpha) = 1 - 1/m$ in the source. Newton's
+method is then no longer of order $2$, and converges linearly with factor $1 - 1/m$. The
+multiplicity is `IsRootOfMultiplicity`: $f^{(i)}(\alpha) = 0$ for $i < m$ and
+$f^{(m)}(\alpha) \neq 0$. The proof specializes
+`Newton.tendsto_scalarStep_sub_div_of_isRootOfMultiplicity` and
 `Newton.hasIterationOrder_scalarStep_one_of_isRootOfMultiplicity`. -/
 theorem equation_6_22 {m : ℕ} (hm : 1 < m) (hf : ContDiffAt ℝ (m + 1 : ℕ) f α)
     (hα : IsRootOfMultiplicity f α m) :
@@ -352,15 +516,26 @@ theorem equation_6_22 {m : ℕ} (hm : 1 < m) (hf : ContDiffAt ℝ (m + 1 : ℕ) 
   obtain ⟨ε, hε, h⟩ := Newton.hasIterationOrder_scalarStep_one_of_isRootOfMultiplicity hm hf hα
   exact ⟨ε, hε, fun x₀ hx₀ => definition_6_1_of_convergesWithOrder le_rfl (h x₀ hx₀)⟩
 
-/-- **(6.23), the modified Newton method** for a root of known multiplicity `m`:
-`x^{(k+1)} = x^{(k)} - m f(x^{(k)}) / f'(x^{(k)})`, the iteration of `Newton.modifiedScalarStep`. -/
+/-- **Equation (6.23)** of [quarteroni2000numerical], the **modified Newton method** for a root of
+known multiplicity $m$:
+$$x^{(k+1)} = x^{(k)} - m \frac{f(x^{(k)})}{f'(x^{(k)})}.$$
+
+The value at $k$ is the $k$-th iterate of `Newton.modifiedScalarStep f f' m` from $x^{(0)}$. The
+derivative $f'$ is passed as a function. -/
 noncomputable def equation_6_23 (f f' : ℝ → ℝ) (m : ℕ) (x₀ : ℝ) (k : ℕ) : ℝ :=
   (Newton.modifiedScalarStep f f' m)^[k] x₀
 
-/-- **Exercise 6.2** (cited by §6.3.1 for (6.22) and (6.23)). Let `α` be a root of `f` of
-multiplicity `m ≥ 1` (`f ∈ C^{m+1}` near `α`). Then (6.22) holds — the limit `1 - 1/m` of the
-Newton error ratios, which is `0` for `m = 1` — and the modified Newton method (6.23) has order
-`2`. The hint `f(x) = (x - α)^m h(x)`, `h(α) ≠ 0`, is `IsRootOfMultiplicity.exists_eq_pow_mul`;
+/-- **Exercise 6.2** of [quarteroni2000numerical], which Section 6.3.1 cites for (6.22) and (6.23).
+Let $m \ge 1$, let $f$ be of class $C^{m+1}$ on a neighbourhood of $\alpha$, and let $\alpha$ be
+a root of $f$ of multiplicity $m$. Then
+$$\lim_{x \to \alpha,\ x \neq \alpha} \frac{\varphi_{\mathrm{Newt}}(x) - \alpha}{x - \alpha} =
+  1 - \frac{1}{m},$$
+which is $0$ for $m = 1$, and there is $\varepsilon > 0$ such that for every $x^{(0)}$ with
+$|x^{(0)} - \alpha| < \varepsilon$ the modified Newton method (6.23), with the exact derivative
+of $f$, converges to $\alpha$ with order $2$ in the sense of Definition 6.1.
+
+The hint of the exercise, $f(x) = (x - \alpha)^m h(x)$ with $h(\alpha) \neq 0$, is
+`IsRootOfMultiplicity.exists_eq_pow_mul`. The proof of the order specializes
 `Newton.hasIterationOrder_modifiedScalarStep_two`. -/
 theorem exercise_6_2 {m : ℕ} (hm : 1 ≤ m) (hf : ContDiffAt ℝ (m + 1 : ℕ) f α)
     (hα : IsRootOfMultiplicity f α m) :

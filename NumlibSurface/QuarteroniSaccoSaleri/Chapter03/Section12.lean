@@ -7,67 +7,101 @@ import Numlib.LinearAlgebra.Matrix.Complexify
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter03.Section11
 
 /-!
-# Quarteroni–Sacco–Saleri §3.12: improving the accuracy of GEM
+# Quarteroni, Sacco and Saleri, Section 3.12: Improving the accuracy of GEM
 
-Surface file for Alfio Quarteroni, Riccardo Sacco and Fausto Saleri, *Numerical Mathematics*
-[quarteroni2000numerical], §3.12, over the backbone `Numlib/Direct/Refinement` (scaling
-`Matrix.scaled_mulVec_eq_iff`, iterative refinement `Refinement.step` as a stationary iteration
-with its exactness and its error recursion), `Numlib/Conditioning/LinearSystem/Componentwise`
-(the Skeel condition numbers `Matrix.skeelCond`, `Matrix.skeelCondAt` of Remark 3.7) and
-`Numlib/LinearAlgebra/Matrix/Complexify` (`ρ(B) < 1 ↔ Bᵏ → 0` for a real matrix).
+This module formalizes Section 3.12 of [quarteroni2000numerical], on two ways to improve the
+accuracy of Gaussian elimination for a linear system $Ax = b$ with $A \in \mathbb{R}^{n \times n}$.
+The first is scaling: the system is replaced by $(D_1 A D_2) y = D_1 b$ with nonsingular diagonal
+matrices $D_1, D_2$ and $y = D_2^{-1} x$. Remark 3.7 introduces the Skeel condition numbers
+$\operatorname{cond}(A) = \| |A^{-1}|\,|A| \|_\infty$ and $\operatorname{cond}(A, x) = \|
+|A^{-1}|\,|A|\,|x| \|_\infty / \|x\|_\infty$, which are invariant under row scaling. The second is
+iterative refinement: from an iterate $x^{(i)}$, compute the residual $r^{(i)} = b - A x^{(i)}$,
+solve $A z = r^{(i)}$ approximately by $z = C r^{(i)}$, and set $x^{(i+1)} = x^{(i)} + z$. In the
+book $C = (\hat L \hat U)^{-1}$ is the solve with the computed LU factors.
+
+In exact arithmetic the error obeys $x^{(k)} - x = (I - CA)^k (x^{(0)} - x)$, and the iteration
+converges for every right-hand side if and only if $\rho(I - CA) < 1$. In floating-point arithmetic
+the two convergence statements of the book, for fixed-precision and for mixed-precision refinement,
+are stated in the rigorous form of Theorems 12.2 and 12.1 of [higham2002accuracy]: the relative
+error contracts by an explicit factor $\rho < 1$ at each step, up to an explicit floor. The proofs
+specialize the backbone modules `Numlib.Direct.Refinement`,
+`Numlib.Conditioning.LinearSystem.Componentwise` and `Numlib.LinearAlgebra.Matrix.Complexify`.
+
+## Main definitions
+
+* Section 3.12.2, `QuarteroniSaccoSaleri.Chapter03.iterativeRefinementStep`: one step
+  $x \mapsto x + C(b - Ax)$ of iterative refinement with an approximate inverse $C$.
+
+## Main results
+
+* Section 3.12.1, `QuarteroniSaccoSaleri.Chapter03.scaledSystem`: $Ax = b$ if and only if
+  $(D_1 A D_2)(D_2^{-1} x) = D_1 b$, and if and only if $D_1 A x = D_1 b$.
+* Remark 3.7, `QuarteroniSaccoSaleri.Chapter03.remark_3_7`: the formulas for the Skeel condition
+  numbers $\operatorname{cond}(A)$ and $\operatorname{cond}(A, x)$.
+* Remark 3.7, `QuarteroniSaccoSaleri.Chapter03.remark_3_7_iSup`: $\operatorname{cond}(A)$ is the
+  supremum of $\operatorname{cond}(A, x)$ over $x \neq 0$.
+* Remark 3.7, `QuarteroniSaccoSaleri.Chapter03.remark_3_7_scaling`: $\operatorname{cond}(A, x)$ does
+  not change when $A$ is replaced by $DA$ for a nonsingular diagonal $D$.
+* Section 3.12.2, `QuarteroniSaccoSaleri.Chapter03.iterativeRefinementStep_eq`: the refinement step
+  is the stationary iteration $x \mapsto (I - CA)x + Cb$.
+* Section 3.12.2, `QuarteroniSaccoSaleri.Chapter03.iterativeRefinement_exact`: with the exact
+  inverse, or with an exact LU solve, one step gives the solution.
+* Section 3.12.2, `QuarteroniSaccoSaleri.Chapter03.iterativeRefinement_convergence`: the error
+  formula $x^{(k)} - x = (I - CA)^k (x^{(0)} - x)$, and convergence for every right-hand side if and
+  only if $\rho(I - CA) < 1$.
+* Section 3.12.2, `QuarteroniSaccoSaleri.Chapter03.iterativeRefinement_fixedPrecision`: in fixed
+  precision, the relative error contracts by a factor $\rho < 1$ up to a floor of about
+  $2(n + 1) \operatorname{cond}(A, x) u$.
+* Section 3.12.2, `QuarteroniSaccoSaleri.Chapter03.iterativeRefinement_mixedPrecision`: in mixed
+  precision, the relative error contracts by a factor $\rho < 1$ up to a floor of the order of $u$.
 
 ## Conventions
 
-Scaling matrices are `diagonal d` for `d : Fin n → ℝ` with nonzero entries. The Skeel condition
-numbers are the backbone's `Matrix.skeelCond A = ‖|A⁻¹| |A|‖_∞` and
-`Matrix.skeelCondAt A x = ‖|A⁻¹| |A| |x|‖_∞ / ‖x‖_∞`, in the `∞`-norms of §3.1. One step of
-iterative refinement with the approximate inverse `C` (in the book, the LU solve with the
-computed factors, `C = (L̂ Û)⁻¹`) is `iterativeRefinementStep C A b x = x + C (b - A x)`, the
-matrix form of the backbone's `Refinement.step`; the iterates `x⁽ⁱ⁾` are its `Function.iterate`
-from `x⁽⁰⁾`. The spectral radius of a real matrix is `Matrix.complexSpectralRadius`, as in
-chapter 1.
+* A scaling matrix is `Matrix.diagonal d` for `d : Fin n → ℝ` with nonzero entries.
+* The norms $\|\cdot\|_\infty$ are those of Section 3.1: the sup norm of `Fin n → ℝ` and the induced
+  operator norm of matrices (`Matrix.Norms.Operator`). The Skeel condition numbers are the backbone
+  definitions `Matrix.skeelCond` and `Matrix.skeelCondAt`.
+* One step of iterative refinement is the map
+  `QuarteroniSaccoSaleri.Chapter03.iterativeRefinementStep` applied to `C A b`. The iterate
+  `(iterativeRefinementStep C A b)^[i] x₀` is the iterate of index $i$ from the initial vector
+  $x^{(0)}$.
+* The spectral radius of a real matrix is `Matrix.complexSpectralRadius`, as in Chapter 1.
 
-## Contents
+## Implementation notes
 
-* `scaledSystem` — `A x = b ↔ (D₁ A D₂) y = D₁ b` with `y = D₂⁻¹ x`, and row scaling.
-* `remark_3_7`, `remark_3_7_iSup`, `remark_3_7_scaling` — the Skeel condition numbers.
-* `iterativeRefinementStep`, `iterativeRefinementStep_eq`, `iterativeRefinement_exact`,
-  `iterativeRefinement_convergence` — iterative refinement in exact arithmetic.
-* `iterativeRefinement_fixedPrecision`, `iterativeRefinement_mixedPrecision` — the two
-  finite-precision convergence statements of §3.12.2 (`ρ ≃ 2 n cond(A, x) u` for fixed-precision
-  and `ρ ≃ u` for mixed-precision refinement), in the rigorous form of [higham2002accuracy]
-  Theorems 12.2 and 12.1: the relative error obeys `e_{i+1} ≤ ρ e_i + φ` with explicit `ρ < 1`
-  and floor `φ`, hence `e_k ≤ ρᵏ e_0 + φ / (1 - ρ)` and `limsup e_k ≤ φ / (1 - ρ)`, where the
-  floor is `≈ 2 (n + 1) cond(A, x) u` in fixed precision and `≈ u` in mixed precision.
+* One step of iterative refinement in floating-point arithmetic (the exact error identity, its
+  $\infty$-norm form and its form in the rounding model) is a general fact and is in the backbone:
+  `Refinement.step_error`, `Refinement.norm_step_error_le` and `Refinement.step_error_fp`.
+* The computed steps of the two finite-precision theorems are the backbone predicates
+  `Refinement.RoundsStepLU` (residual in the working precision) and `Refinement.RoundsStepLUMixed`
+  (residual in a second, finer rounding model, rounded once to the working precision). The two
+  theorems specialize `Refinement.norm_sub_le_of_forall_roundsStepLU` and
+  `Refinement.norm_sub_le_of_forall_roundsStepLUMixed`.
 
-One step of iterative refinement in floating-point arithmetic — the exact error identity, its
-`∞`-norm form and its instantiation in the relational rounding model — is a general fact with no
-book-specific content and lives in the backbone as `Refinement.step_error`,
-`Refinement.norm_step_error_le` and `Refinement.step_error_fp`; the computed steps of the two
-convergence theorems are the backbone predicates `Refinement.RoundsStepLU` (residual in the
-working precision) and `Refinement.RoundsStepLUMixed` (residual in a second, finer rounding model,
-rounded once to the working precision), and the theorems are
-`Refinement.norm_sub_le_of_forall_roundsStepLU` and
-`Refinement.norm_sub_le_of_forall_roundsStepLUMixed`.
+## Deviations from the source
 
-Example 3.10 (a numerical run), the heuristics `‖D₂⁻¹(x̂ - x)‖/‖D₂⁻¹ x‖ ≃ u K_∞(D₁ A D₂)` (which is
-(3.69) for the scaled system) and `K_∞(A) ≃ β^{t(1 - 1/p)}`, and the stopping test of step 4 are
-not nodes.
+* **Remark 3.7** (typo). The book prints $\operatorname{cond}(A, x) = \| |A^{-1}|\,A\,|x|\,x
+  \|_\infty / \|x\|_\infty$. The library uses $\| |A^{-1}|\,|A|\,|x| \|_\infty / \|x\|_\infty$, the
+  definition of Skeel and of [higham2002accuracy], §7.2. See
+  `QuarteroniSaccoSaleri.Chapter03.remark_3_7`.
+* **Section 3.12.2, convergence in exact arithmetic** (reading). The convergence of iterative
+  refinement is stated as convergence of the iterates from every $x^{(0)}$ to one limit, for every
+  $b$. See `QuarteroniSaccoSaleri.Chapter03.iterativeRefinement_convergence`.
+* **Section 3.12.2, fixed-precision refinement** (reading). The display
+  $\rho \simeq 2n \operatorname{cond}(A, x) u$ is not a proposition as printed. It is read as
+  Theorem 12.2 of [higham2002accuracy], with explicit constants. See
+  `QuarteroniSaccoSaleri.Chapter03.iterativeRefinement_fixedPrecision`.
+* **Section 3.12.2, mixed-precision refinement** (reading). The display $\rho \simeq u$ is not a
+  proposition as printed. It is read as Theorem 12.1 of [higham2002accuracy], with explicit
+  constants. See `QuarteroniSaccoSaleri.Chapter03.iterativeRefinement_mixedPrecision`.
 
-## Readings and errata
+## Not formalized
 
-Remark 3.7 prints `cond(A, x) = ‖|A⁻¹| A |x| x‖_∞ / ‖x‖_∞`; it is read as
-`‖|A⁻¹| |A| |x|‖_∞ / ‖x‖_∞`, the definition of [Ske79] and [higham2002accuracy] §7.2. The
-convergence of iterative refinement in exact arithmetic is stated as "the iterates converge
-from every `x⁽⁰⁾` to one and the same limit, for every `b`, iff `ρ(I - C A) < 1`"; the backbone's
-`Refinement.forall_tendsto_iff_spectralRadius_lt_one` allows the limit to depend on the start and
-needs `C` onto instead (`C = 0` is a counterexample otherwise). The two displays
-`ρ ≃ 2 n cond(A, x) u` (FPR) and `ρ ≃ u` (MPR) of §3.12.2 are not propositions as printed (`≃`,
-and "sufficiently small" without a quantifier); they are read as [higham2002accuracy] Theorems
-12.2 and 12.1, the source the book cites, where the two quantities are the *limiting accuracy*
-of the refined solution and the contraction factor is `η ≈ u ‖|A⁻¹| (|A| + 3n |L̂| |Û|)‖_∞`.
-"sufficiently small" is the explicit hypothesis `2θ + γ_{n+1} cond(A) + 2u < 1` with
-`θ = γ_{3n} ‖|A⁻¹| |L̂| |Û|‖_∞`, and `≃` is replaced by the explicit constants of the model.
+* **Example 3.10**, a numerical run.
+* **The heuristic estimate** $\|D_2^{-1}(\hat x - x)\| / \|D_2^{-1} x\| \simeq u K_\infty(D_1 A
+  D_2)$, which is (3.69) for the scaled system.
+* **The heuristic estimate** $K_\infty(A) \simeq \beta^{t(1 - 1/p)}$.
+* **The stopping test** of step 4 of iterative refinement.
 -/
 
 open Filter Finset Matrix Topology WithLp
@@ -77,12 +111,17 @@ namespace QuarteroniSaccoSaleri.Chapter03
 
 variable {n : ℕ}
 
-/-! ### §3.12.1: scaling, and Remark 3.7 -/
+/-! ### Section 3.12.1: Scaling, and Remark 3.7 -/
 
-/-- **§3.12.1, scaling.** For nonsingular diagonal `D₁ = diag(d₁)` (scaling the equations) and
-`D₂ = diag(d₂)` (scaling the unknowns), the system `A x = b` is equivalent to the scaled system
-`(D₁ A D₂) y = D₁ b` with `y = D₂⁻¹ x`; row scaling alone is `D₁ A x = D₁ b` (backbone
-`Matrix.scaled_mulVec_eq_iff`). -/
+/-- **Section 3.12.1** of [quarteroni2000numerical], scaling. Let $A \in \mathbb{R}^{n \times n}$
+and $x, b \in \mathbb{R}^n$, and let $D_1 = \operatorname{diag}(d_1)$ and
+$D_2 = \operatorname{diag}(d_2)$ have nonzero diagonal entries. $D_1$ scales the equations and
+$D_2$ scales the unknowns. Then
+$$Ax = b \iff (D_1 A D_2)\,(D_2^{-1} x) = D_1 b,$$
+so that $Ax = b$ is equivalent to the scaled system $(D_1 A D_2) y = D_1 b$ with
+$y = D_2^{-1} x$. Row scaling alone gives $Ax = b \iff D_1 A x = D_1 b$.
+
+The proof specializes `Matrix.scaled_mulVec_eq_iff`. -/
 theorem scaledSystem {d₁ d₂ : Fin n → ℝ} (h₁ : ∀ i, d₁ i ≠ 0) (h₂ : ∀ i, d₂ i ≠ 0)
     (A : Matrix (Fin n) (Fin n) ℝ) (x b : Fin n → ℝ) :
     (A *ᵥ x = b ↔ (diagonal d₁ * A * diagonal d₂) *ᵥ ((diagonal d₂)⁻¹ *ᵥ x) = diagonal d₁ *ᵥ b) ∧
@@ -97,17 +136,31 @@ theorem scaledSystem {d₁ d₂ : Fin n → ℝ} (h₁ : ∀ i, d₁ i ≠ 0) (h
   rwa [Matrix.mul_one, inv_one, one_mulVec] at h
 
 open scoped Matrix.Norms.Operator in
-/-- **Remark 3.7, the Skeel condition numbers.** `cond(A) = ‖|A⁻¹| |A|‖_∞` and, for `x ≠ 0`,
-`cond(A, x) = ‖|A⁻¹| |A| |x|‖_∞ / ‖x‖_∞` (the book's display is read with the missing absolute
-values restored): the backbone's `Matrix.skeelCond A` and `Matrix.skeelCondAt A x`. -/
+/-- **Remark 3.7** of [quarteroni2000numerical], the Skeel condition numbers. For
+$A \in \mathbb{R}^{n \times n}$, the Skeel condition number of $A$ is
+$$\operatorname{cond}(A) = \| |A^{-1}|\,|A| \|_\infty,$$
+and for every $x \in \mathbb{R}^n$ the Skeel condition number of the system is
+$$\operatorname{cond}(A, x) = \frac{\| |A^{-1}|\,|A|\,|x| \|_\infty}{\|x\|_\infty}.$$
+Here $|M|$ is the matrix of the absolute values of the entries of $M$.
+
+**Typo.** The book prints $\operatorname{cond}(A, x) = \| |A^{-1}|\,A\,|x|\,x \|_\infty /
+\|x\|_\infty$. The intended formula restores the absolute values of $A$ and removes the extra
+$x$, as in the definition of Skeel and in [higham2002accuracy], §7.2.
+
+The two numbers are `Matrix.skeelCond A` and `Matrix.skeelCondAt A x`. At $x = 0$ the quotient
+is $0 / 0 = 0$ in Lean. -/
 theorem remark_3_7 (A : Matrix (Fin n) (Fin n) ℝ) :
     skeelCond A = ‖A⁻¹.abs * A.abs‖ ∧
       ∀ x : Fin n → ℝ, skeelCondAt A x = ‖A⁻¹.abs *ᵥ (A.abs *ᵥ |x|)‖ / ‖x‖ :=
   ⟨by rw [skeelCond], fun x => by rw [skeelCondAt]⟩
 
-/-- **Remark 3.7, `cond(A) = sup_{x ≠ 0} cond(A, x)`** (backbone
-`Matrix.skeelCond_eq_iSup_skeelCondAt`, whose supremum over all `x` is the same, the junk
-value `cond(A, 0) = 0` changing nothing). -/
+/-- **Remark 3.7** of [quarteroni2000numerical], $\operatorname{cond}(A) = \sup_{x \neq 0}
+\operatorname{cond}(A, x)$. Let $A \in \mathbb{R}^{n \times n}$ with $n \ge 1$. Then the Skeel
+condition number $\operatorname{cond}(A)$ is the supremum of $\operatorname{cond}(A, x)$ over
+all nonzero $x \in \mathbb{R}^n$.
+
+The proof specializes `Matrix.skeelCond_eq_iSup_skeelCondAt`, whose supremum is over all $x$.
+The value $\operatorname{cond}(A, 0) = 0$ does not change this supremum. -/
 theorem remark_3_7_iSup [NeZero n] (A : Matrix (Fin n) (Fin n) ℝ) :
     skeelCond A = ⨆ x : {x : Fin n → ℝ // x ≠ 0}, skeelCondAt A x := by
   rw [skeelCond_eq_iSup_skeelCondAt]
@@ -123,30 +176,45 @@ theorem remark_3_7_iSup [NeZero n] (A : Matrix (Fin n) (Fin n) ℝ) :
     exact skeelCondAt_nonneg _
   · exact le_ciSup hbdd' ⟨x, hx⟩
 
-/-- **Remark 3.7, invariance under row scaling.** Unlike `K(A)`, `cond(A, x)` is invariant under
-`A ↦ D A` for a nonsingular diagonal `D` (backbone `Matrix.skeelCondAt_diagonal_mul`). -/
+/-- **Remark 3.7** of [quarteroni2000numerical], invariance under row scaling. Let
+$A \in \mathbb{R}^{n \times n}$, $x \in \mathbb{R}^n$, and let $D = \operatorname{diag}(d)$ have
+nonzero diagonal entries. Then
+$$\operatorname{cond}(DA, x) = \operatorname{cond}(A, x).$$
+The condition number $K(A)$ does not have this property.
+
+The proof specializes `Matrix.skeelCondAt_diagonal_mul`. -/
 theorem remark_3_7_scaling {d : Fin n → ℝ} (hd : ∀ i, d i ≠ 0) (A : Matrix (Fin n) (Fin n) ℝ)
     (x : Fin n → ℝ) : skeelCondAt (diagonal d * A) x = skeelCondAt A x :=
   skeelCondAt_diagonal_mul hd x
 
-/-! ### §3.12.2: iterative refinement -/
+/-! ### Section 3.12.2: Iterative refinement -/
 
 section Refinement
 
 variable (C A : Matrix (Fin n) (Fin n) ℝ) (b : Fin n → ℝ)
 
-/-- **§3.12.2, one step of iterative refinement**, steps 1–3: from the current `x⁽ⁱ⁾`, compute
-the residual `r⁽ⁱ⁾ = b - A x⁽ⁱ⁾`, solve `A z = r⁽ⁱ⁾` approximately, `z = C r⁽ⁱ⁾` — in the book by
-the LU factorization of `A`, `C = (L̂ Û)⁻¹` — and set `x⁽ⁱ⁺¹⁾ = x⁽ⁱ⁾ + z`. This is the matrix form
-of the backbone's `Refinement.step` (`iterativeRefinementStep_eq`). -/
+/-- **Section 3.12.2** of [quarteroni2000numerical], one step of iterative refinement (steps 1 to
+3). Let $C, A \in \mathbb{R}^{n \times n}$ and $b \in \mathbb{R}^n$. From the current iterate
+$x^{(i)}$, compute the residual $r^{(i)} = b - A x^{(i)}$, solve $Az = r^{(i)}$ approximately by
+$z = C r^{(i)}$, and set
+$$x^{(i+1)} = x^{(i)} + C\,(b - A x^{(i)}).$$
+
+In the book $C = (\hat L \hat U)^{-1}$ is the solve with the computed LU factors of $A$. This
+definition is the matrix form of the backbone `Refinement.step`; see
+`QuarteroniSaccoSaleri.Chapter03.iterativeRefinementStep_eq`. -/
 noncomputable def iterativeRefinementStep (x : Fin n → ℝ) : Fin n → ℝ :=
   x + C *ᵥ (b - A *ᵥ x)
 
 variable (p : ℝ≥0∞) [Fact (1 ≤ p)]
 
-/-- The refinement step is the backbone's `Refinement.step` on `PiLp p (Fin n → ℝ)`, and it is
-the stationary iteration `x ↦ (I - C A) x + C b` (backbone
-`Refinement.step_eq_stationary_step`). -/
+/-- **Section 3.12.2** of [quarteroni2000numerical], the refinement step as a stationary iteration.
+Let $C, A \in \mathbb{R}^{n \times n}$, $b, x \in \mathbb{R}^n$ and $1 \le p \le \infty$. The
+refinement step from $x$, viewed in $\ell^p$, is the backbone step `Refinement.step` for the
+operators of $C$ and $A$, and
+$$x + C(b - Ax) = (I - CA)\,x + Cb.$$
+
+The operators are `Matrix.lpCLM p C` and `Matrix.lpCLM p A` on `PiLp p (fun _ : Fin n => ℝ)`.
+The second equality specializes `Refinement.step_eq_stationary_step`. -/
 theorem iterativeRefinementStep_eq (x : Fin n → ℝ) :
     toLp p (iterativeRefinementStep C A b x) =
         Refinement.step (lpCLM p C) (lpCLM p A) (toLp p b) (toLp p x) ∧
@@ -157,7 +225,8 @@ theorem iterativeRefinementStep_eq (x : Fin n → ℝ) :
   · rw [iterativeRefinementStep, sub_mulVec, one_mulVec, mulVec_sub, mulVec_mulVec]
     abel
 
-/-- The iterates of the refinement step are those of the backbone's `Refinement.step`. -/
+/-- The iterates of the refinement step, viewed in $\ell^p$, are the iterates of the backbone step
+`Refinement.step`. -/
 private theorem toLp_iterate (x₀ : Fin n → ℝ) (k : ℕ) :
     toLp p ((iterativeRefinementStep C A b)^[k] x₀) =
       (Refinement.step (lpCLM p C) (lpCLM p A) (toLp p b))^[k] (toLp p x₀) :=
@@ -165,11 +234,18 @@ private theorem toLp_iterate (x₀ : Fin n → ℝ) (k : ℕ) :
 
 variable {C A b}
 
-/-- **§3.12.2, exactness.** "In absence of rounding errors, the process would stop at the first
-step, yielding the exact solution": with the exact inverse `C = A⁻¹` — or the exact LU solve
-`z = U⁻¹ (L⁻¹ r)` of Theorem 3.4's factorization with nonzero pivots — one step from any `x`
-gives the solution `x*` of `A x = b` (backbone `Refinement.step_eq_of_eq_inverse`,
-`Matrix.mulVec_luSolve`). -/
+/-- **Section 3.12.2** of [quarteroni2000numerical], exactness: "in absence of rounding errors, the
+process would stop at the first step, yielding the exact solution". Let
+$A \in \mathbb{R}^{n \times n}$ be nonsingular and let $x^* \in \mathbb{R}^n$ solve $Ax^* = b$.
+Then for every $x \in \mathbb{R}^n$:
+
+* one refinement step from $x$ with $C = A^{-1}$ gives $x^*$;
+* for every LU factorization $A = LU$ (with $L$ unit lower triangular and $U$ upper triangular)
+  whose pivots $u_{ii}$ are nonzero, $x + U^{-1}(L^{-1}(b - Ax)) = x^*$, where the solve is by
+  forward and backward substitution.
+
+The LU factorization is `Matrix.IsLU A L U`, and the solve is `Matrix.luSolve L U`. The proof
+specializes `Refinement.step_eq_of_eq_inverse` and `Matrix.mulVec_luSolve`. -/
 theorem iterativeRefinement_exact (hA : IsUnit A) {xs : Fin n → ℝ} (hxs : A *ᵥ xs = b)
     (x : Fin n → ℝ) :
     iterativeRefinementStep A⁻¹ A b x = xs ∧
@@ -191,13 +267,26 @@ theorem iterativeRefinement_exact (hA : IsUnit A) {xs : Fin n → ℝ} (hxs : A 
   rw [hz]
   exact h1
 
-/-- **§3.12.2, convergence in exact arithmetic.** Iterative refinement with the approximate
-inverse `C` is the stationary iteration with matrix `I - C A`: for a solution `x*` of `A x = b`
-the error obeys `x⁽ᵏ⁾ - x* = (I - C A)ᵏ (x⁽⁰⁾ - x*)`, so it is reduced by a factor
-`‖I - C A‖_p` at each step (backbone `Refinement.iterate_sub_eq`,
-`Refinement.norm_iterate_sub_le`); and the iterates converge from every start to one and the
-same limit, for every right-hand side, iff `ρ(I - C A) < 1` (chapter 1's Theorem 1.5,
-backbone `Matrix.tendsto_pow_iff_complexSpectralRadius_lt_one`). -/
+/-- **Section 3.12.2** of [quarteroni2000numerical], convergence in exact arithmetic. Let
+$C, A \in \mathbb{R}^{n \times n}$ and $1 \le p \le \infty$, and let $x^{(k)}$ be the iterates
+of iterative refinement with the approximate inverse $C$ from $x^{(0)}$.
+
+* For every $b$ and every solution $x^*$ of $Ax^* = b$, and for all $x^{(0)}$ and $k$,
+$$x^{(k)} - x^* = (I - CA)^k (x^{(0)} - x^*), \qquad \|x^{(k)} - x^*\|_p \le \|I - CA\|_p^k\,
+  \|x^{(0)} - x^*\|_p.$$
+* The following are equivalent: for every $b \in \mathbb{R}^n$ there is an $x$ such that the
+  iterates converge to $x$ from every $x^{(0)}$; and $\rho(I - CA) < 1$.
+
+**Reading.** The formal statement reads the convergence of iterative refinement as convergence
+of the iterates from every start to one and the same limit, for every right-hand side. The
+backbone `Refinement.forall_tendsto_iff_spectralRadius_lt_one` lets the limit depend on the
+start, and needs $C$ to be onto instead: for $C = 0$ every iterate equals $x^{(0)}$, so the
+iterates converge, but $\rho(I) = 1$.
+
+The norm $\|I - CA\|_p$ is `Matrix.lpOpNorm p (1 - C * A)`, and $\rho$ is
+`Matrix.complexSpectralRadius`. The proof specializes `Refinement.iterate_sub_eq`,
+`Refinement.norm_iterate_sub_le` and Theorem 1.5 of Chapter 1
+(`Matrix.tendsto_pow_iff_complexSpectralRadius_lt_one`). -/
 theorem iterativeRefinement_convergence (C A : Matrix (Fin n) (Fin n) ℝ) :
     (∀ (b xs : Fin n → ℝ), A *ᵥ xs = b → ∀ (x₀ : Fin n → ℝ) (k : ℕ),
       (iterativeRefinementStep C A b)^[k] x₀ - xs = ((1 - C * A) ^ k) *ᵥ (x₀ - xs) ∧
@@ -215,7 +304,7 @@ theorem iterativeRefinement_convergence (C A : Matrix (Fin n) (Fin n) ℝ) :
 
 end Refinement
 
-/-! ### §3.12.2: iterative refinement in finite precision -/
+/-! ### Section 3.12.2: Iterative refinement in finite precision -/
 
 section FinitePrecision
 
@@ -224,35 +313,43 @@ open scoped Matrix.Norms.Operator
 
 variable [NeZero n] {m : RoundingModel ℝ} {A L U : Matrix (Fin n) (Fin n) ℝ} {b x : Fin n → ℝ}
 
-/-- Division of a recursion `a (k + 1) ≤ ρ a k + φ ‖x‖` by `‖x‖ > 0`. -/
+/-- Division of a recursion $a_{k+1} \le \rho a_k + \varphi c$ by a number $c > 0$. -/
 private theorem div_recursion {a : ℕ → ℝ} {ρ φ c : ℝ} (hc : 0 < c)
     (h : ∀ k, a (k + 1) ≤ ρ * a k + φ * c) (k : ℕ) : a (k + 1) / c ≤ ρ * (a k / c) + φ :=
   (div_le_div_of_nonneg_right (h k) hc.le).trans_eq
     (by rw [add_div, mul_div_assoc, mul_div_assoc, div_self hc.ne', mul_one])
 
-/-- **§3.12.2, fixed-precision iterative refinement (FPR)**, in the rigorous form of
-[higham2002accuracy] Theorem 12.2, which the book's display summarizes. Let `A x = b` with `A`
-nonsingular and `x ≠ 0`, let `L̂`, `Û` be the computed LU factors of `A` with nonzero pivots in a
-floating-point arithmetic with roundoff unit `u`, `3 n u < 1`, and let `x⁽⁰⁾, x⁽¹⁾, …` be
-iterates of the refinement algorithm (steps 1–3) computed in that arithmetic, the residual in the
-working precision (`Refinement.RoundsStepLU` at every step). Put
+/-- **Section 3.12.2** of [quarteroni2000numerical], fixed-precision iterative refinement, in the
+form of Theorem 12.2 of [higham2002accuracy]. Let $n \ge 1$, and consider a floating-point
+arithmetic with roundoff unit $u$ such that $3nu < 1$. Let $A \in \mathbb{R}^{n \times n}$ be
+nonsingular, and let $Ax = b$ with $x \neq 0$. Let $\hat L$, $\hat U$ be the computed LU factors
+of $A$, with nonzero pivots $\hat u_{jj}$. Let $x^{(0)}, x^{(1)}, \dots$ be iterates of
+refinement (steps 1 to 3) computed in this arithmetic, with the residual in the working
+precision. Let $\gamma_k = ku / (1 - ku)$, let $\operatorname{cond}(A)$ and
+$\operatorname{cond}(A, x)$ be the Skeel condition numbers of Remark 3.7, and put
+$$\theta = \gamma_{3n} \| |A^{-1}|\,|\hat L|\,|\hat U| \|_\infty, \qquad \rho = \frac{\theta +
+  \gamma_{n+1} \operatorname{cond}(A)}{1 - 2u - \theta}, \qquad \varphi = \frac{2 \gamma_{n+1}
+  \operatorname{cond}(A, x) + u(1 + \theta)}{1 - 2u - \theta}.$$
+If $2\theta + \gamma_{n+1} \operatorname{cond}(A) + 2u < 1$, then $\rho < 1$, and with
+$e_i = \|x - x^{(i)}\|_\infty / \|x\|_\infty$:
+$$e_{i+1} \le \rho\, e_i + \varphi \quad \text{for all } i, \qquad e_k \le \rho^k e_0 +
+  \frac{\varphi}{1 - \rho} \quad \text{for all } k, \qquad \limsup_{k \to \infty} e_k \le
+  \frac{\varphi}{1 - \rho}.$$
 
-`θ = γ_{3n} ‖|A⁻¹| |L̂| |Û|‖_∞`, `ρ = (θ + γ_{n+1} cond(A)) / (1 - 2u - θ)`,
-`φ = (2 γ_{n+1} cond(A, x) + u (1 + θ)) / (1 - 2u - θ)`,
+**Reading.** The book states that the relative error decreases with
+$\rho \simeq 2n \operatorname{cond}(A, x) u$, if $\| |A^{-1}|\,|\hat L|\,|\hat U| \|_\infty$ is
+sufficiently small. This is not a proposition as printed: it uses $\simeq$, and "sufficiently
+small" has no quantifier. The formal statement is Theorem 12.2 of [higham2002accuracy], the
+source that the book cites. "Sufficiently small" is the hypothesis $2\theta + \gamma_{n+1}
+\operatorname{cond}(A) + 2u < 1$, and $\simeq$ is replaced by the explicit constants. The book's
+$2n \operatorname{cond}(A, x) u$ is the limiting accuracy: the floor $\varphi$ is approximately
+$2(n + 1) \operatorname{cond}(A, x) u$. The contraction factor $\rho$ is approximately $u \|
+|A^{-1}| (3n |\hat L|\,|\hat U| + (n + 1) |A|) \|_\infty$, the number $\eta$ of
+[higham2002accuracy].
 
-with `cond(A)`, `cond(A, x)` the Skeel condition numbers of Remark 3.7 and
-`γ_k = k u / (1 - k u)`. If `‖|A⁻¹| |L̂| |Û|‖_∞` is sufficiently small — precisely, if
-`2θ + γ_{n+1} cond(A) + 2u < 1` — then `ρ < 1` and at each step the relative error
-`‖x - x⁽ⁱ⁾‖_∞ / ‖x‖_∞` is reduced by the factor `ρ` up to the floor `φ`:
-
-`‖x - x⁽ⁱ⁺¹⁾‖_∞ / ‖x‖_∞ ≤ ρ ‖x - x⁽ⁱ⁾‖_∞ / ‖x‖_∞ + φ`,
-
-hence `‖x - x⁽ᵏ⁾‖_∞ / ‖x‖_∞ ≤ ρᵏ ‖x - x⁽⁰⁾‖_∞ / ‖x‖_∞ + φ / (1 - ρ)`, and the limiting accuracy
-is `limsup_k ‖x - x⁽ᵏ⁾‖_∞ / ‖x‖_∞ ≤ φ / (1 - ρ)`, where `φ ≈ 2 (n + 1) cond(A, x) u`. The book's
-"`ρ ≃ 2 n cond(A, x) u`" is this floor (Higham's "until
-`‖x - x̂_i‖_∞ / ‖x‖_∞ ≲ 2n cond(A, x) u`"); the contraction factor itself is
-`ρ ≈ u ‖|A⁻¹| (3n |L̂| |Û| + (n + 1) |A|)‖_∞`, Higham's `η`. Backbone
-`Refinement.norm_sub_le_of_forall_roundsStepLU`. -/
+The proof specializes `Refinement.norm_sub_le_of_forall_roundsStepLU`. The computed factors
+satisfy `FloatingPoint.RoundsLU m A L U`, each computed step satisfies `Refinement.RoundsStepLU`,
+and `FloatingPoint.gamma m.u k` is the constant $\gamma_k$. -/
 theorem iterativeRefinement_fixedPrecision (hcard : ((3 * n : ℕ) : ℝ) * m.u < 1) (hA : IsUnit A)
     (hx : A *ᵥ x = b) (hx0 : x ≠ 0) (hLU : RoundsLU m A L U) (hd : ∀ j, U j j ≠ 0)
     {xs : ℕ → Fin n → ℝ} (hstep : ∀ i, Refinement.RoundsStepLU m A L U b (xs i) (xs (i + 1)))
@@ -293,26 +390,38 @@ theorem iterativeRefinement_fixedPrecision (hcard : ((3 * n : ℕ) : ℝ) * m.u 
       hφ0 hrec' k, ?_⟩
   exact Refinement.limsup_le_div_of_forall_le_mul_add hρ0 hρ1 hφ0 (fun k => by positivity) hrec'
 
-/-- **§3.12.2, mixed-precision iterative refinement (MPR)**, in the rigorous form of
-[higham2002accuracy] Theorem 12.1. As `iterativeRefinement_fixedPrecision`, but the residual
-`r⁽ⁱ⁾ = b - A x⁽ⁱ⁾` is computed in a second, finer floating-point arithmetic with roundoff unit
-`ū` ("double precision"), `(n + 1) ū < 1`, and rounded once to the working precision
-(`Refinement.RoundsStepLUMixed` at every step, a statement with two rounding models). Put
+/-- **Section 3.12.2** of [quarteroni2000numerical], mixed-precision iterative refinement, in the
+form of Theorem 12.1 of [higham2002accuracy]. Let $n \ge 1$, and consider a working
+floating-point arithmetic with roundoff unit $u$ such that $3nu < 1$, and a second, finer
+arithmetic with roundoff unit $\bar u$ such that $(n + 1) \bar u < 1$. Let
+$A \in \mathbb{R}^{n \times n}$ be nonsingular, and let $Ax = b$ with $x \neq 0$. Let $\hat L$,
+$\hat U$ be the LU factors of $A$ computed in the working arithmetic, with nonzero pivots
+$\hat u_{jj}$. Let $x^{(0)}, x^{(1)}, \dots$ be iterates of refinement (steps 1 to 3) computed
+in the working arithmetic, except that the residual $r^{(i)} = b - Ax^{(i)}$ is computed in the
+finer arithmetic and then rounded once to the working precision. Let $\gamma_k = ku / (1 - ku)$
+and $\bar\gamma_k = k \bar u / (1 - k \bar u)$, and put
+$$\theta = \gamma_{3n} \| |A^{-1}|\,|\hat L|\,|\hat U| \|_\infty, \qquad \rho = \frac{\theta +
+  (u + (1 + u) \bar\gamma_{n+1}) \operatorname{cond}(A)}{1 - 2u - \theta}, \qquad \varphi =
+  \frac{2(1 + u) \bar\gamma_{n+1} \operatorname{cond}(A, x) + u(1 + \theta)}{1 - 2u - \theta}.$$
+If $2\theta + (u + (1 + u) \bar\gamma_{n+1}) \operatorname{cond}(A) + 2u < 1$, then $\rho < 1$,
+and with $e_i = \|x - x^{(i)}\|_\infty / \|x\|_\infty$:
+$$e_{i+1} \le \rho\, e_i + \varphi \quad \text{for all } i, \qquad e_k \le \rho^k e_0 +
+  \frac{\varphi}{1 - \rho} \quad \text{for all } k, \qquad \limsup_{k \to \infty} e_k \le
+  \frac{\varphi}{1 - \rho}.$$
+Moreover, if the finer arithmetic has double the working precision, $\bar u \le u^2$, and
+$2(n + 1) \bar u \le 1$, then
+$$\varphi \le \frac{u \left(1 + \theta + 4(1 + u)(n + 1)\, u \operatorname{cond}(A,
+  x)\right)}{1 - 2u - \theta}.$$
 
-`θ = γ_{3n} ‖|A⁻¹| |L̂| |Û|‖_∞`, `ρ = (θ + (u + (1 + u) γ̄_{n+1}) cond(A)) / (1 - 2u - θ)`,
-`φ = (2 (1 + u) γ̄_{n+1} cond(A, x) + u (1 + θ)) / (1 - 2u - θ)`,
+**Reading.** The book states that the relative error decreases with $\rho \simeq u$,
+independently of the condition number of $A$. This is not a proposition as printed. The formal
+statement is Theorem 12.1 of [higham2002accuracy], the source that the book cites, with explicit
+constants in place of $\simeq$. The book's $u$ is the limiting accuracy: by the last bound, the
+floor $\varphi$ is of the order of $u$ and, to first order in $u$, independent of the condition
+number.
 
-with `γ̄_k = k ū / (1 - k ū)` the constant of the finer arithmetic. If
-`2θ + (u + (1 + u) γ̄_{n+1}) cond(A) + 2u < 1` then `ρ < 1`, the relative error is reduced by the
-factor `ρ` at each step up to the floor `φ`, `‖x - x⁽ᵏ⁾‖_∞ / ‖x‖_∞ ≤ ρᵏ ‖x - x⁽⁰⁾‖_∞ / ‖x‖_∞
-+ φ / (1 - ρ)`, and `limsup_k ‖x - x⁽ᵏ⁾‖_∞ / ‖x‖_∞ ≤ φ / (1 - ρ)`. Moreover, in double the
-working precision, `ū ≤ u²` with `2 (n + 1) ū ≤ 1`, the floor is
-
-`φ ≤ u (1 + θ + 4 (1 + u) (n + 1) u cond(A, x)) / (1 - 2u - θ)`,
-
-of the order of the roundoff unit `u` and independent of the condition number to first order in
-`u`: this is the book's "`ρ ≃ u`, independent of the condition number of `A`" (Higham's "until
-`‖x - x̂_i‖_∞ / ‖x‖_∞ ≈ u`"). Backbone `Refinement.norm_sub_le_of_forall_roundsStepLUMixed`. -/
+Each computed step satisfies `Refinement.RoundsStepLUMixed`, a predicate with the two rounding
+models. The proof specializes `Refinement.norm_sub_le_of_forall_roundsStepLUMixed`. -/
 theorem iterativeRefinement_mixedPrecision {m' : RoundingModel ℝ}
     (hcard : ((3 * n : ℕ) : ℝ) * m.u < 1) (hcard' : ((n + 1 : ℕ) : ℝ) * m'.u < 1) (hA : IsUnit A)
     (hx : A *ᵥ x = b) (hx0 : x ≠ 0) (hLU : RoundsLU m A L U) (hd : ∀ j, U j j ≠ 0)

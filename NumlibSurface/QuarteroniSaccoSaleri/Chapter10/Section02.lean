@@ -5,64 +5,83 @@ Released under Apache 2.0 license as described in the file LICENSE.
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter10.Section01
 
 /-!
-# Quarteroni–Sacco–Saleri §10.2: Gaussian integration and interpolation
+# Quarteroni, Sacco and Saleri, Section 10.2: Gaussian integration and interpolation
 
-Surface file for Alfio Quarteroni, Riccardo Sacco and Fausto Saleri, *Numerical Mathematics*,
-Springer, 2000, §10.2.
+This module formalizes Section 10.2 of [quarteroni2000numerical]. Let $x_0, \dots, x_n$ be $n + 1$
+distinct nodes in $[-1, 1]$ and let $w$ be a weight. The section studies the weighted quadrature
+rules $I_{n,w}(f) = \sum_i \alpha_i f(x_i)$ of (10.13) and their degree of exactness $r$ with
+respect to $w$, which means that the error $E_{n,w}(p) = I_w(p) - I_{n,w}(p)$ vanishes for every
+$p \in \mathbb{P}_r$. The interpolatory weights $\alpha_i = \int l_i w$ give degree of exactness at
+least $n$ (10.14). Jacobi's theorem (Theorem 10.1) characterizes degree $n + m$ by the orthogonality
+(10.15) of the nodal polynomial $\omega_{n+1}$ to $\mathbb{P}_{m-1}$. The maximal degree is $2n + 1$
+(Corollary 10.1), and only the Gauss nodes, the zeros of $p_{n+1}$ (10.16), attain it; their weights
+are positive and the nodes are interior.
 
-For `n + 1` distinct nodes `x₀, …, x_n` of `[-1, 1]` and a weight `w`, the section studies the
-weighted quadrature rules `I_{n,w}(f) = ∑ αᵢ f(xᵢ)` (10.13) and their *degree of exactness* `r`
-with respect to `w` (`E_{n,w}(p) = I_w(p) - I_{n,w}(p) = 0` for every `p ∈ ℙ_r`): interpolatory
-weights `αᵢ = ∫ lᵢ w` give degree of exactness at least `n` (10.14); Jacobi's theorem (Theorem
-10.1) characterizes degree `n + m` by the orthogonality of the nodal polynomial `ω_{n+1}` to
-`ℙ_{m-1}` (10.15); the maximal degree is `2n + 1` (Corollary 10.1), attained exactly by the Gauss
-nodes, the zeros of `p_{n+1}` (10.16), whose weights are positive and whose nodes are interior;
-the Gauss–Lobatto rule (10.17)–(10.18) includes the endpoints and has degree `2n - 1`, with its
-interpolant (10.19); Remark 10.2 identifies its interior nodes for a Jacobi weight with the
-extremants of the `n`-th Jacobi polynomial; Gaussian integration converges for every continuous
-integrand; and Remark 10.3 transports a rule from `[-1, 1]` to `[a, b]`.
-
-The backbone is the measure-level exactness theory of `Numlib/Approximation/Quadrature` —
-`Quadrature.IsExactOnMeasure`, `Quadrature.IsInterpolatoryMeasure`, Jacobi's theorem
-`Quadrature.isExactOnMeasure_add_iff` and its consequences, `Quadrature.exists_gauss`, the bridge
-`Quadrature.isExactOnMeasure_iff_isExactOn` to the Szegő–Pólya criterion
-`Quadrature.tendsto_of_nonneg`, and the affine transport
-`Quadrature.isExactOnMeasure_volume_Icc_of_affine` — together with the Gauss–Lobatto construction
-`Quadrature.exists_gaussLobatto` and the Jacobi identity
-`Quadrature.derivative_family_jacobiMeasure` of `Numlib/Approximation/GaussLobatto`.
+The Gauss–Lobatto rule (10.17)–(10.18) includes the endpoints and has degree of exactness $2n - 1$;
+(10.19) gives its interpolant. Remark 10.2 identifies its interior nodes for a Jacobi weight with
+the extremal points of the Jacobi polynomial of degree $n$. Gaussian and Gauss–Lobatto integration
+converge for every continuous integrand, and Remark 10.3 maps a rule from $[-1, 1]$ to $[a, b]$. The
+proofs specialize the exactness theory of `Numlib.Approximation.Quadrature` and the Gauss–Lobatto
+construction of `Numlib.Approximation.GaussLobatto`.
 
 ## Main results
 
-* `isExactOnMeasure_iff_forall_sub_eq_zero` — "degree of exactness `r` with respect to `w`" as the
-  book phrases it, `E_{n,w}(p) = 0` for all `p ∈ ℙ_r`.
-* `equation_10_14` — interpolatory weights give degree of exactness at least `n`, and conversely;
-  the rule is then the integral of the Lagrange interpolant.
-* `theorem_10_1` — Jacobi's theorem; `corollary_10_1` — the maximal degree of exactness is
-  `2n + 1`; `exists_gauss_nodes`, `equation_10_16` — the Gauss nodes are the `n + 1` zeros of
-  `p_{n+1}`, and they alone give degree `2n + 1`; `gauss_weights_pos_nodes_mem_Ioo` — positivity of
-  the Gauss weights and interiority of the Gauss nodes.
-* `equation_10_18` — the Gauss–Lobatto rule: the nodes `x̄₀ = -1, …, x̄_n = 1` are the roots of
-  `ω̄_{n+1} = p_{n+1} + a p_n + b p_{n-1}` with `ω̄_{n+1}(±1) = 0`, the weights `ᾱᵢ = ∫ l̄ᵢ w` are
-  positive, and the degree of exactness is `2n - 1`; `equation_10_19` — its interpolant.
-* `remark_10_2` — for a Jacobi weight the interior Gauss–Lobatto nodes are the zeros of
-  `(J_n^{(α,β)})'`.
-* `gauss_tendsto`, `gaussLobatto_tendsto` — convergence of Gaussian and Gauss–Lobatto integration
-  for every `f ∈ C⁰([-1, 1])`, from the backbone's `Quadrature.tendsto_of_isExactOnMeasure`.
-* `remark_10_3` — integration over an arbitrary interval.
+* Section 10.2, `QuarteroniSaccoSaleri.Chapter10.isExactOnMeasure_iff_forall_sub_eq_zero`: the
+  degree of exactness $r$ with respect to $w$ means $E_{n,w}(p) = 0$ for all $p \in \mathbb{P}_r$.
+* Equations (10.13)–(10.14), `QuarteroniSaccoSaleri.Chapter10.equation_10_14`: the weights are
+  interpolatory if and only if the degree of exactness is at least $n$, and then the rule is the
+  integral of the Lagrange interpolant.
+* Theorem 10.1, `QuarteroniSaccoSaleri.Chapter10.theorem_10_1`: Jacobi's characterization of degree
+  of exactness $n + m$.
+* Corollary 10.1, `QuarteroniSaccoSaleri.Chapter10.corollary_10_1`: the maximal degree of exactness
+  of a rule with $n + 1$ distinct nodes is $2n + 1$.
+* Equation (10.16), `QuarteroniSaccoSaleri.Chapter10.exists_gauss_nodes`: $p_{n+1}$ has $n + 1$
+  distinct real zeros.
+* Equation (10.16), `QuarteroniSaccoSaleri.Chapter10.equation_10_16`: a rule has degree of exactness
+  $2n + 1$ if and only if its nodes are the zeros of $p_{n+1}$ and its weights are interpolatory.
+* Section 10.2, `QuarteroniSaccoSaleri.Chapter10.gauss_weights_pos_nodes_mem_Ioo`: the Gauss weights
+  are positive and the Gauss nodes lie in $(-1, 1)$.
+* Equations (10.17)–(10.18), `QuarteroniSaccoSaleri.Chapter10.equation_10_18`: the Gauss–Lobatto
+  rule exists, with nodes $-1 = \bar x_0, \dots, \bar x_n = 1$, positive weights and degree of
+  exactness $2n - 1$.
+* Equation (10.19), `QuarteroniSaccoSaleri.Chapter10.equation_10_19`: the Gauss–Lobatto interpolant,
+  and the rule as its integral.
+* Remark 10.2, `QuarteroniSaccoSaleri.Chapter10.remark_10_2`: for a Jacobi weight, the interior
+  Gauss–Lobatto nodes are the zeros of $(J_n^{(\alpha,\beta)})'$.
+* Section 10.2, `QuarteroniSaccoSaleri.Chapter10.gauss_tendsto`: Gaussian integration converges for
+  every $f \in C^0([-1, 1])$.
+* Section 10.2, `QuarteroniSaccoSaleri.Chapter10.gaussLobatto_tendsto`: Gauss–Lobatto integration
+  converges for every $f \in C^0([-1, 1])$.
+* Remark 10.3, `QuarteroniSaccoSaleri.Chapter10.remark_10_3`: a rule on $[-1, 1]$ mapped affinely to
+  $[a, b]$ keeps its degree of exactness.
 
 ## Conventions
 
-A rule with `n + 1` nodes is a pair `x α : Fin (n + 1) → ℝ` of nodes and weights, "distinct" is
-`Function.Injective x`, the weight `w(x) dx` is a measure `μ` with `OrthogonalPolynomial.IsWeight μ`
-carried by `[-1, 1]` (`μ (Icc (-1) 1)ᶜ = 0`) where the interval matters, and "degree of exactness
-`r`" is `Quadrature.IsExactOnMeasure μ α x r`: `∑ αᵢ p(xᵢ) = ∫ p ∂μ` for every real polynomial `p`
-of degree at most `r`. The characteristic Lagrange polynomials `lᵢ` and the nodal polynomial
-`ω_{n+1}` are Mathlib's `Lagrange.basis Finset.univ x i` and `Lagrange.nodal Finset.univ x`, as in
-§8.1, and `{p_k}` is the monic orthogonal family `OrthogonalPolynomial.family μ` of §10.1. The
-Gauss–Lobatto nodes are produced as an injective enumeration with `x̄ 0 = -1` and `x̄ n = 1`, the
-book's labelling; the book's `J_n^{(α,β)}` is read as the monic `family (jacobiMeasure α β) n`,
-which has the same zeros and the same extremants. Continuous functions on `[-1, 1]` are `ℝ → ℝ`
-with `ContinuousOn f (Icc (-1) 1)`.
+* A rule with $n + 1$ nodes is a pair `x α : Fin (n + 1) → ℝ` of nodes and weights. The nodes are
+  distinct when `Function.Injective x`.
+* The weight $w(x)\,dx$ is a measure $\mu$ with `OrthogonalPolynomial.IsWeight μ`. Where the
+  interval matters, $\mu$ is carried by $[-1, 1]$, that is, `μ (Icc (-1) 1)ᶜ = 0`.
+* The degree of exactness $r$ is `Quadrature.IsExactOnMeasure μ α x r`:
+  $\sum_i \alpha_i p(x_i) = \int p \, d\mu$ for every real polynomial $p$ of degree at most $r$.
+* The characteristic Lagrange polynomials $l_i$ and the nodal polynomial $\omega_{n+1}$ are
+  Mathlib's `Lagrange.basis Finset.univ x i` and `Lagrange.nodal Finset.univ x`, as in Section 8.1.
+  The polynomials $\{p_k\}$ are the monic orthogonal family `OrthogonalPolynomial.family μ` of
+  Section 10.1.
+* The Gauss–Lobatto nodes are an injective enumeration with $\bar x_0 = -1$ and $\bar x_n = 1$, the
+  labelling of the book.
+* The Jacobi polynomial $J_n^{(\alpha,\beta)}$ of the book is the monic `OrthogonalPolynomial.family
+  (OrthogonalPolynomial.jacobiMeasure α β) n`, which has the same zeros and the same extremal
+  points.
+* A continuous function on $[-1, 1]$ is a function `f : ℝ → ℝ` with `ContinuousOn f (Icc (-1) 1)`.
+
+## Deviations from the source
+
+* **Remark 10.2** (typo). The book prints the Jacobi weight as $(1 - x)^\alpha (1 - x)^\beta$. The
+  library uses $(1 - x)^\alpha (1 + x)^\beta$. See `QuarteroniSaccoSaleri.Chapter10.remark_10_2`.
+* **Remark 10.3** (typo). The book prints the map $\varphi(\xi) = \frac{a + b}{2} \xi + \frac{b -
+  a}{2}$ and the factor $\frac{a + b}{2}$. The library uses $\varphi(\xi) = \frac{b - a}{2} \xi +
+  \frac{a + b}{2}$ and the factor $\frac{b - a}{2}$. See
+  `QuarteroniSaccoSaleri.Chapter10.remark_10_3`.
 -/
 
 open MeasureTheory Polynomial OrthogonalPolynomial Quadrature Real Set Filter Topology
@@ -73,25 +92,31 @@ variable {μ : Measure ℝ} {n : ℕ}
 
 /-! ### Degree of exactness with respect to a weight, and interpolatory rules (10.13)–(10.14) -/
 
-/-- **§10.2, the degree of exactness with respect to a weight**: the rule (10.13),
-`I_{n,w}(f) = ∑ᵢ αᵢ f(xᵢ)`, has degree of exactness `r` with respect to `w` when the error
-`E_{n,w}(p) = I_w(p) - I_{n,w}(p)` vanishes for every `p ∈ ℙ_r`. This is
-`Quadrature.IsExactOnMeasure μ α x r`, the form used throughout the chapter. -/
+/-- **Section 10.2** of [quarteroni2000numerical], the degree of exactness with respect to a weight.
+Let $\mu$ be a measure, and let a rule (10.13), $I_{n,w}(f) = \sum_i \alpha_i f(x_i)$, have
+weights $\alpha_i$ and nodes $x_i$. Then the rule has degree of exactness $r$ with respect to
+$\mu$ if and only if the error
+$$E_{n,w}(p) = I_w(p) - I_{n,w}(p)$$
+vanishes for every $p \in \mathbb{P}_r$.
+
+The left side is `Quadrature.IsExactOnMeasure μ α x r`, the form of the degree of exactness used
+in the whole chapter. -/
 theorem isExactOnMeasure_iff_forall_sub_eq_zero {m : ℕ} (α x : Fin m → ℝ) (r : ℕ) :
     IsExactOnMeasure μ α x r ↔
       ∀ p : ℝ[X], p.degree ≤ r → (∫ t, p.eval t ∂μ) - ∑ i, α i * p.eval (x i) = 0 :=
   forall₂_congr fun _ _ => by rw [sub_eq_zero, eq_comm]
 
-/-- **(10.13)–(10.14).** For `n + 1` distinct nodes `x₀, …, x_n` and a weight `w`, the rule
-`I_{n,w}(f) = ∑ᵢ αᵢ f(xᵢ)` has degree of exactness at least `n` exactly when its weights are
+/-- **Equations (10.13)–(10.14)** of [quarteroni2000numerical]. Let $\mu$ be a weight, and let
+$x_0, \dots, x_n$ be distinct nodes. The rule $I_{n,w}(f) = \sum_i \alpha_i f(x_i)$ has degree
+of exactness at least $n$ if and only if its weights are
+$$\alpha_i = \int_{-1}^1 l_i(x) w(x) \, dx, \qquad i = 0, \dots, n, \tag{10.14}$$
+where $l_i$ are the characteristic Lagrange polynomials of the nodes. In this case
+$I_{n,w}(f) = \int_{-1}^1 \Pi_n f(x) w(x) \, dx$ for every $f$, where $\Pi_n f$ is the Lagrange
+interpolant (8.4) of $f$.
 
-`αᵢ = ∫_{-1}^1 lᵢ(x) w(x) dx`, `i = 0, …, n`, (10.14)
-
-with `lᵢ` the characteristic Lagrange polynomials of the nodes, and then
-`I_{n,w}(f) = ∫_{-1}^1 Π_n f(x) w(x) dx` with `Π_n f` the Lagrange interpolant of `f` (8.4). The
-backbone's `Quadrature.isInterpolatoryMeasure_iff_isExactOnMeasure`; the book states the
-sufficiency, the converse being the remark of §9.1 that a formula on `n + 1` distinct nodes exact
-on `ℙ_n` is interpolatory. -/
+The book states the sufficiency. The converse is the remark of Section 9.1 that a formula on
+$n + 1$ distinct nodes that is exact on $\mathbb{P}_n$ is interpolatory. The proof specializes
+`Quadrature.isInterpolatoryMeasure_iff_isExactOnMeasure`. -/
 theorem equation_10_14 (hw : IsWeight μ) {x : Fin (n + 1) → ℝ} (hx : Function.Injective x)
     (α : Fin (n + 1) → ℝ) :
     ((∀ i, α i = ∫ t, (Lagrange.basis Finset.univ x i).eval t ∂μ) ↔ IsExactOnMeasure μ α x n) ∧
@@ -103,13 +128,14 @@ theorem equation_10_14 (hw : IsWeight μ) {x : Fin (n + 1) → ℝ} (hx : Functi
 
 /-! ### Theorem 10.1, Corollary 10.1 and the Gauss nodes (10.15)–(10.16) -/
 
-/-- **Theorem 10.1 (Jacobi).** For a given `m > 0`, the quadrature formula (10.13) on `n + 1`
-distinct nodes has degree of exactness `n + m` if and only if it is of interpolatory type and the
-nodal polynomial `ω_{n+1}` (8.6) associated with the nodes satisfies
+/-- **Theorem 10.1** of [quarteroni2000numerical] (Jacobi). Let $\mu$ be a weight, let $m > 0$, and
+let $x_0, \dots, x_n$ be distinct nodes. The quadrature formula (10.13) has degree of exactness
+$n + m$ if and only if it is of interpolatory type, that is, its weights are given by (10.14),
+and the nodal polynomial $\omega_{n+1}$ (8.6) of the nodes satisfies
+$$\int_{-1}^1 \omega_{n+1}(x) p(x) w(x) \, dx = 0 \quad \text{for all } p \in \mathbb{P}_{m-1}.
+  \tag{10.15}$$
 
-`∫_{-1}^1 ω_{n+1}(x) p(x) w(x) dx = 0` for all `p ∈ ℙ_{m-1}`. (10.15)
-
-The backbone's `Quadrature.isExactOnMeasure_add_iff`. -/
+The proof specializes `Quadrature.isExactOnMeasure_add_iff`. -/
 theorem theorem_10_1 (hw : IsWeight μ) {m : ℕ} (hm : 0 < m) {x : Fin (n + 1) → ℝ}
     (hx : Function.Injective x) (α : Fin (n + 1) → ℝ) :
     IsExactOnMeasure μ α x (n + m) ↔
@@ -118,10 +144,13 @@ theorem theorem_10_1 (hw : IsWeight μ) {m : ℕ} (hm : 0 < m) {x : Fin (n + 1) 
           ∫ t, (Lagrange.nodal Finset.univ x).eval t * p.eval t ∂μ = 0 :=
   isExactOnMeasure_add_iff hw hm hx α
 
-/-- **Corollary 10.1.** The maximum degree of exactness of a quadrature formula (10.13) with
-`n + 1` distinct nodes is `2n + 1`: no such rule is exact on `ℙ_{2n+2}`
+/-- **Corollary 10.1** of [quarteroni2000numerical]. Let $\mu$ be a weight. The maximum degree of
+exactness of a quadrature formula (10.13) with $n + 1$ distinct nodes is $2n + 1$.
+
+The maximum is stated with `IsGreatest` over the set of degrees $r$ for which such a rule
+exists. No rule with $n + 1$ distinct nodes is exact on $\mathbb{P}_{2n+2}$
 (`Quadrature.not_isExactOnMeasure_two_mul_add_two`), and the Gauss rule
-(`Quadrature.exists_gauss`) attains `2n + 1`. -/
+(`Quadrature.exists_gauss`) attains $2n + 1$. -/
 theorem corollary_10_1 (hw : IsWeight μ) (n : ℕ) :
     IsGreatest {r | ∃ x α : Fin (n + 1) → ℝ, Function.Injective x ∧ IsExactOnMeasure μ α x r}
       (2 * n + 1) := by
@@ -134,8 +163,11 @@ theorem corollary_10_1 (hw : IsWeight μ) (n : ℕ) :
     push Not at hlt
     exact not_isExactOnMeasure_two_mul_add_two hw α x (hexact.mono (by omega))
 
-/-- **The Gauss nodes exist**: `p_{n+1}` has `n + 1` distinct real zeros, the abscissae (10.16).
-The backbone's `OrthogonalPolynomial.exists_injective_family_eq_prod`. -/
+/-- **Equation (10.16)** of [quarteroni2000numerical], existence of the Gauss nodes. Let $\mu$ be a
+weight. Then the orthogonal polynomial $p_{n+1}$ has $n + 1$ distinct real zeros
+$x_0, \dots, x_n$, the abscissae of (10.16).
+
+The proof specializes `OrthogonalPolynomial.exists_injective_family_eq_prod`. -/
 theorem exists_gauss_nodes (hw : IsWeight μ) (n : ℕ) :
     ∃ x : Fin (n + 1) → ℝ, Function.Injective x ∧ ∀ j, (family μ (n + 1)).eval (x j) = 0 := by
   obtain ⟨x, hx, hprod⟩ := exists_injective_family_eq_prod hw (n + 1)
@@ -143,12 +175,14 @@ theorem exists_gauss_nodes (hw : IsWeight μ) (n : ℕ) :
   rw [hprod, eval_prod]
   exact Finset.prod_eq_zero (Finset.mem_univ j) (by simp)
 
-/-- **(10.16), the Gauss nodes.** A rule with `n + 1` distinct nodes has degree of exactness
-`2n + 1` — the maximum of Corollary 10.1 — if and only if its nodes are the zeros of the
-orthogonal polynomial `p_{n+1}`, `p_{n+1}(x_j) = 0` for `j = 0, …, n`, and its weights are given
-by (10.14): this is the *Gauss quadrature formula*. The backbone's
-`Quadrature.isExactOnMeasure_two_mul_add_one_iff`, the condition `ω_{n+1} = p_{n+1}` there being
-equivalent, for distinct nodes, to `p_{n+1}` vanishing at every node
+/-- **Equation (10.16)** of [quarteroni2000numerical], the Gauss nodes. Let $\mu$ be a weight, and
+let $x_0, \dots, x_n$ be distinct nodes. A rule on these nodes has degree of exactness $2n + 1$,
+the maximum of Corollary 10.1, if and only if its nodes are the zeros of $p_{n+1}$,
+$$p_{n+1}(x_j) = 0, \qquad j = 0, \dots, n,$$
+and its weights are given by (10.14). This rule is the **Gauss quadrature formula**.
+
+The proof specializes `Quadrature.isExactOnMeasure_two_mul_add_one_iff`. Its condition
+$\omega_{n+1} = p_{n+1}$ is equivalent, for distinct nodes, to $p_{n+1}(x_j) = 0$ for all $j$
 (`Quadrature.nodal_eq_family_of_forall_eval_eq_zero`). -/
 theorem equation_10_16 (hw : IsWeight μ) {x : Fin (n + 1) → ℝ} (hx : Function.Injective x)
     (α : Fin (n + 1) → ℝ) :
@@ -160,11 +194,14 @@ theorem equation_10_16 (hw : IsWeight μ) {x : Fin (n + 1) → ℝ} (hx : Functi
   rw [← h]
   exact Lagrange.eval_nodal_at_node (Finset.mem_univ j)
 
-/-- **§10.2, after (10.16).** The weights of the Gauss quadrature formula — a rule with `n + 1`
-distinct nodes and degree of exactness `2n + 1` — are all positive, and its nodes are internal to
-the interval `(-1, 1)` when the weight is carried by `[-1, 1]` (the book cites [CHQZ88], p. 56).
-Positivity is exactness on `lᵢ²`; the location is
-`OrthogonalPolynomial.root_family_mem_Ioo`, the nodes being the zeros of `p_{n+1}` by (10.16). -/
+/-- **Section 10.2** of [quarteroni2000numerical], the text after (10.16). Let $\mu$ be a weight
+carried by $[-1, 1]$, and let a rule have $n + 1$ distinct nodes $x_i$, weights $\alpha_i$ and
+degree of exactness $2n + 1$. Then $\alpha_i > 0$ and $x_i \in (-1, 1)$ for every $i$.
+
+The book refers for this fact to Canuto, Hussaini, Quarteroni and Zang (1988), p. 56. The
+positivity follows from exactness on $l_i^2$. The location of the nodes is
+`OrthogonalPolynomial.root_family_mem_Ioo`, because the nodes are the zeros of $p_{n+1}$ by
+(10.16). -/
 theorem gauss_weights_pos_nodes_mem_Ioo (hw : IsWeight μ) (hsupp : μ (Icc (-1 : ℝ) 1)ᶜ = 0)
     {x α : Fin (n + 1) → ℝ} (hx : Function.Injective x)
     (hexact : IsExactOnMeasure μ α x (2 * n + 1)) :
@@ -174,17 +211,29 @@ theorem gauss_weights_pos_nodes_mem_Ioo (hw : IsWeight μ) (hsupp : μ (Icc (-1 
 
 /-! ### The Gauss–Lobatto formula (10.17)–(10.19) -/
 
-/-- **(10.17)–(10.18), the Gauss–Lobatto formula.** For a weight `w` on `[-1, 1]` and `n ≥ 1`, the
-polynomial `ω̄_{n+1} = p_{n+1} + a p_n + b p_{n-1}` (10.17), with the constants `a`, `b` selected
-so that `ω̄_{n+1}(-1) = ω̄_{n+1}(1) = 0` — which determines `ω̄_{n+1}` — has `n + 1` distinct real
-roots `x̄₀ = -1, x̄₁, …, x̄_n = 1` in `[-1, 1]`; with the weights `ᾱᵢ = ∫_{-1}^1 l̄ᵢ w` of (10.14),
-which are positive, the formula
+/-- **Equations (10.17)–(10.18)** of [quarteroni2000numerical], the Gauss–Lobatto formula. Let $\mu$
+be a weight carried by $[-1, 1]$, and let $n \ge 1$. Consider the polynomial
+$$\bar\omega_{n+1} = p_{n+1} + a p_n + b p_{n-1}, \tag{10.17}$$
+with the constants $a, b$ chosen so that $\bar\omega_{n+1}(-1) = \bar\omega_{n+1}(1) = 0$. Then
+there are nodes $\bar x_0, \dots, \bar x_n$ and weights $\bar\alpha_0, \dots, \bar\alpha_n$ such
+that:
 
-`I^{GL}_{n,w}(f) = ∑ᵢ ᾱᵢ f(x̄ᵢ)` (10.18)
+* the nodes are distinct, lie in $[-1, 1]$, and satisfy $\bar x_0 = -1$ and $\bar x_n = 1$;
+* the nodal polynomial of the nodes is $\bar\omega_{n+1}$ for some $a, b$ with
+  $\bar\omega_{n+1}(\pm 1) = 0$;
+* every pair $a, b$ with $\bar\omega_{n+1}(\pm 1) = 0$ gives this nodal polynomial, so the two
+  conditions determine $\bar\omega_{n+1}$;
+* the weights are $\bar\alpha_i = \int_{-1}^1 \bar l_i w \, dx$ as in (10.14), and they are
+  positive;
+* the formula $I^{GL}_{n,w}(f) = \sum_i \bar\alpha_i f(\bar x_i)$ of (10.18) has degree of
+  exactness $2n - 1$.
 
-is the *Gauss–Lobatto formula* with `n + 1` nodes and has degree of exactness `2n - 1`. The
-backbone's `Quadrature.exists_gaussLobatto`, with `Quadrature.lobattoNodal_eq_add_smul` and
-`Quadrature.eq_lobattoNodal_of_eval_eq_zero` for the form (10.17) of the nodal polynomial. -/
+This is the **Gauss–Lobatto formula** with $n + 1$ nodes.
+
+The proof specializes `Quadrature.exists_gaussLobatto`, with
+`Quadrature.lobattoNodal_eq_add_smul` and `Quadrature.eq_lobattoNodal_of_eval_eq_zero` for the
+form (10.17) of the nodal polynomial. The polynomial $p_{n-1}$ is `family μ (n - 1)` with
+natural subtraction. -/
 theorem equation_10_18 (hw : IsWeight μ) (hsupp : μ (Icc (-1 : ℝ) 1)ᶜ = 0) (hn : 1 ≤ n) :
     ∃ x α : Fin (n + 1) → ℝ, Function.Injective x ∧ x 0 = -1 ∧ x (Fin.last n) = 1 ∧
       (∀ i, x i ∈ Icc (-1 : ℝ) 1) ∧
@@ -210,10 +259,16 @@ theorem equation_10_18 (hw : IsWeight μ) (hsupp : μ (Icc (-1 : ℝ) 1)ᶜ = 0)
     rw [hnodal]
     exact eq_lobattoNodal_of_eval_eq_zero hw hsupp hn h2 h1
 
-/-- **(10.19).** Denoting by `Π^{GL}_{n,w} f` the polynomial of degree `n` that interpolates `f` at
-the Gauss–Lobatto nodes `x̄ⱼ`, `Π^{GL}_{n,w} f(x) = ∑ᵢ f(x̄ᵢ) l̄ᵢ(x)`, and the Gauss–Lobatto formula
-is its integral: `I^{GL}_{n,w}(f) = ∫_{-1}^1 Π^{GL}_{n,w} f(x) w(x) dx`. Stated for any rule with
-the interpolatory weights `ᾱᵢ = ∫ l̄ᵢ w`, which the Gauss–Lobatto rule of `equation_10_18` has. -/
+/-- **Equation (10.19)** of [quarteroni2000numerical]. Let $\mu$ be a weight, and let a rule have
+nodes $\bar x_i$ and the interpolatory weights $\bar\alpha_i = \int \bar l_i w \, dx$. Let
+$\Pi^{GL}_{n,w} f$ be the polynomial of degree at most $n$ that interpolates $f$ at the nodes.
+Then
+$$\Pi^{GL}_{n,w} f(x) = \sum_i f(\bar x_i) \bar l_i(x),$$
+and the rule is its integral,
+$$I^{GL}_{n,w}(f) = \int_{-1}^1 \Pi^{GL}_{n,w} f(x) w(x) \, dx.$$
+
+The statement holds for any rule with interpolatory weights. The Gauss–Lobatto rule of
+`QuarteroniSaccoSaleri.Chapter10.equation_10_18` has such weights. -/
 theorem equation_10_19 (hw : IsWeight μ) {x α : Fin (n + 1) → ℝ}
     (hint : ∀ i, α i = ∫ t, (Lagrange.basis Finset.univ x i).eval t ∂μ) (f : ℝ → ℝ) :
     (Lagrange.interpolate Finset.univ x fun i => f (x i)) =
@@ -222,17 +277,24 @@ theorem equation_10_19 (hw : IsWeight μ) {x α : Fin (n + 1) → ℝ}
         ∫ t, (Lagrange.interpolate Finset.univ x fun i => f (x i)).eval t ∂μ :=
   ⟨Lagrange.interpolate_apply _ _ _, sum_mul_eq_integral_interpolate hw hint f⟩
 
-/-! ### Remark 10.2: the Gauss–Lobatto nodes of a Jacobi weight -/
+/-! ### Remark 10.2: The Gauss–Lobatto nodes of a Jacobi weight -/
 
-/-- **Remark 10.2.** For the Gauss–Lobatto quadrature with respect to the Jacobi weight
-`w(x) = (1 - x)^α (1 + x)^β`, `α, β > -1` (the book prints `(1 - x)^α (1 - x)^β`), the internal
-nodes `x̄₁, …, x̄_{n-1}` are the roots of the polynomial `(J_n^{(α,β)})'`, the extremants of the
-`n`-th Jacobi polynomial: a point of `(-1, 1)` is a node exactly when it is a zero of the derivative
-of the `n`-th orthogonal polynomial of the weight. The nodes are described as in (10.17), the
-`n + 1` distinct roots of `p_{n+1} + a p_n + b p_{n-1}` with the combination vanishing at `±1`.
-The backbone's `Quadrature.derivative_family_jacobiMeasure`:
-`(J_n^{(α,β)})' = n J_{n-1}^{(α+1,β+1)}` for the monic families, and the Lobatto nodal polynomial is
-`(x² - 1) J_{n-1}^{(α+1,β+1)}`. -/
+/-- **Remark 10.2** of [quarteroni2000numerical]. Let $\alpha, \beta > -1$, let $n \ge 1$, and let
+$\{J_k\}$ be the monic orthogonal polynomials of the Jacobi weight
+$w(x) = (1 - x)^\alpha (1 + x)^\beta$. Let $a, b \in \mathbb{R}$ be such that the polynomial
+$\bar\omega_{n+1} = J_{n+1} + a J_n + b J_{n-1}$ vanishes at $-1$ and at $1$, and let
+$\bar x_0, \dots, \bar x_n$ be distinct roots of $\bar\omega_{n+1}$. Then a point
+$t \in (-1, 1)$ is a node $\bar x_i$ if and only if $J_n'(t) = 0$. So the interior Gauss–Lobatto
+nodes are the roots of $(J_n^{(\alpha,\beta)})'$, the extremal points of the Jacobi polynomial
+of degree $n$.
+
+**Typo.** The book prints the weight as $(1 - x)^\alpha (1 - x)^\beta$. The intended weight is
+$(1 - x)^\alpha (1 + x)^\beta$.
+
+The nodes are described as in (10.17). The proof uses
+`Quadrature.derivative_family_jacobiMeasure`: for the monic families, $(J_n^{(\alpha,\beta)})' =
+n J_{n-1}^{(\alpha+1,\beta+1)}$, and the Gauss–Lobatto nodal polynomial is
+$(x^2 - 1) J_{n-1}^{(\alpha+1,\beta+1)}$. -/
 theorem remark_10_2 {α β : ℝ} (hα : -1 < α) (hβ : -1 < β) (hn : 1 ≤ n) {a b : ℝ}
     (h1 : (family (jacobiMeasure α β) (n + 1) + C a * family (jacobiMeasure α β) n +
       C b * family (jacobiMeasure α β) (n - 1)).eval (-1) = 0)
@@ -262,14 +324,17 @@ theorem remark_10_2 {α β : ℝ} (hα : -1 < α) (hβ : -1 < β) (hn : 1 ≤ n)
 
 /-! ### Convergence of Gaussian integration -/
 
-/-- **§10.2, the convergence of Gaussian integration** (the book cites [Atk89], Chapter 5). For a
-weight `w` carried by `[-1, 1]`, the Gauss formulae with `n + 1` nodes — rules with `n + 1`
-distinct nodes and degree of exactness `2n + 1` — satisfy
+/-- **Section 10.2** of [quarteroni2000numerical], the convergence of Gaussian integration. Let
+$\mu$ be a weight carried by $[-1, 1]$. For each $k$ let a rule have $k + 1$ distinct nodes
+$x_j^{(k)}$, weights $\alpha_j^{(k)}$ and degree of exactness $2k + 1$; these are the Gauss
+formulae. Then for every $f \in C^0([-1, 1])$,
+$$\lim_{k \to \infty} \left| \int_{-1}^1 f(x) w(x) \, dx - \sum_j \alpha_j^{(k)} f(x_j^{(k)})
+  \right| = 0.$$
 
-`lim_{n → ∞} |∫_{-1}^1 f(x) w(x) dx - ∑ⱼ αⱼ f(xⱼ)| = 0` for all `f ∈ C⁰([-1, 1])`.
-
-The Szegő–Pólya criterion `tendsto_of_isExactOnMeasure`, the weights being positive and the nodes
-interior by `gauss_weights_pos_nodes_mem_Ioo`. -/
+The book refers for this fact to Atkinson (1989), Chapter 5. The proof uses the Szegő–Pólya
+criterion `Quadrature.tendsto_of_isExactOnMeasure`. Its hypotheses hold because the weights are
+positive and the nodes are interior
+(`QuarteroniSaccoSaleri.Chapter10.gauss_weights_pos_nodes_mem_Ioo`). -/
 theorem gauss_tendsto (hw : IsWeight μ) (hsupp : μ (Icc (-1 : ℝ) 1)ᶜ = 0)
     {x α : ∀ k : ℕ, Fin (k + 1) → ℝ} (hx : ∀ k, Function.Injective (x k))
     (hexact : ∀ k, IsExactOnMeasure μ (α k) (x k) (2 * k + 1)) {f : ℝ → ℝ}
@@ -285,10 +350,15 @@ theorem gauss_tendsto (hw : IsWeight μ) (hsupp : μ (Icc (-1 : ℝ) 1)ᶜ = 0)
   refine h.congr fun k => ?_
   rw [Real.norm_eq_abs, abs_sub_comm]
 
-/-- **§10.2, "a similar result also holds for Gauss–Lobatto integration"**: for a weight carried
-by `[-1, 1]` and the Gauss–Lobatto formulae with `n + 1` nodes, `n ≥ 1` — rules with distinct
-nodes in `[-1, 1]`, positive weights and degree of exactness `2n - 1`, as `equation_10_18`
-provides — `∑ⱼ ᾱⱼ f(x̄ⱼ) → ∫_{-1}^1 f w` for every `f ∈ C⁰([-1, 1])`. Indexed by `k = n - 1`. -/
+/-- **Section 10.2** of [quarteroni2000numerical], "a similar result also holds for Gauss–Lobatto
+integration". Let $\mu$ be a weight carried by $[-1, 1]$. For each $n \ge 1$ let a rule have
+$n + 1$ distinct nodes in $[-1, 1]$, positive weights and degree of exactness $2n - 1$, as
+`QuarteroniSaccoSaleri.Chapter10.equation_10_18` provides. Then for every $f \in C^0([-1, 1])$,
+$$\lim_{n \to \infty} \left| \int_{-1}^1 f(x) w(x) \, dx - \sum_j \bar\alpha_j^{(n)} f(\bar
+  x_j^{(n)}) \right| = 0.$$
+
+The sequence of rules is indexed by $k = n - 1 \ge 0$, so the rule of index $k$ has $k + 2$
+nodes and degree of exactness $2(k + 1) - 1$. -/
 theorem gaussLobatto_tendsto (hw : IsWeight μ) (hsupp : μ (Icc (-1 : ℝ) 1)ᶜ = 0)
     {x α : ∀ k : ℕ, Fin (k + 2) → ℝ} (hx : ∀ k, Function.Injective (x k))
     (hmem : ∀ k i, x k i ∈ Icc (-1 : ℝ) 1) (hα : ∀ k i, 0 < α k i)
@@ -302,19 +372,23 @@ theorem gaussLobatto_tendsto (hw : IsWeight μ) (hsupp : μ (Icc (-1 : ℝ) 1)�
   refine h.congr fun k => ?_
   rw [Real.norm_eq_abs, abs_sub_comm]
 
-/-! ### Remark 10.3: integration over an arbitrary interval -/
+/-! ### Remark 10.3: Integration over an arbitrary interval -/
 
-/-- **Remark 10.3 (integration over an arbitrary interval).** A quadrature formula with nodes `ξⱼ`
-and coefficients `βⱼ` over `[-1, 1]` can be mapped onto any interval `[a, b]`: with the affine map
-`φ(ξ) = ((b - a)/2) ξ + (a + b)/2` from `[-1, 1]` onto `[a, b]`,
+/-- **Remark 10.3** of [quarteroni2000numerical] (integration over an arbitrary interval). Let
+$a < b$, and let a quadrature formula on $[-1, 1]$ with nodes $\xi_j$ and coefficients $\beta_j$
+be exact for the Lebesgue measure on all polynomials of degree at most $r$. Let $\varphi(\xi) =
+\frac{b - a}{2} \xi + \frac{a + b}{2}$ be the affine map of $[-1, 1]$ onto $[a, b]$. Then for
+every $f$
+$$\int_a^b f(x) \, dx = \frac{b - a}{2} \int_{-1}^1 (f \circ \varphi)(\xi) \, d\xi,$$
+and the formula with nodes $x_j = \varphi(\xi_j)$ and weights
+$\alpha_j = \frac{b - a}{2} \beta_j$ has degree of exactness $r$ on $[a, b]$.
 
-`∫_a^b f(x) dx = ((b - a)/2) ∫_{-1}^1 (f ∘ φ)(ξ) dξ`,
+**Typo.** The book prints the map as $\varphi(\xi) = \frac{a + b}{2} \xi + \frac{b - a}{2}$ and
+the factor as $\frac{a + b}{2}$. The printed map does not send $[-1, 1]$ onto $[a, b]$; both are
+read as here.
 
-so the formula with nodes `xⱼ = φ(ξⱼ)` and weights `αⱼ = ((b - a)/2) βⱼ` maintains on `[a, b]` the
-degree of exactness `r` of the generating formula. The backbone's
-`Quadrature.isExactOnMeasure_volume_Icc_of_affine`. Erratum: the book prints the map as
-`φ(ξ) = ((a + b)/2) ξ + (b - a)/2` and the factor as `(a + b)/2`; both read as here, the printed map
-not sending `[-1, 1]` onto `[a, b]`. -/
+The integrals are interval integrals. The proof specializes
+`Quadrature.isExactOnMeasure_volume_Icc_of_affine`. -/
 theorem remark_10_3 {a b : ℝ} (hab : a < b) {m : ℕ} {ξ β : Fin m → ℝ} {r : ℕ}
     (h : ∀ p : ℝ[X], p.degree ≤ r → ∑ j, p.eval (ξ j) * β j = ∫ t in (-1 : ℝ)..1, p.eval t) :
     (∀ f : ℝ → ℝ, ∫ t in a..b, f t =

@@ -5,47 +5,58 @@ Released under Apache 2.0 license as described in the file LICENSE.
 import Numlib.ODE.OneStep
 
 /-!
-# Quarteroni–Sacco–Saleri §11.2: one-step numerical methods
+# Quarteroni, Sacco and Saleri, Section 11.2: One-step numerical methods
 
-Surface file for Alfio Quarteroni, Riccardo Sacco and Fausto Saleri, *Numerical Mathematics*,
-Springer, 2000, §11.2.
+This module formalizes Section 11.2 of [quarteroni2000numerical]. The interval $[t_0, t_0 + T]$ is
+discretized by the nodes $t_n = t_0 + nh$, $n = 0, \dots, N_h$, where $N_h$ is the largest integer
+with $t_{N_h} \le t_0 + T$. Definition 11.2 separates one-step methods from multistep methods. The
+four elementary one-step methods are forward Euler (11.7), backward Euler (11.8), Crank–Nicolson
+(11.9) and Heun (11.10), written as the book writes them. Definition 11.3 separates explicit methods
+from implicit methods, and the module proves the book's classification of the four methods.
 
-The discretization of `[t₀, t₀ + T]` by the nodes `t_n = t₀ + n h`, `n = 0, …, N_h`, with `N_h`
-the largest integer such that `t_{N_h} ≤ t₀ + T`; Definition 11.2 (one-step versus multistep
-methods); the four elementary one-step methods — forward Euler (11.7), backward Euler (11.8),
-Crank–Nicolson (11.9) and Heun (11.10) — written as the book writes them; and Definition 11.3
-(explicit versus implicit methods), with the book's classification of the four.
-
-Everything is the scalar case `E = ℝ` of `Numlib/ODE/OneStep`: the grid is `ODE.node` and
-`ODE.gridCount`, a one-step method is a step relation `ODE.OneStep.StepRel ℝ` — for the methods
-of this chapter the relation `ODE.OneStep.ofIncrement Φ` of an increment function
-`Φ : ODE.OneStep.Increment ℝ` — and the four methods are `ODE.OneStep.forwardEuler`,
-`backwardEuler`, `crankNicolson`, `heun`.
+All statements are the scalar case $E = \mathbb{R}$ of `Numlib.ODE.OneStep`. The grid is `ODE.node`
+and `ODE.gridCount`. A one-step method is a step relation `ODE.OneStep.StepRel ℝ`; for the methods
+of this chapter it is the relation `ODE.OneStep.ofIncrement Φ` of an increment function
+`Φ : ODE.OneStep.Increment ℝ`. The four methods are `ODE.OneStep.forwardEuler`,
+`ODE.OneStep.backwardEuler`, `ODE.OneStep.crankNicolson` and `ODE.OneStep.heun`.
 
 ## Main definitions
 
-* `grid t₀ h n`, `gridCount T h` — the nodes `t_n` and their number `N_h`.
-* `definition_11_2 Φ` — the one-step method with increment function `Φ`, as a rule producing
-  `u_{n+1}` from `u_n`.
-* `equation_11_7 f`, `equation_11_8 f`, `equation_11_9 f`, `equation_11_10 f` — the four
-  methods, as increment functions.
-* `definition_11_3 Φ` — the method is explicit.
+* Section 11.2, `QuarteroniSaccoSaleri.Chapter11.grid` and
+  `QuarteroniSaccoSaleri.Chapter11.gridCount`: the nodes $t_n$ and their number $N_h$.
+* Definition 11.2, `QuarteroniSaccoSaleri.Chapter11.definition_11_2`: the one-step method with
+  increment function $\Phi$, as a rule that produces $u_{n+1}$ from $u_n$.
+* Equations (11.7)–(11.10), `QuarteroniSaccoSaleri.Chapter11.equation_11_7`,
+  `QuarteroniSaccoSaleri.Chapter11.equation_11_8`, `QuarteroniSaccoSaleri.Chapter11.equation_11_9`
+  and `QuarteroniSaccoSaleri.Chapter11.equation_11_10`: the four methods, as increment functions.
+* Definition 11.3, `QuarteroniSaccoSaleri.Chapter11.definition_11_3`: the method is explicit.
 
 ## Main results
 
-* `grid_gridCount_le`, `lt_grid_gridCount_succ` — `N_h` is the largest `n` with `t_n ≤ t₀ + T`.
-* `equation_11_7_iterate`, `equation_11_8_orbit`, `equation_11_9_orbit`, `equation_11_10_iterate`
-  — the four methods unfolded to the book's recursions.
-* `definition_11_3_forwardEuler`, `definition_11_3_heun`, `definition_11_3_backwardEuler`,
-  `definition_11_3_crankNicolson` — (11.7) and (11.10) are explicit, (11.8) and (11.9) are not.
+* Section 11.2, `QuarteroniSaccoSaleri.Chapter11.grid_gridCount_le` and
+  `QuarteroniSaccoSaleri.Chapter11.lt_grid_gridCount_succ`: $N_h$ is the largest $n$ with
+  $t_n \le t_0 + T$.
+* Definition 11.2, `QuarteroniSaccoSaleri.Chapter11.definition_11_2_iff`: the recursion
+  $u_{n+1} = u_n + h\Phi(t_n, u_n, u_{n+1}; h)$.
+* Equations (11.7)–(11.10), `QuarteroniSaccoSaleri.Chapter11.equation_11_7_iterate`,
+  `QuarteroniSaccoSaleri.Chapter11.equation_11_8_orbit`,
+  `QuarteroniSaccoSaleri.Chapter11.equation_11_9_orbit` and
+  `QuarteroniSaccoSaleri.Chapter11.equation_11_10_iterate`: the four methods unfolded to the
+  recursions of the book.
+* Definition 11.3, `QuarteroniSaccoSaleri.Chapter11.definition_11_3_forwardEuler`,
+  `QuarteroniSaccoSaleri.Chapter11.definition_11_3_heun`,
+  `QuarteroniSaccoSaleri.Chapter11.definition_11_3_backwardEuler` and
+  `QuarteroniSaccoSaleri.Chapter11.definition_11_3_crankNicolson`: (11.7) and (11.10) are explicit,
+  and (11.8) and (11.9) are implicit.
 
 ## Conventions
 
-The book's `f_n = f(t_n, u_n)` is written out; an increment function takes the arguments
-`Φ t u v h` where `v` is the new value `u_{n+1}` (inert for an explicit method), so that implicit
-methods are increment functions too. An orbit `u : ℕ → ℝ` of an increment function is
-`ODE.OneStep.IsOrbit (ODE.OneStep.ofIncrement Φ) h t₀ u`, and the explicit iteration from `y₀` is
-`ODE.OneStep.iterate Φ h t₀ y₀`.
+* The book's $f_n = f(t_n, u_n)$ is written out.
+* An increment function takes the arguments `Φ t u v h`, where `v` is the new value $u_{n+1}$. An
+  explicit method does not use `v`, so implicit methods are increment functions too.
+* A sequence $u : \mathbb{N} \to \mathbb{R}$ produced by an increment function is an orbit,
+  `ODE.OneStep.IsOrbit (ODE.OneStep.ofIncrement Φ) h t₀ u`. The explicit iteration from $y_0$ is
+  `ODE.OneStep.iterate Φ h t₀ y₀`, whose second component is $u_n$.
 -/
 
 open Set ODE ODE.OneStep
@@ -56,21 +67,31 @@ variable {f : ℝ → ℝ → ℝ} {t₀ T h y₀ : ℝ} {n : ℕ}
 
 /-! ### The grid -/
 
-/-- **The discretization nodes** `t_n = t₀ + n h` of §11.2 (`ODE.node`). -/
+/-- **Section 11.2** of [quarteroni2000numerical], the discretization nodes. For
+$t_0, h \in \mathbb{R}$ and $n \in \mathbb{N}$ the **node** is $t_n = t_0 + nh$.
+
+The definition is `ODE.node`. -/
 def grid (t₀ h : ℝ) (n : ℕ) : ℝ := ODE.node t₀ h n
 
-/-- `t_n = t₀ + n h`. -/
+/-- For $t_0, h \in \mathbb{R}$ and $n \in \mathbb{N}$, the node is $t_n = t_0 + nh$. -/
 theorem grid_eq (t₀ h : ℝ) (n : ℕ) : grid t₀ h n = t₀ + n * h := rfl
 
-/-- **The number of steps** `N_h`, the maximum integer such that `t_{N_h} ≤ t₀ + T`
-(`ODE.gridCount`). -/
+/-- **Section 11.2** of [quarteroni2000numerical], the number of steps. For $T, h \in \mathbb{R}$
+the **number of steps** is $N_h = \lfloor T/h \rfloor$, the natural-number floor of $T/h$, which
+is $0$ when $T/h < 0$. For $T \ge 0$ and $h > 0$ it is the largest integer $n$ with
+$t_n \le t_0 + T$, by `QuarteroniSaccoSaleri.Chapter11.grid_gridCount_le` and
+`QuarteroniSaccoSaleri.Chapter11.lt_grid_gridCount_succ`.
+
+The definition is `ODE.gridCount`. -/
 noncomputable def gridCount (T h : ℝ) : ℕ := ODE.gridCount T h
 
-/-- `t_{N_h} ≤ t₀ + T`. -/
+/-- **Section 11.2** of [quarteroni2000numerical]. Let $T \ge 0$ and $h > 0$. Then
+$t_{N_h} \le t_0 + T$. -/
 theorem grid_gridCount_le (hT : 0 ≤ T) (hh : 0 < h) : grid t₀ h (gridCount T h) ≤ t₀ + T :=
   (node_mem_Icc hT hh le_rfl).2
 
-/-- `N_h` is maximal: `t₀ + T < t_{N_h + 1}`. -/
+/-- **Section 11.2** of [quarteroni2000numerical], maximality of $N_h$. Let $T \ge 0$ and $h > 0$.
+Then $t_0 + T < t_{N_h + 1}$. -/
 theorem lt_grid_gridCount_succ (hT : 0 ≤ T) (hh : 0 < h) :
     t₀ + T < grid t₀ h (gridCount T h + 1) := by
   have : ¬ ((gridCount T h + 1 : ℕ) : ℝ) * h ≤ T := fun hle =>
@@ -81,24 +102,37 @@ theorem lt_grid_gridCount_succ (hT : 0 ≤ T) (hh : 0 < h) :
 
 /-! ### One-step methods -/
 
-/-- **Definition 11.2 (one-step methods)**: a numerical method is a one-step method if
-`u_{n+1}` depends only on `u_n`. The one-step methods of this chapter are the step relations
-`ODE.OneStep.ofIncrement (Φ f)` of an increment function `Φ` built from the field `f`: this is
-the rule `u_{n+1} = u_n + h Φ(t_n, u_n, u_{n+1}; h)`, an `ODE.OneStep.Method ℝ`. -/
+/-- **Definition 11.2** of [quarteroni2000numerical] (one-step methods). A numerical method is a
+**one-step method** if $u_{n+1}$ depends only on $u_n$. The one-step methods of this chapter are
+given by an increment function $\Phi$ built from the field $f$, through the rule
+$$u_{n+1} = u_n + h \Phi(t_n, u_n, u_{n+1}; h).$$
+
+The method is the map that sends $f$ to the step relation `ODE.OneStep.ofIncrement (Φ f)`. It is
+an `ODE.OneStep.Method ℝ`. -/
 def definition_11_2 (Φ : (ℝ → ℝ → ℝ) → ODE.OneStep.Increment ℝ) : ODE.OneStep.Method ℝ :=
   fun f => ODE.OneStep.ofIncrement (Φ f)
 
-/-- The one-step method with increment `Φ`, unfolded: `u_{n+1}` is determined by `u_n` (and
-`t_n`, `h`, `f`) through `u_{n+1} = u_n + h Φ(t_n, u_n, u_{n+1}; h)`. -/
+/-- **Definition 11.2** of [quarteroni2000numerical], unfolded. Let $\Phi$ build an increment
+function from the field $f$, and let $u : \mathbb{N} \to \mathbb{R}$. Then $u$ is an orbit of
+the one-step method with step $h$ from $t_0$ if and only if for every $n \in \mathbb{N}$
+$$u_{n+1} = u_n + h \Phi(t_n, u_n, u_{n+1}; h).$$
+So $u_{n+1}$ is determined by $u_n$, $t_n$, $h$ and $f$. -/
 theorem definition_11_2_iff (Φ : (ℝ → ℝ → ℝ) → ODE.OneStep.Increment ℝ) (u : ℕ → ℝ) :
     IsOrbit (definition_11_2 Φ f) h t₀ u ↔
       ∀ n, u (n + 1) = u n + h * Φ f (grid t₀ h n) (u n) (u (n + 1)) h :=
   isOrbit_ofIncrement_iff
 
-/-- **Forward Euler (11.7)**, `u_{n+1} = u_n + h f_n`: `ODE.OneStep.forwardEuler`. -/
+/-- **Equation (11.7)** of [quarteroni2000numerical], the forward Euler method
+$u_{n+1} = u_n + h f_n$. Its increment function is $\Phi(t, u, v; h) = f(t, u)$.
+
+The definition is `ODE.OneStep.forwardEuler`. -/
 def equation_11_7 (f : ℝ → ℝ → ℝ) : ODE.OneStep.Increment ℝ := forwardEuler f
 
-/-- The forward Euler iteration: `u_{n+1} = u_n + h f(t_n, u_n)`. -/
+/-- **Equation (11.7)** of [quarteroni2000numerical], the forward Euler iteration. For $f :
+\mathbb{R} \times \mathbb{R} \to \mathbb{R}$, $h, t_0, y_0 \in \mathbb{R}$ and
+$n \in \mathbb{N}$, the values $u_n$ of the iteration from $u_0 = y_0$ satisfy
+$$u_{n+1} = u_n + h f(t_n, u_n).$$
+-/
 theorem equation_11_7_iterate (f : ℝ → ℝ → ℝ) (h t₀ y₀ : ℝ) (n : ℕ) :
     (iterate (equation_11_7 f) h t₀ y₀ (n + 1)).2 =
       (iterate (equation_11_7 f) h t₀ y₀ n).2 +
@@ -106,10 +140,17 @@ theorem equation_11_7_iterate (f : ℝ → ℝ → ℝ) (h t₀ y₀ : ℝ) (n :
   rw [iterate_succ, step, iterate_fst]
   rfl
 
-/-- **Backward Euler (11.8)**, `u_{n+1} = u_n + h f_{n+1}`: `ODE.OneStep.backwardEuler`. -/
+/-- **Equation (11.8)** of [quarteroni2000numerical], the backward Euler method
+$u_{n+1} = u_n + h f_{n+1}$. Its increment function is $\Phi(t, u, v; h) = f(t + h, v)$.
+
+The definition is `ODE.OneStep.backwardEuler`. -/
 def equation_11_8 (f : ℝ → ℝ → ℝ) : ODE.OneStep.Increment ℝ := backwardEuler f
 
-/-- The backward Euler recursion: `u_{n+1} = u_n + h f(t_{n+1}, u_{n+1})`. -/
+/-- **Equation (11.8)** of [quarteroni2000numerical], the backward Euler recursion. A sequence
+$u : \mathbb{N} \to \mathbb{R}$ is an orbit of the backward Euler method with step $h$ from
+$t_0$ if and only if for every $n \in \mathbb{N}$
+$$u_{n+1} = u_n + h f(t_{n+1}, u_{n+1}).$$
+-/
 theorem equation_11_8_orbit (u : ℕ → ℝ) :
     IsOrbit (ofIncrement (equation_11_8 f)) h t₀ u ↔
       ∀ n, u (n + 1) = u n + h * f (grid t₀ h (n + 1)) (u (n + 1)) := by
@@ -118,11 +159,18 @@ theorem equation_11_8_orbit (u : ℕ → ℝ) :
   rw [grid, node_succ]
   rfl
 
-/-- **Crank–Nicolson (11.9)**, the trapezoidal method `u_{n+1} = u_n + (h/2) (f_n + f_{n+1})`:
-`ODE.OneStep.crankNicolson`. -/
+/-- **Equation (11.9)** of [quarteroni2000numerical], the Crank–Nicolson (trapezoidal) method
+$u_{n+1} = u_n + \frac{h}{2}(f_n + f_{n+1})$. Its increment function is $\Phi(t, u, v; h) =
+\frac{1}{2}(f(t, u) + f(t + h, v))$.
+
+The definition is `ODE.OneStep.crankNicolson`. -/
 noncomputable def equation_11_9 (f : ℝ → ℝ → ℝ) : ODE.OneStep.Increment ℝ := crankNicolson f
 
-/-- The Crank–Nicolson recursion: `u_{n+1} = u_n + (h/2) (f(t_n, u_n) + f(t_{n+1}, u_{n+1}))`. -/
+/-- **Equation (11.9)** of [quarteroni2000numerical], the Crank–Nicolson recursion. A sequence
+$u : \mathbb{N} \to \mathbb{R}$ is an orbit of the Crank–Nicolson method with step $h$ from
+$t_0$ if and only if for every $n \in \mathbb{N}$
+$$u_{n+1} = u_n + \frac{h}{2}\bigl(f(t_n, u_n) + f(t_{n+1}, u_{n+1})\bigr).$$
+-/
 theorem equation_11_9_orbit (u : ℕ → ℝ) :
     IsOrbit (ofIncrement (equation_11_9 f)) h t₀ u ↔
       ∀ n, u (n + 1) =
@@ -133,11 +181,18 @@ theorem equation_11_9_orbit (u : ℕ → ℝ) :
   simp only [equation_11_9, crankNicolson, smul_eq_mul]
   ring_nf
 
-/-- **Heun's method (11.10)**, `u_{n+1} = u_n + (h/2) (f_n + f(t_{n+1}, u_n + h f_n))`:
-`ODE.OneStep.heun`. -/
+/-- **Equation (11.10)** of [quarteroni2000numerical], Heun's method $u_{n+1} = u_n +
+\frac{h}{2}\bigl(f_n + f(t_{n+1}, u_n + h f_n)\bigr)$. Its increment function is $\Phi(t, u, v;
+h) = \frac{1}{2}\bigl(f(t, u) + f(t + h, u + h f(t, u))\bigr)$.
+
+The definition is `ODE.OneStep.heun`. -/
 noncomputable def equation_11_10 (f : ℝ → ℝ → ℝ) : ODE.OneStep.Increment ℝ := heun f
 
-/-- Heun's iteration: `u_{n+1} = u_n + (h/2) (f(t_n, u_n) + f(t_{n+1}, u_n + h f(t_n, u_n)))`. -/
+/-- **Equation (11.10)** of [quarteroni2000numerical], Heun's iteration. For $f : \mathbb{R} \times
+\mathbb{R} \to \mathbb{R}$, $h, t_0, y_0 \in \mathbb{R}$ and $n \in \mathbb{N}$, the values
+$u_n$ of the iteration from $u_0 = y_0$ satisfy
+$$u_{n+1} = u_n + \frac{h}{2}\bigl(f(t_n, u_n) + f(t_{n+1}, u_n + h f(t_n, u_n))\bigr).$$
+-/
 theorem equation_11_10_iterate (f : ℝ → ℝ → ℝ) (h t₀ y₀ : ℝ) (n : ℕ) :
     (iterate (equation_11_10 f) h t₀ y₀ (n + 1)).2 =
       (iterate (equation_11_10 f) h t₀ y₀ n).2 +
@@ -148,29 +203,33 @@ theorem equation_11_10_iterate (f : ℝ → ℝ → ℝ) (h t₀ y₀ : ℝ) (n 
   simp only [equation_11_10, heun, smul_eq_mul]
   ring_nf
 
-/-- **Definition 11.3 (explicit and implicit methods)**: the one-step method with increment
-`Φ` is explicit if `u_{n+1}` can be computed directly from `u_n`, i.e. `Φ` does not depend on
-its third argument `u_{n+1}` (`ODE.OneStep.IsExplicit`); it is implicit otherwise, `u_{n+1}`
-then depending on itself through `f`. -/
+/-- **Definition 11.3** of [quarteroni2000numerical] (explicit and implicit methods). The one-step
+method with increment function $\Phi$ is **explicit** if $u_{n+1}$ can be computed directly from
+$u_n$, that is, if $\Phi(t, u, v; h)$ does not depend on its third argument $v = u_{n+1}$.
+Otherwise the method is **implicit**, and $u_{n+1}$ depends on itself through $f$.
+
+The definition is `ODE.OneStep.IsExplicit`. -/
 def definition_11_3 (Φ : ODE.OneStep.Increment ℝ) : Prop := ODE.OneStep.IsExplicit Φ
 
-/-- Forward Euler (11.7) is explicit. -/
+/-- **Definition 11.3** of [quarteroni2000numerical], forward Euler. For every field $f$, the
+forward Euler method (11.7) is explicit. -/
 theorem definition_11_3_forwardEuler (f : ℝ → ℝ → ℝ) : definition_11_3 (equation_11_7 f) :=
   isExplicit_forwardEuler f
 
-/-- Heun's method (11.10) is explicit. -/
+/-- **Definition 11.3** of [quarteroni2000numerical], Heun's method. For every field $f$, Heun's
+method (11.10) is explicit. -/
 theorem definition_11_3_heun (f : ℝ → ℝ → ℝ) : definition_11_3 (equation_11_10 f) :=
   isExplicit_heun f
 
-/-- Backward Euler (11.8) is implicit: for the field `f(t, y) = y` its increment depends on
-`u_{n+1}`. -/
+/-- **Definition 11.3** of [quarteroni2000numerical], backward Euler. The backward Euler method
+(11.8) is implicit: for the field $f(t, y) = y$ its increment function depends on $u_{n+1}$. -/
 theorem definition_11_3_backwardEuler : ¬ definition_11_3 (equation_11_8 fun _ y => y) := by
   intro hex
   have := hex 0 0 0 1 0
   simp [equation_11_8, backwardEuler] at this
 
-/-- Crank–Nicolson (11.9) is implicit: for the field `f(t, y) = y` its increment depends on
-`u_{n+1}`. -/
+/-- **Definition 11.3** of [quarteroni2000numerical], Crank–Nicolson. The Crank–Nicolson method
+(11.9) is implicit: for the field $f(t, y) = y$ its increment function depends on $u_{n+1}$. -/
 theorem definition_11_3_crankNicolson : ¬ definition_11_3 (equation_11_9 fun _ y => y) := by
   intro hex
   have := hex 0 0 0 1 0

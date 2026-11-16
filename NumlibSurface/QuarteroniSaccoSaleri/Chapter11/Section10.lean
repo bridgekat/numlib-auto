@@ -6,28 +6,36 @@ import Numlib.Analysis.ODE.LinearSystem
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter11.Section09
 
 /-!
-# Quarteroni–Sacco–Saleri §11.10: stiff problems
+# Quarteroni, Sacco and Saleri, Section 11.10: Stiff Problems
 
-Surface file for Alfio Quarteroni, Riccardo Sacco and Fausto Saleri, *Numerical Mathematics*,
-Springer, 2000, §11.10.
+This module formalizes the stiffness quotient (11.86) of Section 11.10 of [quarteroni2000numerical].
+For a linear system $y' = Ay + \varphi(t)$ with constant coefficients whose eigenvalues satisfy
+$\sigma \le \operatorname{Re} \lambda_j \le \tau < 0$, the stiffness quotient is
+$r_s = \sigma / \tau$. The source calls the system stiff when all eigenvalues have negative real
+part and $r_s \gg 1$, which is not a definition. The module proves that $r_s \ge 1$ in that case.
 
-The stiffness quotient (11.86): for a linear system `y' = A y + φ(t)` with constant coefficients
-whose eigenvalues satisfy `σ ≤ Re λⱼ ≤ τ < 0`, `r_s = σ / τ`; the system is called stiff when the
-eigenvalues all have negative real parts and `r_s ≫ 1`, which is not a definition. Definition
-11.14 (Lambert's characterization of stiffness by the behaviour of methods with bounded
-stability regions) is informal and gets no node; the decomposition of the solution into transient
-and steady state, the fixed-point constraint `L ≥ max |λᵢ|` and the `A(t)` counterexample of the
-linearization discussion are unnumbered prose. The quotient is `ODE.stiffnessQuotient` of
-`Numlib/Analysis/ODE/LinearSystem` on the complexified matrix.
+The quotient is `ODE.stiffnessQuotient` of `Numlib.Analysis.ODE.LinearSystem`, applied to the
+complexified matrix.
 
 ## Main definitions
 
-* `stiffnessQuotient A` — `r_s = σ / τ` for a real matrix `A`.
+* Equation (11.86), `QuarteroniSaccoSaleri.Chapter11.stiffnessQuotient`: the stiffness quotient
+  $r_s = \sigma / \tau$ of a real matrix.
 
 ## Main results
 
-* `stiffnessQuotient_eq` — `r_s = (min Re λ) / (max Re λ)` over the spectrum.
-* `one_le_stiffnessQuotient` — `r_s ≥ 1` when every eigenvalue has negative real part.
+* Equation (11.86), `QuarteroniSaccoSaleri.Chapter11.stiffnessQuotient_eq`: $r_s$ is the least real
+  part of an eigenvalue divided by the greatest one.
+* Equation (11.86), `QuarteroniSaccoSaleri.Chapter11.one_le_stiffnessQuotient`: $r_s \ge 1$ when
+  every eigenvalue has negative real part.
+
+## Not formalized
+
+* **Definition 11.14**, Lambert's characterization of stiffness by the behaviour of methods with
+  bounded regions of absolute stability. It is informal.
+* The decomposition of the solution into a transient and a steady state, the constraint
+  $L \ge \max_i |\lambda_i|$ on the fixed-point iteration, and the counterexample with a matrix
+  $A(t)$ in the discussion of linearization. They are unnumbered prose.
 -/
 
 open Set Matrix
@@ -36,22 +44,35 @@ namespace QuarteroniSaccoSaleri.Chapter11
 
 variable {n : ℕ}
 
-/-- **The stiffness quotient (11.86)** `r_s = σ / τ` of a real matrix `A`, where
-`σ ≤ Re λⱼ ≤ τ` are the least and the greatest real parts of the (complex) eigenvalues of `A`;
-`ODE.stiffnessQuotient` of the complexified matrix. -/
+/-- **Equation (11.86)** of [quarteroni2000numerical]. The **stiffness quotient** of
+$A \in \mathbb{R}^{n \times n}$ is
+$$r_s = \frac{\sigma}{\tau}, \qquad \sigma = \min_j \operatorname{Re} \lambda_j, \quad \tau =
+  \max_j \operatorname{Re} \lambda_j,$$
+where $\lambda_j$ runs over the complex eigenvalues of $A$.
+
+The definition is `ODE.stiffnessQuotient` of the complexified matrix, with the infimum and the
+supremum of the real parts of the spectrum. If $A$ has no eigenvalue ($n = 0$), both are $0$ and
+$r_s = 0$; if $\tau = 0$, then $r_s = 0$, because Lean sets $x / 0 = 0$. -/
 noncomputable def stiffnessQuotient (A : Matrix (Fin n) (Fin n) ℝ) : ℝ :=
   ODE.stiffnessQuotient (A.map ((↑) : ℝ → ℂ))
 
-/-- `r_s = σ / τ` with `σ = min_j Re λⱼ` and `τ = max_j Re λⱼ`, the extrema of the real parts of
-the spectrum of `A` over `ℂ`. -/
+/-- **Equation (11.86)** of [quarteroni2000numerical], unfolded. For
+$A \in \mathbb{R}^{n \times n}$,
+$$r_s = \frac{\inf \{\operatorname{Re} \lambda : \lambda \in \sigma(A)\}}{\sup
+  \{\operatorname{Re} \lambda : \lambda \in \sigma(A)\}},$$
+where $\sigma(A) \subseteq \mathbb{C}$ is the spectrum of $A$ over $\mathbb{C}$. -/
 theorem stiffnessQuotient_eq (A : Matrix (Fin n) (Fin n) ℝ) :
     stiffnessQuotient A =
       sInf (Complex.re '' spectrum ℂ (A.map ((↑) : ℝ → ℂ))) /
         sSup (Complex.re '' spectrum ℂ (A.map ((↑) : ℝ → ℂ))) :=
   rfl
 
-/-- If `A` has an eigenvalue and every eigenvalue has negative real part, then `r_s ≥ 1`;
-`ODE.one_le_stiffnessQuotient`. -/
+/-- **Equation (11.86)** of [quarteroni2000numerical], the quotient is at least one. Let
+$A \in \mathbb{R}^{n \times n}$ have at least one eigenvalue, and let every eigenvalue of $A$
+have negative real part. Then $r_s \ge 1$.
+
+The proof specializes `ODE.one_le_stiffnessQuotient`: $\sigma \le \tau < 0$ gives
+$\sigma / \tau \ge 1$. -/
 theorem one_le_stiffnessQuotient (A : Matrix (Fin n) (Fin n) ℝ)
     (hne : (spectrum ℂ (A.map ((↑) : ℝ → ℂ))).Nonempty)
     (hneg : ∀ μ ∈ spectrum ℂ (A.map ((↑) : ℝ → ℂ)), μ.re < 0) : 1 ≤ stiffnessQuotient A :=

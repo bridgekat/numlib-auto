@@ -6,76 +6,115 @@ import Numlib.ODE.RungeKutta
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter11.Section03
 
 /-!
-# Quarteroni–Sacco–Saleri §11.8: Runge–Kutta methods
+# Quarteroni, Sacco and Saleri, Section 11.8: Runge–Kutta Methods
 
-Surface file for Alfio Quarteroni, Riccardo Sacco and Fausto Saleri, *Numerical Mathematics*,
-Springer, 2000, §11.8.
+This module formalizes Section 11.8 of [quarteroni2000numerical] for the scalar Cauchy problem
+$y' = f(t, y)$. An $s$-stage Runge–Kutta method with Butcher array $(A, b, c)$,
+$A \in \mathbb{R}^{s \times s}$, $b, c \in \mathbb{R}^s$, advances on the grid $t_n = t_0 + nh$ by
+$$u_{n+1} = u_n + h \sum_{i=1}^s b_i K_i, \qquad K_i = f\Big(t_n + c_i h,\ u_n + h \sum_{j=1}^s
+  a_{ij} K_j\Big).$$
+The module states the method (11.70)–(11.71), the row-sum condition (11.72), and the explicit,
+semi-implicit and implicit methods. It proves that an explicit method is consistent if and only if
+$\sum_i b_i = 1$, and that it is then zero-stable and convergent. It states the classical four-stage
+method (11.73) and proves its order four, the two-stage order conditions of Section 11.8.1, the
+embedded pairs (11.76) and the Runge–Kutta–Fehlberg pair of Section 11.8.2, the implicit methods of
+Section 11.8.3, and the stability function $R(z) = 1 + z b^T (I - zA)^{-1} \mathbf{1}$ with the
+regions of absolute stability of Section 11.8.4. Of Property 11.4 only the first clause is proved:
+an explicit $s$-stage method has order at most $s$.
 
-The general `s`-stage Runge–Kutta method (11.70)–(11.71) with its Butcher array, the row-sum
-condition (11.72), explicit, semi-implicit and implicit methods; the local truncation error, the
-consistency condition `∑ b_i = 1`, zero-stability and convergence of the explicit methods; the
-classical method (11.73); the two-stage order conditions of §11.8.1; embedded pairs (11.76) and
-the Runge–Kutta–Fehlberg pair (§11.8.2); the implicit families of §11.8.3; the stability function
-(11.77) and the regions of absolute stability (§11.8.4).
-
-Everything is the scalar case `E = ℝ` of `Numlib/ODE/RungeKutta` (the test problem on `ℂ`), with
-the one-step theory of §11.3. Of Butcher's order barriers (Property 11.4) only the first clause
-is proved — an explicit `s`-stage method has order at most `s`; the rest of that property, with
-Remarks 11.4–11.5, the step-doubling estimates (11.74)–(11.75) and the maximal orders of the
-implicit families, is not formalized (see `## Not formalized here` below).
+The proofs specialize `Numlib.ODE.RungeKutta` at the state space $\mathbb{R}$, and at $\mathbb{C}$
+for the test problem $y' = \lambda y$. The one-step theory of Section 11.3, in
+`NumlibSurface.QuarteroniSaccoSaleri.Chapter11.Section03`, supplies the notions of truncation error,
+order, zero-stability, convergence and absolute stability.
 
 ## Main definitions
 
-* `equation_11_71 tab f h t₀ u`, `equation_11_70_increment tab f` — the orbits of an RK method
-  and the increment of an explicit one.
-* `equation_11_72 tab`, `equation_11_71_explicit tab`, `equation_11_71_semiImplicit tab`,
-  `implicitRungeKutta tab` — the row-sum condition and the shapes of tableaux.
-* `rungeKutta_lte tab f h y t₀ n` — the local truncation error.
-* `equation_11_73` — the classical method.
-* `equation_11_76 s`, `equation_11_76_errorIndicator P f h t u`, `rkf45` — embedded pairs.
-* `stabilityFunction tab z` — the stability function `R`.
+* Equations (11.70)–(11.71), `QuarteroniSaccoSaleri.Chapter11.equation_11_71` and
+  `QuarteroniSaccoSaleri.Chapter11.equation_11_70_increment`: the orbits of a Runge–Kutta method,
+  and the increment function of an explicit one.
+* Equation (11.72), `QuarteroniSaccoSaleri.Chapter11.equation_11_72`: the row-sum condition
+  $c_i = \sum_j a_{ij}$.
+* Section 11.8, `QuarteroniSaccoSaleri.Chapter11.equation_11_71_explicit`,
+  `QuarteroniSaccoSaleri.Chapter11.equation_11_71_semiImplicit` and
+  `QuarteroniSaccoSaleri.Chapter11.implicitRungeKutta`: explicit, semi-implicit and implicit
+  methods.
+* Section 11.8, `QuarteroniSaccoSaleri.Chapter11.rungeKutta_lte`: the local truncation error of an
+  explicit method.
+* Equation (11.73), `QuarteroniSaccoSaleri.Chapter11.equation_11_73`: the classical four-stage
+  method.
+* Equation (11.76), `QuarteroniSaccoSaleri.Chapter11.equation_11_76`,
+  `QuarteroniSaccoSaleri.Chapter11.equation_11_76_errorIndicator` and
+  `QuarteroniSaccoSaleri.Chapter11.rkf45`: embedded pairs, their error indicator, and the
+  Runge–Kutta–Fehlberg 4(5) pair.
+* Section 11.8.4, `QuarteroniSaccoSaleri.Chapter11.stabilityFunction`: the stability function
+  $R(z)$.
 
 ## Main results
 
-* `rungeKutta_consistent_iff`, `rungeKutta_convergent` — consistency and convergence.
-* `equation_11_73_step`, `equation_11_73_order`, `twoStageOrderConditions` — the classical
-  method written out, its order four, and the two-stage order conditions.
-* `gaussLegendre_tableaux`, `radau_tableaux`, `lobatto_tableaux`, `dirk_tableau` — §11.8.3.
-* `equation_11_77`, `rungeKutta_absStable_iff`, `rungeKutta_explicit_stabilityFunction` —
-  absolute stability.
-* `property_11_4_order_le_stages` — the first clause of Property 11.4: an explicit `s`-stage
-  method that has order `q` along `y' = y` has `q ≤ s`.
-
-## Not formalized here
-
-* **Property 11.4**, all of it but the first clause. Butcher's order barriers say, beyond
-  `q ≤ s` — which is `property_11_4_order_le_stages` above — that no explicit `s`-stage method
-  has order `s` when `s ≥ 5`, and that the least number of stages of an explicit method of order
-  `1, …, 8` is `1, 2, 3, 4, 6, 7, 9, 11`. Both rest on the rooted-tree order conditions: the
-  elementary differentials of `f` indexed by rooted trees and the B-series they generate; the
-  `s ≥ 5` clause is then Butcher's case analysis of those conditions (Butcher 1965;
-  Hairer–Nørsett–Wanner I, II.5), and the minimal stage counts need it together with an explicit
-  method attaining each count. The book states the property without proof, citing [But87].
-  `Numlib/ODE/RungeKutta` has no tree combinatorics, no elementary differentials and no
-  B-series: the order conditions exist only as the list written out for small `s`
-  (`ODE.rk4_orderConditions`, `twoStageOrderConditions` and `equation_11_73_order` here), so a
-  B-series module of several thousand lines is the whole of what is missing. What made the
-  first clause cheap by comparison is that it is a statement about the *linear* test equation
-  alone, where the order conditions collapse to the coefficients of a polynomial of degree at
-  most `s`; no case analysis and no trees are involved.
-
-Remarks 11.4–11.5, the step-doubling estimates (11.74)–(11.75) and the maximal orders of the
-implicit families (Gauss–Legendre `2s`, Radau `2s - 1`, Lobatto `2s - 2`, all quoted from
-[But87]) are likewise not formalized: the last three are the same B-series theory, and the
-step-doubling estimates are heuristics the book states as such.
+* Section 11.8, `QuarteroniSaccoSaleri.Chapter11.rungeKutta_consistent_iff`: an explicit method with
+  nodes in $[0, 1]$ is consistent if and only if $\sum_i b_i = 1$.
+* Section 11.8, `QuarteroniSaccoSaleri.Chapter11.rungeKutta_convergent`: an explicit method is
+  zero-stable, and a consistent one is convergent, with the order of its consistency.
+* Property 11.4, first clause, `QuarteroniSaccoSaleri.Chapter11.property_11_4_order_le_stages`: an
+  explicit $s$-stage method of order $q$ has $q \le s$.
+* Equation (11.73), `QuarteroniSaccoSaleri.Chapter11.equation_11_73_step` and
+  `QuarteroniSaccoSaleri.Chapter11.equation_11_73_order`: the classical method written out, and its
+  order four.
+* Section 11.8.1, `QuarteroniSaccoSaleri.Chapter11.twoStageOrderConditions`: a two-stage explicit
+  method has order two if and only if $b_1 + b_2 = 1$ and $c_2 b_2 = 1/2$.
+* Equation (11.76), `QuarteroniSaccoSaleri.Chapter11.equation_11_76_errorIndicator_eq` and
+  `QuarteroniSaccoSaleri.Chapter11.rkf45_spec`: the error indicator is the difference of the two
+  solutions of a pair, and the coefficients of the Fehlberg pair.
+* Section 11.8.3, `QuarteroniSaccoSaleri.Chapter11.gaussLegendre_tableaux`,
+  `QuarteroniSaccoSaleri.Chapter11.radau_tableaux`,
+  `QuarteroniSaccoSaleri.Chapter11.lobatto_tableaux` and
+  `QuarteroniSaccoSaleri.Chapter11.dirk_tableau`: the Gauss–Legendre, Radau, Lobatto and DIRK
+  tableaux.
+* Equation (11.77), `QuarteroniSaccoSaleri.Chapter11.equation_11_77`: on $y' = \lambda y$ one step
+  is $u_{n+1} = R(h\lambda) u_n$.
+* Section 11.8.4, `QuarteroniSaccoSaleri.Chapter11.rungeKutta_absStable_iff`: the region of absolute
+  stability is $\{z : |R(z)| < 1\}$ where $I - zA$ is invertible.
+* Section 11.8.4, `QuarteroniSaccoSaleri.Chapter11.rungeKutta_explicit_stabilityFunction`: for an
+  explicit method $R$ is a polynomial, the region of absolute stability is bounded, and the method
+  is not A-stable.
 
 ## Conventions
 
-A method is a Butcher array `tab : ODE.ButcherTableau s` with `A = tab.A`, `b = tab.b`,
-`c = tab.c`; its step relation `tab.stepRel f` is a `OneStep.Method`, so Definitions 11.4–11.6 of
-§11.3 apply verbatim. The explicit methods are handled through their increment function
-`tab.explicitIncrement f` (11.70). The nodes are assumed to lie in `[0, 1]` wherever the field is
-only controlled on the horizon.
+* A method is a Butcher array `tab : ODE.ButcherTableau s`, with $A$ = `tab.A`, $b$ = `tab.b` and
+  $c$ = `tab.c`. Lean indexes the stages by `Fin s`, from $0$; the prose indexes them from $1$.
+* The step relation `tab.stepRel f` is an `ODE.OneStep.Method`, so Definitions 11.4–11.6 of Section
+  11.3 apply to it without change. An explicit method is also handled through its increment function
+  `tab.explicitIncrement f` (11.70).
+* The nodes are assumed to lie in $[0, 1]$ wherever the field is controlled only on the horizon.
+
+## Deviations from the source
+
+* **Section 11.8.2, the Fehlberg pair** (typo). The table of the source is damaged; the standard
+  coefficients are used. See `QuarteroniSaccoSaleri.Chapter11.rkf45`.
+* **Section 11.8.4, absolute stability** (correction). The source gives the region as
+  $\{z : |R(z)| < 1\}$ without assuming that $I - zA$ is invertible. See
+  `QuarteroniSaccoSaleri.Chapter11.rungeKutta_absStable_iff`.
+* **Section 11.8.4, the stability function of an explicit method of order $s$** (generalization).
+  The source states $R(z) = \sum_{k=0}^s z^k / k!$ for $s = 1, \dots, 4$; it is proved for every
+  $s$. See `QuarteroniSaccoSaleri.Chapter11.rungeKutta_explicit_stabilityFunction`.
+* **Property 11.4, first clause** (generalization). Order $q$ along the single solution $e^t$ of
+  $y' = y$ is enough. See `QuarteroniSaccoSaleri.Chapter11.property_11_4_order_le_stages`.
+
+## Not formalized
+
+* **Property 11.4**, the clauses after the first: no explicit $s$-stage method has order $s$ when
+  $s \ge 5$, and the least number of stages of an explicit method of order $1, \dots, 8$ is
+  $1, 2, 3, 4, 6, 7, 9, 11$. The source states them without proof, citing Butcher (1987). They rest
+  on the order conditions indexed by rooted trees and on B-series, which the backbone does not have:
+  the clause $s \ge 5$ is Butcher's case analysis of these conditions (see [hairer1993solving],
+  Section II.5), and the minimal stage numbers also need a method that attains each number.
+* **Remarks 11.4–11.5.**
+* **Equations (11.74)–(11.75)**, the step-doubling error estimates. The source states them as
+  heuristics.
+* **The maximal orders of the implicit methods** of Section 11.8.3: $2s$ for Gauss–Legendre,
+  $2s - 1$ for Radau and $2s - 2$ for Lobatto. The source quotes them from Butcher (1987) without
+  proof, and they need the same B-series theory.
+* **The order four of the three-stage DIRK method** of Section 11.8.3.
 -/
 
 open Set Filter Topology Asymptotics Matrix ODE ODE.OneStep
@@ -87,15 +126,26 @@ variable {f : ℝ → ℝ → ℝ} {t₀ T h h₀ t y₀ : ℝ} {y : ℝ → ℝ
 
 /-! ### (11.70)–(11.72): the method, its Butcher array and the row-sum condition -/
 
-/-- **The `s`-stage Runge–Kutta method (11.70)–(11.71)**: `u_{n+1} = u_n + h F(t_n, u_n, h; f)`
-with `F = ∑_{i=1}^s b_i K_i` and the stages `K_i = f(t_n + c_i h, u_n + h ∑_{j=1}^s a_ij K_j)`,
-for the Butcher array `(A, b, c)`, `tab : ODE.ButcherTableau s`; `u` is an orbit of the step
-relation `tab.stepRel f`. -/
+/-- **Equation (11.71)** of [quarteroni2000numerical]. Let $(A, b, c)$ be the Butcher array of an
+$s$-stage Runge–Kutta method, let $f : \mathbb{R} \times \mathbb{R} \to \mathbb{R}$, and let
+$h, t_0 \in \mathbb{R}$, with the grid $t_n = t_0 + nh$. A sequence $(u_n)_{n \ge 0}$ is an
+**orbit of the Runge–Kutta method** if for every $n$ there are stages $K_1, \dots, K_s$ with
+$$K_i = f\Big(t_n + c_i h,\ u_n + h \sum_{j=1}^s a_{ij} K_j\Big) \quad (i = 1, \dots, s), \qquad
+  u_{n+1} = u_n + h \sum_{i=1}^s b_i K_i.$$
+
+The definition is `ODE.OneStep.IsOrbit` for the step relation `ODE.ButcherTableau.stepRel` of
+`tab : ODE.ButcherTableau s`. No initial value is imposed, and for an implicit method the stages
+need only exist, not be unique. `QuarteroniSaccoSaleri.Chapter11.equation_11_71_iff` unfolds the
+definition. -/
 def equation_11_71 (tab : ButcherTableau s) (f : ℝ → ℝ → ℝ) (h t₀ : ℝ) (u : ℕ → ℝ) : Prop :=
   IsOrbit (tab.stepRel f) h t₀ u
 
-/-- (11.70)–(11.71), unfolded: at every step there are stages `K` with
-`K_i = f(t_n + c_i h, u_n + h ∑_j a_ij K_j)` and `u_{n+1} = u_n + h ∑_i b_i K_i`. -/
+/-- **Equation (11.71)** of [quarteroni2000numerical], unfolded. A sequence $(u_n)$ is an orbit of
+the Runge–Kutta method (11.71) with Butcher array $(A, b, c)$ if and only if for every $n$ there
+is $K \in \mathbb{R}^s$ with
+$$K_i = f\Big(t_n + c_i h,\ u_n + h \sum_{j=1}^s a_{ij} K_j\Big) \quad \text{for all } i, \qquad
+  u_{n+1} = u_n + h \sum_{i=1}^s b_i K_i.$$
+-/
 theorem equation_11_71_iff (tab : ButcherTableau s) (u : ℕ → ℝ) :
     equation_11_71 tab f h t₀ u ↔ ∀ n, ∃ K : Fin s → ℝ,
       (∀ i, K i = f (grid t₀ h n + tab.c i * h) (u n + h * ∑ j, tab.A i j * K j)) ∧
@@ -103,31 +153,51 @@ theorem equation_11_71_iff (tab : ButcherTableau s) (u : ℕ → ℝ) :
   rw [equation_11_71, isOrbit_iff]
   simp only [ButcherTableau.stepRel_apply, ButcherTableau.IsStages, smul_eq_mul, grid]
 
-/-- **The row-sum condition (11.72)** `c_i = ∑_{j=1}^s a_ij`, assumed throughout §11.8;
+/-- **Equation (11.72)** of [quarteroni2000numerical]. The Butcher array $(A, b, c)$ satisfies the
+**row-sum condition** if
+$$c_i = \sum_{j=1}^s a_{ij}, \qquad i = 1, \dots, s.$$
+
+The source assumes this condition throughout Section 11.8. The definition is
 `ODE.ButcherTableau.IsRowSum`. -/
 def equation_11_72 (tab : ButcherTableau s) : Prop :=
   tab.IsRowSum
 
-/-- (11.72), unfolded. -/
+/-- **Equation (11.72)** of [quarteroni2000numerical], unfolded. The row-sum condition holds if and
+only if $c_i = \sum_{j=1}^s a_{ij}$ for every $i$. -/
 theorem equation_11_72_iff (tab : ButcherTableau s) :
     equation_11_72 tab ↔ ∀ i, tab.c i = ∑ j, tab.A i j :=
   Iff.rfl
 
-/-- **Explicit methods**: `a_ij = 0` for `j ≥ i`, so that each `K_i` is computed from the
-previous stages; `ODE.ButcherTableau.IsExplicit`. -/
+/-- **Section 11.8** of [quarteroni2000numerical], explicit methods. A Runge–Kutta method is
+**explicit** if $a_{ij} = 0$ for $j \ge i$, so that each stage $K_i$ is computed from the
+previous stages $K_1, \dots, K_{i-1}$.
+
+The definition is `ODE.ButcherTableau.IsExplicit`. -/
 def equation_11_71_explicit (tab : ButcherTableau s) : Prop :=
   tab.IsExplicit
 
-/-- **Semi-implicit methods**: `a_ij = 0` for `j > i`, so that each `K_i` solves one equation in
-itself; `ODE.ButcherTableau.IsSemiImplicit`. -/
+/-- **Section 11.8** of [quarteroni2000numerical], semi-implicit methods. A Runge–Kutta method is
+**semi-implicit** if $a_{ij} = 0$ for $j > i$, so that each stage $K_i$ solves one equation in
+$K_i$ alone, once $K_1, \dots, K_{i-1}$ are known.
+
+The definition is `ODE.ButcherTableau.IsSemiImplicit`. -/
 def equation_11_71_semiImplicit (tab : ButcherTableau s) : Prop :=
   tab.IsSemiImplicit
 
-/-- **Implicit methods**: the tableaux that are not explicit (§11.8, §11.8.3). -/
+/-- **Section 11.8** of [quarteroni2000numerical], implicit methods. A Runge–Kutta method is
+**implicit** if it is not explicit, that is, if $a_{ij} \neq 0$ for some $j \ge i$.
+
+The source uses the term in Section 11.8 and in Section 11.8.3. -/
 def implicitRungeKutta (tab : ButcherTableau s) : Prop :=
   ¬ tab.IsExplicit
 
-/-- The shapes, unfolded; an explicit method is semi-implicit. -/
+/-- **Section 11.8** of [quarteroni2000numerical], the shapes of the Butcher array. Let $(A, b, c)$
+be a Butcher array. Then:
+
+* the method is explicit if and only if $a_{ij} = 0$ for all $i \le j$;
+* the method is semi-implicit if and only if $a_{ij} = 0$ for all $i < j$;
+* the method is implicit if and only if $a_{ij} \neq 0$ for some $i \le j$;
+* an explicit method is semi-implicit. -/
 theorem equation_11_71_shapes (tab : ButcherTableau s) :
     (equation_11_71_explicit tab ↔ ∀ i j : Fin s, i ≤ j → tab.A i j = 0) ∧
     (equation_11_71_semiImplicit tab ↔ ∀ i j : Fin s, i < j → tab.A i j = 0) ∧
@@ -135,14 +205,27 @@ theorem equation_11_71_shapes (tab : ButcherTableau s) :
     (equation_11_71_explicit tab → equation_11_71_semiImplicit tab) :=
   ⟨Iff.rfl, Iff.rfl, Iff.rfl, fun hex => hex.isSemiImplicit⟩
 
-/-- **The increment function (11.70) of an explicit method**, `F(t, u, h; f) = ∑_i b_i K_i` with
-the explicitly computed stages; `ODE.ButcherTableau.explicitIncrement`. -/
+/-- **Equation (11.70)** of [quarteroni2000numerical]. For a Butcher array $(A, b, c)$ and $f :
+\mathbb{R} \times \mathbb{R} \to \mathbb{R}$, the **increment function of the explicit method**
+is
+$$F(t, u, h; f) = \sum_{i=1}^s b_i K_i, \qquad K_i = f\Big(t + c_i h,\ u + h \sum_{j < i} a_{ij}
+  K_j\Big),$$
+with the stages computed in the order $i = 1, \dots, s$.
+
+The definition is `ODE.ButcherTableau.explicitIncrement`. It uses only the entries $a_{ij}$ with
+$j < i$, so it is defined for every Butcher array, and it is the increment of the method when
+the method is explicit. -/
 noncomputable def equation_11_70_increment (tab : ButcherTableau s) (f : ℝ → ℝ → ℝ) :
     OneStep.Increment ℝ :=
   tab.explicitIncrement f
 
-/-- For an explicit tableau, (11.71) is the one-step method (11.11) with the increment (11.70),
-and the stages are `K_i = f(t_n + c_i h, u_n + h ∑_{j<i} a_ij K_j)`. -/
+/-- **Section 11.8** of [quarteroni2000numerical], explicit methods as one-step methods. Let the
+Runge–Kutta method with Butcher array $(A, b, c)$ be explicit. Then a sequence $(u_n)$ is an
+orbit of (11.71) if and only if it solves the one-step method (11.11)
+$u_{n+1} = u_n + h F(t_n, u_n, h; f)$ with the increment (11.70) and the initial value $u_0$.
+Moreover, for all $t, v \in \mathbb{R}$ the stages of the increment are
+$$K_i = f\Big(t + c_i h,\ v + h \sum_{j < i} a_{ij} K_j\Big).$$
+-/
 theorem equation_11_71_explicit_iff (tab : ButcherTableau s) (hex : equation_11_71_explicit tab)
     (u : ℕ → ℝ) :
     (equation_11_71 tab f h t₀ u ↔ equation_11_11 (equation_11_70_increment tab f) h t₀ (u 0) u) ∧
@@ -156,25 +239,48 @@ theorem equation_11_71_explicit_iff (tab : ButcherTableau s) (hex : equation_11_
 
 /-! ### The truncation error, consistency and convergence -/
 
-/-- **The local truncation error of an explicit RK method**,
-`h τ_{n+1}(h) = y_{n+1} - y_n - h F(t_n, y_n, h; f)`: (11.12) for the increment (11.70). -/
+/-- **Section 11.8** of [quarteroni2000numerical], the local truncation error of an explicit method.
+Let $y : \mathbb{R} \to \mathbb{R}$ and $t_n = t_0 + nh$. The **local truncation error**
+$\tau_{n+1}(h)$ of the Runge–Kutta method is the local truncation error (11.12) of the increment
+(11.70):
+$$h \tau_{n+1}(h) = y(t_{n+1}) - y(t_n) - h F(t_n, y(t_n), h; f).$$
+
+For $h = 0$ the definition gives $\tau_{n+1}(0) = -F(t_n, y(t_n), 0; f)$, because Lean sets
+$0^{-1} = 0$. `QuarteroniSaccoSaleri.Chapter11.rungeKutta_lte_spec` gives the displayed identity
+for $h \neq 0$. -/
 noncomputable def rungeKutta_lte (tab : ButcherTableau s) (f : ℝ → ℝ → ℝ) (h : ℝ) (y : ℝ → ℝ)
     (t₀ : ℝ) (n : ℕ) : ℝ :=
   equation_11_12 (equation_11_70_increment tab f) h y t₀ n
 
-/-- The local truncation error, unfolded. -/
+/-- **Section 11.8** of [quarteroni2000numerical], the local truncation error unfolded. Let
+$h \neq 0$, let $y : \mathbb{R} \to \mathbb{R}$, and let $K_i$ be the stages (11.70) at
+$(t_n, y(t_n))$. Then
+$$y(t_{n+1}) = y(t_n) + h \sum_{i=1}^s b_i K_i + h \tau_{n+1}(h).$$
+-/
 theorem rungeKutta_lte_spec (hh : h ≠ 0) (tab : ButcherTableau s) (y : ℝ → ℝ) (t₀ : ℝ) (n : ℕ) :
     y (grid t₀ h (n + 1)) = y (grid t₀ h n) +
       h * ∑ i, tab.b i * tab.explicitStages f h (grid t₀ h n) (y (grid t₀ h n)) i +
         h * rungeKutta_lte tab f h y t₀ n :=
   equation_11_12_spec hh (equation_11_70_increment tab f) y t₀ n
 
-/-- **Consistency of an explicit RK method** (§11.8): with nodes in `[0, 1]`, the method is
-consistent — `τ(h) → 0` along the solution of every Cauchy problem with `f` continuous and
-Lipschitz in `y` (on a slightly larger horizon, where the stages are evaluated) — iff
-`∑_{i=1}^s b_i = 1`; `ODE.ButcherTableau.isConsistentFor_of_sum_b_eq_one`,
-`ODE.ButcherTableau.sum_b_eq_one_of_isConsistentFor`. The book cites [Lam91]. Order `p` along a
-solution is `τ(h) = O(h^p)`, (11.14) for the increment (11.70). -/
+/-- **Section 11.8** of [quarteroni2000numerical], consistency of explicit methods. Let $(A, b, c)$
+be a Butcher array with $c_i \in [0, 1]$ for every $i$. The following are equivalent:
+
+* for all $f : \mathbb{R} \times \mathbb{R} \to \mathbb{R}$, $L \in \mathbb{R}$,
+  $t_0 \in \mathbb{R}$, $T > 0$, $y_0 \in \mathbb{R}$ and $y : \mathbb{R} \to \mathbb{R}$: if
+  $f$ is continuous on $[t_0, t_0 + T + 1] \times \mathbb{R}$, satisfies
+  $|f(s, y_1) - f(s, y_2)| \le L |y_1 - y_2|$ for $s \in [t_0, t_0 + T + 1]$ and all $y_1, y_2$,
+  and $y$ solves the Cauchy problem $y' = f(t, y)$, $y(t_0) = y_0$ on $[t_0, t_0 + T]$, then the
+  increment (11.70) is consistent along $y$ on $[t_0, t_0 + T]$;
+* $\sum_{i=1}^s b_i = 1$.
+
+The source cites Lambert (1991) for this result. The field is controlled on the larger interval
+$[t_0, t_0 + T + 1]$ because the stages are evaluated at $t_n + c_i h$, which can lie beyond
+$t_0 + T$. Consistency is `QuarteroniSaccoSaleri.Chapter11.consistent`: the largest local
+truncation error on the grid tends to $0$ as $h \to 0^+$. The statement does not assume that the
+method is explicit, because the increment (11.70) uses only the strictly lower triangle of $A$.
+The proof specializes `ODE.ButcherTableau.isConsistentFor_of_sum_b_eq_one` and
+`ODE.ButcherTableau.sum_b_eq_one_of_isConsistentFor`. -/
 theorem rungeKutta_consistent_iff (tab : ButcherTableau s) (hc : ∀ i, tab.c i ∈ Icc (0 : ℝ) 1) :
     (∀ (f : ℝ → ℝ → ℝ) (L : ℝ) (t₀ T y₀ : ℝ) (y : ℝ → ℝ), 0 < T →
       ContinuousOn (Function.uncurry f) (Icc t₀ (t₀ + T + 1) ×ˢ univ) →
@@ -193,13 +299,24 @@ theorem rungeKutta_consistent_iff (tab : ButcherTableau s) (hc : ∀ i, tab.c i 
         exact (hlip s hs y₁ y₂).trans
           (mul_le_mul_of_nonneg_right (le_max_left _ _) (abs_nonneg _))) hy.2
 
-/-- **"Since RK methods are one-step methods, consistency implies stability and, in turn,
-convergence"** (§11.8): an explicit RK method with nodes in `[0, 1]` applied to a problem whose
-field is Lipschitz in `y` on `[t₀, t₀ + T + h₀]` has a Lipschitz increment, hence is zero-stable
-(Theorem 11.1, Definition 11.4) for every datum; if it is consistent along the solution `y` it is
-convergent (Theorem 11.2, Definition 11.5) from `u_0 = y(t₀)`, and if it has order `p` along `y`
-it converges with order `p`; `ODE.ButcherTableau.lipschitzIncrement_explicit`,
-`ODE.ButcherTableau.isZeroStable_explicit`, `ODE.ButcherTableau.isConvergentFor_explicit`. -/
+/-- **Section 11.8** of [quarteroni2000numerical], convergence of explicit methods ("since RK
+methods are one-step methods, consistency implies stability and, in turn, convergence"). Let the
+Runge–Kutta method with Butcher array $(A, b, c)$ be explicit, with $c_i \in [0, 1]$ for every
+$i$. Let $T \ge 0$ and $h_0 > 0$, and let $f$ satisfy
+$|f(t, y_1) - f(t, y_2)| \le L |y_1 - y_2|$ for $t \in [t_0, t_0 + T + h_0]$ and all $y_1, y_2$.
+Let $y : \mathbb{R} \to \mathbb{R}$. Then:
+
+* the increment (11.70) is zero-stable (Definition 11.4) on $[t_0, t_0 + T]$ for every initial
+  value $y_0$;
+* if the increment is consistent along $y$, the method is convergent (Definition 11.5) to $y$
+  from $u_0 = y(t_0)$;
+* for every $p \in \mathbb{N}$, if the increment has order $p$ (11.14) along $y$, the method
+  converges to $y$ with order $p$.
+
+The function $y$ need not be a solution of the Cauchy problem: consistency along $y$ is all that
+is used. The increment is Lipschitz in $u$, so Theorem 11.1 and Theorem 11.2 of Section 11.3
+apply. The proof specializes `ODE.ButcherTableau.lipschitzIncrement_explicit`,
+`ODE.ButcherTableau.isZeroStable_explicit` and `ODE.ButcherTableau.isConvergentFor_explicit`. -/
 theorem rungeKutta_convergent (tab : ButcherTableau s) (hex : equation_11_71_explicit tab)
     (hc : ∀ i, tab.c i ∈ Icc (0 : ℝ) 1) {L : ℝ}
     (hlip : ∀ t ∈ Icc t₀ (t₀ + T + h₀), ∀ y₁ y₂ : ℝ, |f t y₁ - f t y₂| ≤ L * |y₁ - y₂|)
@@ -227,14 +344,26 @@ theorem rungeKutta_convergent (tab : ButcherTableau s) (hex : equation_11_71_exp
 
 /-! ### (11.73): the classical method -/
 
-/-- **The classical explicit four-stage method of order four (11.73)**,
-`u_{n+1} = u_n + (h/6)(K₁ + 2K₂ + 2K₃ + K₄)`, `K₁ = f_n`, `K₂ = f(t_n + h/2, u_n + (h/2)K₁)`,
-`K₃ = f(t_n + h/2, u_n + (h/2)K₂)`, `K₄ = f(t_{n+1}, u_n + hK₃)`; `ODE.rk4`. Its order four is
-`equation_11_73_order`. -/
+/-- **Equation (11.73)** of [quarteroni2000numerical], the classical explicit four-stage method:
+$$u_{n+1} = u_n + \frac{h}{6} (K_1 + 2K_2 + 2K_3 + K_4),$$
+with $K_1 = f(t_n, u_n)$, $K_2 = f(t_n + h/2, u_n + (h/2) K_1)$,
+$K_3 = f(t_n + h/2, u_n + (h/2) K_2)$ and $K_4 = f(t_{n+1}, u_n + h K_3)$.
+
+The definition is `ODE.rk4`. Its order four is
+`QuarteroniSaccoSaleri.Chapter11.equation_11_73_order`. -/
 noncomputable def equation_11_73 : ButcherTableau 4 :=
   rk4
 
-/-- (11.73), written out: the Butcher array, and the step of the method. -/
+/-- **Equation (11.73)** of [quarteroni2000numerical], written out. The classical method has the
+Butcher array
+$$A = \begin{bmatrix} 0 & 0 & 0 & 0 \\ 1/2 & 0 & 0 & 0 \\ 0 & 1/2 & 0 & 0 \\ 0 & 0 & 1 & 0
+  \end{bmatrix}, \qquad b = (1/6, 1/3, 1/3, 1/6), \qquad c = (0, 1/2, 1/2, 1).$$
+It is explicit and satisfies the row-sum condition (11.72). A sequence $(u_n)$ is an orbit of
+the method if and only if for every $n$
+$$u_{n+1} = u_n + \frac{h}{6} (K_1 + 2K_2 + 2K_3 + K_4)$$
+with $K_1 = f(t_n, u_n)$, $K_2 = f(t_n + h/2, u_n + (h/2) K_1)$,
+$K_3 = f(t_n + h/2, u_n + (h/2) K_2)$ and $K_4 = f(t_n + h, u_n + h K_3)$, all written out in
+the Lean statement. -/
 theorem equation_11_73_step :
     equation_11_73.A = !![0, 0, 0, 0; 1 / 2, 0, 0, 0; 0, 1 / 2, 0, 0; 0, 0, 1, 0] ∧
     equation_11_73.b = ![1 / 6, 1 / 3, 1 / 3, 1 / 6] ∧ equation_11_73.c = ![0, 1 / 2, 1 / 2, 1] ∧
@@ -256,13 +385,23 @@ theorem equation_11_73_step :
 
 /-! ### §11.8.1: the two-stage order conditions -/
 
-/-- **The two-stage order conditions (§11.8.1)**: a two-stage explicit RK method satisfying
-(11.72) has order two iff `b₁ + b₂ = 1` and `c₂ b₂ = 1/2`. The necessity is read on the test
-problems `y' = 1` and `y' = 2t` (`ODE.ButcherTableau.orderTwoConditions_of_hasOrderFor`); the
-sufficiency holds along every `C³` solution of a problem whose field is `C²` with bounded second
-derivative (`ODE.ButcherTableau.hasOrderFor_two_of`, the book's Taylor expansions of `K₂` and
-`y_{n+1}`). Heun's method (`ODE.ButcherTableau.heun`) and the modified Euler method
-(`ODE.ButcherTableau.modifiedEuler`) satisfy them. -/
+/-- **Section 11.8.1** of [quarteroni2000numerical], the two-stage order conditions. Let $(A, b, c)$
+be the Butcher array of a two-stage explicit method that satisfies (11.72). Then:
+
+* if the method has order $2$ along the solution $y(t) = t$ of $y' = 1$ on every interval
+  $[t_0, t_0 + T]$ with $T > 0$, and along the solution $y(t) = t^2$ of $y' = 2t$ on $[0, 1]$,
+  then $b_1 + b_2 = 1$ and $c_2 b_2 = 1/2$;
+* if $b_1 + b_2 = 1$ and $c_2 b_2 = 1/2$, then the method has order $2$ (11.14) along every
+  solution $y \in C^3([t_0, t_0 + T])$, $T > 0$, of a Cauchy problem $y' = f(t, y)$,
+  $y(t_0) = y_0$, whose field $f$ is $C^2$ on $\mathbb{R} \times \mathbb{R}$ with
+  $\|D^2 f\| \le M_2$ everywhere;
+* Heun's method and the modified Euler method satisfy $b_1 + b_2 = 1$ and $c_2 b_2 = 1/2$.
+
+The necessity is read from the two test problems
+(`ODE.ButcherTableau.orderTwoConditions_of_hasOrderFor`). The sufficiency is
+`ODE.ButcherTableau.hasOrderFor_two_of`, which makes rigorous the Taylor expansions of $K_2$ and
+$y_{n+1}$ in the source. Heun's method is `ODE.ButcherTableau.heun` and the modified Euler
+method is `ODE.ButcherTableau.modifiedEuler`. -/
 theorem twoStageOrderConditions (tab : ButcherTableau 2) (hex : equation_11_71_explicit tab)
     (hrow : equation_11_72 tab) :
     ((∀ (t₀ T : ℝ), 0 < T →
@@ -304,17 +443,19 @@ theorem twoStageOrderConditions (tab : ButcherTableau 2) (hex : equation_11_71_e
 
 /-! ### The order of the classical method (11.73) -/
 
-/-- **The classical method (11.73) has order four** (§11.8, "an example of a fourth-order RK
-method is provided by the following explicit 4-stage method"; §11.8.1, "retaining all the terms
-up to the fifth one, we get scheme (11.73)"): along every solution `y ∈ C⁵([t₀, t₀ + T])` of a
-Cauchy problem whose field `f` is `C⁴` on `ℝ × ℝ` with its derivatives of orders one to four
-bounded, `τ(h) = O(h⁴)` — (11.14) with `p = 4` for the increment (11.70) of (11.73). The scalar
-case of `ODE.rk4_hasOrderFor`: the successive Fréchet derivatives it asks for are the iterated
-`fderiv` of `(t, v) ↦ f t v`, which exist by `contDiff_succ_iff_fderiv`, and the derivatives
-`y'', …, y⁽⁵⁾` are the `iteratedDerivWithin` of `y` on `[t₀, t₀ + T]`, whose fifth is bounded by
-compactness. The bounds on the derivatives of the field make the constant uniform over the
-horizon; that a `C⁴` field has `C⁵` solutions is assumed rather than derived, as in §11.8.1
-(`twoStageOrderConditions`). -/
+/-- **Equation (11.73)** of [quarteroni2000numerical], order four. Let $f$ be $C^4$ on
+$\mathbb{R} \times \mathbb{R}$, with $\|D^k f\| \le M_k$ everywhere for $k = 1, 2, 3, 4$. Let
+$T > 0$, and let $y \in C^5([t_0, t_0 + T])$ solve the Cauchy problem $y' = f(t, y)$,
+$y(t_0) = y_0$ on $[t_0, t_0 + T]$. Then the classical method (11.73) has order $4$ along $y$:
+$$\tau(h) = O(h^4) \quad \text{as } h \to 0^+.$$
+
+The source introduces (11.73) in Section 11.8 as an example of a fourth-order method and derives
+it in Section 11.8.1 by keeping all the Taylor terms up to the fifth. The statement is the
+scalar case of `ODE.rk4_hasOrderFor`: the derivatives $D^k f$ are the iterated `fderiv` of
+$(t, v) \mapsto f(t, v)$, and $y'', \dots, y^{(5)}$ are the `iteratedDerivWithin` of $y$ on
+$[t_0, t_0 + T]$. The bounds on the derivatives of $f$ make the constant uniform over the
+horizon. That a $C^4$ field has $C^5$ solutions is assumed rather than derived, as in
+`QuarteroniSaccoSaleri.Chapter11.twoStageOrderConditions`. -/
 theorem equation_11_73_order {M₁ M₂ M₃ M₄ : ℝ} (hf : ContDiff ℝ 4 (Function.uncurry f))
     (hM₁ : ∀ p : ℝ × ℝ, ‖fderiv ℝ (Function.uncurry f) p‖ ≤ M₁)
     (hM₂ : ∀ p : ℝ × ℝ, ‖fderiv ℝ (fderiv ℝ (Function.uncurry f)) p‖ ≤ M₂)
@@ -353,19 +494,32 @@ theorem equation_11_73_order {M₁ M₂ M₃ M₄ : ℝ} (hf : ContDiff ℝ 4 (F
 
 /-! ### §11.8.2: embedded pairs -/
 
-/-- **An embedded pair (11.76)**: two RK methods of orders `p` and `p + 1` sharing `A`, `c` and
-the stages, with weights `b` and `b̂`; `ODE.EmbeddedPair s`. -/
+/-- **Equation (11.76)** of [quarteroni2000numerical]. An **embedded pair** consists of two
+$s$-stage Runge–Kutta methods of orders $p$ and $p + 1$ that share the matrix $A$, the nodes $c$
+and so the stages, and that have weights $b$ and $\hat{b}$.
+
+The definition is `ODE.EmbeddedPair s`. The orders are not part of the structure. -/
 abbrev equation_11_76 (s : ℕ) := EmbeddedPair s
 
-/-- **The error indicator of an embedded pair**, `h ∑_i E_i K_i` with `E = b - b̂`: the difference
-of the two solutions, which estimates the local error of the lower-order method without extra
-evaluations of `f`; `ODE.EmbeddedPair.errorIndicator`. -/
+/-- **Equation (11.76)** of [quarteroni2000numerical], the error indicator. For an embedded pair,
+the **error indicator** at $(t, u)$ is
+$$h \sum_{i=1}^s E_i K_i, \qquad E = b - \hat{b},$$
+where $K_i$ are the explicit stages at $(t, u)$. It is the difference of the two solutions, and
+it estimates the local error of the lower-order method without further evaluations of $f$.
+
+The definition is `ODE.EmbeddedPair.errorIndicator`. -/
 noncomputable def equation_11_76_errorIndicator (P : equation_11_76 s) (f : ℝ → ℝ → ℝ) (h t u : ℝ) :
     ℝ :=
   P.errorIndicator f h t u
 
-/-- The error indicator is `u_{n+1} - û_{n+1}`, the difference of the two steps of the pair from
-`(t_n, u_n)`; `ODE.EmbeddedPair.errorIndicator_eq_sub`. -/
+/-- **Equation (11.76)** of [quarteroni2000numerical], the error indicator as a difference. For an
+embedded pair and all $h, t, u \in \mathbb{R}$, the error indicator equals
+$h \sum_i (b_i - \hat{b}_i) K_i$ with the explicit stages $K_i$ at $(t, u)$, and it equals
+$$\big(u + h F_b(t, u, h; f)\big) - \big(u + h F_{\hat{b}}(t, u, h; f)\big),$$
+the difference of the two steps of the pair from $(t, u)$, where $F_b$ and $F_{\hat{b}}$ are the
+increments (11.70) of the two methods.
+
+The proof specializes `ODE.EmbeddedPair.errorIndicator_eq_sub`. -/
 theorem equation_11_76_errorIndicator_eq (P : equation_11_76 s) (f : ℝ → ℝ → ℝ) (h t u : ℝ) :
     equation_11_76_errorIndicator P f h t u = h * ∑ i, (P.b i - P.bhat i) *
         P.toButcherTableau.explicitStages f h t u i ∧
@@ -374,15 +528,24 @@ theorem equation_11_76_errorIndicator_eq (P : equation_11_76 s) (f : ℝ → ℝ
           (u + h * equation_11_70_increment P.toTableauHat f t u u h) :=
   ⟨rfl, P.errorIndicator_eq_sub f h t u⟩
 
-/-- **The Runge–Kutta–Fehlberg 4(5) pair (§11.8.2)** with the standard coefficients (the book's
-table is damaged in the source): `b` is the fourth-order method, `b̂` the fifth-order one;
-`ODE.rkf45`. -/
+/-- **Section 11.8.2** of [quarteroni2000numerical], the Runge–Kutta–Fehlberg 4(5) pair. It is the
+six-stage embedded pair with the standard Fehlberg coefficients, in which the weights $b$ give
+the fourth-order method and the weights $\hat{b}$ give the fifth-order method.
+
+**Typo.** The table of coefficients in the source is damaged. The definition uses the standard
+coefficients of the Fehlberg pair.
+
+The definition is `ODE.rkf45`. -/
 noncomputable def rkf45 : equation_11_76 6 :=
   ODE.rkf45
 
-/-- The Fehlberg pair: explicit, satisfying (11.72), with both weight vectors summing to `1`, and
-the error coefficients `b̂ - b = (1/360, 0, -128/4275, -2197/75240, 1/50, 2/55)` (the book writes
-`E = b - b̂` for the same numbers). -/
+/-- **Section 11.8.2** of [quarteroni2000numerical], the coefficients of the Fehlberg pair. The pair
+`QuarteroniSaccoSaleri.Chapter11.rkf45` is explicit and satisfies (11.72), both weight vectors
+sum to $1$, and
+$$\hat{b} - b = \Big(\frac{1}{360},\ 0,\ -\frac{128}{4275},\ -\frac{2197}{75240},\
+  \frac{1}{50},\ \frac{2}{55}\Big).$$
+
+The source writes the error coefficients as $E = b - \hat{b}$ and prints the same numbers. -/
 theorem rkf45_spec :
     equation_11_71_explicit rkf45.toButcherTableau ∧ equation_11_72 rkf45.toButcherTableau ∧
     (∑ i, rkf45.b i = 1 ∧ ∑ i, rkf45.bhat i = 1) ∧
@@ -392,14 +555,24 @@ theorem rkf45_spec :
 
 /-! ### §11.8.3: implicit methods -/
 
-/-- **The Gauss–Legendre methods (§11.8.3)**: the one-stage method is the implicit midpoint rule
-`u_{n+1} = u_n + h f(t_n + h/2, (u_n + u_{n+1})/2)` (order two:
-`∑ b = 1`, `∑ b c = 1/2`), and the two-stage method of order four has
-`c = (1/2 ∓ √3/6)`, `A = !![1/4, 1/4 - √3/6; 1/4 + √3/6, 1/4]`, `b = (1/2, 1/2)`, the nodes being
-the roots of the Legendre polynomial `L₂` in `x = 2c - 1`, with the collocation identities
-`∑_j c_j^{k-1} a_ij = c_i^k / k`, `∑_j c_j^{k-1} b_j = 1/k`, `k = 1, 2`;
-`ODE.ButcherTableau.implicitMidpoint`, `ODE.ButcherTableau.gaussLegendre2`. The maximal order
-`2s` is quoted by the book without proof and is not formalized. -/
+/-- **Section 11.8.3** of [quarteroni2000numerical], the Gauss–Legendre methods. The following hold.
+
+* The one-stage Gauss–Legendre method is the implicit midpoint rule: $v$ is a step from $u$ at
+  $t$ if and only if $v = u + h f(t + h/2, (u + v)/2)$. It is implicit, and $\sum_i b_i = 1$ and
+  $\sum_i b_i c_i = 1/2$.
+* The two-stage Gauss–Legendre method has
+$$c = \Big(\frac{1}{2} - \frac{\sqrt{3}}{6},\ \frac{1}{2} + \frac{\sqrt{3}}{6}\Big), \qquad A =
+  \begin{bmatrix} 1/4 & 1/4 - \sqrt{3}/6 \\ 1/4 + \sqrt{3}/6 & 1/4 \end{bmatrix}, \qquad b =
+  \Big(\frac{1}{2}, \frac{1}{2}\Big).$$
+* The two-stage method satisfies the collocation identities
+  $\sum_j c_j^{k-1} a_{ij} = c_i^k / k$ and $\sum_j c_j^{k-1} b_j = 1/k$ for $k = 1, 2$.
+
+The source gives the implicit midpoint rule order two, for which the two sums of the first item
+are the order conditions, and the two-stage method order four; these orders are not formalized.
+The nodes of the two-stage method are the roots of the Legendre polynomial $L_2$ in the variable
+$x = 2c - 1$. The tableaux are `ODE.ButcherTableau.implicitMidpoint` and
+`ODE.ButcherTableau.gaussLegendre2`. The maximal order $2s$, which the source quotes without
+proof, is not formalized. -/
 theorem gaussLegendre_tableaux :
     (∀ (h t u v : ℝ), ButcherTableau.implicitMidpoint.stepRel f h t u v ↔
       v = u + h * f (t + h / 2) (2⁻¹ * (u + v))) ∧
@@ -422,10 +595,15 @@ theorem gaussLegendre_tableaux :
   · have := hex 0 0 le_rfl
     simp [ButcherTableau.implicitMidpoint] at this
 
-/-- **The Radau methods (§11.8.3)**: the one-stage Radau IIA tableau `A = (1)`, `b = (1)`,
-`c = (1)` is backward Euler (11.8), and the two-stage tableau of order three is
-`c = (1/3, 1)`, `A = !![5/12, -1/12; 3/4, 1/4]`, `b = (3/4, 1/4)`;
-`ODE.ButcherTableau.radauIIA1`, `ODE.ButcherTableau.radauIIA2`. The maximal order `2s - 1` is
+/-- **Section 11.8.3** of [quarteroni2000numerical], the Radau methods. The one-stage Radau IIA
+method, with $A = (1)$, $b = (1)$ and $c = (1)$, has the step relation of the backward Euler
+method (11.8), and it is implicit. The two-stage Radau IIA method has
+$$c = \Big(\frac{1}{3}, 1\Big), \qquad A = \begin{bmatrix} 5/12 & -1/12 \\ 3/4 & 1/4
+  \end{bmatrix}, \qquad b = \Big(\frac{3}{4}, \frac{1}{4}\Big),$$
+and it is implicit.
+
+The source gives the two-stage method order three. The tableaux are
+`ODE.ButcherTableau.radauIIA1` and `ODE.ButcherTableau.radauIIA2`. The maximal order $2s - 1$ is
 not formalized. -/
 theorem radau_tableaux :
     ButcherTableau.radauIIA1.stepRel f = OneStep.ofIncrement (equation_11_8 f) ∧
@@ -439,9 +617,13 @@ theorem radau_tableaux :
   · have := hex 0 0 le_rfl
     simp [ButcherTableau.radauIIA2] at this
 
-/-- **The Lobatto methods (§11.8.3)**: the two-stage Lobatto IIIA tableau `c = (0, 1)`,
-`A = !![0, 0; 1/2, 1/2]`, `b = (1/2, 1/2)` is Crank–Nicolson (11.9);
-`ODE.ButcherTableau.lobattoIIIA2`. The maximal order `2s - 2` is not formalized. -/
+/-- **Section 11.8.3** of [quarteroni2000numerical], the Lobatto methods. The two-stage Lobatto IIIA
+method has
+$$c = (0, 1), \qquad A = \begin{bmatrix} 0 & 0 \\ 1/2 & 1/2 \end{bmatrix}, \qquad b =
+  \Big(\frac{1}{2}, \frac{1}{2}\Big).$$
+Its step relation is that of the Crank–Nicolson method (11.9), and it is implicit.
+
+The tableau is `ODE.ButcherTableau.lobattoIIIA2`. The maximal order $2s - 2$ is not formalized. -/
 theorem lobatto_tableaux :
     ButcherTableau.lobattoIIIA2.stepRel f = OneStep.ofIncrement (equation_11_9 f) ∧
     ButcherTableau.lobattoIIIA2.c = ![0, 1] ∧
@@ -452,10 +634,16 @@ theorem lobatto_tableaux :
   have := hex 1 1 le_rfl
   simp [ButcherTableau.lobattoIIIA2] at this
 
-/-- **The three-stage DIRK method (§11.8.3)** with `μ` a root of `3μ³ - 3μ - 1 = 0`:
-`c = ((1+μ)/2, 1/2, (1-μ)/2)`, `A = !![(1+μ)/2, 0, 0; -μ/2, (1+μ)/2, 0; 1+μ, -1-2μ, (1+μ)/2]`,
-`b = (1/(6μ²), 1 - 1/(3μ²), 1/(6μ²))`, a semi-implicit tableau; `ODE.ButcherTableau.dirk3`. Its
-order four is not formalized. -/
+/-- **Section 11.8.3** of [quarteroni2000numerical], the three-stage DIRK method. For
+$\mu \in \mathbb{R}$ the tableau `ODE.ButcherTableau.dirk3 μ` has
+$$c = \Big(\frac{1 + \mu}{2},\ \frac{1}{2},\ \frac{1 - \mu}{2}\Big), \qquad A = \begin{bmatrix}
+  (1 + \mu)/2 & 0 & 0 \\ -\mu/2 & (1 + \mu)/2 & 0 \\ 1 + \mu & -1 - 2\mu & (1 + \mu)/2
+  \end{bmatrix}, \qquad b = \Big(\frac{1}{6\mu^2},\ 1 - \frac{1}{3\mu^2},\
+  \frac{1}{6\mu^2}\Big),$$
+and it is semi-implicit.
+
+The source takes $\mu$ to be a root of $3\mu^3 - 3\mu - 1 = 0$; the statement holds for every
+$\mu$. Its order four is not formalized. -/
 theorem dirk_tableau (μ : ℝ) :
     (ButcherTableau.dirk3 μ).c = ![(1 + μ) / 2, 1 / 2, (1 - μ) / 2] ∧
     (ButcherTableau.dirk3 μ).A =
@@ -466,15 +654,28 @@ theorem dirk_tableau (μ : ℝ) :
 
 /-! ### §11.8.4: the stability function and absolute stability -/
 
-/-- **The stability function** `R(z) = 1 + z bᵀ (I - zA)⁻¹ 𝟙` of a Runge–Kutta method;
-`ODE.ButcherTableau.stabilityFunction`. -/
+/-- **Section 11.8.4** of [quarteroni2000numerical]. The **stability function** of a Runge–Kutta
+method with Butcher array $(A, b, c)$ is
+$$R(z) = 1 + z\, b^T (I - zA)^{-1} \mathbf{1}, \qquad z \in \mathbb{C},$$
+where $\mathbf{1}$ is the vector of ones.
+
+The definition is `ODE.ButcherTableau.stabilityFunction`. It uses the Mathlib inverse, which is
+$0$ on a singular matrix, so $R(z) = 1$ when $I - zA$ is singular. -/
 noncomputable def stabilityFunction (tab : ButcherTableau s) (z : ℂ) : ℂ :=
   tab.stabilityFunction z
 
-/-- **(11.77), the method on the test problem**: the stages of the method on `y' = λy` at `u_n`
-satisfy `(I - hλ A) K = λ u_n 𝟙`, and when `I - hλA` is invertible the step is
-`u_{n+1} = R(hλ) u_n` with `R(z) = 1 + z bᵀ (I - zA)⁻¹ 𝟙`;
-`ODE.ButcherTableau.isStages_testField_iff`, `ODE.ButcherTableau.stepRel_testField_iff`. -/
+/-- **Equation (11.77)** of [quarteroni2000numerical], the method on the test problem. Let
+$(A, b, c)$ be a Butcher array, $h \in \mathbb{R}$ and $\lambda \in \mathbb{C}$, and apply the
+method to $y' = \lambda y$. Then:
+
+* for all $t \in \mathbb{R}$, $u \in \mathbb{C}$ and $K \in \mathbb{C}^s$, the vector $K$ is a
+  vector of stages at $(t, u)$ if and only if $(I - h\lambda A) K = \lambda u \mathbf{1}$;
+* if $I - h\lambda A$ is invertible, then $v$ is a step from $u$ if and only if
+  $v = R(h\lambda) u$;
+* $R(z) = 1 + z\, b^T (I - zA)^{-1} \mathbf{1}$ for every $z \in \mathbb{C}$.
+
+The test problem is `QuarteroniSaccoSaleri.Chapter11.testProblem`. The proof specializes
+`ODE.ButcherTableau.isStages_testField_iff` and `ODE.ButcherTableau.stepRel_testField_iff`. -/
 theorem equation_11_77 (tab : ButcherTableau s) (lam : ℂ) :
     (∀ (t : ℝ) (u : ℂ) (K : Fin s → ℂ), tab.IsStages (testProblem lam) h t u K ↔
       (1 - ((h : ℂ) * lam) • tab.complexA) *ᵥ K = (lam * u) • fun _ => (1 : ℂ)) ∧
@@ -485,11 +686,24 @@ theorem equation_11_77 (tab : ButcherTableau s) (lam : ℂ) :
   ⟨fun _ _ K => tab.isStages_testField_iff K,
     fun hinv t u v => tab.stepRel_testField_iff hinv t u v, fun _ => rfl⟩
 
-/-- **Absolute stability of Runge–Kutta methods (§11.8.4)**: when `I - hλA` is invertible, the
-method with step `h > 0` is absolutely stable for `y' = λy` iff `|R(hλ)| < 1`, and its region of
-absolute stability is `𝒜 = {z : |R(z)| < 1}` on the set where `I - zA` is invertible — an
-invertibility clause the book omits, which is genuinely needed (see the backbone); for an
-explicit method it is automatic; `ODE.ButcherTableau.mem_absStabilityRegion_iff_of_isUnit`,
+/-- **Section 11.8.4** of [quarteroni2000numerical], absolute stability of Runge–Kutta methods. Let
+$(A, b, c)$ be a Butcher array with stability function $R$. Then:
+
+* for all $\lambda \in \mathbb{C}$ and $h > 0$ with $I - h\lambda A$ invertible, the method is
+  absolutely stable (Definition 11.6) for $y' = \lambda y$ with step $h$ if and only if
+  $|R(h\lambda)| < 1$;
+* for every $z \in \mathbb{C}$ with $I - zA$ invertible, $z$ lies in the region of absolute
+  stability $\mathcal{A}$ of (11.26) if and only if $|R(z)| < 1$;
+* if the method is explicit, then $z \in \mathcal{A}$ if and only if $|R(z)| < 1$, for every
+  $z \in \mathbb{C}$.
+
+**Correction.** The source gives the region of absolute stability as $\mathcal{A} = \{z \in
+\mathbb{C} : |R(z)| < 1\}$ without a condition on $I - zA$. The characterization is stated here
+only where $I - zA$ is invertible, as in
+`ODE.ButcherTableau.mem_absStabilityRegion_iff_of_isUnit`, because the condition is needed. For
+an explicit method the matrix $I - zA$ is always invertible.
+
+The proof specializes `ODE.ButcherTableau.mem_absStabilityRegion_iff_of_isUnit` and
 `ODE.ButcherTableau.mem_absStabilityRegion_iff_of_isExplicit`. -/
 theorem rungeKutta_absStable_iff (tab : ButcherTableau s) :
     (∀ (lam : ℂ) (h : ℝ), 0 < h → IsUnit (1 - ((h : ℂ) * lam) • tab.complexA) →
@@ -504,16 +718,27 @@ theorem rungeKutta_absStable_iff (tab : ButcherTableau s) :
     isAbsStable_iff_mem_absStabilityRegion (M := tab.stepRel) tab.testField_scaleInvariant hh]
   exact tab.mem_absStabilityRegion_iff_of_isUnit hinv
 
-/-- **Explicit methods (§11.8.4)**: `R(z) = det(I - zA + z 𝟙 bᵀ) / det(I - zA)` with
-`det(I - zA) = 1`, so `R` is a polynomial in `z` (of degree at most `s`) and `𝒜` can never be
-unbounded: a consistent explicit method has a bounded region and is not A-stable; for an
-explicit `s`-stage method of order `s` (along `y' = y` on `[0, 1]`), `R(z) = ∑_{k=0}^s z^k / k!`
-— the book states this for `s = 1, …, 4`, where such methods exist — and in particular
-`R_{rk4}(z) = 1 + z + z²/2 + z³/6 + z⁴/24`;
-`ODE.ButcherTableau.stabilityFunction_eq_det_of_isExplicit`,
-`ODE.ButcherTableau.det_one_sub_smul_complexA`, `ODE.ButcherTableau.isBounded_absStabilityRegion`,
+/-- **Section 11.8.4** of [quarteroni2000numerical], explicit methods. Let the Runge–Kutta method
+with Butcher array $(A, b, c)$ be explicit, with stability function $R$. Then:
+
+* $R(z) = \det(I - zA + z \mathbf{1} b^T)$ and $\det(I - zA) = 1$ for every $z \in \mathbb{C}$,
+  so $R(z) = \det(I - zA + z \mathbf{1} b^T) / \det(I - zA)$;
+* $R$ agrees with the polynomial `ODE.ButcherTableau.stabilityPolynomial` of the tableau;
+* if $\sum_i b_i = 1$, the region of absolute stability $\mathcal{A}$ is bounded and the method
+  is not A-stable;
+* if the method has order $s$ (11.14) along the solution $e^t$ of $y' = y$ on $[0, 1]$, then
+  $R(z) = \sum_{k=0}^s z^k / k!$ for every $z$;
+* the classical method (11.73) has $R(z) = 1 + z + z^2/2 + z^3/6 + z^4/24$.
+
+**Generalization.** The source states $R(z) = \sum_{k=0}^s z^k / k!$ for $s = 1, \dots, 4$,
+where explicit $s$-stage methods of order $s$ exist. It is proved here for every $s$.
+
+The polynomial `ODE.ButcherTableau.stabilityPolynomial` has degree at most $s$. The proof
+specializes `ODE.ButcherTableau.stabilityFunction_eq_det_of_isExplicit`,
+`ODE.ButcherTableau.det_one_sub_smul_complexA`,
+`ODE.ButcherTableau.isBounded_absStabilityRegion`,
 `ODE.ButcherTableau.not_isAStable_of_isExplicit`,
-`ODE.ButcherTableau.stabilityFunction_eq_truncExp_of_hasOrder`, `ODE.stabilityFunction_rk4`. -/
+`ODE.ButcherTableau.stabilityFunction_eq_truncExp_of_hasOrder` and `ODE.stabilityFunction_rk4`. -/
 theorem rungeKutta_explicit_stabilityFunction (tab : ButcherTableau s)
     (hex : equation_11_71_explicit tab) :
     (∀ z : ℂ, stabilityFunction tab z = (1 - z • tab.complexA +
@@ -533,7 +758,7 @@ theorem rungeKutta_explicit_stabilityFunction (tab : ButcherTableau s)
 
 /-! ### Property 11.4: the order of an explicit method is at most its number of stages -/
 
-/-- Along `h → 0⁺` a higher power is dominated by a lower one: `h^q = O(h^p)` for `p ≤ q`. -/
+/-- As $h \to 0^+$, $h^q = O(h^p)$ for $p \le q$. -/
 private theorem isBigO_pow_of_le {p q : ℕ} (hpq : p ≤ q) :
     (fun h : ℝ => h ^ q) =O[𝓝[>] 0] fun h : ℝ => h ^ p := by
   refine IsBigO.of_bound 1 ?_
@@ -542,17 +767,13 @@ private theorem isBigO_pow_of_le {p q : ℕ} (hpq : p ≤ q) :
     one_mul]
   exact pow_le_pow_of_le_one hh.1.le hh.2 hpq
 
-/-- **Order (11.14) is monotone in the exponent**: a method of order `q` along `y` has order `p`
-for every `p ≤ q`. -/
+/-- A method of order $q$ (11.14) along $y$ has order $p$ along $y$ for every $p \le q$. -/
 private theorem equation_11_14_of_le {Φ : OneStep.Increment ℝ} {t₀ T : ℝ} {y : ℝ → ℝ} {p q : ℕ}
     (hpq : p ≤ q) (hord : equation_11_14 Φ t₀ T y q) : equation_11_14 Φ t₀ T y p :=
   equation_11_14_iff.2 ((equation_11_14_iff.1 hord).trans (isBigO_pow_of_le hpq))
 
-/-- The `O`-estimate behind Property 11.4: if an explicit method has order `m` along the solution
-`e^t` of `y' = y` on `[0, 1]`, then `R(h) - e^h = -h τ(h) = O(h^{m+1})`, because one step from `1`
-on that problem is `R(h)` (`ODE.ButcherTableau.stabilityFunction_ofReal`). This is the first half
-of `ODE.ButcherTableau.stabilityFunction_eq_truncExp_of_hasOrder`, restated with the order `m`
-released from the number of stages `s`, which that backbone lemma identifies. -/
+/-- If an explicit method has order $m$ along the solution $e^t$ of $y' = y$ on $[0, 1]$, then
+$R(h) - e^h = O(h^{m+1})$ as $h \to 0^+$, because one step from $1$ on this problem is $R(h)$. -/
 private theorem isBigO_stabilityFunction_sub_exp {m : ℕ} (tab : ButcherTableau s)
     (hex : tab.IsExplicit)
     (hord : OneStep.HasOrderFor (tab.explicitIncrement fun _ y => y) 0 1 Real.exp m) :
@@ -585,7 +806,7 @@ private theorem isBigO_stabilityFunction_sub_exp {m : ℕ} (tab : ButcherTableau
     Real.norm_eq_abs, abs_mul, abs_of_pos hh.1, abs_of_nonneg (OneStep.globalLte_nonneg _)]
   exact mul_le_mul_of_nonneg_left hle hh.1.le
 
-/-- Taylor's bound for the exponential: `e^h - ∑_{k ≤ m} h^k / k! = O(h^{m+1})` as `h → 0⁺`. -/
+/-- As $h \to 0^+$, $e^h - \sum_{k=0}^m h^k / k! = O(h^{m+1})$. -/
 private theorem isBigO_exp_sub_truncExp (m : ℕ) :
     (fun h : ℝ => Complex.exp h - ∑ k ∈ range (m + 1), (h : ℂ) ^ k / k.factorial) =O[𝓝[>] 0]
       fun h : ℝ => h ^ (m + 1) := by
@@ -599,11 +820,8 @@ private theorem isBigO_exp_sub_truncExp (m : ℕ) :
   rw [Real.norm_of_nonneg (pow_pos hh.1 _).le, mul_comm]
   exact this
 
-/-- **The stability polynomial of an explicit `s`-stage method of order `m ≥ s`** is the truncated
-exponential `∑_{k ≤ m} X^k / k!`: the difference has degree at most `m` — here `s ≤ m` is used —
-and is `O(h^{m+1})` at `0⁺`, hence zero (`Polynomial.eq_zero_of_isBigO_pow_succ`). This is
-`ODE.ButcherTableau.stabilityFunction_eq_truncExp_of_hasOrder` with the order released from the
-number of stages, and as a polynomial identity rather than pointwise. -/
+/-- If an explicit $s$-stage method has order $m \ge s$ along the solution $e^t$ of $y' = y$ on
+$[0, 1]$, its stability polynomial is $\sum_{k=0}^m X^k / k!$. -/
 private theorem stabilityPolynomial_eq_truncExp {m : ℕ} (tab : ButcherTableau s)
     (hex : tab.IsExplicit) (hsm : s ≤ m)
     (hord : OneStep.HasOrderFor (tab.explicitIncrement fun _ y => y) 0 1 Real.exp m) :
@@ -640,20 +858,21 @@ private theorem stabilityPolynomial_eq_truncExp {m : ℕ} (tab : ButcherTableau 
     rw [Polynomial.eval_sub, hSeval, tab.stabilityFunction_eq_eval hex, sub_add_sub_cancel]
   exact sub_eq_zero.1 hQ
 
-/-- **Property 11.4, first clause (Butcher's first order barrier)**: *the order of an `s`-stage
-explicit Runge–Kutta method is at most `s`.*
+/-- **Property 11.4** of [quarteroni2000numerical], first clause (Butcher's first order barrier).
+Let the $s$-stage Runge–Kutta method with Butcher array $(A, b, c)$ be explicit. If the method
+has order $q$ (11.14) along the solution $e^t$ of the test problem $y' = y$ on $[0, 1]$, then
+$q \le s$.
 
-It is enough that the method have order `q` along the single solution `e^t` of the test problem
-`y' = y` on `[0, 1]`, which is the form the book's Table 11.1 (`s = 1, …, 4`) is read from. The
-proof is the one of §11.8.4 rather than Butcher's: for an explicit method the stability function
-`R` is a polynomial of degree at most `s` (`rungeKutta_explicit_stabilityFunction`), and one step
-from `1` on `y' = y` is `R(h)`, so order `q` makes `R(h) - e^h = O(h^{q+1})`. Were `q > s`, the
-method would have order `s + 1` too, and `R` would have to be `∑_{k ≤ s+1} X^k / k!`, whose
-coefficient `1/(s+1)!` in degree `s + 1` a polynomial of degree at most `s` cannot carry.
+**Generalization.** The source states that the order of an explicit $s$-stage method is at most
+$s$. Here the order is needed only along one solution of $y' = y$; this is also the form in
+which Table 11.1 of the source, for $s = 1, \dots, 4$, is read.
 
-The other clauses of Property 11.4 — that no explicit `s`-stage method attains order `s` for
-`s ≥ 5`, and the minimal stage numbers `1, 2, 3, 4, 6, 7, 9, 11` for orders `1, …, 8` — are not
-formalized; see the module doc. -/
+The proof is the argument of Section 11.8.4, not Butcher's. For an explicit method $R$ is a
+polynomial of degree at most $s$
+(`QuarteroniSaccoSaleri.Chapter11.rungeKutta_explicit_stabilityFunction`), and one step from $1$
+on $y' = y$ is $R(h)$, so order $q$ gives $R(h) - e^h = O(h^{q+1})$. If $q > s$, then $R$ would
+be $\sum_{k \le s+1} X^k / k!$, whose coefficient $1/(s+1)!$ in degree $s + 1$ is not zero. The
+other clauses of Property 11.4 are not formalized. -/
 theorem property_11_4_order_le_stages {q : ℕ} (tab : ButcherTableau s)
     (hex : equation_11_71_explicit tab)
     (hord : equation_11_14 (equation_11_70_increment tab fun _ y => y) 0 1 Real.exp q) :

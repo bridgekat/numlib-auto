@@ -5,51 +5,73 @@ Released under Apache 2.0 license as described in the file LICENSE.
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter03.Section14
 
 /-!
-# Quarteroni–Sacco–Saleri §3.15: exercises
+# Quarteroni, Sacco and Saleri, Section 3.15: Exercises
 
-Surface file for Alfio Quarteroni, Riccardo Sacco and Fausto Saleri, *Numerical Mathematics*
-[quarteroni2000numerical], §3.15: the exercises the main text cites — 1 and 2 (§3.1.1), 4
-(§3.1.2), 5 (§3.10), 11 (§3.9) and 15 (§3.11) — over the backbone
-`Numlib/Analysis/Matrix/OperatorNorm` (the comparison of the induced norms),
-`Numlib/LinearAlgebra/Matrix/LU` with `LU/Elimination` and `LU/Pivoting` (the LU factorization, the
-envelope, the stages of GEM and the growth factor) and `Numlib/LinearAlgebra/Matrix/SVD` (the
-singular system).
+This module formalizes the exercises of Section 3.15 of [quarteroni2000numerical] that the main text
+of Chapter 3 cites: Exercises 1 and 2 (cited in Section 3.1.1), 4 (Section 3.1.2), 5 (Section 3.10),
+11 (Section 3.9) and 15 (Section 3.11). They compare the condition numbers $K_1$, $K_2$ and
+$K_\infty$, give a matrix with determinant $1$ but a large condition number and a matrix with a
+large condition number for which a system is well conditioned, show that the growth factor bound
+$2^{n-1}$ of Gaussian elimination is attained, show an arrow matrix whose envelope is full but whose
+factorization has no fill-in, and express the ratio $\|y\|_2 / \|x\|_2$ of (3.70) through the
+singular system of $A$.
+
+The proofs specialize the backbone modules `Numlib.Analysis.Matrix.OperatorNorm` (the comparison of
+the induced norms), `Numlib.LinearAlgebra.Matrix.LU` with
+`Numlib.LinearAlgebra.Matrix.LU.Elimination` and `Numlib.LinearAlgebra.Matrix.LU.Pivoting` (the LU
+factorization, the envelope, the stages of Gaussian elimination and the growth factor), and
+`Numlib.LinearAlgebra.Matrix.SVD` (the singular system).
+
+## Main results
+
+* Exercise 3.1, `QuarteroniSaccoSaleri.Chapter03.exercise_3_1`: $K_1$, $K_2$ and $K_\infty$ are
+  equivalent up to factors $n$ and $n^2$.
+* Exercise 3.2, `QuarteroniSaccoSaleri.Chapter03.exercise_3_2`: the unit upper triangular matrix
+  with $-1$ above the diagonal has determinant $1$ and $K_\infty(B) = n 2^{n-1}$.
+* Exercise 3.4, `QuarteroniSaccoSaleri.Chapter03.exercise_3_4`: for $A = \begin{bmatrix} 1 & \gamma
+  \\ 0 & 1 \end{bmatrix}$, $K_\infty(A) = K_1(A) = (1 + \gamma)^2$, but the system with solution
+  $(1 - \gamma, 1)^T$ is well conditioned.
+* Exercise 3.5, `QuarteroniSaccoSaleri.Chapter03.exercise_3_5`: Wilkinson's matrix has an LU
+  factorization with $|l_{ij}| \le 1$ and $u_{nn} = 2^{n-1}$, and its growth factor is $2^{n-1}$.
+* Exercise 3.11, `QuarteroniSaccoSaleri.Chapter03.exercise_3_11`: the arrow matrix has no fill-in
+  although its envelope is the whole strict lower triangle, and a symmetric permutation empties the
+  envelope.
+* Exercise 3.15, `QuarteroniSaccoSaleri.Chapter03.exercise_3_15`: the ratio $\|y\|_2 / \|x\|_2$ of
+  (3.70) in terms of the singular system of $A$.
 
 ## Conventions
 
-Those of §3.1 and §3.10: `‖A‖_p = lpOpNorm p A`, `K_p(A) = condNumber p A`, vectors in the
-`∞`-norm carry the `Pi` norm, the growth factor is `equation_3_66 A = growthFactor A`, and the
-first and last indices of `Fin n` are `0` and `⊤` under `[NeZero n]`. A matrix given by its
-entries is `Matrix.of fun i j => …`.
+* Exercise 3.k is Exercise k of Section 3.15.
+* The conventions are those of Sections 3.1 and 3.10: $\|A\|_p$ is `Matrix.lpOpNorm p A`, $K_p(A)$
+  is `QuarteroniSaccoSaleri.Chapter03.condNumber p A`, vectors in the $\infty$-norm carry the sup
+  norm of `Fin n → ℝ`, and the growth factor is `QuarteroniSaccoSaleri.Chapter03.equation_3_66 A`.
+* Indices are $0$-based. For $n \ge 1$, which is `[NeZero n]`, the first and the last index of
+  `Fin n` are `0` and `⊤`.
+* A matrix given by its entries is `Matrix.of fun i j => …`.
 
-## Contents
+## Implementation notes
 
-* `exercise_3_1` — the equivalence of `K₁`, `K₂` and `K_∞` up to powers of `n`.
-* `exercise_3_2` — the unit upper triangular matrix with `-1` above the diagonal:
-  `det B = 1`, `K_∞(B) = n 2^{n-1}`.
-* `exercise_3_4` — `A = [1 γ; 0 1]`: `K_∞(A) = K₁(A) = (1 + γ)²`, yet the system with solution
-  `(1 - γ, 1)ᵀ` is well conditioned.
-* `exercise_3_5` — Wilkinson's matrix: an LU factorization with `|l_ij| ≤ 1` and
-  `u_nn = 2^{n-1}`, and the growth factor `2^{n-1}`.
-* `exercise_3_11` — the arrow matrix: no fill-in although the envelope is the whole strict
-  lower triangle, and the permutation that empties the envelope.
-* `exercise_3_15` — the ratio `‖y‖₂/‖x‖₂` of (3.70) through the singular system of `A`.
+* Exercise 6 is part of `QuarteroniSaccoSaleri.Chapter03.example_3_7_lu` in Section 3.10.
+* In Exercise 3.15 the singular system is written with the book's letters, $A v_i = \sigma_i u_i$
+  and $A^T u_i = \sigma_i v_i$. The backbone `Matrix.exists_singularSystem` names the two families
+  the other way round.
 
-Exercise 6 is folded into `example_3_7_lu` (`Section10`); Exercise 3 (`K(A B) ≤ K(A) K(B)`) is
-the backbone's `NormedRing.condNumber_mul_le` and is not cited by the text; Exercises 7–10,
-12–14 are not cited and are not nodes.
+## Deviations from the source
 
-## Readings
+* **Exercise 3.4** (reading). The book asks whether the problem is well or ill conditioned. The
+  statement gives the answer as a bound on the amplification of relative errors, by a factor at most
+  $3$. See `QuarteroniSaccoSaleri.Chapter03.exercise_3_4`.
+* **Exercise 3.11** (reading). "Fill-in" is read through (3.59) and (3.60): the factors have no
+  nonzero entry where $A$ has none, and the envelope of $A$ is the whole strict lower triangle. See
+  `QuarteroniSaccoSaleri.Chapter03.exercise_3_11`.
 
-Exercise 4 asks whether the problem is well- or ill-conditioned; the answer stated is the bound
-`‖δx‖_∞/‖x‖_∞ ≤ ((1 + γ)/max(|1 - γ|, 1)) ‖δb‖_∞/‖b‖_∞` with amplification factor at most `3`
-for every `γ ≥ 0`, although `K_∞(A) = (1 + γ)²` is unbounded. Exercise 11's "fill-in" is read
-through (3.59)–(3.60): the factors have no nonzero entry where `A` has none, while the envelope
-of `A` is the whole strict lower triangle; the hint's permutation `P` (first ↔ last row and
-column) makes `P A Pᵀ = A.submatrix σ σ` upper triangular, with empty envelope. Exercise 15's
-singular system is written with the book's letters, `A v_i = σ_i u_i`, `Aᵀ u_i = σ_i v_i`; the
-backbone's `Matrix.exists_singularSystem` names them the other way round. The discussion of when
-the ratio approximates `σ_n⁻¹ = ‖A⁻¹‖₂` is prose.
+## Not formalized
+
+* **Exercise 3**, the bound $K(AB) \le K(A) K(B)$. It is not cited by the text, and it is the
+  backbone theorem `NormedRing.condNumber_mul_le`.
+* **Exercises 7 to 10 and 12 to 14.** They are not cited by the text.
+* **Exercise 15, the discussion** of when the ratio $\|y\|_2 / \|x\|_2$ approximates
+  $\sigma_n^{-1} = \|A^{-1}\|_2$. It is prose.
 -/
 
 open Finset Matrix WithLp
@@ -61,7 +83,8 @@ variable {n : ℕ}
 
 /-! ### Exercise 1 -/
 
-/-- A comparison `‖M‖_p ≤ c ‖M‖_q` of two induced norms gives `K_p(A) ≤ c² K_q(A)`. -/
+/-- If $\|M\|_p \le c \|M\|_q$ for every matrix $M$, with $c \ge 0$, then $K_p(A) \le c^2 K_q(A)$.
+-/
 private theorem condNumber_le_of_lpOpNorm_le {p q : ℝ≥0∞} [Fact (1 ≤ p)] [Fact (1 ≤ q)] {c : ℝ}
     (hc : 0 ≤ c) (h : ∀ M : Matrix (Fin n) (Fin n) ℝ, lpOpNorm p M ≤ c * lpOpNorm q M)
     (A : Matrix (Fin n) (Fin n) ℝ) : condNumber p A ≤ c ^ 2 * condNumber q A := by
@@ -70,7 +93,7 @@ private theorem condNumber_le_of_lpOpNorm_le {p q : ℝ≥0∞} [Fact (1 ≤ p)]
         mul_le_mul (h A) (h A⁻¹) (lpOpNorm_nonneg _ _) (mul_nonneg hc (lpOpNorm_nonneg _ _))
     _ = c ^ 2 * (lpOpNorm q A * lpOpNorm q A⁻¹) := by ring
 
-/-- `K' ≤ n K` gives the book's `(1/n) K' ≤ K` (trivially for `n = 0`). -/
+/-- If $K \ge 0$ and $K' \le nK$, then $(1/n) K' \le K$, where $1/0 = 0$. -/
 private theorem one_div_mul_le {K K' : ℝ} (hK : 0 ≤ K) (h : K' ≤ n * K) : (1 / n : ℝ) * K' ≤ K := by
   rcases Nat.eq_zero_or_pos n with hn | hn
   · subst hn
@@ -79,12 +102,18 @@ private theorem one_div_mul_le {K K' : ℝ} (hK : 0 ≤ K) (h : K' ≤ n * K) : 
     calc (1 / n : ℝ) * K' ≤ (1 / n : ℝ) * (n * K) := by gcongr
       _ = K := by field_simp
 
-/-- **Exercise 3.1.** For any `A ∈ ℝ^{n×n}`,
-`(1/n) K₂(A) ≤ K₁(A) ≤ n K₂(A)`, `(1/n) K_∞(A) ≤ K₂(A) ≤ n K_∞(A)` and
-`(1/n²) K₁(A) ≤ K_∞(A) ≤ n² K₁(A)`: a matrix ill conditioned in one norm is so in every other,
-up to a factor depending on `n` (backbone `Matrix.l2_opNorm_le_sqrt_card_mul_lpOpNorm_one`,
-`Matrix.l2_opNorm_le_sqrt_card_mul_linfty_opNorm`, `Matrix.lpOpNorm_le_card_rpow_mul_lpOpNorm_of_le`
-and `_of_ge`, applied to `A` and `A⁻¹`). -/
+/-- **Exercise 3.1** of [quarteroni2000numerical]. For every $A \in \mathbb{R}^{n \times n}$,
+$$\frac{1}{n} K_2(A) \le K_1(A) \le n K_2(A), \qquad \frac{1}{n} K_\infty(A) \le K_2(A) \le n
+  K_\infty(A), \qquad \frac{1}{n^2} K_1(A) \le K_\infty(A) \le n^2 K_1(A).$$
+So a matrix that is ill conditioned in one of these norms is ill conditioned in the others, up
+to a factor that depends on $n$.
+
+For $n = 0$ the left inequalities hold because $1/0 = 0$ in Lean. For a singular $A$ all the
+condition numbers are $0$ in Lean. The proof applies
+`Matrix.l2_opNorm_le_sqrt_card_mul_lpOpNorm_one`,
+`Matrix.l2_opNorm_le_sqrt_card_mul_linfty_opNorm`,
+`Matrix.lpOpNorm_le_card_rpow_mul_lpOpNorm_of_le` and
+`Matrix.lpOpNorm_le_card_rpow_mul_lpOpNorm_of_ge` to $A$ and to $A^{-1}$. -/
 theorem exercise_3_1 (A : Matrix (Fin n) (Fin n) ℝ) :
     ((1 / n : ℝ) * condNumber 2 A ≤ condNumber 1 A ∧ condNumber 1 A ≤ n * condNumber 2 A) ∧
       ((1 / n : ℝ) * condNumber ⊤ A ≤ condNumber 2 A ∧ condNumber 2 A ≤ n * condNumber ⊤ A) ∧
@@ -126,13 +155,13 @@ theorem exercise_3_1 (A : Matrix (Fin n) (Fin n) ℝ) :
 
 /-! ### Exercise 2 -/
 
-/-- `∑_{t < m} 2^t = 2^m - 1`. -/
+/-- $\sum_{t < m} 2^t = 2^m - 1$. -/
 private theorem sum_range_two_pow (m : ℕ) : ∑ t ∈ range m, (2 : ℝ) ^ t = 2 ^ m - 1 := by
   induction m with
   | zero => simp
   | succ m ih => rw [sum_range_succ, ih, pow_succ]; ring
 
-/-- `∑_{a ≤ j < b} 2^(b - j - 1) = 2^(b - a) - 1`. -/
+/-- $\sum_{a \le j < b} 2^{b - j - 1} = 2^{b - a} - 1$ for $a \le b$. -/
 private theorem sum_Ico_two_pow_rev {a b : ℕ} (hab : a ≤ b) :
     ∑ j ∈ Ico a b, (2 : ℝ) ^ (b - j - 1) = 2 ^ (b - a) - 1 := by
   induction b, hab using Nat.le_induction with
@@ -149,14 +178,14 @@ private theorem sum_Ico_two_pow_rev {a b : ℕ} (hab : a ≤ b) :
     rw [this, ← Finset.sum_mul, ih]
     ring
 
-/-- `∑_{a ≤ j < b} 2^(j - a) = 2^(b - a) - 1`. -/
+/-- $\sum_{a \le j < b} 2^{j - a} = 2^{b - a} - 1$. -/
 private theorem sum_Ico_two_pow (a b : ℕ) :
     ∑ j ∈ Ico a b, (2 : ℝ) ^ (j - a) = 2 ^ (b - a) - 1 := by
   rw [Finset.sum_Ico_eq_sum_range, ← sum_range_two_pow]
   exact Finset.sum_congr rfl fun t _ => by rw [Nat.add_sub_cancel_left]
 
-/-- The maximum-row-sum norm of a real matrix, from a bound on every row and a row attaining
-it. -/
+/-- If every row sum $\sum_j |b_{ij}|$ of a real matrix $B$ is at most $c \ge 0$, and one row sum
+equals $c$, then $\|B\|_\infty = c$. -/
 private theorem linfty_opNorm_eq_of_forall_sum_le {B : Matrix (Fin n) (Fin n) ℝ} {c : ℝ}
     (hc : 0 ≤ c) (h : ∀ i, ∑ j, |B i j| ≤ c) (i₀ : Fin n) (h₀ : ∑ j, |B i₀ j| = c) :
     lpOpNorm ⊤ B = c := by
@@ -164,10 +193,14 @@ private theorem linfty_opNorm_eq_of_forall_sum_le {B : Matrix (Fin n) (Fin n) �
   exact le_antisymm (linfty_opNorm_le_of_forall_sum_le hc h)
     (h₀ ▸ sum_abs_apply_le_linfty_opNorm B i₀)
 
-/-- **Exercise 3.2.** The matrix `B ∈ ℝ^{n×n}` with `b_ii = 1`, `b_ij = -1` for `i < j` and
-`b_ij = 0` for `i > j` has determinant `1`, yet `K_∞(B) = n 2^{n-1}` is large: its inverse is
-the unit upper triangular matrix with `(B⁻¹)_ij = 2^{j-i-1}` for `i < j`, so `‖B‖_∞ = n` (the
-first row) and `‖B⁻¹‖_∞ = 2^{n-1}` (the first row again). -/
+/-- **Exercise 3.2** of [quarteroni2000numerical]. Let $n \ge 1$, and let
+$B \in \mathbb{R}^{n \times n}$ have the entries $b_{ii} = 1$, $b_{ij} = -1$ for $i < j$, and
+$b_{ij} = 0$ for $i > j$. Then $\det B = 1$, the inverse $B^{-1}$ is the unit upper triangular
+matrix with $(B^{-1})_{ij} = 2^{j - i - 1}$ for $i < j$, and
+$$\|B\|_\infty = n, \qquad \|B^{-1}\|_\infty = 2^{n-1}, \qquad K_\infty(B) = n\, 2^{n-1}.$$
+So $K_\infty(B)$ is large although $\det B = 1$.
+
+Both norms are attained at the first row. -/
 theorem exercise_3_2 [NeZero n] :
     let B : Matrix (Fin n) (Fin n) ℝ := of fun i j => if i = j then 1 else if i < j then -1 else 0
     B.det = 1 ∧
@@ -280,7 +313,7 @@ theorem exercise_3_2 [NeZero n] :
 
 /-! ### Exercise 4 -/
 
-/-- The sup norm on `ℝ²`. -/
+/-- The sup norm of $(a, b) \in \mathbb{R}^2$ is $\max(|a|, |b|)$. -/
 private theorem pi_norm_fin_two (a b : ℝ) : ‖![a, b]‖ = max |a| |b| := by
   refine le_antisymm ?_ (max_le ?_ ?_)
   · refine (pi_norm_le_iff_of_nonneg (le_max_of_le_left (abs_nonneg _))).2 fun i => ?_
@@ -290,12 +323,21 @@ private theorem pi_norm_fin_two (a b : ℝ) : ‖![a, b]‖ = max |a| |b| := by
   · simpa using norm_le_pi_norm ![a, b] 0
   · simpa using norm_le_pi_norm ![a, b] 1
 
-/-- **Exercise 3.4.** For `A = [1 γ; 0 1]` with `γ ≥ 0`, `A⁻¹ = [1 -γ; 0 1]` and
-`K_∞(A) = K₁(A) = (1 + γ)²`. For the system `A x = b` whose solution is `x = (1 - γ, 1)ᵀ`, so
-that `b = (1, 1)ᵀ`, a perturbation `δb = (δ₁, δ₂)ᵀ` of the right-hand side gives
-`‖δx‖_∞/‖x‖_∞ ≤ ((1 + γ)/max(|1 - γ|, 1)) ‖δb‖_∞/‖b‖_∞`, and the amplification factor is at most
-`3` for every `γ ≥ 0`: the problem is well conditioned, although `K_∞(A)` is arbitrarily large
-(the bound of Theorem 3.1 is attained only for special `b`). -/
+/-- **Exercise 3.4** of [quarteroni2000numerical]. Let $\gamma \ge 0$ and
+$$A = \begin{bmatrix} 1 & \gamma \\ 0 & 1 \end{bmatrix}, \qquad x = \begin{bmatrix} 1 - \gamma
+  \\ 1 \end{bmatrix}, \qquad b = \begin{bmatrix} 1 \\ 1 \end{bmatrix}.$$
+Then $A^{-1} = \begin{bmatrix} 1 & -\gamma \\ 0 & 1 \end{bmatrix}$,
+$K_\infty(A) = K_1(A) = (1 + \gamma)^2$, $Ax = b$, $\|x\|_\infty = \max(|1 - \gamma|, 1)$ and
+$\|b\|_\infty = 1$. For all $\delta b, \delta x \in \mathbb{R}^2$ with
+$A(x + \delta x) = b + \delta b$,
+$$\frac{\|\delta x\|_\infty}{\|x\|_\infty} \le \frac{1 + \gamma}{\max(|1 - \gamma|, 1)} \,
+  \frac{\|\delta b\|_\infty}{\|b\|_\infty},$$
+and the amplification factor satisfies $(1 + \gamma) / \max(|1 - \gamma|, 1) \le 3$. So the
+problem is well conditioned for every $\gamma \ge 0$, although $K_\infty(A)$ is arbitrarily
+large: the bound of Theorem 3.1 is attained only for special $b$.
+
+**Reading.** The book asks whether the problem is well or ill conditioned. The statement gives
+the answer as the bound above, with amplification factor at most $3$. -/
 theorem exercise_3_4 {γ : ℝ} (hγ : 0 ≤ γ) :
     let A : Matrix (Fin 2) (Fin 2) ℝ := !![1, γ; 0, 1]
     A⁻¹ = !![1, -γ; 0, 1] ∧ condNumber ⊤ A = (1 + γ) ^ 2 ∧ condNumber 1 A = (1 + γ) ^ 2 ∧
@@ -357,7 +399,7 @@ theorem exercise_3_4 {γ : ℝ} (hγ : 0 ≤ γ) :
 
 /-! ### Exercise 5 -/
 
-/-- `∑_{j < i} 2^j = 2^i - 1` over `Fin n`. -/
+/-- For $i < n$, $\sum_{j < i} 2^j = 2^i - 1$, as a sum over `Fin n`. -/
 private theorem sum_fin_lt_two_pow (i : Fin n) :
     ∑ j : Fin n, (if j < i then (2 : ℝ) ^ (j : ℕ) else 0) = 2 ^ (i : ℕ) - 1 := by
   set f : ℕ → ℝ := fun t => if t < (i : ℕ) then (2 : ℝ) ^ t else 0 with hf
@@ -371,20 +413,30 @@ private theorem sum_fin_lt_two_pow (i : Fin n) :
     omega
   rw [hfilter, sum_range_two_pow]
 
-/-- An LU factorization whose upper factor has a nowhere-zero diagonal has nonsingular strict
-leading principal submatrices (backbone `Matrix.IsLU.det_strictLeadingPrincipalSubmatrix`). -/
+/-- If $A = LU$ is an LU factorization and the diagonal entries of $U$ are nonzero, then every
+strict leading principal submatrix of $A$ is nonsingular. -/
 private theorem isUnit_strict_of_isLU {A L U : Matrix (Fin n) (Fin n) ℝ} (h : IsLU A L U)
     (hd : ∀ i, U i i ≠ 0) (k : Fin n) : IsUnit (A.strictLeadingPrincipalSubmatrix k) := by
   rw [isUnit_iff_isUnit_det, h.det_strictLeadingPrincipalSubmatrix, isUnit_iff_ne_zero,
     Finset.prod_ne_zero_iff]
   exact fun i _ => hd i
 
-/-- **Exercise 3.5** (Wilkinson's matrix). Let `A ∈ ℝ^{n×n}` have entries `a_ij = 1` if `i = j`
-or `j = n`, `a_ij = -1` if `i > j`, and `0` otherwise. Then `A` admits the (unique) LU
-factorization `A = L U` with `L` the lower part of `A` (`l_ij = -1` below the diagonal, so
-`|l_ij| ≤ 1`) and `U` the identity except for its last column `u_in = 2^{i-1}`, whence
-`u_nn = 2^{n-1}`: the growth factor of GEM is `ρ_n = 2^{n-1}`, and the bound
-`growthFactor_le_two_pow` of §3.10 is attained. -/
+/-- **Exercise 3.5** of [quarteroni2000numerical] (Wilkinson's matrix). Let $n \ge 1$, and let
+$A \in \mathbb{R}^{n \times n}$ have the entries $a_{ij} = 1$ if $i = j$ or $j = n$,
+$a_{ij} = -1$ if $i > j$, and $a_{ij} = 0$ otherwise. Let $L$ be the unit lower triangular
+matrix with $l_{ij} = -1$ for $i > j$, and let $U$ be the identity matrix with its last column
+replaced by $u_{in} = 2^{i-1}$. Then:
+
+* $A = LU$ is an LU factorization, and it is the only one;
+* $|l_{ij}| \le 1$ for all $i, j$;
+* $u_{nn} = 2^{n-1}$;
+* the growth factor (3.66) of Gaussian elimination on $A$ is $\rho_n = 2^{n-1}$.
+
+So the bound `QuarteroniSaccoSaleri.Chapter03.growthFactor_le_two_pow` of Section 3.10 is
+attained.
+
+The indices above are $1$-based. In Lean they are $0$-based, the last index is `⊤`, and $u_{in}$
+is `2 ^ (i : ℕ)`. -/
 theorem exercise_3_5 [NeZero n] :
     let A : Matrix (Fin n) (Fin n) ℝ :=
       of fun i j => if i = j ∨ j = ⊤ then 1 else if j < i then -1 else 0
@@ -464,14 +516,27 @@ theorem exercise_3_5 [NeZero n] :
 
 /-! ### Exercise 11 -/
 
-/-- **Exercise 3.11.** Let `A ∈ ℝ^{n×n}` have nonzero entries only on the main diagonal, in
-the first column and in the last row, with a nonzero diagonal. Then `A = L U` with `L` the
-lower part of `A` scaled by the pivots and `U = diag(a_ii)`: there is no fill-in (the factors
-vanish wherever `A` does), although the envelope (3.59) of `A` is the whole strict lower
-triangle as soon as the first column is nonzero — "the hull can contain many zeros" (§3.9).
-Exchanging the first and the last row and column (the hint), `σ = swap 0 n`, turns `A` into
-`P A Pᵀ = A.submatrix σ σ`, which is upper triangular: its envelope is empty and its LU
-factorization is `1 · (P A Pᵀ)`, with no fill-in at all. -/
+/-- **Exercise 3.11** of [quarteroni2000numerical]. Let $n \ge 1$, and let
+$A \in \mathbb{R}^{n \times n}$ have nonzero entries only on the main diagonal, in the first
+column and in the last row, with $a_{ii} \neq 0$ for all $i$. Let $L$ be the unit lower
+triangular matrix with $l_{ij} = a_{ij} / a_{jj}$ for $i > j$, and let
+$D = \operatorname{diag}(a_{11}, \dots, a_{nn})$. Let $P$ be the permutation matrix that
+exchanges the first and the last index. Then:
+
+* $A = LD$ is an LU factorization;
+* there is no fill-in: for $i \neq j$, if $l_{ij} \neq 0$ or $d_{ij} \neq 0$, then
+  $a_{ij} \neq 0$;
+* if $a_{i1} \neq 0$ for all $i > 1$, then the envelope (3.59) of $A$ is the whole strict lower
+  triangle $\{(i, j) : j < i\}$, although the envelope "can contain many zeros" (Section 3.9);
+* $P A P^T$ is upper triangular, its envelope is empty, and $P A P^T = I \cdot (P A P^T)$ is its
+  LU factorization.
+
+**Reading.** "Fill-in" is read through (3.59) and (3.60): the factors have no nonzero entry
+where $A$ has none, while the envelope of $A$ is the whole strict lower triangle. The
+permutation $P$ is the one of the hint.
+
+The matrix $P A P^T$ is `A.submatrix σ σ` with `σ = Equiv.swap 0 ⊤`, and the envelope is
+`QuarteroniSaccoSaleri.Chapter03.equation_3_59`. -/
 theorem exercise_3_11 [NeZero n] {A : Matrix (Fin n) (Fin n) ℝ}
     (hpat : ∀ i j, A i j ≠ 0 → i = j ∨ j = 0 ∨ i = ⊤) (hdiag : ∀ i, A i i ≠ 0) :
     let L : Matrix (Fin n) (Fin n) ℝ :=
@@ -536,15 +601,25 @@ theorem exercise_3_11 [NeZero n] {A : Matrix (Fin n) (Fin n) ℝ}
 
 /-! ### Exercise 15 -/
 
-/-- **Exercise 3.15.** Let `A ∈ ℝ^{n×n}` be nonsingular, with singular system
-`(σ_i; u_i, v_i)`, `i = 1, …, n`: `σ_i > 0`, `(u_i)` and `(v_i)` orthonormal, `A v_i = σ_i u_i`
-and `Aᵀ u_i = σ_i v_i` (backbone `Matrix.exists_singularSystem`; `rank A = n`, so the `v_i` are
-an orthonormal basis and every `d` expands as `d = ∑ d̃_i v_i` with `d̃_i = (v_i, d)`). Then the
-solutions `x`, `y` of `Aᵀ x = d`, `A y = x` in (3.70) are `x = ∑ (d̃_i/σ_i) u_i` and
-`y = ∑ (d̃_i/σ_i²) v_i`, and
-`‖y‖₂/‖x‖₂ = [∑ (d̃_i/σ_i²)² / ∑ (d̃_i/σ_i)²]^{1/2}`. When this ratio approximates
-`σ_n⁻¹ = ‖A⁻¹‖₂` (a `d̃_n` that is not too small, an ill-conditioned `A`) is the book's
-discussion and is prose. -/
+/-- **Exercise 3.15** of [quarteroni2000numerical]. Let $n \ge 1$, and let
+$A \in \mathbb{R}^{n \times n}$ be nonsingular. Then $\operatorname{rank} A = n$, and $A$ has a
+singular system $(\sigma_i; u_i, v_i)$, $i = 1, \dots, n$: numbers $\sigma_i > 0$ and
+orthonormal families $(u_i)$ and $(v_i)$ in $\mathbb{R}^n$ with
+$$A v_i = \sigma_i u_i, \qquad A^T u_i = \sigma_i v_i.$$
+Every $d \in \mathbb{R}^n$ expands as $d = \sum_i (v_i, d)\, v_i$. For every $d$ and all
+coefficients $\tilde d_i$ with $d = \sum_i \tilde d_i v_i$, the solutions $x$ of $A^T x = d$ and
+$y$ of $Ay = x$ in (3.70) are
+$$x = \sum_i \frac{\tilde d_i}{\sigma_i} u_i, \qquad y = \sum_i \frac{\tilde d_i}{\sigma_i^2}
+  v_i, \qquad \frac{\|y\|_2}{\|x\|_2} = \left[ \frac{\sum_i (\tilde d_i / \sigma_i^2)^2}{\sum_i
+  (\tilde d_i / \sigma_i)^2} \right]^{1/2}.$$
+
+The singular system is indexed by `Fin A.rank`, and its vectors are in
+`EuclideanSpace ℝ (Fin n)`. The vectors $x$ and $y$ are written as $A^{-T} d$ and
+$A^{-1} A^{-T} d$. For $d = 0$ both sides of the ratio are $0$ in Lean. The book's letters are
+used: the backbone `Matrix.exists_singularSystem` names the two families the other way round.
+The book then discusses when the ratio approximates $\sigma_n^{-1} = \|A^{-1}\|_2$, for a
+coefficient $\tilde d_n$ that is not too small and an ill-conditioned $A$; this discussion is
+prose and is not formalized. -/
 theorem exercise_3_15 [NeZero n] {A : Matrix (Fin n) (Fin n) ℝ} (hA : IsUnit A) :
     A.rank = n ∧
     ∃ (σ : Fin A.rank → ℝ) (u v : Fin A.rank → EuclideanSpace ℝ (Fin n)),

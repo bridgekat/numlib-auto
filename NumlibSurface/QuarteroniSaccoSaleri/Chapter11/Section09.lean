@@ -6,35 +6,51 @@ import Numlib.Analysis.ODE.LinearSystem
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter11.Section01
 
 /-!
-# Quarteroni–Sacco–Saleri §11.9: systems of ODEs
+# Quarteroni, Sacco and Saleri, Section 11.9: Systems of ODEs
 
-Surface file for Alfio Quarteroni, Riccardo Sacco and Fausto Saleri, *Numerical Mathematics*,
-Springer, 2000, §11.9.
+This module formalizes Section 11.9 of [quarteroni2000numerical], on the Cauchy problem for a system
+$y' = F(t, y)$, $y(t_0) = y_0$ in $\mathbb{R}^n$ (11.78)–(11.79). Property 11.5 gives global
+existence and uniqueness when $F$ is continuous and Lipschitz in $y$ (11.80). For the linear system
+$y' = Ay$ (11.81) with a diagonalizable matrix $A \in \mathbb{R}^{n \times n}$, the solutions are
+$y(t) = \sum_j C_j e^{\lambda_j t} v_j$ (11.82), they decay to $0$ when every eigenvalue has
+negative real part (11.83)–(11.84), and the change of variables $z = Q^{-1} y$ turns the system into
+the diagonal system $z' = \Lambda z$ (11.85).
 
-The vector Cauchy problem (11.78)–(11.79) `y' = F(t, y)`, `y(t₀) = y₀` in `ℝⁿ`; Property 11.5
-(global existence and uniqueness under the Lipschitz condition (11.80)); the linear system
-`y' = A y` (11.81) with `A ∈ ℝⁿˣⁿ` diagonalizable, its solutions `y(t) = ∑ⱼ Cⱼ e^{λⱼ t} vⱼ`
-(11.82), their decay when every eigenvalue has negative real part (11.83)–(11.84), and the
-diagonalized system `z' = Λ z`, `z = Q⁻¹ y` (11.85).
-
-The vector Cauchy problem is `ODE.IsSolutionOn` on `EuclideanSpace ℝ (Fin n)` and Property 11.5
-is `ODE.existsUnique_isSolutionOn_of_lipschitz` there; the linear system is read on `Fin n → ℝ`,
-where matrices act by `Matrix.mulVec`, and its complexification `A.map ofReal` on `Fin n → ℂ`
-is the setting of `Numlib/Analysis/ODE/LinearSystem`. The book's hypothesis "`A` has `n` distinct
-eigenvalues `λⱼ` with eigenvectors `vⱼ`" is taken in the form it is used, a diagonalization
-`A = Q Λ Q⁻¹` over `ℂ` with `Λ = diagonal λ` and the columns of `Q` the eigenvectors.
+The vector Cauchy problem is `ODE.IsSolutionOn` on `EuclideanSpace ℝ (Fin n)`, and Property 11.5
+specializes `ODE.existsUnique_isSolutionOn_of_lipschitz` from `Numlib.Analysis.ODE.Cauchy`. The
+linear system specializes `Numlib.Analysis.ODE.LinearSystem`.
 
 ## Main definitions
 
-* `equation_11_78 F t₀ y₀ I y` — `y` solves the system (11.78)–(11.79) on `I`.
+* Equations (11.78)–(11.79), `QuarteroniSaccoSaleri.Chapter11.equation_11_78`: $y$ solves the vector
+  Cauchy problem on an interval.
 
 ## Main results
 
-* `property_11_5` — existence and uniqueness for a Lipschitz field.
-* `linearSystem_complexify` — a real solution of `y' = A y`, read in `ℂ`, solves the
-  complexified system.
-* `equation_11_82`, `equation_11_83`, `equation_11_85` — the eigen-expansion of the solutions,
-  their decay, and the diagonalized system.
+* Property 11.5, `QuarteroniSaccoSaleri.Chapter11.property_11_5`: existence and uniqueness of the
+  solution for a continuous field that is Lipschitz in $y$.
+* Equation (11.82), `QuarteroniSaccoSaleri.Chapter11.equation_11_82`: every solution of $y' = Ay$ is
+  $\sum_j C_j e^{\lambda_j t} v_j$.
+* Equations (11.83)–(11.84), `QuarteroniSaccoSaleri.Chapter11.equation_11_83`: the solutions tend to
+  $0$ when every eigenvalue has negative real part.
+* Equation (11.85), `QuarteroniSaccoSaleri.Chapter11.equation_11_85`: $z = Q^{-1} y$ solves
+  $z' = \Lambda z$.
+
+## Implementation notes
+
+* The linear system is read on `Fin n → ℝ`, where a matrix acts by `Matrix.mulVec`. The results on
+  it pass to the complexified matrix `A.map ((↑) : ℝ → ℂ)` on `Fin n → ℂ`, which is the setting of
+  `Numlib.Analysis.ODE.LinearSystem`; `QuarteroniSaccoSaleri.Chapter11.linearSystem_complexify`
+  makes this step.
+* The diagonalization is $A = Q \Lambda Q^{-1}$ over $\mathbb{C}$, with $\Lambda =
+  \operatorname{diag}(\lambda_1, \dots, \lambda_n)$ and the columns $v_j$ of $Q$ the eigenvectors.
+  The eigenvalues are `μ : Fin n → ℂ` in Lean.
+
+## Deviations from the source
+
+* **Equations (11.82)–(11.85)** (generalization). The source assumes that $A$ has $n$ distinct
+  eigenvalues; the results assume only that $A$ is diagonalizable over $\mathbb{C}$. See
+  `QuarteroniSaccoSaleri.Chapter11.equation_11_82`.
 -/
 
 open Set Filter Topology Matrix
@@ -43,16 +59,28 @@ namespace QuarteroniSaccoSaleri.Chapter11
 
 variable {n : ℕ}
 
-/-- **The vector Cauchy problem (11.78)–(11.79)**: `y' = F(t, y)`, `y(t₀) = y₀`, for
-`F : ℝ × ℝⁿ → ℝⁿ`; `ODE.IsSolutionOn` on `EuclideanSpace ℝ (Fin n)`. -/
+/-- **Equations (11.78)–(11.79)** of [quarteroni2000numerical]. Let $F : \mathbb{R} \times
+\mathbb{R}^n \to \mathbb{R}^n$, $t_0 \in \mathbb{R}$, $y_0 \in \mathbb{R}^n$ and
+$I \subseteq \mathbb{R}$. A function $y : \mathbb{R} \to \mathbb{R}^n$ **solves the vector
+Cauchy problem** on $I$ if $y(t_0) = y_0$ and $y'(t) = F(t, y(t))$ for every $t \in I$, the
+derivative taken within $I$.
+
+The definition is `ODE.IsSolutionOn` on `EuclideanSpace ℝ (Fin n)`. -/
 def equation_11_78 (F : ℝ → EuclideanSpace ℝ (Fin n) → EuclideanSpace ℝ (Fin n)) (t₀ : ℝ)
     (y₀ : EuclideanSpace ℝ (Fin n)) (I : Set ℝ) (y : ℝ → EuclideanSpace ℝ (Fin n)) : Prop :=
   ODE.IsSolutionOn F t₀ y₀ I y
 
-/-- **Property 11.5**: let `F : ℝ × ℝⁿ → ℝⁿ` be continuous on `D = [t₀, T] × ℝⁿ` (`t₀ ≤ T`), and
-suppose there is `L ≥ 0` with `‖F(t, y) - F(t, ȳ)‖ ≤ L ‖y - ȳ‖` for all `(t, y), (t, ȳ) ∈ D`
-(11.80). Then for every `y₀ ∈ ℝⁿ` there is a unique `y`, continuous and differentiable on
-`[t₀, T]`, solving the Cauchy problem (11.78)–(11.79) (pinned to `y₀` off the interval);
+/-- **Property 11.5** of [quarteroni2000numerical]. Let $t_0 \le T$ and $L \ge 0$, and let $F :
+\mathbb{R} \times \mathbb{R}^n \to \mathbb{R}^n$ be continuous on
+$D = [t_0, T] \times \mathbb{R}^n$ with
+$$\|F(t, y) - F(t, \bar{y})\| \le L \|y - \bar{y}\| \qquad \text{for all } t \in [t_0, T] \text{
+  and } y, \bar{y} \in \mathbb{R}^n \quad (11.80).$$
+Then for every $y_0 \in \mathbb{R}^n$ there is exactly one function
+$y : \mathbb{R} \to \mathbb{R}^n$ that solves the Cauchy problem (11.78)–(11.79) on $[t_0, T]$
+and satisfies $y(t) = y_0$ for $t \notin [t_0, T]$.
+
+The values off $[t_0, T]$ are fixed so that uniqueness of a function on $\mathbb{R}$ makes
+sense. The norm is the Euclidean norm. The proof specializes
 `ODE.existsUnique_isSolutionOn_of_lipschitz`. -/
 theorem property_11_5 {F : ℝ → EuclideanSpace ℝ (Fin n) → EuclideanSpace ℝ (Fin n)} {t₀ T L : ℝ}
     (hT : t₀ ≤ T) (hL : 0 ≤ L) (hF : ContinuousOn (Function.uncurry F) (Icc t₀ T ×ˢ univ))
@@ -68,12 +96,14 @@ theorem property_11_5 {F : ℝ → EuclideanSpace ℝ (Fin n) → EuclideanSpace
       rw [dist_eq_norm, dist_eq_norm]
       exact hlip t ht v₁ v₂) y₀
 
-/-! ### The linear system `y' = A y` -/
+/-! ### The linear system $y' = Ay$ -/
 
 variable {A : Matrix (Fin n) (Fin n) ℝ} {y₀ : Fin n → ℝ} {y : ℝ → Fin n → ℝ}
 
-/-- A real solution of the linear system (11.81) `y' = A y`, read in `ℂ` componentwise, solves the
-complexified system `z' = (A ⊗ ℂ) z`. -/
+/-- A real solution of the linear system (11.81) is a complex solution of the complexified system.
+Let $A \in \mathbb{R}^{n \times n}$, $I \subseteq \mathbb{R}$, and let $y$ solve $y' = Ay$,
+$y(t_0) = y_0$ on $I$. Then $t \mapsto y(t)$, read in $\mathbb{C}^n$ componentwise, solves
+$z' = Az$, $z(t_0) = y_0$ on $I$, where $A$ acts on $\mathbb{C}^n$. -/
 theorem linearSystem_complexify {t₀ : ℝ} {I : Set ℝ}
     (hy : ODE.IsSolutionOn (fun _ v => A *ᵥ v) t₀ y₀ I y) :
     ODE.IsSolutionOn (fun _ v => A.map ((↑) : ℝ → ℂ) *ᵥ v) t₀ (fun i => (y₀ i : ℂ)) I
@@ -86,11 +116,19 @@ theorem linearSystem_complexify {t₀ : ℝ} {I : Set ℝ}
   change ((A *ᵥ y t) i : ℂ) = (A.map ((↑) : ℝ → ℂ) *ᵥ fun i => (y t i : ℂ)) i
   exact RingHom.map_mulVec Complex.ofRealHom A (y t) i
 
-/-- **The solutions of `y' = A y` (11.81)–(11.82)**: if `A ∈ ℝⁿˣⁿ` is diagonalizable over `ℂ`,
-`A = Q Λ Q⁻¹` with `Λ = diagonal λ` (the columns `vⱼ` of `Q` an eigenvector basis, `λⱼ` the
-eigenvalues — as when `A` has `n` distinct eigenvalues), then every solution of `y' = A y`,
-`y(0) = y₀`, on `[0, T]` is `y(t) = ∑ⱼ Cⱼ e^{λⱼ t} vⱼ` (read in `ℂ`), the constants `C = Q⁻¹ y₀`
-being fixed by the initial condition; `ODE.linear_solution_eq_sum_exp_smul`. -/
+/-- **Equation (11.82)** of [quarteroni2000numerical], the solutions of $y' = Ay$ (11.81). Let
+$A \in \mathbb{R}^{n \times n}$, and let $Q \in \mathbb{C}^{n \times n}$ be invertible with
+$A = Q \Lambda Q^{-1}$ over $\mathbb{C}$, where $\Lambda = \operatorname{diag}(\lambda_1, \dots,
+\lambda_n)$. Let $T \in \mathbb{R}$, and let $y$ solve $y' = Ay$, $y(0) = y_0$ on $[0, T]$. Then
+for every $t \in [0, T]$
+$$y(t) = \sum_{j=1}^n C_j e^{\lambda_j t} v_j, \qquad C = Q^{-1} y_0,$$
+where $v_j$ is the $j$-th column of $Q$, and the identity holds in $\mathbb{C}^n$.
+
+**Generalization.** The source assumes that $A$ has $n$ distinct eigenvalues $\lambda_j$ with
+eigenvectors $v_j$. The statement assumes only the diagonalization $A = Q \Lambda Q^{-1}$, which
+is how the assumption is used.
+
+The proof specializes `ODE.linear_solution_eq_sum_exp_smul`. -/
 theorem equation_11_82 {Q : Matrix (Fin n) (Fin n) ℂ} {μ : Fin n → ℂ}
     (hA : A.map ((↑) : ℝ → ℂ) = Q * diagonal μ * Q⁻¹) (hQ : IsUnit Q) {T : ℝ}
     (hy : ODE.IsSolutionOn (fun _ v => A *ᵥ v) 0 y₀ (Icc 0 T) y) {t : ℝ} (ht : t ∈ Icc 0 T) :
@@ -98,9 +136,18 @@ theorem equation_11_82 {Q : Matrix (Fin n) (Fin n) ℂ} {μ : Fin n → ℂ}
       ∑ j, ((Q⁻¹ *ᵥ fun i => (y₀ i : ℂ)) j * Complex.exp (μ j * t)) • fun i => Q i j :=
   ODE.linear_solution_eq_sum_exp_smul hA hQ (linearSystem_complexify hy) ht
 
-/-- **Decay of the solutions (11.83)–(11.84)**: if `A = Q Λ Q⁻¹` is diagonalizable over `ℂ` and
-every eigenvalue has negative real part, every solution of `y' = A y` on `[0, ∞)` satisfies
-`‖y(t)‖ → 0` as `t → ∞`, since `e^{λⱼ t} = e^{Re λⱼ t} (cos (Im λⱼ t) + i sin (Im λⱼ t)) → 0`;
+/-- **Equations (11.83)–(11.84)** of [quarteroni2000numerical], decay of the solutions. Let
+$A \in \mathbb{R}^{n \times n}$, and let $Q \in \mathbb{C}^{n \times n}$ be invertible with
+$A = Q \Lambda Q^{-1}$ over $\mathbb{C}$, where $\Lambda = \operatorname{diag}(\lambda_1, \dots,
+\lambda_n)$ and $\operatorname{Re} \lambda_j < 0$ for every $j$. If $y$ solves $y' = Ay$,
+$y(0) = y_0$ on $[0, \infty)$, then $\|y(t)\| \to 0$ as $t \to \infty$.
+
+**Generalization.** The source assumes that $A$ has $n$ distinct eigenvalues. The statement
+assumes only that $A$ is diagonalizable over $\mathbb{C}$.
+
+The decay comes from $e^{\lambda_j t} = e^{\operatorname{Re}(\lambda_j) t}
+(\cos(\operatorname{Im}(\lambda_j) t) + i \sin(\operatorname{Im}(\lambda_j) t)) \to 0$. The norm
+is the supremum norm of `Fin n → ℝ`. The proof specializes
 `ODE.linear_tendsto_zero_of_re_lt_zero`. -/
 theorem equation_11_83 {Q : Matrix (Fin n) (Fin n) ℂ} {μ : Fin n → ℂ}
     (hA : A.map ((↑) : ℝ → ℂ) = Q * diagonal μ * Q⁻¹) (hQ : IsUnit Q) (hμ : ∀ j, (μ j).re < 0)
@@ -110,9 +157,18 @@ theorem equation_11_83 {Q : Matrix (Fin n) (Fin n) ℂ} {μ : Fin n → ℂ}
   refine this.congr fun t => ?_
   simp only [Pi.norm_def, Complex.nnnorm_real]
 
-/-- **The diagonalized system (11.85)**: with `Λ = Q⁻¹ A Q` diagonal and `z = Q⁻¹ y`, a solution
-`y` of `y' = A y` on `I` gives a solution `z` of `z' = Λ z` on `I`, `n` decoupled scalar test
-equations `zⱼ' = λⱼ zⱼ`; `ODE.linear_diagonalized_isSolutionOn`, `ODE.isSolutionOn_diagonal_iff`. -/
+/-- **Equation (11.85)** of [quarteroni2000numerical], the diagonalized system. Let
+$A \in \mathbb{R}^{n \times n}$, and let $Q \in \mathbb{C}^{n \times n}$ be invertible with
+$A = Q \Lambda Q^{-1}$ over $\mathbb{C}$, where $\Lambda = \operatorname{diag}(\lambda_1, \dots,
+\lambda_n)$. Let $I \subseteq \mathbb{R}$, and let $y$ solve $y' = Ay$, $y(t_0) = y_0$ on $I$.
+Then $z = Q^{-1} y$ solves $z' = \Lambda z$, $z(t_0) = Q^{-1} y_0$ on $I$, and each component
+solves the scalar test equation $z_j' = \lambda_j z_j$, $z_j(t_0) = (Q^{-1} y_0)_j$ on $I$.
+
+**Generalization.** The source assumes that $A$ has $n$ distinct eigenvalues. The statement
+assumes only that $A$ is diagonalizable over $\mathbb{C}$.
+
+The proof specializes `ODE.linear_diagonalized_isSolutionOn` and
+`ODE.isSolutionOn_diagonal_iff`. -/
 theorem equation_11_85 {Q : Matrix (Fin n) (Fin n) ℂ} {μ : Fin n → ℂ}
     (hA : A.map ((↑) : ℝ → ℂ) = Q * diagonal μ * Q⁻¹) (hQ : IsUnit Q) {t₀ : ℝ} {I : Set ℝ}
     (hy : ODE.IsSolutionOn (fun _ v => A *ᵥ v) t₀ y₀ I y) :

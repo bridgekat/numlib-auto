@@ -8,71 +8,98 @@ import Numlib.LinearAlgebra.Matrix.MMatrix
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter03.Section13
 
 /-!
-# Quarteroni–Sacco–Saleri §3.14: applications
+# Quarteroni, Sacco and Saleri, Section 3.14: Applications
 
-Surface file for Alfio Quarteroni, Riccardo Sacco and Fausto Saleri, *Numerical Mathematics*
-[quarteroni2000numerical], §3.14, over the backbone `Numlib/LinearAlgebra/Matrix/MMatrix`
-(M-matrices, `Matrix.IsMMatrix`, the criterion
-`Matrix.isMMatrix_of_isIrreduciblyDiagDominant` and the discrete maximum principle
-`Matrix.IsMMatrix.nonneg_of_mulVec_nonneg`) and `Numlib/LinearAlgebra/Matrix/DiagDominant`
-(irreducible diagonal dominance `Matrix.IsIrreduciblyDiagDominant` and the Gershgorin argument).
+This module formalizes Section 3.14 of [quarteroni2000numerical]. Section 3.14.2 regularizes a
+triangular grid: each interior node $z_i$ is moved to the centre of gravity of its patch $Z_i$, the
+set of nodes adjacent to it, while the boundary nodes stay fixed. This gives the linear system
+(3.78)
+$$n_i z_i - \sum_{z_j \in Z_i \cap N_h} z_j = \sum_{z_j \in Z_i \cap \partial D} z_j^{\partial D},
+  \qquad z_i \in N_h,$$
+where $N_h$ is the set of interior nodes and $n_i$ is the number of nodes in $Z_i$. The module
+proves the result that the section states: the matrix of (3.78) is symmetric positive definite and
+an M-matrix. The M-matrix property gives the discrete maximum principle
+$Az \ge 0 \Rightarrow z \ge 0$.
 
-§3.14.1, the nodal analysis of a structured frame, is a MATLAB experiment with the reorderings of
-§3.9 and states no result; §3.14.2 states one, that the matrix of the barycentric regularization
-system (3.78) is symmetric positive definite and an M-matrix.
+The proofs specialize the backbone modules `Numlib.LinearAlgebra.Matrix.MMatrix` (M-matrices
+`Matrix.IsMMatrix`, the criterion `Matrix.isMMatrix_of_isIrreduciblyDiagDominant` and the discrete
+maximum principle `Matrix.IsMMatrix.nonneg_of_mulVec_nonneg`) and
+`Numlib.LinearAlgebra.Matrix.DiagDominant` (irreducible diagonal dominance
+`Matrix.IsIrreduciblyDiagDominant`).
+
+## Main definitions
+
+* Equation (3.78), `QuarteroniSaccoSaleri.Chapter03.regularizationMatrix`: the matrix of the
+  barycentric regularization system, with $n_i$ on the diagonal and $-1$ at each interior neighbour.
+
+## Main results
+
+* Equation (3.78), `QuarteroniSaccoSaleri.Chapter03.regularizationMatrix_apply`: the formula for the
+  entries of the matrix.
+* Equation (3.78), `QuarteroniSaccoSaleri.Chapter03.equation_3_78`: the system says that each
+  interior node is the centre of gravity of its patch, and its matrix is symmetric, an M-matrix and
+  positive definite, so that the discrete maximum principle holds.
 
 ## Conventions
 
-The triangulation enters only through its *node graph*: the vertices are the grid nodes, split as
-`Fin n ⊕ Fin p` into the `n` interior nodes `N_h` and the `p` boundary nodes, and `G.Adj` is the
-relation "`x_j` belongs to the patch `Z_i` of `x_i`". The book's `n_i = dim(Z_i)` is then
-`G.degree (Sum.inl i)`, counting boundary neighbours too, and the matrix of (3.78) is
-`regularizationMatrix G ∈ ℝ^{n×n}`, of order `N - N_b`: `n_i` on the diagonal, `-1` at an interior
-neighbour, `0` elsewhere. The right-hand side collects the fixed boundary coordinates `z_j^{∂D}`
-of the boundary neighbours.
+* The triangulation enters only through its node graph `G : SimpleGraph (Fin n ⊕ Fin p)`. The
+  vertices are the grid nodes: the $n$ interior nodes `Sum.inl i` and the $p$ boundary nodes
+  `Sum.inr q`. The relation `G.Adj x y` says that $y$ belongs to the patch $Z_x$ of $x$.
+* The book's $n_i = \dim(Z_i)$ is `G.degree (Sum.inl i)`. It counts boundary neighbours too.
+* The matrix of (3.78) is `QuarteroniSaccoSaleri.Chapter03.regularizationMatrix G`, of order
+  $n = N - N_b$. The right-hand side collects the fixed boundary coordinates $z_j^{\partial D}$ of
+  the boundary neighbours.
 
-The hypotheses are the book's, made explicit: the interior node graph is connected
-(`(G.comap Sum.inl).Reachable`), and at least one interior node has a boundary neighbour. Without
-the second the system is singular (the constant vector is in the kernel); without the first the
-statement holds on each connected component separately.
+## Deviations from the source
 
-## Contents
+* **Equation (3.78)** (reading). The book leaves the hypotheses implicit. The statement assumes that
+  the graph of the interior nodes is connected and that at least one interior node has a boundary
+  neighbour. See `QuarteroniSaccoSaleri.Chapter03.equation_3_78`.
 
-* `regularizationMatrix`, `regularizationMatrix_apply` — the matrix of (3.78).
-* `equation_3_78` — the system, the symmetry, the M-matrix property, positive definiteness and
-  the discrete maximum principle.
+## Not formalized
+
+* **Section 3.14.1**, the nodal analysis of a structured frame. It is a MATLAB experiment with the
+  reorderings of Section 3.9, and it states no result.
 -/
 
 open Finset Matrix
 
 namespace QuarteroniSaccoSaleri.Chapter03
 
-/-! ### §3.14.2: the barycentric regularization of a triangular grid -/
+/-! ### Section 3.14.2: The barycentric regularization of a triangular grid -/
 
 section Regularization
 
 variable {n p : ℕ} (G : SimpleGraph (Fin n ⊕ Fin p)) [DecidableRel G.Adj]
 
-/-- **(3.78), the matrix of the barycentric regularization system.** The grid nodes are
-`Fin n ⊕ Fin p`, the interior nodes `N_h` on the left and the fixed boundary nodes on the right,
-and `G.Adj x y` says that `y` belongs to the patch `Z_x` of `x`. The `i`-th row of the system
-`n_i z_i - ∑_{z_j ∈ Z_i ∩ N_h} z_j = ∑_{z_j ∈ Z_i ∩ ∂D} z_j^{∂D}` has matrix entries
-`a_ii = n_i = dim(Z_i)`, `a_ij = -1` for an interior `z_j ∈ Z_i`, and `a_ij = 0` otherwise. -/
+/-- **Equation (3.78)** of [quarteroni2000numerical], the matrix of the barycentric regularization
+system. Let $G$ be a simple graph on the grid nodes, which are $n$ interior nodes and $p$
+boundary nodes, where $y$ is adjacent to $x$ if $y$ belongs to the patch $Z_x$ of $x$. Let $n_i$
+be the number of neighbours of the interior node $i$, boundary nodes included. The **matrix of
+the regularization system** is the $n \times n$ matrix $A$ with
+$$a_{ii} = n_i, \qquad a_{ij} = -1 \text{ if the interior node } j \text{ is in } Z_i, \qquad
+  a_{ij} = 0 \text{ otherwise}.$$
+Its $i$-th row is the left-hand side of the equation $n_i z_i - \sum_{z_j \in Z_i \cap N_h}
+z_j = \sum_{z_j \in Z_i \cap \partial D} z_j^{\partial D}$.
+
+The grid nodes are `Fin n ⊕ Fin p`: the interior nodes $N_h$ are `Sum.inl i`, and the fixed
+boundary nodes are `Sum.inr q`. The number $n_i$ is `G.degree (Sum.inl i)`. -/
 def regularizationMatrix : Matrix (Fin n) (Fin n) ℝ :=
   Matrix.of fun i j =>
     if i = j then (G.degree (Sum.inl i) : ℝ)
     else if G.Adj (Sum.inl i) (Sum.inl j) then -1 else 0
 
-/-- The entries of the matrix of (3.78). -/
+/-- **Equation (3.78)** of [quarteroni2000numerical], the entries. The entry $a_{ij}$ of the matrix
+of the regularization system is $n_i$ if $i = j$, $-1$ if $i \neq j$ and the interior node $j$
+is adjacent to the interior node $i$, and $0$ otherwise. -/
 @[simp]
 theorem regularizationMatrix_apply (i j : Fin n) :
     regularizationMatrix G i j =
       if i = j then (G.degree (Sum.inl i) : ℝ)
       else if G.Adj (Sum.inl i) (Sum.inl j) then -1 else 0 := rfl
 
-/-- The pattern of the matrix of (3.78) is irreducible when the interior node graph is connected:
-a walk between two interior nodes is a chain of nonzero entries, and the positive diagonal closes
-it into one of positive length. -/
+/-- If the graph of the interior nodes is connected and the diagonal of the matrix of (3.78) is
+positive, then the pattern of nonzero entries of this matrix is irreducible. -/
 private theorem isPatternIrreducible_regularizationMatrix
     (hconn : ∀ i j : Fin n, (G.comap Sum.inl).Reachable i j)
     (hdiag : ∀ i : Fin n, 0 < regularizationMatrix G i i) :
@@ -117,15 +144,36 @@ private theorem isPatternIrreducible_regularizationMatrix
   rw [pow_succ]
   exact mul_apply_pos_of_pos_of_pos (hBpow k) hBnn hk (hBdiag j)
 
-/-- **(3.78).** Let the interior node graph be connected and let at least one interior node have a
-boundary neighbour — the hypothesis the book leaves implicit, without which the constant vector is
-in the kernel. Then the matrix `A` of (3.78) is symmetric, it is an M-matrix
-(`Matrix.isMMatrix_of_isIrreduciblyDiagDominant`: it is irreducibly diagonally dominant, with
-positive diagonal and nonpositive off-diagonal entries), and it is positive definite. The system
-`A z = b`, with `b_i` the sum of the fixed coordinates of the boundary nodes of the patch `Z_i`,
-says exactly that every interior node is the centre of gravity of its patch, and the M-matrix
-property gives the discrete maximum principle `A z ≥ 0 ⟹ z ≥ 0` — the new grid coordinates take
-values between the minimum and the maximum attained on the boundary. -/
+/-- **Equation (3.78)** of [quarteroni2000numerical]. Let $G$ be the node graph of a triangular grid
+with $n$ interior nodes and $p$ boundary nodes, and let $A$ be the matrix of the regularization
+system. Assume that the graph of the interior nodes is connected, and that at least one interior
+node is adjacent to a boundary node. Then:
+
+* for every $z \in \mathbb{R}^n$ and every interior node $i$, $(Az)_i = n_i z_i - \sum_{j} z_j$,
+  where the sum is over the interior neighbours $j$ of $i$;
+* for every $z \in \mathbb{R}^n$ and every vector $z^{\partial D} \in \mathbb{R}^p$ of boundary
+  coordinates, $Az = b$ with $b_i = \sum_{q} z^{\partial D}_q$ over the boundary neighbours $q$
+  of $i$ if and only if, for every interior node $i$,
+$$n_i z_i = \sum_{z_j \in Z_i \cap N_h} z_j + \sum_{z_q \in Z_i \cap \partial D} z^{\partial
+  D}_q,$$
+that is, every interior node is the centre of gravity of its patch;
+* $A$ is symmetric;
+* $A$ is an M-matrix: its off-diagonal entries are nonpositive, it is nonsingular, and
+  $A^{-1} \ge 0$ entrywise;
+* $A$ is positive definite;
+* the discrete maximum principle holds: for every $z \in \mathbb{R}^n$, $Az \ge 0$ implies
+  $z \ge 0$.
+
+**Reading.** The book leaves the hypotheses implicit. The statement assumes that the graph of
+the interior nodes is connected, and that at least one interior node has a boundary neighbour.
+Without the second hypothesis the matrix is singular, because the constant vector is in its
+kernel. Without the first, the statement holds on each connected component separately.
+
+The connectedness is `(G.comap Sum.inl).Reachable i j` for all interior nodes $i, j$. The
+M-matrix property comes from `Matrix.isMMatrix_of_isIrreduciblyDiagDominant`: $A$ is irreducibly
+diagonally dominant, with positive diagonal and nonpositive off-diagonal entries. The maximum
+principle means that the new grid coordinates take values between the minimum and the maximum of
+the boundary coordinates; this consequence is not part of the formal statement. -/
 theorem equation_3_78 (hconn : ∀ i j : Fin n, (G.comap Sum.inl).Reachable i j)
     (hbdry : ∃ (i : Fin n) (q : Fin p), G.Adj (Sum.inl i) (Sum.inr q)) :
     (∀ (z : Fin n → ℝ) (i : Fin n),

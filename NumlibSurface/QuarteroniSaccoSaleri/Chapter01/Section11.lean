@@ -7,58 +7,129 @@ import Numlib.Analysis.Matrix.OperatorNorm
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter01.Section10
 
 /-!
-# Quarteroni–Sacco–Saleri §1.11: matrix norms
+# Quarteroni, Sacco and Saleri, Section 1.11: Matrix norms
 
-Surface file for Alfio Quarteroni, Riccardo Sacco and Fausto Saleri, *Numerical Mathematics*
-[quarteroni2000numerical], §1.11, over the backbone `Numlib/Analysis/Matrix/OperatorNorm` (the
-norm induced by an arbitrary vector norm, the `p`-norms, the spectral norm, the Frobenius norm,
-and the spectral-radius bounds), `Numlib/Analysis/Normed/Algebra/SpectralRadius` (the complex
-Banach-algebra statements), `Numlib/LinearAlgebra/Matrix/Complexify` (the real matrices, whose
-spectral radius `Matrix.complexSpectralRadius` is that of the complexification) and
-`Numlib/Analysis/Normed/Module/NormEquivalence`.
+This module formalizes §1.11 of [quarteroni2000numerical]. A matrix norm $\|\cdot\|$ is consistent
+with vector norms if $\|Ax\| \le \|A\| \|x\|$ (Definition 1.20), and sub-multiplicative if
+$\|AB\| \le \|A\| \|B\|$ (Definition 1.21). Every vector norm induces the matrix norm
+$\|A\| = \sup_{x \neq 0} \|Ax\| / \|x\|$ (Theorem 1.1), which is consistent, sub-multiplicative and
+has $\|I\| = 1$ (Theorem 1.3). The module treats the Frobenius norm (Example 1.7), the column sum
+norm $\|A\|_1$, the row sum norm $\|A\|_\infty$, and the spectral norm
+$\|A\|_2 = \sqrt{\rho(A^H A)}$ (Theorem 1.2) with its estimates. In §1.11.1 it relates norms and the
+spectral radius: $\rho(A) \le \|A\|$ for every consistent norm (Theorem 1.4), for every
+$\varepsilon > 0$ some induced norm has $\|A\| \le \rho(A) + \varepsilon$ (Property 1.13), $\rho(A)$
+is the infimum of the induced norms (1.23), and $\|A^m\|^{1/m} \to \rho(A)$ (Property 1.14). In
+§1.11.2 it treats sequences and series of matrices: $A^k \to 0$ if and only if $\rho(A) < 1$
+(Theorem 1.5), and then $\sum_k A^k = (I - A)^{-1}$, with the bounds (1.26) on $\|(I - A)^{-1}\|$.
+
+The proofs specialize the backbone modules `Numlib.Analysis.Matrix.OperatorNorm` (the induced norm,
+the $p$-norms, the spectral norm, the Frobenius norm and the bounds by the spectral radius),
+`Numlib.Analysis.Normed.Algebra.SpectralRadius` (the statements in the Banach algebra of complex
+matrices), `Numlib.LinearAlgebra.Matrix.Complexify` (the spectral radius of a real matrix) and
+`Numlib.Analysis.Normed.Module.NormEquivalence`.
+
+## Main definitions
+
+* Definition 1.19: a matrix norm is a vector norm of Definition 1.17 on the space of matrices; it
+  has no declaration here.
+* Definition 1.20, `QuarteroniSaccoSaleri.Chapter01.definition_1_20`: a matrix norm consistent with
+  vector norms, stated for the backbone predicate `Matrix.IsConsistent`.
+* Definition 1.21, `QuarteroniSaccoSaleri.Chapter01.definition_1_21`: sub-multiplicative matrix
+  norms; the $p$-norms are sub-multiplicative.
+
+## Main results
+
+* §1.11, `QuarteroniSaccoSaleri.Chapter01.maxEntryNorm_not_submultiplicative`: the norm
+  $\|A\|_\Delta = \max_{ij} |a_{ij}|$ is not sub-multiplicative.
+* §1.11, `QuarteroniSaccoSaleri.Chapter01.exists_consistent_vectorNorm`: every sub-multiplicative
+  matrix norm has a consistent vector norm.
+* Example 1.7, `QuarteroniSaccoSaleri.Chapter01.example_1_7`: the Frobenius norm is compatible with
+  the Euclidean norm, and $\|I_n\|_F = \sqrt n$.
+* Theorem 1.1, `QuarteroniSaccoSaleri.Chapter01.theorem_1_1`: the norm induced by a vector norm is a
+  matrix norm.
+* §1.11, `QuarteroniSaccoSaleri.Chapter01.lpOpNorm_one_and_top`: the matrix $p$-norms, the column
+  sum norm $\|A\|_1$ and the row sum norm $\|A\|_\infty$.
+* §1.11, `QuarteroniSaccoSaleri.Chapter01.lpOpNorm_one_eq_linfty_opNorm_transpose`:
+  $\|A\|_1 = \|A^T\|_\infty$, and $\|A\|_1 = \|A\|_\infty$ for a Hermitian or real symmetric $A$.
+* Theorem 1.2, `QuarteroniSaccoSaleri.Chapter01.theorem_1_2`: $\|A\|_2 = \sqrt{\rho(A^H A)} =
+  \sqrt{\rho(A A^H)}$, the largest singular value.
+* Theorem 1.2, `QuarteroniSaccoSaleri.Chapter01.theorem_1_2_hermitian`: $\|A\|_2 = \rho(A)$ for a
+  Hermitian or real symmetric $A$.
+* Theorem 1.2, `QuarteroniSaccoSaleri.Chapter01.theorem_1_2_unitary`: $\|A\|_2 = 1$ for a unitary or
+  real orthogonal $A$.
+* §1.11, `QuarteroniSaccoSaleri.Chapter01.l2_opNorm_bounds`: the estimates of $\|A\|_2$ by the
+  entries, $\|A\|_1$ and $\|A\|_\infty$.
+* §1.11, `QuarteroniSaccoSaleri.Chapter01.l2_opNorm_le_lpOpNorm_of_isStarNormal`:
+  $\|A\|_2 \le \|A\|_p$ for a normal $A$.
+* Exercise 16 of Chapter 1, `QuarteroniSaccoSaleri.Chapter01.exercise_1_16`:
+  $\|A\|_F^2 = \sum_i \sigma_i^2$ and $\|A\|_2 \le \|A\|_F \le \sqrt{\operatorname{rank} A}
+  \|A\|_2$.
+* Theorem 1.3, `QuarteroniSaccoSaleri.Chapter01.theorem_1_3`: an induced norm is consistent and
+  sub-multiplicative, with $\|I\| = 1$.
+* Theorem 1.4, `QuarteroniSaccoSaleri.Chapter01.theorem_1_4` and
+  `QuarteroniSaccoSaleri.Chapter01.theorem_1_4_real`: $\rho(A) \le \|A\|$ for every consistent
+  matrix norm, for complex and for real matrices.
+* Property 1.13, `QuarteroniSaccoSaleri.Chapter01.property_1_13`: for every $\varepsilon > 0$ there
+  is an induced norm with $\|A\| \le \rho(A) + \varepsilon$.
+* Equation (1.23), `QuarteroniSaccoSaleri.Chapter01.equation_1_23`: $\rho(A)$ is the infimum of the
+  induced norms of $A$.
+* §1.11.1, `QuarteroniSaccoSaleri.Chapter01.spectralRadius_not_subadditive`: the spectral radius is
+  neither subadditive nor sub-multiplicative.
+* Property 1.14, `QuarteroniSaccoSaleri.Chapter01.property_1_14` (Gelfand's formula):
+  $\|A^m\|^{1/m} \to \rho(A)$.
+* §1.11.2, `QuarteroniSaccoSaleri.Chapter01.tendsto_iff_tendsto_seminorm`: convergence of a sequence
+  of matrices does not depend on the norm.
+* Theorem 1.5, `QuarteroniSaccoSaleri.Chapter01.theorem_1_5`: $A^k \to 0$ if and only if
+  $\rho(A) < 1$.
+* Theorem 1.5, `QuarteroniSaccoSaleri.Chapter01.theorem_1_5_series`: $\sum_k A^k$ converges if and
+  only if $\rho(A) < 1$, and then its sum is $(I - A)^{-1}$.
+* Equation (1.26), `QuarteroniSaccoSaleri.Chapter01.equation_1_26`: if $\|A\| < 1$ for an induced
+  norm, then $1/(1 + \|A\|) \le \|(I - A)^{-1}\| \le 1/(1 - \|A\|)$.
+* Remark 1.1, `QuarteroniSaccoSaleri.Chapter01.remark_1_1`: if $\rho(A) < 1$, some induced norm has
+  $\|A\| < 1$.
 
 ## Conventions
 
-A matrix norm (Definition 1.19) is a definite `Seminorm ℝ (Matrix (Fin m) (Fin n) ℝ)`, the same
-object as a vector norm of Definition 1.17 on the space of matrices, and carries no declaration
-of its own. The norm induced by a vector norm `p` (Theorem 1.1) is `Matrix.inducedNorm p p`; the
-`p`-norms are `Matrix.lpOpNorm p`, with `Matrix.lpOpNorm_eq_inducedNorm` connecting the two.
-Mathlib's scoped matrix-norm instances — `Matrix.Norms.Operator` (`‖·‖_∞`),
-`Matrix.Norms.L2Operator` (`‖·‖₂`), `Matrix.Norms.Frobenius` (`‖·‖_F`) and
-`Matrix.Norms.Elementwise` (`‖·‖_Δ = max |aᵢⱼ|`) — are opened declaration by declaration. The
-spectral radius of a complex matrix is `spectralRadius ℂ A`, that of a real one
-`Matrix.complexSpectralRadius A`, both `ℝ≥0∞`-valued; real bounds `ρ(A) ≤ ‖A‖` read
-`≤ ENNReal.ofReal ‖A‖`. The book works in `ℝ^{m×n}` for the definitions and in `ℂ^{n×n}` for the
-spectral statements, and the declarations follow it, with the real form beside the complex one
-where the book uses both. The book's matrices have positive size (§1.2), which is the `[NeZero n]`
-of the statements that need a nonempty index type.
+* A matrix norm (Definition 1.19) is a definite seminorm on the space of matrices,
+  `N : Seminorm ℝ (Matrix (Fin m) (Fin n) ℝ)` with `∀ M, N M = 0 → M = 0`. This is the vector norm
+  of Definition 1.17 on that space.
+* The norm induced by vector norms `p` on the domain and `q` on the codomain (Theorem 1.1) is the
+  backbone's `Matrix.inducedNorm q p`. The matrix $p$-norms are `Matrix.lpOpNorm p`, and
+  `Matrix.lpOpNorm_eq_inducedNorm` connects the two.
+* The norms $\|\cdot\|_\infty$, $\|\cdot\|_2$, $\|\cdot\|_F$ and
+  $\|\cdot\|_\Delta = \max_{ij} |a_{ij}|$ are Mathlib's scoped matrix norm instances
+  `Matrix.Norms.Operator`, `Matrix.Norms.L2Operator`, `Matrix.Norms.Frobenius` and
+  `Matrix.Norms.Elementwise`, opened for one declaration at a time.
+* The spectral radius of a complex matrix is `spectralRadius ℂ A`, and that of a real matrix is
+  `Matrix.complexSpectralRadius A`. Both take values in $[0, \infty]$, so a real bound
+  $\rho(A) \le \|A\|$ reads `≤ ENNReal.ofReal ‖A‖`.
+* The book works in $\mathbb{R}^{m \times n}$ for the definitions and in $\mathbb{C}^{n \times n}$
+  for the spectral statements. The declarations follow the book, with the real form beside the
+  complex one where the book uses both.
+* The book's matrices have positive size (§1.2). This is the hypothesis `[NeZero n]` of the
+  statements that need a nonempty index type.
 
-## Contents
+## Implementation notes
 
-* `definition_1_20`, `definition_1_21`, `maxEntryNorm_not_submultiplicative`,
-  `exists_consistent_vectorNorm` — consistency, submultiplicativity, the counterexample
-  `‖·‖_Δ`, the consistent vector norm `‖x yᴴ‖` of a submultiplicative norm.
-* `example_1_7` — the Frobenius norm, (1.18).
-* `theorem_1_1`, `lpOpNorm_one_and_top`, `lpOpNorm_one_eq_linfty_opNorm_transpose` — the
-  induced norm (1.19)–(1.20) and the `1`- and `∞`-norms.
-* `theorem_1_2`, `theorem_1_2_hermitian`, `theorem_1_2_unitary`, `l2_opNorm_bounds`,
-  `l2_opNorm_le_lpOpNorm_of_isStarNormal`, `exercise_1_16` — the spectral norm.
-* `theorem_1_3` — the induced norm is consistent, `‖I‖ = 1`, submultiplicative.
-* `theorem_1_4`, `theorem_1_4_real`, `property_1_13`, `equation_1_23`,
-  `spectralRadius_not_subadditive`, `property_1_14` — §1.11.1, norms and the spectral radius.
-* `tendsto_iff_tendsto_seminorm`, `theorem_1_5`, `theorem_1_5_series`, `equation_1_26`,
-  `remark_1_1` — §1.11.2, sequences and series of matrices.
+* Theorem 1.4 for a real matrix and a real vector norm is a separate statement,
+  `QuarteroniSaccoSaleri.Chapter01.theorem_1_4_real`. The eigenvector in the book's proof can be
+  complex, so the backbone proves the real case through the induced norm.
 
-## Readings and errata
+## Deviations from the source
 
-(1.18) prints `‖A‖_F = tr(A Aᴴ)` for `√tr(A Aᴴ)`. After Theorem 1.2 the text says that for
-normal `A`, `‖A‖₂ ≤ ‖A‖_p` for `p ≥ 2`; it holds for every `p ≥ 1`. After Property 1.13 the text
-calls the spectral radius "a sub-multiplicative seminorm"; it is neither subadditive nor
-submultiplicative (`spectralRadius_not_subadditive`). (1.23)'s infimum over all consistent norms
-is stated over the induced norms, which gives the same value since every consistent norm is at
-least `ρ(A)` (Theorem 1.4). Theorem 1.4 for a *real* matrix and a real vector norm is stated
-separately (`theorem_1_4_real`): the eigenvector of the book's proof may be complex, and the
-backbone proves the real case through the induced norm instead.
+* **Example 1.7** (typo). Equation (1.18) prints $\|A\|_F = \operatorname{tr}(A A^H)$ for
+  $\sqrt{\operatorname{tr}(A A^H)}$. See `QuarteroniSaccoSaleri.Chapter01.example_1_7`.
+* **After Theorem 1.2** (generalization). The book states $\|A\|_2 \le \|A\|_p$ for a normal $A$ and
+  $p \ge 2$; it holds for every $p \ge 1$. See
+  `QuarteroniSaccoSaleri.Chapter01.l2_opNorm_le_lpOpNorm_of_isStarNormal`.
+* **After Property 1.13** (correction). The book calls the spectral radius a sub-multiplicative
+  seminorm; it is neither subadditive nor sub-multiplicative. See
+  `QuarteroniSaccoSaleri.Chapter01.spectralRadius_not_subadditive`.
+* **Equation (1.23)** (reading). The book takes the infimum over all consistent norms; it is stated
+  over the induced norms, which gives the same value. See
+  `QuarteroniSaccoSaleri.Chapter01.equation_1_23`.
+* **Property 1.14** (generalization). The book asks for a consistent matrix norm; the limit holds
+  for every matrix norm. See `QuarteroniSaccoSaleri.Chapter01.property_1_14`.
 -/
 
 open Filter Finset Matrix Topology WithLp
@@ -68,28 +139,42 @@ namespace QuarteroniSaccoSaleri.Chapter01
 
 /-! ### Definitions 1.20 and 1.21 -/
 
-/-- **Definition 1.20, (1.16).** A matrix norm `‖·‖` on `ℝ^{m×n}` is *compatible* or
-*consistent* with vector norms `‖·‖` on `ℝᵐ` and `ℝⁿ` when `‖A x‖ ≤ ‖A‖ ‖x‖` for all `A` and
-`x`; this is the backbone's `Matrix.IsConsistent N q p`, and for square matrices one takes the
-same vector norm on both sides. -/
+/-- **Definition 1.20** of [quarteroni2000numerical], with (1.16). Let $\|\cdot\|$ be a function on
+$\mathbb{R}^{m \times n}$, and let $\|\cdot\|_q$ and $\|\cdot\|_p$ be seminorms on
+$\mathbb{R}^m$ and $\mathbb{R}^n$. The function $\|\cdot\|$ is **compatible**, or
+**consistent**, with these vector norms if and only if
+$$\|Ax\|_q \le \|A\| \, \|x\|_p \quad \text{for all } A \in \mathbb{R}^{m \times n}, \ x \in
+  \mathbb{R}^n.$$
+For square matrices the same vector norm is taken on both sides.
+
+Consistency is the backbone predicate `Matrix.IsConsistent N q p`. -/
 theorem definition_1_20 {m n : ℕ} (N : Matrix (Fin m) (Fin n) ℝ → ℝ) (q : Seminorm ℝ (Fin m → ℝ))
     (p : Seminorm ℝ (Fin n → ℝ)) (N' : Matrix (Fin n) (Fin n) ℝ → ℝ) :
     (IsConsistent N q p ↔ ∀ A x, q (A *ᵥ x) ≤ N A * p x) ∧
       (IsConsistent N' p p ↔ ∀ A x, p (A *ᵥ x) ≤ N' A * p x) :=
   ⟨Iff.rfl, Iff.rfl⟩
 
-/-- **Definition 1.21, (1.17).** A matrix norm, defined on all sizes, is *sub-multiplicative*
-when `‖A B‖ ≤ ‖A‖ ‖B‖` for all `A ∈ ℝ^{n×m}`, `B ∈ ℝ^{m×q}`. The `p`-norms are
-sub-multiplicative (the remark after Theorem 1.3; backbone `Matrix.lpOpNorm_mul_le`). -/
+/-- **Definition 1.21** of [quarteroni2000numerical], with (1.17). A matrix norm defined on matrices
+of all sizes is **sub-multiplicative** if $\|AB\| \le \|A\| \|B\|$ for all
+$A \in \mathbb{R}^{n \times m}$ and $B \in \mathbb{R}^{m \times q}$. The statement shows that
+the matrix $r$-norms are sub-multiplicative for every $r \in [1, \infty]$:
+$$\|AB\|_r \le \|A\|_r \|B\|_r.$$
+
+This is the remark after Theorem 1.3. The proof is the backbone theorem
+`Matrix.lpOpNorm_mul_le`. -/
 theorem definition_1_21 {n m q : ℕ} (r : ℝ≥0∞) [Fact (1 ≤ r)] (A : Matrix (Fin n) (Fin m) ℝ)
     (B : Matrix (Fin m) (Fin q) ℝ) :
     lpOpNorm r (A * B) ≤ lpOpNorm r A * lpOpNorm r B :=
   lpOpNorm_mul_le r A B
 
 open scoped Matrix.Norms.Elementwise in
-/-- **The norm `‖A‖_Δ = max |aᵢⱼ|` is not sub-multiplicative** (§1.11, the example after
-Definition 1.21, from Golub–Van Loan): it is a matrix norm (Mathlib's elementwise supremum
-norm), but for `A = B = [[1, 1], [1, 1]]` one has `‖A B‖_Δ = 2 > 1 = ‖A‖_Δ ‖B‖_Δ`. -/
+/-- **Section 1.11** of [quarteroni2000numerical], the example after Definition 1.21, which the book
+attributes to Golub and Van Loan. The function $\|A\|_\Delta = \max_{ij} |a_{ij}|$ is a matrix
+norm, but it is not sub-multiplicative: for
+$$A = B = \begin{bmatrix} 1 & 1 \\ 1 & 1 \end{bmatrix},$$
+$\|AB\|_\Delta = 2 > 1 = \|A\|_\Delta \|B\|_\Delta$.
+
+The norm $\|\cdot\|_\Delta$ is Mathlib's elementwise supremum norm `Matrix.Norms.Elementwise`. -/
 theorem maxEntryNorm_not_submultiplicative :
     ‖(!![1, 1; 1, 1] : Matrix (Fin 2) (Fin 2) ℝ) * !![1, 1; 1, 1]‖ = 2 ∧
       ‖(!![1, 1; 1, 1] : Matrix (Fin 2) (Fin 2) ℝ)‖ * ‖(!![1, 1; 1, 1] : Matrix (Fin 2) (Fin 2) ℝ)‖
@@ -109,12 +194,16 @@ theorem maxEntryNorm_not_submultiplicative :
   · simpa using norm_apply_le_norm (!![2, 2; 2, 2] : Matrix (Fin 2) (Fin 2) ℝ)
       (i := 0) (j := 0)
 
-/-- **Every sub-multiplicative matrix norm has a consistent vector norm** (§1.11, after
-Definition 1.21): given a sub-multiplicative norm `‖·‖_α` on `ℂ^{n×n}` and any fixed `y ≠ 0`
-in `ℂⁿ`, `‖x‖ := ‖x yᴴ‖_α` is a vector norm on `ℂⁿ` consistent with `‖·‖_α`. The seminorm is
-`N.comp` of the linear map `x ↦ vecMulVec x (star y)` and consistency is
-`A (x yᴴ) = (A x) yᴴ` with sub-multiplicativity (backbone
-`Matrix.exists_isConsistent_of_mul_le`, which does not name the norm). -/
+/-- **Section 1.11** of [quarteroni2000numerical], after Definition 1.21: every sub-multiplicative
+matrix norm has a consistent vector norm. Let $\|\cdot\|_\alpha$ be a sub-multiplicative matrix
+norm on $\mathbb{C}^{n \times n}$, and let $y \in \mathbb{C}^n$ with $y \neq 0$. Then
+$\|x\| = \|x y^H\|_\alpha$ is a vector norm on $\mathbb{C}^n$, and $\|\cdot\|_\alpha$ is
+consistent with it.
+
+The seminorm composes `N` with the linear map `fun x => vecMulVec x (star y)`, which is
+$x \mapsto x y^H$.
+Consistency follows from $A (x y^H) = (Ax) y^H$ and sub-multiplicativity. The proof uses the
+backbone theorem `Matrix.exists_isConsistent_of_mul_le`, which does not name the norm. -/
 theorem exists_consistent_vectorNorm {n : ℕ} (N : Seminorm ℂ (Matrix (Fin n) (Fin n) ℂ))
     (hN : ∀ B, N B = 0 → B = 0) (hmul : ∀ A B, N (A * B) ≤ N A * N B) {y : Fin n → ℂ}
     (hy : y ≠ 0) :
@@ -132,10 +221,17 @@ theorem exists_consistent_vectorNorm {n : ℕ} (N : Seminorm ℂ (Matrix (Fin n)
 /-! ### Example 1.7: the Frobenius norm -/
 
 open scoped Matrix.Norms.Frobenius in
-/-- **Example 1.7, (1.18).** The Frobenius norm `‖A‖_F = √(∑ᵢⱼ |aᵢⱼ|²) = √tr(A Aᴴ)` (the
-display prints `tr(A Aᴴ)` without the square root) is a matrix norm (Mathlib's scoped
-`Matrix.Norms.Frobenius`), compatible with the Euclidean vector norm, `‖A x‖₂ ≤ ‖A‖_F ‖x‖₂`
-(backbone `Matrix.frobenius_norm_mulVec_le`), and `‖Iₙ‖_F = √n`. -/
+/-- **Example 1.7** of [quarteroni2000numerical], with (1.18). Let $A \in \mathbb{C}^{n \times n}$
+and $x \in \mathbb{C}^n$. The **Frobenius norm**
+$$\|A\|_F = \Big(\sum_{i,j} |a_{ij}|^2\Big)^{1/2}$$
+satisfies $\|A\|_F^2 = \operatorname{tr}(A A^H)$. It is compatible with the Euclidean vector
+norm, $\|Ax\|_2 \le \|A\|_F \|x\|_2$, and $\|I_n\|_F = \sqrt n$.
+
+**Typo.** The display (1.18) prints $\|A\|_F = \operatorname{tr}(A A^H)$, without the square
+root. The statement here is $\|A\|_F^2 = \operatorname{tr}(A A^H)$.
+
+The Frobenius norm is Mathlib's scoped `Matrix.Norms.Frobenius`, which is a matrix norm. The
+compatibility uses the backbone theorem `Matrix.frobenius_norm_mulVec_le`. -/
 theorem example_1_7 {n : ℕ} (A : Matrix (Fin n) (Fin n) ℂ) (x : Fin n → ℂ) :
     ‖A‖ = √(∑ i, ∑ j, ‖A i j‖ ^ 2) ∧ ((‖A‖ ^ 2 : ℝ) : ℂ) = trace (A * Aᴴ) ∧
       ‖toLp 2 (A *ᵥ x)‖ ≤ ‖A‖ * ‖toLp 2 x‖ ∧ ‖(1 : Matrix (Fin n) (Fin n) ℂ)‖ = √n := by
@@ -151,12 +247,17 @@ section Induced
 
 variable {m n : ℕ}
 
-/-- **Theorem 1.1, (1.19)–(1.20).** Let `‖·‖` be a vector norm (on `ℝⁿ`, and a second one on
-`ℝᵐ` for the rectangular case). The function `‖A‖ = sup_{x ≠ 0} ‖A x‖ / ‖x‖ = sup_{‖x‖ = 1} ‖A x‖`
-is a matrix norm, the *induced* or *natural* matrix norm: it is the backbone's
-`Matrix.inducedNorm q p A`, the two suprema agree and the second is attained at some `w` with
-`‖w‖ = 1`; it is nonnegative, vanishes only at `A = 0`, is absolutely homogeneous and satisfies
-the triangle inequality. -/
+/-- **Theorem 1.1** of [quarteroni2000numerical], with (1.19) and (1.20). Let $n \ge 1$, let
+$\|\cdot\|_p$ be a vector norm on $\mathbb{R}^n$ and $\|\cdot\|_q$ a vector norm on
+$\mathbb{R}^m$. For $A \in \mathbb{R}^{m \times n}$ let
+$$\|A\| = \sup_{x \neq 0} \frac{\|Ax\|_q}{\|x\|_p} = \sup_{\|x\|_p = 1} \|Ax\|_q.$$
+The two suprema agree, and the second is attained at some $w$ with $\|w\|_p = 1$. The function
+$\|\cdot\|$ is a matrix norm, the **induced** or **natural** matrix norm: for all
+$A, B \in \mathbb{R}^{m \times n}$ and $\alpha \in \mathbb{R}$, $\|A\| \ge 0$, $\|A\| = 0$ if
+and only if $A = 0$, $\|\alpha A\| = |\alpha| \|A\|$, and $\|A + B\| \le \|A\| + \|B\|$.
+
+The induced norm is the backbone's `Matrix.inducedNorm q p A`, defined as the supremum of
+$\|Ax\|_q$ over $\|x\|_p \le 1$. -/
 theorem theorem_1_1 [NeZero n] (q : Seminorm ℝ (Fin m → ℝ)) (p : Seminorm ℝ (Fin n → ℝ))
     (hq : ∀ y, q y = 0 → y = 0) (hp : ∀ x, p x = 0 → x = 0) (A B : Matrix (Fin m) (Fin n) ℝ)
     (α : ℝ) :
@@ -179,12 +280,18 @@ theorem theorem_1_1 [NeZero n] (q : Seminorm ℝ (Fin m → ℝ)) (p : Seminorm 
   · rw [← inducedSeminorm_apply (q := q) hp, map_smul_eq_mul, Real.norm_eq_abs,
       inducedSeminorm_apply]
 
-/-- **The `p`-norms and the `1`- and `∞`-norms** (§1.11, after Theorem 1.1). The matrix
-`p`-norm `‖A‖_p = sup_{x ≠ 0} ‖A x‖_p / ‖x‖_p` is `Matrix.lpOpNorm p A`, the norm induced by the
-vector `p`-norm `Matrix.lpSeminorm p` (backbone `Matrix.lpOpNorm_eq_inducedNorm`); the `1`-norm
-is the *column sum norm* `‖A‖₁ = maxⱼ ∑ᵢ |aᵢⱼ|` and the `∞`-norm the *row sum norm*
-`‖A‖_∞ = maxᵢ ∑ⱼ |aᵢⱼ|` (backbone `Matrix.lpOpNorm_one_eq_sup_sum_norm`, Mathlib's
-`Matrix.linfty_opNorm_def`). -/
+/-- **Section 1.11** of [quarteroni2000numerical], the $p$-norms and the $1$- and $\infty$-norms,
+after Theorem 1.1. Let $A \in \mathbb{R}^{m \times n}$ and $r \in [1, \infty]$. The matrix
+$r$-norm
+$$\|A\|_r = \sup_{x \neq 0} \frac{\|Ax\|_r}{\|x\|_r}$$
+is the norm induced by the vector $r$-norm. The $1$-norm is the **column sum norm** and the
+$\infty$-norm is the **row sum norm**:
+$$\|A\|_1 = \max_j \sum_i |a_{ij}|, \qquad \|A\|_\infty = \max_i \sum_j |a_{ij}|.$$
+
+The matrix $r$-norm is `Matrix.lpOpNorm r A`, and the vector $r$-norm is `Matrix.lpSeminorm r`,
+the norm of `toLp r x`. The proof uses the backbone theorems `Matrix.lpOpNorm_eq_inducedNorm`
+and `Matrix.lpOpNorm_one_eq_sup_sum_norm`, and Mathlib's `Matrix.linfty_opNorm_def`. The maxima
+are suprema over finite sets, which are $0$ when the set is empty. -/
 theorem lpOpNorm_one_and_top (r : ℝ≥0∞) [Fact (1 ≤ r)] (A : Matrix (Fin m) (Fin n) ℝ) :
     lpOpNorm r A = inducedNorm (lpSeminorm r) (lpSeminorm r) A ∧
       (∀ x : Fin n → ℝ, lpSeminorm r x = ‖toLp r x‖) ∧
@@ -194,9 +301,13 @@ theorem lpOpNorm_one_and_top (r : ℝ≥0∞) [Fact (1 ≤ r)] (A : Matrix (Fin 
   open scoped Matrix.Norms.Operator in
   rw [lpOpNorm_top, linfty_opNorm_def]
 
-/-- **`‖A‖₁ = ‖Aᵀ‖_∞`**, and `‖A‖₁ = ‖A‖_∞` if `A` is self-adjoint or real symmetric (§1.11,
-after the column and row sum norms). Backbone `Matrix.lpOpNorm_one_eq_linfty_opNorm_transpose`
-and `Matrix.IsHermitian.lpOpNorm_one_eq_linfty_opNorm`. -/
+/-- **Section 1.11** of [quarteroni2000numerical], after the column and the row sum norms. For
+$A \in \mathbb{R}^{m \times n}$, $\|A\|_1 = \|A^T\|_\infty$. If $B \in \mathbb{C}^{n \times n}$
+is Hermitian, then $\|B\|_1 = \|B\|_\infty$; if $C \in \mathbb{R}^{n \times n}$ is symmetric,
+then $\|C\|_1 = \|C\|_\infty$.
+
+The proof uses the backbone theorems `Matrix.lpOpNorm_one_eq_linfty_opNorm_transpose` and
+`Matrix.IsHermitian.lpOpNorm_one_eq_linfty_opNorm`. -/
 theorem lpOpNorm_one_eq_linfty_opNorm_transpose (A : Matrix (Fin m) (Fin n) ℝ)
     (B : Matrix (Fin n) (Fin n) ℂ) (C : Matrix (Fin n) (Fin n) ℝ) :
     lpOpNorm 1 A = lpOpNorm ⊤ Aᵀ ∧ (B.IsHermitian → lpOpNorm 1 B = lpOpNorm ⊤ B) ∧
@@ -216,11 +327,18 @@ open scoped Matrix.Norms.L2Operator
 
 variable {m n : ℕ}
 
-/-- **Theorem 1.2, (1.21).** For `A ∈ ℂ^{m×n}`, `‖A‖₂ = √ρ(Aᴴ A) = √ρ(A Aᴴ)`, and for a square
-`B` of positive order it is the largest singular value, `‖B‖₂ = σ₁(B) = maxᵢ σᵢ(B)`; for a real
-square `C`, `‖C‖₂² = ρ(Cᵀ C)` with the complex spectral radius. The identities `‖A‖₂² = ρ(Aᴴ A)`
-are the backbone's `Matrix.l2_opNorm_sq_eq_spectralRadius_conjTranspose_mul_self` and its
-companions, stated in `ℝ≥0∞`; the square roots are their real form. -/
+/-- **Theorem 1.2** of [quarteroni2000numerical], with (1.21). Let $n \ge 1$. For
+$A \in \mathbb{C}^{m \times n}$,
+$$\|A\|_2 = \sqrt{\rho(A^H A)} = \sqrt{\rho(A A^H)}.$$
+For $B \in \mathbb{C}^{n \times n}$, $\|B\|_2 = \sigma_1(B) = \max_i \sigma_i(B)$ is the largest
+singular value. For $C \in \mathbb{R}^{n \times n}$, $\|C\|_2^2 = \rho(C^T C)$, with the
+spectral radius of $C^T C$ regarded as a complex matrix.
+
+The spectral norm $\|\cdot\|_2$ is Mathlib's scoped `Matrix.Norms.L2Operator`. The identities
+$\|A\|_2^2 = \rho(A^H A)$ are the backbone theorem
+`Matrix.l2_opNorm_sq_eq_spectralRadius_conjTranspose_mul_self` and its companions, stated in
+$[0, \infty]$; the square roots are their real form. The singular values are
+`Matrix.colSingularValues B`. -/
 theorem theorem_1_2 [NeZero n] (A : Matrix (Fin m) (Fin n) ℂ) (B : Matrix (Fin n) (Fin n) ℂ)
     (C : Matrix (Fin n) (Fin n) ℝ) :
     ((‖A‖₊ : ℝ≥0∞) ^ 2 = spectralRadius ℂ (Aᴴ * A) ∧
@@ -236,9 +354,13 @@ theorem theorem_1_2 [NeZero n] (A : Matrix (Fin m) (Fin n) ℂ) (B : Matrix (Fin
   rw [← conjTranspose_eq_transpose_of_trivial]
   exact l2_opNorm_sq_eq_complexSpectralRadius_conjTranspose_mul_self C
 
-/-- **Theorem 1.2, (1.22).** If `A` is Hermitian (or real and symmetric) then `‖A‖₂ = ρ(A)`:
-backbone `Matrix.IsHermitian.l2_opNorm_eq_spectralRadius` and
-`Matrix.IsHermitian.l2_opNNNorm_eq_complexSpectralRadius`, stated in `ℝ≥0∞` and in `ℝ`. -/
+/-- **Theorem 1.2** of [quarteroni2000numerical], with (1.22). If $A \in \mathbb{C}^{n \times n}$ is
+Hermitian, then $\|A\|_2 = \rho(A)$. If $B \in \mathbb{R}^{n \times n}$ is symmetric, then
+$\|B\|_2 = \rho(B)$, with the spectral radius of $B$ regarded as a complex matrix.
+
+Both identities are stated in $[0, \infty]$ and in $\mathbb{R}$. The proof uses the backbone
+theorems `Matrix.IsHermitian.l2_opNorm_eq_spectralRadius` and
+`Matrix.IsHermitian.l2_opNNNorm_eq_complexSpectralRadius`. -/
 theorem theorem_1_2_hermitian {A : Matrix (Fin n) (Fin n) ℂ} (hA : A.IsHermitian)
     {B : Matrix (Fin n) (Fin n) ℝ} (hB : B.IsSymm) :
     ((‖A‖₊ : ℝ≥0∞) = spectralRadius ℂ A ∧ ‖A‖ = (spectralRadius ℂ A).toReal) ∧
@@ -248,14 +370,18 @@ theorem theorem_1_2_hermitian {A : Matrix (Fin n) (Fin n) ℂ} (hA : A.IsHermiti
   exact ⟨⟨h₁, by rw [← h₁, ENNReal.coe_toReal, coe_nnnorm]⟩,
     ⟨h₂, by rw [← h₂, ENNReal.coe_toReal, coe_nnnorm]⟩⟩
 
-/-- **Theorem 1.2, last clause.** If `A` is unitary (or real orthogonal) then `‖A‖₂ = 1`
-(backbone `Matrix.l2_opNorm_of_mem_unitaryGroup`). -/
+/-- **Theorem 1.2** of [quarteroni2000numerical], the last clause. Let $n \ge 1$. If
+$A \in \mathbb{C}^{n \times n}$ is unitary, then $\|A\|_2 = 1$. If
+$Q \in \mathbb{R}^{n \times n}$ is orthogonal, then $\|Q\|_2 = 1$.
+
+The proof uses the backbone theorem `Matrix.l2_opNorm_of_mem_unitaryGroup`. -/
 theorem theorem_1_2_unitary [NeZero n] {A : Matrix (Fin n) (Fin n) ℂ}
     (hA : A ∈ unitaryGroup (Fin n) ℂ) {Q : Matrix (Fin n) (Fin n) ℝ}
     (hQ : Q ∈ orthogonalGroup (Fin n) ℝ) : ‖A‖ = 1 ∧ ‖Q‖ = 1 :=
   ⟨l2_opNorm_of_mem_unitaryGroup hA, l2_opNorm_of_mem_unitaryGroup hQ⟩
 
-/-- `a ≤ √n b` gives `(1/√n) a ≤ b`, with Lean's `1/√0 = 0` covering the empty case. -/
+/-- If $a \le \sqrt n \, b$ and $b \ge 0$, then $a / \sqrt n \le b$, where $1/\sqrt 0 = 0$ in Lean
+covers the case $n = 0$. -/
 private theorem one_div_sqrt_mul_le {a b : ℝ} (hb : 0 ≤ b) (h : a ≤ √(n : ℝ) * b) :
     1 / √(n : ℝ) * a ≤ b := by
   rcases eq_or_ne (√(n : ℝ)) 0 with h0 | h0
@@ -263,13 +389,21 @@ private theorem one_div_sqrt_mul_le {a b : ℝ} (hb : 0 ≤ b) (h : a ≤ √(n 
   · calc 1 / √(n : ℝ) * a ≤ 1 / √(n : ℝ) * (√(n : ℝ) * b) := by gcongr
       _ = b := by field_simp
 
-/-- **The estimates of `‖A‖₂` after Theorem 1.2**, for a square `A ∈ ℂ^{n×n}` (`‖·‖₂` written
-`Matrix.lpOpNorm 2`, `‖·‖₁` and `‖·‖_∞` as `Matrix.lpOpNorm 1`, `Matrix.lpOpNorm ⊤`):
-`maxᵢⱼ |aᵢⱼ| ≤ ‖A‖₂ ≤ n maxᵢⱼ |aᵢⱼ|`; `n^{-1/2} ‖A‖_∞ ≤ ‖A‖₂ ≤ n^{1/2} ‖A‖_∞`;
-`n^{-1/2} ‖A‖₁ ≤ ‖A‖₂ ≤ n^{1/2} ‖A‖₁`; `‖A‖₂ ≤ √(‖A‖₁ ‖A‖_∞)`. Backbone
-`Matrix.norm_entry_le_l2_opNorm`, `Matrix.l2_opNorm_le_sqrt_card_mul_of_forall_norm_le`,
-`Matrix.l2_opNorm_le_sqrt_card_mul_linfty_opNorm`, `Matrix.l2_opNorm_le_sqrt_card_mul_lpOpNorm_one`
-and `Matrix.l2_opNorm_sq_le_lpOpNorm_one_mul_linfty_opNorm`. -/
+/-- **Section 1.11** of [quarteroni2000numerical], the estimates of $\|A\|_2$ after Theorem 1.2. Let
+$A \in \mathbb{C}^{n \times n}$. Then:
+
+* $|a_{ij}| \le \|A\|_2$ for all $i, j$, and if $|a_{ij}| \le M$ for all $i, j$, with $M \ge 0$,
+  then $\|A\|_2 \le n M$; so $\max_{ij} |a_{ij}| \le \|A\|_2 \le n \max_{ij} |a_{ij}|$;
+* $n^{-1/2} \|A\|_\infty \le \|A\|_2 \le n^{1/2} \|A\|_\infty$;
+* $n^{-1/2} \|A\|_1 \le \|A\|_2 \le n^{1/2} \|A\|_1$;
+* $\|A\|_2 \le \sqrt{\|A\|_1 \|A\|_\infty}$.
+
+The norms are `Matrix.lpOpNorm 2`, `Matrix.lpOpNorm 1` and `Matrix.lpOpNorm ⊤`. For $n = 0$ the
+factor $n^{-1/2}$ is $0$. The proof uses the backbone theorems `Matrix.norm_entry_le_l2_opNorm`,
+`Matrix.l2_opNorm_le_sqrt_card_mul_of_forall_norm_le`,
+`Matrix.l2_opNorm_le_sqrt_card_mul_linfty_opNorm`,
+`Matrix.l2_opNorm_le_sqrt_card_mul_lpOpNorm_one` and
+`Matrix.l2_opNorm_sq_le_lpOpNorm_one_mul_linfty_opNorm`. -/
 theorem l2_opNorm_bounds (A : Matrix (Fin n) (Fin n) ℂ) :
     ((∀ i j, ‖A i j‖ ≤ lpOpNorm 2 A) ∧
         ∀ M : ℝ, 0 ≤ M → (∀ i j, ‖A i j‖ ≤ M) → lpOpNorm 2 A ≤ n * M) ∧
@@ -290,19 +424,28 @@ theorem l2_opNorm_bounds (A : Matrix (Fin n) (Fin n) ℂ) :
       (mul_nonneg (lpOpNorm_nonneg 1 A) (lpOpNorm_nonneg ⊤ A))]
     exact l2_opNorm_sq_le_lpOpNorm_one_mul_linfty_opNorm A
 
-/-- **Normal matrices** (§1.11, after the estimates): if `A` is normal then `‖A‖₂ ≤ ‖A‖_p` for
-every `p`. The book states it for `p ≥ 2`; it holds for every `p ≥ 1`, since `‖A‖₂ = ρ(A)` for a
-normal matrix and `ρ(A) ≤ ‖A‖_p` by consistency (backbone
-`Matrix.l2_opNorm_le_lpOpNorm_of_isStarNormal`). -/
+/-- **Section 1.11** of [quarteroni2000numerical], normal matrices, after the estimates of
+$\|A\|_2$. If $A \in \mathbb{C}^{n \times n}$ is normal and $p \in [1, \infty]$, then
+$\|A\|_2 \le \|A\|_p$.
+
+**Generalization.** The book states the inequality for $p \ge 2$. It holds for every $p \ge 1$,
+because $\|A\|_2 = \rho(A)$ for a normal matrix and $\rho(A) \le \|A\|_p$ by Theorem 1.4.
+
+The proof is the backbone theorem `Matrix.l2_opNorm_le_lpOpNorm_of_isStarNormal`. -/
 theorem l2_opNorm_le_lpOpNorm_of_isStarNormal (A : Matrix (Fin n) (Fin n) ℂ) [IsStarNormal A]
     (p : ℝ≥0∞) [Fact (1 ≤ p)] : lpOpNorm 2 A ≤ lpOpNorm p A :=
   Matrix.l2_opNorm_le_lpOpNorm_of_isStarNormal A p
 
 open scoped Matrix.Norms.Frobenius in
-/-- **Exercise 16 (cited by §1.11 for Exercise 17's table).** `‖A‖_F² = ∑ᵢ σᵢ(A)²`, the Frobenius
-norm squared is the sum of the squared singular values, and hence
-`‖A‖₂ ≤ ‖A‖_F ≤ √(rank A) ‖A‖₂` (backbone `Matrix.frobenius_norm_sq_eq_sum_sq_colSingularValues`,
-`Matrix.l2_opNorm_le_frobenius_norm`, `Matrix.frobenius_norm_le_sqrt_rank_mul_l2_opNorm`). -/
+/-- **Exercise 16 of Chapter 1** of [quarteroni2000numerical], which §1.11 cites for the table of
+Exercise 17. Let $A \in \mathbb{R}^{m \times n}$ with singular values $\sigma_i$. Then the
+square of the Frobenius norm is the sum of the squares of the singular values,
+$$\|A\|_F^2 = \sum_i \sigma_i(A)^2,$$
+and consequently $\|A\|_2 \le \|A\|_F \le \sqrt{\operatorname{rank} A} \, \|A\|_2$.
+
+The singular values are `Matrix.colSingularValues A`, indexed by the columns. The proof uses the
+backbone theorems `Matrix.frobenius_norm_sq_eq_sum_sq_colSingularValues`,
+`Matrix.l2_opNorm_le_frobenius_norm` and `Matrix.frobenius_norm_le_sqrt_rank_mul_l2_opNorm`. -/
 theorem exercise_1_16 (A : Matrix (Fin m) (Fin n) ℝ) :
     ‖A‖ ^ 2 = ∑ i, A.colSingularValues i ^ 2 ∧ lpOpNorm 2 A ≤ ‖A‖ ∧
       ‖A‖ ≤ √(A.rank : ℝ) * lpOpNorm 2 A :=
@@ -313,12 +456,21 @@ end Spectral
 
 /-! ### Theorem 1.3 -/
 
-/-- **Theorem 1.3.** Let `‖|·|‖` be the matrix norm induced by a vector norm `‖·‖` on `ℝⁿ`.
-Then (1) `‖A x‖ ≤ ‖|A|‖ ‖x‖`, that is, `‖|·|‖` is compatible with `‖·‖`; (2) `‖|I|‖ = 1`;
-(3) `‖|A B|‖ ≤ ‖|A|‖ ‖|B|‖`, that is, `‖|·|‖` is sub-multiplicative. The remark after the
-theorem: sub-multiplicativity by itself gives only `‖|I|‖ ≥ 1`, since `‖|I|‖ ≤ ‖|I|‖²`. Backbone
-`Matrix.le_inducedNorm_mul`, `Matrix.isConsistent_inducedNorm`, `Matrix.inducedNorm_one`,
-`Matrix.inducedNorm_mul_le`, `Matrix.one_le_of_mul_le`. -/
+/-- **Theorem 1.3** of [quarteroni2000numerical]. Let $n \ge 1$, let $\|\cdot\|$ be a vector norm on
+$\mathbb{R}^n$, and let $|||\cdot|||$ be the matrix norm induced by it. For all
+$A, B \in \mathbb{R}^{n \times n}$ and $x \in \mathbb{R}^n$:
+
+* (1) $\|Ax\| \le |||A||| \, \|x\|$, that is, $|||\cdot|||$ is compatible with $\|\cdot\|$;
+* (2) $|||I||| = 1$;
+* (3) $|||AB||| \le |||A||| \, |||B|||$, that is, $|||\cdot|||$ is sub-multiplicative.
+
+Moreover, as the remark after the theorem says, sub-multiplicativity alone gives only
+$N(I) \ge 1$: if a function $N$ on $\mathbb{R}^{n \times n}$ is sub-multiplicative and
+$N(I) > 0$, then $N(I) \ge 1$, because $N(I) \le N(I)^2$.
+
+The proof uses the backbone theorems `Matrix.le_inducedNorm_mul`,
+`Matrix.isConsistent_inducedNorm`, `Matrix.inducedNorm_one`, `Matrix.inducedNorm_mul_le` and
+`Matrix.one_le_of_mul_le`. -/
 theorem theorem_1_3 {n : ℕ} [NeZero n] (p : Seminorm ℝ (Fin n → ℝ)) (hp : ∀ x, p x = 0 → x = 0)
     (A B : Matrix (Fin n) (Fin n) ℝ) (x : Fin n → ℝ) (N : Matrix (Fin n) (Fin n) ℝ → ℝ) :
     (p (A *ᵥ x) ≤ inducedNorm p p A * p x ∧ IsConsistent (inducedNorm p p) p p) ∧
@@ -334,20 +486,29 @@ section SpectralRadius
 
 variable {n : ℕ}
 
-/-- **Theorem 1.4.** Let `‖·‖` be a matrix norm consistent with a vector norm on `ℂⁿ`; then
-`ρ(A) ≤ ‖A‖` for every `A ∈ ℂ^{n×n}` (backbone `Matrix.spectralRadius_le_of_isConsistent`, the
-book's eigenvector argument). -/
+/-- **Theorem 1.4** of [quarteroni2000numerical]. Let $\|\cdot\|$ be a vector norm on
+$\mathbb{C}^n$, and let $N$ be a function on $\mathbb{C}^{n \times n}$ consistent with it. Then
+$$\rho(A) \le N(A) \quad \text{for every } A \in \mathbb{C}^{n \times n}.$$
+
+The proof is the book's eigenvector argument, the backbone theorem
+`Matrix.spectralRadius_le_of_isConsistent`. -/
 theorem theorem_1_4 {N : Matrix (Fin n) (Fin n) ℂ → ℝ} {p : Seminorm ℂ (Fin n → ℂ)}
     (hp : ∀ x, p x = 0 → x = 0) (hN : IsConsistent N p p) (A : Matrix (Fin n) (Fin n) ℂ) :
     spectralRadius ℂ A ≤ ENNReal.ofReal (N A) :=
   spectralRadius_le_of_isConsistent hp hN A
 
-/-- **Theorem 1.4 for a real matrix** and a matrix norm consistent with a vector norm on `ℝⁿ`:
-`ρ(A) ≤ ‖A‖`, the spectral radius being the complex one, in particular `ρ(A) ≤ ‖A‖_p` for the
-induced norms of §1.11 and every `p`. The eigenvector of the book's proof may be complex; the
-backbone (`Matrix.complexSpectralRadius_le_of_isConsistent`,
-`Matrix.complexSpectralRadius_le_inducedNorm`, `Matrix.complexSpectralRadius_le_lpOpNorm`) goes
-through the induced norm, which is an algebra norm. -/
+/-- **Theorem 1.4** of [quarteroni2000numerical], for a real matrix. Let $\|\cdot\|$ be a vector
+norm on $\mathbb{R}^n$, and let $N$ be a function on $\mathbb{R}^{n \times n}$ consistent with
+it. For every $A \in \mathbb{R}^{n \times n}$, with $\rho(A)$ the spectral radius of $A$
+regarded as a complex matrix,
+$$\rho(A) \le N(A), \qquad \rho(A) \le |||A|||, \qquad \rho(A) \le \|A\|_r,$$
+where $|||\cdot|||$ is the matrix norm induced by $\|\cdot\|$ and $\|\cdot\|_r$ is the matrix
+$r$-norm for any $r \in [1, \infty]$.
+
+The eigenvector in the book's proof can be complex, so it does not apply directly to a real
+vector norm. The backbone proof goes through the induced norm, which is an algebra norm:
+`Matrix.complexSpectralRadius_le_of_isConsistent`, `Matrix.complexSpectralRadius_le_inducedNorm`
+and `Matrix.complexSpectralRadius_le_lpOpNorm`. -/
 theorem theorem_1_4_real {N : Matrix (Fin n) (Fin n) ℝ → ℝ} {p : Seminorm ℝ (Fin n → ℝ)}
     (hp : ∀ x, p x = 0 → x = 0) (hN : IsConsistent N p p) (A : Matrix (Fin n) (Fin n) ℝ)
     (r : ℝ≥0∞) [Fact (1 ≤ r)] :
@@ -357,12 +518,17 @@ theorem theorem_1_4_real {N : Matrix (Fin n) (Fin n) ℝ → ℝ} {p : Seminorm 
   ⟨complexSpectralRadius_le_of_isConsistent hp hN A, complexSpectralRadius_le_inducedNorm hp A,
     complexSpectralRadius_le_lpOpNorm r A⟩
 
-/-- **Property 1.13.** Let `A ∈ ℂ^{n×n}` and `ε > 0`. Then there exists a consistent matrix norm
-`‖·‖_{A,ε}` — the norm induced by a vector norm on `ℂⁿ` depending on `A` and `ε` — such that
-`‖A‖_{A,ε} ≤ ρ(A) + ε`; and the same for a real `A` with a vector norm on `ℝⁿ` and the complex
-spectral radius. Backbone `Matrix.exists_inducedNorm_le_spectralRadius_add` and
-`Matrix.exists_inducedNorm_le_complexSpectralRadius_add`, the ε-norm of
-`Numlib/LinearAlgebra/Matrix/EpsilonNorm`. -/
+/-- **Property 1.13** of [quarteroni2000numerical]. Let $A \in \mathbb{C}^{n \times n}$ and
+$\varepsilon > 0$. Then there is a vector norm on $\mathbb{C}^n$, depending on $A$ and
+$\varepsilon$, whose induced matrix norm $\|\cdot\|_{A,\varepsilon}$ is consistent with it and
+satisfies
+$$\|A\|_{A,\varepsilon} \le \rho(A) + \varepsilon.$$
+The same holds for $B \in \mathbb{R}^{n \times n}$, with a vector norm on $\mathbb{R}^n$ and the
+spectral radius of $B$ regarded as a complex matrix.
+
+The proof uses the backbone theorems `Matrix.exists_inducedNorm_le_spectralRadius_add` and
+`Matrix.exists_inducedNorm_le_complexSpectralRadius_add`, built on the norm of
+`Numlib.LinearAlgebra.Matrix.EpsilonNorm`. -/
 theorem property_1_13 (A : Matrix (Fin n) (Fin n) ℂ) (B : Matrix (Fin n) (Fin n) ℝ) {ε : ℝ}
     (hε : 0 < ε) :
     (∃ p : Seminorm ℂ (Fin n → ℂ), (∀ x, p x = 0 → x = 0) ∧ IsConsistent (inducedNorm p p) p p ∧
@@ -373,28 +539,41 @@ theorem property_1_13 (A : Matrix (Fin n) (Fin n) ℂ) (B : Matrix (Fin n) (Fin 
   obtain ⟨q, hq, hle'⟩ := exists_inducedNorm_le_complexSpectralRadius_add B hε
   exact ⟨⟨p, hp, isConsistent_inducedNorm hp, hle⟩, ⟨q, hq, isConsistent_inducedNorm hq, hle'⟩⟩
 
-/-- **(1.23).** `ρ(A) = inf ‖A‖`, the infimum being taken over the norms induced by the vector
-norms on `ℝⁿ` (backbone `Matrix.complexSpectralRadius_eq_iInf_inducedNorm`). The book takes it
-over all the consistent norms, which gives the same value: every consistent norm is at least
-`ρ(A)` by Theorem 1.4, and the induced norms are among them. -/
+/-- **Equation (1.23)** of [quarteroni2000numerical]. For $A \in \mathbb{R}^{n \times n}$,
+$$\rho(A) = \inf \|A\|,$$
+where the infimum is taken over the matrix norms induced by the vector norms on $\mathbb{R}^n$,
+and $\rho(A)$ is the spectral radius of $A$ regarded as a complex matrix.
+
+**Reading.** The book takes the infimum over all consistent matrix norms. This gives the same
+value: every consistent norm is at least $\rho(A)$ by Theorem 1.4, and the induced norms are
+consistent.
+
+The proof is the backbone theorem `Matrix.complexSpectralRadius_eq_iInf_inducedNorm`. -/
 theorem equation_1_23 (A : Matrix (Fin n) (Fin n) ℝ) :
     A.complexSpectralRadius.toReal =
       ⨅ p : {p : Seminorm ℝ (Fin n → ℝ) // ∀ x, p x = 0 → x = 0}, inducedNorm p.1 p.1 A :=
   complexSpectralRadius_eq_iInf_inducedNorm A
 
-/-- The spectrum of a `2 × 2` complex matrix, read off its characteristic polynomial
-`λ² - tr(M) λ + det M`. -/
+/-- A number $\mu$ is an eigenvalue of $M \in \mathbb{C}^{2 \times 2}$ if and only if
+$\mu^2 - \operatorname{tr}(M) \mu + \det M = 0$. -/
 private theorem mem_spectrum_fin_two (M : Matrix (Fin 2) (Fin 2) ℂ) (μ : ℂ) :
     μ ∈ spectrum ℂ M ↔ μ ^ 2 - M.trace * μ + M.det = 0 := by
   rw [Matrix.mem_spectrum_iff_isRoot_charpoly, Polynomial.IsRoot.def, Matrix.charpoly_fin_two]
   simp
 
-/-- **The spectral radius is not a norm** (§1.11.1, after Property 1.13; book erratum). The text
-says "the spectral radius is a sub-multiplicative seminorm, since it is not true that `ρ(A) = 0`
-iff `A = 0`". True: `ρ` vanishes on nonzero matrices — the triangular matrix
-`N = [[0, 1], [0, 0]]` with null diagonal has `ρ(N) = 0`, and so does `Nᵀ`. False: `ρ` is not
-subadditive, `ρ(N + Nᵀ) = 1 > 0 = ρ(N) + ρ(Nᵀ)`, and not sub-multiplicative,
-`ρ(N Nᵀ) = 1 > 0 = ρ(N) ρ(Nᵀ)`; it is absolutely homogeneous (`spectralRadius_smul`). -/
+/-- **Section 1.11.1** of [quarteroni2000numerical], after Property 1.13: the spectral radius is not
+a norm. Let
+$$N = \begin{bmatrix} 0 & 1 \\ 0 & 0 \end{bmatrix} \in \mathbb{C}^{2 \times 2}.$$
+Then $N \neq 0$ and $\rho(N) = \rho(N^T) = 0$, but
+$$\rho(N + N^T) = 1 > 0 = \rho(N) + \rho(N^T), \qquad \rho(N N^T) = 1 > 0 = \rho(N) \rho(N^T).$$
+So $\rho$ vanishes at nonzero matrices, and it is neither subadditive nor sub-multiplicative.
+
+**Correction.** The book says that the spectral radius is a sub-multiplicative seminorm, since
+it is not true that $\rho(A) = 0$ if and only if $A = 0$. The second part is true, as
+$\rho(N) = 0$ shows. The first part is false: the example shows that $\rho$ is neither
+subadditive nor sub-multiplicative.
+
+The spectral radius is absolutely homogeneous, by `spectralRadius_smul`. -/
 theorem spectralRadius_not_subadditive :
     (!![0, 1; 0, 0] : Matrix (Fin 2) (Fin 2) ℂ) ≠ 0 ∧
       spectralRadius ℂ (!![0, 1; 0, 0] : Matrix (Fin 2) (Fin 2) ℂ) = 0 ∧
@@ -447,13 +626,19 @@ theorem spectralRadius_not_subadditive :
     · simp [trace_fin_two_of, det_fin_two_of]
 
 open scoped Matrix.Norms.L2Operator in
-/-- **Property 1.14 (Gelfand's formula).** Let `A` be a square matrix and `‖·‖` a matrix norm;
-then `lim_{m → ∞} ‖Aᵐ‖^{1/m} = ρ(A)`. For a real `A` and *any* matrix norm `N` on `ℝ^{n×n}`
-(backbone `Matrix.tendsto_pow_rpow_complexSpectralRadius` for the spectral norm, transported to
-`N` by `Seminorm.tendsto_rpow_one_div`), and for a complex `A` in the spectral norm (Mathlib's
-`spectrum.pow_nnnorm_pow_one_div_tendsto_nhds_spectralRadius`). The book asks for a consistent
-norm; consistency is not needed, since any two norms on `ℝ^{n×n}` differ by a factor whose
-`m`-th roots tend to `1`. -/
+/-- **Property 1.14** of [quarteroni2000numerical] (Gelfand's formula). Let
+$A \in \mathbb{R}^{n \times n}$, and let $N$ be a matrix norm on $\mathbb{R}^{n \times n}$. Then
+$$\lim_{m \to \infty} N(A^m)^{1/m} = \rho(A),$$
+with the spectral radius of $A$ regarded as a complex matrix. For
+$B \in \mathbb{C}^{n \times n}$, $\|B^m\|_2^{1/m} \to \rho(B)$.
+
+**Generalization.** The book asks for a consistent matrix norm. Consistency is not needed: any
+two norms on $\mathbb{R}^{n \times n}$ differ by bounded factors, whose $m$-th roots tend to
+$1$.
+
+The real case uses the backbone theorem `Matrix.tendsto_pow_rpow_complexSpectralRadius` for the
+spectral norm, transported to $N$ by `Seminorm.tendsto_rpow_one_div`. The complex case is
+Mathlib's `spectrum.pow_nnnorm_pow_one_div_tendsto_nhds_spectralRadius`, in $[0, \infty]$. -/
 theorem property_1_14 (N : Seminorm ℝ (Matrix (Fin n) (Fin n) ℝ)) (hN : ∀ M, N M = 0 → M = 0)
     (A : Matrix (Fin n) (Fin n) ℝ) (B : Matrix (Fin n) (Fin n) ℂ) :
     Tendsto (fun m : ℕ => N (A ^ m) ^ (1 / m : ℝ)) atTop (𝓝 A.complexSpectralRadius.toReal) ∧
@@ -471,11 +656,13 @@ section Sequences
 variable {n : ℕ}
 
 open scoped Matrix.Norms.Elementwise in
-/-- **Convergence of a sequence of matrices** (§1.11.2). A sequence `A^(k)` in `ℝ^{n×n}` converges
-to `A` when `lim_k ‖A^(k) - A‖ = 0`, and "the choice of the norm does not influence the result
-since in `ℝ^{n×n}` all norms are equivalent": for every matrix norm `N` this is convergence in
-the topology of `ℝ^{n×n}`, hence independent of `N`. A matrix `A` is *convergent* when
-`A^k → 0`. -/
+/-- **Section 1.11.2** of [quarteroni2000numerical], convergence of a sequence of matrices. A
+sequence $A^{(k)}$ in $\mathbb{R}^{n \times n}$ converges to $A$ if
+$\lim_{k \to \infty} \|A^{(k)} - A\| = 0$, and the choice of the norm does not influence the
+result, since all norms on $\mathbb{R}^{n \times n}$ are equivalent. Precisely: for every matrix
+norm $N$ on $\mathbb{R}^{n \times n}$, $A^{(k)} \to A$ in the topology of
+$\mathbb{R}^{n \times n}$ if and only if $N(A^{(k)} - A) \to 0$. A matrix $A$ is **convergent**
+if $A^k \to 0$. -/
 theorem tendsto_iff_tendsto_seminorm (N : Seminorm ℝ (Matrix (Fin n) (Fin n) ℝ))
     (hN : ∀ M, N M = 0 → M = 0) (M : ℕ → Matrix (Fin n) (Fin n) ℝ) (B : Matrix (Fin n) (Fin n) ℝ) :
     Tendsto M atTop (𝓝 B) ↔ Tendsto (fun k => N (M k - B)) atTop (𝓝 0) := by
@@ -483,10 +670,15 @@ theorem tendsto_iff_tendsto_seminorm (N : Seminorm ℝ (Matrix (Fin n) (Fin n) �
   exact tendsto_iff_norm_sub_tendsto_zero
 
 open scoped Matrix.Norms.L2Operator in
-/-- **Theorem 1.5, (1.24).** For a square matrix `A`, `lim_k Aᵏ = 0 ⟺ ρ(A) < 1`: for a real `A`
-with the complex spectral radius (backbone `Matrix.tendsto_pow_iff_complexSpectralRadius_lt_one`)
-and for a complex `A` of positive order (`spectralRadius_lt_one_iff_tendsto_pow` in the Banach
-algebra `ℂ^{n×n}`). -/
+/-- **Theorem 1.5** of [quarteroni2000numerical], with (1.24). Let $n \ge 1$. For
+$A \in \mathbb{R}^{n \times n}$,
+$$\lim_{k \to \infty} A^k = 0 \iff \rho(A) < 1,$$
+with the spectral radius of $A$ regarded as a complex matrix. The same holds for
+$B \in \mathbb{C}^{n \times n}$.
+
+The real case is the backbone theorem `Matrix.tendsto_pow_iff_complexSpectralRadius_lt_one`. The
+complex case is the backbone theorem `spectralRadius_lt_one_iff_tendsto_pow` in the Banach
+algebra $\mathbb{C}^{n \times n}$. -/
 theorem theorem_1_5 [NeZero n] (A : Matrix (Fin n) (Fin n) ℝ) (B : Matrix (Fin n) (Fin n) ℂ) :
     (Tendsto (fun k => A ^ k) atTop (𝓝 0) ↔ A.complexSpectralRadius < 1) ∧
       (Tendsto (fun k => B ^ k) atTop (𝓝 0) ↔ spectralRadius ℂ B < 1) := by
@@ -495,12 +687,17 @@ theorem theorem_1_5 [NeZero n] (A : Matrix (Fin n) (Fin n) ℝ) (B : Matrix (Fin
     (spectralRadius_lt_one_iff_tendsto_pow B).symm⟩
 
 open scoped Matrix.Norms.L2Operator in
-/-- **Theorem 1.5, (1.25).** The geometric series `∑ₖ Aᵏ` is convergent iff `ρ(A) < 1`, and then
-`I - A` is invertible and `∑ₖ Aᵏ = (I - A)⁻¹`: for a real `A` (backbone
-`Matrix.summable_pow_iff_complexSpectralRadius_lt_one`,
-`Matrix.hasSum_pow_inv_one_sub_of_complexSpectralRadius_lt_one`) and for a complex `A` of
-positive order (`summable_pow_iff_spectralRadius_lt_one`,
-`hasSum_pow_inverse_one_sub_of_spectralRadius_lt_one`). -/
+/-- **Theorem 1.5** of [quarteroni2000numerical], with (1.25). Let $n \ge 1$ and
+$A \in \mathbb{R}^{n \times n}$. The geometric series $\sum_{k \ge 0} A^k$ converges if and only
+if $\rho(A) < 1$, with the spectral radius of $A$ regarded as a complex matrix. In this case
+$I - A$ is invertible and
+$$\sum_{k=0}^\infty A^k = (I - A)^{-1}.$$
+The same holds for $B \in \mathbb{C}^{n \times n}$.
+
+The real case uses the backbone theorems `Matrix.summable_pow_iff_complexSpectralRadius_lt_one`
+and `Matrix.hasSum_pow_inv_one_sub_of_complexSpectralRadius_lt_one`. The complex case uses the
+backbone theorems `summable_pow_iff_spectralRadius_lt_one` and
+`hasSum_pow_inverse_one_sub_of_spectralRadius_lt_one`. -/
 theorem theorem_1_5_series [NeZero n] (A : Matrix (Fin n) (Fin n) ℝ)
     (B : Matrix (Fin n) (Fin n) ℂ) :
     ((Summable fun k => A ^ k) ↔ A.complexSpectralRadius < 1) ∧
@@ -516,10 +713,13 @@ theorem theorem_1_5_series [NeZero n] (A : Matrix (Fin n) (Fin n) ℝ)
   rw [nonsing_inv_eq_ringInverse]
   exact hasSum_pow_inverse_one_sub_of_spectralRadius_lt_one h
 
-/-- **(1.26).** If `‖·‖` is an induced matrix norm on `ℝ^{n×n}` with `‖A‖ < 1`, then `I - A` is
-invertible and `1 / (1 + ‖A‖) ≤ ‖(I - A)⁻¹‖ ≤ 1 / (1 - ‖A‖)` (backbone
-`Matrix.isUnit_one_sub_of_inducedNorm_lt_one`, `Matrix.one_div_one_add_le_inducedNorm_inv_one_sub`,
-`Matrix.inducedNorm_inv_one_sub_le`). -/
+/-- **Equation (1.26)** of [quarteroni2000numerical]. Let $n \ge 1$, let $\|\cdot\|$ be a vector
+norm on $\mathbb{R}^n$ with induced matrix norm $|||\cdot|||$, and let
+$A \in \mathbb{R}^{n \times n}$ with $|||A||| < 1$. Then $I - A$ is invertible and
+$$\frac{1}{1 + |||A|||} \le |||(I - A)^{-1}||| \le \frac{1}{1 - |||A|||}.$$
+
+The proof uses the backbone theorems `Matrix.isUnit_one_sub_of_inducedNorm_lt_one`,
+`Matrix.one_div_one_add_le_inducedNorm_inv_one_sub` and `Matrix.inducedNorm_inv_one_sub_le`. -/
 theorem equation_1_26 [NeZero n] {p : Seminorm ℝ (Fin n → ℝ)} (hp : ∀ x, p x = 0 → x = 0)
     {A : Matrix (Fin n) (Fin n) ℝ} (hA : inducedNorm p p A < 1) :
     IsUnit (1 - A) ∧ 1 / (1 + inducedNorm p p A) ≤ inducedNorm p p (1 - A)⁻¹ ∧
@@ -527,9 +727,13 @@ theorem equation_1_26 [NeZero n] {p : Seminorm ℝ (Fin n → ℝ)} (hp : ∀ x,
   ⟨isUnit_one_sub_of_inducedNorm_lt_one hp hA, one_div_one_add_le_inducedNorm_inv_one_sub hp hA,
     inducedNorm_inv_one_sub_le hp hA⟩
 
-/-- **Remark 1.1.** The assumption of (1.26), that there is an induced matrix norm with
-`‖A‖ < 1`, is justified by Property 1.13 whenever `A` is convergent, since then `ρ(A) < 1`:
-taking `ε = (1 - ρ(A)) / 2` gives a vector norm `p` on `ℝⁿ` with `‖A‖_p < 1`. -/
+/-- **Remark 1.1** of [quarteroni2000numerical]. Let $A \in \mathbb{R}^{n \times n}$ with
+$\rho(A) < 1$, where $\rho(A)$ is the spectral radius of $A$ regarded as a complex matrix. By
+Theorem 1.5 this is the case when $A$ is convergent. Then there is a vector norm on
+$\mathbb{R}^n$ whose induced matrix norm satisfies $|||A||| < 1$. This justifies the assumption
+of (1.26).
+
+The proof applies Property 1.13 with $\varepsilon = (1 - \rho(A)) / 2$. -/
 theorem remark_1_1 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.complexSpectralRadius < 1) :
     ∃ p : Seminorm ℝ (Fin n → ℝ), (∀ x, p x = 0 → x = 0) ∧ inducedNorm p p A < 1 := by
   have hρ : A.complexSpectralRadius.toReal < 1 := by

@@ -7,37 +7,65 @@ import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter07.Section03
 
 /-!
-# Quarteroni–Sacco–Saleri §7.4: applications
+# Quarteroni, Sacco and Saleri, Section 7.4: Applications
 
-Surface file for Alfio Quarteroni, Riccardo Sacco and Fausto Saleri, *Numerical Mathematics*
-[quarteroni2000numerical], §7.4.1, the nonlinear system
-`F(u) = A u + φ(u) - b = 0` (7.57) of semiconductor device simulation, with
-`A = (λ/h)² tridiag(-1, 2, -1)` symmetric positive definite and `φ_i(u) = 2K sinh(u_i)`, and its
-variational form (7.58): the identification `F = ∇f` (`equation_7_58`), the uniform convexity of
-`f` in the energy norm of Exercise 5 (`exercise_7_5`), and the unique minimizer that Property 7.10
-then provides, which is the unique solution of (7.57) (`equation_7_58_existsUnique`).
+This module formalizes the results of Section 7.4.1 of [quarteroni2000numerical] on the nonlinear
+system of semiconductor device simulation,
+$$F(u) = Au + \phi(u) - b = 0, \qquad \phi_i(u) = 2K \sinh(u_i), \tag{7.57}$$
+where $A = (\lambda/h)^2 \operatorname{tridiag}(-1, 2, -1)$ is symmetric positive definite and
+$K > 0$. The system is the condition $\nabla f(u) = 0$ for the functional
+$$f(u) = \frac{1}{2} u^T A u + 2K \sum_{i=1}^n \cosh(u_i) - b^T u. \tag{7.58}$$
+By Exercise 5 of Chapter 7, $f$ is uniformly convex in the energy norm $\|\cdot\|_A$. By Property
+7.10, $f$ then has exactly one minimizer, and it is the unique solution of (7.57).
 
-The damped Newton method (7.59)–(7.61) and the nonlinear Gauss–Seidel method of §7.4.2 are
-algorithms for which the text states no result; the superlinear convergence of damped Newton for
-this problem is quoted from Ortega–Rheinboldt, *Iterative Solution of Nonlinear Equations in
-Several Variables*, Theorem 14.4.3, and is not formalized.
+The proofs use the energy functional and the energy norm of
+`Numlib.Analysis.InnerProductSpace.Energy`, the strict convexity of $\cosh$, and Property 7.10 in
+`NumlibSurface.QuarteroniSaccoSaleri.Chapter07.Section03`.
+
+## Main definitions
+
+* (7.57), `QuarteroniSaccoSaleri.Chapter07.semiconductorPhi`: the nonlinearity
+  $\phi_i(u) = 2K \sinh(u_i)$.
+* (7.57), `QuarteroniSaccoSaleri.Chapter07.semiconductorSystem`: the map $F(u) = Au + \phi(u) - b$.
+* (7.58), `QuarteroniSaccoSaleri.Chapter07.semiconductorFunctional`: the functional $f$ of (7.58).
+
+## Main results
+
+* (7.57), `QuarteroniSaccoSaleri.Chapter07.semiconductorPhi_apply`: the coordinates of $\phi(u)$.
+* (7.58), `QuarteroniSaccoSaleri.Chapter07.equation_7_58`: for symmetric $A$, $\nabla f = F$, so the
+  solutions of (7.57) are the critical points of $f$.
+* Exercise 5 of Chapter 7, `QuarteroniSaccoSaleri.Chapter07.strictConvexOn_cosh`: $\cosh$ is
+  strictly convex on $\mathbb{R}$.
+* Exercise 5 of Chapter 7, `QuarteroniSaccoSaleri.Chapter07.exercise_7_5`: $f$ is uniformly convex
+  in the energy norm, and strongly convex in the sense of (7.49).
+* Section 7.4.1, `QuarteroniSaccoSaleri.Chapter07.equation_7_58_existsUnique`: $f$ has exactly one
+  minimizer, and the minimizers of $f$ are the solutions of (7.57).
 
 ## Conventions
 
-The matrix `A` enters through `Matrix.toEuclideanLin`, as in §7.2; the quadratic part of (7.58) is
-the backbone's `energyFunctional (toEuclideanLin A) b` (`equation_7_35` of §7.2), and `‖·‖_A` is
-`energyNorm (toEuclideanLin A)`, the energy norm (1.28) of §1.12. Only the *shape* of `A` matters
-for the results below, so `A` is an arbitrary symmetric positive definite matrix and the
-discretization constants `λ`, `h` are absorbed into it.
+* The matrix $A$ acts on $\mathbb{R}^n$ = `EuclideanSpace ℝ (Fin n)` through
+  `Matrix.toEuclideanLin`, as in Section 7.2. The quadratic part $\frac{1}{2} u^T A u - b^T u$ of
+  (7.58) is `energyFunctional (toEuclideanLin A) b`, as in (7.35), and $\|\cdot\|_A$ is
+  `energyNorm (toEuclideanLin A)`, the energy norm (1.28).
 
-## Readings and errata
+## Deviations from the source
 
-* (7.58) is printed as `½ uᵀ A u + 2 ∑ cosh(u_i)) - bᵀ u`, with a stray parenthesis and without
-  the factor `K`: the gradient of the second term must be `φ_i(u) = 2K sinh(u_i)`, so the term is
-  `2K ∑ cosh(u_i)`.
-* The uniform-convexity constant of Exercise 5 is `ρ = 1/2` *in the energy norm*; in the Euclidean
-  norm of (7.49) it is `c/2` for any coercivity constant `c` of `A` (`exercise_7_5`, second
-  clause).
+* **Section 7.4.1** (generalization). The results hold for every symmetric positive definite matrix
+  $A$, not only for $(\lambda/h)^2 \operatorname{tridiag}(-1, 2, -1)$; the constants $\lambda$ and
+  $h$ are absorbed into $A$. See `QuarteroniSaccoSaleri.Chapter07.equation_7_58_existsUnique`.
+* **Equation (7.58)** (typo). The book prints $\frac{1}{2} u^T A u + 2 \sum \cosh(u_i)) - b^T u$,
+  with a stray parenthesis and without the factor $K$; the second term is $2K \sum \cosh(u_i)$. See
+  `QuarteroniSaccoSaleri.Chapter07.semiconductorFunctional`.
+* **Exercise 5 of Chapter 7** (reading). The uniform convexity constant $\rho = 1/2$ is read in the
+  energy norm; in the Euclidean norm of (7.49) the constant is $c/2$ for a coercivity constant $c$
+  of $A$. See `QuarteroniSaccoSaleri.Chapter07.exercise_7_5`.
+
+## Not formalized
+
+* **Damped Newton method (7.59)–(7.61).** The book states no result of its own for it; the
+  superlinear convergence for this problem is quoted from Ortega and Rheinboldt, *Iterative Solution
+  of Nonlinear Equations in Several Variables*, Theorem 14.4.3.
+* **Nonlinear Gauss–Seidel method of Section 7.4.2.** The book states no result for it.
 -/
 
 open Filter Matrix Metric Set Topology WithLp
@@ -49,23 +77,37 @@ variable {n : ℕ}
 
 /-! ### The functional (7.58) and the system (7.57) -/
 
-/-- **The nonlinearity of (7.57)**, `φ(u)_i = 2K sinh(u_i)`. -/
+/-- **Equation (7.57)** of [quarteroni2000numerical], the nonlinearity. For $K \in \mathbb{R}$ and
+$u \in \mathbb{R}^n$, the vector $\phi(u) \in \mathbb{R}^n$ has the coordinates
+$\phi_i(u) = 2K \sinh(u_i)$. -/
 noncomputable def semiconductorPhi (K : ℝ) (u : EuclideanSpace ℝ (Fin n)) :
     EuclideanSpace ℝ (Fin n) :=
   WithLp.toLp 2 fun i => 2 * K * Real.sinh (u i)
 
-/-- The coordinates of `φ(u)`. -/
+/-- **Equation (7.57)** of [quarteroni2000numerical], the coordinates of the nonlinearity:
+$\phi(u)_i = 2K \sinh(u_i)$. -/
 @[simp] theorem semiconductorPhi_apply (K : ℝ) (u : EuclideanSpace ℝ (Fin n)) (i : Fin n) :
     semiconductorPhi K u i = 2 * K * Real.sinh (u i) := rfl
 
-/-- **(7.57).** The nonlinear system of semiconductor device simulation,
-`F(u) = A u + φ(u) - b`. -/
+/-- **Equation (7.57)** of [quarteroni2000numerical]. For $A \in \mathbb{R}^{n \times n}$,
+$K \in \mathbb{R}$ and $b \in \mathbb{R}^n$, the nonlinear system of semiconductor device
+simulation is $F(u) = 0$, where
+$$F(u) = Au + \phi(u) - b.$$
+-/
 noncomputable def semiconductorSystem (A : Matrix (Fin n) (Fin n) ℝ) (K : ℝ)
     (b u : EuclideanSpace ℝ (Fin n)) : EuclideanSpace ℝ (Fin n) :=
   toEuclideanLin A u + semiconductorPhi K u - b
 
-/-- **(7.58).** The functional `f(u) = ½ uᵀ A u + 2K ∑ cosh(u_i) - bᵀ u` whose minimizer solves
-(7.57); its quadratic part is the backbone's `energyFunctional (toEuclideanLin A) b` of (7.35). -/
+/-- **Equation (7.58)** of [quarteroni2000numerical]. For $A \in \mathbb{R}^{n \times n}$,
+$K \in \mathbb{R}$ and $b \in \mathbb{R}^n$, the functional is
+$$f(u) = \frac{1}{2} u^T A u - b^T u + 2K \sum_{i=1}^n \cosh(u_i).$$
+
+**Typo.** The book prints $\frac{1}{2} u^T A u + 2 \sum \cosh(u_i)) - b^T u$, with a stray
+parenthesis and without the factor $K$. The gradient of the second term must be
+$\phi_i(u) = 2K \sinh(u_i)$, so the term is $2K \sum \cosh(u_i)$.
+
+The quadratic part $\frac{1}{2} u^T A u - b^T u$ is the backbone's
+`energyFunctional (toEuclideanLin A) b`, as in (7.35). -/
 noncomputable def semiconductorFunctional (A : Matrix (Fin n) (Fin n) ℝ) (K : ℝ)
     (b u : EuclideanSpace ℝ (Fin n)) : ℝ :=
   energyFunctional (toEuclideanLin A) b u + 2 * K * ∑ i, Real.cosh (u i)
@@ -74,11 +116,16 @@ section
 
 variable {A : Matrix (Fin n) (Fin n) ℝ} {K : ℝ} {b : EuclideanSpace ℝ (Fin n)}
 
-/-- **(7.57)–(7.58).** For a symmetric `A`, the functional (7.58) is
-`½ uᵀ A u + 2K ∑ cosh(u_i) - bᵀ u`, its gradient is `∇f(u) = A u + φ(u) - b = F(u)`, and hence the
-zeros of the system (7.57) are exactly the critical points of (7.58).
-`hasGradientAt_energyFunctional` for the quadratic part, `Real.hasDerivAt_cosh` coordinatewise for
-the rest. -/
+/-- **Equations (7.57)–(7.58)** of [quarteroni2000numerical]. Let $A \in \mathbb{R}^{n \times n}$ be
+symmetric, $K \in \mathbb{R}$ and $b, u \in \mathbb{R}^n$. Then
+$$f(u) = \frac{1}{2} u^T A u + 2K \sum_{i=1}^n \cosh(u_i) - b^T u,$$
+the gradient of $f$ at $u$ is $\nabla f(u) = Au + \phi(u) - b = F(u)$, and $F(u) = 0$ if and
+only if $u$ is a critical point of $f$. So the solutions of the system (7.57) are exactly the
+critical points of (7.58).
+
+The gradient of the quadratic part is `hasGradientAt_energyFunctional`, and the gradient of the
+other part follows coordinatewise from `Real.hasDerivAt_cosh`. A critical point is
+`QuarteroniSaccoSaleri.Chapter07.IsCriticalPoint`. -/
 theorem equation_7_58 (hA : A.IsSymm) (u : EuclideanSpace ℝ (Fin n)) :
     semiconductorFunctional A K b u
         = (ofLp u ⬝ᵥ (A *ᵥ ofLp u)) / 2 + 2 * K * ∑ i, Real.cosh (u i) - ofLp b ⬝ᵥ ofLp u ∧
@@ -117,7 +164,8 @@ theorem equation_7_58 (hA : A.IsSymm) (u : EuclideanSpace ℝ (Fin n)) :
 
 /-! ### Exercise 5: the uniform convexity of (7.58) -/
 
-/-- The hyperbolic cosine is strictly convex: its second derivative is `cosh > 0`. -/
+/-- The hyperbolic cosine is strictly convex on $\mathbb{R}$, because its second derivative $\cosh$
+is positive. This supports Exercise 5 of Chapter 7 of [quarteroni2000numerical]. -/
 theorem strictConvexOn_cosh : StrictConvexOn ℝ univ Real.cosh := by
   have h2 : deriv^[2] Real.cosh = Real.cosh := by
     change deriv (deriv Real.cosh) = Real.cosh
@@ -125,8 +173,8 @@ theorem strictConvexOn_cosh : StrictConvexOn ℝ univ Real.cosh := by
   exact strictConvexOn_of_deriv2_pos convex_univ Real.continuous_cosh.continuousOn
     fun x _ => by rw [h2]; exact Real.cosh_pos x
 
-/-- The quadratic part of (7.58) satisfies the convexity identity exactly: the defect of a convex
-combination is `½ t (1 - t) ‖u - v‖_A²`. -/
+/-- For a symmetric $A$, the quadratic part $q$ of (7.58) satisfies $t q(u) + (1 - t) q(v) - q(tu +
+(1 - t)v) = \frac{1}{2} t (1 - t) \|u - v\|_A^2$. -/
 private theorem energyFunctional_combo (hsymm : (toEuclideanLin A).IsSymmetric)
     (u v : EuclideanSpace ℝ (Fin n)) (t : ℝ) :
     t * energyFunctional (toEuclideanLin A) b u
@@ -141,7 +189,8 @@ private theorem energyFunctional_combo (hsymm : (toEuclideanLin A).IsSymmetric)
   rw [hsw]
   ring
 
-/-- Convexity of `cosh`, coordinate by coordinate. -/
+/-- For $0 \le t \le 1$, $\sum_i \cosh((tu + (1 - t)v)_i) \le t \sum_i \cosh(u_i) + (1 - t) \sum_i
+\cosh(v_i)$. -/
 private theorem coshSum_combo_le {t : ℝ} (h0 : 0 ≤ t) (h1 : t ≤ 1)
     (u v : EuclideanSpace ℝ (Fin n)) :
     ∑ i, Real.cosh ((t • u + (1 - t) • v) i)
@@ -155,7 +204,8 @@ private theorem coshSum_combo_le {t : ℝ} (h0 : 0 ≤ t) (h1 : t ≤ 1)
   rw [hco]
   exact hcv
 
-/-- Strict convexity of `cosh` in the coordinate where `u` and `v` differ. -/
+/-- For $0 < t < 1$ and $u \neq v$, $\sum_i \cosh((tu + (1 - t)v)_i) < t \sum_i \cosh(u_i) + (1 - t)
+\sum_i \cosh(v_i)$. -/
 private theorem coshSum_combo_lt {t : ℝ} (h0 : 0 < t) (h1 : t < 1)
     {u v : EuclideanSpace ℝ (Fin n)} (huv : u ≠ v) :
     ∑ i, Real.cosh ((t • u + (1 - t) • v) i)
@@ -178,13 +228,21 @@ private theorem coshSum_combo_lt {t : ℝ} (h0 : 0 < t) (h1 : t < 1)
     rw [hco]
     exact hcv
 
-/-- **Exercise 5, cited in §7.4.1.** For `A` symmetric positive definite and `K > 0` the
-functional (7.58) is uniformly convex on `ℝⁿ`:
-`λ f(u) + (1 - λ) f(v) - f(λ u + (1 - λ) v) > ½ λ (1 - λ) ‖u - v‖_A²` for `u ≠ v` and
-`0 < λ < 1`. The quadratic part contributes the right-hand side exactly and the strict convexity
-of `cosh` in a coordinate where `u` and `v` differ contributes the strict inequality. In the
-Euclidean norm of (7.49) this is strong convexity with `ρ = c / 2` for any coercivity constant `c`
-of `A` (the text's `ρ = 1/2` is in the energy norm), which is the second clause. -/
+/-- **Exercise 5 of Chapter 7** of [quarteroni2000numerical], cited in Section 7.4.1. Let
+$A \in \mathbb{R}^{n \times n}$ be symmetric positive definite, $K > 0$ and
+$b \in \mathbb{R}^n$. Then the functional $f$ of (7.58) is uniformly convex on $\mathbb{R}^n$ in
+the energy norm:
+$$\lambda f(u) + (1 - \lambda) f(v) - f(\lambda u + (1 - \lambda) v) > \frac{1}{2} \lambda (1 -
+  \lambda) \|u - v\|_A^2$$
+for all $u \neq v$ and $0 < \lambda < 1$. Moreover $f$ is strongly convex on $\mathbb{R}^n$ in
+the sense of (7.49) for some $\rho > 0$.
+
+**Reading.** The book gives the constant $\rho = 1/2$. This constant is read in the energy norm,
+as in the first part. In the Euclidean norm of (7.49), the proof gives $\rho = c/2$ for a
+coercivity constant $c$ of $A$; the formal statement asserts only that some $\rho > 0$ exists.
+
+The quadratic part of $f$ gives the right-hand side exactly, and the strict convexity of $\cosh$
+in a coordinate where $u$ and $v$ differ gives the strict inequality. -/
 theorem exercise_7_5 (hA : A.PosDef) (hK : 0 < K) :
     (∀ u v : EuclideanSpace ℝ (Fin n), u ≠ v → ∀ lam : ℝ, 0 < lam → lam < 1 →
         1 / 2 * lam * (1 - lam) * energyNorm (toEuclideanLin A) (u - v) ^ 2
@@ -224,9 +282,18 @@ theorem exercise_7_5 (hA : A.PosDef) (hK : 0 < K) :
         + (1 - α) * ∑ i, Real.cosh (v i)
         - ∑ i, Real.cosh ((α • u + (1 - α) • v) i))]
 
-/-- **The consequence drawn in §7.4.1.** By Exercise 5 and Property 7.10 the functional (7.58) has
-exactly one minimizer `u*` on `ℝⁿ`, and the minimizers of (7.58) are exactly the solutions of the
-nonlinear system (7.57); so (7.57) has exactly one solution. -/
+/-- **Section 7.4.1** of [quarteroni2000numerical], existence and uniqueness. Let
+$A \in \mathbb{R}^{n \times n}$ be symmetric positive definite, $K > 0$ and
+$b \in \mathbb{R}^n$. Then the functional $f$ of (7.58) has exactly one global minimizer $u^*$
+on $\mathbb{R}^n$, and a point $u^*$ is a global minimizer of $f$ if and only if $F(u^*) = 0$.
+So the system (7.57) has exactly one solution.
+
+**Generalization.** The book takes $A = (\lambda/h)^2 \operatorname{tridiag}(-1, 2, -1)$. The
+statement holds for every symmetric positive definite $A$, with the constants $\lambda$ and $h$
+absorbed into $A$.
+
+The proof combines Exercise 5 (`QuarteroniSaccoSaleri.Chapter07.exercise_7_5`) with Property
+7.10 (`QuarteroniSaccoSaleri.Chapter07.property_7_10`). -/
 theorem equation_7_58_existsUnique (hA : A.PosDef) (hK : 0 < K) :
     (∃! ustar : EuclideanSpace ℝ (Fin n),
         IsMinOn (semiconductorFunctional A K b) univ ustar) ∧

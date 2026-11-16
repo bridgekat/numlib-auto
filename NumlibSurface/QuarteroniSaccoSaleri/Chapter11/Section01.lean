@@ -6,47 +6,61 @@ import Numlib.Analysis.ODE.Cauchy
 import Numlib.Analysis.ODE.Gronwall
 
 /-!
-# Quarteroni–Sacco–Saleri §11.1: the Cauchy problem
+# Quarteroni, Sacco and Saleri, Section 11.1: The Cauchy problem
 
-Surface file for Alfio Quarteroni, Riccardo Sacco and Fausto Saleri, *Numerical Mathematics*,
-Springer, 2000, §11.1.
+This module formalizes Section 11.1 of [quarteroni2000numerical]. The scalar Cauchy problem (11.1)
+asks for $y$ with $y'(t) = f(t, y(t))$ on an interval $I \ni t_0$ and $y(t_0) = y_0$. For a
+continuous $f$ it is equivalent to the integral equation (11.2). The book recalls two existence and
+uniqueness results: a local one, under the Lipschitz condition (11.3) on a box, for radii
+$r_0 < \min(r_J, r_\Sigma/M)$, and a global one, under a uniform Lipschitz condition. The module
+also states Liapunov stability (Definition 11.1, (11.5)) for the perturbed problem (11.4) and its
+asymptotic form (11.6), the stability estimate $|y(t) - z(t)| \le (1 + |t - t_0|) \varepsilon
+e^{L|t - t_0|}$ under a uniform Lipschitz condition with the constant $C = (1 + K_I) e^{L K_I}$ that
+it gives, and Gronwall's lemma (Lemma 11.1).
 
-The scalar Cauchy problem (11.1), `y'(t) = f(t, y(t))` on an interval `I ∋ t₀` with `y(t₀) = y₀`,
-its equivalence with the integral equation (11.2) for a continuous `f`, the two existence and
-uniqueness results the book recalls (local, under a Lipschitz condition (11.3) on a box, with the
-radius bounds `r₀ < min(r_J, r_Σ / M)`; global, under a uniform Lipschitz condition), the
-perturbed problem (11.4) and Liapunov stability (Definition 11.1, (11.5)) with its asymptotic
-form (11.6), the stability estimate `|y(t) - z(t)| ≤ (1 + |t - t₀|) ε e^{L |t - t₀|}` under a
-uniform Lipschitz condition and the constant `C = (1 + K_I) e^{L K_I}` it gives, and Gronwall's
-lemma (Lemma 11.1).
-
-Everything is the real case `E = ℝ` of `Numlib/Analysis/ODE/Cauchy` (`ODE.IsSolutionOn`,
-`ODE.IsLiapunovStable`, `ODE.IsAsymptoticallyStable`, the existence theorems and the estimate
-`ODE.norm_sub_le_of_lipschitz`) and of `Numlib/Analysis/ODE/Gronwall`
+All statements are the real case $E = \mathbb{R}$ of `Numlib.Analysis.ODE.Cauchy`
+(`ODE.IsSolutionOn`, `ODE.IsLiapunovStable`, `ODE.IsAsymptoticallyStable`, the existence theorems
+and the estimate `ODE.norm_sub_le_of_lipschitz`) and of `Numlib.Analysis.ODE.Gronwall`
 (`Gronwall.le_mul_exp_integral`).
 
 ## Main definitions
 
-* `cauchyProblem f t₀ y₀ I y` — `y` solves (11.1) on `I`.
-* `definition_11_1 f t₀ y₀ I` — the Cauchy problem is Liapunov stable on `I`.
-* `definition_11_1_asymptotic f t₀ y₀` — the Cauchy problem is asymptotically stable.
+* Equation (11.1), `QuarteroniSaccoSaleri.Chapter11.cauchyProblem`: $y$ solves the Cauchy problem on
+  $I$.
+* Definition 11.1, `QuarteroniSaccoSaleri.Chapter11.definition_11_1`: the Cauchy problem is stable
+  in the sense of Liapunov on $I$.
+* Definition 11.1, (11.6), `QuarteroniSaccoSaleri.Chapter11.definition_11_1_asymptotic`: the Cauchy
+  problem is asymptotically stable.
 
 ## Main results
 
-* `equation_11_2` — for a continuous `f`, (11.1) on `[t₀, t₀ + T]` is equivalent to (11.2).
-* `localExistenceUniqueness`, `globalExistenceUniqueness` — items 1 and 2 of §11.1.
-* `isLiapunovStable_of_lipschitz`, `isLiapunovStable_of_lipschitz_estimate` — uniform Lipschitz
-  continuity of `f` in `y` gives Liapunov stability, through the displayed estimate.
-* `lemma_11_1`, `lemma_11_1_continuous` — Gronwall's lemma, as printed and with a continuous
-  weight.
+* Equation (11.2), `QuarteroniSaccoSaleri.Chapter11.equation_11_2`: for a continuous $f$, (11.1) on
+  $[t_0, t_0 + T]$ is equivalent to the integral equation (11.2).
+* Section 11.1, item 1, `QuarteroniSaccoSaleri.Chapter11.localExistenceUniqueness`: local existence
+  and uniqueness under the Lipschitz condition (11.3).
+* Section 11.1, item 2, `QuarteroniSaccoSaleri.Chapter11.globalExistenceUniqueness`: global
+  existence and uniqueness under a uniform Lipschitz condition.
+* Section 11.1, stability estimate,
+  `QuarteroniSaccoSaleri.Chapter11.isLiapunovStable_of_lipschitz_estimate` and
+  `QuarteroniSaccoSaleri.Chapter11.isLiapunovStable_of_lipschitz`: a uniform Lipschitz condition
+  gives the estimate $|y(t) - z(t)| \le (1 + |t - t_0|) \varepsilon e^{L|t - t_0|}$ and Liapunov
+  stability.
+* Lemma 11.1, `QuarteroniSaccoSaleri.Chapter11.lemma_11_1` and
+  `QuarteroniSaccoSaleri.Chapter11.lemma_11_1_continuous`: Gronwall's lemma, as printed and with a
+  continuous weight.
 
 ## Conventions
 
-The field is `f : ℝ → ℝ → ℝ`, continuity "with respect to both variables" is continuity of
-`(t, y) ↦ f t y` on the strip `I ×ˢ univ`, and `y ∈ C¹(I)` solving (11.1) is
-`HasDerivWithinAt y (f t (y t)) I t` at every `t ∈ I` (one-sided at the endpoints); the
-continuity of `y'` follows from that of `f`. The book's bound `r₀ < 1/L` in item 1 is not needed
-and is dropped (see the errata).
+* The field is `f : ℝ → ℝ → ℝ`. Continuity "with respect to both variables" is continuity of
+  $(t, y) \mapsto f(t, y)$ on the strip $I \times \mathbb{R}$.
+* A solution $y \in C^1(I)$ of (11.1) is a function with `HasDerivWithinAt y (f t (y t)) I t` at
+  every $t \in I$, so the derivative is one-sided at the endpoints. The continuity of $y'$ follows
+  from that of $f$.
+
+## Deviations from the source
+
+* **Section 11.1, item 1** (generalization). The book also requires $r_0 < 1/L$. This bound is not
+  needed and is dropped. See `QuarteroniSaccoSaleri.Chapter11.localExistenceUniqueness`.
 -/
 
 open Set Filter Topology MeasureTheory
@@ -55,19 +69,28 @@ namespace QuarteroniSaccoSaleri.Chapter11
 
 variable {f : ℝ → ℝ → ℝ} {t₀ y₀ T : ℝ} {I : Set ℝ} {y z : ℝ → ℝ}
 
-/-- **The Cauchy problem (11.1)**: `y ∈ C¹(I)` with `y'(t) = f(t, y(t))` for `t ∈ I` and
-`y(t₀) = y₀`; `ODE.IsSolutionOn` at `E = ℝ`. -/
+/-- **Equation (11.1)** of [quarteroni2000numerical], the Cauchy problem. Let $f : \mathbb{R} \times
+\mathbb{R} \to \mathbb{R}$, $t_0, y_0 \in \mathbb{R}$ and $I \subseteq \mathbb{R}$. A function
+$y : \mathbb{R} \to \mathbb{R}$ **solves the Cauchy problem** on $I$ if $y(t_0) = y_0$ and
+$y'(t) = f(t, y(t))$ for every $t \in I$, where the derivative is taken within $I$.
+
+The definition is `ODE.IsSolutionOn` at $E = \mathbb{R}$. The point $t_0$ need not lie in $I$. -/
 def cauchyProblem (f : ℝ → ℝ → ℝ) (t₀ y₀ : ℝ) (I : Set ℝ) (y : ℝ → ℝ) : Prop :=
   ODE.IsSolutionOn f t₀ y₀ I y
 
-/-- (11.1), unfolded: `y(t₀) = y₀` and `y'(t) = f(t, y(t))` (within `I`) for every `t ∈ I`. -/
+/-- **Equation (11.1)** of [quarteroni2000numerical], unfolded. A function $y$ solves the Cauchy
+problem on $I$ if and only if $y(t_0) = y_0$ and $y$ has the derivative $f(t, y(t))$ within $I$
+at every $t \in I$. -/
 theorem cauchyProblem_iff :
     cauchyProblem f t₀ y₀ I y ↔ y t₀ = y₀ ∧ ∀ t ∈ I, HasDerivWithinAt y (f t (y t)) I t :=
   Iff.rfl
 
-/-- **The integral form (11.2)**: if `f` is continuous (in both variables) on the strip over
-`[t₀, t₀ + T]` and `y` is continuous there, then `y` solves the Cauchy problem (11.1) on
-`[t₀, t₀ + T]` iff `y(t) - y₀ = ∫_{t₀}^t f(τ, y(τ)) dτ` for every `t ∈ [t₀, t₀ + T]`. -/
+/-- **Equation (11.2)** of [quarteroni2000numerical], the integral form. Let $T \ge 0$, let $f$ be
+continuous on the strip $[t_0, t_0 + T] \times \mathbb{R}$, and let $y$ be continuous on
+$[t_0, t_0 + T]$. Then $y$ solves the Cauchy problem (11.1) on $[t_0, t_0 + T]$ if and only if
+$$y(t) - y_0 = \int_{t_0}^{t} f(\tau, y(\tau)) \, d\tau \qquad \text{for every } t \in [t_0,
+  t_0 + T].$$
+-/
 theorem equation_11_2 (hT : 0 ≤ T)
     (hf : ContinuousOn (Function.uncurry f) (Icc t₀ (t₀ + T) ×ˢ univ))
     (hy : ContinuousOn y (Icc t₀ (t₀ + T))) :
@@ -76,12 +99,19 @@ theorem equation_11_2 (hT : 0 ≤ T)
   rw [cauchyProblem, ODE.isSolutionOn_iff_integral (left_mem_Icc.2 (by linarith)) hf hy]
   exact forall₂_congr fun t _ => by rw [sub_eq_iff_eq_add']
 
-/-- **Local existence and uniqueness** (§11.1, item 1): let `J = [t₀ - r_J, t₀ + r_J]` and
-`Σ = [y₀ - r_Σ, y₀ + r_Σ]` be neighbourhoods of `t₀` and `y₀` (`r_Σ > 0`), let `f` be continuous
-on `J × Σ`, satisfy the Lipschitz condition (11.3) `|f(t, y₁) - f(t, y₂)| ≤ L |y₁ - y₂|` there
-with `L > 0`, and let `M` bound `|f|` on `J × Σ`. Then for every `0 < r₀ < min (r_J, r_Σ / M)`
-the Cauchy problem has exactly one solution on `[t₀ - r₀, t₀ + r₀]` with values in `Σ`. The
-book's third bound `r₀ < 1/L` is not needed (`ODE.exists_isSolutionOn_of_lipschitzOnWith`). -/
+/-- **Section 11.1** of [quarteroni2000numerical], item 1 (local existence and uniqueness). Let
+$J = [t_0 - r_J, t_0 + r_J]$ and $\Sigma = [y_0 - r_\Sigma, y_0 + r_\Sigma]$ with
+$r_\Sigma > 0$. Let $f$ be continuous on $J \times \Sigma$ and satisfy the Lipschitz condition
+(11.3),
+$$|f(t, y_1) - f(t, y_2)| \le L |y_1 - y_2| \qquad \text{for } t \in J, \ y_1, y_2 \in \Sigma,$$
+with $L > 0$, and let $|f| \le M$ on $J \times \Sigma$. Then for every $r_0$ with
+$0 < r_0 < \min(r_J, r_\Sigma/M)$ the Cauchy problem has a solution on $[t_0 - r_0, t_0 + r_0]$
+with values in $\Sigma$, and every other solution on this interval with values in $\Sigma$
+agrees with it there.
+
+**Generalization.** The book also requires $r_0 < 1/L$. This bound is not needed.
+
+The proof specializes `ODE.exists_isSolutionOn_of_lipschitzOnWith`. -/
 theorem localExistenceUniqueness {rJ rS r₀ L M : ℝ} (hL : 0 < L) (hrS : 0 < rS)
     (hf : ContinuousOn (Function.uncurry f) (Icc (t₀ - rJ) (t₀ + rJ) ×ˢ Icc (y₀ - rS) (y₀ + rS)))
     (hlip : ∀ t ∈ Icc (t₀ - rJ) (t₀ + rJ), ∀ y₁ ∈ Icc (y₀ - rS) (y₀ + rS),
@@ -114,11 +144,14 @@ theorem localExistenceUniqueness {rJ rS r₀ L M : ℝ} (hL : 0 < L) (hrS : 0 < 
       exact hM t ht v hv) hr₀ hrJ hrS.le hMr
   simpa only [Real.closedBall_eq_Icc, cauchyProblem] using key
 
-/-- **Global existence and uniqueness** (§11.1, item 2): if `f` is continuous on the strip over
-`[t₀, t₀ + T]` and uniformly Lipschitz continuous with respect to `y` there, i.e. (11.3) with
-`J = [t₀, t₀ + T]` and `Σ = ℝ`, then the Cauchy problem has exactly one solution on `[t₀, t₀ + T]`
-(pinned to `y₀` off the interval, so that uniqueness of a function on `ℝ` makes sense);
-`ODE.existsUnique_isSolutionOn_of_lipschitz`. -/
+/-- **Section 11.1** of [quarteroni2000numerical], item 2 (global existence and uniqueness). Let
+$T \ge 0$ and $L \ge 0$. Let $f$ be continuous on the strip $[t_0, t_0 + T] \times \mathbb{R}$
+and uniformly Lipschitz continuous with respect to $y$ there, that is (11.3) with
+$J = [t_0, t_0 + T]$ and $\Sigma = \mathbb{R}$. Then the Cauchy problem has exactly one solution
+on $[t_0, t_0 + T]$.
+
+A solution is a function on $\mathbb{R}$, so for uniqueness the statement fixes it to be $y_0$
+outside $[t_0, t_0 + T]$. The proof specializes `ODE.existsUnique_isSolutionOn_of_lipschitz`. -/
 theorem globalExistenceUniqueness {L : ℝ} (hT : 0 ≤ T) (hL : 0 ≤ L)
     (hf : ContinuousOn (Function.uncurry f) (Icc t₀ (t₀ + T) ×ˢ univ))
     (hlip : ∀ t ∈ Icc t₀ (t₀ + T), ∀ y₁ y₂ : ℝ, |f t y₁ - f t y₂| ≤ L * |y₁ - y₂|) :
@@ -128,15 +161,28 @@ theorem globalExistenceUniqueness {L : ℝ} (hT : 0 ≤ T) (hL : 0 ≤ L)
       rw [Real.dist_eq, Real.dist_eq]
       exact hlip t ht v₁ v₂) y₀
 
-/-- **Definition 11.1 (Liapunov stability)**: the Cauchy problem (11.1) is stable in the sense
-of Liapunov on the bounded set `I` if for every perturbation `(δ₀, δ(t))` with `|δ₀| < ε` and
-`|δ(t)| < ε` on `I`, the solution `z` of the perturbed problem (11.4),
-`z' = f(t, z) + δ(t)`, `z(t₀) = y₀ + δ₀`, satisfies (11.5): `|y(t) - z(t)| < C ε` on `I` for a
-constant `C > 0` independent of `ε`; `ODE.IsLiapunovStable` at `E = ℝ`. -/
+/-- **Definition 11.1** of [quarteroni2000numerical] (Liapunov stability). Let $f : \mathbb{R}
+\times \mathbb{R} \to \mathbb{R}$, $t_0, y_0 \in \mathbb{R}$ and $I \subseteq \mathbb{R}$. The
+Cauchy problem (11.1) is **stable in the sense of Liapunov** on $I$ if there is a constant
+$C > 0$, independent of $\varepsilon$, with the following property. For every $\varepsilon > 0$
+and every perturbation $(\delta_0, \delta(t))$ with $|\delta_0| < \varepsilon$, $\delta$
+continuous on $I$ and $|\delta(t)| < \varepsilon$ on $I$, every solution $y$ of (11.1) and every
+solution $z$ of the perturbed problem (11.4),
+$$z'(t) = f(t, z(t)) + \delta(t), \qquad z(t_0) = y_0 + \delta_0,$$
+satisfy (11.5), $|y(t) - z(t)| < C\varepsilon$ for all $t \in I$.
+
+The book takes $I$ bounded and restricts to $\varepsilon$ small enough for the perturbed
+solution to exist. The definition quantifies over the solutions that exist, so it has no such
+restriction. It is `ODE.IsLiapunovStable` at $E = \mathbb{R}$. -/
 def definition_11_1 (f : ℝ → ℝ → ℝ) (t₀ y₀ : ℝ) (I : Set ℝ) : Prop :=
   ODE.IsLiapunovStable f t₀ y₀ I
 
-/-- Definition 11.1, unfolded in the book's terms. -/
+/-- **Definition 11.1** of [quarteroni2000numerical], unfolded. The Cauchy problem is stable in the
+sense of Liapunov on $I$ if and only if there is $C > 0$ such that for all $\varepsilon > 0$,
+all $\delta_0$ with $|\delta_0| < \varepsilon$, all $\delta$ continuous on $I$ with
+$|\delta(t)| < \varepsilon$ on $I$, every solution $y$ of (11.1) on $I$ and every solution $z$
+of the perturbed problem (11.4) on $I$, we have $|y(t) - z(t)| < C\varepsilon$ for all
+$t \in I$. -/
 theorem definition_11_1_iff :
     definition_11_1 f t₀ y₀ I ↔ ∃ C : ℝ, 0 < C ∧ ∀ ε : ℝ, 0 < ε → ∀ (δ₀ : ℝ) (δ : ℝ → ℝ),
       |δ₀| < ε → ContinuousOn δ I → (∀ t ∈ I, |δ t| < ε) →
@@ -145,13 +191,24 @@ theorem definition_11_1_iff :
             ∀ t ∈ I, |y t - z t| < C * ε := by
   simp only [definition_11_1, ODE.IsLiapunovStable, Real.norm_eq_abs, cauchyProblem]
 
-/-- **Definition 11.1, asymptotic stability (11.6)**: Liapunov stable on every bounded interval
-`[t₀, t₀ + T]`, and `|y(t) - z(t)| → 0` as `t → +∞` for the perturbed solutions on `[t₀, ∞)`
-(for perturbations small enough); `ODE.IsAsymptoticallyStable` at `E = ℝ`. -/
+/-- **Definition 11.1** of [quarteroni2000numerical], asymptotic stability (11.6). The Cauchy
+problem (11.1) is **asymptotically stable** if it is stable in the sense of Liapunov on every
+interval $[t_0, t_0 + T]$ with $T > 0$, and if there is $\varepsilon > 0$ such that for every
+perturbation with $|\delta_0| < \varepsilon$, $\delta$ continuous on $[t_0, \infty)$ and
+$|\delta(t)| < \varepsilon$ there, every solution $y$ of (11.1) and every solution $z$ of (11.4)
+on $[t_0, \infty)$ satisfy
+$$|y(t) - z(t)| \to 0 \qquad \text{as } t \to +\infty.$$
+
+The definition is `ODE.IsAsymptoticallyStable` at $E = \mathbb{R}$. -/
 def definition_11_1_asymptotic (f : ℝ → ℝ → ℝ) (t₀ y₀ : ℝ) : Prop :=
   ODE.IsAsymptoticallyStable f t₀ y₀
 
-/-- Asymptotic stability, unfolded in the book's terms. -/
+/-- **Definition 11.1** of [quarteroni2000numerical], asymptotic stability unfolded. The Cauchy
+problem is asymptotically stable if and only if it is stable in the sense of Liapunov on
+$[t_0, t_0 + T]$ for every $T > 0$, and there is $\varepsilon > 0$ such that for all $\delta_0$
+with $|\delta_0| < \varepsilon$, all $\delta$ continuous on $[t_0, \infty)$ with
+$|\delta(t)| < \varepsilon$ there, every solution $y$ of (11.1) and every solution $z$ of (11.4)
+on $[t_0, \infty)$, $|y(t) - z(t)| \to 0$ as $t \to +\infty$. -/
 theorem definition_11_1_asymptotic_iff :
     definition_11_1_asymptotic f t₀ y₀ ↔
       (∀ T : ℝ, 0 < T → definition_11_1 f t₀ y₀ (Icc t₀ (t₀ + T))) ∧
@@ -162,11 +219,14 @@ theorem definition_11_1_asymptotic_iff :
   simp only [definition_11_1_asymptotic, ODE.IsAsymptoticallyStable, definition_11_1,
     Real.norm_eq_abs, cauchyProblem]
 
-/-- **The stability estimate of §11.1**: if `f` is uniformly Lipschitz continuous with respect to
-`y` on `[t₀, t₀ + T]` with constant `L ≥ 0`, `|δ₀| ≤ ε`, `|δ(t)| ≤ ε` on the interval, `y` solves
-(11.1) and `z` the perturbed problem (11.4), then
-`|w(t)| = |z(t) - y(t)| ≤ (1 + |t - t₀|) ε e^{L |t - t₀|}` on the interval;
-`ODE.norm_sub_le_of_lipschitz`. -/
+/-- **Section 11.1** of [quarteroni2000numerical], the stability estimate. Let $L \ge 0$ and let $f$
+be uniformly Lipschitz continuous with respect to $y$ on $[t_0, t_0 + T]$ with the constant $L$.
+Let $|\delta_0| \le \varepsilon$ and $|\delta(t)| \le \varepsilon$ for $t \in [t_0, t_0 + T]$.
+Let $y$ solve (11.1) and $z$ solve the perturbed problem (11.4) on $[t_0, t_0 + T]$. Then for
+every $t \in [t_0, t_0 + T]$
+$$|w(t)| = |z(t) - y(t)| \le (1 + |t - t_0|) \, \varepsilon \, e^{L|t - t_0|}.$$
+
+The proof specializes `ODE.norm_sub_le_of_lipschitz`. -/
 theorem isLiapunovStable_of_lipschitz_estimate {L : ℝ} (hL : 0 ≤ L)
     (hlip : ∀ t ∈ Icc t₀ (t₀ + T), ∀ y₁ y₂ : ℝ, |f t y₁ - f t y₂| ≤ L * |y₁ - y₂|)
     {δ₀ ε : ℝ} {δ : ℝ → ℝ} (hδ₀ : |δ₀| ≤ ε) (hδ : ∀ t ∈ Icc t₀ (t₀ + T), |δ t| ≤ ε)
@@ -183,10 +243,13 @@ theorem isLiapunovStable_of_lipschitz_estimate {L : ℝ} (hL : 0 ≤ L)
   rw [abs_of_nonneg (sub_nonneg.2 ht.1)]
   exact this
 
-/-- **Uniform Lipschitz continuity gives Liapunov stability** (§11.1): if `f` is uniformly
-Lipschitz continuous with respect to `y` on `[t₀, t₀ + T]` with constant `L ≥ 0`, the Cauchy
-problem is stable in the sense of Liapunov on `[t₀, t₀ + T]`, with the constant
-`C = (1 + K_I) e^{L K_I}`, `K_I = max_{t ∈ I} |t - t₀| = T`; `ODE.isLiapunovStable_of_lipschitz`. -/
+/-- **Section 11.1** of [quarteroni2000numerical], Liapunov stability from a uniform Lipschitz
+condition. Let $T \ge 0$, $L \ge 0$, and let $f$ be uniformly Lipschitz continuous with respect
+to $y$ on $[t_0, t_0 + T]$ with the constant $L$. Then for every $y_0$ the Cauchy problem is
+stable in the sense of Liapunov on $[t_0, t_0 + T]$.
+
+The proof gives the constant $C = (1 + K_I) e^{L K_I}$ with
+$K_I = \max_{t \in I} |t - t_0| = T$. It specializes `ODE.isLiapunovStable_of_lipschitz`. -/
 theorem isLiapunovStable_of_lipschitz {L : ℝ} (hT : 0 ≤ T) (hL : 0 ≤ L)
     (hlip : ∀ t ∈ Icc t₀ (t₀ + T), ∀ y₁ y₂ : ℝ, |f t y₁ - f t y₂| ≤ L * |y₁ - y₂|) (y₀ : ℝ) :
     definition_11_1 f t₀ y₀ (Icc t₀ (t₀ + T)) :=
@@ -195,12 +258,18 @@ theorem isLiapunovStable_of_lipschitz {L : ℝ} (hT : 0 ≤ T) (hL : 0 ≤ L)
       rw [Real.dist_eq, Real.dist_eq]
       exact hlip t ht v₁ v₂) y₀
 
-/-- **Lemma 11.1 (Gronwall)**: let `p` be an integrable function, nonnegative on the interval
-`(t₀, t₀ + T)`, and let `g` and `φ` be continuous on `[t₀, t₀ + T]`, `g` nondecreasing. If
-`φ(t) ≤ g(t) + ∫_{t₀}^t p(τ) φ(τ) dτ` for all `t ∈ [t₀, t₀ + T]`, then
-`φ(t) ≤ g(t) exp (∫_{t₀}^t p(τ) dτ)` for all `t ∈ [t₀, t₀ + T]`;
-`Gronwall.le_mul_exp_integral`, after replacing `p` by `max p 0`, which agrees with it almost
-everywhere. (The continuity of `g` is not needed.) -/
+/-- **Lemma 11.1** of [quarteroni2000numerical] (Gronwall's lemma). Let $p$ be integrable on
+$[t_0, t_0 + T]$ and nonnegative on $(t_0, t_0 + T)$. Let $g$ and $\varphi$ be continuous on
+$[t_0, t_0 + T]$, with $g$ nondecreasing. If
+$$\varphi(t) \le g(t) + \int_{t_0}^{t} p(\tau) \varphi(\tau) \, d\tau \qquad \text{for all } t
+  \in [t_0, t_0 + T],$$
+then
+$$\varphi(t) \le g(t) \exp\Bigl(\int_{t_0}^{t} p(\tau) \, d\tau\Bigr) \qquad \text{for all } t
+  \in [t_0, t_0 + T].$$
+
+The continuity of $g$ is a hypothesis of the book that the proof does not use. The proof
+specializes `Gronwall.le_mul_exp_integral` after it replaces $p$ by $\max(p, 0)$, which agrees
+with $p$ almost everywhere. -/
 theorem lemma_11_1 {p g φ : ℝ → ℝ} (hp : IntervalIntegrable p MeasureTheory.volume t₀ (t₀ + T))
     (hp0 : ∀ t ∈ Ioo t₀ (t₀ + T), 0 ≤ p t) (_hg : ContinuousOn g (Icc t₀ (t₀ + T)))
     (hgm : MonotoneOn g (Icc t₀ (t₀ + T))) (hφ : ContinuousOn φ (Icc t₀ (t₀ + T)))
@@ -228,9 +297,13 @@ theorem lemma_11_1 {p g φ : ℝ → ℝ} (hp : IntervalIntegrable p MeasureTheo
   exact Gronwall.le_mul_exp_integral hint' (fun _ _ => le_max_right _ _) hgm hφ
     (fun t' ht' => by rw [h1 t' ht']; exact h t' ht') ht
 
-/-- **Lemma 11.1 with a continuous weight**, the case §11.1 uses: for `p` continuous and
-nonnegative on `[t₀, t₀ + T]`, `g` and `φ` continuous, `g` nondecreasing, the inequality
-`φ ≤ g + ∫ p φ` gives `φ(t) ≤ g(t) exp (∫_{t₀}^t p)`;
+/-- **Lemma 11.1** of [quarteroni2000numerical] with a continuous weight, the case that Section 11.1
+uses. Let $p$ be continuous and nonnegative on $[t_0, t_0 + T]$, let $g$ and $\varphi$ be
+continuous on $[t_0, t_0 + T]$, with $g$ nondecreasing. If
+$\varphi(t) \le g(t) + \int_{t_0}^{t} p \varphi$ for all $t \in [t_0, t_0 + T]$, then
+$\varphi(t) \le g(t) \exp\bigl(\int_{t_0}^{t} p\bigr)$ for all $t \in [t_0, t_0 + T]$.
+
+The continuity of $g$ is not used. The proof specializes
 `Gronwall.le_mul_exp_integral_of_continuousOn`. -/
 theorem lemma_11_1_continuous {p g φ : ℝ → ℝ} (hp : ContinuousOn p (Icc t₀ (t₀ + T)))
     (hp0 : ∀ t ∈ Icc t₀ (t₀ + T), 0 ≤ p t) (_hg : ContinuousOn g (Icc t₀ (t₀ + T)))

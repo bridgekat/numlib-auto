@@ -7,54 +7,106 @@ import Numlib.Eigen.ReducedResolvent
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter05.Section01
 
 /-!
-# Quarteroni–Sacco–Saleri §5.2: stability and conditioning analysis
+# Quarteroni, Sacco and Saleri, Section 5.2: Stability and Conditioning Analysis
 
-Surface file for Alfio Quarteroni, Riccardo Sacco and Fausto Saleri, *Numerical Mathematics*
-[quarteroni2000numerical], §5.2, over the backbone `Numlib/Eigen/Perturbation` (Bauer–Fike, the
-condition number of a simple eigenvalue and the derivative of an eigenvalue along a branch, the
-Hermitian residual bounds) and `Numlib/Eigen/ReducedResolvent` (the derivative of an eigenvector
-along a branch and the condition number of an eigenvector).
+This module formalizes Section 5.2 of [quarteroni2000numerical], on the sensitivity of the
+eigenvalues and eigenvectors of $A \in \mathbb{C}^{n \times n}$ to perturbations. The Bauer–Fike
+theorem (Theorem 5.3) bounds the distance from an eigenvalue of $A + E$ to the spectrum of a
+diagonalizable $A$ by $K_2(X) \|E\|_2$, where $X$ diagonalizes $A$; for a normal $A$ the bound is
+$\|E\|_2$ (5.9). For a simple eigenvalue $\lambda$ with unit right and left eigenvectors $x$ and
+$y$, the derivative of the eigenvalue of $A + \varepsilon E$ at $\varepsilon = 0$ is at most
+$1 / |y^H x|$ when $\|E\|_2 = 1$ (Theorem 5.4), which defines the condition number
+$\kappa(\lambda) = 1 / |y^H x|$ (5.11). Property 5.5 bounds the first-order change of an eigenvector
+of a Hermitian matrix by $\|E\|_2$ divided by the distance to the rest of the spectrum. The a
+posteriori estimates of Section 5.2.2 bound the error of an approximate eigenpair
+$(\hat\lambda, \hat x)$ by its residual $\hat r = A \hat x - \hat\lambda \hat x$ (Theorem 5.5 and
+Properties 5.6 and 5.7).
+
+The proofs specialize the backbone modules `Numlib.Eigen.Perturbation` (the Bauer–Fike theorem, the
+condition number of a simple eigenvalue, the derivative of an eigenvalue along a branch, and the
+residual bounds for Hermitian matrices) and `Numlib.Eigen.ReducedResolvent` (the derivative of an
+eigenvector along a branch and the condition number of an eigenvector).
+
+## Main definitions
+
+* Equation (5.11), `QuarteroniSaccoSaleri.Chapter05.equation_5_11`: the condition number
+  $\kappa(\lambda) = 1 / |y^H x|$ of an eigenvalue.
+
+## Main results
+
+* Section 5.2, `QuarteroniSaccoSaleri.Chapter05.inner_toEuclideanLin_eq_of_conjTranspose_eq`: a left
+  eigenvector in the sense of the book is a left eigenvector in the sense of the backbone.
+* Theorem 5.3, `QuarteroniSaccoSaleri.Chapter05.theorem_5_3`: the Bauer–Fike theorem in the
+  $2$-norm.
+* Equation (5.9), `QuarteroniSaccoSaleri.Chapter05.equation_5_9`: for a normal $A$, every eigenvalue
+  of $A + E$ is within $\|E\|_2$ of $\sigma(A)$.
+* Theorem 5.4, `QuarteroniSaccoSaleri.Chapter05.theorem_5_4`: along a differentiable branch through
+  a simple eigenvalue, $|\partial \lambda / \partial \varepsilon (0)| \le 1 / |y^H x|$.
+* Theorem 5.4, `QuarteroniSaccoSaleri.Chapter05.theorem_5_4_branch`: at a simple eigenvalue, a
+  differentiable branch exists, with $\partial \lambda / \partial \varepsilon (0) = y^H E x / y^H
+  x$.
+* Theorem 5.4, `QuarteroniSaccoSaleri.Chapter05.theorem_5_4_inner_ne_zero`: at a simple eigenvalue,
+  $y^H x \neq 0$.
+* Equation (5.11), `QuarteroniSaccoSaleri.Chapter05.equation_5_11_eq_eigenvalueCondNumber`: for unit
+  vectors, $\kappa(\lambda)$ is the backbone's condition number of an eigenvalue.
+* Equation (5.11), `QuarteroniSaccoSaleri.Chapter05.equation_5_11_one_le`: $\kappa(\lambda) \ge 1$.
+* Equation (5.11), `QuarteroniSaccoSaleri.Chapter05.equation_5_11_normal`: for a normal $A$,
+  $\kappa(\lambda) = 1$.
+* Section 5.2.1, `QuarteroniSaccoSaleri.Chapter05.eigenvalueCondNumber_conj_unitary`: a unitary
+  similarity does not change $\kappa(\lambda)$.
+* Property 5.5, `QuarteroniSaccoSaleri.Chapter05.property_5_5`: for a Hermitian $A$, the derivative
+  of the eigenvector is at most $\|E\|_2 / \delta_k$.
+* Theorem 5.5, `QuarteroniSaccoSaleri.Chapter05.theorem_5_5`: for a Hermitian $A$, some eigenvalue
+  is within $\|\hat r\|_2 / \|\hat x\|_2$ of $\hat\lambda$.
+* Property 5.6, `QuarteroniSaccoSaleri.Chapter05.property_5_6`: for a Hermitian $A$, the distance
+  from $\hat x$ to a span of eigenvectors is at most $\|\hat r\|_2 / \delta$.
+* Property 5.7, `QuarteroniSaccoSaleri.Chapter05.property_5_7`: for a diagonalizable $A$,
+  $\|\hat r\|_2 \le \varepsilon \|\hat x\|_2$ gives an eigenvalue within
+  $\varepsilon \|X^{-1}\|_2 \|X\|_2$ of $\hat\lambda$.
 
 ## Conventions
 
-The book works in `ℂ^{n×n}` with the Euclidean norm: matrices are `Matrix (Fin n) (Fin n) ℂ`,
-vectors are `EuclideanSpace ℂ (Fin n)` acted on through `Matrix.toEuclideanLin`, `‖·‖₂` on
-matrices is Mathlib's scoped `Matrix.Norms.L2Operator` norm and `K₂(X) = ‖X‖₂ ‖X⁻¹‖₂` is
-`NormedRing.condNumber X` under it. A right eigenvector is `A x = λ x`; a left eigenvector
-`yᴴ A = λ yᴴ` is written `Aᴴ y = λ̄ y`, that is `toEuclideanLin Aᴴ y = star λ • y`, and `yᴴ x` is
-the inner product `inner ℂ y x`. A *simple* eigenvalue has algebraic multiplicity one (§1.7), the
-multiplicity of `λ` as a root of the characteristic polynomial: `A.charpoly.rootMultiplicity λ = 1`,
-which Mathlib's `LinearMap.finrank_maxGenEigenspace_eq` identifies with the dimension of the
-generalized eigenspace the backbone works with (`Matrix.finrank_maxGenEigenspace_toEuclideanLin`).
-A
-diagonalizable matrix is given by `X⁻¹ A X = diagonal d` with `X` nonsingular. The perturbation
-parameter `ε` of Theorem 5.4 and Property 5.5 is a complex `t`, the book's real `ε ≥ 0` being its
-restriction, and a "branch" `λ(ε), x(ε)` is a pair of functions `mu : ℂ → ℂ`, `v : ℂ → ℂⁿ` with
-`HasDerivAt` at `0`.
+* The book works in $\mathbb{C}^{n \times n}$ with the Euclidean norm. Matrices are
+  `Matrix (Fin n) (Fin n) ℂ`, and vectors are elements of `EuclideanSpace ℂ (Fin n)`, on which
+  matrices act through `Matrix.toEuclideanLin`. The norm $\|\cdot\|_2$ of matrices is Mathlib's
+  scoped `Matrix.Norms.L2Operator` norm, and $K_2(X) = \|X\|_2 \|X^{-1}\|_2$ is
+  `NormedRing.condNumber X` in this norm.
+* A right eigenvector satisfies $Ax = \lambda x$. A left eigenvector, $y^H A = \lambda y^H$, is
+  written $A^H y = \bar\lambda y$, that is `toEuclideanLin Aᴴ y = star λ • y`. The number $y^H x$ is
+  the inner product `inner ℂ y x`.
+* A simple eigenvalue has algebraic multiplicity one (Section 1.7):
+  `A.charpoly.rootMultiplicity λ = 1`. Mathlib's `LinearMap.finrank_maxGenEigenspace_eq` identifies
+  this multiplicity with the dimension of the generalized eigenspace, with which the backbone works
+  (`Matrix.finrank_maxGenEigenspace_toEuclideanLin`).
+* A diagonalizable matrix is given by $X^{-1} A X = \operatorname{diag}(d)$ with $X$ nonsingular.
+* The perturbation parameter $\varepsilon$ of Theorem 5.4 and Property 5.5 is a complex number $t$,
+  and the real $\varepsilon \ge 0$ of the book is its restriction. A branch $\lambda(\varepsilon)$,
+  $x(\varepsilon)$ is a pair of functions `mu : ℂ → ℂ` and `v : ℂ → EuclideanSpace ℂ (Fin n)` with
+  `HasDerivAt` at $0$.
 
-## Contents
+## Deviations from the source
 
-* `theorem_5_3`, `equation_5_9` — Bauer–Fike and its normal case.
-* `theorem_5_4`, `theorem_5_4_branch`, `theorem_5_4_inner_ne_zero` — the first-order
-  perturbation of a simple eigenvalue, the branch it presupposes, and `yᴴ x ≠ 0`.
-* `equation_5_11`, `equation_5_11_eq_eigenvalueCondNumber`, `equation_5_11_one_le`,
-  `equation_5_11_normal`, `eigenvalueCondNumber_conj_unitary` — the condition number `κ(λ)`.
-* `property_5_5` — the first-order perturbation of the eigenvector of a simple eigenvalue.
-* `theorem_5_5`, `property_5_6`, `property_5_7` — the a posteriori estimates.
+* **Theorem 5.4** (generalization). The book assumes that $A$ is diagonalizable. The statement needs
+  only the differentiable branch, which `QuarteroniSaccoSaleri.Chapter05.theorem_5_4_branch`
+  supplies at a simple eigenvalue. See `QuarteroniSaccoSaleri.Chapter05.theorem_5_4`.
+* **Property 5.5, the matrix** (correction). For a matrix that is not normal, the constant
+  $1 / \min_{j \neq k} |\lambda_k - \lambda_j|$ is false. The property is stated for a Hermitian
+  $A$. See `QuarteroniSaccoSaleri.Chapter05.property_5_5`.
+* **Property 5.5, the remainder** (correction). The remainder $O(\varepsilon^2)$ needs a twice
+  differentiable branch, which the hypotheses do not give. The property is stated with
+  $o(\varepsilon)$. See `QuarteroniSaccoSaleri.Chapter05.property_5_5`.
+* **Property 5.5, the normalization** (reading). The normalization $\|x_k(\varepsilon)\|_2 = 1$ is
+  replaced by $x_k^H x_k(\varepsilon) = 1$. The two differ by a factor $1 + O(\varepsilon^2)$. See
+  `QuarteroniSaccoSaleri.Chapter05.property_5_5`.
+* **Property 5.6** (generalization). The hypothesis $|\lambda_i - \hat\lambda| \le \|\hat r\|_2$ for
+  $i = 1, \dots, m$ plays no role and is dropped. See
+  `QuarteroniSaccoSaleri.Chapter05.property_5_6`.
 
-## Readings and errata
+## Not formalized
 
-Theorem 5.3 is stated for the `2`-norm only; the book says "any matrix `p`-norm". Theorem 5.4 does
-not need `A` diagonalizable, only the differentiable branch it presupposes, which
-`theorem_5_4_branch` supplies at a simple eigenvalue and whose eigen-equation holds near `ε = 0`
-(the book's "in a neighborhood of `ε = 0`"). Property 5.5 is stated for a *Hermitian* `A`, with the
-normalization `x_kᴴ x_k(ε) = 1` in place of `‖x_k(ε)‖₂ = 1` (the two differ by a factor
-`1 + O(ε²)`) and with `o(ε)` in place of `O(ε²)`: for a non-normal `A` the constant
-`1 / min_{j ≠ k} |λ_k − λ_j|` is false, the first-order constant being the norm of the reduced
-resolvent (`Module.End.eigenvectorCondNumber`), and `O(ε²)` needs a `C²` branch the hypotheses do
-not provide; its branch is quantified over every `ε`, as the book quantifies `x_k(ε)`. Property
-5.6's hypothesis `|λ_i − λ̂| ≤ ‖r̂‖₂` for `i = 1, …, m` plays no role and is dropped. The
-floating-point estimate (5.12) and Example 5.2 are not nodes.
+* **Theorem 5.3 in a $p$-norm with $p \neq 2$.** The book states it for any matrix $p$-norm.
+* **The floating-point estimate (5.12).**
+* **Example 5.2.**
 -/
 
 open Filter Matrix Topology
@@ -66,8 +118,10 @@ variable {n : ℕ}
 
 /-! ### Bridges between the matrix and the operator vocabulary -/
 
-/-- A left eigenvector in the book's sense, `yᴴ A = λ yᴴ` (here `Aᴴ y = λ̄ y`), is a left
-eigenvector in the backbone's sense, `⟪y, A z⟫ = λ ⟪y, z⟫` for every `z`. -/
+/-- Let $A \in \mathbb{C}^{n \times n}$, $\lambda \in \mathbb{C}$ and $y \in \mathbb{C}^n$. If $y$
+is a left eigenvector of $A$ in the sense of the book, $y^H A = \lambda y^H$, written
+$A^H y = \bar\lambda y$, then it is a left eigenvector in the sense of the backbone: $\langle y,
+Az \rangle = \lambda \langle y, z \rangle$ for every $z \in \mathbb{C}^n$. -/
 theorem inner_toEuclideanLin_eq_of_conjTranspose_eq {A : Matrix (Fin n) (Fin n) ℂ} {lam : ℂ}
     {y : EuclideanSpace ℂ (Fin n)} (hy : toEuclideanLin Aᴴ y = star lam • y)
     (z : EuclideanSpace ℂ (Fin n)) : inner ℂ y (toEuclideanLin A z) = lam * inner ℂ y z := by
@@ -76,12 +130,19 @@ theorem inner_toEuclideanLin_eq_of_conjTranspose_eq {A : Matrix (Fin n) (Fin n) 
 
 /-! ### Theorem 5.3: Bauer–Fike -/
 
-/-- **Theorem 5.3 (Bauer–Fike), (5.8), `p = 2`.** Let `A ∈ ℂ^{n×n}` be diagonalizable,
-`D = X⁻¹ A X = diag(λ_1, …, λ_n)` with `X` the nonsingular matrix of its right eigenvectors, and
-let `μ` be an eigenvalue of `A + E`. Then `min_{λ ∈ σ(A)} |λ − μ| ≤ K₂(X) ‖E‖₂`, where
-`K₂(X) = ‖X‖₂ ‖X⁻¹‖₂` is the condition number of the eigenvalue problem for `A`. Backbone
-`Matrix.bauer_fike`; the eigenvalue attaining the minimum is a diagonal entry `d i`, and
-`σ(A) = σ(D)` by similarity. The book's "any matrix `p`-norm" is not formalized beyond `p = 2`. -/
+/-- **Theorem 5.3** of [quarteroni2000numerical] (Bauer–Fike), (5.8), for $p = 2$. Let
+$A \in \mathbb{C}^{n \times n}$ be diagonalizable, $X^{-1} A X = D =
+\operatorname{diag}(\lambda_1, \dots, \lambda_n)$ with $X$ nonsingular, so that the columns of
+$X$ are right eigenvectors of $A$. Let $E \in \mathbb{C}^{n \times n}$ and let $\mu$ be an
+eigenvalue of $A + E$. Then
+$$\min_{\lambda \in \sigma(A)} |\lambda - \mu| \le K_2(X) \, \|E\|_2,$$
+where $K_2(X) = \|X\|_2 \|X^{-1}\|_2$ is the condition number of the eigenvalue problem for $A$.
+
+The minimum is stated as the existence of $\lambda \in \sigma(A)$ with
+$|\lambda - \mu| \le K_2(X) \|E\|_2$. The proof specializes the backbone's `Matrix.bauer_fike`:
+the eigenvalue that attains the minimum is a diagonal entry of $D$, and $\sigma(A) = \sigma(D)$
+by similarity. The book states the theorem for any matrix $p$-norm, and only $p = 2$ is
+formalized. -/
 theorem theorem_5_3 {A X : Matrix (Fin n) (Fin n) ℂ} (hX : IsUnit X) {d : Fin n → ℂ}
     (hD : X⁻¹ * A * X = diagonal d) (E : Matrix (Fin n) (Fin n) ℂ) {μ : ℂ}
     (hμ : μ ∈ spectrum ℂ (A + E)) :
@@ -97,11 +158,15 @@ theorem theorem_5_3 {A X : Matrix (Fin n) (Fin n) ℂ} (hX : IsUnit X) {d : Fin 
   rw [← hspec]
   exact ⟨i, rfl⟩
 
-/-- **(5.9).** If `A` is normal, the similarity transformation matrix `X` of Theorem 5.3 is
-unitary, so `K₂(X) = 1` and `min_{λ ∈ σ(A)} |λ − μ| ≤ ‖E‖₂` for every `μ ∈ σ(A + E)`: the
-eigenvalue problem of a normal matrix is well conditioned with respect to the absolute error. From
-`theorem_5_3` with the spectral theorem for normal matrices (`Matrix.IsStarNormal.spectral_theorem`)
-and `Matrix.condNumber_l2_of_mem_unitaryGroup`. -/
+/-- **Equation (5.9)** of [quarteroni2000numerical]. Let $A \in \mathbb{C}^{n \times n}$ be normal
+and $E \in \mathbb{C}^{n \times n}$. Then for every eigenvalue $\mu$ of $A + E$,
+$$\min_{\lambda \in \sigma(A)} |\lambda - \mu| \le \|E\|_2.$$
+So the eigenvalue problem of a normal matrix is well conditioned with respect to the absolute
+error.
+
+For a normal $A$, the matrix $X$ of Theorem 5.3 is unitary, so $K_2(X) = 1$. The proof applies
+`QuarteroniSaccoSaleri.Chapter05.theorem_5_3` with the spectral theorem for normal matrices
+(`Matrix.IsStarNormal.spectral_theorem`) and `Matrix.condNumber_l2_of_mem_unitaryGroup`. -/
 theorem equation_5_9 {A : Matrix (Fin n) (Fin n) ℂ} (hA : IsStarNormal A)
     (E : Matrix (Fin n) (Fin n) ℂ) {μ : ℂ} (hμ : μ ∈ spectrum ℂ (A + E)) :
     ∃ lam ∈ spectrum ℂ A, ‖lam - μ‖ ≤ ‖E‖ := by
@@ -116,14 +181,23 @@ theorem equation_5_9 {A : Matrix (Fin n) (Fin n) ℂ} (hA : IsStarNormal A)
 
 /-! ### Theorem 5.4: the first-order perturbation of a simple eigenvalue -/
 
-/-- **Theorem 5.4, (5.10).** Let `λ` be a simple eigenvalue of `A ∈ ℂ^{n×n}` with right and left
-eigenvectors `x`, `y` (`A x = λ x`, `yᴴ A = λ yᴴ`), `‖x‖₂ = ‖y‖₂ = 1`, and `A(ε) = A + ε E` with
-`‖E‖₂ = 1`. Denoting by `λ(ε)`, `x(ε)` an eigenvalue and eigenvector of `A(ε)` — a branch
-differentiable at `ε = 0`, with `(A + ε E) x(ε) = λ(ε) x(ε)` in a neighborhood of `ε = 0`
-(`theorem_5_4_branch`) — such that `λ(0) = λ` and `x(0) = x`,
-`|∂λ/∂ε (0)| ≤ 1 / |yᴴ x|`. Backbone `Module.End.norm_deriv_eigenvalue_perturbation_le` with
-`Module.End.eigenvalueCondNumber ℂ x y = 1 / |yᴴ x|` for unit vectors, and `yᴴ x ≠ 0` by
-`theorem_5_4_inner_ne_zero`. The book's hypothesis that `A` be diagonalizable is not needed. -/
+/-- **Theorem 5.4** of [quarteroni2000numerical], (5.10). Let $A, E \in \mathbb{C}^{n \times n}$
+with $\|E\|_2 = 1$, and let $\lambda$ be a simple eigenvalue of $A$ with right and left
+eigenvectors $x$ and $y$, $Ax = \lambda x$ and $y^H A = \lambda y^H$, with
+$\|x\|_2 = \|y\|_2 = 1$. Let $\lambda(\varepsilon) \in \mathbb{C}$ and
+$x(\varepsilon) \in \mathbb{C}^n$ be differentiable at $\varepsilon = 0$, with
+$\lambda(0) = \lambda$, $x(0) = x$, and $(A + \varepsilon E) x(\varepsilon) =
+\lambda(\varepsilon) x(\varepsilon)$ for all $\varepsilon$ in a neighborhood of $0$. Then
+$$\left| \frac{\partial \lambda}{\partial \varepsilon}(0) \right| \le \frac{1}{|y^H x|}.$$
+
+**Generalization.** The book assumes that $A$ is diagonalizable. This hypothesis is not needed:
+the statement needs only the differentiable branch, which
+`QuarteroniSaccoSaleri.Chapter05.theorem_5_4_branch` supplies at a simple eigenvalue.
+
+The parameter $\varepsilon$ is complex. The proof specializes the backbone's
+`Module.End.norm_deriv_eigenvalue_perturbation_le`, with `Module.End.eigenvalueCondNumber ℂ x y`
+$= 1 / |y^H x|$ for unit vectors, and $y^H x \neq 0$ by
+`QuarteroniSaccoSaleri.Chapter05.theorem_5_4_inner_ne_zero`. -/
 theorem theorem_5_4 {A E : Matrix (Fin n) (Fin n) ℂ} (hE : ‖E‖ = 1) {lam : ℂ}
     {x y : EuclideanSpace ℂ (Fin n)} (hx : ‖x‖ = 1) (hy : ‖y‖ = 1)
     (hAx : toEuclideanLin A x = lam • x) (hAy : toEuclideanLin Aᴴ y = star lam • y)
@@ -146,12 +220,20 @@ theorem theorem_5_4 {A E : Matrix (Fin n) (Fin n) ℂ} (hE : ‖E‖ = 1) {lam :
     one_mul] at h
   exact h
 
-/-- **Theorem 5.4, the branch it presupposes.** At a simple eigenvalue `λ` of `A` with right
-eigenvector `x ≠ 0` and left eigenvector `y ≠ 0`, there are `λ(ε)`, `x(ε)` with `λ(0) = λ`,
-`x(0) = x`, `(A + ε E) x(ε) = λ(ε) x(ε)` in a neighborhood of `ε = 0`, `x(ε)` differentiable at
-`0`, and `∂λ/∂ε (0) = yᴴ E x / yᴴ x` — the identity the book's proof derives. Backbone
-`Module.End.hasDerivAt_eigenvalue_perturbation_of_finrank_eq_one`, built by the inverse function
-theorem rather than by the continuity of the roots of the characteristic polynomial. -/
+/-- **Theorem 5.4** of [quarteroni2000numerical], the branch that it presupposes. Let
+$A, E \in \mathbb{C}^{n \times n}$, and let $\lambda$ be a simple eigenvalue of $A$ with a right
+eigenvector $x \neq 0$ and a left eigenvector $y \neq 0$. Then there are functions
+$\lambda(\varepsilon) \in \mathbb{C}$ and $x(\varepsilon) \in \mathbb{C}^n$ of
+$\varepsilon \in \mathbb{C}$ with $\lambda(0) = \lambda$, $x(0) = x$, and $(A + \varepsilon E)
+x(\varepsilon) = \lambda(\varepsilon) x(\varepsilon)$ for all $\varepsilon$ in a neighborhood of
+$0$, such that $x(\varepsilon)$ is differentiable at $0$ and
+$$\frac{\partial \lambda}{\partial \varepsilon}(0) = \frac{y^H E x}{y^H x}.$$
+This is the identity that the proof of the book derives.
+
+The proof specializes the backbone's
+`Module.End.hasDerivAt_eigenvalue_perturbation_of_finrank_eq_one`, which builds the branch by
+the inverse function theorem rather than by the continuity of the roots of the characteristic
+polynomial. -/
 theorem theorem_5_4_branch {A : Matrix (Fin n) (Fin n) ℂ} (E : Matrix (Fin n) (Fin n) ℂ) {lam : ℂ}
     {x y : EuclideanSpace ℂ (Fin n)} (hx : x ≠ 0) (hy : y ≠ 0)
     (hAx : toEuclideanLin A x = lam • x) (hAy : toEuclideanLin Aᴴ y = star lam • y)
@@ -171,10 +253,13 @@ theorem theorem_5_4_branch {A : Matrix (Fin n) (Fin n) ℂ} (E : Matrix (Fin n) 
   rw [map_add, map_smul, LinearMap.add_apply, LinearMap.smul_apply]
   exact ht
 
-/-- **Theorem 5.4, the first step of its proof.** For a simple eigenvalue `λ` of `A ∈ ℂ^{n×n}`, a
-right eigenvector `x ≠ 0` and a left eigenvector `y ≠ 0` satisfy `yᴴ x ≠ 0`. Backbone
-`Module.End.inner_ne_zero_of_finrank_maxGenEigenspace_eq_one`, which needs no diagonalizability
-(the book argues through the biorthogonality of the columns of `X` and `Y = X⁻ᴴ`). -/
+/-- **Theorem 5.4** of [quarteroni2000numerical], the first step of its proof. Let $\lambda$ be a
+simple eigenvalue of $A \in \mathbb{C}^{n \times n}$, with a right eigenvector $x \neq 0$ and a
+left eigenvector $y \neq 0$. Then $y^H x \neq 0$.
+
+The proof specializes the backbone's
+`Module.End.inner_ne_zero_of_finrank_maxGenEigenspace_eq_one`, which needs no diagonalizability.
+The book argues through the biorthogonality of the columns of $X$ and $Y = X^{-H}$. -/
 theorem theorem_5_4_inner_ne_zero {A : Matrix (Fin n) (Fin n) ℂ} {lam : ℂ}
     {x y : EuclideanSpace ℂ (Fin n)} (hx : x ≠ 0) (hy : y ≠ 0)
     (hAx : toEuclideanLin A x = lam • x) (hAy : toEuclideanLin Aᴴ y = star lam • y)
@@ -183,31 +268,43 @@ theorem theorem_5_4_inner_ne_zero {A : Matrix (Fin n) (Fin n) ℂ} {lam : ℂ}
     (inner_toEuclideanLin_eq_of_conjTranspose_eq hAy) hy
     (by rw [finrank_maxGenEigenspace_toEuclideanLin]; exact hsimple)
 
-/-! ### (5.11): the condition number of an eigenvalue -/
+/-! ### Equation (5.11): the condition number of an eigenvalue -/
 
-/-- **(5.11).** The condition number of the eigenvalue `λ` with unit right and left eigenvectors
-`x`, `y`: `κ(λ) = 1 / |yᴴ x| = 1 / |cos θ_λ|`, `θ_λ` the angle between `y` and `x`. -/
+/-- **Equation (5.11)** of [quarteroni2000numerical]. Let $x, y \in \mathbb{C}^n$ be unit right and
+left eigenvectors of an eigenvalue $\lambda$. The **condition number** of $\lambda$ is
+$$\kappa(\lambda) = \frac{1}{|y^H x|} = \frac{1}{|\cos \theta_\lambda|},$$
+where $\theta_\lambda$ is the angle between $y$ and $x$.
+
+The definition takes any two vectors $x$ and $y$. Its value is $0$ when $y^H x = 0$. -/
 noncomputable def equation_5_11 (x y : EuclideanSpace ℂ (Fin n)) : ℝ := 1 / ‖inner ℂ y x‖
 
-/-- For unit vectors, `κ(λ)` is the backbone's `Module.End.eigenvalueCondNumber ℂ x y =
-‖x‖ ‖y‖ / |⟪y, x⟫|`. -/
+/-- For unit vectors $x, y \in \mathbb{C}^n$, the condition number $\kappa(\lambda) = 1 / |y^H x|$
+of (5.11) equals the backbone's `Module.End.eigenvalueCondNumber ℂ x y`, which is
+$\|x\| \|y\| / |\langle y, x \rangle|$. -/
 theorem equation_5_11_eq_eigenvalueCondNumber {x y : EuclideanSpace ℂ (Fin n)} (hx : ‖x‖ = 1)
     (hy : ‖y‖ = 1) : equation_5_11 x y = Module.End.eigenvalueCondNumber ℂ x y := by
   rw [equation_5_11, Module.End.eigenvalueCondNumber, hx, hy, one_mul]
 
-/-- **(5.11), `κ(λ) ≥ 1`.** For unit `x`, `y` with `yᴴ x ≠ 0` (which holds at a simple
-eigenvalue, `theorem_5_4_inner_ne_zero`), `1 ≤ κ(λ)`; backbone
-`Module.End.one_le_eigenvalueCondNumber`, Cauchy–Schwarz. -/
+/-- **Equation (5.11)** of [quarteroni2000numerical], $\kappa(\lambda) \ge 1$. Let
+$x, y \in \mathbb{C}^n$ with $\|x\|_2 = \|y\|_2 = 1$ and $y^H x \neq 0$. Then
+$1 \le \kappa(\lambda)$.
+
+The condition $y^H x \neq 0$ holds at a simple eigenvalue
+(`QuarteroniSaccoSaleri.Chapter05.theorem_5_4_inner_ne_zero`). The proof specializes the
+backbone's `Module.End.one_le_eigenvalueCondNumber`, which is the Cauchy–Schwarz inequality. -/
 theorem equation_5_11_one_le {x y : EuclideanSpace ℂ (Fin n)} (hx : ‖x‖ = 1) (hy : ‖y‖ = 1)
     (hne : inner ℂ y x ≠ 0) : 1 ≤ equation_5_11 x y := by
   rw [equation_5_11_eq_eigenvalueCondNumber hx hy]
   exact Module.End.one_le_eigenvalueCondNumber hne
 
-/-- **(5.11), the normal case.** When `A` is normal the left and right eigenvectors of a simple
-eigenvalue `λ` coincide up to a scalar, so that for unit `x`, `y`, `κ(λ) = 1 / ‖x‖₂² = 1`.
-Backbone `Module.End.eigenvalueCondNumber_eq_one_of_isStarNormal`, which asks for geometric
-simplicity; the algebraic simplicity of the book implies it
-(`Module.End.finrank_eigenspace_le`). -/
+/-- **Equation (5.11)** of [quarteroni2000numerical], the normal case. Let
+$A \in \mathbb{C}^{n \times n}$ be normal, and let $\lambda$ be a simple eigenvalue of $A$ with
+unit right and left eigenvectors $x$ and $y$. Then $\kappa(\lambda) = 1$.
+
+The left and right eigenvectors of a simple eigenvalue of a normal matrix are equal up to a
+scalar, so $\kappa(\lambda) = 1 / \|x\|_2^2 = 1$. The proof specializes the backbone's
+`Module.End.eigenvalueCondNumber_eq_one_of_isStarNormal`, which asks for geometric simplicity.
+The algebraic simplicity of the book implies it (`Module.End.finrank_eigenspace_le`). -/
 theorem equation_5_11_normal {A : Matrix (Fin n) (Fin n) ℂ} (hA : IsStarNormal A) {lam : ℂ}
     {x y : EuclideanSpace ℂ (Fin n)} (hx : ‖x‖ = 1) (hy : ‖y‖ = 1)
     (hAx : toEuclideanLin A x = lam • x) (hAy : toEuclideanLin Aᴴ y = star lam • y)
@@ -225,11 +322,14 @@ theorem equation_5_11_normal {A : Matrix (Fin n) (Fin n) ℂ} (hA : IsStarNormal
     (by rw [← toEuclideanLin_conjTranspose_eq_adjoint]; exact hAy) (by simp [← norm_pos_iff, hy])
     hgeom
 
-/-- **Unitary similarity preserves the conditioning** (§5.2.1, after (5.11)). Let `U` be unitary
-and `Ã = Uᴴ A U`. If `x`, `y` are right and left eigenvectors of `A` for `λ`, then `Uᴴ x`, `Uᴴ y`
-are right and left eigenvectors of `Ã` for `λ`, and the condition number is unchanged:
-`κ̃(λ) = |yᴴ U Uᴴ x|⁻¹ = κ(λ)` — a unitary matrix changes neither Euclidean lengths nor the
-angles between vectors. -/
+/-- **Section 5.2.1** of [quarteroni2000numerical], after (5.11): a unitary similarity preserves the
+conditioning. Let $A, U \in \mathbb{C}^{n \times n}$ with $U$ unitary, and let
+$\tilde A = U^H A U$. If $x$ and $y$ are right and left eigenvectors of $A$ for $\lambda$, then
+$U^H x$ and $U^H y$ are right and left eigenvectors of $\tilde A$ for $\lambda$, and the
+condition number does not change:
+$$\tilde\kappa(\lambda) = |y^H U U^H x|^{-1} = \kappa(\lambda).$$
+
+A unitary matrix changes neither Euclidean lengths nor the angles between vectors. -/
 theorem eigenvalueCondNumber_conj_unitary {A U : Matrix (Fin n) (Fin n) ℂ}
     (hU : U ∈ unitaryGroup (Fin n) ℂ) {lam : ℂ} {x y : EuclideanSpace ℂ (Fin n)}
     (hAx : toEuclideanLin A x = lam • x) (hAy : toEuclideanLin Aᴴ y = star lam • y) :
@@ -249,19 +349,39 @@ theorem eigenvalueCondNumber_conj_unitary {A U : Matrix (Fin n) (Fin n) ℂ}
 
 /-! ### Property 5.5: the first-order perturbation of an eigenvector -/
 
-/-- **Property 5.5, for a Hermitian `A`.** Let `λ_k` be a simple eigenvalue of the Hermitian
-matrix `A ∈ ℂ^{n×n}` with unit eigenvector `x_k`, let `δ_k = min_{j ≠ k} |λ_k − λ_j|` — the
-distance from `λ_k` to the rest of the spectrum, `Metric.infDist λ_k (σ(A) \ {λ_k})` — and let
-`ε ↦ (λ_k(ε), x_k(ε))` be a branch of eigenpairs of `A(ε) = A + ε E`, differentiable at `ε = 0`,
-with `λ_k(0) = λ_k`, `x_k(0) = x_k` and normalized by `x_kᴴ x_k(ε) = 1`. Then
-`‖∂x_k/∂ε (0)‖₂ ≤ ‖E‖₂ / δ_k`, hence `‖x_k(ε) − x_k‖₂ ≤ ε ‖E‖₂ / δ_k + o(ε)` as `ε → 0`, with
-`κ(x_k) = 1 / δ_k` the condition number of the eigenvector. Backbone
-`Module.End.norm_deriv_eigenvector_perturbation_le` — the normalization is the spectral-projector
-normalization `P x_k(ε) = x_k`, `Module.End.spectralProjector_apply_of_finrank_eq_one` — with
-`Module.End.eigenvectorCondNumber_eq_inv_dist_of_isSymmetric` evaluating the constant; the `o(ε)`
-form is `HasDerivAt.isLittleO`. Errata: the book's `O(ε²)` needs a `C²` branch, its normalization
-`‖x_k(ε)‖₂ = 1` differs from `x_kᴴ x_k(ε) = 1` by `1 + O(ε²)`, and for a non-normal `A` the constant
-`1 / δ_k` is false. -/
+/-- **Property 5.5** of [quarteroni2000numerical], for a Hermitian matrix. Let
+$A, E \in \mathbb{C}^{n \times n}$ with $A$ Hermitian, let $\lambda_k \in \mathbb{R}$ be a
+simple eigenvalue of $A$ with unit eigenvector $x_k$, and let $\delta_k = \min_{j \neq k}
+|\lambda_k - \lambda_j|$ be the distance from $\lambda_k$ to the rest of the spectrum. Let
+$\varepsilon \mapsto (\lambda_k(\varepsilon), x_k(\varepsilon))$ be a branch of eigenpairs of
+$A(\varepsilon) = A + \varepsilon E$ for all $\varepsilon \in \mathbb{C}$, differentiable at
+$\varepsilon = 0$, with $\lambda_k(0) = \lambda_k$, $x_k(0) = x_k$ and
+$x_k^H x_k(\varepsilon) = 1$ for all $\varepsilon$. Then
+$$\left\| \frac{\partial x_k}{\partial \varepsilon}(0) \right\|_2 \le
+  \frac{\|E\|_2}{\delta_k},$$
+and hence, as $\varepsilon \to 0$,
+$$\|x_k(\varepsilon) - x_k\|_2 \le |\varepsilon| \frac{\|E\|_2}{\delta_k} + o(\varepsilon).$$
+The number $\kappa(x_k) = 1 / \delta_k$ is the condition number of the eigenvector.
+
+**Correction.** The book states the property for any matrix, with the remainder
+$O(\varepsilon^2)$. For a matrix that is not normal, the constant $1 / \delta_k$ is false: the
+first-order constant is the norm of the reduced resolvent (`Module.End.eigenvectorCondNumber`).
+So the property is stated for a Hermitian $A$. The remainder $O(\varepsilon^2)$ needs a twice
+differentiable branch, which the hypotheses do not give, so the statement uses $o(\varepsilon)$.
+
+**Reading.** The book normalizes by $\|x_k(\varepsilon)\|_2 = 1$. The statement uses the
+normalization $x_k^H x_k(\varepsilon) = 1$, which differs from it by a factor
+$1 + O(\varepsilon^2)$. The branch is quantified over every $\varepsilon$, as the book
+quantifies $x_k(\varepsilon)$.
+
+The number $\delta_k$ is `Metric.infDist (lam : ℂ) (spectrum ℂ A \ {(lam : ℂ)})`, where `lam` is
+$\lambda_k$. If $\lambda_k$ is the only eigenvalue, then $\delta_k = 0$ and, since Lean divides
+by zero to zero, the bound says that the derivative is $0$. The proof specializes the backbone's
+`Module.End.norm_deriv_eigenvector_perturbation_le`, whose normalization is the
+spectral-projector normalization $P x_k(\varepsilon) = x_k$
+(`Module.End.spectralProjector_apply_of_finrank_eq_one`), with
+`Module.End.eigenvectorCondNumber_eq_inv_dist_of_isSymmetric` for the constant. The
+$o(\varepsilon)$ form is `HasDerivAt.isLittleO`. -/
 theorem property_5_5 {A E : Matrix (Fin n) (Fin n) ℂ} (hA : A.IsHermitian) {lam : ℝ}
     {x : EuclideanSpace ℂ (Fin n)} (hx : ‖x‖ = 1) (hAx : toEuclideanLin A x = (lam : ℂ) • x)
     (hsimple : A.charpoly.rootMultiplicity (lam : ℂ) = 1) {δ : ℝ}
@@ -315,13 +435,19 @@ theorem property_5_5 {A E : Matrix (Fin n) (Fin n) ℂ} (hA : A.IsHermitian) {la
           rw [norm_smul]
           gcongr
 
-/-! ### §5.2.2: a posteriori estimates -/
+/-! ### Section 5.2.2: a posteriori estimates -/
 
-/-- **Theorem 5.5, (5.13).** Let `A ∈ ℂ^{n×n}` be Hermitian and `(λ̂, x̂)`, `x̂ ≠ 0`, a computed
-approximation of an eigenpair, with residual `r̂ = A x̂ − λ̂ x̂`. Then
-`min_{λ_i ∈ σ(A)} |λ̂ − λ_i| ≤ ‖r̂‖₂ / ‖x̂‖₂`. Backbone
-`LinearMap.IsSymmetric.exists_hasEigenvalue_dist_le` for `toEuclideanLin A`, whose eigenvalues
-are the spectrum of `A`. The book's `λ̂` is real, as a Rayleigh quotient of a Hermitian matrix. -/
+/-- **Theorem 5.5** of [quarteroni2000numerical], (5.13). Let $A \in \mathbb{C}^{n \times n}$ be
+Hermitian, and let $(\hat\lambda, \hat x)$ with $\hat\lambda \in \mathbb{R}$ and
+$\hat x \in \mathbb{C}^n$, $\hat x \neq 0$, be an approximation of an eigenpair, with residual
+$\hat r = A \hat x - \hat\lambda \hat x$. Then
+$$\min_{\lambda_i \in \sigma(A)} |\hat\lambda - \lambda_i| \le \frac{\|\hat r\|_2}{\|\hat
+  x\|_2}.$$
+
+The minimum is stated as the existence of an eigenvalue that satisfies the bound. The
+approximation $\hat\lambda$ of the book is real, as a Rayleigh quotient of a Hermitian matrix.
+The proof specializes the backbone's `LinearMap.IsSymmetric.exists_hasEigenvalue_dist_le` for
+`Matrix.toEuclideanLin A`, whose eigenvalues are the spectrum of $A$. -/
 theorem theorem_5_5 {A : Matrix (Fin n) (Fin n) ℂ} (hA : A.IsHermitian) (lam : ℝ)
     {x : EuclideanSpace ℂ (Fin n)} (hx : x ≠ 0) :
     ∃ μ ∈ spectrum ℂ A, ‖(lam : ℂ) - μ‖ ≤ ‖toEuclideanLin A x - (lam : ℂ) • x‖ / ‖x‖ := by
@@ -329,15 +455,22 @@ theorem theorem_5_5 {A : Matrix (Fin n) (Fin n) ℂ} (hA : A.IsHermitian) (lam :
     (isSymmetric_toEuclideanLin_iff.mpr hA).exists_hasEigenvalue_dist_le lam hx
   exact ⟨μ, (hasEigenvalue_toEuclideanLin_iff A μ).mp hμ, by rwa [norm_sub_rev]⟩
 
-/-- **Property 5.6, (5.15).** Under the assumptions of Theorem 5.5, let `{u_i}` be the
-orthonormal eigenvectors of `A` with eigenvalues `λ_i` (Mathlib's
-`Matrix.IsHermitian.eigenvectorBasis`, `Matrix.IsHermitian.eigenvalues`), let `s` be a set of
-indices (the book's `i = 1, …, m`) and suppose `|λ_i − λ̂| ≥ δ > 0` for `i ∉ s`. Then the
-Euclidean distance from `x̂` to the space `U_m` generated by the `u_i`, `i ∈ s`, satisfies
-`d(x̂, U_m) ≤ ‖r̂‖₂ / δ`. Backbone
-`LinearMap.IsSymmetric.dist_eigenvectorSpan_le_norm_residual_div`, the distance being attained at
-the orthogonal projection (`Submodule.starProjection_minimal`). The book's further hypothesis
-`|λ_i − λ̂| ≤ ‖r̂‖₂` for `i ∈ s` plays no role and is dropped. -/
+/-- **Property 5.6** of [quarteroni2000numerical], (5.15). Let $A \in \mathbb{C}^{n \times n}$ be
+Hermitian with orthonormal eigenvectors $u_i$ and eigenvalues $\lambda_i$, let
+$\hat\lambda \in \mathbb{R}$ and $\hat x \in \mathbb{C}^n$, and let
+$\hat r = A \hat x - \hat\lambda \hat x$. Let $s$ be a set of indices and $\delta > 0$, and
+suppose that $|\lambda_i - \hat\lambda| \ge \delta$ for every $i \notin s$. Then the Euclidean
+distance from $\hat x$ to the space $U_m$ spanned by the $u_i$ with $i \in s$ satisfies
+$$d(\hat x, U_m) \le \frac{\|\hat r\|_2}{\delta}.$$
+
+**Generalization.** The book also assumes $|\lambda_i - \hat\lambda| \le \|\hat r\|_2$ for
+$i \in s$. This hypothesis plays no role and is dropped. The hypothesis $\hat x \neq 0$ of
+Theorem 5.5 is not needed either.
+
+The book takes $s = \{1, \dots, m\}$. The eigenvectors and eigenvalues are Mathlib's
+`Matrix.IsHermitian.eigenvectorBasis` and `Matrix.IsHermitian.eigenvalues`. The proof
+specializes the backbone's `LinearMap.IsSymmetric.dist_eigenvectorSpan_le_norm_residual_div`;
+the distance is attained at the orthogonal projection (`Submodule.starProjection_minimal`). -/
 theorem property_5_6 {A : Matrix (Fin n) (Fin n) ℂ} (hA : A.IsHermitian) (lam : ℝ)
     (x : EuclideanSpace ℂ (Fin n)) (s : Finset (Fin n)) {δ : ℝ} (hδ : 0 < δ)
     (hsep : ∀ i ∉ s, δ ≤ |hA.eigenvalues i - lam|) :
@@ -364,11 +497,18 @@ theorem property_5_6 {A : Matrix (Fin n) (Fin n) ℂ} (hA : A.IsHermitian) (lam 
   rwa [show hA.eigenvalues (e i) = hA'.eigenvalues finrank_euclideanSpace i from
     congrArg (hA'.eigenvalues finrank_euclideanSpace) (e.symm_apply_apply i)] at h
 
-/-- **Property 5.7.** Let `A ∈ ℂ^{n×n}` be diagonalizable, `X⁻¹ A X = diag(λ_1, …, λ_n)` with `X`
-nonsingular. If for some `ε > 0` the residual `r̂ = A x̂ − λ̂ x̂` of an approximate pair
-`(λ̂, x̂)`, `x̂ ≠ 0`, satisfies `‖r̂‖₂ ≤ ε ‖x̂‖₂`, then
-`min_{λ_i ∈ σ(A)} |λ̂ − λ_i| ≤ ε ‖X⁻¹‖₂ ‖X‖₂`. Backbone `Matrix.bauer_fike_residual` applied to
-the unit vector `x̂ / ‖x̂‖₂`. -/
+/-- **Property 5.7** of [quarteroni2000numerical]. Let $A \in \mathbb{C}^{n \times n}$ be
+diagonalizable, $X^{-1} A X = \operatorname{diag}(\lambda_1, \dots, \lambda_n)$ with $X$
+nonsingular. Let $\hat\lambda \in \mathbb{C}$ and $\hat x \in \mathbb{C}^n$ with
+$\hat x \neq 0$, and let $\varepsilon \in \mathbb{R}$. If the residual
+$\hat r = A \hat x - \hat\lambda \hat x$ satisfies $\|\hat r\|_2 \le \varepsilon \|\hat x\|_2$,
+then
+$$\min_{\lambda_i \in \sigma(A)} |\hat\lambda - \lambda_i| \le \varepsilon \, \|X^{-1}\|_2
+  \|X\|_2.$$
+
+The book takes $\varepsilon > 0$. The hypothesis is not needed, because the bound on the
+residual forces $\varepsilon \ge 0$. The proof applies the backbone's
+`Matrix.bauer_fike_residual` to the unit vector $\hat x / \|\hat x\|_2$. -/
 theorem property_5_7 {A X : Matrix (Fin n) (Fin n) ℂ} (hX : IsUnit X) {d : Fin n → ℂ}
     (hD : X⁻¹ * A * X = diagonal d) (lam : ℂ) {x : EuclideanSpace ℂ (Fin n)} (hx : x ≠ 0)
     {ε : ℝ} (hr : ‖toEuclideanLin A x - lam • x‖ ≤ ε * ‖x‖) :

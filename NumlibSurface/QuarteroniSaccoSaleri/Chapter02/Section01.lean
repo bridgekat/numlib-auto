@@ -13,54 +13,96 @@ import Numlib.Analysis.Matrix.ToEuclideanLin
 import Numlib.Conditioning.Problem
 
 /-!
-# Quarteroni–Sacco–Saleri §2.1: well-posedness and condition number of a problem
+# Quarteroni, Sacco and Saleri, Section 2.1: Well-posedness and Condition Number of a Problem
 
-Surface file for Alfio Quarteroni, Riccardo Sacco and Fausto Saleri, *Numerical Mathematics*
-[quarteroni2000numerical], §2.1. The book's problem is `F(x, d) = 0` with datum `d` and solution
-`x = G(d)`; its vocabulary — the continuous-dependence condition (2.3), the relative and absolute
-condition numbers of Definition 2.1 and the first-order formula (2.7) — is the backbone
-`Numlib/Conditioning/Problem`, read here over `ℝ` and on the book's concrete data.
+This module formalizes Section 2.1 of [quarteroni2000numerical]. The book considers a problem
+$F(x, d) = 0$ with datum $d$ and solution $x = G(d)$, where $G$ is the resolvent of the problem. A
+perturbation $\delta d$ of the datum changes the solution by $\delta x = G(d + \delta d) - G(d)$.
+The continuous-dependence condition (2.3) asks for $\|\delta x\| \le K \|\delta d\|$ for small
+$\delta d$. Definition 2.1 gives the relative condition number (2.4), the supremum of $(\|\delta x\|
+/ \|x\|) / (\|\delta d\| / \|d\|)$, and the absolute condition number (2.5), the supremum of
+$\|\delta x\| / \|\delta d\|$. For a differentiable resolvent, (2.7) gives
+$K_{abs}(d) \simeq \|G'(d)\|$ and $K(d) \simeq \|G'(d)\| \|d\| / \|G(d)\|$. The examples compute
+these numbers for the number of real roots of a polynomial, the roots of $x^2 - 2px + 1$, a linear
+system perturbed in its right-hand side, and a root of a nonlinear equation. The example that closes
+the section shows that the first-order formula can underestimate the condition number.
 
-## Definitions and their bridges
+The definitions are those of the backbone module `Numlib.Conditioning.Problem`, here over
+$\mathbb{R}$ and on the concrete data of the book.
 
-* `definition_2_1_rel`, `definition_2_1_abs` — the relative and absolute condition numbers (2.4)
-  and (2.5), as suprema over a set `N` of admissible perturbations, valued in `ℝ≥0∞` as in the
-  backbone so that "the condition number is infinite" (Remark 2.1) is a value. They are
-  `Conditioning.relCondNumberOn` and `Conditioning.absCondNumberOn` by `rfl`
-  (`definition_2_1_rel_eq`, `definition_2_1_abs_eq`), and `definition_2_1_rel_eq_abs_mul` is the
-  relation between the two.
-* `equation_2_3_iff` — the Lipschitz condition (2.3) at radius `η` is finiteness of the absolute
-  condition number over the perturbations of size `< η`.
+## Main definitions
 
-## The first-order formula
+* Example 2.1, `QuarteroniSaccoSaleri.Chapter02.example_2_1_polynomial`: the polynomial
+  $x^4 - x^2(2a - 1) + a(a - 1)$.
+* Definition 2.1, `QuarteroniSaccoSaleri.Chapter02.definition_2_1_rel`: the relative condition
+  number (2.4) over a set of perturbations.
+* Definition 2.1, `QuarteroniSaccoSaleri.Chapter02.definition_2_1_abs`: the absolute condition
+  number (2.5) over a set of perturbations.
+* Example 2.2, `QuarteroniSaccoSaleri.Chapter02.example_2_2_resolvent`: the roots
+  $p \pm \sqrt{p^2 - 1}$ of $x^2 - 2px + 1$ as a function of $p$.
 
-* `equation_2_7_abs`, `equation_2_7_rel` — (2.7) as equalities for the first-order condition
-  numbers `Conditioning.absCondNumber`, `Conditioning.relCondNumber` (the limits as the
-  perturbation size tends to zero, which is what the book's `≃` computes).
-* `equation_2_7_jacobian` — the case `G : ℝⁿ → ℝᵐ` with a Jacobian matrix and the `2`-operator
-  norm "associated with the vector norm (1.19)".
-* `equation_2_7_rel_deriv` — the relative form for a scalar datum `d : ℝ`, in real numbers, which
-  is how Examples 2.2 and 2.7 read it.
+## Main results
 
-## The Examples
+* Example 2.1, `QuarteroniSaccoSaleri.Chapter02.example_2_1`: the number of real roots of the
+  polynomial is $4$, $2$ or $0$, and it jumps as $a$ varies.
+* Definition 2.1, `QuarteroniSaccoSaleri.Chapter02.definition_2_1_rel_eq_abs_mul`:
+  $K(d) = K_{abs}(d) \|d\| / \|G(d)\|$.
+* Equation (2.3), `QuarteroniSaccoSaleri.Chapter02.equation_2_3_iff`: the Lipschitz condition (2.3)
+  holds at radius $\eta$ if and only if the absolute condition number over the perturbations of size
+  less than $\eta$ is finite.
+* Equation (2.7), `QuarteroniSaccoSaleri.Chapter02.equation_2_7_abs`: the first-order absolute
+  condition number is $\|G'(d)\|$.
+* Equation (2.7), `QuarteroniSaccoSaleri.Chapter02.equation_2_7_rel`: the first-order relative
+  condition number is $\|G'(d)\| \|d\| / \|G(d)\|$.
+* Equation (2.7), `QuarteroniSaccoSaleri.Chapter02.equation_2_7_rel_deriv`: the relative form for a
+  scalar datum, as a real number.
+* Equation (2.7), `QuarteroniSaccoSaleri.Chapter02.equation_2_7_jacobian`: for
+  $G : \mathbb{R}^n \to \mathbb{R}^m$ with Jacobian matrix $J$, the absolute condition number is
+  $\|J\|_2$.
+* Example 2.2, `QuarteroniSaccoSaleri.Chapter02.example_2_2_hasDerivAt`: the derivative of the roots
+  with respect to $p$.
+* Example 2.2, `QuarteroniSaccoSaleri.Chapter02.example_2_2`: equation (2.8),
+  $K(p) = |p| / \sqrt{p^2 - 1}$ in the Euclidean norm.
+* Example 2.2, `QuarteroniSaccoSaleri.Chapter02.example_2_2_le_sqrt_two`: for separated roots,
+  $p \ge \sqrt{2}$, the condition number is at most $\sqrt{2}$.
+* Example 2.2, `QuarteroniSaccoSaleri.Chapter02.example_2_2_reparam`: the reparametrized problem has
+  condition number $1$.
+* Remark 2.1, `QuarteroniSaccoSaleri.Chapter02.remark_2_1`: the roots depend continuously on
+  $p \ge 1$, but the condition number at the double root $p = 1$ is infinite.
+* Example 2.3, `QuarteroniSaccoSaleri.Chapter02.example_2_3_eq`: the first equality of (2.9),
+  $K(b) = \|A^{-1}\| \|b\| / \|A^{-1} b\|$.
+* Example 2.3, `QuarteroniSaccoSaleri.Chapter02.example_2_3`: equation (2.9),
+  $K(b) \le \|A\| \|A^{-1}\| = K(A)$.
+* Example 2.4, `QuarteroniSaccoSaleri.Chapter02.example_2_4`: equation (2.11),
+  $K_{abs}(d) = |\varphi'(x)|^{-1}$ for the root of $\varphi(x) = d$.
+* Example 2.4, `QuarteroniSaccoSaleri.Chapter02.example_2_4_rel`: equation (2.10),
+  $K(d) = (|d| / |x|) |\varphi'(x)|^{-1}$.
+* Example 2.4, `QuarteroniSaccoSaleri.Chapter02.example_2_4_multiple_root`: at a multiple root the
+  absolute condition number is infinite.
+* Section 2.1, `QuarteroniSaccoSaleri.Chapter02.cosSubOne_absCondNumberWithin`: for
+  $G(d) = \cos d - 1$, $K_{abs}(0) = 2/\pi$ while $G'(0) = 0$.
 
-Each Example states a computable fact and is a theorem. `example_2_1` counts the real roots of
-`x⁴ - x²(2a - 1) + a(a - 1)` with multiplicity; `example_2_2` is (2.8) made exact in the Euclidean
-norm, with `example_2_2_le_sqrt_two` for the separated roots and `example_2_2_reparam` for the
-reparametrized problem; `remark_2_1` is the double root at `p = 1`, continuous dependence on
-`[1, ∞)` with infinite condition number; `example_2_3` is (2.9), the bound `K(b) ≤ κ(A)` for a
-linear system perturbed in its right-hand side, with the first equality of (2.9) as
-`example_2_3_eq`; `example_2_4` and `example_2_4_rel` are (2.11) and (2.10) for the root of
-`φ(x) = d`, and `example_2_4_multiple_root` the multiple root; `cosSubOne_absCondNumberWithin` is
-the unnumbered example closing the section, where the first-order number underestimates the true
-one.
+## Implementation notes
 
-## Readings
+* Condition numbers take values in $[0, \infty]$ (`ℝ≥0∞`), as in the backbone, so that an infinite
+  condition number (Remark 2.1) is a value. The real values of the book appear through
+  `ENNReal.ofReal`.
+* `QuarteroniSaccoSaleri.Chapter02.definition_2_1_rel` and
+  `QuarteroniSaccoSaleri.Chapter02.definition_2_1_abs` are the backbone's
+  `Conditioning.relCondNumberOn` and `Conditioning.absCondNumberOn` by definition
+  (`QuarteroniSaccoSaleri.Chapter02.definition_2_1_rel_eq`,
+  `QuarteroniSaccoSaleri.Chapter02.definition_2_1_abs_eq`).
+* The first-order condition numbers `Conditioning.absCondNumber` and `Conditioning.relCondNumber`
+  are the limits, as $\eta \to 0^+$, of the condition numbers over the admissible perturbations of
+  size less than $\eta$. This is the quantity that the book's $\simeq$ in (2.7) computes.
 
-The book's `≃` in (2.7)–(2.11) is read as an equality for the first-order condition number, and
-the book's "the problem is thus ill posed if `x` is a multiple root" (Example 2.4) as infinite
-conditioning: the root may depend continuously on the datum, as the book's own Remark 2.1
-observes one page earlier. The book's real values appear through `ENNReal.ofReal`.
+## Deviations from the source
+
+* **Equations (2.7)–(2.11)** (reading). The book writes $\simeq$. The statements are equalities for
+  the first-order condition numbers. See `QuarteroniSaccoSaleri.Chapter02.equation_2_7_abs`.
+* **Example 2.4, multiple root** (reading). The book says that the problem is ill posed if $x$ is a
+  multiple root. This is read as infinite conditioning, because the root may depend continuously on
+  the datum (Remark 2.1). See `QuarteroniSaccoSaleri.Chapter02.example_2_4_multiple_root`.
 -/
 
 open Conditioning Filter Polynomial Set Topology
@@ -70,16 +112,20 @@ namespace QuarteroniSaccoSaleri.Chapter02
 
 /-! ### Example 2.1: counting real roots is ill posed -/
 
-/-- The polynomial `x⁴ - x²(2a - 1) + a(a - 1)` of Example 2.1, a real polynomial depending on
-the parameter `a`. -/
+/-- **Example 2.1** of [quarteroni2000numerical], the polynomial. For $a \in \mathbb{R}$, this is
+the real polynomial
+$$x^4 - x^2 (2a - 1) + a (a - 1) = (x^2 - a)(x^2 - (a - 1)).$$
+-/
 noncomputable def example_2_1_polynomial (a : ℝ) : ℝ[X] :=
   X ^ 4 - C (2 * a - 1) * X ^ 2 + C (a * (a - 1))
 
-/-- **Example 2.1.** The number of real roots of `x⁴ - x²(2a - 1) + a(a - 1)`, counted with
-multiplicity, is `4` if `a ≥ 1`, `2` if `a ∈ [0, 1)` and `0` if `a < 0`: it varies discontinuously
-as `a` varies continuously, so finding the number of real roots of a polynomial is an ill-posed
-problem. (The polynomial is `(x² - a)(x² - (a - 1))`; the book's counts are with multiplicity,
-`a = 1` giving `±1` and a double root `0`.) -/
+/-- **Example 2.1** of [quarteroni2000numerical]. Let $a \in \mathbb{R}$. The number of real roots
+of $x^4 - x^2(2a - 1) + a(a - 1)$, counted with multiplicity, is $4$ if $a \ge 1$, $2$ if
+$0 \le a < 1$, and $0$ if $a < 0$. The number changes discontinuously as $a$ varies
+continuously, so finding the number of real roots of a polynomial is an ill-posed problem.
+
+The polynomial is $(x^2 - a)(x^2 - (a - 1))$. The count is the cardinality of the multiset
+`Polynomial.roots`. At $a = 1$ the roots are $\pm 1$ and the double root $0$. -/
 theorem example_2_1 (a : ℝ) :
     Multiset.card (example_2_1_polynomial a).roots =
       if 1 ≤ a then 4 else if 0 ≤ a then 2 else 0 := by
@@ -95,43 +141,65 @@ section Definition21
 
 variable {D X : Type*} [NormedAddCommGroup D] [NormedAddCommGroup X]
 
-/-- **Definition 2.1, (2.4).** For the problem with resolvent `G : D → X`, the *relative condition
-number* at the datum `d` over the set `N` of admissible perturbations is
-`K(d) = sup_{δd ∈ N} (‖δx‖ / ‖x‖) / (‖δd‖ / ‖d‖)` with `x = G d` and `δx = G (d + δd) - G d`,
-the supremum taken over the nonzero perturbations and valued in `ℝ≥0∞`. This is the backbone's
-`Conditioning.relCondNumberOn` (`definition_2_1_rel_eq`). -/
+/-- **Definition 2.1** of [quarteroni2000numerical], equation (2.4). Let $D$ and $X$ be normed
+abelian groups, let $G : D \to X$ be the resolvent of a problem, let $N \subseteq D$ be a set of
+admissible perturbations, and let $d \in D$. With $x = G(d)$ and
+$\delta x = G(d + \delta d) - G(d)$, the **relative condition number** of the problem at $d$ is
+$$K(d) = \sup_{\delta d \in N,\ \delta d \neq 0} \frac{\|\delta x\| / \|x\|}{\|\delta d\| /
+  \|d\|}.$$
+
+The value is in $[0, \infty]$, and the quotients are computed in `ℝ≥0∞`, where $a / 0 = \infty$
+for $a \neq 0$ and $0 / 0 = 0$. This is the backbone's `Conditioning.relCondNumberOn`
+(`QuarteroniSaccoSaleri.Chapter02.definition_2_1_rel_eq`). -/
 noncomputable def definition_2_1_rel (G : D → X) (N : Set D) (d : D) : ℝ≥0∞ :=
   ⨆ (δd : D) (_ : δd ∈ N) (_ : δd ≠ 0), (‖G (d + δd) - G d‖ₑ / ‖G d‖ₑ) / (‖δd‖ₑ / ‖d‖ₑ)
 
-/-- Definition 2.1's relative condition number is the backbone's `Conditioning.relCondNumberOn`. -/
+/-- The relative condition number (2.4) of Definition 2.1 of [quarteroni2000numerical] is the
+backbone's relative condition number: `QuarteroniSaccoSaleri.Chapter02.definition_2_1_rel G N d`
+equals `Conditioning.relCondNumberOn G N d`. -/
 theorem definition_2_1_rel_eq (G : D → X) (N : Set D) (d : D) :
     definition_2_1_rel G N d = relCondNumberOn G N d :=
   rfl
 
-/-- **Definition 2.1, (2.5).** The *absolute condition number*
-`K_abs(d) = sup_{δd ∈ N} ‖δx‖ / ‖δd‖`, "necessary whenever `d = 0` or `x = 0`". This is the
-backbone's `Conditioning.absCondNumberOn` (`definition_2_1_abs_eq`). -/
+/-- **Definition 2.1** of [quarteroni2000numerical], equation (2.5). Let $G : D \to X$,
+$N \subseteq D$ and $d \in D$ be as in (2.4), with $\delta x = G(d + \delta d) - G(d)$. The
+**absolute condition number** of the problem at $d$ is
+$$K_{abs}(d) = \sup_{\delta d \in N,\ \delta d \neq 0} \frac{\|\delta x\|}{\|\delta d\|}.$$
+The book introduces it as "necessary whenever $d = 0$ or $x = 0$".
+
+The value is in $[0, \infty]$. This is the backbone's `Conditioning.absCondNumberOn`
+(`QuarteroniSaccoSaleri.Chapter02.definition_2_1_abs_eq`). -/
 noncomputable def definition_2_1_abs (G : D → X) (N : Set D) (d : D) : ℝ≥0∞ :=
   ⨆ (δd : D) (_ : δd ∈ N) (_ : δd ≠ 0), ‖G (d + δd) - G d‖ₑ / ‖δd‖ₑ
 
-/-- Definition 2.1's absolute condition number is the backbone's `Conditioning.absCondNumberOn`. -/
+/-- The absolute condition number (2.5) of Definition 2.1 of [quarteroni2000numerical] is the
+backbone's absolute condition number: `QuarteroniSaccoSaleri.Chapter02.definition_2_1_abs G N d`
+equals `Conditioning.absCondNumberOn G N d`. -/
 theorem definition_2_1_abs_eq (G : D → X) (N : Set D) (d : D) :
     definition_2_1_abs G N d = absCondNumberOn G N d :=
   rfl
 
-/-- The two numbers of Definition 2.1 differ by the scale factor `‖d‖ / ‖G d‖`:
-`K(d) = K_abs(d) · ‖d‖ / ‖x‖`. In `ℝ≥0∞` the identity holds without hypotheses; it is
-meaningful when `d ≠ 0` and `x ≠ 0`, which is why the book introduces the absolute number exactly
-when `d = 0` or `x = 0`. -/
+/-- The two condition numbers of Definition 2.1 of [quarteroni2000numerical] differ by a scale
+factor. For $G : D \to X$, $N \subseteq D$ and $d \in D$,
+$$K(d) = K_{abs}(d) \, \frac{\|d\|}{\|G(d)\|}.$$
+
+In `ℝ≥0∞` the identity holds without hypotheses. It is meaningful when $d \neq 0$ and
+$G(d) \neq 0$, which is why the book uses the absolute number when $d = 0$ or $x = 0$. -/
 theorem definition_2_1_rel_eq_abs_mul (G : D → X) (N : Set D) (d : D) :
     definition_2_1_rel G N d = definition_2_1_abs G N d * (‖d‖ₑ / ‖G d‖ₑ) :=
   relCondNumberOn_eq G N d
 
-/-- **(2.3) is finiteness of the condition number.** For the resolvent `G` on the admissible data
-`S` and a radius `η`, the continuous-dependence condition (2.3), "there is `K(η, d)` with
-`‖δd‖ < η ⇒ ‖δx‖ ≤ K(η, d) ‖δd‖`" for the admissible perturbations, holds iff the absolute
-condition number over the admissible perturbations of size `< η` is finite. The book's (2.3) is
-this for every `η > 0`. -/
+/-- **Equation (2.3)** of [quarteroni2000numerical], as finiteness of a condition number. Let
+$G : D \to X$ be the resolvent on the admissible data $S \subseteq D$, let $d \in D$ and let
+$\eta \in \mathbb{R}$. There is a constant $K \in \mathbb{R}$ with
+$$\|\delta d\| < \eta \text{ and } d + \delta d \in S \implies \|G(d + \delta d) - G(d)\| \le K
+  \|\delta d\|$$
+if and only if the absolute condition number of $G$ at $d$ over the admissible perturbations of
+size less than $\eta$ is finite.
+
+The book's condition (2.3) is this property for every $\eta > 0$. The condition number is
+`Conditioning.absCondNumberWithin G S d η`, which is `Conditioning.absCondNumberOn` over the set
+`Conditioning.perturbations S d η`. -/
 theorem equation_2_3_iff (G : D → X) (S : Set D) (d : D) (η : ℝ) :
     (∃ K : ℝ, ∀ δd, ‖δd‖ < η → d + δd ∈ S → ‖G (d + δd) - G d‖ ≤ K * ‖δd‖) ↔
       absCondNumberWithin G S d η ≠ ⊤ :=
@@ -146,23 +214,43 @@ section Equation27
 variable {D X : Type*} [NormedAddCommGroup D] [NormedSpace ℝ D] [NormedAddCommGroup X]
   [NormedSpace ℝ X] {G : D → X} {G' : D →L[ℝ] X} {d : D} {S : Set D}
 
-/-- **(2.7), absolute form.** If the resolvent `G` is differentiable at the datum `d`, an interior
-point of the admissible data `S`, then `K_abs(d) ≃ ‖G'(d)‖`: the first-order absolute condition
-number, the limit of the Lipschitz constant of `G` as the perturbation size tends to zero, is
-exactly the norm of the derivative. -/
+/-- **Equation (2.7)** of [quarteroni2000numerical], absolute form. Let $D$ and $X$ be real normed
+spaces, let $G : D \to X$ be the resolvent on the admissible data $S \subseteq D$, and let $S$
+be a neighbourhood of the datum $d$. If $G$ has the derivative $G'(d)$ at $d$, then
+$$K_{abs}(d) = \|G'(d)\|,$$
+where $K_{abs}(d)$ is the first-order absolute condition number.
+
+**Reading.** The book writes $K_{abs}(d) \simeq \|G'(d)\|$. The statement is an equality for the
+first-order absolute condition number, the limit as $\eta \to 0^+$ of the absolute condition
+number over the admissible perturbations of size less than $\eta$. The same reading applies to
+(2.8)–(2.11).
+
+The first-order number is `Conditioning.absCondNumber G S d`, and $\|G'(d)\|$ is the operator
+norm, taken in `ℝ≥0∞`. -/
 theorem equation_2_7_abs (hG : HasFDerivAt G G' d) (hS : S ∈ 𝓝 d) :
     absCondNumber G S d = ‖G'‖ₑ :=
   absCondNumber_eq_enorm_fderiv hG hS
 
-/-- **(2.7), relative form.** Under the same hypotheses, for `d ≠ 0` and `G d ≠ 0`,
-`K(d) ≃ ‖G'(d)‖ ‖d‖ / ‖G(d)‖`, as an equality for the first-order relative condition number. -/
+/-- **Equation (2.7)** of [quarteroni2000numerical], relative form. Under the hypotheses of
+`QuarteroniSaccoSaleri.Chapter02.equation_2_7_abs`, assume also $d \neq 0$ and $G(d) \neq 0$.
+Then the first-order relative condition number is
+$$K(d) = \|G'(d)\| \, \frac{\|d\|}{\|G(d)\|}.$$
+
+**Reading.** The book writes $\simeq$; the statement is an equality for the first-order
+condition number `Conditioning.relCondNumber G S d`. -/
 theorem equation_2_7_rel (hG : HasFDerivAt G G' d) (hS : S ∈ 𝓝 d) (hd : d ≠ 0) (hx : G d ≠ 0) :
     relCondNumber G S d = ‖G'‖ₑ * (‖d‖ₑ / ‖G d‖ₑ) :=
   relCondNumber_eq_enorm_fderiv hG hS hd hx
 
-/-- **(2.7), relative form, for a scalar datum.** For `G : ℝ → E` with derivative `v` at `d ≠ 0`
-and `G d ≠ 0`, `K(d) = ‖v‖ |d| / ‖G(d)‖`, in real numbers. This is how the Examples of the book
-read (2.7) when the datum is a single number. -/
+/-- **Equation (2.7)** of [quarteroni2000numerical], relative form for a scalar datum. Let $E$ be a
+real normed space, let $G : \mathbb{R} \to E$ have the derivative $v \in E$ at $d$, and assume
+$d \neq 0$ and $G(d) \neq 0$. With all of $\mathbb{R}$ as admissible data, the first-order
+relative condition number is the real number
+$$K(d) = \frac{\|v\| \, |d|}{\|G(d)\|}.$$
+This is how the examples of the book read (2.7) when the datum is a single number.
+
+**Reading.** The book writes $\simeq$; the statement is an equality for the first-order
+condition number. -/
 theorem equation_2_7_rel_deriv {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] {G : ℝ → E}
     {v : E} {d : ℝ} (hG : HasDerivAt G v d) (hd : d ≠ 0) (hx : G d ≠ 0) :
     relCondNumber G univ d = ENNReal.ofReal (‖v‖ * |d| / ‖G d‖) := by
@@ -172,9 +260,19 @@ theorem equation_2_7_rel_deriv {E : Type*} [NormedAddCommGroup E] [NormedSpace �
     Real.norm_eq_abs, mul_div_assoc]
 
 open scoped Matrix.Norms.L2Operator in
-/-- **(2.7) for `G : ℝⁿ → ℝᵐ`.** When the derivative of `G` at `d` is the Jacobian matrix `J`
-acting on Euclidean space, `K_abs(d) = ‖J‖`, "the matrix norm associated with the vector norm
-(1.19)": the `2`-operator norm of `J`. -/
+/-- **Equation (2.7)** of [quarteroni2000numerical], for $G : \mathbb{R}^n \to \mathbb{R}^m$. Let
+$S \subseteq \mathbb{R}^n$ be a neighbourhood of $d$. If $G$ is differentiable at $d$ and its
+derivative is the Jacobian matrix $J \in \mathbb{R}^{m \times n}$, then the first-order absolute
+condition number is
+$$K_{abs}(d) = \|J\|_2,$$
+the matrix norm associated with the vector norm (1.19).
+
+**Reading.** The book writes $\simeq$; the statement is an equality for the first-order
+condition number.
+
+The spaces are `EuclideanSpace ℝ (Fin n)` and `EuclideanSpace ℝ (Fin m)`, the derivative is
+`Matrix.toEuclideanLin J`, and $\|J\|_2$ is the operator norm of Mathlib's scoped
+`Matrix.Norms.L2Operator`. -/
 theorem equation_2_7_jacobian {m n : ℕ} {G : EuclideanSpace ℝ (Fin n) → EuclideanSpace ℝ (Fin m)}
     {J : Matrix (Fin m) (Fin n) ℝ} {d : EuclideanSpace ℝ (Fin n)}
     {S : Set (EuclideanSpace ℝ (Fin n))}
@@ -185,20 +283,25 @@ theorem equation_2_7_jacobian {m n : ℕ} {G : EuclideanSpace ℝ (Fin n) → Eu
 
 end Equation27
 
-/-! ### Example 2.2: the roots of `x² - 2px + 1` -/
+/-! ### Example 2.2: the roots of $x^2 - 2px + 1$ -/
 
-/-- The norm of a vector of `ℝ²` in the Euclidean norm `‖·‖₂`. -/
+/-- The Euclidean norm of $(a, b) \in \mathbb{R}^2$ is $\sqrt{a^2 + b^2}$. -/
 private theorem norm_fin_two (a b : ℝ) :
     ‖(!₂[a, b] : EuclideanSpace ℝ (Fin 2))‖ = √(a ^ 2 + b ^ 2) := by
   rw [EuclideanSpace.norm_eq]; simp [Fin.sum_univ_two]
 
-/-- The resolvent of Example 2.2: `G : ℝ → ℝ²`, `G(p) = (x₊, x₋)` with `x± = p ± √(p² - 1)` the
-roots of `x² - 2px + 1 = 0`. It is a genuine resolvent for `p ≥ 1`; `Real.sqrt` is `0` on
-negatives, so the map is total. -/
+/-- **Example 2.2** of [quarteroni2000numerical], the resolvent. This is the map
+$G : \mathbb{R} \to \mathbb{R}^2$, $G(p) = (x_+, x_-)$ with $x_\pm = p \pm \sqrt{p^2 - 1}$, the
+roots of $x^2 - 2px + 1 = 0$.
+
+It is a resolvent of the problem for $p \ge 1$. The map is total because `Real.sqrt` is $0$ on
+negative numbers. The values are in `EuclideanSpace ℝ (Fin 2)`, with the Euclidean norm. -/
 noncomputable def example_2_2_resolvent (p : ℝ) : EuclideanSpace ℝ (Fin 2) :=
   !₂[p + √(p ^ 2 - 1), p - √(p ^ 2 - 1)]
 
-/-- The derivative of the resolvent of Example 2.2 for `p > 1`: `G'±(p) = 1 ± p / √(p² - 1)`. -/
+/-- For $p > 1$, the resolvent $G$ of Example 2.2 of [quarteroni2000numerical] has the derivative
+$$G'(p) = \Bigl(1 + \frac{p}{\sqrt{p^2 - 1}},\ 1 - \frac{p}{\sqrt{p^2 - 1}}\Bigr).$$
+-/
 theorem example_2_2_hasDerivAt {p : ℝ} (hp : 1 < p) :
     HasDerivAt example_2_2_resolvent !₂[1 + p / √(p ^ 2 - 1), 1 - p / √(p ^ 2 - 1)] p := by
   have h1 : p ^ 2 - 1 ≠ 0 := by nlinarith
@@ -216,11 +319,18 @@ theorem example_2_2_hasDerivAt {p : ℝ} (hp : 1 < p) :
     · exact (hasDerivAt_id' p).sub hs
   exact (PiLp.hasFDerivAt_toLp 2 _).comp_hasDerivAt p hg
 
-/-- **Example 2.2, (2.8).** For `p > 1`, the relative condition number of the roots of
-`x² - 2px + 1 = 0` with respect to the coefficient `p`, in the Euclidean norm on `ℝ²`, is
-`K(p) = |p| / √(p² - 1)`. The book writes `≃`; in the `2`-norm, (2.7) gives an identity:
-`‖G'(p)‖² = 2(2p² - 1)/(p² - 1)`, `‖G(p)‖² = 4p² - 2`, and `‖G'(p)‖ |p| / ‖G(p)‖ = |p| / √(p² - 1)`.
--/
+/-- **Example 2.2** of [quarteroni2000numerical], equation (2.8). Let $p > 1$. In the Euclidean norm
+of $\mathbb{R}^2$, the first-order relative condition number of the roots of $x^2 - 2px + 1 = 0$
+with respect to the coefficient $p$ is
+$$K(p) = \frac{|p|}{\sqrt{p^2 - 1}}.$$
+
+**Reading.** The book writes $\simeq$. In the Euclidean norm, (2.7) gives an equality:
+$\|G'(p)\|^2 = 2(2p^2 - 1)/(p^2 - 1)$ and $\|G(p)\|^2 = 4p^2 - 2$, so $\|G'(p)\| \, |p| /
+\|G(p)\| = |p| / \sqrt{p^2 - 1}$.
+
+The condition number is `Conditioning.relCondNumber` of
+`QuarteroniSaccoSaleri.Chapter02.example_2_2_resolvent`, with all of $\mathbb{R}$ as admissible
+data. -/
 theorem example_2_2 {p : ℝ} (hp : 1 < p) :
     relCondNumber example_2_2_resolvent univ p = ENNReal.ofReal (|p| / √(p ^ 2 - 1)) := by
   have h1 : 0 < p ^ 2 - 1 := by nlinarith
@@ -242,8 +352,12 @@ theorem example_2_2 {p : ℝ} (hp : 1 < p) :
   rw [hA, Real.sqrt_div' _ (by positivity), Real.sqrt_sq hs.le]
   field_simp
 
-/-- **Example 2.2, separated roots.** "In the case of separated roots (say, if `p ≥ √2`) the
-problem is well conditioned": `K(p) ≤ √2`, since `|p| / √(p² - 1) ≤ √2 ⟺ 2 ≤ p²`. -/
+/-- **Example 2.2** of [quarteroni2000numerical], separated roots. If $p \ge \sqrt{2}$, then the
+first-order relative condition number of Example 2.2 satisfies $K(p) \le \sqrt{2}$. In the words
+of the book, "in the case of separated roots (say, if $p \ge \sqrt{2}$) the problem is well
+conditioned".
+
+The bound holds because $|p| / \sqrt{p^2 - 1} \le \sqrt{2}$ if and only if $2 \le p^2$. -/
 theorem example_2_2_le_sqrt_two {p : ℝ} (hp : √2 ≤ p) :
     relCondNumber example_2_2_resolvent univ p ≤ ENNReal.ofReal (√2) := by
   have h2 : (1 : ℝ) < √2 := by rw [Real.lt_sqrt] <;> norm_num
@@ -257,10 +371,14 @@ theorem example_2_2_le_sqrt_two {p : ℝ} (hp : √2 ≤ p) :
     ← Real.sqrt_mul (by norm_num), Real.le_sqrt (by linarith) (by nlinarith)]
   nlinarith
 
-/-- **Example 2.2, the reparametrized problem.** With `t = p + √(p² - 1)` the roots are `x₋ = t`
-and `x₊ = 1/t`, "regular functions of `t`", and (2.7) gives `K(t) ≃ 1` "for any value of `t`":
-here an identity, `‖G'(t)‖ |t| / ‖G(t)‖ = √(1 + t⁻⁴) |t| / √(t² + t⁻²) = 1`. The transformed
-problem is well conditioned, and at `t = 1` the double root is no longer singular. -/
+/-- **Example 2.2** of [quarteroni2000numerical], the reparametrized problem. With
+$t = p + \sqrt{p^2 - 1}$, the two roots are $t$ and $1/t$, regular functions of $t$. For
+$t \neq 0$, the map $t \mapsto (t, 1/t) \in \mathbb{R}^2$ has first-order relative condition
+number $1$ in the Euclidean norm. The transformed problem is well conditioned, and at $t = 1$
+the double root is no longer singular.
+
+**Reading.** The book writes $K(t) \simeq 1$ "for any value of $t$". Here (2.7) gives an
+equality: $\|G'(t)\| \, |t| / \|G(t)\| = \sqrt{1 + t^{-4}} \, |t| / \sqrt{t^2 + t^{-2}} = 1$. -/
 theorem example_2_2_reparam {t : ℝ} (ht : t ≠ 0) :
     relCondNumber (fun t : ℝ => (!₂[t, 1 / t] : EuclideanSpace ℝ (Fin 2))) univ t = 1 := by
   have hd : HasDerivAt (fun t : ℝ => (!₂[t, 1 / t] : EuclideanSpace ℝ (Fin 2)))
@@ -280,13 +398,17 @@ theorem example_2_2_reparam {t : ℝ} (ht : t ≠ 0) :
   congr 1
   field_simp
 
-/-- **Remark 2.1 (ill-posed problems).** "There exist well posed problems (for instance, the
-search of multiple roots of algebraic equations, see Example 2.2) for which the condition number
-is infinite": the roots of `x² - 2px + 1` depend continuously on `p` over the admissible data
-`[1, ∞)`, so the problem is well posed there, yet at the double root `p = 1` the absolute
-condition number is `⊤`. The second clause is the instance `φ(x₊) = (x₊² + 1) / (2x₊)`,
-`φ'(1) = 0`, of the backbone's `Conditioning.absCondNumber_eq_top_of_fderiv_eq_zero`, stated
-within `S = [1, ∞)` because the root exists only on one side of `p = 1`. -/
+/-- **Remark 2.1** of [quarteroni2000numerical] (ill-posed problems). The resolvent of Example 2.2
+is continuous on $[1, \infty)$, so the problem is well posed for the admissible data $p \ge 1$.
+Yet at the double root $p = 1$, the first-order absolute condition number within $[1, \infty)$
+is infinite. This is the remark of the book that "there exist well posed problems (for instance,
+the search of multiple roots of algebraic equations, see Example 2.2) for which the condition
+number is infinite".
+
+The second clause is an instance of the backbone's
+`Conditioning.absCondNumber_eq_top_of_fderiv_eq_zero` with $\varphi(x_+) = (x_+^2 + 1)/(2 x_+)$
+and $\varphi'(1) = 0$. It is stated within $S = [1, \infty)$, because the roots exist only on
+one side of $p = 1$. -/
 theorem remark_2_1 :
     ContinuousOn example_2_2_resolvent (Ici 1) ∧
       absCondNumber example_2_2_resolvent (Ici 1) 1 = ⊤ := by
@@ -321,10 +443,17 @@ open scoped Matrix.Norms.L2Operator
 
 variable {n : ℕ} {A : Matrix (Fin n) (Fin n) ℝ}
 
-/-- **Example 2.3, the first equality of (2.9).** For a nonsingular `A` and `b ≠ 0`, the problem
-`A x = b` perturbed in the right-hand side `b` alone has resolvent `G(b) = A⁻¹ b`, `G'(b) = A⁻¹`,
-and (2.7) gives `K(b) = ‖A⁻¹‖ ‖b‖ / ‖A⁻¹ b‖` in the Euclidean norms — the `2`-operator norm of
-`A⁻¹` and the `2`-norm of the vectors. -/
+/-- **Example 2.3** of [quarteroni2000numerical], the first equality of (2.9). Let
+$A \in \mathbb{R}^{n \times n}$ be nonsingular and let $b \in \mathbb{R}^n$, $b \neq 0$. The
+problem $Ax = b$, perturbed in the right-hand side $b$ only, has the resolvent $G(b) = A^{-1} b$
+with $G'(b) = A^{-1}$. In the Euclidean norms, its first-order relative condition number is
+$$K(b) = \|A^{-1}\|_2 \, \frac{\|b\|_2}{\|A^{-1} b\|_2}.$$
+
+**Reading.** The book writes $\simeq$; the statement is an equality for the first-order
+condition number.
+
+The resolvent is `Matrix.toEuclideanCLM A⁻¹`, all of $\mathbb{R}^n$ is admissible, and
+$\|A^{-1}\|_2$ is the operator norm of Mathlib's scoped `Matrix.Norms.L2Operator`. -/
 theorem example_2_3_eq (hA : IsUnit A) {b : EuclideanSpace ℝ (Fin n)} (hb : b ≠ 0) :
     relCondNumber (Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) A⁻¹) univ b =
       ENNReal.ofReal (‖A⁻¹‖ * ‖b‖ / ‖Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) A⁻¹ b‖) := by
@@ -339,10 +468,15 @@ theorem example_2_3_eq (hA : IsUnit A) {b : EuclideanSpace ℝ (Fin n)} (hb : b 
     ← ofReal_norm, ← ofReal_norm, ← ENNReal.ofReal_div_of_pos (norm_pos_iff.2 hAb),
     ← ENNReal.ofReal_mul (norm_nonneg _), Matrix.cstar_norm_def, mul_div_assoc]
 
-/-- **Example 2.3, (2.9).** For a nonsingular `A` and `b ≠ 0`,
-`K(b) ≃ ‖A⁻¹‖ ‖b‖ / ‖A⁻¹ b‖ ≤ ‖A‖ ‖A⁻¹‖ = K(A)`, the condition number of the matrix `A` in the
-Euclidean operator norm: "if `A` is well conditioned, solving the linear system `A x = b` is a
-stable problem with respect to perturbations of the right-hand side `b`". -/
+/-- **Example 2.3** of [quarteroni2000numerical], equation (2.9). Let
+$A \in \mathbb{R}^{n \times n}$ be nonsingular and let $b \in \mathbb{R}^n$, $b \neq 0$. The
+first-order relative condition number of the problem $Ax = b$ with respect to $b$ satisfies
+$$K(b) \le \|A\|_2 \|A^{-1}\|_2 = K(A),$$
+the condition number of $A$ in the Euclidean operator norm. In the words of the book, "if $A$ is
+well conditioned, solving the linear system $Ax = b$ is a stable problem with respect to
+perturbations of the right-hand side $b$".
+
+$K(A)$ is `NormedRing.condNumber A` for the scoped `Matrix.Norms.L2Operator` norm. -/
 theorem example_2_3 (hA : IsUnit A) {b : EuclideanSpace ℝ (Fin n)} (hb : b ≠ 0) :
     relCondNumber (Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) A⁻¹) univ b ≤
       ENNReal.ofReal (NormedRing.condNumber A) := by
@@ -373,18 +507,32 @@ section Example24
 
 variable {φ G : ℝ → ℝ} {d : ℝ}
 
-/-- **Example 2.4, (2.11).** For the nonlinear equation `φ(x) - d = 0` with `φ` of class `C¹`,
-invertible near `d` with continuous local inverse `G = φ⁻¹` (so `φ (G y) = y` near `d`), and a
-simple root, `φ'(x) ≠ 0` at `x = G d`: `K_abs(d) ≃ |[φ'(x)]⁻¹|`. The problem "is ill conditioned
-when `φ'(x)` is small, well conditioned when `φ'(x)` is large". -/
+/-- **Example 2.4** of [quarteroni2000numerical], equation (2.11). Let
+$\varphi : \mathbb{R} \to \mathbb{R}$ be of class $C^1$, consider the equation $\varphi(x) = d$,
+and let $G : \mathbb{R} \to \mathbb{R}$ be continuous at $d$ with $\varphi(G(y)) = y$ for all
+$y$ near $d$. If the root $x = G(d)$ is simple, $\varphi'(x) \neq 0$, then the first-order
+absolute condition number is
+$$K_{abs}(d) = |\varphi'(x)|^{-1}.$$
+The problem "is ill conditioned when $\varphi'(x)$ is small, well conditioned when $\varphi'(x)$
+is large".
+
+**Reading.** The book writes $\simeq$; the statement is an equality for the first-order
+condition number, with all of $\mathbb{R}$ as admissible data.
+
+$G$ is a continuous local inverse of $\varphi$ near $d$. -/
 theorem example_2_4 (hφ : ContDiff ℝ 1 φ) (hG : ContinuousAt G d)
     (hinv : ∀ᶠ y in 𝓝 d, φ (G y) = y) (hφ' : deriv φ (G d) ≠ 0) :
     absCondNumber G univ d = ENNReal.ofReal |deriv φ (G d)|⁻¹ := by
   rw [absCondNumber_of_local_left_inverse hG (ContDiffAt.hasStrictDerivAt hφ.contDiffAt one_ne_zero)
     hφ' hinv, ← ofReal_norm, Real.norm_eq_abs, ENNReal.ofReal_inv_of_pos (abs_pos.2 hφ')]
 
-/-- **Example 2.4, (2.10).** Under the hypotheses of `example_2_4`, for `d ≠ 0` and a nonzero
-root `x = G d`, the relative condition number is `K(d) ≃ (|d| / |x|) |[φ'(x)]⁻¹|`. -/
+/-- **Example 2.4** of [quarteroni2000numerical], equation (2.10). Under the hypotheses of
+`QuarteroniSaccoSaleri.Chapter02.example_2_4`, assume also $d \neq 0$ and $x = G(d) \neq 0$.
+Then the first-order relative condition number is
+$$K(d) = \frac{|d|}{|x|} \, |\varphi'(x)|^{-1}.$$
+
+**Reading.** The book writes $\simeq$; the statement is an equality for the first-order
+condition number. -/
 theorem example_2_4_rel (hφ : ContDiff ℝ 1 φ) (hG : ContinuousAt G d)
     (hinv : ∀ᶠ y in 𝓝 d, φ (G y) = y) (hφ' : deriv φ (G d) ≠ 0) (hd : d ≠ 0) (hx : G d ≠ 0) :
     relCondNumber G univ d = ENNReal.ofReal (|d| / |G d| * |deriv φ (G d)|⁻¹) := by
@@ -393,10 +541,13 @@ theorem example_2_4_rel (hφ : ContDiff ℝ 1 φ) (hG : ContinuousAt G d)
     Real.norm_eq_abs, Real.norm_eq_abs, ← ENNReal.ofReal_inv_of_pos (abs_pos.2 hφ'),
     ← ENNReal.ofReal_div_of_pos (abs_pos.2 hx), ← ENNReal.ofReal_mul (by positivity), mul_comm]
 
-/-- **Example 2.4, the multiple root.** With `φ`, `G` as in `example_2_4` but `φ'(x) = 0` at the
-root `x = G d`, the absolute condition number is infinite: `K_abs(d) = ⊤`. The book says "the
-problem is thus ill posed if `x` is a multiple root"; read as infinite conditioning, since `G`
-is continuous by hypothesis and the problem may well be well posed (Remark 2.1). -/
+/-- **Example 2.4** of [quarteroni2000numerical], the multiple root. Let $\varphi$ and $G$ be as in
+`QuarteroniSaccoSaleri.Chapter02.example_2_4`, but with $\varphi'(x) = 0$ at the root
+$x = G(d)$. Then the first-order absolute condition number is infinite, $K_{abs}(d) = \infty$.
+
+**Reading.** The book says "the problem is thus ill posed if $x$ is a multiple root". The
+statement reads this as infinite conditioning: $G$ is continuous at $d$ by hypothesis, so the
+problem may be well posed, as Remark 2.1 observes. -/
 theorem example_2_4_multiple_root (hφ : ContDiff ℝ 1 φ) (hG : ContinuousAt G d)
     (hinv : ∀ᶠ y in 𝓝 d, φ (G y) = y) (hφ' : deriv φ (G d) = 0) :
     absCondNumber G univ d = ⊤ := by
@@ -410,14 +561,20 @@ end Example24
 
 /-! ### The first-order condition number can underestimate the true one -/
 
-/-- **The example closing §2.1.** The first-order absolute condition number `‖G'(d)‖` "does not
-always provide a sound estimate of the condition number `K_abs(d)`": for `G(d) = cos d - 1` on
-`(-π/2, π/2)`, `G'(0) = 0` while `K_abs(0) = 2/π`. Here the latter is the absolute condition
-number over the perturbations `|δd| < π/2`: the ratio `(1 - cos δd) / |δd|` is bounded by `2/π`
-(the chord of the convex function `1 - cos` from `0` to `π/2`) and tends to `2/π` as
-`δd → π/2`, so the supremum over the open interval is `2/π`, not attained. Consistent with the
-backbone's `Conditioning.enorm_fderiv_le_absCondNumberWithin`, `0 ≤ 2/π`, and with
-`Conditioning.absCondNumber G univ 0 = 0` from (2.7). -/
+/-- **Section 2.1** of [quarteroni2000numerical], the example that closes the section. Let
+$G(d) = \cos d - 1$. The absolute condition number of $G$ at $d = 0$ over the perturbations with
+$|\delta d| < \pi/2$ is
+$$K_{abs}(0) = \frac{2}{\pi},$$
+while $G'(0) = 0$. So the first-order absolute condition number $\|G'(d)\|$ "does not always
+provide a sound estimate of the condition number $K_{abs}(d)$".
+
+The ratio $(1 - \cos \delta d) / |\delta d|$ is bounded by $2/\pi$, the slope of the chord of
+the convex function $1 - \cos$ from $0$ to $\pi/2$, and it tends to $2/\pi$ as
+$\delta d \to \pi/2$. So the supremum over the open interval is $2/\pi$, and it is not attained.
+The condition number is `Conditioning.absCondNumberWithin` with all of $\mathbb{R}$ as
+admissible data. The result agrees with the backbone's
+`Conditioning.enorm_fderiv_le_absCondNumberWithin`, since $0 \le 2/\pi$, and with the
+first-order value `Conditioning.absCondNumber G univ 0 = 0` from (2.7). -/
 theorem cosSubOne_absCondNumberWithin :
     absCondNumberWithin (fun d : ℝ => Real.cos d - 1) univ 0 (π / 2) =
       ENNReal.ofReal (2 / π) := by

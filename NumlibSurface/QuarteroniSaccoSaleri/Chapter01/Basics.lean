@@ -10,58 +10,126 @@ import Numlib.LinearAlgebra.Matrix.Rank
 import Numlib.LinearAlgebra.Matrix.TridiagonalToeplitz
 
 /-!
-# Quarteroni–Sacco–Saleri §1.1–1.6: vector spaces, matrices, determinants, rank, special shapes
+# Quarteroni, Sacco and Saleri, Sections 1.1–1.6: Vector spaces and matrices
 
-Surface file for Alfio Quarteroni, Riccardo Sacco and Fausto Saleri, *Numerical Mathematics*
-[quarteroni2000numerical], §1.1–1.6. These sections recall the linear algebra the rest of the
-book cites, and almost every numbered item is one of Mathlib's own structures, restated here in
-the book's notation.
+This module formalizes §1.1–1.6 of [quarteroni2000numerical]. These sections recall the linear
+algebra that the rest of the book uses: linear independence, bases and dimension of a vector space;
+the inverse of a square matrix; matrices as linear maps; operations on block-partitioned matrices;
+the determinant and the Laplace rule; the rank and the kernel of a matrix; and the special shapes of
+matrices (block diagonal, triangular, trapezoidal, banded, tridiagonal and Hessenberg). Almost every
+numbered item of these sections is a structure of Mathlib, and the declarations here restate the
+book's items in the book's notation.
 
-## What carries no declaration
+The proofs use Mathlib and the backbone modules `Numlib.LinearAlgebra.Matrix.Rank` (the rank as the
+maximal order of a nonvanishing minor), `Numlib.LinearAlgebra.Matrix.BlockDiagonal`,
+`Numlib.LinearAlgebra.Matrix.Band` and `Numlib.LinearAlgebra.Matrix.Hessenberg` (banded, tridiagonal
+and Hessenberg shapes), and `Numlib.LinearAlgebra.Matrix.TridiagonalToeplitz`.
 
-The numbered items that *are* Mathlib definitions: Definition 1.1 (`Module K V`), 1.2
-(`Submodule`, `Submodule.span`, the direct sum `IsCompl`/`DirectSum.IsInternal`), 1.4
-(`Matrix.submatrix` along strictly monotone maps — the book's "contiguous" is a slip, only
-increasing is meant), 1.5 (`Matrix.fromBlocks`, `Matrix.blockDiagonal'`), 1.7
-(`Matrix.transpose`), 1.8 (`Matrix.conjTranspose`), 1.9 (`Matrix.IsSymm`, `Aᵀ = -A`,
-`Matrix.orthogonalGroup`), 1.10 (`Matrix.IsHermitian`, `Matrix.unitaryGroup`, `IsStarNormal`),
-1.11 (`LinearMap`); the elementary matrices of §1.3 (`Equiv.Perm.permMatrix`, `Matrix.swap`,
-`Matrix.transvection`); the trace and determinant of §1.4 with their listed properties
-(`Matrix.trace`, `Matrix.det_apply`, `Matrix.det_transpose`, `Matrix.det_mul`,
-`Matrix.det_nonsing_inv`, `Matrix.det_conjTranspose`, `Matrix.det_smul`,
-`Matrix.det_zero_of_row_eq`, `Matrix.det_permute`, `Matrix.det_diagonal`,
-`Matrix.isUnit_iff_isUnit_det`, `Matrix.inv_diagonal`, `Matrix.det_of_mem_unitary`); the range
-and kernel of §1.5 (`LinearMap.range`, `LinearMap.ker` of `Matrix.mulVecLin`). Examples 1.1 and
-1.2 are prose.
+## Main definitions
 
-## What does
+* Definition 1.1: a vector space over a field $K$ is Mathlib's `Module K V`; it has no declaration
+  here.
+* Definition 1.2: a subspace, the span of a family and the direct sum are Mathlib's `Submodule`,
+  `Submodule.span`, and `IsCompl` or `DirectSum.IsInternal`; they have no declaration here.
+* Definition 1.3, `QuarteroniSaccoSaleri.Chapter01.definition_1_3`: linear independence of a family
+  of vectors, and the components of a vector with respect to a basis.
+* Definition 1.4: a submatrix is Mathlib's `Matrix.submatrix` along strictly monotone maps of the
+  indices; it has no declaration here.
+* Definition 1.5: a block-partitioned and a block diagonal matrix are Mathlib's `Matrix.fromBlocks`
+  and `Matrix.blockDiagonal'`; they have no declaration here.
+* Definition 1.6, `QuarteroniSaccoSaleri.Chapter01.definition_1_6`: an invertible matrix and its
+  inverse.
+* Definitions 1.7 and 1.8: the transpose and the conjugate transpose are Mathlib's
+  `Matrix.transpose` and `Matrix.conjTranspose`; they have no declaration here.
+* Definition 1.9: symmetric, skew-symmetric ($A^T = -A$) and orthogonal matrices are Mathlib's
+  `Matrix.IsSymm`, the equation `Aᵀ = -A`, and `Matrix.orthogonalGroup`; they have no declaration
+  here.
+* Definition 1.10: Hermitian, unitary and normal matrices are Mathlib's `Matrix.IsHermitian`,
+  `Matrix.unitaryGroup` and `IsStarNormal`; they have no declaration here.
+* Definition 1.11: a linear map is Mathlib's `LinearMap`; it has no declaration here.
+* Example 1.4, `QuarteroniSaccoSaleri.Chapter01.example_1_4_matrix`: the rotation matrix
+  $G(\theta)$.
+* Definition 1.12, `QuarteroniSaccoSaleri.Chapter01.definition_1_12`: the rank as the maximal order
+  of a nonvanishing minor, stated as a theorem about Mathlib's `Matrix.rank`.
 
-* `definition_1_3`, `property_1_1`, `example_1_3` — linear independence, bases and dimension.
-* `definition_1_6`, `property_1_2` — invertibility and its characterization by the columns.
-* `permMatrix_mem_orthogonalGroup` — the elementary permutation matrices (1.2) and the remark
-  after Definition 1.9 that permutation matrices are orthogonal.
-* `property_1_3`, `example_1_4` — matrices as linear maps; the rotation matrix, with the sign
-  erratum recorded (`G(θ)` as printed is the rotation by `-θ`).
-* `property_1_4` — block operations, in the `2 × 2` block form to which the general partition
-  reduces.
-* `equation_1_4` — the Laplace rule and the cofactor formula for the inverse.
-* `definition_1_12` — the rank as the maximal order of a nonvanishing minor, a theorem against
-  Mathlib's `Matrix.rank`.
-* `rank_transpose`, `rank_add_finrank_ker`, `example_1_5` — the two relations of §1.5 and the
-  worked example.
-* `nonsingular_tfae` — the five equivalent forms of nonsingularity, with "no null eigenvalue"
-  from §1.7.
-* `det_blockDiagonal'`, `det_of_isTriangular`, `isTriangular_inv_mul`, `isUpperTrapezoidal_mul`,
-  `isUnitTriangular_mul` — §1.6.1–1.6.2.
-* `hasBandwidth_iff_shape`, `isTridiagonal_tridiag` — the banded vocabulary of §1.6.3 as
-  instances of the backbone's `Matrix.HasLowerBandwidth`/`Matrix.HasUpperBandwidth`.
+## Main results
+
+* Definition 1.3, `QuarteroniSaccoSaleri.Chapter01.definition_1_3`: the characterization of linear
+  independence by the vanishing of the coefficients, and the decomposition of a vector in a basis.
+* Property 1.1, `QuarteroniSaccoSaleri.Chapter01.property_1_1`: if $V$ has a basis of $n$ vectors,
+  then $\dim V = n$, every linearly independent family has at most $n$ elements, and every basis has
+  $n$ elements.
+* Example 1.3, `QuarteroniSaccoSaleri.Chapter01.example_1_3`: the space of $n$-vectors has dimension
+  $n$, with the unit vectors as a basis.
+* Definition 1.6, `QuarteroniSaccoSaleri.Chapter01.definition_1_6`: the inverse of an invertible
+  matrix is invertible, and $(AB)^{-1} = B^{-1} A^{-1}$.
+* Property 1.2, `QuarteroniSaccoSaleri.Chapter01.property_1_2`: a square matrix is invertible if and
+  only if its columns are linearly independent.
+* Equation (1.2), `QuarteroniSaccoSaleri.Chapter01.permMatrix_mem_orthogonalGroup`: the elementary
+  permutation matrix exchanges two rows, and permutation matrices and their products are orthogonal.
+* Property 1.3, `QuarteroniSaccoSaleri.Chapter01.property_1_3`: linear maps
+  $\mathbb{C}^n \to \mathbb{C}^m$ correspond to matrices in $\mathbb{C}^{m \times n}$.
+* Example 1.4, `QuarteroniSaccoSaleri.Chapter01.example_1_4`: $G(\theta)$ is orthogonal with
+  determinant $1$, and it is the rotation by the angle $-\theta$.
+* Property 1.4, `QuarteroniSaccoSaleri.Chapter01.property_1_4`: scalar multiplication,
+  transposition, addition and multiplication of block-partitioned matrices act block by block.
+* Equation (1.4), `QuarteroniSaccoSaleri.Chapter01.equation_1_4`: the Laplace rule for the
+  determinant, and the cofactor formula for the inverse.
+* §1.5, `QuarteroniSaccoSaleri.Chapter01.rank_transpose`: the rank is the dimension of the range,
+  and $\operatorname{rank} A = \operatorname{rank} A^T$.
+* §1.5, `QuarteroniSaccoSaleri.Chapter01.rank_add_finrank_ker`:
+  $\operatorname{rank} A + \dim \ker A = n$.
+* Example 1.5, `QuarteroniSaccoSaleri.Chapter01.example_1_5`: the rank and the kernel dimensions of
+  one $2 \times 3$ matrix.
+* §1.5, `QuarteroniSaccoSaleri.Chapter01.nonsingular_tfae`: six equivalent forms of nonsingularity.
+* §1.6.1, `QuarteroniSaccoSaleri.Chapter01.det_blockDiagonal'`: the determinant of a block diagonal
+  matrix is the product of the determinants of the blocks.
+* §1.6.2, `QuarteroniSaccoSaleri.Chapter01.det_of_isTriangular`: the determinant of a triangular
+  matrix is the product of its diagonal entries.
+* §1.6.2, `QuarteroniSaccoSaleri.Chapter01.isTriangular_inv_mul`: inverses and products of lower
+  (upper) triangular matrices are lower (upper) triangular.
+* §1.6.2, `QuarteroniSaccoSaleri.Chapter01.isUpperTrapezoidal_mul`: products of upper (lower)
+  trapezoidal matrices are upper (lower) trapezoidal.
+* §1.6.2, `QuarteroniSaccoSaleri.Chapter01.isUnitTriangular_mul`: products of unit lower (upper)
+  triangular matrices are unit lower (upper) triangular.
+* §1.6.3, `QuarteroniSaccoSaleri.Chapter01.hasBandwidth_iff_shape`: the diagonal, triangular,
+  tridiagonal, bidiagonal and Hessenberg shapes in terms of the lower and upper bands.
+* §1.6.3, `QuarteroniSaccoSaleri.Chapter01.isTridiagonal_tridiag`: the matrices
+  $\mathrm{tridiag}_n(b, d, c)$ and $\mathrm{tridiag}_n(\beta, \delta, \gamma)$ are tridiagonal.
 
 ## Conventions
 
-Indices are `0`-based (`Fin n`). The book's `ℝⁿ` is `Fin n → ℝ` and `A x` is `A *ᵥ x`. The
-backbone's bandwidth predicates are for square matrices over a linearly ordered index type
-(`Numlib/LinearAlgebra/Matrix/Band`), which is where the book uses them; the rectangular
-trapezoidal shapes of §1.6.2 are stated directly.
+* Indices are 0-based. A vector $x \in \mathbb{R}^n$ is `x : Fin n → ℝ`, and the product $Ax$ is
+  `A *ᵥ x`.
+
+## Implementation notes
+
+* The elementary matrices of §1.3 are Mathlib's `Equiv.Perm.permMatrix`, `Matrix.swap` and
+  `Matrix.transvection`. The trace and the determinant of §1.4, with their listed properties, are
+  Mathlib's `Matrix.trace`, `Matrix.det_apply`, `Matrix.det_transpose`, `Matrix.det_mul`,
+  `Matrix.det_nonsing_inv`, `Matrix.det_conjTranspose`, `Matrix.det_smul`,
+  `Matrix.det_zero_of_row_eq`, `Matrix.det_permute`, `Matrix.det_diagonal`,
+  `Matrix.isUnit_iff_isUnit_det`, `Matrix.inv_diagonal` and `Matrix.det_of_mem_unitary`. The range
+  and the kernel of §1.5 are `LinearMap.range` and `LinearMap.ker` of `Matrix.mulVecLin`. These
+  items have no declaration here.
+* The bandwidth predicates of the backbone, `Matrix.HasLowerBandwidth` and
+  `Matrix.HasUpperBandwidth` in `Numlib.LinearAlgebra.Matrix.Band`, are defined for square matrices
+  over a linearly ordered index type. This is where the book uses them. The rectangular trapezoidal
+  shapes of §1.6.2 are stated directly by the vanishing of entries.
+
+## Deviations from the source
+
+* **Definition 1.4** (typo). The book calls the selected rows and columns of a submatrix
+  "contiguous"; only increasing indices are meant. Mathlib's `Matrix.submatrix` along strictly
+  monotone maps is used.
+* **Example 1.4** (correction). The book calls $G(\theta)$ the counterclockwise rotation by
+  $\theta$; as printed, $G(\theta)$ is the rotation by $-\theta$. See
+  `QuarteroniSaccoSaleri.Chapter01.example_1_4`.
+
+## Not formalized
+
+* **Examples 1.1 and 1.2.** They are prose.
+* **Example 1.3, second clause.** The space $C^p([a, b])$ is infinite-dimensional.
 -/
 
 open Finset Matrix
@@ -74,19 +142,26 @@ section VectorSpaces
 
 variable {K V : Type*} [Field K] [AddCommGroup V] [Module K V]
 
-/-- **Definition 1.3.** A system `v₁, …, vₘ` of vectors is *linearly independent* when
-`α₁ v₁ + ⋯ + αₘ vₘ = 0` forces `α₁ = ⋯ = αₘ = 0` (Mathlib's `LinearIndependent`, through
-`Fintype.linearIndependent_iff`); a *basis* is a linearly independent system of generators
-(`Module.Basis`), and the *components* of `u` with respect to the basis `b` are the coefficients
-`b.repr u i` of its decomposition `u = ∑ i, (b.repr u i) • b i`. -/
+/-- **Definition 1.3** of [quarteroni2000numerical]. Let $V$ be a vector space over a field $K$. A
+system $v_1, \dots, v_m$ of vectors of $V$ is **linearly independent** if and only if
+$\alpha_1 v_1 + \dots + \alpha_m v_m = 0$ implies $\alpha_1 = \dots = \alpha_m = 0$. If
+$b_1, \dots, b_n$ is a basis of $V$ and $u \in V$, then $u = \sum_i u_i b_i$, where the
+**components** $u_i$ of $u$ with respect to the basis are the coefficients of its decomposition.
+
+Linear independence is Mathlib's `LinearIndependent`, and a basis is `Module.Basis`: a linearly
+independent system of generators. The component $u_i$ is `b.repr u i`. The proof uses
+`Fintype.linearIndependent_iff`. -/
 theorem definition_1_3 {m n : ℕ} (v : Fin m → V) (b : Module.Basis (Fin n) K V) (u : V) :
     (LinearIndependent K v ↔ ∀ α : Fin m → K, ∑ i, α i • v i = 0 → ∀ i, α i = 0) ∧
       ∑ i, b.repr u i • b i = u :=
   ⟨Fintype.linearIndependent_iff, b.sum_repr u⟩
 
-/-- **Property 1.1.** If `V` admits a basis of `n` vectors, then every linearly independent
-system of vectors of `V` has at most `n` elements and any other basis of `V` has `n` elements;
-the number `n = dim V` is the *dimension* of `V` (Mathlib's `Module.finrank`). -/
+/-- **Property 1.1** of [quarteroni2000numerical]. Let $V$ be a vector space over a field $K$ with a
+basis of $n$ vectors. Then the **dimension** $\dim V$ is $n$, every linearly independent finite
+system of vectors of $V$ has at most $n$ elements, and every other finite basis of $V$ has $n$
+elements.
+
+The dimension is Mathlib's `Module.finrank`. -/
 theorem property_1_1 {n : ℕ} (b : Module.Basis (Fin n) K V) :
     Module.finrank K V = n ∧
       (∀ {ι : Type*} [Fintype ι] {v : ι → V}, LinearIndependent K v → Fintype.card ι ≤ n) ∧
@@ -98,9 +173,13 @@ theorem property_1_1 {n : ℕ} (b : Module.Basis (Fin n) K V) :
 
 end VectorSpaces
 
-/-- **Example 1.3.** `ℝⁿ` and `ℂⁿ` have dimension `n`, and the usual basis is the set of unit
-vectors `e₁, …, eₙ` with `(eᵢ)ⱼ = δᵢⱼ` (`Pi.basisFun`). The book's other clause, that
-`C^p([a, b])` is infinite-dimensional, is not restated. -/
+/-- **Example 1.3** of [quarteroni2000numerical]. Let $\mathbb{K}$ be a field. The space
+$\mathbb{K}^n$ has dimension $n$, and its usual basis is the system of unit vectors
+$e_1, \dots, e_n$ with $(e_i)_j = \delta_{ij}$.
+
+The book states this for $\mathbb{R}^n$ and $\mathbb{C}^n$; here $\mathbb{K}$ is any field. The
+usual basis is Mathlib's `Pi.basisFun`. The book's other clause, that $C^p([a, b])$ is
+infinite-dimensional, is not formalized. -/
 theorem example_1_3 (𝕜 : Type*) [Field 𝕜] (n : ℕ) :
     Module.finrank 𝕜 (Fin n → 𝕜) = n ∧
       ∀ i j : Fin n, Pi.basisFun 𝕜 (Fin n) i j = if i = j then 1 else 0 :=
@@ -112,10 +191,13 @@ section Inverse
 
 variable {𝕜 : Type*} [Field 𝕜] {n : ℕ}
 
-/-- **Definition 1.6.** A square matrix `A` is *invertible* (regular, nonsingular) when there is
-a `B` with `A B = B A = I` (Mathlib's `IsUnit A`); `B` is the inverse `A⁻¹`. If `A` is invertible
-its inverse is invertible with `(A⁻¹)⁻¹ = A`, and if `A` and `B` are invertible so is `A B`, with
-`(A B)⁻¹ = B⁻¹ A⁻¹`. -/
+/-- **Definition 1.6** of [quarteroni2000numerical]. Let $A$ and $B$ be square matrices of order $n$
+over a field. The matrix $A$ is **invertible** (or regular, or nonsingular) if and only if there
+is a matrix $B$ with $AB = BA = I$; then $B$ is the inverse $A^{-1}$. If $A$ is invertible, then
+$A A^{-1} = A^{-1} A = I$, $A^{-1}$ is invertible, and $(A^{-1})^{-1} = A$. If $A$ and $B$ are
+invertible, then $AB$ is invertible and $(AB)^{-1} = B^{-1} A^{-1}$.
+
+Invertibility is Mathlib's `IsUnit A`, and the inverse is Mathlib's `A⁻¹`. -/
 theorem definition_1_6 (A B : Matrix (Fin n) (Fin n) 𝕜) :
     ((∃ B, A * B = 1 ∧ B * A = 1) ↔ IsUnit A) ∧
       (IsUnit A → A * A⁻¹ = 1 ∧ A⁻¹ * A = 1 ∧ IsUnit A⁻¹ ∧ A⁻¹⁻¹ = A) ∧
@@ -125,19 +207,27 @@ theorem definition_1_6 (A B : Matrix (Fin n) (Fin n) 𝕜) :
   exact ⟨mul_nonsing_inv A hd, nonsing_inv_mul A hd, isUnit_nonsing_inv_iff.2 hA,
     nonsing_inv_nonsing_inv A hd⟩
 
-/-- **Property 1.2.** A square matrix is invertible iff its column vectors are linearly
-independent (`Matrix.linearIndependent_cols_iff_isUnit`). -/
+/-- **Property 1.2** of [quarteroni2000numerical]. A square matrix over a field is invertible if and
+only if its column vectors are linearly independent.
+
+The proof is Mathlib's `Matrix.linearIndependent_cols_iff_isUnit`. -/
 theorem property_1_2 (A : Matrix (Fin n) (Fin n) 𝕜) :
     IsUnit A ↔ LinearIndependent 𝕜 A.col :=
   linearIndependent_col_iff_isUnit.symm
 
 end Inverse
 
-/-- **§1.3, (1.2), and the remark after Definition 1.9.** The elementary permutation matrix
-`P^{(i,j)}` of (1.2) is `Matrix.swap ℝ i j = (Equiv.swap i j).permMatrix ℝ`, and
-pre-multiplying by it exchanges the rows `i` and `j`; the permutation matrices `σ.permMatrix ℝ`
-are orthogonal, `P⁻¹ = Pᵀ`, and so is every product of them (the orthogonal group is closed
-under multiplication). -/
+/-- **Equation (1.2)** of [quarteroni2000numerical], and the remark after Definition 1.9. Let
+$\sigma$ and $\tau$ be permutations of $\{1, \dots, n\}$, with permutation matrices $P_\sigma$
+and $P_\tau$. Then $P_\sigma$ is orthogonal, $P_\sigma^{-1} = P_\sigma^T$, and the product
+$P_\sigma P_\tau$ is orthogonal. For indices $i$ and $j$, the elementary permutation matrix
+$P^{(i,j)}$ of (1.2) is the permutation matrix of the transposition of $i$ and $j$, and for
+every real matrix $A$ of order $n$ the product $P^{(i,j)} A$ is $A$ with the rows $i$ and $j$
+exchanged: row $i$ of $P^{(i,j)} A$ is row $j$ of $A$, row $j$ is row $i$ of $A$, and every
+other row is the row of $A$.
+
+The matrix $P_\sigma$ is `σ.permMatrix ℝ`. The elementary matrix of the transposition of $i$ and
+$j$ is `Matrix.swap ℝ i j`. Orthogonality is membership in `Matrix.orthogonalGroup`. -/
 theorem permMatrix_mem_orthogonalGroup {n : ℕ} (σ τ : Equiv.Perm (Fin n)) :
     σ.permMatrix ℝ ∈ Matrix.orthogonalGroup (Fin n) ℝ ∧
       (σ.permMatrix ℝ)⁻¹ = (σ.permMatrix ℝ)ᵀ ∧
@@ -159,9 +249,12 @@ theorem permMatrix_mem_orthogonalGroup {n : ℕ} (σ τ : Equiv.Perm (Fin n)) :
 
 /-! ### §1.3.2 Matrices and linear mappings -/
 
-/-- **Property 1.3, (1.3).** For every linear map `f : ℂⁿ → ℂᵐ` there is a unique matrix
-`A_f ∈ ℂ^{m×n}` with `f x = A_f x` for all `x` (namely `LinearMap.toMatrix' f`); conversely, for
-every `A ∈ ℂ^{m×n}` the map `x ↦ A x` is linear (`Matrix.mulVecLin A`). -/
+/-- **Property 1.3** of [quarteroni2000numerical], with (1.3). For every linear map
+$f : \mathbb{C}^n \to \mathbb{C}^m$ there is a unique matrix $A_f \in \mathbb{C}^{m \times n}$
+such that $f(x) = A_f x$ for all $x \in \mathbb{C}^n$. Conversely, for every
+$A \in \mathbb{C}^{m \times n}$ the map $x \mapsto Ax$ is linear.
+
+The map $x \mapsto Ax$ is `Matrix.mulVecLin A`, and the matrix $A_f$ is `LinearMap.toMatrix' f`. -/
 theorem property_1_3 {m n : ℕ} (f : (Fin n → ℂ) →ₗ[ℂ] (Fin m → ℂ)) (A : Matrix (Fin m) (Fin n) ℂ) :
     (∃! A : Matrix (Fin m) (Fin n) ℂ, ∀ x, f x = A *ᵥ x) ∧ IsLinearMap ℂ fun x => A *ᵥ x := by
   refine ⟨⟨LinearMap.toMatrix' f, fun x => (LinearMap.toMatrix'_mulVec f x).symm, fun B hB => ?_⟩,
@@ -169,15 +262,26 @@ theorem property_1_3 {m n : ℕ} (f : (Fin n → ℂ) →ₗ[ℂ] (Fin m → ℂ
   have h : Matrix.toLin' B = f := LinearMap.ext fun x => by rw [Matrix.toLin'_apply, hB x]
   rw [← h, LinearMap.toMatrix'_toLin']
 
-/-- The matrix `G(θ) = [[cos θ, sin θ], [-sin θ, cos θ]]` of Example 1.4. -/
+/-- **Example 1.4** of [quarteroni2000numerical], the rotation matrix. For $\theta \in \mathbb{R}$,
+$$G(\theta) = \begin{bmatrix} \cos\theta & \sin\theta \\ -\sin\theta & \cos\theta
+  \end{bmatrix}.$$
+-/
 noncomputable def example_1_4_matrix (θ : ℝ) : Matrix (Fin 2) (Fin 2) ℝ :=
   !![Real.cos θ, Real.sin θ; -Real.sin θ, Real.cos θ]
 
-/-- **Example 1.4.** The rotation matrix `G(θ)` is orthogonal with determinant `1`, and it maps
-`(x₁, x₂)` to `(x₁ cos θ + x₂ sin θ, -x₁ sin θ + x₂ cos θ)`, which under `ℝ² ≃ ℂ` is the point
-`x₁ + i x₂` multiplied by `exp(-iθ)`: the rotation by the angle `-θ`. Book erratum: the text
-calls `G(θ)` the *counterclockwise* rotation by `θ`; as printed it is the clockwise one (the
-counterclockwise matrix is `[[c, -s], [s, c]]`, the transpose). -/
+/-- **Example 1.4** of [quarteroni2000numerical]. Let $\theta, x_1, x_2 \in \mathbb{R}$. The matrix
+$G(\theta)$ is orthogonal with $\det G(\theta) = 1$, and
+$$G(\theta) \begin{bmatrix} x_1 \\ x_2 \end{bmatrix} = \begin{bmatrix} x_1 \cos\theta + x_2
+  \sin\theta \\ -x_1 \sin\theta + x_2 \cos\theta \end{bmatrix}.$$
+If $\mathbb{R}^2$ is identified with $\mathbb{C}$ by $(y_1, y_2) \mapsto y_1 + i y_2$, this
+image is $e^{-i\theta} (x_1 + i x_2)$. So $G(\theta)$ is the rotation by the angle $-\theta$.
+
+**Correction.** The book calls $G(\theta)$ the counterclockwise rotation by the angle $\theta$.
+As printed, $G(\theta)$ is the clockwise rotation by $\theta$. The counterclockwise rotation by
+$\theta$ is the transpose $\begin{bmatrix} \cos\theta & -\sin\theta \\ \sin\theta & \cos\theta
+\end{bmatrix}$.
+
+The matrix $G(\theta)$ is `QuarteroniSaccoSaleri.Chapter01.example_1_4_matrix θ`. -/
 theorem example_1_4 (θ x₁ x₂ : ℝ) :
     example_1_4_matrix θ ∈ Matrix.orthogonalGroup (Fin 2) ℝ ∧ (example_1_4_matrix θ).det = 1 ∧
       example_1_4_matrix θ *ᵥ ![x₁, x₂] =
@@ -201,11 +305,20 @@ theorem example_1_4 (θ x₁ x₂ : ℝ) :
 
 /-! ### §1.3.3 Operations with block-partitioned matrices -/
 
-/-- **Property 1.4.** Operations on block-partitioned matrices are performed block by block, in
-the `2 × 2` block form (`Matrix.fromBlocks`) to which the general `k × l` partition reduces by
-induction: (1) `λ A` and `Aᵀ` blockwise, (2) `A + B` blockwise when the partitions agree, and
-(3) `A B` with the blocks `C_ij = ∑_s A_is B_sj` when the column partition of `A` is the row
-partition of `B`. -/
+/-- **Property 1.4** of [quarteroni2000numerical]. Operations on block-partitioned complex matrices
+are performed block by block. Let
+$$A = \begin{bmatrix} A_{11} & A_{12} \\ A_{21} & A_{22} \end{bmatrix}, \quad A' =
+  \begin{bmatrix} A'_{11} & A'_{12} \\ A'_{21} & A'_{22} \end{bmatrix}, \quad B =
+  \begin{bmatrix} B_{11} & B_{12} \\ B_{21} & B_{22} \end{bmatrix},$$
+where $A_{ij}, A'_{ij} \in \mathbb{C}^{k_i \times l_j}$ and
+$B_{ij} \in \mathbb{C}^{l_i \times m_j}$, and let $c \in \mathbb{C}$. Then: (1) $cA$ has the
+blocks $c A_{ij}$, and $A^T$ has the blocks $(A^T)_{ij} = A_{ji}^T$; (2) $A + A'$ has the blocks
+$A_{ij} + A'_{ij}$; (3) $AB$ has the blocks $C_{ij} = \sum_s A_{is} B_{sj}$.
+
+The book states the property for a general $k \times l$ partition. The statement here is the
+$2 \times 2$ block form `Matrix.fromBlocks`, to which the general partition reduces by
+induction. The equal partitions in (2) and the agreement of the column partition of $A$ with the
+row partition of $B$ in (3) are built into the block sizes. -/
 theorem property_1_4 {k₁ k₂ l₁ l₂ m₁ m₂ : ℕ} (c : ℂ)
     (A₁₁ : Matrix (Fin k₁) (Fin l₁) ℂ) (A₁₂ : Matrix (Fin k₁) (Fin l₂) ℂ)
     (A₂₁ : Matrix (Fin k₂) (Fin l₁) ℂ) (A₂₂ : Matrix (Fin k₂) (Fin l₂) ℂ)
@@ -226,13 +339,18 @@ theorem property_1_4 {k₁ k₂ l₁ l₂ m₁ m₂ : ℕ} (c : ℂ)
 
 /-! ### §1.4 Trace and determinant -/
 
-/-- **(1.4), the Laplace rule, and the cofactor formula for the inverse.** For a matrix of
-order `1`, `det A = a₁₁`; for order `n + 1 > 1` and any row `i`,
-`det A = ∑ⱼ Δᵢⱼ aᵢⱼ` with the cofactors `Δᵢⱼ = (-1)^{i+j} det Aᵢⱼ`, `Aᵢⱼ` the matrix obtained by
-deleting row `i` and column `j` (`Matrix.det_succ_row`); and `A⁻¹ = (det A)⁻¹ C` with
-`C` the matrix of entries `Δⱼᵢ`, that is `C = adjugate A` (`Matrix.inv_def`,
-`Matrix.adjugate_fin_succ_eq_det_submatrix`). Mathlib's `A⁻¹` is `0` for a singular `A`, so the
-last identity holds without the invertibility hypothesis. -/
+/-- **Equation (1.4)** of [quarteroni2000numerical] (the Laplace rule), and the cofactor formula for
+the inverse. Let $A$ be a square matrix of order $n + 1$ over a field, and let $i$ be a row
+index. For a matrix $A_0 = [a_{11}]$ of order $1$, $\det A_0 = a_{11}$. For $A$,
+$$\det A = \sum_j \Delta_{ij} a_{ij}, \qquad \Delta_{ij} = (-1)^{i+j} \det A_{ij},$$
+where $A_{ij}$ is the matrix obtained from $A$ by deleting row $i$ and column $j$. Moreover,
+$A^{-1} = (\det A)^{-1} C$, where $C$ is the adjugate of $A$, the matrix with the entries
+$c_{ji} = \Delta_{ij}$.
+
+Mathlib's inverse is $0$ for a singular matrix, and $(\det A)^{-1} = 0$ when $\det A = 0$, so
+the formula for $A^{-1}$ holds without the hypothesis that $A$ is invertible. The adjugate is
+`Matrix.adjugate`. The proof uses `Matrix.det_succ_row`, `Matrix.inv_def` and
+`Matrix.adjugate_fin_succ_eq_det_submatrix`. -/
 theorem equation_1_4 {𝕜 : Type*} [Field 𝕜] {n : ℕ} (A₀ : Matrix (Fin 1) (Fin 1) 𝕜)
     (A : Matrix (Fin (n + 1)) (Fin (n + 1)) 𝕜) (i : Fin (n + 1)) :
     A₀.det = A₀ 0 0 ∧
@@ -254,11 +372,16 @@ open scoped ComplexOrder
 
 variable {𝕜 : Type*} [Field 𝕜] {m n : ℕ}
 
-/-- **Definition 1.12.** The *rank* of `A ∈ 𝕜^{m×n}` is the maximum order of the nonvanishing
-determinants extracted from `A` — the determinants of the square submatrices along `k` distinct
-rows and `k` distinct columns — and it agrees with Mathlib's `Matrix.rank`, the dimension of
-the range (backbone `Matrix.rank_eq_sup_card_det_submatrix_ne_zero`). `A` has *full rank*,
-`rank A = min m n`, exactly when some determinant of order `min m n` does not vanish. -/
+/-- **Definition 1.12** of [quarteroni2000numerical]. Let $A \in \mathbb{K}^{m \times n}$ over a
+field $\mathbb{K}$. The **rank** of $A$ is the maximum order of the nonvanishing determinants
+extracted from $A$, that is, the largest $k$ such that the square submatrix of $A$ along some
+$k$ distinct rows and some $k$ distinct columns has nonzero determinant. Moreover, $A$ has
+**full rank**, $\operatorname{rank} A = \min(m, n)$, if and only if some determinant of order
+$\min(m, n)$ extracted from $A$ does not vanish.
+
+The statement is a theorem about Mathlib's `Matrix.rank`, the dimension of the range of $A$. The
+proof specializes the backbone theorem `Matrix.rank_eq_sup_card_det_submatrix_ne_zero`. The rows
+and the columns of a submatrix are given by injective maps from `Fin k`. -/
 theorem definition_1_12 (A : Matrix (Fin m) (Fin n) 𝕜) :
     A.rank = sSup {k | ∃ (r : Fin k ↪ Fin m) (c : Fin k ↪ Fin n), (A.submatrix r c).det ≠ 0} ∧
       (A.rank = min m n ↔
@@ -274,19 +397,28 @@ theorem definition_1_12 (A : Matrix (Fin m) (Fin n) 𝕜) :
     · simpa using rank_le_card_height A
     · simpa using rank_le_card_width A
 
-/-- **§1.5, (1.5) and relation 1.** The rank of `A` is the dimension of its range
-`range(A) = {y : y = A x}`; `rank A = rank Aᵀ` ("row rank equals column rank"), and
-`rank A = rank Aᴴ` for a complex matrix. -/
+/-- **Equation (1.5)** of [quarteroni2000numerical], and the first relation of §1.5. Let
+$A \in \mathbb{R}^{m \times n}$ and $B \in \mathbb{C}^{m \times n}$. The range of $A$ is
+$\operatorname{range}(A) = \{y : y = Ax \text{ for some } x\}$, and the rank of $A$ is the
+dimension of $\operatorname{range}(A)$. Moreover, $\operatorname{rank} A^T = \operatorname{rank}
+A$ (row rank equals column rank), and $\operatorname{rank} B^H = \operatorname{rank} B$.
+
+The range is `LinearMap.range A.mulVecLin`. -/
 theorem rank_transpose (A : Matrix (Fin m) (Fin n) ℝ) (B : Matrix (Fin m) (Fin n) ℂ) :
     A.rank = Module.finrank ℝ (LinearMap.range A.mulVecLin) ∧
       (∀ y, y ∈ LinearMap.range A.mulVecLin ↔ ∃ x, A *ᵥ x = y) ∧
       Aᵀ.rank = A.rank ∧ Bᴴ.rank = B.rank :=
   ⟨rfl, fun _ => LinearMap.mem_range, Matrix.rank_transpose A, Matrix.rank_conjTranspose B⟩
 
-/-- **§1.5, relation 2.** The kernel `ker(A) = {x : A x = 0}` satisfies
-`rank A + dim ker A = n` for `A ∈ ℝ^{m×n}` (Mathlib's `LinearMap.finrank_range_add_finrank_ker`;
-the square case is the backbone's `Matrix.rank_add_finrank_ker_mulVecLin`); for a nonsingular
-square `A`, `rank A = n` and `dim ker A = 0`. -/
+/-- **Section 1.5** of [quarteroni2000numerical], the second relation. Let
+$A \in \mathbb{R}^{m \times n}$. The kernel of $A$ is $\ker(A) = \{x : Ax = 0\}$, and
+$$\operatorname{rank} A + \dim \ker A = n.$$
+For a nonsingular square matrix $B$ of order $n$, $\operatorname{rank} B = n$ and
+$\dim \ker B = 0$.
+
+The kernel is `LinearMap.ker A.mulVecLin`. The proof uses Mathlib's
+`LinearMap.finrank_range_add_finrank_ker`; the square case is the backbone theorem
+`Matrix.rank_add_finrank_ker_mulVecLin`. -/
 theorem rank_add_finrank_ker (A : Matrix (Fin m) (Fin n) ℝ) :
     (∀ x, x ∈ LinearMap.ker A.mulVecLin ↔ A *ᵥ x = 0) ∧
       A.rank + Module.finrank ℝ (LinearMap.ker A.mulVecLin) = n ∧
@@ -300,9 +432,12 @@ theorem rank_add_finrank_ker (A : Matrix (Fin m) (Fin n) ℝ) :
     rw [Fintype.card_fin, hr] at h
     exact ⟨hr, by omega⟩
 
-/-- **Example 1.5.** For `A = [[1, 1, 0], [1, -1, 1]]`, `rank A = 2`, `dim ker A = 1` and
-`dim ker Aᵀ = 0`: the leading `2 × 2` minor is `-2 ≠ 0`, so the rank is `2`, and the two
-rank–nullity relations give the kernel dimensions. -/
+/-- **Example 1.5** of [quarteroni2000numerical]. For
+$$A = \begin{bmatrix} 1 & 1 & 0 \\ 1 & -1 & 1 \end{bmatrix} \in \mathbb{R}^{2 \times 3},$$
+$\operatorname{rank} A = 2$, $\dim \ker A = 1$ and $\dim \ker A^T = 0$.
+
+The leading $2 \times 2$ minor is $-2 \neq 0$, so the rank is $2$, and the two relations of §1.5
+give the dimensions of the kernels. -/
 theorem example_1_5 :
     (!![1, 1, 0; 1, -1, 1] : Matrix (Fin 2) (Fin 3) ℝ).rank = 2 ∧
       Module.finrank ℝ (LinearMap.ker (!![1, 1, 0; 1, -1, 1] : Matrix (Fin 2) (Fin 3) ℝ).mulVecLin)
@@ -322,10 +457,13 @@ theorem example_1_5 :
   rw [Matrix.rank_transpose] at h2
   refine ⟨hrank, ?_, ?_⟩ <;> omega
 
-/-- **§1.5, the equivalent forms of nonsingularity** (with "no null eigenvalue" from §1.7). For
-`A ∈ ℂ^{n×n}` the following are equivalent: (1) `A` is nonsingular; (2) `det A ≠ 0`;
-(3) `ker A = {0}`; (4) `rank A = n`; (5) `A` has linearly independent rows and columns;
-(6) `0` is not an eigenvalue of `A`. -/
+/-- **Section 1.5** of [quarteroni2000numerical], the equivalent forms of nonsingularity, with the
+condition on the eigenvalues from §1.7. For $A \in \mathbb{C}^{n \times n}$ the following are
+equivalent: (1) $A$ is nonsingular; (2) $\det A \neq 0$; (3) $\ker A = \{0\}$; (4)
+$\operatorname{rank} A = n$; (5) the rows of $A$ are linearly independent and the columns of $A$
+are linearly independent; (6) $0$ is not an eigenvalue of $A$.
+
+Nonsingularity is `IsUnit A`. Condition (6) says that $0$ is not in `spectrum ℂ A`. -/
 theorem nonsingular_tfae (A : Matrix (Fin n) (Fin n) ℂ) :
     List.TFAE [IsUnit A, A.det ≠ 0, LinearMap.ker A.mulVecLin = ⊥, A.rank = n,
       LinearIndependent ℂ A.row ∧ LinearIndependent ℂ A.col, (0 : ℂ) ∉ spectrum ℂ A] := by
@@ -350,18 +488,24 @@ section Special
 
 variable {𝕜 : Type*} [Field 𝕜] {n : ℕ}
 
-/-- **§1.6.1.** The determinant of a block diagonal matrix `D = diag(D₁, …, Dₖ)`, whose
-diagonal blocks `Dᵢ` are square matrices of possibly different sizes, is the product of the
-determinants of the blocks (backbone `Matrix.det_blockDiagonal'`). -/
+/-- **Section 1.6.1** of [quarteroni2000numerical]. Let $D = \operatorname{diag}(D_1, \dots, D_k)$
+be a block diagonal matrix over a field, whose diagonal blocks $D_i$ are square matrices of
+possibly different orders. Then
+$$\det D = \prod_{i=1}^k \det D_i.$$
+
+The matrix $D$ is Mathlib's `Matrix.blockDiagonal' D`. The proof is the backbone theorem
+`Matrix.det_blockDiagonal'`. -/
 theorem det_blockDiagonal' {k : ℕ} {sz : Fin k → ℕ}
     (D : ∀ i, Matrix (Fin (sz i)) (Fin (sz i)) 𝕜) :
     (blockDiagonal' D).det = ∏ i, (D i).det :=
   Matrix.det_blockDiagonal' D
 
-/-- **§1.6.2, first bullet.** A lower triangular matrix `L` has `lᵢⱼ = 0` for `i < j`
-(`Matrix.IsLowerTriangular`), an upper triangular `U` has `uᵢⱼ = 0` for `i > j`
-(`Matrix.IsUpperTriangular`), and the determinant of a triangular matrix is the product of its
-diagonal entries. -/
+/-- **Section 1.6.2** of [quarteroni2000numerical], the first statement. A square matrix $L$ over a
+field is **lower triangular** if and only if $l_{ij} = 0$ for $i < j$, and a square matrix $U$
+is **upper triangular** if and only if $u_{ij} = 0$ for $i > j$. The determinant of a lower or
+an upper triangular matrix is the product of its diagonal entries.
+
+The two shapes are Mathlib's `Matrix.IsLowerTriangular` and `Matrix.IsUpperTriangular`. -/
 theorem det_of_isTriangular (L U : Matrix (Fin n) (Fin n) 𝕜) :
     (L.IsLowerTriangular ↔ ∀ i j, i < j → L i j = 0) ∧
       (U.IsUpperTriangular ↔ ∀ i j, j < i → U i j = 0) ∧
@@ -369,10 +513,14 @@ theorem det_of_isTriangular (L U : Matrix (Fin n) (Fin n) 𝕜) :
       (U.IsUpperTriangular → U.det = ∏ i, U i i) :=
   ⟨Iff.rfl, Iff.rfl, det_of_isLowerTriangular L, fun hU => det_of_isUpperTriangular hU⟩
 
-/-- **§1.6.2, second and third bullets.** The inverse of an invertible lower (respectively,
-upper) triangular matrix is lower (upper) triangular
-(`Matrix.blockTriangular_inv_of_blockTriangular`), and the product of two lower (upper)
-triangular matrices is lower (upper) triangular (`Matrix.BlockTriangular.mul`). -/
+/-- **Section 1.6.2** of [quarteroni2000numerical], the second and the third statements. Let
+$L, L', U, U'$ be square matrices of order $n$ over a field. If $L$ is lower triangular and
+invertible, then $L^{-1}$ is lower triangular; if $U$ is upper triangular and invertible, then
+$U^{-1}$ is upper triangular. If $L$ and $L'$ are lower triangular, then $LL'$ is lower
+triangular; if $U$ and $U'$ are upper triangular, then $UU'$ is upper triangular.
+
+The proof uses Mathlib's `Matrix.blockTriangular_inv_of_blockTriangular` and
+`Matrix.BlockTriangular.mul`. -/
 theorem isTriangular_inv_mul (L L' U U' : Matrix (Fin n) (Fin n) 𝕜) :
     (L.IsLowerTriangular → IsUnit L → L⁻¹.IsLowerTriangular) ∧
       (U.IsUpperTriangular → IsUnit U → U⁻¹.IsUpperTriangular) ∧
@@ -384,9 +532,14 @@ theorem isTriangular_inv_mul (L L' U U' : Matrix (Fin n) (Fin n) 𝕜) :
   · have := hu.invertible
     exact blockTriangular_inv_of_blockTriangular hU
 
-/-- **§1.6.2, third bullet, the trapezoidal case.** An `m × n` matrix is *upper trapezoidal* when
-`aᵢⱼ = 0` for `i > j` and *lower trapezoidal* when `aᵢⱼ = 0` for `i < j`; the product of two
-upper (lower) trapezoidal matrices is upper (lower) trapezoidal. -/
+/-- **Section 1.6.2** of [quarteroni2000numerical], the third statement for trapezoidal matrices. A
+matrix $A \in \mathbb{K}^{m \times p}$ is **upper trapezoidal** if $a_{ij} = 0$ for $i > j$, and
+**lower trapezoidal** if $a_{ij} = 0$ for $i < j$. Let $A \in \mathbb{K}^{m \times p}$ and
+$B \in \mathbb{K}^{p \times q}$ over a field $\mathbb{K}$. If $A$ and $B$ are upper trapezoidal,
+then $AB$ is upper trapezoidal. If $A$ and $B$ are lower trapezoidal, then $AB$ is lower
+trapezoidal.
+
+The two shapes are stated directly by the vanishing of the entries, without a named predicate. -/
 theorem isUpperTrapezoidal_mul {m p q : ℕ} (A : Matrix (Fin m) (Fin p) 𝕜)
     (B : Matrix (Fin p) (Fin q) 𝕜) :
     ((∀ (i : Fin m) (j : Fin p), (j : ℕ) < i → A i j = 0) →
@@ -402,10 +555,14 @@ theorem isUpperTrapezoidal_mul {m p q : ℕ} (A : Matrix (Fin m) (Fin p) 𝕜)
       (c := fun k : Fin p => OrderDual.toDual k.val) (d := fun j : Fin q => OrderDual.toDual j.val)
       (fun i k h => hA i k h) (fun k j h => hB k j h) hij⟩
 
-/-- **§1.6.2, last bullet.** A *unit* triangular matrix is a triangular matrix with diagonal
-entries `1` (`Matrix.IsUnitLowerTriangular`, and its transpose for the upper shape); the product
-of two unit lower (upper) triangular matrices is unit lower (upper) triangular (backbone
-`Matrix.IsUnitLowerTriangular.mul`). -/
+/-- **Section 1.6.2** of [quarteroni2000numerical], the last statement. A square matrix $L$ over a
+field is **unit lower triangular** if and only if it is lower triangular with diagonal entries
+$l_{ii} = 1$. The product of two unit lower triangular matrices is unit lower triangular, and
+the product of two unit upper triangular matrices is unit upper triangular.
+
+Unit lower triangularity is the backbone predicate `Matrix.IsUnitLowerTriangular`. A matrix $U$
+is unit upper triangular when $U^T$ is unit lower triangular. The proof uses the backbone
+theorem `Matrix.IsUnitLowerTriangular.mul`. -/
 theorem isUnitTriangular_mul (L L' U U' : Matrix (Fin n) (Fin n) 𝕜) :
     (L.IsUnitLowerTriangular ↔ L.IsLowerTriangular ∧ ∀ i, L i i = 1) ∧
       (L.IsUnitLowerTriangular → L'.IsUnitLowerTriangular → (L * L').IsUnitLowerTriangular) ∧
@@ -415,14 +572,29 @@ theorem isUnitTriangular_mul (L L' U U' : Matrix (Fin n) (Fin n) 𝕜) :
   rw [transpose_mul]
   exact h'.mul h
 
-/-- **§1.6.3, banded matrices.** A square matrix `A` has *lower band* `p` when `aᵢⱼ = 0` for
-`i > j + p` and *upper band* `q` when `aᵢⱼ = 0` for `j > i + q` (the backbone's
-`Matrix.HasLowerBandwidth`/`Matrix.HasUpperBandwidth` of `Numlib/LinearAlgebra/Matrix/Band`,
-through `Matrix.hasLowerBandwidth_iff_fin`); the named shapes are: diagonal `(p, q) = (0, 0)`;
-lower triangular `q = 0` and upper triangular `p = 0`; tridiagonal `(1, 1)`; upper bidiagonal
-`(0, 1)` and lower bidiagonal `(1, 0)`; upper Hessenberg `p = 1` and lower Hessenberg (the
-transpose of an upper Hessenberg matrix) `q = 1`. Every matrix of order `n` has both bands
-`n - 1`, which is the book's `p = m - 1`, `q = n - 1` for the trapezoidal and Hessenberg shapes. -/
+/-- **Section 1.6.3** of [quarteroni2000numerical], banded matrices. Let $A$ be a square matrix of
+order $n$ over a field, and let $p, q \ge 0$. The matrix $A$ has **lower band** $p$ if and only
+if $a_{ij} = 0$ for $i > j + p$, and **upper band** $q$ if and only if $a_{ij} = 0$ for
+$j > i + q$. The named shapes are characterized by the bands as follows:
+
+* $A$ is diagonal if and only if it has lower band $0$ and upper band $0$;
+* $A$ is lower triangular if and only if it has upper band $0$, and upper triangular if and only
+  if it has lower band $0$;
+* $A$ is tridiagonal if and only if it has lower band $1$ and upper band $1$;
+* $A$ is upper bidiagonal if and only if it has lower band $0$ and upper band $1$, and lower
+  bidiagonal if and only if it has lower band $1$ and upper band $0$;
+* $A$ is upper Hessenberg if and only if it has lower band $1$, and $A^T$ is upper Hessenberg
+  (that is, $A$ is lower Hessenberg) if and only if $A$ has upper band $1$.
+
+Every matrix of order $n$ has lower band $n - 1$ and upper band $n - 1$.
+
+The bands are the backbone predicates `Matrix.HasLowerBandwidth` and `Matrix.HasUpperBandwidth`
+of `Numlib.LinearAlgebra.Matrix.Band`, read on `Fin n` through
+`Matrix.hasLowerBandwidth_iff_fin`. The shapes are `Matrix.IsDiag`, `Matrix.IsLowerTriangular`,
+`Matrix.IsUpperTriangular`, and the backbone predicates `Matrix.IsTridiagonal`,
+`Matrix.IsUpperBidiagonal`, `Matrix.IsLowerBidiagonal` and `Matrix.IsUpperHessenberg`. The last
+clause is the book's remark that the trapezoidal and the Hessenberg shapes have the bands
+$p = m - 1$ and $q = n - 1$. -/
 theorem hasBandwidth_iff_shape (A : Matrix (Fin n) (Fin n) 𝕜) (p q : ℕ) :
     (A.HasLowerBandwidth p ↔ ∀ i j : Fin n, (j : ℕ) + p < i → A i j = 0) ∧
       (A.HasUpperBandwidth q ↔ ∀ i j : Fin n, (i : ℕ) + q < j → A i j = 0) ∧
@@ -454,11 +626,18 @@ theorem hasBandwidth_iff_shape (A : Matrix (Fin n) (Fin n) 𝕜) (p q : ℕ) :
 
 end Special
 
-/-- **§1.6.3, `tridiagₙ(b, d, c)` and `tridiagₙ(β, δ, γ)`.** The tridiagonal matrix with the
-vectors `b`, `d`, `c` on the lower, principal and upper diagonals is the backbone's
-`Matrix.tridiagonalOf b d c`, the constant-coefficient one `Matrix.tridiagonalToeplitz n β δ γ`
-(`Numlib/LinearAlgebra/Matrix/TridiagonalToeplitz`), the latter the former with constant bands;
-both are tridiagonal. -/
+/-- **Section 1.6.3** of [quarteroni2000numerical], the matrices $\mathrm{tridiag}_n(b, d, c)$ and
+$\mathrm{tridiag}_n(\beta, \delta, \gamma)$. Let $b, c \in \mathbb{R}^N$,
+$d \in \mathbb{R}^{N+1}$ and $\beta, \delta, \gamma \in \mathbb{R}$. The tridiagonal matrix
+$T = \mathrm{tridiag}_{N+1}(b, d, c)$ of order $N + 1$ has the entries $t_{ii} = d_i$,
+$t_{i+1,i} = b_i$ and $t_{i,i+1} = c_i$ (with 0-based indices), and it is tridiagonal. The
+matrix $\mathrm{tridiag}_{N+1}(\beta, \delta, \gamma)$ with constant bands is
+$\mathrm{tridiag}_{N+1}(b, d, c)$ for the constant vectors $b = (\beta, \dots, \beta)$,
+$d = (\delta, \dots, \delta)$ and $c = (\gamma, \dots, \gamma)$, and it is tridiagonal.
+
+The first matrix is the backbone's `Matrix.tridiagonalOf b d c`, and the second is the
+backbone's `Matrix.tridiagonalToeplitz (N + 1) β δ γ` of
+`Numlib.LinearAlgebra.Matrix.TridiagonalToeplitz`. -/
 theorem isTridiagonal_tridiag {N : ℕ} (b : Fin N → ℝ) (d : Fin (N + 1) → ℝ) (c : Fin N → ℝ)
     (β δ γ : ℝ) :
     (∀ i, tridiagonalOf b d c i i = d i) ∧

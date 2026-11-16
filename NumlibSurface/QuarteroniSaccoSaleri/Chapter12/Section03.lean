@@ -6,75 +6,87 @@ import Numlib.Approximation.OrthogonalPolynomial.LegendreBounds
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter12.Section02
 
 /-!
-# Quarteroni–Sacco–Saleri §12.3: the spectral collocation method
+# Quarteroni, Sacco and Saleri, Section 12.3: The Spectral Collocation Method
 
-Surface file for Alfio Quarteroni, Riccardo Sacco and Fausto Saleri, *Numerical Mathematics*,
-Springer, 2000, §12.3.
+This module formalizes Section 12.3 of [quarteroni2000numerical]. The boundary value problem
+$Lu = -u'' = f$ is set on $(-1, 1)$ and discretized by collocation. The approximation $u_n$ is
+sought in the space $\mathbb{P}_n^0$ of polynomials of degree at most $n$ that vanish at both
+endpoints, and the equation $L_n u_n(x_j) = f(x_j)$ is imposed at the $n - 1$ interior
+Legendre–Gauss–Lobatto nodes (12.36). Here $L_n v = L(I_n v)$ applies the differential operator to
+the interpolant at all $n + 1$ nodes, so $L_n v = Lv$ on $\mathbb{P}_n$. With the discrete scalar
+product $(u, v)_n = \sum_{j=0}^n u(x_j) v(x_j) w_j$ of the Gauss–Lobatto weights (12.37), the
+collocation problem is equivalent to the discrete weak form $(L_n u_n, v_n)_n = (f, v_n)_n$ for all
+$v_n \in \mathbb{P}_n^0$ (12.38). Since the quadrature is exact on $\mathbb{P}_{2n-1}$, the energy
+$(L_n v_n, v_n)_n$ equals $\|v_n'\|_{L^2(-1, 1)}^2$, and this gives the stability estimate after
+(12.38) and the uniqueness of the collocation solution.
 
-The boundary value problem `L u = -u'' = f` is set on `(-1, 1)` and discretized by *collocation*:
-`u_n` is sought among the polynomials of degree at most `n` vanishing at both endpoints, and the
-equation `L_n u_n (x_j) = f(x_j)` is imposed at the `n - 1` interior Legendre–Gauss–Lobatto nodes
-(12.36), where `L_n v = L (I_n v)` is the differential operator applied to the interpolant at all
-`n + 1` nodes — so `L_n v = L v` on the polynomials of degree at most `n`. With the discrete scalar
-product `(u, v)_n = ∑_{j=0}^n u(x_j) v(x_j) w_j` of the Gauss–Lobatto weights (12.37), the
-collocation problem is equivalent to the discrete weak form
-`(L_n u_n, v_n)_n = (f, v_n)_n` for all `v_n ∈ P_n^0` (12.38), and the quadrature being exact on
-`P_{2n-1}` turns the energy `(L_n v_n, v_n)_n` into `‖v_n'‖²_{L²(-1,1)}`.
+The proofs specialize the Gauss–Lobatto quadrature of `Numlib.Approximation.GaussLobatto` and the
+closed-form Gauss–Lobatto weights of `Numlib.Approximation.OrthogonalPolynomial.LegendreBounds`.
 
 ## Main definitions
 
-* `IsLegendreLobatto n x w` — the hypothesis bundle "`x`, `w` are the `n + 1` Legendre–Gauss–Lobatto
-  nodes and weights of `[-1, 1]`", with `exists_isLegendreLobatto` for its nonemptiness.
-* `equation_12_36 n x f p` — the spectral collocation problem (12.36).
-* `equation_12_37 n x w u v` — the discrete scalar product (12.37).
+* Section 12.3, `QuarteroniSaccoSaleri.Chapter12.IsLegendreLobatto`: $x$ and $w$ are the $n + 1$
+  Legendre–Gauss–Lobatto nodes and weights of $[-1, 1]$;
+  `QuarteroniSaccoSaleri.Chapter12.exists_isLegendreLobatto` shows that they exist.
+* Equation (12.36), `QuarteroniSaccoSaleri.Chapter12.equation_12_36`: the spectral collocation
+  problem.
+* Equation (12.37), `QuarteroniSaccoSaleri.Chapter12.equation_12_37`: the discrete scalar product.
 
 ## Main results
 
-* `equation_12_37_exact` — the discrete scalar product is the integral on `P_{2n-1}`, and
-  `equation_12_37_self_nonneg` that it is a positive form.
-* `equation_12_37_sum_weights`, `equation_12_37_le_sup`, `equation_12_37_inner_mul_le` — the
-  weights sum to `2`, hence `‖f‖_n ≤ √2 ‖f‖_∞`, and Cauchy–Schwarz for `(·, ·)_n`: the two steps
-  of the stability estimate after (12.38) that do not need the quoted norm equivalence.
-* `equation_12_38` — collocation (12.36) is the discrete weak form (12.38).
-* `equation_12_38_energy` — `(L_n v, v)_n = (L_n v, v) = ‖v'‖²_{L²(-1,1)}` for `v ∈ P_n^0`.
-* `exercise_12_8` — Young's inequality `ab ≤ ε a² + b²/(4ε)` (12.40), used in the proofs of
-  Theorems 12.2 and 12.4.
-* `equation_12_37_norm_equiv` — the norm equivalence `‖v_n‖_{L²} ≤ ‖v_n‖_n ≤ √3 ‖v_n‖_{L²}` on
-  `P_n` quoted from [CHQZ88] p. 286, from the backbone's closed-form Gauss–Lobatto weights
-  (`Numlib/Approximation/OrthogonalPolynomial/LegendreBounds`).
-* `equation_12_38_stability`, `equation_12_36_unique` — the stability bound
-  `‖u_n'‖_{L²} ≤ √6 C_P ‖f‖_∞` after (12.38) and the uniqueness of the collocation solution.
-
-## Not formalized here
-
-* **Theorem 12.2**: for `f ∈ H^s(-1, 1)` with `s ≥ 1`, the spectral collocation solution
-  satisfies `‖u' - u_n'‖_{L²(-1,1)} ≤ C n^{-s} (‖f‖_{H^s(-1,1)} + ‖u‖_{H^{s+1}(-1,1)})` with `C`
-  independent of `n`; it is statable here with `SobolevInterval s (-1) 1` for the norms. The book
-  sketches the proof, and the two estimates it rests on are quoted from [CHQZ88]: the
-  Gauss–Lobatto quadrature error `|E(f, v_n)| ≤ C n^{-s} ‖f‖_{H^s} ‖v_n‖_{L²}` of (10.36)–(10.37)
-  and the interpolation error `‖u - I_n u‖_{H¹} ≤ C n^{1-s} ‖u‖_{H^s}` of (10.22)/(10.71) at the
-  Gauss–Lobatto nodes. Both are open in chapter 10 for the same reason, and the three layers that
-  are missing — the weighted Sobolev seminorms on `(-1, 1)`, the Legendre coefficient decay
-  `|f̂_k| ≤ C k^{-s} ‖f‖_{H^s}` by repeated integration by parts against the Sturm–Liouville
-  operator `((1-x²) f')'`, and the aliasing step from the projection to the interpolant — are
-  written out in `## Not formalized here` of §10.3
-  (`NumlibSurface/QuarteroniSaccoSaleri/Chapter10/Section03.lean`), with the Legendre specifics
-  in §10.4. Everything *else* the proof uses is in this module: the discrete weak form
-  `equation_12_38`, Young's inequality `exercise_12_8` (12.40), the exactness
-  `equation_12_37_exact`, the norm equivalence `equation_12_37_norm_equiv`, Poincaré
-  (`poincare_poly`, `SobolevInterval.norm_le_of_eq_integral`) and the Legendre normalizations
-  `Polynomial.integral_legendre_sq`, `OrthogonalPolynomial.normSq_legendreMeasure`. The constant
-  `C` is not effective in the book, so a faithful statement must quantify one `C` over all `n`,
-  which leaves no weakened form short of the two estimates themselves. Estimate: an
-  `Approximation/SpectralProjection` module, over a thousand lines, and a few hundred more here.
+* Equation (12.37), `QuarteroniSaccoSaleri.Chapter12.equation_12_37_exact`: the discrete scalar
+  product equals the integral on $\mathbb{P}_{2n-1}$;
+  `QuarteroniSaccoSaleri.Chapter12.equation_12_37_self_nonneg` shows that it is a positive form.
+* Equation (12.37), `QuarteroniSaccoSaleri.Chapter12.equation_12_37_sum_weights`,
+  `QuarteroniSaccoSaleri.Chapter12.equation_12_37_le_sup` and
+  `QuarteroniSaccoSaleri.Chapter12.equation_12_37_inner_mul_le`: the weights sum to $2$, hence
+  $\|f\|_n \le \sqrt{2} \|f\|_\infty$, and the Cauchy–Schwarz inequality for $(\cdot, \cdot)_n$.
+* Equation (12.38), `QuarteroniSaccoSaleri.Chapter12.equation_12_38`: the collocation problem
+  (12.36) is the discrete weak form (12.38).
+* Section 12.3, `QuarteroniSaccoSaleri.Chapter12.equation_12_38_energy`:
+  $(L_n v, v)_n = \|v'\|_{L^2(-1, 1)}^2$ for $v \in \mathbb{P}_n^0$.
+* Exercise 12.8, `QuarteroniSaccoSaleri.Chapter12.exercise_12_8`: Young's inequality
+  $ab \le \varepsilon a^2 + b^2/(4\varepsilon)$ (12.40).
+* Section 12.3, `QuarteroniSaccoSaleri.Chapter12.equation_12_37_norm_equiv`: the norm equivalence
+  $\|v_n\|_{L^2} \le \|v_n\|_n \le \sqrt{3} \|v_n\|_{L^2}$ on $\mathbb{P}_n$.
+* Section 12.3, `QuarteroniSaccoSaleri.Chapter12.equation_12_38_stability` and
+  `QuarteroniSaccoSaleri.Chapter12.equation_12_36_unique`: the stability estimate
+  $\|u_n'\|_{L^2} \le \sqrt{6} C_P \|f\|_\infty$ after (12.38), and the uniqueness of the
+  collocation solution.
 
 ## Conventions
 
-Polynomials are `Polynomial ℝ` and `L v` is `-(derivative (derivative v))`; `P_n^0` is
-`p.natDegree ≤ n` together with `p.eval (-1) = 0` and `p.eval 1 = 0`. The book's own statement of
-(12.36) writes `P_n^0` with the conditions `p(0) = p(1) = 0` on `[0, 1]` although the problem is
-posed on `(-1, 1)`; the reading here is `p(±1) = 0`, which is what the nodes and the rest of the
-section use (errata).
+* Polynomials are `Polynomial ℝ`, and $Lv$ is `-(derivative (derivative v))`. A polynomial $p$ lies
+  in $\mathbb{P}_n^0$ when `p.natDegree ≤ n`, `p.eval (-1) = 0` and `p.eval 1 = 0`.
+
+## Deviations from the source
+
+* **Equation (12.36)** (typo). The source writes the conditions of $\mathbb{P}_n^0$ as
+  $p(0) = p(1) = 0$, although the problem is posed on $(-1, 1)$; the conditions are $p(\pm 1) = 0$.
+  See `QuarteroniSaccoSaleri.Chapter12.equation_12_36`.
+* **The stability estimate after (12.38)** (generalization). The source bounds by $\|f\|_\infty$; a
+  bound $M$ on the values of $f$ at the nodes is enough. See
+  `QuarteroniSaccoSaleri.Chapter12.equation_12_38_stability`.
+
+## Not formalized
+
+* **Theorem 12.2**: for $f \in H^s(-1, 1)$ with $s \ge 1$, the collocation solution satisfies
+  $\|u' - u_n'\|_{L^2(-1, 1)} \le C n^{-s} (\|f\|_{H^s(-1, 1)} + \|u\|_{H^{s+1}(-1, 1)})$ with $C$
+  independent of $n$. The source sketches the proof and quotes the two estimates it rests on from
+  Canuto, Hussaini, Quarteroni and Zang (1988): the error $|E(f, v_n)| \le C n^{-s} \|f\|_{H^s}
+  \|v_n\|_{L^2}$ of the Gauss–Lobatto quadrature, (10.36)–(10.37), and the error
+  $\|u - I_n u\|_{H^1} \le C n^{1-s} \|u\|_{H^s}$ of the interpolation at the Gauss–Lobatto nodes,
+  (10.22) and (10.71). Both estimates are not formalized in Chapter 10 either;
+  `NumlibSurface.QuarteroniSaccoSaleri.Chapter10.Section03` lists what they need: weighted Sobolev
+  seminorms on $(-1, 1)$, the decay $|\hat{f}_k| \le C k^{-s} \|f\|_{H^s}$ of the Legendre
+  coefficients, and the aliasing step from the projection to the interpolant. The other steps of the
+  proof are in this module: `QuarteroniSaccoSaleri.Chapter12.equation_12_38`,
+  `QuarteroniSaccoSaleri.Chapter12.exercise_12_8`,
+  `QuarteroniSaccoSaleri.Chapter12.equation_12_37_exact`,
+  `QuarteroniSaccoSaleri.Chapter12.equation_12_37_norm_equiv` and
+  `QuarteroniSaccoSaleri.Chapter12.poincare_poly`. The constant $C$ of the source is not explicit,
+  so a faithful statement must quantify one $C$ over all $n$, and no weaker form is available
+  without the two estimates.
 -/
 
 open MeasureTheory Polynomial Set
@@ -85,25 +97,35 @@ namespace QuarteroniSaccoSaleri.Chapter12
 
 /-! ### The Legendre–Gauss–Lobatto rule -/
 
-/-- **The Legendre–Gauss–Lobatto nodes and weights** of `[-1, 1]` with `n + 1` points, §10.4: `x`
-is injective with `x_0 = -1` and `x_n = 1`, all nodes lie in `[-1, 1]`, the weights are positive,
-and the rule is exact on the polynomials of degree at most `2n - 1`. -/
+/-- **Section 12.3** of [quarteroni2000numerical], the Legendre–Gauss–Lobatto nodes and weights of
+Section 10.4. Nodes $x_0, \dots, x_n$ and weights $w_0, \dots, w_n$ are the
+**Legendre–Gauss–Lobatto nodes and weights** of $[-1, 1]$ if the nodes are distinct, $x_0 = -1$,
+$x_n = 1$, every node lies in $[-1, 1]$, every weight is positive, and
+$$\sum_{j=0}^n w_j \, p(x_j) = \int_{-1}^1 p(x)\, dx \qquad \text{for every polynomial } p
+  \text{ of degree at most } 2n - 1.$$
+
+The structure is a bundle of hypotheses; it does not fix the nodes by a formula. The exactness
+is `Quadrature.IsExactOnMeasure` for `OrthogonalPolynomial.legendreMeasure`, the Lebesgue
+measure on $(-1, 1)$. -/
 structure IsLegendreLobatto (n : ℕ) (x w : Fin (n + 1) → ℝ) : Prop where
   /-- The nodes are distinct. -/
   injective : Function.Injective x
-  /-- The first node is the left endpoint. -/
+  /-- The first node is the left endpoint: $x_0 = -1$. -/
   first : x 0 = -1
-  /-- The last node is the right endpoint. -/
+  /-- The last node is the right endpoint: $x_n = 1$. -/
   last : x (Fin.last n) = 1
-  /-- Every node lies in the interval. -/
+  /-- Every node lies in $[-1, 1]$. -/
   mem : ∀ i, x i ∈ Icc (-1 : ℝ) 1
-  /-- The weights are positive. -/
+  /-- Every weight is positive: $w_j > 0$. -/
   weight_pos : ∀ i, 0 < w i
-  /-- The rule integrates the polynomials of degree at most `2n - 1` exactly. -/
+  /-- The rule integrates every polynomial of degree at most $2n - 1$ exactly. -/
   exact : Quadrature.IsExactOnMeasure OrthogonalPolynomial.legendreMeasure w x (2 * n - 1)
 
-/-- **The Legendre–Gauss–Lobatto rule exists** for every `n ≥ 1` (§10.4,
-`Quadrature.exists_gaussLobatto` at the Legendre weight). -/
+/-- **Section 12.3** of [quarteroni2000numerical], existence of the Legendre–Gauss–Lobatto rule of
+Section 10.4. For every $n \ge 1$ there are nodes and weights $x, w \in \mathbb{R}^{n+1}$ that
+are Legendre–Gauss–Lobatto nodes and weights of $[-1, 1]$.
+
+The proof specializes `Quadrature.exists_gaussLobatto` to the Legendre weight. -/
 theorem exists_isLegendreLobatto {n : ℕ} (hn : 1 ≤ n) :
     ∃ x w : Fin (n + 1) → ℝ, IsLegendreLobatto n x w := by
   have hsupp : OrthogonalPolynomial.legendreMeasure (Icc (-1 : ℝ) 1)ᶜ = 0 := by
@@ -119,28 +141,44 @@ theorem exists_isLegendreLobatto {n : ℕ} (hn : 1 ≤ n) :
 
 /-! ### The collocation problem (12.36) and the discrete scalar product (12.37) -/
 
-/-- **The spectral collocation problem (12.36)**: `u_n ∈ P_n^0` with
-`L_n u_n (x_j) = f(x_j)` at the interior nodes `x_1, …, x_{n-1}`, where `L = -d²/dx²` and
-`L_n v = L (I_n v)` agrees with `L v` on `P_n`. -/
+/-- **Equation (12.36)** of [quarteroni2000numerical] (spectral collocation problem). Let
+$x_0, \dots, x_n$ be nodes and $f : \mathbb{R} \to \mathbb{R}$. A polynomial $u_n$ **solves the
+collocation problem** if $u_n \in \mathbb{P}_n^0$, that is, $\deg u_n \le n$ and
+$u_n(-1) = u_n(1) = 0$, and
+$$-u_n''(x_j) = f(x_j), \qquad j = 1, \dots, n - 1.$$
+
+**Typo.** The source writes the conditions of $\mathbb{P}_n^0$ as $p(0) = p(1) = 0$, although
+the problem is posed on $(-1, 1)$. The conditions here are $p(\pm 1) = 0$, which the nodes and
+the rest of the section use.
+
+The source writes the equation as $L_n u_n(x_j) = f(x_j)$ with $L = -d^2/dx^2$ and
+$L_n v = L(I_n v)$. On $\mathbb{P}_n$ the interpolant $I_n v$ is $v$, so $L_n u_n = -u_n''$. -/
 def equation_12_36 (n : ℕ) (x : Fin (n + 1) → ℝ) (f : ℝ → ℝ) (p : ℝ[X]) : Prop :=
   p.natDegree ≤ n ∧ p.eval (-1) = 0 ∧ p.eval 1 = 0 ∧
     ∀ j : Fin (n + 1), j ≠ 0 → j ≠ Fin.last n →
       -(derivative (derivative p)).eval (x j) = f (x j)
 
-/-- **The discrete scalar product (12.37)** `(u, v)_n = ∑_{j=0}^n u(x_j) v(x_j) w_j` of the
-Gauss–Lobatto rule. -/
+/-- **Equation (12.37)** of [quarteroni2000numerical]. For nodes $x_0, \dots, x_n$ and weights
+$w_0, \dots, w_n$, the **discrete scalar product** of $u, v : \mathbb{R} \to \mathbb{R}$ is
+$$(u, v)_n = \sum_{j=0}^n u(x_j) v(x_j) w_j.$$
+
+The definition is `Quadrature.discreteInner`. -/
 noncomputable def equation_12_37 (n : ℕ) (x w : Fin (n + 1) → ℝ) (u v : ℝ → ℝ) : ℝ :=
   Quadrature.discreteInner w x u v
 
-/-- (12.37) is the sum `∑_j u(x_j) v(x_j) w_j`. -/
+/-- **Equation (12.37)** of [quarteroni2000numerical], unfolded:
+$(u, v)_n = \sum_{j=0}^n u(x_j) v(x_j) w_j$. -/
 theorem equation_12_37_eq (n : ℕ) (x w : Fin (n + 1) → ℝ) (u v : ℝ → ℝ) :
     equation_12_37 n x w u v = ∑ j, u (x j) * v (x j) * w j := by
   simp only [equation_12_37, Quadrature.discreteInner]
   exact Finset.sum_congr rfl fun j _ => by ring
 
-/-- **The discrete scalar product is the integral on `P_{2n-1}`**: for polynomials `P`, `Q` whose
-product has degree at most `2n - 1`, `(P, Q)_n = ∫_{-1}^1 P Q`.  This is the exactness of the
-Gauss–Lobatto rule, §10.2 and §10.4. -/
+/-- **Equation (12.37)** of [quarteroni2000numerical], exactness. Let $x$ and $w$ be the
+Legendre–Gauss–Lobatto nodes and weights of $[-1, 1]$, and let $P$ and $Q$ be polynomials with
+$\deg(PQ) \le 2n - 1$. Then
+$$(P, Q)_n = \int_{-1}^1 P(t) Q(t)\, dt.$$
+
+This is the exactness of the Gauss–Lobatto rule of Sections 10.2 and 10.4. -/
 theorem equation_12_37_exact {n : ℕ} {x w : Fin (n + 1) → ℝ} (hx : IsLegendreLobatto n x w)
     {P Q : ℝ[X]} (hPQ : (P * Q).degree ≤ ((2 * n - 1 : ℕ) : WithBot ℕ)) :
     equation_12_37 n x w (fun t => P.eval t) (fun t => Q.eval t)
@@ -154,7 +192,9 @@ theorem equation_12_37_exact {n : ℕ} {x w : Fin (n + 1) → ℝ} (hx : IsLegen
   rw [hQ, ← h]
   exact Finset.sum_congr rfl fun j _ => by rw [eval_mul]; ring
 
-/-- The discrete scalar product is a positive form: `(v, v)_n ≥ 0`. -/
+/-- **Equation (12.37)** of [quarteroni2000numerical], positivity. If $x$ and $w$ are the
+Legendre–Gauss–Lobatto nodes and weights of $[-1, 1]$, then $(v, v)_n \ge 0$ for every
+$v : \mathbb{R} \to \mathbb{R}$. -/
 theorem equation_12_37_self_nonneg {n : ℕ} {x w : Fin (n + 1) → ℝ} (hx : IsLegendreLobatto n x w)
     (v : ℝ → ℝ) : 0 ≤ equation_12_37 n x w v v := by
   simp only [equation_12_37, Quadrature.discreteInner]
@@ -162,8 +202,9 @@ theorem equation_12_37_self_nonneg {n : ℕ} {x w : Fin (n + 1) → ℝ} (hx : I
   have hw := (hx.weight_pos j).le
   nlinarith [sq_nonneg (v (x j))]
 
-/-- **The Gauss–Lobatto weights sum to the length of the interval**, `∑_j w_j = 2`: the rule is
-exact on the constants. -/
+/-- **Equation (12.37)** of [quarteroni2000numerical], the sum of the weights. If $x$ and $w$ are
+the Legendre–Gauss–Lobatto nodes and weights of $[-1, 1]$, then $\sum_{j=0}^n w_j = 2$, the
+length of the interval, because the rule is exact on the constants. -/
 theorem equation_12_37_sum_weights {n : ℕ} {x w : Fin (n + 1) → ℝ}
     (hx : IsLegendreLobatto n x w) : ∑ j, w j = 2 := by
   have hdeg : (1 : ℝ[X]).degree ≤ ((2 * n - 1 : ℕ) : WithBot ℕ) := by
@@ -175,8 +216,12 @@ theorem equation_12_37_sum_weights {n : ℕ} {x w : Fin (n + 1) → ℝ}
   rw [h]
   norm_num
 
-/-- **`‖f‖_n ≤ √2 ‖f‖_∞`**, in the squared form `(f, f)_n ≤ 2 M²` for a bound `M` on the nodal
-values: the first of the two estimates the stability bound after (12.38) uses. -/
+/-- **Equation (12.37)** of [quarteroni2000numerical], the bound
+$\|f\|_n \le \sqrt{2} \|f\|_\infty$. Let $x$ and $w$ be the Legendre–Gauss–Lobatto nodes and
+weights of $[-1, 1]$, and let $|f(x_j)| \le M$ for $j = 0, \dots, n$. Then
+$$(f, f)_n \le 2M^2.$$
+
+This is the first of the two estimates that the stability bound after (12.38) uses. -/
 theorem equation_12_37_le_sup {n : ℕ} {x w : Fin (n + 1) → ℝ} (hx : IsLegendreLobatto n x w)
     {f : ℝ → ℝ} {M : ℝ} (hM : ∀ j, |f (x j)| ≤ M) :
     equation_12_37 n x w f f ≤ 2 * M ^ 2 := by
@@ -193,8 +238,12 @@ theorem equation_12_37_le_sup {n : ℕ} {x w : Fin (n + 1) → ℝ} (hx : IsLege
     _ = M ^ 2 * ∑ j, w j := by rw [Finset.mul_sum]
     _ = 2 * M ^ 2 := by rw [hsum]; ring
 
-/-- **Cauchy–Schwarz for the discrete scalar product (12.37)**: `(u, v)_n² ≤ (u, u)_n (v, v)_n`,
-which is the step `(f, v_n)_n ≤ ‖f‖_n ‖v_n‖_n` of the stability estimate after (12.38). -/
+/-- **Equation (12.37)** of [quarteroni2000numerical], the Cauchy–Schwarz inequality. If $x$ and $w$
+are the Legendre–Gauss–Lobatto nodes and weights of $[-1, 1]$, then for all
+$u, v : \mathbb{R} \to \mathbb{R}$
+$$(u, v)_n^2 \le (u, u)_n \, (v, v)_n.$$
+
+This is the step $(f, v_n)_n \le \|f\|_n \|v_n\|_n$ of the stability estimate after (12.38). -/
 theorem equation_12_37_inner_mul_le {n : ℕ} {x w : Fin (n + 1) → ℝ}
     (hx : IsLegendreLobatto n x w) (u v : ℝ → ℝ) :
     equation_12_37 n x w u v ^ 2
@@ -211,11 +260,16 @@ theorem equation_12_37_inner_mul_le {n : ℕ} {x w : Fin (n + 1) → ℝ}
 
 /-! ### The discrete weak form (12.38) -/
 
-/-- **(12.38), the discrete weak form of the collocation problem**: `p` solves (12.36) if and only
-if `p ∈ P_n^0` and `(L_n p, v_n)_n = (f, v_n)_n` for every `v_n ∈ P_n^0`.  Forwards, both sides are
-sums over the nodes whose endpoint terms vanish because `v_n(±1) = 0` and whose interior terms
-agree by the collocation equations; backwards, one tests with the Lagrange basis polynomial of an
-interior node and divides by its positive weight. -/
+/-- **Equation (12.38)** of [quarteroni2000numerical] (discrete weak form). Let $x$ and $w$ be the
+Legendre–Gauss–Lobatto nodes and weights of $[-1, 1]$, let $f : \mathbb{R} \to \mathbb{R}$, and
+let $p$ be a polynomial. Then $p$ solves the collocation problem (12.36) if and only if
+$p \in \mathbb{P}_n^0$ and
+$$(-p'', q)_n = (f, q)_n \qquad \text{for every } q \in \mathbb{P}_n^0.$$
+
+In the forward direction, both sides are sums over the nodes; the endpoint terms vanish because
+$q(\pm 1) = 0$, and the interior terms agree by the collocation equations. In the backward
+direction, one tests with the Lagrange basis polynomial of an interior node and divides by its
+positive weight. -/
 theorem equation_12_38 {n : ℕ} {x w : Fin (n + 1) → ℝ} (hx : IsLegendreLobatto n x w) (f : ℝ → ℝ)
     (p : ℝ[X]) :
     equation_12_36 n x f p ↔ p.natDegree ≤ n ∧ p.eval (-1) = 0 ∧ p.eval 1 = 0 ∧
@@ -266,11 +320,14 @@ theorem equation_12_38 {n : ℕ} {x w : Fin (n + 1) → ℝ} (hx : IsLegendreLob
     · intro h
       exact absurd (Finset.mem_univ j) h
 
-/-- **The energy identity of §12.3**: for `v ∈ P_n^0`,
-`(L_n v, v)_n = (L_n v, v) = ‖v'‖²_{L²(-1,1)}`
-— the discrete scalar product is exact on `v'' v ∈ P_{2n-2}`, and integration by parts costs
-nothing because `v` vanishes at both endpoints.  It is the coercivity that makes the collocation
-problem uniquely solvable and stable. -/
+/-- **Section 12.3** of [quarteroni2000numerical], the energy identity. Let $x$ and $w$ be the
+Legendre–Gauss–Lobatto nodes and weights of $[-1, 1]$, and let $v \in \mathbb{P}_n^0$. Then
+$$(L_n v, v)_n = (-v'', v)_n = \int_{-1}^1 v'(t)^2\, dt = \|v'\|_{L^2(-1, 1)}^2.$$
+
+The discrete scalar product is exact on $v'' v \in \mathbb{P}_{2n-2}$, so
+$(L_n v, v)_n = (Lv, v)$, and the integration by parts has no boundary terms because $v$
+vanishes at both endpoints. This coercivity makes the collocation problem uniquely solvable and
+stable. -/
 theorem equation_12_38_energy {n : ℕ} {x w : Fin (n + 1) → ℝ} (hx : IsLegendreLobatto n x w)
     {v : ℝ[X]} (hdeg : v.natDegree ≤ n) (hm1 : v.eval (-1) = 0) (h1 : v.eval 1 = 0) :
     equation_12_37 n x w (fun t => -(derivative (derivative v)).eval t) (fun t => v.eval t)
@@ -309,8 +366,11 @@ theorem equation_12_38_energy {n : ℕ} {x w : Fin (n + 1) → ℝ} (hx : IsLege
 
 /-! ### Young's inequality -/
 
-/-- **Exercise 12.8, Young's inequality (12.40)**: `a b ≤ ε a² + b²/(4 ε)` for every `ε > 0`, used
-in the proofs of Theorem 12.2 and Theorem 12.4. -/
+/-- **Exercise 12.8** of [quarteroni2000numerical] (Young's inequality, (12.40)). For every
+$\varepsilon > 0$ and all $a, b \in \mathbb{R}$,
+$$ab \le \varepsilon a^2 + \frac{b^2}{4\varepsilon}.$$
+
+The source uses it in the proofs of Theorem 12.2 and Theorem 12.4. -/
 theorem exercise_12_8 {ε : ℝ} (hε : 0 < ε) (a b : ℝ) :
     a * b ≤ ε * a ^ 2 + b ^ 2 / (4 * ε) := by
   rw [← sub_nonneg]
@@ -322,9 +382,15 @@ theorem exercise_12_8 {ε : ℝ} (hε : 0 < ε) (a b : ℝ) :
 
 /-! ### The stability estimate after (12.38) -/
 
-/-- The Legendre–Gauss–Lobatto rule is interpolatory and has the Lobatto nodal polynomial: the
-two facts the closed-form weights need, read off the bundle `IsLegendreLobatto` through the
-uniqueness of the Gauss–Lobatto rule (`Quadrature.nodal_eq_lobattoNodal_of_isExactOnMeasure`). -/
+/-- The Legendre–Gauss–Lobatto rule is interpolatory and has the Lobatto nodal polynomial; these are
+the two facts that the closed-form weights in
+`QuarteroniSaccoSaleri.Chapter12.equation_12_37_norm_equiv` need. Let $n \ge 1$, and let $x$ and
+$w$ be the Legendre–Gauss–Lobatto nodes and weights of $[-1, 1]$. Then the rule is interpolatory
+for the Legendre weight, and the nodal polynomial $\prod_{j=0}^n (X - x_j)$ is the Lobatto nodal
+polynomial `Quadrature.lobattoNodal` of degree $n + 1$.
+
+The proof uses the uniqueness of the Gauss–Lobatto rule,
+`Quadrature.nodal_eq_lobattoNodal_of_isExactOnMeasure`. -/
 theorem IsLegendreLobatto.isInterpolatoryMeasure_and_nodal_eq {n : ℕ} (hn : 1 ≤ n)
     {x w : Fin (n + 1) → ℝ} (hx : IsLegendreLobatto n x w) :
     Quadrature.IsInterpolatoryMeasure OrthogonalPolynomial.legendreMeasure w x ∧
@@ -336,10 +402,14 @@ theorem IsLegendreLobatto.isInterpolatoryMeasure_and_nodal_eq {n : ℕ} (hn : 1 
       OrthogonalPolynomial.isWeight_legendreMeasure OrthogonalPolynomial.legendreMeasure_compl_Icc
       hn hx.injective ⟨Fin.last n, hx.last⟩ ⟨0, hx.first⟩ hx.exact⟩
 
-/-- **The norm equivalence `‖v_n‖_{L²(-1,1)} ≤ ‖v_n‖_n ≤ √3 ‖v_n‖_{L²(-1,1)}` on `ℙ_n`** quoted in
-§12.3 from [CHQZ88] p. 286, in squared form: `∫_{-1}^1 v² ≤ (v, v)_n ≤ 3 ∫_{-1}^1 v²` for every
-polynomial `v` of degree at most `n`. Backbone
-`Quadrature.integral_sq_le_discreteInner_self_legendre` and
+/-- **Section 12.3** of [quarteroni2000numerical], the norm equivalence on $\mathbb{P}_n$. Let
+$n \ge 1$, let $x$ and $w$ be the Legendre–Gauss–Lobatto nodes and weights of $[-1, 1]$, and let
+$v$ be a polynomial of degree at most $n$. Then
+$$\int_{-1}^1 v(t)^2\, dt \le (v, v)_n \le 3 \int_{-1}^1 v(t)^2\, dt.$$
+That is, $\|v\|_{L^2(-1, 1)} \le \|v\|_n \le \sqrt{3} \|v\|_{L^2(-1, 1)}$.
+
+The source quotes this equivalence from Canuto, Hussaini, Quarteroni and Zang (1988), p. 286.
+The proof specializes `Quadrature.integral_sq_le_discreteInner_self_legendre` and
 `Quadrature.discreteInner_self_legendre_le_three_mul_integral_sq`. -/
 theorem equation_12_37_norm_equiv {n : ℕ} (hn : 1 ≤ n) {x w : Fin (n + 1) → ℝ}
     (hx : IsLegendreLobatto n x w) {v : ℝ[X]} (hv : v.natDegree ≤ n) :
@@ -355,11 +425,14 @@ theorem equation_12_37_norm_equiv {n : ℕ} (hn : 1 ≤ n) {x w : Fin (n + 1) �
   rw [OrthogonalPolynomial.integral_legendreMeasure] at h1 h2
   exact ⟨h1, h2⟩
 
-/-- **Poincaré's inequality (12.16) on `(-1, 1)` for a polynomial vanishing at `-1`**:
-`∫_{-1}^1 p² ≤ C_P² ∫_{-1}^1 (p')²` with `C_P² = (b - a)²/2 = 2`, the constant the stability
-estimate after (12.38) uses. As `Chapter13.poincare_classical` on `(0, 1)`: `p(y) = ∫_{-1}^y p'`,
-Cauchy–Schwarz against `1` gives `p(y)² ≤ (y + 1) ∫ (p')²`, and `∫_{-1}^1 (y + 1) dy = 2`; the
-backbone's `intervalIntegral.integral_sq_le_of_hasDerivAt_of_left_eq_zero` on `(-1, 1)`. -/
+/-- The Poincaré inequality (12.16) on $(-1, 1)$ for a polynomial, used in the stability estimate
+after (12.38). Let $p$ be a polynomial with $p(-1) = 0$. Then
+$$\int_{-1}^1 p(t)^2\, dt \le 2 \int_{-1}^1 p'(t)^2\, dt,$$
+with the constant $C_P^2 = (b - a)^2/2 = 2$.
+
+From $p(y) = \int_{-1}^y p'$, the Cauchy–Schwarz inequality against $1$ gives
+$p(y)^2 \le (y + 1) \int_{-1}^1 (p')^2$, and $\int_{-1}^1 (y + 1)\, dy = 2$. The proof
+specializes `intervalIntegral.integral_sq_le_of_hasDerivAt_of_left_eq_zero`. -/
 theorem poincare_poly {p : ℝ[X]} (hm1 : p.eval (-1) = 0) :
     (∫ t in (-1 : ℝ)..1, p.eval t ^ 2) ≤ 2 * ∫ t in (-1 : ℝ)..1, (derivative p).eval t ^ 2 := by
   have := intervalIntegral.integral_sq_le_of_hasDerivAt_of_left_eq_zero
@@ -368,13 +441,23 @@ theorem poincare_poly {p : ℝ[X]} (hm1 : p.eval (-1) = 0) :
   norm_num at this
   exact this
 
-/-- **The stability estimate after (12.38)**: a solution `u_n ∈ ℙ_n^0` of the collocation problem
-(12.36) with `|f(x_j)| ≤ M` at the nodes (`M = ‖f‖_∞` in the book) satisfies
-`‖u_n'‖_{L²(-1,1)} ≤ √6 C_P M` with the Poincaré constant `C_P = (b - a)/√2 = 2/√2` of (12.16) on
-`(-1, 1)`. Testing (12.38) with `v_n = u_n`, the energy identity `equation_12_38_energy` gives
-`‖u_n'‖² = (f, u_n)_n ≤ ‖f‖_n ‖u_n‖_n ≤ √2 M · √3 ‖u_n‖_{L²}` (`equation_12_37_inner_mul_le`,
-`equation_12_37_le_sup`, `equation_12_37_norm_equiv`) and Poincaré `‖u_n‖_{L²} ≤ C_P ‖u_n'‖_{L²}`
-closes the estimate. -/
+/-- **Section 12.3** of [quarteroni2000numerical], the stability estimate after (12.38). Let
+$n \ge 1$, let $x$ and $w$ be the Legendre–Gauss–Lobatto nodes and weights of $[-1, 1]$, let
+$|f(x_j)| \le M$ for $j = 0, \dots, n$, and let $u_n$ solve the collocation problem (12.36).
+Then
+$$\|u_n'\|_{L^2(-1, 1)} \le \sqrt{6} \, C_P M, \qquad C_P = \frac{2}{\sqrt{2}},$$
+where $C_P = (b - a)/\sqrt{2}$ is the Poincaré constant of (12.16) on $(-1, 1)$.
+
+**Generalization.** The source takes $M = \|f\|_\infty$. A bound on the values of $f$ at the
+nodes is enough.
+
+Testing (12.38) with $v_n = u_n$, the energy identity
+`QuarteroniSaccoSaleri.Chapter12.equation_12_38_energy` gives $\|u_n'\|^2 = (f, u_n)_n \le
+\|f\|_n \|u_n\|_n \le \sqrt{2} M \cdot \sqrt{3} \|u_n\|_{L^2}$, by
+`QuarteroniSaccoSaleri.Chapter12.equation_12_37_inner_mul_le`,
+`QuarteroniSaccoSaleri.Chapter12.equation_12_37_le_sup` and
+`QuarteroniSaccoSaleri.Chapter12.equation_12_37_norm_equiv`. The Poincaré inequality
+$\|u_n\|_{L^2} \le C_P \|u_n'\|_{L^2}$ closes the estimate. -/
 theorem equation_12_38_stability {n : ℕ} (hn : 1 ≤ n) {x w : Fin (n + 1) → ℝ}
     (hx : IsLegendreLobatto n x w) {f : ℝ → ℝ} {M : ℝ} (hM : ∀ j, |f (x j)| ≤ M) {p : ℝ[X]}
     (hp : equation_12_36 n x f p) :
@@ -415,10 +498,13 @@ theorem equation_12_38_stability {n : ℕ} (hn : 1 ≤ n) {x w : Fin (n + 1) →
   rw [hconst]
   exact Real.sqrt_le_sqrt hEle
 
-/-- **Uniqueness for the collocation problem (12.36)**, the consequence of the stability estimate
-after (12.38): two solutions `u_n`, `ũ_n ∈ ℙ_n^0` of (12.36) for the same `f` coincide. Their
-difference solves (12.36) with `f = 0`, so `‖(u_n - ũ_n)'‖_{L²} ≤ 0`; a polynomial with vanishing
-derivative is constant, and it vanishes at `±1`. -/
+/-- **Section 12.3** of [quarteroni2000numerical], uniqueness for the collocation problem (12.36),
+the consequence of the stability estimate after (12.38). Let $n \ge 1$, let $x$ and $w$ be the
+Legendre–Gauss–Lobatto nodes and weights of $[-1, 1]$, and let $p$ and $q$ solve the collocation
+problem (12.36) with the same $f$. Then $p = q$.
+
+The difference $p - q$ solves (12.36) with $f = 0$, so $\|(p - q)'\|_{L^2} \le 0$. A polynomial
+with zero derivative is constant, and this constant vanishes at $\pm 1$. -/
 theorem equation_12_36_unique {n : ℕ} (hn : 1 ≤ n) {x w : Fin (n + 1) → ℝ}
     (hx : IsLegendreLobatto n x w) {f : ℝ → ℝ} {p q : ℝ[X]} (hp : equation_12_36 n x f p)
     (hq : equation_12_36 n x f q) : p = q := by

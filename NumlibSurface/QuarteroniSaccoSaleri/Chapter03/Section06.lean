@@ -6,36 +6,45 @@ import Numlib.LinearAlgebra.Matrix.FaddeevLeVerrier
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter03.Section05
 
 /-!
-# Quarteroni–Sacco–Saleri §3.6: computing the inverse of a matrix
+# Quarteroni, Sacco and Saleri, Section 3.6: Computing the inverse of a matrix
 
-Surface file for Alfio Quarteroni, Riccardo Sacco and Fausto Saleri, *Numerical Mathematics*
-[quarteroni2000numerical], §3.6, over the backbone `Numlib/Direct/Substitution` (forward and
-backward substitution `Matrix.forwardSubst`, `Matrix.backSubst`, the LU solve `Matrix.luSolve`
-and its correctness with a row permutation) and
-`Numlib/LinearAlgebra/Matrix/FaddeevLeVerrier` (the recurrence `Matrix.faddeevB`,
-`Matrix.faddeevAlpha` and the formula `Matrix.faddeevLeverrier_inv` for the inverse).
+This module formalizes Section 3.6 of [quarteroni2000numerical]. The inverse $X = A^{-1}$ of a
+nonsingular matrix $A \in \mathbb{R}^{n \times n}$ has as columns the solutions $x_i$ of
+$Ax_i = e_i$. With a factorization $PA = LU$, they are found by solving the $2n$ triangular systems
+$Ly_i = Pe_i$ and $Ux_i = y_i$, $i = 1, \ldots, n$. The module also states the Faddeev–LeVerrier
+formula, which computes $A^{-1}$ from the recurrence $B_k = -AB_{k-1} + \alpha_k I$,
+$\alpha_k = \operatorname{tr}(AB_{k-1})/k$.
+
+The proofs specialize the backbone modules `Numlib.Direct.Substitution` (forward and backward
+substitution `Matrix.forwardSubst` and `Matrix.backSubst`, the solve `Matrix.luSolve` and its
+correctness with a row permutation) and `Numlib.LinearAlgebra.Matrix.FaddeevLeVerrier` (the
+recurrence `Matrix.faddeevB`, `Matrix.faddeevAlpha` and the formula `Matrix.faddeevLeverrier_inv`
+for the inverse).
+
+## Main results
+
+* Section 3.6, `QuarteroniSaccoSaleri.Chapter03.inv_col_eq_luSolve`: the columns of $A^{-1}$ are the
+  solutions of the triangular systems $Ly_i = Pe_i$, $Ux_i = y_i$.
+* Section 3.6, `QuarteroniSaccoSaleri.Chapter03.inv_col_partialPivoting`: the same with the factors
+  of GEM with partial pivoting.
+* Section 3.6, `QuarteroniSaccoSaleri.Chapter03.faddeevLeverrier`: the Faddeev–LeVerrier recurrence
+  gives $B_n = 0$ and $A^{-1} = B_{n-1}/\alpha_n$.
 
 ## Conventions
 
-Those of §3.3 and §3.5: an LU factorization is `Matrix.IsLU A L U` (`L` unit lower triangular,
-`U` upper triangular, `L U = A`), a permutation matrix is `σ.permMatrix ℝ`, and the `i`-th vector
-of the canonical basis `e_i` is `Pi.single i 1`, so that the `i`-th column of `X = A⁻¹` is
-`A⁻¹.col i = A⁻¹ *ᵥ e_i` (`Matrix.mulVec_single_one`). The book's `k = 1, …, n` recurrence is
-`0`-based: `B₀ = 1` and the step from `k` to `k + 1` is
-`α_{k+1} = tr(A B_k) / (k + 1)`, `B_{k+1} = -A B_k + α_{k+1} I`, so that the book's `B_k`, `α_k`
-are `Matrix.faddeevB A k`, `Matrix.faddeevAlpha A k` and its terminal index `n` is
-`Fintype.card (Fin n) = n`.
+* As in Sections 3.3 and 3.5, an LU factorization is `Matrix.IsLU A L U`, and a permutation matrix
+  is `σ.permMatrix ℝ`.
+* The $i$-th vector $e_i$ of the canonical basis is `Pi.single i 1`. The $i$-th column of $A^{-1}$
+  is `A⁻¹.col i`, which equals `A⁻¹ *ᵥ Pi.single i 1` (`Matrix.mulVec_single_one`).
+* The recurrence is $0$-based: $B_0 = I$, and the step from $k$ to $k + 1$ is
+  $\alpha_{k+1} = \operatorname{tr}(AB_k)/(k + 1)$, $B_{k+1} = -AB_k + \alpha_{k+1} I$. The book's
+  $B_k$ and $\alpha_k$ are `Matrix.faddeevB A k` and `Matrix.faddeevAlpha A k`, and its last index
+  $n$ is `Fintype.card (Fin n) = n`.
 
-## Contents
+## Not formalized
 
-* `inv_col_eq_luSolve` — the `2n` triangular systems `L y_i = P e_i`, `U x_i = y_i` and their
-  solution, the `i`-th column of `A⁻¹`.
-* `inv_col_partialPivoting` — the same with the factors produced by GEM with partial pivoting,
-  the `P A = L U` of (3.52).
-* `faddeevLeverrier` — the Faddeev–LeVerrier recurrence, `B_n = 0` and `A⁻¹ = B_{n-1} / α_n`.
-
-The operation counts (`(n - 1) n³` flops for the Faddeev–LeVerrier route) and the remark that
-inverting a matrix can be less stable than GEM are prose.
+* **The operation counts**, among them the $(n - 1)n^3$ flops of the Faddeev–LeVerrier formula.
+* **The remark** that computing the inverse can be less stable than GEM.
 -/
 
 open Finset Matrix
@@ -46,15 +55,18 @@ variable {n : ℕ}
 
 /-! ### The inverse through the LU factorization -/
 
-/-- **§3.6, the `2n` triangular systems.** Let `A ∈ ℝ^{n×n}` be nonsingular and let `P A = L U`
-with `P` a permutation matrix and `U` with no zero pivot. Denoting by `X = A⁻¹` the inverse, the
-column vectors of `X` are the solutions of `A x_i = e_i`, and they are obtained by solving the
-`2n` triangular systems
+/-- **Section 3.6** of [quarteroni2000numerical], the $2n$ triangular systems. Let
+$A \in \mathbb{R}^{n \times n}$ be nonsingular, let $P$ be a permutation matrix, and let
+$PA = LU$ be an LU factorization in which $U$ has nonzero diagonal entries. Let $x_i$ be the
+$i$-th column of $X = A^{-1}$. Then $Ax_i = e_i$, and $x_i$ is obtained by solving the two
+triangular systems
+$$Ly_i = Pe_i, \qquad Ux_i = y_i,$$
+the first by forward substitution and the second by backward substitution. The $2n$ systems, for
+$i = 1, \ldots, n$, have the same coefficient matrices and different right-hand sides.
 
-`L y_i = P e_i`, `U x_i = y_i`, `i = 1, …, n`,
-
-a succession of systems with the same coefficient matrices and different right-hand sides
-(backbone `Matrix.forwardSubst`, `Matrix.backSubst`, `Matrix.mulVec_luSolve_permMatrix`). -/
+The vector $y_i$ is `forwardSubst L (σ.permMatrix ℝ *ᵥ Pi.single i 1)`, and the computed $x_i$
+is `luSolve L U (σ.permMatrix ℝ *ᵥ Pi.single i 1)` (see `Matrix.forwardSubst` and
+`Matrix.luSolve`). The proof uses `Matrix.mulVec_luSolve_permMatrix`. -/
 theorem inv_col_eq_luSolve {A L U : Matrix (Fin n) (Fin n) ℝ} (hA : IsUnit A)
     {σ : Equiv.Perm (Fin n)} (h : IsLU (σ.permMatrix ℝ * A) L U) (hd : ∀ i, U i i ≠ 0)
     (i : Fin n) :
@@ -72,10 +84,11 @@ theorem inv_col_eq_luSolve {A L U : Matrix (Fin n) (Fin n) ℝ} (hA : IsUnit A)
   refine mulVec_injective_iff_isUnit.2 hA ?_
   rw [mulVec_luSolve_permMatrix _ h hd, hcol]
 
-/-- **§3.6 with partial pivoting.** The factorization used in practice is the one (3.52) produces:
-`P A = L U` with `P` the permutation matrix of GEM with partial pivoting, `L` the matrix of the
-multipliers and `U` the last stage of the elimination. The columns of `A⁻¹` are then the
-`luSolve L U (P e_i)`. -/
+/-- **Section 3.6** of [quarteroni2000numerical], with partial pivoting. Let
+$A \in \mathbb{R}^{n \times n}$ be nonsingular, and let $PA = LU$ be the factorization (3.52)
+that GEM with partial pivoting produces: $P$ is the accumulated permutation matrix, $L$ is the
+matrix of the multipliers and $U$ is the last stage of the elimination. Then for every $i$,
+solving $Ly_i = Pe_i$ and $Ux_i = y_i$ gives the $i$-th column $x_i$ of $A^{-1}$. -/
 theorem inv_col_partialPivoting {A : Matrix (Fin n) (Fin n) ℝ} (hA : IsUnit A) (i : Fin n) :
     luSolve (gemLower ((gemPivotStage A partialPivotRow n).2.permMatrix ℝ * A))
       (gemPivotStage A partialPivotRow n).1
@@ -92,14 +105,17 @@ theorem inv_col_partialPivoting {A : Matrix (Fin n) (Fin n) ℝ} (hA : IsUnit A)
 
 /-! ### The Faddeev–LeVerrier formula -/
 
-/-- **§3.6, the Faddeev or Leverrier formula.** Letting `B₀ = I`, the recurrence
+/-- **Section 3.6** of [quarteroni2000numerical], the Faddeev or Leverrier formula. Let
+$A \in \mathbb{R}^{n \times n}$, let $B_0 = I$, and let
+$$\alpha_k = \frac{\operatorname{tr}(AB_{k-1})}{k}, \qquad B_k = -AB_{k-1} + \alpha_k I, \qquad
+  k = 1, 2, \ldots.$$
+Then $\alpha_n = \det A$ and $B_n = 0$. If $\alpha_n \neq 0$, that is, if $A$ is nonsingular,
+then
+$$A^{-1} = \frac{1}{\alpha_n} B_{n-1}.$$
 
-`α_k = tr(A B_{k-1}) / k`, `B_k = -A B_{k-1} + α_k I`, `k = 1, 2, …, n`,
-
-satisfies `B_n = 0`, and if `α_n ≠ 0` — that is, if `A` is nonsingular, `α_n` being `det A` —
-then `A⁻¹ = B_{n-1} / α_n` (backbone `Matrix.faddeevB`, `Matrix.faddeevAlpha`,
-`Matrix.faddeevB_card_eq_zero`, `Matrix.faddeevLeverrier_inv`; `B_n = 0` is the Cayley–Hamilton
-theorem and the `α_k` are, up to sign, the coefficients of the characteristic polynomial). -/
+The identity $B_n = 0$ is the Cayley–Hamilton theorem, and the $\alpha_k$ are, up to sign, the
+coefficients of the characteristic polynomial. The proof uses `Matrix.faddeevB_card_eq_zero` and
+`Matrix.faddeevLeverrier_inv`. -/
 theorem faddeevLeverrier (A : Matrix (Fin n) (Fin n) ℝ) :
     faddeevB A 0 = 1 ∧
       (∀ k : ℕ, faddeevAlpha A (k + 1) = trace (A * faddeevB A k) / (k + 1)) ∧

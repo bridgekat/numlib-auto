@@ -9,36 +9,85 @@ import Numlib.RingTheory.Polynomial.RuleOfSigns
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter06.Section03
 
 /-!
-# Quarteroni–Sacco–Saleri §6.4: zeros of algebraic equations
+# Quarteroni, Sacco and Saleri, Section 6.4: Zeros of Algebraic Equations
 
-Surface file for Alfio Quarteroni, Riccardo Sacco and Fausto Saleri, *Numerical Mathematics*
-[quarteroni2000numerical], §6.4: Descartes' rule of signs (Property 6.5) and Cauchy's bound
-(Property 6.6) for localizing the zeros of a real polynomial, Horner's scheme (6.25)–(6.27) and
-synthetic division (6.28), the deflation identity, the Newton–Horner method (6.29) with
-`p'(z) = q(z; z)`, and Muller's method (6.30) with its cited order. Polynomials are `ℝ[X]`, the
-book's real coefficients; the associated polynomial `q_{n-1}(·; z)` is `p /ₘ (X - C z)`. The
-backbone is `Numlib/RingTheory/Polynomial/{Horner, RuleOfSigns}` over Mathlib's
-`Polynomial.divByMonic`, `signVariations` and `cauchyBound`.
+This module formalizes Section 6.4 of [quarteroni2000numerical], on the zeros of a polynomial
+$p_n(x) = \sum_{k=0}^n a_k x^k$ with real coefficients. Two results localize the zeros: Descartes'
+rule of signs (Property 6.5) bounds the number of positive real zeros by the number of sign changes
+in the coefficients, and Cauchy's theorem (Property 6.6) puts all complex zeros in the disc
+$|z| \le 1 + \max_{k < n} |a_k / a_n|$. Horner's scheme (6.25)–(6.26) evaluates $p_n(z)$, and its
+intermediate values $b_k$ are the coefficients of the associated polynomial $q_{n-1}(x; z)$ of
+(6.27), the quotient of $p_n$ by $x - z$. This gives the division identity
+$p_n(x) = b_0 + (x - z) q_{n-1}(x; z)$, the deflation of a known zero, and the identity
+$p_n'(z) = q_{n-1}(z; z)$ behind the Newton–Horner method (6.29).
 
-## Readings
+The module also states division with remainder (6.28), and Muller's method (6.30) with the order of
+convergence that the source cites. The proofs specialize `Numlib.RingTheory.Polynomial.Horner`,
+`Numlib.RingTheory.Polynomial.RuleOfSigns` and the Muller iteration in `Numlib.Nonlinear.Secant`,
+over Mathlib's `Polynomial.divByMonic`, `Polynomial.signVariations` and `Polynomial.cauchyBound`.
 
-* Property 6.5: Mathlib's `signVariations` ignores zero coefficients, as the book's "number of
-  sign changes in `{a_j}`" must; the parity clause is the backbone's
-  `even_signVariations_sub_roots_countP_pos`.
-* Property 6.6 is stated for the complex zeros of the real polynomial through
-  `p.map Complex.ofRealHom`; Mathlib's `cauchyBound` gives the strict inequality, the book's `≤`.
-* (6.28): `g_m ∈ P_m` is read as a polynomial of degree exactly `m` (otherwise the remainder is not
-  unique), and `ρ ∈ P_{m-1}` as `degree ρ < m`, which also covers `m = 0`.
-* Muller's order (`muller_order`) is stated in the book's own sense of order, Definition 6.1, with
-  `p = Real.tribonacci ≈ 1.8393` — the real root of `p³ = p² + p + 1`, which is what the printed
-  `p ≃ 1.84` names. The book's sharper *limit* form
-  `|e^{(k+1)}| / |e^{(k)}|^p → |f⁽³⁾(α) / f'(α)| / 6` is **not** claimed here: the backbone's
-  `Muller.exists_ball_convergesWithOrder` proves the two-sided bounds of
-  `Muller.LocalData.step_bounds`, whose constants tend to `|f⁽³⁾(α) / (6 f'(α))|` as the ball and
-  the tolerance shrink but are not driven to it along a single orbit. Property 6.2 for the secant
-  method is treated the same way. The book quotes the limit from Hildebrand without proof.
-* Muller's method is formalized in real arithmetic only, hence for a simple *real* root; see the
-  backbone module's discussion of the radicand of (6.30).
+## Main definitions
+
+* Equation (6.27), `QuarteroniSaccoSaleri.Chapter06.equation_6_27`: the associated polynomial
+  $q_{n-1}(x; z)$, the quotient of $p_n$ by $x - z$.
+* Equation (6.29), `QuarteroniSaccoSaleri.Chapter06.equation_6_29`: the Newton–Horner method.
+* Equation (6.30), `QuarteroniSaccoSaleri.Chapter06.equation_6_30`: Muller's method, in real
+  arithmetic.
+
+## Main results
+
+* Property 6.5, `QuarteroniSaccoSaleri.Chapter06.property_6_5`: the number of positive real roots is
+  at most the number of sign changes of the coefficients.
+* Property 6.5, `QuarteroniSaccoSaleri.Chapter06.property_6_5_parity`: the difference of the two
+  numbers is even.
+* Property 6.6, `QuarteroniSaccoSaleri.Chapter06.property_6_6`: every complex zero $z$ satisfies
+  $|z| \le 1 + \max_{k < n} |a_k / a_n|$.
+* Equations (6.25)–(6.26), `QuarteroniSaccoSaleri.Chapter06.equation_6_26`: Horner's scheme
+  evaluates $p_n(z)$, and synthetic division gives the coefficients of the quotient by $x - z$.
+* Equation (6.27), `QuarteroniSaccoSaleri.Chapter06.equation_6_27_natDegree` and
+  `QuarteroniSaccoSaleri.Chapter06.equation_6_27_coeff`: the associated polynomial has degree
+  $n - 1$ and the coefficients $b_1, \dots, b_n$.
+* Equation (6.28), `QuarteroniSaccoSaleri.Chapter06.equation_6_28`: division with remainder by a
+  polynomial of degree $m \le n$ has a unique quotient and remainder.
+* Section 6.4.1, `QuarteroniSaccoSaleri.Chapter06.hornerDivision`:
+  $p_n(x) = p_n(z) + (x - z) q_{n-1}(x; z)$.
+* Section 6.4.1, `QuarteroniSaccoSaleri.Chapter06.deflation`: at a zero $z$,
+  $p_n(x) = (x - z) q_{n-1}(x; z)$, and the other roots of $p_n$ are the roots of $q_{n-1}$.
+* Section 6.4.2, `QuarteroniSaccoSaleri.Chapter06.derivative_eq_associatedPolynomial`:
+  $p_n'(z) = q_{n-1}(z; z)$.
+* Section 6.4.2, `QuarteroniSaccoSaleri.Chapter06.equation_6_29_eq_newton`: the Newton–Horner method
+  is Newton's method for $p_n$.
+* Section 6.4.3, `QuarteroniSaccoSaleri.Chapter06.muller_order`: Muller's method converges near a
+  simple real root with order $p \approx 1.84$ in the sense of Definition 6.1.
+
+## Implementation notes
+
+* Polynomials are Mathlib's `Polynomial` with real coefficients. The associated polynomial
+  $q_{n-1}(\cdot; z)$ is `p /ₘ (X - C z)`.
+* Coefficient lists are Mathlib's `Polynomial.coeffList`, with the leading coefficient first.
+* Muller's method is formalized in real arithmetic only. The square root is `Real.sqrt`, whose value
+  is $0$ for a negative radicand, so the formal method finds simple real roots only.
+
+## Deviations from the source
+
+* **Property 6.5** (reading). The "number of sign changes" of the coefficients ignores the zero
+  coefficients. See `QuarteroniSaccoSaleri.Chapter06.property_6_5`.
+* **Property 6.6** (reading). The zeros are the complex zeros of the real polynomial. See
+  `QuarteroniSaccoSaleri.Chapter06.property_6_6`.
+* **Equation (6.28)** (reading). The divisor $g_m \in \mathbb{P}_m$ has degree exactly $m$, and the
+  remainder $\rho \in \mathbb{P}_{m-1}$ has degree less than $m$. See
+  `QuarteroniSaccoSaleri.Chapter06.equation_6_28`.
+* **Section 6.4.3, order of Muller's method** (reading). The order $p \simeq 1.84$ is the real root
+  of $p^3 = p^2 + p + 1$, in the sense of Definition 6.1. See
+  `QuarteroniSaccoSaleri.Chapter06.muller_order`.
+
+## Not formalized
+
+* **Section 6.4.3, the limit form of the order of Muller's method**, $|e^{(k+1)}| / |e^{(k)}|^p \to
+  |f'''(\alpha) / f'(\alpha)| / 6$. The source quotes it from Hildebrand without proof, and the
+  backbone proves only two-sided bounds whose constants are not driven to this limit along a single
+  orbit.
+* **Muller's method in complex arithmetic**, for complex roots.
 -/
 
 open Filter Polynomial Set Topology
@@ -51,21 +100,38 @@ section Localization
 
 variable (p : ℝ[X])
 
-/-- **Property 6.5 (Descartes' rule of signs), first half.** The number `k` of positive real roots
-of `p`, counted with multiplicity, is at most the number `ν` of sign changes in its coefficients.
-Mathlib's `Polynomial.roots_countP_pos_le_signVariations`. -/
+/-- **Property 6.5** of [quarteroni2000numerical] (Descartes' rule of signs), first half. Let $p$ be
+a real polynomial. The number $k$ of positive real roots of $p$, counted with multiplicity, is
+at most the number $\nu$ of sign changes in the sequence of its coefficients.
+
+**Reading.** The sign changes are counted after the zero coefficients are removed. This is
+Mathlib's `Polynomial.signVariations`.
+
+For $p = 0$ both numbers are $0$. The proof is Mathlib's
+`Polynomial.roots_countP_pos_le_signVariations`. -/
 theorem property_6_5 : p.roots.countP (0 < ·) ≤ p.signVariations :=
   roots_countP_pos_le_signVariations p
 
-/-- **Property 6.5, second half.** `ν - k` is even. The backbone's
-`Polynomial.even_signVariations_sub_roots_countP_pos`. -/
+/-- **Property 6.5** of [quarteroni2000numerical] (Descartes' rule of signs), second half. Let
+$p \neq 0$ be a real polynomial, let $k$ be the number of its positive real roots, counted with
+multiplicity, and let $\nu$ be the number of sign changes in its coefficients. Then $\nu - k$ is
+even.
+
+The difference is the truncated difference of natural numbers; by the first half it is the true
+difference. The proof is the backbone's `Polynomial.even_signVariations_sub_roots_countP_pos`. -/
 theorem property_6_5_parity (hp : p ≠ 0) : Even (p.signVariations - p.roots.countP (0 < ·)) :=
   even_signVariations_sub_roots_countP_pos hp
 
-/-- **Property 6.6 (Cauchy's theorem).** All zeros of `p_n`, `n ≥ 1`, lie in the disc
-`|z| ≤ 1 + η`, `η = max_{0 ≤ k ≤ n-1} |a_k / a_n|`. Mathlib's
-`Polynomial.IsRoot.norm_lt_cauchyBound`, whose bound `sup ‖a_k‖₊ / ‖a_n‖₊ + 1` is `1 + η` and whose
-inequality is strict. -/
+/-- **Property 6.6** of [quarteroni2000numerical] (Cauchy's theorem). Let
+$p_n(x) = \sum_{k=0}^n a_k x^k$ be a real polynomial of degree $n \ge 1$, and let
+$z \in \mathbb{C}$ be a zero of $p_n$. Then
+$$|z| \le 1 + \eta, \qquad \eta = \max_{0 \le k \le n-1} \left| \frac{a_k}{a_n} \right|.$$
+
+**Reading.** The source says that all zeros of $p_n$ lie in the disc. The statement takes the
+complex zeros of the real polynomial, as roots of `p.map Complex.ofRealHom`.
+
+The proof uses Mathlib's `Polynomial.IsRoot.norm_lt_cauchyBound`, whose bound
+$\max_k |a_k| / |a_n| + 1$ is $1 + \eta$ and whose inequality is strict. -/
 theorem property_6_6 (hn : 0 < p.natDegree) {z : ℂ} (hz : (p.map Complex.ofRealHom).IsRoot z) :
     ‖z‖ ≤ 1 + (Finset.range p.natDegree).sup' (Finset.nonempty_range_iff.2 hn.ne')
       (fun k => |p.coeff k / p.leadingCoeff|) := by
@@ -104,34 +170,47 @@ theorem property_6_6 (hn : 0 < p.natDegree) {z : ℂ} (hz : (p.map Complex.ofRea
 
 end Localization
 
-/-! ### §6.4.1 The Horner method and deflation -/
+/-! ### Section 6.4.1: The Horner method and deflation -/
 
 section Horner
 
 variable (p : ℝ[X]) (z : ℝ)
 
-/-- **(6.25)–(6.26), Horner's scheme and synthetic division.** The nested form
-`a₀ + x (a₁ + x (a₂ + … ))` evaluates the polynomial (`Polynomial.hornerEval_coeffList`), and the
-intermediate values `bₙ = aₙ`, `bₖ = aₖ + bₖ₊₁ z` of the synthetic division algorithm are the
-coefficients of the quotient by `x - z` followed by `b₀ = p(z)`
-(`Polynomial.hornerScan_coeffList`). -/
+/-- **Equations (6.25)–(6.26)** of [quarteroni2000numerical], Horner's scheme and synthetic
+division. Let $p_n(x) = \sum_{k=0}^n a_k x^k$ be a real polynomial and $z \in \mathbb{R}$. Then:
+
+* the nested form $a_0 + z(a_1 + z(a_2 + \cdots + z a_n))$ is $p_n(z)$;
+* if $p_n \neq 0$, the values $b_n = a_n$ and $b_k = a_k + b_{k+1} z$ for $k = n - 1, \dots, 0$
+  of the synthetic division algorithm are the coefficients $b_n, \dots, b_1$ of the quotient of
+  $p_n$ by $x - z$, followed by $b_0 = p_n(z)$.
+
+The nested form is `Polynomial.hornerEval` and the list $[b_n, \dots, b_0]$ is
+`Polynomial.hornerScan`, both applied to the coefficient list $[a_n, \dots, a_0]$. The proof
+specializes `Polynomial.hornerEval_coeffList` and `Polynomial.hornerScan_coeffList`. -/
 theorem equation_6_26 :
     hornerEval p.coeffList z = p.eval z ∧
       (p ≠ 0 → hornerScan p.coeffList z = (p /ₘ (X - C z)).coeffList ++ [p.eval z]) :=
   ⟨hornerEval_coeffList p z, fun hp => hornerScan_coeffList hp z⟩
 
-/-- **(6.27), the associated polynomial** `q_{n-1}(x; z) = ∑_{k=1}^n b_k x^{k-1}` of `p_n`: the
-quotient `p /ₘ (X - C z)` of the division by `x - z`. -/
+/-- **Equation (6.27)** of [quarteroni2000numerical]. The **associated polynomial** of the real
+polynomial $p_n$ at $z \in \mathbb{R}$ is
+$$q_{n-1}(x; z) = \sum_{k=1}^n b_k x^{k-1},$$
+with $b_k$ the values of the synthetic division (6.26). It is defined as the quotient
+`p /ₘ (X - C z)` of $p_n$ by $x - z$. -/
 noncomputable def equation_6_27 (p : ℝ[X]) (z : ℝ) : ℝ[X] := p /ₘ (X - C z)
 
-/-- The associated polynomial of `p_n`, `n ≥ 1`, has degree `n - 1`.
-`Polynomial.natDegree_divByMonic_X_sub_C`. -/
+/-- The associated polynomial $q_{n-1}(\cdot; z)$ of a real polynomial $p_n$ of degree $n \ge 1$ has
+degree $n - 1$. The proof is `Polynomial.natDegree_divByMonic_X_sub_C`. -/
 theorem equation_6_27_natDegree (hn : 0 < p.natDegree) :
     (equation_6_27 p z).natDegree = p.natDegree - 1 :=
   (natDegree_divByMonic_X_sub_C hn z).2
 
-/-- The coefficients of the associated polynomial are the `b_k`, `k ≥ 1`, of (6.26): the `i`-th
-entry of the synthetic division scan `[bₙ, …, b₁, b₀]` is `q.coeff (n - 1 - i)` for `i < n`.
+/-- The coefficients of the associated polynomial $q_{n-1}(\cdot; z)$ are the values $b_k$,
+$k \ge 1$, of (6.26). Let $p_n$ have degree $n$, and let $i < n$. Then the entry of index $i$ of
+the list $[b_n, \dots, b_1, b_0]$ of synthetic division is the coefficient of $x^{n-1-i}$ in
+$q_{n-1}(\cdot; z)$.
+
+The list is `Polynomial.hornerScan` of the coefficient list, indexed from $0$. The proof uses
 `Polynomial.hornerEval_take_coeffList`. -/
 theorem equation_6_27_coeff {i : ℕ} (hi : i < p.natDegree) :
     (hornerScan p.coeffList z)[i]'(by simp [coeffList,
@@ -142,10 +221,20 @@ theorem equation_6_27_coeff {i : ℕ} (hi : i < p.natDegree) :
     hornerEval_take_coeffList p z hi]
   rfl
 
-/-- **(6.28), division of polynomials.** Given `h_n ∈ P_n` and `g_m` of degree `m ≤ n`, there are
-a unique `δ ∈ P_{n-m}` and a unique `ρ ∈ P_{m-1}` (i.e. `degree ρ < m`) with
-`h_n = g_m δ + ρ`. Mathlib's `divByMonic`/`modByMonic` of the monic multiple `g · lc(g)⁻¹`, with
-`div_modByMonic_unique` for the uniqueness. -/
+/-- **Equation (6.28)** of [quarteroni2000numerical], division of polynomials. Let $m \le n$, let
+$h$ be a real polynomial of degree at most $n$, and let $g$ be a real polynomial of degree $m$.
+Then there is exactly one pair $(\delta, \rho)$ of real polynomials with
+$\deg \delta \le n - m$, $\deg \rho < m$ and
+$$h = g \delta + \rho.$$
+
+**Reading.** The source writes $h_n \in \mathbb{P}_n$, $g_m \in \mathbb{P}_m$,
+$\delta \in \mathbb{P}_{n-m}$ and $\rho \in \mathbb{P}_{m-1}$. Here $g_m$ has degree exactly
+$m$, because otherwise the remainder is not unique, and $\rho \in \mathbb{P}_{m-1}$ means
+$\deg \rho < m$, which also covers $m = 0$.
+
+The proof uses Mathlib's `Polynomial.divByMonic` and `Polynomial.modByMonic` by the monic
+polynomial $g / \operatorname{lc}(g)$, with `Polynomial.div_modByMonic_unique` for the
+uniqueness. -/
 theorem equation_6_28 {h g : ℝ[X]} {n m : ℕ} (hh : h.degree ≤ n) (hg : g.degree = m)
     (_hmn : m ≤ n) :
     ∃! δρ : ℝ[X] × ℝ[X], δρ.1.degree ≤ (n - m : ℕ) ∧ δρ.2.degree < m ∧ h = g * δρ.1 + δρ.2 := by
@@ -178,17 +267,23 @@ theorem equation_6_28 {h g : ℝ[X]} {n m : ℕ} (hh : h.degree ≤ n) (hg : g.d
     simp only
     rw [hunique.1, ← mul_assoc, ← C_mul, inv_mul_cancel₀ hlc, C_1, one_mul]
 
-/-- **The display after (6.28), synthetic division**: dividing `p_n` by `x - z` gives the
-quotient `q_{n-1}(·; z)` and the remainder `b₀ = p_n(z)`,
-`p_n(x) = b₀ + (x - z) q_{n-1}(x; z)`. `Polynomial.eq_X_sub_C_mul_divByMonic_add_C_eval`. -/
+/-- **Section 6.4.1** of [quarteroni2000numerical], the identity after (6.28) for synthetic
+division. Let $p_n$ be a real polynomial and $z \in \mathbb{R}$. Division of $p_n$ by $x - z$
+gives the quotient $q_{n-1}(\cdot; z)$ and the remainder $b_0 = p_n(z)$:
+$$p_n(x) = p_n(z) + (x - z) q_{n-1}(x; z).$$
+
+The proof is `Polynomial.eq_X_sub_C_mul_divByMonic_add_C_eval`. -/
 theorem hornerDivision : p = C (p.eval z) + (X - C z) * equation_6_27 p z := by
   rw [add_comm]
   exact eq_X_sub_C_mul_divByMonic_add_C_eval p z
 
-/-- **Deflation** (§6.4.1). If `z` is a zero of `p_n` then `p_n(x) = (x - z) q_{n-1}(x; z)`
-(Mathlib's `mul_divByMonic_eq_iff_isRoot`), and the equation `q_{n-1}(x; z) = 0` yields the
-remaining `n - 1` roots of `p_n`, with multiplicities
-(`Polynomial.roots_divByMonic_X_sub_C`). -/
+/-- **Section 6.4.1** of [quarteroni2000numerical], deflation. Let $p_n$ be a real polynomial and
+let $z$ be a zero of $p_n$. Then $p_n(x) = (x - z) q_{n-1}(x; z)$. If moreover $p_n \neq 0$, the
+roots of $p_n$, counted with multiplicity, are $z$ together with the roots of
+$q_{n-1}(\cdot; z)$.
+
+So the equation $q_{n-1}(x; z) = 0$ gives the remaining $n - 1$ roots of $p_n$. The proof uses
+Mathlib's `Polynomial.mul_divByMonic_eq_iff_isRoot` and `Polynomial.roots_divByMonic_X_sub_C`. -/
 theorem deflation (hz : p.IsRoot z) :
     p = (X - C z) * equation_6_27 p z ∧
       (p ≠ 0 → p.roots = (equation_6_27 p z).roots + {z}) :=
@@ -196,28 +291,40 @@ theorem deflation (hz : p.IsRoot z) :
 
 end Horner
 
-/-! ### §6.4.2 The Newton–Horner method -/
+/-! ### Section 6.4.2: The Newton–Horner method -/
 
 section NewtonHorner
 
 variable (p : ℝ[X]) (z : ℝ)
 
-/-- **§6.4.2, `p_n'(z) = q_{n-1}(z; z)`**: since `p_n' = q_{n-1} + (x - z) q_{n-1}'`, the derivative
-at `z` is the value of the associated polynomial at `z`.
+/-- **Section 6.4.2** of [quarteroni2000numerical]. Let $p_n$ be a real polynomial and
+$z \in \mathbb{R}$. Then
+$$p_n'(z) = q_{n-1}(z; z).$$
+
+Since $p_n(x) = p_n(z) + (x - z) q_{n-1}(x; z)$, the derivative is
+$p_n' = q_{n-1} + (x - z) q_{n-1}'$, and its value at $z$ is $q_{n-1}(z; z)$. The proof is
 `Polynomial.eval_divByMonic_X_sub_C_self`. -/
 theorem derivative_eq_associatedPolynomial :
     p.derivative.eval z = (equation_6_27 p z).eval z :=
   (eval_divByMonic_X_sub_C_self p z).symm
 
-/-- **(6.29), the Newton–Horner method**:
-`r^{(k+1)} = r^{(k)} - p_n(r^{(k)}) / q_{n-1}(r^{(k)}; r^{(k)})`, the derivative supplied by
-synthetic division. The iteration of the backbone's `NewtonHorner.step`; the complex-arithmetic
-variant the book recommends for complex roots is the same definition over `ℂ[X]`. -/
+/-- **Equation (6.29)** of [quarteroni2000numerical], the **Newton–Horner method** for a real
+polynomial $p_n$:
+$$r^{(k+1)} = r^{(k)} - \frac{p_n(r^{(k)})}{q_{n-1}(r^{(k)}; r^{(k)})},$$
+where synthetic division supplies the derivative $p_n'(r^{(k)}) = q_{n-1}(r^{(k)}; r^{(k)})$.
+
+The value at $k$ is the $k$-th iterate of the backbone's `NewtonHorner.step` from $r^{(0)}$. The
+source recommends complex arithmetic for complex roots; `NewtonHorner.step` is defined over any
+field, so that variant is the same definition over `ℂ[X]`. -/
 noncomputable def equation_6_29 (p : ℝ[X]) (r₀ : ℝ) (k : ℕ) : ℝ := (NewtonHorner.step p)^[k] r₀
 
-/-- The Newton–Horner method is Newton's method (6.16) for `f = p_n`: `NewtonHorner.step_eq`. So
-`newton_order_two` and `equation_6_22` (with `Polynomial.isRootOfMultiplicity_eval_iff`) describe
-its convergence. -/
+/-- The Newton–Horner method (6.29) for a real polynomial $p_n$ is Newton's method (6.16) for
+$f = p_n$ with $f' = p_n'$: for every $r^{(0)}$ and $k$ the two iterates agree.
+
+So `QuarteroniSaccoSaleri.Chapter06.newton_order_two` and
+`QuarteroniSaccoSaleri.Chapter06.equation_6_22`, with
+`Polynomial.isRootOfMultiplicity_eval_iff`, describe its convergence. The proof uses
+`NewtonHorner.step_eq`. -/
 theorem equation_6_29_eq_newton (r₀ : ℝ) (k : ℕ) :
     equation_6_29 p r₀ k = newton (fun x => p.eval x) (fun x => p.derivative.eval x) r₀ k := by
   rw [equation_6_29, newton]
@@ -228,26 +335,43 @@ theorem equation_6_29_eq_newton (r₀ : ℝ) (k : ℕ) :
 
 end NewtonHorner
 
-/-! ### §6.4.3 The Muller method -/
+/-! ### Section 6.4.3: The Muller method -/
 
 section Muller
 
-/-- **(6.30), Muller's method**: from three distinct starting values `x^{(0)}, x^{(1)}, x^{(2)}`,
-`x^{(k+1)} = x^{(k)} - 2 f(x^{(k)}) / (w ∓ √(w² - 4 f(x^{(k)}) f[x^{(k)}, x^{(k-1)}, x^{(k-2)}]))`,
-the zero of the quadratic interpolant through the last three iterates with the sign maximizing the
-modulus of the denominator. Real arithmetic only (`Muller.iterate`); the index is shifted so that
-`equation_6_30 f x₀ x₁ x₂ k` is the book's `x^{(k+2)}`. -/
+/-- **Equation (6.30)** of [quarteroni2000numerical], **Muller's method**. From three distinct
+starting values $x^{(0)}, x^{(1)}, x^{(2)}$, it computes
+$$x^{(k+1)} = x^{(k)} - \frac{2 f(x^{(k)})}{w \mp \sqrt{w^2 - 4 f(x^{(k)}) f[x^{(k)}, x^{(k-1)},
+  x^{(k-2)}]}},$$
+with $w = f[x^{(k)}, x^{(k-1)}] + (x^{(k)} - x^{(k-1)}) f[x^{(k)}, x^{(k-1)}, x^{(k-2)}]$. This
+is the zero of the quadratic interpolant of $f$ at the last three iterates, with the sign that
+maximizes the modulus of the denominator.
+
+The method is in real arithmetic only, as `Muller.iterate`, and the square root of a negative
+radicand is $0$. The index is shifted: the value at $k$ is the iterate $x^{(k+2)}$ of the
+source, so the value at $0$ is $x^{(2)}$. -/
 noncomputable def equation_6_30 (f : ℝ → ℝ) (x₀ x₁ x₂ : ℝ) (k : ℕ) : ℝ :=
   Muller.iterate f x₀ x₁ x₂ k
 
-/-- **The convergence claim after (6.30).** Let `f ∈ C³(J)` on a neighbourhood `J` of a root `α`
-with `f'(α) ≠ 0` (and `f⁽³⁾(α) ≠ 0`, which the order needs, exactly as Property 6.2 needs
-`f''(α) ≠ 0` for the secant method). Then there is `ε > 0` such that from any three distinct
-starting values in `(α - ε, α + ε)`, none of them `α`, the sequence (6.30) converges to `α` with
-order `p = Real.tribonacci ≈ 1.8393` in the sense of Definition 6.1 — the book's `p ≃ 1.84`, the
-real root of `p³ = p² + p + 1`. The backbone's `Muller.exists_ball_convergesWithOrder`. The book's
-limit form of the statement, with the constant `|f⁽³⁾(α) / f'(α)| / 6`, is not claimed; see the
-readings above. -/
+/-- **Section 6.4.3** of [quarteroni2000numerical], the order of Muller's method. Let
+$f(\alpha) = 0$, let $f$ be of class $C^3$ on a neighbourhood of $\alpha$, and let
+$f'(\alpha) \neq 0$ and $f'''(\alpha) \neq 0$. Then there is $\varepsilon > 0$ such that for any
+three distinct starting values $x^{(0)}, x^{(1)}, x^{(2)} \in (\alpha - \varepsilon, \alpha +
+\varepsilon)$, none of them equal to $\alpha$, the sequence (6.30) converges to $\alpha$ with
+order $p$ in the sense of Definition 6.1, where $p \approx 1.8393$ is the real root of
+$p^3 = p^2 + p + 1$.
+
+**Reading.** The source states the order $p \simeq 1.84$. Here $p$ is the exact root
+`Real.tribonacci`, and the order is the one of Definition 6.1. The source also states the limit
+$|e^{(k+1)}| / |e^{(k)}|^p \to |f'''(\alpha) / f'(\alpha)| / 6$, quoted from Hildebrand without
+proof. This limit is not formalized: the backbone proves the two-sided bounds of
+`Muller.LocalData.step_bounds`, whose constants tend to $|f'''(\alpha) / (6 f'(\alpha))|$ as the
+ball and the tolerance shrink, but are not driven to it along a single orbit. Property 6.2 for
+the secant method is treated in the same way.
+
+The hypothesis $f'''(\alpha) \neq 0$ plays the role that $f''(\alpha) \neq 0$ plays for the
+secant method in `QuarteroniSaccoSaleri.Chapter06.property_6_2`. The proof specializes
+`Muller.exists_ball_convergesWithOrder`. -/
 theorem muller_order {f : ℝ → ℝ} {α : ℝ} (hf : ContDiffAt ℝ 3 f α) (hα : f α = 0)
     (hf' : deriv f α ≠ 0) (hf3 : iteratedDeriv 3 f α ≠ 0) :
     ∃ ε > 0, ∀ x₀ ∈ Ioo (α - ε) (α + ε), ∀ x₁ ∈ Ioo (α - ε) (α + ε),

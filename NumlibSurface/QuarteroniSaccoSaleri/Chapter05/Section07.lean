@@ -6,91 +6,97 @@ import Numlib.Eigen.RayleighQuotientIteration
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter05.Section06
 
 /-!
-# Quarteroni–Sacco–Saleri §5.7: the QR iteration with shifting techniques
+# Quarteroni, Sacco and Saleri, Section 5.7: The QR iteration with shifting techniques
 
-Surface file for Alfio Quarteroni, Riccardo Sacco and Fausto Saleri, *Numerical Mathematics*
-[quarteroni2000numerical], §5.7, over the backbone `Numlib/Eigen/QRAlgorithm` (the shifted QR
-step and iterations, their similarity identities, and the reduction of a fixed shift to the basic
-iteration on `A − μI`), over §5.5's Property 5.9 and (5.37) for the convergence claim of
-§5.7.1, and over `Numlib/Eigen/RayleighQuotientIteration` (the local quadratic convergence of
-Rayleigh quotient iteration and the last row of a shifted QR step) for the quadratic convergence
-of the single-shift iteration.
+This module formalizes Section 5.7 of [quarteroni2000numerical], which accelerates the QR iteration
+of Section 5.4 by shifts. One step with shift $\mu$ factors $T - \mu I = QR$ and returns
+$RQ + \mu I = Q^T T Q$, so every iterate is orthogonally similar to the starting matrix $A$. With a
+fixed shift the iteration is the basic QR iteration on $A - \mu I$, and its subdiagonal entries tend
+to zero at the rate $|(\lambda_j - \mu)/(\lambda_{j-1} - \mu)|^k$. With the Rayleigh-quotient shift
+$\mu_k = t_{nn}^{(k)}$ of (5.53), the entry $t_{n,n-1}^{(k)}$ tends to zero quadratically near a
+simple real eigenvalue. The double-shift step (5.55) is two single steps with a complex conjugate
+pair of shifts. The proofs specialize `Numlib.Eigen.QRAlgorithm` and
+`Numlib.Eigen.RayleighQuotientIteration`, and Property 5.9 and (5.37) of Section 5.5.
+
+## Main definitions
+
+* Equation (5.52), `QuarteroniSaccoSaleri.Chapter05.shiftedQrStep`: one QR step with shift $\mu$,
+  $T' = RQ + \mu I$ where $QR = T - \mu I$.
+* Equation (5.52), `QuarteroniSaccoSaleri.Chapter05.shiftedQrIterate`: the QR iteration with a fixed
+  shift $\mu$, from $T^{(0)} = A$.
+* Equation (5.53), `QuarteroniSaccoSaleri.Chapter05.equation_5_53`: the QR iteration with the shift
+  $\mu_k = t_{nn}^{(k)}$.
+* Equation (5.55), `QuarteroniSaccoSaleri.Chapter05.equation_5_55`: the double-shift step with the
+  shifts $\lambda$ and $\bar\lambda$.
+
+## Main results
+
+* Equation (5.52), `QuarteroniSaccoSaleri.Chapter05.shiftedQrStep_eq` and
+  `QuarteroniSaccoSaleri.Chapter05.shiftedQrIterate_eq`: the shifted step and iteration agree with
+  the backbone definitions.
+* Display after (5.52), `QuarteroniSaccoSaleri.Chapter05.shiftedQrIterate_eq_conj`: each shifted
+  step, and each iterate, is an orthogonal similarity of $A$.
+* Section 5.7.1, `QuarteroniSaccoSaleri.Chapter05.shiftedQrIterate_eq_qrIterate`: the iteration with
+  a fixed shift $\mu$ is the basic QR iteration on $A - \mu I$, plus $\mu I$.
+* Section 5.7.1, `QuarteroniSaccoSaleri.Chapter05.shiftedQrIterate_rate`: the subdiagonal entries
+  tend to zero at the rate $|(\lambda_j - \mu)/(\lambda_{j-1} - \mu)|^k$.
+* Equation (5.53), `QuarteroniSaccoSaleri.Chapter05.equation_5_53_eq` and
+  `QuarteroniSaccoSaleri.Chapter05.equation_5_53_eq_conj`: the iteration agrees with the backbone,
+  and every iterate is orthogonally similar to $A$.
+* Equation (5.53), `QuarteroniSaccoSaleri.Chapter05.equation_5_53_quadratic`: near a simple real
+  eigenvalue, one step squares $|t_{n,n-1}^{(k)}|$ up to a constant.
+* Equation (5.53), `QuarteroniSaccoSaleri.Chapter05.equation_5_53_quadratic_iterate`: once an
+  iterate is close enough, $t_{n,n-1}^{(k)} \to 0$ quadratically and $t_{nn}^{(k)} \to \lambda$.
+* Equation (5.55), `QuarteroniSaccoSaleri.Chapter05.equation_5_55_eq` and
+  `QuarteroniSaccoSaleri.Chapter05.equation_5_55_eq_conj`: the double-shift step agrees with the
+  backbone and is a unitary similarity.
 
 ## Conventions
 
-The shifted iterations are written as the book writes them, as recursions on `Matrix (Fin n)
-(Fin n) 𝕜` for any `RCLike` field `𝕜` — real in §5.7.1, complex in §5.7.2 — with the QR
-factorization `Matrix.qrQ`, `Matrix.qrR` of positive diagonal at every step; each recursion carries
-its identification with the backbone's `Matrix.shiftedQrIterate`, `Matrix.rayleighShiftQrIterate`,
-`Matrix.doubleShiftQrStep`. The similarity statements are the book's, over `ℝ` with orthogonal
-matrices, and the double-shift step is over `ℂ` with unitary ones. As in §5.4, the iteration
-starts from `T⁽⁰⁾ = A`; the book's `T⁽⁰⁾ = Q⁽⁰⁾ᵀ A Q⁽⁰⁾` in Hessenberg form is the case
-`A := hessenbergReduce A₀` of §5.6.
+* The iterations are defined over a field $\mathbb{K}$ that is $\mathbb{R}$ or $\mathbb{C}$
+  (`RCLike 𝕜`), on `Matrix (Fin N) (Fin N) 𝕜`. The similarity statements are over $\mathbb{R}$ with
+  orthogonal matrices, and the double-shift step is over $\mathbb{C}$ with unitary matrices.
+* The QR factorization at every step is `Matrix.qrQ` and `Matrix.qrR`, the Gram–Schmidt
+  factorization, which is defined for every square matrix.
+* As in Section 5.4, the iteration starts from $T^{(0)} = A$. The book's start
+  $T^{(0)} = (Q^{(0)})^T A Q^{(0)}$ in Hessenberg form is the case $A = $
+  `QuarteroniSaccoSaleri.Chapter05.hessenbergReduce A₀` of Section 5.6.
 
-## Contents
+## Implementation notes
 
-* `shiftedQrStep`, `shiftedQrIterate`, `shiftedQrStep_eq`, `shiftedQrIterate_eq` — the single-shift
-  iteration (5.52).
-* `shiftedQrIterate_eq_conj` — the shifted iterates are orthogonally similar to `A`.
-* `shiftedQrIterate_eq_qrIterate`, `shiftedQrIterate_rate` — a fixed shift is the basic iteration
-  on `A − μI`, and the convergence claim of §5.7.1.
-* `equation_5_53`, `equation_5_53_eq`, `equation_5_53_eq_conj` — the Rayleigh-quotient shift
-  `μ = t_nn^{(k)}`.
-* `equation_5_53_quadratic`, `equation_5_53_quadratic_iterate` — the quadratic convergence of
-  `t_{n,n−1}^{(k)}` to zero (and of `t_{nn}^{(k)}` to the eigenvalue) for the single-shift
-  iteration at a simple real eigenvalue: the one-step bound, and the tail of the iteration from
-  the first iterate in the basin.
-* `equation_5_55`, `equation_5_55_eq`, `equation_5_55_eq_conj` — the double-shift step.
+* The double-shift step is defined in complex arithmetic, as two complex single steps. The
+  real-arithmetic Francis implementation is not defined, because the book only sketches it.
 
-## Readings and errata
+## Deviations from the source
 
-The convergence claim of §5.7.1 is stated by the book with the non-strict ordering
-`|λ_1 − μ| ≥ … ≥ |λ_n − μ|` and "a rate proportional to `|(λ_j − μ)/(λ_{j−1} − μ)|^k`"; with a tie
-the ratio is `1` and nothing tends to zero, so `shiftedQrIterate_rate` takes the strict ordering
-and `|λ_n − μ| > 0`, together with the general-position hypothesis of Property 5.9 for the
-eigenvector matrix, which the shift does not change. The quadratic-convergence claim for the
-Rayleigh shift (5.53) is stated by the book without proof, citing [Dem97] pp. 161–163, and in the
-form "`|t_{n,n−1}^{(k+1)}| / ‖T⁽⁰⁾‖₂ = O(η_k²)`" at a single `k`; `equation_5_53_quadratic` is
-the rigorous local statement that reading stands for — constants `c, ε₀` uniform in `k`, at a
-simple real eigenvalue `λ`, with the two hypotheses the book leaves implicit: `t_{nn}^{(k)}` is
-close to `λ` (which eigenvalue the last row is converging to) and no shift is exactly an
-eigenvalue (the QR factorizations are unique and Hessenberg form is preserved); the book's
-"unreduced" is not needed. The corresponding claim for the Francis double shift of §5.7.2 is not
-formalized; the record is below. The stopping test (5.54) is part of a program. "Remark 5.13",
-cited in §5.7.2, does not exist (Exercise 14 is meant). Examples 5.10–5.13 are numerical and
-Programs 36–37 are not nodes.
+* **Convergence with a fixed shift, Section 5.7.1** (reading). The source orders the eigenvalues by
+  $|\lambda_1 - \mu| \ge \dots \ge |\lambda_n - \mu|$; the theorem assumes the strict order,
+  $\lambda_n \neq \mu$, and the general-position hypothesis of Property 5.9. See
+  `QuarteroniSaccoSaleri.Chapter05.shiftedQrIterate_rate`.
+* **Quadratic convergence of (5.53)** (reading). The source states $|t_{n,n-1}^{(k+1)}| /
+  \|T^{(0)}\|_2 = O(\eta_k^2)$ at one $k$; the theorem gives constants uniform in $k$ at a simple
+  real eigenvalue, under two hypotheses that the source leaves implicit, and without the hypothesis
+  "unreduced". See `QuarteroniSaccoSaleri.Chapter05.equation_5_53_quadratic`.
+* **Section 5.7.2, reference to Remark 5.13** (typo). Remark 5.13 does not exist; Exercise 14 is
+  meant.
 
-## Not formalized here
+## Not formalized
 
-* **§5.7.2, the quadratic convergence of the QR iteration with the Francis double shift.** The
-  claim is that, when the two shifts of a double step are the eigenvalues of the trailing `2 × 2`
-  block of `T⁽ᵏ⁾`, the iterates converge to the real Schur form *quadratically*: the subdiagonal
-  entry `t_{n−1,n−2}^{(k+1)}` below the trailing block is of the order of the square of
-  `t_{n−1,n−2}^{(k)}`. The book itself says why this cannot be stated as printed. It cites
-  [Fra61], [GL89] §7.5 and [Dem97] §4.4.5 without proof; it notes that special matrices defeat the
-  strategy — the cyclic permutation matrix of Exercise 14, proved as `property_5_9_counterexample`
-  in §5.5, is left fixed by the iteration, so nothing converges at all; and it calls a shift
-  strategy that provably converges for *every* matrix an **open problem**. Any faithful statement
-  therefore carries a genericity hypothesis that none of the cited sources supplies (Golub–Van
-  Loan and Demmel give the heuristic and the exceptional-shift remedy, not a theorem), so there is
-  no rigorous form of the printed claim to prove in its place.
-
-  What *is* proved, and what the block form would need. The single-shift case is
-  `equation_5_53_quadratic` with `equation_5_53_quadratic_iterate` above: local quadratic
-  convergence of `t_{n,n−1}^{(k)}` to `0` at a simple real eigenvalue, over the backbone
-  `Numlib/Eigen/RayleighQuotientIteration` (`Krylov.norm_sub_inner_smul_le_sq_mul_norm` and the
-  last-row identification `Matrix.abs_shiftedQrStep_last_le`), under the two hypotheses the book
-  leaves implicit — `t_{nn}^{(k)}` close to the eigenvalue, and no shift exactly an eigenvalue.
-  The double step itself is `equation_5_55`, `equation_5_55_eq`, `equation_5_55_eq_conj`: one real
-  double step is two complex single steps. What is missing is that argument in *block* form, that
-  is, a **subspace** Rayleigh quotient iteration. The last two columns of `Q` for the double step
-  are `(T − λ)⁻ᵀ (T − λ̄)⁻ᵀ [e_{n−1}, e_n]` orthonormalized, so `t_{n−1,n−2}^{(k+1)}` has to be
-  controlled by the sine of the angle between `span {e_{n−1}, e_n}` and the two-dimensional left
-  invariant subspace of the complex pair, with the gap `Submodule.gap` of
-  `Numlib/Analysis/InnerProductSpace/Projection/Gap` in place of the complementary component and
-  a resolvent bound on the complement of the invariant pair. Estimate: about 400 lines for the
-  block form of `Numlib/Eigen/RayleighQuotientIteration`, after which the genericity hypothesis
-  would still have to be invented.
+* **Section 5.7.2, quadratic convergence of the QR iteration with the Francis double shift.** The
+  source cites the claim without proof, notes that special matrices defeat the strategy (the cyclic
+  permutation matrix of Exercise 14, which
+  `QuarteroniSaccoSaleri.Chapter05.property_5_9_counterexample` shows is left fixed by the
+  iteration), and calls a shift strategy that converges for every matrix an open problem. So any
+  correct statement needs a genericity hypothesis that none of the cited sources supplies. A proof
+  would need a block form of the argument of `Numlib.Eigen.RayleighQuotientIteration`, a subspace
+  Rayleigh quotient iteration: the last two columns of $Q$ for the double step are the
+  orthonormalization of $(T - \lambda I)^{-T} (T - \bar\lambda I)^{-T} [e_{n-1}, e_n]$, so
+  $t_{n-1,n-2}^{(k+1)}$ must be bounded by the gap (`Submodule.gap`) between
+  $\operatorname{span}\{e_{n-1}, e_n\}$ and the left invariant subspace of the pair
+  $\lambda, \bar\lambda$.
+* **The stopping test (5.54).** It is part of a program.
+* **Examples 5.10–5.13.** They are numerical.
+* **Programs 36 and 37.**
 -/
 
 open Filter Finset Matrix Topology
@@ -99,25 +105,35 @@ namespace QuarteroniSaccoSaleri.Chapter05
 
 variable {N : ℕ} {𝕜 : Type*} [RCLike 𝕜]
 
-/-! ### (5.52): the QR method with single shift -/
+/-! ### The QR method with single shift (5.52) -/
 
-/-- **(5.52), one step of the QR iteration with shift `μ`**: determine `Q`, `R` with
-`Q R = T − μ I` (the QR factorization), then let `T' = R Q + μ I`. -/
+/-- **Equation (5.52)** of [quarteroni2000numerical], one step. Let $T \in \mathbb{K}^{n \times n}$
+and $\mu \in \mathbb{K}$. One **step of the QR iteration with shift $\mu$** computes the QR
+factorization $QR = T - \mu I$ and returns $$T' = RQ + \mu I.$$
+
+The factors $Q$ and $R$ are `Matrix.qrQ (T - μ • 1)` and `Matrix.qrR (T - μ • 1)`. -/
 noncomputable def shiftedQrStep (μ : 𝕜) (T : Matrix (Fin N) (Fin N) 𝕜) : Matrix (Fin N) (Fin N) 𝕜 :=
   qrR (T - μ • 1) * qrQ (T - μ • 1) + μ • 1
 
-/-- **(5.52), the shifted QR iteration** with fixed shift `μ`, from `T⁽⁰⁾ = A`: for `k = 1, 2, …`,
-`Q⁽ᵏ⁾ R⁽ᵏ⁾ = T⁽ᵏ⁻¹⁾ − μ I` and `T⁽ᵏ⁾ = R⁽ᵏ⁾ Q⁽ᵏ⁾ + μ I`. -/
+/-- **Equation (5.52)** of [quarteroni2000numerical]. The **QR iteration with fixed shift $\mu$**
+starts from $T^{(0)} = A$, and for $k = 1, 2, \dots$ computes
+$Q^{(k)} R^{(k)} = T^{(k-1)} - \mu I$ and sets $$T^{(k)} = R^{(k)} Q^{(k)} + \mu I.$$
+
+Each step is `QuarteroniSaccoSaleri.Chapter05.shiftedQrStep μ`. -/
 noncomputable def shiftedQrIterate (A : Matrix (Fin N) (Fin N) 𝕜) (μ : 𝕜) :
     ℕ → Matrix (Fin N) (Fin N) 𝕜
   | 0 => A
   | k + 1 => shiftedQrStep μ (shiftedQrIterate A μ k)
 
-/-- The book's shifted step is the backbone's `Matrix.shiftedQrStep`. -/
+/-- The shifted QR step (5.52) of [quarteroni2000numerical] is the backbone step:
+`QuarteroniSaccoSaleri.Chapter05.shiftedQrStep μ T` equals `Matrix.shiftedQrStep μ T` for every
+$\mu$ and $T$. -/
 theorem shiftedQrStep_eq (μ : 𝕜) (T : Matrix (Fin N) (Fin N) 𝕜) :
     shiftedQrStep μ T = Matrix.shiftedQrStep μ T := rfl
 
-/-- **The book's shifted iteration (5.52) is the backbone's `Matrix.shiftedQrIterate`.** -/
+/-- The shifted QR iteration (5.52) of [quarteroni2000numerical] is the backbone iteration: for
+every $k$, `QuarteroniSaccoSaleri.Chapter05.shiftedQrIterate A μ k` equals
+`Matrix.shiftedQrIterate A μ k`. -/
 theorem shiftedQrIterate_eq (A : Matrix (Fin N) (Fin N) 𝕜) (μ : 𝕜) :
     ∀ k, shiftedQrIterate A μ k = Matrix.shiftedQrIterate A μ k
   | 0 => rfl
@@ -125,11 +141,17 @@ theorem shiftedQrIterate_eq (A : Matrix (Fin N) (Fin N) 𝕜) (μ : 𝕜) :
     rw [shiftedQrIterate, shiftedQrIterate_eq A μ k, shiftedQrStep_eq,
       Matrix.shiftedQrIterate_succ]
 
-/-- **The shifted iterates are similar to `A`** (the display after (5.52)). One step is the
-orthogonal similarity `R Q + μ I = Qᵀ (Q R + μ I) Q = Qᵀ T Q` with `Q = qrQ (T − μ I)`, and hence
-every iterate is `T⁽ᵏ⁾ = (Q⁽¹⁾ ⋯ Q⁽ᵏ⁾)ᵀ A (Q⁽¹⁾ ⋯ Q⁽ᵏ⁾)` with `Q⁽¹⁾ ⋯ Q⁽ᵏ⁾ = qrAccum (A − μ I) k`
-orthogonal. Backbone `Matrix.shiftedQrStep_eq_conj` and
-`Matrix.shiftedQrIterate_eq_conj_qrAccum`. -/
+/-- **Display after Equation (5.52)** of [quarteroni2000numerical]. Let
+$A \in \mathbb{R}^{n \times n}$ and $\mu \in \mathbb{R}$. Then:
+
+(i) for every $T \in \mathbb{R}^{n \times n}$, the factor $Q$ of the QR factorization of
+$T - \mu I$ is orthogonal, and the shifted step is the similarity $$RQ + \mu I = Q^T T Q;$$
+
+(ii) for every $k$, the product $\tilde Q_k = Q^{(1)} \cdots Q^{(k)}$ of the factors of the
+basic QR iteration on $A - \mu I$ is orthogonal, and $$T^{(k)} = \tilde Q_k^T A \tilde Q_k.$$
+
+The product $\tilde Q_k$ is `Matrix.qrAccum (A - μ • 1) k`. The proof specializes
+`Matrix.shiftedQrStep_eq_conj` and `Matrix.shiftedQrIterate_eq_conj_qrAccum`. -/
 theorem shiftedQrIterate_eq_conj (A : Matrix (Fin N) (Fin N) ℝ) (μ : ℝ) :
     (∀ T : Matrix (Fin N) (Fin N) ℝ, qrQ (T - μ • 1) ∈ Matrix.orthogonalGroup (Fin N) ℝ ∧
       shiftedQrStep μ T = (qrQ (T - μ • 1))ᵀ * T * qrQ (T - μ • 1)) ∧
@@ -140,22 +162,36 @@ theorem shiftedQrIterate_eq_conj (A : Matrix (Fin N) (Fin N) ℝ) (μ : ℝ) :
   · rw [shiftedQrIterate_eq, Matrix.shiftedQrIterate_eq_conj_qrAccum,
       conjTranspose_eq_transpose_of_trivial]
 
-/-- **A fixed shift is the basic iteration on the shifted matrix**: for every `k`,
-`shiftedQrIterate A μ k = qrIterate (A − μ I) k + μ I`. Backbone
-`Matrix.shiftedQrIterate_eq_qrIterate_sub_add`. -/
+/-- **Section 5.7.1** of [quarteroni2000numerical], a fixed shift. Let
+$A \in \mathbb{R}^{n \times n}$ and $\mu \in \mathbb{R}$. For every $k$, the iterate $T^{(k)}$
+of the QR iteration with fixed shift $\mu$ is $$T^{(k)} = \hat T^{(k)} + \mu I,$$ where
+$\hat T^{(k)}$ is the $k$-th iterate of the basic QR iteration on $A - \mu I$.
+
+The basic iteration is `QuarteroniSaccoSaleri.Chapter05.qrIterate` of Section 5.4. The proof
+specializes `Matrix.shiftedQrIterate_eq_qrIterate_sub_add`. -/
 theorem shiftedQrIterate_eq_qrIterate (A : Matrix (Fin N) (Fin N) ℝ) (μ : ℝ) (k : ℕ) :
     shiftedQrIterate A μ k = qrIterate (A - μ • 1) k + μ • 1 := by
   rw [shiftedQrIterate_eq, qrIterate_eq, Matrix.shiftedQrIterate_eq_qrIterate_sub_add]
 
-/-- **The convergence claim of §5.7.1.** Let `A ∈ ℝ^{n×n}` be diagonalizable, `X⁻¹ A X =
-diag(λ_1, …, λ_n)`, let the shift `μ` be fixed with the eigenvalues ordered so that
-`|λ_1 − μ| > |λ_2 − μ| > … > |λ_n − μ| > 0`, and assume the general-position hypothesis of Property
-5.9 (nonzero leading principal minors of `X⁻¹`). Then for `1 < j ≤ n` the subdiagonal entry
-`t_{j,j−1}^{(k)}` of the shifted iteration (5.52) tends to zero, at a rate proportional to
-`|(λ_j − μ)/(λ_{j−1} − μ)|^k`: `|t_{j,j−1}^{(k)}| ≤ C |(λ_j − μ)/(λ_{j−1} − μ)|^k`. This is
-Property 5.9 and (5.37) for the matrix `A − μ I`, whose eigenvalues are the `λ_i − μ` for the same
-eigenvectors, through `shiftedQrIterate_eq_qrIterate`. Reading: the book orders with `≥`; the
-strict ordering is what makes the ratio less than `1`. -/
+/-- **Section 5.7.1** of [quarteroni2000numerical], convergence with a fixed shift. Let
+$A, X \in \mathbb{R}^{n \times n}$ with $X$ invertible and $X^{-1} A X =
+\operatorname{diag}(\lambda_1, \dots, \lambda_n)$. Let $\mu \in \mathbb{R}$ with
+$\lambda_i \neq \mu$ for all $i$ and $$|\lambda_1 - \mu| > |\lambda_2 - \mu| > \dots >
+|\lambda_n - \mu|,$$ and assume that every leading principal minor of $X^{-1}$ is nonzero (the
+hypothesis of Property 5.9). Let $T^{(k)}$ be the QR iteration (5.52) with fixed shift $\mu$.
+Then for every subdiagonal position $(j, j - 1)$, the entry $t_{j,j-1}^{(k)}$ tends to $0$ as
+$k \to \infty$, and there is a constant $C$ with $$|t_{j,j-1}^{(k)}| \le C \left|
+\frac{\lambda_j - \mu}{\lambda_{j-1} - \mu} \right|^k \quad \text{for all } k.$$
+
+**Reading.** The source orders the eigenvalues by $|\lambda_1 - \mu| \ge \dots \ge |\lambda_n -
+\mu|$ and claims a rate proportional to $|(\lambda_j - \mu)/(\lambda_{j-1} - \mu)|^k$. With a
+tie this ratio is $1$ and nothing tends to zero, so the theorem assumes the strict order and
+$|\lambda_n - \mu| > 0$. It also assumes the general-position hypothesis of Property 5.9 for the
+eigenvector matrix $X$, which the shift does not change.
+
+Indices are 0-based: the position $(j, j - 1)$ is `(i, j)` with `(i : ℕ) = j + 1`. The proof
+applies Property 5.9 and (5.37) to $A - \mu I$, whose eigenvalues are the $\lambda_i - \mu$ with
+the same eigenvectors, through `QuarteroniSaccoSaleri.Chapter05.shiftedQrIterate_eq_qrIterate`. -/
 theorem shiftedQrIterate_rate {A X : Matrix (Fin N) (Fin N) ℝ} (hX : IsUnit X) {lam : Fin N → ℝ}
     (hD : X⁻¹ * A * X = diagonal lam) (μ : ℝ) (hne : ∀ i, lam i - μ ≠ 0)
     (hsep : ∀ i j, i < j → |lam j - μ| < |lam i - μ|)
@@ -176,16 +212,22 @@ theorem shiftedQrIterate_rate {A X : Matrix (Fin N) (Fin N) ℝ} (hX : IsUnit X)
   exact ⟨(property_5_9 hX hD' hne hsep hminor).1 i j (Fin.lt_def.2 (by omega)),
     equation_5_37 hX hD' hne hsep hminor hij⟩
 
-/-! ### (5.53): the Rayleigh-quotient shift -/
+/-! ### The Rayleigh-quotient shift (5.53) -/
 
-/-- **(5.53), the QR iteration with single shift `μ = t_nn^{(k)}`**: at every step the shift is the
-current last diagonal entry, `T⁽ᵏ⁺¹⁾ = R Q + t_nn^{(k)} I` where `Q R = T⁽ᵏ⁾ − t_nn^{(k)} I`. -/
+/-- **Equation (5.53)** of [quarteroni2000numerical]. Let $A \in \mathbb{K}^{n \times n}$ with
+$n \ge 1$. The **QR iteration with single shift $\mu_k = t_{nn}^{(k)}$** starts from
+$T^{(0)} = A$, and at every step takes the current last diagonal entry as the shift:
+$$T^{(k+1)} = RQ + t_{nn}^{(k)} I, \qquad QR = T^{(k)} - t_{nn}^{(k)} I.$$
+
+Here $n = N + 1$, and the last index is `Fin.last N`. Each step is
+`QuarteroniSaccoSaleri.Chapter05.shiftedQrStep`. -/
 noncomputable def equation_5_53 (A : Matrix (Fin (N + 1)) (Fin (N + 1)) 𝕜) :
     ℕ → Matrix (Fin (N + 1)) (Fin (N + 1)) 𝕜
   | 0 => A
   | k + 1 => shiftedQrStep (equation_5_53 A k (Fin.last N) (Fin.last N)) (equation_5_53 A k)
 
-/-- **The book's iteration (5.53) is the backbone's `Matrix.rayleighShiftQrIterate`.** -/
+/-- The iteration (5.53) of [quarteroni2000numerical] is the backbone iteration: for every $k$,
+`QuarteroniSaccoSaleri.Chapter05.equation_5_53 A k` equals `Matrix.rayleighShiftQrIterate A k`. -/
 theorem equation_5_53_eq (A : Matrix (Fin (N + 1)) (Fin (N + 1)) 𝕜) :
     ∀ k, equation_5_53 A k = Matrix.rayleighShiftQrIterate A k
   | 0 => rfl
@@ -193,32 +235,44 @@ theorem equation_5_53_eq (A : Matrix (Fin (N + 1)) (Fin (N + 1)) 𝕜) :
     rw [equation_5_53, equation_5_53_eq A k, shiftedQrStep_eq,
       Matrix.rayleighShiftQrIterate_succ]
 
-/-- Every iterate of the Rayleigh-shift iteration (5.53) is orthogonally similar to `A`, each step
-being the similarity of `shiftedQrIterate_eq_conj`. Backbone
-`Matrix.exists_unitary_conj_rayleighShiftQrIterate`. -/
+/-- **Equation (5.53)** of [quarteroni2000numerical], similarity. Let
+$A \in \mathbb{R}^{n \times n}$ with $n \ge 1$. For every $k$ there is an orthogonal matrix $Q$
+such that the iterate of (5.53) is $T^{(k)} = Q^T A Q$.
+
+Each step is the similarity of `QuarteroniSaccoSaleri.Chapter05.shiftedQrIterate_eq_conj`. The
+proof specializes `Matrix.exists_unitary_conj_rayleighShiftQrIterate`. -/
 theorem equation_5_53_eq_conj (A : Matrix (Fin (N + 1)) (Fin (N + 1)) ℝ) (k : ℕ) :
     ∃ Q ∈ Matrix.orthogonalGroup (Fin (N + 1)) ℝ, equation_5_53 A k = Qᵀ * A * Q := by
   obtain ⟨Q, hQ, h⟩ := Matrix.exists_unitary_conj_rayleighShiftQrIterate A k
   exact ⟨Q, hQ, by rw [equation_5_53_eq, h, conjTranspose_eq_transpose_of_trivial]⟩
 
-/-! ### (5.55): the QR method with double shift -/
+/-! ### The QR method with double shift (5.55) -/
 
-/-- **(5.55), the double-shift step.** When a `2 × 2` diagonal block cannot be reduced to
-triangular form its two eigenvalues are a complex conjugate pair `λ`, `λ̄`; the double shift takes
-two consecutive shifted steps (5.52) with the shifts `λ` and `λ̄`: `Q⁽ᵏ⁾ R⁽ᵏ⁾ = T⁽ᵏ⁻¹⁾ − λ I`,
-`T⁽ᵏ⁾ = R⁽ᵏ⁾ Q⁽ᵏ⁾ + λ I`, then `Q⁽ᵏ⁺¹⁾ R⁽ᵏ⁺¹⁾ = T⁽ᵏ⁾ − λ̄ I`, `T⁽ᵏ⁺¹⁾ = R⁽ᵏ⁺¹⁾ Q⁽ᵏ⁺¹⁾ + λ̄ I`, in
-complex arithmetic. The real-arithmetic Francis implementation is not defined; the book only
-sketches it. -/
+/-- **Equation (5.55)** of [quarteroni2000numerical]. Let $T \in \mathbb{C}^{n \times n}$ and
+$\lambda \in \mathbb{C}$. The **double-shift step** takes two consecutive shifted steps (5.52),
+with the shifts $\lambda$ and $\bar\lambda$: $$Q^{(k)} R^{(k)} = T^{(k-1)} - \lambda I, \quad
+T^{(k)} = R^{(k)} Q^{(k)} + \lambda I,$$ $$Q^{(k+1)} R^{(k+1)} = T^{(k)} - \bar\lambda I, \quad
+T^{(k+1)} = R^{(k+1)} Q^{(k+1)} + \bar\lambda I.$$ The source uses it when a $2 \times 2$
+diagonal block cannot be reduced to triangular form: then the two eigenvalues of the block are a
+complex conjugate pair $\lambda, \bar\lambda$.
+
+The step is in complex arithmetic. The real-arithmetic Francis implementation is not defined,
+because the book only sketches it. -/
 noncomputable def equation_5_55 (T : Matrix (Fin N) (Fin N) ℂ) (lam : ℂ) :
     Matrix (Fin N) (Fin N) ℂ :=
   shiftedQrStep (starRingEnd ℂ lam) (shiftedQrStep lam T)
 
-/-- The book's double-shift step is the backbone's `Matrix.doubleShiftQrStep`. -/
+/-- The double-shift step (5.55) of [quarteroni2000numerical] is the backbone step:
+`QuarteroniSaccoSaleri.Chapter05.equation_5_55 T λ` equals `Matrix.doubleShiftQrStep T λ`. -/
 theorem equation_5_55_eq (T : Matrix (Fin N) (Fin N) ℂ) (lam : ℂ) :
     equation_5_55 T lam = Matrix.doubleShiftQrStep T lam := rfl
 
-/-- The double-shift step is a unitary similarity, the product of the two similarities of its
-steps. Backbone `Matrix.exists_unitary_conj_doubleShiftQrStep`. -/
+/-- **Equation (5.55)** of [quarteroni2000numerical], similarity. Let
+$T \in \mathbb{C}^{n \times n}$ and $\lambda \in \mathbb{C}$. There is a unitary matrix $Q$ such
+that the double-shift step gives $T' = Q^H T Q$.
+
+The matrix $Q$ is the product of the two unitary factors of the two steps. The proof specializes
+`Matrix.exists_unitary_conj_doubleShiftQrStep`. -/
 theorem equation_5_55_eq_conj (T : Matrix (Fin N) (Fin N) ℂ) (lam : ℂ) :
     ∃ Q ∈ Matrix.unitaryGroup (Fin N) ℂ, equation_5_55 T lam = Qᴴ * T * Q :=
   Matrix.exists_unitary_conj_doubleShiftQrStep T lam
@@ -226,40 +280,42 @@ theorem equation_5_55_eq_conj (T : Matrix (Fin N) (Fin N) ℂ) (lam : ℂ) :
 /-! ### The quadratic convergence of the single-shift iteration -/
 
 open scoped Matrix.Norms.L2Operator in
-/-- **The quadratic convergence of the QR iteration with single shift (5.53)**, in the rigorous
-form the book's "if `|t_{n,n-1}^{(k)}| / ‖T⁽⁰⁾‖₂ = η_k < 1` then `|t_{n,n-1}^{(k+1)}| / ‖T⁽⁰⁾‖₂ =
-O(η_k²)`" stands for, following the source it cites ([Dem97] §4.4.5, pp. 161–163). Let
-`T⁽⁰⁾ = A ∈ ℝ^{n×n}` (`n = N + 2`) be upper Hessenberg, let `λ` be a simple real eigenvalue of `A`
-(a simple root of the characteristic polynomial), and let `T⁽ᵏ⁾ = equation_5_53 A k` with the
-shifts never exactly an eigenvalue (`T⁽ᵏ⁾ − t_{nn}^{(k)} I` nonsingular for every `k`, so that
-the QR factorization of every step is the unique one with positive diagonal and Hessenberg form
-is preserved). Then there are `c, ε₀ > 0` with `c ε₀ ≤ 1` such that for every `k`: if
-`|t_{n,n-1}^{(k)}| ≤ ε₀ ‖T⁽⁰⁾‖₂` and `|t_{nn}^{(k)} − λ| ≤ ε₀ ‖T⁽⁰⁾‖₂`, then
+/-- **Equation (5.53)** of [quarteroni2000numerical], quadratic convergence. Let
+$A \in \mathbb{R}^{n \times n}$ with $n \ge 2$ be upper Hessenberg, and let
+$\lambda \in \mathbb{R}$ be a simple root of the characteristic polynomial of $A$. Let $T^{(k)}$
+be the iterates of (5.53) from $T^{(0)} = A$, and assume that no shift is an eigenvalue of its
+iterate: $T^{(k)} - t_{nn}^{(k)} I$ is nonsingular for every $k$. Then there are constants
+$c > 0$ and $\varepsilon_0 > 0$ with $c \varepsilon_0 \le 1$ such that for every $k$: if
+$$|t_{n,n-1}^{(k)}| \le \varepsilon_0 \|A\|_2 \quad \text{and} \quad |t_{nn}^{(k)} - \lambda|
+\le \varepsilon_0 \|A\|_2,$$ then $$|t_{n,n-1}^{(k+1)}| \le \frac{c\,
+|t_{n,n-1}^{(k)}|^2}{\|A\|_2} \quad \text{and} \quad |t_{nn}^{(k+1)} - \lambda| \le \frac{c\,
+|t_{n,n-1}^{(k)}|^2}{\|A\|_2}.$$ Since $c \varepsilon_0 \le 1$, the two hypotheses then hold
+again at $k + 1$.
 
-`|t_{n,n-1}^{(k+1)}| ≤ c |t_{n,n-1}^{(k)}|² / ‖T⁽⁰⁾‖₂` and
-`|t_{nn}^{(k+1)} − λ| ≤ c |t_{n,n-1}^{(k)}|² / ‖T⁽⁰⁾‖₂`;
+**Reading.** The source states, without proof and with a reference to Demmel's book (cited as
+Dem97, pp. 161–163), that if $|t_{n,n-1}^{(k)}| / \|T^{(0)}\|_2 = \eta_k < 1$ then
+$|t_{n,n-1}^{(k+1)}| / \|T^{(0)}\|_2 = O(\eta_k^2)$. The theorem is the local statement that
+this stands for, with constants uniform in $k$. (i) The source assumes only that
+$|t_{n,n-1}^{(k)}|$ is small. The second hypothesis, that $t_{nn}^{(k)}$ is close to $\lambda$,
+says which eigenvalue the last row converges to, and it is needed: a small $t_{n,n-1}^{(k)}$
+alone puts $t_{nn}^{(k)}$ near some eigenvalue, which can be a defective one where the
+convergence is only linear. This hypothesis is the closeness of $e_n$ to the left eigenvector of
+$\lambda$ that the local statement about Rayleigh quotient iteration in Dem97 assumes. (ii) The
+cited source assumes that $T^{(0)}$ is unreduced Hessenberg. This hypothesis is not needed. It
+makes the QR factorization of the singular matrix $T - \lambda I$ unique in that discussion;
+here the nonsingularity hypothesis on $T^{(k)} - t_{nn}^{(k)} I$ replaces it. In this generic
+case the algorithm of the book and `Matrix.qrQ` agree.
 
-since `c ε₀ ≤ 1` the two hypotheses then hold again at `k + 1`, so once an iterate enters the
-basin the subdiagonal entry `t_{n,n-1}^{(k)}` tends to zero quadratically and `t_{nn}^{(k)}` to `λ`.
-
-Readings. (i) The book states the bound with `|t_{n,n-1}^{(k)}|` alone; the second hypothesis
-`|t_{nn}^{(k)} − λ|` small says which eigenvalue the last row is converging to, and is needed: a
-small `t_{n,n-1}^{(k)}` alone puts `t_{nn}^{(k)}` near *some* eigenvalue, which could be a defective
-one where the convergence is only linear. It is the closeness of `e_n` to the left eigenvector
-of `λ` that [Dem97]'s local statement about Rayleigh quotient iteration assumes. (ii) The book
-cites [Dem97] for an *unreduced* Hessenberg `T⁽⁰⁾`; that hypothesis is not needed here — it is
-what makes the QR factorization of the singular matrix `T − λ I` unique in [Dem97]'s discussion,
-and the nonsingularity hypothesis `hreg` (the shift is never exactly an eigenvalue, the generic
-case in which the book's algorithm and `Matrix.qrQ` agree) replaces it. (iii) The constants
-depend on `λ`'s conditioning, through the resolvent of `Aᵀ − λ` on the complement of the right
-eigenvector.
-
-Backbone: `Matrix.exists_abs_isShiftedQrStep_last_le_sq` (the local quadratic bound of one
-single-shift step on a Hessenberg orthogonal conjugate `T⁽ᵏ⁾ = Qᵀ A Q`, `equation_5_53_eq_conj`),
-whose proof identifies the last row of a shifted QR step with a step of Rayleigh quotient
-iteration on `Tᵀ` from `e_n`; `Matrix.isUpperHessenberg_rayleighShiftQrIterate` gives the
-Hessenberg form of every iterate. The constant here is `c = (|C| + 1) ‖T⁽⁰⁾‖₂` for the backbone's
-`C`, and `ε₀` is chosen so that `ε₀ ‖T⁽⁰⁾‖₂` lies below the backbone's radius and `c ε₀ ≤ 1`. -/
+The norm $\|A\|_2$ is the operator norm of `Matrix.Norms.L2Operator`, and $n = N + 2$. The
+constants depend on the conditioning of $\lambda$, through the resolvent of $A^T - \lambda I$ on
+the complement of the right eigenvector. The proof specializes
+`Matrix.exists_abs_isShiftedQrStep_last_le_sq`, the local quadratic bound of one shifted step on
+a Hessenberg orthogonal conjugate $T^{(k)} = Q^T A Q$
+(`QuarteroniSaccoSaleri.Chapter05.equation_5_53_eq_conj`), and
+`Matrix.isUpperHessenberg_rayleighShiftQrIterate` gives the Hessenberg form of every iterate.
+The idea of that bound is that the last row of a shifted QR step is a step of Rayleigh quotient
+iteration on $T^T$ from $e_n$. The constant is $c = (|C| + 1) \|A\|_2$ for the constant $C$ of
+the backbone. -/
 theorem equation_5_53_quadratic {A : Matrix (Fin (N + 2)) (Fin (N + 2)) ℝ}
     (hA : A.IsUpperHessenberg) {lam : ℝ} (hlam : A.charpoly.rootMultiplicity lam = 1)
     (hreg : ∀ k, IsUnit (equation_5_53 A k -
@@ -313,15 +369,23 @@ theorem equation_5_53_quadratic {A : Matrix (Fin (N + 2)) (Fin (N + 2)) ℝ}
 
 
 open scoped Matrix.Norms.L2Operator in
-/-- **(5.53), the quadratic convergence as a statement about the whole tail of the iteration.**
-Under the hypotheses of `equation_5_53_quadratic`, there are `c, ε₀ > 0` such that once an
-iterate `T⁽ᵏ⁾` is in the basin — `|t_{n,n-1}^{(k)}| ≤ ε₀ ‖T⁽⁰⁾‖₂` and
-`|t_{nn}^{(k)} − λ| ≤ ε₀ ‖T⁽⁰⁾‖₂` — the normalized subdiagonal entries
-`η_{k+j} = c |t_{n,n-1}^{(k+j)}| / ‖T⁽⁰⁾‖₂` satisfy
-`η_{k+j} ≤ η_k ^ (2 ^ j)` for every `j`, with `η_k ≤ 1/2`; consequently `t_{n,n-1}^{(k+j)} → 0` and
-`t_{nn}^{(k+j)} → λ` as `j → ∞`. This is the sense in which the book's "the convergence to zero of
-the sequence `{t_{n,n-1}^{(k)}}` is quadratic" holds: by induction on `j` from the one-step bound of
-`equation_5_53_quadratic`, whose hypotheses propagate because `c ε₀ ≤ 1`. -/
+/-- **Equation (5.53)** of [quarteroni2000numerical], quadratic convergence of the whole tail of the
+iteration. Under the hypotheses of `QuarteroniSaccoSaleri.Chapter05.equation_5_53_quadratic`
+($A \in \mathbb{R}^{n \times n}$ with $n \ge 2$ upper Hessenberg, $\lambda$ a simple real
+eigenvalue, no shift an eigenvalue of its iterate), there are constants $c > 0$ and
+$\varepsilon_0 > 0$ with the following property. Let $k$ be such that $$|t_{n,n-1}^{(k)}| \le
+\varepsilon_0 \|A\|_2 \quad \text{and} \quad |t_{nn}^{(k)} - \lambda| \le \varepsilon_0
+\|A\|_2,$$ and let $\eta_m = c\, |t_{n,n-1}^{(m)}| / \|A\|_2$. Then $\eta_k \le 1/2$,
+$$\eta_{k+j} \le \eta_k^{2^j} \quad \text{for all } j,$$ and $t_{n,n-1}^{(k+j)} \to 0$ and
+$t_{nn}^{(k+j)} \to \lambda$ as $j \to \infty$.
+
+**Reading.** The source says that "the convergence to zero of the sequence $\{t_{n,n-1}^{(k)}\}$
+is quadratic". The theorem states this in the sense above, for the tail of the iteration after
+the first iterate in the basin.
+
+The proof is an induction on $j$ from the one-step bound of
+`QuarteroniSaccoSaleri.Chapter05.equation_5_53_quadratic`, whose hypotheses propagate because
+$c \varepsilon_0 \le 1$. -/
 theorem equation_5_53_quadratic_iterate {A : Matrix (Fin (N + 2)) (Fin (N + 2)) ℝ}
     (hA : A.IsUpperHessenberg) {lam : ℝ} (hlam : A.charpoly.rootMultiplicity lam = 1)
     (hreg : ∀ k, IsUnit (equation_5_53 A k -

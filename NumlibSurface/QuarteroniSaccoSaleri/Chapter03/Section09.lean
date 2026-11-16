@@ -7,44 +7,65 @@ import Numlib.LinearAlgebra.Sparse.Pattern
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter03.Section07
 
 /-!
-# Quarteroni–Sacco–Saleri §3.9: sparse matrices
+# Quarteroni, Sacco and Saleri, Section 3.9: Sparse matrices
 
-Surface file for Alfio Quarteroni, Riccardo Sacco and Fausto Saleri, *Numerical Mathematics*
-[quarteroni2000numerical], §3.9, over the backbone `Numlib/LinearAlgebra/Sparse/Pattern` (the
-adjacency digraph `Matrix.adjDigraph` of a matrix), `Numlib/LinearAlgebra/Matrix/LU` (the
-envelope `Matrix.envelope` and its preservation `Matrix.IsLU.envelope_eq`),
-`Numlib/LinearAlgebra/Matrix/Cholesky` and `Numlib/LinearAlgebra/Matrix/SchurComplement` (the
-block factorization `Matrix.fromBlocks_eq_mul_schurComplement` behind substructuring).
+This module formalizes Section 3.9 of [quarteroni2000numerical]. The sparsity pattern of a square
+matrix $A$ is described by its oriented graph $G(A)$, with an arrow from $i$ to $j$ when
+$a_{ij} \neq 0$, and by its envelope $E(A)$ of (3.59), the strictly lower positions of each row from
+its first nonzero entry to the diagonal. For a symmetric positive definite matrix, the fill-in of
+the Cholesky factor stays inside the envelope (3.60). Substructuring splits the unknowns into
+interior and interface groups: eliminating the interior unknowns leaves a system on the Schur
+complement (3.62)–(3.63), which for a symmetric positive definite matrix is no worse conditioned
+than the original system (Remark 3.6).
+
+The proofs specialize the backbone modules `Numlib.LinearAlgebra.Sparse.Pattern` (the adjacency
+digraph `Matrix.adjDigraph`), `Numlib.LinearAlgebra.Matrix.LU` (the envelope `Matrix.envelope` and
+its preservation `Matrix.IsLU.envelope_eq`), `Numlib.LinearAlgebra.Matrix.Cholesky` and
+`Numlib.LinearAlgebra.Matrix.SchurComplement` (the block factorization
+`Matrix.fromBlocks_eq_mul_schurComplement` behind substructuring).
+
+## Main definitions
+
+* Section 3.9, `QuarteroniSaccoSaleri.Chapter03.adjacencyGraph`: the oriented graph $G(A)$.
+* (3.59), `QuarteroniSaccoSaleri.Chapter03.equation_3_59`: the envelope $E(A)$.
+
+## Main results
+
+* Section 3.9, `QuarteroniSaccoSaleri.Chapter03.adjacencyGraph_adj`: $G(A)$ has an arrow from $i$ to
+  $j$ if and only if $a_{ij} \neq 0$.
+* (3.59), `QuarteroniSaccoSaleri.Chapter03.equation_3_59_iff`: the membership in $E(A)$ spelled out
+  with $m_i(A)$.
+* (3.60), `QuarteroniSaccoSaleri.Chapter03.equation_3_60`: $E(A) = E(H + H^T)$ for the Cholesky
+  factor $H$ of $A$.
+* (3.62)–(3.63), `QuarteroniSaccoSaleri.Chapter03.equation_3_63`: substructuring reduces the system
+  to the interface system on the Schur complement.
+* Remark 3.6, `QuarteroniSaccoSaleri.Chapter03.remark_3_6_schur`: the Schur complement of a
+  three-block matrix, and the equivalent interface system.
+* Remark 3.6, `QuarteroniSaccoSaleri.Chapter03.remark_3_6_cond`: $K_2(S) \le K_2(A)$ for symmetric
+  positive definite $A$.
 
 ## Conventions
 
-The oriented graph `G(A)` of a square matrix is the backbone's `Matrix.adjDigraph A`, a
-`Digraph (Fin n)` with an arrow `i → j` iff `a_ij ≠ 0` (a loop at `i` iff `a_ii ≠ 0`). The
-envelope (the book's "convex hull") `E(A)` of (3.59) is `Matrix.envelope A`, a set of index pairs;
-the book's `m_i(A) = i - min {j < i : a_ij ≠ 0}` is spelled out in `equation_3_59_iff`. Block
-systems are written with `Matrix.fromBlocks` over sum index types: the first substructure
-system (3.62) is `fromBlocks A₁₁ A₁₃ A₁₃ᵀ A₃₃'` on `m₁ ⊕ m₃`, and the three-block matrix of
-Remark 3.6 is `fromBlocks (fromBlocks A₁₁ 0 0 A₂₂) (fromRows A₁₃ A₂₃) (fromCols A₁₃ᵀ A₂₃ᵀ) A₃₃`
-on `(m₁ ⊕ m₂) ⊕ m₃`; the Schur complement of a two-block matrix is `Matrix.schurComplement`,
-`C - F B⁻¹ E` for `fromBlocks B E F C`.
+* The oriented graph $G(A)$ of a square matrix is `Matrix.adjDigraph A`, a `Digraph (Fin n)` with an
+  arrow $i \to j$ if and only if $a_{ij} \neq 0$, and a loop at $i$ if and only if $a_{ii} \neq 0$.
+  The book defines $G(A)$ also for a rectangular $A \in \mathbb{R}^{m \times n}$, on $\max(m, n)$
+  vertices; the section uses only square matrices, and only these are covered.
+* The envelope $E(A)$ of (3.59), which the book calls the "convex hull", is `Matrix.envelope A`, a
+  set of index pairs. The book's $m_i(A) = i - \min\{j < i : a_{ij} \neq 0\}$ appears in
+  `QuarteroniSaccoSaleri.Chapter03.equation_3_59_iff`.
+* Block systems are written with `Matrix.fromBlocks` over sum index types. The first substructure
+  system (3.62) is `fromBlocks A₁₁ A₁₃ A₁₃ᵀ A₃₃'` on `m₁ ⊕ m₃`. The three-block matrix of Remark 3.6
+  is `fromBlocks (fromBlocks A₁₁ 0 0 A₂₂) (fromRows A₁₃ A₂₃) (fromCols A₁₃ᵀ A₂₃ᵀ) A₃₃` on
+  `(m₁ ⊕ m₂) ⊕ m₃`.
+* The Schur complement of a two-block matrix `fromBlocks B E F C` is $C - FB^{-1}E$, which is
+  `Matrix.schurComplement`.
 
-## Contents
+## Not formalized
 
-* `adjacencyGraph`, `adjacencyGraph_adj` — the graph `G(A)`.
-* `equation_3_59`, `equation_3_59_iff`, `equation_3_60` — the envelope and the confinement of
-  fill-in.
-* `equation_3_63`, `remark_3_6_schur` — substructuring and the Schur complement system.
-* `remark_3_6_cond` — `K₂(S) ≤ K₂(A)` for symmetric positive definite `A`.
-
-The Cuthill–McKee and nested dissection reorderings (§3.9.1, §3.9.3) state no theorem, the
-operation count (3.61) has no cost model, and Remark 3.5 is prose.
-
-## Readings
-
-The book defines `G(A)` for a rectangular `A ∈ ℝ^{m×n}` on `max(m, n)` vertices; the section
-uses only square matrices, which is what is stated. In (3.60) the fill-in of the Cholesky
-factor `H` is compared with `A` through `E(H + Hᵀ)`: the strictly lower part of `H + Hᵀ` is that
-of `Hᵀ = L D^{1/2}`, whose pattern is that of the unit lower factor `L` of Theorem 3.4.
+* **The Cuthill–McKee and nested dissection reorderings** (Sections 3.9.1 and 3.9.3), which state no
+  theorem.
+* **The operation count (3.61)**, for which there is no cost model.
+* **Remark 3.5**, which is prose.
 -/
 
 open Finset Matrix
@@ -55,25 +76,38 @@ variable {n : ℕ}
 
 /-! ### The graph of a matrix and the envelope -/
 
-/-- **§3.9, the oriented graph `G(A)`** of `A ∈ ℝ^{n×n}`: the vertices are the indices
-`1, …, n`, and a path directed from `i` to `j` exists iff `a_ij ≠ 0`; for `a_ii ≠ 0` the path
-from `i` to itself is a loop. It is the backbone's `Matrix.adjDigraph A`. -/
+/-- **Section 3.9** of [quarteroni2000numerical], the **oriented graph** $G(A)$ of
+$A \in \mathbb{R}^{n \times n}$. Its vertices are the indices $1, \ldots, n$, and a path
+directed from $i$ to $j$ exists if and only if $a_{ij} \neq 0$. For $a_{ii} \neq 0$, the path
+from $i$ to itself is a loop.
+
+The graph is `Matrix.adjDigraph A`. -/
 def adjacencyGraph (A : Matrix (Fin n) (Fin n) ℝ) : Digraph (Fin n) := adjDigraph A
 
-/-- The paths of `G(A)` are the nonzero entries of `A` (backbone `Matrix.adjDigraph_adj`). -/
+/-- **Section 3.9** of [quarteroni2000numerical]. Let $A \in \mathbb{R}^{n \times n}$. The graph
+$G(A)$ has an arrow from $i$ to $j$ if and only if $a_{ij} \neq 0$.
+
+The proof uses `Matrix.adjDigraph_adj`. -/
 theorem adjacencyGraph_adj (A : Matrix (Fin n) (Fin n) ℝ) (i j : Fin n) :
     (adjacencyGraph A).Adj i j ↔ A i j ≠ 0 :=
   adjDigraph_adj
 
-/-- **(3.59), the envelope** (the book's "convex hull") of `A`: with
-`m_i(A) = i - min {j < i : a_ij ≠ 0}`, `E(A) = {(i, j) : 0 < i - j ≤ m_i(A)}`, the strictly
-lower positions of each row from its first nonzero entry to the diagonal. It is the backbone's
-`Matrix.envelope A`; `equation_3_59_iff` spells the membership out. -/
+/-- **Equation (3.59)** of [quarteroni2000numerical], the **envelope** of
+$A \in \mathbb{R}^{n \times n}$, which the book calls its "convex hull". With
+$$m_i(A) = i - \min\{j < i : a_{ij} \neq 0\},$$
+the envelope is
+$$E(A) = \{(i, j) : 0 < i - j \le m_i(A)\},$$
+the strictly lower positions of each row from its first nonzero entry to the diagonal.
+
+The envelope is `Matrix.envelope A`. The membership is spelled out in
+`QuarteroniSaccoSaleri.Chapter03.equation_3_59_iff`. -/
 def equation_3_59 (A : Matrix (Fin n) (Fin n) ℝ) : Set (Fin n × Fin n) := envelope A
 
-/-- **(3.59), spelled out.** `(i, j) ∈ E(A)` iff the set `{j₀ < i : a_{i j₀} ≠ 0}` is nonempty
-and `0 < i - j ≤ m_i(A) = i - min {j₀ < i : a_{i j₀} ≠ 0}`; a row whose strict lower part
-vanishes contributes nothing to the envelope. -/
+/-- **Equation (3.59)** of [quarteroni2000numerical], spelled out. Let
+$A \in \mathbb{R}^{n \times n}$. A pair $(i, j)$ is in $E(A)$ if and only if the set
+$\{j_0 < i : a_{ij_0} \neq 0\}$ is nonempty and
+$$0 < i - j \le m_i(A) = i - \min\{j_0 < i : a_{ij_0} \neq 0\}.$$
+A row whose strictly lower part is zero contributes nothing to the envelope. -/
 theorem equation_3_59_iff (A : Matrix (Fin n) (Fin n) ℝ) (i j : Fin n) :
     (i, j) ∈ equation_3_59 A ↔
       ∃ h : (univ.filter fun j₀ => j₀ < i ∧ A i j₀ ≠ 0).Nonempty,
@@ -104,10 +138,15 @@ private theorem envelope_congr {B C : Matrix (Fin n) (Fin n) ℝ}
   · exact fun h0 => hne ((h i j₀ (hj₀.trans_lt hij)).2 h0)
   · exact fun h0 => hne ((h i j₀ (hj₀.trans_lt hij)).1 h0)
 
-/-- **(3.60).** For a symmetric positive definite `A` with Cholesky factor `H` (Theorem 3.6,
-`A = Hᵀ H`), `E(A) = E(H + Hᵀ)`: fill-in is confined within the envelope of `A`, and reaches its
-boundary. The strictly lower part of `H + Hᵀ` is that of `Hᵀ = L D^{1/2}`, `L` the unit lower
-factor of Theorem 3.4, and `E(L) = E(A)` is the backbone's `Matrix.IsLU.envelope_eq`. -/
+/-- **Equation (3.60)** of [quarteroni2000numerical]. Let $A \in \mathbb{R}^{n \times n}$ be
+symmetric positive definite, with Cholesky factor $H$ (Theorem 3.6, $A = H^T H$). Then
+$$E(A) = E(H + H^T).$$
+So the fill-in is confined within the envelope of $A$, and it reaches the boundary of the
+envelope.
+
+The book compares the fill-in of $H$ with $A$ through $E(H + H^T)$. The strictly lower part of
+$H + H^T$ is that of $H^T = LD^{1/2}$, where $L$ is the unit lower factor of Theorem 3.4, and
+$E(L) = E(A)$ is `Matrix.IsLU.envelope_eq`. -/
 theorem equation_3_60 {A H : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosDef) (hH : IsCholesky A H) :
     equation_3_59 A = equation_3_59 (H + Hᵀ) := by
   have hLU := hH.isLU
@@ -125,15 +164,18 @@ section Substructuring
 
 variable {m₁ m₂ m₃ : ℕ}
 
-/-- Two `Sum.elim`s agree iff their halves do. -/
+/-- Two functions `Sum.elim f g` and `Sum.elim f' g'` are equal if and only if $f = f'$ and
+$g = g'$. -/
 private theorem sum_elim_eq_iff {α β γ : Type*} {f f' : α → γ} {g g' : β → γ} :
     Sum.elim f g = Sum.elim f' g' ↔ f = f' ∧ g = g' := by
   rw [funext_iff, Sum.forall, funext_iff, funext_iff]
   rfl
 
-/-- The two-block system `[[B, E], [F, C]] [x₁; x₃] = [b₁; b₃]` with `B` nonsingular is
-equivalent to the Schur complement system `(C - F B⁻¹ E) x₃ = b₃ - F B⁻¹ b₁` together with
-`B x₁ = b₁ - E x₃`. -/
+/-- Let $B$ be nonsingular. The two-block system
+$$\begin{bmatrix} B & E \\ F & C \end{bmatrix} \begin{bmatrix} x_1 \\ x_3 \end{bmatrix} =
+  \begin{bmatrix} b_1 \\ b_3 \end{bmatrix}$$
+is equivalent to the Schur complement system $(C - FB^{-1}E) x_3 = b_3 - FB^{-1} b_1$ together
+with $Bx_1 = b_1 - Ex_3$. -/
 private theorem fromBlocks_mulVec_eq_iff {l o : Type*} [Fintype l] [Fintype o] [DecidableEq l]
     {B : Matrix l l ℝ} {E : Matrix l o ℝ} {F : Matrix o l ℝ} {C : Matrix o o ℝ}
     (hB : IsUnit B) (x₁ b₁ : l → ℝ) (x₃ b₃ : o → ℝ) :
@@ -165,13 +207,22 @@ private theorem fromBlocks_mulVec_eq_iff {l o : Type*} [Fintype l] [Fintype o] [
     rw [← h3]
     abel
 
-/-- **(3.62)–(3.63), decomposition into substructures.** For the system of the first
-substructure `[[A₁₁, A₁₃], [A₁₃ᵀ, A₃₃']] [x₁; x₃] = [b₁; b₃]` with `A₁₁ = H₁₁ᵀ H₁₁` (`H₁₁`
-nonsingular), let `H₂₁ = H₁₁⁻ᵀ A₁₃` and `c₁ = H₁₁⁻ᵀ b₁`. Then `H₂₁ᵀ H₂₁ = A₁₃ᵀ A₁₁⁻¹ A₁₃` and
-`H₂₁ᵀ c₁ = A₁₃ᵀ A₁₁⁻¹ b₁`, so eliminating `x₁` leaves the interface system with matrix
-`A₃₃‴ = A₃₃' - H₂₁ᵀ H₂₁` — the Schur complement of the block matrix — and right-hand side
-`b₃‴ = b₃ - H₂₁ᵀ c₁`; once it is solved, `x₁` follows from `A₁₁ x₁ = b₁ - A₁₃ x₃` (backbone
-`Matrix.schurComplement`, `Matrix.fromBlocks_eq_mul_schurComplement`). -/
+/-- **Equations (3.62)–(3.63)** of [quarteroni2000numerical], decomposition into substructures.
+Consider the system of the first substructure
+$$\begin{bmatrix} A_{11} & A_{13} \\ A_{13}^T & A_{33}' \end{bmatrix} \begin{bmatrix} x_1 \\ x_3
+  \end{bmatrix} = \begin{bmatrix} b_1 \\ b_3 \end{bmatrix},$$
+with $A_{11} \in \mathbb{R}^{m_1 \times m_1}$, $A_{13} \in \mathbb{R}^{m_1 \times m_3}$ and
+$A_{33}' \in \mathbb{R}^{m_3 \times m_3}$, and let $A_{11} = H_{11}^T H_{11}$ with $H_{11}$
+nonsingular. Let $H_{21} = H_{11}^{-T} A_{13}$ and $c_1 = H_{11}^{-T} b_1$. Then
+$$H_{21}^T H_{21} = A_{13}^T A_{11}^{-1} A_{13}, \qquad H_{21}^T c_1 = A_{13}^T A_{11}^{-1}
+  b_1,$$
+and $A_{33}''' = A_{33}' - H_{21}^T H_{21}$ is the Schur complement of the block matrix. The
+system is equivalent to the interface system $A_{33}''' x_3 = b_3'''$ with
+$b_3''' = b_3 - H_{21}^T c_1$, together with $A_{11} x_1 = b_1 - A_{13} x_3$, which gives $x_1$
+once $x_3$ is known.
+
+The matrix $A_{33}'$ is the argument `A₃₃`. The proof uses `Matrix.schurComplement` and
+`Matrix.fromBlocks_eq_mul_schurComplement`. -/
 theorem equation_3_63 {A₁₁ H₁₁ : Matrix (Fin m₁) (Fin m₁) ℝ} (hH : IsUnit H₁₁)
     (hA₁₁ : A₁₁ = H₁₁ᵀ * H₁₁) (A₁₃ : Matrix (Fin m₁) (Fin m₃) ℝ)
     (A₃₃ : Matrix (Fin m₃) (Fin m₃) ℝ) (x₁ b₁ : Fin m₁ → ℝ) (x₃ b₃ : Fin m₃ → ℝ) :
@@ -196,13 +247,19 @@ theorem equation_3_63 {A₁₁ H₁₁ : Matrix (Fin m₁) (Fin m₁) ℝ} (hH :
   · rw [schurComplement_fromBlocks, h1]
   · rw [fromBlocks_mulVec_eq_iff hA₁₁u, schurComplement_fromBlocks, h1, h2, mulVec_mulVec]
 
-/-- **Remark 3.6, the Schur complement.** For the block matrix
-`A = [[A₁₁, 0, A₁₃], [0, A₂₂, A₂₃], [A₁₃ᵀ, A₂₃ᵀ, A₃₃]]` with `A₁₁`, `A₂₂` nonsingular, the Schur
-complement is `S = A₃₃ - A₁₃ᵀ A₁₁⁻¹ A₁₃ - A₂₃ᵀ A₂₂⁻¹ A₂₃`, and the system `A x = b` is equivalent
-to the interface system `S x₃ = b₃ - A₁₃ᵀ A₁₁⁻¹ b₁ - A₂₃ᵀ A₂₂⁻¹ b₂` followed by the two systems of
-reduced size `A₁₁ x₁ = b₁ - A₁₃ x₃`, `A₂₂ x₂ = b₂ - A₂₃ x₃` (backbone
-`Matrix.fromBlocks_eq_mul_schurComplement`; Mathlib's `Matrix.inv_fromBlocks_zero₁₂_of_isUnit_iff`
-inverts the block diagonal). -/
+/-- **Remark 3.6** of [quarteroni2000numerical], the Schur complement. Let
+$$A = \begin{bmatrix} A_{11} & 0 & A_{13} \\ 0 & A_{22} & A_{23} \\ A_{13}^T & A_{23}^T & A_{33}
+  \end{bmatrix}$$
+with $A_{11}$ and $A_{22}$ nonsingular. Then the Schur complement of the leading $2 \times 2$
+block diagonal part is
+$$S = A_{33} - A_{13}^T A_{11}^{-1} A_{13} - A_{23}^T A_{22}^{-1} A_{23},$$
+and the system $Ax = b$ is equivalent to the interface system
+$$S x_3 = b_3 - A_{13}^T A_{11}^{-1} b_1 - A_{23}^T A_{22}^{-1} b_2$$
+together with the two systems of reduced size $A_{11} x_1 = b_1 - A_{13} x_3$ and
+$A_{22} x_2 = b_2 - A_{23} x_3$.
+
+The proof uses `Matrix.fromBlocks_eq_mul_schurComplement`, and Mathlib's
+`Matrix.inv_fromBlocks_zero₁₂_of_isUnit_iff` inverts the block diagonal. -/
 theorem remark_3_6_schur {A₁₁ : Matrix (Fin m₁) (Fin m₁) ℝ} {A₂₂ : Matrix (Fin m₂) (Fin m₂) ℝ}
     (h₁₁ : IsUnit A₁₁) (h₂₂ : IsUnit A₂₂) (A₁₃ : Matrix (Fin m₁) (Fin m₃) ℝ)
     (A₂₃ : Matrix (Fin m₂) (Fin m₃) ℝ) (A₃₃ : Matrix (Fin m₃) (Fin m₃) ℝ) (x₁ b₁ : Fin m₁ → ℝ)
@@ -242,15 +299,22 @@ theorem remark_3_6_schur {A₁₁ : Matrix (Fin m₁) (Fin m₁) ℝ} {A₂₂ :
   rw [e1, e2, sub_sub b₃]
 
 open scoped Matrix.Norms.L2Operator in
-/-- **Remark 3.6, the conditioning of the interface system.** If the block matrix `A` is symmetric
-and positive definite, then the system on the Schur complement `S` is no more ill conditioned than
-the original one on `A`: `K₂(S) ≤ K₂(A)` (backbone
-`Matrix.PosDef.condNumber_schurComplement_le`, whose proof is Axelsson's Lemma 3.12 without
-interlacing — `0 ≤ S ≤ A₃₃` in the Loewner order gives `‖S‖₂ ≤ ‖A‖₂`, and `S⁻¹ = (A⁻¹)₃₃` gives
-`‖S⁻¹‖₂ ≤ ‖A⁻¹‖₂`, a principal submatrix having the smaller spectral norm). Here `K₂` is
-`NormedRing.condNumber` in Mathlib's scoped `L2Operator` matrix norm, which is the chapter's
-`condNumber 2` transported to a sum index type (`condNumber_two_eq`), and `remark_3_6_schur`
-identifies `A.schurComplement` with `A₃₃ - A₁₃ᵀ A₁₁⁻¹ A₁₃ - A₂₃ᵀ A₂₂⁻¹ A₂₃`. -/
+/-- **Remark 3.6** of [quarteroni2000numerical], the conditioning of the interface system. Let $A$
+be a symmetric positive definite matrix partitioned into $3 \times 3$ blocks, and let $S$ be the
+Schur complement of its leading $2 \times 2$ block part. Then the system on $S$ is no more ill
+conditioned than the system on $A$:
+$$K_2(S) \le K_2(A).$$
+
+Here $K_2$ is `NormedRing.condNumber` for Mathlib's scoped `L2Operator` matrix norm. It is the
+chapter's `QuarteroniSaccoSaleri.Chapter03.condNumber 2` transported to a sum index type
+(`QuarteroniSaccoSaleri.Chapter03.condNumber_two_eq`). The theorem holds for every symmetric
+positive definite $A$ on this index type, and `QuarteroniSaccoSaleri.Chapter03.remark_3_6_schur`
+identifies $S$ with $A_{33} - A_{13}^T A_{11}^{-1} A_{13} - A_{23}^T A_{22}^{-1} A_{23}$ when
+$A$ has the shape of Remark 3.6. The proof specializes
+`Matrix.PosDef.condNumber_schurComplement_le`, which is Axelsson's Lemma 3.12 without
+interlacing: $0 \le S \le A_{33}$ in the Loewner order gives $\|S\|_2 \le \|A\|_2$, and
+$S^{-1} = (A^{-1})_{33}$ gives $\|S^{-1}\|_2 \le \|A^{-1}\|_2$, because a principal submatrix
+has the smaller spectral norm. -/
 theorem remark_3_6_cond
     {A : Matrix ((Fin m₁ ⊕ Fin m₂) ⊕ Fin m₃) ((Fin m₁ ⊕ Fin m₂) ⊕ Fin m₃) ℝ} (hA : A.PosDef) :
     NormedRing.condNumber A.schurComplement ≤ NormedRing.condNumber A := by

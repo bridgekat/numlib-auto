@@ -6,50 +6,69 @@ import NumlibSurface.QuarteroniSaccoSaleri.Chapter08.Section04
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter09.Section02
 
 /-!
-# Quarteroni–Sacco–Saleri §9.5: Hermite quadrature formulae
+# Quarteroni, Sacco and Saleri, Section 9.5: Hermite quadrature formulae
 
-Surface file for Alfio Quarteroni, Riccardo Sacco and Fausto Saleri, *Numerical Mathematics*,
-Springer, 2000, §9.5.
+This module formalizes Section 9.5 of [quarteroni2000numerical]. The Hermite interpolant (9.28) of
+$f$ at distinct nodes $x_0, \dots, x_n$ is
+$$H_{2n+1} f = \sum_{i=0}^{n} f(x_i) \mathcal{L}_i + \sum_{i=0}^{n} f'(x_i) \mathcal{M}_i, \qquad
+  \mathcal{L}_k = \Bigl[1 - \frac{\omega''(x_k)}{\omega'(x_k)} (x - x_k)\Bigr] l_k^2, \qquad
+  \mathcal{M}_k = (x - x_k) l_k^2.$$
+Its integral is the Hermite quadrature formula (9.29), $I_n(f) = \sum_k \alpha_k f(x_k) + \sum_k
+\beta_k f'(x_k)$ with $\alpha_k = I(\mathcal{L}_k)$ and $\beta_k = I(\mathcal{M}_k)$, which has
+degree of exactness $2n + 1$. For $n = 1$ at the nodes $a, b$ it is the corrected trapezoidal
+formula (9.30), whose error is $\frac{h^5}{720} f^{(4)}(\xi)$ (9.31). In the composite form (9.32)
+the corrections at the interior nodes cancel, only the end correction
+$\frac{H^2}{12} (f'(a) - f'(b))$ remains, and the error has order $4$ in $H$, as Example 9.5
+observes. Exercise 9.9, cited there, compares (9.31) with the Simpson error (9.16).
 
-Integrating the Hermite interpolant (9.28), `H_{2n+1} f = ∑ᵢ f(xᵢ) 𝓛ᵢ + ∑ᵢ f'(xᵢ) 𝓜ᵢ` with
-`𝓛_k = [1 - (ω''(x_k)/ω'(x_k))(x - x_k)] l_k²` and `𝓜_k = (x - x_k) l_k²`, gives the Hermite
-quadrature formula (9.29), `I_n(f) = ∑_k α_k f(x_k) + ∑_k β_k f'(x_k)` with `α_k = I(𝓛_k)`,
-`β_k = I(𝓜_k)`, of degree of exactness `2n + 1`. With `n = 1` at the nodes `a, b` it is the
-corrected trapezoidal formula (9.30), whose error is `h⁵/720 f⁗(ξ)` (9.31); its composite form
-(9.32) carries the end correction `H²/12 (f'(a) - f'(b))` only, the corrections at the interior
-nodes cancelling, and has an error of order `4` in `H`, as Example 9.5 observes. Exercise 9,
-cited there, compares (9.31) with the Simpson error (9.16). Example 9.5 itself is a numerical
-table and is not formalized.
-
-The backbone is the Hermite section of `Numlib/Approximation/NewtonCotes`:
-`Quadrature.hermiteBasisL`, `Quadrature.hermiteBasisM`, `Quadrature.hermiteQuadrature`,
+The backbone is the Hermite part of `Numlib.Approximation.NewtonCotes`: `Quadrature.hermiteBasisL`,
+`Quadrature.hermiteBasisM`, `Quadrature.hermiteQuadrature`,
 `Quadrature.integral_eq_hermiteQuadrature_of_degree_le`, `Quadrature.correctedTrapezoid`,
-`Quadrature.correctedTrapezoidSum` and their error theorems. The Hermite interpolant is chapter
-8's `Hermite.interpolate x (fun _ => 1) f`, and (9.28) is chapter 8's Example 8.6 read with the
-book's normalization of the cardinal polynomials.
+`Quadrature.correctedTrapezoidSum` and their error theorems. The Hermite interpolant is
+`Hermite.interpolate x (fun _ => 1) f` of Chapter 8, and (9.28) is Example 8.6 read with the
+normalization of the cardinal polynomials of the book.
 
 ## Main results
 
-* `equation_9_28`, `equation_9_29` — the Hermite interpolant in the cardinal basis `𝓛_k, 𝓜_k`,
-  and its integral, the Hermite quadrature formula.
-* `hermiteQuadrature_degreeOfExactness` — the degree of exactness `2n + 1`.
-* `equation_9_30`, `equation_9_31` — the corrected trapezoidal formula with its weights, and its
-  error `h⁵/720 f⁗(ξ)`, `h = b - a`.
-* `equation_9_32`, `compositeCorrectedTrapezoidalError` — the composite formula with the
-  interior corrections cancelled, and its error `(b - a)H⁴/720 f⁗(ξ)`.
-* `exercise_9_9` — `E₁^corr(f) = -4 E₂(f)` for `f` with constant fourth derivative.
-
-## Erratum
-
-The end correction of (9.32) is printed `(b - a)²/12 [f'(a) - f'(b)]`; on `m` panels it is
-`H²/12 [f'(a) - f'(b)]` with `H = (b - a)/m`, as in the book's own Program 75
-(`(h^2/12)*(f1a-f1b)`) and as the cancellation argument gives. The node states the corrected
-formula.
+* Section 9.5, `QuarteroniSaccoSaleri.Chapter09.hermiteBasisL_eq_example_8_6_A`: the cardinal
+  polynomial $\mathcal{L}_k$ is the polynomial $A_k$ of Example 8.6.
+* Section 9.5, `QuarteroniSaccoSaleri.Chapter09.hermiteBasisM_eq_example_8_6_B`: the cardinal
+  polynomial $\mathcal{M}_k$ is the polynomial $B_k$ of Example 8.6.
+* Equation (9.28), `QuarteroniSaccoSaleri.Chapter09.equation_9_28`: the Hermite interpolant in the
+  cardinal basis $\mathcal{L}_k, \mathcal{M}_k$.
+* Equation (9.29), `QuarteroniSaccoSaleri.Chapter09.equation_9_29`: the Hermite quadrature formula
+  is the integral of the Hermite interpolant.
+* Section 9.5, `QuarteroniSaccoSaleri.Chapter09.hermiteQuadrature_degreeOfExactness`: the degree of
+  exactness is $2n + 1$.
+* Equation (9.30), `QuarteroniSaccoSaleri.Chapter09.equation_9_30`: the corrected trapezoidal
+  formula and its weights.
+* Equation (9.31), `QuarteroniSaccoSaleri.Chapter09.equation_9_31`: its error is
+  $\frac{h^5}{720} f^{(4)}(\xi)$ with $h = b - a$.
+* Equation (9.32), `QuarteroniSaccoSaleri.Chapter09.equation_9_32`: the composite formula, with the
+  interior corrections cancelled.
+* Section 9.5, `QuarteroniSaccoSaleri.Chapter09.compositeCorrectedTrapezoidalError`: its error is
+  $\frac{(b - a) H^4}{720} f^{(4)}(\xi)$.
+* Exercise 9.9, `QuarteroniSaccoSaleri.Chapter09.exercise_9_9`: $E_1^{corr}(f) = -4 E_2(f)$ for
+  every $f$ with constant fourth derivative.
 
 ## Conventions
 
-As in §9.2; `f'` is `deriv f`, so that `f ∈ C⁴([a, b])` supplies it, and the error points `ξ` of
-(9.31) and of the composite formula lie in `[a, b]` (the book writes `(a, b)`).
+* As in Section 9.2, $f \in C^k([a, b])$ is `ContDiffOn ℝ k f U` on an open set
+  $U \supseteq [a, b]$.
+* The derivative $f'$ is `deriv f`, so that $f \in C^4([a, b])$ supplies it.
+* The book puts the points $\xi$ of (9.31) and of the composite error in $(a, b)$. The statements
+  here give $\xi \in [a, b]$.
+* Exercise 9.k is Exercise k of Chapter 9.
+
+## Deviations from the source
+
+* **Equation (9.32)** (correction). The source prints the end correction
+  $\frac{(b - a)^2}{12} [f'(a) - f'(b)]$. On $m$ panels it is $\frac{H^2}{12} [f'(a) - f'(b)]$ with
+  $H = (b - a)/m$. See `QuarteroniSaccoSaleri.Chapter09.equation_9_32`.
+
+## Not formalized
+
+* **Example 9.5.** It is a numerical table.
 -/
 
 open Set intervalIntegral Polynomial
@@ -61,8 +80,12 @@ variable {a b : ℝ} {f : ℝ → ℝ} {U : Set ℝ} {n : ℕ}
 
 /-! ### The Hermite interpolant (9.28) and the Hermite formula (9.29) -/
 
-/-- The book's cardinal polynomial `𝓛_k` is chapter 8's osculatory basis polynomial `A_k` of
-Example 8.6: `ω''(x_k)/ω'(x_k) = 2 l_k'(x_k)` (`Lagrange.eval_derivative_basis_self`). -/
+/-- Let $x_0, \dots, x_n$ be distinct. Then for each $k$ the cardinal polynomial $\mathcal{L}_k$ of
+the book is the osculatory basis polynomial $A_k$ of Example 8.6,
+`QuarteroniSaccoSaleri.Chapter08.example_8_6_A`.
+
+The two polynomials agree because $\omega''(x_k)/\omega'(x_k) = 2 l_k'(x_k)$
+(`Lagrange.eval_derivative_basis_self`). -/
 theorem hermiteBasisL_eq_example_8_6_A {x : Fin (n + 1) → ℝ} (hx : Function.Injective x)
     (k : Fin (n + 1)) : Quadrature.hermiteBasisL x k = Chapter08.example_8_6_A x k := by
   rw [Quadrature.hermiteBasisL, Chapter08.example_8_6_A, Lagrange.eval_derivative_basis_self hx]
@@ -71,15 +94,21 @@ theorem hermiteBasisL_eq_example_8_6_A {x : Fin (n + 1) → ℝ} (hx : Function.
   congr 2
   rw [mul_div_assoc', mul_div_mul_left _ _ (two_ne_zero' ℝ)]
 
-/-- The book's cardinal polynomial `𝓜_k` is chapter 8's `B_k` of Example 8.6. -/
+/-- For all nodes $x_0, \dots, x_n$ and each $k$, the cardinal polynomial
+$\mathcal{M}_k = (x - x_k) l_k^2$ of the book is the polynomial $B_k$ of Example 8.6,
+`QuarteroniSaccoSaleri.Chapter08.example_8_6_B`. -/
 theorem hermiteBasisM_eq_example_8_6_B (x : Fin (n + 1) → ℝ) (k : Fin (n + 1)) :
     Quadrature.hermiteBasisM x k = Chapter08.example_8_6_B x k := rfl
 
-/-- **(9.28).** Given the `2(n + 1)` values `f(x_k), f'(x_k)` at `n + 1` distinct points, the
-Hermite interpolating polynomial of `f` (§8.4) is
-`H_{2n+1} f = ∑ᵢ f(xᵢ) 𝓛ᵢ + ∑ᵢ f'(xᵢ) 𝓜ᵢ`, where `𝓛_k = [1 - (ω''(x_k)/ω'(x_k))(x - x_k)] l_k²`
-and `𝓜_k = (x - x_k) l_k²` are polynomials of `ℙ_{2n+1}` — chapter 8's Example 8.6, with
-`ω''(x_k)/ω'(x_k) = 2 l_k'(x_k)`. -/
+/-- **Equation (9.28)** of [quarteroni2000numerical]. Let $x_0, \dots, x_n$ be distinct and let
+$f : \mathbb{R} \to \mathbb{R}$. Then the Hermite interpolating polynomial of $f$ (Section 8.4)
+at these nodes, for the $2(n + 1)$ values $f(x_k)$ and $f'(x_k)$, is
+$$H_{2n+1} f = \sum_{i=0}^{n} f(x_i) \mathcal{L}_i + \sum_{i=0}^{n} f'(x_i) \mathcal{M}_i,$$
+where $\mathcal{L}_k = [1 - (\omega''(x_k)/\omega'(x_k))(x - x_k)] l_k^2$ and
+$\mathcal{M}_k = (x - x_k) l_k^2$ are polynomials of $\mathbb{P}_{2n+1}$.
+
+The interpolant is `Hermite.interpolate x (fun _ => 1) f`, and $f'$ is `deriv f`. The statement
+is Example 8.6 of Chapter 8 with $\omega''(x_k)/\omega'(x_k) = 2 l_k'(x_k)$. -/
 theorem equation_9_28 {x : Fin (n + 1) → ℝ} (hx : Function.Injective x) (f : ℝ → ℝ) :
     Hermite.interpolate x (fun _ => 1) f
       = ∑ i, C (f (x i)) * Quadrature.hermiteBasisL x i
@@ -87,10 +116,14 @@ theorem equation_9_28 {x : Fin (n + 1) → ℝ} (hx : Function.Injective x) (f :
   rw [Chapter08.example_8_6 hx f, Finset.sum_add_distrib]
   simp only [hermiteBasisL_eq_example_8_6_A hx, hermiteBasisM_eq_example_8_6_B]
 
-/-- **(9.29).** Integrating (9.28) over `[a, b]` gives the Hermite quadrature formula
-`I_n(f) = ∑_k α_k f(x_k) + ∑_k β_k f'(x_k)` with `α_k = I(𝓛_k)`, `β_k = I(𝓜_k)`: the backbone's
-`Quadrature.hermiteQuadrature x a b f f'` is that sum by definition, and at `f' = f'` it is the
-integral of the Hermite interpolant. -/
+/-- **Equation (9.29)** of [quarteroni2000numerical], the Hermite quadrature formula. Let
+$x_0, \dots, x_n$ be distinct, let $a, b \in \mathbb{R}$, and let
+$f : \mathbb{R} \to \mathbb{R}$. For every function $f'$ the backbone's
+`Quadrature.hermiteQuadrature x a b f f'` is
+$$I_n(f) = \sum_{k=0}^{n} \alpha_k f(x_k) + \sum_{k=0}^{n} \beta_k f'(x_k), \qquad \alpha_k =
+  \int_a^b \mathcal{L}_k, \qquad \beta_k = \int_a^b \mathcal{M}_k.$$
+When $f'$ is the derivative of $f$, this is the integral over $[a, b]$ of the Hermite
+interpolant (9.28) of $f$. -/
 theorem equation_9_29 {x : Fin (n + 1) → ℝ} (hx : Function.Injective x) (a b : ℝ) (f : ℝ → ℝ) :
     (∀ f' : ℝ → ℝ, Quadrature.hermiteQuadrature x a b f f'
         = ∑ k, (∫ t in a..b, (Quadrature.hermiteBasisL x k).eval t) * f (x k)
@@ -111,9 +144,14 @@ theorem equation_9_29 {x : Fin (n + 1) → ℝ} (hx : Function.Injective x) (a b
   simp only [integral_const_mul]
   congr 1 <;> exact Finset.sum_congr rfl fun k _ => mul_comm _ _
 
-/-- **§9.5: "Formula (9.29) has degree of exactness equal to `2n + 1`."** For distinct nodes and
-`p ∈ ℙ_{2n+1}`, `∫_a^b p = ∑_k α_k p(x_k) + ∑_k β_k p'(x_k)`: `p` is its own Hermite
-interpolant. The backbone's `Quadrature.integral_eq_hermiteQuadrature_of_degree_le`. -/
+/-- **Section 9.5** of [quarteroni2000numerical], degree of exactness of the Hermite formula. Let
+$x_0, \dots, x_n$ be distinct, let $a, b \in \mathbb{R}$, and let $p$ be a polynomial of degree
+at most $2n + 1$. Then
+$$\int_a^b p(t)\,dt = \sum_{k=0}^{n} \alpha_k p(x_k) + \sum_{k=0}^{n} \beta_k p'(x_k).$$
+
+The book says: "Formula (9.29) has degree of exactness equal to $2n + 1$." The reason is that
+$p$ is its own Hermite interpolant. The proof is the backbone's
+`Quadrature.integral_eq_hermiteQuadrature_of_degree_le`. -/
 theorem hermiteQuadrature_degreeOfExactness {x : Fin (n + 1) → ℝ} (hx : Function.Injective x)
     (a b : ℝ) {p : ℝ[X]} (hp : p.degree ≤ (2 * n + 1 : ℕ)) :
     (∫ t in a..b, p.eval t)
@@ -122,12 +160,16 @@ theorem hermiteQuadrature_degreeOfExactness {x : Fin (n + 1) → ℝ} (hx : Func
 
 /-! ### The corrected trapezoidal formula (9.30)–(9.32) -/
 
-/-- **(9.30).** Taking `n = 1` at the nodes `x₀ = a`, `x₁ = b`, the Hermite formula is the
-*corrected trapezoidal formula*
-`I₁^corr(f) = (b - a)/2 [f(a) + f(b)] + (b - a)²/12 [f'(a) - f'(b)]`, with the weights
-`α₀ = α₁ = (b - a)/2`, `β₀ = (b - a)²/12` and `β₁ = -β₀`. The identity of the two functionals is
-the backbone's `Quadrature.hermiteQuadrature_two_eq_correctedTrapezoid`; the weights are read off
-it at the functions supported at one node. -/
+/-- **Equation (9.30)** of [quarteroni2000numerical], the corrected trapezoidal formula. Let
+$a \neq b$. With $n = 1$ and the nodes $x_0 = a$, $x_1 = b$, the Hermite formula is the
+**corrected trapezoidal formula**
+$$I_1^{corr}(f) = \frac{b - a}{2} [f(a) + f(b)] + \frac{(b - a)^2}{12} [f'(a) - f'(b)]$$
+for all functions $f$ and $f'$. Its weights are $\alpha_0 = \alpha_1 = (b - a)/2$,
+$\beta_0 = (b - a)^2/12$ and $\beta_1 = -\beta_0$.
+
+The identity of the two functionals is the backbone's
+`Quadrature.hermiteQuadrature_two_eq_correctedTrapezoid`. The weights follow from it at
+functions that vanish at one node. -/
 theorem equation_9_30 (hab : a ≠ b) :
     (∀ f f' : ℝ → ℝ, Quadrature.hermiteQuadrature ![a, b] a b f f'
         = (b - a) / 2 * (f a + f b) + (b - a) ^ 2 / 12 * (f' a - f' b)) ∧
@@ -152,9 +194,14 @@ theorem equation_9_30 (hab : a ≠ b) :
     simp [Quadrature.hermiteQuadrature, Fin.sum_univ_two, hab] at h
     linarith
 
-/-- **(9.31).** For `f ∈ C⁴([a, b])`, the error of the corrected trapezoidal formula (9.30) is
-`E₁^corr(f) = h⁵/720 f⁗(ξ)`, `h = b - a`, for some `ξ ∈ [a, b]` — of order `h⁵` like the
-Cavalieri–Simpson formula, against the `h³` of (9.12). The backbone's
+/-- **Equation (9.31)** of [quarteroni2000numerical]. Let $a \le b$ and $f \in C^4([a, b])$. Then
+the error of the corrected trapezoidal formula (9.30) is
+$$E_1^{corr}(f) = \int_a^b f(x)\,dx - I_1^{corr}(f) = \frac{h^5}{720} f^{(4)}(\xi), \qquad h =
+  b - a,$$
+for some $\xi \in [a, b]$.
+
+The error has order $h^5$, like the Cavalieri–Simpson formula, against the $h^3$ of (9.12). The
+book puts $\xi$ in $(a, b)$. The proof is the backbone's
 `Quadrature.exists_sub_correctedTrapezoid_eq`. -/
 theorem equation_9_31 (hab : a ≤ b) (hU : IsOpen U) (hUab : Icc a b ⊆ U)
     (hf : ContDiffOn ℝ 4 f U) :
@@ -169,13 +216,19 @@ theorem equation_9_31 (hab : a ≤ b) (hU : IsOpen U) (hUab : Icc a b ⊆ U)
     (hasDerivAt_iteratedDeriv_of_contDiffOn hU hUab hf4 (by norm_num))
     (continuousOn_iteratedDeriv_of_contDiffOn hU hUab hf4)
 
-/-- **(9.32).** The composite corrected trapezoidal formula on `m` panels, `x_k = a + k H`,
-`H = (b - a)/m`, is
-`I^corr_{1,m}(f) = H {½[f(x₀) + f(x_m)] + f(x₁) + ⋯ + f(x_{m-1})} + H²/12 [f'(a) - f'(b)]`
-(the book prints `(b - a)²/12` for the end correction; `H²/12` is the constant of its own Program
-75): the panel corrections `H²/12 (f'(x_k) - f'(x_{k+1}))` telescope, so that the first
-derivatives at the interior nodes `x₁, …, x_{m-1}` cancel — the sum of the corrected trapezoidal
-formulae of the panels is the displayed formula. -/
+/-- **Equation (9.32)** of [quarteroni2000numerical], the composite corrected trapezoidal formula.
+Let $f, f' : \mathbb{R} \to \mathbb{R}$, let $m \ge 1$, let $H = (b - a)/m$, and let
+$x_k = a + kH$. Then the composite formula `Quadrature.correctedTrapezoidSum f f' a b m` is
+$$I_{1,m}^{corr}(f) = H \Bigl\{\frac{1}{2} [f(x_0) + f(x_m)] + f(x_1) + \dots +
+  f(x_{m-1})\Bigr\} + \frac{H^2}{12} [f'(a) - f'(b)],$$
+and it equals the sum over the $m$ panels of the corrected trapezoidal formulae (9.30).
+
+**Correction.** The source prints the end correction $\frac{(b - a)^2}{12} [f'(a) - f'(b)]$. On
+$m$ panels the constant is $H^2/12$, as in Program 75 of the book (`(h^2/12)*(f1a-f1b)`) and as
+the cancellation argument gives.
+
+The panel corrections $\frac{H^2}{12} (f'(x_k) - f'(x_{k+1}))$ telescope, so the first
+derivatives at the interior nodes $x_1, \dots, x_{m-1}$ cancel. -/
 theorem equation_9_32 (f f' : ℝ → ℝ) (a b : ℝ) {m : ℕ} (hm : 1 ≤ m) :
     Quadrature.correctedTrapezoidSum f f' a b m
         = (b - a) / m * ((f a + f (a + m * ((b - a) / m))) / 2
@@ -187,9 +240,12 @@ theorem equation_9_32 (f f' : ℝ → ℝ) (a b : ℝ) {m : ℕ} (hm : 1 ≤ m) 
   ⟨by rw [Quadrature.correctedTrapezoidSum, Quadrature.trapezoidSum_eq hm],
     (Quadrature.correctedTrapezoidSum_eq_sum f f' a b m).symm⟩
 
-/-- **§9.5, the error of (9.32)** (the order `4` that Example 9.5 observes): for
-`f ∈ C⁴([a, b])`, `m ≥ 1` and `H = (b - a)/m`,
-`∫_a^b f - I^corr_{1,m}(f) = (b - a) H⁴/720 f⁗(ξ)` for some `ξ ∈ [a, b]`. The backbone's
+/-- **Section 9.5** of [quarteroni2000numerical], the error of (9.32). Let $a < b$, let $m \ge 1$,
+let $H = (b - a)/m$, and let $f \in C^4([a, b])$. Then
+$$\int_a^b f(x)\,dx - I_{1,m}^{corr}(f) = \frac{(b - a) H^4}{720} f^{(4)}(\xi)$$
+for some $\xi \in [a, b]$.
+
+This is the order $4$ that Example 9.5 observes. The proof is the backbone's
 `Quadrature.sub_correctedTrapezoidSum_eq`. -/
 theorem compositeCorrectedTrapezoidalError (hab : a < b) {m : ℕ} (hm : 1 ≤ m) (hU : IsOpen U)
     (hUab : Icc a b ⊆ U) (hf : ContDiffOn ℝ 4 f U) :
@@ -206,10 +262,15 @@ theorem compositeCorrectedTrapezoidalError (hab : a < b) {m : ℕ} (hm : 1 ≤ m
 
 /-! ### Exercise 9 -/
 
-/-- **Exercise 9** (cited in Example 9.5): `|E₁^corr(f)| ≃ 4 |E₂(f)|`, in its exact form. The
-error constants of (9.31) and (9.16) on the same interval are `h⁵/720` and
-`-(h/2)⁵/90 = -h⁵/2880`, `h = b - a`, in the ratio `-4`; so for a polynomial `f` of degree at most
-`4`, whose fourth derivative is constant, `E₁^corr(f) = -4 E₂(f)` exactly. -/
+/-- **Exercise 9.9** of [quarteroni2000numerical], in its exact form. Let $a < b$ and let $p$ be a
+polynomial of degree at most $4$. Then the error of the corrected trapezoidal formula (9.30) and
+the error of the Cavalieri–Simpson formula (9.15) on $[a, b]$ satisfy
+$$E_1^{corr}(p) = -4 E_2(p).$$
+
+The exercise is cited in Example 9.5, and the book writes the result as
+$|E_1^{corr}(f)| \simeq 4 |E_2(f)|$. The error constants of (9.31) and (9.16) are $h^5/720$ and
+$-(h/2)^5/90 = -h^5/2880$ with $h = b - a$, in the ratio $-4$, and the fourth derivative of $p$
+is constant. -/
 theorem exercise_9_9 (hab : a < b) {p : ℝ[X]} (hp : p.degree ≤ 4) :
     (∫ x in a..b, p.eval x)
         - Quadrature.correctedTrapezoid (fun x => p.eval x) (deriv fun x => p.eval x) a b

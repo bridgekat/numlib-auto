@@ -7,46 +7,88 @@ import Numlib.LinearAlgebra.Matrix.DiagDominant
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter01.Section11
 
 /-!
-# Quarteroni–Sacco–Saleri §5.1: geometrical location of the eigenvalues
+# Quarteroni, Sacco and Saleri, Section 5.1: Geometrical Location of the Eigenvalues
 
-Surface file for Alfio Quarteroni, Riccardo Sacco and Fausto Saleri, *Numerical Mathematics*
-[quarteroni2000numerical], §5.1, over the backbone `Numlib/Eigen/Perturbation` (Hirsch's bounds,
-the Gershgorin discs and the counting theorem), `Numlib/LinearAlgebra/Matrix/HermitianPart` (the
-Hermitian and skew-Hermitian parts), `Numlib/LinearAlgebra/Sparse/Pattern` (irreducibility as
-strong connectivity of the adjacency quiver) and `Numlib/LinearAlgebra/Matrix/DiagDominant` (the
-third Gershgorin theorem), and over Chapter 1's Theorem 1.4 for the norm bound (5.1).
+This module formalizes Section 5.1 of [quarteroni2000numerical], which locates the eigenvalues of
+$A \in \mathbb{C}^{n \times n}$ in the complex plane. Every eigenvalue lies in the disc of radius
+$\|A\|$ about the origin for a consistent matrix norm (5.1). Hirsch's theorem (Theorem 5.1) bounds
+the real and imaginary parts of the eigenvalues by the extreme eigenvalues of the Hermitian matrices
+$H = (A + A^H)/2$ and $S = (A - A^H)/(2i)$. Gershgorin's theorems use the row circles $R_i = \{z :
+|z - a_{ii}| \le \sum_{j \neq i} |a_{ij}|\}$ and the column circles $C_j = \{z : |z - a_{jj}| \le
+\sum_{i \neq j} |a_{ij}|\}$: the spectrum lies in the union of the row circles (Theorem 5.2), in the
+union of the column circles (5.6), and in the intersection of the two unions (Property 5.1). A union
+of $m$ row circles that is disjoint from the other row circles contains exactly $m$ eigenvalues
+(Property 5.2). For an irreducible matrix (Definition 5.1, Property 5.3), an eigenvalue on the
+boundary of the union of the row circles lies on the boundary of every row circle (Property 5.4).
+
+The proofs specialize the backbone modules `Numlib.Eigen.Perturbation` (Hirsch's bounds, the
+Gershgorin circles and the counting theorem), `Numlib.LinearAlgebra.Matrix.HermitianPart` (the
+Hermitian and skew-Hermitian parts), `Numlib.LinearAlgebra.Sparse.Pattern` (irreducibility as strong
+connectivity of the adjacency quiver) and `Numlib.LinearAlgebra.Matrix.DiagDominant` (the third
+Gershgorin theorem), and Theorem 1.4 of Chapter 1 for (5.1).
+
+## Main definitions
+
+* Definition 5.1, `QuarteroniSaccoSaleri.Chapter05.definition_5_1`: a matrix is reducible if a
+  symmetric permutation of it is block upper triangular with two square diagonal blocks.
+
+## Main results
+
+* Equation (5.1), `QuarteroniSaccoSaleri.Chapter05.equation_5_1`: $|\lambda| \le \|A\|$ for every
+  eigenvalue $\lambda$ and every consistent matrix norm.
+* Theorem 5.1, `QuarteroniSaccoSaleri.Chapter05.theorem_5_1_re`: $\lambda_{\min}(H) \le
+  \operatorname{Re} \lambda \le \lambda_{\max}(H)$.
+* Theorem 5.1, `QuarteroniSaccoSaleri.Chapter05.theorem_5_1_im`: $\lambda_{\min}(S) \le
+  \operatorname{Im} \lambda \le \lambda_{\max}(S)$.
+* Theorem 5.2, `QuarteroniSaccoSaleri.Chapter05.theorem_5_2`: the spectrum lies in the union of the
+  row circles.
+* Equation (5.6), `QuarteroniSaccoSaleri.Chapter05.equation_5_6`: the spectrum lies in the union of
+  the column circles.
+* Property 5.1, `QuarteroniSaccoSaleri.Chapter05.property_5_1`: the spectrum lies in the
+  intersection of the two unions.
+* Property 5.2, `QuarteroniSaccoSaleri.Chapter05.property_5_2`: a union of $m$ row circles that is
+  disjoint from the union of the others contains exactly $m$ eigenvalues.
+* Definition 5.1, `QuarteroniSaccoSaleri.Chapter05.definition_5_1_iff`: for $n \ge 2$, reducibility
+  is the negation of the backbone's pattern irreducibility.
+* Property 5.3, `QuarteroniSaccoSaleri.Chapter05.property_5_3`: for $n \ge 2$, a real matrix is
+  irreducible if and only if its oriented graph is strongly connected.
+* Property 5.4, `QuarteroniSaccoSaleri.Chapter05.property_5_4`: for an irreducible matrix, an
+  eigenvalue on the boundary of the union of the row circles lies on the boundary of every row
+  circle.
 
 ## Conventions
 
-The book works in `ℂ^{n×n}`, which is `Matrix (Fin n) (Fin n) ℂ`; the spectrum is
-`spectrum ℂ A`. The Gershgorin row circle `R_i` is `Metric.closedBall (A i i) (∑_{j ≠ i} ‖A i j‖)`
-and the column circle `C_j` is `Metric.closedBall (A j j) (∑_{i ≠ j} ‖A i j‖)`, written out in
-every statement so that each one is the backbone's verbatim. The Hermitian part `H = (A + Aᴴ)/2`
-is `Matrix.hermitianPart A` and the matrix `S = (A − Aᴴ)/(2i)` of Theorem 5.1 is
-`Matrix.skewHermitianPart A`; `λ_min`, `λ_max` are the infimum and supremum of Mathlib's
-eigenvalue function `Matrix.IsHermitian.eigenvalues`. "Exactly `m` eigenvalues, each counted with
-its algebraic multiplicity" is `Polynomial.countRootsIn S A.charpoly = m`. A reducible matrix
-(Definition 5.1) is `definition_5_1`, stated for any entry type with a zero, since only the zero
-pattern matters; the book's `P A Pᵀ` is `A.submatrix σ σ` for the permutation `σ` and the index set
-of the leading block `B₁₁` is a proper nonempty `Finset`.
+* The book works in $\mathbb{C}^{n \times n}$, which is `Matrix (Fin n) (Fin n) ℂ`. The spectrum
+  $\sigma(A)$ is `spectrum ℂ A`.
+* The row circle $R_i$ is `Metric.closedBall (A i i) (∑ j ∈ univ.erase i, ‖A i j‖)`, and the column
+  circle $C_j$ is `Metric.closedBall (A j j) (∑ i ∈ univ.erase j, ‖A i j‖)`. They are written out in
+  every statement, so that each statement is the backbone's statement word for word.
+* The Hermitian part $H = (A + A^H)/2$ is `Matrix.hermitianPart A`, and the matrix
+  $S = (A - A^H)/(2i)$ of Theorem 5.1 is `Matrix.skewHermitianPart A`. The numbers $\lambda_{\min}$
+  and $\lambda_{\max}$ are the infimum and the supremum of Mathlib's eigenvalue function
+  `Matrix.IsHermitian.eigenvalues`.
+* "Exactly $m$ eigenvalues, each counted with its algebraic multiplicity, in $S$" is
+  `Polynomial.countRootsIn S A.charpoly = m`.
+* A matrix is irreducible if it is not reducible, `¬ definition_5_1 A`.
 
-## Contents
+## Implementation notes
 
-* `equation_5_1` — `|λ| ≤ ‖A‖` for a consistent matrix norm.
-* `theorem_5_1_re`, `theorem_5_1_im` — Hirsch's theorem, (5.2).
-* `theorem_5_2`, `equation_5_6`, `property_5_1`, `property_5_2` — the row and column circles,
-  the first and the second Gershgorin theorem.
-* `definition_5_1`, `definition_5_1_iff`, `property_5_3`, `property_5_4` — reducibility, its
-  agreement with the backbone's pattern irreducibility, the oriented-graph characterization and
-  the third Gershgorin theorem.
+* Definition 5.1 depends only on the zero pattern, so it is stated for any entry type with a zero.
+  The book's $P A P^T$ is `A.submatrix σ σ` for the permutation $\sigma$, and the index set of the
+  leading block $B_{11}$ is a proper nonempty `Finset`.
 
-## Readings
+## Deviations from the source
 
-Definition 5.1 and the backbone's `Matrix.IsPatternIrreducible` differ for `n = 1`: the `1 × 1`
-zero matrix is pattern-reducible (no path of positive length) but not reducible in the book's
-sense (no proper nonempty block). The hypothesis `2 ≤ n` on `definition_5_1_iff`, `property_5_3`
-and `property_5_4` records it. Example 5.1 is a numerical table and Remark 5.1 is prose; neither
-is a node.
+* **Definition 5.1, Properties 5.3 and 5.4** (reading). Definition 5.1 and the backbone's
+  `Matrix.IsPatternIrreducible` differ for $n = 1$: the $1 \times 1$ zero matrix is
+  pattern-reducible (it has no path of positive length) but not reducible in the sense of the book
+  (it has no proper nonempty block). The three results are stated for $n \ge 2$. See
+  `QuarteroniSaccoSaleri.Chapter05.definition_5_1_iff`.
+
+## Not formalized
+
+* **Example 5.1.** It is a numerical table.
+* **Remark 5.1.** It is prose.
 -/
 
 open Finset Matrix
@@ -55,12 +97,18 @@ namespace QuarteroniSaccoSaleri.Chapter05
 
 variable {n : ℕ}
 
-/-! ### (5.1) and Theorem 5.1 -/
+/-! ### Equation (5.1) and Theorem 5.1 -/
 
-/-- **(5.1).** For every consistent matrix norm `‖·‖` on `ℂ^{n×n}` (a seminorm `N` on the matrices
-consistent with a definite vector norm `p`, Definition 1.20) and every `λ ∈ σ(A)`,
-`|λ| ≤ ‖A‖`: all the eigenvalues of `A` lie in the disc of radius `‖A‖` about the origin. This is
-Theorem 1.4, `ρ(A) ≤ ‖A‖`, read at one eigenvalue. -/
+/-- **Equation (5.1)** of [quarteroni2000numerical]. Let $A \in \mathbb{C}^{n \times n}$, let $p$ be
+a norm on $\mathbb{C}^n$, and let $N$ be a seminorm on $\mathbb{C}^{n \times n}$ that is
+consistent with $p$, that is, $p(Bx) \le N(B) \, p(x)$ for all $B$ and $x$. Then every
+eigenvalue $\lambda \in \sigma(A)$ satisfies
+$$|\lambda| \le N(A).$$
+So all the eigenvalues of $A$ lie in the disc of radius $N(A)$ about the origin.
+
+The vector norm $p$ is a seminorm with $p(x) = 0 \Rightarrow x = 0$, and consistency is
+Definition 1.20, `Matrix.IsConsistent N p p`. The result is Theorem 1.4, $\rho(A) \le \|A\|$,
+read at one eigenvalue. -/
 theorem equation_5_1 {N : Seminorm ℂ (Matrix (Fin n) (Fin n) ℂ)} {p : Seminorm ℂ (Fin n → ℂ)}
     (hp : ∀ x, p x = 0 → x = 0) (hN : IsConsistent N p p) (A : Matrix (Fin n) (Fin n) ℂ) :
     ∀ μ ∈ spectrum ℂ A, ‖μ‖ ≤ N A := by
@@ -71,17 +119,24 @@ theorem equation_5_1 {N : Seminorm ℂ (Matrix (Fin n) (Fin n) ℂ)} {p : Semino
     exact le_iSup₂ (f := fun k (_ : k ∈ spectrum ℂ A) => (‖k‖₊ : ENNReal)) μ hμ
   rwa [← enorm_eq_nnnorm, ← ofReal_norm, ENNReal.ofReal_le_ofReal_iff (apply_nonneg N A)] at h
 
-/-- **Theorem 5.1 (Hirsch), real part, (5.2).** Let `H = (A + Aᴴ)/2` be the Hermitian part of
-`A ∈ ℂ^{n×n}`. For any `λ ∈ σ(A)`, `λ_min(H) ≤ Re λ ≤ λ_max(H)`. Backbone `Matrix.hirsch_re`
-(Bendixson's theorem read through `Matrix.toEuclideanLin`). -/
+/-- **Theorem 5.1** of [quarteroni2000numerical] (Hirsch), real part, (5.2). Let
+$A \in \mathbb{C}^{n \times n}$, and let $H = (A + A^H)/2$ be its Hermitian part. Then every
+$\lambda \in \sigma(A)$ satisfies
+$$\lambda_{\min}(H) \le \operatorname{Re} \lambda \le \lambda_{\max}(H).$$
+
+The proof specializes the backbone's `Matrix.hirsch_re`, which is Bendixson's theorem read
+through `Matrix.toEuclideanLin`. -/
 theorem theorem_5_1_re (A : Matrix (Fin n) (Fin n) ℂ) {μ : ℂ} (hμ : μ ∈ spectrum ℂ A) :
     (⨅ i, (hermitianPart_isHermitian A).eigenvalues i) ≤ μ.re ∧
       μ.re ≤ ⨆ i, (hermitianPart_isHermitian A).eigenvalues i :=
   hirsch_re A hμ
 
-/-- **Theorem 5.1 (Hirsch), imaginary part, (5.2).** Let `S = (A − Aᴴ)/(2i)`, so that `iS` is
-the skew-Hermitian part of `A ∈ ℂ^{n×n}` and `S` itself is Hermitian. For any `λ ∈ σ(A)`,
-`λ_min(S) ≤ Im λ ≤ λ_max(S)`. Backbone `Matrix.hirsch_im` (the real half for `−iA`). -/
+/-- **Theorem 5.1** of [quarteroni2000numerical] (Hirsch), imaginary part, (5.2). Let
+$A \in \mathbb{C}^{n \times n}$, and let $S = (A - A^H)/(2i)$, so that $iS$ is the
+skew-Hermitian part of $A$ and $S$ is Hermitian. Then every $\lambda \in \sigma(A)$ satisfies
+$$\lambda_{\min}(S) \le \operatorname{Im} \lambda \le \lambda_{\max}(S).$$
+
+The proof specializes the backbone's `Matrix.hirsch_im`, which applies the real part to $-iA$. -/
 theorem theorem_5_1_im (A : Matrix (Fin n) (Fin n) ℂ) {μ : ℂ} (hμ : μ ∈ spectrum ℂ A) :
     (⨅ i, (skewHermitianPart_isHermitian A).eigenvalues i) ≤ μ.im ∧
       μ.im ≤ ⨆ i, (skewHermitianPart_isHermitian A).eigenvalues i :=
@@ -89,36 +144,51 @@ theorem theorem_5_1_im (A : Matrix (Fin n) (Fin n) ℂ) {μ : ℂ} (hμ : μ ∈
 
 /-! ### Theorem 5.2 and the first two Gershgorin theorems -/
 
-/-- **Theorem 5.2 (of the Gershgorin circles), (5.4).** For `A ∈ ℂ^{n×n}`,
-`σ(A) ⊆ S_R = ⋃ᵢ R_i` with the row circles `R_i = {z : |z − a_ii| ≤ ∑_{j ≠ i} |a_ij|}`.
-Backbone `Matrix.spectrum_subset_iUnion_closedBall`. -/
+/-- **Theorem 5.2** of [quarteroni2000numerical] (Gershgorin circles), (5.4). Let
+$A \in \mathbb{C}^{n \times n}$. Then
+$$\sigma(A) \subseteq S_R = \bigcup_{i=1}^n R_i, \qquad R_i = \Big\{z \in \mathbb{C} : |z -
+  a_{ii}| \le \sum_{j \neq i} |a_{ij}|\Big\}.$$
+
+The proof specializes the backbone's `Matrix.spectrum_subset_iUnion_closedBall`. -/
 theorem theorem_5_2 (A : Matrix (Fin n) (Fin n) ℂ) :
     spectrum ℂ A ⊆ ⋃ i, Metric.closedBall (A i i) (∑ j ∈ univ.erase i, ‖A i j‖) :=
   spectrum_subset_iUnion_closedBall A
 
-/-- **(5.6).** Since `A` and `Aᵀ` share the same spectrum, Theorem 5.2 also holds with the column
-circles `C_j = {z : |z − a_jj| ≤ ∑_{i ≠ j} |a_ij|}`: `σ(A) ⊆ S_C = ⋃ⱼ C_j`. Backbone
-`Matrix.spectrum_subset_iUnion_closedBall_col`. -/
+/-- **Equation (5.6)** of [quarteroni2000numerical]. Let $A \in \mathbb{C}^{n \times n}$. Then the
+spectrum lies in the union of the column circles:
+$$\sigma(A) \subseteq S_C = \bigcup_{j=1}^n C_j, \qquad C_j = \Big\{z \in \mathbb{C} : |z -
+  a_{jj}| \le \sum_{i \neq j} |a_{ij}|\Big\}.$$
+
+This is Theorem 5.2 for $A^T$, which has the same spectrum as $A$. The proof specializes the
+backbone's `Matrix.spectrum_subset_iUnion_closedBall_col`. -/
 theorem equation_5_6 (A : Matrix (Fin n) (Fin n) ℂ) :
     spectrum ℂ A ⊆ ⋃ j, Metric.closedBall (A j j) (∑ i ∈ univ.erase j, ‖A i j‖) :=
   spectrum_subset_iUnion_closedBall_col A
 
-/-- **Property 5.1 (First Gershgorin theorem), (5.7).** For `A ∈ ℂ^{n×n}`, every `λ ∈ σ(A)` lies
-in `S_R ∩ S_C`, the intersection of the union of the row circles with the union of the column
-circles: (5.4) and (5.6) together. -/
+/-- **Property 5.1** of [quarteroni2000numerical] (first Gershgorin theorem), (5.7). Let
+$A \in \mathbb{C}^{n \times n}$. Then every eigenvalue of $A$ lies in the intersection of the
+union of the row circles with the union of the column circles:
+$$\sigma(A) \subseteq S_R \cap S_C.$$
+
+This is (5.4) and (5.6) together. -/
 theorem property_5_1 (A : Matrix (Fin n) (Fin n) ℂ) :
     spectrum ℂ A ⊆
       (⋃ i, Metric.closedBall (A i i) (∑ j ∈ univ.erase i, ‖A i j‖)) ∩
         ⋃ j, Metric.closedBall (A j j) (∑ i ∈ univ.erase j, ‖A i j‖) :=
   Set.subset_inter (theorem_5_2 A) (equation_5_6 A)
 
-/-- **Property 5.2 (Second Gershgorin theorem).** Let `S₁` be the union of the row circles `R_i`
-indexed by a set `τ` of `m` indices (the book's `i = 1, …, m`) and `S₂` the union of the remaining
-ones. If `S₁ ∩ S₂ = ∅`, then `S₁` contains exactly `m` eigenvalues of `A`, each counted with its
-algebraic multiplicity, while the remaining `n − m` eigenvalues are contained in `S₂`: the counts
-are `Polynomial.countRootsIn` of the characteristic polynomial, and every eigenvalue outside `S₁`
-lies in `S₂`. Backbone `Matrix.card_spectrum_of_disjoint_gershgorin`, applied to `τ` and to its
-complement, with Theorem 5.2 for the last clause. -/
+/-- **Property 5.2** of [quarteroni2000numerical] (second Gershgorin theorem). Let
+$A \in \mathbb{C}^{n \times n}$, let $\tau$ be a set of $m$ indices, let
+$S_1 = \bigcup_{i \in \tau} R_i$ be the union of the row circles with index in $\tau$, and let
+$S_2 = \bigcup_{i \notin \tau} R_i$ be the union of the other row circles. If
+$S_1 \cap S_2 = \emptyset$, then $S_1$ contains exactly $m$ eigenvalues of $A$ and $S_2$
+contains exactly $n - m$ eigenvalues of $A$, each counted with its algebraic multiplicity, and
+every eigenvalue of $A$ that is not in $S_1$ lies in $S_2$.
+
+The book takes $\tau = \{1, \dots, m\}$. The counts are `Polynomial.countRootsIn` of the
+characteristic polynomial. The proof applies the backbone's
+`Matrix.card_spectrum_of_disjoint_gershgorin` to $\tau$ and to its complement, and Theorem 5.2
+to the last clause. -/
 theorem property_5_2 (A : Matrix (Fin n) (Fin n) ℂ) (τ : Finset (Fin n)) {S₁ S₂ : Set ℂ}
     (hS₁ : S₁ = ⋃ i ∈ τ, Metric.closedBall (A i i) (∑ j ∈ univ.erase i, ‖A i j‖))
     (hS₂ : S₂ = ⋃ i ∈ τᶜ, Metric.closedBall (A i i) (∑ j ∈ univ.erase i, ‖A i j‖))
@@ -135,24 +205,30 @@ theorem property_5_2 (A : Matrix (Fin n) (Fin n) ℂ) (τ : Finset (Fin n)) {S�
 
 /-! ### Definition 5.1 and the third Gershgorin theorem -/
 
-/-- **Definition 5.1.** A matrix `A ∈ ℂ^{n×n}` is *reducible* if there is a permutation matrix
-`P` such that `P A Pᵀ = [[B₁₁, B₁₂], [0, B₂₂]]` with `B₁₁` and `B₂₂` square: here `P A Pᵀ` is
-`A.submatrix σ σ` for a permutation `σ` of the indices, `s` is the (proper, nonempty) index set of
-the leading block `B₁₁`, and the zero block is the condition that the entries from `sᶜ` to `s`
-vanish. `A` is *irreducible* if it is not reducible. The definition only looks at the zero
-pattern, so it is stated for any entry type with a zero; the book states it over `ℂ` and uses it
-over `ℝ` in Property 5.3. -/
+/-- **Definition 5.1** of [quarteroni2000numerical]. A matrix $A \in \mathbb{C}^{n \times n}$ is
+**reducible** if there is a permutation matrix $P$ such that
+$$P A P^T = \begin{bmatrix} B_{11} & B_{12} \\ 0 & B_{22} \end{bmatrix}$$
+with $B_{11}$ and $B_{22}$ square. A matrix is **irreducible** if it is not reducible.
+
+Here $P A P^T$ is `A.submatrix σ σ` for a permutation $\sigma$ of the indices, $s$ is the index
+set of the leading block $B_{11}$, which is proper and nonempty, and the zero block is the
+condition that the entries in the rows outside $s$ and the columns in $s$ vanish. The definition
+depends only on the zero pattern, so it is stated for any entry type with a zero. The book
+states it over $\mathbb{C}$ and uses it over $\mathbb{R}$ in Property 5.3. -/
 def definition_5_1 {R : Type*} [Zero R] (A : Matrix (Fin n) (Fin n) R) : Prop :=
   ∃ (σ : Equiv.Perm (Fin n)) (s : Finset (Fin n)), s.Nonempty ∧ s ≠ univ ∧
     ∀ i ∉ s, ∀ j ∈ s, A.submatrix σ σ i j = 0
 
-/-- **Definition 5.1 agrees with the backbone**: for `n ≥ 2`, `A` is reducible in the sense of
-Definition 5.1 iff it is not pattern-irreducible (`Matrix.IsPatternIrreducible`, strong
-connectivity of the adjacency quiver). This is
-`Matrix.not_isPatternIrreducible_iff_exists_submatrix_blockTriangular` with the block set
-replaced by its complement: the backbone zeroes the entries from `s` to `sᶜ`, the book those from
-`sᶜ` to `s`. For `n = 1` the two notions differ (the `1 × 1` zero matrix is pattern-reducible but
-not reducible), hence the hypothesis. -/
+/-- Definition 5.1 of [quarteroni2000numerical] agrees with the backbone. Let $n \ge 2$ and let $A$
+be an $n \times n$ matrix over a normed group. Then $A$ is reducible in the sense of Definition
+5.1 if and only if it is not pattern-irreducible (`Matrix.IsPatternIrreducible`, strong
+connectivity of the adjacency quiver).
+
+The proof is `Matrix.not_isPatternIrreducible_iff_exists_submatrix_blockTriangular` with the
+index set of the block replaced by its complement: the backbone sets the entries from $s$ to its
+complement to zero, and the book the entries from the complement to $s$. For $n = 1$ the two
+notions differ: the $1 \times 1$ zero matrix is pattern-reducible but not reducible. This is the
+reason for the hypothesis $n \ge 2$. -/
 theorem definition_5_1_iff {R : Type*} [NormedAddCommGroup R] (hn : 2 ≤ n)
     (A : Matrix (Fin n) (Fin n) R) : definition_5_1 A ↔ ¬ A.IsPatternIrreducible := by
   have : Nontrivial (Fin n) := Fin.nontrivial_iff_two_le.mpr hn
@@ -167,13 +243,19 @@ theorem definition_5_1_iff {R : Type*} [NormedAddCommGroup R] (hn : 2 ≤ n)
       s.compl_ne_univ_iff_nonempty.mpr hs,
       fun i hi j hj => hz i (by simpa using hi) j (Finset.mem_compl.mp hj)⟩
 
-/-- **Property 5.3.** A matrix `A ∈ ℝ^{n×n}` (`n ≥ 2`) is irreducible iff its oriented graph is
-strongly connected: the graph joins the vertices `P_i`, `P_j` by a line oriented from `P_i` to
-`P_j` iff `a_ij ≠ 0` (Mathlib's `Matrix.adjQuiver A`, whose arrows `i ⟶ j` are exactly the
-nonzero entries, `Matrix.nonempty_adjQuiver_hom_iff`), and strong connectivity asks for an
-oriented path between every pair of distinct vertices. Backbone
-`Matrix.isPatternIrreducible_iff_nonempty_path` through `definition_5_1_iff`; the book cites
-[Var62] for the proof. -/
+/-- **Property 5.3** of [quarteroni2000numerical]. Let $n \ge 2$ and
+$A \in \mathbb{R}^{n \times n}$. The oriented graph of $A$ has the vertices $P_1, \dots, P_n$
+and a line oriented from $P_i$ to $P_j$ if and only if $a_{ij} \neq 0$. Then $A$ is irreducible
+if and only if its oriented graph is strongly connected, that is, for every two distinct
+vertices $P_i$ and $P_j$ there is an oriented path from $P_i$ to $P_j$.
+
+**Reading.** The hypothesis $n \ge 2$ comes from the comparison with the backbone in
+`QuarteroniSaccoSaleri.Chapter05.definition_5_1_iff`.
+
+The oriented graph is Mathlib's `Matrix.adjQuiver A`, whose arrows $i \to j$ are exactly the
+nonzero entries (`Matrix.nonempty_adjQuiver_hom_iff`). The proof specializes the backbone's
+`Matrix.isPatternIrreducible_iff_nonempty_path` through
+`QuarteroniSaccoSaleri.Chapter05.definition_5_1_iff`. The book cites Varga (1962) for the proof. -/
 theorem property_5_3 (hn : 2 ≤ n) (A : Matrix (Fin n) (Fin n) ℝ) :
     ¬ definition_5_1 A ↔
       letI := A.adjQuiver; ∀ i j : Fin n, i ≠ j → Nonempty (Quiver.Path i j) := by
@@ -186,11 +268,17 @@ theorem property_5_3 (hn : 2 ≤ n) (A : Matrix (Fin n) (Fin n) ℝ) :
     exact ⟨Quiver.Path.nil⟩
   · exact h i j hij
 
-/-- **Property 5.4 (Third Gershgorin theorem).** Let `A ∈ ℂ^{n×n}` (`n ≥ 2`) be irreducible. An
-eigenvalue `λ ∈ σ(A)` cannot lie on the boundary of `S_R` unless it belongs to the boundary of
-every circle `R_i`, `i = 1, …, n`: if `λ ∈ frontier S_R` then `|λ − a_ii| = ∑_{j ≠ i} |a_ij|`
-for every `i`. Backbone `Matrix.IsPatternIrreducible.norm_sub_eq_of_mem_frontier` through
-`definition_5_1_iff`. -/
+/-- **Property 5.4** of [quarteroni2000numerical] (third Gershgorin theorem). Let $n \ge 2$, and let
+$A \in \mathbb{C}^{n \times n}$ be irreducible. An eigenvalue $\lambda \in \sigma(A)$ cannot lie
+on the boundary of $S_R$ unless it lies on the boundary of every circle $R_i$: if $\lambda$ is
+in the boundary of $S_R$, then
+$$|\lambda - a_{ii}| = \sum_{j \neq i} |a_{ij}|, \qquad i = 1, \dots, n.$$
+
+**Reading.** The hypothesis $n \ge 2$ comes from the comparison with the backbone in
+`QuarteroniSaccoSaleri.Chapter05.definition_5_1_iff`.
+
+The proof specializes the backbone's `Matrix.IsPatternIrreducible.norm_sub_eq_of_mem_frontier`
+through `QuarteroniSaccoSaleri.Chapter05.definition_5_1_iff`. -/
 theorem property_5_4 (hn : 2 ≤ n) {A : Matrix (Fin n) (Fin n) ℂ} (hA : ¬ definition_5_1 A)
     {μ : ℂ} (hμ : μ ∈ spectrum ℂ A)
     (hfr : μ ∈ frontier (⋃ i, Metric.closedBall (A i i) (∑ j ∈ univ.erase i, ‖A i j‖)))

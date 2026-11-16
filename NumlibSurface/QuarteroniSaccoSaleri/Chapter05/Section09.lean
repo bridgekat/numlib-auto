@@ -8,78 +8,94 @@ import NumlibSurface.QuarteroniSaccoSaleri.Chapter03.Section04
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter05.Section05
 
 /-!
-# Quarteroni–Sacco–Saleri §5.9: the generalized eigenvalue problem
+# Quarteroni, Sacco and Saleri, Section 5.9: The generalized eigenvalue problem
 
-Surface file for Alfio Quarteroni, Riccardo Sacco and Fausto Saleri, *Numerical Mathematics*
-[quarteroni2000numerical], §5.9, over the backbone `Numlib/Eigen/Pencil` (matrix pencils, their
-characteristic polynomial, regularity, the eigenvalue at infinity, the generalized Schur
-decomposition and the simultaneous diagonalization of a symmetric-definite pencil) and
-`Numlib/LinearAlgebra/Matrix/Complexify` (the complex eigenvalues of a real pencil).
+This module formalizes Section 5.9 of [quarteroni2000numerical], the generalized eigenvalue problem
+$Ax = \lambda Bx$ for a matrix pencil $(A, B)$ of square matrices. The spectrum of the pencil is
+$\sigma(A, B) = \{\mu : \det(A - \mu B) = 0\}$. The pencil is regular when $\det(A - zB)$ is not
+identically zero; then $\sigma(A, B)$ is the set of roots of the characteristic polynomial
+$p(z) = \det(A - zB)$, and the eigenvalue $\infty$ has multiplicity $n - \deg p$. The module proves
+the reduction to a standard eigenvalue problem when $B$ is nonsingular, the generalized Schur
+decomposition (Property 5.10) and its real form, and the simultaneous diagonalization of a
+symmetric-definite pencil (Theorem 5.7). The proofs specialize `Numlib.Eigen.Pencil` and
+`Numlib.LinearAlgebra.Matrix.GeneralizedSchur`.
+
+## Main definitions
+
+* Section 5.9, `QuarteroniSaccoSaleri.Chapter05.pencilSpectrum`: the spectrum
+  $\sigma(A, B) = \{\mu : \det(A - \mu B) = 0\}$ of a pencil.
+* Section 5.9, `QuarteroniSaccoSaleri.Chapter05.isRegularPencil`: the pencil is regular if
+  $\det(A - zB) \neq 0$ for some $z \in \mathbb{C}$.
+
+## Main results
+
+* Equation (5.58), `QuarteroniSaccoSaleri.Chapter05.equation_5_58`: $\mu \in \sigma(A, B)$ if and
+  only if $Ax = \mu Bx$ for some $x \neq 0$.
+* Equation (5.58), `QuarteroniSaccoSaleri.Chapter05.pencilSpectrum_one`: $\sigma(A, I) = \sigma(A)$.
+* Section 5.9, `QuarteroniSaccoSaleri.Chapter05.isRegularPencil_iff`: regularity agrees with the
+  backbone definition `Matrix.IsRegularPencil`.
+* Section 5.9, `QuarteroniSaccoSaleri.Chapter05.pencilCharpoly`: the spectrum of a regular pencil is
+  the set of roots of $p$, and $\infty$ has multiplicity $n - \deg p$.
+* Example 5.14, `QuarteroniSaccoSaleri.Chapter05.example_5_14_conj`,
+  `QuarteroniSaccoSaleri.Chapter05.example_5_14_infty` and
+  `QuarteroniSaccoSaleri.Chapter05.example_5_14_singular`: a symmetric pencil with eigenvalues
+  $\pm i$, a regular pencil with the eigenvalue $\infty$, and a singular pencil.
+* Section 5.9.1, `QuarteroniSaccoSaleri.Chapter05.pencilSpectrum_eq_spectrum_of_isUnit`: the pencil
+  has $n$ finite eigenvalues if and only if $B$ is nonsingular, and then $\sigma(A, B) = \sigma(C)$
+  for $BC = A$.
+* Property 5.10, `QuarteroniSaccoSaleri.Chapter05.property_5_10`: the generalized Schur
+  decomposition $U^H A Z = T$, $U^H B Z = S$ of a regular pencil.
+* Section 5.9.1, `QuarteroniSaccoSaleri.Chapter05.generalizedRealSchur_of_isUnit` and
+  `QuarteroniSaccoSaleri.Chapter05.generalizedRealSchur`: the generalized real Schur form, first for
+  a nonsingular $B$, then for every real pair.
+* Theorem 5.7, `QuarteroniSaccoSaleri.Chapter05.theorem_5_7`, with
+  `QuarteroniSaccoSaleri.Chapter05.pencilSpectrum_complexify_of_conj` and
+  `QuarteroniSaccoSaleri.Chapter05.theorem_5_7_eigenvectors`: a symmetric-definite pencil has real
+  eigenvalues and linearly independent eigenvectors, and $A$ and $B$ are simultaneously
+  diagonalizable.
 
 ## Conventions
 
-The pencil `(A, B)` of `A, B ∈ ℂ^{n×n}` is the pair of matrices; its spectrum
-`σ(A, B) = {μ ∈ ℂ : det (A − μ B) = 0}` is `pencilSpectrum A B`, written for matrices over any
-field so that the real pencil of Theorem 5.7 has both a real and a complex spectrum, and it is
-the backbone's `Matrix.pencilSpectrum` by definition. The pencil is *regular* (`isRegularPencil`)
-when `det (A − z B)` is not identically zero — some `z` has `det (A − z B) ≠ 0` — which is the
-backbone's `Matrix.IsRegularPencil`, nonvanishing of the characteristic polynomial
-`p = Matrix.pencilPoly A B`; the eigenvalue `∞` of a regular pencil has multiplicity
-`n − deg p = Matrix.pencilInftyMultiplicity A B`. The book's `Uᴴ` is `Uᴴ`, its `Xᵀ` is `Xᵀ`, a
-positive definite `B` is `Matrix.PosDef`.
+* The pencil $(A, B)$ is the pair of matrices. Its spectrum is defined for matrices over any field,
+  so that the real pencil of Theorem 5.7 has both a real and a complex spectrum. It is the
+  backbone's `Matrix.pencilSpectrum` by definition.
+* The characteristic polynomial $p(z) = \det(A - zB)$ is `Matrix.pencilPoly A B`, and the
+  multiplicity $n - \deg p$ of the eigenvalue $\infty$ is `Matrix.pencilInftyMultiplicity A B`.
+* The book's $U^H$ is `Uᴴ`, its $X^T$ is `Xᵀ`, and a positive definite $B$ is `Matrix.PosDef`. A
+  real matrix acts on complex vectors through `Matrix.complexify`.
 
-## Contents
+## Deviations from the source
 
-* `pencilSpectrum`, `equation_5_58`, `pencilSpectrum_one`, `isRegularPencil`,
-  `isRegularPencil_iff`, `pencilCharpoly` — the definitions of §5.9.
-* `example_5_14_conj`, `example_5_14_infty`, `example_5_14_singular` — the three pencils of
-  Example 5.14.
-* `pencilSpectrum_eq_spectrum_of_isUnit` — §5.9.1, `n` finite eigenvalues iff `B` is nonsingular,
-  and then `σ(A, B) = σ(C)` for the solution `C` of `B C = A`.
-* `property_5_10` — the generalized Schur decomposition.
-* `generalizedRealSchur_of_isUnit`, `generalizedRealSchur` — the generalized *real* Schur form,
-  first for a nonsingular `B` (the book's QZ route), then for every real pair.
-* `theorem_5_7`, `theorem_5_7_eigenvectors` — symmetric-definite pencils.
+* **Example 5.14, first pencil** (typo). The source prints $p(z) = z^2 + 1$; the characteristic
+  polynomial is $\det(A - zB) = -(z^2 + 1)$, with the same roots. See
+  `QuarteroniSaccoSaleri.Chapter05.example_5_14_conj`.
+* **Generalized real Schur form, after Property 5.10** (generalization). The source states it for a
+  regular pencil; it holds for every pair of real matrices. See
+  `QuarteroniSaccoSaleri.Chapter05.generalizedRealSchur`.
 
-## Not formalized here
+## Not formalized
 
-The QZ iteration and the QR–Cholesky algorithm of §5.9.1–5.9.2 are described without a theorem
-and are not nodes. The one claim of §5.9.2 that is a statement is the rounding-error estimate,
-and it is not formalized:
-
-* **§5.9.2, the stability of the QR–Cholesky algorithm.** After `B = Hᵀ H` (Cholesky) and
-  `C = H⁻ᵀ A H⁻¹`, the symmetric QR iteration applied to `C` returns approximate eigenvalues `λ̂`
-  of the symmetric-definite pencil `(A, B)`; the book's claim, cited from [GL89] p. 464 without
-  proof, is that each computed `λ̂` is an exact eigenvalue of a perturbed matrix,
-  `λ̂ ∈ σ(H⁻ᵀ A H⁻¹ + E)` with `‖E‖₂ ≃ u ‖A‖₂ ‖B⁻¹‖₂`. As printed it is a `≃`, not a `≤`, so it
-  is not a statement that can be formalized without first being re-planned.
-
-  **The printed bound is, moreover, wrong, and correcting it is the substance of this entry.**
-  Two of the three floating-point analyses a rigorous form needs are in the backbone: the
-  computed Cholesky factor `Ĥ` (`FloatingPoint.RoundsCholesky`,
-  `FloatingPoint.exists_roundsCholesky_eq_add` in `Numlib/FloatingPoint/LU`) and the computed
-  two-sided triangular solve `Ĉ = fl(Ĥ⁻ᵀ A Ĥ⁻¹)` (`FloatingPoint.RoundsTwoSidedSolve`,
-  `FloatingPoint.frobenius_norm_sub_le_of_roundsTwoSidedSolve` in
-  `Numlib/FloatingPoint/Householder`). The second of these carries the bound
-  `‖Ĉ − Ĥ⁻ᵀ A Ĥ⁻¹‖_F ≤ (2θ/(1 − θ)²) ‖Ĥ⁻¹‖_F² ‖A‖_F` with `θ = γ_n ‖Ĥ⁻¹‖_F ‖Ĥ‖_F`, and `θ` is
-  where the difficulty sits: the forward error of a triangular solve is the *condition number*
-  times the backward error, so the solves contribute a factor `κ(Ĥ) = κ(B)^{1/2}` on top of the
-  `‖B⁻¹‖₂ = ‖Ĥ⁻¹‖₂²` the book records. A faithful statement must therefore carry `κ(Ĥ)` — or
-  assume `‖B‖₂ ≈ 1`, which is the normalization under which the printed bound is right. Nothing
-  in `[GL89]`'s formulation as the book quotes it says so.
-
-  The third analysis is still missing: the backward stability of the symmetric QR iteration on
-  `Ĉ`, `λ̂ ∈ σ(Ĉ + E₂)` with `‖E₂‖ ≤ c₂(n, s) u ‖Ĉ‖` for `s` computed shifted QR steps with
-  deflation. It needs the Givens rounding model ([higham2002accuracy] Lemmas 19.7–19.9, a
-  `RoundsGivens` predicate on the pattern of `FloatingPoint.RoundsHouseholderApply`, which does
-  not exist), the computed shifted step `T̂' = fl(R̂ Q̂) + μ I` as a two-sided perturbed similarity
-  (the accumulation `FloatingPoint.exists_eq_prodRev_mul_add_mul_prodFwd` is already general
-  enough for it), and the deflation criterion as an explicit perturbation; the Householder
-  tridiagonalization it starts from is done (`FloatingPoint.exists_roundsHessenbergReduce_eq`).
-  Estimate: 400–600 lines for the Givens model and the computed QR step, then about 100 for the
-  assembly under the corrected bound. The exact-arithmetic Cholesky factor of `B` is
-  `Matrix.exists_isCholesky` of `Numlib/LinearAlgebra/Matrix/Cholesky`, and the exact
-  simultaneous reduction is `theorem_5_7` above.
+* **Section 5.9.1, the QZ iteration.** The source describes it without a theorem.
+* **Section 5.9.2, the QR–Cholesky algorithm.** The source describes it without a theorem.
+* **Section 5.9.2, the stability of the QR–Cholesky algorithm.** After the Cholesky factorization
+  $B = H^T H$ and $C = H^{-T} A H^{-1}$, the symmetric QR iteration on $C$ returns approximate
+  eigenvalues $\hat\lambda$ of the symmetric-definite pencil $(A, B)$. The source claims, citing
+  Golub and Van Loan (cited as GL89, p. 464) without proof, that
+  $\hat\lambda \in \sigma(H^{-T} A H^{-1} + E)$ with $\|E\|_2 \simeq u \|A\|_2 \|B^{-1}\|_2$. This
+  is a relation $\simeq$, not an inequality, so it is not a statement as printed. Moreover the
+  printed bound is wrong: the forward error of a triangular solve is the condition number times the
+  backward error, so the two solves contribute a factor $\kappa(\hat H) = \kappa(B)^{1/2}$ in
+  addition to the factor $\|B^{-1}\|_2 = \|\hat H^{-1}\|_2^2$ that the source records. A correct
+  statement must carry $\kappa(\hat H)$, or assume $\|B\|_2 \approx 1$, which is the normalization
+  under which the printed bound is right. The backbone has the rounding analysis of the computed
+  Cholesky factor (`FloatingPoint.RoundsCholesky`, `FloatingPoint.exists_roundsCholesky_eq_add`) and
+  of the computed two-sided triangular solve $\hat C = fl(\hat H^{-T} A \hat H^{-1})$
+  (`FloatingPoint.RoundsTwoSidedSolve`,
+  `FloatingPoint.frobenius_norm_sub_le_of_roundsTwoSidedSolve`, with the bound $\|\hat C - \hat
+  H^{-T} A \hat H^{-1}\|_F \le \frac{2\theta}{(1 - \theta)^2} \|\hat H^{-1}\|_F^2 \|A\|_F$ for
+  $\theta = \gamma_n \|\hat H^{-1}\|_F \|\hat H\|_F$). The backward stability of the symmetric QR
+  iteration with shifts and deflation on $\hat C$, $\hat\lambda \in \sigma(\hat C + E_2)$, is not
+  available.
 -/
 
 open Finset Matrix Polynomial
@@ -88,36 +104,51 @@ namespace QuarteroniSaccoSaleri.Chapter05
 
 variable {n : ℕ}
 
-/-! ### The pencil, its spectrum, regularity -/
+/-! ### The pencil, its spectrum, and regularity -/
 
-/-- **§5.9, the spectrum of a pencil.** For `A, B ∈ ℂ^{n×n}` (here: over any field) and `z ∈ ℂ`,
-`A − z B` is the matrix pencil `(A, B)`, and the set of its eigenvalues is
-`σ(A, B) = {μ ∈ ℂ : det (A − μ B) = 0}`. This is the backbone's `Matrix.pencilSpectrum A B` by
+/-- **Section 5.9** of [quarteroni2000numerical], the spectrum of a pencil. Let
+$A, B \in K^{n \times n}$ over a field $K$. For $z \in K$, $A - zB$ is the **matrix pencil**
+$(A, B)$, and its **spectrum** is the set of its eigenvalues $$\sigma(A, B) = \{\mu \in K :
+\det(A - \mu B) = 0\}.$$
+
+The source takes $K = \mathbb{C}$. This is the backbone's `Matrix.pencilSpectrum A B` by
 definition. -/
 def pencilSpectrum {K : Type*} [Field K] (A B : Matrix (Fin n) (Fin n) K) : Set K :=
   {μ | (A - μ • B).det = 0}
 
-/-- **(5.58).** The generalized eigenvalue problem: `λ ∈ σ(A, B)` exactly when there is a nonnull
-`x ∈ ℂⁿ` with `A x = λ B x`; such a pair `(λ, x)` is an eigenvalue/eigenvector pair of the pencil
-(`Matrix.HasPencilEigenvector`). Backbone `Matrix.mem_pencilSpectrum_iff_exists`. -/
+/-- **Equation (5.58)** of [quarteroni2000numerical], the generalized eigenvalue problem. Let
+$A, B \in K^{n \times n}$ over a field $K$, and let $\mu \in K$. Then $\mu \in \sigma(A, B)$ if
+and only if there is a vector $x \in K^n$, $x \neq 0$, with $$Ax = \mu Bx.$$ Such a pair
+$(\mu, x)$ is an eigenvalue and eigenvector of the pencil.
+
+The proof specializes `Matrix.mem_pencilSpectrum_iff_exists`. The pair is a
+`Matrix.HasPencilEigenvector` of the backbone. -/
 theorem equation_5_58 {K : Type*} [Field K] (A B : Matrix (Fin n) (Fin n) K) (μ : K) :
     μ ∈ pencilSpectrum A B ↔ ∃ x : Fin n → K, x ≠ 0 ∧ A *ᵥ x = μ • (B *ᵥ x) :=
   Matrix.mem_pencilSpectrum_iff_exists A B μ
 
-/-- Setting `B = Iₙ` in (5.58) recovers the standard eigenvalue problem: `σ(A, I) = σ(A)`.
-Backbone `Matrix.pencilSpectrum_one`. -/
+/-- **Equation (5.58)** of [quarteroni2000numerical], the standard problem as a special case. For
+$A \in K^{n \times n}$ over a field $K$, setting $B = I_n$ in (5.58) gives the standard
+eigenvalue problem: $\sigma(A, I) = \sigma(A)$.
+
+The proof specializes `Matrix.pencilSpectrum_one`. -/
 theorem pencilSpectrum_one {K : Type*} [Field K] (A : Matrix (Fin n) (Fin n) K) :
     pencilSpectrum A 1 = spectrum K A :=
   Matrix.pencilSpectrum_one A
 
-/-- **§5.9, regular pencils.** The pencil `(A, B)` is *regular* if `det (A − z B)` is not
-identically zero — some `z ∈ ℂ` has `det (A − z B) ≠ 0` — and *singular* otherwise. -/
+/-- **Section 5.9** of [quarteroni2000numerical], regular pencils. Let
+$A, B \in \mathbb{C}^{n \times n}$. The pencil $(A, B)$ is **regular** if $\det(A - zB)$ is not
+identically zero, that is, $\det(A - zB) \neq 0$ for some $z \in \mathbb{C}$. Otherwise it is
+**singular**. -/
 def isRegularPencil (A B : Matrix (Fin n) (Fin n) ℂ) : Prop := ∃ z : ℂ, (A - z • B).det ≠ 0
 
-/-- Regularity in the book's words agrees with the backbone's `Matrix.IsRegularPencil`, the
-nonvanishing of the polynomial `p(z) = det (A − z B)` (`Matrix.pencilPoly A B`): a nonzero
-polynomial over the infinite field `ℂ` has a non-root, and a root of `p` at `z` is
-`det (A − z B) = 0` (`Matrix.pencilPoly_eval`). -/
+/-- Let $A, B \in \mathbb{C}^{n \times n}$. The pencil $(A, B)$ is regular in the sense of Section
+5.9 of [quarteroni2000numerical] if and only if it is regular in the sense of the backbone
+`Matrix.IsRegularPencil`, that is, the polynomial $p(z) = \det(A - zB)$
+(`Matrix.pencilPoly A B`) is not the zero polynomial.
+
+A nonzero polynomial over the infinite field $\mathbb{C}$ has a point where it does not vanish,
+and $p(z) = \det(A - zB)$ by `Matrix.pencilPoly_eval`. -/
 theorem isRegularPencil_iff (A B : Matrix (Fin n) (Fin n) ℂ) :
     isRegularPencil A B ↔ Matrix.IsRegularPencil A B := by
   simp only [isRegularPencil, Matrix.IsRegularPencil, ← Matrix.pencilPoly_eval]
@@ -133,12 +164,18 @@ theorem isRegularPencil_iff (A B : Matrix (Fin n) (Fin n) ℂ) :
     rw [show {x | (Matrix.pencilPoly A B).IsRoot x} = Set.univ from Set.eq_univ_of_forall hall]
     exact Set.infinite_univ
 
-/-- **§5.9, the characteristic polynomial of a regular pencil and the eigenvalue `∞`.** For a
-regular pencil `(A, B)`, `p(z) = det (A − z B)` is its characteristic polynomial
-(`Matrix.pencilPoly A B`, evaluated by `Matrix.pencilPoly_eval`); with `k = deg p`, the
-eigenvalues of `(A, B)` are the roots of `p` (if `k = n`, all of them are finite), and `∞` with
-multiplicity `n − k` if `k < n` (`Matrix.pencilInftyMultiplicity A B`). Backbone
-`Matrix.mem_pencilSpectrum_iff_isRoot`, `Matrix.natDegree_pencilPoly_le`. -/
+/-- **Section 5.9** of [quarteroni2000numerical], the characteristic polynomial of a regular pencil
+and the eigenvalue $\infty$. Let $(A, B)$ be a regular pencil of matrices in
+$\mathbb{C}^{n \times n}$, and let $p$ be its characteristic polynomial. Then
+$p(z) = \det(A - zB)$ for every $z \in \mathbb{C}$, $\mu \in \sigma(A, B)$ if and only if
+$p(\mu) = 0$, $\deg p \le n$, and the multiplicity of the eigenvalue $\infty$ is $n - \deg p$.
+So if $\deg p = n$ all eigenvalues are finite, and if $k = \deg p < n$ the eigenvalue $\infty$
+has multiplicity $n - k$.
+
+The polynomial $p$ is `Matrix.pencilPoly A B`, and the multiplicity of $\infty$ is
+`Matrix.pencilInftyMultiplicity A B`. The four facts hold without the regularity hypothesis,
+which the proof does not use. The proof specializes `Matrix.pencilPoly_eval`,
+`Matrix.mem_pencilSpectrum_iff_isRoot` and `Matrix.natDegree_pencilPoly_le`. -/
 theorem pencilCharpoly {A B : Matrix (Fin n) (Fin n) ℂ} (_h : isRegularPencil A B) :
     (∀ z, (Matrix.pencilPoly A B).eval z = (A - z • B).det) ∧
       (∀ μ, μ ∈ pencilSpectrum A B ↔ (Matrix.pencilPoly A B).IsRoot μ) ∧
@@ -150,10 +187,13 @@ theorem pencilCharpoly {A B : Matrix (Fin n) (Fin n) ℂ} (_h : isRegularPencil 
 
 /-! ### Example 5.14 -/
 
-/-- **Example 5.14, first pencil.** `A = [[−1, 0], [0, 1]]`, `B = [[0, 1], [1, 0]]`:
-`p(z) = det (A − z B) = −(z² + 1)` (the book prints `z² + 1`, the same up to sign), so
-`σ(A, B) = {±i}` — a symmetric pencil, unlike a symmetric matrix, may have complex conjugate
-eigenvalues. -/
+/-- **Example 5.14** of [quarteroni2000numerical], first pencil. For $$A = \begin{bmatrix} -1 & 0 \\
+0 & 1 \end{bmatrix}, \qquad B = \begin{bmatrix} 0 & 1 \\ 1 & 0 \end{bmatrix},$$ the
+characteristic polynomial is $p(z) = \det(A - zB) = -(z^2 + 1)$, and $\sigma(A, B) = \{i, -i\}$.
+So a symmetric pencil, unlike a symmetric matrix, can have complex conjugate eigenvalues.
+
+**Typo.** The source prints $p(z) = z^2 + 1$, which differs from $\det(A - zB)$ by the sign and
+has the same roots. -/
 theorem example_5_14_conj :
     Matrix.pencilPoly (!![-1, 0; 0, 1] : Matrix (Fin 2) (Fin 2) ℂ) !![0, 1; 1, 0] = -(X ^ 2 + 1) ∧
       pencilSpectrum (!![-1, 0; 0, 1] : Matrix (Fin 2) (Fin 2) ℂ) !![0, 1; 1, 0] =
@@ -169,9 +209,11 @@ theorem example_5_14_conj :
     rw [← sq_eq_sq_iff_eq_or_eq_neg, Complex.I_sq]
     constructor <;> intro h <;> linear_combination -h
 
-/-- **Example 5.14, second pencil.** `A = [[−1, 0], [0, 0]]`, `B = [[0, 0], [0, 1]]`: `p(z) = z`,
-so the pencil is regular of degree `1 < 2`, `σ(A, B) = {0}` and `∞` is an eigenvalue of
-multiplicity `1`: `σ(A, B) = {0, ∞}`. -/
+/-- **Example 5.14** of [quarteroni2000numerical], second pencil. For $$A = \begin{bmatrix} -1 & 0
+\\ 0 & 0 \end{bmatrix}, \qquad B = \begin{bmatrix} 0 & 0 \\ 0 & 1 \end{bmatrix},$$ the
+characteristic polynomial is $p(z) = z$. So the pencil is regular with $\deg p = 1 < 2$, its
+finite spectrum is $\sigma(A, B) = \{0\}$, and $\infty$ is an eigenvalue of multiplicity $1$. In
+the notation of the source, $\sigma(A, B) = \{0, \infty\}$. -/
 theorem example_5_14_infty :
     Matrix.pencilPoly (!![-1, 0; 0, 0] : Matrix (Fin 2) (Fin 2) ℂ) !![0, 0; 0, 1] = X ∧
       isRegularPencil (!![-1, 0; 0, 0] : Matrix (Fin 2) (Fin 2) ℂ) !![0, 0; 0, 1] ∧
@@ -187,9 +229,12 @@ theorem example_5_14_infty :
     rfl
   · rw [Matrix.pencilInftyMultiplicity, hp, natDegree_X, Fintype.card_fin]
 
-/-- **Example 5.14, third pencil.** `A = [[1, 2], [0, 0]]`, `B = [[1, 0], [0, 0]]`: `p(z) = 0`,
-so the pencil is singular and `σ(A, B) = ℂ`. Backbone
-`Matrix.pencilSpectrum_eq_univ_of_not_isRegularPencil`. -/
+/-- **Example 5.14** of [quarteroni2000numerical], third pencil. For $$A = \begin{bmatrix} 1 & 2 \\
+0 & 0 \end{bmatrix}, \qquad B = \begin{bmatrix} 1 & 0 \\ 0 & 0 \end{bmatrix},$$ the
+characteristic polynomial is $p(z) = 0$. So the pencil is singular, and
+$\sigma(A, B) = \mathbb{C}$.
+
+The proof uses `Matrix.pencilSpectrum_eq_univ_of_not_isRegularPencil`. -/
 theorem example_5_14_singular :
     Matrix.pencilPoly (!![1, 2; 0, 0] : Matrix (Fin 2) (Fin 2) ℂ) !![1, 0; 0, 0] = 0 ∧
       ¬ isRegularPencil (!![1, 2; 0, 0] : Matrix (Fin 2) (Fin 2) ℂ) !![1, 0; 0, 0] ∧
@@ -201,12 +246,16 @@ theorem example_5_14_singular :
   exact ⟨hp, fun h => hreg ((isRegularPencil_iff _ _).mp h),
     Matrix.pencilSpectrum_eq_univ_of_not_isRegularPencil hreg⟩
 
-/-! ### §5.9.1: reduction to a standard problem, the generalized Schur form -/
+/-! ### Section 5.9.1: reduction to a standard problem, and the generalized Schur form -/
 
-/-- **§5.9.1.** The pencil `(A, B)` has `n` finite eigenvalues — its characteristic polynomial has
-degree `n` — iff `B` is nonsingular, and then problem (5.58) is equivalent to the standard
-eigenvalue problem `C x = λ x` for the solution `C` of `B C = A`: `σ(A, B) = σ(C)`. Backbone
-`Matrix.natDegree_pencilPoly_eq_card_iff` and `Matrix.pencilSpectrum_eq_spectrum_of_isUnit`. -/
+/-- **Section 5.9.1** of [quarteroni2000numerical], reduction to a standard problem. Let
+$A, B \in \mathbb{C}^{n \times n}$. The pencil $(A, B)$ has $n$ finite eigenvalues, that is, its
+characteristic polynomial has degree $n$, if and only if $B$ is nonsingular. If $B$ is
+nonsingular, then for every $C$ with $BC = A$, problem (5.58) is equivalent to the standard
+eigenvalue problem $Cx = \lambda x$: $$\sigma(A, B) = \sigma(C).$$
+
+The proof specializes `Matrix.natDegree_pencilPoly_eq_card_iff` and
+`Matrix.pencilSpectrum_eq_spectrum_of_isUnit`. -/
 theorem pencilSpectrum_eq_spectrum_of_isUnit (A B : Matrix (Fin n) (Fin n) ℂ) :
     ((Matrix.pencilPoly A B).natDegree = n ↔ IsUnit B) ∧
       (IsUnit B → ∀ C, B * C = A → pencilSpectrum A B = spectrum ℂ C) := by
@@ -220,15 +269,17 @@ theorem pencilSpectrum_eq_spectrum_of_isUnit (A B : Matrix (Fin n) (Fin n) ℂ) 
     rw [hC']
     exact Matrix.pencilSpectrum_eq_spectrum_of_isUnit A hB
 
-/-- **Property 5.10 (Generalized Schur decomposition).** Let `(A, B)` be a regular pencil. Then
-there are two unitary matrices `U` and `Z` such that `Uᴴ A Z = T` and `Uᴴ B Z = S` are upper
-triangular, and for `i = 1, …, n` the eigenvalues of `(A, B)` are `λ_i = t_ii / s_ii` if
-`s_ii ≠ 0` and `λ_i = ∞` if `s_ii = 0` (and then `t_ii ≠ 0`): `σ(A, B)` is the set of the
-quotients `t_ii / s_ii` over the indices with `s_ii ≠ 0`, and no index has `t_ii = s_ii = 0`.
-Backbone `Matrix.exists_unitary_pencil_isUpperTriangular` (a Schur form and a QR factorization)
-with `Matrix.pencilSpectrum_eq_of_isUpperTriangular` and
-`Matrix.pencilSpectrum_mul_mul_of_isUnit`; a diagonal position with `t_ii = s_ii = 0` would make
-every `μ` an eigenvalue, against the finiteness of the spectrum of a regular pencil. -/
+/-- **Property 5.10** of [quarteroni2000numerical] (generalized Schur decomposition). Let $(A, B)$
+be a regular pencil of matrices in $\mathbb{C}^{n \times n}$. Then there are unitary matrices
+$U, Z \in \mathbb{C}^{n \times n}$ such that $$U^H A Z = T \quad \text{and} \quad U^H B Z = S$$
+are upper triangular. The eigenvalues of $(A, B)$ are $\lambda_i = t_{ii} / s_{ii}$ if
+$s_{ii} \neq 0$ and $\lambda_i = \infty$ if $s_{ii} = 0$: precisely, $$\sigma(A, B) = \{t_{ii} /
+s_{ii} : s_{ii} \neq 0\},$$ and $t_{ii} \neq 0$ for every $i$ with $s_{ii} = 0$.
+
+The proof specializes `Matrix.exists_unitary_pencil_isUpperTriangular` (a Schur form and a QR
+factorization), `Matrix.pencilSpectrum_eq_of_isUpperTriangular` and
+`Matrix.pencilSpectrum_mul_mul_of_isUnit`. A diagonal position with $t_{ii} = s_{ii} = 0$ would
+make every $\mu$ an eigenvalue, but the spectrum of a regular pencil is finite. -/
 theorem property_5_10 {A B : Matrix (Fin n) (Fin n) ℂ} (hreg : isRegularPencil A B) :
     ∃ U ∈ unitaryGroup (Fin n) ℂ, ∃ Z ∈ unitaryGroup (Fin n) ℂ,
       (Uᴴ * A * Z).IsUpperTriangular ∧ (Uᴴ * B * Z).IsUpperTriangular ∧
@@ -263,12 +314,17 @@ theorem property_5_10 {A B : Matrix (Fin n) (Fin n) ℂ} (hreg : isRegularPencil
   · rintro ⟨i, hSi, rfl⟩
     exact ⟨i, by rw [div_mul_cancel₀ _ hSi]⟩
 
-/-! ### §5.9.2: symmetric-definite pencils -/
+/-! ### Section 5.9.2: symmetric-definite pencils -/
 
-/-- The complex spectrum of a real pencil that a real congruence carries to `(diag λ, I)`: it is
-the set of the `λ_i`, read in `ℂ` (`Matrix.pencilSpectrum_mul_mul_of_isUnit` and
-`Matrix.pencilSpectrum_diagonal` for the complexified matrices). The real-eigenvalue clause of
-Theorem 5.7. -/
+/-- Let $A, B, X \in \mathbb{R}^{n \times n}$ with $X$ nonsingular, and let
+$\lambda_1, \dots, \lambda_n \in \mathbb{R}$ with $X^T A X = \operatorname{diag}(\lambda_1,
+\dots, \lambda_n)$ and $X^T B X = I$. Then the complex spectrum of the pencil $(A, B)$ is
+$\{\lambda_1, \dots, \lambda_n\} \subset \mathbb{C}$. This is the clause of Theorem 5.7 of
+[quarteroni2000numerical] that the eigenvalues are real.
+
+The matrices act on $\mathbb{C}^n$ through `Matrix.complexify`. The proof uses
+`Matrix.pencilSpectrum_mul_mul_of_isUnit` and `Matrix.pencilSpectrum_diagonal` for the
+complexified matrices. -/
 theorem pencilSpectrum_complexify_of_conj {A B X : Matrix (Fin n) (Fin n) ℝ} {lam : Fin n → ℝ}
     (hX : IsUnit X) (hA : Xᵀ * A * X = diagonal lam) (hB : Xᵀ * B * X = 1) :
     pencilSpectrum (complexify A) (complexify B) = Set.range fun i => (lam i : ℂ) := by
@@ -282,14 +338,20 @@ theorem pencilSpectrum_complexify_of_conj {A B X : Matrix (Fin n) (Fin n) ℝ} {
   ext μ
   simp [eq_comm]
 
-/-- **Theorem 5.7.** A symmetric-definite pencil `(A, B)` — `A`, `B` real symmetric, `B` positive
-definite — has real eigenvalues and linearly independent eigenvectors, and `A` and `B` can be
-simultaneously diagonalized: there is a nonsingular `X ∈ ℝ^{n×n}` with
-`Xᵀ A X = Λ = diag(λ_1, …, λ_n)` and `Xᵀ B X = Iₙ`, where the `λ_i` are the eigenvalues of the
-pencil `(A, B)` — its real spectrum and its complex spectrum alike are `{λ_1, …, λ_n}`. Backbone
-`Matrix.exists_simultaneous_diagonalization` read over `ℝ` (the book's Cholesky factor `H` of `B`
-is replaced by any `W` with `Wᵀ B W = I`), with `pencilSpectrum_complexify_of_conj` for the
-complex spectrum; the eigenvector clause is `theorem_5_7_eigenvectors`. -/
+/-- **Theorem 5.7** of [quarteroni2000numerical]. Let $A, B \in \mathbb{R}^{n \times n}$ be
+symmetric, with $B$ positive definite, so that $(A, B)$ is a symmetric-definite pencil. Then $A$
+and $B$ can be simultaneously diagonalized: there are a nonsingular
+$X \in \mathbb{R}^{n \times n}$ and real numbers $\lambda_1, \dots, \lambda_n$ with $$X^T A X =
+\Lambda = \operatorname{diag}(\lambda_1, \dots, \lambda_n), \qquad X^T B X = I_n.$$ The
+$\lambda_i$ are the eigenvalues of the pencil: both its real spectrum and its complex spectrum
+are $\{\lambda_1, \dots, \lambda_n\}$. In particular all eigenvalues of the pencil are real.
+
+The clause that the eigenvectors are linearly independent is
+`QuarteroniSaccoSaleri.Chapter05.theorem_5_7_eigenvectors`. The proof specializes
+`Matrix.exists_simultaneous_diagonalization` over $\mathbb{R}$, with any $W$ such that
+$W^T B W = I$ in place of the inverse of the Cholesky factor $H$ of $B$ that the source uses,
+and `QuarteroniSaccoSaleri.Chapter05.pencilSpectrum_complexify_of_conj` for the complex
+spectrum. -/
 theorem theorem_5_7 {A B : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) (hB : B.PosDef) :
     ∃ (X : Matrix (Fin n) (Fin n) ℝ) (lam : Fin n → ℝ), IsUnit X ∧
       Xᵀ * A * X = diagonal lam ∧ Xᵀ * B * X = 1 ∧
@@ -301,10 +363,14 @@ theorem theorem_5_7 {A B : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) (hB : B.P
   simp only [RCLike.ofReal_real_eq_id, id] at hAX hσ
   exact ⟨X, lam, hX, hAX, hBX, hσ, pencilSpectrum_complexify_of_conj hX hAX hBX⟩
 
-/-- **Theorem 5.7, the eigenvectors.** With `X` and `Λ = diag(λ)` as in Theorem 5.7, the columns
-`x_i` of `X` are eigenvectors of the pencil, `A x_i = λ_i B x_i`, and they are linearly
-independent (`X` being nonsingular). Backbone `Matrix.hasPencilEigenvector_col_of_conj_eq_diagonal`
-and `Matrix.linearIndependent_cols_iff_isUnit`. -/
+/-- **Theorem 5.7** of [quarteroni2000numerical], the eigenvectors. Let
+$A, B, X \in \mathbb{R}^{n \times n}$ with $X$ nonsingular, and let
+$\lambda_1, \dots, \lambda_n \in \mathbb{R}$ with $X^T A X = \operatorname{diag}(\lambda_1,
+\dots, \lambda_n)$ and $X^T B X = I$. Then the columns $x_i$ of $X$ are eigenvectors of the
+pencil, $$A x_i = \lambda_i B x_i \quad \text{for all } i,$$ and they are linearly independent.
+
+The proof specializes `Matrix.hasPencilEigenvector_col_of_conj_eq_diagonal` and
+`Matrix.linearIndependent_cols_iff_isUnit`. -/
 theorem theorem_5_7_eigenvectors {A B X : Matrix (Fin n) (Fin n) ℝ} {lam : Fin n → ℝ}
     (hX : IsUnit X) (hA : Xᵀ * A * X = diagonal lam) (hB : Xᵀ * B * X = 1) :
     (∀ i, A *ᵥ X.col i = lam i • (B *ᵥ X.col i)) ∧ LinearIndependent ℝ X.col := by
@@ -315,16 +381,22 @@ theorem theorem_5_7_eigenvectors {A B X : Matrix (Fin n) (Fin n) ℝ} {lam : Fin
     rwa [star_eq_conjTranspose, conjTranspose_eq_transpose_of_trivial]
   exact (Matrix.hasPencilEigenvector_col_of_conj_eq_diagonal hX hB' hA' i).2
 
-/-- **The generalized real Schur form of a pencil with nonsingular `B`**, stated (without proof,
-citing [GL89] §7.7) after Property 5.10: for real `A`, `B` there are orthogonal `Ŭ`, `Z̃` such that
-`T̃ = Ŭᵀ A Z̃` is upper quasi-triangular and `S̃ = Ŭᵀ B Z̃` is upper triangular. As in the book's
-own description of the QZ iteration, which applies the QR algorithm to `𝒜 ℬ⁻¹`, this is proved for a
-nonsingular `B`: take `Z̃` from the real Schur form of `B⁻¹ A` (Property 5.8), so that
-`Z̃ᵀ B⁻¹ A Z̃ = T` is quasi upper triangular, and `Ŭ` from a QR factorization `B Z̃ = Ŭ R`
-(Definition 3.1); then `Ŭᵀ B Z̃ = R` is upper triangular and `Ŭᵀ A Z̃ = R T` is quasi upper
-triangular, a triangular matrix times a quasi triangular one. The quasi-triangular shape is that
-of Property 5.8: the blocks are the fibres of a monotone `p : Fin n → ℕ` with at most two indices
-each. -/
+/-- **Section 5.9.1** of [quarteroni2000numerical], the generalized real Schur form for a
+nonsingular $B$. Let $A, B \in \mathbb{R}^{n \times n}$ with $B$ nonsingular. Then there are
+orthogonal matrices $\tilde U, \tilde Z \in \mathbb{R}^{n \times n}$ such that
+$\tilde T = \tilde U^T A \tilde Z$ is upper quasi-triangular and
+$\tilde S = \tilde U^T B \tilde Z$ is upper triangular. Here upper quasi-triangular means block
+upper triangular with diagonal blocks of order $1$ or $2$.
+
+The source states this form after Property 5.10, without proof and with a reference to Golub and
+Van Loan (cited as GL89, §7.7). As in the description of the QZ iteration in the source, which
+applies the QR algorithm to $A B^{-1}$, the proof assumes that $B$ is nonsingular. It takes
+$\tilde Z$ from the real Schur form of $B^{-1} A$ (Property 5.8), so that
+$\tilde Z^T B^{-1} A \tilde Z = T$ is upper quasi-triangular, and $\tilde U$ from a QR
+factorization $B \tilde Z = \tilde U R$ (Definition 3.1). Then $\tilde U^T B \tilde Z = R$ is
+upper triangular, and $\tilde U^T A \tilde Z = RT$ is upper quasi-triangular. The
+quasi-triangular shape is that of Property 5.8: `Matrix.BlockTriangular p` for a monotone
+`p : Fin n → ℕ` whose fibres have at most two elements. -/
 theorem generalizedRealSchur_of_isUnit {A B : Matrix (Fin n) (Fin n) ℝ} (hB : IsUnit B.det) :
     ∃ U ∈ orthogonalGroup (Fin n) ℝ, ∃ Z ∈ orthogonalGroup (Fin n) ℝ, ∃ p : Fin n → ℕ,
       Monotone p ∧ (∀ k, #{i | p i = k} ≤ 2) ∧
@@ -348,15 +420,21 @@ theorem generalizedRealSchur_of_isUnit {A B : Matrix (Fin n) (Fin n) ℝ} (hB : 
   by_contra hji
   exact absurd (hmono (not_lt.1 hji)) (not_le.2 hij)
 
-/-- **The generalized real Schur form of an arbitrary real pair**, stated (without proof, citing
-[GL89] §7.7) after Property 5.10: for real `A`, `B` there are orthogonal `Ŭ`, `Z̃` such that
-`T̃ = Ŭᵀ A Z̃` is upper quasi-triangular and `S̃ = Ŭᵀ B Z̃` is upper triangular. The book states it
-for a regular pencil; it holds with no hypothesis at all. Backbone
-`Matrix.exists_orthogonal_pencil_isQuasiUpperTriangular`: the nonsingular case
-`generalizedRealSchur_of_isUnit` applied to `(A, B + εI)` for `ε → 0`, with the limits taken in
-the compact orthogonal group and `Ŭᵀ B Z̃ = lim (Ŭ_εᵀ (B + εI) Z̃_ε - ε Ŭ_εᵀ Z̃_ε)`. The
-quasi-triangular shape is that of Property 5.8: the blocks are the fibres of a monotone
-`p : Fin n → ℕ` with at most two indices each. -/
+/-- **Section 5.9.1** of [quarteroni2000numerical], the generalized real Schur form. Let
+$A, B \in \mathbb{R}^{n \times n}$. Then there are orthogonal matrices
+$\tilde U, \tilde Z \in \mathbb{R}^{n \times n}$ such that $\tilde T = \tilde U^T A \tilde Z$ is
+upper quasi-triangular (block upper triangular with diagonal blocks of order $1$ or $2$) and
+$\tilde S = \tilde U^T B \tilde Z$ is upper triangular.
+
+**Generalization.** The source states this form after Property 5.10 for a regular pencil,
+without proof and with a reference to Golub and Van Loan (cited as GL89, §7.7). It holds with no
+hypothesis on the pencil.
+
+The quasi-triangular shape is that of Property 5.8: `Matrix.BlockTriangular p` for a monotone
+`p : Fin n → ℕ` whose fibres have at most two elements. The proof specializes
+`Matrix.exists_orthogonal_pencil_isQuasiUpperTriangular`, which applies
+`QuarteroniSaccoSaleri.Chapter05.generalizedRealSchur_of_isUnit` to $(A, B + \varepsilon I)$ and
+takes the limit $\varepsilon \to 0$ in the compact orthogonal group. -/
 theorem generalizedRealSchur (A B : Matrix (Fin n) (Fin n) ℝ) :
     ∃ U ∈ orthogonalGroup (Fin n) ℝ, ∃ Z ∈ orthogonalGroup (Fin n) ℝ, ∃ p : Fin n → ℕ,
       Monotone p ∧ (∀ k, #{i | p i = k} ≤ 2) ∧

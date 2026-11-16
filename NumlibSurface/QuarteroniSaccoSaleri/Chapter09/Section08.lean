@@ -9,65 +9,91 @@ import NumlibSurface.QuarteroniSaccoSaleri.Chapter09.Section04
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter09.Section07
 
 /-!
-# Quarteroni–Sacco–Saleri §9.8: singular integrals
+# Quarteroni, Sacco and Saleri, Section 9.8: Singular integrals
 
-Surface file for Alfio Quarteroni, Riccardo Sacco and Fausto Saleri, *Numerical Mathematics*,
-Springer, 2000, §9.8.
+This module formalizes Section 9.8 of [quarteroni2000numerical], on three kinds of singular
+integral. A function with a *finite jump* at a known interior point $c$ (Section 9.8.1) is handled
+by (9.46), $\int_a^b f = \int_a^c f + \int_c^b f$, and any formula of the previous sections on the
+two pieces. An *integrable endpoint singularity* (Section 9.8.2), $f(x) = \varphi(x)/(x - a)^\mu$
+with $0 \le \mu < 1$ and $|\varphi| \le M$, obeys the a priori bound
+$|I(f)| \le M (b - a)^{1-\mu}/(1 - \mu)$. Method 1 replaces the singular piece
+$I_1 = \int_a^{a+\varepsilon} f$ by the closed form of the integral of the Taylor polynomial of
+$\varphi$ (9.47)–(9.48), and applies a composite Newton–Cotes formula to the remaining
+$I_2 = \int_{a+\varepsilon}^b f$ (9.49). Method 2 subtracts the Taylor polynomial $\Phi_p$ on the
+whole interval: it integrates $\Phi_p/(x - a)^\mu$ exactly (9.51) and leaves the regularized
+integrand (9.52). Example 9.10 evaluates the Fresnel integral $\int_0^{\pi/2} \cos x/\sqrt{x}\,dx$
+by integrating its Taylor series term by term. On an *unbounded interval* (Section 9.8.3),
+(9.53)–(9.54) define the improper integral, the decay condition $x^{1+\rho} f(x) \to 0$ makes a
+continuous $f$ integrable, Method 2 is the substitution $x = 1/t$ (9.55), and Method 3 is
+Gauss–Laguerre and Gauss–Hermite quadrature.
 
-Three kinds of singular integral. A *finite jump* at a known interior point `c` (§9.8.1) is
-handled by (9.46), `∫_a^b f = ∫_a^c f + ∫_c^b f`, and any of the formulae of the previous sections
-applied to the two pieces. An *integrable endpoint singularity* (§9.8.2), `f(x) = φ(x)/(x - a)^μ`
-with `0 ≤ μ < 1` and `|φ| ≤ M`, obeys the a priori bound `|I(f)| ≤ M (b - a)^{1-μ}/(1 - μ)` and is
-approximated in two ways: Method 1 truncates the singular piece `I_1 = ∫_a^{a+ε} f` to the closed
-form of its Taylor expansion (9.47)–(9.48) and applies a composite Newton–Cotes rule to the
-remaining `I_2 = ∫_{a+ε}^b f` (9.49); Method 2 subtracts the Taylor polynomial `Φ_p` once and for
-all, integrating `Φ_p/(x - a)^μ` exactly (9.51) and leaving the regularized integrand (9.52).
-Example 9.10 evaluates the Fresnel integral `∫_0^{π/2} cos x/√x` by integrating its Taylor series
-term by term. Finally (§9.8.3) an *unbounded interval*: (9.53)–(9.54) define the improper
-integral, the decay criterion `x^{1+ρ} f(x) → 0` makes a continuous `f` integrable, Method 2 is
-the substitution `x = 1/t` (9.55), and Method 3 is Gauss–Laguerre and Gauss–Hermite quadrature.
-
-The backbone is `Numlib/Approximation/SingularIntegral` (the whole of §9.8.2–9.8.3, in the
-namespace `Quadrature`), `Numlib/Approximation/NewtonCotes` through §9.4's `theorem_9_3_even`, and
-the Laguerre and Hermite weights of `Numlib/Approximation/OrthogonalPolynomial/Classical` with
+The backbone is `Numlib.Approximation.SingularIntegral` for Sections 9.8.2–9.8.3, in the namespace
+`Quadrature`; `Numlib.Approximation.NewtonCotes` through
+`QuarteroniSaccoSaleri.Chapter09.theorem_9_3_even` of Section 9.4; and the Laguerre and Hermite
+weights of `Numlib.Approximation.OrthogonalPolynomial.Classical` together with
 `Quadrature.exists_gauss`.
 
 ## Main results
 
-* `equation_9_46` — the additivity (9.46), together with the interval integrability of a function
-  continuous and bounded on `[a, c)` and on `(c, b]`.
-* `singularIntegral_bound` — the a priori bound of §9.8.2.
-* `equation_9_47`, `equation_9_48` — Taylor's formula with the Lagrange remainder, and the
-  truncation error of Method 1: the closed form of the truncated sum, and the bound on `|E_1|`.
-* `equation_9_49` — the a priori bound on `|E_2|`, Theorem 9.3 on `[a + ε, b]`.
-* `example_9_10` — the Fresnel series.
-* `equation_9_51`, `equation_9_52` — Method 2: the exact singular part, and the regularized
-  integrand `g(x) = (x - a)^{p+1-μ} φ^{(p+1)}(ξ(x))/(p + 1)!`.
-* `equation_9_52_regularity` — the sentence after (9.52): `g`, continued by `0` at `a`, is of
-  class `C^p` on `[a, b]` with its first `p` derivatives vanishing at `a`.
-* `equation_9_53`, `equation_9_54` — the improper integral as a limit, and its splitting at an
-  arbitrary `c`.
-* `integrable_of_tendsto_rpow_mul` — the decay criterion.
-* `equation_9_55` — the substitution `x = 1/t`.
-* `gaussLaguerre`, `gaussHermite` — Method 3.
-
-## Not formalized
-
-The consequence the book draws from the regularity of `g` after (9.52) — that a composite
-Newton–Cotes error estimate applies to `I_1` when `p ≥ n + 2` (`n` even) or `p ≥ n + 1` (`n`
-odd) — is not restated: `theorem_9_3_even` asks for smoothness on an open set containing `[a, b]`,
-while `g` is `C^p` on `[a, b]` itself, so the application would need a `C^p` extension of `g`
-across the endpoints, which the library does not have. Examples 9.11 and 9.12 are numerical runs
-and are not formalized.
+* Equation (9.46), `QuarteroniSaccoSaleri.Chapter09.equation_9_46`: additivity of the integral at a
+  jump, for a function continuous on $[a, c)$ and on $(c, b]$ and bounded.
+* Section 9.8.2, `QuarteroniSaccoSaleri.Chapter09.singularIntegral_bound`: the a priori bound
+  $|I(f)| \le M (b - a)^{1-\mu}/(1 - \mu)$.
+* Equation (9.47), `QuarteroniSaccoSaleri.Chapter09.equation_9_47`: Taylor's formula with the
+  Lagrange remainder.
+* Section 9.8.2, `QuarteroniSaccoSaleri.Chapter09.integral_taylorSum_div_rpow`: the closed form of
+  $\int_a^b \Phi_p(x)/(x - a)^\mu\,dx$.
+* Equation (9.48), `QuarteroniSaccoSaleri.Chapter09.equation_9_48`: the truncation error of
+  Method 1.
+* Equation (9.49), `QuarteroniSaccoSaleri.Chapter09.equation_9_49`: the a priori bound on the error
+  $E_2$ of the Newton–Cotes formula on $[a + \varepsilon, b]$.
+* Example 9.10, `QuarteroniSaccoSaleri.Chapter09.example_9_10`: the series for the Fresnel integral
+  (9.50).
+* Equation (9.51), `QuarteroniSaccoSaleri.Chapter09.equation_9_51`: the exact singular part of
+  Method 2.
+* Equation (9.52), `QuarteroniSaccoSaleri.Chapter09.equation_9_52`: the regularized integrand
+  $g(x) = (x - a)^{p+1-\mu} \varphi^{(p+1)}(\xi(x))/(p + 1)!$.
+* Section 9.8.2, `QuarteroniSaccoSaleri.Chapter09.equation_9_52_regularity`: $g$, extended by $0$ at
+  $a$, is of class $C^p$ on $[a, b]$, and its first $p$ derivatives vanish at $a$.
+* Equation (9.53), `QuarteroniSaccoSaleri.Chapter09.equation_9_53`: the improper integral is a limit
+  of proper integrals.
+* Equation (9.54), `QuarteroniSaccoSaleri.Chapter09.equation_9_54`: the integral over $\mathbb{R}$
+  splits at any point $c$.
+* Section 9.8.3, `QuarteroniSaccoSaleri.Chapter09.integrable_of_tendsto_rpow_mul`: the decay
+  condition implies integrability.
+* Equation (9.55), `QuarteroniSaccoSaleri.Chapter09.equation_9_55`: the substitution $x = 1/t$.
+* Section 9.8.3, `QuarteroniSaccoSaleri.Chapter09.gaussLaguerre`: Method 3 with the weight $e^{-x}$
+  on $(0, \infty)$.
+* Section 9.8.3, `QuarteroniSaccoSaleri.Chapter09.gaussHermite`: Method 3 with the weight $e^{-x^2}$
+  on $\mathbb{R}$.
 
 ## Conventions
 
-As in §9.2–9.4: `f ∈ C^k([a, b])` is `ContDiffOn ℝ (k : ℕ) f U` for an open `U ⊇ Icc a b`, so that
-the derivatives `iteratedDeriv k f` are the two-sided ones. The Taylor polynomial `Φ_p` of (9.47)
-is written as the explicit sum `∑_{k ≤ p} φ^{(k)}(a)(x - a)^k/k!`; the backbone knows it as
-`taylorWithinEval φ p Set.univ a` (`Quadrature.taylorWithinEval_univ_eq_sum`). The exponent `μ` of
-the singularity is a real number and `(x - a)^μ` is `Real.rpow`. Erratum: (9.55) prints
-`I_2 = ∫_0^{1/c} f(t) t^{-2} dt`, which should read `f(1/t)`.
+* As in Sections 9.2–9.4, $f \in C^k([a, b])$ is `ContDiffOn ℝ (k : ℕ) f U` for an open set
+  $U \supseteq [a, b]$, so that the derivatives `iteratedDeriv k f` are the two-sided ones.
+* The Taylor polynomial $\Phi_p$ of (9.47) is written as the explicit sum
+  $\sum_{k=0}^{p} \varphi^{(k)}(a)(x - a)^k/k!$. The backbone knows it as
+  `taylorWithinEval φ p Set.univ a` (`Quadrature.taylorWithinEval_univ_eq_sum`).
+* The exponent $\mu$ of the singularity is a real number, and $(x - a)^\mu$ is `Real.rpow`.
+
+## Deviations from the source
+
+* **Equation (9.49)** (correction). The bound uses the constant $|M_n|/n^{n+3}$ of (9.26) as
+  corrected in Section 9.4. See `QuarteroniSaccoSaleri.Chapter09.equation_9_49`.
+* **The sentence after (9.52)** (generalization). The regularity of $g$ holds for every $\mu < 1$,
+  without the standing assumption $0 \le \mu$ of the source. See
+  `QuarteroniSaccoSaleri.Chapter09.equation_9_52_regularity`.
+* **Equation (9.55)** (typo). The source prints $I_2 = \int_0^{1/c} f(t) t^{-2}\,dt$; the integrand
+  should be $f(1/t) t^{-2}$. See `QuarteroniSaccoSaleri.Chapter09.equation_9_55`.
+
+## Not formalized
+
+* **The application of a composite Newton–Cotes error estimate to $I_1$ after (9.52)**, for
+  $p \ge n + 2$ ($n$ even) or $p \ge n + 1$ ($n$ odd).
+  `QuarteroniSaccoSaleri.Chapter09.theorem_9_3_even` asks for smoothness on an open set that
+  contains $[a, b]$, while $g$ is of class $C^p$ on $[a, b]$ only, and the library has no $C^p$
+  extension of $g$ across the endpoints.
+* **Examples 9.11 and 9.12.** They are numerical runs.
 -/
 
 open MeasureTheory Real Set Filter Topology
@@ -78,14 +104,13 @@ variable {a b c ε ρ μ : ℝ} {f φ : ℝ → ℝ} {U : Set ℝ} {n p m : ℕ}
 
 /-! ### §9.8.1 Functions with finite jump discontinuities -/
 
-/-- **(9.46).** Let `c` be a known point of `[a, b]` and let `f` be continuous and bounded on
-`[a, c)` and on `(c, b]`, with a finite jump `f(c⁺) - f(c⁻)` at `c`. Then `f` is interval
-integrable on `[a, c]` and on `[c, b]` and
+/-- **Equation (9.46)** of [quarteroni2000numerical]. Let $a \le c \le b$, let $f$ be continuous on
+$[a, c)$ and on $(c, b]$, and let $|f(x)| \le M$ for all $x \in [a, b]$. Then $f$ is integrable
+on $[a, c]$ and on $[c, b]$, and
+$$I(f) = \int_a^b f(x)\,dx = \int_a^c f(x)\,dx + \int_c^b f(x)\,dx.$$
 
-`I(f) = ∫_a^b f(x) dx = ∫_a^c f(x) dx + ∫_c^b f(x) dx`,
-
-so any integration formula of the previous sections can be used on `[a, c⁻]` and on `[c⁺, b]` to
-furnish an approximation of `I(f)`. -/
+Such an $f$ may have a finite jump at $c$. Any integration formula of the previous sections can
+then be used on $[a, c^-]$ and on $[c^+, b]$ to approximate $I(f)$. -/
 theorem equation_9_46 (hac : a ≤ c) (hcb : c ≤ b) {M : ℝ} (hf₁ : ContinuousOn f (Ico a c))
     (hf₂ : ContinuousOn f (Ioc c b)) (hM : ∀ x ∈ Icc a b, ‖f x‖ ≤ M) :
     IntervalIntegrable f volume a c ∧ IntervalIntegrable f volume c b ∧
@@ -107,10 +132,12 @@ theorem equation_9_46 (hac : a ≤ c) (hcb : c ≤ b) {M : ℝ} (hf₁ : Continu
 
 /-! ### §9.8.2 Integrals of infinite functions: the a priori bound -/
 
-/-- **The a priori bound of §9.8.2.** For `f(x) = φ(x)/(x - a)^μ` with `0 ≤ μ < 1` and `φ`
-continuous on `(a, b]` with `|φ| ≤ M` there, `f` is integrable on `[a, b]` and
-
-`|I(f)| ≤ M lim_{t → a⁺} ∫_t^b (x - a)^{-μ} dx = M (b - a)^{1-μ}/(1 - μ)`. -/
+/-- **Section 9.8.2** of [quarteroni2000numerical], the a priori bound. Let $a < b$ and
+$0 \le \mu < 1$, let $\varphi$ be continuous on $(a, b]$, and let $|\varphi(x)| \le M$ for all
+$x \in (a, b]$. Then $f(x) = \varphi(x)/(x - a)^\mu$ is integrable on $[a, b]$, and
+$$|I(f)| \le M \lim_{t \to a^+} \int_t^b (x - a)^{-\mu}\,dx = \frac{M (b - a)^{1-\mu}}{1 -
+  \mu}.$$
+-/
 theorem singularIntegral_bound (hab : a < b) (hμ0 : 0 ≤ μ) (hμ1 : μ < 1)
     (hφ : ContinuousOn φ (Ioc a b)) {M : ℝ} (hM : ∀ x ∈ Ioc a b, |φ x| ≤ M) :
     IntervalIntegrable (fun x => φ x / (x - a) ^ μ) volume a b ∧
@@ -121,12 +148,12 @@ theorem singularIntegral_bound (hab : a < b) (hμ0 : 0 ≤ μ) (hμ1 : μ < 1)
 
 /-! ### The Taylor expansion (9.47) and its exact contribution -/
 
-/-- **(9.47), Taylor's formula with the Lagrange remainder.** For `φ` of class `C^{p+1}` on an
-open set containing `[a, b]` and `x ∈ (a, b]`,
-
-`φ(x) = Φ_p(x) + (x - a)^{p+1}/(p + 1)! φ^{(p+1)}(ξ(x))`, `ξ(x) ∈ (a, x)`,
-
-with `Φ_p(x) = ∑_{k=0}^p φ^{(k)}(a)(x - a)^k/k!`. -/
+/-- **Equation (9.47)** of [quarteroni2000numerical], Taylor's formula with the Lagrange remainder.
+Let $\varphi$ be of class $C^{p+1}$ on an open set $U \supseteq [a, b]$, and let $x \in (a, b]$.
+Then there is $\xi(x) \in (a, x)$ such that
+$$\varphi(x) = \Phi_p(x) + \frac{(x - a)^{p+1}}{(p + 1)!} \varphi^{(p+1)}(\xi(x)), \qquad
+  \Phi_p(x) = \sum_{k=0}^{p} \frac{\varphi^{(k)}(a)}{k!} (x - a)^k.$$
+-/
 theorem equation_9_47 (hU : IsOpen U) (hUab : Icc a b ⊆ U)
     (hφ : ContDiffOn ℝ ((p + 1 : ℕ) : WithTop ℕ∞) φ U) {x : ℝ} (hx : x ∈ Ioc a b) :
     ∃ ξ ∈ Ioo a x, φ x = (∑ k ∈ Finset.range (p + 1),
@@ -140,12 +167,15 @@ theorem equation_9_47 (hU : IsOpen U) (hUab : Icc a b ⊆ U)
   rw [Quadrature.taylorWithinEval_univ_eq_sum] at h
   exact ⟨ξ, hξ, by linear_combination h⟩
 
-/-- The Taylor polynomial `Φ_p` of `φ` at `a`, divided by the weight, integrates in closed form:
+/-- Let $a \le b$, let $\mu < 1$, let $\varphi : \mathbb{R} \to \mathbb{R}$, and let
+$p \in \mathbb{N}$. Then the Taylor polynomial $\Phi_p$ of $\varphi$ at $a$, divided by the
+weight $(x - a)^\mu$, has the integral
+$$\int_a^b \frac{\Phi_p(x)}{(x - a)^\mu}\,dx = (b - a)^{1-\mu} \sum_{k=0}^{p} \frac{(b - a)^k
+  \varphi^{(k)}(a)}{k!\,(k + 1 - \mu)}.$$
 
-`∫_a^b Φ_p(x)/(x - a)^μ dx = (b - a)^{1-μ} ∑_{k=0}^p (b - a)^k φ^{(k)}(a)/(k!(k + 1 - μ))`.
-
-The backbone's `Quadrature.integral_sum_mul_pow_div_rpow` with `c_k = φ^{(k)}(a)/k!`; it is the
-truncated sum of Method 1 at `b = a + ε`, and the exact part (9.51) of Method 2. -/
+At $b = a + \varepsilon$ this is the truncated sum of Method 1, and it is the exact part (9.51)
+of Method 2. The proof is the backbone's `Quadrature.integral_sum_mul_pow_div_rpow` with
+$c_k = \varphi^{(k)}(a)/k!$. -/
 theorem integral_taylorSum_div_rpow (hab : a ≤ b) (hμ1 : μ < 1) (φ : ℝ → ℝ) (p : ℕ) :
     (∫ x in a..b, (∑ k ∈ Finset.range (p + 1),
         iteratedDeriv k φ a * (x - a) ^ k / (Nat.factorial k : ℝ)) / (x - a) ^ μ)
@@ -163,15 +193,18 @@ theorem integral_taylorSum_div_rpow (hab : a ≤ b) (hμ1 : μ < 1) (φ : ℝ �
 
 /-! ### Method 1: truncation (9.48)–(9.49) -/
 
-/-- **(9.48), the truncation error of Method 1.** Write `I(f) = I_1 + I_2` with
-`I_1 = ∫_a^{a+ε} φ(x)/(x - a)^μ dx`. Replacing `φ` by its `p`-th order Taylor expansion (9.47)
-around `a` gives the closed form
+/-- **Equation (9.48)** of [quarteroni2000numerical], the truncation error of Method 1. Let
+$\varepsilon > 0$ and $0 \le \mu < 1$, let $\varphi$ be of class $C^{p+1}$ on an open set
+$U \supseteq [a, a + \varepsilon]$, and let $|\varphi^{(p+1)}(x)| \le M$ for all
+$x \in [a, a + \varepsilon]$. Then the $p$-th order Taylor expansion (9.47) of $\varphi$ around
+$a$ gives the closed form
+$$\int_a^{a+\varepsilon} \frac{\Phi_p(x)}{(x - a)^\mu}\,dx = \varepsilon^{1-\mu} \sum_{k=0}^{p}
+  \frac{\varepsilon^k \varphi^{(k)}(a)}{k!\,(k + 1 - \mu)},$$
+and the error $E_1$ made by replacing $I_1 = \int_a^{a+\varepsilon} \varphi(x)/(x - a)^\mu\,dx$
+by this finite sum satisfies
+$$|E_1| \le \frac{\varepsilon^{p+2-\mu}}{(p + 1)!\,(p + 2 - \mu)} M.$$
 
-`∫_a^{a+ε} Φ_p(x)/(x - a)^μ dx = ε^{1-μ} ∑_{k=0}^p ε^k φ^{(k)}(a)/(k!(k + 1 - μ))`,
-
-and replacing `I_1` by that finite sum makes an error bounded by
-
-`|E_1| ≤ ε^{p+2-μ}/((p + 1)!(p + 2 - μ)) max_{a ≤ x ≤ a+ε} |φ^{(p+1)}(x)|`. -/
+The book writes $M$ as $\max_{a \le x \le a+\varepsilon} |\varphi^{(p+1)}(x)|$. -/
 theorem equation_9_48 (hε : 0 < ε) (hμ0 : 0 ≤ μ) (hμ1 : μ < 1) (hU : IsOpen U)
     (hUab : Icc a (a + ε) ⊆ U) (hφ : ContDiffOn ℝ ((p + 1 : ℕ) : WithTop ℕ∞) φ U) {M : ℝ}
     (hM : ∀ x ∈ Icc a (a + ε), |iteratedDeriv (p + 1) φ x| ≤ M) :
@@ -213,14 +246,23 @@ theorem equation_9_48 (hε : 0 < ε) (hμ0 : 0 ≤ μ) (hμ1 : μ < 1) (hU : IsO
     exact intervalIntegral.integral_sub hint₁ hint₂
   rwa [hsplit, hclosed] at hbound
 
-/-- **(9.49), the a priori bound on `I_2`.** Approximating `I_2 = ∫_{a+ε}^b φ(x)/(x - a)^μ dx` by
-the composite closed Newton–Cotes formula with `m` subintervals and `n + 1` nodes on each, `n`
-even, Theorem 9.3 on `[a + ε, b]` gives
+/-- **Equation (9.49)** of [quarteroni2000numerical], the a priori bound on the error $E_2$. Let
+$n \ge 2$ be even, let $\varepsilon > 0$ with $a + \varepsilon < b$, let $m \ge 1$, let
+$\varphi$ be of class $C^{n+2}$ on an open set $U \supseteq [a, b]$, and let
+$$\Bigl|\frac{d^{n+2}}{dx^{n+2}} \frac{\varphi(x)}{(x - a)^\mu}\Bigr| \le
+  \mathcal{M}^{(n+2)}(\varepsilon) \qquad \text{for all } x \in [a + \varepsilon, b].$$
+Let $I_2 = \int_{a+\varepsilon}^b \varphi(x)/(x - a)^\mu\,dx$ be approximated by the composite
+closed Newton–Cotes formula with $m$ subintervals and $n + 1$ nodes on each. Then the error
+satisfies
+$$|E_2| \le \mathcal{M}^{(n+2)}(\varepsilon) \frac{b - a - \varepsilon}{(n + 2)!}
+  \frac{|M_n|}{n^{n+3}} \Bigl(\frac{b - a - \varepsilon}{m}\Bigr)^{n+2}.$$
 
-`|E_2| ≤ 𝓜^{(n+2)}(ε) (b - a - ε)/(n + 2)! |M_n|/n^{n+3} ((b - a - ε)/m)^{n+2}`,
+**Correction.** The constant $|M_n|/n^{n+3}$ is the one of (9.26) as corrected in
+`QuarteroniSaccoSaleri.Chapter09.theorem_9_3_even`.
 
-where `𝓜^{(n+2)}(ε) = max_{a+ε ≤ x ≤ b} |d^{n+2}/dx^{n+2} (φ(x)/(x - a)^μ)|`. The constant is the
-one of the corrected (9.26) (see `theorem_9_3_even`). -/
+The book defines $\mathcal{M}^{(n+2)}(\varepsilon)$ as the maximum of the left side over
+$[a + \varepsilon, b]$. The statement holds for every real $\mu$. The proof applies Theorem 9.3
+on $[a + \varepsilon, b]$. -/
 theorem equation_9_49 (hn : Even n) (hn0 : 0 < n) (hε : 0 < ε) (hab : a + ε < b) (hm : 1 ≤ m)
     (hU : IsOpen U) (hUab : Icc a b ⊆ U) (hφ : ContDiffOn ℝ ((n + 2 : ℕ) : WithTop ℕ∞) φ U)
     {Mn : ℝ} (hM : ∀ x ∈ Icc (a + ε) b,
@@ -259,12 +301,14 @@ theorem equation_9_49 (hn : Even n) (hn0 : 0 < n) (hε : 0 < ε) (hab : a + ε <
 
 /-! ### Example 9.10, the Fresnel integral -/
 
-/-- **Example 9.10, the Fresnel integral (9.50).** Expanding the integrand in a Taylor series
-around the origin and applying the theorem of integration by series,
+/-- **Example 9.10** of [quarteroni2000numerical], the Fresnel integral (9.50). Expansion of the
+integrand in a Taylor series around the origin and integration term by term give
+$$\int_0^{\pi/2} \frac{\cos x}{\sqrt{x}}\,dx = \sum_{k=0}^{\infty} \frac{(-1)^k}{(2k)!}
+  \frac{(\pi/2)^{2k+1/2}}{2k + 1/2},$$
+where the series converges.
 
-`∫_0^{π/2} cos(x)/√x dx = ∑_{k=0}^∞ (-1)^k/(2k)! (π/2)^{2k+1/2}/(2k + 1/2)`.
-
-Dominated convergence with the summable bound `(π/2)^{2k}/(2k)! · x^{-1/2}`. -/
+The statement is a `HasSum`. The proof uses dominated convergence with the summable bound
+$(\pi/2)^{2k} x^{-1/2}/(2k)!$. -/
 theorem example_9_10 :
     HasSum (fun k : ℕ => (-1) ^ k / (Nat.factorial (2 * k) : ℝ) *
         ((π / 2) ^ (2 * (k : ℝ) + 1 / 2) / (2 * (k : ℝ) + 1 / 2)))
@@ -328,11 +372,13 @@ theorem example_9_10 :
 
 /-! ### Method 2: subtraction of the Taylor polynomial (9.51)–(9.52) -/
 
-/-- **(9.51), the exact singular part of Method 2.** Splitting
-`I(f) = ∫_a^b (φ - Φ_p)/(x - a)^μ + ∫_a^b Φ_p/(x - a)^μ = I_1 + I_2`, the second integral is
-computed exactly:
-
-`I_2 = (b - a)^{1-μ} ∑_{k=0}^p (b - a)^k φ^{(k)}(a)/(k!(k + 1 - μ))`. -/
+/-- **Equation (9.51)** of [quarteroni2000numerical], the exact singular part of Method 2. Write
+$$I(f) = \int_a^b \frac{\varphi(x) - \Phi_p(x)}{(x - a)^\mu}\,dx + \int_a^b
+  \frac{\Phi_p(x)}{(x - a)^\mu}\,dx = I_1 + I_2.$$
+Let $a \le b$, let $\mu < 1$, let $\varphi : \mathbb{R} \to \mathbb{R}$, and let
+$p \in \mathbb{N}$. Then the second integral is
+$$I_2 = (b - a)^{1-\mu} \sum_{k=0}^{p} \frac{(b - a)^k \varphi^{(k)}(a)}{k!\,(k + 1 - \mu)}.$$
+-/
 theorem equation_9_51 (hab : a ≤ b) (hμ1 : μ < 1) (φ : ℝ → ℝ) (p : ℕ) :
     (∫ x in a..b, (∑ k ∈ Finset.range (p + 1),
         iteratedDeriv k φ a * (x - a) ^ k / (Nat.factorial k : ℝ)) / (x - a) ^ μ)
@@ -340,12 +386,16 @@ theorem equation_9_51 (hab : a ≤ b) (hμ1 : μ < 1) (φ : ℝ → ℝ) (p : �
           (b - a) ^ k * iteratedDeriv k φ a / ((Nat.factorial k : ℝ) * ((k : ℝ) + 1 - μ)) :=
   integral_taylorSum_div_rpow hab hμ1 φ p
 
-/-- **(9.52), the regularized integrand of Method 2.** For `φ` of class `C^{p+1}` on an open set
-containing `[a, b]` there is a choice `ξ(x) ∈ (a, x)` of the Lagrange point of (9.47) with
-
-`(φ(x) - Φ_p(x))/(x - a)^μ = (x - a)^{p+1-μ} φ^{(p+1)}(ξ(x))/(p + 1)!` for every `x ∈ (a, b]`,
-
-so that `I_1 = ∫_a^b (x - a)^{p+1-μ} φ^{(p+1)}(ξ(x))/(p + 1)! dx = ∫_a^b g(x) dx`. -/
+/-- **Equation (9.52)** of [quarteroni2000numerical], the regularized integrand of Method 2. Let
+$a < b$, let $\varphi$ be of class $C^{p+1}$ on an open set $U \supseteq [a, b]$, and let
+$\mu \in \mathbb{R}$. Then there is a function $\xi$ with $\xi(x) \in (a, x)$ for every
+$x \in (a, b]$, the Lagrange point of (9.47), such that
+$$\frac{\varphi(x) - \Phi_p(x)}{(x - a)^\mu} = \frac{(x - a)^{p+1-\mu}}{(p + 1)!}
+  \varphi^{(p+1)}(\xi(x)) \qquad \text{for every } x \in (a, b],$$
+and therefore
+$$I_1 = \int_a^b \frac{(x - a)^{p+1-\mu}}{(p + 1)!} \varphi^{(p+1)}(\xi(x))\,dx = \int_a^b
+  g(x)\,dx.$$
+-/
 theorem equation_9_52 (hab : a < b) (hU : IsOpen U) (hUab : Icc a b ⊆ U)
     (hφ : ContDiffOn ℝ ((p + 1 : ℕ) : WithTop ℕ∞) φ U) (μ : ℝ) :
     ∃ ξ : ℝ → ℝ, (∀ x ∈ Ioc a b, ξ x ∈ Ioo a x) ∧
@@ -376,16 +426,20 @@ theorem equation_9_52 (hab : a < b) (hU : IsOpen U) (hUab : Icc a b ⊆ U)
   rw [uIoc_of_le hab.le]
   filter_upwards with x hx using hξeq x hx
 
-/-- **The sentence after (9.52): the regularized integrand does not blow up at `a`.** For `μ < 1`
-and `φ` of class `C^{p+1}` on an open set containing `[a, b]`, the integrand
-`g(x) = (φ(x) - Φ_p(x))/(x - a)^μ` of Method 2, continued by `0` at `x = a`, is of class `C^p` on
-`[a, b]`, and its derivatives of order `≤ p` within `[a, b]` vanish at `a` — "its first `p`
-derivatives are finite at `x = a`". The backbone's
+/-- **Section 9.8.2** of [quarteroni2000numerical], the sentence after (9.52). Let $a < b$, let
+$\mu < 1$, and let $\varphi$ be of class $C^{p+1}$ on an open set $U \supseteq [a, b]$. Let
+$g(x) = (\varphi(x) - \Phi_p(x))/(x - a)^\mu$ for $x \neq a$, and $g(a) = 0$. Then $g$ is of
+class $C^p$ on $[a, b]$, and its derivatives of order $j \le p$ within $[a, b]$ vanish at $a$.
+
+**Generalization.** The source assumes $0 \le \mu < 1$ throughout the section. The statement
+here holds for every $\mu < 1$.
+
+The book says that the regularized integrand does not blow up at $a$: "its first $p$ derivatives
+are finite at $x = a$". The proof is the backbone's
 `Quadrature.contDiffOn_taylorRemainder_div_rpow` and
-`Quadrature.iteratedDerivWithin_taylorRemainder_div_rpow_eq_zero`, which hold without the book's
-standing `0 ≤ μ`. This is the regularity under which the book applies a composite Newton–Cotes
-error estimate to `I_1`, for `p ≥ n + 2` (`n` even) or `p ≥ n + 1` (`n` odd); that step is not
-restated, see the module docstring. -/
+`Quadrature.iteratedDerivWithin_taylorRemainder_div_rpow_eq_zero`. The book uses this regularity
+to apply a composite Newton–Cotes error estimate to $I_1$; that step is not formalized (see the
+module doc comment). -/
 theorem equation_9_52_regularity (hab : a < b) (hμ1 : μ < 1) (hU : IsOpen U)
     (hUab : Icc a b ⊆ U) (hφ : ContDiffOn ℝ ((p + 1 : ℕ) : WithTop ℕ∞) φ U) :
     ContDiffOn ℝ (p : WithTop ℕ∞) (fun x => if x = a then 0 else
@@ -407,43 +461,58 @@ theorem equation_9_52_regularity (hab : a < b) (hμ1 : μ < 1) (hU : IsOpen U)
 
 /-! ### §9.8.3 Integrals over unbounded intervals -/
 
-/-- **(9.53).** For `f` integrable over `[a, ∞)` the improper integral is the limit of the proper
-ones, `I(f) = ∫_a^∞ f(x) dx = lim_{t → +∞} ∫_a^t f(x) dx`. -/
+/-- **Equation (9.53)** of [quarteroni2000numerical]. Let $f$ be integrable over $(a, \infty)$. Then
+the integral is the limit of the proper integrals:
+$$I(f) = \int_a^\infty f(x)\,dx = \lim_{t \to +\infty} \int_a^t f(x)\,dx.$$
+-/
 theorem equation_9_53 (hf : IntegrableOn f (Ioi a)) :
     Tendsto (fun t => ∫ x in a..t, f x) atTop (𝓝 (∫ x in Ioi a, f x)) :=
   intervalIntegral_tendsto_integral_Ioi a hf tendsto_id
 
-/-- **(9.54).** For `f : ℝ → ℝ` integrable over every bounded interval and over `ℝ`,
-`∫_{-∞}^∞ f = ∫_{-∞}^c f + ∫_c^∞ f` for every real `c`; the definition is correct because the
-value does not depend on the choice of `c`. -/
+/-- **Equation (9.54)** of [quarteroni2000numerical]. Let $f : \mathbb{R} \to \mathbb{R}$ be
+integrable over $\mathbb{R}$. Then for every $c \in \mathbb{R}$,
+$$\int_{-\infty}^{c} f(x)\,dx + \int_c^\infty f(x)\,dx = \int_{-\infty}^{\infty} f(x)\,dx.$$
+
+So the definition of the integral over $\mathbb{R}$ as the sum of the two improper integrals
+does not depend on the choice of $c$. -/
 theorem equation_9_54 (hf : Integrable f) (c : ℝ) :
     (∫ x in Iic c, f x) + (∫ x in Ioi c, f x) = ∫ x, f x :=
   intervalIntegral.integral_Iic_add_Ioi hf.integrableOn hf.integrableOn
 
-/-- **The sufficient condition for integrability of §9.8.3.** If `f` is continuous on `[a, +∞)`
-and there is `ρ > 0` with `lim_{x → +∞} x^{1+ρ} f(x) = 0` — `f` infinitesimal of order `> 1` with
-respect to `1/x` — then `f` is integrable over `[a, +∞)`. -/
+/-- **Section 9.8.3** of [quarteroni2000numerical], a sufficient condition for integrability. Let
+$f$ be continuous on $[a, +\infty)$, and let there be $\rho > 0$ with
+$$\lim_{x \to +\infty} x^{1+\rho} f(x) = 0,$$
+that is, $f$ is infinitesimal of order greater than $1$ with respect to $1/x$. Then $f$ is
+integrable over $(a, +\infty)$. -/
 theorem integrable_of_tendsto_rpow_mul (hf : ContinuousOn f (Ici a)) (hρ : 0 < ρ)
     (hlim : Tendsto (fun x => x ^ (1 + ρ) * f x) atTop (𝓝 0)) : IntegrableOn f (Ioi a) :=
   Quadrature.integrableOn_Ioi_of_tendsto_rpow_mul hf hρ hlim
 
-/-- **(9.55), Method 2 for unbounded intervals.** The change of variable `x = 1/t` transforms
-`I_2 = ∫_c^∞ f(x) dx`, `c > 0`, into an integral over the bounded interval `[0, 1/c]`:
+/-- **Equation (9.55)** of [quarteroni2000numerical], Method 2 for unbounded intervals. Let $c > 0$.
+The change of variable $x = 1/t$ transforms $I_2 = \int_c^\infty f(x)\,dx$ into an integral over
+the bounded interval $(0, 1/c)$:
+$$\int_c^\infty f(x)\,dx = \int_0^{1/c} \frac{f(1/t)}{t^2}\,dt.$$
 
-`I_2 = ∫_0^{1/c} f(1/t) t^{-2} dt = ∫_0^{1/c} g(t) dt`.
+**Typo.** The source prints $I_2 = \int_0^{1/c} f(t) t^{-2}\,dt$, where it means $f(1/t)$.
 
-Erratum: the book prints `f(t)` where it means `f(1/t)`. -/
+The identity has no integrability hypothesis; it holds for every $f$, with the convention that
+the Lean integral of a function that is not integrable is $0$. -/
 theorem equation_9_55 (hc : 0 < c) (f : ℝ → ℝ) :
     ∫ x in Ioi c, f x = ∫ t in Ioo 0 (1 / c), f (1 / t) / t ^ 2 :=
   Quadrature.integral_Ioi_eq_integral_Ioo_inv hc f
 
 /-! ### Method 3: Gauss–Laguerre and Gauss–Hermite -/
 
-/-- **Method 3 of §9.8.3, Gauss–Laguerre.** For every `n` there are `n` distinct nodes — the zeros
-of the `n`-th orthogonal polynomial of the weight `e^{-x}` on `(0, ∞)`, the Laguerre polynomial
-`ℒ_n` of §10.5 — and positive weights with
+/-- **Section 9.8.3** of [quarteroni2000numerical], Method 3 with Gauss–Laguerre formulae. For every
+$n$ there are $n$ distinct nodes $x_0, \dots, x_{n-1}$ and positive weights
+$\alpha_0, \dots, \alpha_{n-1}$ such that
+$$\sum_{k=0}^{n-1} \alpha_k p(x_k) = \int_0^\infty e^{-x} p(x)\,dx$$
+for every polynomial $p$ of degree at most $2n - 1$.
 
-`∑_{k<n} α_k p(x_k) = ∫_0^∞ e^{-x} p(x) dx` for every `p ∈ ℙ_{2n-1}`. -/
+The book takes as nodes the zeros of the Laguerre polynomial $\mathcal{L}_n$ of Section 10.5,
+the $n$-th orthogonal polynomial for the weight $e^{-x}$ on $(0, \infty)$. The statement here
+asserts only the existence of the nodes and weights. The proof applies `Quadrature.exists_gauss`
+to the Laguerre weight of `Numlib.Approximation.OrthogonalPolynomial.Classical`. -/
 theorem gaussLaguerre (n : ℕ) :
     ∃ x w : Fin n → ℝ, Function.Injective x ∧ (∀ i, 0 < w i) ∧
       ∀ P : Polynomial ℝ, P.degree < (2 * n : ℕ) →
@@ -453,10 +522,16 @@ theorem gaussLaguerre (n : ℕ) :
   exact ⟨x, w, hx, hw, fun P hP =>
     (h P hP).trans (OrthogonalPolynomial.integral_laguerreMeasure _)⟩
 
-/-- **Method 3 of §9.8.3, Gauss–Hermite.** The same for the weight `e^{-x²}` on `ℝ`, whose
-orthogonal polynomials are the Hermite polynomials of §10.5:
+/-- **Section 9.8.3** of [quarteroni2000numerical], Method 3 with Gauss–Hermite formulae. For every
+$n$ there are $n$ distinct nodes $x_0, \dots, x_{n-1}$ and positive weights
+$\alpha_0, \dots, \alpha_{n-1}$ such that
+$$\sum_{k=0}^{n-1} \alpha_k p(x_k) = \int_{-\infty}^{\infty} e^{-x^2} p(x)\,dx$$
+for every polynomial $p$ of degree at most $2n - 1$.
 
-`∑_{k<n} α_k p(x_k) = ∫_{-∞}^∞ e^{-x²} p(x) dx` for every `p ∈ ℙ_{2n-1}`. -/
+The book takes as nodes the zeros of the Hermite polynomial of Section 10.5, the $n$-th
+orthogonal polynomial for the weight $e^{-x^2}$ on $\mathbb{R}$. The statement here asserts only
+the existence of the nodes and weights. The proof applies `Quadrature.exists_gauss` to the
+Hermite weight of `Numlib.Approximation.OrthogonalPolynomial.Classical`. -/
 theorem gaussHermite (n : ℕ) :
     ∃ x w : Fin n → ℝ, Function.Injective x ∧ (∀ i, 0 < w i) ∧
       ∀ P : Polynomial ℝ, P.degree < (2 * n : ℕ) →

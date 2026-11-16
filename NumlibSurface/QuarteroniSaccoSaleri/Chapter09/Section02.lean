@@ -5,48 +5,69 @@ Released under Apache 2.0 license as described in the file LICENSE.
 import Numlib.Approximation.NewtonCotes
 
 /-!
-# Quarteroni–Sacco–Saleri §9.2: interpolatory quadratures
+# Quarteroni, Sacco and Saleri, Section 9.2: Interpolatory quadratures
 
-Surface file for Alfio Quarteroni, Riccardo Sacco and Fausto Saleri, *Numerical Mathematics*,
-Springer, 2000, §9.2.
+This module formalizes Section 9.2 of [quarteroni2000numerical], on the Lagrange quadrature formulae
+(9.2) with $n = 0, 1, 2$ nodes beyond the first. These are the midpoint formula (9.5),
+$I_0(f) = (b - a) f((a + b)/2)$, the trapezoidal formula (9.11),
+$I_1(f) = \frac{b - a}{2} (f(a) + f(b))$, and the Cavalieri–Simpson formula (9.15), $I_2(f) =
+\frac{b - a}{6} (f(a) + 4 f(\frac{a + b}{2}) + f(b))$. For each formula the module proves the error
+formula, (9.6), (9.12) and (9.16), the degree of exactness, and the error of the composite formula
+on $m$ panels of width $H = (b - a)/m$, (9.8), (9.14) and (9.17). The discrete mean value theorem
+(Theorem 9.1) collects the panel errors of a composite formula into one value of the derivative.
 
-The section treats the three Lagrange quadrature formulae (9.2) with `n = 0, 1, 2`: the midpoint
-formula (9.5) with its error (9.6) and composite form (9.7)–(9.8), the trapezoidal formula (9.11)
-with its error (9.12) and composite forms (9.13)–(9.14), and the Cavalieri–Simpson formula (9.15)
-with its error (9.16) and composite form (9.17); and the discrete mean value theorem (Theorem 9.1)
-by which the panel errors of a composite rule are collected into one value of the derivative.
-Example 9.1 is a numerical table and is not formalized; Exercise 1, cited in Example 9.4, is
-here.
-
-The rules are the backbone's: the midpoint rule and its composite sum are
-`Quadrature.midpointRule`, `Quadrature.midpointSum` (`Numlib/Approximation/NewtonCotes`), the
-composite trapezoidal and Simpson sums are `Quadrature.trapezoidSum`, `Quadrature.simpsonSum`
-(`Numlib/Approximation/CompositeQuadrature`), and the single-panel formulae (9.11), (9.15) are the
-composite sums with one panel. The error formulae are the Peano-kernel mean value theorems of
-those modules; the discrete mean value theorem is `ContinuousOn.exists_sum_mul_eq_mul_sum` of
-`Numlib/Topology/Order/IntermediateValue`.
+The rules are the backbone rules of `Numlib.Approximation.NewtonCotes` (`Quadrature.midpointRule`,
+`Quadrature.midpointSum`) and `Numlib.Approximation.CompositeQuadrature` (`Quadrature.trapezoidSum`,
+`Quadrature.simpsonSum`). The single-panel formulae (9.11) and (9.15) are the composite sums with
+one panel. The error formulae come from the Peano-kernel mean value theorems of those modules, and
+the discrete mean value theorem is `ContinuousOn.exists_sum_mul_eq_mul_sum` of
+`Numlib.Topology.Order.IntermediateValue`.
 
 ## Main results
 
-* `theorem_9_1` — the discrete mean value theorem (9.9), for weights all of the same sign.
-* `equation_9_6`, `midpoint_degreeOfExactness`, `equation_9_8` — the midpoint error `h³/3 f''(ξ)`,
-  `h = (b - a)/2`, the degree of exactness `1`, and the composite error `(b - a)/24 H² f''(ξ)`.
-* `equation_9_12`, `compositeTrapezoidalError` — the trapezoidal error `-h³/12 f''(ξ)`,
-  `h = b - a`, and the composite error `-(b - a)/12 H² f''(ξ)`.
-* `equation_9_16`, `compositeSimpsonError` — the Cavalieri–Simpson error `-h⁵/90 f⁗(ξ)`,
-  `h = (b - a)/2`, and the composite error `-(b - a)/180 (H/2)⁴ f⁗(ξ)`.
-* `exercise_9_1` — the ratio `-2` between the trapezoidal and midpoint errors, in the exact form
-  the two kernel integrals give.
+* Equation (9.6), `QuarteroniSaccoSaleri.Chapter09.equation_9_6`: the midpoint error is
+  $\frac{h^3}{3} f''(\xi)$ with $h = (b - a)/2$.
+* Section 9.2.1, `QuarteroniSaccoSaleri.Chapter09.midpoint_degreeOfExactness`: the midpoint formula
+  has degree of exactness $1$.
+* Equation (9.7), `QuarteroniSaccoSaleri.Chapter09.equation_9_7`: the composite midpoint formula
+  written out.
+* Equation (9.8), `QuarteroniSaccoSaleri.Chapter09.equation_9_8`: the composite midpoint error is
+  $\frac{b - a}{24} H^2 f''(\xi)$.
+* Theorem 9.1, `QuarteroniSaccoSaleri.Chapter09.theorem_9_1`: the discrete mean value theorem (9.9),
+  for weights of one sign.
+* Equation (9.12), `QuarteroniSaccoSaleri.Chapter09.equation_9_12`: the trapezoidal error is
+  $-\frac{h^3}{12} f''(\xi)$ with $h = b - a$.
+* Equations (9.13)–(9.14), `QuarteroniSaccoSaleri.Chapter09.equation_9_14`: the two forms of the
+  composite trapezoidal formula.
+* Section 9.2.2, `QuarteroniSaccoSaleri.Chapter09.compositeTrapezoidalError`: the composite
+  trapezoidal error is $-\frac{b - a}{12} H^2 f''(\xi)$.
+* Equation (9.16), `QuarteroniSaccoSaleri.Chapter09.equation_9_16`: the Cavalieri–Simpson error is
+  $-\frac{h^5}{90} f^{(4)}(\xi)$ with $h = (b - a)/2$.
+* Section 9.2.3, `QuarteroniSaccoSaleri.Chapter09.simpson_degreeOfExactness`: the Cavalieri–Simpson
+  formula has degree of exactness $3$.
+* Equation (9.17), `QuarteroniSaccoSaleri.Chapter09.equation_9_17`: the composite Cavalieri–Simpson
+  formula written out.
+* Section 9.2.3, `QuarteroniSaccoSaleri.Chapter09.compositeSimpsonError`: the composite
+  Cavalieri–Simpson error is $-\frac{b - a}{180} (H/2)^4 f^{(4)}(\xi)$.
+* Exercise 9.1, `QuarteroniSaccoSaleri.Chapter09.exercise_9_1`: the error constants of the
+  trapezoidal and midpoint formulae are in the ratio $-2$, so $E_1(p) = -2 E_0(p)$ for every
+  polynomial $p$ of degree at most $2$.
 
 ## Conventions
 
-A real function `f ∈ C^k([a, b])` is `f : ℝ → ℝ` with `ContDiffOn ℝ k f U` on an open set
-`U ⊇ [a, b]`, as chapter 8 reads Theorem 8.2 and as the chapter-9 backbone states its error
-formulae; `f^{(k)}(ξ)` is `iteratedDeriv k f ξ`. The book puts the intermediate point `ξ` of every
-error formula in the open interval `(a, b)`; the single-panel formulae (9.6), (9.12) and (9.16)
-are stated so, and the composite ones with `ξ ∈ [a, b]`, which is what the discrete mean value
-theorem on the closed interval gives (the backbone's `Quadrature.sub_composite_*_eq`). The
-composite mesh is `H = (b - a)/m` with `m ≥ 1` panels, as the book writes it.
+* A function $f \in C^k([a, b])$ is `f : ℝ → ℝ` with `ContDiffOn ℝ k f U` on an open set
+  $U \supseteq [a, b]$, as Chapter 8 reads Theorem 8.2 and as the backbone states its error
+  formulae. The derivative $f^{(k)}(\xi)$ is `iteratedDeriv k f ξ`.
+* The book puts the intermediate point $\xi$ of every error formula in the open interval $(a, b)$.
+  The formulae (9.6) and (9.12) are stated so. The formula (9.16) and the composite formulae give
+  $\xi \in [a, b]$, which is what the discrete mean value theorem on the closed interval gives (the
+  backbone's `Quadrature.sub_composite_simpson_eq` and its companions).
+* The composite mesh is $H = (b - a)/m$ with $m \ge 1$ panels, as the book writes it.
+* Exercise 9.k is Exercise k of Chapter 9.
+
+## Not formalized
+
+* **Example 9.1.** It is a numerical table.
 -/
 
 open Set intervalIntegral
@@ -56,35 +77,42 @@ namespace QuarteroniSaccoSaleri.Chapter09
 
 variable {a b : ℝ} {f : ℝ → ℝ} {U : Set ℝ}
 
-/-! ### From `C^k` on an open neighbourhood to the derivative chain on `[a, b]` -/
+/-! ### From $C^k$ on an open neighbourhood to the derivatives on $[a, b]$ -/
 
-/-- For `f ∈ C^N` on an open set `U ⊇ [a, b]` and `j < N`, the `j`-th derivative of `f` has the
-`(j + 1)`-st as its derivative at every point of `[a, b]`; the bridge from the book's regularity
-hypotheses to the explicit-derivative hypotheses of the backbone's Peano-kernel theorems. -/
+/-- Let $U \supseteq [a, b]$ be open, let $f$ be of class $C^N$ on $U$, and let $j < N$. Then at
+every point $x \in [a, b]$ the derivative of $f^{(j)}$ exists and equals $f^{(j+1)}(x)$.
+
+This lemma turns the regularity hypothesis of the book into the explicit derivative hypotheses
+of the backbone's Peano-kernel theorems. -/
 theorem hasDerivAt_iteratedDeriv_of_contDiffOn (hU : IsOpen U) (hUab : Icc a b ⊆ U) {N : ℕ}
     (hf : ContDiffOn ℝ N f U) {j : ℕ} (hj : j < N) :
     ∀ x ∈ Icc a b, HasDerivAt (iteratedDeriv j f) (iteratedDeriv (j + 1) f x) x :=
   fun _ hx => hf.hasDerivAt_iteratedDeriv_of_isOpen hU hj (hUab hx)
 
-/-- For `f ∈ C^N` on an open set `U ⊇ [a, b]`, `f` itself has `f'` as its derivative at every
-point of `[a, b]`. -/
+/-- Let $U \supseteq [a, b]$ be open and let $f$ be of class $C^N$ on $U$ with $N > 0$. Then at
+every point $x \in [a, b]$ the function $f$ has the derivative $f'(x)$, written
+`iteratedDeriv 1 f x`. -/
 theorem hasDerivAt_of_contDiffOn (hU : IsOpen U) (hUab : Icc a b ⊆ U) {N : ℕ}
     (hf : ContDiffOn ℝ N f U) (hN : 0 < N) :
     ∀ x ∈ Icc a b, HasDerivAt f (iteratedDeriv 1 f x) x := fun x hx => by
   simpa using hasDerivAt_iteratedDeriv_of_contDiffOn hU hUab hf hN x hx
 
-/-- For `f ∈ C^N` on an open set `U ⊇ [a, b]`, `f^{(N)}` is continuous on `[a, b]`. -/
+/-- Let $U \supseteq [a, b]$ be open and let $f$ be of class $C^N$ on $U$. Then $f^{(N)}$ is
+continuous on $[a, b]$. -/
 theorem continuousOn_iteratedDeriv_of_contDiffOn (hU : IsOpen U) (hUab : Icc a b ⊆ U) {N : ℕ}
     (hf : ContDiffOn ℝ N f U) : ContinuousOn (iteratedDeriv N f) (Icc a b) :=
   (hf.continuousOn_iteratedDeriv_of_isOpen hU le_rfl).mono hUab
 
 /-! ### Theorem 9.1 -/
 
-/-- **Theorem 9.1 (discrete mean value theorem).** Let `u ∈ C⁰([a, b])`, let `x₀, …, x_s` be
-`s + 1` points in `[a, b]` and `δ₀, …, δ_s` be `s + 1` constants, all having the same sign. Then
-there exists `η ∈ [a, b]` such that `∑ⱼ δⱼ u(xⱼ) = u(η) ∑ⱼ δⱼ` (9.9). The backbone's
-`ContinuousOn.exists_sum_mul_eq_mul_sum` for nonnegative weights, applied to `-δ` when the weights
-are nonpositive. -/
+/-- **Theorem 9.1** of [quarteroni2000numerical] (discrete mean value theorem). Let $a \le b$, let
+$u \in C^0([a, b])$, let $x_0, \dots, x_s$ be $s + 1$ points in $[a, b]$, and let
+$\delta_0, \dots, \delta_s$ be $s + 1$ constants that are all nonnegative or all nonpositive.
+Then there exists $\eta \in [a, b]$ such that
+$$\sum_{j=0}^{s} \delta_j u(x_j) = u(\eta) \sum_{j=0}^{s} \delta_j. \qquad (9.9)$$
+
+The proof applies the backbone's `ContinuousOn.exists_sum_mul_eq_mul_sum` for nonnegative
+weights, to $-\delta$ when the weights are nonpositive. -/
 theorem theorem_9_1 (hab : a ≤ b) {u : ℝ → ℝ} (hu : ContinuousOn u (Icc a b)) {s : ℕ}
     {x : Fin (s + 1) → ℝ} (hx : ∀ j, x j ∈ Icc a b) {δ : Fin (s + 1) → ℝ}
     (hδ : (∀ j, 0 ≤ δ j) ∨ ∀ j, δ j ≤ 0) :
@@ -99,11 +127,15 @@ theorem theorem_9_1 (hab : a ≤ b) {u : ℝ → ℝ} (hu : ContinuousOn u (Icc 
 
 /-! ### The midpoint formula (9.5)–(9.8) -/
 
-/-- **(9.6), the midpoint error.** For `f ∈ C²([a, b])`, the error of the midpoint formula (9.5),
-`I₀(f) = (b - a) f((a + b)/2)`, is `E₀(f) = h³/3 f''(ξ)` with `h = (b - a)/2` and `ξ ∈ (a, b)`.
-The Peano identity `Quadrature.sub_midpoint_eq_integral_peanoKernel` with the nonnegative kernel
-`Quadrature.midpointKernel`, of integral `(b - a)³/24 = h³/3`, and the weighted mean value theorem
-on the open interval. -/
+/-- **Equation (9.6)** of [quarteroni2000numerical], the midpoint error. Let $a < b$ and
+$f \in C^2([a, b])$. The error of the midpoint formula (9.5), $I_0(f) = (b - a) f((a + b)/2)$,
+is
+$$E_0(f) = \int_a^b f(x)\,dx - I_0(f) = \frac{h^3}{3} f''(\xi), \qquad h = \frac{b - a}{2},$$
+for some $\xi \in (a, b)$.
+
+The proof uses the Peano identity `Quadrature.sub_midpoint_eq_integral_peanoKernel` with the
+nonnegative kernel `Quadrature.midpointKernel`, whose integral is $(b - a)^3/24 = h^3/3$, and
+the weighted mean value theorem on the open interval. -/
 theorem equation_9_6 (hab : a < b) (hU : IsOpen U) (hUab : Icc a b ⊆ U)
     (hf : ContDiffOn ℝ 2 f U) :
     ∃ ξ ∈ Ioo a b, (∫ x in a..b, f x) - (b - a) * f ((a + b) / 2)
@@ -124,8 +156,13 @@ theorem equation_9_6 (hab : a < b) (hU : IsOpen U) (hUab : Icc a b ⊆ U)
   rw [h, Quadrature.integral_midpointKernel hab.le]
   ring
 
-/-- **§9.2.1: "the midpoint rule has degree of exactness equal to `1`."** The formula (9.5) is
-exact for constant and affine functions — `f'' = 0` in (9.6) — and not for `x²`. -/
+/-- **Section 9.2.1** of [quarteroni2000numerical], degree of exactness of the midpoint formula. Let
+$a < b$. The midpoint formula (9.5) is exact for every polynomial of degree at most $1$, and it
+is not exact for $x^2$:
+$$\int_a^b x^2\,dx \neq (b - a) \Bigl(\frac{a + b}{2}\Bigr)^2.$$
+
+The book says that "the midpoint rule has degree of exactness equal to $1$". For degree at most
+$1$ the error (9.6) vanishes, because $f'' = 0$. -/
 theorem midpoint_degreeOfExactness (hab : a < b) :
     (∀ p : ℝ[X], p.degree ≤ 1 →
         (∫ x in a..b, p.eval x) = (b - a) * p.eval ((a + b) / 2)) ∧
@@ -145,10 +182,14 @@ theorem midpoint_degreeOfExactness (hab : a < b) :
     have : (b - a) ^ 3 = 0 := by push_cast at h; nlinarith
     exact (pow_ne_zero 3 (sub_ne_zero.2 hab.ne')) this
 
-/-- **(9.8), the composite midpoint error.** For `m ≥ 1`, `H = (b - a)/m`, the composite
-midpoint formula (9.7), `I_{0,m}(f) = H ∑_{k<m} f(a + (2k + 1) H/2)`, has the error
-`E_{0,m}(f) = (b - a)/24 H² f''(ξ)` for `f ∈ C²([a, b])` and some `ξ ∈ [a, b]`: (9.6) on each
-panel and Theorem 9.1 with `u = f''`, `δⱼ = 1`. -/
+/-- **Equation (9.8)** of [quarteroni2000numerical], the composite midpoint error. Let $a < b$, let
+$m \ge 1$, let $H = (b - a)/m$, and let $f \in C^2([a, b])$. The composite midpoint formula
+(9.7), $I_{0,m}(f) = H \sum_{k=0}^{m-1} f(a + (2k + 1) H/2)$, has the error
+$$E_{0,m}(f) = \int_a^b f(x)\,dx - I_{0,m}(f) = \frac{b - a}{24} H^2 f''(\xi)$$
+for some $\xi \in [a, b]$.
+
+The composite formula is `Quadrature.midpointSum f a H m`. The proof applies (9.6) on each panel
+and Theorem 9.1 with $u = f''$ and $\delta_j = 1$. -/
 theorem equation_9_8 (hab : a < b) {m : ℕ} (hm : 1 ≤ m) (hU : IsOpen U) (hUab : Icc a b ⊆ U)
     (hf : ContDiffOn ℝ 2 f U) :
     ∃ ξ ∈ Icc a b, (∫ x in a..b, f x) - Quadrature.midpointSum f a ((b - a) / m) m
@@ -158,8 +199,11 @@ theorem equation_9_8 (hab : a < b) {m : ℕ} (hm : 1 ≤ m) (hU : IsOpen U) (hUa
     two_pos) (hasDerivAt_iteratedDeriv_of_contDiffOn hU hUab hf2 one_lt_two)
     (continuousOn_iteratedDeriv_of_contDiffOn hU hUab hf2)
 
-/-- The composite midpoint formula (9.7) written out: `I_{0,m}(f) = H ∑_{k<m} f(x_k)` with the
-nodes `x_k = a + (2k + 1) H/2`. -/
+/-- **Equation (9.7)** of [quarteroni2000numerical], the composite midpoint formula. For every
+$H \in \mathbb{R}$ and $m \in \mathbb{N}$, the composite midpoint sum
+`Quadrature.midpointSum f a H m` is
+$$I_{0,m}(f) = H \sum_{k=0}^{m-1} f(x_k), \qquad x_k = a + \frac{(2k + 1) H}{2}.$$
+-/
 theorem equation_9_7 (H : ℝ) (m : ℕ) :
     Quadrature.midpointSum f a H m = H * ∑ k ∈ Finset.range m, f (a + (2 * k + 1) * H / 2) := by
   rw [Quadrature.midpointSum, Finset.mul_sum]
@@ -167,11 +211,15 @@ theorem equation_9_7 (H : ℝ) (m : ℕ) :
 
 /-! ### The trapezoidal formula (9.11)–(9.14) -/
 
-/-- **(9.12), the trapezoidal error.** For `f ∈ C²([a, b])`, the error of the trapezoidal formula
-(9.11), `I₁(f) = (b - a)/2 (f(a) + f(b))`, is `E₁(f) = -h³/12 f''(ξ)` with `h = b - a` and
-`ξ ∈ (a, b)`. The Peano identity `Quadrature.sub_trapezoid_eq_integral_peanoKernel` with the
-nonpositive kernel `(t - a)(t - b)/2`, of integral `-(b - a)³/12`, and the weighted mean value
-theorem on the open interval. -/
+/-- **Equation (9.12)** of [quarteroni2000numerical], the trapezoidal error. Let $a < b$ and
+$f \in C^2([a, b])$. The error of the trapezoidal formula (9.11),
+$I_1(f) = \frac{b - a}{2} (f(a) + f(b))$, is
+$$E_1(f) = \int_a^b f(x)\,dx - I_1(f) = -\frac{h^3}{12} f''(\xi), \qquad h = b - a,$$
+for some $\xi \in (a, b)$.
+
+The proof uses the Peano identity `Quadrature.sub_trapezoid_eq_integral_peanoKernel` with the
+nonpositive kernel $(t - a)(t - b)/2$, whose integral is $-(b - a)^3/12$, and the weighted mean
+value theorem on the open interval. -/
 theorem equation_9_12 (hab : a < b) (hU : IsOpen U) (hUab : Icc a b ⊆ U)
     (hf : ContDiffOn ℝ 2 f U) :
     ∃ ξ ∈ Ioo a b, (∫ x in a..b, f x) - (b - a) / 2 * (f a + f b)
@@ -197,11 +245,16 @@ theorem equation_9_12 (hab : a < b) (hU : IsOpen U) (hUab : Icc a b ⊆ U)
   rw [h, Quadrature.integral_peanoKernel]
   ring
 
-/-- **(9.13)–(9.14), the composite trapezoidal formula.** With the nodes `x_k = a + k H`,
-`H = (b - a)/m`, `I_{1,m}(f) = (H/2) ∑_{k<m} (f(x_k) + f(x_{k+1}))` (9.13) is the backbone's
-`Quadrature.trapezoidSum f a H m`, and it equals
-`H [f(x₀)/2 + f(x₁) + ⋯ + f(x_{m-1}) + f(x_m)/2]` (9.14), each interior term being counted
-twice. -/
+/-- **Equations (9.13)–(9.14)** of [quarteroni2000numerical], the composite trapezoidal formula. Let
+$m \ge 1$, let $H \in \mathbb{R}$, and let $x_k = a + kH$. The composite trapezoidal sum
+`Quadrature.trapezoidSum f a H m` satisfies
+$$I_{1,m}(f) = \frac{H}{2} \sum_{k=0}^{m-1} \bigl(f(x_k) + f(x_{k+1})\bigr) \qquad (9.13)$$
+and
+$$I_{1,m}(f) = H \Bigl[\frac{f(x_0)}{2} + f(x_1) + \dots + f(x_{m-1}) + \frac{f(x_m)}{2}\Bigr].
+  \qquad (9.14)$$
+
+The second form counts each interior node twice in the first form. The book takes
+$H = (b - a)/m$; the identities hold for every $H$. -/
 theorem equation_9_14 {m : ℕ} (hm : 1 ≤ m) (H : ℝ) :
     (Quadrature.trapezoidSum f a H m
         = ∑ k ∈ Finset.range m, H / 2 * (f (a + k * H) + f (a + (k + 1) * H))) ∧
@@ -209,9 +262,11 @@ theorem equation_9_14 {m : ℕ} (hm : 1 ≤ m) (H : ℝ) :
         = H * ((f a + f (a + m * H)) / 2 + ∑ k ∈ Finset.Ico 1 m, f (a + k * H)) :=
   ⟨rfl, Quadrature.trapezoidSum_eq hm⟩
 
-/-- **§9.2.2, the composite trapezoidal error.** For `f ∈ C²([a, b])`, `m ≥ 1` and
-`H = (b - a)/m`, the composite trapezoidal formula (9.14) has the error
-`E_{1,m}(f) = -(b - a)/12 H² f''(ξ)` for some `ξ ∈ [a, b]`. -/
+/-- **Section 9.2.2** of [quarteroni2000numerical], the composite trapezoidal error. Let $a < b$,
+let $m \ge 1$, let $H = (b - a)/m$, and let $f \in C^2([a, b])$. The composite trapezoidal
+formula (9.14) has the error
+$$E_{1,m}(f) = \int_a^b f(x)\,dx - I_{1,m}(f) = -\frac{b - a}{12} H^2 f''(\xi)$$
+for some $\xi \in [a, b]$. -/
 theorem compositeTrapezoidalError (hab : a < b) {m : ℕ} (hm : 1 ≤ m) (hU : IsOpen U)
     (hUab : Icc a b ⊆ U) (hf : ContDiffOn ℝ 2 f U) :
     ∃ ξ ∈ Icc a b, (∫ x in a..b, f x) - Quadrature.trapezoidSum f a ((b - a) / m) m
@@ -225,10 +280,15 @@ theorem compositeTrapezoidalError (hab : a < b) {m : ℕ} (hm : 1 ≤ m) (hU : I
 
 /-! ### The Cavalieri–Simpson formula (9.15)–(9.17) -/
 
-/-- **(9.16), the Cavalieri–Simpson error.** For `f ∈ C⁴([a, b])`, the error of the
-Cavalieri–Simpson formula (9.15), `I₂(f) = (b - a)/6 (f(a) + 4 f((a + b)/2) + f(b))`, is
-`E₂(f) = -h⁵/90 f⁗(ξ)` with `h = (b - a)/2` and `ξ ∈ [a, b]`. The backbone's
-`Quadrature.sub_composite_simpson_eq` on one panel: `-(b - a)⁵/2880 = -h⁵/90`. -/
+/-- **Equation (9.16)** of [quarteroni2000numerical], the Cavalieri–Simpson error. Let $a < b$ and
+$f \in C^4([a, b])$. The error of the Cavalieri–Simpson formula (9.15), $I_2(f) = \frac{b -
+a}{6} (f(a) + 4 f(\frac{a + b}{2}) + f(b))$, is
+$$E_2(f) = \int_a^b f(x)\,dx - I_2(f) = -\frac{h^5}{90} f^{(4)}(\xi), \qquad h = \frac{b -
+  a}{2},$$
+for some $\xi \in [a, b]$.
+
+The book puts $\xi$ in $(a, b)$; the statement here gives the closed interval. The proof is the
+backbone's `Quadrature.sub_composite_simpson_eq` on one panel, with $-(b - a)^5/2880 = -h^5/90$. -/
 theorem equation_9_16 (hab : a < b) (hU : IsOpen U) (hUab : Icc a b ⊆ U)
     (hf : ContDiffOn ℝ 4 f U) :
     ∃ ξ ∈ Icc a b, (∫ x in a..b, f x) - (b - a) / 6 * (f a + 4 * f ((a + b) / 2) + f b)
@@ -247,8 +307,12 @@ theorem equation_9_16 (hab : a < b) (hU : IsOpen U) (hUab : Icc a b ⊆ U)
   rw [h]
   ring
 
-/-- **§9.2.3: "(9.15) has degree of exactness equal to `3`."** Simpson's formula is exact on
-`ℙ₃` — `f⁗ = 0` in (9.16) — and not on `x⁴`. -/
+/-- **Section 9.2.3** of [quarteroni2000numerical], degree of exactness of the Cavalieri–Simpson
+formula. Let $a < b$. The formula (9.15) is exact for every polynomial of degree at most $3$,
+and it is not exact for $x^4$.
+
+The book says that "(9.15) has degree of exactness equal to $3$". For degree at most $3$ the
+error (9.16) vanishes, because $f^{(4)} = 0$. -/
 theorem simpson_degreeOfExactness (hab : a < b) :
     (∀ p : ℝ[X], p.degree ≤ 3 →
         (∫ x in a..b, p.eval x) = (b - a) / 6 * (p.eval a + 4 * p.eval ((a + b) / 2) + p.eval b)) ∧
@@ -260,10 +324,14 @@ theorem simpson_degreeOfExactness (hab : a < b) :
   have : (b - a) ^ 5 = 0 := by push_cast at h; nlinarith
   exact (pow_ne_zero 5 (sub_ne_zero.2 hab.ne')) this
 
-/-- **§9.2.3, the composite Simpson error.** For `f ∈ C⁴([a, b])`, `m ≥ 1` and `H = (b - a)/m`,
-the composite Cavalieri–Simpson formula (9.17) — the backbone's `Quadrature.simpsonSum f a H m`,
-with the nodes `x_k = a + k H/2` — has the error `E_{2,m}(f) = -(b - a)/180 (H/2)⁴ f⁗(ξ)` for
-some `ξ ∈ [a, b]`. -/
+/-- **Section 9.2.3** of [quarteroni2000numerical], the composite Cavalieri–Simpson error. Let
+$a < b$, let $m \ge 1$, let $H = (b - a)/m$, and let $f \in C^4([a, b])$. The composite
+Cavalieri–Simpson formula (9.17), with the nodes $x_k = a + kH/2$, has the error
+$$E_{2,m}(f) = \int_a^b f(x)\,dx - I_{2,m}(f) = -\frac{b - a}{180} \Bigl(\frac{H}{2}\Bigr)^4
+  f^{(4)}(\xi)$$
+for some $\xi \in [a, b]$.
+
+The composite formula is the backbone's `Quadrature.simpsonSum f a H m`. -/
 theorem compositeSimpsonError (hab : a < b) {m : ℕ} (hm : 1 ≤ m) (hU : IsOpen U)
     (hUab : Icc a b ⊆ U) (hf : ContDiffOn ℝ 4 f U) :
     ∃ ξ ∈ Icc a b, (∫ x in a..b, f x) - Quadrature.simpsonSum f a ((b - a) / m) m
@@ -277,9 +345,13 @@ theorem compositeSimpsonError (hab : a < b) {m : ℕ} (hm : 1 ≤ m) (hU : IsOpe
     (continuousOn_iteratedDeriv_of_contDiffOn hU hUab hf4)
   exact ⟨ξ, hξ, by rw [h]; ring⟩
 
-/-- **(9.17), the composite Cavalieri–Simpson formula written out.** With the nodes
-`x_k = a + k H/2`, `k = 0, …, 2m`, `H = (b - a)/m`, the backbone's `Quadrature.simpsonSum f a H m`
-is `(H/6) [f(x₀) + 2 ∑_{r=1}^{m-1} f(x_{2r}) + 4 ∑_{s=0}^{m-1} f(x_{2s+1}) + f(x_{2m})]`. -/
+/-- **Equation (9.17)** of [quarteroni2000numerical], the composite Cavalieri–Simpson formula. Let
+$m \ge 1$, let $H \in \mathbb{R}$, and let $x_k = a + kH/2$ for $k = 0, \dots, 2m$. The
+composite Simpson sum `Quadrature.simpsonSum f a H m` is
+$$I_{2,m}(f) = \frac{H}{6} \Bigl[f(x_0) + 2 \sum_{r=1}^{m-1} f(x_{2r}) + 4 \sum_{s=0}^{m-1}
+  f(x_{2s+1}) + f(x_{2m})\Bigr].$$
+
+The book takes $H = (b - a)/m$; the identity holds for every $H$. -/
 theorem equation_9_17 {m : ℕ} (hm : 1 ≤ m) (H : ℝ) :
     Quadrature.simpsonSum f a H m
       = H / 6 * (f a + 2 * ∑ r ∈ Finset.Ico 1 m, f (a + (2 * r) * (H / 2))
@@ -320,10 +392,16 @@ theorem equation_9_17 {m : ℕ} (hm : 1 ≤ m) (H : ℝ) :
 
 /-! ### Exercise 1 -/
 
-/-- **Exercise 1** (cited in Example 9.4): `|E₁(f)| ≃ 2 |E₀(f)|`, in its exact form. The error
-constants of (9.12) and (9.6) are `-(b - a)³/12` and `(b - a)³/24`, in the ratio `-2` — the
-trapezoidal Peano kernel `(t - a)(t - b)/2` and the midpoint kernel integrate to those values — so
-for a quadratic `f` (whose `f''` is constant) `E₁(f) = -2 E₀(f)` exactly. -/
+/-- **Exercise 9.1** of [quarteroni2000numerical], in its exact form. Let $a < b$. The error
+constants of (9.12) and (9.6) are
+$$\int_a^b \frac{(t - a)(t - b)}{2}\,dt = -\frac{(b - a)^3}{12}, \qquad \int_a^b K_0(t)\,dt =
+  \frac{(b - a)^3}{24},$$
+where $K_0$ is the Peano kernel `Quadrature.midpointKernel` of the midpoint formula. They are in
+the ratio $-2$. Hence for every polynomial $p$ of degree at most $2$, whose second derivative is
+constant, the trapezoidal and midpoint errors satisfy $E_1(p) = -2 E_0(p)$.
+
+The exercise is cited in Example 9.4, and the book writes the result as
+$|E_1(f)| \simeq 2 |E_0(f)|$. -/
 theorem exercise_9_1 (hab : a < b) :
     ((∫ t in a..b, (t - a) * (t - b) / 2) = -(b - a) ^ 3 / 12 ∧
       (∫ t in a..b, Quadrature.midpointKernel a b t) = (b - a) ^ 3 / 24) ∧

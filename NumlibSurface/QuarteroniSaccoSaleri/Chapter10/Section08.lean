@@ -6,57 +6,70 @@ import Numlib.Approximation.Chebyshev
 import Numlib.Approximation.Interpolation
 
 /-!
-# Quarteroni–Sacco–Saleri §10.8: the polynomial of best approximation
+# Quarteroni, Sacco and Saleri, Section 10.8: The polynomial of best approximation
 
-Surface file for Alfio Quarteroni, Riccardo Sacco and Fausto Saleri, *Numerical Mathematics*,
-Springer, 2000, §10.8.
+This module formalizes Section 10.8 of [quarteroni2000numerical]. For $f \in C^0([a, b])$, the
+**polynomial of best approximation** $p_n^* \in \mathbb{P}_n$ is the polynomial that realizes $\|f -
+p_n^*\|_\infty = \min_{p \in \mathbb{P}_n} \|f - p\|_\infty$ (10.47), also called the minimax
+approximation, and $E_n^*(f) = \|f - p_n^*\|_\infty$ is its error. The section quotes three results
+without proof. The Chebyshev equioscillation theorem (Property 10.1) says that $p_n^*$ exists and is
+unique, and that $f - p_n^*$ takes the values $\pm E_n^*(f)$ with alternating signs at $n + 2$
+points; as a consequence, $p_n^*$ interpolates $f$ at $n + 1$ points that interlace the alternation
+points. The de la Vallée Poussin theorem (Property 10.2) says that an alternation of any competitor
+bounds $E_n^*(f)$ from below. Finally, the interpolation error is compared with the best
+approximation error through the Lebesgue constant: $\|f - \Pi_n f\|_\infty \le (1 + \Lambda_n)
+E_n^*(f)$.
 
-For `f ∈ C⁰([a, b])`, the *polynomial of best approximation* `p_n^* ∈ ℙ_n` is the one realizing
-`‖f - p_n^*‖_∞ = min_{p ∈ ℙ_n} ‖f - p‖_∞` (10.47), the *minimax* approximation, and
-`E_n^*(f) = ‖f - p_n^*‖_∞` is its error. The section quotes three results without proof: the
-Chebyshev equioscillation theorem (Property 10.1: `p_n^*` exists, is unique, and `f - p_n^*`
-alternates `n + 2` times between `±E_n^*(f)`), with the consequence that `p_n^*` interpolates `f`
-at `n + 1` points interlacing the alternation points; the de la Vallée Poussin theorem (Property
-10.2: an alternation of any competitor bounds `E_n^*(f)` from below); and the comparison of the
-interpolation error with the best approximation error through the Lebesgue constant,
-`‖f - Π_n f‖_∞ ≤ (1 + Λ_n) E_n^*(f)`.
-
-Everything is the backbone `Numlib/Approximation/Chebyshev` on `X = Icc a b` with the subspace
-`polyLE (Icc a b) n` of `C([a, b], ℝ)`: the book's `p_n^*` is `IsBestApprox`, `E_n^*(f)` is the
-distance `Metric.infDist f (polyLE (Icc a b) n)`, Property 10.1 is
-`existsUnique_isBestApprox_polyLE` with `IsBestApprox.equioscillates_of_polyLE`, Property 10.2 is
-`le_infDist_of_alternates`, and the Lebesgue bound is the Lebesgue lemma
-`norm_sub_apply_le_of_isIdempotentElem` of `Numlib/Analysis/Normed/Module/BestApprox` for the
-interpolation projection `Lagrange.interpolateCLM`, whose norm is `Λ_n` by
-`Lagrange.norm_interpolateCLM`. The interpolation consequence is the intermediate value theorem
-applied between consecutive alternation points, which the backbone does not state on its own.
+The proofs specialize `Numlib.Approximation.Chebyshev` on $X = [a, b]$, and the Lebesgue lemma
+`norm_sub_apply_le_of_isIdempotentElem` of `Numlib.Analysis.Normed.Module.BestApprox` for the
+interpolation projection `Lagrange.interpolateCLM`.
 
 ## Main definitions
 
-* `equation_10_47 a b n f p` — `p` is a polynomial of best approximation of `f` in `ℙ_n` on
-  `[a, b]`, (10.47); `equation_10_47_iff` reads it as the book's minimum.
-* `bestApproximationError a b n f` — `E_n^*(f)`, the error of best approximation;
-  `bestApproximationError_eq` is the book's `E_n^*(f) = ‖f - p_n^*‖_∞`.
+* Equation (10.47), `QuarteroniSaccoSaleri.Chapter10.equation_10_47`: $p$ is a polynomial of best
+  approximation of $f$ in $\mathbb{P}_n$ on $[a, b]$.
+* Property 10.1, `QuarteroniSaccoSaleri.Chapter10.bestApproximationError`: the error of best
+  approximation $E_n^*(f)$, the distance from $f$ to $\mathbb{P}_n$.
 
 ## Main results
 
-* `property_10_1_existsUnique`, `property_10_1_equioscillates` — the two clauses of the Chebyshev
-  equioscillation theorem.
-* `property_10_1_interpolates` — the consequence drawn after it: `p_n^*` interpolates `f` at
-  `n + 1` points `x̃₀ < ⋯ < x̃ₙ` with `x_k < x̃_k < x_{k+1}`.
-* `property_10_2` — the de la Vallée Poussin theorem.
-* `interpolation_error_le_lebesgue` — `‖f - Π_n f‖_∞ ≤ (1 + Λ_n) E_n^*(f)`, with `Λ_n` the
-  Lebesgue constant (8.11) of the nodes, written as the maximum of the Lebesgue function
-  `∑ᵢ |lᵢ|` over `[a, b]`.
+* Equation (10.47), `QuarteroniSaccoSaleri.Chapter10.equation_10_47_iff`: $p$ is a polynomial of
+  best approximation if and only if $p \in \mathbb{P}_n$ and $\|f - p\|_\infty$ is the minimum of
+  $\|f - q\|_\infty$ over $q \in \mathbb{P}_n$.
+* Property 10.1, `QuarteroniSaccoSaleri.Chapter10.bestApproximationError_eq`:
+  $E_n^*(f) = \|f - p_n^*\|_\infty$.
+* Property 10.1, `QuarteroniSaccoSaleri.Chapter10.property_10_1_existsUnique`: the polynomial of
+  best approximation exists and is unique.
+* Property 10.1, `QuarteroniSaccoSaleri.Chapter10.property_10_1_equioscillates`: $f - p_n^*$
+  equioscillates at $n + 2$ points.
+* Section 10.8, `QuarteroniSaccoSaleri.Chapter10.property_10_1_interpolates`: $p_n^*$ interpolates
+  $f$ at $n + 1$ points $\tilde x_0 < \dots < \tilde x_n$ with $x_k < \tilde x_k < x_{k+1}$.
+* Property 10.2, `QuarteroniSaccoSaleri.Chapter10.property_10_2`: the de la Vallée Poussin theorem.
+* Section 10.8, `QuarteroniSaccoSaleri.Chapter10.interpolation_error_le_lebesgue`: $\|f - \Pi_n
+  f\|_\infty \le (1 + \Lambda_n) E_n^*(f)$, where $\Lambda_n$ is the Lebesgue constant (8.11) of the
+  nodes.
 
 ## Conventions
 
-Functions live in `C(Icc a b, ℝ)` with the maximum norm `‖·‖`, the book's `‖·‖_∞`; `ℙ_n` on
-`[a, b]` is `polyLE (Icc a b) n`. Points `x₀ < ⋯ < x_{n+1}` of `[a, b]` are a strictly monotone
-`x : Fin (n + 2) → Icc a b`, and the interpolation operator `Π_n` at nodes
-`x : Fin (n + 1) → Icc a b` is `Lagrange.interpolateCLM x`, with the Lagrange basis functions
-`lᵢ = Lagrange.basisCM x i`. Property 10.1 needs `a < b`: on a one-point interval the best
-approximation is not unique.
+* Functions are elements of `C(Icc a b, ℝ)` with the maximum norm, the norm $\|\cdot\|_\infty$ of
+  the book. The space $\mathbb{P}_n$ on $[a, b]$ is `polyLE (Icc a b) n`.
+* Points $x_0 < \dots < x_{n+1}$ of $[a, b]$ are a strictly monotone family
+  `x : Fin (n + 2) → Icc a b`.
+* The interpolation operator $\Pi_n$ at nodes `x : Fin (n + 1) → Icc a b` is
+  `Lagrange.interpolateCLM x`, and the Lagrange basis functions are $l_i$ = `Lagrange.basisCM x i`.
+  The Lebesgue constant $\Lambda_n$ is the supremum over $[a, b]$ of the Lebesgue function
+  $\sum_i |l_i|$.
+
+## Implementation notes
+
+* The polynomial of best approximation is the backbone predicate `IsBestApprox` for the subspace
+  `polyLE (Icc a b) n`, and $E_n^*(f)$ is the distance `Metric.infDist f (polyLE (Icc a b) n)`.
+* Property 10.1 is `existsUnique_isBestApprox_polyLE` with `IsBestApprox.equioscillates_of_polyLE`,
+  and Property 10.2 is `le_infDist_of_alternates`. The norm of the interpolation operator is
+  $\Lambda_n$ by `Lagrange.norm_interpolateCLM`.
+* The interpolation property after Property 10.1 follows from the intermediate value theorem between
+  consecutive alternation points. The backbone does not state it separately.
+* Property 10.1 needs $a < b$: on an interval of one point the best approximation is not unique.
 -/
 
 open Set
@@ -65,17 +78,22 @@ namespace QuarteroniSaccoSaleri.Chapter10
 
 variable {a b : ℝ} {n : ℕ}
 
-/-! ### (10.47): the polynomial of best approximation and its error -/
+/-! ### Equation (10.47): The polynomial of best approximation and its error -/
 
-/-- **(10.47).** For `f ∈ C⁰([a, b])`, a polynomial `p_n^* ∈ ℙ_n` is *the polynomial of best
-approximation* of `f` when `‖f - p_n^*‖_∞ = min_{p_n ∈ ℙ_n} ‖f - p_n‖_∞`, the *minimax*
-approximation of `f`. This is the backbone's `IsBestApprox` for the subspace `polyLE (Icc a b) n`
-of `C([a, b], ℝ)`; `equation_10_47_iff` spells the minimum out. -/
+/-- **Equation (10.47)** of [quarteroni2000numerical]. Let $f \in C^0([a, b])$. A polynomial
+$p_n^* \in \mathbb{P}_n$ is **the polynomial of best approximation** of $f$, or the minimax
+approximation of $f$, if
+$$\|f - p_n^*\|_\infty = \min_{p_n \in \mathbb{P}_n} \|f - p_n\|_\infty.$$
+
+The definition is the backbone's `IsBestApprox` for the subspace `polyLE (Icc a b) n` of
+`C(Icc a b, ℝ)`. The lemma `QuarteroniSaccoSaleri.Chapter10.equation_10_47_iff` writes out the
+minimum. -/
 def equation_10_47 (a b : ℝ) (n : ℕ) (f p : C(Icc a b, ℝ)) : Prop :=
   IsBestApprox (polyLE (Icc a b) n : Set C(Icc a b, ℝ)) f p
 
-/-- (10.47) written out: `p` lies in `ℙ_n` and `‖f - p‖_∞` is the least of the numbers `‖f - q‖_∞`,
-`q ∈ ℙ_n`. -/
+/-- Supports equation (10.47). The polynomial $p$ is a polynomial of best approximation of $f$ if
+and only if $p \in \mathbb{P}_n$ and $\|f - p\|_\infty$ is the least of the numbers
+$\|f - q\|_\infty$ for $q \in \mathbb{P}_n$. -/
 theorem equation_10_47_iff (f p : C(Icc a b, ℝ)) :
     equation_10_47 a b n f p ↔ p ∈ polyLE (Icc a b) n ∧
       IsLeast (Set.range fun q : polyLE (Icc a b) n => ‖f - (q : C(Icc a b, ℝ))‖) ‖f - p‖ := by
@@ -85,36 +103,42 @@ theorem equation_10_47_iff (f p : C(Icc a b, ℝ)) :
   · rintro ⟨hp, -, hmin⟩
     exact ⟨hp, fun q hq => hmin ⟨⟨q, hq⟩, rfl⟩⟩
 
-/-- **`E_n^*(f)`**, the error of best approximation of `f ∈ C⁰([a, b])` from `ℙ_n`: the distance
-`inf_{p ∈ ℙ_n} ‖f - p‖_∞` from `f` to `ℙ_n`, which `bestApproximationError_eq` identifies with the
-book's `‖f - p_n^*‖_∞` for the polynomial of best approximation `p_n^*`. -/
+/-- **Property 10.1** of [quarteroni2000numerical], the error $E_n^*(f)$. For $f \in C^0([a, b])$,
+the **error of best approximation** of $f$ from $\mathbb{P}_n$ is the distance
+$$E_n^*(f) = \inf_{p \in \mathbb{P}_n} \|f - p\|_\infty.$$
+
+The lemma `QuarteroniSaccoSaleri.Chapter10.bestApproximationError_eq` identifies it with
+$\|f - p_n^*\|_\infty$, the form of the book, for the polynomial of best approximation $p_n^*$. -/
 noncomputable def bestApproximationError (a b : ℝ) (n : ℕ) (f : C(Icc a b, ℝ)) : ℝ :=
   Metric.infDist f (polyLE (Icc a b) n : Set C(Icc a b, ℝ))
 
-/-- `E_n^*(f) = ‖f - p_n^*‖_∞` for a polynomial of best approximation `p_n^*` of `f`. -/
+/-- **Property 10.1** of [quarteroni2000numerical], the error $E_n^*(f)$. If $p_n^*$ is a polynomial
+of best approximation of $f \in C^0([a, b])$, then $E_n^*(f) = \|f - p_n^*\|_\infty$. -/
 theorem bestApproximationError_eq {f p : C(Icc a b, ℝ)} (hp : equation_10_47 a b n f p) :
     bestApproximationError a b n f = ‖f - p‖ :=
   hp.norm_sub_eq_infDist.symm
 
-/-! ### Property 10.1: the Chebyshev equioscillation theorem -/
+/-! ### Property 10.1: The Chebyshev equioscillation theorem -/
 
-/-- **Property 10.1 (Chebyshev equioscillation theorem), first clause.** For `a < b`,
-`f ∈ C⁰([a, b])` and any `n ≥ 0`, the polynomial of best approximation `p_n^*` of `f` exists and
-is unique. The backbone's `existsUnique_isBestApprox_polyLE`. -/
+/-- **Property 10.1** of [quarteroni2000numerical] (Chebyshev equioscillation theorem), existence
+and uniqueness. Let $a < b$, $f \in C^0([a, b])$ and $n \ge 0$. Then the polynomial of best
+approximation $p_n^*$ of $f$ exists and is unique.
+
+The proof specializes the backbone's `existsUnique_isBestApprox_polyLE`. -/
 theorem property_10_1_existsUnique (hab : a < b) (n : ℕ) (f : C(Icc a b, ℝ)) :
     ∃! p, equation_10_47 a b n f p :=
   have : Infinite (Icc a b) := Set.Icc.infinite hab
   existsUnique_isBestApprox_polyLE n f
 
-/-- **Property 10.1 (Chebyshev equioscillation theorem), second clause.** For `a < b` and the
-polynomial of best approximation `p_n^*` of `f ∈ C⁰([a, b])`, there exist `n + 2` points
-`x₀ < x₁ < ⋯ < x_{n+1}` in `[a, b]` such that
+/-- **Property 10.1** of [quarteroni2000numerical] (Chebyshev equioscillation theorem),
+equioscillation. Let $a < b$, and let $p_n^*$ be the polynomial of best approximation of
+$f \in C^0([a, b])$. Then there are $n + 2$ points $x_0 < x_1 < \dots < x_{n+1}$ in $[a, b]$ and
+a sign $\sigma \in \{1, -1\}$ such that
+$$f(x_j) - p_n^*(x_j) = \sigma (-1)^j E_n^*(f), \qquad j = 0, \dots, n + 1.$$
+The sign $\sigma$ depends on $f$ and $n$.
 
-`f(x_j) - p_n^*(x_j) = σ (-1)^j E_n^*(f)`, `j = 0, …, n + 1`,
-
-with `σ = 1` or `σ = -1` depending on `f` and `n`, and `E_n^*(f) = ‖f - p_n^*‖_∞`. The backbone's
-`IsBestApprox.equioscillates_of_polyLE`, whose converse `isBestApprox_of_equioscillates` the book
-does not state. -/
+The proof specializes the backbone's `IsBestApprox.equioscillates_of_polyLE`. The backbone also
+proves the converse, `isBestApprox_of_equioscillates`, which the book does not state. -/
 theorem property_10_1_equioscillates (hab : a < b) {f p : C(Icc a b, ℝ)}
     (hp : equation_10_47 a b n f p) :
     ∃ (σ : ℝ) (x : Fin (n + 2) → Icc a b), (σ = 1 ∨ σ = -1) ∧
@@ -127,19 +151,21 @@ theorem property_10_1_equioscillates (hab : a < b) {f p : C(Icc a b, ℝ)}
   rw [bestApproximationError_eq hp]
   simpa using hval j
 
-/-- **The consequence drawn after Property 10.1.** For the polynomial of best approximation
-`p_n^*` of `f ∈ C⁰([a, b])` with alternation points `x₀ < ⋯ < x_{n+1}` and sign
-`σ = ±1` as in Property 10.1, there exist `n + 1` points `x̃₀ < x̃₁ < ⋯ < x̃ₙ` in `[a, b]`, with
-`x_k < x̃_k < x_{k+1}` for `k = 0, …, n`, such that
+/-- **Section 10.8** of [quarteroni2000numerical], the consequence of Property 10.1. Let $p_n^*$ be
+the polynomial of best approximation of $f \in C^0([a, b])$, and let $x_0 < \dots < x_{n+1}$ be
+points of $[a, b]$ and $\sigma \in \{1, -1\}$ with
+$f(x_j) - p_n^*(x_j) = \sigma (-1)^j E_n^*(f)$ for all $j$, as in Property 10.1. Then there are
+$n + 1$ points $\tilde x_0 < \tilde x_1 < \dots < \tilde x_n$ in $[a, b]$, with
+$x_k < \tilde x_k < x_{k+1}$ for $k = 0, \dots, n$, such that
+$$p_n^*(\tilde x_j) = f(\tilde x_j), \qquad j = 0, 1, \dots, n.$$
+So the polynomial of best approximation is a polynomial of degree $n$ that interpolates $f$ at
+$n + 1$ unknown nodes.
 
-`p_n^*(x̃_j) = f(x̃_j)`, `j = 0, 1, …, n`,
-
-so that the best approximation polynomial is a polynomial of degree `n` that interpolates `f` at
-`n + 1` unknown nodes. The intermediate value theorem for `f - p_n^*` between two consecutive
-alternation points, where it takes the values `±E_n^*(f)`; when `E_n^*(f) = 0` the function `f`
-is itself the polynomial `p_n^*` and any point between two alternation points serves. Unlike
-Property 10.1 this needs no `a < b`: the alternation points already are `n + 2` distinct points
-of `[a, b]`. -/
+The proof applies the intermediate value theorem to $f - p_n^*$ between two consecutive
+alternation points, where it takes the values $\pm E_n^*(f)$. When $E_n^*(f) = 0$, $f$ is the
+polynomial $p_n^*$ and any point between two alternation points serves. Unlike Property 10.1,
+the statement needs no hypothesis $a < b$, because the alternation points are already $n + 2$
+distinct points of $[a, b]$. -/
 theorem property_10_1_interpolates {f p : C(Icc a b, ℝ)}
     (hp : equation_10_47 a b n f p) {σ : ℝ} (hσ : σ = 1 ∨ σ = -1) {x : Fin (n + 2) → Icc a b}
     (hmono : StrictMono fun i => (x i : ℝ))
@@ -189,15 +215,17 @@ theorem property_10_1_interpolates {f p : C(Icc a b, ℝ)}
     rw [ContinuousMap.sub_apply, sub_eq_zero] at h
     exact h.symm
 
-/-! ### Property 10.2: the de la Vallée Poussin theorem -/
+/-! ### Property 10.2: The de la Vallée Poussin theorem -/
 
-/-- **Property 10.2 (de la Vallée Poussin theorem).** Let `n ≥ 0` and let `x₀ < x₁ < ⋯ < x_{n+1}`
-be `n + 2` points in `[a, b]`. If there exists a polynomial `q_n` of degree `≤ n` such that
+/-- **Property 10.2** of [quarteroni2000numerical] (de la Vallée Poussin theorem). Let $n \ge 0$,
+let $f \in C^0([a, b])$, and let $x_0 < x_1 < \dots < x_{n+1}$ be $n + 2$ points in $[a, b]$. If
+there is a polynomial $q_n$ of degree at most $n$ such that
+$$f(x_j) - q_n(x_j) = (-1)^j e_j, \qquad j = 0, 1, \dots, n + 1,$$
+where all the $e_j$ are nonzero and have the same sign, then
+$$\min_{0 \le j \le n+1} |e_j| \le E_n^*(f).$$
 
-`f(x_j) - q_n(x_j) = (-1)^j e_j`, `j = 0, 1, …, n + 1`,
-
-where all the `e_j` have the same sign and are non null, then `min_{0 ≤ j ≤ n+1} |e_j| ≤ E_n^*(f)`.
-The backbone's `le_infDist_of_alternates` with `ε = min_j |e_j|` and `σ` the common sign. -/
+The proof specializes the backbone's `le_infDist_of_alternates` with
+$\varepsilon = \min_j |e_j|$ and $\sigma$ the common sign. -/
 theorem property_10_2 {f q : C(Icc a b, ℝ)} (hq : q ∈ polyLE (Icc a b) n)
     {x : Fin (n + 2) → Icc a b} (hmono : StrictMono fun i => (x i : ℝ)) {e : Fin (n + 2) → ℝ}
     (hval : ∀ j : Fin (n + 2), f (x j) - q (x j) = (-1) ^ (j : ℕ) * e j)
@@ -220,14 +248,18 @@ theorem property_10_2 {f q : C(Icc a b, ℝ)} (hq : q ∈ polyLE (Icc a b) n)
 
 /-! ### The interpolation error and the Lebesgue constant -/
 
-/-- **§10.8, the bound `‖f - Π_n f‖_∞ ≤ (1 + Λ_n) E_n^*(f)`.** For `n + 1` distinct nodes in
-`[a, b]` and the Lagrange interpolation operator `Π_n` at those nodes, the interpolation error of
-`f ∈ C⁰([a, b])` exceeds the best approximation error by at most the factor `1 + Λ_n`, where
-`Λ_n = ‖∑ᵢ |lᵢ|‖_∞` is the Lebesgue constant (8.11) of the nodes. The book's argument — the
-triangle inequality through `p_n^*` and the Lagrange representation of `p_n^* - Π_n f = Π_n (p_n^* -
-f)` — is the Lebesgue lemma `norm_sub_apply_le_of_isIdempotentElem` for the projection
-`Lagrange.interpolateCLM x`, whose range is `ℙ_n` (`Lagrange.range_interpolateCLM`) and whose
-norm is `Λ_n` (`Lagrange.norm_interpolateCLM`). -/
+/-- **Section 10.8** of [quarteroni2000numerical], the bound $\|f - \Pi_n f\|_\infty \le (1 +
+\Lambda_n) E_n^*(f)$. Let $x_0, \dots, x_n$ be distinct nodes in $[a, b]$, and let $\Pi_n$ be
+the Lagrange interpolation operator at these nodes. Then for every $f \in C^0([a, b])$,
+$$\|f - \Pi_n f\|_\infty \le (1 + \Lambda_n) E_n^*(f),$$
+where $\Lambda_n = \sup_{t \in [a, b]} \sum_i |l_i(t)|$ is the Lebesgue constant (8.11) of the
+nodes.
+
+The argument of the book is the triangle inequality through $p_n^*$ together with the Lagrange
+representation of $p_n^* - \Pi_n f = \Pi_n (p_n^* - f)$. Here it is the Lebesgue lemma
+`norm_sub_apply_le_of_isIdempotentElem` for the projection `Lagrange.interpolateCLM x`, whose
+range is $\mathbb{P}_n$ (`Lagrange.range_interpolateCLM`) and whose norm is $\Lambda_n$
+(`Lagrange.norm_interpolateCLM`). -/
 theorem interpolation_error_le_lebesgue {x : Fin (n + 1) → Icc a b} (hx : Function.Injective x)
     (f : C(Icc a b, ℝ)) :
     ‖f - Lagrange.interpolateCLM x f‖

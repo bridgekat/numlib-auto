@@ -7,154 +7,129 @@ import NumlibSurface.QuarteroniSaccoSaleri.Chapter10.Section02
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter10.Section08
 
 /-!
-# Quarteroni–Sacco–Saleri §10.3: Chebyshev integration and interpolation
+# Quarteroni, Sacco and Saleri, Section 10.3: Chebyshev integration and interpolation
 
-Surface file for Alfio Quarteroni, Riccardo Sacco and Fausto Saleri, *Numerical Mathematics*,
-Springer, 2000, §10.3.
+This module formalizes Section 10.3 of [quarteroni2000numerical], on Gaussian integration for the
+Chebyshev weight $w(x) = (1 - x^2)^{-1/2}$. The Gauss nodes and weights are
+$x_j = -\cos((2j + 1)\pi / (2(n + 1)))$ and $\alpha_j = \pi / (n + 1)$ (10.20); the nodes are the
+zeros of $T_{n+1}$. The Gauss–Lobatto nodes and weights are $\bar x_j = -\cos(\pi j / n)$ and
+$\bar\alpha_j = \pi / (d_j n)$, with $d_0 = d_n = 2$ and $d_j = 1$ otherwise (10.21); the interior
+nodes are the zeros of $T_n' = n U_{n-1}$. The section bounds the interpolation error at the Gauss
+nodes through the Lebesgue constant (10.25), defines the weighted Sobolev norm (10.23), and states
+that the Gauss–Lobatto formula converges.
 
-For the Chebyshev weight `w(x) = (1 - x²)^{-1/2}` the Gauss nodes and weights are
-`xⱼ = -cos((2j + 1)π/(2(n + 1)))`, `αⱼ = π/(n + 1)` (10.20) — the zeros of `T_{n+1}` — and the
-Gauss–Lobatto nodes and weights are `x̄ⱼ = -cos(πj/n)`, `ᾱⱼ = π/(dⱼ n)` with `d₀ = d_n = 2`,
-`dⱼ = 1` otherwise (10.21), the interior nodes being the zeros of `T_n' = n U_{n-1}`. The section
-then quotes the weighted-Sobolev estimates (10.22), (10.24), (10.26)–(10.27) for the norm
-`‖f‖_{s,w}` (10.23) and the Lebesgue-constant bound (10.25), states that the Gauss–Lobatto formula
-converges, introduces the discrete scalar product `(f, g)_n = I^{GL}_{n,w}(fg)` (10.28), and derives
-the Chebyshev discrete transform: the interpolant at the Gauss–Lobatto nodes is
-`∑_{k ≤ n} f̃_k T_k` (10.29) with `f̃_k = (2/(n d_k)) ∑_{j ≤ n} dⱼ⁻¹ cos(kjπ/n) f(x̄ⱼ)` (10.31), and
-`f(x̄ⱼ) = ∑_k cos(kjπ/n) f̃_k` (10.30).
-
-The Gauss rule is Mathlib's `Polynomial.Chebyshev.integral_eq_sumZeroes`; the Gauss–Lobatto rule,
-the discrete norms of the `T_k` and the discrete transform are
-`Polynomial.Chebyshev.integral_eq_sumExtrema`, `discreteInner_T_T` and `interpolate_eq_sum_cdt` of
-`Numlib/Approximation/GaussLobatto`, stated there at Mathlib's nodes `cos(jπ/n)`
-(`Polynomial.Chebyshev.node`); the book's nodes are these reversed, `x̄ⱼ = node n (n - j)`, and
-every statement here is transported along `j ↦ n - j`. Convergence is the Szegő–Pólya criterion in
-the backbone's measure-level form `Quadrature.tendsto_of_isExactOnMeasure`.
+It then introduces the discrete scalar product $(f, g)_n = I^{GL}_{n,w}(fg)$ (10.28) and derives the
+Chebyshev discrete transform: the interpolant at the Gauss–Lobatto nodes is
+$\sum_{k \le n} \tilde f_k T_k$ (10.29), with coefficients $\tilde f_k$ given by (10.31) and the
+inverse transform (10.30). The proofs specialize Mathlib's Chebyshev–Gauss rule
+`Polynomial.Chebyshev.integral_eq_sumZeroes`, the Chebyshev–Gauss–Lobatto results of
+`Numlib.Approximation.GaussLobatto`, the Lebesgue constant bound of
+`Numlib.Approximation.Interpolation`, and the convergence criterion of
+`Numlib.Approximation.Quadrature`.
 
 ## Main definitions
 
-* `chebyshevGaussNode n j`, `chebyshevLobattoNode n j` — the nodes (10.20) and (10.21) with the
-  book's sign; the weights and the factors `dⱼ` are the backbone's
-  `Polynomial.Chebyshev.lobattoWeight` and `lobattoFactor`, whose values are restated.
-* `chebyshevGaussNodeIcc n j` — the Gauss nodes as points of `[-1, 1]`, the node family of the
-  interpolant `Π^G_n`; they are the backbone's `Lagrange.chebNodeIcc n` reversed.
-* `equation_10_23 μ s f` — the weighted Sobolev norm `‖f‖_{s,μ}` of (10.23) (and (10.35)).
-* `equation_10_28 n f g` — the discrete scalar product `(f, g)_n` of the Gauss–Lobatto rule.
-* `chebyshevDiscreteCoeff n f k` — the discrete coefficients `f̃_k` of (10.31).
+* Equation (10.20), `QuarteroniSaccoSaleri.Chapter10.chebyshevGaussNode`: the Chebyshev–Gauss node
+  $x_j = -\cos((2j + 1)\pi / (2(n + 1)))$.
+* Equation (10.20), `QuarteroniSaccoSaleri.Chapter10.chebyshevGaussNodeIcc`: the Chebyshev–Gauss
+  nodes as points of $[-1, 1]$, the nodes of the interpolant $\Pi^G_n$.
+* Equation (10.21), `QuarteroniSaccoSaleri.Chapter10.chebyshevLobattoNode`: the
+  Chebyshev–Gauss–Lobatto node $\bar x_j = -\cos(\pi j / n)$.
+* Equations (10.23) and (10.35), `QuarteroniSaccoSaleri.Chapter10.equation_10_23`: the weighted
+  Sobolev norm $\|f\|_{s,w}$.
+* Equation (10.28), `QuarteroniSaccoSaleri.Chapter10.equation_10_28`: the discrete scalar product
+  $(f, g)_n$ of the Gauss–Lobatto rule.
+* Equation (10.31), `QuarteroniSaccoSaleri.Chapter10.chebyshevDiscreteCoeff`: the discrete
+  coefficients $\tilde f_k$ of the Chebyshev discrete transform.
 
 ## Main results
 
-* `equation_10_20` — the Chebyshev–Gauss formula: increasing nodes, the zeros of `T_{n+1}`, exact
-  on `ℙ_{2n+1}`.
-* `equation_10_21` — the Chebyshev–Gauss–Lobatto formula: increasing nodes from `-1` to `1`, the
-  factors `dⱼ` and weights, exactness on `ℙ_{2n-1}`, and the interior nodes as zeros of
-  `T_n' = n U_{n-1}`.
-* `equation_10_25_interpolation_error`, `equation_10_25` — (10.25) at the Chebyshev nodes: the
-  first inequality `‖f - Π^G_n f‖_∞ ≤ (1 + Λ_n) E_n^*(f)` from §10.8, and then the Lebesgue
-  constant bound `Λ_n ≤ 2 + (2/π) log(2n + 2)` of the backbone
-  (`Lagrange.norm_interpolateCLM_chebyshev_le`) with the resulting error estimate.
-* `lobatto_tendsto` — `I^{GL}_{n,w}(f) → ∫_{-1}^1 f (1 - x²)^{-1/2} dx` for `f ∈ C⁰([-1, 1])`.
-* `equation_10_31` — the Chebyshev discrete transform (10.29)–(10.31) and the identification of
-  the interpolant with the discrete truncation `f_n^*` of (10.4).
-
-## Not formalized here
-
-Three of the section's quoted results are the Chebyshev members of the **spectral-approximation
-cluster** — (10.22), (10.24), (10.26)–(10.27) here, (10.36)–(10.37) in §10.4, (10.71) in §10.10
-and Theorem 12.2 in §12.3 — which the book quotes from [CHQZ88] without proof and which all wait
-on the same missing development. The statements first, then the inventory; the other four modules
-refer back to this list rather than repeat it.
-
-* **(10.22)**: there is a `C` independent of `n` with
-  `‖f - Π^{GL}_{n,w} f‖_w ≤ C n^{-s} ‖f‖_{s,w}` for every `f` with `s ≥ 1` derivatives in `L²_w`,
-  where `Π^{GL}_{n,w} f` is the interpolant of degree `n` (the book prints "degree `n + 1`") at
-  the Chebyshev–Gauss–Lobatto nodes (10.21) and `‖·‖_{s,w}` is the norm (10.23),
-  `equation_10_23`.
-* **(10.24)** (Exercise 10.3): `‖f - Π^{GL}_{n,w} f‖_∞ ≤ C n^{1/2-s} ‖f‖_{s,w}`, and the same for
-  the interpolant at the Gauss nodes (10.20); hence pointwise convergence for `f` of class `C¹`.
-  Beyond (10.22) it needs the derivative estimate (10.71) and the one-dimensional
-  Gagliardo–Nirenberg inequality `‖v‖²_∞ ≤ ‖v‖²_{L²(-1,1)} + 2 ‖v‖ ‖v'‖`, which is absent:
-  `Numlib/Analysis/Sobolev/Interval/Embedding` has the `L^∞` embedding
-  `‖u‖_∞ ≤ C ‖u‖_{W^{1,p}}` and the `L^p`–`L^∞` interpolation
-  `eLpNorm_le_eLpNorm_rpow_mul_eLpNorm_top_rpow`, not the product form (~100 lines from the
-  fundamental theorem of calculus). Its rate `n^{1/2-s}` is **not** sharper than what the
-  elementary aliasing argument of layer 3 below already yields for (10.22); what costs the extra
-  work is the sup-norm form, through the `H¹` error (10.71).
-* **(10.26)–(10.27)**: `|(f, v_n)_w - (f, v_n)_n| ≤ C n^{-s} ‖f‖_{s,w} ‖v_n‖_w` for every
-  `v_n ∈ ℙ_n`, hence `|∫ f w - I^{GL}_{n,w} f| ≤ C √π n^{-s} ‖f‖_{s,w}` at `v_n = 1`, where
-  `‖1‖_w = √π` (`integral_T_mul_T_div_sqrt 0 0`). (10.26) is that case of (10.27) and is
-  elementary once (10.27) holds. The reduction of (10.27) is
-  `(f, v_n)_w - (f, v_n)_n = (g, v_n)_w - (g, v_n)_n` with `g = f - P_{n-1} f`, exact because the
-  Gauss–Lobatto rule integrates `ℙ_{2n-1}` (`isExactOnMeasure_chebyshevLobatto`), so that
-  `|(f, v_n)_w - (f, v_n)_n| ≤ ‖g‖_w ‖v_n‖_w + ‖g‖_n ‖v_n‖_n`; the second term is where the rate
-  is decided, exactly as in layer 3.
-
-**What exists**, checked in `Numlib/` and Mathlib: the `L²(-1,1)` orthogonal-polynomial Hilbert
-basis with its truncation as the best approximation (`IsWeight.hilbertBasis`,
-`IsWeight.isBestApprox_truncation`, `Numlib/Approximation/OrthogonalPolynomial`); the Chebyshev
-orthogonality `integral_T_mul_T_div_sqrt` and Mathlib's operator identity
-`Polynomial.Chebyshev.one_sub_X_sq_mul_derivative_derivative_T_eq_poly_in_T`; for Legendre the
-operator identities `Polynomial.legendre_ode` and `quad_mul_derivative_legendre`, the coefficient
-layer on `ℙ_N` (`Polynomial.legendreCoeff`, `eq_sum_legendreCoeff`, Parseval
-`integral_sq_eq_sum_legendreCoeff`, `integral_derivative_legendre_mul_legendre`) and the `L²`
-Markov inequality `Polynomial.integral_derivative_sq_le`
-(`Numlib/Approximation/MarkovInequality`); the Gauss–Lobatto norm equivalence
-`‖p‖ ≤ ‖p‖_n ≤ √3 ‖p‖` on `ℙ_n` (`Quadrature.integral_sq_le_discreteInner_self_legendre`,
-`Quadrature.discreteInner_self_legendre_le_three_mul_integral_sq`,
-`Numlib/Approximation/OrthogonalPolynomial/LegendreBounds`); and on the surface the discrete
-inner products with their exactness on `ℙ_{2n-1}` (`equation_10_28`,
-`isExactOnMeasure_chebyshevLobatto`, `equation_10_34` of §10.4) and the discrete Chebyshev
-expansion (10.31). Nothing about the projection or the interpolation **error** exists.
-
-**What is missing**, in three layers; this is the whole of it, and it is the shape a module
-`Approximation/SpectralProjection` would take.
-
-1. *The weighted Sobolev seminorms on `(-1, 1)`.* The norm (10.23) is
-   `‖f‖_{s,w} = (∑_{k ≤ s} ‖(1-x²)^{k/2} f^{(k)}‖²_w)^{1/2}`; only its surface reading
-   `equation_10_23` exists, as a definition, with no calculus attached to it. The non-uniform
-   weight is *not* an obstacle for the `L²` statements: `(1-x²)^{k/2} ≤ 1`, so a projection
-   estimate in the seminorm bounds the book's right-hand side termwise, and no Hardy-type
-   comparison with the uniform norm (10.23) is needed — a correction to an earlier reading of
-   this cluster, which made that comparison a layer of its own; a Hardy inequality would serve
-   only the reverse comparison.
-2. *The coefficient decay and the projection estimate* `‖f - P_n f‖_w ≤ C n^{-s} ‖f‖_{s,w}` for
-   `f ∈ C^s[-1,1]`, `P_n` the truncation of the orthogonal expansion: the Sturm–Liouville
-   symmetry `∫ (L u) v w = ∫ u (L v) w` with the boundary terms killed by the factor `1 - x²`,
-   iterated `⌊s/2⌋` times with one half-step `∫ (L u) v w = -∫ (1-x²) u' v' w` for odd `s`, and
-   the tail bound `∑_{k>n} λ_k^{-2m} |ĝ_k|² ‖T_k‖² ≤ λ_{n+1}^{-2m} ‖g‖²_w` with `λ_k = k²` for
-   the Chebyshev weight and `λ_k = k(k+1)` for the Legendre one. **No missing theory**: 600–800
-   lines per weight.
-3. *The aliasing layer*, from the projection to the interpolant. The elementary argument —
-   `Π_n f - P_n f = Π_n (P_n f - f)`, then `‖Π_n g‖_w ≤ C ‖g‖_n ≤ C' ‖g‖_∞` by the discrete norm
-   equivalence and `‖f - P_n f‖_∞ ≤ ∑_{k>n} |f̂_k| sup |T_k|` — loses a factor `n^{1/2}` and
-   yields `‖f - Π_n f‖_w ≤ C n^{1/2-s} ‖f‖_{s,w}`, some 200 lines on top of layer 2. The
-   **printed** rate `n^{-s}` is Canuto–Quarteroni's / Bernardi–Maday's argument through the `H¹`
-   projection and a Marcinkiewicz–Zygmund-type bound `‖v‖_n ≤ C (‖v‖_w + n⁻¹ ‖v'‖_w)`, which
-   needs the node-spacing estimate — a Sturm comparison for the Chebyshev or Legendre equation,
-   the same gap `SpectralSpace.spectralForm_eigenvalue_le`'s lower companion in §13.3 had to
-   fill for the Legendre nodes (`Numlib/Approximation/OrthogonalPolynomial/LegendreNodes`): well
-   over 1000 lines.
-
-A weakened form at the rate `n^{1/2-s}` is therefore about 1000 lines away with no missing
-theory, and would have to be a *new* node beside (10.22) rather than a replacement, since (10.22)
-as printed is the sharp rate quoted from [CHQZ88]; the printed rates are some 2000 lines and a
-plan of their own.
-
-The bound on the Lebesgue constant printed in (10.25), Rivlin's `Λ_n ≤ (2/π) log(n + 1) + 1`, is
-deliberately absent for an unrelated reason: `equation_10_25` carries the backbone's
-`2 + (2/π) log(2n + 2)` instead, which has the same growth rate and a larger additive constant.
-The printed bound is attained at `n = 0` (`Λ_0 = 1`), so no step of a proof of it may lose
-anything, and it rests on two further theorems (the Lebesgue function is maximal at `±1`, and
-Rivlin's bound on the resulting cotangent sum) that nothing else needs; see `## Not formalized`
-in `Numlib/Approximation/Interpolation`.
+* Equation (10.20), `QuarteroniSaccoSaleri.Chapter10.equation_10_20`: the Chebyshev–Gauss formula
+  has increasing nodes, which are the zeros of $T_{n+1}$, and degree of exactness $2n + 1$.
+* Equation (10.21), `QuarteroniSaccoSaleri.Chapter10.equation_10_21`: the Chebyshev–Gauss–Lobatto
+  formula has increasing nodes from $-1$ to $1$, the given weights and degree of exactness $2n - 1$,
+  and its interior nodes are zeros of $T_n' = n U_{n-1}$.
+* Equation (10.25), `QuarteroniSaccoSaleri.Chapter10.equation_10_25_interpolation_error`: $\|f -
+  \Pi^G_n f\|_\infty \le (1 + \Lambda_n) E_n^*(f)$ at the Chebyshev–Gauss nodes.
+* Equation (10.25), `QuarteroniSaccoSaleri.Chapter10.equation_10_25`:
+  $\Lambda_n \le 2 + (2/\pi) \log(2n + 2)$, and the resulting error bound.
+* Section 10.3, `QuarteroniSaccoSaleri.Chapter10.lobatto_tendsto`: $I^{GL}_{n,w}(f) \to \int_{-1}^1
+  f(x) (1 - x^2)^{-1/2} \, dx$ for every $f \in C^0([-1, 1])$.
+* Equations (10.29)–(10.31) and Exercise 10.2, `QuarteroniSaccoSaleri.Chapter10.equation_10_31`: the
+  Chebyshev discrete transform and its inverse, and the equality of the interpolant with the
+  discrete truncation $f_n^*$ of (10.4).
 
 ## Conventions
 
-The book's node index `j` runs over `Fin (n + 1)`; the nodes are increasing in `j`, so the book's
-`x̄₀ = -1`, `x̄_n = 1`. Erratum: (10.30)–(10.31) are printed with `cos(kjπ/n)`, which is
-`T_k(cos(jπ/n)) = T_k(x̄_{n-j})`, not `T_k(x̄ⱼ)`; with the node ordering of (10.21) both formulas
-read with `cos(k(n - j)π/n) = (-1)^k cos(kjπ/n)`, equivalently they are the formulas for the
-nodes `cos(jπ/n)`. They are stated here in the corrected form.
+* The node index $j$ runs over `Fin (n + 1)`. The nodes increase with $j$, so $\bar x_0 = -1$ and
+  $\bar x_n = 1$, as in the book.
+* The Gauss–Lobatto weights $\bar\alpha_j$ and the factors $d_j$ are the backbone's
+  `Polynomial.Chebyshev.lobattoWeight` and `Polynomial.Chebyshev.lobattoFactor`.
+* The interpolation operator $\Pi_n$ at nodes $x$ is `Lagrange.interpolateCLM x` on
+  $C^0([-1, 1])$. The Lebesgue constant $\Lambda_n$ is the supremum over $t$ of
+  $\sum_i |l_i(t)|$, with $l_i$ = `Lagrange.basisCM x i`.
+* The best approximation error $E_n^*(f)$ is
+  `QuarteroniSaccoSaleri.Chapter10.bestApproximationError` of Section 10.8.
+
+## Implementation notes
+
+* The backbone and Mathlib state the Chebyshev rules at the nodes $\cos(j\pi / n)$
+  (`Polynomial.Chebyshev.node`) and $\cos((2j + 1)\pi / (2(n + 1)))$. The nodes of the book are
+  these nodes in the opposite order, $\bar x_j = \cos((n - j)\pi / n)$, and every statement here is
+  transported along $j \mapsto n - j$.
+* The convergence of the Gauss–Lobatto formula is the Szegő–Pólya criterion in the form
+  `Quadrature.tendsto_of_isExactOnMeasure`.
+* The estimates (10.22), (10.24) and (10.26)–(10.27) of this section, together with (10.36)–(10.37)
+  of Section 10.4, (10.71) of Section 10.10 and Theorem 12.2 of Section 12.3, are quoted by the book
+  from Canuto, Hussaini, Quarteroni and Zang (1988) without proof. They need three pieces of theory
+  that the library does not have. The first is calculus for the weighted Sobolev seminorms on
+  $(-1, 1)$; `QuarteroniSaccoSaleri.Chapter10.equation_10_23` is only a definition. Because
+  $(1 - x^2)^{k/2} \le 1$, a projection estimate in the seminorm with the weights $(1 - x^2)^{k/2}$
+  bounds the right side of the book, with the norm (10.23), term by term. The second is the decay of
+  the coefficients and the projection estimate $\|f - P_n f\|_w \le C n^{-s} \|f\|_{s,w}$ for
+  $f \in C^s[-1, 1]$, where $P_n$ is the truncation of the orthogonal expansion. It follows from the
+  Sturm–Liouville symmetry $\int (Lu) v w = \int u (Lv) w$, in which the factor $1 - x^2$ removes
+  the boundary terms, applied $\lfloor s/2 \rfloor$ times, and from a bound on the tail of the
+  expansion with the eigenvalues $\lambda_k = k^2$ (Chebyshev) or $\lambda_k = k(k + 1)$ (Legendre).
+  The third is the passage from the projection to the interpolant. The elementary argument
+  $\Pi_n f - P_n f = \Pi_n (P_n f - f)$, with the equivalence of the discrete and continuous norms,
+  loses a factor $n^{1/2}$ and gives only the rate $n^{1/2 - s}$. The printed rate $n^{-s}$ needs
+  the $H^1$ projection and a Marcinkiewicz–Zygmund-type bound
+  $\|v\|_n \le C (\|v\|_w + n^{-1} \|v'\|_w)$, which rests on an estimate of the spacing of the
+  nodes.
+* The sup-norm estimate (10.24) also needs (10.71) and the one-dimensional Gagliardo–Nirenberg
+  inequality $\|v\|_\infty^2 \le \|v\|_{L^2(-1,1)}^2 + 2 \|v\| \|v'\|$. The library has the
+  embedding $\|u\|_\infty \le C \|u\|_{W^{1,p}}$ of `Numlib.Analysis.Sobolev.Interval.Embedding`,
+  but not this product form. The rate $n^{1/2 - s}$ of (10.24) is not better than the rate that the
+  elementary argument above gives for (10.22).
+* Estimate (10.26) is the case $v_n = 1$ of (10.27), with $\|1\|_w = \sqrt{\pi}$. Because the
+  Gauss–Lobatto rule is exact on $\mathbb{P}_{2n-1}$, (10.27) reduces to $g = f - P_{n-1} f$: $(f,
+  v_n)_w - (f, v_n)_n = (g, v_n)_w - (g, v_n)_n$, so $|(f, v_n)_w - (f, v_n)_n| \le \|g\|_w
+  \|v_n\|_w + \|g\|_n \|v_n\|_n$.
+
+## Deviations from the source
+
+* **Equations (10.30)–(10.31)** (correction). The book prints $\cos(kj\pi / n)$, which is
+  $T_k(\bar x_{n-j})$ and not $T_k(\bar x_j)$ for the increasing nodes of (10.21). The library uses
+  $\cos(k(n - j)\pi / n) = T_k(\bar x_j)$. See
+  `QuarteroniSaccoSaleri.Chapter10.chebyshevDiscreteCoeff` and
+  `QuarteroniSaccoSaleri.Chapter10.equation_10_31`.
+
+## Not formalized
+
+* **Equation (10.22)**, the estimate $\|f - \Pi^{GL}_{n,w} f\|_w \le C n^{-s} \|f\|_{s,w}$ for the
+  interpolant at the Chebyshev–Gauss–Lobatto nodes. The library has no theory of spectral projection
+  in weighted Sobolev norms. The book calls the interpolant of degree $n + 1$; it has degree $n$.
+* **Equation (10.24)** and **Exercise 10.3**, the estimate $\|f - \Pi^{GL}_{n,w} f\|_\infty \le C
+  n^{1/2 - s} \|f\|_{s,w}$ and the same estimate at the Gauss nodes. The reason is the same as for
+  (10.22), and the one-dimensional Gagliardo–Nirenberg inequality is also missing.
+* **Equations (10.26)–(10.27)**, the error of the discrete scalar product and of the Gauss–Lobatto
+  formula in the norm $\|f\|_{s,w}$. The reason is the same as for (10.22).
+* **Equation (10.25)**, Rivlin's bound $\Lambda_n \le (2/\pi) \log(n + 1) + 1$. It is sharp at
+  $n = 0$ and needs two theorems that nothing else uses; the library proves
+  $\Lambda_n \le 2 + (2/\pi) \log(2n + 2)$ instead.
+* **Section 10.3, convergence of the Gauss–Lobatto formula** for every $f$ with finite weighted
+  integral. Only continuous $f$ are treated.
 -/
 
 open MeasureTheory Polynomial OrthogonalPolynomial Quadrature Real Set Filter Topology
@@ -165,11 +140,15 @@ variable {n : ℕ}
 
 /-! ### The Chebyshev–Gauss formula (10.20) -/
 
-/-- **(10.20), the Chebyshev–Gauss nodes** `xⱼ = -cos((2j + 1)π/(2(n + 1)))`, `0 ≤ j ≤ n`. -/
+/-- **Equation (10.20)** of [quarteroni2000numerical], the Chebyshev–Gauss nodes. For
+$0 \le j \le n$, the **Chebyshev–Gauss node** is
+$$x_j = -\cos\left(\frac{(2j + 1)\pi}{2(n + 1)}\right).$$
+-/
 noncomputable def chebyshevGaussNode (n j : ℕ) : ℝ := -cos ((2 * j + 1) * π / (2 * (n + 1)))
 
-/-- The book's Gauss node `xⱼ` is Mathlib's node `cos((2(n - j) + 1)/(2(n + 1)) π)` of
-`Polynomial.Chebyshev.sumZeroes`: the same set of points, enumerated in the opposite order. -/
+/-- Supports equation (10.20). For $j \le n$, the Gauss node $x_j$ of the book is
+$\cos((2(n - j) + 1)\pi / (2(n + 1)))$, the node of Mathlib's `Polynomial.Chebyshev.sumZeroes`
+of index $n - j$. The two families are the same points in the opposite order. -/
 theorem chebyshevGaussNode_eq {j : ℕ} (hj : j ≤ n) :
     chebyshevGaussNode n j = cos ((2 * ((n - j : ℕ) : ℝ) + 1) / (2 * ((n + 1 : ℕ) : ℝ)) * π) := by
   rw [chebyshevGaussNode, ← cos_pi_sub, Nat.cast_sub hj]
@@ -179,7 +158,7 @@ theorem chebyshevGaussNode_eq {j : ℕ} (hj : j ≤ n) :
   field_simp
   ring
 
-/-- The angle `(2j + 1)π/(2(n + 1))` lies in `[0, π]` for `j ≤ n`. -/
+/-- For $j \le n$, the angle $(2j + 1)\pi / (2(n + 1))$ lies in $[0, \pi]$. -/
 private theorem gaussAngle_mem_Icc {j : ℕ} (hj : j ≤ n) :
     (2 * (j : ℝ) + 1) * π / (2 * ((n : ℝ) + 1)) ∈ Icc 0 π := by
   refine ⟨by positivity, ?_⟩
@@ -187,15 +166,16 @@ private theorem gaussAngle_mem_Icc {j : ℕ} (hj : j ≤ n) :
   have : (j : ℝ) ≤ n := by exact_mod_cast hj
   nlinarith [pi_pos]
 
-/-- **(10.20).** For the Chebyshev weight `w(x) = (1 - x²)^{-1/2}` the Gauss nodes and
-coefficients are
+/-- **Equation (10.20)** of [quarteroni2000numerical]. For the Chebyshev weight
+$w(x) = (1 - x^2)^{-1/2}$, the Gauss nodes and coefficients are
+$$x_j = -\cos\left(\frac{(2j + 1)\pi}{2(n + 1)}\right), \qquad \alpha_j = \frac{\pi}{n + 1},
+  \qquad 0 \le j \le n.$$
+The nodes increase with $j$, they are the zeros of the Chebyshev polynomial
+$T_{n+1} \in \mathbb{P}_{n+1}$, and the formula has degree of exactness $2n + 1$ for $w$.
 
-`xⱼ = -cos((2j + 1)π/(2(n + 1)))`, `αⱼ = π/(n + 1)`, `0 ≤ j ≤ n`:
-
-the nodes increase with `j`, they are the zeros of the Chebyshev polynomial `T_{n+1} ∈ ℙ_{n+1}`,
-and the formula has degree of exactness `2n + 1`. Mathlib's
-`Polynomial.Chebyshev.integral_eq_sumZeroes`, whose nodes `cos((2i + 1)π/(2(n + 1)))` are the
-book's under `j ↦ n - j`. -/
+The weight $w(x)\,dx$ is `OrthogonalPolynomial.chebyshevMeasure`. The proof specializes
+Mathlib's `Polynomial.Chebyshev.integral_eq_sumZeroes`, whose nodes
+$\cos((2i + 1)\pi / (2(n + 1)))$ are those of the book under $j \mapsto n - j$. -/
 theorem equation_10_20 (n : ℕ) :
     StrictMono (fun j : Fin (n + 1) => chebyshevGaussNode n j) ∧
       (∀ j : Fin (n + 1), (Chebyshev.T ℝ (n + 1)).eval (chebyshevGaussNode n j) = 0) ∧
@@ -225,19 +205,20 @@ theorem equation_10_20 (n : ℕ) :
     dsimp only
     rw [chebyshevGaussNode_eq (Nat.lt_succ_iff.mp j.2), Nat.add_sub_cancel, Nat.cast_succ]
 
-/-- The Chebyshev–Gauss nodes lie in `[-1, 1]`. -/
+/-- The Chebyshev–Gauss nodes lie in $[-1, 1]$. -/
 theorem chebyshevGaussNode_mem_Icc (n j : ℕ) : chebyshevGaussNode n j ∈ Icc (-1 : ℝ) 1 :=
   ⟨neg_le_neg (cos_le_one _), by
     rw [chebyshevGaussNode, neg_le]
     exact neg_one_le_cos _⟩
 
-/-- The Chebyshev–Gauss nodes (10.20) as points of `[-1, 1]`: the node family of the interpolant
-`Π^G_n` of (10.25). -/
+/-- Supports equation (10.25). The Chebyshev–Gauss nodes (10.20) as points of $[-1, 1]$. They are
+the nodes of the interpolant $\Pi^G_n$ of (10.25). -/
 noncomputable def chebyshevGaussNodeIcc (n : ℕ) (j : Fin (n + 1)) : Icc (-1 : ℝ) 1 :=
   ⟨chebyshevGaussNode n j, chebyshevGaussNode_mem_Icc n j⟩
 
-/-- The book's Gauss node `x_{n-j}` is the backbone's Chebyshev node `Lagrange.chebNode n j`,
-`cos((2j + 1)π/(2(n + 1)))`, indexed through `Fin.rev`. -/
+/-- Supports equation (10.25). The Gauss node $x_{n-j}$ of the book is the backbone's Chebyshev node
+`Lagrange.chebNode n j`, which is $\cos((2j + 1)\pi / (2(n + 1)))$. The index $n - j$ is
+`Fin.rev j`. -/
 theorem chebyshevGaussNode_rev (j : Fin (n + 1)) :
     chebyshevGaussNode n (Fin.rev j) = Lagrange.chebNode n j := by
   rw [chebyshevGaussNode_eq (Nat.lt_succ_iff.mp (Fin.rev j).2), Lagrange.chebNode,
@@ -248,8 +229,9 @@ theorem chebyshevGaussNode_rev (j : Fin (n + 1)) :
   push_cast
   ring
 
-/-- The book's Gauss nodes are the backbone's `Lagrange.chebNodeIcc n` enumerated in the opposite
-order: a permutation of the same family, so the two interpolation operators coincide. -/
+/-- Supports equation (10.25). The Gauss nodes of the book are the backbone's nodes
+`Lagrange.chebNodeIcc n` in the opposite order. So the two families differ by a permutation, and
+the two interpolation operators are equal. -/
 theorem chebyshevGaussNodeIcc_eq (n : ℕ) :
     chebyshevGaussNodeIcc n = Lagrange.chebNodeIcc n ∘ Fin.revPerm := by
   funext j
@@ -261,11 +243,16 @@ theorem chebyshevGaussNodeIcc_eq (n : ℕ) :
 theorem injective_chebyshevGaussNodeIcc (n : ℕ) : Function.Injective (chebyshevGaussNodeIcc n) :=
   fun _ _ h => (equation_10_20 n).1.injective (congrArg Subtype.val h)
 
-/-- **(10.25), the first inequality.** For the interpolant `Π^G_n f` of `f ∈ C⁰([-1, 1])` at the
-`n + 1` Chebyshev–Gauss nodes (10.20), `‖f - Π^G_n f‖_∞ ≤ (1 + Λ_n) E_n^*(f)`, where `Λ_n` is the
-Lebesgue constant of the Chebyshev nodes and `E_n^*(f)` the best approximation error of §10.8:
-the bound `interpolation_error_le_lebesgue` of §10.8 at these nodes. The bound on `Λ_n` is
-`equation_10_25`. -/
+/-- **Equation (10.25)** of [quarteroni2000numerical], the first inequality. Let
+$f \in C^0([-1, 1])$, and let $\Pi^G_n f$ be its interpolant at the $n + 1$ Chebyshev–Gauss
+nodes (10.20). Then
+$$\|f - \Pi^G_n f\|_\infty \le (1 + \Lambda_n) E_n^*(f),$$
+where $\Lambda_n = \sup_{t \in [-1, 1]} \sum_j |l_j(t)|$ is the Lebesgue constant of the
+Chebyshev–Gauss nodes and $E_n^*(f)$ is the best approximation error of Section 10.8.
+
+The proof applies `QuarteroniSaccoSaleri.Chapter10.interpolation_error_le_lebesgue` of Section
+10.8 at these nodes. The bound on $\Lambda_n$ is
+`QuarteroniSaccoSaleri.Chapter10.equation_10_25`. -/
 theorem equation_10_25_interpolation_error (n : ℕ) (f : C(Icc (-1 : ℝ) 1, ℝ)) :
     ‖f - Lagrange.interpolateCLM (chebyshevGaussNodeIcc n) f‖ ≤
       (1 + sSup (Set.range fun t : Icc (-1 : ℝ) 1 =>
@@ -273,26 +260,29 @@ theorem equation_10_25_interpolation_error (n : ℕ) (f : C(Icc (-1 : ℝ) 1, �
         bestApproximationError (-1) 1 n f :=
   interpolation_error_le_lebesgue (injective_chebyshevGaussNodeIcc n) f
 
-/-- **(10.25).** For the interpolant `Π^G_n f` of `f ∈ C⁰([-1, 1])` at the `n + 1` Chebyshev–Gauss
-nodes (10.20),
+/-- **Equation (10.25)** of [quarteroni2000numerical]. Let $f \in C^0([-1, 1])$, and let $\Pi^G_n f$
+be its interpolant at the $n + 1$ Chebyshev–Gauss nodes (10.20). Let $\Lambda_n = \sup_{t \in
+[-1, 1]} \sum_j |l_j(t)|$ be the Lebesgue constant of these nodes, and let $E_n^*(f)$ be the
+best approximation error of Section 10.8. Then
+$$\Lambda_n \le 2 + \frac{2}{\pi} \log(2n + 2), \qquad \|f - \Pi^G_n f\|_\infty \le \left(1 +
+  2 + \frac{2}{\pi} \log(2n + 2)\right) E_n^*(f).$$
 
-`‖f - Π^G_n f‖_∞ ≤ (1 + Λ_n) E_n^*(f)`, with `Λ_n ≤ 2 + (2/π) log(2n + 2)`,
+The book prints Rivlin's sharper bound $\Lambda_n \le (2/\pi) \log(n + 1) + 1$
+([rivlin1969introduction], Theorem 1.2). The statement here has the same growth rate
+$(2/\pi) \log n$ and a larger additive constant. Rivlin's bound is not formalized: it is an
+equality at $n = 0$, where $\Lambda_0 = 1$, so no step of its proof may lose anything, and it
+needs two further theorems that nothing else in the library uses. These are that the Lebesgue
+function attains its maximum at $\pm 1$, and Rivlin's bound on the cotangent sum that it equals
+there. The argument through `SineSum.sum_term_le` that proves the bound here loses $1.441\ldots$
+in the additive constant, against a margin of $0.0375$. See also the section `Not formalized` of
+`Numlib.Approximation.Interpolation`.
 
-where `Λ_n = max_{[-1, 1]} ∑ⱼ |lⱼ|` is the Lebesgue constant of the Chebyshev nodes and `E_n^*(f)`
-the best approximation error of §10.8. The first inequality is
-`equation_10_25_interpolation_error`; the bound on `Λ_n` is the backbone's
-`Lagrange.norm_interpolateCLM_chebyshev_le`, since `Λ_n = ‖Π^G_n‖` (`Lagrange.norm_interpolateCLM`)
-and the book's nodes are the backbone's `Lagrange.chebNodeIcc n` in the opposite order
-(`chebyshevGaussNodeIcc_eq`, `Lagrange.interpolateCLM_comp_equiv`).
-
-The book prints Rivlin's sharper `Λ_n ≤ (2/π) log(n + 1) + 1` ([rivlin1969introduction],
-Theorem 1.2; the book's [Riv74], p. 13). That constant is deliberately not formalized: at `n = 0`
-it equals `Λ_0 = 1`, so no step of a proof of it may lose anything, and it needs two further
-theorems that nothing else in the library uses — that the Lebesgue function attains its maximum
-at `±1`, and Rivlin's bound on the cotangent sum it equals there. The route through
-`SineSum.sum_term_le` that proves the backbone bound loses `1.441…` in the additive constant
-against a margin of `0.0375`; see `## Not formalized` in `Numlib/Approximation/Interpolation`. The
-growth rate `(2/π) log n`, which is what every application consumes, is the same. -/
+The first inequality is `QuarteroniSaccoSaleri.Chapter10.equation_10_25_interpolation_error`.
+The bound on $\Lambda_n$ is the backbone's `Lagrange.norm_interpolateCLM_chebyshev_le`, because
+$\Lambda_n = \|\Pi^G_n\|$ (`Lagrange.norm_interpolateCLM`) and the nodes of the book are the
+backbone's `Lagrange.chebNodeIcc n` in the opposite order
+(`QuarteroniSaccoSaleri.Chapter10.chebyshevGaussNodeIcc_eq`,
+`Lagrange.interpolateCLM_comp_equiv`). -/
 theorem equation_10_25 (n : ℕ) (f : C(Icc (-1 : ℝ) 1, ℝ)) :
     sSup (Set.range fun t : Icc (-1 : ℝ) 1 =>
         ∑ i, |Lagrange.basisCM (chebyshevGaussNodeIcc n) i t|) ≤
@@ -311,11 +301,14 @@ theorem equation_10_25 (n : ℕ) (f : C(Icc (-1 : ℝ) 1, ℝ)) :
 
 /-! ### The Chebyshev–Gauss–Lobatto formula (10.21) -/
 
-/-- **(10.21), the Chebyshev–Gauss–Lobatto nodes** `x̄ⱼ = -cos(πj/n)`, `0 ≤ j ≤ n`, `n ≥ 1`. -/
+/-- **Equation (10.21)** of [quarteroni2000numerical], the Chebyshev–Gauss–Lobatto nodes. For
+$n \ge 1$ and $0 \le j \le n$, the **Chebyshev–Gauss–Lobatto node** is
+$\bar x_j = -\cos(\pi j / n)$. -/
 noncomputable def chebyshevLobattoNode (n j : ℕ) : ℝ := -cos (j * π / n)
 
-/-- The book's Gauss–Lobatto node `x̄ⱼ` is Mathlib's extremum `cos((n - j)π/n)` of `T_n`
-(`Polynomial.Chebyshev.node`): the same points, enumerated in the opposite order. -/
+/-- Supports equation (10.21). Let $n \ge 1$ and $j \le n$. The Gauss–Lobatto node $\bar x_j$ of the
+book is $\cos((n - j)\pi / n)$, the extremal point of $T_n$ of index $n - j$ in Mathlib's
+`Polynomial.Chebyshev.node`. The two families are the same points in the opposite order. -/
 theorem chebyshevLobattoNode_eq_node (hn : n ≠ 0) {j : ℕ} (hj : j ≤ n) :
     chebyshevLobattoNode n j = Chebyshev.node n (n - j) := by
   rw [chebyshevLobattoNode, Chebyshev.node, ← cos_pi_sub, Nat.cast_sub hj]
@@ -323,18 +316,21 @@ theorem chebyshevLobattoNode_eq_node (hn : n ≠ 0) {j : ℕ} (hj : j ≤ n) :
   have : (n : ℝ) ≠ 0 := by exact_mod_cast hn
   field_simp
 
-/-- The factors `dⱼ` of (10.21) are symmetric under `j ↦ n - j`. -/
+/-- Supports equation (10.21). The factors $d_j$ of (10.21) satisfy $d_{n-j} = d_j$ for $j \le n$.
+-/
 theorem lobattoFactor_sub {j : ℕ} (hj : j ≤ n) :
     Chebyshev.lobattoFactor n (n - j) = Chebyshev.lobattoFactor n j := by
   unfold Chebyshev.lobattoFactor
   split_ifs with h1 h2 <;> first | rfl | (exfalso; omega)
 
-/-- The weights `ᾱⱼ` of (10.21) are symmetric under `j ↦ n - j`. -/
+/-- Supports equation (10.21). The weights $\bar\alpha_j$ of (10.21) satisfy
+$\bar\alpha_{n-j} = \bar\alpha_j$ for $j \le n$. -/
 theorem lobattoWeight_sub {j : ℕ} (hj : j ≤ n) :
     Chebyshev.lobattoWeight n (n - j) = Chebyshev.lobattoWeight n j := by
   simp only [Chebyshev.lobattoWeight, lobattoFactor_sub hj]
 
-/-- The book's node `x̄_{n-j}` is Mathlib's `cos(jπ/n)`, indexed through `Fin.rev`. -/
+/-- Supports equation (10.21). For $n \ge 1$, the node $\bar x_{n-j}$ of the book is Mathlib's
+$\cos(j\pi / n)$. The index $n - j$ is `Fin.rev j`. -/
 theorem chebyshevLobattoNode_rev (hn : n ≠ 0) (j : Fin (n + 1)) :
     chebyshevLobattoNode n (Fin.rev j) = Chebyshev.node n j := by
   rw [chebyshevLobattoNode_eq_node hn (Nat.lt_succ_iff.mp (Fin.rev j).2)]
@@ -342,13 +338,15 @@ theorem chebyshevLobattoNode_rev (hn : n ≠ 0) (j : Fin (n + 1)) :
   rw [Fin.val_rev]
   omega
 
-/-- The weights `ᾱⱼ` are symmetric under `Fin.rev`. -/
+/-- Supports equation (10.21). The weights $\bar\alpha_j$ are symmetric under $j \mapsto n - j$,
+written with `Fin.rev`. -/
 theorem lobattoWeight_rev (j : Fin (n + 1)) :
     Chebyshev.lobattoWeight n (Fin.rev j) = Chebyshev.lobattoWeight n j := by
   rw [Fin.val_rev, show n + 1 - ((j : ℕ) + 1) = n - j by omega,
     lobattoWeight_sub (Nat.lt_succ_iff.mp j.2)]
 
-/-- The Chebyshev–Gauss–Lobatto rule in the book's enumeration of the nodes. -/
+/-- Supports equation (10.21). For $n \ge 1$, the Chebyshev–Gauss–Lobatto rule, with the nodes in
+the order of the book, has degree of exactness $2n - 1$ for the Chebyshev weight. -/
 theorem isExactOnMeasure_chebyshevLobatto (hn : n ≠ 0) :
     IsExactOnMeasure chebyshevMeasure (fun j : Fin (n + 1) => Chebyshev.lobattoWeight n j)
       (fun j : Fin (n + 1) => chebyshevLobattoNode n j) (2 * n - 1) := by
@@ -367,7 +365,7 @@ theorem isExactOnMeasure_chebyshevLobatto (hn : n ≠ 0) :
       Fin.rev_rev]
   rwa [← hw', ← hx'] at h
 
-/-- The Chebyshev–Gauss–Lobatto nodes are distinct. -/
+/-- Supports equation (10.21). For $n \ge 1$, the Chebyshev–Gauss–Lobatto nodes are distinct. -/
 theorem injective_chebyshevLobattoNode (hn : n ≠ 0) :
     Function.Injective fun j : Fin (n + 1) => chebyshevLobattoNode n j := by
   intro i j hij
@@ -379,15 +377,19 @@ theorem injective_chebyshevLobattoNode (hn : n ≠ 0) :
     (Finset.mem_coe.mpr (Finset.mem_range.mpr (by omega : n - j < n + 1))) hij
   exact Fin.ext (by omega)
 
-/-- **(10.21).** For `n ≥ 1` the Chebyshev–Gauss–Lobatto nodes and weights are
+/-- **Equation (10.21)** of [quarteroni2000numerical]. Let $n \ge 1$. The Chebyshev–Gauss–Lobatto
+nodes and weights are
+$$\bar x_j = -\cos\left(\frac{\pi j}{n}\right), \qquad \bar\alpha_j = \frac{\pi}{d_j n}, \qquad
+  0 \le j \le n,$$
+with $d_0 = d_n = 2$ and $d_j = 1$ for $j = 1, \dots, n - 1$. The nodes increase from
+$\bar x_0 = -1$ to $\bar x_n = 1$, and the formula has degree of exactness $2n - 1$ for the
+Chebyshev weight. Moreover $T_n' = n U_{n-1}$, and every internal node
+$\bar x_1, \dots, \bar x_{n-1}$ is a zero of $T_n'$, as anticipated in Remark 10.2.
 
-`x̄ⱼ = -cos(πj/n)`, `ᾱⱼ = π/(dⱼ n)`, `0 ≤ j ≤ n`, with `d₀ = d_n = 2` and `dⱼ = 1` for
-`j = 1, …, n - 1`:
-
-the nodes increase from `x̄₀ = -1` to `x̄_n = 1`, the formula has degree of exactness `2n - 1`, and
-the internal nodes `x̄₁, …, x̄_{n-1}` are the zeros of `T_n' = n U_{n-1}`, as anticipated in
-Remark 10.2. The backbone's `Polynomial.Chebyshev.integral_eq_sumExtrema` at the nodes
-`cos(jπ/n)`, reversed, with Mathlib's `T_derivative_eq_U` and `U_real_cos`. -/
+The formula for $\bar\alpha_j$ holds for every natural number $j$. The proof specializes the
+backbone's `Polynomial.Chebyshev.integral_eq_sumExtrema` at the nodes $\cos(j\pi / n)$, in the
+opposite order, with Mathlib's `Polynomial.Chebyshev.T_derivative_eq_U` and
+`Polynomial.Chebyshev.U_real_cos`. -/
 theorem equation_10_21 (hn : 1 ≤ n) :
     StrictMono (fun j : Fin (n + 1) => chebyshevLobattoNode n j) ∧
       chebyshevLobattoNode n 0 = -1 ∧ chebyshevLobattoNode n n = 1 ∧
@@ -434,22 +436,32 @@ theorem equation_10_21 (hn : 1 ≤ n) :
 
 /-! ### The weighted Sobolev norm (10.23) -/
 
-/-- **(10.23) and (10.35), the weighted Sobolev norm** `‖f‖_{s,w} = (∑_{k=0}^s ‖f^{(k)}‖_w²)^{1/2}`
-of order `s` of a function `f`, for a weight `μ`: the book's `‖·‖_{s,w}` is the case
-`μ = chebyshevMeasure`, and the `‖·‖_s` of (10.35) the case `μ = legendreMeasure`. It is only a
-definition on smooth functions, enough to state the quoted estimates. -/
+/-- **Equations (10.23) and (10.35)** of [quarteroni2000numerical], the weighted Sobolev norm. Let
+$\mu$ be a measure and $s \ge 0$. The **weighted Sobolev norm** of order $s$ of a function $f$
+is
+$$\|f\|_{s,w} = \left(\sum_{k=0}^s \|f^{(k)}\|_w^2\right)^{1/2}, \qquad \|g\|_w^2 = \int g^2 \,
+  d\mu.$$
+The norm $\|\cdot\|_{s,w}$ of (10.23) is the case $\mu$ =
+`OrthogonalPolynomial.chebyshevMeasure`, and the norm $\|\cdot\|_s$ of (10.35) is the case
+$\mu$ = `OrthogonalPolynomial.legendreMeasure`.
+
+The derivatives are `iteratedDeriv`, and an integral that does not exist counts as $0$. The
+definition serves to state the estimates of the book, which are not formalized; no results about
+it are proved. -/
 noncomputable def equation_10_23 (μ : Measure ℝ) (s : ℕ) (f : ℝ → ℝ) : ℝ :=
   √(∑ k ∈ Finset.range (s + 1), ∫ x, (iteratedDeriv k f x) ^ 2 ∂μ)
 
 /-! ### Convergence of the Chebyshev–Gauss–Lobatto formula -/
 
-/-- **§10.3, the convergence of the Chebyshev–Gauss–Lobatto formula** (the book cites [Sze67],
-p. 342, for every `f` with finite weighted integral; stated for `f ∈ C⁰([-1, 1])`):
+/-- **Section 10.3** of [quarteroni2000numerical], the convergence of the Chebyshev–Gauss–Lobatto
+formula. For every $f \in C^0([-1, 1])$,
+$$\int_{-1}^1 f(x) (1 - x^2)^{-1/2} \, dx = \lim_{n \to \infty} I^{GL}_{n,w}(f), \qquad
+  I^{GL}_{n,w}(f) = \sum_{j=0}^n \bar\alpha_j f(\bar x_j).$$
 
-`∫_{-1}^1 f(x) (1 - x²)^{-1/2} dx = lim_{n → ∞} I^{GL}_{n,w}(f)`.
-
-The Szegő–Pólya criterion `tendsto_of_isExactOnMeasure`, the weights `π/(dⱼ n)` being positive and
-the degree of exactness `2n - 1` unbounded. -/
+The book states the limit for every $f$ whose weighted integral is finite, and refers to Szegő
+(1967), p. 342. Only continuous $f$ are treated here. The proof uses the Szegő–Pólya criterion
+`Quadrature.tendsto_of_isExactOnMeasure`: the weights $\pi / (d_j n)$ are positive, and the
+degree of exactness $2n - 1$ is unbounded. -/
 theorem lobatto_tendsto {f : ℝ → ℝ} (hf : ContinuousOn f (Icc (-1 : ℝ) 1)) :
     Tendsto (fun n => ∑ j : Fin (n + 1), Chebyshev.lobattoWeight n j * f (chebyshevLobattoNode n j))
       atTop (𝓝 (∫ x in (-1 : ℝ)..1, f x / √(1 - x ^ 2))) := by
@@ -471,14 +483,17 @@ theorem lobatto_tendsto {f : ℝ → ℝ} (hf : ContinuousOn f (Icc (-1 : ℝ) 1
 
 /-! ### The discrete scalar product (10.28) and the Chebyshev discrete transform (10.29)–(10.31) -/
 
-/-- **(10.28), the discrete scalar product** of the Chebyshev–Gauss–Lobatto formula,
-`(f, g)_n = ∑ⱼ ᾱⱼ f(x̄ⱼ) g(x̄ⱼ) = I^{GL}_{n,w}(fg)`: the backbone's `Quadrature.discreteInner` at
-the weights and nodes (10.21). -/
+/-- **Equation (10.28)** of [quarteroni2000numerical], the discrete scalar product of the
+Chebyshev–Gauss–Lobatto formula:
+$$(f, g)_n = \sum_{j=0}^n \bar\alpha_j f(\bar x_j) g(\bar x_j) = I^{GL}_{n,w}(fg).$$
+
+The definition is `Quadrature.discreteInner` at the weights and nodes (10.21). -/
 noncomputable def equation_10_28 (n : ℕ) (f g : ℝ → ℝ) : ℝ :=
   discreteInner (fun j : Fin (n + 1) => Chebyshev.lobattoWeight n j)
     (fun j : Fin (n + 1) => chebyshevLobattoNode n j) f g
 
-/-- (10.28) written out: `(f, g)_n = ∑ⱼ ᾱⱼ f(x̄ⱼ) g(x̄ⱼ) = I^{GL}_{n,w}(fg)`. -/
+/-- Supports equation (10.28). The discrete scalar product is $(f, g)_n = \sum_j \bar\alpha_j f(\bar
+x_j) g(\bar x_j)$, and it is also $\sum_j \bar\alpha_j (fg)(\bar x_j) = I^{GL}_{n,w}(fg)$. -/
 theorem equation_10_28_eq (n : ℕ) (f g : ℝ → ℝ) :
     equation_10_28 n f g =
         ∑ j : Fin (n + 1), Chebyshev.lobattoWeight n j * f (chebyshevLobattoNode n j) *
@@ -489,18 +504,29 @@ theorem equation_10_28_eq (n : ℕ) (f g : ℝ → ℝ) :
     unfold equation_10_28 discreteInner
     exact Finset.sum_congr rfl fun j _ => by rw [Pi.mul_apply, mul_assoc]⟩
 
-/-- **(10.31), the discrete coefficients**
-`f̃_k = (2/(n d_k)) ∑_{j=0}^n dⱼ⁻¹ cos(k(n - j)π/n) f(x̄ⱼ)` of the Chebyshev discrete transform
-(CDT), `k = 0, …, n`, with the cosine `T_k(x̄ⱼ)` written for the node ordering of (10.21) (the book
-prints `cos(kjπ/n)`, see the module docstring). -/
+/-- **Equation (10.31)** of [quarteroni2000numerical], the discrete coefficients of the Chebyshev
+discrete transform (CDT). For $k = 0, \dots, n$,
+$$\tilde f_k = \frac{2}{n d_k} \sum_{j=0}^n \frac{1}{d_j} \cos\left(\frac{k(n - j)\pi}{n}\right)
+  f(\bar x_j).$$
+The cosine is $T_k(\bar x_j)$ for the node ordering of (10.21).
+
+**Correction.** The book prints $\cos(kj\pi / n)$, which is $T_k(\bar x_{n-j})$ and not
+$T_k(\bar x_j)$ for the increasing nodes of (10.21). With $\cos(kj\pi / n)$ the formula holds
+for the nodes $\cos(j\pi / n)$. Since $\cos(k(n - j)\pi / n) = (-1)^k \cos(kj\pi / n)$, the two
+forms differ by the sign $(-1)^k$.
+
+At $n = 0$ the factor $2 / (n d_k)$ is $0$ by the Lean convention for division by zero. -/
 noncomputable def chebyshevDiscreteCoeff (n : ℕ) (f : ℝ → ℝ) (k : ℕ) : ℝ :=
   2 / (n * Chebyshev.lobattoFactor n k) * ∑ j ∈ Finset.range (n + 1),
     (Chebyshev.lobattoFactor n j)⁻¹ * cos ((k : ℝ) * ((n - j : ℕ) : ℝ) * π / n) *
       f (chebyshevLobattoNode n j)
 
-/-- The discrete coefficients in the book's enumeration are those of the backbone's
-`Polynomial.Chebyshev.interpolate_eq_sum_cdt` at the nodes `cos(jπ/n)`: the sums agree under
-`j ↦ n - j`. -/
+/-- Supports equation (10.31). For $n \ge 1$, the discrete coefficients in the order of the book
+equal those of the backbone's `Polynomial.Chebyshev.interpolate_eq_sum_cdt` at the nodes
+$\cos(j\pi / n)$:
+$$\tilde f_k = \frac{2}{n d_k} \sum_{j=0}^n \frac{1}{d_j} \cos\left(\frac{kj\pi}{n}\right)
+  f(\cos(j\pi / n)).$$
+The two sums agree under $j \mapsto n - j$. -/
 theorem chebyshevDiscreteCoeff_eq (hn : n ≠ 0) (f : ℝ → ℝ) (k : ℕ) :
     chebyshevDiscreteCoeff n f k = 2 / (n * Chebyshev.lobattoFactor n k) *
       ∑ j ∈ Finset.range (n + 1), (Chebyshev.lobattoFactor n j)⁻¹ *
@@ -513,18 +539,24 @@ theorem chebyshevDiscreteCoeff_eq (hn : n ≠ 0) (f : ℝ → ℝ) (k : ℕ) :
   rw [show n + 1 - 1 - j = n - j by omega, lobattoFactor_sub hj',
     chebyshevLobattoNode_eq_node hn hj']
 
-/-- **(10.29)–(10.31), the Chebyshev discrete transform (Exercise 2).** For `n ≥ 1` the
-interpolating polynomial `Π^{GL}_{n,w} f` at the `n + 1` Gauss–Lobatto nodes (10.21) is
+/-- **Equations (10.29)–(10.31)** and **Exercise 10.2** of [quarteroni2000numerical], the Chebyshev
+discrete transform. Let $n \ge 1$ and $f : \mathbb{R} \to \mathbb{R}$. The interpolating
+polynomial $\Pi^{GL}_{n,w} f$ at the $n + 1$ Gauss–Lobatto nodes (10.21) is
+$$\Pi^{GL}_{n,w} f = \sum_{k=0}^n \tilde f_k T_k, \tag{10.29}$$
+with the coefficients $\tilde f_k = \frac{2}{n d_k} \sum_{j=0}^n d_j^{-1} T_k(\bar x_j) f(\bar
+x_j)$ of (10.31). The inverse transform is
+$$f(\bar x_j) = \sum_{k=0}^n T_k(\bar x_j) \tilde f_k, \qquad T_k(\bar x_j) =
+  \cos\left(\frac{k(n - j)\pi}{n}\right). \tag{10.30}$$
+Finally $\Pi^{GL}_{n,w} f$ equals the discrete truncation $f_n^*$ of (10.4) for the discrete
+scalar product (10.28).
 
-`Π^{GL}_{n,w} f = ∑_{k=0}^n f̃_k T_k` (10.29), with
-`f̃_k = (2/(n d_k)) ∑_{j=0}^n dⱼ⁻¹ T_k(x̄ⱼ) f(x̄ⱼ)` (10.31),
+**Correction.** The book prints (10.30) and (10.31) with $\cos(kj\pi / n)$ in place of
+$T_k(\bar x_j) = \cos(k(n - j)\pi / n)$. See
+`QuarteroniSaccoSaleri.Chapter10.chebyshevDiscreteCoeff`.
 
-the CDT; its inverse is `f(x̄ⱼ) = ∑_{k=0}^n T_k(x̄ⱼ) f̃_k` (10.30), where
-`T_k(x̄ⱼ) = cos(k(n - j)π/n)`; and `Π^{GL}_{n,w} f` coincides with the discrete truncation `f_n^*`
-of (10.4) for the discrete scalar product (10.28). The backbone's
-`Polynomial.Chebyshev.interpolate_eq_sum_cdt` (whose ingredients are the discrete norms
-`Polynomial.Chebyshev.discreteInner_T_T` of the exercise's hint), reindexed, and
-`Quadrature.interpolate_eq_sum_discreteInner_smul`. -/
+The proof reindexes the backbone's `Polynomial.Chebyshev.interpolate_eq_sum_cdt`, whose
+ingredients are the discrete norms `Polynomial.Chebyshev.discreteInner_T_T` of the hint of the
+exercise, and uses `Quadrature.interpolate_eq_sum_discreteInner_smul`. -/
 theorem equation_10_31 (hn : 1 ≤ n) (f : ℝ → ℝ) :
     (Lagrange.interpolate Finset.univ (fun j : Fin (n + 1) => chebyshevLobattoNode n j)
         fun j => f (chebyshevLobattoNode n j)) =

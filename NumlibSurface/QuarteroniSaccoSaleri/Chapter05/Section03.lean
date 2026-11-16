@@ -6,48 +6,91 @@ import Numlib.LinearAlgebra.Matrix.Similar
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter05.Section02
 
 /-!
-# Quarteroni–Sacco–Saleri §5.3: the power method
+# Quarteroni, Sacco and Saleri, Section 5.3: The Power Method
 
-Surface file for Alfio Quarteroni, Riccardo Sacco and Fausto Saleri, *Numerical Mathematics*
-[quarteroni2000numerical], §5.3, over the backbone `Numlib/Eigen/PowerMethod` (the power iteration
-in closed form, its convergence and rate, the Rayleigh quotients, the symmetric rate, inverse
-iteration) and `Numlib/Eigen/Perturbation` (the backward error of an approximate eigenpair).
+This module formalizes Section 5.3 of [quarteroni2000numerical]. The power method (5.17) starts from
+a unit vector $q^{(0)}$ and sets $z^{(k)} = A q^{(k-1)}$ and $q^{(k)} = z^{(k)} / \|z^{(k)}\|_2$, so
+that $q^{(k)} = A^k q^{(0)} / \|A^k q^{(0)}\|_2$ (5.18), and it approximates the dominant eigenvalue
+by the Rayleigh quotient $\nu^{(k)} = (q^{(k)})^H A q^{(k)}$. Let $A$ be diagonalizable with
+eigenvalues ordered as in (5.16), $|\lambda_1| > |\lambda_2| \ge |\lambda_i|$, and let
+$q^{(0)} = \sum_i \alpha_i x_i$ with $\alpha_1 \neq 0$ (5.19). Then the iterates approach the
+direction of $x_1$ at the rate $|\lambda_2 / \lambda_1|^k$ (Theorem 5.6), and
+$\nu^{(k)} \to \lambda_1$. For a real symmetric matrix the Rayleigh quotients converge at the rate
+$|\lambda_2 / \lambda_1|^{2k}$ (5.23). Each $\nu^{(k)}$ is an exact eigenvalue of a perturbed matrix
+$A + \varepsilon E^{(k)}$ with $\varepsilon = \|r^{(k)}\|_2$ (5.24). Inverse iteration (5.28) is the
+power method for $(A - \mu I)^{-1}$, and it converges to the eigenvalue closest to $\mu$. Section
+5.3.3 treats two coincident dominant eigenvalues.
+
+The proofs specialize the backbone modules `Numlib.Eigen.PowerMethod` (the power iteration in closed
+form, its convergence and rate, the Rayleigh quotients, the symmetric rate, and inverse iteration)
+and `Numlib.Eigen.Perturbation` (the backward error of an approximate eigenpair).
+
+## Main definitions
+
+* Equation (5.17), `QuarteroniSaccoSaleri.Chapter05.powerIterate`: the power method.
+* Equation (5.17), `QuarteroniSaccoSaleri.Chapter05.rayleighQuotient`: the Rayleigh quotient
+  $q^H A q$.
+* Equation (5.28), `QuarteroniSaccoSaleri.Chapter05.inverseIterate`: inverse iteration with shift
+  $\mu$.
+
+## Main results
+
+* Equation (5.17), `QuarteroniSaccoSaleri.Chapter05.powerIterate_eq_krylov`: the recursion of the
+  book is the backbone's closed form.
+* Equation (5.18), `QuarteroniSaccoSaleri.Chapter05.equation_5_18`:
+  $q^{(k)} = A^k q^{(0)} / \|A^k q^{(0)}\|_2$.
+* Theorem 5.6, `QuarteroniSaccoSaleri.Chapter05.theorem_5_6`: $\|\tilde q^{(k)} - x_1\|_2 \le C
+  |\lambda_2 / \lambda_1|^k$.
+* Theorem 5.6, `QuarteroniSaccoSaleri.Chapter05.theorem_5_6_rayleigh`: $\nu^{(k)} \to \lambda_1$.
+* Equation (5.23), `QuarteroniSaccoSaleri.Chapter05.equation_5_23`: for a real symmetric $A$,
+  $|\lambda_1 - \nu^{(k)}| \le (\lambda_{\max} - \lambda_{\min}) \tan^2 \theta_0 \, |\lambda_2 /
+  \lambda_1|^{2k}$.
+* Equation (5.24), `QuarteroniSaccoSaleri.Chapter05.equation_5_24`: $\nu^{(k)}$ is an eigenvalue of
+  $A + \varepsilon E^{(k)}$, and $\varepsilon = \|r^{(k)}\|_2$ is the smallest such perturbation.
+* Equation (5.28), `QuarteroniSaccoSaleri.Chapter05.inverseIterate_eq_krylov`: the recursion of the
+  book is the backbone's inverse iteration.
+* Section 5.3.2, `QuarteroniSaccoSaleri.Chapter05.inverseIterate_tendsto`: inverse iteration
+  converges to the eigenvector and the eigenvalue closest to $\mu$.
+* Section 5.3.3, `QuarteroniSaccoSaleri.Chapter05.powerIterate_of_eq`: if $\lambda_2 = \lambda_1$,
+  the power method still converges.
 
 ## Conventions
 
-The book's `A ∈ ℂ^{n×n}` is `Matrix (Fin n) (Fin n) ℂ` acting on `EuclideanSpace ℂ (Fin n)` through
-`Matrix.toEuclideanLin`; the iterations are stated for any `RCLike` field so that the real
-symmetric estimate (5.23) reads on `Matrix (Fin n) (Fin n) ℝ`. The power method (5.17) and inverse
-iteration (5.28) are written as the book writes them, as recursions `powerIterate` and
-`inverseIterate` normalizing after every step, and `powerIterate_eq_krylov`,
-`inverseIterate_eq_krylov` identify them with the closed forms `Krylov.powerIterate`,
-`Krylov.inverseIterate` of the backbone; the Rayleigh quotients `ν^(k) = (q^(k))ᴴ A q^(k)` and
-`σ^(k)` are `rayleighQuotient`. A diagonalizable `A` with the matrix of eigenvectors
-`X = (x_1, …, x_n)` is given by a basis `x : Module.Basis (Fin n) ℂ ℂⁿ` of eigenvectors with
-eigenvalues `lam`, and the coefficients `α_i` of (5.19) are the coordinates `x.repr q₀ i`. The
-ordering (5.16) is carried by two indices: `i₀` (the book's `1`, the dominant eigenvalue) and `i₁`
-(the book's `2`), with `‖λ_i‖ ≤ ‖λ_{i₁}‖ < ‖λ_{i₀}‖` for `i ≠ i₀`.
+* The matrix $A \in \mathbb{C}^{n \times n}$ is `Matrix (Fin n) (Fin n) ℂ`, which acts on
+  `EuclideanSpace ℂ (Fin n)` through `Matrix.toEuclideanLin`. The iterations are stated over any
+  `RCLike` field $\mathbb{K}$ ($\mathbb{R}$ or $\mathbb{C}$), so that the real symmetric estimate
+  (5.23) is stated for `Matrix (Fin n) (Fin n) ℝ`.
+* A diagonalizable $A$ with the matrix of eigenvectors $X = (x_1, \dots, x_n)$ is given by a basis
+  `x : Module.Basis (Fin n) ℂ (EuclideanSpace ℂ (Fin n))` of eigenvectors with eigenvalues `lam`.
+  The coefficients $\alpha_i$ of (5.19) are the coordinates `x.repr q₀ i`.
+* The ordering (5.16) is given by two indices: `i₀` is the index $1$ of the dominant eigenvalue, and
+  `i₁` is the index $2$. The hypotheses are $|\lambda_{i_1}| < |\lambda_{i_0}|$ and
+  $|\lambda_i| \le |\lambda_{i_1}|$ for $i \neq i_0$.
 
-## Contents
+## Implementation notes
 
-* `powerIterate`, `rayleighQuotient`, `powerIterate_eq_krylov`, `equation_5_18` — the method
-  (5.17) and its closed form.
-* `theorem_5_6`, `theorem_5_6_rayleigh` — the rate (5.21) and `ν^(k) → λ_1`.
-* `equation_5_23` — the symmetric case.
-* `equation_5_24` — `ν^(k)` is an exact eigenvalue of `A + ε E^(k)` with `ε = ‖r^(k)‖₂`.
-* `inverseIterate`, `inverseIterate_eq_krylov`, `inverseIterate_tendsto` — inverse iteration
-  (5.28) and its convergence.
-* `powerIterate_of_eq` — §5.3.3, coincident dominant eigenvalues.
+* The power method (5.17) and inverse iteration (5.28) are written as the book writes them, as
+  recursions that normalize after every step.
+  `QuarteroniSaccoSaleri.Chapter05.powerIterate_eq_krylov` and
+  `QuarteroniSaccoSaleri.Chapter05.inverseIterate_eq_krylov` identify them with the backbone's
+  closed forms `Krylov.powerIterate` and `Krylov.inverseIterate`.
+* The Rayleigh quotients $\nu^{(k)}$ and $\sigma^{(k)}$ are both
+  `QuarteroniSaccoSaleri.Chapter05.rayleighQuotient`.
 
-## Readings and errata
+## Deviations from the source
 
-Theorem 5.6's constant `C = (∑_{i ≥ 2} (α_i/α_1)²)^{1/2}` comes from the step
-`‖∑ c_i x_i‖₂ ≤ (∑ c_i²)^{1/2}`, which needs the eigenvectors orthonormal (a normal `A`); for a
-diagonalizable `A` the triangle inequality gives `C = ∑_{i ≥ 2} |α_i/α_1|`, which is what is proved.
-In (5.23) the factor `|λ_1 − λ_n|` is the spread `λ_max − λ_min` of the spectrum: with the modulus
-ordering (5.16) it is false as printed (`A = diag(3, −2, 1)` has `|λ_1 − λ_3| = 2` while the error
-constant is `5`); the statement here has `(⨆ λ_i) − (⨅ λ_i)`. The a posteriori estimates
-(5.25), (5.26) and (5.29) are heuristic (`≃`) and are not nodes; Example 5.3 is numerical.
+* **Theorem 5.6** (correction). The book's constant $C = (\sum_{i \ge 2} (\alpha_i /
+  \alpha_1)^2)^{1/2}$ needs orthonormal eigenvectors. For a diagonalizable $A$ the statement has
+  $C = \sum_{i \ge 2} |\alpha_i / \alpha_1|$. See `QuarteroniSaccoSaleri.Chapter05.theorem_5_6`.
+* **Equation (5.23)** (correction). The book prints the factor $|\lambda_1 - \lambda_n|$, which is
+  false under the ordering (5.16) by modulus. The statement has the spread
+  $\lambda_{\max} - \lambda_{\min}$ of the spectrum. See
+  `QuarteroniSaccoSaleri.Chapter05.equation_5_23`.
+
+## Not formalized
+
+* **The a posteriori estimates (5.25), (5.26) and (5.29).** They are heuristic ($\simeq$).
+* **Example 5.3.** It is numerical.
 -/
 
 open Filter Finset Matrix Topology
@@ -59,38 +102,55 @@ variable {n : ℕ} {𝕜 : Type*} [RCLike 𝕜]
 
 /-! ### Bridges to the backbone -/
 
-/-- The shift `A − μ I` is nonsingular exactly when `μ ∉ σ(A)`. -/
+/-- Let $\mathbb{K}$ be $\mathbb{R}$ or $\mathbb{C}$, and let $A \in \mathbb{K}^{n \times n}$ and
+$\mu \in \mathbb{K}$. If $\mu \notin \sigma(A)$, then the shifted matrix $A - \mu I$ is
+nonsingular. -/
 theorem isUnit_sub_smul_one_of_notMem_spectrum {A : Matrix (Fin n) (Fin n) 𝕜} {μ : 𝕜}
     (hμ : μ ∉ spectrum 𝕜 A) : IsUnit (A - μ • (1 : Matrix (Fin n) (Fin n) 𝕜)) := by
   have h := (spectrum.notMem_iff.mp hμ).neg
   rwa [Algebra.algebraMap_eq_smul_one, neg_sub] at h
 
-/-! ### (5.17): the power method -/
+/-! ### Equation (5.17): the power method -/
 
-/-- **(5.17), the power method.** Given `q^(0) ∈ ℂⁿ` of unit Euclidean norm, for `k = 1, 2, …`:
-`z^(k) = A q^(k−1)`, `q^(k) = z^(k) / ‖z^(k)‖₂`; the Rayleigh quotient `ν^(k) = (q^(k))ᴴ A q^(k)` is
-`rayleighQuotient`. The normalization `(0 : ℝ)⁻¹ = 0` makes the recursion total. -/
+/-- **Equation (5.17)** of [quarteroni2000numerical], the power method. Let
+$A \in \mathbb{K}^{n \times n}$, where $\mathbb{K}$ is $\mathbb{R}$ or $\mathbb{C}$, and let
+$q^{(0)} \in \mathbb{K}^n$. For $k = 1, 2, \dots$, the method sets
+$$z^{(k)} = A q^{(k-1)}, \qquad q^{(k)} = \frac{z^{(k)}}{\|z^{(k)}\|_2}.$$
+The approximation of the eigenvalue is the Rayleigh quotient
+$\nu^{(k)} = (q^{(k)})^H A q^{(k)}$, which is
+`QuarteroniSaccoSaleri.Chapter05.rayleighQuotient`.
+
+The book takes $\|q^{(0)}\|_2 = 1$; the definition takes any $q^{(0)}$. Lean divides by zero to
+zero, so $z^{(k)} = 0$ gives $q^{(k)} = 0$, and the recursion is defined for every $k$. -/
 noncomputable def powerIterate (A : Matrix (Fin n) (Fin n) 𝕜) (q₀ : EuclideanSpace 𝕜 (Fin n)) :
     ℕ → EuclideanSpace 𝕜 (Fin n)
   | 0 => q₀
   | k + 1 =>
     (‖toEuclideanLin A (powerIterate A q₀ k)‖ : 𝕜)⁻¹ • toEuclideanLin A (powerIterate A q₀ k)
 
-/-- The Rayleigh quotient `qᴴ A q` of a vector `q`: the `ν^(k) = (q^(k))ᴴ A q^(k)` of (5.17) at
-`q = q^(k)` and the `σ^(k)` of (5.28) at the inverse iterate. -/
+/-- The **Rayleigh quotient** $q^H A q$ of a vector $q \in \mathbb{K}^n$ for
+$A \in \mathbb{K}^{n \times n}$, where $\mathbb{K}$ is $\mathbb{R}$ or $\mathbb{C}$. At
+$q = q^{(k)}$ it is the $\nu^{(k)}$ of (5.17) for the power method, and the $\sigma^{(k)}$ of
+(5.28) for inverse iteration. There is no division by $q^H q$. -/
 noncomputable def rayleighQuotient (A : Matrix (Fin n) (Fin n) 𝕜) (q : EuclideanSpace 𝕜 (Fin n)) :
     𝕜 :=
   inner 𝕜 q (toEuclideanLin A q)
 
-/-- **The book's recursion (5.17) is the backbone's closed form**: from a unit `q^(0)`,
-`powerIterate A q₀ k = Krylov.powerIterate (toEuclideanLin A) q₀ k`
-(`Krylov.eq_powerIterate_of_recurrence`). -/
+/-- The recursion (5.17) of [quarteroni2000numerical] is the backbone's closed form. Let
+$A \in \mathbb{K}^{n \times n}$ and $q^{(0)} \in \mathbb{K}^n$ with $\|q^{(0)}\|_2 = 1$. Then
+for every $k$, the iterate $q^{(k)}$ is `Krylov.powerIterate (toEuclideanLin A) q₀ k`.
+
+The proof specializes the backbone's `Krylov.eq_powerIterate_of_recurrence`. -/
 theorem powerIterate_eq_krylov (A : Matrix (Fin n) (Fin n) 𝕜) {q₀ : EuclideanSpace 𝕜 (Fin n)}
     (hq₀ : ‖q₀‖ = 1) (k : ℕ) : powerIterate A q₀ k = Krylov.powerIterate (toEuclideanLin A) q₀ k :=
   Krylov.eq_powerIterate_of_recurrence (toEuclideanLin A) q₀ (y := powerIterate A q₀)
     (by simp [powerIterate, hq₀]) (fun _ => rfl) k
 
-/-- **(5.18).** `q^(k) = A^k q^(0) / ‖A^k q^(0)‖₂` (for every `k`, given `‖q^(0)‖₂ = 1`):
+/-- **Equation (5.18)** of [quarteroni2000numerical]. Let $A \in \mathbb{K}^{n \times n}$ and
+$q^{(0)} \in \mathbb{K}^n$ with $\|q^{(0)}\|_2 = 1$. Then for every $k$,
+$$q^{(k)} = \frac{A^k q^{(0)}}{\|A^k q^{(0)}\|_2}.$$
+
+If $A^k q^{(0)} = 0$, both sides are $0$. The proof specializes the backbone's
 `Krylov.powerIterate_eq_smul`. -/
 theorem equation_5_18 (A : Matrix (Fin n) (Fin n) 𝕜) {q₀ : EuclideanSpace 𝕜 (Fin n)}
     (hq₀ : ‖q₀‖ = 1) (k : ℕ) :
@@ -98,8 +158,10 @@ theorem equation_5_18 (A : Matrix (Fin n) (Fin n) 𝕜) {q₀ : EuclideanSpace �
       (‖toEuclideanLin (A ^ k) q₀‖ : 𝕜)⁻¹ • toEuclideanLin (A ^ k) q₀ := by
   rw [powerIterate_eq_krylov A hq₀, Krylov.powerIterate_eq_smul, toEuclideanLin_pow]
 
-/-- `‖A^k q^(0)‖₂ q^(k) = A^k q^(0)`, the identity that turns the book's rescaled iterate
-`q̃^(k) = q^(k) ‖A^k q^(0)‖₂ / (α_1 λ_1^k)` of (5.22) into `A^k q^(0) / (α_1 λ_1^k)`. -/
+/-- Let $A \in \mathbb{K}^{n \times n}$ and $q^{(0)} \in \mathbb{K}^n$ with $\|q^{(0)}\|_2 = 1$.
+Then for every $k$, $\|A^k q^{(0)}\|_2 \, q^{(k)} = A^k q^{(0)}$. This identity turns the
+rescaled iterate $\tilde q^{(k)} = q^{(k)} \|A^k q^{(0)}\|_2 / (\alpha_1 \lambda_1^k)$ of (5.22)
+into $A^k q^{(0)} / (\alpha_1 \lambda_1^k)$. -/
 theorem norm_smul_powerIterate (A : Matrix (Fin n) (Fin n) 𝕜) {q₀ : EuclideanSpace 𝕜 (Fin n)}
     (hq₀ : ‖q₀‖ = 1) (k : ℕ) :
     (‖toEuclideanLin (A ^ k) q₀‖ : 𝕜) • powerIterate A q₀ k = toEuclideanLin (A ^ k) q₀ := by
@@ -110,14 +172,24 @@ theorem norm_smul_powerIterate (A : Matrix (Fin n) (Fin n) 𝕜) {q₀ : Euclide
 
 /-! ### Theorem 5.6 -/
 
-/-- **Theorem 5.6, (5.21)–(5.22).** Let `A ∈ ℂ^{n×n}` be diagonalizable, with unit eigenvectors
-`x_1, …, x_n` forming a basis (the columns of `X`) and eigenvalues ordered as (5.16):
-`|λ_1| > |λ_2| ≥ |λ_i|` for `i ≠ 1` (indices `i₀`, `i₁`). Write `q^(0) = ∑ α_i x_i` (5.19) with
-`α_1 ≠ 0`. Then for the rescaled iterate `q̃^(k) = q^(k) ‖A^k q^(0)‖₂ / (α_1 λ_1^k)` of (5.22),
-`‖q̃^(k) − x_1‖₂ ≤ C |λ_2/λ_1|^k` for every `k`, with the constant `C = ∑_{i ≠ 1} |α_i/α_1|`.
-Backbone `Krylov.norm_inv_pow_smul_pow_apply_sub_le_of_eigenbasis`, after
-`norm_smul_powerIterate`. Erratum: the book's `C = (∑ (α_i/α_1)²)^{1/2}` needs orthonormal
-eigenvectors. -/
+/-- **Theorem 5.6** of [quarteroni2000numerical], (5.21)–(5.22). Let $A \in \mathbb{C}^{n \times n}$
+be diagonalizable, with a basis of unit eigenvectors $x_1, \dots, x_n$ (the columns of $X$) and
+eigenvalues ordered as in (5.16):
+$$|\lambda_1| > |\lambda_2| \ge |\lambda_i|, \qquad i \neq 1.$$
+Let $q^{(0)} \in \mathbb{C}^n$ with $\|q^{(0)}\|_2 = 1$, write $q^{(0)} = \sum_i \alpha_i x_i$
+(5.19), and assume $\alpha_1 \neq 0$. Let $\tilde q^{(k)} = q^{(k)} \|A^k q^{(0)}\|_2 /
+(\alpha_1 \lambda_1^k)$ be the rescaled iterate of (5.22). Then for every $k$,
+$$\|\tilde q^{(k)} - x_1\|_2 \le C \left| \frac{\lambda_2}{\lambda_1} \right|^k, \qquad C =
+  \sum_{i \neq 1} \left| \frac{\alpha_i}{\alpha_1} \right|.$$
+
+**Correction.** The book's constant is $C = (\sum_{i \ge 2} (\alpha_i / \alpha_1)^2)^{1/2}$. It
+comes from the step $\|\sum_i c_i x_i\|_2 \le (\sum_i c_i^2)^{1/2}$, which needs orthonormal
+eigenvectors, that is, a normal $A$. For a diagonalizable $A$, the triangle inequality gives the
+constant $C = \sum_{i \neq 1} |\alpha_i / \alpha_1|$, and this is what is proved.
+
+The indices $1$ and $2$ are `i₀` and `i₁`. The proof specializes the backbone's
+`Krylov.norm_inv_pow_smul_pow_apply_sub_le_of_eigenbasis`, after
+`QuarteroniSaccoSaleri.Chapter05.norm_smul_powerIterate`. -/
 theorem theorem_5_6 {A : Matrix (Fin n) (Fin n) ℂ}
     (x : Module.Basis (Fin n) ℂ (EuclideanSpace ℂ (Fin n))) {lam : Fin n → ℂ}
     (hx : ∀ i, toEuclideanLin A (x i) = lam i • x i) (hx1 : ∀ i, ‖x i‖ = 1) {i₀ i₁ : Fin n}
@@ -132,10 +204,16 @@ theorem theorem_5_6 {A : Matrix (Fin n) (Fin n) ℂ}
   exact Krylov.norm_inv_pow_smul_pow_apply_sub_le_of_eigenbasis hx hx1 hl₀ hdom hα
     (x.sum_repr q₀).symm k
 
-/-- The `λ_1`-component and the rest of `q^(0) = ∑ α_i x_i`: the rest lies in the span of the
-generalized eigenspaces of the eigenvalues `λ_i ≠ λ_1`, and every eigenvalue of `A` is some
-`λ_i`. The bookkeeping shared by `theorem_5_6_rayleigh`, `inverseIterate_tendsto` and
-`powerIterate_of_eq`. -/
+/-- Let $A \in \mathbb{C}^{n \times n}$ have a basis of eigenvectors $x_i$ with eigenvalues
+$\lambda_i$, let $q^{(0)} = \sum_i \alpha_i x_i$, and let $s$ be a set of indices and
+$l \in \mathbb{C}$ with $\lambda_i \neq l$ for every $i \notin s$. Then
+$\sum_{i \notin s} \alpha_i x_i$ lies in the span of the generalized eigenspaces of $A$ for the
+eigenvalues $\mu \neq l$.
+
+This splits $q^{(0)}$ into its $l$-component and the rest, for
+`QuarteroniSaccoSaleri.Chapter05.theorem_5_6_rayleigh`,
+`QuarteroniSaccoSaleri.Chapter05.inverseIterate_tendsto` and
+`QuarteroniSaccoSaleri.Chapter05.powerIterate_of_eq`. -/
 theorem sum_repr_erase_mem_iSup_maxGenEigenspace {A : Matrix (Fin n) (Fin n) ℂ}
     (x : Module.Basis (Fin n) ℂ (EuclideanSpace ℂ (Fin n))) {lam : Fin n → ℂ}
     (hx : ∀ i, toEuclideanLin A (x i) = lam i • x i) (q₀ : EuclideanSpace ℂ (Fin n))
@@ -147,10 +225,17 @@ theorem sum_repr_erase_mem_iSup_maxGenEigenspace {A : Matrix (Fin n) (Fin n) ℂ
   exact Submodule.mem_iSup_of_mem (lam i) (Submodule.mem_iSup_of_mem (hs i hi')
     (Module.End.eigenspace_le_maxGenEigenspace (Module.End.mem_eigenspace_iff.mpr (hx i))))
 
-/-- **Theorem 5.6, the consequence drawn after it.** Under its hypotheses the Rayleigh quotients
-converge to the dominant eigenvalue: `lim_{k → ∞} ν^(k) = λ_1`. Backbone
-`Krylov.tendsto_inner_powerIterate`, with `q^(0) = α_1 x_1 + ∑_{i ≠ 1} α_i x_i` the splitting of the
-starting vector along the dominant eigenvector and the other generalized eigenspaces. -/
+/-- **Theorem 5.6** of [quarteroni2000numerical], the consequence that the book draws after it. Let
+$A \in \mathbb{C}^{n \times n}$ have a basis of eigenvectors $x_1, \dots, x_n$ with eigenvalues
+ordered as in (5.16), $|\lambda_1| > |\lambda_2| \ge |\lambda_i|$ for $i \neq 1$. Let
+$q^{(0)} = \sum_i \alpha_i x_i$ with $\|q^{(0)}\|_2 = 1$ and $\alpha_1 \neq 0$. Then the
+Rayleigh quotients converge to the dominant eigenvalue:
+$$\lim_{k \to \infty} \nu^{(k)} = \lambda_1.$$
+
+The eigenvectors need not be unit vectors here. The proof specializes the backbone's
+`Krylov.tendsto_inner_powerIterate`, with the splitting $q^{(0)} = \alpha_1 x_1 + \sum_{i \neq
+1} \alpha_i x_i$ of the starting vector along the dominant eigenvector and the other generalized
+eigenspaces. -/
 theorem theorem_5_6_rayleigh {A : Matrix (Fin n) (Fin n) ℂ}
     (x : Module.Basis (Fin n) ℂ (EuclideanSpace ℂ (Fin n))) {lam : Fin n → ℂ}
     (hx : ∀ i, toEuclideanLin A (x i) = lam i • x i) {i₀ i₁ : Fin n}
@@ -175,15 +260,27 @@ theorem theorem_5_6_rayleigh {A : Matrix (Fin n) (Fin n) ℂ}
   · conv_lhs => rw [← x.sum_repr q₀]
     rw [← Finset.add_sum_erase _ _ (Finset.mem_univ i₀), Finset.sdiff_singleton_eq_erase]
 
-/-! ### (5.23): the symmetric case -/
+/-! ### Equation (5.23): the symmetric case -/
 
-/-- **(5.23).** If `A` is real and symmetric with orthonormal eigenvectors `x_i` and eigenvalues
-`λ_i` (`|λ_1| > |λ_2| ≥ |λ_i|`, `i ≠ 1`, indices `i₀`, `i₁`), and `cos θ_0 = |x_1ᵀ q^(0)| ≠ 0`, then
-`|λ_1 − ν^(k)| ≤ (λ_max − λ_min) tan²θ_0 |λ_2/λ_1|^{2k}` for every `k`: the convergence of `ν^(k)`
-is quadratic in the ratio `|λ_2/λ_1|`. Backbone
-`LinearMap.IsSymmetric.abs_sub_rayleigh_powerIterate_le`, with `tan²θ_0 = (1 − cos²θ_0)/cos²θ_0`.
-Erratum: the book prints `|λ_1 − λ_n|` for the spread of the spectrum, which under the modulus
-ordering (5.16) is false (`diag(3, −2, 1)`). -/
+/-- **Equation (5.23)** of [quarteroni2000numerical]. Let $A \in \mathbb{R}^{n \times n}$ be
+symmetric, with orthonormal eigenvectors $x_i$ and eigenvalues $\lambda_i$ ordered as in (5.16),
+$|\lambda_1| > |\lambda_2| \ge |\lambda_i|$ for $i \neq 1$. Let $q^{(0)} \in \mathbb{R}^n$ with
+$\|q^{(0)}\|_2 = 1$ and $\cos \theta_0 = |x_1^T q^{(0)}| \neq 0$. Then for every $k$,
+$$|\lambda_1 - \nu^{(k)}| \le (\lambda_{\max} - \lambda_{\min}) \tan^2 \theta_0 \left|
+  \frac{\lambda_2}{\lambda_1} \right|^{2k}.$$
+So the convergence of $\nu^{(k)}$ is quadratic in the ratio $|\lambda_2 / \lambda_1|$.
+
+**Correction.** The book prints the factor $|\lambda_1 - \lambda_n|$ for the spread of the
+spectrum. Under the ordering (5.16) by modulus this is false:
+$A = \operatorname{diag}(3, -2, 1)$ has $|\lambda_1 - \lambda_3| = 2$, while the error constant
+is $5$. The statement has $\lambda_{\max} - \lambda_{\min}$.
+
+The eigenvectors and eigenvalues are `LinearMap.IsSymmetric.eigenvectorBasis` and
+`LinearMap.IsSymmetric.eigenvalues` of `Matrix.toEuclideanLin A`, and $\lambda_{\max}$ and
+$\lambda_{\min}$ are their supremum and infimum. The angle is
+$\theta_0 = \arccos |x_1^T q^{(0)}|$. The proof specializes the backbone's
+`LinearMap.IsSymmetric.abs_sub_rayleigh_powerIterate_le`, with $\tan^2 \theta_0 = (1 - \cos^2
+\theta_0) / \cos^2 \theta_0$. -/
 theorem equation_5_23 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) {i₀ i₁ : Fin n}
     (hgap : |(hA.isSymmetric_toEuclideanLin).eigenvalues finrank_euclideanSpace_fin i₁| <
       |(hA.isSymmetric_toEuclideanLin).eigenvalues finrank_euclideanSpace_fin i₀|)
@@ -222,15 +319,25 @@ theorem equation_5_23 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) {i₀ i�
   rw [htan, rayleighQuotient, powerIterate_eq_krylov A hq₀]
   simpa using h
 
-/-! ### (5.24): the backward error of the iterate -/
+/-! ### Equation (5.24): the backward error of the iterate -/
 
-/-- **(5.24).** Let `r^(k) = A q^(k) − ν^(k) q^(k)` be the residual at step `k` (with `z^(k) ≠ 0`,
-so that `‖q^(k)‖₂ = 1`) and `ε E^(k) = −r^(k) (q^(k))ᴴ ∈ ℂ^{n×n}`. Then `ε E^(k) q^(k) = −r^(k)`,
-so `(A + ε E^(k)) q^(k) = ν^(k) q^(k)`: at each step of the power method `ν^(k)` is an eigenvalue
-of the perturbed matrix `A + ε E^(k)`; and `ε = ‖ε E^(k)‖₂ = ‖r^(k)‖₂` (so `‖E^(k)‖₂ = 1`), which
-is moreover the smallest `2`-norm of a perturbation `ΔA` with `(A + ΔA) q^(k) = ν^(k) q^(k)`.
-Backbone `isLeast_eigen_backwardError`; the rank-one matrix `r qᴴ` is
-`InnerProductSpace.rankOne ℂ r q` on `ℂⁿ`. -/
+/-- **Equation (5.24)** of [quarteroni2000numerical]. Let $A \in \mathbb{C}^{n \times n}$ and
+$q^{(0)} \in \mathbb{C}^n$ with $\|q^{(0)}\|_2 = 1$, and let $k \in \mathbb{N}$ with
+$A^k q^{(0)} \neq 0$, so that $\|q^{(k)}\|_2 = 1$. Let $r^{(k)} = A q^{(k)} - \nu^{(k)} q^{(k)}$
+be the residual at step $k$, and let $\varepsilon E^{(k)} = -r^{(k)} (q^{(k)})^H \in
+\mathbb{C}^{n \times n}$. Then:
+
+1. $\varepsilon E^{(k)} q^{(k)} = -r^{(k)}$, so $(A + \varepsilon E^{(k)}) q^{(k)} = \nu^{(k)}
+   q^{(k)}$: at each step of the power method, $\nu^{(k)}$ is an eigenvalue of the perturbed
+   matrix $A + \varepsilon E^{(k)}$;
+2. $\|\varepsilon E^{(k)}\|_2 = \|r^{(k)}\|_2$;
+3. every $\Delta A \in \mathbb{C}^{n \times n}$ with
+   $(A + \Delta A) q^{(k)} = \nu^{(k)} q^{(k)}$ satisfies $\|r^{(k)}\|_2 \le \|\Delta A\|_2$.
+
+The product $\varepsilon E^{(k)}$ is one matrix in the statement, so
+$\varepsilon = \|r^{(k)}\|_2$ and $\|E^{(k)}\|_2 = 1$ are read from part 2. The rank-one matrix
+$r q^H$ is `Matrix.vecMulVec r (star q)`. The proof specializes the backbone's
+`isLeast_eigen_backwardError`. -/
 theorem equation_5_24 (A : Matrix (Fin n) (Fin n) ℂ) {q₀ : EuclideanSpace ℂ (Fin n)}
     (hq₀ : ‖q₀‖ = 1) {k : ℕ} (hz : toEuclideanLin (A ^ k) q₀ ≠ 0) :
     let q := powerIterate A q₀ k
@@ -272,11 +379,16 @@ theorem equation_5_24 (A : Matrix (Fin n) (Fin n) ℂ) {q₀ : EuclideanSpace �
       rw [map_add, LinearMap.add_apply] at hΔ
       exact hΔ
 
-/-! ### (5.28): inverse iteration -/
+/-! ### Equation (5.28): inverse iteration -/
 
-/-- **(5.28), inverse iteration** with shift `μ`. Given `q^(0) ∈ ℂⁿ` of unit Euclidean norm, for
-`k = 1, 2, …`: solve `(A − μ I) z^(k) = q^(k−1)`, set `q^(k) = z^(k) / ‖z^(k)‖₂`; the Rayleigh
-quotient `σ^(k) = (q^(k))ᴴ A q^(k)` is computed on `A` itself, `rayleighQuotient A (q^(k))`. -/
+/-- **Equation (5.28)** of [quarteroni2000numerical], inverse iteration with shift $\mu$. Let
+$A \in \mathbb{K}^{n \times n}$, $\mu \in \mathbb{K}$ and $q^{(0)} \in \mathbb{K}^n$. For
+$k = 1, 2, \dots$, the method solves $(A - \mu I) z^{(k)} = q^{(k-1)}$ and sets
+$q^{(k)} = z^{(k)} / \|z^{(k)}\|_2$. The approximation of the eigenvalue is the Rayleigh
+quotient $\sigma^{(k)} = (q^{(k)})^H A q^{(k)}$ of $A$ itself.
+
+The book takes $\|q^{(0)}\|_2 = 1$. The solution is $z^{(k)} = (A - \mu I)^{-1} q^{(k-1)}$ with
+Mathlib's inverse, which is $0$ when $A - \mu I$ is singular. Lean divides by zero to zero. -/
 noncomputable def inverseIterate (A : Matrix (Fin n) (Fin n) 𝕜) (μ : 𝕜)
     (q₀ : EuclideanSpace 𝕜 (Fin n)) : ℕ → EuclideanSpace 𝕜 (Fin n)
   | 0 => q₀
@@ -284,9 +396,12 @@ noncomputable def inverseIterate (A : Matrix (Fin n) (Fin n) 𝕜) (μ : 𝕜)
     (‖toEuclideanLin (A - μ • 1)⁻¹ (inverseIterate A μ q₀ k)‖ : 𝕜)⁻¹ •
       toEuclideanLin (A - μ • 1)⁻¹ (inverseIterate A μ q₀ k)
 
-/-- **The book's recursion (5.28) is the backbone's inverse iteration**: for `μ ∉ σ(A)` and a unit
-`q^(0)`, `inverseIterate A μ q₀ k = Krylov.inverseIterate (toEuclideanLin A) μ q₀ k`, the power
-method on `(A − μ I)⁻¹` (`Krylov.inverseIterate_eq_powerIterate`). -/
+/-- The recursion (5.28) of [quarteroni2000numerical] is the backbone's inverse iteration. Let
+$A \in \mathbb{K}^{n \times n}$, $\mu \notin \sigma(A)$, and $q^{(0)} \in \mathbb{K}^n$ with
+$\|q^{(0)}\|_2 = 1$. Then for every $k$, the iterate $q^{(k)}$ is `Krylov.inverseIterate
+(toEuclideanLin A) μ q₀ k`, the power method for $(A - \mu I)^{-1}$.
+
+The proof specializes the backbone's `Krylov.inverseIterate_eq_powerIterate`. -/
 theorem inverseIterate_eq_krylov {A : Matrix (Fin n) (Fin n) 𝕜} {μ : 𝕜} (hμ : μ ∉ spectrum 𝕜 A)
     {q₀ : EuclideanSpace 𝕜 (Fin n)} (hq₀ : ‖q₀‖ = 1) (k : ℕ) :
     inverseIterate A μ q₀ k = Krylov.inverseIterate (toEuclideanLin A) μ q₀ k := by
@@ -298,13 +413,20 @@ theorem inverseIterate_eq_krylov {A : Matrix (Fin n) (Fin n) 𝕜} {μ : 𝕜} (
   rw [hinv]
   rfl
 
-/-- **Convergence of inverse iteration** (§5.3.2, after (5.28)). Let `A` be diagonalizable with a
-basis of unit eigenvectors `x_i`, `μ ∉ σ(A)`, and let `λ_m` be the eigenvalue closest to `μ`, in
-the sense (5.27) `|λ_m − μ| < |λ_i − μ|` for `i ≠ m` (so `λ_m` is simple), with `α_m ≠ 0` in
-`q^(0) = ∑ α_i x_i`. Then the iterates converge essentially to `x_m` — `c_k q^(k) → x_m` for the
-unimodular scalars `c_k = ((λ_m − μ)/|λ_m − μ|)^k |α_m|/α_m`, the book's `q̃^(k) → x_m` — and
-`σ^(k) → λ_m`. Backbone `Krylov.tendsto_smul_inverseIterate` and
-`Krylov.tendsto_inner_inverseIterate`. -/
+/-- **Section 5.3.2** of [quarteroni2000numerical], the convergence of inverse iteration, after
+(5.28). Let $A \in \mathbb{C}^{n \times n}$ be diagonalizable, with a basis of unit eigenvectors
+$x_i$ and eigenvalues $\lambda_i$, and let $\mu \notin \sigma(A)$. Let $\lambda_m$ be the
+eigenvalue closest to $\mu$ in the sense of (5.27),
+$$|\lambda_m - \mu| < |\lambda_i - \mu|, \qquad i \neq m,$$
+so that $\lambda_m$ is simple. Let $q^{(0)} = \sum_i \alpha_i x_i$ with $\|q^{(0)}\|_2 = 1$ and
+$\alpha_m \neq 0$. Then
+$$c_k q^{(k)} \to x_m, \qquad c_k = \left( \frac{\lambda_m - \mu}{|\lambda_m - \mu|} \right)^k
+  \frac{|\alpha_m|}{\alpha_m},$$
+and $\sigma^{(k)} \to \lambda_m$.
+
+The scalars $c_k$ have modulus $1$, so the iterates converge to $x_m$ up to a unimodular factor.
+This is the book's $\tilde q^{(k)} \to x_m$. The proof specializes the backbone's
+`Krylov.tendsto_smul_inverseIterate` and `Krylov.tendsto_inner_inverseIterate`. -/
 theorem inverseIterate_tendsto {A : Matrix (Fin n) (Fin n) ℂ}
     (x : Module.Basis (Fin n) ℂ (EuclideanSpace ℂ (Fin n))) {lam : Fin n → ℂ}
     (hx : ∀ i, toEuclideanLin A (x i) = lam i • x i) (hx1 : ∀ i, ‖x i‖ = 1) {μ : ℂ}
@@ -349,15 +471,26 @@ theorem inverseIterate_tendsto {A : Matrix (Fin n) (Fin n) ℂ}
   refine h.congr fun k => ?_
   rw [smul_smul, mul_comm]
 
-/-! ### §5.3.3: coincident dominant eigenvalues -/
+/-! ### Section 5.3.3: coincident dominant eigenvalues -/
 
-/-- **§5.3.3, case 1: `λ_2 = λ_1`.** If the two dominant eigenvalues coincide, `λ_{i₁} = λ_{i₀}`
-with `|λ_i| < |λ_1|` for the other indices, the power method is still convergent: the iterates
-converge essentially to the unit vector in the direction of `α_1 x_1 + α_2 x_2`, which lies in the
-subspace spanned by the eigenvectors `x_1`, `x_2`, and `ν^(k) → λ_1`. Backbone
+/-- **Section 5.3.3** of [quarteroni2000numerical], case 1: $\lambda_2 = \lambda_1$. Let
+$A \in \mathbb{C}^{n \times n}$ have a basis of eigenvectors $x_i$ with eigenvalues $\lambda_i$.
+Suppose that the two dominant eigenvalues coincide, $\lambda_2 = \lambda_1 \neq 0$ for two
+distinct indices, and that $|\lambda_i| < |\lambda_1|$ for the other indices. Let
+$q^{(0)} = \sum_i \alpha_i x_i$ with $\|q^{(0)}\|_2 = 1$ and $\alpha_1 \neq 0$, and let
+$u = \alpha_1 x_1 + \alpha_2 x_2$. Then:
+
+1. $u$ lies in the subspace spanned by $x_1$ and $x_2$;
+2. there are scalars $c_k$ with $|c_k| = 1$ such that $c_k q^{(k)} \to u / \|u\|_2$;
+3. $\nu^{(k)} \to \lambda_1$.
+
+So the power method is still convergent, and the iterates converge, up to a unimodular factor,
+to the unit vector in the direction of $u$.
+
+The indices $1$ and $2$ are `i₀` and `i₁`. The proof specializes the backbone's
 `Krylov.exists_norm_eq_one_tendsto_smul_powerIterate` and `Krylov.tendsto_inner_powerIterate`,
-whose `λ_1`-component `u = α_1 x_1 + α_2 x_2` of `q^(0)` is an eigenvector (the backbone never
-assumed `λ_1` simple, only that the `λ_1`-component of `q^(0)` is an eigenvector). -/
+for which the $\lambda_1$-component $u$ of $q^{(0)}$ is an eigenvector. The backbone does not
+assume that $\lambda_1$ is simple. -/
 theorem powerIterate_of_eq {A : Matrix (Fin n) (Fin n) ℂ}
     (x : Module.Basis (Fin n) ℂ (EuclideanSpace ℂ (Fin n))) {lam : Fin n → ℂ}
     (hx : ∀ i, toEuclideanLin A (x i) = lam i • x i) {i₀ i₁ : Fin n} (hi : i₁ ≠ i₀)

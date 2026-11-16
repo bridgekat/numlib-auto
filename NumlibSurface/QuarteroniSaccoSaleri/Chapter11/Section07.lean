@@ -6,41 +6,66 @@ import Numlib.Nonlinear.FixedPoint
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter11.Section06
 
 /-!
-# Quarteroni–Sacco–Saleri §11.7: predictor–corrector methods
+# Quarteroni, Sacco and Saleri, Section 11.7: Predictor–Corrector Methods
 
-Surface file for Alfio Quarteroni, Riccardo Sacco and Fausto Saleri, *Numerical Mathematics*,
-Springer, 2000, §11.7.
+This module formalizes Section 11.7 of [quarteroni2000numerical]. The step of an implicit linear
+multistep method solves $u_{n+1} = G + h b_{-1} f(t_{n+1}, u_{n+1})$, where $G$ collects the known
+terms. The fixed-point iteration (11.67) for this equation converges if $h |b_{-1}| L < 1$, where
+$L$ is the Lipschitz constant of $f$ in $y$ (11.68). A predictor–corrector scheme replaces the
+iteration by a fixed number $m$ of corrections: an explicit predictor computes $u^{(0)}_{n+1}$, and
+$m$ times an evaluation of $f$ and a correction by the implicit corrector follow. This is the scheme
+$P(EC)^m$ of (11.69), and $P(EC)^mE$ adds a final evaluation. Heun's method and the pair of the
+two-step Adams–Bashforth and Adams–Moulton methods are examples (Example 11.8). If the predictor has
+order $\tilde q$ and the corrector order $q$, the scheme $P(EC)^mE$ has order
+$\min(q, \tilde q + m)$ (Property 11.3). Example 11.10 gives the characteristic polynomials of the
+Adams–Bashforth–Moulton pairs.
 
-The fixed-point iteration (11.67) for the implicit step of a multistep method and its convergence
-condition (11.68); the predictor–corrector schemes `P(EC)^m` and `P(EC)^mE` (11.69); Heun's
-method as a predictor–corrector pair and the Adams–Bashforth–Moulton pair of Example 11.8; the
-order of a pair (Property 11.3); the characteristic polynomials of the ABM pairs (Example 11.10).
-
-Everything is the scalar case `E = ℝ` of `Numlib/ODE/Multistep` (`ODE.PredictorCorrector`), with
-`Numlib/Nonlinear/FixedPoint` for (11.68). Example 11.9 (a numerical experiment), the
-characteristic polynomials `Π_{P(EC)^m}`, `Π_{P(EC)^mE}` and Milne's device are not formalized.
+The proofs specialize the backbone module `Numlib.ODE.Multistep` at $E = \mathbb{R}$, through
+`ODE.PredictorCorrector`, with Mathlib's contraction mapping theorem for (11.68).
 
 ## Main definitions
 
-* `equation_11_69 PC f h t₀ u fv`, `equation_11_69_pece PC f h t₀ u` — the `P(EC)^m` and
-  `P(EC)^mE` orbits of a pair `PC : ODE.PredictorCorrector`.
-* `example_11_8_abm_pair` — the pair (AB2, AM3) with one correction.
-* `pecOrder PC f t₀ T y q` — order `q` of the `P(EC)^mE` scheme along a solution.
+* Equation (11.69), `QuarteroniSaccoSaleri.Chapter11.equation_11_69`: the sequences computed by the
+  scheme $P(EC)^m$.
+* Section 11.7, `QuarteroniSaccoSaleri.Chapter11.equation_11_69_pece`: the sequences computed by the
+  scheme $P(EC)^mE$.
+* Example 11.8, `QuarteroniSaccoSaleri.Chapter11.example_11_8_abm_pair`: the pair of the two-step
+  Adams–Bashforth and Adams–Moulton methods with one correction.
+* Property 11.3, `QuarteroniSaccoSaleri.Chapter11.pecOrder`: the scheme $P(EC)^mE$ has order $q$
+  along a curve.
 
 ## Main results
 
-* `equation_11_68` — the convergence of the fixed-point iteration (11.67).
-* `example_11_8`, `example_11_8_abm` — Heun and the (AB2, AM3) pair.
-* `property_11_3` — the order of a predictor–corrector pair.
-* `example_11_10` — the characteristic polynomials of the ABM pairs.
+* Equation (11.68), `QuarteroniSaccoSaleri.Chapter11.equation_11_68`: if $h |b_{-1}| L < 1$, the
+  implicit step has a unique solution, and the fixed-point iteration (11.67) converges to it.
+* Equation (11.69), `QuarteroniSaccoSaleri.Chapter11.equation_11_69_iff`,
+  `QuarteroniSaccoSaleri.Chapter11.equation_11_69_pece_iff`: the two schemes in explicit form.
+* Example 11.8, `QuarteroniSaccoSaleri.Chapter11.example_11_8`: Heun's method is the scheme $P(EC)E$
+  with forward Euler as predictor and Crank–Nicolson as corrector.
+* Example 11.8, `QuarteroniSaccoSaleri.Chapter11.example_11_8_abm`: the Adams–Bashforth–Moulton pair
+  and its $PEC$ recursion.
+* Property 11.3, `QuarteroniSaccoSaleri.Chapter11.property_11_3`: the scheme $P(EC)^mE$ has order
+  $\min(q, \tilde q + m)$.
+* Example 11.10, `QuarteroniSaccoSaleri.Chapter11.example_11_10`: the characteristic polynomials of
+  the Adams–Bashforth–Moulton pairs.
 
 ## Conventions
 
-A pair `PC : ODE.PredictorCorrector` stores the predictor `(ã, b̃)` (explicit), the corrector
-`(a, b, b_{-1})` padded to the predictor's `p + 1` steps, and the number `m` of corrections;
-`PC.toPredictor` and `PC.toCorrector` are the two methods. The `P(EC)^m` orbit carries the two
-sequences `u = u^{(m)}` and `fv = f^{(m-1)}` of the book; the `P(EC)^mE` orbit only `u`, the
-function values being recomputed from the corrected values.
+* A pair `PC : ODE.PredictorCorrector` stores the explicit predictor $(\tilde a, \tilde b)$, the
+  corrector $(a, b, b_{-1})$ and the number $m$ of corrections. The corrector is padded by zeros to
+  the $p + 1$ steps of the predictor. The two methods are `ODE.PredictorCorrector.toPredictor` and
+  `ODE.PredictorCorrector.toCorrector`.
+* The scheme $P(EC)^m$ computes two sequences, $u = u^{(m)}$ and the stored function values
+  $f^{(m-1)}$, which the Lean code calls `fv`. The scheme $P(EC)^mE$ computes only $u$, and its
+  function values are evaluated at the corrected values.
+
+## Not formalized
+
+* **Example 11.9.** It is a numerical experiment.
+* **The characteristic polynomials $\Pi_{P(EC)^m}$ and $\Pi_{P(EC)^mE}$ of the schemes.**
+* **Milne's device.**
+* **Property 11.3 for the scheme $P(EC)^m$**, whose truncation error is not defined in the backbone,
+  and **the clauses of Property 11.3 on the principal local truncation error**.
 -/
 
 open Set Filter Topology Asymptotics ODE Polynomial
@@ -52,13 +77,19 @@ variable {f : ℝ → ℝ → ℝ} {t₀ T h t : ℝ} {y : ℝ → ℝ} {n : ℕ
 
 /-! ### (11.67)–(11.68): the fixed-point iteration for the implicit step -/
 
-/-- **The convergence condition (11.68)** for the fixed-point iteration (11.67)
-`u_{n+1}^{(k+1)} = Ψ(u_{n+1}^{(k)})`, `Ψ(v) = G + h b_{-1} f(t_{n+1}, v)`, of the implicit step
-`u_{n+1} = G + h b_{-1} f(t_{n+1}, u_{n+1})`, `G = ∑_{j=0}^p a_j u_{n-j} + h ∑_{j=0}^p b_j f_{n-j}`:
-if `f` is `L`-Lipschitz in `y` and `h |b_{-1}| L < 1` (the book's `h < 1/(|b_{-1}| L)`), then `Ψ`
-is a contraction, the step has a unique solution, and the iterates converge to it from every
-starting value; Mathlib's `ContractingWith.fixedPoint` and
-`ContractingWith.tendsto_iterate_fixedPoint` (the book's Theorem 6.1). -/
+/-- **Equation (11.68)** of [quarteroni2000numerical], the convergence condition of the fixed-point
+iteration (11.67). Let $M$ be a linear multistep method, let $L \ge 0$, $t \in \mathbb{R}$ and
+$h \ge 0$, and let $|f(t, y_1) - f(t, y_2)| \le L |y_1 - y_2|$ for all
+$y_1, y_2 \in \mathbb{R}$. Let $G \in \mathbb{R}$, and put $\Psi(v) = G + h b_{-1} f(t, v)$. If
+$$h |b_{-1}| L < 1,$$
+then the equation $v = \Psi(v)$ has a unique solution $v$, and for every starting value $v_0$
+the iterates $\Psi^k(v_0)$ converge to $v$ as $k \to \infty$.
+
+In the book, $t = t_{n+1}$, $G = \sum_{j=0}^{p} a_j u_{n-j} + h \sum_{j=0}^{p} b_j f_{n-j}$, the
+iteration (11.67) is $u_{n+1}^{(k+1)} = \Psi(u_{n+1}^{(k)})$, and the condition is written
+$h < 1/(|b_{-1}| L)$. The map $\Psi$ is a contraction, and the proof uses Mathlib's
+`ContractingWith.fixedPoint` and `ContractingWith.tendsto_iterate_fixedPoint`, the contraction
+mapping theorem (Theorem 6.1 of the book). -/
 theorem equation_11_68 (M : LinearMultistep) {L : ℝ} (hL : 0 ≤ L) (t : ℝ)
     (hf : ∀ y₁ y₂ : ℝ, |f t y₁ - f t y₂| ≤ L * |y₁ - y₂|) (hh : 0 ≤ h)
     (hcond : h * |M.bm1| * L < 1) (G : ℝ) :
@@ -82,24 +113,40 @@ theorem equation_11_68 (M : LinearMultistep) {L : ℝ} (hL : 0 ≤ L) (t : ℝ)
 
 /-! ### (11.69): the `P(EC)^m` and `P(EC)^mE` schemes -/
 
-/-- **The `P(EC)^m` scheme (11.69)**: at every step `n ≥ p`, the predictor `[P]`
-`u^{(0)}_{n+1} = ∑ ã_j u^{(m)}_{n-j} + h ∑ b̃_j f^{(m-1)}_{n-j}`, then `m` times the evaluation
-`[E]` `f^{(k)}_{n+1} = f(t_{n+1}, u^{(k)}_{n+1})` and the correction `[C]`
-`u^{(k+1)}_{n+1} = ∑ a_j u^{(m)}_{n-j} + h ∑ b_j f^{(m-1)}_{n-j} + h b_{-1} f^{(k)}_{n+1}`; the
-sequences are `u = u^{(m)}` and `fv = f^{(m-1)}`. `PEC` is the case `m = 1`;
-`ODE.PredictorCorrector.IsOrbitPEC`. -/
+/-- **Equation (11.69)** of [quarteroni2000numerical], the scheme $P(EC)^m$. Let `PC` be a
+predictor–corrector pair with $p + 1$ steps and $m$ corrections, $f : \mathbb{R} \times
+\mathbb{R} \to \mathbb{R}$ and $h, t_0 \in \mathbb{R}$. Two sequences $u = u^{(m)}$ and
+$f^{(m-1)}$ **are computed by the scheme $P(EC)^m$** if at every step $n \ge p$:
+
+* [P] $u^{(0)}_{n+1} = \sum_{j=0}^{p} \tilde a_j u^{(m)}_{n-j} + h \sum_{j=0}^{p} \tilde b_j
+  f^{(m-1)}_{n-j}$;
+* for $k = 0, \dots, m - 1$: [E] $f^{(k)}_{n+1} = f(t_{n+1}, u^{(k)}_{n+1})$, and [C]
+  $u^{(k+1)}_{n+1} = \sum_{j=0}^{p} a_j u^{(m)}_{n-j} + h \sum_{j=0}^{p} b_j f^{(m-1)}_{n-j} + h
+  b_{-1} f^{(k)}_{n+1}$.
+
+The scheme $PEC$ is the case $m = 1$. The definition is `ODE.PredictorCorrector.IsOrbitPEC`, and
+the sequence $f^{(m-1)}$ is the argument `fv`. -/
 def equation_11_69 (PC : PredictorCorrector) (f : ℝ → ℝ → ℝ) (h t₀ : ℝ) (u fv : ℕ → ℝ) : Prop :=
   PC.IsOrbitPEC f h t₀ u fv
 
-/-- **The `P(EC)^mE` scheme (§11.7)**: as `P(EC)^m`, with a final evaluation
-`f^{(m)}_{n+1} = f(t_{n+1}, u^{(m)}_{n+1})` so that the stored function values are those of the
-corrected values; `ODE.PredictorCorrector.IsOrbitPECE`. -/
+/-- **Section 11.7** of [quarteroni2000numerical], the scheme $P(EC)^mE$. A sequence $u = u^{(m)}$
+is computed by the scheme $P(EC)^mE$ if it follows the steps of $P(EC)^m$, followed by the final
+evaluation $f^{(m)}_{n+1} = f(t_{n+1}, u^{(m)}_{n+1})$. So the stored function values are those
+of the corrected values.
+
+The definition is `ODE.PredictorCorrector.IsOrbitPECE`. -/
 def equation_11_69_pece (PC : PredictorCorrector) (f : ℝ → ℝ → ℝ) (h t₀ : ℝ) (u : ℕ → ℝ) : Prop :=
   PC.IsOrbitPECE f h t₀ u
 
-/-- (11.69), unfolded: for `n ≥ p`, with `Ψ_n(v) = ∑ a_j u_{n-j} + h ∑ b_j fv_{n-j} + h b_{-1}
-f(t_{n+1}, v)` and the predicted value `u^{(0)}_{n+1} = ∑ ã_j u_{n-j} + h ∑ b̃_j fv_{n-j}`,
-`u_{n+1} = Ψ_n^m(u^{(0)}_{n+1})` and `fv_{n+1} = f(t_{n+1}, Ψ_n^{m-1}(u^{(0)}_{n+1}))`. -/
+/-- **Equation (11.69)** of [quarteroni2000numerical], in explicit form. For $n \ge p$ put
+$$\Psi_n(v) = \sum_{j=0}^{p} a_j u_{n-j} + h \sum_{j=0}^{p} b_j f^{(m-1)}_{n-j} + h b_{-1}
+  f(t_{n+1}, v), \qquad u^{(0)}_{n+1} = \sum_{j=0}^{p} \tilde a_j u_{n-j} + h \sum_{j=0}^{p}
+  \tilde b_j f^{(m-1)}_{n-j}.$$
+Then $u$ and $f^{(m-1)}$ are computed by the scheme $P(EC)^m$ if and only if for every $n \ge p$
+$$u_{n+1} = \Psi_n^m\bigl(u^{(0)}_{n+1}\bigr), \qquad f^{(m-1)}_{n+1} = f\bigl(t_{n+1},
+  \Psi_n^{m-1}(u^{(0)}_{n+1})\bigr).$$
+
+For $m = 0$, the exponent $m - 1$ is $0$, by truncated subtraction. -/
 theorem equation_11_69_iff (PC : PredictorCorrector) (u fv : ℕ → ℝ) :
     equation_11_69 PC f h t₀ u fv ↔ ∀ n, PC.p ≤ n →
       u (n + 1) = (fun v => (∑ j : Fin (PC.p + 1), PC.a j * u (n - j) +
@@ -122,8 +169,12 @@ theorem equation_11_69_iff (PC : PredictorCorrector) (u fv : ℕ → ℝ) :
   · intro H n
     exact H (n + PC.p) (Nat.le_add_left _ _)
 
-/-- The `P(EC)^mE` scheme, unfolded: as `equation_11_69_iff` with the stored function values
-`f_{n-j} = f(t_{n-j}, u_{n-j})` of the corrected values. -/
+/-- **Section 11.7** of [quarteroni2000numerical], the scheme $P(EC)^mE$ in explicit form. A
+sequence $u$ is computed by the scheme $P(EC)^mE$ if and only if for every $n \ge p$
+$$u_{n+1} = \Psi_n^m\bigl(u^{(0)}_{n+1}\bigr),$$
+where $\Psi_n$ and $u^{(0)}_{n+1}$ are as in
+`QuarteroniSaccoSaleri.Chapter11.equation_11_69_iff`, with the stored function values
+$f(t_{n-j}, u_{n-j})$ in place of $f^{(m-1)}_{n-j}$. -/
 theorem equation_11_69_pece_iff (PC : PredictorCorrector) (u : ℕ → ℝ) :
     equation_11_69_pece PC f h t₀ u ↔ ∀ n, PC.p ≤ n →
       u (n + 1) = (fun v => (∑ j : Fin (PC.p + 1), PC.a j * u (n - j) +
@@ -144,10 +195,13 @@ theorem equation_11_69_pece_iff (PC : PredictorCorrector) (u : ℕ → ℝ) :
   · intro H n
     exact H (n + PC.p) (Nat.le_add_left _ _)
 
-/-- **Example 11.8, Heun's method**: Heun's method (11.10) is the predictor–corrector method with
-forward Euler as predictor and Crank–Nicolson as corrector and one correction — the `P(EC)E`
-scheme, whose stored function values are those of the corrected values (with `P(EC)` they would
-be those of the predicted values, and the scheme would not be Heun's);
+/-- **Example 11.8** of [quarteroni2000numerical], Heun's method. A sequence $u$ is computed by
+Heun's method (11.10) if and only if it is computed by the scheme $P(EC)E$ with forward Euler as
+predictor, Crank–Nicolson as corrector and one correction.
+
+With $P(EC)$ instead, the stored function values would be those of the predicted values, and the
+scheme would not be Heun's method. Forward Euler is `ODE.LinearMultistep.ofOneStep 1 1 0`, and
+Crank–Nicolson is `ODE.LinearMultistep.ofOneStep 1 (1 / 2) (1 / 2)`. The proof specializes
 `ODE.PredictorCorrector.heun_eq_pece`. -/
 theorem example_11_8 (u : ℕ → ℝ) :
     equation_11_69_pece (PredictorCorrector.ofPair (LinearMultistep.ofOneStep 1 1 0)
@@ -155,17 +209,24 @@ theorem example_11_8 (u : ℕ → ℝ) :
       OneStep.IsOrbit (OneStep.ofIncrement (equation_11_10 f)) h t₀ u :=
   PredictorCorrector.heun_eq_pece
 
-/-- **Example 11.8, the second pair**: the two-step Adams–Bashforth predictor (11.50) with the
-two-step Adams–Moulton corrector (11.51) of order 3 and one correction. -/
+/-- **Example 11.8** of [quarteroni2000numerical], the second pair: the two-step Adams–Bashforth
+method (11.50) as predictor, the two-step Adams–Moulton method (11.51) of order $3$ as
+corrector, and one correction. The predictor has $\tilde a = (1, 0)$ and
+$\tilde b = (3/2, -1/2)$; the corrector has $a = (1, 0)$, $b = (8/12, -1/12)$ and
+$b_{-1} = 5/12$. -/
 noncomputable def example_11_8_abm_pair : PredictorCorrector :=
   ⟨1, ![1, 0], ![3 / 2, -1 / 2], ![1, 0], ![8 / 12, -1 / 12], 5 / 12, 1⟩
 
-/-- The pair `example_11_8_abm_pair` is `(adamsBashforth 1, adamsMoulton 2)`, and its `PEC`
-recursion is the displayed one, for `n ≥ 1`:
-`u^{(0)}_{n+1} = u^{(1)}_n + (h/2)(3 f^{(0)}_n - f^{(0)}_{n-1})`,
-`f^{(0)}_{n+1} = f(t_{n+1}, u^{(0)}_{n+1})`,
-`u^{(1)}_{n+1} = u^{(1)}_n + (h/12)(5 f^{(0)}_{n+1} + 8 f^{(0)}_n - f^{(0)}_{n-1})`, with
-`u = u^{(1)}` and `fv = f^{(0)}`. -/
+/-- **Example 11.8** of [quarteroni2000numerical], the Adams–Bashforth–Moulton pair. The predictor
+of the pair is `ODE.LinearMultistep.adamsBashforth 1`, and its corrector is
+`ODE.LinearMultistep.adamsMoulton 2`. Two sequences $u = u^{(1)}$ and $f^{(0)}$ are computed by
+its scheme $PEC$ if and only if for every $n \ge 1$
+$$\begin{aligned} u^{(0)}_{n+1} &= u_n + \tfrac{h}{2} \bigl(3 f^{(0)}_n - f^{(0)}_{n-1}\bigr),
+  \\ f^{(0)}_{n+1} &= f\bigl(t_{n+1}, u^{(0)}_{n+1}\bigr), \\ u_{n+1} &= u_n + \tfrac{h}{12}
+  \bigl(5 f^{(0)}_{n+1} + 8 f^{(0)}_n - f^{(0)}_{n-1}\bigr). \end{aligned}$$
+
+In the Lean statement the predicted value $u^{(0)}_{n+1}$ is substituted into the other two
+equations. -/
 theorem example_11_8_abm (u fv : ℕ → ℝ) :
     example_11_8_abm_pair.toPredictor = LinearMultistep.adamsBashforth 1 ∧
     example_11_8_abm_pair.toCorrector = LinearMultistep.adamsMoulton 2 ∧
@@ -204,22 +265,33 @@ theorem example_11_8_abm (u fv : ℕ → ℝ) :
 
 /-! ### Property 11.3: the order of a predictor–corrector pair -/
 
-/-- **Order `q` of the `P(EC)^mE` scheme** along a solution `y` on `[t₀, t₀ + T]`: the global
-truncation error of the scheme (the maximum over the steps of `‖y_{n+1} - P(EC)^mE(y_n, …)‖ / h`)
-is `O(h^q)`; `ODE.PredictorCorrector.HasOrderFor`. -/
+/-- **Property 11.3** of [quarteroni2000numerical], the order of the scheme $P(EC)^mE$. Let `PC` be
+a predictor–corrector pair, $f : \mathbb{R} \times \mathbb{R} \to \mathbb{R}$,
+$t_0, T \in \mathbb{R}$, $y : \mathbb{R} \to \mathbb{R}$ and $q \in \mathbb{N}$. The scheme
+$P(EC)^mE$ **has order $q$** along $y$ on $[t_0, t_0 + T]$ if its global truncation error is
+$O(h^q)$ as $h \to 0^+$. The global truncation error is the maximum over the steps
+$p \le n < N_h$ of $|y_{n+1} - \Phi_h(y_n, \dots, y_{n-p})|/h$, where $\Phi_h$ is one step of
+the scheme applied to the exact values.
+
+The definition is `ODE.PredictorCorrector.HasOrderFor`. -/
 def pecOrder (PC : PredictorCorrector) (f : ℝ → ℝ → ℝ) (t₀ T : ℝ) (y : ℝ → ℝ) (q : ℕ) : Prop :=
   PC.HasOrderFor f t₀ T y q
 
-/-- **Property 11.3 (the order of a predictor–corrector pair)**: let the predictor have order `q̃`
-and the corrector order `q` along the solution `y` of a Cauchy problem whose field is Lipschitz in
-`y` uniformly on `[t₀, t₀ + T]`. Then the `P(EC)^mE` scheme has order `min(q, q̃ + m)`: the order
-`q` of the corrector if `q̃ ≥ q`, or if `q̃ < q` and `m ≥ q - q̃`; the order `q̃ + m` if `q̃ < q`
-and `m ≤ q - q̃`; `ODE.PredictorCorrector.hasOrderFor_of`. The book states the property for
-`P(EC)^m`
-and adds that `P(EC)^mE` has the same order; the `P(EC)^m` scheme, whose truncation error is not
-defined in the backbone, and the clauses on the principal local truncation error (the same PLTE
-as the corrector when `m > q - q̃`, a different one when `m = q - q̃`) are not formalized. The
-book quotes the property without proof ([Lam91]). -/
+/-- **Property 11.3** of [quarteroni2000numerical] (the order of a predictor–corrector pair). Let
+$|f(t, y_1) - f(t, y_2)| \le L |y_1 - y_2|$ for all $t \in [t_0, t_0 + T]$ and
+$y_1, y_2 \in \mathbb{R}$, and let $y'(t) = f(t, y(t))$ for every $t \in [t_0, t_0 + T]$. Let
+the predictor have order $\tilde q$ and the corrector order $q$ along $y$ on $[t_0, t_0 + T]$.
+Then the scheme $P(EC)^mE$ has order $\min(q, \tilde q + m)$ along $y$. In particular:
+
+* if $\tilde q \ge q$, the scheme has the order $q$ of the corrector;
+* if $\tilde q < q$ and $m \ge q - \tilde q$, the scheme has order $q$;
+* if $\tilde q < q$ and $m \le q - \tilde q$, the scheme has order $\tilde q + m$.
+
+The book states the property for the scheme $P(EC)^m$ and adds that $P(EC)^mE$ has the same
+order. The scheme $P(EC)^m$, whose truncation error is not defined in the backbone, and the
+clauses on the principal local truncation error (the same as that of the corrector if
+$m > q - \tilde q$, a different one if $m = q - \tilde q$) are not formalized. The book quotes
+the property without proof. The proof specializes `ODE.PredictorCorrector.hasOrderFor_of`. -/
 theorem property_11_3 (PC : PredictorCorrector) {L : ℝ}
     (hf : ∀ t ∈ Icc t₀ (t₀ + T), ∀ y₁ y₂ : ℝ, |f t y₁ - f t y₂| ≤ L * |y₁ - y₂|)
     (hy : ∀ t ∈ Icc t₀ (t₀ + T), HasDerivAt y (f t (y t)) t) {qp q : ℕ}
@@ -241,11 +313,16 @@ theorem property_11_3 (PC : PredictorCorrector) {L : ℝ}
 
 /-! ### Example 11.10: the ABM characteristic polynomials -/
 
-/-- **Example 11.10**: for the Adams–Bashforth–Moulton pair `ODE.PredictorCorrector.abm p m`
-with `p ≥ 2` steps (the `p`-step Adams–Bashforth predictor with the `p - 1`-step Adams–Moulton
-corrector, padded), the predictor and the padded corrector have the same first characteristic
-polynomial `ρ̂(r) = ρ̃(r) = r (r^{p-1} - r^{p-2})`, and the padded corrector's second characteristic
-polynomial is `σ̂(r) = r σ(r)`, `σ` that of the Adams–Moulton corrector;
+/-- **Example 11.10** of [quarteroni2000numerical]. Let $p \ge 2$ and $m \in \mathbb{N}$, and
+consider the Adams–Bashforth–Moulton pair with $p$ steps: the $p$-step Adams–Bashforth method as
+predictor, the $(p-1)$-step Adams–Moulton method as corrector, padded to $p$ steps, and $m$
+corrections. Then the padded corrector and the predictor have the same first characteristic
+polynomial,
+$$\hat\rho(r) = \tilde\rho(r) = r\,(r^{p-1} - r^{p-2}),$$
+and the second characteristic polynomial of the padded corrector is
+$\hat\sigma(r) = r\,\sigma(r)$, where $\sigma$ is that of the Adams–Moulton corrector.
+
+The pair is `ODE.PredictorCorrector.abm p m`. The proof specializes
 `ODE.PredictorCorrector.abm_charPoly`. -/
 theorem example_11_10 (p m : ℕ) (hp : 2 ≤ p) :
     (characteristicPolynomials (PredictorCorrector.abm p m).toCorrector).1 =

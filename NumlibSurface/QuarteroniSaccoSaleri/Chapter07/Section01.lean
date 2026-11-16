@@ -12,46 +12,119 @@ import Numlib.Stationary.ConsistentlyOrdered
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter04.Section01
 
 /-!
-# Quarteroni–Sacco–Saleri §7.1: solution of systems of nonlinear equations
+# Quarteroni, Sacco and Saleri, Section 7.1: Solution of Systems of Nonlinear Equations
 
-Surface file for Alfio Quarteroni, Riccardo Sacco and Fausto Saleri, *Numerical Mathematics*
-[quarteroni2000numerical], §7.1: Newton's method (7.4) in `ℝⁿ` with Theorem 7.1, the composite
-Newton–SOR method (7.7)–(7.8) through Exercise 7.1, the difference-Jacobian method (7.9)–(7.10)
-and Property 7.1, Broyden's method (7.11)–(7.14) with the least-change characterization the book
-derives it from and its superlinear convergence (Property 7.2), and the fixed-point iteration
-(7.17) with Definition 7.1, Theorem 7.2, Property 7.3, Example 7.4 and Remark 7.1. The backbone
-is `Numlib/Nonlinear/{Newton, DifferenceJacobian, QuasiNewton, DennisMore, FixedPoint}` and
-`Numlib/Stationary/Basic` for the truncated inner iteration.
+This module formalizes Section 7.1 of [quarteroni2000numerical], on methods for a system $F(x) = 0$
+with $F : \mathbb{R}^n \to \mathbb{R}^n$. Newton's method (7.4) solves
+$J_F(x^{(k)}) \delta x^{(k)} = -F(x^{(k)})$ at each step, and converges quadratically near a root
+$x^*$ where $J_F(x^*)$ is invertible and $J_F$ is Lipschitz (Theorem 7.1). The variants of Newton's
+method in the section are: the Newton–SOR method (7.7)–(7.8), which solves the Newton system by $m$
+steps of SOR (Exercise 7.1); the difference-Jacobian method (7.9)–(7.10), which converges linearly
+for small increments and quadratically for increments of the size of the error (Property 7.1); and
+Broyden's method (7.11)–(7.14), whose rank-one update is characterized by the secant condition and a
+least-change property, and which converges superlinearly (Property 7.2).
+
+The last part treats the fixed-point iteration $x^{(k+1)} = G(x^{(k)})$ (7.17): contractive maps
+(Definition 7.1), the contraction-mapping theorem (Theorem 7.2), local convergence when
+$\rho(J_G(x^*)) < 1$ (Property 7.3), the two iteration functions of Example 7.4, and Newton's method
+as a fixed-point iteration (Remark 7.1). The proofs specialize `Numlib.Nonlinear.Newton`,
+`Numlib.Nonlinear.DifferenceJacobian`, `Numlib.Nonlinear.QuasiNewton`,
+`Numlib.Nonlinear.DennisMore`, `Numlib.Nonlinear.FixedPoint`, and `Numlib.Stationary.Basic` for the
+inner SOR iteration.
+
+## Main definitions
+
+* Section 7.1.2, `QuarteroniSaccoSaleri.Chapter07.newtonSORStep` and
+  `QuarteroniSaccoSaleri.Chapter07.newtonSORIterate`: the $m$-step Newton–SOR method.
+* Equation (7.10), `QuarteroniSaccoSaleri.Chapter07.equation_7_10`: Newton's method with the
+  difference Jacobian.
+* Definition 7.1, `QuarteroniSaccoSaleri.Chapter07.definition_7_1`: a contractive map on a set.
+* Section 7.1, `QuarteroniSaccoSaleri.Chapter07.jacobianMatrix`: the Jacobian matrix $J_F(x)$.
+* Example 7.4, `QuarteroniSaccoSaleri.Chapter07.example_7_4_F`,
+  `QuarteroniSaccoSaleri.Chapter07.example_7_4_G₁` and
+  `QuarteroniSaccoSaleri.Chapter07.example_7_4_G₂`: the system and its two iteration functions
+  (7.18).
+
+## Main results
+
+* Equation (7.4), `QuarteroniSaccoSaleri.Chapter07.equation_7_4`: the Newton increment solves the
+  Newton system.
+* Theorem 7.1, `QuarteroniSaccoSaleri.Chapter07.theorem_7_1`: local quadratic convergence of
+  Newton's method.
+* Exercise 7.1, `QuarteroniSaccoSaleri.Chapter07.exercise_7_1`: the closed form (7.8) of the
+  $m$-step Newton–SOR iterate.
+* Equation (7.9), `QuarteroniSaccoSaleri.Chapter07.equation_7_9`: the entries and columns of the
+  difference Jacobian.
+* Property 7.1, `QuarteroniSaccoSaleri.Chapter07.property_7_1`: linear convergence of the
+  difference-Jacobian method for small increments.
+* Property 7.1, `QuarteroniSaccoSaleri.Chapter07.property_7_1_quadratic` and
+  `QuarteroniSaccoSaleri.Chapter07.property_7_1_residual`: quadratic convergence when the increments
+  are bounded by the error or by the residual.
+* Equation (7.11), `QuarteroniSaccoSaleri.Chapter07.equation_7_11`: the Broyden step solves
+  $Q_k \delta x = -F(x^{(k)})$.
+* Equation (7.12), `QuarteroniSaccoSaleri.Chapter07.equation_7_12`: the updated matrix satisfies the
+  secant condition.
+* Equation (7.14), `QuarteroniSaccoSaleri.Chapter07.equation_7_14`: Broyden's update in matrix form.
+* Section 7.1.4, `QuarteroniSaccoSaleri.Chapter07.broydenUpdate_leastChange`: Broyden's update is
+  the unique operator that satisfies the secant condition and agrees with $Q_{k-1}$ on the
+  orthogonal complement of $\delta x^{(k)}$.
+* Property 7.2, `QuarteroniSaccoSaleri.Chapter07.property_7_2`: local superlinear convergence of
+  Broyden's method.
+* Theorem 7.2, `QuarteroniSaccoSaleri.Chapter07.theorem_7_2`: a contractive self-map of a nonempty
+  closed set has a unique fixed point there.
+* Theorem 7.2, `QuarteroniSaccoSaleri.Chapter07.theorem_7_2_tendsto`: the fixed-point iterates
+  converge, with an a priori error estimate.
+* Property 7.3, `QuarteroniSaccoSaleri.Chapter07.property_7_3`: if $\rho(J_G(x^*)) < 1$, the
+  fixed-point iteration converges locally.
+* Property 7.3, `QuarteroniSaccoSaleri.Chapter07.property_7_3_norm`: if $\|J_G(x^*)\| < q < 1$, the
+  convergence is geometric with ratio $q$.
+* Example 7.4, `QuarteroniSaccoSaleri.Chapter07.example_7_4_fixedPoint` and
+  `QuarteroniSaccoSaleri.Chapter07.example_7_4_spectralRadius`: the two solutions are fixed points
+  of $G_1$ and $G_2$, where the Jacobians have spectral radii $0$ and $\sqrt{2/3}$.
+* Remark 7.1, `QuarteroniSaccoSaleri.Chapter07.remark_7_1`: Newton's method is the fixed-point
+  iteration of $G_N(x) = x - J_F(x)^{-1} F(x)$ and a preconditioned Richardson iteration.
 
 ## Conventions
 
-Newton's iteration is the backbone's `Newton.iterate F F' x₀` with the junk-valued
-`ContinuousLinearMap.inverse` (so that "the sequence is uniquely defined" is the clause that every
-`F' (x k)` is invertible); the difference-Jacobian iteration (7.10) is `equation_7_10`; Broyden's
-is `Broyden.step`/`Broyden.iterate`; the fixed-point iteration (7.17) is `G^[k] x₀` and needs no
-definition. Theorem 7.1 is stated on an arbitrary finite-dimensional real normed space, because
-the book allows "any vector norm" with the induced (consistent) matrix norm; everything that
-needs coordinates lives on `EuclideanSpace ℝ (Fin n)`, and the Jacobian matrix `J_F(x)` is
-`jacobianMatrix F x`, the matrix of `fderiv ℝ F x` in the standard basis. Spectral radii are
-`Matrix.complexSpectralRadius`, as in chapter 4.
+* Newton's iteration is the backbone's `Newton.iterate F F' x₀`, with the inverse
+  `ContinuousLinearMap.inverse`, whose value at a noninvertible operator is $0$. So the clause "the
+  sequence is uniquely defined" is the statement that every $F'(x^{(k)})$ is invertible.
+* The difference-Jacobian iteration (7.10) is `QuarteroniSaccoSaleri.Chapter07.equation_7_10`,
+  Broyden's method is `Broyden.step` and `Broyden.iterate`, and the fixed-point iteration (7.17) is
+  `G^[k] x₀`, which needs no definition of its own.
+* Theorem 7.1 is stated on any finite-dimensional real normed space, because the source allows "any
+  vector norm" with the induced matrix norm. The results that need coordinates are stated on
+  `EuclideanSpace ℝ (Fin n)`. The Jacobian matrix $J_F(x)$ is
+  `QuarteroniSaccoSaleri.Chapter07.jacobianMatrix F x`, the matrix of `fderiv ℝ F x` in the standard
+  basis.
+* Spectral radii are `Matrix.complexSpectralRadius`, as in Chapter 4.
 
-## Readings
+## Implementation notes
 
-* Property 7.1 is stated in the `‖·‖₁` norm; here it is in the Euclidean norm, where the
-  difference-Jacobian error carries a factor `√n` that changes no conclusion. Its "or,
-  equivalently" clause is one-directional as used: `‖F(x)‖ ≲ ‖x - x*‖` near the root is all the
-  quadratic conclusion needs.
-* Theorem 7.2 omits `D₀ ≠ ∅`; the empty set is closed, `G` maps it into itself and it has no
-  fixed point. Definition 7.1 allows `α < 0`, which is the same as `α = 0`; the a priori
-  estimate of the proof is stated for `0 ≤ α`.
-* Remark 7.1 writes Newton's method as `(I - J_{G_N}(x^{(k)})) δ = -r^{(k)}`; the matrix that
-  makes the identity true, and Newton a preconditioned Richardson iteration, is `J_F(x^{(k)})`
-  (`notes/book-errata.md`).
-* Property 7.2 (superlinear convergence of Broyden's method) is stated on
-  `EuclideanSpace ℝ (Fin n)` with the hypotheses of Theorem 7.1 there, the constants `c_k` of
-  (7.15) being made explicit (`4C (η_k + L ε / 2ᵏ)` with `η_k` the Dennis–Moré quotient); the
-  book states it without proof, and the proof is the Dennis–Moré theory of the backbone
-  `Numlib/Nonlinear/DennisMore`. Examples 7.1–7.3 are numerical runs.
+* Definition 7.1 does not require the contraction constant $\alpha$ to be nonnegative, as in the
+  source. A negative $\alpha$ forces the set to have at most one point, and is the same as
+  $\alpha = 0$. The a priori estimate of the proof of Theorem 7.2 is stated for $\alpha \ge 0$.
+
+## Deviations from the source
+
+* **Property 7.1** (reading). The source states the property in the norm $\|\cdot\|_1$. Here it is
+  stated in the Euclidean norm, where the error of the difference Jacobian carries a factor
+  $\sqrt{n}$ that changes no conclusion. See `QuarteroniSaccoSaleri.Chapter07.property_7_1`.
+* **Property 7.1, "or, equivalently" clause** (reading). The clause is used in one direction: a
+  bound of the increments by the residual implies quadratic convergence. See
+  `QuarteroniSaccoSaleri.Chapter07.property_7_1_residual`.
+* **Property 7.2** (reading). The source states the property without proof. It is stated on
+  $\mathbb{R}^n$ with the hypotheses of Theorem 7.1, and the proof gives the constants $c_k$ of
+  (7.15) explicitly. See `QuarteroniSaccoSaleri.Chapter07.property_7_2`.
+* **Theorem 7.2** (correction). The source omits $D_0 \neq \emptyset$. The empty set satisfies the
+  other hypotheses and has no fixed point. See `QuarteroniSaccoSaleri.Chapter07.theorem_7_2`.
+* **Remark 7.1** (correction). The source writes Newton's method as $(I - J_{G_N}(x^{(k)})) \delta
+  x^{(k)} = -r^{(k)}$. The matrix that makes the identity true is $J_F(x^{(k)})$. See
+  `QuarteroniSaccoSaleri.Chapter07.remark_7_1`.
+
+## Not formalized
+
+* **Examples 7.1–7.3.** They are numerical computations.
 -/
 
 open Filter Matrix Metric Set Topology WithLp
@@ -63,10 +136,16 @@ variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
 
 /-! ### Newton's method (7.4) and Theorem 7.1 -/
 
-/-- **(7.4).** Newton's method for `F(x) = 0` in `EuclideanSpace ℝ (Fin n)`: at each step solve
-`J_F(x^{(k)}) δx^{(k)} = -F(x^{(k)})` and set `x^{(k+1)} = x^{(k)} + δx^{(k)}`. The iterates are
-`Newton.iterate F F' x₀`, and whenever `J_F(x^{(k)}) = F' (x k)` is invertible the increment
-`δx^{(k)} = x^{(k+1)} - x^{(k)}` solves the linear system. -/
+/-- **Equation (7.4)** of [quarteroni2000numerical], Newton's method for $F(x) = 0$. At each step,
+Newton's method solves $J_F(x^{(k)}) \delta x^{(k)} = -F(x^{(k)})$ and sets
+$x^{(k+1)} = x^{(k)} + \delta x^{(k)}$. Let $E$ be a real normed space, let $F : E \to E$, and
+let $F'(x)$ be a continuous linear map for each $x$. Let $x^{(k)}$ be the Newton iterates from
+$x^{(0)}$, and suppose that $F'(x^{(k)})$ is invertible. Then the increment
+$\delta x^{(k)} = x^{(k+1)} - x^{(k)}$ satisfies
+$$F'(x^{(k)}) \delta x^{(k)} = -F(x^{(k)}), \qquad x^{(k+1)} = x^{(k)} + \delta x^{(k)}.$$
+
+The iterates are `Newton.iterate F F' x₀`, and $F'(x)$ stands for $J_F(x)$. Invertibility is a
+continuous linear equivalence `e` whose underlying map is $F'(x^{(k)})$. -/
 theorem equation_7_4 (F : E → E) (F' : E → E →L[ℝ] E) (x₀ : E) (k : ℕ) (e : E ≃L[ℝ] E)
     (he : (e : E →L[ℝ] E) = F' (Newton.iterate F F' x₀ k)) :
     F' (Newton.iterate F F' x₀ k) (Newton.iterate F F' x₀ (k + 1) - Newton.iterate F F' x₀ k)
@@ -80,14 +159,20 @@ theorem equation_7_4 (F : E → E) (F' : E → E →L[ℝ] E) (x₀ : E) (k : �
   rw [Newton.iterate_succ, Newton.step, hinv, sub_sub_cancel_left, map_neg, ← he]
   simp
 
-/-- **Theorem 7.1 (local convergence of Newton's method).** Let `F : ℝⁿ → ℝⁿ` be `C¹` on a convex
-open set containing `x*` (here: differentiable with derivative `F'` on `B(x*; R)`), with
-`F(x*) = 0`, `J_F(x*)⁻¹` existing with `‖J_F(x*)⁻¹‖ ≤ C`, and
-`‖J_F(x) - J_F(y)‖ ≤ L ‖x - y‖` on `B(x*; R)`, for positive constants `R`, `C`, `L`; the norm is
-any norm on the finite-dimensional space `E` and the matrix norm is the induced one. Then there
-is `r > 0` such that for every `x^{(0)} ∈ B(x*; r)` the sequence (7.4) is uniquely defined
-(every `J_F(x^{(k)})` is invertible), converges to `x*`, and satisfies (7.5)
-`‖x^{(k+1)} - x*‖ ≤ C L ‖x^{(k)} - x*‖²`. The radius is the book's `r = min(R, 1/(2CL))`;
+/-- **Theorem 7.1** of [quarteroni2000numerical] (local convergence of Newton's method). Let $E$ be
+a finite-dimensional real normed space and $F : E \to E$ with $F(x^*) = 0$. Let $R, C, L > 0$.
+Suppose that $F$ has the derivative $F'(x)$ at every $x$ in the ball $B(x^*; R)$, that $F'(x^*)$
+is invertible with $\|F'(x^*)^{-1}\| \le C$, and that
+$$\|F'(x) - F'(y)\| \le L \|x - y\| \qquad \text{for all } x, y \in B(x^*; R).$$
+Then there is $r > 0$ such that for every $x^{(0)} \in B(x^*; r)$ the sequence (7.4) is uniquely
+defined, that is, every $F'(x^{(k)})$ is invertible, it converges to $x^*$, and it satisfies
+(7.5):
+$$\|x^{(k+1)} - x^*\| \le C L \|x^{(k)} - x^*\|^2 \qquad \text{for all } k.$$
+
+The source assumes $F \in C^1$ on a convex open set that contains $x^*$; here $F$ is
+differentiable with derivative $F'$ on the ball $B(x^*; R)$, and the Lipschitz condition makes
+$F'$ continuous there. The norm of $E$ is any norm, and the operator norm is the induced matrix
+norm. The proof takes the radius $r = \min(R, 1/(2CL))$ of the source and specializes
 `Newton.forall_norm_iterate_succ_sub_le_of_mem_ball`. -/
 theorem theorem_7_1 [FiniteDimensional ℝ E] {F : E → E} {F' : E → E →L[ℝ] E} {xstar : E}
     (hstar : F xstar = 0) (e : E ≃L[ℝ] E) (he : (e : E →L[ℝ] E) = F' xstar) {R C L : ℝ}
@@ -113,34 +198,47 @@ section NewtonSOR
 
 variable {n : ℕ}
 
-/-- **The `m`-step Newton–SOR method of §7.1.2 (2), one outer step.** With the decomposition
-(7.6) `J_F(x) = D - E - F` into the diagonal, strictly lower and strictly upper parts, the SOR
-iteration (7.7) for the linear system `J_F(x) δ = -F(x)` from `δx₀ = 0` is
-`δx_{r+1} = M δx_r - ω (D - ω E)⁻¹ F(x)`, with the SOR matrix
-`M = (D - ω E)⁻¹ ((1 - ω) D + ω F)` (`Matrix.sorIterationMatrix (J x) ω`); the outer step moves
-from `x` to `x + δx_m`. Stated on `Fin n → ℝ` because the splitting is a matrix operation; the
-inner iteration is chapter 4's `affineStep`. -/
+/-- **Section 7.1.2** of [quarteroni2000numerical], one outer step of the $m$-step Newton–SOR
+method. Let $F : \mathbb{R}^n \to \mathbb{R}^n$, let $J(x) \in \mathbb{R}^{n \times n}$ stand
+for $J_F(x)$, and let $\omega \in \mathbb{R}$. Write $J(x) = D - E - F$ as in (7.6), with $D$
+the diagonal part and $-E$, $-F$ the strictly lower and strictly upper parts. The SOR iteration
+(7.7) for the linear system $J(x) \delta = -F(x)$, from $\delta_0 = 0$, is
+$$\delta_{r+1} = M \delta_r - \omega (D - \omega E)^{-1} F(x), \qquad M = (D - \omega E)^{-1}
+  ((1 - \omega) D + \omega F).$$
+The outer step maps $x$ to $x + \delta_m$.
+
+The matrix $M$ is `Matrix.sorIterationMatrix (J x) ω`, and $D - \omega E$ is
+`diagPart (J x) + ω • strictLower (J x)`. The inner iteration is
+`QuarteroniSaccoSaleri.Chapter04.affineStep`. The method is stated on `Fin n → ℝ`, because the
+splitting is a matrix operation. Matrix inverses are those of Mathlib, which are $0$ for a
+singular matrix. -/
 noncomputable def newtonSORStep (F : (Fin n → ℝ) → Fin n → ℝ)
     (J : (Fin n → ℝ) → Matrix (Fin n) (Fin n) ℝ) (ω : ℝ) (m : ℕ) (x : Fin n → ℝ) : Fin n → ℝ :=
   x + (Chapter04.affineStep (sorIterationMatrix (J x) ω)
     (-(ω • ((diagPart (J x) + ω • strictLower (J x))⁻¹ *ᵥ F x))))^[m] 0
 
-/-- **The `m`-step Newton–SOR iterates** from `x^{(0)}`: `m` SOR sweeps on the Newton system at
-every outer step. The one-step Newton–SOR method is the case `m = 1`. -/
+/-- **Section 7.1.2** of [quarteroni2000numerical], the iterates $x^{(k)}$ of the $m$-step
+Newton–SOR method from $x^{(0)}$: at every outer step, $m$ sweeps of SOR on the Newton system.
+The one-step Newton–SOR method is the case $m = 1$. -/
 noncomputable def newtonSORIterate (F : (Fin n → ℝ) → Fin n → ℝ)
     (J : (Fin n → ℝ) → Matrix (Fin n) (Fin n) ℝ) (ω : ℝ) (m : ℕ) (x₀ : Fin n → ℝ) (k : ℕ) :
     Fin n → ℝ :=
   (newtonSORStep F J ω m)^[k] x₀
 
-/-- The SOR matrix of (7.7) is the iteration operator of the backbone's SOR splitting of
-`J_F(x)` whenever the diagonal `D` is nonsingular and `ω ≠ 0` (`Matrix.sorSplitting`). -/
+/-- Let $A \in \mathbb{R}^{n \times n}$ have a nonsingular diagonal part, and let $\omega \neq 0$.
+Then the SOR matrix $(D - \omega E)^{-1}((1 - \omega) D + \omega F)$ of (7.7) is the iteration
+operator of the backbone's SOR splitting `Matrix.sorSplitting` of $A$. -/
 theorem sorIterationMatrix_eq_sorSplitting_iterationOperator (A : Matrix (Fin n) (Fin n) ℝ)
     (h : IsUnit (diagPart A)) {ω : ℝ} (hω : ω ≠ 0) :
     sorIterationMatrix A ω = (sorSplitting A h hω).iterationOperator :=
   (sorSplitting_iterationOperator_eq A h hω).symm
 
-/-- `m` steps of the linear iteration `δ ↦ B δ + f` from `0` produce `(B^{m-1} + ⋯ + B + I) f`:
-chapter 4's `affineStep` transported to the backbone's `Stationary.step_iterate_eq_pow_add_sum`. -/
+/-- Let $B \in \mathbb{R}^{n \times n}$ and $f \in \mathbb{R}^n$. Then $m$ steps of the linear
+iteration $\delta \mapsto B \delta + f$ from $\delta = 0$ give
+$$\delta_m = (B^{m-1} + \cdots + B + I) f.$$
+
+This is `QuarteroniSaccoSaleri.Chapter04.affineStep` transported to the backbone's
+`Stationary.step_iterate_eq_pow_add_sum`. -/
 theorem affineStep_iterate_zero (B : Matrix (Fin n) (Fin n) ℝ) (f : Fin n → ℝ) (m : ℕ) :
     (Chapter04.affineStep B f)^[m] 0 = (∑ j ∈ Finset.range m, B ^ j) *ᵥ f := by
   apply toLp_injective 2
@@ -149,11 +247,19 @@ theorem affineStep_iterate_zero (B : Matrix (Fin n) (Fin n) ℝ) (f : Fin n → 
   refine Finset.sum_congr rfl fun j _ => ?_
   rw [← map_pow, toEuclideanCLM_toLp]
 
-/-- **Exercise 7.1, cited for (7.8).** The `m`-step Newton–SOR iterate is
-`x^{(k+1)} = x^{(k)} - ω (M_k^{m-1} + ⋯ + M_k + I) (D_k - ω E_k)⁻¹ F(x^{(k)})`, with
-`M_k = sorIterationMatrix (J x^{(k)}) ω` and `D_k - ω E_k = D_k + ω strictLower(J x^{(k)})`.
-From `Stationary.step_iterate_eq_pow_add_sum` and `δx₀ = 0`; the identity is algebraic and needs
-neither `D_k` nonsingular nor `ω ≠ 0` (the inverses are junk-valued otherwise). -/
+/-- **Exercise 7.1** of [quarteroni2000numerical], which the source cites for (7.8). Let
+$F : \mathbb{R}^n \to \mathbb{R}^n$, let $J(x) \in \mathbb{R}^{n \times n}$, let
+$\omega \in \mathbb{R}$ and $m \in \mathbb{N}$. The $m$-step Newton–SOR iterates satisfy
+$$x^{(k+1)} = x^{(k)} - \omega (M_k^{m-1} + \cdots + M_k + I) (D_k - \omega E_k)^{-1}
+  F(x^{(k)}),$$
+where $M_k$ is the SOR matrix and $D_k - \omega E_k$ is the lower triangular part of the
+splitting of $J(x^{(k)})$.
+
+The identity is algebraic. It needs neither a nonsingular $D_k$ nor $\omega \neq 0$, since the
+inverses of Mathlib are $0$ at singular matrices. The matrix $M_k$ is `Matrix.sorIterationMatrix`
+of $J(x^{(k)})$ and $\omega$, and $D_k - \omega E_k$ is $D_k + \omega$ times the strictly lower
+part of $J(x^{(k)})$. The proof uses `Stationary.step_iterate_eq_pow_add_sum` and
+$\delta_0 = 0$. -/
 theorem exercise_7_1 (F : (Fin n → ℝ) → Fin n → ℝ) (J : (Fin n → ℝ) → Matrix (Fin n) (Fin n) ℝ)
     (ω : ℝ) (m : ℕ) (x₀ : Fin n → ℝ) (k : ℕ) :
     newtonSORIterate F J ω m x₀ (k + 1)
@@ -173,10 +279,15 @@ section DifferenceJacobian
 
 variable {n : ℕ}
 
-/-- **(7.9).** The difference Jacobian `J_h` of `F` at `x` with increments `h`: its entries are
-`(F(x + h_j e_j)_i - F(x)_i) / h_j`, and its `j`-th column, read as the image of the basis vector
-`e_j`, is the forward difference `(F(x + h_j e_j) - F(x)) / h_j` of `F` along `e_j`.
-`Matrix.differenceJacobian`. -/
+/-- **Equation (7.9)** of [quarteroni2000numerical], the difference Jacobian. Let
+$F : \mathbb{R}^n \to \mathbb{R}^n$, $x \in \mathbb{R}^n$ and increments $h \in \mathbb{R}^n$.
+The difference Jacobian $J_h$ of $F$ at $x$ has the entries
+$$(J_h)_{ij} = \frac{F_i(x + h_j e_j) - F_i(x)}{h_j},$$
+and its column $j$, the image of the basis vector $e_j$, is the forward difference
+$(F(x + h_j e_j) - F(x)) / h_j$ of $F$ along $e_j$.
+
+The difference Jacobian is `Matrix.differenceJacobian`. An increment $h_j = 0$ gives the column
+$0$. -/
 theorem equation_7_9 (F : EuclideanSpace ℝ (Fin n) → EuclideanSpace ℝ (Fin n))
     (x : EuclideanSpace ℝ (Fin n)) (h : Fin n → ℝ) (i j : Fin n) :
     differenceJacobian F x h i j = (F (x + h j • EuclideanSpace.single j 1) i - F x i) / h j ∧
@@ -184,10 +295,13 @@ theorem equation_7_9 (F : EuclideanSpace ℝ (Fin n) → EuclideanSpace ℝ (Fin
         = (h j)⁻¹ • (F (x + h j • EuclideanSpace.single j 1) - F x) :=
   ⟨differenceJacobian_apply F x h i j, toEuclideanCLM_differenceJacobian_single F x h j⟩
 
-/-- **(7.10).** The difference-Jacobian Newton iteration
-`x^{(k+1)} = x^{(k)} - (J_h^{(k)})⁻¹ F(x^{(k)})`, with the increments `h k` of step `k`; the
-inverse is the junk-valued `ContinuousLinearMap.inverse`, so that invertibility of every `J_h^{(k)}`
-is a conclusion of Property 7.1 rather than a hypothesis. -/
+/-- **Equation (7.10)** of [quarteroni2000numerical], Newton's method with the difference Jacobian:
+$$x^{(k+1)} = x^{(k)} - (J_h^{(k)})^{-1} F(x^{(k)}),$$
+where $J_h^{(k)}$ is the difference Jacobian (7.9) at $x^{(k)}$ with the increments $h^{(k)}$ of
+step $k$.
+
+The inverse is `ContinuousLinearMap.inverse`, whose value at a noninvertible operator is $0$. So
+the invertibility of every $J_h^{(k)}$ is a conclusion of Property 7.1, not a hypothesis. -/
 noncomputable def equation_7_10 (F : EuclideanSpace ℝ (Fin n) → EuclideanSpace ℝ (Fin n))
     (h : ℕ → Fin n → ℝ) (x₀ : EuclideanSpace ℝ (Fin n)) : ℕ → EuclideanSpace ℝ (Fin n)
   | 0 => x₀
@@ -195,7 +309,7 @@ noncomputable def equation_7_10 (F : EuclideanSpace ℝ (Fin n) → EuclideanSpa
       - (toEuclideanCLM (𝕜 := ℝ) (differenceJacobian F (equation_7_10 F h x₀ k) (h k))).inverse
           (F (equation_7_10 F h x₀ k))
 
-/-- The recurrence of (7.10). -/
+/-- The recurrence of (7.10): $x^{(k+1)} = x^{(k)} - (J_h^{(k)})^{-1} F(x^{(k)})$. -/
 theorem equation_7_10_succ (F : EuclideanSpace ℝ (Fin n) → EuclideanSpace ℝ (Fin n))
     (h : ℕ → Fin n → ℝ) (x₀ : EuclideanSpace ℝ (Fin n)) (k : ℕ) :
     equation_7_10 F h x₀ (k + 1) = equation_7_10 F h x₀ k
@@ -207,9 +321,9 @@ variable {F : EuclideanSpace ℝ (Fin n) → EuclideanSpace ℝ (Fin n)}
   {F' : EuclideanSpace ℝ (Fin n) → EuclideanSpace ℝ (Fin n) →L[ℝ] EuclideanSpace ℝ (Fin n)}
   {xstar : EuclideanSpace ℝ (Fin n)}
 
-/-- The difference Jacobian at a point of `B(x*; R/2)` with increments below `η < R/2` is within
-`√n (L/2) η` of the derivative, under the hypotheses of Theorem 7.1 on `B(x*; R)`
-(`Matrix.opNorm_toEuclideanCLM_differenceJacobian_sub_le`). -/
+/-- Under the hypotheses of Theorem 7.1 on $B(x^*; R)$, the difference Jacobian at a point of
+$B(x^*; R/2)$ with increments $0 < |h_j| \le \eta < R/2$ is within $\sqrt{n} (L/2) \eta$ of the
+derivative. -/
 private theorem norm_differenceJacobian_sub_le {R L : ℝ}
     (hF : ∀ x ∈ ball xstar R, HasFDerivAt F (F' x) x)
     (hLip : ∀ x ∈ ball xstar R, ∀ y ∈ ball xstar R, ‖F' x - F' y‖ ≤ L * ‖x - y‖)
@@ -227,10 +341,11 @@ private theorem norm_differenceJacobian_sub_le {R L : ℝ}
     (fun y hy => hLip y (hsub hy) z (hsub (mem_ball_self hR2)))
     (fun j => ⟨abs_pos.1 (hh j).1, lt_of_le_of_lt (hh j).2 hη⟩) fun j => (hh j).2
 
-/-- The common core of the three clauses of Property 7.1: the radius `ε`, the increment bound
-`η`, and for every admissible increment sequence and every start in `B(x*; ε)`, the iterates of
-(7.10) stay in `B(x*; ε) ⊆ B(x*; R/2)`, every `J_h^{(k)}` is invertible with
-`‖(J_h^{(k)})⁻¹‖ ≤ 2 C`, the error halves at every step, and the increments stay below `R/2`. -/
+/-- Under the hypotheses of Property 7.1, there are $\varepsilon \le R/2$ and $\eta < R/2$ such that
+for all increments $0 < |h_j^{(k)}| \le \eta$ and every $x^{(0)} \in B(x^*; \varepsilon)$ the
+iterates of (7.10) stay in $B(x^*; \varepsilon)$, every $J_h^{(k)}$ is invertible with
+$\|(J_h^{(k)})^{-1}\| \le 2C$, the error halves at every step, and the iterates converge to
+$x^*$. -/
 private theorem property_7_1_core {R C L : ℝ} (hstar : F xstar = 0)
     (e : EuclideanSpace ℝ (Fin n) ≃L[ℝ] EuclideanSpace ℝ (Fin n))
     (he : (e : EuclideanSpace ℝ (Fin n) →L[ℝ] EuclideanSpace ℝ (Fin n)) = F' xstar) (hR : 0 < R)
@@ -274,14 +389,25 @@ private theorem property_7_1_core {R C L : ℝ} (hstar : F xstar = 0)
   obtain ⟨e', he', hn⟩ := hinv k
   exact ⟨e', he', hn.trans (by linarith)⟩
 
-/-- **Property 7.1, first part.** Under the hypotheses of Theorem 7.1 (in the Euclidean norm; the
-book's `‖·‖₁` changes only the constants), there are `ε, h > 0` such that for every increment
-sequence with `0 < |h_j^{(k)}| ≤ h` and every `x^{(0)} ∈ B(x*; ε)` the sequence (7.10) is well
-defined — every `J_h^{(k)}` is invertible — and converges linearly to `x*`: the error halves at
-every step, so the convergence is of order `1` with factor `1/2`.
-`Newton.tendsto_of_forall_inverse_sub_step_of_norm_sub_fderiv_le` with the difference-Jacobian
-error bound `Matrix.opNorm_toEuclideanCLM_differenceJacobian_sub_le`. The book states the result
-without proof. -/
+/-- **Property 7.1** of [quarteroni2000numerical], first part. Let
+$F : \mathbb{R}^n \to \mathbb{R}^n$ with $F(x^*) = 0$, and let $R > 0$. Suppose that $F$ has the
+derivative $F'(x)$ at every $x \in B(x^*; R)$, that $F'(x^*)$ is invertible with
+$\|F'(x^*)^{-1}\| \le C$, and that $\|F'(x) - F'(y)\| \le L \|x - y\|$ for $x, y \in B(x^*; R)$.
+Then there are $\varepsilon > 0$ and $\eta > 0$ with the following property. For every sequence
+of increments with $0 < |h_j^{(k)}| \le \eta$ for all $k$ and $j$, and every
+$x^{(0)} \in B(x^*; \varepsilon)$, the sequence (7.10):
+
+* is well defined, that is, every $J_h^{(k)}$ is invertible;
+* satisfies $\|x^{(k+1)} - x^*\| \le \|x^{(k)} - x^*\| / 2$ for all $k$;
+* converges to $x^*$, with order $1$.
+
+**Reading.** The source states the property in the norm $\|\cdot\|_1$. Here the norm is the
+Euclidean norm, where the error of the difference Jacobian carries a factor $\sqrt{n}$; this
+changes only the constants.
+
+The source states the result without proof. The order is `ConvergesWithOrder`. The proof
+specializes `Newton.tendsto_of_forall_inverse_sub_step_of_norm_sub_fderiv_le` with the error
+bound `Matrix.opNorm_toEuclideanCLM_differenceJacobian_sub_le` of the difference Jacobian. -/
 theorem property_7_1 {R C L : ℝ} (hstar : F xstar = 0)
     (e : EuclideanSpace ℝ (Fin n) ≃L[ℝ] EuclideanSpace ℝ (Fin n))
     (he : (e : EuclideanSpace ℝ (Fin n) →L[ℝ] EuclideanSpace ℝ (Fin n)) = F' xstar) (hR : 0 < R)
@@ -303,11 +429,19 @@ theorem property_7_1 {R C L : ℝ} (hstar : F xstar = 0)
   exact convergesWithOrder_one_of_eventually_norm_sub_succ_le (C := 1 / 2) (by norm_num)
     (by norm_num) (Eventually.of_forall fun k => by linarith [hhalf k])
 
-/-- **Property 7.1, second part.** In the situation of `property_7_1`, if moreover
-`max_j |h_j^{(k)}| ≤ C' ‖x^{(k)} - x*‖` for all `k`, then the convergence is quadratic:
-`‖x^{(k+1)} - x*‖ ≤ K ‖x^{(k)} - x*‖²` for all `k`, with `K = 2C (√n (L/2) C' + L/2)`, and the
-sequence converges with order `2`. `Newton.norm_succ_sub_le_sq_of_norm_sub_fderiv_le_mul` with
-the derivative error `√n (L/2) C' ‖x^{(k)} - x*‖`. -/
+/-- **Property 7.1** of [quarteroni2000numerical], second part. Under the hypotheses of
+`QuarteroniSaccoSaleri.Chapter07.property_7_1`, there are $\varepsilon > 0$ and $\eta > 0$ with
+the following property. For every sequence of increments with $0 < |h_j^{(k)}| \le \eta$, every
+$x^{(0)} \in B(x^*; \varepsilon)$ and every $C'$ with $|h_j^{(k)}| \le C' \|x^{(k)} - x^*\|$ for
+all $k$ and $j$, there is $K$ with
+$$\|x^{(k+1)} - x^*\| \le K \|x^{(k)} - x^*\|^2 \qquad \text{for all } k,$$
+and the sequence (7.10) converges to $x^*$ with order $2$.
+
+**Reading.** The norm is the Euclidean norm instead of $\|\cdot\|_1$, as in the first part.
+
+The proof gives $K = 2C (\sqrt{n} (L/2) C' + L/2)$. It specializes
+`Newton.norm_succ_sub_le_sq_of_norm_sub_fderiv_le_mul` with the error
+$\sqrt{n} (L/2) C' \|x^{(k)} - x^*\|$ of the derivative. -/
 theorem property_7_1_quadratic {R C L : ℝ} (hstar : F xstar = 0)
     (e : EuclideanSpace ℝ (Fin n) ≃L[ℝ] EuclideanSpace ℝ (Fin n))
     (he : (e : EuclideanSpace ℝ (Fin n) →L[ℝ] EuclideanSpace ℝ (Fin n)) = F' xstar) (hR : 0 < R)
@@ -351,12 +485,21 @@ theorem property_7_1_quadratic {R C L : ℝ} (hstar : F xstar = 0)
   rw [Real.rpow_two]
   exact (hK k).trans (mul_le_mul_of_nonneg_right (le_max_left _ _) (sq_nonneg _))
 
-/-- **Property 7.1, the "or, equivalently" clause.** The quadratic convergence of
-`property_7_1_quadratic` also holds when `max_j |h_j^{(k)}| ≤ c ‖F(x^{(k)})‖`: on `B(x*; R)` the
-map `F` is Lipschitz with constant `‖F'(x*)‖ + L R` (mean value inequality), and `F(x*) = 0`, so
-`‖F(x^{(k)})‖ ≤ (‖F'(x*)‖ + L R) ‖x^{(k)} - x*‖` and the previous clause applies with
-`C' = c (‖F'(x*)‖ + L R)` (written with `|L|`, since no sign of `L` is assumed). The converse
-direction of the book's "equivalently" is not needed. -/
+/-- **Property 7.1** of [quarteroni2000numerical], the "or, equivalently" clause. Under the
+hypotheses of `QuarteroniSaccoSaleri.Chapter07.property_7_1`, there are $\varepsilon > 0$ and
+$\eta > 0$ with the following property. For every sequence of increments with
+$0 < |h_j^{(k)}| \le \eta$, every $x^{(0)} \in B(x^*; \varepsilon)$ and every $c$ with
+$|h_j^{(k)}| \le c \|F(x^{(k)})\|$ for all $k$ and $j$, there is $K$ with
+$\|x^{(k+1)} - x^*\| \le K \|x^{(k)} - x^*\|^2$ for all $k$, and the sequence (7.10) converges
+to $x^*$ with order $2$.
+
+**Reading.** The source says that the condition on the increments can, equivalently, be stated
+with $\|F(x^{(k)})\|$. Only the direction that the conclusion needs is proved: by the mean value
+inequality, $F$ is Lipschitz on $B(x^*; R)$ with constant $\|F'(x^*)\| + |L| R$, and
+$F(x^*) = 0$, so $\|F(x^{(k)})\| \le (\|F'(x^*)\| + |L| R) \|x^{(k)} - x^*\|$.
+
+The second part then applies with $C' = c (\|F'(x^*)\| + |L| R)$. The constant is written with
+$|L|$ because no sign of $L$ is assumed. -/
 theorem property_7_1_residual {R C L : ℝ} (hstar : F xstar = 0)
     (e : EuclideanSpace ℝ (Fin n) ≃L[ℝ] EuclideanSpace ℝ (Fin n))
     (he : (e : EuclideanSpace ℝ (Fin n) →L[ℝ] EuclideanSpace ℝ (Fin n)) = F' xstar) (hR : 0 < R)
@@ -415,38 +558,59 @@ section Broyden
 
 variable {H : Type*} [NormedAddCommGroup H] [InnerProductSpace ℝ H]
 
-/-- **(7.11).** One step of Broyden's method solves `Q_k δx^{(k+1)} = -F(x^{(k)})` and sets
-`x^{(k+1)} = x^{(k)} + δx^{(k+1)}`: for a state `σ = (x^{(k)}, Q_k)` with `Q_k` invertible,
-`Q_k (x^{(k+1)} - x^{(k)}) = -F(x^{(k)})`. `Broyden.apply_step_x_sub`. -/
+/-- **Equation (7.11)** of [quarteroni2000numerical]. One step of Broyden's method solves
+$Q_k \delta x^{(k+1)} = -F(x^{(k)})$ and sets $x^{(k+1)} = x^{(k)} + \delta x^{(k+1)}$. Let $H$
+be a real inner product space and $F : H \to H$, and let $(x^{(k)}, Q_k)$ be a state of
+Broyden's method with $Q_k$ invertible. Then the next iterate satisfies
+$$Q_k (x^{(k+1)} - x^{(k)}) = -F(x^{(k)}), \qquad x^{(k+1)} = x^{(k)} + (x^{(k+1)} - x^{(k)}).$$
+
+The state is `Broyden.State` and the step is `Broyden.step`. The proof is
+`Broyden.apply_step_x_sub`. -/
 theorem equation_7_11 (F : H → H) (σ : Broyden.State H) (e : H ≃L[ℝ] H)
     (he : (e : H →L[ℝ] H) = σ.Q) :
     σ.Q ((Broyden.step F σ).x - σ.x) = -F σ.x ∧
       (Broyden.step F σ).x = σ.x + ((Broyden.step F σ).x - σ.x) :=
   ⟨Broyden.apply_step_x_sub F σ e he, by abel⟩
 
-/-- **(7.12) with `j = 1`, the secant condition.** The matrix produced by a Broyden step satisfies
-`Q_{k+1} (x^{(k+1)} - x^{(k)}) = F(x^{(k+1)}) - F(x^{(k)})` whenever `x^{(k+1)} ≠ x^{(k)}`.
-`Broyden.step_Q_apply_sub`, from `Broyden.update_apply_self`. -/
+/-- **Equation (7.12)** of [quarteroni2000numerical] with $j = 1$, the secant condition. Let $H$ be
+a real inner product space and $F : H \to H$. If a step of Broyden's method from
+$(x^{(k)}, Q_k)$ gives $x^{(k+1)} \neq x^{(k)}$, then the updated matrix satisfies
+$$Q_{k+1} (x^{(k+1)} - x^{(k)}) = F(x^{(k+1)}) - F(x^{(k)}).$$
+
+The proof is `Broyden.step_Q_apply_sub`, from `Broyden.update_apply_self`. -/
 theorem equation_7_12 (F : H → H) (σ : Broyden.State H) (h : (Broyden.step F σ).x ≠ σ.x) :
     (Broyden.step F σ).Q ((Broyden.step F σ).x - σ.x) = F (Broyden.step F σ).x - F σ.x :=
   Broyden.step_Q_apply_sub F σ h
 
-/-- **(7.14).** Broyden's update in matrix form,
-`Q_k = Q_{k-1} + ((b^{(k)} - Q_{k-1} δx^{(k)}) δx^{(k)ᵀ}) / (δx^{(k)ᵀ} δx^{(k)})`, is
-`Matrix.broydenUpdate Q_{k-1} δx^{(k)} b^{(k)}`, and read on `ℝⁿ = EuclideanSpace ℝ (Fin n)` it
-is the operator update `Broyden.update` of the backbone (`Matrix.toEuclideanCLM_broydenUpdate`). -/
+/-- **Equation (7.14)** of [quarteroni2000numerical], Broyden's update in matrix form. Let
+$Q \in \mathbb{R}^{n \times n}$ and $s, y \in \mathbb{R}^n$. Then
+$$\mathrm{broydenUpdate}(Q, s, y) = Q + \frac{(y - Q s) s^T}{s^T s},$$
+and on $\mathbb{R}^n$ with the Euclidean inner product this matrix is the operator update
+`Broyden.update` of the backbone.
+
+In the notation of the source, $Q_k = \mathrm{broydenUpdate}(Q_{k-1}, \delta x^{(k)}, b^{(k)})$.
+The matrix update is `Matrix.broydenUpdate`. If $s = 0$, the coefficient $1 / (s^T s)$ is $0$
+and the update returns $Q$. The second part is `Matrix.toEuclideanCLM_broydenUpdate`. -/
 theorem equation_7_14 {n : ℕ} (Q : Matrix (Fin n) (Fin n) ℝ) (s y : Fin n → ℝ) :
     broydenUpdate Q s y = Q + (1 / (s ⬝ᵥ s)) • vecMulVec (y - Q *ᵥ s) s ∧
       toEuclideanCLM (𝕜 := ℝ) (broydenUpdate Q s y)
         = Broyden.update (toEuclideanCLM (𝕜 := ℝ) Q) (toLp 2 s) (toLp 2 y) :=
   ⟨rfl, toEuclideanCLM_broydenUpdate Q s y⟩
 
-/-- **The characterization behind (7.14)** (§7.1.4): Broyden's `Q_k = Broyden.update Q_{k-1} s b`
-with `s = δx^{(k)} ≠ 0` and `b = b^{(k)}` satisfies the secant condition (7.12), `j = 1`, and
-`(Q_k - Q_{k-1}) v = 0` for every `v` orthogonal to `δx^{(k)}` — the minimum possible value of
-the quantity the text minimizes — and it is the *unique* operator with these two properties:
-an operator determined on `span {s}` and on `s^⊥` is determined.
-`Broyden.update_apply_self`, `Broyden.update_sub_apply_of_inner_eq_zero`. -/
+/-- **Section 7.1.4** of [quarteroni2000numerical], the characterization behind (7.14). Let $H$ be a
+real inner product space, let $Q : H \to H$ be a continuous linear map, let $s \neq 0$ and
+$b \in H$, and let $Q_+$ be Broyden's update of $Q$ with $s = \delta x^{(k)}$ and $b = b^{(k)}$.
+Then:
+
+* $Q_+ s = b$, the secant condition (7.12) with $j = 1$;
+* $(Q_+ - Q) v = 0$ for every $v$ orthogonal to $s$;
+* every continuous linear map $Q'$ with $Q' s = b$ and $(Q' - Q) v = 0$ for every $v$ orthogonal
+  to $s$ is equal to $Q_+$.
+
+The second property gives the smallest possible value of the quantity that the source minimizes.
+Uniqueness holds because an operator is determined by its values on the span of $s$ and on the
+orthogonal complement of $s$. The proof uses `Broyden.update_apply_self` and
+`Broyden.update_sub_apply_of_inner_eq_zero`. -/
 theorem broydenUpdate_leastChange (Q : H →L[ℝ] H) {s : H} (hs : s ≠ 0) (b : H) :
     Broyden.update Q s b s = b ∧
       (∀ v, ⟪s, v⟫_ℝ = 0 → (Broyden.update Q s b - Q) v = 0) ∧
@@ -468,17 +632,27 @@ theorem broydenUpdate_leastChange (Q : H →L[ℝ] H) {s : H} (hs : s ≠ 0) (b 
     rwa [_root_.sub_apply, sub_eq_zero] at this
   rw [hv, map_add, map_add, map_smul, map_smul, hQ's, Broyden.update_apply_self Q hs b, h1, h2]
 
-/-- **Property 7.2 (local superlinear convergence of Broyden's method).** Under the hypotheses of
-Theorem 7.1 on `ℝⁿ = EuclideanSpace ℝ (Fin n)` — `F(x*) = 0`, `J_F(x*)⁻¹` existing with
-`‖J_F(x*)⁻¹‖ ≤ C`, and `‖J_F(x) - J_F(y)‖ ≤ L ‖x - y‖` on `B(x*; R)` — there are `ε, γ > 0`
-such that if `‖x^{(0)} - x*‖ ≤ ε` and `‖Q₀ - J_F(x*)‖ ≤ γ` then the sequence `x^{(k)}` generated
-by Broyden's method (7.11)–(7.14) from `(x^{(0)}, Q₀)` is well defined (every `Q_k` is
-invertible) and converges superlinearly to `x*`, (7.15): `‖x^{(k+1)} - x*‖ ≤ c_{k+1}
-‖x^{(k)} - x*‖` with `c_k → 0` (here `c_{k+1} = 4C (η_k + L ε / 2ᵏ)`, with `η_k → 0` the
-Dennis–Moré quotient `‖(Q_k - J_F(x*)) δx^{(k+1)}‖ / ‖δx^{(k+1)}‖`); the iterates also satisfy
-`‖x^{(k)} - x*‖ ≤ ε / 2ᵏ`. The book states the result without proof; it is the Dennis–Moré
-theory (Dennis–Schnabel Theorem 8.2.2), backbone `Broyden.exists_superlinear` of
-`Numlib/Nonlinear/DennisMore`, with the Jacobian read as the matrix of `F'`. -/
+/-- **Property 7.2** of [quarteroni2000numerical] (local superlinear convergence of Broyden's
+method). Let $F : \mathbb{R}^n \to \mathbb{R}^n$ with $F(x^*) = 0$, and let $R, C, L > 0$.
+Suppose that $F$ has the derivative $F'(x)$ at every $x \in B(x^*; R)$, that $F'(x^*)$ is
+invertible with $\|F'(x^*)^{-1}\| \le C$, and that $\|F'(x) - F'(y)\| \le L \|x - y\|$ for
+$x, y \in B(x^*; R)$. Then there are $\varepsilon > 0$ and $\gamma > 0$ such that for every
+$x^{(0)}$ with $\|x^{(0)} - x^*\| \le \varepsilon$ and every $Q_0$ with
+$\|Q_0 - F'(x^*)\| \le \gamma$, Broyden's method (7.11)–(7.14) from $(x^{(0)}, Q_0)$:
+
+* is well defined, that is, every $Q_k$ is invertible;
+* satisfies $\|x^{(k)} - x^*\| \le \varepsilon / 2^k$ for all $k$;
+* converges to $x^*$;
+* converges superlinearly, (7.15): there is a sequence $c_k \to 0$ with
+  $\|x^{(k+1)} - x^*\| \le c_k \|x^{(k)} - x^*\|$ for all $k$.
+
+**Reading.** The source states the property without proof. Here it has the hypotheses of Theorem
+7.1 on $\mathbb{R}^n$, with the Jacobian read as the matrix of $F'$.
+
+The proof gives $c_k = 4C (\eta_k + L \varepsilon / 2^k)$, where $\eta_k = \|(Q_k - F'(x^*))
+\delta x^{(k+1)}\| / \|\delta x^{(k+1)}\| \to 0$ is the Dennis–Moré quotient. It is the
+Dennis–Moré theory, Theorem 8.2.2 of Dennis and Schnabel, as the backbone's
+`Broyden.exists_superlinear`. -/
 theorem property_7_2 {n : ℕ} {F : EuclideanSpace ℝ (Fin n) → EuclideanSpace ℝ (Fin n)}
     {F' : EuclideanSpace ℝ (Fin n) → EuclideanSpace ℝ (Fin n) →L[ℝ] EuclideanSpace ℝ (Fin n)}
     {xstar : EuclideanSpace ℝ (Fin n)} (hstar : F xstar = 0)
@@ -519,16 +693,22 @@ end Broyden
 
 /-! ### Fixed-point methods: Definition 7.1, Theorem 7.2, Property 7.3 -/
 
-/-- **Definition 7.1.** A mapping `G` is *contractive* on a set `D₀` if there is a constant
-`α < 1` with `‖G(x) - G(y)‖ ≤ α ‖x - y‖` for all `x, y ∈ D₀`; the "suitable vector norm" is the
-norm of `E`, so a different norm is a different `E`. The book does not ask `α ≥ 0`; a negative
-`α` forces `D₀` to have at most one point and is the same as `α = 0` (`definition_7_1_iff`). -/
+/-- **Definition 7.1** of [quarteroni2000numerical]. Let $E$ be a real normed space. A map
+$G : E \to E$ is **contractive** on a set $D_0 \subseteq E$ if there is a constant $\alpha < 1$
+with
+$$\|G(x) - G(y)\| \le \alpha \|x - y\| \qquad \text{for all } x, y \in D_0.$$
+
+The "suitable vector norm" of the source is the norm of $E$, so a different norm is a different
+space $E$. As in the source, $\alpha \ge 0$ is not required. A negative $\alpha$ forces $D_0$ to
+have at most one point, and is the same as $\alpha = 0$, by
+`QuarteroniSaccoSaleri.Chapter07.definition_7_1_iff`. -/
 def definition_7_1 (G : E → E) (D₀ : Set E) : Prop :=
   ∃ α < 1, ∀ x ∈ D₀, ∀ y ∈ D₀, ‖G x - G y‖ ≤ α * ‖x - y‖
 
 omit [NormedSpace ℝ E] in
-/-- Definition 7.1 is Mathlib's `LipschitzOnWith` with a constant `K < 1`: a negative `α` is
-replaced by `max α 0`, which still works. -/
+/-- A map $G$ is contractive on $D_0$ in the sense of Definition 7.1 if and only if it is Lipschitz
+on $D_0$, in the sense of Mathlib's `LipschitzOnWith`, with a constant $K \in [0, 1)$. A
+negative constant $\alpha$ is replaced by $\max(\alpha, 0)$. -/
 theorem definition_7_1_iff (G : E → E) (D₀ : Set E) :
     definition_7_1 G D₀ ↔ ∃ K : NNReal, K < 1 ∧ LipschitzOnWith K G D₀ := by
   constructor
@@ -544,10 +724,16 @@ theorem definition_7_1_iff (G : E → E) (D₀ : Set E) :
     rwa [dist_eq_norm, dist_eq_norm] at this
 
 omit [NormedSpace ℝ E] in
-/-- **Theorem 7.2 (contraction-mapping theorem).** If `G` is contractive on a closed set `D₀`
-and `G(x) ∈ D₀` for all `x ∈ D₀`, then `G` has a unique fixed point in `D₀`. The book omits
-`D₀ ≠ ∅`: the empty set satisfies every hypothesis and has no fixed point. Stated on a complete
-space, which `ℝⁿ` is; `exists_unique_fixedPoint_of_mapsTo` (`Numlib/Nonlinear/FixedPoint`). -/
+/-- **Theorem 7.2** of [quarteroni2000numerical] (contraction-mapping theorem). Let $E$ be a
+complete normed space, let $D_0 \subseteq E$ be closed and nonempty, and let $G : E \to E$ be
+contractive on $D_0$ with $G(x) \in D_0$ for all $x \in D_0$. Then $G$ has exactly one fixed
+point in $D_0$.
+
+**Correction.** The source omits the hypothesis $D_0 \neq \emptyset$. The empty set satisfies
+all other hypotheses and has no fixed point.
+
+The source states the theorem on $\mathbb{R}^n$, which is complete. The proof specializes
+`exists_unique_fixedPoint_of_mapsTo`. -/
 theorem theorem_7_2 [CompleteSpace E] {G : E → E} {D₀ : Set E} (hG : definition_7_1 G D₀)
     (hD : IsClosed D₀) (hne : D₀.Nonempty) (hmaps : MapsTo G D₀ D₀) :
     ∃! x, x ∈ D₀ ∧ G x = x := by
@@ -558,12 +744,18 @@ theorem theorem_7_2 [CompleteSpace E] {G : E → E} {D₀ : Set E} (hG : definit
   exact (hG x hx y hy).trans (mul_le_mul_of_nonneg_right (le_max_left _ _) (norm_nonneg _))
 
 omit [NormedSpace ℝ E] in
-/-- **Theorem 7.2, the content of its existence proof.** Under the hypotheses of Theorem 7.2 with
-the contraction constant `0 ≤ α < 1`, for every `x^{(0)} ∈ D₀` the fixed-point iterates (7.17)
-`x^{(k)} = G^{[k]}(x^{(0)})` converge to the fixed point `x*`, with the a priori estimate
-`‖x^{(k)} - x*‖ ≤ α^k / (1 - α) ‖x^{(1)} - x^{(0)}‖` (the limit of the Cauchy estimate
-`‖x^{(k+p)} - x^{(k)}‖ ≤ α^k / (1 - α) ‖x^{(1)} - x^{(0)}‖` of the proof, as `p → ∞`).
-`dist_iterate_le_of_mapsTo`. -/
+/-- **Theorem 7.2** of [quarteroni2000numerical], the content of the existence proof. Let $E$ be a
+complete normed space, let $D_0 \subseteq E$ be closed, let $0 \le \alpha < 1$, and let
+$G : E \to E$ map $D_0$ into itself with $\|G(x) - G(y)\| \le \alpha \|x - y\|$ for all
+$x, y \in D_0$. Let $x^* \in D_0$ be a fixed point of $G$, and let $x^{(0)} \in D_0$. Then the
+fixed-point iterates (7.17) $x^{(k)} = G^k(x^{(0)})$ satisfy the a priori estimate
+$$\|x^{(k)} - x^*\| \le \frac{\alpha^k}{1 - \alpha} \|x^{(1)} - x^{(0)}\| \qquad \text{for all }
+  k,$$
+and converge to $x^*$.
+
+The estimate is the limit, as $p \to \infty$, of the Cauchy estimate $\|x^{(k+p)} - x^{(k)}\|
+\le \alpha^k / (1 - \alpha) \, \|x^{(1)} - x^{(0)}\|$ of the proof in the source. The proof
+specializes `dist_iterate_le_of_mapsTo`. -/
 theorem theorem_7_2_tendsto [CompleteSpace E] {G : E → E} {D₀ : Set E} {α : ℝ} (hα0 : 0 ≤ α)
     (hα : α < 1) (hG : ∀ x ∈ D₀, ∀ y ∈ D₀, ‖G x - G y‖ ≤ α * ‖x - y‖) (hD : IsClosed D₀)
     (hmaps : MapsTo G D₀ D₀) {xstar : E} (hstar : xstar ∈ D₀) (hfix : G xstar = xstar) {x₀ : E}
@@ -585,16 +777,20 @@ section Jacobian
 
 variable {n : ℕ}
 
-/-- **The Jacobian matrix** `J_F(x)`, `(J_F(x))_{ij} = ∂F_i/∂x_j (x)`, of
-`F : ℝⁿ → ℝⁿ` at `x`: the matrix of the Fréchet derivative `fderiv ℝ F x` in the standard basis
-of `EuclideanSpace ℝ (Fin n)`. -/
+/-- **Section 7.1** of [quarteroni2000numerical], the **Jacobian matrix** $J_F(x)$ of
+$F : \mathbb{R}^n \to \mathbb{R}^n$ at $x$, with entries
+$$(J_F(x))_{ij} = \frac{\partial F_i}{\partial x_j}(x).$$
+
+It is defined as the matrix of the Fréchet derivative `fderiv ℝ F x` in the standard basis of
+`EuclideanSpace ℝ (Fin n)`. If $F$ is not differentiable at $x$, the derivative is $0$ and so is
+the matrix. -/
 noncomputable def jacobianMatrix (F : EuclideanSpace ℝ (Fin n) → EuclideanSpace ℝ (Fin n))
     (x : EuclideanSpace ℝ (Fin n)) : Matrix (Fin n) (Fin n) ℝ :=
   LinearMap.toMatrix (EuclideanSpace.basisFun (Fin n) ℝ).toBasis
     (EuclideanSpace.basisFun (Fin n) ℝ).toBasis (fderiv ℝ F x : _ →ₗ[ℝ] _)
 
-/-- The entries of the Jacobian matrix are the partial derivatives: `(J_F(x))_{ij}` is the `i`-th
-component of the derivative of `F` at `x` in the direction of the `j`-th basis vector. -/
+/-- The entries of the Jacobian matrix are the partial derivatives: $(J_F(x))_{ij}$ is the component
+$i$ of the derivative of $F$ at $x$ in the direction of the basis vector $e_j$. -/
 theorem jacobianMatrix_apply (F : EuclideanSpace ℝ (Fin n) → EuclideanSpace ℝ (Fin n))
     (x : EuclideanSpace ℝ (Fin n)) (i j : Fin n) :
     jacobianMatrix F x i j = fderiv ℝ F x (EuclideanSpace.single j 1) i := by
@@ -602,27 +798,35 @@ theorem jacobianMatrix_apply (F : EuclideanSpace ℝ (Fin n) → EuclideanSpace 
     EuclideanSpace.basisFun_apply]
   rfl
 
-/-- The bridge to the derivative: the Jacobian matrix acts on `ℝⁿ` as `fderiv ℝ F x`. -/
+/-- The Jacobian matrix $J_F(x)$ acts on $\mathbb{R}^n$ as the derivative `fderiv ℝ F x`, as a
+linear map. -/
 theorem toEuclideanLin_jacobianMatrix (F : EuclideanSpace ℝ (Fin n) → EuclideanSpace ℝ (Fin n))
     (x : EuclideanSpace ℝ (Fin n)) :
     toEuclideanLin (jacobianMatrix F x) = (fderiv ℝ F x : _ →ₗ[ℝ] _) := by
   rw [jacobianMatrix, toEuclideanLin_eq_toLin_orthonormal, Matrix.toLin_toMatrix]
 
-/-- The bridge to the derivative, as continuous linear maps. -/
+/-- The Jacobian matrix $J_F(x)$ acts on $\mathbb{R}^n$ as the derivative `fderiv ℝ F x`, as a
+continuous linear map. -/
 theorem toEuclideanCLM_jacobianMatrix (F : EuclideanSpace ℝ (Fin n) → EuclideanSpace ℝ (Fin n))
     (x : EuclideanSpace ℝ (Fin n)) :
     toEuclideanCLM (𝕜 := ℝ) (jacobianMatrix F x) = fderiv ℝ F x := by
   apply ContinuousLinearMap.coe_injective
   rw [coe_toEuclideanCLM_eq_toEuclideanLin, toEuclideanLin_jacobianMatrix]
 
-/-- **Property 7.3.** Let `G : D ⊆ ℝⁿ → ℝⁿ` have a fixed point `x*` in the interior of `D` and be
-continuously differentiable in a neighbourhood of `x*`, with `ρ(J_G(x*)) < 1`. Then there is a
-neighbourhood `S ⊆ D` of `x*` such that for every `x^{(0)} ∈ S` the iterates (7.17) all lie in
-`D` and converge to `x*`. In finite dimension `ρ(J) < 1` gives `‖J^m‖ < 1` for some `m`
-(`Matrix.exists_opNorm_toEuclideanLin_pow_lt_one_of_complexSpectralRadius_lt_one`), and
-Ostrowski's theorem for `G^{[m]}` (`tendsto_iterate_of_exists_norm_pow_fderiv_lt_one`,
-`exists_ball_mapsTo_iterate_of_exists_norm_pow_fderiv_lt_one`) does the rest. The book cites
-Ortega–Rheinboldt for the proof. -/
+/-- **Property 7.3** of [quarteroni2000numerical]. Let $D \subseteq \mathbb{R}^n$, and let
+$G : \mathbb{R}^n \to \mathbb{R}^n$ have a fixed point $x^*$ in the interior of $D$. Suppose
+that $G$ is continuously differentiable in a neighbourhood of $x^*$ and that
+$\rho(J_G(x^*)) < 1$. Then there is a neighbourhood $S \subseteq D$ of $x^*$ such that for every
+$x^{(0)} \in S$ the iterates $x^{(k)} = G^k(x^{(0)})$ of (7.17) all lie in $D$ and converge to
+$x^*$.
+
+The source cites Ortega and Rheinboldt for the proof. In finite dimension, $\rho(J) < 1$ gives
+$\|J^m\| < 1$ for some $m$, by
+`Matrix.exists_opNorm_toEuclideanLin_pow_lt_one_of_complexSpectralRadius_lt_one`, and
+Ostrowski's theorem for $G^m$ gives the result, by
+`tendsto_iterate_of_exists_norm_pow_fderiv_lt_one` and
+`exists_ball_mapsTo_iterate_of_exists_norm_pow_fderiv_lt_one`. The spectral radius is
+`Matrix.complexSpectralRadius`. -/
 theorem property_7_3 {G : EuclideanSpace ℝ (Fin n) → EuclideanSpace ℝ (Fin n)}
     {D : Set (EuclideanSpace ℝ (Fin n))} {xstar : EuclideanSpace ℝ (Fin n)}
     (hint : xstar ∈ interior D) (hfix : G xstar = xstar) (hG : ContDiffAt ℝ 1 G xstar)
@@ -640,11 +844,17 @@ theorem property_7_3 {G : EuclideanSpace ℝ (Fin n) → EuclideanSpace ℝ (Fin
   refine ⟨S ∩ ball xstar δ, inter_mem hS (ball_mem_nhds xstar hδ), inter_subset_left.trans hSD,
     fun x₀ hx₀ => ⟨hSin x₀ hx₀.1, hconv x₀ hx₀.2⟩⟩
 
-/-- **The remark after Property 7.3**: it suffices that `‖J_G(x*)‖ < 1` in some induced matrix
-norm, here the spectral norm `‖toEuclideanCLM (J_G(x*))‖`, and then the convergence is geometric,
-`‖x^{(k)} - x*‖ ≤ q^k ‖x^{(0)} - x*‖` for any `q` with `‖J_G(x*)‖ < q < 1`
-(`exists_ball_norm_iterate_sub_le_of_norm_fderiv_lt_one`, the case `m = 1` of Ostrowski's
-theorem). -/
+/-- **Property 7.3** of [quarteroni2000numerical], the remark after it. Let
+$D \subseteq \mathbb{R}^n$, and let $G : \mathbb{R}^n \to \mathbb{R}^n$ have a fixed point $x^*$
+in the interior of $D$ and be differentiable at $x^*$. Let $\|J_G(x^*)\| < q < 1$ in the
+spectral norm. Then there is a neighbourhood $S \subseteq D$ of $x^*$ such that for every
+$x^{(0)} \in S$ and every $k$, $x^{(k)} = G^k(x^{(0)}) \in D$ and
+$$\|x^{(k)} - x^*\| \le q^k \|x^{(0)} - x^*\|.$$
+
+The source says that it suffices that $\|J_G(x^*)\| < 1$ in some induced matrix norm; here the
+norm is the spectral norm, the norm of `Matrix.toEuclideanCLM` applied to $J_G(x^*)$. The proof
+specializes `exists_ball_norm_iterate_sub_le_of_norm_fderiv_lt_one`, the case $m = 1$ of
+Ostrowski's theorem. -/
 theorem property_7_3_norm {G : EuclideanSpace ℝ (Fin n) → EuclideanSpace ℝ (Fin n)}
     {D : Set (EuclideanSpace ℝ (Fin n))} {xstar : EuclideanSpace ℝ (Fin n)}
     (hint : xstar ∈ interior D) (hfix : G xstar = xstar) (hG : DifferentiableAt ℝ G xstar)
@@ -674,20 +884,30 @@ end Jacobian
 
 section Example74
 
-/-- The system `F(x) = (x₁² + x₂² - 1, 2x₁ + x₂ - 1) = 0` of Example 7.4. -/
+/-- **Example 7.4** of [quarteroni2000numerical], the system $F(x) = 0$ with
+$$F(x) = (x_1^2 + x_2^2 - 1, \ 2 x_1 + x_2 - 1).$$
+
+The components $x_1, x_2$ of the source are `x 0` and `x 1`. -/
 noncomputable def example_7_4_F (x : EuclideanSpace ℝ (Fin 2)) : EuclideanSpace ℝ (Fin 2) :=
   !₂[x 0 ^ 2 + x 1 ^ 2 - 1, 2 * x 0 + x 1 - 1]
 
-/-- The first iteration function of (7.18), `G₁(x) = ((1 - x₂)/2, √(1 - x₁²))`. -/
+/-- **Example 7.4** of [quarteroni2000numerical], the first iteration function of (7.18),
+$$G_1(x) = \left( \frac{1 - x_2}{2}, \ \sqrt{1 - x_1^2} \right).$$
+
+The square root is `Real.sqrt`, whose value at a negative number is $0$. -/
 noncomputable def example_7_4_G₁ (x : EuclideanSpace ℝ (Fin 2)) : EuclideanSpace ℝ (Fin 2) :=
   !₂[(1 - x 1) / 2, √(1 - x 0 ^ 2)]
 
-/-- The second iteration function of (7.18), `G₂(x) = ((1 - x₂)/2, -√(1 - x₁²))`. -/
+/-- **Example 7.4** of [quarteroni2000numerical], the second iteration function of (7.18),
+$$G_2(x) = \left( \frac{1 - x_2}{2}, \ -\sqrt{1 - x_1^2} \right).$$
+
+The square root is `Real.sqrt`, whose value at a negative number is $0$. -/
 noncomputable def example_7_4_G₂ (x : EuclideanSpace ℝ (Fin 2)) : EuclideanSpace ℝ (Fin 2) :=
   !₂[(1 - x 1) / 2, -√(1 - x 0 ^ 2)]
 
-/-- **Example 7.4, the algebraic part.** `x₁* = (0, 1)` and `x₂* = (4/5, -3/5)` solve the system,
-and they are fixed points of `G₁` and `G₂` respectively: `G₁(x₁*) = x₁*`, `G₂(x₂*) = x₂*`. -/
+/-- **Example 7.4** of [quarteroni2000numerical], the algebraic part. The points $x_1^* = (0, 1)$
+and $x_2^* = (4/5, -3/5)$ solve the system $F(x) = 0$, and they are fixed points of $G_1$ and
+$G_2$ respectively: $G_1(x_1^*) = x_1^*$ and $G_2(x_2^*) = x_2^*$. -/
 theorem example_7_4_fixedPoint :
     example_7_4_F !₂[0, 1] = 0 ∧ example_7_4_F !₂[4 / 5, -3 / 5] = 0 ∧
       example_7_4_G₁ !₂[0, 1] = !₂[0, 1] ∧
@@ -697,8 +917,8 @@ theorem example_7_4_fixedPoint :
   refine ⟨?_, ?_, ?_, ?_⟩ <;> ext i <;> fin_cases i <;>
     simp [example_7_4_F, example_7_4_G₁, example_7_4_G₂, h35] <;> norm_num
 
-/-- The Jacobian matrix of a map `ℝ² → ℝ²` read off the derivatives of its two scalar
-components. -/
+/-- The Jacobian matrix of a map $\mathbb{R}^2 \to \mathbb{R}^2$ has as rows the derivatives of its
+two scalar components, applied to the two basis vectors. -/
 private theorem jacobianMatrix_pair {g₀ g₁ : EuclideanSpace ℝ (Fin 2) → ℝ}
     {L₀ L₁ : EuclideanSpace ℝ (Fin 2) →L[ℝ] ℝ} {p : EuclideanSpace ℝ (Fin 2)}
     (h₀ : HasFDerivAt g₀ L₀ p) (h₁ : HasFDerivAt g₁ L₁ p) :
@@ -719,10 +939,14 @@ private theorem jacobianMatrix_pair {g₀ g₁ : EuclideanSpace ℝ (Fin 2) → 
   rw [jacobianMatrix_apply, hd.fderiv]
   fin_cases i <;> fin_cases j <;> simp
 
-/-- **Example 7.4, the analytic part.** The Jacobian matrices of the two iteration functions at
-their fixed points are `J_{G₁}(x₁*) = [[0, -1/2], [0, 0]]` and
-`J_{G₂}(x₂*) = [[0, -1/2], [4/3, 0]]`, of spectral radii `0` and `√(2/3) < 1` respectively; so
-Property 7.3 applies to both schemes and both converge locally. -/
+/-- **Example 7.4** of [quarteroni2000numerical], the analytic part. The Jacobian matrices of the
+two iteration functions at their fixed points are
+$$J_{G_1}(x_1^*) = \begin{bmatrix} 0 & -1/2 \\ 0 & 0 \end{bmatrix}, \qquad J_{G_2}(x_2^*) =
+  \begin{bmatrix} 0 & -1/2 \\ 4/3 & 0 \end{bmatrix},$$
+with spectral radii $\rho(J_{G_1}(x_1^*)) = 0$ and $\rho(J_{G_2}(x_2^*)) = \sqrt{2/3} < 1$.
+
+So Property 7.3 applies to both iteration functions, and both converge locally. The spectral
+radius is `Matrix.complexSpectralRadius`, a value in $[0, \infty]$. -/
 theorem example_7_4_spectralRadius :
     jacobianMatrix example_7_4_G₁ !₂[0, 1] = !![0, -(1 / 2); 0, 0] ∧
       jacobianMatrix example_7_4_G₂ !₂[4 / 5, -(3 / 5)] = !![0, -(1 / 2); 4 / 3, 0] ∧
@@ -823,16 +1047,23 @@ theorem example_7_4_spectralRadius :
 
 end Example74
 
-/-- **Remark 7.1, corrected.** (a) Newton's method is the fixed-point iteration of
-`G_N(x) = x - J_F(x)⁻¹ F(x)` (7.19): the backbone's `Newton.step F F'` is `G_N` definitionally,
-and when `J_F(x)` is invertible, `G_N(x) = x` iff `F(x) = 0`. (b) With the residual
-`r^{(k)} = F(x^{(k)})`, the Newton increment satisfies
-`J_F(x^{(k)}) (x^{(k+1)} - x^{(k)}) = -r^{(k)}`, the preconditioned stationary Richardson step
-with preconditioner `J_F(x^{(k)})`; the accelerated variant
-`J_F(x^{(k)}) (x^{(k+1)} - x^{(k)}) = -α_k r^{(k)}` is the damped step
-`x^{(k+1)} = x^{(k)} - α_k J_F(x^{(k)})⁻¹ F(x^{(k)})` of §7.2.6. The book prints the
-preconditioner as `I - J_{G_N}(x^{(k)})`, which is wrong: `J_{G_N}(x) = -(D(J_F⁻¹)(x)·) F(x)`, so
-`I - J_{G_N}(x) ≠ J_F(x)` in general (it is `I` at a root, where `J_F` need not be `I`). -/
+/-- **Remark 7.1** of [quarteroni2000numerical]. Let $E$ be a real normed space, let $F : E \to E$,
+and let $F'(x)$ be invertible. Let $G_N(x) = x - F'(x)^{-1} F(x)$ be the iteration function
+(7.19) of Newton's method, and let $\alpha \in \mathbb{R}$. Then:
+
+* the Newton step `Newton.step F F'` at $x$ is $G_N(x)$;
+* $G_N(x) = x$ if and only if $F(x) = 0$;
+* with the residual $r = F(x)$, the Newton increment satisfies $F'(x) (G_N(x) - x) = -r$, which
+  is the preconditioned stationary Richardson step with preconditioner $F'(x)$;
+* the damped step $x_+ = x - \alpha F'(x)^{-1} F(x)$ satisfies $F'(x) (x_+ - x) = -\alpha r$,
+  which is the accelerated Richardson step.
+
+**Correction.** The source prints the preconditioner as $I - J_{G_N}(x^{(k)})$. This is wrong:
+$J_{G_N}(x) = -(D(J_F^{-1})(x) \, \cdot) F(x)$, so $I - J_{G_N}(x) \neq J_F(x)$ in general. At a
+root, for example, $I - J_{G_N}$ is $I$, while $J_F$ need not be $I$. The matrix that makes the
+identity true is $J_F(x^{(k)})$.
+
+The damped step is the one of Section 7.2.6. The derivative $F'(x)$ stands for $J_F(x)$. -/
 theorem remark_7_1 (F : E → E) (F' : E → E →L[ℝ] E) (x : E) (e : E ≃L[ℝ] E)
     (he : (e : E →L[ℝ] E) = F' x) (α : ℝ) :
     Newton.step F F' x = x - (F' x).inverse (F x) ∧

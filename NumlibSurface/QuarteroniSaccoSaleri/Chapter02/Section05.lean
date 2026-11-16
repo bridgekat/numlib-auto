@@ -10,31 +10,131 @@ import Mathlib.Tactic.IntervalCases
 import Numlib.FloatingPoint.System
 
 /-!
-# Quarteroni–Sacco–Saleri §2.5: machine representation of numbers
+# Quarteroni, Sacco and Saleri, Section 2.5: Machine Representation of Numbers
 
-Surface file for [quarteroni2000numerical] §2.5: the positional system (§2.5.1), the floating-point
-number system `𝔽(β, t, L, U)` (§2.5.2), its distribution (§2.5.3), the IEC 559 parameters (§2.5.4),
-rounding and Property 2.1 (§2.5.5), and the machine operations (§2.5.6).
+This module formalizes Section 2.5 of [quarteroni2000numerical]: the positional system (Section
+2.5.1), the floating-point number system $\mathbb{F}(\beta, t, L, U)$ (Section 2.5.2), the
+distribution of its numbers (Section 2.5.3), the parameters of IEC 559 arithmetic (Section 2.5.4),
+rounding and Property 2.1 (Section 2.5.5), and the machine operations (Section 2.5.6). The book
+defines $\mathbb{F}(\beta, t, L, U)$ as the set of $0$ and of the numbers
+$(-1)^s \beta^e \sum_{i=1}^t a_i \beta^{-i}$ with digits $0 \le a_i \le \beta - 1$, $a_1 \neq 0$,
+and exponent $L \le e \le U$. The unit roundoff is $u = \frac{1}{2} \beta^{1-t}$, and rounding to
+nearest satisfies $fl(x) = x(1 + \delta)$ with $|\delta| \le u$ (Property 2.1).
 
-Everything specializes `Numlib/FloatingPoint/System.lean` to `ℝ` (and to `ℚ` for the two decidable
-examples). The book defines `𝔽` by digit strings `(-1)^s β^e ∑_{i=1}^t a_i β^{-i}`; the surface
-restates it in that form (`floatingPointNumbers`) and proves it equal to the backbone's
-integer-mantissa form `FloatingPoint.System.numbers` (`floatingPointNumbers_eq`), the one
-load-bearing equivalence of the file. The rounding (2.32) is restated as the book's digit rule, for
-even `β` as the book assumes, and identified with `FloatingPoint.System.round` (`equation_2_32`).
-Property 2.1 is stated with the book's range hypothesis, although the backbone bound needs none.
-The unnumbered facts the text asserts — the cardinality of `𝔽`, the smallest de-normalized number,
-the spacing, `ε_M` as the gap above `1`, the commutativity and the failure of associativity of `⊕`
-— are nodes under descriptive names.
+All results specialize the backbone module `Numlib.FloatingPoint.System` to $\mathbb{R}$, and to
+$\mathbb{Q}$ for the two examples that are decided by computation. The module restates $\mathbb{F}$
+in the digit form of the book and proves that it equals the integer-mantissa form
+$\pm m \beta^{e-t}$ of the backbone. It also restates the rounding (2.32) as the digit rule of the
+book and identifies it with `FloatingPoint.System.round`. The facts that the text asserts without a
+number (the cardinality of $\mathbb{F}$, the smallest de-normalized number, the spacing of the
+numbers, the machine epsilon $\varepsilon_M$ as the gap above $1$, the commutativity and the failure
+of associativity of $\oplus$) have descriptive names.
 
-Two hypotheses the book leaves implicit are made explicit: `t ≥ 2` for the characterization of
-`ε_M` as the gap above `1` (in `𝔽(2, 1, L, 1)` no number of `𝔽` exceeds `1`) and for the smallest
-de-normalized number (for `t = 1` there are none), and `β` even for the digit rule (2.32) to be
-rounding to nearest.
+## Main definitions
 
-Skipped: Example 2.10 (a numeral written in two bases), Remark 2.3 (MATLAB `eps`), Remark 2.4 (the
-IEC 559 closed arithmetic, NaN, Table 2.3), Tables 2.1–2.2, the flop counts and the round-digit
-hardware discussion of §2.5.6.
+* Section 2.5.2, `QuarteroniSaccoSaleri.Chapter02.floatingPointNumbers`: the set
+  $\mathbb{F}(\beta, t, L, U)$ in the digit form of the book.
+* Example 2.11, `QuarteroniSaccoSaleri.Chapter02.example_2_11_system`: the system
+  $\mathbb{F}(2, 3, -1, 2)$.
+* Section 2.5.6, `QuarteroniSaccoSaleri.Chapter02.machineOp`: the machine operation
+  $fl(fl(x) \circ fl(y))$.
+* Section 2.5.6, `QuarteroniSaccoSaleri.Chapter02.decimalSystem`: the decimal system
+  $\mathbb{F}(10, 2, -1, 2)$.
+
+## Main results
+
+* Section 2.5.1, `QuarteroniSaccoSaleri.Chapter02.positionalDensity`: numbers with finitely many
+  digits in base $\beta$ are dense in $\mathbb{R}$.
+* Section 2.5.2, `QuarteroniSaccoSaleri.Chapter02.floatingPointNumbers_eq`: the digit form of
+  $\mathbb{F}$ is the integer-mantissa form of the backbone.
+* Equation (2.30), `QuarteroniSaccoSaleri.Chapter02.equation_2_30`: $x_{min} \le |x| \le x_{max}$
+  for every nonzero $x \in \mathbb{F}$.
+* Section 2.5.2, `QuarteroniSaccoSaleri.Chapter02.cardFloatingPoint`: $\mathbb{F}$ has
+  $2(\beta - 1)\beta^{t-1}(U - L + 1) + 1$ elements.
+* Section 2.5.2, `QuarteroniSaccoSaleri.Chapter02.denormalizedMin`: the smallest positive
+  de-normalized number is $\beta^{L-t}$.
+* Example 2.11, `QuarteroniSaccoSaleri.Chapter02.example_2_11`: the sixteen positive numbers of
+  $\mathbb{F}(2, 3, -1, 2)$.
+* Example 2.11, `QuarteroniSaccoSaleri.Chapter02.example_2_11_bounds`: $x_{min} = 1/4$,
+  $x_{max} = 7/2$, and $33$ numbers in all.
+* Example 2.11, `QuarteroniSaccoSaleri.Chapter02.example_2_11_denormalized`: the positive
+  de-normalized numbers $3/16$, $1/8$ and $1/16$.
+* Section 2.5.3, `QuarteroniSaccoSaleri.Chapter02.spacing`: the numbers of one exponent are equally
+  spaced, and the spacing near $x$ lies between $\beta^{-1} \varepsilon_M |x|$ and
+  $\varepsilon_M |x|$.
+* Equation (2.31), `QuarteroniSaccoSaleri.Chapter02.equation_2_31`: the relative spacing is $1/m$
+  for the mantissa $m$ (wobbling precision).
+* Section 2.5.3, `QuarteroniSaccoSaleri.Chapter02.machineEps_isLeast`: $\varepsilon_M$ is the least
+  $\delta > 0$ with $1 + \delta \in \mathbb{F}$.
+* Section 2.5.4, `QuarteroniSaccoSaleri.Chapter02.ieeeUnitRoundoff`: the parameters and unit
+  roundoffs of IEC 559 single and double precision.
+* Equation (2.32), `QuarteroniSaccoSaleri.Chapter02.equation_2_32`: rounding to nearest is the digit
+  rule of the book.
+* Section 2.5.5, `QuarteroniSaccoSaleri.Chapter02.fl_eq_self_of_mem`: $fl(x) = x$ for
+  $x \in \mathbb{F}$.
+* Section 2.5.5, `QuarteroniSaccoSaleri.Chapter02.fl_mono`: rounding is monotone.
+* Remark 2.2, `QuarteroniSaccoSaleri.Chapter02.remark_2_2`: overflow and underflow.
+* Property 2.1, `QuarteroniSaccoSaleri.Chapter02.property_2_1`: $fl(x) = x(1 + \delta)$ with
+  $|\delta| \le u$ for $x_{min} \le |x| \le x_{max}$.
+* Equation (2.34), `QuarteroniSaccoSaleri.Chapter02.equation_2_34`: $u = \frac{1}{2} \beta^{1-t} =
+  \frac{1}{2} \varepsilon_M$.
+* Property 2.1, `QuarteroniSaccoSaleri.Chapter02.property_2_1_chop`: chopping satisfies the same
+  bound with $\varepsilon_M$ in place of $u$.
+* Equation (2.35), `QuarteroniSaccoSaleri.Chapter02.equation_2_35`: the relative error of rounding
+  is at most $u$.
+* Section 2.5.5, `QuarteroniSaccoSaleri.Chapter02.roundAbsError`: the absolute error of rounding is
+  at most $\frac{1}{2} \beta^{e-t}$.
+* Section 2.5.6, `QuarteroniSaccoSaleri.Chapter02.machineOp_eq`: the machine operation is the
+  backbone's `FloatingPoint.System.op`.
+* Equation (2.36), `QuarteroniSaccoSaleri.Chapter02.equation_2_36`: each machine operation on
+  numbers of $\mathbb{F}$ has relative error at most $u$.
+* Section 2.5.6, `QuarteroniSaccoSaleri.Chapter02.machineOp_comm`: the machine sum and the machine
+  product are commutative.
+* Section 2.5.6, `QuarteroniSaccoSaleri.Chapter02.machineAdd_not_assoc`: the machine sum is not
+  associative.
+
+## Conventions
+
+* A floating-point system is a `FloatingPoint.System`, with base $\beta \ge 2$, $t \ge 1$ digits and
+  exponent range $L \le U$. The set $\mathbb{F}$ is `FloatingPoint.System.numbers`, and $fl$ is
+  `FloatingPoint.System.round`.
+* The exponent $e$ of a nonzero $x$ is the integer with $\beta^{e-1} \le |x| < \beta^e$, that is,
+  the exponent of the mantissa convention (2.29) $x = \pm (0.a_1 a_2 \dots) \times \beta^e$. It is
+  `FloatingPoint.System.exponent`.
+
+## Implementation notes
+
+* The rounding `FloatingPoint.System.round` is defined on all of $\mathbb{R}$, without a restriction
+  of the exponent range. Overflow is the statement that the result is not in $\mathbb{F}$ (Remark
+  2.2).
+* Property 2.1 keeps the range hypothesis of the book, although the bound on $\delta$ holds without
+  it in the backbone.
+
+## Deviations from the source
+
+* **Section 2.5.2, the smallest de-normalized number** (reading). The statement assumes $t \ge 2$,
+  which the book leaves implicit. See `QuarteroniSaccoSaleri.Chapter02.denormalizedMin`.
+* **Section 2.5.3, the spacing** (reading). The statement uses the mantissa convention (2.29), where
+  the book's sentence uses the convention $a_1.a_2 \dots \times \beta^e$. See
+  `QuarteroniSaccoSaleri.Chapter02.spacing`.
+* **Section 2.5.3, the machine epsilon** (reading). "The smallest number of $\mathbb{F}$ such that
+  $1 + \varepsilon_M > 1$" is read as the least $\delta > 0$ with $1 + \delta \in \mathbb{F}$, and
+  the statement assumes $t \ge 2$ and $L \le 1 \le U$. See
+  `QuarteroniSaccoSaleri.Chapter02.machineEps_isLeast`.
+* **Remark 2.2** (reading). "$fl(x)$ is not defined" is read as "$fl(x)$ is not in $\mathbb{F}$",
+  with the threshold $\beta^U$ in place of $x_{max}$. See
+  `QuarteroniSaccoSaleri.Chapter02.remark_2_2`.
+* **Equation (2.36)** (reading). The additional assumption on the round digit that the book requires
+  for the subtraction holds automatically, because the exact result is rounded. See
+  `QuarteroniSaccoSaleri.Chapter02.equation_2_36`.
+
+## Not formalized
+
+* **Example 2.10** (a numeral written in two bases).
+* **Remark 2.3** (the MATLAB constant `eps`).
+* **Remark 2.4** (the closed arithmetic of IEC 559, NaN, and Table 2.3).
+* **Tables 2.1 and 2.2.**
+* **Section 2.5.6, the operation counts and the discussion of the round digit in hardware.**
 -/
 
 open Finset FloatingPoint
@@ -43,25 +143,33 @@ namespace QuarteroniSaccoSaleri.Chapter02
 
 /-! ### §2.5.1 The positional system -/
 
-/-- **§2.5.1, finite positional expansions are dense**: "any real number can be approximated by
-numbers having a finite representation" — for a base `β ≥ 2`, every `x ∈ ℝ` and `ε > 0` there is
-`y = m β^(-k)` with finitely many digits and `|y - x| < ε`. -/
+/-- **Section 2.5.1** of [quarteroni2000numerical], finite positional expansions are dense. Let
+$\beta \ge 2$ be an integer, let $x \in \mathbb{R}$ and let $\varepsilon > 0$. Then there are
+$m \in \mathbb{Z}$ and $k \in \mathbb{N}$ with
+$$|m \beta^{-k} - x| < \varepsilon.$$
+So "any real number can be approximated by numbers having a finite representation". -/
 theorem positionalDensity {β : ℕ} (hβ : 2 ≤ β) (x : ℝ) {ε : ℝ} (hε : 0 < ε) :
     ∃ (m : ℤ) (k : ℕ), |m * (β : ℝ) ^ (-(k : ℤ)) - x| < ε :=
   exists_int_mul_zpow_sub_abs_lt hβ x hε
 
 /-! ### §2.5.2 The floating-point number system -/
 
-/-- **§2.5.2, the display defining `𝔽(β, t, L, U)`**: the set `{0} ∪ {x ∈ ℝ : x = (-1)^s β^e
-∑_{i=1}^t a_i β^{-i}}` of floating-point numbers with `t` significant digits `0 ≤ a_i ≤ β - 1`,
-range `L ≤ e ≤ U`, and the normalization `a₁ ≠ 0`. The digits are a function `a : ℕ → ℕ` of which
-only `a 1, …, a t` matter. -/
+/-- **Section 2.5.2** of [quarteroni2000numerical], the set $\mathbb{F}(\beta, t, L, U)$. For
+natural numbers $\beta, t$ and integers $L, U$, this is the set
+$$\{0\} \cup \Bigl\{x \in \mathbb{R} : x = (-1)^s \beta^e \sum_{i=1}^t a_i \beta^{-i}\Bigr\}$$
+of the numbers with a sign $s \in \{0, 1\}$, $t$ significant digits $0 \le a_i \le \beta - 1$
+with $a_1 \neq 0$, and an exponent $L \le e \le U$.
+
+The digits are a function `a : ℕ → ℕ`, of which only $a_1, \dots, a_t$ matter. The sign is a
+`Bool`. The definition makes no hypothesis on the parameters;
+`QuarteroniSaccoSaleri.Chapter02.floatingPointNumbers_eq` identifies it with the backbone's set
+for a floating-point system. -/
 def floatingPointNumbers (β t : ℕ) (L U : ℤ) : Set ℝ :=
   {0} ∪ {x | ∃ (s : Bool) (e : ℤ) (a : ℕ → ℕ), (∀ i ∈ Icc 1 t, a i ≤ β - 1) ∧ a 1 ≠ 0 ∧
     L ≤ e ∧ e ≤ U ∧
     x = (-1) ^ s.toNat * (β : ℝ) ^ e * ∑ i ∈ Icc 1 t, (a i : ℝ) * (β : ℝ) ^ (-(i : ℤ))}
 
-/-- A digit string of length `t` in base `β` has value below `β^t`. -/
+/-- If $c_j < \beta$ for every $j < t$, then $\sum_{j < t} c_j \beta^j < \beta^t$. -/
 private theorem sum_mul_pow_lt {β t : ℕ} {c : ℕ → ℕ} (hc : ∀ j < t, c j < β) :
     ∑ j ∈ range t, c j * β ^ j < β ^ t := by
   induction t with
@@ -72,7 +180,8 @@ private theorem sum_mul_pow_lt {β t : ℕ} {c : ℕ → ℕ} (hc : ∀ j < t, c
     have h2 : c t + 1 ≤ β := hc t (by omega)
     nlinarith [Nat.zero_le (β ^ t)]
 
-/-- The base-`β` expansion of `m < β^t`: `m = ∑_{j<t} (m / β^j % β) β^j`. -/
+/-- For $\beta \ge 2$ and $m < \beta^t$, the base-$\beta$ expansion $m = \sum_{j < t} (\lfloor m /
+\beta^j \rfloor \bmod \beta) \, \beta^j$ holds. -/
 private theorem sum_div_pow_mod_mul_pow {β : ℕ} (hβ : 2 ≤ β) :
     ∀ (t m : ℕ), m < β ^ t → ∑ j ∈ range t, m / β ^ j % β * β ^ j = m := by
   intro t
@@ -95,7 +204,8 @@ private theorem sum_div_pow_mod_mul_pow {β : ℕ} (hβ : 2 ≤ β) :
     simp only [pow_zero, Nat.div_one, mul_one]
     exact Nat.div_add_mod m β
 
-/-- Reindexing a sum over the digit positions `1, …, t` by `i ↦ t - i`. -/
+/-- A sum over the digit positions $1, \dots, t$ can be reindexed by $i \mapsto t - i$:
+$\sum_{i=1}^t g(i) = \sum_{j=0}^{t-1} g(t - j)$. -/
 private theorem sum_Icc_eq_sum_range {M : Type*} [AddCommMonoid M] (t : ℕ) (g : ℕ → M) :
     ∑ i ∈ Icc 1 t, g i = ∑ j ∈ range t, g (t - j) := by
   refine sum_nbij' (fun i => t - i) (fun j => t - j) ?_ ?_ ?_ ?_ ?_
@@ -105,8 +215,8 @@ private theorem sum_Icc_eq_sum_range {M : Type*} [AddCommMonoid M] (t : ℕ) (g 
   · intro j hj; simp only [mem_range] at hj; omega
   · intro i hi; simp only [mem_Icc] at hi; rw [Nat.sub_sub_self hi.2]
 
-/-- The value of a digit string, in the two forms: `β^e ∑_{i=1}^t a_i β^{-i} = (∑_{i=1}^t a_i
-β^{t-i}) β^{e-t}`. -/
+/-- For $\beta > 0$, the value of a digit string has the two forms $\beta^e \sum_{i=1}^t a_i
+\beta^{-i} = \bigl(\sum_{i=1}^t a_i \beta^{t-i}\bigr) \beta^{e-t}$. -/
 private theorem zpow_mul_sum_eq {β t : ℕ} (hβ : 0 < β) (e : ℤ) (a : ℕ → ℕ) :
     (β : ℝ) ^ e * ∑ i ∈ Icc 1 t, (a i : ℝ) * (β : ℝ) ^ (-(i : ℤ)) =
       ((∑ i ∈ Icc 1 t, a i * β ^ (t - i) : ℕ) : ℝ) * (β : ℝ) ^ (e - t) := by
@@ -117,10 +227,16 @@ private theorem zpow_mul_sum_eq {β t : ℕ} (hβ : 0 < β) (e : ℤ) (a : ℕ �
   rw [Nat.cast_mul, Nat.cast_pow, ← zpow_natCast, Nat.cast_sub hi.2, mul_left_comm, mul_assoc,
     ← zpow_add₀ hβ', ← zpow_add₀ hβ', show e + -(i : ℤ) = (t : ℤ) - i + (e - t) by ring]
 
-/-- **§2.5.2**: the digit form of `𝔽(β, t, L, U)` is the integer-mantissa form `± m β^(e - t)`,
-`β^(t-1) ≤ m ≤ β^t - 1`, of the backbone: `floatingPointNumbers s.β s.t s.L s.U = s.numbers ℝ`. The
-mantissa is `m = a₁a₂…a_t = ∑ a_i β^(t-i)`, and every `m` in that range has exactly the base-`β`
-digits `a_i = ⌊m / β^(t-i)⌋ mod β`, with `a₁ ≠ 0` because `m ≥ β^(t-1)`. -/
+/-- **Section 2.5.2** of [quarteroni2000numerical], the digit form and the integer-mantissa form.
+Let $s$ be a floating-point system with parameters $\beta, t, L, U$. Then the digit form
+$\mathbb{F}(\beta, t, L, U)$ equals the backbone's set of $0$ and of the numbers
+$\pm m \beta^{e-t}$ with an integer mantissa $\beta^{t-1} \le m \le \beta^t - 1$ and an exponent
+$L \le e \le U$.
+
+The mantissa is $m = a_1 a_2 \dots a_t = \sum_{i=1}^t a_i \beta^{t-i}$. Conversely, every $m$ in
+that range has exactly the base-$\beta$ digits $a_i = \lfloor m / \beta^{t-i} \rfloor \bmod
+\beta$, with $a_1 \neq 0$ because $m \ge \beta^{t-1}$. The backbone's set is
+`FloatingPoint.System.numbers`. -/
 theorem floatingPointNumbers_eq (s : System) :
     floatingPointNumbers s.β s.t s.L s.U = s.numbers ℝ := by
   have hβ := s.β_pos
@@ -181,22 +297,35 @@ theorem floatingPointNumbers_eq (s : System) :
       · exact Or.inr ⟨true, e, fun i => m / s.β ^ (s.t - i) % s.β, hdig, hd1, hL, hU,
           by rw [hval]; simp⟩
 
-/-- **(2.30)**: every nonzero `x ∈ 𝔽` satisfies
-`x_min = β^(L-1) ≤ |x| ≤ β^U (1 - β^(-t)) = x_max`. -/
+/-- **Equation (2.30)** of [quarteroni2000numerical]. Every nonzero $x \in \mathbb{F}$ satisfies
+$$x_{min} = \beta^{L-1} \le |x| \le \beta^U (1 - \beta^{-t}) = x_{max}.$$
+-/
 theorem equation_2_30 (s : System) {x : ℝ} (hx : x ∈ s.numbers ℝ) (h0 : x ≠ 0) :
     (s.β : ℝ) ^ (s.L - 1) ≤ |x| ∧ |x| ≤ (s.β : ℝ) ^ s.U * (1 - (s.β : ℝ) ^ (-(s.t : ℤ))) :=
   ⟨s.xmin_le_abs hx h0, s.abs_le_xmax hx⟩
 
-/-- **§2.5.2, the cardinality of `𝔽`**: `card 𝔽 = 2 (β - 1) β^(t-1) (U - L + 1) + 1`. -/
+/-- **Section 2.5.2** of [quarteroni2000numerical], the cardinality of $\mathbb{F}$. The set
+$\mathbb{F}(\beta, t, L, U)$ has
+$$2 (\beta - 1) \beta^{t-1} (U - L + 1) + 1$$
+elements.
+
+The number of elements is `Set.ncard`, cast to $\mathbb{Z}$. -/
 theorem cardFloatingPoint (s : System) :
     ((s.numbers ℝ).ncard : ℤ)
       = 2 * ((s.β : ℤ) - 1) * (s.β : ℤ) ^ (s.t - 1) * (s.U - s.L + 1) + 1 := by
   rw [← s.coe_finset, Set.ncard_coe_finset, s.card_finset]
 
-/-- **§2.5.2, the de-normalized numbers `𝔽_D`**: they have mantissa between `1` and `β^(t-1) - 1`
-at the exponent `L`, they "belong to the interval `(-β^(L-1), β^(L-1))`", and "the smallest number
-in this set has absolute value equal to `β^(L-t)`". The last clause needs `t ≥ 2`: for `t = 1`
-there are no de-normalized numbers. -/
+/-- **Section 2.5.2** of [quarteroni2000numerical], the de-normalized numbers. The de-normalized
+numbers $\mathbb{F}_D$ are the numbers $\pm m \beta^{L-t}$ with a mantissa
+$1 \le m \le \beta^{t-1} - 1$ at the exponent $L$. Let $t \ge 2$. Then "the smallest number in
+this set has absolute value equal to $\beta^{L-t}$": $\beta^{L-t}$ is the least positive
+de-normalized number. Every de-normalized number "belongs to the interval
+$(-\beta^{L-1}, \beta^{L-1})$".
+
+**Reading.** The book does not state the hypothesis $t \ge 2$. For $t = 1$ there are no
+de-normalized numbers.
+
+The de-normalized numbers are `FloatingPoint.System.denormalized`. -/
 theorem denormalizedMin (s : System) (ht : 2 ≤ s.t) :
     IsLeast {x : ℝ | x ∈ s.denormalized ℝ ∧ 0 < x} ((s.β : ℝ) ^ (s.L - s.t)) ∧
       ∀ x ∈ s.denormalized ℝ, x ∈ Set.Ioo (-(s.β : ℝ) ^ (s.L - 1)) ((s.β : ℝ) ^ (s.L - 1)) :=
@@ -204,11 +333,18 @@ theorem denormalizedMin (s : System) (ht : 2 ≤ s.t) :
     have := abs_lt.1 (s.abs_lt_xmin_of_mem_denormalized hx)
     exact ⟨this.1, this.2⟩⟩
 
-/-- **Example 2.11**: the system `𝔽(2, 3, -1, 2)`. -/
+/-- **Example 2.11** of [quarteroni2000numerical], the system $\mathbb{F}(2, 3, -1, 2)$: base $2$,
+three significant digits, and exponents $-1 \le e \le 2$. -/
 def example_2_11_system : System := ⟨2, 3, -1, 2, by norm_num, by norm_num, by norm_num⟩
 
-/-- **Example 2.11**: the positive numbers of `𝔽(2, 3, -1, 2)` are the sixteen numbers
-`(0.111)₂ 2² = 7/2, (0.110)₂ 2² = 3, …, (0.100)₂ 2⁻¹ = 1/4`. -/
+/-- **Example 2.11** of [quarteroni2000numerical]. The positive numbers of $\mathbb{F}(2, 3, -1, 2)$
+are the sixteen numbers $(0.111)_2 \cdot 2^2 = 7/2$, $(0.110)_2 \cdot 2^2 = 3$, …,
+$(0.100)_2 \cdot 2^{-1} = 1/4$, that is,
+$$\tfrac{7}{2}, 3, \tfrac{5}{2}, 2, \tfrac{7}{4}, \tfrac{3}{2}, \tfrac{5}{4}, 1, \tfrac{7}{8},
+  \tfrac{3}{4}, \tfrac{5}{8}, \tfrac{1}{2}, \tfrac{7}{16}, \tfrac{3}{8}, \tfrac{5}{16},
+  \tfrac{1}{4}.$$
+
+The set is computed over $\mathbb{Q}$. -/
 theorem example_2_11 :
     {x : ℚ | x ∈ example_2_11_system.numbers ℚ ∧ 0 < x} =
       {7/2, 3, 5/2, 2, 7/4, 3/2, 5/4, 1, 7/8, 3/4, 5/8, 1/2, 7/16, 3/8, 5/16, 1/4} := by
@@ -254,10 +390,14 @@ theorem example_2_11 :
     · exact key 5 (-1) (by norm_num) (by norm_num) (by norm_num) (by norm_num) _ (by norm_num)
     · exact key 4 (-1) (by norm_num) (by norm_num) (by norm_num) (by norm_num) _ (by norm_num)
 
-/-- **Example 2.11, the bounds and the count**: the numbers are "included between `x_min = β^(L-1)
-= 2⁻² = 1/4` and `x_max = β^U (1 - β^(-t)) = 2² (1 - 2⁻³) = 7/2`", and there are `(β - 1) β^(t-1) (U
-- L + 1) = 16` strictly positive numbers, hence `2 · 16 + 1` numbers with their opposites and
-zero. -/
+/-- **Example 2.11** of [quarteroni2000numerical], the bounds and the count. The numbers of
+$\mathbb{F}(2, 3, -1, 2)$ lie between $x_{min} = \beta^{L-1} = 2^{-2} = 1/4$ and $x_{max} =
+\beta^U (1 - \beta^{-t}) = 2^2 (1 - 2^{-3}) = 7/2$. There are
+$(\beta - 1) \beta^{t-1} (U - L + 1) = 16$ positive numbers, so $\mathbb{F}$ has
+$2 \cdot 16 + 1 = 33$ elements, with the opposites and zero.
+
+The values are computed over $\mathbb{Q}$, and the count is the cardinality of
+`FloatingPoint.System.finset`. -/
 theorem example_2_11_bounds :
     example_2_11_system.xmin ℚ = 1/4 ∧ example_2_11_system.xmax ℚ = 7/2 ∧
       ((example_2_11_system.finset ℚ).card : ℤ) = 2 * 16 + 1 := by
@@ -266,9 +406,12 @@ theorem example_2_11_bounds :
   · simp [System.xmax, example_2_11_system]; norm_num
   · rw [System.card_finset]; simp [example_2_11_system]
 
-/-- **Example 2.11, the de-normalized numbers**: the positive de-normalized numbers of `𝔽(2, 3, -1,
-2)` are `(.011)₂ 2⁻¹ = 3/16, (.010)₂ 2⁻¹ = 1/8, (.001)₂ 2⁻¹ = 1/16`, and "the smallest de-normalized
-number is `β^(L-t) = 2^(-1-3) = 1/16`". -/
+/-- **Example 2.11** of [quarteroni2000numerical], the de-normalized numbers. The positive
+de-normalized numbers of $\mathbb{F}(2, 3, -1, 2)$ are $(0.011)_2 \cdot 2^{-1} = 3/16$,
+$(0.010)_2 \cdot 2^{-1} = 1/8$ and $(0.001)_2 \cdot 2^{-1} = 1/16$, and "the smallest
+de-normalized number is $\beta^{L-t} = 2^{-1-3} = 1/16$".
+
+The values are computed over $\mathbb{Q}$. -/
 theorem example_2_11_denormalized :
     {x : ℚ | x ∈ example_2_11_system.denormalized ℚ ∧ 0 < x} = {3/16, 1/8, 1/16} ∧
       IsLeast {x : ℚ | x ∈ example_2_11_system.denormalized ℚ ∧ 0 < x} (1/16) := by
@@ -307,16 +450,24 @@ theorem example_2_11_denormalized :
 
 /-! ### §2.5.3 Distribution of the floating-point numbers -/
 
-/-- **§2.5.3, the distribution of the floating-point numbers**. First, having fixed an exponent `L
-≤ e ≤ U`, the numbers of `𝔽` in the binade `[β^(e-1), β^e)` are `m β^(e-t)` for `β^(t-1) ≤ m ≤
-β^t - 1`, "equally spaced and [with] distance equal to `β^(e-t)`". Second, "the spacing between a
-number `x ∈ 𝔽` and its next nearest `y ∈ 𝔽` … is at least `β⁻¹ ε_M |x|` and at most `ε_M |x|`,
-being `ε_M = β^(1-t)` the machine epsilon": the spacing `β^(e-t)` at `x ≠ 0` of exponent `e =
-exponent x` satisfies `β⁻¹ ε_M |x| < β^(e-t) ≤ ε_M |x|`.
+/-- **Section 2.5.3** of [quarteroni2000numerical], the distribution of the floating-point numbers.
+Let $L \le e \le U$. The numbers of $\mathbb{F}$ in $[\beta^{e-1}, \beta^e)$ are exactly the
+numbers $m \beta^{e-t}$ with $\beta^{t-1} \le m \le \beta^t - 1$: they are "equally spaced and
+[with] distance equal to $\beta^{e-t}$". Let $x \neq 0$ have the exponent $e$. Then the spacing
+$\beta^{e-t}$ at $x$ satisfies
+$$\beta^{-1} \varepsilon_M |x| < \beta^{e-t} \le \varepsilon_M |x|,$$
+where $\varepsilon_M = \beta^{1-t}$ is the machine epsilon. The book says that "the spacing
+between a number $x \in \mathbb{F}$ and its next nearest $y \in \mathbb{F}$ … is at least
+$\beta^{-1} \varepsilon_M |x|$ and at most $\varepsilon_M |x|$".
 
-Both are stated in the mantissa convention (2.29), `x = ± 0.a₁…a_t × β^e`, in which the binade of
-exponent `e` is `[β^(e-1), β^e)`; the book's sentence "having fixed an interval of the form `[β^e,
-β^(e+1)]` … distance equal to `β^(e-t)`" uses the other convention `a₁.a₂… × β^e`. -/
+**Reading.** Both statements use the mantissa convention (2.29),
+$x = \pm (0.a_1 \dots a_t) \times \beta^e$, in which the numbers of exponent $e$ fill
+$[\beta^{e-1}, \beta^e)$. The book's sentence "having fixed an interval of the form
+$[\beta^e, \beta^{e+1}]$ … distance equal to $\beta^{e-t}$" uses the other convention
+$a_1.a_2 \dots \times \beta^e$.
+
+The exponent of $x$ is `FloatingPoint.System.exponent x`. The second statement holds for every
+nonzero real $x$, not only for $x \in \mathbb{F}$. -/
 theorem spacing (s : System) :
     (∀ e : ℤ, s.L ≤ e → e ≤ s.U →
       s.numbers ℝ ∩ Set.Ico ((s.β : ℝ) ^ (e - 1)) ((s.β : ℝ) ^ e) =
@@ -327,26 +478,41 @@ theorem spacing (s : System) :
         (s.β : ℝ) ^ (s.exponent x - s.t) ≤ (s.β : ℝ) ^ (1 - (s.t : ℤ)) * |x| :=
   ⟨fun _ hL hU => s.numbers_inter_Ico hL hU, fun _ hx => s.ulp_bounds hx⟩
 
-/-- **(2.31)**: for `x = (-1)^s m(x) β^(e-t) ∈ 𝔽`, the distance `Δx = β^(e-t)` to the successive
-number gives the relative distance `Δx / x = 1 / m(x)`, which depends only on the mantissa
-(*wobbling precision*). -/
+/-- **Equation (2.31)** of [quarteroni2000numerical], wobbling precision. Let
+$x = \sigma m \beta^{e-t}$ with $\sigma = \pm 1$, an integer mantissa
+$\beta^{t-1} \le m \le \beta^t - 1$ and an integer $e$. The distance $\Delta x = \beta^{e-t}$
+from $x$ to the next number gives the relative distance
+$$\frac{\Delta x}{|x|} = \frac{1}{m},$$
+which depends only on the mantissa.
+
+The book writes $\Delta x / x$. The exponent $e$ is not restricted to $[L, U]$, and $\Delta x$
+is written with `FloatingPoint.System.exponent x`, which equals $e$. -/
 theorem equation_2_31 (s : System) {σ : ℤˣ} {m : ℕ} {e : ℤ} (hm1 : s.β ^ (s.t - 1) ≤ m)
     (hm2 : m ≤ s.β ^ s.t - 1) {x : ℝ} (hx : x = ((σ : ℤ) : ℝ) * m * (s.β : ℝ) ^ (e - s.t)) :
     (s.β : ℝ) ^ (s.exponent x - s.t) / |x| = 1 / m :=
   s.ulp_div_eq_inv_mantissa hm1 hm2 hx
 
-/-- **§2.5.3, the machine epsilon**: `ε_M = β^(1-t)` "represents the distance between the number
-`1` and the nearest floating-point number, and therefore it is the smallest number of `𝔽` such
-that `1 + ε_M > 1`" — read as: `ε_M` is the least positive `δ` with `1 + δ ∈ 𝔽`. This needs the
-exponent `1` to be admissible and `t ≥ 2` (in `𝔽(2, 1, L, 1)` no number of `𝔽` exceeds `1`). -/
+/-- **Section 2.5.3** of [quarteroni2000numerical], the machine epsilon. Assume $L \le 1 \le U$ and
+$t \ge 2$. Then $\varepsilon_M = \beta^{1-t}$ is the least $\delta > 0$ with
+$1 + \delta \in \mathbb{F}$. The book says that $\varepsilon_M$ "represents the distance between
+the number $1$ and the nearest floating-point number, and therefore it is the smallest number of
+$\mathbb{F}$ such that $1 + \varepsilon_M > 1$".
+
+**Reading.** The characterization of the book is read as: $\varepsilon_M$ is the least positive
+$\delta$ with $1 + \delta \in \mathbb{F}$. This needs the exponent $1$ to be admissible and
+$t \ge 2$, which the book does not state: in $\mathbb{F}(2, 1, L, 1)$ no number of $\mathbb{F}$
+exceeds $1$. -/
 theorem machineEps_isLeast (s : System) (hL : s.L ≤ 1) (hU : 1 ≤ s.U) (ht : 2 ≤ s.t) :
     IsLeast {δ : ℝ | 0 < δ ∧ 1 + δ ∈ s.numbers ℝ} ((s.β : ℝ) ^ (1 - (s.t : ℤ))) :=
   s.isLeast_machineEps hL hU ht
 
 /-! ### §2.5.4 IEC/IEEE arithmetic -/
 
-/-- **§2.5.4, the IEC 559 basic formats**: single precision is `𝔽(2, 24, -125, 128)` and double
-precision `𝔽(2, 53, -1021, 1024)`, with roundoff units `u = 2^(-24)` and `u = 2^(-53)`. -/
+/-- **Section 2.5.4** of [quarteroni2000numerical], the basic formats of IEC 559. Single precision
+is $\mathbb{F}(2, 24, -125, 128)$ with the roundoff unit $u = 2^{-24}$, and double precision is
+$\mathbb{F}(2, 53, -1021, 1024)$ with $u = 2^{-53}$.
+
+The two systems are `FloatingPoint.System.ieeeSingle` and `FloatingPoint.System.ieeeDouble`. -/
 theorem ieeeUnitRoundoff :
     (System.ieeeSingle.β, System.ieeeSingle.t, System.ieeeSingle.L, System.ieeeSingle.U) =
         (2, 24, -125, 128) ∧
@@ -358,87 +524,128 @@ theorem ieeeUnitRoundoff :
 
 /-! ### §2.5.5 Rounding of a real number in its machine representation -/
 
-/-- **(2.32), the rounding as a digit rule**: for even `β` (the book's standing assumption of
-§2.5.1) and `x` with exponent `e`, digits `|x| = (0.a₁a₂…a_t a_{t+1}…) β^e`, integer part of the
-shifted mantissa `a₁…a_t = ⌊μ⌋` where `μ = |x| β^(t-e)`, and next digit `a_{t+1} = ⌊β μ⌋ mod β`,
+/-- **Equation (2.32)** of [quarteroni2000numerical], rounding as a digit rule. Let $\beta$ be even,
+and let $x \in \mathbb{R}$ have the exponent $e$, so that $|x| = (0.a_1 a_2 \dots a_t a_{t+1}
+\dots)_\beta \, \beta^e$. Let $\mu = |x| \beta^{t-e}$, so that
+$a_1 \dots a_t = \lfloor \mu \rfloor$ and the next digit is $a_{t+1} = \lfloor \beta \mu \rfloor
+\bmod \beta$. Then
+$$fl(x) = (-1)^s (0.a_1 a_2 \dots \tilde{a}_t)_\beta \, \beta^e, \qquad \tilde{a}_t =
+  \begin{cases} a_t & \text{if } a_{t+1} < \beta/2, \\ a_t + 1 & \text{if } a_{t+1} \ge \beta/2,
+  \end{cases}$$
+that is, $fl(x) = \operatorname{sign}(x) \, (\lfloor \mu \rfloor + [a_{t+1} \ge \beta/2]) \,
+\beta^{e-t}$, where $[\cdot]$ is $1$ if the condition holds and $0$ otherwise.
 
-`fl(x) = (-1)^s (0.a₁a₂…ã_t) β^e` with `ã_t = a_t` if `a_{t+1} < β/2` and `a_t + 1` if `a_{t+1} ≥
-β/2`,
-
-i.e. `fl(x) = sign x · (⌊μ⌋ + [a_{t+1} ≥ β/2]) β^(e-t)`; this is the rounding to nearest
-`FloatingPoint.System.round`. For odd `β` the digit rule chops some tails above one half. -/
+The hypothesis that $\beta$ is even is the standing assumption of the book from Section 2.5.1.
+For odd $\beta$ the digit rule is not rounding to nearest. The number $\mu$ is
+`FloatingPoint.System.mantissa x`, and $fl$ is the rounding to nearest `FloatingPoint.System.round`.
+-/
 theorem equation_2_32 (s : System) (hβ : Even s.β) (x : ℝ) :
     s.round x = (SignType.sign x : ℝ) *
       ((⌊s.mantissa x⌋ + if (s.β : ℤ) / 2 ≤ ⌊s.mantissa x * s.β⌋ % s.β then 1 else 0 : ℤ) : ℝ) *
         (s.β : ℝ) ^ (s.exponent x - s.t) := by
   rw [System.round, round_eq_floor_add_ite hβ s.two_le_β]
 
-/-- **§2.5.5**: "`fl(x) = x` if `x ∈ 𝔽`". -/
+/-- **Section 2.5.5** of [quarteroni2000numerical]: $fl(x) = x$ if $x \in \mathbb{F}$. -/
 theorem fl_eq_self_of_mem (s : System) {x : ℝ} (hx : x ∈ s.numbers ℝ) : s.round x = x :=
   s.round_eq_self hx
 
-/-- **§2.5.5, the monotonicity property**: "`fl(x) ≤ fl(y)` if `x ≤ y`, for all `x, y ∈ ℝ`". -/
+/-- **Section 2.5.5** of [quarteroni2000numerical], the monotonicity of rounding: $fl(x) \le fl(y)$
+if $x \le y$, for all $x, y \in \mathbb{R}$. -/
 theorem fl_mono (s : System) {x y : ℝ} (hxy : x ≤ y) : s.round x ≤ s.round y :=
   s.round_mono hxy
 
-/-- **Remark 2.2 (overflow and underflow)**. (i) *Overflow*: for `|x| ≥ β^U` the rounding leaves
-`𝔽` — the book's "`fl(x)` is not defined" for `|x| > x_max`, read as "is not a number of `𝔽`";
-the threshold is `β^U` rather than `x_max`, since the numbers of `(x_max, β^U - ½β^(U-t))` round
-to `x_max`. (ii) *Underflow*: for `0 < |x| < x_min` "the operation of rounding is defined anyway",
-and it still satisfies the bound (2.33), `|fl(x) - x| ≤ u |x|`. -/
+/-- **Remark 2.2** of [quarteroni2000numerical] (overflow and underflow). Overflow: if
+$|x| \ge \beta^U$, then $fl(x) \notin \mathbb{F}$. Underflow: if
+$0 < |x| < x_{min} = \beta^{L-1}$, then "the operation of rounding is defined anyway", and it
+still satisfies the bound (2.33),
+$$|fl(x) - x| \le u |x|, \qquad u = \tfrac{1}{2} \beta^{1-t}.$$
+
+**Reading.** The book says that "$fl(x)$ is not defined" for $|x| > x_{max}$. The statement
+reads this as "$fl(x)$ is not a number of $\mathbb{F}$", with the threshold $\beta^U$ in place
+of $x_{max}$, because the numbers of $(x_{max}, \beta^U - \frac{1}{2} \beta^{U-t})$ round to
+$x_{max}$. -/
 theorem remark_2_2 (s : System) :
     (∀ x : ℝ, (s.β : ℝ) ^ s.U ≤ |x| → s.round x ∉ s.numbers ℝ) ∧
       ∀ x : ℝ, 0 < |x| → |x| < (s.β : ℝ) ^ (s.L - 1) →
         |s.round x - x| ≤ (1 / 2 : ℝ) * (s.β : ℝ) ^ (1 - (s.t : ℤ)) * |x| :=
   ⟨fun _ hx => s.round_notMem_numbers hx, fun x _ _ => s.abs_round_sub_le x⟩
 
-/-- **Property 2.1, (2.33)–(2.34)**: if `x ∈ ℝ` satisfies `x_min ≤ |x| ≤ x_max`, then
-`fl(x) = x (1 + δ)` with `|δ| ≤ u`, where `u = ½ β^(1-t)` is the roundoff unit; and `fl(x) ∈ 𝔽`. -/
+/-- **Property 2.1** of [quarteroni2000numerical], (2.33)–(2.34). If $x \in \mathbb{R}$ satisfies
+$x_{min} \le |x| \le x_{max}$, then $fl(x) \in \mathbb{F}$ and
+$$fl(x) = x (1 + \delta), \qquad |\delta| \le u,$$
+where $u = \frac{1}{2} \beta^{1-t}$ is the roundoff unit.
+
+The bound on $\delta$ holds without the range hypothesis in the backbone; the statement keeps
+the hypothesis of the book. -/
 theorem property_2_1 (s : System) {x : ℝ} (h1 : s.xmin ℝ ≤ |x|) (h2 : |x| ≤ s.xmax ℝ) :
     (∃ δ : ℝ, |δ| ≤ (1 / 2 : ℝ) * (s.β : ℝ) ^ (1 - (s.t : ℤ)) ∧ s.round x = x * (1 + δ)) ∧
       s.round x ∈ s.numbers ℝ :=
   ⟨s.exists_round_eq_mul_one_add x, s.round_mem_numbers h1 h2⟩
 
-/-- **(2.34)**: the roundoff unit is `u = ½ β^(1-t) = ½ ε_M`. -/
+/-- **Equation (2.34)** of [quarteroni2000numerical]. The roundoff unit is $u = \frac{1}{2}
+\beta^{1-t} = \frac{1}{2} \varepsilon_M$.
+
+The two constants are `FloatingPoint.System.unitRoundoff` and `FloatingPoint.System.machineEps`. -/
 theorem equation_2_34 (s : System) :
     s.unitRoundoff ℝ = (1 / 2 : ℝ) * (s.β : ℝ) ^ (1 - (s.t : ℤ)) ∧
       s.unitRoundoff ℝ = s.machineEps ℝ / 2 :=
   ⟨rfl, s.unitRoundoff_eq_machineEps_div_two⟩
 
-/-- **Property 2.1 for chopping** (the book's parenthetical "in the chopping one would take `ã_t =
-a_t`"): `chop x = x (1 + δ)` with `|δ| ≤ β^(1-t) = ε_M`, the unit roundoff of chopping
-([higham2002accuracy] Theorem 2.2). -/
+/-- **Property 2.1** of [quarteroni2000numerical], for chopping, after the remark of the book that
+"in the chopping one would take $\tilde{a}_t = a_t$". For every $x \in \mathbb{R}$,
+$$\operatorname{chop}(x) = x (1 + \delta), \qquad |\delta| \le \beta^{1-t} = \varepsilon_M,$$
+so $\varepsilon_M$ is the unit roundoff of chopping.
+
+Chopping is `FloatingPoint.System.chop`, which truncates the mantissa. The bound is Theorem 2.2
+of [higham2002accuracy]. -/
 theorem property_2_1_chop (s : System) (x : ℝ) :
     ∃ δ : ℝ, |δ| ≤ (s.β : ℝ) ^ (1 - (s.t : ℤ)) ∧ s.chop x = x * (1 + δ) :=
   s.exists_chop_eq_mul_one_add x
 
-/-- **(2.35), the relative error of rounding**: `E_rel(x) = |x - fl(x)| / |x| ≤ u` for `x ≠ 0`. -/
+/-- **Equation (2.35)** of [quarteroni2000numerical], the relative error of rounding. For
+$x \neq 0$,
+$$E_{rel}(x) = \frac{|x - fl(x)|}{|x|} \le u = \tfrac{1}{2} \beta^{1-t}.$$
+-/
 theorem equation_2_35 (s : System) {x : ℝ} (hx : x ≠ 0) :
     |x - s.round x| / |x| ≤ (1 / 2 : ℝ) * (s.β : ℝ) ^ (1 - (s.t : ℤ)) := by
   rw [div_le_iff₀ (abs_pos.2 hx), abs_sub_comm]
   exact s.abs_round_sub_le x
 
-/-- **§2.5.5, the absolute error of rounding** (the display `E(x) ≤ ½ β^(-t+e)` closing the
-section): `E(x) = |x - fl(x)| ≤ ½ β^(e-t)` with `e` the exponent of `x`. -/
+/-- **Section 2.5.5** of [quarteroni2000numerical], the absolute error of rounding, the display
+$E(x) \le \frac{1}{2} \beta^{-t+e}$ that closes the section. For every $x \in \mathbb{R}$ with
+exponent $e$,
+$$E(x) = |x - fl(x)| \le \tfrac{1}{2} \beta^{e-t}.$$
+
+The exponent is `FloatingPoint.System.exponent x`. For $x = 0$ the left side is $0$. -/
 theorem roundAbsError (s : System) (x : ℝ) :
     |x - s.round x| ≤ (1 / 2 : ℝ) * (s.β : ℝ) ^ (s.exponent x - s.t) :=
   s.abs_sub_round_le x
 
 /-! ### §2.5.6 Machine floating-point operations -/
 
-/-- **§2.5.6, the machine operation**: given an arithmetic operation `∘ : ℝ × ℝ → ℝ`, the
-corresponding machine operation is `x ∘ y = fl(fl(x) ∘ fl(y))`. -/
+/-- **Section 2.5.6** of [quarteroni2000numerical], the machine operation. Given an arithmetic
+operation $\circ : \mathbb{R} \times \mathbb{R} \to \mathbb{R}$, the corresponding machine
+operation maps $x, y$ to
+$$fl\bigl(fl(x) \circ fl(y)\bigr).$$
+-/
 noncomputable def machineOp (s : System) (f : ℝ → ℝ → ℝ) (x y : ℝ) : ℝ :=
   s.round (f (s.round x) (s.round y))
 
-/-- The machine operation is the backbone's `FloatingPoint.System.op`; the sum, difference, product
-and quotient are `s.add`, `s.sub`, `s.mul`, `s.div`. -/
+/-- The machine operation of Section 2.5.6 of [quarteroni2000numerical] is the backbone's
+`FloatingPoint.System.op`. The machine sum, difference, product and quotient are
+`FloatingPoint.System.add`, `FloatingPoint.System.sub`, `FloatingPoint.System.mul` and
+`FloatingPoint.System.div`. -/
 theorem machineOp_eq (s : System) (f : ℝ → ℝ → ℝ) : machineOp s f = s.op f := rfl
 
-/-- **(2.36)**: for all `x, y ∈ 𝔽` and each of the four operations, `x ∘ y = (x ∘ y)(1 + δ)` with
-`|δ| ≤ u`. The book says this "will require an additional assumption … the round digit" for the
-subtraction; in this idealized arithmetic the exact result is rounded, so the assumption is built
-in. -/
+/-- **Equation (2.36)** of [quarteroni2000numerical]. For all $x, y \in \mathbb{F}$ and each of the
+four operations $\circ \in \{+, -, \times, /\}$, the machine operation satisfies
+$$fl\bigl(fl(x) \circ fl(y)\bigr) = (x \circ y)(1 + \delta), \qquad |\delta| \le u.$$
+
+**Reading.** The book says that for the subtraction this "will require an additional assumption
+… the round digit". In the arithmetic of this module the exact result is rounded, so the
+assumption holds automatically.
+
+For $y = 0$ the quotient $x / y$ is $0$ in Lean, and the statement holds with $\delta = 0$. -/
 theorem equation_2_36 (s : System) {x y : ℝ} (hx : x ∈ s.numbers ℝ) (hy : y ∈ s.numbers ℝ) :
     (∃ δ : ℝ, |δ| ≤ s.unitRoundoff ℝ ∧ machineOp s (· + ·) x y = (x + y) * (1 + δ)) ∧
       (∃ δ : ℝ, |δ| ≤ s.unitRoundoff ℝ ∧ machineOp s (· - ·) x y = (x - y) * (1 + δ)) ∧
@@ -447,20 +654,29 @@ theorem equation_2_36 (s : System) {x y : ℝ} (hx : x ∈ s.numbers ℝ) (hy : 
   ⟨s.exists_op_eq_mul_one_add _ hx hy, s.exists_op_eq_mul_one_add _ hx hy,
     s.exists_op_eq_mul_one_add _ hx hy, s.exists_op_eq_mul_one_add _ hx hy⟩
 
-/-- **§2.5.6, properties preserved**: "the commutativity of the sum of two addends, or the product
-of two factors" survives in floating-point arithmetic. -/
+/-- **Section 2.5.6** of [quarteroni2000numerical], properties that are preserved: "the
+commutativity of the sum of two addends, or the product of two factors" survives in
+floating-point arithmetic. For all $x, y \in \mathbb{R}$, $x \oplus y = y \oplus x$ and
+$x \otimes y = y \otimes x$. -/
 theorem machineOp_comm (s : System) (x y : ℝ) :
     machineOp s (· + ·) x y = machineOp s (· + ·) y x ∧
       machineOp s (· * ·) x y = machineOp s (· * ·) y x :=
   ⟨s.add_comm x y, s.mul_comm x y⟩
 
-/-- The two-digit decimal system `𝔽(10, 2, -1, 2)`, in which the failure of associativity is
-exhibited (the base and precision of the round-digit example of §2.5.6). -/
+/-- The two-digit decimal system $\mathbb{F}(10, 2, -1, 2)$, in which
+`QuarteroniSaccoSaleri.Chapter02.machineAdd_not_assoc` shows the failure of associativity of
+Section 2.5.6 of [quarteroni2000numerical]. Its base and precision are those of the example of
+the round digit in Section 2.5.6. -/
 def decimalSystem : System := ⟨10, 2, -1, 2, by norm_num, by norm_num, by norm_num⟩
 
-/-- **§2.5.6, associativity is lost**: "in general `x ⊕ (y ⊕ z) ≠ (x ⊕ y) ⊕ z`". In `𝔽(10, 2, -1,
-2)` with `x = 1`, `y = z = 0.04`, all three in `𝔽`: `(x ⊕ y) ⊕ z = fl(fl(1.04) + 0.04) = fl(1.0 +
-0.04) = 1.0`, while `x ⊕ (y ⊕ z) = fl(1 + fl(0.08)) = fl(1.08) = 1.1`. Computed over `ℚ`. -/
+/-- **Section 2.5.6** of [quarteroni2000numerical], associativity is lost: "in general $x \oplus (y
+\oplus z) \neq (x \oplus y) \oplus z$". In $\mathbb{F}(10, 2, -1, 2)$, the numbers $x = 1$ and
+$y = z = 0.04$ lie in $\mathbb{F}$, and
+$$(x \oplus y) \oplus z = fl(fl(1.04) + 0.04) = fl(1.0 + 0.04) = 1.0,$$
+while
+$$x \oplus (y \oplus z) = fl(1 + fl(0.08)) = fl(1.08) = 1.1.$$
+
+The values are computed over $\mathbb{Q}$ with `FloatingPoint.System.add`. -/
 theorem machineAdd_not_assoc :
     (1 : ℚ) ∈ decimalSystem.numbers ℚ ∧ (4 / 100 : ℚ) ∈ decimalSystem.numbers ℚ ∧
       decimalSystem.add (decimalSystem.add (1 : ℚ) (4 / 100)) (4 / 100) = 1 ∧

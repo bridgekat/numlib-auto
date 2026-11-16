@@ -6,53 +6,85 @@ import Numlib.FloatingPoint.Substitution
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter03.Section01
 
 /-!
-# Quarteroni–Sacco–Saleri §3.2: solution of triangular systems
+# Quarteroni, Sacco and Saleri, Section 3.2: Solution of Triangular Systems
 
-Surface file for Alfio Quarteroni, Riccardo Sacco and Fausto Saleri, *Numerical Mathematics*
-[quarteroni2000numerical], §3.2, over the backbone `Numlib/Direct/Substitution` (forward and
-backward substitution as total functions on a finite linear order, their correctness, and the
-inverse of a triangular matrix column by column, block by block and by the entrywise
-recurrence) and `Numlib/FloatingPoint/Substitution` (the rounding-error analysis of substitution
-in the relational model: Higham's Theorems 8.5 and 8.7 and the diagonally dominant case).
+This module formalizes Section 3.2 of [quarteroni2000numerical]. Forward substitution (3.22) solves
+$Lx = b$ for a nonsingular lower triangular $L \in \mathbb{R}^{n \times n}$ by $x_1 = b_1 / l_{11}$
+and $x_i = (b_i - \sum_{j < i} l_{ij} x_j) / l_{ii}$, and backward substitution (3.23) solves
+$Ux = b$ for a nonsingular upper triangular $U$ in the same way from the last index. Section 3.2.2
+analyses the rounding errors: the computed solution $\hat{x}$ solves a perturbed system
+$(T + \delta T) \hat{x} = b$ with $|\delta T| \le \gamma_n |T|$, $\gamma_n = nu / (1 - nu)$ (3.24),
+which gives the relative error bound (3.25), and componentwise bounds hold for matrices with
+dominant diagonal entries. Section 3.2.3 computes the inverse of an upper triangular matrix column
+by column (3.26), by its leading blocks (3.27), and by a recurrence on the entries (3.28).
+
+The proofs specialize the backbone modules `Numlib.Direct.Substitution` (forward and backward
+substitution as total functions on a finite linear order, their correctness, and the inverse of a
+triangular matrix column by column, block by block and by the recurrence on the entries) and
+`Numlib.FloatingPoint.Substitution` (the rounding error analysis of substitution in the relational
+rounding model, after Theorems 8.5 and 8.7 and Lemma 8.8 of [higham2002accuracy]).
+
+## Main results
+
+* Equation (3.22), `QuarteroniSaccoSaleri.Chapter03.equation_3_22`: forward substitution solves
+  $Lx = b$.
+* Equation (3.23), `QuarteroniSaccoSaleri.Chapter03.equation_3_23`: backward substitution solves
+  $Ux = b$.
+* Equation (3.24), `QuarteroniSaccoSaleri.Chapter03.equation_3_24`: the computed solution solves
+  $(T + \delta T) \hat{x} = b$ with $|\delta T| \le \gamma_n |T|$.
+* Equation (3.25), `QuarteroniSaccoSaleri.Chapter03.equation_3_25`: $\|x - \hat{x}\|_\infty /
+  \|x\|_\infty \le \gamma_n K_\infty(T) / (1 - \gamma_n K_\infty(T))$.
+* Section 3.2.2, `QuarteroniSaccoSaleri.Chapter03.backSubst_componentwise_error`: the componentwise
+  bound $2^{n-i+1} \gamma_n \max_{j \ge i} |\hat{x}_j|$ when $|u_{ij}| \le |u_{ii}|$.
+* Section 3.2.2, `QuarteroniSaccoSaleri.Chapter03.backSubst_error_of_diagDominant`: the bound
+  $(2n - 1) \gamma_n \|\hat{x}\|_\infty$ for a diagonally dominant $U$.
+* Equation (3.26), `QuarteroniSaccoSaleri.Chapter03.equation_3_26`: the columns of $U^{-1}$ are
+  computed by backward substitution.
+* Equation (3.27), `QuarteroniSaccoSaleri.Chapter03.equation_3_27`: the leading part of the $k$-th
+  column of $U^{-1}$ solves a system with the leading principal submatrix of order $k$.
+* Equation (3.28), `QuarteroniSaccoSaleri.Chapter03.equation_3_28`: the recurrence for the entries
+  of $U^{-1}$.
 
 ## Conventions
 
-Forward substitution (3.22) is `Matrix.forwardSubst L b`, backward substitution (3.23) is
-`Matrix.backSubst U b`; the book's recurrences are the theorems `equation_3_22`, `equation_3_23`.
-"`L` nonsingular lower triangular" is `L.IsLowerTriangular` with `IsUnit L`, which for a
-triangular matrix is the same as a nowhere-zero diagonal (backbone
-`Matrix.IsLowerTriangular.isUnit_iff`). The first and last indices of
-`Fin n` are `0` and `⊤` (`Fin.last`), under `[NeZero n]`.
+* Forward substitution (3.22) is `Matrix.forwardSubst L b`, and backward substitution (3.23) is
+  `Matrix.backSubst U b`. The recurrences of the book are the theorems
+  `QuarteroniSaccoSaleri.Chapter03.equation_3_22` and
+  `QuarteroniSaccoSaleri.Chapter03.equation_3_23`.
+* "$L$ is nonsingular lower triangular" is `L.IsLowerTriangular` together with `IsUnit L`. For a
+  triangular matrix this is the same as a diagonal without zeros
+  (`Matrix.IsLowerTriangular.isUnit_iff`).
+* Indices start at $0$. Under `[NeZero n]`, the first and the last index of `Fin n` are `0` and `⊤`
+  (`Fin.last`).
+* A solution $\hat{x}$ of $Tx = b$ computed by substitution in floating-point arithmetic with unit
+  roundoff $u$ is an admissible `FloatingPoint.RoundsForwardSubst m T b xhat` (or
+  `FloatingPoint.RoundsBackSubst m T b xhat`) of the relational rounding model
+  `m : FloatingPoint.RoundingModel ℝ` of `Numlib.FloatingPoint.Model`. The number `m.u` is the unit
+  roundoff $u = \frac{1}{2} \beta^{1-t}$ of the book. Every product is rounded, the products are
+  subtracted from $b_i$ one at a time in any order with one rounding each, and the division by the
+  diagonal entry is rounded. This is the order of Program 2, with running differences, for which the
+  constant of (3.24) is exactly $nu / (1 - nu)$.
+* The constant $\gamma_n = nu / (1 - nu)$ is the backbone's `FloatingPoint.gamma m.u n`, and (3.25)
+  uses the $\infty$-norms of Section 3.1.
 
-A computed solution `x̂` of `T x = b` by substitution in floating-point arithmetic with unit
-roundoff `u` is an admissible `FloatingPoint.RoundsForwardSubst m T b x̂` (or
-`RoundsBackSubst`) of the relational rounding model `m : FloatingPoint.RoundingModel ℝ` of
-`Numlib/FloatingPoint/Model`, with `m.u` the book's `u = ½ β^{1-t}`: every product is rounded,
-the products are subtracted from `b i` one at a time in any order with one rounding each, and
-the division by the diagonal entry is rounded (the running-difference order of Program 2, for
-which the constant of (3.24) is exactly `n u / (1 - n u)`). The constant `n u / (1 - n u)` is the
-backbone's `FloatingPoint.gamma m.u n`, and the `∞`-norms of §3.1 are used in (3.25).
+## Deviations from the source
 
-## Contents
+* **Equation (3.25)** (correction). The book prints $nu$ where the constant that (3.24) and Theorem
+  3.1 give is $\gamma_n = nu / (1 - nu) = nu + O(u^2)$. The statement uses $\gamma_n$. See
+  `QuarteroniSaccoSaleri.Chapter03.equation_3_25`.
+* **Section 3.2.2, the diagonally dominant case** (reading). The sentence "the same result holds …
+  if $L$ and $U$ are diagonally dominant" suggests the bound $2^{n-i+1} \gamma_n$. The statement is
+  the linear bound $(2n - 1) \gamma_n \|\hat{x}\|_\infty$ that holds under diagonal dominance by
+  rows. See `QuarteroniSaccoSaleri.Chapter03.backSubst_error_of_diagDominant`.
+* **Equation (3.27)** (typo). The book describes $l_k$ as the vector of $\mathbb{R}^k$ whose first
+  entry is $1$. The $1$ is in the last ($k$-th) position. See
+  `QuarteroniSaccoSaleri.Chapter03.equation_3_27`.
 
-* `equation_3_22`, `equation_3_23` — forward and backward substitution.
-* `equation_3_24`, `equation_3_25`, `backSubst_componentwise_error`,
-  `backSubst_error_of_diagDominant` — the rounding error analysis of §3.2.2.
-* `equation_3_26`, `equation_3_27`, `equation_3_28` — the inverse of an upper triangular matrix.
+## Not formalized
 
-Programs 1–3 are not nodes (they implement `Matrix.forwardSubst` and `Matrix.backSubst`), nor
-are the operation counts.
-
-## Readings and errata
-
-(3.25) is printed with `n u` where the rigorous constant that (3.24) and Theorem 3.1 give is
-`γ_n = n u / (1 - n u) = n u + O(u²)`; it is stated with `γ_n`, for the `∞`-norm (the book also
-names `‖·‖₁` and the Frobenius norm). §3.2.2's "the same result holds … if `L` and `U` are
-diagonally dominant" suggests the `2^{n-i+1}` bound; under (weak, row) diagonal dominance what
-holds is the linear bound `(2n - 1) γ_n ‖x̂‖_∞` ([higham2002accuracy] Lemma 8.8), which is stated.
-In (3.27) the right-hand side `l_k` is described as the vector of `ℝ^k` whose *first* entry is
-`1`; since `v'_k` is the leading part of the `k`-th column of `U⁻¹`, it solves `U^{(k)} v'_k = e_k`
-with the `1` in the *last* (`k`-th) position, as the recurrence (3.28), `v'_kk = u_kk⁻¹`, confirms.
+* **Programs 1–3.** They implement `Matrix.forwardSubst` and `Matrix.backSubst`.
+* **The operation counts of substitution.**
+* **Equation (3.25) in the $1$-norm and the Frobenius norm.**
 -/
 
 open Finset Matrix
@@ -63,10 +95,16 @@ variable {n : ℕ}
 
 /-! ### Forward and backward substitution, (3.22)–(3.23) -/
 
-/-- **(3.22), forward substitution.** For a nonsingular lower triangular `L` of order `n`, the
-solution `x = Matrix.forwardSubst L b` of `L x = b` is computed by `x₁ = b₁ / l₁₁` and
-`xᵢ = (bᵢ - ∑_{j<i} l_ij x_j) / l_ii`, and it solves the system (backbone
-`Matrix.forwardSubst_apply`, `Matrix.mulVec_forwardSubst`). -/
+/-- **Equation (3.22)** of [quarteroni2000numerical], forward substitution. Let $n \ge 1$, let
+$L \in \mathbb{R}^{n \times n}$ be nonsingular and lower triangular, and let
+$b \in \mathbb{R}^n$. The vector $x$ computed by forward substitution satisfies
+$$x_1 = \frac{b_1}{l_{11}}, \qquad x_i = \frac{1}{l_{ii}} \Bigl( b_i - \sum_{j < i} l_{ij} x_j
+  \Bigr), \quad i = 2, \dots, n,$$
+and it solves $Lx = b$.
+
+The vector $x$ is `Matrix.forwardSubst L b`, and its first index is `0`. The recurrence is
+stated for every $i$, including the first index, where the sum is empty. The proof is the
+backbone's `Matrix.forwardSubst_apply` and `Matrix.mulVec_forwardSubst`. -/
 theorem equation_3_22 [NeZero n] {L : Matrix (Fin n) (Fin n) ℝ} (hL : L.IsLowerTriangular)
     (hLu : IsUnit L) (b : Fin n → ℝ) :
     forwardSubst L b 0 = b 0 / L 0 0 ∧
@@ -77,10 +115,16 @@ theorem equation_3_22 [NeZero n] {L : Matrix (Fin n) (Fin n) ℝ} (hL : L.IsLowe
   rw [forwardSubst_apply, Finset.sum_eq_zero fun j hj =>
     absurd (mem_filter.1 hj).2 (not_lt.2 (Fin.zero_le j)), sub_zero]
 
-/-- **(3.23), backward substitution.** For a nonsingular upper triangular `U` of order `n`, the
-solution `x = Matrix.backSubst U b` of `U x = b` is computed by `xₙ = bₙ / uₙₙ` and
-`xᵢ = (bᵢ - ∑_{j>i} u_ij x_j) / u_ii` for `i = n - 1, …, 1`, and it solves the system (backbone
-`Matrix.backSubst_apply`, `Matrix.mulVec_backSubst`; `⊤ = Fin.last` is the last index). -/
+/-- **Equation (3.23)** of [quarteroni2000numerical], backward substitution. Let $n \ge 1$, let
+$U \in \mathbb{R}^{n \times n}$ be nonsingular and upper triangular, and let
+$b \in \mathbb{R}^n$. The vector $x$ computed by backward substitution satisfies
+$$x_n = \frac{b_n}{u_{nn}}, \qquad x_i = \frac{1}{u_{ii}} \Bigl( b_i - \sum_{j > i} u_{ij} x_j
+  \Bigr), \quad i = n - 1, \dots, 1,$$
+and it solves $Ux = b$.
+
+The vector $x$ is `Matrix.backSubst U b`, and its last index is `⊤`, which is `Fin.last`. The
+recurrence is stated for every $i$, including the last index, where the sum is empty. The proof
+is the backbone's `Matrix.backSubst_apply` and `Matrix.mulVec_backSubst`. -/
 theorem equation_3_23 [NeZero n] {U : Matrix (Fin n) (Fin n) ℝ} (hU : U.IsUpperTriangular)
     (hUu : IsUnit U) (b : Fin n → ℝ) :
     backSubst U b ⊤ = b ⊤ / U ⊤ ⊤ ∧
@@ -99,17 +143,24 @@ open FloatingPoint
 
 variable {m : RoundingModel ℝ}
 
-/-- `n u < 1` forces `u < 1` when `n ≥ 1`. -/
+/-- For $n \ge 1$, $nu < 1$ implies $u < 1$. -/
 private theorem u_lt_one_of_mul_lt_one [NeZero n] (hn : (n : ℝ) * m.u < 1) : m.u < 1 := by
   have h1 : (1 : ℝ) ≤ n := by exact_mod_cast Nat.one_le_iff_ne_zero.2 (NeZero.ne n)
   nlinarith [m.u_nonneg]
 
-/-- **(3.24), the backward error of substitution.** In floating-point arithmetic with unit
-roundoff `u`, `n u < 1`, the computed solution `x̂` of a nonsingular triangular system `T x = b`
-by forward substitution (`T = L` lower triangular) or backward substitution (`T = U` upper
-triangular) is the exact solution of a perturbed system `(T + δT) x̂ = b` with
-`|δT| ≤ (n u / (1 - n u)) |T|` entrywise (backbone `FloatingPoint.exists_roundsForwardSubst_eq`,
-`FloatingPoint.exists_roundsBackSubst_eq`, [higham2002accuracy] Theorem 8.5). -/
+/-- **Equation (3.24)** of [quarteroni2000numerical], the backward error of substitution. Consider
+floating-point arithmetic with unit roundoff $u$, let $n \ge 1$ with $nu < 1$, let
+$T \in \mathbb{R}^{n \times n}$ be nonsingular, and let $b \in \mathbb{R}^n$. Let either $T$ be
+lower triangular and $\hat{x}$ a solution of $Tx = b$ computed by forward substitution, or $T$
+be upper triangular and $\hat{x}$ a solution computed by backward substitution. Then there is
+$\delta T \in \mathbb{R}^{n \times n}$ with
+$$(T + \delta T) \hat{x} = b, \qquad |\delta T| \le \frac{nu}{1 - nu} \, |T| \quad
+  \text{entrywise}.$$
+
+The computed solutions are `FloatingPoint.RoundsForwardSubst` and
+`FloatingPoint.RoundsBackSubst`. The proof is the backbone's
+`FloatingPoint.exists_roundsForwardSubst_eq` and `FloatingPoint.exists_roundsBackSubst_eq`,
+which follow Theorem 8.5 of [higham2002accuracy]. -/
 theorem equation_3_24 [NeZero n] (hn : (n : ℝ) * m.u < 1) {T : Matrix (Fin n) (Fin n) ℝ}
     (hTu : IsUnit T) {b xhat : Fin n → ℝ} :
     (T.IsLowerTriangular → RoundsForwardSubst m T b xhat →
@@ -133,8 +184,8 @@ theorem equation_3_24 [NeZero n] (hn : (n : ℝ) * m.u < 1) {T : Matrix (Fin n) 
     simpa [gamma_def] using hδT i j
 
 open scoped Matrix.Norms.Operator in
-/-- The normwise consequence of an entrywise bound `|δT| ≤ γ |T|`, `γ ≥ 0`: `‖δT‖_∞ ≤ γ ‖T‖_∞`
-(backbone `Matrix.linfty_opNorm_le_of_abs_entrywiseLE`). -/
+/-- If $\gamma \ge 0$ and $|\delta T| \le \gamma |T|$ entrywise, then
+$\|\delta T\|_\infty \le \gamma \|T\|_\infty$. -/
 private theorem linfty_opNorm_le_of_abs_le {δT T : Matrix (Fin n) (Fin n) ℝ} {γ : ℝ}
     (hγ : 0 ≤ γ) (h : δT.abs ≤ₑ γ • T.abs) : ‖δT‖ ≤ γ * ‖T‖ := by
   have h' : δT.abs ≤ₑ (γ • T).abs := fun i j => by
@@ -143,9 +194,9 @@ private theorem linfty_opNorm_le_of_abs_le {δT T : Matrix (Fin n) (Fin n) ℝ} 
   calc ‖δT‖ ≤ ‖γ • T‖ := linfty_opNorm_le_of_abs_entrywiseLE h'
     _ = γ * ‖T‖ := by rw [norm_smul, Real.norm_eq_abs, abs_of_nonneg hγ]
 
-/-- The relative error bound of Theorem 3.1 with `δb = 0`, `p = ∞`, monotone in the relative
-perturbation: if `‖δT‖_∞ ≤ γ ‖T‖_∞` and `γ K_∞(T) < 1` then
-`‖x - x̂‖_∞ / ‖x‖_∞ ≤ γ K_∞(T) / (1 - γ K_∞(T))`. -/
+/-- If $T$ is nonsingular, $Tx = b$ with $b \neq 0$, $(T + \delta T) \hat{x} = b$,
+$\|\delta T\|_\infty \le \gamma \|T\|_\infty$ and $\gamma K_\infty(T) < 1$, then $\|x -
+\hat{x}\|_\infty / \|x\|_\infty \le \gamma K_\infty(T) / (1 - \gamma K_\infty(T))$. -/
 private theorem relative_error_le_of_linfty_le {T δT : Matrix (Fin n) (Fin n) ℝ}
     (hTu : IsUnit T) {b x xhat : Fin n → ℝ} (hx : T *ᵥ x = b) (hb : b ≠ 0)
     (hxhat : (T + δT) *ᵥ xhat = b) {γ : ℝ}
@@ -180,12 +231,22 @@ private theorem relative_error_le_of_linfty_le {T δT : Matrix (Fin n) (Fin n) �
   rw [div_le_div_iff₀ h2 h1]
   nlinarith
 
-/-- **(3.25).** If moreover `γ_n K_∞(T) < 1`, `γ_n = n u / (1 - n u)`, then the solution `x̂` of
-a nonsingular triangular system `T x = b`, `b ≠ 0`, computed by forward or backward substitution
-satisfies `‖x - x̂‖_∞ / ‖x‖_∞ ≤ γ_n K_∞(T) / (1 - γ_n K_∞(T)) = n u K_∞(T) + O(u²)`: (3.24) gives
-`‖δT‖_∞ ≤ γ_n ‖T‖_∞` (backbone `Matrix.linfty_opNorm_le_of_abs_entrywiseLE`) and Theorem 3.1
-with `δb = 0` does the rest. The book prints `n u` for `γ_n`, its first-order value, and names
-the `1`-norm and the Frobenius norm as well; the `∞`-norm is stated. -/
+/-- **Equation (3.25)** of [quarteroni2000numerical]. Consider floating-point arithmetic with unit
+roundoff $u$, let $n \ge 1$ with $nu < 1$, and let $\gamma_n = nu / (1 - nu)$. Let
+$T \in \mathbb{R}^{n \times n}$ be nonsingular with $\gamma_n K_\infty(T) < 1$, and let $Tx = b$
+with $b \neq 0$. If $T$ is lower triangular and $\hat{x}$ is computed by forward substitution,
+or $T$ is upper triangular and $\hat{x}$ is computed by backward substitution, then
+$$\frac{\|x - \hat{x}\|_\infty}{\|x\|_\infty} \le \frac{\gamma_n K_\infty(T)}{1 - \gamma_n
+  K_\infty(T)}.$$
+The right side is $nu K_\infty(T) + O(u^2)$.
+
+**Correction.** The book prints $nu$ in place of $\gamma_n$, its first-order value. The constant
+that (3.24) and Theorem 3.1 give is $\gamma_n$. The book also names the $1$-norm and the
+Frobenius norm; the statement is for the $\infty$-norm.
+
+By (3.24), $\|\delta T\|_\infty \le \gamma_n \|T\|_\infty$ (the backbone's
+`Matrix.linfty_opNorm_le_of_abs_entrywiseLE`), and Theorem 3.1 with $\delta b = 0$ gives the
+bound. The condition number $K_\infty(T)$ is `QuarteroniSaccoSaleri.Chapter03.condNumber ⊤ T`. -/
 theorem equation_3_25 [NeZero n] (hn : (n : ℝ) * m.u < 1) {T : Matrix (Fin n) (Fin n) ℝ}
     (hTu : IsUnit T) {b x xhat : Fin n → ℝ} (hx : T *ᵥ x = b) (hb : b ≠ 0)
     (hK : n * m.u / (1 - n * m.u) * condNumber ⊤ T < 1) :
@@ -209,20 +270,24 @@ theorem equation_3_25 [NeZero n] (hn : (n : ℝ) * m.u < 1) {T : Matrix (Fin n) 
     rw [lpOpNorm_top, lpOpNorm_top]
     exact linfty_opNorm_le_of_abs_le hγ hδT
 
-/-- The number of indices `j ≥ i` of `Fin n` is `n - i`. -/
+/-- For an index $i$ of `Fin n`, the number of indices $j$ with $i \le j$ is $n - i$. -/
 private theorem card_filter_le_fin (i : Fin n) : #{j : Fin n | i ≤ j} = n - i := by
   rw [← Fin.card_Ici]
   congr 1
   ext j
   simp [Finset.mem_Ici]
 
-/-- **§3.2.2, the improved componentwise bound.** If the entries of the nonsingular upper
-triangular `U` satisfy `|u_ii| ≥ |u_ij|` for every `j > i`, then the solution `x̂` of `U x = b`
-computed by backward substitution satisfies, for `1 ≤ i ≤ n`,
-`|x_i - x̂_i| ≤ 2^{n-i+1} (n u / (1 - n u)) max_{j ≥ i} |x̂_j|`; with the `0`-based indices of
-`Fin n` the exponent `n - i + 1` reads `n - i`. Backbone
-`FloatingPoint.abs_sub_le_of_roundsBackSubst_of_abs_le_diag`, [higham2002accuracy] Theorem 8.7.
-The same holds for a lower triangular `L` with `|l_ii| ≥ |l_ij|`, `j < i`, by transposition. -/
+/-- **Section 3.2.2** of [quarteroni2000numerical], the improved componentwise bound. Consider
+floating-point arithmetic with unit roundoff $u$, and let $n \ge 1$ with $nu < 1$. Let
+$U \in \mathbb{R}^{n \times n}$ be nonsingular and upper triangular with $|u_{ij}| \le |u_{ii}|$
+for all $j > i$. Let $Ux = b$, and let $\hat{x}$ be computed by backward substitution. Then for
+$1 \le i \le n$,
+$$|x_i - \hat{x}_i| \le 2^{n-i+1} \, \frac{nu}{1 - nu} \, \max_{j \ge i} |\hat{x}_j|.$$
+
+Indices start at $0$, so the exponent $n - i + 1$ is written `n - i`. The proof is the
+backbone's `FloatingPoint.abs_sub_le_of_roundsBackSubst_of_abs_le_diag`, which follows Theorem
+8.7 of [higham2002accuracy]. The same bound holds for a lower triangular $L$ with
+$|l_{ij}| \le |l_{ii}|$ for $j < i$, by transposition. -/
 theorem backSubst_componentwise_error [NeZero n] (hn : (n : ℝ) * m.u < 1)
     {U : Matrix (Fin n) (Fin n) ℝ} (hU : U.IsUpperTriangular) (hUu : IsUnit U)
     (hrow : ∀ i j, i < j → |U i j| ≤ |U i i|) {x b xhat : Fin n → ℝ} (hx : U *ᵥ x = b)
@@ -238,13 +303,21 @@ theorem backSubst_componentwise_error [NeZero n] (hn : (n : ℝ) * m.u < 1)
         ⟨j, hj⟩
   rwa [card_filter_le_fin, Fintype.card_fin, gamma_def] at h
 
-/-- **§3.2.2, the diagonally dominant case.** "The same result holds … if `L` and `U` are
-diagonally dominant": for a nonsingular upper triangular `U` that is diagonally dominant by rows
-(Definition 1.24, `∑_{j ≠ i} |u_ij| ≤ |u_ii|`), the solution `x̂` of `U x = b` computed by
-backward substitution satisfies `|x_i - x̂_i| ≤ (2n - 1) (n u / (1 - n u)) ‖x̂‖_∞` for every `i`
-(backbone `FloatingPoint.abs_sub_le_of_roundsBackSubst_of_isDiagDominant`, [higham2002accuracy]
-Lemma 8.8): under dominance the bound is linear in `n`, better than the `2^{n-i+1}` the book's
-sentence suggests. -/
+/-- **Section 3.2.2** of [quarteroni2000numerical], the diagonally dominant case. Consider
+floating-point arithmetic with unit roundoff $u$, and let $n \ge 1$ with $nu < 1$. Let
+$U \in \mathbb{R}^{n \times n}$ be nonsingular, upper triangular and diagonally dominant by rows
+(Definition 1.24), $\sum_{j \neq i} |u_{ij}| \le |u_{ii}|$. Let $Ux = b$, and let $\hat{x}$ be
+computed by backward substitution. Then for every $i$,
+$$|x_i - \hat{x}_i| \le (2n - 1) \, \frac{nu}{1 - nu} \, \|\hat{x}\|_\infty.$$
+
+**Reading.** The book says "the same result holds … if $L$ and $U$ are diagonally dominant",
+which suggests the bound with $2^{n-i+1}$ of
+`QuarteroniSaccoSaleri.Chapter03.backSubst_componentwise_error`. The statement is the bound that
+holds under (weak, row) diagonal dominance, which is linear in $n$ and so better.
+
+Diagonal dominance is `Matrix.IsDiagDominant`. The proof is the backbone's
+`FloatingPoint.abs_sub_le_of_roundsBackSubst_of_isDiagDominant`, which follows Lemma 8.8 of
+[higham2002accuracy]. -/
 theorem backSubst_error_of_diagDominant [NeZero n] (hn : (n : ℝ) * m.u < 1)
     {U : Matrix (Fin n) (Fin n) ℝ} (hU : U.IsUpperTriangular) (hUu : IsUnit U)
     (hdom : U.IsDiagDominant) {x b xhat : Fin n → ℝ} (hx : U *ᵥ x = b)
@@ -266,9 +339,13 @@ section Inverse
 
 variable {U : Matrix (Fin n) (Fin n) ℝ}
 
-/-- **(3.26).** The column vectors `v_i` of the inverse `V = U⁻¹` of a nonsingular upper
-triangular `U` satisfy `U v_i = e_i`, so each is computed by backward substitution (3.23) from
-the canonical basis vector `e_i` (backbone `Matrix.inv_col_eq_backSubst`). -/
+/-- **Equation (3.26)** of [quarteroni2000numerical]. Let $U \in \mathbb{R}^{n \times n}$ be
+nonsingular and upper triangular, and let $v_i$ be the $i$-th column of $V = U^{-1}$. Then
+$U v_i = e_i$, so $v_i$ is computed by backward substitution (3.23) from the canonical basis
+vector $e_i$.
+
+The column $v_i$ is `U⁻¹.col i`, and $e_i$ is `Pi.single i 1`. The proof is the backbone's
+`Matrix.inv_col_eq_backSubst`. -/
 theorem equation_3_26 (hU : U.IsUpperTriangular) (hUu : IsUnit U) (i : Fin n) :
     U *ᵥ U⁻¹.col i = Pi.single i 1 ∧ U⁻¹.col i = backSubst U (Pi.single i 1) := by
   have hd := (hU.isUnit_iff).1 hUu
@@ -280,13 +357,22 @@ private theorem isUpperTriangular_leadingPrincipalSubmatrix (hU : U.IsUpperTrian
     (k : Fin n) : (U.leadingPrincipalSubmatrix k).IsUpperTriangular :=
   fun _ _ hij => hU hij
 
-/-- **(3.27).** For `k = 1, …, n`, let `U^{(k)}` be the leading principal submatrix of order `k`
-of the nonsingular upper triangular `U` and `v'_k ∈ ℝ^k` the solution of the upper triangular
-system `U^{(k)} v'_k = l_k`, `l_k` the vector of `ℝ^k` whose only nonzero entry is a `1` in the
-`k`-th (last) position — the book says "the first one"; see the module documentation. Then
-`v'_k` is computed by (3.23) and consists of the first `k` entries of the `k`-th column of
-`U⁻¹`, because `(U^{(k)})⁻¹` is the leading block of `U⁻¹` (backbone
-`Matrix.inv_toBlock_le_of_isUpperTriangular`, `Matrix.inv_col_eq_backSubst`). -/
+/-- **Equation (3.27)** of [quarteroni2000numerical]. Let $U \in \mathbb{R}^{n \times n}$ be
+nonsingular and upper triangular. For $k = 1, \dots, n$, let $U^{(k)}$ be the leading principal
+submatrix of order $k$ of $U$, let $l_k \in \mathbb{R}^k$ be the vector whose only nonzero entry
+is a $1$ in the $k$-th (last) position, and let $v'_k$ be the solution of $U^{(k)} v'_k = l_k$
+computed by backward substitution (3.23). Then $v'_k$ solves this system, and it consists of the
+first $k$ entries of the $k$-th column of $U^{-1}$.
+
+**Typo.** The book describes $l_k$ as the vector of $\mathbb{R}^k$ whose first entry is $1$.
+Since $v'_k$ is the leading part of the $k$-th column of $U^{-1}$, it solves
+$U^{(k)} v'_k = e_k$ with the $1$ in the last position, as the recurrence (3.28),
+$v'_{kk} = u_{kk}^{-1}$, confirms.
+
+Indices start at $0$: for `k : Fin n`, the matrix `U.leadingPrincipalSubmatrix k` has order
+$k + 1$ and is indexed by the indices $j \le k$, and $l_k$ is `Pi.single ⟨k, le_rfl⟩ 1`. The
+proof uses that $(U^{(k)})^{-1}$ is the leading block of $U^{-1}$ (the backbone's
+`Matrix.inv_toBlock_le_of_isUpperTriangular`) and `Matrix.inv_col_eq_backSubst`. -/
 theorem equation_3_27 (hU : U.IsUpperTriangular) (hUu : IsUnit U) (k : Fin n) :
     U.leadingPrincipalSubmatrix k *ᵥ
         backSubst (U.leadingPrincipalSubmatrix k) (Pi.single ⟨k, le_rfl⟩ 1) =
@@ -305,11 +391,16 @@ theorem equation_3_27 (hU : U.IsUpperTriangular) (hUu : IsUnit U) (k : Fin n) :
   have h2 := congrFun (congrFun (inv_toBlock_le_of_isUpperTriangular hU hd k) j) ⟨k, le_rfl⟩
   exact h1.symm.trans h2
 
-/-- **(3.28), the inversion algorithm for upper triangular matrices.** For `k = n, n - 1, …, 1`
-the nonzero entries of the `k`-th column of `U⁻¹` are `v'_kk = u_kk⁻¹` and
-`v'_ik = -u_ii⁻¹ ∑_{j=i+1}^{k} u_ij v'_jk` for `i = k - 1, …, 1`; below the diagonal `U⁻¹`
-vanishes (backbone `Matrix.inv_apply_self_of_isUpperTriangular`,
-`Matrix.inv_apply_of_isUpperTriangular`, `Matrix.inv_apply_of_isUpperTriangular_of_lt`). -/
+/-- **Equation (3.28)** of [quarteroni2000numerical], the inversion algorithm for upper triangular
+matrices. Let $U \in \mathbb{R}^{n \times n}$ be nonsingular and upper triangular, and write
+$U^{-1} = (v'_{ik})$. For $k = n, n - 1, \dots, 1$, the entries of the $k$-th column of $U^{-1}$
+satisfy
+$$v'_{kk} = u_{kk}^{-1}, \qquad v'_{ik} = -u_{ii}^{-1} \sum_{j=i+1}^{k} u_{ij} v'_{jk}, \quad
+  i = k - 1, \dots, 1,$$
+and $v'_{ik} = 0$ for $i > k$.
+
+The proof is the backbone's `Matrix.inv_apply_self_of_isUpperTriangular`,
+`Matrix.inv_apply_of_isUpperTriangular` and `Matrix.inv_apply_of_isUpperTriangular_of_lt`. -/
 theorem equation_3_28 (hU : U.IsUpperTriangular) (hUu : IsUnit U) (k : Fin n) :
     U⁻¹ k k = (U k k)⁻¹ ∧
       (∀ i, i < k → U⁻¹ i k = -(U i i)⁻¹ * ∑ j with i < j ∧ j ≤ k, U i j * U⁻¹ j k) ∧

@@ -7,46 +7,78 @@ import Numlib.LinearAlgebra.Matrix.NonsingularInverse
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter04.Section01
 
 /-!
-# Quarteroni–Sacco–Saleri §4.6: stopping criteria
+# Quarteroni, Sacco and Saleri, Section 4.6: Stopping Criteria
 
-Surface file for Alfio Quarteroni, Riccardo Sacco and Fausto Saleri, *Numerical Mathematics*
-[quarteroni2000numerical], §4.6, over the backbone `Numlib/Stationary/Basic` (the error and
-increment recursions of the affine iteration, the a priori and a posteriori bounds of the
-contraction case) and `Numlib/Conditioning/LinearSystem` (the residual–error relation through the
+This module formalizes Section 4.6 of [quarteroni2000numerical]. The setting is the linear iterative
+method $x^{(k+1)} = B x^{(k)} + f$ of (4.2), consistent with $Ax = b$ in the sense of Definition
+4.1, with solution $x = A^{-1} b$ and errors $e^{(k)} = x^{(k)} - x$. The error after $k$ steps
+satisfies $\|e^{(k)}\| \le \|B^k\| \|e^{(0)}\|$, so the iteration reaches the error reduction
+$\|e^{(k)}\| \le \varepsilon \|e^{(0)}\|$ (4.68) once $\|B^k\| \le \varepsilon$, which amounts to
+$k \ge -\log \varepsilon / R_k(B)$ (4.69). Section 4.6.1 bounds the error by the increment
+$x^{(k+1)} - x^{(k)}$ when $\|B\| < 1$ (4.71)–(4.72). Section 4.6.2 bounds the error by the residual
+$b - A x^{(k)}$, in absolute terms through $\|A^{-1}\|$ and in relative terms through the condition
+number $K(A)$.
+
+The proofs specialize the backbone modules `Numlib.Stationary.Basic` (the error and increment
+recursions of the affine iteration, and the a priori and a posteriori bounds of the contraction
+case) and `Numlib.Conditioning.LinearSystem` (the relation between residual and error through the
 condition number).
+
+## Main results
+
+* Section 4.6, `QuarteroniSaccoSaleri.Chapter04.norm_error_le_convergenceFactor`:
+  $\|e^{(k)}\| \le \|B^k\| \|e^{(0)}\|$.
+* Equations (4.68)–(4.69), `QuarteroniSaccoSaleri.Chapter04.equation_4_69`:
+  $\|B^k\| \le \varepsilon$ gives $\|e^{(k)}\| \le \varepsilon \|e^{(0)}\|$, and
+  $\|B^k\| \le \varepsilon$ if and only if $k \ge -\log \varepsilon / R_k(B)$.
+* Equation (4.71), `QuarteroniSaccoSaleri.Chapter04.equation_4_71`: $e^{(k+1)} = B e^{(k)}$ and
+  $\|e^{(k+1)}\| \le \|B\| \|e^{(k)}\|$.
+* Equation (4.72), `QuarteroniSaccoSaleri.Chapter04.equation_4_72`: if $\|B\| < 1$, then $\|x -
+  x^{(k+1)}\| \le \|B\| / (1 - \|B\|) \, \|x^{(k+1)} - x^{(k)}\|$.
+* Section 4.6.1, `QuarteroniSaccoSaleri.Chapter04.equation_4_72_apriori`: if $\|B\| < 1$, then
+  $\|x - x^{(k+1)}\| \le \|B\|^{k+1} / (1 - \|B\|) \, \|x^{(1)} - x^{(0)}\|$.
+* Section 4.6.1, `QuarteroniSaccoSaleri.Chapter04.increment_succ_le`: the ratio of two consecutive
+  increments is at most $\|B\|$.
+* Section 4.6.2, `QuarteroniSaccoSaleri.Chapter04.residual_stopping_abs`:
+  $\|b - A y\| \le \varepsilon$ gives $\|x - y\| \le \|A^{-1}\| \varepsilon$.
+* Section 4.6.2, `QuarteroniSaccoSaleri.Chapter04.residual_stopping_rel`:
+  $\|b - A y\| / \|b\| \le \varepsilon$ gives $\|x - y\| / \|x\| \le K(A) \varepsilon$.
 
 ## Conventions
 
-The iteration is the linear method (4.2) of §4.1, `affineStep B f`, consistent with `A x = b` in
-the sense of Definition 4.1 (`definition_4_1`), with solution `x = A⁻¹ b` and errors
-`e⁽ᵏ⁾ = x⁽ᵏ⁾ - x`. Norms are the Euclidean norms of `EuclideanSpace ℝ (Fin n)`, written
-`‖toLp 2 v‖`, and the spectral norm `‖·‖₂` of matrices (Mathlib's scoped
-`Matrix.Norms.L2Operator`), which is the operator norm they induce; the backbone states the same
-bounds on any normed space with the induced operator norm, so nothing depends on the choice. The
-convergence factor `‖Bᵏ‖` and the average convergence rate `R_k(B)` are those of Definition 4.2
-(`definition_4_2_factor`, `definition_4_2_rate`). The condition number `K(A) = ‖A‖₂ ‖A⁻¹‖₂` is
-`NormedRing.condNumber A` in the spectral norm.
+* The iteration is the linear method (4.2) of Section 4.1,
+  `QuarteroniSaccoSaleri.Chapter04.affineStep B f`, and its $k$-th iterate from $x^{(0)}$ is
+  `(affineStep B f)^[k] x₀`. Consistency is Definition 4.1,
+  `QuarteroniSaccoSaleri.Chapter04.definition_4_1`.
+* Vector norms are the Euclidean norm of `EuclideanSpace ℝ (Fin n)`, written `‖toLp 2 v‖`. Matrix
+  norms are the spectral norm $\|\cdot\|_2$ (Mathlib's scoped `Matrix.Norms.L2Operator`), which is
+  the operator norm that the Euclidean norm induces.
+* The convergence factor $\|B^k\|$ and the average convergence rate $R_k(B)$ are those of Definition
+  4.2, `QuarteroniSaccoSaleri.Chapter04.definition_4_2_factor` and
+  `QuarteroniSaccoSaleri.Chapter04.definition_4_2_rate`.
+* The condition number $K(A) = \|A\|_2 \|A^{-1}\|_2$ is `NormedRing.condNumber A` in the spectral
+  norm.
 
-## Contents
+## Implementation notes
 
-* `norm_error_le_convergenceFactor`, `equation_4_69` — the first display of §4.6 and
-  (4.68)–(4.69).
-* `equation_4_71`, `equation_4_72`, `equation_4_72_apriori`, `increment_succ_le` — §4.6.1, the
-  stopping test based on the increment.
-* `residual_stopping_abs`, `residual_stopping_rel` — §4.6.2, the stopping test based on the
-  residual.
+* The backbone states the same bounds on any normed space with the induced operator norm, so nothing
+  depends on the choice of the Euclidean norm.
 
-(4.70) (`k_min ≃ -log ε / R(B)`) and the indicator (4.73) are heuristics — "should not be regarded
-as an upper bound" — and Examples 4.11–4.12 are numerical; none is a node. The preconditioned
-residual criterion `‖P⁻¹ r⁽ᵏ⁾‖ / ‖P⁻¹ r⁽⁰⁾‖ ≤ ε` is a criterion, not a result, and has no node.
+## Deviations from the source
 
-## Readings
+* **Equation (4.69)** (reading). It is stated for $k \ge 1$ with $0 < \|B^k\| < 1$ and
+  $\varepsilon > 0$, the conditions under which both sides make sense. The book's "amounts to
+  requiring" is the equivalence $\|B^k\| \le \varepsilon \iff k \ge -\log \varepsilon / R_k(B)$. See
+  `QuarteroniSaccoSaleri.Chapter04.equation_4_69`.
 
-(4.69) is stated for `k ≥ 1` with `0 < ‖Bᵏ‖ < 1` and `0 < ε`, the conditions under which both
-sides make sense (`R_k(B) > 0` and `log ε` finite); the book's "`‖Bᵏ‖ < 1` … amounts to requiring"
-is the equivalence `‖Bᵏ‖ ≤ ε ↔ k ≥ -log ε / R_k(B)`. The increment ratio `c = δ_{k+1} / δ_k` of
-§4.6.1 is a lower bound for `‖B‖` (`increment_succ_le`); the indicator (4.73) built from it is not
-a bound and is not formalized.
+## Not formalized
+
+* **Equation (4.70) and the indicator (4.73).** The estimate
+  $k_{\min} \simeq -\log \varepsilon / R(B)$ and the indicator are heuristics, which "should not be
+  regarded as an upper bound".
+* **Examples 4.11 and 4.12.** They are numerical.
+* **The preconditioned residual test** $\|P^{-1} r^{(k)}\| / \|P^{-1} r^{(0)}\| \le \varepsilon$. It
+  is a criterion, not a result.
 -/
 
 open Filter Finset Matrix Topology WithLp
@@ -56,7 +88,7 @@ namespace QuarteroniSaccoSaleri.Chapter04
 
 variable {n : ℕ} {A B : Matrix (Fin n) (Fin n) ℝ} {b f : Fin n → ℝ}
 
-/-- `‖x - y‖ = ‖y - x‖` under `WithLp.toLp 2`. -/
+/-- The Euclidean norm satisfies $\|x - y\| = \|y - x\|$. -/
 private theorem norm_toLp_sub_rev (x y : Fin n → ℝ) :
     ‖(toLp 2 (x - y) : EuclideanSpace ℝ (Fin n))‖ =
       ‖(toLp 2 (y - x) : EuclideanSpace ℝ (Fin n))‖ := by
@@ -64,9 +96,15 @@ private theorem norm_toLp_sub_rev (x y : Fin n → ℝ) :
 
 /-! ### The convergence factor and the number of iterations, (4.68)–(4.69) -/
 
-/-- **The first display of §4.6.** From (4.4), `‖e⁽ᵏ⁾‖ / ‖e⁽⁰⁾‖ ≤ ‖Bᵏ‖`: the convergence factor
-after `k` steps estimates the reduction of the error, `‖e⁽ᵏ⁾‖ ≤ ‖Bᵏ‖ ‖e⁽⁰⁾‖` (backbone
-`Stationary.norm_step_iterate_sub_le`). -/
+/-- **Section 4.6** of [quarteroni2000numerical], the first display. Let
+$A, B \in \mathbb{R}^{n \times n}$ and $b, f \in \mathbb{R}^n$, and let the method
+$x^{(k+1)} = B x^{(k)} + f$ be consistent with $Ax = b$, where $x = A^{-1} b$. Then for every
+$x^{(0)}$ and $k$, the error $e^{(k)} = x^{(k)} - x$ satisfies
+$$\|e^{(k)}\| \le \|B^k\| \, \|e^{(0)}\|, \qquad \frac{\|e^{(k)}\|}{\|e^{(0)}\|} \le \|B^k\|.$$
+The convergence factor after $k$ steps thus estimates the reduction of the error.
+
+The quotient is $0$ when $e^{(0)} = 0$. The first bound follows from (4.4). The proof
+specializes the backbone's `Stationary.norm_step_iterate_sub_le`. -/
 theorem norm_error_le_convergenceFactor (hc : definition_4_1 A b B f) (x₀ : Fin n → ℝ) (k : ℕ) :
     ‖(toLp 2 ((affineStep B f)^[k] x₀ - A⁻¹ *ᵥ b) : EuclideanSpace ℝ (Fin n))‖ ≤
         definition_4_2_factor B k * ‖(toLp 2 (x₀ - A⁻¹ *ᵥ b) : EuclideanSpace ℝ (Fin n))‖ ∧
@@ -77,10 +115,20 @@ theorem norm_error_le_convergenceFactor (hc : definition_4_1 A b B f) (x₀ : Fi
   rw [← toLp_affineStep_iterate, ← toLp_sub, ← toLp_sub, ← map_pow, l2_opNorm_toEuclideanCLM] at h
   exact ⟨h, div_le_of_le_mul₀ (norm_nonneg _) (norm_nonneg _) h⟩
 
-/-- **(4.68)–(4.69).** The iteration is continued until the error has been reduced by a factor
-`ε < 1`, `‖e⁽ᵏ⁾‖ ≤ ε ‖e⁽⁰⁾‖` (4.68), which holds as soon as `‖Bᵏ‖ ≤ ε`; and for `k ≥ 1` with
-`0 < ‖Bᵏ‖ < 1` and `ε > 0`, the condition `‖Bᵏ‖ ≤ ε` amounts to `k ≥ -log ε / R_k(B)` (4.69),
-`R_k(B) = -(1/k) log ‖Bᵏ‖` being the average convergence rate of Definition 4.2. -/
+/-- **Equations (4.68)–(4.69)** of [quarteroni2000numerical]. Let the method
+$x^{(k+1)} = B x^{(k)} + f$ be consistent with $Ax = b$, where $x = A^{-1} b$, let
+$x^{(0)} \in \mathbb{R}^n$, $k \in \mathbb{N}$ and $\varepsilon \in \mathbb{R}$. Then:
+
+1. if $\|B^k\| \le \varepsilon$, then the error is reduced by the factor $\varepsilon$,
+   $\|e^{(k)}\| \le \varepsilon \|e^{(0)}\|$ (4.68);
+2. if $k \ge 1$, $0 < \|B^k\| < 1$ and $\varepsilon > 0$, then
+   $\|B^k\| \le \varepsilon \iff k \ge -\log \varepsilon / R_k(B)$ (4.69).
+
+Here $R_k(B) = -\frac{1}{k} \log \|B^k\|$ is the average convergence rate of Definition 4.2.
+
+**Reading.** The book says that the condition $\|B^k\| \le \varepsilon$ "amounts to requiring"
+(4.69). This is stated as an equivalence, under the conditions $k \ge 1$, $0 < \|B^k\| < 1$ and
+$\varepsilon > 0$, under which $R_k(B) > 0$ and $\log \varepsilon$ is finite. -/
 theorem equation_4_69 (hc : definition_4_1 A b B f) (x₀ : Fin n → ℝ) {k : ℕ} {ε : ℝ} :
     (definition_4_2_factor B k ≤ ε →
         ‖(toLp 2 ((affineStep B f)^[k] x₀ - A⁻¹ *ᵥ b) : EuclideanSpace ℝ (Fin n))‖ ≤
@@ -99,9 +147,13 @@ theorem equation_4_69 (hc : definition_4_1 A b B f) (x₀ : Fin n → ℝ) {k : 
     neg_le_neg_iff]
   exact (Real.log_le_log_iff h0 hε).symm
 
-/-! ### §4.6.1 A stopping test based on the increment -/
+/-! ### Section 4.6.1: a stopping test based on the increment -/
 
-/-- **(4.71).** From the error recursion `e⁽ᵏ⁺¹⁾ = B e⁽ᵏ⁾` of (4.4), `‖e⁽ᵏ⁺¹⁾‖ ≤ ‖B‖ ‖e⁽ᵏ⁾‖`. -/
+/-- **Equation (4.71)** of [quarteroni2000numerical]. Let the method $x^{(k+1)} = B x^{(k)} + f$ be
+consistent with $Ax = b$, where $x = A^{-1} b$. Then for every $x^{(0)}$ and $k$, the errors
+satisfy the recursion $e^{(k+1)} = B e^{(k)}$ of (4.4), and
+$$\|e^{(k+1)}\| \le \|B\| \, \|e^{(k)}\|.$$
+-/
 theorem equation_4_71 (hc : definition_4_1 A b B f) (x₀ : Fin n → ℝ) (k : ℕ) :
     (affineStep B f)^[k + 1] x₀ - A⁻¹ *ᵥ b = B *ᵥ ((affineStep B f)^[k] x₀ - A⁻¹ *ᵥ b) ∧
       ‖(toLp 2 ((affineStep B f)^[k + 1] x₀ - A⁻¹ *ᵥ b) : EuclideanSpace ℝ (Fin n))‖ ≤
@@ -112,9 +164,14 @@ theorem equation_4_71 (hc : definition_4_1 A b B f) (x₀ : Fin n → ℝ) (k : 
   rw [h, ← toEuclideanCLM_toLp, ← l2_opNorm_toEuclideanCLM]
   exact ContinuousLinearMap.le_opNorm _ _
 
-/-- **(4.72), the a posteriori increment test.** If `‖B‖ < 1` then
-`‖x - x⁽ᵏ⁺¹⁾‖ ≤ ‖B‖ / (1 - ‖B‖) ‖x⁽ᵏ⁺¹⁾ - x⁽ᵏ⁾‖`: the triangle inequality in (4.71),
-`‖e⁽ᵏ⁺¹⁾‖ ≤ ‖B‖ (‖e⁽ᵏ⁺¹⁾‖ + ‖x⁽ᵏ⁺¹⁾ - x⁽ᵏ⁾‖)` (backbone `Stationary.norm_iterate_sub_le'`). -/
+/-- **Equation (4.72)** of [quarteroni2000numerical], the a posteriori increment test. Let the
+method $x^{(k+1)} = B x^{(k)} + f$ be consistent with $Ax = b$, where $x = A^{-1} b$, and let
+$\|B\| < 1$. Then for every $x^{(0)}$ and $k$,
+$$\|x - x^{(k+1)}\| \le \frac{\|B\|}{1 - \|B\|} \, \|x^{(k+1)} - x^{(k)}\|.$$
+
+The bound follows from the triangle inequality in (4.71), $\|e^{(k+1)}\| \le \|B\|
+(\|e^{(k+1)}\| + \|x^{(k+1)} - x^{(k)}\|)$. The proof specializes the backbone's
+`Stationary.norm_iterate_sub_le'`. -/
 theorem equation_4_72 (hc : definition_4_1 A b B f) (hB : ‖B‖ < 1) (x₀ : Fin n → ℝ) (k : ℕ) :
     ‖(toLp 2 (A⁻¹ *ᵥ b - (affineStep B f)^[k + 1] x₀) : EuclideanSpace ℝ (Fin n))‖ ≤
       ‖B‖ / (1 - ‖B‖) *
@@ -128,9 +185,13 @@ theorem equation_4_72 (hc : definition_4_1 A b B f) (hB : ‖B‖ < 1) (x₀ : F
   rw [norm_toLp_sub_rev (A⁻¹ *ᵥ b)]
   exact h
 
-/-- **The display after (4.72), the a priori form.** If `‖B‖ < 1` then
-`‖x - x⁽ᵏ⁺¹⁾‖ ≤ ‖B‖ᵏ⁺¹ / (1 - ‖B‖) ‖x⁽¹⁾ - x⁽⁰⁾‖`, which estimates the number of iterations needed
-to reach a given tolerance (backbone `Stationary.norm_iterate_sub_le`). -/
+/-- **Section 4.6.1** of [quarteroni2000numerical], the a priori form of (4.72), from the display
+after (4.72). Let the method $x^{(k+1)} = B x^{(k)} + f$ be consistent with $Ax = b$, where
+$x = A^{-1} b$, and let $\|B\| < 1$. Then for every $x^{(0)}$ and $k$,
+$$\|x - x^{(k+1)}\| \le \frac{\|B\|^{k+1}}{1 - \|B\|} \, \|x^{(1)} - x^{(0)}\|.$$
+This bound estimates the number of iterations that are needed to reach a given tolerance.
+
+The proof specializes the backbone's `Stationary.norm_iterate_sub_le`. -/
 theorem equation_4_72_apriori (hc : definition_4_1 A b B f) (hB : ‖B‖ < 1) (x₀ : Fin n → ℝ)
     (k : ℕ) :
     ‖(toLp 2 (A⁻¹ *ᵥ b - (affineStep B f)^[k + 1] x₀) : EuclideanSpace ℝ (Fin n))‖ ≤
@@ -144,11 +205,18 @@ theorem equation_4_72_apriori (hc : definition_4_1 A b B f) (hB : ‖B‖ < 1) (
   rw [norm_toLp_sub_rev (A⁻¹ *ᵥ b), Function.iterate_one]
   exact h
 
-/-- **§4.6.1, the estimate of `‖B‖`.** The increments obey
-`x⁽ᵏ⁺¹⁾ - x⁽ᵏ⁾ = B (x⁽ᵏ⁾ - x⁽ᵏ⁻¹⁾)`, hence `δ_{k+1} ≤ ‖B‖ δ_k` with `δ_{j+1} = ‖x⁽ʲ⁺¹⁾ - x⁽ʲ⁾‖`, so
-that the ratio `c = δ_{k+1} / δ_k` is a lower bound for `‖B‖` (backbone
-`Stationary.step_iterate_succ_sub`). The indicator `ε⁽ᵏ⁺¹⁾ = δ_{k+1}² / (δ_k - δ_{k+1})` of (4.73),
-obtained by replacing `‖B‖` with `c` in (4.72), is a heuristic and is not formalized. -/
+/-- **Section 4.6.1** of [quarteroni2000numerical], the estimate of $\|B\|$. Let
+$B \in \mathbb{R}^{n \times n}$ and $f, x^{(0)} \in \mathbb{R}^n$, and let $x^{(k)}$ be the
+iterates of $x^{(k+1)} = B x^{(k)} + f$. Write $\delta_{j+1} = \|x^{(j+1)} - x^{(j)}\|$. Then
+for every $k$,
+$$x^{(k+2)} - x^{(k+1)} = B (x^{(k+1)} - x^{(k)}), \qquad \delta_{k+2} \le \|B\| \,
+  \delta_{k+1}, \qquad \frac{\delta_{k+2}}{\delta_{k+1}} \le \|B\|.$$
+So the ratio $c$ of two consecutive increments is a lower bound for $\|B\|$.
+
+No consistency hypothesis is needed. The quotient is $0$ when $\delta_{k+1} = 0$. The proof
+specializes the backbone's `Stationary.step_iterate_succ_sub`. The indicator
+$\varepsilon^{(k+1)} = \delta_{k+1}^2 / (\delta_k - \delta_{k+1})$ of (4.73), which replaces
+$\|B\|$ with $c$ in (4.72), is a heuristic and is not formalized. -/
 theorem increment_succ_le (B : Matrix (Fin n) (Fin n) ℝ) (f x₀ : Fin n → ℝ) (k : ℕ) :
     (affineStep B f)^[k + 2] x₀ - (affineStep B f)^[k + 1] x₀ =
         B *ᵥ ((affineStep B f)^[k + 1] x₀ - (affineStep B f)^[k] x₀) ∧
@@ -178,10 +246,15 @@ theorem increment_succ_le (B : Matrix (Fin n) (Fin n) ℝ) (f x₀ : Fin n → �
     exact ContinuousLinearMap.le_opNorm _ _
   exact ⟨h, hle, div_le_of_le_mul₀ (norm_nonneg _) (norm_nonneg _) hle⟩
 
-/-! ### §4.6.2 A stopping test based on the residual -/
+/-! ### Section 4.6.2: a stopping test based on the residual -/
 
-/-- **§4.6.2, the first display.** For a nonsingular `A` and any vector `y` (an iterate), if the
-residual satisfies `‖b - A y‖ ≤ ε` then `‖x - y‖ = ‖A⁻¹ b - y‖ = ‖A⁻¹ (b - A y)‖ ≤ ‖A⁻¹‖ ε`. -/
+/-- **Section 4.6.2** of [quarteroni2000numerical], the first display. Let
+$A \in \mathbb{R}^{n \times n}$ be nonsingular, let $b, y \in \mathbb{R}^n$ (for example, an
+iterate), and let $\varepsilon \in \mathbb{R}$. If the residual satisfies
+$\|b - A y\| \le \varepsilon$, then
+$$\|A^{-1} b - y\| \le \|A^{-1}\| \, \varepsilon.$$
+
+The proof uses $A^{-1} b - y = A^{-1} (b - A y)$. -/
 theorem residual_stopping_abs (hA : IsUnit A) (b y : Fin n → ℝ) {ε : ℝ}
     (hr : ‖(toLp 2 (b - A *ᵥ y) : EuclideanSpace ℝ (Fin n))‖ ≤ ε) :
     ‖(toLp 2 (A⁻¹ *ᵥ b - y) : EuclideanSpace ℝ (Fin n))‖ ≤ ‖A⁻¹‖ * ε := by
@@ -190,11 +263,15 @@ theorem residual_stopping_abs (hA : IsUnit A) (b y : Fin n → ℝ) {ε : ℝ}
   rw [h, ← toEuclideanCLM_toLp, ← l2_opNorm_toEuclideanCLM]
   exact (ContinuousLinearMap.le_opNorm _ _).trans (mul_le_mul_of_nonneg_left hr (norm_nonneg _))
 
-/-- **§4.6.2, the normalized residual test.** For a nonsingular `A`, `b ≠ 0` and any vector `y`,
-if `‖b - A y‖ / ‖b‖ ≤ ε` then the relative error is controlled by the condition number,
-`‖x - y‖ / ‖x‖ ≤ K(A) ‖b - A y‖ / ‖b‖ ≤ ε K(A)`, with `K(A) = ‖A‖₂ ‖A⁻¹‖₂` (backbone
-`relative_error_le_condNumber_mul_relative_residual` for the operator `x ↦ A x` on
-`EuclideanSpace`). -/
+/-- **Section 4.6.2** of [quarteroni2000numerical], the normalized residual test. Let
+$A \in \mathbb{R}^{n \times n}$ be nonsingular, let $b \in \mathbb{R}^n$ with $b \neq 0$, let
+$y \in \mathbb{R}^n$ and $\varepsilon \in \mathbb{R}$, and let $x = A^{-1} b$. If
+$\|b - A y\| / \|b\| \le \varepsilon$, then
+$$\frac{\|x - y\|}{\|x\|} \le K(A) \, \varepsilon, \qquad K(A) = \|A\|_2 \|A^{-1}\|_2.$$
+
+The proof passes through $\|x - y\| / \|x\| \le K(A) \|b - A y\| / \|b\|$. It specializes the
+backbone's `relative_error_le_condNumber_mul_relative_residual` to the operator $x \mapsto Ax$
+on `EuclideanSpace ℝ (Fin n)`. -/
 theorem residual_stopping_rel (hA : IsUnit A) {b : Fin n → ℝ} (hb : b ≠ 0) (y : Fin n → ℝ)
     {ε : ℝ} (hr : ‖(toLp 2 (b - A *ᵥ y) : EuclideanSpace ℝ (Fin n))‖ /
       ‖(toLp 2 b : EuclideanSpace ℝ (Fin n))‖ ≤ ε) :

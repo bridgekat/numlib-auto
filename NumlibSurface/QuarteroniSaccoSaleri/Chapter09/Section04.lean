@@ -5,51 +5,67 @@ Released under Apache 2.0 license as described in the file LICENSE.
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter09.Section03
 
 /-!
-# Quarteroni–Sacco–Saleri §9.4: composite Newton–Cotes formulae
+# Quarteroni, Sacco and Saleri, Section 9.4: Composite Newton–Cotes formulae
 
-Surface file for Alfio Quarteroni, Riccardo Sacco and Fausto Saleri, *Numerical Mathematics*,
-Springer, 2000, §9.4.
+This module formalizes Section 9.4 of [quarteroni2000numerical]. The interval $[a, b]$ is divided
+into $m$ subintervals $T_j = [y_j, y_{j+1}]$ with $y_j = a + jH$ and $H = (b - a)/m$, and the closed
+Newton–Cotes formula with $n + 1$ equally spaced nodes is used on each subinterval. The composite
+formula (9.25) is $I_{n,m}(f) = \sum_j \sum_k \alpha_k^{(j)} f(x_k^{(j)})$ with
+$\alpha_k^{(j)} = h w_k$ and $h = H/n$. Theorem 9.3 gives the error (9.26) for even $n$, and the
+remark after it states the convergence $E_{n,m}(f) \to 0$ as $m \to \infty$. Property 9.1 gives the
+convergence for a merely continuous integrand when the weights are nonnegative, with the bound
+$2(b - a)\,\Omega(f; H)$ in terms of the modulus of continuity.
 
-The interval `[a, b]` is partitioned into `m` subintervals `T_j = [y_j, y_{j+1}]`, `y_j = a + jH`,
-`H = (b - a)/m`, and on each the closed Newton–Cotes formula with `n + 1` equally spaced nodes is
-used; the composite formula is (9.25), `I_{n,m}(f) = ∑_j ∑_k α_k^{(j)} f(x_k^{(j)})` with
-`α_k^{(j)} = h w_k`, `h = H/n`. Theorem 9.3 gives the error (9.26)–(9.27) — with the constant of
-(9.26) corrected to `M_n/n^{n+3}` (see `notes/book-errata.md`: the closed spacing is `H/n`, and
-`n = 2` must return the composite Simpson constant `-(b - a)H⁴/2880`) — and the remark after it
-the convergence `E_{n,m}(f) → 0` as `m → ∞`; Property 9.1 is the convergence for merely
-continuous integrands when the weights are nonnegative, with the bound `2(b - a)Ω(f; H)` by the
-modulus of continuity. Example 9.4 is a numerical table and is not formalized.
+The backbone is `Numlib.Approximation.NewtonCotes`. It supplies the composite rule
+`Quadrature.compositeNewtonCotes`, Theorem 9.3 with the corrected constant
+(`Quadrature.exists_sub_compositeNewtonCotes_eq_of_even`), Property 9.1
+(`Quadrature.tendsto_compositeNewtonCotes` and `Quadrature.abs_sub_compositeNewtonCotes_le`), and
+the convergence for a smooth integrand without a sign hypothesis on the weights
+(`Quadrature.tendsto_compositeNewtonCotes_of_contDiffOn`).
 
-The backbone is `Numlib/Approximation/NewtonCotes`: `Quadrature.compositeNewtonCotes`,
-`Quadrature.exists_sub_compositeNewtonCotes_eq_of_even` (Theorem 9.3 with the corrected
-constant), `Quadrature.abs_sub_compositeNewtonCotes_le` and
-`Quadrature.tendsto_compositeNewtonCotes` (Property 9.1, whose bound the backbone proves with the
-constant `1`; the book's `2` follows), and
-`Quadrature.tendsto_compositeNewtonCotes_of_contDiffOn` (convergence for a smooth integrand,
-without a sign hypothesis on the weights).
+## Main definitions
+
+* Property 9.1, `QuarteroniSaccoSaleri.Chapter09.modulusOfContinuity`: the modulus of continuity
+  $\Omega(f; H)$ of $f$ on $[a, b]$.
 
 ## Main results
 
-* `equation_9_25` — the composite formula written as the double sum of the book.
-* `theorem_9_3_even` — (9.26), the composite error for even `n`, with the corrected constant.
-* `theorem_9_3_tendsto_even`, `theorem_9_3_tendsto_odd` — `E_{n,m}(f) → 0` as `m → ∞`, for even
-  `n` from (9.26) and for odd `n` from the backbone's `O(H^{n+1})` interpolation bound.
-* `property_9_1`, `property_9_1_midpoint`, `property_9_1_bound` — convergence for `f ∈ C⁰([a, b])`
-  and nonnegative weights (for the closed formulae, and for the composite midpoint formula, which
-  is the open one with `n = 0`), and the modulus-of-continuity bound.
-
-## Deliberately not stated
-
-Theorem 9.3 for odd `n` (9.27) is neither in this file nor in its plan: it is the summation of the
-odd-`n` panel formula (9.20), whose sign analysis the module doc comment of the backbone
-`Numlib/Approximation/NewtonCotes` records as out of reach, together with the reduction and an
-exact-rational certificate that the underlying inequality does hold for every odd `n ≤ 31`. The
-convergence remark for odd `n` does not need it and is `theorem_9_3_tendsto_odd`.
+* Equation (9.25), `QuarteroniSaccoSaleri.Chapter09.equation_9_25`: the composite formula is the
+  double sum of the book.
+* Theorem 9.3, `QuarteroniSaccoSaleri.Chapter09.theorem_9_3_even`: the composite error (9.26) for
+  even $n$, with the corrected constant.
+* Theorem 9.3, `QuarteroniSaccoSaleri.Chapter09.theorem_9_3_tendsto_even`: for even $n$,
+  $E_{n,m}(f) \to 0$ as $m \to \infty$.
+* Theorem 9.3, `QuarteroniSaccoSaleri.Chapter09.theorem_9_3_tendsto_odd`: for odd $n$,
+  $E_{n,m}(f) \to 0$ as $m \to \infty$.
+* Property 9.1, `QuarteroniSaccoSaleri.Chapter09.property_9_1`: convergence for $f \in C^0([a, b])$
+  when the closed weights are nonnegative.
+* Property 9.1, `QuarteroniSaccoSaleri.Chapter09.property_9_1_midpoint`: convergence of the
+  composite midpoint formula for $f \in C^0([a, b])$.
+* Property 9.1, `QuarteroniSaccoSaleri.Chapter09.abs_sub_le_modulusOfContinuity`: the modulus of
+  continuity bounds the change of $f$ over a distance at most $H$.
+* Property 9.1, `QuarteroniSaccoSaleri.Chapter09.property_9_1_bound`: the error bound
+  $2(b - a)\,\Omega(f; H)$.
 
 ## Conventions
 
-As in §9.2. The modulus of continuity `Ω(f; H)` is `modulusOfContinuity f a b H`, the supremum
-of `|f(x) - f(y)|` over `x ≠ y` in `[a, b]` with `|x - y| ≤ H`, as the book defines it.
+* As in Section 9.2, $f \in C^k([a, b])$ is `ContDiffOn ℝ k f U` on an open set
+  $U \supseteq [a, b]$, and $f^{(k)}$ is `iteratedDeriv k f`.
+* The modulus of continuity $\Omega(f; H)$ is `QuarteroniSaccoSaleri.Chapter09.modulusOfContinuity f
+  a b H`, the supremum of $|f(x) - f(y)|$ over $x \neq y$ in $[a, b]$ with $|x - y| \le H$, as the
+  book defines it.
+
+## Deviations from the source
+
+* **Theorem 9.3, equation (9.26)** (correction). The source prints the constant $M_n/(n + 2)^{n+3}$.
+  The correct constant is $M_n/n^{n+3}$. See `QuarteroniSaccoSaleri.Chapter09.theorem_9_3_even`.
+
+## Not formalized
+
+* **Theorem 9.3 for odd $n$, equation (9.27).** It is the sum over the panels of the error formula
+  (9.20) for odd $n$, which is not formalized (see Section 9.3). The convergence remark for odd $n$
+  does not need it and is formalized.
+* **Example 9.4.** It is a numerical table.
 -/
 
 open Set Filter Topology intervalIntegral
@@ -60,10 +76,17 @@ variable {a b : ℝ} {f : ℝ → ℝ} {U : Set ℝ} {n : ℕ}
 
 /-! ### The composite formula (9.25) -/
 
-/-- **(9.25).** The composite closed Newton–Cotes formula on the `m` subintervals
-`T_j = [y_j, y_{j+1}]`, `y_j = a + jH`, `H = (b - a)/m`, is
-`I_{n,m}(f) = ∑_{j<m} ∑_{k≤n} α_k^{(j)} f(x_k^{(j)})` with the nodes `x_k^{(j)} = y_j + k h`,
-`h = H/n`, and the weights `α_k^{(j)} = h w_k`, independent of `T_j`. -/
+/-- **Equation (9.25)** of [quarteroni2000numerical], the composite closed Newton–Cotes formula. For
+all $n, m \in \mathbb{N}$, all $a, b$ and every $f$, let $H = (b - a)/m$, $h = H/n$,
+$y_j = a + jH$ and $x_k^{(j)} = y_j + kh$. Then the composite formula on the $m$ subintervals
+$T_j = [y_j, y_{j+1}]$ is
+$$I_{n,m}(f) = \sum_{j=0}^{m-1} \sum_{k=0}^{n} \alpha_k^{(j)} f(x_k^{(j)}), \qquad
+  \alpha_k^{(j)} = h w_k,$$
+where the weights $\alpha_k^{(j)}$ do not depend on $T_j$.
+
+The composite formula is `Quadrature.compositeNewtonCotes n f a b m`, and $w_k$ is
+`Quadrature.newtonCotesWeight n k`. In Lean, division by zero gives zero, so the identity also
+holds for $m = 0$ or $n = 0$. -/
 theorem equation_9_25 (n : ℕ) (f : ℝ → ℝ) (a b : ℝ) (m : ℕ) :
     Quadrature.compositeNewtonCotes n f a b m
       = ∑ j ∈ Finset.range m, ∑ k : Fin (n + 1),
@@ -79,15 +102,22 @@ theorem equation_9_25 (n : ℕ) (f : ℝ → ℝ) (a b : ℝ) (m : ℕ) :
 
 /-! ### Theorem 9.3 -/
 
-/-- **Theorem 9.3, even `n`, (9.26).** For a composite closed Newton–Cotes formula with even
-`n ≥ 2` and `f ∈ C^{n+2}([a, b])`,
-`E_{n,m}(f) = (b - a)/(n + 2)! · M_n/n^{n+3} · H^{n+2} f^{(n+2)}(ξ)`, `H = (b - a)/m`, for some
-`ξ ∈ [a, b]`. **Erratum:** the book prints `M_n/(n + 2)^{n+3}`; the panel spacing of the closed
-formula is `h = H/n`, so `n^{n+3}` is the constant that makes `n = 2` return the composite
-Simpson error `-(b - a)H⁴/2880` of §9.2.3. Therefore the error is an infinitesimal of order
-`n + 2` in `H` and the degree of exactness is `n + 1`. The backbone's
-`Quadrature.exists_sub_compositeNewtonCotes_eq_of_even`: (9.19) on each subinterval and Theorem
-9.1 with `u = f^{(n+2)}`, `δ_j = 1`. -/
+/-- **Theorem 9.3** of [quarteroni2000numerical], even $n$, equation (9.26). Let $n \ge 2$ be even,
+let $a < b$, let $m \ge 1$, let $H = (b - a)/m$, and let $f \in C^{n+2}([a, b])$. Then the error
+of the composite closed Newton–Cotes formula is
+$$E_{n,m}(f) = \int_a^b f(x)\,dx - I_{n,m}(f) = \frac{b - a}{(n + 2)!} \frac{M_n}{n^{n+3}}
+  H^{n+2} f^{(n+2)}(\xi)$$
+for some $\xi \in [a, b]$, where $M_n$ is the constant of Theorem 9.2.
+
+**Correction.** The source prints $M_n/(n + 2)^{n+3}$ in place of $M_n/n^{n+3}$. The panel
+spacing of the closed formula is $h = H/n$, and with $n^{n+3}$ the case $n = 2$ gives the
+composite Simpson error $-(b - a)H^4/2880$ of Section 9.2.3
+(`QuarteroniSaccoSaleri.Chapter09.compositeSimpsonError`).
+
+The book concludes that the error is an infinitesimal of order $n + 2$ in $H$ and that the
+degree of exactness is $n + 1$. The constant $M_n$ is `Quadrature.newtonCotesM n`. The proof is
+the backbone's `Quadrature.exists_sub_compositeNewtonCotes_eq_of_even`: (9.19) on each
+subinterval, and Theorem 9.1 with $u = f^{(n+2)}$ and $\delta_j = 1$. -/
 theorem theorem_9_3_even (hn : Even n) (hn0 : 0 < n) (hab : a < b) {m : ℕ} (hm : 1 ≤ m)
     (hU : IsOpen U) (hUab : Icc a b ⊆ U) (hf : ContDiffOn ℝ ((n + 2 : ℕ) : WithTop ℕ∞) f U) :
     ∃ ξ ∈ Icc a b, (∫ x in a..b, f x) - Quadrature.compositeNewtonCotes n f a b m
@@ -95,8 +125,12 @@ theorem theorem_9_3_even (hn : Even n) (hn0 : 0 < n) (hab : a < b) {m : ℕ} (hm
         * ((b - a) / m) ^ (n + 2) * iteratedDeriv (n + 2) f ξ :=
   Quadrature.exists_sub_compositeNewtonCotes_eq_of_even hn hn0 hab hm hU hUab hf
 
-/-- **§9.4: "for `n` fixed, `E_{n,m}(f) → 0` as `m → ∞`"**, for even `n` and
-`f ∈ C^{n+2}([a, b])`: the bound (9.26) with `M = max |f^{(n+2)}|` and `H^{n+2} → 0`. -/
+/-- **Section 9.4** of [quarteroni2000numerical], convergence for even $n$. Let $n \ge 2$ be even,
+let $a < b$, and let $f \in C^{n+2}([a, b])$. Then
+$$\lim_{m \to \infty} I_{n,m}(f) = \int_a^b f(x)\,dx.$$
+
+The book states that "for $n$ fixed, $E_{n,m}(f) \to 0$ as $m \to \infty$". The proof uses the
+bound (9.26) with $M = \max |f^{(n+2)}|$ and $H^{n+2} \to 0$. -/
 theorem theorem_9_3_tendsto_even (hn : Even n) (hn0 : 0 < n) (hab : a < b) (hU : IsOpen U)
     (hUab : Icc a b ⊆ U) (hf : ContDiffOn ℝ ((n + 2 : ℕ) : WithTop ℕ∞) f U) :
     Tendsto (fun m => Quadrature.compositeNewtonCotes n f a b m) atTop
@@ -131,13 +165,14 @@ theorem theorem_9_3_tendsto_even (hn : Even n) (hn0 : 0 < n) (hab : a < b) (hU :
     simpa using (tendsto_const_div_atTop_nhds_zero_nat (b - a)).pow (n + 2)
   simpa using hH.const_mul C
 
-/-- **§9.4: "for `n` fixed, `E_{n,m}(f) → 0` as `m → ∞`"**, for odd `n` and
-`f ∈ C^{n+1}([a, b])`: `I_{n,m}(f) → ∫_a^b f` as the number of subintervals grows.
+/-- **Section 9.4** of [quarteroni2000numerical], convergence for odd $n$. Let $n$ be odd, let
+$a < b$, and let $f \in C^{n+1}([a, b])$. Then
+$$\lim_{m \to \infty} I_{n,m}(f) = \int_a^b f(x)\,dx.$$
 
-The book reads this off (9.27). Since (9.27) itself waits on the sign analysis of the order-`n`
-Peano kernel, the backbone proves the convergence from the `O(H^{n+1})` bound that the Lagrange
-interpolation error gives for every `n` — `Quadrature.tendsto_compositeNewtonCotes_of_contDiffOn`,
-which, unlike Property 9.1, needs no sign hypothesis on the weights. -/
+The book reads this from (9.27), which is not formalized. The backbone proves the convergence
+from the $O(H^{n+1})$ bound that the Lagrange interpolation error gives for every $n$
+(`Quadrature.tendsto_compositeNewtonCotes_of_contDiffOn`). Unlike Property 9.1, this needs no
+sign hypothesis on the weights. -/
 theorem theorem_9_3_tendsto_odd (hn : Odd n) (hab : a < b) (hU : IsOpen U) (hUab : Icc a b ⊆ U)
     (hf : ContDiffOn ℝ ((n + 1 : ℕ) : WithTop ℕ∞) f U) :
     Tendsto (fun m => Quadrature.compositeNewtonCotes n f a b m) atTop
@@ -146,9 +181,13 @@ theorem theorem_9_3_tendsto_odd (hn : Odd n) (hab : a < b) (hU : IsOpen U) (hUab
 
 /-! ### Property 9.1 -/
 
-/-- **Property 9.1, first clause.** Let `f ∈ C⁰([a, b])` and assume the weights of the composite
-formula (9.25) are nonnegative; then `lim_{m→∞} I_{n,m}(f) = ∫_a^b f`. For the closed
-Newton–Cotes formulae with `n ≥ 1` the weights are `h w_k`, so the hypothesis is `w_k ≥ 0`. The
+/-- **Property 9.1** of [quarteroni2000numerical], convergence. Let $n \ge 1$, assume that the
+closed Newton–Cotes weights satisfy $w_k \ge 0$ for all $k$, let $a \le b$, and let
+$f \in C^0([a, b])$. Then
+$$\lim_{m \to \infty} I_{n,m}(f) = \int_a^b f(x)\,dx.$$
+
+The book assumes that the weights of the composite formula (9.25) are nonnegative. For the
+closed formulae these weights are $h w_k$, so the hypothesis is $w_k \ge 0$. The proof is the
 backbone's `Quadrature.tendsto_compositeNewtonCotes`, a Riemann-sum argument. -/
 theorem property_9_1 (hn : 1 ≤ n) (hw : ∀ k, 0 ≤ Quadrature.newtonCotesWeight n k) (hab : a ≤ b)
     (hf : ContinuousOn f (Icc a b)) :
@@ -156,9 +195,12 @@ theorem property_9_1 (hn : 1 ≤ n) (hw : ∀ k, 0 ≤ Quadrature.newtonCotesWei
       (𝓝 (∫ x in a..b, f x)) :=
   Quadrature.tendsto_compositeNewtonCotes hn hw hab hf
 
-/-- **Property 9.1 for `n = 0`**: the composite midpoint formula (9.7), the composite form of the
-open formula with `n = 0` (whose weight `w₀ = 2` is positive), converges for every
-`f ∈ C⁰([a, b])`. The backbone's `Quadrature.tendsto_midpointSum`. -/
+/-- **Property 9.1** of [quarteroni2000numerical], the case $n = 0$. Let $a \le b$ and
+$f \in C^0([a, b])$. Then the composite midpoint formula (9.7) with $m + 1$ panels of width
+$(b - a)/(m + 1)$ converges to $\int_a^b f(x)\,dx$ as $m \to \infty$.
+
+The composite midpoint formula is the composite form of the open formula with $n = 0$, whose
+weight $w_0 = 2$ is positive. The proof is the backbone's `Quadrature.tendsto_midpointSum`. -/
 theorem property_9_1_midpoint (hab : a ≤ b) (hf : ContinuousOn f (Icc a b)) :
     Tendsto (fun m : ℕ => Quadrature.midpointSum f a ((b - a) / (m + 1)) (m + 1)) atTop
       (𝓝 (∫ x in a..b, f x)) :=
@@ -166,13 +208,20 @@ theorem property_9_1_midpoint (hab : a ≤ b) (hf : ContinuousOn f (Icc a b)) :
     (fun m => Nat.succ_pos m) (fun m => by push_cast; rfl)
     (by simpa [div_eq_mul_inv] using tendsto_one_div_add_atTop_nhds_zero_nat.const_mul (b - a))
 
-/-- **The modulus of continuity** of Property 9.1,
-`Ω(f; H) = sup {|f(x) - f(y)| : x, y ∈ [a, b], x ≠ y, |x - y| ≤ H}`. -/
+/-- **Property 9.1** of [quarteroni2000numerical], the modulus of continuity. For
+$f : \mathbb{R} \to \mathbb{R}$, an interval $[a, b]$ and $H \in \mathbb{R}$, the **modulus of
+continuity** is
+$$\Omega(f; H) = \sup \{|f(x) - f(y)| : x, y \in [a, b],\ x \neq y,\ |x - y| \le H\}.$$
+
+The supremum is `sSup` on $\mathbb{R}$, which is $0$ for the empty set and for a set that is not
+bounded above. -/
 noncomputable def modulusOfContinuity (f : ℝ → ℝ) (a b H : ℝ) : ℝ :=
   sSup {r | ∃ x ∈ Icc a b, ∃ y ∈ Icc a b, x ≠ y ∧ |x - y| ≤ H ∧ r = |f x - f y|}
 
-/-- The modulus of continuity of a continuous function on `[a, b]` bounds every change of value
-over a distance at most `H` (including `x = y`, since `Ω(f; H) ≥ 0`). -/
+/-- Let $f \in C^0([a, b])$, let $x, y \in [a, b]$, and let $|x - y| \le H$. Then
+$|f(x) - f(y)| \le \Omega(f; H)$.
+
+The case $x = y$ is included, because $\Omega(f; H) \ge 0$. -/
 theorem abs_sub_le_modulusOfContinuity (hf : ContinuousOn f (Icc a b)) {H : ℝ} {x y : ℝ}
     (hx : x ∈ Icc a b) (hy : y ∈ Icc a b) (hxy : |x - y| ≤ H) :
     |f x - f y| ≤ modulusOfContinuity f a b H := by
@@ -192,14 +241,17 @@ theorem abs_sub_le_modulusOfContinuity (hf : ContinuousOn f (Icc a b)) {H : ℝ}
     exact Real.sSup_nonneg (by rintro r ⟨u, -, v, -, -, -, rfl⟩; exact abs_nonneg _)
   · exact le_csSup hbdd ⟨x, hx, y, hy, hne, hxy, rfl⟩
 
-/-- The modulus of continuity is nonnegative. -/
+/-- The modulus of continuity is nonnegative: $\Omega(f; H) \ge 0$ for all $f$, $a$, $b$ and $H$. -/
 theorem modulusOfContinuity_nonneg (f : ℝ → ℝ) (a b H : ℝ) : 0 ≤ modulusOfContinuity f a b H :=
   Real.sSup_nonneg (by rintro r ⟨u, -, v, -, -, -, rfl⟩; exact abs_nonneg _)
 
-/-- **Property 9.1, second clause.** Under the same hypotheses,
-`|∫_a^b f - I_{n,m}(f)| ≤ 2(b - a) Ω(f; H)`, `H = (b - a)/m`, where `Ω(f; H)` is the modulus of
-continuity of `f`. The backbone (`Quadrature.abs_sub_compositeNewtonCotes_le`) proves the bound
-with the constant `1`; the book's `2` follows since `Ω(f; H) ≥ 0`. -/
+/-- **Property 9.1** of [quarteroni2000numerical], the error bound. Let $n \ge 1$, assume that the
+closed Newton–Cotes weights satisfy $w_k \ge 0$ for all $k$, let $a \le b$, let
+$f \in C^0([a, b])$, let $m \ge 1$, and let $H = (b - a)/m$. Then
+$$\Bigl|\int_a^b f(x)\,dx - I_{n,m}(f)\Bigr| \le 2(b - a)\,\Omega(f; H).$$
+
+The backbone's `Quadrature.abs_sub_compositeNewtonCotes_le` proves the bound with the constant
+$1$ in place of $2$. The bound of the book follows, because $\Omega(f; H) \ge 0$. -/
 theorem property_9_1_bound (hn : 1 ≤ n) (hw : ∀ k, 0 ≤ Quadrature.newtonCotesWeight n k)
     (hab : a ≤ b) (hf : ContinuousOn f (Icc a b)) {m : ℕ} (hm : 1 ≤ m) :
     |(∫ x in a..b, f x) - Quadrature.compositeNewtonCotes n f a b m|

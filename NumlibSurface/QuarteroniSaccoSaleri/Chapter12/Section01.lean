@@ -9,64 +9,76 @@ import Mathlib.MeasureTheory.Integral.IntervalIntegral.FundThmCalculus
 import Numlib.Analysis.Calculus.ContDiffOnIcc
 
 /-!
-# Quarteroni–Sacco–Saleri §12.1: a model problem
+# Quarteroni, Sacco and Saleri, Section 12.1: A Model Problem
 
-Surface file for Alfio Quarteroni, Riccardo Sacco and Fausto Saleri, *Numerical Mathematics*,
-Springer, 2000, §12.1.
+This module formalizes Section 12.1 of [quarteroni2000numerical], on the two-point boundary value
+problem
+$$-u''(x) = f(x), \quad 0 < x < 1, \qquad u(0) = u(1) = 0 \qquad (12.1)\text{–}(12.2).$$
+For $u \in C^2([0, 1])$ the problem has the representation $u(x) = \int_0^1 G(x, s) f(s)\, ds$
+(12.3) with the Green's function $G(x, s) = s(1 - x)$ for $s \le x$ and $G(x, s) = x(1 - s)$ for
+$x \le s$ (12.4). The function $G$ is continuous, symmetric and nonnegative, it vanishes when $x$ or
+$s$ is $0$ or $1$, and $\int_0^1 G(x, s)\, ds = x(1 - x)/2$. Hence for every $f \in C^0([0, 1])$ the
+problem has a unique solution $u \in C^2([0, 1])$, given by (12.3). The solution is nonnegative when
+$f$ is (the monotonicity property), and it satisfies the maximum principle
+$\|u\|_\infty \le \|f\|_\infty / 8$ (12.5).
 
-The two-point boundary value problem `-u''(x) = f(x)` for `0 < x < 1` with `u(0) = u(1) = 0`,
-(12.1)–(12.2), is solved in closed form: for `u ∈ C²([0, 1])` the fundamental theorem of calculus
-and the boundary conditions give the representation `u(x) = ∫₀¹ G(x, s) f(s) ds` (12.3) with the
-*Green's function* `G(x, s) = s (1 - x)` for `s ≤ x` and `x (1 - s)` for `x ≤ s` (12.4), which is
-continuous, symmetric, nonnegative, vanishes when `x` or `s` is `0` or `1`, and has
-`∫₀¹ G(x, s) ds = x (1 - x) / 2`. Hence for every `f ∈ C⁰([0, 1])` the problem has a unique
-solution `u ∈ C²([0, 1])`, given by (12.3); it is nonnegative when `f` is (the *monotonicity
-property*), and it satisfies the *maximum principle* `‖u‖_∞ ≤ ‖f‖_∞ / 8` (12.5).
-
-The section is classical calculus on `[0, 1]` and rests on Mathlib alone — interval integrals and
-the fundamental theorem of calculus — with no backbone module behind it; the Green's function
-reappears in §12.2 as `h⁻¹` times the inverse of the finite difference matrix.
+The section is classical calculus on $[0, 1]$. It uses the interval integrals and the fundamental
+theorem of calculus of Mathlib, and no backbone module of numerical analysis. The Green's function
+appears again in Section 12.2, where $h^{-1}$ times the inverse of the finite difference matrix is
+$G$ at the nodes.
 
 ## Main definitions
 
-* `greenFunction x s` — the Green's function `G(x, s)` of (12.4).
-* `IsSolution f u` — `u ∈ C²([0, 1])` solves (12.1)–(12.2) with datum `f`.
+* Equation (12.4), `QuarteroniSaccoSaleri.Chapter12.greenFunction`: the Green's function $G(x, s)$.
+* Equations (12.1)–(12.2), `QuarteroniSaccoSaleri.Chapter12.IsSolution`: $u \in C^2([0, 1])$ solves
+  the boundary value problem with datum $f$.
 
 ## Main results
 
-* `greenFunction_symm`, `greenFunction_nonneg`, `greenFunction_zero_left`, …,
-  `continuous_greenFunction`, `integral_greenFunction` — the properties of `G` listed after (12.4).
-* `equation_12_3_solution` — the function `x ↦ ∫₀¹ G(x, s) f(s) ds` is a `C²` solution of
-  (12.1)–(12.2) for every `f ∈ C⁰([0, 1])`.
-* `equation_12_3` — every `C²` solution is given by (12.3); `IsSolution.eqOn` is the uniqueness
-  behind it and `equation_12_3_existsUnique` the book's conclusion, existence and uniqueness.
-* `IsSolution.contDiffOn_of_contDiffOn` — the regularity `f ∈ C^m` implies `u ∈ C^{m+2}`.
-* `equation_12_3_monotone` — the monotonicity property: `f ≥ 0` implies `u ≥ 0`.
-* `equation_12_5` — the maximum principle `‖u‖_∞ ≤ ‖f‖_∞ / 8`, and `equation_12_5_of_forall_le`
-  the same with any bound `M` on `|f|` in place of `‖f‖_∞`.
+* Section 12.1, `QuarteroniSaccoSaleri.Chapter12.greenFunction_symm`,
+  `QuarteroniSaccoSaleri.Chapter12.greenFunction_nonneg`,
+  `QuarteroniSaccoSaleri.Chapter12.greenFunction_zero_left`,
+  `QuarteroniSaccoSaleri.Chapter12.greenFunction_one_left`,
+  `QuarteroniSaccoSaleri.Chapter12.continuous_greenFunction` and
+  `QuarteroniSaccoSaleri.Chapter12.integral_greenFunction`: the properties of $G$ listed after
+  (12.4).
+* Equation (12.3), `QuarteroniSaccoSaleri.Chapter12.equation_12_3_solution`:
+  $x \mapsto \int_0^1 G(x, s) f(s)\, ds$ is a $C^2$ solution for every $f \in C^0([0, 1])$.
+* Section 12.1, `QuarteroniSaccoSaleri.Chapter12.IsSolution.eqOn`: two $C^2$ solutions with the same
+  datum agree on $[0, 1]$.
+* Equation (12.3), `QuarteroniSaccoSaleri.Chapter12.equation_12_3`: every $C^2$ solution is given by
+  (12.3).
+* Section 12.1, `QuarteroniSaccoSaleri.Chapter12.equation_12_3_existsUnique`: existence and
+  uniqueness of the solution.
+* Section 12.1, `QuarteroniSaccoSaleri.Chapter12.IsSolution.contDiffOn_of_contDiffOn`:
+  $f \in C^m([0, 1])$ implies $u \in C^{m+2}([0, 1])$.
+* Section 12.1, `QuarteroniSaccoSaleri.Chapter12.equation_12_3_monotone`: the monotonicity property,
+  $f \ge 0$ implies $u \ge 0$.
+* Equation (12.5), `QuarteroniSaccoSaleri.Chapter12.equation_12_5_of_forall_le` and
+  `QuarteroniSaccoSaleri.Chapter12.equation_12_5`: the maximum principle
+  $\|u\|_\infty \le \|f\|_\infty / 8$.
 
-## Proof route
+## Proof outline
 
-The book derives (12.3) by integrating (12.1) twice and fixing the two constants by (12.2). The
-route here is the reverse: `equation_12_3_solution` differentiates `v(x) = ∫₀¹ G(x, s) f(s) ds`
-twice by splitting the integral at the kink `s = x`, `v(x) = (1 - x) ∫₀ˣ s f + x ∫ₓ¹ (1 - s) f`, and
-using the fundamental theorem of calculus in each endpoint (`integral_hasDerivWithinAt_right`,
-`integral_hasDerivWithinAt_left`); then `IsSolution.eqOn` says two `C²` solutions agree, since
-their difference has vanishing second derivative and vanishes at both ends, and (12.3) is the
-combination of the two. The general calculus lemmas the argument needs and Mathlib does not state
-— that within-derivative data on `[a, b]` gives `ContDiffOn ℝ 2`, the interior second derivative of
-such a function, the interior derivatives of a `C²` function on `[a, b]`, and that a function with
-zero second derivative vanishing at both ends vanishes — are in
-`Numlib/Analysis/Calculus/ContDiffOnIcc`.
+The source derives (12.3) by integrating (12.1) twice and fixing the two constants by (12.2). The
+proof here goes the other way. It differentiates $v(x) = \int_0^1 G(x, s) f(s)\, ds$ twice, after
+splitting the integral at the kink $s = x$ of $G$: $v(x) = (1 - x) \int_0^x s f(s)\, ds + x \int_x^1
+(1 - s) f(s)\, ds$. Two $C^2$ solutions agree, because their difference has zero second derivative
+and vanishes at both ends. Formula (12.3) combines the two facts. The general calculus lemmas that
+the argument needs and Mathlib does not state are in `Numlib.Analysis.Calculus.ContDiffOnIcc`.
 
 ## Conventions
 
-`u ∈ C²([0, 1])` is `ContDiffOn ℝ 2 u (Icc 0 1)` for `u : ℝ → ℝ`, and `u''(x)` at an interior
-point is `iteratedDeriv 2 u x`; `f ∈ C⁰([0, 1])` is `ContinuousOn f (Icc 0 1)`. The book writes
-`f ∈ C⁰(0, 1)` in the maximum principle; continuity on the closed interval is what (12.3) used and
-what makes `‖f‖_∞` finite, and it is assumed throughout. The maximum norm `‖g‖_∞ = max_{[0,1]} |g|`
-of a real function is written `sSup ((fun s => |g s|) '' Icc 0 1)`, and the bound `‖u‖_∞ ≤ C` as
-`∀ x ∈ Icc 0 1, |u x| ≤ C`.
+* $u \in C^2([0, 1])$ is `ContDiffOn ℝ 2 u (Icc 0 1)` for `u : ℝ → ℝ`, and $u''(x)$ at an interior
+  point is `iteratedDeriv 2 u x`.
+* A datum $f \in C^0([0, 1])$ is a function with `ContinuousOn f (Icc 0 1)`.
+* The maximum norm $\|g\|_\infty = \max_{[0, 1]} |g|$ is `sSup ((fun s => |g s|) '' Icc 0 1)`, and a
+  bound $\|u\|_\infty \le C$ is written `∀ x ∈ Icc 0 1, |u x| ≤ C`.
+
+## Deviations from the source
+
+* **Equation (12.5)** (reading). The source writes $f \in C^0(0, 1)$; continuity on the closed
+  interval $[0, 1]$ is assumed throughout. See `QuarteroniSaccoSaleri.Chapter12.equation_12_5`.
 -/
 
 open Set Filter Topology intervalIntegral
@@ -75,70 +87,83 @@ namespace QuarteroniSaccoSaleri.Chapter12
 
 /-! ### The Green's function (12.4) -/
 
-/-- **The Green's function (12.4)** of the boundary value problem (12.1)–(12.2):
-`G(x, s) = s (1 - x)` if `0 ≤ s ≤ x` and `G(x, s) = x (1 - s)` if `x ≤ s ≤ 1` (the two
-expressions agree at `s = x`). It is defined by the same two expressions on all of `ℝ × ℝ`. -/
+/-- **Equation (12.4)** of [quarteroni2000numerical]. The **Green's function** of the boundary value
+problem (12.1)–(12.2) is
+$$G(x, s) = \begin{cases} s(1 - x), & 0 \le s \le x, \\ x(1 - s), & x \le s \le 1. \end{cases}$$
+
+The two expressions agree at $s = x$. The definition uses the same two expressions on all of
+$\mathbb{R} \times \mathbb{R}$: the first for $s \le x$, the second for $s > x$. -/
 noncomputable def greenFunction (x s : ℝ) : ℝ := if s ≤ x then s * (1 - x) else x * (1 - s)
 
 variable {x s : ℝ}
 
-/-- The first branch of (12.4): `G(x, s) = s (1 - x)` for `s ≤ x`. -/
+/-- The first branch of the Green's function (12.4): $G(x, s) = s(1 - x)$ for $s \le x$. -/
 theorem greenFunction_of_le (h : s ≤ x) : greenFunction x s = s * (1 - x) := by
   simp [greenFunction, h]
 
-/-- The second branch of (12.4): `G(x, s) = x (1 - s)` for `x ≤ s`. -/
+/-- The second branch of the Green's function (12.4): $G(x, s) = x(1 - s)$ for $x \le s$. -/
 theorem greenFunction_of_ge (h : x ≤ s) : greenFunction x s = x * (1 - s) := by
   unfold greenFunction
   split_ifs with h'
   · rw [le_antisymm h' h]
   · rfl
 
-/-- The Green's function in one formula, `G(x, s) = min (x, s) (1 - max (x, s))`. -/
+/-- The Green's function (12.4) in one formula: $G(x, s) = \min(x, s) \, (1 - \max(x, s))$ for all
+$x, s \in \mathbb{R}$. -/
 theorem greenFunction_eq_min_mul (x s : ℝ) : greenFunction x s = min x s * (1 - max x s) := by
   rcases le_total s x with h | h
   · rw [greenFunction_of_le h, min_eq_right h, max_eq_left h]
   · rw [greenFunction_of_ge h, min_eq_left h, max_eq_right h]
 
-/-- `G` is symmetric: `G(x, s) = G(s, x)` (for all `x, s`, in particular in `[0, 1]`). -/
+/-- **Section 12.1** of [quarteroni2000numerical], symmetry of the Green's function. For all
+$x, s \in \mathbb{R}$, $G(x, s) = G(s, x)$. -/
 theorem greenFunction_symm (x s : ℝ) : greenFunction x s = greenFunction s x := by
   rw [greenFunction_eq_min_mul, greenFunction_eq_min_mul, min_comm, max_comm]
 
-/-- `G` is nonnegative on `[0, 1] × [0, 1]`. -/
+/-- **Section 12.1** of [quarteroni2000numerical], nonnegativity of the Green's function. For
+$x, s \in [0, 1]$, $G(x, s) \ge 0$. -/
 theorem greenFunction_nonneg (hx : x ∈ Icc 0 1) (hs : s ∈ Icc 0 1) : 0 ≤ greenFunction x s := by
   rw [greenFunction_eq_min_mul]
   exact mul_nonneg (le_min hx.1 hs.1) (sub_nonneg.2 (max_le hx.2 hs.2))
 
-/-- `G(0, s) = 0` for `s ≥ 0`. -/
+/-- **Section 12.1** of [quarteroni2000numerical], the Green's function at $x = 0$. For $s \ge 0$,
+$G(0, s) = 0$. -/
 theorem greenFunction_zero_left (hs : 0 ≤ s) : greenFunction 0 s = 0 := by
   rw [greenFunction_of_ge hs, zero_mul]
 
-/-- `G(1, s) = 0` for `s ≤ 1`. -/
+/-- **Section 12.1** of [quarteroni2000numerical], the Green's function at $x = 1$. For $s \le 1$,
+$G(1, s) = 0$. -/
 theorem greenFunction_one_left (hs : s ≤ 1) : greenFunction 1 s = 0 := by
   rw [greenFunction_of_le hs, sub_self, mul_zero]
 
-/-- `G(x, 0) = 0` for `x ≥ 0`. -/
+/-- The Green's function (12.4) at $s = 0$: for $x \ge 0$, $G(x, 0) = 0$. -/
 theorem greenFunction_zero_right (hx : 0 ≤ x) : greenFunction x 0 = 0 := by
   rw [greenFunction_symm, greenFunction_zero_left hx]
 
-/-- `G(x, 1) = 0` for `x ≤ 1`. -/
+/-- The Green's function (12.4) at $s = 1$: for $x \le 1$, $G(x, 1) = 0$. -/
 theorem greenFunction_one_right (hx : x ≤ 1) : greenFunction x 1 = 0 := by
   rw [greenFunction_symm, greenFunction_one_left hx]
 
-/-- `G` is continuous on `ℝ × ℝ`: its two branches agree along the diagonal `s = x`. -/
+/-- **Section 12.1** of [quarteroni2000numerical], continuity of the Green's function. The function
+$(x, s) \mapsto G(x, s)$ is continuous on $\mathbb{R} \times \mathbb{R}$, because its two
+branches agree on the diagonal $s = x$. -/
 theorem continuous_greenFunction : Continuous fun p : ℝ × ℝ => greenFunction p.1 p.2 := by
   unfold greenFunction
   exact Continuous.if_le (by fun_prop) (by fun_prop) continuous_snd continuous_fst
     fun p hp => by rw [hp]
 
-/-- For fixed `x`, `s ↦ G(x, s)` is continuous (and piecewise linear). -/
+/-- For fixed $x$, the Green's function $s \mapsto G(x, s)$ of (12.4) is continuous. -/
 theorem continuous_greenFunction_right (x : ℝ) : Continuous (greenFunction x) :=
   continuous_greenFunction.comp (continuous_const.prodMk continuous_id)
 
-/-- For fixed `s`, `x ↦ G(x, s)` is continuous (and piecewise linear). -/
+/-- For fixed $s$, the Green's function $x \mapsto G(x, s)$ of (12.4) is continuous. -/
 theorem continuous_greenFunction_left (s : ℝ) : Continuous fun x => greenFunction x s :=
   continuous_greenFunction.comp (continuous_id.prodMk continuous_const)
 
-/-- `∫₀¹ G(x, s) ds = x (1 - x) / 2` for `x ∈ [0, 1]`. -/
+/-- **Section 12.1** of [quarteroni2000numerical], the integral of the Green's function. For
+$x \in [0, 1]$,
+$$\int_0^1 G(x, s)\, ds = \frac{x(1 - x)}{2}.$$
+-/
 theorem integral_greenFunction (hx : x ∈ Icc 0 1) :
     ∫ s in (0 : ℝ)..1, greenFunction x s = x * (1 - x) / 2 := by
   have hc : Continuous (greenFunction x) := continuous_greenFunction_right x
@@ -158,24 +183,29 @@ theorem integral_greenFunction (hx : x ∈ Icc 0 1) :
 
 /-! ### The boundary value problem (12.1)–(12.2) -/
 
-/-- **The boundary value problem (12.1)–(12.2).** `u ∈ C²([0, 1])` is a solution with datum `f`
-when `-u''(x) = f(x)` for `0 < x < 1` (12.1) and `u(0) = u(1) = 0` (12.2). -/
+/-- **Equations (12.1)–(12.2)** of [quarteroni2000numerical]. A function $u \in C^2([0, 1])$ is a
+**solution of the boundary value problem** with datum $f$ if
+$$-u''(x) = f(x) \quad \text{for } 0 < x < 1 \quad (12.1), \qquad u(0) = u(1) = 0 \quad
+  (12.2).$$
+-/
 structure IsSolution (f u : ℝ → ℝ) : Prop where
-  /-- `u ∈ C²([0, 1])`. -/
+  /-- The solution is $C^2$ on $[0, 1]$. -/
   contDiffOn : ContDiffOn ℝ 2 u (Icc 0 1)
-  /-- (12.1): `-u''(x) = f(x)` for `0 < x < 1`. -/
+  /-- Equation (12.1): $-u''(x) = f(x)$ for $0 < x < 1$. -/
   equation_12_1 : ∀ x ∈ Ioo 0 1, -iteratedDeriv 2 u x = f x
-  /-- (12.2), left end: `u(0) = 0`. -/
+  /-- The left boundary condition of (12.2): $u(0) = 0$. -/
   equation_12_2_left : u 0 = 0
-  /-- (12.2), right end: `u(1) = 0`. -/
+  /-- The right boundary condition of (12.2): $u(1) = 0$. -/
   equation_12_2_right : u 1 = 0
 
 /-! ### The representation formula (12.3) -/
 
 variable {f u : ℝ → ℝ}
 
-/-- The integral of (12.3) split at the kink `s = x` of the Green's function: for `x ∈ [0, 1]`,
-`∫₀¹ G(x, s) f(s) ds = (1 - x) ∫₀ˣ s f(s) ds + x ∫ₓ¹ (1 - s) f(s) ds`. -/
+/-- The integral of (12.3), split at the kink $s = x$ of the Green's function. Let
+$f \in C^0([0, 1])$ and $x \in [0, 1]$. Then
+$$\int_0^1 G(x, s) f(s)\, ds = (1 - x) \int_0^x s f(s)\, ds + x \int_x^1 (1 - s) f(s)\, ds.$$
+-/
 theorem integral_greenFunction_mul_eq (hf : ContinuousOn f (Icc 0 1)) (hx : x ∈ Icc 0 1) :
     ∫ s in (0 : ℝ)..1, greenFunction x s * f s
       = (1 - x) * (∫ s in (0 : ℝ)..x, s * f s) + x * ∫ s in x..1, (1 - s) * f s := by
@@ -196,13 +226,15 @@ theorem integral_greenFunction_mul_eq (hf : ContinuousOn f (Icc 0 1)) (hx : x �
     rw [greenFunction_of_ge hs.1]
     ring
 
-/-- **(12.3), the existence half.** For every `f ∈ C⁰([0, 1])`, the function
-`u(x) = ∫₀¹ G(x, s) f(s) ds` is a solution of (12.1)–(12.2) in `C²([0, 1])`.
+/-- **Equation (12.3)** of [quarteroni2000numerical], existence. For every $f \in C^0([0, 1])$, the
+function
+$$u(x) = \int_0^1 G(x, s) f(s)\, ds$$
+is a solution in $C^2([0, 1])$ of the boundary value problem (12.1)–(12.2).
 
-Splitting the integral at `s = x` (`integral_greenFunction_mul_eq`) and differentiating each piece
-by the fundamental theorem of calculus gives `u'(x) = ∫ₓ¹ (1 - s) f(s) ds - ∫₀ˣ s f(s) ds` and then
-`u''(x) = -(1 - x) f(x) - x f(x) = -f(x)`, at every point of `[0, 1]` as a derivative within the
-interval. -/
+After the split at $s = x$ (`QuarteroniSaccoSaleri.Chapter12.integral_greenFunction_mul_eq`),
+the fundamental theorem of calculus gives $u'(x) = \int_x^1 (1 - s) f(s)\, ds - \int_0^x s
+f(s)\, ds$ and then $u''(x) = -(1 - x) f(x) - x f(x) = -f(x)$, at every point of $[0, 1]$ as a
+derivative within the interval. -/
 theorem equation_12_3_solution (hf : ContinuousOn f (Icc 0 1)) :
     IsSolution f fun x => ∫ s in (0 : ℝ)..1, greenFunction x s * f s := by
   -- the two primitives and their derivatives within `[0, 1]`
@@ -251,8 +283,10 @@ theorem equation_12_3_solution (hf : ContinuousOn f (Icc 0 1)) :
     rw [uIcc_of_le zero_le_one] at hs
     rw [greenFunction_one_left hs.2, zero_mul]
 
-/-- **Uniqueness for (12.1)–(12.2).** Two `C²` solutions with the same datum agree on `[0, 1]`:
-their difference has vanishing second derivative in `(0, 1)` and vanishes at both ends. -/
+/-- **Section 12.1** of [quarteroni2000numerical], uniqueness for (12.1)–(12.2). Let $u$ and $v$ be
+solutions of the boundary value problem with the same datum $f$. Then $u = v$ on $[0, 1]$.
+
+The difference $u - v$ has zero second derivative in $(0, 1)$ and vanishes at both ends. -/
 theorem IsSolution.eqOn {v : ℝ → ℝ} (hu : IsSolution f u) (hv : IsSolution f v) :
     EqOn u v (Icc 0 1) := by
   have hcu := hu.contDiffOn.continuousOn_derivWithin (uniqueDiffOn_Icc zero_lt_one) one_le_two
@@ -271,32 +305,37 @@ theorem IsSolution.eqOn {v : ℝ → ℝ} (hu : IsSolution f u) (hv : IsSolution
   intro y hy
   exact sub_eq_zero.1 (key hy)
 
-/-- **(12.3).** If `u ∈ C²([0, 1])` satisfies the differential equation (12.1) and the boundary
-conditions (12.2), with `f ∈ C⁰([0, 1])`, then
+/-- **Equation (12.3)** of [quarteroni2000numerical]. Let $f \in C^0([0, 1])$, and let $u$ be a
+solution of the boundary value problem (12.1)–(12.2) with datum $f$. Then for every
+$x \in [0, 1]$
+$$u(x) = \int_0^1 G(x, s) f(s)\, ds,$$
+with the Green's function $G$ of (12.4).
 
-`u(x) = ∫₀¹ G(x, s) f(s) ds`, `x ∈ [0, 1]`,
-
-with the Green's function `G` of (12.4). The book integrates (12.1) twice and fixes the constants
-by (12.2); here the right-hand side is a solution (`equation_12_3_solution`) and solutions are
-unique (`IsSolution.eqOn`). -/
+The source integrates (12.1) twice and fixes the constants by (12.2). Here the right-hand side
+is a solution (`QuarteroniSaccoSaleri.Chapter12.equation_12_3_solution`), and solutions are
+unique (`QuarteroniSaccoSaleri.Chapter12.IsSolution.eqOn`). -/
 theorem equation_12_3 (hf : ContinuousOn f (Icc 0 1)) (hu : IsSolution f u) (hx : x ∈ Icc 0 1) :
     u x = ∫ s in (0 : ℝ)..1, greenFunction x s * f s :=
   hu.eqOn (equation_12_3_solution hf) hx
 
-/-- **§12.1, the conclusion drawn from (12.3):** for every `f ∈ C⁰([0, 1])` there is a unique
-solution `u ∈ C²([0, 1])` of the boundary value problem (12.1)–(12.2), and it admits the
-representation (12.3). Uniqueness is on `[0, 1]`, the only place where a solution is
-constrained. -/
+/-- **Section 12.1** of [quarteroni2000numerical], existence and uniqueness. For every
+$f \in C^0([0, 1])$ there is a solution $u \in C^2([0, 1])$ of the boundary value problem
+(12.1)–(12.2) with datum $f$, it is given by the representation (12.3) on $[0, 1]$, and every
+solution agrees with it on $[0, 1]$.
+
+Uniqueness holds on $[0, 1]$, the only place where a solution is constrained. -/
 theorem equation_12_3_existsUnique (hf : ContinuousOn f (Icc 0 1)) :
     ∃ u : ℝ → ℝ, IsSolution f u ∧
       (∀ x ∈ Icc 0 1, u x = ∫ s in (0 : ℝ)..1, greenFunction x s * f s) ∧
       ∀ v, IsSolution f v → EqOn v u (Icc 0 1) :=
   ⟨_, equation_12_3_solution hf, fun _ _ => rfl, fun _ hv => hv.eqOn (equation_12_3_solution hf)⟩
 
-/-- **§12.1, regularity.** Further smoothness of `u` can be derived by (12.1): if
-`f ∈ C^m([0, 1])` for some `m ≥ 0` then the solution `u` of (12.1)–(12.2) is in `C^{m+2}([0, 1])`.
-The second derivative of `u` within `[0, 1]` agrees with `-f` in the interior by (12.1), hence on
-the closed interval by continuity, and `u ∈ C^{m+2}` is `u'' ∈ C^m`. -/
+/-- **Section 12.1** of [quarteroni2000numerical], regularity. Let $m \in \mathbb{N}$, let $u$ be a
+solution of the boundary value problem (12.1)–(12.2) with datum $f$, and let
+$f \in C^m([0, 1])$. Then $u \in C^{m+2}([0, 1])$.
+
+The second derivative of $u$ within $[0, 1]$ agrees with $-f$ in the interior by (12.1), hence
+on the closed interval by continuity, and $u \in C^{m+2}$ means $u'' \in C^m$. -/
 theorem IsSolution.contDiffOn_of_contDiffOn {m : ℕ} (hu : IsSolution f u)
     (hf : ContDiffOn ℝ m f (Icc 0 1)) : ContDiffOn ℝ (m + 2) u (Icc 0 1) := by
   have hs : UniqueDiffOn ℝ (Icc (0 : ℝ) 1) := uniqueDiffOn_Icc zero_lt_one
@@ -320,18 +359,24 @@ theorem IsSolution.contDiffOn_of_contDiffOn {m : ℕ} (hu : IsSolution f u)
 
 /-! ### The monotonicity property and the maximum principle (12.5) -/
 
-/-- **The monotonicity property (§12.1, after (12.4)).** If `f ∈ C⁰([0, 1])` is nonnegative, then
-the solution `u` of (12.1)–(12.2) is nonnegative on `[0, 1]`: by (12.3), since `G(x, s) ≥ 0` for
-all `x, s ∈ [0, 1]`. -/
+/-- **Section 12.1** of [quarteroni2000numerical], the monotonicity property. Let
+$f \in C^0([0, 1])$ with $f(s) \ge 0$ for $s \in [0, 1]$, and let $u$ be the solution of the
+boundary value problem (12.1)–(12.2) with datum $f$. Then $u(x) \ge 0$ for every $x \in [0, 1]$.
+
+The proof uses (12.3) and $G(x, s) \ge 0$ for $x, s \in [0, 1]$. -/
 theorem equation_12_3_monotone (hf : ContinuousOn f (Icc 0 1)) (hf0 : ∀ s ∈ Icc 0 1, 0 ≤ f s)
     (hu : IsSolution f u) : ∀ x ∈ Icc 0 1, 0 ≤ u x := by
   intro x hx
   rw [equation_12_3 hf hu hx]
   exact integral_nonneg zero_le_one fun s hs => mul_nonneg (greenFunction_nonneg hx hs) (hf0 s hs)
 
-/-- **The maximum principle (12.5), with an explicit bound.** For `f ∈ C⁰([0, 1])` with
-`|f| ≤ M` on `[0, 1]` and `u` the solution of (12.1)–(12.2), `|u(x)| ≤ M / 8` on `[0, 1]`:
-since `G` is nonnegative, `|u(x)| ≤ ∫₀¹ G(x, s) |f(s)| ds ≤ M ∫₀¹ G(x, s) ds = M x (1 - x) / 2`. -/
+/-- **Equation (12.5)** of [quarteroni2000numerical], with an explicit bound. Let
+$f \in C^0([0, 1])$ with $|f(s)| \le M$ for $s \in [0, 1]$, and let $u$ be the solution of the
+boundary value problem (12.1)–(12.2) with datum $f$. Then $|u(x)| \le M / 8$ for every
+$x \in [0, 1]$.
+
+Because $G \ge 0$, $|u(x)| \le \int_0^1 G(x, s) |f(s)|\, ds \le M \int_0^1 G(x, s)\, ds = M
+x(1 - x)/2 \le M/8$. -/
 theorem equation_12_5_of_forall_le (hf : ContinuousOn f (Icc 0 1)) (hu : IsSolution f u) {M : ℝ}
     (hM : ∀ s ∈ Icc 0 1, |f s| ≤ M) : ∀ x ∈ Icc 0 1, |u x| ≤ M / 8 := by
   intro x hx
@@ -350,14 +395,14 @@ theorem equation_12_5_of_forall_le (hf : ContinuousOn f (Icc 0 1)) (hu : IsSolut
     _ = x * (1 - x) / 2 * M := by rw [integral_mul_const, integral_greenFunction hx]
     _ ≤ M / 8 := by nlinarith [sq_nonneg (2 * x - 1), hM0]
 
-/-- **The maximum principle (12.5).** For `f ∈ C⁰([0, 1])` and `u` the solution of
-(12.1)–(12.2),
+/-- **Equation (12.5)** of [quarteroni2000numerical] (maximum principle). Let $f \in C^0([0, 1])$,
+and let $u$ be the solution of the boundary value problem (12.1)–(12.2) with datum $f$. Then
+$$\|u\|_\infty \le \frac{1}{8} \|f\|_\infty, \qquad \|g\|_\infty = \max_{0 \le x \le 1}
+  |g(x)|.$$
+That is, $|u(x)| \le \frac{1}{8} \max_{[0, 1]} |f|$ for every $x \in [0, 1]$.
 
-`‖u‖_∞ ≤ (1/8) ‖f‖_∞`,
-
-where `‖g‖_∞ = max_{0 ≤ x ≤ 1} |g(x)|` is the maximum norm: every `|u(x)|`, `x ∈ [0, 1]`, is at
-most `(1/8) max_{[0,1]} |f|`. The book writes `f ∈ C⁰(0, 1)` here; continuity on the closed
-interval is what (12.3) used and what makes `‖f‖_∞` finite. -/
+**Reading.** The source writes $f \in C^0(0, 1)$. The statement assumes continuity on the closed
+interval $[0, 1]$, which is what (12.3) uses and what makes $\|f\|_\infty$ finite. -/
 theorem equation_12_5 (hf : ContinuousOn f (Icc 0 1)) (hu : IsSolution f u) :
     ∀ x ∈ Icc 0 1, |u x| ≤ (1 / 8) * sSup ((fun s => |f s|) '' Icc 0 1) := by
   have hbdd : BddAbove ((fun s => |f s|) '' Icc 0 1) :=

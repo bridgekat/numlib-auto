@@ -6,47 +6,60 @@ import Numlib.LinearAlgebra.Matrix.LU.Pivoting
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter03.Section04
 
 /-!
-# Quarteroni–Sacco–Saleri §3.5: pivoting
+# Quarteroni, Sacco and Saleri, Section 3.5: Pivoting
 
-Surface file for Alfio Quarteroni, Riccardo Sacco and Fausto Saleri, *Numerical Mathematics*
-[quarteroni2000numerical], §3.5, over the backbone `Numlib/LinearAlgebra/Matrix/LU/Pivoting`
-(the pivoted stages `Matrix.gemPivotStage`, the partial-pivoting strategy
-`Matrix.partialPivotRow`, the factorizations `P A = L U` and `P A Q = L U`) and
-`Numlib/LinearAlgebra/Matrix/LU/Elimination`.
+This module formalizes Section 3.5 of [quarteroni2000numerical]. Gaussian elimination stops at a
+zero pivot even for a nonsingular matrix, as (3.33) shows. Pivoting cures this: at stage $k$ a row
+$r \ge k$ is exchanged with row $k$ by an elementary permutation matrix $P_k$, and the Gaussian
+transformation $M_k$ of the exchanged matrix then eliminates column $k$. The result is
+$U = M_{n-1} P_{n-1} \cdots M_0 P_0 A$ (3.51). With partial pivoting, which chooses a row of largest
+modulus in the current column, this gives $PA = LU$ with $|l_{ij}| \le 1$ for every nonsingular $A$
+(3.52). Complete pivoting also exchanges columns and gives $PAQ = LU$.
+
+The proofs specialize the backbone modules `Numlib.LinearAlgebra.Matrix.LU.Pivoting` (the pivoted
+stages `Matrix.gemPivotStage`, the partial pivoting strategy `Matrix.partialPivotRow`, the
+factorizations $PA = LU$ and $PAQ = LU$) and `Numlib.LinearAlgebra.Matrix.LU.Elimination`.
+
+## Main results
+
+* Example 3.5, `QuarteroniSaccoSaleri.Chapter03.example_3_5`: one row exchange cures the zero pivot
+  of (3.33), with (3.50).
+* (3.51), `QuarteroniSaccoSaleri.Chapter03.equation_3_51`: $U = M_{n-1} P_{n-1} \cdots M_0 P_0 A$,
+  stage by stage and as a product.
+* (3.52), `QuarteroniSaccoSaleri.Chapter03.equation_3_52`: partial pivoting gives $PA = LU$ with
+  $|l_{ij}| \le 1$ and $L = PM^{-1}$, and every square matrix has such a factorization.
+* Section 3.5, `QuarteroniSaccoSaleri.Chapter03.completePivoting`: complete pivoting gives
+  $PAQ = LU$ with $|l_{ij}| \le 1$ and $|u_{ij}| \le |u_{ii}|$.
+* Section 3.5, `QuarteroniSaccoSaleri.Chapter03.pivoting_multipliers`: the entries of $L$ are the
+  multipliers of GEM without pivoting on $PA$.
 
 ## Conventions
 
-Gaussian elimination with a pivoting strategy `piv` is the backbone recurrence
-`Matrix.gemPivotStage A piv k`, the pair of the matrix `A^{(k+1)}` after `k` stages and the row
-permutation `σ_k` accumulated so far (`0`-based stages, as in §3.3); at stage `k` the row
-`r = piv A^{(k)} k ≥ k` is exchanged with row `k` by the elementary permutation matrix
-`P_k = (swap k r).permMatrix ℝ`, then the Gaussian transformation `M_k` of the exchanged matrix
-eliminates the column. Partial pivoting by rows is the strategy `Matrix.partialPivotRow`, the
-first row of maximal modulus in the current column, and `P = P_{n-1} ⋯ P_1` is the permutation
-matrix `(gemPivotStage A piv n).2.permMatrix ℝ` of the accumulated interchanges. A permutation
-matrix is `σ.permMatrix ℝ` for a permutation `σ` of the indices; `σ.permMatrix ℝ * A` permutes
-the rows of `A`, `A * τ.permMatrix ℝ` its columns.
+* Gaussian elimination with a pivoting strategy `piv` is `Matrix.gemPivotStage A piv k`, the pair of
+  the matrix $A^{(k)}$ after $k$ stages and the row permutation accumulated so far. Stages are
+  $0$-based, as in `NumlibSurface.QuarteroniSaccoSaleri.Chapter03.Section03`, so $A^{(0)} = A$ and
+  $A^{(n)} = U$.
+* At stage $k$ the row $r \ge k$ that `piv` chooses for $A^{(k)}$ is exchanged with row $k$ by the
+  elementary permutation matrix $P_k$ = `(Equiv.swap k r).permMatrix ℝ` (the backbone's
+  `Matrix.gemPivotSwap`), and the Gaussian transformation $M_k$ of the exchanged matrix eliminates
+  column $k$.
+* Partial pivoting by rows is the strategy `Matrix.partialPivotRow`: the first row $r \ge k$ of
+  maximal modulus in column $k$. The permutation matrix $P = P_{n-1} \cdots P_0$ of the accumulated
+  interchanges is `(gemPivotStage A piv n).2.permMatrix ℝ`.
+* A permutation matrix is `σ.permMatrix ℝ` for a permutation `σ` of the indices. The product
+  `σ.permMatrix ℝ * A` permutes the rows of $A$, and `A * τ.permMatrix ℝ` permutes its columns.
 
-## Contents
+## Deviations from the source
 
-* `example_3_5` — the zero pivot of (3.33) cured by a row exchange, with (3.50).
-* `equation_3_51` — `U = M_{n-1} P_{n-1} ⋯ M_1 P_1 A`, stage by stage and as a product.
-* `equation_3_52` — `P A = L U` for partial pivoting, with `|l_ij| ≤ 1`, `L = P M⁻¹`, the solve
-  through `L y = P b`, `U x = y`, and the existence for every square matrix.
-* `completePivoting` — `P A Q = L U` with `|l_ij| ≤ 1` and rows of `U` dominated by the pivot.
-* `pivoting_multipliers` — the entries of `L` are the multipliers of GEM without pivoting on
-  `P A`.
+* **(3.52)** (generalization). The source proves the factorization for nonsingular $A$. The
+  existence of $PA = LU$ with $|l_{ij}| \le 1$ is also stated for every square matrix. See
+  `QuarteroniSaccoSaleri.Chapter03.equation_3_52`.
 
-Example 3.6 (a `16`-digit run), Remarks 3.3–3.4 (a numerical run and prose) and Program 9 are
-not nodes.
+## Not formalized
 
-## Readings
-
-(3.52) is proved in the book for nonsingular `A`, so that a nonzero pivot exists at every stage;
-the existence of `P A = L U` with `|l_ij| ≤ 1` holds for every square matrix (a zero pivot column
-is skipped, backbone `Matrix.exists_permMatrix_mul_isLU`), and the recurrence with partial
-pivoting produces it whenever its pivots are nonzero, which is automatic for nonsingular `A`
-(`Matrix.gemPivotStage_partialPivotRow_pivot_ne_zero_of_isUnit`).
+* **Example 3.6**, a run in $16$-digit arithmetic.
+* **Remarks 3.3–3.4**, a numerical run and prose.
+* **Program 9.**
 -/
 
 open Finset Matrix
@@ -57,11 +70,22 @@ variable {n : ℕ}
 
 /-! ### Example 3.5 -/
 
-/-- **Example 3.5, with (3.50).** For the matrix `A` of (3.33), the first Gaussian transformation
-is `M⁽¹⁾ = [1, 0, 0; -2, 1, 0; -7, 0, 1]`, and exchanging the second and third rows of the stage
-`A^{(2)} = M⁽¹⁾ A` of (3.33) by the permutation matrix `P = [1, 0, 0; 0, 0, 1; 0, 1, 0]` gives
-`[1, 2, 3; 0, -6, -12; 0, 0, -1] = U`, already upper triangular, so that `M⁽²⁾ = I`; thus
-`A = M₁⁻¹ P M₂⁻¹ U` and `P A = L U` with `L = [1, 0, 0; 7, 1, 0; 2, 0, 1]`. -/
+/-- **Example 3.5** of [quarteroni2000numerical], with equation (3.50). Let $A$ be the matrix of
+(3.33),
+$$A = \begin{bmatrix} 1 & 2 & 3 \\ 2 & 4 & 5 \\ 7 & 8 & 9 \end{bmatrix}.$$
+Its first Gaussian transformation is
+$$M_1 = \begin{bmatrix} 1 & 0 & 0 \\ -2 & 1 & 0 \\ -7 & 0 & 1 \end{bmatrix},$$
+and the second stage is $A^{(2)} = M_1 A$. The permutation matrix $P$ that exchanges the second
+and third rows gives
+$$P A^{(2)} = \begin{bmatrix} 1 & 2 & 3 \\ 0 & -6 & -12 \\ 0 & 0 & -1 \end{bmatrix} = U, \qquad
+  P = \begin{bmatrix} 1 & 0 & 0 \\ 0 & 0 & 1 \\ 0 & 1 & 0 \end{bmatrix},$$
+which is already upper triangular, so that the second Gaussian transformation is $M_2 = I$.
+Hence $A = M_1^{-1} P M_2^{-1} U$, and $PA = LU$ is an LU factorization with
+$$L = \begin{bmatrix} 1 & 0 & 0 \\ 7 & 1 & 0 \\ 2 & 0 & 1 \end{bmatrix}.$$
+
+The transformations $M_1$ and $M_2$ are `Matrix.gaussTransform A 0` and
+`Matrix.gaussTransform U 1`.
+The stage $A^{(2)}$ of the book is `Matrix.gemStage A 1`. -/
 theorem example_3_5 :
     gaussTransform !![(1 : ℝ), 2, 3; 2, 4, 5; 7, 8, 9] 0 = !![1, 0, 0; -2, 1, 0; -7, 0, 1] ∧
     gemStage !![(1 : ℝ), 2, 3; 2, 4, 5; 7, 8, 9] 1 =
@@ -116,21 +140,21 @@ section Pivoted
 
 variable (A : Matrix (Fin n) (Fin n) ℝ) (piv : Matrix (Fin n) (Fin n) ℝ → Fin n → Fin n)
 
-/-- The factor `M_k P_k` of stage `k` of pivoted Gaussian elimination: the permutation matrix
-of the interchange, followed by the Gaussian transformation of the exchanged matrix (`1` past
-the last stage). -/
+/-- The factor $M_k P_k$ of stage $k$ of pivoted Gaussian elimination: the permutation matrix of the
+interchange, followed by the Gaussian transformation of the exchanged matrix; it is the identity
+for $k \ge n$. -/
 private noncomputable def pivotFactor (k : ℕ) : Matrix (Fin n) (Fin n) ℝ :=
   if h : k < n then
     gaussTransform ((gemPivotSwap A piv k h).permMatrix ℝ * (gemPivotStage A piv k).1) ⟨k, h⟩ *
       (gemPivotSwap A piv k h).permMatrix ℝ
   else 1
 
-/-- The permutation matrix `P_k` of the interchange of stage `k` (`1` past the last stage). -/
+/-- The permutation matrix $P_k$ of the interchange of stage $k$; it is the identity for $k \ge n$.
+-/
 private noncomputable def pivotPerm (k : ℕ) : Matrix (Fin n) (Fin n) ℝ :=
   if h : k < n then (gemPivotSwap A piv k h).permMatrix ℝ else 1
 
-/-- After `k` stages the current matrix is the product of the stage factors applied to `A`,
-`A^{(k+1)} = M_{k-1} P_{k-1} ⋯ M_0 P_0 A`. -/
+/-- After $k$ stages the current matrix is $A^{(k)} = M_{k-1} P_{k-1} \cdots M_0 P_0 A$. -/
 private theorem gemPivotStage_fst_eq_prod (k : ℕ) :
     (gemPivotStage A piv k).1 =
       (List.ofFn fun i : Fin k => pivotFactor A piv i).reverse.prod * A := by
@@ -146,7 +170,7 @@ private theorem gemPivotStage_fst_eq_prod (k : ℕ) :
         Matrix.mul_assoc]
     · rw [gemPivotStage_succ_of_le A piv (not_lt.1 h), pivotFactor, dite_eq_right h, Matrix.one_mul]
 
-/-- The permutation accumulated after `k` stages has the permutation matrix `P_{k-1} ⋯ P_0`. -/
+/-- After $k$ stages the accumulated permutation has the permutation matrix $P_{k-1} \cdots P_0$. -/
 private theorem gemPivotStage_snd_permMatrix_eq_prod (k : ℕ) :
     (gemPivotStage A piv k).2.permMatrix ℝ =
       (List.ofFn fun i : Fin k => pivotPerm A piv i).reverse.prod := by
@@ -161,7 +185,7 @@ private theorem gemPivotStage_snd_permMatrix_eq_prod (k : ℕ) :
     · rw [gemPivotStage_succ_of_lt A piv h, Matrix.permMatrix_mul, pivotPerm, dite_eq_left h]
     · rw [gemPivotStage_succ_of_le A piv (not_lt.1 h), pivotPerm, dite_eq_right h, Matrix.one_mul]
 
-/-- The stage factors indexed by `Fin n`, as in (3.51). -/
+/-- The stage factors $M_k P_k$ indexed by $k \in \{0, \ldots, n - 1\}$, in the form of (3.51). -/
 private theorem ofFn_pivotFactor :
     (List.ofFn fun k : Fin n => pivotFactor A piv k) =
       List.ofFn fun k : Fin n =>
@@ -169,12 +193,19 @@ private theorem ofFn_pivotFactor :
           (gemPivotSwap A piv k k.2).permMatrix ℝ :=
   congrArg List.ofFn (funext fun k => by rw [pivotFactor, dite_eq_left k.2])
 
-/-- **(3.51).** Gaussian elimination with (partial) pivoting, `piv` any strategy: at each stage
-`A^{(k+2)} = M_k P_k A^{(k+1)}`, where `P_k` is the elementary permutation matrix exchanging row
-`k` with the chosen row and `M_k` the Gaussian transformation of the exchanged matrix, so that
-the final upper triangular matrix is `U = A^{(n)} = M_{n-1} P_{n-1} ⋯ M_1 P_1 A` and the
-accumulated permutation matrix is `P = P_{n-1} ⋯ P_1` (backbone
-`Matrix.gemPivotStage_succ_fst_eq_gaussTransform_mul`, `Matrix.gemPivotStage_succ_of_lt`). -/
+/-- **Equation (3.51)** of [quarteroni2000numerical]. Let $A \in \mathbb{R}^{n \times n}$, and let
+`piv` be any pivoting strategy. Let $A^{(k)}$ be the stages of Gaussian elimination with this
+strategy, let $P_k$ be the elementary permutation matrix that exchanges row $k$ with the chosen
+row, and let $M_k$ be the Gaussian transformation of $P_k A^{(k)}$ at the pivot $k$. Then for
+every $k \in \{0, \ldots, n - 1\}$,
+$$A^{(k+1)} = M_k P_k A^{(k)},$$
+the final upper triangular matrix is
+$$U = A^{(n)} = M_{n-1} P_{n-1} \cdots M_0 P_0 A,$$
+and the accumulated permutation matrix is $P = P_{n-1} \cdots P_0$.
+
+The stages are $0$-based; the book writes $M_{n-1} P_{n-1} \cdots M_1 P_1 A$. The strategy `piv`
+is any function that chooses a row for a matrix and a stage. The proof uses
+`Matrix.gemPivotStage_succ_fst_eq_gaussTransform_mul` and `Matrix.gemPivotStage_succ_of_lt`. -/
 theorem equation_3_51 :
     (∀ k : Fin n, (gemPivotStage A piv (k + 1)).1 =
       gaussTransform ((gemPivotSwap A piv k k.2).permMatrix ℝ * (gemPivotStage A piv k).1) k *
@@ -193,14 +224,29 @@ theorem equation_3_51 :
     congr 2
     exact congrArg List.ofFn (funext fun k => by rw [pivotPerm, dite_eq_left k.2])
 
-/-- **(3.52).** For a nonsingular `A`, Gaussian elimination with partial pivoting produces
-`U = M A` with `M = M_{n-1} P_{n-1} ⋯ M_1 P_1` and the permutation matrix `P = P_{n-1} ⋯ P_1`
-of (3.51), and `L = P M⁻¹` is unit lower triangular, so that `P A = L U`; the entries of `L` are
-the multipliers of GEM without pivoting applied to `P A`, they satisfy `|l_ij| ≤ 1`, and solving
-`L y = P b`, `U x = y` solves `A x = b` (backbone `Matrix.gemPivotStage_permMatrix_mul_isLU`,
-`Matrix.gemPivotStage_partialPivotRow_norm_gemLower_le_one`, `Matrix.mulVec_luSolve_permMatrix`).
-Moreover *every* square matrix has a factorization `P A = L U` with `|l_ij| ≤ 1`
-(`Matrix.exists_permMatrix_mul_isLU`). -/
+/-- **Equation (3.52)** of [quarteroni2000numerical]. Let $A \in \mathbb{R}^{n \times n}$ be
+nonsingular. Let Gaussian elimination with partial pivoting give $U = A^{(n)} = MA$ with
+$M = M_{n-1} P_{n-1} \cdots M_0 P_0$ and the permutation matrix $P = P_{n-1} \cdots P_0$ of
+(3.51), and let $L$ be the multiplier matrix of GEM without pivoting on $PA$. Then:
+
+* $PA = LU$ is an LU factorization, with $L$ unit lower triangular and $U$ upper triangular;
+* $|l_{ij}| \le 1$ for all $i, j$;
+* $L = P M^{-1}$;
+* for every $b \in \mathbb{R}^n$, solving $Ly = Pb$ by forward substitution and $Ux = y$ by
+  backward substitution gives a solution $x$ of $Ax = b$.
+
+Moreover, every matrix $B \in \mathbb{R}^{n \times n}$, singular or not, has a permutation
+matrix $P$ and an LU factorization $PB = LU$ with $|l_{ij}| \le 1$.
+
+**Generalization.** The source proves (3.52) for nonsingular $A$, so that a nonzero pivot exists
+at every stage. The last statement holds for every square matrix: a zero pivot column is
+skipped. The recurrence with partial pivoting produces the factorization whenever its pivots are
+nonzero, which is automatic for nonsingular $A$.
+
+The solve is `Matrix.luSolve`. The proof uses `Matrix.gemPivotStage_permMatrix_mul_isLU`,
+`Matrix.gemPivotStage_partialPivotRow_norm_gemLower_le_one`, `Matrix.mulVec_luSolve_permMatrix`,
+`Matrix.gemPivotStage_partialPivotRow_pivot_ne_zero_of_isUnit` and
+`Matrix.exists_permMatrix_mul_isLU`. -/
 theorem equation_3_52 (hA : IsUnit A) :
     IsLU ((gemPivotStage A partialPivotRow n).2.permMatrix ℝ * A)
         (gemLower ((gemPivotStage A partialPivotRow n).2.permMatrix ℝ * A))
@@ -255,11 +301,16 @@ theorem equation_3_52 (hA : IsUnit A) :
   · obtain ⟨σ, L, U, h, hL⟩ := exists_permMatrix_mul_isLU B
     exact ⟨σ, L, U, h, fun i j => by simpa [Real.norm_eq_abs] using hL i j⟩
 
-/-- **§3.5, complete pivoting.** Exchanging at each stage the current row and column with those
-of the entry of largest modulus in the trailing block gives permutation matrices `P` (rows) and
-`Q` (columns) with `P A Q = L U`, `L` unit lower triangular with entries of modulus at most `1`
-and every row of `U` dominated by its diagonal entry (backbone
-`Matrix.exists_permMatrix_mul_mul_permMatrix_isLU`). -/
+/-- **Section 3.5** of [quarteroni2000numerical], complete pivoting. Let
+$A \in \mathbb{R}^{n \times n}$. There exist permutation matrices $P$ (of the rows) and $Q$ (of
+the columns) and an LU factorization
+$$PAQ = LU,$$
+with $L$ unit lower triangular, $U$ upper triangular, $|l_{ij}| \le 1$ for all $i, j$, and
+$|u_{ij}| \le |u_{ii}|$ for all $i, j$.
+
+The factorization comes from exchanging, at each stage, the current row and column with those of
+an entry of largest modulus in the trailing block. No nonsingularity is needed. The proof
+specializes `Matrix.exists_permMatrix_mul_mul_permMatrix_isLU`. -/
 theorem completePivoting :
     ∃ (σ τ : Equiv.Perm (Fin n)) (L U : Matrix (Fin n) (Fin n) ℝ),
       IsLU (σ.permMatrix ℝ * A * τ.permMatrix ℝ) L U ∧ (∀ i j, |L i j| ≤ 1) ∧
@@ -268,11 +319,15 @@ theorem completePivoting :
   exact ⟨σ, τ, L, U, h, fun i j => by simpa [Real.norm_eq_abs] using hL i j,
     fun i j => by simpa [Real.norm_eq_abs] using hU i j⟩
 
-/-- **§3.5, the multipliers of pivoted elimination.** "The entries of the matrix `L` coincide
-with the multipliers computed by LU factorization, without pivoting, when applied to the matrix
-`P A`": if `P A = L U` and `P A` satisfies the hypothesis of Theorem 3.4, then `L` is the
-multiplier matrix and `U` the last stage of GEM without pivoting on `P A` (backbone
-`Matrix.IsLU.eq_of_permMatrix_mul`). -/
+/-- **Section 3.5** of [quarteroni2000numerical], the multipliers of pivoted elimination. Let
+$A \in \mathbb{R}^{n \times n}$, let $P$ be a permutation matrix, and let $PA = LU$ be an LU
+factorization. If the leading principal submatrices of $PA$ of orders $0, \ldots, n - 1$ are
+nonsingular (the hypothesis of Theorem 3.4), then $L$ is the multiplier matrix and $U$ is the
+last stage of GEM without pivoting on $PA$.
+
+This is the remark of the source that the entries of $L$ coincide with the multipliers computed
+by the LU factorization without pivoting, when it is applied to $PA$. The proof uses
+`Matrix.IsLU.eq_of_permMatrix_mul`. -/
 theorem pivoting_multipliers {σ : Equiv.Perm (Fin n)} {L U : Matrix (Fin n) (Fin n) ℝ}
     (h : IsLU (σ.permMatrix ℝ * A) L U)
     (hPA : ∀ k, IsUnit ((σ.permMatrix ℝ * A).strictLeadingPrincipalSubmatrix k)) :

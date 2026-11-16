@@ -5,59 +5,104 @@ Released under Apache 2.0 license as described in the file LICENSE.
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter03.Section09
 
 /-!
-# Quarteroni–Sacco–Saleri §3.10: accuracy of the solution achieved using GEM
+# Quarteroni, Sacco and Saleri, Section 3.10: Accuracy of the solution achieved using GEM
 
-Surface file for Alfio Quarteroni, Riccardo Sacco and Fausto Saleri, *Numerical Mathematics*
-[quarteroni2000numerical], §3.10, over the backbone `Numlib/FloatingPoint/LU` (the backward error
-of the LU solve, `FloatingPoint.exists_roundsLU_solve_eq`, and Wilkinson's normwise bound
-`FloatingPoint.linfty_opNorm_le_of_roundsLU_solve`) and `Numlib/LinearAlgebra/Matrix/LU/Pivoting`
+This module formalizes Section 3.10 of [quarteroni2000numerical]. The solution $\hat x$ that
+Gaussian elimination computes in floating-point arithmetic with unit roundoff $u$ is the exact
+solution of a perturbed system $(A + \delta A)\hat x = b$. The size of $\delta A$ is controlled by
+the computed factors $|\hat L||\hat U|$ (3.64)–(3.65), and through them by the growth factor
+$$\rho_n = \frac{\max_{i,j,k} |a^{(k)}_{ij}|}{\max_{i,j} |a_{ij}|}$$
+of (3.66), which gives Wilkinson's bound $\|\delta A\|_\infty \lesssim n^3 u \rho_n \|A\|_\infty$
+(3.67). The module states these bounds, the known bounds on $\rho_n$ for partial pivoting, for
+special classes of matrices and for complete pivoting, and the examples that show the role of the
+condition number: a small residual need not mean a small error.
+
+The proofs specialize the backbone modules `Numlib.FloatingPoint.LU` (the backward error of the LU
+solve, `FloatingPoint.exists_roundsLU_solve_eq`, and Wilkinson's normwise bound
+`FloatingPoint.linfty_opNorm_le_of_roundsLU_solve`) and `Numlib.LinearAlgebra.Matrix.LU.Pivoting`
 (the growth factor `Matrix.growthFactor` and its bounds).
+
+## Main definitions
+
+* (3.66), `QuarteroniSaccoSaleri.Chapter03.equation_3_66`: the growth factor $\rho_n$ of Gaussian
+  elimination.
+
+## Main results
+
+* (3.64), `QuarteroniSaccoSaleri.Chapter03.equation_3_64`: the computed solution solves
+  $(A + \delta A)\hat x = b$ with $|\delta A| \le \gamma_{3n} |\hat L||\hat U|$.
+* (3.65), `QuarteroniSaccoSaleri.Chapter03.equation_3_65`: with multipliers bounded by $1$,
+  $\|\delta A\|_\infty \le n\gamma_{3n} \|\hat U\|_\infty$.
+* (3.66), `QuarteroniSaccoSaleri.Chapter03.equation_3_66_spec`: the formula for $\rho_n$, and
+  $|a^{(k)}_{ij}| \le \rho_n \max_{i,j} |a_{ij}|$.
+* (3.67), `QuarteroniSaccoSaleri.Chapter03.equation_3_67`: Wilkinson's bound $\|\delta A\|_\infty
+  \le n^2 \gamma_{3n} \rho \|A\|_\infty$, in conditional form.
+* Section 3.10, `QuarteroniSaccoSaleri.Chapter03.growthFactor_le_two_pow`: $\rho_n \le 2^{n-1}$ for
+  multipliers bounded by $1$, in particular with partial pivoting.
+* Section 3.10, item (1), `QuarteroniSaccoSaleri.Chapter03.growthFactor_tridiagonal`: $\rho_n \le 2$
+  for tridiagonal matrices with partial pivoting.
+* Section 3.10, item (2), `QuarteroniSaccoSaleri.Chapter03.growthFactor_hessenberg`: $\rho_n \le n$
+  for upper Hessenberg matrices with partial pivoting.
+* Section 3.10, item (3), `QuarteroniSaccoSaleri.Chapter03.growthFactor_posDef`: $\rho_n = 1$ for
+  symmetric positive definite matrices.
+* Section 3.10, item (4), `QuarteroniSaccoSaleri.Chapter03.growthFactor_colDiagDominant`:
+  $\rho_n \le 2$ for matrices strictly diagonally dominant by columns.
+* Section 3.10, `QuarteroniSaccoSaleri.Chapter03.growthFactor_completePivoting`: Wilkinson's bound
+  $\rho_n \le n^{1/2}(2 \cdot 3^{1/2} \cdots n^{1/(n-1)})^{1/2}$ for complete pivoting.
+* Example 3.7, `QuarteroniSaccoSaleri.Chapter03.example_3_7_cond`: the matrix $\begin{bmatrix}
+  \varepsilon & 1 \\ 1 & 0 \end{bmatrix}$ is well conditioned.
+* Example 3.7 and Exercise 6, `QuarteroniSaccoSaleri.Chapter03.example_3_7_lu`: its LU factorization
+  has large entries without pivoting and bounded entries with partial pivoting.
+* Section 3.10, `QuarteroniSaccoSaleri.Chapter03.residual_error_bound`: the relative error is
+  bounded by the condition number times the relative residual.
+* Example 3.8, `QuarteroniSaccoSaleri.Chapter03.example_3_8`: an ill-conditioned system with a small
+  residual and a large error.
+* Section 3.10, `QuarteroniSaccoSaleri.Chapter03.equation_3_69`: if $u K_\infty(A) \le 1/2$, the
+  relative error is at most $4u K_\infty(A)$.
 
 ## Conventions
 
-The computed solution `x̂` of `A x = b` by GEM is described relationally: computed factors
-`L̂`, `Û` (an admissible `FloatingPoint.RoundsLU m A L̂ Û`), then a forward substitution
-`FloatingPoint.RoundsForwardSubst m L̂ b ŷ` and a backward substitution
-`FloatingPoint.RoundsBackSubst m Û ŷ x̂`, all in the relational model
-`m : FloatingPoint.RoundingModel ℝ` of `Numlib/FloatingPoint/Model` with unit roundoff `m.u`;
-`γ_k = k u / (1 - k u)` is `FloatingPoint.gamma m.u k`. The book's displays (3.64), (3.65),
-(3.67) are first order in `u` (`+ O(u²)`); the surface states the rigorous `γ`-forms of
-[higham2002accuracy] Theorems 9.4 and 9.5, whose leading terms are the book's constants up to a
-factor. The growth factor `ρ_n` of (3.66) is `Matrix.growthFactor A`, defined on the *exact*
-stages `Matrix.gemStage A k` of Gaussian elimination without pivoting; for GEM with partial
-pivoting it is `growthFactor (P A)` with `P` the permutation matrix of §3.5 (the pivoted
-stages are the plain stages of `P A` up to the order of the rows). `max_{i,j} |a_ij|` is
-`Matrix.supAbs A`. Norms are the `∞`-norms of §3.1: `‖A‖_∞` is Mathlib's scoped
-`Matrix.Norms.Operator` instance, `‖x‖_∞` the sup norm of `Fin n → ℝ`, `K_∞(A) = condNumber ⊤ A`.
+* The computed solution $\hat x$ of $Ax = b$ by GEM is described relationally: computed factors
+  $\hat L$, $\hat U$ (an admissible `FloatingPoint.RoundsLU m A L̂ Û`), then a forward substitution
+  `FloatingPoint.RoundsForwardSubst m L̂ b ŷ` and a backward substitution
+  `FloatingPoint.RoundsBackSubst m Û ŷ x̂`. All of them are in the relational rounding model
+  `m : FloatingPoint.RoundingModel ℝ` with unit roundoff `m.u`.
+* The constant $\gamma_k = ku/(1 - ku)$ is `FloatingPoint.gamma m.u k`.
+* The growth factor $\rho_n$ of (3.66) is `Matrix.growthFactor A`, defined on the exact stages
+  `Matrix.gemStage A k` of Gaussian elimination without pivoting. For GEM with partial pivoting it
+  is `growthFactor (P A)` with $P$ the permutation matrix of Section 3.5, because the pivoted stages
+  are the plain stages of $PA$ up to the order of the rows.
+* The number $\max_{i,j} |a_{ij}|$ is `Matrix.supAbs A`.
+* Norms are the $\infty$-norms of Section 3.1. The matrix norm $\|A\|_\infty$ is the scoped
+  Mathlib norm `Matrix.Norms.Operator`. The sup norm of `Fin n → ℝ` is the vector norm
+  $\|x\|_\infty$. The condition number $K_\infty(A)$ is
+  `QuarteroniSaccoSaleri.Chapter03.condNumber ⊤ A`.
 
-## Contents
+## Deviations from the source
 
-* `equation_3_64`, `equation_3_65`, `equation_3_66`, `equation_3_66_spec`, `equation_3_67` —
-  the backward error of GEM and the growth factor.
-* `growthFactor_le_two_pow`, `growthFactor_tridiagonal`, `growthFactor_hessenberg`,
-  `growthFactor_posDef`, `growthFactor_colDiagDominant`, `growthFactor_completePivoting` — the
-  bounds on `ρ_n`. The banded bound of item (1), Bohte's `2^{2p-1} - (p-1) 2^{p-2}`, is *not*
-  here and is not planned: neither this book nor [higham2002accuracy] (Theorem 9.11) proves it,
-  both citing Bohte (1975), which the project does not have, and Higham's Problem 9.15 records
-  the general case as an open research problem. The backbone proves a weaker banded bound with
-  the same qualitative content — `ρ_n ≤ 2^{p+q}` for lower bandwidth `p` and upper bandwidth `q`,
-  `Matrix.growthFactor_le_two_pow_of_hasBandwidth`, bounded independently of `n` — which is not
-  restated here because it is not the book's inequality; the book's tridiagonal consequence
-  `ρ_n ≤ 2` is `growthFactor_tridiagonal`, proved sharply and independently.
-* `example_3_7_cond`, `example_3_7_lu`, `residual_error_bound`, `example_3_8`, `equation_3_69`
-  — the examples and the role of the condition number.
+* **(3.64)–(3.65)** (reading). The source prints bounds of first order in $u$, such as $|\delta A|
+  \le nu(3|A| + 5|\hat L||\hat U|) + O(u^2)$. The module states the rigorous forms of Theorem 9.4 of
+  [higham2002accuracy] with $\gamma_{3n} = 3nu + O(u^2)$, which imply the printed ones to first
+  order. See `QuarteroniSaccoSaleri.Chapter03.equation_3_64` and
+  `QuarteroniSaccoSaleri.Chapter03.equation_3_65`.
+* **(3.66)** (reading). The source defines $\rho_n$ with the computed entries $\hat a^{(k)}_{ij}$.
+  The definition uses the exact stages, for which bounds are available. See
+  `QuarteroniSaccoSaleri.Chapter03.equation_3_66`.
+* **(3.67)** (reading). The source prints $\|\delta A\|_\infty \le 8un^3\rho_n\|A\|_\infty +
+  O(u^2)$. The module states the conditional form of Theorem 9.5 of [higham2002accuracy], $\|\delta
+  A\|_\infty \le n^2\gamma_{3n}\rho\|A\|_\infty$ under bounds on the computed factors. See
+  `QuarteroniSaccoSaleri.Chapter03.equation_3_67`.
 
-## Readings and errata
+## Not formalized
 
-(3.64) prints `|δA| ≤ n u (3|A| + 5|L̂||Û|) + O(u²)` (Golub–Van Loan); the rigorous statement is
-`|δA| ≤ γ_{3n} |L̂||Û|` with `γ_{3n} = 3 n u + O(u²)`, which implies the printed one since
-`|A| ≤ |L̂||Û| + O(u)` by (3.40). (3.66) defines `ρ_n` with the computed entries `â^{(k)}_ij`;
-bounds are available only for the exact stages ([higham2002accuracy], after Theorem 9.5), and
-(3.67) is stated in Higham's conditional form: under `|l̂_ij| ≤ 1` and `|û_ij| ≤ ρ max |a_ij|` —
-the facts about the exact factors that the book, like Higham, borrows for the computed ones —
-`‖δA‖_∞ ≤ n² γ_{3n} ρ ‖A‖_∞`, which is the book's `8 u n³ ρ_n ‖A‖_∞` up to the constant. Item
-(4) of the growth-factor list says "strictly diagonally dominant by columns"; the bound holds for
-nonsingular weakly dominant matrices, which the strict ones are.
+* **The banded bound of item (1)**, Bohte's $\rho_n \le 2^{2p-1} - (p - 1)2^{p-2}$ for band width
+  $p$. Neither this book nor [higham2002accuracy] (Theorem 9.11) proves it; both cite Bohte (1975),
+  and Problem 9.15 of [higham2002accuracy] records the general case as an open research problem. The
+  backbone proves the weaker bound $\rho_n \le 2^{p+q}$ for lower bandwidth $p$ and upper bandwidth
+  $q$ (`Matrix.growthFactor_le_two_pow_of_hasBandwidth`), which is not restated here because it is
+  not the book's inequality.
+* **The estimate** $\simeq u K_\infty(A)$ of (3.69), and the count of $t - m$ exact digits, which
+  are heuristics.
 -/
 
 open Finset Matrix
@@ -76,12 +121,22 @@ open scoped Matrix.Norms.Operator
 
 variable {m : RoundingModel ℝ} {A L U : Matrix (Fin n) (Fin n) ℝ} {b y x : Fin n → ℝ}
 
-/-- **(3.64), rigorous form.** The solution `x̂` computed by GEM in floating-point arithmetic
-with unit roundoff `u`, `3 n u < 1` — computed factors `L̂`, `Û` with nonzero pivots, then the two
-substitutions — is the exact solution of a perturbed system `(A + δA) x̂ = b` with
-`|δA| ≤ γ_{3n} |L̂| |Û|`, `γ_{3n} = 3 n u / (1 - 3 n u) = 3 n u + O(u²)` (backbone
-`FloatingPoint.exists_roundsLU_solve_eq`, [higham2002accuracy] Theorem 9.4). The book's
-`n u (3|A| + 5|L̂||Û|) + O(u²)` follows, since `|A| ≤ |L̂||Û| + O(u)` by (3.40). -/
+/-- **Equation (3.64)** of [quarteroni2000numerical], rigorous form. Let
+$A \in \mathbb{R}^{n \times n}$ with $n \ge 1$, $b \in \mathbb{R}^n$, and let $u$ be the unit
+roundoff of a rounding model with $3nu < 1$. Let $\hat L$, $\hat U$ be the factors that GEM
+computes in floating-point arithmetic, with nonzero computed pivots, let $\hat y$ be the
+computed solution of $\hat L y = b$ by forward substitution, and let $\hat x$ be the computed
+solution of $\hat U x = \hat y$ by backward substitution. Then there is a matrix $\delta A$ with
+$$(A + \delta A)\hat x = b, \qquad |\delta A| \le \gamma_{3n} |\hat L||\hat U|, \qquad
+  \gamma_{3n} = \frac{3nu}{1 - 3nu},$$
+where the absolute values and the inequality are entrywise.
+
+**Reading.** The source prints the first-order bound $|\delta A| \le nu(3|A| + 5|\hat L||\hat
+U|) + O(u^2)$, after [golub2013matrix]. The theorem states the rigorous form of Theorem 9.4 of
+[higham2002accuracy]. Since $\gamma_{3n} = 3nu + O(u^2)$ and $|A| \le |\hat L||\hat U| + O(u)$
+by (3.40), it implies the printed bound.
+
+The proof uses `FloatingPoint.exists_roundsLU_solve_eq`. -/
 theorem equation_3_64 [NeZero n] (hn : ((3 * n : ℕ) : ℝ) * m.u < 1) (h : RoundsLU m A L U)
     (hd : ∀ j, U j j ≠ 0) (hy : RoundsForwardSubst m L b y) (hx : RoundsBackSubst m U y x) :
     ∃ δA : Matrix (Fin n) (Fin n) ℝ,
@@ -95,10 +150,17 @@ theorem equation_3_64 [NeZero n] (hn : ((3 * n : ℕ) : ℝ) * m.u < 1) (h : Rou
   refine ⟨δA, ?_, hAx⟩
   rwa [Fintype.card_fin, gamma_def] at hδA
 
-/-- **(3.65), rigorous form.** With partial pivoting the entries of `L̂` are bounded by `1`, so
-`‖L̂‖_∞ ≤ n` and (3.64) becomes `‖δA‖_∞ ≤ n γ_{3n} ‖Û‖_∞` for the perturbation `δA` of (3.64)
-(backbone `Matrix.linfty_opNorm_le_of_abs_entrywiseLE` and the submultiplicativity of `‖·‖_∞`);
-the book's `n u (3‖A‖_∞ + 5 n ‖Û‖_∞) + O(u²)` follows as for (3.64). -/
+/-- **Equation (3.65)** of [quarteroni2000numerical], rigorous form. In the setting of (3.64), with
+$3nu < 1$ and $n \ge 1$, assume moreover that the computed multipliers satisfy
+$|\hat l_{ij}| \le 1$, as partial pivoting gives. Then $\|\hat L\|_\infty \le n$, and there is a
+matrix $\delta A$ with
+$$(A + \delta A)\hat x = b, \qquad \|\delta A\|_\infty \le n \gamma_{3n} \|\hat U\|_\infty.$$
+
+**Reading.** The source prints the first-order bound $\|\delta A\|_\infty \le nu(3\|A\|_\infty +
+5n\|\hat U\|_\infty) + O(u^2)$. It follows from the theorem as for (3.64).
+
+The proof uses `Matrix.linfty_opNorm_le_of_abs_entrywiseLE` and the submultiplicativity of
+$\|\cdot\|_\infty$. -/
 theorem equation_3_65 [NeZero n] (hn : ((3 * n : ℕ) : ℝ) * m.u < 1) (h : RoundsLU m A L U)
     (hd : ∀ j, U j j ≠ 0) (hy : RoundsForwardSubst m L b y) (hx : RoundsBackSubst m U y x)
     (hL : ∀ i j, |L i j| ≤ 1) :
@@ -129,17 +191,29 @@ theorem equation_3_65 [NeZero n] (hn : ((3 * n : ℕ) : ℝ) * m.u < 1) (h : Rou
     _ ≤ γ * (n * ‖U‖) := by gcongr
     _ = n * γ * ‖U‖ := by ring
 
-/-- **(3.66), the growth factor** `ρ_n = max_{i,j,k} |a^{(k)}_ij| / max_{i,j} |a_ij|` of Gaussian
-elimination on `A`, over the stages `A^{(k)}`, `k = 1, …, n` — the backbone's
-`Matrix.growthFactor A`, on the exact stages `Matrix.gemStage A k` (the book writes the computed
-entries `â^{(k)}_ij`; bounds are available for the exact ones). For GEM with partial pivoting
-the growth factor is that of `P A`, `P` the permutation matrix of §3.5. -/
+/-- **Equation (3.66)** of [quarteroni2000numerical], the **growth factor** of Gaussian elimination
+on $A \in \mathbb{R}^{n \times n}$:
+$$\rho_n = \frac{\max_{i,j,k} |a^{(k)}_{ij}|}{\max_{i,j} |a_{ij}|},$$
+where $A^{(k)}$, $k = 1, \ldots, n$, are the stages of Gaussian elimination without pivoting.
+For the zero matrix, $\rho_n = 0$.
+
+**Reading.** The source writes the computed entries $\hat a^{(k)}_{ij}$. The definition uses the
+exact stages `Matrix.gemStage A k`, for which bounds are available ([higham2002accuracy], after
+Theorem 9.5).
+
+The definition is `Matrix.growthFactor A`. For GEM with partial pivoting, the growth factor is
+that of $PA$, where $P$ is the permutation matrix of Section 3.5. -/
 noncomputable def equation_3_66 (A : Matrix (Fin n) (Fin n) ℝ) : ℝ := growthFactor A
 
-/-- **(3.66), spelled out**: `ρ_n` is the quotient of the largest entry of any stage by the
-largest entry of `A`, and every entry of every stage — of `Û = A^{(n)}` in particular —
-satisfies `|u_ij| ≤ ρ_n max_{i,j} |a_ij|` (backbone
-`Matrix.abs_gemStage_le_growthFactor_mul_supAbs`). -/
+/-- **Equation (3.66)** of [quarteroni2000numerical], spelled out. Let
+$A \in \mathbb{R}^{n \times n}$. The growth factor $\rho_n$ is the largest entry in modulus of
+any stage $A^{(k)}$ divided by the largest entry in modulus of $A$. Moreover, every entry of
+every stage, of $U = A^{(n)}$ in particular, satisfies
+$$|a^{(k)}_{ij}| \le \rho_n \max_{i,j} |a_{ij}|.$$
+
+The maximum over the stages runs over the $0$-based stages $k = 0, \ldots, n - 1$ of
+`Matrix.gemStage`, which are the book's $A^{(1)}, \ldots, A^{(n)}$; the bound holds for every
+$k \in \mathbb{N}$. The proof uses `Matrix.abs_gemStage_le_growthFactor_mul_supAbs`. -/
 theorem equation_3_66_spec (A : Matrix (Fin n) (Fin n) ℝ) :
     equation_3_66 A =
       (⨆ p : Fin n × Fin n × Fin n, |gemStage A p.1 p.2.1 p.2.2|) /
@@ -148,12 +222,20 @@ theorem equation_3_66_spec (A : Matrix (Fin n) (Fin n) ℝ) :
       |gemStage A k i j| ≤ equation_3_66 A * ⨆ p : Fin n × Fin n, |A p.1 p.2| :=
   ⟨rfl, fun k i j => abs_gemStage_le_growthFactor_mul_supAbs A k i j⟩
 
-/-- **(3.67), Wilkinson's bound, conditional form.** If the computed factors satisfy
-`|l̂_ij| ≤ 1` (partial pivoting) and `|û_ij| ≤ ρ max_{i,j} |a_ij|` (the growth-factor bound of
-(3.66), which the book borrows from the exact factors), then the computed solution `x̂` of GEM
-(`3 n u < 1`) solves `(A + δA) x̂ = b` with `‖δA‖_∞ ≤ n² γ_{3n} ρ ‖A‖_∞` — the book's
-`8 u n³ ρ_n ‖A‖_∞ + O(u²)` up to the constant, `n² γ_{3n} = 3 n³ u + O(u²)` (backbone
-`FloatingPoint.linfty_opNorm_le_of_roundsLU_solve`, [higham2002accuracy] Theorem 9.5). -/
+/-- **Equation (3.67)** of [quarteroni2000numerical] (Wilkinson's bound), conditional form. In the
+setting of (3.64), with $3nu < 1$ and $n \ge 1$, let $\rho \ge 0$, and assume that the computed
+factors satisfy $|\hat l_{ij}| \le 1$ and $|\hat u_{ij}| \le \rho \max_{i,j} |a_{ij}|$ for all
+$i, j$. Then there is a matrix $\delta A$ with
+$$(A + \delta A)\hat x = b, \qquad \|\delta A\|_\infty \le n^2 \gamma_{3n} \rho \|A\|_\infty.$$
+
+**Reading.** The source prints $\|\delta A\|_\infty \le 8un^3\rho_n\|A\|_\infty + O(u^2)$, and
+it uses for the computed factors the bounds $|l_{ij}| \le 1$ and
+$|u_{ij}| \le \rho_n \max_{i,j}|a_{ij}|$ of the exact factors, as [higham2002accuracy] does. The
+theorem makes these bounds hypotheses, in the conditional form of Theorem 9.5 of
+[higham2002accuracy]. Its constant $n^2\gamma_{3n} = 3n^3u + O(u^2)$ differs from the book's
+$8n^3u$ only in the numerical factor.
+
+The proof uses `FloatingPoint.linfty_opNorm_le_of_roundsLU_solve`. -/
 theorem equation_3_67 [NeZero n] (hn : ((3 * n : ℕ) : ℝ) * m.u < 1) (h : RoundsLU m A L U)
     (hd : ∀ j, U j j ≠ 0) (hy : RoundsForwardSubst m L b y) (hx : RoundsBackSubst m U y x)
     {ρ : ℝ} (hρ : 0 ≤ ρ) (hL : ∀ i j, |L i j| ≤ 1)
@@ -178,10 +260,15 @@ section Growth
 
 variable (A : Matrix (Fin n) (Fin n) ℝ)
 
-/-- **§3.10, `ρ_n ≤ 2^{n-1}`.** The growth factor of Gaussian elimination is at most `2^{n-1}`
-whenever the multipliers have modulus at most `1`, hence with partial pivoting: for
-`P A = L U` of §3.5, `ρ_n(P A) ≤ 2^{n-1}` (backbone `Matrix.growthFactor_le_two_pow`,
-`Matrix.growthFactor_le_two_pow_of_partialPivotRow`). Exercise 5's matrix attains the bound. -/
+/-- **Section 3.10** of [quarteroni2000numerical], the bound $\rho_n \le 2^{n-1}$. Let
+$A \in \mathbb{R}^{n \times n}$. If all multipliers of Gaussian elimination have modulus at most
+$1$, that is, $|a^{(k)}_{ik} / a^{(k)}_{kk}| \le 1$ for all $k < n$ and $i > k$, then
+$\rho_n \le 2^{n-1}$. In particular, for the permutation matrix $P$ of GEM with partial
+pivoting, $\rho_n(PA) \le 2^{n-1}$.
+
+The matrix of Exercise 5 attains the bound. A zero pivot gives a zero multiplier in Lean. The
+proof uses `Matrix.growthFactor_le_two_pow` and
+`Matrix.growthFactor_le_two_pow_of_partialPivotRow`. -/
 theorem growthFactor_le_two_pow :
     ((∀ (k : ℕ) (hk : k < n) (i : Fin n), ⟨k, hk⟩ < i →
       |gemStage A k i ⟨k, hk⟩ / gemStage A k ⟨k, hk⟩ ⟨k, hk⟩| ≤ 1) →
@@ -189,41 +276,57 @@ theorem growthFactor_le_two_pow :
     equation_3_66 ((gemPivotStage A partialPivotRow n).2.permMatrix ℝ * A) ≤ 2 ^ (n - 1) :=
   ⟨fun hmul => Matrix.growthFactor_le_two_pow A hmul, growthFactor_le_two_pow_of_partialPivotRow A⟩
 
-/-- **§3.10 (1), the tridiagonal case.** For a tridiagonal `A`, GEM with partial pivoting has
-`ρ_n ≤ 2` (backbone `Matrix.growthFactor_le_two_of_isTridiagonal`); it is the case `p = 1` of
-Bohte's banded bound, which itself is not in the library (see the contents above). -/
+/-- **Section 3.10** of [quarteroni2000numerical], item (1), the tridiagonal case. Let
+$A \in \mathbb{R}^{n \times n}$ be tridiagonal, and let $P$ be the permutation matrix of GEM
+with partial pivoting. Then $\rho_n(PA) \le 2$.
+
+This is the case $p = 1$ of Bohte's banded bound, which is not formalized. The proof uses
+`Matrix.growthFactor_le_two_of_isTridiagonal`. -/
 theorem growthFactor_tridiagonal (hA : A.IsTridiagonal) :
     equation_3_66 ((gemPivotStage A partialPivotRow n).2.permMatrix ℝ * A) ≤ 2 :=
   growthFactor_le_two_of_isTridiagonal hA
 
-/-- **§3.10 (2), Hessenberg matrices.** For an upper Hessenberg `A`, GEM with partial pivoting
-has `ρ_n ≤ n` (backbone `Matrix.growthFactor_le_card_of_isUpperHessenberg`). -/
+/-- **Section 3.10** of [quarteroni2000numerical], item (2), Hessenberg matrices. Let
+$A \in \mathbb{R}^{n \times n}$ be upper Hessenberg, and let $P$ be the permutation matrix of
+GEM with partial pivoting. Then $\rho_n(PA) \le n$.
+
+The proof uses `Matrix.growthFactor_le_card_of_isUpperHessenberg`. -/
 theorem growthFactor_hessenberg (hA : A.IsUpperHessenberg) :
     equation_3_66 ((gemPivotStage A partialPivotRow n).2.permMatrix ℝ * A) ≤ n :=
   growthFactor_le_card_of_isUpperHessenberg hA
 
-/-- **§3.10 (3), symmetric positive definite matrices.** `ρ_n = 1`: Gaussian elimination
-without pivoting never increases the largest entry (backbone
-`Matrix.growthFactor_eq_one_of_posDef`). -/
+/-- **Section 3.10** of [quarteroni2000numerical], item (3), symmetric positive definite matrices.
+Let $A \in \mathbb{R}^{n \times n}$ be symmetric positive definite, with $n \ge 1$. Then
+$\rho_n = 1$: Gaussian elimination without pivoting never increases the largest entry.
+
+The proof uses `Matrix.growthFactor_eq_one_of_posDef`. -/
 theorem growthFactor_posDef [NeZero n] (hA : A.PosDef) : equation_3_66 A = 1 :=
   growthFactor_eq_one_of_posDef hA (Nat.pos_of_ne_zero (NeZero.ne n))
 
-/-- **§3.10 (4), matrices strictly diagonally dominant by columns.** `ρ_n ≤ 2` without
-pivoting; the bound holds for every nonsingular matrix weakly dominant by columns (backbone
-`Matrix.growthFactor_le_two_of_isColDiagDominant`), and strict dominance gives both. -/
+/-- **Section 3.10** of [quarteroni2000numerical], item (4), matrices strictly diagonally dominant
+by columns. Let $A \in \mathbb{R}^{n \times n}$ satisfy $\sum_{i \neq j} |a_{ij}| < |a_{jj}|$
+for every column $j$. Then $\rho_n \le 2$ for Gaussian elimination without pivoting.
+
+The bound holds more generally for every nonsingular matrix that is weakly diagonally dominant
+by columns (`Matrix.growthFactor_le_two_of_isColDiagDominant`). Strict dominance gives both the
+weak dominance and the nonsingularity. -/
 theorem growthFactor_colDiagDominant (hA : A.IsStrictColDiagDominant) : equation_3_66 A ≤ 2 :=
   growthFactor_le_two_of_isColDiagDominant hA.isUnit hA.isColDiagDominant
 
-/-- **§3.10, complete pivoting (Wilkinson).** "Resorting to complete pivoting would seem to be
-mandatory, since it ensures that `ρ_n ≤ n^{1/2} (2 · 3^{1/2} · … · n^{1/(n-1)})^{1/2}`. Indeed
-this growth is slower than `2^{n-1}` as `n` increases." Here `P` and `Q` are the row and column
-permutations accumulated by the complete-pivoting recurrence `Matrix.gemFullPivotStage` for an
-arbitrary complete-pivoting strategy `piv` (`Matrix.IsCompletePivot`, of which
-`Matrix.completePivotEntry` is one), and `ρ_n` is the growth factor of `P A Q`, whose elimination
-stages are the pivoted ones up to the order of the rows and of the columns. Backbone
-`Matrix.growthFactor_le_wilkinson_of_isCompletePivot`, from
+/-- **Section 3.10** of [quarteroni2000numerical], complete pivoting (Wilkinson). Let
+$A \in \mathbb{R}^{n \times n}$, and let $P$ and $Q$ be the row and column permutation matrices
+of Gaussian elimination with complete pivoting, for any complete pivoting strategy. Then
+$$\rho_n(PAQ) \le n^{1/2} \big( 2 \cdot 3^{1/2} \cdot 4^{1/3} \cdots n^{1/(n-1)} \big)^{1/2}.$$
+The source remarks that this growth is slower than $2^{n-1}$ as $n$ increases, so that complete
+pivoting would seem to be mandatory.
+
+The permutations are those that the complete pivoting recurrence `Matrix.gemFullPivotStage`
+accumulates for a strategy `piv` with `Matrix.IsCompletePivot piv`; `Matrix.completePivotEntry`
+is one such strategy. The elimination stages of $PAQ$ are the pivoted ones up to the order of
+the rows and of the columns. The product is written as $\prod_{t=0}^{n-2} (t + 2)^{1/(t+1)}$.
+The proof uses `Matrix.growthFactor_le_wilkinson_of_isCompletePivot`, which follows from
 `Matrix.growthFactor_le_of_completePivoting` under the stage dominance
-`|a^{(k)}_{ij}| ≤ |a^{(k)}_{kk}|` that complete pivoting arranges. -/
+$|a^{(k)}_{ij}| \le |a^{(k)}_{kk}|$ that complete pivoting arranges. -/
 theorem growthFactor_completePivoting
     {piv : Matrix (Fin n) (Fin n) ℝ → Fin n → Fin n × Fin n} (hpiv : IsCompletePivot piv) :
     equation_3_66 ((gemFullPivotStage A piv n).2.1.permMatrix ℝ * A *
@@ -240,7 +343,8 @@ section Examples
 
 open scoped Matrix.Norms.Operator
 
-/-- The `∞`-norm of a `2 × 2` real matrix is the larger of its two absolute row sums. -/
+/-- For $B \in \mathbb{R}^{2 \times 2}$, if both absolute row sums of $B$ are at most $c$ and one of
+them equals $c$, then $\|B\|_\infty = c$. -/
 private theorem linfty_opNorm_fin_two_eq {B : Matrix (Fin 2) (Fin 2) ℝ} {c : ℝ}
     (h0 : |B 0 0| + |B 0 1| ≤ c) (h1 : |B 1 0| + |B 1 1| ≤ c)
     (hc : |B 0 0| + |B 0 1| = c ∨ |B 1 0| + |B 1 1| = c) : ‖B‖ = c := by
@@ -255,9 +359,15 @@ private theorem linfty_opNorm_fin_two_eq {B : Matrix (Fin 2) (Fin 2) ℝ} {c : �
     · rw [← hc]
       simpa [Fin.sum_univ_two] using sum_abs_apply_le_linfty_opNorm B 1
 
-/-- **Example 3.7, (3.68), the conditioning.** For `ε > 0`, the system with `A = [ε, 1; 1, 0]`
-and `b = (1 + ε, 1)` has the exact solution `x = (1, 1)`, and `A` is well conditioned:
-`A⁻¹ = [0, 1; 1, -ε]`, `‖A‖_∞ = ‖A⁻¹‖_∞ = 1 + ε` and `K_∞(A) = (1 + ε)²`. -/
+/-- **Example 3.7** of [quarteroni2000numerical], equation (3.68), the conditioning. Let
+$\varepsilon > 0$, and let
+$$A = \begin{bmatrix} \varepsilon & 1 \\ 1 & 0 \end{bmatrix}, \qquad b = \begin{bmatrix} 1 +
+  \varepsilon \\ 1 \end{bmatrix}.$$
+Then the system $Ax = b$ has the exact solution $x = (1, 1)^T$, and $A$ is well conditioned:
+$$A^{-1} = \begin{bmatrix} 0 & 1 \\ 1 & -\varepsilon \end{bmatrix}, \qquad \|A\|_\infty =
+  \|A^{-1}\|_\infty = 1 + \varepsilon, \qquad K_\infty(A) = (1 + \varepsilon)^2.$$
+
+The norm $\|\cdot\|_\infty$ is `Matrix.lpOpNorm ⊤`. -/
 theorem example_3_7_cond {ε : ℝ} (hε : 0 < ε) :
     !![ε, 1; 1, 0] *ᵥ ![1, 1] = ![1 + ε, 1] ∧ (!![ε, 1; 1, 0])⁻¹ = !![0, 1; 1, -ε] ∧
       lpOpNorm ⊤ !![ε, 1; 1, 0] = 1 + ε ∧ lpOpNorm ⊤ (!![ε, 1; 1, 0])⁻¹ = 1 + ε ∧
@@ -288,11 +398,20 @@ theorem example_3_7_cond {ε : ℝ} (hε : 0 < ε) :
     · simp [mulVec, dotProduct, Fin.sum_univ_two]
   · rw [condNumber, hA, hAinv, sq]
 
-/-- **Example 3.7 with Exercise 6, the factorizations.** For `ε ≠ 0` the LU factorization of
-`A = [ε, 1; 1, 0]` without pivoting is `L = [1, 0; 1/ε, 1]`, `U = [ε, 1; 0, -1/ε]` — unique by
-Theorem 3.4, with entries of modulus `1/ε`, large for small `ε` — while with partial pivoting
-(`|ε| ≤ 1`, so the second row is the pivot row) `P A = [1, 0; ε, 1] = L U` with
-`L = [1, 0; ε, 1]`, `U = I`, whose entries are bounded by `1`. -/
+/-- **Example 3.7** of [quarteroni2000numerical], with Exercise 6, the factorizations. Let
+$\varepsilon \neq 0$ and $A = \begin{bmatrix} \varepsilon & 1 \\ 1 & 0 \end{bmatrix}$. The LU
+factorization of $A$ without pivoting is
+$$L = \begin{bmatrix} 1 & 0 \\ 1/\varepsilon & 1 \end{bmatrix}, \qquad U = \begin{bmatrix}
+  \varepsilon & 1 \\ 0 & -1/\varepsilon \end{bmatrix},$$
+and it is unique; its entries $l_{21}$ and $u_{22}$ have modulus $1/|\varepsilon|$, which is
+large for small $\varepsilon$. With the row exchange $P = \begin{bmatrix} 0 & 1 \\ 1 & 0
+\end{bmatrix}$ of partial pivoting,
+$$PA = \begin{bmatrix} 1 & 0 \\ \varepsilon & 1 \end{bmatrix} = L' U', \qquad L' =
+  \begin{bmatrix} 1 & 0 \\ \varepsilon & 1 \end{bmatrix}, \quad U' = I,$$
+and if $|\varepsilon| \le 1$, the entries of $L'$ have modulus at most $1$.
+
+For $|\varepsilon| \le 1$ the second row is the pivot row of partial pivoting. The uniqueness
+follows from Theorem 3.4. -/
 theorem example_3_7_lu {ε : ℝ} (hε : ε ≠ 0) :
     IsLU !![ε, 1; 1, 0] !![1, 0; ε⁻¹, 1] !![ε, 1; 0, -ε⁻¹] ∧
       (∀ L U, IsLU !![ε, 1; 1, 0] L U → L = !![1, 0; ε⁻¹, 1] ∧ U = !![ε, 1; 0, -ε⁻¹]) ∧
@@ -325,10 +444,17 @@ theorem example_3_7_lu {ε : ℝ} (hε : ε ≠ 0) :
     · exact one_apply_ne hij.ne'
   · fin_cases i <;> fin_cases j <;> simp [hε1]
 
-/-- **§3.10, the residual and the error.** If `δb` in (3.11) is regarded as the residual
-`r̂ = b - A x̂` of a computed solution `x̂`, then for `A` nonsingular, `A x = b`, `b ≠ 0`:
-`‖x - x̂‖ / ‖x‖ ≤ K(A) ‖r̂‖ / (‖A‖ ‖x‖) ≤ K(A) ‖r̂‖ / ‖b‖` in any induced `p`-norm — a small
-residual does not guarantee a small error when `K(A) ≫ 1` (Example 3.8). -/
+/-- **Section 3.10** of [quarteroni2000numerical], the residual and the error. Let
+$1 \le p \le \infty$, let $A \in \mathbb{R}^{n \times n}$ be nonsingular, let $Ax = b$ with
+$b \neq 0$, and let $\hat x \in \mathbb{R}^n$ be any vector, with residual
+$\hat r = b - A\hat x$. Then
+$$\frac{\|x - \hat x\|_p}{\|x\|_p} \le \frac{K_p(A) \|\hat r\|_p}{\|A\|_p \|x\|_p} \le
+  \frac{K_p(A) \|\hat r\|_p}{\|b\|_p}.$$
+So a small residual does not guarantee a small error when $K_p(A) \gg 1$ (Example 3.8).
+
+This is the bound (3.11) with $\delta b$ regarded as the residual of the computed solution. The
+norms of vectors are those of `WithLp p (Fin n → ℝ)`, and $\|A\|_p$ and $K_p(A)$ are
+`Matrix.lpOpNorm p A` and `QuarteroniSaccoSaleri.Chapter03.condNumber p A`. -/
 theorem residual_error_bound (p : ℝ≥0∞) [Fact (1 ≤ p)] {A : Matrix (Fin n) (Fin n) ℝ}
     {b x : Fin n → ℝ} (hA : IsUnit A) (hx : A *ᵥ x = b) (hb : b ≠ 0) (xhat : Fin n → ℝ) :
     ‖WithLp.toLp p (x - xhat)‖ / ‖WithLp.toLp p x‖ ≤
@@ -370,10 +496,14 @@ theorem residual_error_bound (p : ℝ≥0∞) [Fact (1 ≤ p)] {A : Matrix (Fin 
           rw [condNumber]; ring
   · exact div_le_div_of_nonneg_left (mul_nonneg hK0 hr0) hbn h2
 
-/-- **Example 3.8.** The matrix `A = [1, 1.0001; 1.0001, 1]` is ill conditioned,
-`K_∞(A) = 20001` (`‖A‖_∞ = 2.0001`, `‖A⁻¹‖_∞ = 10000`), and for `b = (1, 1)` the vector
-`x̂ = (-4.499775, 5.5002249)` has the small residual `‖b - A x̂‖_∞ ≤ 10⁻³` although it is far
-from the exact solution `x = A⁻¹ b = (0.499975…, 0.499975…)`: `‖x̂ - x‖_∞ ≥ 4`. -/
+/-- **Example 3.8** of [quarteroni2000numerical]. The matrix
+$$A = \begin{bmatrix} 1 & 1.0001 \\ 1.0001 & 1 \end{bmatrix}$$
+is ill conditioned, with $K_\infty(A) = 20001$. For $b = (1, 1)^T$, the vector
+$\hat x = (-4.499775, 5.5002249)^T$ has the small residual $\|b - A\hat x\|_\infty \le 10^{-3}$,
+although it is far from the exact solution $x = A^{-1}b$: $\|\hat x - x\|_\infty \ge 4$.
+
+The condition number comes from $\|A\|_\infty = 2.0001$ and $\|A^{-1}\|_\infty = 10000$. The
+exact solution has both components equal to $1/2.0001 \approx 0.499975$. -/
 theorem example_3_8 :
     condNumber ⊤ !![(1 : ℝ), 1.0001; 1.0001, 1] = 20001 ∧
       ‖![(1 : ℝ), 1] - !![(1 : ℝ), 1.0001; 1.0001, 1] *ᵥ ![-4.499775, 5.5002249]‖ ≤ 1 / 1000 ∧
@@ -395,10 +525,17 @@ theorem example_3_8 :
     refine le_trans ?_ (norm_le_pi_norm _ 0)
     norm_num [mulVec, dotProduct, Fin.sum_univ_two, Real.norm_eq_abs, le_abs]
 
-/-- **(3.69), the display before it.** Applying (3.13) with `γ = u` and assuming
-`u K_∞(A) ≤ 1/2`, the computed solution of `A x = b` (in the setting of Theorem 3.3 in the
-`∞`-norm) satisfies `‖δx‖_∞ / ‖x‖_∞ ≤ 2 u K_∞(A) / (1 - u K_∞(A)) ≤ 4 u K_∞(A)`. The
-"`≃ u K_∞(A)`" of (3.69) and the count of `t - m` exact digits are heuristics. -/
+/-- **Section 3.10** of [quarteroni2000numerical], the display before (3.69). Let
+$A \in \mathbb{R}^{n \times n}$ be nonsingular, let $Ax = b$ with $b \neq 0$, and let
+$(A + \delta A)(x + \delta x) = b + \delta b$. Let $u \ge 0$ with
+$\|\delta A\|_\infty \le u\|A\|_\infty$, $\|\delta b\|_\infty \le u\|b\|_\infty$ and
+$uK_\infty(A) \le 1/2$. Then
+$$\frac{\|\delta x\|_\infty}{\|x\|_\infty} \le \frac{2uK_\infty(A)}{1 - uK_\infty(A)} \le
+  4uK_\infty(A).$$
+
+This is (3.13) applied with $\gamma = u$, in the setting of Theorem 3.3 for the $\infty$-norm.
+The estimate $\simeq uK_\infty(A)$ of (3.69) and the count of $t - m$ exact digits are
+heuristics and are not formalized. -/
 theorem equation_3_69 {A δA : Matrix (Fin n) (Fin n) ℝ} {b δb x δx : Fin n → ℝ} (hA : IsUnit A)
     (hx : A *ᵥ x = b) (hb : b ≠ 0) (hδx : (A + δA) *ᵥ (x + δx) = b + δb) {u : ℝ} (hu : 0 ≤ u)
     (hδA : lpOpNorm ⊤ δA ≤ u * lpOpNorm ⊤ A) (hδb : ‖δb‖ ≤ u * ‖b‖)

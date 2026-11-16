@@ -12,67 +12,118 @@ import Numlib.Geometry.Triangulation
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter08.Section01
 
 /-!
-# Quarteroni–Sacco–Saleri §8.5: extension to the two-dimensional case
+# Quarteroni, Sacco and Saleri, Section 8.5: Extension to the two-dimensional case
 
-Surface file for Alfio Quarteroni, Riccardo Sacco and Fausto Saleri, *Numerical Mathematics*
-[quarteroni2000numerical], §8.5: tensor-product Lagrange interpolation on a rectangle (§8.5.1),
-the ill-posed bilinear example of Remark 8.1, and piecewise interpolation on a triangulation
-(§8.5.2): the affine map (8.34) from the reference triangle, the space `𝒫_k` (8.35) with
-`dim 𝒫_k(T) = (k+1)(k+2)/2`, the reference-element identity behind (8.38), and the sup-norm
-interpolation error (8.39) on a triangle, with the reference Lagrange basis as data, and the
-global estimate (8.40) on a triangulation.
+This module formalizes Section 8.5 of [quarteroni2000numerical], which extends polynomial
+interpolation to functions of two variables. Section 8.5.1 interpolates on a rectangular grid of
+nodes $(x_i, y_j)$ by the tensor-product interpolant $\Pi_{n,m} f(x, y) = \sum_{i=0}^n \sum_{j=0}^m
+f(x_i, y_j) l_i(x) l_j(y)$, and Remark 8.1 shows that interpolation by the bilinear polynomials
+$a_3 xy + a_2 x + a_1 y + a_0$ at four arbitrary nodes need not be unisolvent. Section 8.5.2
+interpolates piecewise on a triangulation. Each triangle $T$ with vertices $a_1, a_2, a_3$ is the
+image of the reference triangle $\hat T$ with vertices $(0, 0)$, $(1, 0)$, $(0, 1)$ under the affine
+map $F_T(\hat x) = B_T \hat x + b_T$ of (8.34). The space $\mathbb{P}_k$ of polynomials of total
+degree at most $k$ in two variables has dimension $d_k = (k+1)(k+2)/2$ (8.35). The element
+interpolant $\Pi_T^k f$ is the reference interpolant read through $F_T$ (8.38), and it satisfies the
+error bound $\|f - \Pi_T^k f\|_{\infty,T} \le C h_T^{k+1} \|f^{(k+1)}\|_{\infty,T}$ (8.39). The
+piecewise interpolant $\Pi_h^k f$ on a triangulation with mesh size $h$ satisfies the global bound
+$\|f - \Pi_h^k f\|_{\infty,\Omega} \le C h^{k+1} \|f^{(k+1)}\|_{\infty,\Omega}$ (8.40).
 
-The algebra is `Numlib/Approximation/NodalInterpolation` (`Approximation.nodalInterp`,
-`Approximation.IsNodalBasis`, `Approximation.nodalInterp_comp`),
-`Numlib/Approximation/Unisolvent` (`Approximation.IsUnisolvent`) and
-`Numlib/Approximation/MvPolynomial` (`Approximation.mvPolyLE`, `Approximation.finrank_mvPolyLE`);
-the analysis behind (8.39) is `Numlib/Analysis/Calculus/TaylorSegment` (Taylor's theorem along a
-segment with the Lagrange bound, and the polynomial nature of the Taylor polynomial).
-The triangulation is `Triangulation` of `Numlib/Geometry/Triangulation.lean` (a finite family of
-nondegenerate triangles covering `Ω̄`, edge to edge), on the plane `EuclideanSpace ℝ (Fin 2)`;
-the admissibility that makes the piecewise interpolant (8.37) continuous is
-`Triangulation.IsConformingElement`, and `Π_h^k f` is `Triangulation.globalInterp`, whose
-restriction to an element is `Π_T^k f` of (8.38) (`Triangulation.localInterp`). The space
-`𝒫_k^c(Ω)` of (8.36) is `Triangulation.polySpace` of `Numlib/Analysis/Sobolev/Triangulation.lean`.
-Example 8.7 is a table.
+The algebra comes from the backbone modules `Numlib.Approximation.NodalInterpolation` (the nodal
+interpolation operator `Approximation.nodalInterp`, the nodal bases `Approximation.IsNodalBasis`,
+and the change of variables `Approximation.nodalInterp_comp`), `Numlib.Approximation.Unisolvent`
+(`Approximation.IsUnisolvent`) and `Numlib.Approximation.MvPolynomial` (`Approximation.mvPolyLE` and
+`Approximation.finrank_mvPolyLE`). The analysis behind (8.39) is Taylor's theorem along a segment
+with the Lagrange bound, from `Numlib.Analysis.Calculus.TaylorSegment`. The triangulations of (8.40)
+are `Triangulation` of `Numlib.Geometry.Triangulation`.
 
 ## Main definitions
 
-* `tensorProductInterp x y f` — `Π_{n,m} f(x, y) = ∑_i ∑_j f(x_i, y_j) l_i(x) l_j(y)`.
-* `remark_8_1_space`, `remark_8_1_node` — the bilinear polynomials `a₃xy + a₂x + a₁y + a₀` on the
-  square `[-1, 1]²` and the four nodes `(-1, 0), (0, -1), (1, 0), (0, 1)` of Remark 8.1.
-* `equation_8_34 a₁ a₂ a₃` — the affine map `F_T x̂ = B_T x̂ + b_T` from the reference triangle onto
-  the triangle with vertices `a₁, a₂, a₃`, and `equation_8_34_matrix` its matrix `B_T`.
-* `referenceTriangle` — the reference triangle `T̂` with vertices `(0, 0), (1, 0), (0, 1)`.
+* Section 8.5.1, `QuarteroniSaccoSaleri.Chapter08.tensorProductInterp`: the tensor-product
+  interpolant $\Pi_{n,m} f$ on the grid $(x_i, y_j)$.
+* Remark 8.1, `QuarteroniSaccoSaleri.Chapter08.remark_8_1_space`: the bilinear polynomials
+  $a_3 xy + a_2 x + a_1 y + a_0$ on the square $[-1, 1]^2$.
+* Remark 8.1, `QuarteroniSaccoSaleri.Chapter08.remark_8_1_node`: the four nodes $(-1, 0)$,
+  $(0, -1)$, $(1, 0)$, $(0, 1)$.
+* (8.34), `QuarteroniSaccoSaleri.Chapter08.equation_8_34`: the affine map
+  $F_T(\hat x) = B_T \hat x + b_T$ from the reference triangle onto the triangle with vertices
+  $a_1, a_2, a_3$.
+* (8.34), `QuarteroniSaccoSaleri.Chapter08.equation_8_34_matrix`: the matrix
+  $B_T = [a_2 - a_1 \mid a_3 - a_1]$.
+* Section 8.5.2, `QuarteroniSaccoSaleri.Chapter08.referenceTriangle`: the closed reference triangle
+  $\hat T$.
+* Section 8.5.2, `QuarteroniSaccoSaleri.Chapter08.linearNodes` and
+  `QuarteroniSaccoSaleri.Chapter08.linearShape`: for $k = 1$, the vertices of $\hat T$ and the
+  barycentric coordinates.
 
 ## Main results
 
-* `tensorProductInterp_isNodalBasis`, `tensorProductInterp_apply_node`,
-  `tensorProductInterp_mem_span` — the tensor-product interpolant reproduces the data at the grid
-  nodes and is a polynomial of degree `≤ n` in `x` and `≤ m` in `y`.
-* `remark_8_1`, `remark_8_1_apply_node` — the bilinear interpolation problem at the four nodes is
-  not unisolvent: `xy` vanishes at all of them, so the coefficient `a₃` is free.
-* `equation_8_34_vertex`, `equation_8_34_bijective` — `F_T` sends the reference vertices to
-  `a₁, a₂, a₃` and is a bijection exactly when `det B_T ≠ 0`.
-* `equation_8_35_finrank` — `d_k = dim 𝒫_k(T) = (k+1)(k+2)/2`.
-* `equation_8_38_comp` — the element interpolant is the reference interpolant read through `F_T`.
-* `equation_8_39` — `‖f - Π_T^k f‖_{∞,T} ≤ C h_T^{k+1} ‖f^{(k+1)}‖_{∞,T}` with
-  `C = (∑_m ‖l̂_m‖_{∞,T̂} + 1)/(k+1)!`, for a reference Lagrange basis `l̂_m` of `𝒫_k(T̂)` given as
-  data; `equation_8_34_segment_mem`, `norm_equation_8_34_sub_vertex_le` and
-  `exists_mvPolynomial_taylor_equation_8_34` are its geometric and algebraic ingredients.
-* `equation_8_39_linear` — the case `k = 1` with the nodes at the vertices and the barycentric
-  coordinates `linearShape` as the reference basis (`linearShape_isNodalBasis`,
-  `linearShape_span`): `‖f - Π_T^1 f‖_{∞,T} ≤ 2 h_T² ‖f''‖_{∞,T}`.
-* `equation_8_40` — `‖f - Π_h^k f‖_{∞,Ω} ≤ C h^{k+1} ‖f^{(k+1)}‖_{∞,Ω}` on a triangulation, `h`
-  the mesh size: (8.39) on the element containing the point, transported from `ℝ × ℝ` to the
-  plane of the triangulation along the coordinate equivalence `planeEquiv`. The book's
-  regularity hypothesis on the triangulation is not needed in the sup norm.
+* Section 8.5.1, `QuarteroniSaccoSaleri.Chapter08.tensorProductInterp_isNodalBasis`: for distinct
+  nodes, the products $l_i(x) l_j(y)$ are a nodal basis for the grid.
+* Section 8.5.1, `QuarteroniSaccoSaleri.Chapter08.tensorProductInterp_apply_node`:
+  $\Pi_{n,m} f(x_i, y_j) = f(x_i, y_j)$.
+* Section 8.5.1, `QuarteroniSaccoSaleri.Chapter08.tensorProductInterp_mem_span`: $\Pi_{n,m} f$ is a
+  polynomial of degree at most $n$ in $x$ and at most $m$ in $y$.
+* Remark 8.1, `QuarteroniSaccoSaleri.Chapter08.remark_8_1_apply_node`: the product $xy$ vanishes at
+  the four nodes.
+* Remark 8.1, `QuarteroniSaccoSaleri.Chapter08.remark_8_1`: the bilinear interpolation problem at
+  the four nodes is not unisolvent.
+* (8.34), `QuarteroniSaccoSaleri.Chapter08.equation_8_34_vertex`: $F_T$ maps the vertices of
+  $\hat T$ to $a_1, a_2, a_3$.
+* (8.34), `QuarteroniSaccoSaleri.Chapter08.equation_8_34_bijective`: $F_T$ is a bijection if and
+  only if $\det B_T \neq 0$.
+* (8.35), `QuarteroniSaccoSaleri.Chapter08.equation_8_35_finrank`:
+  $\dim \mathbb{P}_k(T) = (k+1)(k+2)/2$ for a set $T$ with nonempty interior.
+* (8.38), `QuarteroniSaccoSaleri.Chapter08.equation_8_38_comp`: $(\Pi_T^k f) \circ F_T = \hat\Pi^k
+  (f \circ F_T)$.
+* (8.39), `QuarteroniSaccoSaleri.Chapter08.equation_8_39`: $|f(x) - \Pi_T^k f(x)| \le C h_T^{k+1}
+  \|f^{(k+1)}\|_{\infty,T}$ on $T$, with $C = (\sum_m \|\hat l_m\|_{\infty,\hat T} + 1)/(k+1)!$.
+* (8.39) for $k = 1$, `QuarteroniSaccoSaleri.Chapter08.equation_8_39_linear`: $|f(x) - \Pi_T^1 f(x)|
+  \le 2 h_T^2 \|f''\|_{\infty,T}$ on $T$.
+* (8.40), `QuarteroniSaccoSaleri.Chapter08.equation_8_40`: $|f(x) - \Pi_h^k f(x)| \le C h^{k+1}
+  \|f^{(k+1)}\|_{\infty,\Omega}$ on $\bar\Omega$ for every conforming triangulation.
+
+## Proof outline
+
+For (8.39), let $P$ be the Taylor polynomial of degree $k$ of $f$ at the vertex $a_1$. Read through
+$F_T$, $P$ is a polynomial of total degree at most $k$, so the interpolant reproduces it, and
+$f - \Pi_T^k f = (f - P) - \Pi_T^k (f - P)$. The triangle $T$ is star-shaped with respect to $a_1$,
+so Taylor's theorem along the segments from $a_1$ gives $|f - P| \le M h_T^{k+1}/(k+1)!$ on $T$. The
+bound (8.40) is (8.39) on the element that contains the point.
 
 ## Conventions
 
-Points of the plane are `ℝ × ℝ`, except in (8.40), whose triangulation lives on
-`EuclideanSpace ℝ (Fin 2)` and whose reference data are read through `planeEquiv`; a polynomial
-space on a set `D ⊆ ℝ²` is `Approximation.mvPolyLE` on `D : Set (Fin 2 → ℝ)`.
+* Points of the plane are elements of `ℝ × ℝ`, which carries the sup norm
+  $\|(x, y)\| = \max\{|x|, |y|\}$. The exception is (8.40): its triangulation lives on
+  `EuclideanSpace ℝ (Fin 2)`, and the reference data are read through the coordinate equivalence
+  `QuarteroniSaccoSaleri.Chapter08.planeEquiv`.
+* The norm $\|f^{(k+1)}(x)\|$ is the operator norm of the $(k+1)$-linear map
+  `iteratedFDeriv ℝ (k + 1) f x`.
+* A polynomial space on a set $D \subseteq \mathbb{R}^2$ is `Approximation.mvPolyLE` on
+  `D : Set (Fin 2 → ℝ)`.
+
+## Implementation notes
+
+* The admissibility of a triangulation, which makes the piecewise interpolant (8.37) continuous, is
+  `Triangulation.IsConformingElement`. The piecewise interpolant $\Pi_h^k f$ is
+  `Triangulation.globalInterp`, and its restriction to an element is the element interpolant
+  `Triangulation.localInterp`.
+* The space $\mathbb{P}_k^c(\Omega)$ of (8.36) is `Triangulation.polySpace` of
+  `Numlib.Analysis.Sobolev.Triangulation`.
+
+## Deviations from the source
+
+* **(8.39)** (generalization). The reference Lagrange basis of $\mathbb{P}_k(\hat T)$ is a
+  hypothesis: any nodal basis with nodes in $\hat T$ that spans $\mathbb{P}_k(\hat T)$, and $h_T$ is
+  any bound on the two edges at $a_1$. The constant is explicit. See
+  `QuarteroniSaccoSaleri.Chapter08.equation_8_39`.
+* **(8.40)** (generalization). The regularity hypothesis $\max_T h_T/\rho_T \le \sigma$ of the
+  source is not needed in the sup norm. See `QuarteroniSaccoSaleri.Chapter08.equation_8_40`.
+
+## Not formalized
+
+* **Example 8.7**, a table.
+* **The existence of the reference Lagrange basis** on the principal lattice of Figure 8.8 (the
+  $\mathbb{P}_k$-unisolvence of Ciarlet, Theorem 2.2.1), which (8.39) takes as a hypothesis.
 -/
 
 open Polynomial Set
@@ -82,20 +133,32 @@ namespace QuarteroniSaccoSaleri.Chapter08
 
 variable {n m : ℕ}
 
-/-! ### §8.5.1: tensor-product interpolation -/
+/-! ### Section 8.5.1: tensor-product interpolation -/
 
-/-- **`Π_{n,m} f`** (§8.5.1): the tensor-product interpolant
-`Π_{n,m} f(x, y) = ∑_{i=0}^n ∑_{j=0}^m f(x_i, y_j) l_i(x) l_j(y)` on the grid `(x_i, y_j)`, with
-`l_i ∈ 𝒫_n` and `l_j ∈ 𝒫_m` the one-dimensional characteristic polynomials in `x` and `y`: the nodal
-interpolation operator `Approximation.nodalInterp` with the product shape functions. -/
+/-- **Section 8.5.1** of [quarteroni2000numerical], the tensor-product interpolant. Let
+$x_0, \ldots, x_n$ and $y_0, \ldots, y_m$ be real numbers, and let
+$f : \mathbb{R}^2 \to \mathbb{R}$. The **tensor-product interpolant** of $f$ on the grid
+$(x_i, y_j)$ is
+$$\Pi_{n,m} f(x, y) = \sum_{i=0}^n \sum_{j=0}^m f(x_i, y_j) l_i(x) l_j(y),$$
+where $l_i \in \mathbb{P}_n$ and $l_j \in \mathbb{P}_m$ are the characteristic Lagrange
+polynomials of the nodes $x_0, \ldots, x_n$ and $y_0, \ldots, y_m$.
+
+The polynomial $l_i$ is `Lagrange.basis Finset.univ x i`. The interpolant is the nodal
+interpolation operator `Approximation.nodalInterp` with the nodes $(x_i, y_j)$ and the product
+shape functions. -/
 noncomputable def tensorProductInterp (x : Fin (n + 1) → ℝ) (y : Fin (m + 1) → ℝ)
     (f : ℝ × ℝ → ℝ) : ℝ × ℝ → ℝ :=
   Approximation.nodalInterp (fun p : Fin (n + 1) × Fin (m + 1) => (x p.1, y p.2))
     (fun p q => (Lagrange.basis Finset.univ x p.1).eval q.1
       * (Lagrange.basis Finset.univ y p.2).eval q.2) f
 
-/-- The product shape functions `l_i(x) l_j(y)` are dual to the grid nodes `(x_i, y_j)`: (8.3) in
-each variable. -/
+/-- **Section 8.5.1** of [quarteroni2000numerical], nodal property. Let $x_0, \ldots, x_n$ be
+distinct real numbers and let $y_0, \ldots, y_m$ be distinct real numbers. Then the product
+shape functions $l_i(x) l_j(y)$ form a nodal basis for the grid nodes $(x_i, y_j)$: the function
+with index $(i, j)$ takes the value $1$ at $(x_i, y_j)$ and the value $0$ at every other grid
+node.
+
+This is (8.3) in each variable. The nodal property is `Approximation.IsNodalBasis`. -/
 theorem tensorProductInterp_isNodalBasis {x : Fin (n + 1) → ℝ} (hx : Function.Injective x)
     {y : Fin (m + 1) → ℝ} (hy : Function.Injective y) :
     Approximation.IsNodalBasis (fun p : Fin (n + 1) × Fin (m + 1) => (x p.1, y p.2))
@@ -108,15 +171,19 @@ theorem tensorProductInterp_isNodalBasis {x : Fin (n + 1) → ℝ} (hx : Functio
       simp [equation_8_3 hx, equation_8_3 hy, h2]
     · simp [equation_8_3 hx, equation_8_3 hy, h1]
 
-/-- **§8.5.1.** The tensor-product interpolant takes the values `α_ij = f(x_i, y_j)` at the grid
-nodes: `Approximation.IsNodalBasis.nodalInterp_apply_node`. -/
+/-- **Section 8.5.1** of [quarteroni2000numerical], interpolation at the nodes. Let
+$x_0, \ldots, x_n$ be distinct real numbers, let $y_0, \ldots, y_m$ be distinct real numbers,
+and let $f : \mathbb{R}^2 \to \mathbb{R}$. Then for all $i$ and $j$,
+$$\Pi_{n,m} f(x_i, y_j) = f(x_i, y_j).$$
+
+The proof is `Approximation.IsNodalBasis.nodalInterp_apply_node`. -/
 theorem tensorProductInterp_apply_node {x : Fin (n + 1) → ℝ} (hx : Function.Injective x)
     {y : Fin (m + 1) → ℝ} (hy : Function.Injective y) (f : ℝ × ℝ → ℝ) (i : Fin (n + 1))
     (j : Fin (m + 1)) : tensorProductInterp x y f (x i, y j) = f (x i, y j) :=
   (tensorProductInterp_isNodalBasis hx hy).nodalInterp_apply_node f (i, j)
 
-/-- A polynomial function of degree at most `n` lies in the span of the monomials `s ↦ s^p`,
-`p ≤ n`, as a function on any set. -/
+/-- A polynomial function of degree at most $n$ lies in the span of the monomials $s \mapsto s^p$,
+$p \le n$. -/
 private theorem eval_mem_span_monomials {P : ℝ[X]} (hP : P.natDegree ≤ n) :
     (fun s : ℝ => P.eval s)
       ∈ Submodule.span ℝ (Set.range fun p : Fin (n + 1) => fun s : ℝ => s ^ (p : ℕ)) := by
@@ -130,8 +197,11 @@ private theorem eval_mem_span_monomials {P : ℝ[X]} (hP : P.natDegree ≤ n) :
   exact Submodule.sum_mem _ fun p _ =>
     Submodule.smul_mem _ _ (Submodule.subset_span ⟨p, rfl⟩)
 
-/-- **§8.5.1.** The tensor-product interpolant is a polynomial of degree `≤ n` in `x` and `≤ m` in
-`y`: it lies in the span of the monomials `x^p y^q`, `p ≤ n`, `q ≤ m`. -/
+/-- **Section 8.5.1** of [quarteroni2000numerical], polynomial degree. Let $x_0, \ldots, x_n$ be
+distinct real numbers, let $y_0, \ldots, y_m$ be distinct real numbers, and let
+$f : \mathbb{R}^2 \to \mathbb{R}$. Then $\Pi_{n,m} f$ is a polynomial of degree at most $n$ in
+$x$ and at most $m$ in $y$: it lies in the span of the monomials $x^p y^q$ with $p \le n$ and
+$q \le m$. -/
 theorem tensorProductInterp_mem_span {x : Fin (n + 1) → ℝ} (hx : Function.Injective x)
     {y : Fin (m + 1) → ℝ} (hy : Function.Injective y) (f : ℝ × ℝ → ℝ) :
     tensorProductInterp x y f ∈ Submodule.span ℝ
@@ -196,34 +266,44 @@ theorem tensorProductInterp_mem_span {x : Fin (n + 1) → ℝ} (hx : Function.In
 
 /-! ### Remark 8.1: the bilinear problem at four nodes -/
 
-/-- The unit square `[-1, 1]²`, as the product of two closed intervals. -/
+/-- **Remark 8.1** of [quarteroni2000numerical], the square. The square $[-1, 1]^2$, as the product
+of two closed intervals. -/
 abbrev remark_8_1_square : Type := Icc (-1 : ℝ) 1 × Icc (-1 : ℝ) 1
 
-/-- The coordinate functions `x` and `y` on the square, as continuous functions. -/
+/-- **Remark 8.1** of [quarteroni2000numerical], the coordinates. The coordinate functions
+$(x, y) \mapsto x$ and $(x, y) \mapsto y$ on the square $[-1, 1]^2$, as continuous functions. -/
 noncomputable def remark_8_1_coord : Fin 2 → C(remark_8_1_square, ℝ) :=
   ![⟨fun q => (q.1 : ℝ), by fun_prop⟩, ⟨fun q => (q.2 : ℝ), by fun_prop⟩]
 
-/-- **Remark 8.1**, the space of the polynomials `p(x, y) = a₃ xy + a₂ x + a₁ y + a₀` of degree `1`
-with respect to each of `x` and `y`, on the square `[-1, 1]²`. -/
+/-- **Remark 8.1** of [quarteroni2000numerical], the space. The space of the polynomials
+$$p(x, y) = a_3 xy + a_2 x + a_1 y + a_0,$$
+which have degree $1$ in each of $x$ and $y$, as continuous functions on the square $[-1, 1]^2$.
+
+The space is the span of $1$, $x$, $y$ and $xy$ in $C([-1, 1]^2)$. -/
 noncomputable def remark_8_1_space : Submodule ℝ C(remark_8_1_square, ℝ) :=
   Submodule.span ℝ {1, remark_8_1_coord 0, remark_8_1_coord 1,
     remark_8_1_coord 0 * remark_8_1_coord 1}
 
-/-- **Remark 8.1**, the four nodes `(-1, 0), (0, -1), (1, 0), (0, 1)`. -/
+/-- **Remark 8.1** of [quarteroni2000numerical], the nodes. The four nodes $(-1, 0)$, $(0, -1)$,
+$(1, 0)$ and $(0, 1)$ of the square $[-1, 1]^2$. -/
 noncomputable def remark_8_1_node : Fin 4 → remark_8_1_square :=
   ![(⟨-1, by norm_num⟩, ⟨0, by norm_num⟩), (⟨0, by norm_num⟩, ⟨-1, by norm_num⟩),
     (⟨1, by norm_num⟩, ⟨0, by norm_num⟩), (⟨0, by norm_num⟩, ⟨1, by norm_num⟩)]
 
-/-- **Remark 8.1**, the mechanism: the product `xy` vanishes at each of the four nodes. -/
+/-- **Remark 8.1** of [quarteroni2000numerical], the mechanism. The product $xy$ vanishes at each of
+the four nodes $(-1, 0)$, $(0, -1)$, $(1, 0)$, $(0, 1)$. -/
 theorem remark_8_1_apply_node (k : Fin 4) :
     (remark_8_1_coord 0 * remark_8_1_coord 1) (remark_8_1_node k) = 0 := by
   fin_cases k <;> simp [remark_8_1_coord, remark_8_1_node]
 
-/-- **Remark 8.1.** Interpolation by polynomials of degree `1` with respect to `x` and `y`,
-`p(x, y) = a₃ xy + a₂ x + a₁ y + a₀`, at the four distinct nodes `(-1, 0), (0, -1), (1, 0), (0, 1)`
-does not in general admit a unique solution: the problem is not unisolvent in the sense of
-`Numlib/Approximation/Unisolvent`, because `xy` is a nonzero element of the space vanishing at all
-four nodes — the interpolation constraints are satisfied by any value of the coefficient `a₃`. -/
+/-- **Remark 8.1** of [quarteroni2000numerical]. Interpolation by the polynomials
+$p(x, y) = a_3 xy + a_2 x + a_1 y + a_0$ at the four distinct nodes $(-1, 0)$, $(0, -1)$,
+$(1, 0)$, $(0, 1)$ is not unisolvent: it is not true that for every choice of four values there
+is exactly one such $p$ that takes these values at the nodes.
+
+The reason is that $xy$ is a nonzero element of the space that vanishes at the four nodes, so
+the interpolation conditions do not fix the coefficient $a_3$. Unisolvence is
+`Approximation.IsUnisolvent`, with the point evaluations at the nodes as the functionals. -/
 theorem remark_8_1 :
     ¬ Approximation.IsUnisolvent remark_8_1_space
       fun k => ContinuousMap.evalCLM ℝ (remark_8_1_node k) := by
@@ -240,33 +320,45 @@ theorem remark_8_1 :
     g (⟨1 / 2, by norm_num⟩, ⟨1 / 2, by norm_num⟩)) h3
   norm_num [remark_8_1_coord] at this
 
-/-! ### §8.5.2: the affine map from the reference triangle, and `𝒫_k` -/
+/-! ### Section 8.5.2: the affine map from the reference triangle, and the space $\mathbb{P}_k$ -/
 
-/-- **(8.34), the affine map** `F_T ξ = B_T ξ + b_T` from the reference triangle with vertices
-`(0, 0), (1, 0), (0, 1)` onto the triangle `T` with vertices `a₁, a₂, a₃`:
-`B_T = [a₂ - a₁ | a₃ - a₁]` and `b_T = a₁`, that is
-`F_T (ξ, η) = a₁ + ξ (a₂ - a₁) + η (a₃ - a₁)`. -/
+/-- **Equation (8.34)** of [quarteroni2000numerical], the affine map. Let
+$a_1, a_2, a_3 \in \mathbb{R}^2$. The **affine map** $F_T(\hat x) = B_T \hat x + b_T$ from the
+reference triangle with vertices $(0, 0)$, $(1, 0)$, $(0, 1)$ onto the triangle $T$ with
+vertices $a_1, a_2, a_3$ has $B_T = [a_2 - a_1 \mid a_3 - a_1]$ and $b_T = a_1$, that is,
+$$F_T(\hat x, \hat y) = a_1 + \hat x (a_2 - a_1) + \hat y (a_3 - a_1).$$
+
+The map is defined for any three points, also for collinear ones. -/
 noncomputable def equation_8_34 (a₁ a₂ a₃ : ℝ × ℝ) : ℝ × ℝ →ᵃ[ℝ] ℝ × ℝ :=
   ((LinearMap.fst ℝ ℝ ℝ).smulRight (a₂ - a₁)
     + (LinearMap.snd ℝ ℝ ℝ).smulRight (a₃ - a₁)).toAffineMap + AffineMap.const ℝ (ℝ × ℝ) a₁
 
-/-- **(8.34), the matrix** `B_T = [x₂ - x₁, x₃ - x₁; y₂ - y₁, y₃ - y₁]`. -/
+/-- **Equation (8.34)** of [quarteroni2000numerical], the matrix. Let
+$a_i = (x_i, y_i) \in \mathbb{R}^2$ for $i = 1, 2, 3$. The matrix of the affine map $F_T$ is
+$$B_T = \begin{bmatrix} x_2 - x_1 & x_3 - x_1 \\ y_2 - y_1 & y_3 - y_1 \end{bmatrix}.$$
+-/
 def equation_8_34_matrix (a₁ a₂ a₃ : ℝ × ℝ) : Matrix (Fin 2) (Fin 2) ℝ :=
   !![a₂.1 - a₁.1, a₃.1 - a₁.1; a₂.2 - a₁.2, a₃.2 - a₁.2]
 
-/-- The value of `F_T`. -/
+/-- **Equation (8.34)** of [quarteroni2000numerical], the value. Let
+$a_1, a_2, a_3, p \in \mathbb{R}^2$. Then
+$$F_T(p) = p_1 (a_2 - a_1) + p_2 (a_3 - a_1) + a_1.$$
+-/
 theorem equation_8_34_apply (a₁ a₂ a₃ : ℝ × ℝ) (p : ℝ × ℝ) :
     equation_8_34 a₁ a₂ a₃ p = p.1 • (a₂ - a₁) + p.2 • (a₃ - a₁) + a₁ := by
   simp [equation_8_34]
 
-/-- **(8.34)**: `F_T` sends the vertices `(0, 0), (1, 0), (0, 1)` of the reference triangle to the
-vertices `a₁, a₂, a₃` of `T`. -/
+/-- **Equation (8.34)** of [quarteroni2000numerical], the vertices. Let
+$a_1, a_2, a_3 \in \mathbb{R}^2$. Then $F_T(0, 0) = a_1$, $F_T(1, 0) = a_2$ and
+$F_T(0, 1) = a_3$. -/
 theorem equation_8_34_vertex (a₁ a₂ a₃ : ℝ × ℝ) :
     equation_8_34 a₁ a₂ a₃ (0, 0) = a₁ ∧ equation_8_34 a₁ a₂ a₃ (1, 0) = a₂ ∧
       equation_8_34 a₁ a₂ a₃ (0, 1) = a₃ := by
   simp [equation_8_34_apply]
 
-/-- The matrix of the linear part of `F_T` in the standard basis is `B_T`. -/
+/-- **Equation (8.34)** of [quarteroni2000numerical], the linear part. Let
+$a_1, a_2, a_3 \in \mathbb{R}^2$. The matrix of the linear part of $F_T$ in the standard basis
+of $\mathbb{R}^2$ is $B_T$. -/
 theorem toMatrix_equation_8_34_linear (a₁ a₂ a₃ : ℝ × ℝ) :
     LinearMap.toMatrix (Module.Basis.finTwoProd ℝ) (Module.Basis.finTwoProd ℝ)
       (equation_8_34 a₁ a₂ a₃).linear = equation_8_34_matrix a₁ a₂ a₃ := by
@@ -275,8 +367,9 @@ theorem toMatrix_equation_8_34_linear (a₁ a₂ a₃ : ℝ × ℝ) :
     simp [LinearMap.toMatrix_apply, equation_8_34, equation_8_34_matrix,
       Module.Basis.finTwoProd_zero, Module.Basis.finTwoProd_one, Module.Basis.coe_finTwoProd_repr]
 
-/-- **(8.34)**: `F_T` is a bijection of the plane exactly when `B_T` is invertible, `det B_T ≠ 0`,
-that is, when the three vertices are not collinear. -/
+/-- **Equation (8.34)** of [quarteroni2000numerical], invertibility. Let
+$a_1, a_2, a_3 \in \mathbb{R}^2$. The affine map $F_T$ is a bijection of the plane if and only
+if $\det B_T \neq 0$, that is, if and only if the three vertices are not collinear. -/
 theorem equation_8_34_bijective (a₁ a₂ a₃ : ℝ × ℝ) :
     Function.Bijective (equation_8_34 a₁ a₂ a₃) ↔ (equation_8_34_matrix a₁ a₂ a₃).det ≠ 0 := by
   set L := (equation_8_34 a₁ a₂ a₃).linear with hL
@@ -289,19 +382,31 @@ theorem equation_8_34_bijective (a₁ a₂ a₃ : ℝ × ℝ) :
     Ne, LinearMap.det_eq_zero_iff_ker_ne_bot, not_not, LinearMap.ker_eq_bot]
   exact ⟨fun h => h.1, fun h => ⟨h, LinearMap.injective_iff_surjective.mp h⟩⟩
 
-/-- **(8.35), `d_k = dim 𝒫_k(T) = (k+1)(k+2)/2`.** The space `𝒫_k(T)` of polynomials of total
-degree `≤ k` in two variables, restricted to a set `T ⊆ ℝ²` with nonempty interior (a triangle),
-is `Approximation.mvPolyLE T k`, of dimension `C(k + 2, 2) = (k+1)(k+2)/2`:
-`Approximation.finrank_mvPolyLE`. -/
+/-- **Equation (8.35)** of [quarteroni2000numerical]. Let $T \subseteq \mathbb{R}^2$ be a set with
+nonempty interior, such as a triangle, and let $k \in \mathbb{N}$. The space $\mathbb{P}_k(T)$
+of the restrictions to $T$ of the polynomials of total degree at most $k$ in two variables has
+dimension
+$$d_k = \dim \mathbb{P}_k(T) = \frac{(k+1)(k+2)}{2}.$$
+
+The space is `Approximation.mvPolyLE T k`, and the proof specializes
+`Approximation.finrank_mvPolyLE`. The division in Lean is division of natural numbers, which is
+exact here. -/
 theorem equation_8_35_finrank {T : Set (Fin 2 → ℝ)} (hT : (interior T).Nonempty) (k : ℕ) :
     Module.finrank ℝ (Approximation.mvPolyLE T k) = (k + 1) * (k + 2) / 2 := by
   rw [Approximation.finrank_mvPolyLE hT, Fintype.card_fin, Nat.choose_two_right,
     show k + 2 - 1 = k + 1 from rfl, mul_comm]
 
-/-- **The reference-element identity behind (8.38)**, `l_{j,T} = l̂_j ∘ F_T⁻¹`: for local nodes
-`ẑ_m` and basis functions `l̂_m` on the reference triangle and a left inverse `G` of `F_T`, the
-element interpolant `Π_T^k f = ∑_m f(F_T ẑ_m) (l̂_m ∘ G)` satisfies
-`(Π_T^k f) ∘ F_T = Π̂^k (f ∘ F_T)`: `Approximation.nodalInterp_comp`. -/
+/-- **Equation (8.38)** of [quarteroni2000numerical], the reference-element identity. Let
+$a_1, a_2, a_3 \in \mathbb{R}^2$, and let $G$ be a left inverse of $F_T$. Let
+$\hat z_m \in \mathbb{R}^2$ be local nodes and $\hat l_m : \mathbb{R}^2 \to \mathbb{R}$
+functions on the reference triangle, for $m$ in a finite set, and let
+$f : \mathbb{R}^2 \to \mathbb{R}$. Define the element interpolant $\Pi_T^k f = \sum_m f(F_T \hat
+z_m) (\hat l_m \circ G)$ and the reference interpolant
+$\hat\Pi^k g = \sum_m g(\hat z_m) \hat l_m$. Then
+$$(\Pi_T^k f) \circ F_T = \hat\Pi^k (f \circ F_T).$$
+
+This is the identity behind $l_{j,T} = \hat l_j \circ F_T^{-1}$ in (8.38), with $G$ in the role
+of $F_T^{-1}$. The proof is `Approximation.nodalInterp_comp`. -/
 theorem equation_8_38_comp {ι : Type*} [Fintype ι] (a₁ a₂ a₃ : ℝ × ℝ) {G : ℝ × ℝ → ℝ × ℝ}
     (hG : Function.LeftInverse G (equation_8_34 a₁ a₂ a₃)) (zhat : ι → ℝ × ℝ)
     (lhat : ι → ℝ × ℝ → ℝ) (f : ℝ × ℝ → ℝ) :
@@ -310,11 +415,14 @@ theorem equation_8_38_comp {ι : Type*} [Fintype ι] (a₁ a₂ a₃ : ℝ × �
       = Approximation.nodalInterp zhat lhat (f ∘ equation_8_34 a₁ a₂ a₃) :=
   Approximation.nodalInterp_comp zhat lhat f hG
 
-/-! ### (8.39): the interpolation error on a triangle -/
+/-! ### Equation (8.39): the interpolation error on a triangle -/
 
-/-- **The reference triangle `T̂`** of §8.5.2, with vertices `(0, 0)`, `(1, 0)` and `(0, 1)`, as a
-subset of the plane `ℝ × ℝ` on which the affine map (8.34) acts:
-`T̂ = {(x̂, ŷ) : x̂ ≥ 0, ŷ ≥ 0, x̂ + ŷ ≤ 1}`. -/
+/-- **Section 8.5.2** of [quarteroni2000numerical], the reference triangle. The **reference
+triangle** $\hat T$ with vertices $(0, 0)$, $(1, 0)$ and $(0, 1)$ is the closed set
+$$\hat T = \{(\hat x, \hat y) \in \mathbb{R}^2 : \hat x \ge 0, \ \hat y \ge 0, \ \hat x + \hat y
+  \le 1\}.$$
+
+It is a subset of `ℝ × ℝ`, the plane on which the affine map (8.34) acts. -/
 def referenceTriangle : Set (ℝ × ℝ) :=
   {x | 0 ≤ x.1 ∧ 0 ≤ x.2 ∧ x.1 + x.2 ≤ 1}
 
@@ -324,13 +432,19 @@ variable {a₁ a₂ a₃ : ℝ × ℝ}
 
 local notation "F_T" => equation_8_34 a₁ a₂ a₃
 
-/-- `F_T x̂ - a₁ = x̂ (a₂ - a₁) + ŷ (a₃ - a₁)`: the affine map (8.34) is `a₁` plus a linear map. -/
+/-- Let $a_1, a_2, a_3 \in \mathbb{R}^2$. For every
+$\hat x = (\hat x_1, \hat x_2) \in \mathbb{R}^2$, the affine map (8.34) satisfies $F_T \hat x -
+a_1 = \hat x_1 (a_2 - a_1) + \hat x_2 (a_3 - a_1)$. This supports (8.39). -/
 theorem equation_8_34_sub_vertex (x : ℝ × ℝ) :
     F_T x - a₁ = x.1 • (a₂ - a₁) + x.2 • (a₃ - a₁) := by
   rw [equation_8_34_apply, add_sub_cancel_right]
 
-/-- **The triangle `T = F_T(T̂)` is star-shaped with respect to its vertex `a₁`**: the segment from
-`a₁` to `F_T x̂` is `F_T` of the segment from `(0, 0)` to `x̂`, which stays in `T̂`. -/
+/-- Let $a_1, a_2, a_3 \in \mathbb{R}^2$. The triangle $T = F_T(\hat T)$ is star-shaped with respect
+to its vertex $a_1$: for $\hat x \in \hat T$ and $s \in [0, 1]$,
+$$a_1 + s (F_T \hat x - a_1) \in F_T(\hat T).$$
+
+This supports (8.39). The segment from $a_1$ to $F_T \hat x$ is the image under $F_T$ of the
+segment from $(0, 0)$ to $\hat x$, which stays in $\hat T$. -/
 theorem equation_8_34_segment_mem {x : ℝ × ℝ} (hx : x ∈ referenceTriangle) {s : ℝ}
     (hs : s ∈ Icc (0 : ℝ) 1) : a₁ + s • (F_T x - a₁) ∈ F_T '' referenceTriangle := by
   refine ⟨s • x, ⟨mul_nonneg hs.1 hx.1, mul_nonneg hs.1 hx.2.1, ?_⟩, ?_⟩
@@ -341,8 +455,10 @@ theorem equation_8_34_segment_mem {x : ℝ × ℝ} (hx : x ∈ referenceTriangle
     simp only [Prod.smul_fst, Prod.smul_snd, smul_eq_mul, smul_add, smul_smul]
     abel
 
-/-- **The distance from the vertex `a₁` to a point of `T`** is at most any `h` bounding the two
-edge lengths `‖a₂ - a₁‖`, `‖a₃ - a₁‖` at `a₁`. -/
+/-- Let $a_1, a_2, a_3 \in \mathbb{R}^2$ and $h \in \mathbb{R}$ with $\|a_2 - a_1\| \le h$ and
+$\|a_3 - a_1\| \le h$. Then every point of the triangle $T = F_T(\hat T)$ has distance at most
+$h$ from the vertex $a_1$: $\|F_T \hat x - a_1\| \le h$ for all $\hat x \in \hat T$. This
+supports (8.39). -/
 theorem norm_equation_8_34_sub_vertex_le {h : ℝ} (hh₂ : ‖a₂ - a₁‖ ≤ h) (hh₃ : ‖a₃ - a₁‖ ≤ h)
     {x : ℝ × ℝ} (hx : x ∈ referenceTriangle) : ‖F_T x - a₁‖ ≤ h := by
   rw [equation_8_34_sub_vertex]
@@ -356,10 +472,16 @@ theorem norm_equation_8_34_sub_vertex_le {h : ℝ} (hh₂ : ‖a₂ - a₁‖ �
     _ ≤ 1 * h := mul_le_mul_of_nonneg_right hx.2.2 ((norm_nonneg _).trans hh₂)
     _ = h := one_mul h
 
-/-- **The Taylor polynomial of `f` at the vertex `a₁`, read through `F_T`, lies in `𝒫_k(T̂)`**:
-`x̂ ↦ ∑_{j ≤ k} (1/j!) D^j f(a₁)[F_T x̂ - a₁]^j` is the evaluation at `(x̂, ŷ)` of a polynomial in
-two variables of total degree at most `k` (`exists_mvPolynomial_taylorSum`, since
-`F_T x̂ - a₁ = x̂ (a₂ - a₁) + ŷ (a₃ - a₁)`). -/
+/-- Let $a_1, a_2, a_3 \in \mathbb{R}^2$, $f : \mathbb{R}^2 \to \mathbb{R}$ and $k \in \mathbb{N}$.
+The Taylor polynomial of degree $k$ of $f$ at the vertex $a_1$, read through $F_T$, is a
+polynomial of total degree at most $k$: there is a polynomial $q$ in two variables of total
+degree at most $k$ such that for all $\hat x = (\hat x_1, \hat x_2) \in \mathbb{R}^2$,
+$$\sum_{j=0}^k \frac{1}{j!} D^j f(a_1)[F_T \hat x - a_1, \ldots, F_T \hat x - a_1] = q(\hat x_1,
+  \hat x_2).$$
+
+This supports (8.39). The statement needs no smoothness of $f$, because `iteratedFDeriv` is
+defined for every function. The proof uses `exists_mvPolynomial_taylorSum` and the formula for
+$F_T \hat x - a_1$. -/
 theorem exists_mvPolynomial_taylor_equation_8_34 (f : ℝ × ℝ → ℝ) (k : ℕ) :
     ∃ q : MvPolynomial (Fin 2) ℝ, q.totalDegree ≤ k ∧ ∀ x : ℝ × ℝ,
       ∑ j ∈ Finset.range (k + 1), ((j ! : ℝ)⁻¹) • iteratedFDeriv ℝ j f a₁ (fun _ => F_T x - a₁)
@@ -370,28 +492,39 @@ theorem exists_mvPolynomial_taylor_equation_8_34 (f : ℝ × ℝ → ℝ) (k : �
   simp only [Fin.sum_univ_two, Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_fin_one,
     equation_8_34_sub_vertex]
 
-/-- **(8.39), the interpolation error on a triangle.** Let `T = F_T(T̂)` be the image of the
-reference triangle under the affine map (8.34) with vertices `a₁, a₂, a₃`, let `G` be a left
-inverse of `F_T`, and let `l̂_m`, `m ∈ ι`, be the Lagrange basis of `𝒫_k(T̂)` at the local nodes
-`ẑ_m ∈ T̂`: `l̂_m(ẑ_j) = δ_{mj}` and every polynomial of total degree `≤ k` is a combination of the
-`l̂_m` on `T̂`. Let `Π_T^k f = ∑_m f(F_T ẑ_m) l̂_m ∘ G` be the element interpolant (8.38). If `f` is
-`C^{k+1}` at every point of `T` with `‖f^{(k+1)}‖_{∞,T} ≤ M`, and `h_T ≥ ‖a₂ - a₁‖, ‖a₃ - a₁‖`,
-then for every `x ∈ T`
+/-- **Equation (8.39)** of [quarteroni2000numerical]. Let $a_1, a_2, a_3 \in \mathbb{R}^2$, let
+$F_T$ be the affine map (8.34), let $G$ be a left inverse of $F_T$, and let $T = F_T(\hat T)$.
+Let $k \in \mathbb{N}$. Let $\hat z_m \in \hat T$ and $\hat l_m : \mathbb{R}^2 \to \mathbb{R}$,
+for $m$ in a finite set, satisfy:
+* $\hat l_m(\hat z_j) = \delta_{mj}$ for all $m$ and $j$;
+* every polynomial of total degree at most $k$ in two variables equals a linear combination of
+  the $\hat l_m$ on $\hat T$;
+* $|\hat l_m| \le L_m$ on $\hat T$ for all $m$.
 
-  `|f(x) - Π_T^k f(x)| ≤ C h_T^{k+1} ‖f^{(k+1)}‖_{∞,T}`, `C = (∑_m ‖l̂_m‖_{∞,T̂} + 1)/(k+1)!`,
+Let $\Pi_T^k f = \sum_m f(F_T \hat z_m) (\hat l_m \circ G)$ be the element interpolant (8.38).
+Let $h \in \mathbb{R}$ with $\|a_2 - a_1\| \le h$ and $\|a_3 - a_1\| \le h$. Let
+$f : \mathbb{R}^2 \to \mathbb{R}$ be $C^{k+1}$ at every point of $T$, and let
+$\|f^{(k+1)}(x)\| \le M$ for all $x \in T$. Then for every $x \in T$,
+$$|f(x) - \Pi_T^k f(x)| \le \frac{\sum_m L_m + 1}{(k+1)!} \, h^{k+1} M.$$
 
-with `C` independent of `h_T` and `f`. The book quotes Ciarlet–Lions Theorem 16.1 (the
-Bramble–Hilbert route through `W^{k+1,∞}`); in the sup norm the proof is elementary: with `P` the
-Taylor polynomial of `f` of degree `k` at the vertex `a₁`, `f - Π_T^k f = (f - P) - Π_T^k(f - P)`
-because `Π_T^k` reproduces `𝒫_k(T)` (`exists_mvPolynomial_taylor_equation_8_34`), and
-`|f - P| ≤ M h_T^{k+1}/(k+1)!` on `T` by Taylor's theorem along the segments from `a₁`
-(`norm_sub_taylorSum_segment_le`), `T` being star-shaped with respect to `a₁`
-(`equation_8_34_segment_mem`). No shape regularity enters. Conventions: `ℝ × ℝ` carries the sup
-norm, `‖f^{(k+1)}(x)‖` is the operator norm of the `(k+1)`-linear map `iteratedFDeriv ℝ (k + 1) f x`
-for that norm, and `h_T` is any bound on the two edges at `a₁` (the maximum edge length of `T`, in
-any norm dominating the sup norm, qualifies). The reference basis is data: its existence for the
-principal lattice of Figure 8.8 is the `𝒫_k`-unisolvence of Ciarlet, Theorem 2.2.1, not
-formalized. -/
+**Generalization.** The source states $\|f - \Pi_T^k f\|_{\infty,T} \le C h_T^{k+1}
+\|f^{(k+1)}\|_{\infty,T}$ for the Lagrange basis on the principal lattice of Figure 8.8, with
+$h_T$ the diameter of $T$ and a constant $C$ independent of $h_T$ and $f$, and quotes the
+theorem of Ciarlet and Lions (Theorem 16.1), whose proof goes through the Bramble–Hilbert lemma
+in $W^{k+1,\infty}$. Here the reference basis is any nodal basis that spans
+$\mathbb{P}_k(\hat T)$, $h$ is any bound on the two edges at $a_1$, and the constant is
+explicit. The maximum edge length of $T$, in any norm that dominates the sup norm, is such a
+bound. No shape regularity of $T$ enters. The existence of the basis on the principal lattice is
+the $\mathbb{P}_k$-unisolvence of Ciarlet, Theorem 2.2.1, which is not formalized.
+
+The plane `ℝ × ℝ` carries the sup norm, and $\|f^{(k+1)}(x)\|$ is the operator norm of the
+$(k+1)$-linear map `iteratedFDeriv ℝ (k + 1) f x`. The left inverse $G$ exists only if $F_T$ is
+injective, that is, only if $T$ is nondegenerate. The proof is elementary: with $P$ the Taylor
+polynomial of $f$ of degree $k$ at $a_1$, $f - \Pi_T^k f = (f - P) - \Pi_T^k (f - P)$ because
+$\Pi_T^k$ reproduces $P$
+(`QuarteroniSaccoSaleri.Chapter08.exists_mvPolynomial_taylor_equation_8_34`), and
+$|f - P| \le M h^{k+1}/(k+1)!$ on $T$ by `norm_sub_taylorSum_segment_le` along the segments from
+$a_1$ (`QuarteroniSaccoSaleri.Chapter08.equation_8_34_segment_mem`). -/
 theorem equation_8_39 {ι : Type*} [Fintype ι] {k : ℕ} {G : ℝ × ℝ → ℝ × ℝ}
     (hG : Function.LeftInverse G F_T)
     {zhat : ι → ℝ × ℝ} (hz : ∀ m, zhat m ∈ referenceTriangle) {lhat : ι → ℝ × ℝ → ℝ}
@@ -461,37 +594,47 @@ theorem equation_8_39 {ι : Type*} [Fintype ι] {k : ℕ} {G : ℝ × ℝ → �
 
 end Triangle
 
-/-! #### The case `k = 1`: the three vertices -/
+/-! ### The case $k = 1$: nodes at the vertices -/
 
-/-- **The local nodes for `k = 1`** (§8.5.2, Figure 8.8): the three vertices
-`(0, 0), (1, 0), (0, 1)` of the reference triangle. -/
+/-- **Section 8.5.2** of [quarteroni2000numerical], the local nodes for $k = 1$ (Figure 8.8). The
+three vertices $(0, 0)$, $(1, 0)$ and $(0, 1)$ of the reference triangle. -/
 def linearNodes : Fin 3 → ℝ × ℝ :=
   ![(0, 0), (1, 0), (0, 1)]
 
-/-- **The reference Lagrange basis of `𝒫_1(T̂)` at the vertices**: the barycentric coordinates
-`λ₀ = 1 - x̂ - ŷ`, `λ₁ = x̂`, `λ₂ = ŷ`. -/
+/-- **Section 8.5.2** of [quarteroni2000numerical], the reference basis for $k = 1$. The Lagrange
+basis of $\mathbb{P}_1(\hat T)$ at the vertices is given by the barycentric coordinates
+$$\lambda_0(\hat x, \hat y) = 1 - \hat x - \hat y, \qquad \lambda_1(\hat x, \hat y) = \hat x,
+  \qquad \lambda_2(\hat x, \hat y) = \hat y.$$
+-/
 def linearShape : Fin 3 → ℝ × ℝ → ℝ :=
   ![fun x => 1 - x.1 - x.2, fun x => x.1, fun x => x.2]
 
-/-- The vertices lie in the reference triangle. -/
+/-- **Section 8.5.2** of [quarteroni2000numerical], for $k = 1$. The three vertices lie in the
+reference triangle $\hat T$. -/
 theorem linearNodes_mem (m : Fin 3) : linearNodes m ∈ referenceTriangle := by
   fin_cases m <;> simp [linearNodes, referenceTriangle]
 
-/-- The barycentric coordinates are dual to the vertices, `λ_m(ẑ_j) = δ_{mj}`. -/
+/-- **Section 8.5.2** of [quarteroni2000numerical], for $k = 1$. The barycentric coordinates are a
+nodal basis for the vertices: $\lambda_m(\hat z_j) = \delta_{mj}$. -/
 theorem linearShape_isNodalBasis : Approximation.IsNodalBasis linearNodes linearShape where
   eval_self m := by fin_cases m <;> simp [linearNodes, linearShape]
   eval_of_ne m j hmj := by
     fin_cases m <;> fin_cases j <;> simp_all [linearNodes, linearShape]
 
-/-- The barycentric coordinates are bounded by `1` on the reference triangle. -/
+/-- **Section 8.5.2** of [quarteroni2000numerical], for $k = 1$. The barycentric coordinates satisfy
+$|\lambda_m(\hat x)| \le 1$ for every $\hat x \in \hat T$. -/
 theorem abs_linearShape_le (m : Fin 3) {x : ℝ × ℝ} (hx : x ∈ referenceTriangle) :
     |linearShape m x| ≤ 1 := by
   obtain ⟨h1, h2, h3⟩ := hx
   rw [abs_le]
   fin_cases m <;> simp [linearShape] <;> constructor <;> linarith
 
-/-- **The barycentric coordinates span `𝒫_1(T̂)`**: a polynomial of total degree at most `1` is
-`q(0,0) λ₀ + q(1,0) λ₁ + q(0,1) λ₂`, monomial by monomial. -/
+/-- **Section 8.5.2** of [quarteroni2000numerical], for $k = 1$. The barycentric coordinates span
+$\mathbb{P}_1(\hat T)$: for every polynomial $q$ in two variables of total degree at most $1$
+there are coefficients $c_0, c_1, c_2$ with $q = c_0 \lambda_0 + c_1 \lambda_1 + c_2 \lambda_2$
+on $\hat T$.
+
+The coefficients are $q(0, 0)$, $q(1, 0)$ and $q(0, 1)$. -/
 theorem linearShape_span (q : MvPolynomial (Fin 2) ℝ) (hq : q.totalDegree ≤ 1) :
     ∃ c : Fin 3 → ℝ, ∀ x ∈ referenceTriangle,
       MvPolynomial.eval ![x.1, x.2] q = ∑ m, c m * linearShape m x := by
@@ -527,9 +670,17 @@ variable {a₁ a₂ a₃ : ℝ × ℝ}
 
 local notation "F_T" => equation_8_34 a₁ a₂ a₃
 
-/-- **(8.39) for `k = 1`**, with the three local nodes at the vertices of `T` and the constant
-made explicit: `‖f - Π_T^1 f‖_{∞,T} ≤ 2 h_T² ‖f''‖_{∞,T}`. `equation_8_39` with the barycentric
-coordinates as the reference basis, `‖λ_m‖_{∞,T̂} = 1`, so `C = (3 + 1)/2! = 2`. -/
+/-- **Equation (8.39)** of [quarteroni2000numerical], for $k = 1$. Let
+$a_1, a_2, a_3 \in \mathbb{R}^2$, let $G$ be a left inverse of the affine map $F_T$ of (8.34),
+and let $T = F_T(\hat T)$. Let $\Pi_T^1 f = \sum_{m=0}^2 f(F_T \hat z_m) (\lambda_m \circ G)$ be
+the element interpolant with the nodes at the vertices $\hat z_m$ of $\hat T$ and the
+barycentric coordinates $\lambda_m$. Let $h \in \mathbb{R}$ with $\|a_2 - a_1\| \le h$ and
+$\|a_3 - a_1\| \le h$. Let $f : \mathbb{R}^2 \to \mathbb{R}$ be $C^2$ at every point of $T$,
+with $\|f''(x)\| \le M$ for all $x \in T$. Then for every $x \in T$,
+$$|f(x) - \Pi_T^1 f(x)| \le 2 h^2 M.$$
+
+This is `QuarteroniSaccoSaleri.Chapter08.equation_8_39` with the barycentric coordinates as the
+reference basis. Since $\|\lambda_m\|_{\infty,\hat T} \le 1$, the constant is $(3 + 1)/2! = 2$. -/
 theorem equation_8_39_linear {G : ℝ × ℝ → ℝ × ℝ} (hG : Function.LeftInverse G F_T)
     {h : ℝ} (hh₂ : ‖a₂ - a₁‖ ≤ h) (hh₃ : ‖a₃ - a₁‖ ≤ h) {f : ℝ × ℝ → ℝ}
     (hf : ∀ x ∈ F_T '' referenceTriangle, ContDiffAt ℝ 2 f x) {M : ℝ}
@@ -546,14 +697,17 @@ theorem equation_8_39_linear {G : ℝ × ℝ → ℝ × ℝ} (hG : Function.Left
 end Triangle
 
 
-/-! ### (8.40): the interpolation error on a triangulation
+/-!
+### Equation (8.40): the interpolation error on a triangulation
 
-The global estimate is (8.39) on each element and the maximum over the elements. The
-triangulation is `Triangulation` of `Numlib/Geometry/Triangulation.lean`, on the plane
-`EuclideanSpace ℝ (Fin 2)`, with the global interpolant `Π_h^k f = Triangulation.globalInterp`
-of (8.37); the element estimate (8.39) is stated on the plane `ℝ × ℝ` of the affine map (8.34),
-so it is transported along the coordinate equivalence `planeEquiv : ℝ² ≃L ℝ × ℝ`, which
-changes the norms by the factor `‖planeEquiv.symm‖^{k+1}` absorbed into the constant. -/
+The global estimate is (8.39) on each element, together with the maximum over the elements. The
+triangulation is a `Triangulation` on the plane `EuclideanSpace ℝ (Fin 2)`, and the global
+interpolant $\Pi_h^k f$ of (8.37) is `Triangulation.globalInterp`. The element estimate (8.39) is
+stated on the plane `ℝ × ℝ` of the affine map (8.34). Therefore it is transported along the
+coordinate equivalence `QuarteroniSaccoSaleri.Chapter08.planeEquiv` from the Euclidean plane to
+`ℝ × ℝ`. This changes the norms by the factor $\|\mathtt{planeEquiv}^{-1}\|^{k+1}$, which goes into
+the constant.
+-/
 
 section Equation840
 
@@ -561,27 +715,30 @@ open EuclideanSpace TopologicalSpace
 
 local notation "𝔼₂" => EuclideanSpace ℝ (Fin 2)
 
-/-- The plane of the triangulations, `EuclideanSpace ℝ (Fin 2)`, as the plane `ℝ × ℝ` of the
-affine map (8.34): the coordinate equivalence `x ↦ (x₀, x₁)`. -/
+/-- The coordinate equivalence $x \mapsto (x_0, x_1)$ from the Euclidean plane
+`EuclideanSpace ℝ (Fin 2)` of the triangulations to the plane `ℝ × ℝ` of the affine map (8.34).
+It supports (8.40). -/
 noncomputable def planeEquiv : 𝔼₂ ≃L[ℝ] ℝ × ℝ :=
   (EuclideanSpace.equiv (Fin 2) ℝ).trans (ContinuousLinearEquiv.finTwoArrow ℝ ℝ)
 
-/-- `planeEquiv x = (x₀, x₁)`. -/
+/-- For $x$ in the Euclidean plane, `planeEquiv x` $= (x_0, x_1)$. -/
 theorem planeEquiv_apply (x : 𝔼₂) : planeEquiv x = (x 0, x 1) := rfl
 
-/-- The first coordinate of `planeEquiv.symm p` is `p.1`. -/
+/-- For $p \in$ `ℝ × ℝ`, the first coordinate of `planeEquiv.symm p` is $p_1$. -/
 theorem planeEquiv_symm_apply_zero (p : ℝ × ℝ) : planeEquiv.symm p 0 = p.1 := rfl
 
-/-- The second coordinate of `planeEquiv.symm p` is `p.2`. -/
+/-- For $p \in$ `ℝ × ℝ`, the second coordinate of `planeEquiv.symm p` is $p_2$. -/
 theorem planeEquiv_symm_apply_one (p : ℝ × ℝ) : planeEquiv.symm p 1 = p.2 := rfl
 
-/-- The sup norm of `ℝ × ℝ` is at most the Euclidean norm: `‖planeEquiv x‖ ≤ ‖x‖`. -/
+/-- For $x$ in the Euclidean plane, the sup norm of `planeEquiv x` is at most the Euclidean norm of
+$x$. -/
 theorem norm_planeEquiv_apply_le (x : 𝔼₂) : ‖planeEquiv x‖ ≤ ‖x‖ := by
   rw [planeEquiv_apply, Prod.norm_def]
   exact max_le (PiLp.norm_apply_le x 0) (PiLp.norm_apply_le x 1)
 
-/-- The iterated derivative of `f ∘ planeEquiv.symm` is that of `f` composed with the
-equivalence in each slot. -/
+/-- Let $f$ be a real function on the Euclidean plane, $y \in$ `ℝ × ℝ` and $i \in \mathbb{N}$. The
+$i$-th derivative of $f \circ \mathtt{planeEquiv}^{-1}$ at $y$ is the $i$-th derivative of $f$
+at $\mathtt{planeEquiv}^{-1}(y)$, composed with $\mathtt{planeEquiv}^{-1}$ in each argument. -/
 theorem iteratedFDeriv_comp_planeEquiv_symm (f : 𝔼₂ → ℝ) (y : ℝ × ℝ) (i : ℕ) :
     iteratedFDeriv ℝ i (f ∘ planeEquiv.symm) y
       = (iteratedFDeriv ℝ i f (planeEquiv.symm y)).compContinuousLinearMap
@@ -590,7 +747,10 @@ theorem iteratedFDeriv_comp_planeEquiv_symm (f : 𝔼₂ → ℝ) (y : ℝ × �
     (mem_univ (planeEquiv.symm y)) i
   rwa [preimage_univ, iteratedFDerivWithin_univ, iteratedFDerivWithin_univ] at this
 
-/-- `‖D^i (f ∘ planeEquiv.symm)(y)‖ ≤ ‖D^i f (planeEquiv.symm y)‖ ‖planeEquiv.symm‖^i`. -/
+/-- Let $f$ be a real function on the Euclidean plane, $y \in$ `ℝ × ℝ` and $i \in \mathbb{N}$. Then
+$$\|D^i (f \circ \mathtt{planeEquiv}^{-1})(y)\| \le \|D^i f(\mathtt{planeEquiv}^{-1}(y))\| \,
+  \|\mathtt{planeEquiv}^{-1}\|^i.$$
+-/
 theorem norm_iteratedFDeriv_comp_planeEquiv_symm_le (f : 𝔼₂ → ℝ) (y : ℝ × ℝ) (i : ℕ) :
     ‖iteratedFDeriv ℝ i (f ∘ planeEquiv.symm) y‖
       ≤ ‖iteratedFDeriv ℝ i f (planeEquiv.symm y)‖
@@ -599,22 +759,29 @@ theorem norm_iteratedFDeriv_comp_planeEquiv_symm_le (f : 𝔼₂ → ℝ) (y : �
   refine (ContinuousMultilinearMap.norm_compContinuousLinearMap_le _ _).trans ?_
   rw [Finset.prod_const, Finset.card_univ, Fintype.card_fin]
 
-/-- A point of the closed reference triangle of the triangulations, read in `ℝ × ℝ`, lies in the
-reference triangle `T̂` of (8.34). -/
+/-- A point of the closed reference triangle `EuclideanSpace.referenceTriangle` of the
+triangulations, read in `ℝ × ℝ` through `planeEquiv`, lies in the reference triangle $\hat T$ of
+(8.34). -/
 theorem planeEquiv_mem_referenceTriangle {x : 𝔼₂}
     (hx : x ∈ closure (EuclideanSpace.referenceTriangle : Set 𝔼₂)) :
     planeEquiv x ∈ referenceTriangle := by
   rw [closure_referenceTriangle_eq] at hx
   exact hx
 
-/-- A point of `T̂` read in `ℝ²` lies in the closed reference triangle of the triangulations. -/
+/-- A point of the reference triangle $\hat T$ of (8.34), read in the Euclidean plane through
+`planeEquiv.symm`, lies in the closure of `EuclideanSpace.referenceTriangle`. -/
 theorem planeEquiv_symm_mem_closure_referenceTriangle {y : ℝ × ℝ} (hy : y ∈ referenceTriangle) :
     planeEquiv.symm y ∈ closure (EuclideanSpace.referenceTriangle : Set 𝔼₂) := by
   rw [closure_referenceTriangle_eq]
   exact hy
 
-/-- The affine map (8.34) of the vertices of an element, read through `planeEquiv`, is the
-element's affine map `F_K` of `Triangulation`: `F_T (planeEquiv y) = planeEquiv (F_K y)`. -/
+/-- Let $\mathcal{T}$ be a triangulation of a domain $\Omega$ in the Euclidean plane, and let $T$ be
+an element with vertices $v_0, v_1, v_2$. Let $F_K(z) = L_K z + v_0$ be the affine map of the
+element, with $L_K$ = `Triangulation.linearPart`. Then the affine map (8.34) of the vertices
+$\mathtt{planeEquiv}(v_0)$, $\mathtt{planeEquiv}(v_1)$, $\mathtt{planeEquiv}(v_2)$ satisfies,
+for every $y \in$ `ℝ × ℝ`,
+$$F_T(y) = \mathtt{planeEquiv}(F_K(\mathtt{planeEquiv}^{-1}(y))).$$
+-/
 theorem equation_8_34_planeEquiv {Ω : Opens 𝔼₂} (𝒯 : Triangulation Ω) (T : 𝒯.elems)
     (y : ℝ × ℝ) :
     equation_8_34 (planeEquiv (T.1 0)) (planeEquiv (T.1 1)) (planeEquiv (T.1 2)) y
@@ -626,24 +793,37 @@ theorem equation_8_34_planeEquiv {Ω : Opens 𝔼₂} (𝒯 : Triangulation Ω) 
     planeEquiv_symm_apply_one]
   abel
 
-/-- **(8.40), the interpolation error on a triangulation.** Let `x̂ᵢ ∈ T̂` and `φ̂ᵢ`, `i ∈ I`, be
-the nodes and the Lagrange basis of `𝒫_k(T̂)` on the reference triangle (nodal, spanning every
-polynomial of total degree at most `k` on `T̂`, with `‖φ̂ᵢ‖_{∞,T̂} ≤ Lᵢ`). Then there is a constant
-`C`, depending on `k` and the reference basis only, such that for every triangulation `𝒯_h` of
-a plane domain `Ω` on which the element is conforming (the admissibility of the triangulation,
-which makes the piecewise interpolant `Π_h^k f` of (8.37) continuous), every `f ∈ C^{k+1}(Ω̄)`
-and every `x ∈ Ω̄`,
+/-- **Equation (8.40)** of [quarteroni2000numerical]. Let $k \in \mathbb{N}$. Let $\hat x_i$ and
+$\hat\varphi_i$, $i = 1, \ldots, I$, be nodes and shape functions on the reference triangle
+$\hat T$ with these properties:
+* each $\hat x_i$ lies in the closed reference triangle;
+* $\hat\varphi_i(\hat x_j) = \delta_{ij}$ for all $i$ and $j$;
+* every polynomial of total degree at most $k$ in two variables equals a linear combination of
+  the $\hat\varphi_i$ on the closed reference triangle;
+* $|\hat\varphi_i| \le L_i$ on the closed reference triangle for all $i$.
 
-  `|f(x) − Π_h^k f(x)| ≤ C h^{k+1} ‖f^{(k+1)}‖_{∞,Ω}`,
+Then there is a constant $C$, which depends only on $k$ and on these data, with the following
+property. Let $\mathcal{T}_h$ be a triangulation of an open set $\Omega$ of the Euclidean plane
+on which the element is conforming. Let $f$ be $C^{k+1}$ at every point of $\bar\Omega$, with
+$\|f^{(k+1)}(x)\| \le M$ for all $x \in \bar\Omega$. Then for every $x \in \bar\Omega$,
+$$|f(x) - \Pi_h^k f(x)| \le C h^{k+1} M,$$
+where $h = \max_T h_T$ is the mesh size of $\mathcal{T}_h$ and $\Pi_h^k f$ is the piecewise
+interpolant (8.37).
 
-`h = max_T h_T` the mesh size. The proof is (8.39) on the element containing `x`, with
-`h_T ≤ h`, transported from the plane `ℝ × ℝ` of (8.34) to the plane of the triangulation along
-`planeEquiv` (the factor `‖planeEquiv.symm‖^{k+1}` goes into `C`), and `Π_h^k f = Π_T^k f` on
-`T`. The regularity hypothesis `max_T h_T/ρ_T ≤ σ` of the book is not needed in the sup norm
-(it is inherited from the Sobolev-norm version of the cited theorem, [QV94] Remark 3.4.2); the
-`ℙ_k` Lagrange element on the principal lattice satisfies the hypotheses on the reference
-basis (`Numlib/FiniteElement/LagrangeElement.lean`: `LagrangeElement.isNodalBasis`,
-`LagrangeElement.nodalInterp_eval`, `LagrangeElement.isConformingElement`). -/
+**Generalization.** The source assumes that the family of triangulations is regular,
+$\max_T h_T/\rho_T \le \sigma$. This hypothesis is not needed in the sup norm. It comes from the
+Sobolev-norm version of the theorem that the source cites, Remark 3.4.2 of
+[quarteroni1994numerical].
+
+The conformity of the element, which makes the piecewise interpolant continuous, is
+`Triangulation.IsConformingElement`. The interpolant is `Triangulation.globalInterp`, and the
+mesh size `Triangulation.meshSize` is the largest Euclidean diameter of an element. The proof
+applies (8.39) on the element that contains $x$, with $h_T \le h$, transported from `ℝ × ℝ` to
+the Euclidean plane along `QuarteroniSaccoSaleri.Chapter08.planeEquiv`; the factor
+$\|\mathtt{planeEquiv}^{-1}\|^{k+1}$ goes into $C$, and $\Pi_h^k f = \Pi_T^k f$ on $T$. The
+$\mathbb{P}_k$ Lagrange element on the principal lattice satisfies the hypotheses on the
+reference data, by `LagrangeElement.isNodalBasis`, `LagrangeElement.nodalInterp_eval` and
+`LagrangeElement.isConformingElement`. -/
 theorem equation_8_40 {I : ℕ} {k : ℕ} {xhat : Fin I → 𝔼₂}
     (hx : ∀ i, xhat i ∈ closure (EuclideanSpace.referenceTriangle : Set 𝔼₂))
     {φhat : Fin I → 𝔼₂ → ℝ} (hnodal : Approximation.IsNodalBasis xhat φhat)

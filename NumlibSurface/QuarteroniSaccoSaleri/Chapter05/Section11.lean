@@ -6,45 +6,62 @@ import Numlib.Eigen.KrylovEigen
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter05.Section10
 
 /-!
-# Quarteroni–Sacco–Saleri §5.11: the Lanczos method
+# Quarteroni, Sacco and Saleri, Section 5.11: The Lanczos method
 
-Surface file for Alfio Quarteroni, Riccardo Sacco and Fausto Saleri, *Numerical Mathematics*
-[quarteroni2000numerical], §5.11, over the backbone `Numlib/Eigen/MinMax` (Courant–Fischer),
-`Numlib/Krylov/Lanczos` (the tridiagonal matrices `H_m` of the Lanczos process),
-`Numlib/Eigen/RayleighRitz` (the Ritz values as the eigenvalues of the compression of `A` to the
-Krylov subspace, and their interlacing with the eigenvalues of `A`) and `Numlib/Eigen/KrylovEigen`
-(the Kaniel–Paige–Saad bound and the identification of the eigenvalues of `H_m` with the Ritz
-values).
+This module formalizes Section 5.11 of [quarteroni2000numerical], the Lanczos method for the extreme
+eigenvalues of a symmetric matrix $A \in \mathbb{R}^{n \times n}$ with eigenvalues
+$\lambda_1 \ge \dots \ge \lambda_n$ (5.66). By the Courant–Fischer theorem, $\lambda_1$ and
+$\lambda_n$ are the maximum and the minimum of the Rayleigh quotient $r(x) = x^T A x / x^T x$. The
+Lanczos process of Section 4.4.3 builds from a starting vector $q^{(1)}$ the symmetric tridiagonal
+matrices $H_m = V_m^T A V_m$, where the columns of $V_m$ are an orthonormal basis of the Krylov
+subspace $\mathcal{K}_m(A, q^{(1)})$. The eigenvalues $\eta_1 \ge \dots \ge \eta_m$ of $H_m$ satisfy
+$\lambda_n \le \eta_m$ and $\eta_1 \le \lambda_1$ (5.67), and the Kaniel–Paige bound (Property 5.12)
+shows that $\eta_1$ approaches $\lambda_1$ at a rate given by a Chebyshev polynomial. The proofs
+specialize `Numlib.Eigen.MinMax`, `Numlib.Krylov.Lanczos`, `Numlib.Eigen.RayleighRitz` and
+`Numlib.Eigen.KrylovEigen`.
+
+## Main definitions
+
+* Section 5.11, `QuarteroniSaccoSaleri.Chapter05.rayleigh`: the Rayleigh quotient
+  $r(x) = x^T A x / x^T x$.
+* Section 5.11, `QuarteroniSaccoSaleri.Chapter05.lanczosTridiag`: the Lanczos matrices $H_m$.
+* Section 5.11, `QuarteroniSaccoSaleri.Chapter05.lanczosEigenvalues`: the eigenvalues
+  $\eta_1 \ge \dots \ge \eta_m$ of $H_m$.
+
+## Main results
+
+* Section 5.11, `QuarteroniSaccoSaleri.Chapter05.rayleigh_eq_rayleighQuotient`: $r(x)$ is the
+  backbone's Rayleigh quotient.
+* Section 5.11, `QuarteroniSaccoSaleri.Chapter05.courantFischer`: $\lambda_1 = \max_{x \neq 0} r(x)$
+  and $\lambda_n = \min_{x \neq 0} r(x)$.
+* Section 5.11, `QuarteroniSaccoSaleri.Chapter05.lanczosTridiag_apply` and
+  `QuarteroniSaccoSaleri.Chapter05.lanczosEigenvalues_eq`: $(H_m)_{ij} = v_i^T A v_j$, and before
+  breakdown the eigenvalues of $H_m$ are the Ritz values.
+* Equation (5.67), `QuarteroniSaccoSaleri.Chapter05.equation_5_67`:
+  $\eta_1 = \max_{\mathcal{K}_m} r \le \lambda_1$ and
+  $\eta_m = \min_{\mathcal{K}_m} r \ge \lambda_n$.
+* Property 5.12, `QuarteroniSaccoSaleri.Chapter05.property_5_12`: the Kaniel–Paige bound
+  $\lambda_1 - \eta_1 \le (\lambda_1 - \lambda_n) \tan^2\phi_1 / T_{m-1}(1 + 2\rho_1)^2$.
+* Display after Property 5.12, `QuarteroniSaccoSaleri.Chapter05.property_5_12_min`: the
+  corresponding bound for $\eta_m - \lambda_n$.
 
 ## Conventions
 
-The symmetric `A ∈ ℝ^{n×n}` is `Matrix (Fin n) (Fin n) ℝ` with `hA : A.IsSymm`, acting on
-`EuclideanSpace ℝ (Fin n)` through `Matrix.toEuclideanLin`; its eigenvalues in the order (5.66),
-`λ_1 ≥ … ≥ λ_n`, are `(hA.isSymmetric_toEuclideanLin).eigenvalues finrank_euclideanSpace_fin :
-Fin n → ℝ` (`0`-based, so `λ_i` is the value at `i − 1`) with the orthonormal eigenvectors
-`u_i = (hA.isSymmetric_toEuclideanLin).eigenvectorBasis finrank_euclideanSpace_fin (i − 1)`. The
-Rayleigh quotient `r(x) = xᵀ A x / xᵀ x` is `rayleigh A x` for `x ∈ ℝⁿ`, the backbone's
-`LinearMap.rayleighQuotient (toEuclideanLin A)`. The Lanczos matrices `H_m = V_mᵀ A V_m` of §4.4.3
-generated from `q^(1)` are `lanczosTridiag A q₁ m`, the backbone's `Lanczos.tridiag`, whose
-entries are `⟪v_i, A v_j⟫` for the Lanczos vectors `v_i = Arnoldi.vec (toEuclideanLin A) q₁ i`
-(`lanczosTridiag_apply`); their eigenvalues `η_1 ≥ … ≥ η_m` are `lanczosEigenvalues A q₁ m`, the
-backbone's `Lanczos.ritzValues`, and, as long as the process has not broken down
-(`finrank 𝒦_m(A, q₁) = m`), they are the eigenvalues of the compression of `A` to `𝒦_m(A, q₁)`
-(`lanczosEigenvalues_eq`).
-
-## Contents
-
-* `rayleigh`, `rayleigh_eq_rayleighQuotient`, `courantFischer` — the Rayleigh quotient and the
-  Courant–Fischer theorem as displayed in §5.11.
-* `lanczosTridiag`, `lanczosTridiag_apply`, `lanczosEigenvalues`, `lanczosEigenvalues_eq` — the
-  Lanczos matrices and their eigenvalues.
-* `equation_5_67` — `λ_1(H_m) = max r ≤ λ_1(A)`, `λ_m(H_m) = min r ≥ λ_n(A)` over `𝒦_m`.
-* `property_5_12` — the Kaniel–Paige bound for `η_1`, and `property_5_12_min` the mirror bound
-  for `η_m`.
+* The symmetric matrix $A$ is `A : Matrix (Fin n) (Fin n) ℝ` with `hA : A.IsSymm`, acting on
+  `EuclideanSpace ℝ (Fin n)` through `Matrix.toEuclideanLin`.
+* The eigenvalues $\lambda_1 \ge \dots \ge \lambda_n$ are `hA.isSymmetric_toEuclideanLin.eigenvalues
+  finrank_euclideanSpace_fin`, indexed from $0$, so $\lambda_i$ is the value at $i - 1$. The
+  orthonormal eigenvectors $u_i$ are `hA.isSymmetric_toEuclideanLin.eigenvectorBasis
+  finrank_euclideanSpace_fin (i - 1)`.
+* The Lanczos vectors $v_i$ are `Arnoldi.vec (toEuclideanLin A) q₁ i`, and the Krylov subspace
+  $\mathcal{K}_m(A, q^{(1)})$ is `Krylov.subspace (toEuclideanLin A) q₁ m`. "Before breakdown" means
+  $\dim \mathcal{K}_m(A, q^{(1)}) = m$.
 
 ## Not formalized
 
-Example 5.18 is numerical; Program 45 is not a node; the reorthogonalization remarks are prose.
+* **Example 5.18.** It is numerical.
+* **Program 45.**
+* **The remarks on reorthogonalization.** They are prose.
 -/
 
 open Filter Finset Matrix Polynomial Topology Krylov
@@ -53,14 +70,19 @@ namespace QuarteroniSaccoSaleri.Chapter05
 
 variable {n : ℕ}
 
-/-! ### The Rayleigh quotient and Courant–Fischer -/
+/-! ### The Rayleigh quotient and the Courant–Fischer theorem -/
 
-/-- The **Rayleigh quotient** `r(x) = xᵀ A x / xᵀ x` of a nonnull `x ∈ ℝⁿ` (§5.11). -/
+/-- **Section 5.11** of [quarteroni2000numerical]. For $A \in \mathbb{R}^{n \times n}$ and
+$x \in \mathbb{R}^n$, $x \neq 0$, the **Rayleigh quotient** is $$r(x) = \frac{x^T A x}{x^T x}.$$
+
+The Lean definition gives $r(0) = 0$, by the convention that division by zero gives zero. -/
 noncomputable def rayleigh (A : Matrix (Fin n) (Fin n) ℝ) (x : Fin n → ℝ) : ℝ :=
   (x ⬝ᵥ (A *ᵥ x)) / (x ⬝ᵥ x)
 
-/-- The book's `r(x)` is the backbone's `LinearMap.rayleighQuotient` of `toEuclideanLin A`:
-`⟪A x, x⟫ = xᵀ A x` and `‖x‖² = xᵀ x` on `ℝⁿ`. -/
+/-- For $A \in \mathbb{R}^{n \times n}$ and $x \in \mathbb{R}^n$, the Rayleigh quotient $r(x)$ of
+Section 5.11 of [quarteroni2000numerical] is the backbone's `LinearMap.rayleighQuotient` of
+`Matrix.toEuclideanLin A` at $x$, because $\langle Ax, x \rangle = x^T A x$ and
+$\|x\|^2 = x^T x$. -/
 theorem rayleigh_eq_rayleighQuotient (A : Matrix (Fin n) (Fin n) ℝ)
     (x : EuclideanSpace ℝ (Fin n)) :
     rayleigh A (WithLp.ofLp x) = (toEuclideanLin A).rayleighQuotient x := by
@@ -69,11 +91,13 @@ theorem rayleigh_eq_rayleighQuotient (A : Matrix (Fin n) (Fin n) ℝ)
     ofLp_toEuclideanLin]
   simp
 
-/-- **The Courant–Fischer theorem** as displayed in §5.11: for a symmetric `A ∈ ℝ^{n×n}` with
-eigenvalues ordered as in (5.66), `λ_1(A) = max_{x ≠ 0} r(x)` and `λ_n(A) = min_{x ≠ 0} r(x)`.
-Backbone `LinearMap.IsSymmetric.rayleighQuotient_mem_Icc` for the bounds and
-`LinearMap.IsSymmetric.rayleighQuotient_eigenvectorBasis` for their attainment (the extreme cases
-of `LinearMap.IsSymmetric.isGreatest_eigenvalues` and `isLeast_eigenvalues`). -/
+/-- **Section 5.11** of [quarteroni2000numerical] (Courant–Fischer theorem). Let
+$A \in \mathbb{R}^{n \times n}$ be symmetric with $n \ge 1$, and let its eigenvalues be ordered
+as in (5.66), $\lambda_1 \ge \dots \ge \lambda_n$. Then $$\lambda_1 = \max_{x \neq 0} r(x),
+\qquad \lambda_n = \min_{x \neq 0} r(x),$$ and both extrema are attained.
+
+Here $n = N + 1$. The proof uses `LinearMap.IsSymmetric.rayleighQuotient_mem_Icc` for the bounds
+and `LinearMap.IsSymmetric.rayleighQuotient_eigenvectorBasis` for their attainment. -/
 theorem courantFischer {N : ℕ} {A : Matrix (Fin (N + 1)) (Fin (N + 1)) ℝ} (hA : A.IsSymm) :
     IsGreatest {c | ∃ x : Fin (N + 1) → ℝ, x ≠ 0 ∧ c = rayleigh A x}
         ((hA.isSymmetric_toEuclideanLin).eigenvalues finrank_euclideanSpace_fin 0) ∧
@@ -101,15 +125,22 @@ theorem courantFischer {N : ℕ} {A : Matrix (Fin (N + 1)) (Fin (N + 1)) ℝ} (h
 
 /-! ### The Lanczos matrices -/
 
-/-- **The Lanczos matrices** `H_m = V_mᵀ A V_m` of §4.4.3 (the tridiagonalization of `A` from the
-starting vector `q^(1)`): the backbone's `Lanczos.tridiag`, the real symmetric tridiagonal matrix
-of the coefficients `α_j`, `β_j` of the Lanczos recurrence. -/
+/-- **Section 5.11** of [quarteroni2000numerical], the Lanczos matrices. For
+$A \in \mathbb{R}^{n \times n}$, a starting vector $q^{(1)} \in \mathbb{R}^n$ and
+$m \in \mathbb{N}$, the matrix $H_m = V_m^T A V_m \in \mathbb{R}^{m \times m}$ of Section 4.4.3
+is the symmetric tridiagonal matrix of the coefficients $\alpha_j$, $\beta_j$ of the Lanczos
+recurrence.
+
+This is the backbone's `Lanczos.tridiag`. -/
 noncomputable def lanczosTridiag (A : Matrix (Fin n) (Fin n) ℝ) (q₁ : EuclideanSpace ℝ (Fin n))
     (m : ℕ) : Matrix (Fin m) (Fin m) ℝ :=
   Lanczos.tridiag (toEuclideanLin A) q₁ m
 
-/-- `H_m = V_mᵀ A V_m` entrywise: `(H_m)_ij = v_iᵀ A v_j` for the Lanczos vectors `v_i`
-(`Arnoldi.vec`), which vanishes off the three diagonals. Backbone
+/-- Let $A \in \mathbb{R}^{n \times n}$ be symmetric, and let $q^{(1)} \in \mathbb{R}^n$. Then the
+Lanczos matrix $H_m = V_m^T A V_m$ of Section 5.11 of [quarteroni2000numerical] has the entries
+$$(H_m)_{ij} = v_i^T A v_j,$$ where $v_i$ are the Lanczos vectors.
+
+The Lanczos vectors are `Arnoldi.vec (toEuclideanLin A) q₁ i`. The proof specializes
 `Lanczos.hessenbergSq_eq_map_tridiag`. -/
 theorem lanczosTridiag_apply {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
     (q₁ : EuclideanSpace ℝ (Fin n)) {m : ℕ} (i j : Fin m) :
@@ -121,16 +152,22 @@ theorem lanczosTridiag_apply {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
     RingHom.id_apply] at h
   exact h.symm
 
-/-- The eigenvalues `η_1 ≥ η_2 ≥ … ≥ η_m` of `H_m`, sorted decreasingly and indexed by `Fin m`:
-the backbone's Ritz values `Lanczos.ritzValues`. -/
+/-- **Section 5.11** of [quarteroni2000numerical]. For $A \in \mathbb{R}^{n \times n}$ and a
+starting vector $q^{(1)}$, the eigenvalues $\eta_1 \ge \eta_2 \ge \dots \ge \eta_m$ of the
+Lanczos matrix $H_m$, sorted decreasingly.
+
+This is the backbone's list of Ritz values `Lanczos.ritzValues`, indexed by `Fin m` from $0$. -/
 noncomputable def lanczosEigenvalues (A : Matrix (Fin n) (Fin n) ℝ) (q₁ : EuclideanSpace ℝ (Fin n))
     (m : ℕ) : Fin m → ℝ :=
   Lanczos.ritzValues (toEuclideanLin A) q₁ m
 
-/-- **The eigenvalues of `H_m` are the Ritz values**: as long as the Lanczos process has not broken
-down (`finrank 𝒦_m(A, q^(1)) = m`), the sorted eigenvalues of `H_m` are the sorted eigenvalues of
-the compression of `A` to the Krylov subspace `𝒦_m(A, q^(1))`. Backbone
-`Lanczos.ritzValues_eq_eigenvalues_compression`. -/
+/-- Let $A \in \mathbb{R}^{n \times n}$ be symmetric, let $q^{(1)} \in \mathbb{R}^n$, and assume
+that the Lanczos process has not broken down: $\dim \mathcal{K}_m(A, q^{(1)}) = m$. Then the
+sorted eigenvalues of $H_m$ are the sorted eigenvalues of the compression of $A$ to the Krylov
+subspace $\mathcal{K}_m(A, q^{(1)})$, that is, the Ritz values. This supports Section 5.11 of
+[quarteroni2000numerical].
+
+The proof specializes `Lanczos.ritzValues_eq_eigenvalues_compression`. -/
 theorem lanczosEigenvalues_eq {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
     (q₁ : EuclideanSpace ℝ (Fin n)) {m : ℕ}
     (hm : Module.finrank ℝ (Krylov.subspace (toEuclideanLin A) q₁ m) = m) :
@@ -139,21 +176,27 @@ theorem lanczosEigenvalues_eq {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
         hA.isSymmetric_toEuclideanLin).eigenvalues hm :=
   Lanczos.ritzValues_eq_eigenvalues_compression q₁ hA.isSymmetric_toEuclideanLin hm
 
-/-- A Krylov subspace of dimension `m` in `ℝⁿ` has `m ≤ n`: the index bookkeeping of (5.67). -/
+/-- If the Krylov subspace $\mathcal{K}_m(A, q^{(1)})$ of a matrix $A \in \mathbb{R}^{n \times n}$
+has dimension $m$, then $m \le n$. This is needed for the indices in (5.67) of
+[quarteroni2000numerical]. -/
 theorem le_of_finrank_krylov_eq (A : Matrix (Fin n) (Fin n) ℝ) (q₁ : EuclideanSpace ℝ (Fin n))
     {m : ℕ} (hm : Module.finrank ℝ (Krylov.subspace (toEuclideanLin A) q₁ m) = m) : m ≤ n :=
   hm ▸ (Submodule.finrank_le _).trans_eq finrank_euclideanSpace_fin
 
-/-- **(5.67).** For the Lanczos matrices `H_m = V_mᵀ A V_m` of a symmetric `A` (before breakdown),
-`λ_1(H_m) = max_{y ∈ 𝒦_m, y ≠ 0} r(y) ≤ λ_1(A)` and `λ_m(H_m) = min_{y ∈ 𝒦_m, y ≠ 0} r(y) ≥ λ_n(A)`,
-where `y = V_m x` runs over the Krylov subspace `𝒦_m(A, q^(1)) = range V_m` as `x ≠ 0` runs over
-`ℝ^m` (and `r(V_m x) = (V_m x)ᵀ A (V_m x) / xᵀ x`, the columns of `V_m` being orthonormal). At
-each step the extremal eigenvalues of `H_m` are thus a lower and an upper bound for those of `A`.
-Backbone `Krylov.rayleighQuotient_compression` with
-`LinearMap.IsSymmetric.rayleighQuotient_mem_Icc` and `rayleighQuotient_eigenvectorBasis` for the
-compression (the variational identities), `LinearMap.IsSymmetric.eigenvalues_compression_le` and
-`LinearMap.IsSymmetric.eigenvalues_le_eigenvalues_compression` (Cauchy interlacing) for the
-bounds. -/
+/-- **Equation (5.67)** of [quarteroni2000numerical]. Let $A \in \mathbb{R}^{n \times n}$ be
+symmetric, let $q^{(1)} \in \mathbb{R}^n$, and let $m \ge 1$ with
+$\dim \mathcal{K}_m(A, q^{(1)}) = m$ (no breakdown). Then the eigenvalues
+$\eta_1 \ge \dots \ge \eta_m$ of $H_m$ satisfy $$\eta_1 = \max_{y \in \mathcal{K}_m,\, y \neq 0}
+r(y) \le \lambda_1(A), \qquad \eta_m = \min_{y \in \mathcal{K}_m,\, y \neq 0} r(y) \ge
+\lambda_n(A),$$ and both extrema are attained. So at each step the extreme eigenvalues of $H_m$
+are a lower bound for $\lambda_1(A)$ and an upper bound for $\lambda_n(A)$.
+
+The source writes $y = V_m x$ with $x \in \mathbb{R}^m$, $x \neq 0$; the Lean statement takes
+$y$ in the Krylov subspace directly. The proof uses `Krylov.rayleighQuotient_compression` with
+`LinearMap.IsSymmetric.rayleighQuotient_mem_Icc` and
+`LinearMap.IsSymmetric.rayleighQuotient_eigenvectorBasis` for the compression, and the Cauchy
+interlacing results `LinearMap.IsSymmetric.eigenvalues_compression_le` and
+`LinearMap.IsSymmetric.eigenvalues_le_eigenvalues_compression` for the bounds. -/
 theorem equation_5_67 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
     (q₁ : EuclideanSpace ℝ (Fin n)) {m : ℕ} (hm0 : 0 < m)
     (hm : Module.finrank ℝ (Krylov.subspace (toEuclideanLin A) q₁ m) = m) :
@@ -203,18 +246,23 @@ theorem equation_5_67 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
 
 /-! ### Property 5.12 -/
 
-/-- **Property 5.12 (Kaniel–Paige).** Let `A ∈ ℝ^{n×n}` be symmetric with eigenvalues ordered as
-in (5.66) and orthonormal eigenvectors `u_1, …, u_n`, and let `η_1 ≥ … ≥ η_m` be the eigenvalues
-of `H_m` (before breakdown). With `cos φ_1 = |(q^(1))ᵀ u_1|` — `φ_1` the angle between `q^(1)`
-and `u_1`, `Submodule.angle` of the line through `q^(1)` — `ρ_1 = (λ_1 − λ_2)/(λ_2 − λ_n)` and
-`T_{m−1}` the Chebyshev polynomial of degree `m − 1`,
+/-- **Property 5.12** of [quarteroni2000numerical] (Kaniel–Paige bound). Let
+$A \in \mathbb{R}^{n \times n}$ be symmetric with $n \ge 2$, with eigenvalues
+$\lambda_1 \ge \dots \ge \lambda_n$ as in (5.66) and orthonormal eigenvectors $u_1, \dots, u_n$,
+and assume $\lambda_1 > \lambda_2 > \lambda_n$. Let $q^{(1)} \in \mathbb{R}^n$ be a unit vector
+with $(q^{(1)})^T u_1 \neq 0$, let $m \ge 1$ with $\dim \mathcal{K}_m(A, q^{(1)}) = m$, and let
+$\eta_1 \ge \dots \ge \eta_m$ be the eigenvalues of $H_m$. Let $\phi_1$ be the angle between
+$q^{(1)}$ and $u_1$, let $$\rho_1 = \frac{\lambda_1 - \lambda_2}{\lambda_2 - \lambda_n},$$ and
+let $T_{m-1}$ be the Chebyshev polynomial of degree $m - 1$. Then
+$\cos\phi_1 = |(q^{(1)})^T u_1|$ and $$\lambda_1 \ge \eta_1 \ge \lambda_1 - \frac{(\lambda_1 -
+\lambda_n) \tan^2\phi_1}{T_{m-1}(1 + 2\rho_1)^2}.$$
 
-`λ_1 ≥ η_1 ≥ λ_1 − (λ_1 − λ_n) tan²φ_1 / T_{m−1}(1 + 2ρ_1)²`.
-
-Backbone `Lanczos.kaniel_paige_saad` at the first index (the deflation product is empty) through
-`lanczosEigenvalues_eq`, with `RayleighRitz`'s `cosAngle_span_singleton` for `cos φ_1`. The
-strict inequalities `λ_1 > λ_2 > λ_n` keep `ρ_1` finite; `(q^(1))ᵀ u_1 ≠ 0` keeps `tan φ_1`
-finite, and `q^(1)` is a unit vector. -/
+The hypothesis $\lambda_2 > \lambda_n$ implies $n \ge 3$. It keeps $\rho_1$ finite, and
+$(q^{(1)})^T u_1 \neq 0$ keeps $\tan\phi_1$ finite. The angle $\phi_1$ is `Submodule.angle` of
+the line through $q^{(1)}$ and $u_1$, and $T_{m-1}$ is `Polynomial.Chebyshev.T ℝ (m - 1)`. The
+proof specializes `Lanczos.kaniel_paige_saad` at the first index, where the deflation product is
+empty, through `QuarteroniSaccoSaleri.Chapter05.lanczosEigenvalues_eq`, and uses
+`Submodule.cosAngle_span_singleton` for $\cos\phi_1$. -/
 theorem property_5_12 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) (hn : 2 ≤ n)
     {q₁ : EuclideanSpace ℝ (Fin n)} (hq₁ : ‖q₁‖ = 1) {m : ℕ} (hm0 : 0 < m)
     (hm : Module.finrank ℝ (Krylov.subspace (toEuclideanLin A) q₁ m) = m)
@@ -261,20 +309,24 @@ theorem property_5_12 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) (hn : 2 �
   rw [htan, mul_div_assoc]
   linarith [hkps.2]
 
-/-- **Property 5.12, the smallest eigenvalue** (the display after Property 5.12). In the setting of
-`property_5_12` — `A` symmetric with eigenvalues `λ_1 ≥ … ≥ λ_n` and orthonormal eigenvectors
-`u_1, …, u_n`, `η_1 ≥ … ≥ η_m` the eigenvalues of `H_m` — with `cos φ_n = |(q^(1))ᵀ u_n|` and
-`ρ_n = (λ_{n-1} - λ_n)/(λ_1 - λ_{n-1})`,
+/-- **Display after Property 5.12** of [quarteroni2000numerical], the smallest eigenvalue. Let
+$A \in \mathbb{R}^{n \times n}$ be symmetric with $n \ge 2$, with eigenvalues
+$\lambda_1 \ge \dots \ge \lambda_n$ and orthonormal eigenvectors $u_1, \dots, u_n$, and assume
+$\lambda_n < \lambda_{n-1} < \lambda_1$. Let $q^{(1)} \in \mathbb{R}^n$ be a unit vector with
+$(q^{(1)})^T u_n \neq 0$, let $m \ge 1$ with $\dim \mathcal{K}_m(A, q^{(1)}) = m$, and let
+$\eta_1 \ge \dots \ge \eta_m$ be the eigenvalues of $H_m$. Let $\phi_n$ be the angle between
+$q^{(1)}$ and $u_n$, and let $$\rho_n = \frac{\lambda_{n-1} - \lambda_n}{\lambda_1 -
+\lambda_{n-1}}.$$ Then $\cos\phi_n = |(q^{(1)})^T u_n|$ and $$\lambda_n \le \eta_m \le
+\lambda_n + \frac{(\lambda_1 - \lambda_n) \tan^2\phi_n}{T_{m-1}(1 + 2\rho_n)^2}.$$
 
-`λ_n ≤ η_m ≤ λ_n + (λ_1 - λ_n) tan²φ_n / T_{m-1}(1 + 2ρ_n)²`.
-
-This is `property_5_12` for `-A`: the Krylov subspaces are the same (`Krylov.subspace_neg`), the
-compression is negated (`compression.neg`), and sorted eigenvalues are negated and reversed
-(`LinearMap.IsSymmetric.eigenvalues_neg`), so the largest Ritz value of `-A` is `-η_m` and the
-largest eigenvalue of `-A` is `-λ_n`. The strict inequalities `λ_n < λ_{n-1} < λ_1` keep `ρ_n`
-finite and make `λ_n` simple, which is what identifies the eigenvector of `-A` for `-λ_n` with
-`u_n` up to a scalar (`LinearMap.IsSymmetric.exists_smul_eigenvectorBasis_neg`);
-`(q^(1))ᵀ u_n ≠ 0` keeps `tan φ_n` finite. -/
+The proof applies `QuarteroniSaccoSaleri.Chapter05.property_5_12` to $-A$. The Krylov subspaces
+of $A$ and $-A$ are the same (`Krylov.subspace_neg`), the compression is negated
+(`compression.neg`), and the sorted eigenvalues are negated and reversed
+(`LinearMap.IsSymmetric.eigenvalues_neg`), so the largest Ritz value of $-A$ is $-\eta_m$ and
+the largest eigenvalue of $-A$ is $-\lambda_n$. The strict inequalities keep $\rho_n$ finite and
+make $\lambda_n$ simple, so the eigenvector of $-A$ for $-\lambda_n$ is $u_n$ up to a scalar
+(`LinearMap.IsSymmetric.exists_smul_eigenvectorBasis_neg`); $(q^{(1)})^T u_n \neq 0$ keeps
+$\tan\phi_n$ finite. -/
 theorem property_5_12_min {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) (hn : 2 ≤ n)
     {q₁ : EuclideanSpace ℝ (Fin n)} (hq₁ : ‖q₁‖ = 1) {m : ℕ} (hm0 : 0 < m)
     (hm : Module.finrank ℝ (Krylov.subspace (toEuclideanLin A) q₁ m) = m)

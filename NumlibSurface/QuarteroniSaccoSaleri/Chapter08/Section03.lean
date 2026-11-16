@@ -7,57 +7,84 @@ import Numlib.Approximation.Spline
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter08.Section01
 
 /-!
-# Quarteroni–Sacco–Saleri §8.3: piecewise Lagrange interpolation
+# Quarteroni, Sacco and Saleri, Section 8.3: Piecewise Lagrange interpolation
 
-Surface file for Alfio Quarteroni, Riccardo Sacco and Fausto Saleri, *Numerical Mathematics*
-[quarteroni2000numerical], §8.3: the partition `𝒯_h` of `[a, b]` into `K` subintervals
-`I_j = [x_j, x_{j+1}]`, the `k + 1` equally spaced nodes of every subinterval, the piecewise
-polynomial space `X_h^k` of (8.22), the piecewise interpolation polynomial `Π_h^k f`, the uniform
-error estimate (8.23), and the `L²` estimates of Theorem 8.3 with their `k = 1` case (8.27).
-Example 8.5 is a table of computed errors and is skipped; (8.24)–(8.25) define `L²(a, b)` and
-its norm, which are Mathlib's `Lp ℝ 2 (volume.restrict (Ioo a b))` and its norm.
+This module formalizes Section 8.3 of [quarteroni2000numerical]. A partition $\mathcal{T}_h$ of
+$[a, b]$ divides it into $K$ subintervals $I_j = [x_j, x_{j+1}]$ of length $h_j \le h$. On each
+$I_j$ take the $k + 1$ equally spaced nodes $x_j^{(i)} = x_j + (i/k)(x_{j+1} - x_j)$,
+$0 \le i \le k$. The piecewise interpolation polynomial $\Pi_h^k f$ is, on each $I_j$, the Lagrange
+interpolant of $f$ at these nodes, and it lies in the space $X_h^k$ of continuous piecewise
+polynomials of degree $k$ (8.22). The module proves the uniform error estimate
+$$\|f - \Pi_h^k f\|_\infty \le C h^{k+1} \|f^{(k+1)}\|_\infty \tag{8.23}$$
+with $C = 1/(k+1)!$, the $L^2$ estimates $\|(f - \Pi_h^k f)^{(m)}\|_{L^2(a,b)} \le C h^{k+1-m}
+\|f^{(k+1)}\|_{L^2(a,b)}$ of Theorem 8.3 with $C = 1$, and their case $k = 1$ (8.27).
 
 The piecewise interpolation operator is `piecewisePolyInterpCLM` of
-`Numlib/Approximation/Interpolation`, whose panel node systems `IsPanelNodes` are instantiated
-here with the equally spaced nodes; the space `X_h^k` is the spline space of smoothness `C⁰`,
-`Spline.splineSpace a b K x k 0` of `Numlib/Approximation/Spline`; the `L²` estimates are
-`Numlib/Approximation/SobolevInterpolation`, over the Sobolev space `H^{k+1}(a, b)` of
-`Numlib/Analysis/Sobolev/Interval`.
+`Numlib.Approximation.Interpolation`, whose node systems `IsPanelNodes` are here the equally spaced
+nodes. The space $X_h^k$ is the spline space of degree $k$ and smoothness $C^0$,
+`Spline.splineSpace a b K x k 0` of `Numlib.Approximation.Spline`. The $L^2$ estimates come from
+`Numlib.Approximation.SobolevInterpolation`, over the Sobolev space $H^{k+1}(a, b)$ of
+`Numlib.Analysis.Sobolev.Interval`.
 
 ## Main definitions
 
-* `equispacedPanelNodes x k` — the nodes `x_j^{(i)} = x_j + (i/k)(x_{j+1} - x_j)`, `0 ≤ i ≤ k`, of
-  the subinterval `I_j`, with `isPanelNodes_equispacedPanelNodes`.
-* `piecewiseLagrangeInterp x K k` — the operator `Π_h^k` on `C([a, b], ℝ)`, with
-  `piecewiseLagrangeInterp_apply_of_mem`: on `I_j` it is the Lagrange interpolant at the nodes of
-  `I_j`.
-* `equation_8_22` — the space `X_h^k`, with `mem_equation_8_22_iff` in the book's phrasing and
-  `range_piecewiseLagrangeInterp`: `X_h^k` is the range of `Π_h^k`.
+* Section 8.3, `QuarteroniSaccoSaleri.Chapter08.equispacedPanelNodes`: the $k + 1$ equally spaced
+  nodes of the subinterval $I_j$.
+* Section 8.3, `QuarteroniSaccoSaleri.Chapter08.piecewiseLagrangeInterp`: the piecewise
+  interpolation operator $\Pi_h^k$ on $C([a, b])$.
+* (8.22), `QuarteroniSaccoSaleri.Chapter08.equation_8_22`: the space $X_h^k$ of continuous piecewise
+  polynomials.
 
 ## Main results
 
-* `equation_8_23`, `equation_8_23_of_forall_le` — `‖f - Π_h^k f‖_∞ ≤ C h^{k+1} ‖f^{(k+1)}‖_∞` with
-  `C = 1/(k+1)!`.
-* `theorem_8_3`, `theorem_8_3_sq`, `theorem_8_3_L2` — `‖(f - Π_h^k f)^{(m)}‖_{L²(a,b)}
-  ≤ C h^{k+1-m} ‖f^{(k+1)}‖_{L²(a,b)}` for `f ∈ H^{k+1}(a, b)` and `0 ≤ m ≤ k + 1`, with `C = 1`.
-* `equation_8_27`, `equation_8_27_deriv` — the case `k = 1`, `m = 0, 1`, with `C₁ = C₂ = 1`.
+* Section 8.3, `QuarteroniSaccoSaleri.Chapter08.isPanelNodes_equispacedPanelNodes`: the equally
+  spaced nodes form a node system for each subinterval.
+* Section 8.3, `QuarteroniSaccoSaleri.Chapter08.piecewiseLagrangeInterp_apply_of_mem`: on $I_j$,
+  $\Pi_h^k f$ is the Lagrange interpolant of $f$ at the nodes of $I_j$.
+* (8.22), `QuarteroniSaccoSaleri.Chapter08.mem_equation_8_22_iff`: $v \in X_h^k$ if and only if $v$
+  is a polynomial of degree at most $k$ on each $I_j$.
+* Section 8.3, `QuarteroniSaccoSaleri.Chapter08.range_piecewiseLagrangeInterp`: $X_h^k$ is the range
+  of $\Pi_h^k$.
+* (8.23), `QuarteroniSaccoSaleri.Chapter08.equation_8_23_of_forall_le`: the uniform estimate with a
+  bound $M$ on $|f^{(k+1)}|$.
+* (8.23), `QuarteroniSaccoSaleri.Chapter08.equation_8_23`: $\|f - \Pi_h^k f\|_\infty \le h^{k+1}
+  \|f^{(k+1)}\|_\infty / (k+1)!$.
+* Theorem 8.3, `QuarteroniSaccoSaleri.Chapter08.theorem_8_3_sq`: the squared form of the $L^2$
+  estimates.
+* Theorem 8.3, `QuarteroniSaccoSaleri.Chapter08.theorem_8_3`: $\|(f - \Pi_h^k f)^{(m)}\|_{L^2(a,b)}
+  \le h^{k+1-m} \|f^{(k+1)}\|_{L^2(a,b)}$ for $0 \le m \le k + 1$.
+* Theorem 8.3, `QuarteroniSaccoSaleri.Chapter08.theorem_8_3_L2`: the case $m = 0$ as an $L^2(a, b)$
+  norm.
+* (8.27), `QuarteroniSaccoSaleri.Chapter08.equation_8_27`: $\|f - \Pi_h^1 f\|_{L^2(a,b)} \le h^2
+  \|f''\|_{L^2(a,b)}$.
+* (8.27), `QuarteroniSaccoSaleri.Chapter08.equation_8_27_deriv`: $\|(f - \Pi_h^1 f)'\|_{L^2(a,b)}
+  \le h \|f''\|_{L^2(a,b)}$.
 
 ## Conventions
 
-The breakpoints are a sequence `x : ℕ → Icc a b` of points of `[a, b]` with
-`IsIntervalPartition a b K (fun j => (x j : ℝ))`: `a = x 0 < x 1 < ⋯ < x K = b`, `K ≥ 1`
-subintervals; the book's `n` (the local degree) is written `k ≥ 1` throughout, as the book does
-from (8.22) on. The mesh `h = max_j h_j` enters as a bound `h_j ≤ h` for every `j`, which is what
-the estimates use. A function `f ∈ C^{k+1}([a, b])` is a function `ℝ → ℝ` of class `C^{k+1}` on an
-open set containing `[a, b]`, as in Theorem 8.2, and `‖g‖_∞` is `sSup ((fun s => |g s|) '' Icc a b)`
-with an `_of_forall_le` companion carrying a bound `M`. In Theorem 8.3 the hypothesis
-"`f^{(m)} ∈ L²(a, b)` for `0 ≤ m ≤ k + 1`" is `u ∈ H^{k+1}(a, b)` (`SobolevInterval (k + 1) a b`),
-`f^{(m)}` is its `m`-th weak derivative `SobolevInterval.deriv u m`, its continuous representative
-`F : C([a, b], ℝ)` is what `Π_h^k` is applied to, and `(Π_h^k f)^{(m)}` is the classical `m`-th
-derivative of `Π_h^k F` (extended by its endpoint values), which for `m ≥ 2` exists only inside
-the subintervals; `‖·‖_{L²(a,b)}` of such a broken function is the square root of the sum over the
-subintervals of the integrals of its square, and `‖f^{(k+1)}‖_{L²(a,b)}` is the seminorm
-`SobolevInterval.seminorm (k + 1) a b u`.
+* The breakpoints are a sequence `x : ℕ → Icc a b` of points of $[a, b]$ with
+  `IsIntervalPartition a b K (fun j => (x j : ℝ))`, that is, $a = x_0 < x_1 < \cdots < x_K = b$,
+  with $K \ge 1$ subintervals.
+* The book's local degree $n$ is written $k \ge 1$ throughout, as the book does from (8.22) on.
+* The mesh size $h = \max_j h_j$ enters as a bound $h_j \le h$ for every $j$, which is what the
+  estimates use.
+* A function $f \in C^{k+1}([a, b])$ is a function $f : \mathbb{R} \to \mathbb{R}$ of class
+  $C^{k+1}$ on an open set that contains $[a, b]$, as in Theorem 8.2, and $F$ is its restriction to
+  $[a, b]$. The norm $\|g\|_\infty$ is the supremum of $|g|$ over $[a, b]$.
+* In Theorem 8.3, the hypothesis "$f^{(m)} \in L^2(a, b)$ for $0 \le m \le k + 1$" is
+  $f \in H^{k+1}(a, b)$, an element of `SobolevInterval (k + 1) a b`. Its $m$-th weak derivative
+  $f^{(m)}$ is `SobolevInterval.deriv u m`, and $\Pi_h^k$ is applied to its continuous
+  representative `F : C(Icc a b, ℝ)`. The derivative $(\Pi_h^k f)^{(m)}$ is the classical $m$-th
+  derivative of $\Pi_h^k F$, extended to $\mathbb{R}$ by its endpoint values; for $m \ge 2$ it
+  exists only inside the subintervals. The $L^2(a, b)$ norm of such a broken function is the square
+  root of the sum over the subintervals of the integrals of its square. The seminorm
+  $\|f^{(k+1)}\|_{L^2(a,b)}$ is `SobolevInterval.seminorm (k + 1) a b u`.
+* The space $L^2(a, b)$ and its norm, defined in (8.24)–(8.25), are Mathlib's
+  `Lp ℝ 2 (volume.restrict (Ioo a b))` and its norm.
+
+## Not formalized
+
+* **Example 8.5.** It is a table of computed errors.
 -/
 
 open MeasureTheory Polynomial Set
@@ -69,8 +96,12 @@ variable {a b : ℝ} {K k : ℕ} {x : ℕ → Icc a b}
 
 /-! ### The equally spaced nodes and the piecewise interpolation operator -/
 
-/-- **The equally spaced nodes of a subinterval** (§8.3): on `I_j = [x_j, x_{j+1}]` the `k + 1`
-nodes `x_j^{(i)} = x_j + (i/k)(x_{j+1} - x_j)`, `0 ≤ i ≤ k`, as points of `[a, b]`. -/
+/-- **Section 8.3** of [quarteroni2000numerical], the equally spaced nodes of a subinterval. On
+$I_j = [x_j, x_{j+1}]$, the $k + 1$ nodes are
+$$x_j^{(i)} = x_j + \frac{i}{k} (x_{j+1} - x_j), \qquad 0 \le i \le k,$$
+as points of $[a, b]$.
+
+For $k = 0$ the single node is $x_j$, by the Lean convention $a / 0 = 0$. -/
 noncomputable def equispacedPanelNodes (x : ℕ → Icc a b) (k : ℕ) (j : ℕ) (i : Fin (k + 1)) :
     Icc a b :=
   ⟨(x j : ℝ) + ((i : ℕ) : ℝ) / k * ((x (j + 1) : ℝ) - x j), by
@@ -78,16 +109,19 @@ noncomputable def equispacedPanelNodes (x : ℕ → Icc a b) (k : ℕ) (j : ℕ)
       ⟨by positivity, div_le_one_of_le₀ (by exact_mod_cast Nat.lt_succ_iff.mp i.2) (by positivity)⟩
     simpa only [smul_eq_mul] using (convex_Icc a b).add_smul_sub_mem (x j).2 (x (j + 1)).2 hi⟩
 
-/-- The value of an equally spaced node. -/
+/-- The value of the equally spaced node: $x_j^{(i)} = x_j + (i/k)(x_{j+1} - x_j)$. -/
 @[simp]
 theorem equispacedPanelNodes_val (x : ℕ → Icc a b) (k j : ℕ) (i : Fin (k + 1)) :
     (equispacedPanelNodes x k j i : ℝ) = (x j : ℝ) + ((i : ℕ) : ℝ) / k * ((x (j + 1) : ℝ) - x j) :=
   rfl
 
-/-- **The equally spaced nodes form a panel node system**: for a partition
-`a = x 0 < ⋯ < x K = b` with `K ≥ 1` and a degree `k ≥ 1`, the nodes of every subinterval lie in
-it, are distinct, and start and end at its endpoints — `IsPanelNodes (K - 1) k x node` of
-`Numlib/Approximation/Interpolation`, whose panels are numbered `0, …, K - 1`. -/
+/-- **Section 8.3** of [quarteroni2000numerical], the equally spaced nodes as a node system. Let
+$a = x_0 < \cdots < x_K = b$ with $K \ge 1$, and let $k \ge 1$. Then for every subinterval $I_j$
+the nodes $x_j^{(0)}, \ldots, x_j^{(k)}$ lie in $I_j$, are distinct, and start and end at the
+endpoints of $I_j$.
+
+The node system is `IsPanelNodes (K - 1) k x (equispacedPanelNodes x k)` of
+`Numlib.Approximation.Interpolation`, whose subintervals are numbered $0, \ldots, K - 1$. -/
 theorem isPanelNodes_equispacedPanelNodes (hx : IsIntervalPartition a b K fun j => (x j : ℝ))
     (hK : 1 ≤ K) (hk : 1 ≤ k) : IsPanelNodes (K - 1) k x (equispacedPanelNodes x k) where
   step i hi := hx.step i (by omega)
@@ -111,18 +145,25 @@ theorem isPanelNodes_equispacedPanelNodes (hx : IsIntervalPartition a b K fun j 
     have hk' : (k : ℝ) ≠ 0 := by exact_mod_cast (by omega : k ≠ 0)
     simp [div_self hk'])
 
-/-- **The piecewise interpolation polynomial `Π_h^k`** (§8.3): the operator on `C([a, b], ℝ)`
-sending `f` to the continuous function which on every subinterval `I_j` of the partition
-`a = x 0 < ⋯ < x K = b` is the Lagrange interpolant of `f` at the `k + 1` equally spaced nodes of
-`I_j` — `piecewisePolyInterpCLM` of `Numlib/Approximation/Interpolation` with the node system
-`equispacedPanelNodes x k`. -/
+/-- **Section 8.3** of [quarteroni2000numerical], the piecewise interpolation polynomial. For a
+partition $a = x_0 < \cdots < x_K = b$, the operator $\Pi_h^k$ on $C([a, b])$ maps $f$ to the
+continuous function that on each subinterval $I_j$ is the Lagrange interpolant of $f$ at the
+$k + 1$ equally spaced nodes of $I_j$.
+
+The operator is `piecewisePolyInterpCLM` of `Numlib.Approximation.Interpolation` with the node
+system `QuarteroniSaccoSaleri.Chapter08.equispacedPanelNodes x k`. -/
 noncomputable def piecewiseLagrangeInterp (x : ℕ → Icc a b) (K k : ℕ) :
     C(Icc a b, ℝ) →L[ℝ] C(Icc a b, ℝ) :=
   piecewisePolyInterpCLM (K - 1) k x (equispacedPanelNodes x k)
 
-/-- **`Π_h^k f` on a subinterval** (§8.3): "the piecewise interpolation polynomial `Π_h^k f`
-coincides on each `I_j` with the interpolating polynomial of `f|_{I_j}` at the `k + 1` nodes
-`x_j^{(i)}`" — `piecewisePolyInterpCLM_apply_of_mem`. -/
+/-- **Section 8.3** of [quarteroni2000numerical], $\Pi_h^k f$ on a subinterval. Let
+$a = x_0 < \cdots < x_K = b$ with $K \ge 1$, let $k \ge 1$, let $f \in C([a, b])$ and $j < K$.
+Then for every $t \in I_j = [x_j, x_{j+1}]$, $\Pi_h^k f(t)$ is the value at $t$ of the
+polynomial that interpolates $f$ at the nodes $x_j^{(0)}, \ldots, x_j^{(k)}$. In the words of
+the book, "the piecewise interpolation polynomial $\Pi_h^k f$ coincides on each $I_j$ with the
+interpolating polynomial of $f|_{I_j}$ at the $k + 1$ nodes $x_j^{(i)}$".
+
+The proof specializes `piecewisePolyInterpCLM_apply_of_mem`. -/
 theorem piecewiseLagrangeInterp_apply_of_mem (hx : IsIntervalPartition a b K fun j => (x j : ℝ))
     (hK : 1 ≤ K) (hk : 1 ≤ k) (f : C(Icc a b, ℝ)) {j : ℕ} (hj : j < K) {t : Icc a b}
     (h1 : (x j : ℝ) ≤ t) (h2 : (t : ℝ) ≤ x (j + 1)) :
@@ -132,20 +173,24 @@ theorem piecewiseLagrangeInterp_apply_of_mem (hx : IsIntervalPartition a b K fun
   piecewisePolyInterpCLM_apply_of_mem (isPanelNodes_equispacedPanelNodes hx hK hk) f
     (by omega) h1 h2
 
-/-! ### (8.22): the space `X_h^k` -/
+/-! ### (8.22): the space $X_h^k$ -/
 
-/-- **(8.22), the piecewise polynomial space**
-`X_h^k = {v ∈ C⁰([a, b]) : v|_{I_j} ∈ 𝒫_k(I_j) ∀ I_j ∈ 𝒯_h}`: the continuous functions on
-`[a, b]` whose restrictions to the subintervals `I_j = [x_j, x_{j+1}]`, `j < K`, are polynomials
-of degree `≤ k` — the spline space of degree `k` and smoothness `C⁰` of
-`Numlib/Approximation/Spline`, `Spline.splineSpace a b K x k 0`; `mem_equation_8_22_iff` is the
-book's phrasing. -/
+/-- **Equation (8.22)** of [quarteroni2000numerical], the piecewise polynomial space
+$$X_h^k = \{v \in C^0([a, b]) : v|_{I_j} \in \mathbb{P}_k(I_j) \ \forall I_j \in
+  \mathcal{T}_h\},$$
+the continuous functions on $[a, b]$ whose restrictions to the subintervals
+$I_j = [x_j, x_{j+1}]$, $j < K$, are polynomials of degree at most $k$.
+
+The space is the spline space of degree $k$ and smoothness $C^0$,
+`Spline.splineSpace a b K x k 0` of `Numlib.Approximation.Spline`. The result
+`QuarteroniSaccoSaleri.Chapter08.mem_equation_8_22_iff` gives the phrasing of the book. -/
 noncomputable def equation_8_22 (a b : ℝ) (K : ℕ) (x : ℕ → Icc a b) (k : ℕ) :
     Submodule ℝ C(Icc a b, ℝ) :=
   Spline.splineSpace a b K (fun j => (x j : ℝ)) k 0
 
-/-- **(8.22) unfolded**: a continuous function `v` on `[a, b]` lies in `X_h^k` exactly when on
-every subinterval `I_j`, `j < K`, it agrees with a polynomial of degree at most `k`. -/
+/-- **Equation (8.22)** of [quarteroni2000numerical], membership. A function $v \in C([a, b])$ lies
+in $X_h^k$ if and only if for every $j < K$ there is a polynomial $p$ of degree at most $k$ with
+$v(t) = p(t)$ for all $t \in [a, b] \cap [x_j, x_{j+1}]$. -/
 theorem mem_equation_8_22_iff (v : C(Icc a b, ℝ)) :
     v ∈ equation_8_22 a b K x k ↔
       ∀ j < K, ∃ p : ℝ[X], p.degree ≤ k ∧
@@ -163,11 +208,14 @@ theorem mem_equation_8_22_iff (v : C(Icc a b, ℝ)) :
     have ht' : t ∈ Icc a b := ⟨(x j).2.1.trans ht.1, ht.2.trans (x (j + 1)).2.2⟩
     rw [IccExtend_of_mem hab v ht', hpe ⟨t, ht'⟩ ht]
 
-/-- **`X_h^k` is the range of `Π_h^k`** (§8.3): for a partition with `K ≥ 1` subintervals and
-`k ≥ 1`, the piecewise interpolation polynomials are exactly the elements of `X_h^k`. `Π_h^k f` is
-a polynomial of degree `≤ k` on every subinterval (`piecewiseLagrangeInterp_apply_of_mem`), and an
-element of `X_h^k` is its own Lagrange interpolant on every subinterval
-(`Lagrange.eq_interpolate_of_eval_eq`), hence is reproduced by `Π_h^k`. -/
+/-- **Section 8.3** of [quarteroni2000numerical], the range of $\Pi_h^k$. Let
+$a = x_0 < \cdots < x_K = b$ with $K \ge 1$, and let $k \ge 1$. Then the range of $\Pi_h^k$ is
+$X_h^k$: the piecewise interpolation polynomials are exactly the elements of $X_h^k$.
+
+$\Pi_h^k f$ is a polynomial of degree at most $k$ on each subinterval, by
+`QuarteroniSaccoSaleri.Chapter08.piecewiseLagrangeInterp_apply_of_mem`. An element of $X_h^k$ is
+its own Lagrange interpolant on each subinterval, by `Lagrange.eq_interpolate_of_eval_eq`, so
+$\Pi_h^k$ reproduces it. -/
 theorem range_piecewiseLagrangeInterp (hx : IsIntervalPartition a b K fun j => (x j : ℝ))
     (hK : 1 ≤ K) (hk : 1 ≤ k) :
     LinearMap.range (piecewiseLagrangeInterp x K k : C(Icc a b, ℝ) →ₗ[ℝ] C(Icc a b, ℝ))
@@ -196,14 +244,15 @@ theorem range_piecewiseLagrangeInterp (hx : IsIntervalPartition a b K fun j => (
 
 /-! ### (8.23): the uniform error estimate -/
 
-/-- **(8.23), with an explicit bound on `f^{(k+1)}`.** For a partition with `K ≥ 1` subintervals
-of length at most `h`, `k ≥ 1`, and `f` of class `C^{k+1}` on an open set `U ⊇ [a, b]` with
-`|f^{(k+1)}| ≤ M` on `[a, b]`, the piecewise interpolant of the restriction `F` of `f` satisfies
+/-- **Equation (8.23)** of [quarteroni2000numerical], with an explicit bound on $f^{(k+1)}$. Let
+$a = x_0 < \cdots < x_K = b$ with $K \ge 1$ subintervals of length at most $h$, and let
+$k \ge 1$. Let $f$ be of class $C^{k+1}$ on an open set $U \supseteq [a, b]$, let $F$ be its
+restriction to $[a, b]$, and let $|f^{(k+1)}| \le M$ on $[a, b]$. Then
+$$\|F - \Pi_h^k F\|_\infty \le \frac{h^{k+1}}{(k+1)!} M.$$
 
-`‖F - Π_h^k F‖_∞ ≤ h^{k+1}/(k+1)! · M`.
-
-Theorem 8.2 on each subinterval (`exists_sub_piecewisePolyInterpCLM_apply_eq_of_contDiffOn`),
-the nodal polynomial of a subinterval being bounded by `h^{k+1}` there. -/
+The proof applies Theorem 8.2 on each subinterval, by
+`exists_sub_piecewisePolyInterpCLM_apply_eq_of_contDiffOn`, and bounds the nodal polynomial of a
+subinterval by $h^{k+1}$ there. -/
 theorem equation_8_23_of_forall_le (hx : IsIntervalPartition a b K fun j => (x j : ℝ))
     (hK : 1 ≤ K) (hk : 1 ≤ k) {h : ℝ} (hmesh : ∀ j < K, (x (j + 1) : ℝ) - x j ≤ h) {f : ℝ → ℝ}
     {U : Set ℝ} (hU : IsOpen U) (hUsub : Icc a b ⊆ U)
@@ -238,13 +287,14 @@ theorem equation_8_23_of_forall_le (hx : IsIntervalPartition a b K fun j => (x j
         mul_le_mul (by gcongr; exact hM ξ hξmem) hprod (abs_nonneg _) (by positivity)
     _ = h ^ (k + 1) / (k + 1).factorial * M := by ring
 
-/-- **(8.23).** For a partition with `K ≥ 1` subintervals of length at most `h`, `k ≥ 1`, and
-`f ∈ C^{k+1}([a, b])` (of class `C^{k+1}` on an open set `U ⊇ [a, b]`), the piecewise interpolant
-of the restriction `F` of `f` satisfies
+/-- **Equation (8.23)** of [quarteroni2000numerical]. Let $a = x_0 < \cdots < x_K = b$ with
+$K \ge 1$ subintervals of length at most $h$, and let $k \ge 1$. Let $f \in C^{k+1}([a, b])$,
+that is, of class $C^{k+1}$ on an open set $U \supseteq [a, b]$, and let $F$ be its restriction
+to $[a, b]$. Then
+$$\|F - \Pi_h^k F\|_\infty \le C h^{k+1} \|f^{(k+1)}\|_\infty, \qquad C = \frac{1}{(k+1)!},$$
+where $\|f^{(k+1)}\|_\infty = \max_{[a,b]} |f^{(k+1)}|$.
 
-`‖F - Π_h^k F‖_∞ ≤ C h^{k+1} ‖f^{(k+1)}‖_∞` with `C = 1/(k+1)!`,
-
-where `‖f^{(k+1)}‖_∞ = max_{[a,b]} |f^{(k+1)}|`. -/
+The maximum is written as the supremum `sSup` of $|f^{(k+1)}|$ over $[a, b]$. -/
 theorem equation_8_23 (hx : IsIntervalPartition a b K fun j => (x j : ℝ)) (hK : 1 ≤ K) (hk : 1 ≤ k)
     {h : ℝ} (hmesh : ∀ j < K, (x (j + 1) : ℝ) - x j ≤ h) {f : ℝ → ℝ} {U : Set ℝ} (hU : IsOpen U)
     (hUsub : Icc a b ⊆ U) (hf : ContDiffOn ℝ ((k + 1 : ℕ) : WithTop ℕ∞) f U) {F : C(Icc a b, ℝ)}
@@ -261,10 +311,11 @@ theorem equation_8_23 (hx : IsIntervalPartition a b K fun j => (x j : ℝ)) (hK 
   exact equation_8_23_of_forall_le hx hK hk hmesh hU hUsub hf hF
     fun s hs => le_csSup hbdd (mem_image_of_mem _ hs)
 
-/-! ### Theorem 8.3: the `L²` estimates -/
+/-! ### Theorem 8.3: the $L^2$ estimates -/
 
-/-- Inside a subinterval `I_j`, the `m`-th derivative of `Π_h^k F` (extended to `ℝ` by its
-endpoint values) is the `m`-th derivative of the Lagrange interpolant of `F` on `I_j`. -/
+/-- Inside a subinterval $I_j$, $j < K$, the $m$-th derivative of $\Pi_h^k F$, extended to
+$\mathbb{R}$ by its endpoint values, is the $m$-th derivative of the Lagrange interpolant of $F$
+on $I_j$. -/
 theorem iteratedDeriv_IccExtend_piecewiseLagrangeInterp
     (hx : IsIntervalPartition a b K fun j => (x j : ℝ)) (hK : 1 ≤ K) (hk : 1 ≤ k)
     (F : C(Icc a b, ℝ)) (m : ℕ) {j : ℕ} (hj : j < K) {t : ℝ}
@@ -280,19 +331,18 @@ theorem iteratedDeriv_IccExtend_piecewiseLagrangeInterp
     exact piecewisePolyInterpCLM_apply_of_mem hnode F (by omega) hs.1 hs.2
   rw [hev.iteratedDeriv_eq m, Polynomial.iteratedDeriv_eval]
 
-/-- **Theorem 8.3, squared** ((8.26) with `C = 1`): for a partition with `K ≥ 1` subintervals of
-length at most `h`, `k ≥ 1`, `f ∈ H^{k+1}(a, b)` with continuous representative `F` and
-`0 ≤ m ≤ k + 1`,
+/-- **Theorem 8.3** of [quarteroni2000numerical], squared form of (8.26) with $C = 1$. Let
+$a = x_0 < \cdots < x_K = b$ with $K \ge 1$ subintervals of length at most $h$, let $k \ge 1$,
+let $f \in H^{k+1}(a, b)$ with continuous representative $F$, and let $0 \le m \le k + 1$. Then
+$$\|(f - \Pi_h^k f)^{(m)}\|_{L^2(a,b)}^2 = \sum_{j < K} \int_{x_j}^{x_{j+1}} \big|f^{(m)} -
+  (\Pi_h^k F)^{(m)}\big|^2 \le h^{2(k+1-m)} \|f^{(k+1)}\|_{L^2(a,b)}^2,$$
+where $f^{(m)}$ is the $m$-th weak derivative of $f$ and $(\Pi_h^k F)^{(m)}$ is the classical
+$m$-th derivative of the piecewise interpolant inside the subintervals.
 
-`‖(f - Π_h^k f)^{(m)}‖²_{L²(a,b)} = ∑_{j<K} ∫_{x_j}^{x_{j+1}} |f^{(m)} - (Π_h^k F)^{(m)}|²
-≤ h^{2(k+1-m)} ‖f^{(k+1)}‖²_{L²(a,b)}`,
-
-with `f^{(m)}` the `m`-th weak derivative of `f` and `(Π_h^k F)^{(m)}` the classical `m`-th
-derivative of the piecewise interpolant inside the subintervals. For `m ≤ k` this is
-`sobolevSeminorm_sub_piecewisePolyInterp_le` of `Numlib/Approximation/SobolevInterpolation`, the
-weak derivative agreeing almost everywhere with the derivative of the `C^k` representative
-(`SobolevInterval.exists_contDiff_ae_eq`); for `m = k + 1` the derivative of the interpolant
-vanishes and the two sides are equal. -/
+For $m \le k$ the proof specializes `sobolevSeminorm_sub_piecewisePolyInterp_le` of
+`Numlib.Approximation.SobolevInterpolation`, with the weak derivative equal almost everywhere to
+the derivative of the $C^k$ representative, by `SobolevInterval.exists_contDiff_ae_eq`. For
+$m = k + 1$ the derivative of the interpolant is $0$ and the two sides are equal. -/
 theorem theorem_8_3_sq (hx : IsIntervalPartition a b K fun j => (x j : ℝ)) (hK : 1 ≤ K)
     (hk : 1 ≤ k) {h : ℝ} (hmesh : ∀ j < K, (x (j + 1) : ℝ) - x j ≤ h)
     (u : SobolevInterval (k + 1) a b) {F : C(Icc a b, ℝ)}
@@ -382,23 +432,24 @@ theorem theorem_8_3_sq (hx : IsIntervalPartition a b K fun j => (x j : ℝ)) (hK
       _ = h ^ (2 * (k + 1 - m)) * SobolevInterval.seminorm (k + 1) a b u ^ 2 := by
           rw [SobolevInterval.seminorm_sq_eq_integral hab.le]
 
-/-- The mesh bound `h` of a partition with at least one subinterval is nonnegative. -/
+/-- The mesh bound $h$ of a partition with at least one subinterval is nonnegative. -/
 theorem mesh_nonneg (hx : IsIntervalPartition a b K fun j => (x j : ℝ)) (hK : 1 ≤ K) {h : ℝ}
     (hmesh : ∀ j < K, (x (j + 1) : ℝ) - x j ≤ h) : 0 ≤ h :=
   (sub_pos.mpr (hx.step 0 hK)).le.trans (hmesh 0 hK)
 
-/-- **Theorem 8.3** ((8.26), with `C = 1`). Let `0 ≤ m ≤ k + 1`, with `k ≥ 1`, and assume that
-`f^{(m)} ∈ L²(a, b)` for `0 ≤ m ≤ k + 1`, i.e. `f ∈ H^{k+1}(a, b)`, with continuous representative
-`F`; then for a partition with `K ≥ 1` subintervals of length at most `h`,
+/-- **Theorem 8.3** of [quarteroni2000numerical], estimate (8.26) with $C = 1$. Let
+$a = x_0 < \cdots < x_K = b$ with $K \ge 1$ subintervals of length at most $h$, and let
+$k \ge 1$. Let $f^{(m)} \in L^2(a, b)$ for $0 \le m \le k + 1$, that is, $f \in H^{k+1}(a, b)$,
+with continuous representative $F$. Then for $0 \le m \le k + 1$,
+$$\|(f - \Pi_h^k f)^{(m)}\|_{L^2(a,b)} \le C h^{k+1-m} \|f^{(k+1)}\|_{L^2(a,b)}, \qquad C = 1.$$
 
-`‖(f - Π_h^k f)^{(m)}‖_{L²(a,b)} ≤ C h^{k+1-m} ‖f^{(k+1)}‖_{L²(a,b)}` with `C = 1`,
-
-the left side being the square root of `∑_{j<K} ∫_{x_j}^{x_{j+1}} |f^{(m)} - (Π_h^k F)^{(m)}|²`,
-with `f^{(m)}` the `m`-th weak derivative of `f` and `(Π_h^k F)^{(m)}` the classical `m`-th
-derivative of the piecewise interpolant inside the subintervals (for `m ≤ 1` it is the `L²(a, b)`
-norm of `(f - Π_h^k f)^{(m)}` itself), and the right side the `H^{k+1}(a, b)` seminorm of `f`.
-The book proves the case `k = 1` and refers to Quarteroni–Valli for the general one; here it is
-`theorem_8_3_sq`, the panelwise estimate of `Numlib/Approximation/SobolevInterpolation`. -/
+The left side is the square root of $\sum_{j < K} \int_{x_j}^{x_{j+1}} |f^{(m)} - (\Pi_h^k
+F)^{(m)}|^2$, with $f^{(m)}$ the $m$-th weak derivative of $f$ and $(\Pi_h^k F)^{(m)}$ the
+classical $m$-th derivative of the piecewise interpolant inside the subintervals; for $m \le 1$
+it is the $L^2(a, b)$ norm of $(f - \Pi_h^k f)^{(m)}$ itself. The right side is the
+$H^{k+1}(a, b)$ seminorm of $f$. The book proves the case $k = 1$ and refers to Quarteroni and
+Valli for the general case. The proof takes the square root in
+`QuarteroniSaccoSaleri.Chapter08.theorem_8_3_sq`. -/
 theorem theorem_8_3 (hx : IsIntervalPartition a b K fun j => (x j : ℝ)) (hK : 1 ≤ K) (hk : 1 ≤ k)
     {h : ℝ} (hmesh : ∀ j < K, (x (j + 1) : ℝ) - x j ≤ h) (u : SobolevInterval (k + 1) a b)
     {F : C(Icc a b, ℝ)} (hF : SobolevInterval.fn u =ᵐ[volume.restrict (Ioo a b)] IccExtend hx.le F)
@@ -418,10 +469,13 @@ theorem theorem_8_3 (hx : IsIntervalPartition a b K fun j => (x j : ℝ)) (hK : 
     _ = h ^ (k + 1 - m) * SobolevInterval.seminorm (k + 1) a b u :=
         Real.sqrt_sq (by positivity)
 
-/-- **Theorem 8.3 for `m = 0`, as an `L²(a, b)` norm on `[a, b]`**: under the hypotheses of
-`theorem_8_3`, `‖f - Π_h^k f‖_{L²(a,b)} ≤ h^{k+1} ‖f^{(k+1)}‖_{L²(a,b)}`, the left side written
-as `√(∫_a^b |f - Π_h^k F|²)` with `f` the element of `H^{k+1}(a, b)` itself:
-`integral_sq_sub_piecewisePolyInterpCLM_le_seminorm`. -/
+/-- **Theorem 8.3** of [quarteroni2000numerical], the case $m = 0$ as an $L^2(a, b)$ norm. Under the
+hypotheses of `QuarteroniSaccoSaleri.Chapter08.theorem_8_3`,
+$$\|f - \Pi_h^k f\|_{L^2(a,b)} = \Big( \int_a^b |f - \Pi_h^k F|^2 \Big)^{1/2} \le h^{k+1}
+  \|f^{(k+1)}\|_{L^2(a,b)},$$
+where $f$ is the element of $H^{k+1}(a, b)$ itself.
+
+The proof specializes `integral_sq_sub_piecewisePolyInterpCLM_le_seminorm`. -/
 theorem theorem_8_3_L2 (hx : IsIntervalPartition a b K fun j => (x j : ℝ)) (hK : 1 ≤ K) (hk : 1 ≤ k)
     {h : ℝ} (hmesh : ∀ j < K, (x (j + 1) : ℝ) - x j ≤ h) (u : SobolevInterval (k + 1) a b)
     {F : C(Icc a b, ℝ)}
@@ -449,14 +503,15 @@ theorem theorem_8_3_L2 (hx : IsIntervalPartition a b K fun j => (x j : ℝ)) (hK
     rw [ht]
     rfl
 
-/-! ### (8.27): the case `k = 1` -/
+/-! ### (8.27): the case $k = 1$ -/
 
-/-- **(8.27), first estimate** (`C₁ = 1`). For `f ∈ H²(a, b)` with continuous representative
-`F`, and a partition with `K ≥ 1` subintervals of length at most `h`,
+/-- **Equation (8.27)** of [quarteroni2000numerical], first estimate, with $C_1 = 1$. Let
+$a = x_0 < \cdots < x_K = b$ with $K \ge 1$ subintervals of length at most $h$, and let
+$f \in H^2(a, b)$ with continuous representative $F$. Then
+$$\|f - \Pi_h^1 f\|_{L^2(a,b)} \le C_1 h^2 \|f''\|_{L^2(a,b)}.$$
 
-`‖f - Π_h^1 f‖_{L²(a,b)} ≤ C₁ h² ‖f''‖_{L²(a,b)}`:
-
-Theorem 8.3 with `k = 1` and `m = 0`, in the form `theorem_8_3_L2`. -/
+This is Theorem 8.3 with $k = 1$ and $m = 0$, in the form
+`QuarteroniSaccoSaleri.Chapter08.theorem_8_3_L2`. -/
 theorem equation_8_27 (hx : IsIntervalPartition a b K fun j => (x j : ℝ)) (hK : 1 ≤ K) {h : ℝ}
     (hmesh : ∀ j < K, (x (j + 1) : ℝ) - x j ≤ h) (u : SobolevInterval 2 a b) {F : C(Icc a b, ℝ)}
     (hF : SobolevInterval.fn u =ᵐ[volume.restrict (Ioo a b)] IccExtend hx.le F) :
@@ -465,14 +520,14 @@ theorem equation_8_27 (hx : IsIntervalPartition a b K fun j => (x j : ℝ)) (hK 
       ≤ h ^ 2 * SobolevInterval.seminorm 2 a b u :=
   theorem_8_3_L2 (k := 1) hx hK le_rfl hmesh u hF
 
-/-- **(8.27), second estimate** (`C₂ = 1`). For `f ∈ H²(a, b)` with continuous representative
-`F`, and a partition with `K ≥ 1` subintervals of length at most `h`,
+/-- **Equation (8.27)** of [quarteroni2000numerical], second estimate, with $C_2 = 1$. Let
+$a = x_0 < \cdots < x_K = b$ with $K \ge 1$ subintervals of length at most $h$, and let
+$f \in H^2(a, b)$ with continuous representative $F$. Then
+$$\|(f - \Pi_h^1 f)'\|_{L^2(a,b)} \le C_2 h \|f''\|_{L^2(a,b)}.$$
 
-`‖(f - Π_h^1 f)'‖_{L²(a,b)} ≤ C₂ h ‖f''‖_{L²(a,b)}`,
-
-the left side being `√(∑_{j<K} ∫_{x_j}^{x_{j+1}} |f' - (Π_h^1 F)'|²)` with `f'` the weak derivative
-and `(Π_h^1 F)'` the slope of the interpolant on each subinterval: Theorem 8.3 with `k = 1` and
-`m = 1`. -/
+The left side is $\big(\sum_{j < K} \int_{x_j}^{x_{j+1}} |f' - (\Pi_h^1 F)'|^2\big)^{1/2}$, with
+$f'$ the weak derivative and $(\Pi_h^1 F)'$ the slope of the interpolant on each subinterval.
+This is Theorem 8.3 with $k = 1$ and $m = 1$. -/
 theorem equation_8_27_deriv (hx : IsIntervalPartition a b K fun j => (x j : ℝ)) (hK : 1 ≤ K)
     {h : ℝ} (hmesh : ∀ j < K, (x (j + 1) : ℝ) - x j ≤ h) (u : SobolevInterval 2 a b)
     {F : C(Icc a b, ℝ)}

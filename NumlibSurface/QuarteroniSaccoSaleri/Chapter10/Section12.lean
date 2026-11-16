@@ -7,63 +7,90 @@ import Numlib.Analysis.Fourier.Uncertainty
 import Numlib.Analysis.Wavelet.ContinuousTransform
 
 /-!
-# Quarteroni–Sacco–Saleri §10.12: the wavelet transform
+# Quarteroni, Sacco and Saleri, Section 10.12: The wavelet transform
 
-Surface file for Alfio Quarteroni, Riccardo Sacco and Fausto Saleri, *Numerical Mathematics*,
-Springer, 2000, §10.12.
+This module formalizes Section 10.12 of [quarteroni2000numerical]. From an elementary wavelet $h$,
+translations and dilations generate the wavelets $h_{s,\tau}(t) = s^{-1/2} h((t - \tau)/s)$ (10.85),
+whose Fourier transform is given by (10.86). The continuous wavelet transform $W_f(s, \tau) = \int
+f(t) \overline{h_{s,\tau}(t)} \, dt$ (Definition 10.4, (10.87)) is also a bank of filters on the
+Fourier side. The module states the Heisenberg inequality $\Delta t \, \Delta\omega \ge 1/2$
+(10.88), the Fourier transforms of the Haar wavelet (Example 10.10) and of the Morlet wavelet
+(Example 10.11), and the discrete and orthonormal wavelets of Section 10.12.2 with the
+reconstruction formula.
 
-The wavelets `h_{s,τ}(t) = s^{-1/2} h((t − τ)/s)` generated from an elementary wavelet by
-translations and dilations (10.85) and their Fourier transform (10.86), the continuous wavelet
-transform (Definition 10.4, (10.87)) and its expression on the Fourier side as a bank of filters,
-the Heisenberg inequality (10.88), the Haar (Example 10.10) and Morlet (Example 10.11) wavelets,
-and the discrete and orthonormal wavelets of §10.12.2 with the reconstruction formula.
-
-The continuous side is `Numlib/Analysis/Wavelet/ContinuousTransform`; the discrete side at the
-dyadic parameters `s₀ = 2`, `τ₀ = 1` is `Numlib/Analysis/Wavelet/{Multiresolution, Haar}`, with the
-level index reversed (`j ↦ −j`) between the book's `s₀^{-j/2} h(s₀^{-j} t − k)` and the backbone's
-`2^{j/2} ψ(2^j x − k)`. The book writes its transforms in the variable `ω = 2πν`; the statements
-below are in the frequency `ν` of Mathlib's `𝓕`.
+The continuous side comes from `Numlib.Analysis.Wavelet.ContinuousTransform`. The discrete side at
+the dyadic parameters $s_0 = 2$, $\tau_0 = 1$ comes from `Numlib.Analysis.Wavelet.Multiresolution`
+and `Numlib.Analysis.Wavelet.Haar`. The Heisenberg inequality comes from
+`Numlib.Analysis.Fourier.Uncertainty`.
 
 ## Main definitions
 
-* `wavelet h s τ` — `h_{s,τ}` (10.85).
-* `definition_10_4 h f s τ` — the continuous wavelet transform `W_f(s, τ)`.
-* `haarWavelet`, `morletWavelet ω₀` — the elementary wavelets of Examples 10.10–10.11.
-* `discreteWavelet h s₀ τ₀ j k`, `discreteWaveletTransform h s₀ τ₀ f j k` — §10.12.2.
+* Equation (10.85), `QuarteroniSaccoSaleri.Chapter10.wavelet`: the wavelet $h_{s,\tau}$.
+* Definition 10.4, `QuarteroniSaccoSaleri.Chapter10.definition_10_4`: the continuous wavelet
+  transform $W_f(s, \tau)$.
+* Equation (10.88), `QuarteroniSaccoSaleri.Chapter10.timeResolution` and
+  `QuarteroniSaccoSaleri.Chapter10.freqResolution`: the resolutions $\Delta t$ in time and
+  $\Delta\omega$ in angular frequency.
+* Example 10.10, `QuarteroniSaccoSaleri.Chapter10.haarWavelet`: the Haar wavelet.
+* Example 10.11, `QuarteroniSaccoSaleri.Chapter10.morletWavelet`: the Morlet wavelet.
+* Section 10.12.2, `QuarteroniSaccoSaleri.Chapter10.discreteWavelet` and
+  `QuarteroniSaccoSaleri.Chapter10.discreteWaveletTransform`: the discrete wavelets $h_{j,k}$ and
+  the discrete wavelet transform $W_f(j, k)$.
 
 ## Main results
 
-* `equation_10_86` — the filter `𝓕 h_{s,τ}(ν) = √s 𝓕h(sν) e^{-2πiντ}`.
-* `definition_10_4_eq_inner`, `continuousTransform_eq_integral_fourier` — `W_f(s, τ)` as the `L²`
-  inner product `⟪h_{s,τ}, f⟫` and as a bank of filters on the Fourier side.
-* `timeResolution`, `freqResolution`, `equation_10_88` — the resolutions `Δt`, `Δω` in time and in
-  angular frequency and the Heisenberg inequality `Δt Δω ≥ 1/2`.
-* `example_10_10`, `example_10_11` — the transforms of the Haar wavelet and of the real part of the
-  Morlet wavelet.
-* `discreteWavelet_two_one`, `orthonormalWavelet_reconstruction` — the dyadic discrete wavelets
-  of a multiresolution analysis are its `waveletSystem`, orthonormal, and reconstruct every
-  `f ∈ L²(ℝ)` with the constant `A = 1`.
+* Equation (10.86), `QuarteroniSaccoSaleri.Chapter10.equation_10_86`: $\mathcal{F} h_{s,\tau}(\nu) =
+  \sqrt{s} \, \mathcal{F} h(s\nu) e^{-2\pi i\nu\tau}$.
+* Definition 10.4, `QuarteroniSaccoSaleri.Chapter10.definition_10_4_eq_inner` and
+  `QuarteroniSaccoSaleri.Chapter10.continuousTransform_eq_integral_fourier`: $W_f(s, \tau)$ as the
+  $L^2$ inner product of $h_{s,\tau}$ and $f$, and as a bank of filters on the Fourier side.
+* Equation (10.88), `QuarteroniSaccoSaleri.Chapter10.equation_10_88`: the Heisenberg inequality
+  $\Delta t \, \Delta\omega \ge 1/2$.
+* Example 10.10, `QuarteroniSaccoSaleri.Chapter10.example_10_10`: the Fourier transform of the Haar
+  wavelet.
+* Example 10.11, `QuarteroniSaccoSaleri.Chapter10.example_10_11`: the Fourier transform of the real
+  part of the Morlet wavelet.
+* Section 10.12.2, `QuarteroniSaccoSaleri.Chapter10.discreteWaveletTransform_eq`: the discrete
+  transform samples the continuous one.
+* Section 10.12.2, `QuarteroniSaccoSaleri.Chapter10.discreteWavelet_two_one` and
+  `QuarteroniSaccoSaleri.Chapter10.orthonormalWavelet_reconstruction`: the dyadic discrete wavelets
+  of a multiresolution analysis are its wavelet system, they are orthonormal, and they reconstruct
+  every $f \in L^2(\mathbb{R})$ with the constant $A = 1$.
 
-## Errata
+## Conventions
 
-* Example 10.10: the transform of the Haar wavelet is `2i e^{-iω/2}(1 − cos(ω/2))/ω`, not
-  `4i e^{-iω/2}(1 − cos(ω/2))/ω`:
-  `∫_0^{1/2} e^{-iωt} dt − ∫_{1/2}^1 e^{-iωt} dt = (1 − e^{-iω/2})²/(iω)` and
-  `(1 − e^{-iω/2})² = −2 e^{-iω/2}(1 − cos(ω/2))`.
-* Example 10.11: the constant is `√(π/2)`, not `√π`: the Gaussian `e^{-x²/2}` transforms to
-  `√(2π) e^{-ω²/2}`, and Euler's formula halves it.
-* §10.12.2 defines the discrete wavelet transform "for `f ∈ L¹(ℝ)`"; it is the `L²` inner product
-  and lives on `L²(ℝ)`. The reconstruction constant `A` is `1` for an orthonormal basis.
+* The book writes its Fourier transforms in the angular frequency $\omega = 2\pi\nu$. The statements
+  here use the frequency $\nu$ of Mathlib's `𝓕`, and the doc comments give both forms.
+* The book's discrete wavelets are $s_0^{-j/2} h(s_0^{-j} t - k\tau_0)$, and the backbone's wavelet
+  system is $2^{j/2} \psi(2^j x - k)$. At $s_0 = 2$, $\tau_0 = 1$ the level index is reversed,
+  $j \mapsto -j$.
+
+## Deviations from the source
+
+* **The bandwidth $\Delta\omega$ of Section 10.12.1** (typo). The book prints an outer square where
+  a square root is meant. See `QuarteroniSaccoSaleri.Chapter10.freqResolution`.
+* **The resolution in time $\Delta t$ in (10.88)** (reading). The book uses $\Delta t$ without a
+  definition. The library uses the root mean square spread of $|h|^2$. See
+  `QuarteroniSaccoSaleri.Chapter10.timeResolution`.
+* **Equation (10.88)** (reading). The book states the inequality for a general signal. The library
+  states it for a nonzero Schwartz function. See `QuarteroniSaccoSaleri.Chapter10.equation_10_88`.
+* **Example 10.10** (correction). The book prints the transform
+  $4i e^{-i\omega/2}(1 - \cos(\omega/2))/\omega$. It is
+  $2i e^{-i\omega/2}(1 - \cos(\omega/2))/\omega$. See
+  `QuarteroniSaccoSaleri.Chapter10.example_10_10`.
+* **Example 10.11** (correction). The book prints the constant $\sqrt{\pi}$. It is $\sqrt{\pi/2}$.
+  See `QuarteroniSaccoSaleri.Chapter10.example_10_11`.
+* **The discrete wavelet transform of Section 10.12.2** (reading). The book defines it for
+  $f \in L^1(\mathbb{R})$. It is the $L^2$ inner product and lives on $L^2(\mathbb{R})$. See
+  `QuarteroniSaccoSaleri.Chapter10.discreteWaveletTransform`.
+* **The reconstruction formula of Section 10.12.2** (reading). The constant $A$ is $1$ for an
+  orthonormal basis. See `QuarteroniSaccoSaleri.Chapter10.orthonormalWavelet_reconstruction`.
 
 ## Not formalized
 
-The bandwidth and quality-factor discussion after Example 10.11 is prose.
-
-## Errata (continued)
-
-* §10.12.1 prints the bandwidth `Δω` with an outer square where a square root is meant; the
-  definition used here is `Δω = (∫ ω²|H(ω)|² dω / ∫ |H(ω)|² dω)^{1/2}`, which is what makes
-  (10.88) dimensionally correct and what `Δω_s = Δω/s` in the display after it requires.
+* **The discussion of the bandwidth and of the quality factor after Example 10.11.** It is prose.
+* **The Heisenberg inequality (10.88) for a general signal in $L^2(\mathbb{R})$.** It needs $t h(t)$
+  and $\nu \mathcal{F} h(\nu)$ in $L^2$ and a density argument.
 -/
 
 open MeasureTheory Filter Topology Complex Set
@@ -72,83 +99,129 @@ open scoped FourierTransform ComplexConjugate Real SchwartzMap
 
 namespace QuarteroniSaccoSaleri.Chapter10
 
-/-! ### (10.85)–(10.87): wavelets and the continuous wavelet transform -/
+/-! ### Equations (10.85)–(10.87): wavelets and the continuous wavelet transform -/
 
-/-- **(10.85), the wavelet** `h_{s,τ}(t) = s^{-1/2} h((t − τ)/s)` obtained from the elementary
-wavelet `h ∈ L²(ℝ)` by the translation `τ` and the dilation `s > 0`: the backbone's
-`Wavelet.dilateTranslate`. -/
+/-- **Equation (10.85)** of [quarteroni2000numerical]. Let $h : \mathbb{R} \to \mathbb{C}$ be an
+elementary wavelet, let $s > 0$ be a dilation and $\tau \in \mathbb{R}$ a translation. The
+**wavelet** $h_{s,\tau}$ is
+$$h_{s,\tau}(t) = s^{-1/2} h\Bigl(\frac{t - \tau}{s}\Bigr).$$
+
+The book takes $h \in L^2(\mathbb{R})$. The definition is the backbone's
+`Wavelet.dilateTranslate`, and it gives a value for every $s \in \mathbb{R}$, with the Lean
+conventions $\sqrt{s} = 0$ for $s < 0$ and $0^{-1} = 0$. -/
 noncomputable def wavelet (h : ℝ → ℂ) (s τ : ℝ) : ℝ → ℂ := Wavelet.dilateTranslate h s τ
 
+/-- For $h : \mathbb{R} \to \mathbb{C}$ and $s, \tau, t \in \mathbb{R}$, the wavelet (10.85) is
+$h_{s,\tau}(t) = (\sqrt{s})^{-1} h((t - \tau)/s)$. -/
 theorem wavelet_apply (h : ℝ → ℂ) (s τ t : ℝ) :
     wavelet h s τ t = (Real.sqrt s : ℂ)⁻¹ * h ((t - τ) / s) := rfl
 
-/-- **(10.86), the filter of the wavelet transform.** In the variable `ω = 2πν`, the Fourier
-transform of `h_{s,τ}` is `H_{s,τ}(ω) = √s H(sω) e^{-iωτ}`, that is
-`𝓕 h_{s,τ}(ν) = √s 𝓕h(sν) e^{-2πiντ}`: a dilation `t/s` in time is a contraction `sω` in
-frequency, so `1/s` plays the role of the frequency (the *scale*). The backbone's
-`Wavelet.fourier_dilateTranslate`. -/
+/-- **Equation (10.86)** of [quarteroni2000numerical], the filter of the wavelet transform. Let
+$h : \mathbb{R} \to \mathbb{C}$, $s > 0$ and $\tau, \nu \in \mathbb{R}$. Then
+$$\mathcal{F} h_{s,\tau}(\nu) = \sqrt{s} \, \mathcal{F} h(s\nu) \, e^{-2\pi i\nu\tau}.$$
+In the variable $\omega = 2\pi\nu$ of the book this is $H_{s,\tau}(\omega) = \sqrt{s} H(s\omega)
+e^{-i\omega\tau}$.
+
+A dilation $t/s$ in time is a contraction $s\omega$ in frequency, so $1/s$ plays the role of the
+frequency, and $s$ is called the scale. The proof specializes `Wavelet.fourier_dilateTranslate`. -/
 theorem equation_10_86 (h : ℝ → ℂ) {s : ℝ} (hs : 0 < s) (τ ν : ℝ) :
     𝓕 (wavelet h s τ) ν = Real.sqrt s * 𝓕 h (s * ν) * Complex.exp (-(2 * π * ν * τ) * I) :=
   Wavelet.fourier_dilateTranslate hs τ ν
 
-/-- **Definition 10.4, (10.87).** The continuous wavelet transform of `f ∈ L²(ℝ)` with respect
-to the elementary wavelet `h`, `W_f(s, τ) = ∫ f(t) conj (h_{s,τ}(t)) dt`, a function of the
-scale `s` and the time shift `τ` — the *time-scale representation* of `f`. The backbone's
-`Wavelet.continuousTransform`. -/
+/-- **Definition 10.4** of [quarteroni2000numerical], (10.87). Let
+$h, f : \mathbb{R} \to \mathbb{C}$ and $s, \tau \in \mathbb{R}$. The **continuous wavelet
+transform** of $f$ with respect to the elementary wavelet $h$ is
+$$W_f(s, \tau) = \int_{-\infty}^{\infty} f(t) \overline{h_{s,\tau}(t)} \, dt,$$
+a function of the scale $s$ and the time shift $\tau$, called the time-scale representation of
+$f$.
+
+The book takes $f \in L^2(\mathbb{R})$. The integral is the Bochner integral, which is $0$ when
+the integrand is not integrable. The definition is the backbone's `Wavelet.continuousTransform`
+by `QuarteroniSaccoSaleri.Chapter10.definition_10_4_eq_continuousTransform`. -/
 noncomputable def definition_10_4 (h f : ℝ → ℂ) (s τ : ℝ) : ℂ :=
   ∫ t : ℝ, f t * conj (wavelet h s τ t)
 
-/-- The book's continuous wavelet transform is the backbone's `Wavelet.continuousTransform`. -/
+/-- For $h, f : \mathbb{R} \to \mathbb{C}$ and $s, \tau \in \mathbb{R}$, the continuous wavelet
+transform of Definition 10.4 is the backbone's `Wavelet.continuousTransform h f s τ`. -/
 theorem definition_10_4_eq_continuousTransform (h f : ℝ → ℂ) (s τ : ℝ) :
     definition_10_4 h f s τ = Wavelet.continuousTransform h f s τ := rfl
 
-/-- For `f, h ∈ L²(ℝ)`, `W_f(s, τ)` is the inner product `⟪h_{s,τ}, f⟫_{L²}` in Mathlib's
-convention (conjugate-linear in the first argument) — the book's `(f, h_{s,τ})`. -/
+/-- **Definition 10.4** of [quarteroni2000numerical], as an inner product. Let
+$h, f \in L^2(\mathbb{R})$, $s > 0$ and $\tau \in \mathbb{R}$. Then $W_f(s, \tau)$ is the $L^2$
+inner product $(f, h_{s,\tau})$ of the book.
+
+In Lean the inner product is `inner ℂ` of the classes of $h_{s,\tau}$ and $f$ in
+`MeasureTheory.Lp ℂ 2`. Mathlib's inner product is conjugate-linear in the first argument, so
+the order of the arguments is the reverse of the book's. -/
 theorem definition_10_4_eq_inner {h f : ℝ → ℂ} (hh : MemLp h 2) (hf : MemLp f 2) {s : ℝ}
     (hs : 0 < s) (τ : ℝ) :
     definition_10_4 h f s τ
       = inner ℂ ((Wavelet.memLp_dilateTranslate hh hs τ).toLp _) (hf.toLp f) :=
   Wavelet.continuousTransform_eq_inner hh hf hs τ
 
-/-- **The wavelet transform as a bank of filters** (the unnumbered formula after (10.88)): for
-`f, h ∈ L¹ ∩ L²` and `s > 0`, `W_f(s, τ) = √s ∫ 𝓕f(ν) conj (𝓕h(sν)) e^{2πiντ} dν` — the book's
-`(√s/2π) ∫ F(ω) conj (H(sω)) e^{iωτ} dω` in `ω = 2πν`. Plancherel's identity applied to `h_{s,τ}`
-and `f` with (10.86): the backbone's `Wavelet.continuousTransform_eq_integral_fourier`. -/
+/-- **Definition 10.4** of [quarteroni2000numerical], the wavelet transform as a bank of filters
+(the formula after (10.88)). Let $h, f \in L^1(\mathbb{R}) \cap L^2(\mathbb{R})$, $s > 0$ and
+$\tau \in \mathbb{R}$. Then
+$$W_f(s, \tau) = \sqrt{s} \int_{-\infty}^{\infty} \mathcal{F} f(\nu) \, \overline{\mathcal{F}
+  h(s\nu)} \, e^{2\pi i\nu\tau} \, d\nu.$$
+In the variable $\omega = 2\pi\nu$ this is the book's $\frac{\sqrt{s}}{2\pi} \int F(\omega)
+\overline{H(s\omega)} e^{i\omega\tau} \, d\omega$.
+
+The proof applies the identity of Plancherel to $h_{s,\tau}$ and $f$, with (10.86). It
+specializes `Wavelet.continuousTransform_eq_integral_fourier`. -/
 theorem continuousTransform_eq_integral_fourier {h f : ℝ → ℂ} (hh1 : MemLp h 1) (hh2 : MemLp h 2)
     (hf1 : MemLp f 1) (hf2 : MemLp f 2) {s : ℝ} (hs : 0 < s) (τ : ℝ) :
     definition_10_4 h f s τ
       = Real.sqrt s * ∫ ν, 𝓕 f ν * conj (𝓕 h (s * ν)) * Complex.exp ((2 * π * ν * τ) * I) :=
   Wavelet.continuousTransform_eq_integral_fourier hh1 hh2 hf1 hf2 hs τ
 
-/-! ### (10.88): the Heisenberg inequality -/
+/-! ### Equation (10.88): the Heisenberg inequality -/
 
-/-- **The resolution in time** of a signal `h`, `Δt = (∫ t² |h(t)|² dt / ∫ |h(t)|² dt)^{1/2}` —
-the root mean square spread of `|h|²` about the origin. The book uses `Δt` in (10.88) without
-defining it; this is the standard definition, the one that makes the bandwidth `Δω` of §10.12.1
-its counterpart in frequency. -/
+/-- **Equation (10.88)** of [quarteroni2000numerical], the resolution in time. For
+$h : \mathbb{R} \to \mathbb{C}$ the **resolution in time** is
+$$\Delta t = \Bigl(\frac{\int t^2 |h(t)|^2 \, dt}{\int |h(t)|^2 \, dt}\Bigr)^{1/2},$$
+the root mean square spread of $|h|^2$ about the origin.
+
+**Reading.** The book uses $\Delta t$ in (10.88) without a definition. This is the standard
+definition, and its counterpart in frequency is the bandwidth $\Delta\omega$ of Section 10.12.1.
+
+The integrals are Bochner integrals, which are $0$ when the integrand is not integrable, and
+division by $0$ gives $0$. -/
 noncomputable def timeResolution (h : ℝ → ℂ) : ℝ :=
   Real.sqrt ((∫ t : ℝ, t ^ 2 * ‖h t‖ ^ 2) / ∫ t : ℝ, ‖h t‖ ^ 2)
 
-/-- **The resolution in angular frequency** of a signal `h`,
-`Δω = (∫ ω² |H(ω)|² dω / ∫ |H(ω)|² dω)^{1/2}`, where `H(ω) = 𝓕h(ω/2π)` is the book's Fourier
-transform in the variable `ω = 2πν`. This is the bandwidth of §10.12.1, with the square root the
-book's display omits. -/
+/-- **Section 10.12.1** of [quarteroni2000numerical], the bandwidth. For
+$h : \mathbb{R} \to \mathbb{C}$ with Fourier transform $H(\omega) = \mathcal{F} h(\omega/2\pi)$
+in the variable $\omega = 2\pi\nu$, the **resolution in angular frequency** is
+$$\Delta\omega = \Bigl(\frac{\int \omega^2 |H(\omega)|^2 \, d\omega}{\int |H(\omega)|^2 \,
+  d\omega}\Bigr)^{1/2}.$$
+
+**Typo.** The book's display has an outer square where the square root is meant. The square root
+makes (10.88) dimensionally correct, and the relation $\Delta\omega_s = \Delta\omega/s$ in the
+display after it requires it.
+
+The integrals are Bochner integrals, which are $0$ when the integrand is not integrable, and
+division by $0$ gives $0$. -/
 noncomputable def freqResolution (h : ℝ → ℂ) : ℝ :=
   Real.sqrt ((∫ ω : ℝ, ω ^ 2 * ‖𝓕 h (ω / (2 * π))‖ ^ 2) / ∫ ω : ℝ, ‖𝓕 h (ω / (2 * π))‖ ^ 2)
 
-/-- **(10.88), the Heisenberg inequality.** For a nonzero signal `h`,
+/-- **Equation (10.88)** of [quarteroni2000numerical], the Heisenberg inequality. Let $h$ be a
+nonzero Schwartz function on $\mathbb{R}$ with complex values. Then
+$$\Delta t \, \Delta\omega \ge \frac{1}{2}.$$
+So the resolutions in time and in frequency cannot both be small: a signal is not a point of the
+time-frequency plane, but occupies a rectangle of area at least $1/2$.
 
-`Δt Δω ≥ 1/2`:
+**Reading.** The book states the inequality for a general signal. It is stated here for a
+Schwartz function. In this class all four integrals in $\Delta t$ and $\Delta\omega$ converge,
+and the backbone's `SchwartzMap.heisenberg_uncertainty` is proved there. The statement for
+general $h \in L^2(\mathbb{R})$ needs $t h(t)$ and $\nu \mathcal{F} h(\nu)$ in $L^2$ and a
+density argument, and it is not formalized.
 
-the resolution in time and the resolution in frequency cannot both be made small, so a signal is
-not a point of the time–frequency plane but occupies a rectangle of area at least `1/2`.
-
-Stated for a Schwartz signal, the class in which all four integrals of `Δt` and `Δω` converge and
-in which the backbone's `SchwartzMap.heisenberg_uncertainty` is proved; the general `L²` statement
-needs `t h(t)` and `ν 𝓕h(ν)` in `L²` and a density argument, which is not formalized. Passing from
-the frequency `ν` of Mathlib's `𝓕` to the book's `ω = 2πν` multiplies the numerator of `Δω²` by
-`8π³` and its denominator by `2π`, so `Δω² = 4π² ∫ ν²|𝓕h|² / ∫|h|²`, and the backbone bound
-`(∫|h|²)² ≤ 16π² (∫ t²|h|²)(∫ ν²|𝓕h|²)` is exactly `Δt² Δω² ≥ 1/4`. -/
+The change from the frequency $\nu$ of Mathlib's `𝓕` to $\omega = 2\pi\nu$ multiplies the
+numerator of $\Delta\omega^2$ by $8\pi^3$ and its denominator by $2\pi$. So $\Delta\omega^2 =
+4\pi^2 \int \nu^2 |\mathcal{F} h|^2 / \int |h|^2$, and the backbone bound $(\int |h|^2)^2 \le
+16\pi^2 (\int t^2 |h|^2)(\int \nu^2 |\mathcal{F} h|^2)$ is exactly
+$\Delta t^2 \Delta\omega^2 \ge 1/4$. -/
 theorem equation_10_88 (h : 𝓢(ℝ, ℂ)) (hne : (h : ℝ → ℂ) ≠ 0) :
     1 / 2 ≤ timeResolution (h : ℝ → ℂ) * freqResolution (h : ℝ → ℂ) := by
   have hpi : (0 : ℝ) < 2 * π := by positivity
@@ -205,14 +278,18 @@ theorem equation_10_88 (h : 𝓢(ℝ, ℂ)) (hne : (h : ℝ → ℂ) ≠ 0) :
 
 /-! ### Examples 10.10–10.11 -/
 
-/-- **The Haar wavelet** of Example 10.10: `h = 1` on `(0, 1/2)`, `−1` on `(1/2, 1)`, `0`
-otherwise. Up to a null set it is the function underlying the backbone's `Haar.waveletFun 0 0`
-(`haarWavelet_ae_eq_waveletFun`). -/
+/-- **Example 10.10** of [quarteroni2000numerical], the Haar wavelet. The **Haar wavelet** is the
+function $h$ with $h(x) = 1$ for $0 < x < 1/2$, $h(x) = -1$ for $1/2 < x < 1$, and $h(x) = 0$
+otherwise.
+
+Up to a null set, it is the function of the backbone's `Haar.waveletFun 0 0`, by
+`QuarteroniSaccoSaleri.Chapter10.haarWavelet_ae_eq_waveletFun`. -/
 noncomputable def haarWavelet (x : ℝ) : ℂ :=
   Set.indicator (Ioo 0 (1 / 2)) (fun _ => (1 : ℂ)) x - Set.indicator (Ioo (1 / 2) 1) (fun _ => 1) x
 
-/-- The Haar wavelet of Example 10.10 is, almost everywhere, the level-`0` Haar wavelet of
-`Numlib/Analysis/Wavelet/Haar`. -/
+/-- The Haar wavelet of Example 10.10 is equal almost everywhere to the Haar wavelet
+`Haar.waveletFun 0 0` of level $0$ of `Numlib.Analysis.Wavelet.Haar`, read as a complex
+function. -/
 theorem haarWavelet_ae_eq_waveletFun :
     haarWavelet =ᵐ[volume] fun x => ((Haar.waveletFun 0 0 : ℝ → ℝ) x : ℂ) := by
   have h := Haar.waveletFun_eq_sub_indicator 0 0
@@ -265,10 +342,18 @@ theorem haarWavelet_ae_eq_waveletFun :
         Set.indicator_of_notMem (fun h => h2 (e2.mpr h))]
       simp
 
-/-- **Example 10.10, the Haar wavelet.** Its Fourier transform, in the variable `ω = 2πν`, is
-`H(ω) = 2i e^{-iω/2}(1 − cos(ω/2))/ω` for `ω ≠ 0`, i.e. `𝓕 h(ν) = i e^{-iπν}(1 − cos(πν))/(πν)`,
-whose modulus is even. Erratum: the book prints `4i` for `2i`. Direct integration of `e^{-2πiνt}`
-over `(0, 1/2)` and `(1/2, 1)`, and Euler's formula for `cos(πν)`. -/
+/-- **Example 10.10** of [quarteroni2000numerical], the Fourier transform of the Haar wavelet. For
+$\nu \neq 0$,
+$$\mathcal{F} h(\nu) = \frac{i e^{-i\pi\nu} (1 - \cos(\pi\nu))}{\pi\nu}.$$
+In the variable $\omega = 2\pi\nu$ this is $H(\omega) = 2i e^{-i\omega/2}(1 -
+\cos(\omega/2))/\omega$ for $\omega \neq 0$. Its modulus is even.
+
+**Correction.** The book prints $4i$ in place of $2i$. Indeed $\int_0^{1/2} e^{-i\omega t} \,
+dt - \int_{1/2}^1 e^{-i\omega t} \, dt = (1 - e^{-i\omega/2})^2/(i\omega)$ and $(1 -
+e^{-i\omega/2})^2 = -2 e^{-i\omega/2}(1 - \cos(\omega/2))$.
+
+The proof integrates $e^{-2\pi i\nu t}$ over $(0, 1/2)$ and $(1/2, 1)$ and uses the formula of
+Euler for $\cos(\pi\nu)$. -/
 theorem example_10_10 {ν : ℝ} (hν : ν ≠ 0) :
     𝓕 haarWavelet ν
       = I * Complex.exp (-(π * ν) * I) * (1 - Real.cos (π * ν)) / (π * ν) := by
@@ -319,15 +404,23 @@ theorem example_10_10 {ν : ℝ} (hν : ν ≠ 0) :
   linear_combination (-(1 / (ν : ℂ))) * e3 - (Complex.exp (-((π : ℂ) * ν * I)) / ν) * hcos
     - (2 * Complex.exp (-((π : ℂ) * ν * I)) * (1 - Complex.cos ((π : ℂ) * ν)) / ν) * Complex.I_sq
 
-/-- **The Morlet wavelet** of Example 10.11, `h(x) = e^{iω₀x} e^{-x²/2}`. -/
+/-- **Example 10.11** of [quarteroni2000numerical], the Morlet wavelet. For
+$\omega_0 \in \mathbb{R}$ the **Morlet wavelet** is $h(x) = e^{i\omega_0 x} e^{-x^2/2}$. -/
 noncomputable def morletWavelet (ω₀ : ℝ) (x : ℝ) : ℂ :=
   Complex.exp ((ω₀ * x) * I) * Real.exp (-(x ^ 2 / 2))
 
-/-- **Example 10.11, the Morlet wavelet.** The real part `cos(ω₀x) e^{-x²/2}` of the Morlet
-wavelet has the real, positive, even Fourier transform
-`H(ω) = √(π/2) (e^{-(ω−ω₀)²/2} + e^{-(ω+ω₀)²/2})` in the variable `ω = 2πν`. Erratum: the book
-prints `√π`; the Gaussian `e^{-x²/2}` transforms to `√(2π) e^{-ω²/2}` and Euler's formula halves
-it. Mathlib's `fourierIntegral_gaussian`. -/
+/-- **Example 10.11** of [quarteroni2000numerical], the Fourier transform of the Morlet wavelet. Let
+$\omega_0, \nu \in \mathbb{R}$. The real part $\cos(\omega_0 x) e^{-x^2/2}$ of the Morlet
+wavelet has the Fourier transform
+$$\mathcal{F}\bigl(\cos(\omega_0 x) e^{-x^2/2}\bigr)(\nu) = \sqrt{\pi/2} \, \bigl(e^{-(2\pi\nu -
+  \omega_0)^2/2} + e^{-(2\pi\nu + \omega_0)^2/2}\bigr).$$
+In the variable $\omega = 2\pi\nu$ this is $H(\omega) = \sqrt{\pi/2} \, (e^{-(\omega -
+\omega_0)^2/2} + e^{-(\omega + \omega_0)^2/2})$, which is real, positive and even.
+
+**Correction.** The book prints the constant $\sqrt{\pi}$. The Gaussian $e^{-x^2/2}$ has the
+transform $\sqrt{2\pi} e^{-\omega^2/2}$, and the formula of Euler for the cosine halves it.
+
+The proof uses Mathlib's `fourierIntegral_gaussian`. -/
 theorem example_10_11 (ω₀ ν : ℝ) :
     𝓕 (fun x : ℝ => ((Real.cos (ω₀ * x) * Real.exp (-(x ^ 2 / 2)) : ℝ) : ℂ)) ν
       = ((Real.sqrt (π / 2) * (Real.exp (-((2 * π * ν - ω₀) ^ 2 / 2))
@@ -397,38 +490,65 @@ theorem example_10_11 (ω₀ ν : ℝ) :
     div_eq_mul_inv (((π ^ (1 / 2 : ℝ) : ℝ)) : ℂ) s2, hinv]
   ring
 
-/-! ### §10.12.2: discrete and orthonormal wavelets -/
+/-! ### Section 10.12.2: discrete and orthonormal wavelets -/
 
-/-- **The discrete wavelets (§10.12.2).** For `s₀ > 1` and `τ₀ ∈ ℝ`, the scale `s = s₀^j` and
-the shift `τ = k τ₀ s₀^j`, `j, k ∈ ℤ`, give `h_{j,k}(t) = s₀^{-j/2} h(s₀^{-j} t − k τ₀)`: the
-backbone's `Wavelet.discrete`, whose `Wavelet.discrete_apply` is this second form. -/
+/-- **Section 10.12.2** of [quarteroni2000numerical], the discrete wavelets. Let
+$h : \mathbb{R} \to \mathbb{C}$, $s_0, \tau_0 \in \mathbb{R}$ and $j, k \in \mathbb{Z}$. The
+scale $s = s_0^j$ and the shift $\tau = k\tau_0 s_0^j$ give the **discrete wavelet**
+$$h_{j,k}(t) = h_{s_0^j, k\tau_0 s_0^j}(t) = s_0^{-j/2} h(s_0^{-j} t - k\tau_0).$$
+
+The book takes $s_0 > 1$. The definition is the backbone's `Wavelet.discrete`, and
+`Wavelet.discrete_apply` gives the second form. -/
 noncomputable def discreteWavelet (h : ℝ → ℂ) (s₀ τ₀ : ℝ) (j k : ℤ) : ℝ → ℂ :=
   Wavelet.discrete h s₀ τ₀ j k
 
-/-- **The discrete wavelet transform (§10.12.2)**, `W_f(j, k) = ∫ f(t) conj (h_{j,k}(t)) dt` — on
-`L²(ℝ)`, where it is the inner product `⟪h_{j,k}, f⟫` (the book says `L¹`). -/
+/-- **Section 10.12.2** of [quarteroni2000numerical], the discrete wavelet transform. Let
+$h, f : \mathbb{R} \to \mathbb{C}$, $s_0, \tau_0 \in \mathbb{R}$ and $j, k \in \mathbb{Z}$. The
+**discrete wavelet transform** is
+$$W_f(j, k) = \int_{-\infty}^{\infty} f(t) \overline{h_{j,k}(t)} \, dt.$$
+
+**Reading.** The book defines the transform for $f \in L^1(\mathbb{R})$. It is the $L^2$ inner
+product of $h_{j,k}$ and $f$, and its natural domain is $L^2(\mathbb{R})$.
+
+The definition is the backbone's `Wavelet.discreteTransform`. -/
 noncomputable def discreteWaveletTransform (h : ℝ → ℂ) (s₀ τ₀ : ℝ) (f : ℝ → ℂ) (j k : ℤ) : ℂ :=
   Wavelet.discreteTransform h s₀ τ₀ f j k
 
-/-- The discrete wavelet transform samples the continuous one at `s = s₀^j`, `τ = k τ₀ s₀^j`. -/
+/-- **Section 10.12.2** of [quarteroni2000numerical]. For $h, f : \mathbb{R} \to \mathbb{C}$,
+$s_0, \tau_0 \in \mathbb{R}$ and $j, k \in \mathbb{Z}$, the discrete wavelet transform samples
+the continuous one: $W_f(j, k) = W_f(s_0^j, k\tau_0 s_0^j)$. -/
 theorem discreteWaveletTransform_eq (h : ℝ → ℂ) (s₀ τ₀ : ℝ) (f : ℝ → ℂ) (j k : ℤ) :
     discreteWaveletTransform h s₀ τ₀ f j k = definition_10_4 h f (s₀ ^ j) (k * τ₀ * s₀ ^ j) := rfl
 
-/-- **The dyadic case.** At `s₀ = 2`, `τ₀ = 1`, the discrete wavelets of the wavelet
-`ψ = mraWavelet φ` of a multiresolution analysis are the `waveletSystem φ (−j) k` of
-`Numlib/Analysis/Wavelet/Multiresolution`, almost everywhere — the level index is reversed between
-the two conventions. The backbone's `Wavelet.discrete_two_one_eq_waveletSystem`. -/
+/-- **Section 10.12.2** of [quarteroni2000numerical], the dyadic case. Let
+$\varphi \in L^2(\mathbb{R})$ be real-valued, let $\psi$ be the wavelet `mraWavelet φ` that
+$\varphi$ generates, and let $j, k \in \mathbb{Z}$. At $s_0 = 2$ and $\tau_0 = 1$ the discrete
+wavelet $\psi_{j,k}$ of the book is equal almost everywhere to the element
+`waveletSystem φ (-j) k` of the backbone's wavelet system, $2^{-j/2} \psi(2^{-j} t - k)$.
+
+The level index is reversed between the two conventions. The statement holds for every
+$\varphi$; it is used for the scaling function of a multiresolution analysis. The proof
+specializes `Wavelet.discrete_two_one_eq_waveletSystem`. -/
 theorem discreteWavelet_two_one (φ : Lp ℝ 2 (volume : Measure ℝ)) (j k : ℤ) :
     discreteWavelet (fun t => ((mraWavelet φ : ℝ → ℝ) t : ℂ)) 2 1 j k
       =ᵐ[volume] fun t => ((waveletSystem φ (-j) k : ℝ → ℝ) t : ℂ) :=
   Wavelet.discrete_two_one_eq_waveletSystem φ j k
 
-/-- **Orthonormal wavelet bases and the reconstruction formula (§10.12.2).** For the wavelet of a
-multiresolution analysis `V, φ`, the dyadic family `h_{j,k} = waveletSystem φ j k` is orthonormal,
-`∫ h_{i,j} conj (h_{k,l}) = δ_{ik} δ_{jl}` for all `i, j, k, l ∈ ℤ`, and every `f ∈ L²(ℝ)` is
-reconstructed as `f = A ∑_{j,k} W_f(j,k) h_{j,k}` with `A = 1` — the constant is `1` for an
-orthonormal basis (`A ≠ 1` would occur for tight frames, which the book does not introduce). The
-Haar wavelet is the instance `Haar.isMultiresolutionAnalysis`. The backbone's
+/-- **Section 10.12.2** of [quarteroni2000numerical], orthonormal wavelet bases and the
+reconstruction formula. Let $(V_j)_{j \in \mathbb{Z}}$ with the scaling function $\varphi$ be a
+multiresolution analysis of $L^2(\mathbb{R})$, and let $\psi_{j,k}$ = `waveletSystem φ j k` be
+its wavelet system. Then the family $(\psi_{j,k})_{(j,k) \in \mathbb{Z}^2}$ is orthonormal,
+$$\int \psi_{i,j} \, \psi_{k,l} = \delta_{ik} \delta_{jl}, \qquad i, j, k, l \in \mathbb{Z},$$
+and every $f \in L^2(\mathbb{R})$ is reconstructed as
+$$f = A \sum_{(j,k) \in \mathbb{Z}^2} (f, \psi_{j,k}) \, \psi_{j,k}, \qquad A = 1,$$
+with unconditional convergence in $L^2(\mathbb{R})$.
+
+**Reading.** The book leaves the constant $A$ open. For an orthonormal basis it is $1$. A value
+$A \neq 1$ would occur for tight frames, which the book does not introduce.
+
+Here $L^2(\mathbb{R})$ is the space of real functions `MeasureTheory.Lp ℝ 2`, and the
+multiresolution analysis is `IsMultiresolutionAnalysis V φ`. The Haar wavelet is the instance
+`Haar.isMultiresolutionAnalysis`. The proof specializes
 `IsMultiresolutionAnalysis.orthonormal_waveletSystem_prod` and
 `IsMultiresolutionAnalysis.hasSum_inner_smul_waveletSystem`. -/
 theorem orthonormalWavelet_reconstruction {V : ℤ → Submodule ℝ (Lp ℝ 2 (volume : Measure ℝ))}

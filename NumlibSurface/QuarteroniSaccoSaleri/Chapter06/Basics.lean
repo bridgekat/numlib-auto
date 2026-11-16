@@ -5,40 +5,66 @@ Released under Apache 2.0 license as described in the file LICENSE.
 import Numlib.Nonlinear.Order
 
 /-!
-# Quarteroni–Sacco–Saleri, chapter 6: the order of convergence
+# Quarteroni, Sacco and Saleri, Chapter 6: The order of convergence
 
-Surface file for Alfio Quarteroni, Riccardo Sacco and Fausto Saleri, *Numerical Mathematics*
-[quarteroni2000numerical], the opening of chapter 6: Definition 6.1 (the order of convergence of a
-sequence of real approximations, in the book's quotient form with its explicit threshold `k₀` and
-the restriction `p ≥ 1`), its equivalence with the backbone's `ConvergesWithOrder`
-(`Numlib/Nonlinear/Order`), and the remark on the convergence factor for `p = 1`.
+This module formalizes the opening of Chapter 6 of [quarteroni2000numerical]: Definition 6.1 of the
+order of convergence of a sequence of real approximations, and the remark that follows it on the
+convergence factor for $p = 1$. A sequence $x^{(k)}$ converges to $\alpha$ with order $p \ge 1$ if
+it converges and the quotients $|x^{(k+1)} - \alpha| / |x^{(k)} - \alpha|^p$ are bounded by a
+constant $C > 0$ from some index $k_0$ on (6.2). The module proves that this quotient form agrees
+with the product form `ConvergesWithOrder` of `Numlib.Nonlinear.Order` for sequences that eventually
+avoid $\alpha$.
 
-## Readings
+## Main definitions
 
-* Lean's `a / 0 = 0` makes the quotient of (6.2) equal to `0` at a term with `x k = α`; that is
-  harmless in a bound, so `definition_6_1` follows from `ConvergesWithOrder` without any
-  hypothesis (`definition_6_1_of_convergesWithOrder`), while the converse needs the sequence to
-  avoid `α` eventually (`definition_6_1_iff`).
-* The remark after Definition 6.1 says that for `p = 1` a factor `C < 1` is *necessary* for
-  convergence; what is true is that it is sufficient (`definition_6_1_convergenceFactor`), and
-  that a bound (6.2) with `p = 1` and `C ≥ 1` says nothing about convergence. Recorded in
-  `notes/book-errata.md`.
+* Definition 6.1, `QuarteroniSaccoSaleri.Chapter06.definition_6_1`: convergence with order
+  $p \ge 1$, in the quotient form (6.2).
+
+## Main results
+
+* Definition 6.1, `QuarteroniSaccoSaleri.Chapter06.definition_6_1_of_convergesWithOrder` and
+  `QuarteroniSaccoSaleri.Chapter06.definition_6_1_iff`: the product form implies Definition 6.1, and
+  the two agree for a sequence that eventually avoids $\alpha$.
+* Remark after Definition 6.1, `QuarteroniSaccoSaleri.Chapter06.definition_6_1_convergenceFactor`: a
+  bound $|x^{(k+1)} - \alpha| \le C |x^{(k)} - \alpha|$ with $0 < C < 1$ gives convergence with
+  order $1$.
+
+## Implementation notes
+
+* In Lean, division by zero gives zero, so the quotient of (6.2) is $0$ at a term with
+  $x^{(k)} = \alpha$. This is harmless in an upper bound. So Definition 6.1 follows from
+  `ConvergesWithOrder` without any hypothesis, while the converse needs the sequence to avoid
+  $\alpha$ eventually.
+
+## Deviations from the source
+
+* **Remark after Definition 6.1** (correction). The source says that for $p = 1$ a factor $C < 1$ is
+  necessary for convergence; it is sufficient, and a bound (6.2) with $p = 1$ and $C \ge 1$ says
+  nothing about convergence. See `QuarteroniSaccoSaleri.Chapter06.definition_6_1_convergenceFactor`.
 -/
 
 open Filter Topology
 
 namespace QuarteroniSaccoSaleri.Chapter06
 
-/-- **Definition 6.1.** A sequence `x^{(k)}` converges to `α` with order `p ≥ 1` if it converges
-and there are `C > 0` and `k₀` with `|x^{(k+1)} - α| / |x^{(k)} - α|^p ≤ C` for all `k ≥ k₀`
-(the displayed condition (6.2)). -/
+/-- **Definition 6.1** of [quarteroni2000numerical]. Let $x^{(k)}$ be a sequence of real numbers,
+let $\alpha \in \mathbb{R}$ and $p \ge 1$. The sequence **converges to $\alpha$ with order $p$**
+if $x^{(k)} \to \alpha$ and there are $C > 0$ and $k_0$ such that $$\frac{|x^{(k+1)} -
+\alpha|}{|x^{(k)} - \alpha|^p} \le C \quad \text{for all } k \ge k_0.$$ This bound is the
+displayed condition (6.2).
+
+The condition $p \ge 1$ is part of the Lean definition. At a term with $x^{(k)} = \alpha$ the
+quotient is $0$, by the convention that division by zero gives zero. -/
 def definition_6_1 (x : ℕ → ℝ) (α : ℝ) (p : ℝ) : Prop :=
   1 ≤ p ∧ Tendsto x atTop (𝓝 α) ∧
     ∃ C > 0, ∃ k₀ : ℕ, ∀ k ≥ k₀, |x (k + 1) - α| / |x k - α| ^ p ≤ C
 
-/-- The backbone's `ConvergesWithOrder` (the product form of (6.2)) implies Definition 6.1 for
-`p ≥ 1`, with no hypothesis on the sequence: at a term with `x k = α` the quotient is `0` by Lean's
-convention. -/
+/-- Let $x^{(k)}$ be a real sequence, $\alpha \in \mathbb{R}$ and $p \ge 1$. If $x^{(k)}$ converges
+to $\alpha$ with order $p$ in the product form of the backbone, `ConvergesWithOrder`
+($x^{(k)} \to \alpha$ and $|x^{(k+1)} - \alpha| \le C |x^{(k)} - \alpha|^p$ for some $C > 0$ and
+all large $k$), then it converges with order $p$ in the sense of Definition 6.1 of
+[quarteroni2000numerical]. No hypothesis on the sequence is needed, because the quotient is $0$
+at a term with $x^{(k)} = \alpha$. -/
 theorem definition_6_1_of_convergesWithOrder {x : ℕ → ℝ} {α p : ℝ} (hp : 1 ≤ p)
     (h : ConvergesWithOrder x α p) : definition_6_1 x α p := by
   obtain ⟨hlim, C, hC, hbound⟩ := h
@@ -51,9 +77,13 @@ theorem definition_6_1_of_convergesWithOrder {x : ℕ → ℝ} {α p : ℝ} (hp 
     exact hC.le
   · exact (div_le_iff₀ (Real.rpow_pos_of_pos (abs_pos.2 (sub_ne_zero.2 hxk)) p)).2 hk'
 
-/-- **Definition 6.1 is the backbone's `ConvergesWithOrder`** with `p ≥ 1`, for a sequence that
-eventually avoids `α`. The hypothesis is needed for the forward direction: at a term with
-`x k = α` the quotient form reads `0 ≤ C` while the product form forces `x (k + 1) = α`. -/
+/-- Let $x^{(k)}$ be a real sequence and $\alpha, p \in \mathbb{R}$, and assume that
+$x^{(k)} \neq \alpha$ for all large $k$. Then $x^{(k)}$ converges to $\alpha$ with order $p$ in
+the sense of Definition 6.1 of [quarteroni2000numerical] if and only if $p \ge 1$ and
+`ConvergesWithOrder x α p` holds.
+
+The hypothesis is needed for the forward direction: at a term with $x^{(k)} = \alpha$ the
+quotient form reads $0 \le C$, while the product form forces $x^{(k+1)} = \alpha$. -/
 theorem definition_6_1_iff {x : ℕ → ℝ} {α p : ℝ} (hx : ∀ᶠ k in atTop, x k ≠ α) :
     definition_6_1 x α p ↔ 1 ≤ p ∧ ConvergesWithOrder x α p := by
   refine ⟨fun ⟨hp, hlim, C, hC, k₀, hk₀⟩ => ⟨hp, hlim, C, hC, ?_⟩,
@@ -63,11 +93,17 @@ theorem definition_6_1_iff {x : ℕ → ℝ} {α p : ℝ} (hx : ∀ᶠ k in atTo
   simp only [Real.norm_eq_abs]
   exact (div_le_iff₀ (Real.rpow_pos_of_pos (abs_pos.2 (sub_ne_zero.2 hk)) p)).1 this
 
-/-- **The remark after Definition 6.1, in its true direction.** If `0 < C < 1` and
-`|x^{(k+1)} - α| ≤ C |x^{(k)} - α|` for all `k ≥ k₀`, then `x^{(k)}` converges to `α` with order
-`1`, and `C` is called the convergence factor. The book says such a `C < 1` is "necessary" for
-convergence when `p = 1`; it is sufficient — a bound (6.2) with `C ≥ 1` and `p = 1` is satisfied
-by many non-convergent sequences (`tendsto_of_eventually_norm_sub_succ_le`). -/
+/-- **Remark after Definition 6.1** of [quarteroni2000numerical], the convergence factor. Let
+$x^{(k)}$ be a real sequence, $\alpha \in \mathbb{R}$, $0 < C < 1$ and $k_0 \in \mathbb{N}$ with
+$$|x^{(k+1)} - \alpha| \le C\, |x^{(k)} - \alpha| \quad \text{for all } k \ge k_0.$$ Then
+$x^{(k)}$ converges to $\alpha$ with order $1$. The constant $C$ is called the convergence
+factor.
+
+**Correction.** The source says that for $p = 1$ a factor $C < 1$ is necessary for convergence.
+The condition is sufficient, as stated here. A bound (6.2) with $p = 1$ and $C \ge 1$ holds for
+many sequences that do not converge, so it says nothing about convergence.
+
+The proof uses `tendsto_of_eventually_norm_sub_succ_le` for the convergence. -/
 theorem definition_6_1_convergenceFactor {x : ℕ → ℝ} {α C : ℝ} {k₀ : ℕ} (hC0 : 0 < C)
     (hC : C < 1) (h : ∀ k ≥ k₀, |x (k + 1) - α| ≤ C * |x k - α|) : definition_6_1 x α 1 :=
   definition_6_1_of_convergesWithOrder le_rfl

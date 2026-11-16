@@ -5,55 +5,81 @@ Released under Apache 2.0 license as described in the file LICENSE.
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter03.Section05
 
 /-!
-# Quarteroni–Sacco–Saleri §3.7: banded systems
+# Quarteroni, Sacco and Saleri, Section 3.7: Banded systems
 
-Surface file for Alfio Quarteroni, Riccardo Sacco and Fausto Saleri, *Numerical Mathematics*
-[quarteroni2000numerical], §3.7, over the backbone `Numlib/LinearAlgebra/Matrix/LU` (band
-preservation `Matrix.IsLU.hasLowerBandwidth`, `Matrix.IsLU.hasUpperBandwidth`, the tridiagonal
-matrix `Matrix.tridiagonalOfNat` and the Thomas recurrences `Matrix.thomasAlpha`,
-`Matrix.thomasBeta`, `Matrix.thomasGamma` with the factors `Matrix.thomasLower`,
-`Matrix.thomasUpper`), `Numlib/LinearAlgebra/Matrix/Band` (the bandwidths),
-`Numlib/Direct/Substitution` and `Numlib/FloatingPoint/LU` (the rounding-error analysis of the
-Thomas algorithm, `FloatingPoint.RoundsThomas`).
+This module formalizes Section 3.7 of [quarteroni2000numerical]. The LU factorization keeps the band
+of a matrix: if $A$ has lower bandwidth $p$ or upper bandwidth $q$, then so does $L$ or $U$
+(Property 3.4). For a tridiagonal matrix $A$ with diagonal $a_i$, subdiagonal $b_i$ and
+superdiagonal $c_i$, the factors are bidiagonal, and the Thomas algorithm computes them by the
+recurrence
+$$\alpha_1 = a_1, \qquad \beta_i = \frac{b_i}{\alpha_{i-1}}, \qquad \alpha_i = a_i - \beta_i c_{i-1}
+  \qquad (i = 2, \ldots, n)$$
+of (3.53). The module states this recurrence, the bidiagonal substitutions (3.54)–(3.55), the
+stability of the algorithm in floating-point arithmetic (Section 3.7.1), and the division-free
+variant (3.56) of Section 3.7.2.
+
+The proofs specialize the backbone modules `Numlib.LinearAlgebra.Matrix.LU` (band preservation
+`Matrix.IsLU.hasLowerBandwidth` and `Matrix.IsLU.hasUpperBandwidth`, the tridiagonal matrix
+`Matrix.tridiagonalOfNat`, the Thomas recurrences `Matrix.thomasAlpha`, `Matrix.thomasBeta`,
+`Matrix.thomasGamma` and the factors `Matrix.thomasLower`, `Matrix.thomasUpper`),
+`Numlib.LinearAlgebra.Matrix.Band` (the bandwidths), `Numlib.Direct.Substitution`, and
+`Numlib.FloatingPoint.LU` (the rounding-error analysis of the Thomas algorithm,
+`FloatingPoint.RoundsThomas`).
+
+## Main results
+
+* Property 3.4, `QuarteroniSaccoSaleri.Chapter03.property_3_4_lower`: if $A$ has lower bandwidth $p$
+  and a unique LU factorization, then $L$ has lower bandwidth $p$.
+* Property 3.4, `QuarteroniSaccoSaleri.Chapter03.property_3_4_upper`: if $A$ has upper bandwidth
+  $q$, then $U$ has upper bandwidth $q$.
+* (3.53), `QuarteroniSaccoSaleri.Chapter03.equation_3_53`: the Thomas algorithm gives the LU
+  factorization of a tridiagonal matrix.
+* (3.54), `QuarteroniSaccoSaleri.Chapter03.equation_3_54`: the forward substitution for the
+  bidiagonal factor $L$.
+* (3.55), `QuarteroniSaccoSaleri.Chapter03.equation_3_55`: the backward substitution for the
+  bidiagonal factor $U$, which solves the tridiagonal system.
+* Section 3.7.1, `QuarteroniSaccoSaleri.Chapter03.thomas_backward_error`: the computed factors
+  satisfy $\hat L \hat U = A + \delta A$ with $|\delta A| \le (4u + 3u^2 + u^3)|\hat L||\hat U|$.
+* Section 3.7.1, `QuarteroniSaccoSaleri.Chapter03.thomas_backward_error_posDef`: under the sign
+  pattern of the symmetric positive definite and M-matrix cases, $|\delta A| \le \frac{4u + 3u^2 +
+  u^3}{1 - u}|A|$.
+* (3.56), `QuarteroniSaccoSaleri.Chapter03.equation_3_56`: the Thomas algorithm without divisions.
 
 ## Conventions
 
-"`A` has lower bandwidth `p`" is the book's §1.6.3 condition `a_ij = 0` for `i > j + p`, and
-"upper bandwidth `q`" is `a_ij = 0` for `j > i + q`; on `Fin n` these are the backbone predicates
-`Matrix.HasLowerBandwidth`, `Matrix.HasUpperBandwidth` (`Matrix.hasLowerBandwidth_iff_fin`). The
-tridiagonal matrix of §3.7.1 with diagonal `a`, subdiagonal `b` and superdiagonal `c` is
-`Matrix.tridiagonalOfNat a b c n` for sequences `a b c : ℕ → ℝ`, `0`-based: `a i` at `(i, i)`,
-`b i` at `(i, i - 1)`, `c i` at `(i, i + 1)`, so the book's `a_i, b_i, c_i` are `a (i - 1)`,
-`b (i - 1)`, `c (i - 1)`; the Thomas coefficients `α_i`, `β_i`, `γ_i` are
-`thomasAlpha a b c (i - 1)` and so on. The bidiagonal factors are `thomasLower a b c n` (unit
-lower, subdiagonal `β`) and `thomasUpper a b c n` (diagonal `α`, superdiagonal `c`). The
-computed Thomas coefficients are an admissible `FloatingPoint.RoundsThomas m a b c α̂ β̂` of the
-relational model, the recurrence (3.53) with its three roundings per step, and the computed
-factors are the bidiagonal matrices `Matrix.lowerBidiagonalOf β̂ n`,
-`Matrix.upperBidiagonalOf α̂ c n` of those coefficients.
+* "$A$ has lower bandwidth $p$" is the condition $a_{ij} = 0$ for $i > j + p$ of Section 1.6.3 of
+  the book, and "upper bandwidth $q$" is $a_{ij} = 0$ for $j > i + q$. On `Fin n` these are the
+  predicates `Matrix.HasLowerBandwidth` and `Matrix.HasUpperBandwidth`
+  (`Matrix.hasLowerBandwidth_iff_fin`).
+* The tridiagonal matrix of Section 3.7.1 with diagonal $a$, subdiagonal $b$ and superdiagonal $c$
+  is `Matrix.tridiagonalOfNat a b c n` for sequences `a b c : ℕ → ℝ`. Indices are $0$-based: $a_i$
+  is at $(i, i)$, $b_i$ at $(i, i - 1)$ and $c_i$ at $(i, i + 1)$. So the book's $a_i$, $b_i$, $c_i$
+  are `a (i - 1)`, `b (i - 1)`, `c (i - 1)`, and the Thomas coefficients $\alpha_i$, $\beta_i$,
+  $\gamma_i$ are `Matrix.thomasAlpha a b c (i - 1)` and so on.
+* The bidiagonal factors are `Matrix.thomasLower a b c n`, unit lower with subdiagonal $\beta$, and
+  `Matrix.thomasUpper a b c n`, with diagonal $\alpha$ and superdiagonal $c$.
+* The computed Thomas coefficients $\hat\alpha$, $\hat\beta$ are an admissible
+  `FloatingPoint.RoundsThomas m a b c α̂ β̂` of the relational rounding model: the recurrence (3.53)
+  with its three roundings per step. The computed factors are the bidiagonal matrices
+  `Matrix.lowerBidiagonalOf β̂ n` and `Matrix.upperBidiagonalOf α̂ c n`.
 
-## Contents
+## Deviations from the source
 
-* `property_3_4_lower`, `property_3_4_upper` — band preservation.
-* `equation_3_53`, `equation_3_54`, `equation_3_55` — the Thomas algorithm.
-* `thomas_backward_error`, `thomas_backward_error_posDef` — its stability (§3.7.1).
-* `equation_3_56` — the division-free variant (§3.7.2).
+* **Property 3.4** (correction). The source assumes only that an LU factorization of $A$ exists. The
+  statement on $L$ is false without uniqueness, and it is stated under the hypothesis of Theorem
+  3.4. See `QuarteroniSaccoSaleri.Chapter03.property_3_4_lower`.
+* **Section 3.7.1, stability of the Thomas algorithm** (reading). The source quotes the constants
+  $4u + 3u^2 + u^3$ and $(4u + 3u^2 + u^3)/(1 - u)$ from [higham2002accuracy]. They are stated for
+  $u < 1/2$ and for $u \le 1/4$, respectively, and the condition "for $u$ small enough" of the
+  second bound is read as a sign condition on the computed factors. See
+  `QuarteroniSaccoSaleri.Chapter03.thomas_backward_error` and
+  `QuarteroniSaccoSaleri.Chapter03.thomas_backward_error_posDef`.
 
-The banded storage format, Programs 10–13 and the operation counts are not nodes.
+## Not formalized
 
-## Readings and errata
-
-Property 3.4 ("suppose that there exists an LU factorization of `A`") fails without uniqueness:
-Example 3.3's `D = [0, 1; 0, 2] = L_β U_β` has lower bandwidth `0` while `L_β` does not for
-`β ≠ 0`; the lower clause is stated under the hypothesis of Theorem 3.4 (the factorization is
-then unique), the upper clause holds for every factorization. The stability bounds of §3.7.1
-are quoted from [higham2002accuracy] (9.20) and Theorem 9.14; the backbone proves them with the
-constants `u / (1 - u)` and `u / (1 - 2u)` of the relational model, which are below the book's
-`4u + 3u² + u³` and `(4u + 3u² + u³) / (1 - u)` for `u < 1/2` and `u ≤ 1/4` respectively, and
-the book's constants are stated under those (harmless) restrictions on the unit roundoff. The
-book's "for `u` small enough" behind the positive definite / M-matrix bound is the hypothesis
-that the computed pivots `α̂_i` are positive and the products `β̂_i c_{i-1}` nonnegative, the
-sign pattern that the exact factors of such matrices have.
+* **The banded storage format.**
+* **Programs 10–13.**
+* **The operation counts.**
 -/
 
 open Finset Matrix
@@ -64,19 +90,34 @@ variable {n : ℕ}
 
 /-! ### Property 3.4: band preservation -/
 
-/-- **Property 3.4, the lower factor.** Let `A ∈ ℝ^{n×n}` have an LU factorization `A = L U`
-(the unique one: the leading principal submatrices of orders `1, …, n - 1` are nonsingular). If
-`A` has lower bandwidth `p`, `a_ij = 0` for `i > j + p`, then so does `L` (backbone
-`Matrix.IsLU.hasLowerBandwidth`). -/
+/-- **Property 3.4** of [quarteroni2000numerical], the lower factor. Let
+$A \in \mathbb{R}^{n \times n}$ have the LU factorization $A = LU$, and assume that the leading
+principal submatrices of $A$ of orders $1, \ldots, n - 1$ are nonsingular, so that this
+factorization is unique. If $A$ has lower bandwidth $p$, that is, $a_{ij} = 0$ for $i > j + p$,
+then $l_{ij} = 0$ for $i > j + p$.
+
+**Correction.** The source assumes only that an LU factorization of $A$ exists. Without
+uniqueness the statement is false: the matrix $D = L_\beta U_\beta$ of Example 3.3 has lower
+bandwidth $0$, while $L_\beta$ does not for $\beta \neq 0$ (see
+`QuarteroniSaccoSaleri.Chapter03.example_3_3_d`). The theorem adds the hypothesis of Theorem
+3.4, under which the factorization is unique.
+
+The hypothesis is stated for the strict leading principal submatrices of orders
+$0, \ldots, n - 1$, as in `QuarteroniSaccoSaleri.Chapter03.theorem_3_4`. The proof uses
+`Matrix.IsLU.hasLowerBandwidth`. -/
 theorem property_3_4_lower {A L U : Matrix (Fin n) (Fin n) ℝ} (h : IsLU A L U)
     (hA : ∀ k, IsUnit (A.strictLeadingPrincipalSubmatrix k)) {p : ℕ}
     (hp : ∀ i j : Fin n, (j : ℕ) + p < i → A i j = 0) :
     ∀ i j : Fin n, (j : ℕ) + p < i → L i j = 0 :=
   hasLowerBandwidth_iff_fin.1 (h.hasLowerBandwidth hA (hasLowerBandwidth_iff_fin.2 hp))
 
-/-- **Property 3.4, the upper factor.** If `A = L U` (unit lower `L`) and `A` has upper
-bandwidth `q`, `a_ij = 0` for `j > i + q`, then so does `U` (backbone
-`Matrix.IsLU.hasUpperBandwidth`; no uniqueness is needed for this clause). -/
+/-- **Property 3.4** of [quarteroni2000numerical], the upper factor. Let
+$A \in \mathbb{R}^{n \times n}$, and let $A = LU$ be an LU factorization with $L$ unit lower
+triangular. If $A$ has upper bandwidth $q$, that is, $a_{ij} = 0$ for $j > i + q$, then
+$u_{ij} = 0$ for $j > i + q$.
+
+This part holds for every LU factorization; no uniqueness is needed. The proof uses
+`Matrix.IsLU.hasUpperBandwidth`. -/
 theorem property_3_4_upper {A L U : Matrix (Fin n) (Fin n) ℝ} (h : IsLU A L U) {q : ℕ}
     (hq : ∀ i j : Fin n, (i : ℕ) + q < j → A i j = 0) :
     ∀ i j : Fin n, (i : ℕ) + q < j → U i j = 0 :=
@@ -88,12 +129,20 @@ section Thomas
 
 variable (a b c : ℕ → ℝ)
 
-/-- **(3.53), the Thomas algorithm.** For the tridiagonal matrix `A` with diagonal `a`,
-subdiagonal `b` and superdiagonal `c`, the coefficients `α₁ = a₁`, `β_i = b_i / α_{i-1}`,
-`α_i = a_i - β_i c_{i-1}` (`i = 2, …, n`) are `Matrix.thomasAlpha`, `Matrix.thomasBeta`, and when
-no pivot `α_i` vanishes (`i < n`) the unit lower bidiagonal `L` with subdiagonal `β` and the
-upper bidiagonal `U` with diagonal `α` and superdiagonal `c` give the LU factorization `A = L U`
-— the Doolittle factorization of `A` (backbone `Matrix.isLU_tridiagonal_thomas`). -/
+/-- **Equation (3.53)** of [quarteroni2000numerical] (the Thomas algorithm). Let
+$A \in \mathbb{R}^{n \times n}$ be the tridiagonal matrix with diagonal $a$, subdiagonal $b$ and
+superdiagonal $c$. The coefficients of the Thomas algorithm satisfy
+$$\alpha_0 = a_0, \qquad \beta_{i+1} = \frac{b_{i+1}}{\alpha_i}, \qquad \alpha_{i+1} = a_{i+1} -
+  \beta_{i+1} c_i.$$
+Let $L$ be the unit lower bidiagonal matrix with subdiagonal entries $l_{i+1,i} = \beta_{i+1}$,
+and let $U$ be the upper bidiagonal matrix with diagonal entries $u_{ii} = \alpha_i$ and
+superdiagonal entries $u_{i,i+1} = c_i$. If the pivots $\alpha_i$ are nonzero for
+$i = 0, \ldots, n - 2$, then $A = LU$ is the LU factorization of $A$, that is, the Doolittle
+factorization.
+
+The indices are $0$-based; the book writes $\alpha_1 = a_1$ and $i = 2, \ldots, n$. The
+coefficients are `Matrix.thomasAlpha` and `Matrix.thomasBeta`. The proof uses
+`Matrix.isLU_tridiagonal_thomas`. -/
 theorem equation_3_53 (hα : ∀ i, i + 1 < n → thomasAlpha a b c i ≠ 0) :
     thomasAlpha a b c 0 = a 0 ∧
     (∀ i, thomasBeta a b c (i + 1) = b (i + 1) / thomasAlpha a b c i) ∧
@@ -106,8 +155,8 @@ theorem equation_3_53 (hα : ∀ i, i + 1 < n → thomasAlpha a b c i ≠ 0) :
   ⟨thomasAlpha_zero a b c, thomasBeta_succ a b c, thomasAlpha_succ a b c, fun _ _ => rfl,
     fun _ _ => rfl, isLU_tridiagonal_thomas a b c hα⟩
 
-/-- Forward substitution on a unit lower bidiagonal matrix: the sum over `j < i + 1` has the
-single term `j = i`. -/
+/-- Forward substitution on a unit lower bidiagonal matrix: the sum over $j < i + 1$ has the single
+term $j = i$. -/
 private theorem sum_filter_lt_succ_eq {L : Matrix (Fin n) (Fin n) ℝ}
     (hL : ∀ i j : Fin n, j < i → (j : ℕ) + 1 ≠ i → L i j = 0) (y : Fin n → ℝ) {i : Fin n}
     (hi : (i : ℕ) + 1 < n) :
@@ -117,8 +166,8 @@ private theorem sum_filter_lt_succ_eq {L : Matrix (Fin n) (Fin n) ℝ}
     (fun h => (h (mem_filter.2 ⟨mem_univ _, Fin.lt_def.2 (Nat.lt_succ_self _)⟩)).elim)
   rw [hL _ _ (mem_filter.1 hj).2 fun h => hji (Fin.ext (Nat.succ_injective h)), zero_mul]
 
-/-- Backward substitution on an upper bidiagonal matrix: the sum over `j > i` has the single
-term `j = i + 1`. -/
+/-- Backward substitution on an upper bidiagonal matrix: the sum over $j > i$ has the single term
+$j = i + 1$. -/
 private theorem sum_filter_gt_eq {U : Matrix (Fin n) (Fin n) ℝ}
     (hU : ∀ i j : Fin n, i < j → (i : ℕ) + 1 ≠ j → U i j = 0) (y : Fin n → ℝ) {i : Fin n}
     (hi : (i : ℕ) + 1 < n) :
@@ -128,9 +177,13 @@ private theorem sum_filter_gt_eq {U : Matrix (Fin n) (Fin n) ℝ}
     (fun h => (h (mem_filter.2 ⟨mem_univ _, Fin.lt_def.2 (Nat.lt_succ_self _)⟩)).elim)
   rw [hU _ _ (mem_filter.1 hj).2 fun h => hji (Fin.ext h.symm), zero_mul]
 
-/-- **(3.54), the bidiagonal forward substitution.** With `L` the unit lower bidiagonal factor of
-(3.53), the solution `y = Matrix.forwardSubst L f` of `L y = f` is computed by `y₁ = f₁`,
-`y_i = f_i - β_i y_{i-1}` for `i = 2, …, n`. -/
+/-- **Equation (3.54)** of [quarteroni2000numerical], the bidiagonal forward substitution. Let $L$
+be the unit lower bidiagonal factor of (3.53), and let $f \in \mathbb{R}^n$. The solution $y$ of
+$Ly = f$ by forward substitution satisfies
+$$y_0 = f_0, \qquad y_{i+1} = f_{i+1} - \beta_{i+1} y_i \quad (i = 0, \ldots, n - 2).$$
+
+The indices are $0$-based; the book writes $y_1 = f_1$ and $y_i = f_i - \beta_i y_{i-1}$ for
+$i = 2, \ldots, n$. The solution is `Matrix.forwardSubst L f`. -/
 theorem equation_3_54 (f : Fin n → ℝ) :
     (∀ h0 : 0 < n, forwardSubst (thomasLower a b c n) f ⟨0, h0⟩ = f ⟨0, h0⟩) ∧
     ∀ (i : Fin n) (hi : (i : ℕ) + 1 < n),
@@ -149,11 +202,17 @@ theorem equation_3_54 (f : Fin n → ℝ) :
     rw [forwardSubst_apply, sum_filter_lt_succ_eq hL _ hi]
     simp [thomasLower, hne]
 
-/-- **(3.55), the bidiagonal backward substitution.** With `U` the upper bidiagonal factor of
-(3.53), the solution `x = Matrix.backSubst U y` of `U x = y` is computed by `xₙ = yₙ / αₙ`,
-`x_i = (y_i - c_i x_{i+1}) / α_i` for `i = n - 1, …, 1`; together with (3.54) this solves the
-tridiagonal system, `A (backSubst U (forwardSubst L f)) = f`, when the pivots `α_i` are nonzero
-(backbone `Matrix.mulVec_luSolve`). -/
+/-- **Equation (3.55)** of [quarteroni2000numerical], the bidiagonal backward substitution. Let $L$
+and $U$ be the bidiagonal factors of (3.53) of the tridiagonal matrix $A$, and let
+$y, f \in \mathbb{R}^n$. The solution $x$ of $Ux = y$ by backward substitution satisfies
+$$x_{n-1} = \frac{y_{n-1}}{\alpha_{n-1}}, \qquad x_i = \frac{y_i - c_i x_{i+1}}{\alpha_i} \quad
+  (i = n - 2, \ldots, 0).$$
+If all pivots $\alpha_i$, $i = 0, \ldots, n - 1$, are nonzero, then the forward substitution
+(3.54) followed by this backward substitution solves the tridiagonal system $Ax = f$.
+
+The indices are $0$-based; the book writes $x_n = y_n/\alpha_n$ and $i = n - 1, \ldots, 1$. The
+solution is `Matrix.backSubst U y`. The proof of the last statement uses
+`Matrix.mulVec_luSolve`. -/
 theorem equation_3_55 (y f : Fin n → ℝ) :
     (∀ h0 : 0 < n, backSubst (thomasUpper a b c n) y ⟨n - 1, Nat.sub_one_lt h0.ne'⟩ =
       y ⟨n - 1, Nat.sub_one_lt h0.ne'⟩ / thomasAlpha a b c (n - 1)) ∧
@@ -177,12 +236,25 @@ theorem equation_3_55 (y f : Fin n → ℝ) :
       fun i => by simpa [thomasUpper] using hα i i.2
 
 open FloatingPoint in
-/-- **§3.7.1, stability of the Thomas algorithm.** If `A` is a nonsingular tridiagonal matrix
-and `L̂`, `Û` are the factors actually computed by (3.53) in floating-point arithmetic with unit
-roundoff `u < 1/2` (an admissible `FloatingPoint.RoundsThomas m a b c α̂ β̂` with nonzero computed
-pivots), then `L̂ Û = A + δA` with `|δA| ≤ (4u + 3u² + u³) |L̂| |Û|` (backbone
-`FloatingPoint.exists_roundsThomas_mul_eq_add`, [higham2002accuracy] (9.20), whose constant
-`u / (1 - u)` is below the book's for `u < 1/2`). -/
+/-- **Section 3.7.1** of [quarteroni2000numerical], stability of the Thomas algorithm. Let $A$ be
+the tridiagonal matrix with diagonal $a$, subdiagonal $b$ and superdiagonal $c$, and let
+$u < 1/2$ be the unit roundoff of a rounding model. Let $\hat\alpha$, $\hat\beta$ be the
+coefficients that (3.53) computes in floating-point arithmetic, with all computed pivots
+$\hat\alpha_i$ nonzero, and let $\hat L$, $\hat U$ be the bidiagonal factors made from them.
+Then there is a matrix $\delta A$ with
+$$\hat L \hat U = A + \delta A, \qquad |\delta A| \le (4u + 3u^2 + u^3) |\hat L| |\hat U|,$$
+where the absolute values and the inequality are entrywise.
+
+**Reading.** The source quotes this bound from (9.20) of [higham2002accuracy]. The backbone
+proves it with the constant $u/(1 - u)$ of the relational model, which is smaller than
+$4u + 3u^2 + u^3$ when $u < 1/2$. So the theorem adds the hypothesis $u < 1/2$.
+
+The source speaks of a nonsingular matrix $A$; the theorem does not need this. The coefficients
+are sequences indexed by $\mathbb{N}$, and the hypothesis $\hat\alpha_i \neq 0$ is stated for
+every $i \in \mathbb{N}$. The computed coefficients are an admissible
+`FloatingPoint.RoundsThomas m a b c α β`, and $\hat L$, $\hat U$ are
+`Matrix.lowerBidiagonalOf β n` and `Matrix.upperBidiagonalOf α c n`. The proof uses
+`FloatingPoint.exists_roundsThomas_mul_eq_add`. -/
 theorem thomas_backward_error {m : RoundingModel ℝ} (hu : 2 * m.u < 1) {α β : ℕ → ℝ}
     (h : RoundsThomas m a b c α β) (hα : ∀ i, α i ≠ 0) :
     ∃ δA : Matrix (Fin n) (Fin n) ℝ,
@@ -205,13 +277,23 @@ theorem thomas_backward_error {m : RoundingModel ℝ} (hu : 2 * m.u < 1) {α β 
   nlinarith
 
 open FloatingPoint in
-/-- **§3.7.1, the symmetric positive definite and M-matrix cases.** If moreover the computed
-pivots `α̂_i` are positive and the products `β̂_i c_{i-1}` are nonnegative — the sign pattern of
-the exact factors of a symmetric positive definite or an M-matrix, which the computed ones share
-"for `u` small enough" — then, for `u ≤ 1/4`, `|δA| ≤ ((4u + 3u² + u³) / (1 - u)) |A|`, which
-expresses the stability of the factorization (backbone
-`FloatingPoint.exists_roundsThomas_mul_eq_add_of_diag_pos`, [higham2002accuracy] Theorem 9.14,
-whose constant `u / (1 - 2u)` is below the book's for `u ≤ 1/4`). -/
+/-- **Section 3.7.1** of [quarteroni2000numerical], the symmetric positive definite and M-matrix
+cases. Let $A$ be the tridiagonal matrix with diagonal $a$, subdiagonal $b$ and superdiagonal
+$c$, and let $u \le 1/4$ be the unit roundoff of a rounding model. Let $\hat\alpha$, $\hat\beta$
+be the coefficients that (3.53) computes in floating-point arithmetic, with $\hat\alpha_i > 0$
+and $\hat\beta_{i+1} c_i \ge 0$ for all $i$, and let $\hat L$, $\hat U$ be the bidiagonal
+factors made from them. Then there is a matrix $\delta A$ with
+$$\hat L \hat U = A + \delta A, \qquad |\delta A| \le \frac{4u + 3u^2 + u^3}{1 - u} |A|$$
+entrywise. This expresses the stability of the factorization.
+
+**Reading.** The source states this bound for symmetric positive definite matrices and
+M-matrices, "for $u$ small enough". The theorem reads this as the hypothesis that the computed
+pivots are positive and the products $\hat\beta_{i+1} c_i$ are nonnegative, the sign pattern of
+the exact factors of such matrices. The source quotes the bound from Theorem 9.14 of
+[higham2002accuracy]. The backbone proves it with the constant $u/(1 - 2u)$, which is smaller
+than the constant of the source when $u \le 1/4$, so the theorem adds this hypothesis.
+
+The proof uses `FloatingPoint.exists_roundsThomas_mul_eq_add_of_diag_pos`. -/
 theorem thomas_backward_error_posDef {m : RoundingModel ℝ} (hu : 4 * m.u ≤ 1) {α β : ℕ → ℝ}
     (h : RoundsThomas m a b c α β) (hα : ∀ i, 0 < α i) (hbc : ∀ i, 0 ≤ β (i + 1) * c i) :
     ∃ δA : Matrix (Fin n) (Fin n) ℝ,
@@ -228,13 +310,24 @@ theorem thomas_backward_error_posDef {m : RoundingModel ℝ} (hu : 4 * m.u ≤ 1
   have h3 : 0 ≤ m.u ^ 3 := pow_nonneg hu0 3
   nlinarith
 
-/-- **§3.7.2, (3.56), the Thomas algorithm without divisions.** With the reciprocal pivots
-`γ_i = (a_i - b_i γ_{i-1} c_{i-1})⁻¹` (`γ₀ = 0`, `b₁ = 0`, `c_n = 0`; the backbone's
-`Matrix.thomasGamma`, equal to `α_i⁻¹`), and the pivots nonzero, `A = L D Mᵀ` with `L` the lower
-bidiagonal matrix of diagonal `γ⁻¹` and subdiagonal `b`, `D = diag γ` and `Mᵀ` the upper
-bidiagonal matrix of diagonal `γ⁻¹` and superdiagonal `c`; the substitutions then read
-`y₁ = γ₁ f₁`, `y_i = γ_i (f_i - b_i y_{i-1})` for `L y = f` and `xₙ = yₙ`,
-`x_i = y_i - γ_i c_i x_{i+1}` for `(D Mᵀ) x = y`, without divisions. -/
+/-- **Equation (3.56)** of [quarteroni2000numerical], Section 3.7.2, the Thomas algorithm without
+divisions. Let $A$ be the tridiagonal matrix with diagonal $a$, subdiagonal $b$ and
+superdiagonal $c$, and assume that the pivots $\alpha_i$ of (3.53) are nonzero for
+$i = 0, \ldots, n - 1$. Let the reciprocal pivots be
+$$\gamma_0 = a_0^{-1}, \qquad \gamma_{i+1} = (a_{i+1} - b_{i+1} \gamma_i c_i)^{-1},$$
+so that $\gamma_i = \alpha_i^{-1}$. Let $L$ be the lower bidiagonal matrix with diagonal
+$\gamma_i^{-1}$ and subdiagonal $b$, let $D = \operatorname{diag}(\gamma_i)$, and let $M^T$ be
+the upper bidiagonal matrix with diagonal $\gamma_i^{-1}$ and superdiagonal $c$. Then
+$A = LDM^T$. For every $f, y \in \mathbb{R}^n$, the forward substitution for $Ly = f$ reads
+$$y_0 = \gamma_0 f_0, \qquad y_{i+1} = \gamma_{i+1} (f_{i+1} - b_{i+1} y_i),$$
+and the backward substitution for $(DM^T)x = y$ reads
+$$x_{n-1} = y_{n-1}, \qquad x_i = y_i - \gamma_i c_i x_{i+1}.$$
+Neither substitution divides.
+
+The indices are $0$-based. The book starts the recurrence at $\gamma_0 = 0$ with $b_1 = 0$ and
+$c_n = 0$, which gives the same $\gamma_1 = a_1^{-1}$. The identity $\gamma_i = \alpha_i^{-1}$
+holds for every $i$, with Lean's convention $0^{-1} = 0$. The reciprocal pivots are
+`Matrix.thomasGamma`. -/
 theorem equation_3_56 (hα : ∀ i, i < n → thomasAlpha a b c i ≠ 0) (f y : Fin n → ℝ) :
     (∀ i, thomasGamma a b c i = (thomasAlpha a b c i)⁻¹) ∧
     thomasGamma a b c 0 = (a 0)⁻¹ ∧

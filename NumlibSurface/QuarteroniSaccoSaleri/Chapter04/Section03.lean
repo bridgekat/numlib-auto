@@ -13,88 +13,208 @@ import Numlib.Stationary.Richardson
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter04.Section02
 
 /-!
-# Quarteroni–Sacco–Saleri §4.3: stationary and nonstationary iterative methods
+# Quarteroni, Sacco and Saleri, Section 4.3: Stationary and nonstationary iterative methods
 
-Surface file for Alfio Quarteroni, Riccardo Sacco and Fausto Saleri, *Numerical Mathematics*
-[quarteroni2000numerical], §4.3, over the backbone `Numlib/Stationary/Richardson` (the
-preconditioned Richardson splitting, Theorems 4.8–4.9, Corollary 4.1, (4.29), the nonstationary
-iteration and its residual update), `Numlib/Stationary/SPD` (the optimal parameter),
-`Numlib/Eigen/Pencil` (the generalized eigenvalue problem of Remark 4.2),
-`Numlib/Analysis/InnerProductSpace/Energy` (the energy functional and its gradient),
-`Numlib/Projection/{OneDimensional,Optimality,ConjugateDirection}` (steepest descent, optimality
-along a direction, conjugate directions), `Numlib/Krylov/CG` and `Numlib/Krylov/Convergence/CG`
-(the conjugate gradient recurrence, its invariants and its Chebyshev bound),
-`Numlib/RingTheory/Polynomial/ChebyshevMinimax` (Property 4.6), `Numlib/Krylov/Preconditioned`
-(PCG) and `Numlib/Stationary/ADI` (the alternating-direction method).
+This module formalizes §4.3 of [quarteroni2000numerical]: iterative methods for a linear system
+$Ax = b$, $A \in \mathbb{R}^{n \times n}$, that are built from a preconditioner $P$ and a sequence
+of parameters. It covers the stationary and nonstationary Richardson methods
+$x^{(k+1)} = x^{(k)} + \alpha_k P^{-1} r^{(k)}$ with the residual $r^{(k)} = b - Ax^{(k)}$, their
+convergence theory (Theorems 4.8–4.9, Corollary 4.1) and the bounds on the spectrum of $P^{-1}A$
+(Remark 4.2, (4.33)). It then treats the gradient method, which minimizes the energy
+$\Phi(y) = \frac12 y^T A y - y^T b$ along the residual (Theorem 4.10); the conjugate gradient
+method, with its conjugacy and orthogonality relations, its finite termination and its Chebyshev
+error bound (Definition 4.4, Theorems 4.11–4.12, Property 4.6); the preconditioned conjugate
+gradient method (§4.3.5); and the alternating-direction method of Peaceman and Rachford (§4.3.6).
+
+The proofs specialize the backbone modules `Numlib.Stationary.Richardson` and
+`Numlib.Stationary.SPD` (the Richardson splitting and its optimal parameter), `Numlib.Eigen.Pencil`
+(the generalized eigenvalue problem), `Numlib.Analysis.InnerProductSpace.Energy` (the energy
+functional and its gradient), `Numlib.Projection.OneDimensional`, `Numlib.Projection.Optimality` and
+`Numlib.Projection.ConjugateDirection` (steepest descent, optimality along a direction, conjugate
+directions), `Numlib.Krylov.CG` and `Numlib.Krylov.Convergence.CG` (the conjugate gradient
+recurrence, its invariants and its Chebyshev bound), `Numlib.RingTheory.Polynomial.ChebyshevMinimax`
+(the minimax property of the Chebyshev polynomials), `Numlib.Krylov.Preconditioned` (the
+preconditioned method) and `Numlib.Stationary.ADI` (the alternating-direction method).
+
+## Main definitions
+
+* Equation (4.23), `QuarteroniSaccoSaleri.Chapter04.richardsonStep`: one step
+  $x \mapsto x + \alpha P^{-1}(b - Ax)$ of the stationary preconditioned Richardson method.
+* Equation (4.24), `QuarteroniSaccoSaleri.Chapter04.nonstationaryRichardson`: the iterates of the
+  nonstationary Richardson method with parameters $\alpha_k$.
+* §4.3.3, `QuarteroniSaccoSaleri.Chapter04.energy`: the energy $\Phi(y) = \frac12 y^T A y - y^T b$
+  of the system.
+* Equations (4.36)–(4.37), `QuarteroniSaccoSaleri.Chapter04.gradientStep`: one step of the gradient
+  method.
+* Definition 4.4, `QuarteroniSaccoSaleri.Chapter04.definition_4_4` and
+  `QuarteroniSaccoSaleri.Chapter04.IsOptimalWrtSubspace`: optimality of a point with respect to a
+  direction and with respect to a subspace.
+* Equations (4.39)–(4.41), `QuarteroniSaccoSaleri.Chapter04.cgStep` and
+  `QuarteroniSaccoSaleri.Chapter04.cg`: the conjugate gradient method.
+* §4.3.5, `QuarteroniSaccoSaleri.Chapter04.pcgStep` and `QuarteroniSaccoSaleri.Chapter04.pcg`: the
+  preconditioned conjugate gradient method.
+* Equation (4.50), `QuarteroniSaccoSaleri.Chapter04.adiStep`,
+  `QuarteroniSaccoSaleri.Chapter04.adiMatrix` and `QuarteroniSaccoSaleri.Chapter04.adiConst`: the
+  alternating-direction method, its iteration matrix $B$ and its vector $f$.
+
+## Main results
+
+* Equation (4.25), `QuarteroniSaccoSaleri.Chapter04.equation_4_25`: one nonstationary Richardson
+  step solves $Pz^{(k)} = r^{(k)}$ and updates the solution and the residual.
+* Theorem 4.8, `QuarteroniSaccoSaleri.Chapter04.theorem_4_8`: for nonsingular $P$, the stationary
+  Richardson method converges if and only if $2 \operatorname{Re} \lambda_i / (\alpha
+  |\lambda_i|^2) > 1$ for every eigenvalue $\lambda_i$ of $P^{-1}A$.
+* Theorem 4.9, `QuarteroniSaccoSaleri.Chapter04.theorem_4_9`: if $P^{-1}A$ has real eigenvalues
+  $\lambda_1 \ge \dots \ge \lambda_n > 0$, the method converges if and only if
+  $0 < \alpha < 2/\lambda_1$.
+* Theorem 4.9, `QuarteroniSaccoSaleri.Chapter04.theorem_4_9_optimal`: the optimal parameter
+  $\alpha_{\mathrm{opt}} = 2/(\lambda_1 + \lambda_n)$ and the optimal spectral radius $(\lambda_1 -
+  \lambda_n)/(\lambda_1 + \lambda_n)$ of (4.27)–(4.28).
+* §4.3.1, `QuarteroniSaccoSaleri.Chapter04.richardson_monotone_of_posDef`: for symmetric positive
+  definite $P^{-1}A$ the convergence is monotone in $\|\cdot\|_2$, and also in $\|\cdot\|_A$ when
+  $A$ is symmetric positive definite and $P$ is symmetric.
+* Equation (4.29), `QuarteroniSaccoSaleri.Chapter04.equation_4_29`: the optimal spectral radius and
+  parameter in terms of $K_2(P^{-1}A)$.
+* Corollary 4.1, `QuarteroniSaccoSaleri.Chapter04.corollary_4_1` and
+  `QuarteroniSaccoSaleri.Chapter04.corollary_4_1_preconditioned`: convergence of the non
+  preconditioned method for $0 < \alpha < 2/\lambda_{\max}(A)$, and the estimate (4.30)
+  $\|e^{(k+1)}\|_A \le \rho(R_\alpha) \|e^{(k)}\|_A$.
+* Remark 4.2, `QuarteroniSaccoSaleri.Chapter04.remark_4_2`: the eigenvalues of $P^{-1}A$ are the
+  generalized eigenvalues of $Ax = \lambda Px$, they are real, and each is a generalized Rayleigh
+  quotient.
+* Equation (4.33), `QuarteroniSaccoSaleri.Chapter04.equation_4_33`:
+  $\lambda_{\min}(A)/\lambda_{\max}(P) \le \lambda \le \lambda_{\max}(A)/\lambda_{\min}(P)$ for the
+  eigenvalues $\lambda$ of $P^{-1}A$.
+* Equation (4.34), `QuarteroniSaccoSaleri.Chapter04.equation_4_34`:
+  $\nabla \Phi(y) = \frac12 (A^T + A) y - b$.
+* Equation (4.35), `QuarteroniSaccoSaleri.Chapter04.equation_4_35`: for symmetric positive definite
+  $A$, $\Phi(y) - \Phi(x) = \frac12 \|y - x\|_A^2$, so the solution $x$ minimizes $\Phi$.
+* Equation (4.37), `QuarteroniSaccoSaleri.Chapter04.equation_4_37`: the gradient method is the
+  nonstationary Richardson method with $P = I$ and the parameters of (4.37).
+* Theorem 4.10, `QuarteroniSaccoSaleri.Chapter04.theorem_4_10`: the gradient method converges, with
+  $\|e^{(k+1)}\|_A \le \frac{K_2(A) - 1}{K_2(A) + 1} \|e^{(k)}\|_A$ (4.38).
+* §4.3.4, `QuarteroniSaccoSaleri.Chapter04.definition_4_4_iff` and
+  `QuarteroniSaccoSaleri.Chapter04.optimal_preserved_iff_conjugate`: optimality with respect to $p$
+  means $p^T r = 0$, and it is preserved by a step $q$ if and only if $p^T A q = 0$.
+* §4.3.4, `QuarteroniSaccoSaleri.Chapter04.cg_eq_CG`: the conjugate gradient method is the backbone
+  recurrence `CG.iterate`.
+* Equation (4.42), `QuarteroniSaccoSaleri.Chapter04.equation_4_42`: the descent directions are
+  $A$-conjugate.
+* Equations (4.43)–(4.44), `QuarteroniSaccoSaleri.Chapter04.equation_4_44`: the residual is
+  orthogonal to the earlier directions, and the directions and the residuals span the Krylov
+  subspaces.
+* Equation (4.45), `QuarteroniSaccoSaleri.Chapter04.equation_4_45`:
+  $\alpha_k = \|r^{(k)}\|^2 / p^{(k)T} A p^{(k)}$ and $\beta_k = -\|r^{(k+1)}\|^2 / \|r^{(k)}\|^2$.
+* Equation (4.46), `QuarteroniSaccoSaleri.Chapter04.equation_4_46`: the three-term recurrence of the
+  residuals.
+* Theorem 4.11, `QuarteroniSaccoSaleri.Chapter04.theorem_4_11`: a method with $A$-conjugate
+  directions terminates after at most $n$ steps with the exact solution.
+* Theorem 4.12, `QuarteroniSaccoSaleri.Chapter04.theorem_4_12_terminates`,
+  `QuarteroniSaccoSaleri.Chapter04.theorem_4_12_orthogonal` and
+  `QuarteroniSaccoSaleri.Chapter04.theorem_4_12_bound`: the conjugate gradient method terminates
+  after at most $n$ steps, its error is $A$-orthogonal to the earlier directions, and it satisfies
+  the bound (4.47).
+* Equations (4.48)–(4.49), `QuarteroniSaccoSaleri.Chapter04.equation_4_49`: the $A$-norm of the
+  error is the minimum of $\|q(A) e^{(0)}\|_A$ over the polynomials $q$ of degree at most $k$ with
+  $q(0) = 1$.
+* Property 4.6, `QuarteroniSaccoSaleri.Chapter04.property_4_6` and
+  `QuarteroniSaccoSaleri.Chapter04.property_4_6_unique`: the shifted Chebyshev polynomial is the
+  unique solution of the minimax problem on $[\lambda_n, \lambda_1]$.
+* Exercise 12, `QuarteroniSaccoSaleri.Chapter04.exercise_4_12`: an example where the second gradient
+  iterate is not optimal with respect to the first residual.
+* §4.3.5, `QuarteroniSaccoSaleri.Chapter04.pcg_eq_PCG` and
+  `QuarteroniSaccoSaleri.Chapter04.pcg_energyNorm_error_le`: the preconditioned method is the
+  backbone recurrence `Krylov.PCG.iterate`, and its error estimate.
+* §4.3.6, `QuarteroniSaccoSaleri.Chapter04.adiStep_eq_affineStep` and
+  `QuarteroniSaccoSaleri.Chapter04.equation_4_50`: the alternating-direction method is the method
+  (4.2) with the matrix $B$ and the vector $f$, which are the backbone's Peaceman–Rachford
+  operators.
+* §4.3.6, `QuarteroniSaccoSaleri.Chapter04.adi_spectralRadius_le`,
+  `QuarteroniSaccoSaleri.Chapter04.adi_tendsto` and
+  `QuarteroniSaccoSaleri.Chapter04.adi_spectralRadius_le_sq`: the estimate of $\rho(B)$, convergence
+  for $\alpha_1 = \alpha_2 > 0$, and the bound for the parameter $1/\sqrt{\delta\gamma}$.
 
 ## Conventions
 
-Two pictures of `ℝⁿ` are used, as in the rest of the chapter. The Richardson methods of
-§4.3.1–4.3.2 and the alternating-direction method of §4.3.6 are stationary iterations on
-`Fin n → ℝ`, written with `A *ᵥ x` and `x ⬝ᵥ y` and identified with the splitting steps of §4.2
-and the affine step `affineStep B f` of §4.1; their convergence is read through Theorem 4.1
-(`theorem_4_1`) and the spectral radius `Matrix.complexSpectralRadius`. The gradient and conjugate
-gradient methods of §4.3.3–4.3.5, whose subject is an inner product, live on
-`EuclideanSpace ℝ (Fin n)`, where a matrix acts as `Matrix.toEuclideanLin A`, the book's `(x, y)`
-is `inner ℝ x y` (the two orders agree over `ℝ`), and the energy norm `‖x‖_A = (x, A x)^{1/2}` of
-(1.28) is `energyNorm (toEuclideanLin A) x`; the two pictures are related by `WithLp.toLp 2`.
-Matrix norms are the spectral norm (Mathlib's scoped `Matrix.Norms.L2Operator`), so that
-`K₂(A) = ‖A‖₂ ‖A⁻¹‖₂` is `NormedRing.condNumber A`, written `κ A`. "The eigenvalues of `P⁻¹ A`"
-are `spectrum ℂ (complexify (P⁻¹ * A))`; "`P⁻¹ A` has real positive eigenvalues
-`λ_1 ≥ … ≥ λ_n > 0`" is the hypothesis triple
-`spectrum ℂ (complexify (P⁻¹ * A)) ⊆ Complex.ofReal '' Set.Icc lmin lmax`,
-`lmin ∈ spectrum ℝ (P⁻¹ * A)`, `lmax ∈ spectrum ℝ (P⁻¹ * A)` with `0 < lmin` (`lmax = λ_1`,
-`lmin = λ_n`); for a symmetric matrix the eigenvalues are Mathlib's
-`Matrix.IsHermitian.eigenvalues`.
+* Two models of $\mathbb{R}^n$ are used, as in the rest of the chapter. The Richardson methods of
+  §4.3.1–4.3.2 and the alternating-direction method of §4.3.6 are stationary iterations on
+  `Fin n → ℝ`, written with `A *ᵥ x` and `x ⬝ᵥ y`. They are identified with the splitting steps of
+  §4.2 and with the step `QuarteroniSaccoSaleri.Chapter04.affineStep B f` of the method (4.2), and
+  their convergence is read through Theorem 4.1 (`QuarteroniSaccoSaleri.Chapter04.theorem_4_1`) and
+  the spectral radius `Matrix.complexSpectralRadius`.
+* The gradient and conjugate gradient methods of §4.3.3–4.3.5, whose subject is an inner product,
+  are stated on `EuclideanSpace ℝ (Fin n)`. There a matrix acts as `Matrix.toEuclideanLin A`, the
+  inner product $(x, y)$ of the source is `inner ℝ x y` (the two orders agree over $\mathbb{R}$),
+  and the energy norm $\|x\|_A = (x, Ax)^{1/2}$ of (1.28) is `energyNorm (toEuclideanLin A) x`. The
+  two models are related by `WithLp.toLp 2`.
+* Matrix norms are the spectral norm (Mathlib's scoped `Matrix.Norms.L2Operator`), so that
+  $K_2(A) = \|A\|_2 \|A^{-1}\|_2$ is `NormedRing.condNumber A`, written `κ A`.
+* "The eigenvalues of $P^{-1}A$" are `spectrum ℂ (complexify (P⁻¹ * A))`. "$P^{-1}A$ has real
+  positive eigenvalues $\lambda_1 \ge \dots \ge \lambda_n > 0$" is the triple of hypotheses
+  `spectrum ℂ (complexify (P⁻¹ * A)) ⊆ Complex.ofReal '' Set.Icc lmin lmax`,
+  `lmin ∈ spectrum ℝ (P⁻¹ * A)` and `lmax ∈ spectrum ℝ (P⁻¹ * A)`, with `0 < lmin`; here `lmax` is
+  $\lambda_1$ and `lmin` is $\lambda_n$. For a symmetric matrix the eigenvalues are Mathlib's
+  `Matrix.IsHermitian.eigenvalues`.
 
-The conjugate gradient algorithm is written in the book's own letters (`cgStep`, `cg`), with the
-book's direction update `p⁽ᵏ⁺¹⁾ = r⁽ᵏ⁺¹⁾ - β_k p⁽ᵏ⁾` of (4.41), whose `β_k` is the *negative* of the
-backbone's `CG.beta`; `cg_eq_CG` identifies it with the backbone recurrence `CG.iterate`, and
-every property of the method is read off that identification. The preconditioned method
-(`pcgStep`, `pcg`) is treated the same way through `Krylov.PCG.iterate`.
+## Implementation notes
 
-## Contents
+* The conjugate gradient method is written in the letters of the source
+  (`QuarteroniSaccoSaleri.Chapter04.cgStep`, `QuarteroniSaccoSaleri.Chapter04.cg`), with the
+  direction update $p^{(k+1)} = r^{(k+1)} - \beta_k p^{(k)}$ of (4.41). Its $\beta_k$ is therefore
+  the negative of the backbone's `CG.beta`. `QuarteroniSaccoSaleri.Chapter04.cg_eq_CG` identifies
+  the method with the backbone recurrence `CG.iterate`, and every property of the method is read off
+  this identification. The preconditioned method (`QuarteroniSaccoSaleri.Chapter04.pcgStep`,
+  `QuarteroniSaccoSaleri.Chapter04.pcg`) is treated in the same way through `Krylov.PCG.iterate`
+  (`QuarteroniSaccoSaleri.Chapter04.pcg_eq_PCG`).
+* Inverses are Mathlib's matrix inverse, which is $0$ for a singular matrix. The algebraic
+  identities, such as `QuarteroniSaccoSaleri.Chapter04.richardsonStep_eq_affineStep` and
+  `QuarteroniSaccoSaleri.Chapter04.adiStep_eq_affineStep`, hold without a nonsingularity hypothesis.
+  Quotients with a zero denominator are $0$.
 
-* `richardsonStep`, `richardsonStep_eq_affineStep`, `richardsonStep_eq`,
-  `richardsonStep_jacobi_gaussSeidel`, `nonstationaryRichardson`, `equation_4_25`,
-  `toLp_nonstationaryRichardson` — the Richardson methods (4.23)–(4.25).
-* `theorem_4_8`, `theorem_4_9`, `theorem_4_9_optimal`, `richardson_monotone_of_posDef`,
-  `equation_4_29`, `corollary_4_1`, `corollary_4_1_preconditioned` — §4.3.1.
-* `remark_4_2`, `equation_4_33` — the generalized eigenvalue problem of §4.3.2.
-* `energy`, `energy_eq_energyFunctional`, `equation_4_34`, `equation_4_35`, `gradientStep`,
-  `gradientStep_eq`, `equation_4_37`, `theorem_4_10` — §4.3.3.
-* `definition_4_4`, `IsOptimalWrtSubspace`, `definition_4_4_iff`,
-  `optimal_preserved_iff_conjugate`, `cgStep`, `cg`, `cgX`, `cgR`, `cgP`, `cgAlpha`, `cgBeta`,
-  `cg_eq_CG`, `equation_4_42`, `equation_4_44`, `equation_4_45`, `equation_4_46`, `theorem_4_11`,
-  `theorem_4_12_terminates`, `theorem_4_12_orthogonal`, `theorem_4_12_bound`, `equation_4_49`,
-  `property_4_6`, `property_4_6_unique`, `exercise_4_12` — §4.3.4.
-* `pcgStep`, `pcg`, `pcg_eq_PCG`, `pcg_energyNorm_error_le` — §4.3.5.
-* `adiStep`, `adiMatrix`, `adiConst`, `equation_4_50`, `adi_spectralRadius_le`, `adi_tendsto`,
-  `adi_spectralRadius_le_sq` — §4.3.6.
+## Deviations from the source
 
-The catalogue of preconditioners in §4.3.2 states no result and its Programs 17–18 are code;
-Examples 4.4–4.7 are numerical experiments and Remark 4.3 is prose on rounding; none is a node.
+* **Corollary 4.1** (correction). The source states that the non preconditioned stationary
+  Richardson method is convergent with no condition on $\alpha$; it needs
+  $0 < \alpha < 2/\lambda_{\max}(A)$, the range of Theorem 4.9. See
+  `QuarteroniSaccoSaleri.Chapter04.corollary_4_1`.
+* **Corollary 4.1, the preconditioned method** (generalization). The source asks $P$, $A$ and
+  $P^{-1}A$ to be symmetric positive definite; only $P$ and $A$ need to be, as the closing sentence
+  of the corollary says. See `QuarteroniSaccoSaleri.Chapter04.corollary_4_1_preconditioned`.
+* **The sentence after Theorem 4.9** (correction). Monotone convergence in $\|\cdot\|_A$ for
+  symmetric positive definite $P^{-1}A$ needs $P$ symmetric as well. See
+  `QuarteroniSaccoSaleri.Chapter04.richardson_monotone_of_posDef`.
+* **Equation (4.33)** (reading). The printed lower bound presupposes $\lambda_{\min}(A) \ge 0$,
+  which is assumed. See `QuarteroniSaccoSaleri.Chapter04.equation_4_33`.
+* **Definition 4.4** (typo). The source calls the point $x^{(k)}$ a direction. See
+  `QuarteroniSaccoSaleri.Chapter04.definition_4_4`.
+* **Definition 4.4** (generalization). The source assumes $p \neq 0$; the definition does not. See
+  `QuarteroniSaccoSaleri.Chapter04.definition_4_4`.
+* **Equation (4.45)** (correction). The source prints $\beta_k = \|r^{(k+1)}\|^2 / \|r^{(k)}\|^2$;
+  with the update (4.41) the sign is negative. See `QuarteroniSaccoSaleri.Chapter04.equation_4_45`.
+* **Equation (4.46)** (typo). The source prints $\beta_k/\alpha_{k-1}$ for the coefficient of
+  $r^{(k-1)}$; it is $\beta_{k-1}/\alpha_{k-1}$. See
+  `QuarteroniSaccoSaleri.Chapter04.equation_4_46`.
+* **Theorem 4.11** (reading). The conjugate directions are assumed nonzero. See
+  `QuarteroniSaccoSaleri.Chapter04.theorem_4_11`.
+* **Theorem 4.12** (correction). The source states that the error is orthogonal to the earlier
+  directions; it is $A$-orthogonal to them. See
+  `QuarteroniSaccoSaleri.Chapter04.theorem_4_12_orthogonal`.
+* **Equation (4.49)** (generalization). The source takes $x^{(0)} = 0$; any $x^{(0)}$ is allowed.
+  See `QuarteroniSaccoSaleri.Chapter04.equation_4_49`.
+* **§4.3.6, the vector $f$** (correction). The display after (4.50) omits the leading factor
+  $(I + \alpha_2 A_2)^{-1}$ of $f$. See `QuarteroniSaccoSaleri.Chapter04.adiConst`.
+* **§4.3.6, the last display** (reading). The proviso that $\gamma/\delta$ tends to $0$ as the size
+  of $A$ grows is not a hypothesis of the inequality. See
+  `QuarteroniSaccoSaleri.Chapter04.adi_spectralRadius_le_sq`.
 
-## Readings and errata
+## Not formalized
 
-* **Corollary 4.1.** "The non preconditioned stationary Richardson method is convergent" needs
-  `0 < α < 2/λ_max(A)`, the range of Theorem 4.9, which the statement omits; (4.30) holds for every
-  `α`. The preconditioned clause asks for `P`, `A` *and* `P⁻¹ A` symmetric positive definite; only
-  `P` and `A` are needed, as the book's own closing sentence says (`corollary_4_1_preconditioned`).
-* **The sentence after Theorem 4.9** ("if `P⁻¹ A` is symmetric positive definite the convergence
-  is monotone with respect to `‖·‖₂` and `‖·‖_A`"): the `‖·‖₂` clause holds as stated, the `‖·‖_A`
-  clause needs `P` symmetric (for `A = diag(1, 4)`, `P⁻¹ A = [[2, 1], [1, 2]]` and `α = 3/5`,
-  `R_α` increases the `A`-norm of `(1, 0)`). It is stated with that hypothesis
-  (`richardson_monotone_of_posDef`).
-* **(4.45)** prints `β_k = ‖r⁽ᵏ⁺¹⁾‖²/‖r⁽ᵏ⁾‖²`; with the update (4.41) the sign is negative
-  (`equation_4_45`). **(4.46)** prints `β_k/α_{k-1}` for the coefficient of `r⁽ᵏ⁻¹⁾`; it is
-  `β_{k-1}/α_{k-1}` (`equation_4_46`). **Theorem 4.12** says the error is orthogonal to the
-  directions; it is `A`-orthogonal (`theorem_4_12_orthogonal`). **Definition 4.4** calls the point
-  `x⁽ᵏ⁾` a direction.
-* **§4.3.6, the vector `f`.** The display after (4.50) prints
-  `f = [α₁ (I - α₂ A₁)(I + α₁ A₁)⁻¹ + α₂ I] b`; composing the two half-steps gives
-  `f = (I + α₂ A₂)⁻¹ [α₁ (I - α₂ A₁)(I + α₁ A₁)⁻¹ + α₂ I] b`, the leading inverse being the one
-  that also opens `B` (`adiConst`, `equation_4_50`).
+* **The catalogue of preconditioners in §4.3.2.** It states no result.
+* **Programs 17–18.** They are code.
+* **Examples 4.4–4.7.** They are numerical experiments.
+* **Remark 4.3.** It is prose on rounding.
+* **Exercise 12, the general claim** that $x^{(k+1)}$ is optimal with respect to $r^{(k)}$ for every
+  $k$.
 -/
 
 open Filter Finset Matrix Stationary Topology WithLp
@@ -110,9 +230,8 @@ section Richardson
 
 variable (A P : Matrix (Fin n) (Fin n) ℝ)
 
-/-- The inverse of a nonzero scalar multiple of a square matrix, for Mathlib's junk-valued
-inverse: `(c • M)⁻¹ = c⁻¹ • M⁻¹` for every `M` and every `c ≠ 0` (both sides vanish when `M` is
-singular). -/
+/-- For a field $\mathbb{K}$, a scalar $c \neq 0$ and a square matrix $M$, Mathlib's inverse
+satisfies $(cM)^{-1} = c^{-1} M^{-1}$; both sides are $0$ when $M$ is singular. -/
 private theorem inv_smul_eq {𝕜 : Type*} [Field 𝕜] {c : 𝕜} (hc : c ≠ 0)
     (M : Matrix (Fin n) (Fin n) 𝕜) : (c • M)⁻¹ = c⁻¹ • M⁻¹ := by
   by_cases hM : IsUnit M.det
@@ -124,19 +243,31 @@ private theorem inv_smul_eq {𝕜 : Type*} [Field 𝕜] {c : 𝕜} (hc : c ≠ 0
       simp [hM]
     rw [nonsing_inv_apply_not_isUnit _ hM, nonsing_inv_apply_not_isUnit _ hcM, smul_zero]
 
-/-- **(4.23).** One step `x ↦ x + α P⁻¹ r` of the stationary preconditioned Richardson method with
-acceleration parameter `α`, `r = b - A x` being the residual; the `k`-th iterate from `x⁽⁰⁾` is
-`(richardsonStep A P α b)^[k] x⁽⁰⁾`. For `P` nonsingular and `α ≠ 0` it is the step of the
-splitting `P/α - (P/α - A)` (`richardsonStep_eq`), with iteration matrix `R_α = I - α P⁻¹ A`
-(`richardsonStep_eq_affineStep`); Jacobi and Gauss–Seidel are `α = 1` with `P = D` and `P = D - E`
-(`richardsonStep_jacobi_gaussSeidel`). -/
+/-- **Equation (4.23)** of [quarteroni2000numerical]. Let $A, P \in \mathbb{R}^{n \times n}$,
+$\alpha \in \mathbb{R}$ and $b \in \mathbb{R}^n$. One step of the **stationary preconditioned
+Richardson method** with acceleration parameter $\alpha$ maps $x \in \mathbb{R}^n$ to
+$$x + \alpha P^{-1} r, \qquad r = b - Ax.$$
+
+The $k$-th iterate from $x^{(0)}$ is `(richardsonStep A P α b)^[k] x₀`, and $P^{-1}$ is
+Mathlib's inverse, which is $0$ for a singular $P$. For $P$ nonsingular and $\alpha \neq 0$ the
+step is that of the splitting $A = \alpha^{-1} P - (\alpha^{-1} P - A)$
+(`QuarteroniSaccoSaleri.Chapter04.richardsonStep_eq`), its iteration matrix is
+$R_\alpha = I - \alpha P^{-1} A$
+(`QuarteroniSaccoSaleri.Chapter04.richardsonStep_eq_affineStep`), and the Jacobi and
+Gauss–Seidel methods are the cases $\alpha = 1$ with $P = D$ and $P = D - E$
+(`QuarteroniSaccoSaleri.Chapter04.richardsonStep_jacobi_gaussSeidel`). -/
 noncomputable def richardsonStep (α : ℝ) (b x : Fin n → ℝ) : Fin n → ℝ :=
   x + α • (P⁻¹ *ᵥ (b - A *ᵥ x))
 
-/-- **The iteration matrix `R_α = I - α P⁻¹ A`** of the stationary Richardson method (§4.3, the
-display after (4.24)): the step (4.23) is the method (4.2) with `B = R_α` and `f = α P⁻¹ b`, for
-every `α` and every `P` (Mathlib's `P⁻¹` is `0` for a singular `P`, and the identity is
-algebraic). -/
+/-- **Section 4.3** of [quarteroni2000numerical], the display after (4.24). Let
+$A, P \in \mathbb{R}^{n \times n}$, $\alpha \in \mathbb{R}$ and $b \in \mathbb{R}^n$. The
+stationary Richardson step (4.23) is the linear iterative method (4.2), $x \mapsto Bx + f$, with
+the **iteration matrix** $B = R_\alpha = I - \alpha P^{-1} A$ and the vector
+$f = \alpha P^{-1} b$.
+
+The method (4.2) is `QuarteroniSaccoSaleri.Chapter04.affineStep`. The identity is algebraic, so
+it holds for every $\alpha$ and every $P$, also for a singular $P$, where Mathlib's $P^{-1}$ is
+$0$. -/
 theorem richardsonStep_eq_affineStep (α : ℝ) (b : Fin n → ℝ) :
     richardsonStep A P α b = affineStep (1 - α • (P⁻¹ * A)) (α • (P⁻¹ *ᵥ b)) := by
   funext x
@@ -144,10 +275,12 @@ theorem richardsonStep_eq_affineStep (α : ℝ) (b : Fin n → ℝ) :
     mulVec_sub, smul_sub]
   abel
 
-/-- For `P` nonsingular and `α ≠ 0`, the Richardson step (4.23) is the step of the splitting
-`A = α⁻¹ P - (α⁻¹ P - A)` of §4.2 (backbone `Stationary.Splitting.preconditionedRichardson`), and
-its iteration matrix is `R_α = I - α P⁻¹ A`
-(`Stationary.Splitting.preconditionedRichardson_iterationOperator`). -/
+/-- Let $A, P \in \mathbb{R}^{n \times n}$ with $P$ nonsingular, and let $\alpha \neq 0$. The
+Richardson step (4.23) is the step of the splitting $A = \alpha^{-1} P - (\alpha^{-1} P - A)$ of
+§4.2, and the iteration matrix of this splitting is $R_\alpha = I - \alpha P^{-1} A$.
+
+The splitting is the backbone's `Stationary.Splitting.preconditionedRichardson`, and its
+iteration matrix is given by `Stationary.Splitting.preconditionedRichardson_iterationOperator`. -/
 theorem richardsonStep_eq {P : Matrix (Fin n) (Fin n) ℝ} (hP : IsUnit P) {α : ℝ} (hα : α ≠ 0)
     (b : Fin n → ℝ) :
     richardsonStep A P α b = (Splitting.preconditionedRichardson A hP hα).mulVecStep b ∧
@@ -156,8 +289,16 @@ theorem richardsonStep_eq {P : Matrix (Fin n) (Fin n) ℝ} (hP : IsUnit P) {α :
   rw [Splitting.mulVecStep_eq_add_inv_mulVec, richardsonStep,
     Splitting.preconditionedRichardson_m, inv_smul_eq (inv_ne_zero hα), inv_inv, smul_mulVec]
 
-/-- **The sentence after (4.24).** The Jacobi and Gauss–Seidel methods are stationary Richardson
-methods with `α = 1` and `P = D`, respectively `P = D - E` (§4.2.1). -/
+/-- **Section 4.3** of [quarteroni2000numerical], the sentence after (4.24). Let
+$A \in \mathbb{R}^{n \times n}$ have nonzero diagonal entries and let $b \in \mathbb{R}^n$. The
+Jacobi and Gauss–Seidel methods of §4.2.1 are stationary Richardson methods with $\alpha = 1$
+and $P = D$, respectively $P = D - E$: one Richardson step is one Jacobi sweep, respectively one
+Gauss–Seidel sweep.
+
+The matrices $D$ and $E$ are `QuarteroniSaccoSaleri.Chapter04.D` and
+`QuarteroniSaccoSaleri.Chapter04.E`. The Jacobi sweep is `Matrix.jorSweep A 1` and the
+Gauss–Seidel sweep is `Matrix.sorSweep A 1`. The hypothesis on the diagonal is
+`IsUnit (diagPart A)`. -/
 theorem richardsonStep_jacobi_gaussSeidel (h : IsUnit (diagPart A)) (b : Fin n → ℝ) :
     richardsonStep A (D A) 1 b = jorSweep A 1 b ∧
       richardsonStep A (D A - E A) 1 b = sorSweep A 1 b := by
@@ -173,17 +314,27 @@ theorem richardsonStep_jacobi_gaussSeidel (h : IsUnit (diagPart A)) (b : Fin n �
       Splitting.preconditionedRichardson_m, inv_one, one_smul, D_sub_E]
     rfl
 
-/-- **(4.24).** The nonstationary Richardson (semi-iterative) method
-`x⁽ᵏ⁺¹⁾ = x⁽ᵏ⁾ + α_k P⁻¹ r⁽ᵏ⁾`, with a parameter `α_k` depending on the step; under `WithLp.toLp 2`
-it is the backbone's `Richardson.iterate` (`toLp_nonstationaryRichardson`). -/
+/-- **Equation (4.24)** of [quarteroni2000numerical]. Let $A, P \in \mathbb{R}^{n \times n}$, let
+$\alpha_0, \alpha_1, \dots$ be real parameters and $b, x^{(0)} \in \mathbb{R}^n$. The
+**nonstationary Richardson method** (semi-iterative method) is
+$$x^{(k+1)} = x^{(k)} + \alpha_k P^{-1} r^{(k)}, \qquad r^{(k)} = b - Ax^{(k)},$$
+with a parameter $\alpha_k$ that depends on the step.
+
+Under `WithLp.toLp 2` it is the backbone's `Richardson.iterate`
+(`QuarteroniSaccoSaleri.Chapter04.toLp_nonstationaryRichardson`). -/
 noncomputable def nonstationaryRichardson (α : ℕ → ℝ) (b x₀ : Fin n → ℝ) : ℕ → Fin n → ℝ
   | 0 => x₀
   | k + 1 => richardsonStep A P (α k) b (nonstationaryRichardson α b x₀ k)
 
-/-- **(4.25).** With the preconditioned residual `z⁽ᵏ⁾ = P⁻¹ r⁽ᵏ⁾`, one step of (4.24) solves
-`P z⁽ᵏ⁾ = r⁽ᵏ⁾`, updates the solution `x⁽ᵏ⁺¹⁾ = x⁽ᵏ⁾ + α_k z⁽ᵏ⁾` and updates the residual
-`r⁽ᵏ⁺¹⁾ = r⁽ᵏ⁾ - α_k A z⁽ᵏ⁾` (backbone `Richardson.residual_iterate_succ`); the first clause needs
-`P` nonsingular. -/
+/-- **Equation (4.25)** of [quarteroni2000numerical]. Let $P$ be nonsingular and let $x^{(k)}$ be
+the iterates of the nonstationary Richardson method (4.24). With the preconditioned residual
+$z^{(k)} = P^{-1} r^{(k)}$, one step solves $Pz^{(k)} = r^{(k)}$, updates the solution
+$$x^{(k+1)} = x^{(k)} + \alpha_k z^{(k)},$$
+and updates the residual
+$$r^{(k+1)} = r^{(k)} - \alpha_k A z^{(k)}.$$
+
+Only the first clause needs $P$ nonsingular. The residual update is the backbone's
+`Richardson.residual_iterate_succ`. -/
 theorem equation_4_25 (hP : IsUnit P) (α : ℕ → ℝ) (b x₀ : Fin n → ℝ) (k : ℕ) :
     P *ᵥ (P⁻¹ *ᵥ (b - A *ᵥ nonstationaryRichardson A P α b x₀ k)) =
         b - A *ᵥ nonstationaryRichardson A P α b x₀ k ∧
@@ -196,8 +347,9 @@ theorem equation_4_25 (hP : IsUnit P) (α : ℕ → ℝ) (b x₀ : Fin n → ℝ
   simp only [nonstationaryRichardson, richardsonStep, mulVec_add, mulVec_smul]
   abel
 
-/-- Under `WithLp.toLp 2`, the nonstationary method (4.24) is the backbone's `Richardson.iterate`
-of the operators `toEuclideanLin A` and `toEuclideanLin P⁻¹` on `EuclideanSpace ℝ (Fin n)`. -/
+/-- Under `WithLp.toLp 2`, the nonstationary Richardson method (4.24) is the backbone's
+`Richardson.iterate` of the operators `toEuclideanLin A` and `toEuclideanLin P⁻¹` on
+`EuclideanSpace ℝ (Fin n)`, with the same parameters, right-hand side and initial vector. -/
 theorem toLp_nonstationaryRichardson (α : ℕ → ℝ) (b x₀ : Fin n → ℝ) (k : ℕ) :
     (toLp 2 (nonstationaryRichardson A P α b x₀ k) : EuclideanSpace ℝ (Fin n)) =
       Richardson.iterate (toEuclideanLin A) (toEuclideanLin P⁻¹) α (toLp 2 b) (toLp 2 x₀) k := by
@@ -215,10 +367,16 @@ section Convergence
 
 variable {A P : Matrix (Fin n) (Fin n) ℝ}
 
-/-- For `P` nonsingular and any `α`, the stationary Richardson method converges to `A⁻¹ b` from
-every `x⁽⁰⁾`, for every `b`, iff `ρ(R_α) < 1`: Theorem 4.1 for the method (4.23). For `α ≠ 0` this
-is `Splitting.forall_tendsto_iff` of the splitting `richardsonStep_eq`; for `α = 0` the method is
-the identity `x ↦ x`, consistent with every system, and Theorem 4.1 applies directly. -/
+/-- Let $P \in \mathbb{R}^{n \times n}$ be nonsingular and $\alpha \in \mathbb{R}$, and let
+$R_\alpha = I - \alpha P^{-1} A$. The stationary Richardson method (4.23) converges to
+$A^{-1} b$ from every $x^{(0)}$ and for every $b$ if and only if $\rho(R_\alpha) < 1$. This is
+Theorem 4.1 for the method (4.23), on which Theorems 4.8 and 4.9 rest.
+
+For $\alpha \neq 0$ the proof is `QuarteroniSaccoSaleri.Chapter04.Splitting.forall_tendsto_iff`
+for the splitting of `QuarteroniSaccoSaleri.Chapter04.richardsonStep_eq`. For $\alpha = 0$ the
+method is the identity map, which is consistent with every system, and
+`QuarteroniSaccoSaleri.Chapter04.theorem_4_1` applies directly. The spectral radius is
+`Matrix.complexSpectralRadius`. -/
 theorem forall_tendsto_richardsonStep_iff (hP : IsUnit P) (α : ℝ) :
     (∀ b x₀, Tendsto (fun k => (richardsonStep A P α b)^[k] x₀) atTop (𝓝 (A⁻¹ *ᵥ b))) ↔
       complexSpectralRadius (1 - α • (P⁻¹ * A)) < 1 := by
@@ -232,24 +390,34 @@ theorem forall_tendsto_richardsonStep_iff (hP : IsUnit P) (α : ℝ) :
   · simp only [(richardsonStep_eq A hP hα _).1]
     rw [Splitting.forall_tendsto_iff, Splitting.preconditionedRichardson_iterationOperator]
 
-/-- **Theorem 4.8.** For any nonsingular matrix `P`, the stationary Richardson method (4.23) is
-convergent (to the solution `A⁻¹ b`, from every `x⁽⁰⁾` and for every `b`) iff
-`2 Re λ_i / (α |λ_i|²) > 1` for every eigenvalue `λ_i ∈ ℂ` of `P⁻¹ A` (4.26). Theorem 4.1 applied
-to `R_α = I - α P⁻¹ A`, whose eigenvalues are `1 - α λ_i` (backbone
-`Stationary.Splitting.complexSpectralRadius_one_sub_smul_lt_one_iff_forall`). At `α = 0` both
-sides are false — the iteration is stationary and Lean's `x / 0 = 0` — as they are at an
-eigenvalue `λ_i = 0`. -/
+/-- **Theorem 4.8** of [quarteroni2000numerical]. Let $n \ge 1$, let
+$A, P \in \mathbb{R}^{n \times n}$ with $P$ nonsingular, and let $\alpha \in \mathbb{R}$. The
+stationary Richardson method (4.23) converges to $A^{-1} b$ from every $x^{(0)}$ and for every
+$b$ if and only if every eigenvalue $\lambda_i \in \mathbb{C}$ of $P^{-1} A$ satisfies (4.26):
+$$\frac{2 \operatorname{Re} \lambda_i}{\alpha |\lambda_i|^2} > 1.$$
+
+The proof applies Theorem 4.1 to $R_\alpha = I - \alpha P^{-1} A$, whose eigenvalues are
+$1 - \alpha \lambda_i$
+(`Stationary.Splitting.complexSpectralRadius_one_sub_smul_lt_one_iff_forall`). At $\alpha = 0$
+both sides are false: the iteration does not move, and Lean evaluates a quotient $t/0$ as $0$.
+Both sides are also false when $P^{-1}A$ has the eigenvalue $\lambda_i = 0$. -/
 theorem theorem_4_8 [NeZero n] (hP : IsUnit P) (α : ℝ) :
     (∀ b x₀, Tendsto (fun k => (richardsonStep A P α b)^[k] x₀) atTop (𝓝 (A⁻¹ *ᵥ b))) ↔
       ∀ μ ∈ spectrum ℂ (complexify (P⁻¹ * A)), 1 < 2 * μ.re / (α * ‖μ‖ ^ 2) := by
   rw [forall_tendsto_richardsonStep_iff hP]
   exact Splitting.complexSpectralRadius_one_sub_smul_lt_one_iff_forall _ α
 
-/-- **Theorem 4.9, convergence.** Assume `P` is nonsingular and `P⁻¹ A` has positive real
-eigenvalues, ordered as `λ_1 ≥ λ_2 ≥ … ≥ λ_n > 0` — that is, its complex spectrum lies in
-`[λ_n, λ_1] ⊆ ℝ` with both endpoints attained and `λ_n > 0`. Then the stationary Richardson
-method (4.23) is convergent iff `0 < α < 2/λ_1`: the eigenvalues of `R_α` are `1 - α λ_i`
-(backbone `Stationary.Splitting.complexSpectralRadius_one_sub_smul_lt_one_iff`). -/
+/-- **Theorem 4.9** of [quarteroni2000numerical], convergence. Let
+$A, P \in \mathbb{R}^{n \times n}$ with $P$ nonsingular, and assume that $P^{-1} A$ has real
+positive eigenvalues $\lambda_1 \ge \lambda_2 \ge \dots \ge \lambda_n > 0$. Then the stationary
+Richardson method (4.23) converges from every $x^{(0)}$ and for every $b$ if and only if
+$$0 < \alpha < \frac{2}{\lambda_1}.$$
+
+The hypothesis on the eigenvalues says that the complex spectrum of $P^{-1}A$ lies in the real
+interval $[\lambda_n, \lambda_1]$, that both endpoints are eigenvalues, and that
+$\lambda_n > 0$; `lmax` and `lmin` stand for $\lambda_1$ and $\lambda_n$. The eigenvalues of
+$R_\alpha$ are $1 - \alpha \lambda_i$, and the proof uses
+`Stationary.Splitting.complexSpectralRadius_one_sub_smul_lt_one_iff`. -/
 theorem theorem_4_9 (hP : IsUnit P) {lmin lmax : ℝ}
     (hsub : spectrum ℂ (complexify (P⁻¹ * A)) ⊆ Complex.ofReal '' Set.Icc lmin lmax)
     (hmin : lmin ∈ spectrum ℝ (P⁻¹ * A)) (hmax : lmax ∈ spectrum ℝ (P⁻¹ * A)) (hpos : 0 < lmin)
@@ -259,11 +427,19 @@ theorem theorem_4_9 (hP : IsUnit P) {lmin lmax : ℝ}
   rw [forall_tendsto_richardsonStep_iff hP]
   exact Splitting.complexSpectralRadius_one_sub_smul_lt_one_iff hsub hmin hmax hpos α
 
-/-- **Theorem 4.9, (4.27)–(4.28).** Under the hypotheses of `theorem_4_9`, the spectral radius of
-`R_α = I - α P⁻¹ A` is minimum over `α > 0` at `α_opt = 2/(λ_1 + λ_n)`, with
-`ρ_opt = ρ(R_{α_opt}) = (λ_1 - λ_n)/(λ_1 + λ_n)` (backbone
-`Stationary.Splitting.isMinOn_complexSpectralRadius_one_sub_smul` and
-`Stationary.Splitting.complexSpectralRadius_one_sub_smul_optimal_eq`). -/
+/-- **Theorem 4.9** of [quarteroni2000numerical], equations (4.27)–(4.28). Let
+$A, P \in \mathbb{R}^{n \times n}$ and assume that $P^{-1} A$ has real positive eigenvalues
+$\lambda_1 \ge \dots \ge \lambda_n > 0$. Then, among all $\alpha > 0$, the spectral radius of
+$R_\alpha = I - \alpha P^{-1} A$ is smallest at
+$$\alpha_{\mathrm{opt}} = \frac{2}{\lambda_1 + \lambda_n},$$
+and its value there is
+$$\rho_{\mathrm{opt}} = \rho(R_{\alpha_{\mathrm{opt}}}) = \frac{\lambda_1 -
+  \lambda_n}{\lambda_1 + \lambda_n}.$$
+
+The hypothesis on the eigenvalues is encoded as in
+`QuarteroniSaccoSaleri.Chapter04.theorem_4_9`; no separate hypothesis that $P$ is nonsingular is
+needed. The proof uses `Stationary.Splitting.isMinOn_complexSpectralRadius_one_sub_smul` and
+`Stationary.Splitting.complexSpectralRadius_one_sub_smul_optimal_eq`. -/
 theorem theorem_4_9_optimal {lmin lmax : ℝ}
     (hsub : spectrum ℂ (complexify (P⁻¹ * A)) ⊆ Complex.ofReal '' Set.Icc lmin lmax)
     (hmin : lmin ∈ spectrum ℝ (P⁻¹ * A)) (hmax : lmax ∈ spectrum ℝ (P⁻¹ * A)) (hpos : 0 < lmin) :
@@ -276,8 +452,12 @@ theorem theorem_4_9_optimal {lmin lmax : ℝ}
   rw [add_comm lmin lmax] at h1 h2
   exact ⟨h1, h2⟩
 
-/-- A real symmetric matrix whose real spectrum lies in `[lmin, lmax]` with both endpoints
-attained, read in the complex form that `theorem_4_9` takes. -/
+/-- Let $M \in \mathbb{R}^{n \times n}$ be symmetric, with all its eigenvalues in
+$[\lambda_{\min}, \lambda_{\max}]$. Then the complex spectrum of $M$ lies in the real interval
+$[\lambda_{\min}, \lambda_{\max}]$. This gives the hypothesis of
+`QuarteroniSaccoSaleri.Chapter04.theorem_4_9` for a symmetric matrix.
+
+The eigenvalues are `Matrix.IsHermitian.eigenvalues`. The endpoints need not be eigenvalues. -/
 theorem spectrum_complexify_subset_of_eigenvalues {M : Matrix (Fin n) (Fin n) ℝ}
     (hM : M.IsHermitian) {lmin lmax : ℝ} (h : ∀ i, hM.eigenvalues i ∈ Set.Icc lmin lmax) :
     spectrum ℂ (complexify M) ⊆ Complex.ofReal '' Set.Icc lmin lmax := by
@@ -286,9 +466,10 @@ theorem spectrum_complexify_subset_of_eigenvalues {M : Matrix (Fin n) (Fin n) �
   rintro _ ⟨i, rfl⟩
   exact h i
 
-/-- The real spectrum of a real symmetric matrix, recovered from the complex-spectrum hypothesis
-of `theorem_4_9`: `spectrum ℂ (complexify M) ⊆ ℝ ∩ [lmin, lmax]` gives
-`spectrum ℝ M ⊆ [lmin, lmax]`. -/
+/-- Let $M \in \mathbb{R}^{n \times n}$. If the complex spectrum of $M$ lies in the real interval
+$[\lambda_{\min}, \lambda_{\max}]$, then the real spectrum of $M$ lies in
+$[\lambda_{\min}, \lambda_{\max}]$. This recovers the real spectrum from the hypothesis of
+`QuarteroniSaccoSaleri.Chapter04.theorem_4_9`. -/
 theorem spectrum_real_subset_of_spectrum_complexify_subset {M : Matrix (Fin n) (Fin n) ℝ}
     {lmin lmax : ℝ} (hsub : spectrum ℂ (complexify M) ⊆ Complex.ofReal '' Set.Icc lmin lmax) :
     spectrum ℝ M ⊆ Set.Icc lmin lmax := by
@@ -296,15 +477,29 @@ theorem spectrum_real_subset_of_spectrum_complexify_subset {M : Matrix (Fin n) (
   obtain ⟨t, ht, hte⟩ := hsub ((ofReal_mem_spectrum_complexify_iff M μ).mpr hμ)
   rwa [Complex.ofReal_inj.mp hte] at ht
 
-/-- **The sentence after Theorem 4.9.** If `P⁻¹ A` is symmetric positive definite and
-`0 < α < 2/λ_1`, `λ_1 = λ_max(P⁻¹ A)`, then `ρ(R_α) < 1` and the convergence of the Richardson
-method is monotone with respect to `‖·‖₂`: `‖R_α e‖₂ ≤ ρ(R_α) ‖e‖₂` for every `e`, because `R_α`
-is symmetric and `‖R_α‖₂ = ρ(R_α)` (backbone
-`Matrix.l2_opNorm_eq_complexSpectralRadius_of_isHermitian`). It is monotone with respect to
-`‖·‖_A` as well, `‖R_α e‖_A ≤ ρ(R_α) ‖e‖_A`, when moreover `A` is positive definite and `P` is
-symmetric (backbone
-`Stationary.Splitting.energyNorm_mulVec_iterationOperator_le_complexSpectralRadius`); the symmetry
-of `P` is not implied by that of `P⁻¹ A` and cannot be dropped (see the module documentation). -/
+/-- **Section 4.3.1** of [quarteroni2000numerical], the sentence after Theorem 4.9. Let
+$A, P \in \mathbb{R}^{n \times n}$ with $P$ nonsingular, let $P^{-1} A$ be symmetric positive
+definite with eigenvalues $\lambda_1 \ge \dots \ge \lambda_n > 0$, and let
+$0 < \alpha < 2/\lambda_1$. Then $\rho(R_\alpha) < 1$, and the convergence of the Richardson
+method is monotone with respect to $\|\cdot\|_2$:
+$$\|R_\alpha e\|_2 \le \rho(R_\alpha) \|e\|_2 \quad \text{for every } e \in \mathbb{R}^n.$$
+If moreover $A$ is symmetric positive definite and $P$ is symmetric, the convergence is also
+monotone with respect to $\|\cdot\|_A$: $\|R_\alpha e\|_A^2 \le \rho(R_\alpha)^2 \|e\|_A^2$ for
+every $e$.
+
+**Correction.** The source states that the convergence is monotone with respect to $\|\cdot\|_A$
+when $P^{-1}A$ is symmetric positive definite. This clause needs $P$ symmetric, which the
+symmetry of $P^{-1}A$ does not imply: for $A = \operatorname{diag}(1, 4)$, $P^{-1}A =
+\begin{bmatrix} 2 & 1 \\ 1 & 2 \end{bmatrix}$ and $\alpha = 3/5$, the matrix $R_\alpha$
+increases the $A$-norm of $(1, 0)$. The clause is stated here with the hypothesis that $P$ is
+symmetric.
+
+The bound in $\|\cdot\|_2$ holds because $R_\alpha$ is symmetric and
+$\|R_\alpha\|_2 = \rho(R_\alpha)$ (`Matrix.l2_opNorm_eq_complexSpectralRadius_of_isHermitian`).
+The bound in $\|\cdot\|_A$ is
+`Stationary.Splitting.energyNorm_mulVec_iterationOperator_le_complexSpectralRadius`, written
+with $\|v\|_A^2 = (Av)^T v$. The hypothesis on the eigenvalues is encoded as in
+`QuarteroniSaccoSaleri.Chapter04.theorem_4_9`. -/
 theorem richardson_monotone_of_posDef (hP : IsUnit P) (hM : (P⁻¹ * A).PosDef) {lmin lmax : ℝ}
     (hsub : spectrum ℂ (complexify (P⁻¹ * A)) ⊆ Complex.ofReal '' Set.Icc lmin lmax)
     (hmin : lmin ∈ spectrum ℝ (P⁻¹ * A)) (hmax : lmax ∈ spectrum ℝ (P⁻¹ * A)) (hpos : 0 < lmin)
@@ -332,12 +527,19 @@ theorem richardson_monotone_of_posDef (hP : IsUnit P) (hM : (P⁻¹ * A).PosDef)
       (Splitting.preconditionedRichardson A hP hα0.ne') hA hm e
     rwa [Splitting.preconditionedRichardson_iterationOperator] at h
 
-/-- **(4.29).** If `P⁻¹ A` is symmetric positive definite, with eigenvalues in `[λ_n, λ_1]`,
-`0 < λ_n`, both attained, then in terms of `K₂(P⁻¹ A) = ‖P⁻¹ A‖₂ ‖A⁻¹ P‖₂` the optimal radius and
-parameter of Theorem 4.9 are `ρ_opt = (K₂(P⁻¹ A) - 1)/(K₂(P⁻¹ A) + 1)` and
-`α_opt = 2 ‖A⁻¹ P‖₂ / (K₂(P⁻¹ A) + 1)` (backbone
+/-- **Equation (4.29)** of [quarteroni2000numerical]. Let $A, P \in \mathbb{R}^{n \times n}$ and let
+$P^{-1} A$ be symmetric positive definite with eigenvalues
+$\lambda_1 \ge \dots \ge \lambda_n > 0$. In terms of the spectral condition number
+$K_2(P^{-1}A) = \|P^{-1}A\|_2 \|A^{-1}P\|_2$, the optimal spectral radius and the optimal
+parameter of Theorem 4.9 are
+$$\rho_{\mathrm{opt}} = \frac{K_2(P^{-1}A) - 1}{K_2(P^{-1}A) + 1}, \qquad
+  \alpha_{\mathrm{opt}} = \frac{2 \|A^{-1} P\|_2}{K_2(P^{-1}A) + 1}.$$
+
+The condition number is `NormedRing.condNumber` for the spectral norm, and
+$(P^{-1}A)^{-1} = A^{-1} P$. The hypothesis on the eigenvalues is encoded as in
+`QuarteroniSaccoSaleri.Chapter04.theorem_4_9`. The proof uses
 `Stationary.Splitting.complexSpectralRadius_one_sub_smul_optimal_eq_condNumber` and
-`Stationary.Splitting.two_div_add_eq_mul_norm_inv_div_condNumber`, with `(P⁻¹ A)⁻¹ = A⁻¹ P`). -/
+`Stationary.Splitting.two_div_add_eq_mul_norm_inv_div_condNumber`. -/
 theorem equation_4_29 (hM : (P⁻¹ * A).PosDef) {lmin lmax : ℝ}
     (hsub : spectrum ℂ (complexify (P⁻¹ * A)) ⊆ Complex.ofReal '' Set.Icc lmin lmax)
     (hmin : lmin ∈ spectrum ℝ (P⁻¹ * A)) (hmax : lmax ∈ spectrum ℝ (P⁻¹ * A)) (hpos : 0 < lmin) :
@@ -354,13 +556,25 @@ theorem equation_4_29 (hM : (P⁻¹ * A).PosDef) {lmin lmax : ℝ}
   exact ⟨Splitting.complexSpectralRadius_one_sub_smul_optimal_eq_condNumber hM.1 hsub' hmin hmax
     hpos, Splitting.two_div_add_eq_mul_norm_inv_div_condNumber hM.1 hsub' hmin hmax hpos⟩
 
-/-- **Corollary 4.1, the non preconditioned method.** Let `A` be symmetric positive definite, with
-extreme eigenvalues `λ_min(A)`, `λ_max(A)`. Then the non preconditioned stationary Richardson method
-(`P = I`) is convergent for `0 < α < 2/λ_max(A)` — the range Theorem 4.9 supplies and the
-corollary omits (for `α = 3/λ_max(A)` the method diverges) — and, for every `α`,
-`‖e⁽ᵏ⁺¹⁾‖_A ≤ ρ(R_α) ‖e⁽ᵏ⁾‖_A` (4.30): the error obeys `e⁽ᵏ⁺¹⁾ = R_α e⁽ᵏ⁾` with `R_α = I - α A`
-(`equation_4_4`), and `‖R_α e‖_A² ≤ ρ(R_α)² ‖e‖_A²` for every `e` (backbone
-`Stationary.Splitting.energyNorm_preconditionedRichardson_mulVec_le` at `P = I`). -/
+/-- **Corollary 4.1** of [quarteroni2000numerical], the non preconditioned method. Let
+$A \in \mathbb{R}^{n \times n}$ be symmetric positive definite, with real spectrum in
+$[\lambda_{\min}, \lambda_{\max}]$ and both endpoints eigenvalues, and let
+$\alpha \in \mathbb{R}$. Consider the non preconditioned stationary Richardson method ($P = I$).
+If $0 < \alpha < 2/\lambda_{\max}$, the method converges to $A^{-1} b$ from every $x^{(0)}$ and
+for every $b$. For every $\alpha$, the method is the method (4.2) with
+$B = R_\alpha = I - \alpha A$ and $f = \alpha b$, so that the error satisfies
+$e^{(k+1)} = R_\alpha e^{(k)}$; and $\|R_\alpha e\|_A \le \rho(R_\alpha) \|e\|_A$ for every
+$e \in \mathbb{R}^n$, which gives (4.30):
+$$\|e^{(k+1)}\|_A \le \rho(R_\alpha) \|e^{(k)}\|_A.$$
+
+**Correction.** The source states that the non preconditioned stationary Richardson method is
+convergent, with no condition on $\alpha$. Convergence needs the range
+$0 < \alpha < 2/\lambda_{\max}(A)$ of Theorem 4.9: for $\alpha = 3/\lambda_{\max}(A)$ the method
+diverges. The estimate (4.30) holds for every $\alpha$.
+
+The error relation is `QuarteroniSaccoSaleri.Chapter04.equation_4_4`. The bound in $\|\cdot\|_A$
+is stated as $(AR_\alpha e)^T R_\alpha e \le \rho(R_\alpha)^2 (Ae)^T e$, and it is
+`Stationary.Splitting.energyNorm_preconditionedRichardson_mulVec_le` at $P = I$. -/
 theorem corollary_4_1 (hA : A.PosDef) {lmin lmax : ℝ} (hsub : spectrum ℝ A ⊆ Set.Icc lmin lmax)
     (hmin : lmin ∈ spectrum ℝ A) (hmax : lmax ∈ spectrum ℝ A) (α : ℝ) :
     (0 < α → α < 2 / lmax →
@@ -386,13 +600,19 @@ theorem corollary_4_1 (hA : A.PosDef) {lmin lmax : ℝ} (hsub : spectrum ℝ A �
     · have h := Splitting.energyNorm_preconditionedRichardson_mulVec_le hA Matrix.PosDef.one hα e
       rwa [inv_one, Matrix.one_mul] at h
 
-/-- **Corollary 4.1, the preconditioned method**, in the generality of the book's closing remark:
-if `P` and `A` are symmetric positive definite (no hypothesis on `P⁻¹ A`, which the corollary
-also asks to be symmetric positive definite and which is symmetric only when `P` and `A`
-commute), then for every `α ≠ 0` the inequality (4.30) holds for the preconditioned method,
-`‖R_α e‖_A² ≤ ρ(R_α)² ‖e‖_A²` with `R_α = I - α P⁻¹ A` (backbone
-`Stationary.Splitting.energyNorm_preconditionedRichardson_mulVec_le`: `R_α` is `A`-self-adjoint
-because `A R_α = A - α A P⁻¹ A` is symmetric). -/
+/-- **Corollary 4.1** of [quarteroni2000numerical], the preconditioned method. Let
+$A, P \in \mathbb{R}^{n \times n}$ be symmetric positive definite, let $\alpha \neq 0$ and
+$R_\alpha = I - \alpha P^{-1} A$. Then the estimate (4.30) holds for the preconditioned method:
+$$\|R_\alpha e\|_A^2 \le \rho(R_\alpha)^2 \|e\|_A^2 \quad \text{for every } e \in
+  \mathbb{R}^n.$$
+
+**Generalization.** The corollary also asks $P^{-1}A$ to be symmetric positive definite, and
+$P^{-1}A$ is symmetric only when $P$ and $A$ commute. The estimate needs only $P$ and $A$
+symmetric positive definite, as the closing sentence of the corollary in the source says.
+
+The proof is `Stationary.Splitting.energyNorm_preconditionedRichardson_mulVec_le`: $R_\alpha$ is
+self-adjoint for the $A$-inner product, because $AR_\alpha = A - \alpha A P^{-1} A$ is
+symmetric. -/
 theorem corollary_4_1_preconditioned (hA : A.PosDef) (hP : P.PosDef) {α : ℝ} (hα : α ≠ 0)
     (e : Fin n → ℝ) :
     (A *ᵥ ((1 - α • (P⁻¹ * A)) *ᵥ e)) ⬝ᵥ ((1 - α • (P⁻¹ * A)) *ᵥ e) ≤
@@ -407,12 +627,17 @@ section Preconditioning
 
 variable {A P : Matrix (Fin n) (Fin n) ℝ}
 
-/-- **Remark 4.2, (4.32).** Let `A` and `P` be real symmetric matrices with `P` positive
-definite. The eigenvalues `λ` of the preconditioned matrix `P⁻¹ A` are the solutions of the
-generalized eigenvalue problem `A x = λ P x` with an eigenvector `x ≠ 0` (backbone
-`Matrix.mem_spectrum_inv_mul_iff_exists_mulVec_eq_smul`); they are all real (backbone
-`Matrix.pencilSpectrum_subset_range_ofReal_of_posDef`, Theorem 5.7); and each is the generalized
-Rayleigh quotient `λ = (A x, x)/(P x, x)` of its eigenvector. -/
+/-- **Remark 4.2** of [quarteroni2000numerical], equation (4.32). Let
+$A, P \in \mathbb{R}^{n \times n}$ be symmetric, with $P$ positive definite. A complex number
+$\lambda$ is an eigenvalue of $P^{-1} A$ if and only if the generalized eigenvalue problem
+$Ax = \lambda Px$ has a solution $x \in \mathbb{C}^n$, $x \neq 0$. Every eigenvalue of $P^{-1}A$
+is real. If $\lambda \in \mathbb{R}$ and $x \in \mathbb{R}^n$, $x \neq 0$, satisfy
+$Ax = \lambda Px$, then $\lambda$ is the generalized Rayleigh quotient
+$$\lambda = \frac{(Ax, x)}{(Px, x)}.$$
+
+The real matrices act on $\mathbb{C}^n$ through `Matrix.complexify`. The first clause is
+`Matrix.mem_spectrum_inv_mul_iff_exists_mulVec_eq_smul`, and the second is
+`Matrix.pencilSpectrum_subset_range_ofReal_of_posDef` (Theorem 5.7 of the source). -/
 theorem remark_4_2 (hA : A.IsHermitian) (hP : P.PosDef) :
     (∀ μ : ℂ, μ ∈ spectrum ℂ (complexify (P⁻¹ * A)) ↔
         ∃ x : Fin n → ℂ, x ≠ 0 ∧ complexify A *ᵥ x = μ • (complexify P *ᵥ x)) ∧
@@ -432,13 +657,21 @@ theorem remark_4_2 (hA : A.IsHermitian) (hP : P.PosDef) :
       rwa [star_trivial, dotProduct_comm] at this
     rw [hμ, smul_dotProduct, smul_eq_mul, mul_div_cancel_right₀ _ hpos.ne']
 
-/-- **(4.33).** Let `A` and `P` be real symmetric with `P` positive definite, and let
-`λ_min(A) ≤ λ_i(A) ≤ λ_max(A)` and `λ_min(P) ≤ λ_i(P) ≤ λ_max(P)` enclose their eigenvalues
-(Mathlib's `Matrix.IsHermitian.eigenvalues`), with `0 ≤ λ_min(A)` — the sign the printed bound
-presupposes, `A` being positive definite in the book's context — and `0 < λ_min(P)`. Then every
-eigenvalue `λ` of `P⁻¹ A` is real and satisfies
-`λ_min(A)/λ_max(P) ≤ λ ≤ λ_max(A)/λ_min(P)` (backbone `Matrix.spectrum_inv_mul_subset_Icc_div`,
-proved from the generalized Rayleigh quotient rather than the Courant–Fischer theorem). -/
+/-- **Equation (4.33)** of [quarteroni2000numerical]. Let $A, P \in \mathbb{R}^{n \times n}$ be
+symmetric with $P$ positive definite. Let $a \le \lambda_i(A) \le a'$ and
+$p \le \lambda_i(P) \le p'$ for all eigenvalues $\lambda_i(A)$ of $A$ and $\lambda_i(P)$ of $P$,
+with $0 \le a$ and $0 < p$. Then every eigenvalue $\lambda$ of $P^{-1} A$ is real and
+$$\frac{a}{p'} \le \lambda \le \frac{a'}{p}.$$
+The source states this for $a = \lambda_{\min}(A)$, $a' = \lambda_{\max}(A)$,
+$p = \lambda_{\min}(P)$ and $p' = \lambda_{\max}(P)$.
+
+**Reading.** The source does not state the sign of $\lambda_{\min}(A)$. The printed lower bound
+presupposes $\lambda_{\min}(A) \ge 0$, as $A$ is positive definite in the context of the source,
+and the declaration assumes $0 \le a$.
+
+The eigenvalues are `Matrix.IsHermitian.eigenvalues`. The proof is
+`Matrix.spectrum_inv_mul_subset_Icc_div`, which uses the generalized Rayleigh quotient of Remark
+4.2 in place of the Courant–Fischer theorem. -/
 theorem equation_4_33 (hA : A.IsHermitian) (hP : P.PosDef) {a a' p p' : ℝ}
     (haA : ∀ i, hA.eigenvalues i ∈ Set.Icc a a') (hpP : ∀ i, hP.1.eigenvalues i ∈ Set.Icc p p')
     (ha : 0 ≤ a) (hp : 0 < p) :
@@ -475,19 +708,24 @@ section Gradient
 
 variable (A : Matrix (Fin n) (Fin n) ℝ) (b : EuclideanSpace ℝ (Fin n))
 
-/-- **The energy of the system** `A x = b` (§4.3.3): the quadratic form
-`Φ(y) = ½ yᵀ A y - yᵀ b` on `ℝⁿ`. It is the backbone's `energyFunctional (toEuclideanLin A) b`
-(`energy_eq_energyFunctional`). -/
+/-- **Section 4.3.3** of [quarteroni2000numerical], the energy of the system $Ax = b$. For
+$A \in \mathbb{R}^{n \times n}$ and $b \in \mathbb{R}^n$, the **energy** is the quadratic
+function
+$$\Phi(y) = \frac12 y^T A y - y^T b, \qquad y \in \mathbb{R}^n.$$
+
+It is the backbone's `energyFunctional (toEuclideanLin A) b`
+(`QuarteroniSaccoSaleri.Chapter04.energy_eq_energyFunctional`). -/
 noncomputable def energy (y : EuclideanSpace ℝ (Fin n)) : ℝ :=
   1 / 2 * inner ℝ (toEuclideanLin A y) y - inner ℝ y b
 
-/-- The book's energy `Φ` is the backbone's energy functional `½ ⟪A y, y⟫ - ⟪b, y⟫`. -/
+/-- The energy $\Phi$ of §4.3.3 is the backbone's energy functional
+$y \mapsto \frac12 (Ay, y) - (b, y)$, that is `energyFunctional (toEuclideanLin A) b`. -/
 theorem energy_eq_energyFunctional (y : EuclideanSpace ℝ (Fin n)) :
     energy A b y = energyFunctional (toEuclideanLin A) b y := by
   simp only [energy, energyFunctional, RCLike.re_to_real, real_inner_comm b y]
   ring
 
-/-- The quadratic form of `A` is that of its symmetric part `½ (Aᵀ + A)`. -/
+/-- The energy of $A$ equals the energy of its symmetric part $\frac12 (A^T + A)$. -/
 private theorem energy_eq_energy_symm (y : EuclideanSpace ℝ (Fin n)) :
     energy A b y = energy ((1 / 2 : ℝ) • (Aᵀ + A)) b y := by
   have h : inner ℝ (toEuclideanLin Aᵀ y) y = inner ℝ (toEuclideanLin A y) y := by
@@ -497,9 +735,14 @@ private theorem energy_eq_energy_symm (y : EuclideanSpace ℝ (Fin n)) :
     inner_add_left, h, RCLike.conj_to_real]
   ring
 
-/-- **(4.34).** The gradient of the energy is `∇Φ(y) = ½ (Aᵀ + A) y - b`, which is `A y - b` for
-symmetric `A` (backbone `hasGradientAt_energyFunctional_of_finiteDimensional`); consequently a
-critical point of `Φ`, `∇Φ(x) = 0`, solves the system `A x = b`. -/
+/-- **Equation (4.34)** of [quarteroni2000numerical]. Let $A \in \mathbb{R}^{n \times n}$ and
+$b \in \mathbb{R}^n$. The energy $\Phi$ has at every $y$ the gradient
+$$\nabla \Phi(y) = \frac12 (A^T + A) y - b,$$
+which is $Ay - b$ when $A$ is symmetric. Consequently a critical point $x$ of $\Phi$,
+$\nabla \Phi(x) = Ax - b = 0$, solves the system $Ax = b$.
+
+The gradient is Mathlib's `HasGradientAt` on `EuclideanSpace ℝ (Fin n)`. The proof uses
+`hasGradientAt_energyFunctional_of_finiteDimensional`. -/
 theorem equation_4_34 (y : EuclideanSpace ℝ (Fin n)) :
     HasGradientAt (energy A b) (toEuclideanLin ((1 / 2 : ℝ) • (Aᵀ + A)) y - b) y ∧
       (A.IsSymm → HasGradientAt (energy A b) (toEuclideanLin A y - b) y) ∧
@@ -513,10 +756,15 @@ theorem equation_4_34 (y : EuclideanSpace ℝ (Fin n)) :
   refine hgrad _ ?_
   rw [IsSymm, transpose_smul, transpose_add, transpose_transpose, add_comm]
 
-/-- **(4.35) and the display before it.** If `A` is symmetric positive definite and `x` solves
-`A x = b`, then `Φ(y) = Φ(x) + ½ (y - x)ᵀ A (y - x)` for every `y`, that is
-`½ ‖y - x‖_A² = Φ(y) - Φ(x)`; hence `Φ(y) > Φ(x)` for `y ≠ x` and `x` is the minimizer of the
-energy (backbone `LinearMap.IsSymmetricCoercive.energyFunctional_sub_eq`). -/
+/-- **Equation (4.35)** of [quarteroni2000numerical] and the display before it. Let
+$A \in \mathbb{R}^{n \times n}$ be symmetric positive definite and let $x$ solve $Ax = b$. Then
+for every $y \in \mathbb{R}^n$
+$$\Phi(y) = \Phi(x) + \frac12 (y - x)^T A (y - x),$$
+that is $\frac12 \|y - x\|_A^2 = \Phi(y) - \Phi(x)$. Hence $\Phi(y) > \Phi(x)$ for every
+$y \neq x$, and $x$ is the unique minimizer of the energy.
+
+The energy norm is `energyNorm (toEuclideanLin A)`. The proof uses
+`LinearMap.IsSymmetricCoercive.energyFunctional_sub_eq`. -/
 theorem equation_4_35 (hA : A.PosDef) {x : EuclideanSpace ℝ (Fin n)} (hx : toEuclideanLin A x = b)
     (y : EuclideanSpace ℝ (Fin n)) :
     energy A b y = energy A b x + 1 / 2 * inner ℝ (toEuclideanLin A (y - x)) (y - x) ∧
@@ -531,25 +779,37 @@ theorem equation_4_35 (hA : A.PosDef) {x : EuclideanSpace ℝ (Fin n)} (hx : toE
   have := hA'.energyNorm_pos (sub_ne_zero.mpr hy)
   nlinarith
 
-/-- **(4.36)–(4.37), the gradient (steepest descent) method.** From `x⁽ᵏ⁾`, with the residual
-`r⁽ᵏ⁾ = b - A x⁽ᵏ⁾` as descent direction, `x⁽ᵏ⁺¹⁾ = x⁽ᵏ⁾ + α_k r⁽ᵏ⁾` with the dynamic parameter
-`α_k = r⁽ᵏ⁾ᵀ r⁽ᵏ⁾ / r⁽ᵏ⁾ᵀ A r⁽ᵏ⁾` minimizing `Φ` along the line; the `k`-th iterate is
-`(gradientStep A b)^[k] x⁽⁰⁾`. It is the backbone's `Projection.steepestDescentStep`
-(`gradientStep_eq`). -/
+/-- **Equations (4.36)–(4.37)** of [quarteroni2000numerical], the gradient (steepest descent)
+method. Let $A \in \mathbb{R}^{n \times n}$ and $b \in \mathbb{R}^n$. One step of the **gradient
+method** takes the residual $r = b - Ax$ as the descent direction and maps $x$ to
+$$x + \alpha r, \qquad \alpha = \frac{r^T r}{r^T A r}.$$
+For symmetric positive definite $A$ this dynamic parameter $\alpha$ minimizes $\Phi$ along the
+line through $x$ in the direction $r$.
+
+The $k$-th iterate from $x^{(0)}$ is `(gradientStep A b)^[k] x₀`. If $r = 0$, the quotient is
+$0/0$, which Lean evaluates as $0$, and the step leaves $x$ unchanged. The step is the
+backbone's `Projection.steepestDescentStep` (`QuarteroniSaccoSaleri.Chapter04.gradientStep_eq`). -/
 noncomputable def gradientStep (x : EuclideanSpace ℝ (Fin n)) : EuclideanSpace ℝ (Fin n) :=
   x + (inner ℝ (b - toEuclideanLin A x) (b - toEuclideanLin A x) /
     inner ℝ (b - toEuclideanLin A x) (toEuclideanLin A (b - toEuclideanLin A x))) •
       (b - toEuclideanLin A x)
 
-/-- The gradient step is the steepest-descent step `Projection.steepestDescentStep` of the
-backbone. -/
+/-- The gradient step of (4.37) is the backbone's steepest-descent step
+`Projection.steepestDescentStep (toEuclideanLin A) b`. -/
 theorem gradientStep_eq (x : EuclideanSpace ℝ (Fin n)) :
     gradientStep A b x = Projection.steepestDescentStep (toEuclideanLin A) b x := rfl
 
-/-- **The sentence after (4.37).** The gradient method is the nonstationary Richardson method
-(4.24) with `P = I` and the parameters `α_k` of (4.37) read along its own iterates: the
-backbone's `Richardson.iterate` (`Richardson.iterate_gradient_eq_steepestDescentStep`), and on
-coordinates `nonstationaryRichardson A 1` (`toLp_nonstationaryRichardson`). -/
+/-- **Equation (4.37)** of [quarteroni2000numerical], the sentence after it. The gradient method is
+the nonstationary Richardson method (4.24) with $P = I$ and the parameters
+$$\alpha_j = \frac{r^{(j)T} r^{(j)}}{r^{(j)T} A r^{(j)}}, \qquad r^{(j)} = b - Ax^{(j)},$$
+computed along its own iterates $x^{(j)}$. That is, for every $x^{(0)}$ and every $k$, the
+$k$-th gradient iterate is the $k$-th iterate of the backbone's `Richardson.iterate` with
+$P^{-1} = I$ and these parameters, and it is also the $k$-th iterate of
+`QuarteroniSaccoSaleri.Chapter04.nonstationaryRichardson A 1` on coordinates.
+
+The first identity is `Richardson.iterate_gradient_eq_steepestDescentStep`, and the second
+follows from `QuarteroniSaccoSaleri.Chapter04.toLp_nonstationaryRichardson`. The coordinate
+vectors of $b$ and $x^{(0)}$ are `WithLp.ofLp b` and `WithLp.ofLp x₀`. -/
 theorem equation_4_37 (x₀ : EuclideanSpace ℝ (Fin n)) (k : ℕ) :
     (gradientStep A b)^[k] x₀ = Richardson.iterate (toEuclideanLin A) LinearMap.id
         (fun j => inner ℝ (b - toEuclideanLin A ((gradientStep A b)^[j] x₀))
@@ -570,9 +830,11 @@ theorem equation_4_37 (x₀ : EuclideanSpace ℝ (Fin n)) (k : ℕ) :
     WithLp.toLp_ofLp]
   exact h
 
-/-- The extreme eigenvalues of a real symmetric matrix of positive order: `lmin` and `lmax` with
-`spectrum ℝ A ⊆ [lmin, lmax]`, both attained, and all of `Matrix.IsHermitian.eigenvalues` in
-between. -/
+/-- Let $n \ge 1$ and let $A \in \mathbb{R}^{n \times n}$ be symmetric. Then $A$ has extreme
+eigenvalues $\lambda_{\min}$ and $\lambda_{\max}$: the real spectrum of $A$ lies in
+$[\lambda_{\min}, \lambda_{\max}]$, both endpoints are eigenvalues, and all of
+`Matrix.IsHermitian.eigenvalues` lie in $[\lambda_{\min}, \lambda_{\max}]$. This supplies the
+hypotheses on the spectrum in Theorem 4.9 and Corollary 4.1. -/
 theorem exists_extreme_eigenvalues [NeZero n] {A : Matrix (Fin n) (Fin n) ℝ}
     (hA : A.IsHermitian) :
     ∃ lmin lmax : ℝ, spectrum ℝ A ⊆ Set.Icc lmin lmax ∧ lmin ∈ spectrum ℝ A ∧
@@ -590,22 +852,33 @@ theorem exists_extreme_eigenvalues [NeZero n] {A : Matrix (Fin n) (Fin n) ℝ}
   · rw [hA.spectrum_real_eq_range_eigenvalues]
     exact ⟨i₁, rfl⟩
 
-/-- The spectral condition number of a symmetric positive definite matrix is the ratio of its
-extreme eigenvalues, `K₂(A) = λ_max/λ_min` (the sentence after Theorem 4.10; backbone
-`Stationary.Splitting.condNumber_eq_div_of_spectrum`). -/
+/-- Let $A \in \mathbb{R}^{n \times n}$ be symmetric positive definite, with real spectrum in
+$[\lambda_{\min}, \lambda_{\max}]$ and both endpoints eigenvalues. Then the spectral condition
+number of $A$ is
+$$K_2(A) = \frac{\lambda_{\max}}{\lambda_{\min}}.$$
+This is the sentence after Theorem 4.10.
+
+The condition number is `NormedRing.condNumber A` for the spectral norm. The proof is
+`Stationary.Splitting.condNumber_eq_div_of_spectrum`. -/
 theorem condNumber_eq_div_of_posDef {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosDef) {lmin lmax : ℝ}
     (hsub : spectrum ℝ A ⊆ Set.Icc lmin lmax) (hmin : lmin ∈ spectrum ℝ A)
     (hmax : lmax ∈ spectrum ℝ A) : κ A = lmax / lmin :=
   Splitting.condNumber_eq_div_of_spectrum hA.1 hsub hmin hmax
     (open scoped MatrixOrder in hA.isStrictlyPositive.spectrum_pos hmin)
 
-/-- **Theorem 4.10.** Let `A` be symmetric positive definite and `x` the solution of `A x = b`.
-Then the gradient method converges for any initial datum `x⁽⁰⁾`, and (4.38)
-`‖e⁽ᵏ⁺¹⁾‖_A ≤ (K₂(A) - 1)/(K₂(A) + 1) ‖e⁽ᵏ⁾‖_A`, `K₂(A) = λ_max/λ_min` being the spectral
-condition number. The one-step estimate is the backbone's
-`Projection.energyNorm_steepestDescentStep_le` (the book's argument: the gradient step beats the
-optimal Richardson step of Corollary 4.1 in the `A`-norm), and the convergence is
-`Projection.tendsto_iterate_steepestDescentStep`. -/
+/-- **Theorem 4.10** of [quarteroni2000numerical]. Let $n \ge 1$, let
+$A \in \mathbb{R}^{n \times n}$ be symmetric positive definite and let $x$ solve $Ax = b$. Then
+the gradient method converges to $x$ for any initial datum $x^{(0)}$. Moreover, if $y'$ is the
+gradient step from any $y \in \mathbb{R}^n$, then
+$$\|x - y'\|_A \le \frac{K_2(A) - 1}{K_2(A) + 1} \|x - y\|_A,$$
+where $K_2(A) = \lambda_{\max}/\lambda_{\min}$ is the spectral condition number. For
+$y = x^{(k)}$ this is (4.38): $\|e^{(k+1)}\|_A \le \frac{K_2(A) - 1}{K_2(A) + 1} \|e^{(k)}\|_A$.
+
+The one-step estimate is the backbone's `Projection.energyNorm_steepestDescentStep_le`. The
+argument of the source is that the gradient step does at least as well in the $A$-norm as the
+optimal Richardson step of Corollary 4.1. The convergence is
+`Projection.tendsto_iterate_steepestDescentStep`. The condition number is
+`NormedRing.condNumber A`. -/
 theorem theorem_4_10 [NeZero n] (hA : A.PosDef) {x : EuclideanSpace ℝ (Fin n)}
     (hx : toEuclideanLin A x = b) :
     (∀ x₀, Tendsto (fun k => (gradientStep A b)^[k] x₀) atTop (𝓝 x)) ∧
@@ -628,27 +901,41 @@ section ConjugateGradient
 
 variable (A : Matrix (Fin n) (Fin n) ℝ) (b : EuclideanSpace ℝ (Fin n))
 
-/-- **Definition 4.4.** The point `x` (the book says "direction `x⁽ᵏ⁾`") is *optimal with respect
-to the direction* `p` when `Φ(x) ≤ Φ(x + λ p)` for every `λ ∈ ℝ` (4.40); the book assumes
-`p ≠ 0`, which nothing below needs. -/
+/-- **Definition 4.4** of [quarteroni2000numerical]. Let $A \in \mathbb{R}^{n \times n}$ and
+$b \in \mathbb{R}^n$, with the energy $\Phi$. A point $x \in \mathbb{R}^n$ is **optimal with
+respect to the direction** $p \in \mathbb{R}^n$ if (4.40) holds:
+$$\Phi(x) \le \Phi(x + \lambda p) \quad \text{for every } \lambda \in \mathbb{R}.$$
+
+**Typo.** The source writes "direction $x^{(k)}$" for the point $x^{(k)}$.
+
+**Generalization.** The source assumes $p \neq 0$. The definition does not, and no result below
+needs it.
+
+The energy $\Phi$ is `QuarteroniSaccoSaleri.Chapter04.energy A b`. -/
 def definition_4_4 (x p : EuclideanSpace ℝ (Fin n)) : Prop :=
   ∀ t : ℝ, energy A b x ≤ energy A b (x + t • p)
 
-/-- **Definition 4.4, second sentence.** `x` is *optimal with respect to a vector space* `V` when it
-is optimal with respect to every direction in `V`. -/
+/-- **Definition 4.4** of [quarteroni2000numerical], the second sentence. A point
+$x \in \mathbb{R}^n$ is **optimal with respect to a vector space** $V \subseteq \mathbb{R}^n$ if
+it is optimal with respect to every direction $p \in V$. -/
 def IsOptimalWrtSubspace (x : EuclideanSpace ℝ (Fin n))
     (V : Submodule ℝ (EuclideanSpace ℝ (Fin n))) : Prop :=
   ∀ p ∈ V, definition_4_4 A b x p
 
 variable {A b}
 
-/-- **The displays after Definition 4.4.** For `A` symmetric positive definite, `x` is optimal
-with respect to `p` iff `p ⟂ r`, `r = b - A x` the residual:
-`∂Φ/∂λ (x + λ p) = pᵀ(A x - b) + λ pᵀ A p` vanishes at `λ = 0` iff `pᵀ r = 0` (backbone
-`inner_residual_eq_zero_iff_forall_quadratic_add_smul_le`). Hence `x` is optimal with respect to
-`V` iff `r ∈ Vᗮ`, and for `x ∈ x₀ + V` that is the Galerkin condition
-`IsGalerkin (toEuclideanLin A) b x₀ V x` of the backbone, which is what the proof of Theorem 4.11
-uses. -/
+/-- **Section 4.3.4** of [quarteroni2000numerical], the displays after Definition 4.4. Let
+$A \in \mathbb{R}^{n \times n}$ be symmetric positive definite, let
+$x, p, x^{(0)} \in \mathbb{R}^n$, let $V$ be a subspace of $\mathbb{R}^n$, and let $r = b - Ax$.
+Then $x$ is optimal with respect to $p$ if and only if $p^T r = 0$, and $x$ is optimal with
+respect to $V$ if and only if $r \in V^\perp$. If moreover $x \in x^{(0)} + V$, then $x$ is
+optimal with respect to $V$ if and only if $x$ satisfies the Galerkin condition for $V$:
+$x - x^{(0)} \in V$ and $r \perp V$.
+
+The first equivalence holds because $\frac{\partial \Phi}{\partial \lambda}(x + \lambda p) = p^T
+(Ax - b) + \lambda p^T A p$ vanishes at $\lambda = 0$ exactly when $p^T r = 0$
+(`inner_residual_eq_zero_iff_forall_quadratic_add_smul_le`). The Galerkin condition is the
+backbone's `IsGalerkin (toEuclideanLin A) b x₀ V x`, which the proof of Theorem 4.11 uses. -/
 theorem definition_4_4_iff (hA : A.PosDef) (x p : EuclideanSpace ℝ (Fin n))
     (V : Submodule ℝ (EuclideanSpace ℝ (Fin n))) (x₀ : EuclideanSpace ℝ (Fin n)) :
     (definition_4_4 A b x p ↔ inner ℝ p (b - toEuclideanLin A x) = 0) ∧
@@ -666,9 +953,11 @@ theorem definition_4_4_iff (hA : A.PosDef) (x p : EuclideanSpace ℝ (Fin n))
     exact forall₂_congr fun p _ => hdir p
   exact ⟨hdir p, hsub, fun hmem => ⟨fun h => ⟨hmem, hsub.1 h⟩, fun h => hsub.2 h.orth⟩⟩
 
-/-- **The display `0 = pᵀ r⁽ᵏ⁺¹⁾ = pᵀ (r⁽ᵏ⁾ - A q) = -pᵀ A q`.** If `x` is optimal with respect to
-`p` and `x' = x + q`, then `x'` is still optimal with respect to `p` iff `pᵀ A q = 0`: to preserve
-optimality the descent directions must be `A`-orthogonal, or `A`-conjugate. -/
+/-- **Section 4.3.4** of [quarteroni2000numerical], the display $0 = p^T r^{(k+1)} = p^T (r^{(k)} -
+Aq) = -p^T A q$. Let $A \in \mathbb{R}^{n \times n}$ be symmetric positive definite, let $x$ be
+optimal with respect to $p$, and let $q \in \mathbb{R}^n$. Then $x + q$ is optimal with respect
+to $p$ if and only if $p^T A q = 0$. Hence the descent directions must be $A$-orthogonal, or
+$A$-conjugate, to preserve optimality. -/
 theorem optimal_preserved_iff_conjugate (hA : A.PosDef) {x p : EuclideanSpace ℝ (Fin n)}
     (hx : definition_4_4 A b x p) (q : EuclideanSpace ℝ (Fin n)) :
     definition_4_4 A b (x + q) p ↔ inner ℝ p (toEuclideanLin A q) = 0 := by
@@ -678,17 +967,27 @@ theorem optimal_preserved_iff_conjugate (hA : A.PosDef) {x p : EuclideanSpace �
 
 variable (A b)
 
-/-- **(4.39).** The step length `α_k = p⁽ᵏ⁾ᵀ r⁽ᵏ⁾ / p⁽ᵏ⁾ᵀ A p⁽ᵏ⁾` minimizing `Φ(x⁽ᵏ⁾ + α p⁽ᵏ⁾)`,
-computed on a state `(x, r, p)`. -/
+/-- **Equation (4.39)** of [quarteroni2000numerical]. On a state $(x, r, p)$ of the conjugate
+gradient method, the step length is
+$$\alpha = \frac{p^T r}{p^T A p}.$$
+When $r = b - Ax$ and $A$ is symmetric positive definite, this $\alpha$ minimizes
+$\Phi(x + \alpha p)$.
+
+The state is the backbone's record `CG.State`. If $p^T A p = 0$, Lean gives $\alpha = 0$. -/
 noncomputable def cgAlphaStep (s : CG.State (EuclideanSpace ℝ (Fin n))) : ℝ :=
   inner ℝ s.p s.r / inner ℝ s.p (toEuclideanLin A s.p)
 
-/-- **The conjugate gradient iteration of §4.3.4**, one step on the state `(x⁽ᵏ⁾, r⁽ᵏ⁾, p⁽ᵏ⁾)` in
-the book's letters: `α_k = p⁽ᵏ⁾ᵀ r⁽ᵏ⁾ / p⁽ᵏ⁾ᵀ A p⁽ᵏ⁾` (4.39), `x⁽ᵏ⁺¹⁾ = x⁽ᵏ⁾ + α_k p⁽ᵏ⁾`,
-`r⁽ᵏ⁺¹⁾ = r⁽ᵏ⁾ - α_k A p⁽ᵏ⁾`, `β_k = (A p⁽ᵏ⁾)ᵀ r⁽ᵏ⁺¹⁾ / (A p⁽ᵏ⁾)ᵀ p⁽ᵏ⁾` and
-`p⁽ᵏ⁺¹⁾ = r⁽ᵏ⁺¹⁾ - β_k p⁽ᵏ⁾` (4.41) — with the book's *minus* sign, so that its `β_k` is the
-negative of the backbone's `CG.beta`. The state type is the backbone's record `CG.State`; the step
-is identified with `CG.step` along the iteration by `cg_eq_CG`. -/
+/-- **Equations (4.39)–(4.41)** of [quarteroni2000numerical], the conjugate gradient iteration. One
+step maps the state $(x^{(k)}, r^{(k)}, p^{(k)})$ to $(x^{(k+1)}, r^{(k+1)}, p^{(k+1)})$, where
+$$\alpha_k = \frac{p^{(k)T} r^{(k)}}{p^{(k)T} A p^{(k)}}, \qquad x^{(k+1)} = x^{(k)} + \alpha_k
+  p^{(k)}, \qquad r^{(k+1)} = r^{(k)} - \alpha_k A p^{(k)},$$
+$$\beta_k = \frac{(A p^{(k)})^T r^{(k+1)}}{(A p^{(k)})^T p^{(k)}}, \qquad p^{(k+1)} =
+  r^{(k+1)} - \beta_k p^{(k)}.$$
+
+The direction update has the minus sign of the source, so that this $\beta_k$ is the negative of
+the backbone's `CG.beta`. The state type is the backbone's record `CG.State`, and
+`QuarteroniSaccoSaleri.Chapter04.cg_eq_CG` identifies the iteration with `CG.step`. A quotient
+with zero denominator is $0$. -/
 noncomputable def cgStep (s : CG.State (EuclideanSpace ℝ (Fin n))) :
     CG.State (EuclideanSpace ℝ (Fin n)) :=
   let α := cgAlphaStep A s
@@ -696,69 +995,83 @@ noncomputable def cgStep (s : CG.State (EuclideanSpace ℝ (Fin n))) :
   let β := inner ℝ (toEuclideanLin A s.p) r' / inner ℝ (toEuclideanLin A s.p) s.p
   { x := s.x + α • s.p, r := r', p := r' - β • s.p }
 
-/-- The coefficient `β_k = (A p⁽ᵏ⁾)ᵀ r⁽ᵏ⁺¹⁾ / (A p⁽ᵏ⁾)ᵀ p⁽ᵏ⁾` of (4.41), computed on a state. -/
+/-- **Equation (4.41)** of [quarteroni2000numerical]. On a state $(x, r, p)$, the coefficient
+$$\beta = \frac{(Ap)^T r'}{(Ap)^T p},$$
+where $r'$ is the residual after one step of `QuarteroniSaccoSaleri.Chapter04.cgStep`. -/
 noncomputable def cgBetaStep (s : CG.State (EuclideanSpace ℝ (Fin n))) : ℝ :=
   inner ℝ (toEuclideanLin A s.p) (cgStep A s).r / inner ℝ (toEuclideanLin A s.p) s.p
 
-/-- **The conjugate gradient method** started at `x⁽⁰⁾` with `r⁽⁰⁾ = b - A x⁽⁰⁾` and
-`p⁽⁰⁾ = r⁽⁰⁾`: the state `(x⁽ᵏ⁾, r⁽ᵏ⁾, p⁽ᵏ⁾)` after `k` steps of `cgStep`. -/
+/-- **Section 4.3.4** of [quarteroni2000numerical], the **conjugate gradient method**. Start from
+$x^{(0)}$ with $r^{(0)} = b - Ax^{(0)}$ and $p^{(0)} = r^{(0)}$. Then `cg A b x₀ k` is the state
+$(x^{(k)}, r^{(k)}, p^{(k)})$ after $k$ steps of `QuarteroniSaccoSaleri.Chapter04.cgStep`. -/
 noncomputable def cg (x₀ : EuclideanSpace ℝ (Fin n)) (k : ℕ) :
     CG.State (EuclideanSpace ℝ (Fin n)) :=
   (cgStep A)^[k] { x := x₀, r := b - toEuclideanLin A x₀, p := b - toEuclideanLin A x₀ }
 
 variable (x₀ : EuclideanSpace ℝ (Fin n))
 
-/-- The `k`-th conjugate gradient iterate `x⁽ᵏ⁾`. -/
+/-- The $k$-th iterate $x^{(k)}$ of the conjugate gradient method of §4.3.4. -/
 noncomputable def cgX (k : ℕ) : EuclideanSpace ℝ (Fin n) := (cg A b x₀ k).x
 
-/-- The `k`-th conjugate gradient residual `r⁽ᵏ⁾`. -/
+/-- The $k$-th residual $r^{(k)}$ of the conjugate gradient method of §4.3.4. -/
 noncomputable def cgR (k : ℕ) : EuclideanSpace ℝ (Fin n) := (cg A b x₀ k).r
 
-/-- The `k`-th conjugate gradient descent direction `p⁽ᵏ⁾`. -/
+/-- The $k$-th descent direction $p^{(k)}$ of the conjugate gradient method of §4.3.4. -/
 noncomputable def cgP (k : ℕ) : EuclideanSpace ℝ (Fin n) := (cg A b x₀ k).p
 
-/-- The step length `α_k` of (4.39) at step `k`. -/
+/-- The step length $\alpha_k$ of (4.39) at step $k$ of the conjugate gradient method. -/
 noncomputable def cgAlpha (k : ℕ) : ℝ := cgAlphaStep A (cg A b x₀ k)
 
-/-- The coefficient `β_k` of (4.41) at step `k`, with the book's sign. -/
+/-- The coefficient $\beta_k$ of (4.41) at step $k$ of the conjugate gradient method, with the sign
+of the source. -/
 noncomputable def cgBeta (k : ℕ) : ℝ := cgBetaStep A (cg A b x₀ k)
 
+/-- The state of the conjugate gradient method after $k + 1$ steps is one step of
+`QuarteroniSaccoSaleri.Chapter04.cgStep` from the state after $k$ steps. -/
 theorem cg_succ (k : ℕ) : cg A b x₀ (k + 1) = cgStep A (cg A b x₀ k) :=
   Function.iterate_succ_apply' _ _ _
 
+/-- The conjugate gradient method starts at $x^{(0)}$. -/
 @[simp] theorem cgX_zero : cgX A b x₀ 0 = x₀ := rfl
 
+/-- The initial residual of the conjugate gradient method is $r^{(0)} = b - Ax^{(0)}$. -/
 @[simp] theorem cgR_zero : cgR A b x₀ 0 = b - toEuclideanLin A x₀ := rfl
 
-/-- `p⁽⁰⁾ = r⁽⁰⁾`. -/
+/-- The initial direction of the conjugate gradient method is $p^{(0)} = r^{(0)}$. -/
 @[simp] theorem cgP_zero : cgP A b x₀ 0 = cgR A b x₀ 0 := rfl
 
-/-- (4.39): `α_k = p⁽ᵏ⁾ᵀ r⁽ᵏ⁾ / p⁽ᵏ⁾ᵀ A p⁽ᵏ⁾`. -/
+/-- **Equation (4.39)** of [quarteroni2000numerical]. The step length of the conjugate gradient
+method is
+$$\alpha_k = \frac{p^{(k)T} r^{(k)}}{p^{(k)T} A p^{(k)}}.$$
+-/
 theorem cgAlpha_eq (k : ℕ) : cgAlpha A b x₀ k =
     inner ℝ (cgP A b x₀ k) (cgR A b x₀ k) /
       inner ℝ (cgP A b x₀ k) (toEuclideanLin A (cgP A b x₀ k)) :=
   rfl
 
-/-- `x⁽ᵏ⁺¹⁾ = x⁽ᵏ⁾ + α_k p⁽ᵏ⁾`. -/
+/-- The conjugate gradient iterates satisfy $x^{(k+1)} = x^{(k)} + \alpha_k p^{(k)}$. -/
 theorem cgX_succ (k : ℕ) :
     cgX A b x₀ (k + 1) = cgX A b x₀ k + cgAlpha A b x₀ k • cgP A b x₀ k := by
   rw [cgX, cg_succ]
   rfl
 
-/-- `r⁽ᵏ⁺¹⁾ = r⁽ᵏ⁾ - α_k A p⁽ᵏ⁾`. -/
+/-- The conjugate gradient residuals satisfy $r^{(k+1)} = r^{(k)} - \alpha_k A p^{(k)}$. -/
 theorem cgR_succ (k : ℕ) :
     cgR A b x₀ (k + 1) = cgR A b x₀ k - cgAlpha A b x₀ k • toEuclideanLin A (cgP A b x₀ k) := by
   rw [cgR, cg_succ]
   rfl
 
-/-- `β_k = (A p⁽ᵏ⁾)ᵀ r⁽ᵏ⁺¹⁾ / (A p⁽ᵏ⁾)ᵀ p⁽ᵏ⁾`. -/
+/-- The coefficient of (4.41) is
+$$\beta_k = \frac{(A p^{(k)})^T r^{(k+1)}}{(A p^{(k)})^T p^{(k)}}.$$
+-/
 theorem cgBeta_eq (k : ℕ) : cgBeta A b x₀ k =
     inner ℝ (toEuclideanLin A (cgP A b x₀ k)) (cgR A b x₀ (k + 1)) /
       inner ℝ (toEuclideanLin A (cgP A b x₀ k)) (cgP A b x₀ k) := by
   rw [cgBeta, cgBetaStep, cgR, cg_succ]
   rfl
 
-/-- (4.41): `p⁽ᵏ⁺¹⁾ = r⁽ᵏ⁺¹⁾ - β_k p⁽ᵏ⁾`. -/
+/-- **Equation (4.41)** of [quarteroni2000numerical]. The conjugate gradient directions satisfy
+$p^{(k+1)} = r^{(k+1)} - \beta_k p^{(k)}$. -/
 theorem cgP_succ (k : ℕ) :
     cgP A b x₀ (k + 1) = cgR A b x₀ (k + 1) - cgBeta A b x₀ k • cgP A b x₀ k := by
   rw [cgP, cg_succ, cgBeta_eq, cgR, cg_succ]
@@ -766,13 +1079,15 @@ theorem cgP_succ (k : ℕ) :
 
 variable {A b x₀}
 
-/-- A positive definite matrix acts as a symmetric coercive operator on `EuclideanSpace`. -/
+/-- A symmetric positive definite matrix $A \in \mathbb{R}^{n \times n}$ acts on
+`EuclideanSpace ℝ (Fin n)` as a symmetric coercive operator, in the sense of
+`LinearMap.IsSymmetricCoercive`. -/
 theorem posDef_isSymmetricCoercive_toEuclideanLin (hA : A.PosDef) :
     (toEuclideanLin A).IsSymmetricCoercive :=
   (posDef_iff_isSymmetricCoercive A).1 hA
 
-/-- On the backbone's iterates, the book's `α_k` of (4.39) is `CG.alpha`, because
-`p⁽ᵏ⁾ᵀ r⁽ᵏ⁾ = ‖r⁽ᵏ⁾‖²` (`CG.inner_residual_direction_eq`). -/
+/-- On the backbone's conjugate gradient iterates, the step length (4.39) is `CG.alpha`, because
+$p^{(k)T} r^{(k)} = \|r^{(k)}\|^2$ (`CG.inner_residual_direction_eq`). -/
 private theorem cgAlphaStep_iterate (hA : A.PosDef) (k : ℕ) :
     cgAlphaStep A (CG.iterate (toEuclideanLin A) b x₀ k) =
       CG.alpha (toEuclideanLin A) (CG.iterate (toEuclideanLin A) b x₀ k) := by
@@ -783,15 +1098,16 @@ private theorem cgAlphaStep_iterate (hA : A.PosDef) (k : ℕ) :
     real_inner_self_eq_norm_sq,
     real_inner_comm (toEuclideanLin A (CG.iterate (toEuclideanLin A) b x₀ k).p)]
 
-/-- On the backbone's iterates, the book's step produces the backbone's residual. -/
+/-- On the backbone's conjugate gradient iterates, one step of
+`QuarteroniSaccoSaleri.Chapter04.cgStep` produces the backbone's next residual. -/
 private theorem cgStep_r_iterate (hA : A.PosDef) (k : ℕ) :
     (cgStep A (CG.iterate (toEuclideanLin A) b x₀ k)).r =
       (CG.iterate (toEuclideanLin A) b x₀ (k + 1)).r := by
   rw [CG.iterate_succ_r, cgStep, cgAlphaStep_iterate hA]
 
-/-- On the backbone's iterates, the book's `β_k` is the negative of `CG.beta`: from
-`α_k A p⁽ᵏ⁾ = r⁽ᵏ⁾ - r⁽ᵏ⁺¹⁾`, `(A p⁽ᵏ⁾)ᵀ r⁽ᵏ⁺¹⁾ = -‖r⁽ᵏ⁺¹⁾‖²/α_k` and
-`(A p⁽ᵏ⁾)ᵀ p⁽ᵏ⁾ = ‖r⁽ᵏ⁾‖²/α_k` (the solution of Exercise 13). -/
+/-- On the backbone's conjugate gradient iterates, the coefficient $\beta_k$ of (4.41) is the
+negative of `CG.beta`, by the computation $(Ap^{(k)})^T r^{(k+1)} = -\|r^{(k+1)}\|^2/\alpha_k$
+and $(Ap^{(k)})^T p^{(k)} = \|r^{(k)}\|^2/\alpha_k$ of the solution of Exercise 13. -/
 private theorem cgBetaStep_iterate (hA : A.PosDef) (k : ℕ) :
     cgBetaStep A (CG.iterate (toEuclideanLin A) b x₀ k) =
       -CG.beta (toEuclideanLin A) (CG.iterate (toEuclideanLin A) b x₀ k) := by
@@ -834,7 +1150,8 @@ private theorem cgBetaStep_iterate (hA : A.PosDef) (k : ℕ) :
     field_simp
     ring
 
-/-- On the backbone's iterates, the book's step is the backbone's step. -/
+/-- On the backbone's conjugate gradient iterates, `QuarteroniSaccoSaleri.Chapter04.cgStep` is the
+backbone's `CG.step`. -/
 private theorem cgStep_iterate (hA : A.PosDef) (k : ℕ) :
     cgStep A (CG.iterate (toEuclideanLin A) b x₀ k) =
       CG.step (toEuclideanLin A) (CG.iterate (toEuclideanLin A) b x₀ k) := by
@@ -850,11 +1167,15 @@ private theorem cgStep_iterate (hA : A.PosDef) (k : ℕ) :
       inner ℝ (toEuclideanLin A s.p) s.p) • s.p = _
     rw [hβ, neg_smul, sub_neg_eq_add]
 
-/-- **The bridge to the backbone.** For `A` symmetric positive definite, the conjugate gradient
-method of §4.3.4 is the backbone recurrence `CG.iterate`: the states coincide, the book's `α_k` is
-`CG.alpha` (because `p⁽ᵏ⁾ᵀ r⁽ᵏ⁾ = ‖r⁽ᵏ⁾‖²`, `CG.inner_residual_direction_eq`) and the book's
-`β_k` is `-CG.beta` (Exercise 13, `equation_4_45`). Every property of the method below is read
-off this identification. -/
+/-- Let $A \in \mathbb{R}^{n \times n}$ be symmetric positive definite. For every $k$, the state of
+the conjugate gradient method of §4.3.4 after $k$ steps is the backbone's state
+`CG.iterate (toEuclideanLin A) b x₀ k`, the step length of (4.39) is `CG.alpha` of that state,
+and the coefficient of (4.41) is the negative of `CG.beta` of that state. All results on the
+method in this module are read off this identification.
+
+The step lengths agree because $p^{(k)T} r^{(k)} = \|r^{(k)}\|^2$
+(`CG.inner_residual_direction_eq`). The coefficients agree up to sign by the computation of
+Exercise 13 (see `QuarteroniSaccoSaleri.Chapter04.equation_4_45`). -/
 theorem cg_eq_CG (hA : A.PosDef) (k : ℕ) :
     cg A b x₀ k = CG.iterate (toEuclideanLin A) b x₀ k ∧
       cgAlpha A b x₀ k = CG.alpha (toEuclideanLin A) (CG.iterate (toEuclideanLin A) b x₀ k) ∧
@@ -866,32 +1187,37 @@ theorem cg_eq_CG (hA : A.PosDef) (k : ℕ) :
   exact ⟨hcg, by rw [cgAlpha, hcg, cgAlphaStep_iterate hA],
     by rw [cgBeta, hcg, cgBetaStep_iterate hA]⟩
 
-/-- The book's iterate `x⁽ᵏ⁾` is the `x` component of the backbone's conjugate-gradient state,
-by `cg_eq_CG`. -/
+/-- Let $A$ be symmetric positive definite. The conjugate gradient iterate $x^{(k)}$ is the `x`
+component of the backbone's state `CG.iterate (toEuclideanLin A) b x₀ k`. -/
 theorem cgX_eq_CG (hA : A.PosDef) (k : ℕ) :
     cgX A b x₀ k = (CG.iterate (toEuclideanLin A) b x₀ k).x := by
   rw [cgX, (cg_eq_CG hA k).1]
 
-/-- The book's residual `r⁽ᵏ⁾` is the `r` component of the backbone's conjugate-gradient state,
-by `cg_eq_CG`. -/
+/-- Let $A$ be symmetric positive definite. The conjugate gradient residual $r^{(k)}$ is the `r`
+component of the backbone's state `CG.iterate (toEuclideanLin A) b x₀ k`. -/
 theorem cgR_eq_CG (hA : A.PosDef) (k : ℕ) :
     cgR A b x₀ k = (CG.iterate (toEuclideanLin A) b x₀ k).r := by
   rw [cgR, (cg_eq_CG hA k).1]
 
-/-- The book's direction `p⁽ᵏ⁾` is the `p` component of the backbone's conjugate-gradient state,
-by `cg_eq_CG`. -/
+/-- Let $A$ be symmetric positive definite. The conjugate gradient direction $p^{(k)}$ is the `p`
+component of the backbone's state `CG.iterate (toEuclideanLin A) b x₀ k`. -/
 theorem cgP_eq_CG (hA : A.PosDef) (k : ℕ) :
     cgP A b x₀ k = (CG.iterate (toEuclideanLin A) b x₀ k).p := by
   rw [cgP, (cg_eq_CG hA k).1]
 
-/-- The state's residual is the true residual `r⁽ᵏ⁾ = b - A x⁽ᵏ⁾`. -/
+/-- Let $A$ be symmetric positive definite. The residual $r^{(k)}$ carried by the conjugate gradient
+method is the true residual $b - Ax^{(k)}$. -/
 theorem cgR_eq_residual (hA : A.PosDef) (k : ℕ) :
     cgR A b x₀ k = b - toEuclideanLin A (cgX A b x₀ k) := by
   rw [cgR_eq_CG hA, cgX_eq_CG hA, CG.residual_eq]
 
-/-- **(4.42).** The descent directions are `A`-conjugate: `(A p⁽ʲ⁾)ᵀ p⁽ᵏ⁺¹⁾ = 0` for
-`j = 0, …, k`, and indeed `(A p⁽ⁱ⁾)ᵀ p⁽ʲ⁾ = 0` for all `i ≠ j` — the book's induction is the
-backbone's `CG.inner_apply_direction_eq_zero`. -/
+/-- **Equation (4.42)** of [quarteroni2000numerical]. Let $A \in \mathbb{R}^{n \times n}$ be
+symmetric positive definite. The descent directions of the conjugate gradient method are
+$A$-conjugate:
+$$(A p^{(j)})^T p^{(k+1)} = 0 \quad \text{for } j = 0, \dots, k,$$
+and more generally $(A p^{(i)})^T p^{(j)} = 0$ for all $i \neq j$.
+
+The induction of the source is the backbone's `CG.inner_apply_direction_eq_zero`. -/
 theorem equation_4_42 (hA : A.PosDef) :
     (∀ k, ∀ j ≤ k, inner ℝ (toEuclideanLin A (cgP A b x₀ j)) (cgP A b x₀ (k + 1)) = 0) ∧
       ∀ i j, i ≠ j → inner ℝ (toEuclideanLin A (cgP A b x₀ i)) (cgP A b x₀ j) = 0 := by
@@ -901,11 +1227,16 @@ theorem equation_4_42 (hA : A.PosDef) :
     exact CG.inner_apply_direction_eq_zero b x₀ (posDef_isSymmetricCoercive_toEuclideanLin hA) hij
   exact ⟨fun k j hj => h j (k + 1) (by omega), h⟩
 
-/-- **(4.43)–(4.44).** The residual `r⁽ᵏ⁾` is orthogonal to the earlier directions,
-`p⁽ʲ⁾ᵀ r⁽ᵏ⁾ = 0` for `j < k` (backbone `CG.inner_residual_direction_eq_zero`), hence to the
-space `V_k = span(p⁽⁰⁾, …, p⁽ᵏ⁻¹⁾)`, which is also `span(r⁽⁰⁾, …, r⁽ᵏ⁻¹⁾)` and is the Krylov
-space `K_k(A; r⁽⁰⁾)` of §4.4 (`CG.span_direction_eq`, `CG.span_residual_eq`); moreover the
-residuals are mutually orthogonal (`CG.inner_residual_eq_zero`). -/
+/-- **Equations (4.43)–(4.44)** of [quarteroni2000numerical]. Let $A \in \mathbb{R}^{n \times n}$ be
+symmetric positive definite. The conjugate gradient residual $r^{(k)}$ is orthogonal to the
+earlier directions, $p^{(j)T} r^{(k)} = 0$ for $j < k$, and hence to their span $V_k =
+\operatorname{span}(p^{(0)}, \dots, p^{(k-1)})$. For every $k$, the space $V_k$ equals
+$\operatorname{span}(r^{(0)}, \dots, r^{(k-1)})$ and the Krylov subspace $K_k(A; r^{(0)})$ of
+§4.4. The residuals are mutually orthogonal: $r^{(i)T} r^{(j)} = 0$ for $i \neq j$.
+
+The Krylov subspace is `Krylov.subspace (toEuclideanLin A) (b - toEuclideanLin A x₀) k`. The
+four clauses are the backbone's `CG.inner_residual_direction_eq_zero`, `CG.span_direction_eq`,
+`CG.span_residual_eq` and `CG.inner_residual_eq_zero`. -/
 theorem equation_4_44 (hA : A.PosDef) :
     (∀ k j, j < k → inner ℝ (cgP A b x₀ j) (cgR A b x₀ k) = 0) ∧
       (∀ k, Submodule.span ℝ (Set.range fun i : Fin k => cgP A b x₀ i) =
@@ -920,12 +1251,19 @@ theorem equation_4_44 (hA : A.PosDef) :
     CG.span_direction_eq b x₀ hA', CG.span_residual_eq b x₀ hA',
     fun i j hij => CG.inner_residual_eq_zero b x₀ hA' hij⟩
 
-/-- **(4.45) and Exercise 13.** The two parameters may alternatively be expressed as
-`α_k = ‖r⁽ᵏ⁾‖² / p⁽ᵏ⁾ᵀ A p⁽ᵏ⁾` and `β_k = -‖r⁽ᵏ⁺¹⁾‖² / ‖r⁽ᵏ⁾‖²`. The sign of `β_k` is negative,
-not positive as printed: with the update `p⁽ᵏ⁺¹⁾ = r⁽ᵏ⁺¹⁾ - β_k p⁽ᵏ⁾` of (4.41),
-`(A p⁽ᵏ⁾)ᵀ r⁽ᵏ⁺¹⁾ = -‖r⁽ᵏ⁺¹⁾‖²/α_k` and `α_k (A p⁽ᵏ⁾)ᵀ p⁽ᵏ⁾ = ‖r⁽ᵏ⁾‖²` (the solution of Exercise 13
-prints a minus sign in the latter, which compensates). Both identities hold at every step, a
-vanishing residual making both sides `0`. -/
+/-- **Equation (4.45)** of [quarteroni2000numerical] and Exercise 13. Let
+$A \in \mathbb{R}^{n \times n}$ be symmetric positive definite. For every $k$ the parameters of
+the conjugate gradient method satisfy
+$$\alpha_k = \frac{\|r^{(k)}\|^2}{p^{(k)T} A p^{(k)}}, \qquad \beta_k =
+  -\frac{\|r^{(k+1)}\|^2}{\|r^{(k)}\|^2}.$$
+
+**Correction.** The source prints $\beta_k = \|r^{(k+1)}\|^2 / \|r^{(k)}\|^2$. With the update
+$p^{(k+1)} = r^{(k+1)} - \beta_k p^{(k)}$ of (4.41) the sign is negative, because $(A p^{(k)})^T
+r^{(k+1)} = -\|r^{(k+1)}\|^2/\alpha_k$ and $\alpha_k (A p^{(k)})^T p^{(k)} = \|r^{(k)}\|^2$. The
+solution of Exercise 13 prints a minus sign in the second identity, which compensates.
+
+Both identities hold at every step: when a residual vanishes, both sides are $0$, since Lean
+evaluates a quotient $t/0$ as $0$. -/
 theorem equation_4_45 (hA : A.PosDef) (k : ℕ) :
     cgAlpha A b x₀ k =
         ‖cgR A b x₀ k‖ ^ 2 / inner ℝ (cgP A b x₀ k) (toEuclideanLin A (cgP A b x₀ k)) ∧
@@ -936,8 +1274,9 @@ theorem equation_4_45 (hA : A.PosDef) (k : ℕ) :
   · rw [hβ, CG.beta_iterate, cgR_eq_CG hA, cgR_eq_CG hA, real_inner_self_eq_norm_sq,
       real_inner_self_eq_norm_sq]
 
-/-- `α_k ≠ 0` while `r⁽ᵏ⁾ ≠ 0`: `α_k = ‖r⁽ᵏ⁾‖²/p⁽ᵏ⁾ᵀ A p⁽ᵏ⁾` with `p⁽ᵏ⁾ᵀ A p⁽ᵏ⁾ > 0`
-(`CG.re_inner_apply_direction_pos`). -/
+/-- Let $A$ be symmetric positive definite. If $r^{(k)} \neq 0$, then the conjugate gradient step
+length satisfies $\alpha_k \neq 0$, because $\alpha_k = \|r^{(k)}\|^2 / p^{(k)T} A p^{(k)}$ with
+$p^{(k)T} A p^{(k)} > 0$ (`CG.re_inner_apply_direction_pos`). -/
 theorem cgAlpha_ne_zero (hA : A.PosDef) {k : ℕ} (hr : cgR A b x₀ k ≠ 0) :
     cgAlpha A b x₀ k ≠ 0 := by
   rw [(equation_4_45 hA k).1]
@@ -946,19 +1285,26 @@ theorem cgAlpha_ne_zero (hA : A.PosDef) {k : ℕ} (hr : cgR A b x₀ k ≠ 0) :
   rw [RCLike.re_to_real, ← cgP_eq_CG hA, real_inner_comm] at hpos
   exact div_ne_zero (pow_ne_zero 2 (norm_ne_zero_iff.mpr hr)) hpos.ne'
 
-/-- A vanishing residual stays zero: `r⁽ᵏ⁺¹⁾ = 0` as soon as `r⁽ᵏ⁾ = 0`
-(`CG.residual_succ_eq_zero_of_eq_zero`). -/
+/-- Let $A$ be symmetric positive definite. If the conjugate gradient residual $r^{(k)}$ vanishes,
+then $r^{(k+1)} = 0$ (`CG.residual_succ_eq_zero_of_eq_zero`). -/
 theorem cgR_succ_eq_zero_of_eq_zero (hA : A.PosDef) {k : ℕ} (hr : cgR A b x₀ k = 0) :
     cgR A b x₀ (k + 1) = 0 := by
   rw [cgR_eq_CG hA] at hr ⊢
   exact CG.residual_succ_eq_zero_of_eq_zero _ b x₀ hr
 
-/-- **(4.46) and Exercise 14, the three-term recurrence of the residuals.** Eliminating the
-descent directions from `r⁽ᵏ⁺¹⁾ = r⁽ᵏ⁾ - α_k A p⁽ᵏ⁾` — through `A p⁽ᵏ⁾ = (r⁽ᵏ⁾ - r⁽ᵏ⁺¹⁾)/α_k`
-and `p⁽ᵏ⁾ = r⁽ᵏ⁾ - β_{k-1} p⁽ᵏ⁻¹⁾`, as the solution of Exercise 14 does — gives, for `k ≥ 1`
-(written `k + 1`) while `r⁽ᵏ⁾ ≠ 0`,
-`A r⁽ᵏ⁾ = -(1/α_k) r⁽ᵏ⁺¹⁾ + (1/α_k - β_{k-1}/α_{k-1}) r⁽ᵏ⁾ + (β_{k-1}/α_{k-1}) r⁽ᵏ⁻¹⁾`. The last
-coefficient is `β_{k-1}/α_{k-1}`, not the printed `β_k/α_{k-1}`. -/
+/-- **Equation (4.46)** of [quarteroni2000numerical] and Exercise 14, the three-term recurrence of
+the residuals. Let $A \in \mathbb{R}^{n \times n}$ be symmetric positive definite, let $k \ge 1$
+and let $r^{(k)} \neq 0$. Then the conjugate gradient residuals satisfy
+$$A r^{(k)} = -\frac{1}{\alpha_k} r^{(k+1)} + \Big(\frac{1}{\alpha_k} -
+  \frac{\beta_{k-1}}{\alpha_{k-1}}\Big) r^{(k)} + \frac{\beta_{k-1}}{\alpha_{k-1}} r^{(k-1)}.$$
+
+**Typo.** The source prints $\beta_k/\alpha_{k-1}$ for the coefficient of $r^{(k-1)}$. The
+coefficient is $\beta_{k-1}/\alpha_{k-1}$.
+
+The Lean statement writes $k + 1$ for the index $k \ge 1$ of the source. The proof eliminates
+the directions from $r^{(k+1)} = r^{(k)} - \alpha_k A p^{(k)}$ through
+$A p^{(k)} = (r^{(k)} - r^{(k+1)})/\alpha_k$ and $p^{(k)} = r^{(k)} - \beta_{k-1} p^{(k-1)}$, as
+the solution of Exercise 14 does. -/
 theorem equation_4_46 (hA : A.PosDef) {k : ℕ} (hr : cgR A b x₀ (k + 1) ≠ 0) :
     toEuclideanLin A (cgR A b x₀ (k + 1)) =
       -(1 / cgAlpha A b x₀ (k + 1)) • cgR A b x₀ (k + 2) +
@@ -984,14 +1330,23 @@ theorem equation_4_46 (hA : A.PosDef) {k : ℕ} (hr : cgR A b x₀ (k + 1) ≠ 0
   rw [h]
   module
 
-/-- **Theorem 4.11.** Let `A` be symmetric positive definite. Any method employing conjugate
-directions — `x⁽ᵏ⁺¹⁾ = x⁽ᵏ⁾ + α_k p⁽ᵏ⁾` with the step (4.39) along mutually `A`-conjugate
-directions `p⁽ᵏ⁾`, the backbone's `ConjugateDirection.iterate` — terminates after at most `n`
-steps, yielding the exact solution. The book's proof is the expanding subspace theorem: `x⁽ᵏ⁾` is
-optimal with respect to `p⁽⁰⁾, …, p⁽ᵏ⁻¹⁾`, i.e. the Galerkin iterate over their span
-(`ConjugateDirection.isGalerkin_iterate`), so `r⁽ⁿ⁾ ⟂ ℝⁿ` and `x⁽ⁿ⁾ = x`
-(`ConjugateDirection.iterate_eq_of_finrank_le`, with `dim ℝⁿ = n`). The directions used must be
-nonzero. -/
+/-- **Theorem 4.11** of [quarteroni2000numerical]. Let $A \in \mathbb{R}^{n \times n}$ be symmetric
+positive definite and let $x$ solve $Ax = b$. Let $p^{(0)}, p^{(1)}, \dots$ be mutually
+$A$-conjugate directions, $(A p^{(i)})^T p^{(j)} = 0$ for $i \neq j$, with $p^{(i)} \neq 0$ for
+$i < n$. Consider the method $x^{(k+1)} = x^{(k)} + \alpha_k p^{(k)}$ with the step length
+(4.39) and any $x^{(0)}$. Then for every $k$ the iterate $x^{(k)}$ satisfies the Galerkin
+condition over $\operatorname{span}(p^{(0)}, \dots, p^{(k-1)})$ with start $x^{(0)}$, and
+$x^{(k)} = x$ for every $k \ge n$: the method terminates after at most $n$ steps with the exact
+solution.
+
+**Reading.** The source speaks of any method that employs conjugate directions. The declaration
+makes explicit that the first $n$ directions are nonzero.
+
+The method is the backbone's `ConjugateDirection.iterate`, the conjugacy is
+`ConjugateDirection.IsConjugateFamily`, and the Galerkin condition is `IsGalerkin`. The proof of
+the source is the expanding subspace theorem: $x^{(k)}$ is optimal with respect to
+$p^{(0)}, \dots, p^{(k-1)}$ (`ConjugateDirection.isGalerkin_iterate`), so $r^{(n)}$ is
+orthogonal to $\mathbb{R}^n$ and $x^{(n)} = x$ (`ConjugateDirection.iterate_eq_of_finrank_le`). -/
 theorem theorem_4_11 (hA : A.PosDef) {p : ℕ → EuclideanSpace ℝ (Fin n)}
     (hp : ConjugateDirection.IsConjugateFamily (toEuclideanLin A) p) (h0 : ∀ i < n, p i ≠ 0)
     {x : EuclideanSpace ℝ (Fin n)} (hx : toEuclideanLin A x = b) :
@@ -1004,11 +1359,17 @@ theorem theorem_4_11 (hA : A.PosDef) {p : ℕ → EuclideanSpace ℝ (Fin n)}
   · rwa [finrank_euclideanSpace_fin]
   · rwa [finrank_euclideanSpace_fin]
 
-/-- **Theorem 4.12, finite termination.** For `A` symmetric positive definite the conjugate
-gradient method converges after at most `n` steps: `r⁽ᵏ⁾ = 0` as soon as `k` reaches the grade of
-`r⁽⁰⁾` (backbone `CG.residual_eq_zero_of_grade_le`), which is at most `n`
-(`Krylov.grade_le_finrank`), and then `x⁽ᵏ⁾ = x`. The book derives it from Theorem 4.11, of
-which CG is an instance (`CG.iterate_x_eq_conjugateDirection_iterate`). -/
+/-- **Theorem 4.12** of [quarteroni2000numerical], finite termination. Let
+$A \in \mathbb{R}^{n \times n}$ be symmetric positive definite and let $x$ solve $Ax = b$. Then
+the conjugate gradient method converges after at most $n$ steps: $r^{(k)} = 0$ as soon as $k$
+reaches the grade of $r^{(0)}$, this grade is at most $n$, and $x^{(k)} = x$ for every
+$k \ge n$.
+
+The grade of $r^{(0)}$ is `Krylov.grade`, the dimension of the span of all vectors
+$A^j r^{(0)}$. The first clause is the backbone's `CG.residual_eq_zero_of_grade_le`, and the
+bound on the grade is `Krylov.grade_le_finrank`. The source derives the theorem from Theorem
+4.11, of which the conjugate gradient method is an instance
+(`CG.iterate_x_eq_conjugateDirection_iterate`). -/
 theorem theorem_4_12_terminates (hA : A.PosDef) {x : EuclideanSpace ℝ (Fin n)}
     (hx : toEuclideanLin A x = b) :
     (∀ k, Krylov.grade (toEuclideanLin A) (b - toEuclideanLin A x₀) ≤ k → cgR A b x₀ k = 0) ∧
@@ -1027,27 +1388,39 @@ theorem theorem_4_12_terminates (hA : A.PosDef) {x : EuclideanSpace ℝ (Fin n)}
   rw [cgR_eq_residual hA, sub_eq_zero] at h
   exact hA'.isCoercive.injective (h.symm.trans hx.symm)
 
-/-- **Theorem 4.12, the orthogonality clause, read correctly.** The error `e⁽ᵏ⁾ = x⁽ᵏ⁾ - x` is
-`A`-orthogonal — not, as printed, orthogonal — to `p⁽ʲ⁾` for `j < k`:
-`(A e⁽ᵏ⁾)ᵀ p⁽ʲ⁾ = -r⁽ᵏ⁾ᵀ p⁽ʲ⁾ = 0` by (4.44). -/
+/-- **Theorem 4.12** of [quarteroni2000numerical], orthogonality of the error. Let
+$A \in \mathbb{R}^{n \times n}$ be symmetric positive definite, let $x$ solve $Ax = b$, and let
+$j < k$. Then the conjugate gradient error $e^{(k)} = x^{(k)} - x$ is $A$-orthogonal to the
+direction $p^{(j)}$:
+$$(A e^{(k)})^T p^{(j)} = 0.$$
+
+**Correction.** The source states that the error is orthogonal to the directions $p^{(j)}$,
+$j < k$. It is $A$-orthogonal to them: $(A e^{(k)})^T p^{(j)} = -r^{(k)T} p^{(j)} = 0$ by
+(4.44). -/
 theorem theorem_4_12_orthogonal (hA : A.PosDef) {x : EuclideanSpace ℝ (Fin n)}
     (hx : toEuclideanLin A x = b) {k j : ℕ} (hj : j < k) :
     inner ℝ (toEuclideanLin A (cgX A b x₀ k - x)) (cgP A b x₀ j) = 0 := by
   have h := (equation_4_44 (b := b) (x₀ := x₀) hA).1 k j hj
   rw [map_sub, hx, ← neg_sub, ← cgR_eq_residual hA, inner_neg_left, real_inner_comm, h, neg_zero]
 
-/-- **Theorem 4.12, (4.47).** For `A` symmetric positive definite with `K₂(A) = λ_max/λ_min` and
-`c = (√K₂(A) - 1)/(√K₂(A) + 1)`, the conjugate gradient error satisfies
-`‖e⁽ᵏ⁾‖_A ≤ (2 cᵏ / (1 + c²ᵏ)) ‖e⁽⁰⁾‖_A` for every `k`. The `k`-th iterate is the Galerkin iterate
-over the Krylov space (`CG.isGalerkinIterate`), which minimizes the `A`-norm of the error among
-all `q(A) e⁽⁰⁾` with `q ∈ P_k^{0,1}` ((4.49), `equation_4_49`); Property 4.6 bounds that minimum
-by `1/T_k((λ_1 + λ_n)/(λ_1 - λ_n))` (backbone
-`Krylov.IsGalerkinIterate.energyNorm_error_le_div_eval_T`), and
-`1/T_k((K₂ + 1)/(K₂ - 1)) = 2cᵏ/(1 + c²ᵏ)`
-(`Polynomial.Chebyshev.one_div_eval_T_eq_two_mul_pow_div`). When `λ_min = λ_max` (`K₂(A) = 1`,
-`c = 0`) the printed bound is `1` at `k = 0` and `0` for `k ≥ 1`, and holds because `A` is then a
-multiple of the identity and the first step is exact
-(`Krylov.IsGalerkinIterate.energyNorm_error_le`). -/
+/-- **Theorem 4.12** of [quarteroni2000numerical], equation (4.47). Let $n \ge 1$, let
+$A \in \mathbb{R}^{n \times n}$ be symmetric positive definite with spectral condition number
+$K_2(A) = \lambda_{\max}/\lambda_{\min}$, and let $x$ solve $Ax = b$. Let
+$$c = \frac{\sqrt{K_2(A)} - 1}{\sqrt{K_2(A)} + 1}.$$
+Then for every $k$ the error of the conjugate gradient method satisfies
+$$\|e^{(k)}\|_A \le \frac{2 c^k}{1 + c^{2k}} \|e^{(0)}\|_A.$$
+
+The errors are written $x - x^{(k)}$ and $x - x^{(0)}$, and $K_2(A)$ is
+`NormedRing.condNumber A`. The $k$-th iterate is the Galerkin iterate over the Krylov space
+(`CG.isGalerkinIterate`), which minimizes the $A$-norm of the error among all $q(A) e^{(0)}$
+with $q \in \mathbb{P}_k^{0,1}$ ((4.49), `QuarteroniSaccoSaleri.Chapter04.equation_4_49`).
+Property 4.6 bounds that minimum by $1/T_k((\lambda_1 + \lambda_n)/(\lambda_1 - \lambda_n))$
+(`Krylov.IsGalerkinIterate.energyNorm_error_le_div_eval_T`), and
+$1/T_k((K_2 + 1)/(K_2 - 1)) = 2c^k/(1 + c^{2k})$
+(`Polynomial.Chebyshev.one_div_eval_T_eq_two_mul_pow_div`). When
+$\lambda_{\min} = \lambda_{\max}$, so that $K_2(A) = 1$ and $c = 0$, the bound is $1$ at $k = 0$
+and $0$ for $k \ge 1$. It holds because $A$ is then a multiple of the identity and the first
+step is exact (`Krylov.IsGalerkinIterate.energyNorm_error_le`). -/
 theorem theorem_4_12_bound [NeZero n] (hA : A.PosDef) {x : EuclideanSpace ℝ (Fin n)}
     (hx : toEuclideanLin A x = b) (k : ℕ) :
     energyNorm (toEuclideanLin A) (x - cgX A b x₀ k) ≤
@@ -1083,11 +1456,19 @@ theorem theorem_4_12_bound [NeZero n] (hA : A.PosDef) {x : EuclideanSpace ℝ (F
       rw [zero_pow hk.ne', mul_zero, zero_div, zero_mul]
       exact h
 
-/-- **(4.48)–(4.49).** For `A` symmetric positive definite and `x` the solution, the `A`-norm of
-the error at step `k + 1` is the minimum of `‖q(A) e⁽⁰⁾‖_A` over the polynomials `q` of degree
-`≤ k + 1` with `q(0) = 1` (the book takes `x⁽⁰⁾ = 0`, where `e⁽⁰⁾ = x`): the conjugate gradient
-iterate is the Galerkin iterate over the Krylov space (`CG.isGalerkinIterate`) and
-`Krylov.IsGalerkinIterate.energyNorm_error_eq_iInf` is the polynomial characterization. -/
+/-- **Equations (4.48)–(4.49)** of [quarteroni2000numerical]. Let $A \in \mathbb{R}^{n \times n}$ be
+symmetric positive definite and let $x$ solve $Ax = b$. For every $k \ge 1$ the $A$-norm of the
+conjugate gradient error is
+$$\|e^{(k)}\|_A = \min_{q \in \mathbb{P}_k^{0,1}} \|q(A) e^{(0)}\|_A,$$
+where $\mathbb{P}_k^{0,1}$ is the set of real polynomials $q$ of degree at most $k$ with
+$q(0) = 1$.
+
+**Generalization.** The source takes $x^{(0)} = 0$, so that $e^{(0)} = x$. The declaration
+allows any $x^{(0)}$.
+
+The Lean statement writes $k + 1$ for $k \ge 1$, the errors as $x - x^{(k)}$, and the minimum as
+the infimum `⨅` over the subtype of these polynomials. The proof combines `CG.isGalerkinIterate`
+with the polynomial characterization `Krylov.IsGalerkinIterate.energyNorm_error_eq_iInf`. -/
 theorem equation_4_49 (hA : A.PosDef) {x : EuclideanSpace ℝ (Fin n)}
     (hx : toEuclideanLin A x = b) (k : ℕ) :
     energyNorm (toEuclideanLin A) (x - cgX A b x₀ (k + 1)) =
@@ -1099,17 +1480,29 @@ theorem equation_4_49 (hA : A.PosDef) {x : EuclideanSpace ℝ (Fin n)}
 
 end ConjugateGradient
 
-/-! ### Property 4.6 and Exercise 12 -/
+/-! ### Property 4.6 -/
 
 section Chebyshev
 
 open Polynomial
 
-/-- **Property 4.6, the value and the minimizer.** For `0 < λ_n < λ_1`, the problem of minimizing
-`max_{λ_n ≤ z ≤ λ_1} |q(z)|` over `P_{k+1}^{0,1}` — the polynomials of degree `≤ k + 1` with
-`q(0) = 1` — has value `1/C_{k+1}`, `C_{k+1} = T_{k+1}((λ_1 + λ_n)/(λ_1 - λ_n))`, and the value is
-attained by `p_{k+1}(ξ) = T_{k+1}((λ_1 + λ_n - 2ξ)/(λ_1 - λ_n))/C_{k+1}` (backbone
-`Polynomial.Chebyshev.shifted (k + 1) λ_n λ_1 0`, whose evaluation is that formula): backbone
+/-- **Property 4.6** of [quarteroni2000numerical], the value and the minimizer. Let
+$0 < \lambda_n < \lambda_1$ and $k \ge 0$, let $T_{k+1}$ be the Chebyshev polynomial of degree
+$k + 1$, and let
+$$C_{k+1} = T_{k+1}\Big(\frac{\lambda_1 + \lambda_n}{\lambda_1 - \lambda_n}\Big).$$
+Every real polynomial $q$ of degree at most $k + 1$ with $q(0) = 1$ satisfies
+$$\frac{1}{C_{k+1}} \le \max_{\lambda_n \le z \le \lambda_1} |q(z)|.$$
+The polynomial
+$$p_{k+1}(\xi) = \frac{1}{C_{k+1}} T_{k+1}\Big(\frac{\lambda_1 + \lambda_n - 2\xi}{\lambda_1 -
+  \lambda_n}\Big)$$
+has degree at most $k + 1$, satisfies $p_{k+1}(0) = 1$, and attains the bound: $\max_{\lambda_n
+\le z \le \lambda_1} |p_{k+1}(z)| = 1/C_{k+1}$. So the problem of minimizing
+$\max_{\lambda_n \le z \le \lambda_1} |q(z)|$ over $q \in \mathbb{P}_{k+1}^{0,1}$ has the value
+$1/C_{k+1}$, attained at $p_{k+1}$.
+
+The maximum is the supremum `sSup` of the image of the interval. The polynomial $p_{k+1}$ is the
+backbone's `Polynomial.Chebyshev.shifted (k + 1) lmin lmax 0`, and $T_{k+1}$ is Mathlib's
+`Polynomial.Chebyshev.T`. The proof uses
 `Polynomial.Chebyshev.one_div_eval_T_le_sSup_abs_eval_of_eval_zero` and
 `Polynomial.Chebyshev.sSup_abs_eval_shifted`. -/
 theorem property_4_6 {lmin lmax : ℝ} (hpos : 0 < lmin) (hlt : lmin < lmax) (k : ℕ) :
@@ -1140,10 +1533,14 @@ theorem property_4_6 {lmin lmax : ℝ} (hpos : 0 < lmin) (hlt : lmin < lmax) (k 
   · rw [Chebyshev.sSup_abs_eval_shifted _ hlt hγ, mul_zero, sub_zero,
       abs_of_nonneg (zero_le_one.trans (Chebyshev.one_le_eval_T hu _))]
 
-/-- **Property 4.6, uniqueness.** The minimizer is unique: a polynomial of degree `≤ k + 1` with
-`q(0) = 1` whose maximum modulus on `[λ_n, λ_1]` is `1/C_{k+1}` is `p_{k+1}` (backbone
-`Polynomial.Chebyshev.eq_shifted_of_sSup_abs_eval_eq`; the book states the property without
-proof). -/
+/-- **Property 4.6** of [quarteroni2000numerical], uniqueness. Let $0 < \lambda_n < \lambda_1$ and
+$k \ge 0$. If a real polynomial $q$ of degree at most $k + 1$ with $q(0) = 1$ satisfies
+$$\max_{\lambda_n \le z \le \lambda_1} |q(z)| = \frac{1}{C_{k+1}},$$
+then $q = p_{k+1}$, with $C_{k+1}$ and $p_{k+1}$ as in
+`QuarteroniSaccoSaleri.Chapter04.property_4_6`. So the minimizer of Property 4.6 is unique.
+
+The source states Property 4.6 without proof. The proof is the backbone's
+`Polynomial.Chebyshev.eq_shifted_of_sSup_abs_eval_eq`. -/
 theorem property_4_6_unique {lmin lmax : ℝ} (hpos : 0 < lmin) (hlt : lmin < lmax) (k : ℕ)
     {q : ℝ[X]} (hq : q.degree ≤ (k + 1 : ℕ)) (hq0 : q.eval 0 = 1)
     (hsup : sSup ((fun t => |q.eval t|) '' Set.Icc lmin lmax) =
@@ -1159,8 +1556,9 @@ end Chebyshev
 
 section Exercise
 
-/-- The gradient step on coordinates: for `b, x : Fin n → ℝ`, with `r = b - A x`,
-`gradientStep A (toLp 2 b) (toLp 2 x) = toLp 2 (x + (r ⬝ᵥ r / r ⬝ᵥ (A r)) • r)`. -/
+/-- The gradient step of (4.37) on coordinates: for $b, x \in \mathbb{R}^n$ given as `Fin n → ℝ`,
+with $r = b - Ax$, the gradient step from `toLp 2 x` is `toLp 2` of $x + (r^T r / r^T A r)\, r$.
+This supports the computation of Exercise 12. -/
 theorem gradientStep_toLp (A : Matrix (Fin n) (Fin n) ℝ) (b x : Fin n → ℝ) :
     gradientStep A (toLp 2 b) (toLp 2 x) =
       toLp 2 (x + ((b - A *ᵥ x) ⬝ᵥ (b - A *ᵥ x) / ((b - A *ᵥ x) ⬝ᵥ (A *ᵥ (b - A *ᵥ x)))) •
@@ -1169,7 +1567,7 @@ theorem gradientStep_toLp (A : Matrix (Fin n) (Fin n) ℝ) (b x : Fin n → ℝ)
     star_trivial, ← toLp_smul, ← toLp_add]
   rw [dotProduct_comm (A *ᵥ (b - A *ᵥ x))]
 
-/-- The matrix `diag(1, 3)` of Exercise 12 is symmetric positive definite. -/
+/-- The matrix $\operatorname{diag}(1, 3)$ of Exercise 12 is symmetric positive definite. -/
 private theorem posDef_diag_one_three : (!![1, 0; 0, 3] : Matrix (Fin 2) (Fin 2) ℝ).PosDef := by
   have h : (!![1, 0; 0, 3] : Matrix (Fin 2) (Fin 2) ℝ) = diagonal ![1, 3] := by
     ext i j
@@ -1178,11 +1576,17 @@ private theorem posDef_diag_one_three : (!![1, 0; 0, 3] : Matrix (Fin 2) (Fin 2)
   intro i
   fin_cases i <;> norm_num
 
-/-- **Exercise 12** (cited after Definition 4.4). The iterate `x⁽ᵏ⁺¹⁾` of the gradient method is
-optimal with respect to `r⁽ᵏ⁾`, but `x⁽ᵏ⁺²⁾` in general is not: for `A = diag(1, 3)`, `b = 0` and
-`x⁽⁰⁾ = (1, 1)`, one has `r⁽⁰⁾ = -(1, 3)`, `x⁽¹⁾ = (9/14, -1/14)`, `x⁽²⁾ = (3/28, 3/28)`,
-`r⁽²⁾ = -(3/28, 9/28)` and `r⁽²⁾ᵀ r⁽⁰⁾ = 30/28 ≠ 0`, so `x⁽²⁾` is not optimal with respect to
-`r⁽⁰⁾` (`definition_4_4_iff`), while `r⁽¹⁾ᵀ r⁽⁰⁾ = 0`. -/
+/-- **Exercise 12** of [quarteroni2000numerical], Chapter 4, cited after Definition 4.4. The source
+asks to show that the iterate $x^{(k+1)}$ of the gradient method is optimal with respect to
+$r^{(k)}$, but that $x^{(k+2)}$ in general is not. The declaration proves this for
+$A = \operatorname{diag}(1, 3)$, $b = 0$ and $x^{(0)} = (1, 1)$: the gradient iterate $x^{(1)}$
+is optimal with respect to $r^{(0)} = b - Ax^{(0)}$, and the gradient iterate $x^{(2)}$ is not
+optimal with respect to $r^{(0)}$.
+
+In this example $r^{(0)} = -(1, 3)$, $x^{(1)} = (9/14, -1/14)$, $x^{(2)} = (3/28, 3/28)$ and
+$r^{(2)} = -(3/28, 9/28)$. Then $r^{(1)T} r^{(0)} = 0$ while $r^{(2)T} r^{(0)} = 30/28 \neq 0$,
+and optimality follows from `QuarteroniSaccoSaleri.Chapter04.definition_4_4_iff`. The general
+claim of the exercise is not formalized. -/
 theorem exercise_4_12 :
     definition_4_4 (!![1, 0; 0, 3] : Matrix (Fin 2) (Fin 2) ℝ) 0
         (gradientStep !![1, 0; 0, 3] 0 (toLp 2 ![1, 1]))
@@ -1227,12 +1631,18 @@ section PCG
 
 variable (A P : Matrix (Fin n) (Fin n) ℝ) (b : EuclideanSpace ℝ (Fin n))
 
-/-- **The preconditioned conjugate gradient iteration of §4.3.5**, one step on the state
-`(x⁽ᵏ⁾, r⁽ᵏ⁾, p⁽ᵏ⁾)` in the book's letters: `α_k = p⁽ᵏ⁾ᵀ r⁽ᵏ⁾ / p⁽ᵏ⁾ᵀ A p⁽ᵏ⁾`,
-`x⁽ᵏ⁺¹⁾ = x⁽ᵏ⁾ + α_k p⁽ᵏ⁾`, `r⁽ᵏ⁺¹⁾ = r⁽ᵏ⁾ - α_k A p⁽ᵏ⁾`, `P z⁽ᵏ⁺¹⁾ = r⁽ᵏ⁺¹⁾`,
-`β_k = (A p⁽ᵏ⁾)ᵀ z⁽ᵏ⁺¹⁾ / (A p⁽ᵏ⁾)ᵀ p⁽ᵏ⁾` and `p⁽ᵏ⁺¹⁾ = z⁽ᵏ⁺¹⁾ - β_k p⁽ᵏ⁾`, the book's `β_k` again
-being the negative of the backbone's `Krylov.PCG.beta`. The state type is the backbone's record
-`Krylov.PCG.State`; the identification is `pcg_eq_PCG`. -/
+/-- **Section 4.3.5** of [quarteroni2000numerical], the preconditioned conjugate gradient iteration.
+Let $A, P \in \mathbb{R}^{n \times n}$. One step maps the state $(x^{(k)}, r^{(k)}, p^{(k)})$ to
+$(x^{(k+1)}, r^{(k+1)}, p^{(k+1)})$, where
+$$\alpha_k = \frac{p^{(k)T} r^{(k)}}{p^{(k)T} A p^{(k)}}, \qquad x^{(k+1)} = x^{(k)} + \alpha_k
+  p^{(k)}, \qquad r^{(k+1)} = r^{(k)} - \alpha_k A p^{(k)},$$
+$$P z^{(k+1)} = r^{(k+1)}, \qquad \beta_k = \frac{(A p^{(k)})^T z^{(k+1)}}{(A p^{(k)})^T
+  p^{(k)}}, \qquad p^{(k+1)} = z^{(k+1)} - \beta_k p^{(k)}.$$
+
+The vector $z^{(k+1)}$ is computed as $P^{-1} r^{(k+1)}$ with Mathlib's inverse. As in
+`QuarteroniSaccoSaleri.Chapter04.cgStep`, this $\beta_k$ is the negative of the backbone's
+`Krylov.PCG.beta`. The state type is the backbone's record `Krylov.PCG.State`, and the
+identification with the backbone is `QuarteroniSaccoSaleri.Chapter04.pcg_eq_PCG`. -/
 noncomputable def pcgStep (s : Krylov.PCG.State (EuclideanSpace ℝ (Fin n))) :
     Krylov.PCG.State (EuclideanSpace ℝ (Fin n)) :=
   let α := inner ℝ s.p s.r / inner ℝ s.p (toEuclideanLin A s.p)
@@ -1241,8 +1651,10 @@ noncomputable def pcgStep (s : Krylov.PCG.State (EuclideanSpace ℝ (Fin n))) :
   let β := inner ℝ (toEuclideanLin A s.p) z' / inner ℝ (toEuclideanLin A s.p) s.p
   { x := s.x + α • s.p, r := r', p := z' - β • s.p }
 
-/-- **The preconditioned conjugate gradient method** started at `x⁽⁰⁾` with `r⁽⁰⁾ = b - A x⁽⁰⁾`,
-`z⁽⁰⁾ = P⁻¹ r⁽⁰⁾` and `p⁽⁰⁾ = z⁽⁰⁾`: the state after `k` steps of `pcgStep`. -/
+/-- **Section 4.3.5** of [quarteroni2000numerical], the **preconditioned conjugate gradient
+method**. Start from $x^{(0)}$ with $r^{(0)} = b - Ax^{(0)}$, $z^{(0)} = P^{-1} r^{(0)}$ and
+$p^{(0)} = z^{(0)}$. Then `pcg A P b x₀ k` is the state $(x^{(k)}, r^{(k)}, p^{(k)})$ after $k$
+steps of `QuarteroniSaccoSaleri.Chapter04.pcgStep`. -/
 noncomputable def pcg (x₀ : EuclideanSpace ℝ (Fin n)) (k : ℕ) :
     Krylov.PCG.State (EuclideanSpace ℝ (Fin n)) :=
   (pcgStep A P)^[k]
@@ -1250,34 +1662,40 @@ noncomputable def pcg (x₀ : EuclideanSpace ℝ (Fin n)) (k : ℕ) :
 
 variable (x₀ : EuclideanSpace ℝ (Fin n))
 
-/-- The step length `α_k = p⁽ᵏ⁾ᵀ r⁽ᵏ⁾ / p⁽ᵏ⁾ᵀ A p⁽ᵏ⁾` of the preconditioned method at step `k`. -/
+/-- The step length $\alpha_k = p^{(k)T} r^{(k)} / p^{(k)T} A p^{(k)}$ of the preconditioned
+conjugate gradient method at step $k$. -/
 noncomputable def pcgAlpha (k : ℕ) : ℝ :=
   inner ℝ (pcg A P b x₀ k).p (pcg A P b x₀ k).r /
     inner ℝ (pcg A P b x₀ k).p (toEuclideanLin A (pcg A P b x₀ k).p)
 
-/-- The coefficient `β_k = (A p⁽ᵏ⁾)ᵀ z⁽ᵏ⁺¹⁾ / (A p⁽ᵏ⁾)ᵀ p⁽ᵏ⁾` of the preconditioned method at step
-`k`, with `z⁽ᵏ⁺¹⁾ = P⁻¹ r⁽ᵏ⁺¹⁾`. -/
+/-- The coefficient $\beta_k = (A p^{(k)})^T z^{(k+1)} / (A p^{(k)})^T p^{(k)}$ of the
+preconditioned conjugate gradient method at step $k$, with $z^{(k+1)} = P^{-1} r^{(k+1)}$. -/
 noncomputable def pcgBeta (k : ℕ) : ℝ :=
   inner ℝ (toEuclideanLin A (pcg A P b x₀ k).p) (toEuclideanLin P⁻¹ (pcg A P b x₀ (k + 1)).r) /
     inner ℝ (toEuclideanLin A (pcg A P b x₀ k).p) (pcg A P b x₀ k).p
 
+/-- The state of the preconditioned conjugate gradient method after $k + 1$ steps is one step of
+`QuarteroniSaccoSaleri.Chapter04.pcgStep` from the state after $k$ steps. -/
 theorem pcg_succ (k : ℕ) : pcg A P b x₀ (k + 1) = pcgStep A P (pcg A P b x₀ k) :=
   Function.iterate_succ_apply' _ _ _
 
-/-- `x⁽ᵏ⁺¹⁾ = x⁽ᵏ⁾ + α_k p⁽ᵏ⁾`. -/
+/-- The preconditioned conjugate gradient iterates satisfy $x^{(k+1)} = x^{(k)} + \alpha_k p^{(k)}$.
+-/
 theorem pcg_succ_x (k : ℕ) :
     (pcg A P b x₀ (k + 1)).x = (pcg A P b x₀ k).x + pcgAlpha A P b x₀ k • (pcg A P b x₀ k).p := by
   rw [pcg_succ]
   rfl
 
-/-- `r⁽ᵏ⁺¹⁾ = r⁽ᵏ⁾ - α_k A p⁽ᵏ⁾`. -/
+/-- The preconditioned conjugate gradient residuals satisfy
+$r^{(k+1)} = r^{(k)} - \alpha_k A p^{(k)}$. -/
 theorem pcg_succ_r (k : ℕ) :
     (pcg A P b x₀ (k + 1)).r =
       (pcg A P b x₀ k).r - pcgAlpha A P b x₀ k • toEuclideanLin A (pcg A P b x₀ k).p := by
   rw [pcg_succ]
   rfl
 
-/-- `p⁽ᵏ⁺¹⁾ = z⁽ᵏ⁺¹⁾ - β_k p⁽ᵏ⁾` with `z⁽ᵏ⁺¹⁾ = P⁻¹ r⁽ᵏ⁺¹⁾`. -/
+/-- The preconditioned conjugate gradient directions satisfy
+$p^{(k+1)} = z^{(k+1)} - \beta_k p^{(k)}$, with $z^{(k+1)} = P^{-1} r^{(k+1)}$. -/
 theorem pcg_succ_p (k : ℕ) :
     (pcg A P b x₀ (k + 1)).p =
       toEuclideanLin P⁻¹ (pcg A P b x₀ (k + 1)).r - pcgBeta A P b x₀ k • (pcg A P b x₀ k).p := by
@@ -1286,16 +1704,21 @@ theorem pcg_succ_p (k : ℕ) :
 
 variable {A P b x₀}
 
-/-- A symmetric positive definite `P` with its inverse `P⁻¹` is a preconditioner in the
-backbone's sense (`Matrix.PosDef.isPreconditioner_toEuclideanLin`). -/
+/-- Let $P \in \mathbb{R}^{n \times n}$ be symmetric positive definite. Then $P$ with its inverse
+$P^{-1}$ is a preconditioner in the sense of the backbone's `Krylov.IsPreconditioner`: $P$ is
+symmetric coercive and $P P^{-1} x = x$ for every $x$. The proof is
+`Matrix.PosDef.isPreconditioner_toEuclideanLin`. -/
 theorem isPreconditioner_of_posDef (hP : P.PosDef) :
     Krylov.IsPreconditioner (toEuclideanLin P) (toEuclideanLin P⁻¹) :=
   hP.isPreconditioner_toEuclideanLin
 
-/-- For `A` and `P` symmetric positive definite, the preconditioned operator `P⁻¹ A` is symmetric
-coercive in the `P`-inner product: it is symmetric there because `A` is, and coercive because
-`(P⁻¹ A x, x)_P = (A x, x) > 0` for `x ≠ 0` and the space is finite-dimensional
-(`LinearMap.isCoercive_iff_forall_pos`). -/
+/-- Let $A, P \in \mathbb{R}^{n \times n}$ be symmetric positive definite. The preconditioned
+operator $P^{-1} A$ is symmetric and coercive for the $P$-inner product $(x, y)_P = (Px, y)$.
+
+It is symmetric there because $A$ is symmetric, and coercive because
+$(P^{-1} A x, x)_P = (Ax, x) > 0$ for $x \neq 0$ in finite dimension
+(`LinearMap.isCoercive_iff_forall_pos`). The operator on the space with the $P$-inner product is
+`Krylov.IsPreconditioner.energyEnd`. -/
 theorem isSymmetricCoercive_energyEnd_of_posDef (hA : A.PosDef) (hP : P.PosDef) :
     ((isPreconditioner_of_posDef hP).energyEnd
       (toEuclideanLin P⁻¹ ∘ₗ toEuclideanLin A)).IsSymmetricCoercive := by
@@ -1311,14 +1734,14 @@ theorem isSymmetricCoercive_energyEnd_of_posDef (hA : A.PosDef) (hP : P.PosDef) 
     rw [hM.inner_energyEnd_left]
     exact hA'.isCoercive.inner_self_pos fun h => hy (by rw [h, map_zero])
 
-/-- `(P⁻¹ r)ᵀ` against `P`-inner products: `(P⁻¹ u, w)_P = (u, w)`. -/
+/-- For symmetric positive definite $P$, the $P$-inner product of $P^{-1} u$ and $w$ is $(u, w)$. -/
 private theorem inner_toEnergy_inv_left (hP : P.PosDef) (u w : EuclideanSpace ℝ (Fin n)) :
     inner ℝ ((isPreconditioner_of_posDef hP).toEnergy (toEuclideanLin P⁻¹ u))
       ((isPreconditioner_of_posDef hP).toEnergy w) = inner ℝ u w := by
   rw [WithEnergy.inner_equiv, energyInner, (isPreconditioner_of_posDef hP).apply_inv]
 
-/-- The residual of the backbone's PCG iteration after the book's step, and the identities
-`p⁽ᵏ⁾ᵀ r⁽ᵏ⁾ = r⁽ᵏ⁾ᵀ P⁻¹ r⁽ᵏ⁾` behind the step length. -/
+/-- On the backbone's preconditioned conjugate gradient iterates,
+$p^{(k)T} r^{(k)} = r^{(k)T} P^{-1} r^{(k)}$. -/
 private theorem pcg_inner_direction_residual (hA : A.PosDef) (hP : P.PosDef) (k : ℕ) :
     inner ℝ (Krylov.PCG.iterate (toEuclideanLin A) (toEuclideanLin P⁻¹) b x₀ k).p
         (Krylov.PCG.iterate (toEuclideanLin A) (toEuclideanLin P⁻¹) b x₀ k).r =
@@ -1335,7 +1758,8 @@ private theorem pcg_inner_direction_residual (hA : A.PosDef) (hP : P.PosDef) (k 
     ← real_inner_self_eq_norm_sq, inner_toEnergy_inv_left hP] at h
   rw [real_inner_comm, h, real_inner_comm]
 
-/-- On the backbone's PCG iterates, the book's `α_k` is `Krylov.PCG.alpha`. -/
+/-- On the backbone's preconditioned conjugate gradient iterates, the step length of
+`QuarteroniSaccoSaleri.Chapter04.pcgStep` is `Krylov.PCG.alpha`. -/
 private theorem pcgAlpha_iterate (hA : A.PosDef) (hP : P.PosDef) (k : ℕ) :
     inner ℝ (Krylov.PCG.iterate (toEuclideanLin A) (toEuclideanLin P⁻¹) b x₀ k).p
         (Krylov.PCG.iterate (toEuclideanLin A) (toEuclideanLin P⁻¹) b x₀ k).r /
@@ -1346,15 +1770,17 @@ private theorem pcgAlpha_iterate (hA : A.PosDef) (hP : P.PosDef) (k : ℕ) :
   rw [Krylov.PCG.alpha, pcg_inner_direction_residual hA hP,
     real_inner_comm (toEuclideanLin A (Krylov.PCG.iterate _ _ b x₀ k).p)]
 
-/-- On the backbone's PCG iterates, the book's step produces the backbone's residual. -/
+/-- On the backbone's preconditioned conjugate gradient iterates, one step of
+`QuarteroniSaccoSaleri.Chapter04.pcgStep` produces the backbone's next residual. -/
 private theorem pcgStep_r_iterate (hA : A.PosDef) (hP : P.PosDef) (k : ℕ) :
     (pcgStep A P (Krylov.PCG.iterate (toEuclideanLin A) (toEuclideanLin P⁻¹) b x₀ k)).r =
       (Krylov.PCG.iterate (toEuclideanLin A) (toEuclideanLin P⁻¹) b x₀ (k + 1)).r := by
   rw [Krylov.PCG.iterate_succ, Krylov.PCG.step_r, pcgStep, pcgAlpha_iterate hA hP]
 
-/-- On the backbone's PCG iterates, the book's `β_k` is the negative of `Krylov.PCG.beta`: from
-`α_k A p⁽ᵏ⁾ = r⁽ᵏ⁾ - r⁽ᵏ⁺¹⁾` and the orthogonalities `r⁽ᵏ⁾ᵀ P⁻¹ r⁽ᵏ⁺¹⁾ = 0`, `r⁽ᵏ⁺¹⁾ᵀ p⁽ᵏ⁾ = 0`
-of the conjugate gradient method in the `P`-inner product. -/
+/-- On the backbone's preconditioned conjugate gradient iterates, the coefficient $\beta_k$ of
+`QuarteroniSaccoSaleri.Chapter04.pcgStep` is the negative of `Krylov.PCG.beta`, by
+$\alpha_k A p^{(k)} = r^{(k)} - r^{(k+1)}$ and the orthogonality relations
+$r^{(k)T} P^{-1} r^{(k+1)} = 0$ and $r^{(k+1)T} p^{(k)} = 0$. -/
 private theorem pcgBeta_iterate (hA : A.PosDef) (hP : P.PosDef) (k : ℕ) :
     inner ℝ
         (toEuclideanLin A (Krylov.PCG.iterate (toEuclideanLin A) (toEuclideanLin P⁻¹) b x₀ k).p)
@@ -1417,7 +1843,8 @@ private theorem pcgBeta_iterate (hA : A.PosDef) (hP : P.PosDef) (k : ℕ) :
     field_simp
     ring
 
-/-- Extensionality for the backbone's PCG state (a record of three vectors). -/
+/-- Two states of the backbone's preconditioned conjugate gradient method are equal if their three
+components are equal. -/
 private theorem PCG.State.ext' {E : Type*} {s t : Krylov.PCG.State E} (hx : s.x = t.x)
     (hr : s.r = t.r) (hp : s.p = t.p) : s = t := by
   cases s
@@ -1425,7 +1852,8 @@ private theorem PCG.State.ext' {E : Type*} {s t : Krylov.PCG.State E} (hx : s.x 
   simp only at hx hr hp
   rw [hx, hr, hp]
 
-/-- On the backbone's PCG iterates, the book's step is the backbone's step. -/
+/-- On the backbone's preconditioned conjugate gradient iterates,
+`QuarteroniSaccoSaleri.Chapter04.pcgStep` is the backbone's `Krylov.PCG.step`. -/
 private theorem pcgStep_iterate (hA : A.PosDef) (hP : P.PosDef) (k : ℕ) :
     pcgStep A P (Krylov.PCG.iterate (toEuclideanLin A) (toEuclideanLin P⁻¹) b x₀ k) =
       Krylov.PCG.step (toEuclideanLin A) (toEuclideanLin P⁻¹)
@@ -1442,12 +1870,16 @@ private theorem pcgStep_iterate (hA : A.PosDef) (hP : P.PosDef) (k : ℕ) :
         inner ℝ (toEuclideanLin A s.p) s.p) • s.p = _
     rw [hr, hβ, neg_smul, sub_neg_eq_add]
 
-/-- **The bridge to the backbone for the preconditioned method.** For `A` and `P` symmetric
-positive definite, the preconditioned conjugate gradient method of §4.3.5 is the backbone's
-`Krylov.PCG.iterate`, the book's `α_k` is `Krylov.PCG.alpha` and its `β_k` is `-Krylov.PCG.beta`;
-the identities `p⁽ᵏ⁾ᵀ r⁽ᵏ⁾ = r⁽ᵏ⁾ᵀ P⁻¹ r⁽ᵏ⁾` and `(A p⁽ᵏ⁾)ᵀ P⁻¹ r⁽ᵏ⁺¹⁾ = -(r⁽ᵏ⁺¹⁾ᵀ P⁻¹ r⁽ᵏ⁺¹⁾)/α_k`
-behind them are those of the conjugate gradient method for `P⁻¹ A` in the `P`-inner product
-(`Krylov.PCG.iterate_eq_CG_iterate_withEnergy`). -/
+/-- Let $A, P \in \mathbb{R}^{n \times n}$ be symmetric positive definite. For every $k$, the state
+of the preconditioned conjugate gradient method of §4.3.5 after $k$ steps is the backbone's
+state `Krylov.PCG.iterate (toEuclideanLin A) (toEuclideanLin P⁻¹) b x₀ k`, the step length is
+`Krylov.PCG.alpha` of that state, and the coefficient of the direction update is the negative of
+`Krylov.PCG.beta` of that state.
+
+The identities behind the step length and the coefficient are
+$p^{(k)T} r^{(k)} = r^{(k)T} P^{-1} r^{(k)}$ and $(A p^{(k)})^T P^{-1} r^{(k+1)} = -r^{(k+1)T}
+P^{-1} r^{(k+1)} / \alpha_k$. They are those of the conjugate gradient method for $P^{-1} A$ in
+the $P$-inner product (`Krylov.PCG.iterate_eq_CG_iterate_withEnergy`). -/
 theorem pcg_eq_PCG (hA : A.PosDef) (hP : P.PosDef) (k : ℕ) :
     pcg A P b x₀ k = Krylov.PCG.iterate (toEuclideanLin A) (toEuclideanLin P⁻¹) b x₀ k ∧
       pcgAlpha A P b x₀ k = Krylov.PCG.alpha (toEuclideanLin A) (toEuclideanLin P⁻¹)
@@ -1464,12 +1896,22 @@ theorem pcg_eq_PCG (hA : A.PosDef) (hP : P.PosDef) (k : ℕ) :
   · rw [pcgAlpha, hpcg, pcgAlpha_iterate hA hP]
   · rw [pcgBeta, hpcg, hpcg, pcgBeta_iterate hA hP]
 
-/-- **§4.3.5, the error estimate.** "The error estimate is the same as for the nonpreconditioned
-method, provided to replace the matrix `A` by `P⁻¹ A`": for `A`, `P` symmetric positive definite,
-`x` the solution, and the generalized eigenvalues of `A y = λ P y` enclosed in `[λ_n, λ_1]` —
-`λ_n (P y, y) ≤ (A y, y) ≤ λ_1 (P y, y)` for all `y`, cf. Remark 4.2 — with `K = λ_1/λ_n`,
-`‖e⁽ᵏ⁾‖_A ≤ 2 ((√K - 1)/(√K + 1))ᵏ ‖e⁽⁰⁾‖_A` (backbone `Krylov.PCG.energyNorm_error_le`
-through `pcg_eq_PCG`). -/
+/-- **Section 4.3.5** of [quarteroni2000numerical], the error estimate. Let
+$A, P \in \mathbb{R}^{n \times n}$ be symmetric positive definite and let $x$ solve $Ax = b$.
+Let $0 < \lambda_n \le \lambda_1$ enclose the generalized eigenvalues of $Ay = \lambda Py$ in
+the sense that
+$$\lambda_n (Py, y) \le (Ay, y) \le \lambda_1 (Py, y) \quad \text{for all } y \in
+  \mathbb{R}^n,$$
+and let $K = \lambda_1/\lambda_n$. Then for every $k$ the error of the preconditioned conjugate
+gradient method satisfies
+$$\|e^{(k)}\|_A \le 2 \Big(\frac{\sqrt{K} - 1}{\sqrt{K} + 1}\Big)^k \|e^{(0)}\|_A.$$
+The source states that the error estimate is the same as for the non preconditioned method, with
+$A$ replaced by $P^{-1} A$.
+
+The errors are written $x - x^{(k)}$ and $x - x^{(0)}$. By Remark 4.2 the numbers $\lambda_n$
+and $\lambda_1$ bound the eigenvalues of $P^{-1}A$. The proof is the backbone's
+`Krylov.PCG.energyNorm_error_le` through `QuarteroniSaccoSaleri.Chapter04.pcg_eq_PCG`. The bound
+has the factor $2c^k$, which is weaker than the factor $2c^k/(1 + c^{2k})$ of (4.47). -/
 theorem pcg_energyNorm_error_le (hA : A.PosDef) (hP : P.PosDef) {x : EuclideanSpace ℝ (Fin n)}
     (hx : toEuclideanLin A x = b) {lmin lmax : ℝ} (hpos : 0 < lmin) (hle : lmin ≤ lmax)
     (hlo : ∀ y, lmin * inner ℝ (toEuclideanLin P y) y ≤ inner ℝ (toEuclideanLin A y) y)
@@ -1491,27 +1933,45 @@ section ADI
 
 variable (A₁ A₂ : Matrix (Fin n) (Fin n) ℝ) (α₁ α₂ : ℝ)
 
-/-- **(4.50), the alternating-direction (Peaceman–Rachford) method** for `A = A₁ + A₂`, with two
-real parameters `α₁`, `α₂`: one step solves `(I + α₁ A₁) x⁽ᵏ⁺¹ᐟ²⁾ = (I - α₁ A₂) x⁽ᵏ⁾ + α₁ b` for the
-half step and then `(I + α₂ A₂) x⁽ᵏ⁺¹⁾ = (I - α₂ A₁) x⁽ᵏ⁺¹ᐟ²⁾ + α₂ b`. -/
+/-- **Equation (4.50)** of [quarteroni2000numerical], the **alternating-direction method** of
+Peaceman and Rachford. Let $A = A_1 + A_2$ with $A_1, A_2 \in \mathbb{R}^{n \times n}$, let
+$\alpha_1, \alpha_2 \in \mathbb{R}$ and $b \in \mathbb{R}^n$. One step from $x^{(k)}$ solves
+$$(I + \alpha_1 A_1) x^{(k+1/2)} = (I - \alpha_1 A_2) x^{(k)} + \alpha_1 b$$
+for the half step, and then
+$$(I + \alpha_2 A_2) x^{(k+1)} = (I - \alpha_2 A_1) x^{(k+1/2)} + \alpha_2 b.$$
+
+The two solves are written with Mathlib's matrix inverse, which is $0$ for a singular matrix.
+The $k$-th iterate from $x^{(0)}$ is `(adiStep A₁ A₂ α₁ α₂ b)^[k] x₀`. -/
 noncomputable def adiStep (b x : Fin n → ℝ) : Fin n → ℝ :=
   (1 + α₂ • A₂)⁻¹ *ᵥ ((1 - α₂ • A₁) *ᵥ ((1 + α₁ • A₁)⁻¹ *ᵥ ((1 - α₁ • A₂) *ᵥ x + α₁ • b)) + α₂ • b)
 
-/-- **The iteration matrix of the ADI method**,
-`B = (I + α₂ A₂)⁻¹ (I - α₂ A₁) (I + α₁ A₁)⁻¹ (I - α₁ A₂)` (the display after (4.50)). -/
+/-- **Section 4.3.6** of [quarteroni2000numerical], the display after (4.50). The **iteration
+matrix** of the alternating-direction method is
+$$B = (I + \alpha_2 A_2)^{-1} (I - \alpha_2 A_1) (I + \alpha_1 A_1)^{-1} (I - \alpha_1 A_2).$$
+-/
 noncomputable def adiMatrix : Matrix (Fin n) (Fin n) ℝ :=
   (1 + α₂ • A₂)⁻¹ * (1 - α₂ • A₁) * (1 + α₁ • A₁)⁻¹ * (1 - α₁ • A₂)
 
-/-- **The vector `f` of the ADI method**,
-`f = (I + α₂ A₂)⁻¹ [α₁ (I - α₂ A₁)(I + α₁ A₁)⁻¹ + α₂ I] b`. The book's display omits the leading
-factor `(I + α₂ A₂)⁻¹`, which composing the two half-steps produces (see the module
-documentation). -/
+/-- **Section 4.3.6** of [quarteroni2000numerical], the display after (4.50). The vector $f$ of the
+alternating-direction method is
+$$f = (I + \alpha_2 A_2)^{-1} \big[\alpha_1 (I - \alpha_2 A_1) (I + \alpha_1 A_1)^{-1} +
+  \alpha_2 I\big] b.$$
+
+**Correction.** The source prints $f = [\alpha_1 (I - \alpha_2 A_1) (I + \alpha_1 A_1)^{-1} +
+\alpha_2 I] b$, without the leading factor $(I + \alpha_2 A_2)^{-1}$. The composition of the two
+half steps of (4.50) produces this factor, the same inverse that opens $B$
+(`QuarteroniSaccoSaleri.Chapter04.adiStep_eq_affineStep`). -/
 noncomputable def adiConst (b : Fin n → ℝ) : Fin n → ℝ :=
   ((1 + α₂ • A₂)⁻¹ * (α₁ • ((1 - α₂ • A₁) * (1 + α₁ • A₁)⁻¹) + α₂ • 1)) *ᵥ b
 
-/-- **The display after (4.50).** The ADI method is the linear iterative method (4.2) with matrix
-`B = adiMatrix` and vector `f = adiConst`, for every choice of the parameters (an algebraic
-identity, valid with Mathlib's junk-valued inverses). -/
+/-- **Section 4.3.6** of [quarteroni2000numerical], the display after (4.50). For all
+$A_1, A_2 \in \mathbb{R}^{n \times n}$ and all parameters $\alpha_1, \alpha_2$, the
+alternating-direction method is the linear iterative method (4.2), $x \mapsto Bx + f$, with the
+matrix $B$ of `QuarteroniSaccoSaleri.Chapter04.adiMatrix` and the vector $f$ of
+`QuarteroniSaccoSaleri.Chapter04.adiConst`.
+
+The identity is algebraic. It holds with Mathlib's inverses also when a shifted matrix
+$I + \alpha_i A_i$ is singular. -/
 theorem adiStep_eq_affineStep (b : Fin n → ℝ) :
     adiStep A₁ A₂ α₁ α₂ b = affineStep (adiMatrix A₁ A₂ α₁ α₂) (adiConst A₁ A₂ α₁ α₂ b) := by
   funext x
@@ -1519,8 +1979,9 @@ theorem adiStep_eq_affineStep (b : Fin n → ℝ) :
     Matrix.mul_add, Matrix.mul_smul, Matrix.mul_one, add_mulVec, smul_mulVec, Matrix.mul_assoc]
   abel
 
-/-- The ADI iteration matrix in the letters of the backbone, `r_i = 1/α_i`:
-`B = (A₂ + r₂)⁻¹ (A₁ - r₂) (A₁ + r₁)⁻¹ (A₂ - r₁)`, over any field. -/
+/-- Over any field, for $\alpha_1, \alpha_2 \neq 0$ and $r_i = 1/\alpha_i$, the iteration matrix of
+the alternating-direction method is $B = (A_2 + r_2 I)^{-1} (A_1 - r_2 I) (A_1 + r_1 I)^{-1}
+(A_2 - r_1 I)$. -/
 private theorem adiMatrix_eq_general {𝕜 : Type*} [Field 𝕜] (A₁ A₂ : Matrix (Fin n) (Fin n) 𝕜)
     {α₁ α₂ : 𝕜} (h₁ : α₁ ≠ 0) (h₂ : α₂ ≠ 0) :
     (1 + α₂ • A₂)⁻¹ * (1 - α₂ • A₁) * (1 + α₁ • A₁)⁻¹ * (1 - α₁ • A₂) =
@@ -1539,8 +2000,9 @@ private theorem adiMatrix_eq_general {𝕜 : Type*} [Field 𝕜] (A₁ A₂ : Ma
   simp only [Matrix.smul_mul, Matrix.mul_smul, smul_smul]
   rw [show -α₁ * (α₁⁻¹ * (-α₂ * α₂⁻¹)) = 1 by field_simp, one_smul]
 
-/-- The matrix of the ADI vector `f` in the letters of the backbone:
-`(I + α₂ A₂)⁻¹ [α₁ (I - α₂ A₁)(I + α₁ A₁)⁻¹ + α₂ I] = (A₂ + r₂)⁻¹ (I - (A₁ - r₂)(A₁ + r₁)⁻¹)`. -/
+/-- Over any field, for $\alpha_1, \alpha_2 \neq 0$ and $r_i = 1/\alpha_i$, the matrix of the vector
+$f$ of the alternating-direction method is $(A_2 + r_2 I)^{-1} (I - (A_1 - r_2 I)(A_1 + r_1
+I)^{-1})$. -/
 private theorem adiConst_eq_general {𝕜 : Type*} [Field 𝕜] (A₁ A₂ : Matrix (Fin n) (Fin n) 𝕜)
     {α₁ α₂ : 𝕜} (h₁ : α₁ ≠ 0) (h₂ : α₂ ≠ 0) :
     (1 + α₂ • A₂)⁻¹ * (α₁ • ((1 - α₂ • A₁) * (1 + α₁ • A₁)⁻¹) + α₂ • 1) =
@@ -1558,9 +2020,9 @@ private theorem adiConst_eq_general {𝕜 : Type*} [Field 𝕜] (A₁ A₂ : Mat
   rw [show α₁ * (α₁⁻¹ * -α₂) * α₂⁻¹ = -1 by field_simp, show α₂ * α₂⁻¹ = 1 by field_simp]
   module
 
-/-- The ADI iteration matrix as an operator, over `ℝ` or `ℂ`: with `α_i = 1/r_i` and the shifted
-matrices `A_i + r_i I` nonsingular, `toEuclideanCLM B` is the backbone's
-`Stationary.peacemanRachfordTwo (toEuclideanCLM A₁) (toEuclideanCLM A₂) r₁ r₂`. -/
+/-- Over $\mathbb{R}$ or $\mathbb{C}$, if $r_1, r_2 \neq 0$ and $A_i + r_i I$ is nonsingular for
+$i = 1, 2$, then the iteration matrix with $\alpha_i = 1/r_i$ acts on Euclidean space as the
+backbone's `Stationary.peacemanRachfordTwo` with the parameters $r_1$ and $r_2$. -/
 private theorem toEuclideanCLM_adiMatrix_general {𝕜 : Type*} [RCLike 𝕜]
     (A₁ A₂ : Matrix (Fin n) (Fin n) 𝕜) {r₁ r₂ : ℝ} (h₁ : r₁ ≠ 0) (h₂ : r₂ ≠ 0)
     (hu₁ : IsUnit (A₁ + (r₁ : 𝕜) • (1 : Matrix (Fin n) (Fin n) 𝕜)))
@@ -1576,7 +2038,8 @@ private theorem toEuclideanCLM_adiMatrix_general {𝕜 : Type*} [RCLike 𝕜]
     toEuclideanCLM_add_smul_one, toEuclideanCLM_add_smul_one, toEuclideanCLM_sub_smul_one,
     toEuclideanCLM_sub_smul_one]
 
-/-- The ADI vector `f` as an operator applied to `b`: `Stationary.peacemanRachfordTwoConst`. -/
+/-- Over $\mathbb{R}$ or $\mathbb{C}$, under the hypotheses of the previous lemma, the vector $f$
+with $\alpha_i = 1/r_i$ is the backbone's `Stationary.peacemanRachfordTwoConst` applied to $b$. -/
 private theorem toEuclideanCLM_adiConst_general {𝕜 : Type*} [RCLike 𝕜]
     (A₁ A₂ : Matrix (Fin n) (Fin n) 𝕜) {r₁ r₂ : ℝ} (h₁ : r₁ ≠ 0) (h₂ : r₂ ≠ 0)
     (hu₁ : IsUnit (A₁ + (r₁ : 𝕜) • (1 : Matrix (Fin n) (Fin n) 𝕜)))
@@ -1593,16 +2056,20 @@ private theorem toEuclideanCLM_adiConst_general {𝕜 : Type*} [RCLike 𝕜]
     toEuclideanCLM_add_smul_one, toEuclideanCLM_add_smul_one, toEuclideanCLM_sub_smul_one,
     mul_apply_eq_comp]
 
-/-- For a positive definite `A` and `r > 0`, the shift `A + r I` is nonsingular. -/
+/-- For a symmetric positive definite matrix $A$ and $r > 0$, the matrix $A + rI$ is nonsingular. -/
 private theorem isUnit_add_smul_one_of_posDef {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosDef)
     {r : ℝ} (hr : 0 < r) : IsUnit (A + r • (1 : Matrix (Fin n) (Fin n) ℝ)) :=
   (hA.add (Matrix.PosDef.one.smul hr)).isUnit
 
-/-- **The display after (4.50), the identification with the backbone.** For `A₁`, `A₂` symmetric
-positive definite and `α₁, α₂ > 0`, the matrix `B` of the ADI method acts on `EuclideanSpace` as
-the two-parameter Peaceman–Rachford sweep operator `Stationary.peacemanRachfordTwo` with the
-reciprocal parameters `r_i = 1/α_i`, and the vector `f` is its affine part
-`Stationary.peacemanRachfordTwoConst`. -/
+/-- **Equation (4.50)** of [quarteroni2000numerical], the identification with the backbone. Let
+$A_1, A_2 \in \mathbb{R}^{n \times n}$ be symmetric positive definite and let
+$\alpha_1, \alpha_2 > 0$. Then the iteration matrix $B$ of the alternating-direction method acts
+on `EuclideanSpace ℝ (Fin n)` as the backbone's two-parameter Peaceman–Rachford operator with
+the parameters $r_i = 1/\alpha_i$, and the vector $f$ is the affine part of that operator
+applied to $b$.
+
+The operator is `Stationary.peacemanRachfordTwo` and its affine part is
+`Stationary.peacemanRachfordTwoConst`. The matrices act through `Matrix.toEuclideanCLM`. -/
 theorem equation_4_50 (hA₁ : A₁.PosDef) (hA₂ : A₂.PosDef) (hα₁ : 0 < α₁) (hα₂ : 0 < α₂)
     (b : Fin n → ℝ) :
     toEuclideanCLM (n := Fin n) (𝕜 := ℝ) (adiMatrix A₁ A₂ α₁ α₂) =
@@ -1625,8 +2092,9 @@ theorem equation_4_50 (hA₁ : A₁.PosDef) (hA₂ : A₂.PosDef) (hα₁ : 0 < 
     rw [adiConst, ← toEuclideanCLM_toLp]
     exact h
 
-/-- The scalar identity behind the book's form of the ADI bound: for `t, α₁, α₂ > 0`,
-`|t - 1/α₂| / (t + 1/α₁) = (α₁/α₂) |1 - α₂ t| / (1 + α₁ t)`. -/
+/-- For $t, \alpha_1, \alpha_2 > 0$: $|t - 1/\alpha_2| / (t + 1/\alpha_1) = (\alpha_1/\alpha_2) \,
+|1 - \alpha_2 t| / (1 + \alpha_1 t)$.
+-/
 private theorem abs_sub_div_add_eq {t : ℝ} (ht : 0 < t) (hα₁ : 0 < α₁) (hα₂ : 0 < α₂) :
     |t - 1 / α₂| / (t + 1 / α₁) = α₁ / α₂ * (|1 - α₂ * t| / (1 + α₁ * t)) := by
   have h1 : |t - 1 / α₂| * α₂ = |1 - α₂ * t| := by
@@ -1641,12 +2109,18 @@ private theorem abs_sub_div_add_eq {t : ℝ} (ht : 0 < t) (hα₁ : 0 < α₁) (
   field_simp
   ring
 
-/-- **§4.3.6, the estimate of `ρ(B)`.** For `A₁`, `A₂` symmetric positive definite with
-eigenvalues `λ_i⁽¹⁾`, `λ_i⁽²⁾` (Mathlib's `Matrix.IsHermitian.eigenvalues`) and `α₁, α₂ > 0`,
-`ρ(B) ≤ max_i |(1 - α₂ λ_i⁽¹⁾)/(1 + α₁ λ_i⁽¹⁾)| · max_i |(1 - α₁ λ_i⁽²⁾)/(1 + α₂ λ_i⁽²⁾)|`
-(backbone `Matrix.PosDef.complexSpectralRadius_peacemanRachfordTwo_le`, which needs no
-commutativity of `A₁` and `A₂`, at `r_i = 1/α_i`; the two factors are those of the backbone up to
-the constants `α₁/α₂` and `α₂/α₁`, which cancel in the product). -/
+/-- **Section 4.3.6** of [quarteroni2000numerical], the estimate of $\rho(B)$. Let $n \ge 1$, let
+$A_1, A_2 \in \mathbb{R}^{n \times n}$ be symmetric positive definite with eigenvalues
+$\lambda_i^{(1)}$ and $\lambda_i^{(2)}$, and let $\alpha_1, \alpha_2 > 0$. Then the iteration
+matrix $B$ of the alternating-direction method satisfies
+$$\rho(B) \le \max_i \frac{|1 - \alpha_2 \lambda_i^{(1)}|}{1 + \alpha_1 \lambda_i^{(1)}} \cdot
+  \max_i \frac{|1 - \alpha_1 \lambda_i^{(2)}|}{1 + \alpha_2 \lambda_i^{(2)}}.$$
+
+The eigenvalues are `Matrix.IsHermitian.eigenvalues`, and the maxima are `Finset.sup'`. The
+proof is the backbone's `Matrix.PosDef.complexSpectralRadius_peacemanRachfordTwo_le` at
+$r_i = 1/\alpha_i$, which needs no commutativity of $A_1$ and $A_2$. Its two factors differ from
+those here by the constants $\alpha_1/\alpha_2$ and $\alpha_2/\alpha_1$, which cancel in the
+product. -/
 theorem adi_spectralRadius_le [NeZero n] (hA₁ : A₁.PosDef) (hA₂ : A₂.PosDef) (hα₁ : 0 < α₁)
     (hα₂ : 0 < α₂) :
     complexSpectralRadius (adiMatrix A₁ A₂ α₁ α₂) ≤ ENNReal.ofReal
@@ -1684,11 +2158,15 @@ theorem adi_spectralRadius_le [NeZero n] (hA₁ : A₁.PosDef) (hA₂ : A₂.Pos
     (inv_pos.mpr hα₂) (mul_nonneg (div_pos hα₁ hα₂).le hM₁0) (mul_nonneg (div_pos hα₂ hα₁).le hM₂0)
     (hbound hA₁ hα₁ hα₂) (hbound hA₂ hα₂ hα₁)
 
-/-- **§4.3.6, convergence for equal parameters.** "The method converges if `ρ(B) < 1`, which is
-always verified if `α₁ = α₂ = α > 0`": for `A₁`, `A₂` symmetric positive definite, `α > 0` and
-`(A₁ + A₂) x = b`, the ADI iterates converge to `x` from every `x⁽⁰⁾` (backbone
-`Stationary.tendsto_peacemanRachford` through `equation_4_50`; coercivity of `A₁`, `A₂` suffices,
-neither symmetry nor commutativity is used). -/
+/-- **Section 4.3.6** of [quarteroni2000numerical], convergence for equal parameters. Let
+$A_1, A_2 \in \mathbb{R}^{n \times n}$ be symmetric positive definite, let $\alpha > 0$, and let
+$(A_1 + A_2) x = b$. Then the alternating-direction method with $\alpha_1 = \alpha_2 = \alpha$
+converges to $x$ from every $x^{(0)}$. The source states that the method converges if
+$\rho(B) < 1$, which always holds if $\alpha_1 = \alpha_2 = \alpha > 0$.
+
+The proof is the backbone's `Stationary.tendsto_peacemanRachford` through
+`QuarteroniSaccoSaleri.Chapter04.equation_4_50`. The backbone uses only the coercivity of $A_1$
+and $A_2$, neither their symmetry nor their commutativity. -/
 theorem adi_tendsto (hA₁ : A₁.PosDef) (hA₂ : A₂.PosDef) {α : ℝ} (hα : 0 < α)
     {b x : Fin n → ℝ} (hx : (A₁ + A₂) *ᵥ x = b) (x₀ : Fin n → ℝ) :
     Tendsto (fun k => (adiStep A₁ A₂ α α b)^[k] x₀) atTop (𝓝 x) := by
@@ -1713,12 +2191,18 @@ theorem adi_tendsto (hA₁ : A₁.PosDef) (hA₂ : A₂.PosDef) {α : ℝ} (hα 
   have h' := (PiLp.continuous_ofLp (p := 2) (β := fun _ : Fin n => ℝ)).tendsto _ |>.comp h
   simpa [Function.comp_def] using h'
 
-/-- **§4.3.6, the last display.** If the eigenvalues of `A₁` and `A₂` all lie in `[γ, δ]`,
-`0 < γ ≤ δ`, then with `α₁ = α₂ = 1/√(δγ)` the ADI iteration matrix satisfies
-`ρ(B) ≤ ((1 - √(γ/δ))/(1 + √(γ/δ)))²` (backbone
-`Matrix.IsHermitian.complexSpectralRadius_peacemanRachford_le_of_spectrum_subset`). The book's
-proviso "provided `γ/δ` tends to `0` as the size of `A` grows" is not a hypothesis of the
-inequality. -/
+/-- **Section 4.3.6** of [quarteroni2000numerical], the last display. Let
+$A_1, A_2 \in \mathbb{R}^{n \times n}$ be symmetric positive definite with all their eigenvalues
+in $[\gamma, \delta]$, where $0 < \gamma \le \delta$. With
+$\alpha_1 = \alpha_2 = 1/\sqrt{\delta\gamma}$, the iteration matrix of the alternating-direction
+method satisfies
+$$\rho(B) \le \Big(\frac{1 - \sqrt{\gamma/\delta}}{1 + \sqrt{\gamma/\delta}}\Big)^2.$$
+
+**Reading.** The source adds the proviso "provided $\gamma/\delta$ tends to $0$ as the size of
+$A$ grows". The proviso is not a hypothesis of the inequality.
+
+The eigenvalues are `Matrix.IsHermitian.eigenvalues`. The proof is the backbone's
+`Matrix.IsHermitian.complexSpectralRadius_peacemanRachford_le_of_spectrum_subset`. -/
 theorem adi_spectralRadius_le_sq (hA₁ : A₁.PosDef) (hA₂ : A₂.PosDef) {γ δ : ℝ} (hγ : 0 < γ)
     (hγδ : γ ≤ δ) (h₁ : ∀ i, hA₁.1.eigenvalues i ∈ Set.Icc γ δ)
     (h₂ : ∀ i, hA₂.1.eigenvalues i ∈ Set.Icc γ δ) :

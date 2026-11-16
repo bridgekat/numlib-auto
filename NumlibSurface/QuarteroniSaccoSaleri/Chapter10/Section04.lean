@@ -6,77 +6,79 @@ import Numlib.Approximation.OrthogonalPolynomial.LegendreBounds
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter10.Section02
 
 /-!
-# Quarteroni–Sacco–Saleri §10.4: Legendre integration and interpolation
+# Quarteroni, Sacco and Saleri, Section 10.4: Legendre integration and interpolation
 
-Surface file for Alfio Quarteroni, Riccardo Sacco and Fausto Saleri, *Numerical Mathematics*,
-Springer, 2000, §10.4.
+This module formalizes Section 10.4 of [quarteroni2000numerical], on Gaussian integration for the
+Legendre weight $w \equiv 1$ on $(-1, 1)$. The Gauss nodes are the zeros of $L_{n+1}$, with weights
+$\alpha_j = 2 / ((1 - x_j^2) L'_{n+1}(x_j)^2)$ (10.32). The Gauss–Lobatto nodes are $\bar x_0 = -1$,
+$\bar x_n = 1$ and the zeros of $L_n'$ (10.33), with weights
+$\bar\alpha_j = 2 / (n(n + 1) L_n(\bar x_j)^2)$ (10.34). The section states bounds on the
+Gauss–Lobatto weights, which are proved here, and derives the discrete Legendre transform: the
+interpolant at the Gauss–Lobatto nodes is $\sum_{k \le n} \tilde f_k L_k$ (10.38), with the inverse
+transform $f(\bar x_j) = \sum_k \tilde f_k L_k(\bar x_j)$ (10.39) and the coefficients (10.40).
 
-For the Legendre weight `w ≡ 1` the Gauss nodes are the zeros of `L_{n+1}` with weights
-`αⱼ = 2/((1 - xⱼ²) L'_{n+1}(xⱼ)²)` (10.32), and the Gauss–Lobatto nodes are `x̄₀ = -1`, `x̄_n = 1`
-and the zeros of `L_n'` (10.33) with weights `ᾱⱼ = 2/(n(n + 1) L_n(x̄ⱼ)²)` (10.34). The section
-quotes bounds on the Lobatto weights (proved here from `Numlib/Approximation/OrthogonalPolynomial/
-LegendreBounds`) and the Legendre forms of the spectral estimates
-((10.36)–(10.37), with the norm (10.35)), and derives the discrete Legendre transform: the
-interpolant at the Gauss–Lobatto nodes is `∑_{k ≤ n} f̃_k L_k` (10.38), with
-`f(x̄ⱼ) = ∑_k f̃_k L_k(x̄ⱼ)` (10.39) and the coefficients (10.40).
-
-The backbone is `Numlib/Approximation/GaussLobatto`: `Quadrature.legendreGaussWeight_eq` and
-`Quadrature.legendreLobattoWeight_eq` for the weights, `Quadrature.derivative_legendre_eq_family`
-for the identification of the interior Lobatto nodes with the zeros of `L_n'`,
-`Quadrature.discreteInner_legendre_legendre` and `Quadrature.interpolate_eq_sum_dlt` for the
-transform; the Gauss and Gauss–Lobatto rules themselves are (10.16) and (10.17)–(10.18) of §10.2
-for `OrthogonalPolynomial.legendreMeasure`, with `OrthogonalPolynomial.family_eq_legendre`.
+The Gauss and Gauss–Lobatto rules are (10.16) and (10.17)–(10.18) of Section 10.2 for the weight
+`OrthogonalPolynomial.legendreMeasure`, related to the Legendre polynomials by
+`OrthogonalPolynomial.family_eq_legendre`. The closed forms of the weights, the zeros of $L_n'$ and
+the transform come from `Numlib.Approximation.GaussLobatto`, and the bounds on the weights from
+`Numlib.Approximation.OrthogonalPolynomial.LegendreBounds`.
 
 ## Main definitions
 
-* `legendreDiscreteCoeff n x f k` — the coefficients `f̃_k` of the discrete Legendre transform
-  (10.40).
+* Equation (10.40), `QuarteroniSaccoSaleri.Chapter10.legendreDiscreteCoeff`: the coefficients
+  $\tilde f_k$ of the discrete Legendre transform.
 
 ## Main results
 
-* `equation_10_32` — the Legendre–Gauss formula: the `n + 1` zeros of `L_{n+1}` exist, and at
-  them the weights `2/((1 - xⱼ²) L'_{n+1}(xⱼ)²)` are positive and give degree of exactness
-  `2n + 1`.
-* `legendreLobatto_nodal_eq`, `equation_10_34` — the Legendre–Gauss–Lobatto formula: nodes
-  `-1`, `1` and the zeros of `L_n'` exist; for any such family the weights
-  `2/(n(n + 1) L_n(x̄ⱼ)²)` are well defined, positive and give degree of exactness `2n - 1`, and
-  every zero of `L_n'` in `(-1, 1)` is a node.
-* `legendreLobattoWeight_bounds` — the bounds `2/(n(n + 1)) ≤ ᾱⱼ ≤ C/n` quoted after (10.34),
-  with the explicit constant `C = 8`.
-* `equation_10_40` — the discrete Legendre transform (10.38)–(10.40), the discrete norms of the
-  Legendre polynomials (the hint of Exercise 6), and the identification of the interpolant with
-  the discrete truncation `f_n^*` of (10.4).
-
-## Not formalized here
-
-* **(10.36)–(10.37)**, together with the Legendre forms of (10.22) and (10.24) stated in the norm
-  (10.35): `|(f, v_n) - (f, v_n)_n| ≤ C n^{-s} ‖f‖_s ‖v_n‖_{L²(-1,1)}` for every `v_n ∈ ℙ_n`,
-  and `|∫_{-1}^1 f - I^{GL}_n f| ≤ C n^{-s} ‖f‖_s` at `v_n = 1` with `‖1‖ = √2`. Quoted from
-  [CHQZ88] without proof. This is the Legendre member of the spectral-approximation cluster
-  whose three missing layers — the weighted Sobolev seminorms on `(-1, 1)`, the coefficient decay
-  by the Sturm–Liouville symmetry, and the aliasing step from the projection to the interpolant —
-  are written out in `## Not formalized here` of §10.3
-  (`NumlibSurface/QuarteroniSaccoSaleri/Chapter10/Section03.lean`), together with the inventory of
-  what the library already has. Two things are specific to this side, and both make it the
-  better-prepared one. The **reduction** is that of (10.27) with the Legendre–Gauss–Lobatto rule
-  (`equation_10_34`, exact on `ℙ_{2n-1}`): `(f, v_n) - (f, v_n)_n = (g, v_n) - (g, v_n)_n` for
-  `g = f - P_{n-1} f`, with `‖v_n‖_n ≤ √3 ‖v_n‖` by the proved norm equivalence and
-  `‖g‖_n ≤ √2 ‖g‖_∞` because the weights sum to `2`; (10.37) is then the case `v_n = 1`. And the
-  **coefficient identity** the projection layer runs on is `f̂_k = -(k(k+1))⁻¹ ((1-x²) f')'^_k`,
-  from `Polynomial.legendre_ode` and one integration by parts on `[-1, 1]` whose boundary terms
-  vanish with `1 - x²`; Parseval in `L²(-1,1)` is `IsWeight.hilbertBasis` with
-  `OrthogonalPolynomial.family_eq_legendre`. Estimate: the Legendre forms of (10.22), (10.24) and
-  (10.36)–(10.37) at the rate `n^{1/2-s}` are some 1000 lines away with no missing theory; at the
-  printed rate `n^{-s}`, some 2000 lines and a plan of their own.
+* Equation (10.32), `QuarteroniSaccoSaleri.Chapter10.equation_10_32`: the $n + 1$ zeros of $L_{n+1}$
+  exist, and with them the weights $2 / ((1 - x_j^2) L'_{n+1}(x_j)^2)$ are positive and give degree
+  of exactness $2n + 1$.
+* Equation (10.33), `QuarteroniSaccoSaleri.Chapter10.legendreLobatto_nodal_eq`: the nodal polynomial
+  of the Legendre–Gauss–Lobatto nodes is the backbone's Gauss–Lobatto nodal polynomial.
+* Equations (10.33)–(10.34), `QuarteroniSaccoSaleri.Chapter10.equation_10_34`: the
+  Legendre–Gauss–Lobatto nodes exist, and for any such nodes the weights
+  $2 / (n(n + 1) L_n(\bar x_j)^2)$ are positive and give degree of exactness $2n - 1$.
+* Section 10.4, `QuarteroniSaccoSaleri.Chapter10.legendreLobattoNode_mem_Icc`: the
+  Legendre–Gauss–Lobatto nodes lie in $[-1, 1]$, and $(1 - \bar x_j^2) L_n'(\bar x_j) = 0$.
+* Section 10.4, `QuarteroniSaccoSaleri.Chapter10.legendreLobattoWeight_bounds`:
+  $2 / (n(n + 1)) \le \bar\alpha_j \le C / n$, with $C$ independent of $n$.
+* Equations (10.38)–(10.40) and Exercise 10.6, `QuarteroniSaccoSaleri.Chapter10.equation_10_40`: the
+  discrete Legendre transform and its inverse, the discrete norms of the Legendre polynomials, and
+  the equality of the interpolant with the discrete truncation $f_n^*$ of (10.4).
 
 ## Conventions
 
-Nodes are `x : Fin (n + 1) → ℝ`, injective; "the zeros of `L_{n+1}`" is `∀ j, L_{n+1}(xⱼ) = 0`
-for such a family, which by counting is the full set of zeros. The Gauss–Lobatto nodes are
-described as the book describes them — `x̄₀ = -1`, `x̄_n = 1`, `L_n'(x̄ⱼ) = 0` for `0 < j < n` — and
-`legendreLobatto_nodal_eq` identifies their nodal polynomial with the backbone's
-`Quadrature.lobattoNodal legendreMeasure n`. Integrals are `∫_{-1}^1`, the Legendre weight being
-Lebesgue measure on `(-1, 1)`.
+* Nodes are an injective family `x : Fin (n + 1) → ℝ`. "The zeros of $L_{n+1}$" means
+  $L_{n+1}(x_j) = 0$ for all $j$; for $n + 1$ distinct points this is the full set of zeros, by
+  counting.
+* The Gauss–Lobatto nodes are described as the book describes them: $\bar x_0 = -1$, $\bar x_n = 1$,
+  and $L_n'(\bar x_j) = 0$ for $0 < j < n$.
+* Integrals are $\int_{-1}^1$, because the Legendre weight is the Lebesgue measure on $(-1, 1)$. The
+  Legendre polynomial $L_k$ is `Polynomial.legendre k`.
+
+## Implementation notes
+
+* The estimates (10.36)–(10.37) belong to the group of spectral estimates that the book quotes
+  without proof; the implementation notes of
+  `NumlibSurface.QuarteroniSaccoSaleri.Chapter10.Section03` describe the theory that they need. Two
+  facts make the Legendre case easier. First, the reduction is that of (10.27) for the
+  Legendre–Gauss–Lobatto rule, which is exact on $\mathbb{P}_{2n-1}$:
+  $(f, v_n) - (f, v_n)_n = (g, v_n) - (g, v_n)_n$ for $g = f - P_{n-1} f$, with
+  $\|v_n\|_n \le \sqrt{3} \|v_n\|$ by the proved equivalence of norms, and
+  $\|g\|_n \le \sqrt{2} \|g\|_\infty$ because the weights sum to $2$; (10.37) is then the case
+  $v_n = 1$. Second, the coefficient identity of the projection estimate is $\hat f_k = -(k(k +
+  1))^{-1} \widehat{((1 - x^2) f')'}_k$. It follows from `Polynomial.legendre_ode` and one
+  integration by parts on $[-1, 1]$, whose boundary terms vanish because of the factor $1 - x^2$.
+  Parseval's equality in $L^2(-1, 1)$ is `OrthogonalPolynomial.hilbertBasis` with
+  `OrthogonalPolynomial.family_eq_legendre`.
+
+## Not formalized
+
+* **Equations (10.36)–(10.37)**, the estimates $|(f, v_n) - (f, v_n)_n| \le C n^{-s} \|f\|_s
+  \|v_n\|_{L^2(-1,1)}$ for $v_n \in \mathbb{P}_n$, and $|\int_{-1}^1 f - I^{GL}_n f| \le C n^{-s}
+  \|f\|_s$, together with the Legendre forms of (10.22) and (10.24) in the norm (10.35). The book
+  quotes them from Canuto, Hussaini, Quarteroni and Zang (1988) without proof, and the library has
+  no theory of spectral projection in weighted Sobolev norms.
 -/
 
 open MeasureTheory Polynomial OrthogonalPolynomial Quadrature Real Set Filter Topology
@@ -87,15 +89,17 @@ variable {n : ℕ}
 
 /-! ### The Legendre–Gauss formula (10.32) -/
 
-/-- **(10.32), the Legendre–Gauss formula.** For `n ≥ 0` the Gauss nodes are the `n + 1` zeros
-`x₀, …, x_n` of `L_{n+1}`, which exist, and the coefficients are
+/-- **Equation (10.32)** of [quarteroni2000numerical], the Legendre–Gauss formula. Let $n \ge 0$.
+The Legendre polynomial $L_{n+1}$ has $n + 1$ distinct zeros $x_0, \dots, x_n$. For any $n + 1$
+distinct zeros $x_0, \dots, x_n$ of $L_{n+1}$, the coefficients
+$$\alpha_j = \frac{2}{(1 - x_j^2) [L'_{n+1}(x_j)]^2}, \qquad j = 0, \dots, n,$$
+are positive, and the formula has degree of exactness $2n + 1$:
+$$\sum_j \alpha_j p(x_j) = \int_{-1}^1 p(x) \, dx \quad \text{for every } p \in
+  \mathbb{P}_{2n+1}.$$
 
-`αⱼ = 2 / ((1 - xⱼ²) [L'_{n+1}(xⱼ)]²)`, `j = 0, …, n`,
-
-positive, with degree of exactness `2n + 1`: `∑ⱼ αⱼ p(xⱼ) = ∫_{-1}^1 p` for every `p ∈ ℙ_{2n+1}`.
-The zeros are those of the monic orthogonal polynomial of the Legendre weight
-(`OrthogonalPolynomial.family_eq_legendre`), so the nodes are the Gauss nodes (10.16); the closed
-form of the interpolatory weights is `Quadrature.legendreGaussWeight_eq`. -/
+The zeros of $L_{n+1}$ are those of the monic orthogonal polynomial of the Legendre weight
+(`OrthogonalPolynomial.family_eq_legendre`), so the nodes are the Gauss nodes (10.16). The
+closed form of the interpolatory weights is `Quadrature.legendreGaussWeight_eq`. -/
 theorem equation_10_32 (n : ℕ) :
     (∃ x : Fin (n + 1) → ℝ, Function.Injective x ∧ ∀ j, (legendre (n + 1)).eval (x j) = 0) ∧
       ∀ x : Fin (n + 1) → ℝ, Function.Injective x → (∀ j, (legendre (n + 1)).eval (x j) = 0) →
@@ -125,11 +129,14 @@ theorem equation_10_32 (n : ℕ) :
 
 /-! ### The Legendre–Gauss–Lobatto formula (10.33)–(10.34) -/
 
-/-- **The nodal polynomial of the Legendre–Gauss–Lobatto nodes.** A family of `n + 1` distinct
-points with `x̄₀ = -1`, `x̄_n = 1` and `L_n'(x̄ⱼ) = 0` at the interior indices — the description
-(10.33) — has the backbone's Lobatto nodal polynomial `Quadrature.lobattoNodal legendreMeasure n`
-as nodal polynomial: that polynomial is `(x² - 1) q_{n-1}` with `L_n'` a nonzero multiple of
-`q_{n-1}` (`Quadrature.derivative_legendre_eq_family`), so it vanishes at every node. -/
+/-- Supports equation (10.33), the nodal polynomial of the Legendre–Gauss–Lobatto nodes. Let
+$n \ge 1$, and let $\bar x_0, \dots, \bar x_n$ be distinct points with $\bar x_0 = -1$,
+$\bar x_n = 1$ and $L_n'(\bar x_j) = 0$ for $0 < j < n$. Then the nodal polynomial of these
+points is the backbone's Gauss–Lobatto nodal polynomial
+`Quadrature.lobattoNodal legendreMeasure n`.
+
+That polynomial is $(x^2 - 1) q_{n-1}$, where $L_n'$ is a nonzero multiple of $q_{n-1}$
+(`Quadrature.derivative_legendre_eq_family`). So it vanishes at every node. -/
 theorem legendreLobatto_nodal_eq (hn : 1 ≤ n) {x : Fin (n + 1) → ℝ} (hx : Function.Injective x)
     (h0 : x 0 = -1) (hl : x (Fin.last n) = 1)
     (hint : ∀ j : Fin (n + 1), 0 < (j : ℕ) → (j : ℕ) < n →
@@ -155,17 +162,21 @@ theorem legendreLobatto_nodal_eq (hn : 1 ≤ n) {x : Fin (n + 1) → ℝ} (hx : 
     exact h.resolve_left hc
   rw [hq, mul_zero]
 
-/-- **(10.33)–(10.34), the Legendre–Gauss–Lobatto formula.** For `n ≥ 1` the Gauss–Lobatto nodes
-are `x̄₀ = -1`, `x̄_n = 1` and the zeros of `L_n'` for `j = 1, …, n - 1` (10.33) — such a family of
-`n + 1` distinct points exists — and the weights are
+/-- **Equations (10.33)–(10.34)** of [quarteroni2000numerical], the Legendre–Gauss–Lobatto formula.
+Let $n \ge 1$. There are $n + 1$ distinct points $\bar x_0, \dots, \bar x_n$ with
+$\bar x_0 = -1$, $\bar x_n = 1$ and $L_n'(\bar x_j) = 0$ for $j = 1, \dots, n - 1$; these are
+the Gauss–Lobatto nodes (10.33). For any such family of points:
 
-`ᾱⱼ = 2 / (n(n + 1)) · 1 / [L_n(x̄ⱼ)]²`, `j = 0, …, n` (10.34),
+* every zero of $L_n'$ in $(-1, 1)$ is one of the nodes;
+* $L_n(\bar x_j) \neq 0$ for every $j$;
+* the weights $\bar\alpha_j = \frac{2}{n(n + 1)} \frac{1}{[L_n(\bar x_j)]^2}$,
+  $j = 0, \dots, n$, of (10.34) are positive;
+* the formula has degree of exactness $2n - 1$: $\sum_j \bar\alpha_j p(\bar x_j) = \int_{-1}^1
+  p(x) \, dx$ for every $p \in \mathbb{P}_{2n-1}$.
 
-where `L_n` is the `n`-th Legendre polynomial (10.12): for any such family, every zero of `L_n'`
-in `(-1, 1)` is one of the nodes, `L_n(x̄ⱼ) ≠ 0`, the weights are positive, and the formula has
-degree of exactness `2n - 1`: `∑ⱼ ᾱⱼ p(x̄ⱼ) = ∫_{-1}^1 p` for every `p ∈ ℙ_{2n-1}`. Existence is
-(10.17)–(10.18) for the Legendre weight with `Quadrature.derivative_legendre_eq_family`; the
-weights are `Quadrature.legendreLobattoWeight_eq`. -/
+Here $L_n$ is the Legendre polynomial (10.12) of degree $n$. The existence is (10.17)–(10.18)
+for the Legendre weight, with `Quadrature.derivative_legendre_eq_family`. The weights are
+`Quadrature.legendreLobattoWeight_eq`. -/
 theorem equation_10_34 (hn : 1 ≤ n) :
     (∃ x : Fin (n + 1) → ℝ, Function.Injective x ∧ x 0 = -1 ∧ x (Fin.last n) = 1 ∧
       ∀ j : Fin (n + 1), 0 < (j : ℕ) → (j : ℕ) < n → (derivative (legendre n)).eval (x j) = 0) ∧
@@ -219,11 +230,15 @@ theorem equation_10_34 (hn : 1 ≤ n) :
 
 /-! ### The bounds on the Gauss–Lobatto weights -/
 
-/-- **A Legendre–Gauss–Lobatto node lies in `[-1, 1]`, and `(1 - x̄ⱼ²) L_n'(x̄ⱼ) = 0` there.** The
-two endpoints kill the factor `1 - x²`; an interior node is a zero of `L_n'`, hence a zero of the
-`(n-1)`-st orthogonal polynomial of the modified weight `(1 - x²) dx`
-(`Quadrature.derivative_legendre_eq_family`), and the zeros of an orthogonal polynomial lie inside
-the interval carrying its weight. -/
+/-- Supports the bounds on the Gauss–Lobatto weights in Section 10.4. Let $n \ge 1$, and let
+$\bar x_0, \dots, \bar x_n$ be points with $\bar x_0 = -1$, $\bar x_n = 1$ and
+$L_n'(\bar x_j) = 0$ for $0 < j < n$. Then every node lies in $[-1, 1]$, and
+$(1 - \bar x_j^2) L_n'(\bar x_j) = 0$.
+
+At the two endpoints the factor $1 - x^2$ vanishes. An interior node is a zero of $L_n'$, hence
+a zero of the orthogonal polynomial of degree $n - 1$ for the weight $(1 - x^2)\,dx$
+(`Quadrature.derivative_legendre_eq_family`), and the zeros of an orthogonal polynomial lie
+inside the interval that carries its weight. -/
 theorem legendreLobattoNode_mem_Icc (hn : 1 ≤ n) {x : Fin (n + 1) → ℝ} (h0 : x 0 = -1)
     (hl : x (Fin.last n) = 1)
     (hint : ∀ j : Fin (n + 1), 0 < (j : ℕ) → (j : ℕ) < n →
@@ -249,17 +264,16 @@ theorem legendreLobattoNode_mem_Icc (hn : 1 ≤ n) {x : Fin (n + 1) → ℝ} (h0
   exact Ioo_subset_Icc_self
     (root_family_mem_Ioo (isWeight_lobattoMeasure hw hsupp) (lobattoMeasure_compl_Icc hsupp) hfam)
 
-/-- **The bounds on the Legendre–Gauss–Lobatto weights** quoted after (10.34): there is a constant
-`C` independent of `n` with
+/-- **Section 10.4** of [quarteroni2000numerical], the bounds on the Legendre–Gauss–Lobatto weights
+stated after (10.34). There is a constant $C$ such that for every $n \ge 1$ and every family of
+points $\bar x_0, \dots, \bar x_n$ with $\bar x_0 = -1$, $\bar x_n = 1$ and $L_n'(\bar x_j) = 0$
+for $0 < j < n$, the weights $\bar\alpha_j = 2 / (n(n + 1) L_n(\bar x_j)^2)$ of (10.34) satisfy
+$$\frac{2}{n(n + 1)} \le \bar\alpha_j \le \frac{C}{n}, \qquad j = 0, \dots, n.$$
 
-`2 / (n(n + 1)) ≤ ᾱⱼ ≤ C / n`, `j = 0, …, n`,
-
-for the weights `ᾱⱼ = 2/(n(n + 1) L_n(x̄ⱼ)²)` of (10.34) at any family of Gauss–Lobatto nodes
-(10.33). The book quotes this from Bernardi and Maday; it is proved here with the explicit
-constant `C = 8` from the two bounds of
-`Numlib/Approximation/OrthogonalPolynomial/LegendreBounds`: `L_n(x̄ⱼ)² ≤ 1` on `[-1, 1]` gives the
-lower bound, and `L_n(x̄ⱼ)² ≥ 1/(4n)` at a point where `(1 - x²) L_n'` vanishes gives the upper
-one. Injectivity of the nodes is not needed. -/
+The book quotes this from Bernardi and Maday. The proof gives the explicit constant $C = 8$ from
+two bounds of `Numlib.Approximation.OrthogonalPolynomial.LegendreBounds`:
+$L_n(\bar x_j)^2 \le 1$ on $[-1, 1]$ gives the lower bound, and $L_n(\bar x_j)^2 \ge 1/(4n)$ at
+a point where $(1 - x^2) L_n'$ vanishes gives the upper bound. The nodes need not be distinct. -/
 theorem legendreLobattoWeight_bounds :
     ∃ c : ℝ, ∀ n : ℕ, 1 ≤ n → ∀ x : Fin (n + 1) → ℝ, x 0 = -1 → x (Fin.last n) = 1 →
       (∀ j : Fin (n + 1), 0 < (j : ℕ) → (j : ℕ) < n →
@@ -287,27 +301,35 @@ theorem legendreLobattoWeight_bounds :
 
 /-! ### The discrete Legendre transform (10.38)–(10.40) -/
 
-/-- **(10.40), the discrete coefficients** of the discrete Legendre transform (DLT) at the
-Gauss–Lobatto nodes `x̄`:
+/-- **Equation (10.40)** of [quarteroni2000numerical], the coefficients of the discrete Legendre
+transform (DLT) at Gauss–Lobatto nodes $\bar x_0, \dots, \bar x_n$:
+$$\tilde f_k = \frac{2k + 1}{n(n + 1)} \sum_{j=0}^n \frac{L_k(\bar x_j) f(\bar x_j)}{L_n(\bar
+  x_j)^2}, \quad k = 0, \dots, n - 1, \qquad \tilde f_n = \frac{1}{n + 1} \sum_{j=0}^n
+  \frac{f(\bar x_j)}{L_n(\bar x_j)}.$$
 
-`f̃_k = ((2k + 1)/(n(n + 1))) ∑ⱼ L_k(x̄ⱼ) f(x̄ⱼ) / L_n(x̄ⱼ)²` for `k = 0, …, n - 1`, and
-`f̃_n = (1/(n + 1)) ∑ⱼ f(x̄ⱼ) / L_n(x̄ⱼ)`. -/
+The definition is given for every natural number $k$: the first formula is used for every
+$k \neq n$. -/
 noncomputable def legendreDiscreteCoeff (n : ℕ) (x : Fin (n + 1) → ℝ) (f : ℝ → ℝ) (k : ℕ) : ℝ :=
   if k = n then 1 / ((n : ℝ) + 1) * ∑ j, f (x j) / (legendre n).eval (x j)
   else (2 * k + 1) / ((n : ℝ) * ((n : ℝ) + 1)) *
     ∑ j, (legendre k).eval (x j) * f (x j) / (legendre n).eval (x j) ^ 2
 
-/-- **(10.38)–(10.40), the discrete Legendre transform (Exercise 6).** For the Legendre–Gauss–
-Lobatto nodes `x̄` of (10.33) with the weights `ᾱⱼ` of (10.34), the interpolating polynomial at the
-nodes is
+/-- **Equations (10.38)–(10.40)** and **Exercise 10.6** of [quarteroni2000numerical], the discrete
+Legendre transform. Let $n \ge 1$, let $\bar x_0, \dots, \bar x_n$ be distinct points with
+$\bar x_0 = -1$, $\bar x_n = 1$ and $L_n'(\bar x_j) = 0$ for $0 < j < n$, and let $\bar\alpha_j$
+be the weights of (10.34). Then for every $f : \mathbb{R} \to \mathbb{R}$:
 
-`Π^{GL}_n f = ∑_{k=0}^n f̃_k L_k` (10.38), with the coefficients `f̃_k` of (10.40),
+* the interpolating polynomial at the nodes is $\Pi^{GL}_n f = \sum_{k=0}^n \tilde f_k L_k$
+  (10.38), with the coefficients $\tilde f_k$ of (10.40);
+* the inverse transform is $f(\bar x_j) = \sum_{k=0}^n \tilde f_k L_k(\bar x_j)$ (10.39);
+* $\Pi^{GL}_n f$ equals the discrete truncation $f_n^*$ of (10.4) for the discrete scalar
+  product $(\cdot, \cdot)_n$ of the rule;
+* for $k, l \le n$ the Legendre polynomials satisfy $(L_k, L_l)_n = 0$ if $k \neq l$,
+  $(L_k, L_k)_n = 2 / (2k + 1)$ if $k < n$, and $(L_n, L_n)_n = 2 / n$. This is the hint of the
+  exercise.
 
-so that `f(x̄ⱼ) = ∑_{k=0}^n f̃_k L_k(x̄ⱼ)` (10.39), the inverse transform; `Π^{GL}_n f` coincides
-with the discrete truncation `f_n^*` of (10.4) for the discrete scalar product (10.28) of the rule;
-and the Legendre polynomials are orthogonal for that discrete scalar product, with
-`(L_k, L_k)_n = 2/(2k + 1)` for `k < n` and `(L_n, L_n)_n = 2/n` (the hint of Exercise 6). The
-backbone's `Quadrature.interpolate_eq_sum_dlt` and `Quadrature.discreteInner_legendre_legendre`. -/
+The proof specializes the backbone's `Quadrature.interpolate_eq_sum_dlt` and
+`Quadrature.discreteInner_legendre_legendre`. -/
 theorem equation_10_40 (hn : 1 ≤ n) {x : Fin (n + 1) → ℝ} (hx : Function.Injective x)
     (h0 : x 0 = -1) (hl : x (Fin.last n) = 1)
     (hint : ∀ j : Fin (n + 1), 0 < (j : ℕ) → (j : ℕ) < n → (derivative (legendre n)).eval (x j) = 0)

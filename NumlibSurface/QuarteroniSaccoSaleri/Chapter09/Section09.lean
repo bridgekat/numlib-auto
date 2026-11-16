@@ -7,69 +7,101 @@ import Numlib.Approximation.TriangleQuadrature
 import Numlib.Probability.MonteCarlo
 
 /-!
-# Quarteroni–Sacco–Saleri §9.9: multidimensional numerical integration
+# Quarteroni, Sacco and Saleri, Section 9.9: Multidimensional numerical integration
 
-Surface file for Alfio Quarteroni, Riccardo Sacco and Fausto Saleri, *Numerical Mathematics*,
-Springer, 2000, §9.9.
+This module formalizes Section 9.9 of [quarteroni2000numerical], on three methods for
+$\int_\Omega f$ in several variables. The *reduction formula* (9.56) writes the integral over a
+domain normal to the $x$ axis as an iterated integral, to which one-dimensional composite formulae
+apply (Section 9.9.1). The *composite interpolatory formulae on a family of triangles* (Section
+9.9.2) are (9.57), with the local weights $\alpha_T^{(j)} = 2|T| \int_{\hat T} \hat l_j$, and its
+instances, the composite midpoint formula (9.58) and the composite trapezoidal formula (9.59).
+Definition 9.1 defines the degree of exactness on the reference triangle $\hat T$, and Property 9.4
+bounds the error of a formula that is exact on $\mathbb{P}_n$ and has nonnegative weights by
+$K_n h^{n+1} |\Omega| M_{n+1}$. The section also gives the two symmetric formulae $I_3$ and $I_7$.
+The *Monte Carlo method* (Section 9.9.3) writes the integral as $|\Omega|$ times a mean value,
+approximates it by the sample mean (9.60), and rests on the strong law of large numbers and the
+variance identity (9.61).
 
-Three methods for `∫_Ω f` in several variables. The *reduction formula* (9.56) writes the
-integral over a domain normal to the `x` axis as an iterated integral, to which one-dimensional
-composite rules apply (§9.9.1; the midpoint and trapezoidal reduction formulae, Programs 78–79, are
-algorithms with no stated property and are not nodes). The *composite interpolatory rules on a
-triangulation* (§9.9.2): (9.57) with the local weights `α_T^{(j)} = 2|T| ∫_{T̂} l̂_j`, the
-composite midpoint (9.58) and trapezoidal (9.59) formulae, Definition 9.1 (degree of exactness on
-the reference triangle `T̂`), Property 9.4 (the error bound `K_n h^{n+1} |Ω| M_{n+1}` of a rule
-exact on `ℙ_n` with nonnegative weights, on one triangle and on a finite family of them), and the
-two symmetric formulae `I₃`, `I₇`. The *Monte Carlo method* (§9.9.3): the integral as `|Ω|` times
-a mean value, the sample mean (9.60), the strong law of large numbers and the variance identity
-(9.61).
-
-The backbone is `Numlib/Approximation/TriangleQuadrature` — `Quadrature.refTriangle`, the
-Dirichlet integrals, the four rules as `Approximation.IsExactOn (volume.restrict refTriangle)`,
-which is Definition 9.1 verbatim, and the affine transport `Quadrature.isExactOn_affineImage` —
-`Numlib/Analysis/Calculus/TaylorSegment` (Taylor's theorem along a segment, behind Property 9.4)
-and `Numlib/Probability/MonteCarlo`; the reduction formula is Fubini's theorem
-(`MeasureTheory.integral_prod`).
+The backbone is `Numlib.Approximation.TriangleQuadrature` (the reference triangle
+`Quadrature.refTriangle`, the Dirichlet integrals, the rules as `Approximation.IsExactOn
+(volume.restrict refTriangle)`, which is Definition 9.1, and the affine transport
+`Quadrature.isExactOn_affineImage`), `Numlib.Analysis.Calculus.TaylorSegment` (Taylor's theorem
+along a segment, for Property 9.4) and `Numlib.Probability.MonteCarlo`. The reduction formula is
+Fubini's theorem (`MeasureTheory.integral_prod`).
 
 ## Main definitions
 
-* `normalDomain a b φ₁ φ₂` — the domain `{(x, y) : a ≤ x ≤ b, φ₁(x) ≤ y ≤ φ₂(x)}` of §9.9.1.
-* `triangleLinear v`, `triangleMap v`, `triangle v`, `area v` — for vertices `v : Fin 3 → ℝ²`,
-  the affine map `F_T x̂ = a₁ + x̂₀ (a₂ - a₁) + x̂₁ (a₃ - a₁)` from `T̂` (chapter 8's (8.34),
-  written on `Fin 2 → ℝ`), the triangle `T = F_T(T̂)` and its area `|T|`.
-* `equation_9_57`, `equation_9_58`, `equation_9_59` — the composite rule on a finite family of
-  triangles with local weights `2|T| ŵ_j` and nodes `F_T(ẑ_j)`, and its instances with the
-  centroid rule (weights `|T|`) and the vertex rule (weights `|T|/3`).
-* `definition_9_1` — degree of exactness `n` on `T̂`.
+* Section 9.9.1, `QuarteroniSaccoSaleri.Chapter09.normalDomain`: the domain $\{(x, y) : a \le x \le
+  b,\ \varphi_1(x) \le y \le \varphi_2(x)\}$ normal to the $x$ axis.
+* Section 9.9.2, `QuarteroniSaccoSaleri.Chapter09.triangleLinear`: the linear part $B_T$ of the
+  affine map (8.34) from $\hat T$ onto a triangle $T$.
+* Section 9.9.2, `QuarteroniSaccoSaleri.Chapter09.triangleMap`: the affine map $F_T(\hat x) = a_1 +
+  \hat x_0 (a_2 - a_1) + \hat x_1 (a_3 - a_1)$.
+* Section 9.9.2, `QuarteroniSaccoSaleri.Chapter09.triangle`: the triangle $T = F_T(\hat T)$.
+* Section 9.9.2, `QuarteroniSaccoSaleri.Chapter09.area`: the area $|T|$.
+* Equation (9.57), `QuarteroniSaccoSaleri.Chapter09.equation_9_57`: the composite formula with local
+  weights $2|T| \hat w_j$ and local nodes $F_T(\hat z_j)$.
+* Equation (9.58), `QuarteroniSaccoSaleri.Chapter09.equation_9_58`: the composite midpoint formula,
+  with the weights $|T|$ at the centroids.
+* Equation (9.59), `QuarteroniSaccoSaleri.Chapter09.equation_9_59`: the composite trapezoidal
+  formula, with the weights $|T|/3$ at the vertices.
+* Definition 9.1, `QuarteroniSaccoSaleri.Chapter09.definition_9_1`: degree of exactness $n$ on
+  $\hat T$.
 
 ## Main results
 
-* `equation_9_56` — the reduction formula.
-* `triangleWeight_eq`, `area_eq` — `∫_T g = 2|T| ∫_{T̂} g ∘ F_T`, `|T| = |det B_T|/2`, and the
-  local weights `|T|` (`k = 0`) and `|T|/3` (`k = 1`).
-* `equation_9_58_eq`, `equation_9_59_eq` — (9.58) and (9.59) are (9.57) with the centroid and
-  vertex reference rules.
-* `definition_9_1_iff`, `definition_9_1_transport` — Definition 9.1 in the book's words, and its
-  consequence on every triangle `T`: the transported rule is exact to the same degree on `T`.
-* `equation_9_58_degreeOfExactness`, `symmetricFormulae` — the composite midpoint and trapezoidal
-  formulae have degree of exactness exactly `1`, the symmetric formulae `I₃`, `I₇` degrees `2`
-  and `3`.
-* `property_9_4_triangle`, `property_9_4` — `|E_n^c(f)| ≤ (2/(n+1)!) h^{n+1} |Ω| M_{n+1}` for a
-  rule of degree of exactness `n` with nonnegative weights, on one triangle (a Taylor expansion at
-  a vertex, the rule being exact on the Taylor polynomial) and on a finite family of triangles
-  covering `Ω` up to null sets.
-* `monteCarlo_mean`, `monteCarlo_strongLaw`, `equation_9_61` — the Monte Carlo statements.
+* Equation (9.56), `QuarteroniSaccoSaleri.Chapter09.equation_9_56`: the reduction formula for double
+  integrals.
+* Section 9.9.2, `QuarteroniSaccoSaleri.Chapter09.area_eq`: $|T| = |\det B_T|/2$.
+* Section 9.9.2, `QuarteroniSaccoSaleri.Chapter09.triangleWeight_eq`:
+  $\int_T g = 2|T| \int_{\hat T} g \circ F_T$, and the integrals over $\hat T$ that give the local
+  weights $|T|$ and $|T|/3$.
+* Equation (9.58), `QuarteroniSaccoSaleri.Chapter09.equation_9_58_eq`: (9.58) is (9.57) with the
+  centroid rule on $\hat T$.
+* Equation (9.59), `QuarteroniSaccoSaleri.Chapter09.equation_9_59_eq`: (9.59) is (9.57) with the
+  vertex rule on $\hat T$.
+* Definition 9.1, `QuarteroniSaccoSaleri.Chapter09.definition_9_1_iff`: Definition 9.1 in the words
+  of the book.
+* Definition 9.1, `QuarteroniSaccoSaleri.Chapter09.definition_9_1_transport`: a rule exact on
+  $\mathbb{P}_n(\hat T)$ gives a rule exact on $\mathbb{P}_n$ on every nondegenerate triangle.
+* Section 9.9.2, `QuarteroniSaccoSaleri.Chapter09.equation_9_58_degreeOfExactness`: the formulae
+  (9.58) and (9.59) have degree of exactness exactly $1$.
+* Property 9.4, `QuarteroniSaccoSaleri.Chapter09.property_9_4_triangle`: the error bound on one
+  triangle.
+* Property 9.4, `QuarteroniSaccoSaleri.Chapter09.property_9_4`: the error bound
+  $\frac{2}{(n+1)!} h^{n+1} |\Omega| M_{n+1}$ on a finite family of triangles.
+* Section 9.9.2, `QuarteroniSaccoSaleri.Chapter09.symmetricFormulae`: the symmetric formulae $I_3$
+  and $I_7$ have degrees of exactness $2$ and $3$.
+* Section 9.9.3, `QuarteroniSaccoSaleri.Chapter09.monteCarlo_mean`:
+  $\int_\Omega f = |\Omega|\, \mu(f)$ for the uniform distribution on $\Omega$.
+* Equation (9.60), `QuarteroniSaccoSaleri.Chapter09.monteCarlo_strongLaw`: the sample mean converges
+  almost surely to $|\Omega|^{-1} \int_\Omega f$.
+* Equation (9.61), `QuarteroniSaccoSaleri.Chapter09.equation_9_61`:
+  $\sigma(I_N(f)) = \sigma(f)/\sqrt{N}$, and the Chebyshev bound.
 
 ## Conventions
 
-Points of the plane are `Fin 2 → ℝ` here (the backbone's exactness predicate lives on `ι → ℝ`;
-chapter 8's `equation_8_34` writes the same affine map on `ℝ × ℝ`), except in the reduction
-formula (9.56), whose iterated integral reads naturally on `ℝ × ℝ`. `ℙ_n(T̂)` of (8.35) is the
-polynomials `p : MvPolynomial (Fin 2) ℝ` with `p.totalDegree ≤ n`. A family of triangles is
-indexed by a finite type `ι`; no triangulation structure is assumed, as none is needed for the
-statements formalized — Property 9.4 asks only that the triangles cover `Ω` and overlap on null
-sets. In Property 9.4, `M_{n+1}` bounds the operator norm of `iteratedFDeriv ℝ (n + 1) f` for
-the sup norm on `Fin 2 → ℝ`, and `h` bounds the two edges at the first vertex of each triangle.
+* Points of the plane are `Fin 2 → ℝ`, because the backbone's exactness predicate is stated on
+  `ι → ℝ`. The exception is the reduction formula (9.56), whose iterated integral reads naturally on
+  `ℝ × ℝ`. The map `QuarteroniSaccoSaleri.Chapter08.equation_8_34` of Chapter 8 is the same affine
+  map on `ℝ × ℝ`.
+* The space $\mathbb{P}_n(\hat T)$ of (8.35) is the set of polynomials `p : MvPolynomial (Fin 2) ℝ`
+  with `p.totalDegree ≤ n`.
+* A family of triangles is indexed by a finite type `ι`, and no triangulation structure is assumed.
+* In Property 9.4, $M_{n+1}$ bounds the operator norm of `iteratedFDeriv ℝ (n + 1) f` for the sup
+  norm on `Fin 2 → ℝ`, and $h$ bounds the sup norms of the two edge vectors at the first vertex of
+  each triangle. The maximum Euclidean edge length is such an $h$.
+
+## Deviations from the source
+
+* **Property 9.4** (generalization). The statement holds for any finite family of nondegenerate
+  triangles that cover $\Omega$ and overlap only on null sets, not only for a triangulation. See
+  `QuarteroniSaccoSaleri.Chapter09.property_9_4`.
+
+## Not formalized
+
+* **Programs 78 and 79**, the midpoint and trapezoidal reduction formulae. They are algorithms with
+  no stated property.
 -/
 
 open Set Filter Topology MeasureTheory ProbabilityTheory Function Quadrature
@@ -79,12 +111,15 @@ namespace QuarteroniSaccoSaleri.Chapter09
 
 /-! ### §9.9.1: the reduction formula -/
 
-/-- **A domain normal to the `x` axis** (§9.9.1, Figure 9.5):
-`Ω = {(x, y) : a ≤ x ≤ b, φ₁(x) ≤ y ≤ φ₂(x)}`. -/
+/-- **Section 9.9.1** of [quarteroni2000numerical] (Figure 9.5). For $a, b \in \mathbb{R}$ and
+functions $\varphi_1, \varphi_2$, the **domain normal to the $x$ axis** is
+$$\Omega = \{(x, y) : a \le x \le b,\ \varphi_1(x) \le y \le \varphi_2(x)\}.$$
+-/
 def normalDomain (a b : ℝ) (φ₁ φ₂ : ℝ → ℝ) : Set (ℝ × ℝ) :=
   {p | p.1 ∈ Icc a b ∧ φ₁ p.1 ≤ p.2 ∧ p.2 ≤ φ₂ p.1}
 
-/-- A normal domain with continuous boundary curves is closed, hence measurable. -/
+/-- If $\varphi_1$ and $\varphi_2$ are continuous on $[a, b]$, the normal domain is closed, and
+hence measurable. -/
 theorem isClosed_normalDomain {a b : ℝ} {φ₁ φ₂ : ℝ → ℝ} (h₁ : ContinuousOn φ₁ (Icc a b))
     (h₂ : ContinuousOn φ₂ (Icc a b)) : IsClosed (normalDomain a b φ₁ φ₂) := by
   have hs : IsClosed (Icc a b ×ˢ (univ : Set ℝ)) := isClosed_Icc.prod isClosed_univ
@@ -103,8 +138,9 @@ theorem isClosed_normalDomain {a b : ℝ} {φ₁ φ₂ : ℝ → ℝ} (h₁ : Co
   exact (hc₁.preimage_isClosed_of_isClosed hs (isClosed_le continuous_fst continuous_snd)).inter
     (hc₂.preimage_isClosed_of_isClosed hs (isClosed_le continuous_fst continuous_snd))
 
-/-- The slice of a normal domain at abscissa `x`: the segment `[φ₁(x), φ₂(x)]` for `x ∈ [a, b]`
-and empty otherwise. -/
+/-- For every $x$, the slice of the normal domain at abscissa $x$ is the segment
+$[\varphi_1(x), \varphi_2(x)]$ if $x \in [a, b]$, and empty otherwise. The statement is written
+for the indicator function of the domain applied to a function $f$. -/
 theorem normalDomain_indicator_slice {a b : ℝ} (φ₁ φ₂ : ℝ → ℝ) (f : ℝ × ℝ → ℝ) (x : ℝ) :
     (fun y => (normalDomain a b φ₁ φ₂).indicator f (x, y))
       = if x ∈ Icc a b then (Icc (φ₁ x) (φ₂ x)).indicator (fun y => f (x, y)) else 0 := by
@@ -121,11 +157,15 @@ theorem normalDomain_indicator_slice {a b : ℝ} (φ₁ φ₂ : ℝ → ℝ) (f 
     rintro ⟨h1, -, -⟩
     exact hx h1
 
-/-- **(9.56), the reduction formula for double integrals.** For `φ₁ ≤ φ₂` continuous on
-`[a, b]`, the domain `Ω = {(x, y) : a ≤ x ≤ b, φ₁(x) ≤ y ≤ φ₂(x)}` normal to the `x` axis, and
-`f` integrable on `Ω`,
-`I(f) = ∫_Ω f(x, y) dx dy = ∫_a^b (∫_{φ₁(x)}^{φ₂(x)} f(x, y) dy) dx = ∫_a^b F_f(x) dx`.
-Fubini's theorem (`MeasureTheory.integral_prod`) for the indicator of `Ω`. -/
+/-- **Equation (9.56)** of [quarteroni2000numerical], the reduction formula for double integrals.
+Let $a \le b$, let $\varphi_1, \varphi_2$ be continuous on $[a, b]$ with
+$\varphi_1 \le \varphi_2$, let $\Omega$ be the domain normal to the $x$ axis, and let $f$ be
+integrable on $\Omega$. Then
+$$I(f) = \int_\Omega f(x, y)\,dx\,dy = \int_a^b \Bigl(\int_{\varphi_1(x)}^{\varphi_2(x)} f(x,
+  y)\,dy\Bigr) dx = \int_a^b F_f(x)\,dx.$$
+
+The proof is Fubini's theorem (`MeasureTheory.integral_prod`) for the indicator function of
+$\Omega$. -/
 theorem equation_9_56 {a b : ℝ} (hab : a ≤ b) {φ₁ φ₂ : ℝ → ℝ} (h₁ : ContinuousOn φ₁ (Icc a b))
     (h₂ : ContinuousOn φ₂ (Icc a b)) (hφ : ∀ x ∈ Icc a b, φ₁ x ≤ φ₂ x) {f : ℝ × ℝ → ℝ}
     (hf : IntegrableOn f (normalDomain a b φ₁ φ₂)) :
@@ -151,34 +191,43 @@ theorem equation_9_56 {a b : ℝ} (hab : a ≤ b) {φ₁ φ₂ : ℝ → ℝ} (h
 
 /-! ### §9.9.2: composite quadratures on triangles -/
 
-/-- **The linear part `B_T = [a₂ - a₁ | a₃ - a₁]`** of the affine map (8.34) from the reference
-triangle onto the triangle with vertices `v 0, v 1, v 2`:
-`x̂ ↦ x̂₀ (v 1 - v 0) + x̂₁ (v 2 - v 0)`. -/
+/-- **Section 9.9.2** of [quarteroni2000numerical], the linear part
+$B_T = [a_2 - a_1 \mid a_3 - a_1]$ of the affine map (8.34) from the reference triangle onto the
+triangle with vertices $a_1, a_2, a_3$. It is the linear map
+$$\hat x \mapsto \hat x_0 (a_2 - a_1) + \hat x_1 (a_3 - a_1).$$
+
+The vertices $a_1, a_2, a_3$ are `v 0`, `v 1`, `v 2`. -/
 noncomputable def triangleLinear (v : Fin 3 → Fin 2 → ℝ) : (Fin 2 → ℝ) →ₗ[ℝ] (Fin 2 → ℝ) :=
   (LinearMap.proj 0).smulRight (v 1 - v 0) + (LinearMap.proj 1).smulRight (v 2 - v 0)
 
-/-- **The affine map `F_T x̂ = a₁ + x̂₀ (a₂ - a₁) + x̂₁ (a₃ - a₁)`** (8.34) from the reference
-triangle onto the triangle `T` with vertices `a₁ = v 0`, `a₂ = v 1`, `a₃ = v 2`. -/
+/-- **Section 9.9.2** of [quarteroni2000numerical], the affine map (8.34)
+$$F_T(\hat x) = a_1 + \hat x_0 (a_2 - a_1) + \hat x_1 (a_3 - a_1)$$
+from the reference triangle onto the triangle $T$ with vertices $a_1, a_2, a_3$, which are
+`v 0`, `v 1` and `v 2`. -/
 noncomputable def triangleMap (v : Fin 3 → Fin 2 → ℝ) (x : Fin 2 → ℝ) : Fin 2 → ℝ :=
   triangleLinear v x + v 0
 
-/-- **The triangle** `T = F_T(T̂)` with vertices `v 0, v 1, v 2`. -/
+/-- **Section 9.9.2** of [quarteroni2000numerical]. The **triangle** with vertices $a_1, a_2, a_3$
+is $T = F_T(\hat T)$, the image of the reference triangle $\hat T = \{\hat x : \hat x_0 \ge 0,\
+\hat x_1 \ge 0,\ \hat x_0 + \hat x_1 \le 1\}$. -/
 noncomputable def triangle (v : Fin 3 → Fin 2 → ℝ) : Set (Fin 2 → ℝ) :=
   triangleMap v '' refTriangle
 
-/-- **The area `|T|`** of the triangle with vertices `v 0, v 1, v 2`. -/
+/-- **Section 9.9.2** of [quarteroni2000numerical]. The **area** $|T|$ of the triangle with vertices
+$a_1, a_2, a_3$ is its Lebesgue measure. -/
 noncomputable def area (v : Fin 3 → Fin 2 → ℝ) : ℝ :=
   (volume (triangle v)).toReal
 
-/-- `F_T x̂ = a₁ + x̂₀ (a₂ - a₁) + x̂₁ (a₃ - a₁)`, written out. -/
+/-- The affine map written out: $F_T(\hat x) = a_1 + \hat x_0 (a_2 - a_1) + \hat x_1 (a_3 - a_1)$.
+-/
 theorem triangleMap_apply (v : Fin 3 → Fin 2 → ℝ) (x : Fin 2 → ℝ) :
     triangleMap v x = v 0 + x 0 • (v 1 - v 0) + x 1 • (v 2 - v 0) := by
   simp only [triangleMap, triangleLinear, LinearMap.add_apply, LinearMap.smulRight_apply,
     LinearMap.proj_apply]
   abel
 
-/-- `F_T` sends the reference vertices `(0, 0), (1, 0), (0, 1)` to `a₁, a₂, a₃`, and the reference
-centroid `(1/3, 1/3)` to the centroid `a_T = (a₁ + a₂ + a₃)/3`. -/
+/-- The map $F_T$ sends the reference vertices $(0, 0)$, $(1, 0)$, $(0, 1)$ to $a_1$, $a_2$, $a_3$,
+and the reference centroid $(1/3, 1/3)$ to the centroid $a_T = (a_1 + a_2 + a_3)/3$. -/
 theorem triangleMap_vertex (v : Fin 3 → Fin 2 → ℝ) :
     triangleMap v ![0, 0] = v 0 ∧ triangleMap v ![1, 0] = v 1 ∧ triangleMap v ![0, 1] = v 2 ∧
       triangleMap v ![1 / 3, 1 / 3] = (v 0 + v 1 + v 2) / 3 := by
@@ -189,19 +238,28 @@ theorem triangleMap_vertex (v : Fin 3 → Fin 2 → ℝ) :
   · funext i; simp
   · funext i; simp; ring
 
-/-- **The area of a triangle** is `|det B_T|/2` (`Quadrature.volume_affineImage_refTriangle`),
-so the Jacobian `|det B_T|` of `F_T` is `2|T|`. -/
+/-- **Section 9.9.2** of [quarteroni2000numerical], the area of a triangle. For all vertices
+$a_1, a_2, a_3$,
+$$|T| = \frac{|\det B_T|}{2},$$
+so the Jacobian $|\det B_T|$ of $F_T$ is $2|T|$.
+
+The proof uses `Quadrature.volume_affineImage_refTriangle`. A degenerate triangle has area $0$. -/
 theorem area_eq (v : Fin 3 → Fin 2 → ℝ) : area v = |LinearMap.det (triangleLinear v)| / 2 := by
   rw [area, triangle, show triangleMap v = fun y => triangleLinear v y + v 0 from rfl,
     volume_affineImage_refTriangle, ENNReal.toReal_ofReal (by positivity)]
 
-/-- **§9.9.2, the local weights on `T` from the reference triangle**: for an integrable `g` on
-`T`, `∫_T g = 2|T| ∫_{T̂} g ∘ F_T` when `F_T` is injective (the triangle is nondegenerate) — in
-particular `α_T^{(j)} = ∫_T l_{j,T} = 2|T| ∫_{T̂} l̂_j` for the basis functions
-`l_{j,T} = l̂_j ∘ F_T⁻¹` of (8.38) — and the weights of the constant rule (`k = 0`) and of the
-vertex rule (`k = 1`) are `α_T^{(0)} = 2|T| ∫_{T̂} 1 = |T|` and
-`α_T^{(j)} = 2|T| ∫_{T̂} λ_j = |T|/3`, the barycentric
-coordinates `λ₀ = 1 - x̂ - ŷ`, `λ₁ = x̂`, `λ₂ = ŷ` integrating to `1/6` (`|T̂| = 1/2`). -/
+/-- **Section 9.9.2** of [quarteroni2000numerical], the local weights from the reference triangle.
+Let $T$ be a nondegenerate triangle, that is, let $B_T$ be injective. Then for every $g$,
+$$\int_T g(x)\,dx = 2|T| \int_{\hat T} g(F_T(\hat x))\,d\hat x.$$
+Moreover $\int_{\hat T} 1 = 1/2$ and
+$$\int_{\hat T} \hat x_0\,d\hat x = \int_{\hat T} \hat x_1\,d\hat x = \int_{\hat T} (1 - \hat
+  x_0 - \hat x_1)\,d\hat x = \frac{1}{6}.$$
+
+In particular the local weights are $\alpha_T^{(j)} = \int_T l_{j,T} = 2|T| \int_{\hat T} \hat
+l_j$ for the basis functions $l_{j,T} = \hat l_j \circ F_T^{-1}$ of (8.38). The weight of the
+constant rule ($k = 0$) is $2|T| \int_{\hat T} 1 = |T|$, and the weights of the vertex rule
+($k = 1$) are $2|T| \int_{\hat T} \lambda_j = |T|/3$, where $\lambda_0 = 1 - \hat x - \hat y$,
+$\lambda_1 = \hat x$ and $\lambda_2 = \hat y$ are the barycentric coordinates. -/
 theorem triangleWeight_eq (v : Fin 3 → Fin 2 → ℝ) (hv : Function.Injective (triangleLinear v)) :
     (∀ g : (Fin 2 → ℝ) → ℝ, ∫ x in triangle v, g x
         = 2 * area v * ∫ x in refTriangle, g (triangleMap v x)) ∧
@@ -239,27 +297,37 @@ theorem triangleWeight_eq (v : Fin 3 → Fin 2 → ℝ) (hv : Function.Injective
     rw [integral_sub h1 hy, integral_sub hi hx, h00, h10, h01]
     norm_num
 
-/-- **(9.57), the composite interpolatory rule on a family of triangles.** For triangles `T`
-with vertices `v T`, indexed by a finite type, and a reference rule with weights `ŵ_j` and nodes
-`ẑ_j` on `T̂`, `I_k^c(f) = ∑_T ∑_j α_j^T f(z̃_j^T)` with the local weights `α_j^T = 2|T| ŵ_j`
-(`triangleWeight_eq`) and the local nodes `z̃_j^T = F_T(ẑ_j)`. -/
+/-- **Equation (9.57)** of [quarteroni2000numerical], the composite interpolatory formula on a
+family of triangles. Let the triangles $T$ have the vertices `v T` and be indexed by a finite
+type, and let a reference rule on $\hat T$ have weights $\hat w_j$ and nodes $\hat z_j$. The
+**composite formula** is
+$$I_k^c(f) = \sum_T \sum_j \alpha_j^T f(\tilde z_j^T), \qquad \alpha_j^T = 2|T| \hat w_j, \qquad
+  \tilde z_j^T = F_T(\hat z_j).$$
+
+The form of the local weights comes from `QuarteroniSaccoSaleri.Chapter09.triangleWeight_eq`. -/
 noncomputable def equation_9_57 {ι K : Type*} [Fintype ι] [Fintype K] (v : ι → Fin 3 → Fin 2 → ℝ)
     (w : K → ℝ) (z : K → Fin 2 → ℝ) (f : (Fin 2 → ℝ) → ℝ) : ℝ :=
   ∑ T, ∑ j, (2 * area (v T) * w j) * f (triangleMap (v T) (z j))
 
-/-- **(9.58), the composite midpoint formula** `I_0^c(f) = ∑_T |T| f(a_T)`, `a_T` the centroid
-`(a₁ + a₂ + a₃)/3` of `T`. -/
+/-- **Equation (9.58)** of [quarteroni2000numerical]. The **composite midpoint formula** on a finite
+family of triangles is
+$$I_0^c(f) = \sum_T |T| f(a_T),$$
+where $a_T = (a_1 + a_2 + a_3)/3$ is the centroid of $T$. -/
 noncomputable def equation_9_58 {ι : Type*} [Fintype ι] (v : ι → Fin 3 → Fin 2 → ℝ)
     (f : (Fin 2 → ℝ) → ℝ) : ℝ :=
   ∑ T, area (v T) * f ((v T 0 + v T 1 + v T 2) / 3)
 
-/-- **(9.59), the composite trapezoidal formula** `I_1^c(f) = (1/3) ∑_T |T| ∑_{j} f(a_T^{(j)})`
-at the vertices. -/
+/-- **Equation (9.59)** of [quarteroni2000numerical]. The **composite trapezoidal formula** on a
+finite family of triangles is
+$$I_1^c(f) = \frac{1}{3} \sum_T |T| \sum_{j=1}^{3} f(a_T^{(j)}),$$
+where $a_T^{(j)}$ are the vertices of $T$. -/
 noncomputable def equation_9_59 {ι : Type*} [Fintype ι] (v : ι → Fin 3 → Fin 2 → ℝ)
     (f : (Fin 2 → ℝ) → ℝ) : ℝ :=
   1 / 3 * ∑ T, area (v T) * ∑ j, f (v T j)
 
-/-- (9.58) is (9.57) with the centroid reference rule (`ŵ = 1/2` at `(1/3, 1/3)`). -/
+/-- **Equation (9.58)** of [quarteroni2000numerical] as an instance of (9.57). The composite
+midpoint formula is (9.57) with the centroid rule on $\hat T$, which has the single weight
+$\hat w = 1/2$ at the node $(1/3, 1/3)$. -/
 theorem equation_9_58_eq {ι : Type*} [Fintype ι] (v : ι → Fin 3 → Fin 2 → ℝ)
     (f : (Fin 2 → ℝ) → ℝ) :
     equation_9_58 v f
@@ -268,7 +336,9 @@ theorem equation_9_58_eq {ι : Type*} [Fintype ι] (v : ι → Fin 3 → Fin 2 �
   refine Finset.sum_congr rfl fun T _ => ?_
   ring
 
-/-- (9.59) is (9.57) with the vertex reference rule (`ŵ = 1/6` at the three vertices of `T̂`). -/
+/-- **Equation (9.59)** of [quarteroni2000numerical] as an instance of (9.57). The composite
+trapezoidal formula is (9.57) with the vertex rule on $\hat T$, which has the weights
+$\hat w_j = 1/6$ at the three vertices of $\hat T$. -/
 theorem equation_9_59_eq {ι : Type*} [Fintype ι] (v : ι → Fin 3 → Fin 2 → ℝ)
     (f : (Fin 2 → ℝ) → ℝ) :
     equation_9_59 v f
@@ -280,24 +350,31 @@ theorem equation_9_59_eq {ι : Type*} [Fintype ι] (v : ι → Fin 3 → Fin 2 �
     Matrix.tail_cons, h.1, h.2.1, h.2.2.1]
   ring
 
-/-- **Definition 9.1.** The quadrature formula (9.57), with reference weights `ŵ` and nodes `ẑ`,
-has degree of exactness `n` if `I_k^{T̂}(p) = ∫_{T̂} p` for every `p ∈ ℙ_n(T̂)`: the backbone's
-`Approximation.IsExactOn (volume.restrict refTriangle) ŵ ẑ n`. -/
+/-- **Definition 9.1** of [quarteroni2000numerical]. The quadrature formula (9.57) with reference
+weights $\hat w_j$ and nodes $\hat z_j$ has **degree of exactness $n$** if
+$I_k^{\hat T}(p) = \int_{\hat T} p$ for every $p \in \mathbb{P}_n(\hat T)$.
+
+The definition is the backbone's `Approximation.IsExactOn (volume.restrict refTriangle) ŵ ẑ n`. -/
 def definition_9_1 {K : Type*} [Fintype K] (w : K → ℝ) (z : K → Fin 2 → ℝ) (n : ℕ) : Prop :=
   Approximation.IsExactOn (volume.restrict refTriangle) w z n
 
-/-- Definition 9.1 in the book's words: `∑_j ŵ_j p(ẑ_j) = ∫_{T̂} p` for every polynomial `p` of
-total degree at most `n` — the space `ℙ_n(T̂)` of (8.35). -/
+/-- **Definition 9.1** of [quarteroni2000numerical] in the words of the book. The rule has degree of
+exactness $n$ if and only if
+$$\sum_j \hat w_j\, p(\hat z_j) = \int_{\hat T} p(\hat x)\,d\hat x$$
+for every polynomial $p$ in two variables of total degree at most $n$, that is, for every $p$ in
+the space $\mathbb{P}_n(\hat T)$ of (8.35). -/
 theorem definition_9_1_iff {K : Type*} [Fintype K] (w : K → ℝ) (z : K → Fin 2 → ℝ) (n : ℕ) :
     definition_9_1 w z n ↔ ∀ p : MvPolynomial (Fin 2) ℝ, p.totalDegree ≤ n →
       ∑ j, w j * MvPolynomial.eval (z j) p = ∫ x in refTriangle, MvPolynomial.eval x p :=
   Iff.rfl
 
-/-- **Exactness on `T̂` transports to every triangle**: if the reference rule has degree of
-exactness `n` (Definition 9.1), then on a nondegenerate triangle `T` the local rule of (9.57),
-with weights `2|T| ŵ_j` and nodes `F_T(ẑ_j)`, integrates every `p ∈ ℙ_n(T)` exactly — the sense in
-which Property 9.4 speaks of the "degree of exactness on `Ω`". The backbone's
-`Quadrature.isExactOn_affineImage`. -/
+/-- **Definition 9.1** of [quarteroni2000numerical], transport to every triangle. Let the reference
+rule $(\hat w_j, \hat z_j)$ have degree of exactness $n$, and let $T$ be a nondegenerate
+triangle. Then the local rule of (9.57), with the weights $2|T| \hat w_j$ and the nodes
+$F_T(\hat z_j)$, integrates every polynomial of total degree at most $n$ exactly over $T$.
+
+This is the sense in which Property 9.4 speaks of the "degree of exactness on $\Omega$". The
+proof is the backbone's `Quadrature.isExactOn_affineImage`. -/
 theorem definition_9_1_transport {K : Type*} [Fintype K] {w : K → ℝ} {z : K → Fin 2 → ℝ} {n : ℕ}
     (h : definition_9_1 w z n) (v : Fin 3 → Fin 2 → ℝ)
     (hv : Function.Injective (triangleLinear v)) :
@@ -311,9 +388,12 @@ theorem definition_9_1_transport {K : Type*} [Fintype K] {w : K → ℝ} {z : K 
   rw [e]
   exact this
 
-/-- **§9.9.2: "the composite formulae (9.58) and (9.59) both have degree of exactness equal to
-`1`."** On the reference triangle the centroid rule and the vertex rule are exact on `ℙ₁` and not
-on `ℙ₂`. -/
+/-- **Section 9.9.2** of [quarteroni2000numerical], degree of exactness of (9.58) and (9.59). On the
+reference triangle, the centroid rule and the vertex rule are exact on $\mathbb{P}_1$ and not on
+$\mathbb{P}_2$.
+
+The book says that "the composite formulae (9.58) and (9.59) both have degree of exactness equal
+to $1$". -/
 theorem equation_9_58_degreeOfExactness :
     (definition_9_1 (fun _ : Fin 1 => (1 / 2 : ℝ)) (fun _ => ![1 / 3, 1 / 3]) 1 ∧
         ¬ definition_9_1 (fun _ : Fin 1 => (1 / 2 : ℝ)) (fun _ => ![1 / 3, 1 / 3]) 2) ∧
@@ -321,10 +401,18 @@ theorem equation_9_58_degreeOfExactness :
         ¬ definition_9_1 (fun _ : Fin 3 => (1 / 6 : ℝ)) ![![0, 0], ![1, 0], ![0, 1]] 2) :=
   ⟨⟨isExactOn_centroid, not_isExactOn_centroid_two⟩, ⟨isExactOn_vertex, not_isExactOn_vertex_two⟩⟩
 
-/-- **§9.9.2, the symmetric formulae.** On the reference triangle, `I₃(f) = (|T̂|/3) ∑_j f(m_j)`
-at the three edge midpoints has degree of exactness `2`, and
-`I₇(f) = (|T̂|/60)(3 ∑_i f(a^{(i)}) + 8 ∑_j f(m_j) + 27 f(a_{T̂}))` has degree of exactness `3`;
-both transport to every triangle by `definition_9_1_transport`. -/
+/-- **Section 9.9.2** of [quarteroni2000numerical], the symmetric formulae. On the reference
+triangle, the formula
+$$I_3(f) = \frac{|\hat T|}{3} \sum_{j=1}^{3} f(m_j)$$
+at the three edge midpoints $m_j$ has degree of exactness $2$, and the formula
+$$I_7(f) = \frac{|\hat T|}{60} \Bigl(3 \sum_{i=1}^{3} f(a^{(i)}) + 8 \sum_{j=1}^{3} f(m_j) + 27
+  f(a_{\hat T})\Bigr)$$
+at the vertices $a^{(i)}$, the edge midpoints and the centroid $a_{\hat T}$ has degree of
+exactness $3$. Neither formula is exact one degree higher.
+
+Here $|\hat T| = 1/2$, so the weights are $1/6$ for $I_3$ and $1/40$, $1/15$, $9/40$ for $I_7$.
+Both formulae transport to every triangle by
+`QuarteroniSaccoSaleri.Chapter09.definition_9_1_transport`. -/
 theorem symmetricFormulae :
     (definition_9_1 (fun _ : Fin 3 => (1 / 6 : ℝ)) ![![1 / 2, 0], ![0, 1 / 2], ![1 / 2, 1 / 2]] 2 ∧
         ¬ definition_9_1 (fun _ : Fin 3 => (1 / 6 : ℝ))
@@ -338,17 +426,20 @@ theorem symmetricFormulae :
   ⟨⟨isExactOn_edgeMidpoint, not_isExactOn_edgeMidpoint_three⟩,
     ⟨isExactOn_sevenPoint, not_isExactOn_sevenPoint_four⟩⟩
 
-/-! #### Property 9.4: the error of a composite rule with nonnegative weights -/
+/-! ### Property 9.4: the error of a composite formula with nonnegative weights -/
 
-/-- `F_T x̂ - a₁ = x̂₀ (a₂ - a₁) + x̂₁ (a₃ - a₁)`: the affine map (8.34) is its vertex `a₁` plus
-a linear map. -/
+/-- The affine map (8.34) is its vertex $a_1$ plus a linear map: $F_T(\hat x) - a_1 = \hat x_0
+(a_2 - a_1) + \hat x_1 (a_3 - a_1)$. -/
 theorem triangleMap_sub_vertex (v : Fin 3 → Fin 2 → ℝ) (x : Fin 2 → ℝ) :
     triangleMap v x - v 0 = x 0 • (v 1 - v 0) + x 1 • (v 2 - v 0) := by
   rw [triangleMap_apply]
   abel
 
-/-- **The triangle `T` is star-shaped with respect to its vertex `a₁`**: the segment from `a₁`
-to `F_T x̂` is `F_T` of the segment from `(0, 0)` to `x̂`, which stays in `T̂`. -/
+/-- A triangle $T$ is star-shaped with respect to its vertex $a_1$. For every $\hat x \in \hat T$
+and every $s \in [0, 1]$, the point $a_1 + s (F_T(\hat x) - a_1)$ lies in $T$.
+
+The reason is that the segment from $a_1$ to $F_T(\hat x)$ is the image under $F_T$ of the
+segment from $(0, 0)$ to $\hat x$, which stays in $\hat T$. -/
 theorem triangleMap_segment_mem (v : Fin 3 → Fin 2 → ℝ) {x : Fin 2 → ℝ} (hx : x ∈ refTriangle)
     {s : ℝ} (hs : s ∈ Icc (0 : ℝ) 1) : v 0 + s • (triangleMap v x - v 0) ∈ triangle v := by
   obtain ⟨h0, h1, h2⟩ := hx
@@ -360,8 +451,9 @@ theorem triangleMap_segment_mem (v : Fin 3 → Fin 2 → ℝ) {x : Fin 2 → ℝ
     simp only [Pi.smul_apply, smul_eq_mul, smul_add, smul_smul]
     abel
 
-/-- **The distance from the vertex `a₁` to a point of `T`** is at most any `h` bounding the two
-edge lengths `‖a₂ - a₁‖`, `‖a₃ - a₁‖` at `a₁`. -/
+/-- Let $h$ bound the norms $\|a_2 - a_1\|$ and $\|a_3 - a_1\|$ of the two edges at the vertex
+$a_1$. Then $\|F_T(\hat x) - a_1\| \le h$ for every $\hat x \in \hat T$. The norm is the sup
+norm on `Fin 2 → ℝ`. -/
 theorem norm_triangleMap_sub_vertex_le {v : Fin 3 → Fin 2 → ℝ} {h : ℝ} (hh₁ : ‖v 1 - v 0‖ ≤ h)
     (hh₂ : ‖v 2 - v 0‖ ≤ h) {x : Fin 2 → ℝ} (hx : x ∈ refTriangle) :
     ‖triangleMap v x - v 0‖ ≤ h := by
@@ -377,7 +469,7 @@ theorem norm_triangleMap_sub_vertex_le {v : Fin 3 → Fin 2 → ℝ} {h : ℝ} (
     _ ≤ 1 * h := mul_le_mul_of_nonneg_right h2 ((norm_nonneg _).trans hh₁)
     _ = h := one_mul h
 
-/-- The affine map `F_T` is continuous. -/
+/-- The affine map $F_T$ is continuous. -/
 theorem continuous_triangleMap (v : Fin 3 → Fin 2 → ℝ) : Continuous (triangleMap v) :=
   (triangleLinear v).continuous_of_finiteDimensional.add continuous_const
 
@@ -393,9 +485,12 @@ theorem measurableSet_triangle (v : Fin 3 → Fin 2 → ℝ) : MeasurableSet (tr
 theorem area_nonneg (v : Fin 3 → Fin 2 → ℝ) : 0 ≤ area v :=
   ENNReal.toReal_nonneg
 
-/-- **The local weights of an exact rule sum to the area**: if the reference rule has degree of
-exactness `n` (so integrates the constant `1` over `T̂`, of area `1/2`), the local weights
-`α_T^{(j)} = 2|T| ŵ_j` of (9.57) sum to `|T|`. -/
+/-- Let the reference rule $(\hat w_j, \hat z_j)$ have degree of exactness $n$ for some $n$. Then
+for every triangle $T$ the local weights $\alpha_T^{(j)} = 2|T| \hat w_j$ of (9.57) sum to
+$|T|$.
+
+The reason is that the rule integrates the constant $1$ exactly over $\hat T$, whose area is
+$1/2$. -/
 theorem sum_triangleWeight_eq_area {K : Type*} [Fintype K] {w : K → ℝ} {z : K → Fin 2 → ℝ}
     {n : ℕ} (hexact : definition_9_1 w z n) (v : Fin 3 → Fin 2 → ℝ) :
     ∑ j, 2 * area v * w j = area v := by
@@ -408,18 +503,24 @@ theorem sum_triangleWeight_eq_area {K : Type*} [Fintype K] {w : K → ℝ} {z : 
   rw [← Finset.mul_sum, h1]
   ring
 
-/-- **Property 9.4 on a single triangle.** Let the reference rule `(ŵ_j, ẑ_j)` have degree of
-exactness `n` (Definition 9.1) and nonnegative weights, with nodes in `T̂`, and let `T` be a
-nondegenerate triangle with vertices `a₁, a₂, a₃` and `h ≥ ‖a₂ - a₁‖, ‖a₃ - a₁‖`. If `f` is
-`C^{n+1}` at every point of `T` with `‖f^{(n+1)}‖_{∞,T} ≤ M_{n+1}`, the local rule (9.57) satisfies
+/-- **Property 9.4** of [quarteroni2000numerical], on a single triangle. Let the reference rule
+$(\hat w_j, \hat z_j)$ have degree of exactness $n$ (Definition 9.1), nonnegative weights and
+nodes in $\hat T$. Let $T$ be a nondegenerate triangle with vertices $a_1, a_2, a_3$, and let
+$\|a_2 - a_1\| \le h$ and $\|a_3 - a_1\| \le h$. Let $f$ be of class $C^{n+1}$ at every point of
+$T$, and let $\|f^{(n+1)}(x)\| \le M_{n+1}$ for all $x \in T$. Then the local rule of (9.57)
+satisfies
+$$|E_T(f)| = \Bigl|\int_T f - \sum_j 2|T| \hat w_j f(F_T(\hat z_j))\Bigr| \le \frac{2}{(n+1)!}
+  h^{n+1} |T| M_{n+1}.$$
 
-  `|E_T(f)| = |∫_T f - ∑_j 2|T| ŵ_j f(F_T ẑ_j)| ≤ (2/(n+1)!) h^{n+1} |T| M_{n+1}`.
-
-With `P` the Taylor polynomial of `f` of degree `n` at `a₁`, `E_T(f) = E_T(f - P)` because the
-rule is exact on `ℙ_n(T)` (`definition_9_1_transport`, `exists_mvPolynomial_taylorSum_pi`);
-`|f - P| ≤ M_{n+1} h^{n+1}/(n+1)!` on `T` by Taylor's theorem along the segments from `a₁`
-(`norm_sub_taylorSum_segment_le`, `triangleMap_segment_mem`), and `|E_T(g)| ≤ 2|T| ‖g‖_{∞,T}` for
-every `g`, the nonnegative weights summing to `|T|` (`sum_triangleWeight_eq_area`). -/
+The derivative $f^{(n+1)}(x)$ is `iteratedFDeriv ℝ (n + 1) f x`, and the norms are the sup norm
+on `Fin 2 → ℝ` and the operator norm for it. Let $P$ be the Taylor polynomial of $f$ of degree
+$n$ at $a_1$. Then $E_T(f) = E_T(f - P)$, because the rule is exact on polynomials of degree $n$
+on $T$ (`QuarteroniSaccoSaleri.Chapter09.definition_9_1_transport`,
+`exists_mvPolynomial_taylorSum_pi`). Taylor's theorem along the segments from $a_1$ gives
+$|f - P| \le M_{n+1} h^{n+1}/(n+1)!$ on $T$ (`norm_sub_taylorSum_segment_le`,
+`QuarteroniSaccoSaleri.Chapter09.triangleMap_segment_mem`). Finally
+$|E_T(g)| \le 2|T| \sup_T |g|$ for every $g$, because the nonnegative weights sum to $|T|$
+(`QuarteroniSaccoSaleri.Chapter09.sum_triangleWeight_eq_area`). -/
 theorem property_9_4_triangle {K : Type*} [Fintype K] {w : K → ℝ} {z : K → Fin 2 → ℝ} {n : ℕ}
     (hexact : definition_9_1 w z n) (hw : ∀ j, 0 ≤ w j) (hz : ∀ j, z j ∈ refTriangle)
     {v : Fin 3 → Fin 2 → ℝ} (hv : Function.Injective (triangleLinear v)) {h : ℝ}
@@ -489,19 +590,26 @@ theorem property_9_4_triangle {K : Type*} [Fintype K] {w : K → ℝ} {z : K →
     _ ≤ B * area v + area v * B := add_le_add hint hnodes
     _ = 2 / (n + 1)! * h ^ (n + 1) * area v * M := by rw [hB]; ring
 
-/-- **Property 9.4.** Let the composite rule (9.57) be built from a reference rule of degree of
-exactness `n ≥ 0` (Definition 9.1) with nonnegative weights and nodes in `T̂`, on a finite family
-of nondegenerate triangles `T` covering `Ω` and overlapping only on null sets, with `h` bounding
-the edge lengths. Then for every `f ∈ C^{n+1}(Ω)`,
+/-- **Property 9.4** of [quarteroni2000numerical]. Let the reference rule $(\hat w_j, \hat z_j)$
+have degree of exactness $n \ge 0$ (Definition 9.1), nonnegative weights and nodes in $\hat T$.
+Let $\{T\}$ be a finite family of nondegenerate triangles whose union is $\Omega$ and which
+pairwise overlap only on null sets, and let $h$ bound the norms of the two edges at the first
+vertex of every triangle. Let $f$ be of class $C^{n+1}$ at every point of $\Omega$, and let
+$\|f^{(n+1)}(x)\| \le M_{n+1}$ for all $x \in \Omega$. Then the composite formula (9.57)
+satisfies
+$$|E_n^c(f)| = \Bigl|\int_\Omega f - I_n^c(f)\Bigr| \le K_n h^{n+1} |\Omega| M_{n+1}, \qquad
+  K_n = \frac{2}{(n+1)!},$$
+where $|\Omega|$ is the area of $\Omega$.
 
-  `|E_n^c(f)| = |∫_Ω f - I_n^c(f)| ≤ K_n h^{n+1} |Ω| M_{n+1}`, `K_n = 2/(n+1)!`,
+**Generalization.** The source states the property for a triangulation of $\Omega$. The
+statement here needs only a finite family of triangles that covers $\Omega$ and overlaps on null
+sets.
 
-`M_{n+1}` bounding the moduli of the derivatives of order `n + 1` of `f` on `Ω` and `|Ω|` the area
-of `Ω`. The book states it without proof ([IK66], pp. 361–362); it is the sum over the elements of
-the per-triangle bound `property_9_4_triangle`, `|Ω| = ∑_T |T|`. Only a finite family of triangles
-enters — no triangulation structure is needed for the bound itself. Conventions: `‖f^{(n+1)}(x)‖`
-is the operator norm of `iteratedFDeriv ℝ (n + 1) f x` for the sup norm on `Fin 2 → ℝ`, and `h`
-bounds the two edges at the first vertex of every triangle (the maximum edge length qualifies). -/
+The book states the property without proof and refers to [isaacson1994analysis], pp. 361–362.
+The proof sums the bound `QuarteroniSaccoSaleri.Chapter09.property_9_4_triangle` over the
+triangles, with $|\Omega| = \sum_T |T|$. The derivative $f^{(n+1)}(x)$ is
+`iteratedFDeriv ℝ (n + 1) f x`, with the operator norm for the sup norm on `Fin 2 → ℝ`, and the
+edges are measured in the sup norm, so the maximum Euclidean edge length is an admissible $h$. -/
 theorem property_9_4 {ι K : Type*} [Fintype ι] [Fintype K] {w : K → ℝ} {z : K → Fin 2 → ℝ}
     {n : ℕ} (hexact : definition_9_1 w z n) (hw : ∀ j, 0 ≤ w j) (hz : ∀ j, z j ∈ refTriangle)
     {v : ι → Fin 3 → Fin 2 → ℝ} (hv : ∀ T, Function.Injective (triangleLinear (v T)))
@@ -539,19 +647,31 @@ theorem property_9_4 {ι K : Type*} [Fintype ι] [Fintype K] {w : K → ℝ} {z 
 
 variable {Ω' : Type*} [MeasurableSpace Ω'] {μ : Measure Ω'} {d : ℕ}
 
-/-- **§9.9.3, the integral as a mean value.** For `Ω ⊆ ℝⁿ` measurable of finite positive volume,
-`∫_Ω f(x) dx = |Ω| ∫_{ℝⁿ} |Ω|⁻¹ χ_Ω(x) f(x) dx = |Ω| μ(f)`, where `μ(f)` is the mean of `f(X)` for
-`X` with the uniform density `|Ω|⁻¹ χ_Ω` — the conditional measure `volume[|Ω]`. -/
+/-- **Section 9.9.3** of [quarteroni2000numerical], the integral as a mean value. Let
+$\Omega \subseteq \mathbb{R}^d$ with $0 < |\Omega| < \infty$. Then for every $f$,
+$$\int_\Omega f(x)\,dx = |\Omega| \int_{\mathbb{R}^d} |\Omega|^{-1} \chi_\Omega(x) f(x)\,dx =
+  |\Omega|\, \mu(f),$$
+where $\mu(f)$ is the mean of $f(X)$ for a random variable $X$ with the uniform density
+$|\Omega|^{-1} \chi_\Omega$.
+
+The uniform distribution is the conditional measure `volume[|Ω]`. The book writes $n$ for the
+dimension $d$. The statement needs no measurability hypothesis on $\Omega$ or $f$. -/
 theorem monteCarlo_mean {Ω : Set (Fin d → ℝ)} (h0 : volume Ω ≠ 0) (htop : volume Ω ≠ ⊤)
     (f : (Fin d → ℝ) → ℝ) :
     ∫ x in Ω, f x = (volume Ω).toReal * ∫ x, f x ∂(volume[|Ω]) :=
   MonteCarlo.setIntegral_eq_volume_mul_integral_cond h0 htop f
 
-/-- **(9.60) and the strong law of large numbers.** For samples `X₁, X₂, …` on `Ω`, pairwise
-independent and each with the uniform law `volume[|Ω]` on `Ω ⊆ ℝⁿ` (`0 < |Ω| < ∞`), and `f`
-measurable with `f(X₁)` integrable, the average `I_N(f) = (∑_{i≤N} f(X_i))/N` converges with
-probability `1` to the mean value `μ(f) = |Ω|⁻¹ ∫_Ω f` as `N → ∞`. The backbone's
-`MonteCarlo.tendsto_sampleMean_ae` (Mathlib's strong law) together with `monteCarlo_mean`. -/
+/-- **Equation (9.60)** of [quarteroni2000numerical] and the strong law of large numbers. Let
+$\Omega \subseteq \mathbb{R}^d$ with $0 < |\Omega| < \infty$, and let $f$ be measurable. Let
+$X_1, X_2, \dots$ be measurable random variables that are pairwise independent and each have the
+uniform distribution on $\Omega$, and let $f(X_1)$ be integrable. Then with probability $1$ the
+sample mean
+$$I_N(f) = \frac{1}{N} \sum_{i=1}^{N} f(X_i)$$
+converges to the mean value $\mu(f) = |\Omega|^{-1} \int_\Omega f$ as $N \to \infty$.
+
+The sample mean is `MonteCarlo.sampleMean f X N`, and the samples are indexed from $0$. The
+proof is the backbone's `MonteCarlo.tendsto_sampleMean_ae` (the strong law of Mathlib) together
+with `QuarteroniSaccoSaleri.Chapter09.monteCarlo_mean`. -/
 theorem monteCarlo_strongLaw {Ω : Set (Fin d → ℝ)} (h0 : volume Ω ≠ 0) (htop : volume Ω ≠ ⊤)
     {f : (Fin d → ℝ) → ℝ} (hf : Measurable f) {X : ℕ → Ω' → (Fin d → ℝ)}
     (hX : ∀ i, Measurable (X i)) (hlaw : ∀ i, Measure.map (X i) μ = volume[|Ω])
@@ -568,12 +688,20 @@ theorem monteCarlo_strongLaw {Ω : Set (Fin d → ℝ)} (h0 : volume Ω ≠ 0) (
   rw [← hmean]
   exact MonteCarlo.tendsto_sampleMean_ae f hf X hint hindep hident
 
-/-- **(9.61)**: for mutually independent samples `X_i`, each with the same law as `X₁`, and
-`f(X₁) ∈ L²`, the standard deviation of the average is `σ(I_N(f)) = σ(f)/√N`, i.e.
-`Var(I_N(f)) = Var(f(X₁))/N`; hence the statistical error decays as `O(N^{-1/2})`, independently
-of the dimension `n` — and Chebyshev's inequality makes this quantitative:
-`P{|I_N(f) - μ(f)| ≥ c} ≤ σ(f)²/(N c²)`. The backbone's `MonteCarlo.variance_sampleMean` and
-`MonteCarlo.meas_ge_le_sampleMean`. -/
+/-- **Equation (9.61)** of [quarteroni2000numerical]. On a probability space, let $f$ be measurable,
+let $X_1, X_2, \dots$ be pairwise independent random variables with the same distribution, let
+$f(X_1)$ have a finite second moment, and let $N \ge 1$. Then the standard deviation of the
+sample mean is
+$$\sigma(I_N(f)) = \frac{\sigma(f)}{\sqrt{N}}, \qquad \text{that is,} \qquad
+  \operatorname{Var}(I_N(f)) = \frac{\operatorname{Var}(f(X_1))}{N},$$
+where $\sigma(f)$ is the standard deviation of $f(X_1)$. Moreover Chebyshev's inequality gives,
+for every $c > 0$,
+$$P\{|I_N(f) - \mu(f)| \ge c\} \le \frac{\sigma(f)^2}{N c^2},$$
+where $\mu(f)$ is the mean of $f(X_1)$.
+
+So the statistical error decays as $O(N^{-1/2})$, independently of the dimension. The statement
+needs only pairwise independence. The proof is the backbone's `MonteCarlo.variance_sampleMean`
+and `MonteCarlo.meas_ge_le_sampleMean`. -/
 theorem equation_9_61 [IsProbabilityMeasure μ] {f : (Fin d → ℝ) → ℝ} (hf : Measurable f)
     {X : ℕ → Ω' → (Fin d → ℝ)} (hL2 : MemLp (f ∘ X 0) 2 μ)
     (hindep : Pairwise ((· ⟂ᵢ[μ] ·) on X)) (hident : ∀ i, IdentDistrib (X i) (X 0) μ μ)

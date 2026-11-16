@@ -6,32 +6,54 @@ import NumlibSurface.QuarteroniSaccoSaleri.Chapter11.Section04
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter11.Section08
 
 /-!
-# Quarteroni–Sacco–Saleri §11.12: exercises
+# Quarteroni, Sacco and Saleri, Section 11.12: Exercises
 
-Surface file for Alfio Quarteroni, Riccardo Sacco and Fausto Saleri, *Numerical Mathematics*,
-Springer, 2000, §11.12 — the exercises the main text uses.
+This module formalizes the exercises of Section 11.12 of [quarteroni2000numerical] that the main
+text of Chapter 11 uses. Exercise 1 shows that Heun's method has order two, and Exercise 2 that the
+Crank–Nicolson method has order two (11.90). Exercise 3 solves a difference equation whose
+characteristic polynomial has a double root and a pair of complex conjugate roots. Exercise 4 proves
+the form (11.32) of the solutions of a difference equation with simple roots, and Exercise 5 that
+the matrix $R$ of (11.37) is then nonsingular. Exercise 12 writes Heun's method and the modified
+Euler method (11.91) as two-stage Runge–Kutta methods.
 
-Exercise 1 (Heun's method has order 2, cited in §11.3), Exercise 2 (Crank–Nicolson has order 2,
-(11.90)), Exercise 3 (a difference equation with a double root and a pair of complex conjugate
-roots, cited in §11.4), Exercise 4 ((11.32) for simple roots), Exercise 5 (the matrix `R` of
-(11.37) is nonsingular), and Exercise 12 with the modified Euler method (11.91), cited in §11.8.1.
+The results restate `Numlib.ODE.OneStep`, `Numlib.Algebra.LinearRecurrence` and
+`Numlib.ODE.RungeKutta`. The closed form of Exercise 3 is verified in this module.
 
-Restatements of `Numlib/ODE/OneStep`, `Numlib/Algebra/LinearRecurrence`,
-`Numlib/Analysis/LinearRecurrence` and `Numlib/ODE/RungeKutta`, with the closed form of Exercise 3
-verified here. Exercises 6–11 and 13–15 are not cited by the main text and are not formalized.
+## Main definitions
+
+* Equation (11.91), `QuarteroniSaccoSaleri.Chapter11.equation_11_91`: the increment of the modified
+  Euler method.
 
 ## Main results
 
-* `exercise_11_1`, `exercise_11_2` — Heun and Crank–Nicolson have order two.
-* `exercise_11_3` — the closed-form solution of the difference equation.
-* `exercise_11_4`, `exercise_11_5` — simple roots: the form (11.32) and the nonsingular `R`.
-* `equation_11_91`, `exercise_11_12` — the modified Euler method and the two-stage tableaux.
+* Exercise 11.1, `QuarteroniSaccoSaleri.Chapter11.exercise_11_1`: Heun's method has order two.
+* Exercise 11.2, `QuarteroniSaccoSaleri.Chapter11.exercise_11_2`: the Crank–Nicolson method has
+  order two.
+* Exercise 11.3, `QuarteroniSaccoSaleri.Chapter11.exercise_11_3`: the closed-form solution of the
+  difference equation $u_{n+4} - 6u_{n+3} + 14u_{n+2} - 16u_{n+1} + 8u_n = n$.
+* Exercise 11.4, `QuarteroniSaccoSaleri.Chapter11.exercise_11_4`: with simple roots, every solution
+  has the form (11.32).
+* Exercise 11.5, `QuarteroniSaccoSaleri.Chapter11.exercise_11_5`: with simple roots, the matrix $R$
+  of (11.37) is nonsingular.
+* Exercise 11.12, `QuarteroniSaccoSaleri.Chapter11.exercise_11_12`: the Butcher arrays of Heun's
+  method and of the modified Euler method.
 
 ## Conventions
 
-As in §11.3 and §11.8: solutions are `C³` on the closed horizon with derivatives
-`derivWithin`/`iteratedDerivWithin`, and the Lipschitz constant `L ≥ 0` of `f` in `y` is uniform
-on `[t₀, t₀ + T]`.
+* As in Sections 11.3 and 11.8, a solution is $C^3$ on the closed horizon, and its derivatives are
+  `derivWithin` and `iteratedDerivWithin` on that interval. The Lipschitz constant $L \ge 0$ of $f$
+  in $y$ is uniform on $[t_0, t_0 + T]$.
+
+## Deviations from the source
+
+* **Exercise 11.3** (typo). The source prints $\sin(\pi/4)$ for $\sin(n\pi/4)$ in the solution. See
+  `QuarteroniSaccoSaleri.Chapter11.exercise_11_3`.
+
+## Not formalized
+
+* **Exercises 11.6–11.11 and 11.13–11.15.** The main text does not cite them.
+* **Equation (11.90)** in its mean-value form, with the intermediate point $\xi_n$. Only the bound
+  on the truncation error is formalized, in `QuarteroniSaccoSaleri.Chapter11.exercise_11_2`.
 -/
 
 open Set Filter Topology Asymptotics ODE ODE.OneStep
@@ -43,12 +65,20 @@ variable {f : ℝ → ℝ → ℝ} {t₀ T h t y₀ : ℝ} {y : ℝ → ℝ} {n 
 
 /-! ### Exercises 1–2: Heun and Crank–Nicolson have order two -/
 
-/-- **Exercise 11.1**: Heun's method (11.10) has order 2. Along a `C³` solution of a Cauchy
-problem whose field is `L`-Lipschitz in `y`, with `|y''| ≤ M₂` and `|y'''| ≤ M₃` on the horizon,
-`|τ_{n+1}(h)| ≤ (h²/12) M₃ + (h²/4) L M₂` for every step of every grid — the hint's splitting
-`h τ_{n+1} = E₁ + E₂` with `E₁` the trapezoidal quadrature error and `E₂` the forward Euler error
-inside `f` — hence (11.14) with `p = 2`; `ODE.OneStep.norm_lte_heun_le`,
-`ODE.OneStep.hasOrderFor_heun`. -/
+/-- **Exercise 11.1** of [quarteroni2000numerical]. Heun's method (11.10) has order $2$. Let $T > 0$
+and $L \ge 0$, and let $f$ satisfy $|f(t, y_1) - f(t, y_2)| \le L |y_1 - y_2|$ for
+$t \in [t_0, t_0 + T]$ and all $y_1, y_2$. Let $y \in C^3([t_0, t_0 + T])$ solve the Cauchy
+problem $y' = f(t, y)$, $y(t_0) = y_0$ on $[t_0, t_0 + T]$, with $|y''| \le M_2$ and
+$|y'''| \le M_3$ on $[t_0, t_0 + T]$. Then:
+
+* for every $h > 0$ and every $n < N_h = \lfloor T / h \rfloor$, the local truncation error of
+  Heun's method satisfies
+$$|\tau_{n+1}(h)| \le \frac{h^2}{12} M_3 + \frac{h^2}{4} L M_2;$$
+* Heun's method has order $2$ (11.14) along $y$.
+
+The proof follows the hint of the source: it splits $h \tau_{n+1} = E_1 + E_2$, where $E_1$ is
+the error of the trapezoidal quadrature and $E_2$ the error of the forward Euler step inside
+$f$. It specializes `ODE.OneStep.norm_lte_heun_le` and `ODE.OneStep.hasOrderFor_heun`. -/
 theorem exercise_11_1 (hT : 0 < T) {L : ℝ} (hL : 0 ≤ L)
     (hlip : ∀ t ∈ Icc t₀ (t₀ + T), ∀ y₁ y₂ : ℝ, |f t y₁ - f t y₂| ≤ L * |y₁ - y₂|)
     (hy : cauchyProblem f t₀ y₀ (Icc t₀ (t₀ + T)) y) (hy3 : ContDiffOn ℝ 3 y (Icc t₀ (t₀ + T)))
@@ -70,13 +100,22 @@ theorem exercise_11_1 (hT : 0 < T) {L : ℝ} (hL : 0 ≤ L)
   exact norm_lte_heun_le hy.2 h2' h3 hM₂ hM₃ hlip' hh (node_mem_Icc_of_lt hh hn)
     (node_add_mem_Icc_of_lt hh hn)
 
-/-- **Exercise 11.2**: Crank–Nicolson (11.9) has order 2. For a `C³` solution with `|y'''| ≤ M₃`
-on the horizon, `|τ_{n+1}(h)| ≤ (h²/12) M₃` for every step of every grid — the norm form of
-(11.90), `(y_{n+1} - y_n)/h = (f(t_n, y_n) + f(t_{n+1}, y_{n+1}))/2 - (h²/12) y'''(ξ_n)`, whose
-remainder the book writes `f''(ξ_n, y(ξ_n))`, the second derivative of `s ↦ f(s, y(s)) = y'(s)`
-— hence (11.14) with `p = 2`, so (11.9) agrees with (11.90) up to `O(h²)`;
-`ODE.OneStep.norm_lte_crankNicolson_le`, `ODE.OneStep.hasOrderFor_crankNicolson`. The mean-value
-form with the intermediate point `ξ_n` is not formalized. -/
+/-- **Exercise 11.2** of [quarteroni2000numerical]. The Crank–Nicolson method (11.9) has order $2$.
+Let $T > 0$, and let $y \in C^3([t_0, t_0 + T])$ solve the Cauchy problem $y' = f(t, y)$,
+$y(t_0) = y_0$ on $[t_0, t_0 + T]$, with $|y'''| \le M_3$ on $[t_0, t_0 + T]$. Then:
+
+* for every $h > 0$ and every $n < N_h = \lfloor T / h \rfloor$, the local truncation error
+  satisfies $|\tau_{n+1}(h)| \le (h^2/12) M_3$;
+* the Crank–Nicolson method has order $2$ (11.14) along $y$, so (11.9) agrees with (11.90) up to
+  $O(h^2)$.
+
+The bound is the norm form of (11.90),
+$$\frac{y_{n+1} - y_n}{h} = \frac{f(t_n, y_n) + f(t_{n+1}, y_{n+1})}{2} - \frac{h^2}{12}
+  y'''(\xi_n),$$
+where the source writes the remainder as $f''(\xi_n, y(\xi_n))$, the second derivative of
+$s \mapsto f(s, y(s)) = y'(s)$. The mean-value form with the intermediate point $\xi_n$ is not
+formalized. The proof specializes `ODE.OneStep.norm_lte_crankNicolson_le` and
+`ODE.OneStep.hasOrderFor_crankNicolson`. -/
 theorem exercise_11_2 (hT : 0 < T) (hy : cauchyProblem f t₀ y₀ (Icc t₀ (t₀ + T)) y)
     (hy3 : ContDiffOn ℝ 3 y (Icc t₀ (t₀ + T))) {M₃ : ℝ}
     (hM₃ : ∀ s ∈ Icc t₀ (t₀ + T), |iteratedDerivWithin 3 y (Icc t₀ (t₀ + T)) s| ≤ M₃) :
@@ -94,13 +133,17 @@ theorem exercise_11_2 (hT : 0 < T) (hy : cauchyProblem f t₀ y₀ (Icc t₀ (t�
 
 /-! ### Exercise 3: a difference equation with complex conjugate roots -/
 
-/-- The closed form of Exercise 11.3: `u_n = 2^n (n/4 - 1) + 2^{(n-2)/2} sin(nπ/4) + n + 2`. -/
+/-- The closed-form solution of Exercise 11.3:
+$$u_n = 2^n \Big(\frac{n}{4} - 1\Big) + 2^{(n-2)/2} \sin\Big(\frac{n\pi}{4}\Big) + n + 2.$$
+-/
 noncomputable def exercise_11_3_sol (n : ℕ) : ℝ :=
   2 ^ n * (n / 4 - 1) + (2 : ℝ) ^ (((n : ℝ) - 2) / 2) * Real.sin (n * Real.pi / 4) + n + 2
 
-/-- The difference equation of Exercise 11.3,
-`u_{n+4} - 6u_{n+3} + 14u_{n+2} - 16u_{n+1} + 8u_n = n`, as (11.28) with `α = (8, -16, 14, -6)`
-and the source `φ_m = m - 4`. -/
+/-- The difference equation of Exercise 11.3 is an equation (11.28). A sequence $(u_n)$ solves
+(11.28) with the coefficients $\alpha = (8, -16, 14, -6)$ and the right-hand side
+$\varphi_m = m - 4$ if and only if
+$$u_{n+4} - 6u_{n+3} + 14u_{n+2} - 16u_{n+1} + 8u_n = n \qquad \text{for every } n.$$
+-/
 theorem exercise_11_3_iff (u : ℕ → ℝ) :
     (equation_11_28 (![8, -16, 14, -6] : Fin 4 → ℝ)).IsSolutionWith (fun m => (m : ℝ) - 4) u ↔
       ∀ n, u (n + 4) - 6 * u (n + 3) + 14 * u (n + 2) - 16 * u (n + 1) + 8 * u n = n := by
@@ -114,13 +157,15 @@ theorem exercise_11_3_iff (u : ℕ → ℝ) :
   push_cast
   constructor <;> intro H <;> linear_combination H
 
-/-- `2^{(n-2)/2} = (√2)^n / 2`. -/
+/-- The power in the solution of Exercise 11.3 is $2^{(n-2)/2} = (\sqrt{2})^n / 2$ for
+$n \in \mathbb{N}$. -/
 theorem exercise_11_3_rpow (n : ℕ) : (2 : ℝ) ^ (((n : ℝ) - 2) / 2) = Real.sqrt 2 ^ n / 2 := by
   rw [Real.sqrt_eq_rpow, ← Real.rpow_natCast, ← Real.rpow_mul (by norm_num),
     show ((n : ℝ) - 2) / 2 = 1 / 2 * n - 1 by ring, Real.rpow_sub (by norm_num), Real.rpow_one]
 
-/-- `(1 + i)^n = (√2)^n e^{inπ/4}`: its imaginary part is `(√2)^n sin(nπ/4)`, the real solution
-attached to the conjugate pair `1 ± i` of roots. -/
+/-- The imaginary part of $(1 + i)^n$, used in Exercise 11.3, is $\operatorname{Im}(1 + i)^n =
+(\sqrt{2})^n \sin(n\pi/4)$, because $(1 + i)^n = (\sqrt{2})^n e^{in\pi/4}$. It is the real
+solution of the homogeneous equation that belongs to the conjugate pair of roots $1 \pm i$. -/
 theorem exercise_11_3_im (n : ℕ) :
     ((1 + Complex.I) ^ n).im = Real.sqrt 2 ^ n * Real.sin (n * Real.pi / 4) := by
   have h2 : (Real.sqrt 2 : ℂ) * (Real.sqrt 2 : ℂ) = 2 := by
@@ -135,8 +180,11 @@ theorem exercise_11_3_im (n : ℕ) :
     ← mul_assoc, ← Complex.ofReal_mul, Complex.im_ofReal_mul, Complex.exp_ofReal_mul_I_im,
     mul_div_assoc]
 
-/-- The sequence `2^{(n-2)/2} sin(nπ/4)` solves the homogeneous equation: it is `Im (1+i)^n / 2`,
-and `1 + i` is a root of the characteristic polynomial `(r - 2)²(r² - 2r + 2)`. -/
+/-- The sequence $w_n = 2^{(n-2)/2} \sin(n\pi/4)$ of Exercise 11.3 solves the homogeneous equation:
+$$w_{n+4} - 6w_{n+3} + 14w_{n+2} - 16w_{n+1} + 8w_n = 0 \qquad \text{for every } n.$$
+
+The sequence is $\operatorname{Im}(1 + i)^n / 2$, and $1 + i$ is a root of the characteristic
+polynomial $(r - 2)^2 (r^2 - 2r + 2)$. -/
 theorem exercise_11_3_sin_rec (n : ℕ) :
     let w : ℕ → ℝ := fun n => (2 : ℝ) ^ (((n : ℝ) - 2) / 2) * Real.sin (n * Real.pi / 4)
     w (n + 4) - 6 * w (n + 3) + 14 * w (n + 2) - 16 * w (n + 1) + 8 * w n = 0 := by
@@ -156,14 +204,20 @@ theorem exercise_11_3_sin_rec (n : ℕ) :
   simp only [hw]
   linarith
 
-/-- **Exercise 11.3**: the solution of `u_{n+4} - 6u_{n+3} + 14u_{n+2} - 16u_{n+1} + 8u_n = n`
-with `u₀ = 1`, `u₁ = 2`, `u₂ = 3`, `u₃ = 4` is
-`u_n = 2^n (n/4 - 1) + 2^{(n-2)/2} sin(nπ/4) + n + 2`:
-this sequence solves the equation with these starting values, and every solution with these
-starting values is it. The characteristic polynomial is `(r - 2)²(r² - 2r + 2)`, with the double
-root `2` (the solutions `2^n`, `n 2^n`) and the conjugate pair `1 ± i = √2 e^{±iπ/4}`, whose real
-solution is `2^{n/2} sin(nπ/4)`; `n + 2` is a particular solution. The source prints
-`sin(π/4)` for `sin(nπ/4)`. -/
+/-- **Exercise 11.3** of [quarteroni2000numerical]. The solution of
+$$u_{n+4} - 6u_{n+3} + 14u_{n+2} - 16u_{n+1} + 8u_n = n$$
+with $u_0 = 1$, $u_1 = 2$, $u_2 = 3$ and $u_3 = 4$ is
+$$u_n = 2^n \Big(\frac{n}{4} - 1\Big) + 2^{(n-2)/2} \sin\Big(\frac{n\pi}{4}\Big) + n + 2.$$
+That is, this sequence solves the equation and has these starting values, and every solution
+with these starting values is equal to it.
+
+**Typo.** The source prints $\sin(\pi/4)$ in place of $\sin(n\pi/4)$.
+
+The equation is (11.28) with $\alpha = (8, -16, 14, -6)$ and $\varphi_m = m - 4$, as in
+`QuarteroniSaccoSaleri.Chapter11.exercise_11_3_iff`. The characteristic polynomial is
+$(r - 2)^2 (r^2 - 2r + 2)$. The double root $2$ gives the solutions $2^n$ and $n 2^n$, the
+conjugate pair $1 \pm i = \sqrt{2} e^{\pm i\pi/4}$ gives the real solution
+$2^{n/2} \sin(n\pi/4)$, and $n + 2$ is a particular solution. -/
 theorem exercise_11_3 :
     (equation_11_28 (![8, -16, 14, -6] : Fin 4 → ℝ)).IsSolutionWith (fun m => (m : ℝ) - 4)
       exercise_11_3_sol ∧
@@ -216,11 +270,17 @@ theorem exercise_11_3 :
 
 /-! ### Exercises 4–5: simple roots -/
 
-/-- **Exercise 11.4**: if the characteristic polynomial (11.30) of the difference equation
-(11.28) has `k` simple roots `r_1, …, r_k` (an injective enumeration of roots), every solution
-`u` has the form (11.32), `u_n = ∑_i γ_i r_i^n`, for a unique `γ`, which is the solution of the
-Vandermonde system `∑_i γ_i r_i^j = u_j`, `j = 0, …, k - 1`;
-`LinearRecurrence.eq_sum_smul_pow_of_injective_roots`. -/
+/-- **Exercise 11.4** of [quarteroni2000numerical]. Let $K$ be a field, let $\alpha \in K^k$, and
+let $r_1, \dots, r_k \in K$ be distinct roots of the characteristic polynomial $\Pi$ (11.30) of
+the difference equation (11.28), so that they are its $k$ simple roots. Let $(u_n)$ solve the
+homogeneous equation (11.28). Then:
+
+* there is exactly one $\gamma \in K^k$ with $u_n = \sum_{j=1}^k \gamma_j r_j^n$ for every $n$,
+  which is the form (11.32);
+* every such $\gamma$ solves the Vandermonde system $\sum_{i=1}^k \gamma_i r_i^j = u_j$ for
+  $j = 0, \dots, k - 1$.
+
+The proof specializes `LinearRecurrence.eq_sum_smul_pow_of_injective_roots`. -/
 theorem exercise_11_4 {K : Type*} [Field K] {k : ℕ} (α : Fin k → K) {r : Fin k → K}
     (hr : Function.Injective r) (hroot : ∀ j, (equation_11_30 α).IsRoot (r j)) {u : ℕ → K}
     (hu : (equation_11_28 α).IsSolution u) :
@@ -235,10 +295,15 @@ theorem exercise_11_4 {K : Type*} [Field K] {k : ℕ} (α : Fin k → K) {r : Fi
   simp only [smul_eq_mul] at this
   exact this
 
-/-- **Exercise 11.5**: if the characteristic polynomial has simple roots `r_1, …, r_k`, the matrix
-`R = (r_m^i)` of (11.37) is nonsingular: it is the transpose of the Vandermonde matrix of the
-roots, whose determinant `∏_{i<j} (r_j - r_i)` is nonzero;
-`LinearRecurrence.det_vandermonde_transpose_ne_zero`, `Matrix.det_vandermonde_ne_zero_iff`. -/
+/-- **Exercise 11.5** of [quarteroni2000numerical]. Let $K$ be a field and let
+$r_1, \dots, r_k \in K$ be distinct. Then the matrix $R = (r_m^i)_{i, m}$ of (11.37) is
+nonsingular: $\det R \neq 0$.
+
+The source takes the $r_m$ to be the simple roots of the characteristic polynomial; the
+statement does not need this. $R$ is the transpose of the Vandermonde matrix of
+$r_1, \dots, r_k$, whose determinant $\prod_{i < j} (r_j - r_i)$ is not zero. The proof
+specializes `LinearRecurrence.det_vandermonde_transpose_ne_zero` and
+`Matrix.det_vandermonde_ne_zero_iff`. -/
 theorem exercise_11_5 {K : Type*} [Field K] {k : ℕ} {r : Fin k → K} (hr : Function.Injective r) :
     (equation_11_37_matrix r).det ≠ 0 := by
   rw [equation_11_37_matrix_eq]
@@ -246,21 +311,31 @@ theorem exercise_11_5 {K : Type*} [Field K] {k : ℕ} {r : Fin k → K} (hr : Fu
 
 /-! ### Exercise 12: the two-stage explicit methods -/
 
-/-- **The modified Euler method (11.91)**, `u_{n+1} = u_n + h f(t_n + h/2, u_n + (h/2) f_n)`: the
-increment of the tableau `ODE.ButcherTableau.modifiedEuler`. -/
+/-- **Equation (11.91)** of [quarteroni2000numerical]. The **modified Euler method** is
+$$u_{n+1} = u_n + h f\Big(t_n + \frac{h}{2},\ u_n + \frac{h}{2} f_n\Big).$$
+
+The definition is the increment of the explicit tableau `ODE.ButcherTableau.modifiedEuler`. -/
 noncomputable def equation_11_91 (f : ℝ → ℝ → ℝ) : OneStep.Increment ℝ :=
   ButcherTableau.modifiedEuler.explicitIncrement f
 
-/-- (11.91), unfolded. -/
+/-- **Equation (11.91)** of [quarteroni2000numerical], unfolded. The increment of the modified Euler
+method at $(t, u)$ with step $h$ is $f(t + h/2, u + (h/2) f(t, u))$. -/
 theorem equation_11_91_apply (f : ℝ → ℝ → ℝ) (t u v h : ℝ) :
     equation_11_91 f t u v h = f (t + h / 2) (u + h / 2 * f t u) := by
   rw [equation_11_91, ButcherTableau.explicitIncrement_modifiedEuler, smul_eq_mul]
 
-/-- **Exercise 11.12**: Heun's method (11.10) is the explicit two-stage Runge–Kutta method with
-Butcher array `c = (0, 1)`, `A = [[0, 0], [1, 0]]`, `b = (1/2, 1/2)`, and the modified Euler
-method (11.91) is the one with `c = (0, 1/2)`, `A = [[0, 0], [1/2, 0]]`, `b = (0, 1)`;
-`ODE.ButcherTableau.explicitIncrement_heun`, `ODE.ButcherTableau.explicitIncrement_modifiedEuler`.
--/
+/-- **Exercise 11.12** of [quarteroni2000numerical]. Heun's method (11.10) is the explicit two-stage
+Runge–Kutta method with Butcher array
+$$c = (0, 1), \qquad A = \begin{bmatrix} 0 & 0 \\ 1 & 0 \end{bmatrix}, \qquad b =
+  \Big(\frac{1}{2}, \frac{1}{2}\Big),$$
+and the modified Euler method (11.91) is the explicit two-stage Runge–Kutta method with
+$$c = \Big(0, \frac{1}{2}\Big), \qquad A = \begin{bmatrix} 0 & 0 \\ 1/2 & 0 \end{bmatrix},
+  \qquad b = (0, 1).$$
+In both cases the tableau is explicit and satisfies (11.72), its increment (11.70) is the
+increment of the method, and the orbits of (11.71) are the orbits of the method.
+
+The proof specializes `ODE.ButcherTableau.explicitIncrement_heun` and
+`ODE.ButcherTableau.explicitIncrement_modifiedEuler`. -/
 theorem exercise_11_12 :
     (ButcherTableau.heun.c = ![0, 1] ∧ ButcherTableau.heun.A = !![0, 0; 1, 0] ∧
       ButcherTableau.heun.b = ![1 / 2, 1 / 2] ∧ equation_11_71_explicit ButcherTableau.heun ∧

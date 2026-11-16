@@ -5,43 +5,80 @@ Released under Apache 2.0 license as described in the file LICENSE.
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter09.Section06
 
 /-!
-# Quarteroni–Sacco–Saleri §9.7: automatic integration
+# Quarteroni, Sacco and Saleri, Section 9.7: Automatic integration
 
-Surface file for Alfio Quarteroni, Riccardo Sacco and Fausto Saleri, *Numerical Mathematics*,
-Springer, 2000, §9.7.
+This module formalizes Section 9.7 of [quarteroni2000numerical]. An automatic integrator pairs each
+approximation $\mathcal{I}_k$ of $\int_a^b f$ with an estimate $\mathcal{E}_k$ of its error. The
+statements of the section are the a posteriori error estimators behind two strategies. The non
+adaptive strategy (Section 9.7.1) doubles the number of panels of a composite Newton–Cotes formula
+and extrapolates. By (9.39)–(9.40),
+$$I(f) - I_{n,2m}(f) \simeq \frac{I_{n,2m}(f) - I_{n,m}(f)}{2^{n+p} - 1},$$
+with $p = 2$ for even $n$ and $p = 1$ for odd $n$; for Simpson's formula the factor is $15$. The
+adaptive strategy (Section 9.7.2) compares Simpson's formula $S_f(\alpha, \beta)$ on
+$[\alpha, \beta]$ with the formula $S_{f,2}(\alpha, \beta)$ on the two halves. By (9.42)–(9.44),
+$|I_f(\alpha, \beta) - S_{f,2}(\alpha, \beta)| \simeq |\mathcal{E}_f(\alpha, \beta)|/15$ with
+$\mathcal{E}_f = S_f - S_{f,2}$, and the local tolerance (9.45), $|\mathcal{E}_f(\alpha, \beta)|/10
+\le \varepsilon (\beta - \alpha)/(b - a)$, on each subinterval ensures the global tolerance.
 
-An automatic integrator pairs each approximation `𝓘_k` of `∫_a^b f` with an estimate `𝓔_k` of its
-error; the section's statements are the a posteriori estimators behind the two strategies. The
-non adaptive one (§9.7.1) doubles the number of panels of a composite Newton–Cotes formula and
-extrapolates: (9.39)–(9.40), `I(f) - I_{n,2m}(f) ≃ (I_{n,2m}(f) - I_{n,m}(f))/(2^{n+p} - 1)`,
-with `p = 2` for even and `p = 1` for odd `n` (a reduction by the factor `15` for Simpson's rule).
-The adaptive one (§9.7.2) compares Simpson's rule on `[α, β]` with the rule on its two halves:
-(9.42)–(9.44), `|I_f(α, β) - S_{f,2}(α, β)| ≃ |𝓔_f(α, β)|/15`, and the local tolerance (9.45),
-`|𝓔_f(α, β)|/10 ≤ ε (β - α)/(b - a)`, ensures the global one. The stopping test (9.38), Program
-77, the Gauss–Kronrod paragraph and Examples 9.8–9.9 are algorithms, prose or numerical runs and
-are not formalized.
-
-The book writes (9.39)–(9.40) and (9.43)–(9.44) with `≃`, the point where the derivative is
-evaluated changing between the two rules. The nodes state them as identities with an explicit
-remainder: of the next order in `H` for (9.40), through the Euler–Maclaurin expansion of Property
-9.3 and the backbone's `Richardson.abs_sub_sub_estimate_le` — for the trapezoidal (`n = 1`) and
-Simpson (`n = 2`) rules, the only composite Newton–Cotes rules whose asymptotic expansion the book
-provides — and bounded by the oscillation of `f⁗` for (9.44)
+The book writes (9.39)–(9.40) and (9.43)–(9.44) with $\simeq$, because the point where the
+derivative is evaluated changes between the two formulae. Here they are stated as identities with an
+explicit remainder. For (9.40) the remainder is of the next order in $H$; the proof uses the
+Euler–Maclaurin expansion of Property 9.3 and the backbone's `Richardson.abs_sub_sub_estimate_le`.
+For (9.44) the remainder is bounded by the oscillation of $f^{(4)}$
 (`Quadrature.abs_sub_simpson_add_estimate_le`).
+
+## Main definitions
+
+* Section 9.7.1, `QuarteroniSaccoSaleri.Chapter09.eulerMaclaurinTerm`: the coefficient of $h^{2i}$
+  in the Euler–Maclaurin expansion.
+* Section 9.7.2, `QuarteroniSaccoSaleri.Chapter09.simpsonRule`: the Cavalieri–Simpson formula
+  $S_f(\alpha, \beta)$ on $[\alpha, \beta]$.
 
 ## Main results
 
-* `equation_9_40_trapezoid`, `equation_9_40_simpson` — the doubling estimators with the factors
-  `3` and `15`, with remainders `O(H⁴)` and `O(H⁶)`.
-* `equation_9_42`, `equation_9_44` — the Simpson panel error and the adaptive estimator, with the
-  remainder `h₀⁵ ω(f⁗)/1350`.
-* `equation_9_45` — local tolerances proportional to the panel lengths add up to the global one.
+* Section 9.7.1, `QuarteroniSaccoSaleri.Chapter09.abs_trapezoidSum_sub_le`: the Euler–Maclaurin
+  expansion as a bound with remainder $O(h_m^{2k+2})$.
+* Equations (9.39)–(9.40), `QuarteroniSaccoSaleri.Chapter09.equation_9_40_trapezoid`: the doubling
+  estimator with the factor $3$ for the trapezoidal formula, with remainder $O(H^4)$.
+* Equations (9.39)–(9.40), `QuarteroniSaccoSaleri.Chapter09.equation_9_40_simpson`: the doubling
+  estimator with the factor $15$ for Simpson's formula, with remainder $O(H^6)$.
+* Section 9.7.2, `QuarteroniSaccoSaleri.Chapter09.simpsonRule_eq_simpsonSum`: $S_f$ and $S_{f,2}$
+  are the composite Simpson formulae with one and two panels.
+* Equation (9.42), `QuarteroniSaccoSaleri.Chapter09.equation_9_42`: the Simpson error on
+  $[\alpha, \beta]$.
+* Equations (9.43)–(9.44), `QuarteroniSaccoSaleri.Chapter09.equation_9_44`: the adaptive estimator,
+  with the remainder $h_0^5 \omega / 1350$.
+* Equation (9.45), `QuarteroniSaccoSaleri.Chapter09.equation_9_45`: local tolerances proportional to
+  the lengths of the subintervals give the global tolerance.
 
 ## Conventions
 
-As in §9.2 and §9.6. `T_m` is `Quadrature.trapezoidSum f a ((b - a)/m) m` and `S_m` is
-`Quadrature.simpsonSum f a ((b - a)/m) m`; the one-panel Simpson value `S_f(α, β)` of §9.7.2 is
-`simpsonRule f α β`.
+* As in Sections 9.2 and 9.6, $f \in C^k([a, b])$ is `ContDiffOn ℝ k f U` on an open set
+  $U \supseteq [a, b]$.
+* The composite trapezoidal formula $T_m$ on $m$ panels is
+  `Quadrature.trapezoidSum f a ((b - a) / m) m`, and the composite Simpson formula $S_m$ is
+  `Quadrature.simpsonSum f a ((b - a) / m) m`.
+* The one-panel Simpson value $S_f(\alpha, \beta)$ of Section 9.7.2 is
+  `QuarteroniSaccoSaleri.Chapter09.simpsonRule f α β`.
+
+## Deviations from the source
+
+* **Equations (9.39)–(9.40)** (reading). The source writes an approximate equality $\simeq$ for
+  every $n$. The library states it as a bound with a remainder of the next order in $H$, for the
+  trapezoidal ($n = 1$) and Simpson ($n = 2$) formulae, the only composite Newton–Cotes formulae for
+  which the book gives an asymptotic expansion. See
+  `QuarteroniSaccoSaleri.Chapter09.equation_9_40_trapezoid` and
+  `QuarteroniSaccoSaleri.Chapter09.equation_9_40_simpson`.
+* **Equations (9.43)–(9.44)** (reading). The source writes an approximate equality $\simeq$. The
+  library states it as a bound with a remainder controlled by the oscillation of $f^{(4)}$. See
+  `QuarteroniSaccoSaleri.Chapter09.equation_9_44`.
+
+## Not formalized
+
+* **The stopping test (9.38).** It is part of an algorithm.
+* **Program 77.** It is an algorithm.
+* **The paragraph on Gauss–Kronrod formulae.** It is prose.
+* **Examples 9.8 and 9.9.** They are numerical runs.
 -/
 
 open Set Filter Topology intervalIntegral
@@ -51,16 +88,19 @@ namespace QuarteroniSaccoSaleri.Chapter09
 
 variable {a b : ℝ} {f : ℝ → ℝ} {U : Set ℝ}
 
-/-! ### The Euler–Maclaurin expansion as a two- and three-term bound -/
+/-! ### The Euler–Maclaurin expansion as a bound with two or three terms -/
 
-/-- The Euler–Maclaurin coefficient `c_i = B_{2i}/(2i)! (f^{(2i-1)}(b) - f^{(2i-1)}(a))` of the
-`h^{2i}` term in the expansion of the composite trapezoidal rule (Property 9.3). -/
+/-- The Euler–Maclaurin coefficient
+$$c_i = \frac{B_{2i}}{(2i)!} \bigl(f^{(2i-1)}(b) - f^{(2i-1)}(a)\bigr)$$
+of the term $h^{2i}$ in the expansion of the composite trapezoidal formula (Property 9.3). -/
 noncomputable def eulerMaclaurinTerm (f : ℝ → ℝ) (a b : ℝ) (i : ℕ) : ℝ :=
   ((bernoulli (2 * i) : ℚ) : ℝ) / (2 * i)! * (iteratedDeriv (2 * i - 1) f b
     - iteratedDeriv (2 * i - 1) f a)
 
-/-- Property 9.3 as a bound: for `f ∈ C^{2k+2}([a, b])` there is `C` with
-`|T_m - ∫_a^b f - ∑_{i=1}^k c_i h_m^{2i}| ≤ C h_m^{2k+2}` for every `m ≥ 1`. -/
+/-- Property 9.3 as a bound. Let $a < b$ and $f \in C^{2k+2}([a, b])$. Then there is a constant $C$
+such that for every $m \ge 1$, with $h_m = (b - a)/m$,
+$$\Bigl|T_m - \int_a^b f(x)\,dx - \sum_{i=1}^{k} c_i h_m^{2i}\Bigr| \le C h_m^{2k+2}.$$
+-/
 theorem abs_trapezoidSum_sub_le (hab : a < b) {k : ℕ} (hU : IsOpen U) (hUab : Icc a b ⊆ U)
     (hf : ContDiffOn ℝ ((2 * k + 2 : ℕ) : WithTop ℕ∞) f U) :
     ∃ C, ∀ m : ℕ, 1 ≤ m →
@@ -96,12 +136,17 @@ theorem abs_trapezoidSum_sub_le (hab : a < b) {k : ℕ} (hU : IsOpen U) (hUab : 
 
 /-! ### The non adaptive estimator (9.40) -/
 
-/-- **(9.39)–(9.40) for the composite trapezoidal rule** (`n = 1`, `p = 1`, `2^{n+p} - 1 = 3`).
-For `f ∈ C⁴([a, b])` and `T_m` the composite trapezoidal rule on `m` panels,
-`I(f) - T_{2m} ≃ (T_{2m} - T_m)/3`: precisely, there is `C` depending only on `f` and `[a, b]`
-with `|(I(f) - T_{2m}) - (T_{2m} - T_m)/3| ≤ C H⁴`, `H = (b - a)/m`, for every `m ≥ 1`. The
-two-term Euler–Maclaurin expansion (Property 9.3 with `k = 1`) and the backbone's
-`Richardson.abs_sub_sub_estimate_le` in the parameter `H²`, `δ = 1/4`. -/
+/-- **Equations (9.39)–(9.40)** of [quarteroni2000numerical], for the composite trapezoidal formula
+($n = 1$, $p = 1$, $2^{n+p} - 1 = 3$). Let $a < b$ and $f \in C^4([a, b])$. Then there is a
+constant $C$, depending only on $f$ and $[a, b]$, such that for every $m \ge 1$, with
+$H = (b - a)/m$,
+$$\Bigl|\bigl(I(f) - T_{2m}\bigr) - \frac{T_{2m} - T_m}{3}\Bigr| \le C H^4.$$
+
+**Reading.** The source writes $I(f) - T_{2m} \simeq (T_{2m} - T_m)/3$. The statement here makes
+the approximation precise with a remainder of order $H^4$.
+
+The proof uses the Euler–Maclaurin expansion with two terms (Property 9.3 with $k = 1$) and the
+backbone's `Richardson.abs_sub_sub_estimate_le` in the parameter $H^2$ with $\delta = 1/4$. -/
 theorem equation_9_40_trapezoid (hab : a < b) (hU : IsOpen U) (hUab : Icc a b ⊆ U)
     (hf : ContDiffOn ℝ 4 f U) :
     ∃ C, ∀ m : ℕ, 1 ≤ m →
@@ -139,13 +184,19 @@ theorem equation_9_40_trapezoid (hab : a < b) (hU : IsOpen U) (hUab : Icc a b �
   refine h.trans (le_of_eq ?_)
   ring
 
-/-- **(9.39)–(9.40) for the composite Simpson rule** (`n = p = 2`, `2^{n+p} - 1 = 15`): "(9.40)
-predicts a reduction of the absolute error by a factor of `15` when passing from `m` to `2m`
-subintervals". For `f ∈ C⁶([a, b])` and `S_m` the composite Simpson rule on `m` panels, there is
-`C` with `|(I(f) - S_{2m}) - (S_{2m} - S_m)/15| ≤ C H⁶`, `H = (b - a)/m`, for every `m ≥ 1`.
-Simpson's rule is the first Romberg column, `S_N = (4 T_{2N} - T_N)/3`, so it inherits from the
-three-term Euler–Maclaurin expansion (Property 9.3 with `k = 2`) an expansion in `H²` whose `H²`
-term is gone; then the backbone's `Richardson.abs_sub_sub_estimate_le` with `p = 2`, `q = 3`. -/
+/-- **Equations (9.39)–(9.40)** of [quarteroni2000numerical], for the composite Simpson formula
+($n = p = 2$, $2^{n+p} - 1 = 15$). Let $a < b$ and $f \in C^6([a, b])$. Then there is a constant
+$C$ such that for every $m \ge 1$, with $H = (b - a)/m$,
+$$\Bigl|\bigl(I(f) - S_{2m}\bigr) - \frac{S_{2m} - S_m}{15}\Bigr| \le C H^6.$$
+
+**Reading.** The source writes that "(9.40) predicts a reduction of the absolute error by a
+factor of $15$ when passing from $m$ to $2m$ subintervals", as an approximate equality. The
+statement here makes it precise with a remainder of order $H^6$.
+
+Simpson's formula is the first Romberg column, $S_N = (4 T_{2N} - T_N)/3$. It therefore inherits
+from the Euler–Maclaurin expansion with three terms (Property 9.3 with $k = 2$) an expansion in
+$H^2$ without the $H^2$ term. The proof then applies the backbone's
+`Richardson.abs_sub_sub_estimate_le` with $p = 2$ and $q = 3$. -/
 theorem equation_9_40_simpson (hab : a < b) (hU : IsOpen U) (hUab : Icc a b ⊆ U)
     (hf : ContDiffOn ℝ 6 f U) :
     ∃ C, ∀ m : ℕ, 1 ≤ m →
@@ -214,13 +265,19 @@ theorem equation_9_40_simpson (hab : a < b) (hU : IsOpen U) (hUab : Icc a b ⊆ 
 
 /-! ### The adaptive estimator (9.42)–(9.44) -/
 
-/-- **`S_f(α, β)`**, the Cavalieri–Simpson formula on `[α, β]` written as in §9.7.2:
-`(h₀/3)[f(α) + 4f(α + h₀) + f(β)]`, `h₀ = (β - α)/2`. -/
+/-- **Section 9.7.2** of [quarteroni2000numerical], the Cavalieri–Simpson formula on
+$[\alpha, \beta]$:
+$$S_f(\alpha, \beta) = \frac{h_0}{3} [f(\alpha) + 4 f(\alpha + h_0) + f(\beta)], \qquad h_0 =
+  \frac{\beta - \alpha}{2}.$$
+-/
 noncomputable def simpsonRule (f : ℝ → ℝ) (α β : ℝ) : ℝ :=
   (β - α) / 2 / 3 * (f α + 4 * f (α + (β - α) / 2) + f β)
 
-/-- `S_f(α, β)` is the composite Simpson sum with one panel, and
-`S_{f,2}(α, β) = S_f(α, (α + β)/2) + S_f((α + β)/2, β)` the one with two panels. -/
+/-- For every $f$ and all $\alpha, \beta$, the value $S_f(\alpha, \beta)$ is the composite Simpson
+sum with one panel, and
+$$S_{f,2}(\alpha, \beta) = S_f\Bigl(\alpha, \frac{\alpha + \beta}{2}\Bigr) +
+  S_f\Bigl(\frac{\alpha + \beta}{2}, \beta\Bigr)$$
+is the composite Simpson sum with two panels. -/
 theorem simpsonRule_eq_simpsonSum (f : ℝ → ℝ) (α β : ℝ) :
     simpsonRule f α β = Quadrature.simpsonSum f α (β - α) 1 ∧
       simpsonRule f α ((α + β) / 2) + simpsonRule f ((α + β) / 2) β
@@ -233,8 +290,13 @@ theorem simpsonRule_eq_simpsonSum (f : ℝ → ℝ) (α β : ℝ) :
       Nat.cast_zero, Nat.cast_one, zero_mul, add_zero, zero_add, one_mul]
     ring_nf
 
-/-- **(9.42).** For `f ∈ C⁴([α, β])`, `I_f(α, β) - S_f(α, β) = -h₀⁵/90 f⁗(ξ)`, `h₀ = (β - α)/2`,
-for some `ξ ∈ [α, β]`: (9.16) on `[α, β]`. -/
+/-- **Equation (9.42)** of [quarteroni2000numerical]. Let $\alpha < \beta$ and
+$f \in C^4([\alpha, \beta])$. Then
+$$I_f(\alpha, \beta) - S_f(\alpha, \beta) = -\frac{h_0^5}{90} f^{(4)}(\xi), \qquad h_0 =
+  \frac{\beta - \alpha}{2},$$
+for some $\xi \in [\alpha, \beta]$, where $I_f(\alpha, \beta) = \int_\alpha^\beta f(x)\,dx$.
+
+This is (9.16) on $[\alpha, \beta]$. -/
 theorem equation_9_42 {α β : ℝ} (hαβ : α < β) (hU : IsOpen U) (hUab : Icc α β ⊆ U)
     (hf : ContDiffOn ℝ 4 f U) :
     ∃ ξ ∈ Icc α β, (∫ x in α..β, f x) - simpsonRule f α β
@@ -244,14 +306,18 @@ theorem equation_9_42 {α β : ℝ} (hαβ : α < β) (hU : IsOpen U) (hUab : Ic
   rw [← h, simpsonRule, show α + (β - α) / 2 = (α + β) / 2 by ring]
   ring
 
-/-- **(9.43)–(9.44), the adaptive Simpson estimator.** On `[α, β] ⊆ [a, b]` with
-`h₀ = (β - α)/2`, let `S_f(α, β)` be Simpson's rule, `S_{f,2}(α, β)` the same rule on the two
-halves `[α, (α + β)/2]`, `[(α + β)/2, β]`, and `𝓔_f(α, β) = S_f(α, β) - S_{f,2}(α, β)`. For
-`f ∈ C⁴([α, β])` with `|f⁗(u) - f⁗(v)| ≤ ω` on `[α, β]`,
-`|(I_f(α, β) - S_{f,2}(α, β)) + 𝓔_f(α, β)/15| ≤ h₀⁵ ω/1350`: the book's
-`|I_f(α, β) - S_{f,2}(α, β)| ≃ |𝓔_f(α, β)|/15` is this with the variation of `f⁗` neglected (note
-the sign, `I_f - S_{f,2} ≈ -𝓔_f/15`). The backbone's
-`Quadrature.abs_sub_simpson_add_estimate_le`. -/
+/-- **Equations (9.43)–(9.44)** of [quarteroni2000numerical], the adaptive Simpson estimator. Let
+$\alpha < \beta$, let $h_0 = (\beta - \alpha)/2$, let $f \in C^4([\alpha, \beta])$, and let
+$|f^{(4)}(u) - f^{(4)}(v)| \le \omega$ for all $u, v \in [\alpha, \beta]$. Let
+$\mathcal{E}_f(\alpha, \beta) = S_f(\alpha, \beta) - S_{f,2}(\alpha, \beta)$. Then
+$$\Bigl|\bigl(I_f(\alpha, \beta) - S_{f,2}(\alpha, \beta)\bigr) + \frac{\mathcal{E}_f(\alpha,
+  \beta)}{15}\Bigr| \le \frac{h_0^5}{1350} \omega.$$
+
+**Reading.** The source writes $|I_f(\alpha, \beta) - S_{f,2}(\alpha, \beta)| \simeq
+|\mathcal{E}_f(\alpha, \beta)|/15$. The statement here is that approximation with the variation
+of $f^{(4)}$ made explicit. Note the sign: $I_f - S_{f,2} \approx -\mathcal{E}_f/15$.
+
+The proof is the backbone's `Quadrature.abs_sub_simpson_add_estimate_le`. -/
 theorem equation_9_44 {α β : ℝ} (hαβ : α < β) (hU : IsOpen U) (hUab : Icc α β ⊆ U)
     (hf : ContDiffOn ℝ 4 f U) {ω : ℝ}
     (hω : ∀ u ∈ Icc α β, ∀ v ∈ Icc α β, |iteratedDeriv 4 f u - iteratedDeriv 4 f v| ≤ ω) :
@@ -267,11 +333,19 @@ theorem equation_9_44 {α β : ℝ} (hαβ : α < β) (hU : IsOpen U) (hUab : Ic
     (hasDerivAt_iteratedDeriv_of_contDiffOn hU hUab hf4 (by norm_num))
     (continuousOn_iteratedDeriv_of_contDiffOn hU hUab hf4) hω
 
-/-- **(9.45) and the sentence before it.** If `[a, b]` is partitioned into the subintervals
-`[t_j, t_{j+1}]`, `j < N`, `t₀ = a`, `t_N = b`, and on each the approximate integral `J_j`
-satisfies `|I_f(t_j, t_{j+1}) - J_j| ≤ ε (t_{j+1} - t_j)/(b - a)`, then
-`|∫_a^b f - ∑_j J_j| ≤ ε`: enforcing the local constraint (9.45) on every subinterval ensures the
-global accuracy `ε`. The triangle inequality and `∑_j (t_{j+1} - t_j) = b - a`. -/
+/-- **Equation (9.45)** of [quarteroni2000numerical] and the sentence before it. Let $a < b$, let
+$t_0, \dots, t_N$ be real numbers with $t_0 = a$ and $t_N = b$, and let $f$ be integrable on
+each interval between $t_j$ and $t_{j+1}$. If for each $j < N$ the approximate integral $J_j$
+satisfies
+$$\Bigl|\int_{t_j}^{t_{j+1}} f(x)\,dx - J_j\Bigr| \le \varepsilon \frac{t_{j+1} - t_j}{b - a},$$
+then
+$$\Bigl|\int_a^b f(x)\,dx - \sum_{j=0}^{N-1} J_j\Bigr| \le \varepsilon.$$
+
+So the local constraint on every subinterval ensures the global accuracy $\varepsilon$. The book
+writes the local test (9.45) with the estimator, as $|\mathcal{E}_f(\alpha, \beta)|/10 \le
+\varepsilon (\beta - \alpha)/(b - a)$; the statement here takes the resulting bound on the error
+of each $J_j$ as its hypothesis. The points $t_j$ need not be increasing. The proof is the
+triangle inequality together with $\sum_j (t_{j+1} - t_j) = b - a$. -/
 theorem equation_9_45 (hab : a < b) {N : ℕ} {t : ℕ → ℝ} (ht0 : t 0 = a) (htN : t N = b)
     (hf : ∀ j < N, IntervalIntegrable f MeasureTheory.volume (t j) (t (j + 1))) {J : ℕ → ℝ}
     {ε : ℝ} (hJ : ∀ j < N, |(∫ x in t j..t (j + 1), f x) - J j| ≤ ε * (t (j + 1) - t j) / (b - a)) :

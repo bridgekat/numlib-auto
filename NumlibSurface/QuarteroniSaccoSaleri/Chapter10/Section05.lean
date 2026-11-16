@@ -6,59 +6,80 @@ import Numlib.Approximation.Quadrature
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter10.Section02
 
 /-!
-# Quarteroni–Sacco–Saleri §10.5: Gaussian integration over unbounded intervals
+# Quarteroni, Sacco and Saleri, Section 10.5: Gaussian integration over unbounded intervals
 
-Surface file for Alfio Quarteroni, Riccardo Sacco and Fausto Saleri, *Numerical Mathematics*,
-Springer, 2000, §10.5.
+This module formalizes Section 10.5 of [quarteroni2000numerical], on integration over the half line
+and over the whole real line by interpolatory Gaussian formulae whose nodes are the zeros of the
+Laguerre and Hermite polynomials. The Laguerre polynomials $\mathcal{L}_n(x) = e^x
+\frac{d^n}{dx^n}(e^{-x} x^n)$ are orthogonal on $[0, \infty)$ for the weight $e^{-x}$ and satisfy
+$\mathcal{L}_{n+1} = (2n + 1 - x) \mathcal{L}_n - n^2 \mathcal{L}_{n-1}$. With $f = e^{-x} \varphi$,
+the Gauss–Laguerre formula (10.41), with the $n$ zeros of $\mathcal{L}_n$ as nodes and the weights
+$\alpha_k = (n!)^2 x_k / \mathcal{L}_{n+1}(x_k)^2$, is exact for $\varphi \in \mathbb{P}_{2n-1}$.
+The Hermite polynomials $\mathcal{H}_n(x) = (-1)^n e^{x^2} \frac{d^n}{dx^n} e^{-x^2}$ are orthogonal
+on $\mathbb{R}$ for the weight $e^{-x^2}$ and satisfy $\mathcal{H}_{n+1} = 2x \mathcal{H}_n - 2n
+\mathcal{H}_{n-1}$. The Gauss–Hermite formula (10.42), with the zeros of $\mathcal{H}_n$ and the
+weights $\alpha_k = 2^{n+1} n! \sqrt{\pi} / \mathcal{H}_{n+1}(x_k)^2$, is exact for
+$\varphi \in \mathbb{P}_{2n-1}$.
 
-Integration on the half line and on the whole real line by interpolatory Gaussian formulae whose
-nodes are the zeros of the Laguerre and Hermite polynomials. The Laguerre polynomials
-`ℒ_n(x) = e^x (d/dx)^n (e^{-x} x^n)` are orthogonal on `[0, ∞)` for the weight `e^{-x}` and satisfy
-`ℒ_{n+1} = (2n + 1 - x) ℒ_n - n² ℒ_{n-1}`; writing `f = e^{-x} φ`, the Gauss–Laguerre formula
-(10.41) with the `n` zeros of `ℒ_n` as nodes and weights `α_k = (n!)² x_k / ℒ_{n+1}(x_k)²` is exact
-for `φ ∈ ℙ_{2n-1}`. The Hermite polynomials `ℋ_n(x) = (-1)^n e^{x²} (d/dx)^n e^{-x²}` are orthogonal
-on `ℝ` for `e^{-x²}` and satisfy `ℋ_{n+1} = 2x ℋ_n - 2n ℋ_{n-1}`; the Gauss–Hermite formula (10.42)
-with the zeros of `ℋ_n` and weights `α_k = 2^{n+1} n! √π / ℋ_{n+1}(x_k)²` is exact for
-`φ ∈ ℙ_{2n-1}`. The remainder terms of (10.41)–(10.42) are the mean value forms
-`((n!)²/(2n)!) φ^{(2n)}(ξ)` and `(n! √π / (2ⁿ (2n)!)) φ^{(2n)}(ξ)`; the book quotes them from
-[DR75], and they come here from `Quadrature.exists_gauss_error_eq_of_convex`, the Gauss remainder
-for a weight carried by an arbitrary convex set.
-
-The backbone is `Numlib/Approximation/OrthogonalPolynomial/Classical` — `Polynomial.laguerre`,
-`Polynomial.physHermite` (the physicists' family; Mathlib's `Polynomial.hermite` is the
-probabilists'), the weights `OrthogonalPolynomial.laguerreMeasure`, `hermiteMeasure`, and the
-identifications `family_laguerreMeasure_eq`, `family_hermiteMeasure_eq` with the monic orthogonal
-family — with the closed-form weights `Quadrature.laguerreGaussWeight_eq`,
-`Quadrature.hermiteGaussWeight_eq` of `Numlib/Approximation/GaussLobatto`; exactness is (10.16) of
-§10.2.
+The remainder terms of (10.41) and (10.42) have the mean value forms
+$\frac{(n!)^2}{(2n)!} \varphi^{(2n)}(\xi)$ and $\frac{n! \sqrt{\pi}}{2^n (2n)!}
+\varphi^{(2n)}(\xi)$. The book quotes them from Davis and Rabinowitz (1975). The proofs specialize
+`Numlib.Approximation.OrthogonalPolynomial.Classical` for the polynomials and their weights, the
+closed forms of the weights in `Numlib.Approximation.GaussLobatto`, the Gauss rule (10.16) of
+Section 10.2, and the Gauss remainder `Quadrature.exists_gauss_error_eq_of_convex` for a weight
+carried by a convex set.
 
 ## Main results
 
-* `laguerre` — Rodrigues' formula, the three-term recurrence and the orthogonality
-  `∫_0^∞ ℒ_n ℒ_m e^{-x} dx = (n!)² δ_{nm}` of the Laguerre polynomials.
-* `equation_10_41` — the Gauss–Laguerre formula: `ℒ_n` has `n` distinct zeros, and at them the
-  weights `α_k = (n!)² x_k / ℒ_{n+1}(x_k)²` are positive and integrate `e^{-x} φ` exactly for every
-  `φ ∈ ℙ_{2n-1}`.
-* `equation_10_41_error` — the remainder of (10.41): the Gauss–Laguerre error is
-  `((n!)²/(2n)!) φ^{(2n)}(ξ)` for some `ξ ∈ (0, ∞)`.
-* `hermite`, `equation_10_42` — the same for the Hermite polynomials and the Gauss–Hermite
-  formula with weights `α_k = 2^{n+1} n! √π / ℋ_{n+1}(x_k)²`.
-* `equation_10_42_error` — the remainder of (10.42): the Gauss–Hermite error is
-  `(n! √π / (2ⁿ (2n)!)) φ^{(2n)}(ξ)` for some `ξ ∈ ℝ`.
+* Section 10.5, `QuarteroniSaccoSaleri.Chapter10.laguerre`: Rodrigues' formula, the three-term
+  recurrence and the orthogonality $\int_0^\infty \mathcal{L}_n \mathcal{L}_m e^{-x} \, dx = (n!)^2
+  \delta_{nm}$ of the Laguerre polynomials.
+* Equation (10.41), `QuarteroniSaccoSaleri.Chapter10.equation_10_41`: $\mathcal{L}_n$ has $n$
+  distinct zeros, and with them the weights $(n!)^2 x_k / \mathcal{L}_{n+1}(x_k)^2$ are positive and
+  integrate $e^{-x} \varphi$ exactly for every $\varphi \in \mathbb{P}_{2n-1}$.
+* Equation (10.41), `QuarteroniSaccoSaleri.Chapter10.equation_10_41_error`: the error of the
+  Gauss–Laguerre formula is $\frac{(n!)^2}{(2n)!} \varphi^{(2n)}(\xi)$ for some
+  $\xi \in (0, \infty)$.
+* Section 10.5, `QuarteroniSaccoSaleri.Chapter10.hermite`: Rodrigues' formula, the three-term
+  recurrence and the orthogonality $\int \mathcal{H}_n \mathcal{H}_m e^{-x^2} \, dx = 2^n n!
+  \sqrt{\pi} \delta_{nm}$ of the Hermite polynomials.
+* Equation (10.42), `QuarteroniSaccoSaleri.Chapter10.equation_10_42`: $\mathcal{H}_n$ has $n$
+  distinct zeros, and with them the weights $2^{n+1} n! \sqrt{\pi} / \mathcal{H}_{n+1}(x_k)^2$ are
+  positive and integrate $e^{-x^2} \varphi$ exactly for every $\varphi \in \mathbb{P}_{2n-1}$.
+* Equation (10.42), `QuarteroniSaccoSaleri.Chapter10.equation_10_42_error`: the error of the
+  Gauss–Hermite formula is $\frac{n! \sqrt{\pi}}{2^n (2n)!} \varphi^{(2n)}(\xi)$ for some
+  $\xi \in \mathbb{R}$.
 
 ## Conventions
 
-The book's `n` nodes `x_1, …, x_n` are `x : Fin n → ℝ`, injective; the backbone states the
-weight formulas for `n + 1` nodes, which the proofs reach by writing `n = m + 1`. Exactness on
-`ℙ_{2n-1}` is stated for real polynomials `φ` of degree at most `2n - 1`, in the book's form
-`∫_0^∞ e^{-x} φ(x) dx = ∑_k α_k φ(x_k)` (respectively `∫_{-∞}^∞ e^{-x²} φ(x) dx`).
+* The $n$ nodes $x_1, \dots, x_n$ of the book are an injective family `x : Fin n → ℝ`.
+* Exactness on $\mathbb{P}_{2n-1}$ is stated for real polynomials $\varphi$ of degree at most
+  $2n - 1$, in the form of the book $\int_0^\infty e^{-x} \varphi(x) \, dx = \sum_k \alpha_k
+  \varphi(x_k)$, and $\int_{-\infty}^\infty e^{-x^2} \varphi(x) \, dx = \sum_k \alpha_k
+  \varphi(x_k)$ for Hermite.
+* The Laguerre polynomials are `Polynomial.laguerre`. The Hermite polynomials are the physicists'
+  family `Polynomial.physHermite`; Mathlib's `Polynomial.hermite` is the probabilists' family. The
+  weights $e^{-x}$ on $(0, \infty)$ and $e^{-x^2}$ on $\mathbb{R}$ are
+  `OrthogonalPolynomial.laguerreMeasure` and `OrthogonalPolynomial.hermiteMeasure`.
 
-The book's integrand `φ` is written `g` in the remainder theorems, because `open scoped Nat` —
-needed for the factorial notation `n !` — makes `φ` a token. The book's regularity hypothesis
-`φ ∈ C^{2n}([0, +∞))` for (10.41) is read as `ContDiff ℝ (2n) g` on all of `ℝ`, the form in which
-the backbone's Hermite interpolation error is stated; for (10.42) the book's `C^{2n}(ℝ)` is that
-hypothesis verbatim. The convergence of the integral, which the book leaves implicit, is the
-hypothesis `hint`.
+## Implementation notes
+
+* The backbone states the formulas for the weights with $n + 1$ nodes. The proofs reach them by
+  writing $n = m + 1$.
+* The integrand $\varphi$ of the book is written `g` in the remainder theorems, because
+  `open scoped Nat`, which gives the factorial notation `n !`, makes `φ` a token.
+
+## Deviations from the source
+
+* **Equation (10.41), the remainder** (reading). The book assumes
+  $\varphi \in C^{2n}([0, +\infty))$. The library assumes that $\varphi$ is $C^{2n}$ on all of
+  $\mathbb{R}$, the form in which the backbone states the Hermite interpolation error. See
+  `QuarteroniSaccoSaleri.Chapter10.equation_10_41_error`.
+* **Equations (10.41) and (10.42), the remainders** (reading). The book leaves the convergence of
+  the integral implicit. The library assumes that $e^{-x} \varphi$ is integrable on $(0, \infty)$,
+  and that $e^{-x^2} \varphi$ is integrable on $\mathbb{R}$. See
+  `QuarteroniSaccoSaleri.Chapter10.equation_10_41_error` and
+  `QuarteroniSaccoSaleri.Chapter10.equation_10_42_error`.
 -/
 
 open MeasureTheory Polynomial OrthogonalPolynomial Quadrature Real Set Filter Topology
@@ -71,12 +92,17 @@ variable {n : ℕ}
 
 /-! ### The Laguerre polynomials and the Gauss–Laguerre formula (10.41) -/
 
-/-- **§10.5, the Laguerre polynomials.** `ℒ_n(x) = e^x (d/dx)^n (e^{-x} x^n)`, `n ≥ 0`, are
-orthogonal on `[0, ∞)` with respect to the weight `w(x) = e^{-x}`, with
-`∫_0^∞ ℒ_n ℒ_m e^{-x} dx = (n!)² δ_{nm}`, and satisfy the three-term relation
-`ℒ_{n+1} = (2n + 1 - x) ℒ_n - n² ℒ_{n-1}`, `n ≥ 0`, `ℒ_{-1} = 0`, `ℒ_0 = 1` — stated as `ℒ_0 = 1`,
-`ℒ_1 = 1 - x` (the step `n = 0`) and the step `n + 1`. The backbone's
-`Polynomial.laguerre_eq_deriv_exp_mul`, `Polynomial.laguerre_succ_succ` and
+/-- **Section 10.5** of [quarteroni2000numerical], the Laguerre polynomials. For $n, m \ge 0$ and
+$x \in \mathbb{R}$, the Laguerre polynomials satisfy Rodrigues' formula
+$$\mathcal{L}_n(x) = e^x \frac{d^n}{dx^n} \left(e^{-x} x^n\right),$$
+the three-term relation $\mathcal{L}_{n+1} = (2n + 1 - x) \mathcal{L}_n - n^2 \mathcal{L}_{n-1}$
+for $n \ge 0$, with $\mathcal{L}_{-1} = 0$ and $\mathcal{L}_0 = 1$, and the orthogonality
+relation for the weight $w(x) = e^{-x}$ on $[0, \infty)$:
+$$\int_0^\infty \mathcal{L}_n(x) \mathcal{L}_m(x) e^{-x} \, dx = (n!)^2 \delta_{nm}.$$
+
+The recurrence is stated as $\mathcal{L}_0 = 1$, $\mathcal{L}_1 = 1 - x$ (the step $n = 0$), and
+$\mathcal{L}_{n+2} = (2(n + 1) + 1 - x) \mathcal{L}_{n+1} - (n + 1)^2 \mathcal{L}_n$. The proof
+uses the backbone's `Polynomial.laguerre_eq_deriv_exp_mul`, `Polynomial.laguerre_succ_succ` and
 `Polynomial.integral_laguerre_mul_laguerre`. -/
 theorem laguerre (n m : ℕ) (x : ℝ) :
     (Polynomial.laguerre n).eval x = exp x * deriv^[n] (fun y => exp (-y) * y ^ n) x ∧
@@ -90,17 +116,19 @@ theorem laguerre (n m : ℕ) (x : ℝ) :
     rw [show 2 * ((n : ℝ) + 1) + 1 = 2 * n + 3 by ring]
     exact Polynomial.laguerre_succ_succ n, Polynomial.integral_laguerre_mul_laguerre n m⟩
 
-/-- **(10.41), the Gauss–Laguerre formula: nodes, weights and exactness.** For `n ≥ 1`, the
-Laguerre polynomial `ℒ_n` has `n` distinct zeros `x_1, …, x_n`; with the weights
-`α_k = (n!)² x_k / ℒ_{n+1}(x_k)²`, which are positive,
+/-- **Equation (10.41)** of [quarteroni2000numerical], the Gauss–Laguerre formula: nodes, weights
+and exactness. Let $n \ge 1$. The Laguerre polynomial $\mathcal{L}_n$ has $n$ distinct zeros
+$x_1, \dots, x_n$. For any $n$ distinct zeros of $\mathcal{L}_n$, the weights $\alpha_k = (n!)^2
+x_k / \mathcal{L}_{n+1}(x_k)^2$ are positive, and
+$$\int_0^\infty e^{-x} \varphi(x) \, dx = \sum_{k=1}^n \alpha_k \varphi(x_k) \quad \text{for
+  every } \varphi \in \mathbb{P}_{2n-1}.$$
+So the formula is exact for $f = \varphi e^{-x}$ with $\varphi \in \mathbb{P}_{2n-1}$: it has
+degree of exactness $2n - 1$.
 
-`∫_0^∞ e^{-x} φ(x) dx = ∑_{k=1}^n α_k φ(x_k)` for every `φ ∈ ℙ_{2n-1}`,
-
-so the formula is exact for `f = φ e^{-x}` with `φ ∈ ℙ_{2n-1}`: it has degree of exactness
-`2n - 1`. The zeros are those of the monic orthogonal polynomial of the weight `e^{-x}`
-(`OrthogonalPolynomial.family_laguerreMeasure_eq`), so exactness is (10.16) with the interpolatory
-weights, which `Quadrature.laguerreGaussWeight_eq` puts in closed form. The remainder term of
-(10.41) is `equation_10_41_error`. -/
+The zeros of $\mathcal{L}_n$ are those of the monic orthogonal polynomial of the weight $e^{-x}$
+(`OrthogonalPolynomial.family_laguerreMeasure_eq`). So exactness is (10.16) with the
+interpolatory weights, which `Quadrature.laguerreGaussWeight_eq` puts in closed form. The
+remainder term of (10.41) is `QuarteroniSaccoSaleri.Chapter10.equation_10_41_error`. -/
 theorem equation_10_41 (hn : 1 ≤ n) :
     (∃ x : Fin n → ℝ, Function.Injective x ∧ ∀ k, (Polynomial.laguerre n).eval (x k) = 0) ∧
       ∀ x : Fin n → ℝ, Function.Injective x → (∀ k, (Polynomial.laguerre n).eval (x k) = 0) →
@@ -132,17 +160,24 @@ theorem equation_10_41 (hn : 1 ≤ n) :
   rw [← integral_laguerreMeasure, ← hexact p hp]
   exact Finset.sum_congr rfl fun k _ => by rw [hform k]
 
-/-- **(10.41), the remainder of the Gauss–Laguerre formula.** For `n ≥ 1`, nodes `x_1, …, x_n`
-the distinct zeros of `ℒ_n`, weights `α_k = (n!)² x_k / ℒ_{n+1}(x_k)²` and an integrand
-`g ∈ C^{2n}` for which `e^{-x} g` is integrable on `(0, ∞)`,
+/-- **Equation (10.41)** of [quarteroni2000numerical], the remainder of the Gauss–Laguerre formula.
+Let $n \ge 1$, let $x_1, \dots, x_n$ be distinct zeros of $\mathcal{L}_n$, and let $\alpha_k =
+(n!)^2 x_k / \mathcal{L}_{n+1}(x_k)^2$. Let $g : \mathbb{R} \to \mathbb{R}$ be $2n$ times
+continuously differentiable on $\mathbb{R}$, with $e^{-x} g$ integrable on $(0, \infty)$. Then
+there is $\xi \in (0, \infty)$ with
+$$\int_0^\infty e^{-x} g(x) \, dx - \sum_{k=1}^n \alpha_k g(x_k) = \frac{(n!)^2}{(2n)!}
+  g^{(2n)}(\xi).$$
 
-`∫_0^∞ e^{-x} g(x) dx = ∑_{k=1}^n α_k g(x_k) + ((n!)²/(2n)!) g^{(2n)}(ξ)`, `0 < ξ < +∞`,
+**Reading.** The book assumes $g \in C^{2n}([0, +\infty))$. The statement here assumes that $g$
+is $C^{2n}$ on all of $\mathbb{R}$, the form in which the backbone states the Hermite
+interpolation error. The book leaves the convergence of the integral implicit; here it is the
+hypothesis that $e^{-x} g$ is integrable.
 
-stated as the error `∫ - ∑`. The book quotes this from [DR75]; it is
-`Quadrature.exists_gauss_error_eq_of_convex` for the weight `OrthogonalPolynomial.laguerreMeasure`
-carried by the convex set `(0, ∞)`, whose nodes lie in `(0, ∞)` by
-`OrthogonalPolynomial.lt_root_family` and whose `∫ p_n² ∂μ` is `(n!)²`
-(`OrthogonalPolynomial.normSq_laguerreMeasure`). -/
+The book quotes the remainder from Davis and Rabinowitz (1975). The proof is
+`Quadrature.exists_gauss_error_eq_of_convex` for the weight
+`OrthogonalPolynomial.laguerreMeasure`, carried by the convex set $(0, \infty)$. The nodes lie
+in $(0, \infty)$ by `OrthogonalPolynomial.lt_root_family`, and $\int p_n^2 \, d\mu = (n!)^2$ by
+`OrthogonalPolynomial.normSq_laguerreMeasure`. -/
 theorem equation_10_41_error (hn : 1 ≤ n) {x : Fin n → ℝ} (hx : Function.Injective x)
     (hroot : ∀ k, (Polynomial.laguerre n).eval (x k) = 0) {g : ℝ → ℝ}
     (hg : ContDiff ℝ ((2 * n : ℕ) : WithTop ℕ∞) g)
@@ -175,14 +210,20 @@ theorem equation_10_41_error (hn : 1 ≤ n) {x : Fin n → ℝ} (hx : Function.I
 
 /-! ### The Hermite polynomials and the Gauss–Hermite formula (10.42) -/
 
-/-- **§10.5, the Hermite polynomials.** `ℋ_n(x) = (-1)^n e^{x²} (d/dx)^n e^{-x²}`, `n ≥ 0`, are
-orthogonal on the real line with respect to the weight `w(x) = e^{-x²}`, with
-`∫ ℋ_n ℋ_m e^{-x²} dx = 2^n n! √π δ_{nm}`, and are generated recursively by
-`ℋ_{n+1} = 2x ℋ_n - 2n ℋ_{n-1}`, `n ≥ 0`, `ℋ_{-1} = 0`, `ℋ_0 = 1` — stated as `ℋ_0 = 1`,
-`ℋ_1 = 2x` and the step `n + 1`. These are the physicists' Hermite polynomials, the backbone's
-`Polynomial.physHermite` (Mathlib's `Polynomial.hermite` is the probabilists' family), with
-`Polynomial.physHermite_eq_deriv_gaussian`, `Polynomial.physHermite_succ_succ` and
-`Polynomial.integral_physHermite_mul_physHermite`. -/
+/-- **Section 10.5** of [quarteroni2000numerical], the Hermite polynomials. For $n, m \ge 0$ and
+$x \in \mathbb{R}$, the Hermite polynomials satisfy Rodrigues' formula
+$$\mathcal{H}_n(x) = (-1)^n e^{x^2} \frac{d^n}{dx^n} e^{-x^2},$$
+the recurrence $\mathcal{H}_{n+1} = 2x \mathcal{H}_n - 2n \mathcal{H}_{n-1}$ for $n \ge 0$, with
+$\mathcal{H}_{-1} = 0$ and $\mathcal{H}_0 = 1$, and the orthogonality relation for the weight
+$w(x) = e^{-x^2}$ on $\mathbb{R}$:
+$$\int_{-\infty}^\infty \mathcal{H}_n(x) \mathcal{H}_m(x) e^{-x^2} \, dx = 2^n n! \sqrt{\pi} \,
+  \delta_{nm}.$$
+
+The recurrence is stated as $\mathcal{H}_0 = 1$, $\mathcal{H}_1 = 2x$, and $\mathcal{H}_{n+2} =
+2x \mathcal{H}_{n+1} - 2(n + 1) \mathcal{H}_n$. These are the physicists' Hermite polynomials,
+the backbone's `Polynomial.physHermite`; Mathlib's `Polynomial.hermite` is the probabilists'
+family. The proof uses `Polynomial.physHermite_eq_deriv_gaussian`,
+`Polynomial.physHermite_succ_succ` and `Polynomial.integral_physHermite_mul_physHermite`. -/
 theorem hermite (n m : ℕ) (x : ℝ) :
     (Polynomial.physHermite n).eval x =
         (-1) ^ n * exp (x ^ 2) * deriv^[n] (fun y => exp (-y ^ 2)) x ∧
@@ -195,15 +236,18 @@ theorem hermite (n m : ℕ) (x : ℝ) :
     Polynomial.physHermite_one, Polynomial.physHermite_succ_succ n,
     Polynomial.integral_physHermite_mul_physHermite n m⟩
 
-/-- **(10.42), the Gauss–Hermite formula: nodes, weights and exactness.** For `n ≥ 1`, the Hermite
-polynomial `ℋ_n` has `n` distinct zeros `x_1, …, x_n`; with the weights
-`α_k = 2^{n+1} n! √π / ℋ_{n+1}(x_k)²`, which are positive,
+/-- **Equation (10.42)** of [quarteroni2000numerical], the Gauss–Hermite formula: nodes, weights and
+exactness. Let $n \ge 1$. The Hermite polynomial $\mathcal{H}_n$ has $n$ distinct zeros
+$x_1, \dots, x_n$. For any $n$ distinct zeros of $\mathcal{H}_n$, the weights $\alpha_k =
+2^{n+1} n! \sqrt{\pi} / \mathcal{H}_{n+1}(x_k)^2$ are positive, and
+$$\int_{-\infty}^{\infty} e^{-x^2} \varphi(x) \, dx = \sum_{k=1}^n \alpha_k \varphi(x_k) \quad
+  \text{for every } \varphi \in \mathbb{P}_{2n-1}.$$
+So the formula is exact for $f = \varphi e^{-x^2}$ with $\varphi \in \mathbb{P}_{2n-1}$: it has
+degree of exactness $2n - 1$.
 
-`∫_{-∞}^{∞} e^{-x²} φ(x) dx = ∑_{k=1}^n α_k φ(x_k)` for every `φ ∈ ℙ_{2n-1}`,
-
-so the formula is exact for `f = φ e^{-x²}` with `φ ∈ ℙ_{2n-1}`: it has degree of exactness
-`2n - 1`. As for (10.41), through `OrthogonalPolynomial.family_hermiteMeasure_eq`, (10.16) and
-`Quadrature.hermiteGaussWeight_eq`. The remainder term of (10.42) is `equation_10_42_error`. -/
+The proof is as for (10.41), through `OrthogonalPolynomial.family_hermiteMeasure_eq`, (10.16)
+and `Quadrature.hermiteGaussWeight_eq`. The remainder term of (10.42) is
+`QuarteroniSaccoSaleri.Chapter10.equation_10_42_error`. -/
 theorem equation_10_42 (hn : 1 ≤ n) :
     (∃ x : Fin n → ℝ, Function.Injective x ∧ ∀ k, (Polynomial.physHermite n).eval (x k) = 0) ∧
       ∀ x : Fin n → ℝ, Function.Injective x → (∀ k, (Polynomial.physHermite n).eval (x k) = 0) →
@@ -235,16 +279,19 @@ theorem equation_10_42 (hn : 1 ≤ n) :
   exact Finset.sum_congr rfl fun k _ => by rw [hform k]
 
 
-/-- **(10.42), the remainder of the Gauss–Hermite formula.** For `n ≥ 1`, nodes `x_1, …, x_n` the
-distinct zeros of `ℋ_n`, weights `α_k = 2^{n+1} n! √π / ℋ_{n+1}(x_k)²` and an integrand
-`g ∈ C^{2n}(ℝ)` for which `e^{-x²} g` is integrable,
+/-- **Equation (10.42)** of [quarteroni2000numerical], the remainder of the Gauss–Hermite formula.
+Let $n \ge 1$, let $x_1, \dots, x_n$ be distinct zeros of $\mathcal{H}_n$, and let $\alpha_k =
+2^{n+1} n! \sqrt{\pi} / \mathcal{H}_{n+1}(x_k)^2$. Let $g \in C^{2n}(\mathbb{R})$, with
+$e^{-x^2} g$ integrable on $\mathbb{R}$. Then there is $\xi \in \mathbb{R}$ with
+$$\int_{-\infty}^\infty e^{-x^2} g(x) \, dx - \sum_{k=1}^n \alpha_k g(x_k) = \frac{n!
+  \sqrt{\pi}}{2^n (2n)!} g^{(2n)}(\xi).$$
 
-`∫_{-∞}^∞ e^{-x²} g(x) dx = ∑_{k=1}^n α_k g(x_k) + (n! √π / (2ⁿ (2n)!)) g^{(2n)}(ξ)`, `ξ ∈ ℝ`,
+**Reading.** The book leaves the convergence of the integral implicit; here it is the hypothesis
+that $e^{-x^2} g$ is integrable.
 
-stated as the error `∫ - ∑`. As for (10.41), this is
-`Quadrature.exists_gauss_error_eq_of_convex` for `OrthogonalPolynomial.hermiteMeasure`, carried by
-the convex set `ℝ`, with `∫ p_n² ∂μ = n! √π / 2ⁿ`
-(`OrthogonalPolynomial.normSq_hermiteMeasure`). -/
+The proof is `Quadrature.exists_gauss_error_eq_of_convex` for
+`OrthogonalPolynomial.hermiteMeasure`, carried by the convex set $\mathbb{R}$, with
+$\int p_n^2 \, d\mu = n! \sqrt{\pi} / 2^n$ (`OrthogonalPolynomial.normSq_hermiteMeasure`). -/
 theorem equation_10_42_error (hn : 1 ≤ n) {x : Fin n → ℝ} (hx : Function.Injective x)
     (hroot : ∀ k, (Polynomial.physHermite n).eval (x k) = 0) {g : ℝ → ℝ}
     (hg : ContDiff ℝ ((2 * n : ℕ) : WithTop ℕ∞) g)

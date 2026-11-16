@@ -10,105 +10,114 @@ import Numlib.LinearAlgebra.Matrix.TridiagonalToeplitz
 import Numlib.FiniteElement.Triangle
 
 /-!
-# Quarteroni–Sacco–Saleri §12.6: a quick glance at the two-dimensional case
+# Quarteroni, Sacco and Saleri, Section 12.6: A quick glance at the two-dimensional case
 
-Surface file for Alfio Quarteroni, Riccardo Sacco and Fausto Saleri, *Numerical Mathematics*,
-Springer, 2000, §12.6.
+This module formalizes Section 12.6 of [quarteroni2000numerical]. The two-dimensional counterpart of
+the model problem of Section 12.1 is the Poisson problem $-\Delta u = f$ in $\Omega$ with $u = 0$ on
+$\partial\Omega$ (12.90). On the unit square with the grid $x_{i,j} = (ih, jh)$, $h = 1/N$, the
+finite difference approximation (12.91) uses the five-point discretization of the Laplacian (12.92),
+$$L_h u_h(x_{i,j}) = h^{-2} (4 u_{i,j} - u_{i+1,j} - u_{i-1,j} - u_{i,j+1} - u_{i,j-1}).$$
+On the $(N - 1)^2$ interior unknowns its matrix is the pentadiagonal matrix (12.93). Indexed by
+pairs, this matrix is $h^{-2}$ times the Kronecker sum $T \oplus T$ of two copies of the
+one-dimensional model matrix $T = \operatorname{tridiag}(-1, 2, -1)$. So it is symmetric positive
+definite and an M-matrix (Exercise 12.14).
 
-The two-dimensional counterpart of §12.1 is the Poisson problem `-Δu = f` in `Ω` with `u = 0` on
-`∂Ω` (12.90). On the unit square with the grid `x_{i,j} = (ih, jh)`, `h = 1/N`, the finite
-difference approximation (12.91) with the **five-point discretization of the Laplacian**
-`L_h u_h(x_{i,j}) = h⁻² (4 u_{i,j} - u_{i+1,j} - u_{i-1,j} - u_{i,j+1} - u_{i,j-1})` (12.92) has,
-on the `(N - 1)²` interior unknowns, the pentadiagonal matrix (12.93); read on the index set
-`Fin (N-1) × Fin (N-1)` it is `h⁻²` times the **Kronecker sum** `T ⊕ₖ T` of two copies of the
-one-dimensional model matrix `T = tridiag(-1, 2, -1)`, which makes its symmetry, its positive
-definiteness and its M-matrix property (Exercise 14) immediate. The finite element method of
-the section — the space `V_h` of (12.94) on a triangulation and the error estimate (12.96) of
-Property 12.2 — is stated on the triangulation scaffold of `Numlib/Geometry/Triangulation.lean`
-and proved by the backbone's finite element error estimate for the Poisson problem with the `ℙ_k`
-Lagrange element (`Numlib/FiniteElement/Triangle.lean`).
+The module also proves Green's formula (12.95) of Exercise 12.15 on a rectangle, on a bounded $C^1$
+domain and on a triangulated polygon. The finite element method of the section uses the space $V_h$
+of (12.94) of continuous piecewise polynomials on a triangulation, and Property 12.2 gives its error
+estimate (12.96) in $H^1$. The proofs specialize `Numlib.LinearAlgebra.Matrix.KroneckerSum`, the
+boundary theory of `Numlib.Analysis.Sobolev.Boundary.ContDiffDomain` and
+`Numlib.Analysis.Sobolev.Boundary.Polygon`, and the finite element estimates of
+`Numlib.FiniteElement.Triangle`.
 
 ## Main definitions
 
-* `equation_12_92 N u i j` — the five-point discrete Laplacian at the interior node
-  `x_{i+1,j+1}`, and `IsFivePointSolution N f u` the discrete problem (12.91).
-* `fivePointMatrix N` — the matrix (12.93) of the scheme, `h⁻² (T ⊕ₖ T)`.
-* `equation_12_94 𝒯 k` — the finite element space `V_h ⊆ H¹₀(Ω)` (12.94).
+* (12.92), `QuarteroniSaccoSaleri.Chapter12.equation_12_92`: the five-point discrete Laplacian
+  $L_h$.
+* (12.91), `QuarteroniSaccoSaleri.Chapter12.IsFivePointSolution`: the five-point finite difference
+  problem.
+* (12.93), `QuarteroniSaccoSaleri.Chapter12.fivePointMatrix`: the matrix $h^{-2}(T \oplus T)$ of the
+  scheme.
+* (12.94), `QuarteroniSaccoSaleri.Chapter12.equation_12_94`: the finite element space
+  $V_h \subseteq H^1_0(\Omega)$.
 
 ## Main results
 
-* `equation_12_93` — the entries of `fivePointMatrix`: `4h⁻²` on the diagonal, `-h⁻²` at the four
-  grid neighbours, `0` elsewhere, which is (12.93) under the row-major numbering.
-* `exercise_12_14` — `fivePointMatrix` is symmetric positive definite and an M-matrix, so the
-  discrete maximum principle holds.
-
-* `exercise_12_15`, `exercise_12_15_polygon` — Green's formula (12.95) of Exercise 12.15,
-  `∫_Ω (-Δu) v = ∫_Ω ∇u · ∇v - ∫_∂Ω (∇u · n) v dγ` for `u ∈ C²(Ω̄)` with `∇u` continuous up to
-  the boundary and `v ∈ C¹(Ω̄)`, on a bounded `C¹` plane domain and on a triangulated polygon,
-  with the arclength measure `dγ` and the outward unit normal `n` of the boundary theory of
-  `Numlib/Analysis/Sobolev/Boundary/` (`IsContDiffDomain.boundaryMeasure`/`outwardNormal`,
-  `Triangulation.boundaryMeasure`/`outwardNormal`); both are `exercise_12_15_of_boundaryData`,
-  the formula for any `BoundaryData`, which is the exercise's own hint over the divergence
-  theorem (`BoundaryData.integral_laplacian_mul_add_eq_of_continuousOn_fderiv`). The book's
-  general plane domain is restated as one of these two; Lipschitz domains in general are out of
-  scope.
-* `exercise_12_15_rectangle` — the same formula on a rectangle, with the boundary integral
-  written as its four sides, by the exercise's own hint over Mathlib's divergence theorem for a
-  rectangle.
-* `equation_12_94` — the finite element space `V_h ⊆ H¹₀(Ω)` of continuous piecewise polynomials
-  of degree `≤ k` vanishing on `∂Ω` on a triangulation `𝒯_h` (`Triangulation.polySpaceZero`);
-  `exists_mem_equation_12_94` says the book's functions are its elements (no trace theorem: a
-  continuous `H¹` function vanishing on `∂Ω` is in `H¹₀`, Brezis's Theorem 9.17), and
-  `finiteDimensional_equation_12_94` that it is finite-dimensional.
-* `property_12_2` — the `H¹` estimate (12.96), `‖u − u_h‖_{H¹₀} ≤ (M/α₀) C h^l ‖u‖_{H^{l+1}}`,
-  on a polygon triangulated by a regular family:
-  `FiniteElement.norm_sub_le_of_isGalerkinSolution_dirichletForm` (Céa's lemma and the global
-  interpolation estimate `Triangulation.sobolevNorm_sub_globalInterp_le`) with the `ℙ_k` Lagrange
-  element on the principal lattice, whose interpolant of a boundary-vanishing function lies in
-  `V_h`.
-
-## Not formalized here
-
-* **Property 12.2, the `L²` estimate (12.97)**: under the assumptions of `property_12_2` —
-  `u ∈ H¹₀(Ω) ∩ H^{l+1}(Ω)` the solution of the Poisson problem (12.90) on a polygon, `u_h ∈ V_h`
-  its finite element approximation of degree `k ≥ 1`, `l = min(k, s - 1)` — one has
-  `‖u - u_h‖_{L²(Ω)} ≤ C h^{l+1} ‖u‖_{H^{l+1}(Ω)}`. The book quotes it from [QV94, Theorem 6.2.1]
-  without proof. The proof is the Aubin–Nitsche duality argument, and that argument is already
-  formalized abstractly: the backbone's `norm_map_sq_le_of_dual` and `norm_map_le_of_dual_approx`
-  (`Numlib/Variational/Galerkin.lean`) give `‖u - u_h‖_{L²} ≤ M δ ‖u - u_h‖_{H¹}` whenever every
-  dual solution `φ_g`, defined by `a(v, φ_g) = (g, v)_{L²}`, is approximated from `V_h` within
-  `δ ‖g‖_{L²}`. With (12.96), proved here as `property_12_2`, that yields (12.97) as soon as
-  `δ = C h`, that is as soon as the dual solutions satisfy `φ_g ∈ H²(Ω)` with
-  `‖φ_g‖_{H²} ≤ C ‖g‖_{L²}`. This is the `H²` regularity of the Dirichlet problem on a **convex
-  polygon** (Grisvard, *Elliptic Problems in Nonsmooth Domains*, Theorem 3.2.1.2), and it is the
-  single missing piece: `Elliptic.regularity_dirichlet`
-  (`Numlib/Analysis/PDE/Elliptic/Regularity.lean`, Brezis Theorem 9.25) proves it on `C²` domains
-  with bounded boundary, and nothing proves it on a polygon. Convexity is not a technicality there —
-  at a re-entrant corner of angle `ω > π` the solution carries a singular part
-  `r^{π/ω} sin(πθ/ω) ∉ H²`, so the bound is false without it. The interpolation half is available:
-  `‖φ_g - Π_h φ_g‖_{H¹} ≤ C h |φ_g|_{H²}` is `LagrangeElement.sobolevNorm_sub_globalInterp_le` at
-  `m = 1`, `k = 1`, with `Π_h φ_g ∈ V_h` by `LagrangeElement.exists_mem_polySpaceZero_globalInterp`.
-  Estimate: ~100 lines here once that regularity bound exists on a convex polygon; the regularity
-  bound itself is research-scale (`notes/frontier.md` blocker 18).
-
-Green's formula (12.95) on a *Lipschitz* plane domain in general is out of scope: it is proved on
-bounded `C¹` domains and on triangulated polygons (the boundary round of 2026-09-21,
-`notes/boundary/planning-brief.md` §1), and on the rectangle, the domain §12.6's own finite
-difference discretization uses, directly from Mathlib's divergence theorem. The book proves
-neither estimate of Property 12.2 (both are quoted from [QV94]); (12.96) is proved here on the
-triangulation scaffold of `Numlib/Geometry/Triangulation.lean`, with the polygon entering through
-the hypothesis that `∂Ω` is a union of element edges (`Triangulation.FrontierSubsetEdges`), the
-regularity `u ∈ H^{l+1}(Ω)` read on a representative continuous up to the boundary, and the
-boundary condition `u = 0` on `∂Ω` on that representative.
+* (12.93), `QuarteroniSaccoSaleri.Chapter12.equation_12_93`: the entries of the five-point matrix.
+* Exercise 12.14, `QuarteroniSaccoSaleri.Chapter12.exercise_12_14`: the five-point matrix is
+  symmetric positive definite and an M-matrix.
+* Exercise 12.15, `QuarteroniSaccoSaleri.Chapter12.exercise_12_15_rectangle`: Green's formula
+  (12.95) on a rectangle.
+* Exercise 12.15, `QuarteroniSaccoSaleri.Chapter12.exercise_12_15_of_boundaryData`: Green's formula
+  (12.95) on a plane domain with boundary data.
+* Exercise 12.15, `QuarteroniSaccoSaleri.Chapter12.exercise_12_15`: Green's formula (12.95) on a
+  bounded $C^1$ plane domain.
+* Exercise 12.15, `QuarteroniSaccoSaleri.Chapter12.exercise_12_15_polygon`: Green's formula (12.95)
+  on a triangulated polygon.
+* (12.94), `QuarteroniSaccoSaleri.Chapter12.exists_mem_equation_12_94`: every continuous piecewise
+  polynomial that vanishes on $\partial\Omega$ is an element of $V_h$.
+* (12.94), `QuarteroniSaccoSaleri.Chapter12.finiteDimensional_equation_12_94`: $V_h$ is
+  finite-dimensional for $k \ge 1$.
+* Property 12.2, `QuarteroniSaccoSaleri.Chapter12.property_12_2`: the $H^1$ estimate (12.96) on a
+  polygon with a regular family of triangulations.
 
 ## Conventions
 
-Grid functions are `ℕ → ℕ → ℝ` and the five-point stencil is written at the indices
-`i, i + 1, i + 2` in each direction, so that `equation_12_92 N u i j` is `L_h u_h` at the interior
-node `x_{i+1, j+1}`; this avoids truncated subtraction, as in §12.5. The matrix is indexed by
-`Fin m × Fin m` with `m = N - 1` rather than by a flattened `Fin (m²)`: the book's offsets
-`j = i ± 1`, `i ± (N + 1)` of (12.93) are the row-major reading of the pairs, and its `N + 1`
-should read `N - 1` under the indexing that makes the count `(N - 1)²` correct (errata).
+* Grid functions are functions `ℕ → ℕ → ℝ`. The five-point stencil is written at the indices $i$,
+  $i + 1$, $i + 2$ in each direction, so that `QuarteroniSaccoSaleri.Chapter12.equation_12_92 N u i
+  j` is $L_h u_h$ at the interior node $x_{i+1, j+1}$. This avoids the truncated subtraction of
+  natural numbers, as in Section 12.5.
+* The matrix of the scheme is indexed by pairs in `Fin m × Fin m` with $m = N - 1$, not by a
+  flattened index in `Fin (m ^ 2)`. The offsets of (12.93) are the row-major reading of the pairs.
+
+## Implementation notes
+
+* A plane domain with a boundary is described by `BoundaryData`: a surface measure on
+  $\partial\Omega$ (the arclength $d\gamma$), an outward unit normal $n$, and the divergence theorem
+  $\int_\Omega \operatorname{div} F = \int_{\partial\Omega} F \cdot n \, d\gamma$ for
+  $F \in C^1(\bar\Omega)$. There are two instances: a bounded $C^1$ domain
+  (`IsContDiffDomain.boundaryData`) and a triangulated polygon (`Triangulation.boundaryData`).
+* An element of $V_h$ is an element of $H^1_0(\Omega)$ whose function agrees almost everywhere with
+  a continuous piecewise polynomial that vanishes on $\partial\Omega$. No trace theorem is needed: a
+  function in $H^1(\Omega)$ that is continuous on $\bar\Omega$ and vanishes on $\partial\Omega$ lies
+  in $H^1_0(\Omega)$ by Theorem 9.17 of [brezis2011functional]. The piecewise polynomial lies in
+  $H^1(\Omega)$ by the characterization of Sobolev functions through lines
+  (`Triangulation.memSobolev_of_piecewise`), not through Green's formula (12.95).
+* The $L^2$ estimate (12.97) would follow from (12.96) and the abstract Aubin–Nitsche duality
+  argument. The lemmas `norm_map_sq_le_of_dual` and `norm_map_le_of_dual_approx` give $\|u -
+  u_h\|_{L^2} \le M \delta \|u - u_h\|_{H^1}$ when every dual solution $\varphi_g$, defined by
+  $a(v, \varphi_g) = (g, v)_{L^2}$, is approximated from $V_h$ within $\delta \|g\|_{L^2}$. This
+  holds with $\delta = Ch$ once the dual solutions satisfy $\|\varphi_g\|_{H^2} \le C \|g\|_{L^2}$.
+  The interpolation part is available: $\|\varphi_g - \Pi_h \varphi_g\|_{H^1} \le C h
+  |\varphi_g|_{H^2}$ is `LagrangeElement.sobolevNorm_sub_globalInterp_le` with $m = 1$ and $k = 1$,
+  and $\Pi_h \varphi_g \in V_h$ by `LagrangeElement.exists_mem_polySpaceZero_globalInterp`. The
+  missing part is the $H^2$ regularity of the Dirichlet problem. It holds on a convex polygon
+  (Theorem 3.2.1.2 of [grisvard2011elliptic]). `Elliptic.regularity_dirichlet` (Theorem 9.25 of
+  [brezis2011functional]) proves it only on $C^2$ domains with bounded boundary. Convexity is
+  necessary: at a re-entrant corner of angle $\omega > \pi$ the solution has the singular part
+  $r^{\pi/\omega} \sin(\pi\theta/\omega) \notin H^2$, so the bound is false without it.
+
+## Deviations from the source
+
+* **(12.93)** (typo). The source prints the offsets $\pm(N + 1)$; for the $(N - 1)^2$ interior
+  unknowns they are $\pm(N - 1)$. See `QuarteroniSaccoSaleri.Chapter12.equation_12_93`.
+* **Exercise 12.15** (reading). The domain and the functions that the source calls smooth enough are
+  a bounded $C^1$ domain or a triangulated polygon, with $u \in C^2(\bar\Omega)$, $\nabla u$
+  continuous on $\bar\Omega$ and $v \in C^1(\bar\Omega)$. See
+  `QuarteroniSaccoSaleri.Chapter12.exercise_12_15_of_boundaryData`.
+* **Property 12.2** (reading). The polygon is a domain whose boundary is a union of element edges,
+  and the regularity $u \in H^{l+1}(\Omega)$ and the condition $u = 0$ on $\partial\Omega$ are
+  hypotheses on a representative that is continuous on $\bar\Omega$. See
+  `QuarteroniSaccoSaleri.Chapter12.property_12_2`.
+
+## Not formalized
+
+* **Property 12.2, the $L^2$ estimate (12.97).** The estimate is $\|u - u_h\|_{L^2(\Omega)} \le C
+  h^{l+1} \|u\|_{H^{l+1}(\Omega)}$ under the hypotheses of (12.96); the book quotes it, like
+  (12.96), from Theorem 6.2.1 of [quarteroni1994numerical] without proof. Its proof needs the $H^2$
+  regularity of the Dirichlet problem on a convex polygon, which is not formalized.
+* **Green's formula (12.95) on a general Lipschitz domain.** The formula is formalized on
+  rectangles, on bounded $C^1$ domains and on triangulated polygons.
 -/
 
 open scoped Kronecker
@@ -117,31 +126,46 @@ namespace QuarteroniSaccoSaleri.Chapter12
 
 /-! ### The five-point discretization (12.91)–(12.92) -/
 
-/-- **The five-point discrete Laplacian (12.92)** at the interior node `x_{i+1, j+1}` of the
-uniform grid of step `h = 1/N` on the unit square:
-`L_h u_h (x_{i,j}) = h⁻² (4 u_{i,j} - u_{i+1,j} - u_{i-1,j} - u_{i,j+1} - u_{i,j-1})`, the centred
-second difference (10.65) in each direction. -/
+/-- **Equation (12.92)** of [quarteroni2000numerical]. The **five-point discrete Laplacian** on the
+uniform grid of step $h = 1/N$ on the unit square, at the interior node $x_{i+1, j+1}$:
+$$L_h u_h(x_{i+1,j+1}) = h^{-2} (4 u_{i+1,j+1} - u_{i+2,j+1} - u_{i,j+1} - u_{i+1,j+2} -
+  u_{i+1,j}).$$
+
+It is the centred second difference (10.65) in each direction. The factor $h^{-2}$ is written
+$N^2$. -/
 noncomputable def equation_12_92 (N : ℕ) (u : ℕ → ℕ → ℝ) (i j : ℕ) : ℝ :=
   (N : ℝ) ^ 2 * (4 * u (i + 1) (j + 1) - u (i + 2) (j + 1) - u i (j + 1)
     - u (i + 1) (j + 2) - u (i + 1) j)
 
-/-- **The five-point finite difference problem (12.91)**: the grid function vanishes on the
-boundary indices and satisfies `L_h u_h (x_{i,j}) = f(x_{i,j})` at every interior node. -/
+/-- **Equation (12.91)** of [quarteroni2000numerical]. A grid function $u$ **solves the five-point
+problem** with the data $f$ if $u_{i,j} = 0$ at the boundary indices ($i, j \le N$ with
+$i \in \{0, N\}$ or $j \in \{0, N\}$), and $L_h u_h(x_{i,j}) = f_{i,j}$ at every interior node
+$x_{i,j}$, $1 \le i, j \le N - 1$. -/
 def IsFivePointSolution (N : ℕ) (f : ℕ → ℕ → ℝ) (u : ℕ → ℕ → ℝ) : Prop :=
   (∀ i j, i ≤ N → j ≤ N → (i = 0 ∨ i = N ∨ j = 0 ∨ j = N) → u i j = 0) ∧
     ∀ i j, i + 2 ≤ N → j + 2 ≤ N → equation_12_92 N u i j = f (i + 1) (j + 1)
 
 /-! ### The matrix of the scheme (12.93) -/
 
-/-- **The matrix (12.93) of the five-point scheme** on the `(N - 1)²` interior unknowns, indexed
-by pairs: `h⁻²` times the Kronecker sum of two copies of the one-dimensional model matrix
-`T = tridiag(-1, 2, -1)`. -/
+/-- **Equation (12.93)** of [quarteroni2000numerical], the matrix of the five-point scheme. For $N$
+and $m$, the matrix indexed by pairs $(i, j)$ with $0 \le i, j < m$,
+$$A = h^{-2} (T \oplus T) = h^{-2} (T \otimes I + I \otimes T), \qquad T =
+  \operatorname{tridiag}(-1, 2, -1) \in \mathbb{R}^{m \times m}, \quad h = 1/N.$$
+
+The scheme has $m = N - 1$; the definition allows any $m$. The Kronecker sum is `⊕ₖ`, and $T$ is
+`Matrix.symmTridiagonalToeplitz m (-1) 2`. -/
 noncomputable def fivePointMatrix (N m : ℕ) : Matrix (Fin m × Fin m) (Fin m × Fin m) ℝ :=
   ((N : ℝ) ^ 2) • (Matrix.symmTridiagonalToeplitz m (-1) 2 ⊕ₖ
     Matrix.symmTridiagonalToeplitz m (-1) 2)
 
-/-- **The entries of the five-point matrix (12.93)**: `4 h⁻²` on the diagonal, `-h⁻²` at the four
-grid neighbours `(i ± 1, j)` and `(i, j ± 1)`, and `0` elsewhere. -/
+/-- **Equation (12.93)** of [quarteroni2000numerical], the entries. The five-point matrix has the
+entry $4h^{-2}$ on the diagonal, the entry $-h^{-2}$ in the row of $(i, j)$ and the column of
+each of the four grid neighbours $(i \pm 1, j)$ and $(i, j \pm 1)$, and $0$ elsewhere.
+
+**Typo.** The source numbers the unknowns row by row and prints the off-diagonal entries at the
+offsets $\pm 1$ and $\pm(N + 1)$. For the $(N - 1)^2$ interior unknowns, a grid row has $N - 1$
+unknowns, so the second offset is $\pm(N - 1)$. The statement uses pairs as indices, so no
+offset appears. -/
 theorem equation_12_93 (N m : ℕ) (p q : Fin m × Fin m) :
     fivePointMatrix N m p q =
       if p = q then 4 * (N : ℝ) ^ 2
@@ -158,7 +182,7 @@ theorem equation_12_93 (N m : ℕ) (p q : Fin m × Fin m) :
 
 /-! ### Exercise 12.14 -/
 
-/-- A positive multiple of a positive definite real matrix is positive definite. -/
+/-- Let $c > 0$, and let $A$ be a positive definite real matrix. Then $cA$ is positive definite. -/
 theorem posDef_smul {m : Type*} [Finite m] {A : Matrix m m ℝ} (hA : A.PosDef) {c : ℝ}
     (hc : 0 < c) : (c • A).PosDef := by
   classical
@@ -167,12 +191,15 @@ theorem posDef_smul {m : Type*} [Finite m] {A : Matrix m m ℝ} (hA : A.PosDef) 
   rw [Matrix.smul_mulVec, dotProduct_smul, smul_eq_mul]
   exact mul_pos hc (hA.dotProduct_mulVec_pos hx)
 
-/-- **Exercise 12.14**: the five-point matrix (12.93) is symmetric positive definite and an
-M-matrix.  Positive definiteness is `Matrix.posDef_kroneckerSum` applied to the one-dimensional
-model matrix `tridiag(-1, 2, -1)` with itself; the M-matrix property is then Stieltjes' criterion
-`Matrix.IsMMatrix.of_posDef_of_offDiag_nonpos`, the off-diagonal entries of the Kronecker sum of
-two Z-matrices being nonpositive.  Consequently the discrete solution satisfies the maximum
-principle `A u ≥ 0 ⇒ u ≥ 0`. -/
+/-- **Exercise 12.14** of [quarteroni2000numerical]. For $N \ge 1$ and every $m$, the five-point
+matrix (12.93) is symmetric positive definite and an M-matrix.
+
+Positive definiteness is `Matrix.posDef_kroneckerSum` for the matrix
+$T = \operatorname{tridiag}(-1, 2, -1)$ with itself. The M-matrix property follows by the
+Stieltjes criterion `Matrix.IsMMatrix.of_posDef_of_offDiag_nonpos`, since the off-diagonal
+entries are nonpositive. So the discrete solution satisfies the maximum principle
+$Au \ge 0 \Rightarrow u \ge 0$ of
+`QuarteroniSaccoSaleri.Chapter12.exercise_12_13_maximumPrinciple`. -/
 theorem exercise_12_14 {N m : ℕ} (hN : N ≠ 0) :
     (fivePointMatrix N m).PosDef ∧ (fivePointMatrix N m).IsMMatrix := by
   have hc : (0 : ℝ) < (N : ℝ) ^ 2 := by
@@ -194,22 +221,23 @@ section Green
 
 open Set MeasureTheory
 
-/-- **Green's formula (12.95) on a rectangle**, Exercise 12.15:
-`∫_Ω (-Δu) v = ∫_Ω ∇u · ∇v - ∫_∂Ω (∇u · n) v dγ` for `Ω = (a₁, b₁) × (a₂, b₂)`, `u ∈ C²` and
-`v ∈ C¹`. The boundary integral is written as the four sides, each carrying its outward normal:
-`+(1, 0)` on `x = b₁`, `-(1, 0)` on `x = a₁`, `+(0, 1)` on `y = b₂` and `-(0, 1)` on `y = a₂`, so
-that the parenthesized difference of four interval integrals *is* `∫_∂Ω (∇u · n) v dγ`.
+/-- **Exercise 12.15** of [quarteroni2000numerical], Green's formula (12.95) on a rectangle. Let
+$\Omega = (a_1, b_1) \times (a_2, b_2)$ with $a_1 \le b_1$ and $a_2 \le b_2$, let
+$u \in C^2(\mathbb{R}^2)$ and $v \in C^1(\mathbb{R}^2)$. Then
+$$\int_\Omega (-\Delta u) v \, dx = \int_\Omega \nabla u \cdot \nabla v \, dx -
+  \int_{\partial\Omega} (\nabla u \cdot n) v \, d\gamma,$$
+where the boundary integral is the sum over the four sides with the outward normals $n = (1, 0)$
+on $x = b_1$, $(-1, 0)$ on $x = a_1$, $(0, 1)$ on $y = b_2$ and $(0, -1)$ on $y = a_2$:
+$$\int_{a_2}^{b_2} (\partial_1 u \, v)(b_1, y) \, dy - \int_{a_2}^{b_2} (\partial_1 u \, v)(a_1,
+  y) \, dy + \int_{a_1}^{b_1} (\partial_2 u \, v)(x, b_2) \, dx - \int_{a_1}^{b_1} (\partial_2 u
+  \, v)(x, a_2) \, dx.$$
 
-The proof is the exercise's own hint — `div (v ∇u) = v Δu + ∇u · ∇v`, integrated over `Ω` and
-closed by the divergence theorem — with Mathlib's divergence theorem for a rectangle,
-`MeasureTheory.integral_divergence_prod_Icc_of_hasFDerivAt_off_countable_of_le`, applied to the
-pair `(v ∂₁u, v ∂₂u)`. A general plane domain would need a boundary measure `dγ` and an outward
-normal, which the library does not have; see the description of `exercise_12_15` in the plan.
-
-Partial derivatives are written `fderiv ℝ w p (1, 0)` and `fderiv ℝ w p (0, 1)`, so the Laplacian
-of `u` at `p` is `fderiv ℝ (fun q => fderiv ℝ u q (1, 0)) p (1, 0) +
-fderiv ℝ (fun q => fderiv ℝ u q (0, 1)) p (0, 1)` (Quarteroni–Sacco–Saleri, *Numerical
-Mathematics*, equation (12.95) and Exercise 12.15). -/
+The proof follows the hint of the exercise: $\operatorname{div}(v \nabla u) = v \Delta u +
+\nabla u \cdot \nabla v$, integrated over $\Omega$, with Mathlib's divergence theorem for a
+rectangle `MeasureTheory.integral_divergence_prod_Icc_of_hasFDerivAt_off_countable_of_le`
+applied to $(v \partial_1 u, v \partial_2 u)$. The partial derivatives are `fderiv ℝ w p (1, 0)`
+and `fderiv ℝ w p (0, 1)`, and the integral over $\Omega$ is over the closed rectangle
+`Icc a b`. -/
 theorem exercise_12_15_rectangle {u v : ℝ × ℝ → ℝ} (hu : ContDiff ℝ 2 u) (hv : ContDiff ℝ 1 v)
     {a b : ℝ × ℝ} (hab : a ≤ b) :
     (∫ p in Icc a b,
@@ -290,19 +318,18 @@ theorem exercise_12_15_rectangle {u v : ℝ × ℝ → ℝ} (hu : ContDiff ℝ 2
   simp only [hf, hg] at hdiv
   linarith
 
-/-! #### Green's formula (12.95) on a bounded `C¹` domain and on a triangulated polygon
+/-!
+### Green's formula (12.95) on a bounded $C^1$ domain and on a triangulated polygon
 
-The general plane domain of (12.95), through the boundary theory of
-`Numlib/Analysis/Sobolev/Boundary/`: a domain `Ω` with boundary data `B : BoundaryData Ω` — a
-surface measure `B.σ` on `∂Ω` (the arclength `dγ`), an outward unit normal `B.ν` (the book's
-`n`) and the divergence theorem `∫_Ω div F = ∫_∂Ω F · ν dσ` for `F ∈ C¹(Ω̄)`
-(`Numlib/Analysis/Sobolev/Boundary/Data.lean`). The two instances are the bounded `C¹` domain
-(`IsContDiffDomain.boundaryData`, `Numlib/Analysis/Sobolev/Boundary/ContDiffDomain.lean`: the
-divergence theorem by Fubini and the fundamental theorem of calculus on graph charts, glued by a
-partition of unity) and the triangulated polygon (`Triangulation.boundaryData`,
-`Numlib/Analysis/Sobolev/Boundary/Polygon.lean`: the sum over the elements, the interior edges
-cancelling in partner pairs). The book's "`Ω` smooth enough" is restated as one of these two;
-Lipschitz domains in general are out of scope (`notes/boundary/planning-brief.md` §1). -/
+These statements use a plane domain $\Omega$ with boundary data `B : BoundaryData Ω`. The data
+consist of a surface measure `B.σ` on the boundary (the arclength), an outward unit normal `B.ν`
+(the normal $n$ of the book), and the divergence theorem $\int_\Omega \operatorname{div} F =
+\int_{\partial\Omega} F \cdot n \, d\gamma$ for $F \in C^1(\bar\Omega)$. The instance for a bounded
+$C^1$ domain is `IsContDiffDomain.boundaryData`; its divergence theorem follows from Fubini's
+theorem and the fundamental theorem of calculus on graph charts, glued by a partition of unity. The
+instance for a triangulated polygon is `Triangulation.boundaryData`; its divergence theorem is the
+sum over the elements, in which the integrals over interior edges cancel in pairs.
+-/
 
 open TopologicalSpace
 
@@ -310,19 +337,26 @@ open scoped InnerProductSpace Laplacian
 
 local notation "𝔼₂" => EuclideanSpace ℝ (Fin 2)
 
-/-- **Green's formula (12.95) for boundary data**, Exercise 12.15 on a plane domain `Ω` with
-boundary data `B` (surface measure `B.σ = dγ`, outward unit normal `B.ν = n`):
-`∫_Ω (-Δu) v = ∫_Ω ∇u · ∇v - ∫_∂Ω (∇u · n) v dγ` for `u ∈ C²(Ω̄)` with `∇u` continuous up to the
-boundary and `v ∈ C¹(Ω̄)`. The book's "`u, v` smooth enough" is read as
-`ContDiffOnClosure ℝ 2 u Ω`, `ContinuousOn (fderiv ℝ u) (closure Ω)` — the continuity of `∇u` on
-`Ω̄` is what gives the boundary term `∇u · n` on `∂Ω` its meaning: the class `C²(Ω̄)` of
-`ContDiffOnClosure` says that the derivatives *extend* continuously to `Ω̄`, not that
-`fderiv ℝ u` itself is that extension on `∂Ω` — and `ContinuousOn v (closure Ω)`,
-`ContDiffOnClosure ℝ 1 v Ω`. The proof is the exercise's own hint,
-`div (v ∇u) = v Δu + ∇u · ∇v` over the divergence theorem `B.integral_div_eq`, which is the
-backbone's `BoundaryData.integral_laplacian_mul_add_eq_of_continuousOn_fderiv`; here the signs
-are rearranged. The two instances are `exercise_12_15` (a bounded `C¹` domain) and
-`exercise_12_15_polygon` (a triangulated polygon); the rectangle is `exercise_12_15_rectangle`. -/
+/-- **Exercise 12.15** of [quarteroni2000numerical], Green's formula (12.95) for boundary data. Let
+$\Omega \subseteq \mathbb{R}^2$ be open with boundary data $B$, that is, an arclength measure
+$d\gamma$ on $\partial\Omega$, an outward unit normal $n$ and the divergence theorem. Let
+$u \in C^2(\bar\Omega)$ with $\nabla u$ continuous on $\bar\Omega$, and let
+$v \in C^1(\bar\Omega)$ be continuous on $\bar\Omega$. Then
+$$\int_\Omega (-\Delta u) v \, dx = \int_\Omega \nabla u \cdot \nabla v \, dx -
+  \int_{\partial\Omega} (\nabla u \cdot n) v \, d\gamma.$$
+
+**Reading.** The source asks for $u$ and $v$ smooth enough. The statement reads this as
+`ContDiffOnClosure ℝ 2 u Ω` and `ContinuousOn (fderiv ℝ u) (closure Ω)` for $u$, and
+`ContinuousOn v (closure Ω)` and `ContDiffOnClosure ℝ 1 v Ω` for $v$. The continuity of
+$\nabla u$ on $\bar\Omega$ gives a meaning to the boundary term $\nabla u \cdot n$: the class
+`ContDiffOnClosure` says that the derivatives extend continuously to $\bar\Omega$, not that
+`fderiv ℝ u` is that extension on $\partial\Omega$.
+
+The proof follows the hint of the exercise, $\operatorname{div}(v \nabla u) = v \Delta u +
+\nabla u \cdot \nabla v$ with the divergence theorem `BoundaryData.integral_div_eq`; it is
+`BoundaryData.integral_laplacian_mul_add_eq_of_continuousOn_fderiv` with the terms rearranged.
+The two instances are `QuarteroniSaccoSaleri.Chapter12.exercise_12_15` and
+`QuarteroniSaccoSaleri.Chapter12.exercise_12_15_polygon`. -/
 theorem exercise_12_15_of_boundaryData {Ω : Opens 𝔼₂} (B : BoundaryData Ω) {u v : 𝔼₂ → ℝ}
     (hu : ContDiffOnClosure ℝ 2 u Ω) (hu' : ContinuousOn (fderiv ℝ u) (closure (Ω : Set 𝔼₂)))
     (hv : ContinuousOn v (closure (Ω : Set 𝔼₂))) (hv' : ContDiffOnClosure ℝ 1 v Ω) :
@@ -333,17 +367,24 @@ theorem exercise_12_15_of_boundaryData {Ω : Opens 𝔼₂} (B : BoundaryData Ω
   simp only [neg_mul, integral_neg]
   linarith
 
-/-- **Green's formula (12.95) on a bounded `C¹` plane domain**, Exercise 12.15:
-`∫_Ω (-Δu) v = ∫_Ω ∇u · ∇v - ∫_∂Ω (∇u · n) v dγ` for `u ∈ C²(Ω̄)` with `∇u` continuous up to the
-boundary and `v ∈ C¹(Ω̄)`, with `n = hΩ.outwardNormal hb` the outward unit normal and
-`dγ = hΩ.boundaryMeasure hb` the arclength measure on `∂Ω` of
-`Numlib/Analysis/Sobolev/Boundary/GraphMeasure.lean`. The book's general plane domain is restated
-as a bounded `C¹` domain (`IsContDiffDomain 1 Ω`: `∂Ω` is locally the graph of a `C¹` function
-after a rigid motion); the polygonal case is `exercise_12_15_polygon`, and Lipschitz domains in
-general are out of scope. This is `exercise_12_15_of_boundaryData` for
-`IsContDiffDomain.boundaryData`, whose divergence theorem is
-`IsContDiffDomain.integral_div_eq` (Quarteroni–Sacco–Saleri, *Numerical Mathematics*, equation
-(12.95) and Exercise 12.15). -/
+/-- **Exercise 12.15** of [quarteroni2000numerical], Green's formula (12.95) on a bounded $C^1$
+plane domain. Let $\Omega \subseteq \mathbb{R}^2$ be a bounded open set with $C^1$ boundary:
+$\partial\Omega$ is locally the graph of a $C^1$ function after a rigid motion. Let $n$ be its
+outward unit normal and $d\gamma$ the arclength measure on $\partial\Omega$. Let
+$u \in C^2(\bar\Omega)$ with $\nabla u$ continuous on $\bar\Omega$, and let
+$v \in C^1(\bar\Omega)$ be continuous on $\bar\Omega$. Then
+$$\int_\Omega (-\Delta u) v \, dx = \int_\Omega \nabla u \cdot \nabla v \, dx -
+  \int_{\partial\Omega} (\nabla u \cdot n) v \, d\gamma.$$
+
+**Reading.** The source asks for a domain that is smooth enough. This statement takes a bounded
+$C^1$ domain, `IsContDiffDomain 1 Ω`; `QuarteroniSaccoSaleri.Chapter12.exercise_12_15_polygon`
+takes a triangulated polygon. The reading of the smoothness of $u$ and $v$ is that of
+`QuarteroniSaccoSaleri.Chapter12.exercise_12_15_of_boundaryData`.
+
+The normal is `IsContDiffDomain.outwardNormal` and the measure is
+`IsContDiffDomain.boundaryMeasure`. This is
+`QuarteroniSaccoSaleri.Chapter12.exercise_12_15_of_boundaryData` for
+`IsContDiffDomain.boundaryData`, whose divergence theorem is `IsContDiffDomain.integral_div_eq`. -/
 theorem exercise_12_15 {Ω : Opens 𝔼₂} (hΩ : IsContDiffDomain 1 (Ω : Set 𝔼₂))
     (hb : Bornology.IsBounded (Ω : Set 𝔼₂)) {u v : 𝔼₂ → ℝ}
     (hu : ContDiffOnClosure ℝ 2 u Ω) (hu' : ContinuousOn (fderiv ℝ u) (closure (Ω : Set 𝔼₂)))
@@ -353,17 +394,25 @@ theorem exercise_12_15 {Ω : Opens 𝔼₂} (hΩ : IsContDiffDomain 1 (Ω : Set 
         - ∫ x, ⟪gradient u x, hΩ.outwardNormal hb x⟫_ℝ * v x ∂(hΩ.boundaryMeasure hb) :=
   exercise_12_15_of_boundaryData (hΩ.boundaryData hb) hu hu' hv hv'
 
-/-- **Green's formula (12.95) on a triangulated polygon**, Exercise 12.15:
-`∫_Ω (-Δu) v = ∫_Ω ∇u · ∇v - ∫_∂Ω (∇u · n) v dγ` for `u ∈ C²(Ω̄)` with `∇u` continuous up to the
-boundary and `v ∈ C¹(Ω̄)`, on a plane domain `Ω` triangulated by `𝒯 : Triangulation Ω`
-(`Numlib/Geometry/Triangulation.lean`), with `n = 𝒯.outwardNormal` the outward unit normal of the
-boundary edges and `dγ = 𝒯.boundaryMeasure` the arclength measure on them, of
-`Numlib/Analysis/Sobolev/Boundary/Polygon.lean`. No hypothesis beyond the axioms of
-`Triangulation` is needed (the divergence theorem `Triangulation.integral_div_eq` holds for every
-triangulation: a field continuous across an interior edge does not see it). This is
-`exercise_12_15_of_boundaryData` for `Triangulation.boundaryData`; the `C¹` case is
-`exercise_12_15` (Quarteroni–Sacco–Saleri, *Numerical Mathematics*, equation (12.95) and
-Exercise 12.15). -/
+/-- **Exercise 12.15** of [quarteroni2000numerical], Green's formula (12.95) on a triangulated
+polygon. Let $\Omega \subseteq \mathbb{R}^2$ be open with a triangulation $\mathcal{T}$, let $n$
+be the outward unit normal on the boundary edges and $d\gamma$ the arclength measure on them.
+Let $u \in C^2(\bar\Omega)$ with $\nabla u$ continuous on $\bar\Omega$, and let
+$v \in C^1(\bar\Omega)$ be continuous on $\bar\Omega$. Then
+$$\int_\Omega (-\Delta u) v \, dx = \int_\Omega \nabla u \cdot \nabla v \, dx -
+  \int_{\partial\Omega} (\nabla u \cdot n) v \, d\gamma.$$
+
+**Reading.** The source asks for a domain that is smooth enough. This statement takes a
+triangulated polygon; `QuarteroniSaccoSaleri.Chapter12.exercise_12_15` takes a bounded $C^1$
+domain. The reading of the smoothness of $u$ and $v$ is that of
+`QuarteroniSaccoSaleri.Chapter12.exercise_12_15_of_boundaryData`.
+
+No hypothesis beyond the axioms of `Triangulation` is needed: the divergence theorem
+`Triangulation.integral_div_eq` holds for every triangulation, because a field that is
+continuous across an interior edge does not see it. The normal is `Triangulation.outwardNormal`
+and the measure is `Triangulation.boundaryMeasure`. This is
+`QuarteroniSaccoSaleri.Chapter12.exercise_12_15_of_boundaryData` for
+`Triangulation.boundaryData`. -/
 theorem exercise_12_15_polygon {Ω : Opens 𝔼₂} (𝒯 : Triangulation Ω) {u v : 𝔼₂ → ℝ}
     (hu : ContDiffOnClosure ℝ 2 u Ω) (hu' : ContinuousOn (fderiv ℝ u) (closure (Ω : Set 𝔼₂)))
     (hv : ContinuousOn v (closure (Ω : Set 𝔼₂))) (hv' : ContDiffOnClosure ℝ 1 v Ω) :
@@ -375,15 +424,15 @@ theorem exercise_12_15_polygon {Ω : Opens 𝔼₂} (𝒯 : Triangulation Ω) {u
 end Green
 
 
-/-! ### The finite element space (12.94) and Property 12.2
+/-!
+### The finite element space (12.94) and Property 12.2
 
-The two-dimensional finite element method of §12.6 on the triangulation scaffold of
-`Numlib/Geometry/Triangulation.lean`: the space `V_h` of (12.94) is `Triangulation.polySpaceZero`
-of `Numlib/Analysis/Sobolev/Triangulation.lean`, and Property 12.2 is the backbone's
-`FiniteElement.norm_sub_le_of_isGalerkinSolution_dirichletForm` (Céa's lemma with the global
-interpolation estimate) for the `ℙ_k` Lagrange element on the principal lattice
-(`LagrangeElement.node`, `LagrangeElement.shape`), the element whose global basis is the
-Lagrange basis (8.36)–(8.37) of §8.5.2. -/
+The space $V_h$ of (12.94) is `Triangulation.polySpaceZero`. Property 12.2 specializes
+`FiniteElement.norm_sub_le_of_isGalerkinSolution_dirichletForm`, Céa's lemma with the global
+interpolation estimate, to the $\mathbb{P}_k$ Lagrange element on the principal lattice
+(`LagrangeElement.node`, `LagrangeElement.shape`). This element has the Lagrange basis (8.36)–(8.37)
+of Section 8.5.2 as its global basis.
+-/
 
 section FiniteElement
 
@@ -392,23 +441,26 @@ open scoped ENNReal
 
 local notation "𝔼₂" => EuclideanSpace ℝ (Fin 2)
 
-/-- **The finite element space (12.94)**,
+/-- **Equation (12.94)** of [quarteroni2000numerical]. For a triangulation $\mathcal{T}_h$ of a
+plane domain $\Omega$ and a degree $k$, the **finite element space**
+$$V_h = \{ v_h \in C^0(\bar\Omega) : v_h|_T \in \mathbb{P}_k(T) \text{ for all } T \in
+  \mathcal{T}_h, \ v_h|_{\partial\Omega} = 0 \},$$
+as a subspace of $H^1_0(\Omega)$. Its elements are the $w \in H^1_0(\Omega)$ whose function
+agrees almost everywhere on $\Omega$ with a function that is continuous on $\bar\Omega$,
+polynomial of degree at most $k$ on each closed element, and zero on $\partial\Omega$.
 
-  `V_h = {v_h ∈ C⁰(Ω̄) : v_h|_T ∈ ℙ_k(T) for all T ∈ 𝒯_h, v_h|_∂Ω = 0}`,
-
-as a subspace of `H¹₀(Ω)`: `Triangulation.polySpaceZero`, the elements of `H¹₀(Ω)` whose function
-is (almost everywhere on `Ω`) a function continuous on `Ω̄`, polynomial of degree at most `k` on
-each closed element in the reference coordinates (`Triangulation.IsPiecewisePoly`), and
-vanishing on `∂Ω`. Every such function is the function of an element of `H¹₀(Ω)`
-(`exists_mem_equation_12_94`), so `V_h` is the book's space; the membership in `H¹₀(Ω)` is
-Brezis's Theorem 9.17, (i) ⇒ (ii), on any open set — no trace theorem is needed to read
-`v_h|_∂Ω = 0`, and the piecewise-`ℙ_k` function lies in `H¹(Ω)` by the characterization through
-lines (`Triangulation.memSobolev_of_piecewise`), not through Green's formula (12.95). -/
+The definition is `Triangulation.polySpaceZero`, and the piecewise polynomial condition is
+`Triangulation.IsPiecewisePoly`; a polynomial on an element is a polynomial in the reference
+coordinates of the element. By `QuarteroniSaccoSaleri.Chapter12.exists_mem_equation_12_94`,
+every function of the book's space is the function of an element of $V_h$. -/
 noncomputable def equation_12_94 {Ω : Opens 𝔼₂} (𝒯 : Triangulation Ω) (k : ℕ) :
     Submodule ℝ (SobolevEuclideanZero 2 1 2 Ω) :=
   𝒯.polySpaceZero 2 k
 
-/-- Membership of `V_h` (12.94), unfolded. -/
+/-- **Equation (12.94)** of [quarteroni2000numerical], membership. An element $w \in H^1_0(\Omega)$
+lies in $V_h$ if and only if there is a function $v$ that is continuous on $\bar\Omega$,
+piecewise polynomial of degree at most $k$ on $\mathcal{T}$, zero on $\partial\Omega$, and equal
+to the function of $w$ almost everywhere on $\Omega$. -/
 theorem mem_equation_12_94_iff {Ω : Opens 𝔼₂} (𝒯 : Triangulation Ω) (k : ℕ)
     {w : SobolevEuclideanZero 2 1 2 Ω} :
     w ∈ equation_12_94 𝒯 k ↔ ∃ v : 𝔼₂ → ℝ, ContinuousOn v (closure (Ω : Set 𝔼₂)) ∧
@@ -416,9 +468,10 @@ theorem mem_equation_12_94_iff {Ω : Opens 𝔼₂} (𝒯 : Triangulation Ω) (k
       SobolevMultiIndex.fn (w : SobolevEuclidean 2 1 2 Ω) =ᵐ[volume.restrict (Ω : Set 𝔼₂)] v :=
   Iff.rfl
 
-/-- **Every function of the book's `V_h` is the function of an element of (12.94)**: a
-function continuous on `Ω̄`, piecewise polynomial of degree at most `k` and vanishing on `∂Ω`
-lies in `H¹₀(Ω)`. -/
+/-- **Equation (12.94)** of [quarteroni2000numerical], the book's functions. Let $v$ be continuous
+on $\bar\Omega$, piecewise polynomial of degree at most $k$ on $\mathcal{T}$, and zero on
+$\partial\Omega$. Then there is $w \in V_h$ whose function equals $v$ almost everywhere on
+$\Omega$. In particular, $v$ lies in $H^1_0(\Omega)$. -/
 theorem exists_mem_equation_12_94 {Ω : Opens 𝔼₂} (𝒯 : Triangulation Ω) {k : ℕ} {v : 𝔼₂ → ℝ}
     (hvc : ContinuousOn v (closure (Ω : Set 𝔼₂))) (hvp : 𝒯.IsPiecewisePoly k v)
     (hv0 : EqOn v 0 (frontier (Ω : Set 𝔼₂))) :
@@ -426,34 +479,48 @@ theorem exists_mem_equation_12_94 {Ω : Opens 𝔼₂} (𝒯 : Triangulation Ω)
       SobolevMultiIndex.fn (w : SobolevEuclidean 2 1 2 Ω) =ᵐ[volume.restrict (Ω : Set 𝔼₂)] v :=
   𝒯.exists_mem_polySpaceZero 2 (by simp) hvc hvp hv0
 
-/-- **`V_h` is finite-dimensional**, `k ≥ 1`: its elements are determined by their values at the
-nodes of the `ℙ_k` Lagrange element (`Triangulation.finiteDimensional_polySpaceZero`). -/
+/-- **Equation (12.94)** of [quarteroni2000numerical], dimension. For $k \ge 1$, the space $V_h$ is
+finite-dimensional.
+
+Its elements are determined by their values at the nodes of the $\mathbb{P}_k$ Lagrange element.
+This is `Triangulation.finiteDimensional_polySpaceZero`. -/
 theorem finiteDimensional_equation_12_94 {Ω : Opens 𝔼₂} (𝒯 : Triangulation Ω) {k : ℕ}
     (hk : 1 ≤ k) : FiniteDimensional ℝ (equation_12_94 𝒯 k) :=
   LagrangeElement.finiteDimensional_polySpaceZero hk 𝒯 2
 
-/-- **Property 12.2, the estimate (12.96).** Let `u ∈ H¹₀(Ω)` be the exact solution of the Poisson
-problem (12.90), `∫_Ω ∇u · ∇v = ∫_Ω f v` for all `v ∈ H¹₀(Ω)`, on a polygon `Ω ⊆ B(0, R)`
-triangulated by a regular family `{𝒯_h}` (mesh parameters at most `H`, `∂Ω` a union of element
-edges), and let `u_h ∈ V_h` be its finite element approximation with continuous piecewise
-polynomials of degree `k ≥ 1`, the Galerkin solution on `V_h` (12.94). If `u ∈ H^{l+1}(Ω)` for
-some `1 ≤ l ≤ k` (the book's `l = min(k, s − 1)` for `u ∈ H^s(Ω)`, `s ≥ 2`), read on a
-representative `ũ` continuous up to the boundary with `ũ = 0` on `∂Ω`, then
+/-- **Property 12.2** of [quarteroni2000numerical], the estimate (12.96). Let
+$\Omega \subseteq \mathbb{R}^2$ be open with $\Omega \subseteq B(0, R)$, $R \ge 0$. Let
+$\{\mathcal{T}_h\}$ be a regular family of triangulations of $\Omega$ with mesh sizes at most
+$H$, such that $\partial\Omega$ is a union of element edges for each $\mathcal{T}_h$. Let
+$1 \le l \le k$. Then there is a constant $C \ge 0$ with the following property. Let
+$f \in L^2(\Omega)$, and let $u \in H^1_0(\Omega)$ solve the Poisson problem (12.90),
+$\int_\Omega \nabla u \cdot \nabla v = \int_\Omega f v$ for all $v \in H^1_0(\Omega)$. For each
+$h$, let $u_h$ be the Galerkin solution in the space $V_h$ of (12.94) of degree $k$. Let
+$\tilde u$ be a function equal to $u$ almost everywhere, with $\tilde u \in H^{l+1}(\Omega)$,
+$\tilde u$ continuous on $\bar\Omega$ and $\tilde u = 0$ on $\partial\Omega$. Then for every $h$
+$$\|u - u_h\|_{H^1_0(\Omega)} \le \frac{M}{\alpha_0} C h^l \|\tilde u\|_{H^{l+1}(\Omega)},$$
+where $M = 1$ is the continuity constant of the form and $\alpha_0 = (1 + (2R)^2)^{-1}$ is its
+coercivity constant on $H^1_0(\Omega)$ by the Poincaré inequality. The constant $C$ does not
+depend on $h$, $f$ or $u$.
 
-  `‖u − u_h‖_{H¹₀(Ω)} ≤ (M/α₀) C h^l ‖u‖_{H^{l+1}(Ω)}`,
+**Reading.** The source states the estimate on a polygon for $u \in H^s(\Omega)$, $s \ge 2$,
+with $l = \min(k, s - 1)$. The statement takes the polygon as a domain whose boundary is a union
+of element edges (`Triangulation.FrontierSubsetEdges`), and it states the regularity
+$u \in H^{l+1}(\Omega)$ and the boundary condition $u = 0$ on $\partial\Omega$ as hypotheses on
+a representative $\tilde u$ that is continuous on $\bar\Omega$. On a $C^1$ domain the boundary
+condition would follow from $u \in H^1_0(\Omega)$. The condition $k \ge 1$ of the source follows
+from $1 \le l \le k$.
 
-with `M = 1` the continuity constant of the form and `α₀ = (1 + (2R)²)⁻¹` its coercivity
-constant on `H¹₀(Ω)` (Poincaré's inequality), and `C` independent of `h` and of `u`. The book
-quotes the estimate from [QV94, Theorem 6.2.1]; it is the backbone's
+The book quotes the estimate from Theorem 6.2.1 of [quarteroni1994numerical]. The proof is
 `FiniteElement.norm_sub_le_of_isGalerkinSolution_dirichletForm`: Céa's lemma
-(`IsGalerkinSolution.norm_sub_le`) with `v_h = Π_h u` and the global interpolation estimate for
-the `ℙ_k` Lagrange element; `Π_h u ∈ V_h` because the Lagrange element is conforming, polynomial
-and edge unisolvent, so that `Π_h ũ` vanishes on `∂Ω` with `ũ`
-(`LagrangeElement.exists_mem_polySpaceZero_globalInterp`). The regularity `u ∈ H^{l+1}(Ω)` is read
-on the continuous representative, as in the interpolation estimates; the boundary condition
-`ũ = 0` on `∂Ω` is the problem's, a hypothesis on a polygon (on a `C¹` domain it follows from
-`u ∈ H¹₀(Ω)`). The `L²` estimate (12.97) is not formalized; see `## Not formalized here` in the
-module doc. The book's `k ≥ 1` is not a separate hypothesis: it follows from `1 ≤ l ≤ k`. -/
+`IsGalerkinSolution.norm_sub_le` with $v_h = \Pi_h u$ and the global interpolation estimate for
+the $\mathbb{P}_k$ Lagrange element. The interpolant $\Pi_h \tilde u$ lies in $V_h$ because the
+Lagrange element is conforming, polynomial and edge unisolvent, so it vanishes on
+$\partial\Omega$ with $\tilde u$ (`LagrangeElement.exists_mem_polySpaceZero_globalInterp`). A
+regular family is `FiniteElement.IsRegularFamily`: the elements satisfy $h_K \le \sigma \rho_K$
+for a fixed $\sigma$, and the mesh sizes tend to $0$ along the filter that indexes the family.
+The factor $M / \alpha_0$ is `1 / (1 + (2 * R) ^ 2)⁻¹` in the code, and the exponent $l$ is `s`.
+The $L^2$ estimate (12.97) is not formalized. -/
 theorem property_12_2 {k : ℕ} {Ω : Opens 𝔼₂} {ι : Type*} {l : Filter ι}
     {𝒯 : ι → Triangulation Ω}
     (hreg : FiniteElement.IsRegularFamily l fun i ↦ Set.range (𝒯 i).K)

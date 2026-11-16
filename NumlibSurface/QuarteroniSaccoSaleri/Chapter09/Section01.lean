@@ -7,62 +7,67 @@ import Numlib.Analysis.Calculus.ContDiffMapIcc
 import Numlib.Approximation.Quadrature
 
 /-!
-# Quarteroni–Sacco–Saleri §9.1: quadrature formulae
+# Quarteroni, Sacco and Saleri, Section 9.1: Quadrature formulae
 
-Surface file for Alfio Quarteroni, Riccardo Sacco and Fausto Saleri, *Numerical Mathematics*,
-Springer, 2000, §9.1.
+This module formalizes Section 9.1 of [quarteroni2000numerical], which sets up the vocabulary of
+Chapter 9. A quadrature formula $I_n(f) = \int_a^b f_n(x) \, dx$ integrates an approximant $f_n$ of
+$f$ (9.1), and its error $E_n(f) = I(f) - I_n(f)$ satisfies $|E_n(f)| \le \int_a^b |f - f_n| \le
+(b - a) \|f - f_n\|_\infty$. With $f_n = \Pi_n f$, the interpolating polynomial at $n + 1$ distinct
+nodes, one obtains the Lagrange quadrature formula $I_n(f) = \sum_i f(x_i) \int_a^b l_i(x) \, dx$
+(9.2). It has the general form $I_n(f) = \sum_i \alpha_i f(x_i)$ (9.3), with nodes $x_i$ and weights
+$\alpha_i$. The degree of exactness of a formula is the largest $r$ with $I_n(f) = I(f)$ for every
+$f \in \mathbb{P}_r$. An interpolatory formula on $n + 1$ distinct nodes has degree of exactness at
+least $n$, and conversely a formula on $n + 1$ distinct nodes that is exact on $\mathbb{P}_n$ is
+interpolatory; for the converse the book cites Isaacson and Keller [isaacson1994analysis], p. 316.
 
-The section sets up the vocabulary of the chapter: a quadrature formula `I_n(f) = ∫_a^b f_n`
-obtained by integrating an approximant `f_n` of `f` (9.1), with the error bound
-`|E_n(f)| ≤ ∫_a^b |f - f_n| ≤ (b - a) ‖f - f_n‖_∞`; the *Lagrange quadrature formula* (9.2),
-`I_n(f) = ∑ᵢ f(xᵢ) ∫_a^b lᵢ`, obtained from the interpolating polynomial `Π_n f` at `n + 1` distinct
-nodes; the general form (9.3), `I_n(f) = ∑ᵢ αᵢ f(xᵢ)`, with *nodes* `xᵢ` and *weights* `αᵢ`; the
-*degree of exactness* of a formula, the largest `r` with `I_n(f) = I(f)` for every `f ∈ ℙ_r`; and
-the two facts that an interpolatory formula on `n + 1` distinct nodes has degree of exactness at
-least `n` and that, conversely, a formula on `n + 1` distinct nodes exact on `ℙ_n` is interpolatory
-(the book cites [IK66], p. 316, for the converse).
-
-The backbone has the whole story on `C([a, b], ℝ)`, in `Numlib/Approximation/Quadrature`: a rule
-with weights `w` and nodes `x` is the functional `Quadrature.functional w x`, exactness on `ℙ_d` for
-a target functional `L` is `Quadrature.IsExactOn L w x d`, "interpolatory" is
-`Quadrature.IsInterpolatory L w x`, and the two facts are the two directions of
+The backbone module `Numlib.Approximation.Quadrature` treats quadrature rules on `C([a, b], ℝ)`. A
+rule with weights `w` and nodes `x` is the functional `Quadrature.functional w x`, exactness on
+$\mathbb{P}_d$ for a target functional `L` is `Quadrature.IsExactOn L w x d`, and "interpolatory" is
+`Quadrature.IsInterpolatory L w x`. The two facts above are the two directions of
 `Quadrature.isInterpolatory_iff_isExactOn`. The target functional here is the integral over
-`[a, b]`, `ContinuousMap.integralIccCLM hab b` of `Numlib/Analysis/Calculus/ContDiffMapIcc`.
+$[a, b]$, `ContinuousMap.integralIccCLM hab b` of `Numlib.Analysis.Calculus.ContDiffMapIcc`.
 
 ## Main definitions
 
-* `lagrangeWeights x a b` — the weights `αᵢ = ∫_a^b lᵢ(x) dx` of (9.2)–(9.3).
-* `lagrangeQuadrature x a b f` — the Lagrange quadrature formula (9.2), `∑ᵢ αᵢ f(xᵢ)`, for a real
-  function `f` and real nodes `x : Fin (n + 1) → ℝ`.
+* (9.2)–(9.3), `QuarteroniSaccoSaleri.Chapter09.lagrangeWeights`: the weights
+  $\alpha_i = \int_a^b l_i(x) \, dx$.
+* (9.2), `QuarteroniSaccoSaleri.Chapter09.lagrangeQuadrature`: the Lagrange quadrature formula
+  $\sum_i \alpha_i f(x_i)$.
 
 ## Main results
 
-* `quadratureError_le_integral_abs`, `quadratureError_le` — the two halves of the unnumbered
-  estimate `|E_n(f)| ≤ ∫_a^b |f - f_n| ≤ (b - a) ‖f - f_n‖_∞`, the second stated with any bound
-  `M` on `|f - f_n|` over `[a, b]`, as the book uses it ("if `‖f - f_n‖_∞ < ε` then
-  `|E_n(f)| ≤ ε (b - a)`").
-* `lagrangeQuadrature_eq_integral_interpolate` — (9.1)–(9.2): the Lagrange quadrature formula is
-  the integral of the interpolating polynomial.
-* `isInterpolatory_lagrangeQuadrature`, `lagrangeQuadrature_eq_functional` — the formula read in
-  the backbone's vocabulary: its weights are `∫ lᵢ`, so it is interpolatory for the integral on
-  `C([a, b], ℝ)`, and its value at a continuous function is `Quadrature.functional` of it.
-* `Quadrature.isExactOn_integralIccCLM_iff` (backbone) — "degree of exactness at least `d`" for a
-  formula `∑ αᵢ f(xᵢ)` on `[a, b]`, stated on real polynomials, is `Quadrature.IsExactOn` for the
-  integral functional.
-* `degreeOfExactness_ge_of_interpolatory` — an interpolatory formula on `n + 1` distinct nodes is
-  exact on `ℙ_n`.
-* `isInterpolatory_of_degreeOfExactness` — a formula on `n + 1` distinct nodes exact on `ℙ_n` has
-  the weights `∫ lᵢ`, i.e. is the Lagrange quadrature formula.
+* Section 9.1, `QuarteroniSaccoSaleri.Chapter09.quadratureError_le_integral_abs`:
+  $|E_n(f)| \le \int_a^b |f(x) - f_n(x)| \, dx$.
+* Section 9.1, `QuarteroniSaccoSaleri.Chapter09.quadratureError_le`: $|E_n(f)| \le (b - a) M$ if
+  $|f - f_n| \le M$ on $[a, b]$.
+* (9.1)–(9.2), `QuarteroniSaccoSaleri.Chapter09.lagrangeQuadrature_eq_integral_interpolate`: the
+  Lagrange quadrature formula is the integral of the interpolating polynomial.
+* Section 9.1, `QuarteroniSaccoSaleri.Chapter09.isInterpolatory_lagrangeQuadrature`: the Lagrange
+  quadrature formula is interpolatory for the integral on `C([a, b], ℝ)`.
+* Section 9.1, `QuarteroniSaccoSaleri.Chapter09.lagrangeQuadrature_eq_functional`: at a continuous
+  function, the formula is the rule `Quadrature.functional` with the weights $\int_a^b l_i$.
+* Section 9.1, `QuarteroniSaccoSaleri.Chapter09.degreeOfExactness_ge_of_interpolatory`: an
+  interpolatory formula on $n + 1$ distinct nodes is exact on $\mathbb{P}_n$.
+* Section 9.1, `QuarteroniSaccoSaleri.Chapter09.isInterpolatory_of_degreeOfExactness`: a formula on
+  $n + 1$ distinct nodes that is exact on $\mathbb{P}_n$ has the weights $\int_a^b l_i$.
 
 ## Conventions
 
-Nodes are real numbers `x : Fin (n + 1) → ℝ` in `[a, b]`, the book's `x₀, …, xₙ`, and "distinct"
-is `Function.Injective x`; the characteristic Lagrange polynomial `lᵢ` of §8.1 is Mathlib's
-`Lagrange.basis Finset.univ x i`, the interpolating polynomial `Π_n f` is
-`Lagrange.interpolate Finset.univ x (fun i => f (x i))`, and `f ∈ ℙ_r` is `p.degree ≤ r` for a
-real polynomial `p`. The bridge to the backbone reads the nodes as points of the subtype `Icc a b`
-and a real function on `[a, b]` as the continuous map it restricts to; `Set.IccExtend` goes the
-other way.
+* The nodes are real numbers `x : Fin (n + 1) → ℝ` in $[a, b]$, the book's $x_0, \ldots, x_n$, and
+  "distinct" is `Function.Injective x`.
+* The characteristic Lagrange polynomial $l_i$ of Section 8.1 is `Lagrange.basis Finset.univ x i`,
+  and the interpolating polynomial $\Pi_n f$ is `Lagrange.interpolate Finset.univ x (fun i => f (x
+  i))`.
+* The condition $f \in \mathbb{P}_r$ is `p.degree ≤ r` for a real polynomial `p`.
+
+## Implementation notes
+
+* The bridge to the backbone reads the nodes as points of the subtype `Icc a b`, and a real function
+  on $[a, b]$ as the continuous map that it restricts to. The function `Set.IccExtend` goes the
+  other way.
+* The backbone lemma `Quadrature.isExactOn_integralIccCLM_iff` says that "degree of exactness at
+  least $d$" for a formula $\sum_i \alpha_i f(x_i)$ on $[a, b]$, stated on real polynomials, is
+  `Quadrature.IsExactOn` for the integral functional.
 -/
 
 open Set intervalIntegral
@@ -74,19 +79,24 @@ variable {a b : ℝ} {n : ℕ}
 
 /-! ### The quadrature error of an approximant -/
 
-/-- **§9.1, the unnumbered estimate, first half.** For `f ∈ C⁰([a, b])` and a continuous
-approximant `f_n`, the quadrature error `E_n(f) = I(f) - I_n(f)` of the formula (9.1),
-`I_n(f) = ∫_a^b f_n`, satisfies `|E_n(f)| ≤ ∫_a^b |f(x) - f_n(x)| dx`. -/
+/-- **Section 9.1** of [quarteroni2000numerical], the error estimate, first half. Let $a \le b$, and
+let $f$ and $f_n$ be continuous on $[a, b]$. Then the error $E_n(f) = I(f) - I_n(f)$ of the
+formula (9.1), $I_n(f) = \int_a^b f_n(x) \, dx$, satisfies
+$$|E_n(f)| \le \int_a^b |f(x) - f_n(x)| \, dx.$$
+-/
 theorem quadratureError_le_integral_abs (hab : a ≤ b) {f fn : ℝ → ℝ}
     (hf : ContinuousOn f (Icc a b)) (hfn : ContinuousOn fn (Icc a b)) :
     |(∫ x in a..b, f x) - ∫ x in a..b, fn x| ≤ ∫ x in a..b, |f x - fn x| := by
   rw [← integral_sub (hf.intervalIntegrable_of_Icc hab) (hfn.intervalIntegrable_of_Icc hab)]
   exact abs_integral_le_integral_abs hab
 
-/-- **§9.1, the unnumbered estimate.** For `f ∈ C⁰([a, b])` and a continuous approximant `f_n`
-with `|f - f_n| ≤ M` on `[a, b]` — in particular for `M = ‖f - f_n‖_∞` — the quadrature error of
-(9.1) satisfies `|E_n(f)| ≤ (b - a) M`; so if `‖f - f_n‖_∞ < ε` for some `n`, then
-`|E_n(f)| ≤ ε (b - a)`. -/
+/-- **Section 9.1** of [quarteroni2000numerical], the error estimate. Let $a \le b$, let $f$ and
+$f_n$ be continuous on $[a, b]$, and let $|f(x) - f_n(x)| \le M$ for all $x \in [a, b]$. Then
+the error of the formula (9.1) satisfies
+$$|E_n(f)| \le (b - a) M.$$
+
+The bound $M$ can be $\|f - f_n\|_\infty$. The book uses the estimate in the form: if
+$\|f - f_n\|_\infty < \varepsilon$ for some $n$, then $|E_n(f)| \le \varepsilon (b - a)$. -/
 theorem quadratureError_le (hab : a ≤ b) {f fn : ℝ → ℝ} (hf : ContinuousOn f (Icc a b))
     (hfn : ContinuousOn fn (Icc a b)) {M : ℝ} (hM : ∀ x ∈ Icc a b, |f x - fn x| ≤ M) :
     |(∫ x in a..b, f x) - ∫ x in a..b, fn x| ≤ (b - a) * M := by
@@ -101,26 +111,36 @@ theorem quadratureError_le (hab : a ≤ b) {f fn : ℝ → ℝ} (hf : Continuous
 
 /-! ### The Lagrange quadrature formula (9.2)–(9.3) -/
 
-/-- The **weights of the Lagrange quadrature formula**, `αᵢ = ∫_a^b lᵢ(x) dx` in (9.2)–(9.3):
-the integrals over `[a, b]` of the characteristic Lagrange polynomials `lᵢ` of the nodes
-`x₀, …, xₙ` (§8.1). -/
+/-- **Equations (9.2)–(9.3)** of [quarteroni2000numerical], the weights. Let $x_0, \ldots, x_n$ be
+real nodes and $a, b \in \mathbb{R}$. The **weights of the Lagrange quadrature formula** are
+$$\alpha_i = \int_a^b l_i(x) \, dx, \qquad i = 0, \ldots, n,$$
+where $l_i$ is the characteristic Lagrange polynomial of the nodes (Section 8.1). -/
 noncomputable def lagrangeWeights (x : Fin (n + 1) → ℝ) (a b : ℝ) (i : Fin (n + 1)) : ℝ :=
   ∫ t in a..b, (Lagrange.basis Finset.univ x i).eval t
 
-/-- **The Lagrange quadrature formula (9.2)**, `I_n(f) = ∑ᵢ₌₀ⁿ f(xᵢ) ∫_a^b lᵢ(x) dx`, an instance
-of the general formula (9.3), `I_n(f) = ∑ᵢ αᵢ f(xᵢ)`, with the weights `αᵢ = ∫_a^b lᵢ` of
-`lagrangeWeights`. -/
+/-- **Equation (9.2)** of [quarteroni2000numerical], the Lagrange quadrature formula. Let
+$x_0, \ldots, x_n$ be real nodes, $a, b \in \mathbb{R}$ and $f : \mathbb{R} \to \mathbb{R}$. The
+**Lagrange quadrature formula** is
+$$I_n(f) = \sum_{i=0}^n \alpha_i f(x_i), \qquad \alpha_i = \int_a^b l_i(x) \, dx.$$
+
+It is an instance of the general formula (9.3), $I_n(f) = \sum_i \alpha_i f(x_i)$, with the
+weights `QuarteroniSaccoSaleri.Chapter09.lagrangeWeights`. -/
 noncomputable def lagrangeQuadrature (x : Fin (n + 1) → ℝ) (a b : ℝ) (f : ℝ → ℝ) : ℝ :=
   ∑ i, lagrangeWeights x a b i * f (x i)
 
-/-- The Lagrange quadrature formula written out as in (9.2). -/
+/-- The Lagrange quadrature formula, written out as in (9.2): $I_n(f) = \sum_{i=0}^n \left( \int_a^b
+l_i(t) \, dt \right) f(x_i)$. -/
 theorem lagrangeQuadrature_def (x : Fin (n + 1) → ℝ) (a b : ℝ) (f : ℝ → ℝ) :
     lagrangeQuadrature x a b f
       = ∑ i, (∫ t in a..b, (Lagrange.basis Finset.univ x i).eval t) * f (x i) := rfl
 
-/-- **(9.1)–(9.2).** The Lagrange quadrature formula is the formula (9.1) with `f_n = Π_n f`, the
-interpolating Lagrange polynomial of `f` at the nodes: `I_n(f) = ∫_a^b Π_n f(x) dx`. This is the
-linearity of the integral over the Lagrange form `Π_n f = ∑ᵢ f(xᵢ) lᵢ`. -/
+/-- **Equations (9.1)–(9.2)** of [quarteroni2000numerical]. Let $x_0, \ldots, x_n$ be real nodes,
+$a, b \in \mathbb{R}$ and $f : \mathbb{R} \to \mathbb{R}$. Then the Lagrange quadrature formula
+is the formula (9.1) with $f_n = \Pi_n f$, the interpolating polynomial of $f$ at the nodes:
+$$I_n(f) = \int_a^b \Pi_n f(x) \, dx.$$
+
+The proof is the linearity of the integral applied to the Lagrange form
+$\Pi_n f = \sum_i f(x_i) l_i$. -/
 theorem lagrangeQuadrature_eq_integral_interpolate (x : Fin (n + 1) → ℝ) (a b : ℝ) (f : ℝ → ℝ) :
     lagrangeQuadrature x a b f
       = ∫ t in a..b, (Lagrange.interpolate Finset.univ x fun i => f (x i)).eval t := by
@@ -131,12 +151,16 @@ theorem lagrangeQuadrature_eq_integral_interpolate (x : Fin (n + 1) → ℝ) (a 
   simp_rw [integral_const_mul]
   exact Finset.sum_congr rfl fun i _ => mul_comm _ _
 
-/-! ### The formula in the backbone's vocabulary -/
+/-! ### The formula in the vocabulary of the backbone -/
 
-/-- **The Lagrange quadrature formula is interpolatory**, in the sense of the backbone's
-`Quadrature.IsInterpolatory` on `C([a, b], ℝ)` for the integral functional
-`ContinuousMap.integralIccCLM hab b`: its weights `∫_a^b lᵢ` are the integrals of the Lagrange
-basis functions `Lagrange.basisCM` of the nodes, read as points of `[a, b]`. -/
+/-- **Section 9.1** of [quarteroni2000numerical], the Lagrange quadrature formula is interpolatory.
+Let $a \le b$ and let $x_0, \ldots, x_n \in [a, b]$. Then the weights $\int_a^b l_i$, with the
+nodes read as points of $[a, b]$, form an interpolatory rule for the integral over $[a, b]$ on
+`C([a, b], ℝ)`: each weight is the integral of the Lagrange basis function `Lagrange.basisCM` of
+the nodes.
+
+Interpolatory is `Quadrature.IsInterpolatory`, and the integral is
+`ContinuousMap.integralIccCLM hab b`. -/
 theorem isInterpolatory_lagrangeQuadrature (hab : a ≤ b) {x : Fin (n + 1) → ℝ}
     (hx : ∀ i, x i ∈ Icc a b) :
     Quadrature.IsInterpolatory (ContinuousMap.integralIccCLM hab b) (lagrangeWeights x a b)
@@ -147,8 +171,12 @@ theorem isInterpolatory_lagrangeQuadrature (hab : a ≤ b) {x : Fin (n + 1) → 
   rw [uIcc_of_le hab] at ht
   rw [ContinuousMap.coe_IccExtend, IccExtend_of_mem hab _ ht, Lagrange.basisCM_apply]
 
-/-- The value of the Lagrange quadrature formula at a continuous function on `[a, b]` is the
-backbone rule `Quadrature.functional` with the weights `∫ lᵢ` at the nodes. -/
+/-- **Section 9.1** of [quarteroni2000numerical], the formula as a backbone rule. Let $a \le b$, let
+$x_0, \ldots, x_n \in [a, b]$, and let $f$ be a continuous function on $[a, b]$. Then the
+Lagrange quadrature formula at the extension of $f$ to $\mathbb{R}$ equals the rule
+`Quadrature.functional` with the weights $\int_a^b l_i$ at the nodes, applied to $f$.
+
+The extension is `Set.IccExtend hab f`, which is constant outside $[a, b]$. -/
 theorem lagrangeQuadrature_eq_functional (hab : a ≤ b) {x : Fin (n + 1) → ℝ}
     (hx : ∀ i, x i ∈ Icc a b) (f : C(Icc a b, ℝ)) :
     lagrangeQuadrature x a b (IccExtend hab f)
@@ -158,10 +186,16 @@ theorem lagrangeQuadrature_eq_functional (hab : a ≤ b) {x : Fin (n + 1) → �
 
 /-! ### The degree of exactness of interpolatory formulae -/
 
-/-- **§9.1: "Any interpolatory quadrature formula that makes use of `n + 1` distinct nodes has
-degree of exactness equal to at least `n`."** For distinct nodes `x₀, …, xₙ` in `[a, b]` and
-`p ∈ ℙ_n`, `I_n(p) = I(p)`: indeed `Π_n p = p`. The direction `mp` of the backbone's
-`Quadrature.isInterpolatory_iff_isExactOn`, applied to `isInterpolatory_lagrangeQuadrature`. -/
+/-- **Section 9.1** of [quarteroni2000numerical], degree of exactness of an interpolatory formula.
+Let $a \le b$, let $x_0, \ldots, x_n \in [a, b]$ be distinct, and let $p$ be a real polynomial
+of degree at most $n$. Then
+$$I_n(p) = \int_a^b p(t) \, dt.$$
+In the words of the book: "Any interpolatory quadrature formula that makes use of $n + 1$
+distinct nodes has degree of exactness equal to at least $n$."
+
+The reason is that $\Pi_n p = p$. The proof applies the forward direction of
+`Quadrature.isInterpolatory_iff_isExactOn` to
+`QuarteroniSaccoSaleri.Chapter09.isInterpolatory_lagrangeQuadrature`. -/
 theorem degreeOfExactness_ge_of_interpolatory (hab : a ≤ b) {x : Fin (n + 1) → ℝ}
     (hx : ∀ i, x i ∈ Icc a b) (hinj : Function.Injective x) {p : ℝ[X]} (hp : p.degree ≤ n) :
     lagrangeQuadrature x a b (fun t => p.eval t) = ∫ t in a..b, p.eval t := by
@@ -171,11 +205,17 @@ theorem degreeOfExactness_ge_of_interpolatory (hab : a ≤ b) {x : Fin (n + 1) �
     ((Quadrature.isInterpolatory_iff_isExactOn hinj').1
       (isInterpolatory_lagrangeQuadrature hab hx)) p hp
 
-/-- **§9.1, the converse ([IK66], p. 316): "a quadrature formula using `n + 1` distinct nodes and
-having degree of exactness equal at least to `n` is necessarily of interpolatory type."** If
-`∑ᵢ αᵢ p(xᵢ) = ∫_a^b p` for every `p ∈ ℙ_n`, then `αᵢ = ∫_a^b lᵢ` for every `i`, so the formula
-is the Lagrange quadrature formula (9.2). The direction `mpr` of the backbone's
-`Quadrature.isInterpolatory_iff_isExactOn`. -/
+/-- **Section 9.1** of [quarteroni2000numerical], the converse. Let $a \le b$, let
+$x_0, \ldots, x_n \in [a, b]$ be distinct, and let $\alpha_0, \ldots, \alpha_n \in \mathbb{R}$
+with
+$$\sum_{i=0}^n \alpha_i p(x_i) = \int_a^b p(t) \, dt$$
+for every real polynomial $p$ of degree at most $n$. Then $\alpha_i = \int_a^b l_i(t) \, dt$ for
+every $i$, so the formula is the Lagrange quadrature formula (9.2). In the words of the book,
+which cites Isaacson and Keller [isaacson1994analysis], p. 316: "a quadrature formula using
+$n + 1$ distinct nodes and having degree of exactness equal at least to $n$ is necessarily of
+interpolatory type."
+
+The proof is the reverse direction of `Quadrature.isInterpolatory_iff_isExactOn`. -/
 theorem isInterpolatory_of_degreeOfExactness (hab : a ≤ b) {x : Fin (n + 1) → ℝ}
     (hx : ∀ i, x i ∈ Icc a b) (hinj : Function.Injective x) {α : Fin (n + 1) → ℝ}
     (hexact : ∀ p : ℝ[X], p.degree ≤ n → ∑ i, α i * p.eval (x i) = ∫ t in a..b, p.eval t) :

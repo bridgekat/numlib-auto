@@ -6,19 +6,47 @@ import NumlibSurface.QuarteroniSaccoSaleri.Chapter06.Section01
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter06.Section03
 
 /-!
-# Quarteroni–Sacco–Saleri §6.5: stopping criteria
+# Quarteroni, Sacco and Saleri, Section 6.5: Stopping Criteria
 
-Surface file for Alfio Quarteroni, Riccardo Sacco and Fausto Saleri, *Numerical Mathematics*
-[quarteroni2000numerical], §6.5: the two stopping tests for a sequence converging to a zero `α`
-of `f`, as the limits that justify them — the residual test with the error estimate obtained by
-"applying the estimate (6.6)" (`residualTest`, `residualTest_simple`), and the increment test
-(6.31) (`equation_6_31`). The backbone is `IsRootOfMultiplicity.tendsto_abs_sub_div_abs_rpow`
-(`Numlib/Analysis/Calculus/RootMultiplicity`) and `tendsto_sub_div_sub_succ_of_hasDerivAt`
-(`Numlib/Nonlinear/Order`). Example 6.9 is a numerical run, and the three qualitative
-conclusions about `|f'(α)| ≃ 1`, `≪ 1`, `≫ 1` are readings of the factor `1 / |f'(α)|`.
+This module formalizes Section 6.5 of [quarteroni2000numerical], on the two tests that stop an
+iteration $x^{(k)}$ that converges to a zero $\alpha$ of $f$. Each test is justified by a limit. The
+residual test controls the error $e^{(k)} = \alpha - x^{(k)}$ by the residual $f(x^{(k)})$: at a
+root of multiplicity $m$ the relative error behaves like $(m! / (|f^{(m)}(\alpha)|
+|\alpha|^m))^{1/m} |f(x^{(k)})|^{1/m}$, which is the estimate (6.6) along the sequence, and at a
+simple root the error is bound to the residual by the factor $1 / |f'(\alpha)|$. The increment test
+(6.31) controls the error of a fixed-point iteration by the increment $x^{(k+1)} - x^{(k)}$, with
+the factor $1 / (1 - \varphi'(\alpha))$.
 
-The book's error is `e^{(k)} = α - x^{(k)}`; with that sign the constant of (6.31) comes out as
-printed, `1 / (1 - φ'(α))`. Both limits need `x^{(k)} ≠ α`, which the book does not say.
+The factor $1 / |f'(\alpha)|$ gives the qualitative conclusions of the source for
+$|f'(\alpha)| \simeq 1$, $|f'(\alpha)| \ll 1$ and $|f'(\alpha)| \gg 1$. The proofs specialize
+`IsRootOfMultiplicity.tendsto_abs_sub_div_abs_rpow` in `Numlib.Analysis.Calculus.RootMultiplicity`
+and `tendsto_sub_div_sub_succ_of_hasDerivAt` in `Numlib.Nonlinear.Order`.
+
+## Main results
+
+* Section 6.5, `QuarteroniSaccoSaleri.Chapter06.residualTest`: the error estimate of the residual
+  test at a root of multiplicity $m$, as a limit of ratios.
+* Section 6.5, `QuarteroniSaccoSaleri.Chapter06.residualTest_simple`: at a simple root, $|x^{(k)} -
+  \alpha| / |f(x^{(k)})| \to 1 / |f'(\alpha)|$.
+* Equation (6.31), `QuarteroniSaccoSaleri.Chapter06.equation_6_31`: for a fixed-point iteration,
+  $e^{(k)} / (x^{(k+1)} - x^{(k)}) \to 1 / (1 - \varphi'(\alpha))$.
+
+## Conventions
+
+* The error is $e^{(k)} = \alpha - x^{(k)}$, as in the source. With this sign the constant of (6.31)
+  is $1 / (1 - \varphi'(\alpha))$, as printed.
+
+## Deviations from the source
+
+* **Section 6.5, residual test** (reading). The estimates are stated as limits along sequences that
+  never equal $\alpha$. See `QuarteroniSaccoSaleri.Chapter06.residualTest` and
+  `QuarteroniSaccoSaleri.Chapter06.residualTest_simple`.
+* **Equation (6.31)** (reading). The estimate is stated as a limit along an orbit that never equals
+  $\alpha$. See `QuarteroniSaccoSaleri.Chapter06.equation_6_31`.
+
+## Not formalized
+
+* **Example 6.9.** It is a numerical computation.
 -/
 
 open Filter Set Topology
@@ -30,11 +58,23 @@ variable {f φ : ℝ → ℝ} {α : ℝ}
 -- `α ≠ 0` is the book's standing assumption for a relative error; the limit is trivially true
 -- at `α = 0`, where both sides are `0` under Lean's `a / 0 = 0`.
 set_option linter.unusedVariables false in
-/-- **The residual test's error estimate** (the display after item 1 of §6.5). If `x^{(k)} → α`
-without reaching it, where `α ≠ 0` is a root of `f ∈ C^m` of multiplicity `m ≥ 1`, then
-`|e^{(k)}| / |α| ≲ (m! / (|f^{(m)}(α)| |α|^m))^{1/m} |f(x^{(k)})|^{1/m}` in the sense that the
-ratio of the two sides tends to `1`: (6.6) along the sequence. `equation_6_4` composed with
-`x^{(k)} → α` in `𝓝[≠] α`, and the constant identity `rpow_div_abs_eq`. -/
+/-- **Section 6.5** of [quarteroni2000numerical], the error estimate of the residual test, in the
+display after item 1. Let $m \ge 1$, let $f$ be of class $C^m$ on a neighbourhood of $\alpha$,
+and let $\alpha \neq 0$ be a root of $f$ of multiplicity $m$. Let $x^{(k)} \to \alpha$ with
+$x^{(k)} \neq \alpha$ for all $k$. Then
+$$\lim_{k \to \infty} \frac{|x^{(k)} - \alpha| / |\alpha|}{|f(x^{(k)})|^{1/m}} = \left(
+  \frac{m!}{|f^{(m)}(\alpha)| \, |\alpha|^m} \right)^{1/m}.$$
+
+**Reading.** The source writes the estimate $|e^{(k)}| / |\alpha| \lesssim (m! /
+(|f^{(m)}(\alpha)| |\alpha|^m))^{1/m} |f(x^{(k)})|^{1/m}$, obtained by applying (6.6). Here it
+is the statement that the ratio of the two sides tends to $1$. The limit needs
+$x^{(k)} \neq \alpha$, which the source does not say.
+
+The condition $\alpha \neq 0$ is the standing assumption of the source for a relative error; the
+proof does not use it, since at $\alpha = 0$ both sides are $0$ because division by $0$ gives
+$0$ in Lean. The proof composes `QuarteroniSaccoSaleri.Chapter06.equation_6_4` with the
+convergence $x^{(k)} \to \alpha$ in the punctured neighbourhood of $\alpha$, and uses
+`QuarteroniSaccoSaleri.Chapter06.rpow_div_abs_eq` for the constant. -/
 theorem residualTest {m : ℕ} (hm : 1 ≤ m) (hf : ContDiffAt ℝ m f α)
     (hα : IsRootOfMultiplicity f α m) (hα0 : α ≠ 0) {x : ℕ → ℝ} (hne : ∀ k, x k ≠ α)
     (hlim : Tendsto x atTop (𝓝 α)) :
@@ -47,10 +87,16 @@ theorem residualTest {m : ℕ} (hm : 1 ≤ m) (hf : ContDiffAt ℝ m f α)
   simp only [Function.comp]
   rw [div_right_comm]
 
-/-- **The residual test at a simple root**: "the error is bound to the residual by the factor
-`1 / |f'(α)|`" — `|x^{(k)} - α| / |f(x^{(k)})| → 1 / |f'(α)|` along a sequence converging to a
-simple root `α` without reaching it. The `m = 1` case of `residualTest`, without the division by
-`|α|` (so `α = 0` is allowed). -/
+/-- **Section 6.5** of [quarteroni2000numerical], the residual test at a simple root. Let $f$ be of
+class $C^1$ on a neighbourhood of $\alpha$, let $f(\alpha) = 0$ and $f'(\alpha) \neq 0$, and let
+$x^{(k)} \to \alpha$ with $x^{(k)} \neq \alpha$ for all $k$. Then
+$$\lim_{k \to \infty} \frac{|x^{(k)} - \alpha|}{|f(x^{(k)})|} = \frac{1}{|f'(\alpha)|}.$$
+
+**Reading.** The source says that the error is bound to the residual by the factor
+$1 / |f'(\alpha)|$. Here this is a limit, which needs $x^{(k)} \neq \alpha$.
+
+This is the case $m = 1$ of `QuarteroniSaccoSaleri.Chapter06.residualTest` without the division
+by $|\alpha|$, so $\alpha = 0$ is allowed. -/
 theorem residualTest_simple (hf : ContDiffAt ℝ 1 f α) (hα : f α = 0) (hf' : deriv f α ≠ 0)
     {x : ℕ → ℝ} (hne : ∀ k, x k ≠ α) (hlim : Tendsto x atTop (𝓝 α)) :
     Tendsto (fun k => |x k - α| / |f (x k)|) atTop (𝓝 (1 / |deriv f α|)) := by
@@ -60,13 +106,21 @@ theorem residualTest_simple (hf : ContDiffAt ℝ 1 f α) (hα : f α = 0) (hf' :
   simp only [Function.comp_def] at h
   simpa using h
 
-/-- **(6.31), the increment test.** For a fixed-point orbit `x^{(k+1)} = φ(x^{(k)})` converging to
-`α = φ(α)` without reaching it, with `φ` differentiable at `α` and `φ'(α) ≠ 1`,
-`e^{(k)} ≃ (x^{(k+1)} - x^{(k)}) / (1 - φ'(α))` with `e^{(k)} = α - x^{(k)}`, as the limit of the
-ratios: `(α - x^{(k)}) / (x^{(k+1)} - x^{(k)}) → 1 / (1 - φ'(α))` (and the increments are
-eventually nonzero). The test is unreliable when `φ'(α)` is close to `1`, optimal for second-order
-methods where `φ'(α) = 0` (Newton), still satisfactory for `-1 < φ'(α) < 0`.
-`tendsto_sub_div_sub_succ_of_hasDerivAt`. -/
+/-- **Equation (6.31)** of [quarteroni2000numerical], the increment test. Let
+$\varphi : \mathbb{R} \to \mathbb{R}$ be differentiable at a fixed point
+$\alpha = \varphi(\alpha)$ with $\varphi'(\alpha) \neq 1$. Let $x^{(k+1)} = \varphi(x^{(k)})$
+for all $k$, with $x^{(k)} \to \alpha$ and $x^{(k)} \neq \alpha$ for all $k$. Then
+$x^{(k+1)} - x^{(k)} \neq 0$ for all large $k$, and
+$$\lim_{k \to \infty} \frac{\alpha - x^{(k)}}{x^{(k+1)} - x^{(k)}} = \frac{1}{1 -
+  \varphi'(\alpha)}.$$
+
+**Reading.** The source writes $e^{(k)} \simeq (x^{(k+1)} - x^{(k)}) / (1 - \varphi'(\alpha))$
+with $e^{(k)} = \alpha - x^{(k)}$. Here this is a limit of ratios, which needs
+$x^{(k)} \neq \alpha$.
+
+So the test is unreliable when $\varphi'(\alpha)$ is close to $1$, optimal for methods of order
+$2$, where $\varphi'(\alpha) = 0$ (Newton's method), and still satisfactory for
+$-1 < \varphi'(\alpha) < 0$. The proof specializes `tendsto_sub_div_sub_succ_of_hasDerivAt`. -/
 theorem equation_6_31 (hφ : DifferentiableAt ℝ φ α) (hα : φ α = α) (h1 : deriv φ α ≠ 1)
     {x : ℕ → ℝ} (hx : ∀ k, x (k + 1) = φ (x k)) (hne : ∀ k, x k ≠ α)
     (hlim : Tendsto x atTop (𝓝 α)) :

@@ -8,26 +8,65 @@ import Numlib.Analysis.Calculus.RootMultiplicity
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter02.Section01
 
 /-!
-# Quarteroni–Sacco–Saleri §6.1: conditioning of a nonlinear equation
+# Quarteroni, Sacco and Saleri, Section 6.1: Conditioning of a nonlinear equation
 
-Surface file for Alfio Quarteroni, Riccardo Sacco and Fausto Saleri, *Numerical Mathematics*
-[quarteroni2000numerical], §6.1. The equation is `f(x) = φ(x) - d = 0` with datum `d`; the
-conditioning of its root is chapter 2's conditioning of the resolvent `G = φ⁻¹`, so (6.3) and the
-multiple-root case (6.4) restate `example_2_4`, `example_2_4_rel` and `example_2_4_multiple_root`
-of `Chapter02.Section01`, as the book itself does ("using the notation of Chapter 2"). Roots of
-multiplicity `m` are `IsRootOfMultiplicity` (`Numlib/Analysis/Calculus/RootMultiplicity`), whose
-Taylor factorization gives the error-versus-residual asymptotics the book writes as (6.4)–(6.7).
+This module formalizes Section 6.1 of [quarteroni2000numerical], the conditioning of a root $\alpha$
+of the equation $f(x) = \varphi(x) - d = 0$ with datum $d$. The root is $\alpha = G(d)$ for the
+resolvent $G = \varphi^{-1}$, so its conditioning is the conditioning of $G$ in the sense of Chapter
+2, as the book itself says ("using the notation of Chapter 2"). At a simple root the absolute
+condition number is $1/|f'(\alpha)|$ (6.3). At a root of multiplicity $m \ge 2$ the condition number
+is infinite, and a perturbation $\delta d$ of the datum moves the root by about
+$(m!/|f^{(m)}(\alpha)|)^{1/m} |\delta d|^{1/m}$ (6.4). The estimates (6.5)–(6.7) bound the error
+$|\hat\alpha - \alpha|$ by the residual $|f(\hat\alpha)|$, and for a polynomial by the size of a
+perturbation of its coefficients; Example 6.1 shows that this bound is sharp. The results (6.3) and
+(6.4) restate `QuarteroniSaccoSaleri.Chapter02.example_2_4`,
+`QuarteroniSaccoSaleri.Chapter02.example_2_4_rel` and
+`QuarteroniSaccoSaleri.Chapter02.example_2_4_multiple_root`; the multiple-root estimates specialize
+`Numlib.Analysis.Calculus.RootMultiplicity`.
 
-## Readings
+## Main results
 
-* (6.4) writes `K_abs(d) ≃ |m! δd / f^{(m)}(α)|^{1/m} / |δd|`, a quantity depending on `δd`, not a
-  condition number in the sense of Definition 2.1 — whose value at a multiple root is `+∞`
-  (`equation_6_4_absCondNumber_eq_top`). Its content is the asymptotic
-  `|δα| ~ (m! / |f^{(m)}(α)|)^{1/m} |δd|^{1/m}`, stated as the limit `equation_6_4`.
-* The book's `≲` in (6.5)–(6.7) ("`a ≤ b` and `a ≃ c`") is read as: for every constant above the
-  asymptotic one, the inequality holds for all perturbed roots close enough to `α`.
-* (6.7) is stated for real roots of real polynomials; the complex form would need
-  `IsRootOfMultiplicity` over `ℂ`, which is not in the backbone.
+* Equation (6.3), `QuarteroniSaccoSaleri.Chapter06.equation_6_3_abs` and
+  `QuarteroniSaccoSaleri.Chapter06.equation_6_3_rel`: at a simple root,
+  $K_{abs}(d) = 1/|f'(\alpha)|$ and $K(d) = |d| / (|\alpha| |f'(\alpha)|)$.
+* Equation (6.4), `QuarteroniSaccoSaleri.Chapter06.equation_6_4_absCondNumber_eq_top`: at a root of
+  multiplicity $m \ge 2$, $K_{abs}(d) = +\infty$.
+* Equation (6.4), `QuarteroniSaccoSaleri.Chapter06.equation_6_4`: $|x - \alpha| / |f(x)|^{1/m} \to
+  (m!/|f^{(m)}(\alpha)|)^{1/m}$ as $x \to \alpha$.
+* Equation (6.5), `QuarteroniSaccoSaleri.Chapter06.equation_6_5`: at a simple root, the relative
+  error is bounded by $c\,|f(\hat\alpha)|/|\alpha|$ for every $c > 1/|f'(\alpha)|$.
+* Equation (6.6), `QuarteroniSaccoSaleri.Chapter06.equation_6_6`: at a root of multiplicity $m$, the
+  relative error is bounded by $c\,|f(\hat\alpha)|^{1/m}$.
+* Equation (6.7), `QuarteroniSaccoSaleri.Chapter06.equation_6_7`: the relative error of a real root
+  of a perturbed polynomial $p + q$ is bounded by $c\,|q(\hat\alpha)|^{1/m}$.
+* Example 6.1, `QuarteroniSaccoSaleri.Chapter06.example_6_1` and
+  `QuarteroniSaccoSaleri.Chapter06.example_6_1_norm`: the roots of $(x - 1)^4 - \varepsilon$ are
+  $1 + \varepsilon^{1/4} i^k$, with relative error exactly $\varepsilon^{1/4}$.
+
+## Conventions
+
+* A root of multiplicity $m$ of a function $f$ is `IsRootOfMultiplicity f α m`: $f(\alpha) =
+  f'(\alpha) = \dots = f^{(m-1)}(\alpha) = 0$ and $f^{(m)}(\alpha) \neq 0$. The smoothness that
+  makes the derivatives meaningful is a separate hypothesis.
+* The absolute and relative condition numbers are `Conditioning.absCondNumber` and
+  `Conditioning.relCondNumber` of Chapter 2, with values in $[0, \infty]$.
+
+## Deviations from the source
+
+* **Equation (6.4)** (reading). The source writes $K_{abs}(d) \simeq |m!\,\delta d /
+  f^{(m)}(\alpha)|^{1/m} / |\delta d|$, a quantity that depends on $\delta d$; the condition number
+  of Definition 2.1 is $+\infty$, and the content of (6.4) is stated as a limit. See
+  `QuarteroniSaccoSaleri.Chapter06.equation_6_4`.
+* **Equations (6.5)–(6.7)** (reading). The source's $\lesssim$ is read as: for every constant above
+  the asymptotic one, the inequality holds for all approximate roots close enough to $\alpha$. See
+  `QuarteroniSaccoSaleri.Chapter06.equation_6_6`.
+* **Equation (6.7)** (reading). The source allows complex roots; the theorem is stated for real
+  roots of real polynomials. See `QuarteroniSaccoSaleri.Chapter06.equation_6_7`.
+
+## Not formalized
+
+* **Equation (6.7) for complex roots.** It would need `IsRootOfMultiplicity` over $\mathbb{C}$,
+  which is not in the backbone.
 -/
 
 open Conditioning Filter Polynomial Set Topology
@@ -38,19 +77,27 @@ section Equation63
 
 variable {φ G : ℝ → ℝ} {d : ℝ}
 
-/-- **(6.3), absolute.** For the equation `f(x) = φ(x) - d = 0` with `φ` continuously
-differentiable, invertible near `d` with continuous local inverse `G` (the resolvent `φ⁻¹`,
-`φ (G y) = y` near `d`), and a simple root `α = G d` (`f'(α) ≠ 0`),
-`K_abs(d) ≃ 1 / |f'(α)|`, as an equality for the first-order absolute condition number. This is
-`example_2_4` of chapter 2 with `f' = φ'`. -/
+/-- **Equation (6.3)** of [quarteroni2000numerical], absolute condition number. Let
+$\varphi : \mathbb{R} \to \mathbb{R}$ be continuously differentiable and $d \in \mathbb{R}$. Let
+$G$ be a local inverse of $\varphi$ near $d$ that is continuous at $d$, that is,
+$\varphi(G(y)) = y$ for all $y$ near $d$. Let $\alpha = G(d)$ be a simple root of
+$f(x) = \varphi(x) - d$, that is, $f'(\alpha) \neq 0$. Then the first-order absolute condition
+number of the root is $$K_{abs}(d) = \frac{1}{|f'(\alpha)|}.$$
+
+The source writes $K_{abs}(d) \simeq 1/|f'(\alpha)|$; here it is an equality for the first-order
+condition number. This is `QuarteroniSaccoSaleri.Chapter02.example_2_4` with $f' = \varphi'$. -/
 theorem equation_6_3_abs (hφ : ContDiff ℝ 1 φ) (hG : ContinuousAt G d)
     (hinv : ∀ᶠ y in 𝓝 d, φ (G y) = y) (hf' : deriv (fun x => φ x - d) (G d) ≠ 0) :
     absCondNumber G univ d = ENNReal.ofReal |deriv (fun x => φ x - d) (G d)|⁻¹ := by
   rw [deriv_sub_const] at hf' ⊢
   exact Chapter02.example_2_4 hφ hG hinv hf'
 
-/-- **(6.3), relative.** Under the hypotheses of `equation_6_3_abs`, for `d ≠ 0` and `α ≠ 0`,
-`K(d) ≃ |d| / (|α| |f'(α)|)`. This is `example_2_4_rel` of chapter 2. -/
+/-- **Equation (6.3)** of [quarteroni2000numerical], relative condition number. Under the hypotheses
+of `QuarteroniSaccoSaleri.Chapter06.equation_6_3_abs`, and with $d \neq 0$ and
+$\alpha = G(d) \neq 0$, the first-order relative condition number of the root is $$K(d) =
+\frac{|d|}{|\alpha|\, |f'(\alpha)|}.$$
+
+This is `QuarteroniSaccoSaleri.Chapter02.example_2_4_rel`. -/
 theorem equation_6_3_rel (hφ : ContDiff ℝ 1 φ) (hG : ContinuousAt G d)
     (hinv : ∀ᶠ y in 𝓝 d, φ (G y) = y) (hf' : deriv (fun x => φ x - d) (G d) ≠ 0) (hd : d ≠ 0)
     (hα : G d ≠ 0) :
@@ -62,10 +109,14 @@ theorem equation_6_3_rel (hφ : ContDiff ℝ 1 φ) (hG : ContinuousAt G d)
   have := abs_pos.2 hf'
   field_simp
 
-/-- **(6.4), the multiple-root case, as a condition number**: if `α = G d` is a root of
-`f = φ - d` of multiplicity `m ≥ 2` (so `f'(α) = 0`), the root problem has infinite first-order
-absolute condition number, `K_abs(d) = +∞` — the book's "`K_abs(d)` could nevertheless be a large
-number". This is `example_2_4_multiple_root` of chapter 2. -/
+/-- **Equation (6.4)** of [quarteroni2000numerical], the multiple-root case as a condition number.
+Let $\varphi$, $d$ and $G$ be as in `QuarteroniSaccoSaleri.Chapter06.equation_6_3_abs`, and let
+$\alpha = G(d)$ be a root of $f = \varphi - d$ of multiplicity $m \ge 2$, so that
+$f'(\alpha) = 0$. Then the first-order absolute condition number of the root is infinite:
+$K_{abs}(d) = +\infty$.
+
+This is the precise form of the remark of the source that "$K_{abs}(d)$ could nevertheless be a
+large number". It is `QuarteroniSaccoSaleri.Chapter02.example_2_4_multiple_root`. -/
 theorem equation_6_4_absCondNumber_eq_top (hφ : ContDiff ℝ 1 φ) (hG : ContinuousAt G d)
     (hinv : ∀ᶠ y in 𝓝 d, φ (G y) = y) {m : ℕ} (hm : 2 ≤ m)
     (hα : IsRootOfMultiplicity (fun x => φ x - d) (G d) m) : absCondNumber G univ d = ⊤ := by
@@ -79,21 +130,36 @@ section MultipleRoot
 
 variable {f : ℝ → ℝ} {α : ℝ} {m : ℕ}
 
-/-- **(6.4), the multiple-root asymptotics.** If `α` is a root of `f ∈ C^m` of multiplicity `m`,
-then `|x - α| / |f x|^{1/m} → (m! / |f^{(m)}(α)|)^{1/m}` as `x → α`, `x ≠ α`: a perturbation
-`δd = f(α + δα)` of the datum moves the root by `|δα| ≃ (m! / |f^{(m)}(α)|)^{1/m} |δd|^{1/m}`,
-which is what (6.4) says about `K_abs(d) ≃ |m! δd / f^{(m)}(α)|^{1/m} / |δd|`.
-`IsRootOfMultiplicity.tendsto_abs_sub_div_abs_rpow`. -/
+/-- **Equation (6.4)** of [quarteroni2000numerical], the multiple-root asymptotics. Let $m \ge 1$,
+let $f : \mathbb{R} \to \mathbb{R}$ be $m$ times continuously differentiable at $\alpha$, and
+let $\alpha$ be a root of $f$ of multiplicity $m$. Then $$\frac{|x - \alpha|}{|f(x)|^{1/m}} \to
+\Big(\frac{m!}{|f^{(m)}(\alpha)|}\Big)^{1/m} \quad \text{as } x \to \alpha,\ x \neq \alpha.$$ So
+a perturbation $\delta d = f(\alpha + \delta\alpha)$ of the datum moves the root by
+$|\delta\alpha| \simeq (m!/|f^{(m)}(\alpha)|)^{1/m} |\delta d|^{1/m}$.
+
+**Reading.** The source writes $K_{abs}(d) \simeq |m!\,\delta d / f^{(m)}(\alpha)|^{1/m} /
+|\delta d|$. This quantity depends on $\delta d$, so it is not a condition number in the sense
+of Definition 2.1, whose value at a multiple root is $+\infty$
+(`QuarteroniSaccoSaleri.Chapter06.equation_6_4_absCondNumber_eq_top`). Its content is the
+asymptotic relation above, stated as a limit.
+
+The proof specializes `IsRootOfMultiplicity.tendsto_abs_sub_div_abs_rpow`. -/
 theorem equation_6_4 (hm : 1 ≤ m) (hf : ContDiffAt ℝ m f α) (hα : IsRootOfMultiplicity f α m) :
     Tendsto (fun x => |x - α| / |f x| ^ (1 / (m : ℝ))) (𝓝[≠] α)
       (𝓝 ((m.factorial / |iteratedDeriv m f α|) ^ (1 / (m : ℝ)))) :=
   hα.tendsto_abs_sub_div_abs_rpow hm hf
 
-/-- **(6.5), error versus residual at a simple root.** If `f ∈ C¹` near a simple root `α ≠ 0`
-(`f α = 0`, `f'(α) ≠ 0`), then for every `c > 1 / |f'(α)|` and every `α̂` close enough to `α`,
-`|α̂ - α| / |α| ≤ c |r̂| / |α|` with the residual `r̂ = f(α̂)`: the book's
-`|α̂ - α| / |α| ≲ |r̂| / (|f'(α)| |α|)`. The `m = 1` case of
-`IsRootOfMultiplicity.eventually_abs_sub_le_mul_abs_rpow`. -/
+/-- **Equation (6.5)** of [quarteroni2000numerical], error and residual at a simple root. Let
+$f : \mathbb{R} \to \mathbb{R}$ be continuously differentiable at $\alpha$, with
+$f(\alpha) = 0$, $f'(\alpha) \neq 0$ and $\alpha \neq 0$. Then for every $c > 1/|f'(\alpha)|$
+and every $\hat\alpha$ close enough to $\alpha$, $$\frac{|\hat\alpha - \alpha|}{|\alpha|} \le
+c\, \frac{|\hat r|}{|\alpha|}, \qquad \hat r = f(\hat\alpha).$$
+
+**Reading.** The source writes $|\hat\alpha - \alpha|/|\alpha| \lesssim |\hat r| /
+(|f'(\alpha)|\, |\alpha|)$. The theorem reads $\lesssim$ as: for every constant above
+$1/|f'(\alpha)|$, the inequality holds near $\alpha$.
+
+This is the case $m = 1$ of `IsRootOfMultiplicity.eventually_abs_sub_le_mul_abs_rpow`. -/
 theorem equation_6_5 (hf : ContDiffAt ℝ 1 f α) (hα : f α = 0) (hf' : deriv f α ≠ 0)
     (hα0 : α ≠ 0) {c : ℝ} (hc : 1 / |deriv f α| < c) :
     ∀ᶠ x in 𝓝 α, |x - α| / |α| ≤ c * |f x| / |α| := by
@@ -105,18 +171,28 @@ theorem equation_6_5 (hf : ContDiffAt ℝ 1 f α) (hα : f α = 0) (hf' : deriv 
   rw [div_le_div_iff_of_pos_right hα']
   simpa using hx
 
-/-- `(m! / |f^{(m)}(α)|)^{1/m} / |α| = (m! / (|f^{(m)}(α)| |α|^m))^{1/m}`: the constants of (6.4)
-and (6.6). -/
+/-- For $a \ge 0$, $b \in \mathbb{R}$ and $m \ge 1$, $$\frac{a^{1/m}}{|b|} =
+\Big(\frac{a}{|b|^m}\Big)^{1/m}.$$ This relates the constants of (6.4) and (6.6) of
+[quarteroni2000numerical]. -/
 theorem rpow_div_abs_eq {a b : ℝ} (ha : 0 ≤ a) (hm : 1 ≤ m) :
     a ^ (1 / (m : ℝ)) / |b| = (a / |b| ^ m) ^ (1 / (m : ℝ)) := by
   have hm0 : m ≠ 0 := by omega
   rw [Real.div_rpow ha (pow_nonneg (abs_nonneg b) m), one_div,
     Real.pow_rpow_inv_natCast (abs_nonneg b) hm0]
 
-/-- **(6.6), error versus residual at a root of multiplicity `m`.** If `α ≠ 0` is a root of
-`f ∈ C^m` of multiplicity `m ≥ 1`, then for every `c > (m! / (|f^{(m)}(α)| |α|^m))^{1/m}` and
-every `α̂` close enough to `α`, `|α̂ - α| / |α| ≤ c |r̂|^{1/m}` with `r̂ = f(α̂)`.
-`IsRootOfMultiplicity.eventually_abs_sub_le_mul_abs_rpow` with the constant `c |α|`. -/
+/-- **Equation (6.6)** of [quarteroni2000numerical], error and residual at a root of multiplicity
+$m$. Let $m \ge 1$, let $f : \mathbb{R} \to \mathbb{R}$ be $m$ times continuously differentiable
+at $\alpha$, and let $\alpha \neq 0$ be a root of $f$ of multiplicity $m$. Then for every $$c >
+\Big(\frac{m!}{|f^{(m)}(\alpha)|\, |\alpha|^m}\Big)^{1/m}$$ and every $\hat\alpha$ close enough
+to $\alpha$, $$\frac{|\hat\alpha - \alpha|}{|\alpha|} \le c\, |\hat r|^{1/m}, \qquad \hat r =
+f(\hat\alpha).$$
+
+**Reading.** The source writes this bound with $\lesssim$ and the constant above. The theorem
+reads $\lesssim$ as: for every constant above the asymptotic one, the inequality holds near
+$\alpha$.
+
+The proof specializes `IsRootOfMultiplicity.eventually_abs_sub_le_mul_abs_rpow` with the
+constant $c |\alpha|$. -/
 theorem equation_6_6 (hm : 1 ≤ m) (hf : ContDiffAt ℝ m f α) (hα : IsRootOfMultiplicity f α m)
     (hα0 : α ≠ 0) {c : ℝ}
     (hc : (m.factorial / (|iteratedDeriv m f α| * |α| ^ m)) ^ (1 / (m : ℝ)) < c) :
@@ -129,12 +205,19 @@ theorem equation_6_6 (hm : 1 ≤ m) (hf : ContDiffAt ℝ m f α) (hα : IsRootOf
   rw [div_le_iff₀ hα']
   linarith
 
-/-- **(6.7), sensitivity of a polynomial root to a perturbation of the coefficients.** Let
-`α ≠ 0` be a real root of `p : ℝ[X]` of multiplicity `m ≥ 1` and `q` a perturbation polynomial.
-For every `c > (m! / (|p^{(m)}(α)| |α|^m))^{1/m}` there is `δ > 0` such that every real root `α̂`
-of `p + q` with `|α̂ - α| < δ` satisfies `|α̂ - α| / |α| ≤ c |q(α̂)|^{1/m}` — (6.6) for `f = p`,
-whose residual at `α̂` is `p(α̂) = -q(α̂)`. Stated for real roots; the book's complex roots would
-need `IsRootOfMultiplicity` over `ℂ`. -/
+/-- **Equation (6.7)** of [quarteroni2000numerical], the sensitivity of a polynomial root to a
+perturbation of the coefficients. Let $p, q$ be real polynomials, and let $\alpha \neq 0$ be a
+real root of $p$ of multiplicity $m \ge 1$. Then for every $$c >
+\Big(\frac{m!}{|p^{(m)}(\alpha)|\, |\alpha|^m}\Big)^{1/m}$$ there is $\delta > 0$ such that
+every real root $\hat\alpha$ of $p + q$ with $|\hat\alpha - \alpha| < \delta$ satisfies
+$$\frac{|\hat\alpha - \alpha|}{|\alpha|} \le c\, |q(\hat\alpha)|^{1/m}.$$
+
+**Reading.** The source states (6.7) with $\lesssim$ and for complex roots. The theorem reads
+$\lesssim$ as in (6.6), and it is stated for real roots only; the complex form would need
+`IsRootOfMultiplicity` over $\mathbb{C}$, which is not in the backbone.
+
+The multiplicity is `Polynomial.rootMultiplicity`. The theorem is (6.6) for $f = p$, whose
+residual at $\hat\alpha$ is $p(\hat\alpha) = -q(\hat\alpha)$. -/
 theorem equation_6_7 {p q : ℝ[X]} {α : ℝ} (hα0 : α ≠ 0) {m : ℕ} (hm : 1 ≤ m)
     (hmult : p.rootMultiplicity α = m) {c : ℝ}
     (hc : (m.factorial / (|(derivative^[m] p).eval α| * |α| ^ m)) ^ (1 / (m : ℝ)) < c) :
@@ -166,10 +249,11 @@ section Example61
 
 open Complex
 
-/-- **Example 6.1, the roots.** For `0 < ε`, the roots of the perturbed polynomial
-`p̂₄(x) = (x - 1)⁴ - ε` are exactly the four complex numbers `1 + ε^{1/4} iᵏ`, `k = 0, 1, 2, 3`:
-they lie at angular spacing `π/2` on the circle of radius `ε^{1/4}` about `1`, the fourfold root
-of `p₄ = (x - 1)⁴`. -/
+/-- **Example 6.1** of [quarteroni2000numerical], the roots. Let $\varepsilon > 0$. A complex number
+$z$ is a root of the perturbed polynomial $\hat p_4(x) = (x - 1)^4 - \varepsilon$ if and only if
+$$z = 1 + \varepsilon^{1/4} i^k \quad \text{for some } k = 0, 1, 2, 3.$$ So the four roots lie
+at angular spacing $\pi/2$ on the circle of radius $\varepsilon^{1/4}$ about $1$, the fourfold
+root of $p_4(x) = (x - 1)^4$. -/
 theorem example_6_1 {ε : ℝ} (hε : 0 < ε) (z : ℂ) :
     ((X - 1) ^ 4 - C (ε : ℂ)).IsRoot z ↔
       ∃ k : Fin 4, z = 1 + ((ε ^ (1 / 4 : ℝ) : ℝ) : ℂ) * I ^ (k : ℕ) := by
@@ -202,10 +286,13 @@ theorem example_6_1 {ε : ℝ} (hε : 0 < ε) (z : ℂ) :
     · exact Or.inl (Or.inl (Or.inr (by simp [I_sq])))
     · exact Or.inr (by simp [hI3])
 
-/-- **Example 6.1, the relative error.** Every root `α̂` of `(x - 1)⁴ - ε` has
-`|α̂ - α| / |α| = ε^{1/4}` from the fourfold root `α = 1`: the problem is stable
-(`α̂ → 1` as `ε → 0`) but ill-conditioned, and the right-hand side of (6.7) is exactly `ε^{1/4}`
-(`m = 4`, `p₄^{(4)} = 4!`, `|q(α̂)| = ε`), so (6.7) is an equality here. -/
+/-- **Example 6.1** of [quarteroni2000numerical], the relative error. Let $\varepsilon > 0$. Every
+root $\hat\alpha$ of $(x - 1)^4 - \varepsilon$ has the relative error $$\frac{|\hat\alpha -
+\alpha|}{|\alpha|} = \varepsilon^{1/4}$$ from the fourfold root $\alpha = 1$. So the problem is
+stable ($\hat\alpha \to 1$ as $\varepsilon \to 0$) but ill-conditioned.
+
+Here $m = 4$, $p_4^{(4)} = 4!$ and $|q(\hat\alpha)| = \varepsilon$, so the asymptotic constant
+of (6.7) is $1$, and (6.7) with this constant holds with equality. -/
 theorem example_6_1_norm {ε : ℝ} (hε : 0 < ε) {z : ℂ} (hz : ((X - 1) ^ 4 - C (ε : ℂ)).IsRoot z) :
     ‖z - 1‖ / ‖(1 : ℂ)‖ = ε ^ (1 / 4 : ℝ) := by
   obtain ⟨k, rfl⟩ := (example_6_1 hε z).1 hz

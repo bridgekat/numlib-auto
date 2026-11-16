@@ -6,43 +6,69 @@ import Numlib.LinearAlgebra.Matrix.QR
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter05.Section04
 
 /-!
-# Quarteroni–Sacco–Saleri §5.5: the basic QR iteration
+# Quarteroni, Sacco and Saleri, Section 5.5: The Basic QR Iteration
 
-Surface file for Alfio Quarteroni, Riccardo Sacco and Fausto Saleri, *Numerical Mathematics*
-[quarteroni2000numerical], §5.5, over the backbone `Numlib/Eigen/QRAlgorithm` (the convergence
-theorem `Matrix.tendsto_qrIterate`, its rate `Matrix.exists_abs_qrIterate_apply_le`, the
-translation `Matrix.forall_isLowerSet_disjoint_iff_isUnit_leadingPrincipal` of its general-position
-hypothesis into leading principal minors, and the Hermitian invariance
-`Matrix.isHermitian_qrIterate`), and over §5.4's `qrIterate`.
+This module formalizes Section 5.5 of [quarteroni2000numerical], on the convergence of the basic QR
+iteration $T^{(0)} = A$, $T^{(k-1)} = Q^{(k)} R^{(k)}$, $T^{(k)} = R^{(k)} Q^{(k)}$ of Section 5.4.
+Let $A \in \mathbb{R}^{n \times n}$ be diagonalizable, $X^{-1} A X = \operatorname{diag}(\lambda_1,
+\dots, \lambda_n)$, with eigenvalues of distinct moduli $|\lambda_1| > |\lambda_2| > \dots >
+|\lambda_n| > 0$. If every leading principal minor of $X^{-1}$ is nonzero, then $T^{(k)}$ converges
+to an upper triangular matrix with $\lambda_1, \dots, \lambda_n$ on the diagonal (Property 5.9,
+(5.36)). The subdiagonal entries decay like $|\lambda_i / \lambda_{i-1}|^k$ (5.37), and for a
+symmetric $A$ the limit is $\operatorname{diag}(\lambda_1, \dots, \lambda_n)$. The LR iteration of
+Remark 5.2 replaces the orthogonal similarity by a similarity with a unit lower triangular matrix.
+
+The proofs specialize the backbone module `Numlib.Eigen.QRAlgorithm`: the convergence theorem
+`Matrix.tendsto_qrIterate`, its rate `Matrix.exists_abs_qrIterate_apply_le`, the translation
+`Matrix.forall_isLowerSet_disjoint_iff_isUnit_leadingPrincipal` of its hypothesis of general
+position into leading principal minors, and the symmetry of the iterates
+`Matrix.isHermitian_qrIterate`. The iteration is `QuarteroniSaccoSaleri.Chapter05.qrIterate` of
+Section 5.4.
+
+## Main results
+
+* Property 5.9, `QuarteroniSaccoSaleri.Chapter05.property_5_9`: under the minor condition, $T^{(k)}$
+  converges to upper triangular form with the eigenvalues in order on the diagonal.
+* Property 5.9, `QuarteroniSaccoSaleri.Chapter05.property_5_9_counterexample`: without the minor
+  condition, the property fails for $A = \operatorname{diag}(1, 2)$.
+* Equation (5.37), `QuarteroniSaccoSaleri.Chapter05.equation_5_37`: $|t_{i,i-1}^{(k)}| \le C
+  |\lambda_i / \lambda_{i-1}|^k$.
+* Property 5.9, `QuarteroniSaccoSaleri.Chapter05.property_5_9_symm`: for a symmetric $A$, $T^{(k)}
+  \to \operatorname{diag}(\lambda_1, \dots, \lambda_n)$.
+* Remark 5.2, `QuarteroniSaccoSaleri.Chapter05.remark_5_2`: the matrix $RL$ of the LR iteration is
+  similar to $A = LR$.
 
 ## Conventions
 
-The basic QR iteration is `qrIterate` of §5.4 (`Q⁽⁰⁾ = I`, `T⁽⁰⁾ = A`). A diagonalizable
-`A ∈ ℝ^{n×n}` is given, as in Theorem 5.3, by a nonsingular `X` with `X⁻¹ A X = diag(λ_1, …, λ_n)`,
-the columns of `X` being the eigenvectors; the eigenvalues are indexed by `Fin n` in the order of
-the book, `|λ_1| > |λ_2| > … > |λ_n|`, which is `i < j → |λ_j| < |λ_i|`. The leading principal
-minor of order `m` of `X⁻¹` is the determinant of `(X⁻¹).submatrix (Fin.castLE hm) (Fin.castLE hm)`.
+* The basic QR iteration is `QuarteroniSaccoSaleri.Chapter05.qrIterate` of Section 5.4, with
+  $Q^{(0)} = I$ and $T^{(0)} = A$.
+* A diagonalizable $A \in \mathbb{R}^{n \times n}$ is given, as in Theorem 5.3, by a nonsingular $X$
+  with $X^{-1} A X = \operatorname{diag}(\lambda_1, \dots, \lambda_n)$. The columns of $X$ are the
+  eigenvectors.
+* The eigenvalues are indexed by `Fin N` in the order of the book, $|\lambda_1| > |\lambda_2| >
+  \dots > |\lambda_n|$, which is the hypothesis `∀ i j, i < j → |lam j| < |lam i|`.
+* The leading principal minor of order $m$ of $X^{-1}$ is the determinant of `(X⁻¹).submatrix
+  (Fin.castLE hm) (Fin.castLE hm)`.
 
-## Contents
+## Implementation notes
 
-* `property_5_9` — convergence of the QR iteration to triangular form, (5.36).
-* `property_5_9_counterexample` — why the hypothesis the book omits is needed.
-* `equation_5_37` — the rate `|t_{i,i-1}^{(k)}| = O(|λ_i/λ_{i-1}|^k)`.
-* `property_5_9_symm` — the symmetric case: convergence to a diagonal matrix.
-* `remark_5_2` — the LR iteration is a (nonorthogonal) similarity.
+* The rate (5.37) is stated with the base $|\lambda_i / \lambda_{i-1}|$ of the book. The backbone's
+  estimate allows its rate parameter to be the largest modulus among the eigenvalues after
+  $\lambda_{i-1}$, which is $|\lambda_i|$.
 
-## Readings and errata
+## Deviations from the source
 
-**Property 5.9 is false as printed.** With only `|λ_1| > … > |λ_n|` the matrix `A = diag(1, 2)` is
-a counterexample: it is upper triangular with positive diagonal, so `Q⁽ᵏ⁾ = I` and `R⁽ᵏ⁾ = A` at
-every step, the iteration leaves it fixed, and the diagonal of the "limit" is `(1, 2)` where (5.36)
-demands `(λ_1, λ_2) = (2, 1)` (`property_5_9_counterexample`). Golub–Van Loan's Theorem 7.3.1,
-which the book cites, also requires that `X⁻¹` have an LU factorization, that is, nonzero leading
-principal minors; this is exactly the general-position hypothesis of the backbone's theorem, and
-`property_5_9` carries it. The book's `|λ_n| > 0` is implicit in the statement and explicit here.
-The rate (5.37) is stated with the book's base `|λ_i/λ_{i-1}|` exactly: the backbone's estimate
-allows the rate parameter to equal the largest modulus among the eigenvalues after `λ_{i-1}`.
-Example 5.4 is numerical and is not a node.
+* **Property 5.9** (correction). With only $|\lambda_1| > \dots > |\lambda_n|$, the property is
+  false: the iteration leaves $A = \operatorname{diag}(1, 2)$ fixed. The property is stated with the
+  further hypothesis that every leading principal minor of $X^{-1}$ is nonzero, which the theorem of
+  Golub and Van Loan that the book cites (Theorem 7.3.1) requires. See
+  `QuarteroniSaccoSaleri.Chapter05.property_5_9_counterexample`.
+* **Property 5.9, $|\lambda_n| > 0$** (reading). The condition is implicit in the statement of the
+  book and explicit here. See `QuarteroniSaccoSaleri.Chapter05.property_5_9`.
+
+## Not formalized
+
+* **Example 5.4.** It is numerical.
 -/
 
 open Filter Finset Matrix Topology
@@ -53,9 +79,21 @@ variable {N : ℕ}
 
 /-! ### Bridges to the backbone -/
 
-/-- The hypotheses of Property 5.9, in the form the backbone's `Matrix.tendsto_qrIterate` takes:
-the columns of `X` are a basis of eigenvectors, the eigenvalues are nonzero and strictly
-decreasing in modulus, and the canonical flag is in general position with respect to them. -/
+/-- The hypotheses of Property 5.9 of [quarteroni2000numerical] in the form that the backbone's
+`Matrix.tendsto_qrIterate` takes. Let $A, X \in \mathbb{R}^{n \times n}$ with $X$ nonsingular
+and $X^{-1} A X = \operatorname{diag}(\lambda_1, \dots, \lambda_n)$, let every $\lambda_i$ be
+nonzero, let $|\lambda_j| < |\lambda_i|$ for $i < j$, and let every leading principal minor of
+$X^{-1}$ be nonzero. Then:
+
+1. $A$ is nonsingular;
+2. the columns $x_1, \dots, x_n$ of $X$ are a basis of $\mathbb{R}^n$, and
+   $A x_j = \lambda_j x_j$ for every $j$;
+3. $|\lambda_k| < |\lambda_j|$ for $j < k$;
+4. the canonical flag is in general position with respect to the eigenvectors: for every initial
+   segment $J$ of the indices, the span of the unit vectors $e_j$ with $j \in J$ meets the span
+   of the $x_j$ with $j \notin J$ only in $0$.
+
+The columns are `Matrix.euclideanCol X j`, and an initial segment is a lower set of `Fin N`. -/
 theorem property_5_9_hypotheses {A X : Matrix (Fin N) (Fin N) ℝ} (hX : IsUnit X)
     {lam : Fin N → ℝ} (hD : X⁻¹ * A * X = diagonal lam) (hne : ∀ i, lam i ≠ 0)
     (hsep : ∀ i j, i < j → |lam j| < |lam i|)
@@ -76,15 +114,27 @@ theorem property_5_9_hypotheses {A X : Matrix (Fin N) (Fin N) ℝ} (hX : IsUnit 
 
 /-! ### Property 5.9: convergence of the QR method -/
 
-/-- **Property 5.9 (convergence of the QR method), (5.36), with the hypothesis the book omits.**
-Let `A ∈ ℝ^{n×n}` be diagonalizable, `X⁻¹ A X = diag(λ_1, …, λ_n)` with `X` nonsingular, with
-`|λ_1| > |λ_2| > … > |λ_n| > 0`, and assume that every leading principal minor of `X⁻¹` is
-nonzero (Golub–Van Loan Theorem 7.3.1: `X⁻¹` has an LU factorization). Then the iterates
-`T⁽ᵏ⁾ = qrIterate A k` of the basic QR iteration converge to upper triangular form with the
-eigenvalues in order down the diagonal: `t_{ij}^{(k)} → 0` for `i > j` and `t_{ii}^{(k)} → λ_i`.
-Backbone `Matrix.tendsto_qrIterate`, whose general-position hypothesis is the minor condition by
-`Matrix.forall_isLowerSet_disjoint_iff_isUnit_leadingPrincipal`. Erratum: without the minor
-condition the statement is false (`property_5_9_counterexample`). -/
+/-- **Property 5.9** of [quarteroni2000numerical] (convergence of the QR method), (5.36). Let
+$A \in \mathbb{R}^{n \times n}$ be diagonalizable, $X^{-1} A X = \operatorname{diag}(\lambda_1,
+\dots, \lambda_n)$ with $X$ nonsingular, and
+$$|\lambda_1| > |\lambda_2| > \dots > |\lambda_n| > 0.$$
+Assume that every leading principal minor of $X^{-1}$ is nonzero. Then the iterates $T^{(k)}$ of
+the basic QR iteration converge to upper triangular form with the eigenvalues in order on the
+diagonal:
+$$t_{ij}^{(k)} \to 0 \quad (i > j), \qquad t_{ii}^{(k)} \to \lambda_i.$$
+
+**Correction.** The book assumes only the ordering of the eigenvalues. Without the minor
+condition the statement is false
+(`QuarteroniSaccoSaleri.Chapter05.property_5_9_counterexample`). Theorem 7.3.1 of Golub and Van
+Loan, which the book cites, also requires that $X^{-1}$ have an LU factorization, that is, that
+its leading principal minors be nonzero.
+
+**Reading.** The condition $|\lambda_n| > 0$ is implicit in the statement of the book. Here it
+is the explicit hypothesis that every $\lambda_i$ is nonzero.
+
+The proof specializes the backbone's `Matrix.tendsto_qrIterate`, whose hypothesis of general
+position is the minor condition by
+`Matrix.forall_isLowerSet_disjoint_iff_isUnit_leadingPrincipal`. -/
 theorem property_5_9 {A X : Matrix (Fin N) (Fin N) ℝ} (hX : IsUnit X) {lam : Fin N → ℝ}
     (hD : X⁻¹ * A * X = diagonal lam) (hne : ∀ i, lam i ≠ 0)
     (hsep : ∀ i j, i < j → |lam j| < |lam i|)
@@ -96,7 +146,8 @@ theorem property_5_9 {A X : Matrix (Fin N) (Fin N) ℝ} (hX : IsUnit X) {lam : F
   simp only [qrIterate_eq]
   exact Matrix.tendsto_qrIterate hA hx hxtop heig hne hsep' hgen
 
-/-- The QR iteration leaves an upper triangular matrix with a positive diagonal fixed. -/
+/-- Let $A \in \mathbb{R}^{n \times n}$ be upper triangular with a positive diagonal. Then the QR
+iteration leaves $A$ fixed: $T^{(k)} = A$ for every $k$. -/
 theorem qrIterate_eq_self_of_isUpperTriangular {A : Matrix (Fin N) (Fin N) ℝ}
     (hA : A.IsUpperTriangular) (hd : ∀ j, 0 < A j j) : ∀ k, qrIterate A k = A
   | 0 => rfl
@@ -105,12 +156,20 @@ theorem qrIterate_eq_self_of_isUpperTriangular {A : Matrix (Fin N) (Fin N) ℝ}
       (qrQ_eq_one_of_isUpperTriangular hA hd).1, (qrQ_eq_one_of_isUpperTriangular hA hd).2,
       Matrix.mul_one]
 
-/-- **Why Property 5.9 needs the minor condition.** For `A = diag(1, 2)` the QR iteration is
-stationary, `T⁽ᵏ⁾ = A` for every `k` (the diagonal is positive, so `qrQ A = 1` and `qrR A = A`),
-and `t_{11}^{(k)} = 1` does not tend to `λ_1 = 2` as (5.36) requires, although
-`|λ_1| = 2 > |λ_2| = 1 > 0`. The eigenvector matrix that orders the eigenvalues by decreasing
-modulus, `X = [0 1; 1 0]` with `X⁻¹ A X = diag(2, 1)`, is orthogonal but its inverse has leading
-`1 × 1` minor `0`: the hypothesis of `property_5_9` fails, and it is the only one that does. -/
+/-- **Property 5.9** of [quarteroni2000numerical], the counterexample without the minor condition.
+Let $A = \operatorname{diag}(1, 2)$ and
+$$X = \begin{bmatrix} 0 & 1 \\ 1 & 0 \end{bmatrix}.$$
+Then:
+
+1. the QR iteration is stationary, $T^{(k)} = A$ for every $k$;
+2. $X$ is orthogonal and $X^{-1} A X = \operatorname{diag}(2, 1)$, so $\lambda_1 = 2$,
+   $\lambda_2 = 1$ and $|\lambda_1| > |\lambda_2| > 0$;
+3. the leading principal minor of order $1$ of $X^{-1}$ is $0$;
+4. $t_{11}^{(k)}$ does not tend to $\lambda_1 = 2$, as (5.36) requires.
+
+The diagonal of $A$ is positive, so the QR factorization of $A$ is $Q = I$, $R = A$. The minor
+condition of `QuarteroniSaccoSaleri.Chapter05.property_5_9` is the only one of its hypotheses
+that fails. -/
 theorem property_5_9_counterexample :
     let A : Matrix (Fin 2) (Fin 2) ℝ := diagonal ![1, 2]
     let X : Matrix (Fin 2) (Fin 2) ℝ := !![0, 1; 1, 0]
@@ -141,13 +200,17 @@ theorem property_5_9_counterexample :
     rw [tendsto_const_nhds_iff]
     simp [A]
 
-/-! ### (5.37): the rate of convergence -/
+/-! ### Equation (5.37): the rate of convergence -/
 
-/-- **(5.37), the convergence rate.** Under the hypotheses of `property_5_9`, for `i = 2, …, n`
-the subdiagonal entry `t_{i,i-1}^{(k)}` satisfies `|t_{i,i-1}^{(k)}| = O(|λ_i/λ_{i-1}|^k)` as
-`k → ∞`: there is a constant `C` with `|t_{i,i-1}^{(k)}| ≤ C (|λ_i|/|λ_{i-1}|)^k` for every `k`.
-Backbone `Matrix.exists_abs_qrIterate_apply_le` with the rate parameter `r = |λ_i|`, the largest
-modulus among the eigenvalues after `λ_{i-1}`. -/
+/-- **Equation (5.37)** of [quarteroni2000numerical], the rate of convergence. Under the hypotheses
+of Property 5.9 (`QuarteroniSaccoSaleri.Chapter05.property_5_9`), for $i = 2, \dots, n$ the
+subdiagonal entry $t_{i,i-1}^{(k)}$ satisfies $|t_{i,i-1}^{(k)}| = O(|\lambda_i /
+\lambda_{i-1}|^k)$ as $k \to \infty$: there is a constant $C$ with
+$$|t_{i,i-1}^{(k)}| \le C \left( \frac{|\lambda_i|}{|\lambda_{i-1}|} \right)^k \quad \text{for
+  every } k.$$
+
+The proof specializes the backbone's `Matrix.exists_abs_qrIterate_apply_le` with the rate
+parameter $r = |\lambda_i|$, the largest modulus among the eigenvalues after $\lambda_{i-1}$. -/
 theorem equation_5_37 {A X : Matrix (Fin N) (Fin N) ℝ} (hX : IsUnit X) {lam : Fin N → ℝ}
     (hD : X⁻¹ * A * X = diagonal lam) (hne : ∀ i, lam i ≠ 0)
     (hsep : ∀ i j, i < j → |lam j| < |lam i|)
@@ -170,10 +233,14 @@ theorem equation_5_37 {A X : Matrix (Fin N) (Fin N) ℝ} (hX : IsUnit X) {lam : 
 
 /-! ### The symmetric case -/
 
-/-- **Property 5.9, the symmetric case.** If in addition `A` is symmetric, the sequence `T⁽ᵏ⁾`
-tends to a diagonal matrix: `t_{ij}^{(k)} → 0` for every `i ≠ j` and `t_{ii}^{(k)} → λ_i`, that is,
-`T⁽ᵏ⁾ → diag(λ_1, …, λ_n)` entrywise. Every iterate is symmetric, being an orthogonal conjugate of
-`A` (`Matrix.isHermitian_qrIterate`), so the entries above the diagonal are those below it. -/
+/-- **Property 5.9** of [quarteroni2000numerical], the symmetric case. Under the hypotheses of
+`QuarteroniSaccoSaleri.Chapter05.property_5_9`, let $A$ also be symmetric. Then the sequence
+$T^{(k)}$ tends to a diagonal matrix: $t_{ij}^{(k)} \to 0$ for every $i \neq j$ and
+$t_{ii}^{(k)} \to \lambda_i$, that is, $T^{(k)} \to \operatorname{diag}(\lambda_1, \dots,
+\lambda_n)$ entrywise.
+
+Every iterate is symmetric, because it is an orthogonal similarity transform of $A$
+(`Matrix.isHermitian_qrIterate`). So the entries above the diagonal are those below it. -/
 theorem property_5_9_symm {A X : Matrix (Fin N) (Fin N) ℝ} (hA : A.IsSymm) (hX : IsUnit X)
     {lam : Fin N → ℝ} (hD : X⁻¹ * A * X = diagonal lam) (hne : ∀ i, lam i ≠ 0)
     (hsep : ∀ i j, i < j → |lam j| < |lam i|)
@@ -194,10 +261,15 @@ theorem property_5_9_symm {A X : Matrix (Fin N) (Fin N) ℝ} (hA : A.IsSymm) (hX
 
 /-! ### Remark 5.2: the LR iteration -/
 
-/-- **Remark 5.2 (the LR iteration).** If `A = L R` with `L` unit lower triangular (hence
-nonsingular) and `R` upper triangular, then `L⁻¹ A L = L⁻¹ (L R) L = R L`: the matrix `R L` of
-the LR (Rutishauser) iteration is similar to `A` by the nonorthogonal transformation `L`, and in
-particular has the same characteristic polynomial. The identity uses nothing about `R`. -/
+/-- **Remark 5.2** of [quarteroni2000numerical] (the LR iteration). Let
+$A, L, R \in \mathbb{R}^{n \times n}$ with $L$ unit lower triangular, so that $L$ is
+nonsingular, and $A = LR$. Then
+$$L^{-1} A L = L^{-1} (L R) L = R L,$$
+so the matrix $RL$ of the LR (Rutishauser) iteration is similar to $A$ through the
+transformation $L$, which is not orthogonal. In particular, $RL$ and $A$ have the same
+characteristic polynomial.
+
+The identity uses nothing about $R$. -/
 theorem remark_5_2 {A L R : Matrix (Fin N) (Fin N) ℝ} (hL : L.IsUnitLowerTriangular)
     (hA : A = L * R) : L⁻¹ * A * L = R * L ∧ (R * L).charpoly = A.charpoly := by
   refine ⟨?_, by rw [hA, charpoly_mul_comm]⟩

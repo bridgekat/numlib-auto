@@ -7,46 +7,58 @@ import Numlib.LinearAlgebra.Matrix.Companion
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter05.Section08
 
 /-!
-# Quarteroni–Sacco–Saleri §5.13: exercises
+# Quarteroni, Sacco and Saleri, Section 5.13: Exercises
 
-Surface file for Alfio Quarteroni, Riccardo Sacco and Fausto Saleri, *Numerical Mathematics*
-[quarteroni2000numerical], §5.13, the four exercises the text uses: Exercise 8 (the companion
-matrix, cited in §5.4 for the impossibility of a direct eigenvalue method), Exercise 9 (unitary
-similarity moves eigenvectors, the justification of §5.8.1–5.8.2), Exercise 10 (the power method
-with `α₁ = 0`, cited in §5.3.3) and Exercise 14 (a matrix the QR iteration leaves fixed, cited in
-§5.7.2 and the counterexample to (5.35)). Over the backbone `Numlib/LinearAlgebra/Matrix/Companion`,
-`Numlib/LinearAlgebra/Matrix/Schur` and `Numlib/Eigen/PowerMethod`, and over §5.3's `powerIterate`,
-§5.4's `qrIterate` and §5.7's Rayleigh-shift iteration.
+This module formalizes the four exercises of Section 5.13 of [quarteroni2000numerical] that the text
+of Chapter 5 uses. Exercise 8 identifies the roots of a polynomial with the eigenvalues of its
+companion matrix (5.72); Section 5.4 cites it for the impossibility of a direct method for
+eigenvalues. Exercise 9 shows that a unitary similarity moves eigenvectors, which justifies Sections
+5.8.1–5.8.2. Exercise 10 is the power method with $\alpha_1 = 0$, cited in Section 5.3.3. Exercise
+14 gives a matrix that the QR iteration leaves fixed; Section 5.7.2 cites it, and it is the
+counterexample to (5.35). The proofs specialize `Numlib.LinearAlgebra.Matrix.Companion`,
+`Numlib.LinearAlgebra.Matrix.Schur` and `Numlib.Eigen.PowerMethod`, and use the power method
+`QuarteroniSaccoSaleri.Chapter05.powerIterate` of Section 5.3, the QR iteration
+`QuarteroniSaccoSaleri.Chapter05.qrIterate` of Section 5.4 and the Rayleigh-shift iteration
+`QuarteroniSaccoSaleri.Chapter05.equation_5_53` of Section 5.7.
+
+## Main definitions
+
+* Equation (5.72), `QuarteroniSaccoSaleri.Chapter05.equation_5_72`: the companion matrix of
+  $p_n(x) = a_0 + a_1 x + \dots + a_n x^n$.
+
+## Main results
+
+* Equation (5.72), `QuarteroniSaccoSaleri.Chapter05.equation_5_72_eq`: the companion matrix of the
+  book is the backbone's `Matrix.companion` of $p_n / a_n$.
+* Exercise 8, `QuarteroniSaccoSaleri.Chapter05.exercise_5_8`: the characteristic polynomial of the
+  companion matrix is $p_n / a_n$, and its eigenvalues are the roots of $p_n$.
+* Exercise 9, `QuarteroniSaccoSaleri.Chapter05.exercise_5_9`: if $Ax = \lambda x$ and $U$ is
+  unitary, then $(U^H A U)(U^H x) = \lambda U^H x$.
+* Exercise 10, `QuarteroniSaccoSaleri.Chapter05.exercise_5_10`, with
+  `QuarteroniSaccoSaleri.Chapter05.sum_repr_sdiff_mem_iSup_maxGenEigenspace`: if $\alpha_1 = 0$, the
+  power method converges to $(\lambda_2, x_2)$.
+* Exercise 14, `QuarteroniSaccoSaleri.Chapter05.exercise_5_14`: the QR iteration, with and without
+  the Rayleigh shift, leaves the cyclic permutation matrix fixed.
 
 ## Conventions
 
-The companion matrix (5.72) is written as the book writes it, `equation_5_72 p n`, from the
-coefficients `a_k = p.coeff k` of a real polynomial `p` of degree `≤ n` with `a_n ≠ 0`, and
-`equation_5_72_eq` identifies it with the backbone's `Matrix.companion` of the monic polynomial
-`p / a_n`. The power method and Rayleigh quotients of Exercise 10 are `powerIterate` and
-`rayleighQuotient` of §5.3, with a basis `x` of eigenvectors and the coordinates `α_i = x.repr q₀ i`
-as there. Exercises 1–7 and 11–13 are numerical or are not used by the text.
+* The companion matrix (5.72) is written as the book writes it, from the coefficients $a_k$
+  (`p.coeff k`) of a real polynomial $p$ of degree at most $n$ with $a_n \neq 0$.
+* The power method and the Rayleigh quotients of Exercise 10 are
+  `QuarteroniSaccoSaleri.Chapter05.powerIterate` and
+  `QuarteroniSaccoSaleri.Chapter05.rayleighQuotient` of Section 5.3, with a basis `x` of
+  eigenvectors and the coordinates $\alpha_i$ = `x.repr q₀ i`, as there.
 
-## Contents
+## Deviations from the source
 
-* `equation_5_72`, `equation_5_72_eq`, `exercise_5_8` — the companion matrix and the roots of a
-  polynomial as eigenvalues.
-* `exercise_5_9` — `(λ, Uᴴ x)` is an eigenpair of `Uᴴ A U`.
-* `sum_repr_sdiff_mem_iSup_maxGenEigenspace`, `exercise_5_10` — the power method converges to
-  the eigenpair dominant *among the components present in `q⁽⁰⁾`*.
-* `exercise_5_14` — the cyclic permutation matrix is fixed by the QR iteration, with and without
-  the Rayleigh shift, and its eigenvalues are the cube roots of unity.
+* **Exercise 10** (reading). The source assumes all the hypotheses of the power method except
+  $\alpha_1 \neq 0$; the theorem assumes that $\lambda_2$ dominates the other eigenvalues except
+  $\lambda_1$, and $\alpha_2 \neq 0$. See `QuarteroniSaccoSaleri.Chapter05.exercise_5_10`.
 
-## Readings
+## Not formalized
 
-Exercise 10 assumes "all the assumptions needed to apply the power method except `α₁ ≠ 0`" and
-concludes convergence to `(λ₂, x₂)`; for that `λ₂` must dominate the eigenvalues that do occur in
-`q⁽⁰⁾`, `|λ₂| > |λ_i|` for `i ≥ 3`, which is the hypothesis stated, together with `α₂ ≠ 0`.
-The backbone's power-method theorem asks the dominant eigenvalue to dominate *all* eigenvalues of
-`A`, which `λ₂` does not; the backbone's `Krylov.tendsto_smul_powerIterate_of_mem_iSup` is the
-form with the domination restricted to the generalized eigenspaces the starting vector meets.
-Exercise 14's claim about Program 37 (the double-shift variant) is a computation and is not a
-node.
+* **Exercises 1–7 and 11–13.** They are numerical, or the text does not use them.
+* **Exercise 14, the claim about Program 37.** It is a computation.
 -/
 
 open Filter Finset Matrix Polynomial Topology
@@ -57,25 +69,36 @@ variable {n : ℕ}
 
 /-! ### Exercise 8: the companion matrix -/
 
-/-- **(5.72), the Frobenius (companion) matrix** of `p_n(x) = a₀ + a₁ x + … + a_n xⁿ`, `a_n ≠ 0`:
-first row `(−a_{n−1}/a_n, −a_{n−2}/a_n, …, −a₀/a_n)`, ones on the subdiagonal, zeros elsewhere. -/
+/-- **Equation (5.72)** of [quarteroni2000numerical], the Frobenius (companion) matrix. Let
+$p_n(x) = a_0 + a_1 x + \dots + a_n x^n$ with $a_n \neq 0$. Its **companion matrix**
+$C \in \mathbb{R}^{n \times n}$ has the first row $$\Big(-\frac{a_{n-1}}{a_n},
+-\frac{a_{n-2}}{a_n}, \dots, -\frac{a_0}{a_n}\Big),$$ ones on the subdiagonal, and zeros
+elsewhere.
+
+The Lean definition takes any real polynomial `p` and any `n`, with $a_k$ = `p.coeff k`. If
+$a_n = 0$, the first row is zero, by the convention that division by zero gives zero. -/
 noncomputable def equation_5_72 (p : ℝ[X]) (n : ℕ) : Matrix (Fin n) (Fin n) ℝ :=
   of fun i j =>
     if (i : ℕ) = 0 then -(p.coeff (n - 1 - j) / p.coeff n) else if (i : ℕ) = j + 1 then 1 else 0
 
-/-- **The book's companion matrix is the backbone's**, `Matrix.companion` of the monic polynomial
-`p / a_n`. -/
+/-- For every real polynomial $p$ and every $n$, the companion matrix (5.72) of
+[quarteroni2000numerical] is the backbone's `Matrix.companion` of the polynomial $p / a_n$,
+which is monic when $p$ has degree $n$. -/
 theorem equation_5_72_eq (p : ℝ[X]) (n : ℕ) :
     equation_5_72 p n = companion (C (p.coeff n)⁻¹ * p) n := by
   ext i j
   simp [equation_5_72, companion_apply, coeff_C_mul, div_eq_inv_mul]
 
-/-- **Exercise 8.** Finding the zeros of a polynomial `p_n(x) = ∑_{k=0}^n a_k x^k` of degree `≤ n`
-with real coefficients and `a_n ≠ 0` is equivalent to determining the spectrum of its companion
-matrix `C` (5.72): the characteristic polynomial of `C` is `p_n / a_n`, so a complex number is an
-eigenvalue of `C` exactly when it is a root of `p_n`. Backbone `Matrix.charpoly_companion` and
-`Matrix.spectrum_companion`. The consequence the text draws in §5.4 — by Abel's theorem, no direct
-method computes the eigenvalues of a general matrix of order `n ≥ 5` — is not a node. -/
+/-- **Exercise 8** of [quarteroni2000numerical]. Let $p_n(x) = \sum_{k=0}^n a_k x^k$ be a real
+polynomial of degree at most $n$ with $a_n \neq 0$, and let $C$ be its companion matrix (5.72).
+Then the characteristic polynomial of $C$ is $p_n / a_n$, and a complex number $z$ is an
+eigenvalue of $C$ if and only if $p_n(z) = 0$. So finding the zeros of $p_n$ is equivalent to
+finding the spectrum of $C$.
+
+The real matrix $C$ acts on $\mathbb{C}^n$ through `Matrix.map` with `algebraMap ℝ ℂ`. The proof
+specializes `Matrix.charpoly_companion` and `Matrix.spectrum_companion`. The consequence that
+the text draws in Section 5.4, that by Abel's theorem no direct method computes the eigenvalues
+of a general matrix of order $n \ge 5$, is not formalized. -/
 theorem exercise_5_8 {p : ℝ[X]} (hdeg : p.natDegree ≤ n) (ha : p.coeff n ≠ 0) :
     (equation_5_72 p n).charpoly = C (p.coeff n)⁻¹ * p ∧
       ∀ z : ℂ, z ∈ spectrum ℂ ((equation_5_72 p n).map (algebraMap ℝ ℂ)) ↔ aeval z p = 0 := by
@@ -99,21 +122,30 @@ theorem exercise_5_8 {p : ℝ[X]} (hdeg : p.natDegree ≤ n) (ha : p.coeff n ≠
 
 /-! ### Exercise 9: unitary similarity -/
 
-/-- **Exercise 9.** If `A ∈ ℂ^{n×n}` admits the eigenvalue/eigenvector pair `(λ, x)`, `A x = λ x`,
-then for a unitary `U` the matrix `Uᴴ A U` admits the pair `(λ, Uᴴ x)`: a similarity
-transformation by a unitary matrix. Backbone `Matrix.mulVec_star_conj_eq_smul_of_mulVec_eq_smul`.
--/
+/-- **Exercise 9** of [quarteroni2000numerical]. Let $A \in \mathbb{C}^{n \times n}$,
+$\lambda \in \mathbb{C}$ and $x \in \mathbb{C}^n$ with $Ax = \lambda x$, and let
+$U \in \mathbb{C}^{n \times n}$ be unitary. Then the matrix $U^H A U$, which is similar to $A$
+by a unitary matrix, satisfies $$(U^H A U)(U^H x) = \lambda\, U^H x.$$
+
+The statement does not assume $x \neq 0$. The proof specializes
+`Matrix.mulVec_star_conj_eq_smul_of_mulVec_eq_smul`. -/
 theorem exercise_5_9 {A U : Matrix (Fin n) (Fin n) ℂ} (hU : U ∈ Matrix.unitaryGroup (Fin n) ℂ)
     {lam : ℂ} {x : Fin n → ℂ} (hx : A *ᵥ x = lam • x) :
     (Uᴴ * A * U) *ᵥ (Uᴴ *ᵥ x) = lam • (Uᴴ *ᵥ x) := by
   have h := mulVec_star_conj_eq_smul_of_mulVec_eq_smul hU hx
   rwa [star_eq_conjTranspose] at h
 
-/-! ### Exercise 10: the power method with `α₁ = 0` -/
+/-! ### Exercise 10: the power method with $\alpha_1 = 0$ -/
 
-/-- The components of `q₀ = ∑ α_i x_i` outside a set `s` of indices lie in the span of the
-generalized eigenspaces of the eigenvalues `λ_i`, `i ∉ s`: the `p`-general form of
-`sum_repr_erase_mem_iSup_maxGenEigenspace`. -/
+/-- Let $A \in \mathbb{C}^{n \times n}$ have a basis $x_1, \dots, x_n$ of eigenvectors with
+eigenvalues $\lambda_1, \dots, \lambda_n$, let $q^{(0)} = \sum_i \alpha_i x_i$, let $s$ be a set
+of indices, and let $P$ be a property of complex numbers that holds at $\lambda_i$ for every
+$i \notin s$. Then $\sum_{i \notin s} \alpha_i x_i$ lies in the sum of the generalized
+eigenspaces of $A$ for the eigenvalues $\mu$ with $P(\mu)$. This supports Exercise 10 of
+[quarteroni2000numerical].
+
+It generalizes `QuarteroniSaccoSaleri.Chapter05.sum_repr_erase_mem_iSup_maxGenEigenspace` of
+Section 5.3 from one removed index to a set $s$ of indices. -/
 theorem sum_repr_sdiff_mem_iSup_maxGenEigenspace {A : Matrix (Fin n) (Fin n) ℂ}
     (x : Module.Basis (Fin n) ℂ (EuclideanSpace ℂ (Fin n))) {lam : Fin n → ℂ}
     (hx : ∀ i, toEuclideanLin A (x i) = lam i • x i) (q₀ : EuclideanSpace ℂ (Fin n))
@@ -125,14 +157,25 @@ theorem sum_repr_sdiff_mem_iSup_maxGenEigenspace {A : Matrix (Fin n) (Fin n) ℂ
   exact Submodule.mem_iSup_of_mem (lam i) (Submodule.mem_iSup_of_mem (hs i hi')
     (Module.End.eigenspace_le_maxGenEigenspace (Module.End.mem_eigenspace_iff.mpr (hx i))))
 
-/-- **Exercise 10.** Suppose the assumptions of Theorem 5.6 hold except that `α₁ = 0` — with
-`A` diagonalizable, `x_i` a basis of eigenvectors with eigenvalues `λ_i` (indices `i₀` for `1`,
-`i₁` for `2`), `q⁽⁰⁾ = ∑ α_i x_i` a unit vector, `α₁ = 0`, `α₂ ≠ 0`, and `|λ₂| > |λ_i|` for
-`i ≥ 3`, `λ₂ ≠ 0`. Then the sequence (5.17) converges to the eigenvalue/eigenvector pair
-`(λ₂, x₂)`: `c_k • q⁽ᵏ⁾ → x₂/‖x₂‖₂` for the unimodular scalars
-`c_k = (|λ₂|/λ₂)^k |α₂|/α₂`, and `ν⁽ᵏ⁾ → λ₂`. The power method never needed `λ₂` to dominate the
-spectrum of `A`, only the components present in `q⁽⁰⁾`
-(`Krylov.tendsto_smul_powerIterate_of_mem_iSup`). -/
+/-- **Exercise 10** of [quarteroni2000numerical]. Let $A \in \mathbb{C}^{n \times n}$ have a basis
+$x_1, \dots, x_n$ of eigenvectors with eigenvalues $\lambda_1, \dots, \lambda_n$ (so $A$ is
+diagonalizable), and assume $\lambda_2 \neq 0$ and $|\lambda_i| < |\lambda_2|$ for every
+$i \neq 1, 2$. Let $q^{(0)} = \sum_i \alpha_i x_i$ be a unit vector with $\alpha_1 = 0$ and
+$\alpha_2 \neq 0$. Then the power method (5.17) converges to the eigenvalue and eigenvector pair
+$(\lambda_2, x_2)$: $$c_k\, q^{(k)} \to \frac{x_2}{\|x_2\|_2}, \qquad c_k =
+\Big(\frac{|\lambda_2|}{\lambda_2}\Big)^k \frac{|\alpha_2|}{\alpha_2},$$ where the scalars $c_k$
+have modulus one, and the Rayleigh quotients satisfy $\nu^{(k)} \to \lambda_2$.
+
+**Reading.** The source assumes "all the assumptions needed to apply the power method except
+$\alpha_1 \neq 0$" and concludes convergence to $(\lambda_2, x_2)$. For this, $\lambda_2$ must
+dominate the eigenvalues that occur in $q^{(0)}$, so the theorem assumes
+$|\lambda_2| > |\lambda_i|$ for $i \ge 3$ and $\alpha_2 \neq 0$. The hypotheses of Theorem 5.6
+would require the dominant eigenvalue to dominate all eigenvalues of $A$, which $\lambda_2$ does
+not.
+
+The indices $1$ and $2$ of the book are `i₀` and `i₁`, with `i₁ ≠ i₀`. The proof specializes
+`Krylov.tendsto_smul_powerIterate_of_mem_iSup`, the form of the power method in which the
+domination is needed only on the generalized eigenspaces that the starting vector meets. -/
 theorem exercise_5_10 {A : Matrix (Fin n) (Fin n) ℂ}
     (x : Module.Basis (Fin n) ℂ (EuclideanSpace ℂ (Fin n))) {lam : Fin n → ℂ}
     (hx : ∀ i, toEuclideanLin A (x i) = lam i • x i) {i₀ i₁ : Fin n} (hi : i₁ ≠ i₀)
@@ -198,15 +241,20 @@ theorem exercise_5_10 {A : Matrix (Fin n) (Fin n) ℂ}
   refine h.congr fun k => ?_
   rw [smul_smul, mul_comm]
 
-/-! ### Exercise 14: a matrix the QR iteration leaves fixed -/
+/-! ### Exercise 14: a matrix that the QR iteration leaves fixed -/
 
-/-- **Exercise 14.** For the cyclic permutation matrix `A = [0 0 1; 1 0 0; 0 1 0]` the QR
-iteration leaves `A` unchanged: `Q⁽ᵏ⁾ = A` and `R⁽ᵏ⁾ = I` at every step (the columns of `A` are
-already orthonormal), so `T⁽ᵏ⁾ = A` for all `k`, and the same holds for the QR iteration with the
-Rayleigh shift `μ = t_nn^{(k)} = 0` of (5.53). The eigenvalues of `A` are the solutions of
-`λ³ − 1 = 0`, `σ(A) = {1, −1/2 ± i√3/2}`, all of modulus one, so neither Property 5.9 nor the
-real Schur form is approached: the iterate `A` is not upper triangular. (Program 37, the
-double-shift variant, changes only signs; that computation is not a node.) -/
+/-- **Exercise 14** of [quarteroni2000numerical]. Let $$A = \begin{bmatrix} 0 & 0 & 1 \\ 1 & 0 & 0
+\\ 0 & 1 & 0 \end{bmatrix}$$ be the cyclic permutation matrix. The QR factorization of $A$ is
+$Q = A$, $R = I$, because the columns of $A$ are already orthonormal. Hence the QR iteration
+leaves $A$ unchanged, $T^{(k)} = A$ for all $k$, and so does the QR iteration (5.53) with the
+Rayleigh shift $\mu = t_{33}^{(k)} = 0$. The eigenvalues of $A$ are the solutions of
+$\lambda^3 = 1$, and all have modulus one. Finally, $A$ is not upper triangular, so the
+iteration does not approach the conclusion of Property 5.9 or a real Schur form.
+
+The factors are `Matrix.qrQ A` and `Matrix.qrR A`, and the iterations are
+`QuarteroniSaccoSaleri.Chapter05.qrIterate` and `QuarteroniSaccoSaleri.Chapter05.equation_5_53`.
+The spectrum is taken over $\mathbb{C}$ through `algebraMap ℝ ℂ`. The claim of the exercise
+about Program 37, the double-shift variant, which changes only signs, is not formalized. -/
 theorem exercise_5_14 :
     let A : Matrix (Fin 3) (Fin 3) ℝ := !![0, 0, 1; 1, 0, 0; 0, 1, 0]
     qrQ A = A ∧ qrR A = 1 ∧ (∀ k, qrIterate A k = A) ∧ (∀ k, equation_5_53 A k = A) ∧

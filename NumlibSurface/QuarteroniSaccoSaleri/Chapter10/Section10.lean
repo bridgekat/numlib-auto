@@ -6,80 +6,102 @@ import Numlib.FiniteDifference.Derivative
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter10.Section03
 
 /-!
-# Quarteroni–Sacco–Saleri §10.10: approximation of function derivatives
+# Quarteroni, Sacco and Saleri, Section 10.10: Approximation of function derivatives
 
-Surface file for Alfio Quarteroni, Riccardo Sacco and Fausto Saleri, *Numerical Mathematics*,
-Springer, 2000, §10.10.
-
-On the uniform grid `x_k = a + k h`, `h = (b - a)/n`, the approximations `u_i` of `f'(x_i)` are
-sought as solutions of the difference scheme (10.57), `h ∑_{k=-m}^m α_k u_{i-k} =
-∑_{k=-m'}^{m'} β_k f(x_{i-k})`. §10.10.1 collects the classical explicit choices — the forward,
-centred and backward differences (10.59), (10.61), (10.63) with their mean-value errors (10.60),
-(10.62), (10.64), and the second centred difference (10.65)–(10.66) for `f''`. §10.10.2 is the
-implicit ("compact") family (10.67), whose consistency error (10.68) has a Taylor expansion whose
-coefficients give the order conditions `2α + 1 = β + γ`, `6α = β + 4γ`, `10α = β + 16γ` and the
-unique sixth-order scheme (10.69). §10.10.3 is the pseudo-spectral derivative
-`𝒟_n f = (Π^{GL}_{n,w} f)'` at the Chebyshev–Gauss–Lobatto nodes of (10.21), with the
+This module formalizes Section 10.10 of [quarteroni2000numerical]. On the uniform grid
+$x_k = a + kh$ the approximations $u_i$ of $f'(x_i)$ are the solutions of the difference scheme
+(10.57),
+$$h \sum_{k=-m}^{m} \alpha_k u_{i-k} = \sum_{k=-m'}^{m'} \beta_k f(x_{i-k}).$$
+Section 10.10.1 treats the classical explicit choices: the forward, centred and backward differences
+(10.59), (10.61) and (10.63) with their mean-value errors (10.60), (10.62) and (10.64), and the
+second centred difference (10.65)–(10.66) for $f''$. Section 10.10.2 treats the implicit (compact)
+family (10.67). The Taylor expansion of its consistency error (10.68) gives the order conditions
+$2\alpha + 1 = \beta + \gamma$, $6\alpha = \beta + 4\gamma$ and $10\alpha = \beta + 16\gamma$, and
+the unique scheme (10.69) of order six. Section 10.10.3 treats the pseudo-spectral derivative
+$\mathcal{D}_n f = (\Pi^{GL}_{n,w} f)'$ at the Chebyshev–Gauss–Lobatto nodes of (10.21), with the
 differentiation matrix (10.72)–(10.73).
 
-All of it is `Numlib/FiniteDifference/Derivative`: `FiniteDifference.forwardDiff`,
-`backwardDiff`, `centredDiff`, `secondCentredDiff` with their mean-value errors,
-`FiniteDifference.compactError` with `compactError_expansion` and the three order conditions, and
-`Lagrange.derivMatrix` with `Lagrange.eval_derivative_interpolate_node` and
+The proofs specialize `Numlib.FiniteDifference.Derivative`: the difference quotients
+`FiniteDifference.forwardDiff`, `FiniteDifference.backwardDiff`, `FiniteDifference.centredDiff` and
+`FiniteDifference.secondCentredDiff` with their mean-value errors, the consistency error
+`FiniteDifference.compactError` with `FiniteDifference.compactError_expansion`, and the
+differentiation matrix `Lagrange.derivMatrix` with `Lagrange.eval_derivative_interpolate_node` and
 `Lagrange.chebyshevLobattoDerivMatrix_apply`.
 
 ## Main definitions
 
-* `equation_10_57` — the difference scheme (10.57) as a relation between `u : ℤ → ℝ` and the nodal
-  values of `f`, at one index `i`.
-* `pseudoSpectralDerivative` — `𝒟_n f`, the derivative of the interpolant at the nodes (10.21).
+* Equation (10.57), `QuarteroniSaccoSaleri.Chapter10.equation_10_57`: the difference scheme, as a
+  relation at one index $i$ between $u : \mathbb{Z} \to \mathbb{R}$ and the nodal values of $f$.
+* Section 10.10.3, `QuarteroniSaccoSaleri.Chapter10.pseudoSpectralDerivative`: the pseudo-spectral
+  derivative $\mathcal{D}_n f$, the derivative of the interpolant of $f$ at the nodes of (10.21).
 
 ## Main results
 
-* `equation_10_60`, `equation_10_62`, `equation_10_64` — the forward, centred and backward
-  differences: each is (10.57) for the coefficients the book lists, and each carries its
-  mean-value error.
-* `equation_10_66` — the second centred difference and its error.
-* `equation_10_68`, `equation_10_69` — the consistency error of the compact scheme, its expansion,
-  and the order conditions with the unique sixth-order scheme.
-* `degree_pseudoSpectralDerivative_lt` — `𝒟_n f ∈ ℙ_{n-1}`.
-* `equation_10_72` — `(𝒟_n f)(x̄_i) = ∑_j f(x̄_j) l̄_j'(x̄_i)`, i.e. `f' = D f`, and `f'' = D² f`.
-* `equation_10_73` — the explicit entries of `D`.
-
-## Not formalized here
-
-* **(10.71)**: `‖f' - 𝒟_n f‖_w ≤ C n^{1-m} ‖f‖_{m,w}` for every `m ≥ 2` with `‖f‖_{m,w}` finite,
-  where `𝒟_n f = (Π^{GL}_{n,w} f)'` is the pseudo-spectral derivative of §10.10.3 and `‖·‖_{m,w}`
-  is the norm (10.23). Quoted from [CHQZ88] without proof. It is the `H¹` form of (10.22) —
-  differentiation loses one power of `n` — and it belongs to the spectral-approximation cluster
-  whose three missing layers and whose inventory of what exists are written out in
-  `## Not formalized here` of §10.3
-  (`NumlibSurface/QuarteroniSaccoSaleri/Chapter10/Section03.lean`). Two things are specific to
-  it. The derivative of the *projection* error is estimated by the same Sturm–Liouville argument
-  one order lower (the Chebyshev coefficients of `(P_n f)'` are `∑_{k>n, k-j odd} 2k f̂_k`-type
-  sums, the Legendre ones `∑_{k>n, k-j odd} (2j+1) f̂_k` — the identity behind
-  `Polynomial.integral_derivative_legendre_mul_legendre`); the derivative of the *aliasing* error
-  `Π_n f - P_n f ∈ ℙ_n` is estimated by the inverse (Markov) inequality `‖p'‖_w ≤ C n² ‖p‖_w` on
-  `ℙ_n`, of which `Polynomial.integral_derivative_sq_le` is the Legendre case with the constant
-  `n(n+1)` while the Chebyshev-weighted one is absent (~300 lines). Only the
-  Marcinkiewicz–Zygmund-type bound `‖Π_n g‖_w ≤ C (‖g‖_w + n⁻¹ ‖g'‖_w)` makes the inverse
-  inequality cost exactly one power of `n` and gives the printed `n^{1-m}`; with the elementary
-  `n^{1/2-m}` aliasing bound of §10.3's third layer the derivative estimate comes out at
-  `n^{5/2-m}`, three halves of a power worse than printed. Estimate: gated on (10.22); ~400 lines
-  on top of it for the Legendre weight, plus the Chebyshev-weighted Markov inequality.
-
-The wave-number discussion of §10.10.2, the boundary closure of the compact scheme and Example
-10.4 are prose or numerical runs and get no node.
+* Equations (10.59)–(10.60), `QuarteroniSaccoSaleri.Chapter10.equation_10_60`: the forward
+  difference is an instance of (10.57), with error $-(h/2) f''(\xi_i)$.
+* Equations (10.61)–(10.62), `QuarteroniSaccoSaleri.Chapter10.equation_10_62`: the centred
+  difference is an instance of (10.57), with error $-(h^2/6) f'''(\xi_i)$.
+* Equations (10.63)–(10.64), `QuarteroniSaccoSaleri.Chapter10.equation_10_64`: the backward
+  difference is an instance of (10.57), with error $(h/2) f''(\xi_i)$.
+* Equations (10.65)–(10.66), `QuarteroniSaccoSaleri.Chapter10.equation_10_66`: the error of the
+  second centred difference.
+* Equations (10.67)–(10.68), `QuarteroniSaccoSaleri.Chapter10.equation_10_68`: the consistency error
+  of the compact scheme and its Taylor expansion up to $O(h^6)$.
+* Equation (10.69), `QuarteroniSaccoSaleri.Chapter10.equation_10_69`: the order conditions and the
+  unique compact scheme of order six.
+* Section 10.10.3, `QuarteroniSaccoSaleri.Chapter10.degree_pseudoSpectralDerivative_lt`:
+  $\mathcal{D}_n f \in \mathbb{P}_{n-1}$.
+* Equation (10.72), `QuarteroniSaccoSaleri.Chapter10.equation_10_72`: $(\mathcal{D}_n f)(\bar x_i) =
+  \sum_j f(\bar x_j) \bar l_j'(\bar x_i)$, that is $f' = Df$ at the nodes, and $D^2 f = D(Df)$.
+* Equation (10.73), `QuarteroniSaccoSaleri.Chapter10.equation_10_73`: the entries of $D$.
 
 ## Conventions
 
-As in §10.3 the Chebyshev–Gauss–Lobatto nodes are the book's `x̄_j = -cos(jπ/n)`
-(`chebyshevLobattoNode`), which are the negatives of Mathlib's `Polynomial.Chebyshev.node`; the
-differentiation matrix at the book's nodes is therefore the negative of the backbone's
-(`Lagrange.derivMatrix_neg`). Errata: the printed expansion of §10.10.2 carries a spurious factor
-`1/2` on both `h²` terms (the order conditions it derives are nevertheless right), the display
-(10.68) prints `- α f_{i+1}^{(1)}` where (10.67) has `+ α u_{i+1}`, and (10.73) prints
-`D_{nn} = (2n² + 1)/3` where the correct value is `(2n² + 1)/6` (`D` has zero trace).
+* As in Section 10.3, the Chebyshev–Gauss–Lobatto nodes are the book's $\bar x_j = -\cos(j\pi/n)$
+  (`QuarteroniSaccoSaleri.Chapter10.chebyshevLobattoNode`). They are the negatives of Mathlib's
+  `Polynomial.Chebyshev.node`, so the differentiation matrix at the book's nodes is the negative of
+  the backbone's matrix (`Lagrange.derivMatrix_neg`).
+* The grid is $x_k = a + kh$ with $k \in \mathbb{Z}$ and any step $h > 0$. The book sets
+  $h = (b - a)/n$.
+
+## Implementation notes
+
+* The estimate (10.71) needs two further tools. The derivative of the projection error is estimated
+  by the Sturm–Liouville argument of (10.22), one order lower. The Chebyshev coefficients of
+  $(P_n f)'$ are sums of the type $\sum_{k > n,\, k - j \text{ odd}} 2k \hat f_k$, and the Legendre
+  coefficients are $\sum_{k > n,\, k - j \text{ odd}} (2j + 1) \hat f_k$; the identity behind them
+  is `Polynomial.integral_derivative_legendre_mul_legendre`. The derivative of the aliasing error
+  $\Pi_n f - P_n f \in \mathbb{P}_n$ is estimated by the inverse (Markov) inequality
+  $\|p'\|_w \le C n^2 \|p\|_w$ on $\mathbb{P}_n$. Its Legendre case, with the constant $n(n+1)$, is
+  `Polynomial.integral_derivative_sq_le`; the case of the Chebyshev weight is not in the library.
+  Only a bound of Marcinkiewicz–Zygmund type $\|\Pi_n g\|_w \le C (\|g\|_w + n^{-1} \|g'\|_w)$ makes
+  the inverse inequality cost exactly one power of $n$ and gives the printed $n^{1-m}$. With the
+  elementary aliasing bound $n^{1/2-m}$ of Section 10.3, the derivative estimate is only
+  $n^{5/2-m}$.
+
+## Deviations from the source
+
+* **The expansion of the consistency error in Section 10.10.2** (typo). The printed expansion has a
+  spurious factor $1/2$ on both $h^2$ terms. The order conditions that the book derives from it are
+  correct. See `QuarteroniSaccoSaleri.Chapter10.equation_10_68`.
+* **Equation (10.68)** (typo). The display prints $-\alpha f_{i+1}^{(1)}$ where (10.67) has
+  $+\alpha u_{i+1}$. See `QuarteroniSaccoSaleri.Chapter10.equation_10_68`.
+* **Equations (10.65)–(10.66)** (generalization). The book assumes $f \in C^4([a, b])$. The library
+  assumes only that $f$ is of class $C^4$ on $[x_{i-1}, x_{i+1}]$. See
+  `QuarteroniSaccoSaleri.Chapter10.equation_10_66`.
+* **Equation (10.73)** (correction). The book prints $D_{nn} = (2n^2 + 1)/3$. The correct value is
+  $(2n^2 + 1)/6$, because $D$ has trace zero. See `QuarteroniSaccoSaleri.Chapter10.equation_10_73`.
+
+## Not formalized
+
+* **Equation (10.71)**, the estimate $\|f' - \mathcal{D}_n f\|_w \le C n^{1-m} \|f\|_{m,w}$ for
+  $m \ge 2$, with the norm (10.23). The book quotes it from Canuto, Hussaini, Quarteroni and Zang
+  (1988) without proof. It is the $H^1$ form of (10.22), and it depends on the spectral
+  approximation estimates that `NumlibSurface.QuarteroniSaccoSaleri.Chapter10.Section03` does not
+  formalize.
+* **The discussion of wave numbers in Section 10.10.2.** It is prose.
+* **The boundary closure of the compact scheme.** It is prose.
+* **Example 10.4.** It is a numerical experiment.
 -/
 
 open Asymptotics Filter Matrix Polynomial Set Topology
@@ -88,38 +110,44 @@ namespace QuarteroniSaccoSaleri.Chapter10
 
 variable {a h : ℝ} {f : ℝ → ℝ} {i : ℤ} {n : ℕ}
 
-/-! ### The general difference scheme (10.57) -/
+/-! ### Equation (10.57): the general difference scheme -/
 
-/-- **(10.57).** On the uniform grid `x_k = a + k h` the difference scheme with coefficients
-`α_{-m}, …, α_m` and `β_{-m'}, …, β_{m'}` relates the approximations `u_k` of `f'(x_k)` to the
-nodal values of `f` by
+/-- **Equation (10.57)** of [quarteroni2000numerical]. Let $m, m' \in \mathbb{N}$, let
+$\alpha, \beta : \mathbb{Z} \to \mathbb{R}$ be coefficients, let
+$f : \mathbb{R} \to \mathbb{R}$, $a, h \in \mathbb{R}$, and let $x_k = a + kh$. A sequence
+$u : \mathbb{Z} \to \mathbb{R}$ of approximations of $f'(x_k)$ **satisfies the difference
+scheme** at the index $i \in \mathbb{Z}$ if
+$$h \sum_{k=-m}^{m} \alpha_k u_{i-k} = \sum_{k=-m'}^{m'} \beta_k f(x_{i-k}).$$
 
-`h ∑_{k=-m}^{m} α_k u_{i-k} = ∑_{k=-m'}^{m'} β_k f(x_{i-k})`.
-
-The predicate is stated at one index `i`, where the whole stencil is available; determining the
-`u_i` requires solving a linear system as soon as `m ≠ 0`. -/
+The predicate is stated at one index $i$, where the whole stencil is available. If $m \neq 0$,
+the values $u_i$ are the solution of a linear system. -/
 def equation_10_57 (m m' : ℕ) (α β : ℤ → ℝ) (f : ℝ → ℝ) (a h : ℝ) (u : ℤ → ℝ) (i : ℤ) : Prop :=
   h * ∑ k ∈ Finset.Icc (-(m : ℤ)) (m : ℤ), α k * u (i - k)
     = ∑ k ∈ Finset.Icc (-(m' : ℤ)) (m' : ℤ), β k * f (a + ((i - k : ℤ) : ℝ) * h)
 
-/-- The one-point stencil `m = 0`. -/
+/-- A sum over the integers $k$ with $0 \le k \le 0$ is the term at $k = 0$. -/
 private theorem sum_icc_zero (g : ℤ → ℝ) :
     ∑ k ∈ Finset.Icc (-((0 : ℕ) : ℤ)) ((0 : ℕ) : ℤ), g k = g 0 := by
   rw [Nat.cast_zero, neg_zero, Finset.Icc_self, Finset.sum_singleton]
 
-/-- The three-point stencil `m' = 1`. -/
+/-- A sum over the integers $k$ with $-1 \le k \le 1$ is the sum of the terms at $k = -1, 0, 1$. -/
 private theorem sum_icc_one (g : ℤ → ℝ) :
     ∑ k ∈ Finset.Icc (-((1 : ℕ) : ℤ)) ((1 : ℕ) : ℤ), g k = g (-1) + g 0 + g 1 := by
   rw [Nat.cast_one, show Finset.Icc (-1 : ℤ) 1 = {-1, 0, 1} from by decide,
     Finset.sum_insert (by decide), Finset.sum_insert (by decide), Finset.sum_singleton, add_assoc]
 
-/-! ### §10.10.1 Classical finite difference methods -/
+/-! ### Section 10.10.1: classical finite difference methods -/
 
-/-- **(10.59)–(10.60), the forward difference.** The approximation
-`u_i^{FD} = (f(x_{i+1}) - f(x_i))/h` is (10.57) with `m = 0`, `α_0 = 1`, `m' = 1`, `β_{-1} = 1`,
-`β_0 = -1`, `β_1 = 0`, and for `f` of the required regularity
+/-- **Equations (10.59)–(10.60)** of [quarteroni2000numerical], the forward difference. Let $h > 0$,
+$a \in \mathbb{R}$, $i \in \mathbb{Z}$ and $x_k = a + kh$. Let $f : \mathbb{R} \to \mathbb{R}$
+be of class $C^2$ on $[x_i, x_{i+1}]$ and differentiable at $x_i$. The approximations
+$u^{FD}_k = (f(x_{k+1}) - f(x_k))/h$ satisfy the scheme (10.57) at $i$ with $m = 0$,
+$\alpha_0 = 1$, $m' = 1$, $\beta_{-1} = 1$, $\beta_0 = -1$ and $\beta_1 = 0$. Moreover there is
+$\xi_i \in (x_i, x_{i+1})$ with
+$$f'(x_i) - u^{FD}_i = -\frac{h}{2} f''(\xi_i).$$
 
-`f'(x_i) - u_i^{FD} = -(h/2) f''(ξ_i)` with `ξ_i ∈ (x_i, x_{i+1})`. -/
+The coefficients $\alpha_k$ and $\beta_k$ that the statement does not list are $0$. The quotient
+is `FiniteDifference.forwardDiff`. -/
 theorem equation_10_60 (hh : 0 < h) (hf : ContDiffOn ℝ 2 f (Icc (a + i * h) (a + i * h + h)))
     (hd : DifferentiableAt ℝ f (a + i * h)) :
     equation_10_57 0 1 (fun k => if k = 0 then 1 else 0)
@@ -136,13 +164,17 @@ theorem equation_10_60 (hh : 0 < h) (hf : ContDiffOn ℝ 2 f (Icc (a + i * h) (a
   field_simp
   ring
 
-/-- **(10.61)–(10.62), the centred difference.** The approximation
-`u_i^{CD} = (f(x_{i+1}) - f(x_{i-1}))/(2h)` is (10.57) with `m = 0`, `α_0 = 1`, `m' = 1`,
-`β_{-1} = 1/2`, `β_0 = 0`, `β_1 = -1/2`, and for `f` of class `C³` on `[x_{i-1}, x_{i+1}]`
+/-- **Equations (10.61)–(10.62)** of [quarteroni2000numerical], the centred difference. Let $h > 0$,
+$a \in \mathbb{R}$, $i \in \mathbb{Z}$ and $x_k = a + kh$. Let $f : \mathbb{R} \to \mathbb{R}$
+be of class $C^3$ on $[x_{i-1}, x_{i+1}]$. The approximations
+$u^{CD}_k = (f(x_{k+1}) - f(x_{k-1}))/(2h)$ satisfy the scheme (10.57) at $i$ with $m = 0$,
+$\alpha_0 = 1$, $m' = 1$, $\beta_{-1} = 1/2$, $\beta_0 = 0$ and $\beta_1 = -1/2$. Moreover there
+is $\xi_i \in (x_{i-1}, x_{i+1})$ with
+$$f'(x_i) - u^{CD}_i = -\frac{h^2}{6} f'''(\xi_i),$$
+so the centred difference is a second-order approximation of $f'(x_i)$.
 
-`f'(x_i) - u_i^{CD} = -(h²/6) f'''(ξ_i)` with `ξ_i ∈ (x_{i-1}, x_{i+1})`,
-
-a second-order approximation to `f'(x_i)`. -/
+The coefficients $\alpha_k$ and $\beta_k$ that the statement does not list are $0$. The quotient
+is `FiniteDifference.centredDiff`. -/
 theorem equation_10_62 (hh : 0 < h)
     (hf : ContDiffOn ℝ 3 f (Icc (a + i * h - h) (a + i * h + h))) :
     equation_10_57 0 1 (fun k => if k = 0 then 1 else 0)
@@ -160,11 +192,16 @@ theorem equation_10_62 (hh : 0 < h)
   field_simp
   ring
 
-/-- **(10.63)–(10.64), the backward difference.** The approximation
-`u_i^{BD} = (f(x_i) - f(x_{i-1}))/h` is (10.57) with `m = 0`, `α_0 = 1`, `m' = 1`, `β_{-1} = 0`,
-`β_0 = 1`, `β_1 = -1`, and
+/-- **Equations (10.63)–(10.64)** of [quarteroni2000numerical], the backward difference. Let
+$h > 0$, $a \in \mathbb{R}$, $i \in \mathbb{Z}$ and $x_k = a + kh$. Let
+$f : \mathbb{R} \to \mathbb{R}$ be of class $C^2$ on $[x_{i-1}, x_i]$ and differentiable at
+$x_i$. The approximations $u^{BD}_k = (f(x_k) - f(x_{k-1}))/h$ satisfy the scheme (10.57) at $i$
+with $m = 0$, $\alpha_0 = 1$, $m' = 1$, $\beta_{-1} = 0$, $\beta_0 = 1$ and $\beta_1 = -1$.
+Moreover there is $\xi_i \in (x_{i-1}, x_i)$ with
+$$f'(x_i) - u^{BD}_i = \frac{h}{2} f''(\xi_i).$$
 
-`f'(x_i) - u_i^{BD} = (h/2) f''(ξ_i)` with `ξ_i ∈ (x_{i-1}, x_i)`. -/
+The coefficients $\alpha_k$ and $\beta_k$ that the statement does not list are $0$. The quotient
+is `FiniteDifference.backwardDiff`. -/
 theorem equation_10_64 (hh : 0 < h) (hf : ContDiffOn ℝ 2 f (Icc (a + i * h - h) (a + i * h)))
     (hd : DifferentiableAt ℝ f (a + i * h)) :
     equation_10_57 0 1 (fun k => if k = 0 then 1 else 0)
@@ -181,12 +218,19 @@ theorem equation_10_64 (hh : 0 < h) (hf : ContDiffOn ℝ 2 f (Icc (a + i * h - h
   field_simp
   ring
 
-/-- **(10.65)–(10.66), the second centred difference.** For `f ∈ C⁴([a, b])` the approximation
-`u_i'' = (f(x_{i+1}) - 2 f(x_i) + f(x_{i-1}))/h²` of `f''(x_i)` has the error
+/-- **Equations (10.65)–(10.66)** of [quarteroni2000numerical], the second centred difference. Let
+$h > 0$, $a \in \mathbb{R}$, $i \in \mathbb{Z}$ and $x_k = a + kh$. Let
+$f : \mathbb{R} \to \mathbb{R}$ be of class $C^4$ on $[x_{i-1}, x_{i+1}]$. Then the
+approximation $u''_i = (f(x_{i+1}) - 2f(x_i) + f(x_{i-1}))/h^2$ of $f''(x_i)$ satisfies, for
+some $\theta_i, \omega_i \in (0, 1)$,
+$$f''(x_i) - u''_i = -\frac{h^2}{24} \bigl(f^{(4)}(x_i + \theta_i h) + f^{(4)}(x_i - \omega_i
+  h)\bigr),$$
+so it is a second-order approximation of $f''(x_i)$.
 
-`f''(x_i) - u_i'' = -(h²/24)(f⁗(x_i + θ_i h) + f⁗(x_i - ω_i h))`, `0 < θ_i, ω_i < 1`,
+**Generalization.** The book assumes $f \in C^4([a, b])$. Here $f$ needs to be of class $C^4$
+only on $[x_{i-1}, x_{i+1}]$.
 
-a second-order approximation to `f''(x_i)`. -/
+The quotient is `FiniteDifference.secondCentredDiff`. -/
 theorem equation_10_66 (hh : 0 < h)
     (hf : ContDiffOn ℝ 4 f (Icc (a + i * h - h) (a + i * h + h))) :
     ∃ θ ∈ Ioo (0 : ℝ) 1, ∃ ω ∈ Ioo (0 : ℝ) 1,
@@ -195,25 +239,28 @@ theorem equation_10_66 (hh : 0 < h)
           + iteratedDeriv 4 f (a + i * h - ω * h)) :=
   FiniteDifference.iteratedDeriv_two_sub_secondCentredDiff_eq hh hf
 
-/-! ### §10.10.2 Compact finite differences -/
+/-! ### Section 10.10.2: compact finite differences -/
 
-/-- **(10.67)–(10.68) and the expansion of the consistency error.** The compact scheme
+/-- **Equations (10.67)–(10.68)** of [quarteroni2000numerical], with the expansion of the
+consistency error. Let $\alpha, \beta, \gamma, x \in \mathbb{R}$, and write
+$f_{i+k} = f(x + kh)$ and $f^{(1)}_{i+k} = f'(x + kh)$. The compact scheme
+$$\alpha u_{i-1} + u_i + \alpha u_{i+1} = \frac{\beta}{2h} (f_{i+1} - f_{i-1}) +
+  \frac{\gamma}{4h} (f_{i+2} - f_{i-2})$$
+has the consistency error, obtained when $f'$ is put in place of $u$,
+$$\sigma_i(h) = \alpha f^{(1)}_{i-1} + f^{(1)}_i + \alpha f^{(1)}_{i+1} - \Bigl(\frac{\beta}{2h}
+  (f_{i+1} - f_{i-1}) + \frac{\gamma}{4h} (f_{i+2} - f_{i-2})\Bigr)$$
+for every $h$. If $f$ is of class $C^7$ at $x$, then as $h \to 0$ with $h \neq 0$
+$$\sigma_i(h) = (2\alpha + 1 - \beta - \gamma) f^{(1)}_i + h^2 \Bigl(\alpha - \frac{\beta}{6} -
+  \frac{2\gamma}{3}\Bigr) f^{(3)}_i + h^4 \Bigl(\frac{\alpha}{12} - \frac{\beta}{120} -
+  \frac{2\gamma}{15}\Bigr) f^{(5)}_i + O(h^6).$$
 
-`α u_{i-1} + u_i + α u_{i+1} = (β/2h)(f_{i+1} - f_{i-1}) + (γ/4h)(f_{i+2} - f_{i-2})`
+**Typo.** The display (10.68) prints $-\alpha f^{(1)}_{i+1}$ for the term $+\alpha u_{i+1}$ of
+(10.67). The two $h^2$ terms of the printed expansion carry a spurious factor $1/2$. The order
+conditions that the book derives from the expansion are correct.
 
-has, by "forcing" `f` to satisfy it, the consistency error
-
-`σ_i(h) = α f_{i-1}^{(1)} + f_i^{(1)} + α f_{i+1}^{(1)}
-  - ((β/2h)(f_{i+1} - f_{i-1}) + (γ/4h)(f_{i+2} - f_{i-2}))`,
-
-and for `f` of class `C⁷` at `x_i` its Taylor expansion around `x_i` is
-
-`σ_i(h) = (2α + 1 - β - γ) f_i^{(1)} + h²(α - β/6 - 2γ/3) f_i^{(3)}
-  + h⁴(α/12 - β/120 - 2γ/15) f_i^{(5)} + O(h⁶)`.
-
-Errata: the display (10.68) prints `- α f_{i+1}^{(1)}` for the `+ α u_{i+1}` of (10.67), and the
-two `h²` terms of the printed expansion carry a spurious factor `1/2`; the order conditions the
-book draws from it are nevertheless correct. -/
+The consistency error is `FiniteDifference.compactError`. At $h = 0$ the quotients use the Lean
+convention $0^{-1} = 0$. The expansion is `FiniteDifference.compactError_expansion`, stated with
+`Asymptotics.IsBigO` along the punctured neighbourhood of $0$. -/
 theorem equation_10_68 {α β γ x : ℝ} (hf : ContDiffAt ℝ 7 f x) :
     (∀ h : ℝ, FiniteDifference.compactError α β γ f x h
         = α * deriv f (x - h) + deriv f x + α * deriv f (x + h)
@@ -226,13 +273,25 @@ theorem equation_10_68 {α β γ x : ℝ} (hf : ContDiffAt ℝ 7 f x) :
         =O[𝓝[≠] 0] fun h => h ^ 6 :=
   ⟨fun _ => rfl, FiniteDifference.compactError_expansion hf⟩
 
-/-- **(10.69) and the order conditions of §10.10.2.** Equating to zero the coefficients of
-`f_i^{(1)}`, `f_i^{(3)}` and `f_i^{(5)}` in the expansion of the consistency error gives the
-conditions `2α + 1 = β + γ` (order 2), `6α = β + 4γ` (order 4) and `10α = β + 16γ` (order 6). The
-three equations have a nonsingular matrix, so there is a unique scheme of order 6, namely
-`α = 1/3`, `β = 14/9`, `γ = 1/9`; there are infinitely many of order 2 and 4, a popular
-fourth-order one being `α = 1/4`, `β = 3/2`, `γ = 0`, and the traditional finite differences are
-the case `α = 0`, of which `α = γ = 0`, `β = 1` is the centred difference (10.61). -/
+/-- **Equation (10.69)** of [quarteroni2000numerical], with the order conditions of Section 10.10.2.
+Let $\alpha, \beta, \gamma, x \in \mathbb{R}$, and let $f : \mathbb{R} \to \mathbb{R}$ be of
+class $C^7$ at $x$. Setting the coefficients of $f^{(1)}_i$, $f^{(3)}_i$ and $f^{(5)}_i$ in the
+expansion of the consistency error to zero gives the conditions $2\alpha + 1 = \beta + \gamma$
+(order 2), $6\alpha = \beta + 4\gamma$ (order 4) and $10\alpha = \beta + 16\gamma$ (order 6). If
+all three conditions hold, then:
+* the consistency error is $\sigma_i(h) = O(h^6)$ as $h \to 0$, $h \neq 0$;
+* $\alpha = 1/3$, $\beta = 14/9$ and $\gamma = 1/9$, so the scheme of order six is unique;
+* the fourth-order scheme $\alpha = 1/4$, $\beta = 3/2$, $\gamma = 0$ has
+  $\sigma_i(h) = O(h^4)$;
+* the scheme $\alpha = \gamma = 0$, $\beta = 1$ has $\sigma_i(h) = f'(x) - (f(x + h) - f(x -
+  h))/(2h)$ for every $h$, which is the error of the centred difference (10.61).
+
+The last two conclusions do not use the three conditions, but the Lean statement has them as
+hypotheses of the whole theorem.
+
+The book also remarks that there are infinitely many schemes of order 2 and of order 4, and that
+the traditional finite differences are the case $\alpha = 0$. These remarks are not stated here
+beyond the two schemes above. -/
 theorem equation_10_69 {α β γ x : ℝ} (h₁ : 2 * α + 1 = β + γ) (h₂ : 6 * α = β + 4 * γ)
     (h₃ : 10 * α = β + 16 * γ) (hf : ContDiffAt ℝ 7 f x) :
     ((fun h => FiniteDifference.compactError α β γ f x h) =O[𝓝[≠] 0] fun h => h ^ 6) ∧
@@ -246,16 +305,24 @@ theorem equation_10_69 {α β γ x : ℝ} (h₁ : 2 * α + 1 = β + γ) (h₂ : 
     FiniteDifference.compactError_isBigO_pow_four (by norm_num) (by norm_num) hf,
     fun h => FiniteDifference.compactError_zero_one_zero h⟩
 
-/-! ### §10.10.3 The pseudo-spectral derivative -/
+/-! ### Section 10.10.3: the pseudo-spectral derivative -/
 
-/-- **The pseudo-spectral derivative** `𝒟_n f = (Π^{GL}_{n,w} f)'` of §10.10.3: the exact
-derivative of the polynomial interpolating `f ∈ C⁰([-1, 1])` at the `n + 1`
-Chebyshev–Gauss–Lobatto nodes (10.21). -/
+/-- **Section 10.10.3** of [quarteroni2000numerical], the pseudo-spectral derivative. For
+$n \in \mathbb{N}$ and $f : \mathbb{R} \to \mathbb{R}$, the **pseudo-spectral derivative**
+$\mathcal{D}_n f = (\Pi^{GL}_{n,w} f)'$ is the derivative of the polynomial that interpolates
+$f$ at the $n + 1$ Chebyshev–Gauss–Lobatto nodes $\bar x_j = -\cos(j\pi/n)$, $j = 0, \dots, n$,
+of (10.21).
+
+The book takes $f \in C^0([-1, 1])$. The definition uses only the values of $f$ at the nodes.
+The interpolant is `Lagrange.interpolate` at the nodes
+`QuarteroniSaccoSaleri.Chapter10.chebyshevLobattoNode n j`. -/
 noncomputable def pseudoSpectralDerivative (n : ℕ) (f : ℝ → ℝ) : ℝ[X] :=
   derivative (Lagrange.interpolate Finset.univ (fun j : Fin (n + 1) => chebyshevLobattoNode n j)
     fun j => f (chebyshevLobattoNode n j))
 
-/-- `𝒟_n f ∈ ℙ_{n-1}(I)`: the pseudo-spectral derivative has degree less than `n`. -/
+/-- **Section 10.10.3** of [quarteroni2000numerical], the degree of the pseudo-spectral derivative.
+For $n \ge 1$ and $f : \mathbb{R} \to \mathbb{R}$, the polynomial $\mathcal{D}_n f$ has degree
+less than $n$, that is $\mathcal{D}_n f \in \mathbb{P}_{n-1}$. -/
 theorem degree_pseudoSpectralDerivative_lt (hn : n ≠ 0) (f : ℝ → ℝ) :
     (pseudoSpectralDerivative n f).degree < (n : ℕ) := by
   have hdq : (Lagrange.interpolate Finset.univ (fun j : Fin (n + 1) => chebyshevLobattoNode n j)
@@ -279,12 +346,16 @@ theorem degree_pseudoSpectralDerivative_lt (hn : n ≠ 0) (f : ℝ → ℝ) :
     rw [degree_eq_natDegree h0]
     exact_mod_cast Nat.lt_succ_iff.mp h1
 
-/-- **(10.72), the pseudo-spectral differentiation matrix.** The nodal values of `𝒟_n f` are
+/-- **Equation (10.72)** of [quarteroni2000numerical], the pseudo-spectral differentiation matrix.
+Let $n \in \mathbb{N}$, $f : \mathbb{R} \to \mathbb{R}$, and let $\bar l_0, \dots, \bar l_n$ be
+the Lagrange basis polynomials at the nodes $\bar x_0, \dots, \bar x_n$. For $i = 0, \dots, n$
+the value of $\mathcal{D}_n f$ at a node is
+$$(\mathcal{D}_n f)(\bar x_i) = \sum_{j=0}^{n} f(\bar x_j) \bar l_j'(\bar x_i).$$
+With the matrix $D_{ij} = \bar l_j'(\bar x_i)$ this is $f' = Df$, where $f$ and $f'$ are the
+vectors of the nodal values of $f$ and of $\mathcal{D}_n f$. The second-order pseudo-spectral
+derivative is $D^2 f = D(Df)$ for every vector $f$.
 
-`(𝒟_n f)(x̄_i) = ∑_{j=0}^n f(x̄_j) l̄_j'(x̄_i)`, `i = 0, …, n`,
-
-so that, with `D_{ij} = l̄_j'(x̄_i)` (`Lagrange.derivMatrix`), `f' = D f`; the second-order
-pseudo-spectral derivative is `D² f = D (D f)`. -/
+The matrix $D$ is `Lagrange.derivMatrix` at the nodes. -/
 theorem equation_10_72 (n : ℕ) (f : ℝ → ℝ) (i : Fin (n + 1)) :
     (pseudoSpectralDerivative n f).eval (chebyshevLobattoNode n i)
         = ∑ j : Fin (n + 1), f (chebyshevLobattoNode n j)
@@ -311,16 +382,20 @@ theorem equation_10_72 (n : ℕ) (f : ℝ → ℝ) (i : Fin (n + 1)) :
     exact Finset.sum_congr rfl fun j _ => by rw [Lagrange.derivMatrix_apply, mul_comm]
   · rw [sq, Matrix.mulVec_mulVec]
 
-/-- **(10.73), the entries of `D`.** At the Chebyshev–Gauss–Lobatto nodes `x̄_j = -cos(jπ/n)`,
-`n ≥ 1`, with the factors `d_0 = d_n = 2`, `d_j = 1` otherwise of §10.3,
+/-- **Equation (10.73)** of [quarteroni2000numerical], the entries of $D$. Let $n \ge 1$, let
+$\bar x_j = -\cos(j\pi/n)$ be the Chebyshev–Gauss–Lobatto nodes, and let $d_0 = d_n = 2$ and
+$d_j = 1$ for $0 < j < n$ be the factors of Section 10.3. Then for $0 \le l, j \le n$
+$$D_{lj} = \begin{cases} \dfrac{d_l}{d_j} \dfrac{(-1)^{l+j}}{\bar x_l - \bar x_j} & l \neq j,
+  \\[1ex] -\dfrac{\bar x_j}{2(1 - \bar x_j^2)} & 1 \le l = j \le n - 1, \\[1ex] -\dfrac{2n^2 +
+  1}{6} & l = j = 0, \\[1ex] \dfrac{2n^2 + 1}{6} & l = j = n. \end{cases}$$
 
-`D_{lj} = (d_l/d_j) (-1)^{l+j}/(x̄_l - x̄_j)` for `l ≠ j`,
-`D_{jj} = -x̄_j/(2(1 - x̄_j²))` for `1 ≤ j ≤ n - 1`,
-`D_{00} = -(2n² + 1)/6` and `D_{nn} = (2n² + 1)/6`.
+**Correction.** The book prints $D_{nn} = (2n^2 + 1)/3$. The value is $(2n^2 + 1)/6$, because
+$D$ has trace zero: the interior diagonal is odd under $j \mapsto n - j$, and the only
+eigenvalue of $D$ is $0$ (Example 5.13 of the book). The value here is the entry of Canuto,
+Hussaini, Quarteroni and Zang (1988), p. 69, with the order of the nodes reversed.
 
-Erratum: the book prints `D_{nn} = (2n² + 1)/3`; since `D` has zero trace (its interior diagonal
-is odd under `j ↦ n - j` and its only eigenvalue is `0`, Example 5.13) the value is
-`(2n² + 1)/6`, the entry of [CHQZ88] p. 69 with the node order reversed. -/
+The factor $d_j$ is `Polynomial.Chebyshev.lobattoFactor n j`. The proof specializes
+`Lagrange.chebyshevLobattoDerivMatrix_apply`. -/
 theorem equation_10_73 (hn : n ≠ 0) (l j : Fin (n + 1)) :
     Lagrange.derivMatrix (fun j : Fin (n + 1) => chebyshevLobattoNode n j) l j
       = if l = j then

@@ -9,118 +9,118 @@ import Numlib.Approximation.NewtonForm
 import Numlib.Approximation.RungePhenomenon
 
 /-!
-# Quarteroni–Sacco–Saleri §8.1: polynomial interpolation
+# Quarteroni, Sacco and Saleri, Section 8.1: Polynomial interpolation
 
-Surface file for Alfio Quarteroni, Riccardo Sacco and Fausto Saleri, *Numerical Mathematics*
-[quarteroni2000numerical], §8.1: Lagrange interpolation — existence and uniqueness (Theorem 8.1),
-the Lagrange form and the nodal polynomial ((8.3)–(8.6)), the error formula (Theorem 8.2), the
-interpolation matrix, the Lebesgue constant and the comparison with the best approximation
-(Property 8.1), the growth of Lebesgue constants, Runge's counterexample (Example 8.1), and the
-stability estimate of §8.1.3 together with a lower bound on the equispaced Lebesgue constants;
-with the cited Exercises 1–3.
+This module formalizes Section 8.1 of [quarteroni2000numerical], Lagrange interpolation. For $n + 1$
+distinct nodes $x_0, \ldots, x_n$ and values $y_0, \ldots, y_n$ there is exactly one polynomial
+$\Pi_n \in \mathbb{P}_n$ with $\Pi_n(x_i) = y_i$ (Theorem 8.1). It has the Lagrange form
+$\Pi_n(x) = \sum_i y_i l_i(x)$ with the characteristic polynomials $l_i(x) = \prod_{j \neq i} (x -
+x_j)/(x_i - x_j)$, and for $f \in C^{n+1}$ the error is
+$$f(x) - \Pi_n f(x) = \frac{f^{(n+1)}(\xi)}{(n+1)!} \, \omega_{n+1}(x), \qquad \omega_{n+1}(x) =
+  \prod_{i=0}^n (x - x_i)$$
+(Theorem 8.2). For an interpolation matrix $X$ on $[a, b]$, the Lebesgue constant $\Lambda_n(X)$ of
+(8.11) is the norm of the interpolation operator $\Pi_n$ on $C([a, b])$. It bounds the interpolation
+error by the best approximation error (Property 8.1) and measures the stability of interpolation
+(Section 8.1.3). The module also states Runge's counterexample (Example 8.1), a lower bound for the
+Lebesgue constants of equispaced nodes, and Exercises 1–3 of Chapter 8, which the section cites.
 
-Everything is Mathlib's `Lagrange.interpolate`, `Lagrange.basis` and `Lagrange.nodal`, the backbone
-`Numlib/Approximation/Interpolation` (the error formula
+The proofs use Mathlib's `Lagrange.interpolate`, `Lagrange.basis` and `Lagrange.nodal`, and the
+backbone modules `Numlib.Approximation.Interpolation` (the error formula
 `Lagrange.exists_sub_interpolate_eq_of_contDiffOn`, the interpolation operator
-`Lagrange.interpolateCLM` with its norm `Lagrange.norm_interpolateCLM`) and the Lebesgue lemma
-`norm_sub_apply_le_of_isIdempotentElem` of `Numlib/Analysis/Normed/Module/BestApprox`; Runge's
-counterexample is `Numlib/Approximation/RungePhenomenon`.
+`Lagrange.interpolateCLM` and its norm `Lagrange.norm_interpolateCLM`),
+`Numlib.Analysis.Normed.Module.BestApprox` (the Lebesgue lemma
+`norm_sub_apply_le_of_isIdempotentElem`) and `Numlib.Approximation.RungePhenomenon` (Runge's
+counterexample).
 
 ## Main definitions
 
-* `IsInterpMatrix X` — an interpolation matrix on `[a, b]` (§8.1.2): a doubly indexed family of
-  points of `[a, b]` whose `(n + 1)`-st row `X n 0, …, X n n` consists of distinct points.
-* `interpRow X n` — the interpolation operator `Π_n` at the nodes of the `(n + 1)`-st row.
-* `lebesgueConstant X n` — the Lebesgue constant `Λ_n(X)` of (8.11), the maximum over `[a, b]` of
-  the Lebesgue function `∑_j |l_j^{(n)}|`, stated as in §10.8.
-* `equispacedMatrix hab` — the equispaced interpolation matrix `x_j^{(n)} = a + j (b - a)/n` of
-  §8.1.3, with `coe_equispacedMatrix` and `isInterpMatrix_equispacedMatrix`.
+* Section 8.1.2, `QuarteroniSaccoSaleri.Chapter08.IsInterpMatrix`: an interpolation matrix on
+  $[a, b]$, a triangular array of points of $[a, b]$ with distinct points in each row.
+* Section 8.1.2, `QuarteroniSaccoSaleri.Chapter08.interpRow`: the interpolation operator $\Pi_n$ at
+  the nodes of row $n$.
+* (8.11), `QuarteroniSaccoSaleri.Chapter08.lebesgueConstant`: the Lebesgue constant $\Lambda_n(X)$.
+* Example 8.1, `QuarteroniSaccoSaleri.Chapter08.example_8_1_nodes`: the equispaced nodes on
+  $[-5, 5]$.
+* Section 8.1.3, `QuarteroniSaccoSaleri.Chapter08.equispacedMatrix`: the equispaced interpolation
+  matrix on $[a, b]$.
 
 ## Main results
 
-* `theorem_8_1`, `theorem_8_1_isUnisolvent` — existence and uniqueness of the interpolant, and its
-  abstract form as a unisolvent interpolation problem over `𝒫_n`.
-* `equation_8_3`, `equation_8_4`, `equation_8_5`, `equation_8_6`, with `exercise_8_1`,
-  `exercise_8_2`, `exercise_8_2_det`, `exercise_8_3` — the characteristic polynomials, the Lagrange
-  form, the barycentric-type form and the nodal polynomial.
-* `theorem_8_2` — the interpolation error `f(x) - Π_n f(x) = f^{(n+1)}(ξ) ω_{n+1}(x)/(n+1)!`.
-* `lebesgueConstant_eq_norm`, `property_8_1`, `property_8_1_bestApprox` — the Lebesgue constant is
-  the operator norm of `Π_n`, and `E_{n,∞}(X) ≤ E_n^*(1 + Λ_n(X))`.
-* `interpRow_sub_le_lebesgueConstant` — the stability estimate of §8.1.3.
-* `lebesgueConstant_equispaced_lower` — §8.1.3, the Schönhage lower bound
-  `Λ_n ≥ 2^n/(8 n²) = 2^{n-3}/n²` for the equispaced nodes: the one-sided half of the asymptotics
-  `Λ_n ≃ 2^{n+1}/(e n log n)` that the book quotes from Turetskii without proof.
-
-* `example_8_1`, `example_8_1_one_le` — Runge's counterexample: at `x = 4.9` the equispaced
-  interpolants of `1/(1 + x²)` on `[-5, 5]` do not converge, the error being `≥ 1` for every odd
-  `n ≥ 401` (`Numlib/Approximation/RungePhenomenon`).
-
-## Not formalized here
-
-Three results of §8.1.2–8.1.3, all quoted by the book without proof. They form one cluster: the
-first blocks the second, and the third is a sharpening of a fact about one particular scheme —
-the one-sided half of which is proved here, as `lebesgueConstant_equispaced_lower`.
-
-* **§8.1.2, Erdős's lower bound on Lebesgue constants.** For every interpolation matrix `X` on
-  `[a, b]` there is a constant `C > 0` with `Λ_n(X) > (2/π) log(n + 1) − C` for all `n`; in
-  particular no choice of nodes keeps the Lebesgue constants bounded, and the Chebyshev nodes,
-  whose `Λ_n` grows like `(2/π) log n`, are optimal up to an additive constant. This is Erdős,
-  *Problems and results on the theory of interpolation II*, Acta Math. Acad. Sci. Hungar. 12
-  (1961) — several pages of hard analysis on the Lebesgue function. It is the blocker of the
-  whole cluster.
-
-  Nothing in the library helps. Every bound on a Lagrange interpolation operator in `Numlib/` is
-  an **upper** one — `Lagrange.norm_interpolateCLM`, `Lagrange.norm_interpolateCLM_chebyshev_le`
-  and the logarithmic estimate `SineSum.sum_term_le` of
-  `Numlib/Analysis/SpecialFunctions/SineSum` that the Chebyshev bound runs on — and every step of
-  those proofs is an upper estimate, so none of them can be turned around. The one lower bound in
-  the corpus, `Runge.one_le_abs_sub_interpolate` of `Numlib/Approximation/RungePhenomenon`, is a
-  bound on one *error* at one point for one node scheme, not on a Lebesgue constant. The
-  backbone's `PeriodicCont.log_le_lebesgueConstant` is the *trigonometric* Lebesgue constant,
-  whose proof is an explicit Dirichlet-kernel integral with no algebraic analogue. Estimate: a
-  week, for Erdős's argument itself or for Bernstein's weaker `Λ_n ≥ c log n`.
-
-* **§8.1.2, Faber's theorem.** For every interpolation matrix `X` on `[a, b]` (`a < b`) there is
-  an `f ∈ C([a, b])` whose interpolants `Π_n f` do not converge uniformly to `f`: no node scheme
-  works for every continuous function. The dependency structure here is worth stating exactly.
-  Faber's theorem is **five lines** from what is already proved — `lebesgueConstant_eq_norm`
-  above identifies `Λ_n(X)` with `‖Π_n‖`, and
-  `ContinuousLinearMap.exists_not_tendsto_of_not_bddAbove` of
-  `Numlib/Analysis/Normed/Operator/BanachSteinhaus`, applied to `Π_n` with `L` the identity of
-  `C(Icc a b, ℝ)`, turns an unbounded family of operator norms into a function on which the
-  family diverges. So Faber is blocked on
-  `¬ BddAbove (Set.range (Λ_· (X)))` and on nothing else, that is, on Erdős's bound (or
-  Bernstein's weaker one) alone. It is *not* blocked on any missing machinery.
-
-  Note also what does **not** give it: Runge's counterexample, proved above as `example_8_1`, is
-  one node scheme (equispaced on `[−5, 5]`) and one explicit function (`1/(1 + x²)`). Faber's
-  statement quantifies over all interpolation matrices, so the Runge example is not a special
-  case of it in any usable direction and cannot be promoted.
-
-* **§8.1.3, the equispaced asymptotics.** For the equispaced matrix `X n j = a + j (b − a)/n`,
-  `Λ_n(X) ≃ 2^{n+1}/(e n log n)` — precisely, `Λ_n(X) · e n log n / 2^{n+1} → 1`. This is
-  Turetskii's theorem (1940; Natanson, *Constructive Function Theory*), and the asymptotic
-  equivalence needs the precise evaluation of the Lebesgue function near the ends of the
-  interval; a few pages of Natanson, not bounded work.
-
-  The one-sided half is proved here: `lebesgueConstant_equispaced_lower` is Schönhage's
-  `Λ_n ≥ 2^{n−3}/n²`, obtained by evaluating the Lebesgue function at the midpoint of the first
-  panel, where the node spacing cancels and the basis products telescope into ratios of
-  factorials. It is enough to show that equispaced interpolation is unstable, and it is the only
-  lower bound on an algebraic Lebesgue constant in the corpus. But it bounds a *single*
-  interpolation matrix, so it refutes nothing about Erdős's theorem or Faber's theorem as those
-  are stated — both quantify over *all* matrices — and the book states neither it nor the
-  exponent `2^{n−3}`; only the two-sided asymptotics are quoted, and those remain open.
+* Theorem 8.1, `QuarteroniSaccoSaleri.Chapter08.theorem_8_1`: the interpolating polynomial exists
+  and is unique.
+* Theorem 8.1, `QuarteroniSaccoSaleri.Chapter08.theorem_8_1_isUnisolvent`: point evaluation at
+  distinct nodes is unisolvent over $\mathbb{P}_n$.
+* (8.3), `QuarteroniSaccoSaleri.Chapter08.equation_8_3`: $l_i(x_j) = \delta_{ij}$.
+* (8.4), `QuarteroniSaccoSaleri.Chapter08.equation_8_4`: the Lagrange form $\Pi_n = \sum_i y_i l_i$.
+* Exercise 1 of Chapter 8, `QuarteroniSaccoSaleri.Chapter08.exercise_8_1`: the $l_i$ form a basis of
+  $\mathbb{P}_n$.
+* Exercise 2 of Chapter 8, `QuarteroniSaccoSaleri.Chapter08.exercise_8_2`: the Vandermonde matrix is
+  nonsingular if and only if the nodes are distinct.
+* Exercise 2 of Chapter 8, `QuarteroniSaccoSaleri.Chapter08.exercise_8_2_det`: the Vandermonde
+  determinant is $\prod_{j < i} (x_i - x_j)$.
+* (8.6), `QuarteroniSaccoSaleri.Chapter08.equation_8_6`: the nodal polynomial
+  $\omega_{n+1}(t) = \prod_i (t - x_i)$.
+* Exercise 3 of Chapter 8, `QuarteroniSaccoSaleri.Chapter08.exercise_8_3`: $\omega_{n+1}'(x_i) =
+  \prod_{j \neq i} (x_i - x_j)$.
+* (8.5), `QuarteroniSaccoSaleri.Chapter08.equation_8_5`: the form of $\Pi_n$ through $\omega_{n+1}$
+  and $\omega_{n+1}'$.
+* Theorem 8.2, `QuarteroniSaccoSaleri.Chapter08.theorem_8_2`: the interpolation error formula.
+* (8.11), `QuarteroniSaccoSaleri.Chapter08.lebesgueConstant_eq_norm`: $\Lambda_n(X) = \|\Pi_n\|$.
+* (8.11), `QuarteroniSaccoSaleri.Chapter08.sum_abs_basisCM_le_lebesgueConstant`: the Lebesgue
+  function is at most $\Lambda_n(X)$.
+* Property 8.1, `QuarteroniSaccoSaleri.Chapter08.property_8_1`: $\|f - \Pi_n f\|_\infty \le (1 +
+  \Lambda_n(X)) E_n^*(f)$.
+* Property 8.1, `QuarteroniSaccoSaleri.Chapter08.property_8_1_bestApprox`: the same bound with the
+  polynomial of best approximation.
+* Example 8.1, `QuarteroniSaccoSaleri.Chapter08.example_8_1_one_le`: the interpolation error of
+  $1/(1 + x^2)$ at $x = 4.9$ is at least $1$ for every odd $n \ge 401$.
+* Example 8.1, `QuarteroniSaccoSaleri.Chapter08.example_8_1`: Runge's counterexample, the equispaced
+  interpolants of $1/(1 + x^2)$ on $[-5, 5]$ do not converge at some point.
+* Section 8.1.3, `QuarteroniSaccoSaleri.Chapter08.interpRow_sub_le_lebesgueConstant`: the stability
+  estimate $\|\Pi_n f - \Pi_n \tilde f\|_\infty \le \Lambda_n(X) \max_i |f(x_i) - \tilde f(x_i)|$.
+* Section 8.1.3, `QuarteroniSaccoSaleri.Chapter08.coe_equispacedMatrix`: the nodes of row $n$ of the
+  equispaced matrix are $a + j(b - a)/n$.
+* Section 8.1.3, `QuarteroniSaccoSaleri.Chapter08.isInterpMatrix_equispacedMatrix`: the equispaced
+  nodes form an interpolation matrix.
+* Section 8.1.3, `QuarteroniSaccoSaleri.Chapter08.lebesgueConstant_equispaced_lower`: Schönhage's
+  lower bound $\Lambda_n \ge 2^n/(8n^2)$ for equispaced nodes.
 
 ## Conventions
 
-Nodes are `x : Fin (n + 1) → ℝ`, injective (the book's "distinct"); the interpolant of data `y`
-is `Lagrange.interpolate Finset.univ x y : ℝ[X]`, of a function `f` it is
-`Lagrange.interpolate Finset.univ x (fun i => f (x i))`; `𝒫_n` on `[a, b]` is
-`polyLE (Icc a b) n`; the interpolation operator on `C(Icc a b, ℝ)` is `Lagrange.interpolateCLM`,
-whose nodes are points of the subtype `Icc a b`. The smallest interval `I_x` containing the nodes
-and a point `t` is `Icc (min t (⨅ i, x i)) (max t (⨆ i, x i))`; Theorem 8.2's `f ∈ C^{n+1}(I_x)` is
-read as `ContDiffOn` on an open set containing `I_x`.
+* The nodes are an injective family `x : Fin (n + 1) → ℝ`; injectivity is the book's "distinct". The
+  interpolant of data $y$ is `Lagrange.interpolate Finset.univ x y`, a polynomial in `ℝ[X]`, and the
+  interpolant of a function $f$ is `Lagrange.interpolate Finset.univ x (fun i => f (x i))`.
+* The space $\mathbb{P}_n$ on $[a, b]$ is `polyLE (Icc a b) n`, a subspace of `C(Icc a b, ℝ)`. The
+  interpolation operator on `C(Icc a b, ℝ)` is `Lagrange.interpolateCLM`, whose nodes are points of
+  the subtype `Icc a b`.
+* The smallest interval $I_x$ that contains the nodes and a point $t$ is
+  `Icc (min t (⨅ i, x i)) (max t (⨆ i, x i))`. Theorem 8.2's hypothesis $f \in C^{n+1}(I_x)$ is read
+  as `ContDiffOn` on an open set that contains $I_x$.
+
+## Not formalized
+
+* **Section 8.1.2, Erdős's lower bound.** For every interpolation matrix $X$ on $[a, b]$ there is
+  $C > 0$ with $\Lambda_n(X) > \frac{2}{\pi} \log(n + 1) - C$ for all $n$; so no choice of nodes
+  keeps the Lebesgue constants bounded, and the Chebyshev nodes, whose $\Lambda_n$ grows like
+  $\frac{2}{\pi} \log n$, are optimal up to an additive constant. The book quotes it without proof
+  from Erdős, *Problems and results on the theory of interpolation II* (Acta Math. Acad. Sci.
+  Hungar. 12, 1961), whose proof is several pages of hard analysis on the Lebesgue function; the
+  bounds on Lagrange interpolation operators in the library are upper bounds and give no lower
+  bound.
+* **Section 8.1.2, Faber's theorem.** For every interpolation matrix $X$ on $[a, b]$ with $a < b$
+  there is $f \in C([a, b])$ whose interpolants $\Pi_n f$ do not converge uniformly to $f$. The book
+  quotes it without proof. It follows from the unboundedness of $\Lambda_n(X)$ (Erdős's bound, or
+  Bernstein's weaker $\Lambda_n \ge c \log n$) by
+  `QuarteroniSaccoSaleri.Chapter08.lebesgueConstant_eq_norm` and the Banach–Steinhaus theorem
+  `ContinuousLinearMap.exists_not_tendsto_of_not_bddAbove`, so it waits only for that lower bound.
+  Runge's counterexample is one node scheme and one function, and is not a special case of it.
+* **Section 8.1.3, the equispaced asymptotics.** For the equispaced matrix,
+  $\Lambda_n(X) \simeq 2^{n+1}/(e n \log n)$, that is,
+  $\Lambda_n(X) \cdot e n \log n / 2^{n+1} \to 1$. The book quotes it without proof from Turetskii
+  (1940; see Natanson, *Constructive Function Theory*); the proof needs a precise evaluation of the
+  Lebesgue function near the ends of the interval. The lower bound
+  `QuarteroniSaccoSaleri.Chapter08.lebesgueConstant_equispaced_lower` is a one-sided version with a
+  weaker constant.
 -/
 
 open Polynomial Set
@@ -131,9 +131,11 @@ variable {n : ℕ}
 
 /-! ### Theorem 8.1 and the Lagrange form -/
 
-/-- **Theorem 8.1.** Given `n + 1` distinct points `x₀, …, x_n` and `n + 1` corresponding values
-`y₀, …, y_n`, there exists a unique polynomial `Π_n ∈ 𝒫_n` such that `Π_n(x_i) = y_i` for
-`i = 0, …, n`. Existence is Mathlib's `Lagrange.interpolate`, uniqueness
+/-- **Theorem 8.1** of [quarteroni2000numerical]. Given $n + 1$ distinct points $x_0, \ldots, x_n$
+and $n + 1$ values $y_0, \ldots, y_n$, there exists a unique polynomial $\Pi_n$ of degree at
+most $n$ such that $\Pi_n(x_i) = y_i$ for $i = 0, \ldots, n$.
+
+Existence is Mathlib's `Lagrange.interpolate`, and uniqueness is
 `Lagrange.eq_interpolate_of_eval_eq`. -/
 theorem theorem_8_1 {x : Fin (n + 1) → ℝ} (hx : Function.Injective x) (y : Fin (n + 1) → ℝ) :
     ∃! p : ℝ[X], p.degree ≤ n ∧ ∀ i, p.eval (x i) = y i := by
@@ -147,16 +149,24 @@ theorem theorem_8_1 {x : Fin (n + 1) → ℝ} (hx : Function.Injective x) (y : F
     rw [hcard]
     exact hdeg.trans_lt (by exact_mod_cast Nat.lt_succ_self n)
 
-/-- **Theorem 8.1** in the abstract form of the backbone: for distinct nodes in `[a, b]`, the point
-evaluations at the nodes are unisolvent over `𝒫_n` — the interpolation problem of
-`Numlib/Approximation/Unisolvent`, `Lagrange.isUnisolvent_polyLE`. -/
+/-- **Theorem 8.1** of [quarteroni2000numerical], abstract form. Let $x_0, \ldots, x_n$ be distinct
+points of $[a, b]$. Then the point evaluations $f \mapsto f(x_i)$ on $C([a, b])$ are unisolvent
+over $\mathbb{P}_n$: for all values $y_0, \ldots, y_n$ there is exactly one $p \in \mathbb{P}_n$
+with $p(x_i) = y_i$ for all $i$.
+
+Unisolvence is `Approximation.IsUnisolvent` of `Numlib.Approximation.Unisolvent`, and the proof
+specializes `Lagrange.isUnisolvent_polyLE`. -/
 theorem theorem_8_1_isUnisolvent {a b : ℝ} {x : Fin (n + 1) → Icc a b}
     (hx : Function.Injective x) :
     Approximation.IsUnisolvent (polyLE (Icc a b) n) fun i => ContinuousMap.evalCLM ℝ (x i) :=
   Lagrange.isUnisolvent_polyLE hx
 
-/-- **(8.3).** The characteristic polynomials `l_i(x) = ∏_{j ≠ i} (x - x_j)/(x_i - x_j)` — Mathlib's
-`Lagrange.basis Finset.univ x i` — satisfy `l_i(x_j) = δ_ij`. -/
+/-- **Equation (8.3)** of [quarteroni2000numerical]. Let $x_0, \ldots, x_n$ be distinct. The
+characteristic polynomials
+$$l_i(x) = \prod_{j \neq i} \frac{x - x_j}{x_i - x_j}$$
+satisfy $l_i(x_j) = \delta_{ij}$.
+
+The polynomial $l_i$ is Mathlib's `Lagrange.basis Finset.univ x i`. -/
 theorem equation_8_3 {x : Fin (n + 1) → ℝ} (hx : Function.Injective x) (i j : Fin (n + 1)) :
     (Lagrange.basis Finset.univ x i).eval (x j) = if i = j then 1 else 0 := by
   split_ifs with h
@@ -164,14 +174,20 @@ theorem equation_8_3 {x : Fin (n + 1) → ℝ} (hx : Function.Injective x) (i j 
     exact Lagrange.eval_basis_self hx.injOn (Finset.mem_univ i)
   · exact Lagrange.eval_basis_of_ne h (Finset.mem_univ j)
 
-/-- **(8.4), the Lagrange form** of the interpolating polynomial: `Π_n(x) = ∑_i y_i l_i(x)`. -/
+/-- **Equation (8.4)** of [quarteroni2000numerical], the Lagrange form of the interpolating
+polynomial: for nodes $x_0, \ldots, x_n$ and values $y_0, \ldots, y_n$,
+$$\Pi_n(x) = \sum_{i=0}^n y_i l_i(x).$$
+-/
 theorem equation_8_4 (x y : Fin (n + 1) → ℝ) :
     Lagrange.interpolate Finset.univ x y = ∑ i, C (y i) * Lagrange.basis Finset.univ x i :=
   Lagrange.interpolate_apply _ _ _
 
-/-- **Exercise 8.1.** The characteristic polynomials `l_i ∈ 𝒫_n` of (8.3) form a basis of `𝒫_n`,
-here `Polynomial.degreeLT ℝ (n + 1)`: they are linearly independent, a vanishing combination being
-evaluated at the nodes, and there are `n + 1 = dim 𝒫_n` of them. -/
+/-- **Exercise 1 of Chapter 8** of [quarteroni2000numerical]. Let $x_0, \ldots, x_n$ be distinct.
+Then the characteristic polynomials $l_0, \ldots, l_n$ of (8.3) form a basis of $\mathbb{P}_n$.
+
+Here $\mathbb{P}_n$ is `Polynomial.degreeLT ℝ (n + 1)`. The $l_i$ are linearly independent,
+because a vanishing combination is $0$ at each node, and there are $n + 1 = \dim \mathbb{P}_n$
+of them. -/
 theorem exercise_8_1 {x : Fin (n + 1) → ℝ} (hx : Function.Injective x) :
     ∃ B : Module.Basis (Fin (n + 1)) ℝ (Polynomial.degreeLT ℝ (n + 1)),
       ∀ i, (B i : ℝ[X]) = Lagrange.basis Finset.univ x i := by
@@ -197,33 +213,45 @@ theorem exercise_8_1 {x : Fin (n + 1) → ℝ} (hx : Function.Injective x) :
   exact ⟨basisOfLinearIndependentOfCardEqFinrank hli hrank, fun i => by
     rw [coe_basisOfLinearIndependentOfCardEqFinrank]⟩
 
-/-- **Exercise 8.2.** The Vandermonde matrix `X = [x_i^j]` of the nodes is nonsingular exactly when
-the nodes are distinct: Mathlib's `Matrix.det_vandermonde_ne_zero_iff`. -/
+/-- **Exercise 2 of Chapter 8** of [quarteroni2000numerical]. The Vandermonde matrix $[x_i^j]$ of
+the nodes $x_0, \ldots, x_n$ is nonsingular if and only if the nodes are distinct.
+
+The proof is Mathlib's `Matrix.det_vandermonde_ne_zero_iff`. -/
 theorem exercise_8_2 (x : Fin (n + 1) → ℝ) :
     (Matrix.vandermonde x).det ≠ 0 ↔ Function.Injective x :=
   Matrix.det_vandermonde_ne_zero_iff
 
-/-- **Exercise 8.2, the hint.** `det X = ∏_{0 ≤ j < i ≤ n} (x_i - x_j)`: Mathlib's
-`Matrix.det_vandermonde`. -/
+/-- **Exercise 2 of Chapter 8** of [quarteroni2000numerical], the hint. The determinant of the
+Vandermonde matrix of $x_0, \ldots, x_n$ is
+$$\det [x_i^j] = \prod_{0 \le j < i \le n} (x_i - x_j).$$
+
+The proof is Mathlib's `Matrix.det_vandermonde`. -/
 theorem exercise_8_2_det (x : Fin (n + 1) → ℝ) :
     (Matrix.vandermonde x).det = ∏ j, ∏ i ∈ Finset.Ioi j, (x i - x j) :=
   Matrix.det_vandermonde x
 
-/-- **(8.6).** The nodal polynomial `ω_{n+1}(x) = ∏_{i=0}^n (x - x_i)` — Mathlib's
-`Lagrange.nodal Finset.univ x` — has that value at every `t`. -/
+/-- **Equation (8.6)** of [quarteroni2000numerical]. The nodal polynomial of $x_0, \ldots, x_n$ has
+the values
+$$\omega_{n+1}(t) = \prod_{i=0}^n (t - x_i), \qquad t \in \mathbb{R}.$$
+
+The nodal polynomial is Mathlib's `Lagrange.nodal Finset.univ x`. -/
 theorem equation_8_6 (x : Fin (n + 1) → ℝ) (t : ℝ) :
     (Lagrange.nodal Finset.univ x).eval t = ∏ i, (t - x i) :=
   Lagrange.eval_nodal
 
-/-- **Exercise 8.3.** `ω'_{n+1}(x_i) = ∏_{j ≠ i} (x_i - x_j)`. -/
+/-- **Exercise 3 of Chapter 8** of [quarteroni2000numerical]. For nodes $x_0, \ldots, x_n$ and each
+$i$, $\omega_{n+1}'(x_i) = \prod_{j \neq i} (x_i - x_j)$. -/
 theorem exercise_8_3 (x : Fin (n + 1) → ℝ) (i : Fin (n + 1)) :
     (derivative (Lagrange.nodal Finset.univ x)).eval (x i)
       = ∏ j ∈ Finset.univ.erase i, (x i - x j) := by
   rw [Lagrange.eval_nodal_derivative_eval_node_eq (Finset.mem_univ i), Lagrange.eval_nodal]
 
-/-- **(8.5).** For `t` distinct from every node,
-`Π_n(t) = ∑_i ω_{n+1}(t) / ((t - x_i) ω'_{n+1}(x_i)) · y_i`: Mathlib's first barycentric form
-`Lagrange.eval_interpolate_not_at_node`. -/
+/-- **Equation (8.5)** of [quarteroni2000numerical]. Let $x_0, \ldots, x_n$ be nodes and
+$y_0, \ldots, y_n$ values. For every $t$ that is not a node,
+$$\Pi_n(t) = \sum_{i=0}^n \frac{\omega_{n+1}(t)}{(t - x_i) \, \omega_{n+1}'(x_i)} \, y_i.$$
+
+The statement assumes no distinctness of the nodes. The proof is Mathlib's first barycentric
+form `Lagrange.eval_interpolate_not_at_node`. -/
 theorem equation_8_5 (x y : Fin (n + 1) → ℝ) {t : ℝ} (ht : ∀ i, t ≠ x i) :
     (Lagrange.interpolate Finset.univ x y).eval t
       = ∑ i, (Lagrange.nodal Finset.univ x).eval t
@@ -236,14 +264,14 @@ theorem equation_8_5 (x y : Fin (n + 1) → ℝ) {t : ℝ} (ht : ∀ i, t ≠ x 
 
 /-! ### Theorem 8.2: the interpolation error -/
 
-/-- **Theorem 8.2.** Let `x₀, …, x_n` be `n + 1` distinct nodes and `t` a point; let `I_t` be the
-smallest interval containing the nodes and `t`, and assume `f ∈ C^{n+1}` on an open set containing
-`I_t`. Then the interpolation error at `t` is
+/-- **Theorem 8.2** of [quarteroni2000numerical]. Let $x_0, \ldots, x_n$ be distinct nodes and
+$t \in \mathbb{R}$, and let $I_t$ be the smallest interval that contains the nodes and $t$. Let
+$f$ be of class $C^{n+1}$ on an open set that contains $I_t$. Then there is $\xi \in I_t$ with
+$$E_n(t) = f(t) - \Pi_n f(t) = \frac{f^{(n+1)}(\xi)}{(n+1)!} \, \omega_{n+1}(t).$$
 
-`E_n(t) = f(t) - Π_n f(t) = f^{(n+1)}(ξ)/(n+1)! · ω_{n+1}(t)`
-
-for some `ξ ∈ I_t`. The backbone's `Lagrange.exists_sub_interpolate_eq_of_contDiffOn` when `I_t`
-has nonempty interior; when `I_t` is a single point, `t` is the node `x₀` and both sides vanish. -/
+When $I_t$ has nonempty interior, the proof specializes
+`Lagrange.exists_sub_interpolate_eq_of_contDiffOn`. When $I_t$ is a single point, $t$ is the
+node $x_0$ and both sides are $0$. -/
 theorem theorem_8_2 {x : Fin (n + 1) → ℝ} (hx : Function.Injective x) (t : ℝ) {f : ℝ → ℝ}
     {U : Set ℝ} (hU : IsOpen U) (hUsub : Icc (min t (⨅ i, x i)) (max t (⨆ i, x i)) ⊆ U)
     (hf : ContDiffOn ℝ ((n + 1 : ℕ) : WithTop ℕ∞) f U) :
@@ -274,46 +302,65 @@ theorem theorem_8_2 {x : Fin (n + 1) → ℝ} (hx : Function.Injective x) (t : �
 
 variable {a b : ℝ}
 
-/-- **The interpolation matrix on `[a, b]`** (§8.1.2): a lower triangular matrix `X` of infinite
-size whose entries are points of `[a, b]`, such that on each row the entries are all distinct. The
-`(n + 1)`-st row is `X n 0, …, X n n`; the entries beyond the diagonal are unused. -/
+/-- **Section 8.1.2** of [quarteroni2000numerical], the interpolation matrix. An **interpolation
+matrix** on $[a, b]$ is a lower triangular matrix $X$ of infinite size whose entries are points
+of $[a, b]$ and whose rows have distinct entries: for each $n$, the points
+$X_{n,0}, \ldots, X_{n,n}$ of row $n$ are distinct.
+
+The matrix is a function `X : ℕ → ℕ → Icc a b`, and its entries $X_{n,j}$ with $j > n$ are not
+used. Row $n$ is the book's $(n + 1)$-st row. -/
 def IsInterpMatrix (X : ℕ → ℕ → Icc a b) : Prop :=
   ∀ n, Function.Injective fun j : Fin (n + 1) => X n j
 
-/-- **`Π_n`** (§8.1.2): the interpolation operator on `C([a, b], ℝ)` at the nodes of the
-`(n + 1)`-st row of the interpolation matrix `X`. -/
+/-- **Section 8.1.2** of [quarteroni2000numerical], the interpolation operator $\Pi_n$ on
+$C([a, b])$ at the nodes $X_{n,0}, \ldots, X_{n,n}$ of row $n$ of $X$. It maps $f$ to the
+restriction to $[a, b]$ of its interpolating polynomial at these nodes.
+
+The operator is `Lagrange.interpolateCLM` at these nodes. -/
 noncomputable def interpRow (X : ℕ → ℕ → Icc a b) (n : ℕ) : C(Icc a b, ℝ) →L[ℝ] C(Icc a b, ℝ) :=
   Lagrange.interpolateCLM fun j : Fin (n + 1) => X n j
 
-/-- **(8.11), the Lebesgue constant** `Λ_n(X) = ‖∑_{j=0}^n |l_j^{(n)}|‖_∞` of the interpolation
-matrix `X`, with `l_j^{(n)}` the characteristic polynomials of the `(n + 1)`-st row: the maximum
-over `[a, b]` of the Lebesgue function, written as the supremum of its range. -/
+/-- **Equation (8.11)** of [quarteroni2000numerical], the Lebesgue constant. Let $l_j^{(n)}$ be the
+characteristic polynomials of the nodes $X_{n,0}, \ldots, X_{n,n}$ of row $n$ of $X$. The
+**Lebesgue constant** of $X$ is
+$$\Lambda_n(X) = \Big\| \sum_{j=0}^n |l_j^{(n)}| \Big\|_\infty = \sup_{t \in [a, b]}
+  \sum_{j=0}^n |l_j^{(n)}(t)|,$$
+the maximum over $[a, b]$ of the Lebesgue function $\sum_j |l_j^{(n)}|$.
+
+The maximum is written as the supremum `sSup` of the range of the Lebesgue function on $[a, b]$,
+as in Section 10.8. -/
 noncomputable def lebesgueConstant (X : ℕ → ℕ → Icc a b) (n : ℕ) : ℝ :=
   sSup (Set.range fun t : Icc a b =>
     ∑ j, |Lagrange.basisCM (fun j : Fin (n + 1) => X n j) j t|)
 
-/-- The Lebesgue constant is the operator norm of `Π_n` on `C([a, b], ℝ)`:
-`Lagrange.norm_interpolateCLM`. -/
+/-- **Equation (8.11)** of [quarteroni2000numerical], the Lebesgue constant as a norm. If $X$ is an
+interpolation matrix on $[a, b]$, then $\Lambda_n(X) = \|\Pi_n\|$, the operator norm of $\Pi_n$
+on $C([a, b])$ with the maximum norm.
+
+The proof specializes `Lagrange.norm_interpolateCLM`. -/
 theorem lebesgueConstant_eq_norm {X : ℕ → ℕ → Icc a b} (hX : IsInterpMatrix X) (n : ℕ) :
     lebesgueConstant X n = ‖interpRow X n‖ :=
   have : Nonempty (Icc a b) := ⟨X 0 0⟩
   (Lagrange.norm_interpolateCLM (hX n)).symm
 
-/-- The Lebesgue function is bounded by the Lebesgue constant at every point. -/
+/-- **Equation (8.11)** of [quarteroni2000numerical], pointwise form. If $X$ is an interpolation
+matrix on $[a, b]$, then $\sum_{j=0}^n |l_j^{(n)}(t)| \le \Lambda_n(X)$ for every
+$t \in [a, b]$. -/
 theorem sum_abs_basisCM_le_lebesgueConstant {X : ℕ → ℕ → Icc a b} (hX : IsInterpMatrix X)
     (n : ℕ) (t : Icc a b) :
     ∑ j, |Lagrange.basisCM (fun j : Fin (n + 1) => X n j) j t| ≤ lebesgueConstant X n :=
   have : Nonempty (Icc a b) := ⟨X 0 0⟩
   (lebesgueConstant_eq_norm hX n).symm ▸ (Lagrange.isGreatest_norm_interpolateCLM (hX n)).2 ⟨t, rfl⟩
 
-/-- **Property 8.1.** Let `f ∈ C⁰([a, b])` and `X` be an interpolation matrix on `[a, b]`. Then
+/-- **Property 8.1** of [quarteroni2000numerical]. Let $X$ be an interpolation matrix on $[a, b]$,
+let $f \in C^0([a, b])$ and $n \ge 0$. Then
+$$E_{n,\infty}(X) \le (1 + \Lambda_n(X)) E_n^*,$$
+where $E_{n,\infty}(X) = \|f - \Pi_n f\|_\infty$ is the interpolation error (8.9) and $E_n^* =
+\inf_{q \in \mathbb{P}_n} \|f - q\|_\infty$ is the best approximation error.
 
-`E_{n,∞}(X) ≤ E_n^* (1 + Λ_n(X))`, `n = 0, 1, …`,
-
-where `E_{n,∞}(X) = ‖f - Π_n f‖_∞` is the interpolation error (8.9) and
-`E_n^* = ‖f - p_n^*‖_∞ = inf_{q ∈ 𝒫_n} ‖f - q‖_∞` the best approximation error. This is the
-Lebesgue lemma `norm_sub_apply_le_of_isIdempotentElem` for the projection `Π_n`, whose range is
-`𝒫_n` and whose norm is `Λ_n(X)`. -/
+The number $E_n^*$ is `Metric.infDist` from $f$ to $\mathbb{P}_n$. The proof is the Lebesgue
+lemma `norm_sub_apply_le_of_isIdempotentElem` for the projection $\Pi_n$, whose range is
+$\mathbb{P}_n$ and whose norm is $\Lambda_n(X)$. -/
 theorem property_8_1 {X : ℕ → ℕ → Icc a b} (hX : IsInterpMatrix X) (f : C(Icc a b, ℝ)) (n : ℕ) :
     ‖f - interpRow X n f‖
       ≤ (1 + lebesgueConstant X n) * Metric.infDist f (polyLE (Icc a b) n : Set C(Icc a b, ℝ)) := by
@@ -322,24 +369,32 @@ theorem property_8_1 {X : ℕ → ℕ → Icc a b} (hX : IsInterpMatrix X) (f : 
   rw [lebesgueConstant_eq_norm hX n]
   rwa [interpRow, Lagrange.range_interpolateCLM (hX n)] at h
 
-/-- **Property 8.1**, with the best approximation polynomial: if `p_n^* ∈ 𝒫_n` is the polynomial of
-best approximation of `f` (which exists and is unique for `a < b`,
-`existsUnique_isBestApprox_polyLE`), then `‖f - Π_n f‖_∞ ≤ (1 + Λ_n(X)) ‖f - p_n^*‖_∞`. -/
+/-- **Property 8.1** of [quarteroni2000numerical], with the polynomial of best approximation. Let
+$X$ be an interpolation matrix on $[a, b]$ and $f \in C^0([a, b])$. If $p_n^* \in \mathbb{P}_n$
+is a polynomial of best approximation of $f$ in the maximum norm, then
+$$\|f - \Pi_n f\|_\infty \le (1 + \Lambda_n(X)) \|f - p_n^*\|_\infty.$$
+
+For $a < b$ the polynomial of best approximation exists and is unique, by
+`existsUnique_isBestApprox_polyLE`. -/
 theorem property_8_1_bestApprox {X : ℕ → ℕ → Icc a b} (hX : IsInterpMatrix X)
     {f p : C(Icc a b, ℝ)} (hp : IsBestApprox (polyLE (Icc a b) n : Set C(Icc a b, ℝ)) f p) :
     ‖f - interpRow X n f‖ ≤ (1 + lebesgueConstant X n) * ‖f - p‖ := by
   rw [hp.norm_sub_eq_infDist]
   exact property_8_1 hX f n
 
-/-! ### §8.1.3: stability -/
+/-! ### Section 8.1.3: stability -/
 
-/-- **The stability estimate of §8.1.3.** For a perturbation `f̃` of the data `f`,
+/-- **Section 8.1.3** of [quarteroni2000numerical], the stability estimate. Let $X$ be an
+interpolation matrix on $[a, b]$, and let $f, \tilde f \in C([a, b])$, where $\tilde f$ is a
+perturbation of the data $f$. Then
+$$\|\Pi_n f - \Pi_n \tilde f\|_\infty \le \Lambda_n(X) \max_{i = 0, \ldots, n} |f(x_i) - \tilde
+  f(x_i)|,$$
+with the nodes $x_i = X_{n,i}$ of row $n$.
 
-`‖Π_n f - Π_n f̃‖_∞ ≤ Λ_n(X) max_{i=0,…,n} |f(x_i) - f̃(x_i)|`:
-
-small changes of the data give small changes of the interpolating polynomial only if the Lebesgue
-constant is small, which "plays the role of the condition number for the interpolation problem".
-The maximum over the nodes is written as a supremum over `Fin (n + 1)`. -/
+So small changes of the data give small changes of the interpolating polynomial only if the
+Lebesgue constant is small; the book says that $\Lambda_n(X)$ "plays the role of the condition
+number for the interpolation problem". The maximum over the nodes is a supremum over
+`Fin (n + 1)`. -/
 theorem interpRow_sub_le_lebesgueConstant {X : ℕ → ℕ → Icc a b} (hX : IsInterpMatrix X) (n : ℕ)
     (f g : C(Icc a b, ℝ)) :
     ‖interpRow X n f - interpRow X n g‖
@@ -371,28 +426,38 @@ theorem interpRow_sub_le_lebesgueConstant {X : ℕ → ℕ → Icc a b} (hX : Is
 
 /-! ### Example 8.1: Runge's counterexample -/
 
-/-- **Example 8.1, the equally spaced nodes** `x_j^{(n)} = -5 + 10j/n`, `j = 0, …, n`, on
-`[-5, 5]`. -/
+/-- **Example 8.1** of [quarteroni2000numerical], the equally spaced nodes $x_j^{(n)} = -5 + 10j/n$,
+$j = 0, \ldots, n$, on $[-5, 5]$.
+
+For $n = 0$ the single node is $-5$, by the Lean convention $a / 0 = 0$. -/
 noncomputable def example_8_1_nodes (n : ℕ) (j : Fin (n + 1)) : ℝ :=
   -5 + 10 * (j : ℝ) / n
 
-/-- **Example 8.1, a quantitative form.** For the function `f(x) = 1/(1 + x²)` of (8.12) and the
-equally spaced nodes on `[-5, 5]`, the interpolation error at `x = 4.9` is at least `1` for every
-odd `n ≥ 401`: `Runge.one_le_abs_sub_interpolate`. -/
+/-- **Example 8.1** of [quarteroni2000numerical], quantitative form. Let $f(x) = 1/(1 + x^2)$ be the
+function of (8.12), and let $\Pi_n f$ interpolate $f$ at the equally spaced nodes
+$x_j^{(n)} = -5 + 10j/n$ on $[-5, 5]$. For every odd $n \ge 400$, that is, every odd
+$n \ge 401$,
+$$|f(4.9) - \Pi_n f(4.9)| \ge 1.$$
+
+The proof specializes `Runge.one_le_abs_sub_interpolate`. -/
 theorem example_8_1_one_le {n : ℕ} (hn : Odd n) (hn400 : 400 ≤ n) :
     1 ≤ |1 / (1 + (49 / 10 : ℝ) ^ 2)
       - (Lagrange.interpolate Finset.univ (example_8_1_nodes n)
           fun j => 1 / (1 + (example_8_1_nodes n j) ^ 2)).eval (49 / 10)| :=
   Runge.one_le_abs_sub_interpolate hn hn400
 
-/-- **Example 8.1 (Runge's counterexample).** Approximating `f(x) = 1/(1 + x²)`, `-5 ≤ x ≤ 5`
-(8.12), by Lagrange interpolation on equally spaced nodes, "some points `x` exist within the
-interpolation interval such that `lim_{n→∞} |f(x) - Π_n f(x)| ≠ 0`": at `x = 4.9` the sequence
-`Π_n f(x)` does not converge to `f(x)`, because along the odd `n` the error stays `≥ 1`
-(`example_8_1_one_le`). The backbone's `Runge.not_tendsto_interpolate`: the error is
-`ω_{n+1}(x) f[x_0, …, x_n, x]` with the divided difference computed exactly through the partial
-fraction `1/(1 + s²) = Re (i/(i - s))`, and the products are estimated by Riemann sums of
-logarithms. The book's threshold `|x| > 3.63…` is not part of the statement. -/
+/-- **Example 8.1** of [quarteroni2000numerical] (Runge's counterexample). Let $f(x) = 1/(1 + x^2)$
+on $[-5, 5]$ (8.12), and let $\Pi_n f$ interpolate $f$ at the equally spaced nodes
+$x_j^{(n)} = -5 + 10j/n$. Then there is $x \in [-5, 5]$ at which $\Pi_n f(x)$ does not converge
+to $f(x)$ as $n \to \infty$. In the words of the book, "some points $x$ exist within the
+interpolation interval such that $\lim_{n \to \infty} |f(x) - \Pi_n f(x)| \neq 0$".
+
+The point is $x = 4.9$: along the odd $n$ the error stays at least $1$, by
+`QuarteroniSaccoSaleri.Chapter08.example_8_1_one_le`. The book's threshold $|x| > 3.63\ldots$ is
+not part of the statement. The proof specializes `Runge.not_tendsto_interpolate`: the error is
+$\omega_{n+1}(x) f[x_0, \ldots, x_n, x]$, the divided difference is computed exactly through the
+partial fraction $1/(1 + s^2) = \operatorname{Re}(i/(i - s))$, and the products are estimated by
+Riemann sums of logarithms. -/
 theorem example_8_1 :
     ∃ t ∈ Icc (-5 : ℝ) 5, ¬ Filter.Tendsto
       (fun n => (Lagrange.interpolate Finset.univ (example_8_1_nodes n)
@@ -400,19 +465,21 @@ theorem example_8_1 :
       Filter.atTop (nhds (1 / (1 + t ^ 2))) :=
   ⟨49 / 10, by norm_num, Runge.not_tendsto_interpolate⟩
 
-/-! ### §8.1.3: a lower bound for the equispaced Lebesgue constants -/
+/-! ### Section 8.1.3: a lower bound for the equispaced Lebesgue constants -/
 
 section Equispaced
 
-/-- **§8.1.3, the equispaced interpolation matrix** on `[a, b]`: the `(n + 1)`-st row is the
-equally spaced nodes `x_j^{(n)} = a + j (b − a)/n`, `j = 0, …, n`, of Runge's example and of the
-asymptotics `Λ_n ≃ 2^{n+1}/(e n log n)`. Entries with `j > n` are unused and are clamped into
-`[a, b]` by `Set.projIcc`. -/
+/-- **Section 8.1.3** of [quarteroni2000numerical], the equispaced interpolation matrix on $[a, b]$,
+for $a < b$. Row $n$ consists of the equally spaced nodes
+$$x_j^{(n)} = a + \frac{j (b - a)}{n}, \qquad j = 0, \ldots, n,$$
+of Runge's example and of the asymptotics $\Lambda_n \simeq 2^{n+1}/(e n \log n)$.
+
+The entries with $j > n$ are not used; `Set.projIcc` moves them into $[a, b]$. -/
 noncomputable def equispacedMatrix (hab : a < b) (n j : ℕ) : Icc a b :=
   projIcc a b hab.le (a + j * (b - a) / n)
 
-/-- The nodes actually used by the `(n + 1)`-st row of `equispacedMatrix` are the equally spaced
-points `a + j (b − a)/n`: the clamping of the definition is inert for `j ≤ n`. -/
+/-- The nodes of row $n$ of `QuarteroniSaccoSaleri.Chapter08.equispacedMatrix` are the equally
+spaced points: for $j \le n$, the entry $x_j^{(n)}$ is $a + j(b - a)/n$. -/
 theorem coe_equispacedMatrix (hab : a < b) {n j : ℕ} (hj : j ≤ n) :
     ((equispacedMatrix hab n j : Icc a b) : ℝ) = a + j * (b - a) / n := by
   have hmem : a + (j : ℝ) * (b - a) / n ∈ Icc a b := by
@@ -432,7 +499,8 @@ theorem coe_equispacedMatrix (hab : a < b) {n j : ℕ} (hj : j ≤ n) :
       exact ⟨by linarith, by linarith⟩
   rw [equispacedMatrix, Set.projIcc_of_mem hab.le hmem]
 
-/-- The equally spaced points form an interpolation matrix: on each row the nodes are distinct. -/
+/-- For $a < b$, the equispaced nodes form an interpolation matrix: the nodes of each row are
+distinct. -/
 theorem isInterpMatrix_equispacedMatrix (hab : a < b) :
     IsInterpMatrix (equispacedMatrix hab) := by
   intro n j k hjk
@@ -455,25 +523,25 @@ theorem isInterpMatrix_equispacedMatrix (hab : a < b) :
     have hne : (b - a) / (n : ℝ) ≠ 0 := ne_of_gt (by positivity)
     exact Fin.ext (by exact_mod_cast mul_right_cancel₀ hne key)
 
-/-- **§8.1.3, a lower bound for the equispaced Lebesgue constants** (Schönhage): for the equally
-spaced nodes on `[a, b]` and `n ≥ 1`,
+/-- **Section 8.1.3** of [quarteroni2000numerical], a lower bound for the equispaced Lebesgue
+constants (Schönhage). Let $a < b$, let $X$ be the equispaced interpolation matrix on $[a, b]$,
+and let $n \ge 1$. Then
+$$\Lambda_n(X) \ge \frac{2^n}{8 n^2} = \frac{2^{n-3}}{n^2}.$$
+So the equispaced Lebesgue constants grow exponentially, and equispaced interpolation is
+unstable.
 
-`Λ_n(X) ≥ 2^n/(8 n²)`, that is, `Λ_n(X) ≥ 2^{n−3}/n²`,
+The book states neither this bound nor the exponent $2^{n-3}$; it quotes the asymptotics
+$\Lambda_n \simeq 2^{n+1}/(e n \log n)$ from Turetskii without proof, and this bound is a
+one-sided version of them. The bound concerns one interpolation matrix, so it says nothing about
+the theorems of Erdős and Faber, which concern all of them.
 
-so the equispaced Lebesgue constants grow exponentially and equispaced interpolation is unstable.
-This is the one-sided half of the asymptotics `Λ_n ≃ 2^{n+1}/(e n log n)` that §8.1.3 quotes from
-Turetskii without proof; the asymptotic equivalence itself is not formalized (see the module
-doc), and this bound concerns a single interpolation matrix, so it says nothing about Erdős's or
-Faber's theorems, which quantify over all of them.
-
-The proof evaluates the Lebesgue function at the midpoint `t = a + (b − a)/(2n)` of the first
+The proof evaluates the Lebesgue function at the midpoint $t = a + (b - a)/(2n)$ of the first
 panel. There the node spacing cancels from every characteristic polynomial,
-`ℓ_i(t) = ∏_{j ≠ i} (1/2 − j)/(i − j)`, the denominators telescope into `i ! (n − i)!`
-(`prod_erase_abs_sub`) and the common numerator into `(2n)!/(2^{2n+1} n !)`
-(`prod_range_abs_half`); the largest omitted factor is `(2n − 1)/2`, and summing
-`∑_i 1/(i ! (n − i)!) = 2^n/n !` gives `C(2n, n) 2^n/(4^n (2n − 1))`, which
-`Nat.four_pow_le_two_mul_self_mul_centralBinom` bounds below by `2^n/(8n²)` (backbone
-`Lagrange.two_pow_div_le_sum_abs_eval_basis_equispaced`). -/
+$l_i(t) = \prod_{j \neq i} (1/2 - j)/(i - j)$. The denominators give $i! \, (n - i)!$ and the
+common numerator gives $(2n)!/(2^{2n+1} n!)$, with the largest omitted factor $(2n - 1)/2$. With
+$\sum_i 1/(i! \, (n - i)!) = 2^n/n!$ this gives $\binom{2n}{n} 2^n / (4^n (2n - 1))$, which is
+at least $2^n/(8n^2)$. The proof specializes
+`Lagrange.two_pow_div_le_sum_abs_eval_basis_equispaced`. -/
 theorem lebesgueConstant_equispaced_lower (hab : a < b) {n : ℕ} (hn : 1 ≤ n) :
     (2 : ℝ) ^ n / (8 * (n : ℝ) ^ 2) ≤ lebesgueConstant (equispacedMatrix hab) n := by
   have hn0 : (0 : ℝ) < n := by exact_mod_cast hn

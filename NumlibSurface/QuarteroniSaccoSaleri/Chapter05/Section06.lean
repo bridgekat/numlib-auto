@@ -9,69 +9,127 @@ import Numlib.FloatingPoint.Householder
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter05.Section05
 
 /-!
-# Quarteroni–Sacco–Saleri §5.6: the QR method for matrices in Hessenberg form
+# Quarteroni, Sacco and Saleri, Section 5.6: The QR Method for Matrices in Hessenberg Form
 
-Surface file for Alfio Quarteroni, Riccardo Sacco and Fausto Saleri, *Numerical Mathematics*
-[quarteroni2000numerical], §5.6, over the backbone `Numlib/LinearAlgebra/Matrix/QR` (Householder
-reflectors, the tail reflector, the Householder reduction to Hessenberg form and the Givens QR
-factorization of a Hessenberg matrix), `Numlib/LinearAlgebra/Matrix/PlaneRotation` (plane rotations
-and the Givens pair), `Numlib/Eigen/Deflation` (Householder deflation),
-`Numlib/Eigen/QRAlgorithm` (the Hessenberg invariance of a QR step) and
-`Numlib/FloatingPoint/Householder` (the rounding model of the Householder reduction, for (5.46)).
+This module formalizes Section 5.6 of [quarteroni2000numerical]. A Householder matrix
+$P = I - 2 v v^T / \|v\|_2^2$ (5.38) is a symmetric orthogonal reflection, and a suitable
+Householder vector $v$ sets to zero all the components of a vector $x$ but one (5.39)–(5.42). A
+Givens matrix $G(i, k, \theta)$ (5.43) rotates the coordinate plane $(x_i, x_k)$, and a suitable
+angle sets $x_k$ to zero (5.44), (5.51). Householder reflections deflate a computed eigenpair
+(Remark 5.3). The Householder method of Section 5.6.2 reduces any $A \in \mathbb{R}^{n \times n}$ by
+$n - 2$ orthogonal similarities $A^{(k)} = P_{(k)}^T A^{(k-1)} P_{(k)}$ (5.45) to an upper
+Hessenberg matrix $H = Q^T A Q$, which is tridiagonal when $A$ is symmetric (Remark 5.4), and in
+floating-point arithmetic it is backward stable (5.46). Givens rotations factor a Hessenberg matrix
+as $H = QR$ (5.47)–(5.48), and the QR iteration preserves Hessenberg form (Section 5.6.4). A
+reflector is applied as a rank-one update (5.49)–(5.50).
+
+The proofs specialize the backbone modules `Numlib.LinearAlgebra.Matrix.QR` (Householder reflectors,
+the reflector of a tail of coordinates, the Householder reduction to Hessenberg form and the Givens
+QR factorization of a Hessenberg matrix), `Numlib.LinearAlgebra.Matrix.PlaneRotation` (plane
+rotations and the Givens pair), `Numlib.Eigen.Deflation` (Householder deflation),
+`Numlib.Eigen.QRAlgorithm` (the invariance of Hessenberg form under a QR step) and
+`Numlib.FloatingPoint.Householder` (the rounding model of the Householder reduction, for (5.46)).
+
+## Main definitions
+
+* Equation (5.38), `QuarteroniSaccoSaleri.Chapter05.equation_5_38`: the Householder matrix
+  $I - 2 v v^T / \|v\|_2^2$.
+* Equation (5.43), `QuarteroniSaccoSaleri.Chapter05.equation_5_43`: the Givens rotation matrix
+  $G(i, k, \theta)$.
+* Equation (5.45), `QuarteroniSaccoSaleri.Chapter05.householderStepMatrix`: the Householder matrix
+  $P_{(k)}$ of a step of the Householder method.
+* Equation (5.45), `QuarteroniSaccoSaleri.Chapter05.hessenbergStep`,
+  `QuarteroniSaccoSaleri.Chapter05.hessenbergIter`,
+  `QuarteroniSaccoSaleri.Chapter05.hessenbergQIter`: one step, the iterates $A^{(k)}$ and the
+  accumulated orthogonal matrices $Q_{(k)}$ of the Householder method.
+* Section 5.6.2, `QuarteroniSaccoSaleri.Chapter05.hessenbergReduce`,
+  `QuarteroniSaccoSaleri.Chapter05.hessenbergQ`: the Hessenberg form $H = A^{(n-2)}$ and the
+  orthogonal matrix $Q$.
+
+## Main results
+
+* Equation (5.38), `QuarteroniSaccoSaleri.Chapter05.equation_5_38_eq_householder`: the Householder
+  matrix of the book is the backbone's reflector of $v / \|v\|_2$.
+* Equation (5.38), `QuarteroniSaccoSaleri.Chapter05.equation_5_38_isSymm`,
+  `QuarteroniSaccoSaleri.Chapter05.equation_5_38_mul_self`,
+  `QuarteroniSaccoSaleri.Chapter05.equation_5_38_mem_orthogonalGroup`: a Householder matrix is
+  symmetric, an involution, and orthogonal.
+* Equations (5.39)–(5.40), `QuarteroniSaccoSaleri.Chapter05.equation_5_40`: the reflector of
+  $v = x \pm \|x\|_2 e_m$ maps $x$ to a multiple of $e_m$.
+* Equations (5.41)–(5.42), `QuarteroniSaccoSaleri.Chapter05.equation_5_41`: the reflector $P_{(k)}$
+  keeps the first $k$ components of $x$ and sets the components after the $(k+1)$-st to zero.
+* Equation (5.43), `QuarteroniSaccoSaleri.Chapter05.equation_5_43_apply`,
+  `QuarteroniSaccoSaleri.Chapter05.equation_5_43_mem_orthogonalGroup`: the entries of a Givens
+  matrix, and its orthogonality.
+* Equation (5.44), `QuarteroniSaccoSaleri.Chapter05.equation_5_44`: $G(i, k, \theta)^T x$ rotates
+  $x$ by $\theta$ in the plane $(x_i, x_k)$.
+* Equations (5.44) and (5.51), `QuarteroniSaccoSaleri.Chapter05.equation_5_51`: a suitable angle
+  sets the $k$-th component of $G(i, k, \theta)^T x$ to zero.
+* Remark 5.3, `QuarteroniSaccoSaleri.Chapter05.remark_5_3`: Householder deflation of a computed
+  eigenpair.
+* Equation (5.45), `QuarteroniSaccoSaleri.Chapter05.equation_5_45`: the iterates of the Householder
+  method are orthogonally similar to $A$.
+* Section 5.6.2, `QuarteroniSaccoSaleri.Chapter05.hessenbergReduce_isUpperHessenberg`: the
+  Householder method gives an upper Hessenberg matrix.
+* Section 5.6.2, `QuarteroniSaccoSaleri.Chapter05.exists_orthogonal_conj_isUpperHessenberg`: every
+  real square matrix is orthogonally similar to an upper Hessenberg matrix.
+* Remark 5.4, `QuarteroniSaccoSaleri.Chapter05.remark_5_4`: for a symmetric $A$, the Householder
+  method gives a symmetric tridiagonal matrix.
+* Equation (5.46), `QuarteroniSaccoSaleri.Chapter05.equation_5_46`: the computed Hessenberg form is
+  $\hat H = Q^T (A + E) Q$ with $\|E\|_F \le c n^2 u \|A\|_F$.
+* Equations (5.47)–(5.48), `QuarteroniSaccoSaleri.Chapter05.equation_5_47`: the Givens QR
+  factorization of a Hessenberg matrix.
+* Section 5.6.4, `QuarteroniSaccoSaleri.Chapter05.isUpperHessenberg_qrIterate`: the QR iteration
+  preserves upper Hessenberg form.
+* Equations (5.49)–(5.50), `QuarteroniSaccoSaleri.Chapter05.equation_5_49`: applying a reflector is
+  a rank-one update.
 
 ## Conventions
 
-Vectors are `Fin n → ℝ` and `‖x‖₂` is the Euclidean norm `‖(WithLp.toLp 2 x : EuclideanSpace ℝ
-(Fin n))‖`. The Householder matrix (5.38) is written as the book writes it, `equation_5_38 v = I −
-2 v vᵀ / ‖v‖₂²`, and `equation_5_38_eq_householder` identifies it with the backbone's reflector of
-the unit axis `v / ‖v‖₂`; the book's sign choice `±` in (5.39) and (5.42) is the backbone's
-`+ sign(x_m)` (`Matrix.householderAxis`, `Matrix.phase` being the sign with `sign 0 = 1`), which
-avoids cancellation. The Givens matrix (5.43) is `equation_5_43 i k θ`, whose entry `(i, k)` is
-`sin θ`; in the backbone's convention (`Matrix.planeRotation i k c s`, entry `(i, k)` equal to `−s`)
-it is `planeRotation i k (cos θ) (−sin θ)`, so the pair `(c, s)` of (5.44) and (5.51) is the
-backbone's `(c, −s)` and `Matrix.givensPair` carries the opposite sign of `s`. Indices count from
-`0`: the book's `P_(k)`, which keeps the first `k` components and works from the `(k+1)`-st on, has
-its pivot at the index `k`.
+* Vectors are `Fin n → ℝ`, and $\|x\|_2$ is the Euclidean norm
+  `‖(WithLp.toLp 2 x : EuclideanSpace ℝ (Fin n))‖`.
+* The sign $\pm$ of the book in (5.39) and (5.42) is the backbone's $+\operatorname{sign}(x_m)$
+  (`Matrix.householderAxis`), which avoids cancellation. The sign is `Matrix.phase`, with
+  $\operatorname{sign} 0 = 1$.
+* The Givens matrix (5.43) is `QuarteroniSaccoSaleri.Chapter05.equation_5_43 i k θ`, whose entry
+  $(i, k)$ is $\sin \theta$. The backbone's `Matrix.planeRotation i k c s` has the entry $-s$ in
+  position $(i, k)$, so the Givens matrix is `planeRotation i k (cos θ) (-sin θ)`. Hence the pair
+  $(c, s)$ of (5.44) and (5.51) is the backbone's $(c, -s)$, and `Matrix.givensPair` has the
+  opposite sign of $s$.
+* Indices start at $0$. The matrix $P_{(k)}$ of the book keeps the first $k$ components and works
+  from the $(k+1)$-st on, so its pivot has the index $k$.
 
-The Householder method of §5.6.2 is written as the book's recursion (5.45), `hessenbergIter`, and
-`hessenbergIter_eq` identifies it with the backbone's `Matrix.hessenbergIter`; the Givens QR
-factorization of §5.6.3 is stated for the backbone's `Matrix.hessenbergGivensQR`, whose factors are
-exhibited as the products of the book's rotations `G_j = G(j, j+1, θ_j)`.
+## Implementation notes
 
-## Contents
+* The Householder matrix (5.38) is written as the book writes it, and
+  `QuarteroniSaccoSaleri.Chapter05.equation_5_38_eq_householder` identifies it with the backbone's
+  reflector of the unit axis $v / \|v\|_2$.
+* The Householder method of Section 5.6.2 is written as the book's recursion (5.45),
+  `QuarteroniSaccoSaleri.Chapter05.hessenbergIter`, and
+  `QuarteroniSaccoSaleri.Chapter05.hessenbergIter_eq` identifies it with the backbone's
+  `Matrix.hessenbergIter`.
+* The Givens QR factorization of Section 5.6.3 is stated for the backbone's
+  `Matrix.hessenbergGivensQR`, whose factors are shown to be the products of the book's rotations
+  $G_j = G(j, j+1, \theta_j)$.
 
-* `equation_5_38`, `equation_5_38_eq_householder`, `equation_5_38_isSymm`,
-  `equation_5_38_mul_self`, `equation_5_38_mem_orthogonalGroup` — the Householder matrix.
-* `equation_5_40`, `equation_5_41` — the reflector that annihilates a vector below one entry, and
-  the one that acts on a tail of coordinates only, (5.39)–(5.42).
-* `equation_5_43`, `equation_5_43_apply`, `equation_5_43_mem_orthogonalGroup`, `equation_5_44`,
-  `equation_5_51` — Givens rotations and the annihilation of one coordinate.
-* `remark_5_3` — Householder deflation.
-* `hessenbergStep`, `hessenbergIter`, `hessenbergReduce`, `hessenbergQ` and their `_eq` lemmas,
-  `equation_5_45`, `hessenbergReduce_isUpperHessenberg`, `exists_orthogonal_conj_isUpperHessenberg`,
-  `remark_5_4` — the Householder reduction to Hessenberg form.
-* `equation_5_46` — the backward stability of the Householder reduction in floating-point
-  arithmetic, `Ĥ = Qᵀ (A + E) Q` with `‖E‖_F ≤ c n² u ‖A‖_F`, for the reduction
-  `FloatingPoint.RoundsHessenbergReduce` of the relational rounding model, with `c = 528` and
-  `c n² u ≤ 1` as the explicit form of "`u` small enough".
-* `equation_5_47` — the Givens QR factorization of a Hessenberg matrix, (5.47)–(5.48).
-* `isUpperHessenberg_qrIterate` — §5.6.4: Hessenberg form is preserved by the QR iteration.
-* `equation_5_49` — applying a reflector is a rank-one update, (5.49)–(5.50).
+## Deviations from the source
 
-## Readings and errata
+* **Remark 5.3** (typo). The book prints $H x_1 = \alpha x_1$ for the reflector $H$. It should read
+  $H x_1 = \alpha e_1$, which is what $v = x_1 \pm \|x_1\|_2 e_1$ and (5.40) give and what the block
+  form of $HAH$ needs. See `QuarteroniSaccoSaleri.Chapter05.remark_5_3`.
+* **Equation (5.46)** (reading). The constant $c$ of the book is given explicitly, and "the roundoff
+  unit $u$" is qualified by $c n^2 u \le 1$. Program 29 is read as Section 19.3 of
+  [higham2002accuracy] reads such an algorithm. See `QuarteroniSaccoSaleri.Chapter05.equation_5_46`.
 
-Remark 5.3 prints "`H x₁ = α x₁`" for the reflector `H`; it should read `H x₁ = α e₁`, which is
-what `v = x₁ ± ‖x₁‖₂ e₁` and (5.40) give and what the block form of `H A H` requires. The rounding
-error estimate (5.46) is stated with the book's `c` made explicit and "the roundoff unit `u`"
-qualified by `c n² u ≤ 1`; the algorithm it is stated for is Program 29 read as
-[higham2002accuracy] §19.3 reads such an algorithm — the Householder vector in the construction
-(19.1) of Higham's Lemma 19.1 (the sign `+ sign(x_k)` of the backbone; Program 32 uses the other
-sign with the rationalized formula, which Higham covers "similarly" and which is not formalized),
-the products by `R` as the rank-one updates (5.49)–(5.50) with one rounding per operation, and
-the annihilated entries of column `k` set to zero rather than left as the roundoff-sized junk
-Program 29 leaves. The unnumbered `‖E‖₂ ≃ u ‖A‖₂` after Program 30 (the Hessenberg-QR iteration)
-carries a `≃` and is not a proposition; it gets no node. Examples 5.5–5.9 are numerical,
-operation counts are prose, and Programs 29–35 are not nodes.
+## Not formalized
+
+* **Equation (5.46) with the Householder vector of Program 32.** Program 32 uses the other sign with
+  the rationalized formula, which [higham2002accuracy] covers "similarly".
+* **The estimate $\|E\|_2 \simeq u \|A\|_2$ after Program 30** (the Hessenberg-QR iteration). It
+  carries a $\simeq$ and is not a proposition.
+* **Examples 5.5–5.9.** They are numerical.
+* **The operation counts.** They are prose.
+* **Programs 29–35.** They are code.
 -/
 
 open Finset Matrix Polynomial
@@ -80,15 +138,19 @@ namespace QuarteroniSaccoSaleri.Chapter05
 
 variable {N : ℕ}
 
-/-! ### (5.38): Householder reflection matrices -/
+/-! ### Equation (5.38): Householder reflection matrices -/
 
-/-- **(5.38), the Householder reflection matrix** of the Householder vector `v ∈ ℝⁿ`:
-`P = I − 2 v vᵀ / ‖v‖₂²`, the reflection across the hyperplane `span{v}ᗮ`; the identity when
-`v = 0`, where the book's formula is undefined. -/
+/-- **Equation (5.38)** of [quarteroni2000numerical], the Householder reflection matrix. For a
+Householder vector $v \in \mathbb{R}^n$, it is the matrix
+$$P = I - \frac{2 v v^T}{\|v\|_2^2},$$
+the reflection across the hyperplane $\operatorname{span}\{v\}^\perp$.
+
+For $v = 0$, where the formula of the book is undefined, Lean divides by zero to zero, and
+$P = I$. -/
 noncomputable def equation_5_38 (v : Fin N → ℝ) : Matrix (Fin N) (Fin N) ℝ :=
   1 - (2 / ‖(WithLp.toLp 2 v : EuclideanSpace ℝ (Fin N))‖ ^ 2) • vecMulVec v v
 
-/-- The book's `‖v‖₂²` is the inner square `v ⬝ᵥ v`. -/
+/-- For $v \in \mathbb{R}^n$, $\|v\|_2^2 = v^T v$. -/
 theorem norm_toLp_sq_eq_dotProduct (v : Fin N → ℝ) :
     ‖(WithLp.toLp 2 v : EuclideanSpace ℝ (Fin N))‖ ^ 2 = v ⬝ᵥ v := by
   rw [EuclideanSpace.norm_sq_eq]
@@ -99,8 +161,8 @@ theorem norm_toLp_sq_eq_dotProduct (v : Fin N → ℝ) :
 theorem equation_5_38_zero : equation_5_38 (0 : Fin N → ℝ) = 1 := by
   simp [equation_5_38]
 
-/-- **The book's Householder matrix is the backbone's reflector** of the normalized axis: for
-`v ≠ 0`, `equation_5_38 v = Matrix.householder (v / ‖v‖₂)`. -/
+/-- For $v \in \mathbb{R}^n$ with $v \neq 0$, the Householder matrix (5.38) of $v$ is the backbone's
+reflector `Matrix.householder` of the normalized axis $v / \|v\|_2$. -/
 theorem equation_5_38_eq_householder {v : Fin N → ℝ} (hv : v ≠ 0) :
     equation_5_38 v =
       householder ((‖(WithLp.toLp 2 v : EuclideanSpace ℝ (Fin N))‖)⁻¹ • v) := by
@@ -115,8 +177,8 @@ theorem equation_5_38_eq_householder {v : Fin N → ℝ} (hv : v ≠ 0) :
 theorem equation_5_38_isSymm (v : Fin N → ℝ) : (equation_5_38 v).IsSymm := by
   rw [IsSymm, equation_5_38, transpose_sub, transpose_one, transpose_smul, transpose_vecMulVec]
 
-/-- The axis `v / ‖v‖₂` of a nonzero `v` is a unit vector, in the form the backbone's reflector
-lemmas take. -/
+/-- For $v \in \mathbb{R}^n$ with $v \neq 0$, the axis $u = v / \|v\|_2$ is a unit vector,
+$u^T u = 1$, in the form that the backbone's lemmas on reflectors take. -/
 theorem star_dotProduct_normalize_self {v : Fin N → ℝ} (hv : v ≠ 0) :
     star ((‖(WithLp.toLp 2 v : EuclideanSpace ℝ (Fin N))‖)⁻¹ • v) ⬝ᵥ
       (‖(WithLp.toLp 2 v : EuclideanSpace ℝ (Fin N))‖)⁻¹ • v = 1 := by
@@ -126,25 +188,28 @@ theorem star_dotProduct_normalize_self {v : Fin N → ℝ} (hv : v ≠ 0) :
     smul_eq_mul]
   field_simp
 
-/-- A Householder matrix is an involution, `P P = I`: the backbone's
-`Matrix.householder_mul_self`. -/
+/-- For $v \in \mathbb{R}^n$ with $v \neq 0$, the Householder matrix $P$ of $v$ is an involution,
+$P P = I$. This is the backbone's `Matrix.householder_mul_self`. -/
 theorem equation_5_38_mul_self {v : Fin N → ℝ} (hv : v ≠ 0) :
     equation_5_38 v * equation_5_38 v = 1 := by
   rw [equation_5_38_eq_householder hv]
   exact householder_mul_self (star_dotProduct_normalize_self hv)
 
-/-- A Householder matrix is orthogonal: the backbone's `Matrix.householder_mem_unitaryGroup`. -/
+/-- For $v \in \mathbb{R}^n$ with $v \neq 0$, the Householder matrix of $v$ is orthogonal. This is
+the backbone's `Matrix.householder_mem_unitaryGroup`. -/
 theorem equation_5_38_mem_orthogonalGroup {v : Fin N → ℝ} (hv : v ≠ 0) :
     equation_5_38 v ∈ Matrix.orthogonalGroup (Fin N) ℝ := by
   rw [equation_5_38_eq_householder hv]
   exact householder_mem_unitaryGroup (star_dotProduct_normalize_self hv)
 
-/-! ### (5.39)–(5.42): reflectors that annihilate coordinates -/
+/-! ### Equations (5.39)–(5.42): reflectors that annihilate coordinates -/
 
-/-- **The book's reflector of the axis (5.39) is the backbone's**: for every `x` and `m`,
-`equation_5_38 (householderAxis x m) = householder (householderVec x m)`, the backbone's unit
-vector `householderVec x m` being the normalized axis (or `0` when `x = 0`, both sides then being
-the identity). -/
+/-- The reflector of the axis (5.39) of [quarteroni2000numerical] is the backbone's reflector. For
+every $x \in \mathbb{R}^n$ and index $m$, the Householder matrix (5.38) of
+`Matrix.householderAxis x m` is `Matrix.householder (Matrix.householderVec x m)`.
+
+The unit vector `Matrix.householderVec x m` is the normalized axis, or $0$ when $x = 0$. In that
+case both sides are the identity. -/
 theorem equation_5_38_householderAxis (x : Fin N → ℝ) (m : Fin N) :
     equation_5_38 (householderAxis x m) = householder (householderVec x m) := by
   rcases eq_or_ne x 0 with rfl | hx
@@ -153,11 +218,18 @@ theorem equation_5_38_householderAxis (x : Fin N → ℝ) (m : Fin N) :
     rw [h, householderVec_zero, householder_zero, equation_5_38_zero]
   · exact equation_5_38_eq_householder (householderAxis_ne_zero hx m)
 
-/-- **(5.39)–(5.40).** Let `x ∈ ℝⁿ`, `x ≠ 0`, and let `v = x ± ‖x‖₂ e_m` be the Householder
-vector (5.39), the sign being `sign(x_m)` (`Matrix.householderAxis x m`, with `sign 0 = 1`). Then
-the Householder matrix `P` of `v` sets to zero all the components of `x` except the `m`-th one:
-`P x = [0, …, 0, ∓‖x‖₂, 0, …, 0]ᵀ`, the surviving entry being `−sign(x_m) ‖x‖₂`, of modulus `‖x‖₂`.
-Backbone `Matrix.householder_mulVec_eq_smul_single`. -/
+/-- **Equations (5.39)–(5.40)** of [quarteroni2000numerical]. Let $x \in \mathbb{R}^n$ with
+$x \neq 0$, let $m$ be an index, and let
+$$v = x + \operatorname{sign}(x_m) \|x\|_2 e_m$$
+be the Householder vector (5.39). Then the Householder matrix $P$ of $v$ sets to zero all the
+components of $x$ except the $m$-th:
+$$P x = -\operatorname{sign}(x_m) \|x\|_2 \, e_m,$$
+and the remaining entry has modulus $\|x\|_2$.
+
+The book writes $v = x \pm \|x\|_2 e_m$ and $Px = [0, \dots, 0, \mp\|x\|_2, 0, \dots, 0]^T$. The
+sign is `Matrix.phase (x m)`, with $\operatorname{sign} 0 = 1$, and $v$ is
+`Matrix.householderAxis x m`. The proof specializes the backbone's
+`Matrix.householder_mulVec_eq_smul_single`. -/
 theorem equation_5_40 {x : Fin N → ℝ} (hx : x ≠ 0) (m : Fin N) :
     let v := householderAxis x m
     v = x + (phase (x m) * ‖(WithLp.toLp 2 x : EuclideanSpace ℝ (Fin N))‖) •
@@ -172,13 +244,21 @@ theorem equation_5_40 {x : Fin N → ℝ} (hx : x ≠ 0) (m : Fin N) :
     exact householder_mulVec_eq_smul_single hx m
   · rw [abs_neg, abs_mul, ← Real.norm_eq_abs, norm_phase, one_mul, abs_norm]
 
-/-- **(5.41)–(5.42).** For `x ∈ ℝⁿ` and `k < n`, let `x^{(n−k)}` be the vector of the last `n − k`
-components of `x` (embedded in `ℝⁿ` by zeros: `t r = x r` for `r ≥ k`, `t r = 0` for `r < k`) and
-let `w^{(k)} = x^{(n−k)} ± ‖x^{(n−k)}‖₂ e₁^{(n−k)}` be the Householder vector (5.42), the sign being
-`sign(x_k)` (`Matrix.householderAxis t k`). The Householder matrix `P_(k)` of `w^{(k)}` has the
-block form `diag(I_k, R_{n−k})` of (5.41) — its axis vanishes on the first `k` coordinates — and
-the transformed vector `y = P_(k) x` reads `y_j = x_j` for `j < k`, `y_j = 0` for `j > k`, and
-`y_k = ±‖x^{(n−k)}‖₂`, precisely `y_k = −sign(x_k) ‖x^{(n−k)}‖₂`. Backbone
+/-- **Equations (5.41)–(5.42)** of [quarteroni2000numerical]. Let $x \in \mathbb{R}^n$ and $k < n$.
+Let $x^{(n-k)}$ be the vector of the last $n - k$ components of $x$, embedded in $\mathbb{R}^n$
+by zeros in the first $k$ components, and let
+$$w^{(k)} = x^{(n-k)} + \operatorname{sign}(x_k) \|x^{(n-k)}\|_2 \, e_k$$
+be the Householder vector (5.42). Let $P_{(k)}$ be the Householder matrix of $w^{(k)}$ and
+$y = P_{(k)} x$. Then:
+
+1. $w^{(k)}$ vanishes on the first $k$ components, so $P_{(k)}$ has the block form
+   $\operatorname{diag}(I_k, R_{n-k})$ of (5.41);
+2. $y_j = x_j$ for $j < k$;
+3. $y_j = 0$ for $j > k$;
+4. $y_k = -\operatorname{sign}(x_k) \|x^{(n-k)}\|_2$, so $|y_k| = \|x^{(n-k)}\|_2$.
+
+The indices start at $0$. The book writes $w^{(k)} = x^{(n-k)} \pm \|x^{(n-k)}\|_2 e_1^{(n-k)}$
+and $y_k = \pm\|x^{(n-k)}\|_2$. The proof specializes the backbone's
 `Matrix.householder_tail_mulVec` and `Matrix.householderTail_apply_of_lt`. -/
 theorem equation_5_41 (x : Fin N → ℝ) {k : ℕ} (hk : k < N) :
     let t : Fin N → ℝ := fun r => if k ≤ (r : ℕ) then x r else 0
@@ -207,17 +287,21 @@ theorem equation_5_41 (x : Fin N → ℝ) {k : ℕ} (hk : k < N) :
   · rw [hP, ← Real.norm_eq_abs]
     exact norm_householder_householderTail_mulVec_apply_self x hk
 
-/-! ### (5.43)–(5.44): Givens rotation matrices -/
+/-! ### Equations (5.43)–(5.44): Givens rotation matrices -/
 
-/-- **(5.43), the Givens rotation matrix** `G(i, k, θ) = I_n − Y`, the identity except for the
-entries `g_ii = g_kk = cos θ`, `g_ik = sin θ` and `g_ki = −sin θ`. In the backbone's convention
-(`Matrix.planeRotation i k c s` has `−s` in position `(i, k)`) it is
-`planeRotation i k (cos θ) (−sin θ)`. -/
+/-- **Equation (5.43)** of [quarteroni2000numerical], the Givens rotation matrix. For indices
+$i \neq k$ and an angle $\theta \in \mathbb{R}$, $G(i, k, \theta) = I_n - Y$ is the identity
+except for the entries
+$$g_{ii} = g_{kk} = \cos \theta, \qquad g_{ik} = \sin \theta, \qquad g_{ki} = -\sin \theta.$$
+
+The backbone's `Matrix.planeRotation i k c s` has $-s$ in position $(i, k)$, so
+$G(i, k, \theta)$ is `planeRotation i k (Real.cos θ) (-Real.sin θ)`. -/
 noncomputable def equation_5_43 (i k : Fin N) (θ : ℝ) : Matrix (Fin N) (Fin N) ℝ :=
   planeRotation i k (Real.cos θ) (-Real.sin θ)
 
-/-- The entries of the Givens matrix (5.43), for `i ≠ k`: `cos θ` at `(i, i)` and `(k, k)`,
-`sin θ` at `(i, k)`, `−sin θ` at `(k, i)`, and the identity elsewhere. -/
+/-- For indices $i \neq k$ and $\theta \in \mathbb{R}$, the entries of the Givens matrix
+$G(i, k, \theta)$ are $\cos \theta$ at $(i, i)$ and $(k, k)$, $\sin \theta$ at $(i, k)$,
+$-\sin \theta$ at $(k, i)$, and those of the identity elsewhere. -/
 theorem equation_5_43_apply {i k : Fin N} (hik : i ≠ k) (θ : ℝ) (p q : Fin N) :
     equation_5_43 i k θ p q =
       if p = i ∧ q = i then Real.cos θ
@@ -229,16 +313,20 @@ theorem equation_5_43_apply {i k : Fin N} (hik : i ≠ k) (θ : ℝ) (p q : Fin 
   by_cases hpi : p = i <;> by_cases hpk : p = k <;> by_cases hqi : q = i <;>
     by_cases hqk : q = k <;> simp_all [hik.symm]
 
-/-- The Givens matrix is orthogonal: `Matrix.planeRotation_mem_orthogonalGroup` with
-`cos² θ + sin² θ = 1`. -/
+/-- For indices $i \neq k$ and $\theta \in \mathbb{R}$, the Givens matrix $G(i, k, \theta)$ is
+orthogonal. This is `Matrix.planeRotation_mem_orthogonalGroup` with
+$\cos^2 \theta + \sin^2 \theta = 1$. -/
 theorem equation_5_43_mem_orthogonalGroup {i k : Fin N} (hik : i ≠ k) (θ : ℝ) :
     equation_5_43 i k θ ∈ Matrix.orthogonalGroup (Fin N) ℝ :=
   planeRotation_mem_orthogonalGroup hik (by rw [neg_sq]; exact Real.cos_sq_add_sin_sq θ)
 
-/-- **(5.44).** For `x ∈ ℝⁿ`, the product `y = G(i, k, θ)ᵀ x` rotates `x` counterclockwise by `θ`
-in the coordinate plane `(x_i, x_k)`: with `c = cos θ`, `s = sin θ`, `y_j = x_j` for `j ≠ i, k`,
-`y_i = c x_i − s x_k` and `y_k = s x_i + c x_k`. Backbone
-`Matrix.transpose_planeRotation_mulVec_apply`. -/
+/-- **Equation (5.44)** of [quarteroni2000numerical]. Let $i \neq k$ be indices,
+$\theta \in \mathbb{R}$ and $x \in \mathbb{R}^n$, and let $c = \cos \theta$ and
+$s = \sin \theta$. Then $y = G(i, k, \theta)^T x$ is $x$ rotated counterclockwise by $\theta$ in
+the coordinate plane $(x_i, x_k)$:
+$$y_j = x_j \quad (j \neq i, k), \qquad y_i = c x_i - s x_k, \qquad y_k = s x_i + c x_k.$$
+
+The proof specializes the backbone's `Matrix.transpose_planeRotation_mulVec_apply`. -/
 theorem equation_5_44 {i k : Fin N} (hik : i ≠ k) (θ : ℝ) (x : Fin N → ℝ) :
     let y := (equation_5_43 i k θ)ᵀ *ᵥ x
     (∀ j, j ≠ i → j ≠ k → y j = x j) ∧
@@ -252,10 +340,18 @@ theorem equation_5_44 {i k : Fin N} (hik : i ≠ k) (θ : ℝ) (x : Fin N → �
       ite_eq_left rfl]
     ring
 
-/-- **(5.44), the annihilating choice, and (5.51).** Let `α_ik = √(x_i² + x_k²) > 0`. If `θ` is
-chosen with `c = cos θ = x_i/α_ik` and `s = sin θ = −x_k/α_ik` (that is, `θ = arctan(−x_k/x_i)`) —
-such a `θ` exists — then `y = G(i, k, θ)ᵀ x` has `y_k = 0`, `y_i = α_ik` and `y_j = x_j` for
-`j ≠ i, k`: this is the system (5.51), `[c −s; s c] [x_i; x_k] = [r; 0]`. The pair `(c, −s)` is
+/-- **Equations (5.44) and (5.51)** of [quarteroni2000numerical], the annihilating choice of the
+angle. Let $i \neq k$ be indices and $x \in \mathbb{R}^n$ with $(x_i, x_k) \neq (0, 0)$, and let
+$\alpha_{ik} = \sqrt{x_i^2 + x_k^2}$. Then there is an angle $\theta$ with
+$$c = \cos \theta = \frac{x_i}{\alpha_{ik}}, \qquad s = \sin \theta =
+  -\frac{x_k}{\alpha_{ik}},$$
+and for this $\theta$ the vector $y = G(i, k, \theta)^T x$ has $y_k = 0$, $y_i = \alpha_{ik}$
+and $y_j = x_j$ for $j \neq i, k$. This is the system (5.51),
+$$\begin{bmatrix} c & -s \\ s & c \end{bmatrix} \begin{bmatrix} x_i \\ x_k \end{bmatrix} =
+  \begin{bmatrix} r \\ 0 \end{bmatrix}.$$
+
+The book writes the angle as $\theta = \arctan(-x_k / x_i)$. This formula gives the right angle
+only when $x_i > 0$; the statement gives $\theta$ by its cosine and sine. The pair $(c, -s)$ is
 the backbone's `Matrix.givensPair (x i) (x k)`, and the annihilation is
 `Matrix.transpose_planeRotation_givensPair_mulVec`. -/
 theorem equation_5_51 {i k : Fin N} (hik : i ≠ k) (x : Fin N → ℝ) (hx : ¬ (x i = 0 ∧ x k = 0)) :
@@ -280,13 +376,25 @@ theorem equation_5_51 {i k : Fin N} (hik : i ≠ k) (x : Fin N → ℝ) (hx : ¬
 
 /-! ### Remark 5.3: Householder deflation -/
 
-/-- **Remark 5.3 (Householder deflation for power iterations).** Let `A ∈ ℝ^{n×n}` and suppose the
-eigenpair `(λ₁, x₁)`, `A x₁ = λ₁ x₁`, `x₁ ≠ 0`, has been computed. Let `H` be the Householder
-matrix (5.38) of `v = x₁ ± ‖x₁‖₂ e₁`, so that `H x₁ = α e₁` for some `α ∈ ℝ` (the book prints
-`H x₁ = α x₁`). Then `A₁ = H A H` has the block form `[λ₁ bᵀ; 0 A₂]`: its first column is `λ₁ e₁`,
-and the eigenvalues of the trailing block `A₂ ∈ ℝ^{(n−1)×(n−1)}` are those of `A` except for `λ₁`,
-with multiplicities: `A.charpoly = (X − λ₁) A₂.charpoly`. Backbone
-`Matrix.householder_conj_eigenvector_apply` and `Matrix.charpoly_householder_conj_eigenvector`. -/
+/-- **Remark 5.3** of [quarteroni2000numerical] (Householder deflation for power iterations). Let
+$A \in \mathbb{R}^{n \times n}$ with $n \ge 1$, and suppose that an eigenpair
+$(\lambda_1, x_1)$, $A x_1 = \lambda_1 x_1$ with $x_1 \neq 0$, has been computed. Let $H$ be the
+Householder matrix (5.38) of $v = x_1 + \sigma \|x_1\|_2 e_1$, where $\sigma$ is the sign of the
+first component of $x_1$, and let $A_1 = H A H$. Then:
+
+1. $H x_1 = \alpha e_1$ for some $\alpha \in \mathbb{R}$;
+2. the first column of $A_1$ is $\lambda_1 e_1$, so that $A_1 = \begin{bmatrix} \lambda_1 & b^T
+   \\ 0 & A_2 \end{bmatrix}$;
+3. the eigenvalues of the trailing block $A_2 \in \mathbb{R}^{(n-1) \times (n-1)}$ are those of
+   $A$ except $\lambda_1$, with multiplicities: $\det(\lambda I - A) = (\lambda - \lambda_1)
+   \det(\lambda I - A_2)$.
+
+**Typo.** The book prints $H x_1 = \alpha x_1$. It should read $H x_1 = \alpha e_1$, which is
+what $v = x_1 \pm \|x_1\|_2 e_1$ and (5.40) give and what the block form of $HAH$ needs.
+
+The matrix has order $N + 1$ in Lean, and $A_2$ is `A₁.submatrix Fin.succ Fin.succ`. The proof
+specializes the backbone's `Matrix.householder_conj_eigenvector_apply` and
+`Matrix.charpoly_householder_conj_eigenvector`. -/
 theorem remark_5_3 {A : Matrix (Fin (N + 1)) (Fin (N + 1)) ℝ} {x₁ : Fin (N + 1) → ℝ} {lam₁ : ℝ}
     (hx : A *ᵥ x₁ = lam₁ • x₁) (hx0 : x₁ ≠ 0) :
     let H := equation_5_38 (householderAxis x₁ 0)
@@ -304,13 +412,16 @@ theorem remark_5_3 {A : Matrix (Fin (N + 1)) (Fin (N + 1)) ℝ} {x₁ : Fin (N +
   · have h := charpoly_householder_conj_eigenvector A hx hx0
     rwa [← hH] at h
 
-/-! ### §5.6.2: the Householder reduction to Hessenberg form -/
+/-! ### Section 5.6.2: the Householder reduction to Hessenberg form -/
 
-/-- The Householder matrix `P_(k)` of the `k`-th step of the Householder method (5.45): the matrix
-(5.41) built, as in `equation_5_41`, from the `k`-th column of the current matrix `A` with pivot
-`k + 1`, so that it sets to zero the entries in positions `k + 2, …, n` of that column (the book
-counts from `1`; here the column is `k` and the pivot `k + 1`, both from `0`). It is the identity
-when there is nothing to annihilate, `k + 1 ≥ n`. -/
+/-- **Equation (5.45)** of [quarteroni2000numerical], the Householder matrix $P_{(k)}$ of a step of
+the Householder method. For $A \in \mathbb{R}^{n \times n}$ and a step $k$ with $k + 1 < n$, it
+is the matrix (5.41) built, as in `QuarteroniSaccoSaleri.Chapter05.equation_5_41`, from the
+$k$-th column of $A$ with pivot $k + 1$, so that it sets to zero the entries of that column
+after the pivot. It is the identity when there is nothing to set to zero, $k + 1 \ge n$.
+
+The indices start at $0$: the book counts from $1$, and here the column is $k$ and the pivot is
+$k + 1$. -/
 noncomputable def householderStepMatrix (A : Matrix (Fin N) (Fin N) ℝ) (k : ℕ) :
     Matrix (Fin N) (Fin N) ℝ :=
   if h : k + 1 < N then
@@ -318,34 +429,39 @@ noncomputable def householderStepMatrix (A : Matrix (Fin N) (Fin N) ℝ) (k : �
       (fun i : Fin N => if k + 1 ≤ (i : ℕ) then A i ⟨k, by omega⟩ else 0) ⟨k + 1, h⟩)
   else 1
 
-/-- **(5.45), one step of the Householder method**: `A^{(k)} = P_(k)ᵀ A^{(k−1)} P_(k)`. -/
+/-- **Equation (5.45)** of [quarteroni2000numerical], one step of the Householder method:
+$A \mapsto P_{(k)}^T A P_{(k)}$. -/
 noncomputable def hessenbergStep (A : Matrix (Fin N) (Fin N) ℝ) (k : ℕ) :
     Matrix (Fin N) (Fin N) ℝ :=
   (householderStepMatrix A k)ᵀ * A * householderStepMatrix A k
 
-/-- **The Householder method, §5.6.2**: the sequence `A^{(0)} = A`,
-`A^{(k)} = P_(k)ᵀ A^{(k−1)} P_(k)` of matrices orthogonally similar to `A`, (5.45). -/
+/-- **Section 5.6.2** of [quarteroni2000numerical], the Householder method (5.45). For
+$A \in \mathbb{R}^{n \times n}$, it is the sequence of matrices $A^{(0)} = A$ and
+$A^{(k)} = P_{(k)}^T A^{(k-1)} P_{(k)}$, which are orthogonally similar to $A$. -/
 noncomputable def hessenbergIter (A : Matrix (Fin N) (Fin N) ℝ) : ℕ → Matrix (Fin N) (Fin N) ℝ
   | 0 => A
   | k + 1 => hessenbergStep (hessenbergIter A k) k
 
-/-- The accumulated orthogonal matrix `Q_(k) = P_(1) ⋯ P_(k)` of (5.45). -/
+/-- **Equation (5.45)** of [quarteroni2000numerical], the accumulated orthogonal matrix
+$Q_{(k)} = P_{(1)} \cdots P_{(k)}$ of the Householder method, with $Q_{(0)} = I$. -/
 noncomputable def hessenbergQIter (A : Matrix (Fin N) (Fin N) ℝ) : ℕ → Matrix (Fin N) (Fin N) ℝ
   | 0 => 1
   | k + 1 => hessenbergQIter A k * householderStepMatrix (hessenbergIter A k) k
 
-/-- **The Hessenberg form `H = A^{(n−2)}`** produced by the `n − 2` steps of the Householder
-method (§5.6.2, Program 29). -/
+/-- **Section 5.6.2** of [quarteroni2000numerical], the Hessenberg form $H = A^{(n-2)}$ produced by
+the $n - 2$ steps of the Householder method (Program 29).
+
+For $n < 2$ there are no steps, and $H = A$. -/
 noncomputable def hessenbergReduce (A : Matrix (Fin N) (Fin N) ℝ) : Matrix (Fin N) (Fin N) ℝ :=
   hessenbergIter A (N - 2)
 
-/-- **The orthogonal matrix `Q = P_(1) ⋯ P_(n−2)`** of the Householder method, with `H = Qᵀ A Q`
-(§5.6.2, Program 29). -/
+/-- **Section 5.6.2** of [quarteroni2000numerical], the orthogonal matrix
+$Q = P_{(1)} \cdots P_{(n-2)}$ of the Householder method, with $H = Q^T A Q$ (Program 29). -/
 noncomputable def hessenbergQ (A : Matrix (Fin N) (Fin N) ℝ) : Matrix (Fin N) (Fin N) ℝ :=
   hessenbergQIter A (N - 2)
 
-/-- **The book's `P_(k)` is the backbone's step reflector**:
-`householderStepMatrix A k = Matrix.hessenbergReflector A k`. -/
+/-- The matrix $P_{(k)}$ of the book is the backbone's step reflector:
+`QuarteroniSaccoSaleri.Chapter05.householderStepMatrix A k` is `Matrix.hessenbergReflector A k`. -/
 theorem householderStepMatrix_eq (A : Matrix (Fin N) (Fin N) ℝ) (k : ℕ) :
     householderStepMatrix A k = hessenbergReflector A k := by
   unfold householderStepMatrix
@@ -357,15 +473,16 @@ theorem householderStepMatrix_eq (A : Matrix (Fin N) (Fin N) ℝ) (k : ℕ) :
     · rw [hessenbergReflector_of_lt A hk, householderTail_of_le _ (by omega), householder_zero]
     · rw [hessenbergReflector_of_le A (not_lt.1 hk)]
 
-/-- The book's step `P_(k)ᵀ A P_(k)` is the backbone's `Matrix.hessenbergStep`, the reflector being
-symmetric. -/
+/-- The step $P_{(k)}^T A P_{(k)}$ of the book is the backbone's `Matrix.hessenbergStep A k`,
+because the reflector is symmetric. -/
 theorem hessenbergStep_eq (A : Matrix (Fin N) (Fin N) ℝ) (k : ℕ) :
     hessenbergStep A k = Matrix.hessenbergStep A k := by
   rw [hessenbergStep, Matrix.hessenbergStep, householderStepMatrix_eq,
     ← conjTranspose_eq_transpose_of_trivial, (isHermitian_hessenbergReflector A k).eq]
 
-/-- **The book's recursion (5.45) is the backbone's**: `hessenbergIter A k =
-Matrix.hessenbergIter A k` and `hessenbergQIter A k = Matrix.hessenbergQIter A k`. -/
+/-- The recursion (5.45) of [quarteroni2000numerical] is the backbone's: for every $k$,
+`QuarteroniSaccoSaleri.Chapter05.hessenbergIter A k` is `Matrix.hessenbergIter A k`, and
+`QuarteroniSaccoSaleri.Chapter05.hessenbergQIter A k` is `Matrix.hessenbergQIter A k`. -/
 theorem hessenbergIter_eq (A : Matrix (Fin N) (Fin N) ℝ) :
     ∀ k, hessenbergIter A k = Matrix.hessenbergIter A k ∧
       hessenbergQIter A k = Matrix.hessenbergQIter A k
@@ -376,19 +493,23 @@ theorem hessenbergIter_eq (A : Matrix (Fin N) (Fin N) ℝ) :
       Matrix.hessenbergIter_succ, Matrix.hessenbergQIter_succ]
     exact ⟨rfl, rfl⟩
 
-/-- The book's `H` and `Q` are the backbone's `Matrix.hessenbergReduce` and
+/-- The matrices $H$ and $Q$ of the book are the backbone's `Matrix.hessenbergReduce` and
 `Matrix.hessenbergQ`. -/
 theorem hessenbergReduce_eq (A : Matrix (Fin N) (Fin N) ℝ) :
     hessenbergReduce A = Matrix.hessenbergReduce A ∧ hessenbergQ A = Matrix.hessenbergQ A :=
   hessenbergIter_eq A (N - 2)
 
-/-- **(5.45).** The matrices `A^{(k)}` generated by the Householder method are orthogonally similar
-to `A`: `A^{(k)} = P_(k)ᵀ A^{(k−1)} P_(k) = (P_(k) ⋯ P_(1))ᵀ A (P_(k) ⋯ P_(1)) = Q_(k)ᵀ A Q_(k)`
-with `Q_(k) = P_(1) ⋯ P_(k)` orthogonal, for every `k`; in particular `H = Qᵀ A Q` for the
-Hessenberg form `H = A^{(n−2)}` and the orthogonal `Q = P_(1) ⋯ P_(n−2)` (the output of
-Program 29).
-Backbone `Matrix.hessenbergIter_eq_conj`, `Matrix.hessenbergQIter_mem_unitaryGroup`,
-`Matrix.hessenbergReduce_eq_conj` and `Matrix.hessenbergQ_mem_orthogonalGroup`. -/
+/-- **Equation (5.45)** of [quarteroni2000numerical]. Let $A \in \mathbb{R}^{n \times n}$. For every
+$k$, the matrix $Q_{(k)} = P_{(1)} \cdots P_{(k)}$ is orthogonal, and the matrix $A^{(k)}$ of
+the Householder method is orthogonally similar to $A$:
+$$A^{(k)} = P_{(k)}^T A^{(k-1)} P_{(k)} = (P_{(1)} \cdots P_{(k)})^T A \, (P_{(1)} \cdots
+  P_{(k)}) = Q_{(k)}^T A Q_{(k)}.$$
+In particular, $Q = P_{(1)} \cdots P_{(n-2)}$ is orthogonal and $H = Q^T A Q$ for the Hessenberg
+form $H = A^{(n-2)}$, which is the output of Program 29.
+
+The proof specializes the backbone's `Matrix.hessenbergIter_eq_conj`,
+`Matrix.hessenbergQIter_mem_unitaryGroup`, `Matrix.hessenbergReduce_eq_conj` and
+`Matrix.hessenbergQ_mem_orthogonalGroup`. -/
 theorem equation_5_45 (A : Matrix (Fin N) (Fin N) ℝ) :
     (∀ k, hessenbergQIter A k ∈ Matrix.orthogonalGroup (Fin N) ℝ ∧
       hessenbergIter A k = (hessenbergQIter A k)ᵀ * A * hessenbergQIter A k) ∧
@@ -401,24 +522,33 @@ theorem equation_5_45 (A : Matrix (Fin N) (Fin N) ℝ) :
     exact ⟨hessenbergQIter_mem_unitaryGroup A k, hessenbergIter_eq_conj A k⟩
   exact ⟨key, (key (N - 2)).1, (key (N - 2)).2⟩
 
-/-- **After `n − 2` steps of the Householder reduction we obtain a matrix `H = A^{(n−2)}` in upper
-Hessenberg form** (§5.6.2): `Matrix.isUpperHessenberg_hessenbergReduce`. -/
+/-- **Section 5.6.2** of [quarteroni2000numerical]. For $A \in \mathbb{R}^{n \times n}$, the matrix
+$H = A^{(n-2)}$ obtained after $n - 2$ steps of the Householder method is upper Hessenberg.
+
+This is the backbone's `Matrix.isUpperHessenberg_hessenbergReduce`. -/
 theorem hessenbergReduce_isUpperHessenberg (A : Matrix (Fin N) (Fin N) ℝ) :
     (hessenbergReduce A).IsUpperHessenberg := by
   rw [(hessenbergReduce_eq A).1]
   exact isUpperHessenberg_hessenbergReduce A
 
-/-- **Every `A ∈ ℝ^{n×n}` can be transformed by an orthogonal similarity into upper Hessenberg
-form** (§5.6.2, the opening sentence): `Matrix.exists_unitary_conj_isUpperHessenberg`, or
-`equation_5_45` with `hessenbergReduce_isUpperHessenberg`. -/
+/-- **Section 5.6.2** of [quarteroni2000numerical], the opening sentence. Every
+$A \in \mathbb{R}^{n \times n}$ can be transformed by an orthogonal similarity into upper
+Hessenberg form: there is an orthogonal $Q$ such that $Q^T A Q$ is upper Hessenberg.
+
+This is the backbone's `Matrix.exists_unitary_conj_isUpperHessenberg`, or
+`QuarteroniSaccoSaleri.Chapter05.equation_5_45` with
+`QuarteroniSaccoSaleri.Chapter05.hessenbergReduce_isUpperHessenberg`. -/
 theorem exists_orthogonal_conj_isUpperHessenberg (A : Matrix (Fin N) (Fin N) ℝ) :
     ∃ Q ∈ Matrix.orthogonalGroup (Fin N) ℝ, (Qᵀ * A * Q).IsUpperHessenberg :=
   ⟨hessenbergQ A, (equation_5_45 A).2.1,
     (equation_5_45 A).2.2 ▸ hessenbergReduce_isUpperHessenberg A⟩
 
-/-- **Remark 5.4 (the symmetric case).** If `A` is symmetric, the transformation (5.45) maintains
-the property: `(A^{(k)})ᵀ = (Q_(k)ᵀ A Q_(k))ᵀ = A^{(k)}` for all `k`, so `H = A^{(n−2)}` is
-symmetric and, being upper Hessenberg, tridiagonal. Backbone `Matrix.isSymm_hessenbergReduce` and
+/-- **Remark 5.4** of [quarteroni2000numerical] (the symmetric case). Let
+$A \in \mathbb{R}^{n \times n}$ be symmetric. Then the transformation (5.45) keeps the symmetry,
+$(A^{(k)})^T = (Q_{(k)}^T A Q_{(k)})^T = A^{(k)}$ for every $k$. So $H = A^{(n-2)}$ is symmetric
+and, because it is upper Hessenberg, tridiagonal.
+
+The proof specializes the backbone's `Matrix.isSymm_hessenbergReduce` and
 `Matrix.IsUpperHessenberg.isTridiagonal_of_isSymm`. -/
 theorem remark_5_4 {A : Matrix (Fin N) (Fin N) ℝ} (hA : A.IsSymm) :
     (∀ k, (hessenbergIter A k).IsSymm) ∧ (hessenbergReduce A).IsSymm ∧
@@ -429,23 +559,35 @@ theorem remark_5_4 {A : Matrix (Fin N) (Fin N) ℝ} (hA : A.IsSymm) :
   exact ⟨hsymm, hsymm (N - 2),
     (hessenbergReduce_isUpperHessenberg A).isTridiagonal_of_isSymm (hsymm (N - 2))⟩
 
-/-! ### (5.46): the stability of the Householder reduction -/
+/-! ### Equation (5.46): the stability of the Householder reduction -/
 
 open scoped Matrix.Norms.Frobenius in
-/-- **(5.46), the backward stability of the Householder reduction to Hessenberg form**
-(Wilkinson; the book quotes it without proof): there is a constant `c` such that, for every
-order `n`, every rounding model of unit roundoff `u` with `c n² u ≤ 1`, every `A ∈ ℝ^{n×n}` and
-every Hessenberg matrix `Ĥ` computed by the Householder reduction in floating-point arithmetic
-(`FloatingPoint.RoundsHessenbergReduce m A Ĥ`, the `n − 2` steps of Program 29 with one
-rounding per operation: the Householder vector of Program 32 in the construction of Higham's
-Lemma 19.1, the products `R H(k+1:n, k:n)` and `H(1:n, k+1:n) R` as the rank-one updates
-(5.49)–(5.50), and the annihilated entries set to zero), there is an orthogonal `Q` with
-`Ĥ = Qᵀ (A + E) Q` and `‖E‖_F ≤ c n² u ‖A‖_F`. The constant is `c = 528`, and `Q` is the
-product `P_(1) ⋯ P_(n−2)` of the *exact* reflectors of the *computed* matrices `A^{(k−1)}`.
-Backbone `FloatingPoint.exists_roundsHessenbergReduce_eq` ([higham2002accuracy] Lemmas
-19.1–19.3 applied to the two sweeps of every step), whose explicit bound
-`‖E‖_F ≤ γ_{2(n−2)}(3 γ_{13n+27}) ‖A‖_F` is turned into `c n² u` by `γ_k ≤ 2 k u` for
-`2 k u ≤ 1`. -/
+/-- **Equation (5.46)** of [quarteroni2000numerical], the backward stability of the Householder
+reduction to Hessenberg form. There is a constant $c > 0$ with the following property. Let
+$n \in \mathbb{N}$, let a rounding model have the unit roundoff $u$ with $c n^2 u \le 1$, let
+$A \in \mathbb{R}^{n \times n}$, and let $\hat H$ be a Hessenberg matrix computed from $A$ by
+the Householder reduction in floating-point arithmetic. Then there are an orthogonal $Q$ and a
+matrix $E$ with
+$$\hat H = Q^T (A + E) Q, \qquad \|E\|_F \le c n^2 u \|A\|_F.$$
+
+**Reading.** The book quotes the estimate, due to Wilkinson, without proof, with an unspecified
+constant $c$ and "the roundoff unit $u$". The constant is explicit here, and $u$ is qualified by
+$c n^2 u \le 1$. Program 29 is read as Section 19.3 of [higham2002accuracy] reads such an
+algorithm: the Householder vector is built as in Lemma 19.1 of [higham2002accuracy], with the
+sign $+\operatorname{sign}(x_k)$ of the backbone; the products by $R$ are the rank-one updates
+(5.49)–(5.50) with one rounding per operation; and the annihilated entries of column $k$ are set
+to zero, rather than left as the small rounding errors that Program 29 leaves. Program 32 uses
+the other sign with the rationalized formula, which [higham2002accuracy] covers "similarly", and
+this variant is not formalized.
+
+The computation is `FloatingPoint.RoundsHessenbergReduce m A Hhat`, the $n - 2$ steps of Program
+29, and $\hat H$ is `Hhat (n - 2)`. The norm is the Frobenius norm. The proof takes $c = 528$,
+and $Q$ is the product $P_{(1)} \cdots P_{(n-2)}$ of the exact reflectors of the computed
+matrices $\hat A^{(k-1)}$. It specializes the backbone's
+`FloatingPoint.exists_roundsHessenbergReduce_eq`, which applies Lemmas 19.1–19.3 of
+[higham2002accuracy] to the two sweeps of every step. Its explicit bound $\|E\|_F \le
+\gamma_{2(n-2)}(3 \gamma_{13n+27}) \|A\|_F$ becomes $c n^2 u$ by $\gamma_k \le 2 k u$ for
+$2 k u \le 1$. -/
 theorem equation_5_46 :
     ∃ c : ℝ, 0 < c ∧ ∀ (n : ℕ) (m : FloatingPoint.RoundingModel ℝ) (A : Matrix (Fin n) (Fin n) ℝ)
       (Hhat : ℕ → Matrix (Fin n) (Fin n) ℝ), c * n ^ 2 * m.u ≤ 1 →
@@ -492,16 +634,21 @@ theorem equation_5_46 :
           mul_le_mul_of_nonneg_left (mul_le_mul hr2 hεle hε0 (by positivity)) (by norm_num)
       _ = 528 * n ^ 2 * m.u := by ring
 
-/-! ### §5.6.3: the Givens QR factorization of a Hessenberg matrix -/
+/-! ### Section 5.6.3: the Givens QR factorization of a Hessenberg matrix -/
 
-/-- **(5.47)–(5.48), the QR factorization of a matrix in Hessenberg form by Givens rotations.**
-For `H ∈ ℝ^{n×n}` upper Hessenberg there are angles `θ_j`, `j = 1, …, n − 1`, such that with the
-Givens rotations `G_j = G(j, j+1, θ_j)` of (5.43), each chosen according to (5.44) so as to
-annihilate the entry `(j+1, j)` of `G_{j−1}ᵀ ⋯ G_1ᵀ H`, the matrix `R = G_{n−1}ᵀ ⋯ G_1ᵀ H` is upper
-triangular, (5.47), and `H = Q R` with `Q = G_1 ⋯ G_{n−1}` orthogonal and itself upper Hessenberg,
-(5.48). The pair `(Q, R)` is the backbone's `Matrix.hessenbergGivensQR H` (Program 31), the fold
-of the `n − 1` rotations of the Givens pairs; `Matrix.hessenbergGivensQR_spec` gives the
-factorization and `Real.exists_cos_eq_sin_eq` the angles. -/
+/-- **Equations (5.47)–(5.48)** of [quarteroni2000numerical], the QR factorization of a Hessenberg
+matrix by Givens rotations. Let $H \in \mathbb{R}^{n \times n}$ be upper Hessenberg. Then there
+are angles $\theta_j$, $j = 1, \dots, n - 1$, such that, with the Givens rotations
+$G_j = G(j, j+1, \theta_j)$ of (5.43), the matrix
+$$R = G_{n-1}^T \cdots G_1^T H$$
+is upper triangular (5.47), and $H = QR$ with $Q = G_1 \cdots G_{n-1}$ orthogonal and upper
+Hessenberg (5.48). The pair $(Q, R)$ is the backbone's `Matrix.hessenbergGivensQR H`.
+
+In the backbone's construction (Program 31), each rotation is chosen according to (5.44) so that
+it sets to zero the entry $(j+1, j)$ of $G_{j-1}^T \cdots G_1^T H$, and
+`Matrix.hessenbergGivensQR` is the fold of the $n - 1$ rotations of the Givens pairs. The proof
+uses `Matrix.hessenbergGivensQR_spec` for the factorization and `Real.exists_cos_eq_sin_eq` for
+the angles. -/
 theorem equation_5_47 {H : Matrix (Fin N) (Fin N) ℝ} (hH : H.IsUpperHessenberg) :
     ∃ θ : ℕ → ℝ,
       let G : ℕ → Matrix (Fin N) (Fin N) ℝ := fun j =>
@@ -561,13 +708,17 @@ theorem equation_5_47 {H : Matrix (Fin N) (Fin N) ℝ} (hH : H.IsUpperHessenberg
   rw [hReq] at hR hQR
   exact ⟨hQeq, hReq, hQ, hR, hQR, hQH⟩
 
-/-! ### §5.6.4: the QR iteration on a Hessenberg matrix -/
+/-! ### Section 5.6.4: the QR iteration on a Hessenberg matrix -/
 
-/-- **§5.6.4: the QR iteration preserves upper Hessenberg form.** If `T⁽⁰⁾ = H⁽⁰⁾` is nonsingular
-and upper Hessenberg then every iterate `T⁽ᵏ⁾ = qrIterate H⁽⁰⁾ k` of (5.32) is upper Hessenberg,
-and so is the orthogonal factor `Q⁽ᵏ⁺¹⁾ = qrQ (T⁽ᵏ⁾)` of each step (§5.6.3): `T⁽ᵏ⁺¹⁾ = R Q` is upper
-triangular times upper Hessenberg. Backbone `Matrix.isUpperHessenberg_qrIterate` and
-`Matrix.isUpperHessenberg_qrQ`. -/
+/-- **Section 5.6.4** of [quarteroni2000numerical]: the QR iteration preserves upper Hessenberg
+form. Let $T^{(0)} = H^{(0)} \in \mathbb{R}^{n \times n}$ be nonsingular and upper Hessenberg.
+Then every iterate $T^{(k)}$ of (5.32) is upper Hessenberg, and so is the orthogonal factor
+$Q^{(k+1)}$ of each step (Section 5.6.3).
+
+The iterate $T^{(k+1)} = R Q$ is an upper triangular matrix times an upper Hessenberg matrix.
+The iterate is `QuarteroniSaccoSaleri.Chapter05.qrIterate A k` and the factor is
+`qrQ (qrIterate A k)`. The proof specializes the backbone's `Matrix.isUpperHessenberg_qrIterate`
+and `Matrix.isUpperHessenberg_qrQ`. -/
 theorem isUpperHessenberg_qrIterate {A : Matrix (Fin N) (Fin N) ℝ} (hA : A.IsUpperHessenberg)
     (hdet : IsUnit A.det) (k : ℕ) :
     (qrIterate A k).IsUpperHessenberg ∧ (qrQ (qrIterate A k)).IsUpperHessenberg := by
@@ -576,14 +727,19 @@ theorem isUpperHessenberg_qrIterate {A : Matrix (Fin N) (Fin N) ℝ} (hA : A.IsU
     isUpperHessenberg_qrQ (isUnit_det_qrIterate hdet k)
       (Matrix.isUpperHessenberg_qrIterate hdet hA k)⟩
 
-/-! ### §5.6.5: applying a reflector -/
+/-! ### Section 5.6.5: applying a reflector -/
 
-/-- **(5.49)–(5.50).** If `P = I − β v vᵀ` is the Householder matrix (5.38) of `v ∈ ℝᵐ`, with
-`β = 2/‖v‖₂²`, and `M ∈ ℝ^{m×m}`, then `P M = M − β v wᵀ` with `w = Mᵀ v`, (5.49), and
-`M P = M − β w vᵀ` with `w = M v`, (5.50): applying a reflector is a matrix–vector product and a
-rank-one update, and `P` is never formed. Backbone `Matrix.householder_mul_eq_sub_vecMulVec` and
-`Matrix.mul_householder_eq_sub_vecMulVec` are the same identities for the normalized axis; here
-they are read off (5.38) directly. -/
+/-- **Equations (5.49)–(5.50)** of [quarteroni2000numerical]. Let $v \in \mathbb{R}^n$, let
+$P = I - \beta v v^T$ be the Householder matrix (5.38) of $v$, with $\beta = 2 / \|v\|_2^2$, and
+let $M \in \mathbb{R}^{n \times n}$. Then
+$$P M = M - \beta v w^T \quad \text{with } w = M^T v, \qquad M P = M - \beta w v^T \quad
+  \text{with } w = M v.$$
+So applying a reflector is a matrix–vector product and a rank-one update, and $P$ is never
+formed.
+
+For $v = 0$, $\beta = 0$ and both identities are trivial. The backbone's
+`Matrix.householder_mul_eq_sub_vecMulVec` and `Matrix.mul_householder_eq_sub_vecMulVec` are the
+same identities for the normalized axis; here they follow from (5.38) directly. -/
 theorem equation_5_49 (v : Fin N → ℝ) (M : Matrix (Fin N) (Fin N) ℝ) :
     let β := 2 / ‖(WithLp.toLp 2 v : EuclideanSpace ℝ (Fin N))‖ ^ 2
     equation_5_38 v * M = M - β • vecMulVec v (Mᵀ *ᵥ v) ∧

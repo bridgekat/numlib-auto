@@ -10,45 +10,72 @@ import Numlib.Analysis.PDE.Heat.Energy
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter12.Section02
 
 /-!
-# Quarteroni–Sacco–Saleri §13.1: the heat equation
+# Quarteroni, Sacco and Saleri, Section 13.1: The heat equation
 
-Surface file for Alfio Quarteroni, Riccardo Sacco and Fausto Saleri, *Numerical Mathematics*,
-Springer, 2000, §13.1.
+This module formalizes Section 13.1 of [quarteroni2000numerical]. The initial boundary value problem
+(13.1)–(13.4) is $u_t + Lu = f$ with $Lu = -\nu u_{xx}$ on $(0, 1) \times (0, T)$, the homogeneous
+Dirichlet conditions $u(0, t) = u(1, t) = 0$ (13.2) and the initial datum $u(x, 0) = u_0(x)$ (13.3).
+It is stated for classical solutions on the closed rectangle $[0, 1] \times [0, T]$. For $\nu = 1$,
+$f = 0$ and a finite sine sum as datum, the separated solution (13.5)
+$$u(x, t) = \sum_n c_n e^{-(n\pi)^2 t} \sin(n\pi x)$$
+is a classical solution, and its coefficients are the sine coefficients
+$c_n = 2 \int_0^1 u_0(x) \sin(n\pi x) \, dx$ of the datum. With the energy
+$E(t) = \int_0^1 u(x, t)^2 \, dx$ and the source energy $F(t) = \int_0^1 f(x, t)^2 \, dx$, every
+classical solution with $\nu > 0$ satisfies the a priori estimate (13.7)
+$$E(t) \le e^{-\gamma t} E(0) + \frac{1}{\gamma} \int_0^t e^{\gamma(s - t)} F(s) \, ds, \qquad
+  \gamma = \frac{\nu}{C_P^2} = 2\nu.$$
+The proofs specialize `Numlib.Analysis.PDE.Heat.Energy`.
 
-The initial boundary value problem (13.1)–(13.4) — `u_t + L u = f` with `L u = -ν u_xx` on
-`(0, 1)`, homogeneous Dirichlet conditions (13.2) and the initial datum (13.3) — is stated as a
-*classical* solution predicate on the rectangle `[0, 1] × [0, T]`: the three partial derivatives
-`u_t`, `u_x`, `u_xx` exist as one-sided derivatives within the rectangle's edges and are
-continuous on it. That is exactly what the book's derivation of the energy estimate uses
-("interchanged differentiation and integration", integration by parts in `x`); the weak
-formulation (13.12) is §13.3's.
+## Main definitions
 
-For `ν = 1`, `f = 0` and a datum that is a *finite* sine sum, (13.5) is verified outright: the
-finite sum `∑ c_n e^{-(nπ)² t} sin(nπx)` is a classical solution
-(`equation_13_5`), and its coefficients are the sine coefficients of the datum
-(`equation_13_5_coeff`, from the orthogonality `∫₀¹ sin(mπx) sin(nπx) dx = δ_{mn}/2`). The book's
-infinite series for a general datum is classical Fourier theory and is not claimed here.
+* (13.1)–(13.4), `QuarteroniSaccoSaleri.Chapter13.IsHeatSolutionWith`: a classical solution with
+  given partial derivatives.
+* (13.1)–(13.4), `QuarteroniSaccoSaleri.Chapter13.IsHeatSolution`: a classical solution of the heat
+  equation.
+* (13.5), `QuarteroniSaccoSaleri.Chapter13.sineDatum`: the finite sine sum
+  $\sum_{n < N} c_n \sin(n\pi x)$.
+* (13.5), `QuarteroniSaccoSaleri.Chapter13.sineSolution`: the finite separated solution
+  $\sum_{n < N} c_n e^{-(n\pi)^2 t} \sin(n\pi x)$.
+* Section 13.1, `QuarteroniSaccoSaleri.Chapter13.energy`: the energy
+  $E(t) = \int_0^1 u(x, t)^2 \, dx$.
 
-The energy `E(t) = ∫₀¹ u(x, t)² dx` is `energy u t`, and the source energy `F(t) = ∫₀¹ f(x, t)² dx`
-is `energy f t` — the same definition at the other function. The a priori estimate (13.7)
-`E(t) ≤ e^{-γt} E(0) + γ⁻¹ ∫₀ᵗ e^{γ(s-t)} F(s) ds` with `γ = ν/C_P² = 2ν` is `equation_13_7`.
+## Main results
 
-The classical solution, the energy and the estimate are the backbone's
-`Numlib/Analysis/PDE/Heat/Energy` (`Heat.IsClassicalSolutionIccWith`, `Heat.energy`,
-`Heat.IsClassicalSolutionIcc.energy_le`). Two things in that proof are not the book's. First, a
-classical solution is *jointly* continuous on the rectangle
-(`Heat.IsClassicalSolutionIccWith.continuousOn`), which the definition does not assume and which
-the mean value inequality supplies from the bounded partial derivatives. Second, "interchanging
-differentiation and integration" is done in the integrated form: `E` is exhibited as a primitive by
-Fubini (`Heat.IsClassicalSolutionIccWith.energy_sub_eq`) rather than differentiated under the
-integral sign, since Mathlib's differentiation under the integral needs a two-sided derivative and
-the estimate is wanted from `t = 0`. The remaining steps are the book's.
+* (13.5), `QuarteroniSaccoSaleri.Chapter13.equation_13_5`: the finite separated solution is a
+  classical solution.
+* Section 13.1, `QuarteroniSaccoSaleri.Chapter13.integral_sin_mul_sin`: $\int_0^1 \sin(m\pi x)
+  \sin(n\pi x) \, dx = \delta_{mn}/2$.
+* (13.5), `QuarteroniSaccoSaleri.Chapter13.equation_13_5_coeff`: the coefficients are
+  $c_n = 2 \int_0^1 u_0(x) \sin(n\pi x) \, dx$.
+* (13.7), `QuarteroniSaccoSaleri.Chapter13.equation_13_7`: the a priori energy estimate.
+
+## Proof outline
+
+The proof of (13.7) follows the book: integration by parts in $x$, the Cauchy–Schwarz inequality,
+the Poincaré inequality (12.16), the Young inequality (12.40) and the differential Gronwall lemma.
+Two steps differ from the book. First, a classical solution is jointly continuous on the rectangle
+(`Heat.IsClassicalSolutionIccWith.continuousOn`); the definition does not assume this, and the mean
+value inequality gives it from the bounded partial derivatives. Second, the interchange of
+differentiation and integration is done in integrated form: $E$ is shown to be a primitive by
+Fubini's theorem (`Heat.IsClassicalSolutionIccWith.energy_sub_eq`), not differentiated under the
+integral sign, because Mathlib's differentiation under the integral needs a two-sided derivative and
+the estimate is needed from $t = 0$.
 
 ## Conventions
 
-A function of space and time is `u : ℝ → ℝ → ℝ` written `u x t`, space first, as the book writes
-`u(x, t)`. The derivative functions of a classical solution are carried explicitly by
-`IsHeatSolutionWith` and existentially quantified in `IsHeatSolution`.
+* A function of space and time is `u : ℝ → ℝ → ℝ`, written `u x t` with space first, as the book
+  writes $u(x, t)$.
+* A classical solution has the partial derivatives $u_t$, $u_x$, $u_{xx}$ at every point of
+  $[0, 1] \times [0, T]$, one-sided at the edges, and they are continuous on the closed rectangle.
+  This is what the book's derivation of the energy estimate uses. The derivatives are named in
+  `QuarteroniSaccoSaleri.Chapter13.IsHeatSolutionWith` and quantified existentially in
+  `QuarteroniSaccoSaleri.Chapter13.IsHeatSolution`.
+* The source energy $F(t)$ is the energy of $f$, `QuarteroniSaccoSaleri.Chapter13.energy f t`.
+
+## Not formalized
+
+* **(13.5) for a general initial datum.** Only finite sine sums are treated; the infinite series for
+  a general datum is classical Fourier theory.
 -/
 
 open Set Filter Topology intervalIntegral
@@ -58,37 +85,58 @@ namespace QuarteroniSaccoSaleri.Chapter13
 
 /-! ### The classical Dirichlet problem (13.1)–(13.4) -/
 
-/-- **A classical solution of the heat equation with its derivatives named**: `u` solves
-(13.1)–(13.4) on `[0, 1] × [0, T]` with diffusivity `ν`, source `f`, initial datum `u₀` and the
-three partial derivatives `ut = ∂u/∂t`, `ux = ∂u/∂x`, `uxx = ∂²u/∂x²`, taken *within* the
-rectangle's edges and continuous on the closed rectangle: the backbone's
+/-- **Equations (13.1)–(13.4)** of [quarteroni2000numerical], with the derivatives named. The
+function $u$ is a **classical solution** on $[0, 1] \times [0, T]$ with diffusivity $\nu$,
+source $f$, initial datum $u_0$ and partial derivatives $u_t$, $u_x$, $u_{xx}$ if:
+
+* at every $(x, t) \in [0, 1] \times [0, T]$, $u_t(x, t)$ is the derivative of $u(x, \cdot)$
+  within $[0, T]$, $u_x(x, t)$ is the derivative of $u(\cdot, t)$ within $[0, 1]$,
+  $u_{xx}(x, t)$ is the derivative of $u_x(\cdot, t)$ within $[0, 1]$, and
+  $u_t - \nu u_{xx} = f$;
+* $u_t$, $u_x$ and $u_{xx}$ are continuous on $[0, 1] \times [0, T]$;
+* $u(0, t) = u(1, t) = 0$ for $t \in [0, T]$;
+* $u(x, 0) = u_0(x)$ for $x \in [0, 1]$.
+
+The derivatives within a closed interval are one-sided at its endpoints. The definition is
 `Heat.IsClassicalSolutionIccWith`. -/
 abbrev IsHeatSolutionWith (ν T : ℝ) (f : ℝ → ℝ → ℝ) (u₀ : ℝ → ℝ) (u ut ux uxx : ℝ → ℝ → ℝ) :
     Prop :=
   Heat.IsClassicalSolutionIccWith ν T f u₀ u ut ux uxx
 
-/-- **The classical Dirichlet problem for the heat equation** ([quarteroni2000numerical]
-(13.1)–(13.4)): `u` solves `u_t - ν u_xx = f` on `[0, 1] × [0, T]` with `u(0, t) = u(1, t) = 0`
-and `u(x, 0) = u₀(x)`, in the classical sense of `IsHeatSolutionWith` for some choice of the
-partial derivatives (backbone `Heat.IsClassicalSolutionIcc`). -/
+/-- **Equations (13.1)–(13.4)** of [quarteroni2000numerical], the classical Dirichlet problem for
+the heat equation. The function $u$ is a **classical solution** of $u_t - \nu u_{xx} = f$ on
+$[0, 1] \times [0, T]$ with $u(0, t) = u(1, t) = 0$ and $u(x, 0) = u_0(x)$ if there are partial
+derivatives $u_t$, $u_x$, $u_{xx}$ for which
+`QuarteroniSaccoSaleri.Chapter13.IsHeatSolutionWith` holds.
+
+The definition is `Heat.IsClassicalSolutionIcc`. -/
 abbrev IsHeatSolution (ν T : ℝ) (f : ℝ → ℝ → ℝ) (u₀ : ℝ → ℝ) (u : ℝ → ℝ → ℝ) : Prop :=
   Heat.IsClassicalSolutionIcc ν T f u₀ u
 
 /-! ### The sine-series solution (13.5) -/
 
-/-- The `N`-term sine sum `∑_{n < N} c_n sin(nπx)`, the initial datum of (13.5). -/
+/-- **Equation (13.5)** of [quarteroni2000numerical], the initial datum. For $N \in \mathbb{N}$ and
+coefficients $c_n$, the finite sine sum
+$$u_0(x) = \sum_{n = 0}^{N - 1} c_n \sin(n\pi x).$$
+
+The term $n = 0$ vanishes. -/
 noncomputable def sineDatum (N : ℕ) (c : ℕ → ℝ) (x : ℝ) : ℝ :=
   ∑ k ∈ Finset.range N, c k * Real.sin (k * π * x)
 
-/-- The `N`-term separated solution `∑_{n < N} c_n e^{-(nπ)² t} sin(nπx)` of
-[quarteroni2000numerical] (13.5). -/
+/-- **Equation (13.5)** of [quarteroni2000numerical], the separated solution. For $N \in \mathbb{N}$
+and coefficients $c_n$, the finite sum
+$$u(x, t) = \sum_{n = 0}^{N - 1} c_n e^{-(n\pi)^2 t} \sin(n\pi x).$$
+-/
 noncomputable def sineSolution (N : ℕ) (c : ℕ → ℝ) (x t : ℝ) : ℝ :=
   ∑ k ∈ Finset.range N, c k * Real.exp (-((k : ℝ) * π) ^ 2 * t) * Real.sin (k * π * x)
 
-/-- **(13.5) for a finite sine datum** ([quarteroni2000numerical] (13.5)): with `ν = 1`, `f = 0`
-and `u₀ = ∑_{n < N} c_n sin(nπx)`, the function `∑_{n < N} c_n e^{-(nπ)² t} sin(nπx)` is a
-classical solution of (13.1)–(13.3) on `[0, 1] × [0, T]`, for every `T`.  The book's infinite
-series for a general datum is classical Fourier theory and is not claimed. -/
+/-- **Equation (13.5)** of [quarteroni2000numerical] for a finite sine datum. Let
+$N \in \mathbb{N}$, let $c_n$ be real coefficients and let $T$ be real. Then $u(x, t) = \sum_{n
+< N} c_n e^{-(n\pi)^2 t} \sin(n\pi x)$ is a classical solution of (13.1)–(13.4) on
+$[0, 1] \times [0, T]$ with $\nu = 1$, $f = 0$ and the initial datum
+$u_0(x) = \sum_{n < N} c_n \sin(n\pi x)$.
+
+The book gives the infinite series for a general datum; that case is not formalized. -/
 theorem equation_13_5 (N : ℕ) (c : ℕ → ℝ) (T : ℝ) :
     IsHeatSolution 1 T (fun _ _ => 0) (sineDatum N c) (sineSolution N c) := by
   have hexp : ∀ a s : ℝ, HasDerivAt (fun r : ℝ => Real.exp (a * r)) (a * Real.exp (a * s)) s :=
@@ -123,10 +171,14 @@ theorem equation_13_5 (N : ℕ) (c : ℕ → ℝ) (T : ℝ) :
   · exact fun t _ => ⟨by simp [sineSolution], by simp [sineSolution, Real.sin_nat_mul_pi]⟩
   · exact fun x _ => by simp [sineSolution, sineDatum]
 
-/-- **Orthogonality of the sines on `(0, 1)`** ([quarteroni2000numerical] §13.1, the formula for
-the coefficients `c_n` of (13.5)): `∫₀¹ sin(mπx) sin(nπx) dx = ½` if `m = n` and `0` otherwise,
-for `n ≠ 0`.  The product is `(cos((m - n)πx) - cos((m + n)πx)) / 2` and `∫₀¹ cos(kπx) dx = 0`
-for every nonzero integer `k`. -/
+/-- **Section 13.1** of [quarteroni2000numerical], orthogonality of the sines on $(0, 1)$. For
+natural numbers $m$ and $n$ with $n \neq 0$,
+$$\int_0^1 \sin(m\pi x) \sin(n\pi x) \, dx = \begin{cases} 1/2 & \text{if } m = n, \\ 0 &
+  \text{otherwise.} \end{cases}$$
+
+This gives the formula for the coefficients $c_n$ of (13.5). The product is
+$(\cos((m - n)\pi x) - \cos((m + n)\pi x))/2$, and $\int_0^1 \cos(k\pi x) \, dx = 0$ for every
+nonzero integer $k$. -/
 theorem integral_sin_mul_sin (m : ℕ) {n : ℕ} (hn : n ≠ 0) :
     (∫ x in (0 : ℝ)..1, Real.sin (m * π * x) * Real.sin (n * π * x))
       = if m = n then 1 / 2 else 0 := by
@@ -178,9 +230,11 @@ theorem integral_sin_mul_sin (m : ℕ) {n : ℕ} (hn : n ≠ 0) :
     rw [hcast, Real.sin_int_mul_pi, zero_div]
     simp [hmn]
 
-/-- **The coefficients of (13.5)** ([quarteroni2000numerical] §13.1): for a finite sine datum
-`u₀ = ∑_{k < N} c_k sin(kπx)` the coefficients are recovered by
-`c_n = 2 ∫₀¹ u₀(x) sin(nπx) dx`, `1 ≤ n < N`, as the book states for a general datum. -/
+/-- **Equation (13.5)** of [quarteroni2000numerical], the coefficients. Let
+$u_0(x) = \sum_{k < N} c_k \sin(k\pi x)$ be a finite sine sum. Then for $1 \le n < N$,
+$$c_n = 2 \int_0^1 u_0(x) \sin(n\pi x) \, dx.$$
+
+The book states this formula for a general datum. -/
 theorem equation_13_5_coeff (N : ℕ) (c : ℕ → ℝ) {n : ℕ} (hn : n ≠ 0) (hnN : n < N) :
     c n = 2 * ∫ x in (0 : ℝ)..1, sineDatum N c x * Real.sin (n * π * x) := by
   have hint : ∀ k : ℕ, IntervalIntegrable
@@ -209,20 +263,24 @@ theorem equation_13_5_coeff (N : ℕ) (c : ℕ → ℝ) {n : ℕ} (hn : n ≠ 0)
 
 /-! ### The energy and the a priori estimate (13.7) -/
 
-/-- The energy `E(t) = ∫₀¹ u(x, t)² dx` of [quarteroni2000numerical] §13.1 (backbone
-`Heat.energy`). The source energy `F(t) = ∫₀¹ f(x, t)² dx` of the same section is `energy f t`. -/
+/-- **Section 13.1** of [quarteroni2000numerical], the energy. For a function $u$ of space and time,
+$$E(t) = \int_0^1 u(x, t)^2 \, dx.$$
+
+The source energy $F(t) = \int_0^1 f(x, t)^2 \, dx$ of the same section is
+`QuarteroniSaccoSaleri.Chapter13.energy f t`. The definition is `Heat.energy`. -/
 noncomputable abbrev energy (u : ℝ → ℝ → ℝ) (t : ℝ) : ℝ := Heat.energy u t
 
-/-- **(13.7), the a priori energy estimate** of [quarteroni2000numerical] §13.1: for a classical
-solution of the heat equation on `[0, 1] × [0, T]` with `ν > 0`,
+/-- **Equation (13.7)** of [quarteroni2000numerical], the a priori energy estimate. Let $\nu > 0$
+and $T \ge 0$, and let $u$ be a classical solution of (13.1)–(13.4) on $[0, 1] \times [0, T]$
+with source $f$ and initial datum $u_0$. Then for every $t \in [0, T]$
+$$E(t) \le e^{-\gamma t} E(0) + \frac{1}{\gamma} \int_0^t e^{\gamma(s - t)} F(s) \, ds, \qquad
+  \gamma = \frac{\nu}{C_P^2} = 2\nu,$$
+where $E(t) = \int_0^1 u(x, t)^2 \, dx$ and $F(t) = \int_0^1 f(x, t)^2 \, dx$. In particular,
+for $f = 0$ the energy decays exponentially.
 
-`E(t) ≤ e^{-γ t} E(0) + (1/γ) ∫₀ᵗ e^{γ(s-t)} F(s) ds`, `γ = ν / C_P² = 2ν`,
-
-with `E(t) = ∫₀¹ u(x, t)² dx` and `F(t) = ∫₀¹ f(x, t)² dx`; in particular, for `f ≡ 0` the energy
-decays exponentially. Backbone `Heat.IsClassicalSolutionIcc.energy_le`: the book's steps —
-integration by parts, Cauchy–Schwarz, Poincaré (12.16), Young (12.40) and the differential
-Gronwall lemma — with "interchanging differentiation and integration" done in integrated form, by
-Fubini (Quarteroni–Sacco–Saleri, *Numerical Mathematics*, equation (13.7)). -/
+The proof is `Heat.IsClassicalSolutionIcc.energy_le`. It follows the steps of the book, with the
+interchange of differentiation and integration done in integrated form by Fubini's theorem. The
+factor $1/\gamma$ is written inside the integral. -/
 theorem equation_13_7 {ν T : ℝ} (hν : 0 < ν) (hT : 0 ≤ T) {f : ℝ → ℝ → ℝ} {u₀ : ℝ → ℝ}
     {u : ℝ → ℝ → ℝ} (hu : IsHeatSolution ν T f u₀ u) {t : ℝ} (ht : t ∈ Icc 0 T) :
     energy u t ≤ Real.exp (-(2 * ν) * t) * energy u 0

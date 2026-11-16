@@ -10,59 +10,102 @@ import Numlib.FiniteDifference.LaxEquivalence
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter02.Section01
 
 /-!
-# Quarteroni–Sacco–Saleri §2.2: stability of numerical methods
+# Quarteroni, Sacco and Saleri, Section 2.2: Stability of Numerical Methods
 
-Surface file for Alfio Quarteroni, Riccardo Sacco and Fausto Saleri, *Numerical Mathematics*
-[quarteroni2000numerical], §2.2 and §2.2.1. A numerical method for the problem `F(x, d) = 0` is a
-sequence of approximate problems `F_n(x_n, d_n) = 0`; the book's consistency (2.13), strong
-consistency and its multistep form (2.14), the condition numbers `K_n`, `K_{abs,n}` of (2.17) and
-the asymptotic ones `K^num`, and the convergence of Definition 2.2 are the backbone
-`Numlib/Conditioning/Method` (on top of `Numlib/Conditioning/Problem`), read here over `ℝ` and on
-the book's concrete methods. The datum is fixed and does not vary with `n`, as in the backbone:
-the book's `d_n` is `d`.
+This module formalizes Section 2.2 of [quarteroni2000numerical], with Section 2.2.1 on the relations
+between stability and convergence. A numerical method for the problem $F(x, d) = 0$ is a sequence of
+approximate problems $F_n(x_n, d_n) = 0$ with resolvents $G_n$. The section defines consistency
+(2.13), strong consistency and its multistep form (2.14), the condition numbers $K_n$ and
+$K_{abs,n}$ of the approximate problems (2.17) with their first-order formulas (2.19), and
+convergence (Definition 2.2, equation (2.20)). Section 2.2.1 gives a sufficient condition for
+convergence (2.21), shows that a convergent method is stable (2.24) and that a consistent method
+with a uniform inverse bound has $x_n(d) \to x(d)$ (2.25), and states that for a consistent method
+stability is equivalent to convergence. The examples are Newton's method and the composite midpoint
+rule (Example 2.5), the sum of two numbers (Example 2.6), and Newton's method for
+$x^2 - 2px + 1 = 0$ (Example 2.7).
 
-## Definitions and their bridges
+The definitions are those of the backbone modules `Numlib.Conditioning.Method` and
+`Numlib.Conditioning.Problem`, here over $\mathbb{R}$. The theorem of Lax and Richtmyer for initial
+value problems comes from `Numlib.FiniteDifference.LaxEquivalence`, and the midpoint rule uses
+`Numlib.Approximation.CompositeQuadrature`.
 
-* `definition_2_2` — convergence of a numerical method, (2.20), verbatim; it is the backbone's
-  `Conditioning.IsConvergent` by `Iff.rfl` (`definition_2_2_iff`).
-* `equation_2_19`, `equation_2_19_abs` — the first-order formulas for `K_n` and `K_{abs,n}`, which
-  are (2.7) applied to the resolvent `G_n` of the `n`-th approximate problem.
+## Main definitions
 
-## The relations between stability and convergence (§2.2.1)
+* Example 2.5, `QuarteroniSaccoSaleri.Chapter02.example_2_5_newtonResidual`: Newton's method (2.15)
+  in the two-step form (2.14).
+* Example 2.5, `QuarteroniSaccoSaleri.Chapter02.example_2_5_midpointRule`: the composite midpoint
+  rule with $n$ panels.
+* Example 2.7, `QuarteroniSaccoSaleri.Chapter02.example_2_7_newtonStep`: one Newton step for
+  $x^2 - 2px + 1 = 0$ as a function of $p$.
+* Definition 2.2, `QuarteroniSaccoSaleri.Chapter02.definition_2_2`: convergence (2.20) of a
+  numerical method at a datum.
 
-* `equation_2_21` — the sufficient criterion for convergence: (2.3) at `d` and uniform closeness
-  of `x_n(d + δd)` to `x(d + δd)`.
-* `equation_2_24` — a convergent method is stable, in the equicontinuity sense of
-  `Conditioning.IsStable`: only that follows from (2.20), not the Lipschitz bound the book's
-  text concludes (see the module `Numlib/Conditioning/Method` and `notes/book-errata.md`).
-* `equation_2_25` — a consistent method with a uniform inverse bound on `∂F_n/∂x` has
-  `x_n(d) → x(d)`; the uniform `AntilipschitzWith` hypothesis is the rigorous content of the
-  book's mean-value argument, which is only scalar.
-* `laxRichtmyerEquivalence` — "for a consistent numerical method, stability is equivalent to
-  convergence", in the book's abstract setting; `laxRichtmyerEquivalence_ivp` is the theorem of
-  Lax and Richtmyer for linear well-posed initial value problems that the book refers to, the
-  backbone's `FiniteDifference.isStable_iff_isConvergent` over `ℝ`.
+## Main results
 
-## The Examples
+* Example 2.5, `QuarteroniSaccoSaleri.Chapter02.example_2_5_newton`: Newton's method is strongly
+  consistent.
+* Example 2.5, `QuarteroniSaccoSaleri.Chapter02.example_2_5_midpoint_consistent`: the composite
+  midpoint rule is consistent for every continuous integrand.
+* Example 2.5, `QuarteroniSaccoSaleri.Chapter02.example_2_5_midpoint_stronglyConsistent`: the
+  composite midpoint rule is strongly consistent for affine integrands.
+* Equation (2.19), `QuarteroniSaccoSaleri.Chapter02.equation_2_19` and
+  `QuarteroniSaccoSaleri.Chapter02.equation_2_19_abs`: the first-order formulas for $K_n$ and
+  $K_{abs,n}$, which are (2.7) for $G_n$.
+* Example 2.6, `QuarteroniSaccoSaleri.Chapter02.example_2_6`: the condition number of $a + b$ in the
+  norm $\|\cdot\|_1$ is $(|a| + |b|) / |a + b|$.
+* Example 2.6, `QuarteroniSaccoSaleri.Chapter02.example_2_6_same_sign`: it is $1$ when $a$ and $b$
+  have the same sign.
+* Example 2.7, `QuarteroniSaccoSaleri.Chapter02.example_2_7_prod`: $x_+ x_- = 1$, the stable formula
+  for the smaller root.
+* Example 2.7, `QuarteroniSaccoSaleri.Chapter02.example_2_7`: the asymptotic condition number of
+  Newton's method is $|p| / \sqrt{p^2 - 1}$, the value (2.8).
+* Definition 2.2, `QuarteroniSaccoSaleri.Chapter02.definition_2_2_iff`: Definition 2.2 is the
+  backbone's `Conditioning.IsConvergent`.
+* Equation (2.21), `QuarteroniSaccoSaleri.Chapter02.equation_2_21`: (2.3) and uniform closeness of
+  $x_n$ to $x$ imply convergence.
+* Equation (2.24), `QuarteroniSaccoSaleri.Chapter02.equation_2_24`: a convergent method is stable.
+* Equation (2.25), `QuarteroniSaccoSaleri.Chapter02.equation_2_25`: a consistent method with a
+  uniform inverse bound has $x_n(d) \to x(d)$.
+* Section 2.2.1, `QuarteroniSaccoSaleri.Chapter02.laxRichtmyerEquivalence`: for a consistent method
+  with a uniform inverse bound, stability is equivalent to convergence.
+* Section 2.2.1, `QuarteroniSaccoSaleri.Chapter02.laxRichtmyerEquivalence_ivp`: the theorem of Lax
+  and Richtmyer for linear initial value problems.
 
-* `example_2_5_newton` — Newton's method (2.15), written in the two-step form (2.14) as
-  `example_2_5_newtonResidual`, is strongly consistent.
-* `example_2_5_midpoint_consistent`, `example_2_5_midpoint_stronglyConsistent` — the composite
-  midpoint rule `example_2_5_midpointRule` is consistent for every continuous integrand and
-  strongly consistent for the *affine* integrands. The book says "provided that `f` is a piecewise
-  linear polynomial", which is false for a kink that is not a mesh point of every mesh (`|t|` on
-  `[-1, 1]` with one panel); affine is the correct hypothesis. The book's rule is indexed by
-  `n ≥ 1` panels; the method's `n`-th problem here uses `n + 1` panels, so that the family is
-  indexed by `ℕ` as the backbone's methods are.
-* `example_2_6`, `example_2_6_same_sign` — the condition number of the sum `f(a, b) = a + b` in the
-  `1`-norm of (1.13) is `(|a| + |b|) / |a + b|`, exactly, and `1` when `a` and `b` have the same
-  sign.
-* `example_2_7_prod`, `example_2_7` — `x₋ = 1 / x₊` (the stable formula for the smaller root), and
-  the asymptotic condition number of Newton's method on `x² - 2px + 1 = 0`: with the previous
-  iterate frozen at a root, the Newton step `example_2_7_newtonStep` as a function of `p` has
-  relative condition number `|p| / √(p² - 1)`, "in perfect agreement with the value (2.8)". This is
-  the limit `K^num(p)` the book computes; its intermediate `K_n(p) ≃ |p| / |x_n - p|` is exact at
-  a root and heuristic away from it, and is not a node.
+## Conventions
+
+* The datum does not vary with $n$: the book's $d_n$ is $d$, as in the backbone.
+* Consistency (2.13), strong consistency, its multistep form (2.14) and stability are the backbone's
+  `Conditioning.IsConsistent`, `Conditioning.IsStronglyConsistent`,
+  `Conditioning.IsStronglyConsistentMultistep` and `Conditioning.IsStable`.
+
+## Implementation notes
+
+* The book's composite midpoint rule has $n \ge 1$ panels. The $n$-th approximate problem here uses
+  $n + 1$ panels, so that the method is indexed by $\mathbb{N}$, as the methods of the backbone are.
+* Stability is the equicontinuity `Conditioning.IsStable`, not the Lipschitz form (2.16)
+  (`Conditioning.IsLipschitzStable`), because only equicontinuity follows from convergence.
+
+## Deviations from the source
+
+* **Equation (2.19) and Example 2.6** (reading). The book writes $\simeq$. The statements are
+  equalities for the first-order condition numbers, as for (2.7). See
+  `QuarteroniSaccoSaleri.Chapter02.equation_2_19`.
+* **Example 2.5, strong consistency of the midpoint rule** (correction). The book assumes $f$
+  piecewise linear, which is not sufficient. The statement assumes $f$ affine. See
+  `QuarteroniSaccoSaleri.Chapter02.example_2_5_midpoint_stronglyConsistent`.
+* **Example 2.7** (reading). The asymptotic condition number $K^{num}(p)$ is computed with the
+  previous iterate fixed at a root. See `QuarteroniSaccoSaleri.Chapter02.example_2_7`.
+* **Equation (2.24)** (correction). The book concludes a Lipschitz bound of the order of
+  $K(\delta, d)$, which does not follow from (2.20). The statement concludes equicontinuity. See
+  `QuarteroniSaccoSaleri.Chapter02.equation_2_24`.
+* **Equation (2.25)** (reading). The book's bounded inverse of $\partial F_n / \partial x$ is stated
+  as a uniform inverse Lipschitz bound, because the mean-value identity (2.25) holds only for scalar
+  $F_n$. See `QuarteroniSaccoSaleri.Chapter02.equation_2_25`.
+
+## Not formalized
+
+* **Example 2.7, the intermediate estimate $K_n(p) \simeq |p| / |x_n - p|$.** It is exact at a root
+  and heuristic away from it.
 -/
 
 open Conditioning Filter Set Topology
@@ -72,35 +115,49 @@ namespace QuarteroniSaccoSaleri.Chapter02
 
 /-! ### Example 2.5: Newton's method, and the composite midpoint rule -/
 
-/-- Newton's method (2.15) written in the two-step form (2.14): the residual
-`F_n(x_n, x_{n-1}, f) = x_n - x_{n-1} + f(x_{n-1}) / f'(x_{n-1})`, the datum being the function
-`f` whose simple root is sought. `x 0` is `x_n` and `x 1` is `x_{n-1}`; the index `n` plays no
-role. -/
+/-- **Example 2.5** of [quarteroni2000numerical], Newton's method (2.15) in the two-step form
+(2.14). The datum is a function $f : \mathbb{R} \to \mathbb{R}$ whose simple root is sought, and
+the residual of the $n$-th problem at the iterates $x_n, x_{n-1}$ is
+$$F_n(x_n, x_{n-1}, f) = x_n - x_{n-1} + \frac{f(x_{n-1})}{f'(x_{n-1})}.$$
+
+`x 0` is $x_n$ and `x 1` is $x_{n-1}$. The index $n$ plays no role. The derivative $f'$ is
+`deriv f`, and a division by $0$ gives $0$. -/
 noncomputable def example_2_5_newtonResidual (_n : ℕ) (x : Fin 2 → ℝ) (f : ℝ → ℝ) : ℝ :=
   x 0 - x 1 + f (x 1) / deriv f (x 1)
 
-/-- **Example 2.5, Newton's method is strongly consistent**: for every root `α` of `f`,
-`F_n(α, α, f) = 0` for all `n`, since `f(α) = 0`. -/
+/-- **Example 2.5** of [quarteroni2000numerical], Newton's method is strongly consistent. For the
+problem $f(x) = 0$ with datum $f$, every root $\alpha$ of $f$ satisfies
+$F_n(\alpha, \alpha, f) = 0$ for all $n$, because $f(\alpha) = 0$.
+
+This is `Conditioning.IsStronglyConsistentMultistep` with two consecutive iterates ($q = 1$),
+with every function $f$ admissible. Since a division by $0$ gives $0$, no hypothesis on
+$f'(\alpha)$ is needed. -/
 theorem example_2_5_newton :
     IsStronglyConsistentMultistep (q := 1) (fun x (f : ℝ → ℝ) => f x) example_2_5_newtonResidual
       univ := by
   intro f _ x hx n
   simp [example_2_5_newtonResidual, hx]
 
-/-- The composite midpoint rule of Example 2.5 with `n` panels on `[a, b]`,
-`x_n = H ∑_{k=1}^n f((t_k + t_{k+1}) / 2)` with `H = (b - a) / n` and `t_k = a + (k - 1) H`, on
-the datum space `C([a, b], ℝ)`; the midpoints are placed in `[a, b]` by `Set.projIcc`, which is
-the identity there. For `n = 0` the sum is empty. -/
+/-- **Example 2.5** of [quarteroni2000numerical], the composite midpoint rule. For $a \le b$, a
+number $n$ of panels and a continuous $f : [a, b] \to \mathbb{R}$,
+$$M_n f = H \sum_{k=1}^{n} f\Bigl(\frac{t_k + t_{k+1}}{2}\Bigr), \qquad H = \frac{b - a}{n},
+  \quad t_k = a + (k - 1) H.$$
+
+The datum space is `C(Icc a b, ℝ)`. The midpoints are placed in $[a, b]$ by `Set.projIcc`, which
+is the identity there. For $n = 0$ the sum is empty and $M_0 f = 0$. -/
 noncomputable def example_2_5_midpointRule {a b : ℝ} (hab : a ≤ b) (n : ℕ) (f : C(Icc a b, ℝ)) :
     ℝ :=
   (b - a) / n * ∑ k ∈ Finset.range n, f (projIcc a b hab (a + (k + 1 / 2) * ((b - a) / n)))
 
-/-- **Example 2.5, the composite midpoint rule is consistent**: for the problem
-`x - ∫_a^b f = 0` on the continuous integrands, the residual `∫_a^b f - M_{n+1} f` of the
-approximate problem `x - M_{n+1} f = 0` tends to zero, i.e. the midpoint sums converge to the
-integral for every continuous `f`. This is the Riemann sum theorem
-`Quadrature.tendsto_compositeSum` on the uniform mesh with one node per panel, the midpoint, of
-weight `1`. -/
+/-- **Example 2.5** of [quarteroni2000numerical], the composite midpoint rule is consistent. Let
+$a \le b$. Consider the problem $x - \int_a^b f(t) \, dt = 0$ with datum $f \in C([a, b])$, and
+the approximate problems $x - M_{n+1} f = 0$ for $n \in \mathbb{N}$. This method is consistent:
+at the exact solution the residual $\int_a^b f - M_{n+1} f$ tends to $0$, that is, the midpoint
+sums converge to the integral for every continuous $f$.
+
+Consistency is `Conditioning.IsConsistent`, with every continuous integrand admissible. The
+proof is the Riemann sum theorem `Quadrature.tendsto_compositeSum` on the uniform mesh with one
+node per panel, the midpoint, of weight $1$. -/
 theorem example_2_5_midpoint_consistent {a b : ℝ} (hab : a ≤ b) :
     IsConsistent (fun (x : ℝ) (f : C(Icc a b, ℝ)) => x - ∫ t in a..b, f (projIcc a b hab t))
       (fun n x f => x - example_2_5_midpointRule hab (n + 1) f) univ := by
@@ -144,13 +201,16 @@ theorem example_2_5_midpoint_consistent {a b : ℝ} (hab : a ≤ b) :
   have := (tendsto_const_nhds (x := ∫ t in a..b, f (projIcc a b hab t))).sub hM
   rwa [sub_self] at this
 
-/-- **Example 2.5, strong consistency of the midpoint rule for affine integrands**: on the
-admissible data `{f | f t = c₀ + c₁ t}` the method `x - M_{n+1} f = 0` is strongly consistent,
-because the midpoint rule integrates affine functions exactly on every panel:
-`M_{n+1} f = ∫_a^b f` for every `n`. The book says "provided that `f` is a piecewise linear
-polynomial", which is false when a kink of `f` is not a mesh point (`|t|` on `[-1, 1]` with one
-panel gives `2 f(0) = 0 ≠ 1`); affine — equivalently, linear on every panel of every mesh — is the
-correct hypothesis. -/
+/-- **Example 2.5** of [quarteroni2000numerical], strong consistency of the midpoint rule for affine
+integrands. Let $a \le b$. On the admissible data $\{f : f(t) = c_0 + c_1 t \text{ for some }
+c_0, c_1 \in \mathbb{R}\}$, the method $x - M_{n+1} f = 0$ is strongly consistent:
+$M_{n+1} f = \int_a^b f$ for every $n$, because the midpoint rule integrates affine functions
+exactly on every panel.
+
+**Correction.** The book says "provided that $f$ is a piecewise linear polynomial". This is
+false when a kink of $f$ is not a mesh point: for $f(t) = |t|$ on $[-1, 1]$ with one panel,
+$M_1 f = 2 f(0) = 0$, but $\int_{-1}^1 f = 1$. The statement assumes $f$ affine, which is the
+same as linear on every panel of every mesh. -/
 theorem example_2_5_midpoint_stronglyConsistent {a b : ℝ} (hab : a ≤ b) :
     IsStronglyConsistent
       (fun (x : ℝ) (f : C(Icc a b, ℝ)) => x - ∫ t in a..b, f (projIcc a b hab t))
@@ -206,15 +266,28 @@ section Equation219
 variable {D X : Type*} [NormedAddCommGroup D] [NormedSpace ℝ D] [NormedAddCommGroup X]
   [NormedSpace ℝ X] {Gn : ℕ → D → X} {n : ℕ} {G' : D →L[ℝ] X} {d : D} {S : Set D}
 
-/-- **(2.19), relative form.** For the resolvent `G_n` of the `n`-th approximate problem (2.18),
-differentiable at the datum `d` interior to the admissible data, with `d ≠ 0` and `G_n(d) ≠ 0`,
-`K_n(d) ≃ ‖G_n'(d)‖ ‖d‖ / ‖G_n(d)‖`: the first-order formula for the condition number (2.17) of
-the approximate problem is (2.7) applied to `G_n`. -/
+/-- **Equation (2.19)** of [quarteroni2000numerical], relative form. Let $D$ and $X$ be real normed
+spaces and let $G_n : D \to X$ be the resolvent of the $n$-th approximate problem (2.18). Let
+the admissible data $S \subseteq D$ be a neighbourhood of $d$, and assume $d \neq 0$ and
+$G_n(d) \neq 0$. If $G_n$ has the derivative $G_n'(d)$ at $d$, then the first-order relative
+condition number of the approximate problem is
+$$K_n(d) = \|G_n'(d)\| \, \frac{\|d\|}{\|G_n(d)\|}.$$
+
+**Reading.** The book writes $\simeq$; the statement is an equality for the first-order
+condition number `Conditioning.relCondNumber`.
+
+This is (2.7) applied to $G_n$, `QuarteroniSaccoSaleri.Chapter02.equation_2_7_rel`. -/
 theorem equation_2_19 (hG : HasFDerivAt (Gn n) G' d) (hS : S ∈ 𝓝 d) (hd : d ≠ 0)
     (hx : Gn n d ≠ 0) : relCondNumber (Gn n) S d = ‖G'‖ₑ * (‖d‖ₑ / ‖Gn n d‖ₑ) :=
   equation_2_7_rel hG hS hd hx
 
-/-- **(2.19), absolute form.** Under the same hypotheses, `K_{abs,n}(d) ≃ ‖G_n'(d)‖`. -/
+/-- **Equation (2.19)** of [quarteroni2000numerical], absolute form. Let $G_n : D \to X$ have the
+derivative $G_n'(d)$ at $d$, and let the admissible data $S$ be a neighbourhood of $d$. Then the
+first-order absolute condition number of the $n$-th approximate problem is
+$K_{abs,n}(d) = \|G_n'(d)\|$.
+
+**Reading.** The book writes $\simeq$; the statement is an equality for the first-order
+condition number `Conditioning.absCondNumber`. -/
 theorem equation_2_19_abs (hG : HasFDerivAt (Gn n) G' d) (hS : S ∈ 𝓝 d) :
     absCondNumber (Gn n) S d = ‖G'‖ₑ :=
   equation_2_7_abs hG hS
@@ -223,10 +296,17 @@ end Equation219
 
 /-! ### Example 2.6: sum and subtraction -/
 
-/-- **Example 2.6 (sum and subtraction).** The sum `f(a, b) = a + b` is a linear map with gradient
-`(1, 1)ᵀ`; in the vector norm `‖·‖₁` of (1.13) its condition number at `(a, b)` with `a + b ≠ 0`
-is `K(a, b) ≃ (|a| + |b|) / |a + b|` — exactly, since the operator norm of `f` from `ℓ¹` to `ℝ` is
-`1`. "Subtracting two numbers almost equal is ill conditioned, since `|a + b| ≪ |a| + |b|`." -/
+/-- **Example 2.6** of [quarteroni2000numerical] (sum and subtraction). The sum $f(a, b) = a + b$ is
+a linear map with gradient $(1, 1)^T$. In the vector norm $\|\cdot\|_1$ of (1.13) on
+$\mathbb{R}^2$ and for $a + b \neq 0$, its first-order relative condition number at $(a, b)$ is
+$$K(a, b) = \frac{|a| + |b|}{|a + b|}.$$
+"Subtracting two numbers almost equal is ill conditioned, since $|a + b| \ll |a| + |b|$."
+
+**Reading.** The book writes $\simeq$. The equality is exact, because the operator norm of $f$
+from $\ell^1$ to $\mathbb{R}$ is $1$.
+
+The space $\mathbb{R}^2$ with the norm $\|\cdot\|_1$ is `WithLp 1 (ℝ × ℝ)`, and all of it is
+admissible. -/
 theorem example_2_6 {a b : ℝ} (hab : a + b ≠ 0) :
     relCondNumber (fun x : WithLp 1 (ℝ × ℝ) => x.fst + x.snd) univ (WithLp.toLp 1 (a, b)) =
       ENNReal.ofReal ((|a| + |b|) / |a + b|) := by
@@ -252,9 +332,12 @@ theorem example_2_6 {a b : ℝ} (hab : a + b ≠ 0) :
     WithLp.prod_norm_eq_of_L1]
   simp [Real.norm_eq_abs]
 
-/-- **Example 2.6, same signs.** "Summing two numbers of the same sign is a well conditioned
-operation, being `K(a, b) ≃ 1`": for `0 ≤ a b` and `(a, b) ≠ 0`, `|a + b| = |a| + |b|` and the
-condition number is `1`. -/
+/-- **Example 2.6** of [quarteroni2000numerical], numbers of the same sign. If $ab \ge 0$ and
+$(a, b) \neq (0, 0)$, then $|a + b| = |a| + |b|$, and the first-order relative condition number
+of the sum at $(a, b)$ in the norm $\|\cdot\|_1$ is $K(a, b) = 1$. In the words of the book,
+"summing two numbers of the same sign is a well conditioned operation".
+
+**Reading.** The book writes $K(a, b) \simeq 1$; the statement is an equality. -/
 theorem example_2_6_same_sign {a b : ℝ} (hab : 0 ≤ a * b) (h0 : (a, b) ≠ (0 : ℝ × ℝ)) :
     relCondNumber (fun x : WithLp 1 (ℝ × ℝ) => x.fst + x.snd) univ (WithLp.toLp 1 (a, b)) =
       1 := by
@@ -268,31 +351,42 @@ theorem example_2_6_same_sign {a b : ℝ} (hab : 0 ≤ a * b) (h0 : (a, b) ≠ (
   rw [example_2_6 hne, habs, div_self (by rw [← habs]; exact abs_ne_zero.2 hne),
     ENNReal.ofReal_one]
 
-/-! ### Example 2.7: the roots of `x² - 2px + 1` by Newton's method -/
+/-! ### Example 2.7: the roots of $x^2 - 2px + 1$ by Newton's method -/
 
-/-- **Example 2.7, the stable formula for `x₋`.** For `p ≥ 1`, `x₊ x₋ = 1`, so the smaller root
-can be computed as `x₋ = 1 / x₊` from `x₊ = p + √(p² - 1)`, avoiding the cancellation in
-`p - √(p² - 1)`. -/
+/-- **Example 2.7** of [quarteroni2000numerical], the stable formula for $x_-$. For $p \ge 1$,
+$$\bigl(p + \sqrt{p^2 - 1}\bigr) \bigl(p - \sqrt{p^2 - 1}\bigr) = 1,$$
+so the smaller root can be computed as $x_- = 1 / x_+$ from $x_+ = p + \sqrt{p^2 - 1}$. This
+avoids the cancellation in $p - \sqrt{p^2 - 1}$. -/
 theorem example_2_7_prod {p : ℝ} (hp : 1 ≤ p) :
     (p + √(p ^ 2 - 1)) * (p - √(p ^ 2 - 1)) = 1 := by
   have hs : √(p ^ 2 - 1) * √(p ^ 2 - 1) = p ^ 2 - 1 := Real.mul_self_sqrt (by nlinarith)
   linear_combination (-1 : ℝ) * hs
 
-/-- One step of Newton's method for `x² - 2px + 1 = 0`, as a function of the datum `p` and the
-previous iterate `x`: `x_n = x_{n-1} - (x_{n-1}² - 2p x_{n-1} + 1) / (2 x_{n-1} - 2p) = f_n(p)` of
-Example 2.7, with `x_{n-1} = x` held fixed. -/
+/-- **Example 2.7** of [quarteroni2000numerical], one step of Newton's method. For the datum $p$ and
+the previous iterate $x$, this is
+$$f_n(p) = x - \frac{x^2 - 2px + 1}{2x - 2p},$$
+the iterate $x_n$ of Newton's method for $x^2 - 2px + 1 = 0$ with $x_{n-1} = x$ held fixed.
+
+For $x = p$ the division by $0$ gives $0$, and the value is $x$. -/
 noncomputable def example_2_7_newtonStep (p x : ℝ) : ℝ :=
   x - (x ^ 2 - 2 * p * x + 1) / (2 * x - 2 * p)
 
-/-- **Example 2.7, the asymptotic condition number of Newton's method on `x² - 2px + 1 = 0`.**
-For `p > 1` and the previous iterate frozen at one of the roots `x = p ± √(p² - 1)` — the limit
-the book's `K_n(p) → K^num(p)` computes, "since in the case when the algorithm converges the
-solution `x_n` would converge to one of the roots" — the Newton step as a function of `p` has
-relative condition number `|p| / √(p² - 1)`, "in perfect agreement with the value (2.8) of the
-condition number of the exact problem". By (2.19): `∂f_n/∂p = (x² - 1) / (2 (x - p)²)`, and at a
-root `x² - 1 = 2(px - 1)`, `(x - p)² = p² - 1` and `f_n(p) = x`. Newton's method for this
-equation "is ill conditioned if `|p|` is very close to `1`, well conditioned in the other cases".
--/
+/-- **Example 2.7** of [quarteroni2000numerical], the asymptotic condition number of Newton's method
+for $x^2 - 2px + 1 = 0$. Let $p > 1$ and let $x = p + \sqrt{p^2 - 1}$ or
+$x = p - \sqrt{p^2 - 1}$ be one of the roots. Then the Newton step $q \mapsto f_n(q)$ with
+previous iterate $x$ has, at $q = p$, the first-order relative condition number
+$$\frac{|p|}{\sqrt{p^2 - 1}},$$
+"in perfect agreement with the value (2.8) of the condition number of the exact problem".
+Newton's method for this equation "is ill conditioned if $|p|$ is very close to $1$, well
+conditioned in the other cases".
+
+**Reading.** The book computes the limit $K^{num}(p)$ of $K_n(p)$, "since in the case when the
+algorithm converges the solution $x_n$ would converge to one of the roots". The statement fixes
+the previous iterate at a root, which gives this limit.
+
+By (2.19), $\partial f_n / \partial p = (x^2 - 1) / (2 (x - p)^2)$. At a root,
+$x^2 - 1 = 2(px - 1)$, $(x - p)^2 = p^2 - 1$ and $f_n(p) = x$. All of $\mathbb{R}$ is
+admissible. -/
 theorem example_2_7 {p x : ℝ} (hp : 1 < p) (hx : x = p + √(p ^ 2 - 1) ∨ x = p - √(p ^ 2 - 1)) :
     relCondNumber (fun q => example_2_7_newtonStep q x) univ p =
       ENNReal.ofReal (|p| / √(p ^ 2 - 1)) := by
@@ -338,25 +432,40 @@ section Convergence
 variable {D X : Type*} [NormedAddCommGroup D] [NormedAddCommGroup X] {G : D → X}
   {Gn : ℕ → D → X} {S : Set D} {d : D}
 
-/-- **Definition 2.2, (2.20).** The numerical method (2.12) with resolvents `G_n` is *convergent*
-at the admissible datum `d` of the problem with resolvent `G` iff for every `ε > 0` there are
-`n₀(ε)` and `δ(n₀, ε) > 0` such that for every `n > n₀` and every admissible perturbation
-`‖δd_n‖ < δ`, `‖x(d) - x_n(d + δd_n)‖ ≤ ε`, where `x(d) = G d` is the exact solution and
-`x_n(d + δd_n) = G_n (d + δd_n)` the numerical solution with the perturbed datum. This is the
-backbone's `Conditioning.IsConvergent` (`definition_2_2_iff`). -/
+/-- **Definition 2.2** of [quarteroni2000numerical], equation (2.20). Let $D$ and $X$ be normed
+abelian groups, let $G : D \to X$ be the resolvent of the problem, let $G_n : D \to X$ be the
+resolvents of the approximate problems of the method (2.12), let $S \subseteq D$ be the
+admissible data, and let $d \in D$. The method is **convergent** at $d$ if for every
+$\varepsilon > 0$ there are $n_0$ and $\delta > 0$ such that
+$$\|x(d) - x_n(d + \delta d_n)\| \le \varepsilon$$
+for every $n > n_0$ and every $\delta d_n$ with $\|\delta d_n\| < \delta$ and
+$d + \delta d_n \in S$. Here $x(d) = G(d)$ is the exact solution and
+$x_n(d + \delta d_n) = G_n(d + \delta d_n)$ is the numerical solution with the perturbed datum.
+
+The book writes the witnesses as $n_0(\varepsilon)$ and $\delta(n_0, \varepsilon)$. This is the
+backbone's `Conditioning.IsConvergent` (`QuarteroniSaccoSaleri.Chapter02.definition_2_2_iff`). -/
 def definition_2_2 (G : D → X) (Gn : ℕ → D → X) (S : Set D) (d : D) : Prop :=
   ∀ ε > (0 : ℝ), ∃ n₀ : ℕ, ∃ δ > (0 : ℝ), ∀ n > n₀, ∀ δd, ‖δd‖ < δ → d + δd ∈ S →
     ‖G d - Gn n (d + δd)‖ ≤ ε
 
-/-- Definition 2.2 is the backbone's `Conditioning.IsConvergent`. -/
+/-- Convergence in the sense of Definition 2.2 of [quarteroni2000numerical] is the backbone's
+convergence: `QuarteroniSaccoSaleri.Chapter02.definition_2_2 G Gn S d` holds if and only if
+`Conditioning.IsConvergent G Gn S d` holds. -/
 theorem definition_2_2_iff : definition_2_2 G Gn S d ↔ IsConvergent G Gn S d :=
   Iff.rfl
 
-/-- **(2.21), the sufficient criterion for convergence.** If the problem satisfies (2.3) at `d`
-(the absolute condition number over some radius is finite, `equation_2_3_iff`) and "under the
-same assumptions" `‖x(d + δd_n) - x_n(d + δd_n)‖ ≤ ε / 2`, then the method is convergent:
-`‖x(d) - x_n(d + δd_n)‖ ≤ K(δ, d) ‖δd_n‖ + ε / 2`, and `δd_n` can be chosen so that the first
-term is `< ε / 2`. -/
+/-- **Equation (2.21)** of [quarteroni2000numerical], a sufficient condition for convergence. Let
+$G$, $G_n$, $S$ and $d$ be as in Definition 2.2. Assume that the problem satisfies (2.3) at $d$:
+for some $\eta > 0$ the absolute condition number of $G$ at $d$ over the admissible
+perturbations of size less than $\eta$ is finite. Assume also that for every $\varepsilon > 0$
+there are $n_0$ and $\delta > 0$ such that
+$$\|x(d + \delta d) - x_n(d + \delta d)\| \le \varepsilon / 2$$
+for every $n > n_0$ and every $\delta d$ with $\|\delta d\| < \delta$ and $d + \delta d \in S$.
+Then the method is convergent at $d$.
+
+The proof bounds $\|x(d) - x_n(d + \delta d_n)\| \le K(\delta, d) \|\delta d_n\| + \varepsilon /
+2$ and makes the first term less than $\varepsilon / 2$ by a choice of small $\delta d_n$. The
+form of (2.3) used here is `QuarteroniSaccoSaleri.Chapter02.equation_2_3_iff`. -/
 theorem equation_2_21 (hK : ∃ η > (0 : ℝ), absCondNumberWithin G S d η ≠ ⊤)
     (h : ∀ ε > (0 : ℝ), ∃ n₀ : ℕ, ∃ δ > (0 : ℝ), ∀ n > n₀, ∀ δd, ‖δd‖ < δ → d + δd ∈ S →
       ‖G (d + δd) - Gn n (d + δd)‖ ≤ ε / 2) :
@@ -367,12 +476,20 @@ theorem equation_2_21 (hK : ∃ η > (0 : ℝ), absCondNumberWithin G S d η ≠
   obtain ⟨n₀, δ, hδ, h⟩ := h ε hε
   exact ⟨n₀, δ, hδ, fun n hn δd hδd hS => (h n hn δd hδd hS).trans (by linarith)⟩
 
-/-- **§2.2.1, stability is necessary for convergence ((2.24)).** A convergent method is stable
-at the admissible datum `d`: for `n` large the numerical solutions depend continuously on the
-data, uniformly in `n`. From (2.24) with (2.20) applied twice,
-`‖δx_n‖ ≤ ‖x_n(d) - x(d)‖ + ‖x(d) - x_n(d + δd_n)‖ ≤ 2ε`. The book concludes a Lipschitz
-bound "of the order of `K(δ, d)`", which does not follow from (2.20); equicontinuity, the
-backbone's `Conditioning.IsStable`, does. -/
+/-- **Equation (2.24)** of [quarteroni2000numerical], stability is necessary for convergence. Let
+$G$, $G_n$, $S$ and $d \in S$ be as in Definition 2.2. If the method is convergent at $d$, then
+it is stable at $d$: for every $\varepsilon > 0$ there are $n_0$ and $\delta > 0$ such that
+$$\|x_n(d + \delta d) - x_n(d)\| \le \varepsilon$$
+for every $n \ge n_0$ and every $\delta d$ with $\|\delta d\| < \delta$ and
+$d + \delta d \in S$. Thus for large $n$ the numerical solutions depend continuously on the
+data, uniformly in $n$.
+
+**Correction.** The book concludes a Lipschitz bound "of the order of $K(\delta, d)$" for
+$\|\delta x_n\|$. This does not follow from (2.20). What follows is the equicontinuity stated
+here, the backbone's `Conditioning.IsStable`.
+
+The proof uses (2.24) with (2.20) applied twice: $\|\delta x_n\| \le \|x_n(d) - x(d)\| +
+\|x(d) - x_n(d + \delta d_n)\| \le 2 \varepsilon$. -/
 theorem equation_2_24 (hd : d ∈ S) (h : definition_2_2 G Gn S d) : IsStable Gn S d :=
   ((definition_2_2_iff).1 h).isStable hd
 
@@ -383,12 +500,21 @@ section Consistency
 variable {D X Y : Type*} [NormedAddCommGroup X] [NormedAddCommGroup Y] {F : X → D → Y}
   {Fn : ℕ → X → D → Y} {G : D → X} {Gn : ℕ → D → X} {S : Set D} {d : D}
 
-/-- **§2.2.1, consistency gives `x_n(d) → x(d)` ((2.25)).** If `x(d) = G d` solves the problem,
-`x_n(d) = G_n d` solves the `n`-th approximate problem, the method is consistent, and the
-approximate problems have a uniform inverse bound `‖x - y‖ ≤ M ‖F_n(x, d) - F_n(y, d)‖` — the
-rigorous form of the book's "`∂F_n/∂x` invertible" with `‖(∂F_n/∂x)⁻¹‖ ≤ M`, whose mean-value
-identity (2.25) holds only for scalar `F_n` — then
-`‖x(d) - x_n(d)‖ ≤ M ‖F_n(x(d), d) - F(x(d), d)‖ → 0` by (2.13). -/
+/-- **Equation (2.25)** of [quarteroni2000numerical], consistency gives $x_n(d) \to x(d)$. Let $X$
+and $Y$ be normed abelian groups, let $F : X \times D \to Y$ define the problem and
+$F_n : X \times D \to Y$ the approximate problems, and let $d \in S$. Let $x(d) = G(d)$ satisfy
+$F(x(d), d) = 0$, and let $x_n(d) = G_n(d)$ satisfy $F_n(x_n(d), d) = 0$ for every $n$. Assume
+that the method is consistent (2.13) and that there is $M \ge 0$ with
+$$\|x - y\| \le M \, \|F_n(x, d) - F_n(y, d)\| \qquad \text{for all } n, x, y.$$
+Then $x_n(d) \to x(d)$ as $n \to \infty$.
+
+**Reading.** The book assumes that $\partial F_n / \partial x$ is invertible with
+$\|(\partial F_n / \partial x)^{-1}\| \le M$, and uses the mean-value identity (2.25), which
+holds only for scalar $F_n$. The uniform inverse bound above is the hypothesis that the argument
+needs in general.
+
+The proof gives $\|x(d) - x_n(d)\| \le M \|F_n(x(d), d) - F(x(d), d)\|$, which tends to $0$ by
+(2.13). The uniform bound is `AntilipschitzWith M` for each map $x \mapsto F_n(x, d)$. -/
 theorem equation_2_25 (hd : d ∈ S) (hF : F (G d) d = 0) (hFn : ∀ n, Fn n (Gn n d) d = 0)
     (hcons : IsConsistent F Fn S) {M : NNReal}
     (hanti : ∀ n, AntilipschitzWith M fun x => Fn n x d) :
@@ -397,11 +523,17 @@ theorem equation_2_25 (hd : d ∈ S) (hF : F (G d) d = 0) (hFn : ∀ n, Fn n (Gn
 
 variable [NormedAddCommGroup D]
 
-/-- **§2.2.1, the equivalence theorem in the book's abstract setting**: "for a consistent
-numerical method, stability is equivalent to convergence". For a consistent method whose
-approximate problems admit a uniform inverse bound at the admissible datum `d`, stability at `d`
-(`Conditioning.IsStable`) and convergence at `d` (Definition 2.2) are the same. The two halves
-are `equation_2_24` and the sufficient condition of §2.2.1, stability plus `equation_2_25`. -/
+/-- **Section 2.2.1** of [quarteroni2000numerical], the equivalence theorem in the abstract setting
+of the book: "for a consistent numerical method, stability is equivalent to convergence". Let
+$F$, $F_n$, $G$, $G_n$, $S$ and $d \in S$ be as in
+`QuarteroniSaccoSaleri.Chapter02.equation_2_25`, with $D$ a normed abelian group: $G(d)$ and
+$G_n(d)$ solve the exact and the approximate problems, the method is consistent, and the
+approximate problems have a uniform inverse bound $M$ at $d$. Then the method is stable at $d$
+if and only if it is convergent at $d$ (Definition 2.2).
+
+Stability is `Conditioning.IsStable`. The two directions are
+`QuarteroniSaccoSaleri.Chapter02.equation_2_24`, and the sufficient condition of Section 2.2.1,
+stability together with `QuarteroniSaccoSaleri.Chapter02.equation_2_25`. -/
 theorem laxRichtmyerEquivalence (hd : d ∈ S) (hF : F (G d) d = 0)
     (hFn : ∀ n, Fn n (Gn n d) d = 0) (hcons : IsConsistent F Fn S) {M : NNReal}
     (hanti : ∀ n, AntilipschitzWith M fun x => Fn n x d) :
@@ -410,15 +542,26 @@ theorem laxRichtmyerEquivalence (hd : d ∈ S) (hF : F (G d) d = 0)
 
 end Consistency
 
-/-- **§2.2.1, the Lax–Richtmyer theorem for linear well-posed initial value problems** — the
-"rigorous proof of this theorem … in [Lax65] and in [RM67]" the book refers to. For a real
-Banach space `V`, an evolution family `S : ℝ → V →L[ℝ] V` with `S 0 = 1` and `t ↦ S t u`
-continuous on `[0, T]`, and a one-step scheme `C : ℝ → V →L[ℝ] V` with `‖C Δt‖ ≤ c₁` for
-`Δt ∈ (0, Δ₀]` that is consistent on a dense set of initial values, the scheme is stable
-(`FiniteDifference.IsStable`: the powers `C Δt ^ m` with `m Δt ≤ T` are uniformly bounded) iff it
-is convergent (`FiniteDifference.IsConvergent`). This is a different formal statement from
-`laxRichtmyerEquivalence`, recorded under the same paragraph of the book; it is the backbone's
-`FiniteDifference.isStable_iff_isConvergent` over `ℝ`. -/
+/-- **Section 2.2.1** of [quarteroni2000numerical], the theorem of Lax and Richtmyer for linear
+well-posed initial value problems, whose rigorous proof the book attributes to Lax and to
+Richtmyer and Morton. Let $V$ be a real Banach space and $T \ge 0$. Let
+$S : \mathbb{R} \to \mathcal{L}(V)$ be an evolution family with $S(0) = I$ and
+$t \mapsto S(t) u$ continuous on $[0, T]$ for every $u \in V$. Let
+$C : \mathbb{R} \to \mathcal{L}(V)$ be a one-step scheme with $\|C(\Delta t)\| \le c_1$ for
+$\Delta t \in (0, \Delta_0]$, and assume that it is consistent with $S$ on a dense set of
+initial values. Then the scheme is stable, that is, the powers $C(\Delta t)^m$ with
+$m \Delta t \le T$ are bounded uniformly in $\Delta t \in (0, \Delta_0]$ and $m$, if and only if
+it is convergent.
+
+Consistency (`FiniteDifference.IsConsistent`) means that $\|C(\Delta t) S(t) u_0 - S(t + \Delta
+t) u_0\| \le \varepsilon \Delta t$ for all small $\Delta t$, uniformly in $t \in [0, T]$, for
+every $u_0$ in a dense set and every $\varepsilon > 0$. Convergence
+(`FiniteDifference.IsConvergent`) means that $C(\Delta t_i)^{m_i} u_0 \to S(t) u_0$ along every
+sequence with $\Delta t_i \to 0$ and $m_i \Delta t_i \to t$, for every $u_0$ and every
+$t \in [0, T]$. Stability is `FiniteDifference.IsStable`. This is a different formal statement
+from `QuarteroniSaccoSaleri.Chapter02.laxRichtmyerEquivalence`, recorded under the same
+paragraph of the book. It is the backbone's `FiniteDifference.isStable_iff_isConvergent` over
+$\mathbb{R}$. -/
 theorem laxRichtmyerEquivalence_ivp {V : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V]
     [CompleteSpace V] {S C : ℝ → V →L[ℝ] V} {T Δ₀ c₁ : ℝ} {D : Set V} (hT : 0 ≤ T)
     (hS0 : S 0 = 1) (hScont : ∀ u : V, ContinuousOn (fun t => S t u) (Icc 0 T))

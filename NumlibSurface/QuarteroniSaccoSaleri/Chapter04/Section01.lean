@@ -8,57 +8,115 @@ import Numlib.LinearAlgebra.Matrix.Complexify
 import Numlib.Stationary.Basic
 
 /-!
-# Quarteroni–Sacco–Saleri §4.1: on the convergence of iterative methods
+# Quarteroni, Sacco and Saleri, Section 4.1: On the convergence of iterative methods
 
-Surface file for Alfio Quarteroni, Riccardo Sacco and Fausto Saleri, *Numerical Mathematics*
-[quarteroni2000numerical], §4.1, over the backbone `Numlib/Stationary/Basic` (the affine
-iteration `x ↦ G x + f` on a normed space, its error propagation, and the convergence factors and
-rates), `Numlib/LinearAlgebra/Matrix/Complexify` (the spectral radius `Matrix.complexSpectralRadius`
-of a real matrix and the equivalence `Bᵏ → 0 ⟺ ρ(B) < 1`) and `Numlib/Analysis/Matrix/SpectralNorm`
-(the spectral norm of a symmetric matrix).
+This module formalizes Section 4.1 of [quarteroni2000numerical], on the linear iterative methods
+(4.2)
+$$x^{(k+1)} = B x^{(k)} + f, \qquad k \ge 0,$$
+for the solution of a linear system $Ax = b$ with $A \in \mathbb{R}^{n \times n}$. The method is
+consistent (Definition 4.1) if the solution $x = A^{-1} b$ is a fixed point, $x = Bx + f$. For a
+consistent method the error $e^{(k)} = x^{(k)} - x$ satisfies $e^{(k)} = B^k e^{(0)}$ (4.4), and
+Theorem 4.1 shows that the iterates converge to $x$ for every $x^{(0)}$ if and only if the spectral
+radius satisfies $\rho(B) < 1$. Example 4.1 shows that consistency alone does not give convergence.
+Definition 4.2 introduces the convergence factor $\|B^m\|$, the average convergence factor
+$\|B^m\|^{1/m}$ and the average convergence rate $R_m(B) = -\frac{1}{m} \log \|B^m\|$, and (4.5)
+identifies the asymptotic convergence rate $R(B) = \lim_{k \to \infty} R_k(B) = -\log \rho(B)$.
+
+The proofs specialize the backbone modules `Numlib.Stationary.Basic` (the affine iteration
+$x \mapsto Gx + f$ on a normed space, its error propagation, and the convergence factors and rates),
+`Numlib.LinearAlgebra.Matrix.Complexify` (the spectral radius `Matrix.complexSpectralRadius` of a
+real matrix and the equivalence $B^k \to 0 \iff \rho(B) < 1$) and
+`Numlib.Analysis.Matrix.SpectralNorm` (the spectral norm of a symmetric matrix).
+
+## Main definitions
+
+* Equation (4.2), `QuarteroniSaccoSaleri.Chapter04.affineStep`: one step $x \mapsto Bx + f$ of the
+  linear iterative method.
+* Definition 4.1, `QuarteroniSaccoSaleri.Chapter04.definition_4_1`: the method is consistent with
+  $Ax = b$ if $A^{-1} b = B A^{-1} b + f$.
+* Definition 4.2, `QuarteroniSaccoSaleri.Chapter04.definition_4_2_factor`: the convergence factor
+  $\|B^m\|_2$ after $m$ steps.
+* Definition 4.2, `QuarteroniSaccoSaleri.Chapter04.definition_4_2_averageFactor`: the average
+  convergence factor $\|B^m\|_2^{1/m}$ after $m$ steps.
+* Definition 4.2, `QuarteroniSaccoSaleri.Chapter04.definition_4_2_rate`: the average convergence
+  rate $R_m(B) = -\frac{1}{m} \log \|B^m\|_2$ after $m$ steps.
+* Equation (4.5), `QuarteroniSaccoSaleri.Chapter04.asymptoticConvergenceRate`: the asymptotic
+  convergence rate $R(B) = -\log \rho(B)$.
+
+## Main results
+
+* Equation (4.2), `QuarteroniSaccoSaleri.Chapter04.toLp_affineStep`: the step is the backbone step
+  `Stationary.step` in `EuclideanSpace ℝ (Fin n)`.
+* Equation (4.2), `QuarteroniSaccoSaleri.Chapter04.toLp_affineStep_iterate`: the same for the
+  iterates.
+* Definition 4.1, `QuarteroniSaccoSaleri.Chapter04.definition_4_1_iff`: the method is consistent if
+  and only if $f = (I - B) A^{-1} b$.
+* Example 4.1, `QuarteroniSaccoSaleri.Chapter04.example_4_1_consistent`: the method
+  $x^{(k+1)} = -x^{(k)} + b$ is consistent with $2Ix = b$.
+* Example 4.1, `QuarteroniSaccoSaleri.Chapter04.example_4_1_iterate`: from $x^{(0)} = 0$ its
+  iterates alternate between $0$ and $b$.
+* Example 4.1, `QuarteroniSaccoSaleri.Chapter04.example_4_1_not_tendsto`: for $b \neq 0$ these
+  iterates do not converge.
+* Example 4.1, `QuarteroniSaccoSaleri.Chapter04.example_4_1_tendsto`: from $x^{(0)} = b/2$ the
+  iterates are constant.
+* Equation (4.4), `QuarteroniSaccoSaleri.Chapter04.equation_4_4`: for a consistent method,
+  $e^{(k)} = B^k e^{(0)}$.
+* Theorem 4.1, `QuarteroniSaccoSaleri.Chapter04.complexSpectralRadius_lt_one_of_forall_tendsto`: if
+  the iterates converge to one limit from every start, then $\rho(B) < 1$.
+* Theorem 4.1, `QuarteroniSaccoSaleri.Chapter04.theorem_4_1`: a consistent method converges for
+  every $x^{(0)}$ if and only if $\rho(B) < 1$.
+* Theorem 4.1, `QuarteroniSaccoSaleri.Chapter04.tendsto_of_algebraNorm_lt_one`: $\|B\| < 1$ in a
+  matrix norm is sufficient for convergence.
+* Definition 4.2, `QuarteroniSaccoSaleri.Chapter04.definition_4_2_eq`: the three quantities agree
+  with the backbone definitions.
+* Equation (4.5), `QuarteroniSaccoSaleri.Chapter04.equation_4_5`: $R_k(B) \to -\log \rho(B)$ if
+  $\rho(B) \neq 0$.
+* Equation (4.5), `QuarteroniSaccoSaleri.Chapter04.equation_4_5_factor`:
+  $\|B^m\|_2^{1/m} \to \rho(B)$.
+* Equation (4.5), `QuarteroniSaccoSaleri.Chapter04.equation_4_5_symm`: for symmetric $B$,
+  $R_m(B) = -\log \rho(B)$ for every $m \ge 1$.
+* Exercise 4.1, `QuarteroniSaccoSaleri.Chapter04.exercise_4_1`: a matrix with $\rho(B) < 1$ whose
+  average convergence factor after one step exceeds $1$.
 
 ## Conventions
 
-The book's linear iterative method (4.2), `x⁽ᵏ⁺¹⁾ = B x⁽ᵏ⁾ + f` on `ℝⁿ`, is `affineStep B f` on
-`Fin n → ℝ`, and its `k`-th iterate from `x⁽⁰⁾` is `(affineStep B f)^[k] x⁽⁰⁾`. Under
-`WithLp.toLp 2` it is the backbone's `Stationary.step` of the operator `Matrix.toEuclideanCLM B` on
-`EuclideanSpace ℝ (Fin n)` (`toLp_affineStep`, `toLp_affineStep_iterate`), which is how every
-backbone statement is transported. The solution of the system `A x = b` of (3.2) is written
-`A⁻¹ *ᵥ b` with Mathlib's junk-valued inverse; the book's standing assumption that `A` is
-nonsingular is therefore carried by the statements that need it and omitted from those that hold
-as written without it. Matrix norms are the spectral norm `‖·‖₂` (Mathlib's scoped
-`Matrix.Norms.L2Operator`), the book's "any matrix norm" of Definition 4.2 being fixed to the
-Euclidean one; the spectral radius of a real matrix is `Matrix.complexSpectralRadius`,
-`ℝ≥0∞`-valued, and its real value is `.toReal`.
+* The method (4.2) on $\mathbb{R}^n$ is `QuarteroniSaccoSaleri.Chapter04.affineStep B f` on
+  `Fin n → ℝ`. The iterate `(affineStep B f)^[k] x⁽⁰⁾` is the iterate $x^{(k)}$.
+* The solution of the system $Ax = b$ of (3.2) is written `A⁻¹ *ᵥ b`. Mathlib's inverse of a
+  singular matrix is $0$. The book's standing assumption that $A$ is nonsingular is therefore a
+  hypothesis of the statements that need it, and it is omitted from the statements that are true
+  without it.
+* Matrix norms are the spectral norm $\|\cdot\|_2$ (Mathlib's scoped `Matrix.Norms.L2Operator`). The
+  spectral radius of a real matrix is `Matrix.complexSpectralRadius`, with values in `ℝ≥0∞`, and its
+  real value is `.toReal`.
+* Exercise 4.k is Exercise k of Chapter 4.
 
-## Contents
+## Implementation notes
 
-* `affineStep`, `toLp_affineStep`, `toLp_affineStep_iterate` — the method (4.2) and its transport.
-* `definition_4_1`, `definition_4_1_iff`, `toLp_fixed_of_consistent` — consistency and its
-  "equivalently".
-* `example_4_1_consistent`, `example_4_1_iterate`, `example_4_1_not_tendsto`,
-  `example_4_1_tendsto` — Example 4.1.
-* `equation_4_4`, `affineStep_iterate_sub_iterate`,
-  `complexSpectralRadius_lt_one_of_forall_tendsto`, `theorem_4_1`,
-  `tendsto_of_algebraNorm_lt_one` — the error recursion, the convergence theorem and the
-  sufficient condition `‖B‖ < 1`.
-* `definition_4_2_factor`, `definition_4_2_averageFactor`, `definition_4_2_rate`,
-  `definition_4_2_eq`, `asymptoticConvergenceRate`, `equation_4_5`, `equation_4_5_factor`,
-  `equation_4_5_symm` — Definition 4.2 and the asymptotic rate (4.5).
-* `exercise_4_1` — Exercise 1, cited after Definition 4.2 (the spectral radius of a matrix with a
-  single real eigenvalue is `Matrix.complexSpectralRadius_eq_of_forall_mem_spectrum_iff`).
+* Under `WithLp.toLp 2`, the method (4.2) is the backbone `Stationary.step` of the operator
+  `Matrix.toEuclideanCLM B` on `EuclideanSpace ℝ (Fin n)`
+  (`QuarteroniSaccoSaleri.Chapter04.toLp_affineStep` and
+  `QuarteroniSaccoSaleri.Chapter04.toLp_affineStep_iterate`). Every backbone statement is
+  transported in this way.
+* The spectral radius of a matrix with a single real eigenvalue, used in Exercise 4.1, is
+  `Matrix.complexSpectralRadius_eq_of_forall_mem_spectrum_iff`.
 
-Remark 4.1 (order, stationarity and linearity of a general iteration) is a classification and
-has no node.
+## Deviations from the source
 
-## Readings
+* **Equation (4.4) and Theorem 4.1** (generalization). The statements do not assume that $A$ is
+  nonsingular. For a singular $A$, $A^{-1} = 0$ in Lean, consistency reads $f = 0$, and the
+  statements remain true. See `QuarteroniSaccoSaleri.Chapter04.equation_4_4` and
+  `QuarteroniSaccoSaleri.Chapter04.theorem_4_1`.
+* **Definition 4.2** (reading). The book allows any matrix norm. The definitions use the spectral
+  norm. See `QuarteroniSaccoSaleri.Chapter04.definition_4_2_factor`.
+* **Equation (4.5)** (reading). The limit is stated for $\rho(B) \neq 0$. For a nilpotent $B$ the
+  book's rate is $+\infty$, and the formal rates $R_k(B)$ are $0$. See
+  `QuarteroniSaccoSaleri.Chapter04.equation_4_5`.
 
-Theorem 4.1 and (4.4) are stated for a consistent method without assuming `A` nonsingular: with
-Mathlib's `A⁻¹ = 0` for a singular `A`, consistency then reads `f = 0` and the statements remain
-true. The book proves the converse of Theorem 4.1 through an eigenvector of modulus `> 1` and
-leaves the case `ρ(B) = 1` unmentioned; both are subsumed by the equivalence `Bᵏ → 0 ⟺ ρ(B) < 1`
-of Theorem 1.5. The symmetric case of (4.5) holds for every `m ≥ 1` with no condition on `ρ(B)`,
-since `Real.log 0 = 0` makes both sides vanish for a nilpotent (hence zero) symmetric `B`.
+## Not formalized
+
+* **Remark 4.1**, on the order, the stationarity and the linearity of a general iterative method. It
+  is a classification.
 -/
 
 open Filter Finset Matrix Topology WithLp
@@ -70,20 +128,29 @@ variable {n : ℕ}
 
 /-! ### The linear iterative method (4.2) -/
 
-/-- **(4.2).** One step `x ↦ B x + f` of the linear iterative method `x⁽ᵏ⁺¹⁾ = B x⁽ᵏ⁾ + f`, for
-the iteration matrix `B ∈ ℝ^{n×n}` and the vector `f` obtained from the right-hand side; the
-`k`-th iterate from `x⁽⁰⁾` is `(affineStep B f)^[k] x⁽⁰⁾`. It is the backbone's `Stationary.step`
-of the operator `Matrix.toEuclideanCLM B` read on plain functions (`toLp_affineStep`). -/
+/-- **Equation (4.2)** of [quarteroni2000numerical]. Let $B \in \mathbb{R}^{n \times n}$ be the
+iteration matrix and let $f \in \mathbb{R}^n$ be the vector obtained from the right-hand side.
+One step of the **linear iterative method** is
+$$x \mapsto Bx + f,$$
+so that the method is $x^{(k+1)} = B x^{(k)} + f$.
+
+The iterate $x^{(k)}$ from $x^{(0)}$ is `(affineStep B f)^[k] x⁽⁰⁾`. This is the backbone
+`Stationary.step` of the operator `Matrix.toEuclideanCLM B`, read on plain functions; see
+`QuarteroniSaccoSaleri.Chapter04.toLp_affineStep`. -/
 def affineStep (B : Matrix (Fin n) (Fin n) ℝ) (f x : Fin n → ℝ) : Fin n → ℝ := B *ᵥ x + f
 
-/-- Under `WithLp.toLp 2`, the step (4.2) is `Stationary.step` of `Matrix.toEuclideanCLM B` on
-`EuclideanSpace ℝ (Fin n)`: the transport through which the theory of `Numlib/Stationary/Basic`
-applies to the book's iteration. -/
+/-- **Equation (4.2)** of [quarteroni2000numerical], the backbone form. Let
+$B \in \mathbb{R}^{n \times n}$ and $f, x \in \mathbb{R}^n$. Under `WithLp.toLp 2`, the step
+$Bx + f$ is the backbone step `Stationary.step` of the operator `Matrix.toEuclideanCLM B` on
+`EuclideanSpace ℝ (Fin n)`. Through this identity the theory of `Numlib.Stationary.Basic`
+applies to the method of the book. -/
 theorem toLp_affineStep (B : Matrix (Fin n) (Fin n) ℝ) (f x : Fin n → ℝ) :
     (toLp 2 (affineStep B f x) : EuclideanSpace ℝ (Fin n)) =
       Stationary.step (toEuclideanCLM (n := Fin n) (𝕜 := ℝ) B) (toLp 2 f) (toLp 2 x) := rfl
 
-/-- The `k`-th iterate of (4.2) under `WithLp.toLp 2` is the `k`-th iterate of the backbone step. -/
+/-- **Equation (4.2)** of [quarteroni2000numerical], the backbone form of the iterates. Under
+`WithLp.toLp 2`, the iterate $x^{(k)}$ of (4.2) from $x^{(0)}$ is the iterate of index $k$ of
+the backbone step `Stationary.step` of `Matrix.toEuclideanCLM B`. -/
 theorem toLp_affineStep_iterate (B : Matrix (Fin n) (Fin n) ℝ) (f x₀ : Fin n → ℝ) (k : ℕ) :
     (toLp 2 ((affineStep B f)^[k] x₀) : EuclideanSpace ℝ (Fin n)) =
       (Stationary.step (toEuclideanCLM (n := Fin n) (𝕜 := ℝ) B) (toLp 2 f))^[k] (toLp 2 x₀) := by
@@ -93,31 +160,40 @@ theorem toLp_affineStep_iterate (B : Matrix (Fin n) (Fin n) ℝ) (f x₀ : Fin n
 
 /-! ### Definition 4.1 and Example 4.1 -/
 
-/-- **Definition 4.1.** The iterative method (4.2) is *consistent* with the system `A x = b` when
-`f` and `B` are such that `x = B x + f` for its solution `x = A⁻¹ b`: the solution is a fixed point
-of the step `affineStep B f`. Meaningful for `A` nonsingular, the standing assumption of §3.2;
-`definition_4_1_iff` is the "equivalently, `f = (I - B) A⁻¹ b`". -/
+/-- **Definition 4.1** of [quarteroni2000numerical]. Let $A, B \in \mathbb{R}^{n \times n}$ and
+$b, f \in \mathbb{R}^n$. The iterative method (4.2) is **consistent** with the system $Ax = b$
+if the solution $x = A^{-1} b$ is a fixed point of the step:
+$$A^{-1} b = B A^{-1} b + f.$$
+
+The definition is meaningful for a nonsingular $A$, the standing assumption of Section 3.2. For
+a singular $A$, Lean's $A^{-1}$ is $0$. The "equivalently, $f = (I - B) A^{-1} b$" of the book
+is `QuarteroniSaccoSaleri.Chapter04.definition_4_1_iff`. -/
 def definition_4_1 (A : Matrix (Fin n) (Fin n) ℝ) (b : Fin n → ℝ) (B : Matrix (Fin n) (Fin n) ℝ)
     (f : Fin n → ℝ) : Prop :=
   A⁻¹ *ᵥ b = B *ᵥ (A⁻¹ *ᵥ b) + f
 
-/-- **Definition 4.1, "equivalently"**: the method is consistent iff `f = (I - B) A⁻¹ b`. A
-rearrangement, valid for every `A`. -/
+/-- **Definition 4.1** of [quarteroni2000numerical], "equivalently". Let
+$A, B \in \mathbb{R}^{n \times n}$ and $b, f \in \mathbb{R}^n$. The method (4.2) is consistent
+with $Ax = b$ if and only if
+$$f = (I - B) A^{-1} b.$$
+This is a rearrangement, and it holds for every $A$. -/
 theorem definition_4_1_iff (A : Matrix (Fin n) (Fin n) ℝ) (b : Fin n → ℝ)
     (B : Matrix (Fin n) (Fin n) ℝ) (f : Fin n → ℝ) :
     definition_4_1 A b B f ↔ f = (1 - B) *ᵥ (A⁻¹ *ᵥ b) := by
   rw [definition_4_1, sub_mulVec, one_mulVec]
   exact ⟨fun h => eq_sub_of_add_eq' h.symm, fun h => (add_eq_of_eq_sub' h).symm⟩
 
-/-- The solution of a consistent method is a fixed point of the backbone step: Definition 4.1
-under `WithLp.toLp 2`, in the form `hfix` that the lemmas of `Numlib/Stationary/Basic` take. -/
+/-- If the method (4.2) is consistent with $Ax = b$, then under `WithLp.toLp 2` the solution
+$A^{-1} b$ is a fixed point of the backbone step: $B A^{-1} b + f = A^{-1} b$ in
+`EuclideanSpace ℝ (Fin n)`. This is the form of the fixed-point hypothesis that the theorems of
+`Numlib.Stationary.Basic` take. -/
 theorem toLp_fixed_of_consistent {A B : Matrix (Fin n) (Fin n) ℝ} {b f : Fin n → ℝ}
     (hc : definition_4_1 A b B f) :
     toEuclideanCLM (n := Fin n) (𝕜 := ℝ) B (toLp 2 (A⁻¹ *ᵥ b)) + toLp 2 f =
       (toLp 2 (A⁻¹ *ᵥ b) : EuclideanSpace ℝ (Fin n)) := by
   rw [toEuclideanCLM_toLp, ← toLp_add, ← hc]
 
-/-- `(2 I)⁻¹ b = b / 2`, the solution of the system of Example 4.1. -/
+/-- $(2I)^{-1} b = b/2$, the solution of the system of Example 4.1. -/
 private theorem inv_two_smul_one_mulVec (b : Fin n → ℝ) :
     ((2 : ℝ) • (1 : Matrix (Fin n) (Fin n) ℝ))⁻¹ *ᵥ b = (1 / 2 : ℝ) • b := by
   have h : ((2 : ℝ) • (1 : Matrix (Fin n) (Fin n) ℝ))⁻¹ = (1 / 2 : ℝ) • 1 := by
@@ -126,15 +202,19 @@ private theorem inv_two_smul_one_mulVec (b : Fin n → ℝ) :
     norm_num
   rw [h, smul_mulVec, one_mulVec]
 
-/-- **Example 4.1, consistency.** To solve `2 I x = b`, the method `x⁽ᵏ⁺¹⁾ = -x⁽ᵏ⁾ + b` (that is,
-`B = -I`, `f = b`) is consistent: `b/2 = -(b/2) + b`. -/
+/-- **Example 4.1** of [quarteroni2000numerical], consistency. For every $b \in \mathbb{R}^n$, the
+method $x^{(k+1)} = -x^{(k)} + b$, that is, $B = -I$ and $f = b$, is consistent with the system
+$2I x = b$: its solution $b/2$ satisfies $b/2 = -b/2 + b$. -/
 theorem example_4_1_consistent (b : Fin n → ℝ) :
     definition_4_1 ((2 : ℝ) • (1 : Matrix (Fin n) (Fin n) ℝ)) b (-1) b := by
   rw [definition_4_1, inv_two_smul_one_mulVec, neg_mulVec, one_mulVec]
   module
 
-/-- **Example 4.1, the iterates from `x⁽⁰⁾ = 0`.** The method generates `x⁽²ᵏ⁾ = 0` and
-`x⁽²ᵏ⁺¹⁾ = b` for every `k`. -/
+/-- **Example 4.1** of [quarteroni2000numerical], the iterates from $x^{(0)} = 0$. For every
+$b \in \mathbb{R}^n$ and every $k$, the method $x^{(k+1)} = -x^{(k)} + b$ started at
+$x^{(0)} = 0$ gives
+$$x^{(2k)} = 0, \qquad x^{(2k+1)} = b.$$
+-/
 theorem example_4_1_iterate (b : Fin n → ℝ) (k : ℕ) :
     (affineStep (-1) b)^[2 * k] 0 = 0 ∧ (affineStep (-1) b)^[2 * k + 1] 0 = b := by
   have h1 : ∀ x, affineStep (-1 : Matrix (Fin n) (Fin n) ℝ) b x = -x + b := fun x => by
@@ -150,8 +230,10 @@ theorem example_4_1_iterate (b : Fin n → ℝ) (k : ℕ) :
     rw [Function.iterate_succ_apply', h2, h1]
     abel
 
-/-- **Example 4.1, non-convergence.** For `b ≠ 0` the sequence started at `x⁽⁰⁾ = 0` has no limit:
-its even terms are `0` and its odd terms are `b`. Consistency alone does not give convergence. -/
+/-- **Example 4.1** of [quarteroni2000numerical], non-convergence. Let $b \in \mathbb{R}^n$ with
+$b \neq 0$. The sequence $x^{(k)}$ of the method $x^{(k+1)} = -x^{(k)} + b$ started at
+$x^{(0)} = 0$ has no limit, because its even terms are $0$ and its odd terms are $b$. So
+consistency alone does not give convergence. -/
 theorem example_4_1_not_tendsto {b : Fin n → ℝ} (hb : b ≠ 0) :
     ¬ ∃ x, Tendsto (fun k => (affineStep (-1) b)^[k] 0) atTop (𝓝 x) := by
   rintro ⟨x, hx⟩
@@ -170,8 +252,10 @@ theorem example_4_1_not_tendsto {b : Fin n → ℝ} (hb : b ≠ 0) :
   exact hb ((tendsto_nhds_unique hodd tendsto_const_nhds).symm.trans
     (tendsto_nhds_unique heven tendsto_const_nhds))
 
-/-- **Example 4.1, convergence from `x⁽⁰⁾ = b/2`.** Started at the solution the method is
-stationary, `x⁽ᵏ⁾ = b/2` for all `k`, hence convergent. -/
+/-- **Example 4.1** of [quarteroni2000numerical], convergence from $x^{(0)} = b/2$. For every
+$b \in \mathbb{R}^n$, the method $x^{(k+1)} = -x^{(k)} + b$ started at the solution
+$x^{(0)} = b/2$ is stationary: $x^{(k)} = b/2$ for all $k$, and so the sequence converges to
+$b/2$. -/
 theorem example_4_1_tendsto (b : Fin n → ℝ) :
     (∀ k, (affineStep (-1) b)^[k] ((1 / 2 : ℝ) • b) = (1 / 2 : ℝ) • b) ∧
       Tendsto (fun k => (affineStep (-1) b)^[k] ((1 / 2 : ℝ) • b)) atTop (𝓝 ((1 / 2 : ℝ) • b)) := by
@@ -186,9 +270,18 @@ theorem example_4_1_tendsto (b : Fin n → ℝ) :
 
 /-! ### Theorem 4.1 -/
 
-/-- **(4.4).** For a consistent method, the error `e⁽ᵏ⁾ = x⁽ᵏ⁾ - x` obeys `e⁽ᵏ⁺¹⁾ = B e⁽ᵏ⁾`, hence
-`e⁽ᵏ⁾ = Bᵏ e⁽⁰⁾` for all `k`; here `x = A⁻¹ b`. It is the backbone's `Stationary.step_iterate_sub`
-transported along `toLp_affineStep_iterate`. -/
+/-- **Equation (4.4)** of [quarteroni2000numerical]. Let $A, B \in \mathbb{R}^{n \times n}$ and
+$b, f \in \mathbb{R}^n$, and let the method (4.2) be consistent with $Ax = b$. Then for every
+$x^{(0)} \in \mathbb{R}^n$ and every $k$, the error $e^{(k)} = x^{(k)} - A^{-1} b$ satisfies
+$$e^{(k)} = B^k e^{(0)}.$$
+This follows from the recursion $e^{(k+1)} = B e^{(k)}$.
+
+**Generalization.** The book assumes that $A$ is nonsingular. The statement holds without this
+hypothesis: for a singular $A$, $A^{-1} = 0$ in Lean, consistency reads $f = 0$, and the
+identity is still true.
+
+The proof specializes `Stationary.step_iterate_sub`, transported along
+`QuarteroniSaccoSaleri.Chapter04.toLp_affineStep_iterate`. -/
 theorem equation_4_4 {A B : Matrix (Fin n) (Fin n) ℝ} {b f : Fin n → ℝ}
     (hc : definition_4_1 A b B f) (x₀ : Fin n → ℝ) (k : ℕ) :
     (affineStep B f)^[k] x₀ - A⁻¹ *ᵥ b = (B ^ k) *ᵥ (x₀ - A⁻¹ *ᵥ b) := by
@@ -197,10 +290,15 @@ theorem equation_4_4 {A B : Matrix (Fin n) (Fin n) ℝ} {b f : Fin n → ℝ}
   rw [← toLp_affineStep_iterate, ← map_pow, ← toLp_sub, ← toLp_sub, toEuclideanCLM_toLp] at h
   exact toLp_injective 2 h
 
-/-- **Two iterations of (4.2) drift apart by `Bᵏ` applied to their initial difference**:
-`x⁽ᵏ⁾ - y⁽ᵏ⁾ = Bᵏ (x⁽⁰⁾ - y⁽⁰⁾)`, no fixed point needed; the difference of two instances of the
-closed form `Stationary.step_iterate_eq_pow_add_sum`. It is what makes "convergence for every
-`x⁽⁰⁾`" force `Bᵏ → 0` whatever the limit is. -/
+/-- **Section 4.1** of [quarteroni2000numerical], the difference of two iterations. Let
+$B \in \mathbb{R}^{n \times n}$ and $f, x^{(0)}, y^{(0)} \in \mathbb{R}^n$, and let $x^{(k)}$
+and $y^{(k)}$ be the iterates of (4.2) from $x^{(0)}$ and from $y^{(0)}$. Then for every $k$
+$$x^{(k)} - y^{(k)} = B^k (x^{(0)} - y^{(0)}).$$
+No fixed point is needed. This identity is the reason why convergence for every $x^{(0)}$ forces
+$B^k \to 0$, whatever the limit is.
+
+The proof takes the difference of two instances of the closed form
+`Stationary.step_iterate_eq_pow_add_sum`. -/
 theorem affineStep_iterate_sub_iterate (B : Matrix (Fin n) (Fin n) ℝ) (f x₀ y₀ : Fin n → ℝ)
     (k : ℕ) :
     (affineStep B f)^[k] x₀ - (affineStep B f)^[k] y₀ = (B ^ k) *ᵥ (x₀ - y₀) := by
@@ -214,10 +312,14 @@ theorem affineStep_iterate_sub_iterate (B : Matrix (Fin n) (Fin n) ℝ) (f x₀ 
     at h
   exact toLp_injective 2 h
 
-/-- **Theorem 4.1, the necessity of `ρ(B) < 1`**, in the form the book's argument proves: if the
-iteration (4.2) converges from every `x⁽⁰⁾` (to any limit `x`, the same for all starting vectors)
-then `ρ(B) < 1`, because the differences `x⁽ᵏ⁾ - y⁽ᵏ⁾ = Bᵏ (x⁽⁰⁾ - y⁽⁰⁾)` tend to `0`, so `Bᵏ v → 0`
-for every `v` (Theorem 1.5). No consistency is needed for this direction. -/
+/-- **Theorem 4.1** of [quarteroni2000numerical], the necessity of $\rho(B) < 1$. Let
+$B \in \mathbb{R}^{n \times n}$ and $f, x \in \mathbb{R}^n$. If the iterates of (4.2) converge
+to $x$ from every $x^{(0)} \in \mathbb{R}^n$, then $\rho(B) < 1$. No consistency is needed for
+this direction.
+
+The reason is that the differences $x^{(k)} - y^{(k)} = B^k (x^{(0)} - y^{(0)})$ of two
+iterations tend to $0$, so that $B^k v \to 0$ for every $v$, and Theorem 1.5 gives
+$\rho(B) < 1$. -/
 theorem complexSpectralRadius_lt_one_of_forall_tendsto {B : Matrix (Fin n) (Fin n) ℝ}
     {f x : Fin n → ℝ} (h : ∀ x₀, Tendsto (fun k => (affineStep B f)^[k] x₀) atTop (𝓝 x)) :
     complexSpectralRadius B < 1 := by
@@ -228,12 +330,21 @@ theorem complexSpectralRadius_lt_one_of_forall_tendsto {B : Matrix (Fin n) (Fin 
   rw [sub_self] at hv
   simpa only [affineStep_iterate_sub_iterate, sub_zero] using hv
 
-/-- **Theorem 4.1.** Let (4.2) be consistent with `A x = b`. Then the sequence `x⁽ᵏ⁾` converges to
-the solution `x = A⁻¹ b` for every choice of `x⁽⁰⁾` iff `ρ(B) < 1`. By (4.4) the errors are
-`Bᵏ e⁽⁰⁾`, and `Bᵏ v → 0` for every `v` iff `Bᵏ → 0` iff `ρ(B) < 1` (Theorem 1.5, backbone
-`Matrix.tendsto_pow_iff_complexSpectralRadius_lt_one`). The book's converse through an eigenvector
-of modulus `> 1`, and the case `ρ(B) = 1` it leaves out, are subsumed by that equivalence
-(`complexSpectralRadius_lt_one_of_forall_tendsto`). -/
+/-- **Theorem 4.1** of [quarteroni2000numerical]. Let $A, B \in \mathbb{R}^{n \times n}$ and
+$b, f \in \mathbb{R}^n$, and let the method (4.2) be consistent with $Ax = b$. Then the sequence
+$x^{(k)}$ converges to the solution $x = A^{-1} b$ for every choice of
+$x^{(0)} \in \mathbb{R}^n$ if and only if $\rho(B) < 1$.
+
+**Generalization.** The book assumes that $A$ is nonsingular. The statement holds without this
+hypothesis: for a singular $A$, $A^{-1} = 0$ in Lean, consistency reads $f = 0$, and the
+equivalence is still true.
+
+By (4.4) the errors are $B^k e^{(0)}$, and $B^k v \to 0$ for every $v$ if and only if
+$B^k \to 0$, if and only if $\rho(B) < 1$ (Theorem 1.5,
+`Matrix.tendsto_pow_iff_complexSpectralRadius_lt_one`). The book proves the converse with an
+eigenvector for an eigenvalue of modulus greater than $1$, and it does not treat the case
+$\rho(B) = 1$. The equivalence of Theorem 1.5 covers both cases
+(`QuarteroniSaccoSaleri.Chapter04.complexSpectralRadius_lt_one_of_forall_tendsto`). -/
 theorem theorem_4_1 {A B : Matrix (Fin n) (Fin n) ℝ} {b f : Fin n → ℝ}
     (hc : definition_4_1 A b B f) :
     (∀ x₀, Tendsto (fun k => (affineStep B f)^[k] x₀) atTop (𝓝 (A⁻¹ *ᵥ b))) ↔
@@ -244,10 +355,15 @@ theorem theorem_4_1 {A B : Matrix (Fin n) (Fin n) ℝ} {b f : Fin n → ℝ}
   rw [← tendsto_sub_nhds_zero_iff]
   simpa only [equation_4_4 hc] using h (x₀ - A⁻¹ *ᵥ b)
 
-/-- **The remark after Theorem 4.1.** A sufficient condition for convergence is `‖B‖ < 1` for any
-matrix norm — here any algebra norm `N` on `ℝ^{n×n}`, by (1.23) and Theorem 1.5: the powers of `B`
-then tend to `0` (backbone `Matrix.tendsto_pow_of_algebraNorm_lt_one`), so `ρ(B) < 1` and
-Theorem 4.1 applies. -/
+/-- **Section 4.1** of [quarteroni2000numerical], the remark after Theorem 4.1. Let
+$A, B \in \mathbb{R}^{n \times n}$ and $b, f \in \mathbb{R}^n$, and let the method (4.2) be
+consistent with $Ax = b$. Let $N$ be a matrix norm on $\mathbb{R}^{n \times n}$ with $N(B) < 1$.
+Then for every $x^{(0)} \in \mathbb{R}^n$ the iterates $x^{(k)}$ converge to $A^{-1} b$. So
+$\|B\| < 1$ in some matrix norm is a sufficient condition for convergence.
+
+A matrix norm is an algebra norm, that is, a submultiplicative norm
+(`AlgebraNorm ℝ (Matrix (Fin n) (Fin n) ℝ)`). By (1.23) and Theorem 1.5 the powers of $B$ tend
+to $0$ (`Matrix.tendsto_pow_of_algebraNorm_lt_one`), so $\rho(B) < 1$ and Theorem 4.1 applies. -/
 theorem tendsto_of_algebraNorm_lt_one {A B : Matrix (Fin n) (Fin n) ℝ} {b f : Fin n → ℝ}
     (hc : definition_4_1 A b B f) (N : AlgebraNorm ℝ (Matrix (Fin n) (Fin n) ℝ)) (hN : N B < 1)
     (x₀ : Fin n → ℝ) :
@@ -262,24 +378,37 @@ section ConvergenceFactor
 
 open scoped Matrix.Norms.L2Operator
 
-/-- **Definition 4.2 (1).** The *convergence factor after `m` steps* of the iteration with matrix
-`B` is `‖Bᵐ‖`, in the spectral norm. It bounds the error reduction over `m` steps, `‖e⁽ᵐ⁾‖ ≤
-‖Bᵐ‖ ‖e⁽⁰⁾‖` (§4.6). -/
+/-- **Definition 4.2** of [quarteroni2000numerical], the convergence factor. Let
+$B \in \mathbb{R}^{n \times n}$ and $m \in \mathbb{N}$. The **convergence factor after $m$
+steps** of the iteration with matrix $B$ is $\|B^m\|_2$, in the spectral norm. It bounds the
+reduction of the error over $m$ steps: $\|e^{(m)}\| \le \|B^m\| \|e^{(0)}\|$ (Section 4.6).
+
+**Reading.** The book allows any matrix norm. The definition fixes the spectral norm. -/
 noncomputable def definition_4_2_factor (B : Matrix (Fin n) (Fin n) ℝ) (m : ℕ) : ℝ := ‖B ^ m‖
 
-/-- **Definition 4.2 (2).** The *average convergence factor after `m` steps* is `‖Bᵐ‖^{1/m}`. -/
+/-- **Definition 4.2** of [quarteroni2000numerical], the average convergence factor. Let
+$B \in \mathbb{R}^{n \times n}$ and $m \in \mathbb{N}$. The **average convergence factor after
+$m$ steps** is $\|B^m\|_2^{1/m}$.
+
+At $m = 0$ the exponent $1/m$ is $0$ in Lean, so the value is $1$. -/
 noncomputable def definition_4_2_averageFactor (B : Matrix (Fin n) (Fin n) ℝ) (m : ℕ) : ℝ :=
   ‖B ^ m‖ ^ (1 / m : ℝ)
 
-/-- **Definition 4.2 (3).** The *average convergence rate after `m` steps* is
-`R_m(B) = -(1/m) log ‖Bᵐ‖`. -/
+/-- **Definition 4.2** of [quarteroni2000numerical], the average convergence rate. Let
+$B \in \mathbb{R}^{n \times n}$ and $m \in \mathbb{N}$. The **average convergence rate after $m$
+steps** is
+$$R_m(B) = -\frac{1}{m} \log \|B^m\|_2.$$
+
+In Lean, $1/0 = 0$ and $\log 0 = 0$. So $R_0(B) = 0$, and $R_m(B) = 0$ when $B^m = 0$. -/
 noncomputable def definition_4_2_rate (B : Matrix (Fin n) (Fin n) ℝ) (m : ℕ) : ℝ :=
   -(1 / m : ℝ) * Real.log ‖B ^ m‖
 
-/-- The three quantities of Definition 4.2 are the backbone's `Stationary.convergenceFactor`,
-`Stationary.averageConvergenceFactor` and `Stationary.averageConvergenceRate` of the operator
-`Matrix.toEuclideanCLM B`, whose operator norm is the spectral norm of `B`
-(`Matrix.l2_opNorm_toEuclideanCLM`). -/
+/-- **Definition 4.2** of [quarteroni2000numerical], the backbone form. For
+$B \in \mathbb{R}^{n \times n}$ and $m \in \mathbb{N}$, the convergence factor, the average
+convergence factor and the average convergence rate after $m$ steps are the backbone
+`Stationary.convergenceFactor`, `Stationary.averageConvergenceFactor` and
+`Stationary.averageConvergenceRate` of the operator `Matrix.toEuclideanCLM B`. The operator norm
+of this operator is the spectral norm of $B$ (`Matrix.l2_opNorm_toEuclideanCLM`). -/
 theorem definition_4_2_eq (B : Matrix (Fin n) (Fin n) ℝ) (m : ℕ) :
     definition_4_2_factor B m =
         Stationary.convergenceFactor (toEuclideanCLM (n := Fin n) (𝕜 := ℝ) B) m ∧
@@ -292,29 +421,49 @@ theorem definition_4_2_eq (B : Matrix (Fin n) (Fin n) ℝ) (m : ℕ) :
     Stationary.averageConvergenceRate, ← map_pow, l2_opNorm_toEuclideanCLM]
   exact ⟨trivial, trivial, trivial⟩
 
-/-- **The asymptotic convergence rate** `R(B) = -log ρ(B)` of (4.5), the limit of the average
-convergence rates `R_k(B)` (`equation_4_5`). -/
+/-- **Equation (4.5)** of [quarteroni2000numerical], definition. For
+$B \in \mathbb{R}^{n \times n}$, the **asymptotic convergence rate** is
+$$R(B) = -\log \rho(B).$$
+It is the limit of the average convergence rates $R_k(B)$; see
+`QuarteroniSaccoSaleri.Chapter04.equation_4_5`. At $\rho(B) = 0$ the value is $0$ in Lean,
+because $\log 0 = 0$. -/
 noncomputable def asymptoticConvergenceRate (B : Matrix (Fin n) (Fin n) ℝ) : ℝ :=
   -Real.log (complexSpectralRadius B).toReal
 
-/-- **(4.5).** `R(B) = lim_{k → ∞} R_k(B) = -log ρ(B)`, "where Property 1.13 has been accounted
-for": Gelfand's formula `‖Bᵏ‖^{1/k} → ρ(B)` composed with the logarithm, for `ρ(B) ≠ 0` (backbone
-`Matrix.tendsto_averageConvergenceRate`). For a nilpotent `B` the book's rate is `+∞` and the
-formal `R_k(B)` are `0`. -/
+/-- **Equation (4.5)** of [quarteroni2000numerical]. Let $B \in \mathbb{R}^{n \times n}$ with
+$\rho(B) \neq 0$. Then
+$$R(B) = \lim_{k \to \infty} R_k(B) = -\log \rho(B),$$
+"where Property 1.13 has been accounted for".
+
+**Reading.** The book does not exclude $\rho(B) = 0$. For a nilpotent $B$ the book's rate is
+$+\infty$, while the formal rates $R_k(B)$ are $0$ for large $k$. The statement therefore
+assumes $\rho(B) \neq 0$.
+
+The proof composes Gelfand's formula $\|B^k\|^{1/k} \to \rho(B)$ with the logarithm
+(`Matrix.tendsto_averageConvergenceRate`). -/
 theorem equation_4_5 {B : Matrix (Fin n) (Fin n) ℝ} (hρ : complexSpectralRadius B ≠ 0) :
     Tendsto (definition_4_2_rate B) atTop (𝓝 (asymptoticConvergenceRate B)) :=
   tendsto_averageConvergenceRate B hρ
 
-/-- **(4.5), the closing remark**: `ρ(B)` is the *asymptotic convergence factor*, the limit of the
-average convergence factors `‖Bᵐ‖^{1/m}` (Property 1.14, backbone
-`Matrix.tendsto_pow_rpow_complexSpectralRadius`). -/
+/-- **Equation (4.5)** of [quarteroni2000numerical], the closing remark. For every
+$B \in \mathbb{R}^{n \times n}$, the average convergence factors converge to the spectral
+radius:
+$$\lim_{m \to \infty} \|B^m\|_2^{1/m} = \rho(B).$$
+So $\rho(B)$ is the **asymptotic convergence factor**.
+
+This is Property 1.14; the proof specializes `Matrix.tendsto_pow_rpow_complexSpectralRadius`. -/
 theorem equation_4_5_factor (B : Matrix (Fin n) (Fin n) ℝ) :
     Tendsto (definition_4_2_averageFactor B) atTop (𝓝 (complexSpectralRadius B).toReal) :=
   tendsto_pow_rpow_complexSpectralRadius B
 
-/-- **(4.5), the symmetric case.** If `B` is symmetric then `R_m(B) = -(1/m) log ‖Bᵐ‖₂ = -log ρ(B)`
-for every `m ≥ 1`, because `‖Bᵐ‖₂ = ‖B‖₂ᵐ = ρ(B)ᵐ` (backbone `Matrix.IsHermitian.l2_opNorm_pow`
-and `Matrix.l2_opNorm_eq_complexSpectralRadius_of_isHermitian`). -/
+/-- **Equation (4.5)** of [quarteroni2000numerical], the symmetric case. Let
+$B \in \mathbb{R}^{n \times n}$ be symmetric and let $m \ge 1$. Then
+$$R_m(B) = -\frac{1}{m} \log \|B^m\|_2 = -\log \rho(B),$$
+because $\|B^m\|_2 = \|B\|_2^m = \rho(B)^m$.
+
+The statement has no condition on $\rho(B)$. If $\rho(B) = 0$, then $B = 0$, and both sides are
+$0$ because $\log 0 = 0$ in Lean. The proof specializes `Matrix.IsHermitian.l2_opNorm_pow` and
+`Matrix.l2_opNorm_eq_complexSpectralRadius_of_isHermitian`. -/
 theorem equation_4_5_symm {B : Matrix (Fin n) (Fin n) ℝ} (hB : B.IsSymm) {m : ℕ} (hm : m ≠ 0) :
     definition_4_2_rate B m = asymptoticConvergenceRate B := by
   have hB' : B.IsHermitian := isHermitian_iff_isSymm.mpr hB
@@ -323,17 +472,20 @@ theorem equation_4_5_symm {B : Matrix (Fin n) (Fin n) ℝ} (hB : B.IsSymm) {m : 
   have hm' : (m : ℝ) ≠ 0 := Nat.cast_ne_zero.mpr hm
   field_simp
 
-/-- The spectrum of the complexification of a real `2 × 2` matrix, read off its characteristic
-polynomial `λ² - tr(B) λ + det B`. -/
+/-- A complex number $\mu$ is in the spectrum of the complexification of a real $2 \times 2$ matrix
+$B$ if and only if $\mu^2 - \operatorname{tr}(B) \mu + \det B = 0$. -/
 private theorem mem_spectrum_complexify_fin_two (B : Matrix (Fin 2) (Fin 2) ℝ) (μ : ℂ) :
     μ ∈ spectrum ℂ (complexify B) ↔ μ ^ 2 - B.trace * μ + B.det = 0 := by
   rw [mem_spectrum_complexify_iff, charpoly_fin_two, Polynomial.IsRoot.def]
   simp
 
-/-- **Exercise 1** (cited after Definition 4.2 for the non-monotone convergence of `‖Bᵐ‖`). For
-`B = [[a, 4], [0, a]]` with `0 < a < 1`, the spectral radius is `ρ(B) = a < 1` (the characteristic
-polynomial is `(λ - a)²`), while the average convergence factor can exceed `1`: already for `m = 1`,
-`‖B‖₂ ≥ |b₁₂| = 4 > 1`. -/
+/-- **Exercise 4.1** of [quarteroni2000numerical], cited after Definition 4.2 for the non-monotone
+behaviour of $\|B^m\|$. Let $0 < a < 1$ and
+$$B = \begin{bmatrix} a & 4 \\ 0 & a \end{bmatrix}.$$
+Then $\rho(B) = a < 1$, while the average convergence factor after one step exceeds $1$:
+$\|B\|_2 > 1$.
+
+The characteristic polynomial of $B$ is $(\lambda - a)^2$, and $\|B\|_2 \ge |b_{12}| = 4$. -/
 theorem exercise_4_1 {a : ℝ} (ha0 : 0 < a) (ha1 : a < 1) :
     complexSpectralRadius (!![a, 4; 0, a] : Matrix (Fin 2) (Fin 2) ℝ) = ENNReal.ofReal a ∧
       complexSpectralRadius (!![a, 4; 0, a] : Matrix (Fin 2) (Fin 2) ℝ) < 1 ∧
