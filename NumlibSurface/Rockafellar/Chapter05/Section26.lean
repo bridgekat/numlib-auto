@@ -8,71 +8,150 @@ import Numlib.Analysis.Convex.Subdifferential.Preservation
 import NumlibSurface.Rockafellar.Common.Euclidean
 
 /-!
-# Rockafellar §26: the Legendre transformation
+# Rockafellar, Section 26: The Legendre transformation
 
-Surface file for R. Tyrrell Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §26:
-the classical Legendre transformation, and the exact sense in which it is the conjugacy
-correspondence restricted to the functions whose subdifferential is a genuine one-to-one mapping.
+This module formalizes Section 26 of [rockafellar1970convex], on the classical Legendre
+transformation and the sense in which it is the conjugacy correspondence $f \mapsto f^*$, restricted
+to the functions whose subdifferential is a one-to-one mapping. A proper convex function $f$ on
+$\mathbb{R}^n$ is essentially smooth if $C = \operatorname{int}(\operatorname{dom} f)$ is non-empty,
+$f$ is differentiable on $C$, and $|\nabla f(x_i)| \to +\infty$ along every sequence in $C$ that
+converges to a boundary point of $C$. It is essentially strictly convex if it is strictly convex on
+every convex subset of $\operatorname{dom} \partial f$. For a closed proper convex $f$, the mapping
+$\partial f$ is single-valued exactly when $f$ is essentially smooth (Theorem 26.1), $f$ is
+essentially strictly convex exactly when $f^*$ is essentially smooth (Theorem 26.3), and
+$\partial f$ is one-to-one exactly when $f$ is both (Corollary 26.3.1).
 
-All eleven numbered results of §26 are formalized over `Rn n = ℝⁿ`: Theorems 26.1, 26.3, 26.4,
-26.5, 26.6, Lemmas 26.2 and 26.7, and Corollaries 26.3.1, 26.3.2, 26.3.3, 26.4.1, together with all
-three of the section's counterexamples, transcribed as Lean definitions.
-
-Three of the book's hypotheses are stronger than its own proofs need. **Theorem 26.5 says "closed
-convex function" where its proof needs "closed *proper* convex"**, so `theorem_26_5` carries
-`ProperConvex f`; nothing is lost, since an improper closed convex function is `+∞` everywhere or
-`−∞` on `cl (dom f)` and so is differentiable on no non-empty interior. **Theorem 26.4's
-single-valuedness and its formula `g = f*` follow from convexity alone**, so
-`theorem_26_4_wellDefined` and `theorem_26_4_eq` carry only `ConvexFn f`. **Corollary 26.3.3's "`A`
-maps `ℝⁿ` onto `ℝᵐ`" is used only through injectivity of `A*`** — the book's own proof says so
-parenthetically.
+For a function $f$ that is differentiable on $C$, the Legendre conjugate of $(C, f)$ is the pair
+$(D, g)$ with $D = \nabla f(C)$ and $g(x^*) = \langle (\nabla f)^{-1}(x^*), x^* \rangle - f((\nabla
+f)^{-1}(x^*))$. It is well defined, and $g$ is the restriction of $f^*$ to $D$ (Theorem 26.4). For a
+convex function of Legendre type the Legendre transformation is a symmetric one-to-one
+correspondence, and $\nabla f^*$ is the inverse of $\nabla f$ (Theorem 26.5). Theorem 26.6 and Lemma
+26.7 treat finite differentiable convex functions on $\mathbb{R}^n$. All eleven numbered results of
+the section are formalized, together with its three counterexamples on $\mathbb{R}^2$ (pp. 253, 254
+and 257). The proofs specialize the backbone modules
+`Numlib.Analysis.Convex.Subdifferential.EssentiallySmooth`,
+`Numlib.Analysis.Convex.Subdifferential.LegendreType`,
+`Numlib.Analysis.Convex.Subdifferential.BoundaryDirDeriv`,
+`Numlib.Analysis.Convex.Subdifferential.Cofinite` and
+`Numlib.Analysis.Convex.Subdifferential.Preservation`.
 
 ## Main definitions
 
-* `SingleValued`, `inverseMap`, `OneToOne` — the book's vocabulary for multivalued mappings
-  (p. 251).
-* `EssentiallySmoothBook`, `EssentiallySmoothDir` — essential smoothness in two equivalent forms,
-  with the book's condition (c) and with its directional form (c′), the equivalence being
-  Lemma 26.2. Both are carried because a limit-of-gradients argument produces (c) while a user with
-  a concrete `f` can check (c′). The backbone's `EssentiallySmooth` quantifies (c) over points
-  *outside* `C` rather than over boundary points of `C`; the two agree, and
-  `essentiallySmooth_iff_book` proves it.
-* `legendreDomain f` — Rockafellar's `D`, the image of `C = int (dom f)` under the gradient
-  mapping. `LegendreType` is the backbone's, and says exactly what the book's "the pair `(C, f)` is
-  a convex function of Legendre type" says for `C = int (dom f)`.
-* `essStrictlyConvexFn`, `strictOnRelintFn`, `halfPlaneFn` with `parabola` — the three
-  counterexamples of pp. 253, 254 and 257.
+* Section 26 (p. 251), `Rockafellar.SingleValued`, `Rockafellar.inverseMap` and
+  `Rockafellar.OneToOne`: single-valued multivalued mappings, the inverse $\rho^{-1}$ of a
+  multivalued mapping $\rho$, and one-to-one mappings.
+* Section 26 (p. 251), `Rockafellar.EssentiallySmoothBook`: essential smoothness, with condition (c)
+  at the boundary points of $C$ as in the source.
+* Lemma 26.2, `Rockafellar.EssentiallySmoothDir`: essential smoothness with condition (c) replaced
+  by the directional condition (c′).
+* Section 26 (p. 253), `Rockafellar.essStrictlyConvexFn`: the first counterexample, which the source
+  calls essentially strictly convex, but which is not strictly convex on $\operatorname{dom} f$.
+* Section 26 (p. 254), `Rockafellar.strictOnRelintFn`, with `Rockafellar.nonnegAxis` and
+  `Rockafellar.openQuadrant`: the second counterexample, strictly convex on
+  $\operatorname{ri}(\operatorname{dom} f)$ but not essentially strictly convex.
+* Section 26 (p. 256), `Rockafellar.legendreDomain`: the domain $D = \nabla f(C)$ of the Legendre
+  conjugate.
+* Section 26 (p. 257), `Rockafellar.halfPlaneFn`, with `Rockafellar.parabola` and
+  `Rockafellar.parabolaPoint`: the third counterexample, $\xi_1^2/4\xi_2$ on the open upper
+  half-plane.
 
 ## Main results
 
-* `theorem_26_1`, `theorem_26_1_gradient`, `theorem_26_1_empty`,
-  `theorem_26_1_domSubdifferential` — `∂f` is single-valued exactly when `f` is essentially
-  smooth, and is then the gradient on `int (dom f)` and empty elsewhere.
-* `lemma_26_2`, `lemma_26_2_at`, `essentiallySmooth_iff_book` — condition (c) may be replaced by
-  the directional condition (c′).
-* `theorem_26_3`, `theorem_26_3'`, `corollary_26_3_1` — essential strict convexity of `f` is
-  essential smoothness of `f*`, so `∂f` is one-to-one exactly when `f` is both.
-* `corollary_26_3_2`, `corollary_26_3_3` — essential smoothness survives addition and composition
-  with a linear map.
-* `theorem_26_4_wellDefined`, `theorem_26_4_eq`, `theorem_26_4_subset_dom_conj`,
-  `corollary_26_4_1_dom`, `corollary_26_4_1_relint_subset`, `corollary_26_4_1_subset_dom`,
-  `corollary_26_4_1_eq`, `corollary_26_4_1_strictConvexOn` — the Legendre conjugate `(D, g)` is
-  well defined and is the restriction of `f*` to `D`, with `ri (dom f*) ⊆ D ⊆ dom f*`.
-* `theorem_26_5`, `theorem_26_5_legendreDomain`, `theorem_26_5_conj_apply`,
-  `theorem_26_5_legendreDomain_conj`, `theorem_26_5_apply`, `theorem_26_5_bijOn`,
-  `theorem_26_5_continuousOn`, `theorem_26_5_continuousOn_conj`, `theorem_26_5_gradient_conj`,
-  `theorem_26_5_gradient_gradient_conj` — for a function of Legendre type the transformation is a
-  symmetric one-to-one correspondence, with `∇f*` the inverse homeomorphism of `∇f`.
-* `theorem_26_6`, `theorem_26_6_conj`, `theorem_26_6_apply`, `lemma_26_7` — the finite
-  differentiable case, in which `f*` and the Legendre conjugate agree.
-* `strictOnRelintFn_not_essentiallyStrictlyConvex`, `strictConvexOnFn_strictOnRelintFn`,
-  `essStrictlyConvexFn_not_strictConvexOn_convexDom`, `not_convex_legendreDomain_halfPlaneFn`,
-  `not_essentiallySmooth_halfPlaneFn` — the three counterexamples doing their work.
+* Theorem 26.1, `Rockafellar.theorem_26_1`, `Rockafellar.theorem_26_1_gradient`,
+  `Rockafellar.theorem_26_1_empty` and `Rockafellar.theorem_26_1_domSubdifferential`: for a closed
+  proper convex $f$, $\partial f$ is single-valued if and only if $f$ is essentially smooth, and
+  then $\partial f(x) = \{\nabla f(x)\}$ on $\operatorname{int}(\operatorname{dom} f)$ and
+  $\partial f(x) = \emptyset$ elsewhere.
+* Lemma 26.2, `Rockafellar.lemma_26_2` and `Rockafellar.lemma_26_2_at`: in the definition of
+  essential smoothness, condition (c) may be replaced by condition (c′).
+* Section 26 (p. 253), `Rockafellar.essStrictlyConvexFn_not_strictConvexOn_convexDom`: the first
+  counterexample is not strictly convex on $\operatorname{dom} f$.
+* Section 26 (p. 254), `Rockafellar.strictConvexOnFn_strictOnRelintFn` and
+  `Rockafellar.strictOnRelintFn_not_essentiallyStrictlyConvex`: the second counterexample is
+  strictly convex on $\operatorname{ri}(\operatorname{dom} f)$ but not essentially strictly convex.
+* Theorem 26.3, `Rockafellar.theorem_26_3` and `Rockafellar.theorem_26_3'`: a closed proper convex
+  $f$ is essentially strictly convex if and only if $f^*$ is essentially smooth.
+* Corollary 26.3.1, `Rockafellar.corollary_26_3_1`: $\partial f$ is one-to-one if and only if $f$ is
+  strictly convex on $\operatorname{int}(\operatorname{dom} f)$ and essentially smooth.
+* Corollary 26.3.2, `Rockafellar.corollary_26_3_2`: the infimal convolution $f_1 \square f_2$ is
+  essentially smooth if $f_1$ is and $\operatorname{ri}(\operatorname{dom} f_1^*) \cap
+  \operatorname{ri}(\operatorname{dom} f_2^*) \neq \emptyset$.
+* Corollary 26.3.3, `Rockafellar.corollary_26_3_3`: the image $Af$ of an essentially smooth $f$
+  under a linear map $A$ onto $\mathbb{R}^m$ is essentially smooth if $A^* y^* \in
+  \operatorname{ri}(\operatorname{dom} f^*)$ for some $y^*$.
+* Theorem 26.4, `Rockafellar.theorem_26_4_wellDefined`, `Rockafellar.theorem_26_4_eq` and
+  `Rockafellar.theorem_26_4_subset_dom_conj`: the Legendre conjugate $(D, g)$ is well defined,
+  $D \subseteq \operatorname{dom} f^*$, and $g$ is the restriction of $f^*$ to $D$.
+* Corollary 26.4.1, `Rockafellar.corollary_26_4_1_dom`,
+  `Rockafellar.corollary_26_4_1_relint_subset`, `Rockafellar.corollary_26_4_1_subset_dom`,
+  `Rockafellar.corollary_26_4_1_eq` and `Rockafellar.corollary_26_4_1_strictConvexOn`: for an
+  essentially smooth closed proper convex $f$, $D = \operatorname{dom} \partial f^*$,
+  $\operatorname{ri}(\operatorname{dom} f^*) \subseteq D \subseteq \operatorname{dom} f^*$, and $g$
+  is strictly convex on every convex subset of $D$.
+* Section 26 (p. 257), `Rockafellar.legendreDomain_halfPlaneFn`,
+  `Rockafellar.not_convex_legendreDomain_halfPlaneFn` and
+  `Rockafellar.not_essentiallySmooth_halfPlaneFn`: for the third counterexample $D$ is the parabola
+  $\xi_2^* = -(\xi_1^*)^2$, which is not convex, and condition (c) fails.
+* Section 26 (p. 258), `Rockafellar.legendreType_iff`: a closed proper convex $f$ is of Legendre
+  type if and only if $\partial f$ is one-to-one.
+* Theorem 26.5, `Rockafellar.theorem_26_5` and the declarations
+  `Rockafellar.theorem_26_5_legendreDomain` to `Rockafellar.theorem_26_5_gradient_gradient_conj`:
+  $(C, f)$ is of Legendre type if and only if $(C^*, f^*)$ is, and then each is the Legendre
+  conjugate of the other and $\nabla f$ is a homeomorphism from $C$ onto $C^*$ with inverse
+  $\nabla f^*$.
+* Theorem 26.6, `Rockafellar.theorem_26_6`, `Rockafellar.theorem_26_6_conj` and
+  `Rockafellar.theorem_26_6_apply`: for a finite differentiable convex $f$ on $\mathbb{R}^n$,
+  $\nabla f$ is one-to-one from $\mathbb{R}^n$ onto itself if and only if $f$ is strictly convex and
+  co-finite, and then $f^*$ has the same properties and is the Legendre conjugate of $f$.
+* Lemma 26.7, `Rockafellar.lemma_26_7`: a finite differentiable convex $f$ is co-finite if and only
+  if $|\nabla f(x_i)| \to +\infty$ whenever $|x_i| \to +\infty$.
 
-There is deliberately **no involution lemma** for the Legendre transformation. The book is explicit
-(p. 258) that the Legendre conjugate of the Legendre conjugate need not be the original function;
-Theorem 26.5 says exactly when it is, and `not_convex_legendreDomain_halfPlaneFn` is why its
-hypothesis cannot be dropped.
+## Conventions
+
+* A multivalued mapping $\rho$ from $\mathbb{R}^n$ to $\mathbb{R}^n$ is a function
+  `Rn n → Set (Rn n)`.
+* The gradient $\nabla f(x)$ is Mathlib's `gradient` of the real trace `fun z => (f z).toReal` of
+  $f$. At a point where $f$ is differentiable it is the gradient of $f$.
+* Essential smoothness is `ConvexAnalysis.EssentiallySmooth`, essential strict convexity is
+  `ConvexAnalysis.EssentiallyStrictlyConvex`, strict convexity on a set is
+  `ConvexAnalysis.StrictConvexOnFn`, and co-finiteness is `ConvexAnalysis.Cofinite`.
+* A convex function of Legendre type $(C, f)$ is `ConvexAnalysis.LegendreType f`, with
+  $C = \operatorname{int}(\operatorname{dom} f)$.
+* The set $\operatorname{dom} \partial f = \{x \mid \partial f(x) \neq \emptyset\}$ is
+  `ConvexAnalysis.domSubdifferential`.
+* The relative interior $\operatorname{ri}$ is Mathlib's `intrinsicInterior ℝ`.
+* The infimal convolution $f_1 \square f_2$ is `ConvexAnalysis.infConv f₁ f₂`.
+* A point $x$ of $\mathbb{R}^2$ is written $(\xi_1, \xi_2)$. Its coordinates are `x 0` and `x 1`.
+
+## Implementation notes
+
+* The backbone's `ConvexAnalysis.EssentiallySmooth` quantifies condition (c) over the points outside
+  $C$, while the source quantifies it over the boundary points of $C$. The two conditions agree by
+  `Rockafellar.essentiallySmooth_iff_book`. Both `Rockafellar.EssentiallySmoothBook` and
+  `Rockafellar.EssentiallySmoothDir` are given, because a limit-of-gradients argument produces
+  condition (c), while condition (c′) is easier to check for a concrete $f$.
+* There is no involution lemma for the Legendre transformation. The source states (p. 258) that the
+  Legendre conjugate of the Legendre conjugate need not be the original function. Theorem 26.5 says
+  when it is, and `Rockafellar.not_convex_legendreDomain_halfPlaneFn` shows that its hypothesis
+  cannot be dropped.
+* In Corollary 26.3.3 the hypothesis that $A$ maps $\mathbb{R}^n$ onto $\mathbb{R}^m$ is used only
+  through the injectivity of $A^*$, as the proof in the source says.
+
+## Deviations from the source
+
+* **Theorem 26.4** (generalization). The source assumes that $f$ is closed and proper and that $f$
+  is differentiable on a non-empty $C$. The well-definedness of $g$ and the formula $g = f^*$ on $D$
+  need only convexity, and the inclusion $D \subseteq \operatorname{dom} f^*$ needs in addition only
+  differentiability on $C$. See `Rockafellar.theorem_26_4_wellDefined`,
+  `Rockafellar.theorem_26_4_eq` and `Rockafellar.theorem_26_4_subset_dom_conj`.
+* **Theorem 26.5** (reading). The source says closed convex function, and its proof needs a closed
+  proper convex function. Here $f$ is assumed proper; an improper closed convex function is
+  differentiable at no point. See `Rockafellar.theorem_26_5`.
+
+## Not formalized
+
+* **Example of p. 253, first claim.** The claim that the function is essentially strictly convex,
+  and in fact essentially smooth.
 -/
 
 open Filter Set Topology
@@ -85,24 +164,33 @@ variable {n : ℕ} {f : Rn n → EReal}
 
 /-! ### Multivalued mappings -/
 
-/-- **§26 (p. 251).** A multivalued mapping `ρ` is **single-valued** when `ρ x` has at most one
-element for each `x`. Its effective domain need not be all of `ℝⁿ`. -/
+/-- **Section 26** of [rockafellar1970convex], p. 251, definition of a single-valued mapping. A
+multivalued mapping $\rho$ from $\mathbb{R}^n$ to $\mathbb{R}^n$ is **single-valued** if
+$\rho(x)$ has at most one element for each $x$.
+
+The effective domain $\{x \mid \rho(x) \neq \emptyset\}$ need not be all of $\mathbb{R}^n$. -/
 def SingleValued (ρ : Rn n → Set (Rn n)) : Prop := ∀ x, (ρ x).Subsingleton
 
-/-- **Rockafellar, §26 (p. 251).** The **inverse** of a multivalued mapping,
-`ρ⁻¹ x* = {x | x* ∈ ρ x}`. -/
+/-- **Section 26** of [rockafellar1970convex], p. 251, definition of the inverse mapping. The
+**inverse** of a multivalued mapping $\rho$ is the multivalued mapping
+$$\rho^{-1}(x^*) = \{x \mid x^* \in \rho(x)\}.$$
+-/
 def inverseMap (ρ : Rn n → Set (Rn n)) : Rn n → Set (Rn n) := fun y => {x | y ∈ ρ x}
 
+/-- For a multivalued mapping $\rho$, $x \in \rho^{-1}(y)$ if and only if $y \in \rho(x)$. -/
 @[simp] theorem mem_inverseMap {ρ : Rn n → Set (Rn n)} {x y : Rn n} :
     x ∈ inverseMap ρ y ↔ y ∈ ρ x := Iff.rfl
 
-/-- **Rockafellar, §26 (p. 251).** A multivalued mapping is **one-to-one** when both it and its
-inverse are single-valued — equivalently, when `graph ρ` contains neither two different pairs with
-the same first component nor two with the same second component. -/
+/-- **Section 26** of [rockafellar1970convex], p. 251, definition of a one-to-one mapping. A
+multivalued mapping $\rho$ is **one-to-one** if both $\rho$ and $\rho^{-1}$ are single-valued.
+
+Equivalently, the graph of $\rho$ contains neither two different pairs with the same first
+component nor two different pairs with the same second component. -/
 def OneToOne (ρ : Rn n → Set (Rn n)) : Prop := SingleValued ρ ∧ SingleValued (inverseMap ρ)
 
-/-- Single-valuedness of `ρ⁻¹` is the statement that `ρ` takes distinct points to disjoint sets,
-which is the form the backbone's injectivity theorems are stated in. -/
+/-- For a multivalued mapping $\rho$, the inverse $\rho^{-1}$ is single-valued if and only if
+$\rho(x_1)$ and $\rho(x_2)$ are disjoint for all $x_1 \neq x_2$. This is the form in which the
+injectivity theorems of the backbone are stated. -/
 theorem singleValued_inverseMap_iff {ρ : Rn n → Set (Rn n)} :
     SingleValued (inverseMap ρ) ↔ ∀ x₁ x₂ : Rn n, x₁ ≠ x₂ → Disjoint (ρ x₁) (ρ x₂) := by
   constructor
@@ -114,22 +202,36 @@ theorem singleValued_inverseMap_iff {ρ : Rn n → Set (Rn n)} :
     by_contra hne
     exact Set.disjoint_left.1 (h x₁ x₂ hne) hx₁ hx₂
 
-/-- The bridge between the book's "one-to-one" and the backbone's injectivity. -/
+/-- A multivalued mapping $\rho$ is one-to-one if and only if each $\rho(x)$ has at most one element
+and $\rho(x_1) \cap \rho(x_2) = \emptyset$ for all $x_1 \neq x_2$. This relates one-to-one
+mappings to the injectivity statements of the backbone. -/
 theorem oneToOne_iff {ρ : Rn n → Set (Rn n)} :
     OneToOne ρ ↔ (∀ x, (ρ x).Subsingleton) ∧ ∀ x₁ x₂ : Rn n, x₁ ≠ x₂ → Disjoint (ρ x₁) (ρ x₂) :=
   and_congr_right' singleValued_inverseMap_iff
 
-/-! ### Essential smoothness
+/-!
+### Essential smoothness
 
-A proper convex function `f` is **essentially smooth** (p. 251) when, for `C = int (dom f)`:
+A proper convex function $f$ is **essentially smooth** (p. 251) if the following conditions hold for
+$C = \operatorname{int}(\operatorname{dom} f)$.
 
-* (a) `C` is not empty;
-* (b) `f` is differentiable throughout `C`;
-* (c) `|∇f xᵢ| → +∞` whenever `x₁, x₂, …` is a sequence in `C` converging to a boundary point of
-  `C`. -/
+* (a) $C$ is not empty.
+* (b) $f$ is differentiable throughout $C$.
+* (c) $|\nabla f(x_i)| \to +\infty$ whenever $x_1, x_2, \dots$ is a sequence in $C$ converging to a
+  boundary point of $C$.
+-/
 
-/-- **Rockafellar, §26 (p. 251)**, verbatim: conditions (a), (b) and (c) with (c) quantified over
-*boundary points* of `C = int (dom f)`, as the book quantifies it. -/
+/-- **Section 26** of [rockafellar1970convex], p. 251, definition of essential smoothness. A
+function $f$ on $\mathbb{R}^n$ satisfies conditions (a), (b) and (c) if
+$C = \operatorname{int}(\operatorname{dom} f)$ is non-empty, $f$ is differentiable at every
+point of $C$, and for every boundary point $z$ of $C$ and every sequence $(z_i)$ in $C$ with
+$z_i \to z$,
+$$\|\nabla f(z_i)\| \to +\infty.$$
+
+Condition (c) is quantified over the boundary points of $C$, as in the source. The norm
+$\|\nabla f(z_i)\|$ is the operator norm of the Fréchet derivative of the real trace of $f$,
+which is the Euclidean norm of the gradient. The backbone's `ConvexAnalysis.EssentiallySmooth`
+is the same condition by `Rockafellar.essentiallySmooth_iff_book`. -/
 def EssentiallySmoothBook (f : Rn n → EReal) : Prop :=
   (interior (convexDom f)).Nonempty ∧
     (∀ ⦃z : Rn n⦄, z ∈ interior (convexDom f) → DifferentiableAtFn f z) ∧
@@ -137,9 +239,11 @@ def EssentiallySmoothBook (f : Rn n → EReal) : Prop :=
       (∀ i, zs i ∈ interior (convexDom f)) → Tendsto zs atTop (𝓝 z) →
         Tendsto (fun i => ‖fderiv ℝ (fun w => (f w).toReal) (zs i)‖) atTop atTop
 
-/-- **The book's condition (c) and the backbone's are the same condition.** `C = int (dom f)` is
-open, so its frontier is `cl C \ C`: a boundary point of `C` is not in `C`, and conversely a point
-outside `C` that a sequence in `C` converges to lies on the boundary. -/
+/-- For a function $f$ on $\mathbb{R}^n$, `ConvexAnalysis.EssentiallySmooth f` holds if and only if
+`Rockafellar.EssentiallySmoothBook f` holds. The backbone quantifies condition (c) over the
+points outside $C = \operatorname{int}(\operatorname{dom} f)$, and the source over the boundary
+points of $C$. Since $C$ is open, its boundary is $\operatorname{cl} C \setminus C$, and a point
+outside $C$ that is the limit of a sequence in $C$ lies on the boundary. -/
 theorem essentiallySmooth_iff_book : EssentiallySmooth f ↔ EssentiallySmoothBook f := by
   have hfr : frontier (interior (convexDom f))
       = closure (interior (convexDom f)) \ interior (convexDom f) :=
@@ -157,14 +261,20 @@ theorem essentiallySmooth_iff_book : EssentiallySmooth f ↔ EssentiallySmoothBo
 
 /-! ### Theorem 26.1 -/
 
-/-- **Theorem 26.1.** Let `f` be a closed proper convex function. Then `∂f` is a
-single-valued mapping if and only if `f` is essentially smooth. -/
+/-- **Theorem 26.1** of [rockafellar1970convex]. Let $f$ be a closed proper convex function on
+$\mathbb{R}^n$. Then $\partial f$ is a single-valued mapping if and only if $f$ is essentially
+smooth.
+
+Essential smoothness is `ConvexAnalysis.EssentiallySmooth`, which agrees with the definition of
+the source by `Rockafellar.essentiallySmooth_iff_book`. -/
 theorem theorem_26_1 (hf : ConvexFn f) (hp : ProperConvex f) (hcl : ClosedConvex f) :
     SingleValued (subdifferential (pairing n) f) ↔ EssentiallySmooth f :=
   subsingleton_subdifferential_iff_essentiallySmooth hf hp hcl
 
-/-- **Theorem 26.1**, the "in this case" clause, first half: `∂f x` consists of the
-vector `∇f x` alone when `x ∈ int (dom f)`. -/
+/-- **Theorem 26.1** of [rockafellar1970convex], the clause on interior points. Let $f$ be an
+essentially smooth convex function on $\mathbb{R}^n$, and let
+$x \in \operatorname{int}(\operatorname{dom} f)$. Then $\partial f(x)$ consists of the vector
+$\nabla f(x)$ alone. Closedness and properness are not assumed. -/
 theorem theorem_26_1_gradient (hf : ConvexFn f) (hes : EssentiallySmooth f) {x : Rn n}
     (hx : x ∈ interior (convexDom f)) :
     subdifferential (pairing n) f x = {gradient (fun w => (f w).toReal) x} := by
@@ -172,16 +282,20 @@ theorem theorem_26_1_gradient (hf : ConvexFn f) (hes : EssentiallySmooth f) {x :
   rwa [show (InnerProductSpace.toDual ℝ (Rn n)).symm (fderiv ℝ (fun w => (f w).toReal) x)
       = gradient (fun w => (f w).toReal) x from rfl] at h
 
-/-- **Theorem 26.1**, the "in this case" clause, second half: `∂f x = ∅` when
-`x ∉ int (dom f)`. This is the substantive half — it is what makes `∂f` an ordinary function on
-`int (dom f)` and nothing anywhere else. -/
+/-- **Theorem 26.1** of [rockafellar1970convex], the clause on the other points. Let $f$ be an
+essentially smooth closed proper convex function on $\mathbb{R}^n$, and let $x \notin
+\operatorname{int}(\operatorname{dom} f)$. Then $\partial f(x) = \emptyset$. This is the
+substantial half: it makes $\partial f$ an ordinary function on
+$\operatorname{int}(\operatorname{dom} f)$, with no values elsewhere. -/
 theorem theorem_26_1_empty (hf : ConvexFn f) (hp : ProperConvex f) (hcl : ClosedConvex f)
     (hes : EssentiallySmooth f) {x : Rn n} (hx : x ∉ interior (convexDom f)) :
     subdifferential (pairing n) f x = ∅ :=
   subdifferential_eq_empty_of_essentiallySmooth hf hp hcl hes hx
 
-/-- **Theorem 26.1**, both halves of the "in this case" clause as one equation:
-`dom ∂f = int (dom f)` for an essentially smooth closed proper convex function. -/
+/-- **Theorem 26.1** of [rockafellar1970convex], both clauses on the domain of $\partial f$ as one
+equation. Let $f$ be an essentially smooth closed proper convex function on $\mathbb{R}^n$. Then
+$$\operatorname{dom} \partial f = \operatorname{int}(\operatorname{dom} f),$$
+where $\operatorname{dom} \partial f = \{x \mid \partial f(x) \neq \emptyset\}$. -/
 theorem theorem_26_1_domSubdifferential (hf : ConvexFn f) (hp : ProperConvex f)
     (hcl : ClosedConvex f)
     (hes : EssentiallySmooth f) :
@@ -190,24 +304,30 @@ theorem theorem_26_1_domSubdifferential (hf : ConvexFn f) (hp : ProperConvex f)
 
 /-! ### Lemma 26.2 -/
 
-/-- **Lemma 26.2**, conditions (a), (b), (c′): the definition of essential smoothness
-with condition (c) replaced by
+/-- **Lemma 26.2** of [rockafellar1970convex], conditions (a), (b) and (c′). A function $f$ on
+$\mathbb{R}^n$ satisfies these conditions if $C = \operatorname{int}(\operatorname{dom} f)$ is
+non-empty, $f$ is differentiable at every point of $C$, and
+$$f'(x + \lambda(a - x); a - x) \to -\infty \quad \text{as } \lambda \downarrow 0$$
+for every $a \in C$ and every $x \notin C$.
 
-```
-(c')  f'(x + λ(a − x); a − x) ↓ −∞ as λ ↓ 0, for any a ∈ C and any boundary point x of C.
-```
-
-The `↓` of the book records that the map is nondecreasing in `λ`, which holds for every convex `f`;
-the *content* of (c′) is the value of the limit, so only the limit appears here. -/
+The source writes $\downarrow -\infty$ in (c′), which also records that the left side is
+non-decreasing in $\lambda$. This holds for every convex $f$, so only the limit appears here.
+The source states (c′) for the boundary points $x$ of $C$. Here it is required at every
+$x \notin C$; by `Rockafellar.lemma_26_2_at`, (c′) holds at every point outside
+$\operatorname{cl} C$, where (c) holds vacuously. -/
 def EssentiallySmoothDir (f : Rn n → EReal) : Prop :=
   (interior (convexDom f)).Nonempty ∧
     (∀ ⦃z : Rn n⦄, z ∈ interior (convexDom f) → DifferentiableAtFn f z) ∧
     ∀ x ∉ interior (convexDom f), ∀ a ∈ interior (convexDom f),
       Tendsto (fun t : ℝ => dirDeriv f (x + t • (a - x)) (a - x)) (𝓝[>] 0) (𝓝 ⊥)
 
-/-- **Lemma 26.2**, at a single point: assuming (a) and (b), condition (c) at `x` and
-condition (c′) at `x` along the segment from any `a ∈ C` say the same thing — namely that `f` has
-no subgradient at `x`. -/
+/-- **Lemma 26.2** of [rockafellar1970convex], at a single point. Let $f$ be a closed proper convex
+function on $\mathbb{R}^n$ that satisfies (a) and (b), let $a \in C =
+\operatorname{int}(\operatorname{dom} f)$, and let $x \in \mathbb{R}^n$. Then condition (c) at
+$x$, that $\|\nabla f(z_i)\| \to +\infty$ for every sequence $(z_i)$ in $C$ with $z_i \to x$,
+holds if and only if
+$$f'(x + \lambda(a - x); a - x) \to -\infty \quad \text{as } \lambda \downarrow 0.$$
+Both conditions say that $f$ has no subgradient at $x$. -/
 theorem lemma_26_2_at (hf : ConvexFn f) (hp : ProperConvex f) (hcl : ClosedConvex f)
     (hne : (interior (convexDom f)).Nonempty)
     (hdiff : ∀ ⦃z : Rn n⦄, z ∈ interior (convexDom f) → DifferentiableAtFn f z)
@@ -217,8 +337,13 @@ theorem lemma_26_2_at (hf : ConvexFn f) (hp : ProperConvex f) (hcl : ClosedConve
       ↔ Tendsto (fun t : ℝ => dirDeriv f (x + t • (a - x)) (a - x)) (𝓝[>] 0) (𝓝 ⊥) :=
   tendsto_norm_fderiv_iff_tendsto_dirDeriv hf hp hcl hne hdiff ha x
 
-/-- **Lemma 26.2.** For a closed proper convex function, condition (c) may be replaced
-by condition (c′): the two definitions of essential smoothness agree. -/
+/-- **Lemma 26.2** of [rockafellar1970convex]. Let $f$ be a closed proper convex function on
+$\mathbb{R}^n$. Then $f$ is essentially smooth if and only if it satisfies conditions (a), (b)
+and (c′). That is, in the definition of essential smoothness, condition (c) may be replaced by
+condition (c′).
+
+The two definitions are `ConvexAnalysis.EssentiallySmooth` and
+`Rockafellar.EssentiallySmoothDir`. -/
 theorem lemma_26_2 (hf : ConvexFn f) (hp : ProperConvex f) (hcl : ClosedConvex f) :
     EssentiallySmooth f ↔ EssentiallySmoothDir f := by
   constructor
@@ -229,30 +354,35 @@ theorem lemma_26_2 (hf : ConvexFn f) (hp : ProperConvex f) (hcl : ClosedConvex f
   · rintro ⟨hne, hdiff, hc⟩
     exact (essentiallySmooth_iff_tendsto_dirDeriv hf hp hcl hne hdiff).2 hc
 
-/-! ### Essential strict convexity
+/-!
+### Essential strict convexity
 
-A real-valued function is **strictly convex on `C`** (p. 253) when the convexity inequality between
-two different points of `C` is strict, and a proper convex function on `ℝⁿ` is **essentially
-strictly convex** when it is strictly convex on every convex subset of `dom ∂f`. Both are the
-backbone's `StrictConvexOnFn` and `EssentiallyStrictlyConvex`, whose definitions are literally the
-book's. Rockafellar's two warnings about the definition are the counterexamples below. -/
+A real-valued function is **strictly convex on $C$** (p. 253) if the convexity inequality between
+two different points of $C$ is strict. A proper convex function on $\mathbb{R}^n$ is **essentially
+strictly convex** if it is strictly convex on every convex subset of
+$\operatorname{dom} \partial f$. These are the backbone's `ConvexAnalysis.StrictConvexOnFn` and
+`ConvexAnalysis.EssentiallyStrictlyConvex`, whose definitions are those of the source. The two
+warnings of the source about the definition are the counterexamples below.
+-/
 
-/-! ### Coordinates on `ℝ²`
+/-!
+### Coordinates on $\mathbb{R}^2$
 
-The section's three counterexamples all live on `ℝ²`; these are the coordinate facts they need. -/
+The three counterexamples of the section are functions on $\mathbb{R}^2$. The following facts about
+coordinates are used in their proofs.
+-/
 
 private theorem sub_apply_two (u v : Rn 2) (i : Fin 2) : (u - v) i = u i - v i := rfl
 
-/-- Two vectors of `ℝ²` agreeing in both coordinates are equal. -/
+/-- Two vectors of $\mathbb{R}^2$ with the same two coordinates are equal. -/
 private theorem ext_two {u v : Rn 2} (h0 : u 0 = v 0) (h1 : u 1 = v 1) : u = v := by
   ext i
   fin_cases i
   · exact h0
   · exact h1
 
-/-- **A function vanishing along the non-negative `ξ₁`-axis is not strictly convex on any set
-containing two points of that axis.** Both counterexamples below are of this shape: `(3/2, 0)` is
-the midpoint of `(1, 0)` and `(2, 0)`, and all three values are `0`. -/
+/-- A function on $\mathbb{R}^2$ that vanishes on the non-negative $\xi_1$-axis is not strictly
+convex on any set that contains $(1, 0)$ and $(2, 0)$, since $(3/2, 0)$ is their midpoint. -/
 private theorem not_strictConvexOnFn_of_axis {g : Rn 2 → EReal} {C : Set (Rn 2)}
     (h1 : (WithLp.toLp 2 ![(1 : ℝ), 0] : Rn 2) ∈ C)
     (h2 : (WithLp.toLp 2 ![(2 : ℝ), 0] : Rn 2) ∈ C)
@@ -272,36 +402,38 @@ private theorem not_strictConvexOnFn_of_axis {g : Rn 2 → EReal} {C : Set (Rn 2
   rw [hmid, hg 1 zero_le_one, hg 2 (by norm_num), hg (3/2) (by norm_num)] at hlt
   simp at hlt
 
-/-! ### The counterexample of p. 253
+/-!
+### The counterexample of p. 253
 
-Rockafellar's first warning: a closed proper convex function which is essentially strictly convex
-need **not** be strictly convex on the whole of `dom f`. -/
+The first warning of the source: a closed proper convex function that is essentially strictly convex
+need not be strictly convex on all of $\operatorname{dom} f$.
+-/
 
-/-- **§26 (p. 253)**, the first counterexample:
+/-- **Section 26** of [rockafellar1970convex], p. 253, the first counterexample. The function $f$ on
+$\mathbb{R}^2$ is
+$$f(\xi_1, \xi_2) = \begin{cases} \xi_2^2/2\xi_1 - 2\xi_2^{1/2} & \text{if } \xi_1 > 0,\ \xi_2
+  \ge 0, \\ 0 & \text{if } \xi_1 = 0 = \xi_2, \\ +\infty & \text{otherwise.} \end{cases}$$
 
-```
-f(ξ₁, ξ₂) = ξ₂²/2ξ₁ − 2ξ₂^(1/2)   if ξ₁ > 0, ξ₂ ≥ 0
-          = 0                      if ξ₁ = 0 = ξ₂
-          = +∞                     otherwise.
-```
+The source claims that $f$ is essentially strictly convex, and in fact essentially smooth, but
+not strictly convex on $\operatorname{dom} f$, because it vanishes on the whole non-negative
+$\xi_1$-axis. Only the second claim is formalized, as
+`Rockafellar.essStrictlyConvexFn_not_strictConvexOn_convexDom`.
 
-The two branches are one formula: at the origin the real expression reads `0/0 − 2√0`, which is `0`
-in Lean, matching the book's second clause. Rockafellar's claim is that this `f` is essentially
-strictly convex — indeed essentially smooth — while **not** being strictly convex on `dom f`,
-because it vanishes along the whole non-negative `ξ₁`-axis. Only the second half is formalized, as
-`essStrictlyConvexFn_not_strictConvexOn_convexDom`. -/
+The first two cases are one formula: at the origin the real expression is $0/0 - 2\sqrt{0}$,
+which is $0$ in Lean because division by $0$ gives $0$. -/
 noncomputable def essStrictlyConvexFn (x : Rn 2) : EReal :=
   ⨅ _ : (0 < x 0 ∧ 0 ≤ x 1) ∨ (x 0 = 0 ∧ x 1 = 0),
     ((x 1 ^ 2 / (2 * x 0) - 2 * Real.sqrt (x 1) : ℝ) : EReal)
 
-/-- The value of the p. 253 example on its effective domain. -/
+/-- On its effective domain, where $\xi_1 > 0$ and $\xi_2 \ge 0$ or $\xi_1 = \xi_2 = 0$, the example
+of p. 253 takes the value $\xi_2^2/2\xi_1 - 2\sqrt{\xi_2}$. -/
 theorem essStrictlyConvexFn_of_mem {x : Rn 2}
     (h : (0 < x 0 ∧ 0 ≤ x 1) ∨ (x 0 = 0 ∧ x 1 = 0)) :
     essStrictlyConvexFn x = ((x 1 ^ 2 / (2 * x 0) - 2 * Real.sqrt (x 1) : ℝ) : EReal) :=
   iInf_pos h
 
-/-- **The p. 253 example vanishes along the whole non-negative `ξ₁`-axis**, which is the book's
-observation. -/
+/-- The example of p. 253 vanishes on the non-negative $\xi_1$-axis: $f(t, 0) = 0$ for every
+$t \ge 0$. This is the observation of the source. -/
 theorem essStrictlyConvexFn_axis {t : ℝ} (ht : 0 ≤ t) :
     essStrictlyConvexFn (WithLp.toLp 2 ![t, 0]) = 0 := by
   have e0 : (WithLp.toLp 2 ![t, 0] : Rn 2) 0 = t := rfl
@@ -315,55 +447,60 @@ theorem essStrictlyConvexFn_axis {t : ℝ} (ht : 0 ≤ t) :
   rw [essStrictlyConvexFn_of_mem hc, e0, e1]
   norm_num
 
-/-- The non-negative `ξ₁`-axis lies in the effective domain of the p. 253 example. -/
+/-- The non-negative $\xi_1$-axis lies in the effective domain of the example of p. 253. -/
 theorem essStrictlyConvexFn_mem_convexDom {t : ℝ} (ht : 0 ≤ t) :
     (WithLp.toLp 2 ![t, 0] : Rn 2) ∈ convexDom essStrictlyConvexFn := by
   rw [mem_convexDom, essStrictlyConvexFn_axis ht]
   exact lt_top_iff_ne_top.2 (by simp)
 
-/-- **Rockafellar, §26 (p. 253).** The example is not strictly convex on `dom f`: it is identically
-zero along the non-negative `ξ₁`-axis, which is a convex subset of `dom f`. This is what separates
-*essential* strict convexity from strict convexity on the effective domain. -/
+/-- **Section 26** of [rockafellar1970convex], p. 253. The example of p. 253 is not strictly convex
+on $\operatorname{dom} f$: it vanishes on the non-negative $\xi_1$-axis, which is a convex
+subset of $\operatorname{dom} f$. This separates essential strict convexity from strict
+convexity on the effective domain. -/
 theorem essStrictlyConvexFn_not_strictConvexOn_convexDom :
     ¬ StrictConvexOnFn essStrictlyConvexFn (convexDom essStrictlyConvexFn) :=
   not_strictConvexOnFn_of_axis (essStrictlyConvexFn_mem_convexDom zero_le_one)
     (essStrictlyConvexFn_mem_convexDom (by norm_num)) fun _ ht => essStrictlyConvexFn_axis ht
 
-/-! ### The counterexample of p. 254
+/-!
+### The counterexample of p. 254
 
-Rockafellar's second warning: a closed proper convex function may be strictly convex on
-`ri (dom f)` and still fail to be essentially strictly convex, because `dom ∂f` can be strictly
-larger than `ri (dom f)` and can contain a convex set on which `f` is constant. -/
+The second warning of the source: a closed proper convex function can be strictly convex on
+$\operatorname{ri}(\operatorname{dom} f)$ and still fail to be essentially strictly convex. The
+reason is that $\operatorname{dom} \partial f$ can be larger than
+$\operatorname{ri}(\operatorname{dom} f)$ and can contain a convex set on which $f$ is constant.
+-/
 
-/-- **§26 (p. 254)**, the second counterexample:
+/-- **Section 26** of [rockafellar1970convex], p. 254, the second counterexample. The function $f$
+on $\mathbb{R}^2$ is
+$$f(\xi_1, \xi_2) = \begin{cases} \xi_2^2/2\xi_1 + \xi_2^2 & \text{if } \xi_1 > 0,\ \xi_2 \ge 0,
+  \\ 0 & \text{if } \xi_1 = 0 = \xi_2, \\ +\infty & \text{otherwise.} \end{cases}$$
 
-```
-f(ξ₁, ξ₂) = ξ₂²/2ξ₁ + ξ₂²   if ξ₁ > 0, ξ₂ ≥ 0
-          = 0                if ξ₁ = 0 = ξ₂
-          = +∞               otherwise.
-```
+The source claims that $\operatorname{ri}(\operatorname{dom} f)$ is the open positive quadrant,
+on which $f$ is strictly convex, while $\operatorname{dom} \partial f$ also contains the whole
+non-negative $\xi_1$-axis, on which $f$ is constant. So $f$ is not essentially strictly convex.
+Both claims are proved, as `Rockafellar.strictConvexOnFn_strictOnRelintFn` and
+`Rockafellar.strictOnRelintFn_not_essentiallyStrictlyConvex`.
 
-Encoded exactly as `essStrictlyConvexFn` is. Rockafellar's claim is that `ri (dom f)` is the open
-positive quadrant, on which `f` *is* strictly convex, while `dom ∂f` also contains the whole
-non-negative `ξ₁`-axis, on which `f` is constant — so `f` is **not** essentially strictly convex.
-Both halves are proved below. -/
+As for `Rockafellar.essStrictlyConvexFn`, the first two cases are one formula, because $0/0 = 0$
+in Lean. -/
 noncomputable def strictOnRelintFn (x : Rn 2) : EReal :=
   ⨅ _ : (0 < x 0 ∧ 0 ≤ x 1) ∨ (x 0 = 0 ∧ x 1 = 0),
     ((x 1 ^ 2 / (2 * x 0) + x 1 ^ 2 : ℝ) : EReal)
 
-/-- The value of the p. 254 example on its effective domain. -/
+/-- On its effective domain the example of p. 254 takes the value $\xi_2^2/2\xi_1 + \xi_2^2$. -/
 theorem strictOnRelintFn_of_mem {x : Rn 2}
     (h : (0 < x 0 ∧ 0 ≤ x 1) ∨ (x 0 = 0 ∧ x 1 = 0)) :
     strictOnRelintFn x = ((x 1 ^ 2 / (2 * x 0) + x 1 ^ 2 : ℝ) : EReal) :=
   iInf_pos h
 
-/-- Off its effective domain the p. 254 example is `+∞`. -/
+/-- Outside its effective domain the example of p. 254 takes the value $+\infty$. -/
 theorem strictOnRelintFn_of_not_mem {x : Rn 2}
     (h : ¬ ((0 < x 0 ∧ 0 ≤ x 1) ∨ (x 0 = 0 ∧ x 1 = 0))) : strictOnRelintFn x = ⊤ :=
   iInf_neg h
 
-/-- The p. 254 example is non-negative everywhere, which is what makes `0` a subgradient at every
-point where it vanishes. -/
+/-- The example of p. 254 is non-negative everywhere. So $0$ is a subgradient at every point where
+it vanishes. -/
 theorem strictOnRelintFn_nonneg (x : Rn 2) : 0 ≤ strictOnRelintFn x := by
   by_cases h : (0 < x 0 ∧ 0 ≤ x 1) ∨ (x 0 = 0 ∧ x 1 = 0)
   · rw [strictOnRelintFn_of_mem h]
@@ -377,11 +514,12 @@ theorem strictOnRelintFn_nonneg (x : Rn 2) : 0 ≤ strictOnRelintFn x := by
   · rw [strictOnRelintFn_of_not_mem h]
     exact le_top
 
-/-- The non-negative `ξ₁`-axis of `ℝ²`. -/
+/-- The non-negative $\xi_1$-axis $\{(\xi_1, \xi_2) \in \mathbb{R}^2 \mid \xi_1 \ge 0,\ \xi_2 =
+0\}$, the convex set on which the example of p. 254 is constant. -/
 def nonnegAxis : Set (Rn 2) := {x : Rn 2 | 0 ≤ x 0 ∧ x 1 = 0}
 
-/-- The non-negative `ξ₁`-axis is convex — which is what makes it admissible in Rockafellar's
-definition of essential strict convexity. -/
+/-- The non-negative $\xi_1$-axis is convex, so it is admissible in the definition of essential
+strict convexity. -/
 theorem convex_nonnegAxis : Convex ℝ nonnegAxis := by
   intro x hx y hy a b ha hb hab
   obtain ⟨hx0, hx1⟩ := hx
@@ -393,7 +531,7 @@ theorem convex_nonnegAxis : Convex ℝ nonnegAxis := by
     rw [hx1, hy1]
     ring
 
-/-- The p. 254 example vanishes on the non-negative `ξ₁`-axis. -/
+/-- The example of p. 254 vanishes on the non-negative $\xi_1$-axis. -/
 theorem strictOnRelintFn_eq_zero_of_mem {x : Rn 2} (hx : x ∈ nonnegAxis) :
     strictOnRelintFn x = 0 := by
   obtain ⟨h0, h1⟩ := hx
@@ -404,9 +542,10 @@ theorem strictOnRelintFn_eq_zero_of_mem {x : Rn 2} (hx : x ∈ nonnegAxis) :
   rw [strictOnRelintFn_of_mem hc, h1]
   norm_num
 
-/-- **The whole non-negative `ξ₁`-axis lies in `dom ∂f`** for the p. 254 example: the function is
-non-negative and vanishes there, so `0` is a subgradient at each of its points. This is exactly
-Rockafellar's observation that `dom ∂f` is bigger than `ri (dom f)` here. -/
+/-- For the example of p. 254, $0$ is a subgradient at every point of the non-negative $\xi_1$-axis,
+because the function is non-negative and vanishes on the axis. So the whole axis lies in
+$\operatorname{dom} \partial f$. This is the observation of the source that
+$\operatorname{dom} \partial f$ is larger than $\operatorname{ri}(\operatorname{dom} f)$ here. -/
 theorem zero_mem_subdifferential_strictOnRelintFn {x : Rn 2} (hx : x ∈ nonnegAxis) :
     (0 : Rn 2) ∈ subdifferential (pairing 2) strictOnRelintFn x := by
   intro z
@@ -414,13 +553,14 @@ theorem zero_mem_subdifferential_strictOnRelintFn {x : Rn 2} (hx : x ∈ nonnegA
   rw [strictOnRelintFn_eq_zero_of_mem hx, h0]
   simpa using strictOnRelintFn_nonneg z
 
-/-- The p. 254 example vanishes at `(t, 0)` for `t ≥ 0`. -/
+/-- The example of p. 254 vanishes at $(t, 0)$ for every $t \ge 0$. -/
 theorem strictOnRelintFn_axis {t : ℝ} (ht : 0 ≤ t) :
     strictOnRelintFn (WithLp.toLp 2 ![t, 0]) = 0 :=
   strictOnRelintFn_eq_zero_of_mem ⟨ht, rfl⟩
 
-/-- **Rockafellar, §26 (p. 254).** The example is not essentially strictly convex: the non-negative
-`ξ₁`-axis is a convex subset of `dom ∂f` on which the function is constant. -/
+/-- **Section 26** of [rockafellar1970convex], p. 254. The example of p. 254 is not essentially
+strictly convex: the non-negative $\xi_1$-axis is a convex subset of
+$\operatorname{dom} \partial f$ on which the function is constant. -/
 theorem strictOnRelintFn_not_essentiallyStrictlyConvex :
     ¬ EssentiallyStrictlyConvex (B := pairing 2) strictOnRelintFn := by
   intro h
@@ -430,21 +570,27 @@ theorem strictOnRelintFn_not_essentiallyStrictlyConvex :
     ⟨by norm_num, rfl⟩ (fun _ ht => strictOnRelintFn_axis ht) ?_
   exact h convex_nonnegAxis hsub
 
-/-! ### The p. 254 example is strictly convex on `ri (dom f)`
+/-!
+### The example of p. 254 is strictly convex on $\operatorname{ri}(\operatorname{dom} f)$
 
-The other half of Rockafellar's claim, and what makes the example separate the two conditions.
-`ri (dom f)` is the open positive quadrant, and strict convexity there is the weighted
-Cauchy–Schwarz inequality `(au + bv)²/(as + bt) ≤ au²/s + bv²/t` together with
-`(au + bv)² ≤ au² + bv²`, one of which is strict at any two distinct points of the quadrant. -/
+This is the other half of the claim of the source, and it is what makes the example separate the two
+conditions. Here $\operatorname{ri}(\operatorname{dom} f)$ is the open positive quadrant. Strict
+convexity there follows from the weighted Cauchy–Schwarz inequality
+$(au + bv)^2/(as + bt) \le au^2/s + bv^2/t$ together with $(au + bv)^2 \le au^2 + bv^2$ for
+$a + b = 1$. At any two distinct points of the quadrant one of the two inequalities is strict.
+-/
 
-/-- The open positive quadrant of `ℝ²`, which is `ri (dom f)` for the p. 254 example. -/
+/-- The open positive quadrant $\{(\xi_1, \xi_2) \in \mathbb{R}^2 \mid \xi_1 > 0,\ \xi_2 > 0\}$,
+which is $\operatorname{ri}(\operatorname{dom} f)$ for the example of p. 254. -/
 def openQuadrant : Set (Rn 2) := {x : Rn 2 | 0 < x 0 ∧ 0 < x 1}
 
+/-- The open positive quadrant is an open subset of $\mathbb{R}^2$. -/
 theorem isOpen_openQuadrant : IsOpen openQuadrant :=
   (isOpen_lt continuous_const (continuous_coord 0)).inter
     (isOpen_lt continuous_const (continuous_coord 1))
 
-/-- The effective domain of the p. 254 example, spelled as a set. -/
+/-- The effective domain of the example of p. 254 is $\{(\xi_1, \xi_2) \mid \xi_1 > 0,\ \xi_2 \ge
+0\} \cup \{(0, 0)\}$. -/
 theorem convexDom_strictOnRelintFn :
     convexDom strictOnRelintFn = {x : Rn 2 | (0 < x 0 ∧ 0 ≤ x 1) ∨ (x 0 = 0 ∧ x 1 = 0)} := by
   ext x
@@ -459,9 +605,10 @@ private theorem openQuadrant_subset_convexDom : openQuadrant ⊆ convexDom stric
   rw [convexDom_strictOnRelintFn]
   exact Or.inl ⟨h0, h1.le⟩
 
-/-- **`ri (dom f)` is the open positive quadrant** for the p. 254 example. The domain has
-non-empty interior, so `ri` collapses to `interior`, and the interior is the quadrant because a
-domain point with `ξ₂ = 0` has points with `ξ₂ < 0` arbitrarily close to it. -/
+/-- For the example of p. 254, $\operatorname{ri}(\operatorname{dom} f)$ is the open positive
+quadrant. The domain has non-empty interior, so its relative interior is its interior. The
+interior is the quadrant, because every point of the domain with $\xi_2 = 0$ has points with
+$\xi_2 < 0$ arbitrarily close to it. -/
 theorem relint_convexDom_strictOnRelintFn : ri (convexDom strictOnRelintFn) = openQuadrant := by
   have hpt : (WithLp.toLp 2 ![(1 : ℝ), 1] : Rn 2) ∈ openQuadrant := ⟨one_pos, one_pos⟩
   have htop : affineSpan ℝ (convexDom strictOnRelintFn) = ⊤ :=
@@ -496,8 +643,8 @@ theorem relint_convexDom_strictOnRelintFn : ri (convexDom strictOnRelintFn) = op
   · exact ⟨h0, hx1⟩
   · exact absurd h1 hx1.ne'
 
-/-- The weighted Cauchy–Schwarz identity: the gap in `(au + bv)²/(as + bt) ≤ au²/s + bv²/t` is
-`ab(ut − vs)²/(st(as + bt))`. No relation between `a` and `b` is used. -/
+/-- The weighted Cauchy–Schwarz identity: for $s, t, a, b > 0$, the gap in
+$(au + bv)^2/(as + bt) \le au^2/s + bv^2/t$ is $ab(ut - vs)^2/(st(as + bt))$. -/
 private theorem engel_key {s t u v a b : ℝ} (hs : 0 < s) (ht : 0 < t) (ha : 0 < a) (hb : 0 < b) :
     a * (u ^ 2 / s) + b * (v ^ 2 / t) - (a * u + b * v) ^ 2 / (a * s + b * t)
       = a * b * (u * t - v * s) ^ 2 / (s * t * (a * s + b * t)) := by
@@ -522,17 +669,19 @@ private theorem engel_lt {s t u v a b : ℝ} (hs : 0 < s) (ht : 0 < t) (ha : 0 <
     div_pos (by positivity) hw
   linarith
 
-/-- The gap in `(au + bv)² ≤ au² + bv²` is `ab(u − v)²`, and here `a + b = 1` is used. -/
+/-- For $a + b = 1$, the gap in $(au + bv)^2 \le au^2 + bv^2$ is $ab(u - v)^2$. -/
 private theorem sq_combo_key {u v a b : ℝ} (hab : a + b = 1) :
     a * u ^ 2 + b * v ^ 2 - (a * u + b * v) ^ 2 = a * b * (u - v) ^ 2 := by
   linear_combination (-(a * u ^ 2 + b * v ^ 2)) * hab
 
-/-- **§26 (p. 254)**, the positive half: the example *is* strictly convex on `ri (dom f)`, the open
-positive quadrant. With `strictOnRelintFn_not_essentiallyStrictlyConvex` this is the whole point of
-the example. Neither summand of `ξ₂²/2ξ₁ + ξ₂²` is strictly convex on the quadrant — the first is
-positively homogeneous, hence affine along every ray from the origin, and the second is constant in
-`ξ₁` — so no sum rule applies; what makes the sum strict is that their directions of affineness are
-disjoint. -/
+/-- **Section 26** of [rockafellar1970convex], p. 254, the positive half. The example of p. 254 is
+strictly convex on $\operatorname{ri}(\operatorname{dom} f)$, the open positive quadrant. With
+`Rockafellar.strictOnRelintFn_not_essentiallyStrictlyConvex`, this is the point of the example.
+
+Neither summand of $\xi_2^2/2\xi_1 + \xi_2^2$ is strictly convex on the quadrant: the first is
+positively homogeneous, hence affine along every ray from the origin, and the second does not
+depend on $\xi_1$. So no sum rule applies. The sum is strictly convex because the two summands
+are affine along different directions. -/
 theorem strictConvexOnFn_strictOnRelintFn :
     StrictConvexOnFn strictOnRelintFn (ri (convexDom strictOnRelintFn)) := by
   rw [relint_convexDom_strictOnRelintFn]
@@ -578,23 +727,30 @@ theorem strictConvexOnFn_strictOnRelintFn :
 
 /-! ### Theorem 26.3 -/
 
-/-- **Theorem 26.3.** A closed proper convex function is essentially strictly convex
-if and only if its conjugate is essentially smooth. -/
+/-- **Theorem 26.3** of [rockafellar1970convex]. Let $f$ be a closed proper convex function on
+$\mathbb{R}^n$. Then $f$ is essentially strictly convex if and only if its conjugate $f^*$ is
+essentially smooth.
+
+Essential strict convexity is `ConvexAnalysis.EssentiallyStrictlyConvex` for the pairing
+`Rockafellar.pairing n`. -/
 theorem theorem_26_3 (hf : ConvexFn f) (hp : ProperConvex f) (hcl : ClosedConvex f) :
     EssentiallyStrictlyConvex (B := pairing n) f ↔ EssentiallySmooth (convexConj (pairing n) f) :=
   (essentiallySmooth_convexConj_iff_essentiallyStrictlyConvex hf hp hcl).symm
 
-/-- **Theorem 26.3**, read at `f*`: the conjugate of a closed proper convex function is
-essentially strictly convex exactly when the function itself is essentially smooth. This is the
-direction Corollaries 26.3.2 and 26.3.3 use. -/
+/-- **Theorem 26.3** of [rockafellar1970convex], with the roles of $f$ and $f^*$ exchanged. Let $f$
+be a closed proper convex function on $\mathbb{R}^n$. Then $f^*$ is essentially strictly convex
+if and only if $f$ is essentially smooth.
+
+Corollaries 26.3.2 and 26.3.3 use this form. -/
 theorem theorem_26_3' (hf : ConvexFn f) (hp : ProperConvex f) (hcl : ClosedConvex f) :
     EssentiallyStrictlyConvex (B := pairing n) (convexConj (pairing n) f) ↔ EssentiallySmooth f :=
   essentiallyStrictlyConvex_convexConj_iff_essentiallySmooth hf hp hcl
 
 /-! ### Corollary 26.3.1 -/
 
-/-- **Corollary 26.3.1.** Let `f` be a closed proper convex function. Then `∂f` is a
-one-to-one mapping if and only if `f` is strictly convex on `int (dom f)` and essentially smooth. -/
+/-- **Corollary 26.3.1** of [rockafellar1970convex]. Let $f$ be a closed proper convex function on
+$\mathbb{R}^n$. Then $\partial f$ is a one-to-one mapping if and only if $f$ is strictly convex
+on $\operatorname{int}(\operatorname{dom} f)$ and essentially smooth. -/
 theorem corollary_26_3_1 (hf : ConvexFn f) (hp : ProperConvex f) (hcl : ClosedConvex f) :
     OneToOne (subdifferential (pairing n) f) ↔
       (StrictConvexOnFn f (interior (convexDom f)) ∧ EssentiallySmooth f) :=
@@ -602,9 +758,13 @@ theorem corollary_26_3_1 (hf : ConvexFn f) (hp : ProperConvex f) (hcl : ClosedCo
 
 /-! ### Corollaries 26.3.2 and 26.3.3: preservation of essential smoothness -/
 
-/-- **Corollary 26.3.2.** Let `f₁` and `f₂` be closed proper convex functions on `ℝⁿ`
-such that `f₁` is essentially smooth and `ri (dom f₁*) ∩ ri (dom f₂*) ≠ ∅`. Then `f₁ □ f₂` is
-essentially smooth. -/
+/-- **Corollary 26.3.2** of [rockafellar1970convex]. Let $f_1$ and $f_2$ be closed proper convex
+functions on $\mathbb{R}^n$ such that $f_1$ is essentially smooth and
+$$\operatorname{ri}(\operatorname{dom} f_1^*) \cap \operatorname{ri}(\operatorname{dom} f_2^*)
+  \neq \emptyset.$$
+Then the infimal convolution $f_1 \square f_2$ is essentially smooth.
+
+The infimal convolution is `ConvexAnalysis.infConv f₁ f₂`. -/
 theorem corollary_26_3_2 {f₁ f₂ : Rn n → EReal} (h₁ : ClosedProperConvexFn f₁)
     (h₂ : ClosedProperConvexFn f₂) (hes : EssentiallySmooth f₁)
     (hri :
@@ -614,13 +774,16 @@ theorem corollary_26_3_2 {f₁ f₂ : Rn n → EReal} (h₁ : ClosedProperConvex
   obtain ⟨y₀, hy₁, hy₂⟩ := hri
   exact essentiallySmooth_infConv_of_relint h₁ h₂ hes hy₁ hy₂
 
-/-- **Corollary 26.3.3.** Let `f` be a closed proper convex function on `ℝⁿ` which is
-essentially smooth, and let `A` be a linear transformation from `ℝⁿ` onto `ℝᵐ`. If there exists a
-`y* ∈ ℝᵐ` such that `A* y* ∈ ri (dom f*)`, then the convex function `Af` on `ℝᵐ` is essentially
-smooth.
+/-- **Corollary 26.3.3** of [rockafellar1970convex]. Let $g$ be an essentially smooth closed proper
+convex function on $\mathbb{R}^n$, and let $A$ be a linear transformation from $\mathbb{R}^n$
+onto $\mathbb{R}^m$. Suppose that there is a $y^* \in \mathbb{R}^m$ with $A^* y^* \in
+\operatorname{ri}(\operatorname{dom} g^*)$. Then the convex function $Ag$ on $\mathbb{R}^m$,
+$$(Ag)(y) = \inf\{g(x) \mid Ax = y\},$$
+is essentially smooth.
 
-`A*` is `LinearMap.adjoint A`; the surjectivity of `A` is used only to make `A*` injective, which is
-what the argument consumes. -/
+The source calls the function $f$. The adjoint $A^*$ is `LinearMap.adjoint A`, and $Ag$ is
+`ConvexAnalysis.mapLin A g`. The surjectivity of $A$ is used only to make $A^*$ injective, as
+the proof in the source says. -/
 theorem corollary_26_3_3 {m : ℕ} {g : Rn n → EReal} (hg : ClosedProperConvexFn g)
     (hes : EssentiallySmooth g) (A : Rn n →ₗ[ℝ] Rn m) (hsurj : Function.Surjective A) {y : Rn m}
     (hy : LinearMap.adjoint A y ∈ ri (convexDom (convexConj (pairing n) g))) :
@@ -630,27 +793,32 @@ theorem corollary_26_3_3 {m : ℕ} {g : Rn n → EReal} (hg : ClosedProperConvex
     rwa [LinearMap.adjoint_adjoint] at h
   exact essentiallySmooth_mapLin_of_relint hA hg hes hsurj hy
 
-/-! ### The Legendre conjugate
+/-!
+### The Legendre conjugate
 
-Rockafellar, p. 256. For a differentiable real-valued `f` on an open set `C ⊆ ℝⁿ`, the **Legendre
-conjugate** of `(C, f)` is the pair `(D, g)` where `D = ∇f(C)` and
+For a differentiable real-valued function $f$ on an open set $C \subseteq \mathbb{R}^n$, the
+**Legendre conjugate** of $(C, f)$ (p. 256) is the pair $(D, g)$ with $D = \nabla f(C)$ and
+$$g(x^*) = \langle (\nabla f)^{-1}(x^*), x^* \rangle - f((\nabla f)^{-1}(x^*)).$$
+The mapping $\nabla f$ need not be one-to-one for $g$ to be well defined. It suffices that
+$\langle x, x^* \rangle - f(x)$ has the same value for every $x$ with $\nabla f(x) = x^*$, which is
+the first clause of Theorem 26.4.
+-/
 
-```
-g(x*) = ⟨(∇f)⁻¹(x*), x*⟩ − f((∇f)⁻¹(x*)).
-```
+/-- **Section 26** of [rockafellar1970convex], p. 256, the domain of the Legendre conjugate. For a
+function $f$ on $\mathbb{R}^n$, the set $D$ is the image of
+$C = \operatorname{int}(\operatorname{dom} f)$ under the gradient mapping:
+$$D = \{\nabla f(x) \mid x \in C\}.$$
 
-`∇f` need not be one-to-one for `g` to be well defined; it suffices that `⟨x, x*⟩ − f(x)` be the
-same for every `x` with `∇f x = x*`, which is Theorem 26.4's first clause. -/
-
-/-- **Rockafellar, §26 (p. 256).** Rockafellar's `D`: the image of `C = int (dom f)` under the
-gradient mapping. -/
+The gradient is Mathlib's `gradient` of the real trace `fun z => (f z).toReal`. Where $f$ is
+differentiable, it is the gradient of $f$. -/
 noncomputable def legendreDomain (f : Rn n → EReal) : Set (Rn n) :=
   gradient (fun w => (f w).toReal) '' interior (convexDom f)
 
-/-- **The bridge to the backbone's `gradientRange`**, valid as soon as condition (b) holds:
-`{v | ∃ x, ∇f x = v}` and "the image of `C` under `∇f`" are the same set, because every gradient is
-attained at an interior point of `dom f` (Corollary 25.1.1) and, on `C`, Mathlib's `gradient` of the
-real trace *is* Rockafellar's `∇f`. -/
+/-- Suppose that $f$ is differentiable at every point of
+$C = \operatorname{int}(\operatorname{dom} f)$, which is condition (b). Then $D$ is the
+backbone's `ConvexAnalysis.gradientRange f`, the set of all gradients $\nabla f(x)$ at points
+$x$ where $f$ is differentiable. The reason is that every gradient is attained at a point of $C$
+(Corollary 25.1.1), and on $C$ Mathlib's `gradient` of the real trace is the gradient of $f$. -/
 theorem legendreDomain_eq_gradientRange
     (hdiff : ∀ ⦃z : Rn n⦄, z ∈ interior (convexDom f) → DifferentiableAtFn f z) :
     legendreDomain f = gradientRange f := by
@@ -664,12 +832,19 @@ theorem legendreDomain_eq_gradientRange
 
 /-! ### Theorem 26.4 -/
 
-/-- **Theorem 26.4**, first clause: the Legendre conjugate `(D, g)` of `(C, f)` is
-well-defined. Whatever `x` is chosen in `(∇f)⁻¹(x*)`, the value `⟨x, x*⟩ − f(x)` is the same.
+/-- **Theorem 26.4** of [rockafellar1970convex], first clause. Let $f$ be a convex function on
+$\mathbb{R}^n$, and let $x_1, x_2, v \in \mathbb{R}^n$ with $\nabla f(x_1) = v$ and
+$\nabla f(x_2) = v$. Then
+$$\langle x_1, v \rangle - f(x_1) = \langle x_2, v \rangle - f(x_2).$$
+So the Legendre conjugate $(D, g)$ of $(C, f)$ is well defined: the value
+$\langle x, x^* \rangle - f(x)$ does not depend on the choice of $x$ in $(\nabla f)^{-1}(x^*)$.
 
-**Only convexity is needed.** The book states the theorem for a closed proper convex `f` with
-non-empty `C = int (dom f)` on which `f` is differentiable; the well-definedness is a consequence of
-Theorem 23.5 at the two points separately and holds wherever two gradients happen to agree. -/
+**Generalization.** The source states the theorem for a closed proper convex $f$ such that
+$C = \operatorname{int}(\operatorname{dom} f)$ is non-empty and $f$ is differentiable on $C$.
+Only convexity is needed: the clause follows from Theorem 23.5 at each of the two points.
+
+The gradient condition is `ConvexAnalysis.HasGradientAtFn` for the functional
+`InnerProductSpace.toDual ℝ (Rn n) v`, and $f(x_i)$ is the real number `(f xᵢ).toReal`. -/
 theorem theorem_26_4_wellDefined (hf : ConvexFn f) {v x₁ x₂ : Rn n}
     (h₁ : HasGradientAtFn f (InnerProductSpace.toDual ℝ (Rn n) v) x₁)
     (h₂ : HasGradientAtFn f (InnerProductSpace.toDual ℝ (Rn n) v) x₂) :
@@ -681,8 +856,13 @@ theorem theorem_26_4_wellDefined (hf : ConvexFn f) {v x₁ x₂ : Rn n}
   rw [hr₁, hr₂]
   simpa using h
 
-/-- **Theorem 26.4**, second and third clauses: `D ⊆ dom f*`, and `g` is the
-restriction of `f*` to `D` — at a point `x*` of `D` the defining formula returns `f*(x*)`. -/
+/-- **Theorem 26.4** of [rockafellar1970convex], second and third clauses. Let $f$ be a convex
+function on $\mathbb{R}^n$ with $\nabla f(x) = v$. Then
+$$f^*(v) = \langle x, v \rangle - f(x).$$
+So $D \subseteq \operatorname{dom} f^*$, and $g$ is the restriction of $f^*$ to $D$.
+
+**Generalization.** The source assumes that $f$ is closed and proper and that $f$ is
+differentiable on a non-empty $C$. Only convexity of $f$ is needed. -/
 theorem theorem_26_4_eq (hf : ConvexFn f) {v x : Rn n}
     (h : HasGradientAtFn f (InnerProductSpace.toDual ℝ (Rn n) v) x) :
     convexConj (pairing n) f v = ((pairing n x v - (f x).toReal : ℝ) : EReal) := by
@@ -691,7 +871,13 @@ theorem theorem_26_4_eq (hf : ConvexFn f) {v x : Rn n}
   rw [convexConj_innerL_eq_convexConj_topDualPairing, hval, toDual_apply_eq_pairing, hr]
   simp
 
-/-- **Theorem 26.4**: `D` is a subset of `dom f*`. -/
+/-- **Theorem 26.4** of [rockafellar1970convex], the inclusion $D \subseteq \operatorname{dom} f^*$.
+Let $f$ be a convex function on $\mathbb{R}^n$ that is differentiable at every point of
+$\operatorname{int}(\operatorname{dom} f)$. Then $D \subseteq \operatorname{dom} f^*$.
+
+**Generalization.** The source assumes that $f$ is closed and proper and that
+$C = \operatorname{int}(\operatorname{dom} f)$ is non-empty. Only convexity and
+differentiability on $C$ are used. -/
 theorem theorem_26_4_subset_dom_conj (hf : ConvexFn f)
     (hdiff : ∀ ⦃z : Rn n⦄, z ∈ interior (convexDom f) → DifferentiableAtFn f z) :
     legendreDomain f ⊆ convexDom (convexConj (pairing n) f) := by
@@ -702,37 +888,56 @@ theorem theorem_26_4_subset_dom_conj (hf : ConvexFn f)
 
 /-! ### Corollary 26.4.1 -/
 
-/-- **Corollary 26.4.1**, first clause: for an essentially smooth closed proper convex
-`f`, the domain `D` of the Legendre conjugate is `{x* | ∂f*(x*) ≠ ∅}`. -/
+/-- **Corollary 26.4.1** of [rockafellar1970convex], first clause. Let $f$ be an essentially smooth
+closed proper convex function on $\mathbb{R}^n$. Then the domain $D$ of the Legendre conjugate
+of $f$ is
+$$D = \{x^* \mid \partial f^*(x^*) \neq \emptyset\} = \operatorname{dom} \partial f^*.$$
+-/
 theorem corollary_26_4_1_dom (hf : ConvexFn f) (hp : ProperConvex f) (hcl : ClosedConvex f)
     (hes : EssentiallySmooth f) :
     legendreDomain f = domSubdifferential (pairing n) (convexConj (pairing n) f) := by
   rw [legendreDomain_eq_gradientRange hes.differentiableAtFn]
   exact gradientRange_eq_domSubdifferential_convexConj hf hp hcl hes
 
-/-- **Corollary 26.4.1**: `ri (dom f*) ⊆ D`, so `D` is "almost convex". -/
+/-- **Corollary 26.4.1** of [rockafellar1970convex], the lower inclusion. Let $f$ be an essentially
+smooth closed proper convex function on $\mathbb{R}^n$. Then
+$\operatorname{ri}(\operatorname{dom} f^*) \subseteq D$.
+
+With `Rockafellar.corollary_26_4_1_subset_dom`, this shows that $D$ is almost convex. -/
 theorem corollary_26_4_1_relint_subset (hf : ConvexFn f) (hp : ProperConvex f)
     (hcl : ClosedConvex f)
     (hes : EssentiallySmooth f) : ri (convexDom (convexConj (pairing n) f)) ⊆ legendreDomain f := by
   rw [legendreDomain_eq_gradientRange hes.differentiableAtFn]
   exact relint_convexDom_convexConj_subset_gradientRange hf hp hcl hes
 
-/-- **Corollary 26.4.1**: `D ⊆ dom f*`, the other half of the squeeze. -/
+/-- **Corollary 26.4.1** of [rockafellar1970convex], the upper inclusion. Let $f$ be an essentially
+smooth closed proper convex function on $\mathbb{R}^n$. Then
+$D \subseteq \operatorname{dom} f^*$. -/
 theorem corollary_26_4_1_subset_dom (hf : ConvexFn f) (hp : ProperConvex f) (hcl : ClosedConvex f)
     (hes : EssentiallySmooth f) : legendreDomain f ⊆ convexDom (convexConj (pairing n) f) := by
   rw [legendreDomain_eq_gradientRange hes.differentiableAtFn]
   exact gradientRange_subset_convexDom_convexConj hf hp hcl hes
 
-/-- **Corollary 26.4.1**: `g` is the restriction of `f*` to `D`. -/
+/-- **Corollary 26.4.1** of [rockafellar1970convex], the formula for $g$. Let $f$ be an essentially
+smooth convex function on $\mathbb{R}^n$, and let
+$x \in \operatorname{int}(\operatorname{dom} f)$. Then
+$$f^*(\nabla f(x)) = \langle x, \nabla f(x) \rangle - f(x),$$
+so $g$ is the restriction of $f^*$ to $D$.
+
+Closedness and properness are not assumed. -/
 theorem corollary_26_4_1_eq (hf : ConvexFn f) (hes : EssentiallySmooth f) {x : Rn n}
     (hx : x ∈ interior (convexDom f)) :
     convexConj (pairing n) f (gradient (fun w => (f w).toReal) x)
       = ((pairing n x (gradient (fun w => (f w).toReal) x) - (f x).toReal : ℝ) : EReal) :=
   theorem_26_4_eq hf (hes.differentiableAtFn hx).hasGradientAtFn_gradient
 
-/-- **Corollary 26.4.1**, last clause: `g` is strictly convex on every convex subset
-of `D`. Since `g = f*` on `D` (Theorem 26.4), this is the essential strict convexity of `f*`, which
-Theorem 26.3 supplies from the essential smoothness of `f`. -/
+/-- **Corollary 26.4.1** of [rockafellar1970convex], last clause. Let $f$ be an essentially smooth
+closed proper convex function on $\mathbb{R}^n$, and let $C$ be a convex subset of $D$. Then
+$f^*$ is strictly convex on $C$. Since $g = f^*$ on $D$, it follows that $g$ is strictly convex
+on every convex subset of $D$.
+
+This is the essential strict convexity of $f^*$, which Theorem 26.3 gives from the essential
+smoothness of $f$. -/
 theorem corollary_26_4_1_strictConvexOn (hf : ConvexFn f) (hp : ProperConvex f)
     (hcl : ClosedConvex f)
     (hes : EssentiallySmooth f) {C : Set (Rn n)} (hC : Convex ℝ C) (hCsub : C ⊆ legendreDomain f) :
@@ -740,44 +945,62 @@ theorem corollary_26_4_1_strictConvexOn (hf : ConvexFn f) (hp : ProperConvex f)
   rw [legendreDomain_eq_gradientRange hes.differentiableAtFn] at hCsub
   exact strictConvexOnFn_convexConj_of_subset_gradientRange hf hp hcl hes hC hCsub
 
-/-! ### The counterexample of p. 257: the parabola
+/-!
+### The counterexample of p. 257: the parabola
 
-Rockafellar, p. 257: if `f` is a differentiable convex function on a non-empty open convex set `C`
-failing condition (c), the domain `D` of the Legendre conjugate need not be *almost convex*. The
-witness is `ξ₁²/4ξ₂` on the open upper half-plane, whose `D` is the parabola `ξ₂* = −(ξ₁*)²`.
-Without condition (c) the squeeze `ri (dom f*) ⊆ D ⊆ dom f*` of Corollary 26.4.1 fails, and `D`
-need not even be convex. -/
+On p. 257 the source shows that, for a differentiable convex function on a non-empty open convex set
+$C$ that fails condition (c), the domain $D$ of the Legendre conjugate need not be almost convex.
+The example is $f(\xi_1, \xi_2) = \xi_1^2/4\xi_2$ on the open upper half-plane, for which $D$ is the
+parabola $\xi_2^* = -(\xi_1^*)^2$. Without condition (c) the inclusions
+$\operatorname{ri}(\operatorname{dom} f^*) \subseteq D \subseteq \operatorname{dom} f^*$ of
+Corollary 26.4.1 fail, and $D$ need not even be convex.
+-/
 
-/-- The vector `(a, −a²)` of `ℝ²`. -/
+/-- The point $(a, -a^2)$ of $\mathbb{R}^2$, a point of the parabola of p. 257. -/
 noncomputable def parabolaPoint (a : ℝ) : Rn 2 := WithLp.toLp 2 ![a, -a ^ 2]
 
+/-- The first coordinate of the point $(a, -a^2)$ is $a$. -/
 @[simp] theorem parabolaPoint_zero (a : ℝ) : parabolaPoint a 0 = a := rfl
 
+/-- The second coordinate of the point $(a, -a^2)$ is $-a^2$. -/
 @[simp] theorem parabolaPoint_one (a : ℝ) : parabolaPoint a 1 = -a ^ 2 := rfl
 
+/-- For $a = 0$ the point $(a, -a^2)$ is the origin. -/
 theorem parabolaPoint_zero_eq : parabolaPoint 0 = 0 :=
   ext_two (by norm_num) (by norm_num)
 
-/-- **Rockafellar, §26 (p. 257).** The parabola `P = {(ξ₁*, ξ₂*) | ξ₂* = −(ξ₁*)²}`. -/
+/-- **Section 26** of [rockafellar1970convex], p. 257. The parabola
+$$P = \{(\xi_1^*, \xi_2^*) \in \mathbb{R}^2 \mid \xi_2^* = -(\xi_1^*)^2\}.$$
+-/
 def parabola : Set (Rn 2) := {w : Rn 2 | w 1 = -(w 0) ^ 2}
 
+/-- A point $(\xi_1^*, \xi_2^*)$ lies on the parabola $P$ if and only if $\xi_2^* = -(\xi_1^*)^2$.
+-/
 theorem mem_parabola {w : Rn 2} : w ∈ parabola ↔ w 1 = -(w 0) ^ 2 := Iff.rfl
 
-/-- **Rockafellar, §26 (p. 257).** `f(ξ₁, ξ₂) = ξ₁²/4ξ₂` on the open upper half-plane, extended by
-`+∞`, so that `C = int (dom f)` is exactly the open upper half-plane. -/
+/-- **Section 26** of [rockafellar1970convex], p. 257, the third counterexample. The function $f$ on
+$\mathbb{R}^2$ is
+$$f(\xi_1, \xi_2) = \begin{cases} \xi_1^2/4\xi_2 & \text{if } \xi_2 > 0, \\ +\infty &
+  \text{otherwise,} \end{cases}$$
+so that $C = \operatorname{int}(\operatorname{dom} f)$ is the open upper half-plane. -/
 noncomputable def halfPlaneFn (x : Rn 2) : EReal :=
   ⨅ _ : 0 < x 1, ((x 0 ^ 2 / (4 * x 1) : ℝ) : EReal)
 
+/-- For $\xi_2 > 0$ the example of p. 257 takes the value $\xi_1^2/4\xi_2$. -/
 theorem halfPlaneFn_of_pos {x : Rn 2} (hx : 0 < x 1) :
     halfPlaneFn x = ((x 0 ^ 2 / (4 * x 1) : ℝ) : EReal) := iInf_pos hx
 
+/-- For $\xi_2 \le 0$ the example of p. 257 takes the value $+\infty$. -/
 theorem halfPlaneFn_of_nonpos {x : Rn 2} (hx : ¬ 0 < x 1) : halfPlaneFn x = ⊤ := iInf_neg hx
 
+/-- The example of p. 257 never takes the value $-\infty$. -/
 theorem halfPlaneFn_ne_bot (x : Rn 2) : halfPlaneFn x ≠ ⊥ := by
   by_cases hx : 0 < x 1
   · rw [halfPlaneFn_of_pos hx]; exact EReal.coe_ne_bot _
   · rw [halfPlaneFn_of_nonpos hx]; exact top_ne_bot
 
+/-- The effective domain of the example of p. 257 is the open upper half-plane
+$\{(\xi_1, \xi_2) \mid \xi_2 > 0\}$. -/
 theorem convexDom_halfPlaneFn : convexDom halfPlaneFn = {x : Rn 2 | 0 < x 1} := by
   ext x
   rw [mem_convexDom]
@@ -785,14 +1008,17 @@ theorem convexDom_halfPlaneFn : convexDom halfPlaneFn = {x : Rn 2 | 0 < x 1} := 
   · simp [halfPlaneFn_of_pos hx, hx]
   · simp [halfPlaneFn_of_nonpos hx, hx]
 
-/-- `C = int (dom f)` is the open upper half-plane, as the book takes it to be. -/
+/-- For the example of p. 257, $C = \operatorname{int}(\operatorname{dom} f)$ is the open upper
+half-plane, as in the source. -/
 theorem interior_convexDom_halfPlaneFn : interior (convexDom halfPlaneFn) =
     {x : Rn 2 | 0 < x 1} := by
   rw [convexDom_halfPlaneFn]
   exact IsOpen.interior_eq (isOpen_lt continuous_const (by fun_prop))
 
-/-- The p. 257 example is convex: "quadratic over linear" is jointly convex, and the identity
-that says so is `A − B = ab(ξ₁ η₂ − η₁ ξ₂)² / 4ξ₂η₂(aξ₂ + bη₂)`. -/
+/-- The example of p. 257 is convex. A square divided by a positive linear function is jointly
+convex: for points $\xi$, $\eta$ of the open upper half-plane and $a, b > 0$ with $a + b = 1$,
+the gap $a f(\xi) + b f(\eta) - f(a\xi + b\eta)$ is $ab(\xi_1\eta_2 - \eta_1\xi_2)^2 /
+4\xi_2\eta_2(a\xi_2 + b\eta_2)$. -/
 theorem convexFn_halfPlaneFn : ConvexFn halfPlaneFn := by
   refine (convexFn_iff_le halfPlaneFn_ne_bot).2 fun x y a b ha hb hab => ?_
   by_cases hx : 0 < x 1
@@ -823,15 +1049,18 @@ theorem convexFn_halfPlaneFn : ConvexFn halfPlaneFn := by
       EReal.top_add_of_ne_bot (EReal.coe_mul_ne_bot hb.le (halfPlaneFn_ne_bot y))]
     exact le_top
 
+/-- The example of p. 257 is a proper function. -/
 theorem properConvex_halfPlaneFn : ProperConvex halfPlaneFn := by
   refine ⟨⟨WithLp.toLp 2 ![0, 1], ?_⟩, halfPlaneFn_ne_bot⟩
   rw [mem_convexDom, halfPlaneFn_of_pos (x := WithLp.toLp 2 ![0, 1]) (by norm_num)]
   exact EReal.coe_lt_top _
 
-/-- **The subdifferential of `ξ₁²/4ξ₂` in coordinates.** Both directions come from the same
-completed square: `ξ₁²/4ξ₂ − u₀ξ₁ − u₁ξ₂ = (ξ₁ − 2u₀ξ₂)²/4ξ₂ − ξ₂(u₀² + u₁)`, whose infimum over
-the ray `ξ = (2su₀, s)` is `−s(u₀² + u₁)`. Testing at `s = ξ₂`, `s = ξ₂ + 1` and `s = ξ₂/2` forces
-both `u₀² + u₁ = 0` and the completed square to vanish, with no case analysis. -/
+/-- Let $x = (\xi_1, \xi_2)$ with $\xi_2 > 0$. A vector $u = (u_1, u_2)$ is a subgradient at $x$ of
+the example of p. 257 if and only if $u_2 = -u_1^2$ and $\xi_1 = 2u_1\xi_2$.
+
+Both directions come from the completed square $\xi_1^2/4\xi_2 - u_1\xi_1 - u_2\xi_2 = (\xi_1 -
+2u_1\xi_2)^2/4\xi_2 - \xi_2(u_1^2 + u_2)$, whose infimum over the ray $(2su_1, s)$, $s > 0$, is
+$-s(u_1^2 + u_2)$. Tests at $s = \xi_2$, $s = \xi_2 + 1$ and $s = \xi_2/2$ give both conditions. -/
 theorem mem_subdifferential_halfPlaneFn_iff {x u : Rn 2} (hx : 0 < x 1) :
     u ∈ subdifferential (pairing 2) halfPlaneFn x ↔ u 1 = -(u 0) ^ 2 ∧ x 0 = 2 * u 0 * x 1 := by
   constructor
@@ -886,8 +1115,9 @@ theorem mem_subdifferential_halfPlaneFn_iff {x u : Rn 2} (hx : 0 < x 1) :
     · rw [halfPlaneFn_of_nonpos hz]
       exact le_top
 
-/-- On the open upper half-plane the subdifferential of the p. 257 example is the single vector
-`(ξ₁/2ξ₂, −ξ₁²/4ξ₂²)`, which lies on the parabola. -/
+/-- On the open upper half-plane, the subdifferential of the example of p. 257 at
+$x = (\xi_1, \xi_2)$ is the single vector $(\xi_1/2\xi_2, -\xi_1^2/4\xi_2^2)$, which lies on the
+parabola $P$. -/
 theorem subdifferential_halfPlaneFn {x : Rn 2} (hx : 0 < x 1) :
     subdifferential (pairing 2) halfPlaneFn x = {parabolaPoint (x 0 / (2 * x 1))} := by
   have hx0 : x 1 ≠ 0 := ne_of_gt hx
@@ -902,8 +1132,9 @@ theorem subdifferential_halfPlaneFn {x : Rn 2} (hx : 0 < x 1) :
     rw [parabolaPoint_zero]
     field_simp
 
-/-- The p. 257 example is differentiable throughout `C`, its gradient at `x` being the single
-subgradient there (Theorem 25.1 backwards). -/
+/-- The example of p. 257 is differentiable at every point $x = (\xi_1, \xi_2)$ with $\xi_2 > 0$,
+and its gradient there is $(\xi_1/2\xi_2, -\xi_1^2/4\xi_2^2)$, its unique subgradient (Theorem
+25.1). -/
 theorem hasGradientAtFn_halfPlaneFn {x : Rn 2} (hx : 0 < x 1) :
     HasGradientAtFn halfPlaneFn
       (InnerProductSpace.toDual ℝ (Rn 2) (parabolaPoint (x 0 / (2 * x 1)))) x :=
@@ -911,14 +1142,17 @@ theorem hasGradientAtFn_halfPlaneFn {x : Rn 2} (hx : 0 < x 1) :
       properConvex_halfPlaneFn
     (subdifferential_halfPlaneFn hx)
 
+/-- The example of p. 257 is differentiable at every point of
+$C = \operatorname{int}(\operatorname{dom} f)$. -/
 theorem differentiableAtFn_halfPlaneFn ⦃z : Rn 2⦄ (hz : z ∈ interior (convexDom halfPlaneFn)) :
     DifferentiableAtFn halfPlaneFn z := by
   rw [interior_convexDom_halfPlaneFn] at hz
   exact ⟨_, hasGradientAtFn_halfPlaneFn hz⟩
 
-/-- **Rockafellar, §26 (p. 257).** The image `D` of `C` under `∇f` is exactly the parabola: as
-`x` runs over the open upper half-plane, `ξ₁/2ξ₂` runs over all of `ℝ`, and the second coordinate
-of the gradient is forced to be minus its square. -/
+/-- **Section 26** of [rockafellar1970convex], p. 257. For the example of p. 257, the set
+`ConvexAnalysis.gradientRange` of all gradients is the parabola $P$. As $x$ runs over the open
+upper half-plane, $\xi_1/2\xi_2$ runs over all of $\mathbb{R}$, and the second coordinate of the
+gradient is minus the square of the first. -/
 theorem gradientRange_halfPlaneFn : gradientRange halfPlaneFn = parabola := by
   ext v
   constructor
@@ -946,13 +1180,14 @@ theorem gradientRange_halfPlaneFn : gradientRange halfPlaneFn = parabola := by
         norm_num
     rwa [hpt] at h
 
-/-- **Rockafellar, §26 (p. 257).** `D` is the parabola, in the book's own `legendreDomain`. -/
+/-- **Section 26** of [rockafellar1970convex], p. 257. For the example of p. 257, the domain $D$ of
+the Legendre conjugate is the parabola $P$. -/
 theorem legendreDomain_halfPlaneFn : legendreDomain halfPlaneFn = parabola := by
   rw [legendreDomain_eq_gradientRange differentiableAtFn_halfPlaneFn]
   exact gradientRange_halfPlaneFn
 
-/-- The parabola is not convex: `(0, 0)` and `(1, −1)` lie on it and their midpoint
-`(1/2, −1/2)` does not, since `−1/2 ≠ −1/4`. -/
+/-- The parabola $P$ is not convex: $(0, 0)$ and $(1, -1)$ lie on $P$, and their midpoint
+$(1/2, -1/2)$ does not, since $-1/2 \neq -1/4$. -/
 theorem not_convex_parabola : ¬ Convex ℝ parabola := by
   intro h
   have h0 : parabolaPoint 0 ∈ parabola := by
@@ -972,18 +1207,21 @@ theorem not_convex_parabola : ¬ Convex ℝ parabola := by
   rw [e0, e1] at hm
   norm_num at hm
 
-/-- **Rockafellar, §26 (p. 257), the point of the example.** For a differentiable convex function on
-a non-empty open convex set that fails condition (c), the domain `D` of the Legendre conjugate need
-not be convex — let alone "almost convex" in the sense of Corollary 26.4.1. -/
+/-- **Section 26** of [rockafellar1970convex], p. 257, the point of the example. For the example of
+p. 257, a differentiable convex function on a non-empty open convex set that fails condition
+(c), the domain $D$ of the Legendre conjugate is not convex. So it is not almost convex in the
+sense of Corollary 26.4.1. -/
 theorem not_convex_legendreDomain_halfPlaneFn : ¬ Convex ℝ (legendreDomain halfPlaneFn) := by
   rw [legendreDomain_halfPlaneFn]
   exact not_convex_parabola
 
-/-- **Rockafellar, §26 (p. 257), last sentence**: "Condition (c) fails for `f` at the origin."
-Along the sequence `(0, 1/(i+1))`, which lies in `C` and converges to the origin, the gradient is
-identically `0`; so its norm does not tend to `+∞` and the p. 257 example is not essentially
-smooth. This is why Corollary 26.4.1 does not apply to it, and hence why
-`not_convex_legendreDomain_halfPlaneFn` is not a contradiction. -/
+/-- **Section 26** of [rockafellar1970convex], p. 257, last sentence: condition (c) fails for the
+example of p. 257 at the origin. Along the sequence $(0, 1/(i+1))$, which lies in $C$ and
+converges to the origin, the gradient is $0$. So its norm does not tend to $+\infty$, and the
+example is not essentially smooth.
+
+This is why Corollary 26.4.1 does not apply to the example, and why
+`Rockafellar.not_convex_legendreDomain_halfPlaneFn` does not contradict that corollary. -/
 theorem not_essentiallySmooth_halfPlaneFn : ¬ EssentiallySmooth halfPlaneFn := by
   intro hes
   set e : Rn 2 := WithLp.toLp 2 ![0, 1] with he
@@ -1026,48 +1264,68 @@ theorem not_essentiallySmooth_halfPlaneFn : ¬ EssentiallySmooth halfPlaneFn := 
   rw [tendsto_congr hzero] at htop
   exact not_tendsto_atTop_of_tendsto_nhds tendsto_const_nhds htop
 
-/-! ### Functions of Legendre type
+/-!
+### Functions of Legendre type
 
-A pair `(C, f)` with `C` open convex and `f` strictly convex on `C` satisfying (a), (b) and (c) is
-a **convex function of Legendre type** (p. 258). Since `C = int (dom f)` is determined by `f`, this
-is the backbone's `LegendreType f`, which by Corollary 26.3.1 holds exactly when `∂f` is
-one-to-one. -/
+A pair $(C, f)$, with $C$ open and convex and $f$ strictly convex on $C$, that satisfies conditions
+(a), (b) and (c) is a **convex function of Legendre type** (p. 258). Since
+$C = \operatorname{int}(\operatorname{dom} f)$ is determined by $f$, this is the backbone's
+`ConvexAnalysis.LegendreType f`. By Corollary 26.3.1 it holds exactly when $\partial f$ is
+one-to-one.
+-/
 
-/-- **Rockafellar, p. 258**, the characterisation the book states immediately after the definition:
-a closed proper convex function `f` has `∂f` one-to-one if and only if the restriction of `f` to
-`C = int (dom f)` is a convex function of Legendre type. -/
+/-- **Section 26** of [rockafellar1970convex], p. 258, the remark after the definition of Legendre
+type. Let $f$ be a closed proper convex function on $\mathbb{R}^n$. Then the restriction of $f$
+to $C = \operatorname{int}(\operatorname{dom} f)$ is a convex function of Legendre type if and
+only if $\partial f$ is one-to-one. -/
 theorem legendreType_iff (hf : ConvexFn f) (hp : ProperConvex f) (hcl : ClosedConvex f) :
     LegendreType f ↔ OneToOne (subdifferential (pairing n) f) :=
   (legendreType_iff_subdifferential_injective hf hp hcl).trans oneToOne_iff.symm
 
 /-! ### Theorem 26.5 -/
 
-/-- **Theorem 26.5**, first assertion. Let `f` be a closed convex function, and let
-`C = int (dom f)`, `C* = int (dom f*)`. Then `(C, f)` is a convex function of Legendre type if and
-only if `(C*, f*)` is. -/
+/-- **Theorem 26.5** of [rockafellar1970convex]. Let $f$ be a closed proper convex function on
+$\mathbb{R}^n$, and let $C = \operatorname{int}(\operatorname{dom} f)$ and $C^* =
+\operatorname{int}(\operatorname{dom} f^*)$. Then $(C, f)$ is a convex function of Legendre type
+if and only if $(C^*, f^*)$ is.
+
+**Reading.** The source says closed convex function. Its proof needs a closed proper convex
+function, so $f$ is assumed proper here. Nothing is lost: an improper closed convex function is
+$+\infty$ everywhere or $-\infty$ on $\operatorname{cl}(\operatorname{dom} f)$, so it is
+differentiable at no point.
+
+The other assertions of the theorem are `Rockafellar.theorem_26_5_legendreDomain` to
+`Rockafellar.theorem_26_5_gradient_gradient_conj`. -/
 theorem theorem_26_5 (hf : ConvexFn f) (hp : ProperConvex f) (hcl : ClosedConvex f) :
     LegendreType f ↔ LegendreType (convexConj (pairing n) f) :=
   (legendreType_convexConj_iff hf hp hcl).symm
 
-/-- **Theorem 26.5**: when `f` is of Legendre type, `(C*, f*)` **is** the Legendre
-conjugate of `(C, f)` — the domain half, `D = C*`. -/
+/-- **Theorem 26.5** of [rockafellar1970convex], the domain of the Legendre conjugate. Let $f$ be a
+closed proper convex function of Legendre type on $\mathbb{R}^n$. Then the domain $D$ of the
+Legendre conjugate of $(C, f)$ is $C^* = \operatorname{int}(\operatorname{dom} f^*)$. With
+`Rockafellar.theorem_26_5_conj_apply`, this says that $(C^*, f^*)$ is the Legendre conjugate of
+$(C, f)$. -/
 theorem theorem_26_5_legendreDomain (hf : ConvexFn f) (hp : ProperConvex f) (hcl : ClosedConvex f)
     (hleg : LegendreType f) :
     legendreDomain f = interior (convexDom (convexConj (pairing n) f)) := by
   rw [legendreDomain_eq_gradientRange hleg.1.differentiableAtFn]
   exact gradientRange_eq_interior_convexDom_convexConj hf hp hcl hleg
 
-/-- **Theorem 26.5**: the value half of "`(C*, f*)` is the Legendre conjugate of
-`(C, f)`" — on `C` the defining formula of the Legendre conjugate returns `f*`. -/
+/-- **Theorem 26.5** of [rockafellar1970convex], the values of the Legendre conjugate. Let $f$ be a
+convex function of Legendre type on $\mathbb{R}^n$, and let $x \in C$. Then
+$$f^*(\nabla f(x)) = \langle x, \nabla f(x) \rangle - f(x).$$
+-/
 theorem theorem_26_5_conj_apply (hf : ConvexFn f) (hleg : LegendreType f) {x : Rn n}
     (hx : x ∈ interior (convexDom f)) :
     convexConj (pairing n) f (gradient (fun w => (f w).toReal) x)
       = ((pairing n x (gradient (fun w => (f w).toReal) x) - (f x).toReal : ℝ) : EReal) :=
   corollary_26_4_1_eq hf hleg.1 hx
 
-/-- **Theorem 26.5**: `(C, f)` is *in turn* the Legendre conjugate of `(C*, f*)` — the
-domain half. Note the hypothesis: this is the involutivity of the Legendre transformation, and it
-holds **only** within the Legendre-type class. See the module docstring. -/
+/-- **Theorem 26.5** of [rockafellar1970convex], the domain of the converse. Let $f$ be a closed
+proper convex function of Legendre type on $\mathbb{R}^n$. Then the domain of the Legendre
+conjugate of $(C^*, f^*)$ is $C$. This is the involution property of the Legendre
+transformation. It holds only for functions of Legendre type; see
+`Rockafellar.not_convex_legendreDomain_halfPlaneFn`. -/
 theorem theorem_26_5_legendreDomain_conj (hf : ConvexFn f) (hp : ProperConvex f)
     (hcl : ClosedConvex f)
     (hleg : LegendreType f) :
@@ -1078,8 +1336,11 @@ theorem theorem_26_5_legendreDomain_conj (hf : ConvexFn f) (hp : ProperConvex f)
     closedConvex_convexConj hgleg
   rwa [convexConj_convexConj_innerL hf hcl] at h
 
-/-- **Theorem 26.5**: `(C, f)` is in turn the Legendre conjugate of `(C*, f*)` — the
-value half. Again only within the Legendre-type class. -/
+/-- **Theorem 26.5** of [rockafellar1970convex], the values of the converse. Let $f$ be a closed
+proper convex function of Legendre type on $\mathbb{R}^n$, and let $v \in C^*$. Then
+$$f(\nabla f^*(v)) = \langle v, \nabla f^*(v) \rangle - f^*(v).$$
+So $(C, f)$ is in turn the Legendre conjugate of $(C^*, f^*)$. Again this holds only for
+functions of Legendre type. -/
 theorem theorem_26_5_apply (hf : ConvexFn f) (hp : ProperConvex f) (hcl : ClosedConvex f)
     (hleg : LegendreType f) {v : Rn n} (hv : v ∈ interior (convexDom (convexConj (pairing n) f))) :
     f (gradient (fun w => (convexConj (pairing n) f w).toReal) v)
@@ -1089,21 +1350,25 @@ theorem theorem_26_5_apply (hf : ConvexFn f) (hp : ProperConvex f) (hcl : Closed
   have h := corollary_26_4_1_eq (convexFn_convexConj (pairing n) f) hgleg.1 hv
   rwa [convexConj_convexConj_innerL hf hcl] at h
 
-/-- **Theorem 26.5**: the gradient mapping `∇f` is one-to-one from the open convex set
-`C` onto the open convex set `C*`. -/
+/-- **Theorem 26.5** of [rockafellar1970convex], the gradient mapping. Let $f$ be a closed proper
+convex function of Legendre type on $\mathbb{R}^n$. Then $\nabla f$ is a one-to-one mapping from
+the open convex set $C$ onto the open convex set $C^*$. -/
 theorem theorem_26_5_bijOn (hf : ConvexFn f) (hp : ProperConvex f) (hcl : ClosedConvex f)
     (hleg : LegendreType f) :
     Set.BijOn (gradient fun w => (f w).toReal) (interior (convexDom f))
       (interior (convexDom (convexConj (pairing n) f))) :=
   bijOn_gradient_of_legendreType hf hp hcl hleg
 
-/-- **Theorem 26.5**: `∇f` is continuous on `C`. -/
+/-- **Theorem 26.5** of [rockafellar1970convex], continuity of $\nabla f$. Let $f$ be a proper
+convex function of Legendre type on $\mathbb{R}^n$. Then $\nabla f$ is continuous on $C$. -/
 theorem theorem_26_5_continuousOn (hf : ConvexFn f) (hp : ProperConvex f) (hleg : LegendreType f) :
     ContinuousOn (gradient fun w => (f w).toReal) (interior (convexDom f)) :=
   continuousOn_gradient_interior_convexDom hf hp hleg.1
 
-/-- **Theorem 26.5**: `∇f` is continuous *in both directions*, the second half being
-the continuity of `∇f*` on `C*`. -/
+/-- **Theorem 26.5** of [rockafellar1970convex], continuity of $\nabla f^*$. Let $f$ be a closed
+proper convex function of Legendre type on $\mathbb{R}^n$. Then $\nabla f^*$ is continuous on
+$C^*$. With `Rockafellar.theorem_26_5_continuousOn`, this says that $\nabla f$ is continuous in
+both directions. -/
 theorem theorem_26_5_continuousOn_conj (hf : ConvexFn f) (hp : ProperConvex f)
     (hcl : ClosedConvex f)
     (hleg : LegendreType f) :
@@ -1113,14 +1378,18 @@ theorem theorem_26_5_continuousOn_conj (hf : ConvexFn f) (hp : ProperConvex f)
       (properConvex_convexConj ⟨hf, hcl, hp⟩)
     (hleg.convexConj hf hp hcl).1
 
-/-- **Theorem 26.5**: `∇f* = (∇f)⁻¹`, one composite. -/
+/-- **Theorem 26.5** of [rockafellar1970convex], $\nabla f^* = (\nabla f)^{-1}$, first composite.
+Let $f$ be a closed proper convex function of Legendre type on $\mathbb{R}^n$, and let
+$x \in C$. Then $\nabla f^*(\nabla f(x)) = x$. -/
 theorem theorem_26_5_gradient_conj (hf : ConvexFn f) (hp : ProperConvex f) (hcl : ClosedConvex f)
     (hleg : LegendreType f) {x : Rn n} (hx : x ∈ interior (convexDom f)) :
     gradient (fun w => (convexConj (pairing n) f w).toReal)
         (gradient (fun w => (f w).toReal) x) = x :=
   gradient_convexConj_gradient hf hp hcl hleg hx
 
-/-- **Theorem 26.5**: `∇f* = (∇f)⁻¹`, the other composite. -/
+/-- **Theorem 26.5** of [rockafellar1970convex], $\nabla f^* = (\nabla f)^{-1}$, second composite.
+Let $f$ be a closed proper convex function of Legendre type on $\mathbb{R}^n$, and let
+$v \in C^*$. Then $\nabla f(\nabla f^*(v)) = v$. -/
 theorem theorem_26_5_gradient_gradient_conj (hf : ConvexFn f) (hp : ProperConvex f)
     (hcl : ClosedConvex f)
     (hleg : LegendreType f) {v : Rn n} (hv : v ∈ interior (convexDom (convexConj (pairing n) f))) :
@@ -1130,9 +1399,13 @@ theorem theorem_26_5_gradient_gradient_conj (hf : ConvexFn f) (hp : ProperConvex
 
 /-! ### Theorem 26.6 -/
 
-/-- **Theorem 26.6.** Let `f` be a (finite) differentiable convex function on `ℝⁿ`. In
-order that `∇f` be a one-to-one mapping from `ℝⁿ` onto itself, it is necessary and sufficient that
-`f` be strictly convex and co-finite. -/
+/-- **Theorem 26.6** of [rockafellar1970convex]. Let $f$ be a finite differentiable convex function
+on $\mathbb{R}^n$. Then $\nabla f$ is a one-to-one mapping from $\mathbb{R}^n$ onto itself if
+and only if $f$ is strictly convex and co-finite.
+
+A finite function is a proper function with $\operatorname{dom} f = \mathbb{R}^n$. Co-finiteness
+is `ConvexAnalysis.Cofinite`: $f$ is closed, proper and convex, and its recession function is
+$+\infty$ in every direction $y \neq 0$. -/
 theorem theorem_26_6 (hf : ConvexFn f) (hp : ProperConvex f) (hdom : convexDom f = Set.univ)
     (hdiff : ∀ z : Rn n, DifferentiableAtFn f z) :
     Set.BijOn (gradient fun w => (f w).toReal) Set.univ Set.univ ↔
@@ -1141,9 +1414,10 @@ theorem theorem_26_6 (hf : ConvexFn f) (hp : ProperConvex f) (hdom : convexDom f
   rw [bijOn_gradient_univ_iff hf hp hdom hdiff,
     ← cofinite_iff_convexDom_convexConj_eq_univ (B := pairing n) ⟨hf, hcl, hp⟩]
 
-/-- **Theorem 26.6**, the concluding clauses: when `∇f` is one-to-one from `ℝⁿ` onto
-itself, `f*` is likewise a (finite) differentiable convex function on `ℝⁿ` which is strictly convex
-and co-finite. -/
+/-- **Theorem 26.6** of [rockafellar1970convex], the concluding clauses. Let $f$ be a finite
+differentiable convex function on $\mathbb{R}^n$ such that $\nabla f$ is a one-to-one mapping
+from $\mathbb{R}^n$ onto itself. Then $f^*$ is also finite and differentiable on $\mathbb{R}^n$,
+and it is strictly convex and co-finite. -/
 theorem theorem_26_6_conj (hf : ConvexFn f) (hp : ProperConvex f) (hdom : convexDom f = Set.univ)
     (hdiff : ∀ z : Rn n, DifferentiableAtFn f z)
     (hbij : Set.BijOn (gradient fun w => (f w).toReal) Set.univ Set.univ) :
@@ -1160,8 +1434,12 @@ theorem theorem_26_6_conj (hf : ConvexFn f) (hp : ProperConvex f) (hdom : convex
       convexConj_convexConj_innerL hf hcl]
   exact hdom
 
-/-- **Theorem 26.6**: `f*` is the same as the Legendre conjugate of `f`, i.e.
-`f*(x*) = ⟨(∇f)⁻¹(x*), x*⟩ − f((∇f)⁻¹(x*))` for every `x*`. -/
+/-- **Theorem 26.6** of [rockafellar1970convex], the formula for $f^*$. Let $f$ be a convex function
+on $\mathbb{R}^n$ that is differentiable at every point. Then for every $x \in \mathbb{R}^n$
+$$f^*(\nabla f(x)) = \langle x, \nabla f(x) \rangle - f(x).$$
+When $\nabla f$ is one-to-one from $\mathbb{R}^n$ onto itself, this says that $f^*$ is the
+Legendre conjugate of $f$: $f^*(x^*) = \langle (\nabla f)^{-1}(x^*), x^* \rangle - f((\nabla
+f)^{-1}(x^*))$ for every $x^*$. -/
 theorem theorem_26_6_apply (hf : ConvexFn f) (hdiff : ∀ z : Rn n, DifferentiableAtFn f z)
     (x : Rn n) :
     convexConj (pairing n) f (gradient (fun w => (f w).toReal) x)
@@ -1170,9 +1448,11 @@ theorem theorem_26_6_apply (hf : ConvexFn f) (hdiff : ∀ z : Rn n, Differentiab
 
 /-! ### Lemma 26.7 -/
 
-/-- **Lemma 26.7.** Let `f` be a differentiable convex function on `ℝⁿ`. In order that
-`f` be co-finite, it is necessary and sufficient that `|∇f(xᵢ)| → +∞` for every sequence with
-`|xᵢ| → +∞`. -/
+/-- **Lemma 26.7** of [rockafellar1970convex]. Let $f$ be a finite differentiable convex function on
+$\mathbb{R}^n$. Then $f$ is co-finite if and only if $|\nabla f(x_i)| \to +\infty$ for every
+sequence $(x_i)$ in $\mathbb{R}^n$ with $|x_i| \to +\infty$.
+
+A finite function is a proper function with $\operatorname{dom} f = \mathbb{R}^n$. -/
 theorem lemma_26_7 (hf : ConvexFn f) (hp : ProperConvex f) (hdom : convexDom f = Set.univ)
     (hdiff : ∀ z : Rn n, DifferentiableAtFn f z) :
     Cofinite f ↔ ∀ xs : ℕ → Rn n, Tendsto (fun i => ‖xs i‖) atTop atTop →

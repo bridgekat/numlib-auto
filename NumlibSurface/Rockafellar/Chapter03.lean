@@ -10,21 +10,23 @@ import NumlibSurface.Rockafellar.Chapter03.Section15
 import NumlibSurface.Rockafellar.Chapter03.Section16
 
 /-!
-# Rockafellar Part III: duality correspondences
+# Rockafellar, Part III: Duality Correspondences
 
-Surface file for R. Tyrrell Rockafellar, *Convex Analysis*, Princeton University Press, 1970,
-§§11–16, which the book prints as Part III.
+This module collects §§11–16 of [rockafellar1970convex], which the book prints as Part III:
+separation theorems, conjugate convex functions, support functions, polars of convex sets and of
+convex functions, and the dual operations that conjugacy exchanges. The backbone develops this
+duality for a dual pair of real vector spaces, not for $\mathbb{R}^n$ or for a topological dual, and
+the section modules specialize it to $\mathbb{R}^n$ with its inner product. All 77 numbered results
+of Part III are formalized.
 
-All 77 numbered results of Part III are formalized. This module only imports the six section
-modules and adds nothing of its own. Duality is developed for a dual pair of vector spaces rather
-than for `ℝⁿ` or a topological dual.
+## Contents
 
-| § | module | subject |
+| Source | Module | Subject |
 |---|---|---|
-| 11 | `Chapter03.Section11` | Separation theorems |
-| 12 | `Chapter03.Section12` | Conjugates of convex functions |
-| 13 | `Chapter03.Section13` | Support functions |
-| 14 | `Chapter03.Section14` | Polars of convex sets |
-| 15 | `Chapter03.Section15` | Polars of convex functions |
-| 16 | `Chapter03.Section16` | Dual operations |
+| §11 Separation theorems | `Chapter03.Section11` | 16 results |
+| §12 Conjugates of convex functions | `Chapter03.Section12` | 9 results |
+| §13 Support functions | `Chapter03.Section13` | 15 results |
+| §14 Polars of convex sets | `Chapter03.Section14` | 11 results |
+| §15 Polars of convex functions | `Chapter03.Section15` | 11 results |
+| §16 Dual operations | `Chapter03.Section16` | 15 results |
 -/

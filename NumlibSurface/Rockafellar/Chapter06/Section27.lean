@@ -10,62 +10,132 @@ import NumlibSurface.Rockafellar.Chapter02.Section08
 import NumlibSurface.Rockafellar.Chapter05.Section25
 
 /-!
-# Rockafellar §27: the minimum of a convex function
+# Rockafellar, Section 27: The minimum of a convex function
 
-Surface file for R. Tyrrell Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §27
-(pp. 263–272): the unconstrained minimum of a convex function and its duality with `f*` at the
-origin (Theorem 27.1); existence, compactness and well-posedness of the minimum set under a
-recession hypothesis (Theorems 27.2 and 27.3); and the optimality condition `0 ∈ ∂h(x) + N_C(x)`
-for minimising over a convex set (Theorem 27.4).
+This module formalizes Section 27 of [rockafellar1970convex] (pp. 263–272), on the minimum of a
+convex function $f$ on $\mathbb{R}^n$. Theorem 27.1 relates the infimum and the minimum set of a
+closed proper convex $f$ to the conjugate $f^*$ near the origin: $\inf f = -f^*(0)$, the minimum set
+is $\partial f^*(0)$, and its being non-empty, bounded or a single point corresponds to properties
+of $f^*$ at $0$. Theorem 27.2 shows that a closed proper convex function with no direction of
+recession attains a finite infimum on a non-empty compact convex minimum set, and that every
+minimizing sequence approaches this set. Theorem 27.3 extends this to minimization over a closed
+convex set $C$, with refinements for polyhedral $C$, and Corollary 27.3.3 to minimization subject to
+an arbitrary system of convex inequalities. Theorem 27.4 gives the optimality condition
+$0 \in \partial h(x) + N_C(x)$ for minimizing $h$ over a convex set $C$; its main application is the
+projection theorem.
 
-All 9 numbered results of §27 are formalized: Theorems 27.1–27.4 — 27.1 with its nine clauses
-(a)–(i) — and Corollaries 27.2.1, 27.2.2, 27.3.1, 27.3.2 and 27.3.3. Corollary 27.2.1 is printed
-with no proof, and the polyhedral clause of Theorem 27.3 is proved in the book from Helly's
-theorem.
-
-The book's *minimum set* of `f` is the backbone's `argmin f = {x | ∀ z, f x ≤ f z}`, whose unfolded
-form is the subgradient inequality at `x* = 0`; `mem_argmin_iff_isMinOn` is the bridge to Mathlib's
-`IsMinOn`. The level set `lev_α f` is written out as `{x | f x ≤ (α : EReal)}` and `inf f` is
-`⨅ x, f x` in `EReal`, so "bounded below", "finite" and "attained" read as `≠ ⊥`, `≠ ⊥ ∧ ≠ ⊤` and
-`(argmin f).Nonempty`. The one definition introduced here is `IsDirectionOfRecession`.
-
-Corollaries 27.2.1 and 27.2.2 are about minimising *sequences* and are stated that way;
-`corollary_27_2_1_infDist` records the backbone's arbitrary-filter form of the same fact.
+All 9 numbered results of the section are formalized: Theorems 27.1–27.4, with the nine clauses
+(a)–(i) of Theorem 27.1, and Corollaries 27.2.1, 27.2.2, 27.3.1, 27.3.2 and 27.3.3. The source
+prints Corollary 27.2.1 without proof, and proves the polyhedral clause of Theorem 27.3 from Helly's
+theorem; the proofs here do not use Helly's theorem. The proofs specialize the backbone modules
+`Numlib.Analysis.Convex.Extremum.Minimum`, `Numlib.Analysis.Convex.Extremum.Prox`,
+`Numlib.Analysis.Convex.Polyhedral.Duality` and
+`Numlib.Analysis.Convex.Subdifferential.StrictlyConvex`.
 
 ## Main definitions
 
-* `IsDirectionOfRecession f y` — Rockafellar's **direction of recession** of `f`: a non-zero `y`
-  along which `f` is non-increasing. `recessionConeFn_eq_zero_iff` reads "no direction of
-  recession" as `0⁺f = {0}`, the hypothesis of Theorems 27.2 and 27.3.
+* Section 27, `Rockafellar.IsDirectionOfRecession`: a direction of recession of $f$ is a vector
+  $y \neq 0$ such that $\lambda \mapsto f(x + \lambda y)$ is non-increasing for every $x$.
 
 ## Main results
 
-* `theorem_27_1_a`, `theorem_27_1_a_bddBelow` — `inf f = -f*(0)`, with no hypothesis at all.
-* `theorem_27_1_b`, `theorem_27_1_b_attained`, `theorem_27_1_b_relint`,
-  `theorem_27_1_b_constancy` — the minimum set is `∂f*(0)`.
-* `theorem_27_1_c`, `theorem_27_1_d`, `theorem_27_1_d_recession`, `theorem_27_1_d_setOf_le`,
-  `theorem_27_1_e`, `theorem_27_1_e_differentiable`, `theorem_27_1_e_gradientVec` — when the
-  infimum is finite but unattained, when the minimum set is non-empty and bounded, and when it is
-  the single point `∇f*(0)`.
-* `theorem_27_1_f_setOf_le`, `theorem_27_1_f_argmin`, `theorem_27_1_f_polarCone`,
-  `theorem_27_1_g_setOf_le`, `theorem_27_1_g_argmin`, `theorem_27_1_h`, `theorem_27_1_i`,
-  `theorem_27_1_i_notMem` — the level sets share a recession cone, their support functions, the
-  limit of those as `α ↓ inf f`, and what `0 ∈ cl (dom f*)` says.
-* `theorem_27_2_finite`, `theorem_27_2_attained`, `theorem_27_2_argmin`, `theorem_27_2_wellPosed`,
-  `corollary_27_2_1_isBounded`, `corollary_27_2_1_clusterPt`, `corollary_27_2_2` — a closed proper
-  convex function with no direction of recession attains a finite infimum on a non-empty compact
-  minimum set, and every minimising sequence is bounded with all its cluster points minimisers.
-* `theorem_27_3`, `theorem_27_3_polyhedral`, `theorem_27_3_lineality`, `corollary_27_3_1`,
-  `corollary_27_3_2`, `corollary_27_3_3`, `corollary_27_3_3_polyhedral` — the same over a closed
-  convex set `C`, with the polyhedral refinements and the version for an arbitrary system of
-  convex inequalities.
-* `theorem_27_4_sufficient`, `theorem_27_4_necessary`, `theorem_27_4_necessary_polyhedral`,
-  `nearest_iff_sub_mem_normalCone` — the optimality condition `0 ∈ ∂h(x) + N_C(x)`, whose headline
-  application is the projection theorem.
-* `mem_argmin_of_localMin`, `convex_argmin_surface`, `isClosed_argmin`,
-  `subsingleton_argmin_of_strictConvexOnFn`, `mem_argmin_iff_zero_mem_subdifferential_surface` —
-  the section's opening remarks, including that a local minimum of a proper convex function is
-  global.
+* Section 27, opening remarks, `Rockafellar.convex_argmin_surface`, `Rockafellar.isClosed_argmin`,
+  `Rockafellar.subsingleton_argmin_of_strictConvexOnFn`,
+  `Rockafellar.mem_argmin_iff_zero_mem_subdifferential_surface` and
+  `Rockafellar.mem_argmin_of_localMin`: the minimum set is convex, closed when $f$ is closed, has at
+  most one point when $f$ is strictly convex, consists of the $x$ with $0 \in \partial f(x)$, and
+  contains every local minimizer of a proper convex function.
+* Theorem 27.1(a), `Rockafellar.theorem_27_1_a` and `Rockafellar.theorem_27_1_a_bddBelow`:
+  $\inf f = -f^*(0)$, so $f$ is bounded below if and only if $0 \in \operatorname{dom} f^*$.
+* Theorem 27.1(b), `Rockafellar.theorem_27_1_b`, `Rockafellar.theorem_27_1_b_attained`,
+  `Rockafellar.theorem_27_1_b_relint` and `Rockafellar.theorem_27_1_b_constancy`: the minimum set is
+  $\partial f^*(0)$, and the infimum is attained when $0 \in \operatorname{ri}(\operatorname{dom}
+  f^*)$.
+* Theorem 27.1(c), `Rockafellar.theorem_27_1_c`: the infimum is finite but not attained if and only
+  if $f^*(0)$ is finite and $(f^*)'(0; y) = -\infty$ for some $y$.
+* Theorem 27.1(d), `Rockafellar.theorem_27_1_d`, `Rockafellar.theorem_27_1_d_recession` and
+  `Rockafellar.theorem_27_1_d_setOf_le`: the minimum set is non-empty and bounded if and only if $0
+  \in \operatorname{int}(\operatorname{dom} f^*)$, if and only if $f$ has no direction of recession.
+* Theorem 27.1(e), `Rockafellar.theorem_27_1_e`, `Rockafellar.theorem_27_1_e_differentiable` and
+  `Rockafellar.theorem_27_1_e_gradientVec`: the minimum set is a single point $x$ if and only if
+  $f^*$ is differentiable at $0$, and then $x = \nabla f^*(0)$.
+* Theorem 27.1(f), `Rockafellar.theorem_27_1_f_setOf_le`, `Rockafellar.theorem_27_1_f_argmin` and
+  `Rockafellar.theorem_27_1_f_polarCone`: all non-empty level sets of $f$ have the recession cone
+  $0^+ f$, which is the polar of the convex cone generated by $\operatorname{dom} f^*$.
+* Theorem 27.1(g), `Rockafellar.theorem_27_1_g_setOf_le` and `Rockafellar.theorem_27_1_g_argmin`:
+  the support functions of the level sets and of the minimum set, in terms of $f^*$.
+* Theorem 27.1(h), `Rockafellar.theorem_27_1_h`: the support functions of the level sets converge to
+  $(f^*)'(0; \cdot)$ as $\alpha \downarrow \inf f$.
+* Theorem 27.1(i), `Rockafellar.theorem_27_1_i` and `Rockafellar.theorem_27_1_i_notMem`: $0 \in
+  \operatorname{cl}(\operatorname{dom} f^*)$ if and only if $(f0^+)(y) \ge 0$ for every $y$.
+* Section 27, remark on clauses (a) and (i), `Rockafellar.theorem_27_1_ai`: $f$ is unbounded below
+  but recedes at a negative rate in no direction if and only if $0 \in
+  \operatorname{cl}(\operatorname{dom} f^*) \setminus \operatorname{dom} f^*$.
+* Theorem 27.2, `Rockafellar.theorem_27_2_finite`, `Rockafellar.theorem_27_2_attained`,
+  `Rockafellar.theorem_27_2_argmin` and `Rockafellar.theorem_27_2_wellPosed`: a closed proper convex
+  function with no direction of recession attains a finite infimum on a non-empty compact convex
+  minimum set, and points with nearly minimal values are near this set.
+* Corollary 27.2.1, `Rockafellar.corollary_27_2_1_isBounded` and
+  `Rockafellar.corollary_27_2_1_clusterPt`: under the same hypotheses, every minimizing sequence is
+  bounded and all its cluster points are minimizers.
+* Corollary 27.2.2, `Rockafellar.corollary_27_2_2`: if the minimum set is a single point, every
+  minimizing sequence converges to it.
+* Theorem 27.3, `Rockafellar.theorem_27_3` and `Rockafellar.theorem_27_3_polyhedral`: a closed
+  proper convex $h$ attains its infimum over a non-empty closed convex $C$ if $h$ and $C$ have no
+  common direction of recession, and over a polyhedral $C$ if every common direction of recession is
+  one in which $h$ is constant.
+* Corollary 27.3.1, `Rockafellar.corollary_27_3_1`: if every direction of recession of $h$ is one in
+  which $h$ is affine, then $h$ attains its infimum over every non-empty polyhedral convex set on
+  which it is bounded below.
+* Corollary 27.3.2, `Rockafellar.corollary_27_3_2`: a polyhedral convex function attains its infimum
+  over every non-empty polyhedral convex set on which it is bounded below.
+* Corollary 27.3.3, `Rockafellar.corollary_27_3_3` and `Rockafellar.corollary_27_3_3_polyhedral`:
+  the same for minimization subject to a consistent system of convex inequalities $f_i(x) \le 0$,
+  $i \in I$.
+* Theorem 27.4, `Rockafellar.theorem_27_4_sufficient`, `Rockafellar.theorem_27_4_necessary` and
+  `Rockafellar.theorem_27_4_necessary_polyhedral`: $h$ attains its infimum over $C$ at $x$ if there
+  is $x^* \in \partial h(x)$ with $-x^*$ normal to $C$ at $x$, and under a constraint qualification
+  only if.
+* Section 27, the projection theorem, `Rockafellar.nearest_iff_sub_mem_normalCone`: $x$ is the point
+  of a convex set $C$ nearest to $a$ if and only if $a - x$ is normal to $C$ at $x$.
+
+## Conventions
+
+* The minimum set $\operatorname{argmin} f = \{x \mid f(x) \le f(z) \text{ for every } z\}$ is
+  `ConvexAnalysis.argmin f`. The bridge to Mathlib's `IsMinOn` is
+  `ConvexAnalysis.mem_argmin_iff_isMinOn`.
+* The level set $\{x \mid f(x) \le \alpha\}$ is written out as `{x | f x ≤ (α : EReal)}`, and
+  $\inf f$ is `⨅ x, f x` in `EReal`. So "bounded below" is $\inf f > -\infty$, "finite" is
+  $-\infty < \inf f < +\infty$, and "attained" is that the minimum set is non-empty.
+* The recession cone $0^+ f$ of a function $f$ is `ConvexAnalysis.recessionConeFn f`, and the
+  recession cone $0^+ C$ of a set $C$ is `ConvexAnalysis.recessionCone C`.
+* The recession function $f0^+$ is `ConvexAnalysis.recessionFn f`.
+* The directions in which $f$ is constant form `ConvexAnalysis.constancySpace f`. The directions in
+  which $f$ is affine form `ConvexAnalysis.linealitySpaceFn f`. The lineality space of a set is
+  `ConvexAnalysis.linealitySpace`.
+* The normal cone $N_C(x)$ is `ConvexAnalysis.normalCone (Rockafellar.pairing n) C x`.
+* "$h$ attains its infimum relative to $C$" is the existence of $x \in C$ with $h(x) \le h(z)$ for
+  every $z \in C$.
+
+## Implementation notes
+
+* Corollaries 27.2.1 and 27.2.2 are about minimizing sequences, and they are stated in that way.
+  `Rockafellar.corollary_27_2_1_infDist` gives the same fact for a minimizing family along an
+  arbitrary filter.
+* In the polyhedral refinement of Corollary 27.3.3, the split $I = I_0 \cup (I \setminus I_0)$ of
+  the source, with $I_0$ finite, is expressed by two index types.
+
+## Deviations from the source
+
+* **Theorem 27.1(a)** (generalization). The source assumes that $f$ is closed proper convex. Clause
+  (a) holds for every function. See `Rockafellar.theorem_27_1_a` and
+  `Rockafellar.theorem_27_1_a_bddBelow`.
+* **Theorem 27.1(b)**, first two sentences (generalization). Properness is not needed. See
+  `Rockafellar.theorem_27_1_b` and `Rockafellar.theorem_27_1_b_attained`.
+* **Theorem 27.1(g)**, first sentence (generalization). Properness is not needed. See
+  `Rockafellar.theorem_27_1_g_setOf_le`.
+* **Theorem 27.4**, sufficiency (generalization). No hypothesis on $h$ or $C$ is needed, and $x$
+  need not lie in $C$. See `Rockafellar.theorem_27_4_sufficient`.
 -/
 
 open Bornology Filter Set Topology
@@ -84,19 +154,23 @@ section Vocabulary
 
 variable {f : Rn n → EReal} {y : Rn n}
 
-/-- Rockafellar's **direction of recession of `f`**: a nonzero `y` such that `λ ↦ f (x + λ y)` is
-non-increasing for every `x`. -/
+/-- **Section 27** of [rockafellar1970convex], definition of a direction of recession of a function.
+A vector $y \in \mathbb{R}^n$ is a **direction of recession** of $f$ if $y \neq 0$ and, for
+every $x \in \mathbb{R}^n$, the function $\lambda \mapsto f(x + \lambda y)$ is non-increasing on
+$\mathbb{R}$. -/
 def IsDirectionOfRecession (f : Rn n → EReal) (y : Rn n) : Prop :=
   y ≠ 0 ∧ ∀ x : Rn n, Antitone fun l : ℝ => f (x + l • y)
 
-/-- A direction of recession is a nonzero element of `recessionConeFn f`. This is Theorem 8.6
-(`forall_antitone_iff_recessionFn_nonpos`), which needs no hypothesis on `f` at all. -/
+/-- A vector $y$ is a direction of recession of $f$ if and only if $y \neq 0$ and $y$ lies in the
+recession cone $0^+ f$ of $f$. This is Theorem 8.6,
+`ConvexAnalysis.forall_antitone_iff_recessionFn_nonpos`, which needs no hypothesis on $f$. -/
 theorem isDirectionOfRecession_iff :
     IsDirectionOfRecession f y ↔ y ≠ 0 ∧ y ∈ recessionConeFn f :=
   and_congr_right fun _ => forall_antitone_iff_recessionFn_nonpos
 
-/-- "`f` has no direction of recession" is `0⁺f = {0}`: the hypothesis of Theorem 27.2 and of the
-non-polyhedral case of Theorem 27.3, as the backbone spells it. -/
+/-- The recession cone of $f$ is $0^+ f = \{0\}$ if and only if $f$ has no direction of recession.
+This is the form that the backbone gives to the hypothesis of Theorem 27.2 and of the
+non-polyhedral case of Theorem 27.3. -/
 theorem recessionConeFn_eq_zero_iff (f : Rn n → EReal) :
     recessionConeFn f = {0} ↔ ¬ ∃ y : Rn n, IsDirectionOfRecession f y := by
   constructor
@@ -109,8 +183,9 @@ theorem recessionConeFn_eq_zero_iff (f : Rn n → EReal) :
     by_contra hz0
     exact h ⟨z, hz0, forall_antitone_iff_recessionFn_nonpos.2 hz⟩
 
-/-- "`f` and `C` have no direction of recession in common", the hypothesis of Theorem 27.3, against
-the backbone's `0⁺f ∩ 0⁺C = {0}`. -/
+/-- For a function $f$ and a set $C$ in $\mathbb{R}^n$, $0^+ f \cap 0^+ C = \{0\}$ if and only if
+$f$ and $C$ have no direction of recession in common. This is the form that the backbone gives
+to the hypothesis of Theorem 27.3. -/
 theorem recessionConeFn_inter_eq_zero_iff (f : Rn n → EReal) (C : Set (Rn n)) :
     recessionConeFn f ∩ recessionCone C = {0}
       ↔ ¬ ∃ y : Rn n, IsDirectionOfRecession f y ∧ y ∈ recessionCone C := by
@@ -133,12 +208,12 @@ section Opening
 
 variable {f : Rn n → EReal} {x : Rn n}
 
-/-- The minimum set of a convex `f` is convex: when nonempty it is a level set of `f`, which is the
-book's reason. -/
+/-- The minimum set of a convex function $f$ on $\mathbb{R}^n$ is convex. The reason given in the
+source is that the minimum set, when it is non-empty, is a level set of $f$. -/
 theorem convex_argmin_surface (hf : ConvexFn f) : Convex ℝ (argmin f) :=
   convex_argmin hf
 
-/-- The minimum set is closed when `f` is closed. -/
+/-- The minimum set of a closed proper convex function on $\mathbb{R}^n$ is closed. -/
 theorem isClosed_argmin (hf : ClosedProperConvexFn f) : IsClosed (argmin f) := by
   rcases Set.eq_empty_or_nonempty (argmin f) with hE | ⟨a, ha⟩
   · rw [hE]; exact isClosed_empty
@@ -148,9 +223,10 @@ theorem isClosed_argmin (hf : ClosedProperConvexFn f) : IsClosed (argmin f) := b
     rw [argmin_eq_setOf_le ha hμ]
     exact (lowerSemicontinuous_iff_isClosed_le.1 hf.lowerSemicontinuous) μ
 
-/-- The minimum set contains at most one point when `f` is strictly convex on `dom f`: two distinct
-minimisers lie in `dom f` — a minimiser of a proper `f` has a finite value — and their midpoint
-would have a strictly smaller value. -/
+/-- Let $f$ be a proper function on $\mathbb{R}^n$ that is strictly convex on
+$\operatorname{dom} f$. Then the minimum set of $f$ has at most one point. Two distinct
+minimizers would lie in $\operatorname{dom} f$, since a minimizer of a proper function has a
+finite value, and their midpoint would have a strictly smaller value. -/
 theorem subsingleton_argmin_of_strictConvexOnFn (hp : ProperConvex f)
     (hs : StrictConvexOnFn f (convexDom f)) : (argmin f).Subsingleton := by
   intro x hx y hy
@@ -170,23 +246,28 @@ theorem subsingleton_argmin_of_strictConvexOnFn (hp : ProperConvex f)
   rw [hval] at hstrict
   exact absurd (hμ ▸ hx ((1 / 2 : ℝ) • x + (1 / 2 : ℝ) • y)) (not_le.2 hstrict)
 
-/-- `x` minimises `f` exactly when `0 ∈ ∂f(x)`: `argmin f` unfolds to the subgradient inequality at
-`x* = 0`. -/
+/-- A point $x$ minimizes $f$ on $\mathbb{R}^n$ if and only if $0 \in \partial f(x)$. The minimum
+set unfolds to the subgradient inequality for the subgradient $0$. -/
 theorem mem_argmin_iff_zero_mem_subdifferential_surface (f : Rn n → EReal) (x : Rn n) :
     x ∈ argmin f ↔ (0 : Rn n) ∈ subdifferential (pairing n) f x :=
   mem_argmin_iff_zero_mem_subdifferential (pairing n) f x
 
-/-- By Theorem 23.2: `0 ∈ ∂f(x)` exactly when `f` is finite at `x` and `f'(x; y) ≥ 0` for every
-`y`. -/
+/-- Let $f$ be finite at $x$. Then $x$ minimizes $f$ on $\mathbb{R}^n$ if and only if
+$f'(x; y) \ge 0$ for every $y \in \mathbb{R}^n$. This follows from Theorem 23.2, which
+characterizes $0 \in \partial f(x)$. -/
 theorem mem_argmin_iff_zero_le_dirDeriv (ht : f x ≠ ⊤) (hb : f x ≠ ⊥) :
     x ∈ argmin f ↔ ∀ y : Rn n, 0 ≤ dirDeriv f x y := by
   rw [mem_argmin_iff_zero_mem_subdifferential_surface, mem_subdifferential_iff_le_dirDeriv ht hb]
   exact forall_congr' fun y => by simp
 
-/-- One of the most quoted sentences in the subject: a *local* minimum of a proper convex function
-is a *global* minimum. Rockafellar routes it through Theorem 23.2 — the directional derivatives see
-only an arbitrarily small neighbourhood — while the proof here is the underlying convexity estimate
-along `[x, z]`. -/
+/-- Let $f$ be a proper convex function on $\mathbb{R}^n$, let $x \in \operatorname{dom} f$, and let
+$\varepsilon > 0$ be such that $f(x) \le f(z)$ for every $z$ with $|z - x| < \varepsilon$. Then
+$x$ minimizes $f$ on $\mathbb{R}^n$. That is, a local minimum of a proper convex function is a
+global minimum.
+
+The source derives this from Theorem 23.2, because the directional derivatives at $x$ depend
+only on an arbitrarily small neighbourhood of $x$. The proof here uses the convexity estimate
+along the segment $[x, z]$. -/
 theorem mem_argmin_of_localMin (hf : ConvexFn f) (hp : ProperConvex f) (hx : x ∈ convexDom f)
     {ε : ℝ} (hε : 0 < ε) (hloc : ∀ z : Rn n, dist z x < ε → f x ≤ f z) : x ∈ argmin f := by
   obtain ⟨μ, hμ⟩ := EReal.exists_coe_of_ne_bot_of_lt_top (hp.ne_bot x) (mem_convexDom.1 hx)
@@ -223,39 +304,52 @@ theorem mem_argmin_of_localMin (hf : ConvexFn f) (hp : ProperConvex f) (hx : x �
 
 end Opening
 
-/-! ### Theorem 27.1(a): the infimum is `-f*(0)` -/
+/-! ### Theorem 27.1(a): the infimum is $-f^*(0)$ -/
 
 section Theorem271
 
 variable {f : Rn n → EReal}
 
-/-- **Theorem 27.1(a)**. `inf f = -f*(0)`. Needs **no hypothesis at all**, not even convexity: the
-theorem's standing "closed proper convex" is there for the other eight clauses. -/
+/-- **Theorem 27.1(a)** of [rockafellar1970convex]. For every function $f$ on $\mathbb{R}^n$,
+$$\inf f = -f^*(0).$$
+
+**Generalization.** The source states Theorem 27.1 for a closed proper convex function $f$. This
+clause needs no hypothesis, not even convexity. The standing hypothesis is needed for the other
+clauses. -/
 theorem theorem_27_1_a (f : Rn n → EReal) : (⨅ x, f x) = -(convexConj (pairing n) f 0) :=
   iInf_eq_neg_convexConj_zero (pairing n) f
 
-/-- **Theorem 27.1(a)**, second sentence: `f` is bounded below iff `0 ∈ dom f*`. Also
-hypothesis-free. -/
+/-- **Theorem 27.1(a)** of [rockafellar1970convex], second sentence. For every function $f$ on
+$\mathbb{R}^n$, $f$ is bounded below if and only if $0 \in \operatorname{dom} f^*$. As for the
+first sentence, no hypothesis is needed. -/
 theorem theorem_27_1_a_bddBelow (f : Rn n → EReal) :
     (⊥ : EReal) < ⨅ x, f x ↔ (0 : Rn n) ∈ convexDom (convexConj (pairing n) f) :=
   (zero_mem_convexDom_convexConj_iff (pairing n) f).symm
 
-/-! ### Theorem 27.1(b): the minimum set is `∂f*(0)` -/
+/-! ### Theorem 27.1(b): the minimum set is $\partial f^*(0)$ -/
 
-/-- **Theorem 27.1(b)**, first sentence: the minimum set of a closed convex `f` is `∂f*(0)`, by
-Theorem 23.5 at the origin. Properness, which the book assumes throughout, is not needed. -/
+/-- **Theorem 27.1(b)** of [rockafellar1970convex], first sentence. Let $f$ be a closed convex
+function on $\mathbb{R}^n$. Then the minimum set of $f$ is
+$$\operatorname{argmin} f = \partial f^*(0).$$
+
+**Generalization.** The source assumes that $f$ is also proper. Properness is not needed.
+
+The proof is Theorem 23.5 at the origin. -/
 theorem theorem_27_1_b (hf : ConvexFn f) (hc : ClosedConvex f) :
     argmin f = subdifferential (pairing n) (convexConj (pairing n) f) 0 := by
   rw [argmin_eq_subdifferential_convexConj_zero (B := pairing n) hf hc, flip_pairing]
 
-/-- **Theorem 27.1(b)**, second sentence: the infimum of `f` is attained exactly when `f*` is
-subdifferentiable at the origin. -/
+/-- **Theorem 27.1(b)** of [rockafellar1970convex], second sentence. Let $f$ be a closed convex
+function on $\mathbb{R}^n$. Then the infimum of $f$ is attained if and only if
+$\partial f^*(0) \neq \emptyset$, that is, $f^*$ is subdifferentiable at $0$. Properness is not
+assumed. -/
 theorem theorem_27_1_b_attained (hf : ConvexFn f) (hc : ClosedConvex f) :
     (argmin f).Nonempty ↔ (subdifferential (pairing n) (convexConj (pairing n) f) 0).Nonempty := by
   rw [theorem_27_1_b hf hc]
 
-/-- **Theorem 27.1(b)**, third sentence: `0 ∈ ri (dom f*)` is enough for the infimum to be attained.
-This is Theorem 23.4 for `f*` at the origin. -/
+/-- **Theorem 27.1(b)** of [rockafellar1970convex], third sentence. Let $f$ be a closed proper
+convex function on $\mathbb{R}^n$ with $0 \in \operatorname{ri}(\operatorname{dom} f^*)$. Then
+the infimum of $f$ is attained. This is Theorem 23.4 for $f^*$ at the origin. -/
 theorem theorem_27_1_b_relint (hf : ConvexFn f) (hc : ClosedConvex f) (hp : ProperConvex f)
     (h0 : (0 : Rn n) ∈ ri (convexDom (convexConj (pairing n) f))) : (argmin f).Nonempty := by
   rw [theorem_27_1_b hf hc]
@@ -263,9 +357,11 @@ theorem theorem_27_1_b_relint (hf : ConvexFn f) (hc : ClosedConvex f) (hp : Prop
       (B := pairing n) (convexFn_convexConj (pairing n) f)
     (properConvex_convexConj ⟨hf, hc, hp⟩) h0
 
-/-- **Theorem 27.1(b)**, last sentence: `0 ∈ ri (dom f*)` exactly when every direction of recession
-of `f` is a direction in which `f` is constant. Corollary 8.6.1 is what makes `constancySpace f` the
-book's phrase. -/
+/-- **Theorem 27.1(b)** of [rockafellar1970convex], last sentence. Let $f$ be a closed proper convex
+function on $\mathbb{R}^n$. Then $0 \in \operatorname{ri}(\operatorname{dom} f^*)$ if and only
+if every direction of recession of $f$ is a direction in which $f$ is constant, that is, $0^+ f$
+is contained in the constancy space of $f$. Corollary 8.6.1 shows that this space is the set of
+directions in which $f$ is constant. -/
 theorem theorem_27_1_b_constancy (hf : ConvexFn f) (hc : ClosedConvex f) (hp : ProperConvex f) :
     (0 : Rn n) ∈ ri (convexDom (convexConj (pairing n) f)) ↔ recessionConeFn f ⊆ constancySpace f :=
   zero_mem_relint_convexDom_convexConj_iff_recessionConeFn_subset_constancySpace (B := pairing n)
@@ -273,32 +369,38 @@ theorem theorem_27_1_b_constancy (hf : ConvexFn f) (hc : ClosedConvex f) (hp : P
 
 /-! ### Theorem 27.1(c): finite but unattained -/
 
-/-- **Theorem 27.1(c)**. The infimum of a closed proper convex `f` is finite but unattained exactly
-when `f*(0)` is finite and `f*'(0; y) = -∞` for some `y`. **Only one of the book's two finiteness
-bounds carries information on each side**; the two that are free are `theorem_27_1_c_free`. -/
+/-- **Theorem 27.1(c)** of [rockafellar1970convex]. Let $f$ be a closed proper convex function on
+$\mathbb{R}^n$. Then the infimum of $f$ is finite but not attained if and only if $f^*(0)$ is
+finite and $(f^*)'(0; y) = -\infty$ for some $y \in \mathbb{R}^n$.
+
+Here "the infimum is finite" is written as $\inf f > -\infty$, and "$f^*(0)$ is finite" as
+$f^*(0) < +\infty$. The other two bounds, $\inf f < +\infty$ and $f^*(0) > -\infty$, hold for
+every proper $f$ and carry no information. They are `Rockafellar.theorem_27_1_c_free`. -/
 theorem theorem_27_1_c (hf : ConvexFn f) (hc : ClosedConvex f) (hp : ProperConvex f) :
     ((⨅ x, f x) ≠ ⊥ ∧ argmin f = ∅)
       ↔ (convexConj (pairing n) f 0 ≠ ⊤ ∧ ∃ y : Rn n,
           dirDeriv (convexConj (pairing n) f) 0 y = ⊥) :=
   iInf_ne_bot_and_argmin_eq_empty_iff (B := pairing n) hf hc hp
 
-/-- The two bounds `theorem_27_1_c` leaves out, so that the reading "finite" can be checked against
-the statement: for a proper `f`, `inf f ≠ ⊤` and `f*(0) ≠ ⊥` hold unconditionally. -/
+/-- For a proper function $f$ on $\mathbb{R}^n$, $\inf f < +\infty$ and $f^*(0) > -\infty$. These
+are the two finiteness bounds that `Rockafellar.theorem_27_1_c` leaves out. -/
 theorem theorem_27_1_c_free (hp : ProperConvex f) :
     (⨅ x, f x) ≠ ⊤ ∧ convexConj (pairing n) f 0 ≠ ⊥ :=
   ⟨iInf_ne_top hp, convexConj_ne_bot hp.convexDom_nonempty 0⟩
 
 /-! ### Theorem 27.1(d): a nonempty bounded minimum set -/
 
-/-- **Theorem 27.1(d)**, first sentence: the minimum set of a closed proper convex `f` is nonempty
-and bounded exactly when `0 ∈ int (dom f*)`. -/
+/-- **Theorem 27.1(d)** of [rockafellar1970convex], first sentence. Let $f$ be a closed proper
+convex function on $\mathbb{R}^n$. Then the minimum set of $f$ is non-empty and bounded if and
+only if $0 \in \operatorname{int}(\operatorname{dom} f^*)$. -/
 theorem theorem_27_1_d (hf : ConvexFn f) (hc : ClosedConvex f) (hp : ProperConvex f) :
     ((argmin f).Nonempty ∧ IsBounded (argmin f))
       ↔ (0 : Rn n) ∈ interior (convexDom (convexConj (pairing n) f)) :=
   argmin_nonempty_and_isBounded_iff_zero_mem_interior_convexDom_convexConj (B := pairing n) hf hc hp
 
-/-- **Theorem 27.1(d)**, second sentence: that holds exactly when `f` has no direction of
-recession. -/
+/-- **Theorem 27.1(d)** of [rockafellar1970convex], second sentence. Let $f$ be a closed proper
+convex function on $\mathbb{R}^n$. Then $0 \in \operatorname{int}(\operatorname{dom} f^*)$ if
+and only if $f$ has no direction of recession. -/
 theorem theorem_27_1_d_recession (hf : ConvexFn f) (hc : ClosedConvex f) (hp : ProperConvex f) :
     (0 : Rn n) ∈ interior (convexDom (convexConj (pairing n) f)) ↔ ¬ ∃ y : Rn n,
         IsDirectionOfRecession f y :=
@@ -306,34 +408,41 @@ theorem theorem_27_1_d_recession (hf : ConvexFn f) (hc : ClosedConvex f) (hp : P
       hp).trans
     (recessionConeFn_eq_zero_iff f)
 
-/-- **Theorem 27.1(d)** in the form Theorem 30.4(g) uses it: *some* level set of `f` is nonempty and
-bounded exactly when the minimum set is. -/
+/-- **Theorem 27.1(d)** of [rockafellar1970convex], in the form that Theorem 30.4(g) uses. Let $f$
+be a closed proper convex function on $\mathbb{R}^n$. Then the minimum set of $f$ is non-empty
+and bounded if and only if some level set $\{x \mid f(x) \le \alpha\}$, $\alpha \in \mathbb{R}$,
+is non-empty and bounded. -/
 theorem theorem_27_1_d_setOf_le (hf : ConvexFn f) (hc : ClosedConvex f) (hp : ProperConvex f) :
     ((argmin f).Nonempty ∧ IsBounded (argmin f))
       ↔ ∃ α : ℝ, {x : Rn n | f x ≤ (α : EReal)}.Nonempty ∧
           IsBounded {x : Rn n | f x ≤ (α : EReal)} :=
   argmin_nonempty_and_isBounded_iff_exists_setOf_le (B := pairing n) hf hc hp
 
-/-! ### Theorem 27.1(e): a unique minimiser is `∇f*(0)` -/
+/-! ### Theorem 27.1(e): a unique minimizer is $\nabla f^*(0)$ -/
 
-/-- **Theorem 27.1(e)**. The minimum set of a closed proper convex `f` is `{x}` exactly when `f*` is
-differentiable at the origin with `∇f*(0) = x`. Nothing needs reflexivity: `∂f*(0)` is a subset of
-`ℝⁿ`, because the pairing is what says what a dual variable of `f*` is. -/
+/-- **Theorem 27.1(e)** of [rockafellar1970convex]. Let $f$ be a closed proper convex function on
+$\mathbb{R}^n$, and let $x \in \mathbb{R}^n$. Then the minimum set of $f$ is $\{x\}$ if and only
+if $f^*$ is differentiable at $0$ with $\nabla f^*(0) = x$.
+
+No reflexivity argument is needed: $\partial f^*(0)$ is a subset of $\mathbb{R}^n$, because the
+pairing fixes the space of the dual variables of $f^*$. -/
 theorem theorem_27_1_e (hf : ConvexFn f) (hc : ClosedConvex f) (hp : ProperConvex f) {x : Rn n} :
     argmin f = {x} ↔ HasGradientVecAt (convexConj (pairing n) f) x 0 := by
   rw [theorem_27_1_b hf hc,
     theorem_25_1 (convexFn_convexConj (pairing n) f) (properConvex_convexConj ⟨hf, hc, hp⟩)]
 
-/-- **Theorem 27.1(e)** as existence: the infimum is attained at a unique point iff `f*` is
-differentiable at the origin. -/
+/-- **Theorem 27.1(e)** of [rockafellar1970convex], existence form. Let $f$ be a closed proper
+convex function on $\mathbb{R}^n$. Then the infimum of $f$ is attained at exactly one point if
+and only if $f^*$ is differentiable at $0$. -/
 theorem theorem_27_1_e_differentiable (hf : ConvexFn f) (hc : ClosedConvex f)
     (hp : ProperConvex f) :
     (∃ x : Rn n, argmin f = {x}) ↔ DifferentiableAtFn (convexConj (pairing n) f) 0 := by
   rw [differentiableAtFn_iff_exists_hasGradientVecAt]
   exact exists_congr fun _ => theorem_27_1_e hf hc hp
 
-/-- **Theorem 27.1(e)**, the identification `x = ∇f*(0)`: the unique minimiser is computed by
-`gradientVec` (§25). -/
+/-- **Theorem 27.1(e)** of [rockafellar1970convex], the formula for the minimizer. Let $f$ be a
+closed proper convex function on $\mathbb{R}^n$ whose minimum set is $\{x\}$. Then
+$x = \nabla f^*(0)$, the vector `Rockafellar.gradientVec` of Section 25. -/
 theorem theorem_27_1_e_gradientVec (hf : ConvexFn f) (hc : ClosedConvex f) (hp : ProperConvex f)
     {x : Rn n}
     (h : argmin f = {x}) : x = gradientVec (convexConj (pairing n) f) 0 :=
@@ -341,22 +450,36 @@ theorem theorem_27_1_e_gradientVec (hf : ConvexFn f) (hc : ClosedConvex f) (hp :
 
 /-! ### Theorem 27.1(f): all nonempty level sets share a recession cone -/
 
-/-- **Theorem 27.1(f)**: every nonempty level set of a closed proper convex `f` has the recession
-cone of `f`. This is Theorem 8.7, restated here because clause (f) is where §27 uses it. -/
+/-- **Theorem 27.1(f)** of [rockafellar1970convex]. Let $f$ be a closed proper convex function on
+$\mathbb{R}^n$, and let $\alpha \in \mathbb{R}$ be such that the level set
+$\{x \mid f(x) \le \alpha\}$ is non-empty. Then the recession cone of this level set is the
+recession cone $0^+ f$ of $f$.
+
+This is Theorem 8.7. It is stated again here because clause (f) is where Section 27 uses it. -/
 theorem theorem_27_1_f_setOf_le (hf : ClosedProperConvexFn f) {α : ℝ}
     (hne : {x : Rn n | f x ≤ (α : EReal)}.Nonempty) :
     recessionCone {x : Rn n | f x ≤ (α : EReal)} = recessionConeFn f :=
   theorem_8_7_recessionCone hf hne
 
-/-- **Theorem 27.1(f)**, the parenthesis: the minimum set, when nonempty, is itself a level set, so
-it too has the recession cone of `f`. -/
+/-- **Theorem 27.1(f)** of [rockafellar1970convex], the parenthesis. Let $f$ be a closed proper
+convex function on $\mathbb{R}^n$, and suppose that the minimum set of $f$ contains a point $a$
+at which $f(a)$ is finite. Then the recession cone of the minimum set is $0^+ f$.
+
+The minimum set is then the level set $\{x \mid f(x) \le f(a)\}$. -/
 theorem theorem_27_1_f_argmin (hf : ClosedProperConvexFn f) {a : Rn n} (ha : a ∈ argmin f)
     {μ : ℝ} (hμ : f a = (μ : EReal)) : recessionCone (argmin f) = recessionConeFn f := by
   rw [argmin_eq_setOf_le ha hμ]
   exact theorem_27_1_f_setOf_le hf ⟨a, le_of_eq hμ⟩
 
-/-- **Theorem 27.1(f)**, last sentence: that common recession cone is the polar of the convex cone
-generated by `dom f*` — equivalently, since polarity does not see the cone hull, of `dom f*`. -/
+/-- **Theorem 27.1(f)** of [rockafellar1970convex], last sentence. Let $f$ be a closed proper convex
+function on $\mathbb{R}^n$, and let $\alpha \in \mathbb{R}$ be such that the level set
+$\{x \mid f(x) \le \alpha\}$ is non-empty. Then the recession cone of this level set is the
+polar $K^\circ = \{y \mid \langle x, y \rangle \le 0 \text{ for every } x \in K\}$ of the convex
+cone $K$ generated by $\operatorname{dom} f^*$.
+
+A polar does not change when a set is replaced by the convex cone that it generates, so this is
+also the polar of $\operatorname{dom} f^*$. The polar is `ConvexAnalysis.polarCone`, and the
+generated cone is Mathlib's `PointedCone.hull`. -/
 theorem theorem_27_1_f_polarCone (hf : ClosedProperConvexFn f) {α : ℝ}
     (hne : {x : Rn n | f x ≤ (α : EReal)}.Nonempty) :
     recessionCone {x : Rn n | f x ≤ (α : EReal)}
@@ -370,16 +493,26 @@ theorem theorem_27_1_f_polarCone (hf : ClosedProperConvexFn f) {α : ℝ}
 
 /-! ### Theorem 27.1(g): support functions of the level sets -/
 
-/-- **Theorem 27.1(g)**, first sentence: for each real `α` the support function of `lev_α f` is the
-closure of the positively homogeneous convex function generated by `f* + α`. -/
+/-- **Theorem 27.1(g)** of [rockafellar1970convex], first sentence. Let $f$ be a closed convex
+function on $\mathbb{R}^n$, and let $\alpha \in \mathbb{R}$. Then the support function of the
+level set $\{x \mid f(x) \le \alpha\}$ is the closure of the positively homogeneous convex
+function generated by $f^* + \alpha$.
+
+**Generalization.** The source assumes that $f$ is also proper. Properness is not needed.
+
+The support function is `ConvexAnalysis.supportFn`, the generated function is
+`ConvexAnalysis.posHomGen`, and the closure is `ConvexAnalysis.convexCl`. -/
 theorem theorem_27_1_g_setOf_le (hf : ConvexFn f) (hc : ClosedConvex f) (α : ℝ) :
     supportFn (pairing n) {x : Rn n | f x ≤ (α : EReal)}
       = convexCl (posHomGen fun y => convexConj (pairing n) f y + (α : EReal)) :=
   supportFn_setOf_le (B := pairing n) hf hc α
 
-/-- **Theorem 27.1(g)**, second sentence: when `f` is bounded below, the support function of the
-minimum set is the closure of `f*'(0; ·)`. Clause (b) plus Theorem 23.2; "bounded below" enters as
-`f*(0) ≠ ⊤`, which is clause (a). -/
+/-- **Theorem 27.1(g)** of [rockafellar1970convex], second sentence. Let $f$ be a closed proper
+convex function on $\mathbb{R}^n$ that is bounded below. Then the support function of the
+minimum set of $f$ is the closure of the function $y \mapsto (f^*)'(0; y)$.
+
+The proof combines clause (b) with Theorem 23.2. By clause (a), the lower bound on $f$ means
+that $f^*(0) < +\infty$. -/
 theorem theorem_27_1_g_argmin (hf : ConvexFn f) (hc : ClosedConvex f) (hp : ProperConvex f)
     (hbdd : (⊥ : EReal) < ⨅ x, f x) :
     supportFn (pairing n) (argmin f) = convexCl (dirDeriv (convexConj (pairing n) f) 0) :=
@@ -388,17 +521,23 @@ theorem theorem_27_1_g_argmin (hf : ConvexFn f) (hc : ClosedConvex f) (hp : Prop
 
 /-! ### Theorem 27.1(h): the limit of the support functions -/
 
-/-- **Theorem 27.1(h)**. If `inf f` is finite then `lim_{α ↓ inf f} δ*(y | lev_α f) = f*'(0; y)` for
-every `y`. **The limit is stated as an infimum**: the level sets increase with `α`, so their support
-functions do, and the monotone limit *is* the infimum; no filter is needed. -/
+/-- **Theorem 27.1(h)** of [rockafellar1970convex]. Let $f$ be a closed proper convex function on
+$\mathbb{R}^n$ whose infimum $\mu = \inf f$ is finite. Then for every $y \in \mathbb{R}^n$
+$$\lim_{\alpha \downarrow \mu} \delta^*(y \mid \{x \mid f(x) \le \alpha\}) = (f^*)'(0; y).$$
+
+The limit is stated as the infimum over $\alpha = \mu + \varepsilon$ with $\varepsilon > 0$. The
+level sets increase with $\alpha$, so their support functions do too, and the limit as
+$\alpha \downarrow \mu$ is this infimum. -/
 theorem theorem_27_1_h (hf : ConvexFn f) (hc : ClosedConvex f) (hp : ProperConvex f) {μ : ℝ}
     (hμ : (⨅ x, f x) = (μ : EReal)) (y : Rn n) :
     (⨅ ε ∈ Ioi (0 : ℝ), supportFn (pairing n) {z : Rn n | f z ≤ ((μ + ε : ℝ) : EReal)} y)
       = dirDeriv (convexConj (pairing n) f) 0 y :=
   iInf_supportFn_setOf_le (B := pairing n) hf hc hp hμ y
 
-/-- The identification the proof of Theorem 27.1(h) runs on, unnumbered in the book: the level sets
-of `f` above its infimum are the ε-subdifferentials of `f*` at the origin. -/
+/-- Let $f$ be a closed proper convex function on $\mathbb{R}^n$ whose infimum $\mu$ is finite, and
+let $\varepsilon \in \mathbb{R}$. Then the $\varepsilon$-subdifferential of $f^*$ at $0$ is the
+level set $\{z \mid f(z) \le \mu + \varepsilon\}$. The proof of Theorem 27.1(h) uses this
+identification, which the source does not number. -/
 theorem theorem_27_1_h_epsSubdifferential (hf : ConvexFn f) (hc : ClosedConvex f)
     (hp : ProperConvex f)
     {μ : ℝ} (hμ : (⨅ x, f x) = (μ : EReal)) (ε : ℝ) :
@@ -406,25 +545,41 @@ theorem theorem_27_1_h_epsSubdifferential (hf : ConvexFn f) (hc : ClosedConvex f
       = {z : Rn n | f z ≤ ((μ + ε : ℝ) : EReal)} := by
   rw [← epsSubdifferential_convexConj_zero (B := pairing n) hf hc hp hμ ε, flip_pairing]
 
-/-! ### Theorem 27.1(i): the origin in the closure of `dom f*` -/
+/-! ### Theorem 27.1(i): the origin in the closure of $\operatorname{dom} f^*$ -/
 
-/-- **Theorem 27.1(i)**, first sentence: `0 ∈ cl (dom f*)` exactly when `(f0⁺)(y) ≥ 0` for every
-`y`. This is the origin case of Corollary 13.3.4. -/
+/-- **Theorem 27.1(i)** of [rockafellar1970convex], first sentence. Let $f$ be a closed proper
+convex function on $\mathbb{R}^n$, with recession function $f0^+$. Then $0 \in
+\operatorname{cl}(\operatorname{dom} f^*)$ if and only if $(f0^+)(y) \ge 0$ for every
+$y \in \mathbb{R}^n$.
+
+This is the case of the origin in Corollary 13.3.4. -/
 theorem theorem_27_1_i (hf : ClosedProperConvexFn f) :
     (0 : Rn n) ∈ closure (convexDom (convexConj (pairing n) f)) ↔ ∀ y : Rn n, 0 ≤ recessionFn f y :=
   zero_mem_closure_convexDom_convexConj_iff (B := pairing n) hf
 
-/-- **Theorem 27.1(i)**, second sentence: `0 ∉ cl (dom f*)` exactly when `f` decreases at a uniform
-positive rate along some nonzero direction. `y ≠ 0` is automatic — at `y = 0` the inequality at
-`λ = 1` would read `0 ≤ -ε` on `dom f` — and restricting `x` to `dom f` costs nothing. -/
+/-- **Theorem 27.1(i)** of [rockafellar1970convex], second sentence. Let $f$ be a closed proper
+convex function on $\mathbb{R}^n$. Then $0 \notin \operatorname{cl}(\operatorname{dom} f^*)$ if
+and only if there are a vector $y \neq 0$ and a number $\varepsilon > 0$ with
+$$f(x + \lambda y) \le f(x) - \lambda\varepsilon \quad \text{for every } x \in
+  \operatorname{dom} f \text{ and every } \lambda \ge 0.$$
+
+The condition $y \neq 0$ is automatic: for $y = 0$ the inequality at $\lambda = 1$ would read
+$0 \le -\varepsilon$ on $\operatorname{dom} f$. The restriction to $x \in \operatorname{dom} f$
+loses nothing. -/
 theorem theorem_27_1_i_notMem (hf : ClosedProperConvexFn f) :
     (0 : Rn n) ∉ closure (convexDom (convexConj (pairing n) f)) ↔
       ∃ y : Rn n, y ≠ 0 ∧ ∃ ε : ℝ, 0 < ε ∧
         ∀ x ∈ convexDom f, ∀ a : ℝ, 0 ≤ a → f (x + a • y) ≤ f x - ((a * ε : ℝ) : EReal) :=
   zero_notMem_closure_convexDom_convexConj_iff (B := pairing n) hf
 
-/-- Clauses (a) and (i) together, an unnumbered remark of §27: `f` can recede nowhere at a negative
-rate and still be unbounded below, exactly when `0 ∈ cl (dom f*)` but `0 ∉ dom f*`. -/
+/-- **Section 27** of [rockafellar1970convex], a remark that combines clauses (a) and (i) of Theorem
+27.1. Let $f$ be a closed proper convex function on $\mathbb{R}^n$. Then $(f0^+)(y) \ge 0$ for
+every $y$ and $\inf f = -\infty$ if and only if
+$$0 \in \operatorname{cl}(\operatorname{dom} f^*) \quad \text{and} \quad 0 \notin
+  \operatorname{dom} f^*.$$
+That is, $f$ can be unbounded below while it recedes at a negative rate in no direction, and
+this happens exactly when $0$ is a boundary point of $\operatorname{dom} f^*$ outside
+$\operatorname{dom} f^*$. -/
 theorem theorem_27_1_ai (hf : ClosedProperConvexFn f) :
     ((∀ y : Rn n, 0 ≤ recessionFn f y) ∧ (⨅ x, f x) = ⊥)
       ↔ ((0 : Rn n) ∈ closure (convexDom (convexConj (pairing n) f)) ∧
@@ -439,21 +594,27 @@ section Theorem272
 
 variable {f : Rn n → EReal}
 
-/-- **Theorem 27.2**, first sentence: a closed proper convex function with no direction of recession
-has a finite infimum. The backbone's proof is the lower-semicontinuous extreme value theorem on a
-level set, which Theorems 8.7 and 8.4 make compact. -/
+/-- **Theorem 27.2** of [rockafellar1970convex], first sentence. Let $f$ be a closed proper convex
+function on $\mathbb{R}^n$ with no direction of recession. Then the infimum of $f$ is finite.
+
+The proof applies the extreme value theorem for lower semicontinuous functions on a level set of
+$f$, which is compact by Theorems 8.7 and 8.4. -/
 theorem theorem_27_2_finite (hf : ClosedProperConvexFn f)
     (hrec : ¬ ∃ y : Rn n, IsDirectionOfRecession f y) : ∃ μ : ℝ, (⨅ z, f z) = (μ : EReal) :=
   exists_iInf_eq_coe hf.convex hf.closed hf.proper ((recessionConeFn_eq_zero_iff f).2 hrec)
 
-/-- **Theorem 27.2**, the attainment. -/
+/-- **Theorem 27.2** of [rockafellar1970convex], attainment. Let $f$ be a closed proper convex
+function on $\mathbb{R}^n$ with no direction of recession. Then the infimum of $f$ is attained. -/
 theorem theorem_27_2_attained (hf : ClosedProperConvexFn f)
     (hrec : ¬ ∃ y : Rn n, IsDirectionOfRecession f y) : (argmin f).Nonempty :=
   argmin_nonempty_of_recessionConeFn_eq_zero hf.convex hf.closed hf.proper
     ((recessionConeFn_eq_zero_iff f).2 hrec)
 
-/-- **Theorem 27.2**, last clause: the minimum set is nonempty, closed, bounded and convex. Closed
-and bounded is stated as compact, which in `ℝⁿ` is the same thing. -/
+/-- **Theorem 27.2** of [rockafellar1970convex], the minimum set. Let $f$ be a closed proper convex
+function on $\mathbb{R}^n$ with no direction of recession. Then the minimum set of $f$ is
+non-empty, closed, bounded and convex.
+
+Closed and bounded is stated as compact, which is the same in $\mathbb{R}^n$. -/
 theorem theorem_27_2_argmin (hf : ClosedProperConvexFn f)
     (hrec : ¬ ∃ y : Rn n, IsDirectionOfRecession f y) :
     (argmin f).Nonempty ∧ IsCompact (argmin f) ∧ Convex ℝ (argmin f) :=
@@ -462,10 +623,14 @@ theorem theorem_27_2_argmin (hf : ClosedProperConvexFn f)
       ((recessionConeFn_eq_zero_iff f).2 hrec),
     convex_argmin hf.convex⟩
 
-/-- **Theorem 27.2**, well-posedness: for every `ε > 0` there is a `δ > 0` such that every `x` with
-`f x ≤ inf f + δ` lies within `ε` of the minimum set. Rockafellar's nested-compactness argument is
-avoided: the extreme value theorem is applied once more, to `lev_{inf f + 1} f \ (M + ε · int
-B)`. -/
+/-- **Theorem 27.2** of [rockafellar1970convex], well-posedness. Let $f$ be a closed proper convex
+function on $\mathbb{R}^n$ with no direction of recession, and let $M$ be its minimum set. Then
+for every $\varepsilon > 0$ there is a $\delta > 0$ such that every $x$ with
+$f(x) \le \inf f + \delta$ lies at distance less than $\varepsilon$ from some point of $M$.
+
+The proof does not use the nested compactness argument of the source. It applies the extreme
+value theorem once more, to the set $\{x \mid f(x) \le \inf f + 1\} \setminus (M + \varepsilon
+\operatorname{int} B)$, where $B$ is the closed unit ball. -/
 theorem theorem_27_2_wellPosed (hf : ClosedProperConvexFn f)
     (hrec : ¬ ∃ y : Rn n, IsDirectionOfRecession f y) {ε : ℝ} (hε : 0 < ε) :
     ∃ δ : ℝ, 0 < δ ∧ ∀ x : Rn n, f x ≤ (⨅ z, f z) + (δ : EReal) →
@@ -475,17 +640,23 @@ theorem theorem_27_2_wellPosed (hf : ClosedProperConvexFn f)
 
 /-! ### Corollary 27.2.1 -/
 
-/-- **Corollary 27.2.1**, first assertion: a minimising sequence of a closed proper convex function
-with no direction of recession is bounded. **The book states this corollary with no proof.** The
-argument is Theorem 27.2's well-posedness clause at `ε = 1`, past which the whole sequence lies
-within distance `1` of the compact minimum set. -/
+/-- **Corollary 27.2.1** of [rockafellar1970convex], first assertion. Let $f$ be a closed proper
+convex function on $\mathbb{R}^n$ with no direction of recession, and let $(u_i)$ be a
+minimizing sequence: $f(u_i) \to \inf f$. Then the sequence $(u_i)$ is bounded.
+
+The source states this corollary without proof. The proof here applies the well-posedness clause
+of Theorem 27.2 with $\varepsilon = 1$: from some index on, the sequence lies within distance
+$1$ of the compact minimum set. -/
 theorem corollary_27_2_1_isBounded (hf : ClosedProperConvexFn f)
     (hrec : ¬ ∃ y : Rn n, IsDirectionOfRecession f y) {u : ℕ → Rn n}
     (hu : Tendsto (fun i => f (u i)) atTop (𝓝 (⨅ z, f z))) : IsBounded (Set.range u) :=
   isBounded_range_of_tendsto_iInf hf.convex hf.closed hf.proper
     ((recessionConeFn_eq_zero_iff f).2 hrec) hu
 
-/-- **Corollary 27.2.1**: every cluster point of a minimising sequence lies in the minimum set. -/
+/-- **Corollary 27.2.1** of [rockafellar1970convex], second assertion. Let $f$ be a closed proper
+convex function on $\mathbb{R}^n$ with no direction of recession, and let $(u_i)$ be a
+minimizing sequence: $f(u_i) \to \inf f$. Then every cluster point of $(u_i)$ lies in the
+minimum set of $f$. -/
 theorem corollary_27_2_1_clusterPt (hf : ClosedProperConvexFn f)
     (hrec : ¬ ∃ y : Rn n, IsDirectionOfRecession f y) {u : ℕ → Rn n}
     (hu : Tendsto (fun i => f (u i)) atTop (𝓝 (⨅ z, f z))) {x : Rn n}
@@ -493,8 +664,12 @@ theorem corollary_27_2_1_clusterPt (hf : ClosedProperConvexFn f)
   mem_argmin_of_mapClusterPt hf.convex hf.closed hf.proper
     ((recessionConeFn_eq_zero_iff f).2 hrec) hu hx
 
-/-- The substance of Corollary 27.2.1: along any minimising net the distance to the minimum set
-tends to `0`. Stated for an arbitrary filter, of which the book's `atTop` is one instance. -/
+/-- Let $f$ be a closed proper convex function on $\mathbb{R}^n$ with no direction of recession, and
+let $(u_i)_{i \in \iota}$ be a family such that $f(u_i) \to \inf f$ along a filter $l$ on
+$\iota$. Then the distance from $u_i$ to the minimum set of $f$ tends to $0$ along $l$.
+
+This is the content of Corollary 27.2.1, for an arbitrary filter. The minimizing sequences of
+the source are the case of the filter `Filter.atTop` on `ℕ`. -/
 theorem corollary_27_2_1_infDist (hf : ClosedProperConvexFn f)
     (hrec : ¬ ∃ y : Rn n, IsDirectionOfRecession f y) {ι : Type*} {l : Filter ι} {u : ι → Rn n}
     (hu : Tendsto (fun i => f (u i)) l (𝓝 (⨅ z, f z))) :
@@ -504,9 +679,12 @@ theorem corollary_27_2_1_infDist (hf : ClosedProperConvexFn f)
 
 /-! ### Corollary 27.2.2 -/
 
-/-- **Corollary 27.2.2** — the label is printed in mixed case in the book. If a closed proper convex
-function attains its infimum at a unique `x`, every minimising sequence converges to `x`. No
-recession hypothesis: a one-point minimum set is a level set, so Theorem 8.7 forces `0⁺f = {0}`. -/
+/-- **Corollary 27.2.2** of [rockafellar1970convex]. Let $f$ be a closed proper convex function on
+$\mathbb{R}^n$ whose minimum set is a single point $a$. Then every minimizing sequence $(u_i)$,
+with $f(u_i) \to \inf f$, converges to $a$.
+
+No recession hypothesis is needed: a minimum set with one point is a level set, so Theorem 8.7
+forces $0^+ f = \{0\}$. The source prints the label of this corollary in mixed case. -/
 theorem corollary_27_2_2 (hf : ClosedProperConvexFn f) {a : Rn n} (hM : argmin f = {a})
     {u : ℕ → Rn n} (hu : Tendsto (fun i => f (u i)) atTop (𝓝 (⨅ z, f z))) :
     Tendsto u atTop (𝓝 a) :=
@@ -520,9 +698,14 @@ section Theorem273
 
 variable {h : Rn n → EReal} {C : Set (Rn n)}
 
-/-- **Theorem 27.3**, the non-polyhedral case: a closed proper convex `h` attains its infimum over a
-nonempty closed convex `C` as soon as `h` and `C` have no direction of recession in common. The
-degenerate case `dom h ∩ C = ∅`, where every point of `C` minimises, is dispatched separately. -/
+/-- **Theorem 27.3** of [rockafellar1970convex]. Let $C$ be a non-empty closed convex set in
+$\mathbb{R}^n$, and let $h$ be a closed proper convex function on $\mathbb{R}^n$ such that $h$
+and $C$ have no direction of recession in common: no direction of recession of $h$ lies in
+$0^+ C$. Then $h$ attains its infimum relative to $C$: there is an $x \in C$ with
+$h(x) \le h(z)$ for every $z \in C$.
+
+The degenerate case $\operatorname{dom} h \cap C = \emptyset$, in which every point of $C$ is a
+minimizer, is treated separately in the proof. -/
 theorem theorem_27_3 (hh : ClosedProperConvexFn h) (hC : Convex ℝ C) (hCc : IsClosed C)
     (hCne : C.Nonempty)
     (hrec : ¬ ∃ y : Rn n, IsDirectionOfRecession h y ∧ y ∈ recessionCone C) :
@@ -530,18 +713,27 @@ theorem theorem_27_3 (hh : ClosedProperConvexFn h) (hC : Convex ℝ C) (hCc : Is
   exists_forall_le_of_recessionConeFn_inter_eq_zero hh hC hCc hCne
     ((recessionConeFn_inter_eq_zero_iff h C).2 hrec)
 
-/-- **Theorem 27.3**, the polyhedral refinement: for polyhedral `C` it is enough that every common
-direction of recession of `h` and `C` be one in which `h` is *constant*. The book proves this from
-Helly's theorem (Theorem 21.5); the proof here projects `ℝⁿ` along the constancy space of `h`. -/
+/-- **Theorem 27.3** of [rockafellar1970convex], the polyhedral case. Let $C$ be a non-empty
+polyhedral convex set in $\mathbb{R}^n$, and let $h$ be a closed proper convex function on
+$\mathbb{R}^n$ such that every common direction of recession of $h$ and $C$ is a direction in
+which $h$ is constant: $0^+ h \cap 0^+ C$ is contained in the constancy space of $h$. Then $h$
+attains its infimum relative to $C$.
+
+The source proves this from Helly's theorem (Theorem 21.5). The proof here projects
+$\mathbb{R}^n$ along the constancy space of $h$. -/
 theorem theorem_27_3_polyhedral (hh : ClosedProperConvexFn h) (hC : Polyhedral C)
     (hCne : C.Nonempty)
     (hrec : recessionConeFn h ∩ recessionCone C ⊆ constancySpace h) :
     ∃ x ∈ C, ∀ z ∈ C, h x ≤ h z :=
   exists_forall_le_of_polyhedral_of_inter_subset_constancySpace hh hC hCne hrec
 
-/-- **Theorem 27.3** in a form the book does not state but its proof gives: for a general closed
-convex `C` the hypothesis weakens to "every common direction of recession is one in which `h` is
-constant *and* `C` is linear". This sits strictly between the book's two clauses. -/
+/-- A form of Theorem 27.3 that the source does not state, but that its proof gives. Let $C$ be a
+non-empty closed convex set in $\mathbb{R}^n$, and let $h$ be a closed proper convex function on
+$\mathbb{R}^n$ such that every common direction of recession of $h$ and $C$ is a direction in
+which $h$ is constant and $C$ is linear. That is, $0^+ h \cap 0^+ C$ is contained in the
+intersection of the constancy space of $h$ and the lineality space of $C$. Then $h$ attains its
+infimum relative to $C$. This hypothesis lies strictly between the two hypotheses of Theorem
+27.3 in the source. -/
 theorem theorem_27_3_lineality (hh : ClosedProperConvexFn h) (hC : Convex ℝ C) (hCc : IsClosed C)
     (hCne : C.Nonempty)
     (hrec : recessionConeFn h ∩ recessionCone C ⊆ constancySpace h ∩ linealitySpace C) :
@@ -550,33 +742,45 @@ theorem theorem_27_3_lineality (hh : ClosedProperConvexFn h) (hC : Convex ℝ C)
 
 /-! ### Corollary 27.3.1 -/
 
-/-- **Corollary 27.3.1**. If every direction of recession of a closed proper convex `h` is one in
-which `h` is *affine*, then `h` attains its infimum relative to any polyhedral convex `C` on which
-it is bounded below. The lower bound cannot be dropped: `h(ξ₁, ξ₂) = ξ₁` is affine in every
-direction and its infimum over `{ξ₂ = 0}` is `-∞`. -/
+/-- **Corollary 27.3.1** of [rockafellar1970convex]. Let $h$ be a closed proper convex function on
+$\mathbb{R}^n$ such that every direction of recession of $h$ is a direction in which $h$ is
+affine, that is, $0^+ h$ is contained in the lineality space of $h$. Let $C$ be a non-empty
+polyhedral convex set, and suppose that $h(x) \ge \beta$ for every $x \in C$, for some
+$\beta \in \mathbb{R}$. Then $h$ attains its infimum relative to $C$.
+
+The lower bound cannot be dropped: $h(\xi_1, \xi_2) = \xi_1$ is affine in every direction, and
+its infimum over $\{\xi_2 = 0\}$ is $-\infty$. The lineality space of $h$ is the set of $y$ with
+$(h0^+)(-y) = -(h0^+)(y)$. -/
 theorem corollary_27_3_1 (hh : ClosedProperConvexFn h) (hC : Polyhedral C) (hCne : C.Nonempty)
     (hrec : recessionConeFn h ⊆ linealitySpaceFn h) {β : ℝ}
     (hbdd : ∀ x ∈ C, (β : EReal) ≤ h x) : ∃ x ∈ C, ∀ z ∈ C, h x ≤ h z :=
   exists_forall_le_of_polyhedral_of_recessionConeFn_subset_linealitySpaceFn hh hC hCne hrec hbdd
 
-/-- The unconstrained case of the polyhedral refinement of Theorem 27.3, which the book does not
-separate out: a closed proper convex function whose recession cone consists of directions of
-constancy attains its infimum. -/
+/-- The unconstrained case of the polyhedral form of Theorem 27.3, which the source does not state
+separately. Let $h$ be a closed proper convex function on $\mathbb{R}^n$ such that every
+direction of recession of $h$ is a direction in which $h$ is constant. Then the infimum of $h$
+is attained. -/
 theorem corollary_27_3_1_unconstrained (hh : ClosedProperConvexFn h)
     (hrec : recessionConeFn h ⊆ constancySpace h) : (argmin h).Nonempty :=
   argmin_nonempty_of_recessionConeFn_subset_constancySpace hh hrec
 
 /-! ### Corollary 27.3.2 -/
 
-/-- **Corollary 27.3.2**. A polyhedral convex function attains its infimum relative to any
-polyhedral convex set on which it is bounded below. The book derives this from Corollary 27.3.1 and
-so from Helly's theorem; the proof here needs neither. -/
+/-- **Corollary 27.3.2** of [rockafellar1970convex]. Let $h$ be a polyhedral convex function on
+$\mathbb{R}^n$, and let $C$ be a non-empty polyhedral convex set such that
+$\inf_{x \in C} h(x) > -\infty$. Then $h$ attains its infimum relative to $C$.
+
+The source derives this from Corollary 27.3.1, and so from Helly's theorem. The proof here needs
+neither. A polyhedral convex function is a function whose epigraph is a polyhedral convex set,
+`ConvexAnalysis.PolyhedralFn`. -/
 theorem corollary_27_3_2 (hh : PolyhedralFn h) (hC : Polyhedral C) (hCne : C.Nonempty)
     (hbdd : (⊥ : EReal) < ⨅ x ∈ C, h x) : ∃ x ∈ C, ∀ z ∈ C, h x ≤ h z :=
   exists_forall_le_of_polyhedralFn_of_polyhedral hh hC hCne hbdd
 
-/-- Corollary 27.3.2 unconstrained. Neither closedness nor properness is assumed: boundedness below
-already excludes `-∞`, and `h ≡ +∞` is minimised everywhere. -/
+/-- Corollary 27.3.2 without a constraint. Let $h$ be a polyhedral convex function on $\mathbb{R}^n$
+that is bounded below. Then the infimum of $h$ is attained. Neither closedness nor properness is
+assumed: the lower bound excludes the value $-\infty$, and the function $h \equiv +\infty$
+attains its infimum at every point. -/
 theorem corollary_27_3_2_unconstrained (hh : PolyhedralFn h) (hbdd : (⊥ : EReal) < ⨅ x, h x) :
     (argmin h).Nonempty :=
   argmin_nonempty_of_polyhedralFn hh hbdd
@@ -589,24 +793,38 @@ section Corollary2733
 
 variable {ι : Type*} {f₀ : Rn n → EReal} {g : ι → Rn n → EReal}
 
-/-- **Corollary 27.3.3**, the non-polyhedral case: a closed proper convex `f₀` attains its infimum
-subject to a consistent system `fᵢ x ≤ 0`, `i ∈ I`, of closed proper convex constraints, provided
-`f₀` and the `fᵢ` have no direction of recession in common. The index set is arbitrary. -/
+/-- **Corollary 27.3.3** of [rockafellar1970convex]. Let $f_0$ and $f_i$, $i \in I$, be closed
+proper convex functions on $\mathbb{R}^n$, where the index set $I$ is arbitrary. Suppose that
+the system $f_i(x) \le 0$, $i \in I$, is consistent, and that $f_0$ and the $f_i$ have no
+direction of recession in common:
+$$0^+ f_0 \cap \bigcap_{i \in I} 0^+ f_i = \{0\}.$$
+Then $f_0$ attains its infimum subject to the constraints $f_i(x) \le 0$, $i \in I$.
+
+The constraint functions $f_i$ are `g i`. -/
 theorem corollary_27_3_3 (hf₀ : ClosedProperConvexFn f₀) (hg : ∀ i, ClosedProperConvexFn (g i))
     (hCne : {x : Rn n | ∀ i, g i x ≤ 0}.Nonempty)
     (hrec : recessionConeFn f₀ ∩ ⋂ i, recessionConeFn (g i) = {0}) :
     ∃ x, (∀ i, g i x ≤ 0) ∧ ∀ z, (∀ i, g i z ≤ 0) → f₀ x ≤ f₀ z :=
   exists_forall_le_of_forall_le_zero hf₀ hg hCne hrec
 
-/-! #### The polyhedral refinement
+/-!
+### Corollary 27.3.3, the polyhedral refinement
 
-The book splits the index set as `I = I₀ ⊔ (I ∖ I₀)` with `I₀` finite; two index *types* say the
-same thing and keep every `DecidableEq` out of the statement. `ι₀` is the book's `I₀`. -/
+The source splits the index set as $I = I_0 \cup (I \setminus I_0)$ with $I_0$ finite. Here two
+index types express the same split, which keeps decidable equality out of the statement. The type
+`ι₀` is the set $I_0$ of the source.
+-/
 
-/-- **Corollary 27.3.3**, the polyhedral refinement: the infimum is attained if the constraints
-split into a *finite* polyhedral family `g₀` and an arbitrary family `g₁`, and the only common
-directions of recession are ones in which `f₀` and all the `g₁` are constant. The book's own
-reduction lands on the polyhedral case of Theorem 27.3, so Helly's theorem is not needed. -/
+/-- **Corollary 27.3.3** of [rockafellar1970convex], the polyhedral refinement. Let $f_0$ be a
+closed proper convex function on $\mathbb{R}^n$. Let $g_i$, $i \in I_0$, be polyhedral convex
+functions with $I_0$ finite, and let $g_j$, $j \in I_1$, be closed proper convex functions with
+$I_1$ arbitrary. Suppose that the system $g_i(x) \le 0$, $i \in I_0 \cup I_1$, is consistent.
+Suppose also that every common direction of recession of $f_0$ and of all the $g_i$ is a
+direction in which $f_0$ and all the $g_j$, $j \in I_1$, are constant. Then $f_0$ attains its
+infimum subject to the constraints $g_i(x) \le 0$, $i \in I_0 \cup I_1$.
+
+The reduction in the source leads to the polyhedral case of Theorem 27.3, so Helly's theorem is
+not needed. The two families are `g₀` and `g₁`. -/
 theorem corollary_27_3_3_polyhedral {ι₀ ι₁ : Type*} [Finite ι₀]
     {g₀ : ι₀ → Rn n → EReal} {g₁ : ι₁ → Rn n → EReal}
     (hf₀ : ClosedProperConvexFn f₀) (hg₀ : ∀ i, PolyhedralFn (g₀ i))
@@ -701,16 +919,27 @@ section Theorem274
 
 variable {h : Rn n → EReal} {C : Set (Rn n)} {x : Rn n}
 
-/-- **Theorem 27.4**, sufficiency: if some `x* ∈ ∂h(x)` has `-x*` normal to `C` at `x`, then `h`
-attains its infimum relative to `C` at `x`. Needs **no hypothesis at all** — not properness of `h`,
-not convexity of `C`, not even `x ∈ C`: the two inequalities simply add. -/
+/-- **Theorem 27.4** of [rockafellar1970convex], sufficiency. Let $h$ be a function on
+$\mathbb{R}^n$, let $C \subseteq \mathbb{R}^n$, and let $x \in \mathbb{R}^n$. Suppose that there
+is an $x^* \in \partial h(x)$ such that $-x^*$ is normal to $C$ at $x$. Then $h(x) \le h(z)$ for
+every $z \in C$. So if $x \in C$, then $h$ attains its infimum relative to $C$ at $x$.
+
+**Generalization.** The source assumes that $h$ is proper and convex and that $C$ is convex. No
+hypothesis is needed, not even $x \in C$: the subgradient inequality and the inequality that
+defines the normal cone add up to the conclusion. -/
 theorem theorem_27_4_sufficient {y : Rn n} (hy : y ∈ subdifferential (pairing n) h x)
     (hn : -y ∈ normalCone (pairing n) C x) {z : Rn n} (hz : z ∈ C) : h x ≤ h z :=
   le_of_mem_subdifferential_of_neg_mem_normalCone hy hn hz
 
-/-- **Theorem 27.4**, necessity under the book's first constraint qualification: `ri (dom h)` meets
-`ri C`. The exactness of the sum `h + δ(· | C)` comes from Theorem 16.4; Rockafellar's proof cites
-Theorem 23.8 for the same step. -/
+/-- **Theorem 27.4** of [rockafellar1970convex], necessity under the first constraint qualification.
+Let $h$ be a proper convex function on $\mathbb{R}^n$, and let $C$ be a non-empty convex set
+such that $\operatorname{ri}(\operatorname{dom} h)$ meets $\operatorname{ri} C$. Let $x \in C$
+with $h(x) \le h(z)$ for every $z \in C$. Then there is an $x^* \in \partial h(x)$ such that
+$-x^*$ is normal to $C$ at $x$, that is,
+$$0 \in \partial h(x) + N_C(x).$$
+
+The proof obtains the exactness of the sum $h + \delta(\cdot \mid C)$ from Theorem 16.4. The
+source cites Theorem 23.8 for the same step. -/
 theorem theorem_27_4_necessary (hh : ConvexFn h) (hp : ProperConvex h) (hC : Convex ℝ C)
     (hCne : C.Nonempty) {x₀ : Rn n} (hx₀h : x₀ ∈ ri (convexDom h)) (hx₀C : x₀ ∈ ri C)
     (hx : x ∈ C) (hmin : ∀ z ∈ C, h x ≤ h z) :
@@ -719,9 +948,15 @@ theorem theorem_27_4_necessary (hh : ConvexFn h) (hp : ProperConvex h) (hC : Con
     (IsExactSum.of_relint (B := pairing n) hh hp (convexFn_indicatorFn.2 hC)
       (properConvex_indicatorFn.2 hCne) hx₀h (by rw [convexDom_indicatorFn]; exact hx₀C)) hx hmin
 
-/-- **Theorem 27.4**, necessity under the book's second constraint qualification: `C` polyhedral and
-`ri (dom h)` meets `C` — merely `C`, not `ri C`, since the polyhedral summand of the `IsExactSum` of
-Theorem 20.1 needs only a point of its effective domain. -/
+/-- **Theorem 27.4** of [rockafellar1970convex], necessity under the second constraint
+qualification. Let $h$ be a proper convex function on $\mathbb{R}^n$, and let $C$ be a
+polyhedral convex set such that $\operatorname{ri}(\operatorname{dom} h)$ meets $C$. Let
+$x \in C$ with $h(x) \le h(z)$ for every $z \in C$. Then there is an $x^* \in \partial h(x)$
+such that $-x^*$ is normal to $C$ at $x$.
+
+It is enough that $\operatorname{ri}(\operatorname{dom} h)$ meets $C$, not
+$\operatorname{ri} C$, because the polyhedral summand of the exact sum of Theorem 20.1 needs
+only a point of its effective domain. -/
 theorem theorem_27_4_necessary_polyhedral (hh : ConvexFn h) (hp : ProperConvex h)
     (hC : Polyhedral C)
     {x₀ : Rn n} (hx₀h : x₀ ∈ ri (convexDom h)) (hx₀C : x₀ ∈ C)
@@ -739,9 +974,12 @@ private theorem quadFn_le_quadFn_iff (u v : Rn n) :
     real_inner_self_eq_norm_sq, real_inner_self_eq_norm_sq, div_le_div_iff_of_pos_right two_pos]
   exact pow_le_pow_iff_left₀ (norm_nonneg u) (norm_nonneg v) two_ne_zero
 
-/-- The headline application of Theorem 27.4, and the projection theorem: `x` is the point of a
-nonempty convex `C` nearest to `a` exactly when `a - x` is normal to `C` at `x`. Closedness of `C`
-is not needed for the characterisation, only for the existence of a nearest point. -/
+/-- The projection theorem, the main application of Theorem 27.4. Let $C$ be a non-empty convex set
+in $\mathbb{R}^n$, let $a \in \mathbb{R}^n$, and let $x \in C$. Then $x$ is a point of $C$
+nearest to $a$ if and only if $a - x$ is normal to $C$ at $x$.
+
+Closedness of $C$ is needed only for the existence of a nearest point, not for this
+characterization. -/
 theorem nearest_iff_sub_mem_normalCone (hC : Convex ℝ C) (hCne : C.Nonempty) {a : Rn n}
     (hx : x ∈ C) :
     (∀ z ∈ C, dist a x ≤ dist a z) ↔ a - x ∈ normalCone (pairing n) C x := by

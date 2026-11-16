@@ -13,56 +13,131 @@ import Numlib.Analysis.Convex.Recession.Closedness
 import NumlibSurface.Rockafellar.Chapter03.Section13
 
 /-!
-# Rockafellar §16: dual operations
+# Rockafellar, Section 16: Dual operations
 
-Surface file for R. Tyrrell Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §16:
-the dual-operations dictionary — every operation of §5 has a dual operation, and conjugacy
-exchanges the two.
+This module formalizes §16 of [rockafellar1970convex]. Each operation on convex functions of §5 has
+a dual operation, and conjugation exchanges the two: left and right scalar multiplication (Theorem
+16.1), image and inverse image under a linear map $A$ (Theorem 16.3), infimal convolution and
+addition (Theorem 16.4), and the convex hull of a family and the pointwise supremum (Theorem 16.5).
+Lemma 16.2 and its corollaries give the relative-interior qualifications in dual form, and the
+corollaries of each theorem specialize it to support functions $\delta^*(\cdot \mid C)$ and polars
+$C^\circ$. All 15 numbered results of §16 are formalized. The proofs specialize the backbone modules
+`Numlib.Analysis.Convex.Duality.Ops`, `Numlib.Analysis.Convex.Duality.Exact` and
+`Numlib.Analysis.Convex.Polyhedral.Duality`.
 
-All 15 numbered results of §16 are formalized.
-
-## The uniform shape of the section
-
-Each of the four theorems is really three statements, and this module keeps them apart:
-
-* the **identity**, valid for arbitrary functions with no hypothesis and no closure
-  (`theorem_16_1_left`, `theorem_16_3_image`, `theorem_16_4_infConv`, `theorem_16_5_convFn`);
-* the **closure form**, `(op of closures)* = cl (dual op of conjugates)`, which is the honest
-  general statement (`theorem_16_3_closure`, `theorem_16_4_closure`, `theorem_16_5_closure`);
-* the **exact form**, in which a relative-interior qualification removes the closure and makes the
-  infimum attained (`theorem_16_3_exact`, `theorem_16_3_attained`, `theorem_16_4_exact`,
-  `theorem_16_4_attained`), together with the *polyhedral* form of the same qualification, which
-  Rockafellar states here as a remark and proves only in §19 (`theorem_16_3_polyhedral`).
-
-## Notation
-
-`A*` is `LinearMap.adjoint A` throughout: `isAdjointPair_adjoint` says that Mathlib's adjoint is
-Rockafellar's, so no statement here carries an `IsAdjointPair` hypothesis even though every
-backbone statement it specialises does. `λf` is `fun x => (l : EReal) * f x` and `fλ` is
-`smulRight f l`, both from §5.
+Each of the four theorems has three forms, and the module states them separately. The identity, such
+as $(Af)^* = f^* A^*$ or $(f_1 \mathbin{\square} f_2)^* = f_1^* + f_2^*$, holds for arbitrary
+functions with no hypothesis and no closure. The closure form, such as $(\operatorname{cl} f_1 +
+\operatorname{cl} f_2)^* = \operatorname{cl}(f_1^* \mathbin{\square} f_2^*)$, holds for all convex
+functions. The exact form drops the closure and states that the infimum in the dual operation is
+attained, under a relative-interior qualification. For a polyhedral function the qualification
+weakens to a domain condition; the source states this as a remark after Corollary 16.3.1 and proves
+it in §19.
 
 ## Main results
 
-* `theorem_16_1_left`, `theorem_16_1_right`, `theorem_16_1_left_zero`, `theorem_16_1_right_zero`,
-  `corollary_16_1_1`, `corollary_16_1_2` — scalar multiplication: `(λf)* = f*λ` and `(fλ)* = λf*`,
-  with the two limiting cases and the consequences for support functions and polars.
-* `lemma_16_2`, `corollary_16_2_1`, `corollary_16_2_2` — when a subspace meets `ri (dom f)`, and
-  the two qualifications the rest of the section uses.
-* `theorem_16_3_image`, `theorem_16_3_closure`, `theorem_16_3_exact`, `theorem_16_3_attained`,
-  `theorem_16_3_polyhedral`, `theorem_16_3_polyhedral_attained`, `corollary_16_3_1_image`,
-  `corollary_16_3_1_closure`, `corollary_16_3_1_exact`, `corollary_16_3_2_image`,
-  `corollary_16_3_2_preimage` — image and inverse image under a linear map are dual: `(gA)* =
-  A*g*`, with the support-function and polar corollaries.
-* `theorem_16_4_infConv`, `theorem_16_4_infConv_finset`, `theorem_16_4_closure`,
-  `theorem_16_4_exact`, `theorem_16_4_attained`, `theorem_16_4_exact_finset`,
-  `theorem_16_4_attained_finset` — addition and infimal convolution are dual: `(f □ g)* = f* + g*`.
-* `corollary_16_4_1_add`, `corollary_16_4_1_add_finset`, `corollary_16_4_1_closure`,
-  `corollary_16_4_1_exact`, `corollary_16_4_1_exact_finset`, `corollary_16_4_1_attained_finset`,
-  `corollary_16_4_2_add` — the same for support functions of sums and intersections, and
-  `(K₁ + K₂)° = K₁° ∩ K₂°`.
-* `theorem_16_5_convFn`, `theorem_16_5_closure`, `corollary_16_5_1_hull`,
-  `corollary_16_5_1_closure`, `corollary_16_5_2_hull`, `corollary_16_5_2_inter` — convex hull of a
-  collection and pointwise supremum are dual.
+* Theorem 16.1, `Rockafellar.theorem_16_1_left`, `Rockafellar.theorem_16_1_right`,
+  `Rockafellar.theorem_16_1_left_zero`, `Rockafellar.theorem_16_1_right_zero`:
+  $(\lambda f)^* = f^* \lambda$ and $(f \lambda)^* = \lambda f^*$ for $\lambda > 0$, and for
+  $\lambda = 0$ when $f$ is proper and convex.
+* Corollary 16.1.1, `Rockafellar.corollary_16_1_1`: $\delta^*(x^* \mid \lambda C) = \lambda
+  \delta^*(x^* \mid C)$ for non-empty $C$ and $\lambda \ge 0$.
+* Corollary 16.1.2, `Rockafellar.corollary_16_1_2`: $(\lambda C)^\circ = \lambda^{-1} C^\circ$ for
+  $\lambda > 0$.
+* Lemma 16.2, `Rockafellar.lemma_16_2`: a subspace $L$ meets
+  $\operatorname{ri}(\operatorname{dom} f)$ if and only if no $x^* \in L^\perp$ has
+  $(f^* 0^+)(x^*) \le 0 < (f^* 0^+)(-x^*)$.
+* Corollary 16.2.1, `Rockafellar.corollary_16_2_1`: the dual form of the condition
+  $Ax \in \operatorname{ri}(\operatorname{dom} g)$ for some $x$.
+* Corollary 16.2.2, `Rockafellar.corollary_16_2_2`: the dual form of the condition $\bigcap_i
+  \operatorname{ri}(\operatorname{dom} f_i) \neq \emptyset$.
+* Theorem 16.3, `Rockafellar.theorem_16_3_image`, `Rockafellar.theorem_16_3_closure`,
+  `Rockafellar.theorem_16_3_exact`, `Rockafellar.theorem_16_3_attained`: $(Af)^* = f^* A^*$,
+  $((\operatorname{cl} g) A)^* = \operatorname{cl}(A^* g^*)$, and $(gA)^* = A^* g^*$ with attainment
+  when $Ax \in \operatorname{ri}(\operatorname{dom} g)$ for some $x$.
+* Corollary 16.3.1, `Rockafellar.corollary_16_3_1_image`, `Rockafellar.corollary_16_3_1_closure`,
+  `Rockafellar.corollary_16_3_1_exact`: the same three forms for support functions of $AC$ and
+  $A^{-1} D$.
+* Remark after Corollary 16.3.1, `Rockafellar.theorem_16_3_polyhedral`,
+  `Rockafellar.theorem_16_3_polyhedral_attained`: for polyhedral $g$ the qualification of Theorem
+  16.3 weakens to $Ax \in \operatorname{dom} g$.
+* Corollary 16.3.2, `Rockafellar.corollary_16_3_2_image`, `Rockafellar.corollary_16_3_2_preimage`:
+  $(AC)^\circ = (A^*)^{-1}(C^\circ)$, and $A^*(D^\circ) \subseteq (A^{-1} D)^\circ$.
+* Theorem 16.4, `Rockafellar.theorem_16_4_infConv`, `Rockafellar.theorem_16_4_infConv_finset`,
+  `Rockafellar.theorem_16_4_closure`, `Rockafellar.theorem_16_4_exact`,
+  `Rockafellar.theorem_16_4_attained`, `Rockafellar.theorem_16_4_exact_finset`,
+  `Rockafellar.theorem_16_4_attained_finset`: $(f_1 \mathbin{\square} \cdots \mathbin{\square}
+  f_m)^* = f_1^* + \cdots + f_m^*$, its closure form, and $(f_1 + \cdots + f_m)^* = f_1^*
+  \mathbin{\square} \cdots \mathbin{\square} f_m^*$ with attainment under a common relative-interior
+  point.
+* Corollary 16.4.1, `Rockafellar.corollary_16_4_1_add`, `Rockafellar.corollary_16_4_1_add_finset`,
+  `Rockafellar.corollary_16_4_1_closure`, `Rockafellar.corollary_16_4_1_exact`,
+  `Rockafellar.corollary_16_4_1_exact_finset`, `Rockafellar.corollary_16_4_1_attained_finset`: the
+  same forms for support functions of sums and intersections of sets.
+* Corollary 16.4.2, `Rockafellar.corollary_16_4_2_add`:
+  $(K_1 + K_2)^\circ = K_1^\circ \cap K_2^\circ$ for non-empty cones.
+* Theorem 16.5, `Rockafellar.theorem_16_5_convFn`, `Rockafellar.theorem_16_5_closure`:
+  $(\operatorname{conv}\{f_i\})^* = \sup_i f_i^*$ and $(\sup_i \operatorname{cl} f_i)^* =
+  \operatorname{cl}(\operatorname{conv}\{f_i^*\})$.
+* Corollary 16.5.1, `Rockafellar.corollary_16_5_1_hull`, `Rockafellar.corollary_16_5_1_closure`: the
+  same two formulas for support functions of $\operatorname{conv} \bigcup_i C_i$ and
+  $\bigcap_i \operatorname{cl} C_i$.
+* Corollary 16.5.2, `Rockafellar.corollary_16_5_2_hull`, `Rockafellar.corollary_16_5_2_inter`:
+  $(\operatorname{conv} \bigcup_i C_i)^\circ = \bigcap_i C_i^\circ$, and
+  $C_i^\circ \subseteq (\bigcap_j C_j)^\circ$.
+
+## Conventions
+
+* The adjoint $A^*$ of a linear map $A \colon \mathbb{R}^n \to \mathbb{R}^m$ is
+  `LinearMap.adjoint A`. The backbone states its results for any adjoint pair of maps, and
+  `ConvexAnalysis.isAdjointPair_adjoint` supplies that hypothesis, so no statement here carries it.
+* Left scalar multiplication $\lambda f$ is `fun x => (l : EReal) * f x`, and right scalar
+  multiplication $f \lambda$ is `ConvexAnalysis.smulRight f l`, the function whose epigraph is
+  $\lambda \cdot \operatorname{epi} f$.
+* The image $Af$ is `ConvexAnalysis.mapLin A f`, the inverse image $gA$ is
+  `ConvexAnalysis.compLin g A`, the infimal convolution $f \mathbin{\square} g$ is
+  `ConvexAnalysis.infConv f g`, and the convex hull $\operatorname{conv}\{f_i\}$ of a family is
+  `ConvexAnalysis.convFn f`.
+* The recession function $f^* 0^+$ of the conjugate is `ConvexAnalysis.recessionFn` applied to
+  `ConvexAnalysis.convexConj (pairing n) f`.
+* The orthogonal complement $L^\perp$ of a subspace is `Lᗮ` of Mathlib, which is the annihilator of
+  $L$ for the pairing.
+
+## Implementation notes
+
+* An $m$-ary form indexes the family by a `Finset` instead of `Fin m`. The infimal convolution $f_1
+  \mathbin{\square} \cdots \mathbin{\square} f_m$ is a sum in the commutative monoid
+  `ConvexAnalysis.InfConvFn`, whose zero is $\delta(\cdot \mid 0)$. The empty family is allowed
+  where the statement holds for it, and the source's $m \ge 1$ is a non-emptiness hypothesis
+  elsewhere.
+
+## Deviations from the source
+
+* **Theorem 16.1** (generalization). For $\lambda > 0$ the source assumes $f$ proper convex; the
+  formulas hold for every $f$. See `Rockafellar.theorem_16_1_left`.
+* **Corollary 16.1.1** (generalization). The source assumes $C$ convex; only non-emptiness is used.
+  See `Rockafellar.corollary_16_1_1`.
+* **Corollary 16.1.2** (generalization). The source assumes $C$ non-empty and convex; the formula
+  holds for every set. See `Rockafellar.corollary_16_1_2`.
+* **Theorem 16.3**, first formula (generalization). The source assumes $f$ convex; the formula holds
+  for every $f$. See `Rockafellar.theorem_16_3_image`.
+* **Corollary 16.3.1**, first formula (generalization). The source assumes $C$ convex; the formula
+  holds for every set. See `Rockafellar.corollary_16_3_1_image`.
+* **Corollary 16.3.2**, first formula (generalization). The source assumes $C$ convex; the formula
+  holds for every set. See `Rockafellar.corollary_16_3_2_image`.
+* **Corollary 16.4.2** (generalization). The source assumes convex cones; convexity is not used. See
+  `Rockafellar.corollary_16_4_2_add`.
+* **Corollary 16.5.1**, second formula (reading). The formula fails for an empty family, so the
+  index set is assumed non-empty. See `Rockafellar.corollary_16_5_1_closure`.
+
+## Not formalized
+
+* **Corollary 16.3.1**, attainment of the infimum in the exact form.
+* **Corollary 16.3.2**, second formula as an equality. Only the inclusion
+  $A^*(D^\circ) \subseteq (A^{-1} D)^\circ$ is formalized.
+* **Corollary 16.4.2**, the formulas after the first.
+* **Corollary 16.5.2**, second formula as an equality. Only the inclusion
+  $C_i^\circ \subseteq (\bigcap_j C_j)^\circ$ is formalized.
 -/
 
 open Set Pointwise
@@ -73,27 +148,34 @@ open ConvexAnalysis
 
 variable {m n : ℕ}
 
-/-! ### The conjugate of the zero function
+/-!
+### The conjugate of the zero function
 
-Rockafellar's proof of Theorem 16.1 at `λ = 0` is the single sentence "the constant function `0`
-is conjugate to the indicator function `δ(· | 0)`". Both halves of that sentence are used below. -/
+The proof of Theorem 16.1 at $\lambda = 0$ in the source is the single sentence "the constant
+function $0$ is conjugate to the indicator function $\delta(\cdot \mid 0)$". Both halves of that
+sentence are used below.
+-/
 
-/-- **Rockafellar, §16, p. 141**: the conjugate of the constant function `0` is `δ(· | 0)`.
+/-- The conjugate of the constant function $0$ on $\mathbb{R}^n$ is the indicator function
+$\delta(\cdot \mid 0)$ of the origin. This is the first half of the sentence on page 141 of
+[rockafellar1970convex] that proves Theorem 16.1 at $\lambda = 0$.
 
-`Rn n` is a `SeparatingDual`, asserted in the shared header. -/
+The proof uses that `Rockafellar.Rn n` has a separating dual. -/
 theorem convexConj_zero_rn : convexConj (pairing n)
     (0 : Rn n → EReal) = indicatorFn ({0} : Set (Rn n)) := by
   have h := convexConj_zero_eq_indicatorFn (B := pairing n) (E := Rn n) (F := Rn n)
   rwa [flip_pairing] at h
 
-/-- The conjugate of `δ(· | 0)` is the constant function `0`, the other half of the same sentence.
-Specialises `convexConj_indicatorFn_zero`. -/
+/-- The conjugate of the indicator function $\delta(\cdot \mid 0)$ of the origin of $\mathbb{R}^n$
+is the constant function $0$. This is the second half of the sentence that proves Theorem 16.1
+at $\lambda = 0$, and specializes `ConvexAnalysis.convexConj_indicatorFn_zero`. -/
 theorem convexConj_indicatorFn_zero_rn :
     convexConj (pairing n) (indicatorFn ({0} : Set (Rn n))) = 0 :=
   convexConj_indicatorFn_zero (pairing n)
 
-/-- The half-space `{x | ⟨x, x*⟩ ≤ 1}` cutting out a polar set is convex, which is why polarity
-does not see a convex hull. -/
+/-- For every $y \in \mathbb{R}^n$ the half-space $\{x \mid \langle x, y \rangle \le 1\}$ is convex.
+Polar sets are intersections of such half-spaces, which is why the polar of a set does not
+change when the set is replaced by its convex hull. -/
 theorem convex_setOf_pairing_le_one (y : Rn n) : Convex ℝ {x : Rn n | pairing n x y ≤ 1} := by
   have hlin : IsLinearMap ℝ fun x : Rn n => pairing n x y :=
     ⟨fun a b => by simp, fun c a => by simp⟩
@@ -101,20 +183,36 @@ theorem convex_setOf_pairing_le_one (y : Rn n) : Convex ℝ {x : Rn n | pairing 
 
 /-! ### Theorem 16.1: scalar multiplication -/
 
-/-- **Theorem 16.1.** For any proper convex function `f` one has `(λf)* = f*λ`,
-`0 ≤ λ < ∞`. This is the case `λ > 0`, where no hypothesis on `f` is needed at all. -/
+/-- **Theorem 16.1** of [rockafellar1970convex], left multiplication. Let $f$ be any function on
+$\mathbb{R}^n$ with values in $[-\infty, +\infty]$, and let $0 < \lambda < \infty$. Then
+$$(\lambda f)^* = f^* \lambda.$$
+
+**Generalization.** The source states the formula for a proper convex function $f$ and
+$0 \le \lambda < \infty$. For $\lambda > 0$ no hypothesis on $f$ is needed. The case
+$\lambda = 0$ is `Rockafellar.theorem_16_1_left_zero`.
+
+Here $\lambda f$ is `fun x => (l : EReal) * f x`, and $f^* \lambda$ is
+`ConvexAnalysis.smulRight` applied to the conjugate. -/
 theorem theorem_16_1_left (f : Rn n → EReal) {l : ℝ} (hl : 0 < l) :
     convexConj (pairing n) (fun x => (l : EReal) * f x) = smulRight (convexConj (pairing n) f) l :=
   convexConj_smul hl (pairing n) f
 
-/-- **Theorem 16.1**, the other formula: `(fλ)* = λf*`, `0 < λ < ∞`. -/
+/-- **Theorem 16.1** of [rockafellar1970convex], right multiplication. Let $f$ be any function on
+$\mathbb{R}^n$ with values in $[-\infty, +\infty]$, and let $0 < \lambda < \infty$. Then
+$$(f \lambda)^* = \lambda f^*.$$
+
+**Generalization.** The source assumes $f$ proper convex. For $\lambda > 0$ no hypothesis on $f$
+is needed. The case $\lambda = 0$ is `Rockafellar.theorem_16_1_right_zero`. -/
 theorem theorem_16_1_right (f : Rn n → EReal) {l : ℝ} (hl : 0 < l) :
     convexConj (pairing n) (smulRight f l) = fun y => (l : EReal) * convexConj (pairing n) f y :=
   convexConj_smulRight hl (pairing n) f
 
-/-- **Theorem 16.1** at `λ = 0`: `(0f)* = f*0`. Left multiplication by `0` sends any
-`f` to the constant function `0`, right multiplication by `0` sends `f*` to `δ(· | 0)`, and the two
-are conjugate. This is the clause the book's proof singles out. -/
+/-- **Theorem 16.1** of [rockafellar1970convex], left multiplication at $\lambda = 0$. Let $f$ be a
+proper convex function on $\mathbb{R}^n$. Then $(0 f)^* = f^* 0$.
+
+With the convention $0 \cdot (\pm\infty) = 0$ of `EReal`, the function $0 f$ is the constant
+function $0$. Since $f^*$ is proper, $f^* 0$ is the indicator function $\delta(\cdot \mid 0)$,
+and the two are conjugate. This is the case that the proof in the source treats separately. -/
 theorem theorem_16_1_left_zero {f : Rn n → EReal} (hf : ConvexFn f) (hp : ProperConvex f) :
     convexConj (pairing n) (fun x => (0 : EReal) * f x)
         = smulRight (convexConj (pairing n) f) 0 := by
@@ -124,18 +222,26 @@ theorem theorem_16_1_left_zero {f : Rn n → EReal} (hf : ConvexFn f) (hp : Prop
   rw [smulRight_zero hdom]
   exact convexConj_zero_rn
 
-/-- **Theorem 16.1** at `λ = 0`, the other formula: `(f0)* = 0f*`. -/
+/-- **Theorem 16.1** of [rockafellar1970convex], right multiplication at $\lambda = 0$. Let $f$ be a
+proper function on $\mathbb{R}^n$. Then $(f 0)^* = 0 f^*$.
+
+Here $f 0$ is the indicator function $\delta(\cdot \mid 0)$, and $0 f^*$ is the constant
+function $0$, by the convention $0 \cdot (\pm\infty) = 0$ of `EReal`. Convexity of $f$ is not
+assumed. -/
 theorem theorem_16_1_right_zero {f : Rn n → EReal} (hp : ProperConvex f) :
     convexConj (pairing n) (smulRight f 0) = fun y => (0 : EReal) * convexConj (pairing n) f y := by
   rw [smulRight_zero hp.convexDom_nonempty, convexConj_indicatorFn_zero_rn]
   funext y
   simp
 
-/-- **Corollary 16.1.1.** For any non-empty convex set `C`,
-`δ*(x* | λC) = λ δ*(x* | C)` for `0 ≤ λ < ∞`.
+/-- **Corollary 16.1.1** of [rockafellar1970convex]. Let $C \subseteq \mathbb{R}^n$ be non-empty and
+let $0 \le \lambda < \infty$. Then for every $x^* \in \mathbb{R}^n$
+$$\delta^*(x^* \mid \lambda C) = \lambda \, \delta^*(x^* \mid C).$$
 
-Convexity is not used: the identity is the indicator instance of Theorem 16.1 and holds for any
-non-empty `C`. Specialises `supportFn_smul`, with the `λ = 0` case read off `0 • C = {0}`. -/
+**Generalization.** The source assumes $C$ convex. Convexity is not used.
+
+The proof specializes `ConvexAnalysis.supportFn_smul` for $\lambda > 0$, and uses
+$0 \cdot C = \{0\}$ for $\lambda = 0$. -/
 theorem corollary_16_1_1 {C : Set (Rn n)} (hC : C.Nonempty) {l : ℝ} (hl : 0 ≤ l) (y : Rn n) :
     supportFn (pairing n) (l • C) y = (l : EReal) * supportFn (pairing n) C y := by
   rcases hl.lt_or_eq with hlt | heq
@@ -143,11 +249,16 @@ theorem corollary_16_1_1 {C : Set (Rn n)} (hC : C.Nonempty) {l : ℝ} (hl : 0 �
   · rw [← heq, zero_smul_set hC, ← Set.singleton_zero, supportFn_singleton]
     simp
 
-/-- **Corollary 16.1.2.** For any non-empty convex set `C`, `(λC)° = λ⁻¹C°` for
-`0 < λ < ∞`.
+/-- **Corollary 16.1.2** of [rockafellar1970convex]. Let $C \subseteq \mathbb{R}^n$ and
+$0 < \lambda < \infty$. Then
+$$(\lambda C)^\circ = \lambda^{-1} C^\circ.$$
 
-The book derives it from Corollary 16.1.1 through `C° = {x* | δ*(x* | C) ≤ 1}`; here it is one
-unfolding of `polarSet`, since `⟨λx, x*⟩ = ⟨x, λx*⟩`. -/
+**Generalization.** The source assumes $C$ non-empty and convex. The formula holds for every
+set.
+
+The source derives the formula from Corollary 16.1.1 through $C^\circ = \{x^* \mid \delta^*(x^*
+\mid C) \le 1\}$. Here it follows from the definition `ConvexAnalysis.polarSet` and $\langle
+\lambda x, x^* \rangle = \langle x, \lambda x^* \rangle$. -/
 theorem corollary_16_1_2 (C : Set (Rn n)) {l : ℝ} (hl : 0 < l) :
     polarSet (pairing n) (l • C) = l⁻¹ • polarSet (pairing n) C := by
   ext y
@@ -164,13 +275,16 @@ theorem corollary_16_1_2 (C : Set (Rn n)) {l : ℝ} (hl : 0 < l) :
     rw [key]
     exact h x hx
 
-/-! ### Lemma 16.2: the constraint qualifications of §9, dualized -/
+/-! ### Lemma 16.2: the constraint qualifications of §9 in dual form -/
 
-/-- **Lemma 16.2.** Let `L` be a subspace of `ℝⁿ` and let `f` be a proper convex
-function. Then `L` meets `ri (dom f)` if and only if there exists no vector `x* ∈ Lᗮ` such that
-`(f* 0⁺)(x*) ≤ 0` and `(f* 0⁺)(-x*) > 0`.
+/-- **Lemma 16.2** of [rockafellar1970convex]. Let $L$ be a subspace of $\mathbb{R}^n$ and let $f$
+be a proper convex function on $\mathbb{R}^n$. Then $L$ meets
+$\operatorname{ri}(\operatorname{dom} f)$ if and only if there is no vector $x^* \in L^\perp$
+with
+$$(f^* 0^+)(x^*) \le 0 \quad \text{and} \quad (f^* 0^+)(-x^*) > 0.$$
 
-`Lᗮ` *is* the annihilator of `L` for the pairing, definitionally. -/
+Here $f^* 0^+$ is the recession function `ConvexAnalysis.recessionFn` of the conjugate, and
+$L^\perp$ is the orthogonal complement `Lᗮ`, which is the annihilator of $L$ for the pairing. -/
 theorem lemma_16_2 (L : Submodule ℝ (Rn n)) {f : Rn n → EReal} (hf : ConvexFn f)
     (hp : ProperConvex f) :
     ((L : Set (Rn n)) ∩ ri (convexDom f)).Nonempty ↔
@@ -179,11 +293,15 @@ theorem lemma_16_2 (L : Submodule ℝ (Rn n)) {f : Rn n → EReal} (hf : ConvexF
   submodule_inter_relint_convexDom_nonempty_iff (B := pairing n) L hf
       hp (properConvex_convexConj_of_properConvex hf hp)
 
-/-- **Corollary 16.2.1.** Let `A` be a linear transformation from `ℝⁿ` to `ℝᵐ` and let `g` be a
-proper convex function on `ℝᵐ`. In order that there exist no vector `y* ∈ ℝᵐ` with `A*y* = 0`,
-`(g* 0⁺)(y*) ≤ 0` and `(g* 0⁺)(-y*) > 0`, it is necessary and sufficient that `Ax ∈ ri (dom g)` for
-at least one `x ∈ ℝⁿ`. Lemma 16.2 for the subspace `L = range A`, whose orthogonal complement is
-`ker A*`. -/
+/-- **Corollary 16.2.1** of [rockafellar1970convex]. Let $A$ be a linear transformation from
+$\mathbb{R}^n$ to $\mathbb{R}^m$ and let $g$ be a proper convex function on $\mathbb{R}^m$.
+There is no vector $y^* \in \mathbb{R}^m$ with
+$$A^* y^* = 0, \quad (g^* 0^+)(y^*) \le 0, \quad (g^* 0^+)(-y^*) > 0$$
+if and only if $Ax \in \operatorname{ri}(\operatorname{dom} g)$ for at least one
+$x \in \mathbb{R}^n$.
+
+This is Lemma 16.2 for the subspace $L = \operatorname{range} A$, whose orthogonal complement is
+$\ker A^*$. -/
 theorem corollary_16_2_1 (A : Rn n →ₗ[ℝ] Rn m) {g : Rn m → EReal} (hg : ConvexFn g)
     (hp : ProperConvex g) :
     (¬ ∃ y' : Rn m, LinearMap.adjoint A y' = 0 ∧
@@ -192,17 +310,16 @@ theorem corollary_16_2_1 (A : Rn n →ₗ[ℝ] Rn m) {g : Rn m → EReal} (hg : 
   (exists_apply_mem_relint_convexDom_iff (separatingRight_pairing n) (isAdjointPair_adjoint A) hg hp
     (properConvex_convexConj_of_properConvex hg hp)).symm
 
-/-- **Corollary 16.2.2.** Let `f₁, …, fₘ` be proper convex functions on `ℝⁿ`. In
-order that there exist no vectors `x₁*, …, xₘ*` with
+/-- **Corollary 16.2.2** of [rockafellar1970convex]. Let $f_1, \dots, f_m$ be proper convex
+functions on $\mathbb{R}^n$. There are no vectors $x_1^*, \dots, x_m^*$ with
+$$x_1^* + \cdots + x_m^* = 0, \quad \sum_{i=1}^m (f_i^* 0^+)(x_i^*) \le 0, \quad \sum_{i=1}^m
+  (f_i^* 0^+)(-x_i^*) > 0$$
+if and only if $\operatorname{ri}(\operatorname{dom} f_1) \cap \cdots \cap
+\operatorname{ri}(\operatorname{dom} f_m) \neq \emptyset$.
 
-`x₁* + ⋯ + xₘ* = 0`,
-`(f₁* 0⁺)(x₁*) + ⋯ + (fₘ* 0⁺)(xₘ*) ≤ 0`,
-`(f₁* 0⁺)(-x₁*) + ⋯ + (fₘ* 0⁺)(-xₘ*) > 0`,
-
-it is necessary and sufficient that `ri (dom f₁) ∩ ⋯ ∩ ri (dom fₘ) ≠ ∅`.
-
-This is Lemma 16.2 inside `ℝᵐⁿ` for the diagonal subspace `L = {x | x₁ = ⋯ = xₘ}`, whose
-orthogonal complement is `{x* | x₁* + ⋯ + xₘ* = 0}`. -/
+The functions are indexed by a finite type `ι`, which can be empty. The proof applies Lemma 16.2
+in $(\mathbb{R}^n)^m$ to the diagonal subspace $L = \{x \mid x_1 = \cdots = x_m\}$, whose
+orthogonal complement is $\{x^* \mid x_1^* + \cdots + x_m^* = 0\}$. -/
 theorem corollary_16_2_2 {ι : Type*} [Fintype ι] (f : ι → Rn n → EReal)
     (hf : ∀ i, ConvexFn (f i)) (hp : ∀ i, ProperConvex (f i)) :
     (¬ ∃ x' : ι → Rn n, (∑ i, x' i = 0) ∧
@@ -214,39 +331,56 @@ theorem corollary_16_2_2 {ι : Type*} [Fintype ι] (f : ι → Rn n → EReal)
 
 /-! ### Theorem 16.3: linear transformations -/
 
-/-- **Theorem 16.3**, first formula: for a linear transformation `A` from `ℝⁿ` to
-`ℝᵐ` and any convex function `f` on `ℝⁿ`, `(Af)* = f*A*`.
+/-- **Theorem 16.3** of [rockafellar1970convex], first formula. Let $A$ be a linear transformation
+from $\mathbb{R}^n$ to $\mathbb{R}^m$ and let $f$ be any function on $\mathbb{R}^n$ with values
+in $[-\infty, +\infty]$. Then
+$$(Af)^* = f^* A^*.$$
 
-Unconditional: no convexity, no properness, no closure. Specialises `convexConj_mapLin`, whose only
-input is the adjointness datum, supplied by `isAdjointPair_adjoint`. -/
+**Generalization.** The source assumes $f$ convex. The formula holds with no hypothesis on $f$:
+no convexity, no properness and no closure.
+
+The proof specializes `ConvexAnalysis.convexConj_mapLin`, whose only hypothesis is the adjoint
+pair, which `ConvexAnalysis.isAdjointPair_adjoint` supplies. -/
 theorem theorem_16_3_image (A : Rn n →ₗ[ℝ] Rn m) (f : Rn n → EReal) :
     convexConj (pairing m) (mapLin A f)
         = compLin (convexConj (pairing n) f) (LinearMap.adjoint A) :=
   convexConj_mapLin (isAdjointPair_adjoint A) f
 
-/-- **Theorem 16.3**, second formula: `((cl g)A)* = cl(A*g*)` for any convex `g`
-on `ℝᵐ`.
+/-- **Theorem 16.3** of [rockafellar1970convex], second formula. Let $A$ be a linear transformation
+from $\mathbb{R}^n$ to $\mathbb{R}^m$ and let $g$ be a convex function on $\mathbb{R}^m$. Then
+$$((\operatorname{cl} g) A)^* = \operatorname{cl}(A^* g^*).$$
 
-Specialises `convexConj_compLin_eq_convexCl_mapLin`, applied to `cl g` (which is closed convex) and
-read back through `(cl g)* = g*`. -/
+The proof applies `ConvexAnalysis.convexConj_compLin_eq_convexCl_mapLin` to the closed convex
+function $\operatorname{cl} g$ and uses $(\operatorname{cl} g)^* = g^*$. -/
 theorem theorem_16_3_closure (A : Rn n →ₗ[ℝ] Rn m) {g : Rn m → EReal} (hg : ConvexFn g) :
     convexConj (pairing n) (compLin (convexCl g) A)
       = convexCl (mapLin (LinearMap.adjoint A) (convexConj (pairing m) g)) := by
   rw [convexConj_compLin_eq_convexCl_mapLin (isAdjointPair_adjoint A) (convexFn_convexCl hg)
     (closedConvex_convexCl g), convexConj_convexCl]
 
-/-- **Theorem 16.3**, the exact half: if there is an `x` with `Ax ∈ ri (dom g)`, the closure
-operation can be omitted and `(gA)* = A*g*`. The book's hypotheses are `g` proper convex, not
-closed. -/
+/-- **Theorem 16.3** of [rockafellar1970convex], exact form. Let $A$ be a linear transformation from
+$\mathbb{R}^n$ to $\mathbb{R}^m$ and let $g$ be a proper convex function on $\mathbb{R}^m$. If
+$Ax \in \operatorname{ri}(\operatorname{dom} g)$ for some $x \in \mathbb{R}^n$, then the closure
+in the second formula can be omitted:
+$$(gA)^* = A^* g^*.$$
+
+As in the source, $g$ need not be closed. -/
 theorem theorem_16_3_exact (A : Rn n →ₗ[ℝ] Rn m) {g : Rn m → EReal} (hg : ConvexFn g)
     (hp : ProperConvex g) {x₀ : Rn n} (hx₀ : A x₀ ∈ ri (convexDom g)) :
     convexConj (pairing n) (compLin g A)
         = mapLin (LinearMap.adjoint A) (convexConj (pairing m) g) :=
   (IsExactImage.of_relint (isAdjointPair_adjoint A) hg hp hx₀).convexConj_compLin
 
-/-- **Theorem 16.3**, the attainment: under the same qualification, for each `x*` the infimum
-`inf {g*(y*) | A*y* = x*}` is attained (or is `+∞` vacuously). The backbone's guard `< ⊤` is exactly
-the book's "or is `+∞` vacuously". -/
+/-- **Theorem 16.3** of [rockafellar1970convex], attainment. Let $A$ be a linear transformation from
+$\mathbb{R}^n$ to $\mathbb{R}^m$, let $g$ be a proper convex function on $\mathbb{R}^m$, and let
+$Ax \in \operatorname{ri}(\operatorname{dom} g)$ for some $x \in \mathbb{R}^n$. If
+$(gA)^*(x^*) < +\infty$, then there is $y^* \in \mathbb{R}^m$ with $A^* y^* = x^*$ and
+$g^*(y^*) = (gA)^*(x^*)$, so the infimum
+$$(A^* g^*)(x^*) = \inf \{ g^*(y^*) \mid A^* y^* = x^* \}$$
+is attained.
+
+The source says that the infimum is attained or is $+\infty$ vacuously. The hypothesis
+$(gA)^*(x^*) < +\infty$ excludes the second case. -/
 theorem theorem_16_3_attained (A : Rn n →ₗ[ℝ] Rn m) {g : Rn m → EReal} (hg : ConvexFn g)
     (hp : ProperConvex g) {x₀ : Rn n} (hx₀ : A x₀ ∈ ri (convexDom g)) {y : Rn n}
     (hy : convexConj (pairing n) (compLin g A) y < ⊤) :
@@ -254,22 +388,29 @@ theorem theorem_16_3_attained (A : Rn n →ₗ[ℝ] Rn m) {g : Rn m → EReal} (
       convexConj (pairing m) g z = convexConj (pairing n) (compLin g A) y :=
   (IsExactImage.of_relint (isAdjointPair_adjoint A) hg hp hx₀).exists_convexConj_compLin_eq hy
 
-/-- **Rockafellar, §16**, the unnumbered remark: when `g` is *polyhedral*, the
-qualification `Ax ∈ ri (dom g)` of Theorem 16.3 weakens to `Ax ∈ dom g`, and the conclusion is
-unchanged.
+/-- **Section 16** of [rockafellar1970convex], the remark after Corollary 16.3.1, exact form. Let
+$A$ be a linear transformation from $\mathbb{R}^n$ to $\mathbb{R}^m$ and let $g$ be a proper
+polyhedral convex function on $\mathbb{R}^m$. If $Ax \in \operatorname{dom} g$ for some
+$x \in \mathbb{R}^n$, then
+$$(gA)^* = A^* g^*.$$
+So for polyhedral $g$ the qualification $Ax \in \operatorname{ri}(\operatorname{dom} g)$ of
+Theorem 16.3 weakens to $Ax \in \operatorname{dom} g$.
 
-Rockafellar states this as a remark just after Corollary 16.3.1 and defers the proof to
-Corollary 19.3.1: `g*` is polyhedral by Theorem 19.2, so `A*g*` is polyhedral and hence closed,
-and the closure in the second formula has nothing left to close. -/
+The source proves the remark in Corollary 19.3.1: $g^*$ is polyhedral by Theorem 19.2, so
+$A^* g^*$ is polyhedral and hence closed, and the closure in the second formula of Theorem 16.3
+changes nothing. -/
 theorem theorem_16_3_polyhedral (A : Rn n →ₗ[ℝ] Rn m) {g : Rn m → EReal} (hg : PolyhedralFn g)
     (hp : ProperConvex g) {x₀ : Rn n} (hx₀ : A x₀ ∈ convexDom g) :
     convexConj (pairing n) (compLin g A)
         = mapLin (LinearMap.adjoint A) (convexConj (pairing m) g) :=
   (IsExactImage.of_polyhedral (isAdjointPair_adjoint A) hg hp hx₀).convexConj_compLin
 
-/-- **Rockafellar, §16**, the same remark, attainment clause under the weakened
-qualification: for a polyhedral `g` the infimum `inf {g*(y*) | A*y* = x*}` is still attained
-wherever it is finite. -/
+/-- **Section 16** of [rockafellar1970convex], the remark after Corollary 16.3.1, attainment. Let
+$A$ be a linear transformation from $\mathbb{R}^n$ to $\mathbb{R}^m$, let $g$ be a proper
+polyhedral convex function on $\mathbb{R}^m$, and let $Ax \in \operatorname{dom} g$ for some
+$x \in \mathbb{R}^n$. If $(gA)^*(x^*) < +\infty$, then there is $y^* \in \mathbb{R}^m$ with
+$A^* y^* = x^*$ and $g^*(y^*) = (gA)^*(x^*)$, so the infimum
+$\inf \{ g^*(y^*) \mid A^* y^* = x^* \}$ is attained. -/
 theorem theorem_16_3_polyhedral_attained (A : Rn n →ₗ[ℝ] Rn m) {g : Rn m → EReal}
     (hg : PolyhedralFn g) (hp : ProperConvex g) {x₀ : Rn n} (hx₀ : A x₀ ∈ convexDom g) {y : Rn n}
     (hy : convexConj (pairing n) (compLin g A) y < ⊤) :
@@ -277,9 +418,15 @@ theorem theorem_16_3_polyhedral_attained (A : Rn n →ₗ[ℝ] Rn m) {g : Rn m �
       convexConj (pairing m) g z = convexConj (pairing n) (compLin g A) y :=
   (IsExactImage.of_polyhedral (isAdjointPair_adjoint A) hg hp hx₀).exists_convexConj_compLin_eq hy
 
-/-- **Corollary 16.3.1**, first formula: `δ*(y* | AC) = δ*(A*y* | C)` for any convex set `C` in
-`ℝⁿ`. The indicator instance of `theorem_16_3_image`, via `mapLin_indicatorFn`. Convexity is not
-used. -/
+/-- **Corollary 16.3.1** of [rockafellar1970convex], first formula. Let $A$ be a linear
+transformation from $\mathbb{R}^n$ to $\mathbb{R}^m$ and let $C \subseteq \mathbb{R}^n$. Then
+for every $y^* \in \mathbb{R}^m$
+$$\delta^*(y^* \mid AC) = \delta^*(A^* y^* \mid C).$$
+
+**Generalization.** The source assumes $C$ convex. Convexity is not used.
+
+This is the case of indicator functions of `Rockafellar.theorem_16_3_image`, through
+`ConvexAnalysis.mapLin_indicatorFn`. -/
 theorem corollary_16_3_1_image (A : Rn n →ₗ[ℝ] Rn m) (C : Set (Rn n)) (y : Rn m) :
     supportFn (pairing m) (A '' C) y = supportFn (pairing n) C (LinearMap.adjoint A y) := by
   have h : supportFn (pairing m) (A '' C)
@@ -289,11 +436,14 @@ theorem corollary_16_3_1_image (A : Rn n →ₗ[ℝ] Rn m) (C : Set (Rn n)) (y :
       theorem_16_3_image]
   rw [h, compLin_apply]
 
-/-- **Corollary 16.3.1**, second formula: for any convex set `D` in `ℝᵐ`,
-`δ*(· | A⁻¹(cl D)) = cl(A* δ*(· | D))`.
+/-- **Corollary 16.3.1** of [rockafellar1970convex], second formula. Let $A$ be a linear
+transformation from $\mathbb{R}^n$ to $\mathbb{R}^m$ and let $D \subseteq \mathbb{R}^m$ be
+convex. Then
+$$\delta^*(\cdot \mid A^{-1}(\operatorname{cl} D)) = \operatorname{cl}(A^* \delta^*(\cdot \mid
+  D)).$$
 
-The indicator instance of `theorem_16_3_closure`, via `convexCl_indicatorFn` and
-`compLin_indicatorFn`. -/
+This is the case of indicator functions of `Rockafellar.theorem_16_3_closure`, through
+`ConvexAnalysis.convexCl_indicatorFn` and `ConvexAnalysis.compLin_indicatorFn`. -/
 theorem corollary_16_3_1_closure (A : Rn n →ₗ[ℝ] Rn m) {D : Set (Rn m)} (hD : Convex ℝ D) :
     supportFn (pairing n) (A ⁻¹' closure D)
       = convexCl (mapLin (LinearMap.adjoint A) (supportFn (pairing m) D)) := by
@@ -302,8 +452,14 @@ theorem corollary_16_3_1_closure (A : Rn n →ₗ[ℝ] Rn m) {D : Set (Rn m)} (h
     ← convexCl_indicatorFn]
   exact theorem_16_3_closure A (convexFn_indicatorFn.2 hD)
 
-/-- **Corollary 16.3.1**, the exact half: if some `Ax ∈ ri D`, the closure operation
-can be omitted and `δ*(x* | A⁻¹D) = inf {δ*(y* | D) | A*y* = x*}`, the infimum being attained. -/
+/-- **Corollary 16.3.1** of [rockafellar1970convex], exact form. Let $A$ be a linear transformation
+from $\mathbb{R}^n$ to $\mathbb{R}^m$ and let $D \subseteq \mathbb{R}^m$ be non-empty and
+convex. If $Ax \in \operatorname{ri} D$ for some $x \in \mathbb{R}^n$, then the closure can be
+omitted: for every $x^* \in \mathbb{R}^n$
+$$\delta^*(x^* \mid A^{-1} D) = \inf \{ \delta^*(y^* \mid D) \mid A^* y^* = x^* \}.$$
+
+The source also states that the infimum is attained. This declaration does not state the
+attainment. -/
 theorem corollary_16_3_1_exact (A : Rn n →ₗ[ℝ] Rn m) {D : Set (Rn m)} (hD : Convex ℝ D)
     (hne : D.Nonempty) {x₀ : Rn n} (hx₀ : A x₀ ∈ ri D) :
     supportFn (pairing n) (A ⁻¹' D)
@@ -315,17 +471,27 @@ theorem corollary_16_3_1_exact (A : Rn n →ₗ[ℝ] Rn m) {D : Set (Rn m)} (hD 
   rw [convexDom_indicatorFn]
   exact hx₀
 
-/-- **Corollary 16.3.2**, first formula: `(AC)° = A*⁻¹(C°)` for any convex set `C` in `ℝⁿ`. One
-unfolding of `polarSet` through the adjointness `⟨Ax, y*⟩ = ⟨x, A*y*⟩`. -/
+/-- **Corollary 16.3.2** of [rockafellar1970convex], first formula. Let $A$ be a linear
+transformation from $\mathbb{R}^n$ to $\mathbb{R}^m$ and let $C \subseteq \mathbb{R}^n$. Then
+$$(AC)^\circ = (A^*)^{-1}(C^\circ).$$
+
+**Generalization.** The source assumes $C$ convex. The formula holds for every set.
+
+The proof unfolds `ConvexAnalysis.polarSet` and uses $\langle Ax, y^* \rangle = \langle x, A^*
+y^* \rangle$. -/
 theorem corollary_16_3_2_image (A : Rn n →ₗ[ℝ] Rn m) (C : Set (Rn n)) :
     polarSet (pairing m) (A '' C) = LinearMap.adjoint A ⁻¹' polarSet (pairing n) C := by
   ext y
   simp only [mem_polarSet, Set.mem_preimage, Set.forall_mem_image]
   exact forall₂_congr fun x _ => by rw [isAdjointPair_adjoint A x y]
 
-/-- **Corollary 16.3.2**, the unconditional half of the second formula:
-`A*(D°) ⊆ (A⁻¹D)°`. Equality holds after a closure, and without one under Corollary 16.3.1's
-qualification; see the module docstring for why the closed form is not here. -/
+/-- **Corollary 16.3.2** of [rockafellar1970convex], second formula, one inclusion. Let $A$ be a
+linear transformation from $\mathbb{R}^n$ to $\mathbb{R}^m$ and let $D \subseteq \mathbb{R}^m$.
+Then
+$$A^*(D^\circ) \subseteq (A^{-1} D)^\circ.$$
+
+The source states an equality, after a closure, and without the closure under the qualification
+of Corollary 16.3.1. The equality is not formalized. -/
 theorem corollary_16_3_2_preimage (A : Rn n →ₗ[ℝ] Rn m) (D : Set (Rn m)) :
     LinearMap.adjoint A '' polarSet (pairing m) D ⊆ polarSet (pairing n) (A ⁻¹' D) := by
   rintro _ ⟨y, hy, rfl⟩ x hx
@@ -334,23 +500,33 @@ theorem corollary_16_3_2_preimage (A : Rn n →ₗ[ℝ] Rn m) (D : Set (Rn m)) :
 
 /-! ### Theorem 16.4: addition and infimal convolution -/
 
-/-- **Theorem 16.4**, first formula, in the book's own `m`-ary form:
-`(f₁ □ ⋯ □ fₘ)* = f₁* + ⋯ + fₘ*`.
+/-- **Theorem 16.4** of [rockafellar1970convex], first formula for $m$ functions. Let
+$f_1, \dots, f_m$ be any functions on $\mathbb{R}^n$ with values in $[-\infty, +\infty]$. Then
+$$(f_1 \mathbin{\square} \cdots \mathbin{\square} f_m)^* = f_1^* + \cdots + f_m^*.$$
 
-The `□`-product is the `AddCommMonoid` sum of `InfConvFn`. Properness is *not* needed, and must
-not be assumed at the intermediate stages, since `□` does not preserve it. -/
+The functions are indexed by a `Finset`. The infimal convolution of the family is the sum in the
+commutative monoid `ConvexAnalysis.InfConvFn`, whose zero is $\delta(\cdot \mid 0)$, so the
+empty family is allowed. Properness is not assumed, and must not be assumed at intermediate
+stages, since infimal convolution does not preserve it. -/
 theorem theorem_16_4_infConv_finset {ι : Type*} (s : Finset ι) (f : ι → Rn n → EReal) :
     convexConj (pairing n) (ofInfConvFn (∑ i ∈ s, toInfConvFn (f i)))
       = ∑ i ∈ s, convexConj (pairing n) (f i) :=
   convexConj_sum_toInfConvFn (pairing n) s f
 
-/-- **Theorem 16.4**, first formula for `m = 2`: `(f □ g)* = f* + g*`. -/
+/-- **Theorem 16.4** of [rockafellar1970convex], first formula for two functions. Let $f$ and $g$ be
+any functions on $\mathbb{R}^n$ with values in $[-\infty, +\infty]$. Then
+$$(f \mathbin{\square} g)^* = f^* + g^*.$$
+-/
 theorem theorem_16_4_infConv (f g : Rn n → EReal) :
     convexConj (pairing n) (infConv f g) = convexConj (pairing n) f + convexConj (pairing n) g :=
   convexConj_infConv (pairing n) f g
 
-/-- **Theorem 16.4**, second formula: `(cl f + cl g)* = cl(f* □ g*)`. Specialises
-`convexConj_add_eq_convexCl_infConv`, applied to the closures. -/
+/-- **Theorem 16.4** of [rockafellar1970convex], second formula. Let $f$ and $g$ be convex functions
+on $\mathbb{R}^n$. Then
+$$(\operatorname{cl} f + \operatorname{cl} g)^* = \operatorname{cl}(f^* \mathbin{\square}
+  g^*).$$
+
+The proof applies `ConvexAnalysis.convexConj_add_eq_convexCl_infConv` to the closures. -/
 theorem theorem_16_4_closure {f g : Rn n → EReal} (hf : ConvexFn f) (hg : ConvexFn g) :
     convexConj (pairing n) (convexCl f + convexCl g)
       = convexCl (infConv (convexConj (pairing n) f) (convexConj (pairing n) g)) := by
@@ -358,9 +534,13 @@ theorem theorem_16_4_closure {f g : Rn n → EReal} (hf : ConvexFn f) (hg : Conv
       (convexFn_convexCl hg)
     (closedConvex_convexCl g), convexConj_convexCl, convexConj_convexCl]
 
-/-- **Theorem 16.4**, the exact half: if `ri (dom f)` and `ri (dom g)` have a point in common, the
-closure operation can be omitted and `(f + g)* = f* □ g*`. Closedness is not assumed, as in the
-book. -/
+/-- **Theorem 16.4** of [rockafellar1970convex], exact form for two functions. Let $f$ and $g$ be
+proper convex functions on $\mathbb{R}^n$. If $\operatorname{ri}(\operatorname{dom} f)$ and
+$\operatorname{ri}(\operatorname{dom} g)$ have a point in common, then the closure in the second
+formula can be omitted:
+$$(f + g)^* = f^* \mathbin{\square} g^*.$$
+
+As in the source, $f$ and $g$ need not be closed. -/
 theorem theorem_16_4_exact {f g : Rn n → EReal} (hf : ConvexFn f) (hpf : ProperConvex f)
     (hg : ConvexFn g) (hpg : ProperConvex g) {x₀ : Rn n} (hxf : x₀ ∈ ri (convexDom f))
     (hxg : x₀ ∈ ri (convexDom g)) :
@@ -368,8 +548,12 @@ theorem theorem_16_4_exact {f g : Rn n → EReal} (hf : ConvexFn f) (hpf : Prope
         = infConv (convexConj (pairing n) f) (convexConj (pairing n) g) :=
   (IsExactSum.of_relint hf hpf hg hpg hxf hxg).convexConj_add
 
-/-- **Theorem 16.4**, the attainment: under the same qualification, for each `x*` the
-infimum `inf {f*(x₁*) + g*(x₂*) | x₁* + x₂* = x*}` is attained. -/
+/-- **Theorem 16.4** of [rockafellar1970convex], attainment for two functions. Let $f$ and $g$ be
+proper convex functions on $\mathbb{R}^n$ such that $\operatorname{ri}(\operatorname{dom} f)$
+and $\operatorname{ri}(\operatorname{dom} g)$ have a point in common. Then for every
+$x^* \in \mathbb{R}^n$ there are $x_1^*, x_2^*$ with $x_1^* + x_2^* = x^*$ and
+$$f^*(x_1^*) + g^*(x_2^*) = (f + g)^*(x^*),$$
+so the infimum $\inf \{ f^*(x_1^*) + g^*(x_2^*) \mid x_1^* + x_2^* = x^* \}$ is attained. -/
 theorem theorem_16_4_attained {f g : Rn n → EReal} (hf : ConvexFn f) (hpf : ProperConvex f)
     (hg : ConvexFn g) (hpg : ProperConvex g) {x₀ : Rn n} (hxf : x₀ ∈ ri (convexDom f))
     (hxg : x₀ ∈ ri (convexDom g)) (y : Rn n) :
@@ -378,17 +562,22 @@ theorem theorem_16_4_attained {f g : Rn n → EReal} (hf : ConvexFn f) (hpf : Pr
           = convexConj (pairing n) (f + g) y :=
   (IsExactSum.of_relint hf hpf hg hpg hxf hxg).exists_convexConj_add_eq y
 
-/-- **Corollary 16.4.1**, first formula for `m = 2`:
-`δ*(· | C₁ + C₂) = δ*(· | C₁) + δ*(· | C₂)`.
+/-- **Corollary 16.4.1** of [rockafellar1970convex], first formula for two sets. Let
+$C_1, C_2 \subseteq \mathbb{R}^n$. Then
+$$\delta^*(\cdot \mid C_1 + C_2) = \delta^*(\cdot \mid C_1) + \delta^*(\cdot \mid C_2).$$
 
-Unlike the function statement this needs no qualification: two suprema over sets never interact
-through an `∞ - ∞`. -/
+Unlike the statement for functions, this needs no hypothesis: two suprema over sets never
+produce the expression $\infty - \infty$. -/
 theorem corollary_16_4_1_add (C D : Set (Rn n)) :
     supportFn (pairing n) (C + D) = supportFn (pairing n) C + supportFn (pairing n) D :=
   supportFn_add_rn C D
 
-/-- **Corollary 16.4.1**, first formula in the book's `m`-ary form:
-`δ*(· | C₁ + ⋯ + Cₘ) = δ*(· | C₁) + ⋯ + δ*(· | Cₘ)`. -/
+/-- **Corollary 16.4.1** of [rockafellar1970convex], first formula for $m$ sets. Let
+$C_1, \dots, C_m \subseteq \mathbb{R}^n$. Then
+$$\delta^*(\cdot \mid C_1 + \cdots + C_m) = \delta^*(\cdot \mid C_1) + \cdots + \delta^*(\cdot
+  \mid C_m).$$
+
+The sets are indexed by a `Finset`, and the empty family is allowed. -/
 theorem corollary_16_4_1_add_finset {ι : Type*} (s : Finset ι) (C : ι → Set (Rn n)) :
     supportFn (pairing n) (∑ i ∈ s, C i) = ∑ i ∈ s, supportFn (pairing n) (C i) := by
   induction s using Finset.cons_induction with
@@ -398,8 +587,13 @@ theorem corollary_16_4_1_add_finset {ι : Type*} (s : Finset ι) (C : ι → Set
     simp
   | cons i t hi ih => rw [Finset.sum_cons, Finset.sum_cons, corollary_16_4_1_add, ih]
 
-/-- **Corollary 16.4.1**, second formula: `δ*(· | cl C₁ ∩ cl C₂) = cl(δ*(· | C₁) □ δ*(· | C₂))`. The
-indicator instance of `theorem_16_4_closure`: adding indicators intersects the sets. -/
+/-- **Corollary 16.4.1** of [rockafellar1970convex], second formula. Let
+$C_1, C_2 \subseteq \mathbb{R}^n$ be convex. Then
+$$\delta^*(\cdot \mid \operatorname{cl} C_1 \cap \operatorname{cl} C_2) =
+  \operatorname{cl}(\delta^*(\cdot \mid C_1) \mathbin{\square} \delta^*(\cdot \mid C_2)).$$
+
+This is the case of indicator functions of `Rockafellar.theorem_16_4_closure`: the sum of two
+indicator functions is the indicator function of the intersection. -/
 theorem corollary_16_4_1_closure {C D : Set (Rn n)} (hC : Convex ℝ C) (hD : Convex ℝ D) :
     supportFn (pairing n) (closure C ∩ closure D)
       = convexCl (infConv (supportFn (pairing n) C) (supportFn (pairing n) D)) := by
@@ -408,9 +602,14 @@ theorem corollary_16_4_1_closure {C D : Set (Rn n)} (hC : Convex ℝ C) (hD : Co
         ← convexCl_indicatorFn]
   exact theorem_16_4_closure (convexFn_indicatorFn.2 hC) (convexFn_indicatorFn.2 hD)
 
-/-- **Corollary 16.4.1**, the exact half: if `ri C₁` and `ri C₂` have a point in
-common, `δ*(x* | C₁ ∩ C₂) = inf {δ*(x₁* | C₁) + δ*(x₂* | C₂) | x₁* + x₂* = x*}`, the infimum being
-attained. -/
+/-- **Corollary 16.4.1** of [rockafellar1970convex], exact form for two sets. Let
+$C_1, C_2 \subseteq \mathbb{R}^n$ be non-empty and convex. If $\operatorname{ri} C_1$ and
+$\operatorname{ri} C_2$ have a point in common, then for every $x^* \in \mathbb{R}^n$
+$$\delta^*(x^* \mid C_1 \cap C_2) = \inf \{ \delta^*(x_1^* \mid C_1) + \delta^*(x_2^* \mid C_2)
+  \mid x_1^* + x_2^* = x^* \}.$$
+
+This declaration does not state that the infimum is attained. The attainment, for any number of
+sets, is `Rockafellar.corollary_16_4_1_attained_finset`. -/
 theorem corollary_16_4_1_exact {C D : Set (Rn n)} (hC : Convex ℝ C) (hD : Convex ℝ D)
     (hCne : C.Nonempty) (hDne : D.Nonempty) {x₀ : Rn n} (hxC : x₀ ∈ ri C) (hxD : x₀ ∈ ri D) :
     supportFn (pairing n) (C ∩ D)
@@ -423,11 +622,18 @@ theorem corollary_16_4_1_exact {C D : Set (Rn n)} (hC : Convex ℝ C) (hD : Conv
   · rw [convexDom_indicatorFn]; exact hxC
   · rw [convexDom_indicatorFn]; exact hxD
 
-/-- **Corollary 16.4.2**, first formula: `(K₁ + K₂)° = K₁° ∩ K₂°` for non-empty
-convex cones.
+/-- **Corollary 16.4.2** of [rockafellar1970convex], first formula. Let
+$K_1, K_2 \subseteq \mathbb{R}^n$ be non-empty cones, that is, $\lambda K_i = K_i$ for every
+$\lambda > 0$. Then
+$$(K_1 + K_2)^\circ = K_1^\circ \cap K_2^\circ,$$
+where $K^\circ = \{x^* \mid \langle x, x^* \rangle \le 0 \text{ for all } x \in K\}$ is the
+polar cone.
 
-The support function of a cone is the indicator of its polar, adding indicators intersects, and
-an indicator determines its set. Only the cone property is used, not convexity. -/
+**Generalization.** The source assumes convex cones. Only the cone property is used.
+
+The support function of a cone is the indicator function of its polar, the sum of two indicator
+functions is the indicator function of the intersection, and an indicator function determines
+its set. -/
 theorem corollary_16_4_2_add {K L : Set (Rn n)} (hKne : K.Nonempty) (hLne : L.Nonempty)
     (hK : ∀ a : ℝ, 0 < a → a • K = K) (hL : ∀ a : ℝ, 0 < a → a • L = L) :
     polarCone (pairing n) (K + L)
@@ -459,12 +665,14 @@ theorem corollary_16_4_2_add {K L : Set (Rn n)} (hKne : K.Nonempty) (hLne : L.No
     rw [indicatorFn_of_notMem h₁, indicatorFn_of_mem h₂] at hy
     exact absurd hy (by simp)
 
-/-- **Theorem 16.4**, the exact half in the book's own `m`-ary form: if the sets
-`ri (dom fᵢ)`, `i = 1, …, m`, have a point in common, the closure operation can be omitted from
-the second formula and `(f₁ + ⋯ + fₘ)* = f₁* □ ⋯ □ fₘ*`.
+/-- **Theorem 16.4** of [rockafellar1970convex], exact form for $m$ functions. Let $f_1, \dots, f_m$
+be proper convex functions on $\mathbb{R}^n$ with $m \ge 1$. If the sets
+$\operatorname{ri}(\operatorname{dom} f_i)$, $i = 1, \dots, m$, have a point in common, then the
+closure can be omitted:
+$$(f_1 + \cdots + f_m)^* = f_1^* \mathbin{\square} \cdots \mathbin{\square} f_m^*.$$
 
-The family is indexed by a `Finset` rather than by `Fin m`, so `m = 0` is the vacuous empty
-family and the book's `m ≥ 1` is `hs`. -/
+The functions are indexed by a non-empty `Finset`, and the condition $m \ge 1$ is the hypothesis
+`hs`. -/
 theorem theorem_16_4_exact_finset {ι : Type*} {s : Finset ι} {f : ι → Rn n → EReal}
     (hs : s.Nonempty) (hf : ∀ i ∈ s, ConvexFn (f i)) (hpf : ∀ i ∈ s, ProperConvex (f i))
     {x₀ : Rn n} (hx₀ : ∀ i ∈ s, x₀ ∈ ri (convexDom (f i))) :
@@ -472,8 +680,12 @@ theorem theorem_16_4_exact_finset {ι : Type*} {s : Finset ι} {f : ι → Rn n 
       = ofInfConvFn (∑ i ∈ s, toInfConvFn (convexConj (pairing n) (f i))) :=
   (IsExactFinsetSum.of_relint (B := pairing n) hs hf hpf hx₀).convexConj_finsetSum
 
-/-- **Theorem 16.4**, the attainment for `m` summands: under the same qualification,
-for each `x*` the infimum `inf {f₁*(x₁*) + ⋯ + fₘ*(xₘ*) | x₁* + ⋯ + xₘ* = x*}` is attained. -/
+/-- **Theorem 16.4** of [rockafellar1970convex], attainment for $m$ functions. Let $f_1, \dots, f_m$
+be proper convex functions on $\mathbb{R}^n$ with $m \ge 1$, such that the sets
+$\operatorname{ri}(\operatorname{dom} f_i)$ have a point in common. Then for every
+$x^* \in \mathbb{R}^n$ there are $x_1^*, \dots, x_m^*$ with $x_1^* + \cdots + x_m^* = x^*$ and
+$$f_1^*(x_1^*) + \cdots + f_m^*(x_m^*) = (f_1 + \cdots + f_m)^*(x^*).$$
+-/
 theorem theorem_16_4_attained_finset {ι : Type*} {s : Finset ι} {f : ι → Rn n → EReal}
     (hs : s.Nonempty) (hf : ∀ i ∈ s, ConvexFn (f i)) (hpf : ∀ i ∈ s, ProperConvex (f i))
     {x₀ : Rn n} (hx₀ : ∀ i ∈ s, x₀ ∈ ri (convexDom (f i))) (y : Rn n) :
@@ -481,9 +693,8 @@ theorem theorem_16_4_attained_finset {ι : Type*} {s : Finset ι} {f : ι → Rn
       ∑ i ∈ s, convexConj (pairing n) (f i) (y' i) = convexConj (pairing n) (∑ i ∈ s, f i) y :=
   (IsExactFinsetSum.of_relint (B := pairing n) hs hf hpf hx₀).exists_convexConj_finsetSum_eq y
 
-/-- Adding indicator functions over a `Finset` intersects the sets: the `m`-ary form of
-`indicatorFn_add`. The empty intersection is `ℝⁿ`, whose indicator is the zero function, so no
-non-emptiness is needed. -/
+/-- The sum of the indicator functions of a finite family of sets is the indicator function of their
+intersection; for the empty family both sides are the zero function. -/
 private theorem sum_indicatorFn_finset {ι : Type*} (s : Finset ι) (C : ι → Set (Rn n)) :
     ∑ i ∈ s, indicatorFn (C i) = indicatorFn (⋂ i ∈ s, C i) := by
   induction s using Finset.cons_induction with
@@ -497,12 +708,14 @@ private theorem sum_indicatorFn_finset {ι : Type*} (s : Finset ι) (C : ι → 
     ext x
     simp [Finset.mem_cons]
 
-/-- **Corollary 16.4.1**, the exact half in the book's `m`-ary form: if the sets
-`ri Cᵢ` have a point in common, the closure operation can be omitted and
-`δ*(· | C₁ ∩ ⋯ ∩ Cₘ) = δ*(· | C₁) □ ⋯ □ δ*(· | Cₘ)`.
+/-- **Corollary 16.4.1** of [rockafellar1970convex], exact form for $m$ sets. Let
+$C_1, \dots, C_m \subseteq \mathbb{R}^n$ be convex with $m \ge 1$. If the sets
+$\operatorname{ri} C_i$ have a point in common, then the closure can be omitted:
+$$\delta^*(\cdot \mid C_1 \cap \cdots \cap C_m) = \delta^*(\cdot \mid C_1) \mathbin{\square}
+  \cdots \mathbin{\square} \delta^*(\cdot \mid C_m).$$
 
-Non-emptiness of the `Cᵢ` is not a hypothesis here although it is in the book: a common point of
-the relative interiors already supplies it. -/
+The source also assumes the sets $C_i$ non-empty. That hypothesis is omitted here because the
+common point of the relative interiors implies it. -/
 theorem corollary_16_4_1_exact_finset {ι : Type*} {s : Finset ι} {C : ι → Set (Rn n)}
     (hs : s.Nonempty) (hC : ∀ i ∈ s, Convex ℝ (C i)) {x₀ : Rn n} (hx₀ : ∀ i ∈ s, x₀ ∈ ri (C i)) :
     supportFn (pairing n) (⋂ i ∈ s, C i)
@@ -517,9 +730,13 @@ theorem corollary_16_4_1_exact_finset {ι : Type*} {s : Finset ι} {C : ι → S
       (fun i hi => by rw [convexDom_indicatorFn]; exact hx₀ i hi)]
   simp only [hconj]
 
-/-- **Corollary 16.4.1**, the attainment for `m` sets: under the same qualification,
-for each `x*` the infimum `inf {δ*(x₁* | C₁) + ⋯ + δ*(xₘ* | Cₘ) | x₁* + ⋯ + xₘ* = x*}` is
-attained. -/
+/-- **Corollary 16.4.1** of [rockafellar1970convex], attainment for $m$ sets. Let
+$C_1, \dots, C_m \subseteq \mathbb{R}^n$ be convex with $m \ge 1$, such that the sets
+$\operatorname{ri} C_i$ have a point in common. Then for every $x^* \in \mathbb{R}^n$ there are
+$x_1^*, \dots, x_m^*$ with $x_1^* + \cdots + x_m^* = x^*$ and
+$$\delta^*(x_1^* \mid C_1) + \cdots + \delta^*(x_m^* \mid C_m) = \delta^*(x^* \mid C_1 \cap
+  \cdots \cap C_m).$$
+-/
 theorem corollary_16_4_1_attained_finset {ι : Type*} {s : Finset ι} {C : ι → Set (Rn n)}
     (hs : s.Nonempty) (hC : ∀ i ∈ s, Convex ℝ (C i)) {x₀ : Rn n} (hx₀ : ∀ i ∈ s, x₀ ∈ ri (C i))
     (y : Rn n) :
@@ -540,15 +757,23 @@ theorem corollary_16_4_1_attained_finset {ι : Type*} {s : Finset ι} {C : ι �
 
 /-! ### Theorem 16.5: pointwise suprema and convex hulls -/
 
-/-- **Theorem 16.5**, first formula: `(conv {fᵢ | i ∈ I})* = sup {fᵢ* | i ∈ I}` for an arbitrary
-index set `I`. Unconditional; the empty family is not an exception. Specialises
-`convexConj_convFn`. -/
+/-- **Theorem 16.5** of [rockafellar1970convex], first formula. Let $\{f_i \mid i \in I\}$ be any
+family of functions on $\mathbb{R}^n$ with values in $[-\infty, +\infty]$, over an arbitrary
+index set $I$. Then
+$$(\operatorname{conv} \{f_i \mid i \in I\})^* = \sup \{f_i^* \mid i \in I\}.$$
+
+No hypothesis is placed on the functions, and the empty family is allowed. The proof specializes
+`ConvexAnalysis.convexConj_convFn`. -/
 theorem theorem_16_5_convFn {ι : Sort*} (f : ι → Rn n → EReal) :
     convexConj (pairing n) (convFn f) = ⨆ i, convexConj (pairing n) (f i) :=
   convexConj_convFn (pairing n) f
 
-/-- **Theorem 16.5**, second formula: `(sup {cl fᵢ | i ∈ I})* = cl (conv {fᵢ* | i ∈ I})`.
-Specialises `convexConj_iSup_eq_convexCl_convFn`, applied to the closures. -/
+/-- **Theorem 16.5** of [rockafellar1970convex], second formula. Let $\{f_i \mid i \in I\}$ be a
+family of convex functions on $\mathbb{R}^n$. Then
+$$(\sup \{\operatorname{cl} f_i \mid i \in I\})^* = \operatorname{cl}(\operatorname{conv}
+  \{f_i^* \mid i \in I\}).$$
+
+The proof applies `ConvexAnalysis.convexConj_iSup_eq_convexCl_convFn` to the closures. -/
 theorem theorem_16_5_closure {ι : Sort*} {f : ι → Rn n → EReal} (hf : ∀ i, ConvexFn (f i)) :
     convexConj (pairing n) (⨆ i, convexCl (f i))
       = convexCl (convFn fun i => convexConj (pairing n) (f i)) := by
@@ -556,18 +781,25 @@ theorem theorem_16_5_closure {ι : Sort*} {f : ι → Rn n → EReal} (hf : ∀ 
       (fun i => closedConvex_convexCl (f i))]
   simp only [convexConj_convexCl]
 
-/-- **Corollary 16.5.1**, first formula: the support function of the convex hull `D`
-of the union of the sets `Cᵢ` is `sup {δ*(· | Cᵢ) | i ∈ I}`. -/
+/-- **Corollary 16.5.1** of [rockafellar1970convex], first formula. Let $\{C_i \mid i \in I\}$ be
+any family of subsets of $\mathbb{R}^n$, and let $D$ be the convex hull of their union. Then
+$$\delta^*(\cdot \mid D) = \sup \{\delta^*(\cdot \mid C_i) \mid i \in I\}.$$
+-/
 theorem corollary_16_5_1_hull {ι : Sort*} (C : ι → Set (Rn n)) :
     supportFn (pairing n) (convexHull ℝ (⋃ i, C i))
       = fun y => ⨆ i, supportFn (pairing n) (C i) y := by
   rw [supportFn_convexHull, supportFn_iUnion]
 
-/-- **Corollary 16.5.1**, second formula: the support function of the intersection of
-the sets `cl Cᵢ` is `cl (conv {δ*(· | Cᵢ) | i ∈ I})`.
+/-- **Corollary 16.5.1** of [rockafellar1970convex], second formula. Let $\{C_i \mid i \in I\}$ be a
+family of convex subsets of $\mathbb{R}^n$ with $I$ non-empty. Then
+$$\delta^*\Bigl(\cdot \Bigm| \bigcap_{i \in I} \operatorname{cl} C_i\Bigr) =
+  \operatorname{cl}(\operatorname{conv} \{\delta^*(\cdot \mid C_i) \mid i \in I\}).$$
 
-The indicator instance of `theorem_16_5_closure`. The index set must be non-empty: over an empty
-family the book's `⋂ cl Cᵢ` is all of `ℝⁿ` while `sup {δ(· | Cᵢ)}` is `-∞`. -/
+**Reading.** The source does not exclude an empty index set. For an empty family the left side
+is $\delta^*(\cdot \mid \mathbb{R}^n) = \delta(\cdot \mid 0)$ and the right side is the constant
+$+\infty$, so the declaration assumes $I$ non-empty.
+
+This is the case of indicator functions of `Rockafellar.theorem_16_5_closure`. -/
 theorem corollary_16_5_1_closure {ι : Sort*} [Nonempty ι] {C : ι → Set (Rn n)}
     (hC : ∀ i, Convex ℝ (C i)) :
     supportFn (pairing n) (⋂ i, closure (C i))
@@ -588,11 +820,12 @@ theorem corollary_16_5_1_closure {ι : Sort*} [Nonempty ι] {C : ι → Set (Rn 
   rw [← hind]
   exact theorem_16_5_closure fun i => convexFn_indicatorFn.2 (hC i)
 
-/-- **Corollary 16.5.2**, first formula:
-`(conv {Cᵢ | i ∈ I})° = ⋂ {Cᵢ° | i ∈ I}`.
+/-- **Corollary 16.5.2** of [rockafellar1970convex], first formula. Let $\{C_i \mid i \in I\}$ be
+any family of subsets of $\mathbb{R}^n$. Then
+$$\Bigl(\operatorname{conv} \bigcup_{i \in I} C_i\Bigr)^\circ = \bigcap_{i \in I} C_i^\circ.$$
 
-Polarity is order-inverting and `{x | ⟨x, x*⟩ ≤ 1}` is convex, so the convex hull is invisible to
-it; this is the book's own second proof. -/
+Polarity reverses inclusion, and each half-space $\{x \mid \langle x, x^* \rangle \le 1\}$ is
+convex, so the convex hull does not change the polar. This is the second proof in the source. -/
 theorem corollary_16_5_2_hull {ι : Sort*} (C : ι → Set (Rn n)) :
     polarSet (pairing n) (convexHull ℝ (⋃ i, C i)) = ⋂ i, polarSet (pairing n) (C i) := by
   ext y
@@ -607,9 +840,13 @@ theorem corollary_16_5_2_hull {ι : Sort*} (C : ι → Set (Rn n)) :
       exact hy i x hi
     exact fun x hx => convexHull_min hsub (convex_setOf_pairing_le_one y) hx
 
-/-- **Corollary 16.5.2**, the unconditional half of the second formula: each `Cᵢ°` is
-contained in `(⋂ Cⱼ)°`, hence so is the convex hull of their union. Equality with the polar of
-`⋂ cl Cⱼ` holds after a closure; see the module docstring. -/
+/-- **Corollary 16.5.2** of [rockafellar1970convex], second formula, one inclusion. Let
+$\{C_j \mid j \in I\}$ be any family of subsets of $\mathbb{R}^n$. Then for each $i \in I$
+$$C_i^\circ \subseteq \Bigl(\bigcap_{j \in I} C_j\Bigr)^\circ.$$
+
+Each $C_i^\circ$ is contained in the polar of the intersection, and so is the convex hull of
+their union. The source states an equality for the polar of $\bigcap_j \operatorname{cl} C_j$,
+which holds after a closure. The equality is not formalized. -/
 theorem corollary_16_5_2_inter {ι : Sort*} (C : ι → Set (Rn n)) (i : ι) :
     polarSet (pairing n) (C i) ⊆ polarSet (pairing n) (⋂ j, C j) :=
   polarSet_anti (Set.iInter_subset C i)

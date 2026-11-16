@@ -14,59 +14,104 @@ import Numlib.Analysis.Convex.Representation
 import NumlibSurface.Rockafellar.Chapter02.Section09
 
 /-!
-# Rockafellar §19: polyhedral convex sets and functions
+# Rockafellar, Section 19: Polyhedral convex sets and functions
 
-Surface file for R. Tyrrell Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §19:
-the Minkowski–Weyl theorem and the polyhedral calculus, over `Rn n = ℝⁿ`.
+This module formalizes §19 of [rockafellar1970convex]: the Minkowski–Weyl theorem, which says that a
+convex set in $\mathbb{R}^n$ is polyhedral if and only if it is finitely generated, and the calculus
+of polyhedral convex sets and functions. Polyhedrality is preserved by conjugation, support
+functions and polars, by images and inverse images under linear maps, by sums and infimal
+convolution, by scalar multiples and recession cones, and by closed convex hulls of unions and
+closed generated cones. All seventeen numbered results are formalized: Theorems 19.1–19.7 and
+Corollaries 19.1.1, 19.1.2, 19.2.1, 19.2.2, 19.3.1–19.3.4, 19.5.1 and 19.7.1, together with the
+unnumbered normal form $f = h + \delta(\cdot \mid C)$ of a polyhedral convex function. The proofs
+specialize the backbone modules under `Numlib.Analysis.Convex.Polyhedral`.
 
-All seventeen numbered results of §19 are formalized: Theorems 19.1–19.7 and Corollaries 19.1.1,
-19.1.2, 19.2.1, 19.2.2, 19.3.1–19.3.4, 19.5.1, 19.7.1, together with the unnumbered normal form
-`f = h + δ(· | C)`.
-
-The section's five notions are the backbone's. A **polyhedral convex set** is `Polyhedral`, the
-solution set of finitely many weak linear inequalities; a **polyhedral convex cone** is
-`PolyhedralCone`; a **finitely generated convex set** is `FinitelyGenerated`, that is `convexHullPD`
-of a finite set of points and directions; a **polytope** is `IsPolytope`, a bounded set of either
-kind; and a **polyhedral convex function** is `PolyhedralFn f := Polyhedral (epi f)`, with
-`FinitelyGeneratedFn` its generated twin.
-
-Theorems 19.6 and 19.7 and Corollary 19.5.1 use Rockafellar's extended coefficient `λ ≥ 0⁺`,
-modelled by §9's `ExtCoeff`: `ExtCoeff.smulSet` sends `0⁺` to the recession cone and
-`ExtCoeff.smulFn` to the recession function.
-
-Every statement of §19 is correct as printed; two of its proofs are not. Theorem 19.1's
-(b) ⇒ (a) reduces without justification to the `n`-dimensional case, and is proved here through
-clause (c) instead; Theorem 19.6 is printed with no proof paragraph at all.
+The printed statements of §19 are correct. Two proofs in the source are incomplete: the proof of (b)
+⇒ (a) in Theorem 19.1 reduces to the $n$-dimensional case without justification, and Theorem 19.6 is
+printed without a proof.
 
 ## Main definitions
 
-* `IsPolytope` — the book's *polytope*: a bounded finitely generated convex set, equivalently
-  (`isPolytope_iff`) a bounded polyhedral one.
-* `FinitelyGeneratedFn` — a convex function whose epigraph is finitely generated.
+* Definition of a polytope, `Rockafellar.IsPolytope`: the convex hull of a finite set of points,
+  equivalently a bounded polyhedral convex set.
+* Definition of a finitely generated convex function, `Rockafellar.FinitelyGeneratedFn`: a function
+  whose epigraph is a finitely generated convex set.
 
 ## Main results
 
-* `theorem_19_1`, `theorem_19_1_pairing`, `theorem_19_1_convexHullPD`, `theorem_19_1_isClosed`,
-  `theorem_19_1_finite_faces`, `theorem_19_1_finitelyGenerated_of_finite_faces`,
-  `theorem_19_1_of_finite_faces`, `theorem_19_1_iff_finite_faces`, `theorem_19_1_face` — the
-  Minkowski–Weyl theorem: polyhedral, closed with finitely many faces, and finitely generated are
-  the same condition on a convex set.
-* `corollary_19_1_1_extremePoints`, `corollary_19_1_1_extremeDirections`, `corollary_19_1_2`,
-  `corollary_19_1_2_closed`, `corollary_19_1_2_attained` — finitely many extreme points and
-  directions, and the function form of the theorem.
-* `theorem_19_2`, `corollary_19_2_1`, `corollary_19_2_2` — polyhedrality is preserved by
-  conjugacy, hence by support functions and polars.
-* `theorem_19_3_image`, `theorem_19_3_preimage`, `corollary_19_3_1_image`,
-  `corollary_19_3_1_preimage`, `corollary_19_3_1_attained`, `corollary_19_3_2`,
-  `corollary_19_3_3`, `corollary_19_3_4`, `corollary_19_3_4_attained` — images and inverse images
-  under linear maps, sums, infimal convolutes, and the strong separation of disjoint polyhedra.
-* `theorem_19_4`, `polyhedralFn_iff_normalForm` — a sum of proper polyhedral convex functions is
-  polyhedral, and the normal form `f = h + δ(· | C)`.
-* `theorem_19_5_smul`, `theorem_19_5_recession`, `theorem_19_5_generators`, `corollary_19_5_1` —
-  scalar multiples, the recession cone, and the generated form of a polyhedral convex set.
-* `theorem_19_6`, `theorem_19_6_iUnion`, `theorem_19_6_biUnion`, `theorem_19_6_biUnion_add`,
-  `theorem_19_7`, `theorem_19_7_iUnion`, `corollary_19_7_1` — the convex hull of a union of
-  polyhedra and the cone generated by a polyhedron are polyhedral, with the `λ ≥ 0⁺` formulas.
+* Theorem 19.1 (Minkowski–Weyl), `Rockafellar.theorem_19_1`, `Rockafellar.theorem_19_1_pairing`,
+  `Rockafellar.theorem_19_1_convexHullPD`, `Rockafellar.theorem_19_1_isClosed`,
+  `Rockafellar.theorem_19_1_finite_faces`,
+  `Rockafellar.theorem_19_1_finitelyGenerated_of_finite_faces`,
+  `Rockafellar.theorem_19_1_of_finite_faces`, `Rockafellar.theorem_19_1_iff_finite_faces`: for a
+  convex set, being polyhedral, being closed with finitely many faces, and being finitely generated
+  are equivalent.
+* The remark after Theorem 19.1, `Rockafellar.theorem_19_1_face`: a face of a polyhedral convex set
+  is polyhedral.
+* Corollary 19.1.1, `Rockafellar.corollary_19_1_1_extremePoints`,
+  `Rockafellar.corollary_19_1_1_extremeDirections`: a polyhedral convex set has finitely many
+  extreme points and extreme directions.
+* Corollary 19.1.2, `Rockafellar.corollary_19_1_2`, `Rockafellar.corollary_19_1_2_closed`,
+  `Rockafellar.corollary_19_1_2_attained`: a convex function is polyhedral if and only if it is
+  finitely generated; a proper polyhedral convex function is closed; and the infimum that defines a
+  finitely generated function is attained where it is finite.
+* Theorem 19.2, `Rockafellar.theorem_19_2`: the conjugate of a polyhedral convex function is
+  polyhedral.
+* Corollary 19.2.1, `Rockafellar.corollary_19_2_1`: a closed convex set is polyhedral if and only if
+  its support function is polyhedral.
+* Corollary 19.2.2, `Rockafellar.corollary_19_2_2`: the polar of a polyhedral convex set is
+  polyhedral.
+* Theorem 19.3, `Rockafellar.theorem_19_3_image`, `Rockafellar.theorem_19_3_preimage`: images and
+  inverse images of polyhedral convex sets under linear maps are polyhedral.
+* Corollary 19.3.1, `Rockafellar.corollary_19_3_1_image`, `Rockafellar.corollary_19_3_1_attained`,
+  `Rockafellar.corollary_19_3_1_preimage`: the same for polyhedral convex functions, with attainment
+  of the infimum that defines $Af$.
+* Corollary 19.3.2, `Rockafellar.corollary_19_3_2`: the sum of two polyhedral convex sets is
+  polyhedral.
+* Corollary 19.3.3, `Rockafellar.corollary_19_3_3`: two disjoint non-empty polyhedral convex sets
+  can be separated strongly.
+* Corollary 19.3.4, `Rockafellar.corollary_19_3_4`, `Rockafellar.corollary_19_3_4_attained`: the
+  infimal convolution of two polyhedral convex functions is polyhedral, and its infimum is attained
+  where it is finite.
+* Theorem 19.4, `Rockafellar.theorem_19_4`: the sum of two proper polyhedral convex functions is
+  polyhedral.
+* The normal form, `Rockafellar.polyhedralFn_iff_normalForm`: a function with values in
+  $(-\infty, +\infty]$ is polyhedral convex if and only if it is a maximum of finitely many affine
+  functions plus the indicator function of a polyhedral convex set.
+* Theorem 19.5, `Rockafellar.theorem_19_5_smul`, `Rockafellar.theorem_19_5_recession`,
+  `Rockafellar.theorem_19_5_generators`: scalar multiples of a polyhedral convex set are polyhedral,
+  and the recession cone of a non-empty one is a polyhedral convex cone generated by its directions.
+* Corollary 19.5.1, `Rockafellar.corollary_19_5_1`: $f \lambda$ is polyhedral for a proper
+  polyhedral convex function $f$, $\lambda \ge 0$ and $\lambda = 0^+$.
+* Theorem 19.6, `Rockafellar.theorem_19_6`, `Rockafellar.theorem_19_6_iUnion`,
+  `Rockafellar.theorem_19_6_biUnion`, `Rockafellar.theorem_19_6_biUnion_add`: the closed convex hull
+  of a union of non-empty polyhedral convex sets is polyhedral, with formulas for it.
+* Theorem 19.7, `Rockafellar.theorem_19_7`, `Rockafellar.theorem_19_7_iUnion`: the closure of the
+  convex cone generated by a non-empty polyhedral convex set is a polyhedral convex cone, with a
+  formula for it.
+* Corollary 19.7.1, `Rockafellar.corollary_19_7_1`: if a polyhedral convex set contains the origin,
+  the convex cone that it generates is polyhedral.
+
+## Conventions
+
+* Theorems 19.6 and 19.7 and Corollary 19.5.1 use the extended coefficient $\lambda \ge 0^+$ of the
+  source, which is `Rockafellar.ExtCoeff` from §9. For the coefficient $0^+$,
+  `Rockafellar.ExtCoeff.smulSet` gives the recession cone $0^+ C$ of a set, and
+  `Rockafellar.ExtCoeff.smulFn` gives the recession function $f 0^+$ of a function.
+
+## Implementation notes
+
+* The five notions of the section are those of the backbone. A polyhedral convex set is
+  `ConvexAnalysis.Polyhedral`, the solution set of finitely many weak linear inequalities. A
+  polyhedral convex cone is `ConvexAnalysis.PolyhedralCone`. A finitely generated convex set is
+  `ConvexAnalysis.FinitelyGenerated`, the set $\operatorname{conv} P + \operatorname{cone} D$ for
+  finite sets $P$ of points and $D$ of directions. A polyhedral convex function is
+  `ConvexAnalysis.PolyhedralFn`, a function whose epigraph is polyhedral.
+
+## Deviations from the source
+
+* **Corollary 19.3.4** (generalization). The source assumes the two functions proper; this is not
+  needed. See `Rockafellar.corollary_19_3_4`.
 -/
 
 namespace Rockafellar
@@ -77,20 +122,27 @@ open scoped Pointwise
 
 variable {n m : ℕ}
 
-/-! ### The book's spellings of the two definitions -/
+/-! ### Polytopes and finitely generated functions -/
 
-/-- **§19**: a **polytope** is a bounded finitely generated convex set — equivalently
-(`isPolytope_iff`) a bounded polyhedral convex set. -/
+/-- **Section 19** of [rockafellar1970convex], definition of a polytope. A set
+$C \subseteq \mathbb{R}^n$ is a **polytope** if it is the convex hull of a finite set of points.
+
+The source defines a polytope as a bounded finitely generated convex set. The two definitions
+agree, and `Rockafellar.isPolytope_iff` shows that a polytope is the same as a bounded
+polyhedral convex set. -/
 def IsPolytope (C : Set (Rn n)) : Prop := ∃ P : Finset (Rn n), C = convexHull ℝ (P : Set (Rn n))
 
-/-- **§19**: a convex function is **finitely generated** when its epigraph is a finitely generated
-convex set in `ℝⁿ⁺¹`. The book defines it by an infimum formula and then observes, before Corollary
-19.1.2, that this says `f x = inf {μ | (x, μ) ∈ F}` for `F` the hull of the points `(aᵢ, αᵢ)`,
-their directions and the direction `(0, 1)`; the generator `(0, 1)` is absorbed here into the
-requirement that the generated set be an epigraph. -/
+/-- **Section 19** of [rockafellar1970convex], definition of a finitely generated convex function. A
+function $f$ on $\mathbb{R}^n$ with values in $[-\infty, +\infty]$ is **finitely generated** if
+its epigraph is a finitely generated convex set in $\mathbb{R}^n \times \mathbb{R}$.
+
+The source defines the notion by an infimum formula, and observes before Corollary 19.1.2 that
+this means $f(x) = \inf \{\mu \mid (x, \mu) \in F\}$, where $F$ is the convex hull of finitely
+many points $(a_i, \alpha_i)$, directions, and the direction $(0, 1)$. Here the generator
+$(0, 1)$ is part of the requirement that the generated set is an epigraph. -/
 def FinitelyGeneratedFn (f : Rn n → EReal) : Prop := FinitelyGenerated (epi f)
 
-/-- A polytope is exactly a bounded polyhedral convex set. -/
+/-- A set $C \subseteq \mathbb{R}^n$ is a polytope if and only if it is polyhedral and bounded. -/
 theorem isPolytope_iff {C : Set (Rn n)} :
     IsPolytope C ↔ Polyhedral C ∧ Bornology.IsBounded C := by
   constructor
@@ -102,15 +154,20 @@ theorem isPolytope_iff {C : Set (Rn n)} :
 
 /-! ### Theorem 19.1 -/
 
-/-- **Theorem 19.1** (Minkowski–Weyl), clauses (a) and (c): a convex set is *polyhedral* — an
-intersection of finitely many closed half-spaces — iff it is *finitely generated*, the convex hull
-of a finite set of points and directions. -/
+/-- **Theorem 19.1** of [rockafellar1970convex] (Minkowski–Weyl theorem), (a) ⇔ (c). A set
+$C \subseteq \mathbb{R}^n$ is polyhedral, that is, the intersection of finitely many closed
+half-spaces, if and only if it is finitely generated, that is, the convex hull of a finite set
+of points and directions. -/
 theorem theorem_19_1 {C : Set (Rn n)} : Polyhedral C ↔ FinitelyGenerated C :=
   polyhedral_iff_finitelyGenerated
 
-/-- **Theorem 19.1**, clause (a) in the book's notation: `C` is polyhedral exactly when it solves a
-finite system `⟨x, bᵢ⟩ ≤ βᵢ` in *vectors* `bᵢ`. The backbone quantifies over linear functionals,
-which the pairing represents on `ℝⁿ`. -/
+/-- **Theorem 19.1** of [rockafellar1970convex], clause (a) in the notation of the source. A set
+$C \subseteq \mathbb{R}^n$ is polyhedral if and only if there are finitely many pairs $(b_i,
+\beta_i) \in \mathbb{R}^n \times \mathbb{R}$ with
+$$C = \{x \mid \langle x, b_i \rangle \le \beta_i \text{ for all } i\}.$$
+
+The backbone quantifies over linear functionals; on $\mathbb{R}^n$ the pairing represents each
+of them by a vector. -/
 theorem theorem_19_1_pairing {C : Set (Rn n)} :
     Polyhedral C ↔ ∃ s : Finset (Rn n × ℝ), C = {x : Rn n | ∀ q ∈ s, pairing n x q.1 ≤ q.2} := by
   classical
@@ -125,63 +182,72 @@ theorem theorem_19_1_pairing {C : Set (Rn n)} :
   · intro h q hq
     exact h ((pairing n).flip q.1, q.2) ⟨q, hq, rfl⟩
 
-/-- **Theorem 19.1**, clause (c) in the book's notation: `C` is finitely generated exactly when
-`C = conv S` for a finite set `S` of points and directions. -/
+/-- **Theorem 19.1** of [rockafellar1970convex], clause (c) in the notation of the source. A set
+$C \subseteq \mathbb{R}^n$ is finitely generated if and only if $C = \operatorname{conv} S$ for
+a finite set $S$ of points $P$ and directions $D$. -/
 theorem theorem_19_1_convexHullPD {C : Set (Rn n)} :
     FinitelyGenerated C ↔ ∃ P D : Finset (Rn n),
       C = convexHullPD (P : Set (Rn n)) (D : Set (Rn n)) := Iff.rfl
 
-/-- **Theorem 19.1**, first half of clause (b): a polyhedral convex set is closed. -/
+/-- **Theorem 19.1** of [rockafellar1970convex], (a) ⇒ (b), first half. A polyhedral convex set in
+$\mathbb{R}^n$ is closed. -/
 theorem theorem_19_1_isClosed {C : Set (Rn n)} (hC : Polyhedral C) : IsClosed C :=
   hC.isClosed
 
-/-- **Theorem 19.1**, second half of clause (b): a polyhedral convex set has finitely many
-faces. -/
+/-- **Theorem 19.1** of [rockafellar1970convex], (a) ⇒ (b), second half. A polyhedral convex set in
+$\mathbb{R}^n$ has finitely many faces. -/
 theorem theorem_19_1_finite_faces {C : Set (Rn n)} (hC : Polyhedral C) :
     {C' : Set (Rn n) | IsFace C C'}.Finite :=
   hC.finite_setOf_isFace
 
-/-- **Theorem 19.1**, (b) ⇒ (c): a closed convex set with finitely many faces is finitely
-generated. -/
+/-- **Theorem 19.1** of [rockafellar1970convex], (b) ⇒ (c). A closed convex set in $\mathbb{R}^n$
+with finitely many faces is finitely generated. -/
 theorem theorem_19_1_finitelyGenerated_of_finite_faces {C : Set (Rn n)} (hC : Convex ℝ C)
     (hCcl : IsClosed C) (hfin : {C' : Set (Rn n) | IsFace C C'}.Finite) :
     FinitelyGenerated C :=
   finitelyGenerated_of_finite_setOf_isFace hC hCcl hfin
 
-/-- **Theorem 19.1**, (b) ⇒ (a): a closed convex set with finitely many faces is polyhedral.
+/-- **Theorem 19.1** of [rockafellar1970convex], (b) ⇒ (a). A closed convex set in $\mathbb{R}^n$
+with finitely many faces is polyhedral.
 
-**The book's proof of this implication has a hole**: it writes "it suffices to treat the case where
-`C` is `n`-dimensional in `Rⁿ`" with no justification, then runs the tangent half-spaces of Theorem
-18.8 over that case. The route taken here avoids the reduction — (b) ⇒ (c) ⇒ (a) — and never uses
-Theorem 18.8 or counts a dimension. -/
+The proof in the source has a gap: it says that it suffices to treat the case where $C$ is
+$n$-dimensional, without justification, and then uses the tangent half-spaces of Theorem 18.8.
+The proof here goes through (b) ⇒ (c) ⇒ (a) instead, and uses neither Theorem 18.8 nor a
+dimension count. -/
 theorem theorem_19_1_of_finite_faces {C : Set (Rn n)} (hC : Convex ℝ C) (hCcl : IsClosed C)
     (hfin : {C' : Set (Rn n) | IsFace C C'}.Finite) : Polyhedral C :=
   polyhedral_of_finite_setOf_isFace hC hCcl hfin
 
-/-- **Theorem 19.1**, clauses (a) and (b): a convex set is polyhedral iff it is closed and has
-finitely many faces. With `theorem_19_1` this completes the three-way statement. -/
+/-- **Theorem 19.1** of [rockafellar1970convex], (a) ⇔ (b). A convex set in $\mathbb{R}^n$ is
+polyhedral if and only if it is closed and has finitely many faces. With
+`Rockafellar.theorem_19_1`, this gives the equivalence of the three clauses. -/
 theorem theorem_19_1_iff_finite_faces {C : Set (Rn n)} (hC : Convex ℝ C) :
     Polyhedral C ↔ IsClosed C ∧ {C' : Set (Rn n) | IsFace C C'}.Finite :=
   polyhedral_iff_isClosed_finite_setOf_isFace hC
 
-/-- **§19**, the remark after Theorem 19.1: a face of a polyhedral convex set is polyhedral. -/
+/-- **Section 19** of [rockafellar1970convex], the remark after Theorem 19.1. A face of a polyhedral
+convex set in $\mathbb{R}^n$ is polyhedral. -/
 theorem theorem_19_1_face {C C' : Set (Rn n)} (hC : Polyhedral C) (hface : IsFace C C') :
     Polyhedral C' :=
   hC.of_isFace hface
 
 /-! ### Corollary 19.1.1 -/
 
-/-- **Corollary 19.1.1**, the points half: a polyhedral convex set has finitely many extreme
-points. -/
+/-- **Corollary 19.1.1** of [rockafellar1970convex], extreme points. A polyhedral convex set in
+$\mathbb{R}^n$ has finitely many extreme points. -/
 theorem corollary_19_1_1_extremePoints {C : Set (Rn n)} (hC : Polyhedral C) :
     (C.extremePoints ℝ).Finite :=
   hC.finitelyGenerated.finite_extremePoints
 
-/-- **Corollary 19.1.1**, the directions half: a polyhedral convex set has finitely many extreme
-directions. This cannot read `(extremeDirections C).Finite`: a direction is recorded by a
-generating vector, so `extremeDirections C` is closed under positive rescaling and is infinite as
-soon as it is non-empty. The finiteness is stated up to positive scaling, which is what the book
-means. -/
+/-- **Corollary 19.1.1** of [rockafellar1970convex], extreme directions. A polyhedral convex set $C$
+in $\mathbb{R}^n$ has finitely many extreme directions: there is a finite set $D$ such that
+every vector $y$ that generates an extreme direction of $C$ is a positive multiple of a vector
+of $D$.
+
+A direction is represented by a vector that generates it, so
+`ConvexAnalysis.extremeDirections C` is closed under multiplication by positive scalars, and it
+is infinite when it is non-empty. So the finiteness is stated up to positive multiples, which is
+the meaning of the source. -/
 theorem corollary_19_1_1_extremeDirections {C : Set (Rn n)} (hC : Polyhedral C) :
     ∃ D : Finset (Rn n), ∀ y ∈ extremeDirections C,
       ∃ z ∈ (D : Set (Rn n)), ∃ a : ℝ, 0 < a ∧ y = a • z := by
@@ -193,20 +259,28 @@ theorem corollary_19_1_1_extremeDirections {C : Set (Rn n)} (hC : Polyhedral C) 
 
 /-! ### Corollary 19.1.2 -/
 
-/-- **Corollary 19.1.2**, first sentence: a convex function is polyhedral iff it is finitely
-generated. Both sides are Theorem 19.1 applied to the epigraph. -/
+/-- **Corollary 19.1.2** of [rockafellar1970convex], first sentence. A function on $\mathbb{R}^n$
+with values in $[-\infty, +\infty]$ is polyhedral convex if and only if it is finitely
+generated.
+
+Both conditions are conditions on the epigraph, and the proof applies Theorem 19.1 to it. -/
 theorem corollary_19_1_2 {f : Rn n → EReal} : PolyhedralFn f ↔ FinitelyGeneratedFn f :=
   polyhedral_iff_finitelyGenerated
 
-/-- **Corollary 19.1.2**, second sentence: a proper polyhedral convex function is closed.
-Properness cannot be dropped: `f ≡ ⊥` has epigraph `ℝⁿ⁺¹`, polyhedral by the empty system, and is
-not closed in the `ClosedConvex` sense. -/
+/-- **Corollary 19.1.2** of [rockafellar1970convex], second sentence. A proper polyhedral convex
+function on $\mathbb{R}^n$ is closed.
+
+Properness cannot be omitted. The constant function $-\infty$ has the epigraph
+$\mathbb{R}^n \times \mathbb{R}$, which is polyhedral as the solution set of the empty system,
+but it is not closed in the sense of `ConvexAnalysis.ClosedConvex`. -/
 theorem corollary_19_1_2_closed {f : Rn n → EReal} (hf : PolyhedralFn f) (hp : ProperConvex f) :
     ClosedConvex f :=
   hf.closedConvex hp.ne_bot
 
-/-- **Corollary 19.1.2**, third sentence: the infimum defining a finitely generated convex function
-is attained wherever it is finite. -/
+/-- **Corollary 19.1.2** of [rockafellar1970convex], third sentence. Let the epigraph of $f$ be the
+convex hull $F$ of a finite set of points and directions in $\mathbb{R}^n \times \mathbb{R}$. If
+$f(x) = \mu$ is finite, then $(x, \mu) \in F$: the infimum
+$f(x) = \inf \{\mu \mid (x, \mu) \in F\}$ is attained wherever it is finite. -/
 theorem corollary_19_1_2_attained {f : Rn n → EReal} {P D : Finset (Rn n × ℝ)}
     (hPD : epi f = convexHullPD (P : Set (Rn n × ℝ)) (D : Set (Rn n × ℝ)))
     {x : Rn n} {μ : ℝ} (hx : f x = (μ : EReal)) :
@@ -216,14 +290,16 @@ theorem corollary_19_1_2_attained {f : Rn n → EReal} {P D : Finset (Rn n × �
 
 /-! ### Theorem 19.2 and its corollaries -/
 
-/-- **Theorem 19.2**. The conjugate of a polyhedral convex function is polyhedral. No properness
-is assumed, and none is needed. -/
+/-- **Theorem 19.2** of [rockafellar1970convex]. The conjugate $f^*$ of a polyhedral convex function
+$f$ on $\mathbb{R}^n$ is polyhedral.
+
+The function $f$ need not be proper. -/
 theorem theorem_19_2 {f : Rn n → EReal} (hf : PolyhedralFn f) :
     PolyhedralFn (convexConj (pairing n) f) :=
   hf.convexConj
 
-/-- **Corollary 19.2.1**. A closed convex set is polyhedral iff its support function is
-polyhedral. -/
+/-- **Corollary 19.2.1** of [rockafellar1970convex]. A closed convex set $C \subseteq \mathbb{R}^n$
+is polyhedral if and only if its support function $\delta^*(\cdot \mid C)$ is polyhedral. -/
 theorem corollary_19_2_1 {C : Set (Rn n)} (hconv : Convex ℝ C) (hcl : IsClosed C) :
     Polyhedral C ↔ PolyhedralFn (supportFn (pairing n) C) := by
   constructor
@@ -236,7 +312,8 @@ theorem corollary_19_2_1 {C : Set (Rn n)} (hconv : Convex ℝ C) (hcl : IsClosed
     have hd := h.polyhedral_convexDom
     rwa [convexDom_indicatorFn] at hd
 
-/-- **Corollary 19.2.2**. The polar of a polyhedral convex set is polyhedral. -/
+/-- **Corollary 19.2.2** of [rockafellar1970convex]. The polar $C^\circ$ of a polyhedral convex set
+$C \subseteq \mathbb{R}^n$ is polyhedral. -/
 theorem corollary_19_2_2 {C : Set (Rn n)} (hC : Polyhedral C) :
     Polyhedral (polarSet (pairing n) C) := by
   have hs : PolyhedralFn (supportFn (pairing n) C) := by
@@ -251,57 +328,76 @@ theorem corollary_19_2_2 {C : Set (Rn n)} (hC : Polyhedral C) :
 
 /-! ### Theorem 19.3 and its corollaries -/
 
-/-- **Theorem 19.3**, first half: the image `AC` of a polyhedral convex set under a linear
-transformation `A : ℝⁿ → ℝᵐ` is polyhedral. -/
+/-- **Theorem 19.3** of [rockafellar1970convex], images. Let $A$ be a linear transformation from
+$\mathbb{R}^n$ to $\mathbb{R}^m$. If $C \subseteq \mathbb{R}^n$ is polyhedral convex, then $AC$
+is polyhedral convex. -/
 theorem theorem_19_3_image {C : Set (Rn n)} (hC : Polyhedral C) (A : Rn n →ₗ[ℝ] Rn m) :
     Polyhedral (A '' C) :=
   hC.image A
 
-/-- **Theorem 19.3**, second half: the preimage `A⁻¹D` of a polyhedral convex set is
-polyhedral. -/
+/-- **Theorem 19.3** of [rockafellar1970convex], inverse images. Let $A$ be a linear transformation
+from $\mathbb{R}^n$ to $\mathbb{R}^m$. If $D \subseteq \mathbb{R}^m$ is polyhedral convex, then
+$A^{-1} D$ is polyhedral convex. -/
 theorem theorem_19_3_preimage {D : Set (Rn m)} (hD : Polyhedral D) (A : Rn n →ₗ[ℝ] Rn m) :
     Polyhedral (A ⁻¹' D) :=
   hD.comap A
 
-/-- **Corollary 19.3.1**, first half: the image `Af` of a polyhedral convex function is
-polyhedral. -/
+/-- **Corollary 19.3.1** of [rockafellar1970convex], images. Let $A$ be a linear transformation from
+$\mathbb{R}^n$ to $\mathbb{R}^m$. If $f$ is a polyhedral convex function on $\mathbb{R}^n$, then
+$Af$, with $(Af)(y) = \inf \{f(x) \mid Ax = y\}$, is polyhedral convex. -/
 theorem corollary_19_3_1_image {f : Rn n → EReal} (hf : PolyhedralFn f) (A : Rn n →ₗ[ℝ] Rn m) :
     PolyhedralFn (mapLin A f) :=
   PolyhedralFn.mapLin hf A
 
-/-- **Corollary 19.3.1**, the attainment clause: the infimum defining `(Af)(y)` is attained
-wherever it is finite. -/
+/-- **Corollary 19.3.1** of [rockafellar1970convex], attainment. Let $A$ be a linear transformation
+from $\mathbb{R}^n$ to $\mathbb{R}^m$ and let $f$ be a polyhedral convex function on
+$\mathbb{R}^n$. If $(Af)(y)$ is finite, then there is $x$ with $Ax = y$ and $f(x) = (Af)(y)$:
+the infimum is attained. -/
 theorem corollary_19_3_1_attained {f : Rn n → EReal} (hf : PolyhedralFn f) (A : Rn n →ₗ[ℝ] Rn m)
     {y : Rn m} {μ : ℝ} (hy : mapLin A f y = (μ : EReal)) :
     ∃ x : Rn n, A x = y ∧ f x = mapLin A f y :=
   exists_mapLin_eq_of_polyhedralFn hf A hy
 
-/-- **Corollary 19.3.1**, second half: `gA` is polyhedral for `g` polyhedral. -/
+/-- **Corollary 19.3.1** of [rockafellar1970convex], inverse images. Let $A$ be a linear
+transformation from $\mathbb{R}^n$ to $\mathbb{R}^m$. If $g$ is a polyhedral convex function on
+$\mathbb{R}^m$, then $gA$, with $(gA)(x) = g(Ax)$, is polyhedral convex. -/
 theorem corollary_19_3_1_preimage {g : Rn m → EReal} (hg : PolyhedralFn g)
     (A : Rn n →ₗ[ℝ] Rn m) : PolyhedralFn (compLin g A) :=
   PolyhedralFn.compLin hg A
 
-/-- **Corollary 19.3.2**. A sum of two polyhedral convex sets is polyhedral. -/
+/-- **Corollary 19.3.2** of [rockafellar1970convex]. If $C_1, C_2 \subseteq \mathbb{R}^n$ are
+polyhedral convex sets, then $C_1 + C_2$ is polyhedral. -/
 theorem corollary_19_3_2 {C₁ C₂ : Set (Rn n)} (h₁ : Polyhedral C₁) (h₂ : Polyhedral C₂) :
     Polyhedral (C₁ + C₂) :=
   h₁.add h₂
 
-/-- **Corollary 19.3.3**. Two disjoint polyhedral convex sets can be separated strongly. The
-book's non-emptiness hypotheses are kept because the book has them, but are not used: `C₁ - C₂` is
-polyhedral hence closed, and Theorem 11.4 applies. -/
+/-- **Corollary 19.3.3** of [rockafellar1970convex]. Let $C_1$ and $C_2$ be non-empty disjoint
+polyhedral convex sets in $\mathbb{R}^n$. Then there is a hyperplane that separates $C_1$ and
+$C_2$ strongly: a continuous linear function $\varphi$ and a number $c$ with
+$$\sup_{x \in C_1} \varphi(x) < c < \inf_{x \in C_2} \varphi(x).$$
+
+The non-emptiness hypotheses of the source are kept, but the proof does not use them. The set
+$C_1 - C_2$ is polyhedral, hence closed, and Theorem 11.4 applies. Strong separation is
+`ConvexAnalysis.SeparatesStrongly`. -/
 theorem corollary_19_3_3 {C₁ C₂ : Set (Rn n)} (h₁ : Polyhedral C₁) (h₂ : Polyhedral C₂)
     (_hne₁ : C₁.Nonempty) (_hne₂ : C₂.Nonempty) (hdisj : Disjoint C₁ C₂) :
     ∃ (φ : Rn n →L[ℝ] ℝ) (c : ℝ), SeparatesStrongly φ c C₁ C₂ :=
   separatesStrongly_of_polyhedral h₁ h₂ hdisj
 
-/-- **Corollary 19.3.4**. The infimal convolute `f₁ □ f₂` of two polyhedral convex functions is
-polyhedral. Properness, which the book assumes, is not needed. -/
+/-- **Corollary 19.3.4** of [rockafellar1970convex]. If $f_1$ and $f_2$ are polyhedral convex
+functions on $\mathbb{R}^n$, then the infimal convolution $f_1 \mathbin{\square} f_2$ is
+polyhedral convex.
+
+**Generalization.** The source assumes $f_1$ and $f_2$ proper. This is not needed. -/
 theorem corollary_19_3_4 {f₁ f₂ : Rn n → EReal} (h₁ : PolyhedralFn f₁) (h₂ : PolyhedralFn f₂) :
     PolyhedralFn (infConv f₁ f₂) :=
   h₁.infConv h₂
 
-/-- **Corollary 19.3.4**, the attainment clause: the infimum defining `(f₁ □ f₂)(x)` is attained
-wherever it is finite. -/
+/-- **Corollary 19.3.4** of [rockafellar1970convex], attainment. Let $f_1$ and $f_2$ be polyhedral
+convex functions on $\mathbb{R}^n$. If $(f_1 \mathbin{\square} f_2)(x) = \mu$ is finite, then
+there are $x_1, x_2$ with $x_1 + x_2 = x$ and $f_1(x_1) + f_2(x_2) \le \mu$, so the infimum in
+$$(f_1 \mathbin{\square} f_2)(x) = \inf \{f_1(x_1) + f_2(x_2) \mid x_1 + x_2 = x\}$$
+is attained. -/
 theorem corollary_19_3_4_attained {f₁ f₂ : Rn n → EReal} (h₁ : PolyhedralFn f₁)
     (h₂ : PolyhedralFn f₂) {x : Rn n} {μ : ℝ} (hx : infConv f₁ f₂ x = (μ : EReal)) :
     ∃ x₁ x₂ : Rn n, x₁ + x₂ = x ∧ f₁ x₁ + f₂ x₂ ≤ (μ : EReal) := by
@@ -316,24 +412,32 @@ theorem corollary_19_3_4_attained {f₁ f₂ : Rn n → EReal} (h₁ : Polyhedra
 
 /-! ### Theorem 19.4 -/
 
-/-- **Theorem 19.4**. A sum of two proper polyhedral convex functions is polyhedral. Properness
-enters only as `∀ x, fᵢ x ≠ ⊥`, which is what makes the `EReal` splitting
-`f₁ x + f₂ x ≤ μ ↔ ∃ α β, f₁ x ≤ α ∧ f₂ x ≤ β ∧ α + β = μ` valid; `⊤ + ⊥` would break it. -/
+/-- **Theorem 19.4** of [rockafellar1970convex]. If $f_1$ and $f_2$ are proper polyhedral convex
+functions on $\mathbb{R}^n$, then $f_1 + f_2$ is polyhedral.
+
+The proof uses properness only through $f_i(x) > -\infty$ for all $x$. This makes valid the
+splitting $f_1(x) + f_2(x) \le \mu$ if and only if $f_1(x) \le \alpha$ and $f_2(x) \le \beta$
+for some $\alpha + \beta = \mu$, which fails for the sum $(+\infty) + (-\infty)$. -/
 theorem theorem_19_4 {f₁ f₂ : Rn n → EReal} (h₁ : PolyhedralFn f₁) (h₂ : PolyhedralFn f₂)
     (hp₁ : ProperConvex f₁) (hp₂ : ProperConvex f₂) : PolyhedralFn (f₁ + f₂) :=
   h₁.add h₂ hp₁.ne_bot hp₂.ne_bot
 
-/-! ### The normal form `f = h + δ(· | C)` -/
+/-! ### The normal form $f = h + \delta(\cdot \mid C)$ -/
 
-/-- **§19**, the unnumbered normal form: `f` is polyhedral convex iff
+/-- **Section 19** of [rockafellar1970convex], the normal form of a polyhedral convex function. Let
+$f$ be a function from $\mathbb{R}^n$ to $(-\infty, +\infty]$. Then $f$ is polyhedral convex if
+and only if there are finitely many pairs $(b_i, \beta_i) \in \mathbb{R}^n \times \mathbb{R}$
+and a polyhedral convex set $C$ with
+$$f(x) = h(x) + \delta(x \mid C), \qquad h(x) = \max_i \{\langle x, b_i \rangle - \beta_i\}.$$
 
-`f x = h x + δ(x | C)`, with `h x = max {⟨x, b₁⟩ - β₁, …, ⟨x, bₖ⟩ - βₖ}` and
-`C = {x | ⟨x, bₖ₊₁⟩ ≤ βₖ₊₁, …, ⟨x, bₘ⟩ ≤ βₘ}`.
+The source writes $C = \{x \mid \langle x, b_i \rangle \le \beta_i,\ i = k + 1, \dots, m\}$ with
+a second family of pairs. The two families are the two kinds of closed half-space that can bound
+the epigraph in $\mathbb{R}^{n+1}$: epigraphs of affine functions, and vertical half-spaces.
 
-The two families are the two kinds of closed half-space that can bound `epi f` in `ℝⁿ⁺¹`: epigraphs
-of affine functions, and "vertical" ones. `∀ x, f x ≠ ⊥` cannot be dropped: since `⊥ + ⊤ = ⊥` in
-`EReal`, a right-hand side of this shape takes the value `⊥` only inside `C`, whereas the function
-that is `⊥` on a non-empty polyhedral `C` and `⊤` outside is convex with polyhedral epigraph. -/
+The hypothesis that $f$ never takes the value $-\infty$ cannot be omitted. In `EReal` the sum
+$(-\infty) + (+\infty)$ is $-\infty$, so a function of the form $h + \delta(\cdot \mid C)$ takes
+the value $-\infty$ only inside $C$, and the function that is $-\infty$ on a non-empty
+polyhedral set and $+\infty$ outside it is convex with a polyhedral epigraph. -/
 theorem polyhedralFn_iff_normalForm {f : Rn n → EReal} (hb : ∀ x, f x ≠ ⊥) :
     PolyhedralFn f ↔ ∃ (s : Finset (Rn n × ℝ)) (C : Set (Rn n)), Polyhedral C ∧
       ∀ x, f x = (⨆ q ∈ s, ((pairing n x q.1 - q.2 : ℝ) : EReal)) + indicatorFn C x := by
@@ -379,27 +483,36 @@ theorem polyhedralFn_iff_normalForm {f : Rn n → EReal} (hb : ∀ x, f x ≠ �
 
 /-! ### Theorem 19.5 and its corollary -/
 
-/-- **Theorem 19.5**, first assertion: `λC` is polyhedral for every scalar `λ`. One statement
-covers `λ > 0`, `λ = 0` and `λ < 0`, so the book's three-way case split is not reproduced. -/
+/-- **Theorem 19.5** of [rockafellar1970convex], scalar multiples. If $C \subseteq \mathbb{R}^n$ is
+polyhedral convex, then $\lambda C$ is polyhedral for every real $\lambda$.
+
+One statement covers $\lambda > 0$, $\lambda = 0$ and $\lambda < 0$, so the case distinction of
+the source is not reproduced. -/
 theorem theorem_19_5_smul {C : Set (Rn n)} (hC : Polyhedral C) (l : ℝ) : Polyhedral (l • C) :=
   hC.smul l
 
-/-- **Theorem 19.5**, second assertion: the recession cone of a non-empty polyhedral convex set is
-a polyhedral convex cone. -/
+/-- **Theorem 19.5** of [rockafellar1970convex], recession cone. The recession cone $0^+ C$ of a
+non-empty polyhedral convex set $C \subseteq \mathbb{R}^n$ is a polyhedral convex cone. -/
 theorem theorem_19_5_recession {C : Set (Rn n)} (hC : Polyhedral C) (hne : C.Nonempty) :
     PolyhedralCone (recessionCone C) :=
   hC.polyhedralCone_recessionCone hne
 
-/-- **Theorem 19.5**, third assertion: if `C = conv S` for a finite set `S` of points and
-directions, then `0⁺C = conv S₀` for `S₀` the origin together with the directions of `S`, which is
-the cone `PointedCone.hull ℝ ↑D` they generate. -/
+/-- **Theorem 19.5** of [rockafellar1970convex], generators. Let $C = \operatorname{conv} S$ be
+non-empty, for a finite set $S$ of points $P$ and directions $D$ in $\mathbb{R}^n$. Then
+$0^+ C = \operatorname{conv} S_0$, where $S_0$ consists of the origin and the directions of $S$:
+the recession cone is the convex cone generated by $D$. -/
 theorem theorem_19_5_generators {C : Set (Rn n)} {P D : Finset (Rn n)}
     (hPD : C = convexHullPD (P : Set (Rn n)) (D : Set (Rn n))) (hne : C.Nonempty) :
     recessionCone C = (PointedCone.hull ℝ (D : Set (Rn n)) : Set (Rn n)) :=
   recessionCone_of_finitelyGenerated hPD hne
 
-/-- **Corollary 19.5.1**. For `f` a proper polyhedral convex function, `fλ` is polyhedral for
-`λ ≥ 0` and for `λ = 0⁺`, the `λ ≥ 0⁺` convention being §9's `ExtCoeff.smulFn`. -/
+/-- **Corollary 19.5.1** of [rockafellar1970convex]. Let $f$ be a proper polyhedral convex function
+on $\mathbb{R}^n$. Then $f \lambda$ is polyhedral for every $\lambda \ge 0$ and for
+$\lambda = 0^+$.
+
+The coefficient is `Rockafellar.ExtCoeff`. The function $f \lambda$ is
+`Rockafellar.ExtCoeff.smulFn`: right scalar multiplication for real $\lambda$, and the recession
+function $f 0^+$ for $\lambda = 0^+$. -/
 theorem corollary_19_5_1 {f : Rn n → EReal} (hf : PolyhedralFn f) (hp : ProperConvex f)
     {l : ExtCoeff} (hl : l.Nonneg) : PolyhedralFn (l.smulFn f) := by
   cases l with
@@ -419,20 +532,25 @@ theorem corollary_19_5_1 {f : Rn n → EReal} (hf : PolyhedralFn f) (hp : Proper
 
 /-! ### Theorems 19.6 and 19.7 -/
 
-/-- **Theorem 19.6** for `m = 2`: `cl (conv (C₁ ∪ C₂))` is polyhedral for `C₁`, `C₂` non-empty
-polyhedral. The book prints Theorem 19.6 with **no proof paragraph**; the argument formalized here
-is the one in its running text. -/
+/-- **Theorem 19.6** of [rockafellar1970convex], for two sets. If $C_1, C_2 \subseteq \mathbb{R}^n$
+are non-empty polyhedral convex sets, then $\operatorname{cl}(\operatorname{conv}(C_1 \cup
+C_2))$ is polyhedral.
+
+The source prints Theorem 19.6 without a proof. The proof formalized here is the argument in the
+text around it. -/
 theorem theorem_19_6 {C₁ C₂ : Set (Rn n)} (h₁ : Polyhedral C₁) (hne₁ : C₁.Nonempty)
     (h₂ : Polyhedral C₂) (hne₂ : C₂.Nonempty) :
     Polyhedral (closure (convexHull ℝ (C₁ ∪ C₂))) :=
   polyhedral_closure_convexHull_union h₁ hne₁ h₂ hne₂
 
-/-- **Theorem 19.6** for `m = 2`, the formula
+/-- **Theorem 19.6** of [rockafellar1970convex], formula for two sets. If
+$C_1, C_2 \subseteq \mathbb{R}^n$ are non-empty polyhedral convex sets, then
+$$\operatorname{cl}(\operatorname{conv}(C_1 \cup C_2)) = \bigcup \{\lambda_1 C_1 + \lambda_2 C_2
+  \mid \lambda_i \ge 0^+,\ \lambda_1 + \lambda_2 = 1\},$$
+where $0^+ C_i$ is used in place of $0 C_i$ when $\lambda_i = 0^+$.
 
-`cl (conv (C₁ ∪ C₂)) = ⋃ {λ₁C₁ + λ₂C₂ | λᵢ ≥ 0, λ₁ + λ₂ = 1}`,
-
-with `0⁺Cᵢ` substituted for `0Cᵢ` when `λᵢ = 0`. The union is indexed by `ExtCoeff`, exactly as in
-Theorem 9.8. -/
+The union is over pairs of `Rockafellar.ExtCoeff`, as in Theorem 9.8. In the sum
+$\lambda_1 + \lambda_2$, the coefficient $0^+$ counts as $0$. -/
 theorem theorem_19_6_iUnion {C₁ C₂ : Set (Rn n)} (h₁ : Polyhedral C₁) (hne₁ : C₁.Nonempty)
     (h₂ : Polyhedral C₂) (hne₂ : C₂.Nonempty) :
     closure (convexHull ℝ (C₁ ∪ C₂))
@@ -442,27 +560,36 @@ theorem theorem_19_6_iUnion {C₁ C₂ : Set (Rn n)} (h₁ : Polyhedral C₁) (h
   rw [iUnion_extCoeff_pair h₁.convex hne₁ h₂.convex hne₂]
   exact (finitelyGenerated_closure_convexHull_union h₁ hne₁ h₂ hne₂).2
 
-/-- **Theorem 19.6** for general `m`: `cl (conv (C₁ ∪ ⋯ ∪ Cₘ))` is polyhedral. Indexed by a
-`Finset`, which also allows the empty family, where both sides are `∅`. -/
+/-- **Theorem 19.6** of [rockafellar1970convex], for $m$ sets. If
+$C_1, \dots, C_m \subseteq \mathbb{R}^n$ are non-empty polyhedral convex sets, then
+$\operatorname{cl}(\operatorname{conv}(C_1 \cup \cdots \cup C_m))$ is polyhedral.
+
+The sets are indexed by a `Finset`. The empty family is allowed, and then the set is empty. -/
 theorem theorem_19_6_biUnion {ι : Type*} {s : Finset ι} {C : ι → Set (Rn n)}
     (hC : ∀ i ∈ s, Polyhedral (C i)) (hne : ∀ i ∈ s, (C i).Nonempty) :
     Polyhedral (closure (convexHull ℝ (⋃ i ∈ s, C i))) :=
   polyhedral_closure_convexHull_biUnion hC hne
 
-/-- **Theorem 19.6** for general `m`, in convention-free form:
+/-- **Theorem 19.6** of [rockafellar1970convex], formula for $m$ sets without the convention $0^+$.
+If $C_1, \dots, C_m \subseteq \mathbb{R}^n$ are non-empty polyhedral convex sets, then
+$$\operatorname{cl}(\operatorname{conv}(C_1 \cup \cdots \cup C_m)) = \operatorname{conv}(C_1
+  \cup \cdots \cup C_m) + (0^+ C_1 + \cdots + 0^+ C_m).$$
 
-`cl (conv (C₁ ∪ ⋯ ∪ Cₘ)) = conv (C₁ ∪ ⋯ ∪ Cₘ) + (0⁺C₁ + ⋯ + 0⁺Cₘ)`.
-
-Adding the recession cones says what the book's union over weights says, with no convention. -/
+The sum of the recession cones expresses what the union over the coefficients
+$\lambda_i \ge 0^+$ expresses in the source. -/
 theorem theorem_19_6_biUnion_add {ι : Type*} {s : Finset ι} {C : ι → Set (Rn n)}
     (hC : ∀ i ∈ s, Polyhedral (C i)) (hne : ∀ i ∈ s, (C i).Nonempty) :
     closure (convexHull ℝ (⋃ i ∈ s, C i))
       = convexHull ℝ (⋃ i ∈ s, C i) + ∑ i ∈ s, recessionCone (C i) :=
   (finitelyGenerated_closure_convexHull_biUnion hC hne).2
 
-/-- **The `λ ≥ 0⁺` convention for a single set.** For convex `C`, Rockafellar's
-`⋃ {λC | λ > 0 or λ = 0⁺}` is exactly `cone C + 0⁺C`. Theorem 19.7 asks `C` non-empty; the identity
-does not, both sides collapsing to `0⁺∅` when `C = ∅`. -/
+/-- For a convex set $C \subseteq \mathbb{R}^n$,
+$$\bigcup \{\lambda C \mid \lambda > 0 \text{ or } \lambda = 0^+\} = \operatorname{cone} C + 0^+
+  C,$$
+where $\operatorname{cone} C$ is the convex cone generated by $C$, which contains the origin.
+This is the convention $\lambda \ge 0^+$ for one set. Theorem 19.7 assumes $C$ non-empty, but
+the identity does not need it: for $C = \emptyset$ both sides are
+$0^+ \emptyset = \mathbb{R}^n$. -/
 theorem iUnion_extCoeff_pos {C : Set (Rn n)} (hC : Convex ℝ C) :
     (⋃ l : ExtCoeff, ⋃ _ : l.Pos, l.smulSet C)
       = (PointedCone.hull ℝ C : Set (Rn n)) + recessionCone C := by
@@ -496,23 +623,31 @@ theorem iUnion_extCoeff_pos {C : Set (Rn n)} (hC : Convex ℝ C) :
         rw [smul_add, smul_smul, mul_inv_cancel₀ (ne_of_gt ht), one_smul, hty', huv']
       rwa [hval] at hmem
 
-/-- **Theorem 19.7**. For `C` a non-empty polyhedral convex set, the closure of the convex cone
-generated by `C` is a polyhedral convex cone. The closure is needed: for `C` the horizontal line at
-height `1` in `ℝ²` the cone generated is the open upper half-plane with the origin, and the missing
-horizontal directions are exactly `0⁺C`. -/
+/-- **Theorem 19.7** of [rockafellar1970convex]. If $C \subseteq \mathbb{R}^n$ is a non-empty
+polyhedral convex set, then the closure of the convex cone generated by $C$ is a polyhedral
+convex cone.
+
+The closure is needed. For $C$ the horizontal line at height $1$ in $\mathbb{R}^2$, the cone
+generated by $C$ is the open upper half-plane together with the origin, and the horizontal
+directions that it misses are exactly $0^+ C$. -/
 theorem theorem_19_7 {C : Set (Rn n)} (hC : Polyhedral C) (hne : C.Nonempty) :
     PolyhedralCone (closure (PointedCone.hull ℝ C : Set (Rn n))) :=
   polyhedralCone_closure_coe_hull hC hne
 
-/-- **Theorem 19.7**, the formula `K = ⋃ {λC | λ > 0 or λ = 0⁺}`, converted by
-`iUnion_extCoeff_pos` into the backbone's `cone C + 0⁺C`. -/
+/-- **Theorem 19.7** of [rockafellar1970convex], formula. If $C \subseteq \mathbb{R}^n$ is a
+non-empty polyhedral convex set, then the closure $K$ of the convex cone generated by $C$ is
+$$K = \bigcup \{\lambda C \mid \lambda > 0 \text{ or } \lambda = 0^+\}.$$
+
+The proof uses `Rockafellar.iUnion_extCoeff_pos` to identify the union with
+$\operatorname{cone} C + 0^+ C$. -/
 theorem theorem_19_7_iUnion {C : Set (Rn n)} (hC : Polyhedral C) (hne : C.Nonempty) :
     closure (PointedCone.hull ℝ C : Set (Rn n)) = ⋃ l : ExtCoeff, ⋃ _ : l.Pos, l.smulSet C := by
   rw [iUnion_extCoeff_pos hC.convex]
   exact (finitelyGeneratedCone_closure_coe_hull hC hne).2
 
-/-- **Corollary 19.7.1**. If a polyhedral convex set `C` contains the origin, the convex cone
-generated by `C` is polyhedral, with no closure needed. -/
+/-- **Corollary 19.7.1** of [rockafellar1970convex]. If a polyhedral convex set
+$C \subseteq \mathbb{R}^n$ contains the origin, then the convex cone generated by $C$ is
+polyhedral, with no closure needed. -/
 theorem corollary_19_7_1 {C : Set (Rn n)} (hC : Polyhedral C) (h0 : (0 : Rn n) ∈ C) :
     PolyhedralCone (PointedCone.hull ℝ C : Set (Rn n)) :=
   (finitelyGeneratedCone_hull_of_zero_mem hC h0).polyhedralCone

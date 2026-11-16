@@ -9,19 +9,20 @@ import NumlibSurface.Rockafellar.Chapter01.Section04
 import NumlibSurface.Rockafellar.Chapter01.Section05
 
 /-!
-# Rockafellar Part I: basic concepts
+# Rockafellar, Part I: Basic Concepts
 
-Surface file for R. Tyrrell Rockafellar, *Convex Analysis*, Princeton University Press, 1970,
-§§1–5, which the book prints as Part I.
+This module collects §§1–5 of [rockafellar1970convex], which the book prints as Part I: affine sets,
+convex sets and cones, the algebra of convex sets, convex functions with values in
+$[-\infty, +\infty]$, and the operations that produce new convex functions from old ones. All 49
+numbered results of Part I are formalized.
 
-All 49 numbered results of Part I are formalized. This module only imports the five section
-modules and adds nothing of its own.
+## Contents
 
-| § | module | subject |
+| Source | Module | Subject |
 |---|---|---|
-| 1 | `Chapter01.Section01` | Affine sets |
-| 2 | `Chapter01.Section02` | Convex sets and cones |
-| 3 | `Chapter01.Section03` | The algebra of convex sets |
-| 4 | `Chapter01.Section04` | Convex functions |
-| 5 | `Chapter01.Section05` | Functional operations |
+| §1 Affine sets | `Chapter01.Section01` | 8 results |
+| §2 Convex sets and cones | `Chapter01.Section02` | 13 results |
+| §3 The algebra of convex sets | `Chapter01.Section03` | 9 results |
+| §4 Convex functions | `Chapter01.Section04` | 11 results |
+| §5 Functional operations | `Chapter01.Section05` | 8 results |
 -/

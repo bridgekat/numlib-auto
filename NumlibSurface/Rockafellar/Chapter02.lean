@@ -9,21 +9,21 @@ import NumlibSurface.Rockafellar.Chapter02.Section09
 import NumlibSurface.Rockafellar.Chapter02.Section10
 
 /-!
-# Rockafellar Part II: topological properties
+# Rockafellar, Part II: Topological Properties
 
-Surface file for R. Tyrrell Rockafellar, *Convex Analysis*, Princeton University Press, 1970,
-§§6–10, which the book prints as Part II.
+This module collects §§6–10 of [rockafellar1970convex], which the book prints as Part II: relative
+interiors of convex sets, closures of convex functions, recession cones, criteria for the closedness
+of images and sums, and the continuity of convex functions. In this Part the development becomes
+essentially finite-dimensional: it rests on Theorem 6.2, which says that a non-empty convex set has
+a non-empty relative interior. All 84 numbered results of Part II are formalized.
 
-All 84 numbered results of Part II are formalized. This module only imports the five section
-modules and adds nothing of its own. Part II is where the development becomes irreducibly
-finite-dimensional, resting on Theorem 6.2: a non-empty convex set has a non-empty relative
-interior.
+## Contents
 
-| § | module | subject |
+| Source | Module | Subject |
 |---|---|---|
-| 6 | `Chapter02.Section06` | Relative interiors of convex sets |
-| 7 | `Chapter02.Section07` | Closures of convex functions |
-| 8 | `Chapter02.Section08` | Recession cones and unboundedness |
-| 9 | `Chapter02.Section09` | Some closedness criteria |
-| 10 | `Chapter02.Section10` | Continuity of convex functions |
+| §6 Relative interiors of convex sets | `Chapter02.Section06` | 18 results |
+| §7 Closures of convex functions | `Chapter02.Section07` | 17 results |
+| §8 Recession cones and unboundedness | `Chapter02.Section08` | 18 results |
+| §9 Some closedness criteria | `Chapter02.Section09` | 18 results |
+| §10 Continuity of convex functions | `Chapter02.Section10` | 13 results |
 -/

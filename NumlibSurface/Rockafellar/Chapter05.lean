@@ -8,21 +8,21 @@ import NumlibSurface.Rockafellar.Chapter05.Section25
 import NumlibSurface.Rockafellar.Chapter05.Section26
 
 /-!
-# Rockafellar Part V: differential theory
+# Rockafellar, Part V: Differential Theory
 
-Surface file for R. Tyrrell Rockafellar, *Convex Analysis*, Princeton University Press, 1970,
-§§23–26, which the book prints as Part V.
+This module collects §§23–26 of [rockafellar1970convex], which the book prints as Part V:
+directional derivatives and subgradients, the continuity and monotonicity of the subdifferential
+mapping, the differentiability of convex functions, and the Legendre transformation. All 49 numbered
+results of Part V are formalized. Theorems 24.1–24.3, which are about functions on the real line,
+are stated over `ℝ` itself; the rest of the Part is stated over `Rockafellar.Rn n` with
+`Rockafellar.pairing n`.
 
-This module imports the four section modules and adds nothing of its own.
+## Contents
 
-| § | module | subject |
+| Source | Module | Subject |
 |---|---|---|
-| 23 | `Chapter05.Section23` | Directional derivatives and subgradients |
-| 24 | `Chapter05.Section24` | Differential continuity and monotonicity |
-| 25 | `Chapter05.Section25` | Differentiability of convex functions |
-| 26 | `Chapter05.Section26` | The Legendre transformation |
-
-All 49 of Part V's numbered results are formalized. Theorems 24.1–24.3 are stated over `ℝ` itself
-rather than over `Rn 1`, which is the book's own reading of them; everything else in the Part is
-over `Rn n` with `pairing n`.
+| §23 Directional derivatives and subgradients | `Chapter05.Section23` | 16 results |
+| §24 Differential continuity and monotonicity | `Chapter05.Section24` | 11 results |
+| §25 Differentiability of convex functions | `Chapter05.Section25` | 11 results |
+| §26 The Legendre transformation | `Chapter05.Section26` | 11 results |
 -/

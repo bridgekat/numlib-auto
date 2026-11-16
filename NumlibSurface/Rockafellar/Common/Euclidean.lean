@@ -22,130 +22,187 @@ import Mathlib.LinearAlgebra.AffineSpace.FiniteDimensional
 import Mathlib.Tactic.TFAE
 
 /-!
-# Rockafellar: the Euclidean vocabulary of the surface
+# Rockafellar, shared conventions: the Euclidean space $\mathbb{R}^n$
 
-Shared notation and glue lemmas for the surface library of R. Tyrrell Rockafellar, *Convex
-Analysis*, Princeton University Press, 1970.
-
-This module is not a section of the book. It is the vocabulary in which a book written in `ℝⁿ` is
-transcribed, and every section module of `NumlibSurface.Rockafellar` is stated in it: `Rn n` is
-`EuclideanSpace ℝ (Fin n)` and `pairing n` is its own inner product read as a bilinear map.
-Together they instantiate the backbone's duality theory at a stroke, which is why the book can
-state everything without qualification. Everything general about a self-pairing of inner-product
-type lives in the backbone (`Numlib/Analysis/Convex/Duality/InnerPairing.lean`); what is here is
-the `ℝⁿ` spelling of it, in the flat `Rockafellar` namespace the rest of the library uses.
+This module fixes the ambient space of the surface library for [rockafellar1970convex]. It is not a
+section of the book. The book works throughout in $\mathbb{R}^n$ with the inner product
+$\langle x, y \rangle = \sum_i x_i y_i$, and every section module of `NumlibSurface.Rockafellar` is
+stated in the vocabulary of this module. The space $\mathbb{R}^n$ is `Rockafellar.Rn n`, defined as
+`EuclideanSpace ℝ (Fin n)`. The inner product on it is `Rockafellar.pairing n`, read as a bilinear
+map. The backbone states its duality theory for an abstract pairing of two real vector spaces, and
+this one pairing instantiates all of it. The general facts about a pairing of a space with itself by
+an inner product are in the backbone module `Numlib.Analysis.Convex.Duality.InnerPairing`. This
+module gives their form for $\mathbb{R}^n$, in the namespace `Rockafellar` that the rest of the
+library uses.
 
 ## Main definitions
 
-* `Rn n` — the ambient space.
-* `pairing n` — the self-pairing `⟨x, y⟩`, as a `LinearMap` so that the backbone's duality applies.
-* `pairingProd`, `pairingAdjoint` — the pairing on a product, and its sign-flipped form.
-* `linFn b` — the vector `b` read as the linear function `⟨·, b⟩`, an abbreviation of Mathlib's
-  `innerSL ℝ b` in the book's spelling.
+* `Rockafellar.Rn`: the space $\mathbb{R}^n$ with its Euclidean structure.
+* `Rockafellar.pairing`: the inner product $\langle x, y \rangle$ on $\mathbb{R}^n$, as a bilinear
+  map, so that the duality theory of the backbone applies.
+* `Rockafellar.pairingProd`: the pairing $\langle (u, x), (u^*, x^*) \rangle = \langle u, u^*
+  \rangle + \langle x, x^* \rangle$ of $\mathbb{R}^m \times \mathbb{R}^n$ with itself.
+* `Rockafellar.pairingAdjoint`: the pairing $-\langle u, u^* \rangle + \langle x, x^* \rangle$ of
+  $\mathbb{R}^m \times \mathbb{R}^n$ with itself, which the adjoint of a bifunction uses.
+* `Rockafellar.linFn`: the linear function $x \mapsto \langle x, b \rangle$ defined by a vector $b$.
 
 ## Main results
 
-* `flip_pairing` — the pairing is its own flip, which rewrites away the `.flip` a bipolar theorem
-  hands back.
-* `pairing_comm`, `forall_pairing_le_comm`, `forall_pairing_lt_comm` — a book writes a linear
-  system as `⟨aᵢ, x⟩ ≤ αᵢ` and the backbone puts the variable on the left; these translate.
-* `pairing_eq_sum`, `pairing_two` — the pairing in coordinates.
-* `exists_linFn`, `linFn_eq_toDual`, `linFn_eq_zero_iff`, `toDual_apply_eq_pairing`,
-  `separatingRight_pairing` — the backbone's Fréchet–Riesz and separation facts about `innerₗ E`,
-  restated for `pairing n` and `linFn`.
-* `pairingProd_euclideanProdEquiv` — `pairingProd` is the inner product of `Rn (m + n)`, read
-  through the concatenation of coordinates.
+* `Rockafellar.flip_pairing`: the pairing is equal to its flip.
+* `Rockafellar.pairing_comm`, `Rockafellar.forall_pairing_le_comm`,
+  `Rockafellar.forall_pairing_lt_comm`: the pairing is symmetric, so a system
+  $\langle a_i, x \rangle \le \alpha_i$ can be written with the variable in either argument.
+* `Rockafellar.pairing_eq_sum`, `Rockafellar.pairing_two`: the pairing in coordinates.
+* `Rockafellar.exists_linFn`, `Rockafellar.linFn_eq_toDual`, `Rockafellar.linFn_eq_zero_iff`,
+  `Rockafellar.toDual_apply_eq_pairing`, `Rockafellar.separatingRight_pairing`: every continuous
+  linear function on $\mathbb{R}^n$ is $\langle \cdot, b \rangle$ for a vector $b$, and the related
+  separation facts.
+* `Rockafellar.pairingProd_euclideanProdEquiv`: the pairing of $\mathbb{R}^m \times \mathbb{R}^n$ is
+  the inner product of $\mathbb{R}^{m+n}$ after concatenation of coordinates.
 
 ## Implementation notes
 
-A textbook in `ℝⁿ` identifies a space with its dual, writing `x*` for a vector of the same space.
-Both sides of `pairing n` are `Rn n`, so the book's `*` is a naming convention here and not a type
-distinction. The backbone keeps its two spaces apart precisely so that the general theory cannot
-use self-duality silently.
+* A textbook in $\mathbb{R}^n$ identifies the space with its dual and writes $x^*$ for a vector of
+  the same space. Both arguments of `Rockafellar.pairing n` are in `Rockafellar.Rn n`, so the star
+  of the book is a naming convention here and not a distinction of types. The backbone keeps its two
+  spaces apart, so that the general theory cannot use the identification of a space with its dual
+  without saying so.
+* `Rockafellar.Rn`, `Rockafellar.pairing`, `Rockafellar.pairingProd`, `Rockafellar.pairingAdjoint`
+  and `Rockafellar.linFn` are abbreviations, so that instance search sees the underlying Mathlib and
+  backbone terms.
 -/
 
 namespace Rockafellar
 
 open ConvexAnalysis
 
-/-- The ambient space of a finite-dimensional real surface: `ℝⁿ` with its Euclidean structure. -/
+/-- The ambient space of the surface library: the space $\mathbb{R}^n$ of real $n$-tuples with its
+Euclidean structure, which is `EuclideanSpace ℝ (Fin n)`.
+
+Coordinates are indexed by `Fin n`, so they are numbered from $0$ to $n - 1$. -/
 abbrev Rn (n : ℕ) := EuclideanSpace ℝ (Fin n)
 
-/-- The **standard inner product** on `Rn n`, as a bilinear map, which is the form the backbone's
-duality theory takes. A book that writes `⟨x, x*⟩` for vectors of one space means this. An
-`abbrev`, not a `def`: instance search does not unfold a plain `def`, and every pairing class the
-surface needs is stated about `innerₗ`. -/
+/-- The **standard inner product** $\langle x, y \rangle$ on $\mathbb{R}^n$, as a bilinear map
+$\mathbb{R}^n \times \mathbb{R}^n \to \mathbb{R}$. This is the form that the duality theory of
+the backbone takes, and a statement of the book that writes $\langle x, x^* \rangle$ for vectors
+of one space means this pairing.
+
+It is Mathlib's `innerₗ` for `Rockafellar.Rn n`. It is an `abbrev` and not a `def`, because
+instance search does not unfold a plain `def`, and every pairing class that the surface needs is
+stated for `innerₗ`. -/
 noncomputable abbrev pairing (n : ℕ) : Rn n →ₗ[ℝ] Rn n →ₗ[ℝ] ℝ := innerₗ (Rn n)
 
+/-- The pairing $\langle x, y \rangle$ is the inner product of $x$ and $y$ in `Rockafellar.Rn n`. -/
 @[simp] theorem pairing_apply {n : ℕ} (x y : Rn n) : pairing n x y = inner ℝ x y := rfl
 
-/-- The pairing is symmetric, hence its own flip: every backbone statement that asks for `B.flip`
-is asking for `pairing n` again. -/
+/-- The pairing on $\mathbb{R}^n$ is equal to its flip:
+$\langle y, x \rangle = \langle x, y \rangle$ as bilinear maps.
+
+A backbone statement that asks for the flipped pairing `(Rockafellar.pairing n).flip` is
+therefore a statement about `Rockafellar.pairing n` again. -/
 @[simp] theorem flip_pairing (n : ℕ) : (pairing n).flip = pairing n :=
   flip_eq_self (pairing n)
 
-/-- **The pairing is symmetric.** Rockafellar writes a linear system as `⟨aᵢ, x⟩ ≤ αᵢ`, with the
-data on the left; the backbone's `B x y` puts the variable there. -/
+/-- The pairing is symmetric: for $x, y \in \mathbb{R}^n$,
+$\langle x, y \rangle = \langle y, x \rangle$.
+
+The book writes a linear system as $\langle a_i, x \rangle \le \alpha_i$, with the data in the
+first argument. The backbone puts the variable in the first argument of `B x y`. -/
 theorem pairing_comm {n : ℕ} (x y : Rn n) : pairing n x y = pairing n y x := real_inner_comm y x
 
-/-- A system of weak inequalities read in the book's orientation and in the backbone's. -/
+/-- Let $(a_i)_{i \in I}$ be vectors in $\mathbb{R}^n$, let $(\alpha_i)_{i \in I}$ be real numbers,
+and let $x \in \mathbb{R}^n$. Then $\langle a_i, x \rangle \le \alpha_i$ for all $i$ if and only
+if $\langle x, a_i \rangle \le \alpha_i$ for all $i$.
+
+This translates a system of weak inequalities between the form of the book and the form of the
+backbone. -/
 theorem forall_pairing_le_comm {n : ℕ} {ι : Sort*} (a : ι → Rn n) (α : ι → ℝ) (x : Rn n) :
     (∀ i, pairing n (a i) x ≤ α i) ↔ ∀ i, pairing n x (a i) ≤ α i :=
   forall_congr' fun i => by rw [pairing_comm]
 
-/-- A system of strict inequalities read in the book's orientation and in the backbone's. -/
+/-- Let $(a_i)_{i \in I}$ be vectors in $\mathbb{R}^n$, let $(\alpha_i)_{i \in I}$ be real numbers,
+and let $x \in \mathbb{R}^n$. Then $\langle a_i, x \rangle < \alpha_i$ for all $i$ if and only
+if $\langle x, a_i \rangle < \alpha_i$ for all $i$.
+
+This translates a system of strict inequalities between the form of the book and the form of the
+backbone. -/
 theorem forall_pairing_lt_comm {n : ℕ} {ι : Sort*} (a : ι → Rn n) (α : ι → ℝ) (x : Rn n) :
     (∀ i, pairing n (a i) x < α i) ↔ ∀ i, pairing n x (a i) < α i :=
   forall_congr' fun i => by rw [pairing_comm]
 
-/-- **The pairing in coordinates**: `⟨u, v⟩ = ∑ᵢ uᵢ vᵢ`. -/
+/-- The pairing in coordinates: for $u, v \in \mathbb{R}^n$,
+$\langle u, v \rangle = \sum_i u_i v_i$. -/
 theorem pairing_eq_sum {n : ℕ} (u v : Rn n) : pairing n u v = ∑ i, u i * v i := by
   simp only [pairing_apply, PiLp.inner_apply, RCLike.inner_apply, conj_trivial]
   exact Finset.sum_congr rfl fun i _ => mul_comm _ _
 
-/-- **The pairing on `ℝ²` in coordinates**: `⟨u, v⟩ = u₀v₀ + u₁v₁`. Rockafellar's counterexamples
-are two-dimensional almost without exception, and this is the first line of every one of them. -/
+/-- The pairing on $\mathbb{R}^2$ in coordinates: $\langle u, v \rangle = u_0 v_0 + u_1 v_1$, with
+the coordinates numbered from $0$.
+
+Almost all counterexamples of the book are in $\mathbb{R}^2$, and their computations start from
+this formula. -/
 theorem pairing_two (u v : Rn 2) : pairing 2 u v = u 0 * v 0 + u 1 * v 1 := by
   rw [pairing_eq_sum, Fin.sum_univ_two]
 
-/-- **Each coordinate of `Rn n` is continuous**, `Rn n` being a `PiLp 2`. A counterexample that
-cuts a region out of `Rn n` with coordinate inequalities needs this to see the region is open. -/
+/-- Each coordinate function $x \mapsto x_i$ on $\mathbb{R}^n$ is continuous.
+
+A counterexample that cuts a region out of $\mathbb{R}^n$ by inequalities between coordinates
+uses this to show that the region is open. -/
 theorem continuous_coord {n : ℕ} (i : Fin n) : Continuous fun x : Rn n => x i :=
   PiLp.continuous_apply (p := 2) (fun _ : Fin n => ℝ) i
 
-/-- **`pairing n` separates on the right**, which is the hypothesis the backbone's level-set and
-recession duality asks for in place of a book's `y ≠ 0`. -/
+/-- The pairing on $\mathbb{R}^n$ separates points in the second argument: if
+$\langle x, y \rangle = 0$ for all $x$, then $y = 0$.
+
+This is the hypothesis `LinearMap.SeparatingRight` that the backbone's duality for level sets
+and recession cones uses in place of the condition $y \neq 0$ of a book. -/
 theorem separatingRight_pairing (n : ℕ) : (pairing n).SeparatingRight :=
   separatingRight_innerL
 
-/-- The **product pairing** on `Rn m × Rn n`, which is what a bifunction from `ℝᵐ` to `ℝⁿ` is
-conjugated against. -/
+/-- The **product pairing** of $\mathbb{R}^m \times \mathbb{R}^n$ with itself:
+$$\langle (u, x), (u^*, x^*) \rangle = \langle u, u^* \rangle + \langle x, x^* \rangle.$$
+A bifunction from $\mathbb{R}^m$ to $\mathbb{R}^n$ is conjugated with respect to this pairing.
+
+It is `ConvexAnalysis.prodPairing` of the two pairings `Rockafellar.pairing m` and
+`Rockafellar.pairing n`. -/
 noncomputable abbrev pairingProd (m n : ℕ) : (Rn m × Rn n) →ₗ[ℝ] (Rn m × Rn n) →ₗ[ℝ] ℝ :=
   prodPairing (pairing m) (pairing n)
 
-/-- The **sign-flipped product pairing** of §30: the one Rockafellar's adjoint `F*` of a convex
-bifunction is stated against. -/
+/-- The **sign-flipped product pairing** of $\mathbb{R}^m \times \mathbb{R}^n$ with itself:
+$$\langle (u, x), (u^*, x^*) \rangle = -\langle u, u^* \rangle + \langle x, x^* \rangle.$$
+This is the pairing for which Section 30 of [rockafellar1970convex] states the adjoint $F^*$ of
+a convex bifunction $F$.
+
+It is `ConvexAnalysis.negFst` applied to `Rockafellar.pairingProd m n`. -/
 noncomputable abbrev pairingAdjoint (m n : ℕ) : (Rn m × Rn n) →ₗ[ℝ] (Rn m × Rn n) →ₗ[ℝ] ℝ :=
   negFst (pairingProd m n)
 
-/-- **The product pairing is the pairing of `Rn (m + n)`, read through the concatenation of
-coordinates** (`euclideanProdEquiv`). This is the identification a text in `ℝⁿ` makes silently
-whenever it writes a point of `ℝᵐ × ℝⁿ` as a point of `ℝᵐ⁺ⁿ`. -/
+/-- For $p, q \in \mathbb{R}^m \times \mathbb{R}^n$, the product pairing of $p$ and $q$ is the inner
+product in $\mathbb{R}^{m+n}$ of the vectors obtained by concatenation of coordinates.
+
+The concatenation is `euclideanProdEquiv`. A text in $\mathbb{R}^n$ makes this identification
+without comment when it writes a point of $\mathbb{R}^m \times \mathbb{R}^n$ as a point of
+$\mathbb{R}^{m+n}$. -/
 theorem pairingProd_euclideanProdEquiv {m n : ℕ} (p q : Rn m × Rn n) :
     pairingProd m n p q = pairing (m + n) (euclideanProdEquiv m n p) (euclideanProdEquiv m n q) :=
   (inner_euclideanProdEquiv p q).symm
 
-/-! ### Dimension
+/-!
+### Dimension
 
-`Module.finrank ℝ (Rn n) = n` is `finrank_euclideanSpace_fin`, which Mathlib does not mark `simp`;
-every dimension count the surface states needs it. -/
+The equation $\dim \mathbb{R}^n = n$ is Mathlib's `finrank_euclideanSpace_fin`, which Mathlib does
+not mark `simp`. The attribute is added here, because every dimension count in the surface uses it.
+-/
 
 attribute [simp] finrank_euclideanSpace_fin
 
-/-! ### Instance discharge
+/-!
+### Instances
 
-Each `example` asserts that a class the surface needs is found by instance search with no
-hypothesis. They are the regression test for the instantiation. -/
+Each `example` below asserts that instance search finds a class that the surface needs, with no
+hypothesis. Together they test that `Rockafellar.Rn` and the pairings above instantiate the
+backbone.
+-/
 
 section Instances
 
@@ -194,51 +251,73 @@ example : IsCompatiblePairing (pairingAdjoint m n).flip := inferInstance
 
 end Instances
 
-/-! ### The vector picture of a linear function
+/-!
+### Linear functions as vectors
 
-A book writes a linear function on `ℝⁿ` as `⟨·, b⟩` and quantifies over the vector `b`; the
-backbone quantifies over a continuous linear functional, which is what separation produces. The
-translation is Mathlib's `innerSL ℝ b`, here under the book's name `linFn b`; the facts about it
-are the backbone's, restated. -/
+A book writes a linear function on $\mathbb{R}^n$ as $\langle \cdot, b \rangle$ and quantifies over
+the vector $b$. The backbone quantifies over continuous linear functionals, which is what separation
+produces. The translation is Mathlib's `innerSL ℝ b`, here under the name `Rockafellar.linFn b`. The
+facts about it are backbone facts, stated again for $\mathbb{R}^n$.
+-/
 
 section LinFn
 
 variable {n : ℕ}
 
-/-- The vector `b` read as the linear function `⟨·, b⟩`: Mathlib's `innerSL ℝ b`. -/
+/-- The vector $b \in \mathbb{R}^n$ read as the continuous linear function
+$x \mapsto \langle x, b \rangle$.
+
+It is Mathlib's `innerSL ℝ b`. -/
 noncomputable abbrev linFn (b : Rn n) : Rn n →L[ℝ] ℝ := innerSL ℝ b
 
+/-- The linear function defined by $b$ takes the value $\langle x, b \rangle$ at $x$. -/
 @[simp] theorem linFn_apply (b x : Rn n) : linFn b x = pairing n x b := by
   simp only [linFn, innerSL_apply_apply, pairing_apply]
   exact real_inner_comm x b
 
-/-- `⟨·, b⟩` is the zero function exactly when `b` is the zero vector: this is what makes `b ≠ 0`
-and "`{x | ⟨x, b⟩ = β}` is a hyperplane" the same condition. -/
+/-- For $b \in \mathbb{R}^n$, the function $\langle \cdot, b \rangle$ is zero if and only if
+$b = 0$.
+
+So the condition $b \neq 0$ and the condition that $\{x \mid \langle x, b \rangle = \beta\}$ is
+a hyperplane are the same. -/
 theorem linFn_eq_zero_iff {b : Rn n} : linFn b = 0 ↔ b = 0 :=
   innerSL_eq_zero_iff
 
-/-- **Every continuous linear function on `ℝⁿ` is `⟨·, b⟩`.** This Fréchet–Riesz identification is
-what lets a surface statement quantify over vectors while its proof quantifies over functionals. -/
+/-- Every continuous linear function $f$ on $\mathbb{R}^n$ has the form
+$f = \langle \cdot, b \rangle$ for some $b \in \mathbb{R}^n$.
+
+This identification (the Fréchet–Riesz theorem) lets a surface statement quantify over vectors
+while its proof quantifies over functionals. -/
 theorem exists_linFn (f : Rn n →L[ℝ] ℝ) : ∃ b : Rn n, linFn b = f :=
   exists_innerSL_eq f
 
-/-- **`linFn` is the Fréchet–Riesz map**, so the surface's vector-to-functional translation and the
-one the backbone's gradient results are stated against are the same map. -/
+/-- For $b \in \mathbb{R}^n$, the linear function $\langle \cdot, b \rangle$ is the image of $b$
+under the Fréchet–Riesz map `InnerProductSpace.toDual`.
+
+So the translation from vectors to functionals in the surface is the same map as the one in the
+backbone's results on gradients. -/
 theorem linFn_eq_toDual (b : Rn n) : linFn b = InnerProductSpace.toDual ℝ (Rn n) b :=
   (toDual_eq_innerSL b).symm
 
-/-- The Riesz representative of `v` evaluated at `x` is the book's `⟨x, v⟩`. Every backbone result
-about `HasGradientAtFn` produces the left-hand side, and every surface statement wants the right. -/
+/-- For $v, x \in \mathbb{R}^n$, the functional that represents $v$ by the Fréchet–Riesz map takes
+the value $\langle x, v \rangle$ at $x$.
+
+The backbone results about `ConvexAnalysis.HasGradientAtFn` give the left-hand side, and the
+surface statements use the right-hand side. -/
 theorem toDual_apply_eq_pairing (v x : Rn n) :
     (InnerProductSpace.toDual ℝ (Rn n) v) x = pairing n x v :=
   toDual_apply_eq_innerL v x
 
 end LinFn
 
-/-! ### The canonical adjoint
+/-!
+### The adjoint of a linear transformation
 
-Between arbitrarily paired spaces a transpose need not exist, so the backbone keeps the adjoint as
-data. On `ℝⁿ` it is canonical, and `isAdjointPair_adjoint` already covers `innerₗ (Rn n)`: a
-surface section writes `A*` as `LinearMap.adjoint A` and discharges the hypothesis with it. -/
+For two arbitrary paired spaces, the transpose of a linear map need not exist, so the backbone takes
+the adjoint of a linear map as data. On $\mathbb{R}^n$ the adjoint is canonical, and
+`ConvexAnalysis.isAdjointPair_adjoint` already covers `innerₗ (Rockafellar.Rn n)`. A surface section
+writes the adjoint $A^*$ of a linear transformation $A$ as `LinearMap.adjoint A` and supplies the
+hypothesis with this lemma.
+-/
 
 end Rockafellar

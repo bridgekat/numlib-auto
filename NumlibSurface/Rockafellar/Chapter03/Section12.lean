@@ -7,52 +7,87 @@ import Numlib.Analysis.Convex.Duality.Ops
 import NumlibSurface.Rockafellar.Chapter02.Section07
 
 /-!
-# Rockafellar §12: conjugates of convex functions
+# Rockafellar, Section 12: Conjugates of convex functions
 
-Surface file for R. Tyrrell Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §12:
-the conjugacy correspondence `f ↦ f*`, its involutivity on closed proper convex functions, and the
-elementary table of operations under which the conjugate transforms by a change of variable.
+This module formalizes Section 12 of [rockafellar1970convex]. For a function
+$f : \mathbb{R}^n \to [-\infty, +\infty]$ the conjugate is $f^*(x^*) = \sup_x \{\langle x, x^*
+\rangle - f(x)\}$. The section shows that a closed convex function is the supremum of its affine
+minorants, that $f^*$ is closed and convex, that $f^{**} = \operatorname{cl} f$ for convex $f$ (the
+Fenchel–Moreau theorem), so that conjugacy is a symmetric one-to-one correspondence on the closed
+proper convex functions, and how $f^*$ changes under a change of variables. It ends with the
+monotone conjugate $g^+$ of a non-decreasing function on the non-negative orthant. All 9 numbered
+results of the section are formalized. The proofs specialize the conjugacy theory of
+`Numlib.Analysis.Convex.Duality.Conjugate` to the self-pairing of $\mathbb{R}^n$.
 
-All 9 numbered results of §12 are formalized.
+## Main definitions
 
-Rockafellar prints **Theorem 12.4** with no proof at all. The argument here avoids the
-symmetrisation `f x = g (abs x)` that the surrounding prose suggests, and with it the question of
-whether `x ↦ g (abs x)` is convex. Writing `K` for the non-negative orthant, the one fact that
-makes the truncation `g⁺ = convexRestrict K f*` harmless is `convexConj_posPart`: `f* (y⁺) = f* y`,
-where `y⁺` is the componentwise positive part. The supremum defining `f**` may then be taken over
-`K` alone, and Fenchel–Moreau finishes.
-
-## The section's definitions
-
-* **The conjugate `f*`** is `convexConj (pairing n) f`, the backbone's `convexConj` against the
-  Euclidean self-pairing, defined by the book's own supremum for an *arbitrary* `f : ℝⁿ → [-∞, +∞]`.
-* **Fenchel's inequality** is `fenchel_inequality`, stated for a proper `f` exactly as the book
-  states it; the hypothesis is not removable.
-* **Symmetry with respect to a set `G` of orthogonal transformations** is transcribed literally as
-  `SymmetricWrt`, with `IsOrthogonalEquiv` for "orthogonal linear transformation of `ℝⁿ` onto
-  itself" — a linear bijection preserving the inner product.
-* **The monotone conjugate `g⁺`** is `monotoneConjOrthant`, acting on `MonotoneOrthantFn`: `+∞`
-  off the non-negative orthant, non-decreasing for the componentwise order, convex, closed, and
-  finite at the origin. `monotoneConjOrthant_apply` is the book's formula
-  `g⁺(z*) = sup {⟨z, z*⟩ - g z | z ≥ 0}`.
-* **`corollary_12_2_1`** is a `def`: the involution of the closed proper convex functions that
-  Corollary 12.2.1 asserts, packaged as an `Equiv`.
+* `Rockafellar.IsOrthogonalEquiv`: a linear bijection $A$ of $\mathbb{R}^n$ with
+  $\langle Ax, Ay \rangle = \langle x, y \rangle$.
+* `Rockafellar.SymmetricWrt`: $f$ is symmetric with respect to a set $G$ of linear bijections if
+  $f(Ax) = f(x)$ for all $x$ and all $A \in G$.
+* `Rockafellar.nonnegOrthant`: the non-negative orthant
+  $K = \{z \mid z_j \ge 0 \text{ for all } j\}$.
+* `Rockafellar.posPart`: the componentwise positive part $y^+$ of $y$.
+* `Rockafellar.MonotoneOrthantFn`: a non-decreasing closed convex function on $K$, finite at the
+  origin and $+\infty$ off $K$.
+* `Rockafellar.monotoneConjOrthant`: the monotone conjugate $g^+$, which is $g^*$ on $K$ and
+  $+\infty$ off $K$.
 
 ## Main results
 
-* `theorem_12_1`, `corollary_12_1_1`, `corollary_12_1_2` — a closed convex function is the
-  pointwise supremum of the affine functions below it.
-* `theorem_12_2_convex`, `theorem_12_2_closed`, `theorem_12_2_proper`, `theorem_12_2_conj_clFn`,
-  `theorem_12_2_biconj` — the conjugate of a convex function is closed and convex, is proper
-  exactly when `f` is, is unchanged by closure, and `f** = cl f` (Fenchel–Moreau).
-* `corollary_12_2_1`, `corollary_12_2_2` — conjugacy is a symmetric one-to-one correspondence on
-  the closed proper convex functions, and the supremum defining `f*` may be restricted to
-  `ri (dom f)`.
-* `fenchel_inequality` — `⟨x, x*⟩ ≤ f x + f* x*` for proper convex `f`.
-* `theorem_12_3`, `corollary_12_3_1` — the change-of-variable table, and the invariance of
-  conjugacy under a group of orthogonal transformations.
-* `theorem_12_4_mem`, `theorem_12_4_involutive` — the monotone conjugate is again a non-decreasing
-  closed convex function on the orthant, and the operation is involutive.
+* Theorem 12.1, `Rockafellar.theorem_12_1`: a closed convex function is the pointwise supremum of
+  the affine functions below it.
+* Corollary 12.1.1, `Rockafellar.corollary_12_1_1`: for any $f$,
+  $\operatorname{cl}(\operatorname{conv} f)$ is the pointwise supremum of the affine functions below
+  $f$.
+* Corollary 12.1.2, `Rockafellar.corollary_12_1_2`: a proper convex function has an affine minorant.
+* Theorem 12.2, `Rockafellar.theorem_12_2_convex`, `Rockafellar.theorem_12_2_closed`,
+  `Rockafellar.theorem_12_2_proper`, `Rockafellar.theorem_12_2_conj_clFn`,
+  `Rockafellar.theorem_12_2_biconj`: $f^*$ is convex and closed, $f^*$ is proper if and only if $f$
+  is, $(\operatorname{cl} f)^* = f^*$, and $f^{**} = \operatorname{cl} f$ for convex $f$.
+* Corollary 12.2.1, `Rockafellar.corollary_12_2_1`: conjugacy is a symmetric one-to-one
+  correspondence on the closed proper convex functions.
+* Corollary 12.2.2, `Rockafellar.corollary_12_2_2`: for convex $f$, the supremum that defines $f^*$
+  can be taken over $\operatorname{ri}(\operatorname{dom} f)$.
+* Fenchel's inequality, `Rockafellar.fenchel_inequality`:
+  $\langle x, x^* \rangle \le f(x) + f^*(x^*)$ for proper $f$.
+* Theorem 12.3, `Rockafellar.theorem_12_3`: the conjugate of $x \mapsto h(A(x - a)) + \langle x, a^*
+  \rangle + \alpha$.
+* Corollary 12.3.1, `Rockafellar.corollary_12_3_1`: a closed convex $f$ is symmetric with respect to
+  a set of orthogonal transformations if and only if $f^*$ is.
+* Theorem 12.4, `Rockafellar.theorem_12_4_mem`, `Rockafellar.theorem_12_4_involutive`: the monotone
+  conjugate of a non-decreasing closed convex function on $K$ that is finite at the origin is again
+  such a function, and $g^{++} = g$.
+
+## Proof outline
+
+The book prints Theorem 12.4 without a proof. The proof here does not use the symmetrization
+$f(x) = g(|x|)$ that the text of the section suggests, and so it does not need to know whether
+$x \mapsto g(|x|)$ is convex. The key fact is `Rockafellar.convexConj_posPart`: for $g$ as in the
+theorem, $g^*(y^+) = g^*(y)$, where $y^+$ is the componentwise positive part of $y$. Thus the
+supremum that defines $g^{++}$ can be taken over $K$ alone, and the Fenchel–Moreau theorem gives
+$g^{++} = g$.
+
+## Conventions
+
+* The conjugate $f^*$ is `ConvexAnalysis.convexConj (Rockafellar.pairing n) f`. It is defined by the
+  supremum of the book for an arbitrary $f : \mathbb{R}^n \to [-\infty, +\infty]$, and the supremum
+  of the empty set is $-\infty$.
+* An affine function on $\mathbb{R}^n$ is $x \mapsto \langle x, b \rangle - \beta$, which is
+  `ConvexAnalysis.affineFn (Rockafellar.pairing n) b β`. It is indexed by the pair $(b, \beta)$.
+* A function on the orthant $K$ is a function on $\mathbb{R}^n$ that is $+\infty$ off $K$, following
+  the convention of Section 4.
+
+## Deviations from the source
+
+* **Theorem 12.2**, convexity and closedness of $f^*$ and $(\operatorname{cl} f)^* = f^*$
+  (generalization). These clauses hold for every $f$, not only for convex $f$. See
+  `Rockafellar.theorem_12_2_convex`, `Rockafellar.theorem_12_2_closed` and
+  `Rockafellar.theorem_12_2_conj_clFn`.
+* **Fenchel's inequality** (generalization). The inequality holds for every proper $f$, not only for
+  proper convex $f$. See `Rockafellar.fenchel_inequality`.
+* **Theorem 12.3** (generalization). The function $h$ need not be convex. See
+  `Rockafellar.theorem_12_3`.
 -/
 
 namespace Rockafellar
@@ -63,19 +98,31 @@ variable {n : ℕ} {f : Rn n → EReal}
 
 /-! ### Theorem 12.1 -/
 
-/-- **Theorem 12.1.** A closed convex function `f` on `ℝⁿ` is the pointwise supremum
-of the collection of all affine functions `h` such that `h ≤ f`.
+/-- **Theorem 12.1** of [rockafellar1970convex]. Let $f : \mathbb{R}^n \to [-\infty, +\infty]$ be a
+closed convex function. Then $f$ is the pointwise supremum of all affine functions $h \le f$:
+for every $x$,
+$$f(x) = \sup \{\langle x, b \rangle - \beta \mid (b, \beta) \in \mathbb{R}^n \times
+  \mathbb{R},\ \langle z, b \rangle - \beta \le f(z) \text{ for all } z\}.$$
 
-An affine function on `ℝⁿ` is `x ↦ ⟨x, b⟩ - β`, indexed here by the pair `(b, β)`; that every affine
-function has this form is the identification of `ℝⁿ` with its own dual that `pairing n` makes. -/
+An affine function on $\mathbb{R}^n$ is $x \mapsto \langle x, b \rangle - \beta$, which is
+`ConvexAnalysis.affineFn (Rockafellar.pairing n) b β`. Every affine function has this form
+because `Rockafellar.pairing n` identifies $\mathbb{R}^n$ with its own dual. The supremum of the
+empty set is $-\infty$, which covers the case $f \equiv -\infty$. -/
 theorem theorem_12_1 (hf : ConvexFn f) (hc : ClosedConvex f) :
     f = fun x => ⨆ p ∈ {p : Rn n × ℝ | affineFn (pairing n) p.1 p.2 ≤ f},
       affineFn (pairing n) p.1 p.2 x :=
   eq_biSup_affineFn hf hc
 
-/-- **Corollary 12.1.1.** If `f` is any function from `ℝⁿ` to `[-∞, ∞]`, then `cl (conv f)` is the
-pointwise supremum of the collection of all affine functions on `ℝⁿ` majorized by `f`. The affine
-minorants of `cl (conv f)` are exactly those of `f`. -/
+/-- **Corollary 12.1.1** of [rockafellar1970convex]. Let $f : \mathbb{R}^n \to [-\infty, +\infty]$
+be any function. Then $\operatorname{cl}(\operatorname{conv} f)$ is the pointwise supremum of
+all affine functions on $\mathbb{R}^n$ that are majorized by $f$:
+$$\operatorname{cl}(\operatorname{conv} f)(x) = \sup \{\langle x, b \rangle - \beta \mid \langle
+  z, b \rangle - \beta \le f(z) \text{ for all } z\}.$$
+In particular, $f$ and $\operatorname{cl}(\operatorname{conv} f)$ have the same affine
+minorants.
+
+The convex hull $\operatorname{conv} f$ is `ConvexAnalysis.convHullFn f`, and the closure is
+`ConvexAnalysis.convexCl`. -/
 theorem corollary_12_1_1 (f : Rn n → EReal) :
     convexCl (convHullFn f) = fun x => ⨆ p ∈ {p : Rn n × ℝ | affineFn (pairing n) p.1 p.2 ≤ f},
       affineFn (pairing n) p.1 p.2 x := by
@@ -87,9 +134,11 @@ theorem corollary_12_1_1 (f : Rn n → EReal) :
   rw [eq_biSup_affineFn (B := pairing n) (convexFn_convexCl (convexFn_convHullFn f))
     (closedConvex_convexCl _), hset]
 
-/-- **Corollary 12.1.2.** Given any proper convex function `f` on `ℝⁿ`, there exists some `b ∈ ℝⁿ`
-and `β ∈ ℝ` such that `f x ≥ ⟨x, b⟩ - β` for every `x`. The book states this corollary with no proof
-of its own. -/
+/-- **Corollary 12.1.2** of [rockafellar1970convex]. Let $f$ be a proper convex function on
+$\mathbb{R}^n$. Then there exist $b \in \mathbb{R}^n$ and $\beta \in \mathbb{R}$ such that
+$f(x) \ge \langle x, b \rangle - \beta$ for every $x$.
+
+The book states this corollary without a proof of its own. -/
 theorem corollary_12_1_2 (hf : ConvexFn f) (hp : ProperConvex f) :
     ∃ (b : Rn n) (β : ℝ), ∀ x, ((inner ℝ x b : ℝ) : EReal) - (β : EReal) ≤ f x := by
   have hcl : ClosedProperConvexFn (convexCl f) :=
@@ -101,23 +150,28 @@ theorem corollary_12_1_2 (hf : ConvexFn f) (hp : ProperConvex f) :
 
 /-! ### Theorem 12.2: Fenchel–Moreau -/
 
-/-- **Theorem 12.2**, first clause: the conjugate of a convex function is convex.
+/-- **Theorem 12.2** of [rockafellar1970convex], convexity of the conjugate. For every function
+$f : \mathbb{R}^n \to [-\infty, +\infty]$, the conjugate $f^*$ is convex.
 
-Convexity of `f` is not needed — `f*` is a pointwise supremum of affine functions whatever `f` is —
-so the hypothesis of the book's statement is dropped. -/
+**Generalization.** The book states the theorem for convex $f$. Convexity of $f$ is not needed,
+because $f^*$ is a pointwise supremum of affine functions for every $f$. -/
 theorem theorem_12_2_convex (f : Rn n → EReal) : ConvexFn (convexConj (pairing n) f) :=
   convexFn_convexConj _ f
 
-/-- **Theorem 12.2**, second clause: the conjugate of a convex function is closed. Again no
-hypothesis on `f` is needed. -/
+/-- **Theorem 12.2** of [rockafellar1970convex], closedness of the conjugate. For every function
+$f : \mathbb{R}^n \to [-\infty, +\infty]$, the conjugate $f^*$ is closed.
+
+**Generalization.** The book states the theorem for convex $f$. Convexity of $f$ is not needed. -/
 theorem theorem_12_2_closed (f : Rn n → EReal) : ClosedConvex (convexConj (pairing n) f) :=
   closedConvex_convexConj
 
-/-- **Theorem 12.2**, third clause: `f*` is proper if and only if `f` is.
+/-- **Theorem 12.2** of [rockafellar1970convex], properness of the conjugate. Let $f$ be a convex
+function on $\mathbb{R}^n$. Then $f^*$ is proper if and only if $f$ is proper.
 
-Strengthens `properConvex_convexConj_iff`, which asks for `f` closed as well as convex: on `ℝⁿ` the
-closure of a proper convex function is again proper (Theorem 7.4), so the hypothesis can be
-discharged, and `convexConj_convexCl` transports the conclusion back. -/
+The backbone result `ConvexAnalysis.properConvex_convexConj_iff` also asks for $f$ to be closed.
+On $\mathbb{R}^n$ the closure of a proper convex function is again proper (Theorem 7.4), so that
+hypothesis can be removed, and `ConvexAnalysis.convexConj_convexCl` carries the conclusion back
+from $\operatorname{cl} f$ to $f$. -/
 theorem theorem_12_2_proper
     (hf : ConvexFn f) : ProperConvex (convexConj (pairing n) f) ↔ ProperConvex f := by
   refine ⟨properConvex_of_properConvex_convexConj, fun hp => ?_⟩
@@ -125,43 +179,58 @@ theorem theorem_12_2_proper
     ⟨convexFn_convexCl hf, closedConvex_convexCl f, hf.properConvex_convexCl hp⟩
   rwa [convexConj_convexCl] at h
 
-/-- **Theorem 12.2**, fourth clause: `(cl f)* = f*`. Convexity is not needed. -/
+/-- **Theorem 12.2** of [rockafellar1970convex], conjugate of the closure. For every function
+$f : \mathbb{R}^n \to [-\infty, +\infty]$, $(\operatorname{cl} f)^* = f^*$.
+
+**Generalization.** The book states the theorem for convex $f$. Convexity of $f$ is not needed. -/
 theorem theorem_12_2_conj_clFn (f : Rn n → EReal) :
     convexConj (pairing n) (convexCl f) = convexConj (pairing n) f :=
   convexConj_convexCl f
 
-/-- **Theorem 12.2**, the Fenchel–Moreau theorem: `f** = cl f` for convex `f`.
+/-- **Theorem 12.2** of [rockafellar1970convex] (Fenchel–Moreau theorem). Let $f$ be a convex
+function on $\mathbb{R}^n$. Then $f^{**} = \operatorname{cl} f$.
 
-On `ℝⁿ` the two sides of the pairing coincide, so `f**` is literally `convexConj (pairing n)`
-applied twice; `flip_pairing` is what removes the backbone's `B.flip`. -/
+On $\mathbb{R}^n$ both sides of the pairing are the same space, so $f^{**}$ is
+`ConvexAnalysis.convexConj (Rockafellar.pairing n)` applied twice. `Rockafellar.flip_pairing`
+removes the flipped pairing that the backbone biconjugate uses. -/
 theorem theorem_12_2_biconj (hf : ConvexFn f) :
     convexConj (pairing n) (convexConj (pairing n) f) = convexCl f := by
   have h := convexBiconj_eq_convexCl (B := pairing n) hf
   rwa [convexBiconj, flip_pairing] at h
 
-/-- **Corollary 12.2.1.** The conjugacy operation `f ↦ f*` induces a symmetric
-one-to-one correspondence in the class of all closed proper convex functions on `ℝⁿ`.
+/-- **Corollary 12.2.1** of [rockafellar1970convex]. The conjugacy operation $f \mapsto f^*$ induces
+a symmetric one-to-one correspondence in the class of all closed proper convex functions on
+$\mathbb{R}^n$.
 
-"Symmetric" is `corollary_12_2_1_symm_apply` below: the inverse of the correspondence is the
-correspondence itself. -/
+The correspondence is a bijection (`Equiv`) of the subtype of closed proper convex functions
+onto itself. It sends $f$ to $f^*$ (`Rockafellar.corollary_12_2_1_apply`). "Symmetric" means
+that the inverse also sends $g$ to $g^*$ (`Rockafellar.corollary_12_2_1_symm_apply`). The
+definition is `ConvexAnalysis.convexConjEquiv` for `Rockafellar.pairing n`. -/
 noncomputable def corollary_12_2_1 (n : ℕ) :
     {f : Rn n → EReal // ClosedProperConvexFn f} ≃ {g : Rn n → EReal // ClosedProperConvexFn g} :=
   convexConjEquiv (pairing n)
 
-/-- The correspondence of Corollary 12.2.1 sends `f` to its conjugate `f*`. -/
+/-- The correspondence of Corollary 12.2.1 sends a closed proper convex function $f$ to its
+conjugate $f^*$. -/
 @[simp] theorem corollary_12_2_1_apply (f : {f : Rn n → EReal // ClosedProperConvexFn f}) :
     ((corollary_12_2_1 n f : {g : Rn n → EReal // ClosedProperConvexFn g}) : Rn n → EReal)
       = convexConj (pairing n) f := rfl
 
-/-- The correspondence of Corollary 12.2.1 is **symmetric**: its inverse is itself. -/
+/-- The correspondence of Corollary 12.2.1 is **symmetric**: its inverse sends a closed proper
+convex function $g$ to $g^*$, so the inverse is the correspondence itself. -/
 @[simp] theorem corollary_12_2_1_symm_apply
     (g : {g : Rn n → EReal // ClosedProperConvexFn g}) :
     (((corollary_12_2_1 n).symm g : {f : Rn n → EReal // ClosedProperConvexFn f}) : Rn n → EReal)
       = convexConj (pairing n) g := by
   simp [corollary_12_2_1, convexConjEquiv]
 
-/-- **Corollary 12.2.2.** For any convex function `f` on `ℝⁿ`,
-`f* x* = sup {⟨x, x*⟩ - f x ∣ x ∈ ri (dom f)}`. -/
+/-- **Corollary 12.2.2** of [rockafellar1970convex]. Let $f$ be a convex function on $\mathbb{R}^n$.
+Then for every $x^* \in \mathbb{R}^n$,
+$$f^*(x^*) = \sup \{\langle x, x^* \rangle - f(x) \mid x \in
+  \operatorname{ri}(\operatorname{dom} f)\}.$$
+
+The effective domain $\operatorname{dom} f = \{x \mid f(x) < +\infty\}$ is
+`ConvexAnalysis.convexDom f`. The supremum of the empty set is $-\infty$. -/
 theorem corollary_12_2_2 (hf : ConvexFn f) (y : Rn n) :
     convexConj (pairing n) f y = ⨆ x ∈ ri (convexDom f), ((inner ℝ x y : ℝ) : EReal) - f x := by
   have hdomconv : Convex ℝ (convexDom f) := hf.convex_convexDom
@@ -195,24 +264,35 @@ theorem corollary_12_2_2 (hf : ConvexFn f) (y : Rn n) :
 
 /-! ### Fenchel's inequality -/
 
-/-- **Fenchel's inequality** (Rockafellar, §12, p. 105): `⟨x, x*⟩ ≤ f x + f* x*` for any proper
-convex function `f` and its conjugate.
+/-- **Section 12** of [rockafellar1970convex], Fenchel's inequality (p. 105). Let $f$ be a proper
+function on $\mathbb{R}^n$. Then for all $x, x^* \in \mathbb{R}^n$,
+$$\langle x, x^* \rangle \le f(x) + f^*(x^*).$$
 
-Properness is the book's hypothesis and it is not removable: for `f ≡ +∞` the right-hand side is
-`⊤ + ⊥ = ⊥`. -/
+**Generalization.** The book states the inequality for a proper convex function $f$. Convexity
+is not needed.
+
+Properness cannot be removed: for $f \equiv +\infty$ the conjugate is $f^* \equiv -\infty$, and
+the right-hand side is $(+\infty) + (-\infty) = -\infty$ in the arithmetic of `EReal`. -/
 theorem fenchel_inequality (hp : ProperConvex f) (x y : Rn n) :
     ((inner ℝ x y : ℝ) : EReal) ≤ f x + convexConj (pairing n) f y :=
   hp.le_add_convexConj (B := pairing n) x y
 
 /-! ### Theorem 12.3 -/
 
-/-- **Theorem 12.3.** Let `h` be a convex function on `ℝⁿ` and
-`f x = h (A (x - a)) + ⟨x, a*⟩ + α` with `A` a one-to-one linear transformation from `ℝⁿ` onto
-`ℝⁿ`. Then `f* x* = h* (A*⁻¹ (x* - a*)) + ⟨x*, a⟩ + α*`, where `α* = -α - ⟨a, a*⟩`.
+/-- **Theorem 12.3** of [rockafellar1970convex]. Let $h : \mathbb{R}^n \to [-\infty, +\infty]$, let
+$A$ be a one-to-one linear transformation of $\mathbb{R}^n$ onto $\mathbb{R}^n$ with adjoint
+$A^*$, let $a, a^* \in \mathbb{R}^n$ and $\alpha \in \mathbb{R}$, and let
+$$f(x) = h(A(x - a)) + \langle x, a^* \rangle + \alpha.$$
+Then for every $x^* \in \mathbb{R}^n$,
+$$f^*(x^*) = h^*(A^{*-1}(x^* - a^*)) + \langle x^*, a \rangle + \alpha^*, \qquad \alpha^* =
+  -\alpha - \langle a, a^* \rangle.$$
 
-The book writes `A*⁻¹`; the adjoint is taken as data, so `A'` and `⟨A x, z⟩ = ⟨x, A' z⟩` are
-hypotheses — over `ℝⁿ` the adjoint exists and is unique, but it must still be supplied. No
-convexity of `h` is needed. -/
+**Generalization.** The book states the theorem for a convex function $h$. Convexity of $h$ is
+not needed.
+
+The adjoint is taken as data: $A^*$ is the linear bijection `A'`, and the hypothesis `hA` is
+$\langle Ax, z \rangle = \langle x, A^* z \rangle$ for all $x, z$. Over $\mathbb{R}^n$ the
+adjoint exists and is unique, but it must still be supplied. The vector $a^*$ is `b`. -/
 theorem theorem_12_3 (A A' : Rn n ≃ₗ[ℝ] Rn n)
     (hA : ∀ x z : Rn n, (inner ℝ (A x) z : ℝ) = inner ℝ x (A' z))
     (h : Rn n → EReal) (a b : Rn n) (α : ℝ) (y : Rn n) :
@@ -223,25 +303,31 @@ theorem theorem_12_3 (A A' : Rn n ≃ₗ[ℝ] Rn n)
 
 /-! ### Corollary 12.3.1 -/
 
-/-- **An orthogonal linear transformation of `ℝⁿ` onto itself** (Rockafellar, §12, p. 109): a
-linear bijection preserving the inner product. The bridge to the backbone's `IsAdjointPair` is
-`orthogonalEquiv_adjoint` below, which is Rockafellar's `A*⁻¹ = A`. -/
+/-- **Section 12** of [rockafellar1970convex], definition of an orthogonal transformation (p. 109).
+A linear bijection $A$ of $\mathbb{R}^n$ onto itself is an **orthogonal linear transformation**
+if $\langle Ax, Ay \rangle = \langle x, y \rangle$ for all $x, y$.
+
+`Rockafellar.orthogonalEquiv_adjoint` shows that the adjoint of an orthogonal $A$ is $A^{-1}$,
+which is the identity $A^{*-1} = A$ of the book. -/
 def IsOrthogonalEquiv (A : Rn n ≃ₗ[ℝ] Rn n) : Prop :=
   ∀ x y : Rn n, (inner ℝ (A x) (A y) : ℝ) = inner ℝ x y
 
-/-- The bridge for `IsOrthogonalEquiv`: for an orthogonal `A` the adjoint `A*` is `A⁻¹`. -/
+/-- Let $A$ be an orthogonal linear transformation of $\mathbb{R}^n$. Then $\langle Ax, z \rangle =
+\langle x, A^{-1} z \rangle$ for all $x, z$, that is, the adjoint of $A$ is $A^{-1}$. -/
 theorem orthogonalEquiv_adjoint {A : Rn n ≃ₗ[ℝ] Rn n} (hA : IsOrthogonalEquiv A) (x z : Rn n) :
     (inner ℝ (A x) z : ℝ) = inner ℝ x (A.symm z) := by
   rw [← hA x (A.symm z), LinearEquiv.apply_symm_apply]
 
-/-- **Symmetry with respect to a set `G` of transformations** (Rockafellar, §12, p. 109):
-`f (A x) = f x` for every `x` and every `A ∈ G`. -/
+/-- **Section 12** of [rockafellar1970convex], definition of symmetry (p. 109). Let $G$ be a set of
+linear bijections of $\mathbb{R}^n$. A function $f : \mathbb{R}^n \to [-\infty, +\infty]$ is
+**symmetric with respect to $G$** if $f(Ax) = f(x)$ for every $x$ and every $A \in G$. -/
 def SymmetricWrt (f : Rn n → EReal) (G : Set (Rn n ≃ₗ[ℝ] Rn n)) : Prop :=
   ∀ A ∈ G, ∀ x, f (A x) = f x
 
-/-- The half of Corollary 12.3.1 that needs no closedness: if `f` is symmetric under the
-orthogonal transformation `A`, so is `f*`. This is Theorem 12.3 with `h = f`, `a = 0 = a*`,
-`α = 0`, together with `A*⁻¹ = A`. -/
+/-- Let $A$ be an orthogonal linear transformation of $\mathbb{R}^n$, and let $f$ satisfy
+$f(Ax) = f(x)$ for every $x$. Then $f^*(Ax^*) = f^*(x^*)$ for every $x^*$. This is the half of
+Corollary 12.3.1 that needs no closedness. It is Theorem 12.3 with $h = f$, $a = a^* = 0$ and
+$\alpha = 0$, together with $A^{*-1} = A$. -/
 theorem convexConj_comp_orthogonal {A : Rn n ≃ₗ[ℝ] Rn n} (hA : IsOrthogonalEquiv A)
     (hfA : ∀ x, f (A x) = f x) (y : Rn n) :
     convexConj (pairing n) f (A y) = convexConj (pairing n) f y := by
@@ -251,9 +337,9 @@ theorem convexConj_comp_orthogonal {A : Rn n ≃ₗ[ℝ] Rn n} (hA : IsOrthogona
   rw [← h]
   exact congrArg (fun g => convexConj (pairing n) g y) (funext hfA)
 
-/-- **Corollary 12.3.1.** A closed convex function `f` is symmetric with respect to a
-given set `G` of orthogonal linear transformations if and only if `f*` is symmetric with respect
-to `G`. -/
+/-- **Corollary 12.3.1** of [rockafellar1970convex]. Let $f$ be a closed convex function on
+$\mathbb{R}^n$, and let $G$ be a set of orthogonal linear transformations of $\mathbb{R}^n$.
+Then $f$ is symmetric with respect to $G$ if and only if $f^*$ is symmetric with respect to $G$. -/
 theorem corollary_12_3_1 (hf : ConvexFn f) (hc : ClosedConvex f) {G : Set (Rn n ≃ₗ[ℝ] Rn n)}
     (hG : ∀ A ∈ G, IsOrthogonalEquiv A) :
     SymmetricWrt f G ↔ SymmetricWrt (convexConj (pairing n) f) G := by
@@ -268,21 +354,23 @@ theorem corollary_12_3_1 (hf : ConvexFn f) (hc : ClosedConvex f) {G : Set (Rn n 
 
 section MonotoneConjugacy
 
-/-- The **non-negative orthant** of `ℝⁿ` (Rockafellar, §12, p. 111): the set `{z | z ≥ 0}` for the
-componentwise order. -/
+/-- **Section 12** of [rockafellar1970convex], the non-negative orthant (p. 111). The **non-negative
+orthant** of $\mathbb{R}^n$ is $K = \{z \mid z_j \ge 0 \text{ for all } j\}$. -/
 def nonnegOrthant (n : ℕ) : Set (Rn n) := {z : Rn n | ∀ j, 0 ≤ z j}
 
+/-- A vector $z$ lies in the non-negative orthant if and only if $z_j \ge 0$ for every $j$. -/
 theorem mem_nonnegOrthant {z : Rn n} : z ∈ nonnegOrthant n ↔ ∀ j, 0 ≤ z j := Iff.rfl
 
-/-- The inner product of `ℝⁿ` in coordinates, which is what the componentwise order interacts
-with. -/
+/-- The inner product of $\mathbb{R}^n$ in coordinates: $\langle x, y \rangle = \sum_j x_j y_j$. -/
 theorem inner_rn (x y : Rn n) : (inner ℝ x y : ℝ) = ∑ j, x j * y j := by
   simp [PiLp.inner_apply, RCLike.inner_apply, mul_comm]
 
+/-- The non-negative orthant is convex. -/
 theorem convex_nonnegOrthant (n : ℕ) : Convex ℝ (nonnegOrthant n) := by
   intro x hx y hy a b ha hb _ j
   exact add_nonneg (mul_nonneg ha (hx j)) (mul_nonneg hb (hy j))
 
+/-- The non-negative orthant is closed. -/
 theorem isClosed_nonnegOrthant (n : ℕ) : IsClosed (nonnegOrthant n) := by
   have hset : nonnegOrthant n = ⋂ j, (fun z : Rn n => z j) ⁻¹' Set.Ici (0 : ℝ) := by
     ext z; simp [nonnegOrthant]
@@ -290,28 +378,40 @@ theorem isClosed_nonnegOrthant (n : ℕ) : IsClosed (nonnegOrthant n) := by
   exact isClosed_iInter fun j =>
     isClosed_Ici.preimage (PiLp.continuous_apply (p := 2) (fun _ : Fin n => ℝ) j)
 
+/-- The origin lies in the non-negative orthant. -/
 theorem zero_mem_nonnegOrthant (n : ℕ) : (0 : Rn n) ∈ nonnegOrthant n := fun _ => le_rfl
 
-/-- The componentwise **positive part** of `y`, which is `y` itself on the orthant. -/
+/-- The componentwise **positive part** of $y \in \mathbb{R}^n$: the vector $y^+$ with
+$(y^+)_j = \max\{y_j, 0\}$. It equals $y$ when $y$ lies in the non-negative orthant. -/
 noncomputable def posPart (y : Rn n) : Rn n := WithLp.toLp 2 fun j => max (y j) 0
 
+/-- The coordinates of the positive part: $(y^+)_j = \max\{y_j, 0\}$. -/
 @[simp] theorem posPart_apply (y : Rn n) (j : Fin n) : posPart y j = max (y j) 0 := rfl
 
+/-- The positive part $y^+$ lies in the non-negative orthant. -/
 theorem posPart_mem (y : Rn n) : posPart y ∈ nonnegOrthant n := fun _ => le_max_right _ _
 
+/-- Each coordinate of $y$ is at most the corresponding coordinate of $y^+$: $y_j \le (y^+)_j$. -/
 theorem le_posPart (y : Rn n) (j : Fin n) : y j ≤ posPart y j := le_max_left _ _
 
+/-- If $y$ lies in the non-negative orthant, then $y^+ = y$. -/
 theorem posPart_of_mem {y : Rn n} (hy : y ∈ nonnegOrthant n) : posPart y = y := by
   ext j; exact max_eq_left (hy j)
 
-/-- `z` with the coordinates on which `y` is negative set to zero. It is the competitor that makes
-the truncation in `monotoneConjOrthant` harmless. -/
+/-- The vector obtained from $z$ by setting to zero the coordinates $j$ with $y_j < 0$: its $j$-th
+coordinate is $z_j$ if $y_j \ge 0$ and $0$ otherwise.
+
+It is the competitor in the proof of `Rockafellar.convexConj_posPart`, the fact that makes the
+truncation in `Rockafellar.monotoneConjOrthant` harmless. -/
 noncomputable def maskNonneg (y z : Rn n) : Rn n :=
   WithLp.toLp 2 fun j => if 0 ≤ y j then z j else 0
 
+/-- The coordinates of `Rockafellar.maskNonneg y z`: the $j$-th coordinate is $z_j$ if $y_j \ge 0$
+and $0$ otherwise. -/
 @[simp] theorem maskNonneg_apply (y z : Rn n) (j : Fin n) :
     maskNonneg y z j = if 0 ≤ y j then z j else 0 := rfl
 
+/-- If $z$ lies in the non-negative orthant, then so does `Rockafellar.maskNonneg y z`. -/
 theorem maskNonneg_mem {z : Rn n} (y : Rn n) (hz : z ∈ nonnegOrthant n) :
     maskNonneg y z ∈ nonnegOrthant n := by
   intro j
@@ -320,6 +420,8 @@ theorem maskNonneg_mem {z : Rn n} (y : Rn n) (hz : z ∈ nonnegOrthant n) :
   · exact hz j
   · exact le_rfl
 
+/-- If $z$ lies in the non-negative orthant, then each coordinate of `Rockafellar.maskNonneg y z` is
+at most the corresponding coordinate of $z$. -/
 theorem maskNonneg_le {z : Rn n} (y : Rn n) (hz : z ∈ nonnegOrthant n) (j : Fin n) :
     maskNonneg y z j ≤ z j := by
   rw [maskNonneg_apply]
@@ -327,6 +429,8 @@ theorem maskNonneg_le {z : Rn n} (y : Rn n) (hz : z ∈ nonnegOrthant n) (j : Fi
   · exact le_rfl
   · exact hz j
 
+/-- Write $\tilde z$ for `Rockafellar.maskNonneg y z`. Then $\langle \tilde z, y \rangle = \langle
+z, y^+ \rangle$. -/
 theorem inner_maskNonneg (y z : Rn n) :
     (inner ℝ (maskNonneg y z) y : ℝ) = inner ℝ z (posPart y) := by
   rw [inner_rn, inner_rn]
@@ -336,32 +440,44 @@ theorem inner_maskNonneg (y z : Rn n) :
   · rw [max_eq_left hj]
   · rw [max_eq_right (le_of_not_ge hj), zero_mul, mul_zero]
 
+/-- If $z$ lies in the non-negative orthant, then $\langle y, z \rangle \le \langle y^+, z \rangle$
+for every $y$. -/
 theorem inner_le_inner_posPart {z : Rn n} (hz : z ∈ nonnegOrthant n) (y : Rn n) :
     (inner ℝ y z : ℝ) ≤ inner ℝ (posPart y) z := by
   rw [inner_rn, inner_rn]
   exact Finset.sum_le_sum fun j _ => mul_le_mul_of_nonneg_right (le_posPart y j) (hz j)
 
-/-- **A non-decreasing closed convex function on the non-negative orthant**, in the encoding the
-book's §4 convention prescribes: a function on all of `ℝⁿ` that is `+∞` off the orthant.
-Rockafellar's hypotheses on `g` (p. 111) are exactly these. -/
+/-- **Section 12** of [rockafellar1970convex], the functions of Theorem 12.4 (p. 111). A function
+$g : \mathbb{R}^n \to [-\infty, +\infty]$ is a **non-decreasing closed convex function on the
+non-negative orthant** $K$, finite at the origin, if $g = +\infty$ off $K$, $g(z) \le g(z')$
+whenever $0 \le z \le z'$ componentwise, $g$ is convex and closed, and $g(0)$ is finite.
+
+The function on $K$ of the book is encoded, following the convention of Section 4, as a function
+on all of $\mathbb{R}^n$ that is $+\infty$ off $K$. The book's hypotheses on $g$ are exactly the
+fields of this structure. -/
 structure MonotoneOrthantFn (f : Rn n → EReal) : Prop where
-  /-- `f` is `+∞` off the non-negative orthant; the book's "function on the orthant". -/
+  /-- The function is $+\infty$ off the non-negative orthant. -/
   top_of_notMem : ∀ ⦃z : Rn n⦄, z ∉ nonnegOrthant n → f z = ⊤
-  /-- `f z ≤ f z'` whenever `0 ≤ z ≤ z'`: the book's *non-decreasing*. -/
+  /-- The function $g$ is non-decreasing on the orthant: $g(z) \le g(z')$ whenever $0 \le z$ and
+  $z \le z'$ componentwise. -/
   mono : ∀ ⦃z z' : Rn n⦄, z ∈ nonnegOrthant n → (∀ j, z j ≤ z' j) → f z ≤ f z'
-  /-- `f` is convex. -/
+  /-- The function is convex. -/
   convex : ConvexFn f
-  /-- `f` is lower semicontinuous, i.e. closed. -/
+  /-- The function is closed, that is, lower semicontinuous. -/
   closed : ClosedConvex f
-  /-- `f 0` is finite: not `+∞` … -/
+  /-- The value at the origin is not $+\infty$. -/
   zero_ne_top : f 0 ≠ ⊤
-  /-- … and not `-∞`. -/
+  /-- The value at the origin is not $-\infty$. -/
   zero_ne_bot : f 0 ≠ ⊥
 
+/-- A non-decreasing closed convex function $g$ on the non-negative orthant attains its minimum over
+the orthant at the origin: $g(0) \le g(z)$ for every $z$ in the orthant. -/
 theorem MonotoneOrthantFn.zero_le {f : Rn n → EReal} (hf : MonotoneOrthantFn f)
     {z : Rn n} (hz : z ∈ nonnegOrthant n) : f 0 ≤ f z :=
   hf.mono (zero_mem_nonnegOrthant n) fun j => hz j
 
+/-- A non-decreasing closed convex function on the non-negative orthant that is finite at the origin
+is proper. -/
 theorem MonotoneOrthantFn.proper {f : Rn n → EReal}
     (hf : MonotoneOrthantFn f) : ProperConvex f := by
   refine ⟨⟨0, lt_of_le_of_ne le_top hf.zero_ne_top⟩, fun z hz => ?_⟩
@@ -369,12 +485,18 @@ theorem MonotoneOrthantFn.proper {f : Rn n → EReal}
   · exact hf.zero_ne_bot (le_bot_iff.1 (hz ▸ hf.zero_le hzm))
   · exact absurd (hf.top_of_notMem hzm) (hz ▸ bot_ne_top)
 
-/-- The **monotone conjugate** `g⁺` of Rockafellar's p. 111: the conjugate, truncated back to the
-non-negative orthant so that the correspondence is one between functions on the orthant. -/
+/-- **Section 12** of [rockafellar1970convex], the monotone conjugate (p. 111). The **monotone
+conjugate** $g^+$ of $g : \mathbb{R}^n \to [-\infty, +\infty]$ is $g^*$ on the non-negative
+orthant $K$ and $+\infty$ off $K$. The truncation makes the correspondence one between functions
+on $K$. -/
 noncomputable def monotoneConjOrthant (f : Rn n → EReal) : Rn n → EReal :=
   convexRestrict (nonnegOrthant n) (convexConj (pairing n) f)
 
-/-- Rockafellar's formula `g⁺(z*) = sup {⟨z, z*⟩ - g z ∣ z ≥ 0}` (p. 111), on the orthant. -/
+/-- **Section 12** of [rockafellar1970convex], formula for the monotone conjugate (p. 111). Let
+$g : \mathbb{R}^n \to [-\infty, +\infty]$ be $+\infty$ off the non-negative orthant $K$. Then
+for every $z^* \in K$,
+$$g^+(z^*) = \sup \{\langle z, z^* \rangle - g(z) \mid z \in K\}.$$
+-/
 theorem monotoneConjOrthant_apply {f : Rn n → EReal}
     (htop : ∀ ⦃z : Rn n⦄, z ∉ nonnegOrthant n → f z = ⊤) {y : Rn n} (hy : y ∈ nonnegOrthant n) :
     monotoneConjOrthant f y = ⨆ z ∈ nonnegOrthant n, ((inner ℝ z y : ℝ) : EReal) - f z := by
@@ -386,17 +508,21 @@ theorem monotoneConjOrthant_apply {f : Rn n → EReal}
     · rw [htop hz]; simp
   · exact le_iSup (fun z : Rn n => ((pairing n z y : ℝ) : EReal) - f z) z
 
+/-- The monotone conjugate is $+\infty$ off the non-negative orthant: $g^+(y) = +\infty$ if
+$y \notin K$. -/
 theorem monotoneConjOrthant_of_notMem (f : Rn n → EReal) {y : Rn n}
     (hy : y ∉ nonnegOrthant n) : monotoneConjOrthant f y = ⊤ :=
   convexRestrict_of_notMem hy
 
+/-- The monotone conjugate majorizes the conjugate: $g^*(y) \le g^+(y)$ for every $y$. -/
 theorem convexConj_le_monotoneConjOrthant (f : Rn n → EReal) (y : Rn n) :
     convexConj (pairing n) f y ≤ monotoneConjOrthant f y := by
   by_cases hy : y ∈ nonnegOrthant n
   · rw [monotoneConjOrthant, convexRestrict_of_mem hy]
   · rw [monotoneConjOrthant_of_notMem f hy]; exact le_top
 
-/-- The conjugate of an orthant function is monotone in the dual variable. -/
+/-- Let $g$ be $+\infty$ off the non-negative orthant. Then $g^*$ is non-decreasing: if
+$y_j \le y'_j$ for every $j$, then $g^*(y) \le g^*(y')$. -/
 theorem convexConj_mono_of_top_of_notMem {f : Rn n → EReal}
     (htop : ∀ ⦃z : Rn n⦄, z ∉ nonnegOrthant n → f z = ⊤) {y y' : Rn n} (h : ∀ j, y j ≤ y' j) :
     convexConj (pairing n) f y ≤ convexConj (pairing n) f y' := by
@@ -411,8 +537,12 @@ theorem convexConj_mono_of_top_of_notMem {f : Rn n → EReal}
     exact Finset.sum_le_sum fun j _ => mul_le_mul_of_nonneg_left (h j) (hz j)
   · rw [htop hz]; simp
 
-/-- **The one fact that makes the truncation harmless**: `f*` does not distinguish `y` from its
-positive part. See the module docstring. -/
+/-- Let $g$ be a non-decreasing closed convex function on the non-negative orthant that is finite at
+the origin. Then $g^*(y^+) = g^*(y)$ for every $y \in \mathbb{R}^n$, where $y^+$ is the
+componentwise positive part of $y$.
+
+This is the fact that makes the truncation in the monotone conjugate harmless; see the proof
+outline in the module doc comment. -/
 theorem convexConj_posPart {f : Rn n → EReal} (hf : MonotoneOrthantFn f) (y : Rn n) :
     convexConj (pairing n) f (posPart y) = convexConj (pairing n) f y := by
   refine le_antisymm ?_ (convexConj_mono_of_top_of_notMem hf.top_of_notMem (le_posPart y))
@@ -427,12 +557,13 @@ theorem convexConj_posPart {f : Rn n → EReal} (hf : MonotoneOrthantFn f) (y : 
     exact (inner_maskNonneg y z).symm
   · rw [hf.top_of_notMem hz]; simp
 
-/-- **Theorem 12.4**, first half: the monotone conjugate `g⁺` of a non-decreasing
-lower semicontinuous convex function on the non-negative orthant, finite at the origin, is another
-such function.
+/-- **Theorem 12.4** of [rockafellar1970convex], first half. Let $g$ be a non-decreasing lower
+semicontinuous convex function on the non-negative orthant $K$ such that $g(0)$ is finite. Then
+the monotone conjugate $g^+$ is again a non-decreasing lower semicontinuous convex function on
+$K$ that is finite at the origin.
 
-The book states Theorem 12.4 with **no proof at all**. Note `g⁺(0) = -g(0)`, because `g` attains
-its infimum over the orthant at the origin. -/
+The book states Theorem 12.4 without a proof. Since $g$ attains its minimum over $K$ at the
+origin, $g^+(0) = -g(0)$. The class of functions is `Rockafellar.MonotoneOrthantFn`. -/
 theorem theorem_12_4_mem {f : Rn n → EReal} (hf : MonotoneOrthantFn f) :
     MonotoneOrthantFn (monotoneConjOrthant f) := by
   have hzero : monotoneConjOrthant f 0 = -f 0 := by
@@ -462,8 +593,12 @@ theorem theorem_12_4_mem {f : Rn n → EReal} (hf : MonotoneOrthantFn f) :
   · rw [hzero]
     exact fun h => hf.zero_ne_top (EReal.neg_eq_bot_iff.1 h)
 
-/-- **Theorem 12.4**, second half: the monotone conjugate of `g⁺` is in turn `g`. The book states
-Theorem 12.4 with **no proof at all**; see the module docstring. -/
+/-- **Theorem 12.4** of [rockafellar1970convex], second half. Let $g$ be a non-decreasing lower
+semicontinuous convex function on the non-negative orthant such that $g(0)$ is finite. Then
+$(g^+)^+ = g$.
+
+The book states Theorem 12.4 without a proof. The proof here is described in the module doc
+comment. -/
 theorem theorem_12_4_involutive {f : Rn n → EReal} (hf : MonotoneOrthantFn f) :
     monotoneConjOrthant (monotoneConjOrthant f) = f := by
   have hbi : convexConj (pairing n) (convexConj (pairing n) f) = f := by

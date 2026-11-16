@@ -9,48 +9,106 @@ import NumlibSurface.Rockafellar.Common.Euclidean
 import NumlibSurface.Rockafellar.Chapter01.Section01
 
 /-!
-# Rockafellar §7: closures of convex functions
+# Rockafellar, Section 7: Closures of convex functions
 
-Surface file for R. Tyrrell Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §7:
-lower semicontinuity, the lower semicontinuous hull, the closure `cl f` of a convex function, and
-closed convex functions.
+This module formalizes §7 of [rockafellar1970convex]: lower semicontinuity, the lower semicontinuous
+hull, the closure $\operatorname{cl} f$ of a convex function
+$f : \mathbb{R}^n \to [-\infty, +\infty]$, and closed convex functions. The main facts are that an
+improper convex function is $-\infty$ throughout $\operatorname{ri}(\operatorname{dom} f)$, that for
+proper convex $f$ the closure $\operatorname{cl} f$ is a closed proper convex function that agrees
+with $f$ except perhaps on the relative boundary of $\operatorname{dom} f$, that
+$(\operatorname{cl} f)(y)$ is the limit of $f$ along a line segment from a point of
+$\operatorname{ri}(\operatorname{dom} f)$ to $y$, and that above $\inf f$ the level sets
+$\{f \le \alpha\}$ and $\{f < \alpha\}$ have the same closure, relative interior and dimension. The
+proofs specialize `Numlib.Analysis.Convex.Closure` and `Numlib.Analysis.Convex.RelativeInterior`.
 
-All 17 numbered results of §7 are formalized. Lower semicontinuity is Mathlib's
-`LowerSemicontinuous`; the lower semicontinuous hull is `lscHull`, characterised as the greatest
-lsc minorant by `lscHull_isGreatest`; the closure of a convex function is `convexCl`; and a closed
-convex function is one with `ClosedConvex f`. Two unnumbered claims of the text are recorded as
-`closedConvex_iff_lowerSemicontinuous_of_properConvex` and `closed_improper_eq_const` — the only
-closed improper convex functions are the constants `+∞` and `−∞`.
+All 17 numbered results of §7 are formalized. Three unnumbered claims of the text are also stated:
+the lower semicontinuous hull is the greatest lower semicontinuous minorant
+(`Rockafellar.lscHull_isGreatest`), closedness of a proper convex function is lower semicontinuity
+(`Rockafellar.closedConvex_iff_lowerSemicontinuous_of_properConvex`), and the only closed improper
+convex functions are the constants $+\infty$ and $-\infty$ (`Rockafellar.closed_improper_eq_const`).
 
 ## Main results
 
-* `theorem_7_1` — the three equivalent forms of lower semicontinuity: closed level sets, a closed
-  epigraph, and `liminf` at every point.
-* `theorem_7_2`, `corollary_7_2_1`, `corollary_7_2_2`, `corollary_7_2_3` — an improper convex
-  function is `-∞` throughout `ri (dom f)`, and the consequences for `cl f`.
-* `lemma_7_3`, `corollary_7_3_1`, `corollary_7_3_2`, `corollary_7_3_3`, `corollary_7_3_4` — the
-  relative interior of an epigraph, and the four comparison principles the book draws from it;
-  `corollary_7_3_4` is the one the rest of the book uses: two convex functions agreeing on a
-  common `ri (dom ·)` have the same closure.
-* `theorem_7_4`, `corollary_7_4_1`, `corollary_7_4_2` — `cl f` is a closed proper convex function
-  agreeing with `f` except perhaps on the relative boundary of `dom f`.
-* `theorem_7_5`, `theorem_7_5_improper`, `corollary_7_5_1` — `cl f` is the limit of `f` along line
-  segments from a point of `ri (dom f)`.
-* `theorem_7_6`, `corollary_7_6_1` — above the infimum, the level sets `{f ≤ α}` and `{f < α}`
-  have the same closure, relative interior, affine hull and dimension.
+* Theorem 7.1, `Rockafellar.theorem_7_1`: lower semicontinuity, closed sublevel sets and a closed
+  epigraph are equivalent.
+* Theorem 7.2, `Rockafellar.theorem_7_2`: an improper convex function is $-\infty$ on
+  $\operatorname{ri}(\operatorname{dom} f)$.
+* Corollary 7.2.1, `Rockafellar.corollary_7_2_1`: a lower semicontinuous improper convex function
+  has no finite values.
+* Corollary 7.2.2, `Rockafellar.corollary_7_2_2`: for improper convex $f$, $\operatorname{cl} f$ is
+  closed, improper and convex, and agrees with $f$ on $\operatorname{ri}(\operatorname{dom} f)$.
+* Corollary 7.2.3, `Rockafellar.corollary_7_2_3`: if $\operatorname{dom} f$ is relatively open, then
+  either $f > -\infty$ everywhere or $f$ has no finite values.
+* Lemma 7.3, `Rockafellar.lemma_7_3`: $\operatorname{ri}(\operatorname{epi} f)$ consists of the
+  pairs $(x, \mu)$ with $x \in \operatorname{ri}(\operatorname{dom} f)$ and $f(x) < \mu < \infty$.
+* Corollary 7.3.1, `Rockafellar.corollary_7_3_1`: if $f(x) < \alpha$ for some $x$, then
+  $f(x) < \alpha$ for some $x \in \operatorname{ri}(\operatorname{dom} f)$.
+* Corollary 7.3.2, `Rockafellar.corollary_7_3_2`: if $\operatorname{ri} C \subseteq
+  \operatorname{dom} f$ and $f(x) < \alpha$ for some $x \in \operatorname{cl} C$, then
+  $f(x) < \alpha$ for some $x \in \operatorname{ri} C$.
+* Corollary 7.3.3, `Rockafellar.corollary_7_3_3`: if $f$ is finite on a convex set $C$ and
+  $f \ge \alpha$ on $C$, then $f \ge \alpha$ on $\operatorname{cl} C$.
+* Corollary 7.3.4, `Rockafellar.corollary_7_3_4`: two convex functions with the same
+  $\operatorname{ri}(\operatorname{dom} \cdot)$ that agree there have the same closure.
+* Theorem 7.4, `Rockafellar.theorem_7_4`: for proper convex $f$, $\operatorname{cl} f$ is closed
+  proper convex and agrees with $f$ off the relative boundary of $\operatorname{dom} f$.
+* Corollary 7.4.1, `Rockafellar.corollary_7_4_1`: for proper convex $f$,
+  $\operatorname{dom}(\operatorname{cl} f)$ lies between $\operatorname{dom} f$ and its closure,
+  with the same closure, relative interior and dimension.
+* Corollary 7.4.2, `Rockafellar.corollary_7_4_2`: a proper convex function whose effective domain is
+  affine is closed.
+* Theorem 7.5, `Rockafellar.theorem_7_5`: for proper convex $f$ and
+  $x \in \operatorname{ri}(\operatorname{dom} f)$, $(\operatorname{cl} f)(y) = \lim_{\lambda
+  \uparrow 1} f((1 - \lambda) x + \lambda y)$ for every $y$; `Rockafellar.theorem_7_5_improper` is
+  the improper case for $y \in \operatorname{cl}(\operatorname{dom} f)$.
+* Corollary 7.5.1, `Rockafellar.corollary_7_5_1`: for closed proper convex $f$ and
+  $x \in \operatorname{dom} f$, $f(y) = \lim_{\lambda \uparrow 1} f((1 - \lambda) x + \lambda y)$
+  for every $y$.
+* Theorem 7.6, `Rockafellar.theorem_7_6`: for proper convex $f$ and $\inf f < \alpha$, the level
+  sets $\{f \le \alpha\}$ and $\{f < \alpha\}$ have the closure
+  $\{\operatorname{cl} f \le \alpha\}$, the relative interior $\{x \in
+  \operatorname{ri}(\operatorname{dom} f) \mid f(x) < \alpha\}$, and the dimension of
+  $\operatorname{dom} f$.
+* Corollary 7.6.1, `Rockafellar.corollary_7_6_1`: for closed proper convex $f$ with relatively open
+  domain and $\inf f < \alpha < +\infty$, $\operatorname{ri}\{f \le \alpha\} = \{f < \alpha\}$ and
+  $\operatorname{cl}\{f < \alpha\} = \{f \le \alpha\}$.
 
-## The `cl f` case split, and the book's slip about `epi (cl f)`
+## Implementation notes
 
-Rockafellar defines `cl f` by cases: the lower semicontinuous hull when `f` is nowhere `−∞`, and
-the constant `−∞` otherwise. The backbone's `convexCl` branches on the *hull* taking `−∞` rather
-than on `f` doing so, which is the standard Γ-regularisation and the only branch that keeps
-`f** = cl f` true; `ConvexFn.convexCl_eq_lscHull` is the proof that the two descriptions agree.
+* Lower semicontinuity is Mathlib's `LowerSemicontinuous`. The lower semicontinuous hull is
+  `ConvexAnalysis.lscHull`, the function whose epigraph is
+  $\operatorname{cl}(\operatorname{epi} f)$. The closure is `ConvexAnalysis.convexCl`, and $f$ is
+  closed when `ConvexAnalysis.ClosedConvex f` holds, that is, when $\operatorname{cl} f = f$.
+* The book defines $\operatorname{cl} f$ by cases: the lower semicontinuous hull when $f$ is nowhere
+  $-\infty$, and the constant $-\infty$ otherwise. `ConvexAnalysis.convexCl` branches instead on
+  whether the hull takes the value $-\infty$. This is the standard Γ-regularization, and it keeps
+  $f^{**} = \operatorname{cl} f$ true in general. For convex $f$ the two definitions agree; for
+  proper convex $f$ this is `ConvexAnalysis.ConvexFn.convexCl_eq_lscHull`.
+* The space $\mathbb{R}^{n+1}$ that contains the epigraph is `Rockafellar.Rn n × ℝ`. The second
+  coordinate of a point of `ConvexAnalysis.epi f` is a real number, so the condition $\mu < \infty$
+  of the book is carried by the type.
+* The limit $\lambda \uparrow 1$ is a limit along the filter `𝓝[<] (1 : ℝ)`, taken in the topology
+  of `EReal`.
+* The dimension `Rockafellar.dim` is the one of §1, with $\dim \emptyset = -1$.
 
-The book then asserts `epi (cl f) = cl (epi f)` "by definition". **That is false for improper
-`f`**: when `f` takes the value `−∞`, `cl f ≡ −∞` and `epi (cl f)` is all of `ℝⁿ⁺¹`, while
-`cl (epi f)` is `cl (dom f) × ℝ`. The identity holds for the *hull* with no hypothesis at all
-(`epi_lscHull`), and for `cl f` exactly when `f` is proper. No statement below inherits the slip:
-every use of it goes through `epi_lscHull` or through properness.
+## Deviations from the source
+
+* **Definition of $\operatorname{cl} f$** (correction). The book asserts
+  $\operatorname{epi}(\operatorname{cl} f) = \operatorname{cl}(\operatorname{epi} f)$ "by
+  definition". This fails for improper $f$: if a convex $f$ takes the value $-\infty$, then
+  $\operatorname{cl} f$ is the constant $-\infty$ and $\operatorname{epi}(\operatorname{cl} f) =
+  \mathbb{R}^{n+1}$, while $\operatorname{cl}(\operatorname{epi} f) =
+  \operatorname{cl}(\operatorname{dom} f) \times \mathbb{R}$, which is smaller when
+  $\operatorname{dom} f$ is not dense. The identity holds for the lower semicontinuous hull without
+  hypothesis (`ConvexAnalysis.epi_lscHull`), and for $\operatorname{cl} f$ whenever $f$ is proper.
+  No statement of this module uses the false identity.
+* **Closedness of a proper convex function** (generalization). The book states that closedness is
+  lower semicontinuity for a proper convex function; convexity is not needed. See
+  `Rockafellar.closedConvex_iff_lowerSemicontinuous_of_properConvex`.
+* **Closed improper convex functions** (generalization). The book states that the only closed
+  improper convex functions are the constants $+\infty$ and $-\infty$; convexity is not needed. See
+  `Rockafellar.closed_improper_eq_const`.
 -/
 
 open Set Filter Topology
@@ -61,37 +119,61 @@ open ConvexAnalysis
 
 variable {n : ℕ} {f g : Rn n → EReal}
 
-/-! ### The definitions of §7 -/
+/-!
+### The definitions of Section 7
 
-/-- **Rockafellar §7**, the sentence defining the lower semicontinuous hull: "there exists a
-greatest lower semi-continuous function (not necessarily finite) majorized by `f`". -/
+The lower semicontinuous hull, the closure of a convex function, and closed convex functions.
+-/
+
+/-- **Section 7** of [rockafellar1970convex], definition of the lower semicontinuous hull. For every
+$f : \mathbb{R}^n \to [-\infty, +\infty]$, the lower semicontinuous hull of $f$ is the greatest
+lower semicontinuous function $g$ with $g \le f$.
+
+The book states this as "there exists a greatest lower semi-continuous function (not necessarily
+finite) majorized by $f$". The hull is `ConvexAnalysis.lscHull`. -/
 theorem lscHull_isGreatest (f : Rn n → EReal) :
     IsGreatest {g : Rn n → EReal | LowerSemicontinuous g ∧ g ≤ f} (lscHull f) :=
   isGreatest_lscHull f
 
-/-- **Rockafellar §7**: "For a proper convex function, closedness is thus the same as lower
-semi-continuity." Only the `≠ -∞` half of properness is used, and convexity is not used at all. -/
+/-- **Section 7** of [rockafellar1970convex], closedness of proper functions. Let
+$f : \mathbb{R}^n \to [-\infty, +\infty]$ be proper. Then $f$ is closed, that is,
+$\operatorname{cl} f = f$, if and only if $f$ is lower semicontinuous.
+
+**Generalization.** The book states: "For a proper convex function, closedness is thus the same
+as lower semi-continuity." Convexity is not used.
+
+The proof uses only the condition $f > -\infty$ of properness. -/
 theorem closedConvex_iff_lowerSemicontinuous_of_properConvex (hp : ProperConvex f) :
     ClosedConvex f ↔ LowerSemicontinuous f :=
   closedConvex_iff_lowerSemicontinuous hp.ne_bot
 
-/-- **Rockafellar §7**: "the only closed improper convex functions are the constant functions `+∞`
-and `−∞`". Convexity is not needed. -/
+/-- **Section 7** of [rockafellar1970convex], closed improper functions. Let
+$f : \mathbb{R}^n \to [-\infty, +\infty]$ be closed and improper. Then $f$ is the constant
+$-\infty$ or the constant $+\infty$.
+
+**Generalization.** The book states this for convex functions: "the only closed improper convex
+functions are the constant functions $+\infty$ and $-\infty$". Convexity is not needed. -/
 theorem closed_improper_eq_const (hc : ClosedConvex f) (himp : ¬ ProperConvex f) :
     f = (fun _ => (⊥ : EReal)) ∨ f = fun _ => (⊤ : EReal) :=
   eq_const_of_closedConvex_of_not_properConvex hc himp
 
-/-! ### Dimension bookkeeping
+/-!
+### Dimension bookkeeping
 
-Corollary 6.3.1 in the form Corollary 7.4.1 and Theorem 7.6 need; `dim` itself is §1's. -/
+The form of Corollary 6.3.1 that Corollary 7.4.1 and Theorem 7.6 need. The dimension
+`Rockafellar.dim` is the one of §1.
+-/
 
-/-- Non-empty sets with the same affine hull have the same dimension. -/
+/-- Let $S, T \subseteq \mathbb{R}^n$ be nonempty sets with the same affine hull. Then
+$\dim S = \dim T$. -/
 theorem dim_eq_of_affineSpan_eq {S T : Set (Rn n)} (hS : S.Nonempty) (hT : T.Nonempty)
     (h : affineSpan ℝ S = affineSpan ℝ T) : dim S = dim T := by
   rw [dim_eq_finrank_direction hS, dim_eq_finrank_direction hT, h]
 
-/-- **Corollary 6.3.1**, dimension half: sets with the same closure have the same
-dimension, because they have the same affine hull. -/
+/-- Let $S, T \subseteq \mathbb{R}^n$ have the same closure. Then $\dim S = \dim T$.
+
+This is the dimension part of Corollary 6.3.1 of [rockafellar1970convex], without the convexity
+hypothesis: sets with the same closure have the same affine hull. -/
 theorem dim_eq_of_closure_eq {S T : Set (Rn n)} (h : closure S = closure T) : dim S = dim T := by
   have hspan : affineSpan ℝ S = affineSpan ℝ T := by
     rw [← affineSpan_closure S, h, affineSpan_closure]
@@ -106,16 +188,17 @@ theorem dim_eq_of_closure_eq {S T : Set (Rn n)} (h : closure S = closure T) : di
 
 /-! ### Theorem 7.1 -/
 
-/-- **Theorem 7.1.** Let `f` be an arbitrary function from `ℝⁿ` to `[-∞, +∞]`. Then
-the following conditions are equivalent:
+/-- **Theorem 7.1** of [rockafellar1970convex]. Let $f$ be an arbitrary function from $\mathbb{R}^n$
+to $[-\infty, +\infty]$. Then the following conditions are equivalent:
 
-(a) `f` is lower semi-continuous throughout `ℝⁿ`;
+(a) $f$ is lower semicontinuous throughout $\mathbb{R}^n$;
 
-(b) `{x | f x ≤ α}` is closed for every `α ∈ R`;
+(b) $\{x \mid f(x) \le \alpha\}$ is closed for every $\alpha \in \mathbb{R}$;
 
-(c) the epigraph of `f` is a closed set in `ℝⁿ⁺¹`.
+(c) the epigraph of $f$ is a closed set in $\mathbb{R}^{n+1}$.
 
-Neither convexity nor finite dimension enters; the book's `ℝⁿ⁺¹` is `Rn n × ℝ`. -/
+Neither convexity nor finite dimension is used. The space $\mathbb{R}^{n+1}$ is
+`Rockafellar.Rn n × ℝ`, and the epigraph is `ConvexAnalysis.epi f`. -/
 theorem theorem_7_1 (f : Rn n → EReal) :
     List.TFAE [LowerSemicontinuous f, ∀ α : ℝ, IsClosed {x | f x ≤ (α : EReal)},
       IsClosed (epi f)] := by
@@ -125,17 +208,21 @@ theorem theorem_7_1 (f : Rn n → EReal) :
 
 /-! ### Theorem 7.2 and its corollaries -/
 
-/-- **Theorem 7.2.** If `f` is an improper convex function, then `f x = -∞` for every
-`x ∈ ri (dom f)`. Thus an improper convex function is necessarily infinite except perhaps at
-relative boundary points of its effective domain. No properness hypothesis is added: the theorem is
-*about* improper functions. -/
+/-- **Theorem 7.2** of [rockafellar1970convex]. Let $f$ be an improper convex function on
+$\mathbb{R}^n$. Then $f(x) = -\infty$ for every $x \in \operatorname{ri}(\operatorname{dom} f)$.
+Thus an improper convex function is necessarily infinite except perhaps at relative boundary
+points of its effective domain.
+
+The hypothesis that $f$ is improper is part of the statement, not a restriction: the theorem is
+about improper functions. -/
 theorem theorem_7_2 (hf : ConvexFn f) (himp : ¬ ProperConvex f) {x : Rn n}
     (hx : x ∈ ri (convexDom f)) :
     f x = ⊥ :=
   hf.eq_bot_of_mem_relint_convexDom himp hx
 
-/-- **Corollary 7.2.1.** A lower semicontinuous improper convex function has no finite
-values. -/
+/-- **Corollary 7.2.1** of [rockafellar1970convex]. Let $f$ be a lower semicontinuous improper
+convex function on $\mathbb{R}^n$. Then $f$ has no finite values: $f(x) = -\infty$ or
+$f(x) = +\infty$ for every $x$. -/
 theorem corollary_7_2_1 (hf : ConvexFn f) (hl : LowerSemicontinuous f) (himp : ¬ ProperConvex f)
     (x : Rn n) : f x = ⊥ ∨ f x = ⊤ := by
   by_cases hx : x ∈ closure (convexDom f)
@@ -144,43 +231,51 @@ theorem corollary_7_2_1 (hf : ConvexFn f) (hl : LowerSemicontinuous f) (himp : �
     by_contra h
     exact hx (subset_closure (mem_convexDom.2 (lt_of_le_of_ne le_top h)))
 
-/-- **Corollary 7.2.2.** Let `f` be an improper convex function. Then `cl f` is a
-closed improper convex function which agrees with `f` on `ri (dom f)`.
+/-- **Corollary 7.2.2** of [rockafellar1970convex]. Let $f$ be an improper convex function on
+$\mathbb{R}^n$. Then $\operatorname{cl} f$ is a closed improper convex function, and
+$(\operatorname{cl} f)(x) = f(x)$ for every $x \in \operatorname{ri}(\operatorname{dom} f)$.
 
-Note that the agreement is *not* obtained from `epi (cl f) = cl (epi f)`, which fails exactly in
-this improper case. -/
+The agreement on $\operatorname{ri}(\operatorname{dom} f)$ is not obtained from
+$\operatorname{epi}(\operatorname{cl} f) = \operatorname{cl}(\operatorname{epi} f)$, which fails
+exactly in this improper case. -/
 theorem corollary_7_2_2 (hf : ConvexFn f) (himp : ¬ ProperConvex f) :
     ConvexFn (convexCl f) ∧ ClosedConvex (convexCl f) ∧ ¬ ProperConvex (convexCl f) ∧
       ∀ x ∈ ri (convexDom f), convexCl f x = f x :=
   ⟨convexFn_convexCl hf, closedConvex_convexCl f, not_properConvex_convexCl himp,
     fun _ hx => hf.convexCl_eq_of_mem_relint_convexDom hx⟩
 
-/-- **Corollary 7.2.3.** If `f` is a convex function whose effective domain is
-relatively open (for instance if `dom f = ℝⁿ`), then either `f x > -∞` for every `x`, or `f x` is
-infinite for every `x`. -/
+/-- **Corollary 7.2.3** of [rockafellar1970convex]. Let $f$ be a convex function on $\mathbb{R}^n$
+whose effective domain is relatively open, that is, $\operatorname{ri}(\operatorname{dom} f) =
+\operatorname{dom} f$ (for instance if $\operatorname{dom} f = \mathbb{R}^n$). Then either
+$f(x) > -\infty$ for every $x$, or $f(x)$ is infinite for every $x$. -/
 theorem corollary_7_2_3 (hf : ConvexFn f) (hopen : ri (convexDom f) = convexDom f) :
     (∀ x, f x ≠ ⊥) ∨ ∀ x, f x = ⊥ ∨ f x = ⊤ :=
   hf.forall_ne_bot_or_forall_infinite hopen
 
 /-! ### Lemma 7.3 and its corollaries -/
 
-/-- **Lemma 7.3.** For any convex function `f`, `ri (epi f)` consists of the pairs
-`(x, μ)` such that `x ∈ ri (dom f)` and `f x < μ < ∞`.
+/-- **Lemma 7.3** of [rockafellar1970convex]. Let $f$ be a convex function on $\mathbb{R}^n$. Then
+$\operatorname{ri}(\operatorname{epi} f)$ consists of the pairs
+$(x, \mu) \in \mathbb{R}^n \times \mathbb{R}$ such that
+$x \in \operatorname{ri}(\operatorname{dom} f)$ and $f(x) < \mu < \infty$.
 
-The book's `μ < ∞` is carried by the type: the second component of a point of `ℝⁿ⁺¹ = Rn n × ℝ` is a
-real number. -/
+The condition $\mu < \infty$ is carried by the type: the second component of a point of
+`Rockafellar.Rn n × ℝ` is a real number. -/
 theorem lemma_7_3 (hf : ConvexFn f) :
     ri (epi f) = {p : Rn n × ℝ | p.1 ∈ ri (convexDom f) ∧ f p.1 < (p.2 : EReal)} :=
   hf.relint_epi
 
-/-- **Corollary 7.3.1.** Let `α` be a real number, and let `f` be a convex function
-such that, for some `x`, `f x < α`. Then actually `f x < α` for some `x ∈ ri (dom f)`. -/
+/-- **Corollary 7.3.1** of [rockafellar1970convex]. Let $\alpha$ be a real number, and let $f$ be a
+convex function on $\mathbb{R}^n$ such that $f(x) < \alpha$ for some $x$. Then $f(x) < \alpha$
+for some $x \in \operatorname{ri}(\operatorname{dom} f)$. -/
 theorem corollary_7_3_1 (hf : ConvexFn f) {α : ℝ} (h : ∃ x, f x < (α : EReal)) :
     ∃ x ∈ ri (convexDom f), f x < (α : EReal) :=
   hf.exists_mem_relint_convexDom_lt h
 
-/-- **Corollary 7.3.2.** For convex `f` and convex `C` with `ri C ⊆ dom f`: if `f x < α` for some
-`x ∈ cl C`, then `f x < α` for some `x ∈ ri C`. -/
+/-- **Corollary 7.3.2** of [rockafellar1970convex]. Let $f$ be a convex function on $\mathbb{R}^n$,
+let $C \subseteq \mathbb{R}^n$ be a convex set with $\operatorname{ri} C \subseteq
+\operatorname{dom} f$, and let $\alpha$ be a real number. If $f(x) < \alpha$ for some
+$x \in \operatorname{cl} C$, then $f(x) < \alpha$ for some $x \in \operatorname{ri} C$. -/
 theorem corollary_7_3_2 (hf : ConvexFn f) {C : Set (Rn n)} (hC : Convex ℝ C)
     (hsub : ri C ⊆ convexDom f) {α : ℝ} (h : ∃ x ∈ closure C, f x < (α : EReal)) :
     ∃ x ∈ ri C, f x < (α : EReal) := by
@@ -205,9 +300,13 @@ theorem corollary_7_3_2 (hf : ConvexFn f) {C : Set (Rn n)} (hC : Convex ℝ C)
   rw [convexRestrict_of_mem (subset_closure (intrinsicInterior_subset hz))] at hzα
   exact ⟨z, hz, hzα⟩
 
-/-- **Corollary 7.3.3.** For convex `f` finite on a convex set `C`: if `f x ≥ α` throughout `C`,
-then `f x ≥ α` throughout `cl C`. Stated in the book's form, which needs `f ≠ -∞` only on `C`,
-where the backbone's `ConvexFn.le_of_mem_closure` assumes it globally. -/
+/-- **Corollary 7.3.3** of [rockafellar1970convex]. Let $f$ be a convex function on $\mathbb{R}^n$,
+let $C \subseteq \mathbb{R}^n$ be a convex set on which $f$ is finite, and let $\alpha$ be a
+real number. If $f(x) \ge \alpha$ for every $x \in C$, then $f(x) \ge \alpha$ for every
+$x \in \operatorname{cl} C$.
+
+This is the form of the book, which needs $f > -\infty$ only on $C$. The backbone result
+`ConvexAnalysis.ConvexFn.le_of_mem_closure` assumes $f > -\infty$ everywhere. -/
 theorem corollary_7_3_3 (hf : ConvexFn f) {C : Set (Rn n)} (hC : Convex ℝ C)
     (hfin : ∀ x ∈ C, f x ≠ ⊥ ∧ f x ≠ ⊤) {α : ℝ} (hge : ∀ x ∈ C, (α : EReal) ≤ f x) {x : Rn n}
     (hx : x ∈ closure C) : (α : EReal) ≤ f x := by
@@ -217,9 +316,14 @@ theorem corollary_7_3_3 (hf : ConvexFn f) {C : Set (Rn n)} (hC : Convex ℝ C)
     ⟨x, hx, not_le.1 hlt⟩
   exact absurd (hge z (intrinsicInterior_subset hz)) (not_le.2 hzα)
 
-/-- **Corollary 7.3.4.** If convex `f` and `g` have `ri (dom f) = ri (dom g)` and agree there,
-then `cl f = cl g`. No improper case split is needed, unlike in the book, because `convexCl` is a
-function of `lscHull` alone. -/
+/-- **Corollary 7.3.4** of [rockafellar1970convex]. Let $f$ and $g$ be convex functions on
+$\mathbb{R}^n$ with $\operatorname{ri}(\operatorname{dom} f) =
+\operatorname{ri}(\operatorname{dom} g)$, and suppose that $f(x) = g(x)$ for every $x$ in this
+set. Then $\operatorname{cl} f = \operatorname{cl} g$.
+
+The rest of the book uses this corollary more than the others of Lemma 7.3. The proof needs no
+case split on properness, unlike the proof in the book, because `ConvexAnalysis.convexCl`
+depends on $f$ only through `ConvexAnalysis.lscHull f`. -/
 theorem corollary_7_3_4 (hf : ConvexFn f) (hg : ConvexFn g)
     (hdom : ri (convexDom f) = ri (convexDom g))
     (hagree : ∀ x ∈ ri (convexDom f), f x = g x) : convexCl f = convexCl g := by
@@ -244,9 +348,13 @@ theorem corollary_7_3_4 (hf : ConvexFn f) (hg : ConvexFn g)
 
 /-! ### Theorem 7.4 and its corollaries -/
 
-/-- **Theorem 7.4.** Let `f` be a proper convex function on `ℝⁿ`. Then `cl f` is a
-closed proper convex function. Moreover, `cl f` agrees with `f` except perhaps at relative
-boundary points of `dom f` — that is, off `cl (dom f) \ ri (dom f)`. -/
+/-- **Theorem 7.4** of [rockafellar1970convex]. Let $f$ be a proper convex function on
+$\mathbb{R}^n$. Then $\operatorname{cl} f$ is a closed proper convex function. Moreover,
+$(\operatorname{cl} f)(x) = f(x)$ except perhaps at relative boundary points of
+$\operatorname{dom} f$, that is, for every $x \notin \operatorname{cl}(\operatorname{dom} f)
+\setminus \operatorname{ri}(\operatorname{dom} f)$.
+
+"Closed proper convex" is `ConvexAnalysis.ClosedProperConvexFn`. -/
 theorem theorem_7_4 (hf : ConvexFn f) (hp : ProperConvex f) :
     ClosedProperConvexFn (convexCl f) ∧ ∀ x ∉ closure (convexDom f) \ ri (convexDom f),
         convexCl f x = f x := by
@@ -258,10 +366,16 @@ theorem theorem_7_4 (hf : ConvexFn f) (hp : ProperConvex f) :
       exact hx ⟨hc, hr⟩)
   · exact hf.convexCl_eq_of_notMem_closure_convexDom hp hc
 
-/-- **Corollary 7.4.1.** If `f` is a proper convex function, then `dom (cl f)` differs from `dom f`
-at most by including some additional relative boundary points of `dom f`. In particular,
-`dom (cl f)` and `dom f` have the same closure and relative interior, as well as the same dimension.
-The dimension clause is `dim_eq_of_closure_eq`, which belongs to §6. -/
+/-- **Corollary 7.4.1** of [rockafellar1970convex]. Let $f$ be a proper convex function on
+$\mathbb{R}^n$. Then $\operatorname{dom}(\operatorname{cl} f)$ differs from
+$\operatorname{dom} f$ at most by some additional relative boundary points of
+$\operatorname{dom} f$:
+$$\operatorname{dom} f \subseteq \operatorname{dom}(\operatorname{cl} f) \subseteq
+  \operatorname{cl}(\operatorname{dom} f).$$
+In particular, $\operatorname{dom}(\operatorname{cl} f)$ and $\operatorname{dom} f$ have the
+same closure, the same relative interior, and the same dimension.
+
+The dimension clause comes from `Rockafellar.dim_eq_of_closure_eq`, a form of Corollary 6.3.1. -/
 theorem corollary_7_4_1 (hf : ConvexFn f) (hp : ProperConvex f) :
     convexDom f ⊆ convexDom (convexCl f) ∧ convexDom (convexCl f) ⊆ closure (convexDom f) ∧
       closure (convexDom (convexCl f)) = closure (convexDom f) ∧ ri (convexDom (convexCl f))
@@ -276,27 +390,38 @@ theorem corollary_7_4_1 (hf : ConvexFn f) (hp : ProperConvex f) :
       (intrinsicInterior_subset.trans hsub) hsup
   exact ⟨hsub, hsup, hcl, hf.relint_convexDom_convexCl hp, dim_eq_of_closure_eq hcl⟩
 
-/-- **Corollary 7.4.2.** If `f` is a proper convex function such that `dom f` is an
-affine set (which is true in particular if `f` is finite throughout `ℝⁿ`), then `f` is closed.
+/-- **Corollary 7.4.2** of [rockafellar1970convex]. Let $f$ be a proper convex function on
+$\mathbb{R}^n$ such that $\operatorname{dom} f$ is an affine set (which is true in particular if
+$f$ is finite throughout $\mathbb{R}^n$). Then $f$ is closed.
 
-`IsAffineSet` and its bridge to `AffineSubspace` are §1's (`Section01.lean`). -/
+Affine sets are `Rockafellar.IsAffineSet`, from `NumlibSurface.Rockafellar.Chapter01.Section01`,
+which also relates them to Mathlib's `AffineSubspace`. -/
 theorem corollary_7_4_2 (hf : ConvexFn f) (hp : ProperConvex f) (hdom : IsAffineSet (convexDom f)) :
     ClosedConvex f :=
   hf.closedConvex_of_convexDom_eq_coe hp hdom.coe_toAffineSubspace.symm
 
 /-! ### Theorem 7.5 and its corollary -/
 
-/-- **Theorem 7.5.** Let `f` be a proper convex function, and let `x ∈ ri (dom f)`. Then
-`(cl f) y = lim_{λ ↑ 1} f ((1 - λ) x + λ y)` for every `y`. The book's `λ ↑ 1` is the filter
-`𝓝[<] (1 : ℝ)`. -/
+/-- **Theorem 7.5** of [rockafellar1970convex]. Let $f$ be a proper convex function on
+$\mathbb{R}^n$, and let $x \in \operatorname{ri}(\operatorname{dom} f)$. Then for every
+$y \in \mathbb{R}^n$,
+$$(\operatorname{cl} f)(y) = \lim_{\lambda \uparrow 1} f((1 - \lambda) x + \lambda y).$$
+
+The limit $\lambda \uparrow 1$ is the filter `𝓝[<] (1 : ℝ)`, and the limit is taken in
+$[-\infty, +\infty]$. The parenthetical clause of the theorem, for improper $f$, is
+`Rockafellar.theorem_7_5_improper`. -/
 theorem theorem_7_5 (hf : ConvexFn f) (hp : ProperConvex f) {x : Rn n} (hx : x ∈ ri (convexDom f))
     (y : Rn n) :
     Tendsto (fun a : ℝ => f ((1 - a) • x + a • y)) (𝓝[<] (1 : ℝ)) (𝓝 (convexCl f y)) :=
   hf.tendsto_convexCl_along_segment_relint hp hx y
 
-/-- **Theorem 7.5**, parenthetical clause: the formula is also valid for improper `f` and
-`y ∈ cl (dom f)`. The restriction to `cl (dom f)` is not decorative — off it the function along
-the segment is eventually `+∞`. -/
+/-- **Theorem 7.5** of [rockafellar1970convex], the improper case. Let $f$ be an improper convex
+function on $\mathbb{R}^n$, let $x \in \operatorname{ri}(\operatorname{dom} f)$, and let
+$y \in \operatorname{cl}(\operatorname{dom} f)$. Then
+$$(\operatorname{cl} f)(y) = \lim_{\lambda \uparrow 1} f((1 - \lambda) x + \lambda y).$$
+
+The hypothesis $y \in \operatorname{cl}(\operatorname{dom} f)$ is necessary: for $y$ outside it,
+$f$ is eventually $+\infty$ along the segment. -/
 theorem theorem_7_5_improper (hf : ConvexFn f) (himp : ¬ ProperConvex f) {x : Rn n}
     (hx : x ∈ ri (convexDom f)) {y : Rn n} (hy : y ∈ closure (convexDom f)) :
     Tendsto (fun a : ℝ => f ((1 - a) • x + a • y)) (𝓝[<] (1 : ℝ)) (𝓝 (convexCl f y)) := by
@@ -308,20 +433,24 @@ theorem theorem_7_5_improper (hf : ConvexFn f) (himp : ¬ ProperConvex f) {x : R
   exact (hf.eq_bot_of_mem_relint_convexDom himp
     (Convex.segment_mem_relint hf.convex_convexDom hx hy ha.1 ha.2)).symm
 
-/-- **Corollary 7.5.1.** For a closed proper convex function `f`, one has
-`f y = lim_{λ ↑ 1} f ((1 - λ) x + λ y)` for every `x ∈ dom f` and every `y`.
+/-- **Corollary 7.5.1** of [rockafellar1970convex]. Let $f$ be a closed proper convex function on
+$\mathbb{R}^n$, and let $x \in \operatorname{dom} f$. Then for every $y \in \mathbb{R}^n$,
+$$f(y) = \lim_{\lambda \uparrow 1} f((1 - \lambda) x + \lambda y).$$
 
-The backbone proves this directly rather than through Theorem 7.5 and a restriction to a line, so no
-relative interiors appear. -/
+The proof does not go through Theorem 7.5 and a restriction to a line, so no relative interiors
+appear. -/
 theorem corollary_7_5_1 (hf : ClosedProperConvexFn f) {x : Rn n} (hx : x ∈ convexDom f) (y : Rn n) :
     Tendsto (fun a : ℝ => f ((1 - a) • x + a • y)) (𝓝[<] (1 : ℝ)) (𝓝 (f y)) :=
   tendsto_along_segment_of_closed_proper hf hx y
 
 /-! ### Theorem 7.6 and its corollary -/
 
-/-- For `α` above the infimum of a convex `f`, the set `{x ∈ ri (dom f) | f x < α}` has the same
-affine hull as `dom f`, hence the same dimension. The step Theorem 7.6's dimension clause needs;
-the book takes it by a slice dimension count, this by the line segment principle. -/
+/-- Let $f$ be a convex function on $\mathbb{R}^n$, and let $\alpha$ be a real number with
+$\inf f < \alpha$. Then the set $\{x \in \operatorname{ri}(\operatorname{dom} f) \mid f(x) <
+\alpha\}$ has the same affine hull as $\operatorname{dom} f$.
+
+This gives the dimension clause of Theorem 7.6. The book obtains that clause by counting the
+dimensions of slices; this proof uses the line segment principle. -/
 theorem affineSpan_relint_convexDom_lt (hf : ConvexFn f) {α : ℝ} (hα : ⨅ x, f x < (α : EReal)) :
     affineSpan ℝ {x ∈ ri (convexDom f) | f x < (α : EReal)} = affineSpan ℝ (convexDom f) := by
   obtain ⟨y, hy, hyα⟩ := hf.exists_mem_relint_convexDom_lt (iInf_lt_iff.1 hα)
@@ -354,9 +483,15 @@ theorem affineSpan_relint_convexDom_lt (hf : ConvexFn f) {α : ℝ} (hα : ⨅ x
   rwa [combo_prolong y x ht0.ne'] at hmem
 
 
-/-- **Theorem 7.6.** For proper convex `f` and real `α > inf f`, the level sets `{x | f x ≤ α}`
-and `{x | f x < α}` have the same closure `{x | (cl f) x ≤ α}`, the same relative interior
-`{x ∈ ri (dom f) | f x < α}`, and the same dimension as `dom f`. -/
+/-- **Theorem 7.6** of [rockafellar1970convex]. Let $f$ be a proper convex function on
+$\mathbb{R}^n$, and let $\alpha$ be a real number with $\inf f < \alpha$. Then the level sets
+$\{x \mid f(x) \le \alpha\}$ and $\{x \mid f(x) < \alpha\}$ have the same closure
+$$\{x \mid (\operatorname{cl} f)(x) \le \alpha\},$$
+the same relative interior
+$$\{x \in \operatorname{ri}(\operatorname{dom} f) \mid f(x) < \alpha\},$$
+and the same dimension as $\operatorname{dom} f$.
+
+The infimum $\inf f$ is taken over all of $\mathbb{R}^n$, in $[-\infty, +\infty]$. -/
 theorem theorem_7_6 (hf : ConvexFn f) (hp : ProperConvex f) {α : ℝ} (hα : ⨅ x, f x < (α : EReal)) :
     closure {x | f x ≤ (α : EReal)} = {x | convexCl f x ≤ (α : EReal)} ∧
       closure {x | f x < (α : EReal)} = {x | convexCl f x ≤ (α : EReal)} ∧
@@ -376,13 +511,17 @@ theorem theorem_7_6 (hf : ConvexFn f) (hp : ProperConvex f) {α : ℝ} (hα : �
     hdim _ (hf.convex_le _) ⟨y, hyα.le⟩ (hf.relint_setOf_le hα),
     hdim _ (hf.convex_lt _) ⟨y, hyα⟩ (hf.relint_setOf_lt hα)⟩
 
-/-- **Corollary 7.6.1.** If `f` is a closed proper convex function whose effective
-domain is relatively open (in particular if `dom f` is an affine set), then for
-`inf f < α < +∞` one has `ri {x | f x ≤ α} = {x | f x < α}` and
-`cl {x | f x < α} = {x | f x ≤ α}`.
+/-- **Corollary 7.6.1** of [rockafellar1970convex]. Let $f$ be a closed proper convex function on
+$\mathbb{R}^n$ whose effective domain is relatively open, that is,
+$\operatorname{ri}(\operatorname{dom} f) = \operatorname{dom} f$ (in particular if
+$\operatorname{dom} f$ is an affine set), and let $\alpha$ be a real number with
+$\inf f < \alpha$. Then
+$$\operatorname{ri}\{x \mid f(x) \le \alpha\} = \{x \mid f(x) < \alpha\}, \qquad
+  \operatorname{cl}\{x \mid f(x) < \alpha\} = \{x \mid f(x) \le \alpha\}.$$
 
-The book's `α < +∞` is carried by `α : ℝ`. The two hypotheses split: the first formula needs only
-relative openness of `dom f`, and the second only closedness. -/
+The condition $\alpha < +\infty$ of the book is carried by the type of $\alpha$. The proof of
+the first formula uses only that $\operatorname{dom} f$ is relatively open, and the proof of the
+second uses only that $f$ is closed. -/
 theorem corollary_7_6_1 (hf : ConvexFn f) (hp : ProperConvex f) (hc : ClosedConvex f)
     (hopen : ri (convexDom f) = convexDom f) {α : ℝ} (hα : ⨅ x, f x < (α : EReal)) :
     ri {x | f x ≤ (α : EReal)} = {x | f x < (α : EReal)} ∧

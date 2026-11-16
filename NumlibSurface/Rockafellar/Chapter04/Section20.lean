@@ -9,55 +9,83 @@ import NumlibSurface.Rockafellar.Chapter03.Section12
 import NumlibSurface.Rockafellar.Chapter03.Section16
 
 /-!
-# Rockafellar §20: some applications of polyhedral convexity
+# Rockafellar, Section 20: Some applications of polyhedral convexity
 
-Surface file for R. Tyrrell Rockafellar, *Convex Analysis*, Princeton University Press, 1970, §20:
-the separation theorems, closure conditions and conjugacy formulas of Parts II and III, refined by
-assuming *some* of the convexity polyhedral.
+This module formalizes §20 of [rockafellar1970convex]: the conjugacy formulas, separation theorems
+and closedness conditions of Parts II and III, sharpened when some of the convex sets or functions
+are polyhedral. All eight numbered results are formalized: Theorems 20.1–20.5 and Corollaries
+20.1.1, 20.2.1 and 20.3.1, together with the computation for two polyhedral functions in the opening
+paragraph of the section. The proofs specialize `Numlib.Analysis.Convex.Duality.Exact`,
+`Numlib.Analysis.Convex.Polyhedral.Closedness` and `Numlib.Analysis.Convex.Polyhedral.Simplicial`,
+and the surface modules for §11, §12 and §16.
 
-All eight numbered results of §20 are formalized over `Rn n = ℝⁿ`: Theorems 20.1–20.5 and
-Corollaries 20.1.1, 20.2.1, 20.3.1, together with the unnumbered all-polyhedral computation of the
-opening paragraph (`theorem_20_1_pair_exact`).
-
-`IsExactSum` and `IsExactFinsetSum` are the backbone's names for the conclusion Theorems 16.4 and
-20.1 share; the `m`-ary statements are proved for the family, not by induction on the binary ones,
-and the index set is split membership-wise so that no `DecidableEq` instance enters a statement.
-
-`IsPolyhedral` is Rockafellar's §19 definition quantified over *vectors* `bᵢ`, bridged to the
-backbone's functional-indexed `Polyhedral` by `isPolyhedral_iff_polyhedral`; a polyhedral convex
-*function* is the backbone's `PolyhedralFn` directly.
+Theorem 16.4 gives $(f_1 + \cdots + f_m)^* = f_1^* \mathbin{\square} \cdots \mathbin{\square}
+f_m^*$, with attainment, when the sets $\operatorname{ri}(\operatorname{dom} f_i)$ have a common
+point. Theorem 20.1 says that for a polyhedral summand $f_i$ the set $\operatorname{dom} f_i$ can
+replace $\operatorname{ri}(\operatorname{dom} f_i)$ in this intersection; when all summands are
+polyhedral, no relative interior appears. In the same way, a polyhedral set $C_1$ needs weaker
+hypotheses for separation (Theorem 20.2) and for the closedness of $C_1 + C_2$ (Theorem 20.3).
 
 ## Main definitions
 
-* `IsPolyhedral` — the book's polyhedral convex set, an intersection of finitely many closed
-  half-spaces `{x | ⟨x, bᵢ⟩ ≤ βᵢ}`.
-* `SeparableProperlyNotContaining` — the sharpened separation of §20: properly, and with the
-  hyperplane containing neither set.
+* Definition of a polyhedral convex set in the words of §19, `Rockafellar.IsPolyhedral`: an
+  intersection of finitely many closed half-spaces $\{x \mid \langle x, b_i \rangle \le \beta_i\}$.
+* Separation that does not contain the second set, `Rockafellar.SeparableProperlyNotContaining`: a
+  hyperplane separates $C_1$ and $C_2$ properly and does not contain $C_2$.
 
 ## Main results
 
-* `theorem_20_1_exact`, `theorem_20_1_attained`, `theorem_20_1_exact_finset`,
-  `theorem_20_1_attained_finset`, `theorem_20_1_pair_exact`, `theorem_20_1_pair_attained` — a
-  polyhedral summand needs only `dom fᵢ`, not `ri (dom fᵢ)`, in the qualification of Theorem 16.4.
-* `corollary_20_1_1`, `corollary_20_1_1_attained`, `corollary_20_1_1_finset`,
-  `corollary_20_1_1_attained_finset` — the dual form, for the infimal convolute.
-* `theorem_20_2`, `corollary_20_2_1` — with `C₁` polyhedral, proper separation not containing `C₂`
-  is possible exactly when `C₁ ∩ ri C₂ = ∅`.
-* `theorem_20_3`, `corollary_20_3_1` — with `C₁` polyhedral and `C₂` closed, strong separation
-  needs only disjointness plus a recession condition.
-* `theorem_20_4` — a closed bounded `C` inside `int D` can be sandwiched by a polyhedral convex
-  `P`: `C ⊆ int P` and `P ⊆ int D`.
-* `theorem_20_5`, `theorem_20_5_polytope` — every polyhedral convex set, and every polytope, is
-  locally simplicial; this is what §10's continuity theorems are applied to.
+* The computation in the opening paragraph, `Rockafellar.theorem_20_1_pair_exact`,
+  `Rockafellar.theorem_20_1_pair_attained`: $(f + g)^* = f^* \mathbin{\square} g^*$, with
+  attainment, for proper polyhedral $f$ and $g$ with $\operatorname{dom} f \cap \operatorname{dom} g
+  \neq \emptyset$.
+* Theorem 20.1, `Rockafellar.theorem_20_1_exact`, `Rockafellar.theorem_20_1_attained`,
+  `Rockafellar.theorem_20_1_exact_finset`, `Rockafellar.theorem_20_1_attained_finset`: the same
+  formula when $f_1, \dots, f_k$ are polyhedral and $\operatorname{dom} f_1 \cap \cdots \cap
+  \operatorname{dom} f_k \cap \operatorname{ri}(\operatorname{dom} f_{k+1}) \cap \cdots \cap
+  \operatorname{ri}(\operatorname{dom} f_m) \neq \emptyset$.
+* Corollary 20.1.1, `Rockafellar.corollary_20_1_1`, `Rockafellar.corollary_20_1_1_attained`,
+  `Rockafellar.corollary_20_1_1_finset`, `Rockafellar.corollary_20_1_1_attained_finset`: under the
+  dual condition on the conjugates, the infimal convolution of closed proper convex functions is
+  closed proper convex, and its infimum is attained.
+* Theorem 20.2, `Rockafellar.theorem_20_2`: for polyhedral $C_1$, a hyperplane separates $C_1$ and
+  $C_2$ properly without containing $C_2$ if and only if
+  $C_1 \cap \operatorname{ri} C_2 = \emptyset$.
+* Corollary 20.2.1, `Rockafellar.corollary_20_2_1`: the same condition in terms of support
+  functions.
+* Theorem 20.3, `Rockafellar.theorem_20_3`: for polyhedral $C_1$ and closed $C_2$, the set
+  $C_1 + C_2$ is closed under a recession condition.
+* Corollary 20.3.1, `Rockafellar.corollary_20_3_1`: for polyhedral $C_1$ and closed $C_2$,
+  disjointness and a recession condition give strong separation.
+* Theorem 20.4, `Rockafellar.theorem_20_4`: a closed bounded set $C$ in the interior of a convex set
+  $D$ lies in the interior of a polyhedral convex set $P \subseteq \operatorname{int} D$.
+* Theorem 20.5, `Rockafellar.theorem_20_5`, `Rockafellar.theorem_20_5_polytope`: polyhedral convex
+  sets and polytopes are locally simplicial.
 
-## The asymmetry of Theorem 20.1
+## Proof outline
 
-Theorem 16.4 makes `(f₁ + ⋯ + fₘ)* = f₁* □ ⋯ □ fₘ*` exact when the sets `ri (dom fᵢ)` have a common
-point. Theorem 20.1 says that for a *polyhedral* summand the relative interior may be dropped: only
-`dom fᵢ` need take part in the intersection, and when every summand is polyhedral no relative
-interior appears at all. The asymmetry comes from two segment lemmas: a proper polyhedral function
-is already closed, so Corollary 7.5.1 asks only for a point of `dom f`, whereas Theorem 7.5 asks
-for a point of `ri (dom g)`.
+The asymmetry in Theorem 20.1 comes from two results of §7 on segments. A proper polyhedral convex
+function is closed, so Corollary 7.5.1 needs only a point of $\operatorname{dom} f$, while Theorem
+7.5 for a general convex function $g$ needs a point of $\operatorname{ri}(\operatorname{dom} g)$.
+
+## Implementation notes
+
+* The $m$-ary statements are proved for the whole family, not by induction from the binary ones. The
+  family is indexed by a `Finset` `s` that is the disjoint union of the polyhedral indices `t` and
+  the other indices `u`, stated by membership, so that no statement needs a `DecidableEq` instance.
+* The common conclusion of Theorems 16.4 and 20.1 is the backbone predicate
+  `ConvexAnalysis.IsExactSum` for two functions and `ConvexAnalysis.IsExactFinsetSum` for a finite
+  family: the summands are proper, and the infimum that defines the infimal convolution of the
+  conjugates is attained at every point.
+* `Rockafellar.IsPolyhedral` quantifies over vectors $b_i$, as the source does. It agrees with the
+  backbone notion `ConvexAnalysis.Polyhedral`, which quantifies over linear functionals, by
+  `Rockafellar.isPolyhedral_iff_polyhedral`. A polyhedral convex function is
+  `ConvexAnalysis.PolyhedralFn`.
+
+## Deviations from the source
+
+* **Theorem 20.4** (generalization). The source assumes $C$ non-empty and convex; neither hypothesis
+  is needed. See `Rockafellar.theorem_20_4`.
 -/
 
 open Set Pointwise
@@ -68,15 +96,24 @@ open ConvexAnalysis
 
 variable {n : ℕ}
 
-/-! ### Polyhedral convex sets, in the book's own words -/
+/-! ### Polyhedral convex sets, in the words of the source -/
 
-/-- **§19 (p. 170).** A **polyhedral convex set** in `ℝⁿ` is an intersection of finitely many
-closed half-spaces `{x | ⟨x, bᵢ⟩ ≤ βᵢ}`. Nothing below unfolds the definition. -/
+/-- **Section 19** of [rockafellar1970convex] (page 170), definition of a polyhedral convex set. A
+set $C \subseteq \mathbb{R}^n$ is a **polyhedral convex set** if it is the intersection of
+finitely many closed half-spaces
+$$C = \{x \mid \langle x, b_i \rangle \le \beta_i,\ i = 1, \dots, m\}, \qquad b_i \in
+  \mathbb{R}^n,\ \beta_i \in \mathbb{R}.$$
+
+The statements below use this definition, and the proofs pass to `ConvexAnalysis.Polyhedral` by
+`Rockafellar.isPolyhedral_iff_polyhedral`. -/
 def IsPolyhedral (C : Set (Rn n)) : Prop :=
   ∃ s : Finset (Rn n × ℝ), C = {x | ∀ q ∈ s, pairing n x q.1 ≤ q.2}
 
-/-- Rockafellar's vector-indexed system of half-spaces and the backbone's functional-indexed one
-describe the same sets, `linFn` and `exists_linFn` being the round trip. -/
+/-- A set $C \subseteq \mathbb{R}^n$ is an intersection of finitely many half-spaces
+$\{x \mid \langle x, b_i \rangle \le \beta_i\}$ given by vectors $b_i$ if and only if it is the
+solution set of finitely many inequalities $\varphi_i(x) \le \beta_i$ given by linear
+functionals $\varphi_i$. The round trip between vectors and functionals is `Rockafellar.linFn`
+and `Rockafellar.exists_linFn`. -/
 theorem isPolyhedral_iff_polyhedral {C : Set (Rn n)} : IsPolyhedral C ↔ Polyhedral C := by
   classical
   constructor
@@ -106,15 +143,24 @@ theorem isPolyhedral_iff_polyhedral {C : Set (Rn n)} : IsPolyhedral C ↔ Polyhe
       have hq' : pairing n x (rep q.1) ≤ q.2 := Finset.forall_mem_image.1 hx hq
       rwa [hrep] at hq'
 
-/-! ### Separation that does not swallow the second set -/
+/-! ### Separation that does not contain the second set -/
 
-/-- **§20 (p. 181).** There exists a hyperplane separating `C₁` and `C₂` properly and *not
-containing* `C₂`. The side convention is §11's: `C₁` lies in the closed half-space
-`{x | ⟨x, b⟩ ≥ β}` and `C₂` in the opposite one. -/
+/-- **Section 20** of [rockafellar1970convex] (page 181). The sets $C_1, C_2 \subseteq \mathbb{R}^n$
+are **properly separable by a hyperplane not containing $C_2$** if there are
+$b \in \mathbb{R}^n$ and $\beta \in \mathbb{R}$ such that the hyperplane
+$\{x \mid \langle x, b \rangle = \beta\}$ separates $C_1$ and $C_2$ properly and does not
+contain $C_2$.
+
+The sides are as in §11: $C_1$ lies in the closed half-space
+$\{x \mid \langle x, b \rangle \ge \beta\}$ and $C_2$ in the opposite one. Proper separation is
+`Rockafellar.SeparatesProperlyRn`, which includes $b \neq 0$. -/
 def SeparableProperlyNotContaining (C₁ C₂ : Set (Rn n)) : Prop :=
   ∃ (b : Rn n) (β : ℝ), SeparatesProperlyRn b β C₁ C₂ ∧ ¬ C₂ ⊆ {x | pairing n x b = β}
 
-/-- The bridge from `SeparableProperlyNotContaining` to the backbone's functional form. -/
+/-- Let $C_1, C_2 \subseteq \mathbb{R}^n$ be non-empty. Then $C_1$ and $C_2$ are properly separable
+by a hyperplane not containing $C_2$ if and only if there are a continuous linear function $g$
+and a number $c$ such that $g$ and $c$ separate $C_1$ and $C_2$ in the sense of
+`ConvexAnalysis.Separates`, and $C_2$ is not contained in $\{x \mid g(x) = c\}$. -/
 theorem separableProperlyNotContaining_iff_exists {C₁ C₂ : Set (Rn n)}
     (hne₁ : C₁.Nonempty) (hne₂ : C₂.Nonempty) :
     SeparableProperlyNotContaining C₁ C₂ ↔
@@ -139,10 +185,13 @@ theorem separableProperlyNotContaining_iff_exists {C₁ C₂ : Set (Rn n)}
 
 /-! ### Theorem 20.1 and its corollary -/
 
-/-- **§20 (p. 179)**, the all-polyhedral case: if `f` and `g` are proper polyhedral convex
-functions whose effective domains meet at all, then `(f + g)* = f* □ g*`. No relative interior
-appears in the hypothesis. Rockafellar gives this unnumbered, as the computation motivating
-Theorem 20.1. -/
+/-- **Section 20** of [rockafellar1970convex] (page 179), the case of two polyhedral functions. Let
+$f$ and $g$ be proper polyhedral convex functions on $\mathbb{R}^n$ with $\operatorname{dom} f
+\cap \operatorname{dom} g \neq \emptyset$. Then
+$$(f + g)^* = f^* \mathbin{\square} g^*.$$
+
+No relative interior appears in the hypothesis. The source gives this computation without a
+number, as the motivation for Theorem 20.1. -/
 theorem theorem_20_1_pair_exact {f g : Rn n → EReal} (hf : PolyhedralFn f) (hpf : ProperConvex f)
     (hg : PolyhedralFn g) (hpg : ProperConvex g) {x₀ : Rn n} (hxf : x₀ ∈ convexDom f)
         (hxg : x₀ ∈ convexDom g) :
@@ -150,8 +199,12 @@ theorem theorem_20_1_pair_exact {f g : Rn n → EReal} (hf : PolyhedralFn f) (hp
         = infConv (convexConj (pairing n) f) (convexConj (pairing n) g) :=
   (IsExactSum.of_polyhedral_pair (B := pairing n) hf hpf hg hpg hxf hxg).convexConj_add
 
-/-- **§20 (p. 179)**, the all-polyhedral case, attainment: the infimum defining `(f* □ g*)(x*)` is
-attained for every `x*`. -/
+/-- **Section 20** of [rockafellar1970convex] (page 179), the case of two polyhedral functions,
+attainment. Let $f$ and $g$ be proper polyhedral convex functions on $\mathbb{R}^n$ with
+$\operatorname{dom} f \cap \operatorname{dom} g \neq \emptyset$. Then for every
+$x^* \in \mathbb{R}^n$ there are $x_1^*, x_2^*$ with $x_1^* + x_2^* = x^*$ and
+$$f^*(x_1^*) + g^*(x_2^*) = (f + g)^*(x^*),$$
+so the infimum that defines $(f^* \mathbin{\square} g^*)(x^*)$ is attained. -/
 theorem theorem_20_1_pair_attained {f g : Rn n → EReal} (hf : PolyhedralFn f) (hpf : ProperConvex f)
     (hg : PolyhedralFn g) (hpg : ProperConvex g) {x₀ : Rn n} (hxf : x₀ ∈ convexDom f)
         (hxg : x₀ ∈ convexDom g)
@@ -161,14 +214,17 @@ theorem theorem_20_1_pair_attained {f g : Rn n → EReal} (hf : PolyhedralFn f) 
           = convexConj (pairing n) (f + g) y :=
   (IsExactSum.of_polyhedral_pair (B := pairing n) hf hpf hg hpg hxf hxg).exists_convexConj_add_eq y
 
-/-- **Theorem 20.1**. For `f` and `g` proper convex with `f` polyhedral and
-`dom f ∩ ri (dom g) ≠ ∅`,
+/-- **Theorem 20.1** of [rockafellar1970convex], two functions. Let $f$ and $g$ be proper convex
+functions on $\mathbb{R}^n$ with $f$ polyhedral, and let $\operatorname{dom} f \cap
+\operatorname{ri}(\operatorname{dom} g) \neq \emptyset$. Then
+$$(f + g)^*(x^*) = (f^* \mathbin{\square} g^*)(x^*) = \inf \{f^*(x_1^*) + g^*(x_2^*) \mid
+  x_1^* + x_2^* = x^*\}.$$
 
-`(f + g)*(x*) = (f* □ g*)(x*) = inf {f*(x₁*) + g*(x₂*) | x₁* + x₂* = x*}`.
-
-**The asymmetry is the point**: the polyhedral summand contributes only a point of `dom f`, the
-other a point of `ri (dom g)`. Compare `theorem_16_4_exact`, which asks for a point of
-`ri (dom f) ∩ ri (dom g)`, and `theorem_20_1_pair_exact`, which asks for neither. -/
+The polyhedral summand needs only a point of $\operatorname{dom} f$, and the other summand a
+point of $\operatorname{ri}(\operatorname{dom} g)$. Compare `Rockafellar.theorem_16_4_exact`,
+which needs a point of $\operatorname{ri}(\operatorname{dom} f) \cap
+\operatorname{ri}(\operatorname{dom} g)$, and `Rockafellar.theorem_20_1_pair_exact`, which needs
+no relative interior point. -/
 theorem theorem_20_1_exact {f g : Rn n → EReal} (hf : PolyhedralFn f) (hpf : ProperConvex f)
     (hg : ConvexFn g) (hpg : ProperConvex g) {x₀ : Rn n} (hxf : x₀ ∈ convexDom f)
     (hxg : x₀ ∈ ri (convexDom g)) :
@@ -176,8 +232,12 @@ theorem theorem_20_1_exact {f g : Rn n → EReal} (hf : PolyhedralFn f) (hpf : P
         = infConv (convexConj (pairing n) f) (convexConj (pairing n) g) :=
   (IsExactSum.of_polyhedral (B := pairing n) hf hpf hg hpg hxf hxg).convexConj_add
 
-/-- **Theorem 20.1**, the attainment clause: under the same qualification the infimum
-`inf {f*(x₁*) + g*(x₂*) | x₁* + x₂* = x*}` is attained for each `x*`. -/
+/-- **Theorem 20.1** of [rockafellar1970convex], two functions, attainment. Let $f$ and $g$ be
+proper convex functions on $\mathbb{R}^n$ with $f$ polyhedral, and let $\operatorname{dom} f
+\cap \operatorname{ri}(\operatorname{dom} g) \neq \emptyset$. Then for every
+$x^* \in \mathbb{R}^n$ there are $x_1^*, x_2^*$ with $x_1^* + x_2^* = x^*$ and
+$$f^*(x_1^*) + g^*(x_2^*) = (f + g)^*(x^*),$$
+so the infimum $\inf \{f^*(x_1^*) + g^*(x_2^*) \mid x_1^* + x_2^* = x^*\}$ is attained. -/
 theorem theorem_20_1_attained {f g : Rn n → EReal} (hf : PolyhedralFn f) (hpf : ProperConvex f)
     (hg : ConvexFn g) (hpg : ProperConvex g) {x₀ : Rn n} (hxf : x₀ ∈ convexDom f)
     (hxg : x₀ ∈ ri (convexDom g)) (y : Rn n) :
@@ -210,10 +270,13 @@ private theorem infConv_eq_convexConj_add_convexConj (hf : PolyhedralFn f)
     rw [theorem_12_2_biconj hg.convex]; exact hg.closed
   rw [(isExactSum_convexConj_of_polyhedral hf hcf hg hxf hxg).convexConj_add, hff, hgg]
 
-/-- **Corollary 20.1.1**. For `f` and `g` closed proper convex with `f` polyhedral and
-`dom f* ∩ ri (dom g*) ≠ ∅`, the infimal convolute `f □ g` is a closed proper convex function.
-Rockafellar's proof verbatim: apply Theorem 20.1 to the conjugates, `f*` being polyhedral by
-Theorem 19.2, and read back through Theorem 12.2. -/
+/-- **Corollary 20.1.1** of [rockafellar1970convex], two functions. Let $f$ and $g$ be closed proper
+convex functions on $\mathbb{R}^n$ with $f$ polyhedral, and let $\operatorname{dom} f^* \cap
+\operatorname{ri}(\operatorname{dom} g^*) \neq \emptyset$. Then the infimal convolution
+$f \mathbin{\square} g$ is a closed proper convex function.
+
+The proof is the one in the source: Theorem 20.1 applies to the conjugates, since $f^*$ is
+polyhedral by Theorem 19.2, and the result follows by Theorem 12.2. -/
 theorem corollary_20_1_1 (hf : PolyhedralFn f) (hcf : ClosedProperConvexFn f)
     (hg : ClosedProperConvexFn g) {x₀ : Rn n} (hxf : x₀ ∈ convexDom (convexConj (pairing n) f))
     (hxg : x₀ ∈ ri (convexDom (convexConj (pairing n) g))) :
@@ -225,8 +288,12 @@ theorem corollary_20_1_1 (hf : PolyhedralFn f) (hcf : ClosedProperConvexFn f)
       (properConvex_convexConj hcf).ne_bot (properConvex_convexConj hg).ne_bot)
           hexact.properConvex_add⟩
 
-/-- **Corollary 20.1.1**, the attainment clause: the infimum defining `(f □ g)(x)` is attained for
-every `x`. -/
+/-- **Corollary 20.1.1** of [rockafellar1970convex], two functions, attainment. Let $f$ and $g$ be
+closed proper convex functions on $\mathbb{R}^n$ with $f$ polyhedral, and let
+$\operatorname{dom} f^* \cap \operatorname{ri}(\operatorname{dom} g^*) \neq \emptyset$. Then for
+every $x$ there are $x_1, x_2$ with $x_1 + x_2 = x$ and
+$f(x_1) + g(x_2) = (f \mathbin{\square} g)(x)$: the infimum that defines
+$(f \mathbin{\square} g)(x)$ is attained. -/
 theorem corollary_20_1_1_attained (hf : PolyhedralFn f) (hcf : ClosedProperConvexFn f)
     (hg : ClosedProperConvexFn g) {x₀ : Rn n} (hxf : x₀ ∈ convexDom (convexConj (pairing n) f))
     (hxg : x₀ ∈ ri (convexDom (convexConj (pairing n) g))) (x : Rn n) :
@@ -242,14 +309,18 @@ theorem corollary_20_1_1_attained (hf : PolyhedralFn f) (hcf : ClosedProperConve
 
 end Corollary_20_1_1
 
-/-- **Theorem 20.1** in the book's `m`-ary form. Let `f₁, …, fₘ` be proper convex with
-`f₁, …, f_k` polyhedral, and suppose
+/-- **Theorem 20.1** of [rockafellar1970convex], $m$ functions. Let $f_1, \dots, f_m$ be proper
+convex functions on $\mathbb{R}^n$ with $m \ge 1$, such that $f_1, \dots, f_k$ are polyhedral
+and
+$$\operatorname{dom} f_1 \cap \cdots \cap \operatorname{dom} f_k \cap
+  \operatorname{ri}(\operatorname{dom} f_{k+1}) \cap \cdots \cap
+  \operatorname{ri}(\operatorname{dom} f_m) \neq \emptyset.$$
+Then
+$$(f_1 + \cdots + f_m)^* = f_1^* \mathbin{\square} \cdots \mathbin{\square} f_m^*.$$
 
-`dom f₁ ∩ ⋯ ∩ dom f_k ∩ ri (dom f_{k+1}) ∩ ⋯ ∩ ri (dom fₘ)`
-
-is non-empty. Then `(f₁ + ⋯ + fₘ)* = f₁* □ ⋯ □ fₘ*`. Here `t` is the book's `{1, …, k}` and `u` its
-complement. Compare `theorem_16_4_exact_finset`, which asks for a relative interior point on every
-index. -/
+The functions are indexed by a non-empty `Finset` `s`. The set `t` stands for the indices
+$1, \dots, k$ and the set `u` for the indices $k + 1, \dots, m$. Compare
+`Rockafellar.theorem_16_4_exact_finset`, which needs a relative interior point of every domain. -/
 theorem theorem_20_1_exact_finset {ι : Type*} {s t u : Finset ι} {f : ι → Rn n → EReal}
     (hs : s.Nonempty) (hdisj : Disjoint t u) (hmem : ∀ i, i ∈ s ↔ i ∈ t ∨ i ∈ u)
     (hpoly : ∀ i ∈ t, PolyhedralFn (f i)) (hconv : ∀ i ∈ u, ConvexFn (f i))
@@ -260,8 +331,11 @@ theorem theorem_20_1_exact_finset {ι : Type*} {s t u : Finset ι} {f : ι → R
   (IsExactFinsetSum.of_polyhedral (B := pairing n) hs hdisj hmem hpoly hconv hpf hxt
     hxu).convexConj_finsetSum
 
-/-- **Theorem 20.1**, the attainment clause for `m` summands:
-`inf {f₁*(x₁*) + ⋯ + fₘ*(xₘ*) | x₁* + ⋯ + xₘ* = x*}` is attained for each `x*`. -/
+/-- **Theorem 20.1** of [rockafellar1970convex], $m$ functions, attainment. Under the hypotheses of
+`Rockafellar.theorem_20_1_exact_finset`, for every $x^* \in \mathbb{R}^n$ there are
+$x_1^*, \dots, x_m^*$ with $x_1^* + \cdots + x_m^* = x^*$ and
+$$f_1^*(x_1^*) + \cdots + f_m^*(x_m^*) = (f_1 + \cdots + f_m)^*(x^*).$$
+-/
 theorem theorem_20_1_attained_finset {ι : Type*} {s t u : Finset ι} {f : ι → Rn n → EReal}
     (hs : s.Nonempty) (hdisj : Disjoint t u) (hmem : ∀ i, i ∈ s ↔ i ∈ t ∨ i ∈ u)
     (hpoly : ∀ i ∈ t, PolyhedralFn (f i)) (hconv : ∀ i ∈ u, ConvexFn (f i))
@@ -299,12 +373,15 @@ private theorem sum_toInfConvFn_eq_convexConj_finsetSum_convexConj :
   exact congrArg ofInfConvFn
     (Finset.sum_congr rfl fun i hi => congrArg toInfConvFn (hbi i hi).symm)
 
-/-- **Corollary 20.1.1** in the book's `m`-ary form. Let `f₁, …, fₘ` be closed proper convex with
-`f₁, …, f_k` polyhedral, and suppose
+/-- **Corollary 20.1.1** of [rockafellar1970convex], $m$ functions. Let $f_1, \dots, f_m$ be closed
+proper convex functions on $\mathbb{R}^n$ with $m \ge 1$, such that $f_1, \dots, f_k$ are
+polyhedral and
+$$\operatorname{dom} f_1^* \cap \cdots \cap \operatorname{dom} f_k^* \cap
+  \operatorname{ri}(\operatorname{dom} f_{k+1}^*) \cap \cdots \cap
+  \operatorname{ri}(\operatorname{dom} f_m^*) \neq \emptyset.$$
+Then $f_1 \mathbin{\square} \cdots \mathbin{\square} f_m$ is a closed proper convex function.
 
-`dom f₁* ∩ ⋯ ∩ dom f_k* ∩ ri (dom f_{k+1}*) ∩ ⋯ ∩ ri (dom fₘ*)`
-
-is non-empty. Then `f₁ □ ⋯ □ fₘ` is a closed proper convex function. -/
+The indexing is as in `Rockafellar.theorem_20_1_exact_finset`. -/
 theorem corollary_20_1_1_finset :
     ClosedProperConvexFn (ofInfConvFn (∑ i ∈ s, toInfConvFn (f i))) := by
   have hx₀ : ∀ i ∈ s, x₀ ∈ convexDom (convexConj (pairing n) (f i)) := fun i hi =>
@@ -319,8 +396,11 @@ theorem corollary_20_1_1_finset :
     (isExactFinsetSum_convexConj_of_polyhedral hs hdisj hmem hpoly hcf hxt
         hxu).properConvex_finsetSum⟩
 
-/-- **Corollary 20.1.1**, the attainment clause: the infimum defining `(f₁ □ ⋯ □ fₘ)(x)` is
-attained for every `x`. -/
+/-- **Corollary 20.1.1** of [rockafellar1970convex], $m$ functions, attainment. Under the hypotheses
+of `Rockafellar.corollary_20_1_1_finset`, for every $x \in \mathbb{R}^n$ there are
+$x_1, \dots, x_m$ with $x_1 + \cdots + x_m = x$ and
+$$f_1(x_1) + \cdots + f_m(x_m) = (f_1 \mathbin{\square} \cdots \mathbin{\square} f_m)(x).$$
+-/
 theorem corollary_20_1_1_attained_finset (x : Rn n) :
     ∃ x' : ι → Rn n, ∑ i ∈ s, x' i = x ∧
       ∑ i ∈ s, f i (x' i) = ofInfConvFn (∑ i ∈ s, toInfConvFn (f i)) x := by
@@ -338,10 +418,13 @@ end Corollary_20_1_1_finset
 
 /-! ### Theorem 20.2 and its corollary -/
 
-/-- **Theorem 20.2**. For non-empty convex `C₁`, `C₂` with `C₁` polyhedral, a hyperplane separating
-`C₁` and `C₂` properly and not containing `C₂` exists iff `C₁ ∩ ri C₂ = ∅`. Compare Theorem 11.3,
-which asks `ri C₁ ∩ ri C₂ = ∅` and promises nothing about containment: polyhedrality of `C₁` buys
-both improvements at once. Convexity of `C₁` follows from polyhedrality and is not assumed. -/
+/-- **Theorem 20.2** of [rockafellar1970convex]. Let $C_1$ and $C_2$ be non-empty convex sets in
+$\mathbb{R}^n$ with $C_1$ polyhedral. There is a hyperplane that separates $C_1$ and $C_2$
+properly and does not contain $C_2$ if and only if $C_1 \cap \operatorname{ri} C_2 = \emptyset$.
+
+Compare Theorem 11.3, which needs $\operatorname{ri} C_1 \cap \operatorname{ri} C_2 = \emptyset$
+and says nothing about containment; polyhedrality of $C_1$ gives both improvements. Convexity of
+$C_1$ follows from polyhedrality and is not a separate hypothesis. -/
 theorem theorem_20_2 {C₁ C₂ : Set (Rn n)} (h₁ : IsPolyhedral C₁) (hne₁ : C₁.Nonempty)
     (h₂ : Convex ℝ C₂) (hne₂ : C₂.Nonempty) :
     SeparableProperlyNotContaining C₁ C₂ ↔ C₁ ∩ ri C₂ = ∅ := by
@@ -349,10 +432,14 @@ theorem theorem_20_2 {C₁ C₂ : Set (Rn n)} (h₁ : IsPolyhedral C₁) (hne₁
     exists_separates_not_subset_iff_disjoint_relint (isPolyhedral_iff_polyhedral.1 h₁) h₂ hne₂,
     Set.disjoint_iff_inter_eq_empty]
 
-/-- **Corollary 20.2.1**. For non-empty convex `C₁`, `C₂` with `C₁` polyhedral, `C₁ ∩ ri C₂` is
-non-empty iff every `x*` with `δ*(x* | C₁) ≤ -δ*(-x* | C₂)` satisfies
-`δ*(x* | C₁) = δ*(x* | C₂)`. The hypothesis on `x*` says some hyperplane orthogonal to `x*`
-separates the two sets; the conclusion says every such hyperplane contains `C₂`. -/
+/-- **Corollary 20.2.1** of [rockafellar1970convex]. Let $C_1$ and $C_2$ be non-empty convex sets in
+$\mathbb{R}^n$ with $C_1$ polyhedral. Then $C_1 \cap \operatorname{ri} C_2 \neq \emptyset$ if
+and only if every $x^*$ with
+$$\delta^*(x^* \mid C_1) \le -\delta^*(-x^* \mid C_2)$$
+satisfies $\delta^*(x^* \mid C_1) = \delta^*(x^* \mid C_2)$.
+
+The hypothesis on $x^*$ says that some hyperplane orthogonal to $x^*$ separates the two sets,
+and the conclusion says that every such hyperplane contains $C_2$. -/
 theorem corollary_20_2_1 {C₁ C₂ : Set (Rn n)} (h₁ : IsPolyhedral C₁) (hne₁ : C₁.Nonempty)
     (h₂ : Convex ℝ C₂) (hne₂ : C₂.Nonempty) :
     (C₁ ∩ ri C₂).Nonempty ↔
@@ -363,11 +450,12 @@ theorem corollary_20_2_1 {C₁ C₂ : Set (Rn n)} (h₁ : IsPolyhedral C₁) (hn
 
 /-! ### Theorem 20.3 and its corollary -/
 
-/-- **Theorem 20.3**. Let `C₁` be polyhedral and `C₂` closed, both non-empty convex, and suppose
-every direction of recession of `C₁` whose opposite recedes in `C₂` is a direction in which `C₂` is
-linear. Then `C₁ + C₂` is closed. "Linear in the direction `v`" is `v ∈ 0⁺C₂` *given* `-v ∈ 0⁺C₂`.
-Compare Corollary 9.1.1, which asks in addition that such a `v` lie in the lineality space of
-`C₁`. -/
+/-- **Theorem 20.3** of [rockafellar1970convex]. Let $C_1$ and $C_2$ be non-empty convex sets in
+$\mathbb{R}^n$ with $C_1$ polyhedral and $C_2$ closed. Assume that every direction of recession
+$v$ of $C_1$ with $-v \in 0^+ C_2$ is a direction in which $C_2$ is linear, that is,
+$v \in 0^+ C_2$. Then $C_1 + C_2$ is closed.
+
+Compare Corollary 9.1.1, which also needs such a $v$ to lie in the lineality space of $C_1$. -/
 theorem theorem_20_3 {C₁ C₂ : Set (Rn n)} (h₁ : IsPolyhedral C₁) (hne₁ : C₁.Nonempty)
     (h₂ : Convex ℝ C₂) (hcl₂ : IsClosed C₂) (hne₂ : C₂.Nonempty)
     (hrec : ∀ v ∈ recessionCone C₁, -v ∈ recessionCone C₂ → v ∈ recessionCone C₂) :
@@ -375,10 +463,13 @@ theorem theorem_20_3 {C₁ C₂ : Set (Rn n)} (h₁ : IsPolyhedral C₁) (hne₁
   isClosed_add_of_polyhedral (B := pairing n) (isPolyhedral_iff_polyhedral.1 h₁) hne₁ h₂ hcl₂
     hne₂ hrec
 
-/-- **Corollary 20.3.1**. Disjoint non-empty convex `C₁` polyhedral and `C₂` closed can be
-separated strongly, provided their only common directions of recession are ones in which `C₂` is
-linear. Compare Corollary 11.4.1, which forbids common recession directions outright, and
-Corollary 19.3.3, where both sets are polyhedral and no recession hypothesis is needed. -/
+/-- **Corollary 20.3.1** of [rockafellar1970convex]. Let $C_1$ and $C_2$ be non-empty disjoint
+convex sets in $\mathbb{R}^n$ with $C_1$ polyhedral and $C_2$ closed. Assume that every common
+direction of recession $v \in 0^+ C_1 \cap 0^+ C_2$ is a direction in which $C_2$ is linear,
+that is, $-v \in 0^+ C_2$. Then $C_1$ and $C_2$ can be separated strongly.
+
+Compare Corollary 11.4.1, which excludes common directions of recession, and Corollary 19.3.3,
+where both sets are polyhedral and no recession hypothesis is needed. -/
 theorem corollary_20_3_1 {C₁ C₂ : Set (Rn n)} (h₁ : IsPolyhedral C₁) (hne₁ : C₁.Nonempty)
     (h₂ : Convex ℝ C₂) (hcl₂ : IsClosed C₂) (hne₂ : C₂.Nonempty) (hdisj : C₁ ∩ C₂ = ∅)
     (hrec : ∀ v ∈ recessionCone C₁, v ∈ recessionCone C₂ → -v ∈ recessionCone C₂) :
@@ -390,26 +481,33 @@ theorem corollary_20_3_1 {C₁ C₂ : Set (Rn n)} (h₁ : IsPolyhedral C₁) (hn
 
 /-! ### Theorems 20.4 and 20.5 -/
 
-/-- **Theorem 20.4**. For `C` closed and bounded and `D` convex with `C ⊆ int D`, there is a
-polyhedral convex `P` with `P ⊆ int D` and `C ⊆ int P`.
+/-- **Theorem 20.4** of [rockafellar1970convex]. Let $C \subseteq \mathbb{R}^n$ be closed and
+bounded and let $D$ be convex with $C \subseteq \operatorname{int} D$. Then there is a
+polyhedral convex set $P$ with $P \subseteq \operatorname{int} D$ and
+$C \subseteq \operatorname{int} P$.
 
-**Rockafellar also assumes `C` non-empty and convex; neither hypothesis is used.** The argument is
-a finite subcover of `C` by polyhedral neighbourhoods and never combines two points of `C`
-convexly. -/
+**Generalization.** The source also assumes $C$ non-empty and convex. Neither hypothesis is
+used: the proof covers $C$ by finitely many polyhedral neighbourhoods and never forms a convex
+combination of two points of $C$. -/
 theorem theorem_20_4 {C D : Set (Rn n)} (hCcl : IsClosed C) (hCbdd : Bornology.IsBounded C)
     (hD : Convex ℝ D) (hCD : C ⊆ interior D) :
     ∃ P : Set (Rn n), IsPolyhedral P ∧ P ⊆ interior D ∧ C ⊆ interior P := by
   obtain ⟨P, hPpoly, hPD, hCP⟩ := exists_polyhedral_between hCcl hCbdd hD hCD
   exact ⟨P, isPolyhedral_iff_polyhedral.2 hPpoly, hPD, hCP⟩
 
-/-- **Theorem 20.5**. Every polyhedral convex set is locally simplicial. The book's proof is a
-two-line sketch which *asserts* the triangulation of a bounded polyhedron; the proof here produces
-the simplices explicitly, as the convex hulls of the affinely independent subsets of a generating
-`Finset`. -/
+/-- **Theorem 20.5** of [rockafellar1970convex]. Every polyhedral convex set in $\mathbb{R}^n$ is
+locally simplicial: near each of its points it agrees with a finite union of simplices that it
+contains.
+
+The proof in the source is a short sketch that assumes the triangulation of a bounded
+polyhedron. The proof here constructs the simplices: they are the convex hulls of the affinely
+independent subsets of a finite generating set. Locally simplicial is
+`ConvexAnalysis.LocallySimplicial`, the property to which the continuity theorems of §10 apply. -/
 theorem theorem_20_5 {C : Set (Rn n)} (hC : IsPolyhedral C) : LocallySimplicial C :=
   Polyhedral.locallySimplicial (isPolyhedral_iff_polyhedral.1 hC)
 
-/-- **Theorem 20.5**, second clause: every polytope is locally simplicial. -/
+/-- **Theorem 20.5** of [rockafellar1970convex], polytopes. The convex hull of a finite set of
+points in $\mathbb{R}^n$ is locally simplicial. -/
 theorem theorem_20_5_polytope (P : Finset (Rn n)) :
     LocallySimplicial (convexHull ℝ (P : Set (Rn n))) :=
   Polyhedral.locallySimplicial (polyhedral_convexHull_finset P)
