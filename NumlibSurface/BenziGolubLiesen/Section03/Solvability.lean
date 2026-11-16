@@ -8,9 +8,42 @@ import Numlib.LinearAlgebra.Matrix.SaddlePoint
 import NumlibSurface.BenziGolubLiesen.Section01
 
 /-!
-# Benzi, Golub and Liesen, Section 3.2
+# Benzi, Golub and Liesen, Section 3.2: Solvability conditions
 
-Nonsingularity criteria for symmetric and nonsymmetric saddle-point systems.
+This module formalizes the nonsingularity criteria for saddle-point matrices in Section 3.2 of
+[benzi2005numerical]. For $A \in \mathbb{R}^{n \times n}$, $B, B_1, B_2 \in \mathbb{R}^{m \times n}$
+and $C \in \mathbb{R}^{m \times m}$, the matrices are
+$$\mathcal{A} = \begin{bmatrix} A & B^T \\ B & -C \end{bmatrix} \quad \text{and} \quad
+  \begin{bmatrix} A & B_1^T \\ B_2 & 0 \end{bmatrix},$$
+as in (1.1). The criteria are stated in terms of the kernels of the blocks, the rank of $B$, and the
+symmetric part $H = \frac{1}{2}(A + A^T)$ of $A$. Theorems 3.1 and 3.2 treat symmetric $A$, Theorem
+3.3 gives necessary conditions for a zero block $C$, and Theorem 3.4 treats nonsymmetric $A$. The
+proofs specialize results in `Numlib.LinearAlgebra.Matrix.SaddlePoint`.
+
+## Main results
+
+* Theorem 3.1, `BenziGolubLiesen.theorem_3_1`: if $A$ is symmetric positive definite and $C$ is
+  symmetric positive semidefinite, then $\ker C \cap \ker B^T = \{0\}$ implies that $\mathcal{A}$ is
+  nonsingular, and so does $\operatorname{rank} B = m$.
+* Theorem 3.2, `BenziGolubLiesen.theorem_3_2`: if $A$ is symmetric positive semidefinite, $B$ has
+  rank $m$ and $C = 0$, then $\mathcal{A}$ is nonsingular if and only if
+  $\ker A \cap \ker B = \{0\}$.
+* Theorem 3.3, `BenziGolubLiesen.theorem_3_3`: if the matrix with blocks $A$, $B_1^T$, $B_2$ and $0$
+  is nonsingular, then $B_1$ has rank $m$ and the stacked matrix
+  $\begin{bmatrix} A \\ B_2 \end{bmatrix}$ has rank $n$.
+* Theorem 3.4, `BenziGolubLiesen.theorem_3_4`: if $H$ and $C$ are positive semidefinite and $B$ has
+  rank $m$, then $\ker H \cap \ker B = \{0\}$ implies that $\mathcal{A}$ is nonsingular, and
+  nonsingularity implies $\ker A \cap \ker B = \{0\}$.
+* Examples after Theorem 3.4, `BenziGolubLiesen.theorem_3_4_converses`: neither implication of
+  Theorem 3.4 has a true converse, even for $C = 0$.
+
+## Implementation notes
+
+* A kernel is the kernel of `Matrix.mulVecLin`, and the condition that two kernels intersect
+  trivially is `LinearMap.ker _ ⊓ LinearMap.ker _ = ⊥`.
+* Nonsingularity of a square matrix is `IsUnit`.
+* The symmetric part $H$ is `Matrix.hermitianPart A`. For a real matrix, `Matrix.PosDef` and
+  `Matrix.PosSemidef` include symmetry.
 -/
 
 namespace BenziGolubLiesen
@@ -25,9 +58,16 @@ private theorem fullRowRank_injective (hB : B.rank = Fintype.card m) :
     Function.Injective Bᵀ.mulVec :=
   Matrix.mulVec_injective_iff_rank_eq_card.mpr (by rwa [Matrix.rank_transpose])
 
-/-- **Theorem 3.1** of [benzi2005numerical]. With positive definite `A` and positive semidefinite
-`C`, a trivial intersection of the kernels of `C` and `Bᵀ` implies nonsingularity.
-In particular full row rank of `B` suffices. -/
+/-- **Theorem 3.1** of [benzi2005numerical]. Let $A \in \mathbb{R}^{n \times n}$ be symmetric
+positive definite, let $B \in \mathbb{R}^{m \times n}$, and let $C \in \mathbb{R}^{m \times m}$
+be symmetric positive semidefinite. Then:
+
+* if $\ker C \cap \ker B^T = \{0\}$, the matrix $\mathcal{A} = \begin{bmatrix} A & B^T \\ B & -C
+  \end{bmatrix}$ is nonsingular;
+* in particular, if $B$ has full rank, $\operatorname{rank} B = m$, then $\mathcal{A}$ is
+  nonsingular.
+
+The matrix $\mathcal{A}$ is `BenziGolubLiesen.saddlePointMatrix A B B C`. -/
 theorem theorem_3_1 (hA : A.PosDef) (hC : C.PosSemidef) :
     (LinearMap.ker C.mulVecLin ⊓ LinearMap.ker Bᵀ.mulVecLin = ⊥ →
       IsUnit (saddlePointMatrix A B B C)) ∧
@@ -41,9 +81,12 @@ theorem theorem_3_1 (hA : A.PosDef) (hC : C.PosSemidef) :
     LinearMap.ker_eq_bot.mpr (fullRowRank_injective hB)
   simp only [hkerB, inf_bot_eq]
 
-/-- **Theorem 3.2** of [benzi2005numerical]. For positive semidefinite `A` and full-row-rank
-`B`, the symmetric saddle-point matrix with zero trailing block is nonsingular exactly when
-the kernels of `A` and `B` intersect trivially. -/
+/-- **Theorem 3.2** of [benzi2005numerical]. Let $A \in \mathbb{R}^{n \times n}$ be symmetric
+positive semidefinite, and let $B \in \mathbb{R}^{m \times n}$ have rank $m$. Then the matrix
+$$\mathcal{A} = \begin{bmatrix} A & B^T \\ B & 0 \end{bmatrix}$$
+is nonsingular if and only if $\ker A \cap \ker B = \{0\}$.
+
+The matrix $\mathcal{A}$ is `BenziGolubLiesen.saddlePointMatrix A B B 0`. -/
 theorem theorem_3_2 (hA : A.PosSemidef) (hB : B.rank = Fintype.card m) :
     IsUnit (saddlePointMatrix A B B 0) ↔
       LinearMap.ker A.mulVecLin ⊓ LinearMap.ker B.mulVecLin = ⊥ := by
@@ -52,16 +95,29 @@ theorem theorem_3_2 (hA : A.PosSemidef) (hB : B.rank = Fintype.card m) :
   simpa only [hkerB, inf_bot_eq, and_true] using
     isUnit_fromBlocks_transpose_neg_iff B hA (PosSemidef.zero (n := m))
 
-/-- **Theorem 3.3** of [benzi2005numerical]. Nonsingularity with a zero trailing block implies
-full row rank of `B₁` and full column rank of the vertical stack of `A` and `B₂`. -/
+/-- **Theorem 3.3** of [benzi2005numerical]. Let $A \in \mathbb{R}^{n \times n}$ and
+$B_1, B_2 \in \mathbb{R}^{m \times n}$. If the matrix
+$$\begin{bmatrix} A & B_1^T \\ B_2 & 0 \end{bmatrix}$$
+is nonsingular, then $\operatorname{rank} B_1 = m$ and the stacked matrix $\begin{bmatrix} A \\
+B_2 \end{bmatrix} \in \mathbb{R}^{(n + m) \times n}$ has rank $n$.
+
+The block matrix is `BenziGolubLiesen.saddlePointMatrix A B₁ B₂ 0`, and the stacked matrix is
+`Matrix.fromRows A B₂`. No further hypotheses on the blocks are needed. -/
 theorem theorem_3_3 (h : IsUnit (saddlePointMatrix A B₁ B₂ 0)) :
     B₁.rank = Fintype.card m ∧ (fromRows A B₂).rank = Fintype.card n :=
   ranks_of_isUnit_fromBlocks_transpose_zero (by simpa [saddlePointMatrix] using h)
 
-/-- **Theorem 3.4** of [benzi2005numerical]. For a positive semidefinite symmetric part `H`,
-a positive semidefinite `C` and full-row-rank `B`, a trivial intersection of the kernels of
-`H` and `B` suffices for nonsingularity. Nonsingularity in turn forces the intersection of the
-kernels of `A` and `B` to be trivial. -/
+/-- **Theorem 3.4** of [benzi2005numerical]. Let $A \in \mathbb{R}^{n \times n}$ have positive
+semidefinite symmetric part $H = \frac{1}{2}(A + A^T)$, let $B \in \mathbb{R}^{m \times n}$ have
+rank $m$, and let $C \in \mathbb{R}^{m \times m}$ be symmetric positive semidefinite. Let
+$\mathcal{A} = \begin{bmatrix} A & B^T \\ B & -C \end{bmatrix}$. Then:
+
+* if $\ker H \cap \ker B = \{0\}$, then $\mathcal{A}$ is nonsingular;
+* if $\mathcal{A}$ is nonsingular, then $\ker A \cap \ker B = \{0\}$.
+
+The symmetric part $H$ is `Matrix.hermitianPart A`, and $\mathcal{A}$ is
+`BenziGolubLiesen.saddlePointMatrix A B B C`. `BenziGolubLiesen.theorem_3_4_converses` shows
+that neither implication can be reversed. -/
 theorem theorem_3_4 (hA : (hermitianPart A).PosSemidef) (hC : C.PosSemidef)
     (hB : B.rank = Fintype.card m) :
     ((LinearMap.ker (hermitianPart A).mulVecLin ⊓ LinearMap.ker B.mulVecLin = ⊥) →
@@ -165,8 +221,21 @@ private theorem converse_ii_counterexample :
     have h0 := congrFun ((isUnit_iff_mulVec_sumElim.mp h) x y hxy).1 0
     norm_num [x] at h0
 
-/-- The examples following **Theorem 3.4** of [benzi2005numerical]. Even with a zero trailing block,
-the hypotheses of the two implications do not force their converses. -/
+/-- **Examples after Theorem 3.4** of [benzi2005numerical]. The two implications of Theorem 3.4 do
+not have true converses, even when $C = 0$:
+
+* there are $A \in \mathbb{R}^{3 \times 3}$ and $B \in \mathbb{R}^{1 \times 3}$ such that
+  $H = \frac{1}{2}(A + A^T)$ is positive semidefinite, $\operatorname{rank} B = 1$ and
+  $\begin{bmatrix} A & B^T \\ B & 0 \end{bmatrix}$ is nonsingular, but
+  $\ker H \cap \ker B \neq \{0\}$;
+* there are $A \in \mathbb{R}^{2 \times 2}$ and $B \in \mathbb{R}^{1 \times 2}$ such that $H$ is
+  positive semidefinite, $\operatorname{rank} B = 1$ and $\ker A \cap \ker B = \{0\}$, but
+  $\begin{bmatrix} A & B^T \\ B & 0 \end{bmatrix}$ is singular.
+
+The proof uses the witnesses $A = \begin{bmatrix} 1 & -1 & 0 \\ 1 & 0 & 0 \\ 0 & 0 & 0
+\end{bmatrix}$, $B = \begin{bmatrix} 0 & 0 & 1 \end{bmatrix}$, with
+$H = \operatorname{diag}(1, 0, 0)$, and $A = \begin{bmatrix} 0 & -1 \\ 1 & 1 \end{bmatrix}$,
+$B = \begin{bmatrix} 0 & 1 \end{bmatrix}$, with $H = \operatorname{diag}(0, 1)$. -/
 theorem theorem_3_4_converses :
     (∃ (A : Matrix (Fin 3) (Fin 3) ℝ) (B : Matrix (Fin 1) (Fin 3) ℝ),
       (hermitianPart A).PosSemidef ∧ B.rank = 1 ∧ IsUnit (saddlePointMatrix A B B 0) ∧

@@ -5,24 +5,80 @@ Released under Apache 2.0 license as described in the file LICENSE.
 import Numlib.Preconditioner.Constraint
 
 /-!
-# Section 10.2: constraint preconditioning
+# Benzi, Golub and Liesen, Section 10.2: Constraint and indefinite preconditioning
 
-[benzi2005numerical, Theorem 10.1] describes the characteristic polynomial and eigenvectors of the
-constraint-preconditioned saddle matrix with zero trailing block.
+This module formalizes Theorem 10.1 of [benzi2005numerical], which describes the spectrum of a
+saddle-point matrix after constraint preconditioning. Let $A, G \in \mathbb{R}^{n \times n}$ and
+$B \in \mathbb{R}^{m \times n}$ with $\operatorname{rank} B = m$, and let the columns of
+$Z \in \mathbb{R}^{n \times (n - m)}$ form a basis of $\ker B$. The constraint preconditioner
+$\mathcal{P}$ keeps the constraint blocks of $\mathcal{A}$ and replaces $A$ by $G$:
+$$\mathcal{A} = \begin{bmatrix} A & B^T \\ B & 0 \end{bmatrix}, \qquad \mathcal{P} = \begin{bmatrix}
+  G & B^T \\ B & 0 \end{bmatrix}.$$
+The characteristic polynomial of $\mathcal{P}^{-1}\mathcal{A}$ is $(\lambda - 1)^{2m}$ times the
+characteristic polynomial of the reduced matrix $(Z^TGZ)^{-1}Z^TAZ$, and the eigenvectors of
+$\mathcal{P}^{-1}\mathcal{A}$ come from the kernel of $A - G$, the multiplier coordinates, and the
+eigenvectors of the reduced pencil $(Z^TAZ, Z^TGZ)$. The proofs specialize results in
+`Numlib.Preconditioner.Constraint`.
+
+## Main results
+
+* Theorem 10.1, `BenziGolubLiesen.theorem_10_1`: $Z^TGZ$ is nonsingular, $\det(\lambda I -
+  \mathcal{P}^{-1}\mathcal{A}) = (\lambda - 1)^{2m} \det\big(\lambda I - (Z^TGZ)^{-1}Z^TAZ\big)$,
+  and, if $Z^TGZ$ is positive definite, $\mathcal{P}^{-1}\mathcal{A}$ has an explicit family of
+  linearly independent eigenvectors.
+* Counterexample for Theorem 10.1, `BenziGolubLiesen.theorem_10_1_multiplicity_example`: for
+  $A = \operatorname{diag}(2, 1)$, $G = I$ and $B = [1, 0]$, the eigenvalue $1$ has multiplicity
+  $3 > 2m$.
+
+## Implementation notes
+
+* The dimensions are natural numbers, and the block matrices are indexed by `Fin n ⊕ Fin m`.
+* The basis $Z$ of $\ker B$ is given by two hypotheses: $Z$ is injective, and the range of $Z$ is
+  $\ker B$.
+
+## Deviations from the source
+
+* **Theorem 10.1** (correction). The eigenvalue $1$ of $\mathcal{P}^{-1}\mathcal{A}$ can have
+  multiplicity greater than $2m$, because the reduced pencil can also have the eigenvalue $1$. See
+  `BenziGolubLiesen.theorem_10_1` and `BenziGolubLiesen.theorem_10_1_multiplicity_example`.
 -/
 
 open Matrix Polynomial
 
 namespace BenziGolubLiesen
 
-/-- **[benzi2005numerical, Theorem 10.1].** The characteristic polynomial of the
-constraint-preconditioned saddle matrix has `2 * m` roots at 1 together with all the eigenvalues
-of the reduced pencil, counted with multiplicities. A root of the reduced pencil at 1 increases
-the total multiplicity at 1. If the reduced preconditioner is positive definite, a reduced
-eigenbasis supplies independent lifts for all reduced eigenvalues different from 1. In the
-original coordinates the primal component of such a lift is `Z *ᵥ z`. The lifts are jointly
-independent with the multiplier coordinate vectors and the eigenvectors at 1 constructed from
-a basis of the kernel of `A - G`. -/
+/-- **Theorem 10.1** of [benzi2005numerical]. Let $m < n$, let $A, G \in \mathbb{R}^{n \times n}$ be
+symmetric with $G \neq A$, let $B \in \mathbb{R}^{m \times n}$ have rank $m$, and let
+$Z \in \mathbb{R}^{n \times (n - m)}$ be injective with range $\ker B$. Assume that
+$$\mathcal{A} = \begin{bmatrix} A & B^T \\ B & 0 \end{bmatrix} \quad \text{and} \quad
+  \mathcal{P} = \begin{bmatrix} G & B^T \\ B & 0 \end{bmatrix}$$
+are nonsingular, and let $M = \mathcal{P}^{-1}\mathcal{A}$. Then:
+
+* $Z^TGZ$ is nonsingular;
+* the characteristic polynomial of $M$ is $$\det(\lambda I - M) = (\lambda - 1)^{2m}
+  \det\big(\lambda I - (Z^TGZ)^{-1}Z^TAZ\big);$$
+* if $Z^TGZ$ is positive definite, let $p = \dim \ker(A - G)$. There are vectors
+  $w_1, \dots, w_p \in \mathbb{R}^n$ with $Aw_i = Gw_i$, eigenpairs $(d_j, z_j)$,
+  $j = 1, \dots, n - m$, of the reduced pencil (that is, $z_j \neq 0$ and
+  $Z^TAZ z_j = d_j Z^TGZ z_j$) with $z_1, \dots, z_{n-m}$ linearly independent, and vectors
+  $y_j \in \mathbb{R}^m$ for each $j$ with $d_j \neq 1$, such that the vectors $$\begin{bmatrix}
+  0 \\ e_l \end{bmatrix} \ (l = 1, \dots, m), \qquad \begin{bmatrix} w_i \\ 0 \end{bmatrix} \
+  (i = 1, \dots, p), \qquad \begin{bmatrix} Zz_j \\ y_j \end{bmatrix} \ (d_j \neq 1)$$ are
+  linearly independent, each vector $v$ of the first two families satisfies $Mv = v$, and the
+  vector $v_j = (Zz_j, y_j)$ of the third family satisfies $Mv_j = d_j v_j$.
+
+**Correction.** The source gives the eigenvalue $1$ of $M$ the multiplicity $2m$. The factor
+$(\lambda - 1)^{2m}$ is always present, but the reduced pencil can supply further roots at $1$.
+For $A = \operatorname{diag}(2, 1)$, $G = I$ and $B = [1, 0]$, the characteristic polynomial is
+$(\lambda - 1)^3$; see `BenziGolubLiesen.theorem_10_1_multiplicity_example`. The statement
+therefore gives the factorization of the characteristic polynomial.
+
+In the original coordinates, the eigenvector lifted from a reduced eigenvector $z_j$ has primal
+component $Zz_j$. The vectors $e_l$ are the coordinate vectors of $\mathbb{R}^m$, written
+`Pi.single l 1`, and the pair $(x, y)$ is `Sum.elim x y`. The proof does not use the hypotheses
+that $G$ is symmetric, that $G \neq A$, that $m < n$, and that $\mathcal{A}$ is nonsingular. It
+specializes `Matrix.charpoly_constraintPreconditioned` and
+`Matrix.exists_constraintPreconditioned_eigenvectors`. -/
 theorem theorem_10_1 {n m : ℕ} {A G : Matrix (Fin n) (Fin n) ℝ} {B : Matrix (Fin m) (Fin n) ℝ}
     {Z : Matrix (Fin n) (Fin (n - m)) ℝ} (hA : A.IsSymm) (_hG : G.IsSymm) (_hGA : G ≠ A)
     (_hmn : m < n) (hB : B.rank = m)
@@ -58,9 +114,18 @@ theorem theorem_10_1 {n m : ℕ} {A G : Matrix (Fin n) (Fin n) ℝ} {B : Matrix 
     simpa [constraintPreconditioned, saddleMatrix, conjTranspose_eq_transpose_of_trivial] using
       exists_constraintPreconditioned_eigenvectors (isHermitian_iff_isSymm.mpr hA) hZi hZ hP' hG'
 
-/-- In [benzi2005numerical, Theorem 10.1] the total algebraic multiplicity of 1 may exceed
-`2 * m`, even when both saddle matrices are nonsingular and `A` and `G` are distinct. For
-`A = diag(2, 1)`, `G = I`, and `B = [1, 0]`, the preconditioned matrix has three roots at 1. -/
+/-- A counterexample to the multiplicity $2m$ printed in Theorem 10.1 of [benzi2005numerical]. There
+are symmetric $A, G \in \mathbb{R}^{2 \times 2}$ with $G \neq A$ and
+$B \in \mathbb{R}^{1 \times 2}$ of rank $1$ such that $\mathcal{A} = \begin{bmatrix} A & B^T \\
+B & 0 \end{bmatrix}$ and $\mathcal{P} = \begin{bmatrix} G & B^T \\ B & 0 \end{bmatrix}$ are
+nonsingular and
+$$\det(\lambda I - \mathcal{P}^{-1}\mathcal{A}) = (\lambda - 1)^3.$$
+So the eigenvalue $1$ has multiplicity $3$, which exceeds $2m = 2$, even though both
+saddle-point matrices are nonsingular and $A \neq G$.
+
+The proof uses $A = \operatorname{diag}(2, 1)$, $G = I$ and $B = [1, 0]$. Here $\ker B$ is
+spanned by $Z = [0, 1]^T$, and the reduced pencil $(Z^TAZ, Z^TGZ) = (1, 1)$ has the eigenvalue
+$1$. -/
 theorem theorem_10_1_multiplicity_example :
     ∃ (A G : Matrix (Fin 2) (Fin 2) ℝ) (B : Matrix (Fin 1) (Fin 2) ℝ),
       A.IsSymm ∧ G.IsSymm ∧ G ≠ A ∧ B.rank = 1 ∧

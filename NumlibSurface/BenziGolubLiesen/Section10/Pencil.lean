@@ -5,13 +5,54 @@ Released under Apache 2.0 license as described in the file LICENSE.
 import Numlib.Preconditioner.ConstraintPencil
 
 /-!
-# Benzi, Golub and Liesen, Section 10.2
+# Benzi, Golub and Liesen, Section 10.2: Constraint and indefinite preconditioning
 
-The generalized eigenproblem in equation (10.21) and the corrected Lemma 10.2 of
-[benzi2005numerical]. The zero eigenspace is the product of the kernel of the primal block and
-the entire multiplier space. The spectral interval includes zero as a possible endpoint on
-either side. For example, scalar blocks `B = C = 1` and `E = -1` have a nonzero eigenvalue
-`-1/2`, which exceeds the largest eigenvalue of `E`.
+This module formalizes the generalized eigenvalue problem (10.21) and Lemma 10.2 of
+[benzi2005numerical]. Let $B \in \mathbb{R}^{m \times n}$, $C \in \mathbb{R}^{m \times m}$ and
+$E \in \mathbb{R}^{n \times n}$. The problem asks for $\gamma \in \mathbb{C}$ and $(x, y) \neq 0$
+with
+$$\begin{bmatrix} E & 0 \\ 0 & 0 \end{bmatrix} \begin{bmatrix} x \\ y \end{bmatrix} = \gamma
+  \begin{bmatrix} I & B^T \\ B & -C \end{bmatrix} \begin{bmatrix} x \\ y \end{bmatrix}.$$
+Lemma 10.2 describes its eigenvalues when $B$ has rank $m$ and $C$ is positive semidefinite. A
+nonzero eigenvalue is a Rayleigh quotient of $E$, the eigenvalue $0$ occurs exactly when $Ex = 0$,
+and the nonzero eigenvalues are real and lie between $\min\{0, \lambda_{\min}(E)\}$ and
+$\max\{0, \lambda_{\max}(E)\}$. The zero eigenspace is the product of $\ker E$ and the whole
+multiplier space $\mathbb{C}^m$. The proofs specialize results in
+`Numlib.Preconditioner.ConstraintPencil`.
+
+## Main definitions
+
+* Equation (10.21), `BenziGolubLiesen.IsConstraintPencilEigenvector`: $(\gamma, x, y)$ is an
+  eigenpair of the generalized eigenvalue problem above.
+
+## Main results
+
+* Lemma 10.2(i), `BenziGolubLiesen.lemma_10_2_i`: if $C$ is positive definite and $Ex \neq 0$, then
+  $\gamma = x^H E x / x^H (I + B^T C^{-1} B) x$ and $\gamma \neq 0$.
+* Lemma 10.2(ii), `BenziGolubLiesen.lemma_10_2_ii`: $\gamma = 0$ if and only if $Ex = 0$, and the
+  kernel of $\operatorname{diag}(E, 0)$ has dimension $\dim \ker E + m$.
+* Lemma 10.2(iii), `BenziGolubLiesen.lemma_10_2_iii`: for symmetric $E$, a nonzero eigenvalue is
+  real and lies in $[\min\{0, \lambda_{\min}(E)\}, \max\{0, \lambda_{\max}(E)\}]$.
+* Counterexample for Lemma 10.2(ii), `BenziGolubLiesen.lemma_10_2_zero_multiplier_example`: for
+  $B = C = 1$ and $E = 0$, the eigenvalue $0$ has an eigenvector with $y = 0$.
+* Counterexample for Lemma 10.2(iii), `BenziGolubLiesen.lemma_10_2_upper_endpoint_example`: for
+  $B = C = 1$ and $E = -1$, the eigenvalue $-1/2$ exceeds $\lambda_{\max}(E) = -1$.
+
+## Implementation notes
+
+* Eigenvalues and eigenvectors are complex. The real matrices act on complex vectors through
+  `Matrix.complexify` and `Matrix.map Complex.ofReal`, and $B^T$ is the conjugate transpose of the
+  complexified $B$.
+* The numbers $\lambda_{\min}(E)$ and $\lambda_{\max}(E)$ are the infimum and the supremum of
+  `Matrix.IsHermitian.eigenvalues`.
+
+## Deviations from the source
+
+* **Lemma 10.2(ii)** (correction). The source requires $y \neq 0$ for the eigenvalue $0$. The
+  condition is $Ex = 0$ alone, with $y$ arbitrary as long as $(x, y) \neq 0$. See
+  `BenziGolubLiesen.lemma_10_2_ii`.
+* **Lemma 10.2(iii)** (correction). The source prints the upper bound $\lambda_{\max}(E)$. The upper
+  bound is $\max\{0, \lambda_{\max}(E)\}$. See `BenziGolubLiesen.lemma_10_2_iii`.
 -/
 
 namespace BenziGolubLiesen
@@ -22,14 +63,30 @@ variable {n m : Type*} [Fintype n] [Fintype m] [DecidableEq n]
 variable {B : Matrix m n ℝ} {C : Matrix m m ℝ} {E : Matrix n n ℝ}
 variable {γ : ℂ} {x : n → ℂ} {y : m → ℂ}
 
-/-- Equation (10.21) of [benzi2005numerical], interpreted over complex eigenvectors. -/
+/-- **Equation (10.21)** of [benzi2005numerical]. Let $B \in \mathbb{R}^{m \times n}$,
+$C \in \mathbb{R}^{m \times m}$ and $E \in \mathbb{R}^{n \times n}$. A scalar
+$\gamma \in \mathbb{C}$ and vectors $x \in \mathbb{C}^n$, $y \in \mathbb{C}^m$ form an
+**eigenpair of the constraint pencil** if $(x, y) \neq 0$ and
+$$\begin{bmatrix} E & 0 \\ 0 & 0 \end{bmatrix} \begin{bmatrix} x \\ y \end{bmatrix} = \gamma
+  \begin{bmatrix} I & B^T \\ B & -C \end{bmatrix} \begin{bmatrix} x \\ y \end{bmatrix}.$$
+
+The problem is read over the complex numbers: $\gamma$, $x$ and $y$ are complex. The definition
+is `Matrix.HasPencilEigenvector` for the two block matrices, with the real matrices embedded
+entrywise in the complex matrices, and the pair $(x, y)$ is `Sum.elim x y`. -/
 abbrev IsConstraintPencilEigenvector (B : Matrix m n ℝ) (C : Matrix m m ℝ)
     (E : Matrix n n ℝ) (γ : ℂ) (x : n → ℂ) (y : m → ℂ) : Prop :=
   Matrix.HasPencilEigenvector (fromBlocks E.complexify 0 0 0)
     (fromBlocks 1 (B.map Complex.ofReal)ᴴ (B.map Complex.ofReal) (-C.complexify)) γ (Sum.elim x y)
 
-/-- **Lemma 10.2(i)** of [benzi2005numerical]. If `C` is positive definite and `E x ≠ 0`, the
-eigenvalue is the nonzero Rayleigh quotient obtained by eliminating the multiplier. -/
+/-- **Lemma 10.2(i)** of [benzi2005numerical]. Let $B \in \mathbb{R}^{m \times n}$ have rank $m$,
+let $C \in \mathbb{R}^{m \times m}$ be symmetric positive definite, and let
+$E \in \mathbb{R}^{n \times n}$. If $(\gamma, x, y)$ is an eigenpair of the constraint pencil
+(10.21) and $Ex \neq 0$, then
+$$\gamma = \frac{x^H E x}{x^H (I + B^T C^{-1} B) x} \quad \text{and} \quad \gamma \neq 0.$$
+The formula follows by eliminating the multiplier $y$.
+
+The eigenpair is `BenziGolubLiesen.IsConstraintPencilEigenvector`. The proof specializes
+`Matrix.HasPencilEigenvector.primalBlock_eq_rayleigh`. -/
 theorem lemma_10_2_i [DecidableEq m] (hB : B.rank = Fintype.card m) (hC : C.PosDef)
     (h : IsConstraintPencilEigenvector B C E γ x y) (hEx : E.complexify *ᵥ x ≠ 0) :
     γ = (star x ⬝ᵥ (E.complexify *ᵥ x)) /
@@ -38,9 +95,23 @@ theorem lemma_10_2_i [DecidableEq m] (hB : B.rank = Fintype.card m) (hC : C.PosD
   h.primalBlock_eq_rayleigh (mulVec_injective_conjTranspose_map_ofReal_of_fullRowRank hB)
     (posDef_complexify_iff.mpr hC) hEx
 
-/-- **Lemma 10.2(ii)** of [benzi2005numerical], corrected. For an eigenpair, the eigenvalue is
-zero exactly when `E x = 0`. The multiplier may be zero when the primal component is nonzero.
-The dimension of the zero eigenspace is the nullity of the complexification of `E` plus `m`. -/
+/-- **Lemma 10.2(ii)** of [benzi2005numerical], corrected. Let $B \in \mathbb{R}^{m \times n}$ have
+rank $m$, let $C \in \mathbb{R}^{m \times m}$ be symmetric positive semidefinite, and let
+$E \in \mathbb{R}^{n \times n}$. If $(\gamma, x, y)$ is an eigenpair of the constraint pencil
+(10.21), then $\gamma = 0$ if and only if $Ex = 0$. Moreover, the eigenspace of the eigenvalue
+$0$ has dimension $\dim \ker E + m$:
+$$\dim \ker \begin{bmatrix} E & 0 \\ 0 & 0 \end{bmatrix} = \dim \ker E + m,$$
+with the kernels taken over $\mathbb{C}$.
+
+**Correction.** The source requires $y \neq 0$ for the eigenvalue $0$. The multiplier $y$ is
+arbitrary: only $(x, y) \neq 0$ is needed, and $y = 0$ is possible when $x \neq 0$. For
+$B = C = 1$ and $E = 0$, the triple $(0, 1, 0)$ is an eigenpair; see
+`BenziGolubLiesen.lemma_10_2_zero_multiplier_example`.
+
+The eigenpair is `BenziGolubLiesen.IsConstraintPencilEigenvector`, and $\ker E$ is the kernel of
+`Matrix.complexify E`. The proof specializes
+`Matrix.HasPencilEigenvector.primalBlock_eq_zero_iff` and
+`Matrix.finrank_ker_fromBlocks_primal`. -/
 theorem lemma_10_2_ii (hB : B.rank = Fintype.card m) (hC : C.PosSemidef)
     (h : IsConstraintPencilEigenvector B C E γ x y) :
     (γ = 0 ↔ E.complexify *ᵥ x = 0) ∧
@@ -51,8 +122,20 @@ theorem lemma_10_2_ii (hB : B.rank = Fintype.card m) (hC : C.PosSemidef)
       hC.complexify,
     finrank_ker_fromBlocks_primal E.complexify⟩
 
-/-- **Lemma 10.2(iii)** of [benzi2005numerical], corrected. Each nonzero eigenvalue is real and lies
-between `min 0 (λmin E)` and `max 0 (λmax E)`. -/
+/-- **Lemma 10.2(iii)** of [benzi2005numerical], corrected. Let $B \in \mathbb{R}^{m \times n}$ have
+rank $m$, let $C \in \mathbb{R}^{m \times m}$ be symmetric positive semidefinite, and let
+$E \in \mathbb{R}^{n \times n}$ be symmetric, with $n \ge 1$. If $(\gamma, x, y)$ is an
+eigenpair of the constraint pencil (10.21) and $\gamma \neq 0$, then $\gamma$ is real and
+$$\min\{0, \lambda_{\min}(E)\} \le \gamma \le \max\{0, \lambda_{\max}(E)\}.$$
+
+**Correction.** The source prints the upper bound $\lambda_{\max}(E)$. This bound fails when
+$\lambda_{\max}(E) < 0$: for $B = C = 1$ and $E = -1$, the pencil has the eigenvalue
+$\gamma = -1/2 > -1$. See `BenziGolubLiesen.lemma_10_2_upper_endpoint_example`.
+
+The eigenpair is `BenziGolubLiesen.IsConstraintPencilEigenvector`. The numbers
+$\lambda_{\min}(E)$ and $\lambda_{\max}(E)$ are the infimum and the supremum of
+`Matrix.IsHermitian.eigenvalues`. The proof specializes
+`Matrix.HasPencilEigenvector.primalBlock_mem_interval`. -/
 theorem lemma_10_2_iii [Nonempty n] (hB : B.rank = Fintype.card m) (hC : C.PosSemidef)
     (hE : E.IsHermitian) (h : IsConstraintPencilEigenvector B C E γ x y) (hγ : γ ≠ 0) :
     γ ∈ Complex.ofReal '' Set.Icc (min 0 (⨅ i, hE.eigenvalues i))
@@ -69,7 +152,10 @@ theorem lemma_10_2_iii [Nonempty n] (hB : B.rank = Fintype.card m) (hC : C.PosSe
   rw [← hj]
   exact ⟨ciInf_le (Set.finite_range _).bddBelow j, le_ciSup (Set.finite_range _).bddAbove j⟩
 
-/-- Scalar counterexample to requiring a nonzero multiplier in Lemma 10.2(ii). -/
+/-- A counterexample to the condition $y \neq 0$ printed in Lemma 10.2(ii) of [benzi2005numerical].
+For $n = m = 1$, $B = 1$, $C = 1$ and $E = 0$, the triple $(\gamma, x, y) = (0, 1, 0)$ is an
+eigenpair of the constraint pencil (10.21). So the eigenvalue $0$ has an eigenvector whose
+multiplier component is zero. -/
 theorem lemma_10_2_zero_multiplier_example :
     IsConstraintPencilEigenvector (1 : Matrix Unit Unit ℝ) 1 0 0
       (fun _ ↦ 1) (fun _ ↦ 0) := by
@@ -79,8 +165,12 @@ theorem lemma_10_2_zero_multiplier_example :
     norm_num at h0
   · simp
 
-/-- Scalar counterexample to the printed upper bound in Lemma 10.2(iii).
-The pencil has eigenvalue `-1/2` while the only eigenvalue of `E` is `-1`. -/
+/-- A counterexample to the upper bound printed in Lemma 10.2(iii) of [benzi2005numerical]. For
+$n = m = 1$, $B = 1$, $C = 1$ and $E = -1$, the triple $(\gamma, x, y) = (-1/2, 1, 1)$ is an
+eigenpair of the constraint pencil (10.21), and the only eigenvalue of $E$ is $-1$. So the
+nonzero eigenvalue $-1/2$ exceeds the printed upper bound $\lambda_{\max}(E) = -1$.
+
+The index type of the scalar case is `Unit`, and the spectrum of $E$ is `spectrum ℝ`. -/
 theorem lemma_10_2_upper_endpoint_example :
     IsConstraintPencilEigenvector (1 : Matrix Unit Unit ℝ) 1 (-1) (-1 / 2)
       (fun _ ↦ 1) (fun _ ↦ 1) ∧

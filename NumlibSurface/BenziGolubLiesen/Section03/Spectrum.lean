@@ -9,13 +9,58 @@ import Numlib.LinearAlgebra.Matrix.SaddlePoint.Spectrum
 import NumlibSurface.BenziGolubLiesen.Section01
 
 /-!
-# Benzi, Golub and Liesen, Section 3.4
+# Benzi, Golub and Liesen, Section 3.4: Spectral properties
 
-Spectral bounds for the symmetric saddle-point matrix and for the sign-flipped
-form, with explicit eigenvalues when the top block is a scalar identity.
+This module formalizes the spectral results of Section 3.4 of [benzi2005numerical]. Let
+$A \in \mathbb{R}^{n \times n}$, $B \in \mathbb{R}^{m \times n}$ and
+$C \in \mathbb{R}^{m \times m}$. The section compares the symmetric saddle-point matrix with the
+sign-flipped matrix (3.10),
+$$\begin{bmatrix} A & B^T \\ B & 0 \end{bmatrix} \quad \text{and} \quad \begin{bmatrix} A & B^T \\
+  -B & C \end{bmatrix}.$$
+For symmetric positive definite $A$, the eigenvalues of the first matrix lie in two intervals given
+by the extreme eigenvalues of $A$ and the extreme singular values of $B$ (Theorem 3.5). The
+eigenvalues of the second matrix have nonnegative real part (Theorem 3.6), and they are real and
+positive when $A$ dominates the Schur complement $BA^{-1}B^T$ (Theorem 3.7). When the top block is
+$\eta I$, the eigenvalues of both forms (3.13) are given explicitly by the singular values of $B$
+(Theorem 3.8). The proofs specialize results in `Numlib.LinearAlgebra.Matrix.SaddlePoint.Spectrum`
+and `Numlib.LinearAlgebra.Matrix.SaddlePoint.ScalarDiagonal`.
 
-The paragraph after Theorem 3.8 calls the nonreal roots purely imaginary.
-Their real part is `η / 2`, as given by the theorem's formulas.
+## Main definitions
+
+* Equation (3.10), `BenziGolubLiesen.signFlippedSaddlePointMatrix`: the matrix with blocks $A$,
+  $B^T$, $-B$ and $C$.
+* Equation (3.13), `BenziGolubLiesen.scaledSaddlePointMatrix`: the matrix with blocks $\eta I$,
+  $B^T$, $\varepsilon B$ and $0$, where $\varepsilon = \pm 1$.
+
+## Main results
+
+* Theorem 3.5, `BenziGolubLiesen.theorem_3_5`: for symmetric positive definite $A$ and $B$ of rank
+  $m$, the eigenvalues of the symmetric matrix are real and lie in the union of two intervals.
+* Theorem 3.6, `BenziGolubLiesen.theorem_3_6`: the sign-flipped matrix has a nonnegative quadratic
+  form, and its eigenvalues have nonnegative real part, or positive real part when the symmetric
+  part of $A$ is positive definite.
+* Theorem 3.7, `BenziGolubLiesen.theorem_3_7`: if $\lambda_{\min}(A) \ge 4 \|BA^{-1}B^T\|_2$, all
+  eigenvalues of the sign-flipped matrix with $C = 0$ are real and positive.
+* Theorem 3.8, `BenziGolubLiesen.theorem_3_8`: the eigenvalues of both matrices (3.13), with
+  algebraic multiplicities, are $0$, $\eta$, and a pair of roots for each nonzero singular value of
+  $B$.
+* Paragraph after Theorem 3.8, `BenziGolubLiesen.signFlipped_roots_re_of_lt`: the nonreal
+  eigenvalues of the sign-flipped matrix (3.13) have real part $\eta / 2$.
+
+## Implementation notes
+
+* Eigenvalues are complex: the spectrum of a real matrix $M$ is `spectrum ℂ M.complexify`, and
+  "real" is membership in the image of `Complex.ofReal`.
+* The extreme eigenvalues of $A$ are the infimum and the supremum of
+  `Matrix.IsHermitian.eigenvalues`. The singular values of $B$ are `Matrix.sortedSingularValues`,
+  indexed from $0$ in decreasing order.
+* The norm $\|\cdot\|_2$ is the operator norm of the scope `Matrix.Norms.L2Operator`.
+
+## Deviations from the source
+
+* **Paragraph after Theorem 3.8** (correction). The source calls the nonreal eigenvalues of the
+  sign-flipped form purely imaginary. They have real part $\eta / 2$, as the formulas of Theorem 3.8
+  give. See `BenziGolubLiesen.signFlipped_roots_re_of_lt`.
 -/
 
 namespace BenziGolubLiesen
@@ -25,7 +70,14 @@ open scoped ComplexOrder Matrix.Norms.L2Operator
 
 variable {n m : Type*} [Fintype n] [Fintype m] [DecidableEq n] [DecidableEq m]
 
-/-- The sign-flipped coefficient matrix in equation (3.10) of [benzi2005numerical]. -/
+/-- **Equation (3.10)** of [benzi2005numerical]. For $A \in \mathbb{R}^{n \times n}$,
+$B \in \mathbb{R}^{m \times n}$ and $C \in \mathbb{R}^{m \times m}$, the **sign-flipped
+saddle-point matrix** is
+$$\begin{bmatrix} A & B^T \\ -B & C \end{bmatrix}.$$
+It is obtained from the matrix of (1.1) with $B_1 = B_2 = B$ by changing the sign of the second
+block row.
+
+The matrix is `Matrix.fromBlocks A Bᵀ (-B) C`, indexed by `n ⊕ m`. -/
 abbrev signFlippedSaddlePointMatrix (A : Matrix n n ℝ) (B : Matrix m n ℝ) (C : Matrix m m ℝ) :
     Matrix (n ⊕ m) (n ⊕ m) ℝ :=
   fromBlocks A Bᵀ (-B) C
@@ -66,9 +118,20 @@ private theorem iInf_eigenvalues_pos [Nonempty n] {A : Matrix n n ℝ} (hA : A.P
     Finset.univ_nonempty
   exact (hA.eigenvalues_pos i).trans_le (le_ciInf fun j => hi j (Finset.mem_univ _))
 
-/-- **Theorem 3.5** of [benzi2005numerical]. The symmetric saddle-point spectrum lies
-in the two Rusten–Winther intervals, in terms of the extreme eigenvalues of `A`
-and singular values of `B`. -/
+/-- **Theorem 3.5** of [benzi2005numerical] (Rusten–Winther bounds). Let $n, m \ge 1$, let
+$A \in \mathbb{R}^{n \times n}$ be symmetric positive definite with eigenvalues
+$\mu_1 \ge \dots \ge \mu_n$, and let $B \in \mathbb{R}^{m \times n}$ have rank $m$ and singular
+values $\sigma_1 \ge \dots \ge \sigma_m$. Then every eigenvalue $\lambda$ of
+$\begin{bmatrix} A & B^T \\ B & 0 \end{bmatrix}$ is real and
+$$\lambda \in \Big[\tfrac{1}{2}\big(\mu_n - \sqrt{\mu_n^2 + 4\sigma_1^2}\big),
+  \tfrac{1}{2}\big(\mu_1 - \sqrt{\mu_1^2 + 4\sigma_m^2}\big)\Big] \cup \Big[\mu_n,
+  \tfrac{1}{2}\big(\mu_1 + \sqrt{\mu_1^2 + 4\sigma_1^2}\big)\Big].$$
+
+The matrix is `BenziGolubLiesen.saddlePointMatrix A B B 0`, and its eigenvalues are the elements
+of the spectrum of its complexification. The numbers $\mu_n$ and $\mu_1$ are the infimum and the
+supremum of `Matrix.IsHermitian.eigenvalues`, and $\sigma_1$ and $\sigma_m$ are
+`Matrix.sortedSingularValues` at the indices $0$ and $m - 1$. The proof specializes
+`Matrix.spectrum_fromBlocks_transpose_zero_subset`. -/
 theorem theorem_3_5 [Nonempty n] [Nonempty m] {A : Matrix n n ℝ} {B : Matrix m n ℝ}
     (hA : A.PosDef) (hB : B.rank = Fintype.card m) :
     let μₙ := ⨅ i, hA.isHermitian.eigenvalues i
@@ -105,9 +168,19 @@ theorem theorem_3_5 [Nonempty n] [Nonempty m] {A : Matrix n n ℝ} {B : Matrix m
     rw [B.sortedSingularValues_zero_eq_l2_opNorm]
     exact B.l2_opNorm_mulVec (toLp 2 x)
 
-/-- **Theorem 3.6** of [benzi2005numerical]. The sign-flipped matrix has
-nonnegative quadratic form and nonnegative real parts of its eigenvalues.
-The real parts are positive when the symmetric part of `A` is positive definite. -/
+/-- **Theorem 3.6** of [benzi2005numerical]. Let $A \in \mathbb{R}^{n \times n}$ have positive
+semidefinite symmetric part $H = \frac{1}{2}(A + A^T)$, let $B \in \mathbb{R}^{m \times n}$ have
+rank $m$, let $C \in \mathbb{R}^{m \times m}$ be symmetric positive semidefinite, and assume
+$\ker H \cap \ker B = \{0\}$. Let $M = \begin{bmatrix} A & B^T \\ -B & C \end{bmatrix}$. Then:
+
+* $v^T M v \ge 0$ for all $v \in \mathbb{R}^{n + m}$;
+* every eigenvalue $\lambda \in \mathbb{C}$ of $M$ has $\operatorname{Re} \lambda \ge 0$;
+* if $H$ is positive definite, every eigenvalue $\lambda$ of $M$ has
+  $\operatorname{Re} \lambda > 0$.
+
+The matrix $M$ is `BenziGolubLiesen.signFlippedSaddlePointMatrix A B C`, and $H$ is
+`Matrix.hermitianPart A`. The proof does not use the hypothesis $\ker H \cap \ker B = \{0\}$.
+The rank condition on $B$ is used only for the third conclusion. -/
 theorem theorem_3_6 {A : Matrix n n ℝ} {B : Matrix m n ℝ} {C : Matrix m m ℝ}
     (hA : A.hermitianPart.PosSemidef) (hB : B.rank = Fintype.card m)
     (hC : C.PosSemidef)
@@ -130,9 +203,16 @@ theorem theorem_3_6 {A : Matrix n n ℝ} {B : Matrix m n ℝ} {C : Matrix m m �
       exact hA') hC.complexify (Matrix.mulVec_injective_conjTranspose_map_ofReal_of_fullRowRank hB)
       (by simpa using hμ)
 
-/-- **Theorem 3.7** of [benzi2005numerical]. If the smallest eigenvalue of `A`
-is at least four times the Euclidean operator norm of the Schur complement
-`B A⁻¹ Bᵀ`, all eigenvalues of the sign-flipped matrix are real and positive. -/
+/-- **Theorem 3.7** of [benzi2005numerical]. Let $n \ge 1$, let $A \in \mathbb{R}^{n \times n}$ be
+symmetric positive definite with smallest eigenvalue $\lambda_{\min}(A)$, and let
+$B \in \mathbb{R}^{m \times n}$ have rank $m$. If
+$$4 \|BA^{-1}B^T\|_2 \le \lambda_{\min}(A),$$
+then every eigenvalue $\lambda$ of $\begin{bmatrix} A & B^T \\ -B & 0 \end{bmatrix}$ is real and
+positive: $\operatorname{Im} \lambda = 0$ and $\operatorname{Re} \lambda > 0$.
+
+The matrix is `BenziGolubLiesen.signFlippedSaddlePointMatrix A B 0`. The norm $\|\cdot\|_2$ is
+the operator norm induced by the Euclidean norm, and $\lambda_{\min}(A)$ is the infimum of
+`Matrix.IsHermitian.eigenvalues`. -/
 theorem theorem_3_7 [Nonempty n] {A : Matrix n n ℝ} {B : Matrix m n ℝ}
     (hA : A.PosDef) (hB : B.rank = Fintype.card m)
     (hS : 4 * ‖B * A⁻¹ * Bᵀ‖ ≤ ⨅ i, hA.isHermitian.eigenvalues i) :
@@ -177,13 +257,24 @@ section ScalarDiagonal
 
 variable {rows cols : ℕ}
 
-/-- The scalar-block matrices in equation (3.13) of [benzi2005numerical],
-with `ε = 1` for the symmetric form and `ε = -1` for the sign-flipped form. -/
+/-- **Equation (3.13)** of [benzi2005numerical]. For $B \in \mathbb{R}^{m \times n}$ and
+$\eta, \varepsilon \in \mathbb{R}$, the **scaled saddle-point matrix** is
+$$\begin{bmatrix} \eta I_n & B^T \\ \varepsilon B & 0 \end{bmatrix}.$$
+The value $\varepsilon = 1$ gives the symmetric form, and $\varepsilon = -1$ gives the
+sign-flipped form (3.10).
+
+The dimensions are natural numbers: $m$ is `rows` and $n$ is `cols`, so $B$ is a
+`Matrix (Fin rows) (Fin cols) ℝ`, and the block matrix is indexed by `Fin cols ⊕ Fin rows`. -/
 abbrev scaledSaddlePointMatrix (B : Matrix (Fin rows) (Fin cols) ℝ) (η ε : ℝ) :
     Matrix (Fin cols ⊕ Fin rows) (Fin cols ⊕ Fin rows) ℝ :=
   fromBlocks (η • 1) Bᵀ (ε • B) 0
 
-/-- Square root of the discriminant for the sign-flipped form in Theorem 3.8. -/
+/-- The square root of the discriminant for the sign-flipped form in Theorem 3.8 of
+[benzi2005numerical]. For $\eta, \sigma \in \mathbb{R}$ it is the complex number
+$$d(\eta, \sigma) = \begin{cases} \sqrt{\eta^2 - 4\sigma^2} & \text{if } 2\sigma \le \eta, \\ i
+  \sqrt{4\sigma^2 - \eta^2} & \text{if } 2\sigma > \eta, \end{cases}$$
+where $\sqrt{\cdot}$ is the real square root `Real.sqrt`. For $\eta > 0$ and $\sigma \ge 0$ it
+satisfies $d(\eta, \sigma)^2 = \eta^2 - 4\sigma^2$. -/
 noncomputable def signFlippedDiscriminantRoot (η σ : ℝ) : ℂ :=
   if 2 * σ ≤ η then (Real.sqrt (η ^ 2 - 4 * σ ^ 2) : ℂ)
   else Complex.I * (Real.sqrt (4 * σ ^ 2 - η ^ 2) : ℂ)
@@ -205,11 +296,30 @@ private theorem signFlippedDiscriminantRoot_sq {η σ : ℝ} (hη : 0 < η) (hσ
     push_cast
     ring
 
-/-- **Theorem 3.8** of [benzi2005numerical]. The complex eigenvalues, counted with
-algebraic multiplicity, are zero and `η` with multiplicities given by the
-left and right nullities, and the stated pair of roots for each nonzero
-singular value. The sign-flipped discriminant gives a complex conjugate pair
-when `σ > η / 2`, including both roots with their multiplicities. -/
+/-- **Theorem 3.8** of [benzi2005numerical]. Let $m \le n$, let $B \in \mathbb{R}^{m \times n}$ have
+rank $r$ and nonzero singular values $\sigma_1 \ge \dots \ge \sigma_r$, and let $\eta > 0$.
+Counted with algebraic multiplicity, the eigenvalues of the symmetric form $\begin{bmatrix} \eta
+I & B^T \\ B & 0 \end{bmatrix}$ are
+
+* $0$ with multiplicity $m - r$ and $\eta$ with multiplicity $n - r$;
+* for each $k = 1, \dots, r$, the two numbers $\frac{1}{2}\big(\eta \pm \sqrt{\eta^2 +
+  4\sigma_k^2}\big)$.
+
+The eigenvalues of the sign-flipped form $\begin{bmatrix} \eta I & B^T \\ -B & 0 \end{bmatrix}$
+are $0$ and $\eta$ with the same multiplicities, and for each $k = 1, \dots, r$ the two numbers
+$\frac{1}{2}\big(\eta \pm d(\eta, \sigma_k)\big)$, where
+$d(\eta, \sigma) = \sqrt{\eta^2 - 4\sigma^2}$ if $2\sigma \le \eta$ and
+$d(\eta, \sigma) = i\sqrt{4\sigma^2 - \eta^2}$ otherwise. So each $\sigma_k > \eta / 2$ gives a
+pair of complex conjugate eigenvalues, and both roots of the pair appear with their
+multiplicities.
+
+The two forms are `BenziGolubLiesen.scaledSaddlePointMatrix B η 1` and
+`BenziGolubLiesen.scaledSaddlePointMatrix B η (-1)`, and $d$ is
+`BenziGolubLiesen.signFlippedDiscriminantRoot`. The statement is an equality of multisets: the
+roots of the characteristic polynomial of the complexified matrix equal the multiset of the
+listed numbers. The singular value $\sigma_k$ is `Matrix.sortedSingularValues` at the index
+$k - 1$. The proof specializes
+`Matrix.roots_charpoly_complexify_fromBlocks_smul_one_transpose_zero`. -/
 theorem theorem_3_8 (hmn : rows ≤ cols) (B : Matrix (Fin rows) (Fin cols) ℝ)
     {η : ℝ} (hη : 0 < η) :
     let base := (rows - B.rank) • ({0} : Multiset ℂ) +
@@ -234,7 +344,18 @@ theorem theorem_3_8 (hmn : rows ≤ cols) (B : Matrix (Fin rows) (Fin cols) ℝ)
     push_cast
     ring
 
-/-- In the nonreal branch of Theorem 3.8, each root has real part `η / 2`. -/
+/-- **Paragraph after Theorem 3.8** of [benzi2005numerical], corrected. Let
+$\eta, \sigma \in \mathbb{R}$ with $\eta < 2\sigma$. Then both eigenvalues
+$\frac{1}{2}\big(\eta \pm d(\eta, \sigma)\big)$ of the sign-flipped form in Theorem 3.8 have
+real part $\eta / 2$:
+$$\operatorname{Re} \tfrac{1}{2}\big(\eta + d(\eta, \sigma)\big) = \operatorname{Re}
+  \tfrac{1}{2}\big(\eta - d(\eta, \sigma)\big) = \tfrac{\eta}{2}.$$
+
+**Correction.** The source calls these nonreal eigenvalues purely imaginary. For
+$\eta < 2\sigma$ the discriminant root is $d(\eta, \sigma) = i\sqrt{4\sigma^2 - \eta^2}$, so the
+formulas of Theorem 3.8 give real part $\eta / 2$, which is nonzero for $\eta > 0$.
+
+The discriminant root $d$ is `BenziGolubLiesen.signFlippedDiscriminantRoot`. -/
 theorem signFlipped_roots_re_of_lt {η σ : ℝ} (h : η < 2 * σ) :
     (((η : ℂ) + signFlippedDiscriminantRoot η σ) / 2).re = η / 2 ∧
       (((η : ℂ) - signFlippedDiscriminantRoot η σ) / 2).re = η / 2 := by
