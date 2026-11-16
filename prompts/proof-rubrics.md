@@ -12,6 +12,7 @@ All mathematical, organizational, and style criteria mentioned in [`plan-rubrics
 ## Documentation comments rubrics
 
 - Follow [Mathlib documentation style](https://leanprover-community.github.io/contribute/doc.html).
+- Follow the doc comment structures in [`generated/documentation.md`](generated/documentation.md) for surface library indices, modules, and declarations.
 - References added to [`references/references.bib`](../references/references.bib) can be cited using the syntax described in the above link. Each reference you add must be marked `# GENERATED` to be reviewed by the user.
 - Each textbook or paper in the surface library should have an index file importing all chapters, whose module-level doc comment provides an overview of the entire work. Discrepancies with the source material due to fixes, or any parts skipped in the formalization due to scope, should be clearly indicated in the doc comment.
 - Doc comments for declarations should be clear and self-contained, easy to read for an outsider having no knowledge about the agents' work process.

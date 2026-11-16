@@ -4,3 +4,4 @@
 /numlib.json
 drafts/
 .DS_Store
+__pycache__/

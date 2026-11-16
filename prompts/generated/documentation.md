@@ -14,7 +14,7 @@ Doc comments are published on the [documentation website](https://bridgekat.gith
 - **Make the first paragraph stand alone.** The tracker and the search results show the first paragraph without the rest.
 - **Use the fixed headings in the fixed order.** Each template below lists them. Omit a section that has no content, unless the template marks it as required. Do not invent other second-level headings.
 - **Describe the final state only.** Do not mention the history of the work, agents, plans, notes, or earlier versions. Do not refer to files outside the published library, such as `plans/` or `notes/`.
-- **Follow Mathlib layout.** Write full sentences that end with a period. Wrap lines at 100 characters. In a module doc comment, put `/-!` and `-/` on their own lines. In a declaration doc comment, start the text on the `/--` line and end it with `-/` on the last line.
+- **Follow Mathlib layout.** Write full sentences that end with a period. Wrap lines at 100 characters; only a line that Markdown cannot break (a title, a table row, a single Lean name) can be longer. In a module doc comment, put `/-!` and `-/` on their own lines. In a declaration doc comment, start the text on the `/--` line and end it with `-/` on the last line.
 
 # Deviations from the source
 
@@ -160,6 +160,11 @@ below use.>
 ## Main results
 
 * `<name>`: <the statement in one sentence>.
+
+## Proof outline
+
+<Optional. The mathematical idea of the main proofs, in a few sentences. Do not describe the Lean
+steps.>
 
 ## Notation
 
@@ -350,3 +355,11 @@ structure Splitting (a : R) where
   /-- The invertible part $m$ of the splitting $a = m - n$. -/
   m : R
 ```
+
+# Checking
+
+The script [`tools/doc_comments.py`](../../tools/doc_comments.py) supports this standard.
+
+- `python3 tools/doc_comments.py dump <file>` prints a module without proof bodies and marks the planned declarations.
+- `python3 tools/doc_comments.py apply <file> <docfile>` replaces or adds doc comments from a text file and wraps them at 100 characters. It refuses any change to the code.
+- `python3 tools/doc_comments.py check [<file> …]` verifies that only comments differ from the last commit, and reports violations of the mechanical rules: headings, line length, missing doc comments, and references to files outside the library.
