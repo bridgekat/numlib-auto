@@ -11,39 +11,84 @@ import NumlibSurface.Brezis.Chapter03.Section07
 import NumlibSurface.Brezis.Chapter11.Section01
 
 /-!
-# Brezis §11.2: quotient spaces
+# Brezis, Section 11.2: Quotient spaces
 
-Surface file for Haim Brezis, *Functional Analysis, Sobolev Spaces and Partial Differential
-Equations*, Universitext, Springer, 2011, §11.2, the quotient `E/M` of a real Banach space `E`
-by a closed subspace `M`. The space, its norm `‖[x]‖ = inf_{m ∈ M} ‖x − m‖`, `‖π‖ ≤ 1` and
-Proposition 11.8 are Mathlib's normed quotient (`Submodule.Quotient.normedAddCommGroup`, an
-instance under `[IsClosed (M : Set E)]`, `Submodule.Quotient.normedSpace`, `Submodule.mkQL`,
-`QuotientAddGroup.norm_mk`, `Submodule.Quotient.completeSpace`). Everything else — the
-factorization `T = T̃ ∘ π`, Propositions 11.9–11.14 — is the backbone
-`Numlib/Analysis/Normed/Module/Quotient`, stated there over `RCLike 𝕜` and read here at `ℝ`.
+This module formalizes Section 11.2 of [brezis2011functional]: the quotient $E/M$ of a real Banach
+space $E$ by a closed subspace $M$. The class of $x \in E$ is $[x] = \pi(x)$, where
+$\pi : E \to E/M$ is the canonical projection, and the quotient norm is
+$\|[x]\| = \inf_{m \in M} \|x - m\|$. With this norm $E/M$ is a Banach space (Proposition 11.8). The
+dual of $E/M$ is isometric to the orthogonal $M^\perp \subseteq E^*$ through the adjoint $\pi^*$
+(Proposition 11.9), and $E^*/M^\perp$ is isometric to $M^*$ (Proposition 11.10). An operator
+$T \in \mathcal{L}(F, G)$ factors as $T = \tilde{T} \circ \pi$ through $F/N(T)$. A quotient of a
+reflexive (uniformly convex) space is reflexive (uniformly convex) (Propositions 11.11 and 11.12).
+Finally, the dimension and the codimension of a closed subspace and of its orthogonal are related
+(Propositions 11.13 and 11.14).
 
-Conventions. The orthogonals `M^⊥ ⊆ E*`, `N^⊥ ⊆ E` of §1.3 are `Submodule.strongDualAnnihilator`
-and `Submodule.strongDualCoannihilator` as chapter 1 reads them (`Chapter01.mem_orthogonal_iff`);
-the adjoint `π*` of Proposition 11.9 and the restriction `T f = f|_M` of Proposition 11.10 are
-chapter 2's Banach adjoint `ContinuousLinearMap.strongDualMap` of `π = M.mkQL` and of the
-inclusion `M.subtypeL`; reflexivity and uniform convexity are chapter 3's Definitions
-`Chapter03.IsReflexive`, `Chapter03.IsUniformlyConvex`; finite codimension and `codim` are
-§11.1's `IsFiniteCodim` and `codim`. Every theorem takes the closedness of the subspace as the
-instance argument `[IsClosed (M : Set E)]` the quotient norm needs, and the book's
-`[CompleteSpace E]` where the book says "Banach", used or not.
+The quotient space, its norm, the bound $\|\pi\| \le 1$ and Proposition 11.8 come from Mathlib's
+normed quotient: `Submodule.Quotient.normedAddCommGroup`, `Submodule.Quotient.normedSpace`,
+`Submodule.mkQL`, `QuotientAddGroup.norm_mk` and `Submodule.Quotient.completeSpace`. The other
+results specialize the backbone module `Numlib.Analysis.Normed.Module.Quotient`, which is stated
+over `RCLike 𝕜`, at $\mathbb{R}$.
+
+## Main definitions
+
+* Section 11.2, definition of the quotient norm, `Brezis.Chapter11.quotientNorm_eq_iInf`:
+  $\|[x]\| = \inf_{m \in M} \|x - m\|$, with $\|\pi\| \le 1$ and $\|[x]\| = 0 \Rightarrow [x] = 0$.
 
 ## Main results
 
-* `quotientNorm_eq_iInf`, `proposition_11_8` — the quotient norm, `‖π‖ ≤ 1`, completeness.
-* `proposition_11_9`, `quotKerFactorization`, `proposition_11_10` — `(E/M)* ≅ M^⊥` through
-  `π*`, the factorization `T = T̃ ∘ π` through `F/N(T)`, and `E*/M^⊥ ≅ M*`.
-* `proposition_11_11`, `proposition_11_12` — the quotient of a reflexive (uniformly convex)
-  space is reflexive (uniformly convex).
-* `proposition_11_13_a`, `proposition_11_13_b`, `proposition_11_14`, `proposition_11_14_le` —
-  `dim M = codim M^⊥`, `codim M = dim M^⊥`, `dim N = codim N^⊥`, `dim N^⊥ ≤ codim N`.
+* Proposition 11.8, `Brezis.Chapter11.proposition_11_8`: $E/M$ with the quotient norm is a Banach
+  space.
+* Proposition 11.9, `Brezis.Chapter11.proposition_11_9`: the adjoint $\pi^*$ is an isometric
+  bijection from $(E/M)^*$ onto $M^\perp$.
+* Section 11.2, factorization through the kernel, `Brezis.Chapter11.quotKerFactorization`:
+  $T = \tilde{T} \circ \pi$, where $\tilde{T}$ is a bijection from $F/N(T)$ onto $R(T)$ with
+  $\|\tilde{T}\| = \|T\|$.
+* Proposition 11.10, `Brezis.Chapter11.proposition_11_10`: the restriction map $E^* \to M^*$ has
+  kernel $M^\perp$, is surjective, and induces an isometric isomorphism $E^*/M^\perp \cong M^*$.
+* Proposition 11.11, `Brezis.Chapter11.proposition_11_11`: a quotient of a reflexive Banach space by
+  a closed subspace is reflexive.
+* Proposition 11.12, `Brezis.Chapter11.proposition_11_12`: a quotient of a uniformly convex Banach
+  space by a closed subspace is uniformly convex.
+* Proposition 11.13(a), `Brezis.Chapter11.proposition_11_13_a`: $\dim M < \infty$ if and only if
+  $\operatorname{codim} M^\perp < \infty$, and then $\dim M = \operatorname{codim} M^\perp$.
+* Proposition 11.13(b), `Brezis.Chapter11.proposition_11_13_b`: $\operatorname{codim} M < \infty$ if
+  and only if $\dim M^\perp < \infty$, and then $\operatorname{codim} M = \dim M^\perp$.
+* Proposition 11.14, `Brezis.Chapter11.proposition_11_14`: for a closed subspace $N \subseteq E^*$,
+  $\dim N < \infty$ if and only if $\operatorname{codim} N^\perp < \infty$, and then
+  $\dim N = \operatorname{codim} N^\perp$.
+* Proposition 11.14, `Brezis.Chapter11.proposition_11_14_le`: if $N \subseteq E^*$ is closed and has
+  finite codimension, then $\dim N^\perp \le \operatorname{codim} N$.
 
-The book's example inside the proof of Proposition 11.14 of a strict inequality
-`dim N^⊥ < codim N` (a hyperplane `N = ker ξ` with `ξ ∈ E** ∖ J(E)`) is not formalized.
+## Conventions
+
+* The orthogonals $M^\perp \subseteq E^*$ and $N^\perp \subseteq E$ of Section 1.3 are
+  `Submodule.strongDualAnnihilator` and `Submodule.strongDualCoannihilator`, as in
+  `Brezis.Chapter01.mem_orthogonal_iff`.
+* The adjoint $\pi^*$ of Proposition 11.9 and the restriction $Tf = f|_M$ of Proposition 11.10 are
+  the Banach adjoints `ContinuousLinearMap.strongDualMap` of Chapter 2, applied to $\pi$, which is
+  `M.mkQL`, and to the inclusion of $M$ in $E$, which is `M.subtypeL`.
+* Reflexivity and uniform convexity are the definitions `Brezis.Chapter03.IsReflexive` and
+  `Brezis.Chapter03.IsUniformlyConvex` of Chapter 3. Finite codimension and the codimension are
+  `Brezis.Chapter11.IsFiniteCodim` and `Brezis.Chapter11.codim` of Section 11.1.
+
+## Implementation notes
+
+* Every theorem takes the closedness of the subspace as the instance argument
+  `[IsClosed (M : Set E)]`, which the quotient norm needs.
+* Every theorem takes `[CompleteSpace E]` where the source says "Banach space", whether or not the
+  proof uses it.
+
+## Deviations from the source
+
+* **Factorization through the kernel** (typo). The source prints $\|T\| = \|T\|$ for
+  $\|\tilde{T}\| = \|T\|$. See `Brezis.Chapter11.quotKerFactorization`.
+
+## Not formalized
+
+* **Example in the proof of Proposition 11.14.** The example of a strict inequality
+  $\dim N^\perp < \operatorname{codim} N$, with a hyperplane $N = \ker \xi$ for
+  $\xi \in E^{**} \setminus J(E)$.
 -/
 
 open Metric Module
@@ -54,10 +99,13 @@ variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
 
 /-! ### The quotient norm -/
 
-/-- **The Definition paragraph of §11.2.** For a closed subspace `M` of `E`, the quotient norm
-of the class `[x] = π(x)` is `‖[x]‖ = inf_{m ∈ M} ‖x − m‖`; the projection satisfies
-`‖π(x)‖ ≤ ‖x‖`, so `π : E → E/M` is bounded with `‖π‖ ≤ 1`; and `‖[x]‖ = 0` forces `[x] = 0`
-(this is where the closedness of `M` is used). -/
+/-- **Section 11.2** of [brezis2011functional], definition of the quotient norm. Let $M$ be a closed
+subspace of $E$, and let $\pi : E \to E/M$, $\pi(x) = [x]$, be the canonical projection. For
+every $x \in E$, $$\|[x]\| = \inf_{m \in M} \|x - m\|,$$ and $\|\pi(x)\| \le \|x\|$, so that
+$\pi$ is bounded with $\|\pi\| \le 1$. Moreover $\|[x]\| = 0$ implies $[x] = 0$.
+
+The last clause is the place where the closedness of $M$ is used. The projection $\pi$ is
+`M.mkQL`, and the infimum runs over the elements of the subtype `M`. -/
 theorem quotientNorm_eq_iInf (M : Submodule ℝ E) [IsClosed (M : Set E)] (x : E) :
     ‖(Submodule.Quotient.mk x : E ⧸ M)‖ = ⨅ m : M, ‖x - m‖ ∧ ‖M.mkQL x‖ ≤ ‖x‖ ∧ ‖M.mkQL‖ ≤ 1 ∧
       (‖(Submodule.Quotient.mk x : E ⧸ M)‖ = 0 → (Submodule.Quotient.mk x : E ⧸ M) = 0) := by
@@ -69,19 +117,26 @@ theorem quotientNorm_eq_iInf (M : Submodule ℝ E) [IsClosed (M : Set E)] (x : E
   simp only [dist_eq_norm]
   rfl
 
-/-- **Proposition 11.8.** The quotient space `E/M` equipped with the quotient norm is a Banach
-space. -/
+/-- **Proposition 11.8** of [brezis2011functional]. Let $E$ be a Banach space and let $M$ be a
+closed subspace of $E$. Then the quotient space $E/M$ with the quotient norm is a Banach space.
+
+The proof is Mathlib's `Submodule.Quotient.completeSpace`. -/
 theorem proposition_11_8 [CompleteSpace E] (M : Submodule ℝ E) [IsClosed (M : Set E)] :
     CompleteSpace (E ⧸ M) :=
   inferInstance
 
 /-! ### The dual of a quotient, and factorization through the kernel -/
 
-/-- **Proposition 11.9.** Let `M` be a closed subspace of `E` and `π* : (E/M)* → E*` the adjoint
-of `π : E → E/M` (`⟨π* ξ, x⟩ = ⟨ξ, π x⟩`). Then `R(π*) = M^⊥`; more precisely `π*` is bijective
-from `(E/M)*` onto `M^⊥` with `‖π* ξ‖_{E*} = ‖ξ‖_{(E/M)*}` for all `ξ`. "In particular `(E/M)*`
-is isomorphic and isometric to `M^⊥`": the backbone's isometry
-`Submodule.strongDualQuotLIEAnnihilator M : (E/M)* ≃ₗᵢ[ℝ] M^⊥` is `π*` (last clause). -/
+/-- **Proposition 11.9** of [brezis2011functional]. Let $M$ be a closed subspace of $E$, and let
+$\pi^* : (E/M)^* \to E^*$ be the adjoint of $\pi : E \to E/M$, that is, $\langle \pi^* \xi, x
+\rangle = \langle \xi, \pi x \rangle$ for all $\xi \in (E/M)^*$ and $x \in E$. Then
+$R(\pi^*) = M^\perp$, the map $\pi^*$ is injective, and $$\|\pi^* \xi\|_{E^*} =
+\|\xi\|_{(E/M)^*} \quad \text{for all } \xi \in (E/M)^*.$$ Thus $\pi^*$ is an isometric
+bijection from $(E/M)^*$ onto $M^\perp$, and "in particular $(E/M)^*$ is isomorphic and
+isometric to $M^\perp$".
+
+The last conjunct says that the backbone isometry `Submodule.strongDualQuotLIEAnnihilator M`,
+from $(E/M)^*$ onto $M^\perp$, is the map $\pi^*$. -/
 theorem proposition_11_9 (M : Submodule ℝ E) [IsClosed (M : Set E)] :
     (∀ (ξ : StrongDual ℝ (E ⧸ M)) (x : E), M.mkQL.strongDualMap ξ x = ξ (M.mkQL x)) ∧
       LinearMap.range (M.mkQL.strongDualMap : StrongDual ℝ (E ⧸ M) →ₗ[ℝ] StrongDual ℝ E) =
@@ -101,10 +156,16 @@ theorem proposition_11_9 (M : Submodule ℝ E) [IsClosed (M : Set E)] :
     obtain ⟨ξ, hξ⟩ := M.strongDualQuotLIEAnnihilator.surjective ⟨f, hf⟩
     exact ⟨ξ, congrArg Subtype.val hξ⟩
 
-/-- **The factorization paragraph of §11.2.** Let `F`, `G` be Banach spaces and `T ∈ 𝓛(F, G)`.
-The kernel `N(T)` is closed, and `T` factors as `T = T̃ ∘ π` through `π : F → F/N(T)`, where
-`T̃ : F/N(T) → G` (`T̃ (π x) = T x`, Mathlib's `Submodule.liftQL`) is well defined, bijective
-from `F/N(T)` onto `R(T)`, and `‖T̃‖ = ‖T‖` (the book prints `‖T‖ = ‖T‖`). -/
+/-- **Section 11.2** of [brezis2011functional], factorization through the kernel. Let $F$ and $G$ be
+Banach spaces and let $T \in \mathcal{L}(F, G)$. Then the kernel $N(T)$ is closed, and
+$T = \tilde{T} \circ \pi$, where $\pi : F \to F/N(T)$ is the canonical projection and
+$\tilde{T} : F/N(T) \to G$, $\tilde{T}(\pi x) = Tx$. The map $\tilde{T}$ is injective,
+$R(\tilde{T}) = R(T)$, and $\|\tilde{T}\| = \|T\|$.
+
+**Typo.** The source prints $\|T\| = \|T\|$. The intended statement is $\|\tilde{T}\| = \|T\|$,
+which is stated here.
+
+The operator $\tilde{T}$ is Mathlib's `Submodule.liftQL` for $N(T)$ = `T.ker`. -/
 theorem quotKerFactorization {F G : Type*} [NormedAddCommGroup F] [NormedSpace ℝ F]
     [CompleteSpace F] [NormedAddCommGroup G] [NormedSpace ℝ G] [CompleteSpace G]
     (T : F →L[ℝ] G) :
@@ -117,10 +178,13 @@ theorem quotKerFactorization {F G : Type*} [NormedAddCommGroup F] [NormedSpace �
   rw [SetLike.ext'_iff] at h
   simpa only [LinearMap.coe_range, ContinuousLinearMap.coe_coe] using h
 
-/-- **Proposition 11.10.** For any Banach space `E` and closed subspace `M`, let
-`T : E* → M*`, `T f = f|_M` (the adjoint of the inclusion `M ⊆ E`). Then `N(T) = M^⊥`, by
-Hahn–Banach `R(T) = M*`, and the induced operator `T̃ : E*/M^⊥ → M*` (`T̃ ∘ π = T`) is a
-bijective isometry from `E*/M^⊥` onto `M*`. -/
+/-- **Proposition 11.10** of [brezis2011functional]. Let $E$ be a Banach space and let $M$ be a
+closed subspace of $E$. Let $T : E^* \to M^*$ be the restriction $Tf = f|_M$. Then
+$N(T) = M^\perp$, and $T$ is surjective, that is, $R(T) = M^*$. Moreover there is an isometric
+isomorphism $\tilde{T} : E^*/M^\perp \to M^*$ with $\tilde{T}([f]) = Tf$ for all $f \in E^*$.
+
+The restriction $T$ is the adjoint of the inclusion $M \subseteq E$, `M.subtypeL.strongDualMap`;
+the first conjunct says that it is the restriction. The surjectivity is the Hahn–Banach theorem. -/
 theorem proposition_11_10 [CompleteSpace E] (M : Submodule ℝ E) [IsClosed (M : Set E)] :
     (∀ (f : StrongDual ℝ E) (x : M), M.subtypeL.strongDualMap f x = f x) ∧
       M.subtypeL.strongDualMap.ker = M.strongDualAnnihilator ∧
@@ -134,18 +198,22 @@ theorem proposition_11_10 [CompleteSpace E] (M : Submodule ℝ E) [IsClosed (M :
 
 /-! ### Reflexivity and uniform convexity of a quotient -/
 
-/-- **Proposition 11.11.** Assume that `E` is a reflexive Banach space and `M` is a closed
-subspace. Then `E/M` is reflexive. (The backbone proves it directly through Proposition 11.9
-and Hahn–Banach rather than through Corollary 3.21 and Proposition 3.20 as the book does.) -/
+/-- **Proposition 11.11** of [brezis2011functional]. Let $E$ be a reflexive Banach space and let $M$
+be a closed subspace of $E$. Then $E/M$ is reflexive.
+
+The source proves this with Corollary 3.21 and Proposition 3.20. The backbone proof uses
+Proposition 11.9 and the Hahn–Banach theorem instead. -/
 theorem proposition_11_11 [CompleteSpace E] (hE : Chapter03.IsReflexive E) (M : Submodule ℝ E)
     [IsClosed (M : Set E)] : Chapter03.IsReflexive (E ⧸ M) :=
   have := Chapter03.isReflexive_iff.1 hE
   Chapter03.isReflexive_iff.2 inferInstance
 
-/-- **Proposition 11.12.** Assume that `E` is a uniformly convex Banach space and `M` is a
-closed subspace. Then `E/M` is uniformly convex. (The book picks representatives in the closed
-unit ball by Corollary 3.23 and Milman–Pettis; the backbone uses representatives in the ball of
-radius `1 + η` and needs neither.) -/
+/-- **Proposition 11.12** of [brezis2011functional]. Let $E$ be a uniformly convex Banach space and
+let $M$ be a closed subspace of $E$. Then $E/M$ is uniformly convex.
+
+The source picks representatives in the closed unit ball with Corollary 3.23 and the
+Milman–Pettis theorem. The backbone proof picks representatives in the ball of radius $1 + \eta$
+and needs neither result. -/
 theorem proposition_11_12 [CompleteSpace E] (hE : Chapter03.IsUniformlyConvex E)
     (M : Submodule ℝ E) [IsClosed (M : Set E)] : Chapter03.IsUniformlyConvex (E ⧸ M) :=
   have := Chapter03.uniformlyConvex_iff.1 hE
@@ -153,26 +221,38 @@ theorem proposition_11_12 [CompleteSpace E] (hE : Chapter03.IsUniformlyConvex E)
 
 /-! ### Dimension and codimension -/
 
-/-- **Proposition 11.13 (a).** Let `E` be a Banach space and `M ⊆ E` a closed subspace. Then
-`dim M < ∞` if and only if `codim M^⊥ < ∞`, and in that case `dim M = codim M^⊥`. -/
+/-- **Proposition 11.13(a)** of [brezis2011functional]. Let $E$ be a Banach space and let
+$M \subseteq E$ be a closed subspace. Then $\dim M < \infty$ if and only if
+$\operatorname{codim} M^\perp < \infty$, and in that case $$\dim M = \operatorname{codim}
+M^\perp.$$
+
+Here $M^\perp \subseteq E^*$ is `M.strongDualAnnihilator`, and
+"$\operatorname{codim} M^\perp < \infty$" is `Brezis.Chapter11.IsFiniteCodim`. -/
 theorem proposition_11_13_a [CompleteSpace E] (M : Submodule ℝ E) [IsClosed (M : Set E)] :
     (FiniteDimensional ℝ M ↔ IsFiniteCodim M.strongDualAnnihilator) ∧
       (FiniteDimensional ℝ M → finrank ℝ M = codim M.strongDualAnnihilator) :=
   ⟨M.finiteDimensional_iff_coFG_strongDualAnnihilator.trans (isFiniteCodim_iff_coFG _).symm,
     fun _ => M.finrank_eq_finrank_quotient_strongDualAnnihilator⟩
 
-/-- **Proposition 11.13 (b).** Let `E` be a Banach space and `M ⊆ E` a closed subspace. Then
-`codim M < ∞` if and only if `dim M^⊥ < ∞`, and in that case `codim M = dim M^⊥`. -/
+/-- **Proposition 11.13(b)** of [brezis2011functional]. Let $E$ be a Banach space and let
+$M \subseteq E$ be a closed subspace. Then $\operatorname{codim} M < \infty$ if and only if
+$\dim M^\perp < \infty$, and in that case $$\operatorname{codim} M = \dim M^\perp.$$
+
+Here $M^\perp \subseteq E^*$ is `M.strongDualAnnihilator`. -/
 theorem proposition_11_13_b [CompleteSpace E] (M : Submodule ℝ E) [IsClosed (M : Set E)] :
     (IsFiniteCodim M ↔ FiniteDimensional ℝ M.strongDualAnnihilator) ∧
       (IsFiniteCodim M → codim M = finrank ℝ M.strongDualAnnihilator) :=
   ⟨(isFiniteCodim_iff_coFG M).trans M.coFG_iff_finiteDimensional_strongDualAnnihilator,
     fun _ => M.finrank_quotient_eq_finrank_strongDualAnnihilator⟩
 
-/-- **Proposition 11.14, first sentence.** Let `N ⊆ E*` be a closed subspace. Then `dim N < ∞`
-if and only if `codim N^⊥ < ∞`, and in that case `dim N = codim N^⊥`. (The claim `N^⊥⊥ = N`
-for finite-dimensional `N` inside the book's proof, by Lemma 3.2, is the backbone's
-`Submodule.strongDualAnnihilator_strongDualCoannihilator_of_finiteDimensional`.) -/
+/-- **Proposition 11.14** of [brezis2011functional], first sentence. Let $E$ be a Banach space and
+let $N \subseteq E^*$ be a closed subspace. Then $\dim N < \infty$ if and only if
+$\operatorname{codim} N^\perp < \infty$, and in that case $$\dim N = \operatorname{codim}
+N^\perp.$$
+
+Here $N^\perp \subseteq E$ is `N.strongDualCoannihilator`. The proof of the source uses
+$N^{\perp\perp} = N$ for a finite-dimensional $N$, by Lemma 3.2; this is the backbone theorem
+`Submodule.strongDualAnnihilator_strongDualCoannihilator_of_finiteDimensional`. -/
 theorem proposition_11_14 [CompleteSpace E] (N : Submodule ℝ (StrongDual ℝ E))
     [IsClosed (N : Set (StrongDual ℝ E))] :
     (FiniteDimensional ℝ N ↔ IsFiniteCodim N.strongDualCoannihilator) ∧
@@ -180,10 +260,12 @@ theorem proposition_11_14 [CompleteSpace E] (N : Submodule ℝ (StrongDual ℝ E
   ⟨N.finiteDimensional_iff_coFG_strongDualCoannihilator.trans (isFiniteCodim_iff_coFG _).symm,
     fun _ => N.finrank_eq_finrank_quotient_strongDualCoannihilator⟩
 
-/-- **Proposition 11.14, second sentence.** "It is also true that `dim N^⊥ ≤ codim N`": for a
-closed subspace `N ⊆ E*` of finite codimension, `N^⊥` is finite-dimensional and
-`dim N^⊥ ≤ codim N`. The book's example showing that the inequality may be strict
-(`dim N^⊥ < codim N < ∞`) is not formalized. -/
+/-- **Proposition 11.14** of [brezis2011functional], second sentence. Let $E$ be a Banach space and
+let $N \subseteq E^*$ be a closed subspace of finite codimension. Then $N^\perp$ is
+finite-dimensional and $$\dim N^\perp \le \operatorname{codim} N.$$
+
+The example of the source that shows that the inequality can be strict,
+$\dim N^\perp < \operatorname{codim} N < \infty$, is not formalized. -/
 theorem proposition_11_14_le [CompleteSpace E] (N : Submodule ℝ (StrongDual ℝ E))
     [IsClosed (N : Set (StrongDual ℝ E))] (hN : IsFiniteCodim N) :
     FiniteDimensional ℝ N.strongDualCoannihilator ∧

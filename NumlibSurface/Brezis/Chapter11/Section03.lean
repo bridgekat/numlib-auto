@@ -7,31 +7,90 @@ import Numlib.Analysis.Normed.Lp.Sequence
 import NumlibSurface.Brezis.Chapter04.Section05
 
 /-!
-# Brezis §11.3: some classical spaces of sequences
+# Brezis, Section 11.3: Some classical spaces of sequences
 
-Surface file for Haim Brezis, *Functional Analysis, Sobolev Spaces and Partial Differential
-Equations*, Universitext, Springer, 2011, §11.3, over `ℝ`. The book's `ℓ^p`, `1 ≤ p ≤ ∞`, is
-Mathlib's `lp (fun _ : ℕ ↦ ℝ) p` (indices from `0` rather than `1`, a relabelling that changes
-nothing), with its norm, completeness (`lp.completeSpace`), Hölder's inequality and the Hilbert
-structure of `ℓ²` (`lp.instInnerProductSpace`); `c` and `c₀` are the backbone's
-`lp.convergent ℝ ℝ` and `lp.zeroAtInfty ℝ ℝ`, closed subspaces of `ℓ^∞`
-(`Numlib/Analysis/Normed/Lp/Sequence`), and Propositions 11.15–11.21 are that module's theorems
-read at `𝕜 = ℝ` and index type `ℕ`. Reflexivity of `ℓ^p` is proved there directly from the
-duality of Proposition 11.18 (the book applies Theorem 4.10 to the counting measure), uniform
-convexity by the book's own route, chapter 4's `L^p` result transported along
-`lp.lpLIELpCount`. The closing table of the section is the content of 11.15–11.21; its last
-entry, "`(ℓ^∞)^*` strictly bigger than `ℓ¹`", is not a numbered claim and has no node.
+This module formalizes Section 11.3 of [brezis2011functional] over $\mathbb{R}$. For
+$1 \le p < \infty$, the space $\ell^p$ consists of the real sequences $x = (x_k)$ with
+$\sum_k |x_k|^p < \infty$, with the norm $\|x\|_p = (\sum_k |x_k|^p)^{1/p}$. The space $\ell^\infty$
+consists of the bounded sequences, with the norm $\|x\|_\infty = \sup_k |x_k|$. Inside $\ell^\infty$
+lie the closed subspaces $c$ of convergent sequences and $c_0$ of sequences that tend to $0$. The
+section shows that $\ell^p$ is reflexive and uniformly convex for $1 < p < \infty$ (Proposition
+11.15), that $c$, $c_0$ and $\ell^p$ for $p < \infty$ are separable but $\ell^\infty$ is not
+(Propositions 11.16 and 11.17), it identifies the duals $(\ell^p)^* = \ell^{p'}$, $(c_0)^* = \ell^1$
+and $c^* = \ell^1 \times \mathbb{R}$ (Propositions 11.18–11.20), and it shows that $\ell^1$,
+$\ell^\infty$, $c$ and $c_0$ are not reflexive (Proposition 11.21).
+
+The space $\ell^p$ is Mathlib's `lp (fun _ : ℕ => ℝ) p`, with its norm, its completeness
+`lp.completeSpace`, Hölder's inequality and the Hilbert structure of $\ell^2$. The spaces $c$ and
+$c_0$ are the backbone subspaces `lp.convergent ℝ ℝ` and `lp.zeroAtInfty ℝ ℝ` of $\ell^\infty$.
+Propositions 11.15–11.21 specialize the theorems of the backbone module
+`Numlib.Analysis.Normed.Lp.Sequence` for real sequences indexed by $\mathbb{N}$.
+
+## Main definitions
+
+* Section 11.3, definition of $\ell^p$ and $\ell^\infty$, `Brezis.Chapter11.lpNorm_eq`: the norms
+  $\|x\|_p$ and $\|x\|_\infty$, and the membership conditions $\sum_k |x_k|^p < \infty$ and
+  $\sup_k |x_k| < \infty$.
+* Section 11.3, definition of $c$ and $c_0$, `Brezis.Chapter11.mem_c_iff`: $x \in c$ if and only if
+  $\lim_k x_k$ exists, and $x \in c_0$ if and only if $\lim_k x_k = 0$.
 
 ## Main results
 
-* `lpNorm_eq`, `lp_completeSpace`, `mem_c_iff`, `c₀_le_c_isClosed`, `holder_lp`, `l2_inner`,
-  `lp_subset_c₀`, `lp_subset_lq` — the definitions and elementary facts of the section.
-* `proposition_11_15` — `ℓ^p` is reflexive and uniformly convex for `1 < p < ∞`.
-* `proposition_11_16`, `proposition_11_17` — `c`, `c₀`, `ℓ^p` (`p < ∞`) are separable, `ℓ^∞` is
-  not.
-* `proposition_11_18`, `proposition_11_19`, `proposition_11_20` — the duals `(ℓ^p)^* = ℓ^{p'}`,
-  `(c₀)^* = ℓ¹`, `c^* = ℓ¹ × ℝ`.
-* `proposition_11_21` — `ℓ¹`, `ℓ^∞`, `c`, `c₀` are not reflexive.
+* Section 11.3, completeness, `Brezis.Chapter11.lp_completeSpace`: $\ell^p$ is a Banach space for
+  $1 \le p \le \infty$.
+* Section 11.3, `Brezis.Chapter11.c₀_le_c_isClosed`: $c_0 \subseteq c \subseteq \ell^\infty$, and
+  $c$ and $c_0$ are closed in $\ell^\infty$.
+* Section 11.3, Hölder's inequality, `Brezis.Chapter11.holder_lp`:
+  $|\sum_k x_k y_k| \le \|x\|_p \|y\|_{p'}$.
+* Section 11.3, `Brezis.Chapter11.l2_inner`: $\ell^2$ is a Hilbert space with the scalar product
+  $(x, y) = \sum_k x_k y_k$.
+* Section 11.3, `Brezis.Chapter11.lp_subset_c₀`: $\ell^p \subseteq c_0$ with
+  $\|x\|_\infty \le \|x\|_p$ for $1 \le p < \infty$.
+* Section 11.3, `Brezis.Chapter11.lp_subset_lq`: $\ell^p \subseteq \ell^q$ with
+  $\|x\|_q \le \|x\|_p$ for $1 \le p \le q \le \infty$.
+* Proposition 11.15, `Brezis.Chapter11.proposition_11_15`: $\ell^p$ is reflexive and uniformly
+  convex for $1 < p < \infty$; the two clauses are `Brezis.Chapter11.proposition_11_15_reflexive`
+  and `Brezis.Chapter11.proposition_11_15_uniformConvex`.
+* Proposition 11.16, `Brezis.Chapter11.proposition_11_16`: $c$, $c_0$ and $\ell^p$ for
+  $1 \le p < \infty$ are separable.
+* Proposition 11.17, `Brezis.Chapter11.proposition_11_17`: $\ell^\infty$ is not separable.
+* Proposition 11.18, `Brezis.Chapter11.proposition_11_18`: every $\varphi \in (\ell^p)^*$,
+  $1 \le p < \infty$, is $x \mapsto \sum_k u_k x_k$ for a unique $u \in \ell^{p'}$, and
+  $\|u\|_{p'} = \|\varphi\|$.
+* Proposition 11.19, `Brezis.Chapter11.proposition_11_19`: every $\varphi \in (c_0)^*$ is
+  $x \mapsto \sum_k u_k x_k$ for a unique $u \in \ell^1$, and $\|u\|_1 = \|\varphi\|$.
+* Proposition 11.20, `Brezis.Chapter11.proposition_11_20`: every $\varphi \in c^*$ is
+  $x \mapsto \sum_k u_k x_k + \lambda \lim_k x_k$ for a unique
+  $(u, \lambda) \in \ell^1 \times \mathbb{R}$, and $\|u\|_1 + |\lambda| = \|\varphi\|$.
+* Proposition 11.21, `Brezis.Chapter11.proposition_11_21`: $\ell^1$, $\ell^\infty$, $c$ and $c_0$
+  are not reflexive; the four clauses are `Brezis.Chapter11.proposition_11_21_one`,
+  `Brezis.Chapter11.proposition_11_21_top`, `Brezis.Chapter11.proposition_11_21_c` and
+  `Brezis.Chapter11.proposition_11_21_c₀`.
+
+## Proof outline
+
+The reflexivity of $\ell^p$ follows directly from the duality of Proposition 11.18; the source
+instead applies Theorem 4.10 to the counting measure. The uniform convexity follows the source: the
+$L^p$ result of Chapter 4 is transported to $\ell^p$ along the isometry `lp.lpLIELpCount` between
+$\ell^p$ and $L^p$ of the counting measure.
+
+## Notation
+
+* `ℓ^p`: the space $\ell^p$ of real sequences indexed by $\mathbb{N}$, a local notation for
+  `lp (fun _ : ℕ => ℝ) p`.
+
+## Conventions
+
+* Sequences are indexed by $\mathbb{N}$ and start at $0$; the source starts at $1$. This
+  relabelling changes nothing.
+* The exponent $p \in [1, \infty]$ is an extended nonnegative real `p : ℝ≥0∞` with `[Fact (1 ≤ p)]`.
+  Conjugate exponents $p$ and $p'$ are `p` and `q` with `[p.HolderConjugate q]`.
+
+## Not formalized
+
+* **Final table of Section 11.3, last entry.** The claim that $(\ell^\infty)^*$ is strictly bigger
+  than $\ell^1$ is not a numbered claim. The other entries of the table are the content of
+  Propositions 11.15–11.21.
 -/
 
 open Filter Topology
@@ -39,14 +98,19 @@ open scoped ENNReal InnerProductSpace
 
 namespace Brezis.Chapter11
 
-/-- The book's `ℓ^p`. -/
+/-- The space $\ell^p$ of real sequences indexed by $\mathbb{N}$, which is
+`lp (fun _ : ℕ => ℝ) p`. -/
 local notation "ℓ^" p => lp (fun _ : ℕ => ℝ) p
 
 /-! ### The definitions -/
 
-/-- **The definition of `ℓ^p` and `ℓ^∞`.** For `x : ℓ^p` with `1 ≤ p < ∞`,
-`‖x‖_p = (∑ |x_k| ^ p) ^ (1 / p)`, and a sequence belongs to `ℓ^p` iff `∑ |x_k| ^ p < ∞`; for
-`p = ∞`, `‖x‖_∞ = sup_k |x_k|`, and a sequence belongs to `ℓ^∞` iff it is bounded. -/
+/-- **Section 11.3** of [brezis2011functional], definition of $\ell^p$ and $\ell^\infty$. Let
+$1 \le p < \infty$. For $x \in \ell^p$, $$\|x\|_p = \Bigl(\sum_k |x_k|^p\Bigr)^{1/p},$$ and a
+real sequence $x$ belongs to $\ell^p$ if and only if $\sum_k |x_k|^p < \infty$. For
+$x \in \ell^\infty$, $\|x\|_\infty = \sup_k |x_k|$, and a real sequence belongs to $\ell^\infty$
+if and only if it is bounded.
+
+The condition $\sum_k |x_k|^p < \infty$ is `Summable`, and the exponent $p$ is `p.toReal`. -/
 theorem lpNorm_eq {p : ℝ≥0∞} [Fact (1 ≤ p)] (hp : p ≠ ∞) :
     (∀ x : ℓ^p, ‖x‖ = (∑' k, |x k| ^ p.toReal) ^ (1 / p.toReal)) ∧
     (∀ x : ℕ → ℝ, Memℓp x p ↔ Summable fun k => |x k| ^ p.toReal) ∧
@@ -58,26 +122,39 @@ theorem lpNorm_eq {p : ℝ≥0∞} [Fact (1 ≤ p)] (hp : p ≠ ∞) :
     fun x => by simpa only [Real.norm_eq_abs] using lp.norm_eq_ciSup x,
     fun x => by simpa only [Real.norm_eq_abs] using memℓp_infty_iff (f := x)⟩
 
-/-- **"Which are Banach spaces for the `ℓ^p` (resp. `ℓ^∞`) norms."** `ℓ^p` is complete,
-`1 ≤ p ≤ ∞` (Mathlib's `lp.completeSpace`, the "direct and quite easy" proof; the route through
-Theorem 4.8 on the counting measure is the backbone's `lp.lpLIELpCount`). -/
+/-- **Section 11.3** of [brezis2011functional], completeness of $\ell^p$. For $1 \le p \le \infty$,
+the space $\ell^p$ is a Banach space for the $\ell^p$ norm (resp. the $\ell^\infty$ norm).
+
+The proof is Mathlib's `lp.completeSpace`, the "direct and quite easy" proof of the source. The
+other route of the source, through Theorem 4.8 on the counting measure, is available through the
+backbone isometry `lp.lpLIELpCount`. -/
 theorem lp_completeSpace {p : ℝ≥0∞} [Fact (1 ≤ p)] : CompleteSpace (ℓ^p) := inferInstance
 
-/-- **The spaces `c` and `c₀`.** `c = {x ; lim x_k exists}` and `c₀ = {x ; lim x_k = 0}`, both
-subspaces of `ℓ^∞` with the `ℓ^∞` norm. -/
+/-- **Section 11.3** of [brezis2011functional], definition of $c$ and $c_0$. The spaces $$c = \{x
+\in \ell^\infty ; \lim_k x_k \text{ exists}\}, \qquad c_0 = \{x \in \ell^\infty ; \lim_k x_k =
+0\}$$ are subspaces of $\ell^\infty$ with the $\ell^\infty$ norm: $x \in c$ if and only if
+$x_k \to l$ for some $l \in \mathbb{R}$, and $x \in c_0$ if and only if $x_k \to 0$.
+
+The spaces $c$ and $c_0$ are `lp.convergent ℝ ℝ` and `lp.zeroAtInfty ℝ ℝ`. -/
 theorem mem_c_iff (x : ℓ^∞) :
     (x ∈ lp.convergent ℝ ℝ ↔ ∃ l : ℝ, Tendsto (fun k => x k) atTop (𝓝 l)) ∧
     (x ∈ lp.zeroAtInfty ℝ ℝ ↔ Tendsto (fun k => x k) atTop (𝓝 0)) :=
   ⟨lp.mem_convergent, lp.mem_zeroAtInfty⟩
 
-/-- **"Clearly `c₀ ⊂ c ⊂ ℓ^∞` with `c₀` closed in `c`, and `c` closed in `ℓ^∞`."** -/
+/-- **Section 11.3** of [brezis2011functional]. "Clearly $c_0 \subset c \subset \ell^\infty$ with
+$c_0$ closed in $c$, and $c$ closed in $\ell^\infty$." Here $c_0 \subseteq c$, and both $c$ and
+$c_0$ are closed in $\ell^\infty$. -/
 theorem c₀_le_c_isClosed :
     lp.zeroAtInfty ℝ ℝ ≤ lp.convergent ℝ ℝ ∧ IsClosed (lp.convergent ℝ ℝ : Set (ℓ^∞)) ∧
       IsClosed (lp.zeroAtInfty ℝ ℝ : Set (ℓ^∞)) :=
   ⟨lp.zeroAtInfty_le_convergent ℝ ℝ, lp.isClosed_convergent ℝ ℝ, lp.isClosed_zeroAtInfty ℝ ℝ⟩
 
-/-- **Hölder's inequality in `ℓ^p`.** For conjugate exponents `p, p'` (`1 ≤ p ≤ ∞`), `x ∈ ℓ^p`
-and `y ∈ ℓ^{p'}`, the series `∑ x_k y_k` converges and `|∑ x_k y_k| ≤ ‖x‖_p ‖y‖_{p'}`. -/
+/-- **Section 11.3** of [brezis2011functional], Hölder's inequality in $\ell^p$. Let
+$1 \le p \le \infty$ and let $p'$ be the conjugate exponent, $1/p + 1/p' = 1$. For
+$x \in \ell^p$ and $y \in \ell^{p'}$, the series $\sum_k x_k y_k$ converges absolutely, and
+$$\Bigl|\sum_k x_k y_k\Bigr| \le \|x\|_p \|y\|_{p'}.$$
+
+The convergence is `Summable`, which for real series is absolute convergence. -/
 theorem holder_lp {p q : ℝ≥0∞} [Fact (1 ≤ p)] [Fact (1 ≤ q)] [p.HolderConjugate q] (x : ℓ^p)
     (y : ℓ^q) : (Summable fun k => x k * y k) ∧ |∑' k, x k * y k| ≤ ‖x‖ * ‖y‖ := by
   refine ⟨?_, ?_⟩
@@ -92,16 +169,23 @@ theorem holder_lp {p q : ℝ≥0∞} [Fact (1 ≤ p)] [Fact (1 ≤ q)] [p.Holder
     congr 1
     exact tsum_congr fun k => mul_comm _ _
 
-/-- **"The space `ℓ²` is a Hilbert space equipped with the scalar product `(x, y) = ∑ x_k y_k`."**
--/
+/-- **Section 11.3** of [brezis2011functional]. "The space $\ell^2$ is a Hilbert space equipped with
+the scalar product $(x, y) = \sum_k x_k y_k$": the scalar product of $\ell^2$ is
+$\sum_k x_k y_k$, and $\ell^2$ is complete.
+
+The scalar product is Mathlib's `lp.instInnerProductSpace`. -/
 theorem l2_inner :
     (∀ x y : ℓ^2, ⟪x, y⟫_ℝ = ∑' k, x k * y k) ∧ CompleteSpace (ℓ^2) :=
   ⟨fun x y => by
     rw [lp.inner_eq_tsum]
     exact tsum_congr fun k => by simp [mul_comm], inferInstance⟩
 
-/-- **"It is clear that `ℓ^p ⊂ c₀` with `‖x‖_∞ ≤ ‖x‖_p`, `1 ≤ p < ∞`."** The inclusion is
-Mathlib's `lp.linearMapOfLE`; its image lies in `c₀` and it does not increase the norm. -/
+/-- **Section 11.3** of [brezis2011functional]. "It is clear that $\ell^p \subset c_0$ with
+$\|x\|_\infty \le \|x\|_p$, $1 \le p < \infty$." For $1 \le p < \infty$ and $x \in \ell^p$, the
+sequence $x$, viewed in $\ell^\infty$, lies in $c_0$, and $\|x\|_\infty \le \|x\|_p$; in
+particular $|x_k| \le \|x\|_p$ for every $k$.
+
+The inclusion $\ell^p \subseteq \ell^\infty$ is Mathlib's `lp.linearMapOfLE`. -/
 theorem lp_subset_c₀ {p : ℝ≥0∞} [Fact (1 ≤ p)] (hp : p ≠ ∞) (x : ℓ^p) :
     lp.linearMapOfLE ℝ (fun _ : ℕ => ℝ) le_top x ∈ lp.zeroAtInfty ℝ ℝ ∧
       ‖lp.linearMapOfLE ℝ (fun _ : ℕ => ℝ) le_top x‖ ≤ ‖x‖ ∧ ∀ k, |x k| ≤ ‖x‖ :=
@@ -110,7 +194,11 @@ theorem lp_subset_c₀ {p : ℝ≥0∞} [Fact (1 ≤ p)] (hp : p ≠ ∞) (x : �
     fun k => by simpa only [Real.norm_eq_abs] using
       lp.norm_apply_le_norm (zero_lt_one.trans_le Fact.out).ne' x k⟩
 
-/-- **"`ℓ^p ⊂ ℓ^q` when `1 ≤ p ≤ q ≤ ∞`, with `‖x‖_q ≤ ‖x‖_p`."** -/
+/-- **Section 11.3** of [brezis2011functional]. "$\ell^p \subset \ell^q$ when
+$1 \le p \le q \le \infty$, with $\|x\|_q \le \|x\|_p$." For $1 \le p \le q \le \infty$ and
+$x \in \ell^p$, the sequence $x$ belongs to $\ell^q$, and $\|x\|_q \le \|x\|_p$.
+
+The inclusion $\ell^p \subseteq \ell^q$ is Mathlib's `lp.linearMapOfLE`. -/
 theorem lp_subset_lq {p q : ℝ≥0∞} [Fact (1 ≤ p)] (h : p ≤ q) (x : ℓ^p) :
     Memℓp (⇑x) q ∧ ‖lp.linearMapOfLE ℝ (fun _ : ℕ => ℝ) h x‖ ≤ ‖x‖ :=
   ⟨(lp.memℓp x).of_exponent_ge h,
@@ -118,38 +206,55 @@ theorem lp_subset_lq {p q : ℝ≥0∞} [Fact (1 ≤ p)] (h : p ≤ q) (x : ℓ^
 
 /-! ### Propositions 11.15–11.17 -/
 
-/-- **Proposition 11.15, first clause.** `ℓ^p` is reflexive for `1 < p < ∞`. -/
+/-- **Proposition 11.15** of [brezis2011functional], reflexivity. For $1 < p < \infty$, the space
+$\ell^p$ is reflexive.
+
+The backbone proof derives this from the duality of Proposition 11.18, not from Theorem 4.10 on
+the counting measure as the source does. -/
 theorem proposition_11_15_reflexive {p : ℝ≥0∞} [Fact (1 ≤ p)] (hp : 1 < p) (hp' : p ≠ ∞) :
     NormedSpace.IsReflexive ℝ (ℓ^p) :=
   lp.isReflexive ℝ ℕ hp hp'
 
-/-- **Proposition 11.15, second clause.** `ℓ^p` is uniformly convex for `1 < p < ∞`. -/
+/-- **Proposition 11.15** of [brezis2011functional], uniform convexity. For $1 < p < \infty$, the
+space $\ell^p$ is uniformly convex.
+
+The proof transports the uniform convexity of $L^p$ of Chapter 4 along the isometry
+`lp.lpLIELpCount` onto $L^p$ of the counting measure, as the source does. -/
 theorem proposition_11_15_uniformConvex {p : ℝ≥0∞} [Fact (1 ≤ p)] (hp : 1 < p) (hp' : p ≠ ∞) :
     UniformConvexSpace (ℓ^p) := by
   have := Fact.mk hp
   have := Fact.mk hp'
   exact lp.uniformConvexSpace
 
-/-- **Proposition 11.15.** `ℓ^p` is reflexive, and even uniformly convex, for `1 < p < ∞`. -/
+/-- **Proposition 11.15** of [brezis2011functional]. For $1 < p < \infty$, the space $\ell^p$ is
+reflexive, and even uniformly convex.
+
+The two clauses are `Brezis.Chapter11.proposition_11_15_reflexive` and
+`Brezis.Chapter11.proposition_11_15_uniformConvex`. -/
 theorem proposition_11_15 {p : ℝ≥0∞} [Fact (1 ≤ p)] (hp : 1 < p) (hp' : p ≠ ∞) :
     NormedSpace.IsReflexive ℝ (ℓ^p) ∧ UniformConvexSpace (ℓ^p) :=
   ⟨proposition_11_15_reflexive hp hp', proposition_11_15_uniformConvex hp hp'⟩
 
-/-- **Proposition 11.16.** The spaces `c`, `c₀` and `ℓ^p`, `1 ≤ p < ∞`, are separable. -/
+/-- **Proposition 11.16** of [brezis2011functional]. The spaces $c$ and $c_0$, and the spaces
+$\ell^p$ for $1 \le p < \infty$, are separable. -/
 theorem proposition_11_16 :
     TopologicalSpace.SeparableSpace (lp.convergent ℝ ℝ) ∧
     TopologicalSpace.SeparableSpace (lp.zeroAtInfty ℝ ℝ) ∧
     ∀ (p : ℝ≥0∞) [Fact (1 ≤ p)], p ≠ ∞ → TopologicalSpace.SeparableSpace (ℓ^p) :=
   ⟨inferInstance, inferInstance, fun _ _ hp => lp.separableSpace (𝕜 := ℝ) hp⟩
 
-/-- **Proposition 11.17.** `ℓ^∞` is not separable. -/
+/-- **Proposition 11.17** of [brezis2011functional]. The space $\ell^\infty$ is not separable. -/
 theorem proposition_11_17 : ¬ TopologicalSpace.SeparableSpace (ℓ^∞) :=
   lp.not_separableSpace_top
 
 /-! ### Propositions 11.18–11.20: the duals -/
 
-/-- **Proposition 11.18.** Let `1 ≤ p < ∞` with conjugate exponent `p'`. Every
-`φ ∈ (ℓ^p)^*` is `x ↦ ∑ u_k x_k` for a unique `u ∈ ℓ^{p'}`, and `‖u‖_{p'} = ‖φ‖`. -/
+/-- **Proposition 11.18** of [brezis2011functional]. Let $1 \le p < \infty$, and let $p'$ be the
+conjugate exponent, $1/p + 1/p' = 1$. For every $\varphi \in (\ell^p)^*$ there is a unique
+$u \in \ell^{p'}$ such that $$\varphi(x) = \sum_k u_k x_k \quad \text{for all } x \in \ell^p
+\qquad \text{and} \qquad \|u\|_{p'} = \|\varphi\|.$$
+
+The uniqueness is stated for the conjunction of the two conditions. -/
 theorem proposition_11_18 {p q : ℝ≥0∞} [Fact (1 ≤ p)] [Fact (1 ≤ q)] [p.HolderConjugate q]
     (hp : p ≠ ∞) (φ : StrongDual ℝ (ℓ^p)) :
     ∃! u : ℓ^q, (∀ x : ℓ^p, φ x = ∑' k, u k * x k) ∧ ‖u‖ = ‖φ‖ := by
@@ -160,8 +265,11 @@ theorem proposition_11_18 {p q : ℝ≥0∞} [Fact (1 ≤ p)] [Fact (1 ≤ q)] [
   ext x
   rw [lp.toDual_apply, hv x]
 
-/-- **Proposition 11.19.** Every `φ ∈ (c₀)^*` is `x ↦ ∑ u_k x_k` for a unique `u ∈ ℓ¹`, and
-`‖u‖_1 = ‖φ‖`. -/
+/-- **Proposition 11.19** of [brezis2011functional]. For every $\varphi \in (c_0)^*$ there is a
+unique $u \in \ell^1$ such that $$\varphi(x) = \sum_k u_k x_k \quad \text{for all } x \in c_0
+\qquad \text{and} \qquad \|u\|_1 = \|\varphi\|.$$
+
+The uniqueness is stated for the conjunction of the two conditions. -/
 theorem proposition_11_19 (φ : StrongDual ℝ (lp.zeroAtInfty ℝ ℝ)) :
     ∃! u : ℓ^1, (∀ x : lp.zeroAtInfty ℝ ℝ, φ x = ∑' k, u k * (x : ℓ^∞) k) ∧ ‖u‖ = ‖φ‖ := by
   obtain ⟨u, hu⟩ := lp.zeroAtInfty.toDual_surjective (𝕜 := ℝ) φ
@@ -171,8 +279,13 @@ theorem proposition_11_19 (φ : StrongDual ℝ (lp.zeroAtInfty ℝ ℝ)) :
   ext x
   rw [lp.zeroAtInfty.toDual_apply, hv x]
 
-/-- **Proposition 11.20.** Every `φ ∈ c^*` is `x ↦ ∑ u_k x_k + λ lim x_k` for a unique pair
-`(u, λ) ∈ ℓ¹ × ℝ`, and `‖u‖_1 + |λ| = ‖φ‖`. -/
+/-- **Proposition 11.20** of [brezis2011functional]. For every $\varphi \in c^*$ there is a unique
+pair $(u, \lambda) \in \ell^1 \times \mathbb{R}$ such that $$\varphi(x) = \sum_k u_k x_k +
+\lambda \lim_{k \to \infty} x_k \quad \text{for all } x \in c \qquad \text{and} \qquad \|u\|_1 +
+|\lambda| = \|\varphi\|.$$
+
+The limit map $c \to \mathbb{R}$ is the backbone's `lp.convergent.limCLM`. The uniqueness is
+stated for the conjunction of the two conditions. -/
 theorem proposition_11_20 (φ : StrongDual ℝ (lp.convergent ℝ ℝ)) :
     ∃! ul : (ℓ^1) × ℝ, (∀ x : lp.convergent ℝ ℝ,
       φ x = ∑' k, ul.1 k * (x : ℓ^∞) k + ul.2 * lp.convergent.limCLM ℝ ℝ x) ∧
@@ -191,23 +304,30 @@ theorem proposition_11_20 (φ : StrongDual ℝ (lp.convergent ℝ ℝ)) :
 
 /-! ### Proposition 11.21 -/
 
-/-- **Proposition 11.21, `c₀`.** `c₀` is not reflexive. -/
+/-- **Proposition 11.21** of [brezis2011functional], the space $c_0$. The space $c_0$ is not
+reflexive. -/
 theorem proposition_11_21_c₀ : ¬ NormedSpace.IsReflexive ℝ (lp.zeroAtInfty ℝ ℝ) :=
   lp.zeroAtInfty.not_isReflexive ℝ
 
-/-- **Proposition 11.21, `ℓ¹`.** `ℓ¹` is not reflexive. -/
+/-- **Proposition 11.21** of [brezis2011functional], the space $\ell^1$. The space $\ell^1$ is not
+reflexive. -/
 theorem proposition_11_21_one : ¬ NormedSpace.IsReflexive ℝ (ℓ^1) :=
   lp.not_isReflexive_one ℝ
 
-/-- **Proposition 11.21, `ℓ^∞`.** `ℓ^∞` is not reflexive. -/
+/-- **Proposition 11.21** of [brezis2011functional], the space $\ell^\infty$. The space
+$\ell^\infty$ is not reflexive. -/
 theorem proposition_11_21_top : ¬ NormedSpace.IsReflexive ℝ (ℓ^∞) :=
   lp.not_isReflexive_top ℝ
 
-/-- **Proposition 11.21, `c`.** `c` is not reflexive. -/
+/-- **Proposition 11.21** of [brezis2011functional], the space $c$. The space $c$ is not reflexive.
+-/
 theorem proposition_11_21_c : ¬ NormedSpace.IsReflexive ℝ (lp.convergent ℝ ℝ) :=
   lp.convergent.not_isReflexive ℝ
 
-/-- **Proposition 11.21.** The spaces `ℓ¹`, `ℓ^∞`, `c` and `c₀` are not reflexive. -/
+/-- **Proposition 11.21** of [brezis2011functional]. The spaces $\ell^1$, $\ell^\infty$, $c$ and
+$c_0$ are not reflexive.
+
+Reflexivity is the backbone class `NormedSpace.IsReflexive`. -/
 theorem proposition_11_21 :
     ¬ NormedSpace.IsReflexive ℝ (ℓ^1) ∧ ¬ NormedSpace.IsReflexive ℝ (ℓ^∞) ∧
       ¬ NormedSpace.IsReflexive ℝ (lp.convergent ℝ ℝ) ∧

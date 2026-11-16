@@ -7,48 +7,86 @@ import Numlib.Analysis.ODE.HilleYosida
 import NumlibSurface.Brezis.Chapter07.Section01
 
 /-!
-# Brezis §7.2: the evolution problem `du/dt + A u = 0` on `[0, +∞)`, `u(0) = u₀`
+# Brezis, Section 7.2: The evolution problem $du/dt + Au = 0$ on $[0, +\infty)$
 
-Surface file for Haim Brezis, *Functional Analysis, Sobolev Spaces and Partial Differential
-Equations*, Universitext, Springer, 2011, §7.2: the Cauchy–Lipschitz–Picard theorem on the
-half-line, the Hille–Yosida theorem for a maximal monotone operator `A` on a real Hilbert space
-`H` with its two lemmas, and Remarks 4–6. Functions of time are `u : ℝ → H`; the book's
-`C¹([0, +∞); H)` is `ContDiffOn ℝ 1 u (Ici 0)`, and `C([0, +∞); D(A))` is the backbone's
-`A.ContDiffOnPowDomain 0 1 u (Ici 0)` — `u` lifts continuously into the Hilbert space
-`A.PowDomain 1`, which is `D(A)` with the Hilbert graph norm `(|v|² + |A v|²)^{1/2}` of
-footnote 2 (`Numlib/Analysis/InnerProductSpace/MaximalMonotone`). The equation with its initial
-condition is the backbone's `A.IsSolutionOn u₀ (Ici 0) u` (`Numlib/Analysis/ODE/HilleYosida`),
-whose derivative at `t = 0` is the one-sided derivative within `[0, +∞)`.
+This module formalizes Section 7.2 of [brezis2011functional]. Let $A$ be a maximal monotone operator
+on a real Hilbert space $H$. Problem (6) of the source is
+$$\frac{du}{dt} + Au = 0 \quad \text{on } [0, +\infty), \qquad u(0) = u_0,$$
+for $u \in C^1([0, +\infty); H) \cap C([0, +\infty); D(A))$. The Hille–Yosida theorem (Theorem 7.4)
+says that for every $u_0 \in D(A)$ problem (6) has a unique solution, with $|u(t)| \le |u_0|$ and
+$|du/dt(t)| = |Au(t)| \le |Au_0|$. The section first recalls the Cauchy–Lipschitz–Picard theorem for
+a Lipschitz vector field on a Banach space (Theorem 7.3), and proves two lemmas: the norms $|w(t)|$
+and $|dw/dt(t)|$ of a solution of the approximate problem $dw/dt + A_\lambda w = 0$ are
+nonincreasing (Lemma 7.1), and $D(A^2)$ is dense in $D(A)$ for the graph norm (Lemma 7.2). Remarks
+4–6 describe the convergence of the approximate solutions, the contraction semigroup $S_A(t)$, and
+the reduction of $du/dt + Au + \lambda u = 0$ to problem (6).
 
-## Main definitions and results
+Theorem 7.3 specializes the backbone module `Numlib.Analysis.ODE.Cauchy`. The other results
+specialize `Numlib.Analysis.ODE.HilleYosida`, with the operators of
+`Numlib.Analysis.InnerProductSpace.MaximalMonotone`.
 
-* `theorem_7_3` — Cauchy, Lipschitz, Picard: the Cauchy problem `du/dt = F u` on `[0, +∞)` for a
-  Lipschitz `F : E → E` on a Banach space has a unique `C¹` solution
-  (`Numlib/Analysis/ODE/Cauchy`, by gluing compact-interval solutions instead of the book's
-  weighted-norm contraction).
-* `IsSolution A u₀ u` — the solution class of problem (6):
-  `u ∈ C¹([0, +∞); H) ∩ C([0, +∞); D(A))`, `du/dt + A u = 0` on `[0, +∞)`, `u(0) = u₀`.
-* `theorem_7_4` — Hille–Yosida: for `u₀ ∈ D(A)` there is a unique solution, with
-  `|u(t)| ≤ |u₀|` and `|du/dt (t)| = |A u(t)| ≤ |A u₀|`.
-* `lemma_7_1` — for a solution `w` of `dw/dt + A_λ w = 0`, `|w(t)|` and `|dw/dt (t)| = |A_λ w(t)|`
-  are nonincreasing.
-* `lemma_7_2` — `D(A²)` is dense in `D(A)` for the graph norm.
-* `remark_7_4_a`, `remark_7_4_b` — the approximate solutions `u_λ(t) = exp(−t A_λ) u₀` converge
-  as `λ → 0`, uniformly on bounded intervals to the solution of Theorem 7.4 when `u₀ ∈ D(A)`,
-  and pointwise for every `u₀ ∈ H`.
-* `remark_7_5` — the contraction semigroup `S_A(t)`: its properties (a), (b), (c).
-* `remark_7_6` — the problem `du/dt + A u + λ u = 0` reduces to (6) through `v(t) = e^{λt} u(t)`.
+## Main definitions
 
-## The route
+* Problem (6), `Brezis.Chapter07.IsSolution`: $u$ is a solution of problem (6) in the class $C^1([0,
+  +\infty); H) \cap C([0, +\infty); D(A))$.
 
-The backbone solves the approximate problem (7) in closed form, `u_λ(t) = A.expYosida λ t u₀ =
-exp(−t A_λ) u₀`, and defines the semigroup `A.semigroup t = S_A(t)` as the limit of `exp(−t A_λ)`
-as `λ → 0⁺` for every datum in `H` (Remark 4 (b), footnote 4); the solution of Theorem 7.4 is
-`t ↦ S_A(t) u₀`. The book's Steps 1–5 are the backbone nodes named in the docstrings; Step 6 and
-the use of Lemma 7.2 in the existence proof are not needed on that route, and Lemma 7.2 is stated
-and proved here on its own, exactly as in the book (`ū₀ = J_λ u₀` for small `λ`). Remark 3 is
-discussion; Remark 4 (b)'s counterexample sentences and the converse in Remark 5 (the Hille–Yosida
-generation theorem, quoted from the literature) are not formalized.
+## Main results
+
+* Theorem 7.3, `Brezis.Chapter07.theorem_7_3` (Cauchy, Lipschitz, Picard): for a Lipschitz map $F$
+  on a Banach space, the problem $du/dt = F(u)$ on $[0, +\infty)$, $u(0) = u_0$, has a unique $C^1$
+  solution.
+* Theorem 7.4, `Brezis.Chapter07.theorem_7_4` (Hille–Yosida): for $u_0 \in D(A)$ problem (6) has a
+  unique solution, with $|u(t)| \le |u_0|$ and $|du/dt(t)| = |Au(t)| \le |Au_0|$.
+* Lemma 7.1, `Brezis.Chapter07.lemma_7_1`: for a solution $w$ of $dw/dt + A_\lambda w = 0$, the
+  functions $|w(t)|$ and $|dw/dt(t)| = |A_\lambda w(t)|$ are nonincreasing.
+* Lemma 7.2, `Brezis.Chapter07.lemma_7_2`: $D(A^2)$ is dense in $D(A)$ for the graph norm.
+* Remark 4(a), `Brezis.Chapter07.remark_7_4_a`: for $u_0 \in D(A)$, the approximate solutions
+  $u_\lambda(t) = e^{-tA_\lambda} u_0$ converge to the solution of problem (6), uniformly on bounded
+  intervals.
+* Remark 4(b), `Brezis.Chapter07.remark_7_4_b`: for every $u_0 \in H$, $u_\lambda(t)$ converges for
+  every $t \ge 0$.
+* Remark 5, `Brezis.Chapter07.remark_7_5`: the operators $S_A(t)$ form a continuous semigroup of
+  contractions.
+* Remark 6, `Brezis.Chapter07.remark_7_6`: the problem $du/dt + Au + \lambda u = 0$ reduces to
+  problem (6) through $v(t) = e^{\lambda t} u(t)$.
+
+## Proof outline
+
+The backbone solves the approximate problem (7) of the source,
+$du_\lambda/dt + A_\lambda u_\lambda = 0$, $u_\lambda(0) = u_0$, in closed form:
+$u_\lambda(t) = e^{-tA_\lambda} u_0$, the backbone's `LinearPMap.expYosida`. It defines the
+semigroup $S_A(t)$, the backbone's `LinearPMap.semigroup`, as the limit of $e^{-tA_\lambda}$ as
+$\lambda \to 0^+$ for every datum in $H$, as in Remark 4(b) and footnote 4 of the source. The
+solution of Theorem 7.4 is $t \mapsto S_A(t) u_0$. On this route Step 6 of the source's proof, and
+the use of Lemma 7.2 in the existence proof, are not needed; Lemma 7.2 is proved on its own, as in
+the source.
+
+## Conventions
+
+* Functions of time are `u : ℝ → H`. The space $C^1([0, +\infty); H)$ is
+  `ContDiffOn ℝ 1 u (Set.Ici 0)`.
+* The space $C([0, +\infty); D(A))$ is the backbone's `LinearPMap.ContDiffOnPowDomain A 0 1 u
+  (Set.Ici 0)`: $u$ lifts to a continuous map into `LinearPMap.PowDomain A 1`, which is $D(A)$ with
+  the graph norm $(|v|^2 + |Av|^2)^{1/2}$ of footnote 2 of the source.
+* The equation with its initial condition is the backbone's
+  `LinearPMap.IsSolutionOn A u₀ (Set.Ici 0) u`. At $t = 0$ the derivative is the one-sided
+  derivative within $[0, +\infty)$.
+
+## Deviations from the source
+
+* **Lemma 7.1** (generalization). The source assumes $w \in C^1([0, +\infty); H)$. This follows from
+  the equation, because $A_\lambda$ is bounded, and is not assumed. See
+  `Brezis.Chapter07.lemma_7_1`.
+
+## Not formalized
+
+* **Remark 3.** It is a discussion and makes no precise statement.
+* **Remark 4(b), the counterexample.** The claim that the limit $u(t)$ may lie outside $D(A)$ for
+  every $t > 0$ and be nowhere differentiable is a claim about a counterexample, which is not
+  constructed.
+* **Remark 5, the converse.** The Hille–Yosida generation theorem, that every continuous semigroup
+  of contractions is $S_A$ for a unique maximal monotone $A$, is quoted from the literature without
+  proof.
 -/
 
 open Filter Topology Set
@@ -58,16 +96,21 @@ noncomputable section
 
 namespace Brezis.Chapter07
 
-/-! ### Theorem 7.3: Cauchy, Lipschitz, Picard -/
+/-! ### Theorem 7.3: the Cauchy–Lipschitz–Picard theorem -/
 
 section CauchyLipschitzPicard
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [CompleteSpace E]
 
-/-- **Theorem 7.3 (Cauchy, Lipschitz, Picard).** Let `E` be a Banach space and `F : E → E` a
-Lipschitz map, `‖F u − F v‖ ≤ L ‖u − v‖`. Then for every initial datum `u₀ ∈ E` there is a unique
-`u ∈ C¹([0, +∞); E)` with `du/dt (t) = F (u t)` on `[0, +∞)` and `u 0 = u₀` (the derivative at
-`t = 0` being one-sided). -/
+/-- **Theorem 7.3** of [brezis2011functional] (Cauchy, Lipschitz, Picard). Let $E$ be a Banach space
+and let $F : E \to E$ be a Lipschitz map, $\|Fu - Fv\| \le L \|u - v\|$ for all $u, v \in E$.
+Then for every $u_0 \in E$ there is a unique $u \in C^1([0, +\infty); E)$ such that
+$$\frac{du}{dt}(t) = F(u(t)) \quad \text{for } t \ge 0, \qquad u(0) = u_0.$$
+
+The derivative at $t = 0$ is the one-sided derivative within $[0, +\infty)$. Uniqueness holds
+among the $C^1$ solutions, on $[0, +\infty)$. The equation is the backbone's `ODE.IsSolutionOn`.
+The source proves the theorem by a contraction argument with a weighted norm; the backbone glues
+the solutions on compact intervals instead. -/
 theorem theorem_7_3 {F : E → E} {L : ℝ} (hF : ∀ u v, ‖F u - F v‖ ≤ L * ‖u - v‖) (u₀ : E) :
     ∃ u : ℝ → E, ODE.IsSolutionOn (fun _ v => F v) 0 u₀ (Ici 0) u ∧ ContDiffOn ℝ 1 u (Ici 0) ∧
       ∀ v : ℝ → E, ODE.IsSolutionOn (fun _ v => F v) 0 u₀ (Ici 0) v →
@@ -94,31 +137,42 @@ end CauchyLipschitzPicard
 
 variable {H : Type*} [NormedAddCommGroup H] [InnerProductSpace ℝ H] {A : H →ₗ.[ℝ] H}
 
-/-- **The solution class of problem (6).** `u` is a solution of `du/dt + A u = 0` on `[0, +∞)`,
-`u(0) = u₀`, in the class `C¹([0, +∞); H) ∩ C([0, +∞); D(A))`: the backbone's
-`A.IsSolutionOn u₀ (Ici 0) u` (values in `D(A)`, the equation with the one-sided derivative at
-`0`, the initial condition), `u ∈ C¹([0, +∞); H)`, and `u ∈ C([0, +∞); D(A))` as
-`A.ContDiffOnPowDomain 0 1 u (Ici 0)` — `u` lifts continuously into `D(A)` with the Hilbert
-graph norm `(|v|² + |A v|²)^{1/2}` of footnote 2, i.e. `t ↦ A u(t)` is continuous as well. -/
+/-- **Problem (6)** of [brezis2011functional], the class of solutions. Let $A$ be a linear unbounded
+operator on $H$ and $u_0 \in H$. A function $u : \mathbb{R} \to H$ is a **solution of problem
+(6)** if
+$$u \in C^1([0, +\infty); H) \cap C([0, +\infty); D(A)), \qquad \frac{du}{dt} + Au = 0 \text{ on
+  } [0, +\infty), \qquad u(0) = u_0.$$
+
+The equation and the initial condition are `LinearPMap.IsSolutionOn A u₀ (Set.Ici 0) u`: the
+values $u(t)$, $t \ge 0$, lie in $D(A)$, the equation holds with the one-sided derivative at
+$0$, and $u(0) = u_0$. The condition $u \in C([0, +\infty); D(A))$ is
+`LinearPMap.ContDiffOnPowDomain A 0 1 u (Set.Ici 0)`: $u$ lifts to a continuous map into $D(A)$
+with the graph norm $(|v|^2 + |Av|^2)^{1/2}$ of footnote 2, so $t \mapsto Au(t)$ is continuous
+as well. -/
 def IsSolution (A : H →ₗ.[ℝ] H) (u₀ : H) (u : ℝ → H) : Prop :=
   A.IsSolutionOn u₀ (Ici 0) u ∧ ContDiffOn ℝ 1 u (Ici 0) ∧ A.ContDiffOnPowDomain 0 1 u (Ici 0)
 
-/-- The class `C^n(s; D(A^j))` only depends on the values of `u` on `s`: the backbone's
-`LinearPMap.ContDiffOnPowDomain.congr`. -/
+/-- The class $C^n(s; D(A^j))$ depends only on the values of $u$ on $s$: if $u \in C^n(s; D(A^j))$
+and $u = v$ on $s$, then $v \in C^n(s; D(A^j))$.
+
+This is the backbone's `LinearPMap.ContDiffOnPowDomain.congr`. -/
 theorem contDiffOnPowDomain_congr {n : WithTop ℕ∞} {j : ℕ} {u v : ℝ → H} {s : Set ℝ}
     (h : A.ContDiffOnPowDomain n j u s) (huv : EqOn u v s) : A.ContDiffOnPowDomain n j v s :=
   h.congr huv
 
-/-- The element `(u₀, A u₀)` of `D(A)` with the graph norm, for `u₀ ∈ D(A)`. -/
+/-- The element $(u_0, Au_0)$ of $D(A)$ with the graph norm, for $u_0 \in D(A)$. -/
 private def toPowDomainOne (A : H →ₗ.[ℝ] H) (u₀ : A.domain) : A.PowDomain 1 :=
   LinearPMap.PowDomain.mk A ![(u₀ : H), A u₀] fun i => by
     refine ⟨?_, ?_⟩ <;> simp [Fin.fin_one_eq_zero i]
 
 variable [CompleteSpace H]
 
-/-- **The solution of Theorem 7.4 is the semigroup**: for `u₀ ∈ D(A)`, `t ↦ S_A(t) u₀` is a
-solution of (6) in the class of `IsSolution`. The `C([0, +∞); D(A))` clause is Theorem 7.5 at
-`k = j = 1`. -/
+/-- Let $H$ be a Hilbert space, let $A$ be maximal monotone, and let $u_0 \in D(A)$. Then
+$t \mapsto S_A(t) u_0$ is a solution of problem (6) in the sense of
+`Brezis.Chapter07.IsSolution`.
+
+This is the solution of Theorem 7.4. The condition $u \in C([0, +\infty); D(A))$ is Theorem 7.5
+with $k = j = 1$. -/
 theorem isSolution_semigroup (hA : IsMaximalMonotone A) (u₀ : A.domain) :
     IsSolution A u₀ fun t => A.semigroup t u₀ := by
   refine ⟨hA.isMaximalMonotone.isSolutionOn_semigroup u₀,
@@ -126,14 +180,20 @@ theorem isSolution_semigroup (hA : IsMaximalMonotone A) (u₀ : A.domain) :
   have h := hA.isMaximalMonotone.contDiffOnPowDomain_semigroup (toPowDomainOne A u₀) le_rfl
   simpa [toPowDomainOne] using h
 
-/-- **Theorem 7.4 (Hille–Yosida).** Let `A` be maximal monotone. For every `u₀ ∈ D(A)` there is
-a unique `u ∈ C¹([0, +∞); H) ∩ C([0, +∞); D(A))` with `du/dt + A u = 0` on `[0, +∞)` and
-`u(0) = u₀`; moreover `|u(t)| ≤ |u₀|` and `|du/dt (t)| = |A u(t)| ≤ |A u₀|` for all `t ≥ 0`.
-The solution is `t ↦ S_A(t) u₀`; the book's Steps 1–5 are the backbone nodes
-`IsMonotone.norm_sub_le_of_isSolutionOn`, `antitoneOn_norm_exp_neg_smul_apply`,
-`norm_expYosida_sub_expYosida_le`, `tendstoUniformlyOn_deriv_expYosida` and
-`hasDerivWithinAt_semigroup_apply` of `Numlib/Analysis/ODE/HilleYosida`; Step 6 is not needed
-on that route. -/
+/-- **Theorem 7.4** of [brezis2011functional] (Hille–Yosida). Let $H$ be a Hilbert space, let $A$ be
+maximal monotone, and let $u_0 \in D(A)$. Then there is a unique
+$$u \in C^1([0, +\infty); H) \cap C([0, +\infty); D(A))$$
+with $du/dt + Au = 0$ on $[0, +\infty)$ and $u(0) = u_0$. Moreover, for all $t \ge 0$,
+$$|u(t)| \le |u_0| \quad \text{and} \quad \left|\frac{du}{dt}(t)\right| = |Au(t)| \le |Au_0|.$$
+
+Uniqueness means that every solution in the sense of `Brezis.Chapter07.IsSolution` agrees with
+$u$ on $[0, +\infty)$. The derivative is `derivWithin u (Set.Ici 0) t`. The solution is
+$t \mapsto S_A(t) u_0$. Steps 1–5 of the source's proof are the backbone results
+`LinearPMap.IsMonotone.norm_sub_le_of_isSolutionOn`, `antitoneOn_norm_exp_neg_smul_apply`,
+`LinearPMap.IsMaximalMonotone.norm_expYosida_sub_expYosida_le`,
+`LinearPMap.IsMaximalMonotone.tendstoUniformlyOn_deriv_expYosida` and
+`LinearPMap.IsMaximalMonotone.hasDerivWithinAt_semigroup_apply`; Step 6 is not needed on that
+route. -/
 theorem theorem_7_4 (hA : IsMaximalMonotone A) (u₀ : A.domain) :
     ∃ u : ℝ → H, ∃ hu : IsSolution A u₀ u, (∀ v, IsSolution A u₀ v → EqOn v u (Ici 0)) ∧
       (∀ t, 0 ≤ t → ‖u t‖ ≤ ‖(u₀ : H)‖) ∧
@@ -146,13 +206,20 @@ theorem theorem_7_4 (hA : IsMaximalMonotone A) (u₀ : A.domain) :
       (uniqueDiffOn_Ici 0 t ht), norm_neg]
   · exact hA.isMaximalMonotone.norm_apply_semigroup_apply_le u₀ ht
 
-/-- **Lemma 7.1.** Let `w ∈ C¹([0, +∞); H)` satisfy `dw/dt + A_λ w = 0` on `[0, +∞)`. Then the
-functions `t ↦ |w(t)|` and `t ↦ |dw/dt (t)| = |A_λ w(t)|` are nonincreasing on `[0, +∞)`. (The
-book's `C¹` hypothesis is implied by the equation, `A_λ` being bounded, and is not assumed.)
-By uniqueness for the bounded monotone operator `A_λ` (Proposition 7.2 (e)),
-`w(t) = exp(−t A_λ) w(0)`, and both claims are the backbone's
-`antitoneOn_norm_exp_neg_smul_apply`, the second for the datum `A_λ w(0)`, since `A_λ` commutes
-with `exp(−t A_λ)`. -/
+/-- **Lemma 7.1** of [brezis2011functional]. Let $H$ be a Hilbert space, let $A$ be maximal
+monotone, and let $\lambda > 0$. Let $w : \mathbb{R} \to H$ satisfy
+$$\frac{dw}{dt} + A_\lambda w = 0 \quad \text{on } [0, +\infty),$$
+with the one-sided derivative at $0$. Then $t \mapsto |w(t)|$ is nonincreasing on
+$[0, +\infty)$, $|dw/dt(t)| = |A_\lambda w(t)|$ for $t \ge 0$, and $t \mapsto |A_\lambda w(t)|$
+is nonincreasing on $[0, +\infty)$.
+
+**Generalization.** The source assumes $w \in C^1([0, +\infty); H)$. This follows from the
+equation, because $A_\lambda$ is bounded, and is not assumed.
+
+The derivative is `derivWithin w (Set.Ici 0) t`. Since $A_\lambda$ is a bounded monotone
+operator (Proposition 7.2(e)), uniqueness gives $w(t) = e^{-tA_\lambda} w(0)$. Both claims then
+follow from the backbone's `antitoneOn_norm_exp_neg_smul_apply`, the second one for the datum
+$A_\lambda w(0)$, because $A_\lambda$ commutes with $e^{-tA_\lambda}$. -/
 theorem lemma_7_1 (hA : IsMaximalMonotone A) {l : ℝ} (hl : 0 < l) {w : ℝ → H}
     (hw' : ∀ t, 0 ≤ t → HasDerivWithinAt w (-(yosidaApprox hA hl (w t))) (Ici 0) t) :
     AntitoneOn (fun t => ‖w t‖) (Ici 0) ∧
@@ -178,10 +245,14 @@ theorem lemma_7_1 (hA : IsMaximalMonotone A) {l : ℝ} (hl : 0 < l) {w : ℝ →
       fun t ht => ?_
     simp only [hEq ht, LinearPMap.yosida_expYosida_comm]
 
-/-- **Lemma 7.2.** Let `u₀ ∈ D(A)`. Then for every `ε > 0` there is `ū₀ ∈ D(A²)` — that is,
-`ū₀ ∈ D(A)` with `A ū₀ ∈ D(A)` — such that `|u₀ − ū₀| < ε` and `|A u₀ − A ū₀| < ε`: `D(A²)` is
-dense in `D(A)` for the graph norm. The witness is `ū₀ = J_λ u₀` for `λ > 0` small, by
-Proposition 7.2 (c) applied to `u₀` and to `A u₀`, since `J_λ (A u₀) = A (J_λ u₀)`. -/
+/-- **Lemma 7.2** of [brezis2011functional]. Let $H$ be a Hilbert space, let $A$ be maximal
+monotone, and let $u_0 \in D(A)$. Then for every $\varepsilon > 0$ there is
+$\bar u_0 \in D(A^2)$, that is, $\bar u_0 \in D(A)$ with $A\bar u_0 \in D(A)$, such that
+$$|u_0 - \bar u_0| < \varepsilon \quad \text{and} \quad |Au_0 - A\bar u_0| < \varepsilon.$$
+So $D(A^2)$ is dense in $D(A)$ for the graph norm.
+
+As in the source, the proof takes $\bar u_0 = J_\lambda u_0$ for small $\lambda > 0$. It applies
+Proposition 7.2(c) to $u_0$ and to $Au_0$, using $J_\lambda(Au_0) = A(J_\lambda u_0)$. -/
 theorem lemma_7_2 (hA : IsMaximalMonotone A) (u₀ : A.domain) {ε : ℝ} (hε : 0 < ε) :
     ∃ v : A.domain, A v ∈ A.domain ∧ ‖(u₀ : H) - v‖ < ε ∧ ‖A u₀ - A v‖ < ε := by
   have h1 := (hA.isMaximalMonotone.tendsto_resolvent_apply (u₀ : H)).eventually
@@ -204,12 +275,18 @@ theorem lemma_7_2 (hA : IsMaximalMonotone A) (u₀ : A.domain) {ε : ℝ} (hε :
 
 /-! ### Remarks 4–6 -/
 
-/-- **Remark 4 (a).** Let `u₀ ∈ D(A)` and let `u_λ` be the solution of the approximate problem
-(7), `du_λ/dt + A_λ u_λ = 0`, `u_λ(0) = u₀` — here `u_λ(t) = exp(−t A_λ) u₀`, the backbone's
-`A.expYosida λ t u₀`, which solves (7) on all of `ℝ`. Then as `λ → 0⁺`, `u_λ(t)` converges for
-every `t ≥ 0`, uniformly on every bounded interval `[0, T]`, and the limit is the solution `u`
-of Theorem 7.4 (one can prove directly that the limit lies in `C¹ ∩ C(D(A))` and satisfies (6):
-this is the route the backbone takes). -/
+/-- **Remark 4(a)** in Chapter 7 of [brezis2011functional]. Let $H$ be a Hilbert space, let $A$ be
+maximal monotone, and let $u_0 \in D(A)$. For $\lambda > 0$ let
+$u_\lambda(t) = e^{-tA_\lambda} u_0$. Then:
+
+* $u_\lambda$ solves the approximate problem (7), $du_\lambda/dt + A_\lambda u_\lambda = 0$ on
+  $\mathbb{R}$ and $u_\lambda(0) = u_0$;
+* if $u$ is a solution of problem (6) in the sense of `Brezis.Chapter07.IsSolution`, then
+  $u_\lambda \to u$ as $\lambda \to 0^+$, uniformly on $[0, T]$ for every $T$.
+
+The function $u_\lambda(t)$ is the backbone's `LinearPMap.expYosida A l t u₀`. The source adds
+that one can prove directly that the limit lies in $C^1([0, +\infty); H) \cap C([0, +\infty);
+D(A))$ and satisfies (6); this is the route of the backbone. -/
 theorem remark_7_4_a (hA : IsMaximalMonotone A) (u₀ : A.domain) :
     (∀ (l : ℝ) (hl : 0 < l), A.expYosida l 0 u₀ = u₀ ∧
       ∀ t, HasDerivAt (fun t => A.expYosida l t u₀)
@@ -222,24 +299,35 @@ theorem remark_7_4_a (hA : IsMaximalMonotone A) (u₀ : A.domain) :
   · exact (hA.isMaximalMonotone.tendstoUniformlyOn_expYosida_semigroup u₀).congr_right
       fun t ht => (hu.1.eq_semigroup hA.isMaximalMonotone ht.1).symm
 
-/-- **Remark 4 (b), the convergence clause.** Assume only `u₀ ∈ H`. Still, as `λ → 0⁺`,
-`u_λ(t) = exp(−t A_λ) u₀` converges for every `t ≥ 0` to some limit `u(t)` — the backbone's
-`S_A(t) u₀` — a "generalized" solution of (6). (That this limit may lie outside `D(A)` for every
-`t > 0` and be nowhere differentiable is a counterexample claim and is not formalized; the
-self-adjoint case, where it cannot happen, is Theorem 7.7.) -/
+/-- **Remark 4(b)** in Chapter 7 of [brezis2011functional], the convergence. Let $H$ be a Hilbert
+space, let $A$ be maximal monotone, let $u_0 \in H$, and let $t \ge 0$. Then
+$u_\lambda(t) = e^{-tA_\lambda} u_0$ converges in $H$ as $\lambda \to 0^+$.
+
+The limit is the backbone's $S_A(t) u_0$, a "generalized" solution of problem (6) in the words
+of the source. The further claim that this limit may lie outside $D(A)$ for every $t > 0$ and be
+nowhere differentiable is about a counterexample and is not formalized; in the self-adjoint case
+this cannot happen, by Theorem 7.7. -/
 theorem remark_7_4_b (hA : IsMaximalMonotone A) (u₀ : H) {t : ℝ} (ht : 0 ≤ t) :
     ∃ w : H, Tendsto (fun l : ℝ => A.expYosida l t u₀) (𝓝[>] 0) (𝓝 w) :=
   ⟨A.semigroup t u₀, hA.isMaximalMonotone.tendsto_expYosida_semigroup ht u₀⟩
 
-/-- **Remark 5 (contraction semigroups).** For `t ≥ 0`, the map `u₀ ∈ D(A) ↦ u(t) ∈ D(A)`, `u`
-the solution of (6) given by Theorem 7.4, extends by continuity (since `|u(t)| ≤ |u₀|` and `D(A)`
-is dense) to a bounded operator `S_A(t)` on `H` — the backbone's `A.semigroup t`, defined on all of
-`H` directly as in footnote 4 — which satisfies: `S_A(t) u₀ = u(t)` for `u₀ ∈ D(A)`;
-(a) `‖S_A(t)‖ ≤ 1` for `t ≥ 0`; (b) `S_A(t₁ + t₂) = S_A(t₁) ∘ S_A(t₂)` for `t₁, t₂ ≥ 0` and
-`S_A(0) = I`; (c) `|S_A(t) u₀ − u₀| → 0` as `t → 0⁺`, for every `u₀ ∈ H`. Such a family is a
-continuous semigroup of contractions. (The converse — every continuous semigroup of contractions
-is `S_A` for a unique maximal monotone `A` — is quoted from the literature and is not
-formalized.) -/
+/-- **Remark 5** in Chapter 7 of [brezis2011functional] (contraction semigroups). Let $H$ be a
+Hilbert space and let $A$ be maximal monotone. Then the operators $S_A(t) \in \mathcal{L}(H)$
+satisfy:
+
+* $S_A(t) u_0 = u(t)$ for $t \ge 0$, whenever $u_0 \in D(A)$ and $u$ is the solution of problem
+  (6);
+* (a) $\|S_A(t)\| \le 1$ for $t \ge 0$;
+* (b) $S_A(t_1 + t_2) = S_A(t_1) \circ S_A(t_2)$ for $t_1, t_2 \ge 0$, and $S_A(0) = I$;
+* (c) $|S_A(t) u_0 - u_0| \to 0$ as $t \to 0^+$, for every $u_0 \in H$.
+
+So $(S_A(t))_{t \ge 0}$ is a continuous semigroup of contractions.
+
+The source defines $S_A(t)$ as the extension by continuity of $u_0 \mapsto u(t)$ from the dense
+set $D(A)$, which is possible because $|u(t)| \le |u_0|$. The backbone's `LinearPMap.semigroup`
+is defined on all of $H$ directly, as in footnote 4 of the source. The converse, that every
+continuous semigroup of contractions is $S_A$ for a unique maximal monotone $A$, is quoted from
+the literature in the source and is not formalized. -/
 theorem remark_7_5 (hA : IsMaximalMonotone A) :
     (∀ (u₀ : A.domain) (u : ℝ → H), IsSolution A u₀ u → ∀ t, 0 ≤ t → A.semigroup t u₀ = u t) ∧
       (∀ t : ℝ, 0 ≤ t → ‖A.semigroup t‖ ≤ 1) ∧
@@ -253,13 +341,20 @@ theorem remark_7_5 (hA : IsMaximalMonotone A) :
     fun u₀ => tendsto_iff_norm_sub_tendsto_zero.1
       (hA.isMaximalMonotone.tendsto_semigroup_apply_zero u₀)⟩
 
-/-- **Remark 6.** Let `A` be maximal monotone and `λ ∈ ℝ`. The problem `du/dt + A u + λ u = 0` on
-`[0, +∞)`, `u(0) = u₀`, reduces to problem (6) through `v(t) = e^{λt} u(t)`: `u` solves the
-perturbed problem iff `v` solves (6) with the same datum (the operator `A + λI` is
-`(λ • LinearMap.id) +ᵥ A`, with domain `D(A)`, and the equivalence needs no hypothesis on `A`).
-Consequently, for `u₀ ∈ D(A)` the perturbed problem has the solution `u(t) = e^{−λt} S_A(t) u₀`,
-which is `C¹` on `[0, +∞)`, and every solution of the perturbed problem agrees with it on
-`[0, +∞)`. -/
+/-- **Remark 6** in Chapter 7 of [brezis2011functional]. Let $H$ be a Hilbert space, let $A$ be
+maximal monotone, and let $\lambda \in \mathbb{R}$. Consider the problem
+$$\frac{du}{dt} + Au + \lambda u = 0 \quad \text{on } [0, +\infty), \qquad u(0) = u_0.$$
+Then:
+
+* for every $u_0 \in H$, a function $u$ solves this problem if and only if
+  $v(t) = e^{\lambda t} u(t)$ solves $dv/dt + Av = 0$ on $[0, +\infty)$, $v(0) = u_0$;
+* for every $u_0 \in D(A)$, the function $u(t) = e^{-\lambda t} S_A(t) u_0$ solves the problem
+  and is $C^1$ on $[0, +\infty)$, and every solution of the problem agrees with it on
+  $[0, +\infty)$.
+
+Both problems are stated with `LinearPMap.IsSolutionOn` on $[0, +\infty)$, which requires values
+in $D(A)$ but no regularity class. The operator $A + \lambda I$ is `(l • LinearMap.id) +ᵥ A`,
+with domain $D(A)$. The first part does not use the maximal monotonicity of $A$. -/
 theorem remark_7_6 (hA : IsMaximalMonotone A) (l : ℝ) :
     (∀ (u₀ : H) (u : ℝ → H),
       ((l • LinearMap.id : H →ₗ[ℝ] H) +ᵥ A).IsSolutionOn u₀ (Ici 0) u ↔

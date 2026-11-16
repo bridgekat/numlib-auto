@@ -6,34 +6,65 @@ import Numlib.Variational.EllipticInterval.MaximumPrinciple
 import NumlibSurface.Brezis.Chapter08.Section04
 
 /-!
-# Brezis §8.5: the maximum principle
+# Brezis, Section 8.5: The maximum principle
 
-Surface file for Haim Brezis, *Functional Analysis, Sobolev Spaces and Partial Differential
-Equations*, Universitext, Springer, 2011, §8.5: Theorem 8.19 (the maximum principle for the
-Dirichlet problem, by Stampacchia's truncation method), Remark 26 (the classical proof),
-Corollary 8.20, Proposition 8.21 (the Neumann problem), Remarks 27–28. Everything is on
-`I = (0, 1)` over `Numlib/Variational/EllipticInterval/MaximumPrinciple`.
+This module formalizes Section 8.5 of [brezis2011functional]. Let $I = (0, 1)$ and
+$\bar I = [0, 1]$, and let $f \in L^2(I)$. Theorem 8.19, the maximum principle, says that the
+solution $u \in H^2(I)$ of the Dirichlet problem (32), $-u'' + u = f$ on $I$, $u(0) = \alpha$,
+$u(1) = \beta$, satisfies (33):
+$$\min\{\alpha, \beta, \inf_I f\} \le u(x) \le \max\{\alpha, \beta, \sup_I f\} \quad \text{for all }
+  x \in \bar I.$$
+The source proves it by Stampacchia's truncation method, and Remark 26 gives the classical proof for
+$f \in C(\bar I)$. Corollary 8.20 derives, for a solution $u$ of the weak equation (34), positivity,
+the bound $\|u\|_{L^\infty(I)} \le \|f\|_{L^\infty(I)}$ when $u = 0$ on $\partial I$, and the bound
+$\|u\|_{L^\infty(I)} \le \|u\|_{L^\infty(\partial I)}$ when $f = 0$. Proposition 8.21 gives the
+bounds (35), $\inf_I f \le u \le \sup_I f$, for the Neumann problem, with the classical proof in
+Remark 27. Remark 28 gives the same bounds for the problem on $\mathbb{R}$ of Example 8.
 
-## Correspondence
-
-* "`u ∈ H²(I)` is the solution of the Dirichlet problem (32) with `u(0) = α`, `u(1) = β`" is
-  `Φ : SobolevInterval 2 0 1` with `Φ'' = Φ − f` a.e. and `Φ(0) = α`, `Φ(1) = β` (Proposition
-  8.16's object, §8.4); the weak equation (34) on `H_0^1`, which is what the backbone consumes,
-  follows by Green's formula (`EllipticInterval.modelForm_inclusionCLM_eq_load_of_mem`).
-* The book's `sup_I f` and `inf_I f` are the essential supremum and infimum (footnote 16),
-  possibly infinite; the bounds (33) and (35) are stated through an arbitrary essential bound:
-  "`f ≤ K` a.e." gives `u ≤ max (α, β, K)`, which is the book's statement when `sup f < ∞`
-  (take `K = sup f`) and vacuous otherwise.
-* "`u(x)`" is the continuous representative `SobolevInterval.rep u x`, `x ∈ [0, 1]`.
+The proofs specialize the backbone module `Numlib.Variational.EllipticInterval.MaximumPrinciple`.
 
 ## Main results
 
-* `theorem_8_19`, `theorem_8_19_le`, `theorem_8_19_ge` — the maximum principle (33).
-* `remark_8_26` — the classical proof for `f ∈ C(Ī)`, `u ∈ C²(Ī)`.
-* `corollary_8_20_i`, `corollary_8_20_ii`, `corollary_8_20_iii`, `corollary_8_20` — positivity,
-  `‖u‖_∞ ≤ ‖f‖_∞`, `‖u‖_∞ ≤ ‖u‖_{L^∞(∂I)}`.
-* `proposition_8_21`, `remark_8_27` — the Neumann problem, weak and classical.
-* `remark_8_28` — the problem on `ℝ` of Example 8.
+* Theorem 8.19, the upper bound, `Brezis.Chapter08.theorem_8_19_le`: $u \le K$ on $\bar I$ for every
+  $K$ with $\alpha \le K$, $\beta \le K$ and $f \le K$ almost everywhere.
+* Theorem 8.19, the lower bound, `Brezis.Chapter08.theorem_8_19_ge`: $K \le u$ on $\bar I$ for every
+  $K$ with $K \le \alpha$, $K \le \beta$ and $K \le f$ almost everywhere.
+* Theorem 8.19, `Brezis.Chapter08.theorem_8_19`: the maximum principle (33).
+* Remark 26, `Brezis.Chapter08.remark_8_26`: the classical maximum principle for $v \in C^2([0, 1])$
+  with $-v'' + v = f$.
+* Corollary 8.20(i), `Brezis.Chapter08.corollary_8_20_i`: if $u \ge 0$ on $\partial I$ and
+  $f \ge 0$, then $u \ge 0$ on $\bar I$.
+* Corollary 8.20(ii), `Brezis.Chapter08.corollary_8_20_ii` and
+  `Brezis.Chapter08.corollary_8_20_ii'`: if $u = 0$ on $\partial I$, then
+  $|u| \le \|f\|_{L^\infty(I)}$ on $\bar I$.
+* Corollary 8.20(iii), `Brezis.Chapter08.corollary_8_20_iii`: if $f = 0$, then
+  $|u(x)| \le \max\{|u(0)|, |u(1)|\}$ on $\bar I$.
+* Corollary 8.20, `Brezis.Chapter08.corollary_8_20`: the three parts together.
+* Proposition 8.21, `Brezis.Chapter08.proposition_8_21_le`, `Brezis.Chapter08.proposition_8_21_ge`
+  and `Brezis.Chapter08.proposition_8_21`: the bounds (35) for the Neumann problem.
+* Remark 27, `Brezis.Chapter08.remark_8_27`: the classical maximum principle for the Neumann
+  problem.
+* Remark 28, `Brezis.Chapter08.remark_8_28`: the bounds $\inf_{\mathbb{R}} f \le u \le
+  \sup_{\mathbb{R}} f$ for the problem on $\mathbb{R}$.
+
+## Conventions
+
+* "$u \in H^2(I)$ is the solution of (32)" is `Φ : SobolevInterval 2 0 1` with $\Phi'' = \Phi - f$
+  almost everywhere and $\Phi(0) = \alpha$, $\Phi(1) = \beta$, the object of Proposition 8.16. The
+  backbone uses the weak equation (34) on $H_0^1$, which follows by Green's formula
+  (`EllipticInterval.modelForm_inclusionCLM_eq_load_of_mem`).
+* The value $u(x)$ for $x \in [0, 1]$ is the value of the continuous representative,
+  `SobolevInterval.rep u x`.
+
+## Deviations from the source
+
+* **Theorem 8.19, Proposition 8.21 and Remark 28** (reading). The source's $\sup_I f$ and $\inf_I f$
+  are the essential supremum and infimum (footnote 16), which can be infinite. The bounds (33) and
+  (35) are stated for every essential bound of $f$: "$f \le K$ a.e." gives
+  $u \le \max\{\alpha, \beta, K\}$. This is the statement of the source with $K = \sup_I f$ when
+  $\sup_I f < \infty$, and the statement of the source is vacuous otherwise. See
+  `Brezis.Chapter08.theorem_8_19`, `Brezis.Chapter08.proposition_8_21` and
+  `Brezis.Chapter08.remark_8_28`.
 -/
 
 open Filter MeasureTheory Set TopologicalSpace EllipticInterval
@@ -43,19 +74,25 @@ noncomputable section
 
 namespace Brezis.Chapter08
 
-/-- The coefficient `1` of the model problem, bounded below by `1` almost everywhere. -/
+/-- The constant coefficient $1$, as an element of $L^\infty(0, 1)$, is at least $1$ almost
+everywhere. -/
 private theorem one_le_constLinf_ae' :
     ∀ᵐ x ∂(volume.restrict (Ioo (0 : ℝ) 1)), 1 ≤ constLinf 0 1 1 x :=
   (coeFn_constLinf 0 1 1).mono fun x hx ↦ by rw [hx]
 
 /-! ### Theorem 8.19 -/
 
-/-- **Theorem 8.19, the upper bound.** Let `f ∈ L²(I)`, `I = (0, 1)`, and let `u ∈ H²(I)` be
-the solution of the Dirichlet problem (32): `−u'' + u = f` a.e., `u(0) = α`, `u(1) = β`. Then
-for every `K` with `α ≤ K`, `β ≤ K` and `f ≤ K` a.e. — `K = max {α, β, sup f}` when
-`sup f < ∞` — `u(x) ≤ K` for every `x ∈ Ī`. Stampacchia's truncation method, the backbone's
-`EllipticInterval.rep_le_of_le_of_isWeakSolution` with `α = γ = 1`, the weak equation (34) on
-`H_0^1` coming from Green's formula. -/
+/-- **Theorem 8.19** of [brezis2011functional], the upper bound. Let $I = (0, 1)$, $f \in L^2(I)$
+and $\alpha, \beta \in \mathbb{R}$, and let $u \in H^2(I)$ be the solution of the Dirichlet
+problem (32):
+$$-u'' + u = f \text{ a.e. on } I, \qquad u(0) = \alpha, \quad u(1) = \beta.$$
+Let $K \in \mathbb{R}$ with $\alpha \le K$, $\beta \le K$ and $f \le K$ almost everywhere on
+$I$. Then $u(x) \le K$ for every $x \in [0, 1]$.
+
+When $\sup_I f < \infty$, the choice $K = \max\{\alpha, \beta, \sup_I f\}$ gives the upper bound
+of (33). The proof is Stampacchia's truncation method,
+`EllipticInterval.rep_le_of_le_of_isWeakSolution` with both coefficients equal to $1$, applied
+to the weak equation (34) on $H_0^1$ that follows from Green's formula. -/
 theorem theorem_8_19_le (f : Lp ℝ 2 (volume.restrict (Ioo (0 : ℝ) 1))) {α β : ℝ}
     {Φ : SobolevInterval 2 0 1}
     (hΦ : (SobolevInterval.deriv Φ 2 : ℝ → ℝ) =ᵐ[volume.restrict (Ioo (0 : ℝ) 1)]
@@ -71,9 +108,13 @@ theorem theorem_8_19_le (f : Lp ℝ 2 (volume.restrict (Ioo (0 : ℝ) 1))) {α �
       filter_upwards [hf, coeFn_constLinf 0 1 1] with x hx hx1
       rw [hx1, mul_one]; exact hx)
 
-/-- **Theorem 8.19, the lower bound.** For every `K` with `K ≤ α`, `K ≤ β` and `K ≤ f` a.e.
-(`K = min {α, β, inf f}` when `inf f > −∞`), `K ≤ u(x)` for every `x ∈ Ī`: the upper bound
-applied to `−u`. -/
+/-- **Theorem 8.19** of [brezis2011functional], the lower bound. Let $I = (0, 1)$, $f \in L^2(I)$
+and $\alpha, \beta \in \mathbb{R}$, and let $u \in H^2(I)$ be the solution of (32). Let
+$K \in \mathbb{R}$ with $K \le \alpha$, $K \le \beta$ and $K \le f$ almost everywhere on $I$.
+Then $K \le u(x)$ for every $x \in [0, 1]$.
+
+When $\inf_I f > -\infty$, the choice $K = \min\{\alpha, \beta, \inf_I f\}$ gives the lower
+bound of (33). The proof applies the upper bound to $-u$. -/
 theorem theorem_8_19_ge (f : Lp ℝ 2 (volume.restrict (Ioo (0 : ℝ) 1))) {α β : ℝ}
     {Φ : SobolevInterval 2 0 1}
     (hΦ : (SobolevInterval.deriv Φ 2 : ℝ → ℝ) =ᵐ[volume.restrict (Ioo (0 : ℝ) 1)]
@@ -89,12 +130,18 @@ theorem theorem_8_19_ge (f : Lp ℝ 2 (volume.restrict (Ioo (0 : ℝ) 1))) {α �
       filter_upwards [hf, coeFn_constLinf 0 1 1] with x hx hx1
       rw [hx1, mul_one]; exact hx)
 
-/-- **Theorem 8.19** (the maximum principle). Let `f ∈ L²(I)` with `I = (0, 1)` and let
-`u ∈ H²(I)` be the solution of the Dirichlet problem `−u'' + u = f` on `I`, `u(0) = α`,
-`u(1) = β` (32). Then for every `x ∈ Ī`,
-`min {α, β, inf_I f} ≤ u(x) ≤ max {α, β, sup_I f}` (33), the essential bounds of `f` being read
-as: for every essential upper bound `M` of `f` (`f ≤ M` a.e.), `u ≤ max {α, β, M}`, and for
-every essential lower bound `m`, `min {α, β, m} ≤ u`. -/
+/-- **Theorem 8.19** of [brezis2011functional] (the maximum principle). Let $I = (0, 1)$,
+$f \in L^2(I)$ and $\alpha, \beta \in \mathbb{R}$, and let $u \in H^2(I)$ be the solution of the
+Dirichlet problem (32), $-u'' + u = f$ on $I$, $u(0) = \alpha$, $u(1) = \beta$. Then (33) holds
+in the following form, for every $x \in [0, 1]$:
+* $u(x) \le \max\{\alpha, \beta, M\}$ for every $M$ with $f \le M$ almost everywhere on $I$;
+* $\min\{\alpha, \beta, m\} \le u(x)$ for every $m$ with $m \le f$ almost everywhere on $I$.
+
+**Reading.** The source states (33) as $\min\{\alpha, \beta, \inf_I f\} \le u(x) \le
+\max\{\alpha, \beta, \sup_I f\}$, with the essential infimum and supremum of $f$ (footnote 16),
+which can be infinite. The statement here quantifies over the essential bounds $M$ and $m$ of
+$f$; it is the statement of the source with $M = \sup_I f$ and $m = \inf_I f$ when these are
+finite. -/
 theorem theorem_8_19 (f : Lp ℝ 2 (volume.restrict (Ioo (0 : ℝ) 1))) {α β : ℝ}
     {Φ : SobolevInterval 2 0 1}
     (hΦ : (SobolevInterval.deriv Φ 2 : ℝ → ℝ) =ᵐ[volume.restrict (Ioo (0 : ℝ) 1)]
@@ -110,13 +157,18 @@ theorem theorem_8_19 (f : Lp ℝ 2 (volume.restrict (Ioo (0 : ℝ) 1))) {α β :
     fun m hm ↦ theorem_8_19_ge f hΦ h0 h1 ((min_le_left _ m).trans (min_le_left α β))
       ((min_le_left _ m).trans (min_le_right α β)) (hm.mono fun _ hx ↦ (min_le_right _ m).trans hx)⟩
 
-/-- **Remark 26.** When `f ∈ C(Ī)`, `u ∈ C²(Ī)` and (33) can be established by the classical
-approach to the maximum principle: let `x₀ ∈ Ī` be a point where `u` attains its maximum; if
-`x₀ = 0` or `x₀ = 1` the conclusion is obvious, otherwise `u'(x₀) = 0`, `u''(x₀) ≤ 0` and
-`u(x₀) = f(x₀) + u''(x₀) ≤ f(x₀) ≤ K`. For `v ∈ C²[0, 1]` with `−v'' + v = f` on `[0, 1]`,
-`v(0) ≤ K`, `v(1) ≤ K` and `f ≤ K` on `[0, 1]`: `v ≤ K` on `[0, 1]`. The backbone's
-`EllipticInterval.le_of_contDiffMapIcc_classical` over the second-derivative test
-`IsLocalMax.deriv_deriv_nonpos`. -/
+/-- **Remark 26** in Chapter 8 of [brezis2011functional]. Let $v \in C^2([0, 1])$,
+$f : \mathbb{R} \to \mathbb{R}$ and $K \in \mathbb{R}$, with
+$$-v'' + v = f \text{ on } [0, 1], \qquad v(0) \le K, \quad v(1) \le K, \quad f \le K \text{ on
+  } [0, 1].$$
+Then $v \le K$ on $[0, 1]$.
+
+The source remarks that when $f \in C(\bar I)$ the solution $u$ of (32) lies in $C^2(\bar I)$,
+and (33) follows from the classical approach to the maximum principle. Let $x_0 \in [0, 1]$ be a
+point where $u$ attains its maximum. If $x_0 = 0$ or $x_0 = 1$ the conclusion is obvious.
+Otherwise $u'(x_0) = 0$ and $u''(x_0) \le 0$, so $u(x_0) = f(x_0) + u''(x_0) \le f(x_0) \le K$.
+The proof specializes `EllipticInterval.le_of_contDiffMapIcc_classical`, which uses the
+second-derivative test `IsLocalMax.deriv_deriv_nonpos`. -/
 theorem remark_8_26 (v : ContDiffMapIcc (zero_lt_one' ℝ).le 2) {f : ℝ → ℝ}
     (hode : ∀ x : Icc (0 : ℝ) 1, -v.deriv 2 x + v x = f x) {K : ℝ}
     (hK0 : v ⟨0, left_mem_Icc.2 zero_le_one⟩ ≤ K) (hK1 : v ⟨1, right_mem_Icc.2 zero_le_one⟩ ≤ K)
@@ -125,10 +177,13 @@ theorem remark_8_26 (v : ContDiffMapIcc (zero_lt_one' ℝ).le 2) {f : ℝ → �
 
 /-! ### Corollary 8.20 -/
 
-/-- **Corollary 8.20 (i).** Let `u` be a solution of (34) (the weak equation
-`∫ u' v' + ∫ u v = ∫ f v` for all `v ∈ H_0^1(I)`, whatever its boundary values). If `u ≥ 0` on
-`∂I` and `f ≥ 0` on `I`, then `u ≥ 0` on `I`. The backbone's
-`EllipticInterval.rep_nonneg_of_isWeakSolution`. -/
+/-- **Corollary 8.20(i)** of [brezis2011functional]. Let $I = (0, 1)$ and $f \in L^2(I)$, and let
+$u \in H^1(I)$ be a solution of (34):
+$$\int_I u'v' + \int_I uv = \int_I fv \quad \text{for all } v \in H_0^1(I),$$
+with any boundary values. If $u(0) \ge 0$, $u(1) \ge 0$ and $f \ge 0$ almost everywhere on $I$,
+then $u \ge 0$ on $[0, 1]$.
+
+The proof specializes `EllipticInterval.rep_nonneg_of_isWeakSolution`. -/
 theorem corollary_8_20_i (f : Lp ℝ 2 (volume.restrict (Ioo (0 : ℝ) 1))) {u : SobolevInterval 1 0 1}
     (hu : ∀ v ∈ SobolevIntervalZero 0 1, modelForm 0 1 u v = load 0 1 f v)
     (h0 : 0 ≤ SobolevInterval.rep u 0) (h1 : 0 ≤ SobolevInterval.rep u 1)
@@ -136,9 +191,13 @@ theorem corollary_8_20_i (f : Lp ℝ 2 (volume.restrict (Ioo (0 : ℝ) 1))) {u :
     ∀ x ∈ Icc (0 : ℝ) 1, 0 ≤ SobolevInterval.rep u x :=
   rep_nonneg_of_isWeakSolution (zero_lt_one' ℝ) f hu h0 h1 hf
 
-/-- **Corollary 8.20 (ii).** If `u = 0` on `∂I` and `f ∈ L^∞(I)`, then
-`‖u‖_{L^∞(I)} ≤ ‖f‖_{L^∞(I)}`: `|u(x)| ≤ ‖f‖_∞` for every `x ∈ Ī`. The backbone's
-`EllipticInterval.abs_rep_le_of_isWeakSolution` with the essential bound `M = ‖f‖_∞`. -/
+/-- **Corollary 8.20(ii)** of [brezis2011functional]. Let $I = (0, 1)$ and $f \in L^2(I)$, and let
+$u \in H^1(I)$ be a solution of (34). If $u(0) = u(1) = 0$ and $f \in L^\infty(I)$, then
+$\|u\|_{L^\infty(I)} \le \|f\|_{L^\infty(I)}$:
+$$|u(x)| \le \|f\|_{L^\infty(I)} \quad \text{for every } x \in [0, 1].$$
+
+The proof specializes `EllipticInterval.abs_rep_le_of_isWeakSolution` with the essential bound
+$M = \|f\|_{L^\infty(I)}$. -/
 theorem corollary_8_20_ii (f : Lp ℝ 2 (volume.restrict (Ioo (0 : ℝ) 1))) {u : SobolevInterval 1 0 1}
     (hu : ∀ v ∈ SobolevIntervalZero 0 1, modelForm 0 1 u v = load 0 1 f v)
     (h0 : SobolevInterval.rep u 0 = 0) (h1 : SobolevInterval.rep u 1 = 0)
@@ -154,8 +213,10 @@ theorem corollary_8_20_ii (f : Lp ℝ 2 (volume.restrict (Ioo (0 : ℝ) 1))) {u 
   have := ENNReal.toReal_mono hne hx
   rwa [ENNReal.toReal_ofReal (abs_nonneg _)] at this
 
-/-- **Corollary 8.20 (ii), with an explicit essential bound.** If `u = 0` on `∂I` and
-`|f| ≤ M` a.e. on `I`, then `|u| ≤ M` on `Ī`. -/
+/-- **Corollary 8.20(ii)** of [brezis2011functional], with an explicit essential bound. Let
+$I = (0, 1)$ and $f \in L^2(I)$, let $u \in H^1(I)$ be a solution of (34) with
+$u(0) = u(1) = 0$, and let $M \in \mathbb{R}$ with $|f| \le M$ almost everywhere on $I$. Then
+$|u(x)| \le M$ for every $x \in [0, 1]$. -/
 theorem corollary_8_20_ii' (f : Lp ℝ 2 (volume.restrict (Ioo (0 : ℝ) 1)))
     {u : SobolevInterval 1 0 1}
     (hu : ∀ v ∈ SobolevIntervalZero 0 1, modelForm 0 1 u v = load 0 1 f v)
@@ -164,18 +225,25 @@ theorem corollary_8_20_ii' (f : Lp ℝ 2 (volume.restrict (Ioo (0 : ℝ) 1)))
     ∀ x ∈ Icc (0 : ℝ) 1, |SobolevInterval.rep u x| ≤ M :=
   abs_rep_le_of_isWeakSolution (zero_lt_one' ℝ) f hu h0 h1 hf
 
-/-- **Corollary 8.20 (iii).** If `f = 0` on `I`, then `‖u‖_{L^∞(I)} ≤ ‖u‖_{L^∞(∂I)}`:
-`|u(x)| ≤ max (|u(0)|, |u(1)|)` for every `x ∈ Ī`. The backbone's
-`EllipticInterval.abs_rep_le_max_of_isWeakSolution`. -/
+/-- **Corollary 8.20(iii)** of [brezis2011functional]. Let $I = (0, 1)$, and let $u \in H^1(I)$ be a
+solution of (34) with $f = 0$. Then $\|u\|_{L^\infty(I)} \le \|u\|_{L^\infty(\partial I)}$:
+$$|u(x)| \le \max\{|u(0)|, |u(1)|\} \quad \text{for every } x \in [0, 1].$$
+
+The proof specializes `EllipticInterval.abs_rep_le_max_of_isWeakSolution`. -/
 theorem corollary_8_20_iii {u : SobolevInterval 1 0 1}
     (hu : ∀ v ∈ SobolevIntervalZero 0 1, modelForm 0 1 u v = load 0 1 0 v) :
     ∀ x ∈ Icc (0 : ℝ) 1,
       |SobolevInterval.rep u x| ≤ max |SobolevInterval.rep u 0| |SobolevInterval.rep u 1| :=
   abs_rep_le_max_of_isWeakSolution (zero_lt_one' ℝ) hu
 
-/-- **Corollary 8.20.** Let `u` be a solution of (34). (i) If `u ≥ 0` on `∂I` and `f ≥ 0` on
-`I`, then `u ≥ 0` on `I`. (ii) If `u = 0` on `∂I` and `f ∈ L^∞(I)`, then
-`‖u‖_{L^∞(I)} ≤ ‖f‖_{L^∞(I)}`. (iii) If `f = 0` on `I`, then `‖u‖_{L^∞(I)} ≤ ‖u‖_{L^∞(∂I)}`. -/
+/-- **Corollary 8.20** of [brezis2011functional]. Let $I = (0, 1)$ and $f \in L^2(I)$, and let
+$u \in H^1(I)$ be a solution of (34), $\int_I u'v' + \int_I uv = \int_I fv$ for all
+$v \in H_0^1(I)$. Then:
+* (i) if $u(0) \ge 0$, $u(1) \ge 0$ and $f \ge 0$ almost everywhere on $I$, then $u \ge 0$ on
+  $[0, 1]$;
+* (ii) if $u(0) = u(1) = 0$ and $f \in L^\infty(I)$, then $|u(x)| \le \|f\|_{L^\infty(I)}$ for
+  every $x \in [0, 1]$;
+* (iii) if $f = 0$, then $|u(x)| \le \max\{|u(0)|, |u(1)|\}$ for every $x \in [0, 1]$. -/
 theorem corollary_8_20 (f : Lp ℝ 2 (volume.restrict (Ioo (0 : ℝ) 1))) {u : SobolevInterval 1 0 1}
     (hu : ∀ v ∈ SobolevIntervalZero 0 1, modelForm 0 1 u v = load 0 1 f v) :
     (0 ≤ SobolevInterval.rep u 0 → 0 ≤ SobolevInterval.rep u 1 →
@@ -191,11 +259,16 @@ theorem corollary_8_20 (f : Lp ℝ 2 (volume.restrict (Ioo (0 : ℝ) 1))) {u : S
 
 /-! ### Proposition 8.21: the Neumann problem -/
 
-/-- **Proposition 8.21, the upper bound.** Let `f ∈ L²(I)`, `I = (0, 1)`, and let `u ∈ H²(I)`
-be the solution of the Neumann problem `−u'' + u = f`, `u'(0) = u'(1) = 0` (Proposition 8.17).
-Then `u(x) ≤ K` for every `x ∈ Ī` and every essential upper bound `K` of `f` (`K = sup_I f`
-when finite). The truncation `G(u − K)` plugged into the weak formulation (36) on `H¹(I)`;
-the backbone's `EllipticInterval.rep_le_of_le_of_isWeakSolution_neumann`. -/
+/-- **Proposition 8.21** of [brezis2011functional], the upper bound. Let $I = (0, 1)$ and
+$f \in L^2(I)$, and let $u \in H^2(I)$ be the solution of the Neumann problem of Proposition
+8.17,
+$$-u'' + u = f \text{ a.e. on } I, \qquad u'(0) = u'(1) = 0.$$
+Let $K \in \mathbb{R}$ with $f \le K$ almost everywhere on $I$. Then $u(x) \le K$ for every
+$x \in [0, 1]$.
+
+When $\sup_I f$ is finite, $K = \sup_I f$ is allowed. The proof puts the truncation $G(u - K)$
+into the weak formulation (36) on $H^1(I)$; it specializes
+`EllipticInterval.rep_le_of_le_of_isWeakSolution_neumann`. -/
 theorem proposition_8_21_le (f : Lp ℝ 2 (volume.restrict (Ioo (0 : ℝ) 1)))
     {Φ : SobolevInterval 2 0 1}
     (hΦ : (SobolevInterval.deriv Φ 2 : ℝ → ℝ) =ᵐ[volume.restrict (Ioo (0 : ℝ) 1)]
@@ -207,8 +280,10 @@ theorem proposition_8_21_le (f : Lp ℝ 2 (volume.restrict (Ioo (0 : ℝ) 1)))
   rep_le_of_le_of_isWeakSolution_neumann (zero_lt_one' ℝ) f
     (proposition_8_17_min f hΦ h0 h1).1 hf
 
-/-- **Proposition 8.21, the lower bound.** `K ≤ u(x)` for every essential lower bound `K` of
-`f`. -/
+/-- **Proposition 8.21** of [brezis2011functional], the lower bound. Let $I = (0, 1)$ and
+$f \in L^2(I)$, and let $u \in H^2(I)$ be the solution of the Neumann problem $-u'' + u = f$
+a.e. on $I$, $u'(0) = u'(1) = 0$. Let $K \in \mathbb{R}$ with $K \le f$ almost everywhere on
+$I$. Then $K \le u(x)$ for every $x \in [0, 1]$. -/
 theorem proposition_8_21_ge (f : Lp ℝ 2 (volume.restrict (Ioo (0 : ℝ) 1)))
     {Φ : SobolevInterval 2 0 1}
     (hΦ : (SobolevInterval.deriv Φ 2 : ℝ → ℝ) =ᵐ[volume.restrict (Ioo (0 : ℝ) 1)]
@@ -220,10 +295,15 @@ theorem proposition_8_21_ge (f : Lp ℝ 2 (volume.restrict (Ioo (0 : ℝ) 1)))
   rep_ge_of_ge_of_isWeakSolution_neumann (zero_lt_one' ℝ) f
     (proposition_8_17_min f hΦ h0 h1).1 hf
 
-/-- **Proposition 8.21.** Let `f ∈ L²(I)` with `I = (0, 1)` and let `u ∈ H²(I)` be the solution
-of the Neumann problem `−u'' + u = f` on `I`, `u'(0) = u'(1) = 0`. Then for every `x ∈ Ī`,
-`inf_I f ≤ u(x) ≤ sup_I f` (35): `m ≤ u(x) ≤ M` for every essential lower bound `m` and
-essential upper bound `M` of `f`. -/
+/-- **Proposition 8.21** of [brezis2011functional]. Let $I = (0, 1)$ and $f \in L^2(I)$, and let
+$u \in H^2(I)$ be the solution of the Neumann problem $-u'' + u = f$ on $I$,
+$u'(0) = u'(1) = 0$. Then (35) holds in the following form, for every $x \in [0, 1]$:
+* $u(x) \le M$ for every $M$ with $f \le M$ almost everywhere on $I$;
+* $m \le u(x)$ for every $m$ with $m \le f$ almost everywhere on $I$.
+
+**Reading.** The source states (35) as $\inf_I f \le u(x) \le \sup_I f$, with the essential
+infimum and supremum of $f$, which can be infinite. The statement here quantifies over the
+essential bounds of $f$; it is the statement of the source when these bounds are finite. -/
 theorem proposition_8_21 (f : Lp ℝ 2 (volume.restrict (Ioo (0 : ℝ) 1)))
     {Φ : SobolevInterval 2 0 1}
     (hΦ : (SobolevInterval.deriv Φ 2 : ℝ → ℝ) =ᵐ[volume.restrict (Ioo (0 : ℝ) 1)]
@@ -236,12 +316,18 @@ theorem proposition_8_21 (f : Lp ℝ 2 (volume.restrict (Ioo (0 : ℝ) 1)))
       m ≤ SobolevInterval.rep (SobolevInterval.inclusionCLM 1 0 1 Φ) x :=
   ⟨fun _ hM ↦ proposition_8_21_le f hΦ h0 h1 hM, fun _ hm ↦ proposition_8_21_ge f hΦ h0 h1 hm⟩
 
-/-- **Remark 27.** If `f ∈ C(Ī)`, then `u ∈ C²(Ī)` and (35) can be established along the lines
-of Remark 26; if `u` achieves its maximum on `∂I`, say at `0`, then `u''(0) ≤ 0` (extending `u`
-by reflection to the left of `0` and using `u'(0) = 0`). For `v ∈ C²[0, 1]` with
-`−v'' + v = f` on `[0, 1]`, `v'(0) = v'(1) = 0` and `f ≤ K` on `[0, 1]`: `v ≤ K` on `[0, 1]`.
-The backbone's `EllipticInterval.le_of_contDiffMapIcc_classical_neumann` (the one-sided
-second-derivative test at the endpoints). -/
+/-- **Remark 27** in Chapter 8 of [brezis2011functional]. Let $v \in C^2([0, 1])$,
+$f : \mathbb{R} \to \mathbb{R}$ and $K \in \mathbb{R}$, with
+$$-v'' + v = f \text{ on } [0, 1], \qquad v'(0) = v'(1) = 0, \qquad f \le K \text{ on } [0,
+  1].$$
+Then $v \le K$ on $[0, 1]$.
+
+The source remarks that when $f \in C(\bar I)$ the solution of the Neumann problem lies in
+$C^2(\bar I)$, and (35) follows along the lines of Remark 26. If $u$ attains its maximum on
+$\partial I$, say at $0$, then $u''(0) \le 0$: extend $u$ by reflection to the left of $0$ and
+use $u'(0) = 0$. The proof specializes
+`EllipticInterval.le_of_contDiffMapIcc_classical_neumann`, which uses the one-sided
+second-derivative test at the endpoints. -/
 theorem remark_8_27 (v : ContDiffMapIcc (zero_lt_one' ℝ).le 2) {f : ℝ → ℝ}
     (hode : ∀ x : Icc (0 : ℝ) 1, -v.deriv 2 x + v x = f x)
     (hv0 : v.deriv 1 ⟨0, left_mem_Icc.2 zero_le_one⟩ = 0)
@@ -249,15 +335,24 @@ theorem remark_8_27 (v : ContDiffMapIcc (zero_lt_one' ℝ).le 2) {f : ℝ → �
     (hf : ∀ x ∈ Icc (0 : ℝ) 1, f x ≤ K) : ∀ x : Icc (0 : ℝ) 1, v x ≤ K :=
   le_of_contDiffMapIcc_classical_neumann (zero_lt_one' ℝ) v hode hv0 hv1 hf
 
-/-! ### Remark 28: the problem on `ℝ` -/
+/-! ### Remark 28: the problem on $\mathbb{R}$ -/
 
-/-- **Remark 28.** Let `f ∈ L²(ℝ)` and let `u ∈ H²(ℝ)` be the solution of `−u'' + u = f` on
-`ℝ`, `u(x) → 0` as `|x| → ∞`, discussed in Example 8 (`EllipticInterval.Line.solution f`). Then
-for all `x ∈ ℝ`, `inf_ℝ f ≤ u(x) ≤ sup_ℝ f`: `u(x) ≤ K` for every essential upper bound `K ≥ 0`
-of `f`, and `k ≤ u(x)` for every essential lower bound `k ≤ 0`. (The sign conditions are no
-restriction — a function of `L²(ℝ)` has `ess sup f ≥ 0 ≥ ess inf f` — but the truncation
-`G(u − K)` lies in `H¹(ℝ)` only for `K ≥ 0`, which the book's sketch does not remark on.) The
-backbone's `EllipticInterval.Line.rep_le_of_le` and `Line.le_rep_of_le`. -/
+/-- **Remark 28** in Chapter 8 of [brezis2011functional]. Let $f \in L^2(\mathbb{R})$, and let
+$u \in H^2(\mathbb{R})$ be the solution of $-u'' + u = f$ on $\mathbb{R}$, $u(x) \to 0$ as
+$|x| \to \infty$, of Example 8. Then $\inf_{\mathbb{R}} f \le u(x) \le \sup_{\mathbb{R}} f$ for
+all $x \in \mathbb{R}$, in the following form:
+* $u(x) \le K$ for every $K \ge 0$ with $f \le K$ almost everywhere;
+* $k \le u(x)$ for every $k \le 0$ with $k \le f$ almost everywhere.
+
+**Reading.** As in Theorem 8.19, the essential supremum and infimum of $f$ are replaced by
+essential bounds of $f$.
+
+The sign conditions $K \ge 0$ and $k \le 0$ are no restriction, because a function of
+$L^2(\mathbb{R})$ satisfies $\operatorname{ess\,sup} f \ge 0 \ge \operatorname{ess\,inf} f$.
+They are needed in the proof, because the truncation $G(u - K)$ lies in $H^1(\mathbb{R})$ only
+for $K \ge 0$; the sketch of the source does not remark on this. The solution $u$ is
+`EllipticInterval.Line.solution f`. The proof specializes `EllipticInterval.Line.rep_le_of_le`
+and `EllipticInterval.Line.le_rep_of_le`. -/
 theorem remark_8_28 (f : Lp ℝ 2 (volume.restrict ((⊤ : Opens ℝ) : Set ℝ))) :
     (∀ K : ℝ, 0 ≤ K → (∀ᵐ x ∂(volume.restrict ((⊤ : Opens ℝ) : Set ℝ)), f x ≤ K) →
       ∀ x, (Line.solution f).rep x ≤ K) ∧

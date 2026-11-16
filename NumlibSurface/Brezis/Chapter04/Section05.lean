@@ -7,32 +7,69 @@ import Numlib.Topology.ContinuousMap.ArzelaAscoli
 import NumlibSurface.Brezis.Chapter04.Section04
 
 /-!
-# Brezis §4.5: criterion for strong compactness in `L^p`
+# Brezis, Section 4.5: Criterion for strong compactness in $L^p$
 
-Surface file for Haim Brezis, *Functional Analysis, Sobolev Spaces and Partial Differential
-Equations*, Universitext, Springer, 2011, §4.5: the Ascoli–Arzelà theorem (4.25), the
-Kolmogorov–M. Riesz–Fréchet theorem (4.26) with its corollaries 4.27–4.28, Lemma 4.3 and
-Remarks 12–13, on `ℝ^N = EuclideanSpace ℝ (Fin N)` with Lebesgue measure and real values. The
-backbone is `Numlib/Topology/ContinuousMap/ArzelaAscoli` and
-`Numlib/MeasureTheory/Function/LpSpace/KolmogorovRiesz` (over any finite-dimensional real normed
-space with a Haar measure, vector-valued, including the converse of Remark 13 —
-`Lp.uniform_translate_of_isCompact_closure`, `Lp.tight_of_isCompact_closure` — and the
-translation invariance `eLpNorm_comp_add_right`), of which the nodes here are instances. The
-translation
-`τ_h f (x) = f (x + h)` is written on the coerced function, `fun x => f (x + h)`, and the book's
-uniform continuity (22) is stated with a real `ε` as `‖τ_h f - f‖_p < ε` in `[0, ∞]`; the
-restriction `F|_Ω` is the backbone's `Lp.restrictCLM ℝ ℝ p volume Ω`.
+This module formalizes Section 4.5 of [brezis2011functional] for real-valued functions on
+$\mathbb{R}^N$ with Lebesgue measure. The first result is the Ascoli–Arzelà theorem: a bounded,
+uniformly equicontinuous set of continuous functions on a compact metric space has compact closure
+(Theorem 4.25). The main result is the Kolmogorov–M. Riesz–Fréchet theorem (Theorem 4.26). Let
+$\mathcal{F}$ be a bounded set in $L^p(\mathbb{R}^N)$, $1 \le p < \infty$, such that
+$$\lim_{|h| \to 0} \|\tau_h f - f\|_p = 0 \quad \text{uniformly in } f \in \mathcal{F}, \qquad
+  (\tau_h f)(x) = f(x + h). \qquad (22)$$
+Then the restrictions of the functions of $\mathcal{F}$ to a set $\Omega$ of finite measure form a
+set with compact closure in $L^p(\Omega)$. With the tightness condition (27), $\mathcal{F}$ itself
+has compact closure in $L^p(\mathbb{R}^N)$ (Corollary 4.27), and the converse holds (Remark 13). The
+module also proves the continuity of translation in $L^q$ (Lemma 4.3), the compactness of
+$G \star \mathcal{B}$ for $G \in L^1$ and bounded $\mathcal{B}$ (Corollary 4.28), and gives an
+example that the hypotheses of Theorem 4.26 do not give compactness in $L^p(\mathbb{R}^N)$ (Remark
+12).
+
+The results are instances of the backbone modules `Numlib.Topology.ContinuousMap.ArzelaAscoli` and
+`Numlib.MeasureTheory.Function.LpSpace.KolmogorovRiesz`. The second module works over any
+finite-dimensional real normed space with a Haar measure and with vector values. It also proves the
+converse of Corollary 4.27 (`MeasureTheory.Lp.uniform_translate_of_isCompact_closure` and
+`MeasureTheory.Lp.tight_of_isCompact_closure`) and the translation invariance
+`MeasureTheory.eLpNorm_comp_add_right`.
 
 ## Main results
 
-* `theorem_4_25` — Ascoli–Arzelà.
-* `theorem_4_26` — Kolmogorov–M. Riesz–Fréchet: a bounded family with uniformly continuous
-  translates has compact closure after restriction to any set of finite measure.
-* `corollary_4_27` — with tightness, compact closure in `L^p(ℝ^N)` itself; `remark_4_13` — the
-  converse, a complete characterization of the relatively compact subsets of `L^p(ℝ^N)`.
-* `corollary_4_28`, `lemma_4_3` — the family `G ⋆ B` for `G ∈ L^1` and bounded `B ⊆ L^p`, and the
-  continuity of translation in `L^q`.
-* `remark_4_12` — the hypotheses of Theorem 4.26 do not give compact closure in `L^p(ℝ^N)`.
+* Theorem 4.25 (Ascoli–Arzelà), `Brezis.Chapter04.theorem_4_25`: a bounded, uniformly equicontinuous
+  subset of $C(K)$ has compact closure.
+* Theorem 4.26 (Kolmogorov–M. Riesz–Fréchet), `Brezis.Chapter04.theorem_4_26`: a bounded set in
+  $L^p(\mathbb{R}^N)$ that satisfies (22) has compact closure after restriction to a set of finite
+  measure.
+* Corollary 4.27, `Brezis.Chapter04.corollary_4_27`: a bounded set that satisfies (22) and the
+  tightness condition (27) has compact closure in $L^p(\mathbb{R}^N)$.
+* Lemma 4.3, `Brezis.Chapter04.lemma_4_3`: for $G \in L^q(\mathbb{R}^N)$, $1 \le q < \infty$,
+  $\|\tau_h G - G\|_q \to 0$ as $h \to 0$.
+* Corollary 4.28, `Brezis.Chapter04.corollary_4_28`: for $G \in L^1$ and bounded
+  $\mathcal{B} \subseteq L^p$, the set $G \star \mathcal{B}$ has compact closure after restriction
+  to a set of finite measure.
+* Remark 12, `Brezis.Chapter04.remark_4_12`: the hypotheses of Theorem 4.26 do not give compact
+  closure in $L^p(\mathbb{R}^N)$.
+* Exercise 4.34, `Brezis.Chapter04.uniform_translate_of_isCompact_closure` and
+  `Brezis.Chapter04.tight_of_isCompact_closure`: a set with compact closure in $L^p(\mathbb{R}^N)$
+  satisfies (22) and (27).
+* Remark 13, `Brezis.Chapter04.remark_4_13`: a set in $L^p(\mathbb{R}^N)$ has compact closure if and
+  only if it is bounded and satisfies (22) and (27).
+
+## Conventions
+
+* The space $\mathbb{R}^N$ is `EuclideanSpace ℝ (Fin N)`, with the local notation `𝔼`, and Lebesgue
+  measure `volume`.
+* The translate $\tau_h f$ of $f \in L^p$ is written on the underlying function, as
+  `fun x => f (x + h)`. The norm $\|\tau_h f - f\|_p$ is
+  `eLpNorm (fun x => f (x + h) - f x) p volume`, with values in $[0, +\infty]$.
+* Condition (22) is stated with a real $\varepsilon$: for every $\varepsilon > 0$ there is
+  $\delta > 0$ with $\|\tau_h f - f\|_p < \varepsilon$ for all $f \in \mathcal{F}$ and all
+  $|h| < \delta$.
+* The restriction $\mathcal{F}|_\Omega$ is the image of $\mathcal{F}$ under the backbone's
+  `MeasureTheory.Lp.restrictCLM ℝ ℝ p volume Ω`.
+
+## Deviations from the source
+
+* **Theorem 4.26** (generalization). The source assumes that $\Omega$ is measurable. The formal
+  statement holds for every set of finite outer measure. See `Brezis.Chapter04.theorem_4_26`.
 -/
 
 open Filter MeasureTheory Metric Topology
@@ -42,12 +79,18 @@ namespace Brezis.Chapter04
 
 variable {N : ℕ}
 
-/-- The book's `ℝ^N`. -/
+/-- The space $\mathbb{R}^N$ of the source, `EuclideanSpace ℝ (Fin N)`. -/
 local notation "𝔼" => EuclideanSpace ℝ (Fin N)
 
-/-- **Theorem 4.25 (Ascoli–Arzelà).** Let `K` be a compact metric space and `H ⊆ C(K)` bounded
-and uniformly equicontinuous: for every `ε > 0` there is `δ > 0` with `|f x₁ - f x₂| < ε` for
-all `f ∈ H` whenever `d(x₁, x₂) < δ`. Then the closure of `H` in `C(K)` is compact. -/
+/-- **Theorem 4.25** of [brezis2011functional] (Ascoli–Arzelà). Let $K$ be a compact metric space
+and let $\mathcal{H}$ be a bounded subset of $C(K)$, that is, $|f(x)| \le M$ for some $M$, all
+$f \in \mathcal{H}$ and all $x \in K$. Assume that $\mathcal{H}$ is uniformly equicontinuous:
+for every $\varepsilon > 0$ there is $\delta > 0$ such that
+$$d(x_1, x_2) < \delta \implies |f(x_1) - f(x_2)| < \varepsilon \quad \text{for all } f \in
+  \mathcal{H}.$$
+Then the closure of $\mathcal{H}$ in $C(K)$ is compact.
+
+The space $C(K)$ is `C(K, ℝ)` with the uniform norm. -/
 theorem theorem_4_25 {K : Type*} [MetricSpace K] [CompactSpace K] {H : Set C(K, ℝ)}
     (hbdd : ∃ M : ℝ, ∀ f ∈ H, ∀ x, |f x| ≤ M)
     (hequi : ∀ ε > 0, ∃ δ > 0, ∀ x₁ x₂ : K, dist x₁ x₂ < δ → ∀ f ∈ H, |f x₁ - f x₂| < ε) :
@@ -61,7 +104,8 @@ theorem theorem_4_25 {K : Type*} [MetricSpace K] [CompactSpace K] {H : Set C(K, 
   rw [Real.dist_eq]
   exact h x y hxy f f.2
 
-/-- The book's hypothesis (22), with a real `ε`, gives the backbone's form with `ε ∈ [0, ∞]`. -/
+/-- Condition (22) of [brezis2011functional], stated with a real $\varepsilon > 0$, implies the same
+condition with $\varepsilon \in (0, +\infty]$, which is the form of the backbone. -/
 theorem uniform_translate_of_real {p : ℝ≥0∞} {F : Set (Lp ℝ p (volume : Measure 𝔼))}
     (hτ : ∀ ε > (0 : ℝ), ∃ δ > (0 : ℝ), ∀ f ∈ F, ∀ h : 𝔼, ‖h‖ < δ →
       eLpNorm (fun x => f (x + h) - f x) p volume < ENNReal.ofReal ε) :
@@ -75,10 +119,15 @@ theorem uniform_translate_of_real {p : ℝ≥0∞} {F : Set (Lp ℝ p (volume : 
   rw [ENNReal.ofReal_toReal ((min_le_right _ _).trans_lt ENNReal.one_lt_top).ne]
   exact min_le_left _ _
 
-/-- **Theorem 4.26 (Kolmogorov–M. Riesz–Fréchet).** Let `F` be a bounded set in `L^p(ℝ^N)`,
-`1 ≤ p < ∞`, such that `‖τ_h f - f‖_p → 0` as `|h| → 0` uniformly in `f ∈ F` (22). Then the
-closure of `F|_Ω` in `L^p(Ω)` is compact for every `Ω ⊆ ℝ^N` of finite measure (the book asks
-`Ω` measurable; it is not needed). -/
+/-- **Theorem 4.26** of [brezis2011functional] (Kolmogorov–M. Riesz–Fréchet). Let $\mathcal{F}$ be a
+bounded set in $L^p(\mathbb{R}^N)$ with $1 \le p < \infty$. Assume that
+$$\lim_{|h| \to 0} \|\tau_h f - f\|_p = 0 \quad \text{uniformly in } f \in \mathcal{F}. \qquad
+  (22)$$
+Let $\Omega \subseteq \mathbb{R}^N$ have finite measure. Then the closure of
+$\mathcal{F}|_\Omega$ in $L^p(\Omega)$ is compact.
+
+**Generalization.** The source assumes that $\Omega$ is measurable. The proof does not need
+this, and the formal statement holds for every set $\Omega$ of finite outer measure. -/
 theorem theorem_4_26 {p : ℝ≥0∞} [Fact (1 ≤ p)] (hp : p ≠ ∞) {F : Set (Lp ℝ p (volume : Measure 𝔼))}
     (hF : Bornology.IsBounded F)
     (hτ : ∀ ε > (0 : ℝ), ∃ δ > (0 : ℝ), ∀ f ∈ F, ∀ h : 𝔼, ‖h‖ < δ →
@@ -88,9 +137,16 @@ theorem theorem_4_26 {p : ℝ≥0∞} [Fact (1 ≤ p)] (hp : p ≠ ∞) {F : Set
   Lp.isCompact_closure_image_restrictCLM_of_uniform_translate hp hF (uniform_translate_of_real hτ)
     hΩ.ne
 
-/-- **Corollary 4.27.** Let `F` be a bounded set in `L^p(ℝ^N)`, `1 ≤ p < ∞`, satisfying (22) and
-the tightness condition (27): for every `ε > 0` there is a bounded measurable `Ω ⊆ ℝ^N` with
-`‖f‖_{L^p(ℝ^N ∖ Ω)} < ε` for all `f ∈ F`. Then `F` has compact closure in `L^p(ℝ^N)`. -/
+/-- **Corollary 4.27** of [brezis2011functional]. Let $\mathcal{F}$ be a bounded set in
+$L^p(\mathbb{R}^N)$ with $1 \le p < \infty$. Assume that $\mathcal{F}$ satisfies (22), and that
+for every $\varepsilon > 0$ there is a bounded measurable set $\Omega \subseteq \mathbb{R}^N$
+with
+$$\|f\|_{L^p(\mathbb{R}^N \setminus \Omega)} < \varepsilon \quad \text{for all } f \in
+  \mathcal{F}. \qquad (27)$$
+Then $\mathcal{F}$ has compact closure in $L^p(\mathbb{R}^N)$.
+
+The norm on $\mathbb{R}^N \setminus \Omega$ is the norm of `Ωᶜ.indicator f` in
+$L^p(\mathbb{R}^N)$. -/
 theorem corollary_4_27 {p : ℝ≥0∞} [Fact (1 ≤ p)] (hp : p ≠ ∞)
     {F : Set (Lp ℝ p (volume : Measure 𝔼))} (hF : Bornology.IsBounded F)
     (hτ : ∀ ε > (0 : ℝ), ∃ δ > (0 : ℝ), ∀ f ∈ F, ∀ h : 𝔼, ‖h‖ < δ →
@@ -107,7 +163,10 @@ theorem corollary_4_27 {p : ℝ≥0∞} [Fact (1 ≤ p)] (hp : p ≠ ∞)
   rw [ENNReal.ofReal_toReal ((min_le_right _ _).trans_lt ENNReal.one_lt_top).ne]
   exact min_le_left _ _
 
-/-- **Lemma 4.3.** For `G ∈ L^q(ℝ^N)`, `1 ≤ q < ∞`, `‖τ_h G - G‖_q → 0` as `h → 0`. -/
+/-- **Lemma 4.3** of [brezis2011functional]. Let $G \in L^q(\mathbb{R}^N)$ with $1 \le q < \infty$.
+Then
+$$\lim_{h \to 0} \|\tau_h G - G\|_q = 0.$$
+-/
 theorem lemma_4_3 {q : ℝ≥0∞} [Fact (1 ≤ q)] (hq : q ≠ ∞) {G : 𝔼 → ℝ} (hG : MemLp G q volume) :
     Tendsto (fun h : 𝔼 => eLpNorm (fun x => G (x + h) - G x) q volume) (𝓝 0) (𝓝 0) := by
   have h1 : Tendsto (fun h : 𝔼 => -h) (𝓝 0) (𝓝 0) := by
@@ -115,30 +174,39 @@ theorem lemma_4_3 {q : ℝ≥0∞} [Fact (1 ≤ q)] (hq : q ≠ ∞) {G : 𝔼 �
   refine ((hG.tendsto_eLpNorm_sub_translate Fact.out hq).comp h1).congr fun h => ?_
   simp only [Function.comp_apply, sub_neg_eq_add]
 
-/-- **Corollary 4.28.** Let `G ∈ L^1(ℝ^N)` and `B ⊆ L^p(ℝ^N)` bounded, `1 ≤ p < ∞`; then the
-family `F = G ⋆ B` has compact closure in `L^p(Ω)` after restriction to any `Ω` of finite
-measure. The convolution with `G` is the backbone's bounded operator `Lp.convolutionCLM`, whose
-values are a.e. the convolutions `G ⋆ u` (`Lp.coeFn_convolutionCLM`). -/
+/-- **Corollary 4.28** of [brezis2011functional]. Let $G \in L^1(\mathbb{R}^N)$, let
+$1 \le p < \infty$, and let $\mathcal{B}$ be a bounded set in $L^p(\mathbb{R}^N)$. Let
+$\mathcal{F} = G \star \mathcal{B} = \{G \star u : u \in \mathcal{B}\}$. Then for every
+$\Omega \subseteq \mathbb{R}^N$ of finite measure, the closure of $\mathcal{F}|_\Omega$ in
+$L^p(\Omega)$ is compact.
+
+The convolution with $G$ is the backbone's bounded operator `MeasureTheory.Lp.convolutionCLM`,
+whose values are a.e. the convolutions $G \star u$ (`MeasureTheory.Lp.coeFn_convolutionCLM`). -/
 theorem corollary_4_28 {p : ℝ≥0∞} [Fact (1 ≤ p)] (hp : p ≠ ∞) {G : 𝔼 → ℝ}
     (hG : Integrable G volume) {B : Set (Lp ℝ p (volume : Measure 𝔼))} (hB : Bornology.IsBounded B)
     {Ω : Set 𝔼} (hΩ : volume Ω < ∞) :
     IsCompact (closure (Lp.restrictCLM ℝ ℝ p volume Ω '' (Lp.convolutionCLM ℝ p hG '' B))) :=
   Lp.isCompact_closure_image_restrictCLM_convolutionCLM hp hG hB hΩ.ne
 
-/-! ### Remark 12: the hypotheses of Theorem 4.26 do not give compactness in `L^p(ℝ^N)` -/
+/-! ### Remark 12: the hypotheses of Theorem 4.26 do not give compactness in $L^p(\mathbb{R}^N)$ -/
 
-/-- The translation `x ↦ x + h` preserves `eLpNorm` on `ℝ`: the backbone's
-`MeasureTheory.eLpNorm_comp_add_right`. -/
+/-- Translation preserves the $L^p$ norm on $\mathbb{R}$: for an a.e. strongly measurable
+$f : \mathbb{R} \to \mathbb{R}$ and $h \in \mathbb{R}$, $\|f(\cdot + h)\|_p = \|f\|_p$.
+
+This is the backbone's `MeasureTheory.eLpNorm_comp_add_right` on $\mathbb{R}$. -/
 theorem eLpNorm_comp_add_right_real {f : ℝ → ℝ} {p : ℝ≥0∞} (hf : AEStronglyMeasurable f volume)
     (h : ℝ) : eLpNorm (fun x => f (x + h)) p volume = eLpNorm f p volume :=
   MeasureTheory.eLpNorm_comp_add_right hf h
 
-/-- **Remark 12 (and Exercise 4.33).** The hypotheses of Theorem 4.26 do not imply that `F`
-itself has compact closure in `L^p(ℝ^N)`: on `ℝ`, the translates `φ(· + n)`, `n ∈ ℕ`, of the
-indicator function `φ` of `[0, 1)` form a bounded family satisfying (22) — their translates are
-uniformly continuous in `L^p` because translation is an isometry of `L^p` and `φ` satisfies
-Lemma 4.3 — whose closure is not compact, the translates being pairwise at distance at least
-`1`. -/
+/-- **Remark 12** in Chapter 4 of [brezis2011functional], with Exercise 4.33. The hypotheses of
+Theorem 4.26 do not imply that $\mathcal{F}$ has compact closure in $L^p(\mathbb{R}^N)$.
+Precisely, for $1 \le p < \infty$ there is a bounded set $\mathcal{F}$ in $L^p(\mathbb{R})$ that
+satisfies (22) and does not have compact closure in $L^p(\mathbb{R})$.
+
+The example is the set of the translates $\varphi(\cdot + n)$, $n \in \mathbb{N}$, of the
+indicator function $\varphi$ of $[0, 1)$. It satisfies (22) because translation is an isometry
+of $L^p$ and $\varphi$ satisfies Lemma 4.3. Its closure is not compact, because the translates
+are at mutual distance at least $1$. -/
 theorem remark_4_12 {p : ℝ≥0∞} [Fact (1 ≤ p)] (hp : p ≠ ∞) :
     ∃ F : Set (Lp ℝ p (volume : Measure ℝ)), Bornology.IsBounded F ∧
       (∀ ε > (0 : ℝ), ∃ δ > (0 : ℝ), ∀ f ∈ F, ∀ h : ℝ, ‖h‖ < δ →
@@ -219,32 +287,46 @@ theorem remark_4_12 {p : ℝ≥0∞} [Fact (1 ≤ p)] (hp : p ≠ ∞) :
 
 /-! ### Remark 13: the converse of Corollary 4.27 -/
 
-/-- The translation `x ↦ x + h` preserves `eLpNorm` on `ℝ^N`: the backbone's
-`MeasureTheory.eLpNorm_comp_add_right`. -/
+/-- Translation preserves the $L^p$ norm on $\mathbb{R}^N$: for an a.e. strongly measurable
+$f : \mathbb{R}^N \to \mathbb{R}$ and $h \in \mathbb{R}^N$, $\|f(\cdot + h)\|_p = \|f\|_p$.
+
+This is the backbone's `MeasureTheory.eLpNorm_comp_add_right` on $\mathbb{R}^N$. -/
 theorem eLpNorm_comp_add_right {f : 𝔼 → ℝ} {p : ℝ≥0∞} (hf : AEStronglyMeasurable f volume)
     (h : 𝔼) : eLpNorm (fun x => f (x + h)) p volume = eLpNorm f p volume :=
   MeasureTheory.eLpNorm_comp_add_right hf h
 
-/-- **Exercise 4.34, the uniform continuity of translation**: a relatively compact `F ⊆ L^p(ℝ^N)`,
-`1 ≤ p < ∞`, satisfies (22) — the backbone's `Lp.uniform_translate_of_isCompact_closure`, with
-the book's real `ε`. -/
+/-- **Exercise 4.34** of [brezis2011functional], uniform continuity of translation. Let
+$1 \le p < \infty$ and let $\mathcal{F} \subseteq L^p(\mathbb{R}^N)$ have compact closure. Then
+$\mathcal{F}$ satisfies (22).
+
+This is the backbone's `MeasureTheory.Lp.uniform_translate_of_isCompact_closure`, with a real
+$\varepsilon$ as in the source. -/
 theorem uniform_translate_of_isCompact_closure {p : ℝ≥0∞} [Fact (1 ≤ p)] (hp : p ≠ ∞)
     {F : Set (Lp ℝ p (volume : Measure 𝔼))} (hF : IsCompact (closure F)) :
     ∀ ε > (0 : ℝ), ∃ δ > (0 : ℝ), ∀ f ∈ F, ∀ h : 𝔼, ‖h‖ < δ →
       eLpNorm (fun x => f (x + h) - f x) p volume < ENNReal.ofReal ε := fun ε hε =>
   Lp.uniform_translate_of_isCompact_closure hp hF (ENNReal.ofReal ε) (ENNReal.ofReal_pos.2 hε)
 
-/-- **Exercise 4.34, tightness**: a relatively compact `F ⊆ L^p(ℝ^N)`, `1 ≤ p < ∞`, satisfies
-(27) — the backbone's `Lp.tight_of_isCompact_closure`, with the book's real `ε`. -/
+/-- **Exercise 4.34** of [brezis2011functional], tightness. Let $1 \le p < \infty$ and let
+$\mathcal{F} \subseteq L^p(\mathbb{R}^N)$ have compact closure. Then $\mathcal{F}$ satisfies
+(27): for every $\varepsilon > 0$ there is a bounded measurable set
+$\Omega \subseteq \mathbb{R}^N$ with $\|f\|_{L^p(\mathbb{R}^N \setminus \Omega)} < \varepsilon$
+for all $f \in \mathcal{F}$.
+
+This is the backbone's `MeasureTheory.Lp.tight_of_isCompact_closure`, with a real $\varepsilon$
+as in the source. -/
 theorem tight_of_isCompact_closure {p : ℝ≥0∞} [Fact (1 ≤ p)] (hp : p ≠ ∞)
     {F : Set (Lp ℝ p (volume : Measure 𝔼))} (hF : IsCompact (closure F)) :
     ∀ ε > (0 : ℝ), ∃ Ω : Set 𝔼, Bornology.IsBounded Ω ∧ MeasurableSet Ω ∧
       ∀ f ∈ F, eLpNorm (Ωᶜ.indicator f) p volume < ENNReal.ofReal ε := fun ε hε =>
   Lp.tight_of_isCompact_closure hp hF (ENNReal.ofReal ε) (ENNReal.ofReal_pos.2 hε)
 
-/-- **Remark 13.** The converse of Corollary 4.27 holds (Exercise 4.34), so a set `F ⊆ L^p(ℝ^N)`,
-`1 ≤ p < ∞`, has compact closure if and only if it is bounded, satisfies (22) and satisfies
-(27): a complete characterization of the relatively compact subsets of `L^p(ℝ^N)`. -/
+/-- **Remark 13** in Chapter 4 of [brezis2011functional]. Let $1 \le p < \infty$ and
+$\mathcal{F} \subseteq L^p(\mathbb{R}^N)$. Then $\mathcal{F}$ has compact closure in
+$L^p(\mathbb{R}^N)$ if and only if $\mathcal{F}$ is bounded, satisfies (22) and satisfies (27).
+
+This is a complete characterization of the relatively compact subsets of $L^p(\mathbb{R}^N)$.
+The direction "only if" is the converse of Corollary 4.27, Exercise 4.34 of the source. -/
 theorem remark_4_13 {p : ℝ≥0∞} [Fact (1 ≤ p)] (hp : p ≠ ∞)
     (F : Set (Lp ℝ p (volume : Measure 𝔼))) :
     IsCompact (closure F) ↔

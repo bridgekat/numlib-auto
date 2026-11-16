@@ -9,43 +9,87 @@ import Numlib.Analysis.Normed.Operator.Unbounded.Adjoint
 import Numlib.Analysis.Normed.Operator.Unbounded.Basic
 
 /-!
-# Brezis §2.6: unbounded linear operators, and the definition of the adjoint
+# Brezis, Section 2.6: Unbounded linear operators, and the definition of the adjoint
 
-Surface file for Haim Brezis, *Functional Analysis, Sobolev Spaces and Partial Differential
-Equations*, Universitext, Springer, 2011, §2.6, over real Banach spaces `E`, `F`. An unbounded
-operator `A : D(A) ⊆ E → F` is Mathlib's `LinearPMap`, `A : E →ₗ.[ℝ] F`, with `A.domain` the
-book's `D(A)`; its graph, range and kernel are `A.graph`, `LinearMap.range A.toFun` and `A.ker`,
-closedness is `A.IsClosed`, and "densely defined" is `Dense (A.domain : Set E)`. The adjoint
-`A* : D(A*) ⊆ F* → E*` is the backbone `LinearPMap.strongDualAdjoint`
-(`Numlib/Analysis/Normed/Operator/Unbounded/Adjoint`), and for a bounded operator it is
+This module formalizes Section 2.6 of [brezis2011functional] for real normed spaces $E$ and $F$. An
+unbounded linear operator $A : D(A) \subseteq E \to F$ is a linear map defined on a linear subspace
+$D(A)$ of $E$, the domain of $A$. It has the graph $G(A) = \{[u, Au] : u \in D(A)\} \subseteq E
+\times F$, the range $R(A)$ and the kernel $N(A)$, and it is closed if $G(A)$ is closed. If $A$ is
+densely defined, its adjoint $A^\star : D(A^\star) \subseteq F^\star \to E^\star$ has the domain
+$$D(A^\star) = \{v \in F^\star : \exists c \ge 0,\ |\langle v, Au \rangle| \le c\|u\| \ \forall u
+  \in D(A)\},$$
+and $A^\star v$ is the unique $f \in E^\star$ with $\langle v, Au \rangle = \langle f, u \rangle$
+for all $u \in D(A)$. The adjoint is closed (Proposition 2.17), and the kernels and ranges of $A$
+and $A^\star$ satisfy four orthogonality relations (Corollary 2.18). Examples on $\ell^2$ show that
+a bounded operator can have a range that is not closed, and that a closable operator need not be
+closed.
+
+The adjoint is the backbone `LinearPMap.strongDualAdjoint` of the module
+`Numlib.Analysis.Normed.Operator.Unbounded.Adjoint`. For a bounded operator $T$ it is the dual map
 `ContinuousLinearMap.strongDualMap`.
+
+## Main definitions
+
+* Section 2.6, definition of a bounded operator, `Brezis.Chapter02.IsBoundedOperator`: $D(A) = E$
+  and $\|Au\| \le c\|u\|$.
+* Remark 20, `Brezis.Chapter02.diagOperator`: the operator $Ax = (x_n/n)_{n \ge 1}$ on $\ell^2$.
+* Section 2.6, `Brezis.Chapter02.finSuppSubmodule`: the finitely supported sequences in $\ell^2$,
+  the domain of the example of Remark 11.
 
 ## Main results
 
-* `IsBoundedOperator`, `isBoundedOperator_iff` — the book's "bounded (or continuous)" operator,
-  and its identification with a `ContinuousLinearMap` on all of `E`.
-* `mem_graph_iff`, `mem_range_iff`, `mem_ker_iff`, `isClosed_iff` — the notation paragraph:
-  graph, range, kernel and closedness.
-* `remark_2_11`, `remark_2_12` — the sequential criterion for closedness; the kernel of a closed
-  operator is closed.
-* `adjoint_domain_iff`, `adjoint_apply`, `adjoint_apply_eq` — the definition of `A*`: its domain
-  (24), the fundamental relation (25), and the uniqueness of the extension.
-* `remark_2_15`, `remark_2_16`, `remark_2_17`, `remark_2_17_reflexive` — the weak-∗ density of
-  `D(A*)`, the adjoint of a bounded operator, `N(A)^⊥` as the weak-∗ closure of `R(A*)`, and its
-  norm form for reflexive `E`.
-* `proposition_2_17`, `graph_adjoint_eq_annihilator_graph`, `corollary_2_18` — `A*` is closed;
-  `I[G(A*)] = G(A)^⊥`; the four orthogonality relations between kernels and ranges.
-* `diagOperator`, `remark_2_12_range_not_closed`, `remark_2_11_not_closed` — the `ℓ²` examples:
-  the bounded operator `x ↦ (xₙ / n)` has dense, non-closed range (Remarks 12 and 20), and the
-  zero operator on the finitely supported sequences is closable but not closed (Remark 11's
-  warning: sequences `uₙ → 0` do not suffice).
+* Section 2.6, `Brezis.Chapter02.isBoundedOperator_iff`: a bounded operator is a bounded linear
+  operator on all of $E$, and conversely.
+* Section 2.6, `Brezis.Chapter02.mem_graph_iff`: the graph $G(A)$.
+* Section 2.6, `Brezis.Chapter02.mem_range_iff`: the range $R(A)$.
+* Section 2.6, `Brezis.Chapter02.mem_ker_iff`: the kernel $N(A)$.
+* Section 2.6, `Brezis.Chapter02.isClosed_iff`: $A$ is closed if and only if $G(A)$ is closed.
+* Remark 11, `Brezis.Chapter02.remark_2_11`: the sequential criterion for closedness.
+* Remark 11, `Brezis.Chapter02.remark_2_11_not_closed`: a closable operator that is not closed.
+* Remark 12, `Brezis.Chapter02.remark_2_12`: the kernel of a closed operator is closed.
+* Remark 12, `Brezis.Chapter02.remark_2_12_range_not_closed`: a bounded operator on $\ell^2$ whose
+  range is not closed.
+* Section 2.6, `Brezis.Chapter02.adjoint_domain_iff`: the domain (24) of $A^\star$.
+* Section 2.6, `Brezis.Chapter02.adjoint_apply`: the fundamental relation (25), $\langle v, Au
+  \rangle = \langle A^\star v, u \rangle$.
+* Section 2.6, `Brezis.Chapter02.adjoint_apply_eq`: $A^\star v$ is the unique extension of
+  $u \mapsto \langle v, Au \rangle$.
+* Remark 15, `Brezis.Chapter02.remark_2_15`: for $A$ closed and densely defined, $D(A^\star)$ is
+  dense in $F^\star$ for $\sigma(F^\star, F)$.
+* Remark 16, `Brezis.Chapter02.remark_2_16`: the adjoint of a bounded operator $T$ is the bounded
+  operator $T^\star$, with $\|T^\star\| = \|T\|$.
+* Proposition 2.17, `Brezis.Chapter02.proposition_2_17`: $A^\star$ is closed.
+* Section 2.6, `Brezis.Chapter02.graph_adjoint_eq_annihilator_graph`: the relations (27),
+  $I[G(A^\star)] = G(A)^\perp$, and (28).
+* Corollary 2.18, `Brezis.Chapter02.corollary_2_18`: $N(A) = R(A^\star)^\perp$,
+  $N(A^\star) = R(A)^\perp$, $N(A)^\perp \supseteq \overline{R(A^\star)}$ and
+  $N(A^\star)^\perp = \overline{R(A)}$.
+* Remark 17, `Brezis.Chapter02.remark_2_17`: $N(A)^\perp$ is the closure of $R(A^\star)$ for
+  $\sigma(E^\star, E)$.
+* Remark 17, `Brezis.Chapter02.remark_2_17_reflexive`: if $E$ is reflexive, then
+  $N(A)^\perp = \overline{R(A^\star)}$.
 
-Remarks 10, 13 and 14 are discussion (Remark 14 — the adjoint is defined by extension by
-continuity, not Hahn–Banach — is the backbone's definition). The first clauses of Remarks 15 and
-17 (the counterexamples on `ℓ¹`, Exercises 2.22–2.23) are not stated; the reflexive clause of
-Remark 15 is Theorem 3.24, chapter 3. The `ℓ²` example of Remark 12 (a bounded operator whose
-range is not closed) is `diagOperator` and `remark_2_12_range_not_closed`, and Remark 11's
-warning is `remark_2_11_not_closed`.
+## Conventions
+
+* An unbounded operator $A : D(A) \subseteq E \to F$ is Mathlib's `LinearPMap`, `A : E →ₗ.[ℝ] F`,
+  and $D(A)$ is `A.domain`. The graph, the range and the kernel are `A.graph`,
+  `LinearMap.range A.toFun` and `A.ker`. Closedness is `A.IsClosed`, and "densely defined" is
+  `Dense (A.domain : Set E)`.
+* $\ell^2$ is `lp (fun _ : ℕ => ℝ) 2`. Sequences are indexed from $0$, so the operator
+  $x \mapsto (x_n/n)_{n \ge 1}$ of the source is $x \mapsto (x_n/(n+1))_{n \ge 0}$.
+
+## Implementation notes
+
+* As Remark 14 explains, the adjoint is defined by extension by continuity, without the Hahn–Banach
+  theorem; this is the definition of `LinearPMap.strongDualAdjoint`. The domain $D(A^\star)$ is
+  defined for every $A$. When $D(A)$ is not dense, the values of `LinearPMap.strongDualAdjoint` are
+  $0$, so the results about the values assume that $D(A)$ is dense.
+
+## Not formalized
+
+* **Remarks 10, 13 and 14.** They are discussion.
+* **Remarks 15 and 17, first clauses (Exercises 2.22 and 2.23).** The counterexamples on $\ell^1$.
+* **Remark 15, reflexive clause.** It is Theorem 3.24 in Chapter 3.
 -/
 
 open Filter Topology NormedSpace
@@ -60,12 +104,17 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [NormedAddComm
 
 /-! ### The definitions -/
 
-/-- **The Definition of §2.6, "bounded (or continuous)":** an unbounded operator `A` is bounded
-when `D(A) = E` and `‖A u‖ ≤ c ‖u‖` for some `c ≥ 0`. -/
+/-- **Section 2.6** of [brezis2011functional], definition of a bounded operator. An unbounded linear
+operator $A : D(A) \subseteq E \to F$ is **bounded** (or **continuous**) if $D(A) = E$ and there
+is a constant $c \ge 0$ such that
+$$\|Au\| \le c\|u\| \quad \text{for all } u \in E.$$
+-/
 def IsBoundedOperator (A : E →ₗ.[ℝ] F) : Prop :=
   A.domain = ⊤ ∧ ∃ c : ℝ, 0 ≤ c ∧ ∀ u : A.domain, ‖A u‖ ≤ c * ‖(u : E)‖
 
-/-- A bounded unbounded operator is a `ContinuousLinearMap` on all of `E`, and conversely. -/
+/-- An unbounded linear operator $A : D(A) \subseteq E \to F$ is bounded in the sense of
+`Brezis.Chapter02.IsBoundedOperator` if and only if $A$ is a bounded linear operator
+$T \in \mathcal{L}(E, F)$, viewed as an operator with domain $E$. -/
 theorem isBoundedOperator_iff (A : E →ₗ.[ℝ] F) :
     IsBoundedOperator A ↔ ∃ T : E →L[ℝ] F, A = (T : E →ₗ[ℝ] F).toPMap ⊤ := by
   constructor
@@ -81,41 +130,56 @@ theorem isBoundedOperator_iff (A : E →ₗ.[ℝ] F) :
   · rintro ⟨T, rfl⟩
     exact ⟨rfl, ‖T‖, norm_nonneg _, fun u => T.le_opNorm u⟩
 
-/-- **The graph** `G(A) = {[u, A u] | u ∈ D(A)} ⊆ E × F` is `A.graph`. -/
+/-- **Section 2.6** of [brezis2011functional], the graph. The graph of $A : D(A) \subseteq E \to F$
+is
+$$G(A) = \{[u, Au] : u \in D(A)\} \subseteq E \times F.$$
+It is `A.graph`, and the theorem states its membership criterion. -/
 theorem mem_graph_iff (A : E →ₗ.[ℝ] F) (x : E) (y : F) :
     (x, y) ∈ A.graph ↔ ∃ u : A.domain, (u : E) = x ∧ A u = y :=
   LinearPMap.mem_graph_iff A
 
-/-- **The range** `R(A) = {A u | u ∈ D(A)} ⊆ F` is `LinearMap.range A.toFun`. -/
+/-- **Section 2.6** of [brezis2011functional], the range. The range of $A : D(A) \subseteq E \to F$
+is
+$$R(A) = \{Au : u \in D(A)\} \subseteq F.$$
+It is `LinearMap.range A.toFun`, and the theorem states its membership criterion. -/
 theorem mem_range_iff (A : E →ₗ.[ℝ] F) (y : F) :
     y ∈ LinearMap.range A.toFun ↔ ∃ u : A.domain, A u = y :=
   LinearMap.mem_range
 
-/-- **The kernel** `N(A) = {u ∈ D(A) | A u = 0} ⊆ E` is `A.ker`. -/
+/-- **Section 2.6** of [brezis2011functional], the kernel. The kernel of
+$A : D(A) \subseteq E \to F$ is
+$$N(A) = \{u \in D(A) : Au = 0\} \subseteq E.$$
+It is `A.ker`, and the theorem states its membership criterion. -/
 theorem mem_ker_iff (A : E →ₗ.[ℝ] F) (x : E) :
     x ∈ A.ker ↔ ∃ u : A.domain, x = u ∧ A u = 0 :=
   LinearPMap.mem_ker_iff
 
-/-- **`A` is closed if `G(A)` is closed** in `E × F`. -/
+/-- **Section 2.6** of [brezis2011functional], closed operators. An unbounded operator
+$A : D(A) \subseteq E \to F$ is **closed** if and only if its graph $G(A)$ is closed in
+$E \times F$. Closedness is Mathlib's `LinearPMap.IsClosed`. -/
 theorem isClosed_iff (A : E →ₗ.[ℝ] F) : A.IsClosed ↔ IsClosed (A.graph : Set (E × F)) :=
   Iff.rfl
 
-/-- **Remark 11.** To prove that `A` is closed one takes `uₙ ∈ D(A)` with `uₙ → u` and
-`A uₙ → f` and checks (a) `u ∈ D(A)` and (b) `f = A u`; this is a characterization. -/
+/-- **Remark 11** of [brezis2011functional]. An unbounded operator $A : D(A) \subseteq E \to F$ is
+closed if and only if, for every sequence $(u_n)$ in $D(A)$ with $u_n \to u$ in $E$ and
+$Au_n \to f$ in $F$, one has (a) $u \in D(A)$ and (b) $f = Au$.
+
+The source gives this as the method to prove that $A$ is closed. -/
 theorem remark_2_11 (A : E →ₗ.[ℝ] F) :
     A.IsClosed ↔ ∀ (u : ℕ → A.domain) (x : E) (y : F),
       Tendsto (fun n => (u n : E)) atTop (𝓝 x) → Tendsto (fun n => A (u n)) atTop (𝓝 y) →
         ∃ hx : x ∈ A.domain, A ⟨x, hx⟩ = y :=
   LinearPMap.isClosed_iff_seq A
 
-/-- **Remark 12, first clause.** If `A` is closed then `N(A)` is closed. -/
+/-- **Remark 12** of [brezis2011functional], first clause. If $A : D(A) \subseteq E \to F$ is
+closed, then $N(A)$ is closed. -/
 theorem remark_2_12 {A : E →ₗ.[ℝ] F} (hA : A.IsClosed) : IsClosed (A.ker : Set E) :=
   hA.isClosed_ker
 
-/-! ### The `ℓ²` examples of Remarks 11, 12 and 20 -/
+/-! ### The $\ell^2$ examples of Remarks 11, 12 and 20 -/
 
-/-- The pointwise map `x ↦ (xₙ / (n + 1))ₙ` of Remark 20 (the book's `xₙ / n` with `n ≥ 1`,
-indexed from `0` here). -/
+/-- The map $x \mapsto (x_n/(n+1))_{n \ge 0}$ on real sequences, which underlies the operator of
+Remark 20 of [brezis2011functional]. -/
 private def diagFun (x : ℕ → ℝ) : ℕ → ℝ := fun n => x n / (n + 1)
 
 private theorem norm_diagFun_le (x : ℕ → ℝ) (n : ℕ) : ‖diagFun x n‖ ≤ ‖x n‖ := by
@@ -126,8 +190,12 @@ private theorem norm_diagFun_le (x : ℕ → ℝ) (n : ℕ) : ‖diagFun x n‖ 
 private theorem memℓp_diagFun (x : lp (fun _ : ℕ => ℝ) 2) : Memℓp (diagFun x) 2 :=
   (lp.memℓp x).mono' (norm_diagFun_le x)
 
-/-- **The operator of Remark 20** (and of Remark 12's second clause) on `ℓ²`:
-`A x = (xₙ / (n + 1))ₙ`, a bounded operator of norm at most `1`. -/
+/-- **Remark 20** of [brezis2011functional], the operator. On $\ell^2$, the operator
+$$Ax = \Big(\frac{x_n}{n}\Big)_{n \ge 1}$$
+is a bounded linear operator of norm at most $1$. It is also the example of the second clause of
+Remark 12.
+
+Sequences are indexed from $0$, so the operator is $x \mapsto (x_n/(n+1))_{n \ge 0}$. -/
 def diagOperator : lp (fun _ : ℕ => ℝ) 2 →L[ℝ] lp (fun _ : ℕ => ℝ) 2 :=
   LinearMap.mkContinuous
     { toFun := fun x => ⟨diagFun x, memℓp_diagFun x⟩
@@ -143,13 +211,14 @@ def diagOperator : lp (fun _ : ℕ => ℝ) 2 →L[ℝ] lp (fun _ : ℕ => ℝ) 2
       rw [one_mul]
       exact lp.norm_mono two_ne_zero (norm_diagFun_le x))
 
-/-- The operator of Remark 20 acts by `(A x)ₙ = xₙ / (n + 1)`. -/
+/-- The operator `Brezis.Chapter02.diagOperator` of Remark 20 acts by $(Ax)_n = x_n/(n+1)$ for
+$n \ge 0$. -/
 @[simp]
 theorem diagOperator_apply (x : lp (fun _ : ℕ => ℝ) 2) (n : ℕ) :
     diagOperator x n = x n / (n + 1) :=
   rfl
 
-/-- The operator of Remark 20 is injective. -/
+/-- The operator `Brezis.Chapter02.diagOperator` of Remark 20 is injective. -/
 theorem diagOperator_injective : Function.Injective diagOperator := by
   intro x y hxy
   ext n
@@ -157,8 +226,9 @@ theorem diagOperator_injective : Function.Injective diagOperator := by
   simp only [diagOperator_apply] at this
   exact (div_left_inj' (by positivity)).1 this
 
-/-- Every finitely supported sequence is in the range of the operator of Remark 20:
-`A (lp.single n ((n + 1) a)) = lp.single n a`. -/
+/-- Every finitely supported sequence is in the range of the operator
+`Brezis.Chapter02.diagOperator` of Remark 20: $A(e_n \cdot (n+1)a) = e_n \cdot a$, where $e_n$
+is the $n$-th unit sequence and $a \in \mathbb{R}$. -/
 theorem diagOperator_single (n : ℕ) (a : ℝ) :
     diagOperator (lp.single 2 n ((n + 1) * a)) = lp.single 2 n a := by
   ext m
@@ -168,8 +238,8 @@ theorem diagOperator_single (n : ℕ) (a : ℝ) :
     exact mul_div_cancel_left₀ a (by positivity)
   · simp [h]
 
-/-- The operator of Remark 20 has dense range: every `x ∈ ℓ²` is the limit of its truncations,
-which are in the range. -/
+/-- The operator `Brezis.Chapter02.diagOperator` of Remark 20 has dense range: every $x \in \ell^2$
+is the limit of its truncations, which are in the range. -/
 theorem dense_range_diagOperator : Dense (Set.range diagOperator) := by
   intro x
   have hsum := (lp.hasSum_single (E := fun _ : ℕ => ℝ) (p := 2) (by norm_num) x).tendsto_sum_nat
@@ -178,7 +248,7 @@ theorem dense_range_diagOperator : Dense (Set.range diagOperator) := by
   rw [map_sum]
   exact Finset.sum_congr rfl fun i _ => diagOperator_single i (x i)
 
-/-- The sequence `1 / (n + 1)` lies in `ℓ²`. -/
+/-- The sequence $(1/(n+1))_{n \ge 0}$ lies in $\ell^2$. -/
 private theorem memℓp_inv_succ : Memℓp (fun n : ℕ => (1 : ℝ) / (n + 1)) 2 := by
   refine memℓp_gen ?_
   have : Summable (fun n : ℕ => 1 / ((n : ℝ) + 1) ^ 2) := by
@@ -188,8 +258,8 @@ private theorem memℓp_inv_succ : Memℓp (fun n : ℕ => (1 : ℝ) / (n + 1)) 
   refine this.congr fun n => ?_
   simp [ENNReal.toReal_ofNat, Real.norm_eq_abs]
 
-/-- The operator of Remark 20 is not onto: `(1 / (n + 1))ₙ ∈ ℓ²` would have the constant
-sequence `1` as preimage, which is not in `ℓ²`. -/
+/-- The operator `Brezis.Chapter02.diagOperator` of Remark 20 is not onto. A preimage of
+$(1/(n+1))_{n \ge 0} \in \ell^2$ would be the constant sequence $1$, which is not in $\ell^2$. -/
 theorem not_surjective_diagOperator : ¬ Function.Surjective diagOperator := by
   intro h
   obtain ⟨x, hx⟩ := h ⟨fun n => 1 / (n + 1), memℓp_inv_succ⟩
@@ -203,16 +273,20 @@ theorem not_surjective_diagOperator : ¬ Function.Surjective diagOperator := by
   have := tendsto_const_nhds_iff.1 hsum.tendsto_atTop_zero
   exact one_ne_zero this
 
-/-- **Remark 12, second clause.** The range of a closed (even bounded) operator need not be
-closed: the operator `x ↦ (xₙ / (n + 1))` on `ℓ²` is closed (bounded, defined everywhere), and
-its range is dense but not closed. -/
+/-- **Remark 12** of [brezis2011functional], second clause. The range of a closed operator, even of
+a bounded operator, need not be closed. The operator $Ax = (x_n/n)_{n \ge 1}$ on $\ell^2$, with
+domain $\ell^2$, is closed, and its range is not closed.
+
+The operator is `Brezis.Chapter02.diagOperator`, viewed as an unbounded operator with domain
+$\ell^2$. Its range is also dense, by `Brezis.Chapter02.dense_range_diagOperator`. -/
 theorem remark_2_12_range_not_closed :
     ¬ IsClosed (Set.range diagOperator) ∧
       ((diagOperator : lp (fun _ : ℕ => ℝ) 2 →ₗ[ℝ] lp (fun _ : ℕ => ℝ) 2).toPMap ⊤).IsClosed := by
   refine ⟨fun h => not_surjective_diagOperator ?_, diagOperator.isClosed_toPMap isClosed_univ⟩
   rw [← Set.range_eq_univ, ← h.closure_eq, dense_range_diagOperator.closure_eq]
 
-/-- The finitely supported sequences, as a subspace of `ℓ²`. -/
+/-- The finitely supported sequences, that is, the $x \in \ell^2$ with $x_n = 0$ for all large $n$,
+as a linear subspace of $\ell^2$. -/
 def finSuppSubmodule : Submodule ℝ (lp (fun _ : ℕ => ℝ) 2) where
   carrier := {x | ∃ N : ℕ, ∀ n, N ≤ n → x n = 0}
   zero_mem' := ⟨0, fun _ _ => rfl⟩
@@ -222,7 +296,7 @@ def finSuppSubmodule : Submodule ℝ (lp (fun _ : ℕ => ℝ) 2) where
   smul_mem' := fun c {x} ⟨N, hN⟩ => ⟨N, fun n hn => by
     rw [lp.coeFn_smul, Pi.smul_apply, hN n hn, smul_zero]⟩
 
-/-- The finitely supported sequences are dense in `ℓ²`. -/
+/-- The finitely supported sequences are dense in $\ell^2$. -/
 theorem dense_finSuppSubmodule : Dense (finSuppSubmodule : Set (lp (fun _ : ℕ => ℝ) 2)) := by
   intro x
   have hsum := (lp.hasSum_single (E := fun _ : ℕ => ℝ) (p := 2) (by norm_num) x).tendsto_sum_nat
@@ -232,7 +306,7 @@ theorem dense_finSuppSubmodule : Dense (finSuppSubmodule : Set (lp (fun _ : ℕ 
   rw [lp.single_apply, Pi.single_eq_of_ne]
   exact ne_of_gt (lt_of_lt_of_le (Finset.mem_range.1 hi) hn)
 
-/-- The finitely supported sequences are not all of `ℓ²`. -/
+/-- The finitely supported sequences are not all of $\ell^2$. -/
 theorem finSuppSubmodule_ne_top : finSuppSubmodule ≠ ⊤ := by
   intro h
   have hmem : (⟨fun n => 1 / (n + 1), memℓp_inv_succ⟩ : lp (fun _ : ℕ => ℝ) 2) ∈
@@ -242,11 +316,14 @@ theorem finSuppSubmodule_ne_top : finSuppSubmodule ≠ ⊤ := by
   change (1 : ℝ) / (N + 1) = 0 at this
   exact absurd this (by positivity)
 
-/-- **Remark 11, the warning.** It does not suffice to consider sequences with `uₙ → 0` in the
-criterion for closedness: that weaker condition is closability (`LinearPMap.IsClosable`), and a
-closable operator need not be closed. The zero operator on the finitely supported sequences of
-`ℓ²` is closable (it extends to the closed zero operator on `ℓ²`) but not closed, its domain being
-dense and proper. -/
+/-- **Remark 11** of [brezis2011functional], the warning. In the criterion for closedness it does
+not suffice to consider sequences with $u_n \to 0$. The weaker condition is closability, and a
+closable operator need not be closed: there is an unbounded operator $A$ on $\ell^2$ that is
+closable but not closed.
+
+Closability is Mathlib's `LinearPMap.IsClosable`. The example is the zero operator on the
+finitely supported sequences `Brezis.Chapter02.finSuppSubmodule`. It extends to the closed zero
+operator on $\ell^2$, and it is not closed because its domain is dense and not all of $\ell^2$. -/
 theorem remark_2_11_not_closed :
     ∃ A : lp (fun _ : ℕ => ℝ) 2 →ₗ.[ℝ] lp (fun _ : ℕ => ℝ) 2, A.IsClosable ∧ ¬ A.IsClosed := by
   refine ⟨(0 : lp (fun _ : ℕ => ℝ) 2 →ₗ[ℝ] lp (fun _ : ℕ => ℝ) 2).toPMap finSuppSubmodule, ?_, ?_⟩
@@ -267,8 +344,13 @@ theorem remark_2_11_not_closed :
 
 /-! ### The adjoint -/
 
-/-- **The definition of the adjoint, (24):** `D(A*)` is the set of `v ∈ F*` for which
-`|⟨v, A u⟩| ≤ c ‖u‖` on `D(A)` for some `c ≥ 0`. -/
+/-- **Section 2.6** of [brezis2011functional], the domain of the adjoint, (24). Let
+$A : D(A) \subseteq E \to F$ be an unbounded operator. Then $v \in F^\star$ is in $D(A^\star)$
+if and only if there is a constant $c \ge 0$ such that
+$$|\langle v, Au \rangle| \le c\|u\| \quad \text{for all } u \in D(A).$$
+
+The adjoint is the backbone `LinearPMap.strongDualAdjoint`. Its domain is defined for every $A$,
+densely defined or not. -/
 theorem adjoint_domain_iff (A : E →ₗ.[ℝ] F) (v : StrongDual ℝ F) :
     v ∈ A.strongDualAdjoint.domain ↔
       ∃ c : ℝ, 0 ≤ c ∧ ∀ u : A.domain, |v (A u)| ≤ c * ‖(u : E)‖ := by
@@ -281,28 +363,44 @@ theorem adjoint_domain_iff (A : E →ₗ.[ℝ] F) (v : StrongDual ℝ F) :
   · rintro ⟨c, -, hc⟩
     exact ⟨c, fun u => by rw [Real.norm_eq_abs, ← Submodule.norm_coe]; exact hc u⟩
 
-/-- **The fundamental relation (25):** `⟨v, A u⟩_{F*, F} = ⟨A* v, u⟩_{E*, E}` for `u ∈ D(A)`,
-`v ∈ D(A*)`. -/
+/-- **Section 2.6** of [brezis2011functional], the fundamental relation (25). Let
+$A : D(A) \subseteq E \to F$ be densely defined. Then
+$$\langle v, Au \rangle_{F^\star, F} = \langle A^\star v, u \rangle_{E^\star, E} \quad \text{for
+  all } u \in D(A),\ v \in D(A^\star).$$
+-/
 theorem adjoint_apply {A : E →ₗ.[ℝ] F} (hA : Dense (A.domain : Set E))
     (v : A.strongDualAdjoint.domain) (u : A.domain) :
     A.strongDualAdjoint v u = (v : StrongDual ℝ F) (A u) :=
   LinearPMap.strongDualAdjoint_apply hA v u
 
-/-- **"The extension of `g` is unique, since `D(A)` is dense":** a functional `f ∈ E*` with
-`f u = ⟨v, A u⟩` on `D(A)` is `A* v`. -/
+/-- **Section 2.6** of [brezis2011functional], uniqueness of the extension. Let
+$A : D(A) \subseteq E \to F$ be densely defined and $v \in D(A^\star)$. If $f \in E^\star$
+satisfies $\langle f, u \rangle = \langle v, Au \rangle$ for all $u \in D(A)$, then
+$f = A^\star v$.
+
+The source notes that the extension is unique since $D(A)$ is dense. -/
 theorem adjoint_apply_eq {A : E →ₗ.[ℝ] F} (hA : Dense (A.domain : Set E))
     (v : A.strongDualAdjoint.domain) {f : StrongDual ℝ E}
     (hf : ∀ u : A.domain, f u = (v : StrongDual ℝ F) (A u)) : A.strongDualAdjoint v = f :=
   LinearPMap.strongDualAdjoint_apply_eq hA v hf
 
-/-- **Remark 15, the weak-∗ clause.** If `A` is closed and densely defined, `D(A*)` is dense in
-`F*` for the weak-∗ topology `σ(F*, F)`. -/
+/-- **Remark 15** of [brezis2011functional], the weak-$\star$ clause. If
+$A : D(A) \subseteq E \to F$ is closed and densely defined, then $D(A^\star)$ is dense in
+$F^\star$ for the weak-$\star$ topology $\sigma(F^\star, F)$.
+
+The weak-$\star$ topology is that of Mathlib's `WeakDual`, reached through
+`StrongDual.toWeakDual`. -/
 theorem remark_2_15 {A : E →ₗ.[ℝ] F} (hc : A.IsClosed) (hA : Dense (A.domain : Set E)) :
     Dense (StrongDual.toWeakDual '' (A.strongDualAdjoint.domain : Set (StrongDual ℝ F))) :=
   hc.dense_toWeakDual_domain_strongDualAdjoint hA
 
-/-- **Remark 16.** If `A` is a bounded operator, `A = T` on all of `E`, then `A*` is the bounded
-operator `T* : F* → E*`, `T* v = v ∘ T`, with `D(A*) = F*` and `‖A*‖ = ‖A‖`. -/
+/-- **Remark 16** of [brezis2011functional]. Let $T \in \mathcal{L}(E, F)$, viewed as an unbounded
+operator $A$ with $D(A) = E$. Then $A^\star$ is the bounded operator
+$T^\star : F^\star \to E^\star$, $T^\star v = v \circ T$, with $D(A^\star) = F^\star$, and
+$$\|T^\star\|_{\mathcal{L}(F^\star, E^\star)} = \|T\|_{\mathcal{L}(E, F)}.$$
+In particular $A^\star$ is a bounded operator.
+
+The operator $T^\star$ is `ContinuousLinearMap.strongDualMap`. -/
 theorem remark_2_16 (T : E →L[ℝ] F) :
     ((T : E →ₗ[ℝ] F).toPMap ⊤).strongDualAdjoint =
         (T.strongDualMap : StrongDual ℝ F →ₗ[ℝ] StrongDual ℝ E).toPMap ⊤ ∧
@@ -315,14 +413,23 @@ theorem remark_2_16 (T : E →L[ℝ] F) :
   rw [isBoundedOperator_iff]
   exact ⟨T.strongDualMap, T.toPMap_strongDualAdjoint hdense⟩
 
-/-- **Proposition 2.17.** The adjoint of a densely defined operator is closed. -/
+/-- **Proposition 2.17** of [brezis2011functional]. Let $A : D(A) \subseteq E \to F$ be a densely
+defined unbounded linear operator. Then $A^\star$ is closed. -/
 theorem proposition_2_17 {A : E →ₗ.[ℝ] F} (hA : Dense (A.domain : Set E)) :
     A.strongDualAdjoint.IsClosed :=
   LinearPMap.strongDualAdjoint_isClosed hA
 
-/-- **The orthogonality relation (27), `I[G(A*)] = G(A)^⊥`**, with `I [v, f] = [-f, v]` and
-`(E × F)* = E* × F*`; and its pointwise form (28), `[v, f] ∈ G(A*) ⟺ ⟨f, u⟩ = ⟨v, A u⟩` on
-`D(A)`. -/
+/-- **Section 2.6** of [brezis2011functional], the orthogonality relations (27) and (28). Let
+$A : D(A) \subseteq E \to F$ be densely defined, and let $I : F^\star \times E^\star \to E^\star
+\times F^\star$ be the isomorphism $I([v, f]) = [-f, v]$. Then
+$$I[G(A^\star)] = G(A)^\perp, \qquad (27)$$
+where $(E \times F)^\star$ is identified with $E^\star \times F^\star$. Moreover, for
+$v \in F^\star$ and $f \in E^\star$,
+$$[v, f] \in G(A^\star) \iff \langle f, u \rangle = \langle v, Au \rangle \quad \text{for all }
+  u \in D(A). \qquad (28)$$
+
+The map $I$ is `LinearEquiv.skewSwap`, and the identification of $E^\star \times F^\star$ with
+$(E \times F)^\star$ is `ContinuousLinearMap.coprodEquivL`. -/
 theorem graph_adjoint_eq_annihilator_graph {A : E →ₗ.[ℝ] F} (hA : Dense (A.domain : Set E)) :
     (A.strongDualAdjoint.graph.map
       (LinearEquiv.skewSwap ℝ (StrongDual ℝ F) (StrongDual ℝ E) : _ →ₗ[ℝ] _)).map
@@ -335,8 +442,16 @@ theorem graph_adjoint_eq_annihilator_graph {A : E →ₗ.[ℝ] F} (hA : Dense (A
   ⟨LinearPMap.map_graph_strongDualAdjoint_eq_annihilator_graph hA,
     fun v f => LinearPMap.mem_graph_strongDualAdjoint_iff hA v f⟩
 
-/-- **Corollary 2.18.** For a densely defined closed `A`: (i) `N(A) = R(A*)^⊥`,
-(ii) `N(A*) = R(A)^⊥`, (iii) `N(A)^⊥ ⊇ closure R(A*)`, (iv) `N(A*)^⊥ = closure R(A)`. -/
+/-- **Corollary 2.18** of [brezis2011functional]. Let $A : D(A) \subseteq E \to F$ be a densely
+defined closed unbounded operator. Then
+
+(i) $N(A) = R(A^\star)^\perp$,
+
+(ii) $N(A^\star) = R(A)^\perp$,
+
+(iii) $N(A)^\perp \supseteq \overline{R(A^\star)}$,
+
+(iv) $N(A^\star)^\perp = \overline{R(A)}$. -/
 theorem corollary_2_18 {A : E →ₗ.[ℝ] F} (hc : A.IsClosed) (hA : Dense (A.domain : Set E)) :
     A.ker = (LinearMap.range A.strongDualAdjoint.toFun).strongDualCoannihilator ∧
       A.strongDualAdjoint.ker = (LinearMap.range A.toFun).strongDualAnnihilator ∧
@@ -349,15 +464,22 @@ theorem corollary_2_18 {A : E →ₗ.[ℝ] F} (hc : A.IsClosed) (hA : Dense (A.d
     LinearPMap.closure_range_strongDualAdjoint_le_annihilator_ker hA,
     LinearPMap.strongDualCoannihilator_ker_strongDualAdjoint_eq_closure_range hA⟩
 
-/-- **Remark 17, the weak-∗ clause.** For a densely defined closed `A`, `N(A)^⊥` is the closure
-of `R(A*)` for the weak-∗ topology `σ(E*, E)`. -/
+/-- **Remark 17** of [brezis2011functional], the weak-$\star$ clause. Let
+$A : D(A) \subseteq E \to F$ be densely defined and closed. Then $N(A)^\perp$ is the closure of
+$R(A^\star)$ for the weak-$\star$ topology $\sigma(E^\star, E)$.
+
+The weak-$\star$ topology is that of Mathlib's `WeakDual`, reached through
+`StrongDual.toWeakDual`. -/
 theorem remark_2_17 {A : E →ₗ.[ℝ] F} (hc : A.IsClosed) (hA : Dense (A.domain : Set E)) :
     StrongDual.toWeakDual '' (A.ker.strongDualAnnihilator : Set (StrongDual ℝ E)) =
       closure (StrongDual.toWeakDual ''
         (LinearMap.range A.strongDualAdjoint.toFun : Set (StrongDual ℝ E))) :=
   hc.annihilator_ker_eq_closure_toWeakDual_range_strongDualAdjoint hA
 
-/-- **Remark 17, the last clause.** If `E` is reflexive then `N(A)^⊥ = closure R(A*)` in norm. -/
+/-- **Remark 17** of [brezis2011functional], the last clause. Let $E$ be reflexive and let
+$A : D(A) \subseteq E \to F$ be densely defined and closed. Then
+$$N(A)^\perp = \overline{R(A^\star)},$$
+with the closure in the norm topology of $E^\star$. -/
 theorem remark_2_17_reflexive [IsReflexive ℝ E] {A : E →ₗ.[ℝ] F} (hc : A.IsClosed)
     (hA : Dense (A.domain : Set E)) :
     A.ker.strongDualAnnihilator =

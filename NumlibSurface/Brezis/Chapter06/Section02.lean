@@ -7,33 +7,59 @@ import Numlib.Variational.WeakMinimization
 import NumlibSurface.Brezis.Chapter03.Section05
 
 /-!
-# Brezis §6.2: the Riesz–Fredholm theory
+# Brezis, Section 6.2: The Riesz–Fredholm theory
 
-Surface file for Haim Brezis, *Functional Analysis, Sobolev Spaces and Partial Differential
-Equations*, Universitext, Springer, 2011, §6.2, over a real normed (Lemma 6.1, Theorem 6.5) or
-Banach (Theorem 6.6) space `E`. Riesz's lemma and Riesz's theorem are Mathlib's
-(`riesz_lemma_of_lt_one`, `FiniteDimensional.of_isCompact_closedBall₀`); the Fredholm
-alternative for `I - T`, `T` compact, delegates clause by clause to the backbone
-`Numlib/Analysis/Normed/Operator/Compact/Banach` (and `…/Riesz`), which states its results for
-`μ • 1 - T` with `μ ≠ 0` — every node here is the instance `μ = 1`, rewritten by `one_smul`.
-The book's `I - T` is `(1 : E →L[ℝ] E) - T`; the adjoint `T*` is chapter 2's
-`ContinuousLinearMap.strongDualMap T`, and `N(I - T*)^⊥ ⊆ E` is chapter 1's
-`Submodule.strongDualCoannihilator` of the kernel. The unnumbered claim of the Comments that
-`I - T` is a Fredholm operator of index zero is stated here as well, in Mathlib's
-`ContinuousLinearMap.IsFredholm` and `LinearMap.index`.
+This module formalizes Section 6.2 of [brezis2011functional] for a real normed space $E$, which is a
+Banach space where a statement needs it. Riesz's lemma gives, for a closed subspace $M \neq E$ and
+$\varepsilon > 0$, a unit vector at distance at least $1 - \varepsilon$ from $M$ (Lemma 6.1). It
+follows that a normed space with compact closed unit ball is finite dimensional (Theorem 6.5,
+Riesz). For a compact operator $T \in \mathcal{K}(E)$ the Fredholm alternative holds (Theorem 6.6):
+$N(I - T)$ is finite dimensional, $R(I - T) = N(I - T^\star)^\perp$ is closed, $I - T$ is injective
+if and only if it is surjective, and $\dim N(I - T) = \dim N(I - T^\star)$. In particular $I - T$ is
+a Fredholm operator of index zero.
+
+Riesz's lemma and Riesz's theorem are Mathlib's `riesz_lemma_of_lt_one` and
+`FiniteDimensional.of_isCompact_closedBall₀`. The Fredholm alternative specializes the backbone
+modules `Numlib.Analysis.Normed.Operator.Compact.Banach` and
+`Numlib.Analysis.Normed.Operator.Riesz`, which state their results for $\mu I - T$ with
+$\mu \neq 0$; every result here is the case $\mu = 1$.
 
 ## Main results
 
-* `lemma_6_1`, `remark_6_3`, `remark_6_3_reflexive` — Riesz's lemma, and the case `ε = 0` for
-  a finite-dimensional or (more generally) a reflexive subspace.
-* `theorem_6_5` — Riesz's theorem: a normed space with compact unit ball is finite dimensional.
-* `theorem_6_6_a`, `theorem_6_6_b_isClosed`, `theorem_6_6_b`, `theorem_6_6_c`, `theorem_6_6_d`
-  — the Fredholm alternative: `N(I - T)` is finite dimensional, `R(I - T) = N(I - T*)^⊥` is
-  closed, `I - T` is injective iff surjective, and `dim N(I - T) = dim N(I - T*)`.
-* `remark_6_4`, `remark_6_5` — the alternative as a dichotomy for the equation `u - T u = f`,
-  and the finite-dimensional fact behind (c).
-* `oneSubCompact_isFredholm_index_zero` — `I - T` is a Fredholm operator of index zero
-  (Comments on Chapter 6, 1).
+* Lemma 6.1, `Brezis.Chapter06.lemma_6_1` (Riesz's lemma): for a closed subspace $M \neq E$ and
+  $\varepsilon > 0$ there is $u$ with $\|u\| = 1$ and
+  $\operatorname{dist}(u, M) \ge 1 - \varepsilon$.
+* Remark 3, `Brezis.Chapter06.remark_6_3`: one can take $\varepsilon = 0$ if $M$ is finite
+  dimensional.
+* Remark 3, `Brezis.Chapter06.remark_6_3_reflexive`: one can take $\varepsilon = 0$ if $M$ is
+  reflexive.
+* Theorem 6.5, `Brezis.Chapter06.theorem_6_5` (Riesz): a normed space with compact closed unit ball
+  is finite dimensional.
+* Theorem 6.6(a), `Brezis.Chapter06.theorem_6_6_a`: $N(I - T)$ is finite dimensional.
+* Theorem 6.6(b), `Brezis.Chapter06.theorem_6_6_b_isClosed` and `Brezis.Chapter06.theorem_6_6_b`:
+  $R(I - T)$ is closed and equals $N(I - T^\star)^\perp$.
+* Theorem 6.6(c), `Brezis.Chapter06.theorem_6_6_c`: $N(I - T) = \{0\}$ if and only if
+  $R(I - T) = E$.
+* Theorem 6.6(d), `Brezis.Chapter06.theorem_6_6_d`: $\dim N(I - T) = \dim N(I - T^\star)$.
+* Remark 4, `Brezis.Chapter06.remark_6_4`: the Fredholm alternative as a dichotomy for the equation
+  $u - Tu = f$.
+* Remark 5, `Brezis.Chapter06.remark_6_5`: in finite dimension a linear operator is injective if and
+  only if it is surjective.
+* Comments on Chapter 6, item 1, `Brezis.Chapter06.oneSubCompact_isFredholm_index_zero`: $I - T$ is
+  a Fredholm operator of index zero.
+
+## Conventions
+
+* The operator $I - T$ is `(1 : E →L[ℝ] E) - T`.
+* The adjoint $T^\star$ is `ContinuousLinearMap.strongDualMap T`, as in Chapter 2.
+* For a subspace $N$ of $E^\star$, the orthogonal $N^\perp \subseteq E$ is
+  `Submodule.strongDualCoannihilator N`, as in Chapter 1.
+
+## Deviations from the source
+
+* **Theorem 6.6(a) and (b)** (generalization). The source assumes that $E$ is a Banach space. Parts
+  (a) and (b) are proved for every normed space. See `Brezis.Chapter06.theorem_6_6_a`,
+  `Brezis.Chapter06.theorem_6_6_b_isClosed` and `Brezis.Chapter06.theorem_6_6_b`.
 -/
 
 open Metric
@@ -46,9 +72,9 @@ variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
 
 /-! ### Riesz's lemma and Riesz's theorem -/
 
-/-- **Lemma 6.1 (Riesz's lemma).** Let `E` be a normed space and `M ⊆ E` a closed linear
-subspace with `M ≠ E`. Then for every `ε > 0` there is `u ∈ E` with `‖u‖ = 1` and
-`dist (u, M) ≥ 1 - ε`. -/
+/-- **Lemma 6.1** of [brezis2011functional] (Riesz's lemma). Let $E$ be a normed space and let
+$M \subseteq E$ be a closed linear subspace with $M \neq E$. Then for every $\varepsilon > 0$
+there is $u \in E$ with $\|u\| = 1$ and $\operatorname{dist}(u, M) \ge 1 - \varepsilon$. -/
 theorem lemma_6_1 {M : Submodule ℝ E} (hM : IsClosed (M : Set E)) (hne : M ≠ ⊤) {ε : ℝ}
     (hε : 0 < ε) : ∃ u : E, ‖u‖ = 1 ∧ 1 - ε ≤ infDist u M := by
   obtain ⟨x, -, hx⟩ := IsConcreteLE.exists_of_lt (lt_top_iff_ne_top.2 hne)
@@ -57,9 +83,8 @@ theorem lemma_6_1 {M : Submodule ℝ E} (hM : IsClosed (M : Set E)) (hne : M ≠
   rw [dist_eq_norm]
   exact hu y hy
 
-/-- The normalization step of the proof of Lemma 6.1, with `ε = 0`: if the distance from
-`v ∉ M` to the subspace `M` is attained at `m₀ ∈ M`, then `u = (v - m₀) / ‖v - m₀‖` has
-`‖u‖ = 1` and `dist (u, M) = 1`, because `m₀ + ‖v - m₀‖ m ∈ M` for every `m ∈ M`. -/
+/-- If $v \notin M$ and the distance from $v$ to the subspace $M$ is attained at $m_0 \in M$, then
+$u = (v - m_0)/\|v - m_0\|$ has $\|u\| = 1$ and $\operatorname{dist}(u, M) = 1$. -/
 private theorem exists_norm_eq_one_infDist_eq_one_of_isBestApprox {M : Submodule ℝ E} {v m₀ : E}
     (hv : v ∉ M) (hm₀ : IsBestApprox (M : Set E) v m₀) :
     ∃ u : E, ‖u‖ = 1 ∧ infDist u M = 1 := by
@@ -80,21 +105,28 @@ private theorem exists_norm_eq_one_infDist_eq_one_of_isBestApprox {M : Submodule
       le_div_iff₀ hpos, one_mul]
     exact hd
 
-/-- **Remark 3, the finite-dimensional case.** If `M` is finite dimensional (and `M ≠ E`) one
-can choose `ε = 0` in Lemma 6.1: there is `u` with `‖u‖ = 1` and `dist (u, M) = 1`, since the
-distance to `M` is attained. -/
+/-- **Remark 3** in Chapter 6 of [brezis2011functional], the finite-dimensional case. Let $E$ be a
+normed space and let $M$ be a finite-dimensional subspace with $M \neq E$. Then one can take
+$\varepsilon = 0$ in Lemma 6.1: there is $u \in E$ with $\|u\| = 1$ and
+$\operatorname{dist}(u, M) = 1$.
+
+The proof uses that the distance from a point to $M$ is attained. -/
 theorem remark_6_3 (M : Submodule ℝ E) [FiniteDimensional ℝ M] (hne : M ≠ ⊤) :
     ∃ u : E, ‖u‖ = 1 ∧ infDist u M = 1 := by
   obtain ⟨v, -, hv⟩ := IsConcreteLE.exists_of_lt (lt_top_iff_ne_top.2 hne)
   obtain ⟨m₀, hm₀⟩ := exists_isBestApprox_of_finiteDimensional M v
   exact exists_norm_eq_one_infDist_eq_one_of_isBestApprox hv hm₀
 
-/-- **Remark 3, the reflexive case.** If `M ⊆ E` is a reflexive subspace (chapter 3's
-`IsReflexive`, for `M` as a normed space; in particular a closed subspace of a reflexive Banach
-space, by Proposition 3.20) with `M ≠ E`, one can choose `ε = 0` in Lemma 6.1: the distance to
-`M` is attained, by the direct method of the calculus of variations in `M` (bounded sequences of
-`M` have weakly convergent subsequences, and the norm is weakly lower semicontinuous). "But this
-is not true in general (see Exercise 1.17)." -/
+/-- **Remark 3** in Chapter 6 of [brezis2011functional], the reflexive case. Let $E$ be a normed
+space and let $M$ be a subspace with $M \neq E$ that is reflexive as a normed space. Then one
+can take $\varepsilon = 0$ in Lemma 6.1: there is $u \in E$ with $\|u\| = 1$ and
+$\operatorname{dist}(u, M) = 1$.
+
+Reflexivity is `Brezis.Chapter03.IsReflexive` for $M$. A closed subspace of a reflexive Banach
+space is reflexive (Proposition 3.20 of the source). The distance from a point to $M$ is
+attained by the direct method of the calculus of variations in $M$: bounded sequences of $M$
+have weakly convergent subsequences, and the norm is weakly lower semicontinuous. The source
+adds that the statement "is not true in general (see Exercise 1.17)". -/
 theorem remark_6_3_reflexive {M : Submodule ℝ E} (hM : Brezis.Chapter03.IsReflexive M)
     (hne : M ≠ ⊤) : ∃ u : E, ‖u‖ = 1 ∧ infDist u M = 1 := by
   have := Brezis.Chapter03.isReflexive_iff.1 hM
@@ -124,8 +156,8 @@ theorem remark_6_3_reflexive {M : Submodule ℝ E} (hM : Brezis.Chapter03.IsRefl
   refine exists_norm_eq_one_infDist_eq_one_of_isBestApprox hv ⟨m₀.2, fun w hw => ?_⟩
   exact isMinOn_iff.1 hm₀ ⟨w, hw⟩ (Set.mem_univ _)
 
-/-- **Theorem 6.5 (Riesz).** Let `E` be a normed space with `B_E` compact. Then `E` is finite
-dimensional. -/
+/-- **Theorem 6.5** of [brezis2011functional] (Riesz). Let $E$ be a normed space whose closed unit
+ball $B_E$ is compact. Then $E$ is finite dimensional. -/
 theorem theorem_6_5 (h : IsCompact (closedBall (0 : E) 1)) : FiniteDimensional ℝ E :=
   FiniteDimensional.of_isCompact_closedBall₀ ℝ one_pos h
 
@@ -134,23 +166,39 @@ theorem theorem_6_5 (h : IsCompact (closedBall (0 : E) 1)) : FiniteDimensional �
 variable [CompleteSpace E]
 
 omit [CompleteSpace E] in
-/-- **Theorem 6.6 (a).** Let `T ∈ K(E)`. Then `N(I - T)` is finite dimensional. -/
+/-- **Theorem 6.6(a)** of [brezis2011functional]. Let $E$ be a normed space and let
+$T \in \mathcal{K}(E)$. Then $N(I - T)$ is finite dimensional.
+
+**Generalization.** The source assumes that $E$ is a Banach space. The statement holds for every
+normed space. -/
 theorem theorem_6_6_a {T : E →L[ℝ] E} (hT : IsCompactOperator T) :
     FiniteDimensional ℝ ((1 : E →L[ℝ] E) - T).ker := by
   have := hT.finiteDimensional_ker_pow one_ne_zero 1
   rwa [one_smul, pow_one] at this
 
 omit [CompleteSpace E] in
-/-- **Theorem 6.6 (b), first clause.** For `T ∈ K(E)`, `R(I - T)` is closed. -/
+/-- **Theorem 6.6(b)** of [brezis2011functional], closedness. Let $E$ be a normed space and let
+$T \in \mathcal{K}(E)$. Then the range $R(I - T)$ is closed.
+
+**Generalization.** The source assumes that $E$ is a Banach space. The statement holds for every
+normed space. -/
 theorem theorem_6_6_b_isClosed {T : E →L[ℝ] E} (hT : IsCompactOperator T) :
     IsClosed (((1 : E →L[ℝ] E) - T).range : Set E) := by
   have := hT.isClosed_range_smul_sub one_ne_zero
   rwa [one_smul] at this
 
 omit [CompleteSpace E] in
-/-- **Theorem 6.6 (b), "and more precisely `R(I - T) = N(I - T*)^⊥`".** For `T ∈ K(E)`, the
-range of `I - T` is the set of `f ∈ E` annihilated by every `v ∈ N(I - T*)`, the kernel of
-`I - T*` in `E*`. -/
+/-- **Theorem 6.6(b)** of [brezis2011functional], the range. Let $E$ be a normed space and let
+$T \in \mathcal{K}(E)$. Then
+$$R(I - T) = N(I - T^\star)^\perp,$$
+that is, $f \in E$ lies in the range of $I - T$ if and only if $\langle v, f \rangle = 0$ for
+every $v \in E^\star$ with $v - T^\star v = 0$.
+
+**Generalization.** The source assumes that $E$ is a Banach space. The statement holds for every
+normed space.
+
+The source writes this as "more precisely $R(I - T) = N(I - T^\star)^\perp$". The orthogonal is
+`Submodule.strongDualCoannihilator`. -/
 theorem theorem_6_6_b {T : E →L[ℝ] E} (hT : IsCompactOperator T) :
     ((1 : E →L[ℝ] E) - T).range =
       ((1 : StrongDual ℝ E →L[ℝ] StrongDual ℝ E) -
@@ -158,7 +206,8 @@ theorem theorem_6_6_b {T : E →L[ℝ] E} (hT : IsCompactOperator T) :
   have := hT.range_smul_one_sub_eq_strongDualCoannihilator_ker_strongDualMap one_ne_zero
   rwa [one_smul, one_smul] at this
 
-/-- **Theorem 6.6 (c).** For `T ∈ K(E)`, `N(I - T) = {0}` iff `R(I - T) = E`. -/
+/-- **Theorem 6.6(c)** of [brezis2011functional]. Let $E$ be a Banach space and let
+$T \in \mathcal{K}(E)$. Then $N(I - T) = \{0\}$ if and only if $R(I - T) = E$. -/
 theorem theorem_6_6_c {T : E →L[ℝ] E} (hT : IsCompactOperator T) :
     ((1 : E →L[ℝ] E) - T).ker = ⊥ ↔ ((1 : E →L[ℝ] E) - T).range = ⊤ := by
   have := hT.injective_iff_surjective_smul_one_sub one_ne_zero
@@ -166,18 +215,25 @@ theorem theorem_6_6_c {T : E →L[ℝ] E} (hT : IsCompactOperator T) :
   rw [LinearMap.ker_eq_bot, LinearMap.range_eq_top, ContinuousLinearMap.coe_coe]
   exact this
 
-/-- **Theorem 6.6 (d).** For `T ∈ K(E)`, `dim N(I - T) = dim N(I - T*)`. -/
+/-- **Theorem 6.6(d)** of [brezis2011functional]. Let $E$ be a Banach space and let
+$T \in \mathcal{K}(E)$. Then
+$$\dim N(I - T) = \dim N(I - T^\star).$$
+
+The dimensions are `Module.finrank`. Both kernels are finite dimensional, so no value of
+`Module.finrank` at an infinite-dimensional space enters. -/
 theorem theorem_6_6_d {T : E →L[ℝ] E} (hT : IsCompactOperator T) :
     Module.finrank ℝ ((1 : E →L[ℝ] E) - T).ker =
       Module.finrank ℝ ((1 : StrongDual ℝ E →L[ℝ] StrongDual ℝ E) - T.strongDualMap).ker := by
   have := hT.finrank_ker_smul_one_sub_eq_finrank_ker_strongDualMap one_ne_zero
   rwa [one_smul, one_smul] at this
 
-/-- **Remark 4, the Fredholm alternative as a dichotomy.** For `T ∈ K(E)`: either for every
-`f ∈ E` the equation `u - T u = f` has a unique solution, or the homogeneous equation
-`u - T u = 0` admits `n = dim N(I - T) > 0` linearly independent solutions, and then the
-inhomogeneous equation `u - T u = f` is solvable iff `f` satisfies the `n` orthogonality
-conditions `f ∈ N(I - T*)^⊥`. -/
+/-- **Remark 4** in Chapter 6 of [brezis2011functional], the Fredholm alternative. Let $E$ be a
+Banach space and let $T \in \mathcal{K}(E)$. Then one of the following holds:
+
+* for every $f \in E$ the equation $u - Tu = f$ has a unique solution $u \in E$;
+* the homogeneous equation $u - Tu = 0$ has $n = \dim N(I - T) > 0$ linearly independent
+  solutions, and the equation $u - Tu = f$ has a solution if and only if $f$ satisfies the $n$
+  orthogonality conditions $f \in N(I - T^\star)^\perp$. -/
 theorem remark_6_4 {T : E →L[ℝ] E} (hT : IsCompactOperator T) :
     (∀ f : E, ∃! u, u - T u = f) ∨
       (0 < Module.finrank ℝ ((1 : E →L[ℝ] E) - T).ker ∧
@@ -204,19 +260,26 @@ theorem remark_6_4 {T : E →L[ℝ] E} (hT : IsCompactOperator T) :
     simp only [ContinuousLinearMap.coe_coe, happly]
 
 omit [CompleteSpace E] in
-/-- **Remark 5.** Property (c) is familiar in finite-dimensional spaces: if `dim E < ∞`, a
-linear operator from `E` into itself is injective iff it is surjective. (In infinite dimension
-a bounded operator may be injective without being surjective, e.g. the right shift on `ℓ²`,
-`remark_6_6_rightShift` in §6.3; so (c) is a remarkable property of the operators `I - T`,
-`T ∈ K(E)`.) -/
+/-- **Remark 5** in Chapter 6 of [brezis2011functional]. Let $E$ be a finite-dimensional normed
+space. Then a linear operator $A \in \mathcal{L}(E)$ is injective if and only if it is
+surjective.
+
+This is the finite-dimensional fact behind Theorem 6.6(c). In infinite dimension a bounded
+operator may be injective without being surjective, for example the right shift on $\ell^2$
+(`Brezis.Chapter06.remark_6_6_rightShift`). So property (c) is a remarkable property of the
+operators $I - T$ with $T$ compact. -/
 theorem remark_6_5 [FiniteDimensional ℝ E] (A : E →L[ℝ] E) :
     Function.Injective A ↔ Function.Surjective A :=
   LinearMap.injective_iff_surjective (f := (A : E →ₗ[ℝ] E))
 
-/-- **Comments on Chapter 6, 1**: "`A = I - T` with `T ∈ K(E)` is a Fredholm operator of index
-zero; this follows from Theorem 6.6". In Mathlib's vocabulary, `ContinuousLinearMap.IsFredholm`
-(finite-dimensional kernel, closed range of finite codimension, plus the automatically satisfied
-strictness and complemented-kernel fields) and `LinearMap.index = dim N(A) - codim R(A)`. -/
+/-- **Comments on Chapter 6, item 1,** of [brezis2011functional]. Let $E$ be a Banach space and let
+$T \in \mathcal{K}(E)$. Then $A = I - T$ is a Fredholm operator of index zero: $N(A)$ is finite
+dimensional, $R(A)$ is closed of finite codimension, and
+$\dim N(A) - \operatorname{codim} R(A) = 0$.
+
+The source says that this "follows from Theorem 6.6". The Fredholm property is Mathlib's
+`ContinuousLinearMap.IsFredholm`. It also asks that $A$ be a strict map and that $N(A)$ be
+topologically complemented; both hold automatically here. The index is `LinearMap.index`. -/
 theorem oneSubCompact_isFredholm_index_zero {T : E →L[ℝ] E} (hT : IsCompactOperator T) :
     ((1 : E →L[ℝ] E) - T).IsFredholm ∧ ((1 : E →L[ℝ] E) - T).index = 0 := by
   have h1 := hT.isFredholm_smul_one_sub one_ne_zero

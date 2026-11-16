@@ -9,34 +9,76 @@ import Numlib.Analysis.Normed.Module.WeakStarMetrizable
 import NumlibSurface.Brezis.Chapter03.Section01
 
 /-!
-# Brezis §3.2: definition and elementary properties of the weak topology `σ(E, E*)`
+# Brezis, Section 3.2: Definition and elementary properties of the weak topology $\sigma(E,E^\star)$
 
-Surface file for Haim Brezis, *Functional Analysis, Sobolev Spaces and Partial Differential
-Equations*, Universitext, Springer, 2011, §3.2, over a real Banach space `E`. The book's
-definition is `weakTopology E := weakestTopology (fun f : StrongDual ℝ E => ⇑f)` (§3.1) and
-`weakTopology_eq` identifies it with Mathlib's `WeakSpace ℝ E`, on which every later node is
-stated: the book's "`x ∈ E` with the weak topology" is `toWeakSpace ℝ E x : WeakSpace ℝ E`, a
-weakly closed/open set is `IsClosed (toWeakSpace ℝ E '' s)` / `IsOpen (…)`, and `xₙ ⇀ x` is
-`WeakTendsto x u`, with the scoped notation `⇀`. Propositions 3.3–3.5 are Mathlib and the
-backbone `Numlib/Analysis/Normed/Module/WeakDual`; Proposition 3.6, Remark 2 and Examples 1–2
-are `Numlib/Analysis/Normed/Module/WeakClosed`; Remark 3 is
-`Numlib/Analysis/Normed/Module/WeakStarMetrizable`. Remark 4 is stated in §3.2 but its node
-`remark_3_4` sits in `Section06`, where Theorem 3.29 is.
+This module formalizes Section 3.2 of [brezis2011functional] for a real Banach space $E$. The weak
+topology $\sigma(E, E^\star)$ is the coarsest topology on $E$ that makes every map
+$x \mapsto \langle f, x \rangle$, $f \in E^\star$, continuous. It is Hausdorff (Proposition 3.3),
+and the sets $V(f_1, \dots, f_k; \varepsilon) = \{x : |\langle f_i, x - x_0 \rangle| < \varepsilon
+\text{ for } i = 1, \dots, k\}$ form a basis of neighborhoods of $x_0$ (Proposition 3.4). A sequence
+converges weakly, $x_n \rightharpoonup x$, if and only if $\langle f, x_n \rangle \to \langle f, x
+\rangle$ for every $f \in E^\star$, and weak limits satisfy the properties of Proposition 3.5. In
+finite dimension the weak and the strong topologies coincide (Proposition 3.6). In infinite
+dimension the unit sphere is not weakly closed, the open unit ball is not weakly open, and the weak
+topology is not metrizable.
 
-The book assumes `E` Banach throughout; `[CompleteSpace E]` is carried on every theorem for
-fidelity although nothing in this section uses it.
+The definition uses `Brezis.Chapter03.weakestTopology` of Section 3.1. Propositions 3.3 to 3.5
+restate Mathlib and the backbone module `Numlib.Analysis.Normed.Module.WeakDual`. Proposition 3.6,
+Remark 2 and Examples 1 and 2 restate `Numlib.Analysis.Normed.Module.WeakClosed`, and Remark 3
+restates `Numlib.Analysis.Normed.Module.WeakStarMetrizable`.
+
+## Main definitions
+
+* Section 3.2, definition of the weak topology, `Brezis.Chapter03.weakTopology`: the topology
+  $\sigma(E, E^\star)$.
+* Section 3.2, the notation $x_n \rightharpoonup x$, `Brezis.Chapter03.WeakTendsto`: weak
+  convergence of a sequence.
 
 ## Main results
 
-* `weakTopology`, `weakTopology_eq`, `weakTopology_le` — the definition, its identification with
-  `WeakSpace ℝ E`, and "the weak topology is weaker than the usual topology".
-* `proposition_3_3`, `proposition_3_4` — Hausdorff; the neighbourhood basis `V(f₁, …, f_k; ε)`.
-* `WeakTendsto`, `proposition_3_5`, `proposition_3_5_ii`, `proposition_3_5_iii_bounded`,
-  `proposition_3_5_iii_liminf`, `proposition_3_5_iv` — the notation `xₙ ⇀ x` and Proposition 3.5.
-* `proposition_3_6`, `proposition_3_6_tendsto` — in finite dimension weak = strong.
-* `remark_3_2_isOpen`, `remark_3_2_isClosed`, `example_3_1`, `example_3_2`, `remark_3_3` —
-  weakly open/closed sets are strongly open/closed; the sphere and the open ball in infinite
-  dimension; the weak topology is not metrizable in infinite dimension.
+* Section 3.2, `Brezis.Chapter03.weakTopology_eq`: $\sigma(E, E^\star)$ is the topology of Mathlib's
+  `WeakSpace ℝ E`.
+* Section 3.2, `Brezis.Chapter03.weakTopology_le`: the weak topology is weaker than the usual
+  topology.
+* Proposition 3.3, `Brezis.Chapter03.proposition_3_3`: $\sigma(E, E^\star)$ is Hausdorff.
+* Proposition 3.4, `Brezis.Chapter03.proposition_3_4`: the sets $V(f_1, \dots, f_k; \varepsilon)$
+  form a basis of neighborhoods of $x_0$.
+* Proposition 3.5, `Brezis.Chapter03.proposition_3_5`: (i) $x_n \rightharpoonup x$ if and only if
+  $\langle f, x_n \rangle \to \langle f, x \rangle$ for every $f \in E^\star$.
+* Proposition 3.5, `Brezis.Chapter03.proposition_3_5_ii`: (ii) strong convergence implies weak
+  convergence.
+* Proposition 3.5, `Brezis.Chapter03.proposition_3_5_iii_bounded`: (iii) a weakly convergent
+  sequence is bounded.
+* Proposition 3.5, `Brezis.Chapter03.proposition_3_5_iii_liminf`: (iii) if $x_n \rightharpoonup x$,
+  then $\|x\| \le \liminf \|x_n\|$.
+* Proposition 3.5, `Brezis.Chapter03.proposition_3_5_iv`: (iv) if $x_n \rightharpoonup x$ and
+  $f_n \to f$ in $E^\star$, then $\langle f_n, x_n \rangle \to \langle f, x \rangle$.
+* Proposition 3.6, `Brezis.Chapter03.proposition_3_6`: in finite dimension, $\sigma(E, E^\star)$ is
+  the usual topology.
+* Proposition 3.6, `Brezis.Chapter03.proposition_3_6_tendsto`: in finite dimension, weak and strong
+  convergence of sequences coincide.
+* Remark 2, `Brezis.Chapter03.remark_3_2_isOpen`: a weakly open set is strongly open.
+* Remark 2, `Brezis.Chapter03.remark_3_2_isClosed`: a weakly closed set is strongly closed.
+* Example 1, `Brezis.Chapter03.example_3_1`: in infinite dimension, the weak closure of the unit
+  sphere is the closed unit ball.
+* Example 2, `Brezis.Chapter03.example_3_2`: in infinite dimension, the open unit ball is not weakly
+  open.
+* Remark 3, `Brezis.Chapter03.remark_3_3`: in infinite dimension, the weak topology is not
+  metrizable.
+
+## Conventions
+
+* A point $x \in E$ with the weak topology is `toWeakSpace ℝ E x : WeakSpace ℝ E`. A set
+  $s \subseteq E$ is weakly closed or weakly open if `toWeakSpace ℝ E '' s` is closed or open. Weak
+  convergence $x_n \rightharpoonup x$ is `Brezis.Chapter03.WeakTendsto x u`, with the scoped
+  notation `⇀`.
+
+## Implementation notes
+
+* The source assumes throughout that $E$ is a Banach space. The theorems carry `[CompleteSpace E]`
+  as the source states it, although no proof in this section uses it.
+* Remark 4 is stated in Section 3.2 of the source, but its declaration `Brezis.Chapter03.remark_3_4`
+  is in `NumlibSurface.Brezis.Chapter03.Section06`, with Theorem 3.29.
 -/
 
 open Filter Metric Set Topology TopologicalSpace
@@ -47,14 +89,19 @@ namespace Brezis.Chapter03
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
 
-/-- **The Definition of §3.2.** The weak topology `σ(E, E*)` on `E` is the coarsest topology
-making every `φ_f = ⟨f, ·⟩`, `f ∈ E*`, continuous (§3.1 with `X = E`, `Y_i = ℝ`, `I = E*`). -/
+/-- **Section 3.2** of [brezis2011functional], definition of the weak topology. Let $E$ be a real
+normed space. For $f \in E^\star$ let $\varphi_f : E \to \mathbb{R}$ be
+$\varphi_f(x) = \langle f, x \rangle$. The **weak topology** $\sigma(E, E^\star)$ on $E$ is the
+coarsest topology that makes every $\varphi_f$, $f \in E^\star$, continuous.
+
+This is the construction of Section 3.1 with $X = E$, $Y_i = \mathbb{R}$ and $I = E^\star$:
+`Brezis.Chapter03.weakestTopology`. -/
 @[instance_reducible]
 def weakTopology (E : Type*) [NormedAddCommGroup E] [NormedSpace ℝ E] : TopologicalSpace E :=
   weakestTopology (fun f : StrongDual ℝ E => (f : E → ℝ))
 
-/-- The book's weak topology is Mathlib's: `weakTopology E` is the topology of `WeakSpace ℝ E`
-transported back to `E` along the identity `toWeakSpace ℝ E`. -/
+/-- The weak topology of the source is Mathlib's: `Brezis.Chapter03.weakTopology E` is the topology
+of `WeakSpace ℝ E`, transported to $E$ along the identity map `toWeakSpace ℝ E`. -/
 theorem weakTopology_eq :
     weakTopology E = TopologicalSpace.induced (toWeakSpace ℝ E) inferInstance := by
   change _ = TopologicalSpace.induced (toWeakSpace ℝ E) (TopologicalSpace.induced
@@ -62,19 +109,29 @@ theorem weakTopology_eq :
   rw [induced_compose, induced_to_pi]
   rfl
 
-/-- "The weak topology is weaker than the usual topology": every weakly open set is open, i.e.
-the norm topology is finer, `(norm topology) ≤ weakTopology E`. -/
+/-- **Section 3.2** of [brezis2011functional], "the weak topology is weaker than the usual
+topology". Every weakly open subset of a real normed space $E$ is open in the norm topology.
+
+In Mathlib's order on topologies, the norm topology is finer:
+`(norm topology) ≤ weakTopology E`. -/
 theorem weakTopology_le : (inferInstance : TopologicalSpace E) ≤ weakTopology E := by
   rw [weakTopology_eq]
   exact continuous_iff_le_induced.1 (toWeakSpaceCLM ℝ E).continuous
 
-/-- **Proposition 3.3.** The weak topology `σ(E, E*)` is Hausdorff. -/
+/-- **Proposition 3.3** of [brezis2011functional]. Let $E$ be a Banach space. The weak topology
+$\sigma(E, E^\star)$ is Hausdorff. -/
 theorem proposition_3_3 [CompleteSpace E] : T2Space (WeakSpace ℝ E) :=
   inferInstance
 
-/-- **Proposition 3.4.** Let `x₀ ∈ E`; for `ε > 0` and a finite set `{f₁, …, f_k} ⊆ E*`, the
-set `V(f₁, …, f_k; ε) = {x | |⟨fᵢ, x - x₀⟩| < ε ∀ i}` is a neighbourhood of `x₀` for
-`σ(E, E*)`, and these sets form a basis of neighbourhoods of `x₀`. -/
+/-- **Proposition 3.4** of [brezis2011functional]. Let $E$ be a Banach space and let $x_0 \in E$.
+Given $\varepsilon > 0$ and a finite set $\{f_1, f_2, \dots, f_k\} \subseteq E^\star$, the set
+$$V = V(f_1, f_2, \dots, f_k; \varepsilon) = \{x \in E : |\langle f_i, x - x_0 \rangle| <
+  \varepsilon \ \forall i \in \{1, 2, \dots, k\}\}$$
+is a neighborhood of $x_0$ for the topology $\sigma(E, E^\star)$. Moreover, these sets form a
+basis of neighborhoods of $x_0$ for $\sigma(E, E^\star)$.
+
+The finite set is a `Finset (StrongDual ℝ E)`, and the basis is indexed by the pairs of a finite
+set and an $\varepsilon > 0$. -/
 theorem proposition_3_4 [CompleteSpace E] (x₀ : E) :
     (∀ (s : Finset (StrongDual ℝ E)) (ε : ℝ), 0 < ε →
       toWeakSpace ℝ E '' {x | ∀ f ∈ s, |f (x - x₀)| < ε} ∈ 𝓝 (toWeakSpace ℝ E x₀)) ∧
@@ -100,68 +157,89 @@ theorem proposition_3_4 [CompleteSpace E] (x₀ : E) :
   rw [hset]
   exact hb.mem_of_mem (i := (s, ε)) hε
 
-/-- **The notation `xₙ ⇀ x`** of §3.2: the sequence `x` converges to `u` in the weak topology
-`σ(E, E*)`. Strong convergence `xₙ → x` is Mathlib's `Tendsto x atTop (𝓝 u)`. -/
+/-- **Section 3.2** of [brezis2011functional], the notation $x_n \rightharpoonup x$. Let $E$ be a
+real normed space. A sequence $(x_n)$ in $E$ **converges weakly** to $x$, written
+$x_n \rightharpoonup x$, if $x_n \to x$ in the weak topology $\sigma(E, E^\star)$.
+
+Strong convergence $x_n \to x$ is Mathlib's `Tendsto x atTop (𝓝 u)`. The scoped notation is
+`x ⇀ u`. -/
 def WeakTendsto (x : ℕ → E) (u : E) : Prop :=
   Tendsto (fun n => toWeakSpace ℝ E (x n)) atTop (𝓝 (toWeakSpace ℝ E u))
 
 @[inherit_doc] scoped notation:50 x:51 " ⇀ " u:51 => WeakTendsto x u
 
-/-- **Proposition 3.5 (i).** `xₙ ⇀ x` weakly in `σ(E, E*)` iff `⟨f, xₙ⟩ → ⟨f, x⟩` for every
-`f ∈ E*`. -/
+/-- **Proposition 3.5(i)** of [brezis2011functional]. Let $E$ be a Banach space and let $(x_n)$ be a
+sequence in $E$. Then $x_n \rightharpoonup x$ weakly in $\sigma(E, E^\star)$ if and only if
+$\langle f, x_n \rangle \to \langle f, x \rangle$ for every $f \in E^\star$. -/
 theorem proposition_3_5 [CompleteSpace E] (x : ℕ → E) (u : E) :
     x ⇀ u ↔ ∀ f : StrongDual ℝ E, Tendsto (fun n => f (x n)) atTop (𝓝 (f u)) :=
   tendsto_toWeakSpace_iff
 
-/-- **Proposition 3.5 (ii).** If `xₙ → x` strongly then `xₙ ⇀ x` weakly. -/
+/-- **Proposition 3.5(ii)** of [brezis2011functional]. Let $E$ be a Banach space and let $(x_n)$ be
+a sequence in $E$. If $x_n \to x$ strongly, then $x_n \rightharpoonup x$ weakly in
+$\sigma(E, E^\star)$. -/
 theorem proposition_3_5_ii [CompleteSpace E] {x : ℕ → E} {u : E} (h : Tendsto x atTop (𝓝 u)) :
     x ⇀ u :=
   ((toWeakSpaceCLM ℝ E).continuous.tendsto u).comp h
 
-/-- **Proposition 3.5 (iii), first half.** If `xₙ ⇀ x` weakly then `(‖xₙ‖)` is bounded. -/
+/-- **Proposition 3.5(iii)** of [brezis2011functional], boundedness. Let $E$ be a Banach space and
+let $(x_n)$ be a sequence in $E$. If $x_n \rightharpoonup x$ weakly in $\sigma(E, E^\star)$,
+then $(\|x_n\|)$ is bounded. -/
 theorem proposition_3_5_iii_bounded [CompleteSpace E] {x : ℕ → E} {u : E} (h : x ⇀ u) :
     ∃ C : ℝ, ∀ n, ‖x n‖ ≤ C :=
   exists_norm_le_of_tendsto_toWeakSpace h
 
-/-- **Proposition 3.5 (iii), second half.** If `xₙ ⇀ x` weakly then `‖x‖ ≤ liminf ‖xₙ‖`. -/
+/-- **Proposition 3.5(iii)** of [brezis2011functional], lower semicontinuity of the norm. Let $E$ be
+a Banach space and let $(x_n)$ be a sequence in $E$. If $x_n \rightharpoonup x$ weakly in
+$\sigma(E, E^\star)$, then
+$$\|x\| \le \liminf_{n \to \infty} \|x_n\|.$$
+-/
 theorem proposition_3_5_iii_liminf [CompleteSpace E] {x : ℕ → E} {u : E} (h : x ⇀ u) :
     ‖u‖ ≤ liminf (fun n => ‖x n‖) atTop :=
   norm_le_liminf_norm_of_weak_tendsto h
 
-/-- **Proposition 3.5 (iv).** If `xₙ ⇀ x` weakly and `fₙ → f` strongly in `E*` then
-`⟨fₙ, xₙ⟩ → ⟨f, x⟩`. -/
+/-- **Proposition 3.5(iv)** of [brezis2011functional]. Let $E$ be a Banach space, let $(x_n)$ be a
+sequence in $E$, and let $(f_n)$ be a sequence in $E^\star$. If $x_n \rightharpoonup x$ weakly
+in $\sigma(E, E^\star)$ and $f_n \to f$ strongly in $E^\star$, then $\langle f_n, x_n \rangle
+\to \langle f, x \rangle$. -/
 theorem proposition_3_5_iv [CompleteSpace E] {x : ℕ → E} {u : E} {f : ℕ → StrongDual ℝ E}
     {g : StrongDual ℝ E} (hx : x ⇀ u) (hf : Tendsto f atTop (𝓝 g)) :
     Tendsto (fun n => f n (x n)) atTop (𝓝 (g u)) :=
   tendsto_apply_of_tendsto_toWeakSpace_of_tendsto hx hf
 
-/-- **Proposition 3.6.** When `E` is finite-dimensional the weak topology `σ(E, E*)` and the
-usual topology are the same. -/
+/-- **Proposition 3.6** of [brezis2011functional]. Let $E$ be a finite-dimensional Banach space.
+Then the weak topology $\sigma(E, E^\star)$ and the usual topology on $E$ are the same. -/
 theorem proposition_3_6 [CompleteSpace E] [FiniteDimensional ℝ E] :
     weakTopology E = (inferInstance : TopologicalSpace E) := by
   rw [weakTopology_eq]
   exact ((toWeakSpaceContinuousLinearEquiv ℝ E).toHomeomorph.isInducing.eq_induced).symm
 
-/-- **Proposition 3.6, "in particular".** In finite dimension a sequence converges weakly iff it
-converges strongly. -/
+/-- **Proposition 3.6** of [brezis2011functional], the "in particular" clause. Let $E$ be a
+finite-dimensional Banach space. A sequence $(x_n)$ in $E$ converges weakly to $x$ if and only
+if it converges strongly to $x$. -/
 theorem proposition_3_6_tendsto [CompleteSpace E] [FiniteDimensional ℝ E] (x : ℕ → E) (u : E) :
     x ⇀ u ↔ Tendsto x atTop (𝓝 u) :=
   tendsto_toWeakSpace_iff_of_finiteDimensional
 
-/-- **Remark 2, open sets.** Open sets in the weak topology are open in the strong topology. -/
+/-- **Remark 2** of [brezis2011functional], open sets. Let $E$ be a Banach space. A subset of $E$
+that is open in the weak topology $\sigma(E, E^\star)$ is open in the strong topology. -/
 theorem remark_3_2_isOpen [CompleteSpace E] {s : Set E} (h : IsOpen (toWeakSpace ℝ E '' s)) :
     IsOpen s :=
   WeakSpace.isOpen_of_isOpen s h
 
-/-- **Remark 2, closed sets.** Closed sets in the weak topology are closed in the strong
-topology. In infinite dimension the converse fails: Examples 1 and 2. -/
+/-- **Remark 2** of [brezis2011functional], closed sets. Let $E$ be a Banach space. A subset of $E$
+that is closed in the weak topology $\sigma(E, E^\star)$ is closed in the strong topology.
+
+In infinite dimension the converse fails: see Examples 1 and 2, `Brezis.Chapter03.example_3_1`
+and `Brezis.Chapter03.example_3_2`. -/
 theorem remark_3_2_isClosed [CompleteSpace E] {s : Set E}
     (h : IsClosed (toWeakSpace ℝ E '' s)) : IsClosed s :=
   WeakSpace.isClosed_of_isClosed h
 
-/-- **Example 1 of §3.2.** In an infinite-dimensional `E` the unit sphere
-`S = {x | ‖x‖ = 1}` is never weakly closed; more precisely its weak closure is the closed unit
-ball `B_E` (1), which is weakly closed. -/
+/-- **Example 1** of Section 3.2 of [brezis2011functional]. Let $E$ be an infinite-dimensional
+Banach space. The unit sphere $S = \{x \in E : \|x\| = 1\}$ is not closed in
+$\sigma(E, E^\star)$. More precisely, its closure in $\sigma(E, E^\star)$ is the closed unit
+ball $B_E = \{x \in E : \|x\| \le 1\}$, and $B_E$ is closed in $\sigma(E, E^\star)$. -/
 theorem example_3_1 [CompleteSpace E] (h : ¬ FiniteDimensional ℝ E) :
     closure (toWeakSpace ℝ E '' sphere (0 : E) 1) = toWeakSpace ℝ E '' closedBall 0 1 ∧
       IsClosed (toWeakSpace ℝ E '' closedBall (0 : E) 1) ∧
@@ -176,15 +254,19 @@ theorem example_3_1 [CompleteSpace E] (h : ¬ FiniteDimensional ℝ E) :
   rw [hz0, mem_sphere_zero_iff_norm, norm_zero] at hz
   exact zero_ne_one hz
 
-/-- **Example 2 of §3.2.** In an infinite-dimensional `E` the open unit ball
-`U = {x | ‖x‖ < 1}` is never weakly open. -/
+/-- **Example 2** of Section 3.2 of [brezis2011functional]. Let $E$ be an infinite-dimensional
+Banach space. The open unit ball $U = \{x \in E : \|x\| < 1\}$ is not open in
+$\sigma(E, E^\star)$. -/
 theorem example_3_2 [CompleteSpace E] (h : ¬ FiniteDimensional ℝ E) :
     ¬ IsOpen (toWeakSpace ℝ E '' ball (0 : E) 1) :=
   not_isOpen_image_toWeakSpace_ball h
 
-/-- **Remark 3.** In an infinite-dimensional space the weak topology is never metrizable: no
-metric on `E` induces `σ(E, E*)` (Exercise 3.8). The "however" — `B_E` is weakly metrizable
-when `E*` is separable — is Theorem 3.29. -/
+/-- **Remark 3** of [brezis2011functional]. Let $E$ be an infinite-dimensional Banach space. The
+weak topology $\sigma(E, E^\star)$ is not metrizable: no metric on $E$ induces it. This is
+Exercise 3.8 of the source.
+
+The clause that follows in the source, that $B_E$ with the weak topology is metrizable when
+$E^\star$ is separable, is Theorem 3.29. -/
 theorem remark_3_3 [CompleteSpace E] (h : ¬ FiniteDimensional ℝ E) :
     ¬ MetrizableSpace (WeakSpace ℝ E) :=
   not_metrizableSpace_weakSpace h

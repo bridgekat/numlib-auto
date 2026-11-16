@@ -5,51 +5,64 @@ Released under Apache 2.0 license as described in the file LICENSE.
 import Numlib.Variational.EllipticInterval.BoundaryConditions
 
 /-!
-# Brezis §8.1: motivation — the model Dirichlet problem and the variational method
+# Brezis, Section 8.1: Motivation
 
-Surface file for Haim Brezis, *Functional Analysis, Sobolev Spaces and Partial Differential
-Equations*, Universitext, Springer, 2011, §8.1. The model problem (1) is
+This module formalizes Section 8.1 of [brezis2011functional], which motivates the variational method
+on the model Dirichlet problem (1),
+$$-u'' + u = f \text{ on } [a, b], \qquad u(a) = u(b) = 0,$$
+for a given $f \in C([a, b])$. A classical solution is a function $u \in C^2([a, b])$ that satisfies
+(1). The provisional weak solution of the section is a function $u \in C^1([a, b])$ with the
+property (2),
+$$\int_a^b u' \varphi' + \int_a^b u \varphi = \int_a^b f \varphi \quad \text{for all } \varphi \in
+  C^1([a, b]) \text{ with } \varphi(a) = \varphi(b) = 0.$$
+The variational method has four steps. Step A: a classical solution is a weak solution (multiply (1)
+by $\varphi$ and integrate by parts). Step B: a weak solution exists and is unique, by the
+Lax–Milgram theorem in the completion $H_0^1$ of the $C^1$ functions that vanish at the endpoints.
+Step C: the weak solution is $C^2$. Step D: a $C^2$ weak solution is a classical solution. The
+section carries out Step D and leaves the other steps to Sections 8.2–8.4. It has no numbered
+result.
 
-  `−u'' + u = f` on `[a, b]`, `u(a) = u(b) = 0`,
-
-for a given `f ∈ C([a, b])`. A *classical solution* is a `C²` function satisfying (1); the
-section's provisional *weak solution* is a `C¹` function `u` with
-
-  `∫_a^b u' φ' + ∫_a^b u φ = ∫_a^b f φ` for all `φ ∈ C¹([a, b])` with `φ(a) = φ(b) = 0` (2),
-
-and the variational method has four steps: A (a classical solution is a weak solution: multiply
-(1) by `φ` and integrate by parts), B (existence and uniqueness of a weak solution, by
-Lax–Milgram in the completion `H_0^1` of the `C¹` functions vanishing at the endpoints), C (the
-weak solution is `C²`), D (a `C²` weak solution is a classical solution). The section carries out
-Step D and defers the others to §8.2–§8.4; it has no numbered result. The spaces `Cᵏ([a, b])` are
-`ContDiffMapIcc hab.le k` of `Numlib/Analysis/Calculus/ContDiffMapIcc.lean`.
+Step D specializes `EllipticInterval.isClassicalSolution_of_forall_testFunction` of the backbone
+module `Numlib.Variational.EllipticInterval.BoundaryConditions`.
 
 ## Main definitions
 
-* `IsClassicalSolution hab f u` — `u ∈ C²([a, b])` solves (1): `−u'' + u = f` on `[a, b]` and
-  `u(a) = u(b) = 0`.
-* `IsWeakSolution hab f u` — `u ∈ C¹([a, b])` satisfies (2).
+* Section 8.1, definition of a classical solution, `Brezis.Chapter08.IsClassicalSolution`:
+  $u \in C^2([a, b])$ satisfies (1).
+* Section 8.1, definition of a weak solution, `Brezis.Chapter08.IsWeakSolution`: $u \in C^1([a, b])$
+  satisfies (2).
 
 ## Main results
 
-* `dirichlet_stepD` — Step D: if `u ∈ C²([a, b])` with `u(a) = u(b) = 0` satisfies (2) and `f`
-  is continuous on `[a, b]`, then `u` is a classical solution.
+* Section 8.1, Step D, `Brezis.Chapter08.dirichlet_stepD`: if $f$ is continuous and
+  $u \in C^2([a, b])$ with $u(a) = u(b) = 0$ satisfies (2), then $u$ is a classical solution.
 
-Where the book's Step D integrates (2) by parts against a `C¹` test function, the proof here
-restricts (2) to the smooth test functions `𝓓((a, b), ℝ)` (which are `C¹` and vanish at the
-endpoints) and applies the backbone's
-`EllipticInterval.isClassicalSolution_of_forall_testFunction` — the general Step D for
-`−(α u')' + β u' + γ u = f`, whose proof is the book's: `−(u')' = f − u` in the weak sense on
-`(a, b)`, hence a.e. by the fundamental lemma of the calculus of variations, hence everywhere by
-continuity. The identity on the open interval `(a, b)` extends to the endpoints by continuity
-(`eqOn_Icc_of_ae_eq`).
+## Proof outline
 
-The definitive weak solution, in `H_0^1`, is §8.4's; the steps in general are Step A
-`EllipticInterval.isWeakSolution_of_classical`, Step B Proposition 8.15, Step C
-`EllipticInterval.mem_sobolevInterval_two_of_forall_testFunction` and
-`EllipticInterval.exists_contDiffMapIcc_of_continuous`, Step D
-`EllipticInterval.isClassicalSolution_of_contDiffMapIcc`, all in
-`Numlib/Variational/EllipticInterval` and its child `BoundaryConditions`.
+Step D in the source integrates (2) by parts against a $C^1$ test function. The proof here restricts
+(2) to the smooth test functions $\mathcal{D}((a, b))$, which are $C^1$ and vanish at the endpoints.
+Then $-(u')' = f - u$ holds in the weak sense on $(a, b)$, hence almost everywhere by the
+fundamental lemma of the calculus of variations, and hence everywhere on $(a, b)$ by continuity. The
+identity extends to the endpoints by continuity (`eqOn_Icc_of_ae_eq`).
+
+## Conventions
+
+* The space $C^k([a, b])$ is `ContDiffMapIcc hab.le k` of the module
+  `Numlib.Analysis.Calculus.ContDiffMapIcc`. An element is the tuple $(u, u', \dots, u^{(k)})$ of
+  continuous functions on $[a, b]$, and `ContDiffMapIcc.deriv u j` is $u^{(j)}$.
+* Integrals over $[a, b]$ are interval integrals of `ContDiffMapIcc.extend`, the extension of a
+  function on $[a, b]$ to `ℝ` that is constant outside $[a, b]$.
+
+## Implementation notes
+
+* The definitive weak solution, in $H_0^1$, is the one of Section 8.4. The steps of the variational
+  method for the general problem $-(\alpha u')' + \beta u' + \gamma u = f$ are backbone results:
+  Step A is `EllipticInterval.isWeakSolution_of_classical`, Step B is
+  `EllipticInterval.existsUnique_isWeakSolution` (its case for the model problem is Proposition 8.15
+  of the source, `Brezis.Chapter08.proposition_8_15`), Step C is
+  `EllipticInterval.mem_sobolevInterval_two_of_forall_testFunction` together with
+  `EllipticInterval.exists_contDiffMapIcc_of_continuous`, and Step D is
+  `EllipticInterval.isClassicalSolution_of_contDiffMapIcc`.
 -/
 
 open Set MeasureTheory TopologicalSpace intervalIntegral
@@ -61,48 +74,61 @@ namespace Brezis.Chapter08
 
 variable {a b : ℝ}
 
-/-! ### The forgetful map `Cˡ[a, b] → Cᵏ[a, b]`
+/-!
+### The inclusion $C^l([a, b]) \to C^k([a, b])$
 
-`Numlib/Analysis/Calculus/ContDiffMapIcc.lean` has the differentiation map `Cᵏ⁺¹ → Cᵏ`
-(`ContDiffMapIcc.shift`) but not the inclusion; a `C²` function is read as a `C¹` one through
-`ContDiffMapIcc.castLE`, which keeps the first `k` derivatives of the tuple. An upstreaming
-candidate for that module. -/
+The module `Numlib.Analysis.Calculus.ContDiffMapIcc` has the differentiation map $C^{k+1} \to C^k$
+(`ContDiffMapIcc.shift`) but not the inclusion. A $C^2$ function is read as a $C^1$ function through
+`ContDiffMapIcc.castLE`, which keeps the first $k$ derivatives of the tuple.
+-/
 
-/-- The inclusion `Cˡ[a, b] → Cᵏ[a, b]` for `k ≤ l`: the same function with its first `k`
-derivatives. -/
+/-- The inclusion $C^l([a, b]) \to C^k([a, b])$ for $k \le l$: it maps $u$ to the same function with
+its first $k$ derivatives, $(u, u', \dots, u^{(k)})$. -/
 def _root_.ContDiffMapIcc.castLE {hab : a ≤ b} {k l : ℕ} (h : k ≤ l)
     (u : ContDiffMapIcc hab l) : ContDiffMapIcc hab k :=
   ContDiffMapIcc.mk hab (fun j ↦ u.deriv (Fin.castLE (Nat.succ_le_succ h) j)) fun j ↦
     u.hasDerivIcc (Fin.castLE h j)
 
-/-- The derivatives of the inclusion are those of the original. -/
+/-- The derivatives of the image of $u$ under the inclusion $C^l([a, b]) \to C^k([a, b])$ are the
+derivatives of $u$: the $j$-th derivative is $u^{(j)}$ for $j \le k$. -/
 @[simp]
 theorem _root_.ContDiffMapIcc.deriv_castLE {hab : a ≤ b} {k l : ℕ} (h : k ≤ l)
     (u : ContDiffMapIcc hab l) (j : Fin (k + 1)) :
     (u.castLE h).deriv j = u.deriv (Fin.castLE (Nat.succ_le_succ h) j) := rfl
 
-/-- The inclusion does not change the function. -/
+/-- The inclusion $C^l([a, b]) \to C^k([a, b])$ does not change the function: the extensions of $u$
+and of its image to `ℝ` are equal. -/
 theorem _root_.ContDiffMapIcc.castLE_extend {hab : a ≤ b} {k l : ℕ} (h : k ≤ l)
     (u : ContDiffMapIcc hab l) : (u.castLE h).extend = u.extend := rfl
 
-/-- The inclusion `C² → C¹` does not change the derivative. -/
+/-- The inclusion $C^2([a, b]) \to C^1([a, b])$ does not change the derivative: the extensions of
+$u'$ and of the derivative of the image of $u$ to `ℝ` are equal. -/
 theorem _root_.ContDiffMapIcc.castLE_shift_extend {hab : a ≤ b} (u : ContDiffMapIcc hab 2) :
     (u.castLE one_le_two).shift.extend = u.shift.extend := rfl
 
 /-! ### The definitions -/
 
-/-- **Definition (§8.1), classical solution.** A *classical* (or *strong*) solution of the model
-problem (1) is a function `u ∈ C²([a, b])` with `−u'' + u = f` on `[a, b]` and `u(a) = u(b) = 0`
-(`ContDiffMapIcc.deriv u 2` is `u''` on `[a, b]`). -/
+/-- **Section 8.1** of [brezis2011functional], definition of a classical solution. Let $a < b$ and
+$f : \mathbb{R} \to \mathbb{R}$. A **classical** (or strong) solution of problem (1) is a
+function $u \in C^2([a, b])$ with
+$$-u''(x) + u(x) = f(x) \quad \text{for all } x \in [a, b], \qquad u(a) = u(b) = 0.$$
+
+The second derivative $u''$ on $[a, b]$, with one-sided derivatives at the endpoints, is
+`ContDiffMapIcc.deriv u 2`. -/
 def IsClassicalSolution (hab : a < b) (f : ℝ → ℝ) (u : ContDiffMapIcc hab.le 2) : Prop :=
   (∀ x : Icc a b, -u.deriv 2 x + u x = f x) ∧
     u ⟨a, left_mem_Icc.2 hab.le⟩ = 0 ∧ u ⟨b, right_mem_Icc.2 hab.le⟩ = 0
 
-/-- **Definition (§8.1), weak solution** (the section's provisional one). A function
-`u ∈ C¹([a, b])` is a *weak solution* of (1) if it satisfies (2):
-`∫_a^b u' φ' + ∫_a^b u φ = ∫_a^b f φ` for every `φ ∈ C¹([a, b])` with `φ(a) = φ(b) = 0`. (The
-book notes that (2) makes sense as soon as `u, u' ∈ L¹`, which is the point of §8.2; the
-definitive weak solution, in `H_0^1`, is §8.4's — `EllipticInterval.IsWeakSolution`.) -/
+/-- **Section 8.1** of [brezis2011functional], definition of a weak solution. Let $a < b$ and
+$f : \mathbb{R} \to \mathbb{R}$. A function $u \in C^1([a, b])$ is a **weak solution** of
+problem (1) if it satisfies (2):
+$$\int_a^b u' \varphi' + \int_a^b u \varphi = \int_a^b f \varphi \quad \text{for every } \varphi
+  \in C^1([a, b]) \text{ with } \varphi(a) = \varphi(b) = 0.$$
+
+This is the provisional weak solution of the section. The source notes that (2) makes sense as
+soon as $u, u' \in L^1$, which leads to Section 8.2. The definitive weak solution, in $H_0^1$,
+is the one of Section 8.4, `Brezis.Chapter08.IsWeakSolutionDirichlet`. The function $f$ is
+arbitrary here; Step D assumes it continuous on $[a, b]$. -/
 def IsWeakSolution (hab : a < b) (f : ℝ → ℝ) (u : ContDiffMapIcc hab.le 1) : Prop :=
   ∀ φ : ContDiffMapIcc hab.le 1, φ ⟨a, left_mem_Icc.2 hab.le⟩ = 0 →
     φ ⟨b, right_mem_Icc.2 hab.le⟩ = 0 →
@@ -111,14 +137,20 @@ def IsWeakSolution (hab : a < b) (f : ℝ → ℝ) (u : ContDiffMapIcc hab.le 1)
 
 /-! ### Step D -/
 
-/-- The second derivative of `u ∈ C²[a, b]` at an interior point is the derivative of `u'`. -/
+/-- Let $a < b$ and $u \in C^2([a, b])$. At every interior point $x \in (a, b)$, the derivative of
+$u'$ is $u''(x)$.
+
+Here $u'$ is read through its extension to `ℝ`. -/
 theorem deriv_shift_extend (hab : a < b) (u : ContDiffMapIcc hab.le 2) {x : ℝ}
     (hx : x ∈ Ioo a b) : deriv u.shift.extend x = u.deriv 2 ⟨x, Ioo_subset_Icc_self hx⟩ :=
   ((u.shift.hasDerivWithinAt_extend ⟨x, Ioo_subset_Icc_self hx⟩).hasDerivAt
     (Icc_mem_nhds hx.1 hx.2)).deriv
 
-/-- A `C²` weak solution satisfies (2) against every smooth test function on `(a, b)`, in the
-form `∫_a^b (u' φ' + u φ) = ∫_a^b f φ` over the open interval. -/
+/-- Let $a < b$, $f : \mathbb{R} \to \mathbb{R}$, and let $u \in C^2([a, b])$ be a weak solution of
+problem (1), read as an element of $C^1([a, b])$. Then for every smooth test function
+$\varphi \in \mathcal{D}((a, b))$,
+$$\int_{(a, b)} (u' \varphi' + u \varphi) = \int_{(a, b)} f \varphi.$$
+-/
 theorem integral_eq_of_isWeakSolution (hab : a < b) {f : ℝ → ℝ} (u : ContDiffMapIcc hab.le 2)
     (hu : IsWeakSolution hab f (u.castLE one_le_two)) (φ : 𝓓(Opens.Ioo a b, ℝ)) :
     ∫ x in Ioo a b, (u.shift.extend x * deriv φ x + u.extend x * φ x)
@@ -159,11 +191,13 @@ theorem integral_eq_of_isWeakSolution (hab : a < b) {f : ℝ → ℝ} (u : ContD
   · rw [e1 x hx, e0 x hx]
   · rw [e0 x hx]
 
-/-- **Step D (§8.1).** If `u ∈ C²([a, b])` with `u(a) = u(b) = 0` satisfies (2), i.e. is a weak
-solution, and `f` is continuous on `[a, b]`, then `u` is a classical solution of (1): the
-equation `−u'' + u = f` holds on `(a, b)` by the general
-`EllipticInterval.isClassicalSolution_of_forall_testFunction` (with `α = γ = 1`, `β = 0`), and
-at the endpoints by continuity. -/
+/-- **Section 8.1** of [brezis2011functional], Step D. Let $a < b$, let $f$ be continuous on
+$[a, b]$, and let $u \in C^2([a, b])$ with $u(a) = u(b) = 0$. If $u$ satisfies (2), that is, $u$
+is a weak solution of problem (1), then $u$ is a classical solution of (1).
+
+The equation $-u'' + u = f$ holds on $(a, b)$ by the backbone's general Step D,
+`EllipticInterval.isClassicalSolution_of_forall_testFunction` with $\alpha = \gamma = 1$ and
+$\beta = 0$, and at the endpoints by continuity. -/
 theorem dirichlet_stepD (hab : a < b) {f : ℝ → ℝ} (hf : ContinuousOn f (Icc a b))
     (u : ContDiffMapIcc hab.le 2) (hua : u ⟨a, left_mem_Icc.2 hab.le⟩ = 0)
     (hub : u ⟨b, right_mem_Icc.2 hab.le⟩ = 0) (hu : IsWeakSolution hab f (u.castLE one_le_two)) :

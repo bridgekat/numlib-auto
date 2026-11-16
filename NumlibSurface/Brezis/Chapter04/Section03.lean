@@ -12,42 +12,112 @@ import Numlib.MeasureTheory.Function.LpSpace.Duality
 import NumlibSurface.Brezis.Chapter04.Section02
 
 /-!
-# Brezis §4.3: reflexivity, separability, dual of `L^p`
+# Brezis, Section 4.3: Reflexivity. Separability. Dual of $L^p$
 
-Surface file for Haim Brezis, *Functional Analysis, Sobolev Spaces and Partial Differential
-Equations*, Universitext, Springer, 2011, §4.3, over a σ-finite measure space `(α, μ)` (the
-chapter's standing assumption (iii)) and real scalars. The three cases of the section:
-(A) `1 < p < ∞` — reflexivity (Theorem 4.10 with its three steps), Clarkson's second inequality
-(Remark 3), the Riesz representation theorem (Theorem 4.11, Remark 4), density of `C_c`
-(Theorem 4.12) and separability (Theorem 4.13); (B) `p = 1` — the dual `(L^1)^* = L^∞`
-(Theorem 4.14, Remark 5) and non-reflexivity (Remark 6); (C) `p = ∞` — weak-∗ compactness of the
-unit ball, weak-∗ sequential compactness on subsets of `ℝ^N`, non-reflexivity, a functional not
-given by an `L^1` function, and non-separability (Lemma 4.2, Remark 8).
+This module formalizes Section 4.3 of [brezis2011functional] for real-valued functions on a σ-finite
+measure space $\Omega$, which is the standing assumption of the chapter. The section treats three
+cases. (A) For $1 < p < \infty$, $L^p$ is reflexive and uniformly convex (Theorem 4.10, Remark 3),
+its dual is $L^{p'}$ (Theorem 4.11, Remark 4), $C_c(\mathbb{R}^N)$ is dense in $L^p(\mathbb{R}^N)$
+(Theorem 4.12), and $L^p$ is separable (Theorem 4.13). (B) For $p = 1$, the dual of $L^1$ is
+$L^\infty$ (Theorem 4.14, Remark 5), and $L^1$ is not reflexive (Remark 6). (C) For $p = \infty$,
+the closed unit ball of $L^\infty$ is weak-∗ compact, bounded sequences have weakly-∗ convergent
+subsequences, $L^\infty$ is not reflexive, its dual is strictly larger than $L^1$, and $L^\infty$ is
+not separable (Lemma 4.2, Remark 8).
 
-The backbone behind it is `Numlib/MeasureTheory/Function/LpSpace/{Clarkson, Duality}`:
-`Lp.instUniformConvexSpace`, `Lp.toDual` (the isometry `T` of Theorem 4.10, Step 3),
-`Lp.toDual_surjective` (Theorems 4.11 and 4.14 at once, proved by Radon–Nikodym), `Lp.dualEquiv`,
-`Lp.instIsReflexive` (proved from the duality, not from Milman–Pettis) and
-`Lp.not_surjective_toDual_top`. Theorem 4.13 is Mathlib's `Lp.SecondCountableTopology`. The
-negative results are stated, as the book proves them, for a nonempty open `Ω ⊆ ℝ^N`, `N ≥ 1`
-(for `N = 0` every `L^p` is one-dimensional and the statements are false), with Lebesgue
-measure; Remark 6 is proved from `Lp.not_surjective_toDual_top` rather than by the book's
-weak-compactness argument.
+The proofs specialize the backbone modules `Numlib.MeasureTheory.Function.LpSpace.Clarkson` and
+`Numlib.MeasureTheory.Function.LpSpace.Duality`: the uniform convexity
+`MeasureTheory.Lp.instUniformConvexSpace`, the isometry `MeasureTheory.Lp.toDual`, its surjectivity
+`MeasureTheory.Lp.toDual_surjective` (which gives Theorems 4.11 and 4.14 together, by the
+Radon–Nikodym theorem), the isometric isomorphism `MeasureTheory.Lp.dualEquiv`, the reflexivity
+instance `MeasureTheory.Lp.instIsReflexive` (proved from the duality, not from the Milman–Pettis
+theorem), and `MeasureTheory.Lp.not_surjective_toDual_top`. Theorem 4.13 is Mathlib's
+`MeasureTheory.Lp.SecondCountableTopology`.
+
+## Main definitions
+
+* Section 4.3, definition of a separable measure space,
+  `Brezis.Chapter04.separableMeasureSpace_of_secondCountable`: a separable measure space is a
+  countably generated σ-algebra, and $\mathbb{R}^N$ and every separable metric space with its Borel
+  σ-algebra are examples.
 
 ## Main results
 
-* `theorem_4_10`, `theorem_4_10_clarkson`, `theorem_4_10_uniformConvex`, `theorem_4_10_isometry`,
-  `remark_4_3` — reflexivity and uniform convexity of `L^p`, `1 < p < ∞`.
-* `theorem_4_11`, `remark_4_4`, `theorem_4_14`, `remark_4_5` — `(L^p)^* = L^{p'}`, `1 ≤ p < ∞`.
-* `theorem_4_12`, `separableMeasureSpace_of_secondCountable`, `theorem_4_13`,
-  `theorem_4_13_subset` — density of `C_c` and separability.
-* `remark_4_6`, `lInfty_not_isReflexive` — `L^1(Ω)` and `L^∞(Ω)` are not reflexive.
-* `lInfty_weakStar_isCompact_closedBall`, `lInfty_exists_subseq_weakStar_tendsto` — the weak-∗
-  compactness properties of `L^∞`.
-* `exists_strongDual_lInfty_not_integral` — a functional on `L^∞` extending `f ↦ f 0` on `C_c`,
-  which is not an integral against an `L^1` function (the backbone's
-  `MeasureTheory.Lp.exists_strongDual_top_apply_eq` at `x₀ = 0`).
-* `lemma_4_2`, `remark_4_8` — `L^∞(Ω)` is not separable.
+* Theorem 4.10, `Brezis.Chapter04.theorem_4_10`: $L^p$ is reflexive for $1 < p < \infty$.
+* Theorem 4.10, Step 1, `Brezis.Chapter04.theorem_4_10_clarkson`: Clarkson's first inequality for
+  $2 \le p < \infty$.
+* Theorem 4.10, Step 2, `Brezis.Chapter04.theorem_4_10_uniformConvex`: $L^p$ is uniformly convex for
+  $2 \le p < \infty$, with an explicit modulus.
+* Theorem 4.10, Step 3, `Brezis.Chapter04.theorem_4_10_isometry`: the map
+  $T : L^p \to (L^{p'})^\star$, $\langle Tu, f \rangle = \int uf$, is an isometry with closed range.
+* Remark 3, `Brezis.Chapter04.remark_4_3`: Clarkson's second inequality, and the uniform convexity
+  of $L^p$ for $1 < p \le 2$.
+* Theorem 4.11 (Riesz representation theorem), `Brezis.Chapter04.theorem_4_11`: every
+  $\varphi \in (L^p)^\star$ is $f \mapsto \int uf$ for a unique $u \in L^{p'}$, with
+  $\|u\|_{p'} = \|\varphi\|$.
+* Remark 4, `Brezis.Chapter04.remark_4_4`: $u \mapsto (f \mapsto \int uf)$ is an isometric
+  isomorphism from $L^{p'}$ onto $(L^p)^\star$.
+* Theorem 4.12, `Brezis.Chapter04.theorem_4_12`: $C_c(\mathbb{R}^N)$ is dense in $L^p(\mathbb{R}^N)$
+  for $1 \le p < \infty$.
+* Theorem 4.13, `Brezis.Chapter04.theorem_4_13`: $L^p(\Omega)$ is separable for a separable measure
+  space $\Omega$ and $1 \le p < \infty$.
+* Section 4.3, `Brezis.Chapter04.theorem_4_13_subset`: $L^p(\Omega)$ is separable for every
+  $\Omega \subseteq \mathbb{R}^N$ and $1 \le p < \infty$.
+* Theorem 4.14 (Riesz representation theorem), `Brezis.Chapter04.theorem_4_14`: every
+  $\varphi \in (L^1)^\star$ is $f \mapsto \int uf$ for a unique $u \in L^\infty$, with
+  $\|u\|_\infty = \|\varphi\|$.
+* Remark 5, `Brezis.Chapter04.remark_4_5`: $u \mapsto (f \mapsto \int uf)$ is an isometric
+  isomorphism from $L^\infty$ onto $(L^1)^\star$.
+* Remark 6, `Brezis.Chapter04.remark_4_6`: $L^1(\Omega)$ is not reflexive for a nonempty open
+  $\Omega \subseteq \mathbb{R}^N$.
+* Section 4.3, case C, `Brezis.Chapter04.lInfty_weakStar_isCompact_closedBall`: the closed unit ball
+  of $L^\infty$ is compact in $\sigma(L^\infty, L^1)$.
+* Section 4.3, case C, `Brezis.Chapter04.lInfty_exists_subseq_weakStar_tendsto`: a bounded sequence
+  in $L^\infty(\Omega)$, $\Omega \subseteq \mathbb{R}^N$, has a weakly-∗ convergent subsequence.
+* Section 4.3, case C, `Brezis.Chapter04.lInfty_not_isReflexive`: $L^\infty(\Omega)$ is not
+  reflexive for a nonempty open $\Omega \subseteq \mathbb{R}^N$.
+* Section 4.3, case C, `Brezis.Chapter04.exists_strongDual_lInfty_not_integral`: some continuous
+  linear functional on $L^\infty(\mathbb{R}^N)$ is not given by a function of $L^1$.
+* Lemma 4.2, `Brezis.Chapter04.lemma_4_2`: a space with an uncountable family of pairwise disjoint
+  nonempty open sets is not separable.
+* Remark 8, `Brezis.Chapter04.remark_4_8`: $L^\infty(\Omega)$ is not separable for a nonempty open
+  $\Omega \subseteq \mathbb{R}^N$.
+
+## Conventions
+
+* The conjugate exponent $p'$ is `q`, with `p.HolderConjugate q`. The space $L^p$ is
+  `MeasureTheory.Lp ℝ p μ`, as in Section 4.2.
+* For $\Omega \subseteq \mathbb{R}^N$, the space $L^p(\Omega)$ is `Lp ℝ p (volume.restrict Ω)` on
+  `EuclideanSpace ℝ (Fin N)`.
+* The negative results (Remarks 6 and 8, and the non-reflexivity and the functional of case C) are
+  stated for a nonempty open set $\Omega \subseteq \mathbb{R}^N$ with $N \ge 1$, with Lebesgue
+  measure. This is the case that the source proves in full. For $N = 0$ every $L^p$ is
+  one-dimensional and these statements are false.
+
+## Implementation notes
+
+* Theorem 4.10 is proved from the Riesz representation theorem, through the backbone instance
+  `MeasureTheory.Lp.instIsReflexive`. The three steps of the proof of the source are stated
+  separately as `Brezis.Chapter04.theorem_4_10_clarkson`,
+  `Brezis.Chapter04.theorem_4_10_uniformConvex` and `Brezis.Chapter04.theorem_4_10_isometry`.
+* Remark 6 is proved from `MeasureTheory.Lp.not_surjective_toDual_top`, not by the weak compactness
+  argument of the source.
+
+## Deviations from the source
+
+* **Theorem 4.11** (generalization). The source states the theorem for $1 < p < \infty$. The formal
+  statement holds for $1 \le p < \infty$, and Theorem 4.14 is its case $p = 1$. See
+  `Brezis.Chapter04.theorem_4_11`.
+* **Remark after Theorem 4.13** (generalization). The source assumes that
+  $\Omega \subseteq \mathbb{R}^N$ is measurable. The formal statement holds for every subset. See
+  `Brezis.Chapter04.theorem_4_13_subset`.
+* **Lemma 4.2** (generalization). The source states the lemma for a Banach space. The formal
+  statement holds for every topological space. See `Brezis.Chapter04.lemma_4_2`.
+
+## Not formalized
+
+* **Remarks 6 and 8, the general measure space.** The claims that $L^1(\Omega)$ is not reflexive and
+  $L^\infty(\Omega)$ is not separable unless $\Omega$ consists of finitely many atoms are stated
+  only for nonempty open subsets of $\mathbb{R}^N$.
 -/
 
 open Filter MeasureTheory Metric Topology
@@ -57,22 +127,33 @@ namespace Brezis.Chapter04
 
 variable {α : Type*} [MeasurableSpace α] {μ : Measure α} {p q : ℝ≥0∞}
 
-/-! ### A. `1 < p < ∞`: reflexivity and uniform convexity -/
+/-! ### A. The case $1 < p < \infty$: reflexivity and uniform convexity -/
 
-/-- **Theorem 4.10.** `L^p` is reflexive for `1 < p < ∞`. The backbone instance
-`MeasureTheory.Lp.instIsReflexive`, proved from the Riesz representation theorem; the book's
-route — Clarkson's inequality, uniform convexity, Milman–Pettis for `2 ≤ p`, and the isometry
-into `(L^{p'})^*` with Corollary 3.21 for `p ≤ 2` — is recorded in the three step nodes
-`theorem_4_10_clarkson`, `theorem_4_10_uniformConvex` and `theorem_4_10_isometry`. -/
+/-- **Theorem 4.10** of [brezis2011functional]. Let $\Omega$ be σ-finite and $1 < p < \infty$. Then
+$L^p(\Omega)$ is reflexive.
+
+The proof is the backbone instance `MeasureTheory.Lp.instIsReflexive`, which follows from the
+Riesz representation theorem. The source argues differently: Clarkson's inequality gives uniform
+convexity for $p \ge 2$, the Milman–Pettis theorem gives reflexivity, and for $1 < p \le 2$ the
+isometry into $(L^{p'})^\star$ and Corollary 3.21 conclude. These steps are
+`Brezis.Chapter04.theorem_4_10_clarkson`, `Brezis.Chapter04.theorem_4_10_uniformConvex` and
+`Brezis.Chapter04.theorem_4_10_isometry`. -/
 theorem theorem_4_10 [SigmaFinite μ] [Fact (1 ≤ p)] (hp : 1 < p) (hp' : p ≠ ∞) :
     NormedSpace.IsReflexive ℝ (Lp ℝ p μ) := by
   have := Fact.mk hp
   have := Fact.mk hp'
   infer_instance
 
-/-- **Theorem 4.10, Step 1 (Clarkson's first inequality).** For `2 ≤ p < ∞` and `f, g ∈ L^p`,
-`‖(f + g) / 2‖_p ^ p + ‖(f - g) / 2‖_p ^ p ≤ (‖f‖_p ^ p + ‖g‖_p ^ p) / 2` (8), which reduces to
-its pointwise form (9) `|(a + b) / 2| ^ p + |(a - b) / 2| ^ p ≤ (|a| ^ p + |b| ^ p) / 2`. -/
+/-- **Theorem 4.10** of [brezis2011functional], Step 1 (Clarkson's first inequality). Let
+$2 \le p < \infty$. For all $f, g \in L^p(\Omega)$,
+$$\Bigl\|\frac{f + g}{2}\Bigr\|_p^p + \Bigl\|\frac{f - g}{2}\Bigr\|_p^p \le \frac12
+  \bigl(\|f\|_p^p + \|g\|_p^p\bigr). \qquad (8)$$
+It follows from the pointwise inequality, for all $a, b \in \mathbb{R}$,
+$$\Bigl|\frac{a + b}{2}\Bigr|^p + \Bigl|\frac{a - b}{2}\Bigr|^p \le \frac12 \bigl(|a|^p +
+  |b|^p\bigr), \qquad (9)$$
+which is also stated.
+
+The measure space need not be σ-finite. -/
 theorem theorem_4_10_clarkson (hp : 2 ≤ p) (hp' : p ≠ ∞) :
     (∀ f g : Lp ℝ p μ, ‖(2 : ℝ)⁻¹ • (f + g)‖ ^ p.toReal + ‖(2 : ℝ)⁻¹ • (f - g)‖ ^ p.toReal ≤
       (‖f‖ ^ p.toReal + ‖g‖ ^ p.toReal) / 2) ∧
@@ -81,10 +162,14 @@ theorem theorem_4_10_clarkson (hp : 2 ≤ p) (hp' : p ≠ ∞) :
   ⟨Lp.clarkson_of_two_le hp hp',
     Real.clarkson_pointwise_of_two_le (by simpa using ENNReal.toReal_mono hp' hp)⟩
 
-/-- **Theorem 4.10, Step 2.** For `2 ≤ p < ∞`, `L^p` is uniformly convex: if `‖f‖_p ≤ 1`,
-`‖g‖_p ≤ 1` and `‖f - g‖_p > ε`, then `‖(f + g) / 2‖_p < 1 - δ` with the book's modulus
-`δ = 1 - [1 - (ε / 2) ^ p] ^ (1 / p)`, by Clarkson's first inequality. "And thus reflexive by
-Theorem 3.31" is chapter 3's Milman–Pettis theorem applied to this instance. -/
+/-- **Theorem 4.10** of [brezis2011functional], Step 2. Let $2 \le p < \infty$. Then $L^p(\Omega)$
+is uniformly convex. Precisely, for every $\varepsilon > 0$ and all $f, g \in L^p(\Omega)$ with
+$\|f\|_p \le 1$, $\|g\|_p \le 1$ and $\|f - g\|_p > \varepsilon$,
+$$\Bigl\|\frac{f + g}{2}\Bigr\|_p < 1 - \delta, \qquad \delta = 1 - \Bigl[1 -
+  \Bigl(\frac{\varepsilon}{2}\Bigr)^p\Bigr]^{1/p}.$$
+
+The bound follows from Clarkson's first inequality. The conclusion of the source, "and thus
+reflexive by Theorem 3.31", is the Milman–Pettis theorem of Chapter 3 applied to this space. -/
 theorem theorem_4_10_uniformConvex [Fact (1 ≤ p)] (hp : 2 ≤ p) (hp' : p ≠ ∞) :
     UniformConvexSpace (Lp ℝ p μ) ∧
     ∀ ε > 0, ∀ f g : Lp ℝ p μ, ‖f‖ ≤ 1 → ‖g‖ ≤ 1 → ε < ‖f - g‖ →
@@ -108,11 +193,16 @@ theorem theorem_4_10_uniformConvex [Fact (1 ≤ p)] (hp : 2 ≤ p) (hp' : p ≠ 
     _ < (1 - (ε / 2) ^ p.toReal) ^ (1 / p.toReal) :=
         Real.rpow_lt_rpow (by positivity) key (by positivity)
 
-/-- **Theorem 4.10, Step 3.** For conjugate exponents `p, p'`, the operator
-`T : L^p → (L^{p'})^*`, `⟨T u, f⟩ = ∫ u f`, satisfies `‖T u‖ = ‖u‖_p` (11), so it is an isometry
-onto a closed subspace of `(L^{p'})^*`. The backbone's `MeasureTheory.Lp.toDual ℝ p' p μ`; the
-book's last sentence (`L^p` reflexive for `1 < p ≤ 2` by Corollary 3.21 and Proposition 3.20)
-is not needed, `theorem_4_10` taking the backbone instance. -/
+/-- **Theorem 4.10** of [brezis2011functional], Step 3. Let $\Omega$ be σ-finite and let
+$1 \le p \le \infty$ with conjugate exponent $p'$. The operator
+$T : L^p(\Omega) \to (L^{p'}(\Omega))^\star$ defined by
+$$\langle Tu, f \rangle = \int_\Omega u f \, d\mu \qquad (u \in L^p,\ f \in L^{p'})$$
+satisfies $\|Tu\|_{(L^{p'})^\star} = \|u\|_p$ for every $u$ (equation (11)), and its range is
+closed in $(L^{p'})^\star$.
+
+The operator is the backbone's `MeasureTheory.Lp.toDual ℝ q p μ`. The last sentence of the step
+in the source, that $L^p$ is reflexive for $1 < p \le 2$ by Corollary 3.21 and Proposition 3.20,
+is not needed here, because `Brezis.Chapter04.theorem_4_10` uses the backbone instance. -/
 theorem theorem_4_10_isometry [SigmaFinite μ] [Fact (1 ≤ p)] [Fact (1 ≤ q)]
     [p.HolderConjugate q] :
     (∀ u : Lp ℝ p μ, ‖Lp.toDual ℝ q p μ u‖ = ‖u‖) ∧
@@ -121,11 +211,14 @@ theorem theorem_4_10_isometry [SigmaFinite μ] [Fact (1 ≤ p)] [Fact (1 ≤ q)]
   ⟨fun u => (Lp.toDual ℝ q p μ).norm_map u, fun u f => Lp.toDual_apply u f,
     (Lp.toDual ℝ q p μ).isometry.isUniformInducing.isComplete_range.isClosed⟩
 
-/-- **Remark 3 (Clarkson's second inequality).** For `1 < p ≤ 2` with conjugate exponent `p'`
-and `f, g ∈ L^p`,
-`‖(f + g) / 2‖_p ^ p' + ‖(f - g) / 2‖_p ^ p' ≤ ((‖f‖_p ^ p + ‖g‖_p ^ p) / 2) ^ (1 / (p - 1))`
-(Problem 20, inequality (6), divided by `2 ^ p'`), and consequently `L^p` is uniformly convex
-for `1 < p ≤ 2` as well. -/
+/-- **Remark 3** in Chapter 4 of [brezis2011functional] (Clarkson's second inequality). Let
+$1 < p \le 2$ with conjugate exponent $p'$. For all $f, g \in L^p(\Omega)$,
+$$\Bigl\|\frac{f + g}{2}\Bigr\|_p^{p'} + \Bigl\|\frac{f - g}{2}\Bigr\|_p^{p'} \le \Bigl[\frac12
+  \bigl(\|f\|_p^p + \|g\|_p^p\bigr)\Bigr]^{1/(p - 1)}.$$
+Consequently $L^p(\Omega)$ is uniformly convex for $1 < p \le 2$ as well.
+
+The inequality is inequality (6) of Problem 20 of the source, divided by $2^{p'}$. The measure
+space need not be σ-finite. -/
 theorem remark_4_3 [Fact (1 ≤ p)] [p.HolderConjugate q] (hp : 1 < p) (hp2 : p ≤ 2) :
     (∀ f g : Lp ℝ p μ, ‖(2 : ℝ)⁻¹ • (f + g)‖ ^ q.toReal + ‖(2 : ℝ)⁻¹ • (f - g)‖ ^ q.toReal ≤
       ((‖f‖ ^ p.toReal + ‖g‖ ^ p.toReal) / 2) ^ (1 / (p.toReal - 1))) ∧
@@ -161,13 +254,20 @@ theorem remark_4_3 [Fact (1 ≤ p)] [p.HolderConjugate q] (hp : 1 < p) (hp2 : p 
     have := Fact.mk hp'
     infer_instance
 
-/-! ### A. `1 < p < ∞`: the dual, density, separability -/
+/-! ### A. The case $1 < p < \infty$: the dual, density, separability -/
 
-/-- **Theorem 4.11 (Riesz representation theorem).** For `1 ≤ p < ∞` with conjugate exponent
-`p'` and `φ ∈ (L^p)^*`, there is a unique `u ∈ L^{p'}` with `⟨φ, f⟩ = ∫ u f` for all `f ∈ L^p`,
-and `‖u‖_{p'} = ‖φ‖`. The book states it for `1 < p < ∞` and proves it from reflexivity; the
-backbone (`MeasureTheory.Lp.toDual_surjective`) proves it by Radon–Nikodym for `1 ≤ p < ∞`,
-so that Theorem 4.14 is the case `p = 1`. -/
+/-- **Theorem 4.11** of [brezis2011functional] (Riesz representation theorem). Let $\Omega$ be
+σ-finite, let $1 \le p < \infty$, and let $p'$ be the conjugate exponent. For every
+$\varphi \in (L^p(\Omega))^\star$ there is a unique $u \in L^{p'}(\Omega)$ such that
+$$\langle \varphi, f \rangle = \int_\Omega u f \, d\mu \quad \text{for all } f \in L^p(\Omega),
+  \qquad \text{and} \qquad \|u\|_{p'} = \|\varphi\|.$$
+
+**Generalization.** The source states the theorem for $1 < p < \infty$ and proves it from the
+reflexivity of $L^p$. The backbone proves it for $1 \le p < \infty$ by the Radon–Nikodym theorem
+(`MeasureTheory.Lp.toDual_surjective`), so Theorem 4.14 is the case $p = 1$.
+
+Uniqueness is stated for the pair of conditions: $u$ is the only element of $L^{p'}$ that
+represents $\varphi$ and has norm $\|\varphi\|$. -/
 theorem theorem_4_11 [SigmaFinite μ] [Fact (1 ≤ p)] [Fact (1 ≤ q)] [p.HolderConjugate q]
     (hp' : p ≠ ∞) (φ : StrongDual ℝ (Lp ℝ p μ)) :
     ∃! u : Lp ℝ q μ, (∀ f : Lp ℝ p μ, φ f = ∫ x, u x * f x ∂μ) ∧ ‖u‖ = ‖φ‖ := by
@@ -178,18 +278,24 @@ theorem theorem_4_11 [SigmaFinite μ] [Fact (1 ≤ p)] [Fact (1 ≤ q)] [p.Holde
   ext f
   rw [Lp.toDual_apply, hv f]
 
-/-- **Remark 4.** The identification `(L^p)^* = L^{p'}`, `1 ≤ p < ∞`: `u ↦ (f ↦ ∫ u f)` is a
-linear surjective isometry `L^{p'} → (L^p)^*` (`MeasureTheory.Lp.dualEquiv`). -/
+/-- **Remark 4** in Chapter 4 of [brezis2011functional]. Let $\Omega$ be σ-finite and
+$1 \le p < \infty$ with conjugate exponent $p'$. The map $u \mapsto (f \mapsto \int u f)$ is a
+linear surjective isometry from $L^{p'}(\Omega)$ onto $(L^p(\Omega))^\star$. This identifies
+$(L^p)^\star$ with $L^{p'}$.
+
+The isometry is the backbone's `MeasureTheory.Lp.dualEquiv`. -/
 theorem remark_4_4 [SigmaFinite μ] [Fact (1 ≤ p)] [Fact (1 ≤ q)] [p.HolderConjugate q]
     (hp' : p ≠ ∞) :
     ∃ e : Lp ℝ q μ ≃ₗᵢ[ℝ] StrongDual ℝ (Lp ℝ p μ),
       ∀ (u : Lp ℝ q μ) (f : Lp ℝ p μ), e u f = ∫ x, u x * f x ∂μ :=
   ⟨Lp.dualEquiv ℝ p q μ hp', fun u f => Lp.dualEquiv_apply hp' u f⟩
 
-/-- **Theorem 4.12.** `C_c(ℝ^N)` is dense in `L^p(ℝ^N)`, `1 ≤ p < ∞`: the classes of
-continuous compactly supported functions form a dense subset. Mathlib's
-`MemLp.exists_hasCompactSupport_eLpNorm_sub_le`, which does not follow the book's proof by
-truncation. -/
+/-- **Theorem 4.12** of [brezis2011functional]. Let $1 \le p < \infty$. Then $C_c(\mathbb{R}^N)$ is
+dense in $L^p(\mathbb{R}^N)$: the classes of continuous functions with compact support form a
+dense subset of $L^p(\mathbb{R}^N)$.
+
+The proof is Mathlib's `MeasureTheory.MemLp.exists_hasCompactSupport_eLpNorm_sub_le`, which does
+not follow the truncation argument of the source. -/
 theorem theorem_4_12 {N : ℕ} [Fact (1 ≤ p)] (hp : p ≠ ∞) :
     Dense {g : Lp ℝ p (volume : Measure (EuclideanSpace ℝ (Fin N))) |
       ∃ φ : EuclideanSpace ℝ (Fin N) → ℝ, Continuous φ ∧ HasCompactSupport φ ∧
@@ -207,55 +313,72 @@ theorem theorem_4_12 {N : ℕ} [Fact (1 ≤ p)] (hp : p ≠ ∞) :
     _ = ε / 2 := ENNReal.toReal_ofReal (by positivity)
     _ < ε := half_lt_self hε
 
-/-- **The definition of a separable measure space, and the example following it.** The book's
-"separable measure space" (a countable family generating the σ-algebra) is Mathlib's
-`MeasurableSpace.CountablyGenerated`; the example says that `ℝ^N`, and more generally any
-separable metric space with its Borel σ-algebra, is a separable measure space. -/
+/-- **Section 4.3** of [brezis2011functional], definition of a separable measure space and the
+example after it. The source calls a measure space **separable** if its σ-algebra is generated
+by a countable family of sets; this is Mathlib's `MeasurableSpace.CountablyGenerated`. The
+example states that $\mathbb{R}^N$ is a separable measure space, and more generally that every
+separable metric space $X$ with its Borel σ-algebra is one.
+
+The Lean statement takes $X$ to be a second countable topological space with its Borel
+σ-algebra. A separable metric space is second countable. -/
 theorem separableMeasureSpace_of_secondCountable (N : ℕ) (X : Type*) [TopologicalSpace X]
     [SecondCountableTopology X] [MeasurableSpace X] [BorelSpace X] :
     MeasurableSpace.CountablyGenerated (EuclideanSpace ℝ (Fin N)) ∧
       MeasurableSpace.CountablyGenerated X :=
   ⟨inferInstance, inferInstance⟩
 
-/-- **Theorem 4.13.** If `Ω` is a separable measure space (and σ-finite), then `L^p(Ω)` is
-separable for `1 ≤ p < ∞`. The book proves only the case `Ω = ℝ^N`; Mathlib's
-`Lp.SecondCountableTopology` has the general case. -/
+/-- **Theorem 4.13** of [brezis2011functional]. Let $\Omega$ be a σ-finite, separable measure space
+and $1 \le p < \infty$. Then $L^p(\Omega)$ is separable.
+
+The source proves only the case $\Omega = \mathbb{R}^N$. Mathlib's
+`MeasureTheory.Lp.SecondCountableTopology` gives the general case. -/
 theorem theorem_4_13 [MeasurableSpace.CountablyGenerated α] [SigmaFinite μ] [Fact (1 ≤ p)]
     (hp : p ≠ ∞) : TopologicalSpace.SeparableSpace (Lp ℝ p μ) := by
   have : Fact (p ≠ ∞) := ⟨hp⟩
   have : SecondCountableTopology (Lp ℝ p μ) := Lp.SecondCountableTopology
   infer_instance
 
-/-- **The remark after Theorem 4.13.** `L^p(Ω)` is separable for every subset `Ω ⊆ ℝ^N`,
-`1 ≤ p < ∞` (the book asks `Ω` measurable and goes through the extension by zero; here
-`L^p(Ω)` is `L^p` of the restricted measure, to which Theorem 4.13 applies directly). -/
+/-- **Section 4.3** of [brezis2011functional], the remark after Theorem 4.13. Let
+$\Omega \subseteq \mathbb{R}^N$ and $1 \le p < \infty$. Then $L^p(\Omega)$ is separable.
+
+**Generalization.** The source assumes that $\Omega$ is measurable, and argues by extension by
+zero. Here $L^p(\Omega)$ is $L^p$ of the restriction of Lebesgue measure to $\Omega$, and
+Theorem 4.13 applies to it directly, for every subset $\Omega$. -/
 theorem theorem_4_13_subset {N : ℕ} (Ω : Set (EuclideanSpace ℝ (Fin N))) [Fact (1 ≤ p)]
     (hp : p ≠ ∞) : TopologicalSpace.SeparableSpace (Lp ℝ p (volume.restrict Ω)) :=
   theorem_4_13 hp
 
-/-! ### B. `p = 1` -/
+/-! ### B. The case $p = 1$ -/
 
-/-- **Theorem 4.14 (Riesz representation theorem, `p = 1`).** For `φ ∈ (L^1)^*` there is a
-unique `u ∈ L^∞` with `⟨φ, f⟩ = ∫ u f` for all `f ∈ L^1`, and `‖u‖_∞ = ‖φ‖`. The case `p = 1`
-of `theorem_4_11`. -/
+/-- **Theorem 4.14** of [brezis2011functional] (Riesz representation theorem, $p = 1$). Let $\Omega$
+be σ-finite. For every $\varphi \in (L^1(\Omega))^\star$ there is a unique
+$u \in L^\infty(\Omega)$ such that
+$$\langle \varphi, f \rangle = \int_\Omega u f \, d\mu \quad \text{for all } f \in L^1(\Omega),
+  \qquad \text{and} \qquad \|u\|_\infty = \|\varphi\|.$$
+
+This is the case $p = 1$ of `Brezis.Chapter04.theorem_4_11`. -/
 theorem theorem_4_14 [SigmaFinite μ] (φ : StrongDual ℝ (Lp ℝ 1 μ)) :
     ∃! u : Lp ℝ ∞ μ, (∀ f : Lp ℝ 1 μ, φ f = ∫ x, u x * f x ∂μ) ∧ ‖u‖ = ‖φ‖ :=
   theorem_4_11 ENNReal.one_ne_top φ
 
-/-- **Remark 5.** The identification `(L^1)^* = L^∞`: `u ↦ (f ↦ ∫ u f)` is a linear surjective
-isometry `L^∞ → (L^1)^*`. -/
+/-- **Remark 5** in Chapter 4 of [brezis2011functional]. Let $\Omega$ be σ-finite. The map
+$u \mapsto (f \mapsto \int u f)$ is a linear surjective isometry from $L^\infty(\Omega)$ onto
+$(L^1(\Omega))^\star$. This identifies $(L^1)^\star$ with $L^\infty$. -/
 theorem remark_4_5 [SigmaFinite μ] :
     ∃ e : Lp ℝ ∞ μ ≃ₗᵢ[ℝ] StrongDual ℝ (Lp ℝ 1 μ),
       ∀ (u : Lp ℝ ∞ μ) (f : Lp ℝ 1 μ), e u f = ∫ x, u x * f x ∂μ :=
   ⟨Lp.dualEquiv ℝ 1 ∞ μ ENNReal.one_ne_top, fun u f => Lp.dualEquiv_apply _ u f⟩
 
-/-- **Remark 6.** `L^1(Ω)` is not reflexive, for a nonempty open `Ω ⊆ ℝ^N` (`N ≥ 1`), the case
-the book proves in full. Proof (not the book's weak-compactness argument): if `L^1` were
-reflexive then, through `(L^1)^* = L^∞`, every functional on `L^∞` would be the evaluation at
-some `u ∈ L^1`, i.e. `f ↦ ∫ u f`; but `(L^∞)^*` is strictly larger than `L^1`
-(`MeasureTheory.Lp.not_surjective_toDual_top`, the concrete functional of
-`exists_strongDual_lInfty_not_integral`). The general "unless `Ω` consists of finitely many
-atoms" is not formalized. -/
+/-- **Remark 6** in Chapter 4 of [brezis2011functional]. Let $N \ge 1$ and let
+$\Omega \subseteq \mathbb{R}^N$ be open and nonempty. Then $L^1(\Omega)$ is not reflexive.
+
+This is the case that the source proves in full. The general claim, for every measure space that
+does not consist of finitely many atoms, is not formalized. The proof is not the weak
+compactness argument of the source. If $L^1$ were reflexive, then through
+$(L^1)^\star = L^\infty$ every continuous linear functional on $L^\infty$ would have the form
+$f \mapsto \int uf$ with $u \in L^1$. But $(L^\infty)^\star$ is strictly larger than $L^1$, by
+`MeasureTheory.Lp.not_surjective_toDual_top` (see also
+`Brezis.Chapter04.exists_strongDual_lInfty_not_integral`). -/
 theorem remark_4_6 {N : ℕ} [NeZero N] {Ω : Set (EuclideanSpace ℝ (Fin N))} (hΩ : IsOpen Ω)
     (hne : Ω.Nonempty) : ¬ NormedSpace.IsReflexive ℝ (Lp ℝ 1 (volume.restrict Ω)) := by
   intro h
@@ -272,11 +395,15 @@ theorem remark_4_6 {N : ℕ} [NeZero N] {Ω : Set (EuclideanSpace ℝ (Fin N))} 
   rw [Lp.toDual_apply, ← this, he, Lp.dualEquiv_apply]
   exact integral_congr_ae (Eventually.of_forall fun x => mul_comm _ _)
 
-/-! ### C. `p = ∞` -/
+/-! ### C. The case $p = \infty$ -/
 
-/-- **§4.3 C (i).** The closed unit ball of `L^∞` is compact in the weak-∗ topology
-`σ(L^∞, L^1)`: through the identification `L^∞ = (L^1)^*` of Remark 5, its image is the closed
-unit ball of `(L^1)^*` in the weak-∗ topology, compact by Theorem 3.16 (Banach–Alaoglu,
+/-- **Section 4.3** of [brezis2011functional], case C, weak-∗ compactness. Let $\Omega$ be σ-finite.
+The closed unit ball of $L^\infty(\Omega)$ is compact in the weak-∗ topology
+$\sigma(L^\infty, L^1)$.
+
+The ball is carried into the dual $(L^1)^\star$ by the identification $L^\infty = (L^1)^\star$
+of Remark 5 (`MeasureTheory.Lp.dualEquiv`), and its image is the closed unit ball of
+`WeakDual ℝ (Lp ℝ 1 μ)`. This ball is compact by Theorem 3.16 (Banach–Alaoglu–Bourbaki,
 `WeakDual.isCompact_closedBall`). -/
 theorem lInfty_weakStar_isCompact_closedBall [SigmaFinite μ] :
     IsCompact ((fun u : Lp ℝ ∞ μ =>
@@ -297,12 +424,17 @@ theorem lInfty_weakStar_isCompact_closedBall [SigmaFinite μ] :
   rw [h]
   exact WeakDual.isCompact_closedBall 0 1
 
-/-- **§4.3 C (ii).** For `Ω ⊆ ℝ^N` and a bounded sequence `fₙ` in `L^∞(Ω)`, there are a
-subsequence `f_{nₖ}` and `f ∈ L^∞(Ω)` with `f_{nₖ} ⇀ f` in the weak-∗ topology `σ(L^∞, L^1)`,
-i.e. `∫ f_{nₖ} g → ∫ f g` for every `g ∈ L^1(Ω)`: Corollary 3.30 (the sequential Banach–Alaoglu
-theorem for the dual of the separable space `L^1(Ω)`, in the backbone's transported form
-`LinearIsometryEquiv.exists_subseq_tendsto_apply`) through the identification `L^∞ = (L^1)^*` of
-Remark 5. -/
+/-- **Section 4.3** of [brezis2011functional], case C, weak-∗ sequential compactness. Let
+$\Omega \subseteq \mathbb{R}^N$, and let $(f_n)$ be a bounded sequence in $L^\infty(\Omega)$,
+with $\|f_n\|_\infty \le C$ for all $n$. Then there are a subsequence $(f_{n_k})$ and
+$f \in L^\infty(\Omega)$ with $f_{n_k} \overset{\star}{\rightharpoonup} f$ in
+$\sigma(L^\infty, L^1)$, that is,
+$$\int_\Omega f_{n_k} g \to \int_\Omega f g \quad \text{for every } g \in L^1(\Omega).$$
+
+The proof is Corollary 3.30, the sequential Banach–Alaoglu theorem for the dual of the separable
+space $L^1(\Omega)$, in the transported form `LinearIsometryEquiv.exists_subseq_tendsto_apply`,
+applied through the identification $L^\infty = (L^1)^\star$ of Remark 5. In the Lean statement
+the limit is `g` and the test function is `h`. -/
 theorem lInfty_exists_subseq_weakStar_tendsto {N : ℕ} {Ω : Set (EuclideanSpace ℝ (Fin N))}
     (f : ℕ → Lp ℝ ∞ (volume.restrict Ω)) {C : ℝ} (hf : ∀ n, ‖f n‖ ≤ C) :
     ∃ (φ : ℕ → ℕ) (g : Lp ℝ ∞ (volume.restrict Ω)), StrictMono φ ∧
@@ -316,9 +448,12 @@ theorem lInfty_exists_subseq_weakStar_tendsto {N : ℕ} {Ω : Set (EuclideanSpac
   refine ⟨φ, g, hφ, fun h => ?_⟩
   simpa only [Lp.dualEquiv_apply] using hlim h
 
-/-- **§4.3 C, non-reflexivity.** `L^∞(Ω)` is not reflexive, for a nonempty open `Ω ⊆ ℝ^N`
-(`N ≥ 1`): `L^∞ = (L^1)^*` (Remark 5), so `L^1` would be reflexive by Corollary 3.21
-(`NormedSpace.isReflexive_of_isReflexive_strongDual`), contradicting Remark 6. -/
+/-- **Section 4.3** of [brezis2011functional], case C, non-reflexivity. Let $N \ge 1$ and let
+$\Omega \subseteq \mathbb{R}^N$ be open and nonempty. Then $L^\infty(\Omega)$ is not reflexive.
+
+Since $L^\infty = (L^1)^\star$ by Remark 5, reflexivity of $L^\infty$ would make $L^1$ reflexive
+by Corollary 3.21 (`NormedSpace.isReflexive_of_isReflexive_strongDual`), which contradicts
+Remark 6. -/
 theorem lInfty_not_isReflexive {N : ℕ} [NeZero N] {Ω : Set (EuclideanSpace ℝ (Fin N))}
     (hΩ : IsOpen Ω) (hne : Ω.Nonempty) :
     ¬ NormedSpace.IsReflexive ℝ (Lp ℝ ∞ (volume.restrict Ω)) := by
@@ -328,10 +463,16 @@ theorem lInfty_not_isReflexive {N : ℕ} [NeZero N] {Ω : Set (EuclideanSpace �
       (Lp.dualEquiv ℝ 1 ∞ (volume.restrict Ω) ENNReal.one_ne_top).toContinuousLinearEquiv).1 h
   exact remark_4_6 hΩ hne NormedSpace.isReflexive_of_isReflexive_strongDual
 
-/-- **§4.3 C, the concrete functional (17)–(18).** On `L^∞(ℝ^N)`, `N ≥ 1`, there is a
-continuous linear functional `φ` with `⟨φ, f⟩ = f 0` for every `f ∈ C_c(ℝ^N)` — a Hahn–Banach
-extension of `f ↦ f 0` — and there is no `u ∈ L^1(ℝ^N)` with `⟨φ, f⟩ = ∫ u f` for all
-`f ∈ L^∞(ℝ^N)`: `(L^∞)^*` is strictly larger than `L^1`. -/
+/-- **Section 4.3** of [brezis2011functional], case C, the functional of (17) and (18). Let
+$N \ge 1$. There is a continuous linear functional $\varphi$ on $L^\infty(\mathbb{R}^N)$ such
+that $\langle \varphi, f \rangle = f(0)$ for every $f \in C_c(\mathbb{R}^N)$, and there is no
+$u \in L^1(\mathbb{R}^N)$ with
+$$\langle \varphi, f \rangle = \int_{\mathbb{R}^N} u f \quad \text{for all } f \in
+  L^\infty(\mathbb{R}^N).$$
+So $(L^\infty)^\star$ is strictly larger than $L^1$.
+
+The functional is a Hahn–Banach extension of $f \mapsto f(0)$. It is the backbone's
+`MeasureTheory.Lp.exists_strongDual_top_apply_eq` at the point $0$. -/
 theorem exists_strongDual_lInfty_not_integral {N : ℕ} [NeZero N] :
     ∃ φ : StrongDual ℝ (Lp ℝ ∞ (volume : Measure (EuclideanSpace ℝ (Fin N)))),
       (∀ (f : EuclideanSpace ℝ (Fin N) → ℝ) (hf : MemLp f ∞ volume), Continuous f →
@@ -345,20 +486,28 @@ theorem exists_strongDual_lInfty_not_integral {N : ℕ} [NeZero N] :
   ext g
   rw [Lp.toDual_apply, hu g]
 
-/-- **Lemma 4.2.** A topological space (the book: a Banach space) with an uncountable family of
-pairwise disjoint nonempty open sets is not separable
-(Mathlib's `Pairwise.countable_of_isOpen_disjoint`). -/
+/-- **Lemma 4.2** of [brezis2011functional]. Let $E$ be a topological space, and suppose that there
+is an uncountable family $(O_i)_{i \in I}$ of nonempty open subsets of $E$ that are pairwise
+disjoint. Then $E$ is not separable.
+
+**Generalization.** The source states the lemma for a Banach space $E$. The proof uses only the
+topology.
+
+The proof is Mathlib's `Pairwise.countable_of_isOpen_disjoint`. -/
 theorem lemma_4_2 {E : Type*} [TopologicalSpace E] {ι : Type*} [Uncountable ι] (O : ι → Set E)
     (hO : ∀ i, IsOpen (O i)) (hne : ∀ i, (O i).Nonempty)
     (hdisj : Pairwise (Function.onFun Disjoint O)) :
     ¬ TopologicalSpace.SeparableSpace E := fun _ =>
   not_countable (hdisj.countable_of_isOpen_disjoint hO hne)
 
-/-- **Remark 8.** `L^∞(Ω)` is not separable, for a nonempty open `Ω ⊆ ℝ^N` (`N ≥ 1`), the case
-the book proves in full: for a ball `B(x₀, r₀) ⊆ Ω`, the classes of the indicator functions of
-`B(x₀, r)`, `0 < r < r₀`, are pairwise at distance `1` in `L^∞`, so the balls of radius `1/2`
-around them are an uncountable family of pairwise disjoint nonempty open sets (Lemma 4.2). The
-general "unless `Ω` consists of finitely many atoms" is not formalized. -/
+/-- **Remark 8** in Chapter 4 of [brezis2011functional]. Let $N \ge 1$ and let
+$\Omega \subseteq \mathbb{R}^N$ be open and nonempty. Then $L^\infty(\Omega)$ is not separable.
+
+This is the case that the source proves in full. The general claim, for every measure space that
+does not consist of finitely many atoms, is not formalized. For a ball
+$B(x_0, r_0) \subseteq \Omega$, the classes of the indicator functions of the balls $B(x_0, r)$,
+$0 < r < r_0$, are at mutual distance $1$ in $L^\infty$. So the balls of radius $1/2$ around
+them form an uncountable family of pairwise disjoint nonempty open sets, and Lemma 4.2 applies. -/
 theorem remark_4_8 {N : ℕ} [NeZero N] {Ω : Set (EuclideanSpace ℝ (Fin N))} (hΩ : IsOpen Ω)
     (hne : Ω.Nonempty) : ¬ TopologicalSpace.SeparableSpace (Lp ℝ ∞ (volume.restrict Ω)) := by
   obtain ⟨x₀, hx₀⟩ := hne

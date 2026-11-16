@@ -11,36 +11,64 @@ import Numlib.Analysis.Normed.Module.Reflexive
 import Numlib.Analysis.Normed.Module.WeakDual
 
 /-!
-# Brezis §1.1: the analytic form of the Hahn–Banach theorem
+# Brezis, Section 1.1: The analytic form of the Hahn–Banach theorem
 
-Surface file for Haim Brezis, *Functional Analysis, Sobolev Spaces and Partial Differential
-Equations*, Universitext, Springer, 2011, §1.1: the analytic form of the Hahn–Banach theorem
-(Theorem 1.1, with Zorn's lemma, Lemma 1.1) and its corollaries on a real normed space `E` with
-dual `E* = StrongDual ℝ E` — the norm-preserving extension of a functional (Corollary 1.2), the
-norming functional of a vector (Corollary 1.3, with the duality map of Remark 2 and its
-uniqueness clause when `E*` is strictly convex) and the dual description of the norm
-(Corollary 1.4). Everything up to Corollary 1.4 is Mathlib's, restated in the book's words:
-Theorem 1.1 is `exists_extension_of_le_sublinear`, Corollary 1.2 is `exists_extension_norm_eq`,
-Corollary 1.3 is `exists_dual_vector` rescaled, Corollary 1.4 is the isometry
-`inclusionInDoubleDualLi` read through `ContinuousLinearMap.sSup_unitClosedBall_eq_norm`. Remark 3
-is proved from the backbone's reflexivity module (`Numlib/Analysis/Normed/Module/Reflexive`,
-`…/WeakDual`) rather than from chapter 3, so that §1.1 stays self-contained.
+This module formalizes Section 1.1 of [brezis2011functional]: the analytic form of the Hahn–Banach
+theorem and its corollaries. Let $p$ be a function on a real vector space $E$ that is positively
+homogeneous and subadditive. A linear functional on a subspace that is dominated by $p$ extends to a
+linear functional on all of $E$ that is still dominated by $p$ (Theorem 1.1, proved with Zorn's
+lemma, Lemma 1.1). For a real normed space $E$ with dual $E^\star$ and the pairing
+$\langle f, x \rangle = f(x)$, the corollaries give the norm-preserving extension of a continuous
+functional (Corollary 1.2), a functional $f_0$ with $\|f_0\| = \|x_0\|$ and
+$\langle f_0, x_0 \rangle = \|x_0\|^2$ (Corollary 1.3), and the dual description $\|x\| =
+\max_{\|f\| \le 1} |\langle f, x \rangle|$ of the norm (Corollary 1.4).
+
+Up to Corollary 1.4 the results restate Mathlib: `exists_extension_of_le_sublinear`,
+`exists_extension_norm_eq`, `exists_dual_vector`, and the isometry
+`NormedSpace.inclusionInDoubleDualLi` with `ContinuousLinearMap.sSup_unitClosedBall_eq_norm`. Remark
+3 uses the backbone modules `Numlib.Analysis.Normed.Module.Reflexive` and
+`Numlib.Analysis.Normed.Module.WeakDual`.
+
+## Main definitions
+
+* Remark 2, `Brezis.Chapter01.dualityMap`: the duality map $F(x_0) = \{f_0 \in E^\star : \|f_0\| =
+  \|x_0\|,\ \langle f_0, x_0 \rangle = \|x_0\|^2\}$.
 
 ## Main results
 
-* `theorem_1_1` — Hahn–Banach, analytic form: a linear functional dominated by a positively
-  homogeneous subadditive `p` on a subspace extends to all of `E` with the same domination.
-* `lemma_1_1` — Zorn's lemma, in the book's formulation.
-* `dualNorm_eq` — the dual norm (5), `‖f‖ = sup_{‖x‖ ≤ 1} |f x| = sup_{‖x‖ ≤ 1} f x`.
-* `corollary_1_2`, `corollary_1_3`, `corollary_1_4` — the three corollaries.
-* `dualityMap`, `dualityMap_nonempty`, `remark_1_2` — the duality map `F x₀` of Remark 2 and its
-  uniqueness clause.
-* `remark_1_3` — in a reflexive Banach space the supremum in (5) is attained.
+* Theorem 1.1, `Brezis.Chapter01.theorem_1_1`: a linear functional on a subspace that is dominated
+  by a positively homogeneous subadditive $p$ extends to $E$ with the same domination.
+* Lemma 1.1, `Brezis.Chapter01.lemma_1_1`: every nonempty inductive ordered set has a maximal
+  element (Zorn's lemma).
+* Formula (5), `Brezis.Chapter01.dualNorm_eq`: $\|f\| = \sup_{\|x\| \le 1} |f(x)| = \sup_{\|x\| \le
+  1} f(x)$.
+* Corollary 1.2, `Brezis.Chapter01.corollary_1_2`: a continuous linear functional on a subspace
+  extends to $E$ with the same norm.
+* Corollary 1.3, `Brezis.Chapter01.corollary_1_3`: for every $x_0$ there is $f_0 \in E^\star$ with
+  $\|f_0\| = \|x_0\|$ and $\langle f_0, x_0 \rangle = \|x_0\|^2$.
+* Remark 2, `Brezis.Chapter01.dualityMap_nonempty`: the set $F(x_0)$ is nonempty.
+* Remark 2, `Brezis.Chapter01.remark_1_2`: if $E^\star$ is strictly convex, then $F(x_0)$ has at
+  most one element.
+* Corollary 1.4, `Brezis.Chapter01.corollary_1_4`: $\|x\| = \sup_{\|f\| \le 1} |\langle f, x
+  \rangle|$, and the supremum is attained.
+* Remark 3, `Brezis.Chapter01.remark_1_3`: in a reflexive Banach space the supremum in (5) is
+  attained.
 
-Remark 1 (on Zorn's lemma) is discussion. Of Remark 3 only the direct clause is formalized, as
-`remark_1_3`: the supremum in (5) is attained when `E` is a reflexive Banach space. Its converse,
-R. C. James' theorem — a Banach space in which every `f ∈ E*` attains its norm is reflexive — is
-quoted by the book from Diestel and Holmes without proof and is not formalized.
+## Conventions
+
+* The dual $E^\star$ of a real normed space $E$ is `StrongDual ℝ E` with its operator norm, and
+  $\langle f, x \rangle$ is `f x`.
+
+## Implementation notes
+
+* Remark 3 is proved from the backbone reflexivity modules, not from Chapter 3, so that this section
+  does not depend on later chapters.
+
+## Not formalized
+
+* **Remark 1.** It is a discussion of Zorn's lemma.
+* **Remark 3, converse (James' theorem).** A Banach space in which every $f \in E^\star$ attains its
+  norm is reflexive. The source quotes this result without proof.
 -/
 
 open Filter Metric NormedSpace Topology
@@ -49,18 +77,27 @@ namespace Brezis.Chapter01
 
 /-! ### Theorem 1.1 and Lemma 1.1 -/
 
-/-- **Theorem 1.1 (Helly, Hahn–Banach analytic form).** Let `E` be a real vector space and
-`p : E → ℝ` with `p (λ • x) = λ * p x` for `λ > 0` (1) and `p (x + y) ≤ p x + p y` (2). If `G` is
-a subspace and `g : G → ℝ` a linear functional with `g x ≤ p x` on `G`, there is a linear
-functional `f` on all of `E` extending `g` with `f x ≤ p x` for all `x`. -/
+/-- **Theorem 1.1** of [brezis2011functional] (Helly, Hahn–Banach theorem, analytic form). Let $E$
+be a real vector space and let $p : E \to \mathbb{R}$ satisfy
+$$p(\lambda x) = \lambda p(x) \quad \text{for all } \lambda > 0,\ x \in E, \qquad (1)$$
+$$p(x + y) \le p(x) + p(y) \quad \text{for all } x, y \in E. \qquad (2)$$
+Let $G \subseteq E$ be a linear subspace and $g : G \to \mathbb{R}$ a linear functional with
+$g(x) \le p(x)$ for all $x \in G$. Then there is a linear functional $f$ on $E$ that extends
+$g$, that is, $f(x) = g(x)$ for all $x \in G$, and satisfies $f(x) \le p(x)$ for all $x \in E$.
+
+The proof specializes Mathlib's `exists_extension_of_le_sublinear`. -/
 theorem theorem_1_1 {E : Type*} [AddCommGroup E] [Module ℝ E] (p : E → ℝ)
     (hp₁ : ∀ l : ℝ, 0 < l → ∀ x, p (l • x) = l * p x) (hp₂ : ∀ x y, p (x + y) ≤ p x + p y)
     (G : Submodule ℝ E) (g : G →ₗ[ℝ] ℝ) (hg : ∀ x : G, g x ≤ p x) :
     ∃ f : E →ₗ[ℝ] ℝ, (∀ x : G, f x = g x) ∧ ∀ x, f x ≤ p x :=
   exists_extension_of_le_sublinear ⟨G, g⟩ p hp₁ hp₂ hg
 
-/-- **Lemma 1.1 (Zorn).** Every nonempty ordered set that is inductive — every totally ordered
-subset has an upper bound — has a maximal element `m`, i.e. `m ≤ x` only for `x = m`. -/
+/-- **Lemma 1.1** of [brezis2011functional] (Zorn's lemma). Let $P$ be a nonempty ordered set that
+is inductive, that is, every totally ordered subset of $P$ has an upper bound. Then $P$ has a
+maximal element: there is $m \in P$ such that $m \le x$ implies $x = m$.
+
+The order is a partial order, `PartialOrder P`, and a totally ordered subset is a chain,
+`IsChain (· ≤ ·) c`. -/
 theorem lemma_1_1 {P : Type*} [PartialOrder P] [Nonempty P]
     (h : ∀ c : Set P, IsChain (· ≤ ·) c → BddAbove c) : ∃ m : P, ∀ x, m ≤ x → x = m := by
   obtain ⟨m, hm⟩ := zorn_le h
@@ -70,9 +107,12 @@ theorem lemma_1_1 {P : Type*} [PartialOrder P] [Nonempty P]
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
 
-/-- **The dual norm, formula (5).** For `f ∈ E*`,
-`‖f‖ = sup_{‖x‖ ≤ 1} |f x| = sup_{‖x‖ ≤ 1} f x`; the book's `E*` is `StrongDual ℝ E` with its
-operator norm. -/
+/-- **Formula (5)** of [brezis2011functional], the dual norm. Let $E$ be a real normed space. For
+every $f \in E^\star$,
+$$\|f\| = \sup_{\|x\| \le 1} |f(x)| = \sup_{\|x\| \le 1} f(x).$$
+
+Here $E^\star$ is `StrongDual ℝ E` and $\|f\|$ is its operator norm. The two suprema are `sSup`
+of the images of the closed unit ball `closedBall 0 1`. -/
 theorem dualNorm_eq (f : StrongDual ℝ E) :
     ‖f‖ = sSup ((fun x => |f x|) '' closedBall 0 1) ∧
       ‖f‖ = sSup ((fun x => f x) '' closedBall 0 1) := by
@@ -99,14 +139,22 @@ theorem dualNorm_eq (f : StrongDual ℝ E) :
     rintro _ ⟨x, hx, rfl⟩
     exact (le_abs_self _).trans (hle x hx)
 
-/-- **Corollary 1.2.** A continuous linear functional `g` on a subspace `G ⊆ E` extends to some
-`f ∈ E*` with `‖f‖_{E*} = ‖g‖_{G*}`. -/
+/-- **Corollary 1.2** of [brezis2011functional]. Let $E$ be a real normed space, let $G \subseteq E$
+be a linear subspace, and let $g : G \to \mathbb{R}$ be a continuous linear functional. Then
+there is $f \in E^\star$ that extends $g$ and satisfies
+$$\|f\|_{E^\star} = \|g\|_{G^\star}.$$
+
+The proof specializes Mathlib's `exists_extension_norm_eq`. -/
 theorem corollary_1_2 (G : Submodule ℝ E) (g : StrongDual ℝ G) :
     ∃ f : StrongDual ℝ E, (∀ x : G, f x = g x) ∧ ‖f‖ = ‖g‖ :=
   exists_extension_norm_eq G g
 
-/-- **Corollary 1.3.** For every `x₀ ∈ E` there is `f₀ ∈ E*` with `‖f₀‖ = ‖x₀‖` and
-`⟨f₀, x₀⟩ = ‖x₀‖²`. -/
+/-- **Corollary 1.3** of [brezis2011functional]. Let $E$ be a real normed space. For every
+$x_0 \in E$ there is $f_0 \in E^\star$ such that
+$$\|f_0\| = \|x_0\| \quad \text{and} \quad \langle f_0, x_0 \rangle = \|x_0\|^2.$$
+
+The proof rescales the functional of Mathlib's `exists_dual_vector`; for $x_0 = 0$ it takes
+$f_0 = 0$. -/
 theorem corollary_1_3 (x₀ : E) :
     ∃ f₀ : StrongDual ℝ E, ‖f₀‖ = ‖x₀‖ ∧ f₀ x₀ = ‖x₀‖ ^ 2 := by
   by_cases hx : x₀ = 0
@@ -117,17 +165,25 @@ theorem corollary_1_3 (x₀ : E) :
   · rw [smul_apply, hgx, smul_eq_mul, sq]
     rfl
 
-/-- **The duality map of Remark 2**: `F x₀ = {f₀ ∈ E* | ‖f₀‖ = ‖x₀‖ ∧ ⟨f₀, x₀⟩ = ‖x₀‖²}`, the
-set of functionals produced by Corollary 1.3. -/
+/-- **Remark 2** of [brezis2011functional], the duality map. Let $E$ be a real normed space and
+$x_0 \in E$. The **duality map** at $x_0$ is the set
+$$F(x_0) = \{f_0 \in E^\star : \|f_0\| = \|x_0\| \text{ and } \langle f_0, x_0 \rangle =
+  \|x_0\|^2\}$$
+of the functionals that Corollary 1.3 produces. -/
 def dualityMap (x₀ : E) : Set (StrongDual ℝ E) :=
   {f₀ | ‖f₀‖ = ‖x₀‖ ∧ f₀ x₀ = ‖x₀‖ ^ 2}
 
-/-- `F x₀` is nonempty: that is Corollary 1.3. -/
+/-- **Remark 2** of [brezis2011functional], nonemptiness of the duality map. For every $x_0$ in a
+real normed space $E$, the set $F(x_0)$ is nonempty. This is Corollary 1.3. -/
 theorem dualityMap_nonempty (x₀ : E) : (dualityMap x₀).Nonempty :=
   corollary_1_3 x₀
 
-/-- **Remark 2.** If `E*` is strictly convex, the functional `f₀` of Corollary 1.3 is unique:
-`F x₀` has at most one element. -/
+/-- **Remark 2** of [brezis2011functional], uniqueness. Let $E$ be a real normed space whose dual
+$E^\star$ is strictly convex, and let $x_0 \in E$. If $f_1, f_2 \in F(x_0)$, then $f_1 = f_2$.
+Thus the functional $f_0$ of Corollary 1.3 is unique.
+
+The strict convexity of $E^\star$ is `StrictConvexSpace ℝ (StrongDual ℝ E)`, and $F(x_0)$ is
+`Brezis.Chapter01.dualityMap`. -/
 theorem remark_1_2 [StrictConvexSpace ℝ (StrongDual ℝ E)] (x₀ : E) {f₁ f₂ : StrongDual ℝ E}
     (h₁ : f₁ ∈ dualityMap x₀) (h₂ : f₂ ∈ dualityMap x₀) : f₁ = f₂ := by
   obtain ⟨hn₁, hv₁⟩ := h₁
@@ -145,9 +201,15 @@ theorem remark_1_2 [StrictConvexSpace ℝ (StrongDual ℝ E)] (x₀ : E) {f₁ f
   exact eq_of_norm_eq_of_norm_add_eq (hn₁.trans hn₂.symm)
     (le_antisymm (norm_add_le _ _) (le_of_mul_le_mul_right hsum hx'))
 
-/-- **Corollary 1.4, formula (6).** For every `x ∈ E`,
-`‖x‖ = sup_{‖f‖ ≤ 1} |⟨f, x⟩| = max_{‖f‖ ≤ 1} |⟨f, x⟩|`: the supremum over the closed unit ball
-of `E*` equals `‖x‖`, and it is attained. -/
+/-- **Corollary 1.4** of [brezis2011functional], formula (6). Let $E$ be a real normed space. For
+every $x \in E$,
+$$\|x\| = \sup_{f \in E^\star,\ \|f\| \le 1} |\langle f, x \rangle| = \max_{f \in E^\star,\
+  \|f\| \le 1} |\langle f, x \rangle|.$$
+That is, the supremum over the closed unit ball of $E^\star$ equals $\|x\|$, and some
+$f \in E^\star$ with $\|f\| \le 1$ has $|\langle f, x \rangle| = \|x\|$.
+
+The proof reads the isometry `NormedSpace.inclusionInDoubleDualLi` through
+`ContinuousLinearMap.sSup_unitClosedBall_eq_norm`. -/
 theorem corollary_1_4 (x : E) :
     ‖x‖ = sSup ((fun f : StrongDual ℝ E => |f x|) '' closedBall 0 1) ∧
       ∃ f : StrongDual ℝ E, ‖f‖ ≤ 1 ∧ |f x| = ‖x‖ := by
@@ -158,17 +220,17 @@ theorem corollary_1_4 (x : E) :
   · obtain ⟨f, hf, hfx⟩ := exists_dual_vector'' ℝ x
     exact ⟨f, hf, by rw [hfx, RCLike.ofReal_real_eq_id, id, abs_norm]⟩
 
-/-- **Remark 3.** In a reflexive Banach space the supremum in (5) is attained: for every
-`f ∈ E*` there is `x` with `‖x‖ ≤ 1` and `⟨f, x⟩ = ‖f‖`.
+/-- **Remark 3** of [brezis2011functional]. Let $E$ be a reflexive Banach space. Then the supremum
+in (5) is attained: for every $f \in E^\star$ there is $x \in E$ with $\|x\| \le 1$ and
+$\langle f, x \rangle = \|f\|$.
 
-A maximizing sequence `xₙ` in the closed unit ball, supplied by `dualNorm_eq` and
-`exists_seq_tendsto_sSup`, is bounded, so reflexivity gives a weakly convergent subsequence
-`x_{φ k} ⇀ x` (`NormedSpace.exists_subseq_forall_dual_tendsto`). Then `f x = lim f (x_{φ k}) = ‖f‖`
-because `f` is weakly continuous, and `‖x‖ ≤ liminf ‖x_{φ k}‖ ≤ 1` because the norm is weakly
-sequentially lower semicontinuous (`norm_le_liminf_norm_of_weak_tendsto`).
-
-The converse — R. C. James' theorem, that a Banach space in which every functional attains its
-norm is reflexive — is quoted by the book without proof and is not formalized. -/
+Reflexivity is the backbone class `NormedSpace.IsReflexive`. The proof takes a maximizing
+sequence $(x_n)$ in the closed unit ball, from `Brezis.Chapter01.dualNorm_eq`. Reflexivity gives
+a weakly convergent subsequence $x_{\varphi(k)} \rightharpoonup x$
+(`NormedSpace.exists_subseq_forall_dual_tendsto`). Then $f(x) = \lim f(x_{\varphi(k)}) = \|f\|$,
+and $\|x\| \le \liminf \|x_{\varphi(k)}\| \le 1$ because the norm is weakly sequentially lower
+semicontinuous (`norm_le_liminf_norm_of_weak_tendsto`). The converse, James' theorem, is quoted
+by the source from Diestel and Holmes without proof and is not formalized. -/
 theorem remark_1_3 [CompleteSpace E] [NormedSpace.IsReflexive ℝ E] (f : StrongDual ℝ E) :
     ∃ x : E, ‖x‖ ≤ 1 ∧ f x = ‖f‖ := by
   have hne : ((fun x : E => f x) '' closedBall 0 1).Nonempty :=

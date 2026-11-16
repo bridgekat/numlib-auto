@@ -6,34 +6,72 @@ import Numlib.Variational.Inequality.Basic
 import Numlib.Variational.LaxMilgram
 
 /-!
-# Brezis §5.3: the theorems of Stampacchia and Lax–Milgram
+# Brezis, Section 5.3: The theorems of Stampacchia and Lax–Milgram
 
-Surface file for Haim Brezis, *Functional Analysis, Sobolev Spaces and Partial Differential
-Equations*, Universitext, Springer, 2011, §5.3, over a real Hilbert space `H`. The book's bilinear
-forms `a : H × H → ℝ` are `LinearMap.BilinForm ℝ H` (the `abbrev` `BilinForm H`, so that the
-predicates below are found by dot notation, the pattern of `AtkinsonHan.BilinForm`), with
-continuity and coercivity as the book's Definition has them; the bridge `BilinForm.toSesqForm`
-bundles a continuous form as the backbone's `SesqForm ℝ H` (`Numlib/Variational/Forms`), through
-which every theorem delegates: Stampacchia to
-`existsUnique_isVariationalInequalitySolution_of_isCoercive` and
-`SesqForm.isMinOn_energy_iff_forall_le`, Lax–Milgram to `SesqForm.laxMilgram` and
-`SesqForm.isMinOn_energy_iff`, and the Banach fixed-point theorem to Mathlib's `ContractingWith`.
+This module formalizes Section 5.3 of [brezis2011functional] for a real Hilbert space $H$. A
+bilinear form $a : H \times H \to \mathbb{R}$ is continuous if $|a(u, v)| \le C |u| |v|$ for all
+$u, v$, and coercive if $a(v, v) \ge \alpha |v|^2$ for all $v$ with some $\alpha > 0$. Stampacchia's
+theorem states that for a continuous coercive form $a$, a nonempty closed convex set $K \subseteq H$
+and $\varphi \in H^\star$, there is a unique $u \in K$ with
+$$a(u, v - u) \ge \langle \varphi, v - u \rangle \quad \text{for all } v \in K, \qquad (10)$$
+and that for symmetric $a$ this $u$ minimizes $\frac12 a(v, v) - \langle \varphi, v \rangle$ on $K$
+(Theorem 5.6). The proof uses the Banach fixed-point theorem (Theorem 5.7). For $K = H$ this is the
+Lax–Milgram theorem: there is a unique $u \in H$ with $a(u, v) = \langle \varphi, v \rangle$ for all
+$v \in H$ (Corollary 5.8).
+
+Each theorem bundles the continuous form as the backbone's `SesqForm ℝ H` from
+`Numlib.Variational.Forms`, by `Brezis.Chapter05.BilinForm.toSesqForm`, and applies the backbone.
+Stampacchia's theorem uses `existsUnique_isVariationalInequalitySolution_of_isCoercive` and
+`SesqForm.isMinOn_energy_iff_forall_le`, the Lax–Milgram theorem uses `SesqForm.laxMilgram` and
+`SesqForm.isMinOn_energy_iff`, and the Banach fixed-point theorem is Mathlib's `ContractingWith`.
+
+## Main definitions
+
+* Section 5.3, `Brezis.Chapter05.BilinForm`: the bilinear forms on $H$, Mathlib's
+  `LinearMap.BilinForm ℝ H`.
+* Section 5.3, definition (i), `Brezis.Chapter05.BilinForm.IsContinuousWith`:
+  $|a(u, v)| \le C |u| |v|$.
+* Section 5.3, definition (ii), `Brezis.Chapter05.BilinForm.IsCoerciveWith`:
+  $a(v, v) \ge \alpha |v|^2$.
+* Section 5.3, `Brezis.Chapter05.BilinForm.toSesqForm`: a continuous bilinear form as a bounded
+  sesquilinear form of the backbone.
 
 ## Main results
 
-* `BilinForm`, `BilinForm.IsContinuousWith`, `BilinForm.IsCoerciveWith` — the Definition, with
-  the bridges `BilinForm.toSesqForm`, `toSesqForm_apply`, `isCoerciveWith_toSesqForm`,
-  `isHermitian_toSesqForm_of_isSymm`.
-* `theorem_5_6`, `theorem_5_6_symm` — Stampacchia's theorem: the variational inequality
-  `a(u, v - u) ≥ ⟨φ, v - u⟩ ∀ v ∈ K` has a unique solution, which for symmetric `a` is the
-  minimizer of `½ a(v, v) - ⟨φ, v⟩` on `K`.
-* `theorem_5_7` — the Banach fixed-point theorem.
-* `corollary_5_8`, `corollary_5_8_symm` — the Lax–Milgram theorem and its symmetric clause.
-* `remark_5_6`, `remark_5_7`, `remark_5_8` — convexity of `v ↦ a(v, v)` for a nonnegative form
-  (no symmetry), the energy's derivative (`(17)` is the Euler equation `F'(u) = 0`), and the
-  direct proof of Lax–Milgram through the operator `A`: injective, closed range, dense range.
+* Section 5.3, `Brezis.Chapter05.BilinForm.toSesqForm_apply`,
+  `Brezis.Chapter05.BilinForm.isCoerciveWith_toSesqForm` and
+  `Brezis.Chapter05.BilinForm.isHermitian_toSesqForm_of_isSymm`: the bundled form has the same
+  values, coercivity and symmetry.
+* Theorem 5.6 (Stampacchia), `Brezis.Chapter05.theorem_5_6`: the variational inequality (10) has a
+  unique solution in $K$.
+* Theorem 5.6, `Brezis.Chapter05.theorem_5_6_symm`: for symmetric $a$, the solutions of (10) are the
+  minimizers of $\frac12 a(v, v) - \langle \varphi, v \rangle$ on $K$, and the minimizer is unique.
+* Theorem 5.7 (Banach fixed-point theorem), `Brezis.Chapter05.theorem_5_7`: a strict contraction of
+  a nonempty complete metric space has a unique fixed point.
+* Corollary 5.8 (Lax–Milgram), `Brezis.Chapter05.corollary_5_8`: there is a unique $u \in H$ with
+  $a(u, v) = \langle \varphi, v \rangle$ for all $v$.
+* Corollary 5.8, `Brezis.Chapter05.corollary_5_8_symm`: for symmetric $a$, $u$ solves (17) if and
+  only if it minimizes $\frac12 a(v, v) - \langle \varphi, v \rangle$ on $H$.
+* Remark 6, `Brezis.Chapter05.remark_5_6`: if $a(v, v) \ge 0$ for all $v$, then $v \mapsto a(v, v)$
+  is convex.
+* Remark 7, `Brezis.Chapter05.remark_5_7`: (17) is the Euler equation $F'(u) = 0$ of the energy $F$.
+* Remark 8, `Brezis.Chapter05.remark_5_8`: the operator $A$ with $(Au, v) = a(u, v)$ is injective
+  with closed dense range, so it is a bijection.
 
-Theorem 5.16 (Minty–Browder, Comments) is not planned.
+## Conventions
+
+* A symmetric form, $a(u, v) = a(v, u)$, is Mathlib's `LinearMap.BilinForm.IsSymm a`.
+* The coercivity constant $\alpha$ is a separate hypothesis `0 < α` of the theorems; the predicate
+  `Brezis.Chapter05.BilinForm.IsCoerciveWith` does not include it.
+
+## Implementation notes
+
+* `Brezis.Chapter05.BilinForm` is an abbreviation, so that the predicates on it can be used with dot
+  notation.
+
+## Not formalized
+
+* **Theorem 5.16 (Minty–Browder), from the Comments on Chapter 5.**
 -/
 
 open scoped InnerProductSpace
@@ -44,49 +82,61 @@ namespace Brezis.Chapter05
 
 variable {H : Type*} [NormedAddCommGroup H] [InnerProductSpace ℝ H] [CompleteSpace H]
 
-/-! ### The Definition: continuous and coercive bilinear forms -/
+/-! ### The definition: continuous and coercive bilinear forms -/
 
-/-- The book's bilinear forms `a : H × H → ℝ`: `LinearMap.BilinForm ℝ H`, as an abbreviation so
-that the predicates below are found by dot notation. -/
+/-- **Section 5.3** of [brezis2011functional]. The bilinear forms $a : H \times H \to \mathbb{R}$ of
+the source are Mathlib's `LinearMap.BilinForm ℝ H`.
+
+This is an abbreviation, so that the predicates below can be used with dot notation. -/
 abbrev BilinForm (H : Type*) [NormedAddCommGroup H] [InnerProductSpace ℝ H] :=
   LinearMap.BilinForm ℝ H
 
 namespace BilinForm
 
 omit [CompleteSpace H] in
-/-- **Definition (i)**: `a` is continuous with constant `C`, `|a(u, v)| ≤ C |u| |v|` for all
-`u, v ∈ H`. -/
+/-- **Section 5.3** of [brezis2011functional], definition (i). A bilinear form $a$ on $H$ is
+**continuous** with constant $C$ if
+$$|a(u, v)| \le C |u| |v| \quad \text{for all } u, v \in H.$$
+-/
 def IsContinuousWith (a : BilinForm H) (C : ℝ) : Prop :=
   ∀ u v, |a u v| ≤ C * ‖u‖ * ‖v‖
 
 omit [CompleteSpace H] in
-/-- **Definition (ii)**: `a` is coercive with constant `α`, `a(v, v) ≥ α |v|²` for all `v ∈ H`;
-the theorems add `0 < α`. -/
+/-- **Section 5.3** of [brezis2011functional], definition (ii). A bilinear form $a$ on $H$ is
+**coercive** with constant $\alpha$ if
+$$a(v, v) \ge \alpha |v|^2 \quad \text{for all } v \in H.$$
+
+The source requires $\alpha > 0$. Here $0 < \alpha$ is a separate hypothesis of the theorems. -/
 def IsCoerciveWith (a : BilinForm H) (α : ℝ) : Prop :=
   ∀ v, α * ‖v‖ ^ 2 ≤ a v v
 
 omit [CompleteSpace H] in
-/-- A continuous bilinear form bundled as the backbone's `SesqForm ℝ H`: over `ℝ` a bounded
-bilinear map `H →L[ℝ] H →L[ℝ] ℝ` *is* a sesquilinear form. -/
+/-- A bilinear form $a$ on $H$ that is continuous with constant $C$, bundled as the backbone's
+`SesqForm ℝ H`. Over $\mathbb{R}$ a bounded bilinear map $H \to H \to \mathbb{R}$ is a
+sesquilinear form. -/
 def toSesqForm (a : BilinForm H) {C : ℝ} (hC : a.IsContinuousWith C) : SesqForm ℝ H :=
   LinearMap.mkContinuous₂ a C fun u v => by simpa [Real.norm_eq_abs] using hC u v
 
 omit [CompleteSpace H] in
-/-- Bundling does not change the values: `toSesqForm a hC u v = a u v`. -/
+/-- The bundled form `Brezis.Chapter05.BilinForm.toSesqForm` has the same values as $a$: its value
+at $(u, v)$ is $a(u, v)$. -/
 @[simp]
 theorem toSesqForm_apply (a : BilinForm H) {C : ℝ} (hC : a.IsContinuousWith C) (u v : H) :
     a.toSesqForm hC u v = a u v := rfl
 
 omit [CompleteSpace H] in
-/-- The book's coercivity is the backbone's `SesqForm.IsCoerciveWith` of the bundled form. -/
+/-- If a continuous bilinear form $a$ is coercive with constant $\alpha$, then the bundled form
+`Brezis.Chapter05.BilinForm.toSesqForm` is coercive with constant $\alpha$ in the sense of the
+backbone's `SesqForm.IsCoerciveWith`. -/
 theorem isCoerciveWith_toSesqForm (a : BilinForm H) {C α : ℝ} (hC : a.IsContinuousWith C)
     (hα : a.IsCoerciveWith α) : SesqForm.IsCoerciveWith (a.toSesqForm hC) α := by
   rw [SesqForm.isCoerciveWith_real_iff]
   exact hα
 
 omit [CompleteSpace H] in
-/-- The book's "symmetric" (`a(u, v) = a(v, u)`, Mathlib's `LinearMap.BilinForm.IsSymm`) is the
-backbone's `SesqForm.IsHermitian` of the bundled form. -/
+/-- If a continuous bilinear form $a$ is symmetric, $a(u, v) = a(v, u)$ for all $u, v$, then the
+bundled form `Brezis.Chapter05.BilinForm.toSesqForm` is Hermitian in the sense of the backbone's
+`SesqForm.IsHermitian`. -/
 theorem isHermitian_toSesqForm_of_isSymm (a : BilinForm H) {C : ℝ} (hC : a.IsContinuousWith C)
     (hs : LinearMap.BilinForm.IsSymm a) : (a.toSesqForm hC).IsHermitian := by
   rw [SesqForm.isHermitian_real_iff]
@@ -100,10 +150,16 @@ open BilinForm
 
 /-! ### Stampacchia's theorem -/
 
-/-- **Theorem 5.6 (Stampacchia), existence and uniqueness.** For a continuous coercive bilinear
-form `a` on `H`, a nonempty closed convex `K ⊆ H` and `φ ∈ H*`, there is a unique `u ∈ K` with
-`a(u, v - u) ≥ ⟨φ, v - u⟩` for all `v ∈ K` (display (10)). The backbone's proof is the book's:
-a fixed point of `v ↦ P_K (ρ f - ρ A v + v)` for small `ρ > 0`, `P_K` being nonexpansive. -/
+/-- **Theorem 5.6** of [brezis2011functional] (Stampacchia), existence and uniqueness. Let $a$ be a
+continuous coercive bilinear form on $H$, with constants $C$ and $\alpha > 0$. Let
+$K \subseteq H$ be a nonempty closed convex set and $\varphi \in H^\star$. Then there is a
+unique $u \in K$ such that
+$$a(u, v - u) \ge \langle \varphi, v - u \rangle \quad \text{for all } v \in K. \qquad (10)$$
+
+The backbone's proof is the proof of the source. Let $f \in H$ represent $\varphi$, and let
+$A : H \to H$ satisfy $(Au, v) = a(u, v)$. Then $u$ is a fixed point of
+$v \mapsto P_K(\rho f - \rho A v + v)$ for small $\rho > 0$, by Theorem 5.7, because $P_K$ does
+not increase distances. -/
 theorem theorem_5_6 {a : BilinForm H} {C α : ℝ} (hC : a.IsContinuousWith C) (hα : 0 < α)
     (ha : a.IsCoerciveWith α) {K : Set H} (hne : K.Nonempty) (hcl : IsClosed K)
     (hK : Convex ℝ K) (φ : StrongDual ℝ H) :
@@ -114,11 +170,18 @@ theorem theorem_5_6 {a : BilinForm H} {C α : ℝ} (hC : a.IsContinuousWith C) (
   simpa [IsVariationalInequalitySolution, SesqForm.inner_rieszRep, SesqForm.inner_toOperator,
     toSesqForm_apply] using h
 
-/-- **Theorem 5.6, the symmetric clause.** If moreover `a` is symmetric, then `u` is characterized
-by `u ∈ K` and `½ a(u, u) - ⟨φ, u⟩ = min_{v ∈ K} {½ a(v, v) - ⟨φ, v⟩}` (display (11)): the
-solutions of (10) in `K` are exactly the minimizers of the energy on `K`, and the minimizer exists
-and is unique. The book's proof — `u` is the projection of `g` onto `K` in the scalar product
-`a` — is the backbone's `IsVariationalInequalitySolution.isBestApprox_energy`. -/
+/-- **Theorem 5.6** of [brezis2011functional] (Stampacchia), the symmetric case. Let $a$ be a
+continuous coercive bilinear form on $H$, with constants $C$ and $\alpha > 0$, that is moreover
+symmetric. Let $K \subseteq H$ be a nonempty closed convex set and $\varphi \in H^\star$. Then:
+
+1. an element $u$ satisfies $u \in K$ and (10) if and only if $u \in K$ and
+$$\frac12 a(u, u) - \langle \varphi, u \rangle = \min_{v \in K} \Bigl\{\frac12 a(v, v) - \langle
+  \varphi, v \rangle\Bigr\}; \qquad (11)$$
+2. there is a unique $u \in K$ that satisfies (11).
+
+The source proves this by showing that $u$ is the projection onto $K$, for the scalar product
+$a$, of the element $g$ that represents $\varphi$. This argument is the backbone's
+`IsVariationalInequalitySolution.isBestApprox_energy`. -/
 theorem theorem_5_6_symm {a : BilinForm H} {C α : ℝ} (hC : a.IsContinuousWith C) (hα : 0 < α)
     (ha : a.IsCoerciveWith α) (hs : LinearMap.BilinForm.IsSymm a) {K : Set H}
     (hne : K.Nonempty) (hcl : IsClosed K) (hK : Convex ℝ K) (φ : StrongDual ℝ H) :
@@ -145,10 +208,14 @@ theorem theorem_5_6_symm {a : BilinForm H} {C α : ℝ} (hC : a.IsContinuousWith
     exact SesqForm.existsUnique_isMinOn_energy hh φ hα (isCoerciveWith_toSesqForm a hC ha) hK hcl
       hne
 
-/-- **Theorem 5.7 (Banach fixed-point theorem, the contraction mapping principle).** A strict
-contraction `S` of a nonempty complete metric space `X` — `d(S v₁, S v₂) ≤ k d(v₁, v₂)` with
-`k < 1` — has a unique fixed point `u = S u`. Mathlib's `ContractingWith`, with the book's real
-`k` replaced by `max k 0` (if `k < 0` the hypothesis forces `S` to be constant). -/
+/-- **Theorem 5.7** of [brezis2011functional] (Banach fixed-point theorem, contraction mapping
+principle). Let $X$ be a nonempty complete metric space and let $S : X \to X$ be a strict
+contraction: there is $k < 1$ with
+$$d(Sv_1, Sv_2) \le k \, d(v_1, v_2) \quad \text{for all } v_1, v_2 \in X.$$
+Then $S$ has a unique fixed point $u = Su$.
+
+The proof is Mathlib's `ContractingWith`, with the constant $\max(k, 0)$. If $k < 0$, the
+hypothesis forces $S$ to be constant. -/
 theorem theorem_5_7 {X : Type*} [MetricSpace X] [Nonempty X] [CompleteSpace X] (S : X → X)
     {k : ℝ} (hk : k < 1) (hS : ∀ v₁ v₂, dist (S v₁) (S v₂) ≤ k * dist v₁ v₂) :
     ∃! u, S u = u := by
@@ -161,15 +228,24 @@ theorem theorem_5_7 {X : Type*} [MetricSpace X] [Nonempty X] [CompleteSpace X] (
 
 /-! ### The Lax–Milgram theorem -/
 
-/-- **Corollary 5.8 (Lax–Milgram).** For a continuous coercive bilinear form `a` on `H` and
-`φ ∈ H*` there is a unique `u ∈ H` with `a(u, v) = ⟨φ, v⟩` for all `v ∈ H` (display (17)). -/
+/-- **Corollary 5.8** of [brezis2011functional] (Lax–Milgram). Let $a$ be a continuous coercive
+bilinear form on $H$, with constants $C$ and $\alpha > 0$, and let $\varphi \in H^\star$. Then
+there is a unique $u \in H$ such that
+$$a(u, v) = \langle \varphi, v \rangle \quad \text{for all } v \in H. \qquad (17)$$
+-/
 theorem corollary_5_8 {a : BilinForm H} {C α : ℝ} (hC : a.IsContinuousWith C) (hα : 0 < α)
     (ha : a.IsCoerciveWith α) (φ : StrongDual ℝ H) : ∃! u, ∀ v, a u v = φ v :=
   SesqForm.laxMilgram (a.toSesqForm hC) φ hα (isCoerciveWith_toSesqForm a hC ha)
 
 omit [CompleteSpace H] in
-/-- **Corollary 5.8, the symmetric clause.** If moreover `a` is symmetric, `u` is characterized by
-`½ a(u, u) - ⟨φ, u⟩ = min_{v ∈ H} {½ a(v, v) - ⟨φ, v⟩}` (display (18)). -/
+/-- **Corollary 5.8** of [brezis2011functional], the symmetric case. Let $a$ be a continuous
+coercive bilinear form on a real inner product space $H$, with constants $C$ and $\alpha > 0$,
+that is moreover symmetric, and let $\varphi \in H^\star$. Then $u \in H$ satisfies (17) if and
+only if
+$$\frac12 a(u, u) - \langle \varphi, u \rangle = \min_{v \in H} \Bigl\{\frac12 a(v, v) - \langle
+  \varphi, v \rangle\Bigr\}. \qquad (18)$$
+
+Completeness of $H$ is not needed for this equivalence. -/
 theorem corollary_5_8_symm {a : BilinForm H} {C α : ℝ} (hC : a.IsContinuousWith C) (hα : 0 < α)
     (ha : a.IsCoerciveWith α) (hs : LinearMap.BilinForm.IsSymm a) (φ : StrongDual ℝ H) (u : H) :
     (∀ v, a u v = φ v) ↔ IsMinOn (fun v => 1 / 2 * a v v - φ v) Set.univ u := by
@@ -182,12 +258,14 @@ theorem corollary_5_8_symm {a : BilinForm H} {C α : ℝ} (hC : a.IsContinuousWi
   rw [h]
   simp only [Submodule.mem_top, true_implies, toSesqForm_apply]
 
-/-! ### Remarks 6–8 -/
+/-! ### Remarks 6 to 8 -/
 
 omit [CompleteSpace H] in
-/-- **Remark 6.** If `a(v, v) ≥ 0` for all `v` then `v ↦ a(v, v)` is convex — no symmetry and no
-continuity is needed: for `s + t = 1`,
-`a(s u + t v, s u + t v) = s a(u, u) + t a(v, v) - s t a(u - v, u - v)`. -/
+/-- **Remark 6** in Chapter 5 of [brezis2011functional]. Let $a$ be a bilinear form on $H$ with
+$a(v, v) \ge 0$ for all $v \in H$. Then the function $v \mapsto a(v, v)$ is convex on $H$.
+
+Neither symmetry nor continuity is needed. For $s + t = 1$ one has $a(su + tv, su + tv) =
+s\,a(u, u) + t\,a(v, v) - st\,a(u - v, u - v)$. -/
 theorem remark_5_6 (a : BilinForm H) (hpos : ∀ v, 0 ≤ a v v) :
     ConvexOn ℝ Set.univ fun v => a v v := by
   refine ⟨convex_univ, fun x _ y _ s t hs ht hst => ?_⟩
@@ -201,10 +279,15 @@ theorem remark_5_6 (a : BilinForm H) (hpos : ∀ v, 0 ≤ a v v) :
   nlinarith [mul_nonneg (mul_nonneg hs ht) h]
 
 omit [CompleteSpace H] in
-/-- **Remark 7.** The precise content of "(17) says `F'(u) = 0` where
-`F(v) = ½ a(v, v) - ⟨φ, v⟩`": for a symmetric continuous `a`, `F` is Fréchet differentiable at
-every `u` with derivative the functional `v ↦ a(u, v) - ⟨φ, v⟩`, and (17) holds at `u` exactly
-when `F'(u) = 0` — (17) is the Euler equation of the minimization problem (18). -/
+/-- **Remark 7** in Chapter 5 of [brezis2011functional], the precise content of "(17) says that
+$F'(u) = 0$". Let $a$ be a continuous symmetric bilinear form on $H$, let $\varphi \in H^\star$,
+and let
+$$F(v) = \frac12 a(v, v) - \langle \varphi, v \rangle.$$
+Then for every $u \in H$, $F$ is Fréchet differentiable at $u$ with derivative the functional
+$v \mapsto a(u, v) - \langle \varphi, v \rangle$. Moreover $u$ satisfies (17) if and only if
+$F'(u) = 0$. So (17) is the Euler equation of the minimization problem (18).
+
+The derivative is written `a.toSesqForm hC u - φ`. -/
 theorem remark_5_7 {a : BilinForm H} {C : ℝ} (hC : a.IsContinuousWith C)
     (hs : LinearMap.BilinForm.IsSymm a) (φ : StrongDual ℝ H) (u : H) :
     HasFDerivAt (fun v => 1 / 2 * a v v - φ v) (a.toSesqForm hC u - φ) u ∧
@@ -223,10 +306,16 @@ theorem remark_5_7 {a : BilinForm H} {C : ℝ} (hC : a.IsContinuousWith C)
   · intro h v
     exact congrArg (fun ψ : StrongDual ℝ H => ψ v) h
 
-/-- **Remark 8, the direct proof of Lax–Milgram.** With `A : H → H` the operator of (13),
-`(A u, v) = a(u, v)` (the backbone's `SesqForm.toOperator`), (a) `A` is injective, since `a` is
-coercive; (b) `R(A)` is closed, since `α |v| ≤ |A v|`; (c) `R(A)` is dense, since `(A u, v) = 0`
-for all `u` forces `v = 0`; hence `A` is a bijection of `H` onto `H`, which is (17). -/
+/-- **Remark 8** in Chapter 5 of [brezis2011functional], the direct proof of the Lax–Milgram
+theorem. Let $a$ be a continuous coercive bilinear form on $H$, with constants $C$ and
+$\alpha > 0$, and let $A : H \to H$ be the operator of (13), with $(Au, v) = a(u, v)$. Then:
+
+1. $A$ is injective, because $a$ is coercive;
+2. the range $R(A)$ is closed, because $\alpha |v| \le |Av|$;
+3. $R(A)$ is dense, because $(Au, v) = 0$ for all $u$ forces $v = 0$;
+4. so $A$ is a bijection of $H$ onto $H$, which is (17).
+
+The operator $A$ is the backbone's `SesqForm.toOperator` of the bundled form. -/
 theorem remark_5_8 {a : BilinForm H} {C α : ℝ} (hC : a.IsContinuousWith C) (hα : 0 < α)
     (ha : a.IsCoerciveWith α) :
     Function.Injective (a.toSesqForm hC).toOperator ∧

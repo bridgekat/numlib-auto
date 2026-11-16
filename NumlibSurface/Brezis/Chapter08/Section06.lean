@@ -6,43 +6,81 @@ import Numlib.Variational.EllipticInterval.SturmLiouville
 import NumlibSurface.Brezis.Chapter08.Section05
 
 /-!
-# Brezis §8.6: eigenfunctions and spectral decomposition
+# Brezis, Section 8.6: Eigenfunctions and spectral decomposition
 
-Surface file for Haim Brezis, *Functional Analysis, Sobolev Spaces and Partial Differential
-Equations*, Universitext, Springer, 2011, §8.6: Theorem 8.22 (the Sturm–Liouville operator
-`A u = −(p u')' + q u` with Dirichlet conditions on `I = (0, 1)` has a sequence of eigenvalues
-`λₙ → +∞` and a Hilbert basis of `L²(I)` of `C²` eigenfunctions), the properties of the solution
-operator `T : f ↦ u` established in its proof, its Example (`p ≡ 1`, `q ≡ 0`: `√2 sin(nπx)`,
-`n²π²`) and Remark 30. Over `Numlib/Variational/EllipticInterval/SturmLiouville` and the compact
-self-adjoint spectral theorem of chapter 6
-(`ContinuousLinearMap.IsSymmetric.eigenvectorHilbertBasis`).
+This module formalizes Section 8.6 of [brezis2011functional]. Let $I = (0, 1)$ and
+$\bar I = [0, 1]$, let $p \in C^1(\bar I)$ with $p \ge \alpha > 0$ on $\bar I$, and let
+$q \in C(\bar I)$. Theorem 8.22 says that the Sturm–Liouville operator $Au = -(pu')' + qu$ with
+Dirichlet conditions has a sequence of eigenvalues $\lambda_n \to +\infty$ and a Hilbert basis
+$(e_n)$ of $L^2(I)$ of eigenfunctions, with $e_n \in C^2(\bar I)$ and (37):
+$$-(pe_n')' + qe_n = \lambda_n e_n \text{ on } I, \qquad e_n(0) = e_n(1) = 0.$$
+The proof reduces to $q \ge 0$ and applies the spectral theorem for compact self-adjoint operators
+(Theorem 6.11) to the solution operator $T : f \mapsto u$ of the problem (38), $-(pu')' + qu = f$,
+$u(0) = u(1) = 0$. In the Example of the section, $p \equiv 1$ and $q \equiv 0$, the eigenfunctions
+are $e_n(x) = \sqrt2 \sin(n\pi x)$ with $\lambda_n = n^2\pi^2$, $n \ge 1$. Remark 30 says that the
+solution operator of the problem on $\mathbb{R}$ of Example 8 is bounded and self-adjoint but not
+compact.
 
-## Correspondence
-
-* The book's hypotheses `p ∈ C¹(Ī)`, `p ≥ α > 0`, `q ∈ C(Ī)` — and, for the operator `T`, the
-  reduction `q ≥ 0` — are the backbone's `EllipticInterval.SturmLiouville.Hypotheses 0 1 p q α`.
-  Theorem 8.22 is stated for an arbitrary continuous `q`: the book's reduction ("replace `q` by
-  `q + C`, which amounts to replacing `λₙ` by `λₙ + C`") is carried out in the proof.
-* `L²(I)` is `Lp ℝ 2 (volume.restrict (Ioo 0 1))`; "a Hilbert basis `(eₙ)`" is
-  `HilbertBasis ℕ ℝ (L²(I))`; "`eₙ ∈ C²(Ī)`" is a `ContDiffMapIcc zero_le_one 2` agreeing a.e.
-  with `eₙ`; the equation (37) is stated on `(0, 1)` with `deriv` of the `C(ℝ)` extension of
-  `eₙ'` (`e.shift.extend`), as in §8.4.
-* The sine example: `√2 sin(nπx)`, `n ≥ 1`, is `sinUnitFun (n − 1)` and the Hilbert basis
-  `sinBasisUnit` of `Numlib/Analysis/Fourier/SineBasis` (indexed from `0`).
+The proofs specialize the backbone module `Numlib.Variational.EllipticInterval.SturmLiouville` and
+the spectral theorem `ContinuousLinearMap.IsSymmetric.eigenvectorHilbertBasis` of chapter 6.
 
 ## Main results
 
-* `theorem_8_22`, `theorem_8_22_basis`, `theorem_8_22_eigen`, `theorem_8_22_tendsto` — Theorem
-  8.22 and its three conclusions.
-* `theorem_8_22_operator` — the solution operator `T` of the proof is bounded, compact,
-  self-adjoint, positive and injective.
-* `sineEigenfunctions`, `sineEigenfunctions_eigen`, `sineEigenfunctions_hilbertBasis`,
-  `sineEigenfunctions_eigenvalue` — the Example.
-* `remark_8_30_bounded_selfAdjoint`, `remark_8_30_not_compact` — the operator `T` of Example 8
-  on `ℝ` is bounded and self-adjoint, and not compact.
+* Theorem 8.22, `Brezis.Chapter08.theorem_8_22`: for $p \in C^1(\bar I)$ with $p \ge \alpha > 0$ and
+  $q \in C(\bar I)$ there are real numbers $\lambda_n \to +\infty$ and a Hilbert basis $(e_n)$ of
+  $L^2(I)$ of $C^2$ solutions of (37).
+* Theorem 8.22, the Hilbert basis, `Brezis.Chapter08.theorem_8_22_basis`: for $q \ge 0$, the
+  eigenfunctions are eigenvectors of $T$ with $Te_n = \lambda_n^{-1} e_n$ and $\lambda_n > 0$.
+* Theorem 8.22, the eigenfunction equation, `Brezis.Chapter08.theorem_8_22_eigen`: for $q \ge 0$,
+  each $e_n$ is a $C^2$ solution of (37).
+* Theorem 8.22, the eigenvalues, `Brezis.Chapter08.theorem_8_22_tendsto`: for $q \ge 0$,
+  $\lambda_n \to +\infty$.
+* Theorem 8.22, the solution operator, `Brezis.Chapter08.theorem_8_22_operator`: for $q \ge 0$, $T$
+  is compact, self-adjoint, positive and injective.
+* Section 8.6, the Example, `Brezis.Chapter08.sineEigenfunctions_eigen`: $\sqrt2 \sin(n\pi x)$ is a
+  $C^2$ solution of $-e'' = n^2\pi^2 e$, $e(0) = e(1) = 0$.
+* Section 8.6, the Example, `Brezis.Chapter08.sineEigenfunctions_hilbertBasis`: these functions form
+  a Hilbert basis of $L^2(0, 1)$ of eigenvectors of $T$.
+* Section 8.6, the Example, `Brezis.Chapter08.sineEigenfunctions_eigenvalue`: the eigenvalues of
+  Theorem 8.22 for $p \equiv 1$, $q \equiv 0$ are exactly the numbers $n^2\pi^2$, each simple.
+* Section 8.6, the Example, `Brezis.Chapter08.sineEigenfunctions_classical`: every nonzero $C^2$
+  Dirichlet eigenfunction of $-u''$ on $[0, 1]$ is a multiple of some $\sin(n\pi x)$.
+* Section 8.6, the Example, `Brezis.Chapter08.sineEigenfunctions`: the first three statements of the
+  Example together.
+* Remark 30, `Brezis.Chapter08.remark_8_30_bounded_selfAdjoint`: the solution operator of Example 8
+  on $L^2(\mathbb{R})$ is bounded and self-adjoint.
+* Remark 30, `Brezis.Chapter08.remark_8_30_not_compact`: this operator is not compact.
 
-Remark 29 (the eigenvalues of `−u''` under the boundary conditions of Examples 3, 5, 6, 7, "as
-an exercise") is not formalized (chapter plan).
+## Conventions
+
+* The hypotheses $p \in C^1(\bar I)$, $p \ge \alpha > 0$, $q \in C(\bar I)$ and $q \ge 0$ are the
+  backbone's `EllipticInterval.SturmLiouville.Hypotheses 0 1 p q α`. The eigenfunctions, the
+  eigenvalues and the solution operator for these hypotheses are
+  `EllipticInterval.SturmLiouville.eigenfunction`, `EllipticInterval.SturmLiouville.eigenvalue` and
+  `EllipticInterval.SturmLiouville.solutionOperator`.
+* $L^2(I)$ is `Lp ℝ 2 (volume.restrict (Ioo 0 1))`, and a Hilbert basis $(e_n)$ of $L^2(I)$ is a
+  `HilbertBasis ℕ ℝ` of this space.
+* "$e_n \in C^2(\bar I)$" is an element `v` of `ContDiffMapIcc zero_le_one 2` that is equal to $e_n$
+  almost everywhere. Equation (37) is stated on $(0, 1)$, with the derivative of the extension of
+  $v'$ to $\mathbb{R}$ (`v.shift.extend`), as in Section 8.4.
+* The sines of the Example are indexed from $0$: $\sqrt2 \sin(n\pi x)$ for $n \ge 1$ is
+  `sinUnitFun (n - 1)`, and the Hilbert basis is `sinBasisUnit`, of the module
+  `Numlib.Analysis.Fourier.SineBasis`.
+
+## Implementation notes
+
+* Theorem 8.22 is stated for every continuous $q$. The reduction of the source, which replaces $q$
+  by $q + C$ and so $\lambda_n$ by $\lambda_n + C$, is carried out in the proof. The parts
+  `Brezis.Chapter08.theorem_8_22_basis`, `Brezis.Chapter08.theorem_8_22_eigen`,
+  `Brezis.Chapter08.theorem_8_22_tendsto` and `Brezis.Chapter08.theorem_8_22_operator` are stated
+  for $q \ge 0$, the normalization of the backbone.
+
+## Not formalized
+
+* **Remark 29.** The eigenvalues of $-u''$ under the boundary conditions of Examples 3, 5, 6 and 7
+  of Section 8.4. The source leaves them as an exercise.
+* **Remark 30, the spectrum.** The eigenvalues and the spectrum of the operator $T$ on
+  $L^2(\mathbb{R})$, which the source leaves to Exercise 8.38.
 -/
 
 open Filter MeasureTheory Set TopologicalSpace EllipticInterval EllipticInterval.SturmLiouville
@@ -54,8 +92,8 @@ namespace Brezis.Chapter08
 
 /-! ### Theorem 8.22 -/
 
-/-- The hypotheses of Theorem 8.22 for `q + C`, `C ≥ 0` a bound for `−q` on `[0, 1]`: the
-book's reduction to `q ≥ 0`. -/
+/-- The hypotheses of Theorem 8.22 hold for $q + C$, for a constant $C \ge 0$ that bounds $-q$ on
+$[0, 1]$: the reduction of the source to $q \ge 0$. -/
 private theorem hypotheses_add_const {p q : ℝ → ℝ} {α : ℝ} (hp : ContDiffOn ℝ 1 p (Icc 0 1))
     (hα : 0 < α) (hpα : ∀ x ∈ Icc (0 : ℝ) 1, α ≤ p x) (hq : ContinuousOn q (Icc 0 1)) :
     ∃ C : ℝ, Hypotheses 0 1 p (fun x ↦ q x + C) α := by
@@ -65,14 +103,20 @@ private theorem hypotheses_add_const {p q : ℝ → ℝ} {α : ℝ} (hp : ContDi
   have := le_max_right 0 (-q x₀)
   linarith
 
-/-- **Theorem 8.22, existence of the eigenvalues and eigenfunctions.** Let `p ∈ C¹(Ī)`, `p ≥ α > 0`
-on `I = (0, 1)`, and `q ∈ C(Ī)`. Then there are a sequence `(λₙ)` of real numbers and a Hilbert
-basis `(eₙ)` of `L²(I)` such that every `eₙ` agrees a.e. with an `e ∈ C²(Ī)` satisfying (37):
-`−(p e')' + q e = λₙ e` on `I` and `e(0) = e(1) = 0`; furthermore `λₙ → +∞`. The book's
-reduction to `q ≥ 0` (replace `q` by `q + C` and `λₙ` by `λₙ + C`) and the backbone's
-`SturmLiouville.eigenfunction`, `eigenvalue`, `exists_contDiffMapIcc_eigenfunction`,
-`tendsto_eigenvalue_atTop` (the spectral theorem for the compact self-adjoint solution
-operator, Theorem 6.11). -/
+/-- **Theorem 8.22** of [brezis2011functional]. Let $I = (0, 1)$ and $\alpha > 0$, let
+$p \in C^1([0, 1])$ satisfy $p \ge \alpha$ on $[0, 1]$, and let $q$ be continuous on $[0, 1]$.
+Then there are a sequence $(\lambda_n)$ of real numbers and a Hilbert basis $(e_n)$ of $L^2(I)$
+with the following properties:
+* each $e_n$ is equal almost everywhere on $I$ to some $e \in C^2([0, 1])$ that satisfies (37),
+  $-(pe')' + qe = \lambda_n e$ on $I$ and $e(0) = e(1) = 0$;
+* $\lambda_n \to +\infty$ as $n \to \infty$.
+
+The proof follows the source: it replaces $q$ by $q + C$, which replaces $\lambda_n$ by
+$\lambda_n + C$, and uses the backbone's `EllipticInterval.SturmLiouville.eigenfunction`,
+`EllipticInterval.SturmLiouville.eigenvalue`,
+`EllipticInterval.SturmLiouville.exists_contDiffMapIcc_eigenfunction` and
+`EllipticInterval.SturmLiouville.tendsto_eigenvalue_atTop`. These come from the spectral theorem
+for the compact self-adjoint solution operator, Theorem 6.11. -/
 theorem theorem_8_22 {p q : ℝ → ℝ} {α : ℝ} (hp : ContDiffOn ℝ 1 p (Icc 0 1)) (hα : 0 < α)
     (hpα : ∀ x ∈ Icc (0 : ℝ) 1, α ≤ p x) (hq : ContinuousOn q (Icc 0 1)) :
     ∃ (l : ℕ → ℝ) (e : HilbertBasis ℕ ℝ (Lp ℝ 2 (volume.restrict (Ioo (0 : ℝ) 1)))),
@@ -90,9 +134,14 @@ theorem theorem_8_22 {p q : ℝ → ℝ} {α : ℝ} (hp : ContDiffOn ℝ 1 p (Ic
     linarith
   · exact tendsto_atTop_add_const_right _ (-C) (tendsto_eigenvalue_atTop h)
 
-/-- **Theorem 8.22, the Hilbert basis clause**, for `q ≥ 0` (the backbone's normalization):
-the eigenfunctions `eₙ = SturmLiouville.eigenfunction h n` form a Hilbert basis of `L²(I)`
-consisting of eigenvectors of the solution operator `T`, `T eₙ = μₙ eₙ` with `μₙ = 1/λₙ > 0`. -/
+/-- **Theorem 8.22** of [brezis2011functional], the Hilbert basis. Let $p \in C^1([0, 1])$ with
+$p \ge \alpha > 0$ on $[0, 1]$, and let $q \in C([0, 1])$ with $q \ge 0$ on $[0, 1]$. Let $T$ be
+the solution operator of (38), let $(e_n)$ be the Hilbert basis
+`EllipticInterval.SturmLiouville.eigenfunction h` of $L^2(0, 1)$, and let $\lambda_n$ be the
+eigenvalues. Then for every $n$,
+$$Te_n = \lambda_n^{-1} e_n \qquad \text{and} \qquad \lambda_n > 0.$$
+
+The eigenvalues $\lambda_n = 1/\mu_n$ are the reciprocals of the eigenvalues $\mu_n$ of $T$. -/
 theorem theorem_8_22_basis {p q : ℝ → ℝ} {α : ℝ} (h : Hypotheses 0 1 p q α) (n : ℕ) :
     solutionOperator h (eigenfunction h n) = (eigenvalue h n)⁻¹ • eigenfunction h n ∧
       0 < eigenvalue h n := by
@@ -100,9 +149,13 @@ theorem theorem_8_22_basis {p q : ℝ → ℝ} {α : ℝ} (h : Hypotheses 0 1 p 
   rw [eigenvalue, inv_inv]
   exact solutionOperator_eigenfunction h n
 
-/-- **Theorem 8.22, the eigenfunction equation (37)**, for `q ≥ 0`: `eₙ ∈ C²(Ī)` with
-`−(p eₙ')' + q eₙ = λₙ eₙ` on `I` and `eₙ(0) = eₙ(1) = 0`. The backbone's
-`SturmLiouville.exists_contDiffMapIcc_eigenfunction`. -/
+/-- **Theorem 8.22** of [brezis2011functional], the eigenfunction equation (37). Let
+$p \in C^1([0, 1])$ with $p \ge \alpha > 0$ on $[0, 1]$, and let $q \in C([0, 1])$ with
+$q \ge 0$ on $[0, 1]$. For every $n$, the eigenfunction $e_n$ is equal almost everywhere on
+$(0, 1)$ to some $e \in C^2([0, 1])$ with
+$$-(pe')' + qe = \lambda_n e \text{ on } (0, 1), \qquad e(0) = e(1) = 0.$$
+
+The proof specializes `EllipticInterval.SturmLiouville.exists_contDiffMapIcc_eigenfunction`. -/
 theorem theorem_8_22_eigen {p q : ℝ → ℝ} {α : ℝ} (h : Hypotheses 0 1 p q α) (n : ℕ) :
     ∃ v : ContDiffMapIcc (zero_lt_one' ℝ).le 2,
       ((eigenfunction h n : ℝ → ℝ) =ᵐ[volume.restrict (Ioo (0 : ℝ) 1)] v.extend) ∧
@@ -112,17 +165,32 @@ theorem theorem_8_22_eigen {p q : ℝ → ℝ} {α : ℝ} (h : Hypotheses 0 1 p 
           = eigenvalue h n * v.extend x :=
   exists_contDiffMapIcc_eigenfunction h n
 
-/-- **Theorem 8.22, "`λₙ → +∞`"**, for `q ≥ 0`: `λₙ = 1/μₙ` with `μₙ → 0`, `μₙ > 0`. -/
+/-- **Theorem 8.22** of [brezis2011functional], the eigenvalues tend to $+\infty$. Let
+$p \in C^1([0, 1])$ with $p \ge \alpha > 0$ on $[0, 1]$, and let $q \in C([0, 1])$ with
+$q \ge 0$ on $[0, 1]$. Then $\lambda_n \to +\infty$ as $n \to \infty$.
+
+This holds because $\lambda_n = 1/\mu_n$, where the eigenvalues $\mu_n > 0$ of the compact
+operator $T$ tend to $0$. -/
 theorem theorem_8_22_tendsto {p q : ℝ → ℝ} {α : ℝ} (h : Hypotheses 0 1 p q α) :
     Tendsto (eigenvalue h) atTop atTop :=
   tendsto_eigenvalue_atTop h
 
-/-- **The solution operator `T : L²(I) → L²(I)`, `f ↦ u`, of the proof of Theorem 8.22** (with
-`q ≥ 0`), where `u ∈ H²(I) ∩ H_0^1(I)` is the unique solution of `−(p u')' + q u = f`,
-`u(0) = u(1) = 0` (38): `T` is a bounded operator (`SturmLiouville.solutionOperator`; the
-estimate `‖T f‖_{H¹} ≤ C ‖f‖_{L²}` is `norm_solution_le`), it is compact (the injection
-`H¹(I) ⊆ L²(I)` being compact since `I` is bounded), self-adjoint (`∫ (T f) g = ∫ f (T g)`),
-positive (`∫ (T f) f ≥ 0`), and `N(T) = {0}`; Theorem 6.11 then applies. -/
+/-- **Theorem 8.22** of [brezis2011functional], the solution operator of the proof. Let
+$p \in C^1([0, 1])$ with $p \ge \alpha > 0$ on $[0, 1]$, and let $q \in C([0, 1])$ with
+$q \ge 0$ on $[0, 1]$. Let $T : L^2(I) \to L^2(I)$ be the bounded operator $f \mapsto u$, where
+$u \in H^2(I) \cap H_0^1(I)$ is the unique solution of (38), $-(pu')' + qu = f$,
+$u(0) = u(1) = 0$. Then:
+* $Tf$ is the function of the weak solution `EllipticInterval.SturmLiouville.solution h f`, as
+  an element of $L^2(I)$;
+* $T$ is compact;
+* $T$ is self-adjoint: $\int (Tf)g = \int f(Tg)$ for all $f, g \in L^2(I)$;
+* $T$ is positive: $\int (Tf)f \ge 0$ for all $f \in L^2(I)$;
+* $N(T) = \{0\}$.
+
+The operator is `EllipticInterval.SturmLiouville.solutionOperator`, which is bounded by its
+type; the estimate $\|Tf\|_{H^1} \le C\|f\|_{L^2}$ is
+`EllipticInterval.SturmLiouville.norm_solution_le`. $T$ is compact because the injection
+$H^1(I) \subset L^2(I)$ is compact for bounded $I$. Theorem 6.11 then applies. -/
 theorem theorem_8_22_operator {p q : ℝ → ℝ} {α : ℝ} (h : Hypotheses 0 1 p q α) :
     (∀ f, solutionOperator h f = SobolevInterval.deriv (solution h f) 0) ∧
     IsCompactOperator (solutionOperator h) ∧
@@ -134,22 +202,30 @@ theorem theorem_8_22_operator {p q : ℝ → ℝ} {α : ℝ} (h : Hypotheses 0 1
     fun f g ↦ isSymmetric_solutionOperator h f g, inner_solutionOperator_nonneg h,
     ker_solutionOperator h⟩
 
-/-! ### The Example: `p ≡ 1`, `q ≡ 0` -/
+/-! ### The Example: $p \equiv 1$, $q \equiv 0$ -/
 
-/-- **The Example of §8.6, the functions.** For `p ≡ 1` and `q ≡ 0`, `eₙ(x) = √2 sin(nπx)` and
-`λₙ = n²π²`, `n = 1, 2, …`: the function `√2 sin((n+1)πx)` (`sinUnitFun n`, `n ≥ 0`) is `C²`,
-vanishes at `0` and `1`, and satisfies `−eₙ'' = (n+1)²π² eₙ`. -/
+/-- **Section 8.6** of [brezis2011functional], the Example, the functions. For $p \equiv 1$ and
+$q \equiv 0$ the source gives $e_n(x) = \sqrt2 \sin(n\pi x)$ and $\lambda_n = n^2\pi^2$,
+$n = 1, 2, \dots$. For every $n \ge 0$, the function $s_n(x) = \sqrt2 \sin((n + 1)\pi x)$ is in
+$C^2(\mathbb{R})$, satisfies $s_n(0) = s_n(1) = 0$, and
+$$-s_n'' = (n + 1)^2\pi^2 s_n \text{ on } \mathbb{R}.$$
+
+The function $s_n$ is `sinUnitFun n`. -/
 theorem sineEigenfunctions_eigen (n : ℕ) :
     ContDiff ℝ 2 (sinUnitFun n) ∧ sinUnitFun n 0 = 0 ∧ sinUnitFun n 1 = 0 ∧
       ∀ x, -deriv (deriv (sinUnitFun n)) x = ((n + 1) * Real.pi) ^ 2 * sinUnitFun n x :=
   ⟨(contDiff_sinUnitFun n).of_le (by simp), sinUnitFun_zero n, sinUnitFun_one n, fun x ↦ by
     rw [deriv_deriv_sinUnitFun]; ring⟩
 
-/-- **The Example of §8.6, the Hilbert basis.** The functions `√2 sin((n+1)πx)`, `n ≥ 0`, form
-a Hilbert basis of `L²(0, 1)` (`sinBasisUnit`, from the cosine basis of
-`Numlib/Analysis/Fourier/CosineBasis` by the multiply-by-`sin` trick rather than from the abstract
-spectral theorem), and they are eigenvectors of the solution operator of `−u''` with Dirichlet
-conditions, `T sₙ = ((n+1)²π²)⁻¹ sₙ`. -/
+/-- **Section 8.6** of [brezis2011functional], the Example, the Hilbert basis. The functions
+$s_n(x) = \sqrt2 \sin((n + 1)\pi x)$, $n \ge 0$, form a Hilbert basis of $L^2(0, 1)$, and they
+are eigenvectors of the solution operator $T$ of $-u''$ with Dirichlet conditions:
+$$Ts_n = \frac{1}{(n + 1)^2\pi^2} s_n.$$
+
+The Hilbert basis is `sinBasisUnit`. It is obtained from the cosine basis of
+`Numlib.Analysis.Fourier.CosineBasis` by multiplication with a sine, not from the abstract
+spectral theorem. The operator $T$ is `EllipticInterval.SturmLiouville.solutionOperator` for
+`EllipticInterval.SturmLiouville.hypotheses_one_zero`. -/
 theorem sineEigenfunctions_hilbertBasis :
     (∀ n, (sinBasisUnit n : ℝ → ℝ) =ᵐ[volume.restrict (Ioo (0 : ℝ) 1)]
       fun x ↦ √2 * Real.sin ((n + 1) * Real.pi * x)) ∧
@@ -157,21 +233,26 @@ theorem sineEigenfunctions_hilbertBasis :
       = (((n + 1) * Real.pi) ^ 2)⁻¹ • sinBasisUnit n :=
   ⟨coeFn_sinBasisUnit, solutionOperator_sinBasisUnit⟩
 
-/-- **The Example of §8.6, the eigenvalues.** The eigenvalues `λₙ` of Theorem 8.22 for
-`p ≡ 1`, `q ≡ 0` are exactly the numbers `n²π²`, `n = 1, 2, …`, each simple: the range of
-`SturmLiouville.eigenvalue hypotheses_one_zero` is `{(n+1)²π² : n ∈ ℕ}` and the map is
-injective. The backbone's `SturmLiouville.eigenvalue_eq_sq_pi_sq` (by expanding an eigenvector
-of `T` in the sine basis). -/
+/-- **Section 8.6** of [brezis2011functional], the Example, the eigenvalues. For $p \equiv 1$ and
+$q \equiv 0$, the eigenvalues $\lambda_n$ of Theorem 8.22 are exactly the numbers $n^2\pi^2$,
+$n = 1, 2, \dots$, and each is simple: the set of values of $n \mapsto \lambda_n$ is
+$\{(n + 1)^2\pi^2 : n \in \mathbb{N}\}$, and $n \mapsto \lambda_n$ is injective.
+
+The eigenvalues are `EllipticInterval.SturmLiouville.eigenvalue hypotheses_one_zero`. The proof
+specializes `EllipticInterval.SturmLiouville.eigenvalue_eq_sq_pi_sq`, which expands an
+eigenvector of $T$ in the sine basis. -/
 theorem sineEigenfunctions_eigenvalue :
     range (eigenvalue hypotheses_one_zero) = range (fun n : ℕ ↦ ((n + 1) * Real.pi) ^ 2) ∧
       Function.Injective (eigenvalue hypotheses_one_zero) :=
   eigenvalue_eq_sq_pi_sq
 
-/-- **The Example of §8.6, the classical form.** Every `C²` Dirichlet eigenfunction of `−u''` on
-`[0, 1]` is a multiple of some `sin((n+1)πx)`, with eigenvalue `(n+1)²π²`: if `e ∈ C²[0, 1]`,
-`e ≠ 0`, `−e'' = λ e` on `[0, 1]` and `e(0) = e(1) = 0`, then `λ = (n+1)²π²` for some `n` and
-`e = c sin((n+1)πx)` for some `c ≠ 0`. The backbone's
-`SturmLiouville.eq_smul_sin_of_dirichlet`. -/
+/-- **Section 8.6** of [brezis2011functional], the Example in classical form. Let
+$e \in C^2([0, 1])$ be nonzero and $\lambda \in \mathbb{R}$, with
+$$-e'' = \lambda e \text{ on } [0, 1], \qquad e(0) = e(1) = 0.$$
+Then there is $n \ge 0$ with $\lambda = (n + 1)^2\pi^2$, and there is $c \neq 0$ with
+$e(x) = c \sin((n + 1)\pi x)$ for all $x \in [0, 1]$.
+
+The proof specializes `EllipticInterval.SturmLiouville.eq_smul_sin_of_dirichlet`. -/
 theorem sineEigenfunctions_classical (e : ContDiffMapIcc (zero_le_one' ℝ) 2) {l : ℝ}
     (hode : ∀ x : Icc (0 : ℝ) 1, -e.deriv 2 x = l * e x)
     (h0 : e ⟨0, left_mem_Icc.2 zero_le_one⟩ = 0) (h1 : e ⟨1, right_mem_Icc.2 zero_le_one⟩ = 0)
@@ -180,11 +261,16 @@ theorem sineEigenfunctions_classical (e : ContDiffMapIcc (zero_le_one' ℝ) 2) {
       ∃ c : ℝ, c ≠ 0 ∧ ∀ x ∈ Icc (0 : ℝ) 1, e.extend x = c * Real.sin ((n + 1) * Real.pi * x) :=
   eq_smul_sin_of_dirichlet e hode h0 h1 hne
 
-/-- **The Example of §8.6.** If `p ≡ 1` and `q ≡ 0`, then `eₙ(x) = √2 sin(nπx)` and
-`λₙ = n²π²`, `n = 1, 2, …`: the sines are `C²` eigenfunctions (`sineEigenfunctions_eigen`), they
-form a Hilbert basis of `L²(0, 1)` of eigenvectors of the solution operator
-(`sineEigenfunctions_hilbertBasis`), and the eigenvalues of Theorem 8.22 are exactly the
-`n²π²`, each simple (`sineEigenfunctions_eigenvalue`). -/
+/-- **Section 8.6** of [brezis2011functional], the Example. If $p \equiv 1$ and $q \equiv 0$, then
+$e_n(x) = \sqrt2 \sin(n\pi x)$ and $\lambda_n = n^2\pi^2$, $n = 1, 2, \dots$. With the index
+$n \ge 0$ and $s_n(x) = \sqrt2 \sin((n + 1)\pi x)$:
+* each $s_n$ is in $C^2(\mathbb{R})$, satisfies $s_n(0) = s_n(1) = 0$, and
+  $-s_n'' = (n + 1)^2\pi^2 s_n$ (`Brezis.Chapter08.sineEigenfunctions_eigen`);
+* the Hilbert basis `sinBasisUnit` of $L^2(0, 1)$ consists of the functions $s_n$, and
+  $Ts_n = ((n + 1)^2\pi^2)^{-1} s_n$ for the solution operator $T$
+  (`Brezis.Chapter08.sineEigenfunctions_hilbertBasis`);
+* the eigenvalues of Theorem 8.22 are exactly the numbers $(n + 1)^2\pi^2$, each simple
+  (`Brezis.Chapter08.sineEigenfunctions_eigenvalue`). -/
 theorem sineEigenfunctions :
     (∀ n : ℕ, ContDiff ℝ 2 (sinUnitFun n) ∧ sinUnitFun n 0 = 0 ∧ sinUnitFun n 1 = 0 ∧
       ∀ x, -deriv (deriv (sinUnitFun n)) x = ((n + 1) * Real.pi) ^ 2 * sinUnitFun n x) ∧
@@ -198,11 +284,16 @@ theorem sineEigenfunctions :
 
 /-! ### Remark 30 -/
 
-/-- **Remark 30, the bounded self-adjoint part.** The operator `T : L²(ℝ) → L²(ℝ)`, `f ↦ u`,
-where `u ∈ H²(ℝ)` is the solution of problem (30) of Example 8 (`Line.solution f`, read in
-`L²(ℝ)` through the inclusion `H¹(ℝ) ⊆ L²(ℝ)`), is a bounded linear operator with
-`⟨T f, g⟩ = ⟨f, T g⟩`: `⟨T f, g⟩ = (T f, T g)_{H¹}` by the weak equation of `T g` tested
-against `T f`, which is symmetric. -/
+/-- **Remark 30** in Chapter 8 of [brezis2011functional], boundedness and self-adjointness. There is
+a bounded linear operator $T : L^2(\mathbb{R}) \to L^2(\mathbb{R})$ such that, for every
+$f \in L^2(\mathbb{R})$, $Tf$ is the solution $u \in H^2(\mathbb{R})$ of problem (30) of Example
+8, read in $L^2(\mathbb{R})$, and
+$$\langle Tf, g \rangle = \langle f, Tg \rangle \quad \text{for all } f, g \in
+  L^2(\mathbb{R}).$$
+
+The solution is `EllipticInterval.Line.solution f`, read in $L^2(\mathbb{R})$ through the
+inclusion $H^1(\mathbb{R}) \subset L^2(\mathbb{R})$. The symmetry holds because
+$\langle Tf, g \rangle = (Tf, Tg)_{H^1}$, by the weak equation of $Tg$ tested against $Tf$. -/
 theorem remark_8_30_bounded_selfAdjoint :
     ∃ T : Lp ℝ 2 (volume.restrict ((⊤ : Opens ℝ) : Set ℝ)) →L[ℝ]
         Lp ℝ 2 (volume.restrict ((⊤ : Opens ℝ) : Set ℝ)),
@@ -242,14 +333,18 @@ theorem remark_8_30_bounded_selfAdjoint :
     = ⟪f, SobolevIntervalLp.deriv (Line.solution g) 0⟫_ℝ
   rw [e1, e2, real_inner_comm]
 
-/-- **Remark 30, the negative half.** The operator `T : L²(ℝ) → L²(ℝ)`, `f ↦ u` of
-`remark_8_30_bounded_selfAdjoint` (any bounded operator with `T f = u(f)`, the weak solution of
-problem (30) of Example 8), is *not* compact. `T` commutes with the translations `τ_n`
-(`Line.solution_translateLp`), so for `f ≠ 0` the translates `f_n = τ_n f`, bounded in `L²(ℝ)`
-by `‖f‖`, are mapped to the translates `τ_n (T f)` of the nonzero `T f` (`T` is injective,
-`Line.solution_eq_zero_iff`), which have no convergent subsequence
-(`Line.not_tendsto_translateLp`) — the argument of Remark 10 (c). The eigenvalues and the
-spectrum of `T` (Exercise 8.38) are not stated. -/
+/-- **Remark 30** in Chapter 8 of [brezis2011functional], the operator is not compact. Let
+$T : L^2(\mathbb{R}) \to L^2(\mathbb{R})$ be a bounded linear operator such that $Tf$ is the
+solution of problem (30) of Example 8 for every $f \in L^2(\mathbb{R})$, as in
+`Brezis.Chapter08.remark_8_30_bounded_selfAdjoint`. Then $T$ is not compact.
+
+The operator $T$ commutes with the translations $\tau_n$
+(`EllipticInterval.Line.solution_translateLp`). For $f \neq 0$, the translates $\tau_n f$ are
+bounded in $L^2(\mathbb{R})$ by $\|f\|$, and $T$ maps them to the translates $\tau_n(Tf)$ of
+$Tf \neq 0$ ($T$ is injective by `EllipticInterval.Line.solution_eq_zero_iff`). These have no
+convergent subsequence (`EllipticInterval.Line.not_tendsto_translateLp`). This is the argument
+of Remark 10(c). The eigenvalues and the spectrum of $T$, Exercise 8.38 of the source, are not
+stated. -/
 theorem remark_8_30_not_compact
     (T : Lp ℝ 2 (volume.restrict ((⊤ : Opens ℝ) : Set ℝ)) →L[ℝ]
       Lp ℝ 2 (volume.restrict ((⊤ : Opens ℝ) : Set ℝ)))

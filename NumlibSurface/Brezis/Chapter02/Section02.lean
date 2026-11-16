@@ -8,32 +8,55 @@ import Numlib.Analysis.Normed.Operator.BanachSteinhaus
 import NumlibSurface.Brezis.Chapter02.Section01
 
 /-!
-# Brezis §2.2: the uniform boundedness principle
+# Brezis, Section 2.2: The uniform boundedness principle
 
-Surface file for Haim Brezis, *Functional Analysis, Sobolev Spaces and Partial Differential
-Equations*, Universitext, Springer, 2011, §2.2, for real Banach spaces `E`, `F` and bounded
-operators `𝓛(E, F) = E →L[ℝ] F` with the norm `sup_{‖x‖ ≤ 1} ‖T x‖` (Mathlib's operator norm,
-`ContinuousLinearMap.sSup_unitClosedBall_eq_norm`). Theorem 2.2 is Mathlib's `banach_steinhaus`;
-Corollary 2.3 (c), Corollary 2.4 and Corollary 2.5 are the backbone
-`Numlib/Analysis/Normed/Operator/BanachSteinhaus` (`opNorm_le_liminf_opNorm_of_tendsto`,
-`isBounded_of_forall_dual_image_isBounded`, `StrongDual.isBounded_of_forall_eval_isBounded`).
-The book assumes `E` and `F` complete throughout; the surface carries both hypotheses for
-fidelity although only the completeness of `E` is used.
+This module formalizes Section 2.2 of [brezis2011functional] for real Banach spaces $E$ and $F$. The
+space $\mathcal{L}(E, F)$ of bounded linear operators carries the norm $\|T\|_{\mathcal{L}(E,F)} =
+\sup_{\|x\| \le 1} \|Tx\|$. The Banach–Steinhaus theorem (Theorem 2.2) states that a family of
+bounded operators with $\sup_i \|T_i x\| < \infty$ for every $x$ satisfies
+$\sup_i \|T_i\| < \infty$. Its corollaries are that a pointwise limit $T$ of bounded operators $T_n$
+is bounded with $\|T\| \le \liminf \|T_n\|$ (Corollary 2.3), that a weakly bounded subset of a
+Banach space is bounded (Corollary 2.4), and that a weak-$\star$ bounded set of functionals is
+bounded (Corollary 2.5). Remark 3 shows that pointwise convergence does not give convergence in
+norm.
+
+Theorem 2.2 is Mathlib's `banach_steinhaus`. Corollaries 2.3 to 2.5 specialize the backbone module
+`Numlib.Analysis.Normed.Operator.BanachSteinhaus`:
+`ContinuousLinearMap.opNorm_le_liminf_opNorm_of_tendsto`, `isBounded_of_forall_dual_image_isBounded`
+and `StrongDual.isBounded_of_forall_eval_isBounded`.
+
+## Main definitions
+
+* Section 2.2, the operator norm, `Brezis.Chapter02.opNorm_eq_sSup`: $\|T\|_{\mathcal{L}(E,F)} =
+  \sup_{\|x\| \le 1} \|Tx\|$.
 
 ## Main results
 
-* `opNorm_eq_sSup` — the notation `‖T‖_{𝓛(E,F)} = sup_{‖x‖ ≤ 1} ‖T x‖`.
-* `theorem_2_2` — Banach–Steinhaus: a pointwise bounded family of bounded operators is
-  uniformly bounded, with the estimate (2).
-* `remark_2_3` — pointwise convergence `Tₙ x → T x` does not give `‖Tₙ - T‖ → 0`: the coordinate
-  functionals on `ℓ²` converge pointwise to `0` and all have norm `1`.
-* `corollary_2_3` — the pointwise limit of a sequence of bounded operators is a bounded operator,
-  the norms are bounded, and `‖T‖ ≤ liminf ‖Tₙ‖`.
-* `corollary_2_4`, `corollary_2_5` — weakly bounded sets are bounded; weak-∗ bounded sets of
-  functionals are bounded.
+* Theorem 2.2, `Brezis.Chapter02.theorem_2_2`: a pointwise bounded family of bounded operators is
+  bounded in norm, with the estimate (2) (Banach–Steinhaus).
+* Remark 3, `Brezis.Chapter02.remark_2_3`: on $\ell^2$ the coordinate functionals converge pointwise
+  to $0$ but not in norm.
+* Corollary 2.3, `Brezis.Chapter02.corollary_2_3`: the pointwise limit $T$ of bounded operators
+  $T_n$ is bounded, $\sup_n \|T_n\| < \infty$, and $\|T\| \le \liminf \|T_n\|$.
+* Corollary 2.4, `Brezis.Chapter02.corollary_2_4`: a set $B$ with $f(B)$ bounded for every
+  $f \in G^\star$ is bounded.
+* Corollary 2.5, `Brezis.Chapter02.corollary_2_5`: a set $B^\star \subseteq G^\star$ with
+  $\langle B^\star, x \rangle$ bounded for every $x \in G$ is bounded.
 
-Remark 2 is discussion; Remark 4 ("weakly bounded ⟺ strongly bounded") is the `iff` form of
-Corollary 2.4, `isBounded_iff_forall_dual_image_isBounded`.
+## Conventions
+
+* $\mathcal{L}(E, F)$ is `E →L[ℝ] F` with Mathlib's operator norm.
+
+## Implementation notes
+
+* The source assumes throughout that $E$ and $F$ are complete. The results carry both hypotheses as
+  the source states them, although the proofs use only the completeness of $E$.
+* Remark 4, "weakly bounded if and only if strongly bounded", is the equivalence form of Corollary
+  2.4, the backbone theorem `isBounded_iff_forall_dual_image_isBounded`.
+
+## Not formalized
+
+* **Remark 2.** It is a discussion.
 -/
 
 open Bornology Filter Metric Topology
@@ -43,24 +66,37 @@ namespace Brezis.Chapter02
 variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [NormedAddCommGroup F]
   [NormedSpace ℝ F]
 
-/-- **The notation of §2.2.** For `T ∈ 𝓛(E, F)`, `‖T‖_{𝓛(E,F)} = sup_{‖x‖ ≤ 1} ‖T x‖`: the
-surface's norm on operators is the book's. -/
+/-- **Section 2.2** of [brezis2011functional], the norm of an operator. Let $E$ and $F$ be real
+normed spaces. For $T \in \mathcal{L}(E, F)$,
+$$\|T\|_{\mathcal{L}(E,F)} = \sup_{x \in E,\ \|x\| \le 1} \|Tx\|.$$
+Thus the operator norm of Mathlib is the norm of the source. -/
 theorem opNorm_eq_sSup (T : E →L[ℝ] F) : ‖T‖ = sSup ((fun x => ‖T x‖) '' closedBall 0 1) :=
   T.sSup_unitClosedBall_eq_norm.symm
 
-/-- **Theorem 2.2 (Banach–Steinhaus, uniform boundedness principle).** Let `E`, `F` be Banach
-spaces and `(Tᵢ)_{i ∈ I}` a family of bounded operators `E → F` with `sup_i ‖Tᵢ x‖ < ∞` for
-every `x`. Then `sup_i ‖Tᵢ‖ < ∞`: there is a constant `c` with `‖Tᵢ x‖ ≤ c ‖x‖` for all `x`
-and `i` (2). -/
+/-- **Theorem 2.2** of [brezis2011functional] (Banach–Steinhaus, uniform boundedness principle). Let
+$E$ and $F$ be two Banach spaces and let $(T_i)_{i \in I}$ be a family of bounded linear
+operators from $E$ into $F$. Assume that
+$$\sup_{i \in I} \|T_i x\| < \infty \quad \text{for all } x \in E.$$
+Then $\sup_{i \in I} \|T_i\|_{\mathcal{L}(E,F)} < \infty$. In other words, there is a constant
+$c$ such that $\|T_i\| \le c$ for all $i$ and
+$$\|T_i x\| \le c\|x\| \quad \text{for all } x \in E,\ i \in I. \qquad (2)$$
+
+The proof specializes Mathlib's `banach_steinhaus`, which does not need the completeness of $F$. -/
 theorem theorem_2_2 [CompleteSpace E] [CompleteSpace F] {ι : Type*} (T : ι → E →L[ℝ] F)
     (h : ∀ x, ∃ C : ℝ, ∀ i, ‖T i x‖ ≤ C) :
     ∃ c : ℝ, (∀ i, ‖T i‖ ≤ c) ∧ ∀ x i, ‖T i x‖ ≤ c * ‖x‖ := by
   obtain ⟨c, hc⟩ := banach_steinhaus h
   exact ⟨c, hc, fun x i => (T i).le_of_opNorm_le (hc i) x⟩
 
-/-- **Corollary 2.3.** Let `E`, `F` be Banach spaces and `(Tₙ)` a sequence of bounded
-operators `E → F` such that `Tₙ x` converges for every `x`, to a limit denoted `T x`. Then
-(a) `sup_n ‖Tₙ‖ < ∞`; (b) `T ∈ 𝓛(E, F)`; (c) `‖T‖ ≤ liminf ‖Tₙ‖`. -/
+/-- **Corollary 2.3** of [brezis2011functional]. Let $E$ and $F$ be two Banach spaces and let
+$(T_n)$ be a sequence in $\mathcal{L}(E, F)$ such that for every $x \in E$ the sequence $T_n x$
+converges to a limit, denoted by $Tx$. Then (a) $\sup_n \|T_n\|_{\mathcal{L}(E,F)} < \infty$,
+(b) $T \in \mathcal{L}(E, F)$, and (c) $\|T\|_{\mathcal{L}(E,F)} \le \liminf_{n \to \infty}
+\|T_n\|_{\mathcal{L}(E,F)}$.
+
+The statement gives a bounded operator $L$ with $T_n x \to Lx$ for every $x$, a bound $C$ with
+$\|T_n\| \le C$ for all $n$, and $\|L\| \le \liminf \|T_n\|$. Part (c) specializes the backbone
+theorem `ContinuousLinearMap.opNorm_le_liminf_opNorm_of_tendsto`. -/
 theorem corollary_2_3 [CompleteSpace E] [CompleteSpace F] (T : ℕ → E →L[ℝ] F)
     (h : ∀ x, ∃ y, Tendsto (fun n => T n x) atTop (𝓝 y)) :
     ∃ L : E →L[ℝ] F, (∃ C : ℝ, ∀ n, ‖T n‖ ≤ C) ∧
@@ -79,23 +115,31 @@ theorem corollary_2_3 [CompleteSpace E] [CompleteSpace F] (T : ℕ → E →L[�
   exact ContinuousLinearMap.opNorm_le_liminf_opNorm_of_tendsto (fun x => hf x)
     ⟨C, by rintro _ ⟨n, rfl⟩; exact hC n⟩
 
-/-- **Corollary 2.4.** Let `G` be a Banach space and `B ⊆ G` such that for every `f ∈ G*` the
-set `f(B) = {⟨f, x⟩ | x ∈ B}` is bounded in `ℝ`. Then `B` is bounded. -/
+/-- **Corollary 2.4** of [brezis2011functional]. Let $G$ be a real Banach space and let
+$B \subseteq G$. Assume that for every $f \in G^\star$ the set
+$$f(B) = \{\langle f, x \rangle : x \in B\}$$
+is bounded in $\mathbb{R}$. Then $B$ is bounded.
+
+The proof specializes the backbone theorem `isBounded_of_forall_dual_image_isBounded`. -/
 theorem corollary_2_4 {G : Type*} [NormedAddCommGroup G] [NormedSpace ℝ G] [CompleteSpace G]
     {B : Set G} (h : ∀ f : StrongDual ℝ G, IsBounded (f '' B)) : IsBounded B :=
   isBounded_of_forall_dual_image_isBounded h
 
-/-- **Corollary 2.5.** Let `G` be a Banach space and `B* ⊆ G*` such that for every `x ∈ G` the
-set `⟨B*, x⟩ = {⟨f, x⟩ | f ∈ B*}` is bounded in `ℝ`. Then `B*` is bounded. -/
+/-- **Corollary 2.5** of [brezis2011functional]. Let $G$ be a real Banach space and let
+$B^\star \subseteq G^\star$. Assume that for every $x \in G$ the set
+$$\langle B^\star, x \rangle = \{\langle f, x \rangle : f \in B^\star\}$$
+is bounded in $\mathbb{R}$. Then $B^\star$ is bounded.
+
+The proof specializes the backbone theorem `StrongDual.isBounded_of_forall_eval_isBounded`. -/
 theorem corollary_2_5 {G : Type*} [NormedAddCommGroup G] [NormedSpace ℝ G] [CompleteSpace G]
     {B : Set (StrongDual ℝ G)} (h : ∀ x : G, IsBounded ((fun f : StrongDual ℝ G => f x) '' B)) :
     IsBounded B :=
   StrongDual.isBounded_of_forall_eval_isBounded h
 
-/-! ### Remark 3: the coordinate functionals on `ℓ²` -/
+/-! ### Remark 3: the coordinate functionals on $\ell^2$ -/
 
-/-- The coordinates of a square-summable sequence tend to `0` (used again in chapter 3,
-Remark 9). -/
+/-- The coordinates of a square-summable sequence tend to $0$: for $x \in \ell^2$, $x_n \to 0$ as
+$n \to \infty$. This supports Remark 3, and Remark 9 of Chapter 3 uses it again. -/
 theorem tendsto_coord_zero (x : lp (fun _ : ℕ => ℝ) 2) :
     Tendsto (fun n => x n) atTop (𝓝 0) := by
   have hsum := (lp.memℓp x).summable (p := 2) (by norm_num)
@@ -106,9 +150,12 @@ theorem tendsto_coord_zero (x : lp (fun _ : ℕ => ℝ) 2) :
   refine (h.congr fun n => Real.rpow_rpow_inv (norm_nonneg _) two_ne_zero).mono_right ?_
   simp
 
-/-- **Remark 3.** In the setting of Theorem 2.2, `Tₙ x → T x` for every `x` does not give
-`‖Tₙ - T‖ → 0`: on `ℓ²`, the coordinate functionals `Tₙ x = xₙ` converge pointwise to `T = 0`,
-while `‖Tₙ - T‖ = ‖Tₙ‖ = 1` for every `n`. -/
+/-- **Remark 3** of [brezis2011functional]. In Theorem 2.2, pointwise convergence $T_n x \to Tx$ for
+every $x$ does not imply $\|T_n - T\| \to 0$. On $E = \ell^2$, the coordinate functionals
+$T_n x = x_n$ converge pointwise to $T = 0$, but $\|T_n - T\|$ does not tend to $0$.
+
+The functional $T_n$ is `lp.evalCLM ℝ (fun _ => ℝ) 2 n`. The source notes that $\|T_n\| = 1$ for
+every $n$; the statement asserts only that $\|T_n - 0\| \not\to 0$. -/
 theorem remark_2_3 :
     (∀ x : lp (fun _ : ℕ => ℝ) 2,
       Tendsto (fun n => lp.evalCLM ℝ (fun _ : ℕ => ℝ) 2 n x) atTop

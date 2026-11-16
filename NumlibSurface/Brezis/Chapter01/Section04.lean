@@ -7,53 +7,129 @@ import Numlib.Analysis.Convex.Extremum.Fenchel
 import NumlibSurface.Brezis.Chapter01.Section03
 
 /-!
-# Brezis §1.4: a quick introduction to the theory of conjugate convex functions
+# Brezis, Section 1.4: A quick introduction to the theory of conjugate convex functions
 
-Surface file for Haim Brezis, *Functional Analysis, Sobolev Spaces and Partial Differential
-Equations*, Universitext, Springer, 2011, §1.4, over a real normed space `E` with dual
-`E* = StrongDual ℝ E`. Everything is the backbone's convex library (`Numlib/Analysis/Convex/…`,
-the Rockafellar development) read over the pairing `⟨f, x⟩ = f x` of `E` with `E*`.
+This module formalizes Section 1.4 of [brezis2011functional] for a real normed space $E$ with dual
+$E^\star$ and the pairing $\langle f, x \rangle = f(x)$. A function
+$\varphi : E \to (-\infty, +\infty]$ has the domain $D(\varphi) = \{x : \varphi(x) < +\infty\}$ and
+the epigraph $\operatorname{epi} \varphi = \{[x, \lambda] \in E \times \mathbb{R} : \varphi(x) \le
+\lambda\}$. Its conjugate is the function $\varphi^\star : E^\star \to (-\infty, +\infty]$,
+$$\varphi^\star(f) = \sup_{x \in E} \{\langle f, x \rangle - \varphi(x)\},$$
+which is convex and lower semicontinuous and satisfies Young's inequality $\langle f, x \rangle \le
+\varphi(x) + \varphi^\star(f)$. If $\varphi$ is convex, lower semicontinuous and
+$\varphi \not\equiv +\infty$, then $\varphi^\star \not\equiv +\infty$ (Proposition 1.10), and
+$\varphi^{\star\star} = \varphi$ (Theorem 1.11, Fenchel–Moreau). The Fenchel–Rockafellar theorem
+(Theorem 1.12) gives
+$$\inf_{x \in E} \{\varphi(x) + \psi(x)\} = \max_{f \in E^\star} \{-\varphi^\star(-f) -
+  \psi^\star(f)\}$$
+for convex $\varphi$ and $\psi$ when $\varphi$ is continuous at a point of
+$D(\varphi) \cap D(\psi)$. Examples 1 to 4 compute conjugates of the norm and of indicator
+functions, and derive formulas for the distance to a convex set and to a subspace.
 
-## Correspondence
+The proofs specialize the backbone convex analysis library, the modules
+`Numlib.Analysis.Convex.Duality.Conjugate`, `Numlib.Analysis.Convex.Duality.Continuity` and
+`Numlib.Analysis.Convex.Extremum.Fenchel`, read over the pairing of $E$ with $E^\star$.
 
-* The book's `φ : E → (-∞, +∞]` is a function `φ : E → EReal` with `∀ x, φ x ≠ ⊥`; `φ ≢ +∞` is
-  `(ConvexAnalysis.convexDom φ).Nonempty`, and the two together are `ConvexAnalysis.ProperConvex φ`.
-  The domain `D(φ)` and the epigraph `epi φ` are `ConvexAnalysis.convexDom` and `ConvexAnalysis.epi`
-  (`mem_domain_iff`, `mem_epigraph_iff`).
-* "l.s.c." is Mathlib's `LowerSemicontinuous` (`lowerSemicontinuous_iff` is the book's
-  definition by sublevel sets), which for a function never equal to `⊥` is the backbone's
-  `ClosedConvex` (`closedConvex_iff_lowerSemicontinuous`). "Convex" is `ConvexAnalysis.ConvexFn`,
-  convexity of the epigraph (`convexFn_iff` is the book's inequality).
-* The pairing is `dualPairing E := (topDualPairing ℝ E).flip`, `E` on the left as the backbone's
-  `convexConj` wants; the conjugate `φ* : E* → (-∞, +∞]` is
-  `conjugate φ := convexConj (dualPairing E) φ` and the biconjugate *restricted to `E`* is
-  `biconjugate φ := convexBiconj (dualPairing E) φ`, which is why the backbone's `convexBiconj` uses
-  `B.flip` rather than a second copy of `B`.
-* The instance `instIsCompatiblePairingTopDual` makes `E` compatibly paired with its dual in its
-  own norm topology, so Fenchel–Moreau (`convexBiconj_eq_convexCl_topDual`) applies with no
-  reflexivity assumption, exactly as in the book; the constraint qualification of Theorem 1.12 is
-  the backbone's `IsExactSum.of_continuousAt`. No new backbone module was needed.
+## Main definitions
+
+* Section 1.4, the domain, `Brezis.Chapter01.mem_domain_iff`: $D(\varphi)$ is the backbone
+  `ConvexAnalysis.convexDom`.
+* Section 1.4, the epigraph, `Brezis.Chapter01.mem_epigraph_iff`: $\operatorname{epi} \varphi$ is
+  the backbone `ConvexAnalysis.epi`.
+* Section 1.4, definition of lower semicontinuity, `Brezis.Chapter01.lowerSemicontinuous_iff`: every
+  sublevel set $[\varphi \le \lambda]$ is closed.
+* Section 1.4, definition of a convex function, `Brezis.Chapter01.convexFn_iff`: the inequality
+  $\varphi(tx + (1-t)y) \le t\varphi(x) + (1-t)\varphi(y)$.
+* Section 1.4, the scalar product of the duality, `Brezis.Chapter01.dualPairing`:
+  $\langle f, x \rangle = f(x)$.
+* Section 1.4, definition of the conjugate function, `Brezis.Chapter01.conjugate`:
+  $\varphi^\star(f) = \sup_x \{\langle f, x \rangle - \varphi(x)\}$.
+* Section 1.4, definition of the biconjugate, `Brezis.Chapter01.biconjugate`:
+  $\varphi^{\star\star}(x) = \sup_f \{\langle f, x \rangle - \varphi^\star(f)\}$ for $x \in E$.
 
 ## Main results
 
-* `lowerSemicontinuous_iff`, `convexFn_iff`, `mem_domain_iff`, `mem_epigraph_iff` — the
-  definitions of §1.4 identified with the backbone's.
-* `conjugate`, `conjugate_apply`, `conjugate_convexFn`, `conjugate_lowerSemicontinuous`,
-  `remark_1_7`, `remark_1_7_classical` — the conjugate function and Young's inequality.
-* `proposition_1_10`, `proposition_1_10_affine` — `φ* ≢ +∞`, and the continuous affine minorant.
-* `biconjugate`, `theorem_1_11` — Fenchel–Moreau, `φ** = φ`.
-* `theorem_1_12`, `theorem_1_12_max`, `lemma_1_4`, `lemma_1_4_convex` — Fenchel–Rockafellar.
-* `example_1_1_conj`, `example_1_1_biconj`, `example_1_2_convexFn_iff`,
-  `example_1_2_lowerSemicontinuous_iff`, `example_1_2_conj`, `example_1_2_biconj`,
-  `example_1_2_orthogonal`, `example_1_3`, `example_1_3_submodule`,
-  `example_1_3_submodule_of_example_1_3`, `example_1_4` — the four examples, with
-  `polarCone_dualPairing_eq` bridging the convex library's polar cones to the orthogonals of
-  §1.3.
+* Section 1.4, `Brezis.Chapter01.conjugate_convexFn`: $\varphi^\star$ is convex.
+* Section 1.4, `Brezis.Chapter01.conjugate_lowerSemicontinuous`: $\varphi^\star$ is lower
+  semicontinuous.
+* Remark 7, `Brezis.Chapter01.remark_1_7`: Young's inequality (11), $\langle f, x \rangle \le
+  \varphi(x) + \varphi^\star(f)$.
+* Remark 7, `Brezis.Chapter01.remark_1_7_classical`: the classical Young inequality (12),
+  $ab \le a^p/p + b^{p'}/p'$.
+* Proposition 1.10, `Brezis.Chapter01.proposition_1_10`: if $\varphi$ is convex, lower
+  semicontinuous and $\varphi \not\equiv +\infty$, then $\varphi^\star \not\equiv +\infty$.
+* Proposition 1.10, `Brezis.Chapter01.proposition_1_10_affine`: such a $\varphi$ is bounded below by
+  a continuous affine function.
+* Theorem 1.11, `Brezis.Chapter01.theorem_1_11`: if $\varphi$ is convex, lower semicontinuous and
+  $\varphi \not\equiv +\infty$, then $\varphi^{\star\star} = \varphi$ (Fenchel–Moreau).
+* Example 1, `Brezis.Chapter01.example_1_1_conj`: the conjugate of the norm is the indicator
+  function of the closed unit ball of $E^\star$.
+* Example 1, `Brezis.Chapter01.example_1_1_biconj`: $\|x\| = \varphi^{\star\star}(x) = \sup_{\|f\|
+  \le 1} \langle f, x \rangle$.
+* Example 2, `Brezis.Chapter01.example_1_2_convexFn_iff`: $I_K$ is convex if and only if $K$ is
+  convex.
+* Example 2, `Brezis.Chapter01.example_1_2_lowerSemicontinuous_iff`: $I_K$ is lower semicontinuous
+  if and only if $K$ is closed.
+* Example 2, `Brezis.Chapter01.example_1_2_conj`: $(I_M)^\star = I_{M^\perp}$ for a linear subspace
+  $M$.
+* Example 2, `Brezis.Chapter01.example_1_2_biconj`: $(I_M)^{\star\star} = I_{(M^\perp)^\perp}$.
+* Example 2, `Brezis.Chapter01.example_1_2_orthogonal`: $(M^\perp)^\perp = M$ for a closed linear
+  subspace $M$.
+* Theorem 1.12, `Brezis.Chapter01.theorem_1_12`: $\inf_x \{\varphi(x) + \psi(x)\} = \sup_f
+  \{-\varphi^\star(-f) - \psi^\star(f)\}$ (Fenchel–Rockafellar).
+* Theorem 1.12, `Brezis.Chapter01.theorem_1_12_max`: the supremum in Theorem 1.12 is attained.
+* Lemma 1.4, `Brezis.Chapter01.lemma_1_4_convex`: the interior of a convex set is convex.
+* Lemma 1.4, `Brezis.Chapter01.lemma_1_4`: if $C$ is convex and
+  $\operatorname{Int} C \neq \emptyset$, then $\overline{C} = \overline{\operatorname{Int} C}$.
+* Example 3, `Brezis.Chapter01.example_1_3`: formula (19), $\operatorname{dist}(x_0, K) =
+  \max_{\|f\| \le 1} \{\langle f, x_0 \rangle - I_K^\star(f)\}$.
+* Example 3, `Brezis.Chapter01.example_1_3_submodule`: $\operatorname{dist}(x_0, M) = \max_{f \in
+  M^\perp,\ \|f\| \le 1} \langle f, x_0 \rangle$.
+* Example 3, `Brezis.Chapter01.example_1_3_submodule_of_example_1_3`: the same formula, derived from
+  (19).
+* Example 4, `Brezis.Chapter01.example_1_4`: $\inf_{x \in M} \varphi(x) = -\min_{f \in M^\perp}
+  \varphi^\star(f)$ for a convex continuous $\varphi$.
 
-The two lists of elementary facts on l.s.c. and convex functions are not numbered results
-(Mathlib's `lowerSemicontinuous_iff_isClosed_epigraph`, `LowerSemicontinuous.add`,
-`lowerSemicontinuous_iSup`, `LowerSemicontinuousOn.exists_isMinOn`, the backbone's
-`ConvexFn.convex_le`, `convexFn_add_coe`, `convexFn_iSup`); Remark 8 is discussion.
+## Conventions
+
+* A function $\varphi : E \to (-\infty, +\infty]$ is `φ : E → EReal` with `∀ x, φ x ≠ ⊥`. The
+  condition $\varphi \not\equiv +\infty$ is `(ConvexAnalysis.convexDom φ).Nonempty`. The two
+  conditions together are `ConvexAnalysis.ProperConvex φ`.
+* "Lower semicontinuous" is Mathlib's `LowerSemicontinuous`. For a function that never takes the
+  value $-\infty$, it is the backbone `ConvexAnalysis.ClosedConvex`, by
+  `ConvexAnalysis.closedConvex_iff_lowerSemicontinuous`.
+* "Convex" is the backbone `ConvexAnalysis.ConvexFn`, convexity of the epigraph.
+* The indicator function $I_K$ of a set $K$ ($0$ on $K$, $+\infty$ off $K$) is
+  `ConvexAnalysis.indicatorFn K`.
+
+## Implementation notes
+
+* The pairing is `Brezis.Chapter01.dualPairing E`, which is `(topDualPairing ℝ E).flip`, with $E$ on
+  the left as `ConvexAnalysis.convexConj` requires. The conjugate is
+  `ConvexAnalysis.convexConj (dualPairing E) φ`. The biconjugate, restricted to $E$, is
+  `ConvexAnalysis.convexBiconj (dualPairing E) φ`. For this reason `ConvexAnalysis.convexBiconj`
+  uses the flipped pairing and not a second copy of the pairing: iterating the conjugate would give
+  a function on $E^{\star\star}$.
+* The instance `ConvexAnalysis.instIsCompatiblePairingTopDual` makes $E$ compatibly paired with
+  $E^\star$ in its own norm topology. Hence the Fenchel–Moreau theorem
+  `ConvexAnalysis.convexBiconj_eq_convexCl_topDual` applies with no reflexivity assumption, as in
+  the source. The constraint qualification of Theorem 1.12 is the backbone
+  `ConvexAnalysis.IsExactSum.of_continuousAt`.
+* The elementary facts that the section lists on lower semicontinuous and convex functions are not
+  numbered results. They are Mathlib's `lowerSemicontinuous_iff_isClosed_epigraph`,
+  `LowerSemicontinuous.add`, `lowerSemicontinuous_iSup` and `LowerSemicontinuousOn.exists_isMinOn`,
+  and the backbone's `ConvexAnalysis.ConvexFn.convex_le`, `ConvexAnalysis.convexFn_add_coe` and
+  `ConvexAnalysis.convexFn_iSup`.
+* The source defines $\varphi^\star$ only for $\varphi \not\equiv +\infty$. The backbone defines
+  `ConvexAnalysis.convexConj` for every $\varphi$, and $\varphi^\star \equiv -\infty$ exactly when
+  $\varphi \equiv +\infty$ (`ConvexAnalysis.convexConj_eq_bot_iff`). The hypothesis
+  $\varphi \not\equiv +\infty$ appears where it is needed.
+
+## Not formalized
+
+* **Remark 7, last clause (Exercise 1.18(h)).** Inequality (12) is the case $\varphi(t) = |t|^p/p$
+  of (11) on $E = \mathbb{R}$.
+* **Remark 8.** It is a discussion.
 -/
 
 open ConvexAnalysis Metric Set
@@ -62,29 +138,48 @@ namespace Brezis.Chapter01
 
 /-! ### Lower semicontinuous and convex functions -/
 
-/-- **The Notation of §1.4, the domain.** For `φ : E → (-∞, +∞]`, `D(φ) = {x ∈ E | φ x < +∞}` is
-the backbone's `dom φ`. -/
+/-- **Section 1.4** of [brezis2011functional], the domain. For a function
+$\varphi : E \to (-\infty, +\infty]$, the **domain** of $\varphi$ is
+$$D(\varphi) = \{x \in E : \varphi(x) < +\infty\}.$$
+
+The domain is the backbone `ConvexAnalysis.convexDom φ`, and the theorem states its membership
+criterion. -/
 theorem mem_domain_iff {E : Type*} (φ : E → EReal) (x : E) : x ∈ convexDom φ ↔ φ x < ⊤ :=
   mem_convexDom
 
-/-- **The Notation of §1.4, the epigraph.** `epi φ = {[x, λ] ∈ E × ℝ | φ x ≤ λ}` is the
-backbone's `epi φ`, a subset of `E × ℝ` — `λ` does not take the value `+∞` (footnote 5). -/
+/-- **Section 1.4** of [brezis2011functional], the epigraph. For a function
+$\varphi : E \to (-\infty, +\infty]$, the **epigraph** of $\varphi$ is
+$$\operatorname{epi} \varphi = \{[x, \lambda] \in E \times \mathbb{R} : \varphi(x) \le
+  \lambda\}.$$
+
+The epigraph is the backbone `ConvexAnalysis.epi φ`, a subset of $E \times \mathbb{R}$: as in
+footnote 5 of the source, $\lambda$ does not take the value $+\infty$. -/
 theorem mem_epigraph_iff {E : Type*} (φ : E → EReal) (x : E) (l : ℝ) :
     (x, l) ∈ epi φ ↔ φ x ≤ (l : EReal) :=
   mk_mem_epi
 
-/-- **The Definition of lower semicontinuity.** On a topological space `E`, a function
-`φ : E → (-∞, +∞]` is l.s.c. iff for every `λ ∈ ℝ` the sublevel set `[φ ≤ λ]` is closed. The
-book's notion is Mathlib's `LowerSemicontinuous` (the section's fact 2, `φ y ≥ φ x - ε` near
-`x`). -/
+/-- **Section 1.4** of [brezis2011functional], definition of lower semicontinuity. Let $E$ be a
+topological space. A function $\varphi : E \to (-\infty, +\infty]$ is **lower semicontinuous**
+if and only if for every $\lambda \in \mathbb{R}$ the sublevel set
+$$[\varphi \le \lambda] = \{x \in E : \varphi(x) \le \lambda\}$$
+is closed.
+
+The notion of the source is Mathlib's `LowerSemicontinuous`, which is the second of the
+elementary facts of the section: for every $x \in E$ and $\varepsilon > 0$,
+$\varphi(y) \ge \varphi(x) - \varepsilon$ for all $y$ near $x$. -/
 theorem lowerSemicontinuous_iff {E : Type*} [TopologicalSpace E] (φ : E → EReal) :
     LowerSemicontinuous φ ↔ ∀ l : ℝ, IsClosed {x | φ x ≤ (l : EReal)} :=
   lowerSemicontinuous_iff_isClosed_le
 
-/-- **The Definition of a convex function.** On a vector space `E`, a function
-`φ : E → (-∞, +∞]` is convex iff `φ (t x + (1 - t) y) ≤ t φ x + (1 - t) φ y` for all `x, y` and
-`t ∈ (0, 1)`. The book's notion is the backbone's `ConvexFn` — convexity of the epigraph, the
-section's fact 1 on convex functions. -/
+/-- **Section 1.4** of [brezis2011functional], definition of a convex function. Let $E$ be a real
+vector space and $\varphi : E \to (-\infty, +\infty]$. Then $\varphi$ is **convex** if and only
+if
+$$\varphi(tx + (1-t)y) \le t\varphi(x) + (1-t)\varphi(y) \quad \text{for all } x, y \in E,\ t
+  \in (0, 1).$$
+
+The notion of the source is the backbone `ConvexAnalysis.ConvexFn`, convexity of the epigraph,
+which is the first of the elementary facts of the section on convex functions. The hypothesis
+that $\varphi$ never takes the value $-\infty$ is `∀ x, φ x ≠ ⊥`. -/
 theorem convexFn_iff {E : Type*} [AddCommGroup E] [Module ℝ E] {φ : E → EReal}
     (hφ : ∀ x, φ x ≠ ⊥) :
     ConvexFn φ ↔ ∀ x y (t : ℝ), 0 < t → t < 1 →
@@ -101,52 +196,85 @@ variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
 
 /-! ### The conjugate function -/
 
-/-- **The scalar product of the duality `E*, E`**, `⟨f, x⟩ = f x`, written with `E` on the left as
-the backbone's `convexConj` wants: `dualPairing E x f = f x`. An `abbrev` of
-`(topDualPairing ℝ E).flip`, so that the backbone's instances `instIsCompatiblePairingTopDual`
-(`E` compatibly paired with `E*` in its norm topology) and `instIsContinuousPairingTopDualNorm`
-(`E*` continuously paired with `E` in the norm topology of `E*`) are found on it. -/
+/-- **Section 1.4** of [brezis2011functional], the scalar product of the duality between $E^\star$
+and $E$: $\langle f, x \rangle = f(x)$ for $x \in E$ and $f \in E^\star$.
+
+It is written with $E$ on the left, as `ConvexAnalysis.convexConj` requires, so that
+`dualPairing E x f = f x`. It is an `abbrev` of `(topDualPairing ℝ E).flip`, so that the
+backbone instances `ConvexAnalysis.instIsCompatiblePairingTopDual` ($E$ compatibly paired with
+$E^\star$ in its norm topology) and `ConvexAnalysis.instIsContinuousPairingTopDualNorm`
+($E^\star$ continuously paired with $E$ in the norm topology of $E^\star$) apply to it. -/
 noncomputable abbrev dualPairing (E : Type*) [NormedAddCommGroup E] [NormedSpace ℝ E] :
     E →ₗ[ℝ] StrongDual ℝ E →ₗ[ℝ] ℝ :=
   (topDualPairing ℝ E).flip
 
+/-- The pairing `Brezis.Chapter01.dualPairing E` sends $x \in E$ and $f \in E^\star$ to $f(x)$. -/
 @[simp] theorem dualPairing_apply (x : E) (f : StrongDual ℝ E) : dualPairing E x f = f x := rfl
 
+/-- The flip of `Brezis.Chapter01.dualPairing E` is Mathlib's `topDualPairing ℝ E`, which sends
+$f \in E^\star$ and $x \in E$ to $f(x)$. -/
 theorem flip_dualPairing : (dualPairing E).flip = topDualPairing ℝ E := rfl
 
-/-- **The Definition of the conjugate function.** For `φ : E → (-∞, +∞]`,
-`φ* : E* → (-∞, +∞]` is `φ* f = sup_{x ∈ E} (⟨f, x⟩ - φ x)`: the backbone's
-`convexConj (dualPairing E) φ`. The book assumes `φ ≢ +∞`; the backbone defines `convexConj` for
-every `φ` (`convexConj_eq_bot_iff`: `φ* ≡ -∞` exactly when `φ ≡ +∞`), and the hypothesis reappears
-where it matters (`remark_1_7`, `proposition_1_10`). -/
+/-- **Section 1.4** of [brezis2011functional], definition of the conjugate function. Let $E$ be a
+real normed space and $\varphi : E \to (-\infty, +\infty]$. The **conjugate function**
+$\varphi^\star : E^\star \to (-\infty, +\infty]$ is
+$$\varphi^\star(f) = \sup_{x \in E} \{\langle f, x \rangle - \varphi(x)\}.$$
+
+The source assumes $\varphi \not\equiv +\infty$. The definition is the backbone
+`ConvexAnalysis.convexConj (dualPairing E) φ`, which is defined for every $\varphi$ with values
+in $[-\infty, +\infty]$; it gives $\varphi^\star \equiv -\infty$ exactly when
+$\varphi \equiv +\infty$ (`ConvexAnalysis.convexConj_eq_bot_iff`). The hypothesis
+$\varphi \not\equiv +\infty$ appears where it is needed, as in `Brezis.Chapter01.remark_1_7` and
+`Brezis.Chapter01.proposition_1_10`. -/
 noncomputable def conjugate (φ : E → EReal) : StrongDual ℝ E → EReal :=
   convexConj (dualPairing E) φ
 
+/-- The conjugate `Brezis.Chapter01.conjugate φ` is the backbone conjugate
+`ConvexAnalysis.convexConj` with respect to the pairing `Brezis.Chapter01.dualPairing E`. -/
 theorem conjugate_eq_convexConj (φ : E → EReal) : conjugate φ = convexConj (dualPairing E) φ := rfl
 
+/-- For every $f \in E^\star$, $\varphi^\star(f) = \sup_{x \in E} \{f(x) - \varphi(x)\}$, with the
+supremum and the subtraction in $[-\infty, +\infty]$. -/
 theorem conjugate_apply (φ : E → EReal) (f : StrongDual ℝ E) :
     conjugate φ f = ⨆ x, ((f x : ℝ) : EReal) - φ x := rfl
 
-/-- "Note that `φ*` is convex and l.s.c. on `E*`", first half: `φ*` is convex, for every `φ`. -/
+/-- **Section 1.4** of [brezis2011functional], convexity of the conjugate. For every function
+$\varphi : E \to [-\infty, +\infty]$, the conjugate $\varphi^\star$ is convex on $E^\star$. This
+is the first half of the sentence "Note that $\varphi^\star$ is convex and l.s.c. on $E^\star$"
+of the source. -/
 theorem conjugate_convexFn (φ : E → EReal) : ConvexFn (conjugate φ) :=
   convexFn_convexConj _ _
 
-/-- "Note that `φ*` is convex and l.s.c. on `E*`", second half: `φ*` is l.s.c. in the norm
-topology of `E*` — the superior envelope of the continuous affine functions `f ↦ ⟨f, x⟩ - φ x`
-(the section's fact 4). -/
+/-- **Section 1.4** of [brezis2011functional], lower semicontinuity of the conjugate. For every
+function $\varphi : E \to [-\infty, +\infty]$, the conjugate $\varphi^\star$ is lower
+semicontinuous in the norm topology of $E^\star$. This is the second half of the sentence "Note
+that $\varphi^\star$ is convex and l.s.c. on $E^\star$" of the source.
+
+As in the source, $\varphi^\star$ is the upper envelope of the continuous affine functions
+$f \mapsto \langle f, x \rangle - \varphi(x)$, and the fourth elementary fact of the section
+applies. -/
 theorem conjugate_lowerSemicontinuous (φ : E → EReal) : LowerSemicontinuous (conjugate φ) :=
   (closedConvex_convexConj (B := dualPairing E) (f := φ)).lowerSemicontinuous
 
-/-- **Remark 7, Young's inequality (11).** `⟨f, x⟩ ≤ φ x + φ* f` for all `x ∈ E`, `f ∈ E*`, when
-`φ x ≠ -∞` and `φ ≢ +∞`; "obvious with our definition of `φ*`" (in `EReal` the two hypotheses are
-what keeps the right-hand side from collapsing to `-∞`). -/
+/-- **Remark 7** of [brezis2011functional], Young's inequality (11). Let $E$ be a real normed space
+and let $\varphi : E \to (-\infty, +\infty]$ with $\varphi \not\equiv +\infty$. Then
+$$\langle f, x \rangle \le \varphi(x) + \varphi^\star(f) \quad \text{for all } x \in E,\ f \in
+  E^\star.$$
+
+The source calls this obvious from the definition of $\varphi^\star$. In $[-\infty, +\infty]$,
+the two hypotheses $\varphi(x) \neq -\infty$ and $\varphi \not\equiv +\infty$ keep the
+right-hand side from being $-\infty$. -/
 theorem remark_1_7 {φ : E → EReal} (hφ : ∀ x, φ x ≠ ⊥) (hdom : (convexDom φ).Nonempty) (x : E)
     (f : StrongDual ℝ E) : ((f x : ℝ) : EReal) ≤ φ x + conjugate φ f :=
   le_add_convexConj (B := dualPairing E) (hφ x) hdom f
 
-/-- **Remark 7, the classical Young inequality (12).** For `a, b ≥ 0`, `1 < p < ∞` and
-`1/p + 1/p' = 1`, `a b ≤ a^p / p + b^{p'} / p'`. That it is (11) for `φ t = |t|^p / p` on
-`E = ℝ` (Exercise 1.18 (h)) is not formalized. -/
+/-- **Remark 7** of [brezis2011functional], the classical Young inequality (12). Let $a, b \ge 0$,
+let $1 < p < \infty$, and let $p'$ satisfy $1/p + 1/p' = 1$. Then
+$$ab \le \frac{a^p}{p} + \frac{b^{p'}}{p'}.$$
+
+The powers are real powers `Real.rpow`. The source obtains (12) from (11) for
+$\varphi(t) = |t|^p/p$ on $E = \mathbb{R}$ (Exercise 1.18(h)); that derivation is not
+formalized. -/
 theorem remark_1_7_classical {a b p p' : ℝ} (ha : 0 ≤ a) (hb : 0 ≤ b) (hp : 1 < p)
     (hpp' : 1 / p + 1 / p' = 1) : a * b ≤ a ^ p / p + b ^ p' / p' :=
   Real.young_inequality_of_nonneg ha hb
@@ -154,16 +282,21 @@ theorem remark_1_7_classical {a b p p' : ℝ} (ha : 0 ≤ a) (hb : 0 ≤ b) (hp 
 
 /-! ### Proposition 1.10 and Theorem 1.11 -/
 
-/-- **Proposition 1.10, first clause.** If `φ : E → (-∞, +∞]` is convex, l.s.c. and `φ ≢ +∞`,
-then `φ* ≢ +∞`. -/
+/-- **Proposition 1.10** of [brezis2011functional]. Let $E$ be a real normed space and let
+$\varphi : E \to (-\infty, +\infty]$ be convex and lower semicontinuous with
+$\varphi \not\equiv +\infty$. Then $\varphi^\star \not\equiv +\infty$, that is,
+$D(\varphi^\star)$ is nonempty. -/
 theorem proposition_1_10 {φ : E → EReal} (hφ : ConvexFn φ) (hl : LowerSemicontinuous φ)
     (hbot : ∀ x, φ x ≠ ⊥) (hdom : (convexDom φ).Nonempty) : (convexDom (conjugate φ)).Nonempty :=
   ((properConvex_convexConj_iff (B := dualPairing E) hφ
     ((closedConvex_iff_lowerSemicontinuous hbot).2 hl)).2 ⟨hdom, hbot⟩).convexDom_nonempty
 
-/-- **Proposition 1.10, "in particular".** Under the same hypotheses `φ` is bounded below by a
-continuous affine function: there are `f ∈ E*` and `c ∈ ℝ` with `⟨f, x⟩ - c ≤ φ x` for all
-`x`. -/
+/-- **Proposition 1.10** of [brezis2011functional], the "in particular" clause. Let $E$ be a real
+normed space and let $\varphi : E \to (-\infty, +\infty]$ be convex and lower semicontinuous
+with $\varphi \not\equiv +\infty$. Then $\varphi$ is bounded below by a continuous affine
+function: there are $f \in E^\star$ and $C \in \mathbb{R}$ such that
+$$\varphi(x) \ge \langle f, x \rangle - C \quad \text{for all } x \in E.$$
+-/
 theorem proposition_1_10_affine {φ : E → EReal} (hφ : ConvexFn φ) (hl : LowerSemicontinuous φ)
     (hbot : ∀ x, φ x ≠ ⊥) (hdom : (convexDom φ).Nonempty) :
     ∃ (f : StrongDual ℝ E) (c : ℝ), ∀ x, ((f x - c : ℝ) : EReal) ≤ φ x := by
@@ -171,32 +304,55 @@ theorem proposition_1_10_affine {φ : E → EReal} (hφ : ConvexFn φ) (hl : Low
     ⟨hφ, (closedConvex_iff_lowerSemicontinuous hbot).2 hl, ⟨hdom, hbot⟩⟩
   exact ⟨f, c, fun x => by rw [EReal.coe_sub]; exact hfc x⟩
 
-/-- **The biconjugate restricted to `E`**, as the book defines it before Theorem 1.11:
-`φ** x = sup_{f ∈ E*} (⟨f, x⟩ - φ* f)` for `x ∈ E` — the backbone's
-`convexBiconj (dualPairing E) φ`, which is `convexConj (topDualPairing ℝ E) (conjugate φ)`.
-Iterating `*` instead would give a function on `E**`; that is why the backbone's `convexBiconj` is
-`convexConj B.flip ∘ convexConj B` and not `convexConj ∘ convexConj`. -/
+/-- **Section 1.4** of [brezis2011functional], definition of the biconjugate. Let $E$ be a real
+normed space and $\varphi : E \to [-\infty, +\infty]$. The **biconjugate** of $\varphi$,
+restricted to $E$ as in the source before Theorem 1.11, is
+$$\varphi^{\star\star}(x) = \sup_{f \in E^\star} \{\langle f, x \rangle - \varphi^\star(f)\}
+  \quad \text{for } x \in E.$$
+
+It is the backbone `ConvexAnalysis.convexBiconj (dualPairing E) φ`, which is
+`ConvexAnalysis.convexConj (topDualPairing ℝ E) (Brezis.Chapter01.conjugate φ)`. To iterate the
+conjugate would give a function on $E^{\star\star}$. For this reason
+`ConvexAnalysis.convexBiconj` takes the conjugate with respect to the flipped pairing the second
+time. -/
 noncomputable def biconjugate (φ : E → EReal) : E → EReal :=
   convexBiconj (dualPairing E) φ
 
+/-- The biconjugate `Brezis.Chapter01.biconjugate φ` is the conjugate of
+`Brezis.Chapter01.conjugate φ` with respect to Mathlib's pairing `topDualPairing ℝ E` of
+$E^\star$ with $E$. -/
 theorem biconjugate_eq_convexConj (φ : E → EReal) :
     biconjugate φ = convexConj (topDualPairing ℝ E) (conjugate φ) := rfl
 
+/-- For every $x \in E$, $\varphi^{\star\star}(x) = \sup_{f \in E^\star} \{f(x) -
+\varphi^\star(f)\}$, with the supremum and the subtraction in $[-\infty, +\infty]$. -/
 theorem biconjugate_apply (φ : E → EReal) (x : E) :
     biconjugate φ x = ⨆ f : StrongDual ℝ E, ((f x : ℝ) : EReal) - conjugate φ f := rfl
 
-/-- **Theorem 1.11 (Fenchel–Moreau).** If `φ : E → (-∞, +∞]` is convex, l.s.c. and `φ ≢ +∞`,
-then `φ** = φ`. No reflexivity is needed: `E` is compatibly paired with `E*` in its own norm
-topology (`instIsCompatiblePairingTopDual`). The backbone's statement does not need `φ ≢ +∞`
-(then `φ* ≡ -∞` and `φ** ≡ +∞`); the hypothesis is kept as the book states it. -/
+/-- **Theorem 1.11** of [brezis2011functional] (Fenchel–Moreau). Let $E$ be a real normed space and
+let $\varphi : E \to (-\infty, +\infty]$ be convex and lower semicontinuous with
+$\varphi \not\equiv +\infty$. Then
+$$\varphi^{\star\star} = \varphi.$$
+
+No reflexivity is needed: $E$ is compatibly paired with $E^\star$ in its own norm topology
+(`ConvexAnalysis.instIsCompatiblePairingTopDual`). The backbone theorem
+`ConvexAnalysis.convexBiconj_eq_convexCl_topDual` does not need $\varphi \not\equiv +\infty$: if
+$\varphi \equiv +\infty$, then $\varphi^\star \equiv -\infty$ and
+$\varphi^{\star\star} \equiv +\infty = \varphi$. The hypothesis is kept as the source states it,
+and the proof does not use it. -/
 theorem theorem_1_11 {φ : E → EReal} (hφ : ConvexFn φ) (hl : LowerSemicontinuous φ)
     (hbot : ∀ x, φ x ≠ ⊥) (_hdom : (convexDom φ).Nonempty) : biconjugate φ = φ :=
   convexBiconj_eq_self (B := dualPairing E) hφ ((closedConvex_iff_lowerSemicontinuous hbot).2 hl)
 
 /-! ### Example 1: the norm -/
 
-/-- **Example 1.** For `φ x = ‖x‖`, `φ* f = 0` if `‖f‖ ≤ 1` and `φ* f = +∞` if `‖f‖ > 1`: the
-indicator function of the closed unit ball of `E*`. -/
+/-- **Example 1** of [brezis2011functional], the conjugate of the norm. Let $E$ be a real normed
+space and $\varphi(x) = \|x\|$. Then
+$$\varphi^\star(f) = \begin{cases} 0 & \text{if } \|f\| \le 1, \\ +\infty & \text{if } \|f\| >
+  1, \end{cases}$$
+that is, $\varphi^\star$ is the indicator function of the closed unit ball of $E^\star$.
+
+The indicator function is `ConvexAnalysis.indicatorFn`. -/
 theorem example_1_1_conj :
     conjugate (fun x : E => (‖x‖ : EReal)) = indicatorFn (closedBall (0 : StrongDual ℝ E) 1) := by
   funext f
@@ -230,10 +386,15 @@ theorem example_1_1_conj :
     rw [← mul_sub, ht, div_mul_cancel₀ _ hd.ne']
     exact (le_abs_self r).trans (by linarith)
 
-/-- **Example 1, continued.** `φ** x = sup_{‖f‖ ≤ 1} ⟨f, x⟩` for the norm `φ`, and, `φ` being
-convex and continuous, `φ** = φ` (Theorem 1.11) gives `‖x‖ = sup_{‖f‖ ≤ 1} ⟨f, x⟩` — "we obtain
-again part of Corollary 1.4" (`corollary_1_4` states the supremum of `|⟨f, x⟩|`; over the
-symmetric ball the two agree). -/
+/-- **Example 1** of [brezis2011functional], the biconjugate of the norm. Let $E$ be a real normed
+space and $\varphi(x) = \|x\|$. For every $x \in E$,
+$$\varphi^{\star\star}(x) = \sup_{\|f\| \le 1} \langle f, x \rangle \quad \text{and} \quad
+  \|x\| = \sup_{\|f\| \le 1} \langle f, x \rangle.$$
+
+The second identity follows from Theorem 1.11, since $\varphi$ is convex and continuous; the
+source notes that "we obtain again part of Corollary 1.4". `Brezis.Chapter01.corollary_1_4`
+states the supremum of $|\langle f, x \rangle|$; the two suprema agree because the unit ball is
+symmetric. -/
 theorem example_1_1_biconj (x : E) :
     biconjugate (fun x : E => (‖x‖ : EReal)) x =
         ⨆ f ∈ closedBall (0 : StrongDual ℝ E) 1, ((f x : ℝ) : EReal) ∧
@@ -254,14 +415,19 @@ theorem example_1_1_biconj (x : E) :
 
 /-! ### Example 2: indicator functions and orthogonals -/
 
-/-- **Example 2.** The indicator function `I_K` of a set `K ⊆ E` (`0` on `K`, `+∞` off `K`; the
-backbone's `indicatorFn K`, not to be confused with the characteristic function `χ_K`) is convex
-iff `K` is convex. -/
+/-- **Example 2** of [brezis2011functional], convexity of an indicator function. Let $E$ be a real
+normed space and $K \subseteq E$. The indicator function $I_K$, equal to $0$ on $K$ and to
+$+\infty$ off $K$, is convex if and only if $K$ is convex.
+
+The indicator function is the backbone `ConvexAnalysis.indicatorFn K`. It is not the
+characteristic function $\chi_K$. -/
 theorem example_1_2_convexFn_iff (K : Set E) : ConvexFn (indicatorFn K) ↔ Convex ℝ K :=
   convexFn_indicatorFn
 
 omit [NormedSpace ℝ E] in
-/-- **Example 2.** `I_K` is l.s.c. iff `K` is closed. -/
+/-- **Example 2** of [brezis2011functional], lower semicontinuity of an indicator function. Let $E$
+be a normed group and $K \subseteq E$. The indicator function $I_K$ is lower semicontinuous if
+and only if $K$ is closed. -/
 theorem example_1_2_lowerSemicontinuous_iff (K : Set E) :
     LowerSemicontinuous (indicatorFn K) ↔ IsClosed K := by
   refine ⟨fun hl => ?_, fun hK => (closedConvex_indicatorFn hK).lowerSemicontinuous⟩
@@ -271,9 +437,14 @@ theorem example_1_2_lowerSemicontinuous_iff (K : Set E) :
   rw [← hK]
   exact (lowerSemicontinuous_iff _).1 hl 0
 
-/-- **The polar cones of the convex library are the orthogonals of §1.3.** For a subspace
-`M ⊆ E`, the polar cone of `M` under `dualPairing E` is `M^⊥ ⊆ E*`; for a subspace `N ⊆ E*`,
-the polar cone of `N` under `topDualPairing ℝ E` is `N^⊥ ⊆ E`. -/
+/-- The polar cones of the convex analysis library are the orthogonals of Section 1.3 of
+[brezis2011functional]. Let $E$ be a real normed space. For a linear subspace $M \subseteq E$,
+the polar cone $\{f \in E^\star : \langle f, x \rangle \le 0 \ \forall x \in M\}$ is $M^\perp$.
+For a linear subspace $N \subseteq E^\star$, the polar cone $\{x \in E : \langle f, x \rangle
+\le 0 \ \forall f \in N\}$ is $N^\perp$.
+
+The polar cones are `ConvexAnalysis.polarCone` with respect to `Brezis.Chapter01.dualPairing E`
+and to `topDualPairing ℝ E`. -/
 theorem polarCone_dualPairing_eq :
     (∀ M : Submodule ℝ E,
         polarCone (dualPairing E) (M : Set E) =
@@ -293,7 +464,10 @@ theorem polarCone_dualPairing_eq :
     simp only [SetLike.mem_coe, Submodule.mem_strongDualCoannihilator, topDualPairing_apply]
     exact Iff.rfl
 
-/-- **Example 2.** For a linear subspace `M ⊆ E`, `(I_M)* = I_{M^⊥}`. -/
+/-- **Example 2** of [brezis2011functional], the conjugate of the indicator function of a subspace.
+Let $E$ be a real normed space and $M \subseteq E$ a linear subspace. Then
+$$(I_M)^\star = I_{M^\perp}.$$
+-/
 theorem example_1_2_conj (M : Submodule ℝ E) :
     conjugate (indicatorFn (M : Set E)) =
       indicatorFn (M.strongDualAnnihilator : Set (StrongDual ℝ E)) := by
@@ -301,7 +475,10 @@ theorem example_1_2_conj (M : Submodule ℝ E) :
     convexConj_indicatorFn_eq_indicatorFn_polarCone (isCone_coe_submodule M)
       ⟨0, M.zero_mem⟩, polarCone_dualPairing_eq.1 M]
 
-/-- **Example 2.** For a linear subspace `M ⊆ E`, `(I_M)** = I_{(M^⊥)^⊥}`. -/
+/-- **Example 2** of [brezis2011functional], the biconjugate of the indicator function of a
+subspace. Let $E$ be a real normed space and $M \subseteq E$ a linear subspace. Then
+$$(I_M)^{\star\star} = I_{(M^\perp)^\perp}.$$
+-/
 theorem example_1_2_biconj (M : Submodule ℝ E) :
     biconjugate (indicatorFn (M : Set E)) =
       indicatorFn (M.strongDualAnnihilator.strongDualCoannihilator : Set E) := by
@@ -309,10 +486,14 @@ theorem example_1_2_biconj (M : Submodule ℝ E) :
     convexConj_indicatorFn_eq_indicatorFn_polarCone (isCone_coe_submodule _)
       ⟨0, Submodule.zero_mem _⟩, polarCone_dualPairing_eq.2]
 
-/-- **Example 2, the conclusion.** For a *closed* linear subspace `M ⊆ E`, writing
-`(I_M)** = I_M` (Theorem 1.11) gives `(M^⊥)^⊥ = M`: "Theorem 1.11 can be viewed as a counterpart
-of Proposition 1.9" (`proposition_1_9` says `(M^⊥)^⊥ = closure M`). Proved the book's way, by
-reading `example_1_2_biconj` through `theorem_1_11`. -/
+/-- **Example 2** of [brezis2011functional], the conclusion. Let $E$ be a real normed space and
+$M \subseteq E$ a closed linear subspace. Then
+$$(M^\perp)^\perp = M.$$
+
+The source obtains this from $(I_M)^{\star\star} = I_M$ (Theorem 1.11) and remarks that "Theorem
+1.11 can be viewed as a counterpart of Proposition 1.9"; `Brezis.Chapter01.proposition_1_9`
+states $(M^\perp)^\perp = \overline{M}$. The proof follows the source: it reads
+`Brezis.Chapter01.example_1_2_biconj` through `Brezis.Chapter01.theorem_1_11`. -/
 theorem example_1_2_orthogonal {M : Submodule ℝ E} (hM : IsClosed (M : Set E)) :
     M.strongDualAnnihilator.strongDualCoannihilator = M := by
   have h := theorem_1_11 (convexFn_indicatorFn.2 M.convex)
@@ -325,10 +506,15 @@ theorem example_1_2_orthogonal {M : Submodule ℝ E} (hM : IsClosed (M : Set E))
 
 /-! ### Theorem 1.12 -/
 
-/-- **Theorem 1.12 (Fenchel–Rockafellar), the duality.** Let `φ, ψ : E → (-∞, +∞]` be convex,
-and let `x₀ ∈ D(φ) ∩ D(ψ)` be a point at which `φ` is continuous. Then
-`inf_{x ∈ E} (φ x + ψ x) = sup_{f ∈ E*} (-φ*(-f) - ψ* f)`. The case `a = -∞` the book treats
-separately is absorbed by the `EReal` formulation. -/
+/-- **Theorem 1.12** of [brezis2011functional] (Fenchel–Rockafellar), the duality. Let $E$ be a real
+normed space and let $\varphi, \psi : E \to (-\infty, +\infty]$ be convex. Assume that there is
+$x_0 \in D(\varphi) \cap D(\psi)$ such that $\varphi$ is continuous at $x_0$. Then
+$$\inf_{x \in E} \{\varphi(x) + \psi(x)\} = \sup_{f \in E^\star} \{-\varphi^\star(-f) -
+  \psi^\star(f)\}.$$
+
+The infimum, the supremum and the arithmetic are in $[-\infty, +\infty]$. The source treats the
+case where the infimum is $-\infty$ separately; this formulation includes it. The proof uses the
+constraint qualification `ConvexAnalysis.IsExactSum.of_continuousAt`. -/
 theorem theorem_1_12 {φ ψ : E → EReal} (hφ : ConvexFn φ) (hψ : ConvexFn ψ)
     (hφb : ∀ x, φ x ≠ ⊥) (hψb : ∀ x, ψ x ≠ ⊥) {x₀ : E} (hx₀φ : x₀ ∈ convexDom φ)
         (hx₀ψ : x₀ ∈ convexDom ψ)
@@ -344,9 +530,14 @@ theorem theorem_1_12 {φ ψ : E → EReal} (hφ : ConvexFn φ) (hψ : ConvexFn �
   exact EReal.neg_add (Or.inl (hex.convexConj_left_ne_bot (-f)))
       (Or.inr (hex.convexConj_right_ne_bot f))
 
-/-- **Theorem 1.12 (Fenchel–Rockafellar), the attainment.** Under the same hypotheses the
-supremum is a maximum: there is `f ∈ E*` with `-φ*(-f) - ψ* f = inf_{x ∈ E} (φ x + ψ x)`, and
-(the book's last expression) the same `f` realizes `inf (φ + ψ) = -min_{f} (φ*(-f) + ψ* f)`. -/
+/-- **Theorem 1.12** of [brezis2011functional] (Fenchel–Rockafellar), the attainment. Under the
+hypotheses of `Brezis.Chapter01.theorem_1_12`, the supremum is a maximum: there is
+$f \in E^\star$ with
+$$-\varphi^\star(-f) - \psi^\star(f) = \inf_{x \in E} \{\varphi(x) + \psi(x)\} \quad \text{and}
+  \quad \varphi^\star(-f) + \psi^\star(f) = -\inf_{x \in E} \{\varphi(x) + \psi(x)\}.$$
+
+The second identity is the last expression of the source, $\inf (\varphi + \psi) = -\min_f
+\{\varphi^\star(-f) + \psi^\star(f)\}$, at the same $f$. -/
 theorem theorem_1_12_max {φ ψ : E → EReal} (hφ : ConvexFn φ) (hψ : ConvexFn ψ)
     (hφb : ∀ x, φ x ≠ ⊥) (hψb : ∀ x, ψ x ≠ ⊥) {x₀ : E} (hx₀φ : x₀ ∈ convexDom φ)
         (hx₀ψ : x₀ ∈ convexDom ψ)
@@ -367,20 +558,25 @@ theorem theorem_1_12_max {φ ψ : E → EReal} (hφ : ConvexFn φ) (hψ : Convex
   · rw [h1, neg_neg]
     exact hval
 
-/-- **Lemma 1.4, first clause.** If `C ⊆ E` is convex then so is `Int C`. -/
+/-- **Lemma 1.4** of [brezis2011functional], first clause. Let $E$ be a real normed space. If
+$C \subseteq E$ is convex, then $\operatorname{Int} C$ is convex. -/
 theorem lemma_1_4_convex {C : Set E} (hC : Convex ℝ C) : Convex ℝ (interior C) :=
   hC.interior
 
-/-- **Lemma 1.4, main clause.** If `C ⊆ E` is convex and `Int C ≠ ∅`, then
-`closure C = closure (Int C)` (the book refers to Exercise 1.7 for the proof). -/
+/-- **Lemma 1.4** of [brezis2011functional]. Let $E$ be a real normed space and let $C \subseteq E$
+be convex with $\operatorname{Int} C \neq \emptyset$. Then
+$$\overline{C} = \overline{\operatorname{Int} C}.$$
+
+The source refers to Exercise 1.7 for the proof. -/
 theorem lemma_1_4 {C : Set E} (hC : Convex ℝ C) (hne : (interior C).Nonempty) :
     closure C = closure (interior C) :=
   (hC.closure_interior_eq_closure_of_nonempty_interior hne).symm
 
 /-! ### Examples 3 and 4 -/
 
-/-- The conjugate of `x ↦ ‖x - x₀‖` at `-f`: `example_1_1_conj` translated by the conjugacy
-table's translation row (`convexConj_comp_sub`), the unit ball being symmetric. -/
+/-- The conjugate of $x \mapsto \|x - x_0\|$ at $-f$ is
+$I_{B_{E^\star}}(f) - \langle f, x_0 \rangle$, where $B_{E^\star}$ is the closed unit ball of
+$E^\star$. -/
 private theorem conjugate_norm_sub_neg (x₀ : E) (f : StrongDual ℝ E) :
     conjugate (fun x : E => (‖x - x₀‖ : EReal)) (-f) =
       indicatorFn (closedBall (0 : StrongDual ℝ E) 1) f - ((f x₀ : ℝ) : EReal) := by
@@ -392,11 +588,16 @@ private theorem conjugate_norm_sub_neg (x₀ : E) (f : StrongDual ℝ E) :
   · rw [indicatorFn_of_mem hf, indicatorFn_of_mem (by simpa using hf)]
   · rw [indicatorFn_of_notMem hf, indicatorFn_of_notMem (by simpa using hf)]
 
-/-- **Example 3, formula (19).** For a nonempty convex `K ⊆ E` and `x₀ ∈ E`,
-`dist (x₀, K) = inf_{x ∈ K} ‖x - x₀‖ = max_{‖f‖ ≤ 1} (⟨f, x₀⟩ - I_K* f)`: the distance is the
-infimum (Mathlib's `infDist`), it is the supremum over the closed unit ball of `E*` of
-`⟨f, x₀⟩ - I_K* f`, and the supremum is attained. Theorem 1.12 with `φ x = ‖x - x₀‖` and
-`ψ = I_K`. -/
+/-- **Example 3** of [brezis2011functional], formula (19). Let $E$ be a real normed space, let
+$K \subseteq E$ be a nonempty convex set, and let $x_0 \in E$. Then
+$$\operatorname{dist}(x_0, K) = \inf_{x \in K} \|x - x_0\| = \max_{f \in E^\star,\ \|f\| \le 1}
+  \{\langle f, x_0 \rangle - I_K^\star(f)\}.$$
+That is, the distance is the infimum, it is the supremum over the closed unit ball of $E^\star$,
+and the supremum is attained.
+
+The distance is Mathlib's `Metric.infDist x₀ K`, and the identities are in $[-\infty, +\infty]$.
+As in the source, the proof applies Theorem 1.12 with $\varphi(x) = \|x - x_0\|$ and
+$\psi = I_K$. -/
 theorem example_1_3 {K : Set E} (hK : Convex ℝ K) (hne : K.Nonempty) (x₀ : E) :
     ((infDist x₀ K : ℝ) : EReal) = ⨅ x ∈ K, (‖x - x₀‖ : EReal) ∧
       ((infDist x₀ K : ℝ) : EReal) =
@@ -448,11 +649,16 @@ theorem example_1_3 {K : Set E} (hK : Convex ℝ K) (hne : K.Nonempty) (x₀ : E
     · rw [iSup_neg h1] at hf
       exact absurd hf.symm (EReal.coe_ne_bot _)
 
-/-- **Example 3, the subspace case.** For a linear subspace `M ⊆ E` and `x₀ ∈ E`,
-`dist (x₀, M) = max_{f ∈ M^⊥, ‖f‖ ≤ 1} ⟨f, x₀⟩`: the supremum of `⟨f, x₀⟩` over the functionals
-of `M^⊥` of norm at most one is `dist (x₀, M)`, and it is attained. The backbone proves this by
-Hahn–Banach in `E ⧸ closure M`; the book derives it from (19) with `(I_M)* = I_{M^⊥}`
-(`example_1_2_conj`). -/
+/-- **Example 3** of [brezis2011functional], the case of a subspace. Let $E$ be a real normed space,
+$M \subseteq E$ a linear subspace, and $x_0 \in E$. Then
+$$\operatorname{dist}(x_0, M) = \max_{f \in M^\perp,\ \|f\| \le 1} \langle f, x_0 \rangle.$$
+That is, the supremum of $\langle f, x_0 \rangle$ over the $f \in M^\perp$ with $\|f\| \le 1$ is
+$\operatorname{dist}(x_0, M)$, and it is attained.
+
+The statement is in $\mathbb{R}$. The proof uses the backbone Hahn–Banach argument in the
+quotient $E / \overline{M}$. The source derives the formula from (19) with
+$(I_M)^\star = I_{M^\perp}$; that derivation is
+`Brezis.Chapter01.example_1_3_submodule_of_example_1_3`. -/
 theorem example_1_3_submodule (M : Submodule ℝ E) (x₀ : E) :
     infDist x₀ M = sSup ((fun f : StrongDual ℝ E => f x₀) ''
         {f | f ∈ M.strongDualAnnihilator ∧ ‖f‖ ≤ 1}) ∧
@@ -467,11 +673,14 @@ theorem example_1_3_submodule (M : Submodule ℝ E) (x₀ : E) :
       (Submodule.norm_apply_le_infDist_of_mem_strongDualAnnihilator hgM hg1 x₀)
   exact ⟨hgreat.csSup_eq.symm, f, hfM, hf1, hfx⟩
 
-/-- **Example 3, the subspace case derived from (19)**, the book's way: with `(I_M)* = I_{M^⊥}`
-(`example_1_2_conj`), formula (19) for `K = M` reads
-`dist (x₀, M) = max_{f ∈ M^⊥, ‖f‖ ≤ 1} ⟨f, x₀⟩` — here in `EReal`, the supremum over
-`{f ∈ M^⊥ | ‖f‖ ≤ 1}` and its attainment. `example_1_3_submodule` is the same statement in `ℝ`,
-proved from the backbone's Hahn–Banach argument instead. -/
+/-- **Example 3** of [brezis2011functional], the case of a subspace, derived from (19) as in the
+source. Let $E$ be a real normed space, $M \subseteq E$ a linear subspace, and $x_0 \in E$. Then
+$$\operatorname{dist}(x_0, M) = \max_{f \in M^\perp,\ \|f\| \le 1} \langle f, x_0 \rangle,$$
+with the supremum taken in $[-\infty, +\infty]$, and the maximum is attained.
+
+The proof reads formula (19) for $K = M$ through $(I_M)^\star = I_{M^\perp}$
+(`Brezis.Chapter01.example_1_2_conj`). `Brezis.Chapter01.example_1_3_submodule` is the same
+statement in $\mathbb{R}$, proved by the backbone Hahn–Banach argument. -/
 theorem example_1_3_submodule_of_example_1_3 (M : Submodule ℝ E) (x₀ : E) :
     ((infDist x₀ M : ℝ) : EReal) =
         ⨆ f ∈ {f : StrongDual ℝ E | f ∈ M.strongDualAnnihilator ∧ ‖f‖ ≤ 1},
@@ -499,10 +708,14 @@ theorem example_1_3_submodule_of_example_1_3 (M : Submodule ℝ E) (x₀ : E) :
     · rw [indicatorFn_of_notMem (fun h => hfM (SetLike.mem_coe.1 h)), EReal.sub_top] at hfx
       exact absurd hfx.symm (EReal.coe_ne_bot _)
 
-/-- **Example 4.** Let `φ : E → ℝ` be convex and continuous and `M ⊆ E` a linear subspace. Then
-`inf_{x ∈ M} φ x = -min_{f ∈ M^⊥} φ* f`: the identity, and the attainment of the minimum.
-Theorem 1.12 with `ψ = I_M`, in the backbone's subspace form
-`iInf_mem_submodule_eq_neg_iInf_mem_polarCone`. -/
+/-- **Example 4** of [brezis2011functional]. Let $E$ be a real normed space, let
+$\varphi : E \to \mathbb{R}$ be convex and continuous, and let $M \subseteq E$ be a linear
+subspace. Then
+$$\inf_{x \in M} \varphi(x) = -\min_{f \in M^\perp} \varphi^\star(f).$$
+That is, the identity holds with the infimum over $M^\perp$, and this infimum is attained.
+
+The identities are in $[-\infty, +\infty]$. The proof applies Theorem 1.12 with $\psi = I_M$, in
+the backbone subspace form `ConvexAnalysis.iInf_mem_submodule_eq_neg_iInf_mem_polarCone`. -/
 theorem example_1_4 {φ : E → ℝ} (hφ : ConvexOn ℝ univ φ) (hc : Continuous φ)
     (M : Submodule ℝ E) :
     (⨅ x ∈ M, ((φ x : ℝ) : EReal)) =

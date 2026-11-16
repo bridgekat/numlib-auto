@@ -11,51 +11,140 @@ import NumlibSurface.Brezis.Chapter04.Section03
 import NumlibSurface.Brezis.Chapter04.Section04
 
 /-!
-# Brezis §9.1: definition and elementary properties of the Sobolev spaces `W^{1,p}(Ω)`
+# Brezis, Section 9.1: Definition and elementary properties of the Sobolev spaces $W^{1,p}(\Omega)$
 
-Surface file for Haim Brezis, *Functional Analysis, Sobolev Spaces and Partial Differential
-Equations*, Universitext, Springer, 2011, §9.1, together with the paragraph "The spaces
-`W^{m,p}(Ω)`" that closes the section, on an open set `Ω ⊆ ℝ^N = EuclideanSpace ℝ (Fin N)` with
-Lebesgue measure.
+This module formalizes Section 9.1 of [brezis2011functional], together with the closing paragraph
+"The spaces $W^{m,p}(\Omega)$", on an open set $\Omega \subseteq \mathbb{R}^N$ with Lebesgue
+measure. For $1 \le p \le \infty$ the Sobolev space $W^{1,p}(\Omega)$ consists of the functions
+$u \in L^p(\Omega)$ that have weak partial derivatives $\partial u / \partial x_i \in L^p(\Omega)$,
+that is, functions $g_i \in L^p(\Omega)$ with $\int_\Omega u \, \partial \varphi / \partial x_i =
+-\int_\Omega g_i \varphi$ for every $\varphi \in C_c^\infty(\Omega)$. The source equips it with the
+norm $\|u\|_p + \sum_i \|\partial u / \partial x_i\|_p$, and $H^1(\Omega) = W^{1,2}(\Omega)$ with
+the scalar product $(u, v)_{H^1} = \int_\Omega uv + \sum_i \int_\Omega \partial_i u \, \partial_i
+v$. The module proves that $W^{1,p}(\Omega)$ is a Banach space, reflexive for $1 < p < \infty$ and
+separable for $p < \infty$ (Proposition 9.1), Friedrichs' approximation theorem (Theorem 9.2), the
+characterizations of $W^{1,p}(\Omega)$ by duality and by translations (Proposition 9.3), the rules
+for products, compositions and changes of variables (Propositions 9.4–9.6), and the elementary
+properties of the spaces $W^{m,p}(\Omega)$.
 
-The book's `W^{1,p}(Ω)` is `sobolevSpace N p Ω := SobolevEuclidean N 1 p Ω`
-(`Numlib/Analysis/Sobolev/MultiIndex`): the multi-index Sobolev space over the standard basis of
-`ℝ^N`, an `abbrev` so that every backbone lemma applies. Its elements carry a function
-`SobolevMultiIndex.fn u`, defined up to a null set of `Ω`, and the weak partial derivatives
-`partialDeriv u i = ∂u/∂x_i ∈ L^p(Ω)`; `sobolevSpace_iff` is the book's displayed definition. The
-norm of the type is the book's "sometimes equivalent norm" `(‖u‖_p^p + ∑ ‖∂_i u‖_p^p)^{1/p}`; the
-norm the book equips `W^{1,p}(Ω)` with, `‖u‖_p + ∑ ‖∂_i u‖_p`, is `bookNorm`, equivalent to it by
-`bookNorm_equiv`. At `p = 2` the type's norm *is* the book's `H^1` norm and its inner product the
-book's `(u, v)_{H^1}` (`hInner`, `hNorm`). The gradient `∇u = (∂_1 u, …, ∂_N u)` is the vector
-field `gradient u`, and `‖∇u‖_{L^p(Ω)}` is `eLpNorm (gradient u) p (volume.restrict Ω)`.
+The proofs specialize the backbone modules `Numlib.Analysis.Sobolev.MultiIndex`,
+`Numlib.Analysis.Sobolev.Calculus` and `Numlib.Analysis.Sobolev.Friedrichs`. The backbone states its
+theorems over a general finite-dimensional space with a Haar measure. This module instantiates them
+on $\mathbb{R}^N$ and converts between the derivative as a field of linear maps and the partial
+derivatives (`Brezis.Chapter09.exists_hasWeakFDerivOn_fn_gradient`).
 
-The backbone theorems are stated over a general finite-dimensional space with a Haar measure in the
-`HasWeakFDerivOn` / `MemSobolev` / `MemSobolevMultiIndex` readings; the surface instantiates them on
-`ℝ^N` and converts between the tensor gradient and the partial derivatives
-(`exists_hasWeakFDerivOn_fn_gradient`). Test functions are `𝓓(Ω, ℝ) = C_c^∞(Ω)`; Remark 1, that
-`C_c^1(Ω)` may be used instead, is `remark_9_1` and `remark_9_1_iff`.
+## Main definitions
+
+* Section 9.1, definition of $W^{1,p}(\Omega)$, `Brezis.Chapter09.sobolevSpace`: the functions of
+  $L^p(\Omega)$ with weak partial derivatives in $L^p(\Omega)$, with the weak partial derivatives
+  `Brezis.Chapter09.partialDeriv` and the gradient `Brezis.Chapter09.gradient`.
+* Section 9.1, definition of $H^1(\Omega)$, `Brezis.Chapter09.hSpace`: the space $W^{1,2}(\Omega)$.
+* Section 9.1, the norm of $W^{1,p}(\Omega)$, `Brezis.Chapter09.bookNorm`: $\|u\|_p + \sum_i
+  \|\partial u / \partial x_i\|_p$.
+* Section 9.1, definition of strong inclusion, `Brezis.Chapter09.IsStronglyIncluded`:
+  $\omega \subset\subset \Omega$ if $\bar\omega \subseteq \Omega$ and $\bar\omega$ is compact.
+* Proposition 9.3, the distance $\operatorname{dist}(\omega, \partial\Omega)$,
+  `Brezis.Chapter09.edistFrontier`.
+* Section 9.1, the spaces $W^{m,p}(\Omega)$, `Brezis.Chapter09.sobolevSpaceHigher`, with the norm
+  `Brezis.Chapter09.bookNormHigher`.
 
 ## Main results
 
-* `sobolevSpace`, `sobolevSpace_iff`, `partialDeriv`, `partialDeriv_spec`, `gradient` — the
-  Definition; `remark_9_1`, `remark_9_1_iff` — `C_c^1` test functions; `hSpace`, `hInner`,
-  `hNorm` — `H^1(Ω)`; `bookNorm`, `bookNorm_equiv` — the norm.
-* `proposition_9_1` — `W^{1,p}(Ω)` is a Banach space, reflexive for `1 < p < ∞`, separable for
-  `p < ∞`; `H^1(Ω)` is a separable Hilbert space.
-* `remark_9_2`, `remark_9_2_closure`, `remark_9_2_converse` — `C^1` functions in `W^{1,p}`, and
-  the `C^1` representative of a function with continuous weak derivatives.
-* `remark_9_4_i`, `remark_9_4_i_bounded`, `remark_9_4_ii`, `remark_9_4_ii_cutoff` — closedness
-  under `L^p` limits, and the extension by zero of `α u`.
-* `IsStronglyIncluded`, `theorem_9_2`, `theorem_9_2_univ`, `lemma_9_1`, `remark_9_5` — Friedrichs'
-  theorem, convolution with an `L^1` kernel, Meyers–Serrin.
-* `proposition_9_3` (the `TFAE`), `proposition_9_3_i_ii`, `proposition_9_3_ii_i`,
-  `proposition_9_3_i_iii`, `proposition_9_3_iii_ii`, `proposition_9_3_univ`, `remark_9_6` — the
-  characterizations of `W^{1,p}`, with the book's `dist(ω, ∂Ω)` as `edistFrontier`;
-  `remark_9_7`, `remark_9_7_convex`, `remark_9_7_const` — `W^{1,∞}` and Lipschitz functions.
-* `proposition_9_4`, `proposition_9_5`, `proposition_9_6` — products, compositions, change of
-  variables.
-* `sobolevSpaceHigher`, `sobolevSpaceHigher_iff`, `sobolevSpaceHigher_iff_inductive`,
-  `sobolevSpaceHigher_banach`, `hSpaceHigher` — the spaces `W^{m,p}(Ω)` and `H^m(Ω)`.
+* Section 9.1, definition of $W^{1,p}(\Omega)$, `Brezis.Chapter09.sobolevSpace_iff`: a function is
+  in $W^{1,p}(\Omega)$ if and only if it satisfies the defining condition of the source.
+* Remark 1, `Brezis.Chapter09.remark_9_1` and `Brezis.Chapter09.remark_9_1_iff`: the test functions
+  in the definition may be taken in $C_c^1(\Omega)$.
+* Section 9.1, `Brezis.Chapter09.hInner` and `Brezis.Chapter09.hNorm`: the scalar product and the
+  norm of $H^1(\Omega)$.
+* Section 9.1, `Brezis.Chapter09.bookNorm_equiv`: the norm of the source is equivalent to the norm
+  of the type.
+* Proposition 9.1, `Brezis.Chapter09.proposition_9_1`: $W^{1,p}(\Omega)$ is a Banach space,
+  reflexive for $1 < p < \infty$ and separable for $1 \le p < \infty$, and $H^1(\Omega)$ is a
+  separable Hilbert space.
+* Remark 2, `Brezis.Chapter09.remark_9_2`, `Brezis.Chapter09.remark_9_2_closure` and
+  `Brezis.Chapter09.remark_9_2_converse`: a $C^1$ function with derivatives in $L^p$ is in
+  $W^{1,p}(\Omega)$, and a function of $W^{1,p}(\Omega)$ with continuous weak derivatives is of
+  class $C^1$.
+* Remark 4(i), `Brezis.Chapter09.remark_9_4_i` and `Brezis.Chapter09.remark_9_4_i_bounded`:
+  $W^{1,p}(\Omega)$ is closed under limits in $L^p$ with convergent, or for $p > 1$ bounded,
+  gradients.
+* Remark 4(ii), `Brezis.Chapter09.remark_9_4_ii` and `Brezis.Chapter09.remark_9_4_ii_cutoff`: the
+  extension by zero of $\alpha u$ lies in $W^{1,p}(\mathbb{R}^N)$.
+* Theorem 9.2 (Friedrichs), `Brezis.Chapter09.theorem_9_2` and `Brezis.Chapter09.theorem_9_2_univ`:
+  approximation by functions of $C_c^\infty(\mathbb{R}^N)$.
+* Lemma 9.1, `Brezis.Chapter09.lemma_9_1`: $\rho \star v \in W^{1,p}(\mathbb{R}^N)$ and
+  $\partial_i(\rho \star v) = \rho \star \partial_i v$ for $\rho \in L^1(\mathbb{R}^N)$.
+* Remark 5 (Meyers–Serrin), `Brezis.Chapter09.remark_9_5`: $C^\infty(\Omega) \cap W^{1,p}(\Omega)$
+  is dense in $W^{1,p}(\Omega)$ for $p < \infty$.
+* Proposition 9.3, `Brezis.Chapter09.proposition_9_3`: for $1 < p \le \infty$, membership in
+  $W^{1,p}(\Omega)$, a duality bound, and a bound on translations are equivalent; the implications
+  are `Brezis.Chapter09.proposition_9_3_i_ii`, `Brezis.Chapter09.proposition_9_3_ii_i`,
+  `Brezis.Chapter09.proposition_9_3_i_iii` and `Brezis.Chapter09.proposition_9_3_iii_ii`, and the
+  case $\Omega = \mathbb{R}^N$ is `Brezis.Chapter09.proposition_9_3_univ`.
+* Remark 6, `Brezis.Chapter09.remark_9_6`: at $p = 1$ the implications (i) ⇒ (ii), (i) ⇒ (iii) and
+  (iii) ⇒ (ii) of Proposition 9.3 hold.
+* Remark 7, `Brezis.Chapter09.remark_9_7`, `Brezis.Chapter09.remark_9_7_convex` and
+  `Brezis.Chapter09.remark_9_7_const`: functions of $W^{1,\infty}(\Omega)$ are continuous, Lipschitz
+  on a convex $\Omega$, and $\nabla u = 0$ makes $u$ constant on each connected component.
+* Proposition 9.4, `Brezis.Chapter09.proposition_9_4`: the product rule in
+  $W^{1,p}(\Omega) \cap L^\infty(\Omega)$.
+* Proposition 9.5, `Brezis.Chapter09.proposition_9_5`: the chain rule $\partial_i (G \circ u) = (G'
+  \circ u) \partial_i u$.
+* Proposition 9.6, `Brezis.Chapter09.proposition_9_6`: the change of variables formula.
+* Section 9.1, the spaces $W^{m,p}(\Omega)$, `Brezis.Chapter09.sobolevSpaceHigher_iff`,
+  `Brezis.Chapter09.sobolevSpaceHigher_iff_inductive`, `Brezis.Chapter09.sobolevSpaceHigher_banach`
+  and `Brezis.Chapter09.hSpaceHigher`: the multi-index and the inductive definitions agree,
+  $W^{m,p}(\Omega)$ is a Banach space, and $H^m(\Omega)$ is a Hilbert space.
+
+## Notation
+
+* `V ⊂⊂ Ω`, scoped in the namespace `Brezis`: `Brezis.Chapter09.IsStronglyIncluded V Ω`.
+
+## Conventions
+
+* The space $\mathbb{R}^N$ is `EuclideanSpace ℝ (Fin N)` with Lebesgue measure `volume`, and
+  $\Omega$ is `Ω : Opens (EuclideanSpace ℝ (Fin N))`. The space $L^p(\Omega)$ is
+  `Lp ℝ p (volume.restrict Ω)`.
+* The standing assumption $1 \le p \le \infty$ is written `[Fact (1 ≤ p)]`.
+* An element `u : sobolevSpace N p Ω` carries a function `SobolevMultiIndex.fn u`, defined up to
+  a null set of $\Omega$. "The function $f$ belongs to $W^{1,p}(\Omega)$" is written
+  `∃ v : sobolevSpace N p Ω, SobolevMultiIndex.fn v =ᵐ[volume.restrict Ω] f`.
+* The weak partial derivative $\partial u / \partial x_i$ is `Brezis.Chapter09.partialDeriv u i`,
+  the gradient $\nabla u$ is `Brezis.Chapter09.gradient u`, and $\|\nabla u\|_{L^p(\Omega)}$ is
+  `eLpNorm (gradient u) p (volume.restrict Ω)`, with the Euclidean norm $|\nabla u|$ at each point.
+* The test functions $C_c^\infty(\Omega)$ are `𝓓(Ω, ℝ)`. The basis vector $e_i$ is
+  `EuclideanSpace.single i 1`, and $\partial \varphi / \partial x_i (x)$ is
+  `fderiv ℝ φ x (EuclideanSpace.single i 1)`.
+* The conjugate exponent $p'$ is `q` with `[p.HolderConjugate q]`. The estimates are stated in
+  `ℝ≥0∞` with `eLpNorm`, a real constant $C$ as `ENNReal.ofReal C`, and $|h|$ as `‖h‖ₑ`.
+
+## Implementation notes
+
+* `Brezis.Chapter09.sobolevSpace` is an abbreviation of the backbone type
+  `SobolevEuclidean N 1 p Ω`, so that every backbone lemma applies to it.
+* For $p < \infty$ the norm of the type is $(\|u\|_p^p + \sum_i \|\partial u / \partial
+  x_i\|_p^p)^{1/p}$, the equivalent norm that the source also mentions; for $p = \infty$ it is the
+  maximum of these $N + 1$ norms. The norm $\|u\|_p + \sum_i \|\partial u / \partial x_i\|_p$ of the
+  source is `Brezis.Chapter09.bookNorm`, equivalent to it by `Brezis.Chapter09.bookNorm_equiv`. At
+  $p = 2$ the norm and the inner product of the type are those of $H^1(\Omega)$ in the source.
+
+## Deviations from the source
+
+* **Remark 2, "in particular"** (reading). The space $C^1(\bar\Omega)$ is read as the functions that
+  are of class $C^1$ on $\bar\Omega$ in the sense of `ContDiffOn`. See
+  `Brezis.Chapter09.remark_9_2_closure`.
+
+## Not formalized
+
+* **Remark 3.**
+* **Remark 4(ii) for a cut-off function $\alpha$ of class $C^1$ that is not of class $C^\infty$.**
+  Both forms of the remark are proved for smooth $\alpha$ only.
+* **Remark 5, second claim**, that for a general $\Omega$ no sequence of $C_c^1(\mathbb{R}^N)$
+  functions need converge to $u$ in $W^{1,p}(\Omega)$. It is a counterexample.
+* **Remark 6, the implication (ii) ⇒ (iii) at $p = 1$, and the discussion of the functions of
+  bounded variation.** It belongs to the theory of $BV$ functions.
+* **Remark 7 on a nonconvex $\Omega$, with the geodesic distance.**
+* **Remark 8.**
 -/
 
 open Filter MeasureTheory Metric Topology TopologicalSpace
@@ -65,20 +154,26 @@ namespace Brezis.Chapter09
 
 variable {N : ℕ}
 
-/-- The book's `ℝ^N`. -/
+/-- The space $\mathbb{R}^N$ of the source. -/
 local notation "𝔼" => EuclideanSpace ℝ (Fin N)
 
-/-- The standard basis of `ℝ^N`, as a `Basis`. -/
+/-- The standard basis $(e_1, \dots, e_N)$ of $\mathbb{R}^N$, as a `Basis`. -/
 local notation "𝔟" => OrthonormalBasis.toBasis (EuclideanSpace.basisFun (Fin N) ℝ)
 
-/-! ### Weak derivatives along one direction, in the book's form -/
+/-! ### Weak derivatives along directions, in the form of the source -/
 
 section Direction
 
 variable {Ω : Opens (EuclideanSpace ℝ (Fin N))}
 
-/-- The defining identity of a weak derivative along a tuple `y` of `n` directions, in the
-book's form: `∫_Ω u D^y φ = (−1)^n ∫_Ω g φ`. -/
+/-- Let $\Omega \subseteq \mathbb{R}^N$ be open, let $u, g : \mathbb{R}^N \to \mathbb{R}$, and let
+$y = (y_1, \dots, y_n)$ be a tuple of $n$ directions in $\mathbb{R}^N$. If $g$ is a weak
+derivative of $u$ along $y$ on $\Omega$, then for every $\varphi \in C_c^\infty(\Omega)$
+$$\int_\Omega u \, D^n \varphi(x)(y_1, \dots, y_n) \, dx = (-1)^n \int_\Omega g \varphi \, dx.$$
+
+This is the defining identity of `HasWeakIteratedLineDerivOn` in the form of
+[brezis2011functional], Section 9.1, with the product written $u \cdot D^y \varphi$. The
+derivative $D^n \varphi(x)(y_1, \dots, y_n)$ is `iteratedFDeriv ℝ n φ x y`. -/
 theorem integral_mul_iteratedFDeriv_eq_of_hasWeakIteratedLineDerivOn {u g : 𝔼 → ℝ} {n : ℕ}
     {y : Fin n → 𝔼} (h : HasWeakIteratedLineDerivOn y u g Ω volume) (φ : 𝓓(Ω, ℝ)) :
     ∫ x in (Ω : Set 𝔼), u x * iteratedFDeriv ℝ n φ x y
@@ -93,8 +188,17 @@ theorem integral_mul_iteratedFDeriv_eq_of_hasWeakIteratedLineDerivOn {u g : 𝔼
     _ = (-1) ^ n * ∫ x in (Ω : Set 𝔼), g x * φ x := by
         rw [setIntegral_congr_fun hs fun x _ ↦ mul_comm (φ x) (g x)]
 
-/-- A weak derivative along a tuple `y` of `n` directions, from the book's identity
-`∫_Ω u D^y φ = (−1)^n ∫_Ω g φ` and local integrability. -/
+/-- Let $\Omega \subseteq \mathbb{R}^N$ be open, let $u, g : \mathbb{R}^N \to \mathbb{R}$ be locally
+integrable on $\Omega$, and let $y = (y_1, \dots, y_n)$ be a tuple of $n$ directions in
+$\mathbb{R}^N$. If
+$$\int_\Omega u \, D^n \varphi(x)(y_1, \dots, y_n) \, dx = (-1)^n \int_\Omega g \varphi \, dx$$
+for every $\varphi \in C_c^\infty(\Omega)$, then $g$ is a weak derivative of $u$ along $y$ on
+$\Omega$.
+
+This is the converse of
+`Brezis.Chapter09.integral_mul_iteratedFDeriv_eq_of_hasWeakIteratedLineDerivOn`: it builds
+`HasWeakIteratedLineDerivOn` from the identity in the form of [brezis2011functional], Section
+9.1. -/
 theorem hasWeakIteratedLineDerivOn_of_forall {u g : 𝔼 → ℝ} {n : ℕ} {y : Fin n → 𝔼}
     (hu : LocallyIntegrableOn u Ω volume) (hg : LocallyIntegrableOn g Ω volume)
     (h : ∀ φ : 𝓓(Ω, ℝ), ∫ x in (Ω : Set 𝔼), u x * iteratedFDeriv ℝ n φ x y
@@ -110,16 +214,21 @@ theorem hasWeakIteratedLineDerivOn_of_forall {u g : 𝔼 → ℝ} {n : ℕ} {y :
     _ = (-1) ^ n * ∫ x in (Ω : Set 𝔼), φ x * g x := by
         rw [setIntegral_congr_fun hs fun x _ ↦ mul_comm (g x) (φ x)]
 
-/-- The defining identity of a weak derivative along a single direction `y`, in the book's
-form: `∫_Ω u ∂_y φ = −∫_Ω g φ`. -/
+/-- Let $\Omega \subseteq \mathbb{R}^N$ be open, $u, g : \mathbb{R}^N \to \mathbb{R}$ and
+$y \in \mathbb{R}^N$. If $g$ is a weak derivative of $u$ along $y$ on $\Omega$, then
+$\int_\Omega u \, \partial_y \varphi = -\int_\Omega g \varphi$ for every
+$\varphi \in C_c^\infty(\Omega)$, where $\partial_y \varphi(x) = D\varphi(x) y$. -/
 theorem integral_mul_fderiv_eq_of_hasWeakIteratedLineDerivOn {u g : 𝔼 → ℝ} {y : 𝔼}
     (h : HasWeakIteratedLineDerivOn ![y] u g Ω volume) (φ : 𝓓(Ω, ℝ)) :
     ∫ x in (Ω : Set 𝔼), u x * fderiv ℝ φ x y = -∫ x in (Ω : Set 𝔼), g x * φ x := by
   have := integral_mul_iteratedFDeriv_eq_of_hasWeakIteratedLineDerivOn h φ
   simpa [iteratedFDeriv_one_apply] using this
 
-/-- A weak derivative along a single direction `y`, from the book's identity
-`∫_Ω u ∂_y φ = −∫_Ω g φ` and local integrability. -/
+/-- Let $\Omega \subseteq \mathbb{R}^N$ be open, let $u, g : \mathbb{R}^N \to \mathbb{R}$ be locally
+integrable on $\Omega$, and let $y \in \mathbb{R}^N$. If $\int_\Omega u \, \partial_y \varphi =
+-\int_\Omega g \varphi$ for every $\varphi \in C_c^\infty(\Omega)$, where
+$\partial_y \varphi(x) = D\varphi(x) y$, then $g$ is a weak derivative of $u$ along $y$ on
+$\Omega$. -/
 theorem hasWeakIteratedLineDerivOn_single_of_forall {u g : 𝔼 → ℝ} {y : 𝔼}
     (hu : LocallyIntegrableOn u Ω volume) (hg : LocallyIntegrableOn g Ω volume)
     (h : ∀ φ : 𝓓(Ω, ℝ), ∫ x in (Ω : Set 𝔼), u x * fderiv ℝ φ x y = -∫ x in (Ω : Set 𝔼), g x * φ x) :
@@ -129,44 +238,66 @@ theorem hasWeakIteratedLineDerivOn_single_of_forall {u g : 𝔼 → ℝ} {y : �
 
 end Direction
 
-/-! ### The Definition -/
+/-! ### The definition of $W^{1,p}(\Omega)$ -/
 
-/-- **The Sobolev space `W^{1,p}(Ω)`** of §9.1: the functions `u ∈ L^p(Ω)` with weak partial
-derivatives `∂u/∂x_i ∈ L^p(Ω)` (`sobolevSpace_iff` for the displayed definition), as the backbone
-type `SobolevEuclidean N 1 p Ω`. The norm of the type is the book's second, equivalent norm
-`(‖u‖_p^p + ∑ ‖∂_i u‖_p^p)^{1/p}` (`SobolevMultiIndex.norm_eq_sum`); the book's first norm is
-`bookNorm`. -/
+/-- **Section 9.1** of [brezis2011functional], definition of the Sobolev space $W^{1,p}(\Omega)$.
+Let $\Omega \subseteq \mathbb{R}^N$ be open and $1 \le p \le \infty$. The **Sobolev space**
+$W^{1,p}(\Omega)$ is the space of the functions $u \in L^p(\Omega)$ for which there are
+$g_1, \dots, g_N \in L^p(\Omega)$ with
+$$\int_\Omega u \frac{\partial \varphi}{\partial x_i} = -\int_\Omega g_i \varphi \qquad
+  \text{for all } \varphi \in C_c^\infty(\Omega) \text{ and } i = 1, \dots, N.$$
+
+The type is the backbone type `SobolevEuclidean N 1 p Ω`, the multi-index Sobolev space over the
+standard basis of $\mathbb{R}^N$ with Lebesgue measure. An element is the family of $u$ and its
+weak partial derivatives in $L^p(\Omega)$; `Brezis.Chapter09.sobolevSpace_iff` shows that the
+functions of these elements are the functions of the definition. The type is defined for every
+exponent $p \in [0, \infty]$, and the results assume $p \ge 1$. For $p < \infty$ the norm of the
+type is $(\|u\|_p^p + \sum_i \|\partial u / \partial x_i\|_p^p)^{1/p}$
+(`SobolevMultiIndex.norm_eq_sum`), the equivalent norm of the source. The norm that the source
+puts on $W^{1,p}(\Omega)$ is `Brezis.Chapter09.bookNorm`. -/
 noncomputable abbrev sobolevSpace (N : ℕ) (p : ℝ≥0∞) (Ω : Opens (EuclideanSpace ℝ (Fin N))) :
     Type :=
   SobolevEuclidean N 1 p Ω
 
 variable {p : ℝ≥0∞} {Ω : Opens (EuclideanSpace ℝ (Fin N))}
 
-/-- **The weak partial derivative `∂u/∂x_i`** of `u ∈ W^{1,p}(Ω)`, the function `g_i` of the
-Definition, as an element of `L^p(Ω)`. -/
+/-- **Section 9.1** of [brezis2011functional], definition of the weak partial derivatives. For
+$u \in W^{1,p}(\Omega)$ and $i = 1, \dots, N$, the **weak partial derivative**
+$\partial u / \partial x_i$ is the function $g_i$ of the definition, as an element of
+$L^p(\Omega)$.
+
+The index $i$ runs over `Fin N`, that is, from $0$ to $N - 1$. The element is the component of
+$u$ at the multi-index `MultiIndexLE.single i`. -/
 noncomputable def partialDeriv (u : sobolevSpace N p Ω) (i : Fin N) :
     Lp ℝ p (volume.restrict (Ω : Set 𝔼)) :=
   SobolevMultiIndex.weakDeriv u (MultiIndexLE.single i)
 
-/-- **The gradient `∇u = (∂u/∂x_1, …, ∂u/∂x_N)`** of `u ∈ W^{1,p}(Ω)`, as an `ℝ^N`-valued
-function on `ℝ^N` (defined up to a null set of `Ω`); `‖∇u‖_{L^p(Ω)}` is
-`eLpNorm (gradient u) p (volume.restrict Ω)`. -/
+/-- **Section 9.1** of [brezis2011functional], the gradient. For $u \in W^{1,p}(\Omega)$, the
+**gradient** is the vector field $\nabla u = (\partial u / \partial x_1, \dots, \partial u /
+\partial x_N)$ from $\mathbb{R}^N$ to $\mathbb{R}^N$, defined up to a null set of $\Omega$.
+
+The norm $\|\nabla u\|_{L^p(\Omega)}$ is `eLpNorm (gradient u) p (volume.restrict Ω)`, with the
+Euclidean norm $|\nabla u(x)|$ at each point. -/
 noncomputable def gradient (u : sobolevSpace N p Ω) (x : 𝔼) : 𝔼 :=
   WithLp.toLp 2 fun i ↦ partialDeriv u i x
 
-/-- The `i`-th component of the gradient is `∂u/∂x_i`. -/
+/-- The $i$-th component of the gradient $\nabla u(x)$ is $\partial u / \partial x_i (x)$. -/
 @[simp]
 theorem gradient_apply (u : sobolevSpace N p Ω) (x : 𝔼) (i : Fin N) :
     gradient u x i = partialDeriv u i x :=
   rfl
 
-/-- The standard basis vector `e_i` of `ℝ^N` is `EuclideanSpace.single i 1`. -/
+/-- The $i$-th vector $e_i$ of the standard basis of $\mathbb{R}^N$ is `EuclideanSpace.single i 1`.
+-/
 theorem basisFun_toBasis_apply (i : Fin N) :
     (𝔟 : Fin N → 𝔼) i = EuclideanSpace.single i 1 := by
   simp
 
-/-- The weak partial derivative `∂u/∂x_i` is the weak derivative of `u` along `e_i` on `Ω`, in
-the backbone's sense. -/
+/-- Let $u \in W^{1,p}(\Omega)$ and $i = 1, \dots, N$. Then $\partial u / \partial x_i$ is a weak
+derivative of $u$ along $e_i$ on $\Omega$, in the sense of `HasWeakIteratedLineDerivOn`.
+
+This connects `Brezis.Chapter09.partialDeriv` to the backbone notion of a weak derivative along
+a direction. -/
 theorem hasWeakIteratedLineDerivOn_partialDeriv (u : sobolevSpace N p Ω) (i : Fin N) :
     HasWeakIteratedLineDerivOn ![EuclideanSpace.single i 1] (SobolevMultiIndex.fn u)
       (partialDeriv u i) Ω volume := by
@@ -175,8 +306,12 @@ theorem hasWeakIteratedLineDerivOn_partialDeriv (u : sobolevSpace N p Ω) (i : F
   rw [basisFun_toBasis_apply] at this
   exact this
 
-/-- **The defining identity of `∂u/∂x_i`**: `∫_Ω u ∂φ/∂x_i = −∫_Ω (∂u/∂x_i) φ` for every test
-function `φ ∈ C_c^∞(Ω)`. -/
+/-- **Section 9.1** of [brezis2011functional], the defining identity of the weak partial
+derivatives. For $u \in W^{1,p}(\Omega)$, $i = 1, \dots, N$ and every test function
+$\varphi \in C_c^\infty(\Omega)$,
+$$\int_\Omega u \frac{\partial \varphi}{\partial x_i} = -\int_\Omega \frac{\partial u}{\partial
+  x_i} \varphi.$$
+-/
 theorem partialDeriv_spec (u : sobolevSpace N p Ω) (i : Fin N) (φ : 𝓓(Ω, ℝ)) :
     ∫ x in (Ω : Set 𝔼), SobolevMultiIndex.fn u x * fderiv ℝ φ x (EuclideanSpace.single i 1)
       = -∫ x in (Ω : Set 𝔼), partialDeriv u i x * φ x :=
@@ -185,9 +320,13 @@ theorem partialDeriv_spec (u : sobolevSpace N p Ω) (i : Fin N) (φ : 𝓓(Ω, �
 
 variable [Fact (1 ≤ p)]
 
-/-- A function of `L^p(Ω)` whose weak partial derivatives along the `e_i` lie in `L^p(Ω)` is, up
-to a null set of `Ω`, the function of an element of `W^{1,p}(Ω)`, whose partial derivatives are
-the given ones. -/
+/-- Let $1 \le p \le \infty$, let $u \in L^p(\Omega)$, and let $g_1, \dots, g_N \in L^p(\Omega)$ be
+such that $g_i$ is a weak derivative of $u$ along $e_i$ on $\Omega$ for each $i$. Then there is
+$v \in W^{1,p}(\Omega)$ whose function equals $u$ almost everywhere on $\Omega$, with
+$\partial v / \partial x_i = g_i$ almost everywhere on $\Omega$ for each $i$.
+
+This builds an element of `Brezis.Chapter09.sobolevSpace` from functions, for the definition of
+$W^{1,p}(\Omega)$ in [brezis2011functional], Section 9.1. -/
 theorem exists_sobolevSpace_of_hasWeakIteratedLineDerivOn {u : 𝔼 → ℝ}
     (hu : MemLp u p (volume.restrict (Ω : Set 𝔼))) {g : Fin N → 𝔼 → ℝ}
     (hg : ∀ i, HasWeakIteratedLineDerivOn ![EuclideanSpace.single i 1] u (g i) Ω volume)
@@ -213,9 +352,12 @@ theorem exists_sobolevSpace_of_hasWeakIteratedLineDerivOn {u : 𝔼 → ℝ}
   exact (ae_restrict_iff' Ω.isOpen.measurableSet).2 (h1.ae_eq (hg i))
 
 omit [Fact (1 ≤ p)] in
-/-- The weak derivative along `e_i` of a function of `W^{1,p}(Ω)` (in the predicate sense) lies
-in `L^p(Ω)`: `L^p` membership transfers along the almost everywhere uniqueness of weak
-derivatives. -/
+/-- Let $u : \mathbb{R}^N \to \mathbb{R}$ belong to $W^{1,p}(\Omega)$ in the sense of the backbone
+predicate `MemSobolevMultiIndex`, and let $g$ be a weak derivative of $u$ along $e_i$ on
+$\Omega$. Then $g \in L^p(\Omega)$.
+
+The weak derivative is unique almost everywhere, so the membership in $L^p(\Omega)$ of the weak
+derivative that the predicate provides passes to $g$. This holds for every exponent $p$. -/
 theorem memLp_of_memSobolevMultiIndex_of_hasWeakIteratedLineDerivOn {u g : 𝔼 → ℝ}
     (hu : MemSobolevMultiIndex 𝔟 u 1 p Ω volume) {i : Fin N}
     (hg : HasWeakIteratedLineDerivOn ![EuclideanSpace.single i 1] u g Ω volume) :
@@ -225,11 +367,15 @@ theorem memLp_of_memSobolevMultiIndex_of_hasWeakIteratedLineDerivOn {u g : 𝔼 
   rw [basisFun_toBasis_apply] at hperm
   exact hwp.ae_eq ((ae_restrict_iff' Ω.isOpen.measurableSet).2 ((hw.of_perm hperm).ae_eq hg))
 
-/-- **The Definition of `W^{1,p}(Ω)`**: a function `u : ℝ^N → ℝ` is (almost everywhere on `Ω`)
-the function of an element of `W^{1,p}(Ω)` if and only if `u ∈ L^p(Ω)` and there are
-`g_1, …, g_N ∈ L^p(Ω)` with `∫_Ω u ∂φ/∂x_i = −∫_Ω g_i φ` for every `φ ∈ C_c^∞(Ω)` and every `i`.
-(Footnote 2, that the `g_i` are unique almost everywhere, is `partialDeriv_spec` together with
-`HasWeakIteratedLineDerivOn.ae_eq`.) -/
+/-- **Section 9.1** of [brezis2011functional], definition of $W^{1,p}(\Omega)$. Let
+$1 \le p \le \infty$. A function $u : \mathbb{R}^N \to \mathbb{R}$ is, almost everywhere on
+$\Omega$, the function of an element of $W^{1,p}(\Omega)$ if and only if $u \in L^p(\Omega)$ and
+there are $g_1, \dots, g_N \in L^p(\Omega)$ with
+$$\int_\Omega u \frac{\partial \varphi}{\partial x_i} = -\int_\Omega g_i \varphi$$
+for every $\varphi \in C_c^\infty(\Omega)$ and every $i$.
+
+Footnote 2 of the source, that the $g_i$ are unique almost everywhere, follows from
+`Brezis.Chapter09.partialDeriv_spec` together with `HasWeakIteratedLineDerivOn.ae_eq`. -/
 theorem sobolevSpace_iff (u : 𝔼 → ℝ) :
     (∃ v : sobolevSpace N p Ω, SobolevMultiIndex.fn v =ᵐ[volume.restrict (Ω : Set 𝔼)] u) ↔
       MemLp u p (volume.restrict (Ω : Set 𝔼)) ∧ ∃ g : Fin N → 𝔼 → ℝ,
@@ -251,15 +397,20 @@ theorem sobolevSpace_iff (u : 𝔼 → ℝ) :
     exact ⟨v, hv⟩
 
 
-/-! ### Remark 1: `C_c^1` test functions -/
+/-! ### Remark 1: test functions of class $C_c^1$ -/
 
 omit [Fact (1 ≤ p)] in
-/-- **Remark 1.** In the definition of `W^{1,p}(Ω)` the test functions may be taken in `C_c^1(Ω)`
-instead of `C_c^∞(Ω)`: for `u ∈ W^{1,p}(Ω)` and `φ : ℝ^N → ℝ` of class `C^1` with compact
-support contained in `Ω`, `∫_Ω u ∂φ/∂x_i = −∫_Ω (∂u/∂x_i) φ` — the identity `partialDeriv_spec`
-for a `C_c^1` test function, the backbone's
-`HasWeakIteratedLineDerivOn.integral_smul_eq_of_contDiff_one` ("use a sequence of
-mollifiers"). `remark_9_1_iff` is the resulting equivalence of the two definitions. -/
+/-- **Remark 1** in Chapter 9 of [brezis2011functional]. In the definition of $W^{1,p}(\Omega)$ the
+test functions may be taken in $C_c^1(\Omega)$ instead of $C_c^\infty(\Omega)$. Let
+$u \in W^{1,p}(\Omega)$ and $i = 1, \dots, N$, and let $\varphi : \mathbb{R}^N \to \mathbb{R}$
+be of class $C^1$ with compact support contained in $\Omega$. Then
+$$\int_\Omega u \frac{\partial \varphi}{\partial x_i} = -\int_\Omega \frac{\partial u}{\partial
+  x_i} \varphi.$$
+
+This holds for every exponent $p$. The proof specializes
+`HasWeakIteratedLineDerivOn.integral_smul_eq_of_contDiff_one`, which uses a sequence of
+mollifiers as the source suggests. The resulting equivalence of the two definitions is
+`Brezis.Chapter09.remark_9_1_iff`. -/
 theorem remark_9_1 (u : sobolevSpace N p Ω) (i : Fin N) {φ : 𝔼 → ℝ} (hφ : ContDiff ℝ 1 φ)
     (hφc : HasCompactSupport φ) (hφΩ : tsupport φ ⊆ Ω) :
     ∫ x in (Ω : Set 𝔼), SobolevMultiIndex.fn u x * fderiv ℝ φ x (EuclideanSpace.single i 1)
@@ -272,12 +423,17 @@ theorem remark_9_1 (u : sobolevSpace N p Ω) (i : Fin N) {φ : 𝔼 → ℝ} (h�
   · congr 1
     exact setIntegral_congr_fun hs fun x _ ↦ by rw [smul_eq_mul, mul_comm]
 
-/-- **Remark 1, as the equivalence of the two definitions.** A function `u : ℝ^N → ℝ` is (almost
-everywhere on `Ω`) the function of an element of `W^{1,p}(Ω)` if and only if `u ∈ L^p(Ω)` and
-there are `g_1, …, g_N ∈ L^p(Ω)` with `∫_Ω u ∂φ/∂x_i = −∫_Ω g_i φ` for every `φ ∈ C_c^1(Ω)` and
-every `i` — the Definition of `W^{1,p}(Ω)` with `C_c^1(Ω)` in place of `C_c^∞(Ω)`
-(`sobolevSpace_iff`): every `C_c^∞(Ω)` function is `C_c^1`, and `remark_9_1` gives the
-identities for `C_c^1(Ω)` from those for `C_c^∞(Ω)`. -/
+/-- **Remark 1** in Chapter 9 of [brezis2011functional], the equivalence of the two definitions. Let
+$1 \le p \le \infty$. A function $u : \mathbb{R}^N \to \mathbb{R}$ is, almost everywhere on
+$\Omega$, the function of an element of $W^{1,p}(\Omega)$ if and only if $u \in L^p(\Omega)$ and
+there are $g_1, \dots, g_N \in L^p(\Omega)$ with
+$$\int_\Omega u \frac{\partial \varphi}{\partial x_i} = -\int_\Omega g_i \varphi$$
+for every $\varphi$ of class $C^1$ with compact support contained in $\Omega$ and every $i$.
+
+This is the definition of $W^{1,p}(\Omega)$ (`Brezis.Chapter09.sobolevSpace_iff`) with
+$C_c^1(\Omega)$ in place of $C_c^\infty(\Omega)$. Every function of $C_c^\infty(\Omega)$ is in
+$C_c^1(\Omega)$, and `Brezis.Chapter09.remark_9_1` gives the identities for $C_c^1(\Omega)$ from
+those for $C_c^\infty(\Omega)$. -/
 theorem remark_9_1_iff (u : 𝔼 → ℝ) :
     (∃ v : sobolevSpace N p Ω, SobolevMultiIndex.fn v =ᵐ[volume.restrict (Ω : Set 𝔼)] u) ↔
       MemLp u p (volume.restrict (Ω : Set 𝔼)) ∧ ∃ g : Fin N → 𝔼 → ℝ,
@@ -296,16 +452,24 @@ theorem remark_9_1_iff (u : 𝔼 → ℝ) :
     exact (sobolevSpace_iff u).2 ⟨hu, g, hgp, fun φ i ↦
       hg φ (φ.contDiff.of_le (by simp)) φ.hasCompactSupport φ.tsupport_subset i⟩
 
-/-! ### `H^1(Ω)` -/
+/-! ### The space $H^1(\Omega)$ -/
 
-/-- **The space `H^1(Ω) = W^{1,2}(Ω)`** of §9.1, a Hilbert space for the scalar product
-`(u, v)_{H^1} = ∫_Ω u v + ∑_i ∫_Ω ∂_i u ∂_i v` (`hInner`) and the norm
-`(‖u‖_2^2 + ∑ ‖∂_i u‖_2^2)^{1/2}` (`hNorm`), which are the inner product and the norm of the
-type. -/
+/-- **Section 9.1** of [brezis2011functional], definition of $H^1(\Omega)$. The space
+$H^1(\Omega) = W^{1,2}(\Omega)$, a Hilbert space for the scalar product
+$$(u, v)_{H^1} = \int_\Omega uv + \sum_{i=1}^N \int_\Omega \frac{\partial u}{\partial x_i}
+  \frac{\partial v}{\partial x_i}$$
+and the norm $\|u\|_{H^1} = (\|u\|_2^2 + \sum_i \|\partial u / \partial x_i\|_2^2)^{1/2}$.
+
+The scalar product and the norm are those of the type, by `Brezis.Chapter09.hInner` and
+`Brezis.Chapter09.hNorm`. -/
 noncomputable abbrev hSpace (N : ℕ) (Ω : Opens (EuclideanSpace ℝ (Fin N))) : Type :=
   sobolevSpace N 2 Ω
 
-/-- **The scalar product of `H^1(Ω)`**: `(u, v)_{H^1} = ∫_Ω u v + ∑_i ∫_Ω ∂_i u ∂_i v`. -/
+/-- **Section 9.1** of [brezis2011functional], the scalar product of $H^1(\Omega)$. For
+$u, v \in H^1(\Omega)$ the inner product of the type is
+$$(u, v)_{H^1} = \int_\Omega uv + \sum_{i=1}^N \int_\Omega \frac{\partial u}{\partial x_i}
+  \frac{\partial v}{\partial x_i}.$$
+-/
 theorem hInner (u v : hSpace N Ω) :
     inner ℝ u v = (∫ x in (Ω : Set 𝔼), SobolevMultiIndex.fn u x * SobolevMultiIndex.fn v x)
       + ∑ i, ∫ x in (Ω : Set 𝔼), partialDeriv u i x * partialDeriv v i x := by
@@ -314,45 +478,64 @@ theorem hInner (u v : hSpace N Ω) :
   simp only [Real.inner_apply, partialDeriv]
   rfl
 
-/-- **The norm of `H^1(Ω)`**: `‖u‖_{H^1} = (‖u‖_2^2 + ∑_i ‖∂_i u‖_2^2)^{1/2}`. -/
+/-- **Section 9.1** of [brezis2011functional], the norm of $H^1(\Omega)$. For $u \in H^1(\Omega)$
+the norm of the type is
+$$\|u\|_{H^1} = \Big(\|u\|_2^2 + \sum_{i=1}^N \Big\|\frac{\partial u}{\partial
+  x_i}\Big\|_2^2\Big)^{1/2}.$$
+
+Here $\|u\|_2$ is the norm of the component `SobolevMultiIndex.weakDeriv u 0` of $u$ at the
+multi-index $0$, which is $u$ as an element of $L^2(\Omega)$. -/
 theorem hNorm (u : hSpace N Ω) :
     ‖u‖ = √(‖SobolevMultiIndex.weakDeriv u 0‖ ^ 2 + ∑ i, ‖partialDeriv u i‖ ^ 2) := by
   rw [SobolevMultiIndex.norm_eq_sum (by simp), MultiIndexLE.sum_univ_one, Real.sqrt_eq_rpow]
   simp only [ENNReal.toReal_ofNat, Real.rpow_two, partialDeriv]
 
-/-! ### The norm `‖u‖_p + ∑ ‖∂_i u‖_p` -/
+/-! ### The norm $\|u\|_p + \sum_i \|\partial u / \partial x_i\|_p$ -/
 
-/-- **The norm the book equips `W^{1,p}(Ω)` with**: `‖u‖_{W^{1,p}} = ‖u‖_p + ∑_i ‖∂u/∂x_i‖_p`.
-It is a norm on the type (`bookNorm_add_le`, `bookNorm_smul`, `bookNorm_eq_zero_iff`), equivalent
-to the norm of the type, which is the book's "sometimes equivalent norm"
-`(‖u‖_p^p + ∑ ‖∂_i u‖_p^p)^{1/p}` (`bookNorm_equiv`). -/
+/-- **Section 9.1** of [brezis2011functional], the norm of $W^{1,p}(\Omega)$. For
+$u \in W^{1,p}(\Omega)$,
+$$\|u\|_{W^{1,p}} = \|u\|_p + \sum_{i=1}^N \Big\|\frac{\partial u}{\partial x_i}\Big\|_p.$$
+
+This is a norm on the type (`Brezis.Chapter09.bookNorm_add_le`,
+`Brezis.Chapter09.bookNorm_smul`, `Brezis.Chapter09.bookNorm_eq_zero_iff`). It is equivalent to
+the norm of the type (`Brezis.Chapter09.bookNorm_equiv`), which for $p < \infty$ is the norm
+$(\|u\|_p^p + \sum_i \|\partial u / \partial x_i\|_p^p)^{1/p}$ that the source also mentions. -/
 noncomputable def bookNorm (u : sobolevSpace N p Ω) : ℝ :=
   ‖SobolevMultiIndex.weakDeriv u 0‖ + ∑ i, ‖partialDeriv u i‖
 
 omit [Fact (1 ≤ p)] in
-/-- The book's norm is the sum of the `L^p` norms of all the weak derivatives of order `≤ 1`. -/
+/-- The norm $\|u\|_{W^{1,p}}$ of the source is the sum of the $L^p(\Omega)$ norms of all the weak
+derivatives $D^\alpha u$ of order $|\alpha| \le 1$. -/
 theorem bookNorm_eq_sum (u : sobolevSpace N p Ω) :
     bookNorm u = ∑ α, ‖SobolevMultiIndex.weakDeriv u α‖ :=
   (MultiIndexLE.sum_univ_one fun α ↦ ‖SobolevMultiIndex.weakDeriv u α‖).symm
 
-/-- The book's norm is nonnegative. -/
+/-- The norm $\|u\|_{W^{1,p}}$ of the source is nonnegative. -/
 theorem bookNorm_nonneg (u : sobolevSpace N p Ω) : 0 ≤ bookNorm u :=
   add_nonneg (norm_nonneg _) (Finset.sum_nonneg fun _ _ ↦ norm_nonneg _)
 
-/-- The book's norm is subadditive. -/
+/-- **Section 9.1** of [brezis2011functional], the triangle inequality for the norm of
+$W^{1,p}(\Omega)$: $\|u + v\|_{W^{1,p}} \le \|u\|_{W^{1,p}} + \|v\|_{W^{1,p}}$ for
+$u, v \in W^{1,p}(\Omega)$. -/
 theorem bookNorm_add_le (u v : sobolevSpace N p Ω) :
     bookNorm (u + v) ≤ bookNorm u + bookNorm v := by
   simp only [bookNorm_eq_sum, SobolevMultiIndex.weakDeriv_add, ← Finset.sum_add_distrib]
   exact Finset.sum_le_sum fun α _ ↦ norm_add_le _ _
 
-/-- The book's norm is homogeneous. -/
+/-- **Section 9.1** of [brezis2011functional], the homogeneity of the norm of $W^{1,p}(\Omega)$:
+$\|cu\|_{W^{1,p}} = |c| \, \|u\|_{W^{1,p}}$ for $c \in \mathbb{R}$ and $u \in W^{1,p}(\Omega)$. -/
 theorem bookNorm_smul (c : ℝ) (u : sobolevSpace N p Ω) : bookNorm (c • u) = |c| * bookNorm u := by
   simp only [bookNorm_eq_sum, SobolevMultiIndex.weakDeriv_smul, norm_smul, Real.norm_eq_abs,
     Finset.mul_sum]
 
-/-- **The two norms of `W^{1,p}(Ω)` are equivalent**: `‖u‖ ≤ ‖u‖_{W^{1,p}} ≤ (N + 1) ‖u‖`, where
-`‖u‖` is the norm of the type, `(‖u‖_p^p + ∑ ‖∂_i u‖_p^p)^{1/p}` — the `ℓ^p` and `ℓ^1` norms of
-the `N + 1` numbers `‖u‖_p, ‖∂_1 u‖_p, …, ‖∂_N u‖_p`. -/
+/-- **Section 9.1** of [brezis2011functional], the equivalence of the two norms of
+$W^{1,p}(\Omega)$. Let $1 \le p \le \infty$ and $u \in W^{1,p}(\Omega)$. Then
+$$\|u\| \le \|u\|_{W^{1,p}} \le (N + 1) \|u\|,$$
+where $\|u\|$ is the norm of the type.
+
+The norm of the type is the $\ell^p$ norm, and $\|u\|_{W^{1,p}}$ is the $\ell^1$ norm, of the
+$N + 1$ numbers $\|u\|_p, \|\partial u / \partial x_1\|_p, \dots, \|\partial u / \partial
+x_N\|_p$. -/
 theorem bookNorm_equiv (u : sobolevSpace N p Ω) :
     ‖u‖ ≤ bookNorm u ∧ bookNorm u ≤ (N + 1) * ‖u‖ := by
   refine ⟨bookNorm_eq_sum u ▸ SobolevMultiIndex.norm_le_sum_norm_weakDeriv u, ?_⟩
@@ -364,7 +547,8 @@ theorem bookNorm_equiv (u : sobolevSpace N p Ω) :
         simp only [Finset.sum_const, Finset.card_univ, Fintype.card_fin, nsmul_eq_mul]
         ring
 
-/-- The book's norm vanishes only at `0`. -/
+/-- **Section 9.1** of [brezis2011functional], the definiteness of the norm of $W^{1,p}(\Omega)$:
+$\|u\|_{W^{1,p}} = 0$ if and only if $u = 0$. -/
 theorem bookNorm_eq_zero_iff (u : sobolevSpace N p Ω) : bookNorm u = 0 ↔ u = 0 := by
   constructor
   · intro h
@@ -375,35 +559,44 @@ theorem bookNorm_eq_zero_iff (u : sobolevSpace N p Ω) : bookNorm u = 0 ↔ u = 
 
 /-! ### Proposition 9.1 -/
 
-/-- **Proposition 9.1, first clause**: `W^{1,p}(Ω)` is a Banach space for every `1 ≤ p ≤ ∞`. -/
+/-- **Proposition 9.1** of [brezis2011functional], first clause. For $1 \le p \le \infty$ the space
+$W^{1,p}(\Omega)$ is a Banach space. -/
 theorem proposition_9_1_banach : CompleteSpace (sobolevSpace N p Ω) :=
   inferInstance
 
-/-- **Proposition 9.1, second clause**: `W^{1,p}(Ω)` is reflexive for `1 < p < ∞`, in the
-sense of chapter 3's Definition (`Brezis.Chapter03.IsReflexive`), through the reflexivity of
-`L^p(Ω)` (Theorem 4.10). -/
+/-- **Proposition 9.1** of [brezis2011functional], second clause. For $1 < p < \infty$ the space
+$W^{1,p}(\Omega)$ is reflexive.
+
+Reflexivity is the definition of Section 3.5 of the source, `Brezis.Chapter03.IsReflexive`. The
+proof uses the reflexivity of $L^p(\Omega)$ (Theorem 4.10 of the source). -/
 theorem proposition_9_1_reflexive (hp : 1 < p) (hp' : p ≠ ⊤) :
     Chapter03.IsReflexive (sobolevSpace N p Ω) := by
   have := Chapter04.theorem_4_10 (μ := volume.restrict (Ω : Set 𝔼)) hp hp'
   exact Chapter03.isReflexive_iff.2 inferInstance
 
-/-- **Proposition 9.1, third clause**: `W^{1,p}(Ω)` is separable for `1 ≤ p < ∞`, in the sense
-of chapter 3's Definition (`Brezis.Chapter03.IsSeparable`). -/
+/-- **Proposition 9.1** of [brezis2011functional], third clause. For $1 \le p < \infty$ the space
+$W^{1,p}(\Omega)$ is separable.
+
+Separability is the definition of Section 3.6 of the source, `Brezis.Chapter03.IsSeparable`. -/
 theorem proposition_9_1_separable (hp' : p ≠ ⊤) : Chapter03.IsSeparable (sobolevSpace N p Ω) := by
   have := Fact.mk hp'
   exact (Chapter03.separable_iff _).2 inferInstance
 
-/-- **Proposition 9.1, last clause**: `H^1(Ω)` is a separable Hilbert space — its inner product
-is the instance of the type (`hInner`), and it is complete and separable. -/
+/-- **Proposition 9.1** of [brezis2011functional], last clause. The space $H^1(\Omega)$ is a
+separable Hilbert space: it is complete and separable, and its inner product is the instance of
+the type, which is the scalar product of the source by `Brezis.Chapter09.hInner`. -/
 theorem proposition_9_1_hilbert :
     CompleteSpace (hSpace N Ω) ∧ Chapter03.IsSeparable (hSpace N Ω) :=
   ⟨proposition_9_1_banach, proposition_9_1_separable (by simp)⟩
 
-/-- **Proposition 9.1.** `W^{1,p}(Ω)` is a Banach space for every `1 ≤ p ≤ ∞`; it is reflexive
-for `1 < p < ∞` and separable for `1 ≤ p < ∞`; `H^1(Ω)` is a separable Hilbert space. The
-proof is the backbone's: `W^{1,p}(Ω)` is a closed subspace of the `ℓ^p` product of `N + 1` copies
-of `L^p(Ω)`, the operator `T u = [u, ∇u]` of the book's proof of Proposition 8.1 being the
-inclusion. -/
+/-- **Proposition 9.1** of [brezis2011functional]. Let $1 \le p \le \infty$. The space
+$W^{1,p}(\Omega)$ is a Banach space. It is reflexive for $1 < p < \infty$ and separable for
+$1 \le p < \infty$. The space $H^1(\Omega)$ is a separable Hilbert space.
+
+Reflexivity and separability are `Brezis.Chapter03.IsReflexive` and
+`Brezis.Chapter03.IsSeparable`. The proof is that of the backbone: $W^{1,p}(\Omega)$ is a closed
+subspace of the $\ell^p$ product of $N + 1$ copies of $L^p(\Omega)$, and the operator
+$Tu = [u, \nabla u]$ of the proof of Proposition 8.1 in the source is the inclusion. -/
 theorem proposition_9_1 :
     CompleteSpace (sobolevSpace N p Ω) ∧
     (1 < p → p ≠ ⊤ → Chapter03.IsReflexive (sobolevSpace N p Ω)) ∧
@@ -415,15 +608,16 @@ theorem proposition_9_1 :
 /-! ### The tensor gradient -/
 
 omit [Fact (1 ≤ p)] in
-/-- The gradient of `u ∈ W^{1,p}(Ω)` is almost everywhere strongly measurable on `Ω`. -/
+/-- The gradient of $u \in W^{1,p}(\Omega)$ is almost everywhere strongly measurable on $\Omega$. -/
 theorem aestronglyMeasurable_gradient (u : sobolevSpace N p Ω) :
     AEStronglyMeasurable (gradient u) (volume.restrict (Ω : Set 𝔼)) :=
   (PiLp.continuous_toLp 2 _).comp_aestronglyMeasurable
     (aemeasurable_pi_iff.2 fun i ↦
       (Lp.aestronglyMeasurable (partialDeriv u i)).aemeasurable).aestronglyMeasurable
 
-/-- A continuous linear functional on `ℝ^N` is the inner product with the vector of its values on
-the standard basis, and its norm is the Euclidean norm of that vector. -/
+/-- A continuous linear functional $L$ on $\mathbb{R}^N$ has the norm
+$\|L\| = |(L e_1, \dots, L e_N)|$, the Euclidean norm of the vector of its values on the
+standard basis. -/
 theorem norm_eq_norm_toLp_apply_single (L : 𝔼 →L[ℝ] ℝ) :
     ‖L‖ = ‖(WithLp.toLp 2 fun i ↦ L (EuclideanSpace.single i 1) : 𝔼)‖ := by
   have h : L = innerSL ℝ (E := 𝔼) (WithLp.toLp 2 fun i ↦ L (EuclideanSpace.single i 1)) := by
@@ -432,10 +626,15 @@ theorem norm_eq_norm_toLp_apply_single (L : 𝔼 →L[ℝ] ℝ) :
   conv_lhs => rw [h]
   exact innerSL_apply_norm (𝕜 := ℝ) (E := 𝔼) _
 
-/-- **The tensor weak derivative of `u ∈ W^{1,p}(Ω)`**: a first-order weak derivative
-`w : ℝ^N → (ℝ^N →L[ℝ] ℝ)` of `u` on `Ω`, in `L^p(Ω)`, whose values on the basis vectors are the
-partial derivatives `∂u/∂x_i`, whose operator norm is the Euclidean norm `|∇u|` of the gradient
-almost everywhere on `Ω`, and whose `L^p(Ω)` norm is therefore `‖∇u‖_{L^p(Ω)}`. -/
+/-- Let $u \in W^{1,p}(\Omega)$. There is a first-order weak derivative $w : \mathbb{R}^N \to
+\mathcal{L}(\mathbb{R}^N, \mathbb{R})$ of $u$ on $\Omega$ such that $w \in L^p(\Omega)$,
+$w(x) e_i = \partial u / \partial x_i (x)$ almost everywhere on $\Omega$ for each $i$,
+$\|w(x)\| = |\nabla u(x)|$ almost everywhere on $\Omega$, and
+$$\|w\|_{L^p(\Omega)} = \|\nabla u\|_{L^p(\Omega)}.$$
+
+The weak derivative is in the sense of `HasWeakFDerivOn`, with the operator norm on
+$\mathcal{L}(\mathbb{R}^N, \mathbb{R})$. This connects the partial derivatives of the source to
+the backbone theorems, which are stated for this derivative. -/
 theorem exists_hasWeakFDerivOn_fn_gradient (u : sobolevSpace N p Ω) :
     ∃ w : 𝔼 → 𝔼 →L[ℝ] ℝ, HasWeakFDerivOn (SobolevMultiIndex.fn u) w Ω volume ∧
       MemLp w p (volume.restrict (Ω : Set 𝔼)) ∧
@@ -457,19 +656,24 @@ theorem exists_hasWeakFDerivOn_fn_gradient (u : sobolevSpace N p Ω) :
   refine ⟨w, hw, hwp, hwi', hnorm, ?_⟩
   exact eLpNorm_congr_norm_ae hwp.aestronglyMeasurable (aestronglyMeasurable_gradient u) hnorm
 
-/-- The gradient of `u ∈ W^{1,p}(Ω)` lies in `L^p(Ω)`. -/
+/-- The gradient of $u \in W^{1,p}(\Omega)$ lies in $L^p(\Omega)$. -/
 theorem memLp_gradient (u : sobolevSpace N p Ω) :
     MemLp (gradient u) p (volume.restrict (Ω : Set 𝔼)) := by
   obtain ⟨w, -, hwp, -, -, heq⟩ := exists_hasWeakFDerivOn_fn_gradient u
   rw [memLp_iff, ← heq]
   exact hwp
 
-/-! ### Remark 2: `C^1` functions -/
+/-! ### Remark 2: functions of class $C^1$ -/
 
-/-- **Remark 2, first part.** If `u ∈ C^1(Ω) ∩ L^p(Ω)` and its classical partial derivatives
-`∂u/∂x_i = ∂_{e_i} u` lie in `L^p(Ω)`, then `u` is (almost everywhere on `Ω`) the function of an
-element of `W^{1,p}(Ω)`, whose weak partial derivatives are the classical ones: the notation is
-consistent. -/
+/-- **Remark 2** in Chapter 9 of [brezis2011functional], first part. Let $1 \le p \le \infty$ and
+let $u \in C^1(\Omega) \cap L^p(\Omega)$ be such that its classical partial derivatives
+$\partial u / \partial x_i$ lie in $L^p(\Omega)$ for $i = 1, \dots, N$. Then $u$ is, almost
+everywhere on $\Omega$, the function of an element $v$ of $W^{1,p}(\Omega)$, and the weak
+partial derivatives of $v$ are the classical partial derivatives of $u$ almost everywhere on
+$\Omega$. So the notation is consistent.
+
+The space $C^1(\Omega)$ is `ContDiffOn ℝ 1 u Ω`, and the classical partial derivative is
+`fderiv ℝ u x (EuclideanSpace.single i 1)`. -/
 theorem remark_9_2 {u : 𝔼 → ℝ} (hu : ContDiffOn ℝ 1 u Ω) (hup : MemLp u p (volume.restrict Ω))
     (hd : ∀ i, MemLp (fun x ↦ fderiv ℝ u x (EuclideanSpace.single i 1)) p (volume.restrict Ω)) :
     ∃ v : sobolevSpace N p Ω, SobolevMultiIndex.fn v =ᵐ[volume.restrict (Ω : Set 𝔼)] u ∧
@@ -480,9 +684,16 @@ theorem remark_9_2 {u : 𝔼 → ℝ} (hu : ContDiffOn ℝ 1 u Ω) (hup : MemLp 
     ![EuclideanSpace.single i 1]
   simpa [iteratedFDeriv_one_apply] using h
 
-/-- **Remark 2, "in particular"**: if `Ω` is bounded, every `u ∈ C^1(Ω̄)` (here: of class `C^1`
-on `closure Ω`) is the function of an element of `W^{1,p}(Ω)`, for every `1 ≤ p ≤ ∞`: `u` and
-its derivative are bounded on `Ω`, and `Ω` has finite measure. -/
+/-- **Remark 2** in Chapter 9 of [brezis2011functional], "in particular". Let $\Omega$ be bounded
+and $1 \le p \le \infty$. Every $u \in C^1(\bar\Omega)$ is, almost everywhere on $\Omega$, the
+function of an element of $W^{1,p}(\Omega)$.
+
+**Reading.** The space $C^1(\bar\Omega)$ is read as the functions
+$u : \mathbb{R}^N \to \mathbb{R}$ that are of class $C^1$ on $\bar\Omega$ in the sense of
+`ContDiffOn ℝ 1 u (closure Ω)`.
+
+The function $u$ and its derivative are bounded on $\Omega$, and $\Omega$ has finite measure, so
+$u$ and its partial derivatives lie in $L^p(\Omega)$. -/
 theorem remark_9_2_closure (hΩ : Bornology.IsBounded (Ω : Set 𝔼)) {u : 𝔼 → ℝ}
     (hu : ContDiffOn ℝ 1 u (closure Ω)) :
     ∃ v : sobolevSpace N p Ω, SobolevMultiIndex.fn v =ᵐ[volume.restrict (Ω : Set 𝔼)] u := by
@@ -511,9 +722,12 @@ theorem remark_9_2_closure (hΩ : Bornology.IsBounded (Ω : Set 𝔼)) {u : 𝔼
   obtain ⟨v, hv, -⟩ := remark_9_2 hu' hup hd
   exact ⟨v, hv⟩
 
-/-- **Remark 2, converse.** If `u ∈ W^{1,p}(Ω)` and each weak partial derivative `∂u/∂x_i` has
-a representative `g_i` continuous on `Ω`, then `u ∈ C^1(Ω)`: more precisely, there is
-`ũ ∈ C^1(Ω)` with `u = ũ` almost everywhere on `Ω`, whose partial derivatives are the `g_i`. -/
+/-- **Remark 2** in Chapter 9 of [brezis2011functional], converse. Let $1 \le p \le \infty$ and
+$u \in W^{1,p}(\Omega)$, and let $g_1, \dots, g_N$ be continuous on $\Omega$ with
+$\partial u / \partial x_i = g_i$ almost everywhere on $\Omega$ for each $i$. Then
+$u \in C^1(\Omega)$: there is a function $\tilde u$ of class $C^1$ on $\Omega$ with
+$u = \tilde u$ almost everywhere on $\Omega$ and $\partial \tilde u / \partial x_i (x) = g_i(x)$
+for every $x \in \Omega$ and every $i$. -/
 theorem remark_9_2_converse (u : sobolevSpace N p Ω) {g : Fin N → 𝔼 → ℝ}
     (hg : ∀ i, ContinuousOn (g i) Ω)
     (hgu : ∀ i, partialDeriv u i =ᵐ[volume.restrict (Ω : Set 𝔼)] g i) :
@@ -541,18 +755,22 @@ theorem remark_9_2_converse (u : sobolevSpace N p Ω) {g : Fin N → 𝔼 → �
   exact ⟨ũ, hũ, hu, fun x hx i ↦ by rw [(hd x hx).fderiv, hWi]⟩
 
 
-/-! ### Convergence in `W^{1,p}(Ω)` -/
+/-! ### Convergence in $W^{1,p}(\Omega)$ -/
 
-/-- The `L^p(Ω)` distance between the function of `u ∈ W^{1,p}(Ω)` and `f ∈ L^p(Ω)` is the
-distance of the elements of `L^p(Ω)`. -/
+/-- For $u \in W^{1,p}(\Omega)$ and $f \in L^p(\Omega)$, the $L^p(\Omega)$ norm of the difference of
+the function of $u$ and $f$ is the distance in $L^p(\Omega)$ of $u$, as an element of
+$L^p(\Omega)$, and $f$.
+
+The element of $L^p(\Omega)$ is the image of $u$ under the inclusion `SobolevMultiIndex.fnL`,
+and the norm is `eLpNorm`, an extended real. -/
 theorem eLpNorm_fn_sub_eq (u : sobolevSpace N p Ω) (f : Lp ℝ p (volume.restrict (Ω : Set 𝔼))) :
     eLpNorm (SobolevMultiIndex.fn u - ⇑f) p (volume.restrict (Ω : Set 𝔼))
       = ENNReal.ofReal ‖SobolevMultiIndex.fnL ℝ 𝔟 1 p Ω volume u - f‖ := by
   rw [Lp.norm_def, ENNReal.ofReal_toReal (Lp.eLpNorm_ne_top _),
     eLpNorm_congr_ae (Lp.coeFn_sub _ _), SobolevMultiIndex.fnL_apply]
 
-/-- Convergence in `W^{1,p}(Ω)` implies convergence of the functions in `L^p(Ω)`, in the
-`eLpNorm` form. -/
+/-- Let $u_n \in W^{1,p}(\Omega)$ and $f \in L^p(\Omega)$. If $u_n \to f$ in $L^p(\Omega)$, then
+$\|u_n - f\|_{L^p(\Omega)} \to 0$ for the functions of the $u_n$, with the norm `eLpNorm`. -/
 theorem tendsto_eLpNorm_fn_sub_of_tendsto {u : ℕ → sobolevSpace N p Ω}
     {f : Lp ℝ p (volume.restrict (Ω : Set 𝔼))}
     (hf : Tendsto (fun n ↦ SobolevMultiIndex.fnL ℝ 𝔟 1 p Ω volume (u n)) atTop (𝓝 f)) :
@@ -562,10 +780,14 @@ theorem tendsto_eLpNorm_fn_sub_of_tendsto {u : ℕ → sobolevSpace N p Ω}
   rw [← ENNReal.ofReal_zero]
   exact ENNReal.tendsto_ofReal (tendsto_iff_norm_sub_tendsto_zero.1 hf)
 
-/-- **Convergence in `W^{1,p}(Ω)` from convergence of the tensor Sobolev norms**: if
-`fn (w n) = v n` almost everywhere on `Ω` and `sobolevNorm (v n − fn u) → 0`, then `w n → u` in
-`W^{1,p}(Ω)`, by the comparison `SobolevMultiIndex.ofReal_norm_le_sobolevNorm` of the two
-norms. -/
+/-- Let $1 \le p < \infty$, let $w_n, u \in W^{1,p}(\Omega)$, and let
+$v_n : \mathbb{R}^N \to \mathbb{R}$ be such that the function of $w_n$ equals $v_n$ almost
+everywhere on $\Omega$. If the Sobolev norm of $v_n - u$ in the backbone formulation
+`sobolevNorm` tends to $0$, then $w_n \to u$ in $W^{1,p}(\Omega)$.
+
+The backbone norm $\operatorname{sobolevNorm} f = (\|f\|_p^p + \|Df\|_p^p)^{1/p}$ measures the
+weak derivative $Df$ as a field of linear maps. The proof compares the two norms by
+`SobolevMultiIndex.ofReal_norm_le_sobolevNorm`. -/
 theorem tendsto_of_tendsto_sobolevNorm (hp' : p ≠ ⊤) {w : ℕ → sobolevSpace N p Ω}
     {u : sobolevSpace N p Ω} {v : ℕ → 𝔼 → ℝ}
     (hw : ∀ n, SobolevMultiIndex.fn (w n) =ᵐ[volume.restrict (Ω : Set 𝔼)] v n)
@@ -599,11 +821,15 @@ theorem tendsto_of_tendsto_sobolevNorm (hp' : p ≠ ⊤) {w : ℕ → sobolevSpa
 
 /-! ### Remark 4 -/
 
-/-- **Remark 4 (i), first sentence.** If `u_n ∈ W^{1,p}(Ω)`, `u_n → f` in `L^p(Ω)` and
-`∇u_n` converges in `(L^p(Ω))^N`, to `(g_1, …, g_N)`, then `f ∈ W^{1,p}(Ω)` — it is the function of
-an element `v` with `∂v/∂x_i = g_i` — and `‖u_n − v‖_{W^{1,p}} → 0`. This is the closedness of
-`W^{1,p}(Ω)` in the product of `N + 1` copies of `L^p(Ω)`, the argument of the proof of
-Proposition 9.1. -/
+/-- **Remark 4(i)** in Chapter 9 of [brezis2011functional], first sentence. Let
+$1 \le p \le \infty$, let $u_n \in W^{1,p}(\Omega)$, and let
+$f, g_1, \dots, g_N \in L^p(\Omega)$. If $u_n \to f$ in $L^p(\Omega)$ and
+$\partial u_n / \partial x_i \to g_i$ in $L^p(\Omega)$ for each $i$, then there is
+$v \in W^{1,p}(\Omega)$ with $v = f$ in $L^p(\Omega)$ and $\partial v / \partial x_i = g_i$ for
+each $i$, and $u_n \to v$ in $W^{1,p}(\Omega)$.
+
+This is the closedness of $W^{1,p}(\Omega)$ in the product of $N + 1$ copies of $L^p(\Omega)$,
+the argument of the proof of Proposition 9.1. -/
 theorem remark_9_4_i {u : ℕ → sobolevSpace N p Ω} {f : Lp ℝ p (volume.restrict (Ω : Set 𝔼))}
     {g : Fin N → Lp ℝ p (volume.restrict (Ω : Set 𝔼))}
     (hf : Tendsto (fun n ↦ SobolevMultiIndex.fnL ℝ 𝔟 1 p Ω volume (u n)) atTop (𝓝 f))
@@ -643,10 +869,15 @@ theorem remark_9_4_i {u : ℕ → sobolevSpace N p Ω} {f : Lp ℝ p (volume.res
     exact hF0
   · exact hFi i
 
-/-- **Remark 4 (i), second sentence.** When `1 < p ≤ ∞` it suffices to know that `u_n → f` in
-`L^p(Ω)` and that `(∇u_n)` is bounded in `(L^p(Ω))^N` to conclude that `f ∈ W^{1,p}(Ω)`: the
-bound (ii) of Proposition 9.3 for the `u_n` passes to the limit and (ii) ⇒ (i) applies (the
-book's "why?"). Here `q` is the conjugate exponent of `p`, and `1 < p` makes `q < ∞`. -/
+/-- **Remark 4(i)** in Chapter 9 of [brezis2011functional], second sentence. Let $1 < p \le \infty$,
+let $u_n \in W^{1,p}(\Omega)$ and $f \in L^p(\Omega)$. If $u_n \to f$ in $L^p(\Omega)$ and
+$(\nabla u_n)$ is bounded in $L^p(\Omega)^N$, that is, there is $M$ with
+$\|\partial u_n / \partial x_i\|_p \le M$ for all $n$ and $i$, then $f \in W^{1,p}(\Omega)$:
+there is $v \in W^{1,p}(\Omega)$ with $v = f$ in $L^p(\Omega)$.
+
+The proof answers the question "why?" of the source: the bound (ii) of Proposition 9.3 for the
+$u_n$ passes to the limit, and (ii) ⇒ (i) applies. The conjugate exponent $p'$ is `q`, and
+$p > 1$ makes $p' < \infty$. -/
 theorem remark_9_4_i_bounded {q : ℝ≥0∞} [p.HolderConjugate q] (hp : 1 < p)
     {u : ℕ → sobolevSpace N p Ω} {f : Lp ℝ p (volume.restrict (Ω : Set 𝔼))}
     (hf : Tendsto (fun n ↦ SobolevMultiIndex.fnL ℝ 𝔟 1 p Ω volume (u n)) atTop (𝓝 f))
@@ -680,11 +911,18 @@ theorem remark_9_4_i_bounded {q : ℝ≥0∞} [p.HolderConjugate q] (hp : 1 < p)
   rw [SobolevMultiIndex.fnL_apply]
   exact hv
 
-/-- **Remark 4 (ii), general form (the remark's last sentence).** Let `u ∈ W^{1,p}(Ω)` and let
-`α` be smooth and bounded with bounded gradient, with `supp α ⊆ ℝ^N ∖ ∂Ω` (the backbone's
-`IsSobolevCutoff Ω α`, with `C^∞` in place of the book's `C^1`). Then the extension by zero
-`\overline{α u}` of `α u` outside `Ω` lies in `W^{1,p}(ℝ^N)`, with
-`∂_i \overline{α u} = \overline{α ∂_i u + (∂_i α) u}`. -/
+/-- **Remark 4(ii)** in Chapter 9 of [brezis2011functional], last sentence. Let $1 \le p \le \infty$
+and $u \in W^{1,p}(\Omega)$, and let $\alpha : \mathbb{R}^N \to \mathbb{R}$ be of class
+$C^\infty$, bounded with bounded derivative, with $\operatorname{supp} \alpha \subseteq
+\mathbb{R}^N \setminus \partial\Omega$. Then the extension by zero $\overline{\alpha u}$ of
+$\alpha u$ outside $\Omega$ lies in $W^{1,p}(\mathbb{R}^N)$, with
+$$\frac{\partial}{\partial x_i} \overline{\alpha u} = \overline{\alpha \frac{\partial
+  u}{\partial x_i} + \frac{\partial \alpha}{\partial x_i} u}$$
+almost everywhere, for each $i$.
+
+The hypothesis on $\alpha$ is the backbone's `IsSobolevCutoff Ω α`. The source asks for $\alpha
+\in C^1(\mathbb{R}^N) \cap L^\infty(\mathbb{R}^N)$ with $\nabla\alpha \in L^\infty$; the case of
+an $\alpha$ of class $C^1$ that is not of class $C^\infty$ is not formalized. -/
 theorem remark_9_4_ii_cutoff (u : sobolevSpace N p Ω) {α : 𝔼 → ℝ} (hα : IsSobolevCutoff Ω α) :
     ∃ v : sobolevSpace N p ⊤,
       SobolevMultiIndex.fn v =ᵐ[volume]
@@ -704,10 +942,17 @@ theorem remark_9_4_ii_cutoff (u : sobolevSpace N p Ω) {α : 𝔼 → ℝ} (hα 
   exact ⟨v, eventuallyEq_restrict_coe_top_iff.1 hv,
     fun i ↦ eventuallyEq_restrict_coe_top_iff.1 (hvi i)⟩
 
-/-- **Remark 4 (ii).** Let `u ∈ W^{1,p}(Ω)` and let `α` be smooth with compact support in `Ω`
-(the book's `α ∈ C_c^1(Ω)`, with `C^∞` in place of `C^1`). Then the extension by zero
-`\overline{α u}` of `α u` outside `Ω` lies in `W^{1,p}(ℝ^N)`, with
-`∂_i \overline{α u} = \overline{α ∂_i u + (∂_i α) u}`. -/
+/-- **Remark 4(ii)** in Chapter 9 of [brezis2011functional]. Let $1 \le p \le \infty$ and
+$u \in W^{1,p}(\Omega)$, and let $\alpha : \mathbb{R}^N \to \mathbb{R}$ be of class $C^\infty$
+with compact support contained in $\Omega$. Then the extension by zero $\overline{\alpha u}$ of
+$\alpha u$ outside $\Omega$ lies in $W^{1,p}(\mathbb{R}^N)$, with
+$$\frac{\partial}{\partial x_i} \overline{\alpha u} = \overline{\alpha \frac{\partial
+  u}{\partial x_i} + \frac{\partial \alpha}{\partial x_i} u}$$
+almost everywhere, for each $i$.
+
+The source asks for $\alpha \in C_c^1(\Omega)$; the case of an $\alpha$ of class $C^1$ that is
+not of class $C^\infty$ is not formalized. The proof specializes
+`Brezis.Chapter09.remark_9_4_ii_cutoff`. -/
 theorem remark_9_4_ii (u : sobolevSpace N p Ω) {α : 𝔼 → ℝ} (hα : ContDiff ℝ ∞ α)
     (hαc : HasCompactSupport α) (hαΩ : tsupport α ⊆ Ω) :
     ∃ v : sobolevSpace N p ⊤,
@@ -720,23 +965,32 @@ theorem remark_9_4_ii (u : sobolevSpace N p Ω) {α : 𝔼 → ℝ} (hα : ContD
 
 /-! ### Strong inclusion, and Friedrichs' theorem -/
 
-/-- **The Definition of `ω ⊂⊂ Ω`**: an open set `ω` is *strongly included* in `Ω` if `ω̄ ⊆ Ω`
-and `ω̄` is compact (footnote 4: the closure is taken in `ℝ^N`). -/
+/-- **Section 9.1** of [brezis2011functional], definition of strong inclusion. An open set $\omega$
+is **strongly included** in $\Omega$, written $\omega \subset\subset \Omega$, if
+$\bar\omega \subseteq \Omega$ and $\bar\omega$ is compact.
+
+As in footnote 4 of the source, the closure is taken in $\mathbb{R}^N$. The definition includes
+the condition that $\omega$ is open. -/
 def IsStronglyIncluded (V Ω : Set 𝔼) : Prop :=
   IsOpen V ∧ closure V ⊆ Ω ∧ IsCompact (closure V)
 
 @[inherit_doc] scoped[Brezis] infixl:50 " ⊂⊂ " => Brezis.Chapter09.IsStronglyIncluded
 
-/-- A strongly included set is a subset. -/
+/-- If $\omega \subset\subset \Omega$, then $\omega \subseteq \Omega$. -/
 theorem IsStronglyIncluded.subset {V Ω : Set 𝔼} (h : IsStronglyIncluded V Ω) : V ⊆ Ω :=
   subset_closure.trans h.2.1
 
-/-- **Theorem 9.2 (Friedrichs).** Let `u ∈ W^{1,p}(Ω)` with `1 ≤ p < ∞`. Then there is a
-sequence `(u_n)` from `C_c^∞(ℝ^N)` such that `u_n|_Ω → u` in `L^p(Ω)` and
-`∇u_n|_ω → ∇u|_ω` in `L^p(ω)^N` for every `ω ⊂⊂ Ω` — component by component, for every `i`.
-The backbone theorem `MemSobolev.exists_seq_contDiff_hasCompactSupport_tendsto` is stated with
-the tensor gradient, of which the partial derivatives are the values on the basis vectors
-(`exists_hasWeakFDerivOn_fn_gradient`). -/
+/-- **Theorem 9.2** of [brezis2011functional] (Friedrichs). Let $1 \le p < \infty$ and
+$u \in W^{1,p}(\Omega)$. Then there is a sequence $(u_n)$ of functions of
+$C_c^\infty(\mathbb{R}^N)$ such that $u_n|_\Omega \to u$ in $L^p(\Omega)$ and
+$\nabla u_n|_\omega \to \nabla u|_\omega$ in $L^p(\omega)^N$ for every
+$\omega \subset\subset \Omega$, that is,
+$$\Big\|\frac{\partial u_n}{\partial x_i} - \frac{\partial u}{\partial x_i}\Big\|_{L^p(\omega)}
+  \to 0 \qquad \text{for every } \omega \subset\subset \Omega \text{ and every } i.$$
+
+The proof specializes `MemSobolev.exists_seq_contDiff_hasCompactSupport_tendsto`, which is
+stated for the derivative as a field of linear maps; its values on the basis vectors are the
+partial derivatives (`Brezis.Chapter09.exists_hasWeakFDerivOn_fn_gradient`). -/
 theorem theorem_9_2 (hp' : p ≠ ⊤) (u : sobolevSpace N p Ω) :
     ∃ v : ℕ → 𝔼 → ℝ, (∀ n, ContDiff ℝ ∞ (v n)) ∧ (∀ n, HasCompactSupport (v n)) ∧
       Tendsto (fun n ↦ eLpNorm (v n - SobolevMultiIndex.fn u) p (volume.restrict (Ω : Set 𝔼)))
@@ -774,10 +1028,11 @@ theorem theorem_9_2 (hp' : p ≠ ⊤) (u : sobolevSpace N p Ω) :
         simpa using L.le_opNorm (EuclideanSpace.single i (1 : ℝ) : 𝔼)
     _ = eLpNorm (fun x ↦ fderiv ℝ (v n) x - w x) p (volume.restrict V) := one_mul _
 
-/-- **Theorem 9.2, the case `Ω = ℝ^N`.** For `u ∈ W^{1,p}(ℝ^N)`, `1 ≤ p < ∞`, there is a
-sequence `(u_n)` from `C_c^∞(ℝ^N)` with `u_n → u` in `L^p(ℝ^N)` and `∇u_n → ∇u` in
-`L^p(ℝ^N)^N`, that is, `u_n → u` in `W^{1,p}(ℝ^N)`: the elements `w n` of `W^{1,p}(ℝ^N)` whose
-functions are the `u_n` converge to `u`. -/
+/-- **Theorem 9.2** of [brezis2011functional], the case $\Omega = \mathbb{R}^N$. Let
+$1 \le p < \infty$ and $u \in W^{1,p}(\mathbb{R}^N)$. Then there is a sequence $(u_n)$ of
+functions of $C_c^\infty(\mathbb{R}^N)$ with $u_n \to u$ in $W^{1,p}(\mathbb{R}^N)$: there are
+elements $w_n \in W^{1,p}(\mathbb{R}^N)$ whose functions equal $u_n$ almost everywhere, and
+$w_n \to u$. -/
 theorem theorem_9_2_univ (hp' : p ≠ ⊤) (u : sobolevSpace N p ⊤) :
     ∃ v : ℕ → 𝔼 → ℝ, (∀ n, ContDiff ℝ ∞ (v n)) ∧ (∀ n, HasCompactSupport (v n)) ∧
       ∃ w : ℕ → sobolevSpace N p ⊤, (∀ n, SobolevMultiIndex.fn (w n) =ᵐ[volume] v n) ∧
@@ -790,9 +1045,14 @@ theorem theorem_9_2_univ (hp' : p ≠ ⊤) (u : sobolevSpace N p ⊤) :
   exact ⟨v, hvs, hvc, w, fun n ↦ eventuallyEq_restrict_coe_top_iff.1 (hw n),
     tendsto_of_tendsto_sobolevNorm hp' hw hvt⟩
 
-/-- **Lemma 9.1.** Let `ρ ∈ L^1(ℝ^N)` and `v ∈ W^{1,p}(ℝ^N)`, `1 ≤ p ≤ ∞`. Then
-`ρ ⋆ v ∈ W^{1,p}(ℝ^N)` and `∂_i (ρ ⋆ v) = ρ ⋆ ∂_i v` for every `i`. The convolution is the
-book's `(ρ ⋆ v)(x) = ∫ ρ(x − y) v(y) dy`, written as in §4.4. -/
+/-- **Lemma 9.1** of [brezis2011functional]. Let $\rho \in L^1(\mathbb{R}^N)$, $1 \le p \le \infty$
+and $v \in W^{1,p}(\mathbb{R}^N)$. Then $\rho \star v \in W^{1,p}(\mathbb{R}^N)$ and
+$$\frac{\partial}{\partial x_i}(\rho \star v) = \rho \star \frac{\partial v}{\partial x_i}
+  \qquad \text{for } i = 1, \dots, N,$$
+almost everywhere.
+
+The convolution is $(\rho \star v)(x) = \int \rho(x - y) v(y) \, dy$ of Section 4.4 of the
+source, written with `ContinuousLinearMap.mul ℝ ℝ`. -/
 theorem lemma_9_1 {ρ : 𝔼 → ℝ} (hρ : Integrable ρ volume) (v : sobolevSpace N p ⊤) :
     ∃ w : sobolevSpace N p ⊤,
       SobolevMultiIndex.fn w =ᵐ[volume]
@@ -823,11 +1083,15 @@ theorem lemma_9_1 {ρ : 𝔼 → ℝ} (hρ : Integrable ρ volume) (v : sobolevS
   exact ⟨w, eventuallyEq_restrict_coe_top_iff.1 hw,
     fun i ↦ eventuallyEq_restrict_coe_top_iff.1 (hwi i)⟩
 
-/-- **Remark 5 (Meyers–Serrin).** For `u ∈ W^{1,p}(Ω)`, `1 ≤ p < ∞`, there is a sequence
-`(u_n)` from `C^∞(Ω) ∩ W^{1,p}(Ω)` with `u_n → u` in `W^{1,p}(Ω)`: the elements `w n` of
-`W^{1,p}(Ω)` whose functions are the `u_n` converge to `u`. (The remark's second claim, that
-for a general `Ω` no sequence of `C_c^1(ℝ^N)` functions need converge to `u` in `W^{1,p}(Ω)`, is
-a counterexample and is not formalized.) -/
+/-- **Remark 5** in Chapter 9 of [brezis2011functional] (Meyers–Serrin). Let $1 \le p < \infty$ and
+$u \in W^{1,p}(\Omega)$. Then there is a sequence $(u_n)$ of functions of
+$C^\infty(\Omega) \cap W^{1,p}(\Omega)$ with $u_n \to u$ in $W^{1,p}(\Omega)$: there are
+elements $w_n \in W^{1,p}(\Omega)$ whose functions equal $u_n$ almost everywhere on $\Omega$,
+and $w_n \to u$.
+
+The second claim of the remark, that for a general $\Omega$ no sequence of functions of
+$C_c^1(\mathbb{R}^N)$ need converge to $u$ in $W^{1,p}(\Omega)$, is a counterexample and is not
+formalized. -/
 theorem remark_9_5 (hp' : p ≠ ⊤) (u : sobolevSpace N p Ω) :
     ∃ v : ℕ → 𝔼 → ℝ, (∀ n, ContDiffOn ℝ ∞ (v n) Ω) ∧
       ∃ w : ℕ → sobolevSpace N p Ω,
@@ -844,7 +1108,8 @@ theorem remark_9_5 (hp' : p ≠ ⊤) (u : sobolevSpace N p Ω) :
 /-! ### Proposition 9.3 -/
 
 omit [Fact (1 ≤ p)] in
-/-- A function of `L^∞` is almost everywhere bounded by its `L^∞` norm. -/
+/-- A function $f \in L^\infty(\mu)$ satisfies $\|f(x)\| \le \|f\|_\infty$ for $\mu$-almost every
+$x$. -/
 theorem ae_norm_le_toReal_eLpNorm_top {G : Type*} [NormedAddCommGroup G] {μ : Measure 𝔼}
     {f : 𝔼 → G} (hf : MemLp f ⊤ μ) : ∀ᵐ x ∂μ, ‖f x‖ ≤ (eLpNorm f ⊤ μ).toReal := by
   have hne : eLpNorm f ⊤ μ ≠ ⊤ := hf.eLpNorm_ne_top
@@ -853,10 +1118,15 @@ theorem ae_norm_le_toReal_eLpNorm_top {G : Type*} [NormedAddCommGroup G] {μ : M
   rw [← ofReal_norm] at hx
   exact (ENNReal.ofReal_le_iff_le_toReal hne).1 hx
 
-/-- **Proposition 9.3, (i) ⇒ (ii), with the constant `C = ‖∇u‖_{L^p(Ω)}`.** For
-`u ∈ W^{1,p}(Ω)`, `1 ≤ p ≤ ∞`, `q` the conjugate exponent: `|∫_Ω u ∂φ/∂x_i| ≤ ‖∇u‖_p ‖φ‖_{p'}`
-for every `φ ∈ C_c^∞(Ω)` and every `i` (the book's "obvious" direction, Hölder's inequality on
-the defining identity). -/
+/-- **Proposition 9.3** of [brezis2011functional], (i) ⇒ (ii), with the constant
+$C = \|\nabla u\|_{L^p(\Omega)}$. Let $1 \le p \le \infty$ with conjugate exponent $p'$, and let
+$u \in W^{1,p}(\Omega)$. Then
+$$\Big|\int_\Omega u \frac{\partial \varphi}{\partial x_i}\Big| \le \|\nabla u\|_{L^p(\Omega)}
+  \|\varphi\|_{L^{p'}(\Omega)}$$
+for every $\varphi \in C_c^\infty(\Omega)$ and every $i$.
+
+The source calls this direction obvious: it is Hölder's inequality applied to the defining
+identity. -/
 theorem proposition_9_3_i_ii {q : ℝ≥0∞} [p.HolderConjugate q] (u : sobolevSpace N p Ω)
     (φ : 𝓓(Ω, ℝ)) (i : Fin N) :
     ‖∫ x in (Ω : Set 𝔼), SobolevMultiIndex.fn u x * fderiv ℝ φ x (EuclideanSpace.single i 1)‖ₑ
@@ -873,10 +1143,15 @@ theorem proposition_9_3_i_ii {q : ℝ≥0∞} [p.HolderConjugate q] (u : sobolev
   exact setIntegral_congr_fun Ω.isOpen.measurableSet fun x _ ↦ by rw [smul_eq_mul, mul_comm]
 
 omit [Fact (1 ≤ p)] in
-/-- **Proposition 9.3, (ii) ⇒ (i).** Let `u ∈ L^p(Ω)`, `1 < p ≤ ∞`, `q` the conjugate exponent
-(`1 < p` is `q < ∞`). If there is a constant `C` with `|∫_Ω u ∂φ/∂x_i| ≤ C ‖φ‖_{p'}` for every
-`φ ∈ C_c^∞(Ω)` and every `i`, then `u ∈ W^{1,p}(Ω)`: the proof of Proposition 8.3, the Riesz
-representation theorem in `L^{p'}(Ω)` (Theorem 4.11), gives the weak derivatives. -/
+/-- **Proposition 9.3** of [brezis2011functional], (ii) ⇒ (i). Let $1 < p \le \infty$ with conjugate
+exponent $p'$, and let $u \in L^p(\Omega)$. If there is a constant $C$ with
+$$\Big|\int_\Omega u \frac{\partial \varphi}{\partial x_i}\Big| \le C
+  \|\varphi\|_{L^{p'}(\Omega)}$$
+for every $\varphi \in C_c^\infty(\Omega)$ and every $i$, then $u \in W^{1,p}(\Omega)$: $u$ is,
+almost everywhere on $\Omega$, the function of an element of $W^{1,p}(\Omega)$.
+
+The condition $p > 1$ is $p' < \infty$. The proof is that of Proposition 8.3 of the source: the
+Riesz representation theorem in $L^{p'}(\Omega)$ (Theorem 4.11) gives the weak derivatives. -/
 theorem proposition_9_3_ii_i {q : ℝ≥0∞} [p.HolderConjugate q] (hp : 1 < p) {u : 𝔼 → ℝ}
     (hu : MemLp u p (volume.restrict Ω)) {C : ℝ}
     (h : ∀ (φ : 𝓓(Ω, ℝ)) (i : Fin N),
@@ -893,15 +1168,24 @@ theorem proposition_9_3_ii_i {q : ℝ≥0∞} [p.HolderConjugate q] (hp : 1 < p)
   congr 1
   exact setIntegral_congr_fun Ω.isOpen.measurableSet fun x _ ↦ by rw [smul_eq_mul, mul_comm]
 
-/-- **The distance `dist(ω, ∂Ω)` from a set `ω` to the boundary of `Ω`**, as an extended real:
-`inf_{x ∈ ω} dist(x, ∂Ω)`, which is `∞` when `∂Ω = ∅` (the case `Ω = ℝ^N`, where every
-translation makes sense). -/
+/-- **Proposition 9.3** of [brezis2011functional], the distance from a set $\omega$ to the boundary
+of $\Omega$:
+$$\operatorname{dist}(\omega, \partial\Omega) = \inf_{x \in \omega} \operatorname{dist}(x,
+  \partial\Omega),$$
+as an extended real number.
+
+The value is $\infty$ when $\partial\Omega = \emptyset$, which is the case
+$\Omega = \mathbb{R}^N$, where every translation makes sense, and also when
+$\omega = \emptyset$. -/
 noncomputable def edistFrontier (V Ω : Set 𝔼) : ℝ≥0∞ :=
   ⨅ x ∈ V, Metric.infEDist x (frontier Ω)
 
-/-- If `|h| < dist(ω, ∂Ω)` and `ω ⊆ Ω`, the segments `[x, x + h]`, `x ∈ ω`, stay in `Ω`: the
-book's "`τ_h u(x) = u(x + h)` makes sense for `x ∈ ω` and `|h| < dist(ω, ∂Ω)`". A segment
-leaving the open set `Ω` would meet its boundary at distance at most `|h|` from `x`. -/
+/-- Let $\omega \subseteq \Omega$ and $h \in \mathbb{R}^N$ with $|h| < \operatorname{dist}(\omega,
+\partial\Omega)$. Then $x + th \in \Omega$ for every $x \in \omega$ and every $t \in [0, 1]$.
+
+This is the statement of the source that $\tau_h u(x) = u(x + h)$ makes sense for $x \in \omega$
+and $|h| < \operatorname{dist}(\omega, \partial\Omega)$, in Proposition 9.3. A segment that
+leaves the open set $\Omega$ meets its boundary at distance at most $|h|$ from $x$. -/
 theorem segment_subset_of_enorm_lt_edistFrontier {V : Set 𝔼} (hVΩ : V ⊆ Ω) {h : 𝔼}
     (hh : ‖h‖ₑ < edistFrontier V Ω) :
     ∀ x ∈ V, ∀ t ∈ Set.Icc (0 : ℝ) 1, x + t • h ∈ (Ω : Set 𝔼) := by
@@ -926,9 +1210,13 @@ theorem segment_subset_of_enorm_lt_edistFrontier {V : Set 𝔼} (hVΩ : V ⊆ Ω
   rw [segment_eq_image']
   exact ⟨t, ht, by rw [add_sub_cancel_left]⟩
 
-/-- **Proposition 9.3, (i) ⇒ (iii), with the constant `C = ‖∇u‖_{L^p(Ω)}`.** For `u` almost
-everywhere equal to the function of `v ∈ W^{1,p}(Ω)`, `1 ≤ p ≤ ∞`, every `ω ⊂⊂ Ω` and every
-`h ∈ ℝ^N` with `|h| < dist(ω, ∂Ω)`: `‖τ_h u − u‖_{L^p(ω)} ≤ ‖∇v‖_{L^p(Ω)} |h|`. -/
+/-- **Proposition 9.3** of [brezis2011functional], (i) ⇒ (iii), with the constant
+$C = \|\nabla u\|_{L^p(\Omega)}$. Let $1 \le p \le \infty$, let $v \in W^{1,p}(\Omega)$, and let
+$u$ equal the function of $v$ almost everywhere on $\Omega$. Then for every
+$\omega \subset\subset \Omega$ and every $h \in \mathbb{R}^N$ with $|h| <
+\operatorname{dist}(\omega, \partial\Omega)$,
+$$\|\tau_h u - u\|_{L^p(\omega)} \le \|\nabla v\|_{L^p(\Omega)} |h|,$$
+where $\tau_h u(x) = u(x + h)$. -/
 theorem proposition_9_3_i_iii (v : sobolevSpace N p Ω) {u : 𝔼 → ℝ}
     (hu : SobolevMultiIndex.fn v =ᵐ[volume.restrict (Ω : Set 𝔼)] u) {V : Set 𝔼}
     (hV : IsStronglyIncluded V Ω) {h : 𝔼} (hh : ‖h‖ₑ < edistFrontier V Ω) :
@@ -953,8 +1241,10 @@ theorem proposition_9_3_i_iii (v : sobolevSpace N p Ω) {u : 𝔼 → ℝ}
   · exact hw.eLpNorm_sub_translate_le_top hV.1 h hseg
   · exact hw.eLpNorm_sub_translate_le (SobolevMultiIndex.memLp v) hwp Fact.out hp' hV.1 h hseg
 
-/-- **Proposition 9.3, the case `Ω = ℝ^N`**: for `u ∈ W^{1,p}(ℝ^N)`, `1 ≤ p ≤ ∞`, and every
-`h ∈ ℝ^N`, `‖τ_h u − u‖_{L^p(ℝ^N)} ≤ |h| ‖∇u‖_{L^p(ℝ^N)}`. -/
+/-- **Proposition 9.3** of [brezis2011functional], the case $\Omega = \mathbb{R}^N$. Let
+$1 \le p \le \infty$ and $u \in W^{1,p}(\mathbb{R}^N)$. Then for every $h \in \mathbb{R}^N$
+$$\|\tau_h u - u\|_{L^p(\mathbb{R}^N)} \le |h| \, \|\nabla u\|_{L^p(\mathbb{R}^N)},$$
+where $\tau_h u(x) = u(x + h)$. -/
 theorem proposition_9_3_univ (u : sobolevSpace N p ⊤) (h : 𝔼) :
     eLpNorm (fun x ↦ SobolevMultiIndex.fn u (x + h) - SobolevMultiIndex.fn u x) p volume
       ≤ ‖h‖ₑ * eLpNorm (gradient u) p volume := by
@@ -968,9 +1258,12 @@ theorem proposition_9_3_univ (u : sobolevSpace N p ⊤) (h : 𝔼) :
       (by simpa [Measure.restrict_coe_top] using SobolevMultiIndex.memLp u)
       (by simpa [Measure.restrict_coe_top] using hwp) Fact.out hp' h
 
-/-- **The distance `dist(ω, ∂Ω)` is positive for `ω ⊂⊂ Ω`**: there is `δ > 0` with
-`δ ≤ dist(ω, ∂Ω)`, since the compact set `ω̄ ⊆ Ω` has a `δ`-thickening inside the open set `Ω`,
-which its boundary avoids. -/
+/-- If $\omega \subset\subset \Omega$, then $\operatorname{dist}(\omega, \partial\Omega) > 0$: there
+is $\delta > 0$ with $\delta \le \operatorname{dist}(\omega, \partial\Omega)$.
+
+The compact set $\bar\omega \subseteq \Omega$ has a $\delta$-neighbourhood inside the open set
+$\Omega$, and the boundary of $\Omega$ does not meet it. This supports Proposition 9.3 of
+[brezis2011functional]. -/
 theorem exists_pos_ofReal_le_edistFrontier {V : Set 𝔼} (hV : IsStronglyIncluded V Ω) :
     ∃ δ : ℝ, 0 < δ ∧ ENNReal.ofReal δ ≤ edistFrontier V Ω := by
   obtain ⟨δ, hδ, hδΩ⟩ := hV.2.2.exists_thickening_subset_open Ω.isOpen hV.2.1
@@ -984,14 +1277,24 @@ theorem exists_pos_ofReal_le_edistFrontier {V : Set 𝔼} (hV : IsStronglyInclud
   exact hδΩ hz'
 
 omit [Fact (1 ≤ p)] in
-/-- **Proposition 9.3, (iii) ⇒ (ii).** Let `u ∈ L^p(Ω)`, `1 ≤ p ≤ ∞`, `q` the conjugate exponent.
-If there is a constant `C` such that `‖τ_h u − u‖_{L^p(ω)} ≤ C |h|` for every `ω ⊂⊂ Ω` and every
-`h ∈ ℝ^N` with `|h| < dist(ω, ∂Ω)`, then `|∫_Ω u ∂φ/∂x_i| ≤ C ‖φ‖_{p'}` for every `φ ∈ C_c^∞(Ω)`
-and every `i`. The book's proof: with `supp φ ⊆ ω ⊂⊂ Ω` and `h = t e_i`, `t` small, the change of
-variables `∫_Ω (τ_h u − u) φ = ∫_Ω u (φ(· − h) − φ)` and Hölder's inequality bound the difference
-quotients of `φ` against `u` by `C ‖φ‖_{p'}`, and `t → 0` gives (ii) — the backbone's
-`abs_integral_smul_fderiv_le_of_eLpNorm_sub_translate_le_of_norm_lt`, fed with the
-positivity of `dist(ω, ∂Ω)` (`exists_pos_ofReal_le_edistFrontier`). -/
+/-- **Proposition 9.3** of [brezis2011functional], (iii) ⇒ (ii). Let $1 \le p \le \infty$ with
+conjugate exponent $p'$, and let $u \in L^p(\Omega)$. Suppose that there is a constant $C$ such
+that
+$$\|\tau_h u - u\|_{L^p(\omega)} \le C |h|$$
+for every $\omega \subset\subset \Omega$ and every $h \in \mathbb{R}^N$ with $|h| <
+\operatorname{dist}(\omega, \partial\Omega)$. Then
+$$\Big|\int_\Omega u \frac{\partial \varphi}{\partial x_i}\Big| \le C
+  \|\varphi\|_{L^{p'}(\Omega)}$$
+for every $\varphi \in C_c^\infty(\Omega)$ and every $i$.
+
+The proof is that of the source. Choose $\omega \subset\subset \Omega$ with
+$\operatorname{supp} \varphi \subseteq \omega$ and $h = t e_i$ with $t$ small. The change of
+variables $\int_\Omega (\tau_h u - u) \varphi = \int_\Omega u (\varphi(\cdot - h) - \varphi)$
+and Hölder's inequality bound the difference quotients of $\varphi$ against $u$ by
+$C \|\varphi\|_{p'}$, and $t \to 0$ gives (ii). The proof specializes
+`abs_integral_smul_fderiv_le_of_eLpNorm_sub_translate_le_of_norm_lt`, with the positivity of
+$\operatorname{dist}(\omega, \partial\Omega)$ from
+`Brezis.Chapter09.exists_pos_ofReal_le_edistFrontier`. -/
 theorem proposition_9_3_iii_ii {q : ℝ≥0∞} [p.HolderConjugate q] {u : 𝔼 → ℝ}
     (hu : MemLp u p (volume.restrict Ω)) {C : ℝ}
     (h : ∀ V : Set 𝔼, IsStronglyIncluded V Ω → ∀ h : 𝔼, ‖h‖ₑ < edistFrontier V Ω →
@@ -1013,14 +1316,23 @@ theorem proposition_9_3_iii_ii {q : ℝ≥0∞} [p.HolderConjugate q] {u : 𝔼 
     calc ‖a‖ₑ < ENNReal.ofReal δ := by rwa [← ofReal_norm, ENNReal.ofReal_lt_ofReal_iff hδ]
       _ ≤ edistFrontier V Ω := hδV
 
-/-- **Proposition 9.3.** Let `u ∈ L^p(Ω)` with `1 < p ≤ ∞` (`q` the conjugate exponent). The
-following properties are equivalent: (i) `u ∈ W^{1,p}(Ω)`, that is, `u` is almost everywhere on
-`Ω` the function of an element of `W^{1,p}(Ω)`; (ii) there is a constant `C` such that
-`|∫_Ω u ∂φ/∂x_i| ≤ C ‖φ‖_{L^{p'}(Ω)}` for all `φ ∈ C_c^∞(Ω)` and all `i = 1, …, N`; (iii) there
-is a constant `C` such that for all `ω ⊂⊂ Ω` and all `h ∈ ℝ^N` with `|h| < dist(ω, ∂Ω)`,
-`‖τ_h u − u‖_{L^p(ω)} ≤ C |h|`. "Furthermore, we can take `C = ‖∇u‖_{L^p(Ω)}` in (ii) and (iii)"
-is `proposition_9_3_i_ii` and `proposition_9_3_i_iii`, and the case `Ω = ℝ^N` is
-`proposition_9_3_univ`. -/
+/-- **Proposition 9.3** of [brezis2011functional]. Let $1 < p \le \infty$ with conjugate exponent
+$p'$, and let $u \in L^p(\Omega)$. The following properties are equivalent:
+
+(i) $u \in W^{1,p}(\Omega)$, that is, $u$ is, almost everywhere on $\Omega$, the function of an
+element of $W^{1,p}(\Omega)$;
+
+(ii) there is a constant $C$ such that $\big|\int_\Omega u \, \partial \varphi / \partial
+x_i\big| \le C \|\varphi\|_{L^{p'}(\Omega)}$ for all $\varphi \in C_c^\infty(\Omega)$ and all
+$i = 1, \dots, N$;
+
+(iii) there is a constant $C$ such that $\|\tau_h u - u\|_{L^p(\omega)} \le C |h|$ for all
+$\omega \subset\subset \Omega$ and all $h \in \mathbb{R}^N$ with $|h| <
+\operatorname{dist}(\omega, \partial\Omega)$.
+
+The statement of the source that one can take $C = \|\nabla u\|_{L^p(\Omega)}$ in (ii) and (iii)
+is `Brezis.Chapter09.proposition_9_3_i_ii` and `Brezis.Chapter09.proposition_9_3_i_iii`. The
+case $\Omega = \mathbb{R}^N$ is `Brezis.Chapter09.proposition_9_3_univ`. -/
 theorem proposition_9_3 {q : ℝ≥0∞} [p.HolderConjugate q] (hp : 1 < p) {u : 𝔼 → ℝ}
     (hu : MemLp u p (volume.restrict Ω)) :
     [∃ v : sobolevSpace N p Ω, SobolevMultiIndex.fn v =ᵐ[volume.restrict (Ω : Set 𝔼)] u,
@@ -1047,11 +1359,15 @@ theorem proposition_9_3 {q : ℝ≥0∞} [p.HolderConjugate q] (hp : 1 < p) {u :
   tfae_finish
 
 omit [Fact (1 ≤ p)] in
-/-- **Remark 6.** When `p = 1` the implications (i) ⇒ (ii) ⇔ (iii) of Proposition 9.3 remain
-true: for `u ∈ L^1(Ω)` (with `p' = ∞`), (i) ⇒ (ii), (i) ⇒ (iii) and (iii) ⇒ (ii), the three
-backbone implications being valid for every `1 ≤ p ≤ ∞`. The implication (ii) ⇒ (iii) at
-`p = 1` — that a function of bounded variation satisfies the translation estimate — belongs to
-the theory of `BV` functions and is not formalized; the remark's discussion of `BV` has no node. -/
+/-- **Remark 6** in Chapter 9 of [brezis2011functional]. When $p = 1$ the implications (i) ⇒ (ii) ⇔
+(iii) of Proposition 9.3 remain true, in part. Let $u \in L^1(\Omega)$, so that $p' = \infty$.
+Then (i) ⇒ (ii), (i) ⇒ (iii) and (iii) ⇒ (ii), with the properties (i), (ii) and (iii) of
+Proposition 9.3 at $p = 1$.
+
+The three implications of the backbone hold for every $1 \le p \le \infty$. The implication (ii)
+⇒ (iii) at $p = 1$, that a function of bounded variation satisfies the estimate on translations,
+belongs to the theory of $BV$ functions and is not formalized. The discussion of $BV$ in the
+remark is not formalized either. -/
 theorem remark_9_6 {u : 𝔼 → ℝ} (hu : MemLp u 1 (volume.restrict Ω)) :
     ((∃ v : sobolevSpace N 1 Ω, SobolevMultiIndex.fn v =ᵐ[volume.restrict (Ω : Set 𝔼)] u) →
       ∃ C : ℝ, ∀ (φ : 𝓓(Ω, ℝ)) (i : Fin N),
@@ -1077,8 +1393,9 @@ theorem remark_9_6 {u : 𝔼 → ℝ} (hu : MemLp u 1 (volume.restrict Ω)) :
 
 /-! ### Remark 7 -/
 
-/-- **Remark 7, first sentence.** Every `u ∈ W^{1,∞}(Ω)` has a continuous representative on
-`Ω`. -/
+/-- **Remark 7** in Chapter 9 of [brezis2011functional], first sentence. Every
+$u \in W^{1,\infty}(\Omega)$ has a representative that is continuous on $\Omega$: there is
+$\tilde u$, continuous on $\Omega$, with $u = \tilde u$ almost everywhere on $\Omega$. -/
 theorem remark_9_7 (u : sobolevSpace N ⊤ Ω) :
     ∃ ũ : 𝔼 → ℝ, ContinuousOn ũ Ω ∧ SobolevMultiIndex.fn u =ᵐ[volume.restrict (Ω : Set 𝔼)] ũ := by
   obtain ⟨w, hw, hwp, -, -, heq⟩ := exists_hasWeakFDerivOn_fn_gradient u
@@ -1086,9 +1403,14 @@ theorem remark_9_7 (u : sobolevSpace N ⊤ Ω) :
     (ae_norm_le_toReal_eLpNorm_top hwp)
   exact ⟨ũ, hũ, hu⟩
 
-/-- **Remark 7, the convex case.** If `Ω` is convex, the continuous representative `ũ` of
-`u ∈ W^{1,∞}(Ω)` satisfies `|ũ(x) − ũ(y)| ≤ ‖∇u‖_{L^∞(Ω)} |x − y|` for all `x, y ∈ Ω` (for a
-convex `Ω` the geodesic distance of the book is `|x − y|`). -/
+/-- **Remark 7** in Chapter 9 of [brezis2011functional], the convex case. Let $\Omega$ be convex and
+$u \in W^{1,\infty}(\Omega)$. Then $u$ has a representative $\tilde u$, equal to $u$ almost
+everywhere on $\Omega$, with
+$$|\tilde u(x) - \tilde u(y)| \le \|\nabla u\|_{L^\infty(\Omega)} |x - y| \qquad \text{for all }
+  x, y \in \Omega.$$
+
+The source states the estimate with the geodesic distance in $\Omega$, which is $|x - y|$ for a
+convex $\Omega$. The form with the geodesic distance on a nonconvex $\Omega$ is not formalized. -/
 theorem remark_9_7_convex (hΩ : Convex ℝ (Ω : Set 𝔼)) (u : sobolevSpace N ⊤ Ω) :
     ∃ ũ : 𝔼 → ℝ, SobolevMultiIndex.fn u =ᵐ[volume.restrict (Ω : Set 𝔼)] ũ ∧
       ∀ x ∈ (Ω : Set 𝔼), ∀ y ∈ (Ω : Set 𝔼),
@@ -1100,9 +1422,13 @@ theorem remark_9_7_convex (hΩ : Convex ℝ (Ω : Set 𝔼)) (u : sobolevSpace N
   have := hlip.dist_le_mul x hx y hy
   rwa [Real.dist_eq, dist_eq_norm, Real.coe_toNNReal _ ENNReal.toReal_nonneg, heq] at this
 
-/-- **Remark 7, last sentence.** If `u ∈ W^{1,p}(Ω)`, `1 ≤ p ≤ ∞`, and `∇u = 0` almost
-everywhere on `Ω`, then `u` is (almost everywhere) constant on each connected component of
-`Ω`. -/
+/-- **Remark 7** in Chapter 9 of [brezis2011functional], last sentence. Let $1 \le p \le \infty$ and
+$u \in W^{1,p}(\Omega)$ with $\nabla u = 0$ almost everywhere on $\Omega$. Then $u$ is constant
+almost everywhere on each connected component of $\Omega$: for every $x_0$ there is
+$c \in \mathbb{R}$ with $u = c$ almost everywhere on the connected component of $x_0$ in
+$\Omega$.
+
+For $x_0 \notin \Omega$ the connected component is empty, and the statement is trivial. -/
 theorem remark_9_7_const (u : sobolevSpace N p Ω)
     (h : ∀ i, partialDeriv u i =ᵐ[volume.restrict (Ω : Set 𝔼)] 0) (x₀ : 𝔼) :
     ∃ c : ℝ, SobolevMultiIndex.fn u
@@ -1123,9 +1449,12 @@ theorem remark_9_7_const (u : sobolevSpace N p Ω)
 
 /-! ### Propositions 9.4–9.6 -/
 
-/-- **Proposition 9.4 (differentiation of a product).** Let `u, v ∈ W^{1,p}(Ω) ∩ L^∞(Ω)`,
-`1 ≤ p ≤ ∞`. Then `u v ∈ W^{1,p}(Ω) ∩ L^∞(Ω)` and `∂_i (u v) = (∂_i u) v + u (∂_i v)` for every
-`i`. -/
+/-- **Proposition 9.4** of [brezis2011functional] (differentiation of a product). Let
+$1 \le p \le \infty$ and $u, v \in W^{1,p}(\Omega) \cap L^\infty(\Omega)$. Then
+$uv \in W^{1,p}(\Omega) \cap L^\infty(\Omega)$ and
+$$\frac{\partial}{\partial x_i}(uv) = \frac{\partial u}{\partial x_i} v + u \frac{\partial
+  v}{\partial x_i} \qquad \text{for } i = 1, \dots, N,$$
+almost everywhere on $\Omega$. -/
 theorem proposition_9_4 (u v : sobolevSpace N p Ω)
     (hu : MemLp (SobolevMultiIndex.fn u) ⊤ (volume.restrict Ω))
     (hv : MemLp (SobolevMultiIndex.fn v) ⊤ (volume.restrict Ω)) :
@@ -1156,9 +1485,12 @@ theorem proposition_9_4 (u v : sobolevSpace N p Ω)
   refine ⟨w, hw, ?_, hwi⟩
   exact (memLp_top_of_bound hmem.memLp.aestronglyMeasurable (M * M) hbound).ae_eq hw.symm
 
-/-- **Proposition 9.5 (differentiation of a composition).** Let `G ∈ C^1(ℝ)` with `G(0) = 0`
-and `|G'(s)| ≤ M` for all `s`, and let `u ∈ W^{1,p}(Ω)`, `1 ≤ p ≤ ∞`. Then `G ∘ u ∈ W^{1,p}(Ω)`
-and `∂_i (G ∘ u) = (G' ∘ u) ∂_i u` for every `i`. -/
+/-- **Proposition 9.5** of [brezis2011functional] (differentiation of a composition). Let
+$G \in C^1(\mathbb{R})$ with $G(0) = 0$ and $|G'(s)| \le M$ for all $s \in \mathbb{R}$, and let
+$1 \le p \le \infty$ and $u \in W^{1,p}(\Omega)$. Then $G \circ u \in W^{1,p}(\Omega)$ and
+$$\frac{\partial}{\partial x_i}(G \circ u) = (G' \circ u) \frac{\partial u}{\partial x_i} \qquad
+  \text{for } i = 1, \dots, N,$$
+almost everywhere on $\Omega$. -/
 theorem proposition_9_5 {G : ℝ → ℝ} (hG : ContDiff ℝ 1 G) (hG0 : G 0 = 0) {M : ℝ}
     (hM : ∀ s, |deriv G s| ≤ M) (u : sobolevSpace N p Ω) :
     ∃ w : sobolevSpace N p Ω,
@@ -1175,13 +1507,20 @@ theorem proposition_9_5 {G : ℝ → ℝ} (hG : ContDiff ℝ 1 G) (hG0 : G 0 = 0
   exact exists_sobolevSpace_of_hasWeakIteratedLineDerivOn hmem.memLp hg
     fun i ↦ memLp_of_memSobolevMultiIndex_of_hasWeakIteratedLineDerivOn hmem (hg i)
 
-/-- **Proposition 9.6 (change of variables formula).** Let `Ω, Ω' ⊆ ℝ^N` be open and let
-`H : Ω' → Ω` be a bijection, `x = H(y)`, with `H ∈ C^1(Ω')`, `H⁻¹ ∈ C^1(Ω)`,
-`Jac H ∈ L^∞(Ω')`, `Jac H⁻¹ ∈ L^∞(Ω)` (the backbone's `IsDiffeoOnWithBoundedJacobian`, with
-footnote 6's Jacobian matrices as the derivatives `fderiv ℝ H y`), and let `u ∈ W^{1,p}(Ω)`,
-`1 ≤ p ≤ ∞`. Then `u ∘ H ∈ W^{1,p}(Ω')` and
-`∂_j (u ∘ H)(y) = ∑_i (∂_i u)(H y) ∂_j H_i(y)` for every `j`, where
-`∂_j H_i (y) = (fderiv ℝ H y e_j) i`. -/
+/-- **Proposition 9.6** of [brezis2011functional] (change of variables formula). Let
+$\Omega, \Omega' \subseteq \mathbb{R}^N$ be open, and let $H : \Omega' \to \Omega$ be a
+bijection, $x = H(y)$, with $H \in C^1(\Omega')$, $H^{-1} \in C^1(\Omega)$,
+$\operatorname{Jac} H \in L^\infty(\Omega')$ and
+$\operatorname{Jac} H^{-1} \in L^\infty(\Omega)$. Let $1 \le p \le \infty$ and
+$u \in W^{1,p}(\Omega)$. Then $u \circ H \in W^{1,p}(\Omega')$ and
+$$\frac{\partial}{\partial y_j}(u \circ H)(y) = \sum_{i=1}^N \frac{\partial u}{\partial
+  x_i}(H(y)) \frac{\partial H_i}{\partial y_j}(y) \qquad \text{for } j = 1, \dots, N,$$
+almost everywhere on $\Omega'$.
+
+The hypotheses on $H$ are the backbone's `IsDiffeoOnWithBoundedJacobian H Hinv Ω' Ω M`: the
+Jacobian matrices of footnote 6 of the source are the derivatives `fderiv ℝ H y`, bounded in
+norm by $M$, and likewise for $H^{-1}$. The entry $\partial H_i / \partial y_j (y)$ is
+`fderiv ℝ H y (EuclideanSpace.single j 1) i`. -/
 theorem proposition_9_6 {H Hinv : 𝔼 → 𝔼} {Ω' : Opens 𝔼} {M : ℝ}
     (hH : IsDiffeoOnWithBoundedJacobian H Hinv Ω' Ω M) (u : sobolevSpace N p Ω) :
     ∃ w : sobolevSpace N p Ω',
@@ -1205,37 +1544,48 @@ theorem proposition_9_6 {H Hinv : 𝔼 → 𝔼} {Ω' : Opens 𝔼} {M : ℝ}
   rw [SobolevMultiIndex.compDiffeoL_apply] at *
   exact hy.trans (hy' _)
 
-/-! ### The spaces `W^{m,p}(Ω)` -/
+/-! ### The spaces $W^{m,p}(\Omega)$ -/
 
-/-- **The space `W^{m,p}(Ω)`** of the paragraph "The spaces `W^{m,p}(Ω)`": the functions
-`u ∈ L^p(Ω)` all of whose weak derivatives `D^α u`, `|α| ≤ m`, lie in `L^p(Ω)`
-(`sobolevSpaceHigher_iff`, the book's second, multi-index definition), equivalently, by
-induction, `u ∈ W^{m−1,p}(Ω)` with `∂_i u ∈ W^{m−1,p}(Ω)` for all `i`
-(`sobolevSpaceHigher_iff_inductive`), as the backbone type `SobolevEuclidean N m p Ω`. -/
+/-- **Section 9.1** of [brezis2011functional], definition of the spaces $W^{m,p}(\Omega)$. Let
+$m \ge 1$ be an integer and $1 \le p \le \infty$. The space $W^{m,p}(\Omega)$ consists of the
+functions $u \in L^p(\Omega)$ all of whose weak derivatives $D^\alpha u$ of order
+$|\alpha| \le m$ lie in $L^p(\Omega)$. Equivalently, defined by induction, $W^{m,p}(\Omega) =
+\{u \in W^{m-1,p}(\Omega) : \partial u / \partial x_i \in W^{m-1,p}(\Omega) \text{ for } i = 1,
+\dots, N\}$.
+
+The type is the backbone type `SobolevEuclidean N m p Ω`, and is defined for every $m \ge 0$.
+The multi-index definition is `Brezis.Chapter09.sobolevSpaceHigher_iff`, and the inductive one
+is `Brezis.Chapter09.sobolevSpaceHigher_iff_inductive`. -/
 noncomputable abbrev sobolevSpaceHigher (N m : ℕ) (p : ℝ≥0∞)
     (Ω : Opens (EuclideanSpace ℝ (Fin N))) : Type :=
   SobolevEuclidean N m p Ω
 
 omit [Fact (1 ≤ p)] in
-/-- `W^{1,p}(Ω)` is the case `m = 1` of `W^{m,p}(Ω)`. -/
+/-- The space $W^{1,p}(\Omega)$ is the case $m = 1$ of $W^{m,p}(\Omega)$: the two types are equal.
+-/
 theorem sobolevSpaceHigher_one : sobolevSpaceHigher N 1 p Ω = sobolevSpace N p Ω :=
   rfl
 
 omit [Fact (1 ≤ p)] in
-/-- A function is (almost everywhere on `Ω`) the function of an element of `W^{m,p}(Ω)` if and
-only if it satisfies the backbone's predicate `MemSobolevMultiIndex`. -/
+/-- A function is, almost everywhere on $\Omega$, the function of an element of $W^{m,p}(\Omega)$ if
+and only if it satisfies the backbone predicate `MemSobolevMultiIndex` for the standard basis,
+the order $m$ and the exponent $p$. -/
 theorem exists_fn_ae_eq_iff {m : ℕ} (u : 𝔼 → ℝ) :
     (∃ v : sobolevSpaceHigher N m p Ω, SobolevMultiIndex.fn v =ᵐ[volume.restrict (Ω : Set 𝔼)] u)
       ↔ MemSobolevMultiIndex 𝔟 u m p Ω volume :=
   ⟨fun ⟨v, hv⟩ ↦ (SobolevMultiIndex.memSobolevMultiIndex v).congr_ae hv,
     fun h ↦ h.exists_sobolevMultiIndex⟩
 
-/-- **The multi-index definition of `W^{m,p}(Ω)`**: a function `u : ℝ^N → ℝ` is (almost
-everywhere on `Ω`) the function of an element of `W^{m,p}(Ω)` if and only if `u ∈ L^p(Ω)` and,
-for every multi-index `α` with `|α| ≤ m`, there is `g_α ∈ L^p(Ω)` with
-`∫_Ω u D^α φ = (−1)^{|α|} ∫_Ω g_α φ` for every `φ ∈ C_c^∞(Ω)`, where `D^α φ` is the iterated
-derivative of `φ` along the `|α|` directions `e_i` repeated `α_i` times
-(`multiIndexTuple`). -/
+/-- **Section 9.1** of [brezis2011functional], the multi-index definition of $W^{m,p}(\Omega)$. Let
+$1 \le p \le \infty$ and $m \ge 0$. A function $u : \mathbb{R}^N \to \mathbb{R}$ is, almost
+everywhere on $\Omega$, the function of an element of $W^{m,p}(\Omega)$ if and only if
+$u \in L^p(\Omega)$ and, for every multi-index $\alpha$ with $|\alpha| \le m$, there is
+$g_\alpha \in L^p(\Omega)$ with
+$$\int_\Omega u \, D^\alpha \varphi = (-1)^{|\alpha|} \int_\Omega g_\alpha \varphi \qquad
+  \text{for every } \varphi \in C_c^\infty(\Omega).$$
+
+Here $D^\alpha \varphi$ is the iterated derivative of $\varphi$ along the $|\alpha|$ directions
+in which each $e_i$ is repeated $\alpha_i$ times (`multiIndexTuple`). -/
 theorem sobolevSpaceHigher_iff {m : ℕ} (u : 𝔼 → ℝ) :
     (∃ v : sobolevSpaceHigher N m p Ω, SobolevMultiIndex.fn v =ᵐ[volume.restrict (Ω : Set 𝔼)] u)
       ↔ MemLp u p (volume.restrict Ω) ∧ ∀ α : MultiIndexLE (Fin N) m,
@@ -1256,9 +1606,15 @@ theorem sobolevSpaceHigher_iff {m : ℕ} (u : 𝔼 → ℝ) :
       (hgp.locallyIntegrableOn hp) hg, hgp⟩
 
 omit [Fact (1 ≤ p)] in
-/-- **The inductive definition of `W^{m+1,p}(Ω)`**: a function `u` is in `W^{m+1,p}(Ω)` if and
-only if it is in `W^{m,p}(Ω)` and, for every `i`, its weak partial derivative `∂u/∂x_i` exists
-and is in `W^{m,p}(Ω)` — the book's `W^{m,p} = {u ∈ W^{m−1,p} : ∂_i u ∈ W^{m−1,p} ∀ i}`. -/
+/-- **Section 9.1** of [brezis2011functional], the inductive definition of $W^{m,p}(\Omega)$. Let
+$m \ge 0$. A function $u$ is in $W^{m+1,p}(\Omega)$ if and only if $u \in W^{m,p}(\Omega)$ and,
+for every $i$, $u$ has a weak partial derivative $\partial u / \partial x_i$ on $\Omega$ that
+lies in $W^{m,p}(\Omega)$.
+
+This is the description $W^{m,p} = \{u \in W^{m-1,p} : \partial u / \partial x_i \in W^{m-1,p}
+\text{ for all } i\}$ of the source, with $m + 1$ in place of $m$. Membership of a function in
+$W^{m,p}(\Omega)$ means that it equals the function of an element almost everywhere on $\Omega$.
+The statement holds for every exponent $p$. -/
 theorem sobolevSpaceHigher_iff_inductive {m : ℕ} (u : 𝔼 → ℝ) :
     (∃ v : sobolevSpaceHigher N (m + 1) p Ω,
         SobolevMultiIndex.fn v =ᵐ[volume.restrict (Ω : Set 𝔼)] u) ↔
@@ -1271,13 +1627,18 @@ theorem sobolevSpaceHigher_iff_inductive {m : ℕ} (u : 𝔼 → ℝ) :
   rw [memSobolevMultiIndex_succ_iff]
   simp only [basisFun_toBasis_apply]
 
-/-- **The norm of `W^{m,p}(Ω)`** the book displays, `‖u‖_{W^{m,p}} = ∑_{|α| ≤ m} ‖D^α u‖_p`;
-equivalent to the norm of the type (`bookNormHigher_equiv`). -/
+/-- **Section 9.1** of [brezis2011functional], the norm of $W^{m,p}(\Omega)$. For
+$u \in W^{m,p}(\Omega)$,
+$$\|u\|_{W^{m,p}} = \sum_{|\alpha| \le m} \|D^\alpha u\|_p.$$
+
+It is equivalent to the norm of the type, by `Brezis.Chapter09.bookNormHigher_equiv`. -/
 noncomputable def bookNormHigher {m : ℕ} (u : sobolevSpaceHigher N m p Ω) : ℝ :=
   ∑ α, ‖SobolevMultiIndex.weakDeriv u α‖
 
-/-- **The two norms of `W^{m,p}(Ω)` are equivalent**: `‖u‖ ≤ ‖u‖_{W^{m,p}} ≤ K ‖u‖`, `K` the
-number of multi-indices of order `≤ m`. -/
+/-- The two norms of $W^{m,p}(\Omega)$ are equivalent: for $u \in W^{m,p}(\Omega)$,
+$$\|u\| \le \|u\|_{W^{m,p}} \le K \|u\|,$$
+where $\|u\|$ is the norm of the type and $K$ is the number of multi-indices $\alpha$ with
+$|\alpha| \le m$. -/
 theorem bookNormHigher_equiv {m : ℕ} (u : sobolevSpaceHigher N m p Ω) :
     ‖u‖ ≤ bookNormHigher u ∧
       bookNormHigher u ≤ Fintype.card (MultiIndexLE (Fin N) m) * ‖u‖ := by
@@ -1287,18 +1648,23 @@ theorem bookNormHigher_equiv {m : ℕ} (u : sobolevSpaceHigher N m p Ω) :
     _ = Fintype.card (MultiIndexLE (Fin N) m) * ‖u‖ := by
         simp only [Finset.sum_const, Finset.card_univ, nsmul_eq_mul]
 
-/-- **"The space `W^{m,p}(Ω)` equipped with the norm `∑_{|α| ≤ m} ‖D^α u‖_p` is a Banach
-space"**: `W^{m,p}(Ω)` is complete, and the book's norm is equivalent to the norm of the
-type. -/
+/-- **Section 9.1** of [brezis2011functional]: "the space $W^{m,p}(\Omega)$ equipped with the norm
+$\sum_{|\alpha| \le m} \|D^\alpha u\|_p$ is a Banach space". Let $1 \le p \le \infty$ and
+$m \ge 0$. The space $W^{m,p}(\Omega)$ is complete, and for every $u \in W^{m,p}(\Omega)$
+$$\|u\| \le \|u\|_{W^{m,p}} \le K \|u\|,$$
+where $\|u\|$ is the norm of the type and $K$ is the number of multi-indices $\alpha$ with
+$|\alpha| \le m$. -/
 theorem sobolevSpaceHigher_banach {m : ℕ} :
     CompleteSpace (sobolevSpaceHigher N m p Ω) ∧
       ∀ u : sobolevSpaceHigher N m p Ω, ‖u‖ ≤ bookNormHigher u ∧
         bookNormHigher u ≤ Fintype.card (MultiIndexLE (Fin N) m) * ‖u‖ :=
   ⟨inferInstance, bookNormHigher_equiv⟩
 
-/-- **"The space `H^m(Ω) = W^{m,2}(Ω)` equipped with the scalar product
-`(u, v)_{H^m} = ∑_{|α| ≤ m} (D^α u, D^α v)_{L^2}` is a Hilbert space"**: the inner product of
-the type is the book's, and the space is complete. -/
+/-- **Section 9.1** of [brezis2011functional]: "the space $H^m(\Omega) = W^{m,2}(\Omega)$ equipped
+with the scalar product $(u, v)_{H^m} = \sum_{|\alpha| \le m} (D^\alpha u, D^\alpha v)_{L^2}$ is
+a Hilbert space". Let $m \ge 0$. The inner product of $W^{m,2}(\Omega)$ is
+$$(u, v)_{H^m} = \sum_{|\alpha| \le m} \int_\Omega D^\alpha u \, D^\alpha v,$$
+and $W^{m,2}(\Omega)$ is complete. -/
 theorem hSpaceHigher {m : ℕ} :
     (∀ u v : sobolevSpaceHigher N m 2 Ω, inner ℝ u v = ∑ α, ∫ x in (Ω : Set 𝔼),
       SobolevMultiIndex.weakDeriv u α x * SobolevMultiIndex.weakDeriv v α x) ∧

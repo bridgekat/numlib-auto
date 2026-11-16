@@ -7,39 +7,79 @@ import Numlib.Analysis.Sobolev.Extension
 import NumlibSurface.Brezis.Chapter09.Section01
 
 /-!
-# Brezis §9.2: extension operators
+# Brezis, Section 9.2: Extension operators
 
-Surface file for Haim Brezis, *Functional Analysis, Sobolev Spaces and Partial Differential
-Equations*, Universitext, Springer, 2011, §9.2, on `ℝ^N = EuclideanSpace ℝ (Fin (d + 1))` — the
-dimension is written `N = d + 1` because the section singles out the last coordinate `x_N`.
+This module formalizes Section 9.2 of [brezis2011functional]. An open set
+$\Omega \subseteq \mathbb{R}^N$ is of class $C^1$ if near each point of its boundary
+$\Gamma = \partial\Omega$ there is a $C^1$ chart $H$ from the cylinder $Q$ that maps the upper half
+$Q_+$ onto the part of $\Omega$ and the equator $Q_0$ onto the part of $\Gamma$. For such an
+$\Omega$ with bounded boundary, and for the half space $\mathbb{R}^N_+$, there is a bounded linear
+extension operator $P : W^{1,p}(\Omega) \to W^{1,p}(\mathbb{R}^N)$ (Theorem 9.7). The proof extends
+a function on $Q_+$ to $Q$ by reflection (Lemma 9.2) and glues the local extensions with a partition
+of unity (Lemma 9.3). As a consequence, the restrictions to $\Omega$ of the functions of
+$C_c^\infty(\mathbb{R}^N)$ are dense in $W^{1,p}(\Omega)$ for $1 \le p < \infty$ (Corollary 9.8).
 
-The notation of the section is the backbone's (`Numlib/Analysis/Sobolev/Chart`): the half space
-`ℝ^N_+ = {x_N > 0}` is `EuclideanSpace.upperHalfSpace d`, the cylinder
-`Q = {|x'| < 1, |x_N| < 1}` is `unitChartCube d`, `Q_+ = Q ∩ ℝ^N_+` is `unitChartCubePos d` and
-`Q_0 = {(x', 0) : |x'| < 1}` is `unitChartCubeZero d`; as open sets, `Q` is `unitChartCubeOpens d`
-and `Q_+` is `posHalf e_N Q`, `e_N` the last basis vector, whose carrier is `unitChartCubePos d`
-(`coe_posHalf_unitChartCubeOpens`). "Ω of class `C^1`" is `IsClassC1 Ω`, the book's definition
-by local charts `H : Q → U` (`IsOfClassC`, `isOfClassC_iff`), which is the backbone's
-`IsContDiffChartDomain 1 Ω` (decision D9 of the planning brief); Atkinson–Han's definition by
-local graphs, `IsContDiffDomain 1 Ω`, is equivalent to it (`isClassC1_of_isContDiffDomain`,
-and the converse `isContDiffDomain_of_isClassC1` by the implicit function theorem,
-`IsContDiffChartDomain.isContDiffDomain` of `Numlib/Analysis/Sobolev/Boundary/ChartGraph`). The
-extension by reflection `u^⋆` of Lemma 9.2 is the backbone's `evenReflection e_N u`, the odd
-reflection `f^□` of its proof is `oddReflection e_N f`.
+The proofs specialize the backbone modules `Numlib.Analysis.Sobolev.Chart`,
+`Numlib.Analysis.Sobolev.Reflection`, `Numlib.Analysis.Sobolev.Extension` and
+`Numlib.Analysis.Sobolev.Boundary.ChartGraph`.
+
+## Main definitions
+
+* Section 9.2, definition of an open set of class $C^m$, `Brezis.Chapter09.IsOfClassC`: an open set
+  with a local chart of class $C^m$ at each boundary point, unfolded by
+  `Brezis.Chapter09.isOfClassC_iff`.
+* Section 9.2, definition of an open set of class $C^1$, `Brezis.Chapter09.IsClassC1`: the case
+  $m = 1$.
 
 ## Main results
 
-* `IsOfClassC`, `isOfClassC_iff`, `IsClassC1`, `isClassC1_of_isContDiffDomain`,
-  `isContDiffDomain_of_isClassC1`, `isClassC1_iff_isContDiffDomain` — the Definition, and its
-  equivalence with Atkinson–Han's.
-* `theorem_9_7`, `theorem_9_7_halfSpace` — the extension operator
-  `P : W^{1,p}(Ω) → W^{1,p}(ℝ^N)` for `Ω` of class `C^1` with bounded boundary, and for the half
-  space.
-* `lemma_9_2`, `lemma_9_2_halfSpace` — extension by reflection from `Q_+` to `Q` and from `ℝ^N_+`
-  to `ℝ^N`, with the identities (7) and (8) and the constant `2` for the book's norms.
-* `lemma_9_3` — the partition of unity.
-* `corollary_9_8`, `corollary_9_8_dense`, `corollary_9_8_bounded` — density of the restrictions of
-  `C_c^∞(ℝ^N)` functions in `W^{1,p}(Ω)`, `1 ≤ p < ∞`.
+* `Brezis.Chapter09.isClassC1_iff_isContDiffDomain`: an open set is of class $C^1$ in the sense of
+  the source if and only if it is a $C^1$ domain in the sense of local graphs; the two directions
+  are `Brezis.Chapter09.isClassC1_of_isContDiffDomain` and
+  `Brezis.Chapter09.isContDiffDomain_of_isClassC1`.
+* Theorem 9.7, `Brezis.Chapter09.theorem_9_7`: an extension operator
+  $P : W^{1,p}(\Omega) \to W^{1,p}(\mathbb{R}^N)$ for $\Omega$ of class $C^1$ with bounded boundary;
+  the case of the half space is `Brezis.Chapter09.theorem_9_7_halfSpace`.
+* Lemma 9.2, `Brezis.Chapter09.lemma_9_2`: the extension by reflection $u^\star$ of
+  $u \in W^{1,p}(Q_+)$ lies in $W^{1,p}(Q)$, with the identities (7) and (8) and the constant $2$;
+  the case of the half space is `Brezis.Chapter09.lemma_9_2_halfSpace`.
+* Remark 9, `Brezis.Chapter09.remark_9_9`: an extension operator for the square $(0, 1)^2$, which is
+  not of class $C^1$.
+* Lemma 9.3, `Brezis.Chapter09.lemma_9_3`: a smooth partition of unity subordinate to an open
+  covering of a compact set $\Gamma$.
+* Corollary 9.8, `Brezis.Chapter09.corollary_9_8`: for $\Omega$ of class $C^1$ and
+  $1 \le p < \infty$, every $u \in W^{1,p}(\Omega)$ is a limit of restrictions of functions of
+  $C_c^\infty(\mathbb{R}^N)$; the density form is `Brezis.Chapter09.corollary_9_8_dense`, and the
+  proof through Theorem 9.7 for a bounded boundary is `Brezis.Chapter09.corollary_9_8_bounded`.
+
+## Conventions
+
+* The dimension is written $N = d + 1$, because the section singles out the last coordinate $x_N$.
+  The space $\mathbb{R}^N$ is `EuclideanSpace ℝ (Fin (d + 1))`, a point is $x = (x', x_N)$, and
+  $e_N$ is `EuclideanSpace.single (Fin.last d) 1`.
+* The half space $\mathbb{R}^N_+ = \{x_N > 0\}$ is `EuclideanSpace.upperHalfSpace d`. The cylinder
+  $Q = \{|x'| < 1, |x_N| < 1\}$ is `unitChartCube d`, $Q_+ = Q \cap \mathbb{R}^N_+$ is
+  `unitChartCubePos d`, and $Q_0 = \{(x', 0) : |x'| < 1\}$ is `unitChartCubeZero d`.
+* As open sets, $Q$ is `unitChartCubeOpens d` and $Q_+$ is `posHalf e_N Q`, whose underlying set is
+  `unitChartCubePos d` (`coe_posHalf_unitChartCubeOpens`). The half space is `posHalf e_N ⊤`, whose
+  underlying set is `EuclideanSpace.upperHalfSpace d` (`coe_posHalf_top_eq_upperHalfSpace`).
+* The extension by reflection $u^\star$ of Lemma 9.2 is `evenReflection e_N u`, and the odd
+  reflection $f^\square$ of its proof is `oddReflection e_N f`.
+* The norm $\|\cdot\|_{W^{1,p}}$ of the source is `Brezis.Chapter09.bookNorm`.
+
+## Implementation notes
+
+* "$\Omega$ is of class $C^1$" is `Brezis.Chapter09.IsClassC1 Ω`, the definition of the source by
+  local charts $H : Q \to U$. It is the backbone's `IsContDiffChartDomain 1 Ω`. The definition by
+  local graphs of Definition 7.2.1 of [han2009theoretical], `IsContDiffDomain 1 Ω`, is equivalent to
+  it: a local graph gives a local chart by straightening (`IsContDiffDomain.isContDiffChartDomain`),
+  and the implicit function theorem gives the converse (`IsContDiffChartDomain.isContDiffDomain`).
+
+## Deviations from the source
+
+* **Definition of an open set of class $C^\infty$** (reading). The source defines "of class
+  $C^\infty$" as "of class $C^m$ for every $m$". The library reads it as one chart of class
+  $C^\infty$ at each boundary point, which is a priori stronger. See `Brezis.Chapter09.IsOfClassC`.
 -/
 
 open Filter MeasureTheory Metric Topology TopologicalSpace EuclideanSpace
@@ -49,33 +89,47 @@ namespace Brezis.Chapter09
 
 variable {d : ℕ}
 
-/-- The book's `ℝ^N`, with `N = d + 1`. -/
+/-- The space $\mathbb{R}^N$ of the source, with $N = d + 1$. -/
 local notation "𝔼" => EuclideanSpace ℝ (Fin (d + 1))
 
-/-- The last basis vector `e_N` of `ℝ^N`, the normal of the hyperplane `x_N = 0`. -/
+/-- The last basis vector $e_N$ of $\mathbb{R}^N$, the normal of the hyperplane $x_N = 0$. -/
 local notation "eN" => EuclideanSpace.single (Fin.last d) (1 : ℝ)
 
-/-! ### Open sets of class `C^m` -/
+/-! ### Open sets of class $C^m$ -/
 
-/-- **The Definition of "`Ω` is of class `C^m`"** (§9.2 for `m = 1`, §9.6 for general `m`): for
-every `x ∈ ∂Ω = Γ` there are a neighbourhood `U` of `x` in `ℝ^N` and a bijective map
-`H : Q → U` such that `H ∈ C^m(Q̄)`, `H⁻¹ ∈ C^m(Ū)`, `H(Q_+) = U ∩ Ω` and `H(Q_0) = U ∩ Γ`
-(`isOfClassC_iff` for this wording); the backbone's chart condition `IsContDiffChartDomain`.
+/-- **Section 9.2** of [brezis2011functional], definition of an open set of class $C^m$. An open set
+$\Omega \subseteq \mathbb{R}^N$ with boundary $\Gamma = \partial\Omega$ is **of class $C^m$** if
+for every $x \in \Gamma$ there are a neighbourhood $U$ of $x$ in $\mathbb{R}^N$ and a bijective
+map $H : Q \to U$ such that
+$$H \in C^m(\bar Q), \quad H^{-1} \in C^m(\bar U), \quad H(Q_+) = U \cap \Omega, \quad H(Q_0) =
+  U \cap \Gamma.$$
 
-The book defines "of class `C^∞`" as "of class `C^m` for every `m`"; `IsOfClassC ⊤ Ω` asks for
-one chart of class `C^∞` at each boundary point, which is a priori stronger and is what the
-regularity theorems of §9.6 and chapter 10 use. The implicit function theorem
-(`IsContDiffChartDomain.isContDiffDomain`, for `1 ≤ n ≠ ω`) turns a chart of class `C^m` into a
-graph, so `IsOfClassC m Ω` for every `m` gives `IsContDiffDomain m Ω` for every `m`; the uniform
-statement — one `C^∞` graph function serving every order — needs the graph function to be the
-same for all `m`, which is not proved here. -/
+**Reading.** The source defines "of class $C^\infty$" as "of class $C^m$ for every $m$". Here
+`IsOfClassC ⊤ Ω` asks for one chart of class $C^\infty$ at each boundary point, which is a
+priori stronger, and which is what the regularity theorems of Section 9.6 and Chapter 10 use.
+The implicit function theorem (`IsContDiffChartDomain.isContDiffDomain`, for every order
+$m \ge 1$ other than the analytic order $\omega$) turns a chart of class $C^m$ into a graph, so
+`IsOfClassC m Ω` for every $m$ gives `IsContDiffDomain m Ω` for every $m \ge 1$. The uniform
+statement, one $C^\infty$ graph function for every order, needs the graph function to be the
+same for all $m$, and is not proved.
+
+The source states the definition for $m = 1$ in Section 9.2 and for general $m$ in Section 9.6.
+The definition is the backbone's chart condition `IsContDiffChartDomain m Ω`, and
+`Brezis.Chapter09.isOfClassC_iff` unfolds it to the wording of the source. Here $m$ ranges over
+$\mathbb{N} \cup \{\infty\}$. -/
 def IsOfClassC (m : ℕ∞) (Ω : Set 𝔼) : Prop :=
   IsContDiffChartDomain m Ω
 
-/-- **The Definition of "`Ω` is of class `C^m`", unfolded to the book's wording**, for an
-integer `m`: `Ω` is open and for every `x ∈ ∂Ω` there are an open neighbourhood `U` of `x` and a
-map `H : Q → U`, a bijection with inverse `H⁻¹`, with `H ∈ C^m(Q̄)`, `H⁻¹ ∈ C^m(Ū)`,
-`H(Q_+) = U ∩ Ω` and `H(Q_0) = U ∩ ∂Ω`. -/
+/-- **Section 9.2** of [brezis2011functional], definition of an open set of class $C^m$, unfolded to
+the wording of the source. Let $m \ge 0$ be an integer. An open set
+$\Omega \subseteq \mathbb{R}^N$ is of class $C^m$ if and only if $\Omega$ is open and for every
+$x \in \partial\Omega$ there are an open neighbourhood $U$ of $x$ and a map $H : Q \to U$, a
+bijection with inverse $H^{-1}$, such that $H \in C^m(\bar Q)$, $H^{-1} \in C^m(\bar U)$,
+$H(Q_+) = U \cap \Omega$ and $H(Q_0) = U \cap \partial\Omega$.
+
+The maps $H$ and $H^{-1}$ are functions on $\mathbb{R}^N$. The regularity on the closures is
+`ContDiffOn` on `closure (unitChartCube d)` and on `closure U`, and the bijection is `Set.BijOn`
+with inverse `Set.InvOn` between $Q$ and $U$. -/
 theorem isOfClassC_iff (m : ℕ) (Ω : Set 𝔼) :
     IsOfClassC m Ω ↔ IsOpen Ω ∧ ∀ x ∈ frontier Ω, ∃ (U : Set 𝔼) (H Hinv : 𝔼 → 𝔼),
       IsOpen U ∧ x ∈ U ∧ ContDiffOn ℝ m H (closure (unitChartCube d)) ∧
@@ -93,41 +147,46 @@ theorem isOfClassC_iff (m : ℕ) (Ω : Set 𝔼) :
     obtain ⟨U, H, Hinv, hU, hxU, hH, hHinv, hbij, hinv, hpos, hzero⟩ := h x hx
     exact ⟨⟨U, H, Hinv, hU, hH, hHinv, hbij, hinv, hpos, hzero⟩, hxU⟩
 
-/-- An open set of class `C^m` is of class `C^k` for every `k ≤ m`. -/
+/-- An open set of class $C^m$ is of class $C^k$ for every $k \le m$. -/
 theorem IsOfClassC.of_le {m k : ℕ∞} {Ω : Set 𝔼} (h : IsOfClassC m Ω) (hkm : k ≤ m) :
     IsOfClassC k Ω :=
   IsContDiffChartDomain.of_le h (by exact_mod_cast hkm)
 
-/-- An open set of class `C^m` is open. -/
+/-- An open set of class $C^m$ is open. -/
 theorem IsOfClassC.isOpen {m : ℕ∞} {Ω : Set 𝔼} (h : IsOfClassC m Ω) : IsOpen Ω :=
   h.1
 
-/-- **The Definition of "`Ω` is of class `C^1`"** (§9.2): `IsOfClassC 1 Ω`, the hypothesis of
-Theorem 9.7, Corollary 9.8, and of Corollaries 9.14–9.15, Theorem 9.16 and Remark 21 in §9.3
-and §9.4. -/
+/-- **Section 9.2** of [brezis2011functional], definition of an open set of class $C^1$. An open set
+$\Omega$ is **of class $C^1$** if it is of class $C^m$ for $m = 1$
+(`Brezis.Chapter09.IsOfClassC`).
+
+This is the hypothesis of Theorem 9.7 and Corollary 9.8, and of Corollaries 9.14 and 9.15,
+Theorem 9.16 and Remark 21 in Sections 9.3 and 9.4 of the source. -/
 abbrev IsClassC1 (Ω : Set 𝔼) : Prop :=
   IsOfClassC 1 Ω
 
-/-- **The two readings of "`C^1` domain" agree, one way**: Atkinson–Han's `C^1` domains
-(`IsContDiffDomain 1 Ω`, Definition 7.2.1, the definition by local graphs of
-`Numlib/Analysis/Sobolev/Domain`) are of class `C^1` in Brezis's sense, a local graph giving a
-local chart by straightening (`IsContDiffDomain.isContDiffChartDomain`). The converse,
-`isContDiffDomain_of_isClassC1`, is the implicit function theorem. -/
+/-- The two definitions of a $C^1$ domain agree, one direction. A $C^1$ domain in the sense of local
+graphs, `IsContDiffDomain 1 Ω` (Definition 7.2.1 of [han2009theoretical]), is of class $C^1$ in
+the sense of [brezis2011functional], Section 9.2.
+
+A local graph gives a local chart by straightening (`IsContDiffDomain.isContDiffChartDomain`).
+The converse is `Brezis.Chapter09.isContDiffDomain_of_isClassC1`. -/
 theorem isClassC1_of_isContDiffDomain {Ω : Set 𝔼} (h : IsContDiffDomain 1 Ω) : IsClassC1 Ω :=
   h.isContDiffChartDomain
 
-/-- **The two readings of "`C^1` domain" agree, the other way**: an open set of class `C^1` in
-Brezis's sense (`IsClassC1 Ω`, by local charts) is a `C^1` domain in Atkinson–Han's sense
-(`IsContDiffDomain 1 Ω`, Definition 7.2.1, by local graphs). This is the backbone's chart ⇒
-graph bridge `IsContDiffChartDomain.isContDiffDomain`
-(`Numlib/Analysis/Sobolev/Boundary/ChartGraph`): the implicit function theorem applied to the
-last coordinate of the inverse chart, whose derivative is invertible, after a rigid motion
-sending its gradient to `e_N`. -/
+/-- The two definitions of a $C^1$ domain agree, the other direction. An open set of class $C^1$ in
+the sense of the source, by local charts, is a $C^1$ domain in the sense of local graphs,
+`IsContDiffDomain 1 Ω` (Definition 7.2.1 of [han2009theoretical]).
+
+The proof specializes the backbone's `IsContDiffChartDomain.isContDiffDomain`: the implicit
+function theorem applies to the last coordinate of the inverse chart, whose derivative is
+invertible, after a rigid motion that sends its gradient to $e_N$. -/
 theorem isContDiffDomain_of_isClassC1 {Ω : Set 𝔼} (h : IsClassC1 Ω) : IsContDiffDomain 1 Ω :=
   h.isContDiffDomain le_rfl WithTop.coe_ne_top
 
-/-- **The two readings of "`C^1` domain" agree**: Brezis's `IsClassC1 Ω` (local charts) is
-Atkinson–Han's `IsContDiffDomain 1 Ω` (local graphs). -/
+/-- The two definitions of a $C^1$ domain agree. An open set $\Omega$ is of class $C^1$ in the sense
+of the source, by local charts, if and only if it is a $C^1$ domain in the sense of local
+graphs, `IsContDiffDomain 1 Ω` (Definition 7.2.1 of [han2009theoretical]). -/
 theorem isClassC1_iff_isContDiffDomain {Ω : Set 𝔼} : IsClassC1 Ω ↔ IsContDiffDomain 1 Ω :=
   ⟨isContDiffDomain_of_isClassC1, isClassC1_of_isContDiffDomain⟩
 
@@ -135,8 +194,15 @@ theorem isClassC1_iff_isContDiffDomain {Ω : Set 𝔼} : IsClassC1 Ω ↔ IsCont
 
 variable {p : ℝ≥0∞} [Fact (1 ≤ p)]
 
-/-- The three properties of the extension operator of Theorem 9.7, with the book's norm
-`‖·‖_{W^{1,p}}` (`bookNorm`), from the backbone's statement with the norm of the type. -/
+/-- Let $\Omega \subseteq \mathbb{R}^N$ be open and $1 \le p \le \infty$. Suppose that there are a
+bounded linear operator $P : W^{1,p}(\Omega) \to W^{1,p}(\mathbb{R}^N)$ and a constant $C$ such
+that, for every $u \in W^{1,p}(\Omega)$, $Pu = u$ almost everywhere on $\Omega$,
+$\|Pu\|_{L^p(\mathbb{R}^N)} \le C \|u\|_{L^p(\Omega)}$ and $\|Pu\| \le C \|u\|$ for the norm of
+the type. Then there are such $P$ and $C$ with the last bound for the norm of the source:
+$\|Pu\|_{W^{1,p}(\mathbb{R}^N)} \le C \|u\|_{W^{1,p}(\Omega)}$.
+
+This converts the backbone form of Theorem 9.7 of [brezis2011functional] to the norm
+`Brezis.Chapter09.bookNorm` of the source, through the equivalence of the two norms. -/
 theorem exists_extension_of_backbone {Ω : Opens 𝔼}
     (h : ∃ (P : sobolevSpace (d + 1) p Ω →L[ℝ] sobolevSpace (d + 1) p ⊤) (C : ℝ),
       ∀ u, SobolevMultiIndex.fn (P u) =ᵐ[volume.restrict (Ω : Set 𝔼)] SobolevMultiIndex.fn u ∧
@@ -167,12 +233,20 @@ theorem exists_extension_of_backbone {Ω : Opens 𝔼}
                 mul_le_mul_of_nonneg_left (bookNorm_equiv u).1 (le_max_right _ _)
       _ = ((d + 1 : ℕ) + 1) * max C 0 * bookNorm u := by ring
 
-/-- **Theorem 9.7.** Suppose that `Ω` is of class `C^1` with `Γ = ∂Ω` bounded. Then there is a
-linear extension operator `P : W^{1,p}(Ω) → W^{1,p}(ℝ^N)`, `1 ≤ p ≤ ∞`, such that for all
-`u ∈ W^{1,p}(Ω)`: `P u|_Ω = u`, `‖P u‖_{L^p(ℝ^N)} ≤ C ‖u‖_{L^p(Ω)}` and
-`‖P u‖_{W^{1,p}(ℝ^N)} ≤ C ‖u‖_{W^{1,p}(Ω)}`, where `C` depends only on `Ω` (and `p`). The
-operator is bounded, and the last bound is stated for the book's norm `‖·‖_{W^{1,p}}`
-(`bookNorm`). -/
+/-- **Theorem 9.7** of [brezis2011functional]. Suppose that $\Omega$ is of class $C^1$ with
+$\Gamma = \partial\Omega$ bounded, and let $1 \le p \le \infty$. Then there are a bounded linear
+extension operator $P : W^{1,p}(\Omega) \to W^{1,p}(\mathbb{R}^N)$ and a constant $C$ such that
+for all $u \in W^{1,p}(\Omega)$:
+
+(i) $Pu|_\Omega = u$;
+
+(ii) $\|Pu\|_{L^p(\mathbb{R}^N)} \le C \|u\|_{L^p(\Omega)}$;
+
+(iii) $\|Pu\|_{W^{1,p}(\mathbb{R}^N)} \le C \|u\|_{W^{1,p}(\Omega)}$.
+
+The source says that $C$ depends only on $\Omega$; here $C$ depends on $\Omega$ and $p$.
+Property (i) holds almost everywhere on $\Omega$, and the norm in (iii) is the norm
+`Brezis.Chapter09.bookNorm` of the source. -/
 theorem theorem_9_7 {Ω : Opens 𝔼} (hΩ : IsClassC1 (Ω : Set 𝔼))
     (hΓ : Bornology.IsBounded (frontier (Ω : Set 𝔼))) :
     ∃ (P : sobolevSpace (d + 1) p Ω →L[ℝ] sobolevSpace (d + 1) p ⊤) (C : ℝ),
@@ -182,9 +256,15 @@ theorem theorem_9_7 {Ω : Opens 𝔼} (hΩ : IsClassC1 (Ω : Set 𝔼))
         bookNorm (P u) ≤ C * bookNorm u :=
   exists_extension_of_backbone (SobolevEuclidean.exists_extensionL hΩ hΓ)
 
-/-- **Theorem 9.7 for the half space `Ω = ℝ^N_+`.** There is a linear extension operator
-`P : W^{1,p}(ℝ^N_+) → W^{1,p}(ℝ^N)`, `1 ≤ p ≤ ∞`, with the three properties of Theorem 9.7:
-the extension by reflection of Lemma 9.2. -/
+/-- **Theorem 9.7** of [brezis2011functional], the case of the half space $\Omega = \mathbb{R}^N_+$.
+Let $1 \le p \le \infty$. There are a bounded linear extension operator $P :
+W^{1,p}(\mathbb{R}^N_+) \to W^{1,p}(\mathbb{R}^N)$ and a constant $C$ such that for all
+$u \in W^{1,p}(\mathbb{R}^N_+)$, $Pu = u$ almost everywhere on $\mathbb{R}^N_+$,
+$\|Pu\|_{L^p(\mathbb{R}^N)} \le C \|u\|_{L^p(\mathbb{R}^N_+)}$ and
+$\|Pu\|_{W^{1,p}(\mathbb{R}^N)} \le C \|u\|_{W^{1,p}(\mathbb{R}^N_+)}$.
+
+The operator is the extension by reflection of Lemma 9.2. The half space is
+`EuclideanSpace.upperHalfSpaceOpens d`. -/
 theorem theorem_9_7_halfSpace :
     ∃ (P : sobolevSpace (d + 1) p (upperHalfSpaceOpens d) →L[ℝ] sobolevSpace (d + 1) p ⊤)
       (C : ℝ), ∀ u, SobolevMultiIndex.fn (P u) =ᵐ[volume.restrict (upperHalfSpace d)]
@@ -195,12 +275,18 @@ theorem theorem_9_7_halfSpace :
         bookNorm (P u) ≤ C * bookNorm u :=
   exists_extension_of_backbone SobolevEuclidean.exists_extensionL_upperHalfSpace
 
-/-- **Remark 9.** Lemma 9.2 gives a very simple construction of extension operators for certain
-open sets that are not of class `C^1`: for the square `Ω = {x ∈ ℝ² ; 0 < x_1 < 1, 0 < x_2 < 1}`
-(`EuclideanSpace.rect 0 1 0 1`) there is a linear extension operator
-`P : W^{1,p}(Ω) → W^{1,p}(ℝ²)`, `1 ≤ p ≤ ∞`, with the three properties of Theorem 9.7 — by four
-successive reflections (Figure 6) reaching `ũ ∈ W^{1,p}(Ω̃)`, `Ω̃ = (−1, 3)²`, followed by a
-cut-off: the backbone's `SobolevEuclidean.exists_extensionL_unitSquare`. -/
+/-- **Remark 9** in Chapter 9 of [brezis2011functional]. Lemma 9.2 gives a simple construction of
+extension operators for some open sets that are not of class $C^1$. Let $\Omega = \{x \in
+\mathbb{R}^2 : 0 < x_1 < 1, \ 0 < x_2 < 1\}$ be the square and $1 \le p \le \infty$. There are a
+bounded linear extension operator $P : W^{1,p}(\Omega) \to W^{1,p}(\mathbb{R}^2)$ and a constant
+$C$ such that for all $u \in W^{1,p}(\Omega)$, $Pu = u$ almost everywhere on $\Omega$,
+$\|Pu\|_{L^p(\mathbb{R}^2)} \le C \|u\|_{L^p(\Omega)}$ and $\|Pu\|_{W^{1,p}(\mathbb{R}^2)} \le C
+\|u\|_{W^{1,p}(\Omega)}$.
+
+The square is `EuclideanSpace.rect 0 1 0 1`. The construction is that of the source: four
+successive reflections (Figure 6) give $\tilde u \in W^{1,p}(\tilde\Omega)$ with
+$\tilde\Omega = (-1, 3)^2$, followed by a cut-off. The proof specializes
+`SobolevEuclidean.exists_extensionL_unitSquare`. -/
 theorem remark_9_9 :
     ∃ (P : sobolevSpace 2 p (EuclideanSpace.rect 0 1 0 1) →L[ℝ] sobolevSpace 2 p ⊤) (C : ℝ),
       ∀ u, SobolevMultiIndex.fn (P u)
@@ -214,9 +300,13 @@ theorem remark_9_9 :
 
 /-! ### Lemma 9.2 -/
 
-/-- The reflection across `x_N = 0` fixes the basis vectors `e_i`, `i < N`, and sends `e_N` to
-`−e_N`; so the reflected derivative in a basis direction has the norm of the even reflection of
-that partial derivative. -/
+/-- Let $\sigma$ be the reflection across the hyperplane $x_N = 0$, let $w : \mathbb{R}^N \to
+\mathcal{L}(\mathbb{R}^N, \mathbb{R})$, and let $i = 1, \dots, N$. For every $x$, the reflected
+derivative of $w$ at $x$ (`reflectFDeriv e_N w x`), applied to $e_i$, has the same absolute
+value as the even reflection of the function $z \mapsto w(z) e_i$ at $x$.
+
+The reflection $\sigma$ fixes the vectors $e_i$ with $i < N$ and sends $e_N$ to $-e_N$. This
+supports the norm bounds of Lemma 9.2 of [brezis2011functional]. -/
 theorem norm_reflectFDeriv_single (w : 𝔼 → 𝔼 →L[ℝ] ℝ) (x : 𝔼) (i : Fin (d + 1)) :
     ‖reflectFDeriv eN w x (EuclideanSpace.single i 1)‖
       = ‖evenReflection eN (fun z ↦ w z (EuclideanSpace.single i 1)) x‖ := by
@@ -233,7 +323,10 @@ theorem norm_reflectFDeriv_single (w : 𝔼 → 𝔼 →L[ℝ] ℝ) (x : 𝔼) (
         simp [hi]
       rw [hyperplaneReflection_apply_of_inner_eq_zero _ h2]
 
-/-- The odd reflection only sees the function up to a null set of `V_+`. -/
+/-- Let $V \subseteq \mathbb{R}^N$ be open and invariant under the reflection across $x_N = 0$, and
+let $V_+ = V \cap \{x_N > 0\}$. If $f = g$ almost everywhere on $V_+$, then
+$f^\square = g^\square$ almost everywhere on $V$, where $f^\square$ is the odd reflection of $f$
+(`oddReflection e_N f`). -/
 theorem oddReflection_congr_ae {V : Opens 𝔼} (hV : hyperplaneReflection eN '' (V : Set 𝔼) = V)
     {f g : 𝔼 → ℝ} (h : f =ᵐ[volume.restrict (posHalf eN V : Set 𝔼)] g) :
     oddReflection eN f =ᵐ[volume.restrict (V : Set 𝔼)] oddReflection eN g := by
@@ -245,12 +338,20 @@ theorem oddReflection_congr_ae {V : Opens 𝔼} (hV : hyperplaneReflection eN ''
   · exact hx
   · rw [hx]
 
-/-- **Lemma 9.2, for any open `V` symmetric under the reflection across `x_N = 0`.** For
-`u ∈ W^{1,p}(V_+)`, `V_+ = V ∩ {x_N > 0}`, `1 ≤ p ≤ ∞`, the extension by reflection `u^⋆` lies
-in `W^{1,p}(V)`, with `‖u^⋆‖_{L^p(V)} ≤ 2 ‖u‖_{L^p(V_+)}`,
-`‖u^⋆‖_{W^{1,p}(V)} ≤ 2 ‖u‖_{W^{1,p}(V_+)}` (the book's norms), and the identities (7)
-`∂_i u^⋆ = (∂_i u)^⋆` for `i < N` and (8) `∂_N u^⋆ = (∂_N u)^□`. The cases `V = Q` and
-`V = ℝ^N` are `lemma_9_2` and `lemma_9_2_halfSpace`. -/
+/-- **Lemma 9.2** of [brezis2011functional], for an open set symmetric under the reflection across
+$x_N = 0$. Let $V \subseteq \mathbb{R}^N$ be open and invariant under this reflection, let
+$V_+ = V \cap \{x_N > 0\}$, and let $1 \le p \le \infty$ and $u \in W^{1,p}(V_+)$. Then the
+extension by reflection $u^\star$ lies in $W^{1,p}(V)$, with
+$$\|u^\star\|_{L^p(V)} \le 2 \|u\|_{L^p(V_+)}, \qquad
+  \|u^\star\|_{W^{1,p}(V)} \le 2 \|u\|_{W^{1,p}(V_+)},$$
+and, almost everywhere on $V$,
+$$\frac{\partial u^\star}{\partial x_i} = \Big(\frac{\partial u}{\partial x_i}\Big)^\star
+  \text{ for } 1 \le i \le N - 1 \quad (7), \qquad
+  \frac{\partial u^\star}{\partial x_N} = \Big(\frac{\partial u}{\partial x_N}\Big)^\square
+  \quad (8).$$
+
+The norm $\|\cdot\|_{W^{1,p}}$ is `Brezis.Chapter09.bookNorm`. The cases $V = Q$ and
+$V = \mathbb{R}^N$ are `Brezis.Chapter09.lemma_9_2` and `Brezis.Chapter09.lemma_9_2_halfSpace`. -/
 theorem lemma_9_2_of_symm {V : Opens 𝔼} (hV : hyperplaneReflection eN '' (V : Set 𝔼) = V)
     (u : sobolevSpace (d + 1) p (posHalf eN V)) :
     ∃ w : sobolevSpace (d + 1) p V,
@@ -319,13 +420,24 @@ theorem lemma_9_2_of_symm {V : Opens 𝔼} (hV : hyperplaneReflection eN '' (V :
       Eventually.of_forall fun x ↦ reflectFDeriv_apply_self _ W x
     exact (hwd (Fin.last d)).trans (h3.trans (oddReflection_congr_ae hV (hWi (Fin.last d))))
 
-/-- **Lemma 9.2.** Given `u ∈ W^{1,p}(Q_+)`, `1 ≤ p ≤ ∞`, the extension by reflection
-`u^⋆(x', x_N) = u(x', x_N)` for `x_N > 0`, `u(x', −x_N)` for `x_N < 0` (the backbone's
-`evenReflection e_N u`) lies in `W^{1,p}(Q)`, with `‖u^⋆‖_{L^p(Q)} ≤ 2 ‖u‖_{L^p(Q_+)}` and
-`‖u^⋆‖_{W^{1,p}(Q)} ≤ 2 ‖u‖_{W^{1,p}(Q_+)}` for the book's norms; moreover (7)
-`∂_i u^⋆ = (∂_i u)^⋆` for `1 ≤ i ≤ N − 1` and (8) `∂_N u^⋆ = (∂_N u)^□`, where
-`f^□(x', x_N) = f(x', x_N)` for `x_N > 0`, `−f(x', −x_N)` for `x_N < 0` (`oddReflection e_N f`).
-Here `Q_+` is `posHalf e_N Q`, whose carrier is `unitChartCubePos d`. -/
+/-- **Lemma 9.2** of [brezis2011functional]. Let $1 \le p \le \infty$ and $u \in W^{1,p}(Q_+)$. The
+extension by reflection
+$$u^\star(x', x_N) = \begin{cases} u(x', x_N) & \text{if } x_N > 0, \\
+  u(x', -x_N) & \text{if } x_N < 0 \end{cases}$$
+lies in $W^{1,p}(Q)$, with $\|u^\star\|_{L^p(Q)} \le 2 \|u\|_{L^p(Q_+)}$ and
+$\|u^\star\|_{W^{1,p}(Q)} \le 2 \|u\|_{W^{1,p}(Q_+)}$. Moreover, almost everywhere on $Q$,
+$$\frac{\partial u^\star}{\partial x_i} = \Big(\frac{\partial u}{\partial x_i}\Big)^\star
+  \text{ for } 1 \le i \le N - 1 \quad (7), \qquad
+  \frac{\partial u^\star}{\partial x_N} = \Big(\frac{\partial u}{\partial x_N}\Big)^\square
+  \quad (8),$$
+where $f^\square(x', x_N) = f(x', x_N)$ if $x_N > 0$ and $f^\square(x', x_N) = -f(x', -x_N)$ if
+$x_N < 0$.
+
+The extension $u^\star$ is `evenReflection e_N u`.
+The odd reflection $f^\square$ is `oddReflection e_N f`.
+Both take the value of the first case also on $x_N = 0$, a null set. The open set $Q_+$ is
+`posHalf e_N Q`, whose underlying set is `unitChartCubePos d`. The norm $\|\cdot\|_{W^{1,p}}$ is
+`Brezis.Chapter09.bookNorm`. -/
 theorem lemma_9_2 (u : sobolevSpace (d + 1) p (posHalf eN (unitChartCubeOpens d))) :
     ∃ w : sobolevSpace (d + 1) p (unitChartCubeOpens d),
       SobolevMultiIndex.fn w =ᵐ[volume.restrict (unitChartCube d)]
@@ -340,9 +452,15 @@ theorem lemma_9_2 (u : sobolevSpace (d + 1) p (posHalf eN (unitChartCubeOpens d)
   have h := lemma_9_2_of_symm (p := p) hyperplaneReflection_image_unitChartCubeOpens u
   rwa [eLpNorm_restrict_congr_set_eq _ p coe_posHalf_unitChartCubeOpens] at h
 
-/-- **Lemma 9.2 for the half space**: "the conclusion of Lemma 9.2 remains valid if `Q_+` is
-replaced by `ℝ^N_+`". Here `ℝ^N_+` is `posHalf e_N ⊤`, whose carrier is `upperHalfSpace d`
-(`coe_posHalf_top_eq_upperHalfSpace`). -/
+/-- **Lemma 9.2** of [brezis2011functional], the case of the half space: "the conclusion of Lemma
+9.2 remains valid if $Q_+$ is replaced by $\mathbb{R}^N_+$". Let $1 \le p \le \infty$ and
+$u \in W^{1,p}(\mathbb{R}^N_+)$. Then $u^\star \in W^{1,p}(\mathbb{R}^N)$, with
+$\|u^\star\|_{L^p(\mathbb{R}^N)} \le 2 \|u\|_{L^p(\mathbb{R}^N_+)}$,
+$\|u^\star\|_{W^{1,p}(\mathbb{R}^N)} \le 2 \|u\|_{W^{1,p}(\mathbb{R}^N_+)}$, and the identities
+(7) and (8) almost everywhere on $\mathbb{R}^N$.
+
+Here $\mathbb{R}^N_+$ is `posHalf e_N ⊤`, whose underlying set is
+`EuclideanSpace.upperHalfSpace d` (`coe_posHalf_top_eq_upperHalfSpace`). -/
 theorem lemma_9_2_halfSpace (u : sobolevSpace (d + 1) p (posHalf eN ⊤)) :
     ∃ w : sobolevSpace (d + 1) p ⊤,
       SobolevMultiIndex.fn w =ᵐ[volume] evenReflection eN (SobolevMultiIndex.fn u) ∧
@@ -361,11 +479,23 @@ theorem lemma_9_2_halfSpace (u : sobolevSpace (d + 1) p (posHalf eN ⊤)) :
 
 /-! ### Lemma 9.3 and Corollary 9.8 -/
 
-/-- **Lemma 9.3 (partition of unity).** Let `Γ ⊆ ℝ^N` be compact and let `U_1, …, U_k` be an
-open covering of `Γ`. Then there are `θ_0, θ_1, …, θ_k ∈ C^∞(ℝ^N)` with `0 ≤ θ_i ≤ 1`,
-`∑_{i=0}^k θ_i = 1` on `ℝ^N`, `supp θ_i` compact with `supp θ_i ⊆ U_i` for `i ≥ 1`, and
-`supp θ_0 ⊆ ℝ^N ∖ Γ`. If moreover `Ω` is open and bounded with `Γ = ∂Ω`, then
-`θ_0|_Ω ∈ C_c^∞(Ω)`: the part of the support of `θ_0` in `Ω̄` is a compact subset of `Ω`. -/
+/-- **Lemma 9.3** of [brezis2011functional] (partition of unity). Let
+$\Gamma \subseteq \mathbb{R}^N$ be compact and let $U_1, \dots, U_k$ be open sets that cover
+$\Gamma$. Then there are functions $\theta_0, \theta_1, \dots, \theta_k \in
+C^\infty(\mathbb{R}^N)$ such that
+
+(i) $0 \le \theta_i \le 1$ for $i = 0, \dots, k$, and $\sum_{i=0}^k \theta_i = 1$ on
+$\mathbb{R}^N$;
+
+(ii) $\operatorname{supp} \theta_i$ is compact and $\operatorname{supp} \theta_i \subseteq U_i$
+for $i = 1, \dots, k$, and $\operatorname{supp} \theta_0 \subseteq \mathbb{R}^N \setminus
+\Gamma$;
+
+(iii) if $\Omega$ is open and bounded with $\Gamma = \partial\Omega$, then
+$\theta_0|_\Omega \in C_c^\infty(\Omega)$.
+
+Property (iii) is stated as: the set $\operatorname{supp} \theta_0 \cap \bar\Omega$ is compact
+and contained in $\Omega$. The same functions $\theta_i$ serve for every such $\Omega$. -/
 theorem lemma_9_3 {Γ : Set 𝔼} (hΓ : IsCompact Γ) {k : ℕ} {U : Fin k → Set 𝔼}
     (hU : ∀ i, IsOpen (U i)) (hΓU : Γ ⊆ ⋃ i, U i) :
     ∃ (θ₀ : 𝔼 → ℝ) (θ : Fin k → 𝔼 → ℝ), ContDiff ℝ ∞ θ₀ ∧ (∀ i, ContDiff ℝ ∞ (θ i)) ∧
@@ -379,10 +509,13 @@ theorem lemma_9_3 {Γ : Set 𝔼} (hΓ : IsCompact Γ) {k : ℕ} {U : Fin k → 
     ⟨(isClosed_tsupport θ₀).isCompact_inter_closure_of_isBounded hΩb,
       inter_closure_subset_of_disjoint_frontier hΩ (hΓΩ ▸ h7)⟩⟩
 
-/-- **Corollary 9.8 (density).** Assume that `Ω` is of class `C^1` and let `u ∈ W^{1,p}(Ω)`,
-`1 ≤ p < ∞`. Then there is a sequence `(u_n)` from `C_c^∞(ℝ^N)` such that `u_n|_Ω → u` in
-`W^{1,p}(Ω)`: the elements `w n` of `W^{1,p}(Ω)` whose functions are the restrictions of the
-`u_n` converge to `u`. -/
+/-- **Corollary 9.8** of [brezis2011functional] (density). Let $\Omega$ be of class $C^1$,
+$1 \le p < \infty$ and $u \in W^{1,p}(\Omega)$. Then there is a sequence $(u_n)$ of functions of
+$C_c^\infty(\mathbb{R}^N)$ such that $u_n|_\Omega \to u$ in $W^{1,p}(\Omega)$: there are
+elements $w_n \in W^{1,p}(\Omega)$ whose functions equal $u_n$ almost everywhere on $\Omega$,
+and $w_n \to u$.
+
+The boundary of $\Omega$ need not be bounded. -/
 theorem corollary_9_8 {Ω : Opens 𝔼} (hΩ : IsClassC1 (Ω : Set 𝔼)) (hp' : p ≠ ⊤)
     (u : sobolevSpace (d + 1) p Ω) :
     ∃ v : ℕ → 𝔼 → ℝ, (∀ n, ContDiff ℝ ∞ (v n)) ∧ (∀ n, HasCompactSupport (v n)) ∧
@@ -391,8 +524,11 @@ theorem corollary_9_8 {Ω : Opens 𝔼} (hΩ : IsClassC1 (Ω : Set 𝔼)) (hp' :
         Tendsto w atTop (𝓝 u) :=
   SobolevEuclidean.exists_seq_contDiff_hasCompactSupport_tendsto hp' hΩ u
 
-/-- **Corollary 9.8, "in other words"**: for `Ω` of class `C^1` and `1 ≤ p < ∞`, the
-restrictions to `Ω` of `C_c^∞(ℝ^N)` functions form a dense subspace of `W^{1,p}(Ω)`. -/
+/-- **Corollary 9.8** of [brezis2011functional], "in other words". Let $\Omega$ be of class $C^1$
+and $1 \le p < \infty$. The restrictions to $\Omega$ of the functions of
+$C_c^\infty(\mathbb{R}^N)$ form a dense subspace of $W^{1,p}(\Omega)$: the set of the elements
+of $W^{1,p}(\Omega)$ whose function equals a function of $C_c^\infty(\mathbb{R}^N)$ almost
+everywhere on $\Omega$ is dense. -/
 theorem corollary_9_8_dense {Ω : Opens 𝔼} (hΩ : IsClassC1 (Ω : Set 𝔼)) (hp' : p ≠ ⊤) :
     Dense {w : sobolevSpace (d + 1) p Ω | ∃ v : 𝔼 → ℝ, ContDiff ℝ ∞ v ∧ HasCompactSupport v ∧
       SobolevMultiIndex.fn w =ᵐ[volume.restrict (Ω : Set 𝔼)] v} := by
@@ -400,10 +536,14 @@ theorem corollary_9_8_dense {Ω : Opens 𝔼} (hΩ : IsClassC1 (Ω : Set 𝔼)) 
   obtain ⟨v, hvs, hvc, w, hw, hwu⟩ := corollary_9_8 hΩ hp' u
   exact mem_closure_of_tendsto hwu (Eventually.of_forall fun n ↦ ⟨v n, hvs n, hvc n, hw n⟩)
 
-/-- **Corollary 9.8, the case of a bounded boundary**, proved through the extension operator of
-Theorem 9.7 as in the first paragraph of the book's proof: for `Ω` of class `C^1` with `Γ`
-bounded and `1 ≤ p < ∞`, every `u ∈ W^{1,p}(Ω)` is the limit in `W^{1,p}(Ω)` of restrictions
-of `C_c^∞(ℝ^N)` functions. -/
+/-- **Corollary 9.8** of [brezis2011functional], the case of a bounded boundary. Let $\Omega$ be of
+class $C^1$ with $\Gamma = \partial\Omega$ bounded, $1 \le p < \infty$ and
+$u \in W^{1,p}(\Omega)$. Then there is a sequence $(u_n)$ of functions of
+$C_c^\infty(\mathbb{R}^N)$ such that $u_n|_\Omega \to u$ in $W^{1,p}(\Omega)$, in the sense of
+`Brezis.Chapter09.corollary_9_8`.
+
+The proof goes through the extension operator of Theorem 9.7, as in the first paragraph of the
+proof of the source. -/
 theorem corollary_9_8_bounded {Ω : Opens 𝔼} (hΩ : IsClassC1 (Ω : Set 𝔼))
     (hΓ : Bornology.IsBounded (frontier (Ω : Set 𝔼))) (hp' : p ≠ ⊤)
     (u : sobolevSpace (d + 1) p Ω) :

@@ -8,30 +8,51 @@ import Numlib.Variational.WeakMinimization
 import NumlibSurface.Brezis.Chapter03.Section02
 
 /-!
-# Brezis §3.3: weak topology, convex sets, and linear operators
+# Brezis, Section 3.3: Weak topology, convex sets, and linear operators
 
-Surface file for Haim Brezis, *Functional Analysis, Sobolev Spaces and Partial Differential
-Equations*, Universitext, Springer, 2011, §3.3, over real Banach spaces `E`, `F`. Theorem 3.7
-(Mazur), Corollary 3.9, Remark 6 and Theorem 3.10 with Remark 7 are the backbone
-`Numlib/Analysis/Normed/Module/WeakClosed`; Corollary 3.8 (Mazur's lemma) is the backbone's
-`exists_seq_convexCombination_tendsto` of `Numlib/Variational/WeakMinimization`; Remark 5 is
-Mathlib's `RCLike.iInter_halfSpaces_eq'` at `𝕜 = ℝ`. Functions `φ : E → (−∞, +∞]` are
-`E → EReal`, convex as `ConvexAnalysis.ConvexFn` and l.s.c. as `LowerSemicontinuous`, as in
-chapter 1's §1.4.
+This module formalizes Section 3.3 of [brezis2011functional] for real Banach spaces $E$ and $F$. A
+convex subset of $E$ is weakly closed if and only if it is strongly closed (Theorem 3.7, Mazur).
+Hence a weakly convergent sequence $x_n \rightharpoonup x$ has convex combinations of its terms that
+converge strongly to $x$ (Corollary 3.8), and a closed convex set is the intersection of the closed
+half-spaces that contain it (Remark 5). A convex function $\varphi : E \to (-\infty, +\infty]$ that
+is lower semicontinuous in the strong topology is lower semicontinuous in the weak topology
+(Corollary 3.9). A linear operator $T : E \to F$ is continuous for the strong topologies if and only
+if it is continuous for the weak topologies (Theorem 3.10).
+
+Theorem 3.7, Corollary 3.9, Remark 6, Theorem 3.10 and Remark 7 restate the backbone module
+`Numlib.Analysis.Normed.Module.WeakClosed`. Corollary 3.8 restates the backbone theorem
+`exists_seq_convexCombination_tendsto` of `Numlib.Variational.WeakMinimization`. Remark 5 is
+Mathlib's `RCLike.iInter_halfSpaces_eq'` for the field $\mathbb{R}$.
 
 ## Main results
 
-* `theorem_3_7` — Mazur: a convex set is weakly closed iff it is strongly closed.
-* `corollary_3_8` — Mazur's lemma: if `xₙ ⇀ x` there are convex combinations of the `xₙ`
-  converging strongly to `x`.
-* `remark_3_5` — a closed convex set is the intersection of the closed half-spaces containing it.
-* `corollary_3_9`, `remark_3_6` — a convex strongly l.s.c. function is weakly l.s.c.; in
-  particular the norm, and `‖x‖ ≤ liminf ‖xₙ‖` again.
-* `theorem_3_10`, `remark_3_7` — a linear operator is strongly continuous iff weak–weak
-  continuous; strong–weak continuity already gives strong–strong.
+* Theorem 3.7, `Brezis.Chapter03.theorem_3_7`: a convex set is weakly closed if and only if it is
+  strongly closed (Mazur).
+* Corollary 3.8, `Brezis.Chapter03.corollary_3_8`: if $x_n \rightharpoonup x$, then convex
+  combinations of the $x_n$ converge strongly to $x$ (Mazur's lemma).
+* Remark 5, `Brezis.Chapter03.remark_3_5`: a closed convex set is the intersection of the closed
+  half-spaces that contain it.
+* Corollary 3.9, `Brezis.Chapter03.corollary_3_9`: a convex function that is strongly lower
+  semicontinuous is weakly lower semicontinuous.
+* Remark 6, `Brezis.Chapter03.remark_3_6`: a convex continuous function, in particular the norm, is
+  weakly lower semicontinuous, and $x_n \rightharpoonup x$ implies $\|x\| \le \liminf \|x_n\|$.
+* Theorem 3.10, `Brezis.Chapter03.theorem_3_10`: a linear operator is strongly continuous if and
+  only if it is weakly continuous.
+* Remark 7, `Brezis.Chapter03.remark_3_7`: a linear operator that is continuous from $E$ strong into
+  $F$ weak is continuous from $E$ strong into $F$ strong.
 
-Remark 7's second clause (weak–strong continuous iff finite rank, Exercise 6.7) and its last
-paragraph (nonlinear maps, Exercise 4.20) are not stated.
+## Conventions
+
+* A function $\varphi : E \to (-\infty, +\infty]$ is a function `E → EReal`, convex in the sense of
+  `ConvexAnalysis.ConvexFn` and lower semicontinuous in the sense of `LowerSemicontinuous`, as in
+  Section 1.4.
+* The weak topology is that of `WeakSpace ℝ E`, as in Section 3.2.
+
+## Not formalized
+
+* **Remark 7, second clause (Exercise 6.7).** A linear operator is continuous from $E$ weak into $F$
+  strong if and only if it has finite rank.
+* **Remark 7, last paragraph (Exercise 4.20).** The case of nonlinear maps.
 -/
 
 open Filter Metric Set Topology
@@ -41,15 +62,23 @@ namespace Brezis.Chapter03
 variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [NormedAddCommGroup F]
   [NormedSpace ℝ F]
 
-/-- **Theorem 3.7 (Mazur).** A convex subset `C ⊆ E` is closed in the weak topology `σ(E, E*)`
-iff it is closed in the strong topology. -/
+/-- **Theorem 3.7** of [brezis2011functional] (Mazur). Let $E$ be a Banach space and let
+$C \subseteq E$ be convex. Then $C$ is closed in the weak topology $\sigma(E, E^\star)$ if and
+only if it is closed in the strong topology. -/
 theorem theorem_3_7 [CompleteSpace E] {C : Set E} (hC : Convex ℝ C) :
     IsClosed (toWeakSpace ℝ E '' C) ↔ IsClosed C :=
   hC.isClosed_image_toWeakSpace_iff
 
-/-- **Corollary 3.8 (Mazur's lemma).** If `xₙ ⇀ x` weakly, there is a sequence `yₙ` made up of
-convex combinations of the `xₙ` that converges strongly to `x`; the combinations may be taken
-from the tails `x_n, …, x_{N n}`. -/
+/-- **Corollary 3.8** of [brezis2011functional] (Mazur's lemma). Let $E$ be a Banach space and
+assume that $x_n \rightharpoonup x$ weakly in $\sigma(E, E^\star)$. Then there is a sequence
+$(y_n)$ of convex combinations of the $x_n$ that converges strongly to $x$.
+
+The statement has two parts. First, the combinations can be taken from the tails: there are
+$N(n) \ge n$ and weights $\lambda_{n,i} \ge 0$ with $\sum_{i=n}^{N(n)} \lambda_{n,i} = 1$ such
+that
+$$\sum_{i=n}^{N(n)} \lambda_{n,i} x_i \to x \quad \text{strongly}.$$
+Second, there is a sequence $(y_n)$ in the convex hull of $\{x_n : n \in \mathbb{N}\}$ with
+$y_n \to x$ strongly. -/
 theorem corollary_3_8 [CompleteSpace E] {x : ℕ → E} {u : E} (h : x ⇀ u) :
     (∃ (N : ℕ → ℕ) (lam : ℕ → ℕ → ℝ), (∀ n, n ≤ N n) ∧ (∀ n i, 0 ≤ lam n i) ∧
       (∀ n, ∑ i ∈ Finset.Icc n (N n), lam n i = 1) ∧
@@ -62,22 +91,33 @@ theorem corollary_3_8 [CompleteSpace E] {x : ℕ → E} {u : E} (h : x ⇀ u) :
   exact (convex_convexHull ℝ _).sum_mem (fun i _ => hlam0 n i) (hlam1 n)
     fun i _ => subset_convexHull ℝ _ ⟨i, rfl⟩
 
-/-- **Remark 5.** Every closed convex set `C` coincides with the intersection of all the closed
-half-spaces containing it. -/
+/-- **Remark 5** of [brezis2011functional]. Let $E$ be a Banach space and let $C \subseteq E$ be a
+closed convex set. Then $C$ coincides with the intersection of all the closed half-spaces that
+contain $C$:
+$$C = \bigcap \{\{x \in E : \langle f, x \rangle \le c\} : f \in E^\star,\ c \in \mathbb{R},\
+  \langle f, y \rangle \le c \ \forall y \in C\}.$$
+-/
 theorem remark_3_5 [CompleteSpace E] {C : Set E} (hC : Convex ℝ C) (hCc : IsClosed C) :
     ⋂ (f : StrongDual ℝ E) (c : ℝ) (_ : ∀ y ∈ C, f y ≤ c), {x | f x ≤ c} = C := by
   have := RCLike.iInter_halfSpaces_eq' (𝕜 := ℝ) hC hCc
   simpa only [RCLike.re_to_real] using this
 
-/-- **Corollary 3.9.** A convex function `φ : E → (−∞, +∞]` that is l.s.c. in the strong
-topology is l.s.c. in the weak topology `σ(E, E*)`. -/
+/-- **Corollary 3.9** of [brezis2011functional]. Let $E$ be a Banach space and let
+$\varphi : E \to (-\infty, +\infty]$ be convex and lower semicontinuous in the strong topology.
+Then $\varphi$ is lower semicontinuous in the weak topology $\sigma(E, E^\star)$.
+
+The weak lower semicontinuity is `LowerSemicontinuous (φ ∘ (toWeakSpace ℝ E).symm)` on
+`WeakSpace ℝ E`. The statement does not need that $\varphi$ never takes the value $-\infty$. -/
 theorem corollary_3_9 [CompleteSpace E] {φ : E → EReal} (hφ : ConvexAnalysis.ConvexFn φ)
     (hlsc : LowerSemicontinuous φ) : LowerSemicontinuous (φ ∘ (toWeakSpace ℝ E).symm) :=
   hlsc.comp_toWeakSpace_symm_of_convex_le (𝕜 := ℝ) fun b => hφ.convex_le b
 
-/-- **Remark 6.** A convex strongly continuous function is weakly l.s.c.; for example the norm
-`φ x = ‖x‖` is weakly l.s.c., and in particular `xₙ ⇀ x` implies `‖x‖ ≤ liminf ‖xₙ‖`
-(Proposition 3.5 (iii) again). -/
+/-- **Remark 6** of [brezis2011functional]. Let $E$ be a Banach space. A convex function
+$\varphi : E \to \mathbb{R}$ that is continuous in the strong topology is lower semicontinuous
+in the weak topology $\sigma(E, E^\star)$. In particular the norm $\varphi(x) = \|x\|$ is weakly
+lower semicontinuous, and $x_n \rightharpoonup x$ implies
+$$\|x\| \le \liminf_{n \to \infty} \|x_n\|,$$
+which is Proposition 3.5(iii) again. -/
 theorem remark_3_6 [CompleteSpace E] :
     (∀ φ : E → ℝ, ConvexOn ℝ Set.univ φ → Continuous φ →
       LowerSemicontinuous (φ ∘ (toWeakSpace ℝ E).symm)) ∧
@@ -87,17 +127,18 @@ theorem remark_3_6 [CompleteSpace E] :
     lowerSemicontinuous_norm_comp_toWeakSpace_symm (𝕜 := ℝ),
     fun _ _ h => proposition_3_5_iii_liminf h⟩
 
-/-- **Theorem 3.10.** Let `E`, `F` be Banach spaces and `T : E → F` a linear operator. Then `T`
-is continuous in the strong topologies iff it is continuous from `E` weak `σ(E, E*)` into `F`
-weak `σ(F, F*)`. -/
+/-- **Theorem 3.10** of [brezis2011functional]. Let $E$ and $F$ be two Banach spaces and let $T$ be
+a linear operator from $E$ into $F$. Then $T$ is continuous in the strong topologies if and only
+if $T$ is continuous from $E$ weak $\sigma(E, E^\star)$ into $F$ weak $\sigma(F, F^\star)$. -/
 theorem theorem_3_10 [CompleteSpace E] [CompleteSpace F] (T : E →ₗ[ℝ] F) :
     Continuous T ↔
       Continuous (fun x : WeakSpace ℝ E => toWeakSpace ℝ F (T ((toWeakSpace ℝ E).symm x))) :=
   T.continuous_iff_continuous_weakSpace
 
-/-- **Remark 7.** A linear operator continuous from `E` strong into `F` weak is continuous from
-`E` strong into `F` strong; so for linear operators the continuity properties `S → S`, `W → W`
-and `S → W` are all the same. -/
+/-- **Remark 7** of [brezis2011functional]. Let $E$ and $F$ be two Banach spaces and let
+$T : E \to F$ be a linear operator that is continuous from $E$ strong into $F$ weak. Then $T$ is
+continuous from $E$ strong into $F$ strong. Thus for linear operators the continuity from strong
+to strong, from weak to weak, and from strong to weak are the same property. -/
 theorem remark_3_7 [CompleteSpace E] [CompleteSpace F] (T : E →ₗ[ℝ] F)
     (hT : Continuous (fun x => toWeakSpace ℝ F (T x))) : Continuous T :=
   T.continuous_of_continuous_toWeakSpace_comp hT

@@ -11,26 +11,40 @@ import Mathlib.MeasureTheory.Integral.Prod
 import Mathlib.MeasureTheory.Measure.Haar.OfBasis
 
 /-!
-# Brezis §4.1: some results about integration that everyone must know
+# Brezis, Section 4.1: Some results about integration that everyone must know
 
-Surface file for Haim Brezis, *Functional Analysis, Sobolev Spaces and Partial Differential
-Equations*, Universitext, Springer, 2011, §4.1: the monotone and dominated convergence theorems,
-Fatou's lemma, the density of `C_c(ℝ^N)` in `L¹(ℝ^N)`, Tonelli and Fubini, and (from the
-Comments on chapter 4) Egorov's theorem. All are Mathlib's; the nodes restate them in the book's
-form for real-valued functions on a measure space `(Ω, 𝓜, μ)`, written `(α, μ)`.
+This module formalizes Section 4.1 of [brezis2011functional] for real-valued functions on a measure
+space $(\Omega, \mathcal{M}, \mu)$. It states the monotone convergence theorem of Beppo Levi
+(Theorem 4.1), the dominated convergence theorem of Lebesgue (Theorem 4.2), Fatou's lemma (Lemma
+4.1), the density of $C_c(\mathbb{R}^N)$ in $L^1(\mathbb{R}^N)$ (Theorem 4.3), and the theorems of
+Tonelli and Fubini on a product of σ-finite measure spaces (Theorems 4.4 and 4.5). It also states
+Egorov's theorem (Theorem 4.29), from the Comments on Chapter 4. All these results are in Mathlib;
+this module restates them in the form of the source.
 
 ## Main results
 
-* `theorem_4_1` — monotone convergence (Beppo Levi): an a.e. increasing sequence of integrable
-  functions with bounded integrals converges a.e. to an integrable function, and in `L¹`.
-* `theorem_4_2` — dominated convergence (Lebesgue).
-* `lemma_4_1` — Fatou's lemma, with the a.e. `liminf` taken in `[0, ∞]` as the book allows.
-* `theorem_4_3` — density of `C_c(ℝ^N)` in `L¹(ℝ^N)`.
-* `theorem_4_4`, `theorem_4_5` — Tonelli and Fubini on a product of σ-finite measure spaces.
-* `theorem_4_29` — Egorov's theorem on a finite measure space.
+* Theorem 4.1 (monotone convergence), `Brezis.Chapter04.theorem_4_1`: an a.e. increasing sequence of
+  integrable functions with bounded integrals converges a.e. and in $L^1$ to an integrable function.
+* Theorem 4.2 (dominated convergence), `Brezis.Chapter04.theorem_4_2`: an a.e. convergent sequence
+  dominated by an integrable function converges in $L^1$.
+* Lemma 4.1 (Fatou), `Brezis.Chapter04.lemma_4_1`: for nonnegative integrable functions with bounded
+  integrals, $\liminf f_n$ is integrable and $\int \liminf f_n \le \liminf \int f_n$.
+* Theorem 4.3, `Brezis.Chapter04.theorem_4_3`: $C_c(\mathbb{R}^N)$ is dense in $L^1(\mathbb{R}^N)$.
+* Theorem 4.4 (Tonelli), `Brezis.Chapter04.theorem_4_4`: a measurable function on
+  $\Omega_1 \times \Omega_2$ whose iterated integral of $|F|$ is finite is integrable.
+* Theorem 4.5 (Fubini), `Brezis.Chapter04.theorem_4_5`: for an integrable function on
+  $\Omega_1 \times \Omega_2$, both iterated integrals exist and equal the integral on the product.
+* Theorem 4.29 (Egorov), `Brezis.Chapter04.theorem_4_29`: on a finite measure space, a.e.
+  convergence is uniform outside a set of arbitrarily small measure.
 
-The book's `C_c(ℝ^N)` is `Continuous g ∧ HasCompactSupport g` on `EuclideanSpace ℝ (Fin N)` with
-Lebesgue measure `volume`.
+## Conventions
+
+* The measure space $(\Omega, \mathcal{M}, \mu)$ is a type `α` with a `MeasurableSpace` and a
+  measure `μ`.
+* The space $C_c(\mathbb{R}^N)$ of continuous functions with compact support is the condition
+  `Continuous g ∧ HasCompactSupport g` on `EuclideanSpace ℝ (Fin N)`, with Lebesgue measure
+  `volume`.
+* The $L^1$ distance $\|f - g\|_1$ is written as the integral $\int |f - g|$.
 -/
 
 open Filter MeasureTheory Topology
@@ -42,8 +56,13 @@ variable {α : Type*} [MeasurableSpace α] {μ : Measure α}
 
 /-! ### Theorem 4.2: the dominated convergence theorem -/
 
-/-- **Theorem 4.2 (dominated convergence theorem, Lebesgue).** If `f n → g` a.e. and
-`|f n| ≤ bound` a.e. for an integrable `bound`, then `g` is integrable and `‖f n - g‖₁ → 0`. -/
+/-- **Theorem 4.2** of [brezis2011functional] (dominated convergence theorem, Lebesgue). Let $(f_n)$
+be a sequence of integrable functions on $\Omega$ such that $f_n(x) \to f(x)$ for a.e.
+$x \in \Omega$. Suppose that there is an integrable function $g$ with $|f_n(x)| \le g(x)$ for
+a.e. $x$ and every $n$. Then $f$ is integrable and
+$$\|f_n - f\|_1 = \int_\Omega |f_n - f| \, d\mu \to 0.$$
+
+In the Lean statement the limit is `g` and the dominating function is `bound`. -/
 theorem theorem_4_2 {f : ℕ → α → ℝ} {g : α → ℝ} (hf : ∀ n, Integrable (f n) μ)
     (hlim : ∀ᵐ x ∂μ, Tendsto (fun n => f n x) atTop (𝓝 (g x))) {bound : α → ℝ}
     (hbound : Integrable bound μ) (hfb : ∀ n, ∀ᵐ x ∂μ, |f n x| ≤ bound x) :
@@ -69,9 +88,13 @@ theorem theorem_4_2 {f : ℕ → α → ℝ} {g : α → ℝ} (hf : ∀ n, Integ
 
 /-! ### Theorem 4.1: the monotone convergence theorem -/
 
-/-- **Theorem 4.1 (monotone convergence theorem, Beppo Levi).** An a.e. increasing sequence of
-integrable functions whose integrals are bounded converges a.e. to a finite limit `g`, which is
-integrable, and `‖f n - g‖₁ → 0`. -/
+/-- **Theorem 4.1** of [brezis2011functional] (monotone convergence theorem, Beppo Levi). Let
+$(f_n)$ be a sequence of integrable functions on $\Omega$ that is increasing for a.e. $x$, with
+$\sup_n \int f_n < \infty$. Then there is an integrable function $f$ such that $f_n(x) \to f(x)$
+for a.e. $x \in \Omega$, and
+$$\|f_n - f\|_1 = \int_\Omega |f_n - f| \, d\mu \to 0.$$
+
+In the Lean statement the limit is `g`. -/
 theorem theorem_4_1 {f : ℕ → α → ℝ} (hf : ∀ n, Integrable (f n) μ)
     (hmono : ∀ᵐ x ∂μ, Monotone fun n => f n x)
     (hbdd : BddAbove (Set.range fun n => ∫ x, f n x ∂μ)) :
@@ -129,9 +152,15 @@ theorem theorem_4_1 {f : ℕ → α → ℝ} (hf : ∀ n, Integrable (f n) μ)
 
 /-! ### Lemma 4.1: Fatou's lemma -/
 
-/-- **Lemma 4.1 (Fatou's lemma).** For a sequence of a.e. nonnegative integrable functions with
-bounded integrals, the a.e. limit inferior `f x = liminf fₙ x ≤ +∞` (taken in `[0, ∞]`, as the
-book allows) is finite a.e., integrable, and `∫ f ≤ liminf ∫ fₙ`. -/
+/-- **Lemma 4.1** of [brezis2011functional] (Fatou's lemma). Let $(f_n)$ be a sequence of integrable
+functions on $\Omega$ such that $f_n \ge 0$ a.e. for every $n$ and $\sup_n \int f_n < \infty$.
+For $x \in \Omega$ let $f(x) = \liminf_{n \to \infty} f_n(x) \le +\infty$. Then $f(x) < \infty$
+for a.e. $x$, $f$ is integrable, and
+$$\int_\Omega f \, d\mu \le \liminf_{n \to \infty} \int_\Omega f_n \, d\mu.$$
+
+The limit inferior $f(x)$ is taken in $[0, +\infty]$, as the source allows, through
+`ENNReal.ofReal`. The function that is integrated is its real part `toReal`, which equals $f$
+where $f$ is finite. -/
 theorem lemma_4_1 {f : ℕ → α → ℝ} (hf : ∀ n, Integrable (f n) μ)
     (hnn : ∀ n, ∀ᵐ x ∂μ, 0 ≤ f n x) (hbdd : BddAbove (Set.range fun n => ∫ x, f n x ∂μ)) :
     (∀ᵐ x ∂μ, liminf (fun n => ENNReal.ofReal (f n x)) atTop < ∞) ∧
@@ -168,10 +197,14 @@ theorem lemma_4_1 {f : ℕ → α → ℝ} (hf : ∀ n, Integrable (f n) μ)
   refine (ENNReal.toReal_mono ENNReal.ofReal_ne_top hL_le).trans (le_of_eq ?_)
   exact ENNReal.toReal_ofReal (le_liminf_of_le hcobdd (Eventually.of_forall hI_nn))
 
-/-! ### Theorem 4.3: density of `C_c(ℝ^N)` in `L¹(ℝ^N)` -/
+/-! ### Theorem 4.3: density of $C_c(\mathbb{R}^N)$ in $L^1(\mathbb{R}^N)$ -/
 
-/-- **Theorem 4.3 (density).** `C_c(ℝ^N)` is dense in `L¹(ℝ^N)`: every integrable `f` is within
-`ε` in `L¹` of a continuous function with compact support. -/
+/-- **Theorem 4.3** of [brezis2011functional] (density). The space $C_c(\mathbb{R}^N)$ is dense in
+$L^1(\mathbb{R}^N)$: for every integrable $f : \mathbb{R}^N \to \mathbb{R}$ and every
+$\varepsilon > 0$ there is a continuous function $g$ with compact support such that
+$\int |f - g| \le \varepsilon$.
+
+The space $\mathbb{R}^N$ is `EuclideanSpace ℝ (Fin N)` with Lebesgue measure. -/
 theorem theorem_4_3 {N : ℕ} {f : EuclideanSpace ℝ (Fin N) → ℝ} (hf : Integrable f) {ε : ℝ}
     (hε : 0 < ε) :
     ∃ g : EuclideanSpace ℝ (Fin N) → ℝ, Continuous g ∧ HasCompactSupport g ∧
@@ -184,20 +217,32 @@ theorem theorem_4_3 {N : ℕ} {f : EuclideanSpace ℝ (Fin N) → ℝ} (hf : Int
 variable {α₁ α₂ : Type*} [MeasurableSpace α₁] [MeasurableSpace α₂] {μ₁ : Measure α₁}
   {μ₂ : Measure α₂}
 
-/-- **Theorem 4.4 (Tonelli).** On a product of σ-finite measure spaces, a measurable
-`F : Ω₁ × Ω₂ → ℝ` such that (a) `∫ |F (x, y)| dμ₂ < ∞` for a.e. `x` and (b)
-`∫ dμ₁ ∫ |F (x, y)| dμ₂ < ∞` is integrable on `Ω₁ × Ω₂`. Clause (a) is the integrability of the
-sections and (b) the integrability of the iterated integral of `|F|`. -/
+/-- **Theorem 4.4** of [brezis2011functional] (Tonelli). Let $(\Omega_1, \mu_1)$ and
+$(\Omega_2, \mu_2)$ be σ-finite measure spaces, and let
+$F : \Omega_1 \times \Omega_2 \to \mathbb{R}$ be measurable. Suppose that
+
+1. for a.e. $x \in \Omega_1$, $\int_{\Omega_2} |F(x, y)| \, d\mu_2 < \infty$, and
+2. $\int_{\Omega_1} d\mu_1 \int_{\Omega_2} |F(x, y)| \, d\mu_2 < \infty$.
+
+Then $F$ is integrable on $\Omega_1 \times \Omega_2$.
+
+Clause (1) is the integrability of the section $y \mapsto F(x, y)$ for a.e. $x$, and clause (2)
+is the integrability of $x \mapsto \int |F(x, y)| \, d\mu_2$. Measurability of $F$ is
+`AEStronglyMeasurable` for the product measure. -/
 theorem theorem_4_4 [SigmaFinite μ₁] [SigmaFinite μ₂] {F : α₁ × α₂ → ℝ}
     (hF : AEStronglyMeasurable F (μ₁.prod μ₂))
     (ha : ∀ᵐ x ∂μ₁, Integrable (fun y => F (x, y)) μ₂)
     (hb : Integrable (fun x => ∫ y, |F (x, y)| ∂μ₂) μ₁) : Integrable F (μ₁.prod μ₂) :=
   (integrable_prod_iff hF).2 ⟨ha, by simpa [Real.norm_eq_abs] using hb⟩
 
-/-- **Theorem 4.5 (Fubini).** On a product of σ-finite measure spaces, if `F ∈ L¹(Ω₁ × Ω₂)`
-then for a.e. `x` the section `F (x, ·)` is integrable and `x ↦ ∫ F (x, y) dμ₂` is integrable;
-symmetrically in the other variable; and the two iterated integrals both equal the integral of
-`F` on the product. -/
+/-- **Theorem 4.5** of [brezis2011functional] (Fubini). Let $(\Omega_1, \mu_1)$ and
+$(\Omega_2, \mu_2)$ be σ-finite measure spaces, and let $F \in L^1(\Omega_1 \times \Omega_2)$.
+Then for a.e. $x \in \Omega_1$ the function $y \mapsto F(x, y)$ is integrable on $\Omega_2$, and
+$x \mapsto \int_{\Omega_2} F(x, y) \, d\mu_2$ is integrable on $\Omega_1$. The same holds with
+the roles of $x$ and $y$ exchanged. Moreover
+$$\int_{\Omega_1} d\mu_1 \int_{\Omega_2} F(x, y) \, d\mu_2 = \int_{\Omega_2} d\mu_2
+  \int_{\Omega_1} F(x, y) \, d\mu_1 = \iint_{\Omega_1 \times \Omega_2} F \, d\mu_1 \, d\mu_2.$$
+-/
 theorem theorem_4_5 [SigmaFinite μ₁] [SigmaFinite μ₂] {F : α₁ × α₂ → ℝ}
     (hF : Integrable F (μ₁.prod μ₂)) :
     ((∀ᵐ x ∂μ₁, Integrable (fun y => F (x, y)) μ₂) ∧
@@ -211,9 +256,13 @@ theorem theorem_4_5 [SigmaFinite μ₁] [SigmaFinite μ₂] {F : α₁ × α₂ 
 
 /-! ### Theorem 4.29: Egorov's theorem -/
 
-/-- **Theorem 4.29 (Egorov; Comments on chapter 4).** On a finite measure space, if a sequence
-of measurable functions converges a.e. to `g`, then for every `ε > 0` there is a measurable `A`
-with `μ (Ω ∖ A) < ε` on which the convergence is uniform. -/
+/-- **Theorem 4.29** of [brezis2011functional] (Egorov). Let $\Omega$ have finite measure, and let
+$(f_n)$ be a sequence of measurable functions that converges a.e. to a measurable function $f$.
+Then for every $\varepsilon > 0$ there is a measurable set $A \subseteq \Omega$ with
+$\mu(\Omega \setminus A) < \varepsilon$ such that $f_n \to f$ uniformly on $A$.
+
+The source states this theorem in the Comments on Chapter 4. The number $\varepsilon$ lies in
+$(0, +\infty]$. The measurability of the limit is a hypothesis, but the proof does not use it. -/
 theorem theorem_4_29 [IsFiniteMeasure μ] {f : ℕ → α → ℝ} {g : α → ℝ}
     (hf : ∀ n, StronglyMeasurable (f n)) (_hg : StronglyMeasurable g)
     (hfg : ∀ᵐ x ∂μ, Tendsto (fun n => f n x) atTop (𝓝 (g x))) {ε : ℝ≥0∞} (hε : 0 < ε) :

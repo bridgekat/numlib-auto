@@ -9,67 +9,151 @@ import NumlibSurface.Brezis.Chapter07.Section04
 import NumlibSurface.Brezis.Chapter09.Section08
 
 /-!
-# Brezis §10.1: The heat equation — existence, uniqueness, and regularity
+# Brezis, Section 10.1: The heat equation: existence, uniqueness, and regularity
 
-Surface file for Haim Brezis, *Functional Analysis, Sobolev Spaces and Partial Differential
-Equations*, Universitext, Springer, 2011, §10.1: the heat equation `∂ₜu − Δu = 0` in
-`Q = Ω × (0, ∞)`, `u = 0` on `Σ = Γ × (0, ∞)`, `u(·, 0) = u₀`, solved by the Hille–Yosida theory of
-chapter 7 in `H = L²(Ω)` — Theorem 10.1 (existence, uniqueness, the smoothing (5), the energy
-identity (6)), the display (7) for `D(A^ℓ)`, Theorem 10.2 (regularity up to `t = 0` for data in
-`H¹₀`, `H² ∩ H¹₀`, and for data satisfying the compatibility conditions (8)) and Remarks 1, 3, 4.
-The backbone is `Numlib/Analysis/PDE/DirichletLaplacian` (the operator `A`),
-`Numlib/Analysis/PDE/Heat` (§10.1 in Bochner form), `Numlib/Analysis/PDE/Bochner/SpaceTime` (the
-space–time bridge behind (5)) and `Numlib/Analysis/PDE/Heat/Classical` (Remark 4).
+This module formalizes Section 10.1 of [brezis2011functional]. Let $\Omega \subset \mathbb{R}^N$ be
+open with boundary $\Gamma$, let $Q = \Omega \times (0, \infty)$ and
+$\Sigma = \Gamma \times (0, \infty)$. The heat equation is the problem
+$$\partial_t u - \Delta u = 0 \text{ in } Q \quad (1), \qquad u = 0 \text{ on } \Sigma \quad (2),
+  \qquad u(\cdot, 0) = u_0 \text{ in } \Omega \quad (3).$$
+The source solves it with the Hille–Yosida theory of Chapter 7 in $H = L^2(\Omega)$, for the
+operator $A u = -\Delta u$ with domain $D(A) = H^2(\Omega) \cap H^1_0(\Omega)$. Theorem 10.1 gives
+existence and uniqueness of a solution in the class (4), the smoothing property (5) and the energy
+identity (6). The display (7) describes the domains $D(A^\ell)$. Theorem 10.2 gives regularity up to
+$t = 0$ for data in $H^1_0(\Omega)$, in $H^2(\Omega) \cap H^1_0(\Omega)$, and for data that satisfy
+the compatibility conditions (8). Remark 1 treats the backward problem, Remark 3 the Fourier method,
+and Remark 4 the necessity of the compatibility conditions.
 
-## Conventions
+The proofs specialize the backbone modules `Numlib.Analysis.PDE.DirichletLaplacian` (the operator
+$A$), `Numlib.Analysis.PDE.Heat` (Section 10.1 in Bochner form),
+`Numlib.Analysis.PDE.Bochner.SpaceTime` (the passage from curves to functions of $(x, t)$ behind
+(5)) and `Numlib.Analysis.PDE.Heat.Classical` (Remark 4).
 
-* The book reads `u(x, t)` as a function of `t` with values in a space of functions of `x`:
-  "when we write `u(t)`, we mean the element `x ↦ u(x, t)` of `H`". A solution is therefore a
-  curve `u : ℝ → L²(Ω)`, `L²(Ω) = Lp ℝ 2 (volume.restrict Ω)`; the classes `C^k(I; V)` for
-  `V = H²(Ω)`, `H¹₀(Ω)` are the backbone's `Bochner.ContDiffOnThrough J k u I` (a `C^k` lift of
-  `u` through the inclusion `J : V → L²(Ω)`), `L²(I; V)` is `Bochner.MemLpThrough J 2 u I`, and
-  `C^∞(Ω̄ × [ε, ∞))` is `ContDiffOnClosure ℝ ∞ U (Ω ×ˢ Ioi ε)` for a function `U` of `(x, t)`
-  representing the curve — footnote 16 of chapter 9's sense of `C^k` up to the boundary.
-* The book's operator `A`, `D(A) = H²(Ω) ∩ H¹₀(Ω)`, `Au = −Δu`, is `heatOperator Ω`: the
-  backbone's Dirichlet Laplacian `dirichletLaplacian Ω` (weak domain `{u ∈ H¹₀ : Δu ∈ L²}`)
-  restricted to the functions of `H²(Ω)` elements. On a domain of class `C²` with bounded boundary
-  the two operators coincide (`heatOperator_eq_dirichletLaplacian`, Theorem 9.25), which is how
-  every backbone statement about `dirichletLaplacian` is read for the book's `A`.
-* `H^k(Ω) = sobolevSpaceHigher N k 2 Ω`, `H¹(Ω) = hSpace N Ω`, `H¹₀(Ω) = hZeroSpace N Ω` (§9.1,
-  §9.4); an `L²(Ω)` function "lies in `H^k(Ω)`" when it is the function `fnL w` of some
-  `w ∈ H^k(Ω)`, and "`u₀ ∈ H¹₀(Ω)`" is the datum `fnL v₀` of some `v₀ ∈ H¹₀(Ω)`. Footnote 3's
-  `|∇u(t)|²_{L²} = ∑ᵢ ∫_Ω |∂ᵢu(x, t)|²` is written for the `H¹₀`-lift of `u(t)` with the weak
-  partial derivatives `partialDeriv` of §9.1 (`sum_integral_partialDeriv_sq`).
-* The standing hypothesis of the chapter, "`Ω` of class `C^∞` with `Γ` bounded", is
-  `Brezis.Chapter09.IsOfClassC ⊤ Ω` and `Bornology.IsBounded (frontier Ω)`, with `N = d + 1`
-  (the chart definition of §9.2 needs a boundary variable). It is carried by the theorems whose
-  proofs use it (the identification `D(A) = H² ∩ H¹₀` and its iterates, hence the class (4), the
-  smoothing (5) and Theorem 10.2 (b), (c)); the statements whose proofs hold on every open set
-  (the operator's monotonicity and symmetry, the energy identities (6) and (11), Theorem 10.2 (a),
-  Remark 3) are stated without it, as the book itself notes ("this assumption may be
-  considerably weakened if we are interested only in weak solutions").
-* Errata (recorded in `notes/book-errata.md`): the clauses `u ∈ L²(0, ∞; H¹₀(Ω))` of Theorem
-  10.1 and `u ∈ L²(0, ∞; H²(Ω))`, `L²(0, ∞; H³(Ω))` of Theorem 10.2 are false on unbounded `Ω`
-  (`Ω = ℝ` with a Gaussian datum); what the proofs show on every open set is the finiteness of
-  the gradient integral, `∫₀^∞ |∇u(t)|² dt ≤ ½ |u₀|²` (`theorem_10_1_memLp_gradient`), and the
-  Bochner memberships hold for **bounded** `Ω` (`theorem_10_1_memLp`, `theorem_10_2_a_memLp`,
-  `theorem_10_2_b_memLp`). The `C^∞` conclusion (5) is `u ∈ C^∞(Ω̄ × [ε, ∞))` for every `ε > 0`, as
-  the book states it — not `C^∞(Ω̄ × [0, ∞))`, which is false for `L²` data. Remark 4 is stated
-  for `u` smooth on `ℝ^N × ℝ`, where its statement is meaningful as written.
+## Main definitions
+
+* Proof of Theorem 10.1, the operator $A$, `Brezis.Chapter10.heatOperator`: $A u = -\Delta u$ on
+  $D(A) = H^2(\Omega) \cap H^1_0(\Omega)$.
+* Problem (1), (2), (3) in the class (4), `Brezis.Chapter10.IsHeatSolution`: $u \in C([0, \infty);
+  L^2) \cap C((0, \infty); H^2 \cap H^1_0) \cap C^1((0, \infty); L^2)$ solves the heat equation with
+  $u(0) = u_0$.
+* Remark 1, the backward problem (9'), (10), (11), `Brezis.Chapter10.IsBackwardHeatSolution`: the
+  same class on $(-\infty, T]$ for $\partial_t u = -\Delta u$ with $u(T) = u_T$.
 
 ## Main results
 
-* `heatOperator`, `heatOperator_mem_domain_iff`, `heatOperator_apply`, `heatOperator_isMonotone`,
-  `heatOperator_isSymmetric`, `heatOperator_eq_dirichletLaplacian`,
-  `heatOperator_isMaximalMonotone`, `heatOperator_isSelfAdjoint` — the operator and the claims
-  (i)–(iii) of the proof of Theorem 10.1.
-* `IsHeatSolution`, `IsHeatSolution.isSolution`, `isHeatSolution_iff` — the problem (1)–(3) in
-  the class (4), and its identification with the backbone's `Heat.IsSolution`.
-* `theorem_10_1`, `theorem_10_1_smooth`, `theorem_10_1_energy`, `theorem_10_1_memLp_gradient`,
-  `theorem_10_1_memLp`, `equation_10_7`.
-* `theorem_10_2_a`, `theorem_10_2_a_memLp`, `theorem_10_2_b`, `theorem_10_2_b_memLp`,
-  `theorem_10_2_c`.
-* `IsBackwardHeatSolution`, `remark_10_1`, `remark_10_1_necessary`, `remark_10_3`, `remark_10_4`.
+* Proof of Theorem 10.1, `Brezis.Chapter10.heatOperator_mem_domain_iff`:
+  $D(A) = H^2(\Omega) \cap H^1_0(\Omega)$.
+* Proof of Theorem 10.1, `Brezis.Chapter10.heatOperator_apply`:
+  $A u = -\sum_i \partial^2 u / \partial x_i^2$.
+* Proof of Theorem 10.1, claim (i), `Brezis.Chapter10.heatOperator_isMonotone`: $A$ is monotone on
+  every open set.
+* Proof of Theorem 10.1, claim (iii), `Brezis.Chapter10.heatOperator_isSymmetric`: $A$ is symmetric
+  on every open set.
+* Proof of Theorem 10.1, `Brezis.Chapter10.heatOperator_eq_dirichletLaplacian`: on a $C^2$ domain
+  with bounded boundary, $A$ is the Dirichlet Laplacian with its weak domain.
+* Proof of Theorem 10.1, claims (i)–(ii), `Brezis.Chapter10.heatOperator_isMaximalMonotone`: $A$ is
+  maximal monotone.
+* Proof of Theorem 10.1, claim (iii), `Brezis.Chapter10.heatOperator_isSelfAdjoint`: $A$ is
+  self-adjoint.
+* Footnote 3, `Brezis.Chapter10.sum_integral_partialDeriv_sq`: $|\nabla v|^2_{L^2} = \sum_i
+  \int_\Omega |\partial v / \partial x_i|^2$ is the Dirichlet form.
+* Theorem 10.1, `Brezis.Chapter10.theorem_10_1`: the problem (1), (2), (3) has a unique solution in
+  the class (4).
+* Theorem 10.1, `Brezis.Chapter10.theorem_10_1_smooth`: the smoothing (5), $u \in
+  C^\infty(\overline{\Omega} \times [\varepsilon, \infty))$ for every $\varepsilon > 0$.
+* Theorem 10.1, `Brezis.Chapter10.theorem_10_1_energy`: the energy identity (6).
+* Theorem 10.1, `Brezis.Chapter10.theorem_10_1_memLp_gradient`: $\int_0^\infty |\nabla u(t)|^2 \, dt
+  \le \frac12 |u_0|^2$ on every open set.
+* Theorem 10.1, `Brezis.Chapter10.theorem_10_1_memLp`: $u \in L^2(0, \infty; H^1_0(\Omega))$ for
+  bounded $\Omega$.
+* Equation (7), `Brezis.Chapter10.equation_10_7`: $D(A^\ell) = \{u \in H^{2\ell}(\Omega) : u =
+  \Delta u = \dots = \Delta^{\ell - 1} u = 0 \text{ on } \Gamma\}$ with continuous injection into
+  $H^{2\ell}(\Omega)$.
+* Theorem 10.2(a), `Brezis.Chapter10.theorem_10_2_a`: for $u_0 \in H^1_0(\Omega)$,
+  $u \in C([0, \infty); H^1_0(\Omega))$, $\partial_t u \in L^2(0, \infty; L^2(\Omega))$ and the
+  identity (11).
+* Theorem 10.2(a), `Brezis.Chapter10.theorem_10_2_a_memLp`: $u \in L^2(0, \infty; H^2(\Omega))$ for
+  bounded $\Omega$.
+* Theorem 10.2(b), `Brezis.Chapter10.theorem_10_2_b`: for $u_0 \in H^2(\Omega) \cap H^1_0(\Omega)$,
+  $u \in C([0, \infty); H^2(\Omega))$ and an energy identity for $\Delta u$.
+* Theorem 10.2(b), `Brezis.Chapter10.theorem_10_2_b_memLp`: $u \in L^2(0, \infty; H^3(\Omega))$ and
+  $\partial_t u \in L^2(0, \infty; H^1_0(\Omega))$ for bounded $\Omega$.
+* Theorem 10.2(c), `Brezis.Chapter10.theorem_10_2_c`: under the compatibility conditions (8), $u \in
+  C^\infty(\overline{\Omega} \times [0, \infty))$.
+* Remark 1, `Brezis.Chapter10.remark_10_1`: the backward problem (9'), (10), (11) is well posed.
+* Remark 1, `Brezis.Chapter10.remark_10_1_necessary`: the condition (12) is necessary for the
+  backward problem (9), (10), (11).
+* Remark 3, `Brezis.Chapter10.remark_10_3`: the Fourier method, the solution is the series (14) in
+  the Dirichlet eigenbasis.
+* Remark 4, `Brezis.Chapter10.remark_10_4`: the compatibility conditions (8) are necessary for a
+  solution that is smooth up to $t = 0$.
+
+## Conventions
+
+* The source reads $u(x, t)$ as a function of $t$ with values in a space of functions of $x$: "when
+  we write $u(t)$, we mean the element $x \mapsto u(x, t)$ of $H$". A solution is therefore a curve
+  in $L^2(\Omega)$, of type `ℝ → Lp ℝ 2 (volume.restrict Ω)`.
+* The classes $C^k(I; V)$ for $V = H^2(\Omega)$ or $H^1_0(\Omega)$ are
+  `Bochner.ContDiffOnThrough J k u I`: a $C^k$ lift of $u$ through the inclusion
+  $J : V \to L^2(\Omega)$. The class $L^2(I; V)$ is `Bochner.MemLpThrough J 2 u I`. The class
+  $C^\infty(\overline{\Omega} \times [\varepsilon, \infty))$ is
+  `ContDiffOnClosure ℝ ∞ U (Ω ×ˢ Ioi ε)` for a function $U$ of $(x, t)$ that represents the curve,
+  in the sense of footnote 16 of Chapter 9 for $C^k$ up to the boundary.
+* The spaces $H^k(\Omega)$, $H^1(\Omega)$ and $H^1_0(\Omega)$ of Sections 9.1 and 9.4 are
+  `Brezis.Chapter09.sobolevSpaceHigher N k 2 Ω`, `Brezis.Chapter09.hSpace N Ω` and
+  `Brezis.Chapter09.hZeroSpace N Ω`. A function in $L^2(\Omega)$ "lies in $H^k(\Omega)$" when it is
+  the function `SobolevMultiIndex.fnL w` of some $w$ in $H^k(\Omega)$. In the same way,
+  "$u_0 \in H^1_0(\Omega)$" means that $u_0$ is the function of some $v_0$ in $H^1_0(\Omega)$.
+* The quantity $|\nabla u(t)|^2_{L^2} = \sum_i \int_\Omega |\partial_i u(x, t)|^2$ of footnote 3 is
+  written for an $H^1_0$-lift of $u(t)$ with the weak partial derivatives
+  `Brezis.Chapter09.partialDeriv` of Section 9.1.
+* The boundary conditions "$\Delta^j u = 0$ on $\Gamma$" of (7) and (8) are read without a trace, as
+  membership of $H^1_0(\Omega)$ (the reading of Theorem 9.17), through `IsDirichletLaplacianChain`.
+* The standing hypothesis of the chapter, "$\Omega$ of class $C^\infty$ with $\Gamma$ bounded", is
+  `Brezis.Chapter09.IsOfClassC ⊤ Ω` together with `Bornology.IsBounded (frontier Ω)`, with
+  $N = d + 1$, because the chart definition of Section 9.2 needs a boundary variable.
+
+## Implementation notes
+
+* The operator $A$ of the source is `Brezis.Chapter10.heatOperator Ω`: the backbone Dirichlet
+  Laplacian `dirichletLaplacian Ω`, whose domain is the weak domain $\{u \in H^1_0(\Omega) : \Delta
+  u \in L^2(\Omega)\}$, restricted to the functions of elements of $H^2(\Omega)$. On a domain of
+  class $C^2$ with bounded boundary the two operators coincide
+  (`Brezis.Chapter10.heatOperator_eq_dirichletLaplacian`, by Theorem 9.25). This identification is
+  how every backbone statement about `dirichletLaplacian` is read for the operator $A$ of the
+  source.
+* The class (4) implies the backbone class `Heat.IsSolution` on every open set, and the two classes
+  agree on a $C^2$ domain with bounded boundary (`Brezis.Chapter10.isHeatSolution_iff`).
+
+## Deviations from the source
+
+* **Standing hypothesis of Chapter 10** (generalization). The source assumes $\Omega$ of class
+  $C^\infty$ with $\Gamma$ bounded throughout. The library assumes it only where a proof uses it, in
+  the form needed: results whose proofs hold on every open set (the monotonicity and symmetry of
+  $A$, the energy identities (6) and (11), Theorem 10.2(a) and Remark 3) carry no regularity
+  hypothesis, and several results assume only class $C^2$ or $C^3$. The source itself notes that
+  "this assumption may be considerably weakened if we are interested only in weak solutions". See
+  `Brezis.Chapter10.theorem_10_1_energy` and `Brezis.Chapter10.theorem_10_2_b`.
+* **Theorem 10.1, $u \in L^2(0, \infty; H^1_0(\Omega))$** (correction). The clause is false on
+  unbounded $\Omega$ ($\Omega = \mathbb{R}$ with a Gaussian datum). The library proves
+  $\int_0^\infty |\nabla u(t)|^2 \, dt \le \frac12 |u_0|^2$ on every open set and the membership for
+  bounded $\Omega$. See `Brezis.Chapter10.theorem_10_1_memLp_gradient` and
+  `Brezis.Chapter10.theorem_10_1_memLp`.
+* **Theorem 10.2(a), $u \in L^2(0, \infty; H^2(\Omega))$** (correction). The clause is false on
+  unbounded $\Omega$. The library proves it for bounded $\Omega$. See
+  `Brezis.Chapter10.theorem_10_2_a_memLp`.
+* **Theorem 10.2(b), $u \in L^2(0, \infty; H^3(\Omega))$ and
+  $\partial_t u \in L^2(0, \infty; H^1_0(\Omega))$** (correction). The clauses are false on
+  unbounded $\Omega$. The library proves them for bounded $\Omega$. See
+  `Brezis.Chapter10.theorem_10_2_b_memLp`.
+* **Remark 4** (reading). The boundary values of $\Delta^j u(\cdot, 0)$ must have a meaning. The
+  library states the remark for $u$ of class $C^\infty$ on $\mathbb{R}^N \times \mathbb{R}$. See
+  `Brezis.Chapter10.remark_10_4`.
+
+## Not formalized
+
+* **Remark 1, nonexistence under (12).** The claim of the source that the backward problem (9),
+  (10), (11) need not have a solution even when (12) holds is a counterexample claim.
 -/
 
 open Filter MeasureTheory Metric Set Topology TopologicalSpace Laplacian
@@ -83,35 +167,43 @@ section General
 
 variable {N : ℕ}
 
-/-- The book's `ℝ^N`. -/
+/-- The space $\mathbb{R}^N$ of the source. -/
 local notation "𝔼" => EuclideanSpace ℝ (Fin N)
 
-/-- The standard basis of `ℝ^N`. -/
+/-- The standard basis of $\mathbb{R}^N$. -/
 local notation "𝔟" => OrthonormalBasis.toBasis (EuclideanSpace.basisFun (Fin N) ℝ)
 
 variable {Ω : Opens (EuclideanSpace ℝ (Fin N))}
 
-/-! ### The operator `A` of the proof of Theorem 10.1 -/
+/-! ### The operator $A$ of the proof of Theorem 10.1 -/
 
 variable (Ω) in
-/-- **The operator `A` of the proof of Theorem 10.1**: the unbounded operator
-`A : D(A) ⊂ L²(Ω) → L²(Ω)` with `D(A) = H²(Ω) ∩ H¹₀(Ω)` and `Au = −Δu`, "the boundary condition
-(2) being incorporated in the definition of the domain". It is the backbone's Dirichlet Laplacian
-`dirichletLaplacian Ω` (whose domain is the weak one, `{u ∈ H¹₀(Ω) : Δu ∈ L²(Ω)}`) restricted to
-the submodule of `L²(Ω)` functions of `H²(Ω)` elements, `LinearPMap.domRestrict`; the weak domain
-contains `H²(Ω) ∩ H¹₀(Ω)` on every open set (`mem_dirichletLaplacianDomain_of_sobolev_two`), so
-the domain is `H²(Ω) ∩ H¹₀(Ω)` (`heatOperator_mem_domain_iff`) and `A u = −∑ᵢ ∂ᵢᵢu`
-(`heatOperator_apply`). -/
+/-- **Proof of Theorem 10.1** in [brezis2011functional], the operator $A$. Let
+$\Omega \subset \mathbb{R}^N$ be open. The operator
+$A : D(A) \subset L^2(\Omega) \to L^2(\Omega)$ is defined by
+$D(A) = H^2(\Omega) \cap H^1_0(\Omega)$ and $A u = -\Delta u$, "the boundary condition (2) being
+incorporated in the definition of the domain".
+
+The definition restricts the backbone Dirichlet Laplacian `dirichletLaplacian Ω`, whose domain
+is the weak domain $\{u \in H^1_0(\Omega) : \Delta u \in L^2(\Omega)\}$, to the submodule of
+$L^2(\Omega)$ functions of elements of $H^2(\Omega)$, with `LinearPMap.domRestrict`. The weak
+domain contains $H^2(\Omega) \cap H^1_0(\Omega)$ on every open set
+(`mem_dirichletLaplacianDomain_of_sobolev_two`). Therefore the domain is
+$H^2(\Omega) \cap H^1_0(\Omega)$ (`Brezis.Chapter10.heatOperator_mem_domain_iff`) and
+$A u = -\sum_i \partial_{ii} u$ (`Brezis.Chapter10.heatOperator_apply`). -/
 noncomputable def heatOperator :
     Lp ℝ 2 (volume.restrict (Ω : Set 𝔼)) →ₗ.[ℝ] Lp ℝ 2 (volume.restrict (Ω : Set 𝔼)) :=
   (dirichletLaplacian Ω).domRestrict (LinearMap.range (fnL ℝ 𝔟 2 2 Ω volume).toLinearMap)
 
-/-- `D(A)` is contained in the weak domain of the Dirichlet Laplacian. -/
+/-- The domain $D(A)$ of the operator $A$ of Theorem 10.1 is contained in the weak domain of the
+Dirichlet Laplacian `dirichletLaplacian Ω`. -/
 theorem heatOperator_domain_le : (heatOperator Ω).domain ≤ (dirichletLaplacian Ω).domain :=
   inf_le_right
 
-/-- **`D(A) = H²(Ω) ∩ H¹₀(Ω)`**: `f ∈ D(A)` iff `f` is the function of an element of `H²(Ω)` and
-of an element of `H¹₀(Ω)`. -/
+/-- **Proof of Theorem 10.1** in [brezis2011functional], $D(A) = H^2(\Omega) \cap H^1_0(\Omega)$.
+Let $\Omega \subset \mathbb{R}^N$ be open and $f \in L^2(\Omega)$. Then $f \in D(A)$ if and only
+if $f$ is the function of an element of $H^2(\Omega)$ and the function of an element of
+$H^1_0(\Omega)$. -/
 theorem heatOperator_mem_domain_iff {f : Lp ℝ 2 (volume.restrict (Ω : Set 𝔼))} :
     f ∈ (heatOperator Ω).domain ↔
       (∃ w : sobolevSpaceHigher N 2 2 Ω, fnL ℝ 𝔟 2 2 Ω volume w = f) ∧
@@ -121,27 +213,38 @@ theorem heatOperator_mem_domain_iff {f : Lp ℝ 2 (volume.restrict (Ω : Set �
   exact ⟨fun ⟨hw, hf⟩ ↦ ⟨hw, dirichletLaplacian_exists_lift ⟨f, hf⟩⟩,
     fun ⟨hw, hv⟩ ↦ ⟨hw, mem_dirichletLaplacianDomain_of_exists_sobolev_two hw hv⟩⟩
 
-/-- `A f` is the value of the Dirichlet Laplacian at `f`, for `f ∈ D(A)`. -/
+/-- For $f \in D(A)$, the value $A f$ of the operator $A$ of Theorem 10.1 is the value of the
+Dirichlet Laplacian `dirichletLaplacian Ω` at $f$. -/
 theorem heatOperator_apply_eq (f : (heatOperator Ω).domain) :
     heatOperator Ω f = dirichletLaplacian Ω ⟨f, heatOperator_domain_le f.2⟩ :=
   LinearPMap.domRestrict_apply rfl
 
-/-- **`A u = −Δu`**: for `f ∈ D(A)` the function of `w ∈ H²(Ω)`, `A f = −∑ᵢ ∂²w/∂xᵢ²`, the weak
-second derivatives of `w` at the multi-indices `2eᵢ`. -/
+/-- **Proof of Theorem 10.1** in [brezis2011functional], $A u = -\Delta u$. Let
+$\Omega \subset \mathbb{R}^N$ be open, let $f \in D(A)$, and let $w \in H^2(\Omega)$ have the
+function $f$. Then
+$$A f = -\sum_{i} \frac{\partial^2 w}{\partial x_i^2},$$
+where $\partial^2 w / \partial x_i^2$ is the weak derivative of $w$ at the multi-index $2 e_i$. -/
 theorem heatOperator_apply (f : (heatOperator Ω).domain) (w : sobolevSpaceHigher N 2 2 Ω)
     (hw : fnL ℝ 𝔟 2 2 Ω volume w = f) :
     heatOperator Ω f = -∑ i, weakDeriv w (MultiIndexLE.addSingle i (MultiIndexLE.single i)) := by
   rw [heatOperator_apply_eq, ← sobolevLaplacianL_apply]
   exact dirichletLaplacian_apply_eq_neg_sobolevLaplacianL w _ hw
 
-/-- **(i) `A` is monotone** (proof of Theorem 10.1): `(Au, u)_{L²} = ∫_Ω |∇u|² ≥ 0` for every
-`u ∈ D(A)`; on every open set. -/
+/-- **Proof of Theorem 10.1** in [brezis2011functional], claim (i): $A$ is monotone. Let
+$\Omega \subset \mathbb{R}^N$ be open. Then $(A u, u)_{L^2} = \int_\Omega |\nabla u|^2 \ge 0$
+for every $u \in D(A)$.
+
+The statement holds on every open set. Monotonicity is `Brezis.Chapter07.IsMonotone`. -/
 theorem heatOperator_isMonotone : Brezis.Chapter07.IsMonotone (heatOperator Ω) := fun f ↦ by
   rw [heatOperator_apply_eq]
   exact dirichletLaplacian_inner_self_nonneg _
 
-/-- **(iii) `A` is symmetric** (proof of Theorem 10.1): `(Au, v)_{L²} = ∫_Ω ∇u · ∇v = (u, Av)_{L²}`
-for `u, v ∈ D(A)`; on every open set. -/
+/-- **Proof of Theorem 10.1** in [brezis2011functional], claim (iii): $A$ is symmetric. Let
+$\Omega \subset \mathbb{R}^N$ be open. Then
+$$(A u, v)_{L^2} = \int_\Omega \nabla u \cdot \nabla v = (u, A v)_{L^2} \qquad \text{for all }
+  u, v \in D(A).$$
+
+The statement holds on every open set. Symmetry is `Brezis.Chapter07.IsSymmetricOperator`. -/
 theorem heatOperator_isSymmetric : IsSymmetricOperator (heatOperator Ω) := fun f g ↦ by
   rw [heatOperator_apply_eq, heatOperator_apply_eq]
   exact dirichletLaplacian_isFormalAdjoint
@@ -151,32 +254,43 @@ theorem heatOperator_isSymmetric : IsSymmetricOperator (heatOperator Ω) := fun 
 /-! ### The problem (1), (2), (3) in the class (4) -/
 
 variable (Ω) in
-/-- **The problem (1), (2), (3) in the class (4) of Theorem 10.1**: `u : ℝ → L²(Ω)` (the book's
-`u(x, t)`, read as the curve `t ↦ u(·, t)`) is a solution with initial datum `u₀` if
-`u ∈ C([0, ∞); L²(Ω))`, `u ∈ C((0, ∞); H²(Ω) ∩ H¹₀(Ω))` — `u(t) ∈ D(A) = H² ∩ H¹₀` for `t > 0`,
-which is the boundary condition (2), and `u` lifts continuously to `H²(Ω)` on `(0, ∞)` —,
-`u ∈ C¹((0, ∞); L²(Ω))`, `∂ₜu = Δu = −A u` in `L²(Ω)` for `t > 0` (1), and `u(0) = u₀` (3). -/
+/-- **Theorem 10.1** of [brezis2011functional], the problem (1), (2), (3) in the class (4). Let
+$\Omega \subset \mathbb{R}^N$ be open and $u_0 \in L^2(\Omega)$. A curve
+$u : \mathbb{R} \to L^2(\Omega)$ is a **solution of the heat equation** with initial datum $u_0$
+if
+
+* $u \in C([0, \infty); L^2(\Omega))$,
+* $u(t) \in D(A) = H^2(\Omega) \cap H^1_0(\Omega)$ for $t > 0$, which is the boundary condition
+  (2), and $u \in C((0, \infty); H^2(\Omega))$,
+* $u \in C^1((0, \infty); L^2(\Omega))$,
+* $\partial_t u(t) = \Delta u(t) = -A u(t)$ in $L^2(\Omega)$ for $t > 0$, which is the heat
+  equation (1), and
+* $u(0) = u_0$, which is the initial condition (3).
+
+The curve $u$ is the function $u(x, t)$ of the source, read as $t \mapsto u(\cdot, t)$. Its
+values at negative times are not constrained. -/
 structure IsHeatSolution (u₀ : Lp ℝ 2 (volume.restrict (Ω : Set 𝔼)))
     (u : ℝ → Lp ℝ 2 (volume.restrict (Ω : Set 𝔼))) : Prop where
-  /-- `u ∈ C([0, ∞); L²(Ω))`. -/
+  /-- $u \in C([0, \infty); L^2(\Omega))$. -/
   continuousOn : ContinuousOn u (Ici 0)
-  /-- `u(t) ∈ H²(Ω) ∩ H¹₀(Ω)` for `t > 0`: the boundary condition (2). -/
+  /-- $u(t) \in H^2(\Omega) \cap H^1_0(\Omega)$ for $t > 0$: the boundary condition (2). -/
   mem_domain : ∀ t, 0 < t → u t ∈ (heatOperator Ω).domain
-  /-- `u ∈ C((0, ∞); H²(Ω))`. -/
+  /-- $u \in C((0, \infty); H^2(\Omega))$. -/
   contDiffOnThrough : Bochner.ContDiffOnThrough (fnL ℝ 𝔟 2 2 Ω volume) 0 u (Ioi 0)
-  /-- `u ∈ C¹((0, ∞); L²(Ω))`. -/
+  /-- $u \in C^1((0, \infty); L^2(\Omega))$. -/
   contDiffOn : ContDiffOn ℝ 1 u (Ioi 0)
-  /-- The heat equation (1): `∂ₜu(t) = Δu(t) = −A u(t)` for `t > 0`. -/
+  /-- The heat equation (1): $\partial_t u(t) = \Delta u(t) = -A u(t)$ for $t > 0$. -/
   hasDerivAt : ∀ t (ht : 0 < t), HasDerivAt u (-(heatOperator Ω ⟨u t, mem_domain t ht⟩)) t
-  /-- The initial condition (3): `u(0) = u₀`. -/
+  /-- The initial condition (3): $u(0) = u_0$. -/
   apply_zero : u 0 = u₀
 
 variable {u₀ : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
   {u : ℝ → Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
 
-/-- **A solution in the class (4) is a solution of the backbone's weak class** `Heat.IsSolution`
-(the class of Theorem 7.7 for the Dirichlet Laplacian with its weak domain), on every open set:
-`D(A) ⊆ {u ∈ H¹₀ : Δu ∈ L²}` and `A` agrees with the Dirichlet Laplacian there. -/
+/-- A solution of the heat equation in the class (4) of Theorem 10.1 is a solution in the backbone
+class `Heat.IsSolution`, the class of Theorem 7.7 for the Dirichlet Laplacian with its weak
+domain. This holds on every open set $\Omega$, because $D(A) \subseteq \{u \in H^1_0(\Omega) :
+\Delta u \in L^2(\Omega)\}$ and $A$ agrees with the Dirichlet Laplacian on $D(A)$. -/
 theorem IsHeatSolution.isSolution (h : IsHeatSolution Ω u₀ u) : Heat.IsSolution Ω u₀ u where
   toIsSolutionOn :=
     { apply_zero := h.apply_zero
@@ -187,8 +301,12 @@ theorem IsHeatSolution.isSolution (h : IsHeatSolution Ω u₀ u) : Heat.IsSoluti
   continuousOn := h.continuousOn
   contDiffOn := h.contDiffOn
 
-/-- **Footnote 3**: `|∇v|²_{L²(Ω)} = ∑ᵢ ∫_Ω |∂v/∂xᵢ|²` is the Dirichlet form `∫_Ω |∇v|²` of the
-backbone, for `v ∈ H¹(Ω)`. -/
+/-- **Footnote 3** in Chapter 10 of [brezis2011functional]. Let $\Omega \subset \mathbb{R}^N$ be
+open and $v \in H^1(\Omega)$. Then
+$$|\nabla v|^2_{L^2(\Omega)} = \sum_i \int_\Omega \left|\frac{\partial v}{\partial
+  x_i}\right|^2$$
+is the Dirichlet form $\int_\Omega |\nabla v|^2$ of the backbone,
+`Elliptic.dirichletForm Ω v v`. -/
 theorem sum_integral_partialDeriv_sq (v : hSpace N Ω) :
     ∑ i, ∫ x in (Ω : Set 𝔼), partialDeriv v i x ^ 2 = Elliptic.dirichletForm Ω v v := by
   rw [Elliptic.dirichletForm_apply_inner]
@@ -196,7 +314,11 @@ theorem sum_integral_partialDeriv_sq (v : hSpace N Ω) :
   rw [MeasureTheory.L2.inner_eq_integral_mul]
   exact integral_congr_ae (Eventually.of_forall fun x ↦ sq _)
 
-/-- The gradient norm of `u(t)`, read on any `H¹₀`-lift, is `(A u(t), u(t))_{L²}`. -/
+/-- Let $u$ be a solution of the heat equation in the class (4) of Theorem 10.1, let $t > 0$, and
+let $v \in H^1_0(\Omega)$ have the function $u(t)$. Then $(A u(t), u(t))_{L^2} = \sum_i
+\int_\Omega |\partial v / \partial x_i|^2$, where $A$ is the Dirichlet Laplacian
+`dirichletLaplacian Ω`. Thus the gradient norm of $u(t)$ does not depend on the choice of the
+$H^1_0$-lift. -/
 theorem IsHeatSolution.inner_apply_self_eq (h : IsHeatSolution Ω u₀ u) {t : ℝ} (ht : 0 < t)
     {v : hSpace N Ω} (hv : v ∈ hZeroSpace N Ω) (hvt : fnL ℝ 𝔟 1 2 Ω volume v = u t) :
     ⟪dirichletLaplacian Ω ⟨u t, h.isSolution.mem_domain ht⟩, u t⟫_ℝ
@@ -206,12 +328,17 @@ theorem IsHeatSolution.inner_apply_self_eq (h : IsHeatSolution Ω u₀ u) {t : �
 
 /-! ### Theorem 10.1, the energy identity (6) -/
 
-/-- **Theorem 10.1, the energy identity (6)**: for a solution `u` of (1), (2), (3) and any
-function `g` with `g(t) = |∇u(t)|²_{L²(Ω)} = ∑ᵢ ∫_Ω |∂ᵢu(x, t)|² dx` for `t > 0` (footnote 3, read
-on the `H¹₀`-lift of `u(t)`), `g` is integrable on `(0, T]` and
-`½ |u(T)|²_{L²} + ∫₀ᵀ |∇u(t)|²_{L²} dt = ½ |u₀|²_{L²}` for every `T > 0`. The book's argument with
-`φ(t) = ½ |u(t)|²`, `φ' = (u, Δu) = −|∇u|²` on `(0, ∞)` and `ε → 0`, is the backbone's
-`Heat.IsSolution.energy`; it holds on every open set. -/
+/-- **Theorem 10.1** of [brezis2011functional], the energy identity (6). Let
+$\Omega \subset \mathbb{R}^N$ be open, let $u_0 \in L^2(\Omega)$, and let $u$ be a solution of
+(1), (2), (3) in the class (4). Let $g : \mathbb{R} \to \mathbb{R}$ be a function with $g(t) =
+|\nabla u(t)|^2_{L^2(\Omega)} = \sum_i \int_\Omega |\partial_i u(x, t)|^2 \, dx$ for $t > 0$,
+computed on an $H^1_0$-lift of $u(t)$ as in footnote 3. Then for every $T > 0$ the function $g$
+is integrable on $(0, T]$ and
+$$\frac12 |u(T)|^2_{L^2} + \int_0^T |\nabla u(t)|^2_{L^2} \, dt = \frac12 |u_0|^2_{L^2}.$$
+
+The statement holds on every open set. The argument of the source, with
+$\varphi(t) = \frac12 |u(t)|^2$, $\varphi' = (u, \Delta u) = -|\nabla u|^2$ on $(0, \infty)$ and
+$\varepsilon \to 0$, is the backbone theorem `Heat.IsSolution.energy`. -/
 theorem theorem_10_1_energy (hu : IsHeatSolution Ω u₀ u) {g : ℝ → ℝ}
     (hg : ∀ t, 0 < t → ∃ v : hSpace N Ω, v ∈ hZeroSpace N Ω ∧ fnL ℝ 𝔟 1 2 Ω volume v = u t ∧
       g t = ∑ i, ∫ x in (Ω : Set 𝔼), partialDeriv v i x ^ 2)
@@ -222,11 +349,20 @@ theorem theorem_10_1_energy (hu : IsHeatSolution Ω u₀ u) {g : ℝ → ℝ}
     obtain ⟨v, hv, hvt, hgt⟩ := hg t ht
     rw [hgt, hu.inner_apply_self_eq ht hv hvt]) hT
 
-/-- **Theorem 10.1, the gradient half of "`u ∈ L²(0, ∞; H¹₀(Ω))`"**, which is what the book's
-proof establishes on every open set: `t ↦ |∇u(t)|²_{L²(Ω)}` is integrable on `(0, ∞)` and
-`∫₀^∞ |∇u(t)|²_{L²} dt ≤ ½ |u₀|²_{L²}` ((6) for every `T`, with `|u(T)|² ≥ 0`). The membership
-`u ∈ L²(0, ∞; H¹₀(Ω))` itself holds for bounded `Ω` (`theorem_10_1_memLp`) and fails on
-unbounded domains, where `∫₀^∞ |u(t)|²_{L²} dt` need not be finite. -/
+/-- **Theorem 10.1** of [brezis2011functional], the gradient part of
+"$u \in L^2(0, \infty; H^1_0(\Omega))$". Let $\Omega \subset \mathbb{R}^N$ be open, let
+$u_0 \in L^2(\Omega)$, let $u$ be a solution of (1), (2), (3) in the class (4), and let
+$g(t) = |\nabla u(t)|^2_{L^2(\Omega)}$ for $t > 0$, as in
+`Brezis.Chapter10.theorem_10_1_energy`. Then $g$ is integrable on $(0, \infty)$ and
+$$\int_0^\infty |\nabla u(t)|^2_{L^2} \, dt \le \frac12 |u_0|^2_{L^2}.$$
+
+**Correction.** The source states $u \in L^2(0, \infty; H^1_0(\Omega))$ for every $\Omega$. This
+is false on unbounded domains, where $\int_0^\infty |u(t)|^2_{L^2} \, dt$ need not be finite,
+for example for $\Omega = \mathbb{R}$ with a Gaussian datum. What the proof of the source
+establishes on every open set is this gradient bound. The membership itself holds for bounded
+$\Omega$ (`Brezis.Chapter10.theorem_10_1_memLp`).
+
+The bound follows from (6) for every $T$, since $|u(T)|^2 \ge 0$. -/
 theorem theorem_10_1_memLp_gradient (hu : IsHeatSolution Ω u₀ u) {g : ℝ → ℝ}
     (hg : ∀ t, 0 < t → ∃ v : hSpace N Ω, v ∈ hZeroSpace N Ω ∧ fnL ℝ 𝔟 1 2 Ω volume v = u t ∧
       g t = ∑ i, ∫ x in (Ω : Set 𝔼), partialDeriv v i x ^ 2) :
@@ -235,18 +371,29 @@ theorem theorem_10_1_memLp_gradient (hu : IsHeatSolution Ω u₀ u) {g : ℝ →
     obtain ⟨v, hv, hvt, hgt⟩ := hg t ht
     rw [hgt, hu.inner_apply_self_eq ht hv hvt]
 
-/-! ### Theorem 10.2 (a) -/
+/-! ### Theorem 10.2(a) -/
 
-/-- **Theorem 10.2 (a)**, the clauses that hold on every open set: if `u₀ ∈ H¹₀(Ω)` — the datum
-is `fnL v₀` for some `v₀ ∈ H¹₀(Ω)` — then the solution `u` of (1), (2), (3) satisfies
-`u ∈ C([0, ∞); H¹₀(Ω))`, `∂ₜu ∈ L²(0, ∞; L²(Ω))`, and (11):
-`∫₀ᵀ |∂ₜu(t)|²_{L²} dt + ½ |∇u(T)|²_{L²} = ½ |∇u₀|²_{L²}` for every `T > 0`, with `|∇u(T)|²` read
-on any `H¹₀`-lift `v` of `u(T)` (footnote 3). The book's proof — the operator `A₁` in
-`H₁ = H¹₀(Ω)` with the scalar product `∫ ∇u · ∇v + ∫ uv` (the backbone's `dirichletLaplacianH10`,
-maximal monotone and symmetric on any open set), Theorem 7.7 there, uniqueness, and
-`φ(t) = ½ |∇u(t)|²` with `φ' = −|∂ₜu|²` — is the backbone's
-`Heat.IsSolution.contDiffOnThrough_sobolevZero_of_mem`, `memLp_deriv` and `energy_sobolevZero`.
-The clause `u ∈ L²(0, ∞; H²(Ω))` is `theorem_10_2_a_memLp` (bounded `Ω`). -/
+/-- **Theorem 10.2(a)** of [brezis2011functional], the clauses that hold on every open set. Let
+$\Omega \subset \mathbb{R}^N$ be open, let $u_0 \in H^1_0(\Omega)$, that is, $u_0$ is the
+function of some $v_0 \in H^1_0(\Omega)$, and let $u$ be the solution of (1), (2), (3) in the
+class (4). Then
+
+* $u \in C([0, \infty); H^1_0(\Omega))$,
+* $\partial_t u \in L^2(0, \infty; L^2(\Omega))$, and
+* the identity (11) holds: for every $T > 0$ and every $v \in H^1_0(\Omega)$ with function
+  $u(T)$,
+$$\int_0^T |\partial_t u(t)|^2_{L^2} \, dt + \frac12 |\nabla v|^2_{L^2} = \frac12 |\nabla
+  v_0|^2_{L^2},$$
+where $|\nabla v|^2_{L^2} = \sum_i \int_\Omega |\partial v / \partial x_i|^2$ as in footnote 3.
+
+The proof of the source uses the operator $A_1$ in $H_1 = H^1_0(\Omega)$ with the scalar product
+$\int_\Omega \nabla u \cdot \nabla v + \int_\Omega uv$ (the backbone operator
+`dirichletLaplacianH10`, maximal monotone and symmetric on every open set), Theorem 7.7 for
+$A_1$, uniqueness, and $\varphi(t) = \frac12 |\nabla u(t)|^2$ with
+$\varphi' = -|\partial_t u|^2$. This is the backbone theorems
+`Heat.IsSolution.contDiffOnThrough_sobolevZero_of_mem`, `Heat.IsSolution.memLp_deriv` and
+`Heat.IsSolution.energy_sobolevZero`. The clause $u \in L^2(0, \infty; H^2(\Omega))$ is
+`Brezis.Chapter10.theorem_10_2_a_memLp`, for bounded $\Omega$. -/
 theorem theorem_10_2_a {v₀ : hZeroSpace N Ω}
     (hu : IsHeatSolution Ω (SobolevMultiIndexZero.fnL ℝ 𝔟 1 2 Ω volume v₀) u) :
     Bochner.ContDiffOnThrough (SobolevMultiIndexZero.fnL ℝ 𝔟 1 2 Ω volume) 0 u (Ici 0) ∧
@@ -264,27 +411,37 @@ theorem theorem_10_2_a {v₀ : hZeroSpace N Ω}
 /-! ### Remark 1: the backward problem (9'), (10), (11) -/
 
 variable (Ω) in
-/-- **The backward problem (9'), (10), (11)** of Remark 1, `−∂ₜu − Δu = 0` in `Ω × (−∞, T)`,
-`u = 0` on `Γ × (−∞, T)`, with the final datum `u(T) = u_T`, in the class of Theorem 10.1
-transported by `t ↦ T − t`: `u ∈ C((−∞, T]; L²(Ω)) ∩ C((−∞, T); H²(Ω) ∩ H¹₀(Ω))`,
-`u ∈ C¹((−∞, T); L²(Ω))`, `∂ₜu = −Δu = A u` for `t < T`, `u(T) = u_T`. -/
+/-- **Remark 1** in Chapter 10 of [brezis2011functional], the backward problem (9'), (10), (11). Let
+$\Omega \subset \mathbb{R}^N$ be open, $T \in \mathbb{R}$ and $u_T \in L^2(\Omega)$. The
+backward problem is $-\partial_t u - \Delta u = 0$ in $\Omega \times (-\infty, T)$, $u = 0$ on
+$\Gamma \times (-\infty, T)$, $u(T) = u_T$. A curve $u : \mathbb{R} \to L^2(\Omega)$ is a
+**solution of the backward problem** if
+
+* $u \in C((-\infty, T]; L^2(\Omega))$,
+* $u(t) \in H^2(\Omega) \cap H^1_0(\Omega)$ for $t < T$ and
+  $u \in C((-\infty, T); H^2(\Omega))$,
+* $u \in C^1((-\infty, T); L^2(\Omega))$,
+* $\partial_t u(t) = -\Delta u(t) = A u(t)$ for $t < T$, and
+* $u(T) = u_T$.
+
+This is the class of Theorem 10.1 transported by $t \mapsto T - t$. -/
 structure IsBackwardHeatSolution (T : ℝ) (uT : Lp ℝ 2 (volume.restrict (Ω : Set 𝔼)))
     (u : ℝ → Lp ℝ 2 (volume.restrict (Ω : Set 𝔼))) : Prop where
-  /-- `u ∈ C((−∞, T]; L²(Ω))`. -/
+  /-- $u \in C((-\infty, T]; L^2(\Omega))$. -/
   continuousOn : ContinuousOn u (Iic T)
-  /-- `u(t) ∈ H²(Ω) ∩ H¹₀(Ω)` for `t < T`: the boundary condition (10). -/
+  /-- $u(t) \in H^2(\Omega) \cap H^1_0(\Omega)$ for $t < T$: the boundary condition (10). -/
   mem_domain : ∀ t, t < T → u t ∈ (heatOperator Ω).domain
-  /-- `u ∈ C((−∞, T); H²(Ω))`. -/
+  /-- $u \in C((-\infty, T); H^2(\Omega))$. -/
   contDiffOnThrough : Bochner.ContDiffOnThrough (fnL ℝ 𝔟 2 2 Ω volume) 0 u (Iio T)
-  /-- `u ∈ C¹((−∞, T); L²(Ω))`. -/
+  /-- $u \in C^1((-\infty, T); L^2(\Omega))$. -/
   contDiffOn : ContDiffOn ℝ 1 u (Iio T)
-  /-- The equation (9'): `∂ₜu(t) = −Δu(t) = A u(t)` for `t < T`. -/
+  /-- The equation (9'): $\partial_t u(t) = -\Delta u(t) = A u(t)$ for $t < T$. -/
   hasDerivAt : ∀ t (ht : t < T), HasDerivAt u (heatOperator Ω ⟨u t, mem_domain t ht⟩) t
-  /-- The final condition (11): `u(T) = u_T`. -/
+  /-- The final condition (11): $u(T) = u_T$. -/
   apply_eq : u T = uT
 
-/-- A solution of the backward problem in the class of Remark 1 is one in the backbone's weak
-class `Heat.IsBackwardSolution`, on every open set. -/
+/-- A solution of the backward problem of Remark 1 in Chapter 10 is a solution in the backbone class
+`Heat.IsBackwardSolution`. This holds on every open set $\Omega$. -/
 theorem IsBackwardHeatSolution.isBackwardSolution {T : ℝ}
     {uT : Lp ℝ 2 (volume.restrict (Ω : Set 𝔼))} (h : IsBackwardHeatSolution Ω T uT u) :
     Heat.IsBackwardSolution Ω T uT u where
@@ -296,14 +453,24 @@ theorem IsBackwardHeatSolution.isBackwardSolution {T : ℝ}
 
 /-! ### Remark 4: the compatibility conditions are necessary -/
 
-/-- **Remark 4.** The compatibility conditions (8) are necessary for a solution of (1), (2), (3)
-that is smooth up to `t = 0`: if `u : ℝ^N × ℝ → ℝ` is of class `C^∞` (on `ℝ^N × ℝ`, so that
-`u ∈ C^∞(Ω̄ × [0, ∞))` and the boundary values of `Δ^j u(·, 0)` are meaningful as written) and
-satisfies `∂ₜu = Δu` in `Q = Ω × (0, ∞)` and `u = 0` on `Σ = Γ × (0, ∞)`, then
-`Δ^j u(·, 0) = 0` on `Γ` for every `j`: `∂ₜ^j u = 0` on `Γ × [0, ∞)` by continuity (15),
-`∂ₜ^j u = Δ^j u` in `Q̄` by induction and continuity (16), and the two are compared on `Γ × {0}`.
-The backbone's `Heat.IsClassicalSolution.iteratedLaplacian_eq_zero_frontier` (with diffusivity
-`1`, on the cylinder `Ω × (0, 1)`). -/
+/-- **Remark 4** in Chapter 10 of [brezis2011functional]. The compatibility conditions (8) are
+necessary for a solution of (1), (2), (3) that is smooth up to $t = 0$. Let
+$\Omega \subset \mathbb{R}^N$ be open with boundary $\Gamma$, and let $u : \mathbb{R}^N \times
+\mathbb{R} \to \mathbb{R}$ be of class $C^\infty$ with
+$$\partial_t u = \Delta u \text{ in } Q = \Omega \times (0, \infty), \qquad u = 0 \text{ on }
+  \Sigma = \Gamma \times (0, \infty).$$
+Then $\Delta^j u(\cdot, 0) = 0$ on $\Gamma$ for every $j \in \mathbb{N}$.
+
+**Reading.** The source considers $u \in C^\infty(\overline{\Omega} \times [0, \infty))$. The
+statement assumes that $u$ is of class $C^\infty$ on $\mathbb{R}^N \times \mathbb{R}$, so that
+the boundary values of $\Delta^j u(\cdot, 0)$ are meaningful as written.
+
+The Laplacian $\Delta$ acts on the variable $x$ and is Mathlib's, and $\partial_t u$ is the
+derivative of $s \mapsto u(x, s)$. The argument: $\partial_t^j u = 0$ on
+$\Gamma \times [0, \infty)$ by continuity (15), $\partial_t^j u = \Delta^j u$ in $\overline{Q}$
+by induction and continuity (16), and the two are compared on $\Gamma \times \{0\}$. The proof
+specializes `Heat.IsClassicalSolution.iteratedLaplacian_eq_zero_frontier`, with diffusivity $1$,
+on the cylinder $\Omega \times (0, 1)$. -/
 theorem remark_10_4 {u : 𝔼 × ℝ → ℝ} (hu : ContDiff ℝ ∞ u)
     (heq : ∀ x ∈ Ω, ∀ t, 0 < t → deriv (fun s ↦ u (x, s)) t = Δ (fun y ↦ u (y, t)) x)
     (hΓ : ∀ x ∈ frontier (Ω : Set 𝔼), ∀ t, 0 < t → u (x, t) = 0) (j : ℕ) :
@@ -324,22 +491,25 @@ section Regular
 
 variable {d : ℕ}
 
-/-- The book's `ℝ^N`, with `N = d + 1`. -/
+/-- The space $\mathbb{R}^N$ of the source, with $N = d + 1$. -/
 local notation "𝔼" => EuclideanSpace ℝ (Fin (d + 1))
 
-/-- The standard basis of `ℝ^N`. -/
+/-- The standard basis of $\mathbb{R}^N$. -/
 local notation "𝔟" => OrthonormalBasis.toBasis (EuclideanSpace.basisFun (Fin (d + 1)) ℝ)
 
 variable {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
 
-/-! ### `A` on a regular domain: claims (i)–(iii) of the proof of Theorem 10.1 -/
+/-! ### The operator $A$ on a regular domain: claims (i)–(iii) of the proof of Theorem 10.1 -/
 
-/-- **`A` is the Dirichlet Laplacian** on a domain of class `C²` with `Γ` bounded: the weak
-domain `{u ∈ H¹₀(Ω) : Δu ∈ L²(Ω)}` is `H²(Ω) ∩ H¹₀(Ω)` — Theorem 9.25 applied to
-`u − Δu ∈ L²(Ω)` (step (ii) of the book's proof; the backbone's
-`dirichletLaplacianDomain_eq_of_isContDiffChartDomain`). Under the chapter's standing `C^∞`
-hypothesis this identification is what lets every backbone statement about `dirichletLaplacian`
-be read for the book's `A`. -/
+/-- **Proof of Theorem 10.1** in [brezis2011functional], claim (ii): $A$ is the Dirichlet Laplacian.
+Let $\Omega \subset \mathbb{R}^N$ be open of class $C^2$, with $N = d + 1$ and bounded boundary
+$\Gamma$. Then the operator $A$ equals the Dirichlet Laplacian `dirichletLaplacian Ω`: the weak
+domain $\{u \in H^1_0(\Omega) : \Delta u \in L^2(\Omega)\}$ is $H^2(\Omega) \cap H^1_0(\Omega)$.
+
+The proof applies Theorem 9.25 to $u - \Delta u \in L^2(\Omega)$, as in step (ii) of the proof
+of the source; it specializes `dirichletLaplacianDomain_eq_of_isContDiffChartDomain`. Under the
+standing $C^\infty$ hypothesis of the chapter, this identification lets every backbone statement
+about `dirichletLaplacian` be read for the operator $A$ of the source. -/
 theorem heatOperator_eq_dirichletLaplacian (hΩ : IsOfClassC 2 (Ω : Set 𝔼))
     (hΓ : Bornology.IsBounded (frontier (Ω : Set 𝔼))) :
     heatOperator Ω = dirichletLaplacian Ω := by
@@ -348,18 +518,27 @@ theorem heatOperator_eq_dirichletLaplacian (hΩ : IsOfClassC 2 (Ω : Set 𝔼))
   rw [heatOperator_mem_domain_iff]
   exact ((dirichletLaplacianDomain_eq_of_isContDiffChartDomain hΩ hΓ).1 f).symm
 
-/-- **(i)–(ii): `A` is maximal monotone** (proof of Theorem 10.1) on a `C²` domain with `Γ`
-bounded: `(Au, u) = ∫_Ω |∇u|² ≥ 0`, and `R(I + A) = L²(Ω)` since for every `f ∈ L²(Ω)` the
-equation `u − Δu = f` has a solution `u ∈ H²(Ω) ∩ H¹₀(Ω)` (Theorem 9.25). The backbone's
-`dirichletLaplacian_isMaximalMonotone` through `heatOperator_eq_dirichletLaplacian`. -/
+/-- **Proof of Theorem 10.1** in [brezis2011functional], claims (i)–(ii): $A$ is maximal monotone.
+Let $\Omega \subset \mathbb{R}^N$ be open of class $C^2$, with $N = d + 1$ and bounded boundary
+$\Gamma$. Then $A$ is maximal monotone: $(A u, u) = \int_\Omega |\nabla u|^2 \ge 0$, and
+$R(I + A) = L^2(\Omega)$, since for every $f \in L^2(\Omega)$ the equation $u - \Delta u = f$
+has a solution $u \in H^2(\Omega) \cap H^1_0(\Omega)$ (Theorem 9.25).
+
+Maximal monotonicity is `Brezis.Chapter07.IsMaximalMonotone`. The proof specializes
+`dirichletLaplacian_isMaximalMonotone` through
+`Brezis.Chapter10.heatOperator_eq_dirichletLaplacian`. -/
 theorem heatOperator_isMaximalMonotone (hΩ : IsOfClassC 2 (Ω : Set 𝔼))
     (hΓ : Bornology.IsBounded (frontier (Ω : Set 𝔼))) :
     Brezis.Chapter07.IsMaximalMonotone (heatOperator Ω) := by
   rw [heatOperator_eq_dirichletLaplacian hΩ hΓ, isMaximalMonotone_iff]
   exact dirichletLaplacian_isMaximalMonotone
 
-/-- **(iii): `A` is self-adjoint** (proof of Theorem 10.1) on a `C²` domain with `Γ` bounded:
-`A` is symmetric (`heatOperator_isSymmetric`) and maximal monotone, hence self-adjoint by
+/-- **Proof of Theorem 10.1** in [brezis2011functional], claim (iii): $A$ is self-adjoint. Let
+$\Omega \subset \mathbb{R}^N$ be open of class $C^2$, with $N = d + 1$ and bounded boundary
+$\Gamma$. Then $A$ is self-adjoint.
+
+Self-adjointness is `Brezis.Chapter07.IsSelfAdjointOperator`. The operator $A$ is symmetric
+(`Brezis.Chapter10.heatOperator_isSymmetric`) and maximal monotone, hence self-adjoint by
 Proposition 7.6. -/
 theorem heatOperator_isSelfAdjoint (hΩ : IsOfClassC 2 (Ω : Set 𝔼))
     (hΓ : Bornology.IsBounded (frontier (Ω : Set 𝔼))) :
@@ -369,11 +548,16 @@ theorem heatOperator_isSelfAdjoint (hΩ : IsOfClassC 2 (Ω : Set 𝔼))
 variable {u₀ : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))}
   {u : ℝ → Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))}
 
-/-- **The class (4) is the backbone's weak class** on a `C²` domain with `Γ` bounded:
-`IsHeatSolution Ω u₀ u ↔ Heat.IsSolution Ω u₀ u`. The forward direction holds on every open set
-(`IsHeatSolution.isSolution`); conversely a weak solution has `u(t) ∈ D(A) = H² ∩ H¹₀` for `t > 0`
-by `heatOperator_eq_dirichletLaplacian` and lifts continuously to `H²(Ω)` on `(0, ∞)` by the
-graph-norm estimate of Theorem 9.25 (`Heat.IsSolution.contDiffOnThrough_two`). -/
+/-- Let $\Omega \subset \mathbb{R}^N$ be open of class $C^2$, with $N = d + 1$ and bounded boundary
+$\Gamma$. Then a curve $u$ is a solution of the heat equation in the class (4) of Theorem 10.1
+if and only if it is a solution in the backbone class `Heat.IsSolution`.
+
+The forward direction holds on every open set (`Brezis.Chapter10.IsHeatSolution.isSolution`).
+Conversely, a solution in the backbone class has
+$u(t) \in D(A) = H^2(\Omega) \cap H^1_0(\Omega)$ for $t > 0$ by
+`Brezis.Chapter10.heatOperator_eq_dirichletLaplacian`, and lifts continuously to $H^2(\Omega)$
+on $(0, \infty)$ by the graph-norm estimate of Theorem 9.25
+(`Heat.IsSolution.contDiffOnThrough_two`). -/
 theorem isHeatSolution_iff (hΩ : IsOfClassC 2 (Ω : Set 𝔼))
     (hΓ : Bornology.IsBounded (frontier (Ω : Set 𝔼))) :
     IsHeatSolution Ω u₀ u ↔ Heat.IsSolution Ω u₀ u := by
@@ -393,15 +577,23 @@ theorem isHeatSolution_iff (hΩ : IsOfClassC 2 (Ω : Set 𝔼))
 
 /-! ### Theorem 10.1 -/
 
-/-- **Theorem 10.1, existence and uniqueness.** Let `Ω` be of class `C^∞` with `Γ` bounded and
-`u₀ ∈ L²(Ω)`. Then there exists a unique function `u` satisfying (1), (2), (3) in the class (4),
-`u ∈ C([0, ∞); L²(Ω)) ∩ C((0, ∞); H²(Ω) ∩ H¹₀(Ω))`, `u ∈ C¹((0, ∞); L²(Ω))` — unique on `[0, ∞)`,
-the class not constraining negative times. The book's proof: `A` is a self-adjoint maximal
-monotone operator in `H = L²(Ω)` (`heatOperator_isSelfAdjoint`), and Theorem 7.7 applies. The
-backbone (`Heat.existsUnique_isSolution`) proves it on every open set for the weak class, which
-the `C²` hypothesis identifies with the book's (`isHeatSolution_iff`); the solution is the
-semigroup `t ↦ S_A(t) u₀` (`Heat.solution`). The smoothing (5) is `theorem_10_1_smooth`, the
-energy identity (6) `theorem_10_1_energy`, and `u ∈ L²(0, ∞; H¹₀(Ω))` is `theorem_10_1_memLp`. -/
+/-- **Theorem 10.1** of [brezis2011functional], existence and uniqueness. Let
+$\Omega \subset \mathbb{R}^N$ be open of class $C^\infty$, with $N = d + 1$ and bounded boundary
+$\Gamma$, and let $u_0 \in L^2(\Omega)$. Then there exists a function $u$ that satisfies (1),
+(2), (3) in the class (4),
+$$u \in C([0, \infty); L^2(\Omega)) \cap C((0, \infty); H^2(\Omega) \cap H^1_0(\Omega)), \qquad
+  u \in C^1((0, \infty); L^2(\Omega)),$$
+and every other such function agrees with $u$ on $[0, \infty)$.
+
+Uniqueness holds on $[0, \infty)$ because the class does not constrain negative times. The proof
+of the source: $A$ is a self-adjoint maximal monotone operator in $H = L^2(\Omega)$
+(`Brezis.Chapter10.heatOperator_isSelfAdjoint`), and Theorem 7.7 applies. The backbone theorem
+`Heat.existsUnique_isSolution` proves the result on every open set for the weak class, which the
+$C^2$ hypothesis identifies with the class of the source
+(`Brezis.Chapter10.isHeatSolution_iff`). The solution is the semigroup $t \mapsto S_A(t) u_0$
+(`Heat.solution`). The smoothing (5) is `Brezis.Chapter10.theorem_10_1_smooth`, the energy
+identity (6) is `Brezis.Chapter10.theorem_10_1_energy`, and
+$u \in L^2(0, \infty; H^1_0(\Omega))$ is `Brezis.Chapter10.theorem_10_1_memLp`. -/
 theorem theorem_10_1 (hΩ : IsOfClassC ⊤ (Ω : Set 𝔼))
     (hΓ : Bornology.IsBounded (frontier (Ω : Set 𝔼))) (u₀ : Lp ℝ 2 (volume.restrict (Ω : Set 𝔼))) :
     ∃ u, IsHeatSolution Ω u₀ u ∧ ∀ v, IsHeatSolution Ω u₀ v → EqOn v u (Ici 0) := by
@@ -409,26 +601,45 @@ theorem theorem_10_1 (hΩ : IsOfClassC ⊤ (Ω : Set 𝔼))
   obtain ⟨u, hu, huniq⟩ := Heat.existsUnique_isSolution (Ω := Ω) u₀
   exact ⟨u, (isHeatSolution_iff hΩ2 hΓ).2 hu, fun v hv ↦ huniq v hv.isSolution⟩
 
-/-- **Theorem 10.1, "`u ∈ L²(0, ∞; H¹₀(Ω))`"**, for **bounded** `Ω`: the solution `u` of (1), (2),
-(3) lifts on `(0, ∞)` to a curve of `L²((0, ∞); H¹₀(Ω))` through the inclusion `H¹₀(Ω) → L²(Ω)`.
-From the gradient bound `∫₀^∞ |∇u(t)|² dt ≤ ½ |u₀|²` (`theorem_10_1_memLp_gradient`) and
-Poincaré's inequality (Corollary 9.19), `|u(t)|_{H¹} ≤ C |∇u(t)|_{L²}`; the backbone's
-`Heat.IsSolution.memLpThrough_sobolevZero_of_isBounded`. The book states the clause for every
-`Ω` of class `C^∞` with `Γ` bounded; on an unbounded domain it is false (erratum). -/
+/-- **Theorem 10.1** of [brezis2011functional], "$u \in L^2(0, \infty; H^1_0(\Omega))$", for bounded
+$\Omega$. Let $\Omega \subset \mathbb{R}^N$ be a bounded open set, with $N = d + 1$, let
+$u_0 \in L^2(\Omega)$, and let $u$ be a solution of (1), (2), (3) in the class (4). Then $u$
+lifts on $(0, \infty)$ to a curve in $L^2((0, \infty); H^1_0(\Omega))$ through the inclusion
+$H^1_0(\Omega) \to L^2(\Omega)$.
+
+**Correction.** The source states the clause for every $\Omega$ of class $C^\infty$ with
+$\Gamma$ bounded. On an unbounded domain it is false. The statement assumes that $\Omega$ is
+bounded, and then needs no regularity of $\Omega$.
+
+The proof combines the gradient bound $\int_0^\infty |\nabla u(t)|^2 \, dt \le \frac12 |u_0|^2$
+(`Brezis.Chapter10.theorem_10_1_memLp_gradient`) with Poincaré's inequality (Corollary 9.19),
+$|u(t)|_{H^1} \le C |\nabla u(t)|_{L^2}$. It specializes
+`Heat.IsSolution.memLpThrough_sobolevZero_of_isBounded`. -/
 theorem theorem_10_1_memLp (hb : Bornology.IsBounded (Ω : Set 𝔼)) (hu : IsHeatSolution Ω u₀ u) :
     Bochner.MemLpThrough (SobolevMultiIndexZero.fnL ℝ 𝔟 1 2 Ω volume) 2 u (Ioi 0) :=
   hu.isSolution.memLpThrough_sobolevZero_of_isBounded hb
 
-/-- **The display (7) of the proof of Theorem 10.1.** For `Ω` of class `C^∞` with `Γ` bounded and
-every `ℓ`, `D(A^ℓ) = {u ∈ H^{2ℓ}(Ω) : u = Δu = ⋯ = Δ^{ℓ−1}u = 0 on Γ}` with continuous injection
-`D(A^ℓ) ⊆ H^{2ℓ}(Ω)`: `u ∈ D(A^ℓ)` (chapter 7's `domainPow`) iff `u` is the function of an
-element of `H^{2ℓ}(Ω)` and the iterates `u, −Δu, …, (−Δ)^{ℓ−1}u` all lie in `H¹₀(Ω)`
-(`IsDirichletLaplacianChain`, "`= 0` on `Γ`" read as membership of `H¹₀(Ω)`, Theorem 9.17's
-trace-free reading, each iterate being in `H²(Ω)` with the next iterate its weak Laplacian), and
-there is `C` with `‖w‖_{H^{2ℓ}} ≤ C ‖x‖_{D(A^ℓ)}` for every `x ∈ D(A^ℓ)` (chapter 7's Hilbert
-space `PowDomain`, graph norm `(∑ⱼ |A^j u|²)^{1/2}`) and every `H^{2ℓ}`-lift `w` of `u = A^0 x`.
-Theorem 9.25 iterated (`theorem_9_25_higher`): the backbone's `dirichletLaplacian_mem_powDomain_iff`
-and `dirichletLaplacian_norm_sobolev_le_of_powDomain`; the inclusion `⊇` needs no regularity. -/
+/-- **Equation (7)** in Chapter 10 of [brezis2011functional], in the proof of Theorem 10.1. Let
+$\Omega \subset \mathbb{R}^N$ be open of class $C^\infty$, with $N = d + 1$ and bounded boundary
+$\Gamma$, and let $\ell \in \mathbb{N}$. Then
+$$D(A^\ell) = \{u \in H^{2\ell}(\Omega) : u = \Delta u = \dots = \Delta^{\ell - 1} u = 0 \text{
+  on } \Gamma\},$$
+with continuous injection $D(A^\ell) \subseteq H^{2\ell}(\Omega)$. Precisely:
+
+* $f \in L^2(\Omega)$ lies in $D(A^\ell)$ if and only if $f$ is the function of an element of
+  $H^{2\ell}(\Omega)$ and the iterates $f, -\Delta f, \dots, (-\Delta)^{\ell - 1} f$ all lie in
+  $H^1_0(\Omega)$;
+* there is $C \ge 0$ with $\|w\|_{H^{2\ell}} \le C \|x\|_{D(A^\ell)}$ for every
+  $x \in D(A^\ell)$ and every $w \in H^{2\ell}(\Omega)$ whose function is $x$.
+
+The domain $D(A^\ell)$ is `Brezis.Chapter07.domainPow` of Chapter 7, and the norm of $D(A^\ell)$
+is the graph norm $(\sum_{j \le \ell} |A^j u|^2)^{1/2}$ of the Hilbert space
+`LinearPMap.PowDomain`. The condition on the iterates is `IsDirichletLaplacianChain`: "$= 0$ on
+$\Gamma$" is read as membership of $H^1_0(\Omega)$, the trace-free reading of Theorem 9.17, and
+each iterate lies in $H^2(\Omega)$ with the next iterate as its weak Laplacian. The proof
+iterates Theorem 9.25 (`Brezis.Chapter09.theorem_9_25_higher`) and specializes
+`dirichletLaplacian_mem_powDomain_iff` and `dirichletLaplacian_norm_sobolev_le_of_powDomain`.
+The inclusion $\supseteq$ needs no regularity. -/
 theorem equation_10_7 (hΩ : IsOfClassC ⊤ (Ω : Set 𝔼))
     (hΓ : Bornology.IsBounded (frontier (Ω : Set 𝔼))) (ℓ : ℕ) :
     (∀ f : Lp ℝ 2 (volume.restrict (Ω : Set 𝔼)), f ∈ domainPow (heatOperator Ω) ℓ ↔
@@ -443,17 +654,23 @@ theorem equation_10_7 (hΩ : IsOfClassC ⊤ (Ω : Set 𝔼))
   exact ⟨fun f ↦ by rw [mem_domainPow_iff]; exact dirichletLaplacian_mem_powDomain_iff hΩ' hΓ f,
     dirichletLaplacian_norm_sobolev_le_of_powDomain hΩ' hΓ⟩
 
-/-- **Theorem 10.1, the smoothing (5)**: for `Ω` of class `C^∞` with `Γ` bounded, the solution
-`u` of (1), (2), (3) satisfies `u ∈ C^∞(Ω̄ × [ε, ∞))` for every `ε > 0` — there is a function
-`U : ℝ^N × ℝ → ℝ` with `U(·, t) = u(t)` a.e. on `Ω` for every `t > 0`, of class `C^∞` on
-`Ω × (ε, ∞)` with every derivative extending continuously to `Ω̄ × [ε, ∞)`, for every `ε > 0`
-(`ContDiffOnClosure`, footnote 16 of chapter 9). The book's argument: `u ∈ C^k((0, ∞); D(A^ℓ))`
-for all `k, ℓ` (Theorem 7.7), `D(A^ℓ) ⊆ H^{2ℓ}(Ω)` with continuous injection ((7),
-`equation_10_7`), hence `u ∈ C^k((0, ∞); H^{2ℓ}(Ω))` for all `k, ℓ`, and Corollary 9.15
-(`H^{2ℓ}(Ω) ⊆ C^k(Ω̄)` for `k + N/2 < 2ℓ`, the integer-safe form) — the backbone's
-`Heat.IsSolution.contDiffOnThrough_sobolev` and the space–time bridge
+/-- **Theorem 10.1** of [brezis2011functional], the smoothing (5). Let $\Omega \subset \mathbb{R}^N$
+be open of class $C^\infty$, with $N = d + 1$ and bounded boundary $\Gamma$, let
+$u_0 \in L^2(\Omega)$, and let $u$ be a solution of (1), (2), (3) in the class (4). Then $u \in
+C^\infty(\overline{\Omega} \times [\varepsilon, \infty))$ for every $\varepsilon > 0$: there is
+a function $U : \mathbb{R}^N \times \mathbb{R} \to \mathbb{R}$ such that $U(\cdot, t) = u(t)$
+almost everywhere on $\Omega$ for every $t > 0$, and for every $\varepsilon > 0$ the function
+$U$ is of class $C^\infty$ on $\Omega \times (\varepsilon, \infty)$ with every derivative
+extending continuously to $\overline{\Omega} \times [\varepsilon, \infty)$.
+
+The smoothness class is `ContDiffOnClosure`, in the sense of footnote 16 of Chapter 9. The
+argument of the source: $u \in C^k((0, \infty); D(A^\ell))$ for all $k, \ell$ (Theorem 7.7), and
+$D(A^\ell) \subseteq H^{2\ell}(\Omega)$ with continuous injection by (7)
+(`Brezis.Chapter10.equation_10_7`). Hence $u \in C^k((0, \infty); H^{2\ell}(\Omega))$ for all
+$k, \ell$, and Corollary 9.15 gives $H^{2\ell}(\Omega) \subseteq C^k(\overline{\Omega})$ for
+$k + N/2 < 2\ell$. The proof specializes `Heat.IsSolution.contDiffOnThrough_sobolev` and
 `Bochner.contDiffOnClosure_spaceTime_of_forall_contDiffOnThrough_Ioi`. The conclusion cannot be
-strengthened to `C^∞(Ω̄ × [0, ∞))` (Theorem 10.2 (c) and Remark 4). -/
+strengthened to $C^\infty(\overline{\Omega} \times [0, \infty))$ (Theorem 10.2(c) and Remark 4). -/
 theorem theorem_10_1_smooth (hΩ : IsOfClassC ⊤ (Ω : Set 𝔼))
     (hΓ : Bornology.IsBounded (frontier (Ω : Set 𝔼))) (hu : IsHeatSolution Ω u₀ u) :
     ∃ U : 𝔼 × ℝ → ℝ, (∀ t, 0 < t → (fun x ↦ U (x, t)) =ᵐ[volume.restrict (Ω : Set 𝔼)] u t) ∧
@@ -466,14 +683,22 @@ theorem theorem_10_1_smooth (hΩ : IsOfClassC ⊤ (Ω : Set 𝔼))
   obtain ⟨U, hU, hc⟩ := Bochner.contDiffOnClosure_spaceTime_of_forall_contDiffOnThrough_Ioi hext hm
   exact ⟨U, fun t ht ↦ hU t ht, hc⟩
 
-/-! ### Theorem 10.2 (a)–(c) on a regular domain -/
+/-! ### Theorem 10.2(a)–(c) on a regular domain -/
 
-/-- **Theorem 10.2 (a), "`u ∈ L²(0, ∞; H²(Ω))`"**, for **bounded** `Ω` of class `C²` with `Γ`
-bounded: if `u₀ ∈ H¹₀(Ω)` then the solution lifts on `(0, ∞)` to a curve of `L²((0, ∞); H²(Ω))`.
-The `H²`-lift satisfies `|w(t)|_{H²} ≤ C (|u(t)| + |∂ₜu(t)|)` (the graph-norm estimate of
-Theorem 9.25), and both are square integrable (Poincaré and (11)); the backbone's
-`Heat.IsSolution.memLpThrough_two_of_isBounded`. On an unbounded domain only
-`∫₀^∞ |Δu(t)|² dt = ∫₀^∞ |∂ₜu(t)|² dt < ∞` holds (erratum). -/
+/-- **Theorem 10.2(a)** of [brezis2011functional], "$u \in L^2(0, \infty; H^2(\Omega))$", for
+bounded $\Omega$. Let $\Omega \subset \mathbb{R}^N$ be a bounded open set of class $C^2$, with
+$N = d + 1$ and bounded boundary $\Gamma$. Let $u_0 \in H^1_0(\Omega)$, that is, $u_0$ is the
+function of some $v_0 \in H^1_0(\Omega)$, and let $u$ be the solution of (1), (2), (3) in the
+class (4). Then $u$ lifts on $(0, \infty)$ to a curve in $L^2((0, \infty); H^2(\Omega))$.
+
+**Correction.** The source states the clause for every $\Omega$ of class $C^\infty$ with
+$\Gamma$ bounded. On an unbounded domain only $\int_0^\infty |\Delta u(t)|^2 \, dt =
+\int_0^\infty |\partial_t u(t)|^2 \, dt < \infty$ holds. The statement assumes that $\Omega$ is
+bounded.
+
+The $H^2$-lift $w$ satisfies $|w(t)|_{H^2} \le C (|u(t)| + |\partial_t u(t)|)$ by the graph-norm
+estimate of Theorem 9.25, and both terms are square integrable by Poincaré's inequality and
+(11). The proof specializes `Heat.IsSolution.memLpThrough_two_of_isBounded`. -/
 theorem theorem_10_2_a_memLp (hb : Bornology.IsBounded (Ω : Set 𝔼))
     (hΩ : IsOfClassC 2 (Ω : Set 𝔼)) (hΓ : Bornology.IsBounded (frontier (Ω : Set 𝔼)))
     {v₀ : hZeroSpace (d + 1) Ω}
@@ -481,15 +706,25 @@ theorem theorem_10_2_a_memLp (hb : Bornology.IsBounded (Ω : Set 𝔼))
     Bochner.MemLpThrough (fnL ℝ 𝔟 2 2 Ω volume) 2 u (Ioi 0) :=
   hu.isSolution.memLpThrough_two_of_isBounded hb hΩ hΓ rfl
 
-/-- **Theorem 10.2 (b)**, on a `C²` domain with `Γ` bounded: if `u₀ ∈ H²(Ω) ∩ H¹₀(Ω)`
-(`u₀ ∈ D(A)`) then the solution `u` of (1), (2), (3) satisfies `u ∈ C([0, ∞); H²(Ω))`, and the
-identity of the book's proof holds: for any `g` with `g(t) = |∇Δu(t)|²_{L²} = |∇∂ₜu(t)|²_{L²}` for
-`t > 0` (footnote 3, on the `H¹₀`-lift of `∂ₜu(t) = Δu(t)`) and every `T > 0`, `g` is integrable
-on `(0, T]` and `½ |Δu(T)|²_{L²} + ∫₀ᵀ |∇Δu(t)|²_{L²} dt = ½ |Δu₀|²_{L²}`, with `Δu(T) = −A u(T)`.
-The book's route is Theorem 7.7 for `A₂` in `H₂ = H² ∩ H¹₀`; the backbone's is Theorem 7.4 for
-`u₀ ∈ D(A)` (`Heat.IsSolution.contDiffOnThrough_two_Ici_of_mem_domain`) and `φ(t) = ½ |Δu(t)|²`
-with `φ' = −|∇Δu|²` (`Heat.IsSolution.energy_domain`, on every open set). The clauses
-`u ∈ L²(0, ∞; H³(Ω))` and `∂ₜu ∈ L²(0, ∞; H¹₀(Ω))` are `theorem_10_2_b_memLp`. -/
+/-- **Theorem 10.2(b)** of [brezis2011functional]. Let $\Omega \subset \mathbb{R}^N$ be open of
+class $C^2$, with $N = d + 1$ and bounded boundary $\Gamma$. Let
+$u_0 \in H^2(\Omega) \cap H^1_0(\Omega) = D(A)$, and let $u$ be the solution of (1), (2), (3) in
+the class (4). Then $u \in C([0, \infty); H^2(\Omega))$, and the identity of the proof of the
+source holds: let $g : \mathbb{R} \to \mathbb{R}$ be a function with $g(t) = |\nabla \partial_t
+u(t)|^2_{L^2} = |\nabla \Delta u(t)|^2_{L^2}$ for $t > 0$, computed on an $H^1_0$-lift of
+$\partial_t u(t)$ as in footnote 3. Then for every $T > 0$ the function $g$ is integrable on
+$(0, T]$ and
+$$\frac12 |\Delta u(T)|^2_{L^2} + \int_0^T |\nabla \Delta u(t)|^2_{L^2} \, dt = \frac12 |\Delta
+  u_0|^2_{L^2}.$$
+
+In the statement $\Delta u(T)$ is $-A u(T)$, and $\partial_t u$ is `deriv u`. The proof of the
+source applies Theorem 7.7 to the operator $A_2$ in $H_2 = H^2(\Omega) \cap H^1_0(\Omega)$. The
+proof here applies Theorem 7.4 for $u_0 \in D(A)$
+(`Heat.IsSolution.contDiffOnThrough_two_Ici_of_mem_domain`) and uses
+$\varphi(t) = \frac12 |\Delta u(t)|^2$ with $\varphi' = -|\nabla \Delta u|^2$
+(`Heat.IsSolution.energy_domain`, on every open set). The clauses
+$u \in L^2(0, \infty; H^3(\Omega))$ and $\partial_t u \in L^2(0, \infty; H^1_0(\Omega))$ are
+`Brezis.Chapter10.theorem_10_2_b_memLp`. -/
 theorem theorem_10_2_b (hΩ : IsOfClassC 2 (Ω : Set 𝔼))
     (hΓ : Bornology.IsBounded (frontier (Ω : Set 𝔼))) (hu₀ : u₀ ∈ (heatOperator Ω).domain)
     (hu : IsHeatSolution Ω u₀ u) :
@@ -513,12 +748,22 @@ theorem theorem_10_2_b (hΩ : IsOfClassC 2 (Ω : Set 𝔼))
   refine ⟨hint, ?_⟩
   rw [heatOperator_apply_eq, heatOperator_apply_eq, ← e, h.deriv_eq hT, norm_neg]
 
-/-- **Theorem 10.2 (b), "`u ∈ L²(0, ∞; H³(Ω))` and `∂ₜu ∈ L²(0, ∞; H¹₀(Ω))`"**, for **bounded**
-`Ω` of class `C³` with `Γ` bounded and `u₀ ∈ H²(Ω) ∩ H¹₀(Ω)`: the solution lifts on `(0, ∞)` to a
-curve of `L²((0, ∞); H³(Ω))`, and `∂ₜu` to a curve of `L²((0, ∞); H¹₀(Ω))`. The book's "(why?)":
-the `H³` estimate of Theorem 9.25 for `−Δu = ∂ₜu ∈ H¹₀` and Poincaré; the backbone's
-`Heat.IsSolution.memLpThrough_three_of_isBounded` and `memLpThrough_sobolevZero_deriv_of_isBounded`.
-On unbounded `Ω` the memberships fail (erratum). -/
+/-- **Theorem 10.2(b)** of [brezis2011functional], "$u \in L^2(0, \infty; H^3(\Omega))$ and
+$\partial_t u \in L^2(0, \infty; H^1_0(\Omega))$", for bounded $\Omega$. Let
+$\Omega \subset \mathbb{R}^N$ be a bounded open set of class $C^3$, with $N = d + 1$ and bounded
+boundary $\Gamma$. Let $u_0 \in H^2(\Omega) \cap H^1_0(\Omega)$, and let $u$ be the solution of
+(1), (2), (3) in the class (4). Then $u$ lifts on $(0, \infty)$ to a curve in
+$L^2((0, \infty); H^3(\Omega))$, and $\partial_t u$ lifts on $(0, \infty)$ to a curve in
+$L^2((0, \infty); H^1_0(\Omega))$.
+
+**Correction.** The source states the clauses for every $\Omega$ of class $C^\infty$ with
+$\Gamma$ bounded. On an unbounded domain the memberships fail. The statement assumes that
+$\Omega$ is bounded.
+
+The source asks "(why?)". The answer is the $H^3$ estimate of Theorem 9.25 for
+$-\Delta u = -\partial_t u \in H^1_0(\Omega)$, together with Poincaré's inequality. The proof
+specializes `Heat.IsSolution.memLpThrough_three_of_isBounded` and
+`Heat.IsSolution.memLpThrough_sobolevZero_deriv_of_isBounded`. -/
 theorem theorem_10_2_b_memLp (hb : Bornology.IsBounded (Ω : Set 𝔼))
     (hΩ : IsOfClassC 3 (Ω : Set 𝔼)) (hΓ : Bornology.IsBounded (frontier (Ω : Set 𝔼)))
     (hu₀ : u₀ ∈ (heatOperator Ω).domain) (hu : IsHeatSolution Ω u₀ u) :
@@ -527,10 +772,9 @@ theorem theorem_10_2_b_memLp (hb : Bornology.IsBounded (Ω : Set 𝔼))
   ⟨hu.isSolution.memLpThrough_three_of_isBounded hb hΩ hΓ (heatOperator_domain_le hu₀),
     hu.isSolution.memLpThrough_sobolevZero_deriv_of_isBounded hb (heatOperator_domain_le hu₀)⟩
 
-/-- Theorem 10.2 (c)'s input to the space–time bridge: if `u₀ ∈ D(A^k)` for every `k`, then
-`u ∈ C^∞([0, ∞); H^m(Ω))` for every `m` (Theorem 7.5 and (7); one lift for all orders by
-`Bochner.ContDiffOnThrough.infty_of_forall_nat`, then every `m` from every `2ℓ`). To be replaced
-by the backbone's `Heat.IsSolution.contDiffOnClosure_spaceTime_Ici` once it exists. -/
+/-- If $u_0 \in D(A^k)$ for every $k$, then a solution $u$ of the heat equation satisfies
+$u \in C^\infty([0, \infty); H^m(\Omega))$ for every $m$; this is the input of Theorem 10.2(c),
+from Theorem 7.5 and (7). -/
 private theorem forall_contDiffOnThrough_Ici_of_forall_powDomain (hΩ : IsOfClassC ⊤ (Ω : Set 𝔼))
     (hΓ : Bornology.IsBounded (frontier (Ω : Set 𝔼))) (h : Heat.IsSolution Ω u₀ u)
     (hk : ∀ k : ℕ, ∃ x : (dirichletLaplacian Ω).PowDomain k,
@@ -547,16 +791,23 @@ private theorem forall_contDiffOnThrough_Ici_of_forall_powDomain (hΩ : IsOfClas
   have hJ : Function.Injective (fnL ℝ 𝔟 (2 * m) 2 Ω volume) := SobolevMultiIndex.fnL_injective
   exact (Bochner.ContDiffOnThrough.infty_of_forall_nat hJ h2m).sobolev_of_le (by omega)
 
-/-- **Theorem 10.2 (c).** Let `Ω` be of class `C^∞` with `Γ` bounded. If `u₀ ∈ H^k(Ω)` for every
-`k` and satisfies the compatibility conditions (8), `u₀ = Δu₀ = ⋯ = Δ^j u₀ = ⋯ = 0` on `Γ` for
-every `j` — read, as in (7), as: for every `ℓ` the iterates `u₀, −Δu₀, …, (−Δ)^{ℓ−1}u₀` lie in
-`H¹₀(Ω)` (`IsDirichletLaplacianChain Ω ℓ u₀`) — then `u ∈ C^∞(Ω̄ × [0, ∞))`: there is
-`U : ℝ^N × ℝ → ℝ` with `U(·, t) = u(t)` a.e. on `Ω` for every `t ≥ 0`, of class `C^∞` on
-`Ω × (0, ∞)` with every derivative extending continuously to `closure (Ω × (0, ∞)) = Ω̄ × [0, ∞)`.
-The book's proof: "assumption (8) says precisely that `u₀ ∈ D(A^k)` for every `k`" ((7),
-`equation_10_7`), Theorem 7.5 gives `u ∈ C^{k−j}([0, ∞); D(A^j))` for all `j ≤ k`, and (7) with
-Corollary 9.15 as in Theorem 10.1 — the backbone's
-`Heat.IsSolution.contDiffOnThrough_sobolev_Ici_of_powDomain` and the bridge
+/-- **Theorem 10.2(c)** of [brezis2011functional]. Let $\Omega \subset \mathbb{R}^N$ be open of
+class $C^\infty$, with $N = d + 1$ and bounded boundary $\Gamma$. Let $u_0 \in H^k(\Omega)$ for
+every $k$, and let $u_0$ satisfy the compatibility conditions (8),
+$$u_0 = \Delta u_0 = \dots = \Delta^j u_0 = \dots = 0 \text{ on } \Gamma,$$
+read as in (7): for every $\ell$ the iterates $u_0, -\Delta u_0, \dots, (-\Delta)^{\ell - 1}
+u_0$ lie in $H^1_0(\Omega)$. Let $u$ be the solution of (1), (2), (3) in the class (4). Then $u
+\in C^\infty(\overline{\Omega} \times [0, \infty))$: there is a function $U : \mathbb{R}^N
+\times \mathbb{R} \to \mathbb{R}$ such that $U(\cdot, t) = u(t)$ almost everywhere on $\Omega$
+for every $t \ge 0$, and $U$ is of class $C^\infty$ on $\Omega \times (0, \infty)$ with every
+derivative extending continuously to the closure $\overline{\Omega} \times [0, \infty)$.
+
+The compatibility conditions are `IsDirichletLaplacianChain Ω ℓ u₀` for every $\ell$, and the
+smoothness class is `ContDiffOnClosure`. The proof of the source: "assumption (8) says precisely
+that $u_0 \in D(A^k)$ for every $k$" (by (7), `Brezis.Chapter10.equation_10_7`), Theorem 7.5
+gives $u \in C^{k - j}([0, \infty); D(A^j))$ for all $j \le k$, and (7) with Corollary 9.15
+concludes as in Theorem 10.1. The proof specializes
+`Heat.IsSolution.contDiffOnThrough_sobolev_Ici_of_powDomain` and
 `Bochner.contDiffOnClosure_spaceTime_of_forall_contDiffOnThrough_Ici`. -/
 theorem theorem_10_2_c (hΩ : IsOfClassC ⊤ (Ω : Set 𝔼))
     (hΓ : Bornology.IsBounded (frontier (Ω : Set 𝔼)))
@@ -575,8 +826,9 @@ theorem theorem_10_2_c (hΩ : IsOfClassC ⊤ (Ω : Set 𝔼))
 
 /-! ### Remark 1 -/
 
-/-- **The backward problem's class is the backbone's**, on a `C²` domain with `Γ` bounded:
-`IsBackwardHeatSolution Ω T u_T u ↔ Heat.IsBackwardSolution Ω T u_T u`. -/
+/-- Let $\Omega \subset \mathbb{R}^N$ be open of class $C^2$, with $N = d + 1$ and bounded boundary
+$\Gamma$. Then a curve $u$ is a solution of the backward problem of Remark 1 in Chapter 10 if
+and only if it is a solution in the backbone class `Heat.IsBackwardSolution`. -/
 theorem isBackwardHeatSolution_iff (hΩ : IsOfClassC 2 (Ω : Set 𝔼))
     (hΓ : Bornology.IsBounded (frontier (Ω : Set 𝔼))) {T : ℝ}
     {uT : Lp ℝ 2 (volume.restrict (Ω : Set 𝔼))} :
@@ -602,11 +854,16 @@ theorem isBackwardHeatSolution_iff (hΩ : IsOfClassC 2 (Ω : Set 𝔼))
         (h.hasDerivAt t ht).congr_deriv (heatOperator_apply_eq ⟨u t, hmem t ht⟩).symm
       apply_eq := h.apply_eq }
 
-/-- **Remark 1, the well-posed half.** For `Ω` of class `C^∞` with `Γ` bounded, every `T` and
-every final datum `u_T ∈ L²(Ω)`, the problem (9'), (10), (11) — `−∂ₜu − Δu = 0` in
-`Ω × (−∞, T)`, `u = 0` on `Γ × (−∞, T)`, `u(T) = u_T` — has a unique solution in the class of
-Theorem 10.1 (unique on `(−∞, T]`): "change `t` into `T − t` and apply Theorem 10.1". The
-backbone's `Heat.existsUnique_isSolution_backward`; the solution is `t ↦ S_A(T − t) u_T`. -/
+/-- **Remark 1** in Chapter 10 of [brezis2011functional], the well-posed backward problem. Let
+$\Omega \subset \mathbb{R}^N$ be open of class $C^\infty$, with $N = d + 1$ and bounded boundary
+$\Gamma$, let $T \in \mathbb{R}$ and $u_T \in L^2(\Omega)$. Then the problem (9'), (10), (11),
+$$-\partial_t u - \Delta u = 0 \text{ in } \Omega \times (-\infty, T), \qquad u = 0 \text{ on }
+  \Gamma \times (-\infty, T), \qquad u(T) = u_T,$$
+has a solution in the class of Theorem 10.1, and every other solution agrees with it on
+$(-\infty, T]$.
+
+The source says: "change $t$ into $T - t$ and apply Theorem 10.1". The proof specializes
+`Heat.existsUnique_isSolution_backward`, and the solution is $t \mapsto S_A(T - t) u_T$. -/
 theorem remark_10_1 (hΩ : IsOfClassC ⊤ (Ω : Set 𝔼))
     (hΓ : Bornology.IsBounded (frontier (Ω : Set 𝔼))) (T : ℝ)
     (uT : Lp ℝ 2 (volume.restrict (Ω : Set 𝔼))) :
@@ -616,15 +873,27 @@ theorem remark_10_1 (hΩ : IsOfClassC ⊤ (Ω : Set 𝔼))
   obtain ⟨u, hu, huniq⟩ := Heat.existsUnique_isSolution_backward (Ω := Ω) T uT
   exact ⟨u, (isBackwardHeatSolution_iff hΩ2 hΓ).2 hu, fun v hv ↦ huniq v hv.isBackwardSolution⟩
 
-/-- **Remark 1, the necessary condition (12) for the backward problem (9), (10), (11).** For
-`Ω` of class `C^∞` with `Γ` bounded, if the backward problem `∂ₜu − Δu = 0` in `Ω × (0, T)`,
-`u = 0` on `Γ × (0, T)`, `u(T) = u_T` has a solution in the class of Theorem 10.1 — a solution
-`u` of (1), (2), (3) on `[0, ∞)` (with datum `u(0)`; by uniqueness this is the only way a solution
-on `[0, T]` in that class arises) with `u(T) = u_T` — then necessarily `u_T ∈ D(A^ℓ)` for every
-`ℓ`, hence by (7) `u_T ∈ H^{2ℓ}(Ω)` with `Δ^j u_T = 0` on `Γ` for all `j < ℓ`, for every `ℓ`, and
-`u_T ∈ C^∞(Ω̄)` (Corollary 9.15 at every order): `u_T = u(T)` is as smooth as Theorem 10.1 makes
-the solution at any positive time (`Heat.IsSolution.exists_powDomain`). The book's further claim,
-that even under (12) a solution need not exist, is a counterexample claim and is not formalized. -/
+/-- **Remark 1** in Chapter 10 of [brezis2011functional], the necessary condition (12) for the
+backward problem (9), (10), (11). Let $\Omega \subset \mathbb{R}^N$ be open of class $C^\infty$,
+with $N = d + 1$ and bounded boundary $\Gamma$, and let $T > 0$. The backward problem is
+$\partial_t u - \Delta u = 0$ in $\Omega \times (0, T)$, $u = 0$ on $\Gamma \times (0, T)$,
+$u(T) = u_T$. Let $u$ be a solution of (1), (2), (3) in the class (4), with some initial datum
+$u_0$, such that $u(T) = u_T$. Then
+
+* $u_T \in D(A^\ell)$ for every $\ell$,
+* hence, by (7), for every $\ell$ the function $u_T$ lies in $H^{2\ell}(\Omega)$ and
+  $\Delta^j u_T = 0$ on $\Gamma$ for all $j < \ell$, and
+* $u_T \in C^\infty(\overline{\Omega})$: $u_T$ agrees almost everywhere on $\Omega$ with a
+  function $\tilde u$ that is continuous on $\overline{\Omega}$ and of class
+  $C^\infty(\overline{\Omega})$.
+
+A solution of the backward problem in the class of Theorem 10.1 is a solution of (1), (2), (3)
+on $[0, \infty)$ with datum $u(0)$; by uniqueness this is the only way that a solution on
+$[0, T]$ in that class arises. So $u_T = u(T)$ is as smooth as Theorem 10.1 makes the solution
+at any positive time (`Heat.IsSolution.exists_powDomain`). The condition "$\Delta^j u_T = 0$ on
+$\Gamma$" is read as in (7), with `IsDirichletLaplacianChain`, and $C^\infty(\overline{\Omega})$
+is `ContDiffOnClosure`. The further claim of the source, that even under (12) a solution need
+not exist, is not formalized. -/
 theorem remark_10_1_necessary (hΩ : IsOfClassC ⊤ (Ω : Set 𝔼))
     (hΓ : Bornology.IsBounded (frontier (Ω : Set 𝔼))) {T : ℝ} (hT : 0 < T)
     {uT : Lp ℝ 2 (volume.restrict (Ω : Set 𝔼))} (hu : IsHeatSolution Ω u₀ u) (huT : u T = uT) :
@@ -652,15 +921,24 @@ theorem remark_10_1_necessary (hΩ : IsOfClassC ⊤ (Ω : Set 𝔼))
 
 /-! ### Remark 3: the Fourier method -/
 
-/-- **Remark 3, the Fourier method.** For a bounded (nonempty) `Ω`, let `(eₙ)`, `(λₙ)` be the
-Dirichlet eigenbasis of `−Δ` of Theorem 9.31 (the backbone's `Elliptic.dirichletEigenbasis`,
-`Elliptic.dirichletEigenvalue`; `theorem_9_31_weak`), and let `u` be the solution of (1), (2),
-(3). Then the coefficients `aₙ(t) = (u(t), eₙ)_{L²}` of `u(t) = ∑ₙ aₙ(t) eₙ` satisfy (13),
-`aₙ' + λₙ aₙ = 0` on `(0, ∞)`, so that `aₙ(t) = aₙ(0) e^{−λₙ t}` with `aₙ(0) = ∫_Ω u₀ eₙ`, and
-the solution is given by the series (14): `u(t) = ∑ₙ (∫_Ω u₀ eₙ) e^{−λₙ t} eₙ` in `L²(Ω)`, for
-every `t ≥ 0`. The backbone's `Heat.IsSolution.hasDerivAt_inner_eigenfunction`,
-`inner_eigenfunction`, `hasSum_eigenfunction`; no regularity of `Ω` is needed, and the
-convergence question the book refers to the literature for is settled by uniqueness. -/
+/-- **Remark 3** in Chapter 10 of [brezis2011functional] (the Fourier method). Let
+$\Omega \subset \mathbb{R}^N$ be a bounded nonempty open set, with $N = d + 1$. Let $(e_n)$ and
+$(\lambda_n)$ be the Dirichlet eigenbasis of $-\Delta$ and its eigenvalues from Theorem 9.31,
+let $u_0 \in L^2(\Omega)$, and let $u$ be a solution of (1), (2), (3) in the class (4). Write
+$a_n(t) = (u(t), e_n)_{L^2}$, so that $u(t) = \sum_n a_n(t) e_n$. Then
+
+* the coefficients satisfy (13), $a_n' + \lambda_n a_n = 0$ on $(0, \infty)$,
+* $a_n(t) = a_n(0) e^{-\lambda_n t}$ for $t \ge 0$, with $a_n(0) = \int_\Omega u_0 e_n$, and
+* the solution is given by the series (14), which converges in $L^2(\Omega)$ for every
+  $t \ge 0$:
+$$u(t) = \sum_n \Big(\int_\Omega u_0 e_n\Big) e^{-\lambda_n t} e_n.$$
+
+The eigenbasis is `Elliptic.dirichletEigenbasis` and the eigenvalues are
+`Elliptic.dirichletEigenvalue` (see `Brezis.Chapter09.theorem_9_31_weak`). No regularity of
+$\Omega$ is needed. The question of convergence, for which the source refers to the literature,
+is settled by uniqueness. The proof specializes
+`Heat.IsSolution.hasDerivAt_inner_eigenfunction`, `Heat.IsSolution.inner_eigenfunction` and
+`Heat.IsSolution.hasSum_eigenfunction`. -/
 theorem remark_10_3 (hb : Bornology.IsBounded (Ω : Set 𝔼)) (hne : (Ω : Set 𝔼).Nonempty)
     (hu : IsHeatSolution Ω u₀ u) :
     (∀ n, ∀ t, 0 < t → HasDerivAt (fun t ↦ ⟪u t, Elliptic.dirichletEigenbasis Ω hb hne n⟫_ℝ)

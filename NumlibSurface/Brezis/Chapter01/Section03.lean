@@ -6,30 +6,57 @@ import Numlib.Analysis.Normed.Module.Annihilator
 import NumlibSurface.Brezis.Chapter01.Section02
 
 /-!
-# Brezis §1.3: the bidual `E**`, orthogonality relations
+# Brezis, Section 1.3: The bidual $E^{\star\star}$, orthogonality relations
 
-Surface file for Haim Brezis, *Functional Analysis, Sobolev Spaces and Partial Differential
-Equations*, Universitext, Springer, 2011, §1.3, over a real normed space `E`. The canonical
-injection `J : E → E**` is Mathlib's `NormedSpace.inclusionInDoubleDual ℝ E`, with
-`⟨J x, f⟩ = ⟨f, x⟩` (`NormedSpace.dual_def`) and the isometry `inclusionInDoubleDualLi`;
-reflexivity (`J` onto) is the backbone's `NormedSpace.IsReflexive ℝ E`, restated in chapter 3.
-The orthogonals `M^⊥ ⊆ E*` (for `M ⊆ E`) and `N^⊥ ⊆ E` (for `N ⊆ E*`) are the backbone's
-`Submodule.strongDualAnnihilator` and `Submodule.strongDualCoannihilator`
-(`Numlib/Analysis/Normed/Module/Annihilator`); Proposition 1.9 and Remark 6's reflexive clause
-are `strongDualCoannihilator_strongDualAnnihilator`,
-`topologicalClosure_le_strongDualAnnihilator_strongDualCoannihilator` and
-`strongDualAnnihilator_strongDualCoannihilator` there.
+This module formalizes Section 1.3 of [brezis2011functional] for a real normed space $E$. The
+canonical injection $J : E \to E^{\star\star}$ sends $x$ to the functional
+$f \mapsto \langle f, x \rangle$ on $E^\star$, so that $\langle Jx, f \rangle_{E^{\star\star},
+E^\star} = \langle f, x \rangle_{E^\star, E}$. It is a linear isometry, hence injective. For a
+linear subspace $M \subseteq E$ and a linear subspace $N \subseteq E^\star$, the orthogonals are
+$$M^\perp = \{f \in E^\star : \langle f, x \rangle = 0 \ \forall x \in M\},
+  \qquad N^\perp = \{x \in E : \langle f, x \rangle = 0 \ \forall f \in N\}.$$
+Both are closed linear subspaces. Proposition 1.9 states $(M^\perp)^\perp = \overline{M}$ and
+$(N^\perp)^\perp \supseteq \overline{N}$, and Remark 6 states equality in the second relation when
+$E$ is reflexive.
+
+The canonical injection is Mathlib's `NormedSpace.inclusionInDoubleDual ℝ E`, with the isometry
+`NormedSpace.inclusionInDoubleDualLi`. The orthogonals and the proofs come from the backbone module
+`Numlib.Analysis.Normed.Module.Annihilator`: Proposition 1.9 and Remark 6 specialize
+`Submodule.strongDualCoannihilator_strongDualAnnihilator`,
+`Submodule.topologicalClosure_le_strongDualAnnihilator_strongDualCoannihilator` and
+`Submodule.strongDualAnnihilator_strongDualCoannihilator`.
+
+## Main definitions
+
+* Section 1.3, the canonical injection, `Brezis.Chapter01.canonicalInjection_apply`: $J$ is
+  `NormedSpace.inclusionInDoubleDual ℝ E`, and $\langle Jx, f \rangle = \langle f, x \rangle$.
+* Section 1.3, the notation for orthogonals, `Brezis.Chapter01.mem_orthogonal_iff`: the orthogonals
+  $M^\perp$ and $N^\perp$ are `Submodule.strongDualAnnihilator` and
+  `Submodule.strongDualCoannihilator`.
 
 ## Main results
 
-* `canonicalInjection_apply`, `norm_canonicalInjection`, `canonicalInjection_injective` — the
-  canonical injection `J` and its isometry.
-* `mem_orthogonal_iff`, `isClosed_orthogonal` — the two orthogonals of the Notation paragraph.
-* `proposition_1_9`, `proposition_1_9_supset` — `(M^⊥)^⊥ = closure M` and `(N^⊥)^⊥ ⊇ closure N`.
-* `remark_1_6` — `(N^⊥)^⊥ = closure N` when `E` is reflexive.
+* Section 1.3, `Brezis.Chapter01.norm_canonicalInjection`: $\|Jx\|_{E^{\star\star}} = \|x\|_E$.
+* Section 1.3, `Brezis.Chapter01.canonicalInjection_injective`: $J$ is injective.
+* Section 1.3, `Brezis.Chapter01.isClosed_orthogonal`: $M^\perp$ and $N^\perp$ are closed.
+* Proposition 1.9, `Brezis.Chapter01.proposition_1_9`: $(M^\perp)^\perp = \overline{M}$.
+* Proposition 1.9, `Brezis.Chapter01.proposition_1_9_supset`:
+  $(N^\perp)^\perp \supseteq \overline{N}$.
+* Remark 6, `Brezis.Chapter01.remark_1_6`: if $E$ is reflexive, then
+  $(N^\perp)^\perp = \overline{N}$.
 
-Remark 6's strict inclusion in `ℓ¹` (Exercise 1.16) and its last sentence, that `(N^⊥)^⊥` is
-the weak-∗ closure of `N`, are not stated here (the latter is chapter 3's).
+## Conventions
+
+* Reflexivity, that is, $J$ is onto, is the backbone class `NormedSpace.IsReflexive ℝ E`. Chapter 3
+  restates it.
+* $N^\perp$ is a subset of $E$, not of $E^{\star\star}$.
+
+## Not formalized
+
+* **Remark 6, strict inclusion (Exercise 1.16).** An example in $\ell^1$ where
+  $(N^\perp)^\perp \neq \overline{N}$.
+* **Remark 6, last sentence.** $(N^\perp)^\perp$ is the closure of $N$ in the weak-$\star$ topology.
+  The weak-$\star$ topology belongs to Chapter 3.
 -/
 
 open NormedSpace
@@ -40,51 +67,83 @@ variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
 
 /-! ### The canonical injection -/
 
-/-- **The canonical injection `J : E → E**`** of §1.3: `J x` is the functional `f ↦ ⟨f, x⟩` on
-`E*`, so that `⟨J x, f⟩_{E**, E*} = ⟨f, x⟩_{E*, E}`. It is `NormedSpace.inclusionInDoubleDual ℝ E`,
-a bounded linear map. -/
+/-- **Section 1.3** of [brezis2011functional], the canonical injection $J : E \to E^{\star\star}$.
+Let $E$ be a real normed space. For $x \in E$, $Jx$ is the functional
+$f \mapsto \langle f, x \rangle$ on $E^\star$, that is,
+$$\langle Jx, f \rangle_{E^{\star\star}, E^\star} = \langle f, x \rangle_{E^\star, E} \quad
+  \text{for all } f \in E^\star.$$
+
+The map $J$ is Mathlib's `NormedSpace.inclusionInDoubleDual ℝ E`, a bounded linear map. -/
 theorem canonicalInjection_apply (x : E) (f : StrongDual ℝ E) :
     inclusionInDoubleDual ℝ E x f = f x :=
   dual_def ℝ E x f
 
-/-- **`J` is an isometry**: `‖J x‖_{E**} = ‖x‖_E` (by Corollary 1.4). -/
+/-- **Section 1.3** of [brezis2011functional], $J$ is an isometry. For every $x$ in a real normed
+space $E$,
+$$\|Jx\|_{E^{\star\star}} = \|x\|_E.$$
+
+The source derives this from Corollary 1.4. The proof uses Mathlib's
+`NormedSpace.inclusionInDoubleDualLi`. -/
 theorem norm_canonicalInjection (x : E) : ‖inclusionInDoubleDual ℝ E x‖ = ‖x‖ :=
   (inclusionInDoubleDualLi ℝ).norm_map x
 
-/-- `J` is injective (it is an isometry). -/
+/-- **Section 1.3** of [brezis2011functional]. The canonical injection $J : E \to E^{\star\star}$ is
+injective, because it is an isometry. -/
 theorem canonicalInjection_injective : Function.Injective (inclusionInDoubleDual ℝ E) :=
   (inclusionInDoubleDualLi ℝ (E := E)).injective
 
 /-! ### The orthogonals -/
 
-/-- **The Notation of §1.3.** For a subspace `M ⊆ E`, `M^⊥ = {f ∈ E* | ⟨f, x⟩ = 0 ∀ x ∈ M}` is
-`M.strongDualAnnihilator`; for a subspace `N ⊆ E*`, `N^⊥ = {x ∈ E | ⟨f, x⟩ = 0 ∀ f ∈ N}` — a
-subset of `E` rather than of `E**` — is `N.strongDualCoannihilator`. -/
+/-- **Section 1.3** of [brezis2011functional], the notation for orthogonals. Let $E$ be a real
+normed space. For a linear subspace $M \subseteq E$,
+$$M^\perp = \{f \in E^\star : \langle f, x \rangle = 0 \ \forall x \in M\},$$
+and for a linear subspace $N \subseteq E^\star$,
+$$N^\perp = \{x \in E : \langle f, x \rangle = 0 \ \forall f \in N\}.$$
+
+The set $M^\perp$ is `M.strongDualAnnihilator`. The set $N^\perp$, a subset of $E$ rather than
+of $E^{\star\star}$, is `N.strongDualCoannihilator`. The theorem states the two membership
+criteria. -/
 theorem mem_orthogonal_iff (M : Submodule ℝ E) (N : Submodule ℝ (StrongDual ℝ E))
     (f : StrongDual ℝ E) (x : E) :
     (f ∈ M.strongDualAnnihilator ↔ ∀ y ∈ M, f y = 0) ∧
       (x ∈ N.strongDualCoannihilator ↔ ∀ g ∈ N, g x = 0) :=
   ⟨Submodule.mem_strongDualAnnihilator, Submodule.mem_strongDualCoannihilator⟩
 
-/-- "It is clear that `M^⊥` (resp. `N^⊥`) is a closed linear subspace of `E*` (resp. `E`)." -/
+/-- **Section 1.3** of [brezis2011functional]. Let $E$ be a real normed space, $M \subseteq E$ and
+$N \subseteq E^\star$ linear subspaces. Then $M^\perp$ is a closed linear subspace of $E^\star$
+and $N^\perp$ is a closed linear subspace of $E$. -/
 theorem isClosed_orthogonal (M : Submodule ℝ E) (N : Submodule ℝ (StrongDual ℝ E)) :
     IsClosed (M.strongDualAnnihilator : Set (StrongDual ℝ E)) ∧
       IsClosed (N.strongDualCoannihilator : Set E) :=
   ⟨M.isClosed_strongDualAnnihilator, N.isClosed_strongDualCoannihilator⟩
 
-/-- **Proposition 1.9, first clause.** For a linear subspace `M ⊆ E`, `(M^⊥)^⊥ = closure M`. -/
+/-- **Proposition 1.9** of [brezis2011functional], first relation. Let $E$ be a real normed space.
+For every linear subspace $M \subseteq E$,
+$$(M^\perp)^\perp = \overline{M}.$$
+
+The closure $\overline{M}$ is `M.topologicalClosure`. The proof specializes the backbone theorem
+`Submodule.strongDualCoannihilator_strongDualAnnihilator`. -/
 theorem proposition_1_9 (M : Submodule ℝ E) :
     M.strongDualAnnihilator.strongDualCoannihilator = M.topologicalClosure :=
   M.strongDualCoannihilator_strongDualAnnihilator
 
-/-- **Proposition 1.9, second clause.** For a linear subspace `N ⊆ E*`,
-`(N^⊥)^⊥ ⊇ closure N`. -/
+/-- **Proposition 1.9** of [brezis2011functional], second relation. Let $E$ be a real normed space.
+For every linear subspace $N \subseteq E^\star$,
+$$(N^\perp)^\perp \supseteq \overline{N}.$$
+
+The proof specializes the backbone theorem
+`Submodule.topologicalClosure_le_strongDualAnnihilator_strongDualCoannihilator`. -/
 theorem proposition_1_9_supset (N : Submodule ℝ (StrongDual ℝ E)) :
     N.topologicalClosure ≤ N.strongDualCoannihilator.strongDualAnnihilator :=
   N.topologicalClosure_le_strongDualAnnihilator_strongDualCoannihilator
 
-/-- **Remark 6.** If `E` is reflexive then `(N^⊥)^⊥ = closure N` for every linear subspace
-`N ⊆ E*`: the separating `ξ ∈ E**` of the attempted proof is then `J x₀` for some `x₀ ∈ E`. -/
+/-- **Remark 6** of [brezis2011functional], the reflexive case. Let $E$ be a reflexive real normed
+space. For every linear subspace $N \subseteq E^\star$,
+$$(N^\perp)^\perp = \overline{N}.$$
+
+In the proof of the source, the functional $\xi \in E^{\star\star}$ that separates a point from
+$\overline{N}$ is then $Jx_0$ for some $x_0 \in E$. The proof specializes the backbone theorem
+`Submodule.strongDualAnnihilator_strongDualCoannihilator`. -/
 theorem remark_1_6 [IsReflexive ℝ E] (N : Submodule ℝ (StrongDual ℝ E)) :
     N.strongDualCoannihilator.strongDualAnnihilator = N.topologicalClosure :=
   N.strongDualAnnihilator_strongDualCoannihilator

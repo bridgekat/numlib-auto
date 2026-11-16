@@ -7,27 +7,51 @@ import Numlib.MeasureTheory.Function.LpSpace.Convergence
 import NumlibSurface.Brezis.Chapter04.Section01
 
 /-!
-# Brezis §4.2: definition and elementary properties of `L^p` spaces
+# Brezis, Section 4.2: Definition and elementary properties of $L^p$ spaces
 
-Surface file for Haim Brezis, *Functional Analysis, Sobolev Spaces and Partial Differential
-Equations*, Universitext, Springer, 2011, §4.2. The space `L^p(Ω)` is Mathlib's
-`MeasureTheory.Lp ℝ p μ` over a measure space `(α, μ)`, whose elements are classes of a.e. equal
-functions, as in the book; membership of a function is `MemLp f p μ` and its (extended) norm is
-`eLpNorm f p μ`. The two "Definition." paragraphs are read back as the book's formulas, and
-Hölder, Minkowski, Fischer–Riesz and the a.e. subsequence theorem are Mathlib's, with Remark 2
-and the domination clause of Theorem 4.9 from the backbone
-`Numlib/MeasureTheory/Function/LpInterpolation` and `…/LpSpace/Convergence`.
+This module formalizes Section 4.2 of [brezis2011functional] for real-valued functions on a measure
+space $(\Omega, \mathcal{M}, \mu)$. For $1 \le p < \infty$, the space $L^p(\Omega)$ consists of the
+measurable functions $f$ with $|f|^p$ integrable, with the norm $\|f\|_p = (\int |f|^p)^{1/p}$. The
+space $L^\infty(\Omega)$ consists of the measurable functions that are a.e. bounded, with the norm
+$\|f\|_\infty = \inf\{C : |f| \le C \text{ a.e.}\}$. Elements of these spaces are classes of a.e.
+equal functions. The module states Hölder's inequality (Theorem 4.6) and its extensions (Remark 2),
+the facts that $L^p$ is a normed space (Theorem 4.7, Minkowski) and a Banach space (Theorem 4.8,
+Fischer–Riesz) for $1 \le p \le \infty$, and that a convergent sequence in $L^p$ has a dominated
+subsequence that converges a.e. (Theorem 4.9).
+
+The proofs use Mathlib's `MeasureTheory.Lp`, and the backbone modules
+`Numlib.MeasureTheory.Function.LpInterpolation` (Remark 2) and
+`Numlib.MeasureTheory.Function.LpSpace.Convergence` (the domination in Theorem 4.9).
+
+## Main definitions
+
+* Section 4.2, definition of $L^p$ for $1 \le p < \infty$,
+  `Brezis.Chapter04.lpNorm_eq_integral_rpow`: $f \in L^p$ if and only if $|f|^p$ is integrable, and
+  $\|f\|_p = (\int |f|^p)^{1/p}$.
+* Section 4.2, definition of $L^\infty$, `Brezis.Chapter04.lInftyNorm_eq_sInf`: $f \in L^\infty$ if
+  and only if $|f| \le C$ a.e. for some $C$, and $\|f\|_\infty = \inf\{C : |f| \le C \text{
+  a.e.}\}$.
 
 ## Main results
 
-* `lpNorm_eq_integral_rpow`, `lInftyNorm_eq_sInf` — the definitions of `L^p`, `1 ≤ p < ∞`, and
-  `L^∞` with their norms.
-* `remark_4_1` — `|f| ≤ ‖f‖_∞` a.e.
-* `theorem_4_6` — Hölder's inequality; `remark_4_2` — the `k`-fold Hölder inequality and the
-  interpolation inequality.
-* `theorem_4_7` — `L^p` is a normed vector space (Minkowski); `theorem_4_8` — Fischer–Riesz.
-* `theorem_4_9` — a convergent sequence in `L^p` has an a.e. convergent subsequence dominated by
-  an `L^p` function.
+* Remark 1, `Brezis.Chapter04.remark_4_1`: $|f| \le \|f\|_\infty$ a.e. for $f \in L^\infty$.
+* Theorem 4.6 (Hölder's inequality), `Brezis.Chapter04.theorem_4_6`: for conjugate exponents,
+  $\int |fg| \le \|f\|_p \|g\|_{p'}$.
+* Remark 2, `Brezis.Chapter04.remark_4_2`: the Hölder inequality for $k$ functions, and the
+  interpolation inequality $\|f\|_r \le \|f\|_p^\alpha \|f\|_q^{1 - \alpha}$.
+* Theorem 4.7, `Brezis.Chapter04.theorem_4_7`: $L^p$ is a vector space and $\|\cdot\|_p$ is a norm,
+  for $1 \le p \le \infty$.
+* Theorem 4.8 (Fischer–Riesz), `Brezis.Chapter04.theorem_4_8`: $L^p$ is a Banach space for
+  $1 \le p \le \infty$.
+* Theorem 4.9, `Brezis.Chapter04.theorem_4_9`: a convergent sequence in $L^p$ has a subsequence that
+  converges a.e. and is dominated by a function of $L^p$.
+
+## Conventions
+
+* The space $L^p(\Omega)$ is Mathlib's `MeasureTheory.Lp ℝ p μ`, with the exponent `p : ℝ≥0∞`. That
+  a function $f$ belongs to $L^p$ is `MemLp f p μ`, and its norm in $[0, +\infty]$ is
+  `eLpNorm f p μ`.
+* Conjugate exponents $p$ and $p'$, with $1/p + 1/p' = 1$, are `p.HolderConjugate q`.
 -/
 
 open Filter MeasureTheory Topology
@@ -39,9 +63,13 @@ variable {α : Type*} [MeasurableSpace α] {μ : Measure α}
 
 /-! ### The definitions -/
 
-/-- **The definition of `L^p` and `‖·‖_p` for `1 ≤ p < ∞`** (§4.2, first "Definition."): a
-measurable `f : Ω → ℝ` belongs to `L^p` iff `|f| ^ p` is integrable, and then
-`‖f‖_p = (∫ |f| ^ p) ^ (1 / p)`. -/
+/-- **Section 4.2** of [brezis2011functional], definition of $L^p$ and $\|\cdot\|_p$ for
+$1 \le p < \infty$. Let $1 \le p < \infty$. A measurable function $f : \Omega \to \mathbb{R}$
+belongs to $L^p(\Omega)$ if and only if $|f|^p$ is integrable. For $f \in L^p(\Omega)$,
+$$\|f\|_p = \Bigl(\int_\Omega |f|^p \, d\mu\Bigr)^{1/p}.$$
+
+The source takes these formulas as the definition. Here they are proved for Mathlib's `MemLp`
+and the norm of `MeasureTheory.Lp`. Measurability of $f$ is `AEStronglyMeasurable`. -/
 theorem lpNorm_eq_integral_rpow {p : ℝ≥0∞} [Fact (1 ≤ p)] (hp : p ≠ ∞) :
     (∀ f : α → ℝ, AEStronglyMeasurable f μ →
       (MemLp f p μ ↔ Integrable (fun x => |f x| ^ p.toReal) μ)) ∧
@@ -62,9 +90,14 @@ theorem lpNorm_eq_integral_rpow {p : ℝ≥0∞} [Fact (1 ≤ p)] (hp : p ≠ �
     refine lintegral_congr fun x => ?_
     rw [← ENNReal.ofReal_rpow_of_nonneg (abs_nonneg _) hP.le, ← Real.norm_eq_abs, ofReal_norm]
 
-/-- **The definition of `L^∞` and `‖·‖_∞`** (§4.2, second "Definition."): a measurable `f`
-belongs to `L^∞` iff `|f| ≤ C` a.e. for some constant `C`, and then
-`‖f‖_∞ = inf {C ; |f| ≤ C a.e.}`. -/
+/-- **Section 4.2** of [brezis2011functional], definition of $L^\infty$ and $\|\cdot\|_\infty$. A
+measurable function $f : \Omega \to \mathbb{R}$ belongs to $L^\infty(\Omega)$ if and only if
+there is a constant $C$ with $|f(x)| \le C$ for a.e. $x \in \Omega$. For
+$f \in L^\infty(\Omega)$,
+$$\|f\|_\infty = \inf\{C : |f(x)| \le C \text{ for a.e. } x \in \Omega\}.$$
+
+The source takes these formulas as the definition. Here they are proved for Mathlib's `MemLp`
+with exponent $\infty$ and the norm of `MeasureTheory.Lp`. -/
 theorem lInftyNorm_eq_sInf :
     (∀ f : α → ℝ, AEStronglyMeasurable f μ → (MemLp f ∞ μ ↔ ∃ C : ℝ, ∀ᵐ x ∂μ, |f x| ≤ C)) ∧
     ∀ f : Lp ℝ ∞ μ, ‖f‖ = sInf {C : ℝ | ∀ᵐ x ∂μ, |f x| ≤ C} := by
@@ -92,14 +125,20 @@ theorem lInftyNorm_eq_sInf :
           rw [Filter.eventually_false_iff_eq_bot, ae_eq_bot] at this
           exact hμ this
 
-/-- **Remark 1.** For `f ∈ L^∞`, `|f| ≤ ‖f‖_∞` a.e. -/
+/-- **Remark 1** in Chapter 4 of [brezis2011functional]. For $f \in L^\infty(\Omega)$,
+$|f(x)| \le \|f\|_\infty$ for a.e. $x \in \Omega$. -/
 theorem remark_4_1 (f : Lp ℝ ∞ μ) : ∀ᵐ x ∂μ, |f x| ≤ ‖f‖ := by
   simpa only [Real.norm_eq_abs] using Lp.ae_norm_le_norm_top f
 
 /-! ### Hölder's inequality -/
 
-/-- **Theorem 4.6 (Hölder's inequality).** For conjugate exponents `p, p'` (`1 ≤ p ≤ ∞`),
-`f ∈ L^p` and `g ∈ L^{p'}`, the product `f g` is integrable and `∫ |f g| ≤ ‖f‖_p ‖g‖_{p'}`. -/
+/-- **Theorem 4.6** of [brezis2011functional] (Hölder's inequality). Let $1 \le p \le \infty$ and
+let $p'$ be the conjugate exponent, $1/p + 1/p' = 1$. Let $f \in L^p(\Omega)$ and
+$g \in L^{p'}(\Omega)$. Then $fg$ is integrable and
+$$\int_\Omega |fg| \, d\mu \le \|f\|_p \|g\|_{p'}.$$
+
+The conjugate exponent $p'$ is `q`. The norms are the real parts of `eLpNorm`, which are finite
+here. -/
 theorem theorem_4_6 {p q : ℝ≥0∞} [p.HolderConjugate q] {f g : α → ℝ} (hf : MemLp f p μ)
     (hg : MemLp g q μ) :
     Integrable (f * g) μ ∧
@@ -117,11 +156,21 @@ theorem theorem_4_6 {p q : ℝ≥0∞} [p.HolderConjugate q] {f g : α → ℝ} 
         ENNReal.toReal_mono (ENNReal.mul_ne_top hf.eLpNorm_ne_top hg.eLpNorm_ne_top) h
     _ = (eLpNorm f p μ).toReal * (eLpNorm g q μ).toReal := ENNReal.toReal_mul
 
-/-- **Remark 2.** (i) The `k`-fold Hölder inequality: if `f i ∈ L^{p i}` for `i ∈ s` and
-`1 / p = ∑ 1 / p i ≤ 1`, then `∏ f i ∈ L^p` and `‖∏ f i‖_p ≤ ∏ ‖f i‖_{p i}`. (ii) The
-interpolation inequality: if `f ∈ L^p ∩ L^q` with `1 ≤ p ≤ q ≤ ∞`, then `f ∈ L^r` for every
-`p ≤ r ≤ q`, and `‖f‖_r ≤ ‖f‖_p ^ α ‖f‖_q ^ (1 - α)` where `1 / r = α / p + (1 - α) / q`,
-`0 ≤ α ≤ 1`. -/
+/-- **Remark 2** in Chapter 4 of [brezis2011functional].
+
+1. The Hölder inequality for several functions. Let $f_i \in L^{p_i}(\Omega)$ for $i$ in a
+   finite index set $s$, and let $1/r = \sum_{i \in s} 1/p_i$ with $r \ge 1$. Then
+   $f = \prod_{i \in s} f_i$ belongs to $L^r(\Omega)$ and
+$$\|f\|_r \le \prod_{i \in s} \|f_i\|_{p_i}.$$
+2. The interpolation inequality. Let $1 \le p \le r \le q \le \infty$ and
+   $f \in L^p(\Omega) \cap L^q(\Omega)$, and let $0 \le \alpha \le 1$ with
+   $1/r = \alpha/p + (1 - \alpha)/q$. Then $f \in L^r(\Omega)$ and
+$$\|f\|_r \le \|f\|_p^\alpha \|f\|_q^{1 - \alpha}.$$
+
+The exponents are in $[1, +\infty]$, and the norms are `eLpNorm`, with values in $[0, +\infty]$.
+The source writes $1/p = 1/p_1 + \dots + 1/p_k \le 1$; the condition $r \ge 1$ is the same. In
+(2) the number $\alpha$ is `θ`. The proofs are in
+`Numlib.MeasureTheory.Function.LpInterpolation`. -/
 theorem remark_4_2 :
     (∀ {ι : Type*} (s : Finset ι) (f : ι → α → ℝ) (p : ι → ℝ≥0∞) (r : ℝ≥0∞),
       (∀ i ∈ s, MemLp (f i) (p i) μ) → r⁻¹ = ∑ i ∈ s, (p i)⁻¹ → 1 ≤ r →
@@ -136,12 +185,19 @@ theorem remark_4_2 :
   · exact ⟨hfp.interpolate (zero_lt_one.trans_le hp).ne' hfq hpr hrq,
       eLpNorm_le_eLpNorm_rpow_mul_eLpNorm_rpow hfp.aestronglyMeasurable hθ₀ hθ₁ hr⟩
 
-/-! ### `L^p` is a Banach space -/
+/-! ### $L^p$ is a Banach space -/
 
-/-- **Theorem 4.7.** `L^p` is a vector space and `‖·‖_p` is a norm, `1 ≤ p ≤ ∞`: sums and
-scalar multiples of `L^p` functions are in `L^p` (`MemLp.add`, `MemLp.const_smul`), and on the
-classes `‖f + g‖ ≤ ‖f‖ + ‖g‖` (Minkowski's inequality), `‖c • f‖ = |c| ‖f‖` and `‖f‖ = 0` iff
-`f = 0`. -/
+/-- **Theorem 4.7** of [brezis2011functional]. Let $1 \le p \le \infty$. Then $L^p(\Omega)$ is a
+vector space and $\|\cdot\|_p$ is a norm on it. Precisely:
+
+1. if $f, g \in L^p$, then $f + g \in L^p$;
+2. if $f \in L^p$ and $c \in \mathbb{R}$, then $cf \in L^p$;
+3. $\|f + g\|_p \le \|f\|_p + \|g\|_p$ (Minkowski's inequality);
+4. $\|cf\|_p = |c| \|f\|_p$;
+5. $\|f\|_p = 0$ if and only if $f = 0$.
+
+Parts (1) and (2) are about functions, with `MemLp`. Parts (3) to (5) are about elements of
+`MeasureTheory.Lp ℝ p μ`, that is, classes of a.e. equal functions. -/
 theorem theorem_4_7 {p : ℝ≥0∞} [Fact (1 ≤ p)] :
     (∀ f g : α → ℝ, MemLp f p μ → MemLp g p μ → MemLp (f + g) p μ) ∧
     (∀ (c : ℝ) (f : α → ℝ), MemLp f p μ → MemLp (c • f) p μ) ∧
@@ -151,11 +207,19 @@ theorem theorem_4_7 {p : ℝ≥0∞} [Fact (1 ≤ p)] :
   ⟨fun _ _ hf hg => hf.add hg, fun c _ hf => hf.const_smul c, fun f g => norm_add_le f g,
     fun c f => by rw [norm_smul, Real.norm_eq_abs], fun f => norm_eq_zero⟩
 
-/-- **Theorem 4.8 (Fischer–Riesz).** `L^p` is a Banach space, `1 ≤ p ≤ ∞`. -/
+/-- **Theorem 4.8** of [brezis2011functional] (Fischer–Riesz). Let $1 \le p \le \infty$. Then
+$L^p(\Omega)$ is a Banach space. -/
 theorem theorem_4_8 {p : ℝ≥0∞} [Fact (1 ≤ p)] : CompleteSpace (Lp ℝ p μ) := inferInstance
 
-/-- **Theorem 4.9.** If `fₙ → f` in `L^p`, `1 ≤ p ≤ ∞`, there are a subsequence `f_{nₖ}` and
-`h ∈ L^p` with (a) `f_{nₖ} → f` a.e. and (b) `|f_{nₖ}| ≤ h` a.e. for every `k`. -/
+/-- **Theorem 4.9** of [brezis2011functional]. Let $1 \le p \le \infty$, and let $(f_n)$ be a
+sequence in $L^p(\Omega)$ with $f_n \to f$ in $L^p(\Omega)$. Then there are a subsequence
+$(f_{n_k})$ and a function $h \in L^p(\Omega)$ such that
+
+1. $f_{n_k}(x) \to f(x)$ for a.e. $x \in \Omega$, and
+2. $|f_{n_k}(x)| \le h(x)$ for every $k$ and a.e. $x \in \Omega$.
+
+The limit is `g` in the Lean statement, and the subsequence is `f ∘ ns` with `ns` strictly
+increasing. -/
 theorem theorem_4_9 {p : ℝ≥0∞} [Fact (1 ≤ p)] {f : ℕ → Lp ℝ p μ} {g : Lp ℝ p μ}
     (hfg : Tendsto f atTop (𝓝 g)) :
     ∃ ns : ℕ → ℕ, StrictMono ns ∧ ∃ h : Lp ℝ p μ,

@@ -10,36 +10,74 @@ import Numlib.Analysis.InnerProductSpace.CompactSpectral.Basis
 import NumlibSurface.Brezis.Chapter06.Section03
 
 /-!
-# Brezis §6.4: spectral decomposition of self-adjoint compact operators
+# Brezis, Section 6.4: Spectral decomposition of self-adjoint compact operators
 
-Surface file for Haim Brezis, *Functional Analysis, Sobolev Spaces and Partial Differential
-Equations*, Universitext, Springer, 2011, §6.4, for `T : H →L[ℝ] H` on a real Hilbert space `H`
-(`[NormedAddCommGroup H] [InnerProductSpace ℝ H] [CompleteSpace H]`). The book identifies `H*`
-with `H` and reads `T*` as a bounded operator on `H`; self-adjointness is Mathlib's
-`IsSelfAdjoint T`, i.e. `ContinuousLinearMap.adjoint T = T`. Proposition 6.9's bounds
-`m = inf_{|u|=1} (Tu, u)`, `M = sup_{|u|=1} (Tu, u)` are written as infima and suprema over the
-unit sphere `Metric.sphere (0 : H) 1`, as the book has them, and converted to the backbone's
-Rayleigh-quotient form (`Numlib/Analysis/InnerProductSpace/CompactSpectral/Basis`, over
-`RCLike 𝕜` with `{x // x ≠ 0}` as index) by
-`ContinuousLinearMap.iInf_rayleigh_eq_iInf_rayleigh_sphere`. Theorem 6.11 is the backbone's
-`exists_type_hilbertBasis_eigenvectors`, with an index type in the universe of `H`; the book's
-separability hypothesis is carried for faithfulness although the theorem holds for every
-Hilbert space. Steps (i) and (ii) of its proof are Mathlib's
-`LinearMap.IsSymmetric.orthogonalFamily_eigenspaces` and
-`ContinuousLinearMap.orthogonalComplement_iSup_eigenspaces_eq_bot`.
+This module formalizes Section 6.4 of [brezis2011functional] for a bounded operator
+$T \in \mathcal{L}(H)$ on a real Hilbert space $H$ with scalar product $(u, v)$. The source
+identifies $H^\star$ with $H$, so the adjoint $T^\star$ is again an operator on $H$, and $T$ is
+self-adjoint if $T^\star = T$, that is, $(Tu, v) = (u, Tv)$ for all $u, v$. For a self-adjoint $T$
+put
+$$m = \inf_{|u| = 1} (Tu, u), \qquad M = \sup_{|u| = 1} (Tu, u).$$
+Then $\sigma(T) \subseteq [m, M]$, both $m$ and $M$ lie in $\sigma(T)$, and
+$\|T\| = \max\{|m|, |M|\}$ (Proposition 6.9); so a self-adjoint operator with $\sigma(T) = \{0\}$ is
+zero (Corollary 6.10). A compact self-adjoint operator on a separable Hilbert space has a Hilbert
+basis of eigenvectors (Theorem 6.11), and the finite truncations of its eigenvector expansion
+converge to $T$ in norm (Remark 8).
+
+Proposition 6.9 specializes the Rayleigh-quotient results of the backbone module
+`Numlib.Analysis.InnerProductSpace.CompactSpectral.Basis`. Theorem 6.11 is the backbone's
+`ContinuousLinearMap.IsSymmetric.exists_type_hilbertBasis_eigenvectors`, and the steps of its proof
+are Mathlib's `LinearMap.IsSymmetric.orthogonalFamily_eigenspaces` and
+`ContinuousLinearMap.orthogonalComplement_iSup_eigenspaces_eq_bot`. The last result specializes
+`Numlib.Analysis.InnerProductSpace.Ascent`.
+
+## Main definitions
+
+* Section 6.4, definition of a self-adjoint operator, `Brezis.Chapter06.isSelfAdjoint_iff`:
+  Mathlib's `IsSelfAdjoint T` means $T^\star = T$, and also $(Tu, v) = (u, Tv)$ for all $u, v$.
 
 ## Main results
 
-* `isSelfAdjoint_iff` — the Definition: `T* = T`, i.e. `(Tu, v) = (u, Tv)`.
-* `proposition_6_9_subset`, `proposition_6_9_inf_mem`, `proposition_6_9_sup_mem`,
-  `proposition_6_9_norm` — `σ(T) ⊆ [m, M]`, `m, M ∈ σ(T)`, `‖T‖ = max (|m|, |M|)`.
-* `corollary_6_10` — a self-adjoint operator with `σ(T) = {0}` is zero.
-* `theorem_6_11`, `theorem_6_11_orthogonal`, `theorem_6_11_dense` — a compact self-adjoint
-  operator on a separable Hilbert space has a Hilbert basis of eigenvectors; the eigenspaces
-  are mutually orthogonal and span a dense subspace.
-* `remark_6_8` — the finite-rank truncations of the eigen-expansion converge to `T` in norm.
-* `multiplicity_eq_of_isSelfAdjoint` — the ascent of `T - λI` is `1` for self-adjoint `T`
-  (Comments on Chapter 6, 3).
+* Proposition 6.9, `Brezis.Chapter06.proposition_6_9_subset`: $\sigma(T) \subseteq [m, M]$.
+* Proposition 6.9, `Brezis.Chapter06.proposition_6_9_inf_mem` and
+  `Brezis.Chapter06.proposition_6_9_sup_mem`: $m \in \sigma(T)$ and $M \in \sigma(T)$.
+* Proposition 6.9, `Brezis.Chapter06.proposition_6_9_norm`: $\|T\| = \max\{|m|, |M|\}$.
+* Corollary 6.10, `Brezis.Chapter06.corollary_6_10`: a self-adjoint operator with
+  $\sigma(T) = \{0\}$ is zero.
+* Theorem 6.11, `Brezis.Chapter06.theorem_6_11`: a compact self-adjoint operator on a separable
+  Hilbert space has a Hilbert basis of eigenvectors.
+* Theorem 6.11, `Brezis.Chapter06.theorem_6_11_orthogonal` and
+  `Brezis.Chapter06.theorem_6_11_dense`: the eigenspaces are mutually orthogonal, and for compact
+  $T$ they span a dense subspace.
+* Remark 8, `Brezis.Chapter06.remark_6_8`: the finite truncations of
+  $Tu = \sum_i \mu_i (u, e_i) e_i$ have finite rank and converge to $T$ in norm.
+* Comments on Chapter 6, item 3, `Brezis.Chapter06.multiplicity_eq_of_isSelfAdjoint`: for
+  self-adjoint $T$, $N((T - \lambda I)^k) = N(T - \lambda I)$ for all $k \ge 1$.
+
+## Conventions
+
+* Self-adjointness is Mathlib's `IsSelfAdjoint T`, which means `ContinuousLinearMap.adjoint T = T`.
+* The numbers $m$ and $M$ are the infimum and the supremum of $(Tu, u)$ over the unit sphere
+  `Metric.sphere (0 : H) 1`, as the source writes them.
+
+## Implementation notes
+
+* The backbone states Proposition 6.9 for the Rayleigh quotient $(Tx, x)/|x|^2$ over $x \neq 0$,
+  over `RCLike 𝕜`. Mathlib's `ContinuousLinearMap.iInf_rayleigh_eq_iInf_rayleigh_sphere` converts it
+  to the unit sphere.
+* In Theorem 6.11 the index type of the Hilbert basis is in the universe of $H$.
+
+## Deviations from the source
+
+* **Proposition 6.9** (reading). The statements $m, M \in \sigma(T)$ and $\|T\| = \max\{|m|, |M|\}$
+  assume $H \neq \{0\}$, which the source leaves implicit. See
+  `Brezis.Chapter06.proposition_6_9_inf_mem`.
+* **Theorem 6.11** (reading). The source's Hilbert basis is a sequence $(e_n)$. Here the basis is
+  indexed by an arbitrary type, which also covers finite dimension. See
+  `Brezis.Chapter06.theorem_6_11`.
+* **Remark 8** (reading). The source truncates the expansion after the first $k$ eigenvalues. Here
+  the index set is not ordered, and the truncation keeps a finite set of indices that contains all
+  $i$ with $|\mu_i| > \varepsilon$. See `Brezis.Chapter06.remark_6_8`.
 -/
 
 open Filter Topology Module.End
@@ -51,9 +89,13 @@ namespace Brezis.Chapter06
 
 variable {H : Type*} [NormedAddCommGroup H] [InnerProductSpace ℝ H] [CompleteSpace H]
 
-/-- **The Definition of §6.4.** A bounded operator `T ∈ L(H)` is self-adjoint if `T* = T`
-(Mathlib's `ContinuousLinearMap.adjoint`, after the identification `H* = H`), i.e.
-`(Tu, v) = (u, Tv)` for all `u, v ∈ H`. Both readings are Mathlib's `IsSelfAdjoint T`. -/
+/-- **Section 6.4** of [brezis2011functional], definition of a self-adjoint operator. Let $H$ be a
+Hilbert space and $T \in \mathcal{L}(H)$. Then $T$ is self-adjoint in the sense of Mathlib's
+`IsSelfAdjoint T` if and only if $T^\star = T$, and also if and only if
+$$(Tu, v) = (u, Tv) \quad \text{for all } u, v \in H.$$
+
+The adjoint $T^\star$ is Mathlib's `ContinuousLinearMap.adjoint T`, which identifies $H^\star$
+with $H$ as the source does. -/
 theorem isSelfAdjoint_iff (T : H →L[ℝ] H) :
     (IsSelfAdjoint T ↔ ContinuousLinearMap.adjoint T = T) ∧
       (IsSelfAdjoint T ↔ ∀ u v : H, ⟪T u, v⟫_ℝ = ⟪u, T v⟫_ℝ) :=
@@ -62,29 +104,35 @@ theorem isSelfAdjoint_iff (T : H →L[ℝ] H) :
 /-! ### Proposition 6.9 -/
 
 omit [CompleteSpace H] in
-/-- On the unit sphere the Rayleigh quotient is `(Tu, u)`. -/
+/-- On the unit sphere, the Rayleigh quotient of $T$ at $u$ is $(Tu, u)$. -/
 private theorem rayleighQuotient_sphere (T : H →L[ℝ] H) (x : Metric.sphere (0 : H) 1) :
     T.rayleighQuotient x = ⟪T x, x⟫_ℝ := by
   have hx : ‖(x : H)‖ = 1 := mem_sphere_zero_iff_norm.1 x.2
   simp [ContinuousLinearMap.rayleighQuotient, ContinuousLinearMap.reApplyInnerSelf_apply, hx]
 
 omit [CompleteSpace H] in
-/-- The backbone's `m` is the book's `inf_{|u|=1} (Tu, u)`. -/
+/-- The infimum of the Rayleigh quotient of $T$ over $x \neq 0$ is $\inf_{|u| = 1} (Tu, u)$. -/
 private theorem iInf_rayleigh_eq (T : H →L[ℝ] H) :
     ⨅ x : {x : H // x ≠ 0}, T.rayleighQuotient x = ⨅ u : Metric.sphere (0 : H) 1, ⟪T u, u⟫_ℝ := by
   rw [T.iInf_rayleigh_eq_iInf_rayleigh_sphere one_pos]
   exact iInf_congr (rayleighQuotient_sphere T)
 
 omit [CompleteSpace H] in
-/-- The backbone's `M` is the book's `sup_{|u|=1} (Tu, u)`. -/
+/-- The supremum of the Rayleigh quotient of $T$ over $x \neq 0$ is $\sup_{|u| = 1} (Tu, u)$. -/
 private theorem iSup_rayleigh_eq (T : H →L[ℝ] H) :
     ⨆ x : {x : H // x ≠ 0}, T.rayleighQuotient x = ⨆ u : Metric.sphere (0 : H) 1, ⟪T u, u⟫_ℝ := by
   rw [T.iSup_rayleigh_eq_iSup_rayleigh_sphere one_pos]
   exact iSup_congr (rayleighQuotient_sphere T)
 
-/-- **Proposition 6.9, `σ(T) ⊆ [m, M]`.** Let `T ∈ L(H)` be self-adjoint and
-`m = inf_{|u|=1} (Tu, u)`, `M = sup_{|u|=1} (Tu, u)`. Then `σ(T) ⊆ [m, M]`. (The book's
-Lax–Milgram proof uses no symmetry: this clause holds for every bounded operator.) -/
+/-- **Proposition 6.9** of [brezis2011functional], the inclusion. Let $H$ be a Hilbert space and let
+$T \in \mathcal{L}(H)$ be self-adjoint. Put $m = \inf_{|u| = 1} (Tu, u)$ and
+$M = \sup_{|u| = 1} (Tu, u)$. Then
+$$\sigma(T) \subseteq [m, M].$$
+
+The proof of the source uses the Lax–Milgram theorem and no symmetry, so this inclusion holds
+for every bounded operator; the self-adjointness hypothesis is not used. If $H = \{0\}$, then
+the sphere is empty, $m = M = 0$ by the convention for the infimum and the supremum of an empty
+set in `ℝ`, and $\sigma(T) = \emptyset$. -/
 theorem proposition_6_9_subset {T : H →L[ℝ] H} (_hT : IsSelfAdjoint T) :
     spectrum ℝ T ⊆
       Set.Icc (⨅ u : Metric.sphere (0 : H) 1, ⟪T u, u⟫_ℝ)
@@ -94,27 +142,41 @@ theorem proposition_6_9_subset {T : H →L[ℝ] H} (_hT : IsSelfAdjoint T) :
     (by simpa only [RCLike.ofReal_real_eq_id, id] using ht)
   rwa [iInf_rayleigh_eq, iSup_rayleigh_eq] at h
 
-/-- **Proposition 6.9, `m ∈ σ(T)`.** For `T` self-adjoint on a nontrivial Hilbert space,
-`m = inf_{|u|=1} (Tu, u)` belongs to the spectrum. -/
+/-- **Proposition 6.9** of [brezis2011functional], the lower end. Let $H \neq \{0\}$ be a Hilbert
+space and let $T \in \mathcal{L}(H)$ be self-adjoint. Then $m = \inf_{|u| = 1} (Tu, u)$ belongs
+to $\sigma(T)$.
+
+**Reading.** The hypothesis $H \neq \{0\}$ is implicit in the source. For $H = \{0\}$ the
+spectrum is empty. -/
 theorem proposition_6_9_inf_mem [Nontrivial H] {T : H →L[ℝ] H} (hT : IsSelfAdjoint T) :
     (⨅ u : Metric.sphere (0 : H) 1, ⟪T u, u⟫_ℝ) ∈ spectrum ℝ T := by
   have h := hT.ofReal_iInf_rayleighQuotient_mem_spectrum
   simpa only [RCLike.ofReal_real_eq_id, id, iInf_rayleigh_eq] using h
 
-/-- **Proposition 6.9, `M ∈ σ(T)`.** For `T` self-adjoint on a nontrivial Hilbert space,
-`M = sup_{|u|=1} (Tu, u)` belongs to the spectrum. -/
+/-- **Proposition 6.9** of [brezis2011functional], the upper end. Let $H \neq \{0\}$ be a Hilbert
+space and let $T \in \mathcal{L}(H)$ be self-adjoint. Then $M = \sup_{|u| = 1} (Tu, u)$ belongs
+to $\sigma(T)$.
+
+**Reading.** The hypothesis $H \neq \{0\}$ is implicit in the source. For $H = \{0\}$ the
+spectrum is empty. -/
 theorem proposition_6_9_sup_mem [Nontrivial H] {T : H →L[ℝ] H} (hT : IsSelfAdjoint T) :
     (⨆ u : Metric.sphere (0 : H) 1, ⟪T u, u⟫_ℝ) ∈ spectrum ℝ T := by
   have h := hT.ofReal_iSup_rayleighQuotient_mem_spectrum
   simpa only [RCLike.ofReal_real_eq_id, id, iSup_rayleigh_eq] using h
 
-/-- **Proposition 6.9, "moreover `‖T‖ = max {|m|, |M|}`".** -/
+/-- **Proposition 6.9** of [brezis2011functional], the norm. Let $H \neq \{0\}$ be a Hilbert space
+and let $T \in \mathcal{L}(H)$ be self-adjoint, with $m = \inf_{|u| = 1} (Tu, u)$ and
+$M = \sup_{|u| = 1} (Tu, u)$. Then
+$$\|T\| = \max\{|m|, |M|\}.$$
+
+The source states this with the word "moreover". -/
 theorem proposition_6_9_norm [Nontrivial H] {T : H →L[ℝ] H} (hT : IsSelfAdjoint T) :
     ‖T‖ = max |⨅ u : Metric.sphere (0 : H) 1, ⟪T u, u⟫_ℝ|
       |⨆ u : Metric.sphere (0 : H) 1, ⟪T u, u⟫_ℝ| := by
   rw [hT.norm_eq_max_abs_iInf_abs_iSup, iInf_rayleigh_eq, iSup_rayleigh_eq]
 
-/-- **Corollary 6.10.** Let `T ∈ L(H)` be self-adjoint with `σ(T) = {0}`. Then `T = 0`. -/
+/-- **Corollary 6.10** of [brezis2011functional]. Let $H$ be a Hilbert space and let
+$T \in \mathcal{L}(H)$ be self-adjoint with $\sigma(T) = \{0\}$. Then $T = 0$. -/
 theorem corollary_6_10 {T : H →L[ℝ] H} (hT : IsSelfAdjoint T) (h : spectrum ℝ T = {0}) :
     T = 0 :=
   hT.eq_zero_of_spectrum_subset_zero h.le
@@ -127,10 +189,19 @@ universe u
 
 variable {H : Type u} [NormedAddCommGroup H] [InnerProductSpace ℝ H] [CompleteSpace H]
 
-/-- **Theorem 6.11.** Let `H` be a separable Hilbert space and `T` a compact self-adjoint
-operator. Then there is a Hilbert basis `(eᵢ)` of `H` composed of eigenvectors of `T`. The
-index type lives in the universe of `H`; the separability hypothesis is carried as the book
-states it and is not used (the theorem holds in every Hilbert space). -/
+/-- **Theorem 6.11** of [brezis2011functional]. Let $H$ be a separable Hilbert space and let
+$T \in \mathcal{L}(H)$ be compact and self-adjoint. Then there is a Hilbert basis
+$(e_i)_{i \in I}$ of $H$ composed of eigenvectors of $T$: for every $i$ there is
+$\mu_i \in \mathbb{R}$ with $T e_i = \mu_i e_i$.
+
+**Reading.** The source's Hilbert basis is a sequence $(e_n)$. Here the basis is indexed by a
+type $I$, which may be finite. The countability of $I$, which follows from separability, is not
+stated.
+
+The index type is in the universe of $H$. The separability hypothesis is kept as the source
+states it but is not used: the backbone theorem
+`ContinuousLinearMap.IsSymmetric.exists_type_hilbertBasis_eigenvectors` holds in every Hilbert
+space. -/
 theorem theorem_6_11 [TopologicalSpace.SeparableSpace H] {T : H →L[ℝ] H} (hT : IsSelfAdjoint T)
     (hK : IsCompactOperator T) :
     ∃ (ι : Type u) (b : HilbertBasis ι ℝ H), ∀ i, ∃ μ : ℝ, T (b i) = μ • b i := by
@@ -142,17 +213,25 @@ theorem theorem_6_11 [TopologicalSpace.SeparableSpace H] {T : H →L[ℝ] H} (hT
 
 end Universe
 
-/-- **Theorem 6.11, step (i) of the proof.** The eigenspaces `Eₙ = N(T - λₙ I)` of a
-self-adjoint `T` (including `E₀ = N(T)`) are mutually orthogonal. Compactness is not needed. -/
+/-- **Theorem 6.11** of [brezis2011functional], step (i) of the proof. Let $H$ be a Hilbert space
+and let $T \in \mathcal{L}(H)$ be self-adjoint. Then the eigenspaces
+$E(\lambda) = N(T - \lambda I)$, $\lambda \in \mathbb{R}$, are mutually orthogonal: they form an
+orthogonal family in the sense of Mathlib's `OrthogonalFamily`.
+
+The family includes $E(0) = N(T)$. Compactness of $T$ is not needed. -/
 theorem theorem_6_11_orthogonal {T : H →L[ℝ] H} (hT : IsSelfAdjoint T) :
     OrthogonalFamily ℝ (fun μ : ℝ => eigenspace (T : Module.End ℝ H) μ)
       fun μ => (eigenspace (T : Module.End ℝ H) μ).subtypeₗᵢ :=
   (ContinuousLinearMap.isSelfAdjoint_iff_isSymmetric.1 hT).orthogonalFamily_eigenspaces
 
-/-- **Theorem 6.11, step (ii) of the proof.** The space `F` spanned by the eigenspaces of a
-compact self-adjoint `T` is dense in `H`: `F^⊥ = {0}`. The book's argument — `T` restricted to
-`F^⊥` is compact self-adjoint with spectrum `{0}`, hence zero by Corollary 6.10 — is the proof
-Mathlib gives. -/
+/-- **Theorem 6.11** of [brezis2011functional], step (ii) of the proof. Let $H$ be a Hilbert space
+and let $T \in \mathcal{L}(H)$ be compact and self-adjoint, and let $F$ be the linear space
+spanned by the eigenspaces $N(T - \lambda I)$, $\lambda \in \mathbb{R}$. Then $F^\perp = \{0\}$,
+and $F$ is dense in $H$.
+
+The argument of the source is the proof of Mathlib's
+`ContinuousLinearMap.orthogonalComplement_iSup_eigenspaces_eq_bot`: the restriction of $T$ to
+$F^\perp$ is compact and self-adjoint with spectrum $\{0\}$, so it is zero by Corollary 6.10. -/
 theorem theorem_6_11_dense {T : H →L[ℝ] H} (hT : IsSelfAdjoint T) (hK : IsCompactOperator T) :
     (⨆ μ : ℝ, eigenspace (T : Module.End ℝ H) μ)ᗮ = ⊥ ∧
       Dense ((⨆ μ : ℝ, eigenspace (T : Module.End ℝ H) μ : Submodule ℝ H) : Set H) := by
@@ -163,14 +242,21 @@ theorem theorem_6_11_dense {T : H →L[ℝ] H} (hT : IsSelfAdjoint T) (hK : IsCo
 
 /-! ### Remark 8 -/
 
-/-- **Remark 8.** Let `T` be a compact self-adjoint operator, `(eᵢ)` a Hilbert basis of
-eigenvectors with `T eᵢ = μᵢ eᵢ` (Theorem 6.11). Then `T u = ∑ μᵢ (u, eᵢ) eᵢ`, and the truncated
-sums are finite-rank operators converging to `T` in norm: for every `ε > 0` only finitely
-many `|μᵢ|` exceed `ε`, and for every finite set `s` of indices containing them the finite-rank
-operator `Tₛ u = ∑_{i ∈ s} μᵢ (u, eᵢ) eᵢ` satisfies `‖Tₛ - T‖ ≤ ε` — the book's
-`‖T_k - T‖ ≤ sup_{n ≥ k+1} |λₙ| → 0`, with the truncation at `|λ| > ε` since the index set is
-not ordered. (Every compact operator into a Hilbert space is a norm limit of finite-rank
-operators, self-adjoint or not: `remark_6_1`.) -/
+/-- **Remark 8** in Chapter 6 of [brezis2011functional]. Let $H$ be a Hilbert space and let
+$T \in \mathcal{L}(H)$ be compact and self-adjoint. Let $(e_i)_{i \in I}$ be a Hilbert basis of
+$H$ and $(\mu_i)$ real numbers with $T e_i = \mu_i e_i$ for all $i$, and let $\varepsilon > 0$.
+Then the set of $i$ with $|\mu_i| > \varepsilon$ is finite, and for every finite set
+$s \subseteq I$ that contains all these $i$, the operator
+$$T_s u = \sum_{i \in s} \mu_i (u, e_i) e_i$$
+has finite rank and satisfies $\|T_s - T\| \le \varepsilon$.
+
+**Reading.** The source orders the eigenvalues as a sequence $(\lambda_n)$ and proves $\|T_k -
+T\| \le \sup_{n \ge k+1} |\lambda_n| \to 0$ for the truncation $T_k$ after $k$ terms. Here the
+index set is not ordered, so the truncation is made at $|\mu_i| > \varepsilon$.
+
+The operator $u \mapsto (u, e_i) e_i$ is `InnerProductSpace.rankOne ℝ (b i) (b i)`. Every
+compact operator into a Hilbert space is a norm limit of operators of finite rank, self-adjoint
+or not: see `Brezis.Chapter06.remark_6_1`. -/
 theorem remark_6_8 {T : H →L[ℝ] H} (_hT : IsSelfAdjoint T) (hK : IsCompactOperator T)
     {ι : Type*} (b : HilbertBasis ι ℝ H) (μ : ι → ℝ) (hb : ∀ i, T (b i) = μ i • b i) {ε : ℝ}
     (hε : 0 < ε) :
@@ -263,12 +349,17 @@ theorem remark_6_8 {T : H →L[ℝ] H} (_hT : IsSelfAdjoint T) (hK : IsCompactOp
 
 /-! ### The ascent of a self-adjoint operator -/
 
-/-- **Comments on Chapter 6, 3, last sentence.** For a self-adjoint `T ∈ L(H)` (compact or not)
-and `λ ∈ ℝ`, the geometric and algebraic multiplicities of `λ` coincide because the ascent of
-`T - λI` is `1`: `N((T - λI)²) = N(T - λI)`, hence `N((T - λI)ᵏ) = N(T - λI)` for all `k ≥ 1`
-(Problem 36). Indeed `(T - λI)² v = 0` gives `|(T - λI) v|² = ((T - λI)² v, v) = 0` — the
-backbone's `IsSelfAdjoint.ker_sq_sub_smul_eq_ker` and `IsSelfAdjoint.ker_pow_sub_smul_eq_ker`,
-over the real scalars for which every `λ` is real. -/
+/-- **Comments on Chapter 6, item 3,** of [brezis2011functional], last sentence. Let $H$ be a
+Hilbert space, let $T \in \mathcal{L}(H)$ be self-adjoint, compact or not, and let
+$\lambda \in \mathbb{R}$. Then
+$$N((T - \lambda I)^2) = N(T - \lambda I), \qquad N((T - \lambda I)^k) = N(T - \lambda I) \quad
+  \text{for all } k \ge 1.$$
+So the ascent of $T - \lambda I$ is at most $1$, and the geometric and algebraic multiplicities
+of $\lambda$ are equal.
+
+This is also Problem 36 of the source. If $(T - \lambda I)^2 v = 0$, then $|(T - \lambda I)
+v|^2 = ((T - \lambda I)^2 v, v) = 0$. The proof specializes
+`IsSelfAdjoint.ker_sq_sub_smul_eq_ker` and `IsSelfAdjoint.ker_pow_sub_smul_eq_ker`. -/
 theorem multiplicity_eq_of_isSelfAdjoint {T : H →L[ℝ] H} (hT : IsSelfAdjoint T) (l : ℝ) :
     ((T - l • (1 : H →L[ℝ] H)) ^ 2).ker = (T - l • (1 : H →L[ℝ] H)).ker ∧
       ∀ k, 1 ≤ k → ((T - l • (1 : H →L[ℝ] H)) ^ k).ker = (T - l • (1 : H →L[ℝ] H)).ker :=

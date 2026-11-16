@@ -6,32 +6,52 @@ import Numlib.Analysis.Normed.Module.Annihilator.ClosedSum
 import NumlibSurface.Brezis.Chapter02.Section04
 
 /-!
-# Brezis §2.5: orthogonality revisited
+# Brezis, Section 2.5: Orthogonality revisited
 
-Surface file for Haim Brezis, *Functional Analysis, Sobolev Spaces and Partial Differential
-Equations*, Universitext, Springer, 2011, §2.5: the orthogonals of sums and intersections of
-closed subspaces `G`, `L` of a real Banach space `E`, in the notation of §1.3
-(`M^⊥ = M.strongDualAnnihilator ⊆ E*` for `M ⊆ E`, `N^⊥ = N.strongDualCoannihilator ⊆ E` for
-`N ⊆ E*`). All three results are the backbone `Numlib/Analysis/Normed/Module/Annihilator`
-(Proposition 2.14 and Corollary 2.15) and its child `Annihilator/ClosedSum` (Theorem 2.16,
-`Submodule.tfae_isClosed_sup`), restated over `ℝ`. The backbone proves (17), (18) and (19)
-without closedness of `G`, `L`; the surface keeps the book's hypotheses.
+This module formalizes Section 2.5 of [brezis2011functional]: the orthogonals of sums and
+intersections of two closed linear subspaces $G$ and $L$ of a real normed space $E$. In the notation
+of Section 1.3, $M^\perp \subseteq E^\star$ is the orthogonal of $M \subseteq E$ and
+$N^\perp \subseteq E$ is the orthogonal of $N \subseteq E^\star$. Proposition 2.14 gives
+$G \cap L = (G^\perp + L^\perp)^\perp$ and $G^\perp \cap L^\perp = (G + L)^\perp$. Corollary 2.15
+gives $(G \cap L)^\perp \supseteq \overline{G^\perp + L^\perp}$ and $(G^\perp \cap L^\perp)^\perp =
+\overline{G + L}$. When $E$ is a Banach space, Theorem 2.16 shows that $G + L$ is closed if and only
+if $G^\perp + L^\perp$ is closed, and gives two more equivalent conditions.
+
+The results specialize the backbone module `Numlib.Analysis.Normed.Module.Annihilator` (Proposition
+2.14 and Corollary 2.15) and the module `Numlib.Analysis.Normed.Module.Annihilator.ClosedSum`
+(Theorem 2.16, from `Submodule.tfae_isClosed_sup`).
 
 ## Main results
 
-* `proposition_2_14` — `G ∩ L = (G^⊥ + L^⊥)^⊥` (16) and `G^⊥ ∩ L^⊥ = (G + L)^⊥` (17).
-* `corollary_2_15` — `(G ∩ L)^⊥ ⊇ closure (G^⊥ + L^⊥)` (18) and `(G^⊥ ∩ L^⊥)^⊥ = closure (G + L)`
-  (19).
-* `theorem_2_16` — `G + L` is closed iff `G^⊥ + L^⊥` is closed iff `G + L = (G^⊥ ∩ L^⊥)^⊥` iff
-  `G^⊥ + L^⊥ = (G ∩ L)^⊥`.
+* Proposition 2.14, `Brezis.Chapter02.proposition_2_14`: $G \cap L = (G^\perp + L^\perp)^\perp$ (16)
+  and $G^\perp \cap L^\perp = (G + L)^\perp$ (17).
+* Corollary 2.15, `Brezis.Chapter02.corollary_2_15`: $(G \cap L)^\perp \supseteq \overline{G^\perp +
+  L^\perp}$ (18) and $(G^\perp \cap L^\perp)^\perp = \overline{G + L}$ (19).
+* Theorem 2.16, `Brezis.Chapter02.theorem_2_16`: $G + L$ is closed if and only if
+  $G^\perp + L^\perp$ is closed, if and only if $G + L = (G^\perp \cap L^\perp)^\perp$, if and only
+  if $G^\perp + L^\perp = (G \cap L)^\perp$.
+
+## Conventions
+
+* $M^\perp$ for $M \subseteq E$ is `Submodule.strongDualAnnihilator`, and $N^\perp$ for
+  $N \subseteq E^\star$ is `Submodule.strongDualCoannihilator`. The sum $G + L$ is `G ⊔ L` and the
+  intersection $G \cap L$ is `G ⊓ L`.
+
+## Implementation notes
+
+* The backbone proves (17), (18) and (19) without the closedness of $G$ and $L$. The results keep
+  the hypotheses of the source.
 -/
 
 namespace Brezis.Chapter02
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
 
-/-- **Proposition 2.14.** Let `G`, `L` be two closed subspaces of `E`. Then
-(16) `G ∩ L = (G^⊥ + L^⊥)^⊥` and (17) `G^⊥ ∩ L^⊥ = (G + L)^⊥`. -/
+/-- **Proposition 2.14** of [brezis2011functional]. Let $E$ be a real normed space and let $G$ and
+$L$ be two closed linear subspaces of $E$. Then
+$$G \cap L = (G^\perp + L^\perp)^\perp, \qquad (16)$$
+$$G^\perp \cap L^\perp = (G + L)^\perp. \qquad (17)$$
+-/
 theorem proposition_2_14 {G L : Submodule ℝ E} (hG : IsClosed (G : Set E))
     (hL : IsClosed (L : Set E)) :
     G ⊓ L = (G.strongDualAnnihilator ⊔ L.strongDualAnnihilator).strongDualCoannihilator ∧
@@ -39,8 +59,12 @@ theorem proposition_2_14 {G L : Submodule ℝ E} (hG : IsClosed (G : Set E))
   ⟨(Submodule.strongDualCoannihilator_sup_strongDualAnnihilator_of_isClosed hG hL).symm,
     (Submodule.strongDualAnnihilator_sup G L).symm⟩
 
-/-- **Corollary 2.15.** Let `G`, `L` be two closed subspaces of `E`. Then
-(18) `(G ∩ L)^⊥ ⊇ closure (G^⊥ + L^⊥)` and (19) `(G^⊥ ∩ L^⊥)^⊥ = closure (G + L)`. -/
+/-- **Corollary 2.15** of [brezis2011functional]. Let $E$ be a real normed space and let $G$ and $L$
+be two closed linear subspaces of $E$. Then
+$$(G \cap L)^\perp \supseteq \overline{G^\perp + L^\perp}, \qquad (18)$$
+$$(G^\perp \cap L^\perp)^\perp = \overline{G + L}. \qquad (19)$$
+
+The proof does not use the closedness of $G$ and $L$. -/
 theorem corollary_2_15 {G L : Submodule ℝ E} (_hG : IsClosed (G : Set E))
     (_hL : IsClosed (L : Set E)) :
     (G.strongDualAnnihilator ⊔ L.strongDualAnnihilator).topologicalClosure ≤
@@ -50,9 +74,13 @@ theorem corollary_2_15 {G L : Submodule ℝ E} (_hG : IsClosed (G : Set E))
   ⟨Submodule.topologicalClosure_sup_strongDualAnnihilator_le G L,
     Submodule.strongDualCoannihilator_inf_strongDualAnnihilator G L⟩
 
-/-- **Theorem 2.16.** Let `G`, `L` be two closed subspaces of a Banach space `E`. The following
-are equivalent: (a) `G + L` is closed in `E`; (b) `G^⊥ + L^⊥` is closed in `E*`;
-(c) `G + L = (G^⊥ ∩ L^⊥)^⊥`; (d) `G^⊥ + L^⊥ = (G ∩ L)^⊥`. -/
+/-- **Theorem 2.16** of [brezis2011functional]. Let $E$ be a Banach space and let $G$ and $L$ be two
+closed linear subspaces of $E$. The following properties are equivalent: (a) $G + L$ is closed
+in $E$; (b) $G^\perp + L^\perp$ is closed in $E^\star$; (c)
+$G + L = (G^\perp \cap L^\perp)^\perp$; (d) $G^\perp + L^\perp = (G \cap L)^\perp$.
+
+The equivalence is stated with `List.TFAE`. The proof specializes the backbone theorem
+`Submodule.tfae_isClosed_sup`. -/
 theorem theorem_2_16 [CompleteSpace E] {G L : Submodule ℝ E} (hG : IsClosed (G : Set E))
     (hL : IsClosed (L : Set E)) :
     [IsClosed ((G ⊔ L : Submodule ℝ E) : Set E),

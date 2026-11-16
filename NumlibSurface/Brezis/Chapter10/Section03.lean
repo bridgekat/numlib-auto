@@ -6,66 +6,119 @@ import Numlib.Analysis.PDE.Wave
 import NumlibSurface.Brezis.Chapter10.Section02
 
 /-!
-# Brezis §10.3: The wave equation
+# Brezis, Section 10.3: The wave equation
 
-Surface file for Haim Brezis, *Functional Analysis, Sobolev Spaces and Partial Differential
-Equations*, Universitext, Springer, 2011, §10.3: the wave equation `∂ₜₜu − Δu = 0` in
-`Q = Ω × (0, ∞)`, `u = 0` on `Σ`, `u(·, 0) = u₀`, `∂ₜu(·, 0) = v₀`, solved as the first-order system
-(33)–(35) in the phase space `H = H¹₀(Ω) × L²(Ω)` with the scalar product (34): Theorem 10.7
-(existence, uniqueness, the energy identity (32)), Remark 6, Remark 7 (the Dirichlet scalar
-product on bounded `Ω`, `A` and `−A` maximal monotone, the group of isometries), Remark 8
-(d'Alembert's formula and the characteristics), Remark 9 (the Fourier method) and Theorem 10.8
-with Remark 10 (regularity and the compatibility conditions). The backbone is
-`Numlib/Analysis/PDE/Wave`.
+This module formalizes Section 10.3 of [brezis2011functional]. Let $\Omega \subset \mathbb{R}^N$ be
+open with boundary $\Gamma$, $Q = \Omega \times (0, \infty)$ and
+$\Sigma = \Gamma \times (0, \infty)$. The wave equation is the problem
+$$\partial_{tt} u - \Delta u = 0 \text{ in } Q \ (27), \quad u = 0 \text{ on } \Sigma \ (28), \quad
+  u(\cdot, 0) = u_0 \ (29), \quad \partial_t u(\cdot, 0) = v_0 \ (30).$$
+The source solves it as the first-order system $dU/dt + AU = 0$ for $U = (u, \partial_t u)$ in the
+phase space $H = H^1_0(\Omega) \times L^2(\Omega)$ with the scalar product (34), where
+$A(u, v) = (-v, -\Delta u)$ is the operator (35). Theorem 10.7 gives existence and uniqueness of a
+solution in the class (31) and the energy identity (32), which Remark 6 reads as a conservation law.
+Remark 7 uses the Dirichlet scalar product on a bounded $\Omega$, for which $A$ and $-A$ are maximal
+monotone and the solutions form a group of isometries. Remark 8 treats d'Alembert's formula on
+$\mathbb{R}$ and the propagation of singularities along the characteristics, Remark 9 the Fourier
+method, and Theorem 10.8 with Remark 10 the regularity of the solution and the compatibility
+conditions.
 
-## Conventions
+The proofs specialize the backbone module `Numlib.Analysis.PDE.Wave`.
 
-* As in §10.1, a solution is the curve `u : ℝ → L²(Ω)` of the book's unknown `u(x, t)` (not the
-  phase-space curve `U = (u, ∂ₜu)`), and the classes of (31) are the Bochner classes of
-  `Numlib/Analysis/PDE/Bochner`; the data are `u₀, v₀ ∈ H¹₀(Ω) = hZeroSpace N Ω`, the datum
-  `u₀ ∈ H²(Ω) ∩ H¹₀(Ω)` being `fnL u₀ ∈ D(A)` for the operator `A = −Δ` of §10.1
-  (`heatOperator_mem_domain_iff`). The phase space is the backbone's `Wave.phaseSpace Ω`
-  (`WithLp 2 (H¹₀(Ω) × L²(Ω))`, whose inner product is (34)), and the book's operator (35),
-  `A(u, v) = (−v, −Δu)` with `D(A) = (H²(Ω) ∩ H¹₀(Ω)) × H¹₀(Ω)`, is `waveOperator Ω`: the
-  backbone's `Wave.operator Ω` (weak domain `D(−Δ) × H¹₀(Ω)`) restricted to the pairs whose first
-  component lies in `H²(Ω)`; on a `C²` domain with bounded boundary the two coincide
-  (`waveOperator_eq`, Theorem 9.25).
-* The book's citation "Remark 7.7" in the proof of Theorem 10.7 means chapter 7's Remark 6 (the
-  shift `V = e^{λt} U`), `Brezis.Chapter07.remark_7_6` (erratum recorded in
-  `notes/book-errata.md`). The class `u ∈ C([0, ∞); H² ∩ H¹₀)` of (31) is a consequence of
-  `U ∈ C¹([0, ∞); H)` and the equation, not a separate output of Theorem 7.4.
-* Footnote 10's `|∇u(t)|²_{L²} = ∑ᵢ ∫_Ω |∂ᵢu(x, t)|²` is written, as in §10.1, for the
-  `H¹₀`-lift of `u(t)` (`sum_integral_partialDeriv_sq`).
-* The standing hypothesis "`Ω` of class `C^∞` with `Γ` bounded" is carried by Theorem 10.7 as
-  stated; the energy identity (32), Remark 6, Remark 7 and Remark 9 hold on every open set (or
-  every bounded one) and are stated so.
-* Remark 8 is stated on `Ω = ⊤ : Opens ℝ¹` (`ℝ¹ = EuclideanSpace ℝ (Fin 1)`), the data
-  `u₀ ∈ H²(ℝ)`, `v₀ ∈ H¹(ℝ)` read in `H¹₀(ℝ) = H¹(ℝ)` through the backbone's `Wave.toZeroTopL`,
-  and the formula (40) through `Wave.lineEmbed : ℝ → ℝ¹` and the coordinate `x ↦ x 0`
-  (`Wave.coeFn_dAlembertL2_dAlembert`).
-* Remark 7's clause `A* = −A` (the adjoint for the Dirichlet scalar product) is not restated:
-  the backbone does not formalize it. The two-sided solvability and `|U(t)|_H = |U₀|_H` for all
-  `t ∈ ℝ` are obtained by time reversal (`Wave.existsUnique_isSolution_backward`), which needs
-  neither the boundedness of `Ω` nor the Dirichlet scalar product.
-* Theorem 10.8's compatibility conditions `Δ^j u₀ = Δ^j v₀ = 0` on `Γ` for every `j` are read,
-  as the display of its proof does, through the domains `D_m` of the Dirichlet Laplacian
-  (`Wave.MemLaplacianDomain`: `D_0 = L²`, `D_1 = H¹₀`, `D_{m+2} = {w ∈ D(−Δ) : −Δw ∈ D_m}`) as
-  `u₀, v₀ ∈ D_k` for every `k`; the hypothesis `u₀, v₀ ∈ H^k(Ω)` for every `k` is then a
-  consequence (`Wave.MemLaplacianDomain.exists_sobolev`, as for Theorem 10.2 (c)), and
-  `D(A^k) = D_{k+1} × D_k` with the continuous injection into `H^{k+1} × H^k` is
-  `theorem_10_8_domain`, `theorem_10_8_domain_norm`. Remark 10 (necessity) is stated as
-  Remark 4 of §10.1 is, for a `C^∞` function on `ℝ^N × ℝ`.
+## Main definitions
+
+* Equation (35), `Brezis.Chapter10.waveOperator`: $A(u, v) = (-v, -\Delta u)$ on $D(A) =
+  (H^2(\Omega) \cap H^1_0(\Omega)) \times H^1_0(\Omega)$.
+* Problem (27)–(30) in the class (31), `Brezis.Chapter10.IsWaveSolution`: $u \in C([0, \infty); H^2
+  \cap H^1_0) \cap C^1([0, \infty); H^1_0) \cap C^2([0, \infty); L^2)$ solves the wave equation with
+  $u(0) = u_0$ and $\partial_t u(0) = v_0$.
 
 ## Main results
 
-* `waveOperator`, `waveOperator_mem_domain_iff`, `waveOperator_apply`,
-  `waveOperator_add_id_inner_self_nonneg`, `waveOperator_eq`,
-  `waveOperator_add_id_isMaximalMonotone`.
-* `IsWaveSolution`, `IsWaveSolution.isSolution`, `isWaveSolution_iff`, `theorem_10_7`,
-  `theorem_10_7_energy`, `remark_10_6`.
-* `remark_10_7`, `remark_10_7_group`, `remark_10_8`, `remark_10_8_characteristics`,
-  `remark_10_9`.
-* `theorem_10_8_domain`, `theorem_10_8_domain_norm`, `theorem_10_8`, `remark_10_10`.
+* Equation (35), `Brezis.Chapter10.waveOperator_mem_domain_iff`: $D(A) = (H^2(\Omega) \cap
+  H^1_0(\Omega)) \times H^1_0(\Omega)$.
+* Equation (35), `Brezis.Chapter10.waveOperator_apply`: $A(u, v) = (-v, -\Delta u)$.
+* Proof of Theorem 10.7, claim (i), `Brezis.Chapter10.waveOperator_add_id_inner_self_nonneg`:
+  $A + I$ is monotone on every open set.
+* Proof of Theorem 10.7, `Brezis.Chapter10.waveOperator_eq`: on a $C^2$ domain with bounded
+  boundary, $A$ is the backbone wave operator.
+* Proof of Theorem 10.7, `Brezis.Chapter10.waveOperator_add_id_isMaximalMonotone`: $A + I$ is
+  maximal monotone in $H$.
+* Theorem 10.7, `Brezis.Chapter10.theorem_10_7`: the problem (27)–(30) has a unique solution in the
+  class (31).
+* Theorem 10.7, `Brezis.Chapter10.theorem_10_7_energy`: the energy identity (32), $|\partial_t
+  u(t)|^2 + |\nabla u(t)|^2 = |v_0|^2 + |\nabla u_0|^2$.
+* Remark 6, `Brezis.Chapter10.remark_10_6`: the energy is constant in time.
+* Remark 7, `Brezis.Chapter10.remark_10_7`: for the Dirichlet scalar product on a bounded $\Omega$,
+  $(AU, U) = 0$, and $A$ and $-A$ are maximal monotone.
+* Remark 7, `Brezis.Chapter10.remark_10_7_group`: the problem can be solved on all of $\mathbb{R}$,
+  and (32) holds for all $t \in \mathbb{R}$.
+* Remark 8, `Brezis.Chapter10.remark_10_8`: on $\Omega = \mathbb{R}$, d'Alembert's formula (40)
+  gives the solution.
+* Remark 8, `Brezis.Chapter10.remark_10_8_characteristics`: for $v_0 = 0$, the solution (41) is
+  $C^\infty$ off the characteristics through a singular point of $u_0$.
+* Remark 9, `Brezis.Chapter10.remark_10_9`: the Fourier method, the coefficients of $u(t)$ in the
+  Dirichlet eigenbasis satisfy (42).
+* Proof of Theorem 10.8, `Brezis.Chapter10.theorem_10_8_domain`: the description of $D(A^k)$, and
+  $D(A^k) \subseteq H^{k+1}(\Omega) \times H^k(\Omega)$.
+* Proof of Theorem 10.8, `Brezis.Chapter10.theorem_10_8_domain_norm`: the injection $D(A^k)
+  \subseteq H^{k+1}(\Omega) \times H^k(\Omega)$ is continuous.
+* Theorem 10.8, `Brezis.Chapter10.theorem_10_8`: under the compatibility conditions, $u \in
+  C^\infty(\overline{\Omega} \times [0, \infty))$.
+* Remark 10, `Brezis.Chapter10.remark_10_10`: the compatibility conditions are necessary for a
+  solution that is smooth up to $t = 0$.
+
+## Conventions
+
+* As in Section 10.1, a solution is the curve `u : ℝ → L²(Ω)` of the unknown $u(x, t)$ of the
+  source, not the phase-space curve $U = (u, \partial_t u)$. The classes of (31) are the Bochner
+  classes of `Numlib.Analysis.PDE.Bochner`.
+* The data are $u_0, v_0 \in H^1_0(\Omega)$, elements of `Brezis.Chapter09.hZeroSpace N Ω`. The
+  condition $u_0 \in H^2(\Omega) \cap H^1_0(\Omega)$ is that the function of $u_0$ lies in the
+  domain $D(A)$ of the operator $A = -\Delta$ of Section 10.1
+  (`Brezis.Chapter10.heatOperator_mem_domain_iff`).
+* The quantity $|\nabla u(t)|^2_{L^2} = \sum_i \int_\Omega |\partial_i u(x, t)|^2$ of footnote 10 is
+  written, as in Section 10.1, for an $H^1_0$-lift of $u(t)$.
+* Remark 8 is stated on $\Omega = \mathbb{R}$, the open set `⊤ : Opens ℝ¹` with $\mathbb{R}^1$ =
+  `EuclideanSpace ℝ (Fin 1)`.
+
+## Implementation notes
+
+* The phase space is the backbone space `Wave.phaseSpace Ω`, which is `WithLp 2 (H¹₀(Ω) × L²(Ω))`
+  with the scalar product (34).
+* The operator (35) of the source is `Brezis.Chapter10.waveOperator Ω`: the backbone operator
+  `Wave.operator Ω`, whose domain is $D(-\Delta) \times H^1_0(\Omega)$ for the weak Dirichlet
+  Laplacian, restricted to the pairs whose first component lies in $H^2(\Omega)$. On a $C^2$ domain
+  with bounded boundary the two operators coincide (`Brezis.Chapter10.waveOperator_eq`, by Theorem
+  9.25).
+* In Remark 8 the data $u_0 \in H^2(\mathbb{R})$ and $v_0 \in H^1(\mathbb{R})$ are read in
+  $H^1_0(\mathbb{R}) = H^1(\mathbb{R})$ through `Wave.toZeroTopL`, and the formula (40) through
+  `Wave.lineEmbed : ℝ → ℝ¹` and the first coordinate (`Wave.coeFn_dAlembertL2_dAlembert`).
+* The compatibility conditions of Theorem 10.8 are read through the domains $D_m$ of the Dirichlet
+  Laplacian, `Wave.MemLaplacianDomain`: $D_0 = L^2(\Omega)$, $D_1 = H^1_0(\Omega)$ and $D_{m+2} =
+  \{w \in D(-\Delta) : -\Delta w \in D_m\}$.
+
+## Deviations from the source
+
+* **Standing hypothesis of Chapter 10** (generalization). The energy identity (32), Remark 6, Remark
+  7 and Remark 9 hold on every open set, or on every bounded one, and are stated so. Theorem 10.7
+  carries the hypothesis that $\Omega$ is of class $C^\infty$ with $\Gamma$ bounded. See
+  `Brezis.Chapter10.theorem_10_7_energy` and `Brezis.Chapter10.remark_10_9`.
+* **Remark 7, group of isometries** (generalization). The two-sided solvability and
+  $|U(t)|_H = |U_0|_H$ for all $t \in \mathbb{R}$ are obtained by time reversal, which needs neither
+  the boundedness of $\Omega$ nor the Dirichlet scalar product. See
+  `Brezis.Chapter10.remark_10_7_group`.
+* **Theorem 10.8** (reading). The compatibility conditions $\Delta^j u_0 = \Delta^j v_0 = 0$ on
+  $\Gamma$ are read, as in the display of the proof, as $u_0, v_0 \in D_k$ for every $k$. The
+  hypothesis $u_0, v_0 \in H^k(\Omega)$ for every $k$ is then a consequence and is not assumed. See
+  `Brezis.Chapter10.theorem_10_8`.
+* **Remark 10** (reading). As for Remark 4 of Section 10.1, the statement is for $u$ of class
+  $C^\infty$ on $\mathbb{R}^N \times \mathbb{R}$. See `Brezis.Chapter10.remark_10_10`.
+
+## Not formalized
+
+* **Remark 7(ii), $A^* = -A$.** The backbone does not formalize the adjoint for the Dirichlet scalar
+  product.
 -/
 
 open Filter MeasureTheory Metric Set Topology TopologicalSpace Laplacian
@@ -79,33 +132,41 @@ section General
 
 variable {N : ℕ}
 
-/-- The book's `ℝ^N`. -/
+/-- The space $\mathbb{R}^N$ of the source. -/
 local notation "𝔼" => EuclideanSpace ℝ (Fin N)
 
-/-- The standard basis of `ℝ^N`. -/
+/-- The standard basis of $\mathbb{R}^N$. -/
 local notation "𝔟" => OrthonormalBasis.toBasis (EuclideanSpace.basisFun (Fin N) ℝ)
 
 variable {Ω : Opens (EuclideanSpace ℝ (Fin N))}
 
-/-! ### The operator (35) on the phase space `H¹₀(Ω) × L²(Ω)` -/
+/-! ### The operator (35) on the phase space $H^1_0(\Omega) \times L^2(\Omega)$ -/
 
 variable (Ω) in
-/-- **The operator `A` of (35)** on the phase space `H = H¹₀(Ω) × L²(Ω)` with the scalar product
-(34), `A(u, v) = (−v, −Δu)`, with `D(A) = (H²(Ω) ∩ H¹₀(Ω)) × H¹₀(Ω)`: the backbone's
-`Wave.operator Ω` (whose domain is `D(−Δ) × H¹₀(Ω)` for the weak Dirichlet Laplacian) restricted
-to the pairs `(u, v)` whose first component is the function of an element of `H²(Ω)`
-(`LinearPMap.domRestrict`); "the boundary condition (28) has been incorporated in the space
-`H`". -/
+/-- **Equation (35)** in Chapter 10 of [brezis2011functional], the operator $A$. Let
+$\Omega \subset \mathbb{R}^N$ be open, and let $H = H^1_0(\Omega) \times L^2(\Omega)$ with the
+scalar product (34). The operator $A : D(A) \subset H \to H$ is defined by
+$$A(u, v) = (-v, -\Delta u), \qquad D(A) = (H^2(\Omega) \cap H^1_0(\Omega)) \times
+  H^1_0(\Omega).$$
+As the source says, "the boundary condition (28) has been incorporated in the space $H$".
+
+The definition restricts the backbone operator `Wave.operator Ω`, whose domain is
+$D(-\Delta) \times H^1_0(\Omega)$ for the weak Dirichlet Laplacian, to the pairs $(u, v)$ whose
+first component is the function of an element of $H^2(\Omega)$, with `LinearPMap.domRestrict`. -/
 noncomputable def waveOperator : Wave.phaseSpace Ω →ₗ.[ℝ] Wave.phaseSpace Ω :=
   (Wave.operator Ω).domRestrict ((LinearMap.range (fnL ℝ 𝔟 2 2 Ω volume).toLinearMap).comap
     ((SobolevMultiIndexZero.fnL ℝ 𝔟 1 2 Ω volume).comp (Wave.phaseSpace.fstL Ω)).toLinearMap)
 
-/-- `D(A)` is contained in the weak domain of the backbone's wave operator. -/
+/-- The domain $D(A)$ of the operator (35) is contained in the domain of the backbone wave operator
+`Wave.operator Ω`. -/
 theorem waveOperator_domain_le : (waveOperator Ω).domain ≤ (Wave.operator Ω).domain :=
   inf_le_right
 
-/-- **`D(A) = (H²(Ω) ∩ H¹₀(Ω)) × H¹₀(Ω)`**: `(u, v) ∈ D(A)` iff `u ∈ H¹₀(Ω)` is the function of
-an element of `H²(Ω)` and `v ∈ L²(Ω)` is the function of an element of `H¹₀(Ω)`. -/
+/-- **Equation (35)** in Chapter 10 of [brezis2011functional], $D(A) = (H^2(\Omega) \cap
+H^1_0(\Omega)) \times H^1_0(\Omega)$. Let $\Omega \subset \mathbb{R}^N$ be open and $U = (u, v)
+\in H^1_0(\Omega) \times L^2(\Omega)$. Then $U \in D(A)$ if and only if the function of $u$ is
+the function of an element of $H^2(\Omega)$ and $v$ is the function of an element of
+$H^1_0(\Omega)$. -/
 theorem waveOperator_mem_domain_iff {U : Wave.phaseSpace Ω} :
     U ∈ (waveOperator Ω).domain ↔
       (∃ w : sobolevSpaceHigher N 2 2 Ω,
@@ -117,14 +178,18 @@ theorem waveOperator_mem_domain_iff {U : Wave.phaseSpace Ω} :
     fun h ↦ ⟨h.1, mem_dirichletLaplacianDomain_of_exists_sobolev_two h.1 ⟨U.fst, U.fst.2, rfl⟩,
       h.2⟩⟩
 
-/-- `A U` is the value of the backbone's wave operator at `U`, for `U ∈ D(A)`. -/
+/-- For $U \in D(A)$, the value $AU$ of the operator (35) is the value of the backbone wave operator
+`Wave.operator Ω` at $U$. -/
 theorem waveOperator_apply_eq (U : (waveOperator Ω).domain) :
     waveOperator Ω U = Wave.operator Ω ⟨U, waveOperator_domain_le U.2⟩ :=
   rfl
 
-/-- **`A(u, v) = (−v, −Δu)`**: for `U = (u, v) ∈ D(A)`, the first component of `A U` is `−v`
-(read in `L²(Ω)`: its function is `−v`) and the second is `−Δu = −∑ᵢ ∂ᵢᵢw` for the `H²`-element
-`w` with function `u`. -/
+/-- **Equation (35)** in Chapter 10 of [brezis2011functional], $A(u, v) = (-v, -\Delta u)$. Let
+$\Omega \subset \mathbb{R}^N$ be open, let $U = (u, v) \in D(A)$, and let $w \in H^2(\Omega)$
+have the same function as $u$. Then the first component of $AU$ has the function $-v$ in
+$L^2(\Omega)$, and the second component is
+$$-\Delta u = -\sum_i \frac{\partial^2 w}{\partial x_i^2},$$
+where $\partial^2 w / \partial x_i^2$ is the weak derivative of $w$ at the multi-index $2 e_i$. -/
 theorem waveOperator_apply (U : (waveOperator Ω).domain) (w : sobolevSpaceHigher N 2 2 Ω)
     (hw : fnL ℝ 𝔟 2 2 Ω volume w
       = SobolevMultiIndexZero.fnL ℝ 𝔟 1 2 Ω volume (U : Wave.phaseSpace Ω).fst) :
@@ -141,9 +206,13 @@ theorem waveOperator_apply (U : (waveOperator Ω).domain) (w : sobolevSpaceHighe
       ((dirichletLaplacian_apply_eq_neg_sobolevLaplacianL w _ hw).trans
         (congrArg Neg.neg (sobolevLaplacianL_apply w))))
 
-/-- **Claim (i) of the proof of Theorem 10.7: `A + I` is monotone** —
-`(AU, U)_H + |U|²_H = −∫ uv + ∫ u² + ∫ v² + ∫ |∇u|² ≥ 0` for `U = (u, v) ∈ D(A)`; on every open
-set (the backbone's `Wave.operator_add_id_inner_self_nonneg`). -/
+/-- **Proof of Theorem 10.7** in [brezis2011functional], claim (i): $A + I$ is monotone. Let
+$\Omega \subset \mathbb{R}^N$ be open. For every $U = (u, v) \in D(A)$,
+$$(AU, U)_H + |U|^2_H = -\int_\Omega uv + \int_\Omega u^2 + \int_\Omega v^2 + \int_\Omega
+  |\nabla u|^2 \ge 0.$$
+
+The statement holds on every open set. The proof specializes
+`Wave.operator_add_id_inner_self_nonneg`. -/
 theorem waveOperator_add_id_inner_self_nonneg (U : (waveOperator Ω).domain) :
     0 ≤ ⟪waveOperator Ω U, (U : Wave.phaseSpace Ω)⟫_ℝ + ‖(U : Wave.phaseSpace Ω)‖ ^ 2 := by
   have h := Wave.operator_add_id_inner_self_nonneg
@@ -153,37 +222,48 @@ theorem waveOperator_add_id_inner_self_nonneg (U : (waveOperator Ω).domain) :
 /-! ### The problem (27)–(30) in the class (31) -/
 
 variable (Ω) in
-/-- **The problem (27), (28), (29), (30) in the class (31) of Theorem 10.7**, for data
-`u₀, v₀ ∈ H¹₀(Ω)`: `u : ℝ → L²(Ω)` (the book's `u(x, t)`, read as the curve `t ↦ u(·, t)`) is a
-solution if `u ∈ C([0, ∞); H²(Ω) ∩ H¹₀(Ω))` — `u(t) ∈ D(A) = H² ∩ H¹₀` for `t ≥ 0`, which is the
-boundary condition (28), and `u` lifts continuously to `H²(Ω)` —, `u ∈ C¹([0, ∞); H¹₀(Ω))`,
-`u ∈ C²([0, ∞); L²(Ω))`, `∂ₜₜu = Δu = −A u` in `L²(Ω)` on `[0, ∞)` (27), `u(0) = u₀` (29) and
-`∂ₜu(0) = v₀` (30), the derivatives at `t = 0` being one-sided. -/
+/-- **Theorem 10.7** of [brezis2011functional], the problem (27), (28), (29), (30) in the class
+(31). Let $\Omega \subset \mathbb{R}^N$ be open and $u_0, v_0 \in H^1_0(\Omega)$. A curve
+$u : \mathbb{R} \to L^2(\Omega)$ is a **solution of the wave equation** with data $u_0$, $v_0$
+if
+
+* $u(t) \in D(A) = H^2(\Omega) \cap H^1_0(\Omega)$ for $t \ge 0$, which is the boundary
+  condition (28), and $u \in C([0, \infty); H^2(\Omega))$,
+* $u \in C^1([0, \infty); H^1_0(\Omega))$ and $u \in C^2([0, \infty); L^2(\Omega))$,
+* $\partial_{tt} u(t) = \Delta u(t) = -A u(t)$ in $L^2(\Omega)$ for $t \ge 0$, which is the wave
+  equation (27), and
+* $u(0) = u_0$ and $\partial_t u(0) = v_0$, which are the initial conditions (29) and (30).
+
+The curve $u$ is the function $u(x, t)$ of the source, read as $t \mapsto u(\cdot, t)$. The
+derivatives at $t = 0$ are one-sided, and the values at negative times are not constrained. Here
+$A$ is the operator `Brezis.Chapter10.heatOperator` of Section 10.1. -/
 structure IsWaveSolution (u₀ v₀ : hZeroSpace N Ω) (u : ℝ → Lp ℝ 2 (volume.restrict (Ω : Set 𝔼))) :
     Prop where
-  /-- `u ∈ C([0, ∞); H²(Ω))`. -/
+  /-- $u \in C([0, \infty); H^2(\Omega))$. -/
   contDiffOnThrough_two : Bochner.ContDiffOnThrough (fnL ℝ 𝔟 2 2 Ω volume) 0 u (Ici 0)
-  /-- `u(t) ∈ H²(Ω) ∩ H¹₀(Ω)` for `t ≥ 0`: the boundary condition (28). -/
+  /-- $u(t) \in H^2(\Omega) \cap H^1_0(\Omega)$ for $t \ge 0$: the boundary condition (28). -/
   mem_domain : ∀ t, 0 ≤ t → u t ∈ (heatOperator Ω).domain
-  /-- `u ∈ C¹([0, ∞); H¹₀(Ω))`. -/
+  /-- $u \in C^1([0, \infty); H^1_0(\Omega))$. -/
   contDiffOnThrough_one :
     Bochner.ContDiffOnThrough (SobolevMultiIndexZero.fnL ℝ 𝔟 1 2 Ω volume) 1 u (Ici 0)
-  /-- `u ∈ C²([0, ∞); L²(Ω))`. -/
+  /-- $u \in C^2([0, \infty); L^2(\Omega))$. -/
   contDiffOn : ContDiffOn ℝ 2 u (Ici 0)
-  /-- The wave equation (27): `∂ₜₜu(t) = Δu(t) = −A u(t)` for `t ≥ 0`. -/
+  /-- The wave equation (27): $\partial_{tt} u(t) = \Delta u(t) = -A u(t)$ for $t \ge 0$, with
+  one-sided derivatives at $t = 0$. -/
   eqn : ∀ t (ht : 0 ≤ t),
     iteratedDerivWithin 2 u (Ici 0) t = -(heatOperator Ω ⟨u t, mem_domain t ht⟩)
-  /-- The initial condition (29): `u(0) = u₀`. -/
+  /-- The initial condition (29): $u(0) = u_0$. -/
   apply_zero : u 0 = SobolevMultiIndexZero.fnL ℝ 𝔟 1 2 Ω volume u₀
-  /-- The initial condition (30): `∂ₜu(0) = v₀`. -/
+  /-- The initial condition (30): $\partial_t u(0) = v_0$, with the right derivative at $t = 0$. -/
   derivWithin_zero : derivWithin u (Ici 0) 0 = SobolevMultiIndexZero.fnL ℝ 𝔟 1 2 Ω volume v₀
 
 variable {u₀ v₀ : hZeroSpace N Ω}
   {u : ℝ → Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))}
 
-/-- **A solution in the class (31) is a solution of the backbone's weak class** `Wave.IsSolution`,
-on every open set: `D(A) ⊆ D(−Δ)`, and the clause `u ∈ C([0, ∞); D(−Δ))` follows from
-`u ∈ C²([0, ∞); L²)` and the equation, `−Δu = −∂ₜₜu`. -/
+/-- A solution of the wave equation in the class (31) of Theorem 10.7 is a solution in the backbone
+class `Wave.IsSolution`. This holds on every open set $\Omega$, because
+$D(A) \subseteq D(-\Delta)$, and the clause $u \in C([0, \infty); D(-\Delta))$ follows from
+$u \in C^2([0, \infty); L^2(\Omega))$ and the equation $-\Delta u = -\partial_{tt} u$. -/
 theorem IsWaveSolution.isSolution (h : IsWaveSolution Ω u₀ v₀ u) :
     Wave.IsSolution Ω u₀ (SobolevMultiIndexZero.fnL ℝ 𝔟 1 2 Ω volume v₀) u where
   contDiffOn := h.contDiffOn
@@ -207,7 +287,11 @@ theorem IsWaveSolution.isSolution (h : IsWaveSolution Ω u₀ v₀ u) :
   apply_zero := h.apply_zero
   derivWithin_zero := h.derivWithin_zero
 
-/-- The gradient norm of `u(t)`, read on any `H¹₀`-lift, is `(−Δu(t), u(t))_{L²}`. -/
+/-- Let $u$ be a solution of the wave equation in the class (31) of Theorem 10.7, let $t \ge 0$, and
+let $w \in H^1_0(\Omega)$ have the function $u(t)$. Then $(-\Delta u(t), u(t))_{L^2} = \sum_i
+\int_\Omega |\partial w / \partial x_i|^2$, where $-\Delta$ is the Dirichlet Laplacian
+`dirichletLaplacian Ω`. Thus the gradient norm of $u(t)$ does not depend on the choice of the
+$H^1_0$-lift. -/
 theorem IsWaveSolution.inner_apply_self_eq (h : IsWaveSolution Ω u₀ v₀ u) {t : ℝ} (ht : 0 ≤ t)
     {w : hSpace N Ω} (hw : w ∈ hZeroSpace N Ω) (hwt : fnL ℝ 𝔟 1 2 Ω volume w = u t) :
     ⟪dirichletLaplacian Ω ⟨u t, h.isSolution.mem_domain t ht⟩, u t⟫_ℝ
@@ -217,12 +301,19 @@ theorem IsWaveSolution.inner_apply_self_eq (h : IsWaveSolution Ω u₀ v₀ u) {
 
 /-! ### Theorem 10.7, the energy identity (32), and Remark 6 -/
 
-/-- **Theorem 10.7, the energy identity (32)**: for a solution `u` of (27)–(30) and every
-`t ≥ 0`, `|∂ₜu(t)|²_{L²} + |∇u(t)|²_{L²} = |v₀|²_{L²} + |∇u₀|²_{L²}`, with
-`|∇u(t)|²_{L²} = ∑ᵢ ∫_Ω |∂ᵢu(x, t)|²` read on any `H¹₀`-lift `w` of `u(t)` (footnote 10).
-"Multiply (27) by `∂ₜu` and integrate on `Ω`": `∫ ∂ₜₜu ∂ₜu = ½ ∂ₜ ∫ |∂ₜu|²` and
-`∫ (−Δu) ∂ₜu = ½ ∂ₜ ∫ |∇u|²`; the backbone's `Wave.IsSolution.energy_dirichletForm`, on every
-open set. -/
+/-- **Theorem 10.7** of [brezis2011functional], the energy identity (32). Let
+$\Omega \subset \mathbb{R}^N$ be open, let $u_0, v_0 \in H^1_0(\Omega)$, and let $u$ be a
+solution of (27), (28), (29), (30) in the class (31). Let $t \ge 0$ and let
+$w \in H^1_0(\Omega)$ have the function $u(t)$. Then
+$$|\partial_t u(t)|^2_{L^2} + |\nabla u(t)|^2_{L^2} = |v_0|^2_{L^2} + |\nabla u_0|^2_{L^2},$$
+where $|\nabla u(t)|^2_{L^2} = \sum_i \int_\Omega |\partial w / \partial x_i|^2$ as in
+footnote 10.
+
+The statement holds on every open set, and $\partial_t u(t)$ is the right derivative at $t = 0$.
+The argument of the source: "multiply (27) by $\partial_t u$ and integrate on $\Omega$", with
+$\int_\Omega \partial_{tt} u \, \partial_t u = \frac12 \partial_t \int_\Omega |\partial_t u|^2$
+and $\int_\Omega (-\Delta u) \partial_t u = \frac12 \partial_t \int_\Omega |\nabla u|^2$. The
+proof specializes `Wave.IsSolution.energy_dirichletForm`. -/
 theorem theorem_10_7_energy (hu : IsWaveSolution Ω u₀ v₀ u) {t : ℝ} (ht : 0 ≤ t)
     {w : hSpace N Ω} (hw : w ∈ hZeroSpace N Ω) (hwt : fnL ℝ 𝔟 1 2 Ω volume w = u t) :
     ‖derivWithin u (Ici 0) t‖ ^ 2 + ∑ i, ∫ x in (Ω : Set 𝔼), partialDeriv w i x ^ 2
@@ -238,10 +329,12 @@ theorem theorem_10_7_energy (hu : IsWaveSolution Ω u₀ v₀ u) {t : ℝ} (ht :
   exact (congrArg (‖derivWithin u (Ici 0) t‖ ^ 2 + ·) e1).symm.trans
     (e.trans (congrArg (‖SobolevMultiIndexZero.fnL ℝ 𝔟 1 2 Ω volume v₀‖ ^ 2 + ·) e2))
 
-/-- **Remark 6.** Equation (32) is a conservation law: the energy
-`E(t) = |∂ₜu(t)|²_{L²} + |∇u(t)|²_{L²}` of the system is invariant in time — for any function
-`E` with `E(t) = ‖∂ₜu(t)‖² + ∑ᵢ ∫_Ω |∂ᵢu(x, t)|²` (on the `H¹₀`-lift of `u(t)`) for `t ≥ 0`,
-`E(t) = E(0)` for every `t ≥ 0`. -/
+/-- **Remark 6** in Chapter 10 of [brezis2011functional]. Equation (32) is a conservation law: the
+energy $E(t) = |\partial_t u(t)|^2_{L^2} + |\nabla u(t)|^2_{L^2}$ of the system is constant in
+time. Precisely, let $\Omega \subset \mathbb{R}^N$ be open, let $u$ be a solution of (27), (28),
+(29), (30) in the class (31), and let $E : \mathbb{R} \to \mathbb{R}$ be a function with $E(t) =
+|\partial_t u(t)|^2_{L^2} + \sum_i \int_\Omega |\partial_i u(x, t)|^2$ for $t \ge 0$, computed
+on an $H^1_0$-lift of $u(t)$. Then $E(t) = E(0)$ for every $t \ge 0$. -/
 theorem remark_10_6 (hu : IsWaveSolution Ω u₀ v₀ u) {E : ℝ → ℝ}
     (hE : ∀ t, 0 ≤ t → ∃ w : hSpace N Ω, w ∈ hZeroSpace N Ω ∧ fnL ℝ 𝔟 1 2 Ω volume w = u t ∧
       E t = ‖derivWithin u (Ici 0) t‖ ^ 2 + ∑ i, ∫ x in (Ω : Set 𝔼), partialDeriv w i x ^ 2) :
@@ -253,11 +346,18 @@ theorem remark_10_6 (hu : IsWaveSolution Ω u₀ v₀ u) {E : ℝ → ℝ}
 
 /-! ### Remark 8: d'Alembert's formula, the characteristics -/
 
-/-- **Remark 8, the propagation of singularities.** On `Ω = ℝ` with `v₀ = 0`, the solution (41),
-`u(x, t) = ½ (u₀(x + t) + u₀(x − t))` (the backbone's `Wave.dAlembert u₀ 0`), is not more regular
-than `u₀`; precisely, if `u₀ ∈ C^∞(ℝ ∖ {x₀})` then `u(x, t)` is `C^∞` on `ℝ × ℝ` except on the
-characteristics `x + t = x₀` and `x − t = x₀` through `(x₀, 0)`: singularities propagate along
-the characteristics. The backbone's `Wave.dAlembert_contDiffOn_off_characteristics`. -/
+/-- **Remark 8** in Chapter 10 of [brezis2011functional], the propagation of singularities. On
+$\Omega = \mathbb{R}$ with $v_0 = 0$, the solution (41) is
+$$u(x, t) = \frac12 \big(u_0(x + t) + u_0(x - t)\big),$$
+and it is not more regular than $u_0$. Precisely, let $u_0 : \mathbb{R} \to \mathbb{R}$ and
+$x_0 \in \mathbb{R}$, and let $u_0$ be of class $C^\infty$ on $\mathbb{R} \setminus \{x_0\}$.
+Then the function $u$ above is of class $C^\infty$ on $\mathbb{R} \times \mathbb{R}$ except on
+the characteristics $x + t = x_0$ and $x - t = x_0$ through $(x_0, 0)$: singularities propagate
+along the characteristics.
+
+The function $u$ is the backbone function `Wave.dAlembert u₀ 0`, and the first part of the
+statement is the formula for it. The proof specializes
+`Wave.dAlembert_contDiffOn_off_characteristics`. -/
 theorem remark_10_8_characteristics {u₀ : ℝ → ℝ} {x₀ : ℝ} (hu₀ : ContDiffOn ℝ ∞ u₀ {x₀}ᶜ) :
     (∀ t x, Wave.dAlembert u₀ 0 t x = (1 / 2) * (u₀ (x + t) + u₀ (x - t))) ∧
       ContDiffOn ℝ ∞ (fun p : ℝ × ℝ ↦ Wave.dAlembert u₀ 0 p.2 p.1)
@@ -270,19 +370,21 @@ section Regular
 
 variable {d : ℕ}
 
-/-- The book's `ℝ^N`, with `N = d + 1`. -/
+/-- The space $\mathbb{R}^N$ of the source, with $N = d + 1$. -/
 local notation "𝔼" => EuclideanSpace ℝ (Fin (d + 1))
 
-/-- The standard basis of `ℝ^N`. -/
+/-- The standard basis of $\mathbb{R}^N$. -/
 local notation "𝔟" => OrthonormalBasis.toBasis (EuclideanSpace.basisFun (Fin (d + 1)) ℝ)
 
 variable {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
 
 /-! ### The operator on a regular domain, and Theorem 10.7 -/
 
-/-- **`A` is the backbone's wave operator** on a domain of class `C²` with `Γ` bounded: the weak
-domain `D(−Δ) × H¹₀(Ω)` is `(H²(Ω) ∩ H¹₀(Ω)) × H¹₀(Ω)` by Theorem 9.25
-(`heatOperator_eq_dirichletLaplacian`). -/
+/-- **Proof of Theorem 10.7** in [brezis2011functional], $A$ is the backbone wave operator. Let
+$\Omega \subset \mathbb{R}^N$ be open of class $C^2$, with $N = d + 1$ and bounded boundary
+$\Gamma$. Then the operator (35) equals the backbone operator `Wave.operator Ω`: its domain
+$D(-\Delta) \times H^1_0(\Omega)$ is $(H^2(\Omega) \cap H^1_0(\Omega)) \times H^1_0(\Omega)$ by
+Theorem 9.25 (`Brezis.Chapter10.heatOperator_eq_dirichletLaplacian`). -/
 theorem waveOperator_eq (hΩ : IsOfClassC 2 (Ω : Set 𝔼))
     (hΓ : Bornology.IsBounded (frontier (Ω : Set 𝔼))) :
     waveOperator Ω = Wave.operator Ω := by
@@ -292,11 +394,18 @@ theorem waveOperator_eq (hΩ : IsOfClassC 2 (Ω : Set 𝔼))
   -- `U ∈ D(−Δ) × H¹₀` has an `H²` first component by Theorem 9.25
   exact ((hdom _).1 (Wave.memOperatorDomain_of_mem hU).1).1
 
-/-- **The claim of the proof of Theorem 10.7: `A + I` is maximal monotone in `H`**, on a `C²`
-domain with `Γ` bounded — (i) `(AU, U)_H + |U|²_H ≥ 0` (`waveOperator_add_id_inner_self_nonneg`),
-(ii) `A + 2I` is onto: given `F = (f, g)`, solve `−Δu + 4u = 2f + g` (Theorem 9.25; on the weak
-domain, the Riesz representation on `H¹₀`) and set `v = 2u − f`. The backbone's
-`Wave.operator_add_id_isMaximalMonotone` through `waveOperator_eq`. -/
+/-- **Proof of Theorem 10.7** in [brezis2011functional]: $A + I$ is maximal monotone in $H$. Let
+$\Omega \subset \mathbb{R}^N$ be open of class $C^2$, with $N = d + 1$ and bounded boundary
+$\Gamma$. Then $A + I$ is maximal monotone in $H = H^1_0(\Omega) \times L^2(\Omega)$:
+
+* (i) $(AU, U)_H + |U|^2_H \ge 0$ (`Brezis.Chapter10.waveOperator_add_id_inner_self_nonneg`),
+  and
+* (ii) $A + 2I$ is onto: given $F = (f, g)$, solve $-\Delta u + 4u = 2f + g$ by Theorem 9.25 and
+  set $v = 2u - f$.
+
+Maximal monotonicity is `Brezis.Chapter07.IsMaximalMonotone`. On the weak domain, (ii) uses the
+Riesz representation on $H^1_0(\Omega)$. The proof specializes
+`Wave.operator_add_id_isMaximalMonotone` through `Brezis.Chapter10.waveOperator_eq`. -/
 theorem waveOperator_add_id_isMaximalMonotone (hΩ : IsOfClassC 2 (Ω : Set 𝔼))
     (hΓ : Bornology.IsBounded (frontier (Ω : Set 𝔼))) :
     Brezis.Chapter07.IsMaximalMonotone
@@ -307,10 +416,14 @@ theorem waveOperator_add_id_isMaximalMonotone (hΩ : IsOfClassC 2 (Ω : Set 𝔼
 variable {u₀ v₀ : hZeroSpace (d + 1) Ω}
   {u : ℝ → Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))}
 
-/-- **The class (31) is the backbone's weak class** on a `C²` domain with `Γ` bounded:
-`IsWaveSolution Ω u₀ v₀ u ↔ Wave.IsSolution Ω u₀ (fnL v₀) u`. The forward direction holds on
-every open set (`IsWaveSolution.isSolution`); conversely a weak solution has `u(t) ∈ H² ∩ H¹₀`
-and lifts continuously to `H²(Ω)` by the graph-norm estimate of Theorem 9.25. -/
+/-- Let $\Omega \subset \mathbb{R}^N$ be open of class $C^2$, with $N = d + 1$ and bounded boundary
+$\Gamma$, and let $u_0, v_0 \in H^1_0(\Omega)$. Then a curve $u$ is a solution of the wave
+equation in the class (31) of Theorem 10.7 if and only if it is a solution in the backbone class
+`Wave.IsSolution` with the data $u_0$ and the function of $v_0$.
+
+The forward direction holds on every open set (`Brezis.Chapter10.IsWaveSolution.isSolution`).
+Conversely, a solution in the backbone class has $u(t) \in H^2(\Omega) \cap H^1_0(\Omega)$ and
+lifts continuously to $H^2(\Omega)$ by the graph-norm estimate of Theorem 9.25. -/
 theorem isWaveSolution_iff (hΩ : IsOfClassC 2 (Ω : Set 𝔼))
     (hΓ : Bornology.IsBounded (frontier (Ω : Set 𝔼))) :
     IsWaveSolution Ω u₀ v₀ u
@@ -332,16 +445,25 @@ theorem isWaveSolution_iff (hΩ : IsOfClassC 2 (Ω : Set 𝔼))
       apply_zero := h.apply_zero
       derivWithin_zero := h.derivWithin_zero }
 
-/-- **Theorem 10.7 (existence and uniqueness).** Let `Ω` be of class `C^∞` with `Γ` bounded,
-`u₀ ∈ H²(Ω) ∩ H¹₀(Ω)` and `v₀ ∈ H¹₀(Ω)`. Then there exists a unique solution `u` of (27), (28),
-(29), (30) in the class (31),
-`u ∈ C([0, ∞); H²(Ω) ∩ H¹₀(Ω)) ∩ C¹([0, ∞); H¹₀(Ω)) ∩ C²([0, ∞); L²(Ω))` — unique on `[0, ∞)`,
-the class not constraining negative times. The book's proof: `A + I` is maximal monotone in
-`H = H¹₀(Ω) × L²(Ω)` (`waveOperator_add_id_isMaximalMonotone`), Theorem 7.4 with chapter 7's
-Remark 6 (the shift `e^{−t}`) gives `U ∈ C¹([0, ∞); H) ∩ C([0, ∞); D(A))` solving (38) with
-`U(0) = (u₀, v₀) ∈ D(A)`, and (31) is read off (39). The backbone's
-`Wave.existsUnique_isSolution` (on every open set, for the weak class) through
-`isWaveSolution_iff`; the energy identity (32) is `theorem_10_7_energy`. -/
+/-- **Theorem 10.7** of [brezis2011functional] (existence and uniqueness). Let
+$\Omega \subset \mathbb{R}^N$ be open of class $C^\infty$, with $N = d + 1$ and bounded boundary
+$\Gamma$. Let $u_0 \in H^2(\Omega) \cap H^1_0(\Omega)$ and $v_0 \in H^1_0(\Omega)$. Then there
+exists a solution $u$ of (27), (28), (29), (30) in the class (31),
+$$u \in C([0, \infty); H^2(\Omega) \cap H^1_0(\Omega)) \cap C^1([0, \infty); H^1_0(\Omega)) \cap
+  C^2([0, \infty); L^2(\Omega)),$$
+and every other such solution agrees with $u$ on $[0, \infty)$.
+
+Uniqueness holds on $[0, \infty)$ because the class does not constrain negative times. The proof
+of the source: $A + I$ is maximal monotone in $H = H^1_0(\Omega) \times L^2(\Omega)$
+(`Brezis.Chapter10.waveOperator_add_id_isMaximalMonotone`). Theorem 7.4 with the shift $e^{-t}$
+gives $U \in C^1([0, \infty); H) \cap C([0, \infty); D(A))$ solving (38) with
+$U(0) = (u_0, v_0) \in D(A)$, and (31) is read off from (39). The source cites "Remark 7.7" for
+the shift; the remark meant is Remark 6 of Chapter 7, `Brezis.Chapter07.remark_7_6`. The class
+$u \in C([0, \infty); H^2 \cap H^1_0)$ of (31) is a consequence of $U \in C^1([0, \infty); H)$
+and the equation, not a separate output of Theorem 7.4. The proof specializes
+`Wave.existsUnique_isSolution`, on every open set for the weak class, through
+`Brezis.Chapter10.isWaveSolution_iff`. The energy identity (32) is
+`Brezis.Chapter10.theorem_10_7_energy`. -/
 theorem theorem_10_7 (hΩ : IsOfClassC ⊤ (Ω : Set 𝔼))
     (hΓ : Bornology.IsBounded (frontier (Ω : Set 𝔼))) (u₀ v₀ : hZeroSpace (d + 1) Ω)
     (hu₀ : SobolevMultiIndexZero.fnL ℝ 𝔟 1 2 Ω volume u₀ ∈ (heatOperator Ω).domain) :
@@ -353,14 +475,23 @@ theorem theorem_10_7 (hΩ : IsOfClassC ⊤ (Ω : Set 𝔼))
 
 /-! ### Remark 7: the Dirichlet scalar product, the group of isometries -/
 
-/-- **Remark 7 (i)–(ii), for bounded `Ω`.** With the scalar product `∫_Ω ∇u₁ · ∇u₂` on `H¹₀(Ω)`
-(Corollary 9.19) and `(U₁, U₂) = ∫_Ω ∇u₁ · ∇u₂ + ∫_Ω v₁ v₂` on `H = H¹₀(Ω) × L²(Ω)` — the
-backbone's `Wave.dirichletPhaseSpace Ω hb`, whose scalar product is this (first clause) — the
-operator `A(u, v) = (−v, −Δu)` (`Wave.operator' Ω hb`, whose domain is
-`D(A) = (H²(Ω) ∩ H¹₀(Ω)) × H¹₀(Ω)` on a `C²` domain with `Γ` bounded, second clause) satisfies
-`(AU, U) = −∫_Ω ∇v · ∇u + ∫_Ω (−Δu) v = 0` for all `U = (u, v) ∈ D(A)`, and (i) `A` and `−A` are
-maximal monotone. The clause (ii) `A* = −A` is not restated (the backbone does not formalize the
-adjoint for this scalar product). -/
+/-- **Remark 7** in Chapter 10 of [brezis2011functional], for bounded $\Omega$. Let
+$\Omega \subset \mathbb{R}^N$ be a bounded open set of class $C^2$, with $N = d + 1$ and bounded
+boundary $\Gamma$. Equip $H^1_0(\Omega)$ with the scalar product
+$\int_\Omega \nabla u_1 \cdot \nabla u_2$ (Corollary 9.19) and
+$H = H^1_0(\Omega) \times L^2(\Omega)$ with the scalar product
+$$(U_1, U_2) = \int_\Omega \nabla u_1 \cdot \nabla u_2 + \int_\Omega v_1 v_2.$$
+Let $A(u, v) = (-v, -\Delta u)$ on this space. Then
+
+* the scalar product of the space is the one displayed,
+* $D(A) = (H^2(\Omega) \cap H^1_0(\Omega)) \times H^1_0(\Omega)$,
+* $(AU, U) = -\int_\Omega \nabla v \cdot \nabla u + \int_\Omega (-\Delta u) v = 0$ for all
+  $U = (u, v) \in D(A)$, and
+* (i) $A$ and $-A$ are maximal monotone.
+
+The space is `Wave.dirichletPhaseSpace Ω hb` and the operator is `Wave.operator' Ω hb`. Maximal
+monotonicity is `Brezis.Chapter07.IsMaximalMonotone`. The clause (ii) $A^* = -A$ is not
+formalized, because the backbone does not formalize the adjoint for this scalar product. -/
 theorem remark_10_7 (hb : Bornology.IsBounded (Ω : Set 𝔼)) (hΩ : IsOfClassC 2 (Ω : Set 𝔼))
     (hΓ : Bornology.IsBounded (frontier (Ω : Set 𝔼))) :
     (∀ U V : Wave.dirichletPhaseSpace Ω hb, ⟪U, V⟫_ℝ
@@ -386,15 +517,25 @@ theorem remark_10_7 (hb : Bornology.IsBounded (Ω : Set 𝔼)) (hΩ : IsOfClassC
       ⟨fun h ↦ ⟨((hdom _).1 h.1).1, h.2⟩, fun h ↦
         ⟨mem_dirichletLaplacianDomain_of_exists_sobolev_two h.1 ⟨U.fst, U.fst.2, rfl⟩, h.2⟩⟩
 
-/-- **Remark 7, the group of isometries.** The problem `dU/dt + AU = 0` may also be solved on
-`(−∞, 0]` ("just change `t` into `−t`", footnote 12: time is reversible for the wave equation):
-for `Ω` of class `C^∞` with `Γ` bounded, `u₀ ∈ H² ∩ H¹₀` and `v₀ ∈ H¹₀`, there is a unique
-`u : ℝ → L²(Ω)` which solves (27)–(30) on `[0, ∞)` and whose reflection `t ↦ u(−t)` solves
-(27)–(30) with the data `(u₀, −v₀)` on `[0, ∞)`; and for such a `u` the relation (32) holds for
-all `t ∈ ℝ`, `|U(t)|_H = |U₀|_H` in the energy norm: `|∂ₜu(t)|² + |∇u(t)|² = |v₀|² + |∇u₀|²`, the
-time derivative at `t ≤ 0` being that of the reflected solution. The backbone's
-`Wave.existsUnique_isSolution_backward` and `Wave.IsSolution.energy_neg`, which need neither the
-boundedness of `Ω` nor the Dirichlet scalar product. -/
+/-- **Remark 7** in Chapter 10 of [brezis2011functional], the group of isometries. The problem
+$dU/dt + AU = 0$ can also be solved on $(-\infty, 0]$: "just change $t$ into $-t$", and footnote
+12 notes that time is reversible for the wave equation. Let $\Omega \subset \mathbb{R}^N$ be
+open of class $C^\infty$, with $N = d + 1$ and bounded boundary $\Gamma$, let
+$u_0 \in H^2(\Omega) \cap H^1_0(\Omega)$ and $v_0 \in H^1_0(\Omega)$. Then
+
+* there is a unique curve $u : \mathbb{R} \to L^2(\Omega)$ that solves (27)–(30) with the data
+  $(u_0, v_0)$ on $[0, \infty)$ and whose reflection $t \mapsto u(-t)$ solves (27)–(30) with the
+  data $(u_0, -v_0)$ on $[0, \infty)$, and
+* for such a curve $u$, the relation (32) holds for all $t \in \mathbb{R}$: $|U(t)|_H = |U_0|_H$
+  in the energy norm, that is, $|\partial_t u(t)|^2 + |\nabla u(t)|^2 = |v_0|^2 + |\nabla
+  u_0|^2$, where $|\nabla u(t)|^2$ is computed on any $H^1_0$-lift of $u(t)$.
+
+**Generalization.** The source states the remark for bounded $\Omega$ with the Dirichlet scalar
+product. Time reversal needs neither the boundedness of $\Omega$ nor the Dirichlet scalar
+product, so the statement assumes neither.
+
+For $t \le 0$ the time derivative $\partial_t u(t)$ is that of the reflected solution at $-t$.
+The proof specializes `Wave.existsUnique_isSolution_backward` and `Wave.IsSolution.energy_neg`. -/
 theorem remark_10_7_group (hΩ : IsOfClassC ⊤ (Ω : Set 𝔼))
     (hΓ : Bornology.IsBounded (frontier (Ω : Set 𝔼))) (u₀ v₀ : hZeroSpace (d + 1) Ω)
     (hu₀ : SobolevMultiIndexZero.fnL ℝ 𝔟 1 2 Ω volume u₀ ∈ (heatOperator Ω).domain) :
@@ -447,16 +588,27 @@ theorem remark_10_7_group (hΩ : IsOfClassC ⊤ (Ω : Set 𝔼))
 
 /-! ### Remark 9: the Fourier method -/
 
-/-- **Remark 9, the Fourier method for the wave equation.** For a bounded (nonempty) `Ω`, let
-`(eₙ)`, `(λₙ)` be the Dirichlet eigenbasis of `−Δ` of Theorem 9.31 (`Elliptic.dirichletEigenbasis`,
-`Elliptic.dirichletEigenvalue`, `λₙ > 0`), and let `u` be a solution of (27)–(30). Then the
-coefficients `aₙ(t) = (u(t), eₙ)_{L²}` of `u(t) = ∑ₙ aₙ(t) eₙ` satisfy `aₙ'' + λₙ aₙ = 0` on
-`[0, ∞)` — `aₙ' = (∂ₜu, eₙ)` and `(aₙ')' = −λₙ aₙ` —, so that (42):
-`aₙ(t) = aₙ(0) cos(√λₙ t) + (aₙ'(0)/√λₙ) sin(√λₙ t)` with `aₙ(0) = ∫_Ω u₀ eₙ`,
-`aₙ'(0) = ∫_Ω v₀ eₙ` the components of the data, and `u(t) = ∑ₙ aₙ(t) eₙ` in `L²(Ω)` for every
-`t ≥ 0`. The backbone's `Wave.IsSolution.hasDerivWithinAt_inner_eigenbasis`,
-`hasDerivWithinAt_inner_derivWithin_eigenbasis`, `inner_eigenfunction` and
-`hasSum_eigenfunction`; no regularity of `Ω` is needed. -/
+/-- **Remark 9** in Chapter 10 of [brezis2011functional] (the Fourier method for the wave equation).
+Let $\Omega \subset \mathbb{R}^N$ be a bounded nonempty open set, with $N = d + 1$. Let $(e_n)$
+and $(\lambda_n)$ be the Dirichlet eigenbasis of $-\Delta$ and its eigenvalues from Theorem
+9.31, with $\lambda_n > 0$, let $u_0, v_0 \in H^1_0(\Omega)$, and let $u$ be a solution of (27),
+(28), (29), (30) in the class (31). Write $a_n(t) = (u(t), e_n)_{L^2}$, so that
+$u(t) = \sum_n a_n(t) e_n$. Then
+
+* $a_n'' + \lambda_n a_n = 0$ on $[0, \infty)$: $a_n' = (\partial_t u, e_n)$ and
+  $(a_n')' = -\lambda_n a_n$, with one-sided derivatives at $t = 0$,
+* the coefficients are given by (42),
+$$a_n(t) = a_n(0) \cos(\sqrt{\lambda_n}\, t) + \frac{a_n'(0)}{\sqrt{\lambda_n}}
+  \sin(\sqrt{\lambda_n}\, t), \qquad a_n(0) = \int_\Omega u_0 e_n, \quad a_n'(0) = \int_\Omega
+  v_0 e_n,$$
+for $t \ge 0$, and
+* $u(t) = \sum_n a_n(t) e_n$ in $L^2(\Omega)$ for every $t \ge 0$.
+
+The eigenbasis is `Elliptic.dirichletEigenbasis` and the eigenvalues are
+`Elliptic.dirichletEigenvalue`. No regularity of $\Omega$ is needed. The proof specializes
+`Wave.IsSolution.hasDerivWithinAt_inner_eigenbasis`,
+`Wave.IsSolution.hasDerivWithinAt_inner_derivWithin_eigenbasis`,
+`Wave.IsSolution.inner_eigenfunction` and `Wave.IsSolution.hasSum_eigenfunction`. -/
 theorem remark_10_9 (hb : Bornology.IsBounded (Ω : Set 𝔼)) (hne : (Ω : Set 𝔼).Nonempty)
     (hu : IsWaveSolution Ω u₀ v₀ u) :
     (∀ n, ∀ t, 0 ≤ t →
@@ -499,19 +651,29 @@ theorem remark_10_9 (hb : Bornology.IsBounded (Ω : Set 𝔼)) (hne : (Ω : Set 
 
 /-! ### Theorem 10.8: regularity -/
 
-/-- **The display in the proof of Theorem 10.8.** For `Ω` of class `C^∞` with `Γ` bounded and
-every `k`, `D(A^k) = {(u, v) : u ∈ H^{k+1}(Ω), Δ^j u = 0 on Γ for 0 ≤ j ≤ [k/2];
-v ∈ H^k(Ω), Δ^j v = 0 on Γ for 0 ≤ j ≤ [(k+1)/2] − 1}` ("easy to see, by induction on `k`"),
-read with the backbone's domains `D_m` of the Dirichlet Laplacian (`Wave.MemLaplacianDomain`:
-`D_0 = L²(Ω)`, `D_1 = H¹₀(Ω)`, `D_{m+2} = {w ∈ D(−Δ) : −Δw ∈ D_m}` — the book's "`w ∈ H^m(Ω)`,
-`Δ^j w = 0` on `Γ` for `2j < m`", with "`= 0` on `Γ`" as membership of `H¹₀(Ω)` and each
-iterate in `D(−Δ) = H² ∩ H¹₀`):
-`(u, v) ∈ D(A^k)` (chapter 7's `domainPow`) iff `u ∈ D_{k+1}` and `v ∈ D_k`
-(`Wave.mem_operator_powGraph_iff`, on every open set), and in particular
-`D(A^k) ⊆ H^{k+1}(Ω) × H^k(Ω)`: `u` and `v` are the functions of elements of `H^{k+1}(Ω)` and
-`H^k(Ω)` (`Wave.MemLaplacianDomain.exists_sobolev`, Theorem 9.25 at every order). The book's `A`
-is the backbone's `Wave.operator Ω` on a `C²` domain (`waveOperator_eq`); the continuity of the
-injection is `theorem_10_8_domain_norm`. -/
+/-- **Proof of Theorem 10.8** in [brezis2011functional], the domains $D(A^k)$. Let
+$\Omega \subset \mathbb{R}^N$ be open of class $C^\infty$, with $N = d + 1$ and bounded boundary
+$\Gamma$, and let $k \in \mathbb{N}$. The source states, "easy to see, by induction on $k$",
+that
+$$D(A^k) = \Big\{(u, v) : u \in H^{k+1}(\Omega),\ \Delta^j u = 0 \text{ on } \Gamma \text{ for }
+  0 \le j \le [k/2];\ v \in H^k(\Omega),\ \Delta^j v = 0 \text{ on } \Gamma \text{ for } 0 \le j
+  \le [(k+1)/2] - 1\Big\}.$$
+The statement reads this with the domains $D_m$ of the Dirichlet Laplacian, and has two parts:
+
+* $(u, v) \in D(A^k)$ if and only if $u \in D_{k+1}$ and $v \in D_k$, and
+* if $(u, v) \in D(A^k)$, then $u$ is the function of an element of $H^{k+1}(\Omega)$ and $v$ is
+  the function of an element of $H^k(\Omega)$, so $D(A^k) \subseteq H^{k+1}(\Omega) \times
+  H^k(\Omega)$.
+
+The domains are `Wave.MemLaplacianDomain`: $D_0 = L^2(\Omega)$, $D_1 = H^1_0(\Omega)$ and
+$D_{m+2} = \{w \in D(-\Delta) : -\Delta w \in D_m\}$. This is the condition
+"$w \in H^m(\Omega)$, $\Delta^j w = 0$ on $\Gamma$ for $2j < m$" of the source, with "$= 0$ on
+$\Gamma$" read as membership of $H^1_0(\Omega)$ and each iterate in
+$D(-\Delta) = H^2 \cap H^1_0$. The domain $D(A^k)$ is `Brezis.Chapter07.domainPow`. The first
+part is `Wave.mem_operator_powGraph_iff`, on every open set; the second is
+`Wave.MemLaplacianDomain.exists_sobolev`, Theorem 9.25 at every order. The operator $A$ of the
+source is `Wave.operator Ω` on a $C^2$ domain (`Brezis.Chapter10.waveOperator_eq`). The
+continuity of the injection is `Brezis.Chapter10.theorem_10_8_domain_norm`. -/
 theorem theorem_10_8_domain (hΩ : IsOfClassC ⊤ (Ω : Set 𝔼))
     (hΓ : Bornology.IsBounded (frontier (Ω : Set 𝔼))) (k : ℕ) :
     (∀ U : Wave.phaseSpace Ω, U ∈ domainPow (waveOperator Ω) k ↔
@@ -534,13 +696,18 @@ theorem theorem_10_8_domain (hΩ : IsOfClassC ⊤ (Ω : Set 𝔼))
   exact ⟨hmem, fun U hU ↦ ⟨((hmem U).1 hU).1.exists_sobolev (k + 1) hΩk hΓ,
     ((hmem U).1 hU).2.exists_sobolev k hΩk' hΓ⟩⟩
 
-/-- **"`D(A^k) ⊂ H^{k+1}(Ω) × H^k(Ω)` with continuous injection"** (proof of Theorem 10.8): for
-`Ω` of class `C^∞` with `Γ` bounded and every `k` there is `C` with `‖w‖_{H^{k+1}} ≤ C ‖x‖_{D(A^k)}`
-and `‖z‖_{H^k} ≤ C ‖x‖_{D(A^k)}` for every `x ∈ D(A^k)` (chapter 7's Hilbert space `PowDomain`,
-graph norm `(∑ⱼ |A^j U|²)^{1/2}`) and the lifts `w ∈ H^{k+1}(Ω)`, `z ∈ H^k(Ω)` of the components
-`(u, v) = A^0 x` given by `theorem_10_8_domain`. The backbone's bounded linear map
-`Wave.operator.powDomainToSobolevL` (closed graph theorem), whose two components the lifts are
-since `fnL` is injective. -/
+/-- **Proof of Theorem 10.8** in [brezis2011functional], "$D(A^k) \subset H^{k+1}(\Omega) \times
+H^k(\Omega)$ with continuous injection". Let $\Omega \subset \mathbb{R}^N$ be open of class
+$C^\infty$, with $N = d + 1$ and bounded boundary $\Gamma$, and let $k \in \mathbb{N}$. There is
+$C \ge 0$ such that for every $x \in D(A^k)$ with components $(u, v)$, and for all
+$w \in H^{k+1}(\Omega)$ and $z \in H^k(\Omega)$ with the same functions as $u$ and $v$,
+$$\|w\|_{H^{k+1}} \le C \|x\|_{D(A^k)}, \qquad \|z\|_{H^k} \le C \|x\|_{D(A^k)}.$$
+
+The norm of $D(A^k)$ is the graph norm $(\sum_{j \le k} |A^j U|^2)^{1/2}$ of the Hilbert space
+`LinearPMap.PowDomain` of Chapter 7, and $(u, v)$ is the component $A^0 x$. The lifts exist by
+`Brezis.Chapter10.theorem_10_8_domain`. The proof uses the backbone bounded linear map
+`Wave.operator.powDomainToSobolevL`, from the closed graph theorem; the lifts are its two
+components because `SobolevMultiIndex.fnL` is injective. -/
 theorem theorem_10_8_domain_norm (hΩ : IsOfClassC ⊤ (Ω : Set 𝔼))
     (hΓ : Bornology.IsBounded (frontier (Ω : Set 𝔼))) (k : ℕ) :
     ∃ C : ℝ, 0 ≤ C ∧ ∀ (x : (waveOperator Ω).PowDomain k)
@@ -574,22 +741,34 @@ theorem theorem_10_8_domain_norm (hΩ : IsOfClassC ⊤ (Ω : Set 𝔼))
   exact ⟨(norm_fst_le _).trans ((Wave.operator.powDomainToSobolevL k hΩk hΓ).le_opNorm x),
     (norm_snd_le _).trans ((Wave.operator.powDomainToSobolevL k hΩk hΓ).le_opNorm x)⟩
 
-/-- **Theorem 10.8 (regularity).** Let `Ω` be of class `C^∞` with `Γ` bounded. Assume that the
-initial data satisfy `u₀, v₀ ∈ H^k(Ω)` for every `k` and the compatibility conditions
-`Δ^j u₀ = 0`, `Δ^j v₀ = 0` on `Γ` for every integer `j ≥ 0` — read, as in the display of the
-proof (`theorem_10_8_domain`), as `u₀ ∈ D_k` and `v₀ ∈ D_k` for every `k`
-(`Wave.MemLaplacianDomain`: the iterates `u₀, −Δu₀, (−Δ)²u₀, …` lie in `D(−Δ) = H² ∩ H¹₀`
-with `(−Δ)^j u₀ ∈ H¹₀(Ω)` for every `j`, likewise for `v₀`), which on a `C^∞` domain contains
-`u₀, v₀ ∈ H^k(Ω)` for every `k` (`Wave.MemLaplacianDomain.exists_sobolev`). Then the solution
-`u` of (27), (28), (29), (30) belongs to `C^∞(Ω̄ × [0, ∞))`: there is `U : ℝ^N × ℝ → ℝ` with
-`U(·, t) = u(t)` a.e. on `Ω` for every `t ≥ 0`, of class `C^∞` on `Ω × (0, ∞)` with every
-derivative extending continuously to `closure (Ω × (0, ∞)) = Ω̄ × [0, ∞)` (`ContDiffOnClosure`,
-the shape of `theorem_10_2_c`). The book's proof: `U₀ = (u₀, v₀) ∈ D(A^k)` for every `k`
-(`theorem_10_8_domain`), Theorem 7.5 gives `U ∈ C^{k−j}([0, ∞); D(A^j))` for `0 ≤ j ≤ k`, so
-`u ∈ C^{k−j}([0, ∞); H^{j+1}(Ω))` (`theorem_10_8_domain_norm`), and Corollary 9.15 — the
-backbone's `Wave.IsSolution.contDiffOnThrough_of_powDomain` and
-`Wave.IsSolution.contDiffOnClosure_spaceTime` (through the space–time bridge
-`Bochner.contDiffOnClosure_spaceTime_of_forall_contDiffOnThrough_Ici`). -/
+/-- **Theorem 10.8** of [brezis2011functional] (regularity). Let $\Omega \subset \mathbb{R}^N$ be
+open of class $C^\infty$, with $N = d + 1$ and bounded boundary $\Gamma$, and let
+$u_0, v_0 \in H^1_0(\Omega)$ satisfy the compatibility conditions
+$$\Delta^j u_0 = 0 \text{ and } \Delta^j v_0 = 0 \text{ on } \Gamma \qquad \text{for every
+  integer } j \ge 0,$$
+read as $u_0 \in D_k$ and $v_0 \in D_k$ for every $k$. Let $u$ be the solution of (27), (28),
+(29), (30) in the class (31). Then $u \in C^\infty(\overline{\Omega} \times [0, \infty))$: there
+is a function $U : \mathbb{R}^N \times \mathbb{R} \to \mathbb{R}$ such that $U(\cdot, t) = u(t)$
+almost everywhere on $\Omega$ for every $t \ge 0$, and $U$ is of class $C^\infty$ on
+$\Omega \times (0, \infty)$ with every derivative extending continuously to the closure
+$\overline{\Omega} \times [0, \infty)$.
+
+**Reading.** The source also assumes $u_0, v_0 \in H^k(\Omega)$ for every $k$. The compatibility
+conditions are read, as in the display of the proof (`Brezis.Chapter10.theorem_10_8_domain`),
+through the domains $D_k$ of `Wave.MemLaplacianDomain`: the iterates
+$u_0, -\Delta u_0, (-\Delta)^2 u_0, \dots$ lie in $D(-\Delta) = H^2 \cap H^1_0$, with
+$(-\Delta)^j u_0 \in H^1_0(\Omega)$ for every $j$, and likewise for $v_0$. On a $C^\infty$
+domain this implies $u_0, v_0 \in H^k(\Omega)$ for every $k$
+(`Wave.MemLaplacianDomain.exists_sobolev`), so that hypothesis is not assumed separately.
+
+The smoothness class is `ContDiffOnClosure`, as in `Brezis.Chapter10.theorem_10_2_c`. The proof
+of the source: $U_0 = (u_0, v_0) \in D(A^k)$ for every $k$
+(`Brezis.Chapter10.theorem_10_8_domain`), Theorem 7.5 gives
+$U \in C^{k - j}([0, \infty); D(A^j))$ for $0 \le j \le k$, so $u \in C^{k - j}([0, \infty);
+H^{j + 1}(\Omega))$ (`Brezis.Chapter10.theorem_10_8_domain_norm`), and Corollary 9.15 concludes.
+The proof specializes `Wave.IsSolution.contDiffOnThrough_of_powDomain` and
+`Wave.IsSolution.contDiffOnClosure_spaceTime`, through
+`Bochner.contDiffOnClosure_spaceTime_of_forall_contDiffOnThrough_Ici`. -/
 theorem theorem_10_8 (hΩ : IsOfClassC ⊤ (Ω : Set 𝔼))
     (hΓ : Bornology.IsBounded (frontier (Ω : Set 𝔼)))
     (hu₀ : ∀ k, Wave.MemLaplacianDomain Ω k (SobolevMultiIndexZero.fnL ℝ 𝔟 1 2 Ω volume u₀))
@@ -609,19 +788,28 @@ end Regular
 
 section DAlembert
 
-/-- The line `ℝ` as `ℝ¹`. -/
+/-- The line $\mathbb{R}$ as $\mathbb{R}^1$. -/
 local notation "𝔼₁" => EuclideanSpace ℝ (Fin 1)
 
-/-! ### Remark 8: d'Alembert's formula is the solution on `Ω = ℝ` -/
+/-! ### Remark 8: d'Alembert's formula is the solution on $\Omega = \mathbb{R}$ -/
 
-/-- **Remark 8, d'Alembert's formula (40).** On `Ω = ℝ` (`N = 1`, `Ω = ⊤`), for `u₀ ∈ H²(ℝ)` and
-`v₀ ∈ H¹(ℝ)` — the data of Theorem 10.7, `H¹₀(ℝ) = H¹(ℝ)` (Remark 17 of chapter 9,
-`Wave.toZeroTopL`) — the curve `u` of the `L²(ℝ)` classes of
-`u(x, t) = ½ (u₀(x + t) + u₀(x − t)) + ½ ∫_{x−t}^{x+t} v₀(s) ds` (the backbone's
-`Wave.dAlembertL2`, whose value is `Wave.dAlembert` read on the line through the coordinate
-`x ↦ x₀` and `Wave.lineEmbed : ℝ → ℝ¹`) is the solution of (27)–(30) in the class (31): it is a
-solution (`Wave.isSolution_dAlembert`), and every solution agrees with it on `[0, ∞)`
-(`Wave.IsSolution.eqOn_dAlembertL2`). For `v₀ = 0` it is (41). -/
+/-- **Remark 8** in Chapter 10 of [brezis2011functional], d'Alembert's formula (40). Let
+$\Omega = \mathbb{R}$, so $N = 1$, and let $u_0 \in H^2(\mathbb{R})$ and
+$v_0 \in H^1(\mathbb{R})$, the data of Theorem 10.7 with $H^1_0(\mathbb{R}) = H^1(\mathbb{R})$
+(Remark 17 of Chapter 9). Let $u$ be the curve in $L^2(\mathbb{R})$ of
+$$u(x, t) = \frac12 \big(u_0(x + t) + u_0(x - t)\big) + \frac12 \int_{x - t}^{x + t} v_0(s) \,
+  ds.$$
+Then
+
+* $u$ is a solution of (27)–(30) in the class (31) with the data $u_0$, $v_0$,
+* every solution of (27)–(30) in the class (31) with these data agrees with $u$ on
+  $[0, \infty)$, and
+* for every $t$, $u(t)$ agrees almost everywhere with the function given by the formula above.
+
+For $v_0 = 0$ the formula is (41). The curve $u$ is `Wave.dAlembertL2 u₀ v₀`, whose value is
+`Wave.dAlembert` read on the line through the coordinate $x \mapsto x_0$ and
+`Wave.lineEmbed : ℝ → ℝ¹`. The data are read in $H^1_0$ of the line through `Wave.toZeroTopL`.
+The proof specializes `Wave.isSolution_dAlembert` and `Wave.IsSolution.eqOn_dAlembertL2`. -/
 theorem remark_10_8 (u₀ : sobolevSpaceHigher 1 2 2 ⊤) (v₀ : hSpace 1 ⊤) :
     IsWaveSolution ⊤ (Wave.toZeroTopL (by simp) (Wave.dAlembertU₀ u₀))
         (Wave.toZeroTopL (by simp) v₀) (Wave.dAlembertL2 u₀ v₀) ∧
@@ -645,23 +833,34 @@ section Necessity
 
 variable {N : ℕ}
 
-/-- The book's `ℝ^N`. -/
+/-- The space $\mathbb{R}^N$ of the source. -/
 local notation "𝔼" => EuclideanSpace ℝ (Fin N)
 
 variable {Ω : Opens (EuclideanSpace ℝ (Fin N))}
 
 /-! ### Remark 10: the compatibility conditions are necessary -/
 
-/-- **Remark 10.** The compatibility conditions of Theorem 10.8 are necessary and sufficient in
-order to have a solution `u ∈ C^∞(Ω̄ × [0, ∞))` of (27), (28), (29), (30). Sufficiency is
-`theorem_10_8`; necessity, "the proof is the same as in Remark 4" (`remark_10_4`): if
-`u : ℝ^N × ℝ → ℝ` is of class `C^∞` (on `ℝ^N × ℝ`, so that `u ∈ C^∞(Ω̄ × [0, ∞))` and the
-boundary values of `Δ^j u(·, 0)` and `Δ^j ∂ₜu(·, 0)` are meaningful as written), satisfies
-`∂ₜₜu = Δu` in `Q = Ω × (0, ∞)` and `u = 0` on `Σ = Γ × (0, ∞)`, then `Δ^j u₀ = 0` and
-`Δ^j v₀ = 0` on `Γ` for every `j`, where `u₀ = u(·, 0)` and `v₀ = ∂ₜu(·, 0)`: all time derivatives
-of `u` vanish on `Γ × [0, ∞)` by continuity, `∂ₜ^{2j} u = Δ^j u` and `∂ₜ^{2j+1} u = Δ^j ∂ₜu` in
-`Q̄` by induction and continuity, and the two are compared on `Γ × {0}`. The backbone's
-`Wave.IsClassicalSolution.iteratedLaplacian_eq_zero_frontier` (on the cylinder `Ω × (0, 1)`). -/
+/-- **Remark 10** in Chapter 10 of [brezis2011functional]. The compatibility conditions of Theorem
+10.8 are necessary and sufficient for a solution $u \in C^\infty(\overline{\Omega} \times [0,
+\infty))$ of (27), (28), (29), (30); sufficiency is `Brezis.Chapter10.theorem_10_8`. This
+declaration states necessity. Let $\Omega \subset \mathbb{R}^N$ be open with boundary $\Gamma$,
+and let $u : \mathbb{R}^N \times \mathbb{R} \to \mathbb{R}$ be of class $C^\infty$ with
+$$\partial_{tt} u = \Delta u \text{ in } Q = \Omega \times (0, \infty), \qquad u = 0 \text{ on }
+  \Sigma = \Gamma \times (0, \infty).$$
+Let $u_0 = u(\cdot, 0)$ and $v_0 = \partial_t u(\cdot, 0)$. Then $\Delta^j u_0 = 0$ and
+$\Delta^j v_0 = 0$ on $\Gamma$ for every $j \in \mathbb{N}$.
+
+**Reading.** The source considers $u \in C^\infty(\overline{\Omega} \times [0, \infty))$. As for
+Remark 4 (`Brezis.Chapter10.remark_10_4`), the statement assumes that $u$ is of class $C^\infty$
+on $\mathbb{R}^N \times \mathbb{R}$, so that the boundary values of $\Delta^j u(\cdot, 0)$ and
+$\Delta^j \partial_t u(\cdot, 0)$ are meaningful as written.
+
+The source says "the proof is the same as in Remark 4": all time derivatives of $u$ vanish on
+$\Gamma \times [0, \infty)$ by continuity, $\partial_t^{2j} u = \Delta^j u$ and
+$\partial_t^{2j+1} u = \Delta^j \partial_t u$ in $\overline{Q}$ by induction and continuity, and
+the two are compared on $\Gamma \times \{0\}$. The proof specializes
+`Wave.IsClassicalSolution.iteratedLaplacian_eq_zero_frontier`, on the cylinder
+$\Omega \times (0, 1)$. -/
 theorem remark_10_10 {u : 𝔼 × ℝ → ℝ} (hu : ContDiff ℝ ∞ u)
     (heq : ∀ x ∈ Ω, ∀ t, 0 < t →
       deriv (deriv fun s ↦ u (x, s)) t = Δ (fun y ↦ u (y, t)) x)

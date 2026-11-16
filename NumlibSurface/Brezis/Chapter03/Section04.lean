@@ -12,38 +12,88 @@ import NumlibSurface.Brezis.Chapter02.Section02
 import NumlibSurface.Brezis.Chapter03.Section03
 
 /-!
-# Brezis §3.4: the weak-∗ topology `σ(E*, E)`
+# Brezis, Section 3.4: The weak-∗ topology $\sigma(E^\star, E)$
 
-Surface file for Haim Brezis, *Functional Analysis, Sobolev Spaces and Partial Differential
-Equations*, Universitext, Springer, 2011, §3.4, on the dual `E* = StrongDual ℝ E` of a real
-Banach space `E`. The book's definition is
-`weakStarTopology E := weakestTopology (fun x : E => fun f : StrongDual ℝ E => f x)` and
-`weakStarTopology_eq` identifies it with Mathlib's `WeakDual ℝ E`, on which every later node is
-stated: `StrongDual.toWeakDual f : WeakDual ℝ E` is "`f` with the weak-∗ topology", and
-`fₙ ⇀* f` is `WeakStarTendsto f g` with the scoped notation `⇀*`. Propositions 3.11–3.13 are
-Mathlib and the backbone `Numlib/Analysis/Normed/Module/WeakDual`; Proposition 3.14 is Mathlib's
-weak representation theorem `LinearMap.dualEmbedding_surjective` and Lemma 3.2 its algebraic
-core `mem_span_of_iInf_ker_le_ker`; Corollary 3.15 and Remark 11 are proved here from them;
-Theorem 3.16 is `WeakDual.isCompact_closedBall`; Remark 10 is the backbone's
-`toWeakDualContinuousLinearEquiv` (`WeakClosed`). `[CompleteSpace E]` is carried on every
-theorem; it is used in Proposition 3.13 (iii)–(iv) (uniform boundedness in `E`).
+This module formalizes Section 3.4 of [brezis2011functional] on the dual $E^\star$ of a real Banach
+space $E$. The weak-∗ topology $\sigma(E^\star, E)$ is the coarsest topology on $E^\star$ for which
+every evaluation $f \mapsto \langle f, x \rangle$, $x \in E$, is continuous. It is coarser than the
+weak topology $\sigma(E^\star, E^{\star\star})$, which is coarser than the strong topology. The
+module proves that $\sigma(E^\star, E)$ is Hausdorff (Proposition 3.11), describes its neighbourhood
+basis (Proposition 3.12) and its convergent sequences (Proposition 3.13), shows that the weak-∗
+continuous linear functionals on $E^\star$ are the evaluations at points of $E$ (Proposition 3.14,
+Corollary 3.15), and proves the Banach–Alaoglu–Bourbaki theorem: the closed unit ball of $E^\star$
+is weak-∗ compact (Theorem 3.16).
+
+The proofs use Mathlib's `WeakDual ℝ E`, its weak representation theorem
+`LinearMap.dualEmbedding_surjective` and the algebraic lemma `mem_span_of_iInf_ker_le_ker`,
+Mathlib's `WeakDual.isCompact_closedBall`, and the backbone modules
+`Numlib.Analysis.Normed.Module.WeakDual` and `Numlib.Analysis.Normed.Module.WeakClosed`. Corollary
+3.15 and Remark 11 are proved in this module.
+
+## Main definitions
+
+* Section 3.4, definition of the weak-∗ topology, `Brezis.Chapter03.weakStarTopology`: the coarsest
+  topology on $E^\star$ that makes every evaluation at a point of $E$ continuous.
+* Section 3.4, the notation $f_n \overset{\star}{\rightharpoonup} f$,
+  `Brezis.Chapter03.WeakStarTendsto`: convergence of a sequence in $\sigma(E^\star, E)$.
 
 ## Main results
 
-* `weakStarTopology`, `weakStarTopology_eq` — the definition, its identification with
-  `WeakDual ℝ E`, and "weak-∗ is coarser than weak, which is coarser than strong" on `E*`.
-* `proposition_3_11`, `proposition_3_12` — Hausdorff; the neighbourhood basis `V(x₁, …, x_k; ε)`.
-* `WeakStarTendsto`, `proposition_3_13`, `proposition_3_13_ii_weak`,
-  `proposition_3_13_ii_weakStar`, `proposition_3_13_iii_bounded`, `proposition_3_13_iii_liminf`,
-  `proposition_3_13_iv` — the notation `fₙ ⇀* f` and Proposition 3.13.
-* `remark_3_9` — the `ℓ²` example: `fₙ ⇀* f` and `xₙ ⇀ x` do not give `⟨fₙ, xₙ⟩ → ⟨f, x⟩`.
-* `remark_3_10` — in finite dimension the three topologies on `E*` coincide.
-* `proposition_3_14`, `lemma_3_2`, `corollary_3_15`, `remark_3_11` — weak-∗ continuous
-  functionals are evaluations; the algebraic lemma; weak-∗ closed hyperplanes; a weakly closed
-  hyperplane that is not weak-∗ closed when `J` is not onto.
-* `theorem_3_16` — Banach–Alaoglu–Bourbaki: `B_{E*}` is weak-∗ compact.
+* Section 3.4, `Brezis.Chapter03.weakStarTopology_eq`: $\sigma(E^\star, E)$ is the topology of
+  Mathlib's `WeakDual ℝ E`, and it is coarser than $\sigma(E^\star, E^{\star\star})$, which is
+  coarser than the strong topology.
+* Proposition 3.11, `Brezis.Chapter03.proposition_3_11`: the weak-∗ topology is Hausdorff.
+* Proposition 3.12, `Brezis.Chapter03.proposition_3_12`: the sets $V(x_1, \dots, x_k; \varepsilon)$
+  form a basis of weak-∗ neighbourhoods of $f_0$.
+* Proposition 3.13(i), `Brezis.Chapter03.proposition_3_13`: $f_n \overset{\star}{\rightharpoonup} f$
+  if and only if $\langle f_n, x \rangle \to \langle f, x \rangle$ for every $x \in E$.
+* Proposition 3.13(ii), `Brezis.Chapter03.proposition_3_13_ii_weak` and
+  `Brezis.Chapter03.proposition_3_13_ii_weakStar`: strong convergence implies weak convergence in
+  $\sigma(E^\star, E^{\star\star})$, which implies weak-∗ convergence.
+* Proposition 3.13(iii), `Brezis.Chapter03.proposition_3_13_iii_bounded` and
+  `Brezis.Chapter03.proposition_3_13_iii_liminf`: a weak-∗ convergent sequence is bounded, and
+  $\|f\| \le \liminf \|f_n\|$.
+* Proposition 3.13(iv), `Brezis.Chapter03.proposition_3_13_iv`: if
+  $f_n \overset{\star}{\rightharpoonup} f$ and $x_n \to x$ strongly, then $\langle f_n, x_n \rangle
+  \to \langle f, x \rangle$.
+* Remark 9, `Brezis.Chapter03.remark_3_9`: in $\ell^2$, weak convergence of $(f_n)$ and $(x_n)$ does
+  not give $\langle f_n, x_n \rangle \to \langle f, x \rangle$.
+* Remark 10, `Brezis.Chapter03.remark_3_10`: in finite dimension the strong, weak and weak-∗
+  topologies on $E^\star$ coincide.
+* Proposition 3.14, `Brezis.Chapter03.proposition_3_14`: every weak-∗ continuous linear functional
+  on $E^\star$ is the evaluation at some $x_0 \in E$.
+* Lemma 3.2, `Brezis.Chapter03.lemma_3_2`: a linear functional that vanishes on the common kernel of
+  $\varphi_1, \dots, \varphi_k$ is a linear combination of them.
+* Corollary 3.15, `Brezis.Chapter03.corollary_3_15`: a weak-∗ closed hyperplane of $E^\star$ has the
+  form $\{f : \langle f, x_0 \rangle = \beta\}$ with $x_0 \in E$, $x_0 \neq 0$.
+* Remark 11, `Brezis.Chapter03.remark_3_11`: if the canonical injection $J : E \to E^{\star\star}$
+  is not onto, some hyperplane is closed in $\sigma(E^\star, E^{\star\star})$ but not in
+  $\sigma(E^\star, E)$.
+* Theorem 3.16, `Brezis.Chapter03.theorem_3_16` (Banach–Alaoglu–Bourbaki): the closed unit ball
+  $B_{E^\star}$ is compact in $\sigma(E^\star, E)$.
 
-Remarks 8 and 12 are discussion.
+## Conventions
+
+* The dual $E^\star$ is `StrongDual ℝ E` with the norm topology. The same space with the weak-∗
+  topology is `WeakDual ℝ E`, and `StrongDual.toWeakDual f` is $f$ seen in `WeakDual ℝ E`. All
+  results after the definition are stated on `WeakDual ℝ E`.
+* Weak-∗ convergence $f_n \overset{\star}{\rightharpoonup} f$ is
+  `Brezis.Chapter03.WeakStarTendsto f g`, with the scoped notation `f ⇀* g`. Weak convergence
+  $f_n \rightharpoonup f$ in $\sigma(E^\star, E^{\star\star})$ is `Brezis.Chapter03.WeakTendsto` on
+  the Banach space $E^\star$, with the notation `f ⇀ g`.
+* The canonical injection $J : E \to E^{\star\star}$ is `NormedSpace.inclusionInDoubleDual ℝ E`.
+* The theorems assume that $E$ is complete. Proposition 3.13(iii) and (iv) use it, through the
+  uniform boundedness principle in $E$.
+
+## Implementation notes
+
+* In Mathlib's order on topologies, $\tau_1 \le \tau_2$ means that $\tau_1$ is finer than $\tau_2$.
+  So "$\sigma(E^\star, E)$ is coarser than $\sigma(E^\star, E^{\star\star})$" is `weakTopology
+  (StrongDual ℝ E) ≤ weakStarTopology E`.
+
+## Not formalized
+
+* **Remarks 8 and 12.** They are discussion.
 -/
 
 open Filter Metric Set Topology TopologicalSpace NormedSpace
@@ -54,17 +104,28 @@ variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
 
 /-! ### The weak-∗ topology -/
 
-/-- **The Definition of §3.4.** The weak-∗ topology `σ(E*, E)` on `E*` is the coarsest topology
-making every `φ_x = ⟨·, x⟩`, `x ∈ E`, continuous (§3.1 with `X = E*`, `Y_i = ℝ`, `I = E`). -/
+/-- **Section 3.4** of [brezis2011functional], definition of the weak-∗ topology. Let $E$ be a real
+normed space. The **weak-∗ topology** $\sigma(E^\star, E)$ on $E^\star$ is the coarsest topology
+for which every map $\varphi_x : E^\star \to \mathbb{R}$, $\varphi_x(f) = \langle f, x \rangle$
+with $x \in E$, is continuous.
+
+This is the construction of Section 3.1 with $X = E^\star$, $Y_i = \mathbb{R}$ and index set
+$I = E$, that is, `Brezis.Chapter03.weakestTopology` of the family of evaluations. -/
 @[instance_reducible]
 def weakStarTopology (E : Type*) [NormedAddCommGroup E] [NormedSpace ℝ E] :
     TopologicalSpace (StrongDual ℝ E) :=
   weakestTopology (fun x : E => fun f : StrongDual ℝ E => f x)
 
-/-- The book's weak-∗ topology is Mathlib's: `weakStarTopology E` is the topology of
-`WeakDual ℝ E` transported back to `E*` along the identity `StrongDual.toWeakDual`. Moreover
-`σ(E*, E)` is coarser than `σ(E*, E**)`, which is coarser than the strong topology (in
-Mathlib's order on topologies, `≤` is "finer"). -/
+/-- **Section 3.4** of [brezis2011functional], comparison of the topologies on $E^\star$. Let $E$ be
+a real normed space. Then:
+
+1. the topology $\sigma(E^\star, E)$ is the topology induced on $E^\star$ by the identity map
+   onto Mathlib's `WeakDual ℝ E`;
+2. $\sigma(E^\star, E)$ is coarser than the weak topology $\sigma(E^\star, E^{\star\star})$;
+3. $\sigma(E^\star, E^{\star\star})$ is coarser than the strong topology of $E^\star$.
+
+In Mathlib's order on topologies, $\le$ means "finer", so (2) is `weakTopology (StrongDual ℝ E)
+≤ weakStarTopology E`. The map onto `WeakDual ℝ E` is `StrongDual.toWeakDual`. -/
 theorem weakStarTopology_eq :
     weakStarTopology E =
         TopologicalSpace.induced (StrongDual.toWeakDual : StrongDual ℝ E → WeakDual ℝ E)
@@ -91,13 +152,21 @@ theorem weakStarTopology_eq :
         rw [induced_compose]
         rfl
 
-/-- **Proposition 3.11.** The weak-∗ topology is Hausdorff. -/
+/-- **Proposition 3.11** of [brezis2011functional]. Let $E$ be a real Banach space. The weak-∗
+topology $\sigma(E^\star, E)$ is Hausdorff. -/
 theorem proposition_3_11 [CompleteSpace E] : T2Space (WeakDual ℝ E) :=
   inferInstance
 
-/-- **Proposition 3.12.** Let `f₀ ∈ E*`; for a finite set `{x₁, …, x_k} ⊆ E` and `ε > 0`, the
-set `V(x₁, …, x_k; ε) = {f | |⟨f - f₀, xᵢ⟩| < ε ∀ i}` is a neighbourhood of `f₀` for
-`σ(E*, E)`, and these sets form a basis of neighbourhoods of `f₀`. -/
+/-- **Proposition 3.12** of [brezis2011functional]. Let $E$ be a real Banach space and
+$f_0 \in E^\star$. For a finite set $\{x_1, \dots, x_k\} \subseteq E$ and $\varepsilon > 0$, the
+set
+$$V(x_1, \dots, x_k; \varepsilon) = \{f \in E^\star : |\langle f - f_0, x_i \rangle| <
+  \varepsilon \text{ for } i = 1, \dots, k\}$$
+is a neighbourhood of $f_0$ for $\sigma(E^\star, E)$. These sets, for all finite sets of points
+and all $\varepsilon > 0$, form a basis of neighbourhoods of $f_0$ for $\sigma(E^\star, E)$.
+
+The finite set is a `Finset E`, and the basis is indexed by pairs (finite set, $\varepsilon$)
+with $\varepsilon > 0$. The neighbourhoods are taken in `WeakDual ℝ E`. -/
 theorem proposition_3_12 [CompleteSpace E] (f₀ : StrongDual ℝ E) :
     (∀ (s : Finset E) (ε : ℝ), 0 < ε →
       StrongDual.toWeakDual '' {f | ∀ x ∈ s, |(f - f₀) x| < ε} ∈
@@ -125,52 +194,71 @@ theorem proposition_3_12 [CompleteSpace E] (f₀ : StrongDual ℝ E) :
   rw [hset]
   exact hb.mem_of_mem (i := (s, ε)) hε
 
-/-- **The notation `fₙ ⇀* f`** of §3.4: the sequence `f` of `E*` converges to `g` in the weak-∗
-topology `σ(E*, E)`. The book's "`fₙ ⇀ f` in `σ(E*, E**)`" is `WeakTendsto f g` on the Banach
-space `E*`. -/
+/-- **Section 3.4** of [brezis2011functional], the notation
+$f_n \overset{\star}{\rightharpoonup} f$. A sequence $(f_n)$ in $E^\star$ **converges weakly-∗**
+to $f \in E^\star$, written $f_n \overset{\star}{\rightharpoonup} f$, if it converges to $f$ in
+the weak-∗ topology $\sigma(E^\star, E)$.
+
+The scoped notation is `f ⇀* g`. Weak convergence $f_n \rightharpoonup f$ in
+$\sigma(E^\star, E^{\star\star})$ is `Brezis.Chapter03.WeakTendsto` on the normed space
+$E^\star$. -/
 def WeakStarTendsto (f : ℕ → StrongDual ℝ E) (g : StrongDual ℝ E) : Prop :=
   Tendsto (fun n => StrongDual.toWeakDual (f n)) atTop (𝓝 (StrongDual.toWeakDual g))
 
 @[inherit_doc] scoped notation:50 f:51 " ⇀* " g:51 => WeakStarTendsto f g
 
-/-- **Proposition 3.13 (i).** `fₙ ⇀* f` in `σ(E*, E)` iff `⟨fₙ, x⟩ → ⟨f, x⟩` for every
-`x ∈ E`. -/
+/-- **Proposition 3.13(i)** of [brezis2011functional]. Let $E$ be a real Banach space, $(f_n)$ a
+sequence in $E^\star$ and $f \in E^\star$. Then $f_n \overset{\star}{\rightharpoonup} f$ in
+$\sigma(E^\star, E)$ if and only if $\langle f_n, x \rangle \to \langle f, x \rangle$ for every
+$x \in E$. -/
 theorem proposition_3_13 [CompleteSpace E] (f : ℕ → StrongDual ℝ E) (g : StrongDual ℝ E) :
     f ⇀* g ↔ ∀ x : E, Tendsto (fun n => f n x) atTop (𝓝 (g x)) :=
   tendsto_iff_forall_eval_tendsto_topDualPairing
 
-/-- **Proposition 3.13 (ii), first sentence.** If `fₙ → f` strongly then `fₙ ⇀ f` in
-`σ(E*, E**)`. -/
+/-- **Proposition 3.13(ii)** of [brezis2011functional], first statement. Let $E$ be a real Banach
+space, $(f_n)$ a sequence in $E^\star$ and $f \in E^\star$. If $f_n \to f$ strongly, then
+$f_n \rightharpoonup f$ in $\sigma(E^\star, E^{\star\star})$. -/
 theorem proposition_3_13_ii_weak [CompleteSpace E] {f : ℕ → StrongDual ℝ E}
     {g : StrongDual ℝ E} (h : Tendsto f atTop (𝓝 g)) : f ⇀ g :=
   proposition_3_5_ii h
 
-/-- **Proposition 3.13 (ii), second sentence.** If `fₙ ⇀ f` in `σ(E*, E**)` then `fₙ ⇀* f` in
-`σ(E*, E)`. -/
+/-- **Proposition 3.13(ii)** of [brezis2011functional], second statement. Let $E$ be a real Banach
+space, $(f_n)$ a sequence in $E^\star$ and $f \in E^\star$. If $f_n \rightharpoonup f$ in
+$\sigma(E^\star, E^{\star\star})$, then $f_n \overset{\star}{\rightharpoonup} f$ in
+$\sigma(E^\star, E)$. -/
 theorem proposition_3_13_ii_weakStar [CompleteSpace E] {f : ℕ → StrongDual ℝ E}
     {g : StrongDual ℝ E} (h : f ⇀ g) : f ⇀* g :=
   tendsto_toWeakDual_of_tendsto_toWeakSpace h
 
-/-- **Proposition 3.13 (iii), first half.** If `fₙ ⇀* f` then `(‖fₙ‖)` is bounded. -/
+/-- **Proposition 3.13(iii)** of [brezis2011functional], boundedness. Let $E$ be a real Banach
+space, $(f_n)$ a sequence in $E^\star$ and $f \in E^\star$. If
+$f_n \overset{\star}{\rightharpoonup} f$, then $(\|f_n\|)$ is bounded: there is $C$ with
+$\|f_n\| \le C$ for all $n$. -/
 theorem proposition_3_13_iii_bounded [CompleteSpace E] {f : ℕ → StrongDual ℝ E}
     {g : StrongDual ℝ E} (h : f ⇀* g) : ∃ C : ℝ, ∀ n, ‖f n‖ ≤ C :=
   exists_norm_le_of_tendsto_toWeakDual h
 
-/-- **Proposition 3.13 (iii), second half.** If `fₙ ⇀* f` then `‖f‖ ≤ liminf ‖fₙ‖`. -/
+/-- **Proposition 3.13(iii)** of [brezis2011functional], lower semicontinuity of the norm. Let $E$
+be a real Banach space, $(f_n)$ a sequence in $E^\star$ and $f \in E^\star$. If
+$f_n \overset{\star}{\rightharpoonup} f$, then
+$$\|f\| \le \liminf_{n \to \infty} \|f_n\|.$$
+-/
 theorem proposition_3_13_iii_liminf [CompleteSpace E] {f : ℕ → StrongDual ℝ E}
     {g : StrongDual ℝ E} (h : f ⇀* g) : ‖g‖ ≤ liminf (fun n => ‖f n‖) atTop :=
   norm_le_liminf_norm_of_weakStar_tendsto h
 
-/-- **Proposition 3.13 (iv).** If `fₙ ⇀* f` in `σ(E*, E)` and `xₙ → x` strongly in `E`, then
-`⟨fₙ, xₙ⟩ → ⟨f, x⟩`. -/
+/-- **Proposition 3.13(iv)** of [brezis2011functional]. Let $E$ be a real Banach space, $(f_n)$ a
+sequence in $E^\star$, $f \in E^\star$, $(x_n)$ a sequence in $E$ and $x \in E$. If
+$f_n \overset{\star}{\rightharpoonup} f$ in $\sigma(E^\star, E)$ and $x_n \to x$ strongly in
+$E$, then $\langle f_n, x_n \rangle \to \langle f, x \rangle$. -/
 theorem proposition_3_13_iv [CompleteSpace E] {f : ℕ → StrongDual ℝ E} {g : StrongDual ℝ E}
     {x : ℕ → E} {u : E} (hf : f ⇀* g) (hx : Tendsto x atTop (𝓝 u)) :
     Tendsto (fun n => f n (x n)) atTop (𝓝 (g u)) :=
   tendsto_apply_of_tendsto_toWeakDual_of_tendsto hf hx
 
-/-! ### Remark 9: the example in `ℓ²` -/
+/-! ### Remark 9: the example in $\ell^2$ -/
 
-/-- The standard unit vectors of `ℓ²` converge weakly to `0`. -/
+/-- The standard unit vectors $e_n$ of $\ell^2$ converge weakly to $0$. -/
 private theorem weakTendsto_single_zero :
     (fun n => lp.single 2 n (1 : ℝ) : ℕ → lp (fun _ : ℕ => ℝ) 2) ⇀ 0 := by
   refine tendsto_toWeakSpace_iff.2 fun g => ?_
@@ -179,10 +267,17 @@ private theorem weakTendsto_single_zero :
   refine (Brezis.Chapter02.tendsto_coord_zero y).congr fun n => ?_
   rw [lp.inner_single_right, RCLike.inner_apply, conj_trivial, one_mul]
 
-/-- **Remark 9.** From `fₙ ⇀* f` (even `fₙ ⇀ f` in `σ(E*, E**)`) and `xₙ ⇀ x` one cannot
-conclude `⟨fₙ, xₙ⟩ → ⟨f, x⟩`: in the Hilbert space `ℓ²`, the unit vectors `eₙ` and the
-functionals `fₙ = ⟨eₙ, ·⟩` satisfy `eₙ ⇀ 0`, `fₙ ⇀ 0` weakly, `fₙ ⇀* 0`, and `⟨fₙ, eₙ⟩ = 1`
-for every `n`. -/
+/-- **Remark 9** in Chapter 3 of [brezis2011functional]. From
+$f_n \overset{\star}{\rightharpoonup} f$, or even $f_n \rightharpoonup f$ in
+$\sigma(E^\star, E^{\star\star})$, and $x_n \rightharpoonup x$ one cannot conclude
+$\langle f_n, x_n \rangle \to \langle f, x \rangle$. In the Hilbert space $\ell^2$, let $e_n$ be the
+$n$-th unit vector and $f_n = (e_n, \cdot)$. Then $e_n \rightharpoonup 0$, $f_n \rightharpoonup 0$
+in $\sigma(E^\star, E^{\star\star})$, $f_n \overset{\star}{\rightharpoonup} 0$, and
+$\langle f_n, e_n \rangle = 1$ for every $n$, so $\langle f_n, e_n \rangle$ does not converge to
+$0$.
+
+The space $\ell^2$ is `lp (fun _ : ℕ => ℝ) 2`, the unit vector $e_n$ is `lp.single 2 n 1`, and
+$f_n$ is `InnerProductSpace.toDual ℝ _ (e n)`. Coordinates are indexed from $0$. -/
 theorem remark_3_9 :
     let e : ℕ → lp (fun _ : ℕ => ℝ) 2 := fun n => lp.single 2 n (1 : ℝ)
     let f : ℕ → StrongDual ℝ (lp (fun _ : ℕ => ℝ) 2) :=
@@ -209,9 +304,13 @@ theorem remark_3_9 :
 
 /-! ### Finite dimension, the weak representation theorem, and Banach–Alaoglu -/
 
-/-- **Remark 10.** When `E` is finite-dimensional the three topologies (strong, weak, weak-∗)
-on `E*` coincide: `σ(E*, E) = σ(E*, E**)` since `J` is onto, and `σ(E*, E**)` is the strong
-topology by Proposition 3.6. -/
+/-- **Remark 10** in Chapter 3 of [brezis2011functional]. Let $E$ be a finite-dimensional real
+Banach space. Then the three topologies on $E^\star$ coincide:
+$\sigma(E^\star, E) = \sigma(E^\star, E^{\star\star})$, and $\sigma(E^\star, E^{\star\star})$ is the
+strong topology.
+
+The first equality holds because $J : E \to E^{\star\star}$ is onto. The second is Proposition
+3.6 for the finite-dimensional space $E^\star$. -/
 theorem remark_3_10 [CompleteSpace E] [FiniteDimensional ℝ E] :
     weakStarTopology E = weakTopology (StrongDual ℝ E) ∧
       weakTopology (StrongDual ℝ E) = (inferInstance : TopologicalSpace (StrongDual ℝ E)) := by
@@ -222,9 +321,15 @@ theorem remark_3_10 [CompleteSpace E] [FiniteDimensional ℝ E] :
     (toWeakSpaceContinuousLinearEquiv ℝ (StrongDual ℝ E)).toHomeomorph.isInducing.eq_induced
   exact h₁.symm.trans h₂
 
-/-- **Proposition 3.14.** A linear functional `φ : E* → ℝ` continuous for the weak-∗ topology
-is evaluation at some `x₀ ∈ E`: `φ f = ⟨f, x₀⟩` for all `f`. Stated both for `φ` a continuous
-functional on `WeakDual ℝ E` and for a linear `φ` continuous for `weakStarTopology E`. -/
+/-- **Proposition 3.14** of [brezis2011functional]. Let $E$ be a real Banach space, and let
+$\varphi : E^\star \to \mathbb{R}$ be a linear functional that is continuous for the weak-∗
+topology $\sigma(E^\star, E)$. Then there is $x_0 \in E$ with
+$\varphi(f) = \langle f, x_0 \rangle$ for all $f \in E^\star$.
+
+The statement is given in two forms. In the first form, $\varphi$ is a continuous linear
+functional on `WeakDual ℝ E`. In the second form, it is a linear map on `StrongDual ℝ E` that is
+continuous for `Brezis.Chapter03.weakStarTopology E`. The proof uses Mathlib's
+`LinearMap.dualEmbedding_surjective`. -/
 theorem proposition_3_14 [CompleteSpace E] :
     (∀ φ : StrongDual ℝ (WeakDual ℝ E), ∃ x₀ : E, ∀ f : StrongDual ℝ E,
       φ (StrongDual.toWeakDual f) = f x₀) ∧
@@ -247,8 +352,14 @@ theorem proposition_3_14 [CompleteSpace E] :
   obtain ⟨x₀, hx₀⟩ := hrep ⟨φ ∘ₗ StrongDual.toWeakDual.symm.toLinearMap, hc⟩
   exact ⟨x₀, fun f => by simpa using hx₀ f⟩
 
-/-- **Lemma 3.2.** Let `X` be a vector space and `φ, φ₁, …, φ_k` linear functionals on `X` with
-`[φᵢ v = 0 ∀ i] ⇒ [φ v = 0]`. Then `φ = ∑ λᵢ φᵢ` for some constants `λᵢ`. -/
+/-- **Lemma 3.2** of [brezis2011functional]. Let $X$ be a real vector space and let
+$\varphi, \varphi_1, \dots, \varphi_k$ be linear functionals on $X$ such that
+$$\varphi_i(v) = 0 \text{ for all } i = 1, \dots, k \implies \varphi(v) = 0.$$
+Then there are constants $\lambda_1, \dots, \lambda_k \in \mathbb{R}$ with
+$\varphi = \sum_{i=1}^k \lambda_i \varphi_i$.
+
+The functionals $\varphi_i$ are indexed by `Fin k`. The proof uses Mathlib's
+`mem_span_of_iInf_ker_le_ker`. -/
 theorem lemma_3_2 {X : Type*} [AddCommGroup X] [Module ℝ X] {k : ℕ} (φ : X →ₗ[ℝ] ℝ)
     (φ' : Fin k → (X →ₗ[ℝ] ℝ)) (h : ∀ v, (∀ i, φ' i v = 0) → φ v = 0) :
     ∃ lam : Fin k → ℝ, φ = ∑ i, lam i • φ' i := by
@@ -259,8 +370,8 @@ theorem lemma_3_2 {X : Type*} [AddCommGroup X] [Module ℝ X] {k : ℕ} (φ : X 
   obtain ⟨lam, hlam⟩ := (Submodule.mem_span_range_iff_exists_fun ℝ).1 hmem
   exact ⟨lam, hlam.symm⟩
 
-/-- A translate of a hyperplane `{f | φ f = α}` of `WeakDual ℝ E` is the kernel of `φ`, so a
-weak-∗ closed hyperplane has weak-∗ closed kernel and `φ` is weak-∗ continuous. -/
+/-- Let $\varphi \neq 0$ be a linear functional on `WeakDual ℝ E`. If a level set
+$\{g : \varphi(g) = \alpha\}$ is weak-∗ closed, then $\varphi$ is weak-∗ continuous. -/
 private theorem continuous_of_isClosed_level {φ : WeakDual ℝ E →ₗ[ℝ] ℝ} (hφ : φ ≠ 0)
     {α : ℝ} (hH : IsClosed {g : WeakDual ℝ E | φ g = α}) : Continuous φ := by
   obtain ⟨g, hg⟩ : ∃ g, φ g ≠ 0 := by
@@ -275,8 +386,16 @@ private theorem continuous_of_isClosed_level {φ : WeakDual ℝ E →ₗ[ℝ] �
   rw [LinearMap.continuous_iff_isClosed_ker, hker]
   exact hH.preimage (continuous_id.add continuous_const)
 
-/-- **Corollary 3.15.** A hyperplane `H = {f ∈ E* | φ f = α}` (with `φ` linear, `φ ≢ 0`) that is
-closed in `σ(E*, E)` has the form `H = {f | ⟨f, x₀⟩ = α}` for some `x₀ ∈ E`, `x₀ ≠ 0`. -/
+/-- **Corollary 3.15** of [brezis2011functional]. Let $E$ be a real Banach space, let
+$\varphi : E^\star \to \mathbb{R}$ be a linear functional with $\varphi \neq 0$, and let
+$\alpha \in \mathbb{R}$. Suppose that the hyperplane
+$H = \{f \in E^\star : \varphi(f) = \alpha\}$ is closed in $\sigma(E^\star, E)$. Then there are
+$x_0 \in E$ with $x_0 \neq 0$ and $\beta \in \mathbb{R}$ such that
+$$H = \{f \in E^\star : \langle f, x_0 \rangle = \beta\}.$$
+
+The source writes the constant $\alpha$ in place of $\beta$. The two forms are equivalent: if
+$\alpha \neq 0$, then $\beta \neq 0$, and $x_0$ can be scaled by $\alpha / \beta$; if
+$\alpha = 0$, then $0 \in H$ and so $\beta = 0$. The formal statement does not make this step. -/
 theorem corollary_3_15 [CompleteSpace E] {φ : StrongDual ℝ E →ₗ[ℝ] ℝ} (hφ : φ ≠ 0) (α : ℝ)
     (hH : IsClosed (StrongDual.toWeakDual '' {f | φ f = α})) :
     ∃ (x₀ : E) (β : ℝ), x₀ ≠ 0 ∧ {f | φ f = α} = {f | f x₀ = β} := by
@@ -303,10 +422,16 @@ theorem corollary_3_15 [CompleteSpace E] {φ : StrongDual ℝ E →ₗ[ℝ] ℝ}
     mem_ofPred_eq, hφx]⟩
   rw [hφx, h0, map_zero, LinearMap.zero_apply]
 
-/-- **Remark 11.** If `J : E → E**` is not surjective, `σ(E*, E)` is strictly coarser than
-`σ(E*, E**)`: for `ξ ∈ E**` with `ξ ∉ J(E)`, the hyperplane `H = {f | ⟨ξ, f⟩ = 0}` is closed
-in `σ(E*, E**)` but not in `σ(E*, E)`. So convex sets that are strongly closed need not be
-weak-∗ closed. -/
+/-- **Remark 11** in Chapter 3 of [brezis2011functional]. Let $E$ be a real Banach space, and
+suppose that the canonical injection $J : E \to E^{\star\star}$ is not surjective. Let
+$\xi \in E^{\star\star}$ with $\xi \notin J(E)$. Then the hyperplane
+$H = \{f \in E^\star : \langle \xi, f \rangle = 0\}$ is closed in $\sigma(E^\star, E^{\star\star})$
+but not closed in $\sigma(E^\star, E)$. So $\sigma(E^\star, E)$ is strictly coarser than
+$\sigma(E^\star, E^{\star\star})$.
+
+The source concludes that a convex set that is strongly closed need not be weak-∗ closed. The
+weak topology $\sigma(E^\star, E^{\star\star})$ is `WeakSpace ℝ (StrongDual ℝ E)`, reached by
+`toWeakSpace`. -/
 theorem remark_3_11 [CompleteSpace E] {ξ : StrongDual ℝ (StrongDual ℝ E)}
     (hξ : ξ ∉ Set.range (inclusionInDoubleDual ℝ E)) :
     IsClosed (toWeakSpace ℝ (StrongDual ℝ E) '' {f | ξ f = 0}) ∧
@@ -339,8 +464,12 @@ theorem remark_3_11 [CompleteSpace E] {ξ : StrongDual ℝ (StrongDual ℝ E)}
     rw [hlam, Fin.sum_univ_one]
     rfl
 
-/-- **Theorem 3.16 (Banach–Alaoglu–Bourbaki).** The closed unit ball `B_{E*} = {f | ‖f‖ ≤ 1}` is
-compact in the weak-∗ topology `σ(E*, E)`. -/
+/-- **Theorem 3.16** of [brezis2011functional] (Banach–Alaoglu–Bourbaki). Let $E$ be a real Banach
+space. The closed unit ball
+$$B_{E^\star} = \{f \in E^\star : \|f\| \le 1\}$$
+is compact in the weak-∗ topology $\sigma(E^\star, E)$.
+
+The proof is Mathlib's `WeakDual.isCompact_closedBall`. -/
 theorem theorem_3_16 [CompleteSpace E] :
     IsCompact (WeakDual.toStrongDual ⁻¹' closedBall (0 : StrongDual ℝ E) 1) :=
   WeakDual.isCompact_closedBall 0 1

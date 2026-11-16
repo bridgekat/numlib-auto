@@ -9,30 +9,46 @@ import Numlib.Analysis.Normed.Module.Reflexive
 import Numlib.Analysis.Normed.Operator.Unbounded.Adjoint
 
 /-!
-# Brezis §5.2: the dual space of a Hilbert space
+# Brezis, Section 5.2: The dual space of a Hilbert space
 
-Surface file for Haim Brezis, *Functional Analysis, Sobolev Spaces and Partial Differential
-Equations*, Universitext, Springer, 2011, §5.2, over a real Hilbert space `H`. The Riesz–Fréchet
-theorem is Mathlib's isometry `InnerProductSpace.toDual ℝ H : H ≃ₗᵢ⋆[ℝ] StrongDual ℝ H`; Remark 3,
-the pivot-space triple `V ⊂ H ⊂ V*`, is stated with chapter 2's Banach adjoint
-`ContinuousLinearMap.strongDualMap` (the restriction of functionals along the injection
-`i : V → H`); Remark 5 identifies the book's two readings of `M^⊥` — as a subspace of `H*`
-(chapter 1's `Submodule.strongDualAnnihilator`) and as a subspace of `H` (Mathlib's
-`Submodule.orthogonal`, `Mᗮ`) — through `toDual`.
+This module formalizes Section 5.2 of [brezis2011functional] for a real Hilbert space $H$ with
+scalar product $(u, v)$ and norm $|u|$. The Riesz–Fréchet representation theorem states that every
+$\varphi \in H^\star$ has the form $\langle \varphi, u \rangle = (f, u)$ for a unique $f \in H$, and
+that $|f| = \|\varphi\|_{H^\star}$ (Theorem 5.5). The remarks of the section describe a Banach space
+$V$ that is continuously and densely embedded in $H$, with $H$ as the pivot space of the triple
+$V \subset H \subset V^\star$ (Remark 3), give a direct proof that Hilbert spaces are reflexive
+(Remark 4), and identify the orthogonal complement $M^\perp$ of a closed subspace in $H$ with its
+annihilator in $H^\star$ (Remark 5).
+
+The Riesz–Fréchet theorem is Mathlib's isometry `InnerProductSpace.toDual ℝ H`. Remark 3 uses the
+Banach adjoint `ContinuousLinearMap.strongDualMap` of Chapter 2, which restricts a functional along
+the injection $i : V \to H$. Remark 5 uses the annihilator `Submodule.strongDualAnnihilator` of
+Chapter 1 and Mathlib's orthogonal complement `Submodule.orthogonal`.
 
 ## Main results
 
-* `theorem_5_5` — the Riesz–Fréchet representation theorem: every `φ ∈ H*` is `u ↦ (f, u)` for a
-  unique `f ∈ H`, and `|f| = ‖φ‖`.
-* `remark_5_3`, `remark_5_3_pairing` — the triple `V ⊂ H ⊂ V*`: the restriction map
-  `T : H* → V*` is bounded by the norm of the injection, injective, has dense range when `V` is
-  reflexive, and `⟨T f, v⟩ = (f, v)` for `f ∈ H` identified with `H*`.
-* `remark_5_4` — Hilbert spaces are reflexive, by the Riesz–Fréchet isomorphism used twice.
-* `remark_5_5`, `remark_5_5_annihilator` — `M ∩ M^⊥ = {0}`, `M + M^⊥ = H` for closed `M`,
-  `f - P_M f = P_{M^⊥} f`, every closed subspace is complemented; and the annihilator of §1.3 is
-  carried onto `Mᗮ` by the Riesz isometry.
+* Theorem 5.5 (Riesz–Fréchet), `Brezis.Chapter05.theorem_5_5`: every $\varphi \in H^\star$ is
+  $u \mapsto (f, u)$ for a unique $f \in H$, and $|f| = \|\varphi\|$.
+* Remark 3, `Brezis.Chapter05.remark_5_3`: the restriction map $T : H^\star \to V^\star$ is bounded
+  by the norm of the injection and injective, and it has dense range when $V$ is reflexive.
+* Remark 3, `Brezis.Chapter05.remark_5_3_pairing`: $\langle Tf, v \rangle_{V^\star, V} = (f, v)$ for
+  $f \in H$ and $v \in V$.
+* Remark 4, `Brezis.Chapter05.remark_5_4`: Hilbert spaces are reflexive.
+* Remark 5, `Brezis.Chapter05.remark_5_5`: for a closed subspace $M$, $M \cap M^\perp = \{0\}$,
+  $M + M^\perp = H$, $f - P_M f = P_{M^\perp} f$, and $M$ is complemented.
+* Remark 5, `Brezis.Chapter05.remark_5_5_annihilator`: the annihilator of $M$ in $H^\star$
+  corresponds to $M^\perp \subseteq H$ under the Riesz–Fréchet isometry.
 
-The weighted-`ℓ²` example inside Remark 3 is not stated.
+## Conventions
+
+* Reflexivity is the backbone class `NormedSpace.IsReflexive ℝ V`.
+* The orthogonal complement $M^\perp = \{u \in H : (u, v) = 0 \text{ for all } v \in M\}$ is
+  Mathlib's `Mᗮ`, and the orthogonal projection $P_M$ is `Submodule.starProjection M`.
+
+## Not formalized
+
+* **Remark 3, the example with a weighted space $\ell^2$.** It is not stated.
+* **Remark 3, footnote.** The claim that $T$ is not surjective in general is not stated.
 -/
 
 open InnerProductSpace NormedSpace
@@ -44,8 +60,12 @@ namespace Brezis.Chapter05
 
 variable {H : Type*} [NormedAddCommGroup H] [InnerProductSpace ℝ H] [CompleteSpace H]
 
-/-- **Theorem 5.5 (Riesz–Fréchet representation theorem).** Given any `φ ∈ H*` there is a unique
-`f ∈ H` with `⟨φ, u⟩ = (f, u)` for all `u ∈ H`; moreover `|f| = ‖φ‖`. The representative is
+/-- **Theorem 5.5** of [brezis2011functional] (Riesz–Fréchet representation theorem). Let $H$ be a
+real Hilbert space. For every $\varphi \in H^\star$ there is a unique $f \in H$ such that
+$$\langle \varphi, u \rangle = (f, u) \quad \text{for all } u \in H.$$
+Moreover $|f| = \|\varphi\|_{H^\star}$.
+
+Uniqueness is stated for the pair of conditions. The representative is
 `(InnerProductSpace.toDual ℝ H).symm φ`. -/
 theorem theorem_5_5 (φ : StrongDual ℝ H) :
     ∃! f : H, (∀ u, φ u = ⟪f, u⟫_ℝ) ∧ ‖f‖ = ‖φ‖ := by
@@ -57,20 +77,26 @@ theorem theorem_5_5 (φ : StrongDual ℝ H) :
     ext u
     rw [toDual_apply_apply, ← hg, LinearIsometryEquiv.apply_symm_apply]
 
-/-! ### Remark 3: the triple `V ⊂ H ⊂ V*` -/
+/-! ### Remark 3: the triple $V \subset H \subset V^\star$ -/
 
 section Pivot
 
 variable {V : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V] [CompleteSpace V]
 
 omit [CompleteSpace H] [CompleteSpace V] in
-/-- **Remark 3, the triple `V ⊂ H ⊂ V*` with `H` as pivot space.** For a Banach space `V`
-continuously and densely injected into `H` by `i : V →L[ℝ] H` (the book's `V ⊂ H` with
-`|v| ≤ C ‖v‖`, `C = ‖i‖`), the canonical map `T : H* → V*`, `⟨T φ, v⟩ = ⟨φ, i v⟩` — the
-restriction of functionals to `V`, chapter 2's `i.strongDualMap` — satisfies
-(i) `‖T φ‖ ≤ ‖i‖ ‖φ‖`, (ii) `T` is injective, (iii) `R(T)` is dense in `V*` if `V` is reflexive.
-The footnote — `T` is not surjective in general — is not stated. Neither completeness is used:
-reflexivity of `V` is the hypothesis of (iii), and `H` enters only through its dual. -/
+/-- **Remark 3** in Chapter 5 of [brezis2011functional], the triple $V \subset H \subset V^\star$
+with $H$ as pivot space. Let $V$ be a real normed space and let $i : V \to H$ be a continuous,
+injective linear map with dense range, so that $|i v| \le C \|v\|$ with $C = \|i\|$. Let
+$T : H^\star \to V^\star$ be the restriction map, $\langle T\varphi, v \rangle = \langle
+\varphi, i v \rangle$. Then:
+
+1. $\|T\varphi\|_{V^\star} \le \|i\| \, \|\varphi\|_{H^\star}$ for every $\varphi \in H^\star$;
+2. $T$ is injective;
+3. if $V$ is reflexive, then the range $R(T)$ is dense in $V^\star$.
+
+The map $T$ is the Banach adjoint `i.strongDualMap` of Chapter 2. The completeness of $V$ and
+$H$ is not used: reflexivity of $V$ is the hypothesis of (3), and $H$ enters only through its
+dual. -/
 theorem remark_5_3 (i : V →L[ℝ] H) (hi : Function.Injective i) (hd : DenseRange i) :
     (∀ φ : StrongDual ℝ H, ‖i.strongDualMap φ‖ ≤ ‖i‖ * ‖φ‖) ∧
       Function.Injective i.strongDualMap ∧
@@ -110,22 +136,33 @@ theorem remark_5_3 (i : V →L[ℝ] H) (hi : Function.Injective i) (hd : DenseRa
     simp at hξ1
 
 omit [CompleteSpace V] in
-/-- **Remark 3, the identification of the pairings**: `⟨f, v⟩_{V*, V} = (f, v)` for `f ∈ H` and
-`v ∈ V`, where `f ∈ H` is read in `H*` by Riesz–Fréchet and then in `V*` by `T`. -/
+/-- **Remark 3** in Chapter 5 of [brezis2011functional], the identification of the pairings. Let $V$
+be a real normed space and $i : V \to H$ a continuous linear map. Read $f \in H$ as an element
+of $H^\star$ by the Riesz–Fréchet isometry, and then as an element of $V^\star$ by $T$. Then
+$$\langle f, v \rangle_{V^\star, V} = (f, i v) \quad \text{for all } f \in H,\ v \in V.$$
+-/
 theorem remark_5_3_pairing (i : V →L[ℝ] H) (f : H) (v : V) :
     i.strongDualMap (toDual ℝ H f) v = ⟪f, i v⟫_ℝ := by
   rw [ContinuousLinearMap.strongDualMap_apply, toDual_apply_apply]
 
 end Pivot
 
-/-- **Remark 4.** Hilbert spaces are reflexive, without the theory of uniformly convex spaces:
-the backbone instance `NormedSpace.instIsReflexiveOfInnerProductSpace` is the Riesz–Fréchet
-isomorphism used twice, from `H` onto `H*` and then from `H*` onto `H**`. -/
+/-- **Remark 4** in Chapter 5 of [brezis2011functional]. Every real Hilbert space is reflexive. The
+proof does not use the theory of uniformly convex spaces.
+
+The proof is the backbone instance `NormedSpace.instIsReflexiveOfInnerProductSpace`, which uses
+the Riesz–Fréchet isomorphism twice: from $H$ onto $H^\star$, and from $H^\star$ onto
+$H^{\star\star}$. -/
 theorem remark_5_4 : IsReflexive ℝ H := inferInstance
 
-/-- **Remark 5, the orthogonal complement in `H`.** For a closed subspace `M` and `f ∈ H`:
-`M ∩ M^⊥ = {0}`, `M + M^⊥ = H`, `f - P_M f = P_{M^⊥} f`, and `M` has a complement in the sense
-of §2.4 (`M.ClosedComplemented`). -/
+/-- **Remark 5** in Chapter 5 of [brezis2011functional], the orthogonal complement in $H$. Let
+$M \subseteq H$ be a closed linear subspace and $f \in H$. Then $M \cap M^\perp = \{0\}$,
+$M + M^\perp = H$,
+$$f - P_M f = P_{M^\perp} f,$$
+and $M$ has a complement in the sense of Section 2.4.
+
+The last property is Mathlib's `Submodule.ClosedComplemented`: there is a continuous linear
+projection of $H$ onto $M$. -/
 theorem remark_5_5 (M : Submodule ℝ H) (hM : IsClosed (M : Set H)) (f : H) :
     M ⊓ Mᗮ = ⊥ ∧ M ⊔ Mᗮ = ⊤ ∧
       (haveI := hM.completeSpace_coe; f - M.starProjection f = Mᗮ.starProjection f) ∧
@@ -134,9 +171,14 @@ theorem remark_5_5 (M : Submodule ℝ H) (hM : IsClosed (M : Set H)) (f : H) :
   exact ⟨M.inf_orthogonal_eq_bot, Submodule.sup_orthogonal_of_hasOrthogonalProjection,
     (M.starProjection_orthogonal_val f).symm, M.isTopCompl_orthogonal.closedComplemented⟩
 
-/-- **Remark 5, first sentence.** The annihilator `M^⊥ ⊆ H*` of §1.3 "may now be considered as a
-subspace of `H`": under the Riesz isometry, `φ ∈ M^⊥` (chapter 1's `M.strongDualAnnihilator`)
-exactly when its representative lies in `Mᗮ = {u ∈ H | (u, v) = 0 ∀ v ∈ M}`. -/
+/-- **Remark 5** in Chapter 5 of [brezis2011functional], first sentence. Let $M \subseteq H$ be a
+linear subspace. The annihilator $M^\perp \subseteq H^\star$ of Section 1.3 "may now be
+considered as a subspace of $H$": a functional $\varphi \in H^\star$ lies in the annihilator of
+$M$ if and only if its Riesz–Fréchet representative lies in
+$$M^\perp = \{u \in H : (u, v) = 0 \text{ for all } v \in M\}.$$
+
+The annihilator is `Submodule.strongDualAnnihilator M`, and the representative is
+`(InnerProductSpace.toDual ℝ H).symm φ`. -/
 theorem remark_5_5_annihilator (M : Submodule ℝ H) (φ : StrongDual ℝ H) :
     φ ∈ M.strongDualAnnihilator ↔ (toDual ℝ H).symm φ ∈ Mᗮ := by
   rw [Submodule.mem_strongDualAnnihilator, Submodule.mem_orthogonal]
