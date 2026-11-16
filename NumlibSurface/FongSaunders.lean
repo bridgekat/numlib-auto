@@ -9,113 +9,130 @@ import NumlibSurface.FongSaunders.Section04
 import NumlibSurface.FongSaunders.Section05
 
 /-!
-# Fong–Saunders, *CG versus MINRES: an empirical comparison*
+# Fong and Saunders, *CG versus MINRES: an empirical comparison*
 
-The surface library for D. C.-L. Fong and M. A. Saunders, *CG versus MINRES: an empirical
-comparison* [fong2012cg]: five modules, one per section of the paper. Each states the paper's
-results in the paper's own terms and proves them from `Numlib`, the general backbone. Little is
-proved here that is not proved there — the surface exists to test the backbone against a published
-account of the subject, and to give a reader of the paper a Lean name for every result in it.
+This library formalizes the mathematical results of the paper [fong2012cg] by D. C.-L. Fong and M.
+A. Saunders, which also appeared as Report SOL 2011-2R, Stanford University, 2011. The paper
+compares the conjugate gradient method (CG) and MINRES on a real symmetric positive definite system
+$Ax = b$, solved from $x_0 = 0$. It proves that the solution norms $\|x_k\|$ increase and the errors
+$\|x^* - x_k\|$ and $\|x^* - x_k\|_A$ decrease for both methods, and that for MINRES, which
+coincides with the conjugate residual method (CR) on such systems, also the residual norms $\|r_k\|$
+and the normwise relative backward errors decrease. Section 3 applies these results to the stopping
+rule (3.4), which is based on the normwise relative backward error. The library formalizes the
+theorems of Sections 2 and 3, the exact relations behind the experiments of Section 4, and the
+summary Table 5.1. The proofs specialize the Krylov subspace theory of the backbone, in particular
+`Numlib.Krylov.CG`, `Numlib.Krylov.CR`, `Numlib.Krylov.Lanczos` and `Numlib.Krylov.Monotonicity`,
+together with the projection results of `Numlib.Projection.Optimality`. The module
+`NumlibSurface.FongSaunders.Section01` fixes the vocabulary that the other modules use and proves
+the lemmas that connect it to the backbone; each later module imports the one before it.
 
-**All six numbered theorems of the paper are formalized** — Theorems 2.1–2.5 and Theorem 3.1 —
-together with the displayed equations (2.2), (3.2)–(3.6) and (4.1), the definitions (2.1) of a
-MINRES iterate and (3.1) of an acceptable solution, the two algorithms of Table 2.1, and the
-monotonicity profile of Table 5.1. The two indefinite-case results that §4.2 states in prose are
-deferred; see "Not formalized" below.
+## Coverage
 
-This module imports the five section modules and adds nothing of its own.
+All six numbered theorems of the paper are formalized: Theorems 2.1–2.5 and Theorem 3.1. The library
+also formalizes the displayed equations (2.2), (3.2)–(3.6) and (4.1), the definitions (2.1) of a
+MINRES iterate and (3.1) of an acceptable solution, the two algorithms of Table 2.1, the
+monotonicity profile of Table 5.1, the indefinite example (4.2), and the theorem of Steihaug with
+its CR and MINRES analogue that Section 4.2 states in prose. The unnumbered facts that these
+statements use, such as the Lanczos relation and the termination of the algorithms, are formalized
+too. The empirical half of the paper (test problems, figures and percentages of monotone steps) is
+out of scope, and so are Table 5.2 and the discussion of LSQR and LSMR in Section 5, which state
+results of other papers.
 
-## Naming
+## Contents
 
-A declaration is named for the result it states, so the name is the index: `theorem_2_3_cr` is
-Theorem 2.3 for Algorithm CR and `equation_4_1` is (4.1). Where one numbered result needs several
-declarations — its separate clauses, its CG and its MINRES form, or a strict beside a nonstrict
-version — a trailing word tells them apart, as in `theorem_2_2_a`, `theorem_3_1_minres` and
-`theorem_2_3_strict`. The paper's unnumbered constructions keep descriptive names (`cg`, `cr`,
-`krylov`, `lanczosVec`, `nrbe`). Everything is in the flat `FongSaunders` namespace, and `SectionNN`
-is the module for §N.
-
-## The outline
-
-| § | module | subject |
+| Source | Module | Subject |
 |---|---|---|
-| 1 | `Section01` | The setting, Krylov subspaces and the Lanczos process |
-| 2 | `Section02` | Algorithms CG and CR, their minimization properties, Theorems 2.1–2.5 |
-| 3 | `Section03` | Normwise relative backward errors, the stopping rule, Theorem 3.1 |
-| 4 | `Section04` | The exact relations behind the numerical comparison |
-| 5 | `Section05` | Table 5.1, the summary of monotonicity properties |
+| §1 The setting, Krylov subspaces and the Lanczos process | `Section01` | Lanczos relation, $x^*$ |
+| §2 Algorithms CG and CR, their monotonicity | `Section02` | Table 2.1, (2.1), Theorems 2.1–2.5 |
+| §3 Normwise relative backward errors and stopping rules | `Section03` | (3.1)–(3.6), Theorem 3.1 |
+| §4 The exact relations behind the numerical comparison | `Section04` | (4.1), Steihaug's theorem |
+| §5 Table 5.1, the summary of monotonicity properties | `Section05` | Table 5.1, example (4.2) |
 
-`Section01` also fixes the vocabulary the other four use and proves the bridges to the backbone;
-each later module imports its predecessor together with the backbone modules its own proofs need.
+## Conventions
 
-## The setting
+* A declaration is named for the item that it states: Theorem 2.3 for Algorithm CR is
+  `FongSaunders.theorem_2_3_cr`, and equation (4.1) is `FongSaunders.equation_4_1`. Where one
+  numbered item needs several declarations (its separate clauses, its CG and its MINRES form, or a
+  strict beside a nonstrict version), a trailing word tells them apart, as in
+  `FongSaunders.theorem_2_2_a`, `FongSaunders.theorem_3_1_minres` and
+  `FongSaunders.theorem_2_3_strict`. Unnumbered constructions have descriptive names, such as
+  `FongSaunders.cg`, `FongSaunders.cr`, `FongSaunders.krylov`, `FongSaunders.lanczosVec` and
+  `FongSaunders.nrbe`. All declarations are in the namespace `FongSaunders`, and the module
+  `SectionNN` formalizes §N.
+* The paper works with a real symmetric positive definite system $Ax = b$ of order $n$, with the
+  2-norm on vectors and the Frobenius norm on matrices.
+* The space $\mathbb{R}^n$ is `FongSaunders.Vec n`, which is `EuclideanSpace ℝ (Fin n)`. On it,
+  $\|\cdot\|$ is the 2-norm and `⟪x, y⟫_ℝ` is $x^T y$.
+* The matrix $A$ is `A : Matrix (Fin n) (Fin n) ℝ`. Positive definiteness is `A.PosDef`, which over
+  $\mathbb{R}$ means that $A$ is symmetric and $x^T A x > 0$ for $x \neq 0$. The lemma
+  `FongSaunders.isSymmetricCoercive_of_posDef` turns it into the backbone hypothesis
+  `LinearMap.IsSymmetricCoercive`, through which every backbone theorem applies.
+* The product $Ax$ is `A ⬝ x`, which is `FongSaunders.mulVecE A x`, that is
+  `Matrix.toEuclideanLin A x`.
+* The matrix norm $\|A\|$ is the Frobenius norm, from `open scoped Matrix.Norms.Frobenius` in
+  `Section03`.
+* The starting point $x_0 = 0$ is an instantiation, not a hypothesis. The backbone states its Krylov
+  theory for an arbitrary $x_0$, and every result here fixes $x_0 = 0$, as the paper does. Therefore
+  the iterates lie in $\mathcal{K}_k(A, b)$, not in $\mathcal{K}_k(A, r_0)$. The choice $x_0 = 0$ is
+  also the cause of the two restrictions to $k \ge 1$ in the deviations below. Because the ambient
+  space is `FongSaunders.Vec n`, the instance hypotheses `FiniteDimensional` of the backbone are
+  discharged automatically, and its real part `RCLike.re` reduces to the identity.
 
-The paper works throughout with a real symmetric positive definite system `A x = b` of order `n`,
-solved from the zero starting point `x₀ = 0`, taking the 2-norm on vectors and the Frobenius norm
-on matrices. In Lean:
+## Deviations from the source
 
-* `Vec n` is `EuclideanSpace ℝ (Fin n)`, so `‖·‖` on it is the 2-norm and `⟪x, y⟫_ℝ` is `xᵀ y`;
-* `A : Matrix (Fin n) (Fin n) ℝ` carries `hA : A.PosDef`, which over `ℝ` is Mathlib's spelling of
-  "symmetric, with `xᵀ A x > 0` for `x ≠ 0`"; `isSymmetricCoercive_of_posDef` is the bridge to the
-  backbone's `LinearMap.IsSymmetricCoercive`, through which every backbone theorem applies;
-* `A ⬝ x` is `Matrix.toEuclideanLin A x`, the paper's matrix–vector product read on `Vec n`;
-* `‖A‖` is the Frobenius norm, from `open scoped Matrix.Norms.Frobenius` in `Section03`.
+**Section 2**
 
-`x₀ = 0` is an instantiation rather than a hypothesis: the backbone states its Krylov theory for an
-arbitrary `x₀`, and every theorem here fixes it to `0`, as the paper does. That is what makes
-`𝒦_k(A, b)` — not `𝒦_k(A, r₀)` — the subspace the iterates live in, and it is where the two `k ≥ 1`
-restrictions recorded below come from. Because the ambient space is `Vec n`, the backbone's
-`[FiniteDimensional …]` instance hypotheses are discharged automatically and its `RCLike.re`
-disappears.
+* **Energy norm** (reading). Section 2.1 writes $\|v\|_A$ for $v^T A v$; the library defines
+  $\|v\|_A = (v^T A v)^{1/2}$, and every statement about it is unchanged by squaring. See
+  `FongSaunders.energyNorm`.
 
-## Where formalizing needs care
+**Section 3**
 
-Three places where the paper does not transcribe literally, each recorded on the declarations
-concerned.  The paper's own ambiguities, and the readings adopted for them, are in
-`notes/book-errata.md`.
+* **Nonzero data in the backward-error results** (reading). The ratios $\|E\| / \|A\|$ and
+  $\|f\| / \|b\|$ presuppose $A \neq 0$ and $b \neq 0$, which the paper leaves implicit. With Lean's
+  convention $t / 0 = 0$, every perturbation of a zero matrix would be feasible at every tolerance,
+  and the results would be vacuous instead of sharp; so the results state both hypotheses. Under
+  `A.PosDef` the first follows from the second by `FongSaunders.ne_zero_of_posDef`. See
+  `FongSaunders.nrbePert_attains`, `FongSaunders.nrbe_isLeast` and
+  `FongSaunders.isAcceptable_iff_nrbe_le_one`.
+* **Theorem 3.1, the rows that divide by $\|x_k\|$** (reading). The paper's $E_0$ is undefined
+  because $x_0 = 0$, while in Lean the ratio is $0$ at $k = 0$, below every later value; so the
+  decrease of $\|E_k\| / \|A\|$, and of $\xi_k$ when $\beta = 0$, is stated for $k \ge 1$. For
+  $\beta > 0$ the denominator of $\xi_k$ is positive at $k = 0$, and
+  `FongSaunders.nrbe_minres_antitone` states the decrease for all $k$. See
+  `FongSaunders.theorem_3_1_minres`, `FongSaunders.theorem_3_1_cr` and
+  `FongSaunders.nrbe_minres_antitoneOn`.
 
-* **The backward-error results need `A ≠ 0` and `b ≠ 0`** (§3). The paper measures a perturbation
-  by the ratios `‖E‖/‖A‖` and `‖f‖/‖b‖`, which presuppose nonzero denominators. Lean's `t / 0 = 0`
-  makes both ratios vanish when they do not, so every perturbation of a zero matrix would be
-  feasible at every tolerance and `nrbe_isLeast`, `nrbePert_attains` and
-  `isAcceptable_iff_nrbe_le_one` would be vacuously true rather than sharp. The two hypotheses are
-  therefore explicit; under `A.PosDef` the first follows from the second by `ne_zero_of_posDef`.
+**Section 4**
 
-* **Two monotonicity rows start at `k = 1`, because `x₀ = 0`** (§3, §5). The quantities `‖E_k‖/‖A‖`
-  of Theorem 3.1 and `‖r_k‖/‖x_k‖` of Table 5.1 divide by `‖x_k‖`, which vanishes at `k = 0`. The
-  paper's `E_0` is simply undefined there, whereas in Lean the ratio evaluates to `0`, which is
-  *below* every later value: `Antitone` on all of `ℕ` would be false, not merely unstated. So
-  `theorem_3_1_minres`, `nrbe_minres_antitoneOn` and `MINRESProfile.backwardError` are
-  `AntitoneOn … (Set.Ici 1)`. When `β > 0` keeps the denominator positive at `k = 0` the honest
-  statement is `Antitone` on all of `ℕ`, and that is what `nrbe_minres_antitone` says.
+* **Steihaug's theorem for CR and MINRES** (reading). The paper assumes $p_j^T A p_j > 0$ and
+  $r_j^T A r_j > 0$ for $1 \le j \le k$, a local hypothesis that its proof through Theorem 2.2(d)
+  does not support; the library assumes $r_j^T A r_j > 0$ at every iteration before termination and
+  drops the first condition as redundant. See `FongSaunders.steihaug_cr`.
 
-* **The two blank entries of Table 5.1 need explicit witnesses** (§5). Read faithfully, a blank
-  entry asserts the existence of a symmetric positive definite system on which the row fails to be
-  monotone. `cg_norm_residual_not_antitone` uses `A = diag(1, 9)`, `b = (3, 1)ᵀ`, where
-  `‖r₀‖² = 10` and `‖r₁‖² = 160/9`. `cg_backwardError_not_antitoneOn` uses `A = diag(1, 13, 16)`,
-  `b = (1, 5, 1)ᵀ`, where `(‖r₁‖/‖x₁‖)² = 50/9 < 200/33 = (‖r₂‖/‖x₂‖)²`. The second admits no
-  `2 × 2` witness: CG on an order-2 system terminates with `r₂ = 0`, so the ratio is `0` from
-  `k = 2` on and the row cannot fail on `Set.Ici 1`.
+**Section 5**
+
+* **The blank CG entries of Table 5.1** (reading). A blank entry is read as the existence of a
+  symmetric positive definite system on which the row fails to be monotone; the witnesses are
+  $A = \operatorname{diag}(1, 9)$ with $b = (3, 1)^T$, and $A = \operatorname{diag}(1, 13, 16)$ with
+  $b = (1, 5, 1)^T$. See `FongSaunders.cg_norm_residual_not_antitone` and
+  `FongSaunders.cg_backwardError_not_antitoneOn`.
+* **The row $\|r_k\| / \|x_k\|$ of Table 5.1** (reading). The ratio is undefined at $k = 0$ because
+  $x_0 = 0$; the row is stated for $k \ge 1$. See `FongSaunders.MINRESProfile`.
 
 ## Not formalized
 
-**Deferred.** §4.2 states Steihaug's theorem — for CG on a symmetric, possibly *indefinite* system
-the solution norms `‖x_1‖, …, ‖x_k‖` increase strictly as long as `p_jᵀ A p_j > 0` — and asserts
-the same for CR and MINRES under the further condition `r_jᵀ A r_j > 0`. Both rest on strict
-monotonicity statements for symmetric indefinite operators that the backbone does not yet provide
-(`notes/backbone.md` §3.11, "Steihaug's generalization", scheduled for phase 2), and the surface
-layer may not invent them. The CR analogue would also need restating: the paper's proof of
-Theorem 2.2 (d) expands `p_i` in the complete orthogonal basis `{q_0, …, q_{ℓ−1}}` of `A 𝒦_ℓ`,
-which needs the recurrence to run to termination without breakdown, not merely through iteration
-`k`, so the local hypotheses the paper states do not support the local conclusion it draws.
+**Section 4**
 
-**Left out.** The empirical half of the paper: the test set and diagonal preconditioning of §4, all
-of Figures 4.1–4.8 with their percentages of monotone steps, the "cumulative minimum" heuristic of
-§4.1.1, and the MINRES-QLP relationship of §4.2, which is built on Choi–Paige–Saunders and from
-which the paper draws no theorem. Table 5.2 and the §5 discussion of LSQR and LSMR state results of
-other papers.
+* **The test set and the diagonal preconditioning of Section 4.** They are empirical.
+* **Figures 4.1–4.8 and their percentages of monotone steps.** They are empirical.
+* **The "cumulative minimum" heuristic of Section 4.1.1.** It is empirical.
+* **The relation to MINRES-QLP in Section 4.2.** It rests on the work of Choi, Paige and Saunders,
+  the paper draws no theorem from it, and its missing ingredient, the QLP factorization
+  $R_k P_k = L_k$, belongs in the backbone module `Numlib.Krylov.Singular`.
 
-## References
+**Section 5**
 
-* [fong2012cg]; also Report SOL 2011-2R, Stanford University, 2011.
+* **Table 5.2.** It states results of other papers.
+* **The discussion of LSQR and LSMR in Section 5.** It states results of other papers.
 -/

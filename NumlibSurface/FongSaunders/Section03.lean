@@ -9,20 +9,79 @@ import Numlib.Krylov.Monotonicity
 import NumlibSurface.FongSaunders.Section02
 
 /-!
-# Fong–Saunders §3: normwise relative backward errors and stopping rules
+# Fong and Saunders, Section 3: Normwise relative backward errors and stopping rules
 
-Surface file for D. C.-L. Fong and M. A. Saunders, *CG versus MINRES: an empirical comparison*, SQU
-Journal for Science **17** (2012) 44–62 (Report SOL 2011-2R), §3.
+This module formalizes Section 3 of [fong2012cg]. The section measures an approximate solution $x_k$
+of $Ax = b$ by the smallest perturbation $(A + E_k) x_k = b + f_k$ that $x_k$ solves exactly, with
+$\|E_k\| / \|A\| \le \alpha \xi$ and $\|f_k\| / \|b\| \le \beta \xi$ for tolerances
+$\alpha, \beta \ge 0$; the matrix norm is the Frobenius norm. The least such $\xi$ is the normwise
+relative backward error
+$$\xi_k = \frac{\|r_k\|}{\alpha \|A\| \|x_k\| + \beta \|b\|}, \qquad r_k = b - A x_k.$$
 
-§3 measures an approximate solution `x_k` by the smallest perturbation `(A + E) x_k = b + f` it
-solves exactly, with `‖E‖/‖A‖ ≤ α ξ` and `‖f‖/‖b‖ ≤ β ξ`; the matrix norm is the Frobenius norm.
-Contents: the definition (3.1) of an acceptable solution, the optimal perturbations (3.2)–(3.3)
-and the closed form of the normwise relative backward error `ξ_k`, the stopping rule (3.4), the
-norms (3.5)–(3.6), the remark that `φ_k` decreases for CG and MINRES, and Theorem 3.1.
+The module gives the definition (3.1) of an acceptable solution, the closed form (3.2) of $\xi_k$
+with the weight $\phi_k = \beta \|b\| / (\alpha \|A\| \|x_k\| + \beta \|b\|)$, the optimal
+perturbations (3.3), the stopping rule (3.4), the norms (3.5)–(3.6) of the optimal perturbations,
+the remark of Section 3.2 that $\phi_k$ decreases for CG and MINRES, and Theorem 3.1: for MINRES,
+and hence for CR, the relative backward errors $\|E_k\| / \|A\|$ and $\|f_k\| / \|b\|$ decrease
+monotonically. The monotonicity results specialize `Numlib.Krylov.Monotonicity`, through Theorem 2.3
+in `NumlibSurface.FongSaunders.Section02`.
 
-The paper's ratios `‖E‖/‖A‖` and `‖f‖/‖b‖` are transcribed literally, so the statements about
-the optimal perturbation carry the hypotheses `A ≠ 0` and `b ≠ 0` that the paper leaves implicit:
-Lean's `t / 0 = 0` would otherwise make every perturbation of a zero matrix feasible.
+## Main definitions
+
+* Equation (3.1), `FongSaunders.IsAcceptable`: $x$ is an acceptable solution if $(A + E) x = b + f$
+  for some $E$ and $f$ with $\|E\| / \|A\| \le \alpha$ and $\|f\| / \|b\| \le \beta$.
+* Equation (3.2), `FongSaunders.nrbe`: the normwise relative backward error $\xi_k$.
+* Equation (3.2), `FongSaunders.nrbePhi`: the weight $\phi_k$.
+* Equation (3.3), `FongSaunders.nrbePertA`: the optimal matrix perturbation
+  $E_k = \frac{1 - \phi_k}{\|x_k\|^2} r_k x_k^T$.
+* Equation (3.3), `FongSaunders.nrbePertb`: the optimal right-hand-side perturbation
+  $f_k = -\phi_k r_k$.
+
+## Main results
+
+* Equations (3.2)–(3.3), `FongSaunders.nrbePert_attains`: the perturbations $E_k$ and $f_k$ are
+  feasible and attain the value $\xi_k$.
+* Equation (3.2), `FongSaunders.nrbe_isLeast`: $\xi_k$ is the least $\xi$ for which a feasible
+  perturbation exists.
+* Equation (3.4), `FongSaunders.nrbe_le_one_iff`: $\xi_k \le 1$ if and only if
+  $\|r_k\| \le \alpha \|A\| \|x_k\| + \beta \|b\|$.
+* Section 3, `FongSaunders.isAcceptable_iff_nrbe_le_one`: $x_k$ is acceptable if and only if
+  $\xi_k \le 1$.
+* Equation (3.5), `FongSaunders.norm_nrbePertA`: $\|E_k\| = (1 - \phi_k) \|r_k\| / \|x_k\|$.
+* Equation (3.6), `FongSaunders.norm_nrbePertb`: $\|f_k\| = \phi_k \|r_k\|$.
+* Section 3.2, `FongSaunders.nrbePhi_cg_antitone` and `FongSaunders.nrbePhi_minres_antitone`:
+  $\phi_k$ decreases monotonically for CG and for MINRES.
+* Theorem 3.1, `FongSaunders.nrbe_minres_antitone` and `FongSaunders.nrbe_minres_antitoneOn`:
+  $\xi_k$ decreases monotonically for MINRES.
+* Theorem 3.1, `FongSaunders.theorem_3_1_minres` and `FongSaunders.theorem_3_1_cr`:
+  $\|E_k\| / \|A\|$ and $\|f_k\| / \|b\|$ decrease monotonically for MINRES and for CR.
+* Section 3, `FongSaunders.minres_stops_first`: under the stopping rule $\|r_k\| \le \beta \|b\|$,
+  MINRES stops no later than CG.
+
+## Conventions
+
+* In this section $\alpha$ and $\beta$ are the tolerances of the stopping rule, not the coefficients
+  of Table 2.1.
+* The matrix norm $\|A\|$ is the Frobenius norm, from `open scoped Matrix.Norms.Frobenius`.
+
+## Implementation notes
+
+* The ratios $\|E\| / \|A\|$ and $\|f\| / \|b\|$ are written as divisions, with Lean's convention
+  $t / 0 = 0$. The definitions of $\xi_k$, $\phi_k$ and $E_k$ are also divisions: each is $0$ when
+  its denominator is $0$, and in particular $E_k = 0$ for $x_k = 0$.
+* The backbone proves the Rigal–Gaches theorem in `Numlib.Conditioning.LinearSystem` for the
+  operator norm. The surface proves it again for the Frobenius norm.
+
+## Deviations from the source
+
+* **Nonzero data in the backward-error results** (reading). The ratios $\|E\| / \|A\|$ and
+  $\|f\| / \|b\|$ presuppose $A \neq 0$ and $b \neq 0$, which the paper leaves implicit; the results
+  state them. See `FongSaunders.nrbePert_attains`, `FongSaunders.nrbe_isLeast` and
+  `FongSaunders.isAcceptable_iff_nrbe_le_one`.
+* **Theorem 3.1, the rows that divide by $\|x_k\|$** (reading). The paper's $E_0$ is undefined
+  because $x_0 = 0$; the decrease of $\|E_k\| / \|A\|$, and of $\xi_k$ when $\beta = 0$, is stated
+  for $k \ge 1$. See `FongSaunders.theorem_3_1_minres`, `FongSaunders.theorem_3_1_cr` and
+  `FongSaunders.nrbe_minres_antitoneOn`.
 -/
 
 namespace FongSaunders
@@ -33,26 +92,30 @@ open scoped Matrix.Norms.Frobenius
 
 variable {n : ℕ} {A : Matrix (Fin n) (Fin n) ℝ} {b : Vec n} {α β : ℝ}
 
-/-! ### Linearity of the product in the matrix, and two Frobenius-norm lemmas
+/-!
+### Linearity of the product in the matrix, and two facts on the Frobenius norm
 
-The backbone (`Numlib/Conditioning/LinearSystem.lean`) proves the Rigal–Gaches theorem with the
-*operator* norm on `E →L[𝕜] E`.  The paper uses the Frobenius norm, so the surface reproves the
-two norm facts the argument needs; everything else is the same computation. -/
+The backbone module `Numlib.Conditioning.LinearSystem` proves the Rigal–Gaches theorem with the
+operator norm. The paper uses the Frobenius norm, so this module proves again the two norm facts
+that the argument needs. The rest of the argument is the same computation.
+-/
 
-/-- The product is additive in the matrix, as needed for the perturbed system `(A + E) x`. -/
+/-- The product is additive in the matrix: $(E + F) x = Ex + Fx$. The perturbed system $(A + E) x$
+needs this. -/
 theorem add_mulVecE (E F : Matrix (Fin n) (Fin n) ℝ) (x : Vec n) :
     (E + F) ⬝ x = E ⬝ x + F ⬝ x := by
   change Matrix.toEuclideanLin (E + F) x
     = Matrix.toEuclideanLin E x + Matrix.toEuclideanLin F x
   rw [map_add, LinearMap.add_apply]
 
-/-- The product is homogeneous in the matrix. -/
+/-- The product is homogeneous in the matrix: $(cE) x = c\,(Ex)$ for $c \in \mathbb{R}$. -/
 theorem smul_mulVecE (c : ℝ) (E : Matrix (Fin n) (Fin n) ℝ) (x : Vec n) :
     (c • E) ⬝ x = c • (E ⬝ x) := by
   change Matrix.toEuclideanLin (c • E) x = c • Matrix.toEuclideanLin E x
   rw [map_smul, LinearMap.smul_apply]
 
-/-- The Frobenius norm of a rank-one matrix `r xᵀ` is `‖r‖ ‖x‖`. -/
+/-- For finite index types and vectors $w$ and $v$, the Frobenius norm of the rank-one matrix
+$w v^T$ is $\|w v^T\| = \|w\| \, \|v\|$, with the Euclidean norms of $w$ and $v$. -/
 theorem frobenius_norm_vecMulVec {m k : Type*} [Fintype m] [Fintype k] (w : m → ℝ) (v : k → ℝ) :
     ‖Matrix.vecMulVec w v‖
       = ‖(WithLp.toLp 2 w : EuclideanSpace ℝ m)‖ * ‖(WithLp.toLp 2 v : EuclideanSpace ℝ k)‖ := by
@@ -63,7 +126,8 @@ theorem frobenius_norm_vecMulVec {m k : Type*} [Fintype m] [Fintype k] (w : m �
   refine Finset.sum_congr rfl fun i _ => Finset.sum_congr rfl fun j _ => ?_
   rw [Matrix.vecMulVec_apply, Real.rpow_two, norm_mul, mul_pow]
 
-/-- The Frobenius norm dominates the Euclidean operator norm: `‖E x‖ ≤ ‖E‖ ‖x‖`. -/
+/-- The Frobenius norm dominates the operator norm: $\|Ex\| \le \|E\| \, \|x\|$ for every
+$E \in \mathbb{R}^{n \times n}$ and $x \in \mathbb{R}^n$. -/
 theorem norm_mulVecE_le_frobenius (E : Matrix (Fin n) (Fin n) ℝ) (x : Vec n) :
     ‖E ⬝ x‖ ≤ ‖E‖ * ‖x‖ := by
   have hone : ‖(WithLp.toLp 2 (fun _ : Unit => (1 : ℝ)) : EuclideanSpace ℝ Unit)‖ = 1 := by
@@ -81,7 +145,8 @@ theorem norm_mulVecE_le_frobenius (E : Matrix (Fin n) (Fin n) ℝ) (x : Vec n) :
         Matrix.frobenius_norm_mul _ _
     _ = ‖E‖ * ‖x‖ := by rw [hcol]
 
-/-- A rank-one matrix applied to a vector: `(u vᵀ) w = (vᵀ w) u`. -/
+/-- A rank-one matrix applied to a vector: $(u v^T) w = (v^T w)\,u$ for $u, v, w \in \mathbb{R}^n$.
+-/
 theorem mulVecE_vecMulVec (u v w : Vec n) :
     Matrix.vecMulVec (WithLp.ofLp u) (WithLp.ofLp v) ⬝ w = ⟪v, w⟫_ℝ • u := by
   ext i
@@ -92,59 +157,89 @@ theorem mulVecE_vecMulVec (u v w : Vec n) :
   congr 1
   exact Finset.sum_congr rfl fun j _ => mul_comm _ _
 
-/-! ### D9: acceptable solutions and the normwise relative backward error -/
+/-! ### Acceptable solutions and the normwise relative backward error -/
 
-/-- (3.1): `x` is an *acceptable* solution for the tolerances `α, β` if it solves exactly a
-system perturbed by at most those relative amounts. -/
+/-- **Equation (3.1)** of [fong2012cg], acceptable solutions. Let $A \in \mathbb{R}^{n \times n}$,
+$b \in \mathbb{R}^n$ and tolerances $\alpha, \beta \in \mathbb{R}$. A vector $x$ is an
+**acceptable solution** if there are $E \in \mathbb{R}^{n \times n}$ and $f \in \mathbb{R}^n$
+with $$(A + E)\,x = b + f, \qquad \frac{\|E\|}{\|A\|} \le \alpha, \qquad \frac{\|f\|}{\|b\|} \le
+\beta.$$
+
+The matrix norm is the Frobenius norm. The ratios are Lean divisions, so a ratio with
+denominator $0$ is $0$; the results that use this definition therefore assume $A \neq 0$ and
+$b \neq 0$. -/
 def IsAcceptable (A : Matrix (Fin n) (Fin n) ℝ) (b : Vec n) (α β : ℝ) (x : Vec n) : Prop :=
   ∃ (E : Matrix (Fin n) (Fin n) ℝ) (f : Vec n),
     (A + E) ⬝ x = b + f ∧ ‖E‖ / ‖A‖ ≤ α ∧ ‖f‖ / ‖b‖ ≤ β
 
-/-- The feasible set of the optimization problem defining the normwise relative backward
-error. -/
+/-- For $A$, $b$, tolerances $\alpha, \beta$ and a vector $x$, the set of the numbers
+$\xi \in \mathbb{R}$ for which there are $E$ and $f$ with $(A + E) x = b + f$,
+$\|E\| / \|A\| \le \alpha \xi$ and $\|f\| / \|b\| \le \beta \xi$. The normwise relative backward
+error is the least element of this set (`FongSaunders.nrbe_isLeast`). -/
 def nrbeFeasible (A : Matrix (Fin n) (Fin n) ℝ) (b : Vec n) (α β : ℝ) (x : Vec n) : Set ℝ :=
   {ξ : ℝ | ∃ (E : Matrix (Fin n) (Fin n) ℝ) (f : Vec n),
     (A + E) ⬝ x = b + f ∧ ‖E‖ / ‖A‖ ≤ α * ξ ∧ ‖f‖ / ‖b‖ ≤ β * ξ}
 
-/-- (3.2): the normwise relative backward error `ξ_k = ‖r_k‖ / (α ‖A‖ ‖x_k‖ + β ‖b‖)`. -/
+/-- **Equation (3.2)** of [fong2012cg], the normwise relative backward error. For $A$, $b$,
+tolerances $\alpha, \beta$ and $x_k \in \mathbb{R}^n$ with residual $r_k = b - A x_k$, $$\xi_k =
+\frac{\|r_k\|}{\alpha \|A\| \|x_k\| + \beta \|b\|}.$$
+
+The value is $0$ when the denominator is $0$. -/
 noncomputable def nrbe (A : Matrix (Fin n) (Fin n) ℝ) (b : Vec n) (α β : ℝ) (x : Vec n) : ℝ :=
   ‖b - A ⬝ x‖ / (α * ‖A‖ * ‖x‖ + β * ‖b‖)
 
-/-- (3.2): the weight `φ_k = β ‖b‖ / (α ‖A‖ ‖x_k‖ + β ‖b‖)`. -/
+/-- **Equation (3.2)** of [fong2012cg], the weight. For $A$, $b$, tolerances $\alpha, \beta$ and
+$x_k \in \mathbb{R}^n$, $$\phi_k = \frac{\beta \|b\|}{\alpha \|A\| \|x_k\| + \beta \|b\|}.$$
+
+The value is $0$ when the denominator is $0$. -/
 noncomputable def nrbePhi (A : Matrix (Fin n) (Fin n) ℝ) (b : Vec n) (α β : ℝ) (x : Vec n) : ℝ :=
   β * ‖b‖ / (α * ‖A‖ * ‖x‖ + β * ‖b‖)
 
-/-- (3.3): the optimal matrix perturbation `E_k = ((1 − φ_k)/‖x_k‖²) r_k x_kᵀ`. -/
+/-- **Equation (3.3)** of [fong2012cg], the optimal matrix perturbation. For $A$, $b$, tolerances
+$\alpha, \beta$ and $x_k \in \mathbb{R}^n$ with residual $r_k = b - A x_k$, $$E_k = \frac{1 -
+\phi_k}{\|x_k\|^2}\, r_k x_k^T.$$
+
+For $x_k = 0$ the coefficient is a division by $0$, so $E_k = 0$. -/
 noncomputable def nrbePertA (A : Matrix (Fin n) (Fin n) ℝ) (b : Vec n) (α β : ℝ) (x : Vec n) :
     Matrix (Fin n) (Fin n) ℝ :=
   ((1 - nrbePhi A b α β x) / ‖x‖ ^ 2) •
     Matrix.vecMulVec (WithLp.ofLp (b - A ⬝ x)) (WithLp.ofLp x)
 
-/-- (3.3): the optimal right-hand-side perturbation `f_k = −φ_k r_k`. -/
+/-- **Equation (3.3)** of [fong2012cg], the optimal right-hand-side perturbation. For $A$, $b$,
+tolerances $\alpha, \beta$ and $x_k \in \mathbb{R}^n$ with residual $r_k = b - A x_k$, $$f_k =
+-\phi_k\, r_k.$$
+-/
 noncomputable def nrbePertb (A : Matrix (Fin n) (Fin n) ℝ) (b : Vec n) (α β : ℝ) (x : Vec n) :
     Vec n :=
   -nrbePhi A b α β x • (b - A ⬝ x)
 
-/-- `0 ≤ φ_k`. -/
+/-- If $\beta \ge 0$ and $\alpha \|A\| \|x_k\| + \beta \|b\| \ge 0$, then $\phi_k \ge 0$. -/
 theorem nrbePhi_nonneg (x : Vec n) (hβ : 0 ≤ β) (hden : 0 ≤ α * ‖A‖ * ‖x‖ + β * ‖b‖) :
     0 ≤ nrbePhi A b α β x :=
   div_nonneg (mul_nonneg hβ (norm_nonneg b)) hden
 
-/-- `1 − φ_k = α ‖A‖ ‖x_k‖ / (α ‖A‖ ‖x_k‖ + β ‖b‖)`. -/
+/-- If $\alpha \|A\| \|x_k\| + \beta \|b\| > 0$, then $$1 - \phi_k = \frac{\alpha \|A\|
+\|x_k\|}{\alpha \|A\| \|x_k\| + \beta \|b\|}.$$
+-/
 theorem one_sub_nrbePhi {x : Vec n} (hden : 0 < α * ‖A‖ * ‖x‖ + β * ‖b‖) :
     1 - nrbePhi A b α β x = α * ‖A‖ * ‖x‖ / (α * ‖A‖ * ‖x‖ + β * ‖b‖) := by
   rw [nrbePhi, eq_div_iff hden.ne', sub_mul, one_mul, div_mul_cancel₀ _ hden.ne']
   ring
 
-/-- `0 ≤ 1 − φ_k`, the coefficient of the optimal matrix perturbation `E_k`. -/
+/-- If $\alpha \ge 0$ and $\alpha \|A\| \|x_k\| + \beta \|b\| > 0$, then $1 - \phi_k \ge 0$; this is
+the coefficient of the optimal matrix perturbation $E_k$. -/
 theorem one_sub_nrbePhi_nonneg (hα : 0 ≤ α) {x : Vec n}
     (hden : 0 < α * ‖A‖ * ‖x‖ + β * ‖b‖) : 0 ≤ 1 - nrbePhi A b α β x := by
   rw [one_sub_nrbePhi hden]
   positivity
 
-/-! ### R3.4: (3.5)–(3.6), the norms of the optimal perturbations -/
+/-! ### Equations (3.5)–(3.6): the norms of the optimal perturbations -/
 
-/-- (3.5): `‖E_k‖ = (1 − φ_k) ‖r_k‖ / ‖x_k‖`. -/
+/-- **Equation (3.5)** of [fong2012cg]. Let $\alpha \ge 0$, let $x_k \neq 0$, and let
+$\alpha \|A\| \|x_k\| + \beta \|b\| > 0$. Then the optimal matrix perturbation satisfies
+$$\|E_k\| = \frac{(1 - \phi_k)\,\|r_k\|}{\|x_k\|}.$$
+
+The norm is the Frobenius norm. -/
 theorem norm_nrbePertA (hα : 0 ≤ α) {x : Vec n} (hx : x ≠ 0)
     (hden : 0 < α * ‖A‖ * ‖x‖ + β * ‖b‖) :
     ‖nrbePertA A b α β x‖ = (1 - nrbePhi A b α β x) * ‖b - A ⬝ x‖ / ‖x‖ := by
@@ -157,13 +252,18 @@ theorem norm_nrbePertA (hα : 0 ≤ α) {x : Vec n} (hx : x ≠ 0)
   rw [h1, h2]
   field_simp
 
-/-- (3.6): `‖f_k‖ = φ_k ‖r_k‖`. -/
+/-- **Equation (3.6)** of [fong2012cg]. Let $\beta \ge 0$ and
+$\alpha \|A\| \|x_k\| + \beta \|b\| > 0$. Then the optimal right-hand-side perturbation
+satisfies $$\|f_k\| = \phi_k \|r_k\|.$$
+-/
 theorem norm_nrbePertb (hβ : 0 ≤ β) {x : Vec n} (hden : 0 < α * ‖A‖ * ‖x‖ + β * ‖b‖) :
     ‖nrbePertb A b α β x‖ = nrbePhi A b α β x * ‖b - A ⬝ x‖ := by
   rw [nrbePertb, norm_smul, Real.norm_eq_abs, abs_neg,
     abs_of_nonneg (nrbePhi_nonneg x hβ hden.le)]
 
-/-- (3.6) in relative form: `‖f_k‖/‖b‖ = β ξ_k`, valid for every `x_k` (including `x_k = 0`). -/
+/-- Equation (3.6) in relative form. If $b \neq 0$, $\beta \ge 0$ and
+$\alpha \|A\| \|x_k\| + \beta \|b\| > 0$, then $\|f_k\| / \|b\| = \beta \xi_k$. This holds for
+every $x_k$, also for $x_k = 0$. -/
 theorem norm_nrbePertb_div (hb0 : b ≠ 0) (hβ : 0 ≤ β) {x : Vec n}
     (hden : 0 < α * ‖A‖ * ‖x‖ + β * ‖b‖) :
     ‖nrbePertb A b α β x‖ / ‖b‖ = β * nrbe A b α β x := by
@@ -171,7 +271,8 @@ theorem norm_nrbePertb_div (hb0 : b ≠ 0) (hβ : 0 ≤ β) {x : Vec n}
   rw [norm_nrbePertb hβ hden, nrbePhi, nrbe]
   field_simp
 
-/-- (3.5) in relative form: `‖E_k‖/‖A‖ = α ξ_k` for `x_k ≠ 0`. -/
+/-- Equation (3.5) in relative form. If $A \neq 0$, $\alpha \ge 0$, $x_k \neq 0$ and
+$\alpha \|A\| \|x_k\| + \beta \|b\| > 0$, then $\|E_k\| / \|A\| = \alpha \xi_k$. -/
 theorem norm_nrbePertA_div (hA0 : A ≠ 0) (hα : 0 ≤ α) {x : Vec n} (hx : x ≠ 0)
     (hden : 0 < α * ‖A‖ * ‖x‖ + β * ‖b‖) :
     ‖nrbePertA A b α β x‖ / ‖A‖ = α * nrbe A b α β x := by
@@ -180,9 +281,18 @@ theorem norm_nrbePertA_div (hA0 : A ≠ 0) (hα : 0 ≤ α) {x : Vec n} (hx : x 
   rw [norm_nrbePertA hα hx hden, one_sub_nrbePhi hden, nrbe]
   field_simp
 
-/-! ### R3.1: (3.2)–(3.3), the optimal perturbation attains the backward error -/
+/-! ### Equations (3.2)–(3.3): the optimal perturbations attain the backward error -/
 
-/-- The optimal perturbations of (3.3) are feasible and attain the value `ξ_k`. -/
+/-- **Equations (3.2)–(3.3)** of [fong2012cg], attainment. Let $A \neq 0$, $b \neq 0$,
+$\alpha, \beta \ge 0$, $x_k \neq 0$ and $\alpha \|A\| \|x_k\| + \beta \|b\| > 0$. Then the
+perturbations $E_k$ and $f_k$ of (3.3) are feasible and attain the value $\xi_k$: $$(A +
+E_k)\,x_k = b + f_k, \qquad \frac{\|E_k\|}{\|A\|} = \alpha \xi_k, \qquad \frac{\|f_k\|}{\|b\|} =
+\beta \xi_k.$$
+
+**Reading.** The paper leaves the conditions $A \neq 0$ and $b \neq 0$ implicit in the ratios
+$\|E\| / \|A\|$ and $\|f\| / \|b\|$. Lean's convention $t / 0 = 0$ would make both ratios vanish
+otherwise, so the conditions are stated. For positive definite $A$, the condition $A \neq 0$
+follows from $b \neq 0$ by `FongSaunders.ne_zero_of_posDef`. -/
 theorem nrbePert_attains (hA0 : A ≠ 0) (hb0 : b ≠ 0) (hα : 0 ≤ α) (hβ : 0 ≤ β) {x : Vec n}
     (hx : x ≠ 0) (hden : 0 < α * ‖A‖ * ‖x‖ + β * ‖b‖) :
     (A + nrbePertA A b α β x) ⬝ x = b + nrbePertb A b α β x ∧
@@ -197,7 +307,20 @@ theorem nrbePert_attains (hA0 : A ≠ 0) (hb0 : b ≠ 0) (hα : 0 ≤ α) (hβ :
   rw [add_mulVecE, happ, nrbePertb, hAx]
   module
 
-/-- R3.1: `ξ_k` is the optimal value of the problem `min ξ` of §3. -/
+/-- **Equation (3.2)** of [fong2012cg], optimality of the backward error. Let $A \neq 0$,
+$b \neq 0$, $\alpha, \beta \ge 0$, and let $\alpha \|A\| \|x_k\| + \beta \|b\| > 0$. Then
+$\xi_k$ is the optimal value of the problem
+$$\min \xi \quad \text{subject to} \quad (A + E)\,x_k = b + f, \quad \frac{\|E\|}{\|A\|} \le
+  \alpha \xi, \quad \frac{\|f\|}{\|b\|} \le \beta \xi.$$
+That is, $\xi_k$ is feasible, and $\xi_k \le \xi$ for every feasible $\xi$.
+
+**Reading.** The paper leaves the conditions $A \neq 0$ and $b \neq 0$ implicit in the ratios.
+Without them the statement is false, because Lean's convention $t / 0 = 0$ makes every
+perturbation of a zero matrix feasible at every tolerance. For example, if $A = 0$, $b \neq 0$,
+$\beta > 0$ and $x_k \neq 0$, then $\xi = 0$ is feasible with $f = 0$ and any $E$ with
+$E x_k = b$, while $\xi_k = 1 / \beta > 0$.
+
+The feasible set is `FongSaunders.nrbeFeasible`. The vector $x_k$ can be $0$. -/
 theorem nrbe_isLeast (hA0 : A ≠ 0) (hb0 : b ≠ 0) (hα : 0 ≤ α) (hβ : 0 ≤ β) (x : Vec n)
     (hden : 0 < α * ‖A‖ * ‖x‖ + β * ‖b‖) :
     IsLeast (nrbeFeasible A b α β x) (nrbe A b α β x) := by
@@ -236,14 +359,23 @@ theorem nrbe_isLeast (hA0 : A ≠ 0) (hb0 : b ≠ 0) (hα : 0 ≤ α) (hβ : 0 �
       _ ≤ α * ξ * ‖A‖ * ‖x‖ + β * ξ * ‖b‖ := by gcongr
       _ = ξ * (α * ‖A‖ * ‖x‖ + β * ‖b‖) := by ring
 
-/-! ### R3.2 and R3.3: acceptability and the stopping rule (3.4) -/
+/-! ### Acceptability and the stopping rule (3.4) -/
 
-/-- R3.3, the stopping rule (3.4): `ξ_k ≤ 1` iff `‖r_k‖ ≤ α ‖A‖ ‖x_k‖ + β ‖b‖`. -/
+/-- **Equation (3.4)** of [fong2012cg], the stopping rule. Let $\alpha, \beta \in \mathbb{R}$, and
+let $\alpha \|A\| \|x_k\| + \beta \|b\| > 0$. Then $$\xi_k \le 1 \iff \|r_k\| \le \alpha \|A\|
+\|x_k\| + \beta \|b\|.$$
+-/
 theorem nrbe_le_one_iff (α β : ℝ) (x : Vec n) (hden : 0 < α * ‖A‖ * ‖x‖ + β * ‖b‖) :
     nrbe A b α β x ≤ 1 ↔ ‖b - A ⬝ x‖ ≤ α * ‖A‖ * ‖x‖ + β * ‖b‖ := by
   rw [nrbe, div_le_one hden]
 
-/-- R3.2: `x_k` is an acceptable solution exactly when `ξ_k ≤ 1`. -/
+/-- **Section 3** of [fong2012cg], acceptability. Let $A \neq 0$, $b \neq 0$, $\alpha, \beta \ge 0$,
+and let $\alpha \|A\| \|x_k\| + \beta \|b\| > 0$. Then $x_k$ is an acceptable solution (3.1) if
+and only if $\xi_k \le 1$.
+
+**Reading.** The paper leaves the conditions $A \neq 0$ and $b \neq 0$ implicit in the ratios of
+(3.1); without them the statement fails, because Lean's convention $t / 0 = 0$ makes every
+perturbation of a zero matrix feasible. -/
 theorem isAcceptable_iff_nrbe_le_one (hA0 : A ≠ 0) (hb0 : b ≠ 0) (hα : 0 ≤ α) (hβ : 0 ≤ β)
     {x : Vec n} (hden : 0 < α * ‖A‖ * ‖x‖ + β * ‖b‖) :
     IsAcceptable A b α β x ↔ nrbe A b α β x ≤ 1 := by
@@ -259,9 +391,10 @@ theorem isAcceptable_iff_nrbe_le_one (hA0 : A ≠ 0) (hb0 : b ≠ 0) (hα : 0 �
     · calc β * nrbe A b α β x ≤ β * 1 := by gcongr
         _ = β := mul_one β
 
-/-! ### R3.5: `φ_k` decreases for CG and MINRES (§3.2) -/
+/-! ### The weight $\phi_k$ decreases for CG and MINRES (Section 3.2) -/
 
-/-- `φ` is antitone along any sequence of iterates with nondecreasing norms. -/
+/-- Let $\alpha, \beta \ge 0$, and let $(x_k)$ be a sequence with $\|x_k\|$ nondecreasing. Then
+$\phi_k$ is nonincreasing along $(x_k)$. -/
 theorem nrbePhi_antitone_of_monotone (hα : 0 ≤ α) (hβ : 0 ≤ β) {x : ℕ → Vec n}
     (hmono : Monotone fun k => ‖x k‖) : Antitone fun k => nrbePhi A b α β (x k) := by
   intro i j hij
@@ -277,22 +410,32 @@ theorem nrbePhi_antitone_of_monotone (hα : 0 ≤ α) (hβ : 0 ≤ β) {x : ℕ 
     rw [div_le_div_iff₀ (hden j) (hden i)]
     exact mul_le_mul_of_nonneg_left hd hnum
 
-/-- R3.5 for CG: `φ_k` decreases monotonically. -/
+/-- **Section 3.2** of [fong2012cg], the weight for CG. Let $A \in \mathbb{R}^{n \times n}$ be
+positive definite, and let $\alpha, \beta \ge 0$. Then $\phi_k$ at the CG iterates $x_k^C$
+decreases monotonically: $\phi_l \le \phi_k$ for $k \le l$.
+
+The proof uses the increase of $\|x_k^C\|$, which is the theorem of [steihaug1983conjugate]. -/
 theorem nrbePhi_cg_antitone (hA : A.PosDef) (hα : 0 ≤ α) (hβ : 0 ≤ β) :
     Antitone fun k => nrbePhi A b α β (cg A b k).x := by
   refine nrbePhi_antitone_of_monotone hα hβ ?_
   simp only [cg_x]
   exact CG.norm_iterate_monotone b (isSymmetricCoercive_of_posDef hA)
 
-/-- R3.5 for MINRES: `φ_k` decreases monotonically. -/
+/-- **Section 3.2** of [fong2012cg], the weight for MINRES. Let $A \in \mathbb{R}^{n \times n}$ be
+positive definite, let $\alpha, \beta \ge 0$, and let $(x_k)$ be a sequence such that each $x_k$
+is a MINRES iterate at step $k$. Then $\phi_k$ decreases monotonically: $\phi_l \le \phi_k$ for
+$k \le l$.
+
+The proof uses Theorem 2.3 (`FongSaunders.theorem_2_3_minres`). -/
 theorem nrbePhi_minres_antitone (hA : A.PosDef) (hα : 0 ≤ α) (hβ : 0 ≤ β) {x : ℕ → Vec n}
     (hx : ∀ k, IsMINRESIterate A b k (x k)) : Antitone fun k => nrbePhi A b α β (x k) :=
   nrbePhi_antitone_of_monotone hα hβ (theorem_2_3_minres hA hx)
 
-/-! ### R3.6: Theorem 3.1 -/
+/-! ### Theorem 3.1 -/
 
-/-- A MINRES iterate is nonzero from step `1` on, so the ratio `‖r_k‖/‖x_k‖` is meaningful
-there. -/
+/-- If $A$ is positive definite, $b \neq 0$, and $(x_k)$ is a sequence such that each $x_k$ is a
+MINRES iterate at step $k$, then $x_k \neq 0$ for every $k \ge 1$. So the ratio
+$\|r_k\| / \|x_k\|$ has a nonzero denominator for $k \ge 1$. -/
 theorem minres_iterate_ne_zero (hA : A.PosDef) (hb : b ≠ 0) {x : ℕ → Vec n}
     (hx : ∀ k, IsMINRESIterate A b k (x k)) {k : ℕ} (hk : 1 ≤ k) : x k ≠ 0 := by
   have h1 : x 1 ≠ 0 := by
@@ -303,15 +446,28 @@ theorem minres_iterate_ne_zero (hA : A.PosDef) (hb : b ≠ 0) {x : ℕ → Vec n
   simp only at hmono
   exact norm_pos_iff.1 (lt_of_lt_of_le (norm_pos_iff.2 h1) hmono)
 
-/-- R3.6: the normwise relative backward error decreases monotonically for MINRES (`β > 0`). -/
+/-- **Theorem 3.1** of [fong2012cg], the backward error for MINRES. Let
+$A \in \mathbb{R}^{n \times n}$ be positive definite, $b \neq 0$, $\alpha \ge 0$ and
+$\beta > 0$, and let $(x_k)$ be a sequence such that each $x_k$ is a MINRES iterate at step $k$.
+Then the normwise relative backward error decreases monotonically: $$\xi_l \le \xi_k \quad
+\text{for } k \le l.$$
+
+With $\beta > 0$ the denominator of $\xi_k$ is positive also at $k = 0$, so the statement holds
+for all $k$. The case $\beta = 0$ is `FongSaunders.nrbe_minres_antitoneOn`. -/
 theorem nrbe_minres_antitone (hA : A.PosDef) (hb : b ≠ 0) (hα : 0 ≤ α) (hβ : 0 < β)
     {x : ℕ → Vec n} (hx : ∀ k, IsMINRESIterate A b k (x k)) :
     Antitone fun k => nrbe A b α β (x k) :=
   Krylov.IsMinResidualIterate.backwardError_antitone (isSymmetricCoercive_of_posDef hA)
     (fun k => isMINRESIterate_iff.1 (hx k)) hα hβ (norm_nonneg A) hb
 
-/-- R3.6 with `β = 0` allowed: on `k ≥ 1` the backward error is still antitone.  The restriction
-to `Set.Ici 1` is necessary in Lean: at `k = 0` the ratio `‖r_0‖/‖x_0‖` is `‖b‖/0 = 0`. -/
+/-- **Theorem 3.1** of [fong2012cg], the backward error for MINRES from step $1$. Let
+$A \in \mathbb{R}^{n \times n}$ be positive definite, $b \neq 0$, $\alpha > 0$ and
+$\beta \ge 0$, and let $(x_k)$ be a sequence such that each $x_k$ is a MINRES iterate at step
+$k$. Then $$\xi_l \le \xi_k \quad \text{for } 1 \le k \le l.$$
+
+**Reading.** The restriction to $k \ge 1$ is necessary: for $\beta = 0$ the value
+$\xi_0 = \|b\| / (\alpha \|A\| \cdot 0)$ is a division by $0$, which Lean evaluates to $0$,
+below every later value. -/
 theorem nrbe_minres_antitoneOn (hA : A.PosDef) (hb : b ≠ 0) (hα : 0 < α) (hβ : 0 ≤ β)
     {x : ℕ → Vec n} (hx : ∀ k, IsMINRESIterate A b k (x k)) :
     AntitoneOn (fun k => nrbe A b α β (x k)) (Set.Ici 1) := by
@@ -329,9 +485,16 @@ theorem nrbe_minres_antitoneOn (hA : A.PosDef) (hb : b ≠ 0) (hα : 0 < α) (h�
     exact mul_le_mul_of_nonneg_left h (by positivity)
   · exact (nrbe_minres_antitone hA hb hα.le hβ0 hx).antitoneOn _
 
-/-- Theorem 3.1 for MINRES: for `α, β > 0` the relative backward errors `‖E_k‖/‖A‖` and
-`‖f_k‖/‖b‖` decrease monotonically.  The row for `‖E_k‖/‖A‖` starts at `k = 1`: at `k = 0` the
-paper's `E_0` is undefined and Lean's is `0`. -/
+/-- **Theorem 3.1** of [fong2012cg], for MINRES. Let $A \in \mathbb{R}^{n \times n}$ be positive
+definite, $b \neq 0$ and $\alpha, \beta > 0$, and let $(x_k)$ be a sequence such that each $x_k$
+is a MINRES iterate at step $k$. Then the relative backward errors of the optimal perturbations
+(3.3) decrease monotonically: $$\frac{\|E_l\|}{\|A\|} \le \frac{\|E_k\|}{\|A\|} \quad \text{for
+} 1 \le k \le l, \qquad \frac{\|f_l\|}{\|b\|} \le \frac{\|f_k\|}{\|b\|} \quad \text{for } k \le
+l.$$
+
+**Reading.** The paper states the decrease of $\|E_k\| / \|A\|$ without a lower bound on $k$. At
+$k = 0$ the iterate is $x_0 = 0$, so the paper's $E_0$ is undefined, while Lean's $E_0$ is $0$,
+below every later value. The decrease of $\|E_k\| / \|A\|$ is therefore stated for $k \ge 1$. -/
 theorem theorem_3_1_minres (hA : A.PosDef) (hb : b ≠ 0) (hα : 0 < α) (hβ : 0 < β)
     {x : ℕ → Vec n} (hx : ∀ k, IsMINRESIterate A b k (x k)) :
     AntitoneOn (fun k => ‖nrbePertA A b α β (x k)‖ / ‖A‖) (Set.Ici 1) ∧
@@ -354,22 +517,35 @@ theorem theorem_3_1_minres (hA : A.PosDef) (hb : b ≠ 0) (hα : 0 < α) (hβ : 
     simp only [norm_nrbePertb_div hb hβ.le (hden (x i)), norm_nrbePertb_div hb hβ.le (hden (x j))]
     exact mul_le_mul_of_nonneg_left (nrbe_minres_antitone hA hb hα.le hβ hx hij) hβ.le
 
-/-- Theorem 3.1 for CR. -/
+/-- **Theorem 3.1** of [fong2012cg], for CR. Let $A \in \mathbb{R}^{n \times n}$ be positive
+definite, $b \neq 0$ and $\alpha, \beta > 0$. Then at the CR iterates $x_k$,
+$$\frac{\|E_l\|}{\|A\|} \le \frac{\|E_k\|}{\|A\|} \quad \text{for } 1 \le k \le l, \qquad
+\frac{\|f_l\|}{\|b\|} \le \frac{\|f_k\|}{\|b\|} \quad \text{for } k \le l.$$
+
+**Reading.** As in `FongSaunders.theorem_3_1_minres`, the decrease of $\|E_k\| / \|A\|$ is
+stated for $k \ge 1$, because $E_0$ is undefined in the paper. -/
 theorem theorem_3_1_cr (hA : A.PosDef) (hb : b ≠ 0) (hα : 0 < α) (hβ : 0 < β) :
     AntitoneOn (fun k => ‖nrbePertA A b α β (cr A b k).x‖ / ‖A‖) (Set.Ici 1) ∧
       Antitone fun k => ‖nrbePertb A b α β (cr A b k).x‖ / ‖b‖ :=
   theorem_3_1_minres hA hb hα hβ (cr_isMINRESIterate hA)
 
-/-! ### R3.7: MINRES stops no later than CG under the rule (3.4) with `α = 0` -/
+/-! ### MINRES stops no later than CG under the rule (3.4) with $\alpha = 0$ -/
 
-/-- The MINRES residual never exceeds the CG residual at the same step. -/
+/-- **Section 3** of [fong2012cg], the residuals of MINRES and CG. Let
+$A \in \mathbb{R}^{n \times n}$ be positive definite. If $x$ is a MINRES iterate at step $k$,
+then $$\|b - Ax\| \le \|r_k^C\|.$$
+-/
 theorem minres_norm_residual_le_cg (hA : A.PosDef) (k : ℕ) {x : Vec n}
     (hx : IsMINRESIterate A b k x) : ‖b - A ⬝ x‖ ≤ ‖(cg A b k).r‖ := by
   rw [cg_residual_eq]
   exact hx.2 _ (cg_mem_krylov hA k)
 
-/-- With the stopping rule `‖r_k‖ ≤ β ‖b‖` (rule (3.4) with `α = 0`) MINRES stops no later
-than CG. -/
+/-- **Section 3** of [fong2012cg], MINRES stops first. Let $A \in \mathbb{R}^{n \times n}$ be
+positive definite, let $\beta \in \mathbb{R}$, and let $(x_k)$ be a sequence such that each
+$x_k$ is a MINRES iterate at step $k$. If CG satisfies the stopping rule
+$\|r_k^C\| \le \beta \|b\|$ at step $k$, which is rule (3.4) with $\alpha = 0$, then MINRES
+satisfies it too: $$\|b - A x_k\| \le \beta \|b\|.$$
+-/
 theorem minres_stops_first (hA : A.PosDef) (β : ℝ) {x : ℕ → Vec n}
     (hx : ∀ k, IsMINRESIterate A b k (x k)) (k : ℕ) (hcg : ‖(cg A b k).r‖ ≤ β * ‖b‖) :
     ‖b - A ⬝ x k‖ ≤ β * ‖b‖ :=

@@ -11,31 +11,63 @@ import Numlib.Krylov.Subspace
 import NumlibSurface.FongSaunders.Section04
 
 /-!
-# Fong–Saunders §5: Table 5.1, the summary of monotonicity properties
+# Fong and Saunders, Section 5: Table 5.1, the summary of monotonicity properties
 
-Surface file for D. C.-L. Fong and M. A. Saunders, *CG versus MINRES: an empirical comparison*, SQU
-Journal for Science **17** (2012) 44–62 (Report SOL 2011-2R), §5.
+This module formalizes Table 5.1 of [fong2012cg], which collects the monotonicity properties of CG
+and MINRES on a symmetric positive definite system $Ax = b$ from $x_0 = 0$. The table has five rows:
+$\|x_k\|$ increases, and $\|x^* - x_k\|$, $\|x^* - x_k\|_A$, $\|r_k\|$ and $\|r_k\| / \|x_k\|$
+decrease. All five rows hold for MINRES; the first three hold for CG, and the table leaves the CG
+entries of the last two rows blank ("not monotonic"). The structures `FongSaunders.MonotoneProfile`
+and `FongSaunders.MINRESProfile` package the rows, and `FongSaunders.cg_profile`,
+`FongSaunders.minres_profile` and `FongSaunders.cr_profile` prove the monotone entries from Sections
+2 and 3. The two blank entries are proved by explicit counterexamples on diagonal matrices.
 
-Table 5.1 collects the monotonicity properties of CG and MINRES on a symmetric positive definite
-system.  `MonotoneProfile` and `MINRESProfile` package the rows of the table; `cg_profile`,
-`minres_profile` and `cr_profile` are the table's ↗/↘ entries, assembled from §2 and §3.  The two
-"not monotonic" entries of the CG column are read as the existence of counterexamples and proved
-by explicit computation on diagonal matrices.
+The module also formalizes the indefinite example (4.2) of Section 4.2, $$A = \begin{bmatrix} 2 & 1
+& 1 \\ 1 & 0 & 1 \\ 1 & 1 & 2 \end{bmatrix}, \qquad b = \begin{bmatrix} 0 \\ 1 \\ 1 \end{bmatrix},$$
+because it has the same form and shows that the MINRES column of the table needs $A \succ 0$. On
+this nonsingular, symmetric, indefinite system both $\|x_k\|$ and $\|r_k\| / \|x_k\|$ fail to be
+monotone for MINRES.
 
-The `3 × 3` counterexample (4.2) of §4.2 is here too, since it is of the same shape and it is what
-makes the table's MINRES column sharp: `minres_norm_iterate_not_monotone` and
-`minres_backwardError_not_antitoneOn` exhibit a nonsingular *indefinite* system on which the two
-rows Theorems 2.3 and 3.1 supply for MINRES both fail, and `indefinite_witness` shows that what
-fails for it is exactly the hypothesis `A ≻ 0`.  Because that witness is nonsingular the MINRES
-iterate is unique at every step, so the three statements quantify over *every* sequence of MINRES
-iterates rather than over one algorithm's output.
+## Main definitions
 
-Left out: Table 5.2 and the §5 discussion of the least-squares solvers LSQR and LSMR, which are
-results of other papers; and the MINRES-QLP factorization argument of §4.2, whose missing
-ingredient §4's module doc names.
+* Table 5.1, `FongSaunders.MonotoneProfile`: rows 1–3 of the table for a sequence of iterates.
+* Table 5.1, `FongSaunders.MINRESProfile`: all five rows of the table for a sequence of iterates.
 
-The extra import `Mathlib.Algebra.Order.Star.Real` provides the instance `StarOrderedRing ℝ`
-required by `Matrix.posDef_diagonal_iff` in the counterexamples.
+## Main results
+
+* Table 5.1, `FongSaunders.cg_profile`: the CG column, rows 1–3.
+* Table 5.1, `FongSaunders.minres_profile`: the MINRES column, all five rows.
+* Table 5.1, `FongSaunders.cr_profile`: the MINRES column for the CR iterates.
+* Table 5.1, `FongSaunders.cg_norm_residual_not_antitone`: a symmetric positive definite system on
+  which $\|r_k^C\|$ is not monotone.
+* Table 5.1, `FongSaunders.cg_backwardError_not_antitoneOn`: a symmetric positive definite system on
+  which $\|r_k^C\| / \|x_k^C\|$ is not monotone for $k \ge 1$.
+* Section 4.2, `FongSaunders.indefinite_witness`: the matrix of (4.2) is symmetric, nonsingular and
+  indefinite.
+* Section 4.2, `FongSaunders.minres_norm_iterate_not_monotone`: on the system (4.2), $\|x_k\|$ is
+  not monotone for MINRES.
+* Section 4.2, `FongSaunders.minres_backwardError_not_antitoneOn`: on the system (4.2),
+  $\|r_k\| / \|x_k\|$ is not monotone for MINRES.
+
+## Implementation notes
+
+* The import `Mathlib.Algebra.Order.Star.Real` provides the instance `StarOrderedRing ℝ`, which
+  `Matrix.posDef_diagonal_iff` needs in the counterexamples.
+* The matrix of (4.2) is nonsingular, so the MINRES iterate is unique at every step. The two results
+  on (4.2) therefore hold for every sequence of MINRES iterates.
+
+## Deviations from the source
+
+* **The blank CG entries of Table 5.1** (reading). A blank entry is read as the existence of a
+  symmetric positive definite system on which the row fails to be monotone. See
+  `FongSaunders.cg_norm_residual_not_antitone` and `FongSaunders.cg_backwardError_not_antitoneOn`.
+* **The row $\|r_k\| / \|x_k\|$ of Table 5.1** (reading). The ratio is undefined at $k = 0$ because
+  $x_0 = 0$; the row is stated for $k \ge 1$. See `FongSaunders.MINRESProfile`.
+
+## Not formalized
+
+* **Table 5.2.** It states results of other papers.
+* **The discussion of LSQR and LSMR in Section 5.** It states results of other papers.
 -/
 
 namespace FongSaunders
@@ -44,32 +76,52 @@ open Krylov Matrix
 
 variable {n : ℕ} {A : Matrix (Fin n) (Fin n) ℝ} {b : Vec n}
 
-/-! ### D11: the rows of Table 5.1 -/
+/-! ### The rows of Table 5.1 -/
 
-/-- Rows 1–3 of Table 5.1 for a sequence of iterates `x_k` with exact solution `x*`: the norm of
-the iterate increases, the error and the energy norm of the error decrease. -/
+/-- **Table 5.1** of [fong2012cg], rows 1–3. Let $A \in \mathbb{R}^{n \times n}$,
+$x^* \in \mathbb{R}^n$, and let $(x_k)$ be a sequence in $\mathbb{R}^n$. The sequence has the
+**monotone profile** of rows 1–3 if the norm of the iterate increases and the error and the
+energy norm of the error decrease: for $k \le l$, $$\|x_k\| \le \|x_l\|, \qquad \|x^* - x_l\|
+\le \|x^* - x_k\|, \qquad \|x^* - x_l\|_A \le \|x^* - x_k\|_A.$$
+-/
 structure MonotoneProfile (A : Matrix (Fin n) (Fin n) ℝ) (xstar : Vec n) (x : ℕ → Vec n) :
     Prop where
-  /-- `‖x_k‖ ↗` (CG: Steihaug Thm 2.1; MINRES: Thm 2.3). -/
+  /-- The norm of the iterate increases monotonically: $\|x_k\| \le \|x_l\|$ for $k \le l$. For CG
+  this is Theorem 2.1 of [steihaug1983conjugate]; for MINRES it is Theorem 2.3. -/
   norm_iterate : Monotone fun k => ‖x k‖
-  /-- `‖x* − x_k‖ ↘` (CG: Hestenes–Stiefel Thm 4:3; MINRES: Thm 2.4). -/
+  /-- The error decreases monotonically: $\|x^* - x_l\| \le \|x^* - x_k\|$ for $k \le l$. For CG
+  this is Theorem 4:3 of [hestenes1952methods]; for MINRES it is Theorem 2.4. -/
   norm_error : Antitone fun k => ‖xstar - x k‖
-  /-- `‖x* − x_k‖_A ↘` (CG: Hestenes–Stiefel Thm 6:3; MINRES: Thm 2.5). -/
+  /-- The energy norm of the error decreases monotonically: $\|x^* - x_l\|_A \le \|x^* - x_k\|_A$
+  for $k \le l$. For CG this is Theorem 6:3 of [hestenes1952methods]; for MINRES it is Theorem
+  2.5. -/
   energyNorm_error : Antitone fun k => energyNorm A (xstar - x k)
 
-/-- All five rows of Table 5.1, i.e. the MINRES column: the three rows of `MonotoneProfile`
-together with the monotone residual norm and the monotone backward error. -/
+/-- **Table 5.1** of [fong2012cg], all five rows. Let $A \in \mathbb{R}^{n \times n}$,
+$b, x^* \in \mathbb{R}^n$, and let $(x_k)$ be a sequence in $\mathbb{R}^n$ with residuals
+$r_k = b - A x_k$. The sequence has the **MINRES profile** if it has the monotone profile of
+rows 1–3 (`FongSaunders.MonotoneProfile`), the residual norm decreases, and the ratio
+$\|r_k\| / \|x_k\|$ decreases from step $1$ on: $$\|r_l\| \le \|r_k\| \quad \text{for } k \le l,
+\qquad \frac{\|r_l\|}{\|x_l\|} \le \frac{\|r_k\|}{\|x_k\|} \quad \text{for } 1 \le k \le l.$$
+
+**Reading.** The paper's ratio $\|r_0\| / \|x_0\|$ is undefined, because $x_0 = 0$. In Lean it
+is $\|b\| / 0 = 0$, which is below every later value, so a decrease over all $k$ would be false.
+The last row is therefore stated for $k \ge 1$. -/
 structure MINRESProfile (A : Matrix (Fin n) (Fin n) ℝ) (b xstar : Vec n) (x : ℕ → Vec n) : Prop
     extends MonotoneProfile A xstar x where
-  /-- `‖r_k‖ ↘` (Hestenes–Stiefel Thm 7:2). -/
+  /-- The residual norm decreases monotonically: $\|b - A x_l\| \le \|b - A x_k\|$ for $k \le l$.
+  This is Theorem 7:2 of [hestenes1952methods]. -/
   norm_residual : Antitone fun k => ‖b - A ⬝ x k‖
-  /-- `‖r_k‖/‖x_k‖ ↘` (Thm 3.1); at `k = 0` the ratio is `‖b‖/0`, so the row is stated for
-  `k ≥ 1`. -/
+  /-- The ratio $\|r_k\| / \|x_k\|$ decreases monotonically for $1 \le k \le l$; this is the row of
+  Theorem 3.1. At $k = 0$ the ratio is $\|b\| / 0$, so the row starts at $k = 1$. -/
   backwardError : AntitoneOn (fun k => ‖b - A ⬝ x k‖ / ‖x k‖) (Set.Ici 1)
 
-/-! ### R5.1: the monotone entries of Table 5.1 -/
+/-! ### The monotone entries of Table 5.1 -/
 
-/-- Table 5.1, CG column (rows 1–3): `‖x_k‖ ↗`, `‖x* − x_k‖ ↘`, `‖x* − x_k‖_A ↘`. -/
+/-- **Table 5.1** of [fong2012cg], the CG column. Let $A \in \mathbb{R}^{n \times n}$ be positive
+definite, and let $Ax^* = b$. Then the CG iterates $x_k^C$ have the monotone profile of rows
+1–3: $\|x_k^C\|$ increases, and $\|x^* - x_k^C\|$ and $\|x^* - x_k^C\|_A$ decrease
+monotonically. -/
 theorem cg_profile (hA : A.PosDef) {xstar : Vec n} (hstar : A ⬝ xstar = b) :
     MonotoneProfile A xstar fun k => (cg A b k).x where
   norm_iterate := by
@@ -82,7 +134,11 @@ theorem cg_profile (hA : A.PosDef) {xstar : Vec n} (hstar : A ⬝ xstar = b) :
     simp only [energyNorm_eq, cg_x]
     exact CG.energyNorm_error_antitone b 0 (isSymmetricCoercive_of_posDef hA) hstar
 
-/-- Table 5.1, MINRES column (all five rows). -/
+/-- **Table 5.1** of [fong2012cg], the MINRES column. Let $A \in \mathbb{R}^{n \times n}$ be
+positive definite, let $b \neq 0$ and $Ax^* = b$, and let $(x_k)$ be a sequence such that each
+$x_k$ is a MINRES iterate at step $k$. Then $(x_k)$ has the MINRES profile of all five rows:
+$\|x_k\|$ increases; $\|x^* - x_k\|$, $\|x^* - x_k\|_A$ and $\|r_k\|$ decrease; and
+$\|r_k\| / \|x_k\|$ decreases for $k \ge 1$. -/
 theorem minres_profile (hA : A.PosDef) (hb : b ≠ 0) {xstar : Vec n} (hstar : A ⬝ xstar = b)
     {x : ℕ → Vec n} (hx : ∀ k, IsMINRESIterate A b k (x k)) : MINRESProfile A b xstar x where
   norm_iterate := theorem_2_3_minres hA hx
@@ -94,31 +150,36 @@ theorem minres_profile (hA : A.PosDef) (hb : b ≠ 0) {xstar : Vec n} (hstar : A
     Krylov.IsMinResidualIterate.norm_residual_div_norm_antitoneOn
       (isSymmetricCoercive_of_posDef hA) (fun k => isMINRESIterate_iff.1 (hx k)) hb
 
-/-- Table 5.1, MINRES column, for the CR iterates (which are the MINRES iterates, R2.2). -/
+/-- **Table 5.1** of [fong2012cg], the MINRES column for CR. Let $A \in \mathbb{R}^{n \times n}$ be
+positive definite, and let $b \neq 0$ and $Ax^* = b$. Then the CR iterates $x_k$ have the MINRES
+profile of all five rows.
+
+The CR iterates are the MINRES iterates (`FongSaunders.isMINRESIterate_iff_eq_cr`). -/
 theorem cr_profile (hA : A.PosDef) (hb : b ≠ 0) {xstar : Vec n} (hstar : A ⬝ xstar = b) :
     MINRESProfile A b xstar fun k => (cr A b k).x :=
   minres_profile hA hb hstar fun k => cr_isMINRESIterate hA k
 
-/-! ### R5.2: the two "not monotonic" entries of the CG column
+/-!
+### The two blank entries of the CG column
 
-Table 5.1 leaves the CG entries for `‖r_k‖` and `‖r_k‖/‖x_k‖` blank ("not monotonic").  Read
-faithfully, this is the *existence* of a symmetric positive definite system on which the two
-quantities fail to be monotonic; both witnesses below are diagonal.
+Table 5.1 leaves the CG entries for $\|r_k\|$ and $\|r_k\| / \|x_k\|$ blank ("not monotonic"). Read
+faithfully, a blank entry asserts that there is a symmetric positive definite system on which the
+quantity fails to be monotone. Both witnesses below are diagonal.
 -/
 
 section Counterexamples
 
 open EuclideanSpace
 
-/-- The inner product in coordinates. -/
+/-- The inner product in coordinates: $u^T v = \sum_i u_i v_i$. -/
 private theorem inner_eq (u v : Vec n) :
     ⟪u, v⟫_ℝ = ∑ i, WithLp.ofLp u i * WithLp.ofLp v i := by
   simp [PiLp.inner_apply, mul_comm]
 
-/-- The `2 × 2` witness `A = diag(1, 9)`. -/
+/-- The matrix $A = \operatorname{diag}(1, 9)$ of the $2 \times 2$ counterexample. -/
 private def A2 : Matrix (Fin 2) (Fin 2) ℝ := Matrix.diagonal ![1, 9]
 
-/-- The `2 × 2` witness `b = (3, 1)ᵀ`. -/
+/-- The vector $b = (3, 1)^T$ of the $2 \times 2$ counterexample. -/
 private def b2 : Vec 2 := !₂[3, 1]
 
 private theorem posDef_A2 : A2.PosDef := by
@@ -138,8 +199,14 @@ private theorem rho2_one : (cg A2 b2 1).ρ = 160 / 9 := by
     Fin.sum_univ_two, mulVec_diagonal, cons_val_zero, cons_val_one]
   norm_num
 
-/-- R5.2, first entry: the CG residual norm is not monotonic.  On `A = diag(1, 9)` with
-`b = (3, 1)ᵀ` one has `‖r_0‖² = 10` and `‖r_1‖² = 160/9 > 10`. -/
+/-- **Table 5.1** of [fong2012cg], the CG entry for $\|r_k\|$. There are a positive definite
+$A \in \mathbb{R}^{2 \times 2}$ and $b \in \mathbb{R}^2$ such that the CG residual norm
+$\|r_k^C\|$ is not monotonically decreasing.
+
+**Reading.** The table leaves this entry blank, which is read as the existence of such a system.
+
+The witness is $A = \operatorname{diag}(1, 9)$ and $b = (3, 1)^T$, for which $\|r_0^C\|^2 = 10$
+and $\|r_1^C\|^2 = 160/9 > 10$. -/
 theorem cg_norm_residual_not_antitone :
     ∃ (A : Matrix (Fin 2) (Fin 2) ℝ) (b : Vec 2), A.PosDef ∧
       ¬ Antitone fun k => ‖(cg A b k).r‖ := by
@@ -150,10 +217,10 @@ theorem cg_norm_residual_not_antitone :
   simp only at hle
   nlinarith [norm_nonneg (cg A2 b2 0).r, norm_nonneg (cg A2 b2 1).r]
 
-/-- The `3 × 3` witness `A = diag(1, 13, 16)`. -/
+/-- The matrix $A = \operatorname{diag}(1, 13, 16)$ of the $3 \times 3$ counterexample. -/
 private def A3 : Matrix (Fin 3) (Fin 3) ℝ := Matrix.diagonal ![1, 13, 16]
 
-/-- The `3 × 3` witness `b = (1, 5, 1)ᵀ`. -/
+/-- The vector $b = (1, 5, 1)^T$ of the $3 \times 3$ counterexample. -/
 private def b3 : Vec 3 := !₂[1, 5, 1]
 
 private theorem posDef_A3 : A3.PosDef := by
@@ -218,9 +285,16 @@ private theorem cg3_two_r : WithLp.ofLp (cg A3 b3 2).r = ![5 / 12, -5 / 12, 5 / 
   fin_cases i <;>
     norm_num [mulVec_diagonal, cons_val_two, tail_cons, head_cons, vecHead, vecTail]
 
-/-- R5.2, second entry: the CG backward error `‖r_k‖/‖x_k‖` is not monotonic on `k ≥ 1`.  On
-`A = diag(1, 13, 16)` with `b = (1, 5, 1)ᵀ` one has `(‖r_1‖/‖x_1‖)² = 50/9 < 200/33 =
-(‖r_2‖/‖x_2‖)²`.  No `2 × 2` witness exists: there `r_2 = 0`. -/
+/-- **Table 5.1** of [fong2012cg], the CG entry for $\|r_k\| / \|x_k\|$. There are $n$, a positive
+definite $A \in \mathbb{R}^{n \times n}$ and $b \in \mathbb{R}^n$ such that the ratio
+$\|r_k^C\| / \|x_k^C\|$ is not monotonically decreasing on $k \ge 1$.
+
+**Reading.** The table leaves this entry blank, which is read as the existence of such a system.
+The ratio is considered for $k \ge 1$, as in the MINRES column.
+
+The witness is $A = \operatorname{diag}(1, 13, 16)$ and $b = (1, 5, 1)^T$, for which $(\|r_1^C\|
+/ \|x_1^C\|)^2 = 50/9 < 200/33 = (\|r_2^C\| / \|x_2^C\|)^2$. No $2 \times 2$ witness exists: CG
+on a system of order $2$ terminates with $r_2^C = 0$, so the ratio is $0$ from $k = 2$ on. -/
 theorem cg_backwardError_not_antitoneOn :
     ∃ (n : ℕ) (A : Matrix (Fin n) (Fin n) ℝ) (b : Vec n), A.PosDef ∧
       ¬ AntitoneOn (fun k => ‖(cg A b k).r‖ / ‖(cg A b k).x‖) (Set.Ici 1) := by
@@ -252,35 +326,38 @@ theorem cg_backwardError_not_antitoneOn :
 
 end Counterexamples
 
-/-! ### R4.6: the `3 × 3` indefinite counterexample (4.2)
+/-!
+### The indefinite example (4.2)
 
-§4.2 exhibits the nonsingular *indefinite* system `A = [[2,1,1],[1,0,1],[1,1,2]]`, `b = (0,1,1)ᵀ`
-on which MINRES gives non-monotonic solution norms, and hence non-monotonic backward errors
-(Figure 4.6).  It is the converse half of the paper's message: Theorems 2.3 and 3.1 assume
-`A ≻ 0`, and this is the witness that the hypothesis cannot be dropped.
+Section 4.2 of [fong2012cg] gives the nonsingular, symmetric, indefinite system $$A =
+\begin{bmatrix} 2 & 1 & 1 \\ 1 & 0 & 1 \\ 1 & 1 & 2 \end{bmatrix}, \qquad b = \begin{bmatrix} 0 \\ 1
+\\ 1 \end{bmatrix},$$ on which MINRES gives solution norms that are not monotone, and hence backward
+errors that are not monotone (Figure 4.6). Theorems 2.3 and 3.1 assume $A \succ 0$, and this example
+shows that the assumption cannot be dropped.
 
-`A` is nonsingular (`det A = −2`), so the MINRES iterate is unique at every step
-(`Krylov.existsUnique_isMinResidualIterate_of_injective`) and the two theorems below can be
-quantified over *every* sequence of MINRES iterates without assuming positive definiteness anywhere.
+The matrix is nonsingular, with $\det A = -2$. So the MINRES iterate is unique at every step
+(`Krylov.existsUnique_isMinResidualIterate_of_injective`), and the two theorems below hold for every
+sequence of MINRES iterates, without a positive definiteness assumption.
 -/
 
 section Indefinite
 
 open EuclideanSpace
 
-/-- The `3 × 3` indefinite witness of (4.2). -/
+/-- The matrix $A$ of the example (4.2). -/
 private def A4 : Matrix (Fin 3) (Fin 3) ℝ := !![2, 1, 1; 1, 0, 1; 1, 1, 2]
 
-/-- The right-hand side of (4.2). -/
+/-- The right-hand side $b = (0, 1, 1)^T$ of the example (4.2). -/
 private def b4 : Vec 3 := !₂[0, 1, 1]
 
-/-- The first MINRES iterate of (4.2), `x_1 = (2/7) b`. -/
+/-- The first MINRES iterate $x_1 = \frac{2}{7} b = (0, 2/7, 2/7)^T$ of the example (4.2). -/
 private noncomputable def x4one : Vec 3 := !₂[0, 2 / 7, 2 / 7]
 
-/-- The second MINRES iterate of (4.2), `x_2 = (2/19) b + (1/19) A b`. -/
+/-- The second MINRES iterate $x_2 = \frac{2}{19} b + \frac{1}{19} Ab = (2/19, 3/19, 5/19)^T$ of the
+example (4.2). -/
 private noncomputable def x4two : Vec 3 := !₂[2 / 19, 3 / 19, 5 / 19]
 
-/-- Multiplying by the identity matrix does nothing. -/
+/-- The identity matrix maps every vector to itself: $Iv = v$. -/
 private theorem one_mulVecE (v : Vec n) : (1 : Matrix (Fin n) (Fin n) ℝ) ⬝ v = v := by
   change Matrix.toEuclideanLin 1 v = v
   rw [Matrix.toEuclideanLin_one]
@@ -305,7 +382,7 @@ private theorem injective_A4 : Function.Injective (Matrix.toEuclideanLin A4) := 
   rw [← Matrix.ofLp_toEuclideanLin, ← Matrix.ofLp_toEuclideanLin]
   exact congrArg WithLp.ofLp huv
 
-/-- `A b = (2, 1, 3)ᵀ`. -/
+/-- In the example (4.2), $Ab = (2, 1, 3)^T$. -/
 private theorem ofLp_A4_b4 : WithLp.ofLp (A4 ⬝ b4) = ![2, 1, 3] := by
   rw [Matrix.ofLp_toEuclideanLin]
   funext i
@@ -313,7 +390,7 @@ private theorem ofLp_A4_b4 : WithLp.ofLp (A4 ⬝ b4) = ![2, 1, 3] := by
     norm_num [A4, b4, Matrix.mulVec, dotProduct, Fin.sum_univ_three, cons_val_two, tail_cons,
       head_cons]
 
-/-- `A² b = (8, 5, 9)ᵀ`. -/
+/-- In the example (4.2), $A^2 b = (8, 5, 9)^T$. -/
 private theorem ofLp_A4_A4_b4 : WithLp.ofLp (A4 ⬝ (A4 ⬝ b4)) = ![8, 5, 9] := by
   rw [Matrix.ofLp_toEuclideanLin, ofLp_A4_b4]
   funext i
@@ -321,7 +398,7 @@ private theorem ofLp_A4_A4_b4 : WithLp.ofLp (A4 ⬝ (A4 ⬝ b4)) = ![8, 5, 9] :=
     norm_num [A4, Matrix.mulVec, dotProduct, Fin.sum_univ_three, cons_val_two, tail_cons,
       head_cons]
 
-/-- The residual of `x_1`: `r_1 = (−4/7, 5/7, 1/7)ᵀ`. -/
+/-- In the example (4.2), the residual of $x_1$ is $r_1 = (-4/7, 5/7, 1/7)^T$. -/
 private theorem ofLp_res_one : WithLp.ofLp (b4 - A4 ⬝ x4one) = ![-4 / 7, 5 / 7, 1 / 7] := by
   rw [WithLp.ofLp_sub, Matrix.ofLp_toEuclideanLin]
   funext i
@@ -329,7 +406,7 @@ private theorem ofLp_res_one : WithLp.ofLp (b4 - A4 ⬝ x4one) = ![-4 / 7, 5 / 7
     norm_num [A4, b4, x4one, Matrix.mulVec, dotProduct, Fin.sum_univ_three, cons_val_two,
       tail_cons, head_cons]
 
-/-- The residual of `x_2`: `r_2 = (−12/19, 12/19, 4/19)ᵀ`. -/
+/-- In the example (4.2), the residual of $x_2$ is $r_2 = (-12/19, 12/19, 4/19)^T$. -/
 private theorem ofLp_res_two : WithLp.ofLp (b4 - A4 ⬝ x4two) = ![-12 / 19, 12 / 19, 4 / 19] := by
   rw [WithLp.ofLp_sub, Matrix.ofLp_toEuclideanLin]
   funext i
@@ -337,8 +414,8 @@ private theorem ofLp_res_two : WithLp.ofLp (b4 - A4 ⬝ x4two) = ![-12 / 19, 12 
     norm_num [A4, b4, x4two, Matrix.mulVec, dotProduct, Fin.sum_univ_three, cons_val_two,
       tail_cons, head_cons]
 
-/-- The Krylov subspace is spanned by the powers, so orthogonality to `A 𝒦_k` is orthogonality
-to the `k` vectors `A (A^i b)`. -/
+/-- If $r^T A (A^i b) = 0$ for every $i < m$, then $r^T A z = 0$ for every
+$z \in \mathcal{K}_m(A, b)$. -/
 private theorem inner_mulVecE_eq_zero_of_generators {m : ℕ} {A : Matrix (Fin n) (Fin n) ℝ}
     {b r : Vec n} (h : ∀ i < m, ⟪r, A ⬝ ((A ^ i) ⬝ b)⟫_ℝ = 0) :
     ∀ z ∈ krylov A b m, ⟪r, A ⬝ z⟫_ℝ = 0 := by
@@ -350,8 +427,8 @@ private theorem inner_mulVecE_eq_zero_of_generators {m : ℕ} {A : Matrix (Fin n
   | add u v _ _ hu hv => rw [mulVecE_add, inner_add_right, hu, hv, add_zero]
   | smul c u _ hu => rw [mulVecE_smul, real_inner_smul_right, hu, mul_zero]
 
-/-- A point of `𝒦_k` whose residual is orthogonal to `A 𝒦_k` is a MINRES iterate: the
-normal-equations characterization of the least-squares minimizer, specialized to `𝒦_k`. -/
+/-- A point $x \in \mathcal{K}_k(A, b)$ whose residual $b - Ax$ is orthogonal to
+$A \mathcal{K}_k(A, b)$ is a MINRES iterate at step $k$. -/
 private theorem isMINRESIterate_of_orth {k : ℕ} {x : Vec n} (hmem : x ∈ krylov A b k)
     (horth : ∀ z ∈ krylov A b k, ⟪b - A ⬝ x, A ⬝ z⟫_ℝ = 0) : IsMINRESIterate A b k x := by
   refine ⟨hmem, fun y hy => ?_⟩
@@ -400,7 +477,7 @@ private theorem isMINRESIterate_x4two : IsMINRESIterate A4 b4 2 x4two := by
     · rw [pow_one, inner_eq, ofLp_res_two, ofLp_A4_A4_b4]
       norm_num [Fin.sum_univ_three, cons_val_two, tail_cons, head_cons]
 
-/-- The MINRES iterate of the witness system is unique at every step, because `A` is
+/-- In the example (4.2), any two MINRES iterates at the same step are equal, because $A$ is
 nonsingular. -/
 private theorem eq_of_isMINRESIterate {k : ℕ} {x y : Vec 3} (hx : IsMINRESIterate A4 b4 k x)
     (hy : IsMINRESIterate A4 b4 k y) : x = y := by
@@ -427,9 +504,13 @@ private theorem norm_sq_res_two : ‖b4 - A4 ⬝ x4two‖ ^ 2 = 16 / 19 := by
   simp [Fin.sum_univ_three]
   norm_num
 
-/-- **§4.2**: the witness of (4.2) is indefinite — `⟪A e_0, e_0⟫ = 2 > 0` while
-`⟪A w, w⟫ = −2 < 0` at `w = (1, −2, 1)ᵀ` — so the hypothesis `A ≻ 0` of Theorems 2.3 and 3.1
-fails for it, and it is nonsingular, so MINRES is defined at every step. -/
+/-- **Section 4.2** of [fong2012cg], the example (4.2) is indefinite. There are a matrix
+$A \in \mathbb{R}^{3 \times 3}$ and vectors $u, w \in \mathbb{R}^3$ such that $A$ is symmetric
+and nonsingular, $u^T A u > 0$ and $w^T A w < 0$.
+
+The witness is the matrix $A$ of (4.2), with $u = e_1$, where $u^T A u = 2$, and
+$w = (1, -2, 1)^T$, where $w^T A w = -2$. So the assumption $A \succ 0$ of Theorems 2.3 and 3.1
+fails for this matrix, while MINRES is defined at every step because $A$ is nonsingular. -/
 theorem indefinite_witness :
     ∃ (A : Matrix (Fin 3) (Fin 3) ℝ) (u w : Vec 3), A.IsSymm ∧ IsUnit A.det ∧
       0 < ⟪u, A ⬝ u⟫_ℝ ∧ ⟪w, A ⬝ w⟫_ℝ < 0 := by
@@ -441,11 +522,14 @@ theorem indefinite_witness :
     norm_num [A4, Matrix.mulVec, dotProduct, Fin.sum_univ_three, cons_val_two, tail_cons,
       head_cons]
 
-/-- **§4.2, (4.2), first half**: on the nonsingular indefinite system
-`A = [[2,1,1],[1,0,1],[1,1,2]]`,
-`b = (0,1,1)ᵀ`, MINRES produces non-monotonic solution norms.  The iterates are
-`x_1 = (0, 2/7, 2/7)ᵀ` and `x_2 = (2/19, 3/19, 5/19)ᵀ` with `‖x_1‖² = 8/49 > 2/19 = ‖x_2‖²`, so
-Theorem 2.3 fails as soon as `A ≻ 0` is dropped. -/
+/-- **Section 4.2** of [fong2012cg], the example (4.2), solution norms. There are a symmetric
+nonsingular $A \in \mathbb{R}^{3 \times 3}$ and $b \in \mathbb{R}^3$ such that for every
+sequence $(x_k)$ in which each $x_k$ is a MINRES iterate at step $k$, the norms $\|x_k\|$ are
+not monotonically increasing.
+
+The witness is the system (4.2). Its MINRES iterates are $x_1 = (0, 2/7, 2/7)^T$ and
+$x_2 = (2/19, 3/19, 5/19)^T$, with $\|x_1\|^2 = 8/49 > 2/19 = \|x_2\|^2$. So Theorem 2.3 fails
+when the assumption $A \succ 0$ is dropped. -/
 theorem minres_norm_iterate_not_monotone :
     ∃ (A : Matrix (Fin 3) (Fin 3) ℝ) (b : Vec 3), A.IsSymm ∧ IsUnit A.det ∧
       ∀ x : ℕ → Vec 3, (∀ k, IsMINRESIterate A b k (x k)) → ¬ Monotone fun k => ‖x k‖ := by
@@ -456,9 +540,14 @@ theorem minres_norm_iterate_not_monotone :
   simp only [h1, h2] at hle
   nlinarith [norm_sq_x4one, norm_sq_x4two, norm_nonneg x4one, norm_nonneg x4two]
 
-/-- **§4.2, (4.2), second half**: on the same system the MINRES backward errors `‖r_k‖/‖x_k‖` are
-not monotonic either — `(‖r_1‖/‖x_1‖)² = 21/4 < 8 = (‖r_2‖/‖x_2‖)²` — so Theorem 3.1 also fails
-without `A ≻ 0`.  This is the content of Figure 4.6. -/
+/-- **Section 4.2** of [fong2012cg], the example (4.2), backward errors. There are a symmetric
+nonsingular $A \in \mathbb{R}^{3 \times 3}$ and $b \in \mathbb{R}^3$ such that for every
+sequence $(x_k)$ in which each $x_k$ is a MINRES iterate at step $k$, the ratios
+$\|r_k\| / \|x_k\|$ with $r_k = b - A x_k$ are not monotonically decreasing on $k \ge 1$.
+
+The witness is the system (4.2), with $(\|r_1\| / \|x_1\|)^2 = 21/4 < 8 = (\|r_2\| /
+\|x_2\|)^2$. So Theorem 3.1 also fails when the assumption $A \succ 0$ is dropped. This is the
+content of Figure 4.6. -/
 theorem minres_backwardError_not_antitoneOn :
     ∃ (A : Matrix (Fin 3) (Fin 3) ℝ) (b : Vec 3), A.IsSymm ∧ IsUnit A.det ∧
       ∀ x : ℕ → Vec 3, (∀ k, IsMINRESIterate A b k (x k)) →

@@ -12,26 +12,57 @@ import Numlib.Projection.Basic
 import NumlibSurface.FongSaunders.Section03
 
 /-!
-# Fong–Saunders §4: the exact relations behind the numerical comparison
+# Fong and Saunders, Section 4: The exact relations behind the numerical comparison
 
-Surface file for D. C.-L. Fong and M. A. Saunders, *CG versus MINRES: an empirical comparison*, SQU
-Journal for Science **17** (2012) 44–62 (Report SOL 2011-2R), §4.
+This module formalizes the mathematical content of Section 4 of [fong2012cg], which is mostly an
+experimental study. It proves the relation (4.1) between the residual norms of CG and MINRES,
+$$\|r_k^C\| = \frac{\|r_k^M\|}{\sqrt{1 - \|r_k^M\|^2 / \|r_{k-1}^M\|^2}},$$
+the telescoping product of residual ratios of Section 4.1.1, and the description in Section 4.2 of
+the MINRES iterate as $x_k^M = V_k y_k^M$, where $y_k^M$ solves the least-squares subproblem
+$\min_y \|\underline{T}_k y - \beta_1 e_1\|$ with $\beta_1 = \|b\|$. For a symmetric, possibly
+indefinite system, it also proves the theorem of [steihaug1983conjugate] that Section 4.2 quotes:
+the CG solution norms increase strictly as long as $p_j^T A p_j > 0$. It proves the analogue for CR,
+whose iterates are then the MINRES iterates.
 
-§4 is mostly an experimental study; the material with mathematical content is formalized here:
-the FOM/GMRES-type relation (4.1) between the CG and MINRES residual norms, the telescoping
-product of residual ratios of §4.1.1, and the description of the MINRES iterate as the solution
-of a least-squares subproblem in Lanczos coordinates (§4.2).
-
-Left out, as empirical or as the results of other papers: the test set, the diagonal
-preconditioning, the figures and the percentages of monotone steps, the "cumulative minimum"
-heuristic, and the MINRES-QLP relationship, whose missing ingredient is the QLP factorization
-`R_k P_k = L_k` and belongs in `Numlib/Krylov/Singular` rather than in this surface.
-
-The two indefinite-case results of §4.2 (Steihaug's theorem for CG and its CR analogue) are
-`steihaug_cg` and `steihaug_cr`, specializations of the backbone's strict, symmetric-indefinite
+The proofs specialize `Numlib.Krylov.Relations`, `Numlib.Krylov.Hessenberg` and the strict
 monotonicity theorems `CG.norm_iterate_lt_of_re_inner_apply_direction_pos` and
-`CR.norm_iterate_lt_of_pos`.  The latter carries its positivity hypothesis up to the termination
-index rather than up to `k`, for the reason explained at `steihaug_cr` below.
+`CR.norm_iterate_lt_of_pos` of the backbone. The indefinite example (4.2) of Section 4.2 is
+formalized in `NumlibSurface.FongSaunders.Section05`, together with Table 5.1.
+
+## Main results
+
+* Equation (4.1), `FongSaunders.equation_4_1` and `FongSaunders.equation_4_1_minres`: for $k \ge 1$
+  and $r_k^M \neq 0$, $\|r_k^C\| = \|r_k^M\| / \sqrt{1 - \|r_k^M\|^2 / \|r_{k-1}^M\|^2}$.
+* Section 4.1.1, `FongSaunders.prod_ratio_residual`: $\prod_{k=1}^{l} \|r_k\| / \|r_{k-1}\| =
+  \|r_l\| / \|b\|$ when $r_0 = b$ and the residuals before step $l$ are nonzero.
+* Section 4.2, `FongSaunders.minres_subproblem`: for $k \le \ell$, $V_k y$ is the MINRES iterate if
+  and only if $y$ minimizes $\|\beta_1 e_1 - \underline{T}_k y\|$.
+* Section 4.2, `FongSaunders.minres_coeff_unique`: for $k \le \ell$, the coordinate vector $y_k^M$
+  of the MINRES iterate is unique.
+* Section 4.2, `FongSaunders.steihaug_cg`: for symmetric $A$, the CG solution norms increase
+  strictly as long as $p_j^T A p_j > 0$.
+* Section 4.2, `FongSaunders.steihaug_cr`: for symmetric $A$, the CR solution norms increase
+  strictly if $\rho_j = r_j^T A r_j > 0$ at every iteration before termination.
+
+## Conventions
+
+* The CG residual is $r_k^C$, the residual of `FongSaunders.cg`. The MINRES residual $r_k^M$ is the
+  CR residual $r_k$ of `FongSaunders.cr`, or $b - A x_k$ for a sequence $(x_k)$ of MINRES iterates.
+
+## Deviations from the source
+
+* **Steihaug's theorem for CR and MINRES** (reading). The paper assumes $p_j^T A p_j > 0$ and
+  $r_j^T A r_j > 0$ for $1 \le j \le k$; here $r_j^T A r_j > 0$ is assumed at every iteration before
+  termination, and the first condition is dropped as redundant. See `FongSaunders.steihaug_cr`.
+
+## Not formalized
+
+* **The test set and the diagonal preconditioning of Section 4.** They are empirical.
+* **Figures 4.1–4.8 and their percentages of monotone steps.** They are empirical.
+* **The "cumulative minimum" heuristic of Section 4.1.1.** It is empirical.
+* **The relation to MINRES-QLP in Section 4.2.** It rests on the work of Choi, Paige and Saunders,
+  the paper draws no theorem from it, and its missing ingredient, the QLP factorization
+  $R_k P_k = L_k$, belongs in the backbone module `Numlib.Krylov.Singular`.
 -/
 
 namespace FongSaunders
@@ -40,19 +71,26 @@ open Krylov Matrix
 
 variable {n : ℕ} {A : Matrix (Fin n) (Fin n) ℝ} {b : Vec n}
 
-/-- `b − A x_k = r_k` for CR, in the unfolded shape the backbone's residual lemmas produce. -/
+/-- For Algorithm CR, $b - A x_k = r_k$, in the form that the backbone residual lemmas produce. -/
 private theorem cr_res (k : ℕ) : b - Matrix.toEuclideanLin A (cr A b k).x = (cr A b k).r :=
   (cr_residual_eq k).symm
 
-/-- `b − A x_k = r_k` for CG, in the unfolded shape the backbone's residual lemmas produce. -/
+/-- For Algorithm CG, $b - A x_k^C = r_k^C$, in the form that the backbone residual lemmas produce.
+-/
 private theorem cg_res (k : ℕ) : b - Matrix.toEuclideanLin A (cg A b k).x = (cg A b k).r :=
   (cg_residual_eq k).symm
 
-/-! ### R4.1: equation (4.1) -/
+/-! ### Equation (4.1) -/
 
-/-- (4.1): `‖r_k^C‖ = ‖r_k^M‖ / √(1 − ‖r_k^M‖²/‖r_{k−1}^M‖²)` (Greenbaum Lemma 5.4.1 /
-Titley-Péloquin), for `k ≥ 1` and `r_k^M ≠ 0`.  It is the harmonic identity
-`1/‖r_{k}^M‖² = 1/‖r_{k-1}^M‖² + 1/‖r_k^C‖²` of `Numlib/Krylov/Relations.lean` rearranged. -/
+/-- **Equation (4.1)** of [fong2012cg]. Let $A \in \mathbb{R}^{n \times n}$ be positive definite,
+and let $k \ge 1$. If the MINRES residual satisfies $r_k^M \neq 0$, then the CG residual
+satisfies $$\|r_k^C\| = \frac{\|r_k^M\|}{\sqrt{1 - \|r_k^M\|^2 / \|r_{k-1}^M\|^2}}.$$
+
+The relation is Lemma 5.4.1 of [greenbaum1997iterative], also due to Titley-Péloquin. The
+statement is written for step $k + 1$ with $k \in \mathbb{N}$, so that $k \ge 1$ holds by
+construction, and $r_k^M$ is the CR residual $r_k$. The proof rearranges the harmonic identity
+$1 / \|r_k^M\|^2 = 1 / \|r_{k-1}^M\|^2 + 1 / \|r_k^C\|^2$, which is
+`Krylov.inv_sq_norm_residual_minRes`. -/
 theorem equation_4_1 (hA : A.PosDef) (k : ℕ) (hk : (cr A b (k + 1)).r ≠ 0) :
     ‖(cg A b (k + 1)).r‖
       = ‖(cr A b (k + 1)).r‖ /
@@ -86,7 +124,13 @@ theorem equation_4_1 (hA : A.PosDef) (k : ℕ) (hk : (cr A b (k + 1)).r ≠ 0) :
   rw [hval, Real.sqrt_sq (by positivity)]
   field_simp
 
-/-- (4.1) for an arbitrary sequence of MINRES iterates, whose residual is `r_k^M = b − A x_k`. -/
+/-- **Equation (4.1)** of [fong2012cg], for MINRES iterates. Let $A \in \mathbb{R}^{n \times n}$ be
+positive definite, let $(x_k)$ be a sequence such that each $x_k$ is a MINRES iterate at step
+$k$, and let $r_k^M = b - A x_k$. For $k \ge 1$ with $r_k^M \neq 0$, $$\|r_k^C\| =
+\frac{\|r_k^M\|}{\sqrt{1 - \|r_k^M\|^2 / \|r_{k-1}^M\|^2}}.$$
+
+As in `FongSaunders.equation_4_1`, the statement is written for step $k + 1$ with
+$k \in \mathbb{N}$. -/
 theorem equation_4_1_minres (hA : A.PosDef) {x : ℕ → Vec n} (hx : ∀ k, IsMINRESIterate A b k (x k))
     (k : ℕ) (hk : b - A ⬝ x (k + 1) ≠ 0) :
     ‖(cg A b (k + 1)).r‖
@@ -98,11 +142,15 @@ theorem equation_4_1_minres (hA : A.PosDef) {x : ℕ → Vec n} (hx : ∀ k, IsM
   rw [hres, hres]
   exact equation_4_1 hA k hk
 
-/-! ### R4.2: the telescoping product of residual ratios (§4.1.1) -/
+/-! ### The telescoping product of residual ratios (Section 4.1.1) -/
 
-/-- §4.1.1: if the residuals `r_0 = b, r_1, …, r_{l−1}` are nonzero then
-`∏_{k=1}^{l} ‖r_k‖/‖r_{k−1}‖ = ‖r_l‖/‖b‖`.  (The hypothesis `b ≠ 0` is automatic for `l ≥ 1`;
-it is stated so that the degenerate case `l = 0` is also covered.) -/
+/-- **Section 4.1.1** of [fong2012cg], the telescoping product. Let $b \neq 0$, and let $(r_k)$ be a
+sequence of vectors with $r_0 = b$. If $l \in \mathbb{N}$ and $r_0, r_1, \dots, r_{l-1}$ are
+nonzero, then $$\prod_{k=1}^{l} \frac{\|r_k\|}{\|r_{k-1}\|} = \frac{\|r_l\|}{\|b\|}.$$
+
+The sequence is arbitrary; it need not come from an algorithm. The condition $b \neq 0$ follows
+from the other conditions when $l \ge 1$; it is stated so that the case $l = 0$ is also covered.
+The product is written over $k < l$ with the factor $\|r_{k+1}\| / \|r_k\|$. -/
 theorem prod_ratio_residual (r : ℕ → Vec n) (hb : b ≠ 0) (hr0 : r 0 = b) (l : ℕ)
     (hne : ∀ k < l, r k ≠ 0) :
     ∏ k ∈ Finset.range l, ‖r (k + 1)‖ / ‖r k‖ = ‖r l‖ / ‖b‖ := by
@@ -113,16 +161,24 @@ theorem prod_ratio_residual (r : ℕ → Vec n) (hb : b ≠ 0) (hr0 : r 0 = b) (
     rw [Finset.prod_range_succ, ih fun k hk => hne k (by omega)]
     field_simp
 
-/-! ### R4.5: the MINRES subproblem in Lanczos coordinates (§4.2) -/
+/-! ### The MINRES subproblem in Lanczos coordinates (Section 4.2) -/
 
-/-- For symmetric `A` the Arnoldi Hessenberg matrix is the Lanczos matrix `T̲_k`. -/
+/-- If $A$ is symmetric, then the Hessenberg matrix `Arnoldi.hessenberg` of the Arnoldi process for
+`Matrix.toEuclideanLin A` and $b$ is the Lanczos matrix $\underline{T}_k$. -/
 theorem hessenberg_eq_lanczosT (hA : A.IsSymm) (k : ℕ) :
     Arnoldi.hessenberg (Matrix.toEuclideanLin A) b k = lanczosT A b k := by
   rw [Lanczos.hessenberg_eq_map_tridiagExt b (isSymmetric_toEuclideanLin hA) k]
   ext i j
   simp
 
-/-- §4.2: `x_k^M = V_k y_k^M` where `y_k^M` minimizes `‖T̲_k y − β_1 e_1‖` (`β_1 = ‖b‖`). -/
+/-- **Section 4.2** of [fong2012cg], the MINRES subproblem. Let $A \in \mathbb{R}^{n \times n}$ be
+positive definite, let $\ell$ be the termination step of the Lanczos process, and let
+$k \le \ell$. For $y \in \mathbb{R}^k$, the vector $V_k y$ is a MINRES iterate at step $k$ if
+and only if $y$ minimizes $$\|\beta_1 e_1 - \underline{T}_k z\| \quad \text{over } z \in
+\mathbb{R}^k, \qquad \beta_1 = \|b\|.$$
+
+The vector $\beta_1 e_1 \in \mathbb{R}^{k+1}$ is `Krylov.firstVec ‖b‖ (k + 1)`, and $V_k y$ is
+the sum $\sum_j y_j v_j$ of the Lanczos vectors. -/
 theorem minres_subproblem (hA : A.PosDef) (k : ℕ) (hk : k ≤ lanczosTerm A b) (y : Fin k → ℝ) :
     IsMINRESIterate A b k (∑ j, y j • lanczosVec A b j) ↔
       IsMinOn (fun z : Fin k → ℝ =>
@@ -134,7 +190,10 @@ theorem minres_subproblem (hA : A.PosDef) (k : ℕ) (hk : k ≤ lanczosTerm A b)
     RCLike.ofReal_real_eq_id, id_eq] at hK
   rw [isMINRESIterate_iff, ← hK, zero_add]
 
-/-- §4.2: for `k ≤ ℓ` the coordinate vector `y_k^M` of the MINRES iterate is unique. -/
+/-- **Section 4.2** of [fong2012cg], uniqueness of the MINRES coordinates. Let
+$A \in \mathbb{R}^{n \times n}$ be positive definite, let $\ell$ be the termination step of the
+Lanczos process, and let $k \le \ell$. Then there is exactly one $y \in \mathbb{R}^k$ such that
+$V_k y$ is a MINRES iterate at step $k$. -/
 theorem minres_coeff_unique (hA : A.PosDef) (k : ℕ) (hk : k ≤ lanczosTerm A b) :
     ∃! y : Fin k → ℝ, IsMINRESIterate A b k (∑ j, y j • lanczosVec A b j) := by
   have hinj : Function.Injective fun j : Fin k => (⟨(j : ℕ), lt_of_lt_of_le j.2 hk⟩ :
@@ -159,11 +218,15 @@ theorem minres_coeff_unique (hA : A.PosDef) (k : ℕ) (hk : k ≤ lanczosTerm A 
   have := Fintype.linearIndependent_iff.1 hli (z - y) hzero j
   simpa [sub_eq_zero] using this
 
-/-! ### R4.3, R4.4: Steihaug's theorem on indefinite systems (§4.2) -/
+/-! ### Steihaug's theorem on indefinite systems (Section 4.2) -/
 
-/-- §4.2, Steihaug's theorem: for CG on a symmetric, possibly indefinite `A x = b` from `x₀ = 0`,
-the solution norms `‖x₁‖, …, ‖x_k‖` are strictly increasing as long as `p_jᵀ A p_j > 0` for the
-directions `p₀, …, p_{k-1}` used in iterations `1..k`. -/
+/-- **Section 4.2** of [fong2012cg] (Steihaug's theorem [steihaug1983conjugate]). Let
+$A \in \mathbb{R}^{n \times n}$ be symmetric, possibly indefinite, and let $x_j^C$ and $p_j^C$
+be the iterates and the directions of Algorithm CG for $Ax = b$ from $x_0 = 0$. Let
+$k \in \mathbb{N}$, and suppose that $(p_j^C)^T A p_j^C > 0$ for $j = 0, \dots, k - 1$, the
+directions of iterations $1, \dots, k$. Then $$\|x_0^C\| < \|x_1^C\| < \dots < \|x_k^C\|.$$
+
+The conclusion is stated as $\|x_i^C\| < \|x_{i+1}^C\|$ for every $i < k$. -/
 theorem steihaug_cg (hA : A.IsSymm) {k : ℕ}
     (hpos : ∀ j < k, 0 < ⟪(cg A b j).p, A ⬝ (cg A b j).p⟫_ℝ) {i : ℕ} (hi : i < k) :
     ‖(cg A b i).x‖ < ‖(cg A b (i + 1)).x‖ := by
@@ -173,17 +236,23 @@ theorem steihaug_cg (hA : A.IsSymm) {k : ℕ}
   rw [RCLike.re_to_real, real_inner_comm]
   simpa only [cg_p] using hpos j hj
 
-/-- §4.2, the CR/MINRES analogue of Steihaug's theorem: the CR solution norms are strictly
-increasing as long as `ρ_j = r_jᵀ A r_j > 0` at every iteration before termination.
+/-- **Section 4.2** of [fong2012cg], Steihaug's theorem for CR and MINRES. Let
+$A \in \mathbb{R}^{n \times n}$ be symmetric, possibly indefinite, and let $\ell$ be the
+termination step of Algorithm CR for $Ax = b$. Suppose that $\rho_j = r_j^T A r_j > 0$ for every
+$j < \ell$. Then for every $i < \ell$, the CR iterates satisfy $$\|x_i\| < \|x_{i+1}\|.$$
 
-The paper states the property "as long as both `p_jᵀ A p_j > 0` and `r_jᵀ A r_j > 0` for all
-iterations `1 ≤ j ≤ k`", a *local* hypothesis.  Its proof of Theorem 2.2 (d) expands `r_i` over
-*all* the remaining steps, so a single negative `ρ_m` beyond `k` breaks the argument; the
-hypothesis is therefore imposed up to the termination index `ℓ = crTerm A b`, which is how the
-paper's condition reads when it is read globally.  The second condition `p_jᵀ A p_j > 0` is then
-redundant, since `r_jᵀ A p_j = ρ_j ≠ 0` already forces `A p_j ≠ 0` (see
-`CR.norm_iterate_lt_of_pos`).  Under these hypotheses `CR.isMinResidualIterate_of_no_breakdown`
-identifies `x_k` with the MINRES iterate, so the property transfers to MINRES. -/
+**Reading.** The paper states the property for CR and MINRES as long as both $p_j^T A p_j > 0$
+and $r_j^T A r_j > 0$ for all iterations $1 \le j \le k$, which is a local hypothesis. Its proof
+of Theorem 2.2(d) expands $r_i$ over all the remaining steps, so a single negative $\rho_m$
+after step $k$ breaks the argument. The statement here therefore reads the hypothesis globally
+and assumes $\rho_j > 0$ up to the termination step $\ell$. The condition $p_j^T A p_j > 0$ is
+then redundant, because $r_j^T A p_j = \rho_j \neq 0$ already forces $A p_j \neq 0$ (see
+`CR.norm_iterate_lt_of_pos`).
+
+The termination step $\ell$ is `FongSaunders.crTerm A b`. If no CR residual vanishes, its value
+is $0$ and the statement says nothing. Under the hypotheses,
+`CR.isMinResidualIterate_of_no_breakdown` identifies $x_k$ with the MINRES iterate, so the
+property transfers to MINRES. -/
 theorem steihaug_cr (hA : A.IsSymm) (hpos : ∀ j < crTerm A b, 0 < (cr A b j).ρ) {i : ℕ}
     (hi : i < crTerm A b) : ‖(cr A b i).x‖ < ‖(cr A b (i + 1)).x‖ := by
   have hne : {k | (cr A b k).r = 0}.Nonempty := by
