@@ -10,49 +10,97 @@ import NumlibSurface.GolubVanLoan.Chapter01.Section01
 import NumlibSurface.GolubVanLoan.Chapter09.Section01
 
 /-!
-# Golub–Van Loan §9.2: approximation methods
+# Golub and Van Loan, Section 9.2: Approximation methods
 
-Surface file for [golub2013matrix] §9.2: the Jordan analysis (Theorem 9.2.1), the Schur analysis
-(Theorem 9.2.2 with its ingredients (9.2.1) and (9.2.2)), Taylor truncation (Theorem 9.2.3), the
-double-angle formulas, Horner's scheme for matrix polynomials (Algorithm 9.2.1) and the
-Paterson–Stockmeyer regrouping (9.2.5), binary powering (Algorithm 9.2.2), Simpson's rule for
-`∫ f(At) dt` ((9.2.6)–(9.2.7)), and the Cauchy integral (9.2.8) over circles.
+This module formalizes §9.2 of [golub2013matrix], the approximation of a matrix function $f(A)$,
+$A \in \mathbb{C}^{n \times n}$, by a simpler function $g(A)$, and the evaluation of matrix
+polynomials and powers. It proves the bounds on $\|f(A) - g(A)\|$ from a Jordan decomposition
+(Theorem 9.2.1) and from a Schur decomposition (Theorem 9.2.2, with its ingredients (9.2.1) and
+(9.2.2)), the error bound of Taylor truncation (Theorem 9.2.3), and the double-angle formulas for
+$\cos$ and $\sin$. It defines Horner's scheme for matrix polynomials (Algorithm 9.2.1) and binary
+powering (Algorithm 9.2.2), proves their exact correctness, and proves the Paterson–Stockmeyer
+regrouping (9.2.5). Last, it bounds the error of Simpson's rule for $\int_a^b f(At) \, dt$
+((9.2.6)–(9.2.7)) and proves the Cauchy integral formula (9.2.8) over circles.
+
+The proofs specialize the backbone modules `Numlib.Analysis.Calculus.HermiteGenocchi` (bounds on
+divided differences), `Numlib.Analysis.Matrix.Function.Triangular` (powers of triangular matrices as
+path sums), `Numlib.Analysis.Normed.Algebra.PrimaryFunctionalCalculus.Cauchy` (the Cauchy integral)
+and `Numlib.Analysis.Matrix.Function.Approximation` (the approximation bounds and the Simpson
+bound).
+
+## Main definitions
+
+* Algorithm 9.2.1, `GolubVanLoan.Chapter09.algorithm_9_2_1`: Horner's scheme for
+  $b_q A^q + \dots + b_1 A + b_0 I$.
+* Algorithm 9.2.2, `GolubVanLoan.Chapter09.algorithm_9_2_2`: binary powering for $A^s$.
+
+## Main results
+
+* Theorem 9.2.1, `GolubVanLoan.Chapter09.theorem_9_2_1`: a bound on $\|f(A) - g(A)\|_2$ through a
+  Jordan decomposition $A = X J X^{-1}$ and $\kappa_2(X)$.
+* Equation (9.2.1), `GolubVanLoan.Chapter09.equation_9_2_1`: a divided difference of $h$ at nodes in
+  a compact convex set $\Omega$ is bounded by $\sup_{z \in \Omega} |h^{(r)}(z)| / r!$.
+* Equation (9.2.2), `GolubVanLoan.Chapter09.equation_9_2_2`: the entries of $|N|^r$ for strictly
+  upper triangular $N$ as path sums.
+* Theorem 9.2.2, `GolubVanLoan.Chapter09.theorem_9_2_2`: a bound on $\|f(A) - g(A)\|_F$ through a
+  Schur decomposition $Q^H A Q = \operatorname{diag}(\lambda_i) + N$.
+* Theorem 9.2.3, `GolubVanLoan.Chapter09.theorem_9_2_3`: the error bound of the truncated Taylor
+  series.
+* §9.2.3, `GolubVanLoan.Chapter09.double_angle`: $\cos(2A) = 2\cos(A)^2 - I$ and
+  $\sin(2A) = 2 \sin(A) \cos(A)$.
+* Algorithm 9.2.1, `GolubVanLoan.Chapter09.algorithm_9_2_1_spec`: in exact arithmetic, Horner's
+  scheme returns $\sum_{k=0}^{q} b_k A^k$.
+* Equation (9.2.5), `GolubVanLoan.Chapter09.equation_9_2_5`: the Paterson–Stockmeyer regrouping
+  $p(A) = \sum_{k=0}^{r} B_k (A^s)^k$.
+* Algorithm 9.2.2, `GolubVanLoan.Chapter09.algorithm_9_2_2_spec`: in exact arithmetic, binary
+  powering returns $A^s$.
+* Equations (9.2.6)–(9.2.7), `GolubVanLoan.Chapter09.equation_9_2_7`: the error bound of the
+  composite Simpson rule for $\int_a^b f(At) \, dt$.
+* Equation (9.2.8), `GolubVanLoan.Chapter09.equation_9_2_8`: $f(A) = \frac{1}{2\pi i} \oint_{|z -
+  c| = R} f(z) (zI - A)^{-1} \, dz$.
 
 ## Conventions
 
-As in §9.1: `A : Matrix (Fin n) (Fin n) ℂ`, `f(A) = pfc f A`. `‖·‖₂` is Mathlib's scoped
-`Matrix.Norms.L2Operator`, also the norm in which (9.2.8)'s contour integral is taken (every norm
-on `ℂ^{n×n}` gives the same integral). `|N|` is `N.map (‖·‖)`. Algorithms 9.2.1 and 9.2.2 are real
-(`Matrix (Fin n) (Fin n) ℝ`) and compute every matrix product by chapter 1's `algorithm_1_1_5`
-(`C ← C + A B`, with `C = 0` or `C = b_k I`); the integer computations on the exponent of
-Algorithm 9.2.2 (its binary expansion) are exact.
+* As in §9.1, $A \in \mathbb{C}^{n \times n}$ is `A : Matrix (Fin n) (Fin n) ℂ`, and $f(A)$ is
+  `pfc f A`.
+* The norm $\|\cdot\|_2$ is the operator norm of Mathlib's scope `Matrix.Norms.L2Operator`, and
+  $\|\cdot\|_F$ is the Frobenius norm of the scope `Matrix.Norms.Frobenius`. The contour integral of
+  (9.2.8) is taken in the norm $\|\cdot\|_2$; every norm on $\mathbb{C}^{n \times n}$ gives the same
+  integral.
+* The matrix $|N|$ of entrywise absolute values is `N.map (‖·‖)`.
+* Algorithms 9.2.1 and 9.2.2 are real, on `Matrix (Fin n) (Fin n) ℝ`.
 
-## Sources
+## Implementation notes
 
-`Numlib/Analysis/Calculus/HermiteGenocchi` (`Hermite.norm_divDiff_le`),
-`Numlib/Analysis/Matrix/Function/Triangular` (`Matrix.pow_succ_apply_eq_sum_pathProd`),
-`Numlib/Analysis/Normed/Algebra/PrimaryFunctionalCalculus/{Basic,Analytic,Cauchy}` (`pfc_comp`,
-`norm_pfc_sub_sum_le`, `pfc_eq_circleIntegral`), `Numlib/Analysis/Matrix/Function/Approximation`
-(`Matrix.l2_opNorm_pfc_sub_le_of_conj_jordanForm`, `Matrix.frobenius_norm_pfc_sub_le_of_isCompact`,
-`Matrix.norm_integral_pfc_smul_sub_simpsonSum_le`).
+* Algorithms 9.2.1 and 9.2.2 follow the algorithm conventions of `NumlibSurface.GolubVanLoan`. They
+  compute every matrix product with Algorithm 1.1.5 of Chapter 1,
+  `GolubVanLoan.Chapter01.algorithm_1_1_5`, which computes $C \leftarrow C + AB$, with $C = 0$ or
+  $C = b_k I$.
+* The integer computations on the exponent in Algorithm 9.2.2, which form its binary expansion, are
+  exact.
+
+## Deviations from the source
+
+* **Theorem 9.2.1** (typo). The source takes the maximum over $1 \le i \le p$. The intended range is
+  $1 \le i \le q$, the blocks of the Jordan form. See `GolubVanLoan.Chapter09.theorem_9_2_1`.
+* **Equation (9.2.1) and Theorem 9.2.2** (reading). The source takes $\Omega$ closed and convex, but
+  the supremum $\delta_r$ is finite only for bounded $\Omega$. The statements take $\Omega$ compact
+  and convex. See `GolubVanLoan.Chapter09.equation_9_2_1` and
+  `GolubVanLoan.Chapter09.theorem_9_2_2`.
+* **Equation (9.2.7)** (correction). The source bounds the error by
+  $\max_{a \le t \le b} \|f^{(4)}(At)\|_2$, without the factor $A^4$, which is false. The statement
+  has $\max_{a \le t \le b} \|A^4 f^{(4)}(At)\|_2$. See `GolubVanLoan.Chapter09.equation_9_2_7`.
 
 ## Not formalized
 
-(9.2.3) (notation for the Taylor remainder `E(s)`) and (9.2.4) (the entrywise mean-value remainder,
-a step of the book's proof of Theorem 9.2.3); the numerical examples (after Theorem 9.2.2, the
-`[-49 24; -64 31]` matrix, `q = 9`); the multiplication counts; the sin/cos scaling loop (its exact
-content is the double-angle formulas).
-
-## Errata
-
-Theorem 9.2.1's `max` over `1 ≤ i ≤ p` is over `1 ≤ i ≤ q`. The proof of Theorem 9.2.2 cites
-"Theorem 9.1.3" for Theorem 9.1.4 and sums `r` to `j - 1` for `j - i`; its `δ_r` is a supremum
-over a closed convex `Ω`, finite only for bounded `Ω`. (9.2.4) applies the real mean-value form of
-Taylor's remainder to complex-valued entries, where no `ε_ij` need exist; the bound of
-Theorem 9.2.3 survives by the vector-valued integral remainder, even without the factor `n` (as the
-book remarks after the proof, citing Mathias). The proof of Theorem 9.2.3 also writes
-`f_ij^{(q-1)}` for `f_ij^{(q+1)}`, and needs the disk centred at `0`. (9.2.7) omits the factor `A⁴`
-(`d⁴/dt⁴ f(At) = A⁴ f⁽⁴⁾(At)`).
+* Display (9.2.3), the notation for the Taylor remainder $E(s)$.
+* Display (9.2.4), the entrywise mean-value form of the remainder, a step of the source's proof of
+  Theorem 9.2.3.
+* The numerical examples, among them the matrix $\begin{bmatrix} -49 & 24 \\ -64 & 31 \end{bmatrix}$
+  with $q = 9$ after Theorem 9.2.2.
+* The multiplication counts.
+* The scaling loop for $\sin$ and $\cos$; its exact content is the double-angle formulas,
+  `GolubVanLoan.Chapter09.double_angle`.
 -/
 
 open Polynomial Finset Filter Topology
@@ -68,12 +116,20 @@ section Jordan
 
 open scoped Matrix.Norms.L2Operator
 
-/-- **Theorem 9.2.1.** Let `A = X · diag(J₁, …, J_q) · X⁻¹` be a Jordan decomposition of
-`A ∈ ℂ^{n×n}` (as in (9.1.3): `J_i` the `n_i × n_i` Jordan block at `λ_i`), and let `f`, `g` be
-analytic on an open set containing `λ(A)` (analytic at every eigenvalue). Then
-`‖f(A) - g(A)‖₂ ≤ κ₂(X) · max_{1 ≤ i ≤ q, 0 ≤ r ≤ n_i - 1} n_i |f⁽ʳ⁾(λ_i) - g⁽ʳ⁾(λ_i)| / r!`,
-`κ₂(X) = ‖X‖₂ ‖X⁻¹‖₂` (the book's `max` over `1 ≤ i ≤ p` is over `i ≤ q`). Backbone
-`Matrix.l2_opNorm_pfc_sub_le_of_conj_jordanForm`. -/
+/-- **Theorem 9.2.1** of [golub2013matrix]. Let $A, X \in \mathbb{C}^{n \times n}$ with $X$
+nonsingular and $X^{-1} A X = \operatorname{diag}(J_1, \dots, J_q)$ a Jordan form, as in
+(9.1.3), where $J_i$ is the Jordan block of size $n_i$ for $\lambda_i$. Let
+$f, g : \mathbb{C} \to \mathbb{C}$ be analytic at every eigenvalue of $A$. Then
+$$\|f(A) - g(A)\|_2 \le \kappa_2(X) \max_{\substack{1 \le i \le q \\ 0 \le r \le n_i - 1}} n_i
+  \frac{|f^{(r)}(\lambda_i) - g^{(r)}(\lambda_i)|}{r!}, \qquad \kappa_2(X) = \|X\|_2
+  \|X^{-1}\|_2.$$
+
+**Typo.** The source takes the maximum over $1 \le i \le p$. The intended range is
+$1 \le i \le q$.
+
+The Jordan form is `Matrix.jordanForm e μ` with $n_i = e_i$, placed in `Fin n` by the bijection
+`σ`. The maximum is a supremum over a finite set, and a block of size $0$ contributes nothing.
+The proof specializes `Matrix.l2_opNorm_pfc_sub_le_of_conj_jordanForm`. -/
 theorem theorem_9_2_1 {q : ℕ} (e : Fin q → ℕ) (μ : Fin q → ℂ) (σ : (Σ i, Fin (e i)) ≃ Fin n)
     {A X : Matrix (Fin n) (Fin n) ℂ} (hX : IsUnit X)
     (h : X⁻¹ * A * X = Matrix.reindex σ σ (Matrix.jordanForm e μ)) {f g : ℂ → ℂ}
@@ -91,9 +147,15 @@ end Jordan
 
 /-! ### §9.2.2 A Schur analysis -/
 
-/-- **(9.2.1)**: if `Ω` is convex (and compact, so that the supremum is finite) and `h` is analytic
-on a neighbourhood of `Ω`, then for nodes `λ_{s₀}, …, λ_{s_r} ∈ Ω`, repeated or not,
-`|h[λ_{s₀}, …, λ_{s_r}]| ≤ sup_{z ∈ Ω} |h⁽ʳ⁾(z)| / r!`. -/
+/-- **Equation (9.2.1)** of [golub2013matrix]. Let $\Omega \subseteq \mathbb{C}$ be convex and
+compact, and let $h$ be analytic on a neighbourhood of $\Omega$. For nodes
+$\lambda_{s_0}, \dots, \lambda_{s_r} \in \Omega$, repeated or not,
+$$|h[\lambda_{s_0}, \dots, \lambda_{s_r}]| \le \frac{\sup_{z \in \Omega} |h^{(r)}(z)|}{r!}.$$
+
+**Reading.** The source takes $\Omega$ closed and convex. The supremum is finite only for
+bounded $\Omega$, so the statement takes $\Omega$ compact.
+
+The nodes form a multiset of size $r + 1$, and the divided difference is `Hermite.divDiff`. -/
 theorem equation_9_2_1 {Ω : Set ℂ} (hΩ : Convex ℝ Ω) (hΩc : IsCompact Ω) {h : ℂ → ℂ}
     (hh : AnalyticOnNhd ℂ h Ω) {r : ℕ} {s : Multiset ℂ} (hs : Multiset.card s = r + 1)
     (hsΩ : ∀ x ∈ s, x ∈ Ω) :
@@ -104,7 +166,7 @@ theorem equation_9_2_1 {Ω : Set ℂ} (hΩ : Convex ℝ Ω) (hΩc : IsCompact Ω
   exact Hermite.norm_divDiff_le hΩ hh hs hsΩ fun z hz =>
     le_csSup (hΩc.bddAbove_image hc) ⟨z, hz, rfl⟩
 
-/-- The path products of `|N|` are the absolute values of those of `N`. -/
+/-- The path products of $|N|$ are the absolute values of the path products of $N$. -/
 private theorem pathProd_map_norm (N : Matrix (Fin n) (Fin n) ℂ) (l : List (Fin n)) :
     Matrix.pathProd (N.map (‖·‖)) l = ‖Matrix.pathProd N l‖ := by
   induction l with
@@ -115,11 +177,17 @@ private theorem pathProd_map_norm (N : Matrix (Fin n) (Fin n) ℂ) (l : List (Fi
     | cons j l =>
       rw [Matrix.pathProd_cons_cons, Matrix.pathProd_cons_cons, ih, norm_mul, Matrix.map_apply]
 
-/-- **(9.2.2)** (the book's P9.2.1): for `N` strictly upper triangular and `r ≥ 1`, the entries of
-`|N|^r` are `0` for `j < i + r` and otherwise
-`∑_{s ∈ S_ij^{(r)}} |n_{s₀s₁} ⋯ n_{s_{r-1}s_r}|`, over the strictly increasing sequences
-`i = s₀ < ⋯ < s_r = j` (interior indices `s ⊆ (i, j)` of size `r - 1`). Stated at the exponent
-`r + 1`. -/
+/-- **Equation (9.2.2)** of [golub2013matrix]. Let $N \in \mathbb{C}^{n \times n}$ be strictly upper
+triangular, and let $r \ge 1$. The entry $(i, j)$ of $|N|^r$ is $0$ if $j < i + r$, and
+otherwise
+$$(|N|^r)_{ij} = \sum_{(s_0, \dots, s_r) \in S_{ij}^{(r)}} |n_{s_0 s_1} n_{s_1 s_2} \cdots
+  n_{s_{r-1} s_r}|,$$
+where $S_{ij}^{(r)}$ is the set of strictly increasing sequences
+$i = s_0 < s_1 < \dots < s_r = j$.
+
+The source refers to Problem P9.2.1 for this identity. The statement is written for the exponent
+$r + 1$ with $r \ge 0$. A sequence in $S_{ij}^{(r+1)}$ is `Matrix.path i s j` for a set `s` of
+$r$ interior indices in `Finset.Ioo i j`. -/
 theorem equation_9_2_2 {N : Matrix (Fin n) (Fin n) ℂ} (hN : ∀ i j, j ≤ i → N i j = 0) (r : ℕ)
     (i j : Fin n) :
     ((j : ℕ) < i + (r + 1) → ((N.map (‖·‖)) ^ (r + 1)) i j = 0) ∧
@@ -146,13 +214,21 @@ section Schur
 
 open scoped Matrix Matrix.Norms.Frobenius
 
-/-- **Theorem 9.2.2.** Let `Qᴴ A Q = T = diag(λ_i) + N` be a Schur decomposition of
-`A ∈ ℂ^{n×n}` (`N` the strictly upper triangular part of `T`). If `f` and `g` are analytic on a
-closed convex set `Ω` whose interior contains `λ(A)`, then
-`‖f(A) - g(A)‖_F ≤ ∑_{r=0}^{n-1} δ_r ‖|N|^r‖_F / r!`,
-`δ_r = sup_{z ∈ Ω} |f⁽ʳ⁾(z) - g⁽ʳ⁾(z)|`. `Ω` is taken **compact**, so that `δ_r` is finite (for an
-unbounded `Ω` the supremum may be `+∞`, and Lean's `sSup` of an unbounded set of reals is `0`).
-Backbone `Matrix.frobenius_norm_pfc_sub_le_of_isCompact`. -/
+/-- **Theorem 9.2.2** of [golub2013matrix]. Let $A, Q \in \mathbb{C}^{n \times n}$ with $Q$ unitary
+and $Q^H A Q = T = \operatorname{diag}(\lambda_i) + N$ upper triangular, with $N$ the strictly
+upper triangular part of $T$. Let $\Omega \subseteq \mathbb{C}$ be compact and convex with
+$\lambda(A)$ in the interior of $\Omega$, and let $f$ and $g$ be analytic on a neighbourhood of
+$\Omega$. Then
+$$\|f(A) - g(A)\|_F \le \sum_{r=0}^{n-1} \delta_r \frac{\| |N|^r \|_F}{r!}, \qquad \delta_r =
+  \sup_{z \in \Omega} |f^{(r)}(z) - g^{(r)}(z)|.$$
+
+**Reading.** The source takes $\Omega$ closed and convex. The supremum $\delta_r$ is finite only
+for bounded $\Omega$, so the statement takes $\Omega$ compact. For an unbounded $\Omega$ the
+supremum can be $+\infty$, and Lean's `sSup` of an unbounded set of reals is $0$.
+
+The source's proof cites "Theorem 9.1.3" for Theorem 9.1.4, and sums $r$ up to $j - 1$ where the
+range is up to $j - i$; neither slip changes the statement. The proof specializes
+`Matrix.frobenius_norm_pfc_sub_le_of_isCompact`. -/
 theorem theorem_9_2_2 {A Q : Matrix (Fin n) (Fin n) ℂ} (hQ : Q ∈ Matrix.unitaryGroup (Fin n) ℂ)
     (hT : (Qᴴ * A * Q).IsUpperTriangular) {Ω : Set ℂ} (hΩc : IsCompact Ω) (hΩ : Convex ℝ Ω)
     (hAΩ : spectrum ℂ A ⊆ interior Ω) {f g : ℂ → ℂ} (hf : AnalyticOnNhd ℂ f Ω)
@@ -176,9 +252,18 @@ section Taylor
 
 open scoped Matrix.Norms.L2Operator
 
-/-- **Theorem 9.2.3**: if `f(z) = ∑ α_k zᵏ` on an open disk centred at `0` containing `λ(A)`, then
-`‖f(A) - ∑_{k=0}^{q} α_k Aᵏ‖₂ ≤ n/(q+1)! · max_{0 ≤ s ≤ 1} ‖A^{q+1} f^{(q+1)}(As)‖₂`, stated for
-every bound `M` of the maximum. -/
+/-- **Theorem 9.2.3** of [golub2013matrix]. Let $f(z) = \sum_{k \ge 0} \alpha_k z^k$ on an open disk
+centred at $0$ that contains $\lambda(A)$, for $A \in \mathbb{C}^{n \times n}$. Let $q \ge 0$,
+and let $M$ satisfy $\|A^{q+1} f^{(q+1)}(As)\|_2 \le M$ for all $s \in [0, 1]$. Then
+$$\Big\| f(A) - \sum_{k=0}^{q} \alpha_k A^k \Big\|_2 \le \frac{n}{(q+1)!} M.$$
+With $M = \max_{0 \le s \le 1} \|A^{q+1} f^{(q+1)}(As)\|_2$ this is the source's bound.
+
+The disk of convergence has radius $r \in (0, \infty]$, and $\alpha_k$ is the $k$-th coefficient
+of the power series. The source's proof applies the real mean-value form (9.2.4) of Taylor's
+remainder to complex-valued entries, where the intermediate points need not exist, and writes
+$f_{ij}^{(q-1)}$ for $f_{ij}^{(q+1)}$. The bound holds through the vector-valued integral form
+of the remainder, even without the factor $n$, as the source remarks after the proof with a
+citation of Mathias. -/
 theorem theorem_9_2_3 {f : ℂ → ℂ} {p : FormalMultilinearSeries ℂ ℂ ℂ} {r : ℝ≥0∞}
     (hf : HasFPowerSeriesOnBall f p 0 r) {A : Matrix (Fin n) (Fin n) ℂ}
     (hA : ∀ μ ∈ spectrum ℂ A, μ ∈ Metric.eball 0 r) (q : ℕ) {M : ℝ}
@@ -198,8 +283,10 @@ theorem theorem_9_2_3 {f : ℂ → ℂ} {p : FormalMultilinearSeries ℂ ℂ ℂ
 
 end Taylor
 
-/-- **The double-angle formulas** of §9.2.3: `cos(2A) = 2 cos(A)² - I` and
-`sin(2A) = 2 sin(A) cos(A)`. -/
+/-- **§9.2.3** of [golub2013matrix], the double-angle formulas. For every
+$A \in \mathbb{C}^{n \times n}$,
+$$\cos(2A) = 2 \cos(A)^2 - I, \qquad \sin(2A) = 2 \sin(A) \cos(A).$$
+-/
 theorem double_angle (A : Matrix (Fin n) (Fin n) ℂ) :
     pfc Complex.cos ((2 : ℂ) • A) = (2 : ℂ) • pfc Complex.cos A ^ 2 - 1 ∧
     pfc Complex.sin ((2 : ℂ) • A) = (2 : ℂ) • (pfc Complex.sin A * pfc Complex.cos A) := by
@@ -241,17 +328,18 @@ section Programs
 
 variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 
-/-- **Algorithm 9.2.1 (Horner's scheme)**: given `A` and `b(0:q)`, compute
-`F = b_q A^q + ⋯ + b₁ A + b₀ I`.
+/-- **Algorithm 9.2.1** of [golub2013matrix] (Horner's scheme). Given
+$A \in \mathbb{R}^{n \times n}$ and $b(0{:}q)$, the algorithm computes
+$F = b_q A^q + \dots + b_1 A + b_0 I$.
 ```
 F = b_q A + b_{q-1} I
 for k = q-2:-1:0
     F = A F + b_k I
 end
 ```
-The first step rounds each product `b_q a_ij`, then each diagonal sum `b_q a_ii + b_{q-1}`; each
-update `F = A F + b_k I`
-is chapter 1's `C ← C + A B` (Algorithm 1.1.5) with `C = b_k I`. -/
+The first step rounds each product $b_q a_{ij}$ and then each diagonal sum
+$b_q a_{ii} + b_{q-1}$. Each update $F = AF + b_k I$ is Algorithm 1.1.5 of Chapter 1,
+$C \leftarrow C + AB$, with $C = b_k I$. -/
 def algorithm_9_2_1 (A : Matrix (Fin n) (Fin n) ℝ) (q : ℕ) (b : ℕ → ℝ) :
     M (Matrix (Fin n) (Fin n) ℝ) := do
   let F ← (List.finRange n).foldlM (fun F i =>
@@ -264,11 +352,13 @@ def algorithm_9_2_1 (A : Matrix (Fin n) (Fin n) ℝ) (q : ℕ) (b : ℕ → ℝ)
   (List.range (q - 1)).reverse.foldlM (fun F k =>
     GolubVanLoan.Chapter01.algorithm_1_1_5 rnd A F (b k • (1 : Matrix (Fin n) (Fin n) ℝ))) F
 
-/-- The least `k` with `β_k ≠ 0` in the binary expansion `s = ∑ β_k 2ᵏ` (`0` for `s = 0`). -/
+/-- The least $k$ with $\beta_k \neq 0$ in the binary expansion $s = \sum_k \beta_k 2^k$, and $0$
+for $s = 0$. -/
 noncomputable def lowestSetBit (s : ℕ) : ℕ :=
   open Classical in if h : ∃ k, s.testBit k then Nat.find h else 0
 
-/-- **Algorithm 9.2.2 (Binary Powering)**: `F = Aˢ` for a positive integer `s`.
+/-- **Algorithm 9.2.2** of [golub2013matrix] (binary powering). Given
+$A \in \mathbb{R}^{n \times n}$ and a positive integer $s$, the algorithm computes $F = A^s$.
 ```
 Let s = ∑_{k=0}^{t} β_k 2^k be the binary expansion of s with β_t ≠ 0
 Z = A; q = 0
@@ -283,8 +373,9 @@ for k = q+1:t
     end
 end
 ```
-The binary expansion is exact integer arithmetic (`t = ⌊log₂ s⌋`, `q = lowestSetBit s`); every
-matrix product is chapter 1's Algorithm 1.1.5 with `C = 0`. -/
+The binary expansion is computed in exact integer arithmetic, with
+$t = \lfloor \log_2 s \rfloor$ and $q$ = `GolubVanLoan.Chapter09.lowestSetBit s`. Every matrix
+product is Algorithm 1.1.5 of Chapter 1 with $C = 0$. -/
 noncomputable def algorithm_9_2_2 (A : Matrix (Fin n) (Fin n) ℝ) (s : ℕ) :
     M (Matrix (Fin n) (Fin n) ℝ) := do
   let t := Nat.log 2 s
@@ -302,9 +393,9 @@ noncomputable def algorithm_9_2_2 (A : Matrix (Fin n) (Fin n) ℝ) (s : ℕ) :
 
 end Programs
 
-/-- Two nested loops over a duplicate-free row list writing each entry `(i, j)` once, from
-`g i j`: on each row `List.foldl_update_self` and `List.foldl_update_eq_ite`, over the rows
-`List.foldl_update_of_nodup`. -/
+/-- Two nested loops over a duplicate-free list of rows, which write each entry $(i, j)$ once with
+the value $g(i, j)$, give $g(a, c)$ at the positions they visit and leave the other entries
+unchanged. -/
 private theorem foldl_foldl_updateRow {α : Type*} (g : Fin n → Fin n → α) {l₁ : List (Fin n)}
     (hl₁ : l₁.Nodup) (l₂ : List (Fin n)) (F : Matrix (Fin n) (Fin n) α) (a c : Fin n) :
     (l₁.foldl (fun F i => l₂.foldl (fun F j => F.updateRow i (Function.update (F i) j (g i j))) F)
@@ -320,8 +411,8 @@ private theorem foldl_foldl_updateRow {α : Type*} (g : Fin n → Fin n → α) 
     c).trans ?_
   by_cases ha : a ∈ l₁ <;> simp [ha]
 
-/-- A loop adding `c` to each diagonal entry listed once: `List.foldl_update_of_nodup` on the
-rows. -/
+/-- A loop that adds $c$ to each diagonal entry of a duplicate-free list adds $c$ to exactly those
+entries. -/
 private theorem foldl_diag_add (c : ℝ) {l : List (Fin n)} (hl : l.Nodup)
     (F : Matrix (Fin n) (Fin n) ℝ) (a d : Fin n) :
     (l.foldl (fun (F : Matrix (Fin n) (Fin n) ℝ) i =>
@@ -335,8 +426,8 @@ private theorem foldl_diag_add (c : ℝ) {l : List (Fin n)} (hl : l.Nodup)
     by_cases ha : a ∈ l <;> simp [ha]
   · by_cases ha : a ∈ l <;> simp [ha, had, Ne.symm had]
 
-/-- The Horner loop: from `F`, the updates `F ← A F + b_k I` for `k = m-1, …, 0` give
-`∑_{i<m} b_i Aⁱ + Aᵐ F`. -/
+/-- The Horner loop: starting from $F$, the updates $F \leftarrow AF + b_k I$ for
+$k = m-1, \dots, 0$ give $\sum_{i < m} b_i A^i + A^m F$. -/
 private theorem foldl_horner (A : Matrix (Fin n) (Fin n) ℝ) (b : ℕ → ℝ) (m : ℕ)
     (F : Matrix (Fin n) (Fin n) ℝ) :
     (List.range m).reverse.foldl (fun F k => b k • (1 : Matrix (Fin n) (Fin n) ℝ) + A * F) F =
@@ -349,7 +440,10 @@ private theorem foldl_horner (A : Matrix (Fin n) (Fin n) ℝ) (b : ℕ → ℝ) 
       mul_one]
     abel
 
-/-- **Exact semantics of Algorithm 9.2.1**: for `q ≥ 1` it returns `∑_{k=0}^{q} b_k Aᵏ`. -/
+/-- **Algorithm 9.2.1** of [golub2013matrix], exact semantics. Let $A \in \mathbb{R}^{n \times n}$,
+$q \ge 1$ and $b_0, \dots, b_q \in \mathbb{R}$. Then in exact arithmetic Algorithm 9.2.1 returns
+$$\sum_{k=0}^{q} b_k A^k.$$
+-/
 theorem algorithm_9_2_1_spec (A : Matrix (Fin n) (Fin n) ℝ) {q : ℕ} (hq : 1 ≤ q) (b : ℕ → ℝ) :
     Id.run (algorithm_9_2_1 pure A q b) = ∑ k ∈ range (q + 1), b k • A ^ k := by
   have key : ∀ F₀ : Matrix (Fin n) (Fin n) ℝ,
@@ -374,10 +468,15 @@ theorem algorithm_9_2_1_spec (A : Matrix (Fin n) (Fin n) ℝ) {q : ℕ} (hq : 1 
   · subst hac; simp
   · simp [hac, Matrix.one_apply_ne hac]
 
-/-- **(9.2.5), Paterson–Stockmeyer**: for `r = ⌊q/s⌋`,
-`p(A) = ∑_{k=0}^{r} B_k (A^s)^k` with `B_k = b_{sk+s-1} A^{s-1} + ⋯ + b_{sk} I` for `k < r` and
-`B_r = b_q A^{q-sr} + ⋯ + b_{sr} I` — in any algebra (the book's `s ≤ √q` only minimizes the
-number of multiplications; the identity even holds for `s = 0`, where `r = 0`). -/
+/-- **Equation (9.2.5)** of [golub2013matrix] (Paterson–Stockmeyer). Let $R$ be an algebra over a
+commutative semiring $K$, let $A \in R$, $b_0, \dots, b_q \in K$ and $s \ge 0$, and let
+$r = \lfloor q/s \rfloor$. Then
+$$p(A) = \sum_{k=0}^{q} b_k A^k = \sum_{k=0}^{r} B_k (A^s)^k,$$
+where $B_k = b_{sk+s-1} A^{s-1} + \dots + b_{sk+1} A + b_{sk} I$ for $k < r$ and $B_r = b_q
+A^{q-sr} + \dots + b_{sr+1} A + b_{sr} I$.
+
+The source chooses $s \le \sqrt{q}$, which only minimizes the number of multiplications; the
+identity holds for every $s$. For $s = 0$ the Lean division gives $r = 0$, and $B_0 = p(A)$. -/
 theorem equation_9_2_5 {K R : Type*} [CommSemiring K] [Semiring R] [Algebra K R] (b : ℕ → K)
     (A : R) (s q : ℕ) :
     ∑ k ∈ range (q + 1), b k • A ^ k =
@@ -407,7 +506,8 @@ theorem equation_9_2_5 {K R : Type*} [CommSemiring K] [Semiring R] [Algebra K R]
 
 /-! ### §9.2.5 Computing powers of a matrix -/
 
-/-- The bits below the lowest set bit vanish, and the lowest set bit is set. -/
+/-- For $s \neq 0$, the bits of $s$ below its lowest set bit $q$ vanish and bit $q$ is set:
+$s \bmod 2^{q+1} = 2^q$. -/
 private theorem mod_two_pow_succ_lowestSetBit {s : ℕ} (hs : s ≠ 0) :
     s % 2 ^ (lowestSetBit s + 1) = 2 ^ lowestSetBit s ∧ s.testBit (lowestSetBit s) := by
   have hex : ∃ k, s.testBit k := Nat.exists_testBit_of_ne_zero hs
@@ -430,7 +530,8 @@ private theorem mod_two_pow_succ_lowestSetBit {s : ℕ} (hs : s ≠ 0) :
     exact of_decide_eq_true this.symm
   rw [h1, mul_one]
 
-/-- One step of the main loop of Algorithm 9.2.2 in exact arithmetic. -/
+/-- One step of the main loop of Algorithm 9.2.2 in exact arithmetic: multiplying $A^{s \bmod 2^k}$
+by $A^{2^k}$ when bit $k$ of $s$ is set gives $A^{s \bmod 2^{k+1}}$. -/
 private theorem binaryPower_step (A : Matrix (Fin n) (Fin n) ℝ) (s k : ℕ) :
     (if s.testBit k then A ^ (s % 2 ^ k) * A ^ 2 ^ k else A ^ (s % 2 ^ k)) =
       A ^ (s % 2 ^ (k + 1)) := by
@@ -445,9 +546,11 @@ private theorem binaryPower_step (A : Matrix (Fin n) (Fin n) ℝ) (s k : ℕ) :
   · have h1 : s / 2 ^ k % 2 = 1 := of_decide_eq_true (by rw [← this, h])
     simp [h1, pow_add]
 
-/-- **Exact semantics of Algorithm 9.2.2**: for `s ≥ 1` it returns `Aˢ`. After the squaring loop
-`Z = A^{2^q}`; after step `k` of the main loop `Z = A^{2^k}` and `F = A^{s mod 2^{k+1}}`; at
-`k = t`, `s mod 2^{t+1} = s`. -/
+/-- **Algorithm 9.2.2** of [golub2013matrix], exact semantics. Let $A \in \mathbb{R}^{n \times n}$
+and $s \ge 1$. Then in exact arithmetic Algorithm 9.2.2 returns $A^s$.
+
+After the squaring loop $Z = A^{2^q}$. After step $k$ of the main loop $Z = A^{2^k}$ and
+$F = A^{s \bmod 2^{k+1}}$, and at $k = t$, $s \bmod 2^{t+1} = s$. -/
 theorem algorithm_9_2_2_spec (A : Matrix (Fin n) (Fin n) ℝ) {s : ℕ} (hs : 1 ≤ s) :
     Id.run (algorithm_9_2_2 pure A s) = A ^ s := by
   have hs0 : s ≠ 0 := by omega
@@ -493,8 +596,9 @@ theorem algorithm_9_2_2_spec (A : Matrix (Fin n) (Fin n) ℝ) {s : ℕ} (hs : 1 
 
 /-! ### §9.2.6 Integrating matrix functions -/
 
-/-- The composite Simpson weights `w_0, …, w_m = 1, 4, 2, 4, …, 2, 4, 1` of (9.2.6), `m = 2N`,
-regrouped by panels: `∑_{k=0}^{2N} w_k g_k = ∑_{j<N} (g_{2j} + 4 g_{2j+1} + g_{2j+2})`. -/
+/-- The composite Simpson weights $w_0, \dots, w_{2N} = 1, 4, 2, 4, \dots, 2, 4, 1$ of (9.2.6),
+regrouped by panels: for $N \ge 1$, $\sum_{k=0}^{2N} w_k g_k = \sum_{j < N} (g_{2j} + 4
+g_{2j+1} + g_{2j+2})$. -/
 private theorem sum_simpsonWeight_smul {M : Type*} [AddCommGroup M] [Module ℝ M] (g : ℕ → M)
     {N : ℕ} (hN : 1 ≤ N) :
     ∑ k ∈ range (2 * N + 1),
@@ -529,14 +633,22 @@ section Simpson
 
 open scoped Matrix.Norms.L2Operator
 
-/-- **(9.2.6)–(9.2.7), corrected.** For `A ∈ ℂ^{n×n}` and `f` analytic at `t μ` for every
-`t ∈ [a, b]` and every eigenvalue `μ` of `A`, `m` even, `h = (b - a)/m` and the Simpson
-approximation `F̃ = (h/3) ∑_{k=0}^m w_k f(A(a + kh))` (`w = 1, 4, 2, …, 2, 4, 1`) of
-`F = ∫_a^b f(At) dt`, `F̃ = F + E` with
-`‖E‖₂ ≤ n h⁴ (b - a)/180 · max_{a ≤ t ≤ b} ‖A⁴ f⁽⁴⁾(At)‖₂`. The book prints `‖f⁽⁴⁾(At)‖₂` without
-the factor `A⁴`, which is false (`n = 1`, `f = exp`, `A = 2`: `d⁴/dt⁴ e^{2t} = 16 e^{2t}`). Backbone
-`Matrix.norm_integral_pfc_smul_sub_simpsonSum_le` (without the factor `n`), on `m/2` panels of
-width `2h`. -/
+/-- **Equations (9.2.6)–(9.2.7)** of [golub2013matrix], corrected. Let
+$A \in \mathbb{C}^{n \times n}$, let $a < b$, and let $f$ be analytic at $t\mu$ for every
+$t \in [a, b]$ and every eigenvalue $\mu$ of $A$. Let $m > 0$ be even and $h = (b - a)/m$. The
+composite Simpson approximation
+$$\tilde F = \frac{h}{3} \sum_{k=0}^{m} w_k f(A(a + kh)), \qquad w = 1, 4, 2, 4, \dots, 2, 4,
+  1,$$
+of $F = \int_a^b f(At) \, dt$ satisfies $\tilde F = F + E$ with
+$$\|E\|_2 \le \frac{n h^4 (b - a)}{180} \max_{a \le t \le b} \|A^4 f^{(4)}(At)\|_2.$$
+
+**Correction.** The source prints $\|f^{(4)}(At)\|_2$ in the bound, without the factor $A^4$.
+This is false: for $n = 1$, $f = \exp$ and $A = 2$, the fourth derivative of $e^{2t}$ is
+$16 e^{2t}$.
+
+The maximum is `sSup` over $[a, b]$. The proof specializes
+`Matrix.norm_integral_pfc_smul_sub_simpsonSum_le`, which gives the bound without the factor $n$,
+on $m/2$ panels of width $2h$. -/
 theorem equation_9_2_7 (A : Matrix (Fin n) (Fin n) ℂ) {f : ℂ → ℂ} {a b h : ℝ} (hab : a < b)
     {m : ℕ} (hm : Even m) (hm0 : 0 < m) (hh : h = (b - a) / m)
     (hf : ∀ t ∈ Set.Icc a b, ∀ μ ∈ spectrum ℂ A, AnalyticAt ℂ f (t * μ)) :
@@ -587,9 +699,13 @@ section Cauchy
 
 open scoped Matrix.Norms.L2Operator
 
-/-- **(9.2.8)**, for circular contours: if `f` is analytic on a neighbourhood of the closed disk
-`|z - c| ≤ R` whose interior contains `λ(A)`, then
-`f(A) = (2πi)⁻¹ ∮_{|z - c| = R} f(z) (zI - A)⁻¹ dz`. -/
+/-- **Equation (9.2.8)** of [golub2013matrix], for circular contours. Let
+$A \in \mathbb{C}^{n \times n}$, $c \in \mathbb{C}$ and $R \in \mathbb{R}$, and let $f$ be
+complex differentiable on the closed disk $|z - c| \le R$, with $\lambda(A)$ contained in the
+open disk $|z - c| < R$. Then
+$$f(A) = \frac{1}{2\pi i} \oint_{|z - c| = R} f(z) (zI - A)^{-1} \, dz.$$
+
+The contour of the statement is a circle. The integral is `circleIntegral`. -/
 theorem equation_9_2_8 {A : Matrix (Fin n) (Fin n) ℂ} {f : ℂ → ℂ} {c : ℂ} {R : ℝ}
     (hf : DifferentiableOn ℂ f (Metric.closedBall c R)) (hA : spectrum ℂ A ⊆ Metric.ball c R) :
     pfc f A = (2 * π * Complex.I)⁻¹ •

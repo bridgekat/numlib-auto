@@ -9,39 +9,120 @@ import NumlibSurface.GolubVanLoan.Chapter01.Section02
 import NumlibSurface.GolubVanLoan.Chapter02.Section06
 
 /-!
-# Golub–Van Loan §2.7: finite precision matrix computations
+# Golub and Van Loan, Section 2.7: Finite precision matrix computations
 
-Surface file for [golub2013matrix] §2.7: the 3-digit calculator and the IEEE double format as
-instances of `FloatingPoint.System` (§2.7.1–2.7.2), the model of floating point arithmetic
-(2.7.4)–(2.7.6), the non-associativity of floating point addition (Maxim 1), storing a matrix
-(2.7.7), Lemma 2.7.1, rounding in scaling and addition (2.7.15)–(2.7.16), the `2 × 2` backward error
-example of §2.7.9, and the ideal equation solver (2.7.21)–(2.7.22).
+This module formalizes §2.7 of [golub2013matrix] on floating point arithmetic and the rounding
+errors of basic matrix computations. It describes two concrete number systems: a 3-digit decimal
+calculator (§2.7.1) and the IEEE double format (2.7.2)–(2.7.3), with its machine epsilon $2^{-52}$
+and the relative error bound $2^{-53}$ of rounding to nearest. It proves the model of floating point
+arithmetic: $\operatorname{fl}(x) = x(1 + \delta)$ with $|\delta| \le u$ (2.7.4), $u$ is half the
+gap between $1$ and the next floating point number (2.7.5), and $\operatorname{fl}(x \mathbin{op}
+y) = (x \mathbin{op} y)(1 + \delta)$ (2.7.6). It shows that floating point addition is not
+associative (Maxim 1), and bounds the error of storing a matrix (2.7.7). For the dot product it
+proves the error recursion (2.7.9)–(2.7.10), Lemma 2.7.1, and the bounds $|\operatorname{fl}(x^T
+y) - x^T y| \le 1.01 n u |x|^T |y|$ (2.7.11) and $\le \gamma_n |x|^T |y|$ (2.7.12), with
+$\gamma_n = nu/(1 - nu)$. It then bounds the errors of scaling and addition (2.7.15)–(2.7.16), of
+the saxpy and the outer product update (2.7.17)–(2.7.18), and of matrix multiplication
+(2.7.19)–(2.7.20), proves the backward error form of the $2 \times 2$ triangular product of §2.7.9,
+and analyses the ideal equation solver (2.7.21)–(2.7.22).
+
+The proofs specialize the backbone modules `Numlib.FloatingPoint.Model`,
+`Numlib.FloatingPoint.System` and `Numlib.FloatingPoint.InnerProduct`, and
+`Numlib.Analysis.Matrix.OperatorNorm` for the bounds in norms.
+
+## Main definitions
+
+* §2.7.1, `GolubVanLoan.Chapter02.calculator3`: the 3-digit calculator as the number system
+  $\mathbb{F}(10, 3, -8, 10)$.
+
+## Main results
+
+* §2.7.1, `GolubVanLoan.Chapter02.calculator3_card`: the calculator has $34201$ floating point
+  numbers.
+* §2.7.1, `GolubVanLoan.Chapter02.calculator3_range`: the smallest and the largest positive numbers
+  of the calculator, and the spacing of its numbers.
+* Equation (2.7.2), `GolubVanLoan.Chapter02.equation_2_7_2`: the normalized doubles
+  $\pm (1.b_1 \dots b_{52})_2 \times 2^{E - 1023}$ are the nonzero numbers of the double system.
+* Equation (2.7.3), `GolubVanLoan.Chapter02.equation_2_7_3`: the values
+  $\pm (0.b_1 \dots b_{52})_2 \times 2^{-1022}$ are $0$ and the subnormal doubles.
+* §2.7.2, `GolubVanLoan.Chapter02.ieeeDouble_constants`: the machine epsilon $2^{-52}$ and the
+  extreme positive normalized doubles $2^{-1022}$ and $(2 - 2^{-52}) 2^{1023}$.
+* §2.7.2, `GolubVanLoan.Chapter02.ieeeDouble_round_nearest`: rounding to nearest has relative error
+  at most $2^{-53}$.
+* Equation (2.7.4), `GolubVanLoan.Chapter02.equation_2_7_4` and
+  `GolubVanLoan.Chapter02.equation_2_7_4_system`: $\operatorname{fl}(x) = x(1 + \delta)$ with
+  $|\delta| \le u$.
+* Equation (2.7.5), `GolubVanLoan.Chapter02.equation_2_7_5`: $u$ is half the gap between $1$ and the
+  next floating point number, and its values for the IEEE formats.
+* Equation (2.7.6), `GolubVanLoan.Chapter02.equation_2_7_6`: the fundamental axiom of floating point
+  arithmetic.
+* §2.7.4, Maxim 1, `GolubVanLoan.Chapter02.calculator3_add_not_assoc`: floating point addition is
+  not associative.
+* Equation (2.7.7), `GolubVanLoan.Chapter02.equation_2_7_7`: $|\operatorname{fl}(A) - A| \le u |A|$
+  and $\|\operatorname{fl}(A) - A\|_1 \le u \|A\|_1$.
+* Equation (2.7.9), `GolubVanLoan.Chapter02.equation_2_7_9`: the recursion of the rounding errors in
+  the partial sums of a dot product.
+* Equation (2.7.10), `GolubVanLoan.Chapter02.equation_2_7_10`: $\operatorname{fl}(x^T y) = \sum_k
+  x_k y_k (1 + \gamma_k)$.
+* Lemma 2.7.1, `GolubVanLoan.Chapter02.lemma_2_7_1`: if $1 + \alpha = \prod_{k=1}^n (1 + \alpha_k)$
+  with $|\alpha_k| \le u$ and $nu \le 0.01$, then $|\alpha| \le 1.01 nu$.
+* Equation (2.7.11), `GolubVanLoan.Chapter02.equation_2_7_11`: $|\operatorname{fl}(x^T y) - x^T y|
+  \le 1.01 nu |x|^T |y|$.
+* Equation (2.7.12), `GolubVanLoan.Chapter02.equation_2_7_12`: $|\operatorname{fl}(x^T y) - x^T y|
+  \le \gamma_n |x|^T |y|$.
+* Equations (2.7.15)–(2.7.16), `GolubVanLoan.Chapter02.equation_2_7_15` and
+  `GolubVanLoan.Chapter02.equation_2_7_16`: the errors of $\operatorname{fl}(\alpha A)$ and
+  $\operatorname{fl}(A + B)$.
+* Equations (2.7.17)–(2.7.18), `GolubVanLoan.Chapter02.equation_2_7_17` and
+  `GolubVanLoan.Chapter02.equation_2_7_18`: the errors of the saxpy and of the outer product update.
+* Equation (2.7.19), `GolubVanLoan.Chapter02.equation_2_7_19`,
+  `GolubVanLoan.Chapter02.equation_2_7_19_saxpy` and `GolubVanLoan.Chapter02.equation_2_7_19_outer`:
+  $|\operatorname{fl}(AB) - AB| \le \gamma_r |A| |B|$ for the dot product, saxpy and outer product
+  forms of matrix multiplication.
+* Equation (2.7.20), `GolubVanLoan.Chapter02.equation_2_7_20`: $\|\operatorname{fl}(AB) - AB\|_1 \le
+  \gamma_r \|A\|_1 \|B\|_1$.
+* §2.7.9, `GolubVanLoan.Chapter02.triangular_mul_two_backward` and
+  `GolubVanLoan.Chapter02.triangular_mul_two_backward_run`: the computed product of two $2 \times 2$
+  upper triangular matrices is the exact product of slightly perturbed factors.
+* §2.7.10, `GolubVanLoan.Chapter02.abs_sub_le_gamma_mul_abs_of_nonneg`: for $A, B \ge 0$, the
+  computed product has small componentwise relative error.
+* Equation (2.7.21), `GolubVanLoan.Chapter02.equation_2_7_21`: storing $A$ and $b$ gives
+  $\|E\|_\infty \le u \|A\|_\infty$ and $\|e\|_\infty \le u \|b\|_\infty$.
+* Equation (2.7.22), `GolubVanLoan.Chapter02.equation_2_7_22`: the ideal equation solver has
+  relative error at most $4 u \kappa_\infty(A)$.
 
 ## Conventions
 
-`fp : FloatingPoint.RoundingModel ℝ` is the book's arithmetic and `fp.u` its unit roundoff `u`; a
-stored or computed `fl(x)` is any `y` with `fp.Rounds x y`, entrywise for matrices and vectors.
-Concrete arithmetic is a `FloatingPoint.System` (`𝔽(β, t, L, U)`), whose rounding is
-`FloatingPoint.System.round` and whose machine operations are `FloatingPoint.System.add` etc. First
-order `… + O(u²)` bounds are stated with `FloatingPoint.gamma` (`γ_n = n u / (1 - n u)`).
+* `fp : FloatingPoint.RoundingModel ℝ` is the floating point arithmetic of the source, and `fp.u` is
+  its unit roundoff $u$. A stored or computed value $\operatorname{fl}(x)$ is any $y$ with
+  `fp.Rounds x y`, entrywise for matrices and vectors.
+* Concrete arithmetic is a `FloatingPoint.System`, the number system $\mathbb{F}(\beta, t, L, U)$.
+  Its rounding is `FloatingPoint.System.round`, and its machine operations are
+  `FloatingPoint.System.op` and `FloatingPoint.System.add`.
+* The source states first-order bounds with a term $O(u^2)$. The theorems state rigorous bounds with
+  `FloatingPoint.gamma`, $\gamma_n = nu/(1 - nu) = nu + O(u^2)$, or with the $u^2$ term written out.
+* The statements about the dot product (2.7.8)–(2.7.12), the saxpy and the outer product update
+  (2.7.17)–(2.7.18), the matrix products (2.7.19)–(2.7.20), the remark on nonnegative factors of
+  §2.7.10 and the $2 \times 2$ triangular product of §2.7.9 are about every run
+  `s ∈ (alg fp.round …).run` of Algorithms 1.1.1, 1.1.2, 1.1.6–1.1.8 and 1.2.1 of Chapter 1, in the
+  namespace `GolubVanLoan.Chapter01`.
+* The source uses that the first addition $\operatorname{fl}(0 + p) = p$ of an accumulation is
+  exact. This is the hypothesis `fp.IsIdempotent`. The rounding bridges of Chapter 1
+  (`GolubVanLoan.Chapter01.algorithm_1_1_1_rounds`, `GolubVanLoan.Chapter01.algorithm_1_1_6_rounds`
+  and the corresponding theorems for Algorithms 1.1.7 and 1.1.8, and the run characterizations
+  `…_mem_run`) turn runs into the backbone relations `FloatingPoint.RoundsDot` and
+  `FloatingPoint.RoundsMul`.
 
-The run statements of the dot product (2.7.8)–(2.7.12), the saxpy and outer product updates
-(2.7.17)–(2.7.18) and the matrix products (2.7.19)–(2.7.20), the nonnegative-product remark of
-§2.7.10 and the `2 × 2` triangular product of §2.7.9 are about the runs `∀ s ∈ (alg fp.round …).run`
-of chapter 1's Algorithms 1.1.1, 1.1.2, 1.1.6–1.1.8 and 1.2.1 (`GolubVanLoan.Chapter01`). The
-book's exact `fl(0 + p) = p` at the start of an accumulation is the hypothesis `fp.IsIdempotent`;
-chapter 1's bridges (`GolubVanLoan.Chapter01.algorithm_1_1_1_rounds`, `…_1_1_{6,7,8}_rounds`, the
-run characterizations `…_mem_run`) turn runs into the backbone's relations `RoundsDot`,
-`RoundsMul`.
+## Not formalized
 
-## Sources
-
-Backbone `Numlib/FloatingPoint/{Model,System,InnerProduct}`, and
-`Numlib/Analysis/Matrix/OperatorNorm` for the norm forms. Not formalized: the IEEE bit layout
-(2.7.1) (notation), the sample roundings of §2.7.1, `±∞`, `NaN`, exceptions and the directed
-rounding modes of §2.7.2 (the `lsb` tie rule is covered by "any nearest element"), Maxims 2
-and 3, the styles (2.7.13)–(2.7.14), the Wilkinson quotation, and the Strassen claims of
-§2.7.10 (no stated constant; see the chapter module).
+* **The IEEE bit layout (2.7.1).** It is notation.
+* **The sample roundings of §2.7.1.**
+* **The values $\pm\infty$ and NaN, the exceptions, and the directed rounding modes of §2.7.2.** The
+  tie rule of rounding to nearest is covered by allowing any nearest element.
+* **Maxims 2 and 3 of §2.7.4.**
+* **The styles of error analysis (2.7.13)–(2.7.14).**
+* **The quotation of Wilkinson.**
+* **The claims about the Strassen method in §2.7.10.** They have no stated constant.
 -/
 
 open Finset Matrix FloatingPoint WithLp
@@ -53,20 +134,26 @@ variable {m n : ℕ}
 
 /-! ### §2.7.1 A 3-digit calculator -/
 
-/-- **§2.7.1, the 3-digit calculator** `± d₀.d₁d₂ × 10^e`, `1 ≤ d₀ ≤ 9`, `-9 ≤ e ≤ 9`: the system
-`𝔽(10, 3, -8, 10)` (the backbone writes the numbers as `0.d₀d₁d₂ × 10^{e+1}`, which shifts the
-exponent range by one). -/
+/-- **Section 2.7.1** of [golub2013matrix], the 3-digit calculator. The calculator represents the
+numbers $\pm d_0.d_1 d_2 \times 10^e$ with digits $d_i$, $1 \le d_0 \le 9$ and $-9 \le e \le 9$,
+together with $0$. It is the number system $\mathbb{F}(10, 3, -8, 10)$.
+
+The backbone writes the numbers as $\pm 0.d_0 d_1 d_2 \times 10^{e+1}$, which shifts the
+exponent range by one. -/
 def calculator3 : System :=
   ⟨10, 3, -8, 10, by norm_num, by norm_num, by norm_num⟩
 
-/-- **§2.7.1**: the calculator has `2 × 9 × 10 × 10 × 19 + 1 = 34201` floating point numbers. -/
+/-- **Section 2.7.1** of [golub2013matrix]. The 3-digit calculator has
+$$2 \times 9 \times 10 \times 10 \times 19 + 1 = 34201$$
+floating point numbers. -/
 theorem calculator3_card : ((calculator3.finset ℝ).card : ℤ) = 34201 := by
   rw [System.card_finset]
   norm_num [calculator3]
 
-/-- **§2.7.1**: the smallest and largest positive numbers of the calculator are
-`N_min = 1.00 × 10⁻⁹` and `N_max = 9.99 × 10⁹`, and between `1.00 × 10^e` and `1.00 × 10^{e+1}`
-(`-9 ≤ e ≤ 9`) the numbers are the `m × 10^{e-2}`, `100 ≤ m ≤ 999`: the spacing is `10^{e-2}`. -/
+/-- **Section 2.7.1** of [golub2013matrix]. The smallest and the largest positive numbers of the
+3-digit calculator are $N_{\min} = 1.00 \times 10^{-9}$ and $N_{\max} = 9.99 \times 10^9$. For
+$-9 \le e \le 9$, the numbers of the calculator in $[10^e, 10^{e+1})$ are exactly the numbers
+$m \times 10^{e-2}$ with $100 \le m \le 999$, so their spacing is $10^{e-2}$. -/
 theorem calculator3_range :
     calculator3.xmin ℝ = 10 ^ (-9 : ℤ) ∧ calculator3.xmax ℝ = 999 / 100 * 10 ^ 9 ∧
       ∀ e : ℤ, -9 ≤ e → e ≤ 9 →
@@ -87,8 +174,8 @@ theorem calculator3_range :
 
 /-! ### §2.7.2 IEEE floating point arithmetic -/
 
-/-- The 52 mantissa bits `b₁ … b₅₂` read as the integer `∑ᵢ bᵢ 2^{52-i}` (0-based `2^{51-i}`):
-`finFunctionFinEquiv` of the reversed bit string. -/
+/-- The 52 mantissa bits $b_1, \dots, b_{52}$ read as the integer $\sum_i b_i 2^{52-i}$ (with
+0-based exponent $51 - i$) are `finFunctionFinEquiv` of the reversed bit string. -/
 private theorem bits_eq (b : Fin 52 → Fin 2) :
     ∑ i : Fin 52, (b i : ℕ) * 2 ^ (51 - (i : ℕ)) = (finFunctionFinEquiv (b ∘ Fin.rev) : ℕ) := by
   rw [finFunctionFinEquiv_apply]
@@ -96,13 +183,13 @@ private theorem bits_eq (b : Fin 52 → Fin 2) :
   simp only [Fin.revPerm_apply, Function.comp_apply, Fin.rev_rev, Fin.val_rev]
   rw [show 52 - ((i : ℕ) + 1) = 51 - (i : ℕ) by omega]
 
-/-- The mantissa bits encode exactly the integers below `2^52`. -/
+/-- The integer encoded by 52 mantissa bits is less than $2^{52}$. -/
 private theorem bits_lt (b : Fin 52 → Fin 2) :
     ∑ i : Fin 52, (b i : ℕ) * 2 ^ (51 - (i : ℕ)) < 2 ^ 52 := by
   rw [bits_eq]
   exact (finFunctionFinEquiv (b ∘ Fin.rev)).isLt
 
-/-- Every integer below `2^52` is encoded by some mantissa bits. -/
+/-- Every natural number less than $2^{52}$ is encoded by some 52 mantissa bits. -/
 private theorem exists_bits {r : ℕ} (hr : r < 2 ^ 52) :
     ∃ b : Fin 52 → Fin 2, ∑ i : Fin 52, (b i : ℕ) * 2 ^ (51 - (i : ℕ)) = r := by
   refine ⟨finFunctionFinEquiv.symm ⟨r, hr⟩ ∘ Fin.rev, ?_⟩
@@ -112,7 +199,8 @@ private theorem exists_bits {r : ℕ} (hr : r < 2 ^ 52) :
     simp
   rw [bits_eq, h, Equiv.apply_symm_apply]
 
-/-- The binary fraction `(0.b₁…b₅₂)₂` is the integer of the bits times `2⁻⁵²`. -/
+/-- The binary fraction $(0.b_1 \dots b_{52})_2$ is the integer encoded by the bits times $2^{-52}$.
+-/
 private theorem bits_real (b : Fin 52 → Fin 2) :
     ∑ i : Fin 52, ((b i : ℕ) : ℝ) * (2 : ℝ) ^ (-((i : ℤ) + 1)) =
       ((∑ i : Fin 52, (b i : ℕ) * 2 ^ (51 - (i : ℕ)) : ℕ) : ℝ) * 2 ^ (-52 : ℤ) := by
@@ -124,19 +212,25 @@ private theorem bits_real (b : Fin 52 → Fin 2) :
   have := i.isLt
   omega
 
-/-- `2⁵² · 2⁻⁵² = 1`. -/
+/-- $2^{52} \cdot 2^{-52} = 1$. -/
 private theorem two_pow_mul_zpow_neg : (2 : ℝ) ^ (52 : ℕ) * 2 ^ (-52 : ℤ) = 1 := by
   rw [← zpow_natCast, ← zpow_add₀ two_ne_zero]
   norm_num
 
-/-- The value of the double system's base and number of digits. -/
+/-- The base of the double system is $2$. -/
 private theorem ieeeDouble_β_cast : ((System.ieeeDouble.β : ℕ) : ℝ) = 2 := by
   norm_num [System.ieeeDouble]
 
-/-- **(2.7.2), the normalized doubles**: the values `± (1.b₁b₂…b₅₂)₂ × 2^{E - 1023}` with a biased
-exponent `1 ≤ E ≤ 2046` (the exponent bits neither all `0` nor all `1`) are exactly the nonzero
-numbers of the backbone's double system `𝔽(2, 53, -1021, 1024)` (mantissa
-`m = 2⁵² + ∑ bᵢ 2^{52-i}`, exponent `e = E - 1022`). The bits `bᵢ` are digits `Fin 2`. -/
+/-- **Equation (2.7.2)** of [golub2013matrix], the normalized doubles. The real numbers
+$$\pm (1.b_1 b_2 \dots b_{52})_2 \times 2^{E - 1023}$$
+with bits $b_i \in \{0, 1\}$ and a biased exponent $1 \le E \le 2046$, that is, with exponent
+bits neither all $0$ nor all $1$, are exactly the nonzero numbers of the double system
+$\mathbb{F}(2, 53, -1021, 1024)$.
+
+The double system is `FloatingPoint.System.ieeeDouble`. A number
+$\pm (1.b_1 \dots b_{52})_2 \times 2^{E - 1023}$ has the mantissa
+$m = 2^{52} + \sum_i b_i 2^{52-i}$ and the exponent $e = E - 1022$ of that system. The bits are
+elements of `Fin 2`, and the sign is a unit of `ℤ`. -/
 theorem equation_2_7_2 :
     {x : ℝ | ∃ (σ : ℤˣ) (b : Fin 52 → Fin 2) (E : ℕ), 1 ≤ E ∧ E ≤ 2046 ∧
         x = ((σ : ℤ) : ℝ) * (1 + ∑ i : Fin 52, ((b i : ℕ) : ℝ) * 2 ^ (-((i : ℤ) + 1))) *
@@ -178,10 +272,15 @@ theorem equation_2_7_2 :
     push_cast
     linear_combination (((σ : ℤ) : ℝ)) * (2 : ℝ) ^ (e + 1022 - 1023) * two_pow_mul_zpow_neg
 
-/-- **(2.7.3), zero and the subnormal doubles**: the values `± (0.b₁b₂…b₅₂)₂ × 2^{-1022}` (exponent
-bits all `0`) are exactly `0` and the de-normalized numbers `± m 2^{L-t} = ± m 2^{-1074}`,
-`1 ≤ m < 2⁵²`, of the double system; they lie strictly between `-N_min` and `N_min`, uniformly
-spaced by `2^{-1074}`. -/
+/-- **Equation (2.7.3)** of [golub2013matrix], zero and the subnormal doubles. The real numbers
+$$\pm (0.b_1 b_2 \dots b_{52})_2 \times 2^{-1022},$$
+whose exponent bits are all $0$, are exactly $0$ and the de-normalized numbers
+$\pm m \, 2^{L - t} = \pm m \, 2^{-1074}$, $1 \le m < 2^{52}$, of the double system. Every
+de-normalized double $x$ satisfies $|x| < N_{\min}$.
+
+So the subnormal doubles lie strictly between $-N_{\min}$ and $N_{\min}$, with the uniform
+spacing $2^{-1074}$. The de-normalized numbers are `FloatingPoint.System.denormalized`, and
+$N_{\min}$ is `FloatingPoint.System.xmin`. -/
 theorem equation_2_7_3 :
     {x : ℝ | ∃ (σ : ℤˣ) (b : Fin 52 → Fin 2),
         x = ((σ : ℤ) : ℝ) * (∑ i : Fin 52, ((b i : ℕ) : ℝ) * 2 ^ (-((i : ℤ) + 1))) *
@@ -219,9 +318,12 @@ theorem equation_2_7_3 :
     · rw [Set.mem_singleton_iff] at h0
       exact ⟨1, fun _ => 0, by simp [h0]⟩
 
-/-- **§2.7.2, the double format.** The machine epsilon, the gap between `1` and the next larger
-double, is `2⁻⁵²`; the smallest and largest positive normalized doubles are `N_min = 2⁻¹⁰²²` and
-`N_max = (2 - 2⁻⁵²) 2¹⁰²³`. -/
+/-- **Section 2.7.2** of [golub2013matrix], the constants of the double format. The machine epsilon
+of the double system is $2^{-52}$, and it is the gap between $1$ and the next larger double: it
+is the least $\delta > 0$ such that $1 + \delta$ is a double. The smallest and the largest
+positive normalized doubles are
+$$N_{\min} = 2^{-1022}, \qquad N_{\max} = (2 - 2^{-52}) \, 2^{1023}.$$
+-/
 theorem ieeeDouble_constants :
     System.ieeeDouble.machineEps ℝ = 2 ^ (-52 : ℤ) ∧
       IsLeast {δ : ℝ | 0 < δ ∧ 1 + δ ∈ System.ieeeDouble.numbers ℝ} (2 ^ (-52 : ℤ)) ∧
@@ -232,9 +334,14 @@ theorem ieeeDouble_constants :
   exact System.ieeeDouble.isLeast_machineEps (by norm_num [System.ieeeDouble])
     (by norm_num [System.ieeeDouble]) (by norm_num [System.ieeeDouble])
 
-/-- **§2.7.2, rounding to nearest.** If `N_min ≤ |x| ≤ N_max` and `y` is a double nearest to `x`,
-then `|y - x| / |x| ≤ 2⁻⁵³`: the relative error is at most half the machine epsilon. The book's
-round-half-to-even tie rule is one choice of such a `y`. -/
+/-- **Section 2.7.2** of [golub2013matrix], rounding to nearest. Let $x \in \mathbb{R}$ with
+$N_{\min} \le |x| \le N_{\max}$, and let $y \in \mathbb{R}$ be at least as close to $x$ as every
+double. Then
+$$\frac{|y - x|}{|x|} \le 2^{-53},$$
+so the relative error is at most half the machine epsilon.
+
+A nearest double to $x$ is such a $y$. The tie rule of the source, round half to even, chooses
+one nearest double. -/
 theorem ieeeDouble_round_nearest {x y : ℝ} (h1 : System.ieeeDouble.xmin ℝ ≤ |x|)
     (h2 : |x| ≤ System.ieeeDouble.xmax ℝ) (hnear : ∀ z ∈ System.ieeeDouble.numbers ℝ,
       |y - x| ≤ |z - x|) :
@@ -245,20 +352,39 @@ theorem ieeeDouble_round_nearest {x y : ℝ} (h1 : System.ieeeDouble.xmin ℝ �
 
 /-! ### §2.7.3 The `fl` notation -/
 
-/-- **(2.7.4)**: a floating point representation is `fl(x) = x (1 + δ)` with `|δ| ≤ u`, for every
-admissible rounding `y` of `x` in the model. -/
+/-- **Equation (2.7.4)** of [golub2013matrix]. In a rounding model with unit roundoff $u$, every
+admissible floating point representation $y = \operatorname{fl}(x)$ of $x \in \mathbb{R}$
+satisfies
+$$\operatorname{fl}(x) = x(1 + \delta), \qquad |\delta| \le u.$$
+
+The representation $y$ is any value with `fp.Rounds x y`. -/
 theorem equation_2_7_4 (fp : RoundingModel ℝ) {x y : ℝ} (h : fp.Rounds x y) :
     ∃ δ : ℝ, |δ| ≤ fp.u ∧ y = x * (1 + δ) :=
   h.exists_delta
 
-/-- **(2.7.4)** for the rounding `fl` of a concrete system `𝔽`: `fl(z) = z (1 + δ)`, `|δ| ≤ u`. -/
+/-- **Equation (2.7.4)** of [golub2013matrix], for a concrete number system. Let $\mathbb{F}$ be a
+number system with unit roundoff $u$, and let $\operatorname{fl}$ be its rounding to nearest.
+Then for every $z \in \mathbb{R}$,
+$$\operatorname{fl}(z) = z(1 + \delta), \qquad |\delta| \le u.$$
+
+The rounding `FloatingPoint.System.round` puts no bound on the exponent, so no range hypothesis
+on $z$ is needed. -/
 theorem equation_2_7_4_system (s : System) (z : ℝ) :
     ∃ δ : ℝ, |δ| ≤ s.unitRoundoff ℝ ∧ s.round z = z * (1 + δ) :=
   s.exists_round_eq_mul_one_add z
 
-/-- **(2.7.5)**: `u = ½ × (gap between 1 and the next larger floating point number)`, for a system
-with at least two digits whose exponent range contains `1`; for the IEEE formats `u = 2⁻²⁴`
-(single, about `10⁻⁷`) and `u = 2⁻⁵³` (double, about `10⁻¹⁶`). -/
+/-- **Equation (2.7.5)** of [golub2013matrix]. Let $\mathbb{F}(\beta, t, L, U)$ be a number system
+with $t \ge 2$ and $L \le 1 \le U$. Then its unit roundoff is
+$$u = \tfrac12 \times (\text{gap between } 1 \text{ and the next larger floating point
+  number}),$$
+that is, $u$ is half the machine epsilon, and the machine epsilon is the least $\delta > 0$ such
+that $1 + \delta$ is a floating point number. For the IEEE formats,
+$u = 2^{-24} \approx 10^{-7}$ in single precision and $u = 2^{-53} \approx 10^{-16}$ in double
+precision.
+
+The hypotheses $t \ge 2$ and $L \le 1 \le U$ make sure that $1$ and the next larger number are
+in the system. The IEEE formats are `FloatingPoint.System.ieeeSingle` and
+`FloatingPoint.System.ieeeDouble`. -/
 theorem equation_2_7_5 (s : System) (hL : s.L ≤ 1) (hU : 1 ≤ s.U) (ht : 2 ≤ s.t) :
     s.unitRoundoff ℝ = s.machineEps ℝ / 2 ∧
       IsLeast {δ : ℝ | 0 < δ ∧ 1 + δ ∈ s.numbers ℝ} (s.machineEps ℝ) ∧
@@ -267,9 +393,16 @@ theorem equation_2_7_5 (s : System) (hL : s.L ≤ 1) (hU : 1 ≤ s.U) (ht : 2 �
   ⟨s.unitRoundoff_eq_machineEps_div_two, s.isLeast_machineEps hL hU ht,
     System.ieeeSingle_unitRoundoff, System.ieeeDouble_unitRoundoff⟩
 
-/-- **(2.7.6), the fundamental axiom of floating point arithmetic.** For floating point `x`, `y`
-and an operation `op` (the book's `+`, `-`, `×`, `/`), `fl(x op y) = (x op y)(1 + δ)` with
-`|δ| ≤ u`; equivalently the relative error is at most `u` when `x op y ≠ 0`. -/
+/-- **Equation (2.7.6)** of [golub2013matrix], the fundamental axiom of floating point arithmetic.
+Let $\mathbb{F}$ be a number system with unit roundoff $u$, let $x, y \in \mathbb{F}$, and let
+$\mathbin{op}$ be a binary operation on $\mathbb{R}$. Then
+$$\operatorname{fl}(x \mathbin{op} y) = (x \mathbin{op} y)(1 + \delta), \qquad |\delta| \le u.$$
+Equivalently, if $x \mathbin{op} y \neq 0$, the relative error $|\operatorname{fl}(x
+\mathbin{op} y) - x \mathbin{op} y| / |x \mathbin{op} y|$ is at most $u$.
+
+The source states the axiom for $+$, $-$, $\times$ and $/$; the theorem holds for every function
+`f : ℝ → ℝ → ℝ`. The computed value is the machine operation `FloatingPoint.System.op`, which
+rounds the arguments and the result. -/
 theorem equation_2_7_6 (s : System) (f : ℝ → ℝ → ℝ) {x y : ℝ} (hx : x ∈ s.numbers ℝ)
     (hy : y ∈ s.numbers ℝ) :
     (∃ δ : ℝ, |δ| ≤ s.unitRoundoff ℝ ∧ s.op f x y = f x y * (1 + δ)) ∧
@@ -282,7 +415,8 @@ theorem equation_2_7_6 (s : System) (f : ℝ → ℝ → ℝ) {x y : ℝ} (hx : 
 
 /-! ### §2.7.4 Become a floating point thinker -/
 
-/-- The rounding of the calculator at a number with known exponent. -/
+/-- The rounding of the 3-digit calculator at $x$ with $10^{e-1} \le |x| < 10^e$: the mantissa
+$|x| \, 10^{3-e}$ is rounded to an integer, and the sign and the exponent are restored. -/
 private theorem calculator3_round_eq {x : ℝ} (e : ℤ) (h1 : (10 : ℝ) ^ (e - 1) ≤ |x|)
     (h2 : |x| < 10 ^ e) :
     calculator3.round x =
@@ -291,9 +425,13 @@ private theorem calculator3_round_eq {x : ℝ} (e : ℤ) (h1 : (10 : ℝ) ^ (e -
     (by simpa [calculator3] using h1) (by simpa [calculator3] using h2)
   simpa [calculator3] using h
 
-/-- **§2.7.4, Maxim 1: order is important.** Floating point addition is not associative: in the
-calculator, with `x = 1.24`, `y = -1.23`, `z = 1.00 × 10⁻³`,
-`fl(fl(x + y) + z) = 1.10 × 10⁻²` while `fl(x + fl(y + z)) = 1.00 × 10⁻²`. -/
+/-- **Section 2.7.4** of [golub2013matrix], Maxim 1: order is important. Floating point addition is
+not associative. In the 3-digit calculator, with $x = 1.24$, $y = -1.23$ and
+$z = 1.00 \times 10^{-3}$,
+$$\operatorname{fl}(\operatorname{fl}(x + y) + z) = 1.10 \times 10^{-2}, \qquad
+  \operatorname{fl}(x + \operatorname{fl}(y + z)) = 1.00 \times 10^{-2}.$$
+
+The machine addition is `FloatingPoint.System.add` of `GolubVanLoan.Chapter02.calculator3`. -/
 theorem calculator3_add_not_assoc :
     calculator3.add (calculator3.add (124 / 100 : ℝ) (-123 / 100)) (1 / 1000) = 110 / 10000 ∧
       calculator3.add (124 / 100 : ℝ) (calculator3.add (-123 / 100) (1 / 1000)) = 100 / 10000 := by
@@ -320,9 +458,12 @@ theorem calculator3_add_not_assoc :
 
 /-! ### §2.7.5 Storing a real matrix -/
 
-/-- **(2.7.7), storing a matrix.** If `fl(A)` rounds each entry of `A ∈ ℝ^{m×n}`, then
-`[fl(A)]ᵢⱼ = aᵢⱼ (1 + εᵢⱼ)` with `|εᵢⱼ| ≤ u`, i.e. `|fl(A) - A| ≤ u |A|`, and in the 1-norm
-`‖fl(A) - A‖₁ ≤ u ‖A‖₁`. -/
+/-- **Equation (2.7.7)** of [golub2013matrix], storing a real matrix. Let
+$A \in \mathbb{R}^{m \times n}$, and let $\operatorname{fl}(A)$ round each entry of $A$ in a
+rounding model with unit roundoff $u$. Then $[\operatorname{fl}(A)]_{ij} = a_{ij}(1 +
+\epsilon_{ij})$ with $|\epsilon_{ij}| \le u$, so
+$$|\operatorname{fl}(A) - A| \le u |A|$$
+entrywise, and $\|\operatorname{fl}(A) - A\|_1 \le u \|A\|_1$. -/
 theorem equation_2_7_7 (fp : RoundingModel ℝ) {A Â : Matrix (Fin m) (Fin n) ℝ}
     (h : ∀ i j, fp.Rounds (A i j) (Â i j)) :
     (∃ ε : Matrix (Fin m) (Fin n) ℝ, (∀ i j, |ε i j| ≤ fp.u) ∧ ∀ i j, Â i j = A i j * (1 + ε i j)) ∧
@@ -336,8 +477,8 @@ theorem equation_2_7_7 (fp : RoundingModel ℝ) {A Â : Matrix (Fin m) (Fin n) �
 
 /-! ### §2.7.6 Roundoff in dot products -/
 
-/-- A run of the dot product (2.7.8) on `n + 1` entries is a run on the first `n` entries followed
-by one rounded update `fl(s + fl(x_{n+1} y_{n+1}))`. -/
+/-- A run of the dot product (2.7.8) on $n + 1$ entries is a run on the first $n$ entries followed
+by one rounded update $\operatorname{fl}(s + \operatorname{fl}(x_{n+1} y_{n+1}))$. -/
 private theorem mem_run_algorithm_1_1_1_succ (fp : RoundingModel ℝ) {n : ℕ}
     (x y : Fin (n + 1) → ℝ) (s : ℝ) :
     s ∈ (Chapter01.algorithm_1_1_1 fp.round x y).run ↔
@@ -348,7 +489,9 @@ private theorem mem_run_algorithm_1_1_1_succ (fp : RoundingModel ℝ) {n : ℕ}
     List.foldlM_map, List.foldlM_cons, List.foldlM_nil, bind_pure, SetM.mem_run_bind,
     RoundingModel.mem_run_round]
 
-/-- `∏_{j ≥ castSucc q} f j = (∏_{j ≥ q} f (castSucc j)) f(last)`. -/
+/-- Splitting off the last factor: for $f$ on $n + 1$ indices and $q < n$, the product of
+$f(j)$ over $j \ge q$ is the product of $f(j)$ over $q \le j < n$ times $f(n)$, with 0-based
+indices. -/
 private theorem prod_Ici_castSucc {n : ℕ} (f : Fin (n + 1) → ℝ) (q : Fin n) :
     ∏ j ∈ Finset.Ici (Fin.castSucc q), f j =
       (∏ j ∈ Finset.Ici q, f (Fin.castSucc j)) * f (Fin.last n) := by
@@ -356,17 +499,16 @@ private theorem prod_Ici_castSucc {n : ℕ} (f : Fin (n + 1) → ℝ) (q : Fin n
     Finset.prod_filter, Fin.prod_univ_castSucc]
   simp [Fin.castSucc_le_castSucc_iff, Fin.le_last]
 
-/-- `∏_{j ≥ last} f j = f(last)`. -/
+/-- The product of $f$ over the indices from the last index on is $f$ at the last index. -/
 private theorem prod_Ici_last {n : ℕ} (f : Fin (n + 1) → ℝ) :
     ∏ j ∈ Finset.Ici (Fin.last n), f j = f (Fin.last n) := by
   rw [← Fin.top_eq_last, Finset.Ici_top, Finset.prod_singleton]
 
-/-- The partial sums of a run of the dot product (2.7.8) and their closed form: a run `s` has
-relative errors `δ_k` (products) and `ε_k` (additions), `ε₁ = 0` because the first addition
-`0 + fl(x₁ y₁)` is exact over an idempotent model, with `s_0 = 0`,
-`s_p = (s_{p-1} + x_p y_p (1 + δ_p))(1 + ε_p)`, and
-`s = ∑_k x_k y_k (1 + δ_k) ∏_{j ≥ k} (1 + ε_j)`. By induction on `n`, peeling off the last
-update. -/
+/-- The partial sums of a run of the dot product (2.7.8), and their closed form. Over an idempotent
+rounding model, a run $s$ of Algorithm 1.1.1 has relative errors $\delta_k$ of the products and
+$\epsilon_k$ of the additions, with $\epsilon_1 = 0$, such that $s_0 = 0$, $s_p = (s_{p-1} + x_p
+y_p (1 + \delta_p))(1 + \epsilon_p)$, $s = s_n$ and $s = \sum_k x_k y_k (1 + \delta_k) \prod_{j
+\ge k} (1 + \epsilon_j)$. -/
 private theorem exists_partialSums_of_mem_run (fp : RoundingModel ℝ) (hfp : fp.IsIdempotent) :
     ∀ {n : ℕ} (x y : Fin n → ℝ) {s : ℝ}, s ∈ (Chapter01.algorithm_1_1_1 fp.round x y).run →
       ∃ δ ε : Fin n → ℝ, (∀ k, |δ k| ≤ fp.u) ∧ (∀ k, |ε k| ≤ fp.u) ∧
@@ -425,11 +567,20 @@ private theorem exists_partialSums_of_mem_run (fp : RoundingModel ℝ) (hfp : fp
       · simp only [Fin.snoc_last, prod_Ici_last]
         ring
 
-/-- **(2.7.9)**: the rounding errors of the dot product (2.7.8). For every run `s` of
-Algorithm 1.1.1 (the book's `fl(xᵀy)`) the partial sums `s_p = fl(∑_{k ≤ p} x_k y_k)` satisfy
-`s₁ = x₁ y₁ (1 + δ₁)` and `s_p = (s_{p-1} + x_p y_p (1 + δ_p))(1 + ε_p)` for `p = 2:n`, with
-`|δ_p|, |ε_p| ≤ u`, and `s = s_n` (0-based indices; `s₁` is exact up to `δ₁` because
-`fl(0 + p) = p`, the hypothesis `fp.IsIdempotent`). -/
+/-- **Equation (2.7.9)** of [golub2013matrix], the rounding errors of the dot product (2.7.8). Let
+the rounding model have unit roundoff $u$ and exact first additions,
+$\operatorname{fl}(0 + p) = p$. Let $x, y \in \mathbb{R}^n$, and let $s$ be a computed value of
+$\operatorname{fl}(x^T y)$ by Algorithm 1.1.1. Then there are $\delta_p, \epsilon_p$ with
+$|\delta_p|, |\epsilon_p| \le u$ such that the partial sums $s_p = \operatorname{fl}(\sum_{k \le
+p} x_k y_k)$ satisfy
+$$s_1 = x_1 y_1 (1 + \delta_1), \qquad s_p = (s_{p-1} + x_p y_p (1 + \delta_p))(1 + \epsilon_p)
+  \quad (p = 2, \dots, n),$$
+and $s = s_n$.
+
+The hypothesis $\operatorname{fl}(0 + p) = p$ is `fp.IsIdempotent`; it makes $s_1$ exact up to
+$\delta_1$. The computed value is any `s ∈ (GolubVanLoan.Chapter01.algorithm_1_1_1 fp.round x
+y).run`. The indices of $x$, $y$, $\delta$ and $\epsilon$ are 0-based, and the partial sums are
+a function `S : ℕ → ℝ` with $s_p$ = `S p`. -/
 theorem equation_2_7_9 (fp : RoundingModel ℝ) (hfp : fp.IsIdempotent) {n : ℕ} (x y : Fin n → ℝ)
     {s : ℝ} (hs : s ∈ (Chapter01.algorithm_1_1_1 fp.round x y).run) :
     ∃ (δ ε : Fin n → ℝ) (S : ℕ → ℝ), (∀ k, |δ k| ≤ fp.u) ∧ (∀ k, |ε k| ≤ fp.u) ∧
@@ -440,9 +591,17 @@ theorem equation_2_7_9 (fp : RoundingModel ℝ) (hfp : fp.IsIdempotent) {n : ℕ
   refine ⟨δ, ε, S, hδ, hε, fun p hp => ?_, fun p _ => hrec p, hsS⟩
   simpa [hp, hS0, hε0 p hp] using hrec p
 
-/-- **(2.7.10)**: every run `s` of Algorithm 1.1.1 is `fl(xᵀy) = ∑_k x_k y_k (1 + γ_k)` with
-`1 + γ_k = (1 + δ_k) ∏_{j=k}^n (1 + ε_j)` (the convention `ε₁ = 0`), hence
-`|fl(xᵀy) - xᵀy| ≤ ∑_k |x_k y_k| |γ_k|`. (The book's `γ_k` is not `FloatingPoint.gamma`.) -/
+/-- **Equation (2.7.10)** of [golub2013matrix]. Let the rounding model have unit roundoff $u$ and
+$\operatorname{fl}(0 + p) = p$, let $x, y \in \mathbb{R}^n$, and let $s$ be a computed value of
+$\operatorname{fl}(x^T y)$ by Algorithm 1.1.1. Then there are $\delta_k, \epsilon_k$ with
+$|\delta_k|, |\epsilon_k| \le u$ and $\epsilon_1 = 0$ such that
+$$\operatorname{fl}(x^T y) = \sum_{k=1}^n x_k y_k (1 + \gamma_k), \qquad 1 + \gamma_k = (1 +
+  \delta_k) \prod_{j=k}^n (1 + \epsilon_j),$$
+and hence
+$$|\operatorname{fl}(x^T y) - x^T y| \le \sum_{k=1}^n |x_k y_k| |\gamma_k|.$$
+
+The $\gamma_k$ of the source are these local quantities, not `FloatingPoint.gamma`. The
+hypothesis $\operatorname{fl}(0 + p) = p$ is `fp.IsIdempotent`. -/
 theorem equation_2_7_10 (fp : RoundingModel ℝ) (hfp : fp.IsIdempotent) {n : ℕ}
     (x y : Fin n → ℝ) {s : ℝ} (hs : s ∈ (Chapter01.algorithm_1_1_1 fp.round x y).run) :
     ∃ δ ε : Fin n → ℝ, (∀ k, |δ k| ≤ fp.u) ∧ (∀ k, |ε k| ≤ fp.u) ∧
@@ -456,17 +615,24 @@ theorem equation_2_7_10 (fp : RoundingModel ℝ) (hfp : fp.IsIdempotent) {n : �
   rw [← abs_mul]
   exact le_of_eq (congrArg _ (by ring))
 
-/-- **Lemma 2.7.1.** If `1 + α = ∏_{k=1}^n (1 + αₖ)` with `|αₖ| ≤ u` and `n u ≤ .01`, then
-`|α| ≤ 1.01 n u`. -/
+/-- **Lemma 2.7.1** of [golub2013matrix]. Let $u \ge 0$, let $\alpha_1, \dots, \alpha_n$ satisfy
+$|\alpha_k| \le u$, and let $nu \le 0.01$. If $1 + \alpha = \prod_{k=1}^n (1 + \alpha_k)$, then
+$$|\alpha| \le 1.01 \, nu.$$
+-/
 theorem lemma_2_7_1 {u : ℝ} (hu : 0 ≤ u) (α : Fin n → ℝ) (hα : ∀ k, |α k| ≤ u)
     (hnu : (n : ℝ) * u ≤ 1 / 100) {a : ℝ} (ha : 1 + a = ∏ k, (1 + α k)) :
     |a| ≤ 101 / 100 * (n * u) := by
   have h := abs_prod_one_add_sub_one_le_of_mul_le hu hα hnu
   rwa [← ha, add_sub_cancel_left] at h
 
-/-- **(2.7.11)**: under `n u ≤ .01`, every run `s` of Algorithm 1.1.1 satisfies
-`|fl(xᵀy) - xᵀy| ≤ 1.01 n u |x|ᵀ|y|`: the product form bound `(1 + u)^n - 1`
-(`FloatingPoint.abs_sub_le_one_add_pow_sub_one_of_roundsDot`) and Lemma 2.7.1. -/
+/-- **Equation (2.7.11)** of [golub2013matrix]. Let the rounding model have unit roundoff $u$ and
+$\operatorname{fl}(0 + p) = p$, let $x, y \in \mathbb{R}^n$ with $nu \le 0.01$, and let $s$ be a
+computed value of $\operatorname{fl}(x^T y)$ by Algorithm 1.1.1. Then
+$$|\operatorname{fl}(x^T y) - x^T y| \le 1.01 \, nu \, |x|^T |y|.$$
+
+The proof combines the bound $(1 + u)^n - 1$ of the product form,
+`FloatingPoint.abs_sub_le_one_add_pow_sub_one_of_roundsDot`, with Lemma 2.7.1. The hypothesis
+$\operatorname{fl}(0 + p) = p$ is `fp.IsIdempotent`. -/
 theorem equation_2_7_11 (fp : RoundingModel ℝ) (hfp : fp.IsIdempotent) {n : ℕ}
     (x y : Fin n → ℝ) (hnu : (n : ℝ) * fp.u ≤ 1 / 100) {s : ℝ}
     (hs : s ∈ (Chapter01.algorithm_1_1_1 fp.round x y).run) :
@@ -481,10 +647,20 @@ theorem equation_2_7_11 (fp : RoundingModel ℝ) (hfp : fp.IsIdempotent) {n : �
   exact h.trans (mul_le_mul_of_nonneg_right hc
     (dotProduct_nonneg_of_nonneg (abs_nonneg x) (abs_nonneg y)))
 
-/-- **(2.7.12)**, rigorous form of `|fl(xᵀy) - xᵀy| ≤ n u |x|ᵀ|y| + O(u²)`: every run `s` of
-Algorithm 1.1.1 satisfies `|fl(xᵀy) - xᵀy| ≤ γ_n |x|ᵀ|y|`, `γ_n = n u / (1 - n u) = n u + O(u²)`,
-when `n u < 1` and `fl(0 + p) = p` (`fp.IsIdempotent`); without the latter the first addition
-costs one more rounding, `γ_{n+1}` (`FloatingPoint.abs_sub_le_of_mem_run_dotAccum`). -/
+/-- **Equation (2.7.12)** of [golub2013matrix], in rigorous form. Let the rounding model have unit
+roundoff $u$, let $x, y \in \mathbb{R}^n$, and let $s$ be a computed value of
+$\operatorname{fl}(x^T y)$ by Algorithm 1.1.1. If $\operatorname{fl}(0 + p) = p$ and $nu < 1$,
+then
+$$|\operatorname{fl}(x^T y) - x^T y| \le \gamma_n |x|^T |y|, \qquad \gamma_n = \frac{nu}{1 -
+  nu}.$$
+Without the hypothesis $\operatorname{fl}(0 + p) = p$, the first addition costs one more
+rounding: if $(n + 1)u < 1$, then $|\operatorname{fl}(x^T y) - x^T y| \le \gamma_{n+1} |x|^T
+|y|$.
+
+The source states the first-order bound $nu |x|^T |y| + O(u^2)$, which follows because
+$\gamma_n = nu + O(u^2)$. The hypothesis $\operatorname{fl}(0 + p) = p$ is `fp.IsIdempotent`,
+and $\gamma_n$ is `FloatingPoint.gamma`. The second bound is
+`FloatingPoint.abs_sub_le_of_mem_run_dotAccum`. -/
 theorem equation_2_7_12 (fp : RoundingModel ℝ) {n : ℕ} (x y : Fin n → ℝ) {s : ℝ}
     (hs : s ∈ (Chapter01.algorithm_1_1_1 fp.round x y).run) :
     (fp.IsIdempotent → (n : ℝ) * fp.u < 1 → |s - x ⬝ᵥ y| ≤ gamma fp.u n * (|x| ⬝ᵥ |y|)) ∧
@@ -508,24 +684,33 @@ theorem equation_2_7_12 (fp : RoundingModel ℝ) {n : ℕ} (x y : Fin n → ℝ)
 
 /-! ### §2.7.8 Roundoff in other basic matrix computations -/
 
-/-- **(2.7.15)**: if `fl(αA)` rounds each entry of `αA`, then `fl(αA) = αA + E` with
-`|E| ≤ u |αA|`. -/
+/-- **Equation (2.7.15)** of [golub2013matrix]. Let $\alpha \in \mathbb{R}$ and
+$A \in \mathbb{R}^{m \times n}$, and let $\operatorname{fl}(\alpha A)$ round each entry of
+$\alpha A$ in a rounding model with unit roundoff $u$. Then
+$$\operatorname{fl}(\alpha A) = \alpha A + E, \qquad |E| \le u |\alpha A|.$$
+-/
 theorem equation_2_7_15 (fp : RoundingModel ℝ) (α : ℝ) {A C : Matrix (Fin m) (Fin n) ℝ}
     (h : ∀ i j, fp.Rounds (α * A i j) (C i j)) :
     ∃ E : Matrix (Fin m) (Fin n) ℝ, C = α • A + E ∧ E.abs ≤ₑ fp.u • (α • A).abs :=
   ⟨C - α • A, by abel, fun i j => by simpa using fp.abs_sub_le (h i j)⟩
 
-/-- **(2.7.16)**: if `fl(A + B)` rounds each entry of `A + B`, then `fl(A + B) = (A + B) + E` with
-`|E| ≤ u |A + B|`. -/
+/-- **Equation (2.7.16)** of [golub2013matrix]. Let $A, B \in \mathbb{R}^{m \times n}$, and let
+$\operatorname{fl}(A + B)$ round each entry of $A + B$ in a rounding model with unit roundoff
+$u$. Then
+$$\operatorname{fl}(A + B) = (A + B) + E, \qquad |E| \le u |A + B|.$$
+-/
 theorem equation_2_7_16 (fp : RoundingModel ℝ) {A B C : Matrix (Fin m) (Fin n) ℝ}
     (h : ∀ i j, fp.Rounds (A i j + B i j) (C i j)) :
     ∃ E : Matrix (Fin m) (Fin n) ℝ, C = (A + B) + E ∧ E.abs ≤ₑ fp.u • (A + B).abs :=
   ⟨C - (A + B), by abel, fun i j => by simpa using fp.abs_sub_le (h i j)⟩
 
-/-- **(2.7.17)**, rigorous form: every run `ŷ` of the saxpy, Algorithm 1.1.2, is
-`fl(y + αx) = y + αx + z` with `|z| ≤ u |y| + (2u + u²) |αx|` (the book's
-`u(|y| + 2|αx|) + O(u²)`): one rounded update per entry
-(`FloatingPoint.abs_sub_le_of_rounds_add_mul`). -/
+/-- **Equation (2.7.17)** of [golub2013matrix], in rigorous form. Let $a \in \mathbb{R}$ and
+$x, y \in \mathbb{R}^n$, and let $\hat y$ be a computed value of the saxpy $y + ax$ by Algorithm
+1.1.2 in a rounding model with unit roundoff $u$. Then
+$$\operatorname{fl}(y + ax) = y + ax + z, \qquad |z| \le u |y| + (2u + u^2) |ax|.$$
+
+The source states the first-order bound $|z| \le u(|y| + 2|ax|) + O(u^2)$. Each entry is one
+rounded update, `FloatingPoint.abs_sub_le_of_rounds_add_mul`. -/
 theorem equation_2_7_17 (fp : RoundingModel ℝ) (a : ℝ) (x y : Fin n → ℝ) {ŷ : Fin n → ℝ}
     (hŷ : ŷ ∈ (Chapter01.algorithm_1_1_2 fp.round a x y).run) :
     ∃ z : Fin n → ℝ, ŷ = y + a • x + z ∧
@@ -534,10 +719,18 @@ theorem equation_2_7_17 (fp : RoundingModel ℝ) (a : ℝ) (x y : Fin n → ℝ)
   obtain ⟨p, hp, hs⟩ := (Chapter01.algorithm_1_1_2_mem_run fp a x y ŷ).1 hŷ i
   simpa using abs_sub_le_of_rounds_add_mul hp hs
 
-/-- **(2.7.18)**, rigorous form: the outer product update `C + u vᵀ`, computed entrywise as
-`fl(c_ij + fl(u_i v_j))` (a run of Algorithm 1.1.8 with inner dimension `1`), is
-`fl(C + u vᵀ) = C + u vᵀ + E` with `|E| ≤ u |C| + (2u + u²) |u vᵀ|` (the book's
-`u(|C| + 2|u vᵀ|) + O(u²)`). -/
+/-- **Equation (2.7.18)** of [golub2013matrix], in rigorous form. In this statement the unit
+roundoff is written $\mathbf{u}$, because $u$ is a vector. Let $C \in \mathbb{R}^{m \times n}$,
+$u \in \mathbb{R}^m$ and $v \in \mathbb{R}^n$, and let $\hat C$ be a computed value of the outer
+product update $C + uv^T$, with each entry computed as $\operatorname{fl}(c_{ij} +
+\operatorname{fl}(u_i v_j))$. Then
+$$\operatorname{fl}(C + uv^T) = C + uv^T + E, \qquad |E| \le \mathbf{u} |C| + (2\mathbf{u} +
+  \mathbf{u}^2) |uv^T|.$$
+
+The source states the first-order bound $|E| \le \mathbf{u}(|C| + 2|uv^T|) + O(\mathbf{u}^2)$.
+The computed value is a run of Algorithm 1.1.8 with inner dimension $1$, applied to the
+$m \times 1$ matrix `replicateCol (Fin 1) u` and the $1 \times n$ matrix
+`replicateRow (Fin 1) v`. -/
 theorem equation_2_7_18 (fp : RoundingModel ℝ) (C : Matrix (Fin m) (Fin n) ℝ) (u : Fin m → ℝ)
     (v : Fin n → ℝ) {Ĉ : Matrix (Fin m) (Fin n) ℝ}
     (hĈ : Ĉ ∈ (Chapter01.algorithm_1_1_8 fp.round (replicateCol (Fin 1) u)
@@ -552,8 +745,10 @@ theorem equation_2_7_18 (fp : RoundingModel ℝ) (C : Matrix (Fin m) (Fin n) ℝ
   obtain ⟨p, hp, hs⟩ := h
   simpa [vecMulVec_apply] using abs_sub_le_of_rounds_add_mul hp hs
 
-/-- The matrix-product bound `|Ĉ - AB| ≤ γ_r |A||B|` of a relational product, for every inner
-dimension `r` with `r u < 1` (for `r = 0` both sides vanish). -/
+/-- In a rounding model with unit roundoff $u$, if $\hat C$ is a computed product of
+$A \in \mathbb{R}^{m \times r}$ and $B \in \mathbb{R}^{r \times n}$ in the relational sense
+`FloatingPoint.RoundsMul` and $ru < 1$, then $|\hat C - AB| \le \gamma_r |A| |B|$; for $r = 0$
+both sides vanish. -/
 private theorem abs_sub_entrywiseLE_of_roundsMul_fin (fp : RoundingModel ℝ) {r : ℕ}
     {A : Matrix (Fin m) (Fin r) ℝ} {B : Matrix (Fin r) (Fin n) ℝ} {Ĉ : Matrix (Fin m) (Fin n) ℝ}
     (hr : (r : ℝ) * fp.u < 1) (h : RoundsMul fp A B Ĉ) :
@@ -570,10 +765,15 @@ private theorem abs_sub_entrywiseLE_of_roundsMul_fin (fp : RoundingModel ℝ) {r
       linarith
     simpa using abs_sub_entrywiseLE_of_roundsMul hu (by simpa using hr) h
 
-/-- **(2.7.19)**, rigorous form: every run `Ĉ` of the dot product matrix multiplication,
-Algorithm 1.1.6 started at `C = 0` (inner dimension `r`, `r u < 1`, `fp.IsIdempotent`), is
-`fl(AB) = AB + E` with `|E| ≤ γ_r |A||B|`, `γ_r = r u + O(u²)` (the book's `n u |A||B| + O(u²)`,
-`n` the inner dimension): chapter 1's `algorithm_1_1_6_rounds` and
+/-- **Equation (2.7.19)** of [golub2013matrix], in rigorous form. Let the rounding model have unit
+roundoff $u$ and $\operatorname{fl}(0 + p) = p$, let $A \in \mathbb{R}^{m \times r}$ and
+$B \in \mathbb{R}^{r \times n}$ with $ru < 1$, and let $\hat C$ be a computed value of $AB$ by
+the dot product matrix multiplication, Algorithm 1.1.6 started at $C = 0$. Then
+$$\operatorname{fl}(AB) = AB + E, \qquad |E| \le \gamma_r |A| |B|.$$
+
+The source states $|E| \le nu |A| |B| + O(u^2)$, where its $n$ is the inner dimension, here $r$;
+this follows because $\gamma_r = ru + O(u^2)$. The proof applies
+`GolubVanLoan.Chapter01.algorithm_1_1_6_rounds` and
 `FloatingPoint.abs_sub_entrywiseLE_of_roundsMul`. -/
 theorem equation_2_7_19 (fp : RoundingModel ℝ) (hfp : fp.IsIdempotent) {r : ℕ}
     (A : Matrix (Fin m) (Fin r) ℝ) (B : Matrix (Fin r) (Fin n) ℝ) (hr : (r : ℝ) * fp.u < 1)
@@ -581,27 +781,39 @@ theorem equation_2_7_19 (fp : RoundingModel ℝ) (hfp : fp.IsIdempotent) {r : �
     (Ĉ - A * B).abs ≤ₑ gamma fp.u r • (A.abs * B.abs) :=
   abs_sub_entrywiseLE_of_roundsMul_fin fp hr (Chapter01.algorithm_1_1_6_rounds hfp A B Ĉ hĈ)
 
-/-- **(2.7.19), "the same result applies if a gaxpy … procedure is used"**: every run of the
-saxpy matrix multiplication, Algorithm 1.1.7 from `C = 0`, satisfies `|Ĉ - AB| ≤ γ_r |A||B|`
-(`fp.IsIdempotent`, `r u < 1`): each entry is accumulated over `k = 1:r` in order. -/
+/-- **Equation (2.7.19)** of [golub2013matrix], the remark that "the same result applies if a gaxpy
+… procedure is used". Let the rounding model have unit roundoff $u$ and
+$\operatorname{fl}(0 + p) = p$, let $A \in \mathbb{R}^{m \times r}$ and
+$B \in \mathbb{R}^{r \times n}$ with $ru < 1$, and let $\hat C$ be a computed value of $AB$ by
+the saxpy matrix multiplication, Algorithm 1.1.7 started at $C = 0$. Then
+$$|\hat C - AB| \le \gamma_r |A| |B|.$$
+
+Each entry is accumulated over $k = 1, \dots, r$ in order. -/
 theorem equation_2_7_19_saxpy (fp : RoundingModel ℝ) (hfp : fp.IsIdempotent) {r : ℕ}
     (A : Matrix (Fin m) (Fin r) ℝ) (B : Matrix (Fin r) (Fin n) ℝ) (hr : (r : ℝ) * fp.u < 1)
     {Ĉ : Matrix (Fin m) (Fin n) ℝ} (hĈ : Ĉ ∈ (Chapter01.algorithm_1_1_7 fp.round A B 0).run) :
     (Ĉ - A * B).abs ≤ₑ gamma fp.u r • (A.abs * B.abs) :=
   abs_sub_entrywiseLE_of_roundsMul_fin fp hr (Chapter01.algorithm_1_1_7_rounds hfp A B Ĉ hĈ)
 
-/-- **(2.7.19), "… or outer product based procedure"**: every run of the outer product matrix
-multiplication, Algorithm 1.1.8 from `C = 0`, satisfies `|Ĉ - AB| ≤ γ_r |A||B|`
-(`fp.IsIdempotent`, `r u < 1`). -/
+/-- **Equation (2.7.19)** of [golub2013matrix], the remark that the same result applies to an "outer
+product based procedure". Let the rounding model have unit roundoff $u$ and
+$\operatorname{fl}(0 + p) = p$, let $A \in \mathbb{R}^{m \times r}$ and
+$B \in \mathbb{R}^{r \times n}$ with $ru < 1$, and let $\hat C$ be a computed value of $AB$ by
+the outer product matrix multiplication, Algorithm 1.1.8 started at $C = 0$. Then
+$$|\hat C - AB| \le \gamma_r |A| |B|.$$
+-/
 theorem equation_2_7_19_outer (fp : RoundingModel ℝ) (hfp : fp.IsIdempotent) {r : ℕ}
     (A : Matrix (Fin m) (Fin r) ℝ) (B : Matrix (Fin r) (Fin n) ℝ) (hr : (r : ℝ) * fp.u < 1)
     {Ĉ : Matrix (Fin m) (Fin n) ℝ} (hĈ : Ĉ ∈ (Chapter01.algorithm_1_1_8 fp.round A B 0).run) :
     (Ĉ - A * B).abs ≤ₑ gamma fp.u r • (A.abs * B.abs) :=
   abs_sub_entrywiseLE_of_roundsMul_fin fp hr (Chapter01.algorithm_1_1_8_rounds hfp A B Ĉ hĈ)
 
-/-- **(2.7.20)**, rigorous form: for the runs of (2.7.19),
-`‖fl(AB) - AB‖₁ ≤ γ_r ‖A‖₁ ‖B‖₁` (the book's `n u ‖A‖₁ ‖B‖₁ + O(u²)`): the 1-norm is monotone in
-`|·|`, submultiplicative, and `‖|A|‖₁ = ‖A‖₁`. -/
+/-- **Equation (2.7.20)** of [golub2013matrix], in rigorous form. Under the hypotheses of (2.7.19)
+for Algorithm 1.1.6,
+$$\|\operatorname{fl}(AB) - AB\|_1 \le \gamma_r \|A\|_1 \|B\|_1.$$
+
+The source states $nu \|A\|_1 \|B\|_1 + O(u^2)$. The proof uses that the 1-norm is monotone in
+$|\cdot|$ and submultiplicative, and that $\| |A| \|_1 = \|A\|_1$. -/
 theorem equation_2_7_20 (fp : RoundingModel ℝ) (hfp : fp.IsIdempotent) {r : ℕ}
     (A : Matrix (Fin m) (Fin r) ℝ) (B : Matrix (Fin r) (Fin n) ℝ) (hr : (r : ℝ) * fp.u < 1)
     {Ĉ : Matrix (Fin m) (Fin n) ℝ} (hĈ : Ĉ ∈ (Chapter01.algorithm_1_1_6 fp.round A B 0).run) :
@@ -621,9 +833,15 @@ theorem equation_2_7_20 (fp : RoundingModel ℝ) (hfp : fp.IsIdempotent) {r : �
         mul_le_mul_of_nonneg_left (lpOpNorm_mul_le 1 A.abs B.abs) hγ
     _ = gamma fp.u r * (lpOpNorm 1 A * lpOpNorm 1 B) := by rw [habs, habs]
 
-/-- **§2.7.10**: "if `A ≥ 0` and `B ≥ 0`, then conventional matrix multiplication produces a
-product `Ĉ` that has small componentwise relative error": for entrywise nonnegative `A`, `B`,
-every run of (2.7.19) satisfies `|Ĉ - C| ≤ γ_r |C|`, `C = AB` (since `|A||B| = AB`). -/
+/-- **Section 2.7.10** of [golub2013matrix]: "if $A \ge 0$ and $B \ge 0$, then conventional matrix
+multiplication produces a product $\hat C$ that has small componentwise relative error". Let the
+rounding model have unit roundoff $u$ and $\operatorname{fl}(0 + p) = p$, let
+$A \in \mathbb{R}^{m \times r}$ and $B \in \mathbb{R}^{r \times n}$ be entrywise nonnegative
+with $ru < 1$, and let $\hat C$ be a computed value of $C = AB$ by Algorithm 1.1.6 started at
+$0$. Then
+$$|\hat C - C| \le \gamma_r |C|.$$
+
+The proof is (2.7.19) together with $|A| |B| = AB$. -/
 theorem abs_sub_le_gamma_mul_abs_of_nonneg (fp : RoundingModel ℝ) (hfp : fp.IsIdempotent)
     {r : ℕ} {A : Matrix (Fin m) (Fin r) ℝ} {B : Matrix (Fin r) (Fin n) ℝ}
     (hA : A.EntrywiseNonneg) (hB : B.EntrywiseNonneg) (hr : (r : ℝ) * fp.u < 1)
@@ -644,17 +862,30 @@ theorem abs_sub_le_gamma_mul_abs_of_nonneg (fp : RoundingModel ℝ) (hfp : fp.Is
 
 /-! ### §2.7.9 Forward and backward error analyses -/
 
-/-- `|a c - a| ≤ g |a|` from `|c - 1| ≤ g`. -/
+/-- If $|c - 1| \le g$, then $|ac - a| \le g |a|$. -/
 private theorem abs_mul_sub_self_le {a c g : ℝ} (h : |c - 1| ≤ g) : |a * c - a| ≤ g * |a| := by
   rw [show a * c - a = a * (c - 1) by ring, abs_mul, mul_comm]
   exact mul_le_mul_of_nonneg_right h (abs_nonneg a)
 
-/-- **§2.7.9, backward error of the `2 × 2` triangular product.** If `|εᵢ| ≤ u` (`i = 1:5`,
-0-based here) and `fl(AB)` has the book's form
-`[a₁₁b₁₁(1+ε₁), (a₁₁b₁₂(1+ε₂) + a₁₂b₂₂(1+ε₃))(1+ε₄); 0, a₂₂b₂₂(1+ε₅)]`, then `fl(AB) = Â B̂` with
-`Â = [a₁₁, a₁₂(1+ε₃)(1+ε₄); 0, a₂₂(1+ε₅)]`, `B̂ = [b₁₁(1+ε₁), b₁₂(1+ε₂)(1+ε₄); 0, b₂₂]`, and
-`|Â - A| ≤ γ₂ |A|`, `|B̂ - B| ≤ γ₂ |B|` (the book's `2u|A| + O(u²)`): the computed product is the
-exact product of slightly perturbed factors. -/
+/-- **Section 2.7.9** of [golub2013matrix], the backward error of the $2 \times 2$ triangular
+product. Let $u \ge 0$ with $2u < 1$, let $a_{11}, a_{12}, a_{22}, b_{11}, b_{12}, b_{22} \in
+\mathbb{R}$, let $A = \begin{bmatrix} a_{11} & a_{12} \\ 0 & a_{22} \end{bmatrix}$ and $B =
+\begin{bmatrix} b_{11} & b_{12} \\ 0 & b_{22} \end{bmatrix}$, and let $|\epsilon_i| \le u$ for
+$i = 1, \dots, 5$. Then
+$$\begin{bmatrix} a_{11} b_{11} (1 + \epsilon_1) & (a_{11} b_{12} (1 + \epsilon_2) + a_{12}
+  b_{22} (1 + \epsilon_3))(1 + \epsilon_4) \\ 0 & a_{22} b_{22} (1 + \epsilon_5) \end{bmatrix} =
+  \hat A \hat B,$$
+where
+$$\hat A = \begin{bmatrix} a_{11} & a_{12} (1 + \epsilon_3)(1 + \epsilon_4) \\ 0 & a_{22} (1 +
+  \epsilon_5) \end{bmatrix}, \qquad \hat B = \begin{bmatrix} b_{11} (1 + \epsilon_1) & b_{12}
+  (1 + \epsilon_2)(1 + \epsilon_4) \\ 0 & b_{22} \end{bmatrix},$$
+and $|\hat A - A| \le \gamma_2 |A|$ and $|\hat B - B| \le \gamma_2 |B|$. So the computed product
+is the exact product of slightly perturbed factors.
+
+The left side is the form of $\operatorname{fl}(AB)$ in the source;
+`GolubVanLoan.Chapter02.triangular_mul_two_backward_run` shows that every computed product has
+this form. The source states the first-order bounds $2u|A| + O(u^2)$ and $2u|B| + O(u^2)$. The
+indices of $\epsilon$ are 0-based in Lean. -/
 theorem triangular_mul_two_backward {u : ℝ} (hu : 0 ≤ u) (h2u : 2 * u < 1)
     (a₁₁ a₁₂ a₂₂ b₁₁ b₁₂ b₂₂ : ℝ) (ε : Fin 5 → ℝ) (hε : ∀ i, |ε i| ≤ u) :
     !![a₁₁ * b₁₁ * (1 + ε 0),
@@ -690,11 +921,19 @@ theorem triangular_mul_two_backward {u : ℝ} (hu : 0 ≤ u) (h2u : 2 * u < 1)
     · simp
     · simpa using mul_nonneg hγ0 (abs_nonneg b₂₂)
 
-/-- **§2.7.9, "it can be shown that"**: every run `Ĉ` of Algorithm 1.2.1 for `n = 2` (upper
-triangular `A`, `B`, started at `C = 0`, `fp.IsIdempotent`) is
-`fl(AB) = [a₁₁b₁₁(1+ε₁), (a₁₁b₁₂(1+ε₂) + a₁₂b₂₂(1+ε₃))(1+ε₄); 0, a₂₂b₂₂(1+ε₅)]` with `|εᵢ| ≤ u`
-(0-based here); with `triangular_mul_two_backward` this is the backward error statement
-`fl(AB) = Â B̂`. -/
+/-- **Section 2.7.9** of [golub2013matrix], the claim "it can be shown that". Let the rounding model
+have unit roundoff $u$ and $\operatorname{fl}(0 + p) = p$, and let $\hat C$ be a computed value
+of $AB$ by Algorithm 1.2.1 for the $2 \times 2$ upper triangular matrices $A = \begin{bmatrix}
+a_{11} & a_{12} \\ 0 & a_{22} \end{bmatrix}$ and $B = \begin{bmatrix} b_{11} & b_{12} \\ 0 &
+b_{22} \end{bmatrix}$, started at $C = 0$. Then there are $\epsilon_1, \dots, \epsilon_5$ with
+$|\epsilon_i| \le u$ and
+$$\hat C = \begin{bmatrix} a_{11} b_{11} (1 + \epsilon_1) & (a_{11} b_{12} (1 + \epsilon_2) +
+  a_{12} b_{22} (1 + \epsilon_3))(1 + \epsilon_4) \\ 0 & a_{22} b_{22} (1 + \epsilon_5)
+  \end{bmatrix}.$$
+
+With `GolubVanLoan.Chapter02.triangular_mul_two_backward` this gives the backward error
+statement $\operatorname{fl}(AB) = \hat A \hat B$. The indices of $\epsilon$ are 0-based in
+Lean. -/
 theorem triangular_mul_two_backward_run (fp : RoundingModel ℝ) (hfp : fp.IsIdempotent)
     (a₁₁ a₁₂ a₂₂ b₁₁ b₁₂ b₂₂ : ℝ) {Ĉ : Matrix (Fin 2) (Fin 2) ℝ}
     (hĈ : Ĉ ∈ (Chapter01.algorithm_1_2_1 fp.round !![a₁₁, a₁₂; 0, a₂₂] !![b₁₁, b₁₂; 0, b₂₂]
@@ -727,8 +966,11 @@ theorem triangular_mul_two_backward_run (fp : RoundingModel ℝ) (hfp : fp.IsIde
 
 /-! ### §2.7.11 Analysis of an ideal equation solver -/
 
-/-- **(2.7.21)**: if `fl(A) = A + E` and `fl(b) = b + e` round the entries of `A` and `b`, then
-`‖E‖_∞ ≤ u ‖A‖_∞` and `‖e‖_∞ ≤ u ‖b‖_∞`. -/
+/-- **Equation (2.7.21)** of [golub2013matrix]. Let $A \in \mathbb{R}^{n \times n}$ and
+$b \in \mathbb{R}^n$, and let $\operatorname{fl}(A) = A + E$ and $\operatorname{fl}(b) = b + e$
+round each entry of $A$ and $b$ in a rounding model with unit roundoff $u$. Then
+$$\|E\|_\infty \le u \|A\|_\infty, \qquad \|e\|_\infty \le u \|b\|_\infty.$$
+-/
 theorem equation_2_7_21 (fp : RoundingModel ℝ) {A Â : Matrix (Fin n) (Fin n) ℝ}
     {b bh : Fin n → ℝ} (hA : ∀ i j, fp.Rounds (A i j) (Â i j)) (hb : ∀ i, fp.Rounds (b i) (bh i)) :
     lpOpNorm ∞ (Â - A) ≤ fp.u * lpOpNorm ∞ A ∧
@@ -743,9 +985,15 @@ theorem equation_2_7_21 (fp : RoundingModel ℝ) {A Â : Matrix (Fin n) (Fin n) 
       (mul_le_mul_of_nonneg_left ((Real.norm_eq_abs _).symm.trans_le (norm_le_pi_norm b i))
         fp.u_nonneg)
 
-/-- **(2.7.22), the ideal equation solver.** If `Ax = b` with `A` nonsingular and `b ≠ 0`, the
-computed `xh` solves `(A + E) xh = b + e` with the bounds (2.7.21), and `u κ_∞(A) ≤ 1/2`, then
-`‖x - xh‖_∞ / ‖x‖_∞ ≤ 4 u κ_∞(A)` (Theorem 2.6.2 at `ε = u`). -/
+/-- **Equation (2.7.22)** of [golub2013matrix], the ideal equation solver. Let
+$A \in \mathbb{R}^{n \times n}$ be nonsingular, let $b \in \mathbb{R}^n$ with $b \neq 0$, and
+let $Ax = b$. Let $\hat x$ solve $(A + E) \hat x = b + e$, where
+$\|E\|_\infty \le u \|A\|_\infty$ and $\|e\|_\infty \le u \|b\|_\infty$ as in (2.7.21). If
+$u \kappa_\infty(A) \le 1/2$, then
+$$\frac{\|x - \hat x\|_\infty}{\|x\|_\infty} \le 4 u \kappa_\infty(A).$$
+
+The proof is Theorem 2.6.2 with $\epsilon = u$. The perturbations $E$ and $e$ need only satisfy
+the norm bounds; they need not come from rounding. -/
 theorem equation_2_7_22 (fp : RoundingModel ℝ) {A E : Matrix (Fin n) (Fin n) ℝ}
     {b e x xh : Fin n → ℝ} (hA : IsUnit A) (hx : A *ᵥ x = b) (hb : b ≠ 0)
     (hxh : (A + E) *ᵥ xh = b + e) (hE : lpOpNorm ∞ E ≤ fp.u * lpOpNorm ∞ A)

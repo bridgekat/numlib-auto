@@ -9,55 +9,165 @@ import Numlib.FloatingPoint.Program
 import NumlibSurface.GolubVanLoan.Chapter01.Section04
 
 /-!
-# Golub–Van Loan §4.8: circulant and discrete Poisson systems
+# Golub and Van Loan, Section 4.8: Circulant and discrete Poisson systems
 
-Surface file for [golub2013matrix] §4.8: solving through an eigenvalue decomposition (4.8.2), the
-inverse of the DFT matrix (§4.8.1), circulant matrices and their diagonalization by the DFT
-((4.8.3)–(4.8.4), Lemma 4.8.1, Theorem 4.8.2, Algorithm 4.8.1), the one- and two-dimensional
-discrete Poisson problems ((4.8.6)–(4.8.12)), the fast Poisson solver framework (Algorithm 4.8.2),
-the inverses of the DST and DCT (§4.8.5), the sine and cosine vectors under the second-difference
-matrices (Lemma 4.8.3, (4.8.16)–(4.8.21)), the four fast eigenvalue decompositions
-((4.8.22)–(4.8.25)) and the symmetrization of `𝒯^{(DN)}` (§4.8.7).
+This module formalizes §4.8 of [golub2013matrix], on linear systems that a fast transform
+diagonalizes. If $V^{-1} A V = \Lambda$ is diagonal, then $Au = b$ has the solution
+$u = V(\Lambda^{-1}(V^{-1} b))$ (4.8.2). The DFT matrix $F_n$ satisfies
+$F_n^{-1} = \frac{1}{n} \bar F_n$, and it diagonalizes every circulant matrix $C(z)$: $F_n^{-1} C(z)
+F_n = \operatorname{diag}(\bar F_n z)$ (Theorem 4.8.2). Algorithm 4.8.1 uses this to solve
+$C(z) x = y$ with three FFTs. The discretized Poisson equation in one dimension gives the
+second-difference matrices $\mathcal{T}^{(DD)}_n$, $\mathcal{T}^{(DN)}_n$, $\mathcal{T}^{(NN)}_n$
+and $\mathcal{T}^{(P)}_n$ ((4.8.6)–(4.8.10)). In two dimensions it gives the system $(I_{n_2}
+\otimes A_1 + A_2 \otimes I_{n_1}) u = b$, which is equivalent to the matrix equation
+$A_1 U + U A_2^T = B$ (4.8.12), and which Algorithm 4.8.2 solves when $A_1$ and $A_2$ have fast
+eigenvalue decompositions.
+
+The module also proves the inverses of the DST and DCT matrices (§4.8.5), the action of the
+second-difference matrices on the sine and cosine vectors (Lemma 4.8.3), the four fast eigenvalue
+decompositions of §4.8.6 by $\mathrm{DST}(n)$, $\mathrm{DST2}(n)$, $\mathrm{DCT}(n)$ and $F_n$
+((4.8.22)–(4.8.25)), and the symmetrization of $\mathcal{T}^{(DN)}_n$ (§4.8.7). The proofs
+specialize the backbone modules `Numlib.Analysis.Fourier.DFT`, `Numlib.Analysis.Fourier.Circulant`
+and `Numlib.Analysis.Fourier.SineCosineTransform` (the DFT, circulant, DST and DCT facts and the
+four eigensystems), `Numlib.LinearAlgebra.Matrix.Permutation`,
+`Numlib.LinearAlgebra.Matrix.TridiagonalToeplitz`, `Numlib.LinearAlgebra.Matrix.KroneckerSum`, and
+`Numlib.Direct.FastPoisson` (the solution formula of the fast Poisson framework).
+
+## Main definitions
+
+* Algorithm 4.8.1, `GolubVanLoan.Chapter04.algorithm_4_8_1`: the solution of a circulant system
+  $C(z) x = y$ with three FFTs.
+* §4.8.4, `GolubVanLoan.Chapter04.fivePointRhs`: the right-hand side of the five-point system.
+* Algorithm 4.8.2, `GolubVanLoan.Chapter04.algorithm_4_8_2`: the fast Poisson solver framework.
+* §4.8.5, `GolubVanLoan.Chapter04.altSignVecReal`: the alternating vector
+  $v = (-1, 1, \dots, (-1)^{m-1})^T$.
+* `GolubVanLoan.Chapter04.transformCols`: a vector program applied to every column of a matrix, for
+  the transforms of Algorithm 4.8.2.
+
+## Main results
+
+* Equation (4.8.2), `GolubVanLoan.Chapter04.equation_4_8_2`: if
+  $V^{-1} A V = \operatorname{diag}(\nu)$ with $V$ nonsingular, then $A^{-1} b = V
+  (\operatorname{diag}(\nu)^{-1} (V^{-1} b))$.
+* §4.8.1, `GolubVanLoan.Chapter04.map_star_fourierMatrix`,
+  `GolubVanLoan.Chapter04.dft_conjTranspose`, `GolubVanLoan.Chapter04.dft_conjTranspose_mul_self`,
+  `GolubVanLoan.Chapter04.dft_inv` and `GolubVanLoan.Chapter04.isUnit_fourierMatrix`:
+  $F_n^H = \bar F_n$, $F_n^H F_n = \bar F_n F_n = n I_n$, and $F_n$ is nonsingular with
+  $F_n^{-1} = \frac{1}{n} \bar F_n$ for $n \ge 1$.
+* Equation (4.8.3), `GolubVanLoan.Chapter04.equation_4_8_3`:
+  $C(z) = \sum_{k=0}^{n-1} z_k \mathcal{D}_n^k$ and $\mathcal{D}_n^n = I_n$.
+* Equation (4.8.4), `GolubVanLoan.Chapter04.equation_4_8_4`: if $V^{-1} \mathcal{D}_n V$ is
+  diagonal, then so is $V^{-1} C(z) V$.
+* Lemma 4.8.1, `GolubVanLoan.Chapter04.lemma_4_8_1`: $F_n^{-1} \mathcal{D}_n F_n =
+  \operatorname{diag}(1, \bar\omega_n, \dots, \bar\omega_n^{n-1})$.
+* Theorem 4.8.2, `GolubVanLoan.Chapter04.theorem_4_8_2`: $F_n^{-1} C(z) F_n =
+  \operatorname{diag}(\bar F_n z)$.
+* Algorithm 4.8.1, `GolubVanLoan.Chapter04.algorithm_4_8_1_spec` and
+  `GolubVanLoan.Chapter04.algorithm_4_8_1_fft_spec`: in exact arithmetic, the algorithm solves
+  $C(z) x = y$ when $C(z)$ is nonsingular, with any FFT and with Algorithm 1.4.1 for $n = 2^t$.
+* Equation (4.8.6), `GolubVanLoan.Chapter04.equation_4_8_6`: the three-point discretization of
+  $-u'' = f$ with Dirichlet boundary values is the system $\mathcal{T}^{(DD)}_{m-1} u(1{:}m-1) = h^2
+  f(1{:}m-1) + u_\alpha e_1 + u_\beta e_{m-1}$.
+* Equations (4.8.8)–(4.8.10), `GolubVanLoan.Chapter04.equation_4_8_8`,
+  `GolubVanLoan.Chapter04.equation_4_8_9` and `GolubVanLoan.Chapter04.equation_4_8_10`:
+  $\mathcal{T}^{(DN)}_n$, $\mathcal{T}^{(NN)}_n$ and $\mathcal{T}^{(P)}_n$ are
+  $\mathcal{T}^{(DD)}_n$ minus one or two matrices $e_p e_q^T$.
+* §4.8.4, `GolubVanLoan.Chapter04.one_kronecker_add_kronecker_one`:
+  $I_{n_2} \otimes A_1 + A_2 \otimes I_{n_1}$ is the Kronecker sum of $A_2$ and $A_1$.
+* §4.8.4, `GolubVanLoan.Chapter04.poisson2D_eq_kroneckerSum`: the five-point equations at the
+  interior grid points are the system $(I_{m_2-1} \otimes \mathcal{T}^{(DD)}_{m_1-1} +
+  \mathcal{T}^{(DD)}_{m_2-1} \otimes I_{m_1-1}) u = b$.
+* Equation (4.8.12), `GolubVanLoan.Chapter04.equation_4_8_12`: $(I_{n_2} \otimes A_1 + A_2 \otimes
+  I_{n_1}) \operatorname{vec}(U) = \operatorname{vec}(B)$ if and only if $A_1 U + U A_2^T = B$.
+* §4.8.4, `GolubVanLoan.Chapter04.fastPoisson_transformed` and
+  `GolubVanLoan.Chapter04.add_ne_zero_of_isUnit_kroneckerSum`: the transformed system
+  $D_1 \tilde U + \tilde U D_2 = \tilde B$ and its solution $\tilde u_{ij} = \tilde b_{ij} /
+  (\lambda_i + \mu_j)$, and $\lambda_i + \mu_j \neq 0$ when the system matrix is nonsingular.
+* Algorithm 4.8.2, `GolubVanLoan.Chapter04.algorithm_4_8_2_spec`: in exact arithmetic, the algorithm
+  solves $(I_{n_2} \otimes A_1 + A_2 \otimes I_{n_1}) u = b$.
+* §4.8.4, `GolubVanLoan.Chapter04.poisson2D_posDef_bandwidth`: the two-dimensional Dirichlet matrix
+  is symmetric positive definite with lower and upper bandwidth $n_1$.
+* §4.8.5, `GolubVanLoan.Chapter04.dst_inv` and `GolubVanLoan.Chapter04.dct_inv`:
+  $\mathrm{DST}(m-1)^{-1} = \frac{2}{m} \mathrm{DST}(m-1)$ and $\mathrm{DCT}(m+1)^{-1} = \frac{2}{m}
+  \mathrm{DCT}(m+1)$.
+* §4.8.5, `GolubVanLoan.Chapter04.dst_block_identities`: the block identities of
+  $\bar F_{2m} F_{2m} = 2m I$, with $2 S_{m-1}^2 = m I$ and $2 C_{m-1}^2 = m I - e e^T - v v^T$.
+* Lemma 4.8.3, `GolubVanLoan.Chapter04.lemma_4_8_3`, with its parts (4.8.16)–(4.8.21),
+  `GolubVanLoan.Chapter04.equation_4_8_16` to `GolubVanLoan.Chapter04.equation_4_8_21`: each
+  second-difference matrix maps $s(\theta)$ or $c(\theta)$ to $4 \sin^2(\theta/2)$ times itself plus
+  multiples of $e_1$ and $e_n$.
+* §4.8.6, `GolubVanLoan.Chapter04.dd_eigen`, `GolubVanLoan.Chapter04.dn_eigen`,
+  `GolubVanLoan.Chapter04.nn_eigen` and `GolubVanLoan.Chapter04.periodic_eigen`: the eigenvalue
+  decompositions of $\mathcal{T}^{(DD)}_n$, $\mathcal{T}^{(DN)}_n$, $\mathcal{T}^{(NN)}_n$ and
+  $\mathcal{T}^{(P)}_n$ by $\mathrm{DST}(n)$, $\mathrm{DST2}(n)$, a scaled $\mathrm{DCT}(n)$ and
+  $F_n$.
+* Equation (4.8.22), `GolubVanLoan.Chapter04.equation_4_8_22`: the eigenvalues of
+  $\mathcal{T}^{(P)}_n$ satisfy $\lambda_j = \lambda_{n+2-j}$.
+* Equation (4.8.23), `GolubVanLoan.Chapter04.equation_4_8_23`: $\bar F_n(:, j) = F_n(:, n+2-j)$.
+* Equations (4.8.24)–(4.8.25), `GolubVanLoan.Chapter04.equation_4_8_25`: the real matrix $V^{(P)}_n$
+  built from the real and imaginary parts of the columns of $F_n$ has eigenvectors of
+  $\mathcal{T}^{(P)}_n$ as columns.
+* §4.8.7, `GolubVanLoan.Chapter04.dn_symmetrizable`: $D^{-1} \mathcal{T}^{(DN)}_n D$ is symmetric
+  for $D = \operatorname{diag}(I_{n-1}, \sqrt{2})$.
 
 ## Conventions
 
-The book's DFT matrix `F_n` (`ω_n = e^{−2πi/n}`) is chapter 1's
-`GolubVanLoan.Chapter01.fourierMatrix n = (Matrix.dft n)ᴴ`, and its entrywise conjugate `F̄_n` is
-`(fourierMatrix n).map star = Matrix.dft n` (`map_star_fourierMatrix`). The book's circulant `C(z)`
-(first column `z`) is Mathlib's `Matrix.circulant z`, the downshift `𝒟_n` is `Matrix.downshift n`.
-The second-difference matrices are `𝒯^{(DD)}_n = Matrix.symmTridiagonalToeplitz n (-1) 2` and
-`Matrix.secondDifferenceDN/NN/Periodic n`; the vectors `s(θ)`, `c(θ)` of (4.8.15) are
-`Matrix.sinAngleVec n θ`, `Matrix.cosAngleVec n θ`; `e_1`, `e_n` are `Pi.single ⟨0, _⟩ 1`,
-`Pi.single ⟨n − 1, _⟩ 1`. The transforms are `Matrix.dst1` (the book's `DST(n)`), `Matrix.dst2`
-(`DST2(n)`) and `Matrix.dct1 m` (`DCT(m + 1)`). The book's eigenvalue letter `λ` is a Lean
-keyword; diagonals are named `ν`, `μ`, `Λ`. Indices are 0-based: the book's `λ_{j+1}` is entry `j`.
+* The DFT matrix $F_n$, with entries $\omega_n^{kj}$ and $\omega_n = e^{-2\pi i/n}$, is
+  `GolubVanLoan.Chapter01.fourierMatrix n`, which is `(Matrix.dft n)ᴴ`. Its entrywise conjugate
+  $\bar F_n$ is `(fourierMatrix n).map star`, which equals `Matrix.dft n`
+  (`GolubVanLoan.Chapter04.map_star_fourierMatrix`).
+* The circulant matrix $C(z)$ with first column $z$ is Mathlib's `Matrix.circulant z`, and the
+  downshift $\mathcal{D}_n$ is `Matrix.downshift n`.
+* The second-difference matrices $\mathcal{T}^{(DD)}_n$, $\mathcal{T}^{(DN)}_n$,
+  $\mathcal{T}^{(NN)}_n$ and $\mathcal{T}^{(P)}_n$ are, in this order,
+  `Matrix.symmTridiagonalToeplitz n (-1) 2`, `Matrix.secondDifferenceDN n`,
+  `Matrix.secondDifferenceNN n` and `Matrix.secondDifferencePeriodic n`.
+* The vectors $s(\theta)$ and $c(\theta)$ of (4.8.15) are `Matrix.sinAngleVec n θ` and
+  `Matrix.cosAngleVec n θ`. The unit vectors $e_1$ and $e_n$ are `Pi.single ⟨0, _⟩ 1` and
+  `Pi.single ⟨n - 1, _⟩ 1`.
+* The source's transforms $\mathrm{DST}(n)$, $\mathrm{DST2}(n)$ and $\mathrm{DCT}(m+1)$ are, in
+  this order, `Matrix.dst1 n`, `Matrix.dst2 n` and `Matrix.dct1 m`.
+* The source's eigenvalue letter $\lambda$ is a Lean keyword, so diagonals are named `ν`, `μ` and
+  `Λ`.
+* Indices are 0-based: the source's $\lambda_{j+1}$ is entry `j`.
+* $\operatorname{reshape}(u, n_1, n_2)$ is Mathlib's column-major `Matrix.vec` read backwards:
+  $u = \operatorname{vec}(U)$ with `U : Matrix (Fin n₁) (Fin n₂) ℝ`, and $u$ is indexed by
+  `Fin n₂ × Fin n₁`.
+* The source's $I_{n_2} \otimes A_1 + A_2 \otimes I_{n_1}$ is written literally,
+  `1 ⊗ₖ A₁ + A₂ ⊗ₖ 1`. It is the Kronecker sum `A₂ ⊕ₖ A₁` of the backbone
+  (`GolubVanLoan.Chapter04.one_kronecker_add_kronecker_one`).
 
-`reshape(u, n₁, n₂)` is Mathlib's column-major `Matrix.vec` read backwards: `u = vec U` with
-`U : Matrix (Fin n₁) (Fin n₂) ℝ` and `u` indexed by `Fin n₂ × Fin n₁`. The book's
-`I_{n₂} ⊗ A₁ + A₂ ⊗ I_{n₁}` is written literally, `1 ⊗ₖ A₁ + A₂ ⊗ₖ 1`, and is the Kronecker sum
-`A₂ ⊕ₖ A₁` of the backbone (`one_kronecker_add_kronecker_one`).
+## Implementation notes
 
-Algorithms 4.8.1 and 4.8.2 follow the algorithm conventions of `NumlibSurface/GolubVanLoan`: every
-product, sum and quotient passes through the hook `rnd`; the book's fast transforms ("use an FFT")
-are program parameters computing the transforms — for Algorithm 4.8.1 any FFT, in particular
-chapter 1's Algorithm 1.4.1 for `n = 2^t` (`algorithm_4_8_1_fft_spec`), for Algorithm 4.8.2 the
-abstract `V⁻¹ ·`, `W⁻¹ ·`, `V ·`, `W ·` — whose specification is a hypothesis of the spec theorem
-(convention 5). Only the exact semantics is stated (the book gives no rounding analysis);
-Algorithm 4.8.1 is complex, `rnd : ℂ → M ℂ`.
+* Algorithms 4.8.1 and 4.8.2 follow the algorithm conventions of `NumlibSurface.GolubVanLoan`: every
+  product, sum and quotient passes through the rounding hook `rnd`. Algorithm 4.8.1 is complex, with
+  `rnd : ℂ → M ℂ`.
+* The fast transforms of the source ("use an FFT") are program parameters, and their specification
+  is a hypothesis of the exact-correctness theorem (convention 5 of the library). For Algorithm
+  4.8.1 the parameter is any FFT, in particular Algorithm 1.4.1 for $n = 2^t$
+  (`GolubVanLoan.Chapter04.algorithm_4_8_1_fft_spec`). For Algorithm 4.8.2 the parameters are the
+  abstract transforms $V^{-1} \cdot$, $W^{-1} \cdot$, $V \cdot$ and $W \cdot$, which
+  `GolubVanLoan.Chapter04.transformCols` applies to matrices column by column.
+* Only the exact semantics of the two algorithms is stated, because the source gives no rounding
+  analysis.
 
-## Sources
+## Deviations from the source
 
-Backbone `Numlib/Analysis/Fourier/{DFT,Circulant,SineCosineTransform}` (the DFT, circulant, DST and
-DCT facts and the four eigensystems), `Numlib/LinearAlgebra/Matrix/{Permutation,TridiagonalToeplitz,
-KroneckerSum}` and `Numlib/Direct/FastPoisson` (the solution formula of the fast Poisson framework).
+* **Equation (4.8.4)** (typo). The source prints $(V^{-1} \mathcal{D}_n V^{-1})^k$;
+  $(V^{-1} \mathcal{D}_n V)^k$ is meant. See `GolubVanLoan.Chapter04.equation_4_8_4`.
+* **Lemma 4.8.1** (reading). The formula $\lambda_{j+1} = \bar\omega_n^j$ is read for every
+  $n \ge 1$; for $n = 1$ the downshift is $I_1$. See `GolubVanLoan.Chapter04.lemma_4_8_1`.
+* **§4.8.6, the Dirichlet–Neumann paragraph** (typo). The source cites a nonexistent "(1.4.13)" for
+  $\mathrm{DST2}$; (1.4.12) is meant. See `GolubVanLoan.Chapter04.dn_eigen`.
+* **§4.8.6, the Neumann–Neumann paragraph** (typo). The source twice writes $\mathcal{T}^{(DN)}$ and
+  $V^{(DN)}$ for $\mathcal{T}^{(NN)}$ and $V^{(NN)}$. See `GolubVanLoan.Chapter04.nn_eigen`.
+* **§4.8.6, the periodic matrix** (reading). The statement that $\mathcal{T}^{(P)}_n$ is circulant,
+  with first column $(2, -1, 0, \dots, 0, -1)^T$, is read for $n \ge 3$. See
+  `GolubVanLoan.Chapter04.periodic_eigen`.
 
-## Readings and errata
+## Not formalized
 
-(4.8.4) prints `(V⁻¹ 𝒟_n V⁻¹)^k`; `(V⁻¹ 𝒟_n V)^k` is meant. In §4.8.6 the Neumann–Neumann paragraph
-twice writes `𝒯^{(DN)}`/`V^{(DN)}` for `𝒯^{(NN)}`/`V^{(NN)}`, and the Dirichlet–Neumann paragraph
-cites a nonexistent "(1.4.13)" for `DST2`, meaning (1.4.12). "`𝒯^{(P)}_n` is circulant" needs
-`n ≥ 3`.
-Lemma 4.8.1's `λ_{j+1} = ω̄_n^j` is read for every `n ≥ 1` (for `n = 1` the downshift is `I_1`).
+* **The Problems of §4.8.** Problems are out of scope for the library.
 -/
 
 open Complex FloatingPoint Matrix GolubVanLoan.Chapter01
@@ -65,10 +175,17 @@ open scoped ComplexConjugate Real Kronecker
 
 namespace GolubVanLoan.Chapter04
 
-/-! ### (4.8.2): solving through an eigenvalue decomposition -/
+/-! ### Equation (4.8.2): solving through an eigenvalue decomposition -/
 
-/-- **(4.8.2).** If `V⁻¹ A V = Λ = diag(λ₁, …, λ_n)` (4.8.1) with `V` nonsingular, then
-`u = A⁻¹ b = (V Λ V⁻¹)⁻¹ b = V (Λ⁻¹ (V⁻¹ b))`. -/
+/-- **Equation (4.8.2)** of [golub2013matrix]. Let $A, V \in \mathbb{C}^{n \times n}$ with $V$
+nonsingular, and let $\nu \in \mathbb{C}^n$ with $V^{-1} A V = \operatorname{diag}(\nu_1, \dots,
+\nu_n)$, as in (4.8.1). Then for every $b \in \mathbb{C}^n$ $$A^{-1} b = V
+\bigl(\operatorname{diag}(\nu)^{-1} (V^{-1} b)\bigr).$$
+
+The source writes $\Lambda = \operatorname{diag}(\lambda_1, \dots, \lambda_n)$ and derives
+$u = A^{-1} b = (V \Lambda V^{-1})^{-1} b$. The statement has no hypothesis that $A$ is
+nonsingular. The inverse is Mathlib's `Matrix.inv`, which is $0$ at a singular matrix, and $A$
+is singular exactly when $\operatorname{diag}(\nu)$ is, so that both sides are then $0$. -/
 theorem equation_4_8_2 {n : ℕ} {A V : Matrix (Fin n) (Fin n) ℂ} {ν : Fin n → ℂ} (hV : IsUnit V)
     (hAV : V⁻¹ * A * V = diagonal ν) (b : Fin n → ℂ) :
     A⁻¹ *ᵥ b = V *ᵥ ((diagonal ν)⁻¹ *ᵥ (V⁻¹ *ᵥ b)) := by
@@ -81,30 +198,39 @@ theorem equation_4_8_2 {n : ℕ} {A V : Matrix (Fin n) (Fin n) ℂ} {ν : Fin n 
 
 /-! ### §4.8.1 The inverse of the DFT matrix -/
 
-/-- The entrywise conjugate `F̄_n` of the DFT matrix is the backbone's `Matrix.dft n`. -/
+/-- **Section 4.8.1** of [golub2013matrix], the conjugate DFT matrix. For every $n$, the entrywise
+complex conjugate $\bar F_n$ of the DFT matrix $F_n$ is the backbone matrix `Matrix.dft n`, with
+entries $\bar\omega_n^{kj}$ for $k, j = 0, \dots, n-1$, where $\bar\omega_n = e^{2\pi i/n}$. -/
 theorem map_star_fourierMatrix (n : ℕ) : (fourierMatrix n).map star = dft n := by
   ext i j
   simp [fourierMatrix, conjTranspose_apply, dft_apply_comm]
 
-/-- **§4.8.1**: "It is easy to verify that `F_nᴴ = F̄_n`" (`F_n` is symmetric). -/
+/-- **Section 4.8.1** of [golub2013matrix]. For every $n$, $F_n^H = \bar F_n$. The source says: "It
+is easy to verify that $F_n^H = \bar F_n$".
+
+The identity holds because $F_n$ is symmetric. -/
 theorem dft_conjTranspose (n : ℕ) : (fourierMatrix n)ᴴ = (fourierMatrix n).map star := by
   rw [map_star_fourierMatrix, fourierMatrix, conjTranspose_conjTranspose]
 
-/-- **§4.8.1**: `n I_n = F_nᴴ F_n = F̄_n F_n`, from the orthogonality sums
-`∑_k ω_n^{k(q−p)} = n δ_{pq}`. -/
+/-- **Section 4.8.1** of [golub2013matrix]. For every $n$, $$F_n^H F_n = n I_n \quad \text{and}
+\quad \bar F_n F_n = n I_n.$$
+
+The proof uses the orthogonality sums $\sum_k \omega_n^{k(q-p)} = n \delta_{pq}$. -/
 theorem dft_conjTranspose_mul_self (n : ℕ) :
     (fourierMatrix n)ᴴ * fourierMatrix n = (n : ℂ) • (1 : Matrix (Fin n) (Fin n) ℂ) ∧
       (fourierMatrix n).map star * fourierMatrix n = (n : ℂ) • (1 : Matrix (Fin n) (Fin n) ℂ) := by
   rw [dft_conjTranspose, map_star_fourierMatrix, fourierMatrix]
   exact ⟨dft_mul_conjTranspose_dft n, dft_mul_conjTranspose_dft n⟩
 
-/-- **§4.8.1**: "the DFT matrix is a scaled unitary matrix and `F_n⁻¹ = (1/n) F̄_n`". -/
+/-- **Section 4.8.1** of [golub2013matrix]. For $n \ge 1$, "the DFT matrix is a scaled unitary
+matrix and" $$F_n^{-1} = \frac{1}{n} \bar F_n.$$
+-/
 theorem dft_inv (n : ℕ) [NeZero n] :
     (fourierMatrix n)⁻¹ = (n : ℂ)⁻¹ • (fourierMatrix n).map star := by
   rw [map_star_fourierMatrix, fourierMatrix]
   exact inv_conjTranspose_dft n
 
-/-- `F_n` is nonsingular (`n ≥ 1`). -/
+/-- **Section 4.8.1** of [golub2013matrix]. For $n \ge 1$, the DFT matrix $F_n$ is nonsingular. -/
 theorem isUnit_fourierMatrix (n : ℕ) [NeZero n] : IsUnit (fourierMatrix n) := by
   have hn : (n : ℂ) ≠ 0 := Nat.cast_ne_zero.2 (NeZero.ne n)
   refine (isUnit_iff_isUnit_det _).2 (isUnit_det_of_left_inverse (B := (n : ℂ)⁻¹ • dft n) ?_)
@@ -113,15 +239,26 @@ theorem isUnit_fourierMatrix (n : ℕ) [NeZero n] : IsUnit (fourierMatrix n) := 
 
 /-! ### §4.8.2 Circulant systems -/
 
-/-- **(4.8.3)**: `C(z) = ∑_{k=0}^{n−1} z_k 𝒟_n^k`, and `𝒟_n^n = I_n`. -/
+/-- **Equation (4.8.3)** of [golub2013matrix]. Let $n \ge 1$ and $z \in \mathbb{C}^n$. The circulant
+matrix $C(z)$ with first column $z$ is a polynomial in the downshift $\mathcal{D}_n$, $$C(z) =
+\sum_{k=0}^{n-1} z_k \mathcal{D}_n^k,$$ and $\mathcal{D}_n^n = I_n$.
+
+The entries of $z$ are 0-based, $z = (z_0, \dots, z_{n-1})$. $C(z)$ is `Matrix.circulant z`,
+whose entry $(i, j)$ is $z_{i-j}$ with the index taken modulo $n$, and $\mathcal{D}_n$ is the
+complex `Matrix.downshift n`. -/
 theorem equation_4_8_3 {n : ℕ} [NeZero n] (z : Fin n → ℂ) :
     circulant z = ∑ k : Fin n, z k • (downshift n : Matrix (Fin n) (Fin n) ℂ) ^ (k : ℕ) ∧
       (downshift n : Matrix (Fin n) (Fin n) ℂ) ^ n = 1 :=
   ⟨circulant_eq_sum_downshift_pow z, downshift_pow_card n⟩
 
-/-- **(4.8.4)**: if `V⁻¹ 𝒟_n V = Λ` is diagonal, then
-`V⁻¹ C(z) V = ∑_{k=0}^{n−1} z_k Λ^k` is diagonal (the book prints `(V⁻¹ 𝒟_n V⁻¹)^k`, a misprint for
-`(V⁻¹ 𝒟_n V)^k`). -/
+/-- **Equation (4.8.4)** of [golub2013matrix]. Let $n \ge 1$, let $V \in \mathbb{C}^{n \times n}$ be
+nonsingular, and let $\Lambda \in \mathbb{C}^n$ with $V^{-1} \mathcal{D}_n V =
+\operatorname{diag}(\Lambda)$. Then for every $z \in \mathbb{C}^n$ $$V^{-1} C(z) V =
+\sum_{k=0}^{n-1} z_k \operatorname{diag}(\Lambda)^k = \operatorname{diag}\Bigl(\sum_{k=0}^{n-1}
+z_k \Lambda_i^k\Bigr)_{i},$$ so that $V^{-1} C(z) V$ is diagonal.
+
+**Typo.** The source prints $(V^{-1} \mathcal{D}_n V^{-1})^k$ in the sum. The intended factor is
+$(V^{-1} \mathcal{D}_n V)^k = \operatorname{diag}(\Lambda)^k$. -/
 theorem equation_4_8_4 {n : ℕ} [NeZero n] {V : Matrix (Fin n) (Fin n) ℂ} (hV : IsUnit V)
     {Λ : Fin n → ℂ} (h : V⁻¹ * (downshift n : Matrix (Fin n) (Fin n) ℂ) * V = diagonal Λ)
     (z : Fin n → ℂ) :
@@ -146,16 +283,28 @@ theorem equation_4_8_4 {n : ℕ} [NeZero n] {V : Matrix (Fin n) (Fin n) ℂ} (hV
   simp only [Matrix.smul_apply, diagonal_pow, diagonal_apply, smul_eq_mul, Pi.pow_apply]
   split_ifs with hij <;> simp [hij]
 
-/-- **Theorem 4.8.2.** For `z ∈ ℂⁿ`, `V = F_n` and `λ = F̄_n z`: `V⁻¹ C(z) V = diag(λ₁, …, λ_n)`. -/
+/-- **Theorem 4.8.2** of [golub2013matrix]. Let $z \in \mathbb{C}^n$, $V = F_n$ and
+$\lambda = \bar F_n z$. Then $$V^{-1} C(z) V = \operatorname{diag}(\lambda_1, \dots,
+\lambda_n).$$
+
+The statement needs no hypothesis on $n$. -/
 theorem theorem_4_8_2 {n : ℕ} (z : Fin n → ℂ) :
     (fourierMatrix n)⁻¹ * circulant z * fourierMatrix n =
       diagonal ((fourierMatrix n).map star *ᵥ z) := by
   rw [map_star_fourierMatrix, fourierMatrix]
   exact inv_conjTranspose_dft_mul_circulant_mul_conjTranspose_dft z
 
-/-- **Lemma 4.8.1.** If `V = F_n`, then `V⁻¹ 𝒟_n V = diag(λ₁, …, λ_n)` with
-`λ_{j+1} = ω̄_n^j = cos(2jπ/n) + i sin(2jπ/n)`, `ω̄_n = e^{2πi/n}`. The downshift is the circulant
-of the book's `e₂` (`Matrix.downshift_eq_circulant`), and Theorem 4.8.2 applies. -/
+/-- **Lemma 4.8.1** of [golub2013matrix]. Let $n \ge 1$ and $V = F_n$. Then $V^{-1} \mathcal{D}_n
+V = \operatorname{diag}(\lambda_1, \dots, \lambda_n)$ with $$\lambda_{j+1} = \bar\omega_n^j =
+\cos\Bigl(\frac{2 j \pi}{n}\Bigr) + i \sin\Bigl(\frac{2 j \pi}{n}\Bigr), \qquad j = 0, \dots,
+n-1,$$ where $\bar\omega_n = e^{2\pi i/n}$.
+
+**Reading.** The formula is read for every $n \ge 1$. For $n = 1$ the downshift is $I_1$, and
+$\lambda_1 = 1$.
+
+Entry $j$ of the Lean diagonal is $\lambda_{j+1}$, written `Complex.exp (2 * π * I / n) ^ j`.
+The downshift is the circulant matrix of the source's $e_2$ (`Matrix.downshift_eq_circulant`),
+so that Theorem 4.8.2 applies. -/
 theorem lemma_4_8_1 (n : ℕ) [NeZero n] :
     (fourierMatrix n)⁻¹ * (downshift n : Matrix (Fin n) (Fin n) ℂ) * fourierMatrix n =
       diagonal fun j : Fin n => Complex.exp (2 * π * I / n) ^ (j : ℕ) := by
@@ -173,7 +322,8 @@ theorem lemma_4_8_1 (n : ℕ) [NeZero n] :
 
 /-! ### Algorithm 4.8.1 -/
 
-/-- A loop over `List.finRange n` whose step `a` writes entry `a` with `c a` ends with `c`. -/
+/-- A loop over `List.finRange n` whose step $a$ overwrites entry $a$ with $c_a$ ends with the
+vector $c$. -/
 private theorem foldl_update_finRange_apply {n : ℕ} {β : Type} (c : Fin n → β) (y₀ : Fin n → β)
     (i : Fin n) :
     (List.finRange n).foldl (fun (y : Fin n → β) a => Function.update y a (c a)) y₀ i = c i := by
@@ -184,8 +334,10 @@ section Programs
 
 variable {M : Type → Type} [Monad M]
 
-/-- **A vector program applied to every column**: `X(:, j) ← f(X(:, j))` for `j = 1:p`. The
-abstract transforms `V⁻¹ ·`, `W⁻¹ ·`, `V ·`, `W ·` of Algorithm 4.8.2 act on matrices this way. -/
+/-- A vector program applied to every column. For $X \in K^{m \times p}$ and a program $f$ on $K^m$,
+the program computes $X(:, j) \leftarrow f(X(:, j))$ for $j = 1, \dots, p$ in this order, and
+returns the matrix of the results. The abstract transforms $V^{-1} \cdot$, $W^{-1} \cdot$,
+$V \cdot$ and $W \cdot$ of Algorithm 4.8.2 act on matrices in this way. -/
 def transformCols {K : Type} [Zero K] {m p : ℕ} (f : (Fin m → K) → M (Fin m → K))
     (X : Matrix (Fin m) (Fin p) K) : M (Matrix (Fin m) (Fin p) K) := do
   let cols ← (List.finRange p).foldlM (fun (C : Fin p → Fin m → K) (j : Fin p) => do
@@ -193,17 +345,22 @@ def transformCols {K : Type} [Zero K] {m p : ℕ} (f : (Fin m → K) → M (Fin 
     pure (Function.update C j c)) 0
   pure (of fun i j => cols j i)
 
-/-- **Algorithm 4.8.1.** "If `z ∈ ℂⁿ`, `y ∈ ℂⁿ`, and `C(z)` is nonsingular, then the following
-algorithm solves the linear system `C(z) x = y`":
+/-- **Algorithm 4.8.1** of [golub2013matrix]. "If $z \in \mathbb{C}^n$, $y \in \mathbb{C}^n$, and
+$C(z)$ is nonsingular, then the following algorithm solves the linear system $C(z) x = y$":
 ```
 Use an FFT to compute c = F̄_n y and d = F̄_n z.
 w = c./d
 Use an FFT to compute u = F_n w.
 x = u/n
 ```
-The FFT is the program parameter `fft`, a computation of `x ↦ F_n x` (for `n = 2^t` chapter 1's
-Algorithm 1.4.1, `algorithm_4_8_1_fft_spec`); `F̄_n y` is computed as `conj(F_n conj(y))`
-(conjugation is exact, convention 1). -/
+The program computes $c' = F_n \bar y$ and $d' = F_n \bar z$ with the FFT, then $w_i \leftarrow
+\mathrm{fl}(\bar c'_i / \bar d'_i)$, which is $\mathrm{fl}(c_i / d_i)$ because
+$\bar F_n y = \overline{F_n \bar y}$. It then computes $u = F_n w$ with the FFT and
+$x_i \leftarrow \mathrm{fl}(u_i / n)$ for $i = 1, \dots, n$.
+
+The FFT is the program parameter `fft`, a computation of $x \mapsto F_n x$. For $n = 2^t$ it can
+be Algorithm 1.4.1 (`GolubVanLoan.Chapter04.algorithm_4_8_1_fft_spec`). Complex conjugation is
+exact (convention 1 of the library). The program has no hypothesis on $z$. -/
 noncomputable def algorithm_4_8_1 (rnd : ℂ → M ℂ) {n : ℕ} (fft : (Fin n → ℂ) → M (Fin n → ℂ))
     (z y : Fin n → ℂ) : M (Fin n → ℂ) := do
   let c ← fft fun i => star (y i)
@@ -218,8 +375,10 @@ noncomputable def algorithm_4_8_1 (rnd : ℂ → M ℂ) {n : ℕ} (fft : (Fin n 
 
 end Programs
 
-/-- **The exact semantics of `transformCols`**: if the program `f` computes `x ↦ A x`, then
-`transformCols f X` computes `A X`. -/
+/-- The exact semantics of `GolubVanLoan.Chapter04.transformCols`. Let $K$ be a semiring, not
+necessarily unital or associative, let $A \in K^{m \times m}$, and let $f$ be a program in exact
+arithmetic (the monad `Id`) that computes $x \mapsto A x$. Then for every
+$X \in K^{m \times p}$, the program `transformCols f X` computes $A X$. -/
 theorem transformCols_id {K : Type} [NonUnitalNonAssocSemiring K] {m p : ℕ}
     {f : (Fin m → K) → Id (Fin m → K)} {A : Matrix (Fin m) (Fin m) K}
     (hf : ∀ x, Id.run (f x) = A *ᵥ x) (X : Matrix (Fin m) (Fin p) K) :
@@ -229,14 +388,19 @@ theorem transformCols_id {K : Type} [NonUnitalNonAssocSemiring K] {m p : ℕ}
   rw [foldl_update_finRange_apply, hf]
   rfl
 
-/-- `F̄_n y = conj(F_n conj(y))`. -/
+/-- For a complex matrix $A$ and a vector $y$, $\bar A y = \overline{A \bar y}$ entrywise. -/
 private theorem map_star_mulVec_eq_star {n : ℕ} (A : Matrix (Fin n) (Fin n) ℂ) (y : Fin n → ℂ)
     (i : Fin n) : (A.map star *ᵥ y) i = star ((A *ᵥ fun j => star (y j)) i) := by
   simp only [mulVec, dotProduct, map_apply, star_sum, star_mul', star_star]
 
-/-- **Exact correctness of Algorithm 4.8.1**: if `C(z)` is nonsingular (`n ≥ 1`), the exact run
-solves `C(z) x = y`. By Theorem 4.8.2, `C(z) F_n = F_n diag(d)` with `d = F̄_n z`, whose entries
-are nonzero because `C(z)` is nonsingular; then `C(z) (F_n (c ./ d)/n) = F_n F̄_n y / n = y`. -/
+/-- **Algorithm 4.8.1** of [golub2013matrix], exact correctness. Let $n \ge 1$, let
+$z \in \mathbb{C}^n$ with $C(z)$ nonsingular, and let `fft` be a program that computes
+$x \mapsto F_n x$ in exact arithmetic. Then for every $y \in \mathbb{C}^n$, the vector $x$ that
+Algorithm 4.8.1 returns in exact arithmetic satisfies $C(z) x = y$.
+
+By Theorem 4.8.2, $C(z) F_n = F_n \operatorname{diag}(d)$ with $d = \bar F_n z$. The entries of
+$d$ are nonzero because $C(z)$ is nonsingular, and then $C(z) (F_n (c ./ d) / n) = F_n \bar F_n
+y / n = y$. -/
 theorem algorithm_4_8_1_spec {n : ℕ} [NeZero n] {z : Fin n → ℂ} (hC : IsUnit (circulant z))
     {fft : (Fin n → ℂ) → Id (Fin n → ℂ)} (hfft : ∀ x, Id.run (fft x) = fourierMatrix n *ᵥ x)
     (y : Fin n → ℂ) : circulant z *ᵥ Id.run (algorithm_4_8_1 pure fft z y) = y := by
@@ -277,8 +441,10 @@ theorem algorithm_4_8_1_spec {n : ℕ} [NeZero n] {z : Fin n → ℂ} (hC : IsUn
   rw [mulVec_smul, mulVec_mulVec, hCF, ← mulVec_mulVec, hw, hFc, smul_smul,
     inv_mul_cancel₀ hn, one_smul]
 
-/-- **Algorithm 4.8.1 with chapter 1's FFT**: for `n = 2^t`, Algorithm 4.8.1 with the radix-2 FFT
-`GolubVanLoan.Chapter01.algorithm_1_4_1` solves `C(z) x = y` in exact arithmetic. -/
+/-- **Algorithm 4.8.1** of [golub2013matrix] with the radix-2 FFT. Let $n = 2^t$ and let
+$z \in \mathbb{C}^n$ with $C(z)$ nonsingular. Then for every $y \in \mathbb{C}^n$, Algorithm
+4.8.1 with Algorithm 1.4.1 (`GolubVanLoan.Chapter01.algorithm_1_4_1`) as its FFT returns in
+exact arithmetic a vector $x$ with $C(z) x = y$. -/
 theorem algorithm_4_8_1_fft_spec (t : ℕ) {z : Fin (2 ^ t) → ℂ} (hC : IsUnit (circulant z))
     (y : Fin (2 ^ t) → ℂ) :
     circulant z *ᵥ Id.run (algorithm_4_8_1 pure (algorithm_1_4_1 pure t) z y) = y :=
@@ -286,9 +452,9 @@ theorem algorithm_4_8_1_fft_spec (t : ℕ) {z : Fin (2 ^ t) → ℂ} (hC : IsUni
 
 /-! ### §4.8.3 The discretized Poisson equation in one dimension -/
 
-/-- A row of `𝒯^{(DD)}_{N+1}` applied to the interior values `g_1, …, g_{N+1}` of a grid function
-`g`: the second difference `2 g_{x+1} − g_x − g_{x+2}` with the boundary values `g_0`, `g_{N+2}`
-added back in the first and last rows. -/
+/-- Row $x$ of $\mathcal{T}^{(DD)}_{N+1}$ applied to the interior values $g_1, \dots, g_{N+1}$ of a
+sequence $g$ is $2 g_{x+1} - g_x - g_{x+2}$, plus $g_0$ in the first row and $g_{N+2}$ in the
+last row. -/
 private theorem symmTridiagonalToeplitz_mulVec_shift_apply (N : ℕ) (g : ℕ → ℝ)
     (x : Fin (N + 1)) :
     (symmTridiagonalToeplitz (N + 1) (-1) 2 *ᵥ fun i : Fin (N + 1) => g ((i : ℕ) + 1)) x =
@@ -317,12 +483,19 @@ private theorem symmTridiagonalToeplitz_mulVec_shift_apply (N : ℕ) (g : ℕ �
     simp
     ring
 
-/-- **(4.8.6)** and the Dirichlet–Dirichlet system after it. With `h = (β − α)/m`,
-`m = N + 2`, the divided difference is
-`((u_{i+1} − u_i)/h − (u_i − u_{i−1})/h)/h = (u_{i−1} − 2u_i + u_{i+1})/h²`, and for `h ≠ 0` the
-equations `(u_{i−1} − 2u_i + u_{i+1})/h² = −f_i`, `i = 1 : m − 1`, with the boundary values
-`u_0 = u_α`, `u_m = u_β` are the system
-`𝒯^{(DD)}_{m−1} u(1:m−1) = h² f(1:m−1) + u_α e_1 + u_β e_{m−1}`. -/
+/-- **Equation (4.8.6)** of [golub2013matrix] and the Dirichlet–Dirichlet system after it. Let
+$N \ge 0$ and $m = N + 2$, let $h \neq 0$ be real, and let $u, f : \mathbb{N} \to \mathbb{R}$.
+First, for every $i$, $$\frac{1}{h} \Bigl(\frac{u_{i+1} - u_i}{h} - \frac{u_i -
+u_{i-1}}{h}\Bigr) = \frac{u_{i-1} - 2 u_i + u_{i+1}}{h^2}.$$ Second, the equations
+$$\frac{u_{i-1} - 2 u_i + u_{i+1}}{h^2} = -f_i, \qquad i = 1, \dots, m-1,$$ hold if and only if
+$$\mathcal{T}^{(DD)}_{m-1} u(1{:}m-1) = h^2 f(1{:}m-1) + u_0 e_1 + u_m e_{m-1}.$$
+
+In the source, $h = (\beta - \alpha)/m$ is the grid spacing on $[\alpha, \beta]$, and the
+boundary values are $u_0 = u_\alpha$ and $u_m = u_\beta$; the statement holds for every
+$h \neq 0$. The sequence $u$ is indexed by $\mathbb{N}$, so that $u_{i-1}$ at $i = 0$ is $u_0$
+by truncated subtraction; the first identity holds there too. The matrix
+$\mathcal{T}^{(DD)}_{m-1}$ is `Matrix.symmTridiagonalToeplitz (N + 1) (-1) 2`, and the equations
+are indexed from $0$ by `Fin (N + 1)`. -/
 theorem equation_4_8_6 (N : ℕ) {h : ℝ} (hh : h ≠ 0) (u f : ℕ → ℝ) :
     (∀ i : ℕ, ((u (i + 1) - u i) / h - (u i - u (i - 1)) / h) / h =
       (u (i - 1) - 2 * u i + u (i + 1)) / h ^ 2) ∧
@@ -340,7 +513,10 @@ theorem equation_4_8_6 (N : ℕ) {h : ℝ} (hh : h ≠ 0) (u f : ℕ → ℝ) :
   rw [div_eq_iff (pow_ne_zero 2 hh)]
   constructor <;> intro h' <;> linarith
 
-/-- **(4.8.8)**: `𝒯^{(DN)}_n = 𝒯^{(DD)}_n − e_n e_{n−1}ᵀ` (`2 ≤ n`). -/
+/-- **Equation (4.8.8)** of [golub2013matrix]. For $n \ge 2$, the Dirichlet–Neumann
+second-difference matrix is $$\mathcal{T}^{(DN)}_n = \mathcal{T}^{(DD)}_n - e_n e_{n-1}^T.$$
+
+Its last row is $(0, \dots, 0, -2, 2)$. -/
 theorem equation_4_8_8 {n : ℕ} (hn : 2 ≤ n) :
     secondDifferenceDN n = symmTridiagonalToeplitz n (-1) 2 -
       vecMulVec (Pi.single (⟨n - 1, by omega⟩ : Fin n) 1) (Pi.single ⟨n - 2, by omega⟩ 1) := by
@@ -350,7 +526,9 @@ theorem equation_4_8_8 {n : ℕ} (hn : 2 ≤ n) :
   simp only [of_apply, vecMulVec_apply, Pi.single_apply, Fin.ext_iff]
   split_ifs <;> first | (exfalso; omega) | simp
 
-/-- **(4.8.9)**: `𝒯^{(NN)}_n = 𝒯^{(DD)}_n − e_n e_{n−1}ᵀ − e_1 e_2ᵀ` (`2 ≤ n`). -/
+/-- **Equation (4.8.9)** of [golub2013matrix]. For $n \ge 2$, the Neumann–Neumann second-difference
+matrix is $$\mathcal{T}^{(NN)}_n = \mathcal{T}^{(DD)}_n - e_n e_{n-1}^T - e_1 e_2^T.$$
+-/
 theorem equation_4_8_9 {n : ℕ} (hn : 2 ≤ n) :
     secondDifferenceNN n = symmTridiagonalToeplitz n (-1) 2 -
       vecMulVec (Pi.single (⟨n - 1, by omega⟩ : Fin n) 1) (Pi.single ⟨n - 2, by omega⟩ 1) -
@@ -362,7 +540,11 @@ theorem equation_4_8_9 {n : ℕ} (hn : 2 ≤ n) :
   simp only [of_apply, vecMulVec_apply, Pi.single_apply, Fin.ext_iff]
   split_ifs <;> first | (exfalso; omega) | simp
 
-/-- **(4.8.10)**: `𝒯^{(P)}_n = 𝒯^{(DD)}_n − e_1 e_nᵀ − e_n e_1ᵀ` (`2 ≤ n`). -/
+/-- **Equation (4.8.10)** of [golub2013matrix]. For $n \ge 2$, the periodic second-difference matrix
+is $$\mathcal{T}^{(P)}_n = \mathcal{T}^{(DD)}_n - e_1 e_n^T - e_n e_1^T.$$
+
+For $n = 1$ the two corner positions coincide, and `Matrix.secondDifferencePeriodic 1` is $(1)$,
+not the value $(0)$ of the formula. -/
 theorem equation_4_8_10 {n : ℕ} (hn : 2 ≤ n) :
     secondDifferencePeriodic n = symmTridiagonalToeplitz n (-1) 2 -
       vecMulVec (Pi.single (⟨0, by omega⟩ : Fin n) 1) (Pi.single ⟨n - 1, by omega⟩ 1) -
@@ -375,16 +557,26 @@ theorem equation_4_8_10 {n : ℕ} (hn : 2 ≤ n) :
 
 /-! ### §4.8.4 The discretized Poisson equation in two dimensions -/
 
-/-- The book's `I_{n₂} ⊗ A₁ + A₂ ⊗ I_{n₁}` is the backbone's Kronecker sum `A₂ ⊕ₖ A₁`. -/
+/-- **Section 4.8.4** of [golub2013matrix], the Kronecker sum. Let $R$ be a commutative ring,
+$A_1 \in R^{n_1 \times n_1}$ and $A_2 \in R^{n_2 \times n_2}$. Then the source's matrix
+$I_{n_2} \otimes A_1 + A_2 \otimes I_{n_1}$ is the Kronecker sum `A₂ ⊕ₖ A₁`
+$= A_2 \otimes I_{n_1} + I_{n_2} \otimes A_1$ of the backbone. -/
 theorem one_kronecker_add_kronecker_one {R : Type*} [CommRing R] {n₁ n₂ : ℕ}
     (A₁ : Matrix (Fin n₁) (Fin n₁) R) (A₂ : Matrix (Fin n₂) (Fin n₂) R) :
     (1 : Matrix (Fin n₂) (Fin n₂) R) ⊗ₖ A₁ + A₂ ⊗ₖ (1 : Matrix (Fin n₁) (Fin n₁) R) = A₂ ⊕ₖ A₁ := by
   rw [kroneckerSum_def, add_comm]
 
-/-- The right-hand side `B` of the five-point system (§4.8.4, with `h_x = h_y = h`,
-`m₁ = N₁ + 2`, `m₂ = N₂ + 2`): at the interior point `P = (a + 1, b + 1)` of the grid, `h² F(P)`
-plus the values of `u` at the neighbours of `P` that lie on the boundary. The grid values are
-`G i j ≈ u(α_x + i h, α_y + j h)`. -/
+/-- **Section 4.8.4** of [golub2013matrix], the right-hand side of the five-point system. Let
+$N_1, N_2 \ge 0$, $m_1 = N_1 + 2$ and $m_2 = N_2 + 2$, let $h$ be real, and let $F, G :
+\mathbb{N} \times \mathbb{N} \to \mathbb{R}$, where $G_{ij}$ stands for the grid value
+$u(\alpha_x + i h, \alpha_y + j h)$. The matrix $B \in \mathbb{R}^{(m_1-1) \times (m_2-1)}$ has,
+at the interior point $P = (i, j)$ with $1 \le i \le m_1 - 1$ and $1 \le j \le m_2 - 1$, the
+entry $$b_{ij} = h^2 F_{ij} + [i = 1] G_{0j} + [i = m_1 - 1] G_{m_1 j} + [j = 1] G_{i0} + [j =
+m_2 - 1] G_{i m_2},$$ where $[\cdot]$ is $1$ if the condition holds and $0$ otherwise. This is
+$h^2 F(P)$ plus the values of $G$ at the neighbours of $P$ that lie on the boundary.
+
+The grid spacings are equal, $h_x = h_y = h$. Entry $(a, b)$ of the Lean matrix is the point
+$(a + 1, b + 1)$. At a corner of the interior, two boundary values are added. -/
 def fivePointRhs (N₁ N₂ : ℕ) (h : ℝ) (F G : ℕ → ℕ → ℝ) :
     Matrix (Fin (N₁ + 1)) (Fin (N₂ + 1)) ℝ :=
   of fun a b => h ^ 2 * F ((a : ℕ) + 1) ((b : ℕ) + 1)
@@ -393,11 +585,18 @@ def fivePointRhs (N₁ N₂ : ℕ) (h : ℝ) (F G : ℕ → ℕ → ℝ) :
     + (if (b : ℕ) = 0 then G ((a : ℕ) + 1) 0 else 0)
     + (if (b : ℕ) = N₂ then G ((a : ℕ) + 1) (N₂ + 2) else 0)
 
-/-- **§4.8.4, the five-point system.** With equal grid spacings `h`, the equations
-`4u(P) − u(N) − u(E) − u(S) − u(W) = h² F(P)` at the interior grid points, the neighbours on the
-boundary moved to the right-hand side (`fivePointRhs`), are the linear system
-`(I_{m₂−1} ⊗ 𝒯^{(DD)}_{m₁−1} + 𝒯^{(DD)}_{m₂−1} ⊗ I_{m₁−1}) u = b` with `u = vec U` the interior
-values (`U a b = u(a + 1, b + 1)`, `x` along the rows of `U`). -/
+/-- **Section 4.8.4** of [golub2013matrix], the five-point system. Let $N_1, N_2$, $m_1 = N_1 + 2$,
+$m_2 = N_2 + 2$, $h$, $F$ and $G$ be as in `GolubVanLoan.Chapter04.fivePointRhs`, and let $B$ be
+the matrix defined there. The equations $$4 G_{ij} - G_{i,j+1} - G_{i+1,j} - G_{i,j-1} -
+G_{i-1,j} = h^2 F_{ij}$$ at all interior points $1 \le i \le m_1 - 1$, $1 \le j \le m_2 - 1$
+hold if and only if $$\bigl(I_{m_2-1} \otimes \mathcal{T}^{(DD)}_{m_1-1} +
+\mathcal{T}^{(DD)}_{m_2-1} \otimes I_{m_1-1}\bigr) \operatorname{vec}(U) =
+\operatorname{vec}(B),$$ where $U \in \mathbb{R}^{(m_1-1) \times (m_2-1)}$ is the matrix of
+interior values, $U_{ij} = G_{ij}$.
+
+The equations are the source's $4 u(P) - u(N) - u(E) - u(S) - u(W) = h^2 F(P)$ with equal grid
+spacings $h$, and the neighbours on the boundary are moved to the right-hand side. The first
+index runs along $x$ and along the rows of $U$; `Matrix.vec` stacks the columns of $U$. -/
 theorem poisson2D_eq_kroneckerSum (N₁ N₂ : ℕ) (h : ℝ) (F G : ℕ → ℕ → ℝ) :
     (∀ (a : Fin (N₁ + 1)) (b : Fin (N₂ + 1)),
       4 * G ((a : ℕ) + 1) ((b : ℕ) + 1) - G ((a : ℕ) + 1) ((b : ℕ) + 2)
@@ -427,18 +626,29 @@ theorem poisson2D_eq_kroneckerSum (N₁ N₂ : ℕ) (h : ℝ) (F G : ℕ → ℕ
   simp only [fivePointRhs, of_apply]
   constructor <;> intro h' <;> linarith
 
-/-- **(4.8.12)** reshaped: `(I_{n₂} ⊗ A₁ + A₂ ⊗ I_{n₁}) u = b` with `u = vec U`, `b = vec B`
-(`U = reshape(u, n₁, n₂)`) iff `A₁ U + U A₂ᵀ = B`. -/
+/-- **Equation (4.8.12)** of [golub2013matrix], in matrix form. Let
+$A_1 \in \mathbb{R}^{n_1 \times n_1}$, $A_2 \in \mathbb{R}^{n_2 \times n_2}$ and
+$U, B \in \mathbb{R}^{n_1 \times n_2}$, and let $u = \operatorname{vec}(U)$ and
+$b = \operatorname{vec}(B)$, so that $U = \operatorname{reshape}(u, n_1, n_2)$. Then $$(I_{n_2}
+\otimes A_1 + A_2 \otimes I_{n_1}) u = b \iff A_1 U + U A_2^T = B.$$
+-/
 theorem equation_4_8_12 {n₁ n₂ : ℕ} (A₁ : Matrix (Fin n₁) (Fin n₁) ℝ)
     (A₂ : Matrix (Fin n₂) (Fin n₂) ℝ) (U B : Matrix (Fin n₁) (Fin n₂) ℝ) :
     ((1 : Matrix (Fin n₂) (Fin n₂) ℝ) ⊗ₖ A₁ + A₂ ⊗ₖ (1 : Matrix (Fin n₁) (Fin n₁) ℝ)) *ᵥ vec U
       = vec B ↔ A₁ * U + U * A₂ᵀ = B := by
   rw [one_kronecker_add_kronecker_one, kroneckerSum_mulVec_vec, vec_inj]
 
-/-- **§4.8.4, the transformed system.** Under (4.8.13)–(4.8.14), `V⁻¹ A₁ V = D₁ = diag(ν)` and
-`W⁻¹ A₂ W = D₂ = diag(μ)`, `A₁ U + U A₂ᵀ = B` iff `D₁ Ũ + Ũ D₂ = B̃` with `Ũ = V⁻¹ U W⁻ᵀ`,
-`B̃ = V⁻¹ B W⁻ᵀ`; and when no `λ_i + μ_j` vanishes the unique solution is
-`ũ_ij = b̃_ij / (λ_i + μ_j)`, i.e. `U = V Ũ Wᵀ`. -/
+/-- **Section 4.8.4** of [golub2013matrix], the transformed system. Let
+$A_1, V \in \mathbb{R}^{n_1 \times n_1}$ and $A_2, W \in \mathbb{R}^{n_2 \times n_2}$ with $V$
+and $W$ nonsingular, $V^{-1} A_1 V = D_1 = \operatorname{diag}(\lambda)$ and
+$W^{-1} A_2 W = D_2 = \operatorname{diag}(\mu)$, as in (4.8.13)–(4.8.14). Let
+$U, B \in \mathbb{R}^{n_1 \times n_2}$, and put $\tilde U = V^{-1} U W^{-T}$ and
+$\tilde B = V^{-1} B W^{-T}$. Then $A_1 U + U A_2^T = B$ if and only if
+$D_1 \tilde U + \tilde U D_2 = \tilde B$. If moreover $\lambda_i + \mu_j \neq 0$ for all $i$ and
+$j$, then $A_1 U + U A_2^T = B$ if and only if $U = V X W^T$, where
+$X_{ij} = \tilde b_{ij} / (\lambda_i + \mu_j)$.
+
+The eigenvalues $\lambda_i$ of $A_1$ are `ν i` in Lean. -/
 theorem fastPoisson_transformed {n₁ n₂ : ℕ} {A₁ V : Matrix (Fin n₁) (Fin n₁) ℝ}
     {A₂ W : Matrix (Fin n₂) (Fin n₂) ℝ} (hV : IsUnit V) (hW : IsUnit W) {ν : Fin n₁ → ℝ}
     {μ : Fin n₂ → ℝ} (hA₁ : V⁻¹ * A₁ * V = diagonal ν) (hA₂ : W⁻¹ * A₂ * W = diagonal μ)
@@ -479,9 +689,16 @@ theorem fastPoisson_transformed {n₁ n₂ : ℕ} {A₁ V : Matrix (Fin n₁) (F
   · rw [← equation_4_8_12 A₁ A₂ U B, one_kronecker_add_kronecker_one]
     exact FastPoisson.kroneckerSum_mulVec_vec_eq_iff hV hW hA₁ hA₂ hνμ U B
 
-/-- In the setting of (4.8.13)–(4.8.14), if `A = I_{n₂} ⊗ A₁ + A₂ ⊗ I_{n₁}` is nonsingular then no
-`λ_i + μ_j` vanishes ("For this to be well-defined, no eigenvalue of `A₁` can be the negative of an
-eigenvalue of `A₂`"): otherwise `U = V e_i e_jᵀ Wᵀ ≠ 0` has `A vec U = 0`. -/
+/-- **Section 4.8.4** of [golub2013matrix]. Let $A_1, V \in \mathbb{R}^{n_1 \times n_1}$ and
+$A_2, W \in \mathbb{R}^{n_2 \times n_2}$ with $V$ and $W$ nonsingular,
+$V^{-1} A_1 V = \operatorname{diag}(\lambda)$ and $W^{-1} A_2 W = \operatorname{diag}(\mu)$, as
+in (4.8.13)–(4.8.14). If $A = I_{n_2} \otimes A_1 + A_2 \otimes I_{n_1}$ is nonsingular, then
+$\lambda_i + \mu_j \neq 0$ for all $i$ and $j$. The source says: "For this to be well-defined,
+no eigenvalue of $A_1$ can be the negative of an eigenvalue of $A_2$".
+
+If $\lambda_i + \mu_j = 0$, then $U = V e_i e_j^T W^T \neq 0$ has $A \operatorname{vec}(U) = 0$.
+The eigenvalues $\lambda_i$ are `ν i` in Lean. The hypothesis on $A$ is stated for the Kronecker
+sum `A₂ ⊕ₖ A₁`, which is $A$ by `GolubVanLoan.Chapter04.one_kronecker_add_kronecker_one`. -/
 theorem add_ne_zero_of_isUnit_kroneckerSum {n₁ n₂ : ℕ} {A₁ V : Matrix (Fin n₁) (Fin n₁) ℝ}
     {A₂ W : Matrix (Fin n₂) (Fin n₂) ℝ} (hV : IsUnit V) (hW : IsUnit W) {ν : Fin n₁ → ℝ}
     {μ : Fin n₂ → ℝ} (hA₁ : V⁻¹ * A₁ * V = diagonal ν) (hA₂ : W⁻¹ * A₂ * W = diagonal μ)
@@ -523,18 +740,27 @@ theorem add_ne_zero_of_isUnit_kroneckerSum {n₁ n₂ : ℕ} {A₁ V : Matrix (F
   have := congrFun (congrFun hE' i) j
   simp [hE] at this
 
-/-- **Algorithm 4.8.2 (Fast Poisson Solver Framework).** "Assume that `A₁ ∈ ℝ^{n₁×n₁}` and
-`A₂ ∈ ℝ^{n₂×n₂}` have fast eigenvalue decompositions (4.8.13) and (4.8.14) and that the matrix
-`A = I_{n₂} ⊗ A₁ + A₂ ⊗ I_{n₁}` is nonsingular. The following algorithm solves the linear system
-`Au = b`":
+/-- **Algorithm 4.8.2** of [golub2013matrix] (Fast Poisson Solver Framework). "Assume that
+$A_1 \in \mathbb{R}^{n_1 \times n_1}$ and $A_2 \in \mathbb{R}^{n_2 \times n_2}$ have fast
+eigenvalue decompositions (4.8.13) and (4.8.14) and that the matrix
+$A = I_{n_2} \otimes A_1 + A_2 \otimes I_{n_1}$ is nonsingular. The following algorithm solves
+the linear system $Au = b$":
 ```
 B̃ = (W⁻¹ (V⁻¹ B)ᵀ)ᵀ where B = reshape(b, n₁, n₂)
 for i = 1:n₁, for j = 1:n₂: ũ_ij = b̃_ij / (λ_i + μ_j)
 u = reshape(U, n₁n₂, 1) where U = (W (V Ũ)ᵀ)ᵀ
 ```
-The fast transforms "`V⁻¹ ·`, `W⁻¹ ·`, `V ·`, `W ·`" are program parameters (`applyVinv`,
-`applyWinv`, `applyV`, `applyW`: computations of `x ↦ V⁻¹x`, …, the "fast eigenvalue
-decompositions"), applied column by column (`transformCols`); `b` is indexed as `vec B`. -/
+The program reads $B = \operatorname{reshape}(b, n_1, n_2)$ and computes $Y = V^{-1} B$ and
+$\tilde B^T = W^{-1} Y^T$ column by column. It then computes $\tilde u_{ij} \leftarrow
+\mathrm{fl}(\tilde b_{ij} / \mathrm{fl}(\lambda_i + \mu_j))$ for all $i$ and $j$, then
+$P = V \tilde U$ and $Q = W P^T$ column by column, and returns $u = \operatorname{vec}(Q^T)$.
+
+The fast transforms $V^{-1} \cdot$, $W^{-1} \cdot$, $V \cdot$ and $W \cdot$ are the program
+parameters `applyVinv`, `applyWinv`, `applyV` and `applyW`, computations of $x \mapsto V^{-1} x$
+and so on, which `GolubVanLoan.Chapter04.transformCols` applies column by column. The
+eigenvalues $\lambda$ and $\mu$ are the parameters `ν` and `μ`, and $b$ is indexed by
+`Fin n₂ × Fin n₁` as $\operatorname{vec}(B)$. The program has no hypotheses; those of the source
+are hypotheses of `GolubVanLoan.Chapter04.algorithm_4_8_2_spec`. -/
 noncomputable def algorithm_4_8_2 {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ) {n₁ n₂ : ℕ}
     (applyVinv applyV : (Fin n₁ → ℝ) → M (Fin n₁ → ℝ))
     (applyWinv applyW : (Fin n₂ → ℝ) → M (Fin n₂ → ℝ))
@@ -551,11 +777,18 @@ noncomputable def algorithm_4_8_2 {M : Type → Type} [Monad M] (rnd : ℝ → M
   let Q ← transformCols applyW Pᵀ
   pure (vec Qᵀ)
 
-/-- **Exact correctness of Algorithm 4.8.2**: if `V⁻¹ A₁ V = diag(λ)`, `W⁻¹ A₂ W = diag(μ)`, the
-transform programs compute `x ↦ V⁻¹x`, `V x`, `W⁻¹x`, `W x`, and
-`A = I_{n₂} ⊗ A₁ + A₂ ⊗ I_{n₁}` is nonsingular, the exact run solves `A u = b`: it computes
-`U = V Ũ Wᵀ` with `ũ_ij = b̃_ij / (λ_i + μ_j)`,
-`B̃ = V⁻¹ B W⁻ᵀ`, the solution of `FastPoisson.kroneckerSum_mulVec_vec_eq_iff`. -/
+/-- **Algorithm 4.8.2** of [golub2013matrix], exact correctness. Let
+$A_1, V \in \mathbb{R}^{n_1 \times n_1}$ and $A_2, W \in \mathbb{R}^{n_2 \times n_2}$ with $V$
+and $W$ nonsingular, $V^{-1} A_1 V = \operatorname{diag}(\lambda)$ and
+$W^{-1} A_2 W = \operatorname{diag}(\mu)$, and let
+$A = I_{n_2} \otimes A_1 + A_2 \otimes I_{n_1}$ be nonsingular. Let the transform programs
+compute $x \mapsto V^{-1} x$, $x \mapsto V x$, $x \mapsto W^{-1} x$ and $x \mapsto W x$ in exact
+arithmetic. Then for every $b \in \mathbb{R}^{n_1 n_2}$, the vector $u$ that Algorithm 4.8.2
+returns in exact arithmetic satisfies $A u = b$.
+
+The algorithm computes $U = V \tilde U W^T$ with $\tilde u_{ij} = \tilde b_{ij} / (\lambda_i +
+\mu_j)$ and $\tilde B = V^{-1} B W^{-T}$, which is the solution of
+`FastPoisson.kroneckerSum_mulVec_vec_eq_iff`. -/
 theorem algorithm_4_8_2_spec {n₁ n₂ : ℕ} {A₁ V : Matrix (Fin n₁) (Fin n₁) ℝ}
     {A₂ W : Matrix (Fin n₂) (Fin n₂) ℝ} (hV : IsUnit V) (hW : IsUnit W) {ν : Fin n₁ → ℝ}
     {μ : Fin n₂ → ℝ} (hA₁ : V⁻¹ * A₁ * V = diagonal ν) (hA₂ : W⁻¹ * A₂ * W = diagonal μ)
@@ -586,9 +819,16 @@ theorem algorithm_4_8_2_spec {n₁ n₂ : ℕ} {A₁ V : Matrix (Fin n₁) (Fin 
   rw [hrun, (FastPoisson.kroneckerSum_mulVec_vec_eq_iff hV hW hA₁ hA₂ hνμ _ B).2 rfl]
   rfl
 
-/-- **§4.8.4**: for `A₁ = 𝒯^{(DD)}_{n₁}`, `A₂ = 𝒯^{(DD)}_{n₂}`, "`A` is symmetric positive definite
-with bandwidth `n₁ + 1`": lower and upper bandwidth `n₁` in the positional layout `Fin (n₂ n₁)`
-(the book's bandwidth counts the diagonal). -/
+/-- **Section 4.8.4** of [golub2013matrix]. Let $A_1 = \mathcal{T}^{(DD)}_{n_1}$,
+$A_2 = \mathcal{T}^{(DD)}_{n_2}$ and $A = I_{n_2} \otimes A_1 + A_2 \otimes I_{n_1}$. Then "$A$
+is symmetric positive definite with bandwidth $n_1 + 1$": $A$ is positive definite, and with the
+unknowns numbered as in $\operatorname{vec}$, $A$ has lower bandwidth $n_1$ and upper bandwidth
+$n_1$.
+
+The source's bandwidth $n_1 + 1$ counts the diagonal. The Lean statement uses
+`Matrix.HasLowerBandwidth` and `Matrix.HasUpperBandwidth`, under which the entry $(p, q)$
+vanishes for $|p - q| > n_1$. The positional numbering reindexes $A$ by `finProdFinEquiv` from
+`Fin n₂ × Fin n₁` to `Fin (n₂ * n₁)`, which puts the pair $(j, i)$ at position $i + n_1 j$. -/
 theorem poisson2D_posDef_bandwidth (n₁ n₂ : ℕ) :
     ((1 : Matrix (Fin n₂) (Fin n₂) ℝ) ⊗ₖ symmTridiagonalToeplitz n₁ (-1) 2
       + symmTridiagonalToeplitz n₂ (-1) 2 ⊗ₖ (1 : Matrix (Fin n₁) (Fin n₁) ℝ)).PosDef ∧
@@ -605,7 +845,12 @@ theorem poisson2D_posDef_bandwidth (n₁ n₂ : ℕ) :
 
 /-! ### §4.8.5 The inverse of the DST and DCT matrices -/
 
-/-- **§4.8.5**: `V = DST(m − 1) ⇒ V⁻¹ = (2/m) DST(m − 1)` (`m ≥ 1`), from `2 S_{m−1}² = m I`. -/
+/-- **Section 4.8.5** of [golub2013matrix], the inverse of the DST matrix. Let $m \ge 1$ and
+$V = \mathrm{DST}(m-1)$. Then $$V^{-1} = \frac{2}{m} \mathrm{DST}(m-1).$$
+
+The identity follows from $2 S_{m-1}^2 = m I$ (`GolubVanLoan.Chapter04.dst_block_identities`).
+The matrix $\mathrm{DST}(m-1)$ is `Matrix.dst1 (m - 1)`, with entries $\sin(k j \pi / m)$ for
+$k, j = 1, \dots, m-1$. -/
 theorem dst_inv {m : ℕ} (hm : 1 ≤ m) : (dst1 (m - 1))⁻¹ = (2 / m : ℝ) • dst1 (m - 1) := by
   have hm' : (m : ℝ) ≠ 0 := by positivity
   have hcast : ((m - 1 : ℕ) : ℝ) + 1 = m := by rw [Nat.cast_sub hm]; ring
@@ -613,18 +858,25 @@ theorem dst_inv {m : ℕ} (hm : 1 ≤ m) : (dst1 (m - 1))⁻¹ = (2 / m : ℝ) �
   rw [Matrix.smul_mul, dst1_mul_self, hcast, smul_smul, div_mul_div_comm, mul_comm (2 : ℝ),
     div_self (mul_ne_zero hm' two_ne_zero), one_smul]
 
-/-- **§4.8.5**: `V = DCT(m + 1) ⇒ V⁻¹ = (2/m) DCT(m + 1)` (`m ≥ 1`). -/
+/-- **Section 4.8.5** of [golub2013matrix], the inverse of the DCT matrix. Let $m \ge 1$ and
+$V = \mathrm{DCT}(m+1)$. Then $$V^{-1} = \frac{2}{m} \mathrm{DCT}(m+1).$$
+
+The matrix $\mathrm{DCT}(m+1)$ is `Matrix.dct1 m`, with entries $c_j \cos(k j \pi / m)$ for
+$k, j = 0, \dots, m$, where $c_0 = c_m = 1/2$ and $c_j = 1$ otherwise. -/
 theorem dct_inv {m : ℕ} (hm : 0 < m) : (dct1 m)⁻¹ = (2 / m : ℝ) • dct1 m := by
   have hm' : (m : ℝ) ≠ 0 := by positivity
   refine inv_eq_left_inv ?_
   rw [Matrix.smul_mul, dct1_mul_self hm, smul_smul, div_mul_div_comm, mul_comm (2 : ℝ),
     div_self (mul_ne_zero hm' two_ne_zero), one_smul]
 
-/-- The book's real vector `v = (−1, 1, …, (−1)^{m−1})` of Theorem 1.4.1 and §4.8.5, 0-based
-`v_j = (−1)^{j+1}` (chapter 1's `altSignVec m` is its complex form). -/
+/-- **Section 4.8.5** of [golub2013matrix]. The real vector $v = (-1, 1, \dots, (-1)^{m-1})^T \in
+\mathbb{R}^{m-1}$ of Theorem 1.4.1 and §4.8.5, with $v_j = (-1)^j$ for $j = 1, \dots, m-1$.
+
+In 0-based form, entry $j$ is $(-1)^{j+1}$. The complex form of $v$ is
+`GolubVanLoan.Chapter01.altSignVec`. -/
 def altSignVecReal (m : ℕ) : Fin (m - 1) → ℝ := fun j => (-1) ^ ((j : ℕ) + 1)
 
-/-- Real parts of the products of `x ± i y` met in the block identities. -/
+/-- For real $x$, $y$, $x'$ and $y'$, the real part of $(x + iy)(x' - iy')$ is $x x' + y y'$. -/
 private theorem re_add_mul_sub (x y x' y' : ℝ) :
     (((x : ℂ) + I * y) * ((x' : ℂ) - I * y')).re = x * x' + y * y' := by
   simp [Complex.mul_re]
@@ -664,8 +916,8 @@ section DSTBlocks
 
 variable (m : ℕ) [NeZero m]
 
-/-- A sum over `Fin (2m)` split along the index blocks `0`, `1 : m − 1`, `m`, `m + 1 : 2m − 1` of
-Theorem 1.4.1. -/
+/-- A sum over the indices $0, \dots, 2m-1$ splits along the index blocks $\{0\}$,
+$\{1, \dots, m-1\}$, $\{m\}$ and $\{m+1, \dots, 2m-1\}$ of Theorem 1.4.1. -/
 private theorem sum_dftBlocks {R : Type*} [AddCommMonoid R] (f : Fin (2 * m) → R) :
     ∑ k, f k = f (dftBlockIdx₀ m 0) + ∑ t, f (dftBlockIdx₁ m t) + f (dftBlockIdx₂ m 0) +
       ∑ t, f (dftBlockIdx₃ m t) := by
@@ -701,8 +953,8 @@ private theorem sum_dftBlocks {R : Type*} [AddCommMonoid R] (f : Fin (2 * m) →
     simp only [dftBlockIdx₃, Fin.val_mk]
     omega
 
-/-- Row `a` of the second block row of `F̄_{2m} F_{2m} = 2m I`, expanded along the index blocks
-(the last block reindexed by `t ↦ rev t`). -/
+/-- Row $a$ of the second block row of $\bar F_{2m} F_{2m} = 2m I$, expanded along the four index
+blocks, with the last block in reverse order. -/
 private theorem fourierMatrix_row₁_sum (a : Fin (m - 1)) (k : Fin (2 * m)) :
     star (fourierMatrix (2 * m) (dftBlockIdx₁ m a) (dftBlockIdx₀ m 0)) *
         fourierMatrix (2 * m) (dftBlockIdx₀ m 0) k +
@@ -728,11 +980,20 @@ private theorem fourierMatrix_row₁_sum (a : Fin (m - 1)) (k : Fin (2 * m)) :
   simpa only [map_apply, Matrix.smul_apply, Matrix.one_apply, smul_eq_mul, mul_ite, mul_one,
     mul_zero] using h
 
-/-- **§4.8.5, the block identities.** With `C = C_{m−1}`, `S = S_{m−1}`, `e = (1, …, 1)` and
-`v = (−1, 1, …, (−1)^{m−1})` as in Theorem 1.4.1, comparing the `(2,1)`, `(2,2)`, `(2,3)` and
-`(2,4)` blocks of `2m I = F̄_{2m} F_{2m}` gives `0 = 2Ce + e + v`,
-`2m I = 2C² + 2S² + eeᵀ + vvᵀ`, `0 = 2Cv + e + (−1)^m v`, `0 = 2C² − 2S² + eeᵀ + vvᵀ`; "it follows
-that `2S² = m I` and `2C² = m I − eeᵀ − vvᵀ`". -/
+/-- **Section 4.8.5** of [golub2013matrix], the block identities. Let $m \ge 1$, let $C = C_{m-1}$
+and $S = S_{m-1}$ be the matrices of (1.4.6), and let $e = (1, \dots, 1)^T \in \mathbb{R}^{m-1}$
+and $v = (-1, 1, \dots, (-1)^{m-1})^T \in \mathbb{R}^{m-1}$, as in Theorem 1.4.1. Then
+$$\begin{aligned}
+  0 &= 2 C e + e + v, & 2m I &= 2 C^2 + 2 S^2 + e e^T + v v^T, \\
+  0 &= 2 C v + e + (-1)^m v, & 0 &= 2 C^2 - 2 S^2 + e e^T + v v^T,
+\end{aligned}$$
+and "it follows that $2 S^2 = m I$ and $2 C^2 = m I - e e^T - v v^T$".
+
+The source obtains the first four identities by comparing the $(2,1)$, $(2,2)$, $(2,3)$ and
+$(2,4)$ blocks of $2m I = \bar F_{2m} F_{2m}$. The matrix $C$ is `Matrix.cosMatrix (m - 1)`,
+with entries $\cos(k j \pi / m)$, and $S$ is `Matrix.dst1 (m - 1)`, with entries
+$\sin(k j \pi / m)$, for $k, j = 1, \dots, m-1$. The vector $v$ is
+`GolubVanLoan.Chapter04.altSignVecReal m`. -/
 theorem dst_block_identities :
     (2 : ℝ) • (cosMatrix (m - 1) *ᵥ fun _ => 1) + (fun _ => 1) + altSignVecReal m = 0 ∧
     (2 : ℝ) • (cosMatrix (m - 1) * cosMatrix (m - 1)) + (2 : ℝ) • (dst1 (m - 1) * dst1 (m - 1)) +
@@ -888,14 +1149,17 @@ end DSTBlocks
 
 /-! ### §4.8.6 Four fast eigenvalue decompositions -/
 
-/-- `2 − 2 cos θ = 4 sin² (θ / 2)` (`Real.two_sub_two_mul_cos`), in the form the Toeplitz lemmas
-produce. -/
+/-- The identity $2 - 2 \cos\theta = 4 \sin^2(\theta/2)$, in the form $2 + 2 \cdot (-1) \cos\theta$
+that the Toeplitz lemmas produce. -/
 private theorem two_sub_two_mul_cos' (θ : ℝ) :
     2 + 2 * (-1) * Real.cos θ = 4 * Real.sin (θ / 2) ^ 2 := by
   rw [← Real.two_sub_two_mul_cos]
   ring
 
-/-- **(4.8.16)**: `𝒯^{(DD)}_n s(θ) = λ s(θ) + s_{n+1} e_n`, `λ = 4 sin²(θ/2)`. -/
+/-- **Equation (4.8.16)** of [golub2013matrix]. Let $n \ge 1$, let $\theta$ be real, and let
+$\lambda = 4 \sin^2(\theta/2)$. Then $$\mathcal{T}^{(DD)}_n s(\theta) = \lambda s(\theta) +
+s_{n+1} e_n,$$ where $s(\theta) = (s_1, \dots, s_n)^T$ with $s_k = \sin(k\theta)$ is the sine
+vector of (4.8.15). -/
 theorem equation_4_8_16 {n : ℕ} (hn : 0 < n) (θ : ℝ) :
     symmTridiagonalToeplitz n (-1) 2 *ᵥ sinAngleVec n θ =
       (4 * Real.sin (θ / 2) ^ 2) • sinAngleVec n θ +
@@ -903,7 +1167,10 @@ theorem equation_4_8_16 {n : ℕ} (hn : 0 < n) (θ : ℝ) :
   rw [symmTridiagonalToeplitz_mulVec_sinAngleVec (-1) 2 hn, two_sub_two_mul_cos', neg_one_mul,
     neg_smul, sub_neg_eq_add]
 
-/-- **(4.8.17)**: `𝒯^{(DD)}_n c(θ) = λ c(θ) + c_1 e_1 + c_n e_n` (`2 ≤ n`). -/
+/-- **Equation (4.8.17)** of [golub2013matrix]. Let $n \ge 2$, let $\theta$ be real, and let
+$\lambda = 4 \sin^2(\theta/2)$. Then $$\mathcal{T}^{(DD)}_n c(\theta) = \lambda c(\theta) + c_1
+e_1 + c_n e_n,$$ where $c(\theta) = (c_0, \dots, c_{n-1})^T$ with $c_k = \cos(k\theta)$ is the
+cosine vector of (4.8.15). -/
 theorem equation_4_8_17 {n : ℕ} (hn : 2 ≤ n) (θ : ℝ) :
     symmTridiagonalToeplitz n (-1) 2 *ᵥ cosAngleVec n θ =
       (4 * Real.sin (θ / 2) ^ 2) • cosAngleVec n θ +
@@ -912,7 +1179,10 @@ theorem equation_4_8_17 {n : ℕ} (hn : 2 ≤ n) (θ : ℝ) :
   rw [symmTridiagonalToeplitz_mulVec_cosAngleVec (-1) 2 hn, two_sub_two_mul_cos', neg_one_mul,
     neg_one_mul, neg_smul, neg_smul, sub_neg_eq_add, sub_neg_eq_add]
 
-/-- **(4.8.18)**: `𝒯^{(DN)}_n s(θ) = λ s(θ) + (s_{n+1} − s_{n−1}) e_n` (`2 ≤ n`). -/
+/-- **Equation (4.8.18)** of [golub2013matrix]. Let $n \ge 2$, let $\theta$ be real, and let
+$\lambda = 4 \sin^2(\theta/2)$. Then, with the sine vector $s(\theta)$ of (4.8.15),
+$$\mathcal{T}^{(DN)}_n s(\theta) = \lambda s(\theta) + (s_{n+1} - s_{n-1}) e_n.$$
+-/
 theorem equation_4_8_18 {n : ℕ} (hn : 2 ≤ n) (θ : ℝ) :
     secondDifferenceDN n *ᵥ sinAngleVec n θ =
       (4 * Real.sin (θ / 2) ^ 2) • sinAngleVec n θ +
@@ -920,14 +1190,20 @@ theorem equation_4_8_18 {n : ℕ} (hn : 2 ≤ n) (θ : ℝ) :
           Pi.single (⟨n - 1, by omega⟩ : Fin n) 1 :=
   secondDifferenceDN_mulVec_sinAngleVec hn θ
 
-/-- **(4.8.19)**: `𝒯^{(NN)}_n c(θ) = λ c(θ) + (c_n − c_{n−2}) e_n` (`2 ≤ n`). -/
+/-- **Equation (4.8.19)** of [golub2013matrix]. Let $n \ge 2$, let $\theta$ be real, and let
+$\lambda = 4 \sin^2(\theta/2)$. Then, with the cosine vector $c(\theta)$ of (4.8.15),
+$$\mathcal{T}^{(NN)}_n c(\theta) = \lambda c(\theta) + (c_n - c_{n-2}) e_n.$$
+-/
 theorem equation_4_8_19 {n : ℕ} (hn : 2 ≤ n) (θ : ℝ) :
     secondDifferenceNN n *ᵥ cosAngleVec n θ =
       (4 * Real.sin (θ / 2) ^ 2) • cosAngleVec n θ +
         (Real.cos (n * θ) - Real.cos ((n - 2) * θ)) • Pi.single (⟨n - 1, by omega⟩ : Fin n) 1 :=
   secondDifferenceNN_mulVec_cosAngleVec hn θ
 
-/-- **(4.8.20)**: `𝒯^{(P)}_n s(θ) = λ s(θ) − s_n e_1 + (s_{n+1} − s_1) e_n` (`2 ≤ n`). -/
+/-- **Equation (4.8.20)** of [golub2013matrix]. Let $n \ge 2$, let $\theta$ be real, and let
+$\lambda = 4 \sin^2(\theta/2)$. Then, with the sine vector $s(\theta)$ of (4.8.15),
+$$\mathcal{T}^{(P)}_n s(\theta) = \lambda s(\theta) - s_n e_1 + (s_{n+1} - s_1) e_n.$$
+-/
 theorem equation_4_8_20 {n : ℕ} (hn : 2 ≤ n) (θ : ℝ) :
     secondDifferencePeriodic n *ᵥ sinAngleVec n θ =
       (4 * Real.sin (θ / 2) ^ 2) • sinAngleVec n θ -
@@ -935,7 +1211,10 @@ theorem equation_4_8_20 {n : ℕ} (hn : 2 ≤ n) (θ : ℝ) :
         (Real.sin ((n + 1) * θ) - Real.sin θ) • Pi.single (⟨n - 1, by omega⟩ : Fin n) 1 :=
   secondDifferencePeriodic_mulVec_sinAngleVec hn θ
 
-/-- **(4.8.21)**: `𝒯^{(P)}_n c(θ) = λ c(θ) + (c_1 − c_{n−1}) e_1 + (c_n − 1) e_n` (`2 ≤ n`). -/
+/-- **Equation (4.8.21)** of [golub2013matrix]. Let $n \ge 2$, let $\theta$ be real, and let
+$\lambda = 4 \sin^2(\theta/2)$. Then, with the cosine vector $c(\theta)$ of (4.8.15),
+$$\mathcal{T}^{(P)}_n c(\theta) = \lambda c(\theta) + (c_1 - c_{n-1}) e_1 + (c_n - 1) e_n.$$
+-/
 theorem equation_4_8_21 {n : ℕ} (hn : 2 ≤ n) (θ : ℝ) :
     secondDifferencePeriodic n *ᵥ cosAngleVec n θ =
       (4 * Real.sin (θ / 2) ^ 2) • cosAngleVec n θ +
@@ -943,8 +1222,21 @@ theorem equation_4_8_21 {n : ℕ} (hn : 2 ≤ n) (θ : ℝ) :
         (Real.cos (n * θ) - 1) • Pi.single (⟨n - 1, by omega⟩ : Fin n) 1 :=
   secondDifferencePeriodic_mulVec_cosAngleVec hn θ
 
-/-- **Lemma 4.8.3.** For the real `n`-vectors `s(θ)`, `c(θ)` of (4.8.15), `s_k = sin(kθ)`,
-`c_k = cos(kθ)`, and `λ = 4 sin²(θ/2)`, the six identities (4.8.16)–(4.8.21) hold (`2 ≤ n`). -/
+/-- **Lemma 4.8.3** of [golub2013matrix]. Let $n \ge 2$, let $\theta$ be real, and let
+$\lambda = 4 \sin^2(\theta/2)$. Let $s(\theta) = (s_1, \dots, s_n)^T$ and
+$c(\theta) = (c_0, \dots, c_{n-1})^T$ be the real vectors of (4.8.15), with
+$s_k = \sin(k\theta)$ and $c_k = \cos(k\theta)$. Then the six identities (4.8.16)–(4.8.21) hold:
+$$\begin{aligned}
+  \mathcal{T}^{(DD)}_n s(\theta) &= \lambda s(\theta) + s_{n+1} e_n, \\
+  \mathcal{T}^{(DD)}_n c(\theta) &= \lambda c(\theta) + c_1 e_1 + c_n e_n, \\
+  \mathcal{T}^{(DN)}_n s(\theta) &= \lambda s(\theta) + (s_{n+1} - s_{n-1}) e_n, \\
+  \mathcal{T}^{(NN)}_n c(\theta) &= \lambda c(\theta) + (c_n - c_{n-2}) e_n, \\
+  \mathcal{T}^{(P)}_n s(\theta) &= \lambda s(\theta) - s_n e_1 + (s_{n+1} - s_1) e_n, \\
+  \mathcal{T}^{(P)}_n c(\theta) &= \lambda c(\theta) + (c_1 - c_{n-1}) e_1 + (c_n - 1) e_n.
+\end{aligned}$$
+
+The vectors $s(\theta)$ and $c(\theta)$ are `Matrix.sinAngleVec n θ` and
+`Matrix.cosAngleVec n θ`. -/
 theorem lemma_4_8_3 {n : ℕ} (hn : 2 ≤ n) (θ : ℝ) :
     symmTridiagonalToeplitz n (-1) 2 *ᵥ sinAngleVec n θ =
         (4 * Real.sin (θ / 2) ^ 2) • sinAngleVec n θ +
@@ -971,22 +1263,29 @@ theorem lemma_4_8_3 {n : ℕ} (hn : 2 ≤ n) (θ : ℝ) :
   ⟨equation_4_8_16 (by omega) θ, equation_4_8_17 hn θ, equation_4_8_18 hn θ,
     equation_4_8_19 hn θ, equation_4_8_20 hn θ, equation_4_8_21 hn θ⟩
 
-/-- A nonsingular `V` whose columns are eigenvectors of `A` diagonalizes it. -/
+/-- If $V$ is nonsingular and $A V = V \operatorname{diag}(\gamma)$, then
+$V^{-1} A V = \operatorname{diag}(\gamma)$. -/
 private theorem inv_mul_mul_eq_diagonal {n : ℕ} {A V : Matrix (Fin n) (Fin n) ℝ} {γ : Fin n → ℝ}
     (hV : IsUnit V) (hAV : A * V = V * diagonal γ) : V⁻¹ * A * V = diagonal γ := by
   rw [Matrix.mul_assoc, hAV, ← Matrix.mul_assoc,
     nonsing_inv_mul _ ((isUnit_iff_isUnit_det V).1 hV), Matrix.one_mul]
 
-/-- A matrix whose square is a nonzero multiple of the identity is nonsingular. -/
+/-- A real matrix $V$ with $V^2 = c I$ for some $c \neq 0$ is nonsingular. -/
 private theorem isUnit_of_mul_self_eq_smul {n : ℕ} {V : Matrix (Fin n) (Fin n) ℝ} {c : ℝ}
     (hc : c ≠ 0) (h : V * V = c • 1) : IsUnit V := by
   refine (isUnit_iff_isUnit_det _).2 (isUnit_det_of_left_inverse (B := c⁻¹ • V) ?_)
   rw [Matrix.smul_mul, h, smul_smul, inv_mul_cancel₀ hc, one_smul]
 
-/-- **§4.8.6, the Dirichlet–Dirichlet matrix.** For `θ_j = jπ/(n + 1)` the residual `s_{n+1}`
-vanishes and `𝒯^{(DD)}_n s(θ_j) = 4 sin²(θ_j/2) s(θ_j)`; the eigenvector matrix
-`[V^{(DD)}]_{kj} = sin(kjπ/(n+1))` is `DST(n)`, nonsingular, and
-`V⁻¹ 𝒯^{(DD)}_n V = diag(4 sin²(jπ/(2(n+1))))` (0-based `j + 1` for the book's `j`). -/
+/-- **Section 4.8.6** of [golub2013matrix], the Dirichlet–Dirichlet matrix. Let $n \ge 0$ and let
+$V = V^{(DD)} = \mathrm{DST}(n)$, with entries $[V]_{kj} = \sin(k j \pi / (n+1))$ for
+$k, j = 1, \dots, n$. Then each column of $V$ is an eigenvector of $\mathcal{T}^{(DD)}_n$,
+$$\mathcal{T}^{(DD)}_n V(:, j) = 4 \sin^2\Bigl(\frac{j \pi}{2(n+1)}\Bigr) V(:, j), \qquad j = 1,
+\dots, n,$$ the matrix $V$ is nonsingular, and $$V^{-1} \mathcal{T}^{(DD)}_n V =
+\operatorname{diag}\Bigl(4 \sin^2\Bigl(\frac{j \pi}{2(n+1)}\Bigr)\Bigr)_{j=1}^{n}.$$
+
+Column $j$ of $V$ is $s(\theta_j)$ with $\theta_j = j\pi/(n+1)$, and at $\theta_j$ the residual
+$s_{n+1}$ of (4.8.16) vanishes. The matrix $V$ is `Matrix.dst1 n`, and the 0-based column `j` is
+the source's column $j + 1$. -/
 theorem dd_eigen (n : ℕ) :
     (∀ j : Fin n, symmTridiagonalToeplitz n (-1) 2 *ᵥ (fun k => dst1 n k j) =
         (4 * Real.sin (((j : ℕ) + 1) * π / (2 * (n + 1))) ^ 2) • fun k => dst1 n k j) ∧
@@ -1003,12 +1302,18 @@ theorem dd_eigen (n : ℕ) :
     isUnit_of_mul_self_eq_smul (by positivity) (dst1_mul_self n)
   exact ⟨hcol, hu, inv_mul_mul_eq_diagonal hu (mul_eq_mul_diagonal_of_forall_mulVec_col hcol)⟩
 
-/-- **§4.8.6, the Dirichlet–Neumann matrix.** For `θ_j = (2j − 1)π/(2n)` (0-based `(2j + 1)π/(2n)`)
-the residual `s_{n+1} − s_{n−1} = 2 s_1 c_n` vanishes and `𝒯^{(DN)}_n s(θ_j) = 4 sin²(θ_j/2)
-s(θ_j)`;
-the eigenvector matrix `[V^{(DN)}]_{kj} = sin(k(2j − 1)π/(2n))` is `DST2(n)`, nonsingular, and
-`V⁻¹ 𝒯^{(DN)}_n V = diag(4 sin²((2j − 1)π/(4n)))` (`2 ≤ n`; the book's pointer "(1.4.13)" is
-(1.4.12)). -/
+/-- **Section 4.8.6** of [golub2013matrix], the Dirichlet–Neumann matrix. Let $n \ge 2$ and
+$\theta_j = (2j - 1)\pi/(2n)$ for $j = 1, \dots, n$. Then $$\mathcal{T}^{(DN)}_n s(\theta_j) = 4
+\sin^2(\theta_j / 2) s(\theta_j),$$ the matrix $V = V^{(DN)}$ with entries
+$[V]_{kj} = \sin(k (2j - 1) \pi / (2n))$ is $\mathrm{DST2}(n)$, so that its column $j$ is
+$s(\theta_j)$, the matrix $V$ is nonsingular, and $$V^{-1} \mathcal{T}^{(DN)}_n V =
+\operatorname{diag}\Bigl(4 \sin^2\Bigl(\frac{(2j - 1) \pi}{4n}\Bigr)\Bigr)_{j=1}^{n}.$$
+
+**Typo.** The source cites "(1.4.13)" for $\mathrm{DST2}(n)$, but there is no such equation;
+(1.4.12) is meant.
+
+At $\theta_j$ the residual $s_{n+1} - s_{n-1} = 2 s_1 c_n$ of (4.8.18) vanishes. The matrix $V$
+is `Matrix.dst2 n`. In 0-based form, $\theta_j = (2j + 1)\pi/(2n)$ for $j = 0, \dots, n-1$. -/
 theorem dn_eigen {n : ℕ} (hn : 2 ≤ n) :
     (∀ j : Fin n, secondDifferenceDN n *ᵥ sinAngleVec n ((2 * (j : ℕ) + 1) * π / (2 * n)) =
         (4 * Real.sin ((2 * (j : ℕ) + 1) * π / (2 * n) / 2) ^ 2) •
@@ -1023,13 +1328,19 @@ theorem dn_eigen {n : ℕ} (hn : 2 ≤ n) :
   rw [dst2_col_eq_sinAngleVec] at h
   rw [h, div_div, show (2 * (n : ℝ) * 2) = 4 * n by ring]
 
-/-- **§4.8.6, the Neumann–Neumann matrix** (`n = m + 1`). For `θ_j = (j − 1)π/(n − 1)` (0-based
-`jπ/m`) the residual `c_n − c_{n−2} = −2 s_1 s_{n−1}` vanishes and
-`𝒯^{(NN)}_n c(θ_j) = 4 sin²(θ_j/2) c(θ_j)`; the eigenvector matrix
-`[V^{(NN)}]_{kj} = cos((k − 1)(j − 1)π/(n − 1))` is `DCT(n) · diag(2, I_{n−2}, 2)`, nonsingular, and
-`V⁻¹ 𝒯^{(NN)}_n V = diag(4 sin²((j − 1)π/(2(n − 1))))`. (The book twice writes `𝒯^{(DN)}`,
-`V^{(DN)}`
-for `𝒯^{(NN)}`, `V^{(NN)}` in this paragraph.) -/
+/-- **Section 4.8.6** of [golub2013matrix], the Neumann–Neumann matrix. Let $m \ge 1$, $n = m + 1$,
+and $\theta_j = (j - 1)\pi/(n - 1)$ for $j = 1, \dots, n$. Then $$\mathcal{T}^{(NN)}_n
+c(\theta_j) = 4 \sin^2(\theta_j / 2) c(\theta_j),$$ the matrix $V = V^{(NN)}$ with entries
+$[V]_{kj} = \cos((k - 1)(j - 1) \pi / (n - 1))$ is $\mathrm{DCT}(n) \operatorname{diag}(2,
+I_{n-2}, 2)$, the matrix $V$ is nonsingular, and $$V^{-1} \mathcal{T}^{(NN)}_n V =
+\operatorname{diag}\Bigl(4 \sin^2\Bigl(\frac{(j - 1) \pi}{2(n - 1)}\Bigr)\Bigr)_{j=1}^{n}.$$
+
+**Typo.** In this paragraph the source twice writes $\mathcal{T}^{(DN)}$ and $V^{(DN)}$ for
+$\mathcal{T}^{(NN)}$ and $V^{(NN)}$.
+
+At $\theta_j$ the residual $c_n - c_{n-2} = -2 s_1 s_{n-1}$ of (4.8.19) vanishes. The matrix
+$\mathrm{DCT}(n)$ is `Matrix.dct1 m`. In 0-based form, $\theta_j = j\pi/m$ for
+$j = 0, \dots, m$. -/
 theorem nn_eigen {m : ℕ} (hm : 0 < m) :
     (∀ j : Fin (m + 1), secondDifferenceNN (m + 1) *ᵥ cosAngleVec (m + 1) ((j : ℕ) * π / m) =
         (4 * Real.sin ((j : ℕ) * π / (2 * m)) ^ 2) • cosAngleVec (m + 1) ((j : ℕ) * π / m)) ∧
@@ -1054,11 +1365,17 @@ theorem nn_eigen {m : ℕ} (hm : 0 < m) :
   congr 1
   ring
 
-/-- **§4.8.6, the periodic matrix** (`n ≥ 3`). `𝒯^{(P)}_n` is the circulant of `(2, −1, 0, …, 0,
-−1)`,
-so by Theorem 4.8.2 `F_n⁻¹ 𝒯^{(P)}_n F_n = diag(λ)` with `λ = F̄_n (2, −1, 0, …, 0, −1)ᵀ`, and "it
-can
-be shown that" `λ_j = 4 sin²((j − 1)π/n)` (0-based `4 sin²(jπ/n)`). -/
+/-- **Section 4.8.6** of [golub2013matrix], the periodic matrix. Let $n \ge 3$ and $z = (2, -1, 0,
+\dots, 0, -1)^T \in \mathbb{R}^n$. Then $\mathcal{T}^{(P)}_n = C(z)$, so that by Theorem 4.8.2
+$$F_n^{-1} \mathcal{T}^{(P)}_n F_n = \operatorname{diag}(\lambda), \qquad \lambda = \bar F_n
+z,$$ and "it can be shown that" $\lambda_j = 4 \sin^2((j - 1)\pi/n)$ for $j = 1, \dots, n$.
+
+**Reading.** The source says that $\mathcal{T}^{(P)}_n$ is circulant, and the declaration reads
+this for $n \ge 3$. For $n = 2$ the two entries $-1$ of $z$ fall on the same position, and
+$\mathcal{T}^{(P)}_2$ is the circulant matrix of $(2, -2)^T$, not of $(2, -1)^T$.
+
+The real matrix $\mathcal{T}^{(P)}_n$ enters the complex products entrywise. In 0-based form the
+eigenvalues are $4 \sin^2(j\pi/n)$ for $j = 0, \dots, n-1$. -/
 theorem periodic_eigen {n : ℕ} (hn : 3 ≤ n) :
     secondDifferencePeriodic n =
         circulant (fun k : Fin n => if (k : ℕ) = 0 then 2 else
@@ -1075,8 +1392,11 @@ theorem periodic_eigen {n : ℕ} (hn : 3 ≤ n) :
   · rw [fourierMatrix]
     exact inv_conjTranspose_dft_mul_secondDifferencePeriodic_mul_conjTranspose_dft hn
 
-/-- **(4.8.22)**: the eigenvalues of `𝒯^{(P)}_n` satisfy `λ_j = λ_{n+2−j}` for `j = 2:n`
-(0-based: the `j`-th and `(n − j)`-th diagonal entries of `F_n⁻¹ 𝒯^{(P)}_n F_n` agree, `0 < j`). -/
+/-- **Equation (4.8.22)** of [golub2013matrix]. Let $n \ge 3$, and let $\lambda_1, \dots, \lambda_n$
+be the diagonal entries of $F_n^{-1} \mathcal{T}^{(P)}_n F_n$. Then $$\lambda_j =
+\lambda_{n+2-j}, \qquad j = 2, \dots, n.$$
+
+In 0-based form, the diagonal entries $j$ and $n - j$ agree for $0 < j < n$. -/
 theorem equation_4_8_22 {n : ℕ} (hn : 3 ≤ n) (j : Fin n) (hj : 0 < (j : ℕ)) :
     ((fourierMatrix n)⁻¹ * (secondDifferencePeriodic n).map (fun x : ℝ => (x : ℂ)) *
         fourierMatrix n) j j =
@@ -1086,17 +1406,25 @@ theorem equation_4_8_22 {n : ℕ} (hn : 3 ≤ n) (j : Fin n) (hj : 0 < (j : ℕ)
   congr 1
   exact secondDifferencePeriodic_eigenvalue_symm j.isLt.le
 
-/-- **(4.8.23)**: `F̄_n(:, j) = F_n(:, n + 2 − j)` for `j = 2:n` (0-based `F̄_n(:, j) = F_n(:, n −
-j)`,
-`0 < j`), since `ω_n^{n−k} = ω̄_n^k`. -/
+/-- **Equation (4.8.23)** of [golub2013matrix]. For $j = 2, \dots, n$, $$\bar F_n(:, j) = F_n(:, n +
+2 - j),$$ because $\omega_n^{n-k} = \bar\omega_n^k$.
+
+In 0-based form, $\bar F_n(:, j) = F_n(:, n - j)$ for $0 < j < n$. -/
 theorem equation_4_8_23 {n : ℕ} (i j : Fin n) (hj : 0 < (j : ℕ)) :
     (fourierMatrix n).map star i j = fourierMatrix n i ⟨n - j, by omega⟩ := by
   rw [map_star_fourierMatrix, fourierMatrix]
   exact conj_dft_col_eq i j hj
 
-/-- **(4.8.24)–(4.8.25)** (`n ≥ 3`): with `m = ⌈(n + 1)/2⌉` and
-`V^{(P)}_n = [Re(F_n(:, 1:m)) | Im(F_n(:, m+1:n))]` (`Matrix.realDftCol`, 0-based columns `j < m`
-real parts), `𝒯^{(P)}_n V^{(P)}_n(:, j) = λ_j V^{(P)}_n(:, j)` for every `j`. -/
+/-- **Equations (4.8.24)–(4.8.25)** of [golub2013matrix]. Let $n \ge 3$ and
+$m = \lceil (n + 1)/2 \rceil$, and let $$V^{(P)}_n = \bigl[\operatorname{Re}(F_n(:, 1{:}m)) \mid
+\operatorname{Im}(F_n(:, m+1{:}n))\bigr]$$ as in (4.8.24). Then every column of $V^{(P)}_n$ is
+an eigenvector of $\mathcal{T}^{(P)}_n$: $$\mathcal{T}^{(P)}_n V^{(P)}_n(:, j) = \lambda_j
+V^{(P)}_n(:, j), \qquad \lambda_j = 4 \sin^2\Bigl(\frac{(j - 1)\pi}{n}\Bigr), \qquad j = 1,
+\dots, n.$$
+
+Column $j$ of $V^{(P)}_n$, 0-based, is `Matrix.realDftCol n j`. The first part of the statement
+says that it is the real part of $F_n(:, j)$ for $j < m = (n + 2)/2$ (integer division) and the
+imaginary part otherwise. In 0-based form the eigenvalue is $4 \sin^2(j\pi/n)$. -/
 theorem equation_4_8_25 {n : ℕ} (hn : 3 ≤ n) (j : Fin n) :
     (∀ k : Fin n, realDftCol n j k = if (j : ℕ) < (n + 2) / 2 then (fourierMatrix n k j).re
       else (fourierMatrix n k j).im) ∧
@@ -1109,8 +1437,10 @@ theorem equation_4_8_25 {n : ℕ} (hn : 3 ≤ n) (j : Fin n) :
 
 /-! ### §4.8.7 A note on symmetry and boundary conditions -/
 
-/-- **§4.8.7**: "if `D = diag(I_{n−1}, √2)`, then `D⁻¹ 𝒯^{(DN)}_n D` is symmetric"
-(for every `n`). -/
+/-- **Section 4.8.7** of [golub2013matrix]. Let $D = \operatorname{diag}(I_{n-1}, \sqrt{2}) \in
+\mathbb{R}^{n \times n}$. Then "$D^{-1} \mathcal{T}^{(DN)}_n D$ is symmetric".
+
+The statement holds for every $n$. -/
 theorem dn_symmetrizable (n : ℕ) :
     ((diagonal fun i : Fin n => if (i : ℕ) + 1 = n then Real.sqrt 2 else 1)⁻¹ *
       secondDifferenceDN n *

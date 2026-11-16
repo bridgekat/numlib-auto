@@ -10,53 +10,110 @@ import Numlib.LinearAlgebra.Matrix.Rank
 import NumlibSurface.GolubVanLoan.Chapter04.Section02
 
 /-!
-# Golub–Van Loan §4.3: banded systems
+# Golub and Van Loan, Section 4.3: Banded systems
 
-Surface file for [golub2013matrix] §4.3: the band preservation of the LU factorization (Theorem
-4.3.1), band Gaussian elimination and band triangular substitution (Algorithms 4.3.1–4.3.3), band
-Gaussian elimination with partial pivoting (Theorem 4.3.2), Hessenberg LU (Algorithm 4.3.4), band
-Cholesky (Algorithm 4.3.5), the symmetric positive definite tridiagonal solver (§4.3.6, Algorithm
-4.3.6), and the rank structure of the inverse of a band matrix (Theorem 4.3.3).
+This module formalizes §4.3 of [golub2013matrix]. A matrix $A \in \mathbb{R}^{n \times n}$ has upper
+bandwidth $q$ if $a_{ij} = 0$ whenever $j > i + q$, and lower bandwidth $p$ if $a_{ij} = 0$ whenever
+$i > j + p$. Theorem 4.3.1 says that the LU factorization preserves the band: $U$ has upper
+bandwidth $q$ and $L$ has lower bandwidth $p$. Theorem 4.3.2 says that with partial pivoting the
+upper bandwidth of $U$ grows to at most $p + q$, and Theorem 4.3.3 bounds the ranks of the
+off-diagonal blocks of $A^{-1}$ by the bandwidths of $A$.
+
+The module defines band Gaussian elimination, band forward substitution and band back substitution
+(Algorithms 4.3.1–4.3.3), Hessenberg LU with partial pivoting (Algorithm 4.3.4), band Cholesky
+(Algorithm 4.3.5) and the solver for symmetric positive definite tridiagonal systems (Algorithm
+4.3.6) as programs, and proves their exact correctness. The proofs specialize
+`Numlib.LinearAlgebra.Matrix.Band`, `Numlib.LinearAlgebra.Matrix.LU`,
+`Numlib.LinearAlgebra.Matrix.LU.Pivoting`, `Numlib.LinearAlgebra.Matrix.Cholesky`,
+`Numlib.LinearAlgebra.Matrix.Rank` and `Numlib.Direct.Substitution`.
+
+## Main definitions
+
+* Algorithm 4.3.1, `GolubVanLoan.Chapter04.algorithm_4_3_1`: band Gaussian elimination.
+* Algorithm 4.3.2, `GolubVanLoan.Chapter04.algorithm_4_3_2`: band forward substitution.
+* Algorithm 4.3.3, `GolubVanLoan.Chapter04.algorithm_4_3_3`: band back substitution.
+* Algorithm 4.3.4, `GolubVanLoan.Chapter04.algorithm_4_3_4`: Hessenberg LU, with its pass
+  `GolubVanLoan.Chapter04.hessenbergLUStep`.
+* Algorithm 4.3.5, `GolubVanLoan.Chapter04.algorithm_4_3_5`: band Cholesky.
+* Algorithm 4.3.6, `GolubVanLoan.Chapter04.algorithm_4_3_6`: the symmetric, tridiagonal, positive
+  definite system solver.
+* §4.3.8, `GolubVanLoan.Chapter04.blockSplit`: the partition of the indices into square diagonal
+  blocks of sizes $k$ and $n - k$.
+
+## Main results
+
+* Theorem 4.3.1, `GolubVanLoan.Chapter04.theorem_4_3_1`: the factors of $A = LU$ inherit the
+  bandwidths of $A$, also stated for each factor in `GolubVanLoan.Chapter04.theorem_4_3_1_a` and
+  `GolubVanLoan.Chapter04.theorem_4_3_1_b`.
+* Algorithm 4.3.1, `GolubVanLoan.Chapter04.algorithm_4_3_1_spec`: the exact run holds the LU
+  factorization.
+* Algorithms 4.3.2 and 4.3.3, `GolubVanLoan.Chapter04.algorithm_4_3_2_spec` and
+  `GolubVanLoan.Chapter04.algorithm_4_3_3_spec`: the exact runs solve the band triangular systems.
+* Theorem 4.3.2, `GolubVanLoan.Chapter04.theorem_4_3_2`: with partial pivoting, $U$ has upper
+  bandwidth $p + q$, and the Gauss vectors have at most $p$ nonzero entries.
+* Algorithm 4.3.4, `GolubVanLoan.Chapter04.algorithm_4_3_4_spec` and
+  `GolubVanLoan.Chapter04.algorithm_4_3_4_spec_abs_le_one`: the exact run is Gaussian elimination
+  with partial pivoting, and its multipliers are bounded by one.
+* Algorithm 4.3.5, `GolubVanLoan.Chapter04.algorithm_4_3_5_spec`: the exact run is the Cholesky
+  factor, which has the lower bandwidth of $A$.
+* §4.3.6, `GolubVanLoan.Chapter04.tridiagonal_ldlt`: the $LDL^T$ factorization of a symmetric
+  tridiagonal matrix.
+* Algorithm 4.3.6, `GolubVanLoan.Chapter04.algorithm_4_3_6_spec`: the exact run solves the
+  tridiagonal system.
+* Theorem 4.3.3, `GolubVanLoan.Chapter04.theorem_4_3_3`: $\operatorname{rank}(X_{21}) \le p$ and
+  $\operatorname{rank}(X_{12}) \le q$ for $X = A^{-1}$.
+* §4.3.8, `GolubVanLoan.Chapter04.rank_inv_offDiag_eq`: $\operatorname{rank}(X_{21}) =
+  \operatorname{rank}(A_{21})$ and $\operatorname{rank}(X_{12}) = \operatorname{rank}(A_{12})$.
 
 ## Conventions
 
-Real square matrices `A : Matrix (Fin n) (Fin n) ℝ`, 0-based. "Upper bandwidth `q`" is
-`Matrix.HasUpperBandwidth A q` and "lower bandwidth `p`" is `Matrix.HasLowerBandwidth A p`
-(`a_ij = 0` whenever `j > i + q`, resp. `i > j + p`, by `Matrix.hasUpperBandwidth_iff_fin`); the
-book's loop bounds `min(k + p, n)` and `max(1, j − q)` are guards on the index in the filtered
-index lists of the programs (algorithm convention 10). "`A(1:k, 1:k)` nonsingular for `k = 1:n−1`"
-is `∀ k, IsUnit (A.strictLeadingPrincipalSubmatrix k)`. The packed LU output is read as chapter 3
-reads it (`Chapter03.packedL F = 1 + F.strictLower`, `Chapter03.packedU F = F − F.strictLower`).
-Tridiagonal matrices are the backbone's `Matrix.tridiagonalOf` (diagonal `d`, sub- and
-superdiagonal) and, for the Thomas recurrences, `Matrix.tridiagonalOfNat` of `ℕ`-indexed
-sequences.
+* Matrices are real, `A : Matrix (Fin n) (Fin n) ℝ`, and indices are 0-based.
+* Upper bandwidth $q$ is `Matrix.HasUpperBandwidth A q`, and lower bandwidth $p$ is
+  `Matrix.HasLowerBandwidth A p`. On `Fin n` they mean $a_{ij} = 0$ whenever $j > i + q$, and
+  $a_{ij} = 0$ whenever $i > j + p$ (`Matrix.hasUpperBandwidth_iff_fin`).
+* The loop bounds $\min(k + p, n)$ and $\max(1, j - q)$ of the source are conditions on the index in
+  the filtered index lists of the programs.
+* "$A(1{:}k, 1{:}k)$ is nonsingular for $k = 1{:}n-1$" is `∀ k, IsUnit
+  (A.strictLeadingPrincipalSubmatrix k)`.
+* The packed LU output is read as in Chapter 3: $L$ is `GolubVanLoan.Chapter03.packedL F` and $U$ is
+  `GolubVanLoan.Chapter03.packedU F`.
+* Tridiagonal matrices are `Matrix.tridiagonalOf`, with diagonal, subdiagonal and superdiagonal,
+  and, for the Thomas recurrences, `Matrix.tridiagonalOfNat` of sequences indexed by `ℕ`.
 
-The algorithms follow the algorithm conventions of `NumlibSurface/GolubVanLoan` (every product,
-difference, quotient and square root through the rounding hook `rnd`; comparisons exact). Their
-exact specifications are proved at `M := Id`, `rnd := pure` by loop invariants on the folds
-(`List.foldl_finRange_induction`, `List.foldl_update_of_nodup`); the book gives no rounding
-analysis here.
+## Implementation notes
 
-## Sources
+* The algorithms follow the algorithm conventions of `NumlibSurface.GolubVanLoan`: every product,
+  difference, quotient and square root passes through the rounding hook `rnd`, and comparisons are
+  exact.
+* The exact specifications are proved in the monad `Id` with `rnd := pure`, by loop invariants on
+  the folds (`List.foldl_finRange_induction`, `List.foldl_update_of_nodup`). The source gives no
+  rounding analysis in this section.
+* Theorem 4.3.3 is proved through the nullity theorem (`Matrix.rank_inv_toBlocks₂₁`), which also
+  gives the equality of ranks that the source attributes to Strang and Nguyen. So the limit argument
+  of the source (Problem P4.3.11) is not needed.
 
-Backbone `Numlib/LinearAlgebra/Matrix/{Band,LU,LU/Pivoting,Cholesky,Rank}` (Theorems 4.3.1–4.3.3,
-the Thomas algorithm), `Numlib/Direct/Substitution`. Theorem 4.3.3 is proved through the nullity
-theorem (`Matrix.rank_inv_toBlocks₂₁`), which also gives the equality of ranks the book attributes
-to Strang and Nguyen, so the book's limit argument (P4.3.11) is not needed.
+## Deviations from the source
 
-## Readings and errata
+* **Theorem 4.3.1** (correction). The statement about $L$ is false without the nonsingularity of the
+  leading principal submatrices: $\begin{bmatrix} 0 & 1 \\ 0 & 2 \end{bmatrix} = \begin{bmatrix} 1 &
+  0 \\ \beta & 1 \end{bmatrix} \begin{bmatrix} 0 & 1 \\ 0 & 2 - \beta \end{bmatrix}$ for every
+  $\beta$. The library adds this hypothesis for $L$. See `GolubVanLoan.Chapter04.theorem_4_3_1_b`.
+* **Algorithm 4.3.1** (reading). "Assuming it exists" is read as the nonsingularity of the leading
+  principal submatrices $A(1{:}k, 1{:}k)$, $k = 1{:}n-1$. See
+  `GolubVanLoan.Chapter04.algorithm_4_3_1_spec`.
+* **Theorem 4.3.2** (generalization). The source assumes that $A$ is nonsingular. The library does
+  not need this hypothesis. See `GolubVanLoan.Chapter04.theorem_4_3_2`.
+* **Algorithm 4.3.6** (typo). The second loop prints $b(k) = b(k) - \beta(k-1) \cdot \beta(k-1)$.
+  The forward solve $Ly = b$ is $b(k) = b(k) - \beta(k-1) \cdot b(k-1)$, which the program does. See
+  `GolubVanLoan.Chapter04.algorithm_4_3_6`.
 
-* Theorem 4.3.1 is false for `L` without the nonsingularity of the leading principal submatrices
-  (the book's proof divides by `α`): `[0 1; 0 2] = [1 0; β 1][0 1; 0 2 − β]` for every `β`, and
-  this matrix is upper triangular. The lower half carries the hypothesis.
-* Algorithm 4.3.6 prints `b(k) = b(k) − β(k−1) · β(k−1)` in its second loop; the forward solve
-  `L y = b` it implements is `b(k) = b(k) − β(k−1) · b(k−1)`, which is what the program does.
-* Theorem 4.3.2 does not need the nonsingularity of `A`.
+## Not formalized
 
-## Not formalized here
-
-§4.3.7 (vectorization), §4.3.9 (banded inverses: "assuming `N` is not too big"), band storage,
-the flop counts, and the band `L D Lᵀ` ("left to the reader").
+* **§4.3.7, vectorization.**
+* **§4.3.9, banded inverses.**
+* **Band storage.**
+* **Flop counts.**
+* **The band $LDL^T$ factorization.** The source leaves it to the reader.
 -/
 
 open FloatingPoint Matrix Finset
@@ -67,7 +124,8 @@ variable {n : ℕ}
 
 /-! ### Loop lemmas in exact arithmetic -/
 
-/-- A sum over the indices below `j + 1` (and below `i`) splits off the term `j`. -/
+/-- A sum over the indices $k < j + 1$ with $k < i$ splits into the sum over $k < j$ with $k < i$
+and the term $k = j$ if $j < i$. -/
 private theorem sum_filter_val_lt_succ (f : Fin n → ℝ) (i j : Fin n) :
     ∑ k ∈ univ.filter (fun k : Fin n => (k : ℕ) < j + 1 ∧ k < i), f k =
       ∑ k ∈ univ.filter (fun k : Fin n => (k : ℕ) < j ∧ k < i), f k + if j < i then f j else 0 := by
@@ -82,7 +140,8 @@ private theorem sum_filter_val_lt_succ (f : Fin n → ℝ) (i j : Fin n) :
     have : ((k : ℕ) < j + 1) ↔ (k : ℕ) < j := by omega
     simp [this, hk]
 
-/-- A sum over the indices from `j` on (and above `i`) splits off the term `j`. -/
+/-- A sum over the indices $k \ge j$ with $k > i$ splits into the sum over $k \ge j + 1$ with
+$k > i$ and the term $k = j$ if $i < j$. -/
 private theorem sum_filter_le_val_split (f : Fin n → ℝ) (i j : Fin n) :
     ∑ k ∈ univ.filter (fun k : Fin n => (j : ℕ) ≤ k ∧ i < k), f k =
       ∑ k ∈ univ.filter (fun k : Fin n => (j : ℕ) + 1 ≤ k ∧ i < k), f k +
@@ -100,23 +159,44 @@ private theorem sum_filter_le_val_split (f : Fin n → ℝ) (i j : Fin n) :
 
 /-! ### §4.3.1 Band LU factorization -/
 
-/-- **Theorem 4.3.1, the upper factor.** "Suppose `A` has an LU factorization `A = LU`. If `A` has
-upper bandwidth `q` …, then `U` has upper bandwidth `q`." No further hypothesis is needed. -/
+/-- **Theorem 4.3.1** of [golub2013matrix], the upper factor. Let
+$A, L, U \in \mathbb{R}^{n \times n}$, where $A = LU$ is an LU factorization of $A$. If $A$ has
+upper bandwidth $q$, then $U$ has upper bandwidth $q$.
+
+No further hypothesis is needed. The factorization is `Matrix.IsLU A L U`. -/
 theorem theorem_4_3_1_a {A L U : Matrix (Fin n) (Fin n) ℝ} (h : IsLU A L U) {q : ℕ}
     (hq : A.HasUpperBandwidth q) : U.HasUpperBandwidth q :=
   h.hasUpperBandwidth hq
 
-/-- **Theorem 4.3.1, the lower factor.** "If `A` has … lower bandwidth `p`, then … `L` has lower
-bandwidth `p`", under the nonsingularity of `A(1:k, 1:k)`, `k = 1:n−1`, which the book's proof
-uses and which is necessary: `[0 1; 0 2] = [1 0; β 1][0 1; 0 2 − β]` for every `β`. -/
+/-- **Theorem 4.3.1** of [golub2013matrix], the lower factor. Let
+$A, L, U \in \mathbb{R}^{n \times n}$, where $A = LU$ is an LU factorization of $A$, and assume
+that $A(1{:}k, 1{:}k)$ is nonsingular for $k = 1{:}n-1$. If $A$ has lower bandwidth $p$, then
+$L$ has lower bandwidth $p$.
+
+**Correction.** The source does not assume the nonsingularity of the leading principal
+submatrices, but its proof divides by the pivot $\alpha$. The hypothesis is necessary: for every
+$\beta$,
+$$\begin{bmatrix} 0 & 1 \\ 0 & 2 \end{bmatrix} = \begin{bmatrix} 1 & 0 \\ \beta & 1
+  \end{bmatrix} \begin{bmatrix} 0 & 1 \\ 0 & 2 - \beta \end{bmatrix},$$
+and the left side is upper triangular, so it has lower bandwidth $0$, while the lower factor has
+lower bandwidth $0$ only for $\beta = 0$.
+
+The factorization is `Matrix.IsLU A L U`, and the hypothesis is `∀ k, IsUnit
+(A.strictLeadingPrincipalSubmatrix k)`. -/
 theorem theorem_4_3_1_b {A L U : Matrix (Fin n) (Fin n) ℝ} (h : IsLU A L U)
     (hA : ∀ k, IsUnit (A.strictLeadingPrincipalSubmatrix k)) {p : ℕ}
     (hp : A.HasLowerBandwidth p) : L.HasLowerBandwidth p :=
   h.hasLowerBandwidth hA hp
 
-/-- **Theorem 4.3.1.** "Suppose `A ∈ ℝⁿˣⁿ` has an LU factorization `A = LU`. If `A` has upper
-bandwidth `q` and lower bandwidth `p`, then `U` has upper bandwidth `q` and `L` has lower bandwidth
-`p`" — with the nonsingularity of `A(1:k, 1:k)`, `k = 1:n−1`, added (see `theorem_4_3_1_b`). -/
+/-- **Theorem 4.3.1** of [golub2013matrix]. Let $A, L, U \in \mathbb{R}^{n \times n}$, where
+$A = LU$ is an LU factorization of $A$, and assume that $A(1{:}k, 1{:}k)$ is nonsingular for
+$k = 1{:}n-1$. If $A$ has upper bandwidth $q$ and lower bandwidth $p$, then $U$ has upper
+bandwidth $q$ and $L$ has lower bandwidth $p$.
+
+**Correction.** The source does not assume the nonsingularity of the leading principal
+submatrices. Without it the statement about $L$ fails; see
+`GolubVanLoan.Chapter04.theorem_4_3_1_b`. The statement about $U$ holds without it
+(`GolubVanLoan.Chapter04.theorem_4_3_1_a`). -/
 theorem theorem_4_3_1 {A L U : Matrix (Fin n) (Fin n) ℝ} (h : IsLU A L U)
     (hA : ∀ k, IsUnit (A.strictLeadingPrincipalSubmatrix k)) {p q : ℕ}
     (hp : A.HasLowerBandwidth p) (hq : A.HasUpperBandwidth q) :
@@ -127,9 +207,10 @@ section Programs
 
 variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 
-/-- **Algorithm 4.3.1 (Band Gaussian Elimination).** "Given `A ∈ ℝⁿˣⁿ` with upper bandwidth `q`
-and lower bandwidth `p`, the following algorithm computes the factorization `A = LU`, assuming it
-exists. `A(i, j)` is overwritten by `L(i, j)` if `i > j` and by `U(i, j)` otherwise":
+/-- **Algorithm 4.3.1** of [golub2013matrix] (band Gaussian elimination). Given
+$A \in \mathbb{R}^{n \times n}$ with upper bandwidth $q$ and lower bandwidth $p$, the algorithm
+computes the factorization $A = LU$, assuming it exists. $A(i, j)$ is overwritten by $L(i, j)$
+if $i > j$ and by $U(i, j)$ otherwise.
 ```
 for k = 1:n−1
     for i = k+1:min{k+p, n}
@@ -142,7 +223,9 @@ for k = 1:n−1
     end
 end
 ```
-The last pass `k = n` of the fold does nothing (its index lists are empty). -/
+
+The program runs the passes for $k = 1, \dots, n$; the last pass does nothing, because its index
+lists are empty. Every quotient, product and difference is rounded. -/
 noncomputable def algorithm_4_3_1 (p q : ℕ) (A : Matrix (Fin n) (Fin n) ℝ) :
     M (Matrix (Fin n) (Fin n) ℝ) :=
   (List.finRange n).foldlM (fun (A : Matrix (Fin n) (Fin n) ℝ) (k : Fin n) => do
@@ -158,9 +241,9 @@ noncomputable def algorithm_4_3_1 (p q : ℕ) (A : Matrix (Fin n) (Fin n) ℝ) :
             let a ← rnd (A i j - t)
             pure (A.updateRow i (Function.update (A i) j a))) A) A) A
 
-/-- **Algorithm 4.3.2 (Band Forward Substitution).** "Let `L ∈ ℝⁿˣⁿ` be a unit lower triangular
-matrix with lower bandwidth `p`. Given `b ∈ ℝⁿ`, the following algorithm overwrites `b` with the
-solution to `Lx = b`":
+/-- **Algorithm 4.3.2** of [golub2013matrix] (band forward substitution). Let
+$L \in \mathbb{R}^{n \times n}$ be a unit lower triangular matrix with lower bandwidth $p$.
+Given $b \in \mathbb{R}^n$, the algorithm overwrites $b$ with the solution to $Lx = b$.
 ```
 for j = 1:n
     for i = j+1:min{j+p, n}
@@ -168,7 +251,9 @@ for j = 1:n
     end
 end
 ```
-(the column-oriented Algorithm 3.1.3 on the band; no division, `L` being unit). -/
+
+This is the column-oriented Algorithm 3.1.3 restricted to the band. It has no division, because
+$L$ has a unit diagonal. -/
 def algorithm_4_3_2 (p : ℕ) (L : Matrix (Fin n) (Fin n) ℝ) (b : Fin n → ℝ) : M (Fin n → ℝ) :=
   (List.finRange n).foldlM (fun (b : Fin n → ℝ) (j : Fin n) =>
     ((List.finRange n).filter (fun i : Fin n => j < i ∧ (i : ℕ) ≤ j + p)).foldlM
@@ -177,9 +262,9 @@ def algorithm_4_3_2 (p : ℕ) (L : Matrix (Fin n) (Fin n) ℝ) (b : Fin n → �
         let v ← rnd (b i - t)
         pure (Function.update b i v)) b) b
 
-/-- **Algorithm 4.3.3 (Band Back Substitution).** "Let `U ∈ ℝⁿˣⁿ` be a nonsingular upper
-triangular matrix with upper bandwidth `q`. Given `b ∈ ℝⁿ`, the following algorithm overwrites `b`
-with the solution to `Ux = b`":
+/-- **Algorithm 4.3.3** of [golub2013matrix] (band back substitution). Let
+$U \in \mathbb{R}^{n \times n}$ be a nonsingular upper triangular matrix with upper bandwidth
+$q$. Given $b \in \mathbb{R}^n$, the algorithm overwrites $b$ with the solution to $Ux = b$.
 ```
 for j = n:−1:1
     b(j) = b(j)/U(j, j)
@@ -199,9 +284,10 @@ noncomputable def algorithm_4_3_3 (q : ℕ) (U : Matrix (Fin n) (Fin n) ℝ) (b 
         let w ← rnd (b i - t)
         pure (Function.update b i w)) (Function.update b j v)) b
 
-/-- **Algorithm 4.3.5 (Band Cholesky).** "Given a symmetric positive definite `A ∈ ℝⁿˣⁿ` with
-bandwidth `p`, the following algorithm computes a lower triangular matrix `G` with lower bandwidth
-`p` such that `A = GGᵀ`. For all `i ≥ j`, `G(i, j)` overwrites `A(i, j)`":
+/-- **Algorithm 4.3.5** of [golub2013matrix] (band Cholesky). Given a symmetric positive definite
+$A \in \mathbb{R}^{n \times n}$ with bandwidth $p$, the algorithm computes a lower triangular
+matrix $G$ with lower bandwidth $p$ such that $A = GG^T$. For all $i \ge j$, $G(i, j)$
+overwrites $A(i, j)$.
 ```
 for j = 1:n
     for k = max(1, j−p):j−1
@@ -212,8 +298,10 @@ for j = 1:n
     A(j:λ, j) = A(j:λ, j)/sqrt(A(j, j))
 end
 ```
-The square root is computed once per column and rounded, and the whole column `A(j:λ, j)`,
-diagonal included, is divided by it (the operation order of Algorithm 4.2.1). -/
+
+The square root is computed once per column and rounded, and the whole column
+$A(j{:}\lambda, j)$, diagonal included, is divided by it. This is the operation order of
+Algorithm 4.2.1. -/
 noncomputable def algorithm_4_3_5 (p : ℕ) (A : Matrix (Fin n) (Fin n) ℝ) :
     M (Matrix (Fin n) (Fin n) ℝ) :=
   (List.finRange n).foldlM (fun (A : Matrix (Fin n) (Fin n) ℝ) (j : Fin n) => do
@@ -234,7 +322,8 @@ end Programs
 
 /-! ### §4.3.2 Band triangular system solving -/
 
-/-- The exact run of Algorithm 4.3.2 as a fold. -/
+/-- In exact arithmetic, Algorithm 4.3.2 is the fold that subtracts $\ell_{ij} b_j$ from $b_i$ for
+$j = 1, \dots, n$ and $j < i \le j + p$. -/
 private theorem algorithm_4_3_2_id (p : ℕ) (L : Matrix (Fin n) (Fin n) ℝ) (b : Fin n → ℝ) :
     Id.run (algorithm_4_3_2 pure p L b) =
       (List.finRange n).foldl (fun (b : Fin n → ℝ) (j : Fin n) =>
@@ -243,9 +332,12 @@ private theorem algorithm_4_3_2_id (p : ℕ) (L : Matrix (Fin n) (Fin n) ℝ) (b
   simp only [algorithm_4_3_2, pure_bind, List.foldlM_pure]
   rfl
 
-/-- **Exact correctness of Algorithm 4.3.2**: for a unit lower triangular `L` of lower bandwidth
-`p`, the exact run solves `Lx = b`. The skipped updates of the full forward substitution are
-products with the zero entries `ℓ_ij`, `i > j + p`. -/
+/-- **Algorithm 4.3.2** of [golub2013matrix], exact correctness. Let $L \in \mathbb{R}^{n \times n}$
+be unit lower triangular with lower bandwidth $p$, and let $b \in \mathbb{R}^n$. Then the vector
+$x$ computed by Algorithm 4.3.2 in exact arithmetic satisfies $Lx = b$.
+
+The updates that the band loop skips are products with the zero entries $\ell_{ij}$,
+$i > j + p$. -/
 theorem algorithm_4_3_2_spec {p : ℕ} {L : Matrix (Fin n) (Fin n) ℝ}
     (hL : L.IsUnitLowerTriangular) (hp : L.HasLowerBandwidth p) (b : Fin n → ℝ) :
     L *ᵥ Id.run (algorithm_4_3_2 pure p L b) = b := by
@@ -287,7 +379,8 @@ theorem algorithm_4_3_2_spec {p : ℕ} {L : Matrix (Fin n) (Fin n) ℝ}
   rw [this]
   ring
 
-/-- The exact run of Algorithm 4.3.3 as a fold along the reversed indices. -/
+/-- In exact arithmetic, Algorithm 4.3.3 is the fold along the reversed indices that divides $b_j$
+by $u_{jj}$ and then subtracts $u_{ij} b_j$ from $b_i$ for $j - q \le i < j$. -/
 private theorem algorithm_4_3_3_id (q : ℕ) (U : Matrix (Fin n) (Fin n) ℝ) (b : Fin n → ℝ) :
     Id.run (algorithm_4_3_3 pure q U b) =
       (List.finRange n).foldl (fun (b : Fin n → ℝ) (c : Fin n) =>
@@ -299,8 +392,10 @@ private theorem algorithm_4_3_3_id (q : ℕ) (U : Matrix (Fin n) (Fin n) ℝ) (b
     List.foldlM_map]
   rfl
 
-/-- **Exact correctness of Algorithm 4.3.3**: for a nonsingular upper triangular `U` of upper
-bandwidth `q`, the exact run solves `Ux = b`. -/
+/-- **Algorithm 4.3.3** of [golub2013matrix], exact correctness. Let $U \in \mathbb{R}^{n \times n}$
+be upper triangular with nonzero diagonal entries and upper bandwidth $q$, and let
+$b \in \mathbb{R}^n$. Then the vector $x$ computed by Algorithm 4.3.3 in exact arithmetic
+satisfies $Ux = b$. -/
 theorem algorithm_4_3_3_spec {q : ℕ} {U : Matrix (Fin n) (Fin n) ℝ}
     (hU : U.IsUpperTriangular) (hd : ∀ i, U i i ≠ 0) (hq : U.HasUpperBandwidth q)
     (b : Fin n → ℝ) : U *ᵥ Id.run (algorithm_4_3_3 pure q U b) = b := by
@@ -390,13 +485,21 @@ theorem algorithm_4_3_3_spec {q : ℕ} {U : Matrix (Fin n) (Fin n) ℝ}
 
 /-! ### §4.3.6 Tridiagonal system solving -/
 
-/-- **§4.3.6, the `L D Lᵀ` factorization of a symmetric tridiagonal matrix.** For the symmetric
-tridiagonal matrix with diagonal `a` and off-diagonal `e` (`e k` at `(k + 1, k)` and `(k, k + 1)`),
-"we deduce from the equation `A = LDLᵀ` that `d_1 = a_11`, `ℓ_{k−1} = a_{k,k−1}/d_{k−1}`,
-`d_k = a_kk − ℓ_{k−1} a_{k,k−1}`": these are the Thomas recurrences `Matrix.thomasAlpha` (the
-`d_k`) and `Matrix.thomasBeta` (the `ℓ_k`) with equal off-diagonals, and whenever the pivots used
-as divisors are nonzero, `A = L D Lᵀ` with `L` the unit lower bidiagonal `Matrix.thomasLower` and
-`D = diag(d)`. -/
+/-- **Section 4.3.6** of [golub2013matrix], the $LDL^T$ factorization of a symmetric tridiagonal
+matrix. With 0-based indices, let $A \in \mathbb{R}^{m \times m}$ be the symmetric tridiagonal
+matrix with diagonal entries $a_{kk} = a_k$ and off-diagonal entries
+$a_{k+1,k} = a_{k,k+1} = e_k$. Define
+$$d_0 = a_0, \qquad \ell_k = e_k / d_k, \qquad d_{k+1} = a_{k+1} - \ell_k e_k.$$
+If $d_k \neq 0$ for $k = 0, \dots, m - 2$, then $A = LDL^T$, where $L$ is unit lower bidiagonal
+with subdiagonal entries $L(k+1, k) = \ell_k$, $k = 0, \dots, m - 2$, and
+$D = \operatorname{diag}(d_0, \dots, d_{m-1})$.
+
+The matrix $A$ is `Matrix.tridiagonalOfNat a (fun i => e (i - 1)) e m`. The numbers $d_k$ and
+$\ell_k$ are the Thomas recurrences `Matrix.thomasAlpha` and `Matrix.thomasBeta` with equal
+off-diagonals, and $L$ is `Matrix.thomasLower`. The hypothesis is on the pivots used as
+divisors. The source writes the recurrences with 1-based indices, $d_1 = a_{11}$,
+$\ell_{k-1} = a_{k,k-1} / d_{k-1}$ and $d_k = a_{kk} - \ell_{k-1} a_{k,k-1}$, and deduces them
+from the equation $A = LDL^T$. -/
 theorem tridiagonal_ldlt (a e : ℕ → ℝ) (m : ℕ)
     (hd : ∀ i, i + 1 < m → thomasAlpha a (fun i => e (i - 1)) e i ≠ 0) :
     IsLDM (tridiagonalOfNat a (fun i => e (i - 1)) e m) (thomasLower a (fun i => e (i - 1)) e m)
@@ -419,8 +522,12 @@ theorem tridiagonal_ldlt (a e : ℕ → ℝ) (m : ℕ)
   exact ⟨h.isUnitLowerTriangular, isDiag_diagonal _, h.isUnitLowerTriangular,
     by rw [Matrix.mul_assoc, hU, h.mul_eq]⟩
 
-/-- The pivots `d_k` of a positive definite symmetric tridiagonal matrix are positive: the leading
-blocks are positive definite and are `L D Lᵀ` with the leading pivots (`tridiagonal_ldlt`). -/
+/-- Let $A \in \mathbb{R}^{m \times m}$ be a symmetric tridiagonal matrix as in
+`GolubVanLoan.Chapter04.tridiagonal_ldlt`. If $A$ is positive definite, then all the pivots
+$d_1, \dots, d_m$ are positive.
+
+The leading blocks are positive definite and have the $LDL^T$ factorizations with the leading
+pivots. -/
 theorem thomasAlpha_pos_of_posDef (a e : ℕ → ℝ) (m : ℕ)
     (hA : (tridiagonalOfNat a (fun i => e (i - 1)) e m).PosDef) :
     ∀ i, i < m → 0 < thomasAlpha a (fun i => e (i - 1)) e i := by
@@ -444,21 +551,21 @@ theorem thomasAlpha_pos_of_posDef (a e : ℕ → ℝ) (m : ℕ)
   have := hL'.posDef_iff.1 hP (Fin.last i)
   simpa using this
 
-/-- The `ℕ`-indexed sequence of a vector, zero past its end. -/
+/-- The sequence indexed by `ℕ` of a vector, zero past its end. -/
 private def natSeq {N : ℕ} (v : Fin N → ℝ) : ℕ → ℝ := fun i => if h : i < N then v ⟨i, h⟩ else 0
 
 @[simp]
 private theorem natSeq_val {N : ℕ} (v : Fin N → ℝ) (i : Fin N) : natSeq v i = v i := by
   simp [natSeq]
 
-/-- The unit lower bidiagonal factor on a vector: `(L x)_0 = x_0`,
-`(L x)_{k+1} = x_{k+1} + ℓ_k x_k`. -/
+/-- The unit lower bidiagonal factor applied to a vector: $(Lx)_0 = x_0$. -/
 private theorem thomasLower_mulVec_zero {N : ℕ} (a b c : ℕ → ℝ) (x : Fin (N + 1) → ℝ) :
     (thomasLower a b c (N + 1) *ᵥ x) 0 = x 0 := by
   rw [mulVec, dotProduct, Finset.sum_eq_single 0 (fun r _ hr => ?_) (by simp)]
   · simp [thomasLower]
   · simp [thomasLower, Ne.symm hr]
 
+/-- The unit lower bidiagonal factor applied to a vector: $(Lx)_{k+1} = x_{k+1} + \ell_k x_k$. -/
 private theorem thomasLower_mulVec_succ {N : ℕ} (a b c : ℕ → ℝ) (x : Fin (N + 1) → ℝ)
     (k : Fin N) :
     (thomasLower a b c (N + 1) *ᵥ x) k.succ =
@@ -469,7 +576,7 @@ private theorem thomasLower_mulVec_succ {N : ℕ} (a b c : ℕ → ℝ) (x : Fin
   · have h2 : (r : ℕ) ≠ k := fun h => hr.2 (Fin.ext (by simp [h]))
     simp [thomasLower, Ne.symm hr.1, h2]
 
-/-- The transposed factor on a vector: `(Lᵀ x)_n = x_n`, `(Lᵀ x)_k = x_k + ℓ_k x_{k+1}`. -/
+/-- The transposed factor applied to a vector: $(L^T x)_N = x_N$. -/
 private theorem thomasLower_transpose_mulVec_last {N : ℕ} (a b c : ℕ → ℝ)
     (x : Fin (N + 1) → ℝ) : ((thomasLower a b c (N + 1))ᵀ *ᵥ x) (Fin.last N) = x (Fin.last N) := by
   rw [mulVec, dotProduct, Finset.sum_eq_single (Fin.last N) (fun r _ hr => ?_) (by simp)]
@@ -477,6 +584,7 @@ private theorem thomasLower_transpose_mulVec_last {N : ℕ} (a b c : ℕ → ℝ
   · have : ¬ ((N : ℕ) + 1 = r) := by omega
     simp [thomasLower, hr, this]
 
+/-- The transposed factor applied to a vector: $(L^T x)_k = x_k + \ell_k x_{k+1}$ for $k < N$. -/
 private theorem thomasLower_transpose_mulVec_castSucc {N : ℕ} (a b c : ℕ → ℝ)
     (x : Fin (N + 1) → ℝ) (k : Fin N) :
     ((thomasLower a b c (N + 1))ᵀ *ᵥ x) k.castSucc =
@@ -491,10 +599,10 @@ section Programs
 
 variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 
-/-- **Algorithm 4.3.6 (Symmetric, Tridiagonal, Positive Definite System Solver).** "Given an
-`n`-by-`n` symmetric, tridiagonal, positive definite matrix `A` and `b ∈ ℝⁿ`, the following
-algorithm overwrites `b` with the solution to `Ax = b`. It is assumed that the diagonal of `A` is
-stored in `α(1:n)` and the superdiagonal in `β(1:n−1)`":
+/-- **Algorithm 4.3.6** of [golub2013matrix] (symmetric, tridiagonal, positive definite system
+solver). Given an $n \times n$ symmetric, tridiagonal, positive definite matrix $A$ and
+$b \in \mathbb{R}^n$, the algorithm overwrites $b$ with the solution to $Ax = b$. The diagonal
+of $A$ is stored in $\alpha(1{:}n)$ and the superdiagonal in $\beta(1{:}n-1)$.
 ```
 for k = 2:n
     t = β(k−1), β(k−1) = t/α(k−1), α(k) = α(k) − t · β(k−1)
@@ -507,9 +615,12 @@ for k = n−1:−1:1
     b(k) = b(k)/α(k) − β(k) · b(k+1)
 end
 ```
-With `n = N + 1`, the diagonal is `α : Fin (N + 1) → ℝ` and the superdiagonal `β : Fin N → ℝ`. The
-book prints the second loop as `b(k) = b(k) − β(k−1) · β(k−1)`, a misprint for the forward solve
-`b(k) = b(k) − β(k−1) · b(k−1)`, which the program follows. -/
+
+**Typo.** The source prints the second loop as $b(k) = b(k) - \beta(k-1) \cdot \beta(k-1)$. The
+forward solve $Ly = b$ is $b(k) = b(k) - \beta(k-1) \cdot b(k-1)$, and the program does this.
+
+With $n = N + 1$, the diagonal is `α : Fin (N + 1) → ℝ` and the superdiagonal is
+`β : Fin N → ℝ`. -/
 noncomputable def algorithm_4_3_6 {N : ℕ} (α : Fin (N + 1) → ℝ) (β : Fin N → ℝ)
     (b : Fin (N + 1) → ℝ) : M (Fin (N + 1) → ℝ) := do
   let s ← (List.finRange N).foldlM
@@ -531,7 +642,8 @@ noncomputable def algorithm_4_3_6 {N : ℕ} (α : Fin (N + 1) → ℝ) (β : Fin
 
 end Programs
 
-/-- The exact run of Algorithm 4.3.6 as three folds. -/
+/-- In exact arithmetic, Algorithm 4.3.6 is three folds: the factorization loop, the forward solve,
+and the back solve after the division of the last entry. -/
 private theorem algorithm_4_3_6_id {N : ℕ} (α : Fin (N + 1) → ℝ) (β : Fin N → ℝ)
     (b : Fin (N + 1) → ℝ) :
     Id.run (algorithm_4_3_6 pure α β b) =
@@ -550,10 +662,16 @@ private theorem algorithm_4_3_6_id {N : ℕ} (α : Fin (N + 1) → ℝ) (β : Fi
     List.foldlM_map]
   rfl
 
-/-- **Exact correctness of Algorithm 4.3.6**: if the symmetric tridiagonal matrix
-`A = tridiag(β, α, β)` is positive definite, the exact run solves `Ax = b`. The first loop computes
-the `d_k` and `ℓ_k` of `tridiagonal_ldlt`, the second solves `L y = b`, the last two solve
-`D Lᵀ x = y` in the combined form `x_k = y_k/d_k − ℓ_k x_{k+1}`; then `ldlt_solve`. -/
+/-- **Algorithm 4.3.6** of [golub2013matrix], exact correctness. Let $\alpha \in \mathbb{R}^{N+1}$
+and $\beta \in \mathbb{R}^N$, and suppose that the symmetric tridiagonal matrix $A$ with
+diagonal $\alpha$ and off-diagonals $\beta$ is positive definite. Then for every
+$b \in \mathbb{R}^{N+1}$, the vector $x$ computed by Algorithm 4.3.6 in exact arithmetic
+satisfies $Ax = b$.
+
+The matrix $A$ is `Matrix.tridiagonalOf β α β`. The first loop computes the $d_k$ and $\ell_k$
+of `GolubVanLoan.Chapter04.tridiagonal_ldlt`, the second solves $Ly = b$, and the last two steps
+solve $DL^T x = y$ in the combined form $x_k = y_k / d_k - \ell_k x_{k+1}$. The proof ends with
+`GolubVanLoan.Chapter04.ldlt_solve`. -/
 theorem algorithm_4_3_6_spec {N : ℕ} (α : Fin (N + 1) → ℝ) (β : Fin N → ℝ)
     (hA : (tridiagonalOf β α β).PosDef) (b : Fin (N + 1) → ℝ) :
     tridiagonalOf β α β *ᵥ Id.run (algorithm_4_3_6 pure α β b) = b := by
@@ -701,14 +819,20 @@ theorem algorithm_4_3_6_spec {N : ℕ} (α : Fin (N + 1) → ℝ) (β : Fin N �
 
 /-! ### §4.3.3 Band Gaussian elimination with pivoting -/
 
-/-- **Theorem 4.3.2.** "Suppose `A ∈ ℝⁿˣⁿ` … has upper and lower bandwidths `q` and `p`,
-respectively. If Gaussian elimination with partial pivoting is used to compute Gauss
-transformations `M_j = I − α^{(j)} e_jᵀ` and permutations `P_1, …, P_{n−1}` such that
-`M_{n−1} P_{n−1} ⋯ M_1 P_1 A = U` is upper triangular, then `U` has upper bandwidth `p + q` and
-`α^{(j)}_i = 0` whenever `i ≤ j` or `i > j + p`." Gaussian elimination with partial pivoting is the
-backbone's `Matrix.gemPivotStage A Matrix.partialPivotRow`, and the Gauss vector of stage `k` is
-column `k` of `Matrix.elimMultipliers` of the interchanged stage-`k` matrix. The book's
-nonsingularity of `A` is not needed. -/
+/-- **Theorem 4.3.2** of [golub2013matrix]. Let $A \in \mathbb{R}^{n \times n}$ have lower bandwidth
+$p$ and upper bandwidth $q$. Suppose that Gaussian elimination with partial pivoting computes
+Gauss transformations $M_j = I - \alpha^{(j)} e_j^T$ and permutations $P_1, \dots, P_{n-1}$ such
+that $M_{n-1} P_{n-1} \cdots M_1 P_1 A = U$ is upper triangular. Then $U$ has upper bandwidth
+$p + q$, and $\alpha^{(j)}_i = 0$ whenever $i \le j$ or $i > j + p$.
+
+**Generalization.** The source assumes that $A$ is nonsingular. The theorem does not need this
+hypothesis.
+
+Gaussian elimination with partial pivoting is `Matrix.gemPivotStage A Matrix.partialPivotRow`,
+and $U$ is its stage $n$. The Gauss vector of stage $k$ is column $k$ of
+`Matrix.elimMultipliers` of the stage-$k$ matrix after the interchange of stage $k$
+(`Matrix.gemPivotSwap`). The indices are 0-based, so the condition reads $i \le k$ or
+$i > k + p$ for stage $k$. -/
 theorem theorem_4_3_2 {A : Matrix (Fin n) (Fin n) ℝ} {p q : ℕ} (hp : A.HasLowerBandwidth p)
     (hq : A.HasUpperBandwidth q) :
     (gemPivotStage A partialPivotRow n).1.HasUpperBandwidth (p + q) ∧
@@ -724,7 +848,8 @@ section Programs
 
 variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 
-/-- **One pass `k` of Algorithm 4.3.4** on the state `(H, piv)`: for `k + 1 < n`,
+/-- One pass $k$ of Algorithm 4.3.4 of [golub2013matrix] on the state $(H, \mathrm{piv})$. For
+$k + 1 < n$, the pass is
 ```
 if |H(k, k)| < |H(k+1, k)|
     piv(k) = 1; H(k, k:n) ↔ H(k+1, k:n)
@@ -737,7 +862,8 @@ if H(k, k) ≠ 0
     H(k+1, k) = τ
 end
 ```
-The interchange of the two row segments and the comparisons are exact; the last pass `k = n`
+
+The interchange of the two row segments and the comparisons are exact. The last pass, $k = n$,
 does nothing. -/
 noncomputable def hessenbergLUStep (s : Matrix (Fin n) (Fin n) ℝ × (Fin n → ℕ)) (k : Fin n) :
     M (Matrix (Fin n) (Fin n) ℝ × (Fin n → ℕ)) :=
@@ -759,24 +885,27 @@ noncomputable def hessenbergLUStep (s : Matrix (Fin n) (Fin n) ℝ × (Fin n →
     else pure s
   else pure s
 
-/-- **Algorithm 4.3.4 (Hessenberg LU).** "Given an upper Hessenberg matrix `H ∈ ℝⁿˣⁿ`, the
-following algorithm computes the upper triangular matrix `M_{n−1} P_{n−1} ⋯ M_1 P_1 H = U` where
-each `P_k` is a permutation and each `M_k` is a Gauss transformation whose entries are bounded by
-unity. `H(i, k)` is overwritten with `U(i, k)` if `i ≤ k` and by `−[M_k]_{k+1,k}` if `i = k + 1`.
-An integer vector `piv(1:n−1)` encodes the permutations. If `P_k = I`, then `piv(k) = 0`. If `P_k`
-interchanges rows `k` and `k + 1`, then `piv(k) = 1`": the passes `hessenbergLUStep` for
-`k = 1:n−1`, on the state `(H, piv)` with `piv` initially `0`. -/
+/-- **Algorithm 4.3.4** of [golub2013matrix] (Hessenberg LU). Given an upper Hessenberg matrix
+$H \in \mathbb{R}^{n \times n}$, the algorithm computes the upper triangular matrix
+$M_{n-1} P_{n-1} \cdots M_1 P_1 H = U$, where each $P_k$ is a permutation and each $M_k$ is a
+Gauss transformation whose entries are bounded by unity. $H(i, k)$ is overwritten with $U(i, k)$
+if $i \le k$ and by $-[M_k]_{k+1,k}$ if $i = k + 1$. An integer vector $\mathrm{piv}(1{:}n-1)$
+encodes the permutations: if $P_k = I$, then $\mathrm{piv}(k) = 0$, and if $P_k$ interchanges
+rows $k$ and $k + 1$, then $\mathrm{piv}(k) = 1$.
+
+The program runs the passes `GolubVanLoan.Chapter04.hessenbergLUStep` for $k = 1, \dots, n$ on
+the state $(H, \mathrm{piv})$, with $\mathrm{piv} = 0$ at the start. The last pass does nothing. -/
 noncomputable def algorithm_4_3_4 (H : Matrix (Fin n) (Fin n) ℝ) :
     M (Matrix (Fin n) (Fin n) ℝ × (Fin n → ℕ)) :=
   (List.finRange n).foldlM (hessenbergLUStep rnd) (H, 0)
 
 end Programs
 
-/-- The loop invariant of Algorithm 4.3.4 after `c` passes: on and above the diagonal and in the
-columns from `c` on, the state is the matrix of stage `c` of Gaussian elimination with partial
-pivoting; the stored multipliers of the passes before `c` are bounded by one; the recorded
-interchanges are those of partial pivoting; the stored multipliers are those of partial pivoting
-(`Matrix.elimMultipliers` of the interchanged stage matrix). -/
+/-- The loop invariant of Algorithm 4.3.4 after $c$ passes. On and above the diagonal, and in the
+columns from $c$ on, the state is the matrix of stage $c$ of Gaussian elimination with partial
+pivoting. The stored multipliers of the passes before $c$ are bounded by one, the recorded
+interchanges are those of partial pivoting, and the stored multipliers are those of partial
+pivoting. -/
 private def HessInv (H : Matrix (Fin n) (Fin n) ℝ) (c : ℕ)
     (s : Matrix (Fin n) (Fin n) ℝ × (Fin n → ℕ)) : Prop :=
   (∀ i j : Fin n, (c ≤ (j : ℕ) ∨ i ≤ j) → s.1 i j = (gemPivotStage H partialPivotRow c).1 i j) ∧
@@ -787,7 +916,8 @@ private def HessInv (H : Matrix (Fin n) (Fin n) ℝ) (c : ℕ)
     s.1 ⟨k + 1, hk⟩ k = elimMultipliers ((gemPivotStage H partialPivotRow k).1.submatrix
       (gemPivotSwap H partialPivotRow k k.isLt) id) k ⟨k + 1, hk⟩ k)
 
-/-- Stage `k + 1` of partial pivoting at a pivot index `k : Fin n`. -/
+/-- Stage $k + 1$ of Gaussian elimination with partial pivoting, for a pivot index $k$ in `Fin n`,
+is the elimination step at $k$ applied to stage $k$ after its interchange. -/
 private theorem gemPivotStage_succ_fin (H : Matrix (Fin n) (Fin n) ℝ) (k : Fin n) :
     (gemPivotStage H partialPivotRow ((k : ℕ) + 1)).1 =
       elimStep ((gemPivotStage H partialPivotRow k).1.submatrix
@@ -795,7 +925,7 @@ private theorem gemPivotStage_succ_fin (H : Matrix (Fin n) (Fin n) ℝ) (k : Fin
   rw [gemPivotStage_succ_of_lt H partialPivotRow k.isLt]
   rfl
 
-/-- One pass of Algorithm 4.3.4 keeps the invariant. -/
+/-- One pass of Algorithm 4.3.4 keeps the loop invariant. -/
 private theorem hessInv_step {H : Matrix (Fin n) (Fin n) ℝ} (hH : H.IsUpperHessenberg)
     (k : Fin n) (s : Matrix (Fin n) (Fin n) ℝ × (Fin n → ℕ)) (hs : HessInv H k s) :
     HessInv H (k + 1) (Id.run (hessenbergLUStep pure s k)) := by
@@ -1030,7 +1160,7 @@ private theorem hessInv_step {H : Matrix (Fin n) (Fin n) ℝ} (hH : H.IsUpperHes
         change (0 : ℝ) = Mx k₁ k * (Mx k k)⁻¹
         rw [hMkk, _root_.inv_zero, mul_zero]
 
-/-- The invariant of Algorithm 4.3.4 after its `n` passes. -/
+/-- The loop invariant of Algorithm 4.3.4 holds after its $n$ passes. -/
 private theorem hessInv_run {H : Matrix (Fin n) (Fin n) ℝ} (hH : H.IsUpperHessenberg) :
     HessInv H n (Id.run (algorithm_4_3_4 pure H)) := by
   have key := List.foldl_finRange_induction (f := fun s k => Id.run (hessenbergLUStep pure s k))
@@ -1041,13 +1171,19 @@ private theorem hessInv_run {H : Matrix (Fin n) (Fin n) ℝ} (hH : H.IsUpperHess
   rw [algorithm_4_3_4, List.idRun_foldlM]
   exact key
 
-/-- **Exact correctness of Algorithm 4.3.4**: for an upper Hessenberg `H`, with `(F, piv)` the
-exact run, the upper triangle of `F` is the upper factor `U` of Gaussian elimination with partial
-pivoting (`Matrix.gemPivotStage H Matrix.partialPivotRow n`), `piv(k) = 1` exactly when partial
-pivoting interchanges the rows `k` and `k + 1` at stage `k`, and the subdiagonal entry
-`F(k+1, k)` is the multiplier `τ = −[M_k]_{k+1,k}` of stage `k` (the entry `(k+1, k)` of
-`Matrix.elimMultipliers` of the interchanged stage-`k` matrix; `0` when the pivot vanishes). The
-bound `|F(k+1, k)| ≤ 1` is `algorithm_4_3_4_spec_abs_le_one`. -/
+/-- **Algorithm 4.3.4** of [golub2013matrix], exact correctness. Let $H \in \mathbb{R}^{n \times n}$
+be upper Hessenberg, and let $(F, \mathrm{piv})$ be the output of Algorithm 4.3.4 in exact
+arithmetic. Then:
+* on and above the diagonal, $F$ agrees with the upper factor $U$ of Gaussian elimination with
+  partial pivoting;
+* for $k + 1 < n$, $\mathrm{piv}(k) = 1$ if and only if partial pivoting interchanges rows $k$
+  and $k + 1$ at stage $k$;
+* for $k + 1 < n$, the entry $F(k+1, k)$ is the multiplier $\tau = -[M_k]_{k+1,k}$ of stage $k$.
+
+Gaussian elimination with partial pivoting is `Matrix.gemPivotStage H Matrix.partialPivotRow`.
+The multiplier is the entry $(k+1, k)$ of `Matrix.elimMultipliers` of the stage-$k$ matrix after
+its interchange, and it is $0$ when the pivot vanishes. The indices are 0-based. The bound
+$|F(k+1, k)| \le 1$ is `GolubVanLoan.Chapter04.algorithm_4_3_4_spec_abs_le_one`. -/
 theorem algorithm_4_3_4_spec {H : Matrix (Fin n) (Fin n) ℝ} (hH : H.IsUpperHessenberg) :
     (∀ i j : Fin n, i ≤ j →
       (Id.run (algorithm_4_3_4 pure H)).1 i j = (gemPivotStage H partialPivotRow n).1 i j) ∧
@@ -1062,9 +1198,12 @@ theorem algorithm_4_3_4_spec {H : Matrix (Fin n) (Fin n) ℝ} (hH : H.IsUpperHes
   exact ⟨fun i j hij => h1 i j (Or.inr hij), fun k hk => h3 k hk k.isLt,
     fun k hk => h4 k hk k.isLt⟩
 
-/-- **The multipliers of Algorithm 4.3.4 are bounded by unity**: "each `M_k` is a Gauss
-transformation whose entries are bounded by unity", i.e. `|F(k+1, k)| ≤ 1` for the exact run
-`(F, piv)` on an upper Hessenberg `H`. -/
+/-- **Algorithm 4.3.4** of [golub2013matrix], the bound on the multipliers. Let
+$H \in \mathbb{R}^{n \times n}$ be upper Hessenberg, and let $(F, \mathrm{piv})$ be the output
+of Algorithm 4.3.4 in exact arithmetic. Then $|F(k+1, k)| \le 1$ for every $k$ with $k + 1 < n$.
+
+This is the claim of the source that each $M_k$ is a Gauss transformation whose entries are
+bounded by unity. -/
 theorem algorithm_4_3_4_spec_abs_le_one {H : Matrix (Fin n) (Fin n) ℝ}
     (hH : H.IsUpperHessenberg) (k : Fin n) (hk : (k : ℕ) + 1 < n) :
     |(Id.run (algorithm_4_3_4 pure H)).1 ⟨k + 1, hk⟩ k| ≤ 1 := by
@@ -1072,10 +1211,11 @@ theorem algorithm_4_3_4_spec_abs_le_one {H : Matrix (Fin n) (Fin n) ℝ}
 
 /-! ### §4.3.5 Band Cholesky -/
 
-/-- **A loop writing column `j` of a matrix, one row per step, in exact arithmetic.** Over a
-duplicate-free list `l` of rows, a fold whose step `i` replaces the entry `(i, j)` by `h i A`, a
-value that reads only the entry `(i, j)` and the entries outside the written ones, replaces every
-entry `(i, j)`, `i ∈ l`, by `h i` of the initial matrix. -/
+/-- A loop that writes column $j$ of a matrix, one row per step, in exact arithmetic. Let $l$ be a
+duplicate-free list of rows, and suppose that step $i$ replaces the entry $(i, j)$ by a value
+$h_i(A)$ that depends only on the entry $(i, j)$ and on the entries outside the written ones.
+Then the loop replaces every entry $(i, j)$, $i \in l$, by $h_i$ of the initial matrix, and
+keeps the other entries. -/
 theorem foldl_updateRow_col {l : List (Fin n)} (hl : l.Nodup) (j : Fin n)
     (h : Fin n → Matrix (Fin n) (Fin n) ℝ → ℝ)
     (hh : ∀ i ∈ l, ∀ A A' : Matrix (Fin n) (Fin n) ℝ,
@@ -1105,10 +1245,10 @@ theorem foldl_updateRow_col {l : List (Fin n)} (hl : l.Nodup) (j : Fin n)
     exact List.foldl_update_apply_of_forall_ne _ _ (fun i hi (e : (i, j) = (r, c)) => by
       cases e; exact hrc ⟨rfl, hi⟩) _
 
-/-- The first phase of column `j` of Algorithm 4.3.5, in exact arithmetic: the updates
-`A(j:λ, j) = A(j:λ, j) − A(j, k) · A(j:λ, k)` over the columns `k` of a duplicate-free list not
-containing `j` subtract from each entry `(r, j)`, `r ≥ j`, the products of the columns `k` with
-`r ≤ k + p`. -/
+/-- The first phase of column $j$ of Algorithm 4.3.5 in exact arithmetic. The updates
+$A(j{:}\lambda, j) = A(j{:}\lambda, j) - A(j, k) \cdot A(j{:}\lambda, k)$ over the columns $k$
+of a duplicate-free list that does not contain $j$ subtract from each entry $(r, j)$, $r \ge j$,
+the products $a_{jk} a_{rk}$ of the columns $k$ with $r \le k + p$. -/
 private theorem bandChol_phase1 (j : Fin n) (p : ℕ) :
     ∀ (K : List (Fin n)), K.Nodup → (∀ k ∈ K, k ≠ j) → ∀ S : Matrix (Fin n) (Fin n) ℝ,
     K.foldl (fun (A : Matrix (Fin n) (Fin n) ℝ) (k : Fin n) =>
@@ -1177,17 +1317,21 @@ private noncomputable def bandCholStepId (p : ℕ) (A : Matrix (Fin n) (Fin n) �
           (fun (A : Matrix (Fin n) (Fin n) ℝ) (i : Fin n) =>
             A.updateRow i (Function.update (A i) j (A i j - A j k * A i k))) A) A)
 
-/-- The exact run of Algorithm 4.3.5 as a fold of its column steps. -/
+/-- In exact arithmetic, Algorithm 4.3.5 is the fold of its column steps. -/
 private theorem algorithm_4_3_5_id (p : ℕ) (A : Matrix (Fin n) (Fin n) ℝ) :
     Id.run (algorithm_4_3_5 pure p A) = (List.finRange n).foldl (bandCholStepId p) A := by
   simp only [algorithm_4_3_5, pure_bind, List.foldlM_pure]
   rfl
 
-/-- **Exact correctness of Algorithm 4.3.5**: for a symmetric positive definite `A` with lower
-bandwidth `p`, the lower triangle of the exact run is the Cholesky factor `G = cholesky A`, which
-"has the same lower bandwidth as `A`" (Theorem 4.3.1), and `A = GGᵀ`. The band loops skip only
-products with a zero factor `g_jk` (`j > k + p`) or `g_rk` (`r > k + p`), so each column obeys the
-Cholesky recurrence (4.2.9). -/
+/-- **Algorithm 4.3.5** of [golub2013matrix], exact correctness. Let $A \in \mathbb{R}^{n \times n}$
+be symmetric positive definite with lower bandwidth $p$, and let $G$ be the lower triangle of
+the output of Algorithm 4.3.5 in exact arithmetic. Then $G$ is the Cholesky factor
+`Matrix.cholesky A`, $G$ has lower bandwidth $p$, and $A = GG^T$.
+
+The source notes that $G$ has the same lower bandwidth as $A$, by Theorem 4.3.1. The band loops
+skip only products with a zero factor $g_{jk}$ ($j > k + p$) or $g_{rk}$ ($r > k + p$), so each
+column follows the Cholesky recurrence (4.2.9). The lower triangle of the output `F` is
+`F - F.strictUpper`. -/
 theorem algorithm_4_3_5_spec {p : ℕ} {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosDef)
     (hp : A.HasLowerBandwidth p) :
     Id.run (algorithm_4_3_5 pure p A) - (Id.run (algorithm_4_3_5 pure p A)).strictUpper =
@@ -1273,7 +1417,7 @@ theorem algorithm_4_3_5_spec {p : ℕ} {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.
 
 /-! ### Exact correctness of band Gaussian elimination -/
 
-/-- One pass `k` of Algorithm 4.3.1 in exact arithmetic. -/
+/-- One pass $k$ of Algorithm 4.3.1 in exact arithmetic. -/
 private noncomputable def bandGEStepId (p q : ℕ) (A : Matrix (Fin n) (Fin n) ℝ) (k : Fin n) :
     Matrix (Fin n) (Fin n) ℝ :=
   ((List.finRange n).filter (fun j : Fin n => k < j ∧ (j : ℕ) ≤ k + q)).foldl
@@ -1285,14 +1429,15 @@ private noncomputable def bandGEStepId (p q : ℕ) (A : Matrix (Fin n) (Fin n) �
       (fun (A : Matrix (Fin n) (Fin n) ℝ) (i : Fin n) =>
         A.updateRow i (Function.update (A i) k (A i k / A k k))) A)
 
-/-- The exact run of Algorithm 4.3.1 as a fold of its passes. -/
+/-- In exact arithmetic, Algorithm 4.3.1 is the fold of its passes. -/
 private theorem algorithm_4_3_1_id (p q : ℕ) (A : Matrix (Fin n) (Fin n) ℝ) :
     Id.run (algorithm_4_3_1 pure p q A) = (List.finRange n).foldl (bandGEStepId p q) A := by
   simp only [algorithm_4_3_1, pure_bind, List.foldlM_pure]
   rfl
 
-/-- The rank-one update of a pass of Algorithm 4.3.1, over the columns `J` and the rows `I`
-(neither containing the pivot index `k`), in exact arithmetic. -/
+/-- The rank-one update of a pass $k$ of Algorithm 4.3.1 in exact arithmetic, over a list $J$ of
+columns and a list $I$ of rows that do not contain $k$, subtracts $s_{rk} s_{kc}$ from the
+entries $(r, c)$ with $r \in I$ and $c \in J$. -/
 private theorem bandGE_update (k : Fin n) {I : List (Fin n)} (hI : I.Nodup) (hkI : k ∉ I) :
     ∀ (J : List (Fin n)), J.Nodup → k ∉ J → ∀ S : Matrix (Fin n) (Fin n) ℝ,
     J.foldl (fun (A : Matrix (Fin n) (Fin n) ℝ) (j : Fin n) =>
@@ -1319,9 +1464,9 @@ private theorem bandGE_update (k : Fin n) {I : List (Fin n)} (hI : I.Nodup) (hkI
     simp only [e1, e2]
     by_cases hcj : c = j <;> by_cases hr : r ∈ I <;> simp [hcj, hr, hjJ]
 
-/-- **The band structure of the stages of Gaussian elimination** (the induction of the proof of
-Theorem 4.3.1): with nonzero pivots, every stage keeps the lower bandwidth `p` and the upper
-bandwidth `q` of `A`. -/
+/-- The stages of Gaussian elimination keep the band. If the pivots used as divisors are nonzero,
+then every stage of Gaussian elimination on $A$ has the lower bandwidth $p$ and the upper
+bandwidth $q$ of $A$. This is the induction of the proof of Theorem 4.3.1. -/
 private theorem gemStage_band {A : Matrix (Fin n) (Fin n) ℝ} {p q : ℕ}
     (hpiv : ∀ (m : ℕ) (hm : m < n), m + 1 < n → gemStage A m ⟨m, hm⟩ ⟨m, hm⟩ ≠ 0)
     (hp : ∀ i j : Fin n, (j : ℕ) + p < i → A i j = 0)
@@ -1351,15 +1496,22 @@ private theorem gemStage_band {A : Matrix (Fin n) (Fin n) ℝ} {p q : ℕ}
       · rw [ihq ⟨k, hk⟩ j (by have := Fin.lt_def.1 hki; simp only at this ⊢; omega), mul_zero]
       · rfl
 
-/-- **Exact correctness of Algorithm 4.3.1**: if `A` has lower bandwidth `p`, upper bandwidth `q`
-and `A(1:k, 1:k)` is nonsingular for `k = 1:n−1` ("assuming it exists"), the exact run `F` holds
-the LU factorization: `L = Chapter03.packedL F` and `U = Chapter03.packedU F`. The band loops
-perform exactly the operations of Gaussian elimination on the entries that can be nonzero: by the
-band structure of its stages (`gemStage_band`), the skipped multipliers and updates are zero; the
-result is the multiplier matrix `Matrix.gemLower A` and the last stage `Matrix.gemStage A n`.
-Reading: "assuming it exists" is read as the nonsingularity of the leading principal submatrices
-used as pivots, which is stronger than the existence of an LU factorization; with erratum 5 it is
-the hypothesis under which Gaussian elimination without pivoting runs to completion. -/
+/-- **Algorithm 4.3.1** of [golub2013matrix], exact correctness. Let $A \in \mathbb{R}^{n \times n}$
+have lower bandwidth $p$ and upper bandwidth $q$, and assume that $A(1{:}k, 1{:}k)$ is
+nonsingular for $k = 1{:}n-1$. Let $F$ be the output of Algorithm 4.3.1 in exact arithmetic.
+Then the unit lower triangular $L$ stored below the diagonal of $F$ and the upper triangular $U$
+stored on and above it form the LU factorization $A = LU$.
+
+**Reading.** The source says "assuming it exists". This is read as the nonsingularity of the
+leading principal submatrices that are used as pivots. It is stronger than the existence of an
+LU factorization, and it is the hypothesis under which Gaussian elimination without pivoting
+runs to completion.
+
+The factors are `GolubVanLoan.Chapter03.packedL F` and `GolubVanLoan.Chapter03.packedU F`, and
+the conclusion is `Matrix.IsLU`. The band loops perform exactly the operations of Gaussian
+elimination on the entries that can be nonzero: the stages keep the band, so the multipliers and
+updates that are skipped are zero. The result is the multiplier matrix `Matrix.gemLower A` and
+the last stage `Matrix.gemStage A n`. -/
 theorem algorithm_4_3_1_spec {p q : ℕ} {A : Matrix (Fin n) (Fin n) ℝ}
     (hp : A.HasLowerBandwidth p) (hq : A.HasUpperBandwidth q)
     (hA : ∀ k, IsUnit (A.strictLeadingPrincipalSubmatrix k)) :
@@ -1478,8 +1630,9 @@ theorem algorithm_4_3_1_spec {p q : ℕ} {A : Matrix (Fin n) (Fin n) ℝ}
 
 /-! ### §4.3.8 The inverse of a band matrix -/
 
-/-- The partition `Fin k ⊕ Fin (n − k) ≃ Fin n` of the indices of an `n × n` matrix into square
-diagonal blocks of sizes `k` and `n − k`. -/
+/-- For $k \le n$, the partition $\{0, \dots, k-1\} \cup \{k, \dots, n-1\}$ of the indices of an
+$n \times n$ matrix into square diagonal blocks of sizes $k$ and $n - k$, as the equivalence
+`Fin k ⊕ Fin (n - k) ≃ Fin n`. -/
 def blockSplit {k : ℕ} (hk : k ≤ n) : Fin k ⊕ Fin (n - k) ≃ Fin n :=
   finSumFinEquiv.trans (finCongr (Nat.add_sub_cancel' hk))
 
@@ -1493,7 +1646,7 @@ private theorem blockSplit_inr {k : ℕ} (hk : k ≤ n) (a : Fin (n - k)) :
     ((blockSplit hk (Sum.inr a) : Fin n) : ℕ) = k + a := by
   simp [blockSplit]
 
-/-- A matrix whose rows from `p` on vanish has rank at most `p`. -/
+/-- A matrix whose rows from $p$ on vanish has rank at most $p$. -/
 private theorem rank_le_of_rows_eq_zero {m k : ℕ} (B : Matrix (Fin m) (Fin k) ℝ) (p : ℕ)
     (h : ∀ i : Fin m, p ≤ (i : ℕ) → ∀ j, B i j = 0) : B.rank ≤ p := by
   classical
@@ -1514,17 +1667,25 @@ private theorem rank_le_of_rows_eq_zero {m k : ℕ} (B : Matrix (Fin m) (Fin k) 
         · exact Subtype.ext (Fin.ext (by simpa using congrArg Fin.val hab))
     _ = p := Fintype.card_fin p
 
-/-- A matrix whose columns from `q` on vanish has rank at most `q`. -/
+/-- A matrix whose columns from $q$ on vanish has rank at most $q$. -/
 private theorem rank_le_of_cols_eq_zero {m k : ℕ} (B : Matrix (Fin m) (Fin k) ℝ) (q : ℕ)
     (h : ∀ j : Fin k, q ≤ (j : ℕ) → ∀ i, B i j = 0) : B.rank ≤ q := by
   rw [← rank_transpose]
   exact rank_le_of_rows_eq_zero Bᵀ q fun j hj i => h j hj i
 
-/-- **Theorem 4.3.3**, (4.3.1)–(4.3.2). "Suppose `A = [A₁₁ A₁₂; A₂₁ A₂₂]` is nonsingular and has
-lower bandwidth `p` and upper bandwidth `q`. Assume that the diagonal blocks are square. If
-`A⁻¹ = X = [X₁₁ X₁₂; X₂₁ X₂₂]` is partitioned conformably, then `rank(X₂₁) ≤ p` (4.3.1) and
-`rank(X₁₂) ≤ q` (4.3.2)." The partition is `blockSplit` with a leading block of size `k`. Through
-the nullity theorem `rank X₂₁ = rank A₂₁`; no limit argument (P4.3.11) is needed. -/
+/-- **Theorem 4.3.3** of [golub2013matrix], with (4.3.1) and (4.3.2). Let
+$A \in \mathbb{R}^{n \times n}$ be nonsingular, with lower bandwidth $p$ and upper bandwidth
+$q$, and partition
+$$A = \begin{bmatrix} A_{11} & A_{12} \\ A_{21} & A_{22} \end{bmatrix}$$
+with square diagonal blocks $A_{11} \in \mathbb{R}^{k \times k}$ and $A_{22}$, $k \le n$. If
+$X = A^{-1} = \begin{bmatrix} X_{11} & X_{12} \\ X_{21} & X_{22} \end{bmatrix}$ is partitioned
+conformably, then
+$$\operatorname{rank}(X_{21}) \le p, \qquad (4.3.1)$$
+$$\operatorname{rank}(X_{12}) \le q. \qquad (4.3.2)$$
+
+The partition is `GolubVanLoan.Chapter04.blockSplit`. The proof uses the nullity theorem,
+$\operatorname{rank}(X_{21}) = \operatorname{rank}(A_{21})$, so the limit argument of the source
+(Problem P4.3.11) is not needed. -/
 theorem theorem_4_3_3 {A : Matrix (Fin n) (Fin n) ℝ} (hA : IsUnit A) {p q : ℕ}
     (hp : A.HasLowerBandwidth p) (hq : A.HasUpperBandwidth q) {k : ℕ} (hk : k ≤ n) :
     (A⁻¹.submatrix (blockSplit hk) (blockSplit hk)).toBlocks₂₁.rank ≤ p ∧
@@ -1544,9 +1705,14 @@ theorem theorem_4_3_3 {A : Matrix (Fin n) (Fin n) ℝ} (hA : IsUnit A) {p q : �
   · simp only [toBlocks₁₂, of_apply, submatrix_apply]
     exact hq' _ _ (by simp; omega)
 
-/-- **§4.3.8**: "It can actually be shown that `rank(A₂₁) = rank(X₂₁)` and
-`rank(A₁₂) = rank(X₁₂)`" (Strang and Nguyen), for a nonsingular `A` partitioned as in
-`theorem_4_3_3` — the nullity theorem. -/
+/-- **Section 4.3.8** of [golub2013matrix], the equality of ranks. Let
+$A \in \mathbb{R}^{n \times n}$ be nonsingular and let $k \le n$. If $A$ and $X = A^{-1}$ are
+partitioned as in Theorem 4.3.3, with square diagonal blocks of sizes $k$ and $n - k$, then
+$$\operatorname{rank}(A_{21}) = \operatorname{rank}(X_{21}), \qquad
+  \operatorname{rank}(A_{12}) = \operatorname{rank}(X_{12}).$$
+
+The source says that this can be shown and attributes it to Strang and Nguyen. It is the nullity
+theorem, and it needs no band structure. -/
 theorem rank_inv_offDiag_eq {A : Matrix (Fin n) (Fin n) ℝ} (hA : IsUnit A) {k : ℕ}
     (hk : k ≤ n) :
     (A⁻¹.submatrix (blockSplit hk) (blockSplit hk)).toBlocks₂₁.rank =

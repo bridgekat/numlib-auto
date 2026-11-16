@@ -11,30 +11,88 @@ import NumlibSurface.GolubVanLoan.Chapter07.Section03
 import NumlibSurface.GolubVanLoan.Chapter08.Section01
 
 /-!
-# Golub–Van Loan §8.2: power iterations
+# Golub and Van Loan, Section 8.2: Power iterations
 
-Surface file for [golub2013matrix] §8.2: the QR iteration (8.2.1) as an orthogonal similarity
-(8.2.2), the power method's computable error bound, inverse iteration, Rayleigh quotient iteration
-(8.2.6) with the two-by-two cubic recurrence (8.2.7), and the convergence of the QR iteration to
-diagonal form (§8.2.5).
+This module formalizes §8.2 of [golub2013matrix], the power iterations for a symmetric
+$A \in \mathbb{R}^{n \times n}$ with the symmetric Schur decomposition $Q^T A Q =
+\operatorname{diag}(\lambda_1, \dots, \lambda_n)$. The QR iteration $T_{k-1} = U_k R_k$,
+$T_k = R_k U_k$ of (8.2.1) is an orthogonal similarity (8.2.2). For the power method, Theorem 8.2.1
+bounds the angle between the iterate $q^{(k)}$ and the dominant eigenvector $q_1$ by
+$\tan(\theta_0) |\lambda_2/\lambda_1|^k$ and the error of the eigenvalue estimate by a multiple of
+$|\lambda_2/\lambda_1|^{2k}$, and §8.2.1 gives a computable error bound from the residual. The
+module also treats the eigenvector expansion behind inverse iteration (§8.2.2), Rayleigh quotient
+iteration (8.2.6) with its cubic convergence for $n = 2$ ((8.2.7)), the convergence of orthogonal
+iteration to a dominant invariant subspace (Theorem 8.2.2), and the convergence of the QR iteration
+to diagonal form (§8.2.5).
+
+The proofs specialize the backbone modules `Numlib.Eigen.PowerMethod`,
+`Numlib.Eigen.InvariantSubspace`, `Numlib.Eigen.QRAlgorithm` and
+`Numlib.Eigen.RayleighQuotientIteration`, and use the power method and orthogonal iteration of §7.3.
+
+## Main definitions
+
+* (8.2.6), `GolubVanLoan.Chapter08.rayleighQuotientIteration`: Rayleigh quotient iteration
+  $x_{k+1} = z_{k+1}/\|z_{k+1}\|_2$ with $(A - r(x_k) I) z_{k+1} = x_k$.
+
+## Main results
+
+* (8.2.1)–(8.2.2), `GolubVanLoan.Chapter08.equation_8_2_2`: the QR iterates are
+  $T_k = (U_0 \cdots U_k)^T A (U_0 \cdots U_k)$ and are symmetric.
+* Theorem 8.2.1, `GolubVanLoan.Chapter08.theorem_8_2_1` and
+  `GolubVanLoan.Chapter08.theorem_8_2_1_b`: the power method satisfies $|\sin \theta_k| \le
+  \tan(\theta_0) |\lambda_2/\lambda_1|^k$ (8.2.4) and $|\lambda^{(k)} - \lambda_1| \le \max_{2 \le i
+  \le n} |\lambda_1 - \lambda_i| \tan(\theta_0)^2 |\lambda_2/\lambda_1|^{2k}$ (8.2.5).
+* §8.2.1, `GolubVanLoan.Chapter08.powerMethod_residual_bound`: for a unit $q$, some eigenvalue
+  $\lambda$ has $|q^T A q - \lambda| \le \|Aq - (q^T A q) q\|_2$.
+* §8.2.2, `GolubVanLoan.Chapter08.inverseIteration_expansion`: $(A - \lambda I)^{-1} \sum_i a_i
+  q_i = \sum_i a_i/(\lambda_i - \lambda) \, q_i$.
+* §8.2.3, `GolubVanLoan.Chapter08.rayleighQuotient_isMinOn`: the Rayleigh quotient $r(x)$ minimizes
+  $\|(A - \mu I) x\|_2$ over $\mu \in \mathbb{R}$.
+* (8.2.6), `GolubVanLoan.Chapter08.equation_8_2_6`: the iteration (8.2.6) is the backbone's Rayleigh
+  quotient iteration.
+* (8.2.7), `GolubVanLoan.Chapter08.equation_8_2_7`: one step of Rayleigh quotient iteration on
+  $\operatorname{diag}(\lambda_1, \lambda_2)$ maps $(c, s)$ to $(c^3, -s^3)/\sqrt{c^6 + s^6}$.
+* §8.2.3, `GolubVanLoan.Chapter08.equation_8_2_7_cubic`: for $n = 2$, $|s_k/c_k| = |s_0/c_0|^{3^k}$.
+* (8.2.13)–(8.2.14), `GolubVanLoan.Chapter08.equation_8_2_13`: $D_1^k V_0 = V_k (R_k \cdots R_1)$
+  and $D_2^k W_0 = W_k (R_k \cdots R_1)$.
+* Theorem 8.2.2, `GolubVanLoan.Chapter08.theorem_8_2_2`: orthogonal iteration satisfies
+  $\operatorname{dist}(D_r(A), \operatorname{ran}(Q_k)) \le |\lambda_{r+1}/\lambda_r|^k
+  d_0/\sqrt{1 - d_0^2}$.
+* §8.2.5 with (8.2.15), `GolubVanLoan.Chapter08.orthogonalIteration_gap_le_of_forall`: the leading
+  $i$ columns of a square orthogonal iteration converge to $D_i(A)$ at the rate
+  $|\lambda_{i+1}/\lambda_i|^k$.
+* §8.2.5, `GolubVanLoan.Chapter08.qrIterate_tendsto_diagonal`: the QR iterates converge to
+  $\operatorname{diag}(\lambda_1, \dots, \lambda_n)$.
+* §8.2.5, `GolubVanLoan.Chapter08.orthogonalIteration_qr_step`: $T_k = Q_k^T A Q_k$ arises from
+  $T_{k-1}$ by one step of the QR iteration.
 
 ## Conventions
 
-The iterations are displays of the book, not numbered algorithms. The power method (8.2.3) and
-orthogonal iteration (8.2.8) are chapter 7's (7.3.3) and (7.3.6), which the nodes that use them
-(Theorems 8.2.1–8.2.2, (8.2.13), (8.2.15), the orthogonal-iteration form of the QR step) cite.
-Inverse iteration is the backbone's `Krylov.inverseIterate`, Rayleigh quotient iteration
-`Krylov.rayleighQuotientIterate`, the QR iteration `Matrix.qrIterate`.
+* The iterations of this section are displays of the source, not numbered algorithms. The power
+  method (8.2.3) is (7.3.3), `GolubVanLoan.Chapter07.powerMethod`, and orthogonal iteration (8.2.8)
+  is (7.3.6), `GolubVanLoan.Chapter07.orthogonalIteration`, both over $\mathbb{R}$.
+* Inverse iteration is the backbone's `Krylov.inverseIterate`, Rayleigh quotient iteration is
+  `Krylov.rayleighQuotientIterate`, and the QR iteration is `Matrix.qrIterate`.
 
-## Readings
+## Implementation notes
 
-(8.2.7) loses the signs: `x_{k+1} = (c_k³, -s_k³)/√(c_k⁶ + s_k⁶)`, and needs `c_k s_k ≠ 0` (else
-`μ_k` is an eigenvalue). In the proof of Theorem 8.2.1 the first sum is garbled and
-`|λ_1 - λ_n|` should be `max_i |λ_1 - λ_i|`; in the proof of Theorem 8.2.2, `V_k = Q_αᵀ Q_0` should
-be `Q_αᵀ Q_k` and `1/(1 - d_0²)` should be `1/√(1 - d_0²)`. (8.2.15) is a hypothesis display (the
-gaps `dist(D_i(A), span{q^{(0)}_1, …, q^{(0)}_i}) < 1`), not an algorithm, so its node keeps the
-content name `orthogonalIteration_gap_le_of_forall`; the program (8.2.6) is
-`rayleighQuotientIteration` with its exact semantics `equation_8_2_6`.
+* The display (8.2.15) is a hypothesis on the starting matrix, not an algorithm, so the result that
+  uses it has the content name `GolubVanLoan.Chapter08.orthogonalIteration_gap_le_of_forall`. The
+  program (8.2.6) is `GolubVanLoan.Chapter08.rayleighQuotientIteration`, and its exact semantics is
+  `GolubVanLoan.Chapter08.equation_8_2_6`.
+
+## Deviations from the source
+
+* **Equations (8.2.1)–(8.2.2)** (generalization). The source takes $U_0$ orthogonal. The similarity
+  $T_k = (U_0 \cdots U_k)^T A (U_0 \cdots U_k)$ and the symmetry of $T_k$ hold for every $U_0$, and
+  the $R_k$ need not be upper triangular. See `GolubVanLoan.Chapter08.equation_8_2_2`.
+* **Equation (8.2.7)** (correction). The source omits the hypothesis $c_k s_k \neq 0$; without it
+  $\mu_k$ is an eigenvalue and the step is not defined. See `GolubVanLoan.Chapter08.equation_8_2_7`.
+* **Equation (8.2.7)** (typo). The source loses the minus sign: the next iterate is
+  $(c_k^3, -s_k^3)/\sqrt{c_k^6 + s_k^6}$. See `GolubVanLoan.Chapter08.equation_8_2_7`.
+* **Equation (8.2.13)** (typo). The source defines both $V_k$ and $W_k$ with $Q_0$;
+  $V_k = Q_\alpha^T Q_k$ and $W_k = Q_\beta^T Q_k$ are meant. See
+  `GolubVanLoan.Chapter08.equation_8_2_13`.
 -/
 
 open Matrix
@@ -43,11 +101,21 @@ namespace GolubVanLoan.Chapter08
 
 variable {n : ℕ}
 
-/-! ### §8.2.1 The power method -/
+/-! ### The power method (§8.2.1) -/
 
-/-- **(8.2.1)–(8.2.2).** For symmetric `A`, an orthogonal `U₀` and any QR steps
-`T_{k-1} = U_k R_k`, `T_k = R_k U_k` with orthogonal `U_k`, starting from `T_0 = U₀ᵀ A U₀`:
-`T_k = (U₀ U₁ ⋯ U_k)ᵀ A (U₀ U₁ ⋯ U_k)`, and every `T_k` is symmetric. -/
+/-- **Equations (8.2.1)–(8.2.2)** of [golub2013matrix]. Let $A \in \mathbb{R}^{n \times n}$ be
+symmetric, let $U_0 \in \mathbb{R}^{n \times n}$, and let $T_0 = U_0^T A U_0$. Let
+$U_k, R_k \in \mathbb{R}^{n \times n}$ for $k \ge 1$, with $U_k$ orthogonal, satisfy the QR
+steps
+$$T_{k-1} = U_k R_k, \qquad T_k = R_k U_k.$$
+Then for every $k \ge 0$,
+$$T_k = (U_0 U_1 \cdots U_k)^T A (U_0 U_1 \cdots U_k),$$
+and $T_k$ is symmetric.
+
+**Generalization.** The source takes $U_0$ orthogonal and $U_k R_k$ a QR factorization. The
+statement assumes neither that $U_0$ is orthogonal nor that the $R_k$ are upper triangular.
+
+The product $U_1 \cdots U_k$ is the list product over `List.range k`. -/
 theorem equation_8_2_2 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
     {U₀ : Matrix (Fin n) (Fin n) ℝ} {U R T : ℕ → Matrix (Fin n) (Fin n) ℝ}
     (hU : ∀ k, U (k + 1) ∈ orthogonalGroup (Fin n) ℝ)
@@ -71,7 +139,7 @@ theorem equation_8_2_2 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
   rw [key k]
   exact hA.transpose_mul_mul (U₀ * ((List.range k).map fun i => U (i + 1)).prod)
 
-/-- The columns of an orthogonal matrix, as an orthonormal basis of `ℝⁿ`. -/
+/-- The columns of an orthogonal matrix, as an orthonormal basis of $\mathbb{R}^n$. -/
 private noncomputable def colBasis {Q : Matrix (Fin n) (Fin n) ℝ}
     (hQ : Q ∈ orthogonalGroup (Fin n) ℝ) : OrthonormalBasis (Fin n) ℝ (EuclideanSpace ℝ (Fin n)) :=
   OrthonormalBasis.mk (orthonormal_euclideanCol (by
@@ -85,7 +153,8 @@ private theorem colBasis_apply {Q : Matrix (Fin n) (Fin n) ℝ}
   simp only [colBasis, OrthonormalBasis.coe_mk]
   rfl
 
-/-- The columns of the Schur factor are eigenvectors. -/
+/-- If $Q$ is orthogonal and $Q^T A Q = \operatorname{diag}(\lambda)$, then the columns of $Q$ are
+eigenvectors of $A$: $A q_i = \lambda_i q_i$. -/
 private theorem toEuclideanLin_colBasis {A Q : Matrix (Fin n) (Fin n) ℝ}
     (hQ : Q ∈ orthogonalGroup (Fin n) ℝ) {lam : Fin n → ℝ} (hQA : Qᵀ * A * Q = diagonal lam)
     (i : Fin n) : toEuclideanLin A (colBasis hQ i) = lam i • colBasis hQ i := by
@@ -96,11 +165,19 @@ private theorem toEuclideanLin_colBasis {A Q : Matrix (Fin n) (Fin n) ℝ}
   simp only [colBasis, OrthonormalBasis.coe_mk]
   exact h
 
-/-- **Theorem 8.2.1, (8.2.4).** Let `Qᵀ A Q = diag(λ)` with `Q = [q₁ | ⋯ | q_n]` orthogonal and
-`|λ₁| > |λ₂| ≥ ⋯ ≥ |λ_n|`, and let `q^{(k)}` be the power method (8.2.3) (chapter 7's (7.3.3)) from
-a unit `q^{(0)}` with `cos θ₀ = |q₁ᵀ q^{(0)}| ≠ 0`. Then
-`|sin θ_k| ≤ tan θ₀ |λ₂/λ₁|^k`, where `sin θ_k = √(1 - (q₁ᵀ q^{(k)})²)` and
-`tan θ₀ = √(1 - cos² θ₀) / cos θ₀`. (`A` is symmetric by the hypothesis.) -/
+/-- **Theorem 8.2.1** of [golub2013matrix], (8.2.4). Let $A \in \mathbb{R}^{n \times n}$ with
+$n \ge 2$, and let $Q = [q_1 | \cdots | q_n]$ be orthogonal with $Q^T A Q =
+\operatorname{diag}(\lambda_1, \dots, \lambda_n)$, where
+$$|\lambda_1| > |\lambda_2| \ge \dots \ge |\lambda_n|.$$
+Let $q^{(k)}$ be the vectors of the power method (8.2.3) from a unit vector $q^{(0)}$ with
+$\cos(\theta_0) = |q_1^T q^{(0)}| \neq 0$. Then for every $k$,
+$$|\sin(\theta_k)| \le \tan(\theta_0) \left|\frac{\lambda_2}{\lambda_1}\right|^k,$$
+where $|\sin(\theta_k)| = \sqrt{1 - (q_1^T q^{(k)})^2}$ and $\tan(\theta_0) = \sqrt{1 -
+\cos^2(\theta_0)} / \cos(\theta_0)$.
+
+The matrix $A$ is symmetric because $Q^T A Q$ is diagonal. The order $n = N + 2$ makes
+$\lambda_2$ exist. The power method is `GolubVanLoan.Chapter07.powerMethod`, and $q^{(k)}$ is
+its first component. The indices of $\lambda$ and of the columns of $Q$ are 0-based. -/
 theorem theorem_8_2_1 {N : ℕ} {A Q : Matrix (Fin (N + 2)) (Fin (N + 2)) ℝ}
     (hQ : Q ∈ orthogonalGroup (Fin (N + 2)) ℝ) {lam : Fin (N + 2) → ℝ}
     (hQA : Qᵀ * A * Q = diagonal lam) (h01 : |lam 1| < |lam 0|) (hlam : Antitone fun i => |lam i|)
@@ -131,9 +208,15 @@ theorem theorem_8_2_1 {N : ℕ} {A Q : Matrix (Fin (N + 2)) (Fin (N + 2)) ℝ}
     ((colBasis hQ).orthonormal.1 0), hv0] at h
   simpa only [Real.norm_eq_abs, sq_abs, abs_div] using h
 
-/-- **Theorem 8.2.1, (8.2.5).** Under the hypotheses of Theorem 8.2.1, the eigenvalue estimates
-`λ^{(k)} = q^{(k)ᵀ} A q^{(k)}` of the power method satisfy
-`|λ^{(k)} - λ₁| ≤ max_{2 ≤ i ≤ n} |λ₁ - λ_i| tan(θ₀)² |λ₂/λ₁|^{2k}`. -/
+/-- **Theorem 8.2.1** of [golub2013matrix], (8.2.5). Under the hypotheses of
+`GolubVanLoan.Chapter08.theorem_8_2_1`, the eigenvalue estimates
+$\lambda^{(k)} = q^{(k)T} A q^{(k)}$ of the power method satisfy
+$$|\lambda^{(k)} - \lambda_1| \le \max_{2 \le i \le n} |\lambda_1 - \lambda_i| \,
+  \tan(\theta_0)^2 \left|\frac{\lambda_2}{\lambda_1}\right|^{2k}.$$
+
+The estimate $\lambda^{(k)}$ is the second component of `GolubVanLoan.Chapter07.powerMethod`. In
+the proof of the source the first sum is garbled, and $|\lambda_1 - \lambda_n|$ is written where
+$\max_i |\lambda_1 - \lambda_i|$ is needed. -/
 theorem theorem_8_2_1_b {N : ℕ} {A Q : Matrix (Fin (N + 2)) (Fin (N + 2)) ℝ}
     (hQ : Q ∈ orthogonalGroup (Fin (N + 2)) ℝ) {lam : Fin (N + 2) → ℝ}
     (hQA : Qᵀ * A * Q = diagonal lam) (h01 : |lam 1| < |lam 0|) (hlam : Antitone fun i => |lam i|)
@@ -170,9 +253,13 @@ theorem theorem_8_2_1_b {N : ℕ} {A Q : Matrix (Fin (N + 2)) (Fin (N + 2)) ℝ}
     Real.sq_sqrt (by linarith), sq_abs]
   simpa only [hv0, Real.norm_eq_abs, sq_abs, abs_div, RCLike.re_to_real] using h
 
-/-- **§8.2.1, the computable error bound.** For symmetric `A` and a unit `q` with
-`‖A q - (qᵀAq) q‖₂ = δ`, some eigenvalue `λ` of `A` has `|qᵀAq - λ| ≤ δ`, a fortiori the book's
-`|qᵀAq - λ| ≤ √2 δ` (the case `r = 1` of Theorem 8.1.13). -/
+/-- **Section 8.2.1** of [golub2013matrix], the computable error bound. Let
+$A \in \mathbb{R}^{n \times n}$ be symmetric, let $q \in \mathbb{R}^n$ with $q^T q = 1$, and let
+$\delta = \|A q - (q^T A q) q\|_2$. Then there is an eigenvalue $\lambda$ of $A$ with
+$$|q^T A q - \lambda| \le \delta, \qquad \text{hence} \qquad |q^T A q - \lambda| \le \sqrt{2} \,
+  \delta.$$
+
+The second bound is the one of the source, the case $r = 1$ of Theorem 8.1.13. -/
 theorem powerMethod_residual_bound {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
     {q : Fin n → ℝ} (hq : q ⬝ᵥ q = 1) :
     ∃ l ∈ spectrum ℝ A, |q ⬝ᵥ A *ᵥ q - l| ≤ ‖WithLp.toLp 2 (A *ᵥ q - (q ⬝ᵥ A *ᵥ q) • q)‖ ∧
@@ -202,12 +289,16 @@ theorem powerMethod_residual_bound {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSy
       exact Real.sqrt_le_sqrt (by norm_num)
     nlinarith [norm_nonneg (WithLp.toLp 2 (A *ᵥ q - (q ⬝ᵥ A *ᵥ q) • q))]
 
-/-! ### §8.2.2 Inverse iteration -/
+/-! ### Inverse iteration (§8.2.2) -/
 
-/-- **§8.2.2, the expansion behind inverse iteration.** For symmetric `A` with an orthonormal
-eigenbasis `q_i = Q(:, i)` (`Qᵀ A Q = diag(λ)`), `x = ∑ a_i q_i` and `λ` not an eigenvalue,
-`(A - λI)⁻¹ x = ∑ (a_i / (λ_i - λ)) q_i`. Inverse iteration is the power method applied to
-`(A - λI)⁻¹` (`Krylov.inverseIterate`). -/
+/-- **Section 8.2.2** of [golub2013matrix], the expansion behind inverse iteration. Let
+$Q = [q_1 | \cdots | q_n]$ be orthogonal with $Q^T A Q = \operatorname{diag}(\lambda_1, \dots,
+\lambda_n)$, and let $\lambda \in \mathbb{R}$ with $\lambda \neq \lambda_i$ for all $i$. Then
+for every $x = \sum_i a_i q_i$,
+$$(A - \lambda I)^{-1} x = \sum_{i=1}^n \frac{a_i}{\lambda_i - \lambda} \, q_i.$$
+
+The vector $x$ is $Q a$. Inverse iteration is the power method applied to
+$(A - \lambda I)^{-1}$, which is `Krylov.inverseIterate`. -/
 theorem inverseIteration_expansion {A Q : Matrix (Fin n) (Fin n) ℝ}
     (hQ : Q ∈ orthogonalGroup (Fin n) ℝ) {l : Fin n → ℝ} (hQA : Qᵀ * A * Q = diagonal l)
     {c : ℝ} (hc : ∀ i, l i ≠ c) (a : Fin n → ℝ) :
@@ -226,10 +317,13 @@ theorem inverseIteration_expansion {A Q : Matrix (Fin n) (Fin n) ℝ}
   funext i
   rw [mulVec_diagonal, div_eq_mul_inv, mul_comm]
 
-/-! ### §8.2.3 Rayleigh quotient iteration -/
+/-! ### Rayleigh quotient iteration (§8.2.3) -/
 
-/-- **§8.2.3**: the Rayleigh quotient `r(x) = xᵀAx / xᵀx` minimizes `‖(A - λI)x‖₂` over `λ ∈ ℝ`,
-for any `A` and `x ≠ 0`. -/
+/-- **Section 8.2.3** of [golub2013matrix]. Let $A \in \mathbb{R}^{n \times n}$ and
+$x \in \mathbb{R}^n$ with $x \neq 0$. Then the Rayleigh quotient $r(x) = x^T A x / x^T x$
+minimizes $\|(A - \mu I) x\|_2$ over $\mu \in \mathbb{R}$.
+
+The matrix $A$ need not be symmetric. -/
 theorem rayleighQuotient_isMinOn (A : Matrix (Fin n) (Fin n) ℝ) {x : Fin n → ℝ} (hx : x ≠ 0) :
     IsMinOn (fun μ : ℝ => ‖WithLp.toLp 2 ((A - μ • 1) *ᵥ x)‖) Set.univ (rayleighQuotient A x) := by
   have hxx : 0 < x ⬝ᵥ x := by
@@ -255,9 +349,15 @@ theorem rayleighQuotient_isMinOn (A : Matrix (Fin n) (Fin n) ℝ) {x : Fin n →
     ring
   nlinarith [sq_nonneg (μ - (x ⬝ᵥ A *ᵥ x) / (x ⬝ᵥ x))]
 
-/-- **(8.2.6), Rayleigh quotient iteration**: `x_0` given; `μ_k = r(x_k)`,
-`(A - μ_k I) z_{k+1} = x_k`, `x_{k+1} = z_{k+1} / ‖z_{k+1}‖₂`. The solve is `Matrix.inv` (a singular
-shift gives Lean's junk value `0`; statements carry the hypotheses). -/
+/-- **Equation (8.2.6)** of [golub2013matrix], Rayleigh quotient iteration. For
+$A \in \mathbb{R}^{n \times n}$ and $x_0 \in \mathbb{R}^n$, the iterates are defined for
+$k \ge 0$ by
+$$\mu_k = r(x_k), \qquad (A - \mu_k I) z_{k+1} = x_k, \qquad x_{k+1} = z_{k+1} /
+  \|z_{k+1}\|_2.$$
+
+The solve is the product with the matrix inverse `Matrix.inv`. If $A - \mu_k I$ is singular, the
+inverse is $0$ in Lean, so that $z_{k+1} = 0$ and $x_{k+1} = 0$; statements about the iteration
+carry the hypotheses that exclude this. -/
 noncomputable def rayleighQuotientIteration (A : Matrix (Fin n) (Fin n) ℝ) (x₀ : Fin n → ℝ) :
     ℕ → Fin n → ℝ
   | 0 => x₀
@@ -266,7 +366,7 @@ noncomputable def rayleighQuotientIteration (A : Matrix (Fin n) (Fin n) ℝ) (x�
       rayleighQuotientIteration A x₀ k
     ‖(WithLp.toLp 2 z : EuclideanSpace ℝ (Fin n))‖⁻¹ • z
 
-/-- `Ring.inverse` of the operator of a matrix is the operator of its inverse. -/
+/-- `Ring.inverse` of the operator of a matrix $M$ is the operator of $M^{-1}$. -/
 private theorem ringInverse_toEuclideanLin' (M : Matrix (Fin n) (Fin n) ℝ) :
     Ring.inverse (toEuclideanLin M) = toEuclideanLin M⁻¹ := by
   by_cases hM : IsUnit M
@@ -280,9 +380,11 @@ private theorem ringInverse_toEuclideanLin' (M : Matrix (Fin n) (Fin n) ℝ) :
     rw [Ring.inverse_non_unit _ h1, nonsing_inv_eq_ringInverse, Ring.inverse_non_unit _ hM,
       map_zero]
 
-/-- **(8.2.6) is the backbone's Rayleigh quotient iteration**: from a unit `x_0`, the book's
-iterates are `Krylov.rayleighQuotientIterate (toEuclideanLin A) x_0` (inverse iteration with the
-Rayleigh shift `⟪x, A x⟫`, normalized). -/
+/-- **Equation (8.2.6)** of [golub2013matrix] as the backbone's iteration. Let
+$A \in \mathbb{R}^{n \times n}$ and let $x_0 \in \mathbb{R}^n$ be a unit vector. Then the
+iterates of `GolubVanLoan.Chapter08.rayleighQuotientIteration` are those of
+`Krylov.rayleighQuotientIterate` for the operator `Matrix.toEuclideanLin A` from $x_0$: inverse
+iteration with the Rayleigh shift $\langle x, Ax \rangle$, normalized. -/
 theorem equation_8_2_6 (A : Matrix (Fin n) (Fin n) ℝ) {x₀ : Fin n → ℝ}
     (hx₀ : x₀ ⬝ᵥ x₀ = 1) (k : ℕ) :
     WithLp.toLp 2 (rayleighQuotientIteration A x₀ k) =
@@ -331,12 +433,20 @@ theorem equation_8_2_6 (A : Matrix (Fin n) (Fin n) ℝ) {x₀ : Fin n → ℝ}
     rw [hop, toEuclideanLin_toLp, WithLp.toLp_smul]
     rfl
 
-/-- **(8.2.7).** Rayleigh quotient iteration on `A = diag(λ₁, λ₂)`, `λ₁ > λ₂`, from
-`x_k = (c_k, s_k)` with `c_k² + s_k² = 1` and `c_k s_k ≠ 0` (the book omits this: otherwise
-`μ_k` is an eigenvalue): `μ_k = λ₁c_k² + λ₂s_k²`,
-`z_{k+1} = (1/(λ₁ - λ₂)) (c_k/s_k², -s_k/c_k²)` and
-`x_{k+1} = (c_k³, -s_k³)/√(c_k⁶ + s_k⁶)` — so `|c_{k+1}| = |c_k|³/√(c_k⁶ + s_k⁶)` and
-`|s_{k+1}| = |s_k|³/√(c_k⁶ + s_k⁶)`, the book's display up to the lost sign. -/
+/-- **Equation (8.2.7)** of [golub2013matrix]. Let $\lambda_1 > \lambda_2$ and
+$A = \operatorname{diag}(\lambda_1, \lambda_2)$, and let $x_k = (c_k, s_k)$ with
+$c_k^2 + s_k^2 = 1$, $c_k \neq 0$ and $s_k \neq 0$. Then one step of Rayleigh quotient iteration
+(8.2.6) gives
+$$\mu_k = \lambda_1 c_k^2 + \lambda_2 s_k^2, \qquad z_{k+1} = \frac{1}{\lambda_1 - \lambda_2}
+  \begin{bmatrix} c_k / s_k^2 \\ -s_k / c_k^2 \end{bmatrix}, \qquad x_{k+1} =
+  \frac{1}{\sqrt{c_k^6 + s_k^6}} \begin{bmatrix} c_k^3 \\ -s_k^3 \end{bmatrix}.$$
+
+**Correction.** The source omits the hypothesis $c_k s_k \neq 0$. If $c_k s_k = 0$, then $\mu_k$
+is an eigenvalue of $A$, and $A - \mu_k I$ is singular.
+
+**Typo.** The source loses the minus sign of the second component of $x_{k+1}$. The display of
+the source holds for $|c_{k+1}| = |c_k|^3/\sqrt{c_k^6 + s_k^6}$ and
+$|s_{k+1}| = |s_k|^3/\sqrt{c_k^6 + s_k^6}$. -/
 theorem equation_8_2_7 {l₁ l₂ : ℝ} (hl : l₂ < l₁) {c s : ℝ} (hcs : c ^ 2 + s ^ 2 = 1)
     (hc : c ≠ 0) (hs : s ≠ 0) :
     let A : Matrix (Fin 2) (Fin 2) ℝ := diagonal ![l₁, l₂]
@@ -401,10 +511,16 @@ theorem equation_8_2_7 {l₁ l₂ : ℝ} (hl : l₂ < l₁) {c s : ℝ} (hcs : c
   congr 1
   field_simp
 
-/-- **§8.2.3, cubic convergence for `n = 2`.** For `A = diag(λ₁, λ₂)`, `λ₁ > λ₂`, and a unit
-`x_0 = (c_0, s_0)` with `c_0 s_0 ≠ 0`, the Rayleigh quotient iterates `x_k = (c_k, s_k)` stay unit
-vectors with `c_k s_k ≠ 0`, and `|s_k / c_k| = |s_0 / c_0|^(3^k)`: they converge cubically to
-`span{e₁}` if `|c_0| > |s_0|` and to `span{e₂}` if `|c_0| < |s_0|`. -/
+/-- **Section 8.2.3** of [golub2013matrix], cubic convergence for $n = 2$. Let
+$\lambda_1 > \lambda_2$ and $A = \operatorname{diag}(\lambda_1, \lambda_2)$, and let
+$x_0 = (c_0, s_0)$ with $c_0^2 + s_0^2 = 1$, $c_0 \neq 0$ and $s_0 \neq 0$. Then for every $k$
+the Rayleigh quotient iterate $x_k = (c_k, s_k)$ satisfies $c_k^2 + s_k^2 = 1$, $c_k \neq 0$,
+$s_k \neq 0$ and
+$$\left|\frac{s_k}{c_k}\right| = \left|\frac{s_0}{c_0}\right|^{3^k}.$$
+So the iterates converge cubically to $\operatorname{span}\{e_1\}$ if $|c_0| > |s_0|$, and to
+$\operatorname{span}\{e_2\}$ if $|c_0| < |s_0|$.
+
+The proof applies `GolubVanLoan.Chapter08.equation_8_2_7` at each step. -/
 theorem equation_8_2_7_cubic {l₁ l₂ : ℝ} (hl : l₂ < l₁) {c₀ s₀ : ℝ}
     (hcs : c₀ ^ 2 + s₀ ^ 2 = 1) (hc : c₀ ≠ 0) (hs : s₀ ≠ 0) (k : ℕ) :
     let x := rayleighQuotientIteration (diagonal ![l₁, l₂]) ![c₀, s₀] k
@@ -433,9 +549,9 @@ theorem equation_8_2_7_cubic {l₁ l₂ : ℝ} (hl : l₂ < l₁) {c₀ s₀ : �
           field_simp]
       rw [abs_neg, abs_pow, h4, ← pow_mul, pow_succ]
 
-/-! ### §8.2.4 Orthogonal iteration -/
+/-! ### Orthogonal iteration (§8.2.4) -/
 
-/-- The product `R_k ⋯ R_1` of the triangular factors of an iteration. -/
+/-- If $A Q_k = Q_{k+1} R_{k+1}$ for all $k$, then $A^k Q_0 = Q_k (R_k \cdots R_1)$. -/
 private theorem pow_mul_eq_mul_prod {p : ℕ} {A : Matrix (Fin n) (Fin n) ℝ}
     {Qk : ℕ → Matrix (Fin n) (Fin p) ℝ} {R : ℕ → Matrix (Fin p) (Fin p) ℝ}
     (hQR : ∀ k, A * Qk k = Qk (k + 1) * R (k + 1)) (k : ℕ) :
@@ -447,11 +563,22 @@ private theorem pow_mul_eq_mul_prod {p : ℕ} {A : Matrix (Fin n) (Fin n) ℝ}
       List.reverse_append, List.map_append, List.prod_append]
     simp [Matrix.mul_assoc]
 
-/-- **(8.2.13)–(8.2.14).** Let `Q = [Q_α Q_β]` with `Q Qᵀ = I` and `Qᵀ A Q = diag(D₁, D₂)`
-((8.2.9)–(8.2.10)), and let `A Q_{k-1} = Q_k R_k` for all `k` — the relations of orthogonal
-iteration (8.2.8) (chapter 7's (7.3.6), `Chapter07.orthogonalIteration`, with the triangular
-factors of its thin QR steps). With `V_k = Q_αᵀ Q_k` and `W_k = Q_βᵀ Q_k` (the book prints `Q₀`
-in both definitions; `Q_k` is meant): `D₁^k V₀ = V_k (R_k ⋯ R₁)` and `D₂^k W₀ = W_k (R_k ⋯ R₁)`. -/
+/-- **Equations (8.2.13)–(8.2.14)** of [golub2013matrix]. Let $A \in \mathbb{R}^{n \times n}$, and
+let $Q = [Q_\alpha \; Q_\beta]$ with $Q_\alpha \in \mathbb{R}^{n \times r}$,
+$Q_\beta \in \mathbb{R}^{n \times s}$, $Q Q^T = I$ and
+$$Q^T A Q = \begin{bmatrix} D_1 & 0 \\ 0 & D_2 \end{bmatrix},$$
+as in (8.2.9)–(8.2.10). Let $Q_k \in \mathbb{R}^{n \times p}$ and
+$R_k \in \mathbb{R}^{p \times p}$ satisfy $A Q_{k-1} = Q_k R_k$ for all $k \ge 1$, the relation
+of orthogonal iteration (8.2.8). Let $V_k = Q_\alpha^T Q_k$ and $W_k = Q_\beta^T Q_k$. Then for
+every $k$,
+$$D_1^k V_0 = V_k (R_k \cdots R_1), \qquad D_2^k W_0 = W_k (R_k \cdots R_1).$$
+
+**Typo.** The source prints $Q_0$ in the definitions of both $V_k$ and $W_k$; $Q_k$ is meant.
+
+The statement needs only the relation $A Q_{k-1} = Q_k R_k$: neither orthonormal columns of
+$Q_k$ nor triangular $R_k$ are assumed. In orthogonal iteration
+(`GolubVanLoan.Chapter07.orthogonalIteration`) the $R_k$ are the triangular factors of its thin
+QR steps. -/
 theorem equation_8_2_13 {r s p : ℕ} {A : Matrix (Fin n) (Fin n) ℝ} {Qα : Matrix (Fin n) (Fin r) ℝ}
     {Qβ : Matrix (Fin n) (Fin s) ℝ} (hQ : fromCols Qα Qβ * (fromCols Qα Qβ)ᵀ = 1)
     {D₁ : Matrix (Fin r) (Fin r) ℝ} {D₂ : Matrix (Fin s) (Fin s) ℝ}
@@ -479,7 +606,9 @@ theorem equation_8_2_13 {r s p : ℕ} {A : Matrix (Fin n) (Fin n) ℝ} {Qα : Ma
   · rw [← Matrix.mul_assoc, ← hpow hα, Matrix.mul_assoc, hk, Matrix.mul_assoc]
   · rw [← Matrix.mul_assoc, ← hpow hβ, Matrix.mul_assoc, hk, Matrix.mul_assoc]
 
-/-- The span of the first `r` columns of `Q`, the book's `D_r(A) = ran(Q_α)`. -/
+/-- The span of the first $r$ columns of an orthogonal $Q$, the subspace
+$D_r(A) = \operatorname{ran}(Q_\alpha)$ of the source, is the span of the first $r$ vectors of
+the orthonormal column basis. -/
 private theorem span_leading_cols_eq {Q : Matrix (Fin n) (Fin n) ℝ}
     (hQ : Q ∈ orthogonalGroup (Fin n) ℝ) {r : ℕ} (hr : r ≤ n) :
     Submodule.span ℝ (Set.range fun i : Fin r =>
@@ -494,13 +623,21 @@ private theorem span_leading_cols_eq {Q : Matrix (Fin n) (Fin n) ℝ}
   · rintro ⟨i, hi, rfl⟩
     exact ⟨⟨i, hi⟩, rfl⟩
 
-/-- **Theorem 8.2.2.** Let `Qᵀ A Q = diag(λ)` ((8.2.9)) with `Q` orthogonal and
-`|λ₁| ≥ ⋯ ≥ |λ_n|`, `1 ≤ r < n`, `|λ_r| > |λ_{r+1}|`, `D_r(A) = ran(Q_α) = span{q₁, …, q_r}`,
-and let `Q_k` be an orthogonal iteration (8.2.8) (chapter 7's (7.3.6)) with
-`d_k = dist(D_r(A), ran(Q_k))`. If `d₀ < 1` ((8.2.11)) then
-`d_k ≤ |λ_{r+1}/λ_r|^k d₀/√(1 - d₀²)` ((8.2.12); the book's proof prints `1/(1 - d₀²)`). The
-book's argument through (8.2.13) and the thin CS decomposition is replaced by the backbone's graph
-argument (`LinearMap.IsSymmetric.gap_subspaceIterate_le`). (`A` is symmetric by the hypothesis.) -/
+/-- **Theorem 8.2.2** of [golub2013matrix]. Let $A \in \mathbb{R}^{n \times n}$, and let
+$Q = [q_1 | \cdots | q_n]$ be orthogonal with $Q^T A Q = \operatorname{diag}(\lambda_1, \dots,
+\lambda_n)$ (8.2.9), where $|\lambda_1| \ge \dots \ge |\lambda_n|$. Let $1 \le r < n$ with
+$|\lambda_r| > |\lambda_{r+1}|$, and let $D_r(A) = \operatorname{span}\{q_1, \dots, q_r\}$. Let
+$Q_k \in \mathbb{R}^{n \times r}$ be an orthogonal iteration (8.2.8), and let $d_k =
+\operatorname{dist}(D_r(A), \operatorname{ran}(Q_k))$. If $d_0 < 1$ (8.2.11), then for every $k$
+$$d_k \le \left|\frac{\lambda_{r+1}}{\lambda_r}\right|^k \frac{d_0}{\sqrt{1 - d_0^2}}.$$
+This bound is (8.2.12).
+
+The matrix $A$ is symmetric because $Q^T A Q$ is diagonal. Orthogonal iteration is
+`GolubVanLoan.Chapter07.orthogonalIteration`, and the distance is
+`GolubVanLoan.Chapter02.subspaceDist`. The proof of the source prints the factor $1/(1 - d_0^2)$
+instead of $1/\sqrt{1 - d_0^2}$. The argument of the source through (8.2.13) and the thin CS
+decomposition is replaced by the graph argument of
+`LinearMap.IsSymmetric.gap_subspaceIterate_le`. -/
 theorem theorem_8_2_2 {A Q : Matrix (Fin n) (Fin n) ℝ} (hQ : Q ∈ orthogonalGroup (Fin n) ℝ)
     {lam : Fin n → ℝ} (hQA : Qᵀ * A * Q = diagonal lam) (hlam : Antitone fun i => |lam i|)
     {r : ℕ} (hr0 : 0 < r) (hrn : r < n) (hgap : |lam ⟨r, hrn⟩| < |lam ⟨r - 1, by omega⟩|)
@@ -564,7 +701,8 @@ theorem theorem_8_2_2 {A Q : Matrix (Fin n) (Fin n) ℝ} (hQ : Q ∈ orthogonalG
   refine key.trans (le_of_eq ?_)
   rw [div_pow]
 
-/-- The leading `i` columns of a thin QR factorization form one: `R` is upper triangular. -/
+/-- The leading $i$ columns of a thin QR factorization form a thin QR factorization of the leading
+$i$ columns, because $R$ is upper triangular. -/
 private theorem isThinQR_leading {m : Type*} [Fintype m] {p i : ℕ} (hi : i ≤ p)
     {B Q' : Matrix m (Fin p) ℝ} {R : Matrix (Fin p) (Fin p) ℝ} (h : IsThinQR B Q' R) :
     IsThinQR (B.submatrix id (Fin.castLE hi)) (Q'.submatrix id (Fin.castLE hi))
@@ -587,13 +725,19 @@ private theorem isThinQR_leading {m : Type*} [Fintype m] {p i : ℕ} (hi : i ≤
     rw [e, Matrix.one_apply, Matrix.one_apply]
     simp only [(Fin.castLE_injective hi).eq_iff]
 
-/-- **§8.2.5, (8.2.15).** For `Qᵀ A Q = diag(λ)` with `Q` orthogonal and
-`|λ₁| > |λ₂| > ⋯ > |λ_n|`, and an orthogonal iteration `Q_k` with `r = n`: if
-`dist(D_i(A), span{q^{(0)}_1, …, q^{(0)}_i}) < 1` for `i = 1:n-1` ((8.2.15)), then for each such
-`i`, `dist(span{q^{(k)}_1, …, q^{(k)}_i}, span{q_1, …, q_i}) ≤ |λ_{i+1}/λ_i|^k C_i` with the
-explicit `C_i = d₀^{(i)}/√(1 - (d₀^{(i)})²)` — the book's `O(|λ_{i+1}/λ_i|^k)`. The leading `i`
-columns of `Q_k` are an orthogonal iteration of their own (the `R_k` are upper triangular), and
-Theorem 8.2.2 applies to them. -/
+/-- **Section 8.2.5** of [golub2013matrix], with (8.2.15). Let $Q = [q_1 | \cdots | q_n]$ be
+orthogonal with $Q^T A Q = \operatorname{diag}(\lambda_1, \dots, \lambda_n)$, where
+$|\lambda_1| > |\lambda_2| > \dots > |\lambda_n|$. Let $Q_k \in \mathbb{R}^{n \times n}$ be an
+orthogonal iteration with columns $q^{(k)}_1, \dots, q^{(k)}_n$, and let
+$$d^{(i)}_0 = \operatorname{dist}(D_i(A), \operatorname{span}\{q^{(0)}_1, \dots, q^{(0)}_i\}),
+  \qquad D_i(A) = \operatorname{span}\{q_1, \dots, q_i\}.$$
+If $d^{(i)}_0 < 1$ for $i = 1, \dots, n - 1$ (8.2.15), then for each such $i$ and every $k$
+$$\operatorname{dist}(\operatorname{span}\{q^{(k)}_1, \dots, q^{(k)}_i\}, D_i(A)) \le
+  \left|\frac{\lambda_{i+1}}{\lambda_i}\right|^k \frac{d^{(i)}_0}{\sqrt{1 - (d^{(i)}_0)^2}}.$$
+
+The source states the rate as $O(|\lambda_{i+1}/\lambda_i|^k)$; the constant here is explicit.
+The leading $i$ columns of $Q_k$ form an orthogonal iteration of their own, because the factors
+$R_k$ are upper triangular, and Theorem 8.2.2 applies to them. -/
 theorem orthogonalIteration_gap_le_of_forall {A Q : Matrix (Fin n) (Fin n) ℝ}
     (hQ : Q ∈ orthogonalGroup (Fin n) ℝ) {lam : Fin n → ℝ} (hQA : Qᵀ * A * Q = diagonal lam)
     (hlam : StrictAnti fun i => |lam i|) {Qk : ℕ → Matrix (Fin n) (Fin n) ℝ}
@@ -628,13 +772,19 @@ theorem orthogonalIteration_gap_le_of_forall {A Q : Matrix (Fin n) (Fin n) ℝ}
   rw [Submodule.gap_comm]
   exact theorem_8_2_2 hQ hQA hlam.antitone hi0 hi hgap hlead (h₀ i hi hi0) k
 
-/-! ### §8.2.5 The QR iteration and orthogonal iteration -/
+/-! ### The QR iteration and orthogonal iteration (§8.2.5) -/
 
-/-- **§8.2.5: "the matrices `T_k = Q_kᵀ A Q_k` converge to diagonal form".** For symmetric `A` with
-`Qᵀ A Q = diag(λ)` (`Q` orthogonal), eigenvalues of distinct moduli `|λ_1| > ⋯ > |λ_n| > 0`, and
-`Qᵀ` with nonsingular leading principal submatrices (the general-position condition (8.2.15) at
-`Q_0 = I`), the QR iterates `Matrix.qrIterate A k` converge to `diag(λ)`: every off-diagonal entry
-tends to `0` and the `j`-th diagonal entry to `λ_j`. -/
+/-- **Section 8.2.5** of [golub2013matrix], "the matrices $T_k = Q_k^T A Q_k$ converge to diagonal
+form". Let $A \in \mathbb{R}^{n \times n}$ be symmetric, and let $Q$ be orthogonal with $Q^T A
+Q = \operatorname{diag}(\lambda_1, \dots, \lambda_n)$, where
+$$|\lambda_1| > |\lambda_2| > \dots > |\lambda_n| > 0.$$
+Assume that every leading principal submatrix of $Q^T$ is nonsingular. Then the iterates $T_k$
+of the QR iteration from $T_0 = A$ converge to $\operatorname{diag}(\lambda_1, \dots,
+\lambda_n)$: every off-diagonal entry of $T_k$ tends to $0$, and the $j$-th diagonal entry tends
+to $\lambda_j$.
+
+The QR iteration is `Matrix.qrIterate`, with the canonical QR factorization. The condition on
+$Q^T$ is the general-position condition (8.2.15) for $Q_0 = I$. -/
 theorem qrIterate_tendsto_diagonal {A Q : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
     (hQ : Q ∈ orthogonalGroup (Fin n) ℝ) {l : Fin n → ℝ} (hQA : Qᵀ * A * Q = diagonal l)
     (hsep : ∀ j k : Fin n, j < k → |l k| < |l j|) (hl0 : ∀ j, l j ≠ 0)
@@ -672,11 +822,16 @@ theorem qrIterate_tendsto_diagonal {A Q : Matrix (Fin n) (Fin n) ℝ} (hA : A.Is
     exact hconv.1 k j h
   · exact hconv.1 j k h
 
-/-- **§8.2.5, the QR iteration from orthogonal iteration**: for an orthogonal iteration (8.2.8) with
-square `Q_k` and `T_k = Q_kᵀ A Q_k`, the triangular factor `R_k` of the step gives
-`T_{k-1} = (Q_{k-1}ᵀ Q_k) R_k` and `T_k = R_k (Q_{k-1}ᵀ Q_k)` with `Q_{k-1}ᵀ Q_k` orthogonal —
-"`T_k` is determined by computing the QR factorization of `T_{k-1}` and then multiplying the
-factors together in reverse order", one step of (8.2.1). Chapter 7's §7.3.3 at `ℝ`. -/
+/-- **Section 8.2.5** of [golub2013matrix], the QR iteration from orthogonal iteration. Let
+$A \in \mathbb{R}^{n \times n}$, let $Q_k \in \mathbb{R}^{n \times n}$ be an orthogonal
+iteration (8.2.8) with square $Q_k$, and let $T_k = Q_k^T A Q_k$. Then for every $k$ there is an
+upper triangular $R$ such that $Q_k^T Q_{k+1}$ is orthogonal,
+$$T_k = (Q_k^T Q_{k+1}) R, \qquad T_{k+1} = R (Q_k^T Q_{k+1}),$$
+and $T_{k+1}$ arises from $T_k$ by one unshifted QR step (`Matrix.IsShiftedQrStep` with shift
+$0$). In the words of the source, "$T_k$ is determined by computing the QR factorization of
+$T_{k-1}$ and then multiplying the factors together in reverse order", one step of (8.2.1).
+
+The matrix $A$ need not be symmetric. This is §7.3.3 of [golub2013matrix] over $\mathbb{R}$. -/
 theorem orthogonalIteration_qr_step {A : Matrix (Fin n) (Fin n) ℝ}
     {Qk : ℕ → Matrix (Fin n) (Fin n) ℝ} (hQk : Chapter07.orthogonalIteration A Qk) (k : ℕ) :
     ∃ R : Matrix (Fin n) (Fin n) ℝ, R.IsUpperTriangular ∧

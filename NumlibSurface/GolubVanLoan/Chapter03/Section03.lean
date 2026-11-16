@@ -5,27 +5,58 @@ Released under Apache 2.0 license as described in the file LICENSE.
 import NumlibSurface.GolubVanLoan.Chapter03.Section02
 
 /-!
-# Golub–Van Loan §3.3: roundoff error in Gaussian elimination
+# Golub and Van Loan, Section 3.3: Roundoff error in Gaussian elimination
 
-Surface file for Gene H. Golub and Charles F. Van Loan, *Matrix Computations*, 4th edition, §3.3:
-Theorem 3.3.1 (the computed LU factors) and Theorem 3.3.2 (factor, then the two triangular solves),
-both about the runs of the programs of §3.1–3.2 in the relational rounding model
-`FloatingPoint.RoundingModel ℝ`.
+This module formalizes the two backward error theorems of §3.3 of [golub2013matrix]. Let $u$ be the
+unit roundoff and $\gamma_k = ku/(1 - ku)$. Theorem 3.3.1 says that the factors $\hat L$ and
+$\hat U$ that Gaussian elimination (Algorithm 3.2.1) computes for $A \in \mathbb{R}^{n \times n}$
+satisfy $\hat L \hat U = A + H$ with $|H| \le \gamma_n |\hat L| |\hat U|$ entrywise. Theorem 3.3.2
+says that if $\hat L$ and $\hat U$ are then used in the triangular solves of §3.1 for
+$b \in \mathbb{R}^n$, the computed solution $\hat x$ satisfies $(A + E) \hat x = b$ with
+$|E| \le \gamma_{3n} |\hat L| |\hat U|$ entrywise. Both theorems are statements about every output
+of the programs of §3.1–3.2 in the relational rounding model `FloatingPoint.RoundingModel`.
 
-## Design
+Each proof applies a rounding bridge of §3.1–3.2, which says that every run satisfies a relation of
+the backbone, and then a backbone theorem about that relation:
+`FloatingPoint.exists_roundsLU_mul_eq_add`, `FloatingPoint.exists_roundsLU_solveDot_eq` and
+`FloatingPoint.exists_roundsLU_solve_eq`. These are Theorems 9.3 and 9.4 of [higham2002accuracy].
 
-The book's first-order bounds `2(n-1)u(|A| + |L̂||Û|) + O(u²)` and `nu(2|A| + 4|L̂||Û|) + O(u²)` are
-stated in their rigorous `γ` forms ([higham2002accuracy] Theorems 9.3–9.4), `|H| ≤ γ_n |L̂||Û|` and
-`|E| ≤ γ_{3n} |L̂||Û|` entrywise, which are sharper to first order (`γ_n = nu + O(u²)`, and no `|A|`
-term) and imply the printed forms. Each theorem is a bridge of §3.1–3.2 followed by the backbone
-theorem about the relation (`FloatingPoint.exists_roundsLU_mul_eq_add`,
-`FloatingPoint.exists_roundsLU_solveDot_eq`, `FloatingPoint.exists_roundsLU_solve_eq`). The
-hypotheses are about the returned packed factors only (convention 9), and the composite of factoring
-and solving is stated nested, one program per quantifier.
+## Main results
 
-The book's hypothesis "`A` is an `n`-by-`n` matrix of floating point numbers" has no counterpart in
-the relational model (inputs are arbitrary reals) and is dropped. The proof-internal displays
-(3.3.3)–(3.3.13) are not formalized: the backbone proves Higham's Theorem 9.3 entrywise.
+* Theorem 3.3.1, `GolubVanLoan.Chapter03.theorem_3_3_1`: the packed factors computed by Algorithm
+  3.2.1 satisfy $\hat L \hat U = A + H$ with $|H| \le \gamma_n |\hat L| |\hat U|$.
+* §3.3.1, `GolubVanLoan.Chapter03.theorem_3_3_1_gaxpy`: the same bound for the factors computed by
+  Algorithm 3.2.2.
+* Theorem 3.3.2, `GolubVanLoan.Chapter03.theorem_3_3_2`: factoring by Algorithm 3.2.1 and solving by
+  Algorithms 3.1.1 and 3.1.2 gives $(A + E) \hat x = b$ with
+  $|E| \le \gamma_{3n} |\hat L| |\hat U|$.
+* Theorem 3.3.2 for the column-oriented solves, `GolubVanLoan.Chapter03.theorem_3_3_2_column`: the
+  same bound when the solves are Algorithms 3.1.3 and 3.1.4.
+
+## Conventions
+
+* The source states first-order bounds, $|H| \le 2(n-1)u(|A| + |\hat L||\hat U|) + O(u^2)$ and
+  $|E| \le nu(2|A| + 4|\hat L||\hat U|) + O(u^2)$. The theorems state the rigorous bounds
+  $|H| \le \gamma_n |\hat L||\hat U|$ and $|E| \le \gamma_{3n} |\hat L||\hat U|$. Since
+  $\gamma_k = ku + O(u^2)$, these imply the printed bounds to first order, and they have no $|A|$
+  term.
+* A computed quantity is any element of the run set of its program in the rounding model `fp`, with
+  the hook `fp.round`. A composite of factoring and solving is stated with one universal quantifier
+  per program. The hypotheses are about the returned packed factors only.
+
+## Deviations from the source
+
+* **Theorems 3.3.1 and 3.3.2** (generalization). The source assumes that the entries of $A$ are
+  floating point numbers. The theorems hold for every real matrix $A$. See
+  `GolubVanLoan.Chapter03.theorem_3_3_1` and `GolubVanLoan.Chapter03.theorem_3_3_2`.
+* **Theorem 3.3.1** (generalization). The source assumes that no zero pivots occur. Only the pivots
+  that are used as divisors, $\hat u_{jj}$ for $j < n$, must be nonzero. See
+  `GolubVanLoan.Chapter03.theorem_3_3_1`.
+
+## Not formalized
+
+* **Displays (3.3.3)–(3.3.13).** They are steps of the proof in the source; the backbone proves the
+  entrywise bound of [higham2002accuracy] Theorem 9.3 directly.
 -/
 
 open FloatingPoint Matrix
@@ -34,11 +65,23 @@ namespace GolubVanLoan.Chapter03
 
 variable {fp : RoundingModel ℝ} {n : ℕ}
 
-/-- **Theorem 3.3.1**, rigorous form: "assume that `A` is an `n`-by-`n` matrix … If no zero pivots
-are encountered during the execution of Algorithm 3.2.1, then the computed triangular matrices
-`L̂` and `Û` satisfy `L̂ Û = A + H`", with `|H| ≤ γ_n |L̂| |Û|` entrywise — the book's
-`|H| ≤ 2(n-1)u(|A| + |L̂||Û|) + O(u²)` to first order. Only the pivots that are divisors are
-needed nonzero. -/
+/-- **Theorem 3.3.1** of [golub2013matrix]. Let $A \in \mathbb{R}^{n \times n}$, and let the unit
+roundoff $u$ satisfy $u < 1$ and $nu < 1$. Let $F$ be a packed matrix computed by Algorithm
+3.2.1 from $A$, and let $\hat L$ and $\hat U$ be the unit lower triangular and the upper
+triangular factors stored in $F$. If the pivots $\hat u_{jj}$ are nonzero for
+$j = 1, \dots, n-1$, then there is $H \in \mathbb{R}^{n \times n}$ with
+$$\hat L \hat U = A + H, \qquad |H| \le \gamma_n |\hat L| |\hat U|$$
+entrywise, where $\gamma_n = nu/(1 - nu)$.
+
+**Generalization.** The source assumes that $A$ is a matrix of floating point numbers and that
+no zero pivots are encountered. The theorem holds for every real $A$, and it needs only the
+pivots that are divisors to be nonzero: the last pivot $\hat u_{nn}$ can vanish.
+
+The source prints the first-order bound $|H| \le 2(n-1)u(|A| + |\hat L||\hat U|) + O(u^2)$,
+which follows from the rigorous bound because $\gamma_n = nu + O(u^2)$. The factors are
+`GolubVanLoan.Chapter03.packedL` and `GolubVanLoan.Chapter03.packedU` of $F$, and the pivot
+hypothesis is on `F j j` for 0-based $j$ with $j + 1 < n$. The proof applies
+`GolubVanLoan.Chapter03.algorithm_3_2_1_rounds` and `FloatingPoint.exists_roundsLU_mul_eq_add`. -/
 theorem theorem_3_3_1 (hu : fp.u < 1) (hn : (n : ℝ) * fp.u < 1) (A : Matrix (Fin n) (Fin n) ℝ) :
     ∀ F ∈ (algorithm_3_2_1 fp.round A).run, (∀ j : Fin n, (j : ℕ) + 1 < n → F j j ≠ 0) →
       ∃ H : Matrix (Fin n) (Fin n) ℝ, packedL F * packedU F = A + H ∧
@@ -50,9 +93,15 @@ theorem theorem_3_3_1 (hu : fp.u < 1) (hn : (n : ℝ) * fp.u < 1) (A : Matrix (F
       exact hpiv j (by have := Fin.lt_def.1 hji; omega)
   exact ⟨H, hLU, by simpa using hH⟩
 
-/-- §3.3.1, "the error bounds that we derive also apply to the gaxpy formulation (Algorithm
-3.2.2)": Theorem 3.3.1 for the runs `(L̂, Û)` of Algorithm 3.2.2 whose divisor pivots `û_jj`,
-`j + 1 < n`, are nonzero: `L̂ Û = A + H` with `|H| ≤ γ_n |L̂| |Û|`. -/
+/-- **Section 3.3.1** of [golub2013matrix], the remark that the error bounds also apply to the gaxpy
+formulation. Let $A \in \mathbb{R}^{n \times n}$, and let $u < 1$ and $nu < 1$. If
+$(\hat L, \hat U)$ is computed by Algorithm 3.2.2 from $A$ and the pivots $\hat u_{jj}$ are
+nonzero for $j = 1, \dots, n-1$, then there is $H \in \mathbb{R}^{n \times n}$ with
+$$\hat L \hat U = A + H, \qquad |H| \le \gamma_n |\hat L| |\hat U|$$
+entrywise.
+
+This is Theorem 3.3.1 for Algorithm 3.2.2. The proof applies
+`GolubVanLoan.Chapter03.algorithm_3_2_2_rounds` and `FloatingPoint.exists_roundsLU_mul_eq_add`. -/
 theorem theorem_3_3_1_gaxpy (hu : fp.u < 1) (hn : (n : ℝ) * fp.u < 1)
     (A : Matrix (Fin n) (Fin n) ℝ) :
     ∀ out ∈ (algorithm_3_2_2 fp.round A).run, (∀ j : Fin n, (j : ℕ) + 1 < n → out.2 j j ≠ 0) →
@@ -64,11 +113,25 @@ theorem theorem_3_3_1_gaxpy (hu : fp.u < 1) (hn : (n : ℝ) * fp.u < 1)
       hpiv j (by have := Fin.lt_def.1 hji; omega)
   exact ⟨H, hLU, by simpa using hH⟩
 
-/-- **Theorem 3.3.2**, rigorous form: "let `L̂` and `Û` be the computed LU factors of the `n`-by-`n`
-floating point matrix `A` obtained by Algorithm 3.2.1. Suppose the methods of §3.1 are used to
-produce the computed solution `ŷ` to `L̂ y = b` and the computed solution `x̂` to `Û x = ŷ`. Then
-`(A + E) x̂ = b`" with `|E| ≤ γ_{3n} |L̂| |Û|` entrywise (the row-oriented solves, Algorithms
-3.1.1–3.1.2) — the book's `|E| ≤ nu(2|A| + 4|L̂||Û|) + O(u²)` to first order. -/
+/-- **Theorem 3.3.2** of [golub2013matrix]. Let $A \in \mathbb{R}^{n \times n}$ and
+$b \in \mathbb{R}^n$, and let the unit roundoff $u$ satisfy $u < 1$ and $3nu < 1$. Let $\hat L$
+and $\hat U$ be the factors stored in a packed matrix computed by Algorithm 3.2.1 from $A$, and
+assume that every diagonal entry $\hat u_{jj}$ is nonzero. Let $\hat y$ be a solution of
+$\hat L y = b$ computed by row-oriented forward substitution (Algorithm 3.1.1), and let $\hat x$
+be a solution of $\hat U x = \hat y$ computed by row-oriented back substitution (Algorithm
+3.1.2). Then there is $E \in \mathbb{R}^{n \times n}$ with
+$$(A + E) \hat x = b, \qquad |E| \le \gamma_{3n} |\hat L| |\hat U|$$
+entrywise.
+
+**Generalization.** The source assumes that $A$ is a matrix of floating point numbers. The
+theorem holds for every real $A$.
+
+The source prints the first-order bound $|E| \le nu(2|A| + 4|\hat L||\hat U|) + O(u^2)$, which
+follows from the rigorous bound because $\gamma_{3n} = 3nu + O(u^2)$. The source says "the
+methods of §3.1"; this theorem uses the row-oriented solves, and
+`GolubVanLoan.Chapter03.theorem_3_3_2_column` uses the column-oriented ones. The proof applies
+the bridges of Algorithms 3.2.1, 3.1.1 and 3.1.2 and
+`FloatingPoint.exists_roundsLU_solveDot_eq`. -/
 theorem theorem_3_3_2 (hu : fp.u < 1) (hn : ((3 * n : ℕ) : ℝ) * fp.u < 1)
     (A : Matrix (Fin n) (Fin n) ℝ) (b : Fin n → ℝ) :
     ∀ F ∈ (algorithm_3_2_1 fp.round A).run, (∀ j, F j j ≠ 0) →
@@ -82,9 +145,18 @@ theorem theorem_3_3_2 (hu : fp.u < 1) (hn : ((3 * n : ℕ) : ℝ) * fp.u < 1)
     (algorithm_3_1_1_rounds fp _ b y hy) (algorithm_3_1_2_rounds fp _ y x hx)
   exact ⟨E, hAx, by simpa using hE⟩
 
-/-- Theorem 3.3.2 with the column-oriented solves of §3.1.3 ("the methods of §3.1" covers both):
-`ŷ` from Algorithm 3.1.3 and `x̂` from Algorithm 3.1.4 give the same backward error
-`|E| ≤ γ_{3n} |L̂| |Û|` ([higham2002accuracy] Theorem 9.4). -/
+/-- **Theorem 3.3.2** of [golub2013matrix], with the column-oriented solves of §3.1.3. Let
+$A \in \mathbb{R}^{n \times n}$ and $b \in \mathbb{R}^n$, and let $u < 1$ and $3nu < 1$. Let
+$\hat L$ and $\hat U$ be the factors stored in a packed matrix computed by Algorithm 3.2.1 from
+$A$, with every $\hat u_{jj}$ nonzero. If $\hat y$ is computed from $\hat L$ and $b$ by
+Algorithm 3.1.3 and $\hat x$ from $\hat U$ and $\hat y$ by Algorithm 3.1.4, then there is
+$E \in \mathbb{R}^{n \times n}$ with
+$$(A + E) \hat x = b, \qquad |E| \le \gamma_{3n} |\hat L| |\hat U|$$
+entrywise.
+
+The bound is the same as for the row-oriented solves; this is Theorem 9.4 of
+[higham2002accuracy]. The proof applies the bridges of Algorithms 3.2.1, 3.1.3 and 3.1.4 and
+`FloatingPoint.exists_roundsLU_solve_eq`. -/
 theorem theorem_3_3_2_column (hu : fp.u < 1) (hn : ((3 * n : ℕ) : ℝ) * fp.u < 1)
     (A : Matrix (Fin n) (Fin n) ℝ) (b : Fin n → ℝ) :
     ∀ F ∈ (algorithm_3_2_1 fp.round A).run, (∀ j, F j j ≠ 0) →

@@ -5,37 +5,119 @@ Released under Apache 2.0 license as described in the file LICENSE.
 import NumlibSurface.GolubVanLoan.Chapter05.Section04
 
 /-!
-# Golub–Van Loan §5.5: the rank-deficient least-squares problem
+# Golub and Van Loan, Section 5.5: The rank-deficient least-squares problem
 
-Surface file for [golub2013matrix] §5.5: the convex solution set and its minimal-norm element,
-also through a complete orthogonal decomposition (§5.5.1), the SVD solution (Theorem 5.5.1,
-(5.5.1)–(5.5.2)), the pseudoinverse and its characterizations (§5.5.2, (5.5.3), the Moore–Penrose
-conditions), its sensitivity (§5.5.3: Wedin's bound and the discontinuity example), the truncated
-SVD solution (§5.5.4), basic solutions from QR with column pivoting (§5.5.5, (5.5.4)–(5.5.5)) and
-SVD-based subset selection (§5.5.7, Theorem 5.5.2, Algorithm 5.5.1 and its specification) and the
-residual comparison of §5.5.8 (Theorem 5.5.3).
+This module formalizes §5.5 of [golub2013matrix], the least-squares problem $\min_x \|Ax - b\|_2$
+for $A \in \mathbb{R}^{m \times n}$ and $b \in \mathbb{R}^m$ when $A$ can be rank deficient. The set
+of minimizers is then convex, and its unique element of minimum 2-norm is $x_{LS} = A^+ b$, where
+$A^+$ is the pseudoinverse. For an SVD $U^T A V = \Sigma$ and $r = \operatorname{rank}(A)$, Theorem
+5.5.1 gives $x_{LS} = \sum_{i=1}^{r} (u_i^T b / \sigma_i) v_i$ and $\|Ax_{LS} - b\|_2^2 =
+\sum_{i=r+1}^{m} (u_i^T b)^2$. The module also proves the characterizations of $A^+$ (the SVD
+formula, the Frobenius-norm problem (5.5.3) and the Moore–Penrose conditions), the sensitivity of
+$A^+$ (Wedin's bound and an example of discontinuity), an error bound for the truncated SVD
+solution, the properties of the basic solution $x_B$ from QR with column pivoting with the
+comparison (5.5.5) of $x_B$ and $x_{LS}$, and SVD-based subset selection (Theorems 5.5.2–5.5.3 and
+Algorithm 5.5.1).
+
+The proofs specialize the backbone modules `Numlib.LinearAlgebra.Matrix.LeastSquares`,
+`Numlib.LinearAlgebra.Matrix.SVD`, `Numlib.LinearAlgebra.Matrix.CompleteOrthogonal` and
+`Numlib.LinearAlgebra.Matrix.RankRevealing`.
+
+## Main definitions
+
+* §5.5.4, `GolubVanLoan.Chapter05.truncatedSVDSolution`: the truncated SVD solution $x_{\hat r} =
+  \sum_{i=1}^{\hat r} (\hat u_i^T b / \hat\sigma_i) \hat v_i$.
+* Algorithm 5.5.1, `GolubVanLoan.Chapter05.algorithm_5_5_1`: SVD-based subset selection.
+
+## Main results
+
+* §5.5.1, `GolubVanLoan.Chapter05.minNorm_existsUnique`: the set of least-squares minimizers is
+  convex, and $A^+ b$ is its unique element of minimum 2-norm.
+* §5.5.1, `GolubVanLoan.Chapter05.minNorm_of_completeOrthogonal`: the minimum-norm solution and the
+  residual from a complete orthogonal decomposition.
+* Equation (5.5.1), `GolubVanLoan.Chapter05.equation_5_5_1`: $\sum_{i=1}^{r} (u_i^T b / \sigma_i)
+  v_i = A^+ b$, and this vector is the least-squares minimizer of minimum 2-norm.
+* Equation (5.5.2), `GolubVanLoan.Chapter05.equation_5_5_2`: $\|A x_{LS} - b\|_2^2 =
+  \sum_{i=r+1}^{m} (u_i^T b)^2$.
+* Theorem 5.5.1, `GolubVanLoan.Chapter05.theorem_5_5_1`: the SVD formula for $x_{LS}$ and for its
+  residual.
+* §5.5.2, `GolubVanLoan.Chapter05.pseudoinverse_eq_svd`: $A^+ = V \Sigma^+ U^T$,
+  $\rho_{LS} = \|(I - AA^+) b\|_2$, and $A^+ = (A^T A)^{-1} A^T$ when $\operatorname{rank}(A) = n$.
+* §5.5.2, `GolubVanLoan.Chapter05.pseudoinverse_eq_inv`: $A^+ = A^{-1}$ for a nonsingular square
+  $A$.
+* Equation (5.5.3), `GolubVanLoan.Chapter05.equation_5_5_3`: $A^+$ is the solution of minimum
+  Frobenius norm of $\min_X \|AX - I_m\|_F$.
+* §5.5.2, `GolubVanLoan.Chapter05.moorePenrose`: $A^+$ is the unique matrix that satisfies the four
+  Moore–Penrose conditions, and $AA^+$ is the orthogonal projection onto $\operatorname{ran}(A)$.
+* §5.5.3, `GolubVanLoan.Chapter05.pinv_perturbation`: $\|(A + \delta A)^+ - A^+\|_F \le 2 \|\delta
+  A\|_F \max\{\|A^+\|_2^2, \|(A + \delta A)^+\|_2^2\}$.
+* §5.5.3, `GolubVanLoan.Chapter05.pinv_discontinuity`: the pseudoinverse is not a continuous
+  function of the matrix.
+* §5.5.4, `GolubVanLoan.Chapter05.norm_truncatedSVDSolution_sub_le`: a bound on
+  $\|x_{\hat r} - x_{LS}\|_2$ when the computed singular vectors are close to the exact ones.
+* §5.5.5, `GolubVanLoan.Chapter05.basicSolution`: the least-squares minimizers in terms of a QR
+  factorization with column pivoting, and the basic solution $x_B$ is a minimizer with at most $r$
+  nonzero components.
+* Equation (5.5.4), `GolubVanLoan.Chapter05.equation_5_5_4`: $\|x_{LS}\|_2$ as a minimum over the
+  minimizers $x_B - \Pi [R_{11}^{-1} R_{12}; -I] z$.
+* §5.5.5, `GolubVanLoan.Chapter05.basicSolution_eq_pinv_of_eq_zero`: if $R_{12} = 0$, then
+  $x_B = x_{LS}$.
+* Equation (5.5.5), `GolubVanLoan.Chapter05.equation_5_5_5`: $1 \le \|x_B\|_2 / \|x_{LS}\|_2 \le
+  \sqrt{1 + \|R_{11}^{-1} R_{12}\|_2^2}$.
+* Theorem 5.5.2, `GolubVanLoan.Chapter05.theorem_5_5_2`: $\sigma_{\tilde r}(A) / \|\tilde
+  V_{11}^{-1}\|_2 \le \sigma_{\tilde r}(B_1) \le \sigma_{\tilde r}(A)$ for the first $\tilde r$
+  columns $B_1$ of $AP$.
+* §5.5.7, `GolubVanLoan.Chapter05.qrcp_V11`: QR with column pivoting of $V(:, 1{:}\tilde r)^T$ gives
+  a nonsingular $\tilde V_{11}$ with $\|\tilde V_{11}^{-1}\|_2 = \|R_{11}^{-1}\|_2$.
+* Algorithm 5.5.1, `GolubVanLoan.Chapter05.algorithm_5_5_1_spec`: in exact arithmetic, the selected
+  columns are independent and $z$ solves the least-squares problem on them.
+* Theorem 5.5.3, `GolubVanLoan.Chapter05.theorem_5_5_3`: the residuals of the subset solution and of
+  the nearest rank-$\tilde r$ solution differ by at most $(\sigma_{\tilde r + 1}(A) / \sigma_{\tilde
+  r}(A)) \|\tilde V_{11}^{-1}\|_2 \|b\|_2$.
 
 ## Conventions
 
-The pseudoinverse is the backbone's `Matrix.pinv`; the book's definition `A⁺ = V Σ⁺ Uᵀ` is the
-theorem `pseudoinverse_eq_svd`. An SVD is `Matrix.IsSVD A U σ V` (`Uᵀ A V = Σ`, `σ` sorted and
-nonnegative), `u_i`, `v_i` are the columns of `U`, `V`, 0-based. Least-squares statements are on
-`EuclideanSpace ℝ (Fin m)`. A QR factorization with column pivoting `A Π = QR`,
-`R = [R₁₁ R₁₂; 0 0]` with `R₁₁` nonsingular, is the backbone's
-`Matrix.IsPivotedQR.IsRankRevealing A Q R π r` (`A Π = A.submatrix id π`), a complete orthogonal
-decomposition is `Matrix.IsCompleteOrthogonal`; `x_B` is `Matrix.pivotedBasicSolution`.
+* The pseudoinverse $A^+$ is `Matrix.pinv`. The definition $A^+ = V \Sigma^+ U^T$ of the source is
+  the theorem `GolubVanLoan.Chapter05.pseudoinverse_eq_svd`.
+* An SVD $U^T A V = \Sigma$ is `Matrix.IsSVD A U σ V`: $U$ and $V$ are orthogonal, and the singular
+  values $\sigma$ are nonnegative and nonincreasing. Indices are 0-based: the source's $u_i$, $v_i$
+  and $\sigma_i$ are `U.col (i - 1)`, `V.col (i - 1)` and `σ (i - 1)`. The sorted singular value
+  $\sigma_k(A)$ is `A.sortedSingularValues (k - 1)`.
+* Least-squares statements are on `EuclideanSpace ℝ (Fin m)`, where a matrix acts through
+  `Matrix.toEuclideanLin`. A least-squares minimizer is `Matrix.IsLeastSquaresSolution`, and the
+  minimizer of minimum 2-norm is `Matrix.IsMinNormLeastSquaresSolution`.
+* A QR factorization with column pivoting $A\Pi = QR$ with $R = [R_{11}\ R_{12}; 0\ 0]$ and
+  $R_{11} \in \mathbb{R}^{r \times r}$ nonsingular is
+  `Matrix.IsPivotedQR.IsRankRevealing A Q R π r`, with the product by $\Pi$ written as
+  `A.submatrix id π`. A complete orthogonal decomposition is `Matrix.IsCompleteOrthogonal`, and
+  the basic solution $x_B$ is `Matrix.pivotedBasicSolution`.
+* From §5.5.3 on, the matrix norm $\|\cdot\|_2$ is the spectral norm.
 
-## Book slips carried
+## Deviations from the source
 
-"`z ∈ hull(A)`" (§5.5.1) is `z ∈ null(A)`; (5.5.3)'s `X ∈ ℝ^{m×n}` is `ℝ^{n×m}`; the
-discontinuity example's `(A + δA)⁺` has a spurious `1` in position `(2, 1)`.
+* **§5.5.1** (typo). The source writes $z \in \operatorname{hull}(A)$ where
+  $z \in \operatorname{null}(A)$ is meant. See `GolubVanLoan.Chapter05.minNorm_existsUnique`.
+* **Equation (5.5.3)** (typo). The source prints $X \in \mathbb{R}^{m \times n}$; the unknown is
+  $X \in \mathbb{R}^{n \times m}$. See `GolubVanLoan.Chapter05.equation_5_5_3`.
+* **Example of §5.5.3** (typo). The source prints $(A + \delta A)^+$ with a spurious entry $1$ in
+  position $(2, 1)$. See `GolubVanLoan.Chapter05.pinv_discontinuity`.
+* **Equation (5.5.4)** (typo). The source prints $z \in \mathbb{R}^{n-2}$ for
+  $z \in \mathbb{R}^{n-r}$. See `GolubVanLoan.Chapter05.equation_5_5_4`.
+* **Theorem 5.5.3** (typo). The source calls $\tilde V_{11}$ the leading "$r$-by-$r$" principal
+  submatrix of $P^T V$; it is $\tilde r$-by-$\tilde r$. See `GolubVanLoan.Chapter05.theorem_5_5_3`.
+* **Theorem 5.5.3** (reading). The source leaves the hypothesis
+  $\tilde r \le \operatorname{rank}(A)$ implicit; the statement assumes it. See
+  `GolubVanLoan.Chapter05.theorem_5_5_3`.
 
 ## Not formalized
 
-The second bound of §5.5.4 (its middle term cannot be right as printed and no derivation is given),
-the flop table of §5.5.6, the `δ`-rank display of §5.5.4 (misprinted; the definition is (5.4.5)),
-the unstable-subset example (numerical), and "column pivoting tends to produce a well-conditioned
-`R₁₁`" (heuristic).
+* **The second bound of §5.5.4.** Its middle term cannot be right as printed, and the source gives
+  no derivation.
+* **The display of the $\delta$-rank in §5.5.4.** It is misprinted; the definition is (5.4.5).
+* **The flop table of §5.5.6.** Operation counts are out of scope for the library.
+* **The example of an unstable subset.** It is a numerical example.
+* **The remark that column pivoting tends to produce a well-conditioned $R_{11}$.** It is a
+  heuristic.
 -/
 
 open Matrix WithLp
@@ -48,8 +130,16 @@ variable {m n : ℕ}
 
 section MinNorm
 
-/-- **§5.5.1**: the set `𝒳 = {x : ‖Ax - b‖₂ = min}` of least-squares minimizers is convex, and it
-has a unique element of minimum 2-norm, `x_LS = A⁺ b`. -/
+/-- **§5.5.1** of [golub2013matrix], the minimum norm solution. Let $A \in \mathbb{R}^{m \times n}$
+and $b \in \mathbb{R}^m$. The set $\mathcal{X} = \{x \in \mathbb{R}^n : \|Ax - b\|_2 = \min\}$
+of least-squares minimizers is convex, the vector $x_{LS} = A^+ b$ is a least-squares minimizer
+of minimum 2-norm, and every least-squares minimizer of minimum 2-norm is equal to $A^+ b$.
+
+**Typo.** The source writes $z \in \operatorname{hull}(A)$ in this subsection where
+$z \in \operatorname{null}(A)$ is meant.
+
+The minimizer of minimum 2-norm is `Matrix.IsMinNormLeastSquaresSolution`, and $x_{LS}$ is
+`toEuclideanLin A.pinv b`. -/
 theorem minNorm_existsUnique (A : Matrix (Fin m) (Fin n) ℝ) (b : EuclideanSpace ℝ (Fin m)) :
     Convex ℝ {x | IsLeastSquaresSolution A b x} ∧
       IsMinNormLeastSquaresSolution A b (toEuclideanLin A.pinv b) ∧
@@ -57,10 +147,20 @@ theorem minNorm_existsUnique (A : Matrix (Fin m) (Fin n) ℝ) (b : EuclideanSpac
   ⟨convex_setOf_isLeastSquaresSolution A b, isMinNormLeastSquaresSolution_pinv A b,
     fun _ hx => hx.unique (isMinNormLeastSquaresSolution_pinv A b)⟩
 
-/-- **§5.5.1, least squares through a complete orthogonal decomposition**: if
-`Qᵀ A Z = T = [T₁₁ 0; 0 0]` (`r = rank A`, `T₁₁` nonsingular) and `Qᵀb = [c; d]`, then
-`x_LS = Z [T₁₁⁻¹ c; 0]` is the minimal-norm least-squares solution and `‖A x_LS - b‖₂ = ‖d‖₂`;
-for every `x`, with `Zᵀ x = [w; y]`, `‖Ax - b‖₂² = ‖T₁₁ w - c‖₂² + ‖d‖₂²`. -/
+/-- **§5.5.1** of [golub2013matrix], least squares through a complete orthogonal decomposition. Let
+$A \in \mathbb{R}^{m \times n}$ and $b \in \mathbb{R}^m$, and let
+$Q \in \mathbb{R}^{m \times m}$ and $Z \in \mathbb{R}^{n \times n}$ be orthogonal with
+$$Q^T A Z = T = \begin{bmatrix} T_{11} & 0 \\ 0 & 0 \end{bmatrix},$$
+where $T_{11} \in \mathbb{R}^{r \times r}$ is nonsingular. Write $Q^T b = [c; d]$ with
+$c \in \mathbb{R}^r$. Then for every $x \in \mathbb{R}^n$, with $Z^T x = [w; y]$ and
+$w \in \mathbb{R}^r$,
+$$\|Ax - b\|_2^2 = \|T_{11} w - c\|_2^2 + \|d\|_2^2.$$
+The vector $x_{LS} = Z [T_{11}^{-1} c; 0]$ is the least-squares minimizer of minimum 2-norm, and
+$\|A x_{LS} - b\|_2 = \|d\|_2$.
+
+The decomposition is `Matrix.IsCompleteOrthogonal A Q Z r`; then $r = \operatorname{rank}(A)$.
+The block $T_{11}$ is a submatrix of `Qᵀ * A * Z`, the vector $[u; v]$ is `Matrix.blockVec`, and
+the entries of $d$ are read through `Matrix.tailIdx`. -/
 theorem minNorm_of_completeOrthogonal {A : Matrix (Fin m) (Fin n) ℝ}
     {Q : Matrix (Fin m) (Fin m) ℝ} {Z : Matrix (Fin n) (Fin n) ℝ} {r : ℕ}
     (h : IsCompleteOrthogonal A Q Z r) (b : EuclideanSpace ℝ (Fin m)) :
@@ -105,8 +205,8 @@ section SVD
 variable {A : Matrix (Fin m) (Fin n) ℝ} {U : Matrix (Fin m) (Fin m) ℝ} {σ : ℕ → ℝ}
   {V : Matrix (Fin n) (Fin n) ℝ}
 
-/-- The pseudoinverse from an SVD applied to `b`, for any shape:
-`A⁺ b = ∑_{j < min(m,n)} (u_jᵀ b / σ_j) v_j`. -/
+/-- For an SVD $U^T A V = \Sigma$ of $A$ of any shape, $A^+ b = \sum_{j < \min(m, n)} (u_j^T b /
+\sigma_j) v_j$, where a term with $\sigma_j = 0$ is zero. -/
 private theorem pinv_mulVec_eq_sum_dite (h : IsSVD A U σ V) (b : Fin m → ℝ) :
     A.pinv *ᵥ b = ∑ j : Fin n,
       (if hj : (j : ℕ) < m then (U.col ⟨j, hj⟩ ⬝ᵥ b) / σ j else 0) • V.col j := by
@@ -128,9 +228,15 @@ private theorem pinv_mulVec_eq_sum_dite (h : IsSVD A U σ V) (b : Fin m → ℝ)
   change ∑ j, V p j * _ = _
   simp only [hD, mul_comm]
 
-/-- **(5.5.1)**: if `Uᵀ A V = Σ` is an SVD of `A ∈ ℝ^{m×n}` with `r = rank(A)`, then
-`x_LS = ∑_{i=1}^{r} (u_iᵀ b / σ_i) v_i` minimizes `‖Ax - b‖₂` and has the smallest 2-norm of all
-minimizers; it is `A⁺ b`. -/
+/-- **Equation (5.5.1)** of [golub2013matrix]. Let $U^T A V = \Sigma$ be an SVD of
+$A \in \mathbb{R}^{m \times n}$ with $r = \operatorname{rank}(A)$, and let $b \in \mathbb{R}^m$.
+Then the vector
+$$x_{LS} = \sum_{i=1}^{r} \frac{u_i^T b}{\sigma_i} v_i$$
+is equal to $A^+ b$, and it is the minimizer of $\|Ax - b\|_2$ that has the smallest 2-norm of
+all minimizers.
+
+The SVD is `Matrix.IsSVD A U σ V`, and $u_i$, $v_i$ are the columns `U.col (i - 1)` and
+`V.col (i - 1)`. -/
 theorem equation_5_5_1 (h : IsSVD A U σ V) (b : Fin m → ℝ) :
     ∑ i : Fin A.rank, ((U.col (Fin.castLE (rank_le_height A) i) ⬝ᵥ b) / σ i) •
         V.col (Fin.castLE (rank_le_width A) i) = A.pinv *ᵥ b ∧
@@ -163,7 +269,11 @@ theorem equation_5_5_1 (h : IsSVD A U σ V) (b : Fin m → ℝ) :
   rw [hsum, ← toEuclideanLin_toLp]
   exact isMinNormLeastSquaresSolution_pinv A (toLp 2 b)
 
-/-- **(5.5.2)**: `ρ_LS² = ‖A x_LS - b‖₂² = ∑_{i=r+1}^{m} (u_iᵀ b)²`. -/
+/-- **Equation (5.5.2)** of [golub2013matrix]. Let $U^T A V = \Sigma$ be an SVD of
+$A \in \mathbb{R}^{m \times n}$ with $r = \operatorname{rank}(A)$, and let $b \in \mathbb{R}^m$.
+The residual of $x_{LS} = A^+ b$ satisfies
+$$\rho_{LS}^2 = \|A x_{LS} - b\|_2^2 = \sum_{i=r+1}^{m} (u_i^T b)^2.$$
+-/
 theorem equation_5_5_2 (h : IsSVD A U σ V) (b : Fin m → ℝ) :
     ‖toEuclideanLin A (toLp 2 (A.pinv *ᵥ b)) - toLp 2 b‖ ^ 2 =
       ∑ i ∈ Finset.univ.filter (fun i : Fin m => A.rank ≤ (i : ℕ)), (U.col i ⬝ᵥ b) ^ 2 := by
@@ -173,9 +283,15 @@ theorem equation_5_5_2 (h : IsSVD A U σ V) (b : Fin m → ℝ) :
   simp only [star_trivial, dotProduct_comm]
   rfl
 
-/-- **Theorem 5.5.1**: for an SVD `Uᵀ A V = Σ` of `A ∈ ℝ^{m×n}` with `r = rank(A)`,
-`x_LS = ∑_{i=1}^{r} (u_iᵀ b / σ_i) v_i` minimizes `‖Ax - b‖₂` and has the smallest 2-norm of all
-minimizers, and `ρ_LS² = ∑_{i=r+1}^{m} (u_iᵀ b)²`. -/
+/-- **Theorem 5.5.1** of [golub2013matrix]. Let $U^T A V = \Sigma$ be an SVD of
+$A \in \mathbb{R}^{m \times n}$ with $r = \operatorname{rank}(A)$, and let $b \in \mathbb{R}^m$.
+Then
+$$x_{LS} = \sum_{i=1}^{r} \frac{u_i^T b}{\sigma_i} v_i$$
+minimizes $\|Ax - b\|_2$ and has the smallest 2-norm of all minimizers. Moreover
+$$\rho_{LS}^2 = \|A x_{LS} - b\|_2^2 = \sum_{i=r+1}^{m} (u_i^T b)^2.$$
+
+The SVD is `Matrix.IsSVD A U σ V`. The proof combines `GolubVanLoan.Chapter05.equation_5_5_1`
+and `GolubVanLoan.Chapter05.equation_5_5_2`. -/
 theorem theorem_5_5_1 (h : IsSVD A U σ V) (b : Fin m → ℝ) :
     IsMinNormLeastSquaresSolution A (toLp 2 b)
         (toLp 2 (∑ i : Fin A.rank, ((U.col (Fin.castLE (rank_le_height A) i) ⬝ᵥ b) / σ i) •
@@ -187,10 +303,20 @@ theorem theorem_5_5_1 (h : IsSVD A U σ V) (b : Fin m → ℝ) :
   obtain ⟨hsum, hmin⟩ := equation_5_5_1 h b
   exact ⟨hmin, by rw [hsum]; exact equation_5_5_2 h b⟩
 
-/-- **§5.5.2, the pseudoinverse from the SVD**: `A⁺ = V Σ⁺ Uᵀ` with
-`Σ⁺ = diag(1/σ₁, …, 1/σ_r, 0, …, 0) ∈ ℝ^{n×m}` (`1/0 = 0`); `x_LS = A⁺ b` and
-`ρ_LS = ‖(I - AA⁺) b‖₂`; `A⁺ = (AᵀA)⁻¹Aᵀ` if `rank(A) = n`; `A⁺ = A⁻¹` if `A` is square and
-nonsingular. -/
+/-- **§5.5.2** of [golub2013matrix], the pseudoinverse from the SVD. Let $U^T A V = \Sigma$ be an
+SVD of $A \in \mathbb{R}^{m \times n}$ with $r = \operatorname{rank}(A)$, and let
+$b \in \mathbb{R}^m$. Then
+$$A^+ = V \Sigma^+ U^T, \qquad \Sigma^+ = \operatorname{diag}(1/\sigma_1, \dots, 1/\sigma_r, 0,
+  \dots, 0) \in \mathbb{R}^{n \times m}.$$
+The vector $x_{LS} = A^+ b$ is the least-squares minimizer of minimum 2-norm, and $\rho_{LS} =
+\|A x_{LS} - b\|_2 = \|(I - AA^+) b\|_2$. If $\operatorname{rank}(A) = n$, then
+$A^+ = (A^T A)^{-1} A^T$.
+
+The matrix $\Sigma^+$ is `Matrix.rectDiagonal` of $i \mapsto \sigma_i^{-1}$. In Lean
+$0^{-1} = 0$, so the zero singular values give the zero entries. The hypothesis
+$\operatorname{rank}(A) = n$ is `LinearIndependent ℝ Aᵀ`, that is, the columns of $A$ are
+linearly independent. The case of a nonsingular square matrix is
+`GolubVanLoan.Chapter05.pseudoinverse_eq_inv`. -/
 theorem pseudoinverse_eq_svd (h : IsSVD A U σ V) (b : Fin m → ℝ) :
     A.pinv = V * (rectDiagonal fun i => (σ i)⁻¹ : Matrix (Fin n) (Fin m) ℝ) * Uᵀ ∧
       IsMinNormLeastSquaresSolution A (toLp 2 b) (toLp 2 (A.pinv *ᵥ b)) ∧
@@ -207,12 +333,23 @@ theorem pseudoinverse_eq_svd (h : IsSVD A U σ V) (b : Fin m → ℝ) :
   · have := pinv_eq_inv_conjTranspose_mul_self_mul_conjTranspose hA
     rwa [conjTranspose_eq_transpose_of_trivial] at this
 
-/-- **§5.5.2**: `A⁺ = A⁻¹` if `m = n = rank(A)`. -/
+/-- **§5.5.2** of [golub2013matrix]. If $B \in \mathbb{R}^{n \times n}$ is nonsingular, then
+$B^+ = B^{-1}$. -/
 theorem pseudoinverse_eq_inv {B : Matrix (Fin n) (Fin n) ℝ} (hB : IsUnit B) : B.pinv = B⁻¹ :=
   pinv_eq_inv hB
 
-/-- **(5.5.3)**: `A⁺` is the unique minimal-Frobenius-norm solution of
-`min_{X ∈ ℝ^{n×m}} ‖AX - I_m‖_F` (the book prints `X ∈ ℝ^{m×n}`). -/
+/-- **Equation (5.5.3)** of [golub2013matrix]. Let $A \in \mathbb{R}^{m \times n}$. The
+pseudoinverse $A^+$ is a solution of
+$$\min_{X \in \mathbb{R}^{n \times m}} \|AX - I_m\|_F,$$
+and it is the unique solution of minimum Frobenius norm: every $X \in \mathbb{R}^{n \times m}$
+with $\|AX - I_m\|_F = \|AA^+ - I_m\|_F$ satisfies $\|A^+\|_F \le \|X\|_F$, with equality only
+for $X = A^+$.
+
+**Typo.** The source prints $X \in \mathbb{R}^{m \times n}$. The product $AX$ requires
+$X \in \mathbb{R}^{n \times m}$.
+
+The Frobenius norm is put on the matrix types by `Matrix.frobeniusNormedAddCommGroup`. The proof
+specializes `Matrix.isMinOn_norm_mul_sub_one_pinv`. -/
 theorem equation_5_5_3 (A : Matrix (Fin m) (Fin n) ℝ) :
     letI := Matrix.frobeniusNormedAddCommGroup (m := Fin m) (n := Fin m) (α := ℝ)
     letI := Matrix.frobeniusNormedAddCommGroup (m := Fin n) (n := Fin m) (α := ℝ)
@@ -222,9 +359,16 @@ theorem equation_5_5_3 (A : Matrix (Fin m) (Fin n) ℝ) :
   ⟨fun X => isMinOn_iff.1 (isMinOn_norm_mul_sub_one_pinv A).1 X (Set.mem_univ X),
     (isMinOn_norm_mul_sub_one_pinv A).2⟩
 
-/-- **§5.5.2, the Moore–Penrose conditions**: `A⁺` is the unique `X ∈ ℝ^{n×m}` with
-(i) `AXA = A`, (ii) `XAX = X`, (iii) `(AX)ᵀ = AX`, (iv) `(XA)ᵀ = XA`; and `AA⁺` is the orthogonal
-projection onto `ran(A)`. -/
+/-- **§5.5.2** of [golub2013matrix], the Moore–Penrose conditions. Let
+$A \in \mathbb{R}^{m \times n}$. Then $A^+$ is the unique $X \in \mathbb{R}^{n \times m}$ that
+satisfies
+
+(i) $AXA = A$, (ii) $XAX = X$, (iii) $(AX)^T = AX$, (iv) $(XA)^T = XA$.
+
+Moreover, $AA^+$ is the orthogonal projection onto $\operatorname{ran}(A)$.
+
+The orthogonal projection is `Submodule.starProjection` of the range of
+`Matrix.toEuclideanLin A`. -/
 theorem moorePenrose (A : Matrix (Fin m) (Fin n) ℝ) :
     A * A.pinv * A = A ∧ A.pinv * A * A.pinv = A.pinv ∧ (A * A.pinv)ᵀ = A * A.pinv ∧
       (A.pinv * A)ᵀ = A.pinv * A ∧
@@ -250,9 +394,14 @@ section PinvPerturbation
 
 open scoped Matrix.Norms.Frobenius
 
-/-- **§5.5.3, the perturbation of the pseudoinverse** (Wedin 1973, Stewart 1975):
-`‖(A + δA)⁺ - A⁺‖_F ≤ 2 ‖δA‖_F max{‖A⁺‖₂², ‖(A + δA)⁺‖₂²}`, the spectral norms written
-`lpOpNorm 2`. -/
+/-- **§5.5.3** of [golub2013matrix], the perturbation of the pseudoinverse (Wedin 1973, Stewart
+1975). For all $A, \delta A \in \mathbb{R}^{m \times n}$,
+$$\|(A + \delta A)^+ - A^+\|_F \le 2 \|\delta A\|_F \max\{\|A^+\|_2^2, \|(A + \delta
+  A)^+\|_2^2\}.$$
+
+The statement has no hypothesis on the ranks of $A$ and $A + \delta A$. The Frobenius norm comes
+from the scoped instance `Matrix.Norms.Frobenius`, and the spectral norm $\|\cdot\|_2$ is
+`Matrix.lpOpNorm 2`. -/
 theorem pinv_perturbation (A δA : Matrix (Fin m) (Fin n) ℝ) :
     ‖(A + δA).pinv - A.pinv‖ ≤ 2 * ‖δA‖ *
       max (lpOpNorm 2 A.pinv ^ 2) (lpOpNorm 2 (A + δA).pinv ^ 2) :=
@@ -260,13 +409,16 @@ theorem pinv_perturbation (A δA : Matrix (Fin m) (Fin n) ℝ) :
 
 end PinvPerturbation
 
-/-- The matrix `A = [1 0; 0 0; 0 0]` of §5.5.3's example. -/
+/-- The matrix $A = \begin{bmatrix} 1 & 0 \\ 0 & 0 \\ 0 & 0 \end{bmatrix} \in \mathbb{R}^{3 \times
+2}$ of the example in §5.5.3 of [golub2013matrix]. -/
 def pinvExampleA : Matrix (Fin 3) (Fin 2) ℝ := !![1, 0; 0, 0; 0, 0]
 
-/-- The perturbation `δA = [0 0; 0 ε; 0 0]` of §5.5.3's example. -/
+/-- The perturbation $\delta A = \begin{bmatrix} 0 & 0 \\ 0 & \epsilon \\ 0 & 0 \end{bmatrix} \in
+\mathbb{R}^{3 \times 2}$ of the example in §5.5.3 of [golub2013matrix]. -/
 def pinvExampleE (ε : ℝ) : Matrix (Fin 3) (Fin 2) ℝ := !![0, 0; 0, ε; 0, 0]
 
-/-- The pseudoinverse of `A + δA` in §5.5.3's example, for `ε ≠ 0`. -/
+/-- For $\epsilon \neq 0$, the pseudoinverse of $A + \delta A$ in the example of §5.5.3 is
+$\begin{bmatrix} 1 & 0 & 0 \\ 0 & 1/\epsilon & 0 \end{bmatrix}$. -/
 theorem pinv_pinvExample {ε : ℝ} (hε : ε ≠ 0) :
     (pinvExampleA + pinvExampleE ε).pinv = !![1, 0, 0; 0, 1 / ε, 0] := by
   symm
@@ -284,7 +436,8 @@ theorem pinv_pinvExample {ε : ℝ} (hε : ε ≠ 0) :
     fin_cases i <;> fin_cases j <;>
       simp [pinvExampleA, pinvExampleE, Matrix.mul_apply, Fin.sum_univ_succ, hε]
 
-/-- The pseudoinverse of `A` in §5.5.3's example. -/
+/-- The pseudoinverse of the matrix $A$ in the example of §5.5.3 is $\begin{bmatrix} 1 & 0 & 0 \\ 0
+& 0 & 0 \end{bmatrix}$. -/
 theorem pinv_pinvExampleA : pinvExampleA.pinv = !![1, 0, 0; 0, 0, 0] := by
   symm
   refine pinv_unique (A := pinvExampleA) ?_ ?_ ?_ ?_
@@ -298,10 +451,21 @@ theorem pinv_pinvExampleA : pinvExampleA.pinv = !![1, 0, 0; 0, 0, 0] := by
     fin_cases i <;> fin_cases j <;> simp [pinvExampleA, Matrix.mul_apply, Fin.sum_univ_succ]
 
 open scoped Matrix.Norms.L2Operator in
-/-- **§5.5.3's example, "`x_LS` is not even a continuous function of the data"**: for
-`A = [1 0; 0 0; 0 0]` and `δA = [0 0; 0 ε; 0 0]` (`ε > 0`), `A⁺ = [1 0 0; 0 0 0]`,
-`(A + δA)⁺ = [1 0 0; 0 1/ε 0]` (the book prints a spurious `1` in position `(2,1)`) and
-`‖A⁺ - (A + δA)⁺‖₂ = 1/ε`; so the pseudoinverse is not continuous at `A`. -/
+/-- **§5.5.3** of [golub2013matrix], the example of discontinuity. Let $\epsilon > 0$,
+$$A = \begin{bmatrix} 1 & 0 \\ 0 & 0 \\ 0 & 0 \end{bmatrix}, \qquad \delta A = \begin{bmatrix} 0
+  & 0 \\ 0 & \epsilon \\ 0 & 0 \end{bmatrix}.$$
+Then
+$$A^+ = \begin{bmatrix} 1 & 0 & 0 \\ 0 & 0 & 0 \end{bmatrix}, \qquad (A + \delta A)^+ =
+  \begin{bmatrix} 1 & 0 & 0 \\ 0 & 1/\epsilon & 0 \end{bmatrix},$$
+and $\|A^+ - (A + \delta A)^+\|_2 = 1/\epsilon$. Hence the map $B \mapsto B^+$ on
+$\mathbb{R}^{3 \times 2}$ is not continuous at $A$: "$x_{LS}$ is not even a continuous function
+of the data".
+
+**Typo.** The source prints $(A + \delta A)^+$ with an entry $1$ in position $(2, 1)$. This
+entry is $0$.
+
+The matrices are `GolubVanLoan.Chapter05.pinvExampleA` and
+`GolubVanLoan.Chapter05.pinvExampleE`, and $\|\cdot\|_2$ is the spectral norm. -/
 theorem pinv_discontinuity {ε : ℝ} (hε : 0 < ε) :
     pinvExampleA.pinv = !![1, 0, 0; 0, 0, 0] ∧
       (pinvExampleA + pinvExampleE ε).pinv = !![1, 0, 0; 0, 1 / ε, 0] ∧
@@ -365,15 +529,22 @@ theorem pinv_discontinuity {ε : ℝ} (hε : 0 < ε) :
 
 section TruncatedSVD
 
-/-- **§5.5.4, the truncated SVD solution**: for computed factors `Û`, `Σ̂ = diag(σ̂_i)`, `V̂` and an
-accepted `δ`-rank `r̂`, "`x_r̂ = ∑_{i=1}^{r̂} (û_iᵀ b / σ̂_i) v̂_i`" (0-based: the indices `i < r̂`;
-indices beyond `min(m, n)` carry no term). -/
+/-- **§5.5.4** of [golub2013matrix], the truncated SVD solution. Let
+$\hat U \in \mathbb{R}^{m \times m}$ and $\hat V \in \mathbb{R}^{n \times n}$ have columns
+$\hat u_i$ and $\hat v_i$, let $\hat\sigma_1, \hat\sigma_2, \dots$ be real numbers, let
+$\hat r \ge 0$, and let $b \in \mathbb{R}^m$. The **truncated SVD solution** is
+$$x_{\hat r} = \sum_{i=1}^{\hat r} \frac{\hat u_i^T b}{\hat\sigma_i} \hat v_i.$$
+
+In the source, $\hat U$, $\hat\Sigma = \operatorname{diag}(\hat\sigma_i)$ and $\hat V$ are
+computed factors and $\hat r$ is an accepted $\delta$-rank. The 0-based sum runs over the
+indices $i < \hat r$, and an index $i \ge \min(m, n)$ gives no term. A term with
+$\hat\sigma_i = 0$ is zero, because division by zero gives zero in Lean. -/
 noncomputable def truncatedSVDSolution (U : Matrix (Fin m) (Fin m) ℝ) (σ : ℕ → ℝ)
     (V : Matrix (Fin n) (Fin n) ℝ) (r : ℕ) (b : Fin m → ℝ) : Fin n → ℝ :=
   ∑ i : Fin n, if h : (i : ℕ) < r ∧ (i : ℕ) < m then ((U.col ⟨i, h.2⟩ ⬝ᵥ b) / σ i) • V.col i
     else 0
 
-/-- Cauchy–Schwarz for the real dot product, with Euclidean norms. -/
+/-- The Cauchy–Schwarz inequality $|x^T y| \le \|x\|_2 \|y\|_2$ for real vectors. -/
 private theorem abs_dotProduct_le_norm {k : ℕ} (x y : Fin k → ℝ) :
     |x ⬝ᵥ y| ≤
       ‖(toLp 2 x : EuclideanSpace ℝ (Fin k))‖ * ‖(toLp 2 y : EuclideanSpace ℝ (Fin k))‖ := by
@@ -388,7 +559,7 @@ private theorem col_dotProduct_col_of_mem {k : ℕ} {Q : Matrix (Fin k) (Fin k) 
   rw [← this]
   simp [Matrix.mul_apply, dotProduct, col_apply]
 
-/-- The columns of an orthogonal matrix have unit Euclidean norm. -/
+/-- The columns of an orthogonal matrix have Euclidean norm $1$. -/
 private theorem norm_col_of_mem {k : ℕ} {Q : Matrix (Fin k) (Fin k) ℝ}
     (hQ : Q ∈ unitaryGroup (Fin k) ℝ) (j : Fin k) :
     ‖(toLp 2 (Q.col j) : EuclideanSpace ℝ (Fin k))‖ = 1 := by
@@ -396,11 +567,25 @@ private theorem norm_col_of_mem {k : ℕ} {Q : Matrix (Fin k) (Fin k) ℝ}
   rw [one_apply_eq, dotProduct_self_eq_norm_sq] at h1
   exact (pow_eq_one_iff_of_nonneg (norm_nonneg _) two_ne_zero).1 h1
 
-/-- **§5.5.4, the error of the truncated SVD solution**: under the book's simplifying assumptions
-(`r = n`, `ΔA = 0` in (5.4.4), so `Σ̂ = Σ = Wᵀ A Z` with `W`, `Z` orthogonal — here an SVD
-`IsSVD A W σ Z` with `n ≤ m`), if the computed singular vectors satisfy `‖w_i - û_i‖₂ ≤ ε` and
-`‖z_i - v̂_i‖₂ ≤ ε` for `i ≤ r̂` and `σ_r̂ > 0`, then
-`‖x_r̂ - x_LS‖₂ ≤ (r̂ / σ_r̂) 2(1 + ε) ε ‖b‖₂ + √(∑_{i=r̂+1}^{n} (w_iᵀ b / σ_i)²)`. -/
+/-- **§5.5.4** of [golub2013matrix], the error of the truncated SVD solution. Let
+$A \in \mathbb{R}^{m \times n}$ with $n \le m$, and let $W^T A Z = \Sigma =
+\operatorname{diag}(\sigma_1, \dots, \sigma_n)$ be an SVD of $A$, with columns $w_i$ of $W$ and
+$z_i$ of $Z$. Let $\hat U \in \mathbb{R}^{m \times m}$ and $\hat V \in \mathbb{R}^{n \times n}$
+have columns $\hat u_i$ and $\hat v_i$, let $\hat r \le n$ with $\sigma_{\hat r} > 0$, and let
+$\epsilon \ge 0$ with
+$$\|w_i - \hat u_i\|_2 \le \epsilon, \qquad \|z_i - \hat v_i\|_2 \le \epsilon \qquad (1 \le i
+  \le \hat r).$$
+Then for every $b \in \mathbb{R}^m$ the truncated SVD solution $x_{\hat r}$ formed from
+$\hat U$, $\Sigma$ and $\hat V$ satisfies
+$$\|x_{\hat r} - x_{LS}\|_2 \le \frac{\hat r}{\sigma_{\hat r}} 2 (1 + \epsilon) \epsilon
+  \|b\|_2 + \sqrt{\sum_{i=\hat r+1}^{n} \left(\frac{w_i^T b}{\sigma_i}\right)^2},$$
+where $x_{LS} = A^+ b$.
+
+The source makes the simplifying assumptions $r = n$ and $\Delta A = 0$ in (5.4.4), so that
+$\hat\Sigma = \Sigma = W^T A Z$ with $W$ and $Z$ orthogonal; here this is an SVD
+`Matrix.IsSVD A W σ Z` with $n \le m$. The hypothesis on $\sigma_{\hat r}$ is stated for the
+0-based `σ (r - 1)`, so for $\hat r = 0$ it reads $\sigma_1 > 0$. A term with $\sigma_i = 0$ in
+the last sum is zero, because division by zero gives zero in Lean. -/
 theorem norm_truncatedSVDSolution_sub_le {A : Matrix (Fin m) (Fin n) ℝ}
     {W : Matrix (Fin m) (Fin m) ℝ} {σ : ℕ → ℝ} {Z : Matrix (Fin n) (Fin n) ℝ}
     (h : IsSVD A W σ Z) (hnm : n ≤ m) {r : ℕ} (hr : r ≤ n) (hσ : 0 < σ (r - 1))
@@ -531,13 +716,22 @@ open scoped Matrix.Norms.L2Operator
 variable {A : Matrix (Fin m) (Fin n) ℝ} {Q : Matrix (Fin m) (Fin m) ℝ}
   {R : Matrix (Fin m) (Fin n) ℝ} {π : Equiv.Perm (Fin n)} {r : ℕ}
 
-/-- **§5.5.5, basic solutions via QR with column pivoting**: if `A Π = QR` with
-`R = [R₁₁ R₁₂; 0 0]`, `R₁₁` nonsingular of order `r = rank A` (the factorization (5.4.6)) and
-`Qᵀb = [c; d]`, then for every `x`, with `Πᵀx = [y; z]`,
-`‖Ax - b‖₂² = ‖R₁₁ y + R₁₂ z - c‖₂² + ‖d‖₂²`; `x` is a least-squares minimizer iff
-`R₁₁ y + R₁₂ z = c`, i.e. `x = Π [R₁₁⁻¹(c - R₁₂ z); z]`; and the basic solution
-`x_B = Π [R₁₁⁻¹ c; 0]` (`Matrix.pivotedBasicSolution`) is a minimizer with at most `r` nonzero
-components. -/
+/-- **§5.5.5** of [golub2013matrix], basic solutions via QR with column pivoting. Let
+$A \in \mathbb{R}^{m \times n}$ have a QR factorization with column pivoting $A \Pi = QR$ as in
+(5.4.6), with
+$$R = \begin{bmatrix} R_{11} & R_{12} \\ 0 & 0 \end{bmatrix}$$
+and $R_{11} \in \mathbb{R}^{r \times r}$ nonsingular (then $r = \operatorname{rank}(A)$). Let
+$b \in \mathbb{R}^m$, and write $Q^T b = [c; d]$ with $c \in \mathbb{R}^r$. For every
+$x \in \mathbb{R}^n$, with $\Pi^T x = [y; z]$ and $y \in \mathbb{R}^r$,
+$$\|Ax - b\|_2^2 = \|R_{11} y + R_{12} z - c\|_2^2 + \|d\|_2^2.$$
+Hence $x$ is a least-squares minimizer if and only if $R_{11} y + R_{12} z = c$, that is,
+$x = \Pi [R_{11}^{-1}(c - R_{12} z); z]$. The basic solution $x_B = \Pi [R_{11}^{-1} c; 0]$ is a
+least-squares minimizer, and it has at most $r$ nonzero components.
+
+The factorization is `Matrix.IsPivotedQR.IsRankRevealing A Q R π r`, and $x_B$ is
+`Matrix.pivotedBasicSolution`. The vector $R_{11} y + R_{12} z$ is the first $r$ entries of
+$R \Pi^T x$, where $\Pi^T x$ is `x ∘ π`. The bound on the nonzero components is stated as: the
+entries of $x_B$ at the positions $\pi(r), \dots, \pi(n - 1)$ are zero. -/
 theorem basicSolution (h : IsPivotedQR.IsRankRevealing A Q R π r)
     (b : EuclideanSpace ℝ (Fin m)) :
     (∀ x : EuclideanSpace ℝ (Fin n), ‖toEuclideanLin A x - b‖ ^ 2 =
@@ -558,8 +752,14 @@ theorem basicSolution (h : IsPivotedQR.IsRankRevealing A Q R π r)
   · have := h.isLeastSquaresSolution_iff (b := b) (x := x)
     simpa only [conjTranspose_eq_transpose_of_trivial] using this
 
-/-- **(5.5.4)**: `‖x_LS‖₂ = min_{z ∈ ℝ^{n-r}} ‖x_B - Π [R₁₁⁻¹R₁₂; -I_{n-r}] z‖₂` (printed
-`z ∈ ℝ^{n-2}`), over the factorization of `basicSolution`. -/
+/-- **Equation (5.5.4)** of [golub2013matrix]. In the setting of
+`GolubVanLoan.Chapter05.basicSolution`, the minimum-norm solution $x_{LS} = A^+ b$ satisfies
+$$\|x_{LS}\|_2 = \min_{z \in \mathbb{R}^{n-r}} \left\| x_B - \Pi \begin{bmatrix} R_{11}^{-1}
+  R_{12} \\ -I_{n-r} \end{bmatrix} z \right\|_2.$$
+
+**Typo.** The source prints $z \in \mathbb{R}^{n-2}$.
+
+The minimum is stated as the infimum over $z$. -/
 theorem equation_5_5_4 (h : IsPivotedQR.IsRankRevealing A Q R π r)
     (b : EuclideanSpace ℝ (Fin m)) :
     ‖toEuclideanLin A.pinv b‖ = ⨅ z : Fin (n - r) → ℝ,
@@ -568,8 +768,10 @@ theorem equation_5_5_4 (h : IsPivotedQR.IsRankRevealing A Q R π r)
           R.submatrix (Fin.castLE h.le_rows) (tailIdx h.le_cols)) *ᵥ z) (-z) ∘ π.symm)‖ :=
   h.norm_minNorm_eq_iInf b
 
-/-- **§5.5.5**, "the basic solution is not the minimal 2-norm solution unless the submatrix `R₁₂`
-is zero" — its converse half: when `R₁₂ = 0`, `x_B = x_LS` for every `b`. -/
+/-- **§5.5.5** of [golub2013matrix]. In the setting of `GolubVanLoan.Chapter05.basicSolution`, if
+$R_{12} = 0$, then $x_B = x_{LS} = A^+ b$ for every $b$. This is the converse of the remark of
+the source that "the basic solution is not the minimal 2-norm solution unless the submatrix
+$R_{12}$ is zero". -/
 theorem basicSolution_eq_pinv_of_eq_zero (h : IsPivotedQR.IsRankRevealing A Q R π r)
     (hR : R.submatrix (Fin.castLE h.le_rows) (tailIdx h.le_cols) = 0)
     (b : EuclideanSpace ℝ (Fin m)) :
@@ -580,8 +782,11 @@ theorem basicSolution_eq_pinv_of_eq_zero (h : IsPivotedQR.IsRankRevealing A Q R 
     fun y hy => hle.trans ?_⟩
   exact (isMinNormLeastSquaresSolution_pinv A b).2 y hy
 
-/-- **(5.5.5)** (Golub–Pereyra): for `x_LS ≠ 0`,
-`1 ≤ ‖x_B‖₂/‖x_LS‖₂ ≤ √(1 + ‖R₁₁⁻¹R₁₂‖₂²)`. -/
+/-- **Equation (5.5.5)** of [golub2013matrix] (Golub and Pereyra). In the setting of
+`GolubVanLoan.Chapter05.basicSolution`, if $x_{LS} = A^+ b \neq 0$, then
+$$1 \le \frac{\|x_B\|_2}{\|x_{LS}\|_2} \le \sqrt{1 + \|R_{11}^{-1} R_{12}\|_2^2}.$$
+
+The matrix norm $\|\cdot\|_2$ is the spectral norm. -/
 theorem equation_5_5_5 (h : IsPivotedQR.IsRankRevealing A Q R π r)
     (b : EuclideanSpace ℝ (Fin m)) (hx : toEuclideanLin A.pinv b ≠ 0) :
     1 ≤ ‖pivotedBasicSolution Q R π h.le_rows h.le_cols b‖ / ‖toEuclideanLin A.pinv b‖ ∧
@@ -600,11 +805,18 @@ section SubsetSelection
 
 open scoped Matrix.Norms.L2Operator
 
-/-- **Theorem 5.5.2**: let `Uᵀ A V = Σ` be an SVD, `P` a permutation (`A P = A.submatrix id π`),
-`B₁` the first `r̃` columns of `A P` (`1 ≤ r̃ ≤ rank A`), and `Ṽ₁₁` the leading `r̃ × r̃` block of
-`PᵀV` ((5.5.6)), assumed nonsingular. Then `σ_r̃(A)/‖Ṽ₁₁⁻¹‖₂ ≤ σ_r̃(B₁) ≤ σ_r̃(A)` (1-based
-`σ_r̃` is `sortedSingularValues (r̃ - 1)`). The upper bound is Corollary 2.4.5 iterated (the book
-cites Corollary 2.4.4). -/
+/-- **Theorem 5.5.2** of [golub2013matrix]. Let $U^T A V = \Sigma$ be an SVD of
+$A \in \mathbb{R}^{m \times n}$, let $P \in \mathbb{R}^{n \times n}$ be a permutation, and let
+$1 \le \tilde r \le \operatorname{rank}(A)$. Let $B_1$ be the first $\tilde r$ columns of $AP$,
+and let $\tilde V_{11}$ be the leading $\tilde r \times \tilde r$ block of $P^T V$ as in
+(5.5.6). If $\tilde V_{11}$ is nonsingular, then
+$$\frac{\sigma_{\tilde r}(A)}{\|\tilde V_{11}^{-1}\|_2} \le \sigma_{\tilde r}(B_1) \le
+  \sigma_{\tilde r}(A).$$
+
+The permutation is `π : Equiv.Perm (Fin n)`: $AP$ is `A.submatrix id π` and $P^T V$ is
+`V.submatrix π id`. The singular values are 0-based: `sortedSingularValues (k - 1)` is
+$\sigma_k$, and $\|\cdot\|_2$ is the spectral norm. The proof of the upper bound applies
+Corollary 2.4.5 repeatedly; the source cites Corollary 2.4.4 at this step. -/
 theorem theorem_5_5_2 {A : Matrix (Fin m) (Fin n) ℝ} {U : Matrix (Fin m) (Fin m) ℝ} {σ : ℕ → ℝ}
     {V : Matrix (Fin n) (Fin n) ℝ} (h : IsSVD A U σ V) (π : Equiv.Perm (Fin n)) {r : ℕ}
     (hr0 : 0 < r) (hrA : r ≤ A.rank)
@@ -629,8 +841,8 @@ theorem theorem_5_5_2 {A : Matrix (Fin m) (Fin n) ℝ} {U : Matrix (Fin m) (Fin 
     ((Fin.castLEEmb hrN).trans π.toEmbedding).injective (r - 1)
   exact this
 
-/-- The leading `r` columns of an orthogonal `V` have orthonormal columns, so
-`V(:, 1:r)ᵀ` has rank `r`. -/
+/-- If $V \in \mathbb{R}^{n \times n}$ is orthogonal and $r \le n$, then $V(:, 1{:}r)^T$ has rank
+$r$. -/
 private theorem rank_transpose_leadingCols {V : Matrix (Fin n) (Fin n) ℝ}
     (hV : V ∈ orthogonalGroup (Fin n) ℝ) {r : ℕ} (hr : r ≤ n) :
     ((V.submatrix id (Fin.castLE hr))ᵀ).rank = r := by
@@ -644,12 +856,19 @@ private theorem rank_transpose_leadingCols {V : Matrix (Fin n) (Fin n) ℝ}
   have := rank_mul_le_left W Wᵀ
   rwa [hWW, rank_one, Fintype.card_fin] at this
 
-/-- **§5.5.7, QR with column pivoting of `V(:, 1:r̃)ᵀ`**: for `V` orthogonal and `r̃ ≤ n`, let
-`Qᵀ [V₁₁ᵀ V₂₁ᵀ] P = [R₁₁ R₁₂]` be a QR factorization with column pivoting of the `r̃ × n` matrix
-`W = V(:, 1:r̃)ᵀ` (`W P = Q R`, rows of `R` from the `r`-th on zero and its leading `r × r` block
-nonsingular, as (5.4.6) provides). Then `r = r̃` (the rows of `W` are orthonormal),
-`[Ṽ₁₁; Ṽ₂₁] = Pᵀ [V₁₁; V₂₁] = [R₁₁ᵀQᵀ; R₁₂ᵀQᵀ]`, "`R₁₁` is nonsingular", and
-`‖Ṽ₁₁⁻¹‖₂ = ‖R₁₁⁻¹‖₂`. -/
+/-- **§5.5.7** of [golub2013matrix], QR with column pivoting of $V(:, 1{:}\tilde r)^T$. Let
+$V \in \mathbb{R}^{n \times n}$ be orthogonal, let $\tilde r \le n$, and let $W = V(:,
+1{:}\tilde r)^T = [V_{11}^T\ V_{21}^T] \in \mathbb{R}^{\tilde r \times n}$. Let $WP = QR$ be a
+QR factorization with column pivoting, $Q^T W P = [R_{11}\ R_{12}]$, in which the rows of $R$
+from row $r + 1$ on are zero and the leading $r \times r$ block is nonsingular, as (5.4.6)
+provides. Then $r = \tilde r$,
+$$\begin{bmatrix} \tilde V_{11} \\ \tilde V_{21} \end{bmatrix} = P^T \begin{bmatrix} V_{11} \\
+  V_{21} \end{bmatrix} = \begin{bmatrix} R_{11}^T Q^T \\ R_{12}^T Q^T \end{bmatrix},$$
+the block $R_{11} \in \mathbb{R}^{\tilde r \times \tilde r}$ is nonsingular, and
+$\|\tilde V_{11}^{-1}\|_2 = \|R_{11}^{-1}\|_2$.
+
+The factorization is `Matrix.IsPivotedQR.IsRankRevealing` for $W$ with block size $r$. The
+equation $r = \tilde r$ holds because the rows of $W$ are orthonormal. -/
 theorem qrcp_V11 {V : Matrix (Fin n) (Fin n) ℝ} (hV : V ∈ orthogonalGroup (Fin n) ℝ) {r' r : ℕ}
     (hr : r ≤ n) {Q : Matrix (Fin r) (Fin r) ℝ} {R : Matrix (Fin r) (Fin n) ℝ}
     {π : Equiv.Perm (Fin n)}
@@ -687,16 +906,29 @@ theorem qrcp_V11 {V : Matrix (Fin n) (Fin n) ℝ} (hV : V ∈ orthogonalGroup (F
 
 /-! ### §5.5.8 Column independence versus residual size -/
 
-/-- **Theorem 5.5.3**: "Assume that `UᵀAV = Σ` is the SVD of `A ∈ ℝ^{m×n}` and that `r_y` and
-`r_{x_r̃}` are defined as above. If `Ṽ₁₁` is the leading `r̃`-by-`r̃` principal submatrix of `PᵀV`,
-then `‖r_{x_r̃} - r_y‖₂ ≤ (σ_{r̃+1}(A)/σ_r̃(A)) ‖Ṽ₁₁⁻¹‖₂ ‖b‖₂`" (printed "`r`-by-`r`"), where
-`r_{x_r̃} = b - A x_r̃ = (I - U₁U₁ᵀ) b` (`x_r̃` solving the nearest rank-`r̃` problem, `U₁` the
-first `r̃` columns of `U`) and `r_y = b - B₁ z = (I - B₁B₁⁺) b` (`B₁` the first `r̃` columns of
-`AP = A.submatrix id π`); 0-based, `σ_{r̃+1}(A)/σ_r̃(A)` is
-`A.sortedSingularValues r̃ / A.sortedSingularValues (r̃ - 1)`. With it, the remark after the proof:
-`r_{x_r̃} - r_y = B₁ z - ∑_{i=1}^{r̃} (u_iᵀ b) u_i` (`z = B₁⁺ b`). As in Theorem 5.5.2,
-`1 ≤ r̃ ≤ rank A` and `Ṽ₁₁` nonsingular; the book leaves `r̃ ≤ rank A` implicit, and it is needed
-(for `A = 0` the left side need not vanish). Backbone `Matrix.norm_residual_subset_sub_le`. -/
+/-- **Theorem 5.5.3** of [golub2013matrix]. Let $U^T A V = \Sigma$ be an SVD of
+$A \in \mathbb{R}^{m \times n}$, let $P \in \mathbb{R}^{n \times n}$ be a permutation, let
+$1 \le \tilde r \le \operatorname{rank}(A)$, and let $b \in \mathbb{R}^m$. Let $U_1$ be the
+first $\tilde r$ columns of $U$, let $B_1$ be the first $\tilde r$ columns of $AP$, and let
+$\tilde V_{11}$ be the leading $\tilde r \times \tilde r$ block of $P^T V$. Assume that
+$\tilde V_{11}$ is nonsingular. Let $r_{x_{\tilde r}} = b - A x_{\tilde r} = (I - U_1 U_1^T) b$
+be the residual of the solution $x_{\tilde r}$ of the nearest rank-$\tilde r$ problem, and let
+$r_y = b - B_1 z = (I - B_1 B_1^+) b$ be the residual of the least-squares solution
+$z = B_1^+ b$ on the columns of $B_1$. Then
+$$\|r_{x_{\tilde r}} - r_y\|_2 \le \frac{\sigma_{\tilde r + 1}(A)}{\sigma_{\tilde r}(A)}
+  \|\tilde V_{11}^{-1}\|_2 \|b\|_2,$$
+and, as in the remark after the proof, $r_{x_{\tilde r}} - r_y = B_1 z - \sum_{i=1}^{\tilde r}
+(u_i^T b) u_i$.
+
+**Typo.** The source calls $\tilde V_{11}$ the leading "$r$-by-$r$" principal submatrix of
+$P^T V$. It is $\tilde r$-by-$\tilde r$.
+
+**Reading.** The source leaves the hypothesis $\tilde r \le \operatorname{rank}(A)$ implicit.
+The hypothesis is needed: for $A = 0$ the left side need not vanish.
+
+The quotient $\sigma_{\tilde r + 1}(A) / \sigma_{\tilde r}(A)$ is `A.sortedSingularValues r /
+A.sortedSingularValues (r - 1)`, and $\|\cdot\|_2$ is the spectral norm. The proof specializes
+`Matrix.norm_residual_subset_sub_le`. -/
 theorem theorem_5_5_3 {A : Matrix (Fin m) (Fin n) ℝ} {U : Matrix (Fin m) (Fin m) ℝ} {σ : ℕ → ℝ}
     {V : Matrix (Fin n) (Fin n) ℝ} (h : IsSVD A U σ V) (π : Equiv.Perm (Fin n)) {r : ℕ}
     (hr0 : 0 < r) (hrA : r ≤ A.rank)
@@ -741,20 +973,27 @@ section Programs
 
 variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 
-/-- **Algorithm 5.5.1** (SVD-based subset selection): "Given `A ∈ ℝ^{m×n}` and `b ∈ ℝ^m` the
-following algorithm computes a permutation `P`, a rank estimate `r̃`, and a vector `z ∈ ℝ^r̃` such
-that the first `r̃` columns of `B = AP` are independent and `‖B(:, 1:r̃) z - b‖₂` is minimized":
+/-- **Algorithm 5.5.1** of [golub2013matrix] (SVD-based subset selection). "Given
+$A \in \mathbb{R}^{m \times n}$ and $b \in \mathbb{R}^m$ the following algorithm computes a
+permutation $P$, a rank estimate $\tilde r$, and a vector $z \in \mathbb{R}^{\tilde r}$ such
+that the first $\tilde r$ columns of $B = AP$ are independent and
+$\|B(:, 1{:}\tilde r) z - b\|_2$ is minimized":
 ```
 Compute the SVD UᵀAV = diag(σ₁, …, σ_n) and save V.
 Determine r̃ ≤ rank(A).
 Apply QR with column pivoting: QᵀV(:, 1:r̃)ᵀP = [R₁₁ | R₁₂] and set AP = [B₁ | B₂].
 Determine z ∈ ℝ^r̃ such that ‖b - B₁z‖₂ = min.
 ```
-The SVD (a Chapter 8 algorithm) and the rank decision are inputs: `V` and `r̃` are arguments
-(convention 5). QR with column pivoting is Algorithm 5.4.1 on `V(:, 1:r̃)ᵀ` padded with zero rows
-(`Matrix.padRows`), and the least-squares step is the Householder LS solution of §5.3.3 on `B₁`
-with the returned `β` (`householderLS`; the as-printed Algorithm 5.3.2 recomputes `β` and fails,
-e.g. for `B₁ = I₂`, `algorithm_5_3_2_counterexample`). Returns `(P, z)`. -/
+The program takes $V$ and $\tilde r$, with $\tilde r \le n$ and $\tilde r \le m$, as arguments,
+and it returns the pair $(P, z)$.
+
+The SVD is an algorithm of Chapter 8 and the choice of $\tilde r$ is a decision, so both are
+inputs (convention 5 of `NumlibSurface.GolubVanLoan`). QR with column pivoting is Algorithm
+5.4.1 (`GolubVanLoan.Chapter05.algorithm_5_4_1`) on $V(:, 1{:}\tilde r)^T$ padded with zero rows
+(`Matrix.padRows`), and $P$ is `GolubVanLoan.Chapter05.pivotPerm` of its pivots. The
+least-squares step is the Householder least-squares solution of §5.3.3 with the returned $\beta$
+(`GolubVanLoan.Chapter05.householderLS`). Algorithm 5.3.2 as printed recomputes $\beta$ and
+fails, for example for $B_1 = I_2$ (`GolubVanLoan.Chapter05.algorithm_5_3_2_counterexample`). -/
 noncomputable def algorithm_5_5_1 {r : ℕ} (hrn : r ≤ n) (hrm : r ≤ m)
     (A : Matrix (Fin m) (Fin n) ℝ) (V : Matrix (Fin n) (Fin n) ℝ) (b : Fin m → ℝ) :
     M (Equiv.Perm (Fin n) × (Fin r → ℝ)) := do
@@ -769,15 +1008,21 @@ section Spec
 
 open scoped Matrix.Norms.L2Operator
 
-/-- **Algorithm 5.5.1 selects independent columns and solves the subset problem** (exact
-arithmetic): if `V` is the right-singular-vector matrix of an SVD `UᵀAV = Σ` and
-`1 ≤ r̃ ≤ rank A`, then for the output `(P, z)`, with `B₁` the first `r̃` columns of `AP` and `Ṽ₁₁`
-the leading `r̃ × r̃` block of `PᵀV`: `Ṽ₁₁` is nonsingular (QR with column pivoting of
-`V(:, 1:r̃)ᵀ` has rank `r̃`, the rows being orthonormal, so its pivots pick an invertible
-`Ṽ₁₁ᵀ`), `σ_r̃(B₁) ≥ σ_r̃(A)/‖Ṽ₁₁⁻¹‖₂ > 0` (Theorem 5.5.2), hence "the first `r̃` columns of
-`B = AP` are independent"; and "`‖B(:, 1:r̃) z - b‖₂` is minimized" (`householderLS_spec`).
-Algorithm 5.4.1 runs on `V(:, 1:r̃)ᵀ` padded with zero rows (`Matrix.padRows`); the padding changes
-neither the rank nor the rows of `R` that matter. -/
+/-- **Algorithm 5.5.1** of [golub2013matrix], correctness in exact arithmetic. Let
+$U^T A V = \Sigma$ be an SVD of $A \in \mathbb{R}^{m \times n}$, let $b \in \mathbb{R}^m$, and
+let $1 \le \tilde r \le \operatorname{rank}(A)$, with $\tilde r \le n$ and $\tilde r \le m$. Let
+$(P, z)$ be the output of Algorithm 5.5.1 in exact arithmetic, let $B_1$ be the first $\tilde r$
+columns of $AP$, and let $\tilde V_{11}$ be the leading $\tilde r \times \tilde r$ block of
+$P^T V$. Then $\tilde V_{11}$ is nonsingular,
+$$\frac{\sigma_{\tilde r}(A)}{\|\tilde V_{11}^{-1}\|_2} \le \sigma_{\tilde r}(B_1),$$
+the columns of $B_1$ are linearly independent ("the first $\tilde r$ columns of $B = AP$ are
+independent"), and $z$ minimizes $\|B_1 z - b\|_2$.
+
+QR with column pivoting of $V(:, 1{:}\tilde r)^T$ has rank $\tilde r$, because the rows of this
+matrix are orthonormal, so its pivots give a nonsingular $\tilde V_{11}$
+(`GolubVanLoan.Chapter05.qrcp_V11`). Theorem 5.5.2 then gives the bound, whose left side is
+positive. The least-squares property is `GolubVanLoan.Chapter05.householderLS_spec`. The zero
+rows of the padding change neither the rank nor the rows of $R$ that the argument uses. -/
 theorem algorithm_5_5_1_spec {A : Matrix (Fin m) (Fin n) ℝ} {U : Matrix (Fin m) (Fin m) ℝ}
     {σ : ℕ → ℝ} {V : Matrix (Fin n) (Fin n) ℝ} (h : IsSVD A U σ V) {r : ℕ} (hrn : r ≤ n)
     (hrm : r ≤ m) (hr0 : 0 < r) (hrA : r ≤ A.rank) (b : Fin m → ℝ)

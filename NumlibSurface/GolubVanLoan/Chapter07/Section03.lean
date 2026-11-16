@@ -10,37 +10,125 @@ import Numlib.LinearAlgebra.Matrix.LU
 import NumlibSurface.GolubVanLoan.Chapter07.Section02
 
 /-!
-# Golub–Van Loan §7.3: power iterations
+# Golub and Van Loan, Section 7.3: Power Iterations
 
-Surface file for Gene H. Golub and Charles F. Van Loan, *Matrix Computations*, 4th edition
-[golub2013matrix], §7.3: the QR iteration (7.3.1)–(7.3.2) as a unitary similarity, the power method
-(7.3.3) with its rate (7.3.5) and its backward error, orthogonal iteration (7.3.6) and the dominant
-invariant subspace, the QR iteration as orthogonal iteration and the convergence (7.3.11) of
-`T_k = Q_kᴴ A Q_k` to triangular form (§7.3.3), and the appendix: Lemma 7.3.2 and the proof displays
-(7.3.20), (7.3.23)–(7.3.24).
+This module formalizes §7.3 of [golub2013matrix], on iterations that multiply repeatedly by a matrix
+$A \in \mathbb{C}^{n \times n}$. It covers the QR iteration (7.3.1)–(7.3.2) as a sequence of unitary
+similarities; the power method (7.3.3) with its convergence rate (7.3.5) and its backward error;
+orthogonal iteration (7.3.6) and the dominant invariant subspace $D_r(A)$; the QR iteration as
+orthogonal iteration and the convergence (7.3.11) of $T_k = Q_k^H A Q_k$ to triangular form
+(§7.3.3); the LR iteration as treppeniteration (§7.3.4); and the appendix of the section, which
+proves Lemma 7.3.2 and Theorem 7.3.1 with the displays (7.3.18)–(7.3.26).
+
+Theorem 7.3.1, the convergence bound of orthogonal iteration, is false as printed.
+`GolubVanLoan.Chapter07.theorem_7_3_1_counterexample` gives a counterexample, and
+`GolubVanLoan.Chapter07.theorem_7_3_1` states a corrected version. The proofs specialize the
+backbone modules `Numlib.Eigen.PowerMethod` (the iterates `Krylov.powerIterate` and their rates),
+`Numlib.Eigen.QRAlgorithm` (the predicates `Matrix.IsShiftedQrStep` and
+`Matrix.IsOrthogonalIterationStep`), `Numlib.Eigen.InvariantSubspace` (Lemma 7.3.2 and the dominant
+invariant subspace) and `Numlib.LinearAlgebra.Matrix.Sylvester` (the separation `Matrix.sep`).
+
+## Main definitions
+
+* (7.3.3), `GolubVanLoan.Chapter07.powerMethod`: the power method,
+  $q^{(k)} = A q^{(k-1)} / \|A q^{(k-1)}\|_2$ and $\lambda^{(k)} = [q^{(k)}]^H A q^{(k)}$.
+* (7.3.6), `GolubVanLoan.Chapter07.orthogonalIteration`: a sequence $Q_k$ with $A Q_{k-1} = Q_k R_k$
+  a thin QR factorization at every step.
+* (7.3.8), `GolubVanLoan.Chapter07.schurSplit`: the partition of the indices into the first $r$ and
+  the last $n - r$.
+
+## Main results
+
+* (7.3.1)–(7.3.2), `GolubVanLoan.Chapter07.equation_7_3_2`: the iterates of the QR iteration satisfy
+  $T_k = (U_0 \cdots U_k)^H A (U_0 \cdots U_k)$.
+* (7.3.5), `GolubVanLoan.Chapter07.equation_7_3_5`: the eigenvalue estimates of the power method
+  converge at the rate $(|\lambda_2| / |\lambda_1|)^k$.
+* §7.3.1, `GolubVanLoan.Chapter07.powerMethod_dist`: the vectors of the power method converge to the
+  dominant eigenvector at the same rate.
+* §7.3.1, `GolubVanLoan.Chapter07.powerMethod_backwardError`: $\lambda^{(k)}$ is an exact eigenvalue
+  of $A + E$ with $\|E\|_2 = \|r^{(k)}\|_2$, and no smaller $E$ does this.
+* §7.3.2, `GolubVanLoan.Chapter07.orthogonalIteration_range`: $\operatorname{ran}(Q_k) = A^k
+  \operatorname{ran}(Q_0)$, and the first columns of the $Q_k$ are the vectors of the power method.
+* §7.3.2, `GolubVanLoan.Chapter07.dominantInvariantSubspace_unique`: $D_r(A)$ is the unique
+  invariant subspace for the $r$ dominant eigenvalues.
+* §7.3.3, `GolubVanLoan.Chapter07.orthogonalIteration_qr_step`: for $r = n$, consecutive matrices
+  $Q_k^H A Q_k$ are related by a QR step.
+* (7.3.11), `GolubVanLoan.Chapter07.equation_7_3_11`: under the corrected hypothesis of Theorem
+  7.3.1, the matrices $Q_k^H A Q_k$ converge to upper triangular form.
+* (7.3.12)–(7.3.14), `GolubVanLoan.Chapter07.equation_7_3_14`: the LR iteration is treppeniteration
+  started from a unit lower triangular matrix.
+* Lemma 7.3.2, `GolubVanLoan.Chapter07.lemma_7_3_2`: the bounds (7.3.15) and (7.3.16) on $\|A^k\|_2$
+  and $\|A^{-k}\|_2$ through a Schur form.
+* Theorem 7.3.1, `GolubVanLoan.Chapter07.theorem_7_3_1`: the corrected convergence bound for
+  $\operatorname{dist}(D_r(A), \operatorname{ran}(Q_k))$.
+* Theorem 7.3.1, `GolubVanLoan.Chapter07.theorem_7_3_1_counterexample`: a $2 \times 2$ example in
+  which the printed theorem fails.
+* (7.3.18), `GolubVanLoan.Chapter07.equation_7_3_18`: $\operatorname{dist}(D_r(A),
+  \operatorname{ran}(Q_k)) = \|Q_\beta^H Q_k\|_2$.
+* (7.3.19), `GolubVanLoan.Chapter07.equation_7_3_19`: $1 = d_k^2 + \sigma_{\min}(Q_\alpha^H Q_k)^2$.
+* (7.3.20), `GolubVanLoan.Chapter07.equation_7_3_20`: the Sylvester equation
+  $T_{11} X - X T_{22} = -T_{12}$ has a solution with $\|X\|_F \le \|T_{12}\|_F /
+  \operatorname{sep}(T_{11}, T_{22})$.
+* (7.3.23)–(7.3.24), `GolubVanLoan.Chapter07.equation_7_3_24`: if $G G^H = I + X X^H$, then
+  $\sigma_{\min}(G) \ge 1$.
+* (7.3.25), `GolubVanLoan.Chapter07.equation_7_3_25`: the columns of $Q_\alpha X + Q_\beta$ span an
+  invariant subspace of $A$, and those of $Q_\alpha - Q_\beta X^H$ span an invariant subspace of
+  $A^H$.
+* (7.3.26), `GolubVanLoan.Chapter07.equation_7_3_26`: the corrected bound $\|(V_0 - X W_0)^{-1}\|_2
+  \le 1/\sqrt{1 - \tilde d_0^2}$.
 
 ## Conventions
 
-Complex matrices `Matrix (Fin n) (Fin n) ℂ` as in §7.1, except that the two iterations chapter 8
-reuses — the power method (7.3.3) and orthogonal iteration (7.3.6) — are stated over any `RCLike`
-field `𝕜`, so that chapter 8's (8.2.3) and (8.2.8) are their instances at `ℝ`. Vectors live in
-`EuclideanSpace 𝕜 (Fin n)` where norms matter and `A` acts by `Matrix.toEuclideanLin`. "Some QR
-factorization" is recorded as data (the factors `U_k`, `R_k`), or by the backbone's
-`Matrix.IsShiftedQrStep` and `Matrix.IsOrthogonalIterationStep`, so that every statement holds for
-every choice of factorization, as the book's do. Subspace distance is `Submodule.gap`.
+* Matrices are complex, `Matrix (Fin n) (Fin n) ℂ`, as in §7.1. The power method (7.3.3), orthogonal
+  iteration (7.3.6) and the results about them are stated over a field $\mathbb{K}$ that is
+  $\mathbb{R}$ or $\mathbb{C}$ (`RCLike 𝕜`), so that (8.2.3) and (8.2.8) of Chapter 8 are their
+  instances at $\mathbb{K} = \mathbb{R}$.
+* $D_r(A)$ is the dominant invariant subspace of $A$, spanned by the first $r$ columns $Q_\alpha$ of
+  the unitary factor $Q = [Q_\alpha\ Q_\beta]$ of a Schur decomposition (7.3.7)–(7.3.8). The
+  distance $\operatorname{dist}$ of two subspaces is the gap `Submodule.gap`.
+* $\|\cdot\|_2$ is the scoped norm `Matrix.Norms.L2Operator` or `Matrix.lpOpNorm 2`, and
+  $\|\cdot\|_F$ is the scoped norm `Matrix.Norms.Frobenius`. For a matrix $B$, $\sigma_{\min}(B)$ is
+  the least column singular value `⨅ i, B.colSingularValues i`.
 
-## Sources
+## Implementation notes
 
-`Numlib/Eigen/PowerMethod` (`Krylov.powerIterate` and its rates), `Numlib/Eigen/QRAlgorithm`
-(`Matrix.IsShiftedQrStep`, `Matrix.IsOrthogonalIterationStep`), `Numlib/Eigen/InvariantSubspace`
-(Lemma 7.3.2, the dominant invariant subspace), `Numlib/LinearAlgebra/Matrix/Sylvester` (`sep`).
+* Vectors are in `EuclideanSpace 𝕜 (Fin n)` where norms matter, and a matrix acts on them by
+  `Matrix.toEuclideanLin`.
+* "Some QR factorization" is recorded as data (the factors $U_k$ and $R_k$) or by the predicates
+  `Matrix.IsShiftedQrStep` and `Matrix.IsOrthogonalIterationStep`. Every statement therefore holds
+  for every choice of the factorizations, as in the source.
+
+## Deviations from the source
+
+* **Theorem 7.3.1** (correction). The printed bound is false. The theorem assumes
+  $\operatorname{dist}(D_r(A^H), \operatorname{ran}(Q_0)) < 1$ in place of (7.3.9) and has this
+  distance in the denominator. See `GolubVanLoan.Chapter07.theorem_7_3_1` and
+  `GolubVanLoan.Chapter07.theorem_7_3_1_counterexample`.
+* **Theorem 7.3.1** (generalization). Any bounds $a \le |\lambda_r|$, $b \ge |\lambda_{r+1}|$ with
+  $b < a$, and $\nu \ge \|N\|_F$ can replace the source's $|\lambda_r|$, $|\lambda_{r+1}|$ and
+  $\|N\|_F$. See `GolubVanLoan.Chapter07.theorem_7_3_1`.
+* **Equation (7.3.26)** (correction). The source ends the chain of inequalities with $d_0 =
+  \operatorname{dist}(D_r(A), \operatorname{ran}(Q_0))$ through the false claim
+  $\operatorname{ran}(Q_\beta) = D_r(A^H)^\perp$. The statement ends it with
+  $\operatorname{dist}(D_r(A^H), \operatorname{ran}(Q_0))$. See
+  `GolubVanLoan.Chapter07.equation_7_3_26`.
+* **Lemma 7.3.2** (typo). The last display of the source writes $|\mu|$ for $|\lambda_{\min}|$. See
+  `GolubVanLoan.Chapter07.lemma_7_3_2`.
+* **Equations (7.3.12)–(7.3.14)** (reading). The source starts treppeniteration from
+  $G_0 \in \mathbb{C}^{n \times r}$ of rank $r$. The statement takes $r = n$ and $G_0 = L_0$ unit
+  lower triangular. See `GolubVanLoan.Chapter07.equation_7_3_14`.
 
 ## Not formalized
 
-Stewart's accelerated orthogonal iteration (`≈` rates, no algorithm given); the heuristics
-`|λ^(k) - λ₁| ≈ ‖r^(k)‖₂ / s(λ₁)` and `s(λ₁) ≈ |w^(k)ᴴ q^(k)|`; "under reasonable assumptions the
-`T_k` converge to upper triangular form" for the LR iteration; the proof-internal (7.3.17),
-(7.3.21)–(7.3.23) (identities whose content is Theorem 7.3.1); the flop remark.
+* **Stewart's accelerated orthogonal iteration.** The source gives only approximate rates and no
+  algorithm.
+* **The estimates $|\lambda^{(k)} - \lambda_1| \approx \|r^{(k)}\|_2 / s(\lambda_1)$ and
+  $s(\lambda_1) \approx |w^{(k)H} q^{(k)}|$.** They are heuristics.
+* **The remark that "under reasonable assumptions" the matrices $T_k$ of the LR iteration converge
+  to upper triangular form.**
+* **Equations (7.3.17), (7.3.21) and (7.3.22).** They are identities inside the proof of Theorem
+  7.3.1, whose content is the theorem.
+* **The flop count.**
 -/
 
 open Matrix Filter Topology
@@ -51,9 +139,14 @@ variable {n : ℕ}
 
 /-! ### The QR iteration (7.3.1) -/
 
-/-- **(7.3.1)–(7.3.2).** If `T₀ = U₀ᴴ A U₀` with `U₀` unitary and `T_k` comes from `T_{k-1}` by a QR
-step for some QR factorization, `T_{k-1} = U_k R_k`, `T_k = R_k U_k`, then
-`T_k = (U₀ U₁ ⋯ U_k)ᴴ A (U₀ U₁ ⋯ U_k)`: each `T_k` is unitarily similar to `A`. -/
+/-- **Equations (7.3.1)–(7.3.2)** of [golub2013matrix]. Let $A \in \mathbb{C}^{n \times n}$ and let
+$U_0, U_1, \dots \in \mathbb{C}^{n \times n}$ be unitary, with $T_0 = U_0^H A U_0$. Suppose that
+$T_{k-1} = U_k R_k$ and $T_k = R_k U_k$ for every $k \ge 1$. Then for every $k \ge 0$
+$$T_k = (U_0 U_1 \cdots U_k)^H A (U_0 U_1 \cdots U_k),$$
+so every $T_k$ is unitarily similar to $A$.
+
+In the source $T_{k-1} = U_k R_k$ is a QR factorization; the statement does not use that $R_k$
+is upper triangular. The product $U_0 U_1 \cdots U_k$ is `((List.range (k + 1)).map U).prod`. -/
 theorem equation_7_3_2 {A : Matrix (Fin n) (Fin n) ℂ} {T U R : ℕ → Matrix (Fin n) (Fin n) ℂ}
     (hU : ∀ k, U k ∈ unitaryGroup (Fin n) ℂ) (hT0 : T 0 = star (U 0) * A * U 0)
     (hQR : ∀ k, T k = U (k + 1) * R (k + 1)) (hRQ : ∀ k, T (k + 1) = R (k + 1) * U (k + 1))
@@ -75,10 +168,18 @@ section RCLike
 
 variable {𝕜 : Type*} [RCLike 𝕜]
 
-/-- **(7.3.3), the power method**, over any `RCLike` field (the book states it over `ℂ`; chapter 8's
-(8.2.3) is the instance `𝕜 = ℝ`): `q^(0) = q₀`, `z^(k) = A q^(k-1)`, `q^(k) = z^(k)/‖z^(k)‖₂`,
-`λ^(k) = q^(k)ᴴ A q^(k)`, returned as the pair `(q^(k), λ^(k))`. For a unit `q₀` the vectors are the
-backbone's `Krylov.powerIterate` (`powerMethod_fst`). -/
+/-- **Equation (7.3.3)** of [golub2013matrix] (the power method). Let $\mathbb{K}$ be $\mathbb{R}$
+or $\mathbb{C}$, $A \in \mathbb{K}^{n \times n}$ and $q_0 \in \mathbb{K}^n$. The power method
+computes
+$$q^{(0)} = q_0, \qquad z^{(k)} = A q^{(k-1)}, \qquad q^{(k)} = z^{(k)} / \|z^{(k)}\|_2, \qquad
+  \lambda^{(k)} = [q^{(k)}]^H A q^{(k)},$$
+and `powerMethod A q₀ k` is the pair $(q^{(k)}, \lambda^{(k)})$, with
+$\lambda^{(0)} = q_0^H A q_0$.
+
+The source states the method over $\mathbb{C}$, and (8.2.3) of Chapter 8 is the instance
+$\mathbb{K} = \mathbb{R}$. If $z^{(k)} = 0$, then $q^{(k)} = 0$, because the inverse of $0$ is
+$0$ in Lean. For a unit $q_0$ the vectors are the backbone's `Krylov.powerIterate`; see
+`GolubVanLoan.Chapter07.powerMethod_fst`. -/
 noncomputable def powerMethod (A : Matrix (Fin n) (Fin n) 𝕜) (q₀ : EuclideanSpace 𝕜 (Fin n)) :
     ℕ → EuclideanSpace 𝕜 (Fin n) × 𝕜
   | 0 => (q₀, inner 𝕜 q₀ (toEuclideanLin A q₀))
@@ -87,14 +188,15 @@ noncomputable def powerMethod (A : Matrix (Fin n) (Fin n) 𝕜) (q₀ : Euclidea
     let q := (‖z‖ : 𝕜)⁻¹ • z
     (q, inner 𝕜 q (toEuclideanLin A q))
 
-/-- The eigenvalue estimate of the power method is the Rayleigh quotient of its vector. -/
+/-- The eigenvalue estimate $\lambda^{(k)}$ of the power method is the Rayleigh quotient
+$[q^{(k)}]^H A q^{(k)}$ of its vector $q^{(k)}$. -/
 theorem powerMethod_snd (A : Matrix (Fin n) (Fin n) 𝕜) (q₀ : EuclideanSpace 𝕜 (Fin n)) (k : ℕ) :
     (powerMethod A q₀ k).2 =
       inner 𝕜 (powerMethod A q₀ k).1 (toEuclideanLin A (powerMethod A q₀ k).1) := by
   cases k <;> rfl
 
-/-- For a unit starting vector the vectors of the power method (7.3.3) are the backbone's
-`Krylov.powerIterate`, the normalizations of `A^k q₀`. -/
+/-- If $\|q_0\|_2 = 1$, the vector $q^{(k)}$ of the power method (7.3.3) is
+$A^k q_0 / \|A^k q_0\|_2$, which is the backbone's `Krylov.powerIterate`. -/
 theorem powerMethod_fst (A : Matrix (Fin n) (Fin n) 𝕜) {q₀ : EuclideanSpace 𝕜 (Fin n)}
     (hq₀ : ‖q₀‖ = 1) (k : ℕ) :
     (powerMethod A q₀ k).1 = Krylov.powerIterate (toEuclideanLin A) q₀ k :=
@@ -103,10 +205,17 @@ theorem powerMethod_fst (A : Matrix (Fin n) (Fin n) 𝕜) {q₀ : EuclideanSpace
     change q₀ = _
     rw [hq₀, RCLike.ofReal_one, inv_one, one_smul]) (fun _ => rfl) k
 
-/-- **(7.3.5), rigorous.** Let `x : Fin n → EuclideanSpace 𝕜 (Fin n)` be unit eigenvectors of `A`,
-`A x_i = λ_i x_i`, with `λ_{i₀}` dominant: `|λ_i| ≤ ρ < |λ_{i₀}|` for `i ≠ i₀` (the book's
-`ρ = |λ₂|`). If the unit `q^(0) = ∑ a_i x_i` has `a_{i₀} ≠ 0` (7.3.4), then
-`|λ_{i₀} - λ^(k)| ≤ C (ρ / |λ_{i₀}|)^k` for some `C` and all `k`. -/
+/-- **Equation (7.3.5)** of [golub2013matrix]. Let $\mathbb{K}$ be $\mathbb{R}$ or $\mathbb{C}$, let
+$A \in \mathbb{K}^{n \times n}$, and let $x_1, \dots, x_n$ be unit vectors with
+$A x_i = \lambda_i x_i$. Let $i_0$ be an index and $\rho \ge 0$ a number with
+$|\lambda_i| \le \rho < |\lambda_{i_0}|$ for all $i \neq i_0$. Let $q^{(0)}$ be a unit vector
+with $q^{(0)} = \sum_i a_i x_i$ and $a_{i_0} \neq 0$, as in (7.3.4). Then there is a constant
+$C$ such that the eigenvalue estimates of the power method satisfy
+$$|\lambda_{i_0} - \lambda^{(k)}| \le C \left( \frac{\rho}{|\lambda_{i_0}|} \right)^k \qquad
+  \text{for all } k \ge 0.$$
+
+The source states $|\lambda_1 - \lambda^{(k)}| = O(|\lambda_2 / \lambda_1|^k)$ for a dominant
+$\lambda_1$; here the dominant index is $i_0$ and $\rho$ plays the role of $|\lambda_2|$. -/
 theorem equation_7_3_5 {A : Matrix (Fin n) (Fin n) 𝕜} {x : Fin n → EuclideanSpace 𝕜 (Fin n)}
     {l : Fin n → 𝕜} (hx : ∀ i, toEuclideanLin A (x i) = l i • x i) (hx1 : ∀ i, ‖x i‖ = 1)
     {i₀ : Fin n} {ρ : ℝ} (hρ0 : 0 ≤ ρ) (hρ : ∀ i, i ≠ i₀ → ‖l i‖ ≤ ρ) (hdom : ρ < ‖l i₀‖)
@@ -125,10 +234,16 @@ section L2
 
 open scoped Matrix.Norms.L2Operator
 
-/-- **§7.3.1, the backward error of the power method.** With `r^(k) = A q^(k) - λ^(k) q^(k)`, the
-eigenvalue estimate `λ^(k)` is an exact eigenvalue, with eigenvector `q^(k)`, of `A + E` for some
-`E` with `‖E‖₂ = ‖r^(k)‖₂` (the book's `E^(k) = -r^(k) q^(k)ᴴ`), and no smaller perturbation does
-this. -/
+/-- **Section 7.3.1** of [golub2013matrix], the backward error of the power method. Let $\mathbb{K}$
+be $\mathbb{R}$ or $\mathbb{C}$, let $A \in \mathbb{K}^{n \times n}$, let $q^{(k)}$ and
+$\lambda^{(k)}$ be the iterates of the power method from $q_0$, and assume $\|q^{(k)}\|_2 = 1$.
+Let $r^{(k)} = A q^{(k)} - \lambda^{(k)} q^{(k)}$. Then $\|r^{(k)}\|_2$ is the least value of
+$\|E\|_2$ over all $E \in \mathbb{K}^{n \times n}$ with
+$$(A + E) q^{(k)} = \lambda^{(k)} q^{(k)},$$
+and the least value is attained.
+
+The source's perturbation is $E^{(k)} = -r^{(k)} [q^{(k)}]^H$. The norm is the scoped 2-norm
+`Matrix.Norms.L2Operator`. -/
 theorem powerMethod_backwardError (A : Matrix (Fin n) (Fin n) 𝕜) (q₀ : EuclideanSpace 𝕜 (Fin n))
     (k : ℕ) (hq : ‖(powerMethod A q₀ k).1‖ = 1) :
     IsLeast {ε : ℝ | ∃ E : Matrix (Fin n) (Fin n) 𝕜,
@@ -157,18 +272,27 @@ end L2
 
 /-! ### §7.3.2 Orthogonal iteration -/
 
-/-- **(7.3.6), orthogonal iteration**, as a relation over any `RCLike` field (chapter 8's (8.2.8) is
-the instance `𝕜 = ℝ`): `Q : ℕ → Matrix (Fin n) (Fin r) 𝕜` is an orthogonal iteration for `A` when
-`Q₀` has orthonormal columns and each `Q_k` is the `Q`-factor of some thin QR factorization
-`Q_k R_k = Z_k = A Q_{k-1}` (the backbone's `Matrix.IsOrthogonalIterationStep`). The eigenvalue
-estimates are the spectrum of `Q_kᴴ A Q_k`. From every orthonormal `Q₀` with `r ≤ n` an orthogonal
-iteration starts (`orthogonalIteration_exists`). -/
+/-- **Equation (7.3.6)** of [golub2013matrix] (orthogonal iteration). Let $\mathbb{K}$ be
+$\mathbb{R}$ or $\mathbb{C}$ and $A \in \mathbb{K}^{n \times n}$. A sequence
+$Q_0, Q_1, \dots \in \mathbb{K}^{n \times r}$ is an **orthogonal iteration** for $A$ if
+$Q_0^H Q_0 = I$ and, for every $k \ge 1$, $Q_k$ is the orthonormal factor of some thin QR
+factorization
+$$Z_k = A Q_{k-1} = Q_k R_k,$$
+with $Q_k^H Q_k = I$ and $R_k$ upper triangular. The eigenvalue estimates are the eigenvalues of
+$Q_k^H A Q_k$.
+
+The source states the method over $\mathbb{C}$, and (8.2.8) of Chapter 8 is the instance
+$\mathbb{K} = \mathbb{R}$. A step is `Matrix.IsOrthogonalIterationStep`. Every $Q_0$ with
+orthonormal columns and $r \le n$ starts an orthogonal iteration; see
+`GolubVanLoan.Chapter07.orthogonalIteration_exists`. -/
 def orthogonalIteration {r : ℕ} (A : Matrix (Fin n) (Fin n) 𝕜)
     (Q : ℕ → Matrix (Fin n) (Fin r) 𝕜) : Prop :=
   (Q 0)ᴴ * Q 0 = 1 ∧ ∀ k, IsOrthogonalIterationStep A (Q k) (Q (k + 1))
 
-/-- Orthogonal iteration can be run from every `Q₀` with orthonormal columns: each step has a thin
-QR factorization, with no rank hypothesis. -/
+/-- Let $\mathbb{K}$ be $\mathbb{R}$ or $\mathbb{C}$, $A \in \mathbb{K}^{n \times n}$, and let
+$Q_0 \in \mathbb{K}^{n \times r}$ have orthonormal columns, with $r \le n$. Then there is an
+orthogonal iteration (7.3.6) for $A$ that starts at $Q_0$. No rank hypothesis is needed, because
+every step has a thin QR factorization. -/
 theorem orthogonalIteration_exists {r : ℕ} (A : Matrix (Fin n) (Fin n) 𝕜)
     {Q₀ : Matrix (Fin n) (Fin r) 𝕜} (hQ₀ : Q₀ᴴ * Q₀ = 1) (hr : r ≤ n) :
     ∃ Q : ℕ → Matrix (Fin n) (Fin r) 𝕜, Q 0 = Q₀ ∧ orthogonalIteration A Q := by
@@ -177,12 +301,17 @@ theorem orthogonalIteration_exists {r : ℕ} (A : Matrix (Fin n) (Fin n) 𝕜)
   let Q : ℕ → Matrix (Fin n) (Fin r) 𝕜 := fun k => Nat.rec Q₀ (fun _ P => next P) k
   exact ⟨Q, rfl, hQ₀, fun k => hnext (Q k)⟩
 
-/-- **§7.3.3, the QR iteration from orthogonal iteration**, over any `RCLike` field (chapter 8's
-§8.2.5 is the instance `𝕜 = ℝ`): for an orthogonal iteration with `r = n` and
-`T_k = Q_kᴴ A Q_k`, the triangular factor `R_{k+1}` of the step gives
-`T_k = (Q_kᴴ Q_{k+1}) R_{k+1}` and `T_{k+1} = R_{k+1} (Q_kᴴ Q_{k+1})` with `Q_kᴴ Q_{k+1}` unitary —
-"`T_k` is determined by computing the QR factorization of `T_{k-1}` and then multiplying the factors
-together in reverse order", `Matrix.IsShiftedQrStep 0 T_k T_{k+1}`. -/
+/-- **Section 7.3.3** of [golub2013matrix], the QR iteration as orthogonal iteration. Let
+$\mathbb{K}$ be $\mathbb{R}$ or $\mathbb{C}$, $A \in \mathbb{K}^{n \times n}$, let
+$Q_0, Q_1, \dots \in \mathbb{K}^{n \times n}$ be an orthogonal iteration (7.3.6) with $r = n$,
+and let $T_k = Q_k^H A Q_k$. For every $k$ there is an upper triangular $R$ such that
+$Q_k^H Q_{k+1}$ is unitary and
+$$T_k = (Q_k^H Q_{k+1}) R, \qquad T_{k+1} = R (Q_k^H Q_{k+1}).$$
+So "$T_k$ is determined by computing the QR factorization of $T_{k-1}$ and then multiplying the
+factors together in reverse order".
+
+The last conclusion is also stated as a QR step with shift $0$, `Matrix.IsShiftedQrStep`. The
+section §8.2.5 of Chapter 8 is the instance $\mathbb{K} = \mathbb{R}$. -/
 theorem orthogonalIteration_qr_step {A : Matrix (Fin n) (Fin n) 𝕜}
     {Q : ℕ → Matrix (Fin n) (Fin n) 𝕜} (hQ : orthogonalIteration A Q) (k : ℕ) :
     ∃ R : Matrix (Fin n) (Fin n) 𝕜, R.IsUpperTriangular ∧
@@ -215,13 +344,20 @@ theorem orthogonalIteration_qr_step {A : Matrix (Fin n) (Fin n) 𝕜}
   · rw [zero_smul, sub_zero, h1]
   · rw [zero_smul, add_zero, h2]
 
-/-- **§7.3.2, orthogonal iteration iterates subspaces and contains the power method.** For an
-orthogonal iteration `Q` (7.3.6) with `A^k Q₀` of full column rank: `ran Q_k = A^k (ran Q₀)`
-(`Krylov.subspaceIterate`); `A^k Q₀ = Q_k S` with `S` nonsingular upper triangular (the product
-`R_k ⋯ R_1` of the triangular factors of the steps, the first display of the appendix proof); and
-"the sequence `{Q_k e₁}` is precisely the sequence produced by the power iteration": the first
-column of `Q_k` is the power method's `q^(k)` from `q₀ = Q₀ e₁`, up to a unimodular factor (the sign
-or phase freedom of the QR factorizations). -/
+/-- **Section 7.3.2** of [golub2013matrix], orthogonal iteration iterates subspaces and contains the
+power method. Let $\mathbb{K}$ be $\mathbb{R}$ or $\mathbb{C}$, $A \in \mathbb{K}^{n \times n}$,
+let $Q_0, Q_1, \dots \in \mathbb{K}^{n \times r}$ be an orthogonal iteration (7.3.6), and let
+$k \ge 0$ be such that $A^k Q_0$ has full column rank. Then $\operatorname{ran}(Q_k) = A^k
+\operatorname{ran}(Q_0)$, and $A^k Q_0 = Q_k S$ for a nonsingular upper triangular
+$S \in \mathbb{K}^{r \times r}$. Moreover, if $r \ge 1$, the first column of $Q_k$ is
+$c\, q^{(k)}$ for some $c$ with $|c| = 1$, where $q^{(k)}$ is the vector of the power method
+(7.3.3) started from the first column of $Q_0$.
+
+The last part is the source's remark that "the sequence $\{Q_k e_1\}$ is precisely the sequence
+produced by the power iteration". The factor $c$ accounts for the freedom of sign or phase in
+the QR factorizations. The matrix $S$ is the product $R_k \cdots R_1$ of the triangular factors,
+as in the first display of the proof in the appendix. Full column rank is linear independence of
+the rows of the transpose, and the subspace on the right is `Krylov.subspaceIterate`. -/
 theorem orthogonalIteration_range {r : ℕ} {A : Matrix (Fin n) (Fin n) 𝕜}
     {Q : ℕ → Matrix (Fin n) (Fin r) 𝕜} (hQ : orthogonalIteration A Q) {k : ℕ}
     (hk : LinearIndependent 𝕜 (A ^ k * Q 0)ᵀ) :
@@ -275,12 +411,22 @@ end RCLike
 
 /-! ### §7.3.4 LR iterations -/
 
-/-- **(7.3.12)–(7.3.14), the LR iteration is treppeniteration.** Let `L₀` be unit lower triangular
-and `T_k` the LR iterates: `T₀ = L₀⁻¹ A L₀`, `T_{k-1} = L_k R_k` an LU factorization,
-`T_k = R_k L_k`. Then `G_k = L₀ L₁ ⋯ L_k` is unit lower triangular, `T_k = G_k⁻¹ A G_k` (7.3.13),
-and `A G_k = G_{k+1} R_{k+1}` is an LU-type factorization of `A G_k` — the treppeniteration (7.3.12)
-started from `G₀ = L₀`. (The book's "`G₀ ∈ ℂ^{n×r}` of rank `r`" with `r = n` and `L₀ = G₀` is read
-with `G₀` unit lower triangular, which the identification needs.) -/
+/-- **Equations (7.3.12)–(7.3.14)** of [golub2013matrix], the LR iteration as treppeniteration. Let
+$A \in \mathbb{C}^{n \times n}$, let $L_0$ be unit lower triangular, and let
+$T_0 = L_0^{-1} A L_0$. For $k \ge 1$ let $T_{k-1} = L_k R_k$ be an LU factorization, with $L_k$
+unit lower triangular and $R_k$ upper triangular, and let $T_k = R_k L_k$. Let
+$G_k = L_0 L_1 \cdots L_k$. Then for every $k \ge 0$, $G_k$ is unit lower triangular,
+$$T_k = G_k^{-1} A G_k, \qquad A G_k = G_{k+1} R_{k+1}.$$
+The first identity is (7.3.13). The second says that $A G_k = G_{k+1} R_{k+1}$ is an LU-type
+factorization, so the $G_k$ are the iterates of treppeniteration (7.3.12) started from
+$G_0 = L_0$.
+
+**Reading.** The source starts treppeniteration from a matrix $G_0 \in \mathbb{C}^{n \times r}$
+of rank $r$. The statement takes $r = n$ and $G_0 = L_0$, and it needs $G_0$ to be unit lower
+triangular for the identification with the LR iteration.
+
+An LU factorization is `Matrix.IsLU`, and the product $G_k$ is
+`((List.range (k + 1)).map L).prod`. -/
 theorem equation_7_3_14 {A : Matrix (Fin n) (Fin n) ℂ} {L R T : ℕ → Matrix (Fin n) (Fin n) ℂ}
     (hL0 : (L 0).IsUnitLowerTriangular) (hT0 : T 0 = (L 0)⁻¹ * A * L 0)
     (hLU : ∀ k, IsLU (T k) (L (k + 1)) (R (k + 1)))
@@ -319,10 +465,16 @@ theorem equation_7_3_14 {A : Matrix (Fin n) (Fin n) ℂ} {L R T : ℕ → Matrix
 
 /-! ### The dominant invariant subspace -/
 
-/-- The span of the leading Schur vectors when the diagonal blocks have disjoint spectra: if
-`Qᴴ A Q = [T₁₁ T₁₂; 0 T₂₂]` with `Q` unitary and `λ(T₁₁) ∩ λ(T₂₂) = ∅`, then the first `p` columns
-of `Q` span `⨆_{λ ∈ λ(T₁₁)} null((A - λI)^n)`, and every `A`-invariant subspace of dimension `p` on
-which `A` has only eigenvalues from `λ(T₁₁)` equals it. Shared by §7.3.2 and §7.6.2. -/
+/-- Let $A, Q \in \mathbb{C}^{(p+q) \times (p+q)}$ with $Q$ unitary and $Q^H A Q = \begin{bmatrix}
+T_{11} & T_{12} \\ 0 & T_{22} \end{bmatrix}$, where $T_{11} \in \mathbb{C}^{p \times p}$, and
+assume $\lambda(T_{11}) \cap \lambda(T_{22}) = \emptyset$. Then the first $p$ columns of $Q$
+span $\sum_{\mu \in \lambda(T_{11})} \operatorname{null}((A - \mu I)^{p+q})$, the sum of the
+generalized eigenspaces of $A$ for the eigenvalues of $T_{11}$. Every $A$-invariant subspace $S$
+of dimension $p$ that contains no eigenvector of $A$ for an eigenvalue outside $\lambda(T_{11})$
+equals this span.
+
+The block form is stated after reindexing by `finSumFinEquiv`. The result is used in §7.3.2 and
+§7.6.2. -/
 theorem span_leading_schurVectors_eq {p q : ℕ} {A Q : Matrix (Fin (p + q)) (Fin (p + q)) ℂ}
     (hQ : Q ∈ unitaryGroup (Fin (p + q)) ℂ) {T₁₁ : Matrix (Fin p) (Fin p) ℂ}
     {T₁₂ : Matrix (Fin p) (Fin q) ℂ} {T₂₂ : Matrix (Fin q) (Fin q) ℂ}
@@ -351,12 +503,20 @@ theorem span_leading_schurVectors_eq {p q : ℕ} {A Q : Matrix (Fin (p + q)) (Fi
     (fun μ hμ x hx hAx => hΛ μ hμ x hx (by rwa [toLin'_apply] at hAx)) ?_
   rw [← hspan, hfin, hdim]
 
-/-- **§7.3.2, the dominant invariant subspace.** With the Schur decomposition (7.3.7)–(7.3.8),
-`Qᴴ A Q = [T₁₁ T₁₂; 0 T₂₂]`, and `|λ_r| > |λ_{r+1}|` (every eigenvalue of `T₁₁` exceeds every
-eigenvalue of `T₂₂` in modulus), the dominant invariant subspace `D_r(A) = ran(Q_α)` spanned by the
-first `r` Schur vectors "is the unique invariant subspace associated with the eigenvalues
-`λ₁, …, λ_r`": it is `⨆_{λ ∈ λ(T₁₁)} null((A - λI)^n)`, and every `A`-invariant subspace of
-dimension `r` on which `A` has only eigenvalues among `λ₁, …, λ_r` equals it. -/
+/-- **Section 7.3.2** of [golub2013matrix], the dominant invariant subspace. Let
+$A, Q \in \mathbb{C}^{n \times n}$ with $n = r + s$ and $Q$ unitary, and let
+$$Q^H A Q = \begin{bmatrix} T_{11} & T_{12} \\ 0 & T_{22} \end{bmatrix}, \qquad T_{11} \in
+  \mathbb{C}^{r \times r},$$
+be a block Schur form as in (7.3.7)–(7.3.8). Assume $|\mu| > |\nu|$ for every eigenvalue $\mu$
+of $T_{11}$ and every eigenvalue $\nu$ of $T_{22}$; this is the source's
+$|\lambda_r| > |\lambda_{r+1}|$. Then the dominant invariant subspace $D_r(A)$, spanned by the
+first $r$ columns of $Q$, "is the unique invariant subspace associated with the eigenvalues
+$\lambda_1, \dots, \lambda_r$": it equals $\sum_{\mu \in \lambda(T_{11})}
+\operatorname{null}((A - \mu I)^n)$, and every $A$-invariant subspace $S$ of dimension $r$ that
+contains no eigenvector of $A$ for an eigenvalue outside $\lambda(T_{11})$ equals it.
+
+The diagonal blocks need not be triangular. The block form is stated after reindexing by
+`finSumFinEquiv`. The proof applies `GolubVanLoan.Chapter07.span_leading_schurVectors_eq`. -/
 theorem dominantInvariantSubspace_unique {r s : ℕ} {A Q : Matrix (Fin (r + s)) (Fin (r + s)) ℂ}
     (hQ : Q ∈ unitaryGroup (Fin (r + s)) ℂ) {T₁₁ : Matrix (Fin r) (Fin r) ℂ}
     {T₁₂ : Matrix (Fin r) (Fin s) ℂ} {T₂₂ : Matrix (Fin s) (Fin s) ℂ}
@@ -377,12 +537,21 @@ section Frobenius
 
 open scoped Matrix.Norms.Frobenius
 
-/-- **Lemma 7.3.2.** Let `Qᴴ A Q = T = D + N` be a Schur decomposition (`T` upper triangular with
-diagonal `D`, `N` its strictly upper triangular part), `|λ_max| = max_i |t_ii|` and
-`|λ_min| = min_i |t_ii|` the extreme moduli of the eigenvalues, and `μ ≥ 0`. Then
-(7.3.15) `‖A^k‖₂ ≤ (1 + μ)^{n-1} (|λ_max| + ‖N‖_F/(1 + μ))^k` for all `k`, and (7.3.16) if
-`(1 + μ)|λ_min| > ‖N‖_F` then `‖A^{-k}‖₂ ≤ (1 + μ)^{n-1} (1/(|λ_min| - ‖N‖_F/(1 + μ)))^k`. (The
-book's last display writes `|μ|` for `|λ_min|`.) -/
+/-- **Lemma 7.3.2** of [golub2013matrix]. Let $A, Q \in \mathbb{C}^{n \times n}$ with $Q$ unitary
+and $Q^H A Q = T = D + N$ upper triangular, where $D$ is the diagonal and $N$ the strictly upper
+triangular part of $T$. Let $|\lambda_{\max}| = \max_i |t_{ii}|$ and
+$|\lambda_{\min}| = \min_i |t_{ii}|$, and let $\mu \ge 0$. Then for every $k \ge 0$ the bound
+(7.3.15) holds:
+$$\|A^k\|_2 \le (1 + \mu)^{n-1} \left( |\lambda_{\max}| + \frac{\|N\|_F}{1 + \mu} \right)^k.$$
+If moreover $(1 + \mu) |\lambda_{\min}| > \|N\|_F$, then for every $k \ge 0$ the bound (7.3.16)
+holds:
+$$\|A^{-k}\|_2 \le (1 + \mu)^{n-1} \left( \frac{1}{|\lambda_{\min}| - \|N\|_F / (1 + \mu)}
+  \right)^k.$$
+
+**Typo.** The last display of the source writes $|\mu|$ where $|\lambda_{\min}|$ is meant.
+
+The matrix $N$ is `Matrix.strictUpper T`, and the 2-norm is `Matrix.lpOpNorm 2`. The power
+$A^{-k}$ is `A⁻¹ ^ k`. For $n = 0$ the maximum and the minimum are $0$. -/
 theorem lemma_7_3_2 {A Q T : Matrix (Fin n) (Fin n) ℂ} (hQ : Q ∈ unitaryGroup (Fin n) ℂ)
     (hT : star Q * A * Q = T) (hTu : T.IsUpperTriangular) {μ : ℝ} (hμ : 0 ≤ μ) :
     (∀ k : ℕ, lpOpNorm 2 (A ^ k) ≤
@@ -391,8 +560,14 @@ theorem lemma_7_3_2 {A Q T : Matrix (Fin n) (Fin n) ℂ} (hQ : Q ∈ unitaryGrou
       (1 + μ) ^ (n - 1) * (1 / ((⨅ i, ‖T i i‖) - ‖strictUpper T‖ / (1 + μ))) ^ k) :=
   ⟨l2_opNorm_pow_le_of_schur hQ hT hTu hμ, fun hm => l2_opNorm_inv_pow_le_of_schur hQ hT hTu hμ hm⟩
 
-/-- **(7.3.20).** If `λ(T₁₁) ∩ λ(T₂₂) = ∅`, the Sylvester equation `T₁₁ X - X T₂₂ = -T₁₂` has a
-solution (Lemma 7.1.5), and `‖X‖_F ≤ ‖T₁₂‖_F / sep(T₁₁, T₂₂)`. -/
+/-- **Equation (7.3.20)** of [golub2013matrix]. Let $p, q \ge 1$,
+$T_{11} \in \mathbb{C}^{p \times p}$, $T_{22} \in \mathbb{C}^{q \times q}$ and
+$T_{12} \in \mathbb{C}^{p \times q}$. If $\lambda(T_{11}) \cap \lambda(T_{22}) = \emptyset$, the
+Sylvester equation $T_{11} X - X T_{22} = -T_{12}$ has a solution
+$X \in \mathbb{C}^{p \times q}$ with
+$$\|X\|_F \le \frac{\|T_{12}\|_F}{\operatorname{sep}(T_{11}, T_{22})}.$$
+
+The existence of the solution is Lemma 7.1.5. -/
 theorem equation_7_3_20 {p q : ℕ} [NeZero p] [NeZero q] {T₁₁ : Matrix (Fin p) (Fin p) ℂ}
     {T₂₂ : Matrix (Fin q) (Fin q) ℂ} (T₁₂ : Matrix (Fin p) (Fin q) ℂ)
     (h : spectrum ℂ T₁₁ ∩ spectrum ℂ T₂₂ = ∅) :
@@ -406,12 +581,24 @@ theorem equation_7_3_20 {p q : ℕ} [NeZero p] [NeZero q] {T₁₁ : Matrix (Fin
 
 end Frobenius
 
-/-- **(7.3.25) and the complementary invariant subspace.** With `X` from (7.3.20),
-`T₁₁ X - X T₂₂ = -T₁₂`, the Schur coordinates `T = [T₁₁ T₁₂; 0 T₂₂]` satisfy
-`T [X; I] = [X; I] T₂₂` — the columns of `Q [X; I] = Q_α X + Q_β` span the complementary invariant
-subspace of `A` — and `Tᴴ [I; -Xᴴ] = [I; -Xᴴ] T₁₁ᴴ`, i.e. `Aᴴ (Q_α - Q_β Xᴴ) = (Q_α - Q_β Xᴴ) T₁₁ᴴ`:
-the columns of `Q_α - Q_β Xᴴ` (orthonormalized by `G^{-H}` in the book) span the dominant invariant
-subspace `D_r(Aᴴ)` of `Aᴴ`. -/
+/-- **Equation (7.3.25)** of [golub2013matrix], with the complementary invariant subspace. Let
+$A, Q \in \mathbb{C}^{n \times n}$ with $n = p + q$, $Q = [Q_\alpha\ Q_\beta]$ unitary, and
+$$Q^H A Q = T = \begin{bmatrix} T_{11} & T_{12} \\ 0 & T_{22} \end{bmatrix}, \qquad T_{11} \in
+  \mathbb{C}^{p \times p}.$$
+Let $X \in \mathbb{C}^{p \times q}$ solve $T_{11} X - X T_{22} = -T_{12}$. Then
+$$T \begin{bmatrix} X \\ I \end{bmatrix} = \begin{bmatrix} X \\ I \end{bmatrix} T_{22}, \qquad
+  T^H \begin{bmatrix} I \\ -X^H \end{bmatrix} = \begin{bmatrix} I \\ -X^H \end{bmatrix}
+  T_{11}^H,$$
+and therefore
+$$A (Q_\alpha X + Q_\beta) = (Q_\alpha X + Q_\beta) T_{22}, \qquad A^H (Q_\alpha - Q_\beta
+  X^H) = (Q_\alpha - Q_\beta X^H) T_{11}^H.$$
+So the columns of $Q_\alpha X + Q_\beta$ span an invariant subspace of $A$ that is complementary
+to $\operatorname{ran}(Q_\alpha)$, and the columns of $Q_\alpha - Q_\beta X^H$ span an invariant
+subspace of $A^H$. In the setting of Theorem 7.3.1 the latter is the dominant invariant subspace
+$D_p(A^H)$.
+
+The source orthonormalizes the columns of $Q_\alpha - Q_\beta X^H$ by $G^{-H}$. The index type
+is `Fin p ⊕ Fin q`, so the two matrices are `Q * fromRows X 1` and `Q * fromRows 1 (-Xᴴ)`. -/
 theorem equation_7_3_25 {p q : ℕ} {A : Matrix (Fin p ⊕ Fin q) (Fin p ⊕ Fin q) ℂ}
     {Q : Matrix (Fin p ⊕ Fin q) (Fin p ⊕ Fin q) ℂ} (hQ : Q ∈ unitaryGroup (Fin p ⊕ Fin q) ℂ)
     {T₁₁ : Matrix (Fin p) (Fin p) ℂ} {T₁₂ : Matrix (Fin p) (Fin q) ℂ}
@@ -456,10 +643,14 @@ theorem equation_7_3_25 {p q : ℕ} {A : Matrix (Fin p ⊕ Fin q) (Fin p ⊕ Fin
     rw [← Matrix.mul_assoc Qᴴ Q, hQh, Matrix.one_mul, h2]
 
 open scoped ComplexOrder in
-/-- **(7.3.23)–(7.3.24).** For any `X`, `I + X Xᴴ` is Hermitian positive definite, and any `G` with
-`G Gᴴ = I + X Xᴴ` (for instance its Cholesky factor) has `σ_min(G) ≥ 1`: `‖Gᴴ v‖² = ‖v‖² + ‖Xᴴ v‖²`
-bounds `Gᴴ` from below, hence `(Gᴴ)⁻¹` from above, and
-`‖x‖² = ⟪(Gᴴ)⁻¹ x, G x⟫ ≤ ‖x‖ ‖G x‖`. -/
+/-- **Equations (7.3.23)–(7.3.24)** of [golub2013matrix]. Let $n \ge 1$ and
+$X \in \mathbb{C}^{n \times m}$, and let $G \in \mathbb{C}^{n \times n}$ satisfy
+$G G^H = I + X X^H$, as in (7.3.23); the Cholesky factor of $I + X X^H$ is one such $G$. Then
+$I + X X^H$ is Hermitian positive definite, and $\sigma_{\min}(G) \ge 1$.
+
+The proof uses $\|G^H v\|^2 = \|v\|^2 + \|X^H v\|^2$, which bounds $G^H$ from below and hence
+$(G^H)^{-1}$ from above, and $\|x\|^2 = \langle (G^H)^{-1} x, G x \rangle \le \|x\| \|G x\|$.
+Here $\sigma_{\min}(G)$ is the least column singular value. -/
 theorem equation_7_3_24 [NeZero n] {m : ℕ} (X : Matrix (Fin n) (Fin m) ℂ)
     {G : Matrix (Fin n) (Fin n) ℂ} (hG : G * Gᴴ = 1 + X * Xᴴ) :
     (1 + X * Xᴴ).PosDef ∧ 1 ≤ ⨅ i, G.colSingularValues i := by
@@ -523,11 +714,18 @@ section RCLike
 
 variable {𝕜 : Type*} [RCLike 𝕜]
 
-/-- **§7.3.1**: "`dist(span{q^(k)}, span{x₁}) = O(|λ₂/λ₁|^k)`", rigorous. With unit eigenvectors
-`x_i` of `A` (`A x_i = λ_i x_i`), `λ_{i₀}` dominant (`|λ_i| ≤ ρ < |λ_{i₀}|` for `i ≠ i₀`, the book's
-`ρ = |λ₂|`) and a unit `q^(0) = ∑ a_i x_i` with `a_{i₀} ≠ 0` (7.3.4), there is `C` with
-`dist(span{q^(k)}, span{x_{i₀}}) ≤ C (ρ / |λ_{i₀}|)^k` for all `k`, the distance being the gap.
-For lines the gap is the sine of the angle, which the backbone bounds. -/
+/-- **Section 7.3.1** of [golub2013matrix], the convergence of the vectors of the power method. Let
+$\mathbb{K}$ be $\mathbb{R}$ or $\mathbb{C}$ and $A \in \mathbb{K}^{n \times n}$. Let
+$x_1, \dots, x_n$ be unit vectors with $A x_i = \lambda_i x_i$, let $\rho \ge 0$ with
+$|\lambda_i| \le \rho < |\lambda_{i_0}|$ for all $i \neq i_0$, and let
+$q^{(0)} = \sum_i a_i x_i$ be a unit vector with $a_{i_0} \neq 0$, as in (7.3.4). Then there is
+a constant $C$ with
+$$\operatorname{dist}(\operatorname{span}\{q^{(k)}\}, \operatorname{span}\{x_{i_0}\}) \le C
+  \left( \frac{\rho}{|\lambda_{i_0}|} \right)^k \qquad \text{for all } k \ge 0.$$
+
+The source states $\operatorname{dist}(\operatorname{span}\{q^{(k)}\},
+\operatorname{span}\{x_1\}) = O(|\lambda_2 / \lambda_1|^k)$. The distance is the gap of
+subspaces; for two lines it is the sine of the angle between them, which the backbone bounds. -/
 theorem powerMethod_dist {A : Matrix (Fin n) (Fin n) 𝕜} {x : Fin n → EuclideanSpace 𝕜 (Fin n)}
     {l : Fin n → 𝕜} (hx : ∀ i, toEuclideanLin A (x i) = l i • x i) (hx1 : ∀ i, ‖x i‖ = 1)
     {i₀ : Fin n} {ρ : ℝ} (hρ0 : 0 ≤ ρ) (hρ : ∀ i, i ≠ i₀ → ‖l i‖ ≤ ρ) (hdom : ρ < ‖l i₀‖)
@@ -557,7 +755,8 @@ section Blocks
 
 variable {r s : ℕ}
 
-/-- The column blocks of a unitary `Q = [Q_α Q_β]`: orthonormal columns, mutually orthogonal. -/
+/-- If $[Q_\alpha\ Q_\beta]$ has orthonormal columns, then $Q_\alpha^H Q_\alpha = I$,
+$Q_\beta^H Q_\beta = I$ and $Q_\alpha^H Q_\beta = 0$. -/
 private theorem conjTranspose_mul_fromCols_eq {Qα : Matrix (Fin n) (Fin r) ℂ}
     {Qβ : Matrix (Fin n) (Fin s) ℂ} (hQ : (fromCols Qα Qβ)ᴴ * fromCols Qα Qβ = 1) :
     Qαᴴ * Qα = 1 ∧ Qβᴴ * Qβ = 1 ∧ Qαᴴ * Qβ = 0 := by
@@ -568,9 +767,16 @@ private theorem conjTranspose_mul_fromCols_eq {Qα : Matrix (Fin n) (Fin r) ℂ}
 
 open scoped Matrix.Norms.L2Operator
 
-/-- **(7.3.18)**: with `Q = [Q_α Q_β]` unitary (the Schur vectors, `D_r(A) = ran Q_α`) and `Q_k`
-with orthonormal columns, `dist(D_r(A), ran Q_k) = ‖W_k‖₂` for `W_k = Q_βᴴ Q_k` — chapter 2's
-characterization of the distance of two equal-dimensional subspaces (Theorem 2.5.1). -/
+/-- **Equation (7.3.18)** of [golub2013matrix]. Let $Q = [Q_\alpha\ Q_\beta]$ be unitary, with
+$Q_\alpha \in \mathbb{C}^{n \times r}$ and $Q_\beta \in \mathbb{C}^{n \times s}$, and let
+$Q_k \in \mathbb{C}^{n \times r}$ have orthonormal columns. Then
+$$\operatorname{dist}(\operatorname{ran}(Q_\alpha), \operatorname{ran}(Q_k)) = \|W_k\|_2, \qquad
+  W_k = Q_\beta^H Q_k.$$
+
+In the source $Q$ is the matrix of Schur vectors, so that
+$\operatorname{ran}(Q_\alpha) = D_r(A)$. The identity is the characterization in Theorem 2.5.1
+of the distance between two subspaces of equal dimension. Unitarity is stated as $Q^H Q = I$
+together with $Q Q^H = I$, and the norm is the scoped 2-norm `Matrix.Norms.L2Operator`. -/
 theorem equation_7_3_18 {Qα : Matrix (Fin n) (Fin r) ℂ} {Qβ : Matrix (Fin n) (Fin s) ℂ}
     (hQ : (fromCols Qα Qβ)ᴴ * fromCols Qα Qβ = 1) (hQ' : fromCols Qα Qβ * (fromCols Qα Qβ)ᴴ = 1)
     {Qk : Matrix (Fin n) (Fin r) ℂ} (hQk : Qkᴴ * Qk = 1) :
@@ -581,9 +787,14 @@ theorem equation_7_3_18 {Qα : Matrix (Fin n) (Fin r) ℂ} {Qβ : Matrix (Fin n)
     (range_eq_orthogonal_of_fromCols hQ hQ'), ← l2_opNorm_conjTranspose, conjTranspose_mul,
     conjTranspose_conjTranspose]
 
-/-- **(7.3.19)**: for `Q_α`, `Q_k` with `r ≥ 1` orthonormal columns and `V_k = Q_αᴴ Q_k`,
-`1 = d_k² + σ_min(V_k)²` with `d_k = dist(ran Q_α, ran Q_k)` — the thin CS decomposition read for
-two subspaces (`σ_min = ⨅ i, σ_i`). -/
+/-- **Equation (7.3.19)** of [golub2013matrix]. Let $r \ge 1$ and let
+$Q_\alpha, Q_k \in \mathbb{C}^{n \times r}$ have orthonormal columns. With
+$V_k = Q_\alpha^H Q_k$ and $d_k = \operatorname{dist}(\operatorname{ran}(Q_\alpha),
+\operatorname{ran}(Q_k))$,
+$$1 = d_k^2 + \sigma_{\min}(V_k)^2.$$
+
+This is the thin CS decomposition read for two subspaces. Here $\sigma_{\min}(V_k)$ is the least
+column singular value of $V_k$. -/
 theorem equation_7_3_19 [NeZero r] {Qα Qk : Matrix (Fin n) (Fin r) ℂ} (hα : Qαᴴ * Qα = 1)
     (hQk : Qkᴴ * Qk = 1) :
     1 = (LinearMap.range (toEuclideanLin Qα)).gap (LinearMap.range (toEuclideanLin Qk)) ^ 2 +
@@ -596,14 +807,27 @@ theorem equation_7_3_19 [NeZero r] {Qα Qk : Matrix (Fin n) (Fin r) ℂ} (hα : 
 
 
 open scoped ComplexOrder in
-/-- **(7.3.26), corrected.** Let `Q = [Q_α Q_β]` be unitary, `X` any `r × (n - r)` matrix,
-`I + X Xᴴ = G Gᴴ` (7.3.23), and `Z = (Q_α - Q_β Xᴴ) G^{-H}`, whose columns are an orthonormal basis
-of `ran(Q_α - Q_β Xᴴ)` — the dominant invariant subspace `D_r(Aᴴ)` when `X` solves the Sylvester
-equation (7.3.20), by (7.3.25). For `Q₀` with orthonormal columns, `V₀ = Q_αᴴ Q₀`,
-`W₀ = Q_βᴴ Q₀` and `d̃₀ = dist(D_r(Aᴴ), ran Q₀) < 1`: `V₀ - X W₀ = G (Zᴴ Q₀)` is nonsingular and
-`‖(V₀ - X W₀)⁻¹‖₂ ≤ ‖G⁻¹‖₂ ‖(Zᴴ Q₀)⁻¹‖₂ ≤ 1/√(1 - d̃₀²)`. The book ends the chain with `d₀`, through
-the claim `ran(Q_β) = D_r(Aᴴ)^⊥`, which is false unless `T₁₂ = 0` — the source of the error in
-Theorem 7.3.1. -/
+/-- **Equation (7.3.26)** of [golub2013matrix], corrected. Let
+$Q_\alpha \in \mathbb{C}^{n \times r}$ and $Q_\beta \in \mathbb{C}^{n \times s}$ with $r \ge 1$
+be such that $[Q_\alpha\ Q_\beta]$ has orthonormal columns. Let $X \in \mathbb{C}^{r \times s}$,
+let $G \in \mathbb{C}^{r \times r}$ satisfy $G G^H = I + X X^H$ as in (7.3.23), and let
+$Z = (Q_\alpha - Q_\beta X^H) G^{-H}$. Let $Q_0 \in \mathbb{C}^{n \times r}$ have orthonormal
+columns, and let $V_0 = Q_\alpha^H Q_0$, $W_0 = Q_\beta^H Q_0$ and $\tilde d_0 =
+\operatorname{dist}(\operatorname{ran}(Z), \operatorname{ran}(Q_0))$. If $\tilde d_0 < 1$, then
+$Z^H Z = I$, $V_0 - X W_0 = G (Z^H Q_0)$, the matrix $V_0 - X W_0$ is nonsingular, and
+$$\|(V_0 - X W_0)^{-1}\|_2 \le \|G^{-1}\|_2 \|(Z^H Q_0)^{-1}\|_2 \le \frac{1}{\sqrt{1 - \tilde
+  d_0^2}}.$$
+
+**Correction.** The source ends this chain with $d_0 = \operatorname{dist}(D_r(A),
+\operatorname{ran}(Q_0))$ in place of $\tilde d_0$, through the claim
+$\operatorname{ran}(Q_\beta) = D_r(A^H)^\perp$. That claim is false unless $T_{12} = 0$, and it
+is the source of the error in Theorem 7.3.1; see
+`GolubVanLoan.Chapter07.theorem_7_3_1_counterexample`.
+
+The columns of $Z$ are an orthonormal basis of $\operatorname{ran}(Q_\alpha - Q_\beta X^H)$.
+When $X$ solves the Sylvester equation (7.3.20), this is the dominant invariant subspace
+$D_r(A^H)$, by (7.3.25). The distance is the gap of subspaces, and the norm is the scoped
+2-norm. -/
 theorem equation_7_3_26 [NeZero r] {Qα : Matrix (Fin n) (Fin r) ℂ} {Qβ : Matrix (Fin n) (Fin s) ℂ}
     (hQ : (fromCols Qα Qβ)ᴴ * fromCols Qα Qβ = 1) {X : Matrix (Fin r) (Fin s) ℂ}
     {G : Matrix (Fin r) (Fin r) ℂ} (hG : G * Gᴴ = 1 + X * Xᴴ) {Z : Matrix (Fin n) (Fin r) ℂ}
@@ -674,16 +898,16 @@ theorem equation_7_3_26 [NeZero r] {Qα : Matrix (Fin n) (Fin r) ℂ} {Qβ : Mat
 
 end Blocks
 
-/-- The norm of a vector of `ℂ²`. -/
+/-- The norm of a vector $v \in \mathbb{C}^2$ is $\sqrt{|v_0|^2 + |v_1|^2}$. -/
 private theorem norm_euclidean_two (v : EuclideanSpace ℂ (Fin 2)) :
     ‖v‖ = Real.sqrt (‖v 0‖ ^ 2 + ‖v 1‖ ^ 2) := by
   rw [EuclideanSpace.norm_eq, Fin.sum_univ_two]
 
-/-- `(√2)⁻¹ · (√2)⁻¹ = 1/2`. -/
+/-- The identity $(\sqrt 2)^{-1} (\sqrt 2)^{-1} = 1/2$. -/
 private theorem inv_sqrt_two_mul_self : (Real.sqrt 2)⁻¹ * (Real.sqrt 2)⁻¹ = 1 / 2 := by
   rw [← mul_inv, Real.mul_self_sqrt (by norm_num : (0 : ℝ) ≤ 2), one_div]
 
-/-- The column space of a one-column matrix is the line through its column. -/
+/-- The column space of a one-column matrix is the line spanned by its column. -/
 private theorem range_toEuclideanLin_col {m : ℕ} (M : Matrix (Fin m) (Fin 1) ℂ) :
     LinearMap.range (toEuclideanLin M) = ℂ ∙ WithLp.toLp 2 (fun i => M i 0) := by
   have happ : ∀ y : EuclideanSpace ℂ (Fin 1),
@@ -702,14 +926,26 @@ private theorem range_toEuclideanLin_col {m : ℕ} (M : Matrix (Fin m) (Fin 1) �
     simp
 
 open scoped Matrix.Norms.Frobenius in
-/-- **Theorem 7.3.1 as printed is false.** For `A = [2 1; 0 1]` (a Schur form with `Q = I`, `r = 1`,
-`D₁(A) = span{e₁}`, `N = [0 1; 0 0]`, `‖N‖_F = 1`, `sep(2, 1) = 1`), `μ = 3` (so
-`(1 + μ)|λ₁| = 8 > ‖N‖_F`) and `Q₀ = (1, -1)ᵀ/√2`, every orthogonal iteration (7.3.6) from `Q₀` has
-`ran Q_k = ran Q₀` (`A Q₀ = Q₀`), so `d_k = dist(D₁(A), ran Q_k) = 1/√2 < 1` for every `k` — the
-printed hypothesis (7.3.9) holds — while the printed right-hand side of (7.3.10),
-`(1 + 1/1) ((1 + 1/4)/(2 - 1/4))^k d₀/√(1 - d₀²)`, tends to `0`. The hypothesis the proof really
-uses fails: `D₁(Aᴴ) = span{(1, 1)}` (`Aᴴ (1, 1) = 2 (1, 1)`) is orthogonal to `ran Q₀`, so
-`d̃₀ = dist(D₁(Aᴴ), ran Q₀) = 1`. -/
+/-- **Theorem 7.3.1** of [golub2013matrix], a counterexample to the printed statement. Let
+$$A = \begin{bmatrix} 2 & 1 \\ 0 & 1 \end{bmatrix}, \qquad Q_0 = \frac{1}{\sqrt 2}
+  \begin{bmatrix} 1 \\ -1 \end{bmatrix},$$
+and let $Q_0, Q_1, \dots \in \mathbb{C}^{2 \times 1}$ be any orthogonal iteration (7.3.6) for
+$A$ that starts at $Q_0$. Let $N$ be the strictly upper triangular part of $A$ and $d_k =
+\operatorname{dist}(\operatorname{span}\{e_1\}, \operatorname{ran}(Q_k))$. Then $\|N\|_F = 1$,
+$d_k = 1/\sqrt 2$ for every $k$, and the printed right-hand side of (7.3.10) with $\mu = 3$,
+$$\left( 1 + \frac{1}{1} \right) \left( \frac{1 + 1/4}{2 - 1/4} \right)^k \frac{d_0}{\sqrt{1 -
+  d_0^2}},$$
+tends to $0$ as $k \to \infty$. Moreover $A^H (1, 1)^T = 2 (1, 1)^T$, and
+$\operatorname{dist}(\operatorname{span}\{(1, 1)^T\}, \operatorname{ran}(Q_0)) = 1$.
+
+Here $A$ is its own Schur form, with $Q = I$, $r = 1$, $D_1(A) = \operatorname{span}\{e_1\}$,
+$T_{11} = 2$, $T_{12} = 1$, $T_{22} = 1$ and $\operatorname{sep}(2, 1) = 1$. With $\mu = 3$ the
+hypothesis $(1 + \mu) |\lambda_1| = 8 > \|N\|_F$ of the theorem holds, and the printed
+hypothesis (7.3.9) holds because $d_0 = 1/\sqrt 2 < 1$. Yet $d_k$ does not tend to $0$, because
+$A Q_0 = Q_0$ gives $\operatorname{ran}(Q_k) = \operatorname{ran}(Q_0)$ for every $k$. The
+hypothesis that the proof really uses fails: $D_1(A^H) = \operatorname{span}\{(1, 1)^T\}$ is
+orthogonal to $\operatorname{ran}(Q_0)$, so $\operatorname{dist}(D_1(A^H),
+\operatorname{ran}(Q_0)) = 1$. -/
 theorem theorem_7_3_1_counterexample {Q : ℕ → Matrix (Fin 2) (Fin 1) ℂ}
     (hQ : orthogonalIteration !![(2 : ℂ), 1; 0, 1] Q)
     (h0 : Q 0 = !![(((Real.sqrt 2)⁻¹ : ℝ) : ℂ); -(((Real.sqrt 2)⁻¹ : ℝ) : ℂ)]) :
@@ -840,9 +1076,10 @@ theorem theorem_7_3_1_counterexample {Q : ℕ → Matrix (Fin 2) (Fin 1) ℂ}
       simp [q₀, w, PiLp.inner_apply, Fin.sum_univ_two]
     rw [hinner, zero_div, zero_smul, sub_zero, hw1]
 
-/-- The complementary-subspace identity behind (7.3.25), in the coordinates of a block Schur form
-`Qᴴ A Q = [T₁₁ T₁₂; 0 T₂₂]` reindexed along `e`: with `T₁₁ X - X T₂₂ = -T₁₂` and
-`P = Q [I; -Xᴴ]`, the powers satisfy `(Aᴴ)^k P = P (T₁₁ᴴ)^k`. -/
+/-- If $Q$ is unitary, $Q^H A Q$ reindexed along $e$ is $\begin{bmatrix} T_{11} & T_{12} \\ 0 &
+T_{22} \end{bmatrix}$, $T_{11} X - X T_{22} = -T_{12}$ and
+$P = Q \begin{bmatrix} I \\ -X^H \end{bmatrix}$, then $(A^H)^k P = P (T_{11}^H)^k$ for every
+$k$. -/
 private theorem conjTranspose_pow_mul_eq {r : ℕ} {A Q : Matrix (Fin n) (Fin n) ℂ}
     (hQ : Q ∈ unitaryGroup (Fin n) ℂ) (e : Fin n ≃ Fin r ⊕ Fin (n - r))
     {T₁₁ : Matrix (Fin r) (Fin r) ℂ} {T₁₂ : Matrix (Fin r) (Fin (n - r)) ℂ}
@@ -874,18 +1111,22 @@ private theorem conjTranspose_pow_mul_eq {r : ℕ} {A Q : Matrix (Fin n) (Fin n)
   | succ k ih =>
     rw [pow_succ, Matrix.mul_assoc, h1, ← Matrix.mul_assoc, ih, pow_succ, Matrix.mul_assoc]
 
-/-- **The partition (7.3.8)**: `Fin n` split into the first `r` and the last `n - r` indices, the
-reindexing under which `Qᴴ A Q = [T₁₁ T₁₂; 0 T₂₂]` with `T₁₁` of size `r`. -/
+/-- The partition (7.3.8) of the indices: for $r \le n$, the bijection of `Fin n` with
+`Fin r ⊕ Fin (n - r)` that sends the first $r$ indices to the left summand and the last $n - r$
+indices to the right summand. After reindexing along it, a block Schur form $Q^H A Q$ is
+$\begin{bmatrix} T_{11} & T_{12} \\ 0 & T_{22} \end{bmatrix}$ with $T_{11}$ of size $r$. -/
 def schurSplit {r : ℕ} (h : r ≤ n) : Fin n ≃ Fin r ⊕ Fin (n - r) :=
   (finCongr (by omega : n = r + (n - r))).trans finSumFinEquiv.symm
 
-/-- The first `r` indices under the partition (7.3.8). -/
+/-- Under the partition (7.3.8), the index $i < r$ of the first block is the index $i$ of `Fin n`.
+-/
 theorem schurSplit_symm_inl {r : ℕ} (h : r ≤ n) (i : Fin r) :
     (schurSplit h).symm (Sum.inl i) = Fin.castLE h i := by
   ext
   simp [schurSplit]
 
-/-- The last `n - r` indices under the partition (7.3.8). -/
+/-- Under the partition (7.3.8), the index $j$ of the second block is the index $r + j$ of `Fin n`.
+-/
 theorem schurSplit_symm_inr {r : ℕ} (h : r ≤ n) (j : Fin (n - r)) :
     ((schurSplit h).symm (Sum.inr j) : ℕ) = r + j := by
   simp [schurSplit]
@@ -894,8 +1135,8 @@ section Split
 
 variable {r : ℕ} (h : r ≤ n)
 
-/-- Restricting the columns of `P R` to the first `r` for an upper triangular `R`: only the first
-`r` columns of `P` and the leading block of `R` enter. -/
+/-- If $R$ is upper triangular, the first $r$ columns of $P R$ are the first $r$ columns of $P$
+times the leading $r \times r$ block of $R$. -/
 private theorem mul_submatrix_castLE {m : ℕ} (P : Matrix (Fin m) (Fin n) ℂ)
     {R : Matrix (Fin n) (Fin n) ℂ} (hR : R.IsUpperTriangular) :
     (P * R).submatrix id (Fin.castLE h) =
@@ -911,8 +1152,8 @@ private theorem mul_submatrix_castLE {m : ℕ} (P : Matrix (Fin m) (Fin n) ℂ)
     exact hj ⟨⟨j, by omega⟩, Fin.ext (by simp)⟩
   exact mul_eq_zero_of_right _ (hR hjl)
 
-/-- The leading `r` columns of an orthogonal iteration with `r = n` are an orthogonal iteration:
-the triangular factors restrict to their leading blocks. -/
+/-- The first $r$ columns of an orthogonal iteration with square iterates form an orthogonal
+iteration. -/
 private theorem orthogonalIteration_castLE {A : Matrix (Fin n) (Fin n) ℂ}
     {Qk : ℕ → Matrix (Fin n) (Fin n) ℂ} (hQk : orthogonalIteration A Qk) :
     orthogonalIteration A fun k => (Qk k).submatrix id (Fin.castLE h) := by
@@ -930,8 +1171,8 @@ private theorem orthogonalIteration_castLE {A : Matrix (Fin n) (Fin n) ℂ}
   · intro i j hij
     exact hR.isUpperTriangular (show Fin.castLE h j < Fin.castLE h i from hij)
 
-/-- The leading block of the partition (7.3.8) in matrix form: `Q [I; 0]` is `Q_α`, the first `r`
-columns of `Q`. -/
+/-- Under the partition (7.3.8), $Q \begin{bmatrix} I \\ 0 \end{bmatrix}$ is $Q_\alpha$, the matrix
+of the first $r$ columns of $Q$. -/
 private theorem mul_fromRows_one_zero_submatrix (Q : Matrix (Fin n) (Fin n) ℂ) :
     Q * (fromRows (1 : Matrix (Fin r) (Fin r) ℂ)
       (0 : Matrix (Fin (n - r)) (Fin r) ℂ)).submatrix (schurSplit h) id =
@@ -958,26 +1199,52 @@ private theorem mul_fromRows_one_zero_submatrix (Q : Matrix (Fin n) (Fin n) ℂ)
 end Split
 
 open scoped Matrix.Norms.L2Operator in
-/-- The operator bound in the `L2Operator` norm, as a hypothesis-free constant. -/
+/-- Every matrix $A$ acts on `EuclideanSpace ℂ (Fin n)` as a bounded operator: there is $M \ge 0$
+with $\|A y\| \le M \|y\|$ for every $y$. -/
 private theorem exists_norm_toEuclideanLin_le (A : Matrix (Fin n) (Fin n) ℂ) :
     ∃ M : ℝ, 0 ≤ M ∧ ∀ y, ‖toEuclideanLin A y‖ ≤ M * ‖y‖ :=
   ⟨‖A‖, norm_nonneg _, norm_toEuclideanLin_apply_le A⟩
 
 open scoped Matrix.Norms.Frobenius
 
-/-- **Theorem 7.3.1, corrected.** Let the Schur decomposition (7.3.7)–(7.3.8) be
-`Qᴴ A Q = [T₁₁ T₁₂; 0 T₂₂]` (reindexed along `e`, `T₁₁` of size `r`, `0 < r < n`, both diagonal
-blocks upper triangular), `|t_ii| ≥ a` on `T₁₁` and `|t_jj| ≤ b < a` on `T₂₂` (the book's
-`a = |λ_r| > |λ_{r+1}| = b`), `ν ≥ ‖N‖_F` for the strictly upper parts of both blocks (the book's
-`ν = ‖N‖_F`), `μ ≥ 0` with `(1 + μ) a > ν`, and `X` the solution of `T₁₁ X - X T₂₂ = -T₁₂` (7.3.20).
-Let `Q_k` be an orthogonal iteration (7.3.6), `d_k = dist(D_r(A), ran Q_k)` with
-`D_r(A) = ran(Q [I; 0])`, and `d̃₀ = dist(D_r(Aᴴ), ran Q₀)` with `D_r(Aᴴ) = ran(Q [I; -Xᴴ])` (the
-dominant invariant subspace of `Aᴴ`, (7.3.25)). If `d̃₀ < 1` (in place of the printed (7.3.9)),
-`d_k ≤ (1 + μ)^{n-2} (1 + ‖T₁₂‖_F / sep(T₁₁, T₂₂)) ((b + ν/(1+μ)) / (a - ν/(1+μ)))^k
-d₀ / √(1 - d̃₀²)` for every `k`. `A^k Q₀` has full column rank (no vector of `ran Q₀` is orthogonal
-to `D_r(Aᴴ)`, and `Aᴴ` is invertible on `D_r(Aᴴ)`), so `ran Q_k = A^k ran Q₀` and the backbone's
-subspace-iteration bound applies. The printed version is false
-(`theorem_7_3_1_counterexample`). -/
+/-- **Theorem 7.3.1** of [golub2013matrix], corrected. Let $A, Q \in \mathbb{C}^{n \times n}$ with
+$Q$ unitary, let $0 < r < n$, and let
+$$Q^H A Q = \begin{bmatrix} T_{11} & T_{12} \\ 0 & T_{22} \end{bmatrix}$$
+be a block Schur form as in (7.3.7)–(7.3.8), with $T_{11} \in \mathbb{C}^{r \times r}$, and with
+$T_{11}$ and $T_{22}$ upper triangular. Let $N_{11}$ and $N_{22}$ be the strictly upper
+triangular parts of $T_{11}$ and $T_{22}$. Let $a$, $b$, $\nu$ and $\mu$ be real numbers with
+$|t_{ii}| \ge a$ on the diagonal of $T_{11}$, $|t_{jj}| \le b$ on the diagonal of $T_{22}$,
+$b < a$, $\|N_{11}\|_F \le \nu$, $\|N_{22}\|_F \le \nu$, $\mu \ge 0$ and $\nu < (1 + \mu) a$.
+Let $X$ solve $T_{11} X - X T_{22} = -T_{12}$, as in (7.3.20). Let
+$Q_0, Q_1, \dots \in \mathbb{C}^{n \times r}$ be an orthogonal iteration (7.3.6) for $A$, and
+let
+$$d_k = \operatorname{dist}(D_r(A), \operatorname{ran}(Q_k)), \qquad \tilde d_0 =
+  \operatorname{dist}(D_r(A^H), \operatorname{ran}(Q_0)),$$
+where $D_r(A) = \operatorname{ran}(Q \begin{bmatrix} I \\ 0 \end{bmatrix})$, and $D_r(A^H) =
+\operatorname{ran}(Q \begin{bmatrix} I \\ -X^H \end{bmatrix})$ is the dominant invariant
+subspace of $A^H$ by (7.3.25). If $\tilde d_0 < 1$, then for every $k \ge 0$
+$$d_k \le (1 + \mu)^{n-2} \left( 1 + \frac{\|T_{12}\|_F}{\operatorname{sep}(T_{11}, T_{22})}
+  \right) \left( \frac{b + \nu / (1 + \mu)}{a - \nu / (1 + \mu)} \right)^k \frac{d_0}{\sqrt{1 -
+  \tilde d_0^2}}.$$
+
+**Correction.** The printed theorem assumes (7.3.9) and has $\sqrt{1 - d_0^2}$ in the
+denominator of (7.3.10). That statement is false: the example of
+`GolubVanLoan.Chapter07.theorem_7_3_1_counterexample` satisfies (7.3.9), and its printed bound
+tends to $0$ while $d_k = 1/\sqrt 2$ for every $k$. The proof in the source needs
+$\tilde d_0 < 1$, and it replaces $\tilde d_0$ by $d_0$ through a false claim (see
+`GolubVanLoan.Chapter07.equation_7_3_26`). The statement here assumes $\tilde d_0 < 1$ in place
+of (7.3.9).
+
+**Generalization.** The source has $a = |\lambda_r|$, $b = |\lambda_{r+1}|$ and $\nu = \|N\|_F$
+for the strictly upper triangular part $N$ of the Schur form. Here any bounds $a$, $b$ and $\nu$
+with the stated properties suffice.
+
+Because no vector of $\operatorname{ran}(Q_0)$ is orthogonal to $D_r(A^H)$ and $A^H$ is
+invertible on $D_r(A^H)$, the matrix $A^k Q_0$ has full column rank. So
+$\operatorname{ran}(Q_k) = A^k \operatorname{ran}(Q_0)$, and the backbone's bound for subspace
+iteration applies. The block form is stated after reindexing along any bijection
+`e : Fin n ≃ Fin r ⊕ Fin (n - r)`; the partition (7.3.8) is `GolubVanLoan.Chapter07.schurSplit`.
+The distance is the gap `Submodule.gap`. -/
 theorem theorem_7_3_1 {r : ℕ} {A Q : Matrix (Fin n) (Fin n) ℂ} (hQ : Q ∈ unitaryGroup (Fin n) ℂ)
     (e : Fin n ≃ Fin r ⊕ Fin (n - r)) {T₁₁ : Matrix (Fin r) (Fin r) ℂ}
     {T₁₂ : Matrix (Fin r) (Fin (n - r)) ℂ} {T₂₂ : Matrix (Fin (n - r)) (Fin (n - r)) ℂ}
@@ -1059,16 +1326,27 @@ theorem theorem_7_3_1 {r : ℕ} {A Q : Matrix (Fin n) (Fin n) ℂ} (hQ : Q ∈ u
     hX hdim h0 k
   exact (le_of_eq (Submodule.gap_congr _ _ (orthogonalIteration_range hQk hli).1)).trans key
 
-/-- **(7.3.11) and the conclusion drawn from it (§7.3.3).** Let `Qᴴ A Q = T` be a Schur
-decomposition with `|λ₁| > ⋯ > |λ_n|` (strictly decreasing moduli of the diagonal) and `Q_k` an
-orthogonal iteration (7.3.6) with `r = n`. If for every `i = 1:n-1` the initial iterate is not
-deficient — `dist(D_i(Aᴴ), span{q₁^(0), …, q_i^(0)}) < 1`, where `D_i(Aᴴ) = ran(Q [I; -X_iᴴ])` for
-the solution `X_i` of the Sylvester equation of the partition (7.3.8) at `r = i` (7.3.20), (7.3.25)
-— then `dist(span{q₁^(k), …, q_i^(k)}, span{q₁, …, q_i}) → 0` for every `i`, and the matrices
-`T_k = Q_kᴴ A Q_k` converge to upper triangular form: their strictly lower entries tend to `0`.
-Theorem 7.3.1 (corrected) for each `r = i`, applied to the leading `i` columns of `Q_k` (again an
-orthogonal iteration), and `(T_k)_{jl} = ⟪q_j^(k), A q_l^(k)⟫` bounded by the gap
-(`Krylov.norm_inner_le_of_gap`). (`i = n` is trivial: both spans are the whole space.) -/
+/-- **Equation (7.3.11)** of [golub2013matrix], and the conclusion of §7.3.3 drawn from it. Let
+$A, Q \in \mathbb{C}^{n \times n}$ with $Q = [q_1 \mid \cdots \mid q_n]$ unitary and
+$T = Q^H A Q$ upper triangular with $|t_{11}| > |t_{22}| > \cdots > |t_{nn}|$. Let
+$Q_0, Q_1, \dots \in \mathbb{C}^{n \times n}$ be an orthogonal iteration (7.3.6) with $r = n$,
+and let $q_1^{(k)}, \dots, q_n^{(k)}$ be the columns of $Q_k$. For $1 \le i \le n - 1$ let
+$T_{11}$, $T_{12}$, $T_{22}$ be the blocks of $T$ for the partition (7.3.8) with $r = i$. Assume
+that for every such $i$ there is a solution $X_i$ of $T_{11} X_i - X_i T_{22} = -T_{12}$ with
+$$\operatorname{dist}(D_i(A^H), \operatorname{span}\{q_1^{(0)}, \dots, q_i^{(0)}\}) < 1, \qquad
+  D_i(A^H) = \operatorname{ran}\left( Q \begin{bmatrix} I \\ -X_i^H \end{bmatrix} \right).$$
+Then for every $i$ with $1 \le i \le n - 1$
+$$\operatorname{dist}(\operatorname{span}\{q_1, \dots, q_i\}, \operatorname{span}\{q_1^{(k)},
+  \dots, q_i^{(k)}\}) \to 0 \qquad (k \to \infty),$$
+and the matrices $T_k = Q_k^H A Q_k$ converge to upper triangular form: every entry of $T_k$
+below the diagonal tends to $0$.
+
+The hypothesis on $Q_0$ is the one of the corrected Theorem 7.3.1,
+`GolubVanLoan.Chapter07.theorem_7_3_1`. The proof applies that theorem with $r = i$ to the first
+$i$ columns of $Q_k$, which again form an orthogonal iteration. It bounds the entry
+$(T_k)_{jl} = \langle q_j^{(k)}, A q_l^{(k)} \rangle$ by the gap with
+`Krylov.norm_inner_le_of_gap`. The case $i = n$ is trivial, because both spans are the whole
+space. -/
 theorem equation_7_3_11 {A Q : Matrix (Fin n) (Fin n) ℂ} (hQ : Q ∈ unitaryGroup (Fin n) ℂ)
     (hT : (star Q * A * Q).IsUpperTriangular)
     (hdiag : StrictAnti fun i => ‖(star Q * A * Q) i i‖)

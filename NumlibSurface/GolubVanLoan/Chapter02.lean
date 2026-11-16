@@ -11,120 +11,29 @@ import NumlibSurface.GolubVanLoan.Chapter02.Section06
 import NumlibSurface.GolubVanLoan.Chapter02.Section07
 
 /-!
-# Golub–Van Loan, Chapter 2: Matrix Analysis
+# Golub and Van Loan, Chapter 2: Matrix analysis
 
-Surface of [golub2013matrix] Chapter 2, Matrix Analysis: the linear algebra review (§2.1), vector
-and matrix norms (§2.2–2.3), the SVD (§2.4), subspace metrics and the CS decomposition (§2.5), the
-sensitivity of square systems (§2.6), finite precision arithmetic (§2.7). One module per section,
-`NumlibSurface/GolubVanLoan/Chapter02/SectionMM.lean`, namespace `GolubVanLoan.Chapter02`.
+This module collects the formalization of Chapter 2 of [golub2013matrix], the matrix analysis that
+the later chapters use: the review of linear algebra (§2.1), vector and matrix norms (§2.2–2.3), the
+singular value decomposition (§2.4), the distance between subspaces and the CS decomposition (§2.5),
+the sensitivity of square linear systems (§2.6), and the model of floating-point arithmetic with the
+rounding errors of dot products and matrix products (§2.7). The chapter has no numbered algorithm;
+its rounding results are stated about the runs of the algorithms of Chapter 1. Most of the proofs
+are in the backbone: `Numlib.Analysis.Matrix.OperatorNorm`, `Numlib.Analysis.Normed.Lp.PiLp`,
+`Numlib.Conditioning.LinearSystem`, `Numlib.LinearAlgebra.Matrix.SVD`,
+`Numlib.LinearAlgebra.Matrix.CSDecomposition`, `Numlib.Analysis.InnerProductSpace.Projection.Gap`,
+`Numlib.FloatingPoint.Model`, `Numlib.FloatingPoint.InnerProduct` and `Numlib.FloatingPoint.System`.
+The module imports the section modules and declares nothing.
 
-## Conventions of the chapter's surface files
+## Contents
 
-* Real matrices `A : Matrix (Fin m) (Fin n) ℝ`, vectors `x : Fin n → ℝ`, `ℂ` only in §2.1.7 and
-  §2.4.4. The book's 1-based `A(i₁:i₂, j₁:j₂)` is `A.submatrix` along 0-based `Fin` embeddings
-  (`Fin.castLE`, `Fin.natAdd`, `Fin.castSucc`); `[V₁ | V₂]` is `Matrix.fromCols` reindexed by
-  `finSumFinEquiv`, `[A | z]` is `Matrix.of fun i => Fin.snoc (A i) (z i)`; `u_i`, `v_i` are `U.col
-  i`, `V.col i`. Orthogonal means `∈ Matrix.orthogonalGroup (Fin n) ℝ` (= `unitaryGroup` over `ℝ`,
-  so every backbone `RCLike`/`unitaryGroup` statement applies with `star = transpose`).
-* Vector norms `‖x‖_p = ‖WithLp.toLp p x‖` for `p : ℝ≥0∞` with `[Fact (1 ≤ p)]`; the book's abstract
-  "vector norm" is the predicate `IsVectorNorm` (§2.2), bridged to a definite `Seminorm`. Matrix
-  norms: `‖A‖_p = Matrix.lpOpNorm p A` (rectangular), subordinate norms `Matrix.inducedNorm`, `‖A‖₂`
-  also as the scoped `Matrix.Norms.L2Operator` norm (`Matrix.lpOpNorm_two`), `‖A‖_F` the scoped
-  `Matrix.Norms.Frobenius` norm, `‖A‖_∞` Mathlib's scoped `Matrix.Norms.Operator`
-  (`Matrix.lpOpNorm_top`). Keep each `open scoped` in its own `section` (`notes/lessons.md`, "the
-  norm and spectral-radius layer").
-* `κ_p(A) = Matrix.condNumberLp p A` (real, `0` at singular `A`) under an explicit `IsUnit A`; the
-  book's `κ = ∞` convention is the surface definition `kappa` (§2.6).
-* Singular values in the book's order: `σ_i(A) = A.sortedSingularValues (i - 1)` (a backbone
-  `abbrev` for Mathlib's sorted `(toEuclideanLin A).singularValues`, shared with chapter 8's
-  surface); `σ_max`, `σ_min` are `sigmaMax`, `sigmaMin` (§2.4), the surface convention for every
-  later section and chapter. "An SVD of `A`" is the backbone's `Matrix.IsSVD A U σ V`. The
-  column-indexed `Matrix.colSingularValues` of the backbone is the working form behind the norm
-  identities (`sigmaMax_eq_iSup_colSingularValues`, `sigmaMin_eq_iInf_colSingularValues`).
-* Subspaces are `Submodule ℝ (EuclideanSpace ℝ (Fin n))`, `ran(A) = LinearMap.range (toEuclideanLin
-  A)`, `null(A) = LinearMap.ker (toEuclideanLin A)`; `dist(S₁, S₂) = Submodule.gap S₁ S₂`
-  (`subspaceDist`).
-* Floating point: `fp : FloatingPoint.RoundingModel ℝ`, `u = fp.u`; computed quantities are runs of
-  chapter 1's algorithms in `SetM` (`∀ s ∈ (alg fp.round …).run`), or entrywise `fp.Rounds`
-  relations for the non-algorithmic `fl(αA)`, `fl(A + B)`, `fl(A)`. Concrete arithmetic is
-  `FloatingPoint.System` (`calculator3`, `ieeeDouble`). First-order `+ O(u²)` bounds are stated with
-  `FloatingPoint.gamma` or with the `u²` term explicit. The book's exact `fl(0 +
-  p) = p` is chapter 1's hypothesis `fp.IsIdempotent` (true of every `FloatingPoint.System`),
-  carried by the dot-product and matrix-product run statements; chapter 1's run characterizations
-  and bridges (`GolubVanLoan.Chapter01.algorithm_1_1_1_rounds`, `…_1_1_2_mem_run`,
-  `…_1_1_{6,7,8}_rounds`, `…_1_1_8_mem_run`) turn runs into the backbone's relations (suffixes:
-  convention 12 of `NumlibSurface/GolubVanLoan`, whose numbered algorithm conventions this chapter
-  follows).
-
-## Design, and the backbone correspondence
-
-Chapter 2 is mostly the existing backbone: `Numlib/Analysis/Matrix/OperatorNorm` (every norm
-comparison of §2.3), `Numlib/Analysis/Normed/Lp/PiLp` (§2.2),
-`Numlib/Analysis/Normed/Ring/{Inverse,CondNumber}`, `Numlib/Conditioning/LinearSystem` (+
-`Componentwise`: Lemma 2.6.1, Theorems 2.6.2–2.6.3, Kahan (2.6.6), the Skeel number),
-`Numlib/LinearAlgebra/Matrix/{SVD,NonsingularInverse,Similar}`, `Numlib/Eigen/MinMax`,
-`Numlib/FloatingPoint/{Model,InnerProduct,System}`, and the modules and appends written for it:
-
-* `Numlib/LinearAlgebra/Matrix/CSDecomposition` (new module): the specifications `Matrix.IsThinCSD`,
-  `Matrix.IsCSD` and their existence theorems `Matrix.exists_isThinCSD`, `Matrix.exists_isCSD`
-  (Theorems 2.5.2–2.5.3). The block-norm identity for stacked isometries is
-  `Matrix.l2_opNorm_sq_eq_one_sub_sq_sortedSingularValues` in
-  `Numlib/Analysis/Matrix/SingularValues`.
-* `Numlib/Analysis/InnerProductSpace/Projection/Gap` (new module): no new definition — the distance
-  is the existing `Submodule.gap`; the equal-dimension theory (one-sided = two-sided gap, `gap = 1`
-  iff the subspaces meet orthogonally; `Submodule.gap_eq_one_iff_of_finrank_eq` needs no
-  finite-dimensional ambient space). The matrix form of Theorem 2.5.1
-  (`Matrix.gap_range_eq_l2_opNorm_conjTranspose_mul`) is in `Numlib/Analysis/Matrix/SingularValues`;
-  `Matrix.toEuclideanLin_mul_conjTranspose_eq_starProjection` is a corollary of
-  `Matrix.mul_pinv_eq_starProjection` in `Numlib/LinearAlgebra/Matrix/LeastSquares`.
-* Appends: `SVD` (the `sortedSingularValues` abbrev and the bridge to the column-indexed values, `σ₀
-  = ‖A‖₂`, the orthonormal completion Theorem 2.1.1, thin SVD, `svdTruncation`, Eckart–Young in the
-  2- and Frobenius norms — the Frobenius lower bound, `σ(Aᴴ) = σ(A)`, `IsSVD` and
-  `shiftedRectDiagonal` are chapter 6's appends, Weyl's inequality is chapter 8's
-  `Numlib/Analysis/InnerProductSpace/SingularValues`, the least-stretch form of `σ_min` chapter 7's
-  append), `OperatorNorm` (submatrix bound for every `p`, condition-number equivalence, isometries,
-  the Neumann series), `Normed/Ring/Inverse` (Theorem 2.3.4 with `‖A⁻¹E‖`),
-  `Conditioning/LinearSystem` ((2.6.2) rigorous, (2.6.7) in two forms),
-  `Conditioning/LinearSystem/Componentwise` (Oettli–Prager, `cond ≤ κ_∞`), `FloatingPoint/Model`
-  (Lemma 2.7.1 — which `γ_n` does *not* give), `FloatingPoint/InnerProduct` (the product form
-  (2.7.10), the saxpy step), `FloatingPoint/System` (nearest rounding, IEEE constants),
-  `Normed/Lp/PiLp` (Hölder).
-
-There are no numbered algorithms in Chapter 2. The dot product (2.7.8) is Algorithm 1.1.1; the
-saxpy, outer-product and matrix-product analyses (2.7.17)–(2.7.20) are stated about the runs of
-chapter 1's Algorithms 1.1.2, 1.1.6, 1.1.7, 1.1.8.
-
-## Not formalized
-
-* §2.1.1 and §2.1.8: vocabulary only (Mathlib's `LinearIndependent`, `span`, `finrank`,
-  `hasDerivAt_pi`).
-* §2.2.3: absolute/relative error are names; "relative error `≈ 10^{-p}` means `p` correct digits"
-  is a heuristic with no rigorous reading, and the `1.234`/`.05674` example is numerical.
-* (2.3.4), the definition of mutually consistent norms: used only in prose (the counterexample
-  after it is stated numerically, `maxAbs_not_consistent`). (2.7.1), the IEEE bit layout: notation.
-* The operation-count remarks ("`O(n²)` computations", "2-norm computation is iterative").
-* The hyperellipsoid geometry of the SVD (§2.4.2, §2.6.2), the "intimate connection with `AᵀA`"
-  prose, and "all real SVD properties have complex analogs" (covered by the `RCLike` backbone, not
-  restated).
-* The illustrative CS patterns after Theorem 2.5.3; the `2 × 2` example after Theorem 2.6.2; "the
-  Skeel number can be considerably less than `κ_∞`" (no specific matrix); "(2.7.21)–(2.7.22) are
-  best possible" (prose).
-* §2.7.1's sample roundings (`π ≈ 3.14`, `round(1275600)`, overflow examples) — numerical examples;
-  the structural facts (count, range, spacing) are nodes.
-* §2.7.2: `±∞`, `NaN`, exceptions and the directed rounding modes are not modelled (overflow is
-  `FloatingPoint.System.round_notMem_numbers`); the `lsb` tie-breaking rule is covered by "any
-  nearest element" (`ieeeDouble_round_nearest`) rather than modelled bit by bit; correct rounding of
-  `√` and conversions is prose.
-* §2.7.4 Maxims 2 and 3: the divided-difference `h = √u` heuristic and the quadratic-formula IEEE
-  runs are numerical/heuristic; Maxim 1's non-associativity is a node (`calculator3_add_not_assoc`).
-* (2.7.13)–(2.7.14): "`φ(n)` a modest function", "`c` of order unity" — styles, no precise content
-  beyond (2.7.11)–(2.7.12). The Wilkinson quotation (§2.7.7) is prose.
-* §2.7.10, Strassen: "Strassen's `Ĉ` satisfies an inequality of the form (2.7.20)" has no stated
-  constant (Higham's Theorem 23.2 has one growing like `n^{log₂ 12}`), and the `2`-digit
-  counterexample `ĉ₁₂ = 0` is a numerical run; both would need a Strassen rounding analysis nobody
-  consumes. The nonnegative-matrix consequence of (2.7.19) is a node.
-* Notes and References, Problems (except as cited helpers: P2.3.2 → `Matrix.lpOpNorm_submatrix_le`,
-  P2.3.3 → `Matrix.l2_opNorm_rectDiagonal`, P2.4.7 →
-  `Matrix.frobenius_norm_le_sqrt_rank_mul_l2_opNorm`, P2.7.2 →
-  `FloatingPoint.System.abs_sub_le_of_forall_abs_sub_le`).
+| Source | Module | Subject |
+|---|---|---|
+| §2.1 | `Chapter02.Section01` | Basic ideas from linear algebra: Theorem 2.1.1 |
+| §2.2 | `Chapter02.Section02` | Vector norms: equations (2.2.1)–(2.2.7) |
+| §2.3 | `Chapter02.Section03` | Matrix norms: Theorems 2.3.1, 2.3.4; Lemma 2.3.3; Corollary 2.3.2 |
+| §2.4 | `Chapter02.Section04` | The singular value decomposition |
+| §2.5 | `Chapter02.Section05` | Subspace metrics: Theorems 2.5.1–2.5.3; equation (2.5.1) |
+| §2.6 | `Chapter02.Section06` | The sensitivity of square systems |
+| §2.7 | `Chapter02.Section07` | Finite precision matrix computations: Lemma 2.7.1 |
 -/

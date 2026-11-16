@@ -11,39 +11,152 @@ import Numlib.LinearAlgebra.Matrix.QR
 import NumlibSurface.GolubVanLoan.Chapter01.Section03
 
 /-!
-# Golub–Van Loan §12.3: Kronecker product computations
+# Golub and Van Loan, Section 12.3: Kronecker product computations
 
-Surface file for §12.3 of Golub and Van Loan, *Matrix Computations* (4th edition): the properties
-of the Kronecker product listed in §12.3.1 ((12.3.1)–(12.3.4) and the unnumbered facts), the
-Tracy–Singh product (12.3.5)–(12.3.8), the Hadamard and Khatri–Rao products (§12.3.3), `vec` and
-`reshape` (12.3.9)–(12.3.11), `vec` and perfect shuffles (12.3.12) with the two-pass transposition
-of §12.3.5, the Kronecker product SVD and nearest Kronecker products (12.3.14)–(12.3.19) with
-Theorem 12.3.1, the nearest `X ⊗ X` and `X ⊗ Y − Y ⊗ X` problems with Lemmas 12.3.2–12.3.3 and
-(12.3.20)–(12.3.21), and the reshaping identity of §12.3.10.
+This module formalizes §12.3 of [golub2013matrix]. For $B \in \mathbb{R}^{m_1 \times n_1}$ and
+$C \in \mathbb{R}^{m_2 \times n_2}$, the Kronecker product $B \otimes C \in \mathbb{R}^{m_1 m_2
+\times n_1 n_2}$ is the block matrix with the blocks $b_{ij} C$. The module proves the properties of
+§12.3.1: the perfect shuffle identity (12.3.1), Kronecker products of permutation matrices (12.3.2),
+the structures and factorizations that the Kronecker product preserves, the Schur decomposition and
+the eigenvalues (12.3.3), the SVD and the singular values (12.3.4), and the rank, determinant, trace
+and norms. It treats the Tracy–Singh product (12.3.5)–(12.3.8), the Hadamard and Khatri–Rao products
+(§12.3.3), the operations vec and reshape (12.3.9)–(12.3.12), and the two-pass transposition of
+§12.3.5. For the nearest Kronecker product problems it uses the rearrangement $\mathcal{R}(A)$,
+which permutes the entries of $A$ and turns $\min \|A - B \otimes C\|_F$ into a nearest rank-one
+problem for $\mathcal{R}(A)$. This gives (12.3.14)–(12.3.15), the Kronecker product SVD of Theorem
+12.3.1, the nearest sums of Kronecker products (12.3.19), and the nearest $X \otimes X$ and
+$X \otimes Y - Y \otimes X$ with Lemmas 12.3.2–12.3.3 and (12.3.20)–(12.3.21). The module ends with
+the reshaping identity of §12.3.10.
 
-## Design
+The proofs specialize `Numlib.LinearAlgebra.Matrix.Kronecker`,
+`Numlib.LinearAlgebra.Matrix.Kronecker.Spectral` and `Numlib.LinearAlgebra.Matrix.KroneckerApprox`,
+and the Eckart–Young–Mirsky theorem `Matrix.isLeast_frobenius_norm_sub_of_rank_le` for competitors
+of rank at most $\tilde r$. They use (1.3.5) and (1.3.6) of Chapter 1
+(`GolubVanLoan.Chapter01.equation_1_3_5`, `GolubVanLoan.Chapter01.equation_1_3_6`).
 
-Where the book's positional layout matters (perfect shuffles, `vec`, `reshape`, the rearrangement
-`𝓡`), matrices live on `Fin` and the Kronecker product is chapter 1's `Matrix.kroneckerFin` (block
-`(i, j)` is `b_ij C`, row `(i₁, i₂)` at position `i₂ + m₂ i₁`); `vec` is `Matrix.vecFin`, and the
-book's `reshape(a, m, n)` of a vector is `reshapeVec a`. Statements that do not depend on the layout
-use Mathlib's typed `B ⊗ₖ C` on product index types. The four basic identities of §12.3.1
-(transpose, inverse, product, associativity) are chapter 1's (1.3.1)–(1.3.4) and are not restated.
+## Main definitions
 
-The rearrangement `𝓡(A)` of an `m₁ m₂ × n₁ n₂` matrix blocked as (12.3.16) is `rearrangement A`, the
-backbone's typed `Matrix.kroneckerRearrange` read through `finProdFinEquiv`: row `(j − 1) m₁ + i` is
-`vec(A_{ij})ᵀ`. It permutes entries, so every nearest-Kronecker-product problem is a nearest
-low-rank problem for `𝓡(A)`.
+* §12.3.2, `GolubVanLoan.Chapter12.tracySinghFin`: the Tracy–Singh product $B \otimes_{TS} C$ of two
+  block matrices.
+* §12.3.3, `GolubVanLoan.Chapter12.blockKhatriRao`: the block Khatri–Rao product, with the blocks
+  $B_{ij} \otimes C_{ij}$.
+* `GolubVanLoan.Chapter12.reshapeVec`: the source's $\operatorname{reshape}(a, m, n)$, the matrix
+  $A$ with $\operatorname{vec}(A) = a$.
+* §12.3.6, `GolubVanLoan.Chapter12.rearrangement`: the rearrangement $\mathcal{R}(A)$, whose rows
+  are $\operatorname{vec}(A_{ij})^T$.
 
-Lemma 12.3.2 and §12.3.8 are stated for an arbitrary Schur decomposition `Qᵀ T Q = diag(α)` of the
-symmetric part `T = (M + Mᵀ)/2` (`Matrix.hermitianPart M` over `ℝ`), as the book does.
+## Main results
 
-## Not formalized here
+* Equation (12.3.1), `GolubVanLoan.Chapter12.equation_12_3_1`: $\mathcal{P}_{m_1,m_2} (B \otimes C)
+  \mathcal{P}_{n_1,n_2}^T = C \otimes B$.
+* Equation (12.3.2), `GolubVanLoan.Chapter12.equation_12_3_2`:
+  $I_m(p, :) \otimes I_n(q, :) = I_{mn}(w, :)$ with an explicit permutation $w$.
+* §12.3.1, `GolubVanLoan.Chapter12.kronecker_structure_preserved`: Kronecker products of orthogonal,
+  stochastic or symmetric positive definite matrices have the same property.
+* §12.3.1, `GolubVanLoan.Chapter12.kronecker_factorizations`: the Cholesky, LU and QR factorizations
+  of $B \otimes C$ are Kronecker products of those of $B$ and $C$.
+* §12.3.1, `GolubVanLoan.Chapter12.kronecker_thin_qr`: the thin pivoted QR factorization of
+  $B \otimes C$.
+* Equation (12.3.3), `GolubVanLoan.Chapter12.equation_12_3_3`: the Schur decomposition of
+  $B \otimes C$, and $\lambda(B \otimes C) = \{\beta_i \gamma_j\}$.
+* Equation (12.3.4), `GolubVanLoan.Chapter12.equation_12_3_4`: the SVD of $B \otimes C$, and its
+  singular values are the products of those of $B$ and $C$.
+* §12.3.1, `GolubVanLoan.Chapter12.kronecker_invariants`: eigenvectors, rank, determinant and trace
+  of $B \otimes C$.
+* §12.3.1, `GolubVanLoan.Chapter12.kronecker_frobenius_norm` and
+  `GolubVanLoan.Chapter12.kronecker_l2_norm`: $\|B \otimes C\| = \|B\| \|C\|$ in the Frobenius norm
+  and in the 2-norm.
+* Equations (12.3.5)–(12.3.6), `GolubVanLoan.Chapter12.equation_12_3_6`:
+  $B \otimes_{TS} C = P (B \otimes C) Q^T$ for permutation matrices $P$ and $Q$.
+* Equations (12.3.7)–(12.3.8), `GolubVanLoan.Chapter12.equation_12_3_7`: $P$ and $Q$ as products of
+  perfect shuffles.
+* §12.3.3, `GolubVanLoan.Chapter12.hadamard_khatriRao_submatrix_kronecker`: the Hadamard and
+  Khatri–Rao products are submatrices of the Kronecker and Tracy–Singh products.
+* Equation (12.3.9), `GolubVanLoan.Chapter12.equation_12_3_9`: $Y = C X B^T$ if and only if
+  $\operatorname{vec}(Y) = (B \otimes C) \operatorname{vec}(X)$.
+* Equations (12.3.10)–(12.3.11), `GolubVanLoan.Chapter12.equation_12_3_11`: the vec form of
+  $\sum_k F_k X G_k^T = C$.
+* Equation (12.3.12), `GolubVanLoan.Chapter12.equation_12_3_12`: $\operatorname{vec}(A^T) =
+  \mathcal{P}_{r,q} \operatorname{vec}(A)$.
+* §12.3.5, `GolubVanLoan.Chapter12.perfectShuffle_two_pass`: the two-pass transposition, in
+  corrected form.
+* Equation (12.3.14), `GolubVanLoan.Chapter12.equation_12_3_14`: $\|A - B \otimes C\|_F =
+  \|\mathcal{R}(A) - \operatorname{vec}(B) \operatorname{vec}(C)^T\|_F$.
+* Equation (12.3.15), `GolubVanLoan.Chapter12.equation_12_3_15`: the nearest Kronecker product from
+  the leading singular triple of $\mathcal{R}(A)$.
+* Theorem 12.3.1, `GolubVanLoan.Chapter12.theorem_12_3_1`: the Kronecker product SVD.
+* Equation (12.3.19), `GolubVanLoan.Chapter12.equation_12_3_19`: the truncated Kronecker product SVD
+  is a nearest sum of $\tilde r$ Kronecker products.
+* Equation (12.3.20), `GolubVanLoan.Chapter12.equation_12_3_20`: $\|A - X \otimes X\|_F =
+  \|\mathcal{R}(A) - \operatorname{vec}(X) \operatorname{vec}(X)^T\|_F$.
+* Lemma 12.3.2, `GolubVanLoan.Chapter12.lemma_12_3_2`: the nearest symmetric matrix of rank at most
+  one, in corrected form.
+* §12.3.8, `GolubVanLoan.Chapter12.nearest_kronecker_self`: the nearest $X \otimes X$, in corrected
+  form.
+* Equation (12.3.21), `GolubVanLoan.Chapter12.equation_12_3_21`: the same identity for
+  $X \otimes Y - Y \otimes X$.
+* Lemma 12.3.3, `GolubVanLoan.Chapter12.lemma_12_3_3`: the nearest skew-symmetric matrix of rank at
+  most two, in corrected form.
+* §12.3.10, `GolubVanLoan.Chapter12.kronecker_mulVec_reshape`: $\operatorname{reshape}((P \otimes Q)
+  x) = Q \operatorname{reshape}(x) P^T$.
 
-§12.3.7 (constrained nearest Kronecker products: the positive definiteness and nonnegativity of
-`B_opt`, `C_opt` are cited without proof, the Toeplitz-constrained reduction is a method sketch),
-the memory-hierarchy discussion of multipass transposition beyond the two-pass identity, the small
-numerical examples, and all operation counts.
+## Conventions
+
+* Where the positional layout of the source matters (perfect shuffles, vec, reshape and
+  $\mathcal{R}$), matrices are indexed by `Fin`, and $B \otimes C$ is the Kronecker product
+  `Matrix.kroneckerFin B C` of Chapter 1. Its block $(i, j)$ is $b_{ij} C$, and its row $(i_1, i_2)$
+  is at the 0-based position $i_2 + m_2 i_1$. The column stacking $\operatorname{vec}$ is
+  `Matrix.vecFin`, which puts the entry $(i, j)$ at the position $i + mj$. Statements that do not
+  depend on the layout use Mathlib's Kronecker product `B ⊗ₖ C` on product index types.
+* The perfect shuffle $\mathcal{P}_{p,r}$ is `Matrix.perfectShuffle p r`. Where two products of
+  sizes, such as $rq \cdot q$ and $q \cdot rq$, must be identified, the statement uses `finCongr`.
+
+## Implementation notes
+
+* The four basic identities of §12.3.1 (transpose, inverse, product and associativity) are
+  (1.3.1)–(1.3.4) of Chapter 1, and they are not restated here.
+* The rearrangement $\mathcal{R}(A)$ is the backbone's typed `Matrix.kroneckerRearrange`, read
+  through `finProdFinEquiv`. It permutes the entries, so every nearest Kronecker product problem is
+  a nearest low-rank problem for $\mathcal{R}(A)$.
+* Lemma 12.3.2 and §12.3.8 are stated for an arbitrary Schur decomposition
+  $Q^T T Q = \operatorname{diag}(\alpha)$ of the symmetric part $T = (M + M^T)/2$, as in the source.
+  The symmetric part is `Matrix.hermitianPart M`.
+
+## Deviations from the source
+
+* **Equation (12.3.9)** (typo). The source states $X \in \mathbb{R}^{n_1 \times m_2}$ for
+  $X \in \mathbb{R}^{n_2 \times n_1}$. See `GolubVanLoan.Chapter12.equation_12_3_9`.
+* **§12.3.5, the two-pass transposition** (correction). The source prints
+  $\Gamma_1 = \mathcal{P}_{r,q} \otimes I_q$, which is correct only for $r = q$, and announces a
+  factorization of $\mathcal{P}_{rq,q}$ before it writes $\mathcal{P}_{q,rq}$. See
+  `GolubVanLoan.Chapter12.perfectShuffle_two_pass`.
+* **Equation (12.3.21)** (typo). The source writes $\phi_{skew}(X)$ for $\phi_{skew}(X, Y)$ and
+  drops a parenthesis. See `GolubVanLoan.Chapter12.equation_12_3_21`.
+* **Lemma 12.3.2** (correction). The minimum over $\operatorname{rank}(Z) = 1$ is not attained for
+  $T = 0$; the statement uses $\operatorname{rank}(Z) \le 1$. See
+  `GolubVanLoan.Chapter12.lemma_12_3_2`.
+* **§12.3.8, the nearest $X \otimes X$** (correction). The eigenvalue must be the algebraically
+  largest one, not one of largest modulus, and it enters through its positive part. See
+  `GolubVanLoan.Chapter12.nearest_kronecker_self`.
+* **Lemma 12.3.3** (correction). For $S = 0$ the minimizer has rank $0$; the statement minimizes
+  over rank at most two. See `GolubVanLoan.Chapter12.lemma_12_3_3`.
+* **Lemma 12.3.3** (generalization). Of the hypothesis $S [u \,|\, v] = [u \,|\, v] \begin{bmatrix}
+  0 & \mu \\ -\mu & 0 \end{bmatrix}$ only $Sv = \mu u$ is needed. See
+  `GolubVanLoan.Chapter12.lemma_12_3_3`.
+
+## Not formalized
+
+* **§12.3.7, constrained nearest Kronecker products.** The positive definiteness and the
+  nonnegativity of $B_{opt}$ and $C_{opt}$ are cited without proof, and the reduction for Toeplitz
+  constraints is a method sketch.
+* **The memory-hierarchy discussion of multipass transposition in §12.3.5**, beyond the two-pass
+  identity.
+* **The dynamic-programming remark of §12.3.10**, beyond the reshaping identity.
+* **The remark of §12.3.1 that rectangular $R$ factors need row permutations to become triangular.**
+  It is prose.
+* **The small numerical examples.** Numerical examples are out of scope for the library.
+* **The operation counts.** Operation counts are out of scope for the library.
+* **The Problems of §12.3.** Problems are out of scope for the library.
 -/
 
 open Matrix
@@ -55,22 +168,33 @@ variable {m₁ n₁ m₂ n₂ : ℕ}
 
 /-! ### §12.3.1: basic properties -/
 
-/-- **(12.3.1)**: `𝒫_{m₁,m₂} (B ⊗ C) 𝒫_{n₁,n₂}ᵀ = C ⊗ B` for `B ∈ ℝ^{m₁×n₁}`, `C ∈ ℝ^{m₂×n₂}` —
-chapter 1's (1.3.5). -/
+/-- **Equation (12.3.1)** of [golub2013matrix]. Let $B \in \mathbb{R}^{m_1 \times n_1}$ and
+$C \in \mathbb{R}^{m_2 \times n_2}$. Then $$\mathcal{P}_{m_1,m_2} (B \otimes C)
+\mathcal{P}_{n_1,n_2}^T = C \otimes B,$$ where $\mathcal{P}_{p,r}$ is the perfect shuffle
+permutation matrix.
+
+This is (1.3.5) of Chapter 1, `GolubVanLoan.Chapter01.equation_1_3_5`. The product $B \otimes C$
+is `Matrix.kroneckerFin B C`. The perfect shuffle $\mathcal{P}_{p,r}$ is
+`Matrix.perfectShuffle p r`. -/
 theorem equation_12_3_1 (B : Matrix (Fin m₁) (Fin n₁) ℝ) (C : Matrix (Fin m₂) (Fin n₂) ℝ) :
     perfectShuffle m₁ m₂ * kroneckerFin B C *
         (perfectShuffle n₁ n₂ : Matrix (Fin (n₂ * n₁)) (Fin (n₁ * n₂)) ℝ)ᵀ =
       kroneckerFin C B :=
   Chapter01.equation_1_3_5 B C
 
-/-- The row permutation `w` of (12.3.2): `(i, j) ↦ (p i, q j)` in the positional layout. -/
+/-- The row permutation $w$ of (12.3.2) in [golub2013matrix]: in the positional layout of the index
+pairs, it maps the pair $(i, j)$ to $(p_i, q_j)$. -/
 def kroneckerPermIndex {m n : ℕ} (p : Equiv.Perm (Fin m)) (q : Equiv.Perm (Fin n)) :
     Equiv.Perm (Fin (m * n)) :=
   finProdFinEquiv.symm.trans ((p.prodCongr q).trans finProdFinEquiv)
 
-/-- **(12.3.2)**: for permutations `p` of `1:m` and `q` of `1:n`, `I_m(p, :) ⊗ I_n(q, :) = I_{mn}(w,
-:)` with `w = (1_m ⊗ q) + n · (p − 1_m) ⊗ 1_n`, i.e. (0-based) `w((i − 1) n + j) = q_j + n p_i`; in
-particular the Kronecker product of two permutation matrices is a permutation matrix. -/
+/-- **Equation (12.3.2)** of [golub2013matrix]. Let $p$ be a permutation of $1{:}m$ and $q$ a
+permutation of $1{:}n$. Then $$I_m(p, :) \otimes I_n(q, :) = I_{mn}(w, :),$$ where $w =
+(\mathbf{1}_m \otimes q) + n \cdot (p - \mathbf{1}_m) \otimes \mathbf{1}_n$; with 0-based
+indices, $w(in + j) = q_j + n p_i$. In particular, the Kronecker product of two permutation
+matrices is a permutation matrix.
+
+The permutation $w$ is `GolubVanLoan.Chapter12.kroneckerPermIndex p q`. -/
 theorem equation_12_3_2 {m n : ℕ} (p : Equiv.Perm (Fin m)) (q : Equiv.Perm (Fin n)) :
     kroneckerFin ((1 : Matrix (Fin m) (Fin m) ℝ).submatrix p id)
         ((1 : Matrix (Fin n) (Fin n) ℝ).submatrix q id) =
@@ -85,9 +209,15 @@ theorem equation_12_3_2 {m n : ℕ} (p : Equiv.Perm (Fin m)) (q : Equiv.Perm (Fi
     EmbeddingLike.apply_eq_iff_eq, Prod.mk.injEq]
   rw [ite_zero_mul_ite_zero, one_mul]
 
-/-- **§12.3.1**, structure preserved by the Kronecker product: (orthogonal) ⊗ (orthogonal) =
-(orthogonal), (stochastic) ⊗ (stochastic) = (stochastic), (sym. pos. def.) ⊗ (sym. pos. def.) =
-(sym. pos. def.), and `B = G_B G_Bᵀ`, `C = G_C G_Cᵀ ⇒ B ⊗ C = (G_B ⊗ G_C)(G_B ⊗ G_C)ᵀ`. -/
+/-- **§12.3.1** of [golub2013matrix], structure preserved by the Kronecker product. Let
+$B \in \mathbb{R}^{m \times m}$ and $C \in \mathbb{R}^{n \times n}$. If $B$ and $C$ are
+orthogonal, then $B \otimes C$ is orthogonal. If $B$ and $C$ are stochastic, then $B \otimes C$
+is stochastic. If $B$ and $C$ are symmetric positive definite, then $B \otimes C$ is symmetric
+positive definite. If $B = G_B G_B^T$ and $C = G_C G_C^T$, then $$B \otimes C = (G_B \otimes
+G_C)(G_B \otimes G_C)^T.$$
+
+The Kronecker product is Mathlib's `B ⊗ₖ C`, and a stochastic matrix is an element of
+`Matrix.rowStochastic`. -/
 theorem kronecker_structure_preserved {m n : ℕ} (B : Matrix (Fin m) (Fin m) ℝ)
     (C : Matrix (Fin n) (Fin n) ℝ) :
     (B ∈ orthogonalGroup (Fin m) ℝ → C ∈ orthogonalGroup (Fin n) ℝ →
@@ -100,7 +230,8 @@ theorem kronecker_structure_preserved {m n : ℕ} (B : Matrix (Fin m) (Fin m) �
   ⟨fun hB hC => kronecker_mem_unitary hB hC, kronecker_mem_rowStochastic, PosDef.kronecker,
     fun G_B G_C hB hC => by rw [hB, hC, mul_kronecker_mul, kroneckerMap_transpose]⟩
 
-/-- The positional Kronecker product of orthogonal matrices is orthogonal. -/
+/-- If $Q_1 \in \mathbb{R}^{m \times m}$ and $Q_2 \in \mathbb{R}^{n \times n}$ are orthogonal, then
+their Kronecker product $Q_1 \otimes Q_2$ in the positional layout is orthogonal. -/
 theorem kroneckerFin_mem_orthogonalGroup {m n : ℕ} {Q₁ : Matrix (Fin m) (Fin m) ℝ}
     {Q₂ : Matrix (Fin n) (Fin n) ℝ} (h₁ : Q₁ ∈ orthogonalGroup (Fin m) ℝ)
     (h₂ : Q₂ ∈ orthogonalGroup (Fin n) ℝ) :
@@ -108,12 +239,19 @@ theorem kroneckerFin_mem_orthogonalGroup {m n : ℕ} {Q₁ : Matrix (Fin m) (Fin
   rw [mem_orthogonalGroup_iff] at h₁ h₂ ⊢
   rw [transpose_kroneckerFin, kroneckerFin_mul_kroneckerFin, h₁, h₂, kroneckerFin_one_one]
 
-/-- **§12.3.1**, factorizations of a Kronecker product: the Cholesky factor of `B ⊗ C` is the
-Kronecker product of the Cholesky factors; `P_B B = L_B U_B`, `P_C C = L_C U_C` give the LU
-factorization `(P_B ⊗ P_C)(B ⊗ C) = (L_B ⊗ L_C)(U_B ⊗ U_C)`; square QR factorizations `B = Q_B R_B`,
-`C = Q_C R_C` give the QR factorization `B ⊗ C = (Q_B ⊗ Q_C)(R_B ⊗ R_C)`; and thin (pivoted) QR
-factorizations `B P_B = Q_B R_B`, `C P_C = Q_C R_C` give the thin QR factorization
-`(B ⊗ C)(P_B ⊗ P_C) = (Q_B ⊗ Q_C)(R_B ⊗ R_C)`. All in the book's positional layout. -/
+/-- **§12.3.1** of [golub2013matrix], factorizations of a Kronecker product. Let
+$B \in \mathbb{R}^{m \times m}$ and $C \in \mathbb{R}^{n \times n}$. If $B = H_B^T H_B$ and
+$C = H_C^T H_C$ are Cholesky factorizations, with $H_B$ and $H_C$ upper triangular with positive
+diagonal, then $B \otimes C = (H_B \otimes H_C)^T (H_B \otimes H_C)$ is the Cholesky
+factorization of $B \otimes C$. If $P_B B = L_B U_B$ and $P_C C = L_C U_C$ are LU
+factorizations, for any matrices $P_B$ and $P_C$, then $$(P_B \otimes P_C)(B \otimes C) = (L_B
+\otimes L_C)(U_B \otimes U_C)$$ is an LU factorization. If $B = Q_B R_B$ and $C = Q_C R_C$ are
+QR factorizations, then $B \otimes C = (Q_B \otimes Q_C)(R_B \otimes R_C)$ is a QR
+factorization.
+
+All Kronecker products are in the positional layout of the source. The factorizations are
+`Matrix.IsCholesky`, `Matrix.IsLU` and `Matrix.IsQR`. The thin pivoted QR factorization is
+`GolubVanLoan.Chapter12.kronecker_thin_qr`. -/
 theorem kronecker_factorizations {m n : ℕ} (B : Matrix (Fin m) (Fin m) ℝ)
     (C : Matrix (Fin n) (Fin n) ℝ) :
     (∀ H_B H_C, IsCholesky B H_B → IsCholesky C H_C →
@@ -133,11 +271,16 @@ theorem kronecker_factorizations {m n : ℕ} (B : Matrix (Fin m) (Fin m) ℝ)
       fun i j h => (hRB.kroneckerFin hRC) h, ?_⟩
     rw [kroneckerFin_mul_kroneckerFin, hB.mul_eq, hC.mul_eq]
 
-/-- **§12.3.1**, the thin pivoted QR factorization of a Kronecker product: if `B P_B = Q_B R_B` and
-`C P_C = Q_C R_C` with `Q_B`, `Q_C` having orthonormal columns and `R_B`, `R_C` upper triangular,
-then `(B ⊗ C)(P_B ⊗ P_C) = (Q_B ⊗ Q_C)(R_B ⊗ R_C)`, `Q_B ⊗ Q_C` has orthonormal columns and `R_B ⊗
-R_C` is upper triangular. (The remark that rectangular `R` factors need row permutations to become
-triangular is prose.) -/
+/-- **§12.3.1** of [golub2013matrix], the thin pivoted QR factorization of a Kronecker product. Let
+$B \in \mathbb{R}^{m_1 \times n_1}$ and $C \in \mathbb{R}^{m_2 \times n_2}$, let $P_B$ and $P_C$
+be permutation matrices, and let $B P_B = Q_B R_B$ and $C P_C = Q_C R_C$, where
+$Q_B \in \mathbb{R}^{m_1 \times n_1}$ and $Q_C \in \mathbb{R}^{m_2 \times n_2}$ have orthonormal
+columns and $R_B \in \mathbb{R}^{n_1 \times n_1}$ and $R_C \in \mathbb{R}^{n_2 \times n_2}$ are
+upper triangular. Then $$(B \otimes C)(P_B \otimes P_C) = (Q_B \otimes Q_C)(R_B \otimes R_C),$$
+$Q_B \otimes Q_C$ has orthonormal columns, and $R_B \otimes R_C$ is upper triangular.
+
+The source's remark that rectangular $R$ factors need row permutations to become triangular is
+prose and is not formalized. -/
 theorem kronecker_thin_qr {m₁ n₁ m₂ n₂ : ℕ} (B : Matrix (Fin m₁) (Fin n₁) ℝ)
     (C : Matrix (Fin m₂) (Fin n₂) ℝ) (P_B : Equiv.Perm (Fin n₁)) (P_C : Equiv.Perm (Fin n₂))
     (Q_B : Matrix (Fin m₁) (Fin n₁) ℝ) (R_B : Matrix (Fin n₁) (Fin n₁) ℝ)
@@ -153,10 +296,15 @@ theorem kronecker_thin_qr {m₁ n₁ m₂ n₂ : ℕ} (B : Matrix (Fin m₁) (Fi
   · rw [kroneckerFin_mul_kroneckerFin, kroneckerFin_mul_kroneckerFin, hB, hC]
   · rw [transpose_kroneckerFin, kroneckerFin_mul_kroneckerFin, hQB, hQC, kroneckerFin_one_one]
 
-/-- **(12.3.3)** and the display before it: Schur decompositions `Q_Bᴴ B Q_B = T_B`, `Q_Cᴴ C Q_C =
-T_C` give `(Q_B ⊗ Q_C)ᴴ (B ⊗ C)(Q_B ⊗ Q_C) = T_B ⊗ T_C`, upper triangular when `T_B` and `T_C` are;
-hence `λ(B ⊗ C) = {β_i γ_j}`: if the characteristic polynomials of `B` and `C` split as `∏ (x −
-β_i)` and `∏ (x − γ_j)`, that of `B ⊗ C` is `∏_{i,j} (x − β_i γ_j)`. -/
+/-- **Equation (12.3.3)** of [golub2013matrix] and the display before it. Let
+$B, Q_B, T_B \in \mathbb{C}^{m \times m}$ and $C, Q_C, T_C \in \mathbb{C}^{n \times n}$ with
+$Q_B^H B Q_B = T_B$ and $Q_C^H C Q_C = T_C$. Then $$(Q_B \otimes Q_C)^H (B \otimes C)(Q_B
+\otimes Q_C) = T_B \otimes T_C,$$ and $T_B \otimes T_C$ is upper triangular if $T_B$ and $T_C$
+are. Hence $\lambda(B \otimes C) = \{\beta_i \gamma_j\}$: if the characteristic polynomials of
+$B$ and $C$ are $\prod_i (x - \beta_i)$ and $\prod_j (x - \gamma_j)$, then the characteristic
+polynomial of $B \otimes C$ is $\prod_{i,j} (x - \beta_i \gamma_j)$.
+
+The identity does not need $Q_B$ and $Q_C$ to be unitary. -/
 theorem equation_12_3_3 {m n : ℕ} (B Q_B T_B : Matrix (Fin m) (Fin m) ℂ)
     (C Q_C T_C : Matrix (Fin n) (Fin n) ℂ) (hB : Q_Bᴴ * B * Q_B = T_B)
     (hC : Q_Cᴴ * C * Q_C = T_C) :
@@ -171,9 +319,15 @@ theorem equation_12_3_3 {m n : ℕ} (B Q_B T_B : Matrix (Fin m) (Fin m) ℂ)
   rw [conjTranspose_kroneckerFin, kroneckerFin_mul_kroneckerFin, kroneckerFin_mul_kroneckerFin,
     hB, hC]
 
-/-- **(12.3.4)** and the display before (12.3.3): SVDs `U_Bᵀ B V_B = S_B`, `U_Cᵀ C V_C = S_C` give
-`(U_B ⊗ U_C)ᵀ (B ⊗ C)(V_B ⊗ V_C) = S_B ⊗ S_C`; hence `σ(B ⊗ C) = {β_i γ_j}`: the singular values of
-`B ⊗ C` are the products of those of `B` and `C`, up to a relabelling. -/
+/-- **Equation (12.3.4)** of [golub2013matrix] and the display before (12.3.3). Let
+$B \in \mathbb{R}^{m_1 \times n_1}$ and $C \in \mathbb{R}^{m_2 \times n_2}$, and let
+$U_B, V_B, U_C, V_C$ be square matrices with $U_B^T B V_B = S_B$ and $U_C^T C V_C = S_C$. Then
+$$(U_B \otimes U_C)^T (B \otimes C)(V_B \otimes V_C) = S_B \otimes S_C.$$ Moreover, the singular
+values of $B \otimes C$ are the products of those of $B$ and $C$: there is a bijection $e$ of
+the index pairs with $\sigma_{e(i,j)}(B \otimes C) = \sigma_i(B) \sigma_j(C)$.
+
+The identity does not need $U_B, V_B, U_C, V_C$ to be orthogonal. The singular values are
+indexed by the columns, `Matrix.colSingularValues`, so $B \otimes C$ has $n_1 n_2$ of them. -/
 theorem equation_12_3_4 {m₁ n₁ m₂ n₂ : ℕ} (U_B : Matrix (Fin m₁) (Fin m₁) ℝ)
     (V_B : Matrix (Fin n₁) (Fin n₁) ℝ) (U_C : Matrix (Fin m₂) (Fin m₂) ℝ)
     (V_C : Matrix (Fin n₂) (Fin n₂) ℝ) (Bᵣ : Matrix (Fin m₁) (Fin n₁) ℝ)
@@ -187,9 +341,13 @@ theorem equation_12_3_4 {m₁ n₁ m₂ n₂ : ℕ} (U_B : Matrix (Fin m₁) (Fi
   refine ⟨?_, colSingularValues_kronecker Bᵣ Cᵣ⟩
   rw [← kroneckerMap_transpose, ← mul_kronecker_mul, ← mul_kronecker_mul, hB, hC]
 
-/-- **§12.3.1**, after (12.3.4): `B y = β y`, `C z = γ z ⇒ (B ⊗ C)(y ⊗ z) = βγ (y ⊗ z)`;
-`rank(B ⊗ C) = rank(B) rank(C)`; `det(B ⊗ C) = det(B)ⁿ det(C)ᵐ` for `B ∈ ℝ^{m×m}`, `C ∈ ℝ^{n×n}`;
-`tr(B ⊗ C) = tr(B) tr(C)`. -/
+/-- **§12.3.1** of [golub2013matrix], after (12.3.4). Let $B \in \mathbb{R}^{m \times m}$ and
+$C \in \mathbb{R}^{n \times n}$. If $By = \beta y$ and $Cz = \gamma z$, then $(B \otimes C)(y
+\otimes z) = \beta\gamma (y \otimes z)$. Moreover $$\operatorname{rank}(B \otimes C) =
+\operatorname{rank}(B) \operatorname{rank}(C), \quad \det(B \otimes C) = \det(B)^n \det(C)^m,
+\quad \operatorname{tr}(B \otimes C) = \operatorname{tr}(B) \operatorname{tr}(C).$$
+
+The vector $y \otimes z$ is `Matrix.kroneckerVec y z`. -/
 theorem kronecker_invariants {m n : ℕ} (B : Matrix (Fin m) (Fin m) ℝ)
     (C : Matrix (Fin n) (Fin n) ℝ) :
     (∀ (y : Fin m → ℝ) (z : Fin n → ℝ) (β γ : ℝ), B *ᵥ y = β • y → C *ᵥ z = γ • z →
@@ -205,7 +363,9 @@ section Frobenius
 
 open scoped Matrix.Norms.Frobenius
 
-/-- **§12.3.1**: `‖B ⊗ C‖_F = ‖B‖_F ‖C‖_F`. -/
+/-- **§12.3.1** of [golub2013matrix]. For $B \in \mathbb{R}^{m_1 \times n_1}$ and
+$C \in \mathbb{R}^{m_2 \times n_2}$, $$\|B \otimes C\|_F = \|B\|_F \|C\|_F.$$
+-/
 theorem kronecker_frobenius_norm {m₁ n₁ m₂ n₂ : ℕ} (B : Matrix (Fin m₁) (Fin n₁) ℝ)
     (C : Matrix (Fin m₂) (Fin n₂) ℝ) : ‖B ⊗ₖ C‖ = ‖B‖ * ‖C‖ :=
   frobenius_norm_kronecker B C
@@ -216,7 +376,9 @@ section L2
 
 open scoped Matrix.Norms.L2Operator
 
-/-- **§12.3.1**: `‖B ⊗ C‖₂ = ‖B‖₂ ‖C‖₂`. -/
+/-- **§12.3.1** of [golub2013matrix]. For $B \in \mathbb{R}^{m_1 \times n_1}$ and
+$C \in \mathbb{R}^{m_2 \times n_2}$, $$\|B \otimes C\|_2 = \|B\|_2 \|C\|_2.$$
+-/
 theorem kronecker_l2_norm {m₁ n₁ m₂ n₂ : ℕ} (B : Matrix (Fin m₁) (Fin n₁) ℝ)
     (C : Matrix (Fin m₂) (Fin n₂) ℝ) : ‖B ⊗ₖ C‖ = ‖B‖ * ‖C‖ :=
   l2_opNorm_kronecker B C
@@ -229,17 +391,23 @@ section TracySingh
 
 variable {M₁ N₁ M₂ N₂ : ℕ}
 
-/-- The row layout of the Tracy–Singh product: block row `I₁`, then block row `I₂`, then the
-Kronecker row `(i₁, i₂)`, each pair big-endian. -/
+/-- The row layout of the Tracy–Singh product: the index $((I_1, I_2), (i_1, i_2))$ is ordered by
+the block row $I_1$, then the block row $I_2$, then the Kronecker row $(i_1, i_2)$, with the
+first index of each pair varying slowest. -/
 def tracySinghIndex (M₁ M₂ m₁ m₂ : ℕ) :
     (Fin M₁ × Fin M₂) × (Fin m₁ × Fin m₂) ≃ Fin (M₁ * M₂ * (m₁ * m₂)) :=
   (finProdFinEquiv.prodCongr finProdFinEquiv).trans finProdFinEquiv
 
-/-- **§12.3.2**, the Tracy–Singh product `B ⊗_TS C` of the block matrices (12.3.5) —
-`B ∈ ℝ^{M₁m₁ × N₁n₁}` with `M₁ × N₁` blocks `B_ij ∈ ℝ^{m₁×n₁}` and `C ∈ ℝ^{M₂m₂ × N₂n₂}` with `M₂ ×
-N₂` blocks `C_kl ∈ ℝ^{m₂×n₂}`, blocks laid out as `finProdFinEquiv` (block index slow) — in the
-book's layout: the `M₁ × N₁` block matrix whose `(i, j)` block is `[B_ij ⊗ C_kl]_{k,l}`. It is the
-backbone's typed `Matrix.tracySingh` read through `tracySinghIndex`. -/
+/-- **§12.3.2** of [golub2013matrix], the Tracy–Singh product (12.3.5). Let
+$B \in \mathbb{R}^{M_1 m_1 \times N_1 n_1}$ be an $M_1 \times N_1$ block matrix with the blocks
+$B_{ij} \in \mathbb{R}^{m_1 \times n_1}$, and let $C \in \mathbb{R}^{M_2 m_2 \times N_2 n_2}$ be
+an $M_2 \times N_2$ block matrix with the blocks $C_{kl} \in \mathbb{R}^{m_2 \times n_2}$. The
+**Tracy–Singh product** $B \otimes_{TS} C$ is the $M_1 \times N_1$ block matrix whose block
+$(i, j)$ is the block matrix $[B_{ij} \otimes C_{kl}]_{k,l}$.
+
+The blocks are laid out by `finProdFinEquiv`, with the block index varying slowest. The product
+is the backbone's typed `Matrix.tracySingh`, read through
+`GolubVanLoan.Chapter12.tracySinghIndex`. -/
 def tracySinghFin (B : Matrix (Fin (M₁ * m₁)) (Fin (N₁ * n₁)) ℝ)
     (C : Matrix (Fin (M₂ * m₂)) (Fin (N₂ * n₂)) ℝ) :
     Matrix (Fin (M₁ * M₂ * (m₁ * m₂))) (Fin (N₁ * N₂ * (n₁ * n₂))) ℝ :=
@@ -247,16 +415,22 @@ def tracySinghFin (B : Matrix (Fin (M₁ * m₁)) (Fin (N₁ * n₁)) ℝ)
     (C.submatrix finProdFinEquiv finProdFinEquiv)).reindex (tracySinghIndex M₁ M₂ m₁ m₂)
       (tracySinghIndex N₁ N₂ n₁ n₂)
 
-/-- The position of the Kronecker row `((I₁, i₁), (I₂, i₂))` of `B ⊗ C`. -/
+/-- The position of the row $((I_1, I_2), (i_1, i_2))$ in $B \otimes C$: the row of $B \otimes C$
+formed by the row $(I_1, i_1)$ of $B$ and the row $(I_2, i_2)$ of $C$. -/
 def kroneckerBlockIndex (M₁ M₂ m₁ m₂ : ℕ) :
     (Fin M₁ × Fin M₂) × (Fin m₁ × Fin m₂) ≃ Fin (M₁ * m₁ * (M₂ * m₂)) :=
   (Equiv.prodProdProdComm _ _ _ _).trans
     ((finProdFinEquiv.prodCongr finProdFinEquiv).trans finProdFinEquiv)
 
-/-- **(12.3.5)–(12.3.6)**: the Tracy–Singh product is a row and column permutation of the Kronecker
-product, `B ⊗_TS C = P (B ⊗ C) Qᵀ` with `P`, `Q` the permutation matrices of the equivalences
-`kroneckerBlockIndex ∘ (tracySinghIndex)⁻¹` (matrices of `Fin`-equivalences, as chapter 1's perfect
-shuffle; `Matrix.tracySingh_eq_reindex_kronecker`). -/
+/-- **Equations (12.3.5)–(12.3.6)** of [golub2013matrix]. The Tracy–Singh product is a row and
+column permutation of the Kronecker product: $$B \otimes_{TS} C = P (B \otimes C) Q^T,$$ where
+$P$ and $Q$ are the permutation matrices that take the Kronecker order of the rows and the
+columns to the Tracy–Singh order.
+
+The matrices $P$ and $Q$ are the matrices of the index permutations formed from
+`GolubVanLoan.Chapter12.tracySinghIndex` and `GolubVanLoan.Chapter12.kroneckerBlockIndex`, as
+for the perfect shuffle of Chapter 1. The backbone fact is
+`Matrix.tracySingh_eq_reindex_kronecker`. -/
 theorem equation_12_3_6 (B : Matrix (Fin (M₁ * m₁)) (Fin (N₁ * n₁)) ℝ)
     (C : Matrix (Fin (M₂ * m₂)) (Fin (N₂ * n₂)) ℝ) :
     tracySinghFin B C =
@@ -272,15 +446,24 @@ theorem equation_12_3_6 (B : Matrix (Fin (M₁ * m₁)) (Fin (N₁ * n₁)) ℝ)
   obtain ⟨⟨⟨J₁, J₂⟩, ⟨j₁, j₂⟩⟩, rfl⟩ := (tracySinghIndex N₁ N₂ n₁ n₂).surjective J
   simp [tracySinghFin, kroneckerBlockIndex, tracySingh, kroneckerFin_apply]
 
-/-- **§12.3.3**, the block Khatri–Rao product of two `M × N` block matrices: the block matrix of the
-blockwise Kronecker products `B_ij ⊗ C_ij` (typed: block indices `M`, `N`). -/
+/-- **§12.3.3** of [golub2013matrix], the block Khatri–Rao product. For two $M \times N$ block
+matrices $B$ and $C$, with the blocks $B_{ij}$ and $C_{ij}$, it is the $M \times N$ block matrix
+with the blocks $B_{ij} \otimes C_{ij}$.
+
+The block indices are the types `M` and `N`. -/
 def blockKhatriRao {M N p₁ q₁ p₂ q₂ : Type*} (B : Matrix (M × p₁) (N × q₁) ℝ)
     (C : Matrix (M × p₂) (N × q₂) ℝ) : Matrix (M × (p₁ × p₂)) (N × (q₁ × q₂)) ℝ :=
   of fun I J => B (I.1, I.2.1) (J.1, J.2.1) * C (I.1, I.2.2) (J.1, J.2.2)
 
-/-- **§12.3.3**: the Hadamard product `B .* C` and the column Khatri–Rao product
-`[b₁ | ⋯ | b_n] ⊙ [c₁ | ⋯ | c_n] = [b₁ ⊗ c₁ | ⋯ | b_n ⊗ c_n]` are submatrices of `B ⊗ C`, and the
-block Khatri–Rao product (blocks `B_ij ⊗ C_ij`) is a submatrix of the Tracy–Singh product. -/
+/-- **§12.3.3** of [golub2013matrix], the Hadamard and Khatri–Rao products as submatrices. Let
+$B, C \in \mathbb{R}^{m \times n}$, $F \in \mathbb{R}^{m_1 \times r}$ and
+$G \in \mathbb{R}^{m_2 \times r}$. The Hadamard product $B .* C$ is the submatrix of
+$B \otimes C$ in the rows $(i, i)$ and the columns $(j, j)$. The column Khatri–Rao product $$F
+\odot G = [f_1 \otimes g_1 \,|\, \cdots \,|\, f_r \otimes g_r]$$ is the submatrix of
+$F \otimes G$ in the columns $(j, j)$, and its column $j$ is $f_j \otimes g_j$. The block
+Khatri–Rao product of two block matrices is a submatrix of their Tracy–Singh product.
+
+The Hadamard product is `B ⊙ C`, and the column Khatri–Rao product is `Matrix.khatriRao F G`. -/
 theorem hadamard_khatriRao_submatrix_kronecker {m n r : ℕ} (B C : Matrix (Fin m) (Fin n) ℝ)
     (F : Matrix (Fin m₁) (Fin r) ℝ) (G : Matrix (Fin m₂) (Fin r) ℝ) :
     B ⊙ C = (B ⊗ₖ C).submatrix (fun i => (i, i)) (fun j => (j, j)) ∧
@@ -295,37 +478,52 @@ theorem hadamard_khatriRao_submatrix_kronecker {m n r : ℕ} (B C : Matrix (Fin 
 
 end TracySingh
 
-/-! ### `vec` and `reshape` (12.3.9)–(12.3.12) -/
+/-! ### The operations vec and reshape (12.3.9)–(12.3.12) -/
 
-/-- The book's `reshape(a, m, n)` of a vector `a ∈ ℝ^{mn}`: the `m × n` matrix `A` with
-`vec(A) = a`. -/
+/-- The source's $\operatorname{reshape}(a, m, n)$ of a vector $a \in \mathbb{R}^{mn}$: the matrix
+$A \in \mathbb{R}^{m \times n}$ with $\operatorname{vec}(A) = a$. -/
 def reshapeVec {m n : ℕ} (a : Fin (n * m) → ℝ) : Matrix (Fin m) (Fin n) ℝ :=
   of fun i j => a (finProdFinEquiv (j, i))
 
-/-- `vec(reshape(a, m, n)) = a`. -/
+/-- For every vector $a \in \mathbb{R}^{mn}$, $\operatorname{vec}(\operatorname{reshape}(a, m, n)) =
+a$. -/
 @[simp]
 theorem vecFin_reshapeVec {m n : ℕ} (a : Fin (n * m) → ℝ) : vecFin (reshapeVec a) = a := by
   funext t
   obtain ⟨⟨j, i⟩, rfl⟩ := finProdFinEquiv.surjective t
   rw [vecFin_apply, reshapeVec, of_apply]
 
-/-- **(12.3.9)**: `Y = C X Bᵀ ⇔ vec(Y) = (B ⊗ C) vec(X)` for `B ∈ ℝ^{m₁×n₁}`, `C ∈ ℝ^{m₂×n₂}` —
-chapter 1's (1.3.6) (the book's `X ∈ ℝ^{n₁×m₂}` reads `X ∈ ℝ^{n₂×n₁}`). -/
+/-- **Equation (12.3.9)** of [golub2013matrix]. Let $B \in \mathbb{R}^{m_1 \times n_1}$,
+$C \in \mathbb{R}^{m_2 \times n_2}$, $X \in \mathbb{R}^{n_2 \times n_1}$ and
+$Y \in \mathbb{R}^{m_2 \times m_1}$. Then $$Y = C X B^T \iff \operatorname{vec}(Y) = (B \otimes
+C) \operatorname{vec}(X).$$
+
+**Typo.** The source states $X \in \mathbb{R}^{n_1 \times m_2}$. The product $C X B^T$ needs
+$X \in \mathbb{R}^{n_2 \times n_1}$.
+
+This is (1.3.6) of Chapter 1, `GolubVanLoan.Chapter01.equation_1_3_6`. -/
 theorem equation_12_3_9 (B : Matrix (Fin m₁) (Fin n₁) ℝ) (C : Matrix (Fin m₂) (Fin n₂) ℝ)
     (X : Matrix (Fin n₂) (Fin n₁) ℝ) (Y : Matrix (Fin m₂) (Fin m₁) ℝ) :
     Y = C * X * Bᵀ ↔ vecFin Y = kroneckerFin B C *ᵥ vecFin X :=
   Chapter01.equation_1_3_6 B C X Y
 
-/-- `vec` is additive over finite sums. -/
+/-- The operation vec is additive over finite sums: $\operatorname{vec}(\sum_k A_k) = \sum_k
+\operatorname{vec}(A_k)$. -/
 theorem vecFin_sum {m n p : ℕ} (A : Fin p → Matrix (Fin m) (Fin n) ℝ) :
     vecFin (∑ k, A k) = ∑ k, vecFin (A k) := by
   funext t
   obtain ⟨⟨j, i⟩, rfl⟩ := finProdFinEquiv.surjective t
   simp [vecFin_apply, Finset.sum_apply, Matrix.sum_apply]
 
-/-- **(12.3.10) ⇔ (12.3.11)**: `F₁ X G₁ᵀ + ⋯ + F_p X G_pᵀ = C` iff
-`(G₁ ⊗ F₁ + ⋯ + G_p ⊗ F_p) vec(X) = vec(C)`; and `reshape(v ⊗ u, m, n) = u vᵀ` (typed:
-`Matrix.unvec`). -/
+/-- **Equations (12.3.10)–(12.3.11)** of [golub2013matrix]. Let
+$F_k \in \mathbb{R}^{m_2 \times n_2}$ and $G_k \in \mathbb{R}^{m_1 \times n_1}$ for
+$k = 1, \dots, p$, and let $X \in \mathbb{R}^{n_2 \times n_1}$ and
+$C \in \mathbb{R}^{m_2 \times m_1}$. Then $$F_1 X G_1^T + \cdots + F_p X G_p^T = C \iff (G_1
+\otimes F_1 + \cdots + G_p \otimes F_p) \operatorname{vec}(X) = \operatorname{vec}(C).$$
+Moreover, for $u \in \mathbb{R}^m$ and $v \in \mathbb{R}^n$, $\operatorname{reshape}(v \otimes
+u, m, n) = uv^T$.
+
+The second part is stated on product index types, with `Matrix.unvec` for reshape. -/
 theorem equation_12_3_11 {p : ℕ} (F : Fin p → Matrix (Fin m₂) (Fin n₂) ℝ)
     (G : Fin p → Matrix (Fin m₁) (Fin n₁) ℝ) (X : Matrix (Fin n₂) (Fin n₁) ℝ)
     (C : Matrix (Fin m₂) (Fin m₁) ℝ) :
@@ -338,7 +536,9 @@ theorem equation_12_3_11 {p : ℕ} (F : Fin p → Matrix (Fin m₂) (Fin n₂) �
   simp only [h, ← vecFin_sum]
   exact ⟨fun h' => h' ▸ rfl, fun h' => vecFin_injective h'⟩
 
-/-- **(12.3.12)**: `vec(Aᵀ) = 𝒫_{r,q} vec(A)` for `A ∈ ℝ^{q×r}`. -/
+/-- **Equation (12.3.12)** of [golub2013matrix]. For $A \in \mathbb{R}^{q \times r}$,
+$$\operatorname{vec}(A^T) = \mathcal{P}_{r,q} \operatorname{vec}(A).$$
+-/
 theorem equation_12_3_12 {q r : ℕ} (A : Matrix (Fin q) (Fin r) ℝ) :
     vecFin Aᵀ = perfectShuffle r q *ᵥ vecFin A :=
   (perfectShuffle_mulVec_vecFin A).symm
@@ -347,7 +547,7 @@ theorem equation_12_3_12 {q r : ℕ} (A : Matrix (Fin q) (Fin r) ℝ) :
 
 section TwoPass
 
-/-- `reshape(vec(Y)) = Y`. -/
+/-- For every matrix $Y$, $\operatorname{reshape}(\operatorname{vec}(Y)) = Y$. -/
 @[simp]
 theorem reshapeVec_vecFin {m n : ℕ} (Y : Matrix (Fin m) (Fin n) ℝ) :
     reshapeVec (vecFin Y) = Y := by
@@ -356,7 +556,7 @@ theorem reshapeVec_vecFin {m n : ℕ} (Y : Matrix (Fin m) (Fin n) ℝ) :
 
 variable {q r : ℕ}
 
-/-- The first pass `Γ₁ vec(A)`, entrywise: its entry `(k, j, i)` is `(A_k)_{ij}`. -/
+/-- The entry $(k, j, i)$ of the first pass $\Gamma_1 \operatorname{vec}(A)$ is $(A_k)_{ij}$. -/
 private theorem twoPass_first (A : Matrix (Fin (r * q)) (Fin q) ℝ) (k : Fin r) (i j : Fin q) :
     (kroneckerFin (perfectShuffle q r) (1 : Matrix (Fin q) (Fin q) ℝ) *ᵥ
       (vecFin A ∘ finCongr (by ring))) (finProdFinEquiv (finProdFinEquiv (k, j), i)) =
@@ -369,7 +569,8 @@ private theorem twoPass_first (A : Matrix (Fin (r * q)) (Fin q) ℝ) (k : Fin r)
     ring
   rw [this, vecFin_apply]
 
-/-- The two passes `Γ₂ Γ₁ vec(A)`, entrywise: the entry `(k, a, b)` is `(A_k)_{ab}`. -/
+/-- The entry $(k, a, b)$ of the two passes $\Gamma_2 \Gamma_1 \operatorname{vec}(A)$ is
+$(A_k)_{ab}$. -/
 private theorem twoPass_second (A : Matrix (Fin (r * q)) (Fin q) ℝ) (k : Fin r) (a b : Fin q) :
     (kroneckerFin (1 : Matrix (Fin r) (Fin r) ℝ) (perfectShuffle q q) *ᵥ
       ((kroneckerFin (perfectShuffle q r) (1 : Matrix (Fin q) (Fin q) ℝ) *ᵥ
@@ -384,11 +585,18 @@ private theorem twoPass_second (A : Matrix (Fin (r * q)) (Fin q) ℝ) (k : Fin r
   rw [this]
   exact twoPass_first A k a b
 
-/-- **§12.3.5**, the two-pass transposition of `A = [A₁; ⋯; A_r]` (`A_k ∈ ℝ^{q×q}`): with
-`Γ₁ = 𝒫_{q,r} ⊗ I_q` and `Γ₂ = I_r ⊗ 𝒫_{q,q}`, `reshape(Γ₁ vec(A), q, rq) = [A₁ | ⋯ | A_r]`,
-`reshape(Γ₂ Γ₁ vec(A), q, rq) = [A₁ᵀ ⋯ A_rᵀ] = Aᵀ`, and `𝒫_{q,rq} = Γ₂ Γ₁` (up to the identification
-of the size products). The book prints `Γ₁ = 𝒫_{r,q} ⊗ I_q` (its transpose; the two agree only for
-`r = q`) and announces a factorization of `𝒫_{rq,q}` before writing `𝒫_{q,rq}`. -/
+/-- **§12.3.5** of [golub2013matrix], the two-pass transposition. Let $A = \begin{bmatrix} A_1 \\
+\vdots \\ A_r \end{bmatrix}$ with $A_k \in \mathbb{R}^{q \times q}$, and let
+$\Gamma_1 = \mathcal{P}_{q,r} \otimes I_q$ and $\Gamma_2 = I_r \otimes \mathcal{P}_{q,q}$. Then
+$$\operatorname{reshape}(\Gamma_1 \operatorname{vec}(A), q, rq) = [A_1 \,|\, \cdots \,|\, A_r],
+\qquad \operatorname{reshape}(\Gamma_2 \Gamma_1 \operatorname{vec}(A), q, rq) = [A_1^T \,|\,
+\cdots \,|\, A_r^T] = A^T,$$ and $\mathcal{P}_{q,rq} = \Gamma_2 \Gamma_1$.
+
+**Correction.** The source prints $\Gamma_1 = \mathcal{P}_{r,q} \otimes I_q$, the transpose of
+the matrix here; the two agree only for $r = q$. The source also announces a factorization of
+$\mathcal{P}_{rq,q}$ before it writes $\mathcal{P}_{q,rq}$.
+
+The sizes $rq \cdot q$ and $q \cdot rq$ are identified by `finCongr`. -/
 theorem perfectShuffle_two_pass (A : Matrix (Fin (r * q)) (Fin q) ℝ) :
     reshapeVec (kroneckerFin (perfectShuffle q r) (1 : Matrix (Fin q) (Fin q) ℝ) *ᵥ
         (vecFin A ∘ finCongr (by ring))) =
@@ -424,8 +632,8 @@ section TracySinghPerm
 
 variable {M₁ M₂ m₁ m₂ : ℕ}
 
-/-- The row permutation of (12.3.7) acting on a vector: the Kronecker order `(I₁, i₁, I₂, i₂)` goes
-to the Tracy–Singh order `(I₁, I₂, i₁, i₂)`. -/
+/-- The row permutation of (12.3.7) acting on a vector: it takes the Kronecker order
+$(I_1, i_1, I_2, i_2)$ to the Tracy–Singh order $(I_1, I_2, i_1, i_2)$. -/
 private theorem tracySinghPerm_mulVec (x : Fin (M₁ * m₁ * (M₂ * m₂)) → ℝ)
     (t : Fin (M₁ * M₂ * (m₁ * m₂))) :
     (kroneckerFin (1 : Matrix (Fin (M₁ * M₂)) (Fin (M₁ * M₂)) ℝ) (perfectShuffle m₂ m₁) *ᵥ
@@ -449,10 +657,13 @@ private theorem tracySinghPerm_mulVec (x : Fin (M₁ * m₁ * (M₂ * m₂)) →
   simp [finProdFinEquiv_apply_val, kroneckerBlockIndex]
   ring
 
-/-- **(12.3.7)–(12.3.8)**: the permutations of (12.3.6) are
-`P = (I_{M₁M₂} ⊗ 𝒫_{m₂,m₁})(I_{M₁} ⊗ 𝒫_{m₁,M₂m₂})` and `Q = (I_{N₁N₂} ⊗ 𝒫_{n₂,n₁})(I_{N₁} ⊗
-𝒫_{n₁,N₂n₂})` (chapter 1's perfect shuffles and positional Kronecker products, up to the
-identification of the size products), so that `B ⊗_TS C = P (B ⊗ C) Qᵀ`. -/
+/-- **Equations (12.3.7)–(12.3.8)** of [golub2013matrix]. The permutation matrices of (12.3.6) are
+$$P = (I_{M_1 M_2} \otimes \mathcal{P}_{m_2,m_1})(I_{M_1} \otimes \mathcal{P}_{m_1,M_2 m_2}),
+\qquad Q = (I_{N_1 N_2} \otimes \mathcal{P}_{n_2,n_1})(I_{N_1} \otimes \mathcal{P}_{n_1,N_2
+n_2}),$$ so that $B \otimes_{TS} C = P (B \otimes C) Q^T$.
+
+The Kronecker products and the perfect shuffles are those of Chapter 1 in the positional layout.
+The products of sizes are identified by `finCongr`. -/
 theorem equation_12_3_7 {N₁ N₂ n₁ n₂ : ℕ} (B : Matrix (Fin (M₁ * m₁)) (Fin (N₁ * n₁)) ℝ)
     (C : Matrix (Fin (M₂ * m₂)) (Fin (N₂ * n₂)) ℝ) :
     ((tracySinghIndex M₁ M₂ m₁ m₂).symm.trans
@@ -491,15 +702,21 @@ end TracySinghPerm
 
 /-! ### The rearrangement and the Kronecker product SVD (§12.3.6) -/
 
-/-- **§12.3.6**, Definition: the book's `𝓡(A) ∈ ℝ^{m₁n₁ × m₂n₂}` for `A ∈ ℝ^{m₁m₂ × n₁n₂}` blocked
-as (12.3.16) (`A_ij ∈ ℝ^{m₂×n₂}`): row `(j − 1) m₁ + i` is `vec(A_ij)ᵀ`, the rows ordered
-`Ã₁, …, Ã_{n₁}`. The backbone's `Matrix.kroneckerRearrange` read through `finProdFinEquiv`. -/
+/-- **§12.3.6** of [golub2013matrix], definition of the rearrangement. Let
+$A \in \mathbb{R}^{m_1 m_2 \times n_1 n_2}$ be blocked as in (12.3.16), with the blocks
+$A_{ij} \in \mathbb{R}^{m_2 \times n_2}$ for $i = 1, \dots, m_1$ and $j = 1, \dots, n_1$. The
+**rearrangement** $\mathcal{R}(A) \in \mathbb{R}^{m_1 n_1 \times m_2 n_2}$ is the matrix whose
+row $(j - 1) m_1 + i$ is $\operatorname{vec}(A_{ij})^T$, so that its rows are ordered by the
+block columns $\tilde A_1, \dots, \tilde A_{n_1}$.
+
+It is the backbone's `Matrix.kroneckerRearrange`, read through `finProdFinEquiv`. -/
 def rearrangement (A : Matrix (Fin (m₁ * m₂)) (Fin (n₁ * n₂)) ℝ) :
     Matrix (Fin (n₁ * m₁)) (Fin (n₂ * m₂)) ℝ :=
   (kroneckerRearrange (A.reindex finProdFinEquiv.symm finProdFinEquiv.symm)).reindex
     finProdFinEquiv finProdFinEquiv
 
-/-- The entries of the rearrangement: `𝓡(A)((j, i), (l, k)) = (A_ij)_kl`. -/
+/-- The entries of the rearrangement: the entry of $\mathcal{R}(A)$ in the row $(j, i)$ and the
+column $(l, k)$ is $(A_{ij})_{kl}$. -/
 @[simp]
 theorem rearrangement_apply (A : Matrix (Fin (m₁ * m₂)) (Fin (n₁ * n₂)) ℝ) (i : Fin m₁)
     (j : Fin n₁) (k : Fin m₂) (l : Fin n₂) :
@@ -507,24 +724,27 @@ theorem rearrangement_apply (A : Matrix (Fin (m₁ * m₂)) (Fin (n₁ * n₂)) 
       A (finProdFinEquiv (i, k)) (finProdFinEquiv (j, l)) := by
   simp [rearrangement]
 
-/-- The rearrangement is linear. -/
+/-- The rearrangement preserves differences: $\mathcal{R}(A - A') = \mathcal{R}(A) -
+\mathcal{R}(A')$. -/
 theorem rearrangement_sub (A A' : Matrix (Fin (m₁ * m₂)) (Fin (n₁ * n₂)) ℝ) :
     rearrangement (A - A') = rearrangement A - rearrangement A' :=
   rfl
 
-/-- The rearrangement commutes with scalar multiples. -/
+/-- The rearrangement commutes with scalar multiples: $\mathcal{R}(cA) = c \mathcal{R}(A)$. -/
 theorem rearrangement_smul (c : ℝ) (A : Matrix (Fin (m₁ * m₂)) (Fin (n₁ * n₂)) ℝ) :
     rearrangement (c • A) = c • rearrangement A :=
   rfl
 
-/-- The rearrangement commutes with finite sums. -/
+/-- The rearrangement commutes with finite sums: $\mathcal{R}(\sum_k X_k) = \sum_k
+\mathcal{R}(X_k)$. -/
 theorem rearrangement_sum {ι : Type*} (s : Finset ι)
     (X : ι → Matrix (Fin (m₁ * m₂)) (Fin (n₁ * n₂)) ℝ) :
     rearrangement (∑ k ∈ s, X k) = ∑ k ∈ s, rearrangement (X k) := by
   ext I J
   simp [rearrangement, Matrix.sum_apply]
 
-/-- `𝓡(B ⊗ C) = vec(B) vec(C)ᵀ`. -/
+/-- The rearrangement of a Kronecker product has rank one: $\mathcal{R}(B \otimes C) =
+\operatorname{vec}(B) \operatorname{vec}(C)^T$. -/
 theorem rearrangement_kroneckerFin (B : Matrix (Fin m₁) (Fin n₁) ℝ)
     (C : Matrix (Fin m₂) (Fin n₂) ℝ) :
     rearrangement (kroneckerFin B C) = vecMulVec (vecFin B) (vecFin C) := by
@@ -537,28 +757,38 @@ section Norm
 
 open scoped Matrix.Norms.Frobenius
 
-/-- `‖𝓡(A)‖_F = ‖A‖_F`: the rearrangement permutes the entries. -/
+/-- The rearrangement preserves the Frobenius norm, $\|\mathcal{R}(A)\|_F = \|A\|_F$, because it
+permutes the entries. -/
 theorem frobenius_norm_rearrangement (A : Matrix (Fin (m₁ * m₂)) (Fin (n₁ * n₂)) ℝ) :
     ‖rearrangement A‖ = ‖A‖ := by
   rw [rearrangement, reindex_apply, frobenius_norm_submatrix_equiv,
     frobenius_norm_kroneckerRearrange, reindex_apply, frobenius_norm_submatrix_equiv]
 
-/-- **(12.3.14)** and the display after the example: `φ(B, C) = ‖A − B ⊗ C‖_F =
-‖𝓡(A) − vec(B) vec(C)ᵀ‖_F`, so minimizing `φ` is finding a nearest rank-one matrix to `𝓡(A)`. -/
+/-- **Equation (12.3.14)** of [golub2013matrix] and the display after the example. For
+$A \in \mathbb{R}^{m_1 m_2 \times n_1 n_2}$, $B \in \mathbb{R}^{m_1 \times n_1}$ and
+$C \in \mathbb{R}^{m_2 \times n_2}$, $$\phi(B, C) = \|A - B \otimes C\|_F = \|\mathcal{R}(A) -
+\operatorname{vec}(B) \operatorname{vec}(C)^T\|_F.$$ So to minimize $\phi$ is to find a nearest
+rank-one matrix to $\mathcal{R}(A)$. -/
 theorem equation_12_3_14 (A : Matrix (Fin (m₁ * m₂)) (Fin (n₁ * n₂)) ℝ)
     (B : Matrix (Fin m₁) (Fin n₁) ℝ) (C : Matrix (Fin m₂) (Fin n₂) ℝ) :
     ‖A - kroneckerFin B C‖ = ‖rearrangement A - vecMulVec (vecFin B) (vecFin C)‖ := by
   rw [← frobenius_norm_rearrangement, rearrangement_sub, rearrangement_kroneckerFin]
 
-/-- **(12.3.20)**: for `A ∈ ℝ^{m²×m²}`, `φ_sym(X) = ‖A − X ⊗ X‖_F = ‖𝓡(A) − vec(X) vec(X)ᵀ‖_F`. -/
+/-- **Equation (12.3.20)** of [golub2013matrix]. For $A \in \mathbb{R}^{m^2 \times m^2}$ and
+$X \in \mathbb{R}^{m \times m}$, $$\phi_{sym}(X) = \|A - X \otimes X\|_F = \|\mathcal{R}(A) -
+\operatorname{vec}(X) \operatorname{vec}(X)^T\|_F.$$
+-/
 theorem equation_12_3_20 {m : ℕ} (A : Matrix (Fin (m * m)) (Fin (m * m)) ℝ)
     (X : Matrix (Fin m) (Fin m) ℝ) :
     ‖A - kroneckerFin X X‖ = ‖rearrangement A - vecMulVec (vecFin X) (vecFin X)‖ :=
   equation_12_3_14 A X X
 
-/-- **(12.3.21)**: for `A ∈ ℝ^{m²×m²}`, `φ_skew(X, Y) = ‖A − (X ⊗ Y − Y ⊗ X)‖_F =
-‖𝓡(A) − (vec(X) vec(Y)ᵀ − vec(Y) vec(X)ᵀ)‖_F` (the book writes `φ_skew(X)` and drops a parenthesis).
--/
+/-- **Equation (12.3.21)** of [golub2013matrix]. For $A \in \mathbb{R}^{m^2 \times m^2}$ and
+$X, Y \in \mathbb{R}^{m \times m}$, $$\phi_{skew}(X, Y) = \|A - (X \otimes Y - Y \otimes
+X)\|_F = \|\mathcal{R}(A) - (\operatorname{vec}(X) \operatorname{vec}(Y)^T -
+\operatorname{vec}(Y) \operatorname{vec}(X)^T)\|_F.$$
+
+**Typo.** The source writes $\phi_{skew}(X)$ for $\phi_{skew}(X, Y)$ and drops a parenthesis. -/
 theorem equation_12_3_21 {m : ℕ} (A : Matrix (Fin (m * m)) (Fin (m * m)) ℝ)
     (X Y : Matrix (Fin m) (Fin m) ℝ) :
     ‖A - (kroneckerFin X Y - kroneckerFin Y X)‖ =
@@ -568,10 +798,16 @@ theorem equation_12_3_21 {m : ℕ} (A : Matrix (Fin (m * m)) (Fin (m * m)) ℝ)
 
 end Norm
 
-/-- **Theorem 12.3.1** (Kronecker product SVD): if `𝓡(A) = ∑_{k=1}^r σ_k u_k v_kᵀ` (12.3.17) then
-`A = ∑_{k=1}^r σ_k U_k ⊗ V_k` (12.3.18) with `U_k = reshape(u_k, m₁, n₁)`, `V_k = reshape(v_k, m₂,
-n₂)`; and when the expansion is an SVD (`σ_k > 0`, the `u_k` and the `v_k` orthonormal) `r` is the
-Kronecker product rank of `A`, the rank of `𝓡(A)`. -/
+/-- **Theorem 12.3.1** of [golub2013matrix] (Kronecker product SVD). Let
+$A \in \mathbb{R}^{m_1 m_2 \times n_1 n_2}$, and let the expansion (12.3.17) $$\mathcal{R}(A) =
+\sum_{k=1}^r \sigma_k u_k v_k^T$$ hold with $u_k \in \mathbb{R}^{m_1 n_1}$ and
+$v_k \in \mathbb{R}^{m_2 n_2}$. Then (12.3.18) holds: $$A = \sum_{k=1}^r \sigma_k U_k \otimes
+V_k, \qquad U_k = \operatorname{reshape}(u_k, m_1, n_1), \quad V_k = \operatorname{reshape}(v_k,
+m_2, n_2).$$ If moreover the expansion is an SVD, that is, $\sigma_k > 0$ for all $k$ and both
+$u_1, \dots, u_r$ and $v_1, \dots, v_r$ are orthonormal, then $r$ is the Kronecker product rank
+of $A$, the rank of $\mathcal{R}(A)$.
+
+The Kronecker product rank is `Matrix.kroneckerRank`. -/
 theorem theorem_12_3_1 {r : ℕ} (A : Matrix (Fin (m₁ * m₂)) (Fin (n₁ * n₂)) ℝ) (σ : Fin r → ℝ)
     (u : Fin r → Fin (n₁ * m₁) → ℝ) (v : Fin r → Fin (n₂ * m₂) → ℝ)
     (hA : rearrangement A = ∑ k, σ k • vecMulVec (u k) (v k)) :
@@ -621,7 +857,7 @@ theorem theorem_12_3_1 {r : ℕ} (A : Matrix (Fin (m₁ * m₂)) (Fin (n₁ * n�
         _ ≤ (U * diagonal σ * Vᵀ).rank :=
           (rank_mul_le_left _ _).trans (rank_mul_le_right _ _)
 
-/-- A sum of `r` rank-one matrices has rank at most `r`. -/
+/-- A sum of $r$ rank-one matrices $x_k y_k^T$ has rank at most $r$. -/
 private theorem rank_sum_vecMulVec_le {p q r : ℕ} (x : Fin r → Fin p → ℝ)
     (y : Fin r → Fin q → ℝ) : (∑ k, vecMulVec (x k) (y k)).rank ≤ r := by
   have h : (∑ k, vecMulVec (x k) (y k)) =
@@ -632,17 +868,25 @@ private theorem rank_sum_vecMulVec_le {p q r : ℕ} (x : Fin r → Fin p → ℝ
   exact (rank_mul_le_left _ _).trans ((rank_le_card_width _).trans (by simp))
 
 open scoped Matrix.Norms.Frobenius in
-/-- **(12.3.19)** and the paragraph before it: if `Uᵀ 𝓡(A) V = Σ` is an SVD of the rearrangement
-(12.3.17) and `r̃` is at most both dimensions of `𝓡(A)`, then
-`A_r̃ = ∑_{k=1}^{r̃} σ_k U_k ⊗ V_k`, with `U_k = reshape(U(:, k), m₁, n₁)` and
-`V_k = reshape(V(:, k), m₂, n₂)`, is a closest matrix to `A` in the Frobenius norm among the sums of
-`r̃` Kronecker products: `‖A − A_r̃‖_F ≤ ‖A − ∑_{k=1}^{r̃} B_k ⊗ C_k‖_F`. Through `𝓡`, an isometry,
-this is the Eckart–Young–Mirsky theorem for `𝓡(A)`
-(`Matrix.isLeast_frobenius_norm_sub_of_rank_le`), since `𝓡(∑ B_k ⊗ C_k) = ∑ vec(B_k) vec(C_k)ᵀ` has
-rank at most `r̃` and `𝓡(A_r̃)` is the truncation of the SVD (`Matrix.svdTruncation_eq_sum`).
-The competitors have rank at most `r̃`, so chapter 2's Frobenius Eckart–Young, which compares the
-ranks equal to `k < rank(A)` (`Chapter02.svdTruncation_isLeast_frobenius`), does not apply as
-stated. -/
+/-- **Equation (12.3.19)** of [golub2013matrix] and the paragraph before it. Let
+$A \in \mathbb{R}^{m_1 m_2 \times n_1 n_2}$, let $U^T \mathcal{R}(A) V = \Sigma$ be an SVD of
+the rearrangement as in (12.3.17), with the singular values $\sigma_1 \ge \sigma_2 \ge \cdots$,
+and let $\tilde r \le m_1 n_1$ and $\tilde r \le m_2 n_2$. Let $U_k =
+\operatorname{reshape}(U(:, k), m_1, n_1)$, $V_k = \operatorname{reshape}(V(:, k), m_2, n_2)$
+and $$A_{\tilde r} = \sum_{k=1}^{\tilde r} \sigma_k U_k \otimes V_k.$$ Then for all
+$B_k \in \mathbb{R}^{m_1 \times n_1}$ and $C_k \in \mathbb{R}^{m_2 \times n_2}$, $$\|A -
+A_{\tilde r}\|_F \le \Bigl\|A - \sum_{k=1}^{\tilde r} B_k \otimes C_k\Bigr\|_F.$$ So
+$A_{\tilde r}$ is a closest matrix to $A$ in the Frobenius norm among the sums of $\tilde r$
+Kronecker products.
+
+The SVD is `Matrix.IsSVD`. Because $\mathcal{R}$ is an isometry, this is the Eckart–Young–Mirsky
+theorem for $\mathcal{R}(A)$, `Matrix.isLeast_frobenius_norm_sub_of_rank_le`: the matrix
+$\mathcal{R}(\sum_k B_k \otimes C_k) = \sum_k \operatorname{vec}(B_k) \operatorname{vec}(C_k)^T$
+has rank at most $\tilde r$, and $\mathcal{R}(A_{\tilde r})$ is the truncated SVD
+(`Matrix.svdTruncation_eq_sum`). The Frobenius form of the Eckart–Young theorem in Chapter 2,
+`GolubVanLoan.Chapter02.svdTruncation_isLeast_frobenius`, compares only matrices whose rank is
+equal to some $k < \operatorname{rank}(A)$. It does not apply as stated, because here the
+competitors have rank at most $\tilde r$. -/
 theorem equation_12_3_19 (A : Matrix (Fin (m₁ * m₂)) (Fin (n₁ * n₂)) ℝ)
     {U : Matrix (Fin (n₁ * m₁)) (Fin (n₁ * m₁)) ℝ} {σ : ℕ → ℝ}
     {V : Matrix (Fin (n₂ * m₂)) (Fin (n₂ * m₂)) ℝ} (h : IsSVD (rearrangement A) U σ V) {r : ℕ}
@@ -664,17 +908,25 @@ theorem equation_12_3_19 (A : Matrix (Fin (m₁ * m₂)) (Fin (n₁ * n₂)) ℝ
     ⟨_, rank_sum_vecMulVec_le (fun k => vecFin (B k)) (fun k => vecFin (C k)), rfl⟩
   simpa using this
 
-/-- `reshape` is linear. -/
+/-- The operation reshape commutes with scalar multiples: $\operatorname{reshape}(ca) = c
+\operatorname{reshape}(a)$. -/
 theorem reshapeVec_smul {m n : ℕ} (c : ℝ) (a : Fin (n * m) → ℝ) :
     reshapeVec (c • a) = c • reshapeVec a := by
   ext i j
   simp [reshapeVec]
 
 open scoped Matrix.Norms.Frobenius in
-/-- **(12.3.15)** and the sentence after it: "if `Uᵀ 𝓡(A) V = Σ` is the SVD of `𝓡(A)`, then
-`vec(B_opt) = √σ₁ U(:, 1)`, `vec(C_opt) = √σ₁ V(:, 1)` minimize `φ(B, C) = ‖A − B ⊗ C‖_F`", "and
-so do `α B_opt`, `C_opt/α` for any `α ≠ 0`": the case `r̃ = 1` of (12.3.19) (`equation_12_3_19`),
-`B_opt ⊗ C_opt = σ₁ U₁ ⊗ V₁`. -/
+/-- **Equation (12.3.15)** of [golub2013matrix] and the sentence after it. Let
+$A \in \mathbb{R}^{m_1 m_2 \times n_1 n_2}$ with $m_1 n_1 \ge 1$ and $m_2 n_2 \ge 1$, and let
+$U^T \mathcal{R}(A) V = \Sigma$ be an SVD of $\mathcal{R}(A)$. Then the matrices $B_{opt}$ and
+$C_{opt}$ with $$\operatorname{vec}(B_{opt}) = \sqrt{\sigma_1}\, U(:, 1), \qquad
+\operatorname{vec}(C_{opt}) = \sqrt{\sigma_1}\, V(:, 1)$$ minimize
+$\phi(B, C) = \|A - B \otimes C\|_F$, and so do $\alpha B_{opt}$ and $C_{opt}/\alpha$ for every
+$\alpha \neq 0$: $$\|A - (\alpha B_{opt}) \otimes (C_{opt}/\alpha)\|_F \le \|A - B \otimes
+C\|_F$$ for all $B \in \mathbb{R}^{m_1 \times n_1}$ and $C \in \mathbb{R}^{m_2 \times n_2}$.
+
+This is the case $\tilde r = 1$ of (12.3.19), `GolubVanLoan.Chapter12.equation_12_3_19`, because
+$B_{opt} \otimes C_{opt} = \sigma_1 U_1 \otimes V_1$. -/
 theorem equation_12_3_15 (A : Matrix (Fin (m₁ * m₂)) (Fin (n₁ * n₂)) ℝ)
     {U : Matrix (Fin (n₁ * m₁)) (Fin (n₁ * m₁)) ℝ} {σ : ℕ → ℝ}
     {V : Matrix (Fin (n₂ * m₂)) (Fin (n₂ * m₂)) ℝ} (h : IsSVD (rearrangement A) U σ V)
@@ -696,7 +948,7 @@ theorem equation_12_3_15 (A : Matrix (Fin (m₁ * m₂)) (Fin (n₁ * n₂)) ℝ
   rw [hopt, hBC]
   exact equation_12_3_19 A h h₁ h₂ _ _
 
-/-! ### Lemma 12.3.2 and the nearest `X ⊗ X` (§12.3.8) -/
+/-! ### Lemma 12.3.2 and the nearest $X \otimes X$ (§12.3.8) -/
 
 section Symmetric
 
@@ -704,8 +956,8 @@ open scoped Matrix.Norms.Frobenius
 
 variable {n : ℕ}
 
-/-- The quadratic form of `T` in the eigenbasis of a Schur decomposition `Qᵀ T Q = diag(α)`:
-`xᵀ T x = ∑ α_i y_i²` with `y = Qᵀ x`, and `∑ y_i² = xᵀ x`. -/
+/-- For a Schur decomposition $Q^T T Q = \operatorname{diag}(\alpha)$ with $Q$ orthogonal, and
+$y = Q^T x$, we have $x^T T x = \sum_i \alpha_i y_i^2$ and $\sum_i y_i^2 = x^T x$. -/
 private theorem dotProduct_mulVec_eq_sum {T Q : Matrix (Fin n) (Fin n) ℝ} {α : Fin n → ℝ}
     (hQ : Q ∈ orthogonalGroup (Fin n) ℝ) (hT : Qᵀ * T * Q = diagonal α) (x : Fin n → ℝ) :
     x ⬝ᵥ (T *ᵥ x) = ∑ i, α i * (Qᵀ *ᵥ x) i ^ 2 ∧ ∑ i, (Qᵀ *ᵥ x) i ^ 2 = x ⬝ᵥ x := by
@@ -727,8 +979,9 @@ private theorem dotProduct_mulVec_eq_sum {T Q : Matrix (Fin n) (Fin n) ℝ} {α 
     rw [← h3]
     simp [dotProduct, sq]
 
-/-- The column `q_k` of an orthogonal `Q` in a Schur decomposition `Qᵀ T Q = diag(α)` is a unit
-eigenvector: `q_kᵀ q_k = 1` and `q_kᵀ T q_k = α_k`. -/
+/-- The column $q_k$ of the orthogonal matrix $Q$ in a Schur decomposition
+$Q^T T Q = \operatorname{diag}(\alpha)$ is a unit eigenvector: $q_k^T q_k = 1$ and
+$q_k^T T q_k = \alpha_k$. -/
 private theorem col_dotProduct {T Q : Matrix (Fin n) (Fin n) ℝ} {α : Fin n → ℝ}
     (hQ : Q ∈ orthogonalGroup (Fin n) ℝ) (hT : Qᵀ * T * Q = diagonal α) (k : Fin n) :
     (fun i => Q i k) ⬝ᵥ (fun i => Q i k) = 1 ∧
@@ -749,8 +1002,9 @@ private theorem col_dotProduct {T Q : Matrix (Fin n) (Fin n) ℝ} {α : Fin n �
   · rw [h1]
     simp [Pi.single_apply]
 
-/-- The Rayleigh bounds from a Schur decomposition: for a unit `x`, `|xᵀ T x| ≤ max |α_i|` and
-`xᵀ T x ≤ max α_i`. -/
+/-- For a Schur decomposition $Q^T T Q = \operatorname{diag}(\alpha)$ and a unit vector $x$: if
+$|\alpha_i| \le |\alpha_k|$ for all $i$, then $|x^T T x| \le |\alpha_k|$, and if
+$\alpha_i \le \alpha_k$ for all $i$, then $x^T T x \le \alpha_k$. -/
 private theorem rayleigh_bounds {T Q : Matrix (Fin n) (Fin n) ℝ} {α : Fin n → ℝ}
     (hQ : Q ∈ orthogonalGroup (Fin n) ℝ) (hT : Qᵀ * T * Q = diagonal α) {x : Fin n → ℝ}
     (hx : x ⬝ᵥ x = 1) (k : Fin n) :
@@ -772,11 +1026,18 @@ private theorem rayleigh_bounds {T Q : Matrix (Fin n) (Fin n) ℝ} {α : Fin n �
           Finset.sum_le_sum fun i _ => mul_le_mul_of_nonneg_right (hk i) (sq_nonneg _)
       _ = α k := by rw [← Finset.mul_sum, h2, mul_one]
 
-/-- **Lemma 12.3.2**: for `M ∈ ℝ^{n×n}` and a Schur decomposition `Qᵀ T Q = diag(α₁, …, α_n)` of
-`T = (M + Mᵀ)/2` (`Matrix.hermitianPart M`), if `|α_k| = max |α_i|` then `Z_opt = α_k q_k q_kᵀ`
-(`q_k = Q(:, k)`) minimizes `‖M − Z‖_F` over symmetric `Z` of rank at most one. The book's
-"`rank(Z) = 1`" fails for `T = 0`, where no matrix of rank exactly one attains the infimum; `rank ≤
-1` is the formalized reading and coincides with it when `T ≠ 0`. -/
+/-- **Lemma 12.3.2** of [golub2013matrix]. Let $M \in \mathbb{R}^{n \times n}$ and
+$T = (M + M^T)/2$, and let $Q \in \mathbb{R}^{n \times n}$ be orthogonal with $Q^T T Q =
+\operatorname{diag}(\alpha_1, \dots, \alpha_n)$. If $|\alpha_k| = \max_i |\alpha_i|$, then
+$$Z_{opt} = \alpha_k q_k q_k^T, \qquad q_k = Q(:, k),$$ minimizes $\|M - Z\|_F$ over all
+symmetric $Z \in \mathbb{R}^{n \times n}$ with $\operatorname{rank}(Z) \le 1$.
+
+**Correction.** The source minimizes over $\operatorname{rank}(Z) = 1$. For $T = 0$ no matrix of
+rank exactly one attains the infimum. The statement uses $\operatorname{rank}(Z) \le 1$, which
+agrees with the source when $T \neq 0$.
+
+The symmetric part $T$ is `Matrix.hermitianPart M`. The statement holds for an arbitrary Schur
+decomposition of $T$, as in the source. -/
 theorem lemma_12_3_2 (M Q : Matrix (Fin n) (Fin n) ℝ) (α : Fin n → ℝ)
     (hQ : Q ∈ orthogonalGroup (Fin n) ℝ) (hT : Qᵀ * hermitianPart M * Q = diagonal α) {k : Fin n}
     (hk : ∀ i, |α i| ≤ |α k|) :
@@ -806,12 +1067,19 @@ section NearestSelf
 
 open scoped Matrix.Norms.Frobenius
 
-/-- **§12.3.8**, "the solution `X_opt` is a reshaping of an eigenvector associated with the
-symmetric part of `𝓡(A)`", in the form that is true: with a Schur decomposition `Qᵀ T Q = diag(α)`
-of `T = (𝓡(A) + 𝓡(A)ᵀ)/2` and `α_k = max α_i`, `X_opt = reshape(√(α_k⁺) q_k, m, m)` minimizes
-`φ_sym(X) = ‖A − X ⊗ X‖_F` (`α_k⁺ = max(α_k, 0)`). Lemma 12.3.2 alone does not give it:
-`vec(X) vec(X)ᵀ` is positive semidefinite, so a negative eigenvalue of largest modulus is not
-admissible. -/
+/-- **§12.3.8** of [golub2013matrix], the nearest $X \otimes X$. Let
+$A \in \mathbb{R}^{m^2 \times m^2}$, let $T = (\mathcal{R}(A) + \mathcal{R}(A)^T)/2$, and let
+$Q$ be orthogonal with $Q^T T Q = \operatorname{diag}(\alpha)$. If $\alpha_k = \max_i \alpha_i$,
+then $$X_{opt} = \operatorname{reshape}\bigl(\sqrt{\alpha_k^+}\, q_k, m, m\bigr), \qquad
+\alpha_k^+ = \max(\alpha_k, 0),$$ minimizes $\phi_{sym}(X) = \|A - X \otimes X\|_F$ over all
+$X \in \mathbb{R}^{m \times m}$.
+
+**Correction.** The source states that "the solution $X_{opt}$ is a reshaping of an eigenvector
+associated with the symmetric part of $\mathcal{R}(A)$". The statement here is the form of this
+claim that is true. Lemma 12.3.2 alone does not give it:
+$\operatorname{vec}(X) \operatorname{vec}(X)^T$ is positive semidefinite, so a negative
+eigenvalue of largest modulus is not admissible. The statement takes the algebraically largest
+eigenvalue and its positive part. -/
 theorem nearest_kronecker_self {m : ℕ} (A Q : Matrix (Fin (m * m)) (Fin (m * m)) ℝ)
     (α : Fin (m * m) → ℝ) (hQ : Q ∈ orthogonalGroup (Fin (m * m)) ℝ)
     (hT : Qᵀ * hermitianPart (rearrangement A) * Q = diagonal α) {k : Fin (m * m)}
@@ -875,9 +1143,16 @@ end NearestSelf
 
 /-! ### The reshaping identity of §12.3.10 -/
 
-/-- **§12.3.10**: for `y = (B₁ ⊗ ⋯ ⊗ B_p) x`, with `P = B₁ ⊗ ⋯ ⊗ B_i ∈ ℝ^{M_i × N_i}` and
-`Q = B_{i+1} ⊗ ⋯ ⊗ B_p` (so that `B₁ ⊗ ⋯ ⊗ B_p = P ⊗ Q` by associativity, chapter 1's (1.3.4)),
-`reshape(y, M_p/M_i, M_i) = Q · reshape(x, N_p/N_i, N_i) · Pᵀ`. -/
+/-- **§12.3.10** of [golub2013matrix], the reshaping identity. Let
+$y = (B_1 \otimes \cdots \otimes B_p) x$, and write
+$B_1 \otimes \cdots \otimes B_p = P \otimes Q$ with $P = B_1 \otimes \cdots \otimes B_i \in
+\mathbb{R}^{M_i \times N_i}$ and $Q = B_{i+1} \otimes \cdots \otimes B_p$, by the associativity
+(1.3.4) of Chapter 1. Then $$\operatorname{reshape}(y, M_p/M_i, M_i) = Q \cdot
+\operatorname{reshape}(x, N_p/N_i, N_i) \cdot P^T.$$
+
+The Lean statement is for the two factors: for $P \in \mathbb{R}^{a \times b}$,
+$Q \in \mathbb{R}^{c \times e}$ and $x \in \mathbb{R}^{be}$, $\operatorname{reshape}((P \otimes
+Q) x, c, a) = Q \operatorname{reshape}(x, e, b) P^T$. -/
 theorem kronecker_mulVec_reshape {a b c e : ℕ} (P : Matrix (Fin a) (Fin b) ℝ)
     (Q : Matrix (Fin c) (Fin e) ℝ) (x : Fin (b * e) → ℝ) :
     reshapeVec (kroneckerFin P Q *ᵥ x) = Q * reshapeVec x * Pᵀ := by
@@ -890,15 +1165,22 @@ section SkewNearest
 
 open scoped Matrix.Norms.Frobenius
 
-/-- **Lemma 12.3.3.** "Suppose `M ∈ ℝ^{n×n}` and that `S = (M − Mᵀ)/2`. If
-`S [u | v] = [u | v] [0 μ; −μ 0]` where `u, v ∈ ℝⁿ` are orthonormal and `μ = ρ(S)`, then
-`Z_opt = μ (u vᵀ − v uᵀ)` minimizes `‖M − Z‖_F` over all rank-2 skew-symmetric matrices
-`Z ∈ ℝ^{n×n}`." The spectral radius is the complex one (`ρ(S) = ‖S‖₂` for the normal `S`,
-the backbone's `Matrix.complexSpectralRadius_toReal_eq_lpOpNorm_two_of_transpose_eq_neg`), and the
-competitors are the skew-symmetric matrices of rank
-at most two (with `S = 0` the minimizer `Z_opt = 0` has rank `0`). Of the hypothesis
-`S [u | v] = [u | v] [0 μ; −μ 0]` only the column `S v = μ u` is needed
-(`Matrix.isMinOn_frobenius_norm_sub_skew_rank_le_two`). -/
+/-- **Lemma 12.3.3** of [golub2013matrix]. Let $M \in \mathbb{R}^{n \times n}$ and
+$S = (M - M^T)/2$. Let $u, v \in \mathbb{R}^n$ be orthonormal, let $\mu = \rho(S)$ be the
+spectral radius of $S$, and assume $Sv = \mu u$. Then $$Z_{opt} = \mu (uv^T - vu^T)$$ minimizes
+$\|M - Z\|_F$ over all skew-symmetric $Z \in \mathbb{R}^{n \times n}$ with
+$\operatorname{rank}(Z) \le 2$.
+
+**Correction.** The source minimizes over the skew-symmetric matrices of rank $2$. For $S = 0$
+the minimizer $Z_{opt} = 0$ has rank $0$, so the statement uses rank at most two.
+
+**Generalization.** The source assumes $S [u \,|\, v] = [u \,|\, v] \begin{bmatrix} 0 & \mu \\
+-\mu & 0 \end{bmatrix}$. Only its second column, $Sv = \mu u$, is needed.
+
+The spectral radius is computed over $\mathbb{C}$, `Matrix.complexSpectralRadius`. For the
+normal matrix $S$ it equals $\|S\|_2$
+(`Matrix.complexSpectralRadius_toReal_eq_lpOpNorm_two_of_transpose_eq_neg`). The proof
+specializes `Matrix.isMinOn_frobenius_norm_sub_skew_rank_le_two`. -/
 theorem lemma_12_3_3 {n : ℕ} (M : Matrix (Fin n) (Fin n) ℝ) {u v : Fin n → ℝ} {μ : ℝ}
     (hu : u ⬝ᵥ u = 1) (hv : v ⬝ᵥ v = 1) (huv : u ⬝ᵥ v = 0)
     (hSv : ((1 / 2 : ℝ) • (M - Mᵀ)) *ᵥ v = μ • u)

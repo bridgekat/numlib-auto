@@ -9,41 +9,99 @@ import NumlibSurface.GolubVanLoan.Chapter02.Section03
 import NumlibSurface.GolubVanLoan.Chapter02.Section04
 
 /-!
-# Golub–Van Loan §2.6: the sensitivity of square systems
+# Golub and Van Loan, Section 2.6: The sensitivity of square systems
 
-Surface file for [golub2013matrix] §2.6: the SVD expansion of the solution (2.6.1), the derivative
-of the perturbed solution and the first-order bounds (2.6.2), (2.6.4) in rigorous form, the
-condition number (2.6.3) and its characterizations (2.6.5)–(2.6.8), `κ ≥ 1`, the examples (2.6.9)
-and `Dₙ`, the rigorous normwise bounds Lemma 2.6.1 and Theorem 2.6.2 with (2.6.11), the
-componentwise Theorem 2.6.3 with the Skeel condition number, and the Oettli–Prager theorem
-(2.6.13).
+This module formalizes §2.6 of [golub2013matrix] on the sensitivity of the solution of $Ax = b$, for
+nonsingular $A \in \mathbb{R}^{n \times n}$, to perturbations of $A$ and $b$. It proves the SVD
+expansion $x = \sum_i (u_i^T b / \sigma_i) v_i$ (2.6.1), the derivative of the solution
+$x(\epsilon)$ of $(A + \epsilon F) x(\epsilon) = b + \epsilon f$, and the bounds (2.6.2) and (2.6.4)
+on $\|x(\epsilon) - x\| / \|x\|$. The condition number is $\kappa(A) = \|A\| \|A^{-1}\|$ (2.6.3).
+The module proves its characterizations (2.6.5)–(2.6.8): $\kappa_2 = \sigma_{\max}/\sigma_{\min}$,
+$1/\kappa$ is the relative distance to the singular matrices, $\kappa$ is a normalized derivative of
+$A \mapsto A^{-1}$, and condition numbers in different norms are equivalent. It also proves
+$\kappa \ge 1$ and gives the examples (2.6.9) and $D_n$, which show that the determinant does not
+measure conditioning. The rigorous normwise bounds are Lemma 2.6.1 and Theorem 2.6.2 with (2.6.11).
+The componentwise bound is Theorem 2.6.3, with the Skeel condition number
+$\| |A^{-1}| |A| \|_\infty$, and the module ends with the Oettli–Prager theorem (2.6.13).
+
+The proofs specialize the backbone modules `Numlib.Conditioning.LinearSystem` and
+`Numlib.Conditioning.LinearSystem.Componentwise` (the Skeel condition number and the Oettli–Prager
+theorem), `Numlib.Analysis.Matrix.OperatorNorm` (`Matrix.condNumberLp`, `Matrix.lpEquiv`) and
+`Numlib.LinearAlgebra.Matrix.SVD`.
+
+## Main definitions
+
+* Equation (2.6.3), `GolubVanLoan.Chapter02.kappa`: the condition number
+  $\kappa_p(A) = \|A\|_p \|A^{-1}\|_p$, with $\kappa_p(A) = \infty$ for singular $A$.
+
+## Main results
+
+* Equation (2.6.1), `GolubVanLoan.Chapter02.equation_2_6_1`:
+  $A^{-1} b = \sum_i (u_i^T b / \sigma_i) v_i$ for an SVD of $A$.
+* §2.6.2, `GolubVanLoan.Chapter02.perturbed_solution_hasDerivAt`: $\dot x(0) = A^{-1}(f - Fx)$.
+* Equation (2.6.2), `GolubVanLoan.Chapter02.equation_2_6_2`: a bound on
+  $\|x(\epsilon) - x\|_p / \|x\|_p$ in terms of $\|A^{-1}\|_p$, $\|f\|_p$ and $\|F\|_p$.
+* `GolubVanLoan.Chapter02.kappa_of_isUnit` and `GolubVanLoan.Chapter02.kappa_of_not_isUnit`: the
+  value of $\kappa_p(A)$ for nonsingular and for singular $A$.
+* Equation (2.6.4), `GolubVanLoan.Chapter02.equation_2_6_4`: the relative error of $x(\epsilon)$ is
+  at most $\kappa_p(A)(\rho_A + \rho_b)$ up to a factor $1 + O(\epsilon)$.
+* Equation (2.6.5), `GolubVanLoan.Chapter02.equation_2_6_5`: $\kappa_2(A) = \sigma_{\max}(A) /
+  \sigma_{\min}(A)$.
+* Equation (2.6.6), `GolubVanLoan.Chapter02.equation_2_6_6`: $1/\kappa_p(A)$ is the least relative
+  distance $\|\Delta A\|_p / \|A\|_p$ to a singular matrix $A + \Delta A$.
+* Equation (2.6.7), `GolubVanLoan.Chapter02.equation_2_6_7`: $\kappa_p(A)$ is a normalized
+  derivative of $A \mapsto A^{-1}$.
+* Equation (2.6.8), `GolubVanLoan.Chapter02.equation_2_6_8`: the equivalence of $\kappa_1$,
+  $\kappa_2$ and $\kappa_\infty$ up to factors $n$ and $n^2$.
+* §2.6.2, `GolubVanLoan.Chapter02.one_le_kappa`: $\kappa_p(A) \ge 1$.
+* §2.6.2, `GolubVanLoan.Chapter02.kappa_two_eq_one_of_mem_orthogonalGroup`: $\kappa_2(Q) = 1$ for
+  orthogonal $Q$.
+* Equation (2.6.9), `GolubVanLoan.Chapter02.equation_2_6_9`: the matrix $B_n$ has $\det(B_n) = 1$
+  and $\kappa_\infty(B_n) = n 2^{n-1}$.
+* §2.6.3, `GolubVanLoan.Chapter02.condNumberLp_diag_tenth`: $D_n = \operatorname{diag}(10^{-1},
+  \dots, 10^{-1})$ has $\kappa_p(D_n) = 1$ and $\det(D_n) = 10^{-n}$.
+* Lemma 2.6.1, `GolubVanLoan.Chapter02.lemma_2_6_1`: $A + \Delta A$ is nonsingular and
+  $\|y\|_p / \|x\|_p \le (1 + r)/(1 - r)$.
+* Equation (2.6.11), `GolubVanLoan.Chapter02.equation_2_6_11`:
+  $y - x = A^{-1} \Delta b - A^{-1} \Delta A \, y$.
+* Theorem 2.6.2 with (2.6.10), `GolubVanLoan.Chapter02.theorem_2_6_2`: $\|y - x\|_p / \|x\|_p \le
+  2\epsilon \kappa_p(A) / (1 - r)$.
+* §2.6.5, `GolubVanLoan.Chapter02.skeelCond_eq_and_le_condNumberLp`: the Skeel condition number is
+  at most $\kappa_\infty(A)$.
+* Theorem 2.6.3 with (2.6.12), `GolubVanLoan.Chapter02.theorem_2_6_3`: the componentwise bound
+  $\|y - x\|_\infty / \|x\|_\infty \le 2\epsilon \| |A^{-1}| |A| \|_\infty / (1 - r)$.
+* Equation (2.6.13), `GolubVanLoan.Chapter02.equation_2_6_13`: the Oettli–Prager theorem on the
+  componentwise backward error.
 
 ## Conventions
 
-Norms are the `p`-norms, `p : ℝ≥0∞` with `[Fact (1 ≤ p)]`: `‖x‖_p = ‖WithLp.toLp p x‖`,
-`‖A‖_p = Matrix.lpOpNorm p A`. The book's "any vector norm and consistent matrix norm" is the
-backbone's operator statement (`Numlib/Conditioning/LinearSystem`, on any normed space), which
-this file instantiates at `PiLp p` through `Matrix.lpCLM` and `Matrix.lpEquiv`. The condition
-number `κ_p(A) = ‖A‖_p ‖A⁻¹‖_p` is the backbone's real-valued `Matrix.condNumberLp p A`, used under
-an explicit `IsUnit A`; the book's convention `κ(A) = ∞` for singular `A` is the surface
-definition `kappa`. The first-order bounds (2.6.2) and (2.6.4), printed with `+ O(ε²)`, are stated
-in the rigorous form whose factor `1 / (1 - |ε| ‖A⁻¹‖ ‖F‖) = 1 + O(ε)` produces the `O(ε²)` term.
-`σ_max(A)` and `σ_min(A)` in (2.6.5) are §2.4's `sigmaMax` and `sigmaMin` (the convention of
-`NumlibSurface/GolubVanLoan`). An SVD `A = U Σ Vᵀ` in (2.6.1) is given by its three factors.
+* Norms are the $p$-norms for `p : ℝ≥0∞` with `[Fact (1 ≤ p)]`: $\|x\|_p$ is `‖WithLp.toLp p x‖` and
+  $\|A\|_p$ is `Matrix.lpOpNorm p A`. The phrase "any vector norm and consistent matrix norm" of the
+  source is the operator statement of the backbone module `Numlib.Conditioning.LinearSystem` on any
+  normed space, which this module applies to `PiLp p` through `Matrix.lpCLM` and `Matrix.lpEquiv`.
+* The condition number $\kappa_p(A) = \|A\|_p \|A^{-1}\|_p$ is the real number
+  `Matrix.condNumberLp p A`, used under an explicit hypothesis `IsUnit A`; it is $0$ for singular
+  $A$. The convention $\kappa(A) = \infty$ of the source for singular $A$ is the definition
+  `GolubVanLoan.Chapter02.kappa`.
+* The source states (2.6.2) and (2.6.4) with a term $O(\epsilon^2)$. The theorems state rigorous
+  bounds with the factor $1/(1 - |\epsilon| \|A^{-1}\| \|F\|) = 1 + O(\epsilon)$, which gives the
+  $O(\epsilon^2)$ term.
+* $\sigma_{\max}(A)$ and $\sigma_{\min}(A)$ in (2.6.5) are `GolubVanLoan.Chapter02.sigmaMax` and
+  `GolubVanLoan.Chapter02.sigmaMin` of §2.4. The SVD $A = U \Sigma V^T$ in (2.6.1) is given by its
+  three factors.
 
-## Sources
+## Deviations from the source
 
-Backbone `Numlib/Conditioning/LinearSystem` (+ `/Componentwise`: the Skeel number and
-Oettli–Prager), `Numlib/Analysis/Matrix/OperatorNorm` (`Matrix.condNumberLp`, `Matrix.lpEquiv`),
-`Numlib/LinearAlgebra/Matrix/SVD`. The `2 × 2` example after Theorem 2.6.2 (the bound attained or
-not) is a numerical example.
+* **Lemma 2.6.1** (reading). The source carries the nonsingularity of $A$ through the convention
+  $\kappa(A) = \infty$. The lemma has the explicit hypothesis that $A$ is nonsingular. See
+  `GolubVanLoan.Chapter02.lemma_2_6_1`.
+* **Theorem 2.6.3** (typo). The source prints the hypothesis as $\delta \kappa_\infty(A) = r < 1$,
+  with $\delta$ for $\epsilon$. See `GolubVanLoan.Chapter02.theorem_2_6_3`.
 
-## Readings and errata
+## Not formalized
 
-Lemma 2.6.1 carries the nonsingularity of `A` through the convention `κ = ∞`; it is an explicit
-hypothesis here. Theorem 2.6.3 prints its hypothesis as "`δ κ_∞(A) = r < 1`", a typo for `ε`, and
-its second display "`(A + ΔA) y, = b + ΔbΔA ∈ …`" is conversion damage for
-`(A + ΔA) y = b + Δb`, `ΔA ∈ ℝ^{n×n}`, `Δb ∈ ℝⁿ`.
+* **The $2 \times 2$ example after Theorem 2.6.2**, which shows that the bound can be attained or
+  not. It is a numerical example.
 -/
 
 open Filter Finset Matrix Topology WithLp
@@ -53,9 +111,10 @@ namespace GolubVanLoan.Chapter02
 
 variable {n : ℕ}
 
-/-! ### Glue between matrices and operators on `PiLp p` -/
+/-! ### Matrices as operators on `PiLp p` -/
 
-/-- The operator condition number of the coercion of `Matrix.lpEquiv`. -/
+/-- For nonsingular $A \in \mathbb{R}^{n \times n}$, the condition number of the operator
+`Matrix.lpEquiv p hA` on `PiLp p` is $\kappa_p(A)$. -/
 private theorem condNumber_coe_lpEquiv (p : ℝ≥0∞) [Fact (1 ≤ p)] {A : Matrix (Fin n) (Fin n) ℝ}
     (hA : IsUnit A) :
     NormedRing.condNumber
@@ -63,8 +122,9 @@ private theorem condNumber_coe_lpEquiv (p : ℝ≥0∞) [Fact (1 ≤ p)] {A : Ma
       condNumberLp p A := by
   rw [coe_lpEquiv, condNumberLp_eq_condNumber]
 
-/-- A perturbation with `‖ΔA‖_p ≤ ε ‖A‖_p` and `ε κ_p(A) < 1` keeps `A` nonsingular (Theorem 2.3.4,
-since `‖A⁻¹ ΔA‖_p ≤ ε κ_p(A)`). -/
+/-- If $A$ is nonsingular, $\|\Delta A\|_p \le \epsilon \|A\|_p$ and $\epsilon \kappa_p(A) < 1$,
+then $A + \Delta A$ is nonsingular, by Theorem 2.3.4 and
+$\|A^{-1} \Delta A\|_p \le \epsilon \kappa_p(A)$. -/
 private theorem isUnit_add_of_lpOpNorm_le (p : ℝ≥0∞) [Fact (1 ≤ p)]
     {A ΔA : Matrix (Fin n) (Fin n) ℝ} (hA : IsUnit A) {ε : ℝ}
     (hΔA : lpOpNorm p ΔA ≤ ε * lpOpNorm p A) (hr : ε * condNumberLp p A < 1) :
@@ -77,8 +137,13 @@ private theorem isUnit_add_of_lpOpNorm_le (p : ℝ≥0∞) [Fact (1 ≤ p)]
 
 /-! ### §2.6.1 An SVD analysis -/
 
-/-- **(2.6.1)**: if `A = U Σ Vᵀ` is an SVD of a nonsingular `A`, then
-`x = A⁻¹ b = ∑ᵢ (uᵢᵀ b / σᵢ) vᵢ`. -/
+/-- **Equation (2.6.1)** of [golub2013matrix]. Let $A \in \mathbb{R}^{n \times n}$ be nonsingular,
+and let $U, V \in \mathbb{R}^{n \times n}$ be orthogonal with $U^T A V =
+\operatorname{diag}(\sigma_1, \dots, \sigma_n)$. Then for every $b \in \mathbb{R}^n$,
+$$x = A^{-1} b = \sum_{i=1}^n \frac{u_i^T b}{\sigma_i} v_i.$$
+
+The vectors $u_i$ and $v_i$ are the columns `U.col i` and `V.col i`. The theorem does not
+require the $\sigma_i$ to be sorted or nonnegative. -/
 theorem equation_2_6_1 {A U V : Matrix (Fin n) (Fin n) ℝ} (hA : IsUnit A)
     (hU : U ∈ orthogonalGroup (Fin n) ℝ) (hV : V ∈ orthogonalGroup (Fin n) ℝ) {σ : ℕ → ℝ}
     (h : Uᵀ * A * V = diagonal fun i : Fin n => σ i) (b : Fin n → ℝ) :
@@ -96,9 +161,15 @@ theorem equation_2_6_1 {A U V : Matrix (Fin n) (Fin n) ℝ} (hA : IsUnit A)
 
 /-! ### §2.6.2 Condition -/
 
-/-- **§2.6.2**: for nonsingular `A`, the solution `x(ε) = (A + εF)⁻¹ (b + εf)` of the parameterized
-system `(A + εF) x(ε) = b + εf` is differentiable at `0` with `ẋ(0) = A⁻¹ (f - F x)`,
-`x = A⁻¹ b`. -/
+/-- **Section 2.6.2** of [golub2013matrix], the derivative of the perturbed solution. Let
+$A \in \mathbb{R}^{n \times n}$ be nonsingular, let $F \in \mathbb{R}^{n \times n}$ and
+$b, f \in \mathbb{R}^n$, and let $x(\epsilon) = (A + \epsilon F)^{-1}(b + \epsilon f)$ be the
+solution of $(A + \epsilon F) x(\epsilon) = b + \epsilon f$. Then $x(\epsilon)$ is
+differentiable at $\epsilon = 0$ and
+$$\dot x(0) = A^{-1}(f - Fx), \qquad x = A^{-1} b.$$
+
+The inverse is the matrix inverse of Mathlib, which is $0$ at a singular matrix;
+$A + \epsilon F$ is nonsingular for small $|\epsilon|$. -/
 theorem perturbed_solution_hasDerivAt {A : Matrix (Fin n) (Fin n) ℝ} (hA : IsUnit A)
     (F : Matrix (Fin n) (Fin n) ℝ) (b f : Fin n → ℝ) :
     HasDerivAt (fun ε : ℝ => (A + ε • F)⁻¹ *ᵥ (b + ε • f)) (A⁻¹ *ᵥ (f - F *ᵥ (A⁻¹ *ᵥ b))) 0 := by
@@ -113,9 +184,17 @@ theorem perturbed_solution_hasDerivAt {A : Matrix (Fin n) (Fin n) ℝ} (hA : IsU
   simp_rw [key] at h
   exact (PiLp.hasFDerivAt_ofLp (𝕜 := ℝ) 2 _).comp_hasDerivAt 0 h
 
-/-- **(2.6.2), rigorous form.** With `x(ε)` as above, `x ≠ 0` and `|ε| ‖A⁻¹‖_p ‖F‖_p < 1`,
-`‖x(ε) - x‖_p / ‖x‖_p ≤ |ε| ‖A⁻¹‖_p (‖f‖_p / ‖x‖_p + ‖F‖_p) / (1 - |ε| ‖A⁻¹‖_p ‖F‖_p)`; the book's
-`+ O(ε²)` is the factor `1 / (1 - |ε| ‖A⁻¹‖ ‖F‖) = 1 + O(ε)`. -/
+/-- **Equation (2.6.2)** of [golub2013matrix], in rigorous form. Let $1 \le p \le \infty$, let
+$A \in \mathbb{R}^{n \times n}$ be nonsingular, let $F \in \mathbb{R}^{n \times n}$ and
+$b, f \in \mathbb{R}^n$, and let $x \neq 0$ solve $Ax = b$. If
+$|\epsilon| \|A^{-1}\|_p \|F\|_p < 1$, then $x(\epsilon) = (A + \epsilon F)^{-1}(b + \epsilon
+f)$ satisfies
+$$\frac{\|x(\epsilon) - x\|_p}{\|x\|_p} \le \frac{|\epsilon| \|A^{-1}\|_p}{1 - |\epsilon|
+  \|A^{-1}\|_p \|F\|_p} \Big( \frac{\|f\|_p}{\|x\|_p} + \|F\|_p \Big).$$
+
+The source states the first-order bound $|\epsilon| \|A^{-1}\| (\|f\|/\|x\| + \|F\|) +
+O(\epsilon^2)$. The term $O(\epsilon^2)$ comes from the factor $1/(1 - |\epsilon| \|A^{-1}\|
+\|F\|) = 1 + O(\epsilon)$. -/
 theorem equation_2_6_2 (p : ℝ≥0∞) [Fact (1 ≤ p)] {A F : Matrix (Fin n) (Fin n) ℝ} (hA : IsUnit A)
     {b f x : Fin n → ℝ} (hx : A *ᵥ x = b) (hx0 : x ≠ 0) {ε : ℝ}
     (hε : |ε| * lpOpNorm p A⁻¹ * lpOpNorm p F < 1) :
@@ -142,25 +221,40 @@ theorem equation_2_6_2 (p : ℝ≥0∞) [Fact (1 ≤ p)] {A F : Matrix (Fin n) (
   ring_nf
 
 open Classical in
-/-- **(2.6.3), the condition number** `κ(A) = ‖A‖ ‖A⁻¹‖` in the `p`-norm, with the book's
-convention `κ(A) = ∞` for singular `A`. -/
+/-- **Equation (2.6.3)** of [golub2013matrix], the condition number. Let $1 \le p \le \infty$. For
+$A \in \mathbb{R}^{n \times n}$, the **condition number** is
+$$\kappa_p(A) = \|A\|_p \|A^{-1}\|_p$$
+if $A$ is nonsingular, and $\kappa_p(A) = \infty$ if $A$ is singular.
+
+The value is in `ℝ≥0∞`: it is `ENNReal.ofReal (Matrix.condNumberLp p A)` for nonsingular $A$ and
+`⊤` otherwise. -/
 noncomputable def kappa (p : ℝ≥0∞) [Fact (1 ≤ p)] (A : Matrix (Fin n) (Fin n) ℝ) : ℝ≥0∞ :=
   if IsUnit A then ENNReal.ofReal (condNumberLp p A) else ⊤
 
-/-- For nonsingular `A`, `kappa` is the backbone's `κ_p(A) = ‖A‖_p ‖A⁻¹‖_p`. -/
+/-- For nonsingular $A \in \mathbb{R}^{n \times n}$, `GolubVanLoan.Chapter02.kappa p A` is the real
+condition number $\kappa_p(A) = \|A\|_p \|A^{-1}\|_p$ of the backbone,
+`Matrix.condNumberLp p A`. -/
 theorem kappa_of_isUnit (p : ℝ≥0∞) [Fact (1 ≤ p)] {A : Matrix (Fin n) (Fin n) ℝ}
     (hA : IsUnit A) : kappa p A = ENNReal.ofReal (condNumberLp p A) :=
   ite_eq_left hA
 
-/-- For singular `A`, `κ(A) = ∞`. -/
+/-- For singular $A \in \mathbb{R}^{n \times n}$, $\kappa_p(A) = \infty$. -/
 theorem kappa_of_not_isUnit (p : ℝ≥0∞) [Fact (1 ≤ p)] {A : Matrix (Fin n) (Fin n) ℝ}
     (hA : ¬ IsUnit A) : kappa p A = ⊤ :=
   ite_eq_right hA
 
-/-- **(2.6.4), rigorous form.** With `x(ε)` as above, `x ≠ 0`, `b ≠ 0` and
-`|ε| ‖A⁻¹‖_p ‖F‖_p < 1`,
-`‖x(ε) - x‖_p / ‖x‖_p ≤ κ_p(A) / (1 - |ε| ‖A⁻¹‖_p ‖F‖_p) · (ρ_A + ρ_b)` with
-the relative errors `ρ_A = |ε| ‖F‖_p / ‖A‖_p` and `ρ_b = |ε| ‖f‖_p / ‖b‖_p`. -/
+/-- **Equation (2.6.4)** of [golub2013matrix], in rigorous form. Let $1 \le p \le \infty$, let
+$A \in \mathbb{R}^{n \times n}$ be nonsingular, let $F \in \mathbb{R}^{n \times n}$ and
+$b, f \in \mathbb{R}^n$ with $b \neq 0$, and let $x \neq 0$ solve $Ax = b$. If
+$|\epsilon| \|A^{-1}\|_p \|F\|_p < 1$, then $x(\epsilon) = (A + \epsilon F)^{-1}(b + \epsilon
+f)$ satisfies
+$$\frac{\|x(\epsilon) - x\|_p}{\|x\|_p} \le \frac{\kappa_p(A)}{1 - |\epsilon| \|A^{-1}\|_p
+  \|F\|_p} (\rho_A + \rho_b),$$
+where $\rho_A = |\epsilon| \|F\|_p / \|A\|_p$ and $\rho_b = |\epsilon| \|f\|_p / \|b\|_p$ are
+the relative errors in $A$ and $b$.
+
+The source states the first-order bound $\kappa(A)(\rho_A + \rho_b) + O(\epsilon^2)$. The
+condition number is `Matrix.condNumberLp p A`. -/
 theorem equation_2_6_4 (p : ℝ≥0∞) [Fact (1 ≤ p)] {A F : Matrix (Fin n) (Fin n) ℝ} (hA : IsUnit A)
     {b f x : Fin n → ℝ} (hx : A *ᵥ x = b) (hx0 : x ≠ 0) (hb : b ≠ 0) {ε : ℝ}
     (hε : |ε| * lpOpNorm p A⁻¹ * lpOpNorm p F < 1) :
@@ -189,7 +283,9 @@ section L2
 
 open scoped Matrix.Norms.L2Operator
 
-/-- **(2.6.5)**: `κ₂(A) = ‖A‖₂ ‖A⁻¹‖₂ = σ_max(A) / σ_min(A)` for nonsingular `A`. -/
+/-- **Equation (2.6.5)** of [golub2013matrix]. For nonsingular $A \in \mathbb{R}^{n \times n}$,
+$$\kappa_2(A) = \|A\|_2 \|A^{-1}\|_2 = \frac{\sigma_{\max}(A)}{\sigma_{\min}(A)}.$$
+-/
 theorem equation_2_6_5 {A : Matrix (Fin n) (Fin n) ℝ} (hA : IsUnit A) :
     condNumberLp 2 A = lpOpNorm 2 A * lpOpNorm 2 A⁻¹ ∧
       condNumberLp 2 A = sigmaMax A / sigmaMin A := by
@@ -205,9 +301,13 @@ theorem equation_2_6_5 {A : Matrix (Fin n) (Fin n) ℝ} (hA : IsUnit A) :
 
 end L2
 
-/-- **(2.6.6), Kahan**: `1 / κ_p(A) = min_{A + ΔA singular} ‖ΔA‖_p / ‖A‖_p` for nonsingular
-`A ∈ ℝ^{n×n}`, `n ≥ 1`: `κ_p(A)` measures the relative distance from `A` to the singular
-matrices. -/
+/-- **Equation (2.6.6)** of [golub2013matrix], a result of Kahan. Let $1 \le p \le \infty$, and let
+$A \in \mathbb{R}^{n \times n}$ be nonsingular with $n \ge 1$. Then
+$$\frac{1}{\kappa_p(A)} = \min_{A + \Delta A \text{ singular}} \frac{\|\Delta A\|_p}{\|A\|_p}.$$
+So $\kappa_p(A)$ measures the relative distance from $A$ to the set of singular matrices.
+
+The minimum is an `IsLeast` statement: the value $1/\kappa_p(A)$ is attained by some $\Delta A$,
+and no singular $A + \Delta A$ is closer. -/
 theorem equation_2_6_6 (p : ℝ≥0∞) [Fact (1 ≤ p)] {A : Matrix (Fin n) (Fin n) ℝ} (hA : IsUnit A)
     (hn : 0 < n) :
     IsLeast {r : ℝ | ∃ ΔA : Matrix (Fin n) (Fin n) ℝ, ¬ IsUnit (A + ΔA) ∧
@@ -226,9 +326,14 @@ theorem equation_2_6_6 (p : ℝ≥0∞) [Fact (1 ≤ p)] {A : Matrix (Fin n) (Fi
     rw [lpCLMEquiv_apply, ← lpCLM_add, isUnit_lpCLM_iff] at ht
     exact ⟨ΔA, ht, rfl⟩
 
-/-- **(2.6.7)**: the condition number is a normalized Fréchet derivative of `A ↦ A⁻¹`,
-`κ_p(A) = lim_{ε → 0⁺} sup_{‖ΔA‖_p ≤ ε ‖A‖_p} ‖(A + ΔA)⁻¹ - A⁻¹‖_p / (ε ‖A⁻¹‖_p)` for nonsingular
-`A`, `n ≥ 1`. -/
+/-- **Equation (2.6.7)** of [golub2013matrix]: the condition number is a normalized Fréchet
+derivative of the map $A \mapsto A^{-1}$. Let $1 \le p \le \infty$, and let
+$A \in \mathbb{R}^{n \times n}$ be nonsingular with $n \ge 1$. Then
+$$\kappa_p(A) = \lim_{\epsilon \to 0^+} \sup_{\|\Delta A\|_p \le \epsilon \|A\|_p} \frac{\|(A +
+  \Delta A)^{-1} - A^{-1}\|_p}{\epsilon \|A^{-1}\|_p}.$$
+
+The supremum is the real supremum `iSup`, and $(A + \Delta A)^{-1}$ is the inverse of Mathlib,
+which is $0$ at a singular matrix. -/
 theorem equation_2_6_7 (p : ℝ≥0∞) [Fact (1 ≤ p)] {A : Matrix (Fin n) (Fin n) ℝ} (hA : IsUnit A)
     (hn : 0 < n) :
     Tendsto (fun ε : ℝ => (⨆ ΔA : {ΔA : Matrix (Fin n) (Fin n) ℝ //
@@ -249,8 +354,14 @@ theorem equation_2_6_7 (p : ℝ≥0∞) [Fact (1 ≤ p)] {A : Matrix (Fin n) (Fi
   rw [← lpCLM_add, ringInverse_lpCLM, ← lpCLM_sub]
   rfl
 
-/-- **(2.6.8)**: on `ℝ^{n×n}`, `(1/n) κ₂ ≤ κ₁ ≤ n κ₂`, `(1/n) κ_∞ ≤ κ₂ ≤ n κ_∞` and
-`(1/n²) κ₁ ≤ κ_∞ ≤ n² κ₁`: any two condition numbers are equivalent. -/
+/-- **Equation (2.6.8)** of [golub2013matrix]: any two of the condition numbers $\kappa_1$,
+$\kappa_2$ and $\kappa_\infty$ are equivalent. For $A \in \mathbb{R}^{n \times n}$,
+$$\frac{1}{n} \kappa_2(A) \le \kappa_1(A) \le n \kappa_2(A), \qquad \frac{1}{n} \kappa_\infty(A)
+  \le \kappa_2(A) \le n \kappa_\infty(A), \qquad \frac{1}{n^2} \kappa_1(A) \le \kappa_\infty(A)
+  \le n^2 \kappa_1(A).$$
+
+The condition numbers are `Matrix.condNumberLp`, which is $0$ at a singular matrix, so the
+inequalities hold for every $A$. For $n = 0$ the Lean value of $1/n$ is $0$. -/
 theorem equation_2_6_8 (A : Matrix (Fin n) (Fin n) ℝ) :
     1 / (n : ℝ) * condNumberLp 2 A ≤ condNumberLp 1 A ∧ condNumberLp 1 A ≤ n * condNumberLp 2 A ∧
       1 / (n : ℝ) * condNumberLp ∞ A ≤ condNumberLp 2 A ∧
@@ -277,7 +388,10 @@ section L2
 
 open scoped Matrix.Norms.L2Operator
 
-/-- **§2.6.2**: `κ_p(A) ≥ 1` for every `A ∈ ℝ^{n×n}`, `n ≥ 1` (for singular `A`, `κ = ∞`). -/
+/-- **Section 2.6.2** of [golub2013matrix]. Let $1 \le p \le \infty$ and $n \ge 1$. For every
+$A \in \mathbb{R}^{n \times n}$, $\kappa_p(A) \ge 1$.
+
+For singular $A$ this holds because $\kappa_p(A) = \infty$. -/
 theorem one_le_kappa (p : ℝ≥0∞) [Fact (1 ≤ p)] (hn : 0 < n) (A : Matrix (Fin n) (Fin n) ℝ) :
     1 ≤ kappa p A := by
   have : Nonempty (Fin n) := ⟨⟨0, hn⟩⟩
@@ -287,8 +401,10 @@ theorem one_le_kappa (p : ℝ≥0∞) [Fact (1 ≤ p)] (hn : 0 < n) (A : Matrix 
   · rw [kappa_of_not_isUnit p hA]
     exact le_top
 
-/-- **§2.6.2**: orthogonal matrices are perfectly conditioned in the 2-norm,
-`κ₂(Q) = ‖Q‖₂ ‖Qᵀ‖₂ = 1` (`n ≥ 1`). -/
+/-- **Section 2.6.2** of [golub2013matrix]: orthogonal matrices are perfectly conditioned in the
+2-norm. Let $n \ge 1$ and let $Q \in \mathbb{R}^{n \times n}$ be orthogonal. Then
+$$\kappa_2(Q) = \|Q\|_2 \|Q^T\|_2 = 1.$$
+-/
 theorem kappa_two_eq_one_of_mem_orthogonalGroup (hn : 0 < n) {Q : Matrix (Fin n) (Fin n) ℝ}
     (hQ : Q ∈ orthogonalGroup (Fin n) ℝ) : kappa 2 Q = 1 := by
   have : Nonempty (Fin n) := ⟨⟨0, hn⟩⟩
@@ -302,11 +418,13 @@ end L2
 
 /-! ### §2.6.3 Determinants and nearness to singularity -/
 
-/-- The entries of the matrix `Bₙ` of (2.6.9) on natural indices. -/
+/-- The entries of the matrix $B_n$ of (2.6.9) on natural number indices: $1$ on the diagonal, $-1$
+above it and $0$ below it. -/
 private def bEntry (i k : ℕ) : ℝ :=
   if i = k then 1 else if i < k then -1 else 0
 
-/-- The entries of `Bₙ⁻¹` on natural indices: `1` on the diagonal, `2^{j-i-1}` above it. -/
+/-- The entries of $B_n^{-1}$ on natural number indices: $1$ on the diagonal, $2^{j-i-1}$ at the
+position $(i, j)$ above it and $0$ below it. -/
 private def cEntry (k j : ℕ) : ℝ :=
   if k = j then 1 else if k < j then 2 ^ (j - k - 1) else 0
 
@@ -319,7 +437,7 @@ private theorem bEntry_of_gt {i k : ℕ} (h : i < k) : bEntry i k = -1 := by
 private theorem cEntry_of_gt {k j : ℕ} (h : j < k) : cEntry k j = 0 := by
   simp [cEntry, show k ≠ j by omega, show ¬ k < j by omega]
 
-/-- The columns of `Bₙ⁻¹` double: `c_{k,j+1} = 2 c_{k,j} - δ_{k,j} + δ_{k,j+1}`. -/
+/-- The columns of $B_n^{-1}$ double: $c_{k,j+1} = 2 c_{kj} - \delta_{kj} + \delta_{k,j+1}$. -/
 private theorem cEntry_succ (k j : ℕ) :
     cEntry k (j + 1) = 2 * cEntry k j - (if k = j then 1 else 0) +
       (if k = j + 1 then 1 else 0) := by
@@ -335,7 +453,7 @@ private theorem cEntry_succ (k j : ℕ) :
     · rw [cEntry_of_gt h, cEntry_of_gt h']
       simp [show k ≠ j by omega, show k ≠ j + 1 by omega]
 
-/-- One more column: `∑ₖ b_{ik} c_{k,j+1} = 2 ∑ₖ b_{ik} c_{kj} - b_{ij} + b_{i,j+1}`. -/
+/-- For $j + 1 < n$, $\sum_k b_{ik} c_{k,j+1} = 2 \sum_k b_{ik} c_{kj} - b_{ij} + b_{i,j+1}$. -/
 private theorem sum_bEntry_mul_cEntry_succ {n i j : ℕ} (hj : j + 1 < n) :
     ∑ k ∈ range n, bEntry i k * cEntry k (j + 1) =
       2 * ∑ k ∈ range n, bEntry i k * cEntry k j - bEntry i j + bEntry i (j + 1) := by
@@ -347,7 +465,7 @@ private theorem sum_bEntry_mul_cEntry_succ {n i j : ℕ} (hj : j + 1 < n) :
   rw [Finset.sum_add_distrib, Finset.sum_sub_distrib, ← Finset.mul_sum, Finset.sum_ite_eq',
     Finset.sum_ite_eq', ite_eq_left (mem_range.2 (by omega)), ite_eq_left (mem_range.2 hj)]
 
-/-- Row `i` of `Bₙ` against column `j < i` of `Bₙ⁻¹`. -/
+/-- For $j < i$, row $i$ of $B_n$ times column $j$ of $B_n^{-1}$ is $0$. -/
 private theorem sum_bEntry_mul_cEntry_of_lt {n i j : ℕ} (hji : j < i) :
     ∑ k ∈ range n, bEntry i k * cEntry k j = 0 := by
   refine Finset.sum_eq_zero fun k _ => ?_
@@ -355,7 +473,7 @@ private theorem sum_bEntry_mul_cEntry_of_lt {n i j : ℕ} (hji : j < i) :
   · rw [cEntry_of_gt (by omega), mul_zero]
   · rw [bEntry_of_lt (by omega), zero_mul]
 
-/-- Row `i` of `Bₙ` against column `i` of `Bₙ⁻¹`. -/
+/-- For $i < n$, row $i$ of $B_n$ times column $i$ of $B_n^{-1}$ is $1$. -/
 private theorem sum_bEntry_mul_cEntry_self {n i : ℕ} (hi : i < n) :
     ∑ k ∈ range n, bEntry i k * cEntry k i = 1 := by
   rw [Finset.sum_eq_single_of_mem i (mem_range.2 hi)]
@@ -365,7 +483,8 @@ private theorem sum_bEntry_mul_cEntry_self {n i : ℕ} (hi : i < n) :
     · rw [bEntry_of_lt h, zero_mul]
     · rw [cEntry_of_gt h, mul_zero]
 
-/-- Row `i` of `Bₙ` against column `j > i` of `Bₙ⁻¹`, by induction on `j`. -/
+/-- For $j > i$, row $i$ of $B_n$ times column $j$ of $B_n^{-1}$ is $0$; the proof is by induction
+on $j$. -/
 private theorem sum_bEntry_mul_cEntry_of_gt {n i : ℕ} (d : ℕ) (hj : i + 1 + d < n) :
     ∑ k ∈ range n, bEntry i k * cEntry k (i + 1 + d) = 0 := by
   induction d with
@@ -379,7 +498,7 @@ private theorem sum_bEntry_mul_cEntry_of_gt {n i : ℕ} (d : ℕ) (hj : i + 1 + 
       bEntry_of_gt (by omega : i < i + 1 + d + 1)]
     ring
 
-/-- `Bₙ Bₙ⁻¹ = I` on natural indices. -/
+/-- $B_n B_n^{-1} = I$ on natural number indices. -/
 private theorem sum_bEntry_mul_cEntry {n i j : ℕ} (hi : i < n) (hj : j < n) :
     ∑ k ∈ range n, bEntry i k * cEntry k j = if i = j then 1 else 0 := by
   rcases lt_trichotomy j i with hji | rfl | hij
@@ -388,7 +507,7 @@ private theorem sum_bEntry_mul_cEntry {n i j : ℕ} (hi : i < n) (hj : j < n) :
   · obtain ⟨d, rfl⟩ : ∃ d, j = i + 1 + d := ⟨j - i - 1, by omega⟩
     rw [ite_eq_right (by omega), sum_bEntry_mul_cEntry_of_gt d hj]
 
-/-- The row sums of `|Bₙ|`: `∑_{k < m} |b_{ik}| = m - i` for `i ≤ m`. -/
+/-- For $i \le m$, the row sums of $|B_n|$ satisfy $\sum_{k < m} |b_{ik}| = m - i$. -/
 private theorem sum_abs_bEntry {i m : ℕ} (hi : i ≤ m) :
     ∑ k ∈ range m, |bEntry i k| = ((m - i : ℕ) : ℝ) := by
   induction m, hi using Nat.le_induction with
@@ -403,7 +522,7 @@ private theorem sum_abs_bEntry {i m : ℕ} (hi : i ≤ m) :
     · simp [bEntry]
     · rw [bEntry_of_gt h, abs_neg, abs_one]
 
-/-- The row sums of `|Bₙ⁻¹|`: `∑_{k < m} |c_{ik}| = 2^{m-i-1}` for `i < m`. -/
+/-- For $i < m$, the row sums of $|B_n^{-1}|$ satisfy $\sum_{k < m} |c_{ik}| = 2^{m-i-1}$. -/
 private theorem sum_abs_cEntry {i m : ℕ} (hi : i < m) :
     ∑ k ∈ range m, |cEntry i k| = 2 ^ (m - i - 1) := by
   induction m, hi using Nat.le_induction with
@@ -418,14 +537,18 @@ private theorem sum_abs_cEntry {i m : ℕ} (hi : i < m) :
     rw [hc, abs_of_pos (by positivity)]
     ring
 
-/-- A finite supremum attained at the first index. -/
+/-- If a function $f$ on `Fin n` takes its largest value at the index $0$, then its supremum is
+$f(0)$. -/
 private theorem iSup_eq_of_le_zero (hn : 0 < n) {f : Fin n → ℝ} (h : ∀ i, f i ≤ f ⟨0, hn⟩) :
     ⨆ i, f i = f ⟨0, hn⟩ :=
   have : Nonempty (Fin n) := ⟨⟨0, hn⟩⟩
   le_antisymm (ciSup_le h) (le_ciSup (Set.finite_range f).bddAbove _)
 
-/-- **(2.6.9)**: the unit upper triangular `Bₙ` with `-1` above the diagonal has `det(Bₙ) = 1` but
-`κ_∞(Bₙ) = n · 2^{n-1}`: determinant size does not measure conditioning. -/
+/-- **Equation (2.6.9)** of [golub2013matrix]. Let $n \ge 1$, and let
+$B_n \in \mathbb{R}^{n \times n}$ be the unit upper triangular matrix with every entry above the
+diagonal equal to $-1$. Then
+$$\det(B_n) = 1, \qquad \kappa_\infty(B_n) = n \, 2^{n-1}.$$
+So the size of the determinant does not measure the conditioning of a matrix. -/
 theorem equation_2_6_9 (hn : 0 < n) :
     (of fun i j : Fin n => if i = j then (1 : ℝ) else if i < j then -1 else 0).det = 1 ∧
       condNumberLp ∞ (of fun i j : Fin n => if i = j then (1 : ℝ) else if i < j then -1 else 0) =
@@ -460,8 +583,10 @@ theorem equation_2_6_9 (hn : 0 < n) :
         pow_le_pow_right₀ one_le_two (by dsimp only; omega)]
     simp
 
-/-- **§2.6.3**: `Dₙ = diag(10⁻¹, …, 10⁻¹)` is perfectly conditioned, `κ_p(Dₙ) = 1`, although
-`det(Dₙ) = 10⁻ⁿ`: determinant size does not measure conditioning. -/
+/-- **Section 2.6.3** of [golub2013matrix]. Let $1 \le p \le \infty$ and $n \ge 1$, and let $D_n =
+\operatorname{diag}(10^{-1}, \dots, 10^{-1}) \in \mathbb{R}^{n \times n}$. Then
+$$\kappa_p(D_n) = 1, \qquad \det(D_n) = 10^{-n}.$$
+So $D_n$ is perfectly conditioned although its determinant is small. -/
 theorem condNumberLp_diag_tenth (p : ℝ≥0∞) [Fact (1 ≤ p)] (hn : 0 < n) :
     condNumberLp p (diagonal fun _ : Fin n => (10 : ℝ)⁻¹) = 1 ∧
       (diagonal fun _ : Fin n => (10 : ℝ)⁻¹).det = 10 ^ (-(n : ℤ)) := by
@@ -474,9 +599,17 @@ theorem condNumberLp_diag_tenth (p : ℝ≥0∞) [Fact (1 ≤ p)] (hn : 0 < n) :
 
 /-! ### §2.6.4 A rigorous norm bound -/
 
-/-- **Lemma 2.6.1.** Suppose `Ax = b` with `A` nonsingular and `b ≠ 0`, `(A + ΔA) y = b + Δb` with
-`‖ΔA‖_p ≤ ε ‖A‖_p` and `‖Δb‖_p ≤ ε ‖b‖_p`. If `ε κ_p(A) = r < 1`, then `A + ΔA` is nonsingular and
-`‖y‖_p / ‖x‖_p ≤ (1 + r) / (1 - r)`. -/
+/-- **Lemma 2.6.1** of [golub2013matrix]. Let $1 \le p \le \infty$, let
+$A \in \mathbb{R}^{n \times n}$ be nonsingular, let $b \in \mathbb{R}^n$ with $b \neq 0$, and
+let $Ax = b$. Let $\Delta A \in \mathbb{R}^{n \times n}$ and $\Delta b \in \mathbb{R}^n$ with
+$\|\Delta A\|_p \le \epsilon \|A\|_p$ and $\|\Delta b\|_p \le \epsilon \|b\|_p$, and let
+$(A + \Delta A) y = b + \Delta b$. If $r = \epsilon \kappa_p(A) < 1$, then $A + \Delta A$ is
+nonsingular and
+$$\frac{\|y\|_p}{\|x\|_p} \le \frac{1 + r}{1 - r}.$$
+
+**Reading.** The source carries the nonsingularity of $A$ through the convention
+$\kappa(A) = \infty$ for singular $A$. Here it is an explicit hypothesis, and $\kappa_p(A)$ is
+`Matrix.condNumberLp p A`. -/
 theorem lemma_2_6_1 (p : ℝ≥0∞) [Fact (1 ≤ p)] {A ΔA : Matrix (Fin n) (Fin n) ℝ}
     {b Δb x y : Fin n → ℝ} (hA : IsUnit A) (hx : A *ᵥ x = b) (hb : b ≠ 0)
     (hy : (A + ΔA) *ᵥ y = b + Δb) {ε : ℝ} (hΔA : lpOpNorm p ΔA ≤ ε * lpOpNorm p A)
@@ -492,15 +625,21 @@ theorem lemma_2_6_1 (p : ℝ≥0∞) [Fact (1 ≤ p)] {A ΔA : Matrix (Fin n) (F
     (by rw [coe_lpEquiv]; exact hΔA) hΔb (by rwa [condNumber_coe_lpEquiv]) (by simpa using hb)
   rwa [condNumber_coe_lpEquiv] at h
 
-/-- **(2.6.11)**: if `Ax = b` with `A` nonsingular and `(A + ΔA) y = b + Δb`, then
-`y - x = A⁻¹ Δb - A⁻¹ ΔA y`. -/
+/-- **Equation (2.6.11)** of [golub2013matrix]. Let $A \in \mathbb{R}^{n \times n}$ be nonsingular,
+let $Ax = b$, and let $(A + \Delta A) y = b + \Delta b$. Then
+$$y - x = A^{-1} \Delta b - A^{-1} \Delta A \, y.$$
+-/
 theorem equation_2_6_11 {A ΔA : Matrix (Fin n) (Fin n) ℝ} {b Δb x y : Fin n → ℝ}
     (hA : IsUnit A) (hx : A *ᵥ x = b) (hy : (A + ΔA) *ᵥ y = b + Δb) :
     y - x = A⁻¹ *ᵥ Δb - A⁻¹ *ᵥ (ΔA *ᵥ y) := by
   rw [sub_eq_inv_mulVec_of_mulVec_eq hA hx hy, mulVec_sub]
 
-/-- **Theorem 2.6.2, (2.6.10).** Under the hypotheses of Lemma 2.6.1,
-`‖y - x‖_p / ‖x‖_p ≤ 2ε / (1 - r) · κ_p(A)`. -/
+/-- **Theorem 2.6.2** of [golub2013matrix], with (2.6.10). Under the hypotheses of Lemma 2.6.1, that
+is, $1 \le p \le \infty$, $A$ nonsingular, $Ax = b$ with $b \neq 0$,
+$(A + \Delta A) y = b + \Delta b$, $\|\Delta A\|_p \le \epsilon \|A\|_p$,
+$\|\Delta b\|_p \le \epsilon \|b\|_p$ and $r = \epsilon \kappa_p(A) < 1$,
+$$\frac{\|y - x\|_p}{\|x\|_p} \le \frac{2\epsilon}{1 - r} \kappa_p(A).$$
+-/
 theorem theorem_2_6_2 (p : ℝ≥0∞) [Fact (1 ≤ p)] {A ΔA : Matrix (Fin n) (Fin n) ℝ}
     {b Δb x y : Fin n → ℝ} (hA : IsUnit A) (hx : A *ᵥ x = b) (hb : b ≠ 0)
     (hy : (A + ΔA) *ᵥ y = b + Δb) {ε : ℝ} (hΔA : lpOpNorm p ΔA ≤ ε * lpOpNorm p A)
@@ -516,15 +655,27 @@ theorem theorem_2_6_2 (p : ℝ≥0∞) [Fact (1 ≤ p)] {A ΔA : Matrix (Fin n) 
 
 /-! ### §2.6.5 More refined bounds -/
 
-/-- **§2.6.5, the Skeel condition number** `‖|A⁻¹| |A|‖_∞` (the backbone's `Matrix.skeelCond A`)
-is at most `κ_∞(A)`. -/
+/-- **Section 2.6.5** of [golub2013matrix], the Skeel condition number. For
+$A \in \mathbb{R}^{n \times n}$, the Skeel condition number `Matrix.skeelCond A` is
+$\| |A^{-1}| |A| \|_\infty$, and
+$$\| |A^{-1}| |A| \|_\infty \le \kappa_\infty(A).$$
+
+Here $|A|$ is the entrywise absolute value. Both sides are $0$ when $A$ is singular, because the
+inverse of Mathlib is then $0$. -/
 theorem skeelCond_eq_and_le_condNumberLp (A : Matrix (Fin n) (Fin n) ℝ) :
     skeelCond A = lpOpNorm ∞ (A⁻¹.abs * A.abs) ∧ skeelCond A ≤ condNumberLp ∞ A :=
   ⟨(lpOpNorm_top _).symm, skeelCond_le_condNumberLp_top A⟩
 
-/-- **Theorem 2.6.3, (2.6.12).** Suppose `Ax = b` with `A` nonsingular and `b ≠ 0`,
-`(A + ΔA) y = b + Δb`, `|ΔA| ≤ ε |A|` and `|Δb| ≤ ε |b|`. If `ε κ_∞(A) = r < 1`, then `A + ΔA` is
-nonsingular and `‖y - x‖_∞ / ‖x‖_∞ ≤ 2ε / (1 - r) · ‖|A⁻¹| |A|‖_∞`. -/
+/-- **Theorem 2.6.3** of [golub2013matrix], with (2.6.12). Let $A \in \mathbb{R}^{n \times n}$ be
+nonsingular, let $b \in \mathbb{R}^n$ with $b \neq 0$, and let $Ax = b$. Let
+$\Delta A \in \mathbb{R}^{n \times n}$ and $\Delta b \in \mathbb{R}^n$ with
+$|\Delta A| \le \epsilon |A|$ and $|\Delta b| \le \epsilon |b|$ entrywise, and let
+$(A + \Delta A) y = b + \Delta b$. If $r = \epsilon \kappa_\infty(A) < 1$, then $A + \Delta A$
+is nonsingular and
+$$\frac{\|y - x\|_\infty}{\|x\|_\infty} \le \frac{2\epsilon}{1 - r} \| |A^{-1}| |A| \|_\infty.$$
+
+**Typo.** The source prints the hypothesis as $\delta \kappa_\infty(A) = r < 1$; the intended
+quantity is $\epsilon$. -/
 theorem theorem_2_6_3 {A ΔA : Matrix (Fin n) (Fin n) ℝ} {b Δb x y : Fin n → ℝ} (hA : IsUnit A)
     (hx : A *ᵥ x = b) (hb : b ≠ 0) (hy : (A + ΔA) *ᵥ y = b + Δb) {ε : ℝ}
     (hΔA : ΔA.abs ≤ₑ ε • A.abs) (hΔb : |Δb| ≤ ε • |b|) (hr : ε * condNumberLp ∞ A < 1) :
@@ -557,12 +708,20 @@ theorem theorem_2_6_3 {A ΔA : Matrix (Fin n) (Fin n) ℝ} {b Δb x y : Fin n �
   refine div_le_div_of_nonneg_left (by positivity) (by linarith) ?_
   linarith [mul_le_mul_of_nonneg_left hsk hε0]
 
-/-- **(2.6.13), Oettli–Prager.** For given `A`, `b`, `x̂`, `E`, `f`, a perturbation
-`(A + ΔA) x̂ = b + Δb` with `|ΔA| ≤ ω |E|`, `|Δb| ≤ ω |f|` exists exactly when
-`|b - A x̂| ≤ ω (|E| |x̂| + |f|)`; the smallest such `ω ≥ 0` is
-`ω_min = max_i |A x̂ - b|_i / (|E| |x̂| + |f|)_i` (`Matrix.componentwiseBackwardError`) when every
-row with `(|E| |x̂| + |f|)_i = 0` has zero residual, and otherwise no `ω` exists (the book's
-`ω_min = ∞`); if `A x̂ = b`, then `ω_min = 0`. -/
+/-- **Equation (2.6.13)** of [golub2013matrix] (the Oettli–Prager theorem). Let
+$A, E \in \mathbb{R}^{n \times n}$ and $b, f, \hat x \in \mathbb{R}^n$, and let
+$g = |E| |\hat x| + |f|$. Then:
+* for every $\omega \ge 0$, there are $\Delta A$ and $\Delta b$ with
+  $(A + \Delta A) \hat x = b + \Delta b$, $|\Delta A| \le \omega |E|$ and
+  $|\Delta b| \le \omega |f|$ if and only if $|b - A \hat x| \le \omega g$;
+* if every row $i$ with $g_i = 0$ has $(b - A\hat x)_i = 0$, the least such $\omega \ge 0$ is
+  $\omega_{\min} = \max_i |A \hat x - b|_i / g_i$;
+* if some row $i$ has $g_i = 0$ and $(b - A\hat x)_i \neq 0$, no such $\omega \ge 0$ exists,
+  which is the value $\omega_{\min} = \infty$ of the source;
+* if $A \hat x = b$, then $\omega_{\min} = 0$.
+
+All inequalities between matrices and vectors are entrywise. The value $\omega_{\min}$ is
+`Matrix.componentwiseBackwardError A E b f x`, in which a row with $g_i = 0$ contributes $0$. -/
 theorem equation_2_6_13 (A E : Matrix (Fin n) (Fin n) ℝ) (b f x : Fin n → ℝ) :
     (∀ ω : ℝ, 0 ≤ ω →
       ((∃ (ΔA : Matrix (Fin n) (Fin n) ℝ) (Δb : Fin n → ℝ), (A + ΔA) *ᵥ x = b + Δb ∧

@@ -9,45 +9,112 @@ import Numlib.LinearAlgebra.Matrix.CSDecomposition
 import NumlibSurface.GolubVanLoan.Chapter02.Section04
 
 /-!
-# Golub–Van Loan §2.5: subspace metrics
+# Golub and Van Loan, Section 2.5: Subspace metrics
 
-Surface file for [golub2013matrix] §2.5: orthogonal projections as matrices (§2.5.1), the
-projections of the SVD (§2.5.2), the distance between subspaces (2.5.1), its block form
-(Theorem 2.5.1) and its basic properties (§2.5.3), and the CS decomposition in its thin and full
-forms (Theorems 2.5.2–2.5.3).
+This module formalizes §2.5 of [golub2013matrix]. A matrix $P \in \mathbb{R}^{n \times n}$ is the
+orthogonal projection onto a subspace $S \subseteq \mathbb{R}^n$ if $\operatorname{ran}(P) = S$,
+$P^2 = P$ and $P^T = P$. The module proves the basic facts about orthogonal projections of §2.5.1
+(uniqueness, $P = VV^T$ for an orthonormal basis $V$ of $S$, and $vv^T / v^Tv$ for a line), and the
+four projections that an SVD of $A$ gives onto $\operatorname{null}(A)$, $\operatorname{ran}(A)$ and
+their orthogonal complements (§2.5.2). The distance between two subspaces is
+$\operatorname{dist}(S_1, S_2) = \|P_1 - P_2\|_2$ (2.5.1), where $P_i$ is the orthogonal projection
+onto $S_i$. Theorem 2.5.1 computes it from orthogonal bases, $\operatorname{dist}(S_1, S_2) =
+\|W_1^T Z_2\|_2$, and §2.5.3 shows $0 \le \operatorname{dist} \le 1$ with the cases
+$\operatorname{dist} = 0$ and $\operatorname{dist} = 1$. The module ends with the CS decomposition,
+in its thin form (Theorem 2.5.2) and its full form (Theorem 2.5.3).
+
+The proofs specialize the backbone module `Numlib.Analysis.InnerProductSpace.Projection.Gap`, the
+orthogonal projections of Mathlib (`Submodule.starProjection`, `LinearMap.IsSymmetricProjection`),
+the matrix form `Matrix.gap_range_eq_l2_opNorm_conjTranspose_mul` of Theorem 2.5.1, and the backbone
+module `Numlib.LinearAlgebra.Matrix.CSDecomposition` (`Matrix.exists_isThinCSD`,
+`Matrix.exists_isCSD`).
+
+## Main definitions
+
+* §2.5.1, `GolubVanLoan.Chapter02.IsOrthogonalProjection`: $P$ is the orthogonal projection onto
+  $S$.
+* Equation (2.5.1), `GolubVanLoan.Chapter02.subspaceDist`: the distance $\operatorname{dist}(S_1,
+  S_2) = \|P_1 - P_2\|_2$ between subspaces.
+
+## Main results
+
+* §2.5.1, `GolubVanLoan.Chapter02.IsOrthogonalProjection.iff_toEuclideanLin_eq`: $P$ is the
+  orthogonal projection onto $S$ if and only if it acts as the orthogonal projection
+  `S.starProjection` of Mathlib.
+* §2.5.1, `GolubVanLoan.Chapter02.IsOrthogonalProjection.mem_and_sub_mem_orthogonal`: $Px \in S$ and
+  $(I - P)x \in S^\perp$.
+* §2.5.1, `GolubVanLoan.Chapter02.norm_sq_sub_mulVec_eq`: the identity $\|(P_1 - P_2)z\|_2^2 = (P_1
+  z)^T (I - P_2) z + (P_2 z)^T (I - P_1) z$.
+* §2.5.1, `GolubVanLoan.Chapter02.IsOrthogonalProjection.unique`: the orthogonal projection onto a
+  subspace is unique.
+* §2.5.1, `GolubVanLoan.Chapter02.isOrthogonalProjection_mul_transpose`: $VV^T$ is the orthogonal
+  projection onto $\operatorname{ran}(V)$ when $V^T V = I$.
+* §2.5.1, `GolubVanLoan.Chapter02.isOrthogonalProjection_vecMulVec`: $vv^T / v^T v$ is the
+  orthogonal projection onto $\operatorname{span}\{v\}$.
+* §2.5.2, `GolubVanLoan.Chapter02.svd_projections`: the column blocks of the SVD factors give the
+  orthogonal projections onto $\operatorname{null}(A)^\perp$, $\operatorname{null}(A)$,
+  $\operatorname{ran}(A)$ and $\operatorname{ran}(A)^\perp$.
+* Equation (2.5.1), `GolubVanLoan.Chapter02.subspaceDist_eq_lpOpNorm_sub`: $\operatorname{dist}(S_1,
+  S_2) = \|P_1 - P_2\|_2$ for the projection matrices.
+* Theorem 2.5.1, `GolubVanLoan.Chapter02.theorem_2_5_1`: $\operatorname{dist}(S_1, S_2) = \|W_1^T
+  Z_2\|_2 = \|Z_1^T W_2\|_2$.
+* §2.5.3, `GolubVanLoan.Chapter02.subspaceDist_mem_Icc`:
+  $0 \le \operatorname{dist}(S_1, S_2) \le 1$.
+* §2.5.3, `GolubVanLoan.Chapter02.subspaceDist_eq_zero`: $\operatorname{dist}(S_1, S_2) = 0$ if and
+  only if $S_1 = S_2$.
+* §2.5.3, `GolubVanLoan.Chapter02.subspaceDist_eq_one`: for $\dim S_1 = \dim S_2$,
+  $\operatorname{dist}(S_1, S_2) = 1$ if and only if $S_1 \cap S_2^\perp \neq \{0\}$.
+* Theorem 2.5.2, `GolubVanLoan.Chapter02.theorem_2_5_2`: the thin CS decomposition.
+* Theorem 2.5.3, `GolubVanLoan.Chapter02.theorem_2_5_3`: the CS decomposition.
+
+## Proof outline
+
+Theorem 2.5.1 is not proved by the argument of the source with the blocks $Q_{12}$ and $Q_{21}$ of
+$Q = W^T Z$. It applies the backbone formula for the one-sided gap of two subspaces of equal
+dimension, `Matrix.gap_range_eq_l2_opNorm_conjTranspose_mul`, once for $(W, Z)$ and once for
+$(Z, W)$.
 
 ## Conventions
 
-Subspaces of `ℝⁿ` are `Submodule ℝ (EuclideanSpace ℝ (Fin n))`, `ran(P)` is
-`LinearMap.range (Matrix.toEuclideanLin P)`, and `span{v}` is `ℝ ∙ WithLp.toLp 2 v`. The book's
-orthogonal projection matrix is the predicate `IsOrthogonalProjection P S`, identified with
-Mathlib's `S.starProjection` by `IsOrthogonalProjection.iff_toEuclideanLin_eq`. The distance
-`dist(S₁, S₂) = ‖P₁ - P₂‖₂` of (2.5.1) is the backbone's `Submodule.gap` (the operator norm of the
-difference of the orthogonal projections), restated as `subspaceDist`; the book defines it only for
-`dim S₁ = dim S₂`, and the theorems that need it carry that hypothesis.
+* Subspaces of $\mathbb{R}^n$ are `Submodule ℝ (EuclideanSpace ℝ (Fin n))`. The range
+  $\operatorname{ran}(P)$ is `LinearMap.range (Matrix.toEuclideanLin P)`, and
+  $\operatorname{span}\{v\}$ is `ℝ ∙ WithLp.toLp 2 v`.
+* The column blocks $W(:, 1{:}k)$ and $W(:, k{+}1{:}n)$ of $W \in \mathbb{R}^{n \times n}$ are
+  `W.submatrix id` along `Fin.castLE` and along `Fin.cast _ ∘ Fin.natAdd k`.
+* The CS decomposition is stated in the block form of the source with `Matrix.fromRows` and
+  `Matrix.fromBlocks`. Its diagonal-like blocks are `Matrix.rectDiagonal`,
+  `Matrix.shiftedRectDiagonal` and `Matrix.csdUpperRight` of the angles `θ : ℕ → ℝ`, with 0-based
+  indices. The first $p$ angles are $0$, which gives the identity blocks.
 
-The column blocks `W(:, 1:k)` and `W(:, k+1:n)` of an `n × n` matrix are `W.submatrix id` along
-`Fin.castLE` and along `Fin.cast _ ∘ Fin.natAdd k`. The CS decomposition is stated in the book's
-block form with `Matrix.fromRows`/`Matrix.fromBlocks`; its diagonal-like blocks are the backbone's
-`Matrix.rectDiagonal`, `Matrix.shiftedRectDiagonal` and `Matrix.csdUpperRight` of the angles
-`θ : ℕ → ℝ` (0-based; the first `p` angles are `0`, giving the identity blocks).
+## Implementation notes
 
-## Sources
+* An orthogonal projection matrix is the predicate `GolubVanLoan.Chapter02.IsOrthogonalProjection P
+  S`. It is identified with the orthogonal projection `S.starProjection` of Mathlib by
+  `GolubVanLoan.Chapter02.IsOrthogonalProjection.iff_toEuclideanLin_eq`.
+* The distance `GolubVanLoan.Chapter02.subspaceDist` is the gap `Submodule.gap` of the backbone, the
+  operator norm of the difference of the two orthogonal projections. The source defines the distance
+  only for $\dim S_1 = \dim S_2$. The Lean definition applies to every pair of subspaces, and the
+  theorems that need equal dimensions have that hypothesis.
 
-Backbone `Numlib/Analysis/InnerProductSpace/Projection/Gap`; Mathlib's orthogonal projections
-(`Submodule.starProjection`, `LinearMap.IsSymmetricProjection`); the matrix form of Theorem 2.5.1,
-`Matrix.gap_range_eq_l2_opNorm_conjTranspose_mul` (whose proof is not the book's `Q₁₂`/`Q₂₁`
-argument but the one-sided gap of equal-dimensional subspaces); and
-`Numlib/LinearAlgebra/Matrix/CSDecomposition` (`Matrix.exists_isThinCSD`, `Matrix.exists_isCSD`,
-which need neither the book's `m₂ ≥ n₁` in Theorem 2.5.2 nor its `m₁ ≥ m₂` in Theorem 2.5.3). The
-two illustrative CS patterns after Theorem 2.5.3 are examples; (2.5.2) only names `Q = Wᵀ Z`
-inside a proof.
+## Deviations from the source
 
-## Readings
+* **Section 2.5.3, $\operatorname{dist}(S_1, S_2) = 0 \Rightarrow S_1 = S_2$** (generalization). The
+  source states an implication. The theorem is an equivalence and needs no hypothesis on the
+  dimensions. See `GolubVanLoan.Chapter02.subspaceDist_eq_zero`.
+* **Section 2.5.3, $\operatorname{dist}(S_1, S_2) = 1 \Rightarrow S_1 \cap S_2^\perp \neq \{0\}$**
+  (generalization). The source states an implication. The theorem is an equivalence. See
+  `GolubVanLoan.Chapter02.subspaceDist_eq_one`.
+* **Theorem 2.5.3** (generalization). The source assumes $m_1 \ge m_2$ and that $Q$ is orthogonal.
+  The theorem does not assume $m_1 \ge m_2$, and it assumes only $Q^T Q = I$ for the square matrix
+  $Q$. See `GolubVanLoan.Chapter02.theorem_2_5_3`.
+* **Theorem 2.5.3** (typo). The row labels of the block display are misprinted ($n_1 - n_1$). The
+  block sizes that add up are the rows $p, n_1 - p, m_1 - n_1 \mid n_1 - p, q$ and the columns
+  $p, n_1 - p \mid n_1 - p, q, m_1 - n_1$. See `GolubVanLoan.Chapter02.theorem_2_5_3`.
 
-The display of Theorem 2.5.3 has its row labels mangled (`n₁ - n₁`); the block sizes that add up
-are rows `p, n₁ - p, m₁ - n₁ | n₁ - p, q` and columns `p, n₁ - p | n₁ - p, q, m₁ - n₁`, the layout
-of the backbone's predicate `Matrix.IsCSD`, which the statement below reproduces.
+## Not formalized
+
+* **The two example CS patterns after Theorem 2.5.3.** They are examples.
+* **Equation (2.5.2).** It only names $Q = W^T Z$ inside a proof.
 -/
 
 open Matrix WithLp
@@ -58,25 +125,33 @@ variable {m n k : ℕ}
 
 /-! ### §2.5.1 Orthogonal projections -/
 
-/-- **§2.5.1, orthogonal projection.** `P ∈ ℝ^{n×n}` is the orthogonal projection onto the
-subspace `S ⊆ ℝⁿ` if `ran(P) = S`, `P² = P` and `Pᵀ = P`. -/
+/-- **Section 2.5.1** of [golub2013matrix], definition of an orthogonal projection. A matrix
+$P \in \mathbb{R}^{n \times n}$ is the **orthogonal projection** onto a subspace
+$S \subseteq \mathbb{R}^n$ if $\operatorname{ran}(P) = S$, $P^2 = P$ and $P^T = P$.
+
+The range is `LinearMap.range (Matrix.toEuclideanLin P)`. -/
 structure IsOrthogonalProjection (P : Matrix (Fin n) (Fin n) ℝ)
     (S : Submodule ℝ (EuclideanSpace ℝ (Fin n))) : Prop where
-  /-- The range of `P` is `S`. -/
+  /-- The range of $P$ is $S$. -/
   range_eq : LinearMap.range (toEuclideanLin P) = S
-  /-- `P` is idempotent. -/
+  /-- The matrix $P$ is idempotent, $P^2 = P$. -/
   mul_self : P * P = P
-  /-- `P` is symmetric. -/
+  /-- The matrix $P$ is symmetric, $P^T = P$. -/
   transpose_eq : Pᵀ = P
 
-/-- The orthogonal projection onto `S` is a symmetric projection of `EuclideanSpace`. -/
+/-- The orthogonal projection of Mathlib onto a subspace $S$ of `EuclideanSpace ℝ (Fin n)` is a
+symmetric projection. -/
 private theorem isSymmetricProjection_starProjection' (S : Submodule ℝ (EuclideanSpace ℝ (Fin n))) :
     (S.starProjection : EuclideanSpace ℝ (Fin n) →ₗ[ℝ] _).IsSymmetricProjection :=
   ⟨ContinuousLinearMap.IsIdempotentElem.toLinearMap S.isIdempotentElem_starProjection,
     S.starProjection_isSymmetric⟩
 
-/-- **§2.5.1**: `P` is the orthogonal projection onto `S` exactly when it acts as Mathlib's
-orthogonal projection `S.starProjection`. -/
+/-- **Section 2.5.1** of [golub2013matrix]. A matrix $P \in \mathbb{R}^{n \times n}$ is the
+orthogonal projection onto a subspace $S \subseteq \mathbb{R}^n$ if and only if $Px$ is the
+orthogonal projection of $x$ onto $S$ for every $x \in \mathbb{R}^n$.
+
+The orthogonal projection of $x$ is `S.starProjection x` of Mathlib, and $P$ acts on
+$\mathbb{R}^n$ as `Matrix.toEuclideanLin P`. -/
 theorem IsOrthogonalProjection.iff_toEuclideanLin_eq {P : Matrix (Fin n) (Fin n) ℝ}
     {S : Submodule ℝ (EuclideanSpace ℝ (Fin n))} :
     IsOrthogonalProjection P S ↔
@@ -100,8 +175,11 @@ theorem IsOrthogonalProjection.iff_toEuclideanLin_eq {P : Matrix (Fin n) (Fin n)
       rw [IsHermitian, conjTranspose_eq_transpose_of_trivial] at hH
       exact hH
 
-/-- **§2.5.1**: if `P` is the orthogonal projection onto `S`, then `P x ∈ S` and
-`(I - P) x ∈ S⊥` for every `x` (the book's "easy to show"). -/
+/-- **Section 2.5.1** of [golub2013matrix]. If $P \in \mathbb{R}^{n \times n}$ is the orthogonal
+projection onto $S \subseteq \mathbb{R}^n$, then for every $x \in \mathbb{R}^n$,
+$$Px \in S, \qquad (I - P)x \in S^\perp.$$
+
+The source says that this is easy to show. -/
 theorem IsOrthogonalProjection.mem_and_sub_mem_orthogonal {P : Matrix (Fin n) (Fin n) ℝ}
     {S : Submodule ℝ (EuclideanSpace ℝ (Fin n))} (hP : IsOrthogonalProjection P S)
     (x : EuclideanSpace ℝ (Fin n)) :
@@ -110,8 +188,11 @@ theorem IsOrthogonalProjection.mem_and_sub_mem_orthogonal {P : Matrix (Fin n) (F
   rw [map_sub, toEuclideanLin_one, LinearMap.sub_apply, h]
   exact ⟨S.starProjection_apply_mem x, S.sub_starProjection_mem_orthogonal x⟩
 
-/-- **§2.5.1, the display**: for orthogonal projections `P₁`, `P₂` and any `z`,
-`‖(P₁ - P₂) z‖₂² = (P₁ z)ᵀ (I - P₂) z + (P₂ z)ᵀ (I - P₁) z`. -/
+/-- **Section 2.5.1** of [golub2013matrix], the display before (2.5.1). Let
+$P_1, P_2 \in \mathbb{R}^{n \times n}$ be the orthogonal projections onto subspaces $S_1$ and
+$S_2$ of $\mathbb{R}^n$. Then for every $z \in \mathbb{R}^n$,
+$$\|(P_1 - P_2)z\|_2^2 = (P_1 z)^T (I - P_2) z + (P_2 z)^T (I - P_1) z.$$
+-/
 theorem norm_sq_sub_mulVec_eq {P₁ P₂ : Matrix (Fin n) (Fin n) ℝ}
     {S₁ S₂ : Submodule ℝ (EuclideanSpace ℝ (Fin n))} (h₁ : IsOrthogonalProjection P₁ S₁)
     (h₂ : IsOrthogonalProjection P₂ S₂) (z : Fin n → ℝ) :
@@ -129,15 +210,18 @@ theorem norm_sq_sub_mulVec_eq {P₁ P₂ : Matrix (Fin n) (Fin n) ℝ}
     EuclideanSpace.inner_eq_star_dotProduct]
   simp [dotProduct_comm]
 
-/-- **§2.5.1**: the orthogonal projection onto a subspace is unique. -/
+/-- **Section 2.5.1** of [golub2013matrix], uniqueness. If $P_1, P_2 \in \mathbb{R}^{n \times n}$
+are both the orthogonal projection onto the same subspace $S \subseteq \mathbb{R}^n$, then
+$P_1 = P_2$. -/
 theorem IsOrthogonalProjection.unique {P₁ P₂ : Matrix (Fin n) (Fin n) ℝ}
     {S : Submodule ℝ (EuclideanSpace ℝ (Fin n))} (h₁ : IsOrthogonalProjection P₁ S)
     (h₂ : IsOrthogonalProjection P₂ S) : P₁ = P₂ :=
   toEuclideanLin.injective ((IsOrthogonalProjection.iff_toEuclideanLin_eq.1 h₁).trans
     (IsOrthogonalProjection.iff_toEuclideanLin_eq.1 h₂).symm)
 
-/-- **§2.5.1**: if the columns of `V = [v₁ | ⋯ | v_k]` are an orthonormal basis of `S`
-(`VᵀV = I`, `ran(V) = S`), then `P = V Vᵀ` is the orthogonal projection onto `S`. -/
+/-- **Section 2.5.1** of [golub2013matrix]. Let $V = [v_1 \mid \dots \mid v_k] \in \mathbb{R}^{n
+\times k}$ have orthonormal columns, $V^T V = I$, and let $S = \operatorname{ran}(V)$. Then
+$P = VV^T$ is the orthogonal projection onto $S$. -/
 theorem isOrthogonalProjection_mul_transpose {V : Matrix (Fin n) (Fin k) ℝ} (hV : Vᵀ * V = 1)
     {S : Submodule ℝ (EuclideanSpace ℝ (Fin n))} (hS : LinearMap.range (toEuclideanLin V) = S) :
     IsOrthogonalProjection (V * Vᵀ) S := by
@@ -154,7 +238,9 @@ theorem isOrthogonalProjection_mul_transpose {V : Matrix (Fin n) (Fin k) ℝ} (h
   · rw [← Matrix.mul_assoc, hVVV]
   · rw [transpose_mul, transpose_transpose]
 
-/-- **§2.5.1**: for `v ≠ 0`, `P = v vᵀ / vᵀv` is the orthogonal projection onto `span{v}`. -/
+/-- **Section 2.5.1** of [golub2013matrix]. Let $v \in \mathbb{R}^n$ with $v \neq 0$. Then
+$$P = \frac{v v^T}{v^T v}$$
+is the orthogonal projection onto $\operatorname{span}\{v\}$. -/
 theorem isOrthogonalProjection_vecMulVec {v : Fin n → ℝ} (hv : v ≠ 0) :
     IsOrthogonalProjection ((1 / (v ⬝ᵥ v)) • vecMulVec v v) (ℝ ∙ WithLp.toLp 2 v) := by
   have hvv : v ⬝ᵥ v ≠ 0 := by
@@ -178,7 +264,8 @@ theorem isOrthogonalProjection_vecMulVec {v : Fin n → ℝ} (hv : v ≠ 0) :
 
 /-! ### §2.5.2 SVD-related projections -/
 
-/-- The columns of an orthogonal matrix selected along an injection are orthonormal. -/
+/-- If $W \in \mathbb{R}^{n \times n}$ is orthogonal, the columns of $W$ selected along an injective
+map $e$ are orthonormal. -/
 private theorem transpose_mul_submatrix_eq_one {k : ℕ} {W : Matrix (Fin n) (Fin n) ℝ}
     (hW : W ∈ orthogonalGroup (Fin n) ℝ) {e : Fin k → Fin n} (he : Function.Injective e) :
     (W.submatrix id e)ᵀ * W.submatrix id e = 1 := by
@@ -186,13 +273,14 @@ private theorem transpose_mul_submatrix_eq_one {k : ℕ} {W : Matrix (Fin n) (Fi
     (mem_orthogonalGroup_iff' (Fin n) ℝ).1 hW]
   exact submatrix_one e he
 
-/-- The trailing column block `W(:, k+1:n)`: `Fin (n - k) → Fin n`, `j ↦ k + j`. -/
+/-- The map $j \mapsto k + j$ from `Fin (n - k)` to `Fin n`, which selects the trailing column block
+$W(:, k{+}1{:}n)$, is injective. -/
 private theorem cast_natAdd_injective {k : ℕ} (hk : k ≤ n) :
     Function.Injective (Fin.cast (Nat.add_sub_of_le hk) ∘ Fin.natAdd k : Fin (n - k) → Fin n) :=
   (Fin.cast_injective _).comp (Fin.natAdd_injective _ k)
 
-/-- The leading and trailing column blocks `W(:, 1:k)`, `W(:, k+1:n)` of an orthogonal `W` have
-complementary ranges (§2.1.5). -/
+/-- If $W \in \mathbb{R}^{n \times n}$ is orthogonal and $k \le n$, the ranges of the column blocks
+$W(:, 1{:}k)$ and $W(:, k{+}1{:}n)$ are orthogonal complements of each other. -/
 private theorem orthogonal_range_castLE_eq {k : ℕ} {W : Matrix (Fin n) (Fin n) ℝ}
     (hW : W ∈ orthogonalGroup (Fin n) ℝ) (hk : k ≤ n) :
     (LinearMap.range (toEuclideanLin (W.submatrix id (Fin.castLE hk))))ᗮ =
@@ -205,7 +293,8 @@ private theorem orthogonal_range_castLE_eq {k : ℕ} {W : Matrix (Fin n) (Fin n)
       omega)
     (Nat.add_sub_of_le hk)
 
-/-- The span of the columns `j ≥ k` of `W` is the range of the trailing block `W(:, k+1:n)`. -/
+/-- For $k \le n$, the span of the columns $j \ge k$ (0-based) of $W \in \mathbb{R}^{n \times n}$ is
+the range of the trailing block $W(:, k{+}1{:}n)$. -/
 private theorem span_image_le_eq_range {k : ℕ} (W : Matrix (Fin n) (Fin n) ℝ) (hk : k ≤ n) :
     Submodule.span ℝ ((fun j => toLp 2 (W.col j)) '' {j : Fin n | k ≤ (j : ℕ)}) =
       LinearMap.range
@@ -227,7 +316,8 @@ private theorem span_image_le_eq_range {k : ℕ} (W : Matrix (Fin n) (Fin n) ℝ
   · rintro ⟨b, rfl⟩
     exact ⟨Fin.cast (Nat.add_sub_of_le hk) (Fin.natAdd k b), by simp, rfl⟩
 
-/-- The span of the columns `i < k` of `W` is the range of the leading block `W(:, 1:k)`. -/
+/-- For $k \le n$, the span of the columns $j < k$ (0-based) of $W \in \mathbb{R}^{n \times n}$ is
+the range of the leading block $W(:, 1{:}k)$. -/
 private theorem span_image_lt_eq_range {k : ℕ} (W : Matrix (Fin n) (Fin n) ℝ) (hk : k ≤ n) :
     Submodule.span ℝ ((fun j => toLp 2 (W.col j)) '' {j : Fin n | (j : ℕ) < k}) =
       LinearMap.range (toEuclideanLin (W.submatrix id (Fin.castLE hk))) := by
@@ -240,11 +330,20 @@ private theorem span_image_lt_eq_range {k : ℕ} (W : Matrix (Fin n) (Fin n) ℝ
   · rintro ⟨b, rfl⟩
     exact ⟨Fin.castLE hk b, b.isLt, rfl⟩
 
-/-- **§2.5.2, SVD-related projections.** If `A = U Σ Vᵀ` is the SVD of `A ∈ ℝ^{m×n}`,
-`r = rank(A)`, and `U = [U_r | Ũ_r]`, `V = [V_r | Ṽ_r]` (the first `r` columns and the rest), then
-`V_r V_rᵀ` is the orthogonal projection onto `null(A)⊥ = ran(Aᵀ)`, `Ṽ_r Ṽ_rᵀ` onto `null(A)`,
-`U_r U_rᵀ` onto `ran(A)` and `Ũ_r Ũ_rᵀ` onto `ran(A)⊥ = null(Aᵀ)`. From Corollary 2.4.6 and
-§2.5.1. -/
+/-- **Section 2.5.2** of [golub2013matrix], the projections related to the SVD. Let
+$A = U \Sigma V^T$ be an SVD of $A \in \mathbb{R}^{m \times n}$, let
+$r = \operatorname{rank}(A)$, and partition $U = [U_r \mid \tilde U_r]$ and
+$V = [V_r \mid \tilde V_r]$, where $U_r$ and $V_r$ have $r$ columns. Then
+$\operatorname{null}(A)^\perp = \operatorname{ran}(A^T)$, $\operatorname{ran}(A)^\perp =
+\operatorname{null}(A^T)$, and
+* $V_r V_r^T$ is the orthogonal projection onto $\operatorname{null}(A)^\perp =
+  \operatorname{ran}(A^T)$,
+* $\tilde V_r \tilde V_r^T$ is the orthogonal projection onto $\operatorname{null}(A)$,
+* $U_r U_r^T$ is the orthogonal projection onto $\operatorname{ran}(A)$,
+* $\tilde U_r \tilde U_r^T$ is the orthogonal projection onto $\operatorname{ran}(A)^\perp =
+  \operatorname{null}(A^T)$.
+
+The proof combines Corollary 2.4.6 with §2.5.1. -/
 theorem svd_projections {A : Matrix (Fin m) (Fin n) ℝ} {U : Matrix (Fin m) (Fin m) ℝ} {σ : ℕ → ℝ}
     {V : Matrix (Fin n) (Fin n) ℝ} (h : IsSVD A U σ V) :
     IsOrthogonalProjection (V.submatrix id (Fin.castLE A.rank_le_width) *
@@ -298,14 +397,22 @@ theorem svd_projections {A : Matrix (Fin m) (Fin n) ℝ} {U : Matrix (Fin m) (Fi
 
 /-! ### §2.5.3 Distance between subspaces -/
 
-/-- **(2.5.1), the distance between subspaces** `dist(S₁, S₂) = ‖P₁ - P₂‖₂`, `Pᵢ` the orthogonal
-projection onto `Sᵢ`: the backbone's gap `Submodule.gap`. The book defines it for
-`dim(S₁) = dim(S₂)`, which the theorems below assume where they need it. -/
+/-- **Equation (2.5.1)** of [golub2013matrix], the distance between subspaces. For subspaces $S_1$
+and $S_2$ of $\mathbb{R}^n$, the **distance** is
+$$\operatorname{dist}(S_1, S_2) = \|P_1 - P_2\|_2,$$
+where $P_i$ is the orthogonal projection onto $S_i$.
+
+The definition is the gap `Submodule.gap` of the backbone. The source defines the distance only
+when $\dim S_1 = \dim S_2$. The Lean definition applies to every pair of subspaces, and the
+theorems below assume equal dimensions where they need it. -/
 noncomputable def subspaceDist (S₁ S₂ : Submodule ℝ (EuclideanSpace ℝ (Fin n))) : ℝ :=
   S₁.gap S₂
 
-/-- **(2.5.1), with projection matrices**: if `P₁`, `P₂` are the orthogonal projections onto `S₁`,
-`S₂`, then `dist(S₁, S₂) = ‖P₁ - P₂‖₂`. -/
+/-- **Equation (2.5.1)** of [golub2013matrix], with projection matrices. Let
+$P_1, P_2 \in \mathbb{R}^{n \times n}$ be the orthogonal projections onto subspaces $S_1$ and
+$S_2$ of $\mathbb{R}^n$. Then
+$$\operatorname{dist}(S_1, S_2) = \|P_1 - P_2\|_2.$$
+-/
 theorem subspaceDist_eq_lpOpNorm_sub {P₁ P₂ : Matrix (Fin n) (Fin n) ℝ}
     {S₁ S₂ : Submodule ℝ (EuclideanSpace ℝ (Fin n))} (h₁ : IsOrthogonalProjection P₁ S₁)
     (h₂ : IsOrthogonalProjection P₂ S₂) : subspaceDist S₁ S₂ = lpOpNorm 2 (P₁ - P₂) := by
@@ -318,11 +425,14 @@ theorem subspaceDist_eq_lpOpNorm_sub {P₁ P₂ : Matrix (Fin n) (Fin n) ℝ}
   rw [map_sub, LinearMap.sub_apply, e₁, e₂]
   rfl
 
-/-- **Theorem 2.5.1.** If `W = [W₁ | W₂]`, `Z = [Z₁ | Z₂]` are `n × n` orthogonal matrices with
-`W₁`, `Z₁` of `k` columns, `S₁ = ran(W₁)` and `S₂ = ran(Z₁)`, then
-`dist(S₁, S₂) = ‖W₁ᵀ Z₂‖₂ = ‖Z₁ᵀ W₂‖₂`. Backbone `Matrix.gap_range_eq_l2_opNorm_conjTranspose_mul`
-twice (with `W`, `Z` exchanged and `Submodule.gap_comm`); the blocks of an orthogonal matrix have
-orthonormal columns and complementary ranges (§2.1.5). -/
+/-- **Theorem 2.5.1** of [golub2013matrix]. Let $W = [W_1 \mid W_2]$ and $Z = [Z_1 \mid Z_2]$ be
+orthogonal matrices in $\mathbb{R}^{n \times n}$, where $W_1$ and $Z_1$ have $k \le n$ columns.
+If $S_1 = \operatorname{ran}(W_1)$ and $S_2 = \operatorname{ran}(Z_1)$, then
+$$\operatorname{dist}(S_1, S_2) = \|W_1^T Z_2\|_2 = \|Z_1^T W_2\|_2.$$
+
+The proof applies `Matrix.gap_range_eq_l2_opNorm_conjTranspose_mul` twice, with $W$ and $Z$
+exchanged and `Submodule.gap_comm`. The column blocks of an orthogonal matrix have orthonormal
+columns and complementary ranges (§2.1.5). -/
 theorem theorem_2_5_1 {W Z : Matrix (Fin n) (Fin n) ℝ} (hW : W ∈ orthogonalGroup (Fin n) ℝ)
     (hZ : Z ∈ orthogonalGroup (Fin n) ℝ) (hk : k ≤ n) :
     subspaceDist (LinearMap.range (toEuclideanLin (W.submatrix id (Fin.castLE hk))))
@@ -352,17 +462,29 @@ theorem theorem_2_5_1 {W Z : Matrix (Fin n) (Fin n) ℝ} (hW : W ∈ orthogonalG
   rw [subspaceDist, Submodule.gap_comm, ← subspaceDist]
   exact hgap hZ hW
 
-/-- **§2.5.3**: `0 ≤ dist(S₁, S₂) ≤ 1` (no dimension hypothesis is needed). -/
+/-- **Section 2.5.3** of [golub2013matrix]. For subspaces $S_1$ and $S_2$ of $\mathbb{R}^n$,
+$$0 \le \operatorname{dist}(S_1, S_2) \le 1.$$
+
+No hypothesis on the dimensions is needed. -/
 theorem subspaceDist_mem_Icc (S₁ S₂ : Submodule ℝ (EuclideanSpace ℝ (Fin n))) :
     subspaceDist S₁ S₂ ∈ Set.Icc 0 1 :=
   ⟨S₁.gap_nonneg S₂, S₁.gap_le_one S₂⟩
 
-/-- **§2.5.3**: `dist(S₁, S₂) = 0 ⇒ S₁ = S₂` (in fact `⇔`). -/
+/-- **Section 2.5.3** of [golub2013matrix]. For subspaces $S_1$ and $S_2$ of $\mathbb{R}^n$,
+$\operatorname{dist}(S_1, S_2) = 0$ if and only if $S_1 = S_2$.
+
+**Generalization.** The source states the implication from left to right. The theorem is an
+equivalence, and it needs no hypothesis on the dimensions. -/
 theorem subspaceDist_eq_zero {S₁ S₂ : Submodule ℝ (EuclideanSpace ℝ (Fin n))} :
     subspaceDist S₁ S₂ = 0 ↔ S₁ = S₂ :=
   S₁.gap_eq_zero_iff S₂
 
-/-- **§2.5.3**: for `dim(S₁) = dim(S₂)`, `dist(S₁, S₂) = 1 ⇒ S₁ ∩ S₂⊥ ≠ {0}` (in fact `⇔`). -/
+/-- **Section 2.5.3** of [golub2013matrix]. Let $S_1$ and $S_2$ be subspaces of $\mathbb{R}^n$ with
+$\dim S_1 = \dim S_2$. Then $\operatorname{dist}(S_1, S_2) = 1$ if and only if
+$S_1 \cap S_2^\perp \neq \{0\}$.
+
+**Generalization.** The source states the implication from left to right. The theorem is an
+equivalence. -/
 theorem subspaceDist_eq_one {S₁ S₂ : Submodule ℝ (EuclideanSpace ℝ (Fin n))}
     (h : Module.finrank ℝ S₁ = Module.finrank ℝ S₂) :
     subspaceDist S₁ S₂ = 1 ↔ S₁ ⊓ S₂ᗮ ≠ ⊥ :=
@@ -370,12 +492,22 @@ theorem subspaceDist_eq_one {S₁ S₂ : Submodule ℝ (EuclideanSpace ℝ (Fin 
 
 /-! ### §2.5.4 The CS decomposition -/
 
-/-- **Theorem 2.5.2 (the CS decomposition, thin version).** If `Q₁ ∈ ℝ^{m₁×n₁}`,
-`Q₂ ∈ ℝ^{m₂×n₁}` with `m₁ ≥ n₁`, `m₂ ≥ n₁`, and the columns of `Q = [Q₁; Q₂]` are orthonormal,
-then there are orthogonal `U₁ ∈ ℝ^{m₁×m₁}`, `U₂ ∈ ℝ^{m₂×m₂}`, `V₁ ∈ ℝ^{n₁×n₁}` with
-`diag(U₁, U₂)ᵀ [Q₁; Q₂] V₁ = [C₀; S₀]`, `C₀ = diag(cos θ₁, …, cos θ_{n₁}) ∈ ℝ^{m₁×n₁}`,
-`S₀ = diag(sin θ₁, …, sin θ_{n₁}) ∈ ℝ^{m₂×n₁}` and `0 ≤ θ₁ ≤ ⋯ ≤ θ_{n₁} ≤ π/2`. Backbone
-`Matrix.exists_isThinCSD`, whose shift `p = n₁ - min n₁ m₂` vanishes here. -/
+/-- **Theorem 2.5.2** of [golub2013matrix] (the CS decomposition, thin version). Let
+$Q_1 \in \mathbb{R}^{m_1 \times n_1}$ and $Q_2 \in \mathbb{R}^{m_2 \times n_1}$ with
+$m_1 \ge n_1$ and $m_2 \ge n_1$, and assume that $Q = \begin{bmatrix} Q_1 \\ Q_2 \end{bmatrix}$
+has orthonormal columns. Then there are orthogonal matrices
+$U_1 \in \mathbb{R}^{m_1 \times m_1}$, $U_2 \in \mathbb{R}^{m_2 \times m_2}$ and
+$V_1 \in \mathbb{R}^{n_1 \times n_1}$ with
+$$\begin{bmatrix} U_1 & 0 \\ 0 & U_2 \end{bmatrix}^T \begin{bmatrix} Q_1 \\ Q_2 \end{bmatrix}
+  V_1 = \begin{bmatrix} C_0 \\ S_0 \end{bmatrix},$$
+where $C_0 = \operatorname{diag}(\cos\theta_1, \dots, \cos\theta_{n_1}) \in \mathbb{R}^{m_1
+\times n_1}$, $S_0 = \operatorname{diag}(\sin\theta_1, \dots, \sin\theta_{n_1}) \in
+\mathbb{R}^{m_2 \times n_1}$ and $0 \le \theta_1 \le \dots \le \theta_{n_1} \le \pi/2$.
+
+The angles are a monotone function `θ : ℕ → ℝ` with values in $[0, \pi/2]$, and $C_0$ and $S_0$
+are each a `Matrix.rectDiagonal`, of the cosines and of the sines. The proof applies
+`Matrix.exists_isThinCSD`, which does not need $m_2 \ge n_1$; under that hypothesis its shift
+$p = n_1 - \min\{n_1, m_2\}$ is $0$. -/
 theorem theorem_2_5_2 {m₁ m₂ n₁ : ℕ} (Q₁ : Matrix (Fin m₁) (Fin n₁) ℝ)
     (Q₂ : Matrix (Fin m₂) (Fin n₁) ℝ) (h₁ : n₁ ≤ m₁) (h₂ : n₁ ≤ m₂)
     (hQ : (fromRows Q₁ Q₂)ᵀ * fromRows Q₁ Q₂ = 1) :
@@ -399,17 +531,37 @@ theorem theorem_2_5_2 {m₁ m₂ n₁ : ℕ} (Q₁ : Matrix (Fin m₁) (Fin n₁
   rw [fromBlocks_transpose, fromBlocks_mul_fromRows, fromRows_mul]
   simp only [transpose_zero, Matrix.zero_mul, add_zero, zero_add, hl, hr]
 
-/-- **Theorem 2.5.3 (the CS decomposition).** If `Q = [Q₁₁ Q₁₂; Q₂₁ Q₂₂]` (row blocks `m₁, m₂`,
-column blocks `n₁, n₂`) is square and orthogonal and `m₁ ≥ n₁`, then with
-`p = max{0, n₁ - m₂}` and `q = max{0, m₂ - n₁}` there are orthogonal `U₁, U₂, V₁, V₂` such that
-`diag(U₁, U₂)ᵀ Q diag(V₁, V₂)` has the block form
-`[I 0 0 0 0; 0 C S 0 0; 0 0 0 0 I; 0 S -C 0 0; 0 0 0 I 0]` with `C = diag(c_{p+1}, …, c_{n₁})`,
-`S = diag(s_{p+1}, …, s_{n₁})`, `c_i = cos θ_i`, `s_i = sin θ_i` and
-`0 ≤ θ_{p+1} ≤ ⋯ ≤ θ_{n₁} ≤ π/2` (0-based: the angles `θ i` are monotone in `[0, π/2]` with the
-first `p` of them `0`, which produces the identity block). The four blocks are the backbone's
-`Matrix.rectDiagonal`, `Matrix.csdUpperRight`, `Matrix.shiftedRectDiagonal` patterns of the
-predicate `Matrix.IsCSD` (`Matrix.exists_isCSD`). The book's hypothesis `m₁ ≥ m₂` is not needed,
-and of "orthogonal" only `QᵀQ = I` is assumed: with `m₁ + m₂ = n₁ + n₂` it implies `QQᵀ = I`. -/
+/-- **Theorem 2.5.3** of [golub2013matrix] (the CS decomposition). Let
+$$Q = \begin{bmatrix} Q_{11} & Q_{12} \\ Q_{21} & Q_{22} \end{bmatrix}$$
+with $Q_{11} \in \mathbb{R}^{m_1 \times n_1}$, $Q_{12} \in \mathbb{R}^{m_1 \times n_2}$,
+$Q_{21} \in \mathbb{R}^{m_2 \times n_1}$ and $Q_{22} \in \mathbb{R}^{m_2 \times n_2}$, where
+$m_1 + m_2 = n_1 + n_2$, $m_1 \ge n_1$ and $Q^T Q = I$. Let $p = \max\{0, n_1 - m_2\}$ and
+$q = \max\{0, m_2 - n_1\}$. Then there are orthogonal matrices
+$U_1 \in \mathbb{R}^{m_1 \times m_1}$, $U_2 \in \mathbb{R}^{m_2 \times m_2}$,
+$V_1 \in \mathbb{R}^{n_1 \times n_1}$ and $V_2 \in \mathbb{R}^{n_2 \times n_2}$ with
+$$\begin{bmatrix} U_1 & 0 \\ 0 & U_2 \end{bmatrix}^T Q \begin{bmatrix} V_1 & 0 \\ 0 & V_2
+  \end{bmatrix} = \begin{bmatrix} I & 0 & 0 & 0 & 0 \\ 0 & C & S & 0 & 0 \\ 0 & 0 & 0 & 0 & I \\
+  0 & S & -C & 0 & 0 \\ 0 & 0 & 0 & I & 0 \end{bmatrix},$$
+where the row blocks have sizes $p, n_1 - p, m_1 - n_1, n_1 - p, q$, the column blocks have
+sizes $p, n_1 - p, n_1 - p, q, m_1 - n_1$, $C = \operatorname{diag}(\cos\theta_{p+1}, \dots,
+\cos\theta_{n_1})$, $S = \operatorname{diag}(\sin\theta_{p+1}, \dots, \sin\theta_{n_1})$ and $0
+\le \theta_{p+1} \le \dots \le \theta_{n_1} \le \pi/2$.
+
+**Generalization.** The source assumes $m_1 \ge m_2$ and that $Q$ is orthogonal. The theorem
+does not need $m_1 \ge m_2$. Of the orthogonality it assumes only $Q^T Q = I$, which implies
+$Q Q^T = I$ because $Q$ is square.
+
+**Typo.** The row labels of the block display in the source are misprinted ($n_1 - n_1$). The
+block sizes above are the ones that add up to $m_1 + m_2$ and $n_1 + n_2$.
+
+The angles are a monotone function `θ : ℕ → ℝ` with values in $[0, \pi/2]$ whose first $p$
+values (0-based) are $0$; these give the leading identity block, with $\cos\theta_i = 1$. In
+Lean, $p$ is $n_1 - \min\{n_1, m_2\}$ and $q$ is $m_2 - \min\{n_1, m_2\}$. The upper left block of
+the right side is a `Matrix.rectDiagonal` of the cosines, the upper right block is a
+`Matrix.csdUpperRight`, the lower left block is a `Matrix.shiftedRectDiagonal` of the sines, and
+the lower right block is a `Matrix.rectDiagonal` with the negated cosines followed by ones. This
+is the layout of the backbone predicate `Matrix.IsCSD`. The proof applies `Matrix.exists_isCSD`.
+-/
 theorem theorem_2_5_3 {m₁ m₂ n₁ n₂ : ℕ} (Q₁₁ : Matrix (Fin m₁) (Fin n₁) ℝ)
     (Q₁₂ : Matrix (Fin m₁) (Fin n₂) ℝ) (Q₂₁ : Matrix (Fin m₂) (Fin n₁) ℝ)
     (Q₂₂ : Matrix (Fin m₂) (Fin n₂) ℝ) (hsq : m₁ + m₂ = n₁ + n₂)

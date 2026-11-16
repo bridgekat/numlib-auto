@@ -6,51 +6,102 @@ import Numlib.Analysis.Fourier.SineCosineTransform
 import NumlibSurface.GolubVanLoan.Chapter01.Section03
 
 /-!
-# Golub–Van Loan §1.4: fast matrix-vector products
+# Golub and Van Loan, Section 1.4: Fast matrix-vector products
 
-Surface file for §1.4 of Golub and Van Loan, *Matrix Computations* (4th edition): the DFT matrix and
-the radix-2 FFT (Algorithm 1.4.1), the block structure of `F_{2m}` (Theorem 1.4.1), the fast sine
-and cosine transforms through it ((1.4.3)–(1.4.11), Algorithms 1.4.2–1.4.3), and the Haar wavelet
-transform ((1.4.13), Algorithm 1.4.4).
+This module formalizes §1.4 of [golub2013matrix], on matrix-vector products that cost far fewer than
+$n^2$ operations. The DFT matrix is $F_n = (\omega_n^{kj})$ with $\omega_n = \exp(-2\pi i/n)$,
+(1.4.1)–(1.4.2). The module defines the radix-2 fast Fourier transform (Algorithm 1.4.1), which
+computes $y = F_n x$ for $n = 2^t$, and proves it correct in exact arithmetic. It proves the block
+structure (1.4.7) of $F_{2m}$ (Theorem 1.4.1), relates the discrete sine and cosine transforms
+(1.4.3)–(1.4.4) to the matrices of (1.4.8) and (1.4.10), and proves that the fast sine and cosine
+transforms through the FFT (Algorithms 1.4.2–1.4.3) compute them. Last, it defines the Haar wavelet
+transform matrix $W_n$ of §1.4.3, proves its block factorization (1.4.13), and proves that the fast
+Haar transform (Algorithm 1.4.4) computes $y = W_n x$.
 
-## Design
+The proofs specialize the backbone modules `Numlib.Analysis.Fourier.DFT` (the DFT matrix and its
+radix-2 splitting) and `Numlib.Analysis.Fourier.SineCosineTransform` (the sine and cosine transform
+matrices). This module also defines the rounded entrywise vector operations that later chapters use.
 
-The book's `F_n = (ω_n^{kj})`, `ω_n = exp(−2πi/n)` ((1.4.1)–(1.4.2)) is `fourierMatrix n`, the
-conjugate transpose of the backbone's `Matrix.dft n` (whose root is `exp(+2πi/n)`); its radix-2
-splitting is the backbone's `Matrix.dft_radix_two`/`Matrix.dft_radix_two_add`. `S_r`, `C_r` of
-(1.4.6) are `Matrix.dst1 r` and `Matrix.cosMatrix r`, `DCT(m+1)` of (1.4.10) is `Matrix.dct1 m`, and
-`x_sin`, `x_cos` ((1.4.9), (1.4.11)) are `Matrix.oddExtensionVec` and `Matrix.evenExtensionVec`
-(`Numlib/Analysis/Fourier/SineCosineTransform`); the exchange `E` is `Matrix.exchange` (§1.2). The
-book's indices `k, j` in (1.4.3)–(1.4.5) already start at `0`; 0-based `Fin` indices shift the
-others by one, as stated per declaration.
+## Main definitions
 
-The fast transforms are complex algorithms: their hook is `rnd : ℂ → M ℂ`, through which every
-complex `+`, `−`, `×`, `/`, the root `ω = exp(−2πi/n)` and each twiddle factor `ω^k` (by the
-recurrence `ω^k = ω^{k−1} ω`) pass; multiplication by `i` is exact (it swaps the real and imaginary
-parts with a negation, convention 1). Their exact semantics is the same as in the real case; no
-complex rounding model exists in the backbone, and the book analyses none. The Haar transform is a
-real algorithm. The recursive algorithms recurse on `t` with `n = 2^t`; the halves of
-`Fin (2^(t+1))` are `GolubVanLoan.Chapter01.twoPowSplit` and the even/odd positions are
-`finProdFinEquiv` on `Fin (2^t * 2)`, which is `Fin (2^(t+1))` definitionally.
-
-The Haar matrix `W_n` is surface-only: no other source uses the discrete Haar transform (the
-backbone's `Numlib/Analysis/Wavelet/Haar` is the continuous system on `L²(ℝ)`).
+* `GolubVanLoan.Chapter01.vecAdd`, `GolubVanLoan.Chapter01.vecSub` and
+  `GolubVanLoan.Chapter01.vecPointwiseMul`: the entrywise rounded sum, difference and product of two
+  vectors.
+* Equations (1.4.1)–(1.4.2), `GolubVanLoan.Chapter01.fourierMatrix`: the DFT matrix $F_n$.
+* Algorithm 1.4.1, `GolubVanLoan.Chapter01.algorithm_1_4_1`: the radix-2 FFT.
+* Equation (1.4.3), `GolubVanLoan.Chapter01.dstTransform`: the discrete sine transform.
+* Equation (1.4.4), `GolubVanLoan.Chapter01.dctTransform`: the discrete cosine transform.
+* Algorithm 1.4.2, `GolubVanLoan.Chapter01.algorithm_1_4_2`: the DST through the FFT.
+* Algorithm 1.4.3, `GolubVanLoan.Chapter01.algorithm_1_4_3`: the DCT through the FFT.
+* §1.4.3, `GolubVanLoan.Chapter01.haarMatrix`: the Haar wavelet transform matrix $W_n$.
+* Algorithm 1.4.4, `GolubVanLoan.Chapter01.algorithm_1_4_4`: the fast Haar wavelet transform.
 
 ## Main results
 
-* `fourierMatrix`, `equation_1_4_5` — `F_n` and its entries in real form.
-* `algorithm_1_4_1`, `algorithm_1_4_1_spec` — the radix-2 FFT.
-* `theorem_1_4_1` — the block structure (1.4.7) of `F_{2m}`.
-* `dstTransform`, `dctTransform`, `equation_1_4_8`, `equation_1_4_10` — the DST and DCT.
-* `algorithm_1_4_2`, `algorithm_1_4_3` and their specifications — the DST and DCT through the FFT.
-* `haarMatrix`, `equation_1_4_13`, `algorithm_1_4_4`, `algorithm_1_4_4_spec` — the Haar transform.
+* Equation (1.4.5), `GolubVanLoan.Chapter01.equation_1_4_5`: $[F_{2m}]_{kj} = \cos(kj\pi/m) - i
+  \sin(kj\pi/m)$.
+* Algorithm 1.4.1, `GolubVanLoan.Chapter01.algorithm_1_4_1_spec`: in exact arithmetic the FFT
+  computes $y = F_n x$.
+* Theorem 1.4.1, `GolubVanLoan.Chapter01.theorem_1_4_1`: the block structure (1.4.7) of $F_{2m}$ in
+  terms of $C_{m-1}$, $S_{m-1}$ and the exchange matrix.
+* Equation (1.4.8), `GolubVanLoan.Chapter01.equation_1_4_8`: the sine transform is the product with
+  $S_{m-1}$.
+* Equation (1.4.10), `GolubVanLoan.Chapter01.equation_1_4_10`: the cosine transform is the product
+  with $\mathrm{DCT}(m+1)$.
+* Algorithm 1.4.2, `GolubVanLoan.Chapter01.algorithm_1_4_2_spec`: in exact arithmetic the algorithm
+  computes the DST.
+* Algorithm 1.4.3, `GolubVanLoan.Chapter01.algorithm_1_4_3_spec`: in exact arithmetic the algorithm
+  computes the DCT.
+* Equation (1.4.13), `GolubVanLoan.Chapter01.equation_1_4_13`: $\mathcal{P}_{2,m}^T W_n = (W_2
+  \otimes I_m) \operatorname{diag}(W_m, I_m)$.
+* Algorithm 1.4.4, `GolubVanLoan.Chapter01.algorithm_1_4_4_spec`: in exact arithmetic the algorithm
+  computes $y = W_n x$.
 
-## Not formalized here
+## Conventions
 
-The flop analyses (`8n log₂ n`, `5n log₂ n`, `2n`), the display of `F_8(:,cols)` as a worked
-example (its content is the radix-2 splitting), the definitions DST-II … DCT-IV of (1.4.12) and the
-remark that DST-II is a subvector of a DST of an interleaved vector (the backbone's `Matrix.dst2`,
-`Matrix.dct2` serve chapter 4), the examples `F_4`, `W_2`, `W_4`, `W_8`.
+* The indices $k, j$ of the source in (1.4.3)–(1.4.5) already start at $0$. The other indices of the
+  source start at $1$, and the 0-based `Fin` indices shift them by one, as each declaration states.
+* The matrices $S_r$ and $C_r$ of (1.4.6) are `Matrix.dst1 r` and `Matrix.cosMatrix r`, and
+  $\mathrm{DCT}(m+1)$ of (1.4.10) is `Matrix.dct1 m`. The vectors $x_{\sin}$ of (1.4.9) and
+  $x_{\cos}$ of (1.4.11) are `Matrix.oddExtensionVec` and `Matrix.evenExtensionVec`. The exchange
+  matrix $E$ is `Matrix.exchange`, as in §1.2.
+
+## Implementation notes
+
+* The source's $F_n$ is `GolubVanLoan.Chapter01.fourierMatrix n`, the conjugate transpose of the
+  backbone's `Matrix.dft n`, whose root of unity is $\exp(+2\pi i/n)$. The radix-2 splitting of
+  $F_n$ is the backbone's `Matrix.dft_radix_two` and `Matrix.dft_radix_two_add`.
+* The fast transforms are complex algorithms. Their rounding hook is `rnd : ℂ → M ℂ`. Every complex
+  sum, difference, product and quotient passes through it, and so do the root
+  $\omega = \exp(-2\pi i/n)$ and each twiddle factor $\omega^k$, which is computed by the recurrence
+  $\omega^k = \omega^{k-1} \omega$. Multiplication by $i$ is exact, because it swaps the real and
+  imaginary parts with a change of sign. The exact semantics are as in the real case. The backbone
+  has no complex rounding model, and the source analyses none.
+* The Haar transform is a real algorithm.
+* The recursive algorithms recurse on $t$ with $n = 2^t$. The halves of `Fin (2 ^ (t + 1))` are
+  given by `GolubVanLoan.Chapter01.twoPowSplit`, and the even and odd positions by `finProdFinEquiv`
+  on `Fin (2 ^ t * 2)`, which is `Fin (2 ^ (t + 1))` up to a cast.
+* The Haar matrix $W_n$ is defined in this module only. No other source of the library uses the
+  discrete Haar transform; the backbone's `Numlib.Analysis.Wavelet.Haar` is the continuous Haar
+  system on $L^2(\mathbb{R})$.
+
+## Deviations from the source
+
+* **§1.4.3, the Haar matrix** (typo). The printed recursion for $W_{2m}$ lost its brackets, and the
+  printed $W_4$ and the sixth row of $W_8$ are garbled; the definition follows $W_2$ and the intact
+  rows of $W_8$. See `GolubVanLoan.Chapter01.haarMatrix`.
+* **Algorithm 1.4.4** (typo). The source writes $y(1{:}2{:}m)$ and $y(2{:}2{:}m)$ for $y(1{:}2{:}n)$
+  and $y(2{:}2{:}n)$. See `GolubVanLoan.Chapter01.algorithm_1_4_4`.
+
+## Not formalized
+
+* **The flop counts $8n \log_2 n$, $5n \log_2 n$ and $2n$.** Operation counts are out of scope for
+  the library.
+* **The display of $F_8(:, \mathrm{cols})$ as a worked example.** Its content is the radix-2
+  splitting.
+* **The definitions DST-II to DCT-IV of (1.4.12), and the remark that DST-II is a subvector of a DST
+  of an interleaved vector.** The backbone's `Matrix.dst2` and `Matrix.dct2` serve Chapter 4.
+* **The examples $F_4$, $W_2$, $W_4$ and $W_8$.**
 -/
 
 open Matrix Complex
@@ -64,19 +115,23 @@ section VectorOps
 
 variable {M : Type → Type} [Monad M] {K : Type} (rnd : K → M K)
 
-/-- The entrywise rounded sum `fl(u + v)` of two vectors, `u(k) = u(k) + v(k)` over `k`. -/
+/-- The entrywise rounded sum $\mathrm{fl}(u + v)$ of two vectors: the program computes
+$u_k \leftarrow \mathrm{fl}(u_k + v_k)$ for $k = 1, \dots, n$. -/
 def vecAdd [Add K] {n : ℕ} (u v : Fin n → K) : M (Fin n → K) :=
   (List.finRange n).foldlM (fun y k => do
     let s ← rnd (y k + v k)
     pure (Function.update y k s)) u
 
-/-- The entrywise rounded difference `fl(u − v)` of two vectors. -/
+/-- The entrywise rounded difference $\mathrm{fl}(u - v)$ of two vectors: the program computes
+$u_k \leftarrow \mathrm{fl}(u_k - v_k)$ for $k = 1, \dots, n$. -/
 def vecSub [Sub K] {n : ℕ} (u v : Fin n → K) : M (Fin n → K) :=
   (List.finRange n).foldlM (fun y k => do
     let s ← rnd (y k - v k)
     pure (Function.update y k s)) u
 
-/-- The entrywise rounded product `fl(d .* v)` of two vectors, the book's `d .* y`. -/
+/-- The entrywise rounded product $\mathrm{fl}(d \mathbin{.*} v)$ of two vectors, the source's
+$d \mathbin{.*} y$: the program computes $v_k \leftarrow \mathrm{fl}(d_k v_k)$ for
+$k = 1, \dots, n$. -/
 def vecPointwiseMul [Mul K] {n : ℕ} (d v : Fin n → K) : M (Fin n → K) :=
   (List.finRange n).foldlM (fun y k => do
     let s ← rnd (d k * y k)
@@ -84,7 +139,7 @@ def vecPointwiseMul [Mul K] {n : ℕ} (d v : Fin n → K) : M (Fin n → K) :=
 
 end VectorOps
 
-/-- In exact arithmetic `vecAdd` is the sum. -/
+/-- In exact arithmetic, `GolubVanLoan.Chapter01.vecAdd` computes the sum $u + v$. -/
 theorem vecAdd_spec {K : Type} [Add K] {n : ℕ} (u v : Fin n → K) :
     Id.run (vecAdd pure u v) = u + v := by
   funext k
@@ -92,7 +147,7 @@ theorem vecAdd_spec {K : Type} [Add K] {n : ℕ} (u v : Fin n → K) :
     (List.nodup_finRange n), ite_eq_left (List.mem_finRange k)]
   rfl
 
-/-- In exact arithmetic `vecSub` is the difference. -/
+/-- In exact arithmetic, `GolubVanLoan.Chapter01.vecSub` computes the difference $u - v$. -/
 theorem vecSub_spec {K : Type} [Sub K] {n : ℕ} (u v : Fin n → K) :
     Id.run (vecSub pure u v) = u - v := by
   funext k
@@ -100,7 +155,8 @@ theorem vecSub_spec {K : Type} [Sub K] {n : ℕ} (u v : Fin n → K) :
     (List.nodup_finRange n), ite_eq_left (List.mem_finRange k)]
   rfl
 
-/-- In exact arithmetic `vecPointwiseMul` is the entrywise product. -/
+/-- In exact arithmetic, `GolubVanLoan.Chapter01.vecPointwiseMul` computes the entrywise product of
+$d$ and $v$. -/
 theorem vecPointwiseMul_spec {K : Type} [Mul K] {n : ℕ} (d v : Fin n → K) :
     Id.run (vecPointwiseMul pure d v) = d * v := by
   funext k
@@ -108,8 +164,8 @@ theorem vecPointwiseMul_spec {K : Type} [Mul K] {n : ℕ} (d v : Fin n → K) :
     (List.nodup_finRange n), ite_eq_left (List.mem_finRange k)]
   rfl
 
-/-- In exact arithmetic, a loop writing entry `k` of a vector with a value not depending on the
-state sets the vector to those values. -/
+/-- In exact arithmetic, a loop that writes entry $k$ of a vector with a value that does not depend
+on the state sets the vector to those values. -/
 private theorem idRun_foldlM_finRange_set {K : Type} {n : ℕ} (f : Fin n → K) (y₀ : Fin n → K) :
     Id.run ((List.finRange n).foldlM (fun (y : Fin n → K) k => do
       let v ← (pure (f k) : Id K); pure (Function.update y k v)) y₀) = f := by
@@ -118,7 +174,8 @@ private theorem idRun_foldlM_finRange_set {K : Type} {n : ℕ} (f : Fin n → K)
     ite_eq_left (List.mem_finRange k)]
   rfl
 
-/-- **An invariant of a `finRange` loop in exact arithmetic**, indexed by the step count. -/
+/-- An invariant of a loop over `List.finRange n` in exact arithmetic, indexed by the number of
+steps. -/
 private theorem foldl_finRange_invariant {β : Type} {n : ℕ} (f : β → Fin n → β) (a : β)
     (I : ℕ → β → Prop) (h0 : I 0 a) (hstep : ∀ (k : Fin n) c, I k c → I (k + 1) (f c k)) :
     I n ((List.finRange n).foldl f a) := by
@@ -131,21 +188,29 @@ private theorem foldl_finRange_invariant {β : Type} {n : ℕ} (f : β → Fin n
 
 /-! ### The DFT matrix -/
 
-/-- **(1.4.1)–(1.4.2)**: the DFT matrix `F_n = (f_kj)`, `f_kj = ω_n^{(k−1)(j−1)}` (1-based),
-`ω_n = exp(−2πi/n) = cos(2π/n) − i sin(2π/n)`: the conjugate transpose of the backbone's
-`Matrix.dft n`, whose root is `exp(+2πi/n)` (`fourierMatrix_apply`). -/
+/-- **Equations (1.4.1)–(1.4.2)** of [golub2013matrix]. The **DFT matrix**
+$F_n = (f_{kj}) \in \mathbb{C}^{n \times n}$ has the entries $f_{kj} = \omega_n^{(k-1)(j-1)}$
+(1-based), where
+$$\omega_n = \exp(-2\pi i/n) = \cos(2\pi/n) - i \sin(2\pi/n).$$
+
+The definition is the conjugate transpose of the backbone's `Matrix.dft n`, whose root is
+$\exp(+2\pi i/n)$. The entries are `GolubVanLoan.Chapter01.fourierMatrix_apply`. -/
 noncomputable def fourierMatrix (n : ℕ) : Matrix (Fin n) (Fin n) ℂ :=
   (dft n)ᴴ
 
-/-- The entries of `F_n`, 0-based: `F_n k j = ω_n^{kj}`, `ω_n = exp(−2πi/n)`. -/
+/-- The entries of $F_n$ in 0-based indices: $[F_n]_{kj} = \omega_n^{kj}$ with
+$\omega_n = \exp(-2\pi i/n)$. -/
 theorem fourierMatrix_apply {n : ℕ} (k j : Fin n) :
     fourierMatrix n k j = Complex.exp (-2 * π * I / n) ^ ((k : ℕ) * (j : ℕ)) := by
   rw [fourierMatrix, conjTranspose_dft_apply, ← Complex.exp_neg]
   congr 2
   ring
 
-/-- **(1.4.5)**: for `k, j = 0 : 2m − 1`, `[F_{2m}]_{k+1, j+1} = ω_{2m}^{kj} = cos(kjπ/m) −
-i sin(kjπ/m)` (the book's `k, j` are already 0-based here). -/
+/-- **Equation (1.4.5)** of [golub2013matrix]. For $k, j = 0, \dots, 2m - 1$,
+$$[F_{2m}]_{k+1, j+1} = \omega_{2m}^{kj} = \cos(kj\pi/m) - i \sin(kj\pi/m).$$
+
+The indices $k, j$ of the source already start at $0$ here, so they are the 0-based `Fin`
+indices. -/
 theorem equation_1_4_5 {m : ℕ} (k j : Fin (2 * m)) :
     fourierMatrix (2 * m) k j =
       (Real.cos ((k : ℕ) * (j : ℕ) * π / m) : ℂ) -
@@ -157,21 +222,22 @@ theorem equation_1_4_5 {m : ℕ} (k j : Fin (2 * m)) :
       mul_div_mul_left _ _ two_ne_zero]
   rw [fourierMatrix, conjTranspose_dft_apply_eq_cos_sub_sin, h]
 
-/-- `F_1 = [1]`. -/
+/-- The DFT matrix of order $1$ is $F_1 = [1]$. -/
 private theorem fourierMatrix_one : fourierMatrix 1 = 1 := by
   ext i j
   rw [Subsingleton.elim i 0, Subsingleton.elim j 0, fourierMatrix_apply, one_apply_eq]
   simp
 
-/-- `F_N` along an equality of orders. -/
+/-- The DFT matrix $F_N$ transported along an equality of orders $N = N'$. -/
 private theorem fourierMatrix_mulVec_cast {N N' : ℕ} (h : N = N') (v : Fin N' → ℂ) (i : Fin N) :
     (fourierMatrix N *ᵥ (v ∘ Fin.cast h)) i = (fourierMatrix N' *ᵥ v) (Fin.cast h i) := by
   subst h
   rfl
 
-/-- **The radix-2 splitting** of `F_N`, `N = 2n`: `y(1:n) = y_T + d .* y_B`,
-`y(n+1:N) = y_T − d .* y_B` with `y_T = F_n x(1:2:N)`, `y_B = F_n x(2:2:N)` and
-`d = [1, ω_N, …, ω_N^{n−1}]` — the backbone's `Matrix.dft_radix_two`, `Matrix.dft_radix_two_add`. -/
+/-- The radix-2 splitting of $F_N$ for $N = 2n$: $y(1{:}n) = y_T + d \mathbin{.*} y_B$ and
+$y(n+1{:}N) = y_T - d \mathbin{.*} y_B$, where $y_T = F_n x(1{:}2{:}N)$,
+$y_B = F_n x(2{:}2{:}N)$ and $d = [1, \omega_N, \dots, \omega_N^{n-1}]$; this is the backbone's
+`Matrix.dft_radix_two` and `Matrix.dft_radix_two_add`. -/
 private theorem fourier_radix_two {N n : ℕ} (hN : N = 2 * n) (x : Fin N → ℂ) (k : Fin n) :
     (fourierMatrix N *ᵥ x) ⟨k, by omega⟩ =
         (fourierMatrix n *ᵥ fun l : Fin n => x ⟨2 * l, by omega⟩) k +
@@ -197,16 +263,17 @@ section FFT
 
 variable {M : Type → Type} [Monad M] (rnd : ℂ → M ℂ)
 
-/-- The twiddle factors `d = [1, ω, …, ω^{m−1}]` of Algorithm 1.4.1, each power formed from the
-previous one by a rounded multiplication: `d_0 = 1`, `d_k = fl(d_{k−1} ω)`. -/
+/-- The twiddle factors $d = [1, \omega, \dots, \omega^{m-1}]$ of Algorithm 1.4.1. Each power is
+formed from the previous one by a rounded multiplication: $d_0 = 1$ and
+$d_k = \mathrm{fl}(d_{k-1} \omega)$. -/
 def fftTwiddles (m : ℕ) (ω : ℂ) : M (Fin m → ℂ) := do
   let st ← (List.finRange m).foldlM (fun (st : (Fin m → ℂ) × ℂ) (k : Fin m) => do
     let c ← (if (k : ℕ) = 0 then pure 1 else rnd (st.2 * ω) : M ℂ)
     pure (Function.update st.1 k c, c)) (fun _ => 0, 1)
   pure st.1
 
-/-- **Algorithm 1.4.1** (radix-2 FFT). "If `x ∈ ℂⁿ` and `n = 2^t`, then this algorithm computes the
-discrete Fourier transform `y = F_n x`":
+/-- **Algorithm 1.4.1** of [golub2013matrix] (radix-2 FFT). "If $x \in \mathbb{C}^n$ and $n = 2^t$,
+then this algorithm computes the discrete Fourier transform $y = F_n x$":
 ```
 function y = fft(x, n)
     if n = 1
@@ -221,7 +288,13 @@ function y = fft(x, n)
         y = [y_T + z; y_T − z]
     end
 ```
--/
+The root $\omega$ is rounded once, the twiddle factors are `GolubVanLoan.Chapter01.fftTwiddles`,
+and the vector operations are `GolubVanLoan.Chapter01.vecPointwiseMul`,
+`GolubVanLoan.Chapter01.vecAdd` and `GolubVanLoan.Chapter01.vecSub`.
+
+The program recurses on $t$. The subvectors $x(1{:}2{:}n)$ and $x(2{:}2{:}n)$ are the entries at
+the 0-based positions $2l$ and $2l + 1$, and the halves of $y$ are joined by
+`GolubVanLoan.Chapter01.twoPowSplit`. -/
 noncomputable def algorithm_1_4_1 : (t : ℕ) → (Fin (2 ^ t) → ℂ) → M (Fin (2 ^ t) → ℂ)
   | 0, x => pure x
   | t + 1, x => do
@@ -238,7 +311,8 @@ noncomputable def algorithm_1_4_1 : (t : ℕ) → (Fin (2 ^ t) → ℂ) → M (F
 
 end FFT
 
-/-- In exact arithmetic the twiddle factors are the powers `ω^k`. -/
+/-- In exact arithmetic, the twiddle factors are the powers $d_k = \omega^k$, $k = 0, \dots, m - 1$.
+-/
 theorem fftTwiddles_spec (m : ℕ) (ω : ℂ) :
     Id.run (fftTwiddles pure m ω) = fun k : Fin m => ω ^ (k : ℕ) := by
   have key := foldl_finRange_invariant
@@ -266,8 +340,10 @@ theorem fftTwiddles_spec (m : ℕ) (ω : ℂ) :
   rw [fftTwiddles, Id.run_bind, Id.run_pure, List.idRun_foldlM]
   exact key.1 l l.isLt
 
-/-- **Algorithm 1.4.1 computes `y = F_n x`**: by induction on `t`, `F_1 x = x` and the radix-2
-splitting of `F_{2m}`. -/
+/-- **Algorithm 1.4.1** of [golub2013matrix], exact correctness. For every $t$, $n = 2^t$ and
+$x \in \mathbb{C}^n$, in exact arithmetic Algorithm 1.4.1 returns $y = F_n x$.
+
+The proof is by induction on $t$, from $F_1 x = x$ and the radix-2 splitting of $F_{2m}$. -/
 theorem algorithm_1_4_1_spec :
     ∀ (t : ℕ) (x : Fin (2 ^ t) → ℂ), Id.run (algorithm_1_4_1 pure t x) = fourierMatrix (2 ^ t) *ᵥ x
   | 0, x => by
@@ -289,38 +365,39 @@ theorem algorithm_1_4_1_spec :
         Pi.mul_apply]
       rw [hi, (fourier_radix_two (pow_succ' 2 t) x k).2]
 
-/-! ### Theorem 1.4.1: the block structure of `F_{2m}` -/
+/-! ### Theorem 1.4.1: the block structure of $F_{2m}$ -/
 
 section Theorem141
 
 variable (m : ℕ) [NeZero m]
 
-/-- The rows and columns of the blocks of (1.4.7), 0-based: `0`, `1 : m − 1`, `m` and
-`m + 1 : 2m − 1` of `Fin (2m)`. -/
+/-- The 0-based row and column $0$ of $F_{2m}$, the first of the four index blocks $0$, $1{:}m-1$,
+$m$ and $m+1{:}2m-1$ of (1.4.7); it is the source's row and column $1$. -/
 def dftBlockIdx₀ : Fin 1 → Fin (2 * m) := fun _ => ⟨0, by have := NeZero.pos m; omega⟩
 
-/-- The rows and columns `1 : m − 1` of `F_{2m}` (0-based), the book's `2 : m`. -/
+/-- The rows and columns $1{:}m-1$ of $F_{2m}$ in 0-based indices, the source's $2{:}m$. -/
 def dftBlockIdx₁ : Fin (m - 1) → Fin (2 * m) := fun j => ⟨j + 1, by omega⟩
 
-/-- The row and column `m` of `F_{2m}` (0-based), the book's `m + 1`. -/
+/-- The row and column $m$ of $F_{2m}$ in 0-based indices, the source's $m + 1$. -/
 def dftBlockIdx₂ : Fin 1 → Fin (2 * m) := fun _ => ⟨m, by have := NeZero.pos m; omega⟩
 
-/-- The rows and columns `m + 1 : 2m − 1` of `F_{2m}` (0-based), the book's `m + 2 : 2m`. -/
+/-- The rows and columns $m+1{:}2m-1$ of $F_{2m}$ in 0-based indices, the source's $m+2{:}2m$. -/
 def dftBlockIdx₃ : Fin (m - 1) → Fin (2 * m) := fun j => ⟨m + 1 + j, by omega⟩
 
-/-- The book's `C_{m−1}` of (1.4.6) as a complex matrix. -/
+/-- The matrix $C_{m-1}$ of (1.4.6) of [golub2013matrix], as a complex matrix. -/
 noncomputable abbrev cosMatrixC : Matrix (Fin (m - 1)) (Fin (m - 1)) ℂ :=
   (cosMatrix (m - 1)).map (↑)
 
-/-- The book's `S_{m−1}` of (1.4.6) as a complex matrix. -/
+/-- The matrix $S_{m-1}$ of (1.4.6) of [golub2013matrix], as a complex matrix. -/
 noncomputable abbrev dst1C : Matrix (Fin (m - 1)) (Fin (m - 1)) ℂ :=
   (dst1 (m - 1)).map (↑)
 
-/-- The book's `v = (−1, 1, …, (−1)^{m−1})` of Theorem 1.4.1, 0-based `v_j = (−1)^{j+1}`. -/
+/-- The vector $v = (-1, 1, \dots, (-1)^{m-1})$ of length $m - 1$ of Theorem 1.4.1 of
+[golub2013matrix]; in 0-based indices $v_j = (-1)^{j+1}$. -/
 abbrev altSignVec : Fin (m - 1) → ℂ := fun j => (-1) ^ ((j : ℕ) + 1)
 
 omit [NeZero m] in
-/-- An entry of `F_{2m}` as an exponential, `ω_{2m}^{ab} = exp(−(abπ/m) i)`. -/
+/-- An entry of $F_{2m}$ as an exponential: $\omega_{2m}^{ab} = \exp(-(ab\pi/m) i)$. -/
 private theorem fourierMatrix_two_mul_apply' (hm : 0 < m) {a b : ℕ} (ha : a < 2 * m)
     (hb : b < 2 * m) :
     fourierMatrix (2 * m) ⟨a, ha⟩ ⟨b, hb⟩ = Complex.exp (-((a : ℂ) * b * π / m) * I) := by
@@ -330,41 +407,41 @@ private theorem fourierMatrix_two_mul_apply' (hm : 0 < m) {a b : ℕ} (ha : a < 
   push_cast
   field_simp
 
-/-- `cos θ + i sin θ = exp(θ i)`, the entries of `C + iS`. -/
+/-- $\cos\theta + i \sin\theta = \exp(\theta i)$, the form of the entries of $C + iS$. -/
 private theorem cos_add_I_mul_sin (θ : ℝ) :
     (Real.cos θ : ℂ) + I * (Real.sin θ : ℂ) = Complex.exp ((θ : ℂ) * I) := by
   rw [Complex.exp_mul_I, Complex.ofReal_cos, Complex.ofReal_sin]
   ring
 
-/-- `cos θ − i sin θ = exp(−θ i)`, the entries of `C − iS`. -/
+/-- $\cos\theta - i \sin\theta = \exp(-\theta i)$, the form of the entries of $C - iS$. -/
 private theorem cos_sub_I_mul_sin (θ : ℝ) :
     (Real.cos θ : ℂ) - I * (Real.sin θ : ℂ) = Complex.exp (-(θ : ℂ) * I) := by
   rw [Complex.exp_mul_I, Complex.cos_neg, Complex.sin_neg, Complex.ofReal_cos,
     Complex.ofReal_sin]
   ring
 
-/-- `(−1)^n = exp(nπ i)`. -/
+/-- $(-1)^n = \exp(n\pi i)$. -/
 private theorem neg_one_pow_eq_exp (n : ℕ) :
     ((-1 : ℂ)) ^ n = Complex.exp ((n : ℂ) * π * I) := by
   rw [show (n : ℂ) * π * I = n * (π * I) by ring, Complex.exp_nat_mul, Complex.exp_pi_mul_I]
 
-/-- Two exponentials `exp(x i)`, `exp(y i)` whose arguments differ by `2πn` agree. -/
+/-- Two exponentials $\exp(xi)$ and $\exp(yi)$ agree if $x = y + 2\pi n$ for an integer $n$. -/
 private theorem exp_mul_I_eq_of_eq_add {x y : ℂ} (n : ℤ) (h : x = y + n * (2 * π)) :
     Complex.exp (x * I) = Complex.exp (y * I) :=
   Complex.exp_eq_exp_iff_exists_int.2 ⟨n, by rw [h]; ring⟩
 
-/-- **Theorem 1.4.1.** Let `m` be a positive integer, `eᵀ = (1, …, 1)` and
-`vᵀ = (−1, 1, …, (−1)^{m−1})` of length `m − 1`, `E = ℰ_{m−1}`, `C = C_{m−1}` and `S = S_{m−1}`.
-Then
-```
-         ⎡ 1   eᵀ          1        eᵀ         ⎤
-F_{2m} = ⎢ e   C − iS      v        (C + iS)E  ⎥
-         ⎢ 1   vᵀ          (−1)^m   vᵀE        ⎥
-         ⎣ e   E(C + iS)   Ev       E(C − iS)E ⎦
-```
-(1.4.7), stated block by block: the blocks sit at the 0-based rows and columns `0`, `1:m−1`, `m`,
-`m+1:2m−1` of `F_{2m}` (`dftBlockIdx₀` … `dftBlockIdx₃`), and a `1 × 1` block `c`, a row `eᵀ`
-or a column `e` is the constant matrix `of fun _ _ => c`. -/
+/-- **Theorem 1.4.1** of [golub2013matrix]. Let $m$ be a positive integer. Let $e^T = (1, \dots, 1)$
+and $v^T = (-1, 1, \dots, (-1)^{m-1})$ have length $m - 1$, and let $E = \mathcal{E}_{m-1}$,
+$C = C_{m-1}$ and $S = S_{m-1}$. Then
+$$F_{2m} = \begin{bmatrix} 1 & e^T & 1 & e^T \\ e & C - iS & v & (C + iS)E \\ 1 & v^T & (-1)^m &
+  v^T E \\ e & E(C + iS) & Ev & E(C - iS)E \end{bmatrix}. \qquad (1.4.7)$$
+
+The statement gives the sixteen blocks one by one. The blocks sit at the 0-based rows and
+columns $0$, $1{:}m-1$, $m$ and $m+1{:}2m-1$ of $F_{2m}$ (`GolubVanLoan.Chapter01.dftBlockIdx₀`
+to `GolubVanLoan.Chapter01.dftBlockIdx₃`). A $1 \times 1$ block $c$, a row $e^T$ and a column
+$e$ are constant matrices `of fun _ _ => c`. The matrices $C$ and $S$ are
+`Matrix.cosMatrix (m - 1)` and `Matrix.dst1 (m - 1)` with complex entries, and $E$ is
+`Matrix.exchange (m - 1)`. -/
 theorem theorem_1_4_1 :
     let F := fourierMatrix (2 * m)
     let E : Matrix (Fin (m - 1)) (Fin (m - 1)) ℂ := exchange (m - 1)
@@ -479,20 +556,31 @@ end Theorem141
 
 /-! ### The sine and cosine transforms (1.4.3)–(1.4.11) -/
 
-/-- **(1.4.3)**: the discrete sine transform of `x_1, …, x_{m−1}`,
-`y_k = ∑_{j=1}^{m−1} sin(kjπ/m) x_j`, `k = 1 : m − 1` (0-based: `x j` is the book's `x_{j+1}`). -/
+/-- **Equation (1.4.3)** of [golub2013matrix]. The **discrete sine transform** of
+$x_1, \dots, x_{m-1}$ is the vector $y$ with
+$$y_k = \sum_{j=1}^{m-1} \sin\left(\frac{kj\pi}{m}\right) x_j, \qquad k = 1, \dots, m - 1.$$
+
+In 0-based indices, the argument `x j` is the source's $x_{j+1}$, and the output entry with index
+$k$ is $y_{k+1}$. -/
 noncomputable def dstTransform (m : ℕ) (x : Fin (m - 1) → ℝ) : Fin (m - 1) → ℝ := fun k =>
   ∑ j : Fin (m - 1), Real.sin (((k : ℕ) + 1) * ((j : ℕ) + 1) * π / m) * x j
 
-/-- **(1.4.4)**: the discrete cosine transform of `x_0, …, x_m`,
-`y_k = x_0/2 + ∑_{j=1}^{m−1} cos(kjπ/m) x_j + (−1)^k x_m/2`, `k = 0 : m`, with the three terms as
-printed (the middle sum over `j : Fin (m − 1)` shifted by one). -/
+/-- **Equation (1.4.4)** of [golub2013matrix]. The **discrete cosine transform** of
+$x_0, \dots, x_m$ is the vector $y$ with
+$$y_k = \frac{x_0}{2} + \sum_{j=1}^{m-1} \cos\left(\frac{kj\pi}{m}\right) x_j + (-1)^k
+  \frac{x_m}{2}, \qquad k = 0, \dots, m.$$
+
+The three terms are as printed. The middle sum runs over `j : Fin (m - 1)`, shifted by one. -/
 noncomputable def dctTransform (m : ℕ) (x : Fin (m + 1) → ℝ) : Fin (m + 1) → ℝ := fun k =>
   x 0 / 2 + ∑ j : Fin (m - 1), Real.cos ((k : ℕ) * ((j : ℕ) + 1) * π / m) * x ⟨j + 1, by omega⟩ +
     (-1) ^ (k : ℕ) * x (Fin.last m) / 2
 
-/-- **(1.4.8)**: `DST(m − 1) = S_{m−1}`, the sine transform (1.4.3) is the matrix-vector product
-with `S_{m−1}` of (1.4.6). -/
+/-- **Equation (1.4.8)** of [golub2013matrix]. For every $m$ and $x \in \mathbb{R}^{m-1}$, the
+discrete sine transform (1.4.3) is the matrix-vector product with the matrix $S_{m-1}$ of
+(1.4.6): $\mathrm{DST}(m - 1) = S_{m-1}$, that is,
+$$y = S_{m-1} x.$$
+
+The matrix $S_{m-1}$ is `Matrix.dst1 (m - 1)`. -/
 theorem equation_1_4_8 (m : ℕ) (x : Fin (m - 1) → ℝ) : dstTransform m x = dst1 (m - 1) *ᵥ x := by
   funext k
   have hm : 0 < m := by have := k.isLt; omega
@@ -500,9 +588,14 @@ theorem equation_1_4_8 (m : ℕ) (x : Fin (m - 1) → ℝ) : dstTransform m x = 
   refine Finset.sum_congr rfl fun j _ => ?_
   rw [Nat.cast_pred hm, sub_add_cancel]
 
-/-- **(1.4.10)**: for `0 < m`, the cosine transform (1.4.4) is the matrix-vector product with
-`DCT(m + 1) = [1/2, eᵀ, 1/2; e/2, C_{m−1}, v/2; 1/2, vᵀ, (−1)^m/2]` (the backbone's
-`Matrix.dct1 m`, whose block form is its docstring). -/
+/-- **Equation (1.4.10)** of [golub2013matrix]. Let $m \ge 1$ and $x \in \mathbb{R}^{m+1}$. The
+discrete cosine transform (1.4.4) is the matrix-vector product $y = \mathrm{DCT}(m+1) x$ with
+$$\mathrm{DCT}(m+1) = \begin{bmatrix} 1/2 & e^T & 1/2 \\ e/2 & C_{m-1} & v/2 \\ 1/2 & v^T &
+  (-1)^m/2 \end{bmatrix}.$$
+
+The matrix $\mathrm{DCT}(m+1)$ is the backbone's `Matrix.dct1 m`, with entries
+$c_j \cos(kj\pi/m)$, where $c_0 = c_m = 1/2$ and $c_j = 1$ otherwise; its doc comment gives the
+block form. -/
 theorem equation_1_4_10 {m : ℕ} (hm : 0 < m) (x : Fin (m + 1) → ℝ) :
     dctTransform m x = dct1 m *ᵥ x := by
   obtain ⟨m, rfl⟩ : ∃ m', m = m' + 1 := ⟨m - 1, by omega⟩
@@ -529,7 +622,7 @@ theorem equation_1_4_10 {m : ℕ} (hm : 0 < m) (x : Fin (m + 1) → ℝ) :
 
 /-! ### Algorithms 1.4.2 and 1.4.3: the DST and the DCT through the FFT -/
 
-/-- `2^(t+1) = 2 ((2^t − 1) + 1)`: the order of `x_sin`. -/
+/-- $2^{t+1} = 2((2^t - 1) + 1)$, the length of $x_{\sin}$. -/
 private theorem two_pow_succ_eq (t : ℕ) : 2 ^ (t + 1) = 2 * (2 ^ t - 1 + 1) := by
   rw [Nat.sub_add_cancel Nat.one_le_two_pow, pow_succ']
 
@@ -537,15 +630,19 @@ section Transforms
 
 variable {M : Type → Type} [Monad M] (rnd : ℂ → M ℂ)
 
-/-- **Algorithm 1.4.2** (DST through the FFT), for `m = 2^t`: "The following algorithm assigns the
-DST of `x_1, …, x_{m−1}` to `y`":
+/-- **Algorithm 1.4.2** of [golub2013matrix] (DST through the FFT), for $m = 2^t$. "The following
+algorithm assigns the DST of $x_1, \dots, x_{m-1}$ to $y$":
 ```
 Set up the vector x_sin defined by (1.4.9).
 Use fft (e.g., Algorithm 1.4.1) to compute ỹ = F_{2m} x_sin
 y = i · ỹ(2:m)/2
 ```
-Setting up `x_sin` involves no arithmetic but negation. The output is complex: in floating point
-`y` acquires an imaginary part. -/
+Here $x_{\sin} = [0; x; 0; -Ex] \in \mathbb{R}^{2m}$. Each output entry is one rounding of
+$i \tilde y_k / 2$.
+
+Setting up $x_{\sin}$ needs no arithmetic except negation, which is exact. The output is
+complex, because in floating point $y$ acquires an imaginary part. The vector $x_{\sin}$ is
+`Matrix.oddExtensionVec x`. -/
 noncomputable def algorithm_1_4_2 (t : ℕ) (x : Fin (2 ^ t - 1) → ℝ) :
     M (Fin (2 ^ t - 1) → ℂ) := do
   let xsin : Fin (2 ^ (t + 1)) → ℂ := fun l =>
@@ -555,14 +652,18 @@ noncomputable def algorithm_1_4_2 (t : ℕ) (x : Fin (2 ^ t - 1) → ℝ) :
     let v ← rnd (I * yt ⟨k + 1, by have := k.isLt; rw [two_pow_succ_eq]; omega⟩ / 2)
     pure (Function.update y k v)) (fun _ => 0)
 
-/-- **Algorithm 1.4.3** (DCT through the FFT), for `m = 2^t`: "The following algorithm assigns to
-`y ∈ ℝ^{m+1}` the DCT of `x_0, …, x_m`":
+/-- **Algorithm 1.4.3** of [golub2013matrix] (DCT through the FFT), for $m = 2^t$. "The following
+algorithm assigns to $y \in \mathbb{R}^{m+1}$ the DCT of $x_0, \dots, x_m$":
 ```
 Set up the vector x_cos ∈ ℝ^{2m} defined by (1.4.11).
 Use fft (e.g., Algorithm 1.4.1) to compute ỹ = F_{2m} x_cos
 y = ỹ(1:m+1)/2
 ```
--/
+Here $x_{\cos} = [x_0; \tilde x; x_m; E \tilde x]$ with $\tilde x = (x_1, \dots, x_{m-1})$. Each
+output entry is one rounding of $\tilde y_k / 2$.
+
+The output is complex, as for Algorithm 1.4.2. The vector $x_{\cos}$ is
+`Matrix.evenExtensionVec x`. -/
 noncomputable def algorithm_1_4_3 (t : ℕ) (x : Fin (2 ^ t + 1) → ℝ) :
     M (Fin (2 ^ t + 1) → ℂ) := do
   let xcos : Fin (2 ^ (t + 1)) → ℂ := fun l => (evenExtensionVec x (Fin.cast (pow_succ' 2 t) l) : ℂ)
@@ -574,7 +675,9 @@ noncomputable def algorithm_1_4_3 (t : ℕ) (x : Fin (2 ^ t + 1) → ℝ) :
 
 end Transforms
 
-/-- **Algorithm 1.4.2 computes the DST**: its output is `DST(m − 1) x` of (1.4.3), `m = 2^t`. -/
+/-- **Algorithm 1.4.2** of [golub2013matrix], exact correctness. Let $m = 2^t$ and
+$x \in \mathbb{R}^{m-1}$. In exact arithmetic, Algorithm 1.4.2 returns the discrete sine
+transform $\mathrm{DST}(m - 1) x$ of (1.4.3), as a complex vector with zero imaginary parts. -/
 theorem algorithm_1_4_2_spec (t : ℕ) (x : Fin (2 ^ t - 1) → ℝ) :
     Id.run (algorithm_1_4_2 pure t x) = fun k => (dstTransform (2 ^ t) x k : ℂ) := by
   simp only [algorithm_1_4_2, Id.run_bind, algorithm_1_4_1_spec]
@@ -588,7 +691,9 @@ theorem algorithm_1_4_2_spec (t : ℕ) (x : Fin (2 ^ t - 1) → ℝ) :
     fourierMatrix]
   ring
 
-/-- **Algorithm 1.4.3 computes the DCT**: its output is `DCT(m + 1) x` of (1.4.4), `m = 2^t`. -/
+/-- **Algorithm 1.4.3** of [golub2013matrix], exact correctness. Let $m = 2^t$ and
+$x \in \mathbb{R}^{m+1}$. In exact arithmetic, Algorithm 1.4.3 returns the discrete cosine
+transform $\mathrm{DCT}(m + 1) x$ of (1.4.4), as a complex vector with zero imaginary parts. -/
 theorem algorithm_1_4_3_spec (t : ℕ) (x : Fin (2 ^ t + 1) → ℝ) :
     Id.run (algorithm_1_4_3 pure t x) = fun k => (dctTransform (2 ^ t) x k : ℂ) := by
   simp only [algorithm_1_4_3, Id.run_bind, algorithm_1_4_1_spec]
@@ -604,12 +709,22 @@ theorem algorithm_1_4_3_spec (t : ℕ) (x : Fin (2 ^ t + 1) → ℝ) :
 
 /-! ### The Haar wavelet transform (§1.4.3) -/
 
-/-- **§1.4.3**: the Haar wavelet transform matrix `W_n`, `n = 2^t`, defined recursively by
-`W_1 = [1]` and `W_{2m} = [W_m ⊗ (1; 1) | I_m ⊗ (1; −1)]`. (The printed recursion lost its brackets
-in conversion, and both printed examples beyond `W_2` are partly garbled: `W_2` and the intact
-rows of `W_8`, which agree with the recursion, fix the meaning; the printed `W_4` and the sixth row
-of `W_8` are not used as evidence.) Column `j < m` of `W_{2m}` is `W_m(⌊i/2⌋, j)`, column `m + j`
-is `(−1)^{i mod 2}` where `⌊i/2⌋ = j` and `0` elsewhere (`haarMatrix_succ_apply`). -/
+/-- **§1.4.3** of [golub2013matrix], the Haar wavelet transform matrix. For $n = 2^t$ the matrix
+$W_n \in \mathbb{R}^{n \times n}$ is defined by recursion: $W_1 = [1]$ and
+$$W_{2m} = \left[\, W_m \otimes \begin{bmatrix} 1 \\ 1 \end{bmatrix} \;\middle|\; I_m \otimes
+  \begin{bmatrix} 1 \\ -1 \end{bmatrix} \,\right].$$
+So, in 0-based indices, column $j < m$ of $W_{2m}$ has the entries
+$W_m(\lfloor i/2 \rfloor, j)$, and column $m + j$ has the entry $(-1)^{i \bmod 2}$ in the rows
+$i$ with $\lfloor i/2 \rfloor = j$ and $0$ elsewhere
+(`GolubVanLoan.Chapter01.haarMatrix_succ_apply`).
+
+**Typo.** The printed recursion lost its brackets in conversion, and both printed examples
+beyond $W_2$ are partly garbled. The matrix $W_2$ and the intact rows of $W_8$, which agree with
+the recursion, fix the meaning. The printed $W_4$ and the sixth row of $W_8$ are not used as
+evidence.
+
+The Kronecker products are `Matrix.kroneckerFin`, and the two column blocks are joined by
+`GolubVanLoan.Chapter01.twoPowSplit`. -/
 def haarMatrix : (t : ℕ) → Matrix (Fin (2 ^ t)) (Fin (2 ^ t)) ℝ
   | 0 => 1
   | t + 1 => of fun i j => Sum.elim
@@ -619,9 +734,11 @@ def haarMatrix : (t : ℕ) → Matrix (Fin (2 ^ t)) (Fin (2 ^ t)) ℝ
         (Fin.cast (pow_succ 2 t) i) (Fin.cast (Nat.mul_one _).symm j'))
       ((twoPowSplit t).symm j)
 
-/-- Row `2i + a` of `W_{2m}` (0-based, `a ∈ {0, 1}`; the position `finProdFinEquiv (i, a)` of
-`Fin (2^t * 2) = Fin (2^(t+1))`): `W_m(i, j)` in column `j < m`, and `(−1)^a δ_{ij}` in column
-`m + j`. -/
+/-- The rows of $W_{2m}$, $m = 2^t$. Row $2i + a$ of $W_{2m}$ (0-based, $a \in \{0, 1\}$) has the
+entry $W_m(i, j)$ in column $j < m$, and the entry $(-1)^a \delta_{ij}$ in column $m + j$.
+
+The row $2i + a$ is the position `finProdFinEquiv (i, a)` of `Fin (2 ^ t * 2)`, which is
+`Fin (2 ^ (t + 1))` up to a cast. -/
 theorem haarMatrix_succ_apply (t : ℕ) (i : Fin (2 ^ t)) (a : Fin 2) (j : Fin (2 ^ t)) :
     haarMatrix (t + 1) (Fin.cast (pow_succ 2 t).symm (finProdFinEquiv (i, a)))
         (twoPowSplit t (.inl j)) = haarMatrix t i j ∧
@@ -639,10 +756,14 @@ theorem haarMatrix_succ_apply (t : ℕ) (i : Fin (2 ^ t)) (a : Fin 2) (j : Fin (
     · simp
     · split_ifs <;> simp
 
-/-- **(1.4.13)**: reordering the rows of `W_n`, `n = 2m`, so that the odd-indexed rows come first,
-`𝒫_{2,m}ᵀ W_n = [W_m, I_m; W_m, −I_m] = (W_2 ⊗ I_m) [W_m, 0; 0, I_m]` with
-`W_2 = [1, 1; 1, −1]`, the blocks sitting at the first and second halves of the rows (`rows`) and of
-the columns (`twoPowSplit`). -/
+/-- **Equation (1.4.13)** of [golub2013matrix]. Let $m = 2^t$ and $n = 2m$. If the rows of $W_n$ are
+reordered so that the odd-indexed rows come first, then
+$$\mathcal{P}_{2,m}^T W_n = \begin{bmatrix} W_m & I_m \\ W_m & -I_m \end{bmatrix} = (W_2 \otimes
+  I_m) \begin{bmatrix} W_m & 0 \\ 0 & I_m \end{bmatrix}, \qquad W_2 = \begin{bmatrix} 1 & 1 \\ 1
+  & -1 \end{bmatrix}.$$
+
+The statement gives the two equalities. The blocks sit at the first and second halves of the
+rows (the local equivalence `rows`) and of the columns (`GolubVanLoan.Chapter01.twoPowSplit`). -/
 theorem equation_1_4_13 (t : ℕ) :
     let W : Matrix (Fin (2 ^ t * 2)) (Fin (2 ^ (t + 1))) ℝ := haarMatrix (t + 1)
     let rows : Fin (2 * 2 ^ t) ≃ Fin (2 ^ t) ⊕ Fin (2 ^ t) :=
@@ -701,8 +822,10 @@ theorem equation_1_4_13 (t : ℕ) :
   rw [hK, submatrix_mul_equiv, fromBlocks_multiply]
   simp
 
-/-- The row form of (1.4.13): `y(1:2:n) = W_m x_T + x_B`, `y(2:2:n) = W_m x_T − x_B` for
-`y = W_n x`, `x_T = x(1:m)`, `x_B = x(m+1:n)`. -/
+/-- The row form of (1.4.13) of [golub2013matrix]. Let $m = 2^t$, $n = 2m$, $x \in \mathbb{R}^n$,
+$x_T = x(1{:}m)$ and $x_B = x(m+1{:}n)$. Then $y = W_n x$ satisfies
+$$y(1{:}2{:}n) = W_m x_T + x_B, \qquad y(2{:}2{:}n) = W_m x_T - x_B.$$
+In 0-based indices, entry $2i + a$ of $y$, $a \in \{0, 1\}$, is $(W_m x_T)_i + (-1)^a (x_B)_i$. -/
 theorem haarMatrix_succ_mulVec (t : ℕ) (x : Fin (2 ^ (t + 1)) → ℝ) (i : Fin (2 ^ t)) (a : Fin 2) :
     (haarMatrix (t + 1) *ᵥ x) (Fin.cast (pow_succ 2 t).symm (finProdFinEquiv (i, a))) =
       (haarMatrix t *ᵥ fun l => x (twoPowSplit t (.inl l))) i +
@@ -716,8 +839,8 @@ section Haar
 
 variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 
-/-- **Algorithm 1.4.4 (Haar Wavelet Transform).** "If `x ∈ ℝⁿ` and `n = 2^t`, then this algorithm
-computes the Haar transform `y = W_n x`":
+/-- **Algorithm 1.4.4** of [golub2013matrix] (Haar wavelet transform). "If $x \in \mathbb{R}^n$ and
+$n = 2^t$, then this algorithm computes the Haar transform $y = W_n x$":
 ```
 function y = fht(x, n)
     if n = 1
@@ -729,8 +852,14 @@ function y = fht(x, n)
         y(2:2:n) = z − x(m+1:n)
     end
 ```
-(The book's `y(1:2:m)`, `y(2:2:m)` are misprints for `y(1:2:n)`, `y(2:2:n)`.) Position `2k + a`
-of `y` is `finProdFinEquiv (k, a)` of `Fin (2^t * 2)`. -/
+The sums and differences are `GolubVanLoan.Chapter01.vecAdd` and
+`GolubVanLoan.Chapter01.vecSub`.
+
+**Typo.** The source writes $y(1{:}2{:}m)$ and $y(2{:}2{:}m)$. These are misprints for
+$y(1{:}2{:}n)$ and $y(2{:}2{:}n)$.
+
+The program recurses on $t$. Position $2k + a$ of $y$ is `finProdFinEquiv (k, a)` of
+`Fin (2 ^ t * 2)`. -/
 def algorithm_1_4_4 : (t : ℕ) → (Fin (2 ^ t) → ℝ) → M (Fin (2 ^ t) → ℝ)
   | 0, x => pure x
   | t + 1, x => do
@@ -743,7 +872,11 @@ def algorithm_1_4_4 : (t : ℕ) → (Fin (2 ^ t) → ℝ) → M (Fin (2 ^ t) →
 
 end Haar
 
-/-- **Algorithm 1.4.4 computes `y = W_n x`**: induction on `t` with the row form of (1.4.13). -/
+/-- **Algorithm 1.4.4** of [golub2013matrix], exact correctness. For every $t$, $n = 2^t$ and
+$x \in \mathbb{R}^n$, in exact arithmetic Algorithm 1.4.4 returns $y = W_n x$.
+
+The proof is by induction on $t$, with the row form of (1.4.13)
+(`GolubVanLoan.Chapter01.haarMatrix_succ_mulVec`). -/
 theorem algorithm_1_4_4_spec :
     ∀ (t : ℕ) (x : Fin (2 ^ t) → ℝ), Id.run (algorithm_1_4_4 pure t x) = haarMatrix t *ᵥ x
   | 0, x => by rw [algorithm_1_4_4, Id.run_pure, haarMatrix, one_mulVec]

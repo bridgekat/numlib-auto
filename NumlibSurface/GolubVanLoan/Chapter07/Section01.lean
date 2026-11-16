@@ -12,42 +12,124 @@ import Numlib.LinearAlgebra.Matrix.Schur
 import Numlib.LinearAlgebra.Matrix.Sylvester
 
 /-!
-# Golub–Van Loan §7.1: properties and decompositions
+# Golub and Van Loan, Section 7.1: Properties and decompositions
 
-Surface file for Gene H. Golub and Charles F. Van Loan, *Matrix Computations*, 4th edition
-[golub2013matrix], §7.1: the spectrum and the attributes attached to it — spectral radius (7.1.1)
-and abscissa (7.1.2), numerical radius (7.1.3) and range (7.1.4) — invariant subspaces (§7.1.1),
-decoupling (Lemma 7.1.1), the unitary reductions (Lemma 7.1.2, the Schur decomposition 7.1.3 with
-any order of the diagonal, the Schur vectors (7.1.8), normal matrices 7.1.4, the departure from
-normality), the nonunitary reductions (the Sylvester map of Lemma 7.1.5, block diagonalization
-7.1.6, Corollaries 7.1.7–7.1.8, the Jordan decomposition 7.1.9 and its uniqueness), the density of
-diagonalizable matrices (§7.1.5), and singular values against eigenvalues (§7.1.6).
+This module formalizes §7.1 of [golub2013matrix], the basic theory of the unsymmetric eigenvalue
+problem for $A \in \mathbb{C}^{n \times n}$. It defines the quantities attached to the spectrum
+$\lambda(A)$: the spectral radius $\rho(A)$ (7.1.1), the spectral abscissa $\alpha(A)$ (7.1.2), the
+numerical radius $r(A)$ (7.1.3) and the numerical range $W(A)$ (7.1.4). It treats invariant
+subspaces (§7.1.1) and decoupling (Lemma 7.1.1). The unitary reductions are Lemma 7.1.2, the Schur
+decomposition (Theorem 7.1.3) with any order of the eigenvalues on the diagonal, the Schur vectors
+(7.1.8), normal matrices (Corollary 7.1.4) and the departure from normality. The nonunitary
+reductions are the Sylvester map of Lemma 7.1.5, the block diagonal decomposition (Theorem 7.1.6),
+Corollaries 7.1.7 and 7.1.8, and the Jordan decomposition (Theorem 7.1.9) with its uniqueness. The
+module also proves that the diagonalizable matrices are dense (§7.1.5) and compares singular values
+with eigenvalues (§7.1.6).
+
+The decompositions specialize `Numlib.LinearAlgebra.Matrix.Schur`,
+`Numlib.LinearAlgebra.Matrix.Jordan`, `Numlib.LinearAlgebra.Matrix.Similar`,
+`Numlib.LinearAlgebra.Matrix.Sylvester` and `Numlib.Eigen.Normal`. The numerical range is
+`Numlib.Eigen.NumericalRange`, which proves the Toeplitz–Hausdorff theorem, and the facts about
+singular values come from `Numlib.LinearAlgebra.Matrix.SVD`.
+
+## Main definitions
+
+* Equation (7.1.1), `GolubVanLoan.Chapter07.spectralRadius`: $\rho(A) = \max_{\lambda \in
+  \lambda(A)} |\lambda|$.
+* Equation (7.1.2), `GolubVanLoan.Chapter07.spectralAbscissa`: $\alpha(A) = \max_{\lambda \in
+  \lambda(A)} \operatorname{Re}(\lambda)$.
+* Equation (7.1.4), `GolubVanLoan.Chapter07.numericalRange`: $W(A) = \{x^H A x : \|x\|_2 = 1\}$.
+* Equation (7.1.3), `GolubVanLoan.Chapter07.numericalRadius`:
+  $r(A) = \max\{|x^H A x| : \|x\|_2 = 1\}$.
+* §7.1.3, `GolubVanLoan.Chapter07.departureFromNormality`: $\Delta(A) = (\|A\|_F^2 - \sum_i
+  |\lambda_i|^2)^{1/2}$.
+* §7.1.4, `GolubVanLoan.Chapter07.algebraicMultiplicity`: the multiplicity of $\lambda$ as a root of
+  the characteristic polynomial.
+* §7.1.4, `GolubVanLoan.Chapter07.geometricMultiplicity`: $\dim \operatorname{null}(A - \lambda I)$.
+* §7.1.4, `GolubVanLoan.Chapter07.IsSimpleEigenvalue`: the algebraic multiplicity is $1$.
+* §7.1.4, `GolubVanLoan.Chapter07.IsDefectiveEigenvalue`: the geometric multiplicity is less than
+  the algebraic multiplicity.
+* §7.1.4, `GolubVanLoan.Chapter07.IsDefective`: the matrix has a defective eigenvalue.
+
+## Main results
+
+* §7.1.1, `GolubVanLoan.Chapter07.det_eq_prod_eigenvalues`: $\det(A) = \lambda_1 \cdots \lambda_n$
+  and $\operatorname{tr}(A) = \lambda_1 + \dots + \lambda_n$.
+* §7.1.1, `GolubVanLoan.Chapter07.spectrum_subset_numericalRange`: $\lambda(A) \subseteq W(A)$.
+* §7.1.1, `GolubVanLoan.Chapter07.convex_numericalRange`: $W(A)$ is convex.
+* §7.1.1, `GolubVanLoan.Chapter07.spectrum_subset_of_mul_eq_mul`: if $AX = XB$, then
+  $\operatorname{ran}(X)$ is invariant, and $\lambda(B) \subseteq \lambda(A)$ when $X$ has full
+  column rank.
+* Lemma 7.1.1, `GolubVanLoan.Chapter07.lemma_7_1_1`: $\lambda(T) = \lambda(T_{11}) \cup
+  \lambda(T_{22})$ for a block upper triangular $T$.
+* Lemma 7.1.2, `GolubVanLoan.Chapter07.lemma_7_1_2`: an invariant subspace gives a unitary reduction
+  to block upper triangular form.
+* Theorem 7.1.3, `GolubVanLoan.Chapter07.theorem_7_1_3`: the Schur decomposition $Q^H A Q = D + N$.
+* Equation (7.1.8), `GolubVanLoan.Chapter07.equation_7_1_8`: the Schur vectors and the invariant
+  subspaces they span.
+* Corollary 7.1.4, `GolubVanLoan.Chapter07.corollary_7_1_4`: $A$ is normal if and only if it is
+  unitarily diagonalizable.
+* §7.1.3, `GolubVanLoan.Chapter07.departureFromNormality_eq`: $\|N\|_F = \Delta(A)$ for every Schur
+  decomposition.
+* Lemma 7.1.5, `GolubVanLoan.Chapter07.lemma_7_1_5`: the Sylvester map is nonsingular if and only if
+  $\lambda(T_{11}) \cap \lambda(T_{22}) = \emptyset$.
+* Lemma 7.1.5, `GolubVanLoan.Chapter07.lemma_7_1_5_blockDiagonal`: a solution of $\phi(Z) = -T_{12}$
+  block-diagonalizes $T$.
+* Theorem 7.1.6, `GolubVanLoan.Chapter07.theorem_7_1_6`: the block diagonal decomposition.
+* Corollary 7.1.7, `GolubVanLoan.Chapter07.corollary_7_1_7`: $X^{-1} A X =
+  \operatorname{diag}(\lambda_1 I + N_1, \dots, \lambda_q I + N_q)$.
+* Corollary 7.1.8, `GolubVanLoan.Chapter07.corollary_7_1_8`: $A$ is nondefective if and only if it
+  is diagonalizable.
+* §7.1.4, `GolubVanLoan.Chapter07.corollary_7_1_7_multiplicity`: in Corollary 7.1.7, $n_i$ is the
+  algebraic and $\dim \operatorname{null}(N_i)$ the geometric multiplicity of $\lambda_i$.
+* Theorem 7.1.9, `GolubVanLoan.Chapter07.theorem_7_1_9`: the Jordan decomposition.
+* Theorem 7.1.9, `GolubVanLoan.Chapter07.theorem_7_1_9_unique`: the number and the sizes of the
+  Jordan blocks of each eigenvalue are unique.
+* §7.1.5, `GolubVanLoan.Chapter07.dense_diagonalizable`: the diagonalizable matrices are dense in
+  $\mathbb{C}^{n \times n}$.
+* §7.1.6, `GolubVanLoan.Chapter07.sigmaMin_le_norm_eigenvalue`: $\sigma_{\min}(A) \le |\lambda| \le
+  \sigma_{\max}(A)$ for every eigenvalue $\lambda$.
+* Equation (7.1.13), `GolubVanLoan.Chapter07.equation_7_1_13`: the diagonalizing matrices of
+  $[1 + \varepsilon\ 1; 0\ 1 - \varepsilon]$ have 2-norm condition of order $1/\varepsilon$.
 
 ## Conventions
 
-Complex throughout, as in the book: `A : Matrix (Fin n) (Fin n) ℂ`, 0-based. The spectrum
-`λ(A)` is Mathlib's `spectrum ℂ A` in the algebra of matrices (the root set of `A.charpoly`,
-`Matrix.mem_spectrum_iff_isRoot_charpoly`), and "the eigenvalues `λ₁, …, λₙ`" counted with
-multiplicity are the multiset `A.charpoly.roots`. A unitary `Q` is a member of
-`Matrix.unitaryGroup (Fin n) ℂ`, and `Qᴴ = star Q`. A block partition `[T₁₁ T₁₂; 0 T₂₂]` is
-`Matrix.fromBlocks` on `Fin p ⊕ Fin q`, reindexed by `finSumFinEquiv` where the book's matrix is a
-single `n × n` array. A matrix is *strictly upper triangular* when its entries on and below the
-diagonal vanish. The 2-norm is the scoped `Matrix.Norms.L2Operator` norm and the Frobenius norm
-the scoped `Matrix.Norms.Frobenius` norm, each opened in its own section; `σ_min(A)` and
-`σ_max(A)` are `⨅ i, A.colSingularValues i` and `⨆ i, A.colSingularValues i` over the backbone's
-column-indexed `Matrix.colSingularValues`.
+* Matrices are complex, as in the source, and indices are 0-based: $A$ is
+  `A : Matrix (Fin n) (Fin n) ℂ`.
+* The spectrum $\lambda(A)$ is Mathlib's `spectrum ℂ A` in the algebra of matrices, which is the set
+  of roots of `A.charpoly` (`Matrix.mem_spectrum_iff_isRoot_charpoly`). The eigenvalues
+  $\lambda_1, \dots, \lambda_n$ counted with multiplicity are the multiset `A.charpoly.roots`.
+* A unitary $Q$ is a member of `Matrix.unitaryGroup (Fin n) ℂ`, and $Q^H$ is `star Q`.
+* A block partition $[T_{11}\ T_{12}; 0\ T_{22}]$ is `Matrix.fromBlocks` on `Fin p ⊕ Fin q`,
+  reindexed by `finSumFinEquiv` where the source has a single $n \times n$ array.
+* A matrix is strictly upper triangular when its entries on and below the diagonal vanish.
+* The 2-norm is the scoped `Matrix.Norms.L2Operator` norm, and the Frobenius norm is the scoped
+  `Matrix.Norms.Frobenius` norm; each is opened in its own section. The numbers $\sigma_{\min}(A)$
+  and $\sigma_{\max}(A)$ are the infimum and the supremum of `Matrix.colSingularValues`.
 
-## Sources
+## Deviations from the source
 
-The decompositions are the backbone's `Numlib/LinearAlgebra/Matrix/{Schur,Jordan,Similar,
-Sylvester}` and `Numlib/Eigen/Normal`; the numerical range is `Numlib/Eigen/NumericalRange`
-(Toeplitz–Hausdorff); the singular-value facts are `Numlib/LinearAlgebra/Matrix/SVD`.
+* **Equation (7.1.3)** (typo). The source prints the maximum as $\max_{\lambda \in \lambda(A)}$. The
+  maximum is over the unit vectors $x$. See `GolubVanLoan.Chapter07.numericalRadius`.
+* **Lemma 7.1.5, block diagonalization** (generalization). The source assumes that $\phi$ is
+  nonsingular. The statement needs only a solution $Z$ of $\phi(Z) = -T_{12}$. See
+  `GolubVanLoan.Chapter07.lemma_7_1_5_blockDiagonal`.
+* **Theorem 7.1.6** (typo). The source prints the hypothesis as $\lambda(T_{ij}) \cap
+  \lambda(T_{jj}) = \emptyset$. It means $\lambda(T_{ii}) \cap \lambda(T_{jj}) = \emptyset$. See
+  `GolubVanLoan.Chapter07.theorem_7_1_6`.
+* **Equation (7.1.13)** (reading). The source says that the diagonalizing matrix has "a 2-norm
+  condition of order $1/\varepsilon$". The statement gives the lower bound $1/(2\varepsilon)$ for
+  every diagonalizing matrix and the upper bound $1/\varepsilon + 2\varepsilon$ for one of them. See
+  `GolubVanLoan.Chapter07.equation_7_1_13`.
 
 ## Not formalized
 
-The roundoff claims (7.1.14)–(7.1.15) (`fl(X⁻¹AX) = X⁻¹AX + E`, `‖E‖₂ ≈ u κ₂(X) ‖A‖₂`) name no
-algorithm for forming `X⁻¹ A X` and carry a `≈`; the remark "`max |λ_i|/|λ_j| ≪ κ₂(A)` may occur" is
-an illustration (its rigorous half, `|λ_i|/|λ_j| ≤ κ₂(A)`, is in `sigmaMin_le_norm_eigenvalue`).
+* **The roundoff claims (7.1.14)–(7.1.15)**, $fl(X^{-1} A X) = X^{-1} A X + E$ with
+  $\|E\|_2 \approx u\, \kappa_2(X) \|A\|_2$. They name no algorithm for forming $X^{-1} A X$, and
+  they are approximate.
+* **The remark that $\max |\lambda_i| / |\lambda_j| \ll \kappa_2(A)$ may occur.** It is an
+  illustration. Its rigorous half, $|\lambda_i| / |\lambda_j| \le \kappa_2(A)$, is in
+  `GolubVanLoan.Chapter07.sigmaMin_le_norm_eigenvalue`.
 -/
 
 open Matrix Polynomial
@@ -58,21 +140,29 @@ variable {n : ℕ}
 
 /-! ### §7.1.1 Eigenvalues and invariant subspaces -/
 
-/-- **§7.1.1, determinant and trace.** If `λ(A) = {λ₁, …, λₙ}` (with multiplicity) then
-`det(A) = λ₁ λ₂ ⋯ λₙ` and `tr(A) = λ₁ + ⋯ + λₙ`: the eigenvalues counted with multiplicity are the
-roots of the characteristic polynomial. -/
+/-- **Section 7.1.1** of [golub2013matrix], determinant and trace. Let
+$A \in \mathbb{C}^{n \times n}$ have the eigenvalues $\lambda_1, \dots, \lambda_n$, counted with
+multiplicity. Then $$\det(A) = \lambda_1 \lambda_2 \cdots \lambda_n, \qquad
+\operatorname{tr}(A) = \lambda_1 + \dots + \lambda_n.$$
+
+The eigenvalues counted with multiplicity are the roots `A.charpoly.roots` of the characteristic
+polynomial. -/
 theorem det_eq_prod_eigenvalues (A : Matrix (Fin n) (Fin n) ℂ) :
     A.det = A.charpoly.roots.prod ∧ A.trace = A.charpoly.roots.sum :=
   ⟨A.det_eq_prod_roots_charpoly, A.trace_eq_sum_roots_charpoly⟩
 
-/-- **(7.1.1), the spectral radius** `ρ(A) = max_{λ ∈ λ(A)} |λ|`, as the supremum of the moduli of
-the eigenvalues (`0` for `n = 0`; the spectrum is finite, so for `n ≥ 1` it is a maximum). Its
-agreement with Mathlib's `ℝ≥0∞`-valued `spectralRadius` of the matrix algebra is
-`spectralRadius_eq`. -/
+/-- **Equation (7.1.1)** of [golub2013matrix]. The **spectral radius** of
+$A \in \mathbb{C}^{n \times n}$ is $$\rho(A) = \max_{\lambda \in \lambda(A)} |\lambda|.$$
+
+It is defined as the supremum of the moduli of the eigenvalues. For $n = 0$ the spectrum is
+empty and the value is $0$; for $n \ge 1$ the spectrum is finite and nonempty, so the supremum
+is a maximum. The agreement with Mathlib's `spectralRadius`, which takes values in `ℝ≥0∞`, is
+`GolubVanLoan.Chapter07.spectralRadius_eq`. -/
 noncomputable def spectralRadius (A : Matrix (Fin n) (Fin n) ℂ) : ℝ :=
   sSup ((‖·‖) '' spectrum ℂ A)
 
-/-- The spectral radius (7.1.1) is Mathlib's spectral radius of `A` in the algebra of matrices. -/
+/-- The spectral radius $\rho(A)$ of (7.1.1) is the real value of Mathlib's spectral radius of $A$
+in the algebra of matrices. -/
 theorem spectralRadius_eq (A : Matrix (Fin n) (Fin n) ℂ) :
     spectralRadius A = (_root_.spectralRadius ℂ A).toReal := by
   have h : _root_.spectralRadius ℂ A = ⨆ k ∈ spectrum ℂ A, (‖k‖₊ : ENNReal) := by
@@ -82,37 +172,46 @@ theorem spectralRadius_eq (A : Matrix (Fin n) (Fin n) ℂ) :
     sSup_image']
   simp only [ENNReal.coe_toReal, coe_nnnorm]
 
-/-- **(7.1.2), the spectral abscissa** `α(A) = max_{λ ∈ λ(A)} Re(λ)`, as a supremum; it is attained
-for `n ≥ 1` (`spectralAbscissa_mem`). It is the backbone's `spectralAbscissa` of `A` in the
-algebra of matrices (`spectralAbscissa_eq`). -/
+/-- **Equation (7.1.2)** of [golub2013matrix]. The **spectral abscissa** of
+$A \in \mathbb{C}^{n \times n}$ is $$\alpha(A) = \max_{\lambda \in \lambda(A)}
+\operatorname{Re}(\lambda).$$
+
+It is defined as a supremum, which is $0$ for $n = 0$ and is attained for $n \ge 1$
+(`GolubVanLoan.Chapter07.spectralAbscissa_mem`). It equals the backbone's `spectralAbscissa` of
+$A$ in the algebra of matrices (`GolubVanLoan.Chapter07.spectralAbscissa_eq`). -/
 noncomputable def spectralAbscissa (A : Matrix (Fin n) (Fin n) ℂ) : ℝ :=
   sSup (Complex.re '' spectrum ℂ A)
 
-/-- The spectral abscissa (7.1.2) is the backbone's `spectralAbscissa`. -/
+/-- The spectral abscissa $\alpha(A)$ of (7.1.2) is the backbone's `spectralAbscissa` of $A$ in the
+algebra of matrices. -/
 theorem spectralAbscissa_eq (A : Matrix (Fin n) (Fin n) ℂ) :
     spectralAbscissa A = _root_.spectralAbscissa A := rfl
 
-/-- The spectral abscissa (7.1.2) is a maximum: some eigenvalue has real part `α(A)`
-(`exists_mem_spectrum_re_eq_spectralAbscissa`). -/
+/-- For $n \ge 1$, the spectral abscissa (7.1.2) is a maximum: some eigenvalue $\lambda$ of $A$ has
+$\operatorname{Re}(\lambda) = \alpha(A)$. -/
 theorem spectralAbscissa_mem [NeZero n] (A : Matrix (Fin n) (Fin n) ℂ) :
     ∃ μ ∈ spectrum ℂ A, μ.re = spectralAbscissa A :=
   exists_mem_spectrum_re_eq_spectralAbscissa (Matrix.finite_spectrum A).isCompact
     (spectrum.nonempty_of_isAlgClosed_of_finiteDimensional ℂ A)
 
-/-- **(7.1.4), the numerical range** (field of values) `W(A) = {xᴴ A x : ‖x‖₂ = 1}`. Its agreement
-with the backbone's operator numerical range, defined by Rayleigh quotients of nonzero vectors, is
-`numericalRange_eq`. -/
+/-- **Equation (7.1.4)** of [golub2013matrix]. The **numerical range**, or field of values, of
+$A \in \mathbb{C}^{n \times n}$ is $$W(A) = \{x^H A x : x \in \mathbb{C}^n,\ \|x\|_2 = 1\}.$$
+
+Its agreement with the backbone's numerical range of an operator, which is defined by the
+Rayleigh quotients of nonzero vectors, is `GolubVanLoan.Chapter07.numericalRange_eq`. -/
 def numericalRange (A : Matrix (Fin n) (Fin n) ℂ) : Set ℂ :=
   {z | ∃ x : Fin n → ℂ, ‖WithLp.toLp 2 x‖ = 1 ∧ star x ⬝ᵥ (A *ᵥ x) = z}
 
-/-- The quadratic form `xᴴ A x` is the inner product `⟪x, A x⟫` in `EuclideanSpace ℂ (Fin n)`. -/
+/-- The quadratic form $x^H A x$ is the inner product $\langle x, Ax \rangle$ in $\mathbb{C}^n$. -/
 private theorem star_dotProduct_mulVec_eq_inner (A : Matrix (Fin n) (Fin n) ℂ) (x : Fin n → ℂ) :
     star x ⬝ᵥ (A *ᵥ x) =
       inner ℂ (WithLp.toLp 2 x) (toEuclideanLin A (WithLp.toLp 2 x)) := by
   simp only [toLpLin_toLp, EuclideanSpace.inner_toLp_toLp, toLin'_apply, dotProduct_comm]
 
-/-- The numerical range (7.1.4) is the backbone's numerical range of `A` as an operator on
-`EuclideanSpace ℂ (Fin n)`, `{⟪x, A x⟫ / ⟪x, x⟫ : x ≠ 0}`: normalize `x`. -/
+/-- The numerical range (7.1.4) equals the backbone's numerical range of $A$ as an operator on
+$\mathbb{C}^n$, $\{\langle x, Ax \rangle / \langle x, x \rangle : x \neq 0\}$.
+
+The proof normalizes $x$. The backbone set is `LinearMap.numericalRange (toEuclideanLin A)`. -/
 theorem numericalRange_eq (A : Matrix (Fin n) (Fin n) ℂ) :
     numericalRange A = LinearMap.numericalRange (toEuclideanLin A) := by
   ext z
@@ -134,14 +233,21 @@ theorem numericalRange_eq (A : Matrix (Fin n) (Fin n) ℂ) :
       field_simp
       exact (mul_div_cancel_left₀ _ (pow_ne_zero 2 this)).symm
 
-/-- **(7.1.3), the numerical radius** `r(A) = max {|xᴴ A x| : ‖x‖₂ = 1}`, the supremum of the moduli
-of the numerical range. The book prints the maximum as `max_{λ ∈ λ(A)}`, a misprint for the
-maximum over unit `x`. -/
+/-- **Equation (7.1.3)** of [golub2013matrix]. The **numerical radius** of
+$A \in \mathbb{C}^{n \times n}$ is $$r(A) = \max\{|x^H A x| : \|x\|_2 = 1\},$$ the supremum of
+the moduli of the numerical range $W(A)$.
+
+**Typo.** The source prints the maximum as $\max_{\lambda \in \lambda(A)}$. The maximum is over
+the unit vectors $x$.
+
+For $n = 0$ the numerical range is empty and the value is $0$. -/
 noncomputable def numericalRadius (A : Matrix (Fin n) (Fin n) ℂ) : ℝ :=
   sSup ((‖·‖) '' numericalRange A)
 
-/-- **§7.1.1, "the numerical range … obviously includes `λ(A)`"**: a unit eigenvector `x` for `λ`
-gives `xᴴ A x = λ`. -/
+/-- **Section 7.1.1** of [golub2013matrix]: the numerical range "obviously includes $\lambda(A)$".
+For $A \in \mathbb{C}^{n \times n}$, $$\lambda(A) \subseteq W(A).$$
+
+A unit eigenvector $x$ for $\lambda$ gives $x^H A x = \lambda$. -/
 theorem spectrum_subset_numericalRange (A : Matrix (Fin n) (Fin n) ℂ) :
     spectrum ℂ A ⊆ numericalRange A := by
   intro μ hμ
@@ -153,12 +259,14 @@ theorem spectrum_subset_numericalRange (A : Matrix (Fin n) (Fin n) ℂ) :
   rw [toLpLin_toLp, toLin'_apply, hx, WithLp.toLp_smul, inner_smul_right, mul_div_assoc,
     div_self hne, mul_one]
 
-/-- **§7.1.1, "It can be shown that `W(A)` is convex"** (the Toeplitz–Hausdorff theorem). -/
+/-- **Section 7.1.1** of [golub2013matrix] (Toeplitz–Hausdorff theorem): "It can be shown that
+$W(A)$ is convex." For $A \in \mathbb{C}^{n \times n}$, the numerical range $W(A)$ is a convex
+subset of $\mathbb{C}$. -/
 theorem convex_numericalRange (A : Matrix (Fin n) (Fin n) ℂ) : Convex ℝ (numericalRange A) := by
   rw [numericalRange_eq]
   exact LinearMap.convex_numericalRange _
 
-/-- If `X` has full column rank, `X y = 0` forces `y = 0`. -/
+/-- If $X \in \mathbb{C}^{m \times k}$ has rank $k$ and $Xy = 0$, then $y = 0$. -/
 private theorem eq_zero_of_mulVec_eq_zero {m k : ℕ} {X : Matrix (Fin m) (Fin k) ℂ}
     (hX : X.rank = k) {y : Fin k → ℂ} (hy : X *ᵥ y = 0) : y = 0 := by
   have h := LinearMap.finrank_range_add_finrank_ker X.mulVecLin
@@ -168,10 +276,17 @@ private theorem eq_zero_of_mulVec_eq_zero {m k : ℕ} {X : Matrix (Fin m) (Fin k
   rw [h] at hmem
   exact (Submodule.mem_bot ℂ).1 hmem
 
-/-- **§7.1.1, invariant subspaces from `A X = X B`**, for `X ∈ ℂ^{n×k}`, `B ∈ ℂ^{k×k}`: `ran(X)` is
-invariant for `A`; `B y = λ y ⇒ A (X y) = λ (X y)`; if `X` has full column rank then
-`λ(B) ⊆ λ(A)`; and a similarity `B = X⁻¹ A X` with `X` square and nonsingular preserves the
-spectrum. -/
+/-- **Section 7.1.1** of [golub2013matrix], invariant subspaces. Let
+$A \in \mathbb{C}^{n \times n}$, $X \in \mathbb{C}^{n \times k}$ and
+$B \in \mathbb{C}^{k \times k}$ satisfy $AX = XB$. Then:
+
+* $\operatorname{ran}(X)$ is invariant for $A$;
+* if $By = \lambda y$, then $A(Xy) = \lambda (Xy)$;
+* if $X$ has full column rank $k$, then $\lambda(B) \subseteq \lambda(A)$;
+* for every nonsingular $Y \in \mathbb{C}^{n \times n}$, $\lambda(Y^{-1} A Y) = \lambda(A)$, so
+  a similarity preserves the spectrum.
+
+The last part does not use $AX = XB$. The range is that of `Matrix.toLin' X`. -/
 theorem spectrum_subset_of_mul_eq_mul {k : ℕ} {A : Matrix (Fin n) (Fin n) ℂ}
     {X : Matrix (Fin n) (Fin k) ℂ} {B : Matrix (Fin k) (Fin k) ℂ} (h : A * X = X * B) :
     LinearMap.range (toLin' X) ∈ Module.End.invtSubmodule (toLin' A) ∧
@@ -193,9 +308,14 @@ theorem spectrum_subset_of_mul_eq_mul {k : ℕ} {A : Matrix (Fin n) (Fin n) ℂ}
 
 /-! ### §7.1.2 Decoupling -/
 
-/-- **Lemma 7.1.1.** If `T = [T₁₁ T₁₂; 0 T₂₂]` then `λ(T) = λ(T₁₁) ∪ λ(T₂₂)`; with multiplicity,
-the characteristic polynomial of `T` is the product of those of the diagonal blocks (the book's
-"same cardinality" argument is this multiset statement). -/
+/-- **Lemma 7.1.1** of [golub2013matrix]. Let $T_{11} \in \mathbb{C}^{p \times p}$,
+$T_{12} \in \mathbb{C}^{p \times q}$ and $T_{22} \in \mathbb{C}^{q \times q}$. If $$T =
+\begin{bmatrix} T_{11} & T_{12} \\ 0 & T_{22} \end{bmatrix},$$ then $\lambda(T) =
+\lambda(T_{11}) \cup \lambda(T_{22})$. With multiplicity, the characteristic polynomial of $T$
+is the product of the characteristic polynomials of $T_{11}$ and $T_{22}$.
+
+The second part is the multiset form of the counting argument ("same cardinality") in the proof
+of the source. -/
 theorem lemma_7_1_1 {p q : ℕ} (T₁₁ : Matrix (Fin p) (Fin p) ℂ) (T₁₂ : Matrix (Fin p) (Fin q) ℂ)
     (T₂₂ : Matrix (Fin q) (Fin q) ℂ) :
     spectrum ℂ (fromBlocks T₁₁ T₁₂ 0 T₂₂) = spectrum ℂ T₁₁ ∪ spectrum ℂ T₂₂ ∧
@@ -208,8 +328,14 @@ theorem lemma_7_1_1 {p q : ℕ} (T₁₁ : Matrix (Fin p) (Fin p) ℂ) (T₁₂ 
 
 /-! ### §7.1.3 Basic unitary decompositions -/
 
-/-- **Lemma 7.1.2.** If `A X = X B` with `rank(X) = p` (7.1.5), then a unitary `Q` puts `A` in block
-upper triangular form `Qᴴ A Q = [T₁₁ T₁₂; 0 T₂₂]` (7.1.6) with `λ(T₁₁) = λ(A) ∩ λ(B)`. -/
+/-- **Lemma 7.1.2** of [golub2013matrix]. Let $A \in \mathbb{C}^{(p+q) \times (p+q)}$,
+$B \in \mathbb{C}^{p \times p}$ and $X \in \mathbb{C}^{(p+q) \times p}$ satisfy $$AX = XB,
+\qquad \operatorname{rank}(X) = p \qquad (7.1.5).$$ Then there is a unitary
+$Q \in \mathbb{C}^{(p+q) \times (p+q)}$ such that $$Q^H A Q = T = \begin{bmatrix} T_{11} &
+T_{12} \\ 0 & T_{22} \end{bmatrix} \qquad (7.1.6)$$ with $T_{11} \in \mathbb{C}^{p \times p}$,
+and $\lambda(T_{11}) = \lambda(A) \cap \lambda(B)$.
+
+The block form is `Matrix.fromBlocks` after reindexing by `finSumFinEquiv`. -/
 theorem lemma_7_1_2 {p q : ℕ} {A : Matrix (Fin (p + q)) (Fin (p + q)) ℂ}
     {B : Matrix (Fin p) (Fin p) ℂ} {X : Matrix (Fin (p + q)) (Fin p) ℂ} (hAX : A * X = X * B)
     (hX : X.rank = p) :
@@ -222,9 +348,16 @@ theorem lemma_7_1_2 {p q : ℕ} {A : Matrix (Fin (p + q)) (Fin (p + q)) ℂ}
   rw [← IsSimilar.spectrum_eq hsim,
     Set.inter_eq_right.2 ((spectrum_subset_of_mul_eq_mul hAX).2.2.1 hX)]
 
-/-- **Theorem 7.1.3 (Schur decomposition)** (7.1.7). There is a unitary `Q` with `Qᴴ A Q = D + N`,
-`D = diag(λ₁, …, λₙ)` listing the eigenvalues and `N` strictly upper triangular; and `Q` can be
-chosen so that the eigenvalues appear in any prescribed order `μ` along the diagonal. -/
+/-- **Theorem 7.1.3** of [golub2013matrix] (Schur decomposition). If
+$A \in \mathbb{C}^{n \times n}$, then there is a unitary $Q \in \mathbb{C}^{n \times n}$ such
+that $$Q^H A Q = T = D + N \qquad (7.1.7),$$ where $D = \operatorname{diag}(\lambda_1, \dots,
+\lambda_n)$ lists the eigenvalues of $A$ with multiplicity and $N$ is strictly upper triangular.
+Furthermore, $Q$ can be chosen so that the eigenvalues appear in any prescribed order along the
+diagonal: for every list $\mu_1, \dots, \mu_n$ of the eigenvalues with multiplicity, there is a
+unitary $Q$ such that $Q^H A Q$ is upper triangular with the diagonal $\mu_1, \dots, \mu_n$.
+
+"The diagonal lists the eigenvalues with multiplicity" is stated as
+`A.charpoly = ∏ i, (X - C (d i))`. -/
 theorem theorem_7_1_3 (A : Matrix (Fin n) (Fin n) ℂ) :
     (∃ Q ∈ unitaryGroup (Fin n) ℂ, ∃ (d : Fin n → ℂ) (N : Matrix (Fin n) (Fin n) ℂ),
       (∀ i j, j ≤ i → N i j = 0) ∧ star Q * A * Q = diagonal d + N ∧
@@ -241,16 +374,22 @@ theorem theorem_7_1_3 (A : Matrix (Fin n) (Fin n) ℂ) :
   · simp [Matrix.sub_apply, hT hlt, diagonal_apply_ne _ hlt.ne']
   · simp
 
-/-- `A Q = Q T` for a unitary `Q` and `T = Qᴴ A Q`. -/
+/-- If $Q$ is unitary and $T = Q^H A Q$, then $AQ = QT$. -/
 private theorem mul_eq_mul_conj {Q A : Matrix (Fin n) (Fin n) ℂ}
     (hQ : Q ∈ unitaryGroup (Fin n) ℂ) : A * Q = Q * (star Q * A * Q) := by
   rw [← Matrix.mul_assoc, ← Matrix.mul_assoc, mem_unitaryGroup_iff.1 hQ, Matrix.one_mul]
 
-/-- **(7.1.8) and the paragraph after it: the Schur vectors.** Let `Qᴴ A Q = T` be upper triangular
-with `Q` unitary and `q_k` the columns of `Q`. Then (a) `A q_k = t_kk q_k + ∑_{i<k} t_ik q_i`;
-(b) each `S_k = span{q₀, …, q_k}` is invariant for `A`; (c) with `Q_k = [q₀ | ⋯ | q_{k-1}]`,
-`λ(Q_kᴴ A Q_k) = {t₀₀, …, t_{k-1,k-1}}`; (d) `q_k` is an eigenvector of `A` exactly when column
-`k` of the strictly upper triangular part of `T` vanishes. -/
+/-- **Equation (7.1.8)** of [golub2013matrix] and the paragraph after it, the Schur vectors. Let
+$Q^H A Q = T$ be upper triangular with $Q = [q_1 \mid \dots \mid q_n]$ unitary. Then:
+
+* $A q_k = t_{kk} q_k + \sum_{i=1}^{k-1} t_{ik} q_i$ for each $k$ (7.1.8);
+* each subspace $S_k = \operatorname{span}\{q_1, \dots, q_k\}$ is invariant for $A$;
+* for $k \le n$ and $Q_k = [q_1 \mid \dots \mid q_k]$, $\lambda(Q_k^H A Q_k) = \{t_{11}, \dots,
+  t_{kk}\}$;
+* $q_k$ is an eigenvector of $A$ if and only if $t_{ik} = 0$ for all $i < k$, that is, column
+  $k$ of the strictly upper triangular part of $T$ vanishes.
+
+The columns are 0-based in the Lean statement: $q_k$ is `Q.col (k - 1)`. -/
 theorem equation_7_1_8 {A Q : Matrix (Fin n) (Fin n) ℂ} (hQ : Q ∈ unitaryGroup (Fin n) ℂ)
     (hT : (star Q * A * Q).IsUpperTriangular) :
     (∀ k, A *ᵥ Q.col k = (star Q * A * Q) k k • Q.col k +
@@ -321,8 +460,11 @@ theorem equation_7_1_8 {A Q : Matrix (Fin n) (Fin n) ℂ} (hQ : Q ∈ unitaryGro
       · simp [col_apply]
       · simp [col_apply, hT hi, hi.ne']
 
-/-- **Corollary 7.1.4.** `A` is normal (`Aᴴ A = A Aᴴ`) if and only if there is a unitary `Q` with
-`Qᴴ A Q = diag(λ₁, …, λₙ)`. -/
+/-- **Corollary 7.1.4** of [golub2013matrix]. A matrix $A \in \mathbb{C}^{n \times n}$ is normal,
+$A^H A = AA^H$, if and only if there is a unitary $Q \in \mathbb{C}^{n \times n}$ with $$Q^H A
+Q = \operatorname{diag}(\lambda_1, \dots, \lambda_n).$$
+
+Normality is `IsStarNormal A`. -/
 theorem corollary_7_1_4 (A : Matrix (Fin n) (Fin n) ℂ) :
     IsStarNormal A ↔ ∃ Q ∈ unitaryGroup (Fin n) ℂ, ∃ d : Fin n → ℂ,
       star Q * A * Q = diagonal d := by
@@ -333,13 +475,19 @@ section Frobenius
 
 open scoped Matrix.Norms.Frobenius
 
-/-- **§7.1.3, Definition: the departure from normality**
-`Δ(A) = (‖A‖_F² - ∑ |λ_i|²)^{1/2}`, the eigenvalues counted with multiplicity. -/
+/-- **Section 7.1.3** of [golub2013matrix], the **departure from normality** of
+$A \in \mathbb{C}^{n \times n}$: $$\Delta(A) = \Big(\|A\|_F^2 - \sum_{i=1}^n
+|\lambda_i|^2\Big)^{1/2},$$ where the eigenvalues $\lambda_i$ are counted with multiplicity.
+
+The difference under the root is nonnegative by
+`GolubVanLoan.Chapter07.departureFromNormality_eq`. -/
 noncomputable def departureFromNormality (A : Matrix (Fin n) (Fin n) ℂ) : ℝ :=
   √(‖A‖ ^ 2 - (A.charpoly.roots.map fun z => ‖z‖ ^ 2).sum)
 
-/-- **§7.1.3: `‖N‖_F` does not depend on the Schur decomposition.** If `Qᴴ A Q = diag(d) + N` with
-`Q` unitary and `N` strictly upper triangular, then `‖N‖_F² = ‖A‖_F² - ∑ |d_i|² = Δ²(A)`. -/
+/-- **Section 7.1.3** of [golub2013matrix]: $\|N\|_F$ does not depend on the Schur decomposition. If
+$Q^H A Q = \operatorname{diag}(d) + N$ with $Q$ unitary and $N$ strictly upper triangular, then
+$$\|N\|_F^2 = \|A\|_F^2 - \sum_{i=1}^n |d_i|^2 = \Delta(A)^2.$$
+-/
 theorem departureFromNormality_eq {A Q N : Matrix (Fin n) (Fin n) ℂ} {d : Fin n → ℂ}
     (hQ : Q ∈ unitaryGroup (Fin n) ℂ) (hN : ∀ i j, j ≤ i → N i j = 0)
     (h : star Q * A * Q = diagonal d + N) :
@@ -383,23 +531,33 @@ end Frobenius
 
 /-! ### §7.1.4 Nonunitary reductions -/
 
-/-- **Lemma 7.1.5, first half.** The Sylvester map `φ(X) = T₁₁ X - X T₂₂` on `ℂ^{p×q}` is
-nonsingular if and only if `λ(T₁₁) ∩ λ(T₂₂) = ∅`. (The book's SVD argument for "`φ` singular ⇒
-a common eigenvalue" is replaced by the characteristic-polynomial argument of the backbone.) -/
+/-- **Lemma 7.1.5** of [golub2013matrix], first part. Let $T_{11} \in \mathbb{C}^{p \times p}$ and
+$T_{22} \in \mathbb{C}^{q \times q}$. The Sylvester map $\phi : \mathbb{C}^{p \times q} \to
+\mathbb{C}^{p \times q}$, $$\phi(X) = T_{11} X - X T_{22},$$ is nonsingular if and only if
+$\lambda(T_{11}) \cap \lambda(T_{22}) = \emptyset$.
+
+The source proves that a singular $\phi$ gives a common eigenvalue by an SVD argument; the
+backbone uses the characteristic polynomial instead. The map is `Matrix.sylvesterMap`, and
+nonsingular means bijective. -/
 theorem lemma_7_1_5 {p q : ℕ} (T₁₁ : Matrix (Fin p) (Fin p) ℂ) (T₂₂ : Matrix (Fin q) (Fin q) ℂ) :
     Function.Bijective (sylvesterMap T₁₁ T₂₂) ↔ spectrum ℂ T₁₁ ∩ spectrum ℂ T₂₂ = ∅ := by
   rw [sylvesterMap_bijective_iff_disjoint_spectrum, Set.disjoint_iff_inter_eq_empty]
 
-/-- The inverse of the block unit upper triangular `[I Z; 0 I]` is `[I -Z; 0 I]`. -/
+/-- The inverse of the block unit upper triangular matrix $[I\ Z; 0\ I]$ is $[I\ {-Z}; 0\ I]$. -/
 private theorem inv_fromBlocks_one {p q : ℕ} (Z : Matrix (Fin p) (Fin q) ℂ) :
     (fromBlocks 1 Z 0 1 : Matrix (Fin p ⊕ Fin q) (Fin p ⊕ Fin q) ℂ)⁻¹ = fromBlocks 1 (-Z) 0 1 := by
   refine Matrix.inv_eq_left_inv ?_
   rw [fromBlocks_multiply]
   simp [fromBlocks_one]
 
-/-- **Lemma 7.1.5, second half.** If `φ(Z) = -T₁₂` and `Y = [I Z; 0 I]`, then
-`Y⁻¹ T Y = diag(T₁₁, T₂₂)` for `T = [T₁₁ T₁₂; 0 T₂₂]`. (The book assumes `φ` nonsingular, which
-only guarantees that such a `Z` exists.) -/
+/-- **Lemma 7.1.5** of [golub2013matrix], block diagonalization. Let $$T = \begin{bmatrix} T_{11} &
+T_{12} \\ 0 & T_{22} \end{bmatrix}$$ with $T_{11} \in \mathbb{C}^{p \times p}$ and
+$T_{22} \in \mathbb{C}^{q \times q}$. If $Z \in \mathbb{C}^{p \times q}$ satisfies
+$\phi(Z) = T_{11} Z - Z T_{22} = -T_{12}$ and $Y = [I\ Z; 0\ I]$, then $$Y^{-1} T Y =
+\operatorname{diag}(T_{11}, T_{22}).$$
+
+**Generalization.** The source assumes that $\phi$ is nonsingular. That assumption only
+guarantees that such a $Z$ exists; the statement needs only the existence of $Z$. -/
 theorem lemma_7_1_5_blockDiagonal {p q : ℕ} (T₁₁ : Matrix (Fin p) (Fin p) ℂ)
     (T₁₂ : Matrix (Fin p) (Fin q) ℂ) (T₂₂ : Matrix (Fin q) (Fin q) ℂ) {Z : Matrix (Fin p) (Fin q) ℂ}
     (hZ : sylvesterMap T₁₁ T₂₂ Z = -T₁₂) :
@@ -409,11 +567,19 @@ theorem lemma_7_1_5_blockDiagonal {p q : ℕ} (T₁₁ : Matrix (Fin p) (Fin p) 
   rw [sylvesterMap_apply] at hZ
   rw [hZ, neg_add_cancel]
 
-/-- **Theorem 7.1.6 (block diagonal decomposition)** (7.1.9)–(7.1.10). Let `Qᴴ A Q = T` with `Q`
-unitary and `T` block upper triangular for the block index `b` (square diagonal blocks
-`T_ii = T.toSquareBlock b i`). If `λ(T_ii) ∩ λ(T_jj) = ∅` whenever `i ≠ j`, there is a nonsingular
-`Y` with `(Q Y)⁻¹ A (Q Y) = diag(T₁₁, …, T_qq)`, the block diagonal part of `T`. The book prints the
-hypothesis as `λ(T_ij) ∩ λ(T_jj) = ∅`, a misprint for `λ(T_ii)`. -/
+/-- **Theorem 7.1.6** of [golub2013matrix] (block diagonal decomposition). Let $Q^H A Q = T$ with
+$Q \in \mathbb{C}^{n \times n}$ unitary and $T$ block upper triangular, with square diagonal
+blocks $T_{11}, \dots, T_{qq}$ (7.1.9). If $\lambda(T_{ii}) \cap \lambda(T_{jj}) = \emptyset$
+whenever $i \neq j$, then there is a nonsingular $Y \in \mathbb{C}^{n \times n}$ such that
+$$(QY)^{-1} A (QY) = \operatorname{diag}(T_{11}, \dots, T_{qq}) \qquad (7.1.10).$$
+
+**Typo.** The source prints the hypothesis as $\lambda(T_{ij}) \cap \lambda(T_{jj}) =
+\emptyset$. It means $\lambda(T_{ii}) \cap \lambda(T_{jj}) = \emptyset$.
+
+The blocks are given by a block index `b : Fin n → Fin q`: $T$ is `Matrix.BlockTriangular b`,
+the block $T_{ii}$ is `Matrix.toSquareBlock b i`, and
+$\operatorname{diag}(T_{11}, \dots, T_{qq})$ is the matrix that keeps the entries $t_{kl}$ with
+`b k = b l` and is zero elsewhere. -/
 theorem theorem_7_1_6 {q : ℕ} {A Q : Matrix (Fin n) (Fin n) ℂ} (hQ : Q ∈ unitaryGroup (Fin n) ℂ)
     {b : Fin n → Fin q} (hT : (star Q * A * Q).BlockTriangular b)
     (hdisj : ∀ i j, i ≠ j → spectrum ℂ ((star Q * A * Q).toSquareBlock b i) ∩
@@ -427,8 +593,8 @@ theorem theorem_7_1_6 {q : ℕ} {A Q : Matrix (Fin n) (Fin n) ℂ} (hQ : Q ∈ u
   rw [← hYT, Matrix.mul_inv_rev, Matrix.inv_eq_left_inv (mem_unitaryGroup_iff'.1 hQ)]
   simp only [Matrix.mul_assoc]
 
-/-- Reindexing the blocks of a block diagonal matrix along equivalences of the block index
-types. -/
+/-- Reindexing each block of a block diagonal matrix by an equivalence of its index type reindexes
+the block diagonal matrix. -/
 private theorem blockDiagonal'_submatrix_sigmaCongrRight {q : ℕ} {κ κ' : Fin q → Type*}
     (M : ∀ i, Matrix (κ' i) (κ' i) ℂ) (f : ∀ i, κ i ≃ κ' i) :
     (blockDiagonal' M).submatrix (Equiv.sigmaCongrRight f) (Equiv.sigmaCongrRight f) =
@@ -438,12 +604,16 @@ private theorem blockDiagonal'_submatrix_sigmaCongrRight {q : ℕ} {κ κ' : Fin
   · simp only [submatrix_apply, Equiv.sigmaCongrRight_apply, blockDiagonal'_apply_eq]
   · simp only [submatrix_apply, Equiv.sigmaCongrRight_apply, blockDiagonal'_apply_ne _ _ _ hab]
 
-/-- **Corollary 7.1.7** (7.1.11). There is a nonsingular `X` with
-`X⁻¹ A X = diag(λ₁ I + N₁, …, λ_q I + N_q)`, the `λ_i` distinct, `N_i ∈ ℂ^{n_i×n_i}` strictly upper
-triangular and `n₁ + ⋯ + n_q = n` (the blocks laid out along `Fin n` by `σ`). Read off the Jordan
-form grouped by eigenvalue (`Matrix.exists_conj_blockDiagonal'_jordanForm`), whose outer block for
-`λ_i` is `λ_i I` plus a direct sum of nilpotent Jordan blocks — a shorter route than the book's
-Theorem 7.1.6 applied to an ordered Schur form. -/
+/-- **Corollary 7.1.7** of [golub2013matrix]. If $A \in \mathbb{C}^{n \times n}$, then there is a
+nonsingular $X \in \mathbb{C}^{n \times n}$ such that $$X^{-1} A X =
+\operatorname{diag}(\lambda_1 I + N_1, \dots, \lambda_q I + N_q) \qquad (7.1.11),$$ where
+$\lambda_1, \dots, \lambda_q$ are distinct, each $N_i \in \mathbb{C}^{n_i \times n_i}$ is
+strictly upper triangular, and $n_1 + \dots + n_q = n$.
+
+The blocks are laid out along `Fin n` by an equivalence `σ`. The proof reads off the Jordan form
+grouped by eigenvalue (`Matrix.exists_conj_blockDiagonal'_jordanForm`), whose block for
+$\lambda_i$ is $\lambda_i I$ plus a direct sum of nilpotent Jordan blocks. This route is shorter
+than the proof in the source, which applies Theorem 7.1.6 to an ordered Schur form. -/
 theorem corollary_7_1_7 (A : Matrix (Fin n) (Fin n) ℂ) :
     ∃ (q : ℕ) (μ : Fin q → ℂ) (sz : Fin q → ℕ) (N : ∀ i, Matrix (Fin (sz i)) (Fin (sz i)) ℂ)
       (σ : ((i : Fin q) × Fin (sz i)) ≃ Fin n) (X : Matrix (Fin n) (Fin n) ℂ),
@@ -483,35 +653,43 @@ theorem corollary_7_1_7 (A : Matrix (Fin n) (Fin n) ℂ) :
     ext a b
     simp [reindex_apply, τ]
 
-/-- **§7.1.4, Definition: algebraic multiplicity.** The algebraic multiplicity of `λ` as an
-eigenvalue of `A` is its multiplicity as a root of the characteristic polynomial. With it come the
-geometric multiplicity (`geometricMultiplicity`), simple eigenvalues (`IsSimpleEigenvalue`) and
-defective eigenvalues and matrices (`IsDefectiveEigenvalue`, `IsDefective`). -/
+/-- **Section 7.1.4** of [golub2013matrix], definition of the **algebraic multiplicity**: the
+algebraic multiplicity of $\lambda$ as an eigenvalue of $A \in \mathbb{C}^{n \times n}$ is its
+multiplicity as a root of the characteristic polynomial of $A$.
+
+The related notions are `GolubVanLoan.Chapter07.geometricMultiplicity`,
+`GolubVanLoan.Chapter07.IsSimpleEigenvalue`, `GolubVanLoan.Chapter07.IsDefectiveEigenvalue` and
+`GolubVanLoan.Chapter07.IsDefective`. The value is $0$ when $\lambda$ is not an eigenvalue. -/
 noncomputable def algebraicMultiplicity (A : Matrix (Fin n) (Fin n) ℂ) (μ : ℂ) : ℕ :=
   A.charpoly.rootMultiplicity μ
 
-/-- **§7.1.4, Definition: geometric multiplicity**, the number of independent eigenvectors,
-`dim null(A - λI)`. -/
+/-- **Section 7.1.4** of [golub2013matrix], definition of the **geometric multiplicity**: the number
+of independent eigenvectors of $A \in \mathbb{C}^{n \times n}$ for $\lambda$, that is,
+$\dim \operatorname{null}(A - \lambda I)$. -/
 noncomputable def geometricMultiplicity (A : Matrix (Fin n) (Fin n) ℂ) (μ : ℂ) : ℕ :=
   Module.finrank ℂ (Module.End.eigenspace A.mulVecLin μ)
 
-/-- **§7.1.4, Definition**: `λ` is a *simple* eigenvalue if its algebraic multiplicity is `1`. -/
+/-- **Section 7.1.4** of [golub2013matrix], definition: $\lambda$ is a **simple** eigenvalue of $A$
+if its algebraic multiplicity is $1$. -/
 def IsSimpleEigenvalue (A : Matrix (Fin n) (Fin n) ℂ) (μ : ℂ) : Prop :=
   algebraicMultiplicity A μ = 1
 
-/-- **§7.1.4, Definition**: `λ` is a *defective* eigenvalue if its algebraic multiplicity exceeds
-its geometric multiplicity. -/
+/-- **Section 7.1.4** of [golub2013matrix], definition: $\lambda$ is a **defective** eigenvalue of
+$A$ if its algebraic multiplicity exceeds its geometric multiplicity. -/
 def IsDefectiveEigenvalue (A : Matrix (Fin n) (Fin n) ℂ) (μ : ℂ) : Prop :=
   geometricMultiplicity A μ < algebraicMultiplicity A μ
 
-/-- **§7.1.4, Definition**: a *defective* matrix is one with a defective eigenvalue; nondefective
-matrices are called diagonalizable (Corollary 7.1.8). -/
+/-- **Section 7.1.4** of [golub2013matrix], definition: a matrix is **defective** if it has a
+defective eigenvalue. Nondefective matrices are called diagonalizable (Corollary 7.1.8). -/
 def IsDefective (A : Matrix (Fin n) (Fin n) ℂ) : Prop :=
   ∃ μ, IsDefectiveEigenvalue A μ
 
-/-- **Corollary 7.1.8 (diagonal form)** (7.1.12). `A` is nondefective if and only if
-`X⁻¹ A X = diag(λ₁, …, λₙ)` for a nonsingular `X`; and then the columns of `X` are right
-eigenvectors and the rows of `X⁻¹` left eigenvectors of `A`. -/
+/-- **Corollary 7.1.8** of [golub2013matrix] (diagonal form). A matrix
+$A \in \mathbb{C}^{n \times n}$ is nondefective if and only if there is a nonsingular
+$X \in \mathbb{C}^{n \times n}$ such that $$X^{-1} A X = \operatorname{diag}(\lambda_1, \dots,
+\lambda_n) \qquad (7.1.12).$$ In that case, the columns $x_i$ of $X$ are right eigenvectors,
+$A x_i = \lambda_i x_i$, and the rows $y_i^T$ of $X^{-1}$ are left eigenvectors,
+$y_i^T A = \lambda_i y_i^T$. -/
 theorem corollary_7_1_8 (A : Matrix (Fin n) (Fin n) ℂ) :
     (¬ IsDefective A ↔ ∃ X : Matrix (Fin n) (Fin n) ℂ, IsUnit X ∧ ∃ d : Fin n → ℂ,
       X⁻¹ * A * X = diagonal d) ∧
@@ -549,9 +727,14 @@ theorem corollary_7_1_8 (A : Matrix (Fin n) (Fin n) ℂ) :
         single_vecMul] at h
       exact h
 
-/-- **§7.1.4, the terms attached to (7.1.11).** In a decomposition as in Corollary 7.1.7, `n_i` is
-the algebraic multiplicity of `λ_i` and `dim null(N_i)` is its geometric multiplicity: the blocks
-for the other eigenvalues `λ_j - λ_i ≠ 0` are nonsingular. -/
+/-- **Section 7.1.4** of [golub2013matrix], the terms attached to (7.1.11). Let $X^{-1} A X =
+\operatorname{diag}(\lambda_1 I + N_1, \dots, \lambda_q I + N_q)$ be a decomposition as in
+Corollary 7.1.7, with $X$ nonsingular, $\lambda_1, \dots, \lambda_q$ distinct and each
+$N_i \in \mathbb{C}^{n_i \times n_i}$ strictly upper triangular. Then for each $i$, the
+algebraic multiplicity of $\lambda_i$ is $n_i$, and its geometric multiplicity is
+$\dim \operatorname{null}(N_i)$.
+
+The proof uses that the blocks $(\lambda_j - \lambda_i) I + N_j$ for $j \neq i$ are nonsingular. -/
 theorem corollary_7_1_7_multiplicity {A X : Matrix (Fin n) (Fin n) ℂ} {q : ℕ} {μ : Fin q → ℂ}
     {sz : Fin q → ℕ} {N : ∀ i, Matrix (Fin (sz i)) (Fin (sz i)) ℂ}
     {σ : ((i : Fin q) × Fin (sz i)) ≃ Fin n} (hμ : Function.Injective μ)
@@ -614,9 +797,15 @@ theorem corollary_7_1_7_multiplicity {A X : Matrix (Fin n) (Fin n) ℂ} {q : ℕ
     · intro hi
       exact absurd (Finset.mem_univ i) hi
 
-/-- **Theorem 7.1.9 (Jordan decomposition).** There is a nonsingular `X` with
-`X⁻¹ A X = diag(J₁, …, J_q)`, `J_i` the Jordan block of size `n_i ≥ 1` for `λ_i`, `∑ n_i = n` (the
-blocks laid out consecutively along the diagonal). -/
+/-- **Theorem 7.1.9** of [golub2013matrix] (Jordan decomposition). If
+$A \in \mathbb{C}^{n \times n}$, then there is a nonsingular $X \in \mathbb{C}^{n \times n}$
+such that $$X^{-1} A X = \operatorname{diag}(J_1, \dots, J_q),$$ where
+$J_i \in \mathbb{C}^{n_i \times n_i}$ is the Jordan block of size $n_i \ge 1$ for an eigenvalue
+$\lambda_i$, with $\lambda_i$ on the diagonal and $1$ on the superdiagonal, and
+$n_1 + \dots + n_q = n$.
+
+The blocks are laid out consecutively along the diagonal. The Jordan form is
+`Matrix.jordanForm`. -/
 theorem theorem_7_1_9 (A : Matrix (Fin n) (Fin n) ℂ) :
     ∃ (q : ℕ) (e : Fin q → ℕ) (μ : Fin q → ℂ) (he : ∑ i, e i = n)
       (X : Matrix (Fin n) (Fin n) ℂ), (∀ i, 0 < e i) ∧ IsUnit X ∧
@@ -624,10 +813,11 @@ theorem theorem_7_1_9 (A : Matrix (Fin n) (Fin n) ℂ) :
           (finSigmaFinEquiv.trans (finCongr he)) (jordanForm e μ) :=
   exists_conj_jordanForm A
 
-/-- **The uniqueness remark after Theorem 7.1.9**: "The number and dimensions of the Jordan blocks
-associated with each distinct eigenvalue are unique". For two Jordan decompositions of `A`
-(blocks of positive size, laid out along `Fin n` by any `σ`, `σ'`), each eigenvalue `c` has the
-same number of blocks of each size `k`. -/
+/-- **Theorem 7.1.9** of [golub2013matrix], the uniqueness remark: "The number and dimensions of the
+Jordan blocks associated with each distinct eigenvalue are unique." Let $X^{-1} A X$ and
+$X'^{-1} A X'$ be two Jordan forms of $A \in \mathbb{C}^{n \times n}$, with blocks of positive
+size laid out along the diagonal in any order. Then for every $c \in \mathbb{C}$ and every $k$,
+the two forms have the same number of Jordan blocks of size $k$ for the eigenvalue $c$. -/
 theorem theorem_7_1_9_unique {A : Matrix (Fin n) (Fin n) ℂ} {q q' : ℕ} {e : Fin q → ℕ}
     {μ : Fin q → ℂ} {e' : Fin q' → ℕ} {μ' : Fin q' → ℂ} (he : ∀ i, 0 < e i)
     (he' : ∀ i, 0 < e' i) (σ : ((i : Fin q) × Fin (e i)) ≃ Fin n)
@@ -640,8 +830,8 @@ theorem theorem_7_1_9_unique {A : Matrix (Fin n) (Fin n) ℂ} {q q' : ℕ} {e : 
 
 /-! ### §7.1.5 Some comments on nonunitary similarity -/
 
-/-- A matrix whose characteristic polynomial has distinct roots is diagonalizable: every eigenvalue
-is simple, and an eigenvector makes its geometric multiplicity `1`. -/
+/-- If the characteristic polynomial of $A$ is $\prod_i (x - d_i)$ with distinct $d_i$, then $A$ is
+diagonalizable. -/
 private theorem exists_diagonal_of_charpoly_eq_prod {A : Matrix (Fin n) (Fin n) ℂ}
     {d : Fin n → ℂ} (hd : Function.Injective d)
     (h : A.charpoly = ∏ i, (Polynomial.X - C (d i))) :
@@ -668,9 +858,14 @@ private theorem exists_diagonal_of_charpoly_eq_prod {A : Matrix (Fin n) (Fin n) 
   rw [Submodule.finrank_eq_zero.1 hgeo, Submodule.mem_bot] at hmem
   exact hv0 hmem
 
-/-- **§7.1.5: "The set of `n`-by-`n` diagonalizable matrices is dense in `ℂ^{n×n}`"** (the book's
-P7.1.5). From a Schur form `Qᴴ A Q = T`, the matrices `Q (T + t diag(0, 1, …, n-1)) Qᴴ` tend to `A`
-as `t → 0`, and for all but finitely many `t` their (triangular) diagonal entries are distinct. -/
+/-- **Section 7.1.5** of [golub2013matrix]: "The set of $n$-by-$n$ diagonalizable matrices is dense
+in $\mathbb{C}^{n \times n}$." The set of $A \in \mathbb{C}^{n \times n}$ with $X^{-1} A X$
+diagonal for some nonsingular $X$ is dense.
+
+The source refers to Problem P7.1.5 for the proof. From a Schur form $Q^H A Q = T$, the matrices
+$Q (T + t \operatorname{diag}(0, 1, \dots, n - 1)) Q^H$ tend to $A$ as $t \to 0$, and for all
+but finitely many $t$ their eigenvalues, the diagonal entries of the triangular matrix, are
+distinct. -/
 theorem dense_diagonalizable :
     Dense {A : Matrix (Fin n) (Fin n) ℂ |
       ∃ X : Matrix (Fin n) (Fin n) ℂ, IsUnit X ∧ ∃ d : Fin n → ℂ, X⁻¹ * A * X = diagonal d} := by
@@ -731,8 +926,16 @@ section L2
 
 open scoped Matrix.Norms.L2Operator
 
-/-- **§7.1.6.** `σ_min(A) ≤ |λ| ≤ σ_max(A) = ‖A‖₂` for every eigenvalue `λ` of `A`; and (the
-rigorous half of the remark that follows) `|λ_i| / |λ_j| ≤ κ₂(A)` for a nonsingular `A`. -/
+/-- **Section 7.1.6** of [golub2013matrix], singular values and eigenvalues. Let
+$A \in \mathbb{C}^{n \times n}$ with $n \ge 1$. Then $$\sigma_{\min}(A) \le |\lambda| \le
+\sigma_{\max}(A) = \|A\|_2$$ for every eigenvalue $\lambda$ of $A$. If moreover $A$ is
+nonsingular, then $|\lambda_i| / |\lambda_j| \le \kappa_2(A)$ for all eigenvalues $\lambda_i$
+and $\lambda_j$.
+
+The last part is the rigorous half of the remark in the source that
+$\max |\lambda_i| / |\lambda_j| \ll \kappa_2(A)$ may occur. The numbers $\sigma_{\min}(A)$ and
+$\sigma_{\max}(A)$ are the infimum and the supremum of `Matrix.colSingularValues`, and
+$\kappa_2(A)$ is `NormedRing.condNumber A` for the 2-norm. -/
 theorem sigmaMin_le_norm_eigenvalue [NeZero n] (A : Matrix (Fin n) (Fin n) ℂ) :
     (∀ μ ∈ spectrum ℂ A, (⨅ i, A.colSingularValues i) ≤ ‖μ‖ ∧ ‖μ‖ ≤ ⨆ i, A.colSingularValues i) ∧
     ‖A‖ = ⨆ i, A.colSingularValues i ∧
@@ -768,7 +971,7 @@ theorem sigmaMin_le_norm_eigenvalue [NeZero n] (A : Matrix (Fin n) (Fin n) ℂ) 
   exact div_le_div₀ ((norm_nonneg μ).trans (hbound μ hμ).2) (hbound μ hμ).2 hmin
     (hbound ν hν).1
 
-/-- An entry is bounded by the 2-norm. -/
+/-- Every entry of a matrix is bounded in modulus by its 2-norm. -/
 private theorem norm_entry_le_lpOpNorm_two {m k : ℕ} (M : Matrix (Fin m) (Fin k) ℂ) (i : Fin m)
     (j : Fin k) : ‖M i j‖ ≤ lpOpNorm 2 M := by
   rw [lpOpNorm_two]
@@ -780,7 +983,7 @@ section Frobenius
 
 open scoped Matrix.Norms.Frobenius
 
-/-- The 2-norm is at most the Frobenius norm, written out entrywise. -/
+/-- The 2-norm of a matrix is at most its Frobenius norm $\big(\sum_{i,j} |m_{ij}|^2\big)^{1/2}$. -/
 private theorem lpOpNorm_two_le_sqrt {m k : ℕ} (M : Matrix (Fin m) (Fin k) ℂ) :
     lpOpNorm 2 M ≤ √(∑ i, ∑ j, ‖M i j‖ ^ 2) := by
   rw [← frobenius_norm_sq_eq_sum_sq, Real.sqrt_sq (norm_nonneg _)]
@@ -788,11 +991,18 @@ private theorem lpOpNorm_two_le_sqrt {m k : ℕ} (M : Matrix (Fin m) (Fin k) ℂ
 
 end Frobenius
 
-/-- **(7.1.13)**: for `0 < ε`, every `X` diagonalizing `A = [1 + ε, 1; 0, 1 - ε]` has
-`κ₂(X) ≥ 1/(2ε)`, and some diagonalizing `X` has `κ₂(X) ≤ 1/ε + 2ε` — the rigorous reading of
-"a 2-norm condition of order `1/ε`". If `X⁻¹ A X` is diagonal, the column `x` of `X` and the row
-`yᴴ` of `X⁻¹` belonging to `λ = 1 + ε` are right and left eigenvectors with `yᴴ x = 1`; the
-eigenvector equations force `x = (x₁, 0)` and `y₁ = 2ε y₂`, so `2ε x₁ y₂ = 1`. -/
+/-- **Equation (7.1.13)** of [golub2013matrix]. Let $\varepsilon > 0$ and $$A = \begin{bmatrix} 1 +
+\varepsilon & 1 \\ 0 & 1 - \varepsilon \end{bmatrix}.$$ Then every nonsingular $X$ with
+$X^{-1} A X$ diagonal has $\kappa_2(X) \ge 1/(2\varepsilon)$, and some nonsingular $X$ with
+$X^{-1} A X$ diagonal has $\kappa_2(X) \le 1/\varepsilon + 2\varepsilon$.
+
+**Reading.** The source says that the diagonalizing matrix has "a 2-norm condition of order
+$1/\varepsilon$". The two bounds are the rigorous form of this claim.
+
+If $X^{-1} A X$ is diagonal, the column $x$ of $X$ and the row $y^H$ of $X^{-1}$ for the
+eigenvalue $1 + \varepsilon$ are right and left eigenvectors with $y^H x = 1$. The eigenvector
+equations force $x = (x_1, 0)$ and $y_1 = 2\varepsilon y_2$, so $2\varepsilon x_1 y_2 = 1$. The
+condition number $\kappa_2(X) = \|X\|_2 \|X^{-1}\|_2$ is `Matrix.condNumberLp 2 X`. -/
 theorem equation_7_1_13 {ε : ℝ} (hε : 0 < ε) :
     (∀ (X : Matrix (Fin 2) (Fin 2) ℂ) (d : Fin 2 → ℂ), IsUnit X →
       X⁻¹ * !![1 + (ε : ℂ), 1; 0, 1 - ε] * X = diagonal d → 1 / (2 * ε) ≤ condNumberLp 2 X) ∧

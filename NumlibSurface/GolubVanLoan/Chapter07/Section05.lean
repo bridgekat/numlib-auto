@@ -7,58 +7,172 @@ import NumlibSurface.GolubVanLoan.Chapter05.Section01
 import NumlibSurface.GolubVanLoan.Chapter07.Section04
 
 /-!
-# Golub–Van Loan §7.5: the practical QR algorithm
+# Golub and Van Loan, Section 7.5: The practical QR algorithm
 
-Surface file for Gene H. Golub and Charles F. Van Loan, *Matrix Computations*, 4th edition
-[golub2013matrix], §7.5: the shifted QR step (7.5.3) as an orthogonal similarity and the rate of
-the fixed-shift iteration (§7.5.2), the exact shift (Theorem 7.5.1) and the quadratic convergence
-of the single-shift iteration (§7.5.3), the double-shift identities (7.5.6)–(7.5.8), the first
-column of `M` that starts the Francis step, the Francis QR step (Algorithm 7.5.1) and its
-essential uniqueness (§7.5.5), and the QR algorithm (Algorithm 7.5.2, §7.5.6).
+This module formalizes §7.5 of [golub2013matrix], the practical QR algorithm, which computes the
+real Schur form of $A \in \mathbb{R}^{n \times n}$. One step of the shifted QR iteration on an upper
+Hessenberg $H$ factors $H - \mu I = UR$ and sets $H_+ = RU + \mu I = U^T H U$ (7.5.3). The module
+proves the rate of convergence of the subdiagonal entries for a fixed shift (§7.5.2), the deflation
+of the last row by an exact eigenvalue as shift (Theorem 7.5.1), and the local quadratic convergence
+of the single-shift iteration (§7.5.3). For the double shift of §7.5.4, with the eigenvalues
+$a_1, a_2$ of the trailing $2 \times 2$ block, two steps give $H_2 = (U_1 U_2)^H H (U_1 U_2)$ with
+$(U_1 U_2)(R_2 R_1) = M = (H - a_1 I)(H - a_2 I)$, and $M = H^2 - sH + tI$ is real, with
+$s = a_1 + a_2$ and $t = a_1 a_2$ ((7.5.5)–(7.5.8)).
+
+The Francis QR step (Algorithm 7.5.1, §7.5.5) computes $H' = Z^T H Z$ in real arithmetic. It starts
+from the first column of $M$, which has only three nonzero entries, and chases a bulge down the
+matrix with $3 \times 3$ Householder reflectors. The module proves that the exact Algorithm 7.5.1
+gives an upper Hessenberg $H'$ with $Z^T M$ upper triangular, and that $H'$ equals the explicit
+double-shift step up to a $\pm 1$ diagonal similarity. The QR algorithm (Algorithm 7.5.2, §7.5.6)
+reduces $A$ to Hessenberg form, then repeats deflation and Francis steps on the unreduced diagonal
+block, and at the end triangularizes the $2 \times 2$ diagonal blocks with real eigenvalues. In
+exact arithmetic its output is the real Schur form of a perturbation $A + E$, where $E$ comes from
+the deflations. The proofs specialize `Numlib.Eigen.QRAlgorithm`,
+`Numlib.Eigen.RayleighQuotientIteration` and `Numlib.LinearAlgebra.Matrix.UnreducedHessenberg`, and
+the programs use the Householder and Givens helpers of §5.1.
+
+## Main definitions
+
+* Algorithm 7.5.1, `GolubVanLoan.Chapter07.algorithm_7_5_1`: the Francis QR step on a window of
+  consecutive indices, which returns the new matrix and the Householder data of $Z$.
+* Algorithm 7.5.1, `GolubVanLoan.Chapter07.IsFrancisStepOn`: $Z$ performs a Francis step on the
+  diagonal block $H_{22}$ of a window.
+* Algorithm 7.5.2, `GolubVanLoan.Chapter07.triangularize2x2`: the upper triangularization of a
+  $2 \times 2$ diagonal block with real eigenvalues by a Givens rotation.
+* Algorithm 7.5.2, `GolubVanLoan.Chapter07.IsQRDeflation`: the deflation, which sets the small
+  subdiagonal entries to zero.
+* Algorithm 7.5.2, `GolubVanLoan.Chapter07.IsQRPass`: one pass of the loop, a deflation followed by
+  a Francis step on the unreduced block.
+* Algorithm 7.5.2, `GolubVanLoan.Chapter07.algorithm_7_5_2`: the QR algorithm.
+
+## Main results
+
+* (7.5.3), `GolubVanLoan.Chapter07.equation_7_5_3`: if $H - \mu I = UR$ with $U$ orthogonal, then
+  $RU + \mu I = U^T H U$.
+* §7.5.2, `GolubVanLoan.Chapter07.shiftedQr_rate`: for a fixed shift $\mu$, the subdiagonal entry
+  $(p+1, p)$ of $H_k$ is at most $C (r / |\lambda_p - \mu|)^k$ for every
+  $r > |\lambda_{p+1} - \mu|$.
+* Theorem 7.5.1, `GolubVanLoan.Chapter07.theorem_7_5_1`: if $\mu$ is an eigenvalue of an unreduced
+  $H$, the last row of $RU + \mu I$ is $\mu e_n^T$.
+* §7.5.3, `GolubVanLoan.Chapter07.single_shift_quadratic`: near an algebraically simple real
+  eigenvalue, one single-shift step makes $|h_{n,n-1}|$ at most a constant times its square.
+* (7.5.6)–(7.5.7), `GolubVanLoan.Chapter07.equation_7_5_7`: two shifted steps give
+  $(U_1 U_2)(R_2 R_1) = (H - a_1 I)(H - a_2 I)$ and $H_2 = (U_1 U_2)^H H (U_1 U_2)$.
+* (7.5.5) and (7.5.8), `GolubVanLoan.Chapter07.equation_7_5_8`: $a_1 + a_2$ and $a_1 a_2$ are the
+  trace and the determinant of the trailing block, and $M = H^2 - sH + tI$ is real.
+* §7.5.4, `GolubVanLoan.Chapter07.double_shift_real`: for real $H$ and the shifts $a, \bar a$, the
+  double-shift step is the real matrix $Z^T H Z$, where $Z$ is the orthogonal factor of $M$.
+* §7.5.5, `GolubVanLoan.Chapter07.francis_first_column`: $M e_1 = (x, y, z, 0, \dots, 0)^T$ with
+  explicit $x$, $y$ and $z$.
+* Algorithm 7.5.1, `GolubVanLoan.Chapter07.algorithm_7_5_1_window`: the exact run on a window is a
+  block similarity, and it performs a Francis step on an unreduced window block.
+* Algorithm 7.5.1, `GolubVanLoan.Chapter07.algorithm_7_5_1_spec`: the exact run on an unreduced $H$
+  is a Francis step $H' = Z^T H Z$.
+* §7.5.5, `GolubVanLoan.Chapter07.algorithm_7_5_1_essential`: the output of Algorithm 7.5.1 is
+  $D (Z^T H Z) D$, where $Z$ is the orthogonal factor of $M$ and $D = \operatorname{diag}(\pm 1)$.
+* Algorithm 7.5.2, `GolubVanLoan.Chapter07.triangularize2x2_spec`: the exact standardization of a
+  $2 \times 2$ block is a Givens similarity, which makes a block with real eigenvalues upper
+  triangular.
+* Algorithm 7.5.2, `GolubVanLoan.Chapter07.qrPass_isQRPass`: each exact pass of the program is a
+  deflation followed by a Francis step on the unreduced block.
+* Algorithm 7.5.2, `GolubVanLoan.Chapter07.algorithm_7_5_2_spec`: the exact output is
+  $T = Q^T (A + E) Q$ with $Q$ orthogonal and $\|E\|_F \le ((1 + 2\,\mathrm{tol})^{n \cdot
+  \mathrm{fuel}} - 1) \|A\|_F$, and $T$ is in real Schur form when the loop has ended.
 
 ## Conventions
 
-Real upper Hessenberg `H : Matrix (Fin n) (Fin n) ℝ`, complex shifts through `Matrix.complexify`.
-"A QR factorization" is given as data: a unitary (orthogonal over `ℝ`) `U` and an upper triangular
-`R` with `H - μ I = U R`, so that the statements hold for every factorization, as the book's do. The
-backbone's canonical steps are `Matrix.shiftedQrStep`, `Matrix.doubleShiftQrStep`, and the
-predicates `Matrix.IsShiftedQrStep`, `Matrix.IsFrancisStep` (`Numlib/Eigen/QRAlgorithm`). Indices
-are 0-based: the book's `h_{n,n-1}` is `H (Fin.last _) (Fin.castSucc (Fin.last _))`.
+* Matrices are real, `Matrix (Fin n) (Fin n) ℝ`. A complex shift acts on a real matrix through
+  `Matrix.complexify`, the entrywise embedding of the real matrices in the complex matrices.
+* A QR factorization is given as data: a unitary (over $\mathbb{R}$, orthogonal) $U$ and an upper
+  triangular $R$ with $H - \mu I = UR$. So the statements hold for every QR factorization, as in the
+  source. The predicate `Matrix.IsShiftedQrStep μ H H'` says that $H'$ is one shifted QR step of $H$
+  for some QR factorization. The canonical steps `Matrix.shiftedQrStep` and
+  `Matrix.doubleShiftQrStep` of `Numlib.Eigen.QRAlgorithm` use the QR factorization by Gram–Schmidt,
+  and `Matrix.IsFrancisStep s t H H'` specifies a Francis step.
+* Indices are 0-based. The source's $h_{11}$ is `H 0 0`, and its $h_{n,n-1}$ is
+  `H (Fin.last _) (Fin.castSucc (Fin.last _))`.
+* The window $[p, m)$ is the list of the indices $i$ with $p \le i < m$,
+  `GolubVanLoan.Chapter07.francisWindow n p m`. In Algorithm 7.5.2 the blocks $H_{11}$, $H_{22}$ and
+  $H_{33}$ have the index sets $[0, p)$, $[p, m)$ and $[m, n)$, so $q = n - m$.
 
-## Algorithms
+## Implementation notes
 
-The programs follow the conventions of `NumlibSurface/GolubVanLoan` (generic in a monad `M` and a
-rounding hook `rnd`) and call chapter 5's shared helpers. `algorithm_7_5_1` is the Francis step on
-a window `w` of consecutive indices, bulge chasing by `houseOn` and
-`householderApplyLeft/Right` over the book's restricted row and column ranges
-(`francisReflect`, `francisChaseStep`); it returns the reflector data, so that
-`Z = householderProduct data`. Its exact semantics `algorithm_7_5_1_spec` (on the full window)
-rests on the bulge pattern `IsFrancisBulge`: each reflector annihilates the bulge column, and the
-restricted ranges miss only zeros, so each step is the full similarity `P H P`; the triangularity
-of `Zᵀ (H - a₁ I)(H - a₂ I)` is the implicit-shift principle
-`Matrix.IsUnreducedUpperHessenberg.isUpperTriangular_star_mul_aeval`, packaged as
-`isFrancisStep_of_first_reflector`. On a window `[p, p + N + 3)` (the unreduced block `H₂₂`,
-indexed by `windowEmb`, blocks `windowBlock`) the run is a Francis step on `H₂₂`
-(`algorithm_7_5_1_window`, `IsFrancisStepOn`). `triangularize2x2` is the
-book's unspecified "upper triangularize all 2-by-2 diagonal blocks with real eigenvalues" (an
-eigenvector, then `givens`), with `triangularize2x2_spec`. `algorithm_7_5_2` runs Algorithm 7.4.2,
-the backward accumulation of its reflectors, at most `fuel` deflation-and-Francis passes
-(`qrDeflate`, `schurTrailingStart`, `unreducedStart`, `qrPass`) and the final standardization.
-Its exact semantics `algorithm_7_5_2_spec` is a statement with a perturbation: each deflation
-perturbs by at most `2 tol ‖H‖_F` (`qrDeflate_spec`), while the Francis step on the window
-`[p, m)` and the off-block updates (`offBlockConj`) together are the exact similarity by
-`diag(I_p, Z, I_q)` (`offBlockConj_blockConj`), and the partition search really finds a
-decoupled quasi-triangular `H₃₃` (`schurTrailingStart_spec`, `NoTwoSubdiag`,
-`isQuasiUpperTriangular_of_noTwoSubdiag`). Each pass is the book's loop body
-(`qrPass_isQRPass`): the deflation `IsQRDeflation` (`qrDeflate_isQRDeflation`) followed by a
-Francis step on the unreduced block (`IsQRPass`, `IsQRFrancisPass`), and the specification
-records this trace of passes.
+* The programs follow the algorithm conventions of `NumlibSurface.GolubVanLoan`: they are generic in
+  a monad `M` and a rounding hook `rnd`, and they call the helpers of §5.1,
+  `GolubVanLoan.Chapter05.houseOn`, `GolubVanLoan.Chapter05.householderApplyLeft` and
+  `GolubVanLoan.Chapter05.householderApplyRight`.
+* `GolubVanLoan.Chapter07.algorithm_7_5_1` runs on a window `w` of consecutive indices. The
+  algorithm of the source is the full window `List.finRange n`, and Algorithm 7.5.2 runs it on the
+  unreduced block $H_{22}$. The bulge chasing applies each reflector over the restricted row and
+  column ranges of the source (`GolubVanLoan.Chapter07.francisReflect`,
+  `GolubVanLoan.Chapter07.francisChaseStep`). The program returns the reflector data, so that $Z$ is
+  `GolubVanLoan.Chapter05.householderProduct data`.
+* The exact semantics of Algorithm 7.5.1 rests on the bulge pattern
+  `GolubVanLoan.Chapter07.IsFrancisBulge`. Each reflector annihilates the bulge column, and the
+  restricted ranges miss only zero entries, so each step is the full similarity $P H P$. The
+  triangularity of $Z^T (H - a_1 I)(H - a_2 I)$ is the implicit-shift principle
+  `Matrix.IsUnreducedUpperHessenberg.isUpperTriangular_star_mul_aeval`, in the form
+  `GolubVanLoan.Chapter07.isFrancisStep_of_first_reflector`. On a window $[p, p + N + 3)$, the block
+  $H_{22}$ is indexed by `GolubVanLoan.Chapter07.windowEmb` and read by
+  `GolubVanLoan.Chapter07.windowBlock`, and the run is a Francis step on $H_{22}$
+  (`GolubVanLoan.Chapter07.algorithm_7_5_1_window`, `GolubVanLoan.Chapter07.IsFrancisStepOn`).
+* `GolubVanLoan.Chapter07.triangularize2x2` carries out the last step of Algorithm 7.5.2, "upper
+  triangularize all 2-by-2 diagonal blocks with real eigenvalues", by an eigenvector of the block
+  and then `GolubVanLoan.Chapter05.algorithm_5_1_3` (givens). Its exact semantics is
+  `GolubVanLoan.Chapter07.triangularize2x2_spec`.
+* `GolubVanLoan.Chapter07.algorithm_7_5_2` runs Algorithm 7.4.2, the backward accumulation of its
+  reflectors, at most `fuel` passes of deflation and Francis step
+  (`GolubVanLoan.Chapter07.qrDeflate`, `GolubVanLoan.Chapter07.schurTrailingStart`,
+  `GolubVanLoan.Chapter07.unreducedStart`, `GolubVanLoan.Chapter07.qrPass`), and the final
+  standardization. Each deflation changes $H$ by at most $2\,\mathrm{tol}\,\|H\|_F$
+  (`GolubVanLoan.Chapter07.qrDeflate_spec`). The Francis step on the window $[p, m)$ and the updates
+  outside the block (`GolubVanLoan.Chapter07.offBlockConj`) are together the exact similarity by
+  $\operatorname{diag}(I_p, Z, I_q)$ (`GolubVanLoan.Chapter07.offBlockConj_blockConj`). The search
+  for the partition finds a decoupled upper quasi-triangular $H_{33}$
+  (`GolubVanLoan.Chapter07.schurTrailingStart_spec`, `GolubVanLoan.Chapter07.NoTwoSubdiag`,
+  `GolubVanLoan.Chapter07.isQuasiUpperTriangular_of_noTwoSubdiag`).
+* Each pass is the loop body of the source (`GolubVanLoan.Chapter07.qrPass_isQRPass`): the deflation
+  `GolubVanLoan.Chapter07.IsQRDeflation` (`GolubVanLoan.Chapter07.qrDeflate_isQRDeflation`) followed
+  by a Francis step on the unreduced block (`GolubVanLoan.Chapter07.IsQRPass`,
+  `GolubVanLoan.Chapter07.IsQRFrancisPass`). The specification
+  `GolubVanLoan.Chapter07.algorithm_7_5_2_spec` records this sequence of passes.
+
+## Deviations from the source
+
+* **(7.5.3) and (7.5.6)–(7.5.7)** (generalization). The source takes the factorizations to be QR
+  factorizations. The identities hold for any second factor $R$, $R_1$, $R_2$. See
+  `GolubVanLoan.Chapter07.equation_7_5_3` and `GolubVanLoan.Chapter07.equation_7_5_7`.
+* **§7.5.2, the rate of the fixed-shift iteration** (reading). The source states the rate
+  $|(\lambda_{p+1} - \mu)/(\lambda_p - \mu)|^k$ by reference to the theory of §7.3. The theorem
+  assumes a diagonalizable $A$ with real eigenvalues, distinct nonzero $|\lambda_i - \mu|$ and a
+  general-position condition, and it gives the bound $C (r / |\lambda_p - \mu|)^k$ for every
+  $r > |\lambda_{p+1} - \mu|$. See `GolubVanLoan.Chapter07.shiftedQr_rate`.
+* **Theorem 7.5.1** (generalization). The source concludes $\tilde h_{n,n-1} = 0$ and
+  $\tilde h_{nn} = \mu$. The theorem shows that the whole last row of $\tilde H$ is $\mu e_n^T$. See
+  `GolubVanLoan.Chapter07.theorem_7_5_1`.
+* **§7.5.3, the quadratic convergence** (reading). The source says that if $h_{n,n-1}$ converges to
+  zero, it is likely to do so at a quadratic rate. The theorem is a local bound near an
+  algebraically simple real eigenvalue. See `GolubVanLoan.Chapter07.single_shift_quadratic`.
+* **§7.5.5, the essential uniqueness of the Francis step** (typo). The source cites "Theorem 7.4.3"
+  for the implicit Q theorem, which is Theorem 7.4.2. See
+  `GolubVanLoan.Chapter07.algorithm_7_5_1_essential`.
+* **Algorithm 7.5.2, the last step** (reading). The source gives no algorithm to upper triangularize
+  the $2 \times 2$ diagonal blocks with real eigenvalues. The library uses one Givens rotation built
+  from an eigenvector of the block. See `GolubVanLoan.Chapter07.triangularize2x2`.
+* **Algorithm 7.5.2** (reading). The source says that the algorithm computes the real Schur form
+  $Q^T A Q = T$. The deflations set nonzero entries to zero, so in exact arithmetic the theorem
+  states $T = Q^T (A + E) Q$ with a bound on $\|E\|_F$, and $E = 0$ if $\mathrm{tol} = 0$. See
+  `GolubVanLoan.Chapter07.algorithm_7_5_2_spec`.
 
 ## Not formalized
 
-The deflation criterion (7.5.2) as a heuristic and the "decoupling" discussion; Stewart's worked
-example `h̃_{n,n-1} = -ε² b/(a² + ε²)` (its rigorous content is `single_shift_quadratic`); the
-roundoff claims of §7.5.6 (`≈`, no derivation); balancing (§7.5.7); flop counts.
+* **The deflation criterion (7.5.2) as a heuristic, and the discussion of decoupling.** The
+  criterion itself is the deflation step of Algorithm 7.5.2.
+* **Stewart's worked example** $\tilde h_{n,n-1} = -\epsilon^2 b/(a^2 + \epsilon^2)$ of §7.5.3. Its
+  rigorous content is `GolubVanLoan.Chapter07.single_shift_quadratic`.
+* **The roundoff claims of §7.5.6.** The source states them with $\approx$ and gives no derivation.
+* **Balancing (§7.5.7).**
+* **Flop counts.**
 -/
 
 open Matrix Polynomial FloatingPoint
@@ -79,22 +193,40 @@ variable {n : ℕ}
 
 /-! ### §7.5.2 The shifted QR iteration -/
 
-/-- **(7.5.3).** Each matrix of the shifted QR iteration is orthogonally similar to its predecessor:
-if `H - μ I = U R` with `U` orthogonal, then `R U + μ I = Uᵀ (U R + μ I) U = Uᵀ H U`. -/
+/-- **Equation (7.5.3)** of [golub2013matrix]. Let $H, U, R \in \mathbb{R}^{n \times n}$ and
+$\mu \in \mathbb{R}$, with $U$ orthogonal and $H - \mu I = UR$. Then each matrix of the shifted
+QR iteration is orthogonally similar to its predecessor:
+$$RU + \mu I = U^T (UR + \mu I) U = U^T H U.$$
+
+**Generalization.** The source takes $H - \mu I = UR$ to be a QR factorization. The identity
+holds for any $R$: only the orthogonality of $U$ is used. -/
 theorem equation_7_5_3 {H U R : Matrix (Fin n) (Fin n) ℝ} {μ : ℝ}
     (hU : U ∈ orthogonalGroup (Fin n) ℝ) (hQR : H - μ • 1 = U * R) :
     R * U + μ • 1 = Uᵀ * H * U := by
   have h := mul_add_smul_one_eq_star_mul_mul hU hQR
   rwa [star_eq_conjTranspose, conjTranspose_eq_transpose_of_trivial] at h
 
-/-- **§7.5.2, the rate of the fixed-shift QR iteration.** "If `μ` is a fixed shift and the
-eigenvalues `λ_i` of `H` are ordered so that `|λ₁ - μ| ≥ ⋯ ≥ |λ_n - μ|`, then the theory of §7.3
-says that the `p`th subdiagonal entry in `H_k` converges to zero with rate
-`|(λ_{p+1} - μ)/(λ_p - μ)|^k`." Rigorous form: for `A = X diag(λ) X⁻¹` with
-`|λ₁ - μ| > ⋯ > |λ_n - μ| > 0` and `X⁻¹` with nonsingular leading principal submatrices (the
-general-position hypothesis of the theory of §7.3), every fixed-shift QR iteration `H_{k+1}` of
-`H_k` (`H_k - μ I = U_k R_k`, `H_{k+1} = R_k U_k + μ I`, any factorizations), `H_0 = A`, has
-`|H_k(p+1, p)| ≤ C (r / |λ_p - μ|)^k` for every `r > |λ_{p+1} - μ|` (0-based indices). -/
+/-- **Section 7.5.2** of [golub2013matrix], the rate of the fixed-shift QR iteration. Let
+$A, X \in \mathbb{R}^{n \times n}$ with $X$ nonsingular and $X^{-1} A X =
+\operatorname{diag}(\lambda_1, \dots, \lambda_n)$, and let $\mu \in \mathbb{R}$ with
+$$|\lambda_1 - \mu| > |\lambda_2 - \mu| > \dots > |\lambda_n - \mu| > 0.$$
+Assume that every leading principal submatrix of $X^{-1}$ is nonsingular. Let $H_0 = A$, and let
+each $H_{k+1}$ be a shifted QR step of $H_k$ with the shift $\mu$: $H_k - \mu I = U_k R_k$ for
+some QR factorization, and $H_{k+1} = R_k U_k + \mu I$. Then for every $p$ with $1 \le p < n$
+and every $r > |\lambda_{p+1} - \mu|$ there is a constant $C$ with
+$$|(H_k)_{p+1,p}| \le C \left( \frac{r}{|\lambda_p - \mu|} \right)^k \quad \text{for all } k \ge
+  0.$$
+
+**Reading.** The source says: "If $\mu$ is a fixed shift and the eigenvalues $\lambda_i$ of $H$
+are ordered so that $|\lambda_1 - \mu| \ge \dots \ge |\lambda_n - \mu|$, then the theory of §7.3
+says that the $p$th subdiagonal entry in $H_k$ converges to zero with rate
+$|(\lambda_{p+1} - \mu)/(\lambda_p - \mu)|^k$." The theorem makes the hypotheses of the theory
+of §7.3 explicit: $A$ is diagonalizable with real eigenvalues, the numbers $|\lambda_i - \mu|$
+are distinct and nonzero, and $X^{-1}$ is in general position. The rate holds with every $r$
+larger than $|\lambda_{p+1} - \mu|$.
+
+The Lean indices are 0-based: the entry is `H k q p` with `q = p + 1`, and the eigenvalues are
+`l : Fin n → ℝ`. Each step is `Matrix.IsShiftedQrStep μ (H k) (H (k + 1))`. -/
 theorem shiftedQr_rate {A X : Matrix (Fin n) (Fin n) ℝ} {l : Fin n → ℝ} {μ : ℝ}
     (hX : IsUnit X.det) (hXA : X⁻¹ * A * X = diagonal l)
     (hsep : ∀ j k : Fin n, j < k → |l k - μ| < |l j - μ|) (hμ : ∀ j, l j ≠ μ)
@@ -153,10 +285,18 @@ theorem shiftedQr_rate {A X : Matrix (Fin n) (Fin n) ℝ} {l : Fin n → ℝ} {�
         exact div_le_div_of_nonneg_right hr'r hL0.le
 
 
-/-- **Theorem 7.5.1 (the exact shift)**, over `ℂ` as printed (the eigenvalue `μ` of the real `H` may
-be complex). Let `H ∈ ℝ^{n×n}` be unreduced upper Hessenberg and `μ` an eigenvalue of `H`. If
-`H̃ = R U + μ I` where `H - μ I = U R` is a QR factorization (`U` unitary, `R` upper triangular),
-then `h̃_{n,n-1} = 0` and `h̃_{nn} = μ`: indeed the whole last row of `H̃` is `μ e_nᵀ`. -/
+/-- **Theorem 7.5.1** of [golub2013matrix] (the exact shift). Let $H \in \mathbb{R}^{n \times n}$ be
+unreduced upper Hessenberg, and let $\mu \in \mathbb{C}$ be an eigenvalue of $H$. Let
+$H - \mu I = UR$ with $U \in \mathbb{C}^{n \times n}$ unitary and $R$ upper triangular, and let
+$\tilde H = RU + \mu I$. Then the last row of $\tilde H$ is $\mu e_n^T$. In particular
+$\tilde h_{n,n-1} = 0$ and $\tilde h_{nn} = \mu$.
+
+**Generalization.** The source concludes $\tilde h_{n,n-1} = 0$ and $\tilde h_{nn} = \mu$. The
+theorem shows that all the other entries of the last row vanish too.
+
+The statement is over $\mathbb{C}$, as in the source, because the eigenvalue $\mu$ of the real
+$H$ can be complex; $H$ enters as `H.complexify`. The size is $n = N + 1$, and the last row is
+`Fin.last N`. -/
 theorem theorem_7_5_1 {N : ℕ} {H : Matrix (Fin (N + 1)) (Fin (N + 1)) ℝ} (hH : IsUnreduced H)
     {μ : ℂ} (hμ : μ ∈ spectrum ℂ H.complexify) {U R H' : Matrix (Fin (N + 1)) (Fin (N + 1)) ℂ}
     (hU : U ∈ unitaryGroup (Fin (N + 1)) ℂ) (hR : R.IsUpperTriangular)
@@ -167,14 +307,23 @@ theorem theorem_7_5_1 {N : ℕ} {H : Matrix (Fin (N + 1)) (Fin (N + 1)) ℝ} (hH
 
 /-! ### §7.5.3 The single-shift strategy -/
 
-/-- **§7.5.3, the single-shift iteration (7.5.4): "If the `(n, n-1)` entry converges to zero, it is
-likely to do so at a quadratic rate."** Rigorous local form: for `A` with an algebraically simple
-real eigenvalue `l` there are `C` and `δ > 0` such that, for every Hessenberg orthogonal conjugate
-`T = Qᵀ A Q` with `|t_{n,n-1}| ≤ δ`, `|t_nn - l| ≤ δ` and `T - t_nn I` nonsingular, every
-single-shift QR step `T'` (`T - t_nn I = U R`, `T' = R U + t_nn I`, any factorization) has
-`|t'_{n,n-1}| ≤ C t_{n,n-1}²` and `|t'_nn - l| ≤ C t_{n,n-1}²` (0-based: `n` is `Fin.last`). The
-last row of a shifted step is one step of Rayleigh quotient iteration on `Tᵀ`
-(`Matrix.abs_shiftedQrStep_last_le_of_conj`). -/
+/-- **Section 7.5.3** of [golub2013matrix], the quadratic convergence of the single-shift iteration
+(7.5.4). Let $A \in \mathbb{R}^{n \times n}$ with $n \ge 2$, and let $\lambda \in \mathbb{R}$ be
+an algebraically simple eigenvalue of $A$. Then there are constants $C$ and $\delta > 0$ with
+the following property. Let $Q$ be orthogonal, let $T = Q^T A Q$ be upper Hessenberg, and assume
+that $T - t_{nn} I$ is nonsingular, $|t_{n,n-1}| \le \delta$ and
+$|t_{nn} - \lambda| \le \delta$. If $T'$ is a shifted QR step of $T$ with the shift $t_{nn}$
+($T - t_{nn} I = UR$ for some QR factorization, and $T' = RU + t_{nn} I$), then
+$$|t'_{n,n-1}| \le C\, t_{n,n-1}^2, \qquad |t'_{nn} - \lambda| \le C\, t_{n,n-1}^2.$$
+
+**Reading.** The source says: "If the $(n, n-1)$ entry converges to zero, it is likely to do so
+at a quadratic rate." The theorem is a rigorous local form of this claim near an algebraically
+simple real eigenvalue.
+
+The eigenvalue is algebraically simple in the sense `A.charpoly.rootMultiplicity l = 1`. The
+size is $n = N + 2$, and the index $n$ is `Fin.last (N + 1)`. The last row of a shifted QR step
+is one step of Rayleigh quotient iteration on $T^T$, and the proof applies
+`Matrix.abs_shiftedQrStep_last_le_of_conj`. -/
 theorem single_shift_quadratic {N : ℕ} {A : Matrix (Fin (N + 2)) (Fin (N + 2)) ℝ} {l : ℝ}
     (hl : A.charpoly.rootMultiplicity l = 1) :
     ∃ C δ : ℝ, 0 < δ ∧ ∀ Q T T' : Matrix (Fin (N + 2)) (Fin (N + 2)) ℝ,
@@ -192,9 +341,19 @@ theorem single_shift_quadratic {N : ℕ} {A : Matrix (Fin (N + 2)) (Fin (N + 2))
 
 /-! ### §7.5.4 The double-shift strategy -/
 
-/-- **(7.5.6)–(7.5.7).** If `H - a₁ I = U₁ R₁`, `H₁ = R₁ U₁ + a₁ I`, `H₁ - a₂ I = U₂ R₂`,
-`H₂ = R₂ U₂ + a₂ I` (complex shifts, factorizations of complex matrices), then
-`(U₁ U₂)(R₂ R₁) = M` with `M = (H - a₁ I)(H - a₂ I)` (7.5.8), and `H₂ = (U₁ U₂)ᴴ H (U₁ U₂)`. -/
+/-- **Equations (7.5.6) and (7.5.7)** of [golub2013matrix]. Let $H, H_1, H_2, U_1, U_2, R_1, R_2 \in
+\mathbb{C}^{n \times n}$ and $a_1, a_2 \in \mathbb{C}$, with $U_1$ and $U_2$ unitary and
+$$H - a_1 I = U_1 R_1, \quad H_1 = R_1 U_1 + a_1 I, \quad H_1 - a_2 I = U_2 R_2, \quad H_2 = R_2
+  U_2 + a_2 I.$$
+Then
+$$(U_1 U_2)(R_2 R_1) = M, \qquad H_2 = (U_1 U_2)^H H (U_1 U_2),$$
+where $M = (H - a_1 I)(H - a_2 I)$ is the matrix of (7.5.8).
+
+**Generalization.** The source takes the two factorizations to be QR factorizations. The
+identities hold for any $R_1$ and $R_2$.
+
+The matrices and the shifts are complex, because the shifts $a_1$ and $a_2$ of the double-shift
+strategy can be complex. -/
 theorem equation_7_5_7 {H H₁ H₂ U₁ U₂ R₁ R₂ : Matrix (Fin n) (Fin n) ℂ} {a₁ a₂ : ℂ}
     (hU₁ : U₁ ∈ unitaryGroup (Fin n) ℂ) (hU₂ : U₂ ∈ unitaryGroup (Fin n) ℂ)
     (h₁ : H - a₁ • 1 = U₁ * R₁) (hH₁ : H₁ = R₁ * U₁ + a₁ • 1)
@@ -218,10 +377,19 @@ theorem equation_7_5_7 {H H₁ H₂ U₁ U₂ R₁ R₂ : Matrix (Fin n) (Fin n)
       star_mul]
     simp only [Matrix.mul_assoc]
 
-/-- **(7.5.5) and (7.5.8).** Let `G = [h_mm h_mn; h_nm h_nn]` (`m = n - 1`) be the trailing `2 × 2`
-block of a real `H` and `a₁`, `a₂` its (possibly complex) eigenvalues. Then `s = a₁ + a₂ = tr G`
-and `t = a₁ a₂ = det G` are real, and `M = (H - a₁ I)(H - a₂ I) = H² - s H + t I` is real even
-when `a₁`, `a₂` are complex. -/
+/-- **Equations (7.5.5) and (7.5.8)** of [golub2013matrix]. Let $H \in \mathbb{R}^{n \times n}$ with
+$n \ge 2$, let
+$$G = \begin{bmatrix} h_{mm} & h_{mn} \\ h_{nm} & h_{nn} \end{bmatrix}, \qquad m = n - 1,$$
+be its trailing $2 \times 2$ block, and let $a_1, a_2 \in \mathbb{C}$ be the eigenvalues of $G$,
+counted with multiplicity. Then $s = a_1 + a_2 = \operatorname{tr} G$ and $t = a_1 a_2 = \det G$
+are real, and
+$$M = (H - a_1 I)(H - a_2 I) = H^2 - sH + tI$$
+is a real matrix, even when $a_1$ and $a_2$ are complex.
+
+The size is $n = N + 2$, and $G$ is `H.submatrix (Fin.natAdd N) (Fin.natAdd N)`. The eigenvalues
+are the roots of the characteristic polynomial of the complexification of $G$. That $M$ is real
+is stated as the equality of $(H - a_1 I)(H - a_2 I)$ with the complexification of the real
+matrix $H^2 - sH + tI$. -/
 theorem equation_7_5_8 {N : ℕ} (H : Matrix (Fin (N + 2)) (Fin (N + 2)) ℝ) {a₁ a₂ : ℂ}
     (ha : (H.submatrix (Fin.natAdd N) (Fin.natAdd N)).complexify.charpoly.roots = {a₁, a₂}) :
     a₁ + a₂ = ((H.submatrix (Fin.natAdd N) (Fin.natAdd N)).trace : ℂ) ∧
@@ -249,12 +417,22 @@ theorem equation_7_5_8 {N : ℕ} (H : Matrix (Fin (N + 2)) (Fin (N + 2)) ℝ) {a
     Matrix.mul_one, add_smul]
   module
 
-/-- **§7.5.4: "(7.5.7) is the QR factorization of a real matrix and we may choose `U₁` and `U₂` so
-that `Z = U₁ U₂` is real orthogonal. It then follows that `H₂ = Zᵀ H Z` is real."** For real `H`
-and a shift `a₁ = a` that is not an eigenvalue, with `a₂ = ā`, the canonical double-shift step is
-real: it is the complexification of `Zᵀ H Z` with `Z` the canonical orthogonal factor of the real
-`M = H² - 2 Re(a) H + |a|² I`; and for any choice of the two QR factorizations the result is a
-unimodular diagonal similarity of it. -/
+/-- **Section 7.5.4** of [golub2013matrix], the reality of the double-shift step. The source says:
+"(7.5.7) is the QR factorization of a real matrix and we may choose $U_1$ and $U_2$ so that
+$Z = U_1 U_2$ is real orthogonal. It then follows that $H_2 = Z^T H Z$ is real." Let
+$H \in \mathbb{R}^{n \times n}$, and let $a \in \mathbb{C}$ not be an eigenvalue of $H$. Let
+$M = H^2 - 2 \operatorname{Re}(a) H + |a|^2 I$, and let $Z$ be the orthogonal factor of the QR
+factorization of $M$ by Gram–Schmidt. Then:
+* $Z$ is real orthogonal;
+* the canonical double-shift QR step of $H$ with the shifts $a_1 = a$ and $a_2 = \bar a$ is
+  $Z^T H Z$, so it is real;
+* if $H_1$ is a shifted QR step of $H$ with the shift $a$, and $H_2$ is a shifted QR step of
+  $H_1$ with the shift $\bar a$, for any QR factorizations, then $H_2 = D^H (Z^T H Z) D$ for a
+  diagonal matrix $D$ whose diagonal entries have modulus $1$.
+
+$Z$ is `Matrix.qrQ M`, and the canonical double-shift step is
+`Matrix.doubleShiftQrStep H.complexify a`. The second statement says that this step is the
+complexification of $Z^T H Z$. -/
 theorem double_shift_real (H : Matrix (Fin n) (Fin n) ℝ) {a : ℂ}
     (ha : a ∉ spectrum ℂ H.complexify) :
     qrQ (H * H - (2 * a.re) • H + Complex.normSq a • 1) ∈ orthogonalGroup (Fin n) ℝ ∧
@@ -291,11 +469,15 @@ theorem double_shift_real (H : Matrix (Fin n) (Fin n) ℝ) {a : ℂ}
 
 /-! ### §7.5.5 The Francis step -/
 
-/-- **§7.5.5, the first column of `M`.** For upper Hessenberg `H` with `n ≥ 3` and
-`M = H² - s H + t I`, the first column `M e₁ = (x, y, z, 0, …, 0)ᵀ` with
-`x = h₁₁² + h₁₂ h₂₁ - s h₁₁ + t`, `y = h₂₁ (h₁₁ + h₂₂ - s)`, `z = h₂₁ h₃₂` (0-based in Lean): only
-the first three entries of the first column of `M` can be nonzero, which is why the Francis step
-starts with a `3 × 3` reflector. -/
+/-- **Section 7.5.5** of [golub2013matrix], the first column of $M$. Let
+$H \in \mathbb{R}^{n \times n}$ with $n \ge 3$ be upper Hessenberg, let $s, t \in \mathbb{R}$,
+and let $M = H^2 - sH + tI$. Then $M e_1 = (x, y, z, 0, \dots, 0)^T$ with
+$$x = h_{11}^2 + h_{12} h_{21} - s h_{11} + t, \qquad y = h_{21} (h_{11} + h_{22} - s), \qquad
+  z = h_{21} h_{32}.$$
+So only the first three entries of the first column of $M$ can be nonzero, which is why the
+Francis step starts with a $3 \times 3$ reflector.
+
+The size is $n = N + 3$, and the Lean indices are 0-based: $h_{11}$ is `H 0 0`. -/
 theorem francis_first_column {N : ℕ} {H : Matrix (Fin (N + 3)) (Fin (N + 3)) ℝ}
     (hH : H.IsUpperHessenberg) (s t : ℝ) :
     (H * H - s • H + t • 1) 0 0 = H 0 0 * H 0 0 + H 0 1 * H 1 0 - s * H 0 0 + t ∧
@@ -338,19 +520,20 @@ section Programs
 
 variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 
-/-- **The window `[p, m)`**: the indices `p ≤ i < m` in increasing order — the unreduced block
-`H₂₂` of Algorithm 7.5.2, on which the Francis step runs. -/
+/-- The **window** $[p, m)$: the list of the indices $i$ with $p \le i < m$, in increasing order.
+Algorithm 7.5.2 runs the Francis step on the window of the unreduced block $H_{22}$. -/
 def francisWindow (n p m : ℕ) : List (Fin n) :=
   (List.finRange n).filter fun i => p ≤ (i : ℕ) ∧ (i : ℕ) < m
 
-/-- The consecutive triples `(w₀, w₁, w₂), (w₁, w₂, w₃), …` of a window `w`: the index lists
-`o_k = [w_k, w_{k+1}, w_{k+2}]` of the bulge-chasing steps of Algorithm 7.5.1. -/
+/-- The list of the consecutive triples $(w_0, w_1, w_2), (w_1, w_2, w_3), \dots$ of a list $w$.
+These are the index lists $o_k = [w_k, w_{k+1}, w_{k+2}]$ of the bulge-chasing steps of
+Algorithm 7.5.1. A list with fewer than three elements has no triple. -/
 def francisTriples {α : Type*} : List α → List (α × α × α)
   | a :: b :: c :: t => (a, b, c) :: francisTriples (b :: c :: t)
   | _ => []
 
-/-- The first column of `(H - a₁ I)(H - a₂ I)` in Algorithm 7.5.1, with `s`, `t` from the trailing
-`2 × 2` block `H([m, l], [m, l])`:
+/-- The first column of $(H - a_1 I)(H - a_2 I)$ in Algorithm 7.5.1, where $s$ and $t$ come from the
+trailing $2 \times 2$ block $H([m, l], [m, l])$:
 ```
 s = H(m,m) + H(l,l)
 t = H(m,m)·H(l,l) - H(m,l)·H(l,m)
@@ -358,8 +541,8 @@ x = H(1,1)·H(1,1) + H(1,2)·H(2,1) - s·H(1,1) + t
 y = H(2,1)·(H(1,1) + H(2,2) - s)
 z = H(2,1)·H(3,2)
 ```
-each operation rounded in the printed order; `x`, `y`, `z` are placed at the indices `a`, `b`, `c`
-(the book's `1, 2, 3`), zero elsewhere. -/
+Each operation is rounded, in the printed order. The values $x$, $y$ and $z$ are placed at the
+indices $a$, $b$ and $c$ (the source's $1$, $2$ and $3$), and the other entries are zero. -/
 noncomputable def francisShiftVector (a b c m l : Fin n) (H : Matrix (Fin n) (Fin n) ℝ) :
     M (Fin n → ℝ) := do
   let s ← rnd (H m m + H l l)
@@ -370,9 +553,11 @@ noncomputable def francisShiftVector (a b c m l : Fin n) (H : Matrix (Fin n) (Fi
   let z ← rnd (H b a * H c b)
   pure fun i => if i = a then x else if i = b then y else if i = c then z else 0
 
-/-- One two-sided Householder update of Algorithm 7.5.1: `[v, β] = house(u(o))` (chapter 5's
-`houseOn`), `H(o, cols) = (I - β v vᵀ) H(o, cols)`, `H(rows, o) = H(rows, o) (I - β v vᵀ)`;
-returns the new matrix and the reflector data `(v, β)`. -/
+/-- One two-sided Householder update of Algorithm 7.5.1 on the index list $o$:
+$[v, \beta] = \mathrm{house}(u(o))$ by `GolubVanLoan.Chapter05.houseOn`, then $H(o,
+\mathrm{cols}) = (I - \beta v v^T) H(o, \mathrm{cols})$ and $H(\mathrm{rows}, o) =
+H(\mathrm{rows}, o) (I - \beta v v^T)$. It returns the new matrix and the reflector data
+$(v, \beta)$. -/
 noncomputable def francisReflect (o : List (Fin n)) (u : Fin n → ℝ) (cols rows : List (Fin n))
     (H : Matrix (Fin n) (Fin n) ℝ) : M (Matrix (Fin n) (Fin n) ℝ × ((Fin n → ℝ) × ℝ)) := do
   let vβ ← houseOn rnd o u
@@ -380,10 +565,11 @@ noncomputable def francisReflect (o : List (Fin n)) (u : Fin n → ℝ) (cols ro
   let H ← householderApplyRight rnd vβ.1 vβ.2 rows o H
   pure (H, vβ)
 
-/-- One bulge-chasing step `k ≥ 1` of Algorithm 7.5.1 on the triple `t = (a, a+1, a+2)`:
-`[v, β] = house(H(a:a+2, a-1))`, the two-sided update of `francisReflect` with the column range
-`q:n` (`a ≤ j + 1`) and the row range `1:r` (`i ≤ a + 3`) of the window `w`, and the reflector data
-appended to the list. -/
+/-- One bulge-chasing step $k \ge 1$ of Algorithm 7.5.1 on the triple $t = (a, a+1, a+2)$ of the
+window $w$. It computes $[v, \beta] = \mathrm{house}(H(a{:}a{+}2, a{-}1))$, applies the
+two-sided update `GolubVanLoan.Chapter07.francisReflect` with the column range $q{:}n$ (the
+window indices $j$ with $a \le j + 1$) and the row range $1{:}r$ (the window indices $i$ with
+$i \le a + 3$), and appends the reflector data to the list. -/
 noncomputable def francisChaseStep (w : List (Fin n))
     (st : Matrix (Fin n) (Fin n) ℝ × List ((Fin n → ℝ) × ℝ)) (t : Fin n × Fin n × Fin n) :
     M (Matrix (Fin n) (Fin n) ℝ × List ((Fin n → ℝ) × ℝ)) := do
@@ -392,11 +578,10 @@ noncomputable def francisChaseStep (w : List (Fin n))
     (w.filter fun j => (t.1 : ℕ) ≤ j + 1) (w.filter fun i => (i : ℕ) ≤ t.1 + 3) st.1
   pure (r.1, st.2 ++ [r.2])
 
-/-- **Algorithm 7.5.1 (Francis QR step)** on a window `w` of consecutive indices (the book's
-algorithm is `w = List.finRange n`; Algorithm 7.5.2 runs it on the unreduced block `H₂₂`):
-"Given the unreduced upper Hessenberg matrix `H ∈ ℝ^{n×n}` whose trailing 2-by-2 principal
-submatrix has eigenvalues `a₁` and `a₂`, this algorithm overwrites `H` with `Zᵀ H Z`, where `Z` is
-a product of Householder matrices and `Zᵀ (H - a₁ I)(H - a₂ I)` is upper triangular."
+/-- **Algorithm 7.5.1** of [golub2013matrix] (Francis QR step). Given the unreduced upper Hessenberg
+matrix $H \in \mathbb{R}^{n \times n}$ whose trailing $2 \times 2$ principal submatrix has the
+eigenvalues $a_1$ and $a_2$, the algorithm overwrites $H$ with $Z^T H Z$, where $Z$ is a product
+of Householder matrices and $Z^T (H - a_1 I)(H - a_2 I)$ is upper triangular.
 ```
 m = n - 1
 s = H(m,m) + H(n,n);  t = H(m,m)·H(n,n) - H(m,n)·H(n,m)
@@ -412,12 +597,18 @@ end
 H(n-1:n, n-2:n) = (I - β v vᵀ) H(n-1:n, n-2:n)
 H(1:n, n-1:n) = H(1:n, n-1:n) (I - β v vᵀ)
 ```
-The step `k` works on the triple `o_k = (a, a+1, a+2)` of window indices (`francisTriples`); for
-`k ≥ 1` the vector `[x y z]ᵀ` is column `a - 1` of `H` on `o_k`, read in place by `houseOn`; the
-column range `q:n` is the window indices `j` with `a ≤ j + 1`, the row range `1:r` those with
-`i ≤ a + 3`. Only the block `H(w, w)` changes. Returns the new `H` and the reflector data in order
-of application (convention 13), so that `Z = householderProduct data`. For a window of fewer than
-three indices nothing is done. -/
+The program runs on a window $w$ of consecutive indices. The algorithm of the source is the full
+window `List.finRange n`, and Algorithm 7.5.2 runs the program on the unreduced block $H_{22}$.
+Only the block $H(w, w)$ changes. The program returns the new $H$ and the reflector data in the
+order of application, so that $Z$ is `GolubVanLoan.Chapter05.householderProduct data`. On a
+window of fewer than three indices it does nothing.
+
+The step $k$ works on the triple $o_k = (a, a+1, a+2)$ of window indices
+(`GolubVanLoan.Chapter07.francisTriples`). For $k \ge 1$, the vector $[x\ y\ z]^T$ is column
+$a - 1$ of $H$ on $o_k$, which `GolubVanLoan.Chapter05.houseOn` reads in place. With 0-based
+indices, the column range $q{:}n$ is the window indices $j$ with $a \le j + 1$, and the row
+range $1{:}r$ is the window indices $i$ with $i \le a + 3$. The program has no hypothesis on
+$H$. Its exact semantics is `GolubVanLoan.Chapter07.algorithm_7_5_1_spec`. -/
 noncomputable def algorithm_7_5_1 (w : List (Fin n)) (H : Matrix (Fin n) (Fin n) ℝ) :
     M (Matrix (Fin n) (Fin n) ℝ × List ((Fin n → ℝ) × ℝ)) :=
   match francisTriples w with
@@ -440,7 +631,8 @@ section Triples
 
 variable {α : Type*}
 
-/-- The number of consecutive triples of a list. -/
+/-- A list of length $\ell$ has $\ell - 2$ consecutive triples, in truncated subtraction, so none
+when $\ell < 3$. -/
 theorem length_francisTriples : ∀ w : List α, (francisTriples w).length = w.length - 2
   | a :: b :: c :: t => by
     rw [francisTriples, List.length_cons, length_francisTriples (b :: c :: t)]
@@ -449,7 +641,7 @@ theorem length_francisTriples : ∀ w : List α, (francisTriples w).length = w.l
   | [_] => rfl
   | [_, _] => rfl
 
-/-- The `k`-th consecutive triple of a list. -/
+/-- The $k$-th consecutive triple of a list $w$ is $(w_k, w_{k+1}, w_{k+2})$. -/
 theorem getElem_francisTriples : ∀ (w : List α) (k : ℕ) (hk : k < (francisTriples w).length),
     (francisTriples w)[k] =
       (w[k]'(by rw [length_francisTriples] at hk; omega),
@@ -470,23 +662,24 @@ end Triples
 
 section Window
 
-/-- The membership in the window `[p, m)`. -/
+/-- An index $i$ lies in the window $[p, m)$ if and only if $p \le i < m$. -/
 theorem mem_francisWindow {p m : ℕ} {i : Fin n} :
     i ∈ francisWindow n p m ↔ p ≤ (i : ℕ) ∧ (i : ℕ) < m := by
   simp [francisWindow]
 
-/-- The window has no repeated index. -/
+/-- The window $[p, m)$ has no repeated index. -/
 theorem nodup_francisWindow (n p m : ℕ) : (francisWindow n p m).Nodup :=
   (List.nodup_finRange n).filter _
 
-/-- The window `[0, n)` is the full index list. -/
+/-- The window $[0, n)$ is the full index list `List.finRange n`. -/
 theorem francisWindow_zero (n : ℕ) : francisWindow n 0 n = List.finRange n :=
   List.filter_eq_self.2 fun i _ => by simp
 
+/-- For $k < n$, the value of `Fin.ofNat n k` is $k$. -/
 private theorem val_ofNat_lt [NeZero n] {k : ℕ} (hk : k < n) : (Fin.ofNat n k : ℕ) = k := by
   rw [Fin.val_ofNat, Nat.mod_eq_of_lt hk]
 
-/-- The window `[p, m)` lists `p, p + 1, …, m - 1` in increasing order. -/
+/-- For $m \le n$, the window $[p, m)$ is the list $p, p + 1, \dots, m - 1$. -/
 theorem francisWindow_eq_map [NeZero n] {p m : ℕ} (hm : m ≤ n) :
     francisWindow n p m = (List.range (m - p)).map fun k => Fin.ofNat n (p + k) := by
   have hmap : ∀ k ∈ List.range (m - p), (Fin.ofNat n (p + k) : ℕ) = p + k := fun k hk => by
@@ -516,7 +709,7 @@ theorem francisWindow_eq_map [NeZero n] {p m : ℕ} (hm : m ≤ n) :
       rw [hmap a ha, hmap b hb] at this
       omega
 
-/-- The length of the window `[p, m)`. -/
+/-- For $m \le n$, the window $[p, m)$ has length $m - p$. -/
 theorem length_francisWindow {p m : ℕ} (hm : m ≤ n) :
     (francisWindow n p m).length = m - p := by
   rcases Nat.eq_zero_or_pos n with rfl | hn
@@ -525,7 +718,7 @@ theorem length_francisWindow {p m : ℕ} (hm : m ≤ n) :
   · have : NeZero n := ⟨hn.ne'⟩
     rw [francisWindow_eq_map hm, List.length_map, List.length_range]
 
-/-- The `k`-th index of the window `[p, m)` is `p + k`. -/
+/-- For $m \le n$, the $k$-th index of the window $[p, m)$ is $p + k$. -/
 theorem val_getElem_francisWindow {p m : ℕ} (hm : m ≤ n) (k : ℕ)
     (hk : k < (francisWindow n p m).length) : ((francisWindow n p m)[k] : ℕ) = p + k := by
   have hk' := hk
@@ -535,17 +728,19 @@ theorem val_getElem_francisWindow {p m : ℕ} (hm : m ≤ n) (k : ℕ)
   simp only [List.getElem_map, List.getElem_range, Fin.val_ofNat]
   exact Nat.mod_eq_of_lt (by omega)
 
-/-- The triple `(k, k+1, k+2)` of `Fin n`. -/
+/-- The triple $(k, k+1, k+2)$ of indices in `Fin n`, each taken modulo $n$. -/
 def francisTri (n : ℕ) [NeZero n] (k : ℕ) : Fin n × Fin n × Fin n :=
   (Fin.ofNat n k, Fin.ofNat n (k + 1), Fin.ofNat n (k + 2))
 
-/-- The values of the triple `(k, k+1, k+2)`. -/
+/-- If $k + 2 < n$, the triple `GolubVanLoan.Chapter07.francisTri n k` has the values $k$, $k + 1$
+and $k + 2$. -/
 theorem francisTri_val [NeZero n] {k : ℕ} (hk : k + 2 < n) :
     ((francisTri n k).1 : ℕ) = k ∧ ((francisTri n k).2.1 : ℕ) = k + 1 ∧
       ((francisTri n k).2.2 : ℕ) = k + 2 :=
   ⟨val_ofNat_lt (by omega), val_ofNat_lt (by omega), val_ofNat_lt hk⟩
 
-/-- The consecutive triples of the window `[p, m)`. -/
+/-- For $m \le n$, the consecutive triples of the window $[p, m)$ are the triples
+$(p + k, p + k + 1, p + k + 2)$ for $k = 0, \dots, m - p - 3$. -/
 theorem francisTriples_francisWindow [NeZero n] {p m : ℕ} (hm : m ≤ n) :
     francisTriples (francisWindow n p m) =
       (List.range (m - p - 2)).map fun k => francisTri n (p + k) := by
@@ -554,27 +749,30 @@ theorem francisTriples_francisWindow [NeZero n] {p m : ℕ} (hm : m ≤ n) :
   rw [getElem_francisTriples]
   simp only [List.getElem_map, List.getElem_range, francisTri, Nat.add_assoc]
 
-/-- **A similarity on the block `[p, m) × [p, m)`**: `Qᵀ H Q` on the block and `H` elsewhere — what
-Algorithm 7.5.1 does to a matrix when it runs on the window `[p, m)`. -/
+/-- The **block similarity** on the block $[p, m) \times [p, m)$: the matrix that equals $Q^T H Q$
+on the block and $H$ elsewhere. This is what Algorithm 7.5.1 does to a matrix when it runs on
+the window $[p, m)$. -/
 def blockConj (p m : ℕ) (Q H : Matrix (Fin n) (Fin n) ℝ) : Matrix (Fin n) (Fin n) ℝ :=
   of fun i j => if (p ≤ (i : ℕ) ∧ (i : ℕ) < m) ∧ (p ≤ (j : ℕ) ∧ (j : ℕ) < m) then
     (Qᵀ * H * Q) i j else H i j
 
-/-- On the full window the block similarity is the similarity. -/
+/-- On the full window $[0, n)$, the block similarity by $Q$ of $H$ is the similarity $Q^T H Q$. -/
 theorem blockConj_zero (Q H : Matrix (Fin n) (Fin n) ℝ) : blockConj 0 n Q H = Qᵀ * H * Q := by
   ext i j
   simp [blockConj]
 
-/-- `Q` acts on the block `[p, m)` only: it is the identity outside `[p, m) × [p, m)`. -/
+/-- A matrix $Q$ **acts on the block** $[p, m)$ if it agrees with the identity outside
+$[p, m) \times [p, m)$. -/
 def IsBlockSupported (p m : ℕ) (Q : Matrix (Fin n) (Fin n) ℝ) : Prop :=
   ∀ i j : Fin n, ¬ ((p ≤ (i : ℕ) ∧ (i : ℕ) < m) ∧ (p ≤ (j : ℕ) ∧ (j : ℕ) < m)) →
     Q i j = (1 : Matrix (Fin n) (Fin n) ℝ) i j
 
-/-- The identity acts on any block. -/
+/-- The identity acts on every block. -/
 theorem isBlockSupported_one (p m : ℕ) : IsBlockSupported p m (1 : Matrix (Fin n) (Fin n) ℝ) :=
   fun _ _ _ => rfl
 
-/-- A reflector whose vector vanishes off the block acts on the block. -/
+/-- A reflector $I - \beta v v^T$ whose vector $v$ vanishes outside $[p, m)$ acts on the block
+$[p, m)$. -/
 theorem isBlockSupported_reflector {p m : ℕ} {v : Fin n → ℝ} (β : ℝ)
     (hv : ∀ i : Fin n, ¬ (p ≤ (i : ℕ) ∧ (i : ℕ) < m) → v i = 0) :
     IsBlockSupported p m (1 - β • vecMulVec v v) := fun i j hij => by
@@ -583,7 +781,7 @@ theorem isBlockSupported_reflector {p m : ℕ} {v : Fin n → ℝ} (β : ℝ)
   · rw [hv j fun hj => hij ⟨hi, hj⟩, mul_zero, mul_zero, sub_zero]
   · rw [hv i hi, zero_mul, mul_zero, sub_zero]
 
-/-- Products of matrices acting on a block act on it. -/
+/-- The product of two matrices that act on the block $[p, m)$ acts on it. -/
 theorem IsBlockSupported.mul {p m : ℕ} {Q P : Matrix (Fin n) (Fin n) ℝ}
     (hQ : IsBlockSupported p m Q) (hP : IsBlockSupported p m P) : IsBlockSupported p m (Q * P) :=
   fun i j hij => by
@@ -600,7 +798,8 @@ theorem IsBlockSupported.mul {p m : ℕ} {Q P : Matrix (Fin n) (Fin n) ℝ}
         rw [hQ i k (fun h => hi h.1), one_apply_ne (Ne.symm hki), zero_mul]
       · simp
 
-/-- A product of reflector data supported on the block acts on the block. -/
+/-- If every vector of the reflector data vanishes outside $[p, m)$, the product of the reflectors
+acts on the block $[p, m)$. -/
 theorem isBlockSupported_householderProduct {p m : ℕ} {data : List ((Fin n → ℝ) × ℝ)}
     (h : ∀ q ∈ data, ∀ i : Fin n, ¬ (p ≤ (i : ℕ) ∧ (i : ℕ) < m) → q.1 i = 0) :
     IsBlockSupported p m (householderProduct data) := by
@@ -611,7 +810,8 @@ theorem isBlockSupported_householderProduct {p m : ℕ} {data : List ((Fin n →
     exact (isBlockSupported_reflector q.2 (h q List.mem_cons_self)).mul
       (ih fun r hr => h r (List.mem_cons_of_mem _ hr))
 
-/-- A similarity by a matrix acting on the block sees only the block of the conjugated matrix. -/
+/-- If $P$ acts on the block $[p, m)$ and $X$ and $Y$ agree on the block, then $P^T X P$ and
+$P^T Y P$ agree on the block. -/
 private theorem transpose_mul_mul_apply_congr {p m : ℕ} {P X Y : Matrix (Fin n) (Fin n) ℝ}
     (hP : IsBlockSupported p m P)
     (hXY : ∀ k l : Fin n, (p ≤ (k : ℕ) ∧ (k : ℕ) < m) → (p ≤ (l : ℕ) ∧ (l : ℕ) < m) →
@@ -628,8 +828,8 @@ private theorem transpose_mul_mul_apply_congr {p m : ℕ} {P X Y : Matrix (Fin n
       zero_mul,
       zero_mul, zero_mul]
 
-/-- **Block similarities compose**: for `Z`, `P` acting on the block,
-`blockConj P (blockConj Z H) = blockConj (Z P) H`. -/
+/-- **Block similarities compose**: if $P$ acts on the block $[p, m)$, then the block similarity by
+$P$ of the block similarity by $Z$ of $H$ is the block similarity by $ZP$ of $H$. -/
 theorem blockConj_blockConj {p m : ℕ} {Z P : Matrix (Fin n) (Fin n) ℝ}
     (hP : IsBlockSupported p m P) (H : Matrix (Fin n) (Fin n) ℝ) :
     blockConj p m P (blockConj p m Z H) = blockConj p m (Z * P) H := by
@@ -641,7 +841,9 @@ theorem blockConj_blockConj {p m : ℕ} {Z P : Matrix (Fin n) (Fin n) ℝ}
     simp only [Matrix.mul_assoc]
   · rfl
 
-/-- A block similarity of a matrix decoupled from the rest along the block is the similarity. -/
+/-- Let $Z$ act on the block $[p, m)$, and let $X$ be decoupled along the block:
+$x_{ij} = x_{ji} = 0$ whenever $i$ lies in $[p, m)$ and $j$ does not. Then the block similarity
+by $Z$ of $X$ is $Z^T X Z$. -/
 theorem blockConj_eq_of_decoupled {p m : ℕ} {Z X : Matrix (Fin n) (Fin n) ℝ}
     (hZ : IsBlockSupported p m Z)
     (hX : ∀ i j : Fin n, (p ≤ (i : ℕ) ∧ (i : ℕ) < m) → ¬ (p ≤ (j : ℕ) ∧ (j : ℕ) < m) →
@@ -690,26 +892,28 @@ end Window
 
 section Bulge
 
-/-- **The zero pattern of Algorithm 7.5.1 on the window `[p, m)` before the step on the triple
-`(a, a+1, a+2)`**: upper Hessenberg except for the bulge entries `(a+1, a-1)`, `(a+2, a-1)` and
-`(a+2, a)` inside the window (for `a = p` only `(p+2, p)`): `h_ij = 0` for `j + 1 < i` unless
-`p ≤ j`, `i < m`, `a ≤ j + 1`, `j ≤ a`, `i ≤ a + 2`. -/
+/-- The **bulge pattern** of Algorithm 7.5.1 on the window $[p, m)$ before the step on the triple
+$(a, a+1, a+2)$. The matrix is upper Hessenberg except for the bulge entries $(a+1, a-1)$,
+$(a+2, a-1)$ and $(a+2, a)$ inside the window, and for $a = p$ only the entry $(p+2, p)$:
+$h_{ij} = 0$ for $j + 1 < i$ unless $p \le j$, $i < m$, $a \le j + 1$, $j \le a$ and
+$i \le a + 2$. -/
 def IsFrancisBulge (p m a : ℕ) (H : Matrix (Fin n) (Fin n) ℝ) : Prop :=
   ∀ i j : Fin n, (j : ℕ) + 1 < i →
     ¬ (p ≤ (j : ℕ) ∧ (i : ℕ) < m ∧ a ≤ (j : ℕ) + 1 ∧ (j : ℕ) ≤ a ∧ (i : ℕ) ≤ a + 2) → H i j = 0
 
-/-- An upper Hessenberg matrix has every bulge pattern. -/
+/-- An upper Hessenberg matrix has the bulge pattern for all $p$, $m$ and $a$. -/
 theorem isFrancisBulge_of_isUpperHessenberg {H : Matrix (Fin n) (Fin n) ℝ}
     (hH : H.IsUpperHessenberg) (p m a : ℕ) : IsFrancisBulge p m a H := fun i j hij _ =>
   hH i j ⟨⟨(j : ℕ) + 1, by omega⟩, Fin.lt_def.2 (by simp), Fin.lt_def.2 (by simpa using hij)⟩
 
 variable {v u : Fin n → ℝ} {β : ℝ}
 
-/-- **One bulge-chasing step keeps the pattern** ([golub2013matrix] §7.5.5, the pictures of the
-Francis step), on the window `[p, m)`: if `H` has the pattern before the step on `(a, a+1, a+2)`,
-`p ≤ a`, `a + 2 < m`, `v` is supported on those rows, and `P = I - β v vᵀ` maps `u` — column
-`a - 1` of `H` when `p < a` — to a vector vanishing at `a + 1`, `a + 2`, then the block similarity
-by `P` has the pattern before the step on `(a+1, a+2, a+3)`. -/
+/-- **One bulge-chasing step keeps the pattern**, as in the pictures of the Francis step in §7.5.5
+of [golub2013matrix]. Let $H$ have the bulge pattern on the window $[p, m)$ before the step on
+$(a, a+1, a+2)$. Let $v$ vanish outside the indices $a$, $a+1$, $a+2$, let
+$P = I - \beta v v^T$, and let $u$ be a vector with $(Pu)_{a+1} = (Pu)_{a+2} = 0$ that equals
+column $a - 1$ of $H$ if $p < a$. Then the block similarity by $P$ of $H$ has the bulge pattern
+before the step on $(a+1, a+2, a+3)$. -/
 theorem IsFrancisBulge.conj {p m a : ℕ} {H : Matrix (Fin n) (Fin n) ℝ}
     (hB : IsFrancisBulge p m a H)
     (hv : ∀ i : Fin n, (i : ℕ) < a ∨ a + 2 < (i : ℕ) → v i = 0)
@@ -750,11 +954,11 @@ theorem IsFrancisBulge.conj {p m a : ℕ} {H : Matrix (Fin n) (Fin n) ℝ}
     · rw [one_sub_smul_vecMulVec_mul_apply_of_notMem hv' _ H hi]
       exact hB i j hij (by omega)
 
-/-- **The last step of Algorithm 7.5.1 restores Hessenberg form**, on the window `[p, a + 3)`: if
-`H` has the pattern before the step on `(a+1, a+2, a+3)` — only the entry `(a+2, a)` below the
-subdiagonal inside the window — `v` is supported on `a + 1`, `a + 2`, and `P = I - β v vᵀ` maps
-column `a` of `H` to a vector vanishing at `a + 2`, then the block similarity by `P` is upper
-Hessenberg. -/
+/-- **The last step of Algorithm 7.5.1 restores the Hessenberg form.** Let $a + 3 = m$, and let $H$
+have the bulge pattern on the window $[p, m)$ before the step on $(a+1, a+2, a+3)$, so that
+$(a+2, a)$ is the only entry below the subdiagonal inside the window that can be nonzero. Let
+$v$ vanish outside the indices $a+1$ and $a+2$, let $P = I - \beta v v^T$, and let $u$ be column
+$a$ of $H$, with $(Pu)_{a+2} = 0$. Then the block similarity by $P$ of $H$ is upper Hessenberg. -/
 theorem IsFrancisBulge.conj_last {p m a : ℕ} (ham : a + 3 = m)
     {H : Matrix (Fin n) (Fin n) ℝ} (hB : IsFrancisBulge p m (a + 1) H)
     (hv : ∀ i : Fin n, (i : ℕ) ≤ a ∨ a + 2 < (i : ℕ) → v i = 0)
@@ -790,10 +994,14 @@ end Bulge
 
 section FrancisSpec
 
-/-- **The exact two-sided update on a window**: if the reflector's rows `o` lie in the window
-`[p, m)` and in both ranges, the columns of the window outside the column range vanish on `o`,
-and the rows of the window outside the row range vanish on `o`, then the restricted updates of
-`francisReflect` compute the block similarity by `P = I - β v vᵀ`. -/
+/-- **The exact two-sided update on a window.** Let $o$ be a nonempty list of distinct indices, and
+let the lists cols and rows have no repeated index and consist of the indices of the window
+$[p, m)$ that satisfy the conditions $C$ and $R$, respectively. Assume that every index of $o$
+lies in the window and satisfies $C$ and $R$, that $h_{kq} = 0$ for $k \in o$ and every window
+column $q$ that does not satisfy $C$, and that $h_{rk} = 0$ for $k \in o$ and every window row
+$r$ that does not satisfy $R$. Then the exact `GolubVanLoan.Chapter07.francisReflect` returns
+the block similarity by $P = I - \beta v v^T$ of $H$, where $(v, \beta) = \mathrm{house}(u(o))$,
+together with $(v, \beta)$. -/
 theorem francisReflect_window {p m : ℕ} {o : List (Fin n)} (ho : o.Nodup) (hne : o ≠ [])
     (u : Fin n → ℝ) {cols rows : List (Fin n)} (hcols : cols.Nodup) (hrows : rows.Nodup)
     {C R : Fin n → Prop} (hcm : ∀ q, q ∈ cols ↔ (p ≤ (q : ℕ) ∧ (q : ℕ) < m) ∧ C q)
@@ -874,10 +1082,14 @@ theorem francisReflect_window {p m : ℕ} {o : List (Fin n)} (ho : o.Nodup) (hne
         (fun h => hrB (hoin r h).1)]
     · exact hLout r c hcB
 
-/-- **One bulge-chasing step on a window, exactly**: on the triple `(a, a+1, a+2)` of the window
-`[p, m)` with the pattern `IsFrancisBulge p m a`, the two restricted updates of Algorithm 7.5.1
-compute the block similarity by the reflector `P = I - β v vᵀ` of `house(u)`, which has the pattern
-`IsFrancisBulge p m (a + 1)`. -/
+/-- **One bulge-chasing step on a window, in exact arithmetic.** Let $b = a + 1$, $c = a + 2$,
+$p \le a$ and $a + 2 < m$, let $H$ have the bulge pattern on the window $[p, m)$ before the step
+on $(a, b, c)$, and let $u$ equal column $a - 1$ of $H$ if $p < a$. Let
+$(v, \beta) = \mathrm{house}(u([a, b, c]))$ and $P = I - \beta v v^T$. Then the two restricted
+updates of Algorithm 7.5.1 compute the block similarity by $P$ of $H$, and this matrix has the
+bulge pattern before the step on $(a+1, a+2, a+3)$. Moreover $\beta = 0$ or $\beta v^T v = 2$,
+$v$ vanishes outside $a$, $b$, $c$, and $Pu$ has the entry $\|(u_a, u_b, u_c)\|_2$ at $a$, zeros
+at $b$ and $c$, and the entries of $u$ elsewhere. -/
 theorem francis_step {p m : ℕ} {a b c : Fin n} (hb : (b : ℕ) = a + 1) (hc : (c : ℕ) = a + 2)
     (hpa : p ≤ a) (ham : (a : ℕ) + 2 < m) {H : Matrix (Fin n) (Fin n) ℝ}
     (hB : IsFrancisBulge p m a H) {u : Fin n → ℝ}
@@ -929,9 +1141,12 @@ theorem francis_step {p m : ℕ} {a b c : Fin n} (hb : (b : ℕ) = a + 1) (hc : 
     rw [hmem] at hk
     exact hB r k (by omega) (by omega)
 
-/-- **The last step of Algorithm 7.5.1 on a window, exactly**: on the pair `(a+1, a+2)` of the
-window `[p, a + 3)` with the pattern `IsFrancisBulge p m (a + 1)`, the restricted updates compute
-the block similarity by the reflector, which is upper Hessenberg. -/
+/-- **The last step of Algorithm 7.5.1 on a window, in exact arithmetic.** Let $b = a + 1$,
+$c = a + 2$, $p \le a$ and $a + 3 = m$, and let $H$ have the bulge pattern on the window
+$[p, m)$ before the step on $(a+1, a+2, a+3)$. Let $(v, \beta) = \mathrm{house}(H([b, c], a))$
+and $P = I - \beta v v^T$. Then the restricted updates compute the block similarity by $P$ of
+$H$, this matrix is upper Hessenberg, $\beta = 0$ or $\beta v^T v = 2$, and $v$ vanishes outside
+$b$ and $c$. -/
 theorem francis_step_last {p m : ℕ} {a b c : Fin n} (hb : (b : ℕ) = a + 1)
     (hc : (c : ℕ) = a + 2) (hpa : p ≤ a) (ham : (a : ℕ) + 3 = m) {H : Matrix (Fin n) (Fin n) ℝ}
     (hB : IsFrancisBulge p m (a + 1) H) {v : Fin n → ℝ} {β : ℝ}
@@ -981,7 +1196,11 @@ end FrancisSpec
 
 section WindowBlock
 
-/-- The exact first column of `francisShiftVector`. -/
+/-- In exact arithmetic, `GolubVanLoan.Chapter07.francisShiftVector` returns the vector with the
+entry $h_{aa}^2 + h_{ab} h_{ba} - s h_{aa} + t$ at $a$, the entry $h_{ba} (h_{aa} + h_{bb} - s)$
+at $b$, the entry $h_{ba} h_{cb}$ at $c$, and zero elsewhere, where $s = h_{mm} + h_{ll}$ and
+$t = h_{mm} h_{ll} - h_{ml} h_{lm}$. If two of $a$, $b$, $c$ coincide, the first one in this
+order determines the entry. -/
 theorem francisShiftVector_pure (a b c m l : Fin n) (H : Matrix (Fin n) (Fin n) ℝ) :
     Id.run (francisShiftVector pure a b c m l H) = fun i =>
       if i = a then H a a * H a a + H a b * H b a - (H m m + H l l) * H a a +
@@ -989,27 +1208,29 @@ theorem francisShiftVector_pure (a b c m l : Fin n) (H : Matrix (Fin n) (Fin n) 
       else if i = b then H b a * (H a a + H b b - (H m m + H l l))
       else if i = c then H b a * H c b else 0 := rfl
 
-/-- The polynomial of the double shift, evaluated at `H`. -/
+/-- The polynomial $X^2 - sX + t$, evaluated at a matrix $H$, is $H^2 - sH + tI$. -/
 theorem aeval_francisPoly (H : Matrix (Fin n) (Fin n) ℝ) (s t : ℝ) :
     aeval H (X ^ 2 - C s * X + C t) = H * H - s • H + t • 1 := by
   simp only [map_add, map_sub, map_mul, aeval_X, aeval_C,
     Algebra.algebraMap_eq_smul_one, Matrix.smul_mul, Matrix.one_mul, sq]
 
-/-- **The window `[p, p + k)` as an embedding** `i ↦ p + i` of `Fin k` into `Fin n`: it indexes
-the diagonal block `H₂₂` of Algorithms 7.5.2 and 7.7.3. -/
+/-- The **window embedding** $i \mapsto p + i$ of `Fin k` into `Fin n`, for $p + k \le n$. It
+indexes the diagonal block $H_{22}$ of Algorithms 7.5.2 and 7.7.3. -/
 def windowEmb (p : ℕ) {k : ℕ} (h : p + k ≤ n) (i : Fin k) : Fin n := ⟨p + i, by omega⟩
 
+/-- The window embedding maps $i$ to $p + i$. -/
 @[simp]
 theorem val_windowEmb (p : ℕ) {k : ℕ} (h : p + k ≤ n) (i : Fin k) :
     (windowEmb p h i : ℕ) = p + i := rfl
 
+/-- The window embedding is injective. -/
 theorem windowEmb_injective (p : ℕ) {k : ℕ} (h : p + k ≤ n) :
     Function.Injective (windowEmb p h) := fun i j hij => by
   have := congrArg Fin.val hij
   simp only [val_windowEmb] at this
   exact Fin.ext (by omega)
 
-/-- The range of the window embedding is the window. -/
+/-- An index $i$ lies in the range of the window embedding if and only if $p \le i < p + k$. -/
 theorem mem_range_windowEmb {p k : ℕ} (h : p + k ≤ n) {i : Fin n} :
     i ∈ Set.range (windowEmb p h) ↔ p ≤ (i : ℕ) ∧ (i : ℕ) < p + k := by
   constructor
@@ -1020,48 +1241,54 @@ theorem mem_range_windowEmb {p k : ℕ} (h : p + k ≤ n) {i : Fin n} :
   · rintro ⟨h1, h2⟩
     exact ⟨⟨(i : ℕ) - p, by omega⟩, Fin.ext (by simp only [val_windowEmb]; omega)⟩
 
-/-- The window embedding lands in the window. -/
+/-- The window embedding takes its values in the window $[p, p + k)$. -/
 theorem windowEmb_mem {p k : ℕ} (h : p + k ≤ n) (i : Fin k) :
     p ≤ (windowEmb p h i : ℕ) ∧ (windowEmb p h i : ℕ) < p + k :=
   (mem_range_windowEmb h).1 ⟨i, rfl⟩
 
-/-- **The diagonal block on the window `[p, p + k)`**: `X(p:p+k, p:p+k)`. -/
+/-- The **window block** of $X$: the $k \times k$ diagonal block of $X$ in the rows and columns
+$p, p + 1, \dots, p + k - 1$, indexed by `Fin k`. -/
 def windowBlock (p : ℕ) {k : ℕ} (h : p + k ≤ n) (X : Matrix (Fin n) (Fin n) ℝ) :
     Matrix (Fin k) (Fin k) ℝ :=
   X.submatrix (windowEmb p h) (windowEmb p h)
 
+/-- The entry $(i, j)$ of the window block of $X$ is the entry $(p + i, p + j)$ of $X$. -/
 @[simp]
 theorem windowBlock_apply (p : ℕ) {k : ℕ} (h : p + k ≤ n) (X : Matrix (Fin n) (Fin n) ℝ)
     (i j : Fin k) : windowBlock p h X i j = X (windowEmb p h i) (windowEmb p h j) := rfl
 
+/-- The window block of $X^T$ is the transpose of the window block of $X$. -/
 theorem windowBlock_transpose (p : ℕ) {k : ℕ} (h : p + k ≤ n) (X : Matrix (Fin n) (Fin n) ℝ) :
     windowBlock p h Xᵀ = (windowBlock p h X)ᵀ := rfl
 
+/-- The window block of the identity is the identity. -/
 theorem windowBlock_one (p : ℕ) {k : ℕ} (h : p + k ≤ n) :
     windowBlock p h (1 : Matrix (Fin n) (Fin n) ℝ) = 1 :=
   submatrix_one _ (windowEmb_injective p h)
 
-/-- A sum of a function vanishing off the window is a sum over the window. -/
+/-- If $f$ vanishes outside the window $[p, p + k)$, then $\sum_i f(i)$ is the sum of $f$ over the
+window. -/
 theorem sum_eq_sum_windowEmb {p k : ℕ} (h : p + k ≤ n) {f : Fin n → ℝ}
     (hf : ∀ i : Fin n, ¬ (p ≤ (i : ℕ) ∧ (i : ℕ) < p + k) → f i = 0) :
     ∑ i, f i = ∑ a, f (windowEmb p h a) :=
   (Fintype.sum_of_injective _ (windowEmb_injective p h) _ _
     (fun i hi => hf i fun hw => hi ((mem_range_windowEmb h).2 hw)) fun _ => rfl).symm
 
-/-- The transpose of a matrix acting on a block acts on it. -/
+/-- The transpose of a matrix that acts on a block acts on the same block. -/
 theorem IsBlockSupported.transpose {p m : ℕ} {Q : Matrix (Fin n) (Fin n) ℝ}
     (hQ : IsBlockSupported p m Q) : IsBlockSupported p m Qᵀ := fun i j hij => by
   simpa [Matrix.one_apply, eq_comm] using hQ j i fun h => hij ⟨h.2, h.1⟩
 
-/-- A matrix acting on the window is zero between a window index and an index off it. -/
+/-- If $Q$ acts on the window $[p, p + k)$, then $q_{ij} = 0$ whenever exactly one of $i$ and $j$
+lies in the window. -/
 theorem IsBlockSupported.apply_eq_zero {p k : ℕ} {Q : Matrix (Fin n) (Fin n) ℝ}
     (hQ : IsBlockSupported p (p + k) Q) {i j : Fin n}
     (h : ¬ ((p ≤ (i : ℕ) ∧ (i : ℕ) < p + k) ↔ (p ≤ (j : ℕ) ∧ (j : ℕ) < p + k))) : Q i j = 0 := by
   rw [hQ i j fun hh => h ⟨fun _ => hh.2, fun _ => hh.1⟩,
     one_apply_ne fun e => h (by rw [e])]
 
-/-- **The window block of a product with a matrix acting on the window** on the right:
-`(X Y)₂₂ = X₂₂ Y₂₂`. -/
+/-- **The window block of a product, with a matrix that acts on the window on the right**: if $Y$
+acts on the window, then $(XY)_{22} = X_{22} Y_{22}$. -/
 theorem windowBlock_mul_of_isBlockSupported_right {p k : ℕ} (h : p + k ≤ n)
     {Y : Matrix (Fin n) (Fin n) ℝ} (hY : IsBlockSupported p (p + k) Y)
     (X : Matrix (Fin n) (Fin n) ℝ) :
@@ -1071,8 +1298,8 @@ theorem windowBlock_mul_of_isBlockSupported_right {p k : ℕ} (h : p + k ≤ n)
   refine sum_eq_sum_windowEmb h fun l hl => ?_
   rw [hY.apply_eq_zero (fun e => hl (e.2 (windowEmb_mem h b))), mul_zero]
 
-/-- **The window block of a product with a matrix acting on the window** on the left:
-`(X Y)₂₂ = X₂₂ Y₂₂`. -/
+/-- **The window block of a product, with a matrix that acts on the window on the left**: if $X$
+acts on the window, then $(XY)_{22} = X_{22} Y_{22}$. -/
 theorem windowBlock_mul_of_isBlockSupported_left {p k : ℕ} (h : p + k ≤ n)
     {X : Matrix (Fin n) (Fin n) ℝ} (hX : IsBlockSupported p (p + k) X)
     (Y : Matrix (Fin n) (Fin n) ℝ) :
@@ -1082,7 +1309,7 @@ theorem windowBlock_mul_of_isBlockSupported_left {p k : ℕ} (h : p + k ≤ n)
   refine sum_eq_sum_windowEmb h fun l hl => ?_
   rw [hX.apply_eq_zero (fun e => hl (e.1 (windowEmb_mem h a))), zero_mul]
 
-/-- The window block of an orthogonal matrix acting on the window is orthogonal. -/
+/-- The window block of an orthogonal matrix that acts on the window is orthogonal. -/
 theorem windowBlock_mem_orthogonalGroup {p k : ℕ} (h : p + k ≤ n)
     {Z : Matrix (Fin n) (Fin n) ℝ} (hZ : Z ∈ orthogonalGroup (Fin n) ℝ)
     (hZS : IsBlockSupported p (p + k) Z) : windowBlock p h Z ∈ orthogonalGroup (Fin k) ℝ := by
@@ -1090,8 +1317,8 @@ theorem windowBlock_mem_orthogonalGroup {p k : ℕ} (h : p + k ≤ n)
     ← windowBlock_mul_of_isBlockSupported_right h hZS.transpose,
     (mem_orthogonalGroup_iff (Fin n) ℝ).1 hZ, windowBlock_one]
 
-/-- **The window block of an equivalence by matrices acting on the window**:
-`(Qᵀ H Z)₂₂ = Q₂₂ᵀ H₂₂ Z₂₂`. -/
+/-- **The window block of an equivalence by matrices that act on the window**: if $Q$ and $Z$ act on
+the window, then $(Q^T H Z)_{22} = Q_{22}^T H_{22} Z_{22}$. -/
 theorem windowBlock_transpose_mul_mul {p k : ℕ} (h : p + k ≤ n)
     {Q Z : Matrix (Fin n) (Fin n) ℝ} (hQS : IsBlockSupported p (p + k) Q)
     (hZS : IsBlockSupported p (p + k) Z) (H : Matrix (Fin n) (Fin n) ℝ) :
@@ -1100,8 +1327,8 @@ theorem windowBlock_transpose_mul_mul {p k : ℕ} (h : p + k ≤ n)
   rw [windowBlock_mul_of_isBlockSupported_right h hZS,
     windowBlock_mul_of_isBlockSupported_left h hQS.transpose, windowBlock_transpose]
 
-/-- The window block of the block similarity `blockConj` is the window block of the
-similarity. -/
+/-- The window block of the block similarity by $Z$ of $H$ on the window $[p, p + k)$ equals the
+window block of $Z^T H Z$. -/
 theorem windowBlock_blockConj {p k : ℕ} (h : p + k ≤ n) (Z H : Matrix (Fin n) (Fin n) ℝ) :
     windowBlock p h (blockConj p (p + k) Z H) = windowBlock p h (Zᵀ * H * Z) := by
   ext a b
@@ -1122,7 +1349,8 @@ theorem isUpperTriangular_windowBlock {p k : ℕ} (h : p + k ≤ n) {B : Matrix 
   intro a b hab
   exact hB _ _ (by simp only [val_windowEmb]; omega)
 
-/-- `X₂₂ u₂₂` is the window part of `X u` for `u` vanishing off the window. -/
+/-- If $u$ vanishes outside the window, then $X_{22}$ times the window part of $u$ is the window
+part of $Xu$. -/
 theorem windowBlock_mulVec {p k : ℕ} (h : p + k ≤ n) (X : Matrix (Fin n) (Fin n) ℝ)
     {u : Fin n → ℝ} (hu : ∀ i : Fin n, ¬ (p ≤ (i : ℕ) ∧ (i : ℕ) < p + k) → u i = 0) (a : Fin k) :
     (windowBlock p h X *ᵥ (u ∘ windowEmb p h)) a = (X *ᵥ u) (windowEmb p h a) := by
@@ -1130,16 +1358,17 @@ theorem windowBlock_mulVec {p k : ℕ} (h : p + k ≤ n) (X : Matrix (Fin n) (Fi
   exact (sum_eq_sum_windowEmb h (f := fun i => X (windowEmb p h a) i * u i)
     fun i hi => by rw [hu i hi, mul_zero]).symm
 
-/-- The columns of a window block. -/
+/-- Column $a$ of the window block of $X$ is the window part of column $p + a$ of $X$. -/
 theorem windowBlock_mulVec_single {p k : ℕ} (h : p + k ≤ n) (X : Matrix (Fin n) (Fin n) ℝ)
     (a : Fin k) :
     windowBlock p h X *ᵥ Pi.single a 1 = (X *ᵥ Pi.single (windowEmb p h a) 1) ∘ windowEmb p h := by
   funext b
   simp only [mulVec_single_one, col_apply, windowBlock_apply, Function.comp_apply]
 
-/-- **The first reflector on the window**: if `Z` and `P` act on the window `[p, p + k)`,
-`P² = I`, `Z e_p = P e_p`, and `P u` vanishes off `p` for `u` vanishing off the window, then the
-window blocks satisfy the same: `P₂₂² = I`, `Z₂₂ e₀ = P₂₂ e₀`, `P₂₂ u₂₂ ∥ e₀`. -/
+/-- **The first reflector on the window.** Let $P$ act on the window $[p, p + N + 1)$, with
+$P^2 = I$, and let $Z$ satisfy $Z e_p = P e_p$. Let $u$ vanish outside the window, and let $Pu$
+vanish outside the index $p$. Then the window blocks satisfy the same conditions:
+$P_{22}^2 = I$, $Z_{22} e_1 = P_{22} e_1$, and $P_{22} u_{22}$ vanishes outside the first index. -/
 theorem windowBlock_first_reflector {p N : ℕ} (h : p + (N + 1) ≤ n)
     {Z P : Matrix (Fin n) (Fin n) ℝ} {u : Fin n → ℝ}
     (hPS : IsBlockSupported p (p + (N + 1)) P) (hP : P * P = 1)
@@ -1155,22 +1384,28 @@ theorem windowBlock_first_reflector {p N : ℕ} (h : p + (N + 1) ≤ n)
   · rw [windowBlock_mulVec h P hu]
     exact hPu _ ((windowEmb_injective p h).ne ha)
 
-/-- The trace `s` of the trailing `2 × 2` block (the double shift of the Francis step, (7.5.8)). -/
+/-- The trace $s = h_{n-1,n-1} + h_{nn}$ of the trailing $2 \times 2$ block of
+$H \in \mathbb{R}^{n \times n}$, $n \ge 2$: the sum of the two shifts of the Francis step,
+(7.5.8). -/
 def trailingTrace {N : ℕ} (H : Matrix (Fin (N + 2)) (Fin (N + 2)) ℝ) : ℝ :=
   H (Fin.last N).castSucc (Fin.last N).castSucc + H (Fin.last (N + 1)) (Fin.last (N + 1))
 
-/-- The determinant `t` of the trailing `2 × 2` block (the double shift of the Francis step,
-(7.5.8)). -/
+/-- The determinant $t = h_{n-1,n-1} h_{nn} - h_{n-1,n} h_{n,n-1}$ of the trailing $2 \times 2$
+block of $H \in \mathbb{R}^{n \times n}$, $n \ge 2$: the product of the two shifts of the
+Francis step, (7.5.8). -/
 def trailingDet {N : ℕ} (H : Matrix (Fin (N + 2)) (Fin (N + 2)) ℝ) : ℝ :=
   H (Fin.last N).castSucc (Fin.last N).castSucc * H (Fin.last (N + 1)) (Fin.last (N + 1)) -
     H (Fin.last N).castSucc (Fin.last (N + 1)) * H (Fin.last (N + 1)) (Fin.last N).castSucc
 
-/-- **The implicit-shift argument of the Francis step** (§7.5.5; also §7.7.6 for the QZ step):
-for `H` unreduced upper Hessenberg, `Z` orthogonal with `Zᵀ H Z` upper Hessenberg, and a first
-reflector `P` (`P² = I`) with `Z e₁ = P e₁` that maps `M e₁` to a multiple of `e₁`,
-`M = H² - s H + t I`: `Z e₁ ∥ M e₁`, so `Zᵀ M` is upper triangular
-(`Matrix.IsUnreducedUpperHessenberg.isUpperTriangular_star_mul_aeval`) and `Zᵀ H Z` is a Francis
-step of `H`. (`M e₁ ≠ 0`: its third entry is `h₂₁ h₃₂`.) -/
+/-- **The implicit-shift argument of the Francis step** (§7.5.5 of [golub2013matrix], and §7.7.6 for
+the QZ step). Let $H \in \mathbb{R}^{n \times n}$ with $n \ge 3$ be unreduced upper Hessenberg,
+let $s, t \in \mathbb{R}$, and let $M = H^2 - sH + tI$. Let $Z$ be orthogonal with $Z^T H Z$
+upper Hessenberg, and let $P$ satisfy $P^2 = I$, $Z e_1 = P e_1$, and
+$P M e_1 \in \operatorname{span}\{e_1\}$. Then $Z^T M$ is upper triangular, $Z e_1$ lies in the
+span of $M e_1$, and $Z^T H Z$ is a Francis step of $H$ (`Matrix.IsFrancisStep`).
+
+The vector $M e_1$ is nonzero, since its third entry is $h_{21} h_{32}$. The triangularity is
+`Matrix.IsUnreducedUpperHessenberg.isUpperTriangular_star_mul_aeval`. -/
 theorem isFrancisStep_of_first_reflector {N : ℕ}
     {H Z P : Matrix (Fin (N + 3)) (Fin (N + 3)) ℝ} {s t : ℝ} (hH : IsUnreduced H)
     (hZ : Z ∈ orthogonalGroup (Fin (N + 3)) ℝ)
@@ -1221,11 +1456,13 @@ theorem isFrancisStep_of_first_reflector {N : ℕ}
     rwa [aeval_francisPoly, hstarZ] at this
   exact ⟨htri, hcol, Z, hZ, rfl, hG, htri⟩
 
-/-- **A Francis step on the window `[p, p + N + 3)`** (the loop body of Algorithm 7.5.2,
-"perform a Francis QR step on `H₂₂`: `H₂₂ = Zᵀ H₂₂ Z`"): `Z` is orthogonal and acts on the window
-only (`diag(I_p, Z₂₂, I_q)`), `Z₂₂ᵀ H₂₂ Z₂₂` is upper Hessenberg, and
-`Z₂₂ᵀ (H₂₂ - a₁ I)(H₂₂ - a₂ I)` is upper triangular, `a₁, a₂` the eigenvalues of the trailing
-`2 × 2` block of `H₂₂` (`IsFrancisStepOn.isFrancisStep`). -/
+/-- A **Francis step on the window** $[p, p + N + 3)$, the loop body of Algorithm 7.5.2 ("perform a
+Francis QR step on $H_{22}$: $H_{22} = Z^T H_{22} Z$"). It holds when $Z$ is orthogonal and acts
+on the window only, so that $Z = \operatorname{diag}(I_p, Z_{22}, I_q)$, the matrix
+$Z_{22}^T H_{22} Z_{22}$ is upper Hessenberg, and $Z_{22}^T (H_{22}^2 - s H_{22} + t I)$ is
+upper triangular. Here $s$ and $t$ are the trace and the determinant of the trailing
+$2 \times 2$ block of $H_{22}$, so that $H_{22}^2 - s H_{22} + t I = (H_{22} - a_1 I)(H_{22} -
+a_2 I)$ with the eigenvalues $a_1$, $a_2$ of that block. -/
 def IsFrancisStepOn (p N : ℕ) (h : p + (N + 3) ≤ n) (H Z : Matrix (Fin n) (Fin n) ℝ) : Prop :=
   Z ∈ orthogonalGroup (Fin n) ℝ ∧ IsBlockSupported p (p + (N + 3)) Z ∧
     ((windowBlock p h Z)ᵀ * windowBlock p h H * windowBlock p h Z).IsUpperHessenberg ∧
@@ -1233,8 +1470,8 @@ def IsFrancisStepOn (p N : ℕ) (h : p + (N + 3) ≤ n) (H Z : Matrix (Fin n) (F
       trailingTrace (windowBlock p h H) • windowBlock p h H +
       trailingDet (windowBlock p h H) • 1)).IsUpperTriangular
 
-/-- A Francis step on the window: the window block of `Zᵀ H Z` is `Z₂₂ᵀ H₂₂ Z₂₂`, a Francis step
-of `H₂₂` (`Matrix.IsFrancisStep`). -/
+/-- If $Z$ performs a Francis step on the window, then the window block of $Z^T H Z$ is
+$Z_{22}^T H_{22} Z_{22}$, and it is a Francis step of $H_{22}$ (`Matrix.IsFrancisStep`). -/
 theorem IsFrancisStepOn.isFrancisStep {p N : ℕ} {h : p + (N + 3) ≤ n}
     {H Z : Matrix (Fin n) (Fin n) ℝ} (hF : IsFrancisStepOn p N h H Z) :
     windowBlock p h (Zᵀ * H * Z) =
@@ -1254,10 +1491,11 @@ section FrancisWindow
 
 variable [NeZero n]
 
-/-- **The invariant of the loop of Algorithm 7.5.1 on the window `[p, m)`** after `k` further
-steps: the pattern before the step on `(p+k+1, p+k+2, p+k+3)`, the accumulated block similarity
-by `Z = householderProduct data`, the `β` dichotomy and the support of every reflector in the
-window, and every reflector after the first acting trivially on the indices `≤ p`. -/
+/-- The invariant of the loop of Algorithm 7.5.1 on the window $[p, m)$ after $k$ further steps: the
+bulge pattern before the step on $(p+k+1, p+k+2, p+k+3)$, the accumulated block similarity by
+the product of the reflectors, and for each reflector the dichotomy $\beta = 0$ or
+$\beta v^T v = 2$, the support in the window, and, after the first reflector, the support in the
+indices $> p$. -/
 private def FrancisWinInv (p m : ℕ) (H : Matrix (Fin n) (Fin n) ℝ) (p₀ : (Fin n → ℝ) × ℝ)
     (k : ℕ) (st : Matrix (Fin n) (Fin n) ℝ × List ((Fin n → ℝ) × ℝ)) : Prop :=
   IsFrancisBulge p m (p + k + 1) st.1 ∧ st.1 = blockConj p m (householderProduct st.2) H ∧
@@ -1265,7 +1503,7 @@ private def FrancisWinInv (p m : ℕ) (H : Matrix (Fin n) (Fin n) ℝ) (p₀ : (
       ∀ i : Fin n, ¬ (p ≤ (i : ℕ) ∧ (i : ℕ) < m) → q.1 i = 0) ∧
     ∃ rest, st.2 = p₀ :: rest ∧ ∀ q ∈ rest, ∀ i : Fin n, (i : ℕ) ≤ p → q.1 i = 0
 
-/-- The loop of Algorithm 7.5.1 at the exact model keeps `FrancisWinInv`. -/
+/-- The exact loop of Algorithm 7.5.1 on the window $[p, m)$ keeps its loop invariant. -/
 private theorem francisWinLoop_inv {p m : ℕ} (hm : m ≤ n) {H : Matrix (Fin n) (Fin n) ℝ}
     {p₀ : (Fin n → ℝ) × ℝ} {st : Matrix (Fin n) (Fin n) ℝ × List ((Fin n → ℝ) × ℝ)}
     (hst : FrancisWinInv p m H p₀ 0 st) :
@@ -1316,7 +1554,8 @@ private theorem francisWinLoop_inv {p m : ℕ} (hm : m ≤ n) {H : Matrix (Fin n
       · rw [List.mem_singleton.1 hq]
         exact fun i hi => hv' i (Or.inl (by rw [ha]; omega))
 
-/-- The consecutive triples of the window `[p, m)`, `m ≥ p + 3`: the first, then the others. -/
+/-- For $p + 3 \le m \le n$, the consecutive triples of the window $[p, m)$ are the triple at $p$
+followed by the triples at $p + k + 1$ for $k = 0, \dots, m - p - 4$. -/
 private theorem francisTriples_francisWindow_cons {p m : ℕ} (hm : m ≤ n) (hpm : p + 3 ≤ m) :
     francisTriples (francisWindow n p m) =
       francisTri n p :: (List.range (m - p - 3)).map fun k => francisTri n (p + (k + 1)) := by
@@ -1324,7 +1563,8 @@ private theorem francisTriples_francisWindow_cons {p m : ℕ} (hm : m ≤ n) (hp
     List.range_succ_eq_map, List.map_cons, List.map_map]
   rfl
 
-/-- The last triple of the window `[p, m)` is `(m - 3, m - 2, m - 1)`. -/
+/-- For $p + 3 \le m$, the last consecutive triple of the window $[p, m)$ is
+$(m - 3, m - 2, m - 1)$. -/
 private theorem getLast_francisTri {p m : ℕ} (hpm : p + 3 ≤ m) :
     (francisTri n p :: (List.range (m - p - 3)).map fun k => francisTri n (p + (k + 1))).getLast
       (List.cons_ne_nil _ _) = francisTri n (m - 3) := by
@@ -1336,7 +1576,7 @@ private theorem getLast_francisTri {p m : ℕ} (hpm : p + 3 ≤ m) :
   rw [List.getLast_congr _ (by simp; omega) hl, List.getLast_map, List.getLast_range,
     show p + (m - p - 2 - 1) = m - 3 by omega]
 
-/-- The unfolded exact run of Algorithm 7.5.1 on the window `[p, m)`. -/
+/-- The exact run of Algorithm 7.5.1 on the window $[p, m)$, with the loop unfolded. -/
 private theorem algorithm_7_5_1_window_eq {p m : ℕ} (hm : m ≤ n) (hpm : p + 3 ≤ m)
     (H : Matrix (Fin n) (Fin n) ℝ) :
     Id.run (algorithm_7_5_1 pure (francisWindow n p m) H) =
@@ -1355,8 +1595,8 @@ private theorem algorithm_7_5_1_window_eq {p m : ℕ} (hm : m ≤ n) (hpm : p + 
   rw [algorithm_7_5_1, francisTriples_francisWindow_cons hm hpm]
   rfl
 
-/-- The internal form of `algorithm_7_5_1_window`: besides the block similarity, the first
-reflector and its action on the first column of `(H - a₁ I)(H - a₂ I)`. -/
+/-- The internal form of `GolubVanLoan.Chapter07.algorithm_7_5_1_window`, which also describes the
+first reflector and its action on the first column of $(H - a_1 I)(H - a_2 I)$. -/
 private theorem algorithm_7_5_1_window_aux {p m : ℕ} (hm : m ≤ n) (hpm : p + 3 ≤ m)
     {H H' : Matrix (Fin n) (Fin n) ℝ} {data : List ((Fin n → ℝ) × ℝ)}
     (hH : H.IsUpperHessenberg)
@@ -1441,14 +1681,23 @@ private theorem algorithm_7_5_1_window_aux {p m : ℕ} (hm : m ≤ n) (hpm : p +
     · rw [List.mem_singleton.1 hq]
       exact fun i hi => hv₃ i (Or.inl (by rw [hvN0]; omega))
 
-/-- **Algorithm 7.5.1 on a window** (what Algorithm 7.5.2 runs on the unreduced block `H₂₂`): for an
-upper Hessenberg `H` and the window `[p, p + N + 3)`, the exact run `(H', data)` has
-`Z = householderProduct data` orthogonal and acting on the window only, `H'` is the block
-similarity `blockConj p (p + N + 3) Z H` (`Zᵀ H Z` on the block `H₂₂`, `H` elsewhere), `H'` is upper
-Hessenberg, and when `H₂₂` is unreduced, `Z` performs a Francis step on `H₂₂`
-(`IsFrancisStepOn`): the first reflector maps the first column of `(H₂₂ - a₁ I)(H₂₂ - a₂ I)` to a
-multiple of `e₁` and the others fix `e₁`, so the implicit-shift argument
-`isFrancisStep_of_first_reflector` applies to the window blocks. -/
+/-- **Algorithm 7.5.1** of [golub2013matrix] on a window, as Algorithm 7.5.2 runs it on the
+unreduced block $H_{22}$. Let $H \in \mathbb{R}^{n \times n}$ be upper Hessenberg, and let
+$p + N + 3 \le n$. Let $(H', \mathrm{data})$ be the exact run of Algorithm 7.5.1 on the window
+$[p, p + N + 3)$, and let $Z$ be the product of the reflectors in data. Then:
+* $Z$ is orthogonal and acts on the window only;
+* $H'$ is the block similarity by $Z$ of $H$: $H'$ equals $Z^T H Z$ on the block $H_{22}$ and
+  $H$ elsewhere;
+* $H'$ is upper Hessenberg;
+* every reflector vector vanishes outside the window;
+* if $H_{22}$ is unreduced, then $Z$ performs a Francis step on $H_{22}$.
+
+$Z$ is `GolubVanLoan.Chapter05.householderProduct data`, the block similarity is
+`GolubVanLoan.Chapter07.blockConj`, and the last statement is
+`GolubVanLoan.Chapter07.IsFrancisStepOn`. In the unreduced case, the first reflector maps the
+first column of $(H_{22} - a_1 I)(H_{22} - a_2 I)$ to a multiple of $e_1$ and the other
+reflectors fix $e_1$, so that `GolubVanLoan.Chapter07.isFrancisStep_of_first_reflector` applies
+to the window blocks. -/
 theorem algorithm_7_5_1_window {p N : ℕ} (hm : p + (N + 3) ≤ n)
     {H H' : Matrix (Fin n) (Fin n) ℝ} {data : List ((Fin n → ℝ) × ℝ)}
     (hH : H.IsUpperHessenberg)
@@ -1551,15 +1800,19 @@ section FrancisTheorem
 
 variable {N : ℕ}
 
-/-- **Algorithm 7.5.1 computes a Francis step** ([golub2013matrix] Algorithm 7.5.1, header): for
-`H ∈ ℝ^{n×n}` unreduced upper Hessenberg, `n ≥ 3`, and `s`, `t` the trace and determinant of the
-trailing `2 × 2` block (so that `H² - s H + t I = (H - a₁ I)(H - a₂ I)`, (7.5.8)), the exact run
-`(H', data)` of the program on the full window has `Z = householderProduct data` orthogonal,
-`H' = Zᵀ H Z` upper Hessenberg, `Zᵀ (H² - s H + t I)` upper triangular and `Z e₁` parallel to
-`(H² - s H + t I) e₁`; so `H'` is a Francis step of `H` (`Matrix.IsFrancisStep`). The proof is the
-bulge-chasing invariant `IsFrancisBulge` (`algorithm_7_5_1_window` at the full window), and the
-implicit-shift principle `Matrix.IsUnreducedUpperHessenberg.isUpperTriangular_star_mul_aeval` for
-the triangularity. -/
+/-- **Algorithm 7.5.1** of [golub2013matrix], exact semantics. Let $H \in \mathbb{R}^{n \times n}$
+with $n \ge 3$ be unreduced upper Hessenberg, and let $s$ and $t$ be the trace and the
+determinant of its trailing $2 \times 2$ block, so that
+$M = H^2 - sH + tI = (H - a_1 I)(H - a_2 I)$ by (7.5.8). Let $(H', \mathrm{data})$ be the exact
+run of the program on the full window, and let $Z$ be the product of the reflectors in data.
+Then $Z$ is orthogonal, $H' = Z^T H Z$ is upper Hessenberg, $Z^T M$ is upper triangular, and
+$Z e_1$ is a multiple of $M e_1$. So $H'$ is a Francis step of $H$ (`Matrix.IsFrancisStep`).
+
+The size is $n = N + 3$, and $Z$ is `GolubVanLoan.Chapter05.householderProduct data`. The proof
+applies `GolubVanLoan.Chapter07.algorithm_7_5_1_window` to the full window: the bulge-chasing
+invariant `GolubVanLoan.Chapter07.IsFrancisBulge` gives the similarity, and the implicit-shift
+principle `Matrix.IsUnreducedUpperHessenberg.isUpperTriangular_star_mul_aeval` gives the
+triangularity. -/
 theorem algorithm_7_5_1_spec {H H' : Matrix (Fin (N + 3)) (Fin (N + 3)) ℝ}
     {data : List ((Fin (N + 3) → ℝ) × ℝ)} (hH : IsUnreduced H)
     (h : Id.run (algorithm_7_5_1 pure (List.finRange (N + 3)) H) = (H', data)) :
@@ -1650,13 +1903,25 @@ section FrancisEssential
 
 variable {N : ℕ}
 
-/-- **§7.5.5: "we can assert that `Z₁` essentially equals `Z` provided that the upper Hessenberg
-matrices `Zᵀ H Z` and `Z₁ᵀ H Z₁` are each unreduced"** — the implicit Q theorem (the book cites
-"Theorem 7.4.3", it is Theorem 7.4.2). For `H` unreduced and `M = H² - s H + t I` nonsingular, the
-output `H'` of Algorithm 7.5.1 is `D (Zᵀ H Z) D` for a `±1` diagonal `D`, `Z` the orthogonal factor
-of the explicit QR factorization `M = Z R` (`Matrix.qrQ`); and when the trailing eigenvalues are a
-complex conjugate pair `a, ā` (`s = 2 Re a`, `t = |a|²`, `a` not an eigenvalue), `H'` is, over `ℂ`,
-the same `±1` diagonal similarity of the double-shift QR step `H₂` of (7.5.6)–(7.5.7). -/
+/-- **Section 7.5.5** of [golub2013matrix], the essential uniqueness of the Francis step. The source
+says: "we can assert that $Z_1$ essentially equals $Z$ provided that the upper Hessenberg
+matrices $Z^T H Z$ and $Z_1^T H Z_1$ are each unreduced." Let $H \in \mathbb{R}^{n \times n}$
+with $n \ge 3$ be unreduced upper Hessenberg, let $s$ and $t$ be the trace and the determinant
+of its trailing $2 \times 2$ block, and assume that $M = H^2 - sH + tI$ is nonsingular. Let $H'$
+be the output of the exact run of Algorithm 7.5.1 on $H$, and let $Z$ be the orthogonal factor
+of the explicit QR factorization $M = ZR$ by Gram–Schmidt. Then there is
+$D = \operatorname{diag}(d_1, \dots, d_n)$ with every $d_i = \pm 1$ such that
+$$H' = D (Z^T H Z) D.$$
+If moreover $s = 2 \operatorname{Re}(a)$ and $t = |a|^2$ for some $a \in \mathbb{C}$ that is not
+an eigenvalue of $H$, then $H' = D H_2 D$ over $\mathbb{C}$, where $H_2$ is the double-shift QR
+step of $H$ with the shifts $a$ and $\bar a$ of (7.5.6)–(7.5.7).
+
+**Typo.** The source cites "Theorem 7.4.3" for this argument. The implicit Q theorem is Theorem
+7.4.2 (`GolubVanLoan.Chapter07.theorem_7_4_2`).
+
+$Z$ is `Matrix.qrQ M`, and $H_2$ is the canonical step
+`Matrix.doubleShiftQrStep H.complexify a`. The proof applies
+`Matrix.IsFrancisStep.eq_diagonal_conj`, which rests on the implicit Q theorem. -/
 theorem algorithm_7_5_1_essential {H H' : Matrix (Fin (N + 3)) (Fin (N + 3)) ℝ}
     {data : List ((Fin (N + 3) → ℝ) × ℝ)} (hH : IsUnreduced H)
     (h : Id.run (algorithm_7_5_1 pure (List.finRange (N + 3)) H) = (H', data)) :
@@ -1690,16 +1955,24 @@ section StandardizeProgram
 
 variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 
-/-- **The standardization of a `2 × 2` diagonal block with real eigenvalues** (the last step of
-Algorithm 7.5.2, "upper triangularize all 2-by-2 diagonal blocks in `H` that have real
-eigenvalues and accumulate the transformations"; the book gives no algorithm). For the block
-`[w x; y z]` in rows and columns `(i, j)`, `j = i + 1`: `δ = w - z`, `d = δ² + 4xy`; if `d ≥ 0`,
-the eigenvalue `λ = (w + z)/2 + sign(δ) √d / 2` on the side of `w` (`sign(δ)·` a copy or a
-negation, exact; not necessarily the one of larger modulus), its eigenvector `(x, λ - w)` (or
-`(λ - z, y)` when `x = 0`), `(c, s) = givens` of it
-(Algorithm 5.1.3), and the rotation applied to rows `i, j` over the columns `≥ i`, to columns
-`i, j` over the rows `≤ j`, and to the columns `i, j` of `Q`; if `d < 0` nothing is done. Every
-arithmetic operation is rounded, the comparisons are exact. -/
+/-- **Algorithm 7.5.2** of [golub2013matrix], the last step: the upper triangularization of one
+$2 \times 2$ diagonal block with real eigenvalues ("upper triangularize all 2-by-2 diagonal
+blocks in $H$ that have real eigenvalues and accumulate the transformations"). The block is
+$\begin{bmatrix} w & x \\ y & z \end{bmatrix}$ in the rows and columns $i$ and $j = i + 1$ of
+$H$. The program computes $\delta = w - z$ and $d = \delta^2 + 4xy$. If $d \ge 0$, it computes
+the eigenvalue $\lambda = (w + z)/2 + \operatorname{sign}(\delta) \sqrt{d} / 2$, its eigenvector
+$(x, \lambda - w)$, or $(\lambda - z, y)$ when $x = 0$, and $(c, s) = \mathrm{givens}$ of this
+eigenvector by Algorithm 5.1.3. It then applies the rotation to the rows $i, j$ of $H$ over the
+columns $\ge i$, to the columns $i, j$ of $H$ over the rows $\le j$, and to the columns $i, j$
+of $Q$. If $d < 0$, it does nothing.
+
+**Reading.** The source gives no algorithm for this step. The program is one way to carry it
+out.
+
+The state is the pair $(H, Q)$. Every arithmetic operation is rounded, and the comparisons are
+exact. The factor $\operatorname{sign}(\delta)$, with $\operatorname{sign}(0) = 1$, is applied
+as a copy or a negation, which is exact. It selects the eigenvalue on the side of $w$, which
+need not be the eigenvalue of larger modulus. -/
 noncomputable def triangularize2x2 (i j : Fin n)
     (HQ : Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ) :
     M (Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ) := do
@@ -1723,7 +1996,8 @@ end StandardizeProgram
 
 section Standardize
 
-/-- The `(k, j)` entry of a matrix conjugated by a plane rotation. -/
+/-- The entry $(k, j)$ of $G^T M G$, for the plane rotation $G$ in the plane $(j, k)$ with the
+entries $c$ and $s$, is $-s (c m_{jj} + s m_{jk}) + c (c m_{kj} + s m_{kk})$. -/
 private theorem conj_planeRotation_apply_kj {j k : Fin n} (hjk : j ≠ k) (c s : ℝ)
     (M : Matrix (Fin n) (Fin n) ℝ) :
     ((planeRotation j k c s)ᵀ * M * planeRotation j k c s) k j
@@ -1731,8 +2005,8 @@ private theorem conj_planeRotation_apply_kj {j k : Fin n} (hjk : j ≠ k) (c s :
   simp [transpose_planeRotation_mul_apply hjk, mul_planeRotation_apply hjk, Ne.symm hjk]
   ring
 
-/-- A plane rotation in the plane `(i, j)` is block diagonal for any block index with
-`p i = p j`. -/
+/-- A plane rotation in the plane $(i, j)$ has a zero entry $(r, q)$ whenever $p(r) \neq p(q)$, for
+every block index $p$ with $p(i) = p(j)$. -/
 private theorem planeRotation_apply_eq_zero_of_ne {i j : Fin n} (hij : i ≠ j) {p : Fin n → ℕ}
     (hp : p i = p j) (c s : ℝ) {r q : Fin n} (hrq : p r ≠ p q) : planeRotation i j c s r q = 0 := by
   rw [planeRotation_apply hij]
@@ -1740,8 +2014,10 @@ private theorem planeRotation_apply_eq_zero_of_ne {i j : Fin n} (hij : i ≠ j) 
   split_ifs with h1 h2 h3 h4 h5 h6 h7 h8 <;> simp_all
 
 /-- **Conjugation by a rotation in the plane of one diagonal block keeps a block triangular
-structure** (the "rest of the quasi-triangular structure" of Algorithm 7.5.2's last step): if
-`p i = p j`, `Gᵀ H G` is block upper triangular for `p` whenever `H` is. -/
+structure**, which is the rest of the quasi-triangular structure in the last step of Algorithm
+7.5.2. Let $i \neq j$, let $p$ be a block index with $p(i) = p(j)$, and let $H$ be block upper
+triangular for $p$. Then $G^T H G$ is block upper triangular for $p$, where $G$ is the rotation
+`GolubVanLoan.Chapter05.givensRotation i j c s` for any $c, s \in \mathbb{R}$. -/
 theorem blockTriangular_givens_conj {i j : Fin n} (hij : i ≠ j) {p : Fin n → ℕ} (hp : p i = p j)
     {H : Matrix (Fin n) (Fin n) ℝ} (hH : H.BlockTriangular p) (c s : ℝ) :
     ((givensRotation i j c s)ᵀ * H * givensRotation i j c s).BlockTriangular p := by
@@ -1752,7 +2028,7 @@ theorem blockTriangular_givens_conj {i j : Fin n} (hij : i ≠ j) {p : Fin n →
     exact planeRotation_apply_eq_zero_of_ne hij hp c (-s) hqr.ne
   exact (hGt.mul hH).mul hG
 
-/-- The first column of `G(i, j, θ)`: `c e_i - s e_j`. -/
+/-- The rotation $G(i, j, \theta)$ with the entries $c$ and $s$ maps $e_i$ to $c e_i - s e_j$. -/
 private theorem givensRotation_mulVec_single {i j : Fin n} (hij : i ≠ j) (c s : ℝ) :
     givensRotation i j c s *ᵥ Pi.single i 1 = c • Pi.single i 1 - s • Pi.single j 1 := by
   funext t
@@ -1763,7 +2039,8 @@ private theorem givensRotation_mulVec_single {i j : Fin n} (hij : i ≠ j) (c s 
     · subst htj; simp [hij.symm]
     · simp [hti, htj]
 
-/-- The subdiagonal entry of `Gᵀ H G` in the plane `(i, j)`. -/
+/-- The entry $(j, i)$ of $G^T H G$, for the rotation $G$ in the plane $(i, j)$ with the entries $c$
+and $s$, is $s (c h_{ii} - s h_{ij}) + c (c h_{ji} - s h_{jj})$. -/
 private theorem givens_conj_apply_ji {i j : Fin n} (hij : i ≠ j) (c s : ℝ)
     (H : Matrix (Fin n) (Fin n) ℝ) :
     ((givensRotation i j c s)ᵀ * H * givensRotation i j c s) j i =
@@ -1771,21 +2048,21 @@ private theorem givens_conj_apply_ji {i j : Fin n} (hij : i ≠ j) (c s : ℝ)
   rw [givensRotation, conj_planeRotation_apply_kj hij]
   ring
 
-/-- `givens(a, 0) = (1, 0)` exactly. -/
+/-- In exact arithmetic, $\mathrm{givens}(a, 0) = (1, 0)$. -/
 private theorem algorithm_5_1_3_pure_zero (a : ℝ) : Id.run (algorithm_5_1_3 pure a 0) = (1, 0) := by
   simp [algorithm_5_1_3]
 
-/-- The rotation with `c = 1`, `s = 0` is the identity. -/
+/-- The rotation with $c = 1$ and $s = 0$ is the identity. -/
 private theorem givensRotation_one_zero {i j : Fin n} (hij : i ≠ j) :
     givensRotation i j 1 0 = 1 := by
   ext r q
   rw [givensRotation, planeRotation_apply hij, Matrix.one_apply]
   split_ifs <;> simp_all
 
-/-- **The eigenvector rotation triangularizes the block**: if `(a, b) ≠ 0`-or-`b = 0` is an
-eigenvector of `[w x; y z]` for `λ` and `(c, s)` satisfy `c² + s² = 1`, `s a + c b = 0`, then the
-subdiagonal entry `s (c w - s x) + c (c y - s z)` of the rotated block vanishes, provided it does
-when `a = b = 0` (where `givens` returns `(1, 0)` and `y = 0`). -/
+/-- If $c^2 + s^2 = 1$, $sa + cb = 0$ and $\begin{bmatrix} w & x \\ y & z \end{bmatrix}
+\begin{bmatrix} a \\ b \end{bmatrix} = \lambda \begin{bmatrix} a \\ b \end{bmatrix}$, then the
+subdiagonal entry $s (cw - sx) + c (cy - sz)$ of the rotated block vanishes, provided that it
+vanishes when $a = b = 0$. -/
 private theorem givens_entry_eq_zero {w x y z lam a b c s : ℝ} (hcs : c ^ 2 + s ^ 2 = 1)
     (hz : s * a + c * b = 0) (h1 : w * a + x * b = lam * a) (h2 : y * a + z * b = lam * b)
     (h0 : a = 0 → b = 0 → s * (c * w - s * x) + c * (c * y - s * z) = 0) :
@@ -1810,8 +2087,10 @@ section GivensUpdates
 
 open GolubVanLoan.Chapter05
 
-/-- The row update on a column list is the full product `G(i, k, θ)ᵀ A` when the omitted
-columns vanish in the rows `i`, `k`. -/
+/-- Let $i \neq k$, and let cols be a list without repeated index. If $a_{iq} = a_{kq} = 0$ for
+every column $q$ outside the list, then the exact row update
+`GolubVanLoan.Chapter05.givensApplyLeft` over the list gives the full product
+$G(i, k, \theta)^T A$. -/
 theorem givensApplyLeft_eq_mul {m p : ℕ} {i k : Fin m} (hik : i ≠ k) (c s : ℝ)
     {cols : List (Fin p)} (hcols : cols.Nodup) {A : Matrix (Fin m) (Fin p) ℝ}
     (hA : ∀ q, q ∉ cols → A i q = 0 ∧ A k q = 0) :
@@ -1827,8 +2106,10 @@ theorem givensApplyLeft_eq_mul {m p : ℕ} {i k : Fin m} (hik : i ≠ k) (c s : 
     · subst h2; rw [(hA q hq).2]; ring
     · rfl
 
-/-- The column update on a row list is the full product `A G(i, k, θ)` when the omitted rows
-vanish in the columns `i`, `k`. -/
+/-- Let $i \neq k$, and let rows be a list without repeated index. If $a_{ri} = a_{rk} = 0$ for
+every row $r$ outside the list, then the exact column update
+`GolubVanLoan.Chapter05.givensApplyRight` over the list gives the full product
+$A \, G(i, k, \theta)$. -/
 theorem givensApplyRight_eq_mul {m p : ℕ} {i k : Fin p} (hik : i ≠ k) (c s : ℝ)
     {rows : List (Fin m)} (hrows : rows.Nodup) {A : Matrix (Fin m) (Fin p) ℝ}
     (hA : ∀ r, r ∉ rows → A r i = 0 ∧ A r k = 0) :
@@ -1844,7 +2125,8 @@ theorem givensApplyRight_eq_mul {m p : ℕ} {i k : Fin p} (hik : i ≠ k) (c s :
     · subst h2; rw [(hA r hr).2]; ring
     · rfl
 
-/-- The exact output of `givens`. -/
+/-- In exact arithmetic, $\mathrm{givens}(a, b)$ (Algorithm 5.1.3) returns $(c, s)$ with
+$c^2 + s^2 = 1$ and $sa + cb = 0$. -/
 theorem givens_exact (a b : ℝ) :
     ∃ c s : ℝ, Id.run (algorithm_5_1_3 pure a b) = (c, s) ∧ c ^ 2 + s ^ 2 = 1 ∧
       s * a + c * b = 0 := by
@@ -1855,14 +2137,22 @@ end GivensUpdates
 
 section Standardize2
 
-/-- **Exact semantics of `triangularize2x2`**: if rows `i`, `j = i + 1` vanish in the columns
-`< i` and columns `i`, `j` vanish in the rows `> j` (the block is a diagonal block of a block upper
-triangular `H`), the program returns `(Gᵀ H G, Q G)` for a rotation `G = G(i, j, θ)`,
-`c² + s² = 1` (so `G` is orthogonal, `givensRotation_mem_orthogonalGroup`), and when the block
-`[w x; y z]` has real eigenvalues, `(w - z)² + 4xy ≥ 0`, the rotated block is upper triangular:
-the first column of `G` is an eigenvector of the block. With `d < 0` nothing is done.
-Block triangular structure with `i`, `j` in one block is kept
-(`blockTriangular_givens_conj`). -/
+/-- **Algorithm 7.5.2** of [golub2013matrix], the exact semantics of the last step
+`GolubVanLoan.Chapter07.triangularize2x2`. Let $H, Q \in \mathbb{R}^{n \times n}$ and
+$j = i + 1$. Assume that the rows $i$ and $j$ of $H$ vanish in the columns $< i$, and that the
+columns $i$ and $j$ of $H$ vanish in the rows $> j$, so that the rows and columns $i, j$ form a
+diagonal block of a block upper triangular matrix. Let the block be
+$\begin{bmatrix} w & x \\ y & z \end{bmatrix}$. Then there are $c, s \in \mathbb{R}$ with
+$c^2 + s^2 = 1$ such that, for the rotation $G = G(i, j, \theta)$ with the entries $c$ and $s$:
+* the program returns $(G^T H G, QG)$;
+* if the block has real eigenvalues, $(w - z)^2 + 4xy \ge 0$, then the entry $(j, i)$ of
+  $G^T H G$ is zero;
+* if $(w - z)^2 + 4xy < 0$, then the program returns $(H, Q)$ unchanged.
+
+$G$ is `GolubVanLoan.Chapter05.givensRotation i j c s`, which is orthogonal by
+`GolubVanLoan.Chapter05.givensRotation_mem_orthogonalGroup`. In the real case the first column
+of $G$ is an eigenvector of the block. By `GolubVanLoan.Chapter07.blockTriangular_givens_conj`,
+the rotation keeps every block triangular structure in which $i$ and $j$ lie in one block. -/
 theorem triangularize2x2_spec {i j : Fin n} (hij : (j : ℕ) = i + 1)
     (H Q : Matrix (Fin n) (Fin n) ℝ) (hrow : ∀ q : Fin n, (q : ℕ) < i → H i q = 0 ∧ H j q = 0)
     (hcol : ∀ r : Fin n, (j : ℕ) < r → H r i = 0 ∧ H r j = 0) :
@@ -1969,36 +2259,39 @@ section QRAlgorithm
 
 variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 
-/-- The subdiagonal entry above row `i` is zero, or `i = 0`, or `i ≥ n`: the positions where
-`H` splits into diagonal blocks (Algorithm 7.5.2's partition; a comparison, exact). -/
+/-- The subdiagonal entry above row $i$ is zero or absent: $h_{i,i-1} = 0$ if $0 < i < n$, and the
+condition holds if $i = 0$ or $i \ge n$. These are the positions where $H$ splits into diagonal
+blocks in Algorithm 7.5.2. The test is a comparison, so the program evaluates it exactly. -/
 def SubdiagZero (H : Matrix (Fin n) (Fin n) ℝ) (i : ℕ) : Prop :=
   ∀ h : i < n, 0 < i → H ⟨i, h⟩ ⟨i - 1, by omega⟩ = 0
 
 noncomputable instance (H : Matrix (Fin n) (Fin n) ℝ) (i : ℕ) : Decidable (SubdiagZero H i) :=
   Classical.dec _
 
-/-- **The start of the trailing quasi-triangular part** of an upper Hessenberg `H`
-(Algorithm 7.5.2, "find the largest nonnegative `q` … such that `H₃₃` is upper
-quasi-triangular"): scanning from the bottom, a zero subdiagonal entry above the last row closes a
-`1 × 1` block, one above the second-to-last a `2 × 2` block; `schurTrailingStart H m` is the first
-row of the decoupled quasi-triangular trailing part of the leading `m × m` block, so
-`q = n - schurTrailingStart H n`. -/
+/-- **The start of the trailing quasi-triangular part** of an upper Hessenberg $H$, for the step of
+Algorithm 7.5.2 "find the largest nonnegative $q$ … such that $H_{33}$ is upper
+quasi-triangular". For the leading $m \times m$ block of $H$ (0-based rows), the value is $0$ if
+$m \le 1$. For $m \ge 2$, it is the value for $m - 1$ if $h_{m-1,m-2} = 0$ (a $1 \times 1$ block
+closes); otherwise it is the value for $m - 2$ if the subdiagonal entry above row $m - 2$ is
+zero or absent (a $2 \times 2$ block closes); otherwise it is $m$. So the value is the first row
+of the decoupled quasi-triangular trailing part, and $q$ is $n$ minus `schurTrailingStart H n`. -/
 noncomputable def schurTrailingStart (H : Matrix (Fin n) (Fin n) ℝ) : ℕ → ℕ
   | 0 => 0
   | 1 => 0
   | m + 2 => if SubdiagZero H (m + 1) then schurTrailingStart H (m + 1)
       else if SubdiagZero H m then schurTrailingStart H m else m + 2
 
-/-- **The start of the unreduced block ending at row `e`** (Algorithm 7.5.2, "the smallest
-non-negative `p` such that … `H₂₂` is unreduced"): the last row `≤ e` with a zero subdiagonal
-entry above it (or `0`). -/
+/-- **The start of the unreduced block that ends at row $e$**, for the step of Algorithm 7.5.2 "the
+smallest non-negative $p$ such that … $H_{22}$ is unreduced": the largest row $r \le e$ whose
+subdiagonal entry is zero or absent, which is $0$ if there is no other. -/
 noncomputable def unreducedStart (H : Matrix (Fin n) (Fin n) ℝ) : ℕ → ℕ
   | 0 => 0
   | e + 1 => if SubdiagZero H (e + 1) then e + 1 else unreducedStart H e
 
-/-- **One test of the deflation criterion** of Algorithm 7.5.2, on row `i ≥ 1`: "set to zero
-`h_{i,i-1}` if `|h_{i,i-1}| ≤ tol · (|h_ii| + |h_{i-1,i-1}|)`"; the right side is rounded (two
-operations), `|·|` and the comparison are exact (convention 1). -/
+/-- **One test of the deflation criterion** of Algorithm 7.5.2 on row $i$: for $i \ge 1$, set
+$h_{i,i-1}$ to zero if $|h_{i,i-1}| \le \mathrm{tol} \cdot (|h_{ii}| + |h_{i-1,i-1}|)$. For
+$i = 0$ nothing is done. The right side is computed with two rounded operations, and the
+absolute values and the comparison are exact. -/
 noncomputable def qrDeflateStep (tol : ℝ) (H : Matrix (Fin n) (Fin n) ℝ) (i : Fin n) :
     M (Matrix (Fin n) (Fin n) ℝ) :=
   if 0 < (i : ℕ) then do
@@ -2007,15 +2300,17 @@ noncomputable def qrDeflateStep (tol : ℝ) (H : Matrix (Fin n) (Fin n) ℝ) (i 
     pure (if |H i j| ≤ b then H.updateRow i (Function.update (H i) j 0) else H)
   else pure H
 
-/-- **The deflation step** of Algorithm 7.5.2: "set to zero all subdiagonal elements that satisfy
-`|h_{i,i-1}| ≤ tol · (|h_ii| + |h_{i-1,i-1}|)`", row by row. -/
+/-- **The deflation step** of Algorithm 7.5.2, "set to zero all subdiagonal elements that satisfy
+$|h_{i,i-1}| \le \mathrm{tol} \cdot (|h_{ii}| + |h_{i-1,i-1}|)$": the test
+`GolubVanLoan.Chapter07.qrDeflateStep` on the rows $i = 0, \dots, n - 1$ in turn. -/
 noncomputable def qrDeflate (tol : ℝ) (H : Matrix (Fin n) (Fin n) ℝ) :
     M (Matrix (Fin n) (Fin n) ℝ) :=
   (List.finRange n).foldlM (qrDeflateStep rnd tol) H
 
-/-- One reflector `(v, β)` of the Francis step on the window `[p, m)` applied outside the block
-`H₂₂` (Algorithm 7.5.2): `Q = Q diag(I_p, P, I_q)` (all rows, the window's columns),
-`H₁₂ = H₁₂ P` (rows `< p`) and `H₂₃ = Pᵀ H₂₃` (columns `≥ m`). -/
+/-- One reflector $(v, \beta)$ of the Francis step on the window $[p, m)$, applied outside the block
+$H_{22}$ in Algorithm 7.5.2. With $P = I - \beta v v^T$ on the window, it sets
+$Q = Q \operatorname{diag}(I_p, P, I_q)$ (all rows, the window columns), $H_{12} = H_{12} P$
+(the rows $< p$) and $H_{23} = P^T H_{23}$ (the columns $\ge m$). -/
 noncomputable def francisOffBlockStep (p m : ℕ)
     (HQ : Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ) (vβ : (Fin n → ℝ) × ℝ) :
     M (Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ) := do
@@ -2026,10 +2321,12 @@ noncomputable def francisOffBlockStep (p m : ℕ)
     ((List.finRange n).filter fun (j : Fin n) => m ≤ (j : ℕ)) H
   pure (H, Q)
 
-/-- One pass of the `until` loop of Algorithm 7.5.2 on the state `(H, Q, done)`: once `done`,
-nothing; else deflate, find `q = n - m` and `p`, stop if `q = n`, else run the Francis step
-(Algorithm 7.5.1) on the window `[p, m)` of `H₂₂` and apply its reflectors to `Q`, `H₁₂` and
-`H₂₃` (`francisOffBlockStep`). -/
+/-- One pass of the `until` loop of Algorithm 7.5.2 on the state $(H, Q, \mathrm{done})$. If done is
+set, nothing changes. Otherwise the pass deflates $H$, finds $m = n - q$ by
+`GolubVanLoan.Chapter07.schurTrailingStart` and $p$ by `GolubVanLoan.Chapter07.unreducedStart`,
+and sets done if $q = n$. If $q < n$, it runs the Francis step (Algorithm 7.5.1) on the window
+$[p, m)$ of $H_{22}$ and applies its reflectors to $Q$, $H_{12}$ and $H_{23}$ by
+`GolubVanLoan.Chapter07.francisOffBlockStep`. -/
 noncomputable def qrPass (tol : ℝ)
     (st : Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ × Bool) :
     M (Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ × Bool) :=
@@ -2042,8 +2339,10 @@ noncomputable def qrPass (tol : ℝ)
       let HQ ← r.2.foldlM (francisOffBlockStep rnd p m) (r.1, st.2.1)
       pure (HQ.1, HQ.2, false)
 
-/-- The last step of Algorithm 7.5.2 at row `i`: if `(i, i+1)` is a `2 × 2` diagonal block (a
-nonzero subdiagonal entry between zero ones), standardize it by `triangularize2x2`. -/
+/-- The last step of Algorithm 7.5.2 at row $i$: if the rows and columns $i, i+1$ form a
+$2 \times 2$ diagonal block, that is, $h_{i+1,i} \neq 0$ while the subdiagonal entries above the
+rows $i$ and $i + 2$ are zero or absent, then the step standardizes the block by
+`GolubVanLoan.Chapter07.triangularize2x2`. Otherwise it does nothing. -/
 noncomputable def standardizeStep (HQ : Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ)
     (i : Fin n) : M (Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ) :=
   if h : (i : ℕ) + 1 < n then
@@ -2052,8 +2351,9 @@ noncomputable def standardizeStep (HQ : Matrix (Fin n) (Fin n) ℝ × Matrix (Fi
     else pure HQ
   else pure HQ
 
-/-- **Algorithm 7.5.2 (QR algorithm)**: "Given `A ∈ ℝ^{n×n}` and a tolerance `tol` greater than the
-unit roundoff, this algorithm computes the real Schur canonical form `Qᵀ A Q = T`."
+/-- **Algorithm 7.5.2** of [golub2013matrix] (QR algorithm). Given $A \in \mathbb{R}^{n \times n}$
+and a tolerance tol greater than the unit roundoff, the algorithm computes the real Schur
+canonical form $Q^T A Q = T$.
 ```
 Use Algorithm 7.4.2 to compute the Hessenberg reduction H = U₀ᵀ A U₀, Q = P₁ ⋯ P_{n-2}
 until q = n
@@ -2069,10 +2369,15 @@ end
 Upper triangularize all 2-by-2 diagonal blocks in H that have real eigenvalues and accumulate
 the transformations
 ```
-`H` is the Hessenberg part of Algorithm 7.4.2's array and `Q` the backward accumulation of its
-returned reflector data (§5.1.6); the `until` loop is at most `fuel` passes of `qrPass`
-(convention 3, `done` set when `q = n`); the last step runs `standardizeStep` along the diagonal.
-Returns `(Q, T, done)`. -/
+$H$ is the Hessenberg part (`GolubVanLoan.Chapter07.hessenbergPart`) of the array that Algorithm
+7.4.2 returns, and $Q$ is the backward accumulation (§5.1.6) of the reflector data that
+Algorithm 7.4.2 returns. The `until` loop is at most `fuel` passes of
+`GolubVanLoan.Chapter07.qrPass`, which sets the flag done when $q = n$. The last step runs
+`GolubVanLoan.Chapter07.standardizeStep` along the diagonal. The program returns
+$(Q, T, \mathrm{done})$.
+
+The program has no hypothesis on tol. Its exact semantics is
+`GolubVanLoan.Chapter07.algorithm_7_5_2_spec`. -/
 noncomputable def algorithm_7_5_2 (tol : ℝ) (A : Matrix (Fin n) (Fin n) ℝ) (fuel : ℕ) :
     M (Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ × Bool) := do
   let r ← algorithm_7_4_2 rnd A
@@ -2088,20 +2393,21 @@ section QRAlgorithmSpec
 
 /-! ### Algorithm 7.5.2: the partition -/
 
-/-- There is no subdiagonal entry above row `0`. -/
+/-- Row $0$ has no subdiagonal entry above it, so `GolubVanLoan.Chapter07.SubdiagZero H 0` holds. -/
 theorem subdiagZero_zero (H : Matrix (Fin n) (Fin n) ℝ) : SubdiagZero H 0 :=
   fun _ h => absurd h (lt_irrefl 0)
 
-/-- There is no subdiagonal entry above a row `≥ n`. -/
+/-- A row $i \ge n$ has no subdiagonal entry, so `GolubVanLoan.Chapter07.SubdiagZero H i` holds. -/
 theorem subdiagZero_of_le (H : Matrix (Fin n) (Fin n) ℝ) {i : ℕ} (hi : n ≤ i) :
     SubdiagZero H i :=
   fun h => absurd h (by omega)
 
-/-- **The trailing quasi-triangular part found by Algorithm 7.5.2**: if the subdiagonal entry above
-row `k` vanishes, `s = schurTrailingStart H k ≤ k` has a zero subdiagonal entry above it, no two
-consecutive subdiagonal entries of rows `s < i < k` are nonzero (`H(s:k, s:k)` is upper
-quasi-triangular), and unless `s = 0` the two subdiagonal entries above rows `s - 1`, `s - 2` are
-nonzero (so `s ≥ 3`). -/
+/-- **The trailing quasi-triangular part found by Algorithm 7.5.2.** Let the subdiagonal entry above
+row $k$ be zero or absent, and let $s$ be `schurTrailingStart H k`. Then $s \le k$, and the
+subdiagonal entry above row $s$ is zero or absent. For $s < i$ and $i + 1 < k$, the subdiagonal
+entries above the rows $i$ and $i + 1$ are not both nonzero, so a Hessenberg $H$ has an upper
+quasi-triangular diagonal block in the rows $s, \dots, k - 1$. If $s \neq 0$, then $s \ge 3$ and
+the subdiagonal entries above the rows $s - 1$ and $s - 2$ are nonzero. -/
 theorem schurTrailingStart_spec (H : Matrix (Fin n) (Fin n) ℝ) :
     ∀ k, SubdiagZero H k → schurTrailingStart H k ≤ k ∧
       SubdiagZero H (schurTrailingStart H k) ∧
@@ -2137,8 +2443,9 @@ theorem schurTrailingStart_spec (H : Matrix (Fin n) (Fin n) ℝ) :
       · simpa using h1
       · simpa using h2
 
-/-- **The unreduced block found by Algorithm 7.5.2**: `p = unreducedStart H e ≤ e` has a zero
-subdiagonal entry above it and every row `p < k ≤ e` a nonzero one. -/
+/-- **The unreduced block found by Algorithm 7.5.2.** The row $p$ = `unreducedStart H e` satisfies
+$p \le e$, the subdiagonal entry above row $p$ is zero or absent, and the subdiagonal entry
+above every row $k$ with $p < k \le e$ is nonzero. -/
 theorem unreducedStart_spec (H : Matrix (Fin n) (Fin n) ℝ) :
     ∀ e, unreducedStart H e ≤ e ∧ SubdiagZero H (unreducedStart H e) ∧
       ∀ k, unreducedStart H e < k → k ≤ e → ¬ SubdiagZero H k
@@ -2153,16 +2460,15 @@ theorem unreducedStart_spec (H : Matrix (Fin n) (Fin n) ℝ) :
       · rwa [hk]
       · exact c k h₁ (by omega)
 
-/-- No two consecutive subdiagonal entries of `H` are nonzero: together with the Hessenberg form,
-upper quasi-triangular (`isQuasiUpperTriangular_of_noTwoSubdiag`). Each pass is the book's loop body
-(`qrPass_isQRPass`): the deflation `IsQRDeflation` (`qrDeflate_isQRDeflation`) followed by a
-Francis step on the unreduced block (`IsQRPass`, `IsQRFrancisPass`), and the specification
-records this trace of passes. -/
+/-- No two consecutive subdiagonal entries of $H$ are nonzero: for every $i \ge 1$, the subdiagonal
+entry above row $i$ or the one above row $i + 1$ is zero or absent. For an upper Hessenberg
+matrix this means upper quasi-triangular
+(`GolubVanLoan.Chapter07.isQuasiUpperTriangular_of_noTwoSubdiag`). -/
 def NoTwoSubdiag (H : Matrix (Fin n) (Fin n) ℝ) : Prop :=
   ∀ i, 0 < i → SubdiagZero H i ∨ SubdiagZero H (i + 1)
 
-/-- **A Hessenberg matrix with no two consecutive nonzero subdiagonal entries is upper
-quasi-triangular** (`Matrix.isQuasiUpperTriangular_iff_fin`). -/
+/-- **An upper Hessenberg matrix with no two consecutive nonzero subdiagonal entries is upper
+quasi-triangular.** The proof applies `Matrix.isQuasiUpperTriangular_iff_fin`. -/
 theorem isQuasiUpperTriangular_of_noTwoSubdiag {H : Matrix (Fin n) (Fin n) ℝ}
     (hH : H.IsUpperHessenberg) (h2 : NoTwoSubdiag H) : H.IsQuasiUpperTriangular :=
   isQuasiUpperTriangular_iff_fin.2 ⟨hH, fun i hi => (h2 (i + 1) (by omega)).imp
@@ -2174,7 +2480,7 @@ section Deflation
 
 open scoped Matrix.Norms.Frobenius
 
-/-- The Frobenius norm of a matrix with one nonzero entry. -/
+/-- If $F$ is zero outside the entry $(i, j)$, then $\|F\|_F = |f_{ij}|$. -/
 private theorem frobenius_norm_of_eq_zero {F : Matrix (Fin n) (Fin n) ℝ} {i j : Fin n}
     (hF : ∀ r c, ¬ (r = i ∧ c = j) → F r c = 0) : ‖F‖ = ‖F i j‖ := by
   refine (sq_eq_sq₀ (norm_nonneg _) (norm_nonneg _)).1 ?_
@@ -2187,7 +2493,9 @@ private theorem frobenius_norm_of_eq_zero {F : Matrix (Fin n) (Fin n) ℝ} {i j 
     rw [hF r c fun h => hr h.1, norm_zero, sq, mul_zero]
   · simp
 
-/-- The exact deflation test on row `i`. -/
+/-- In exact arithmetic, the deflation test on a row $i \ge 1$ sets $h_{i,i-1}$ to zero if
+$|h_{i,i-1}| \le \mathrm{tol} (|h_{ii}| + |h_{i-1,i-1}|)$ and otherwise leaves $H$ unchanged. On
+row $0$ it leaves $H$ unchanged. -/
 theorem qrDeflateStep_pure (tol : ℝ) (H : Matrix (Fin n) (Fin n) ℝ) (i : Fin n) :
     Id.run (qrDeflateStep pure tol H i) =
       if 0 < (i : ℕ) then
@@ -2200,9 +2508,12 @@ theorem qrDeflateStep_pure (tol : ℝ) (H : Matrix (Fin n) (Fin n) ℝ) (i : Fin
       else H :=
   rfl
 
-/-- **One deflation test of Algorithm 7.5.2, exact arithmetic**: it changes `H` by at most
-`tol (|h_ii| + |h_{i-1,i-1}|) ≤ 2 tol ‖H‖_F` in the Frobenius norm, each entry either stays or
-becomes `0`, and nothing changes when `tol = 0`. -/
+/-- **One deflation test of Algorithm 7.5.2, in exact arithmetic.** Let $\mathrm{tol} \ge 0$, and
+let $H'$ be the result of the test on row $i$. Then $\|H' - H\|_F \le 2\,\mathrm{tol}\,\|H\|_F$,
+every entry of $H'$ equals the entry of $H$ or is $0$, and $H' = H$ if $\mathrm{tol} = 0$.
+
+The change is at most $\mathrm{tol} (|h_{ii}| + |h_{i-1,i-1}|)$, which is at most
+$2\,\mathrm{tol}\,\|H\|_F$. -/
 theorem qrDeflateStep_spec {tol : ℝ} (htol : 0 ≤ tol) (H : Matrix (Fin n) (Fin n) ℝ) (i : Fin n) :
     ‖Id.run (qrDeflateStep pure tol H i) - H‖ ≤ 2 * tol * ‖H‖ ∧
       (∀ r c, Id.run (qrDeflateStep pure tol H i) r c = H r c ∨
@@ -2248,11 +2559,16 @@ theorem qrDeflateStep_spec {tol : ℝ} (htol : 0 ≤ tol) (H : Matrix (Fin n) (F
   · simpa using hH0
   · simpa using hH0
 
-/-- **The deflation step of Algorithm 7.5.2, exact arithmetic**: if `H = Qᵀ (A + E) Z` with `Q`,
-`Z` orthogonal and `‖E‖_F ≤ (c - 1) ‖A‖_F`, the deflated `H' = Qᵀ (A + E') Z` with
-`‖E'‖_F ≤ ((1 + 2 tol)^n c - 1) ‖A‖_F`: each of the `n` tests perturbs by at most
-`2 tol ‖H‖_F ≤ 2 tol c ‖A‖_F`. `E' = 0` when `tol = 0`, and `H'` stays upper Hessenberg. (The QR
-algorithm has `Z = Q`; the QZ algorithm's deflation of `A` is the same sweep, `qzDeflate`.) -/
+/-- **The deflation step of Algorithm 7.5.2, in exact arithmetic.** Let $\mathrm{tol} \ge 0$, let
+$Q$ and $Z$ be orthogonal, and let $A, E \in \mathbb{R}^{n \times n}$ and $c \in \mathbb{R}$
+with $\|E\|_F \le (c - 1) \|A\|_F$, where $E = 0$ if $\mathrm{tol} = 0$. Let $H = Q^T (A + E) Z$
+be upper Hessenberg. Then the deflated matrix is $H' = Q^T (A + E') Z$ with
+$$\|E'\|_F \le ((1 + 2\,\mathrm{tol})^n c - 1) \|A\|_F,$$
+where $E' = 0$ if $\mathrm{tol} = 0$, and $H'$ is upper Hessenberg.
+
+Each of the $n$ tests changes the matrix by at most $2\,\mathrm{tol}$ times its Frobenius norm,
+and the given $H$ has $\|H\|_F \le c \|A\|_F$. The QR algorithm has $Z = Q$.
+The deflation of $A$ in the QZ algorithm is the same sweep, `GolubVanLoan.Chapter07.qzDeflate`. -/
 theorem qrDeflate_spec {tol : ℝ} (htol : 0 ≤ tol) {Q Z : Matrix (Fin n) (Fin n) ℝ}
     (hQ : Q ∈ orthogonalGroup (Fin n) ℝ) (hZ : Z ∈ orthogonalGroup (Fin n) ℝ)
     (A : Matrix (Fin n) (Fin n) ℝ) {E H : Matrix (Fin n) (Fin n) ℝ} (hHE : H = Qᵀ * (A + E) * Z)
@@ -2316,15 +2632,18 @@ theorem qrDeflate_spec {tol : ℝ} (htol : 0 ≤ tol) {Q Z : Matrix (Fin n) (Fin
   rw [List.idRun_foldlM]
   exact this
 
-/-- **The deflation of Algorithm 7.5.2**, as a relation: `H₁` is `H` with every subdiagonal entry
-satisfying the test `|h_{i,i-1}| ≤ tol (|h_ii| + |h_{i-1,i-1}|)` set to zero (exact arithmetic).
-The tests read only entries that the sweep does not change, so the sequential sweep `qrDeflate`
-is this simultaneous one (`qrDeflate_isQRDeflation`). -/
+/-- **The deflation of Algorithm 7.5.2**, as a relation in exact arithmetic: $H_1$ is $H$ with every
+subdiagonal entry $h_{i,i-1}$ that satisfies $|h_{i,i-1}| \le \mathrm{tol} (|h_{ii}| +
+|h_{i-1,i-1}|)$ set to zero.
+
+The tests read only entries that the sweep does not change, so the sequential sweep
+`GolubVanLoan.Chapter07.qrDeflate` is this simultaneous deflation
+(`GolubVanLoan.Chapter07.qrDeflate_isQRDeflation`). -/
 def IsQRDeflation (tol : ℝ) (H H₁ : Matrix (Fin n) (Fin n) ℝ) : Prop :=
   ∀ i j : Fin n, H₁ i j =
     if (j : ℕ) + 1 = i ∧ |H i j| ≤ tol * (|H i i| + |H j j|) then 0 else H i j
 
-/-- A deflation keeps the upper Hessenberg form. -/
+/-- A deflation of an upper Hessenberg matrix is upper Hessenberg. -/
 theorem IsQRDeflation.isUpperHessenberg {tol : ℝ} {H H₁ : Matrix (Fin n) (Fin n) ℝ}
     (h : IsQRDeflation tol H H₁) (hH : H.IsUpperHessenberg) : H₁.IsUpperHessenberg := by
   intro i j hij
@@ -2333,8 +2652,9 @@ theorem IsQRDeflation.isUpperHessenberg {tol : ℝ} {H H₁ : Matrix (Fin n) (Fi
   · rfl
   · exact hH i j hij
 
-/-- **The deflation sweep of Algorithm 7.5.2 deflates** (exact arithmetic): the run of `qrDeflate`
-is the simultaneous deflation `IsQRDeflation`. -/
+/-- **The deflation sweep of Algorithm 7.5.2 deflates**: in exact arithmetic, the result of
+`GolubVanLoan.Chapter07.qrDeflate` is the simultaneous deflation
+`GolubVanLoan.Chapter07.IsQRDeflation` of $H$. -/
 theorem qrDeflate_isQRDeflation (tol : ℝ) (H : Matrix (Fin n) (Fin n) ℝ) :
     IsQRDeflation tol H (Id.run (qrDeflate pure tol H)) := by
   have key : ∀ l : List (Fin n), l.Nodup → ∀ G : Matrix (Fin n) (Fin n) ℝ,
@@ -2403,20 +2723,22 @@ theorem qrDeflate_isQRDeflation (tol : ℝ) (H : Matrix (Fin n) (Fin n) ℝ) :
 
 end Deflation
 
-/-! ### Algorithm 7.5.2: the Francis step on `H₂₂` as a similarity of `H` -/
+/-! ### Algorithm 7.5.2: the Francis step on $H_{22}$ as a similarity of $H$ -/
 
 section OffBlock
 
-/-- **The off-block updates of Algorithm 7.5.2** for a transformation `Z` of the window `[p, m)`:
-`H₁₂ Z` (rows `< p`, window columns) and `Zᵀ H₂₃` (window rows, columns `≥ m`), the rest of `H`
-unchanged. -/
+/-- **The off-block updates of Algorithm 7.5.2** for a transformation $Z$ of the window $[p, m)$:
+the matrix that equals $HZ$ in the rows $< p$ and the window columns (the block $H_{12} Z$),
+equals $Z^T H$ in the window rows and the columns $\ge m$ (the block $Z^T H_{23}$), and equals
+$H$ elsewhere. -/
 def offBlockConj (p m : ℕ) (Z H : Matrix (Fin n) (Fin n) ℝ) : Matrix (Fin n) (Fin n) ℝ :=
   of fun i j => if (i : ℕ) < p ∧ (p ≤ (j : ℕ) ∧ (j : ℕ) < m) then (H * Z) i j
     else if (p ≤ (i : ℕ) ∧ (i : ℕ) < m) ∧ m ≤ (j : ℕ) then (Zᵀ * H) i j else H i j
 
 variable {p m : ℕ} {Z : Matrix (Fin n) (Fin n) ℝ}
 
-/-- A column in the window of `X Z` sees only the window columns of `X`. -/
+/-- If $Z$ acts on the window $[p, m)$ and the rows $i$ of $X$ and $Y$ agree on the window, then
+$XZ$ and $YZ$ agree at $(i, j)$ for every $j$ in the window. -/
 private theorem mul_apply_congr_of_isBlockSupported (hZ : IsBlockSupported p m Z)
     {X Y : Matrix (Fin n) (Fin n) ℝ} {i j : Fin n} (hj : p ≤ (j : ℕ) ∧ (j : ℕ) < m)
     (hXY : ∀ k : Fin n, (p ≤ (k : ℕ) ∧ (k : ℕ) < m) → X i k = Y i k) :
@@ -2428,7 +2750,8 @@ private theorem mul_apply_congr_of_isBlockSupported (hZ : IsBlockSupported p m Z
   · rw [hZ k j fun h => hk h.1, one_apply_ne fun e => hk (by rw [e]; exact hj), mul_zero,
       mul_zero]
 
-/-- A column outside the window of `X Z` is the column of `X`. -/
+/-- If $Z$ acts on the window $[p, m)$, then a column of $XZ$ outside the window is the same column
+of $X$. -/
 private theorem mul_apply_of_isBlockSupported (hZ : IsBlockSupported p m Z)
     (X : Matrix (Fin n) (Fin n) ℝ) (i : Fin n) {j : Fin n}
     (hj : ¬ (p ≤ (j : ℕ) ∧ (j : ℕ) < m)) : (X * Z) i j = X i j := by
@@ -2437,7 +2760,8 @@ private theorem mul_apply_of_isBlockSupported (hZ : IsBlockSupported p m Z)
     rw [hZ k j fun h => hj h.2, one_apply_ne hk, mul_zero]
   · simp
 
-/-- A row in the window of `Zᵀ X` sees only the window rows of `X`. -/
+/-- If $Z$ acts on the window $[p, m)$ and the columns $j$ of $X$ and $Y$ agree on the window, then
+$Z^T X$ and $Z^T Y$ agree at $(i, j)$ for every $i$ in the window. -/
 private theorem transpose_mul_apply_congr_of_isBlockSupported (hZ : IsBlockSupported p m Z)
     {X Y : Matrix (Fin n) (Fin n) ℝ} {i j : Fin n} (hi : p ≤ (i : ℕ) ∧ (i : ℕ) < m)
     (hXY : ∀ k : Fin n, (p ≤ (k : ℕ) ∧ (k : ℕ) < m) → X k j = Y k j) :
@@ -2449,7 +2773,8 @@ private theorem transpose_mul_apply_congr_of_isBlockSupported (hZ : IsBlockSuppo
   · rw [hZ k i fun h => hk h.1, one_apply_ne fun e => hk (by rw [e]; exact hi), zero_mul,
       zero_mul]
 
-/-- A row outside the window of `Zᵀ X` is the row of `X`. -/
+/-- If $Z$ acts on the window $[p, m)$, then a row of $Z^T X$ outside the window is the same row of
+$X$. -/
 private theorem transpose_mul_apply_of_isBlockSupported (hZ : IsBlockSupported p m Z)
     (X : Matrix (Fin n) (Fin n) ℝ) {i : Fin n} (j : Fin n)
     (hi : ¬ (p ≤ (i : ℕ) ∧ (i : ℕ) < m)) : (Zᵀ * X) i j = X i j := by
@@ -2459,14 +2784,15 @@ private theorem transpose_mul_apply_of_isBlockSupported (hZ : IsBlockSupported p
     rw [transpose_apply, hZ k i fun h => hi h.2, one_apply_ne hk, zero_mul]
   · simp
 
-/-- With no transformation, nothing changes. -/
+/-- For $Z = I$, the off-block updates leave $H$ unchanged. -/
 theorem offBlockConj_one (p m : ℕ) (H : Matrix (Fin n) (Fin n) ℝ) :
     offBlockConj p m 1 H = H := by
   ext i j
   simp only [offBlockConj, of_apply, Matrix.mul_one, transpose_one, Matrix.one_mul]
   split_ifs <;> rfl
 
-/-- The off-block updates do not touch the entries below the subdiagonal. -/
+/-- For every $Z$, the off-block updates of an upper Hessenberg matrix give an upper Hessenberg
+matrix, since they change only entries above the diagonal. -/
 theorem isUpperHessenberg_offBlockConj {H : Matrix (Fin n) (Fin n) ℝ} (hH : H.IsUpperHessenberg)
     (p m : ℕ) (Z : Matrix (Fin n) (Fin n) ℝ) : (offBlockConj p m Z H).IsUpperHessenberg := by
   rw [isUpperHessenberg_iff_fin] at hH ⊢
@@ -2475,9 +2801,10 @@ theorem isUpperHessenberg_offBlockConj {H : Matrix (Fin n) (Fin n) ℝ} (hH : H.
   rw [ite_eq_right (fun h => by omega), ite_eq_right (fun h => by omega)]
   exact hH i j hij
 
-/-- **One reflector of the off-block updates** (`francisOffBlockStep`, exact arithmetic): for a
-reflector `P = I - β v vᵀ` supported on the window, it turns `offBlockConj Z H` into
-`offBlockConj (Z P) H` and `Q` into `Q P`. -/
+/-- **One reflector of the off-block updates**, in exact arithmetic. Let $P = I - \beta v v^T$,
+where $v$ vanishes outside the window $[p, m)$. Then
+`GolubVanLoan.Chapter07.francisOffBlockStep` maps the state `(offBlockConj p m Z H, Q)` to
+`(offBlockConj p m (Z * P) H, Q * P)`. -/
 theorem francisOffBlockStep_pure {v : Fin n → ℝ} (β : ℝ)
     (hv : ∀ i : Fin n, ¬ (p ≤ (i : ℕ) ∧ (i : ℕ) < m) → v i = 0)
     (Z H Q : Matrix (Fin n) (Fin n) ℝ) :
@@ -2554,9 +2881,11 @@ theorem francisOffBlockStep_pure {v : Fin n → ℝ} (β : ℝ)
   · ext i j
     simp [List.mem_finRange]
 
-/-- **The off-block updates of Algorithm 7.5.2** (the fold of `francisOffBlockStep`, exact
-arithmetic): for reflector data supported on the window, `offBlockConj Z H` becomes
-`offBlockConj (Z Z') H` and `Q` becomes `Q Z'`, `Z' = householderProduct data`. -/
+/-- **The off-block updates of Algorithm 7.5.2**, in exact arithmetic. If every reflector vector of
+data vanishes outside the window $[p, m)$, then the fold of
+`GolubVanLoan.Chapter07.francisOffBlockStep` over data maps the state
+`(offBlockConj p m Z H, Q)` to `(offBlockConj p m (Z * Z') H, Q * Z')`, where $Z'$ is the
+product `GolubVanLoan.Chapter05.householderProduct data` of the reflectors. -/
 theorem francisOffBlock_foldl {data : List ((Fin n → ℝ) × ℝ)}
     (hdata : ∀ q ∈ data, ∀ i : Fin n, ¬ (p ≤ (i : ℕ) ∧ (i : ℕ) < m) → q.1 i = 0)
     (Z H Q : Matrix (Fin n) (Fin n) ℝ) :
@@ -2571,10 +2900,12 @@ theorem francisOffBlock_foldl {data : List ((Fin n → ℝ) × ℝ)}
       ih (fun q hq => hdata q (List.mem_cons_of_mem _ hq)), householderProduct_cons,
       Matrix.mul_assoc, Matrix.mul_assoc]
 
-/-- **The off-block updates complete the Francis step to a similarity of the whole `H`**: if `H`
-has zero blocks below the window (`H₂₁ = 0`, `H₃₁ = 0`, `H₃₂ = 0`), then for `Z` acting on the
-window, `offBlockConj Z (blockConj Z H) = Zᵀ H Z` — "`H₂₂ = Zᵀ H₂₂ Z`, `H₁₂ = H₁₂ Z`,
-`H₂₃ = Zᵀ H₂₃`" is the similarity by `diag(I_p, Z, I_q)`. -/
+/-- **The off-block updates complete the Francis step to a similarity of the whole $H$.** Let $Z$
+act on the window $[p, m)$, and let $h_{ij} = 0$ whenever $i \ge p > j$ or $i \ge m > j$, that
+is, $H_{21} = 0$, $H_{31} = 0$ and $H_{32} = 0$. Then the off-block updates by $Z$ of the block
+similarity by $Z$ of $H$ give $Z^T H Z$. So the three updates "$H_{22} = Z^T H_{22} Z$,
+$H_{12} = H_{12} Z$, $H_{23} = Z^T H_{23}$" of the source together are the similarity by
+$\operatorname{diag}(I_p, Z, I_q)$. -/
 theorem offBlockConj_blockConj (hZ : IsBlockSupported p m Z) {H : Matrix (Fin n) (Fin n) ℝ}
     (hp : ∀ i j : Fin n, p ≤ (i : ℕ) → (j : ℕ) < p → H i j = 0)
     (hm : ∀ i j : Fin n, m ≤ (i : ℕ) → (j : ℕ) < m → H i j = 0) :
@@ -2610,11 +2941,12 @@ theorem offBlockConj_blockConj (hZ : IsBlockSupported p m Z) {H : Matrix (Fin n)
 
 end OffBlock
 
-/-! ### Algorithm 7.5.2: the standardization of the `2 × 2` blocks -/
+/-! ### Algorithm 7.5.2: the standardization of the $2 \times 2$ blocks -/
 
 section StandardizeSpec
 
-/-- The subdiagonal entry above row `j = i + 1` is `H j i`. -/
+/-- If $j = i + 1$, then the subdiagonal entry above row $j$ is $h_{ji}$:
+`GolubVanLoan.Chapter07.SubdiagZero H j` holds if and only if $h_{ji} = 0$. -/
 theorem subdiagZero_iff {H : Matrix (Fin n) (Fin n) ℝ} {i j : Fin n} (hij : (j : ℕ) = i + 1) :
     SubdiagZero H j ↔ H j i = 0 := by
   constructor
@@ -2626,7 +2958,8 @@ theorem subdiagZero_iff {H : Matrix (Fin n) (Fin n) ℝ} {i j : Fin n} (hij : (j
     convert h using 2
     exact Fin.ext (by simp; omega)
 
-/-- A rotation in the plane `(i, j)` leaves the entries outside rows and columns `i`, `j`. -/
+/-- For a rotation $G$ in the plane $(i, j)$, the matrix $G^T H G$ agrees with $H$ outside the rows
+and the columns $i$ and $j$. -/
 private theorem givens_conj_apply_of_ne {i j : Fin n} (hij : i ≠ j) (c s : ℝ)
     (H : Matrix (Fin n) (Fin n) ℝ) {r q : Fin n} (hri : r ≠ i) (hrj : r ≠ j) (hqi : q ≠ i)
     (hqj : q ≠ j) :
@@ -2634,11 +2967,9 @@ private theorem givens_conj_apply_of_ne {i j : Fin n} (hij : i ≠ j) (c s : ℝ
   simp only [givensRotation, mul_planeRotation_apply hij, transpose_planeRotation_mul_apply hij,
     hri, hrj, hqi, hqj, ↓reduceIte]
 
-/-- **The rotation of a `2 × 2` diagonal block of a Hessenberg matrix** (the last step of
-Algorithm 7.5.2): if the subdiagonal entries above rows `i` and `i + 2` vanish, `Gᵀ H G` for a
-rotation in the plane `(i, i+1)` is upper Hessenberg with zero subdiagonal entries above rows `i`
-and `i + 2`: the rows and columns `i, i+1` are a diagonal block of a block triangular matrix
-(`blockTriangular_givens_conj`). -/
+/-- If $H$ is upper Hessenberg with zero subdiagonal entries above the rows $i$ and $i + 2$, then
+for every rotation $G$ in the plane $(i, i+1)$, the matrix $G^T H G$ is upper Hessenberg with
+zero subdiagonal entries above the rows $i$ and $i + 2$. -/
 private theorem givens_conj_hessenberg {i j : Fin n} (hij : (j : ℕ) = i + 1)
     {H : Matrix (Fin n) (Fin n) ℝ} (hH : H.IsUpperHessenberg) (hi : SubdiagZero H i)
     (hj : SubdiagZero H (i + 2)) (c s : ℝ) :
@@ -2679,11 +3010,11 @@ private theorem givens_conj_hessenberg {i j : Fin n} (hij : (j : ℕ) = i + 1)
   · simp only [hb]
     split_ifs <;> omega
 
-/-- **One step of the standardization of Algorithm 7.5.2, exact arithmetic**: the state
-`(H, Q)` with `H = Qᵀ (A + E) Q` upper Hessenberg is mapped to one of the same form; if no two
-consecutive subdiagonal entries of `H` are nonzero, the same holds after the step, every `2 × 2`
-diagonal block other than the one at `k` keeps its entries, and the block at `k` is either split
-(its subdiagonal entry is zero) or has complex eigenvalues. -/
+/-- One step of the standardization of Algorithm 7.5.2, in exact arithmetic, maps a state $(H, Q)$
+with $Q$ orthogonal and $H = Q^T (A + E) Q$ upper Hessenberg to a state of the same form, and if
+no two consecutive subdiagonal entries of $H$ are nonzero, it keeps this property, keeps the
+other $2 \times 2$ diagonal blocks, and leaves the block at $k$ either split or with complex
+eigenvalues. -/
 private theorem standardizeStep_spec {A E H Q : Matrix (Fin n) (Fin n) ℝ}
     (hQ : Q ∈ orthogonalGroup (Fin n) ℝ) (hHE : H = Qᵀ * (A + E) * Q) (hH : H.IsUpperHessenberg)
     (k : Fin n) :
@@ -2808,10 +3139,11 @@ private theorem standardizeStep_spec {A E H Q : Matrix (Fin n) (Fin n) ℝ}
   have h4 : j' ≠ j := fun e => hik0 (by have := congrArg Fin.val e; omega)
   exact ⟨hout h3 h4 h1 h2', hout h1 h2' h1 h2', hout h1 h2' h3 h4, hout h3 h4 h3 h4⟩
 
-/-- **The standardization of Algorithm 7.5.2, exact arithmetic** (the fold of `standardizeStep`
-over a list of rows): the form `H = Qᵀ (A + E) Q` upper Hessenberg is kept, and if no two
-consecutive subdiagonal entries are nonzero (flag `D`), every `2 × 2` diagonal block at a row
-already treated, or of the list, has complex eigenvalues. -/
+/-- The standardization of Algorithm 7.5.2 in exact arithmetic, a fold of
+`GolubVanLoan.Chapter07.standardizeStep` over a list of rows, keeps the form $H = Q^T (A + E) Q$
+upper Hessenberg, and under the condition $D$ that no two consecutive subdiagonal entries are
+nonzero, every $2 \times 2$ diagonal block at a row treated before or in the list has complex
+eigenvalues. -/
 private theorem standardize_foldl {A E : Matrix (Fin n) (Fin n) ℝ} {D : Prop} (l : List (Fin n)) :
     ∀ (H Q : Matrix (Fin n) (Fin n) ℝ) (P : Fin n → Prop),
       Q ∈ orthogonalGroup (Fin n) ℝ → H = Qᵀ * (A + E) * Q → H.IsUpperHessenberg →
@@ -2867,8 +3199,8 @@ section QRSpec
 
 open scoped Matrix.Norms.Frobenius
 
-/-- The start of Algorithm 7.5.2, exact arithmetic: Algorithm 7.4.2 gives `H₀ = Q₀ᵀ A Q₀` upper
-Hessenberg with `Q₀ = householderProduct data` orthogonal. -/
+/-- In exact arithmetic, Algorithm 7.4.2 gives $H_0 = Q_0^T A Q_0$ upper Hessenberg, where $Q_0$ is
+the orthogonal product of its reflectors. -/
 private theorem qrInit (A : Matrix (Fin n) (Fin n) ℝ) :
     householderProduct (Id.run (algorithm_7_4_2 pure A)).2 ∈ orthogonalGroup (Fin n) ℝ ∧
       hessenbergPart (Id.run (algorithm_7_4_2 pure A)).1 =
@@ -2882,23 +3214,31 @@ private theorem qrInit (A : Matrix (Fin n) (Fin n) ℝ) :
   | succ N =>
     exact ⟨(algorithm_7_4_2_spec A).1, (algorithm_7_4_2_spec A).2.1, (algorithm_7_4_2_spec A).2.2.1⟩
 
-/-- **The Francis branch of a pass of Algorithm 7.5.2** on the deflated `H₁`: the partition
-`H₁ = [H₁₁ H₁₂ H₁₃; 0 H₂₂ H₂₃; 0 0 H₃₃]` with `H₂₂ = H₁(p:p+N+3, p:p+N+3)` unreduced (decoupled by
-zero subdiagonal entries above rows `p` and `p + N + 3`) and `H₃₃` upper quasi-triangular (no two
-consecutive nonzero subdiagonal entries below), and `Z = diag(I_p, Z₂₂, I_q)` a Francis step on
-`H₂₂` (`IsFrancisStepOn`) with `Zᵀ H₁ Z` upper Hessenberg. -/
+/-- **The Francis branch of a pass of Algorithm 7.5.2** on the deflated matrix $H_1$, with the
+partition
+$$H_1 = \begin{bmatrix} H_{11} & H_{12} & H_{13} \\ 0 & H_{22} & H_{23} \\ 0 & 0 & H_{33}
+  \end{bmatrix},$$
+where $H_{22}$ has the rows and columns $p, \dots, p + N + 2$ (0-based). It holds when the
+subdiagonal entries above the rows $p$ and $p + N + 3$ are zero or absent, no two consecutive
+subdiagonal entries above the rows $i$ and $i + 1$ with $i > p + N + 3$ are nonzero (so $H_{33}$
+is upper quasi-triangular), $H_{22}$ is unreduced, $Z = \operatorname{diag}(I_p, Z_{22}, I_q)$
+performs a Francis step on $H_{22}$ (`GolubVanLoan.Chapter07.IsFrancisStepOn`), and $Z^T H_1 Z$
+is upper Hessenberg. -/
 def IsQRFrancisPass (p N : ℕ) (h : p + (N + 3) ≤ n) (H₁ Z : Matrix (Fin n) (Fin n) ℝ) : Prop :=
   SubdiagZero H₁ p ∧ SubdiagZero H₁ (p + (N + 3)) ∧
     (∀ i, p + (N + 3) < i → SubdiagZero H₁ i ∨ SubdiagZero H₁ (i + 1)) ∧
     IsUnreduced (windowBlock p h H₁) ∧ IsFrancisStepOn p N h H₁ Z ∧
     (Zᵀ * H₁ * Z).IsUpperHessenberg
 
-/-- **One unfinished pass of Algorithm 7.5.2, exact arithmetic**: for upper Hessenberg `H`, with
-`H₁` the deflated matrix, either no two consecutive subdiagonal entries of `H₁` are nonzero
-(`q = n`) and the pass returns `(H₁, Q, true)`, or it returns `(Zᵀ H₁ Z, Q Z, false)` for a Francis
-step `Z = diag(I_p, Z₂₂, I_q)` on the unreduced block `H₂₂` (`IsQRFrancisPass`) — "perform a
-Francis QR step on `H₂₂`: `H₂₂ = Zᵀ H₂₂ Z`; `Q = Q diag(I_p, Z, I_q)`; `H₁₂ = H₁₂ Z`;
-`H₂₃ = Zᵀ H₂₃`". -/
+/-- **One unfinished pass of Algorithm 7.5.2, in exact arithmetic.** Let $H$ be upper Hessenberg,
+and let $H_1$ be its deflation by `GolubVanLoan.Chapter07.qrDeflate`. Then the pass on the state
+$(H, Q, \mathrm{false})$ does one of two things. Either no two consecutive subdiagonal entries
+of $H_1$ are nonzero ($q = n$), and the pass returns $(H_1, Q, \mathrm{true})$. Or the pass
+returns $(Z^T H_1 Z, QZ, \mathrm{false})$ for a Francis step
+$Z = \operatorname{diag}(I_p, Z_{22}, I_q)$ on the unreduced block $H_{22}$ of $H_1$
+(`GolubVanLoan.Chapter07.IsQRFrancisPass`). This is the source's "perform a Francis QR step on
+$H_{22}$: $H_{22} = Z^T H_{22} Z$; $Q = Q \operatorname{diag}(I_p, Z, I_q)$;
+$H_{12} = H_{12} Z$; $H_{23} = Z^T H_{23}$". -/
 theorem qrPass_false_spec (tol : ℝ) {H : Matrix (Fin n) (Fin n) ℝ} (hH : H.IsUpperHessenberg)
     (Q : Matrix (Fin n) (Fin n) ℝ) :
     (NoTwoSubdiag (Id.run (qrDeflate pure tol H)) ∧
@@ -2975,10 +3315,12 @@ theorem qrPass_false_spec (tol : ℝ) {H : Matrix (Fin n) (Fin n) ℝ} (hH : H.I
   exact isUpperHessenberg_offBlockConj hH₂hess _ _ _
 
 /-- **One pass of Algorithm 7.5.2 in exact arithmetic**, as a relation between the states
-`(H, Q, done)` before and after: a finished state is kept; an unfinished one is deflated
-(`IsQRDeflation`) to `H₁`, and then either `H₁` has no two consecutive nonzero subdiagonal entries
-and the state becomes `(H₁, Q, true)`, or the state becomes `(Zᵀ H₁ Z, Q Z, false)` for a Francis
-step `Z = diag(I_p, Z₂₂, I_q)` on the unreduced block `H₂₂` of `H₁` (`IsQRFrancisPass`). -/
+$(H, Q, \mathrm{done})$ before and after. A finished state stays the same. An unfinished state
+is deflated to $H_1$ (`GolubVanLoan.Chapter07.IsQRDeflation`). Then either $H_1$ has no two
+consecutive nonzero subdiagonal entries and the state becomes $(H_1, Q, \mathrm{true})$, or the
+state becomes $(Z^T H_1 Z, QZ, \mathrm{false})$ for a Francis step
+$Z = \operatorname{diag}(I_p, Z_{22}, I_q)$ on the unreduced block $H_{22}$ of $H_1$
+(`GolubVanLoan.Chapter07.IsQRFrancisPass`). -/
 def IsQRPass (tol : ℝ)
     (st st' : Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ × Bool) : Prop :=
   (st.2.2 = true → st' = st) ∧
@@ -2987,9 +3329,11 @@ def IsQRPass (tol : ℝ)
         ∃ (p N : ℕ) (h : p + (N + 3) ≤ n) (Z : Matrix (Fin n) (Fin n) ℝ),
           IsQRFrancisPass p N h H₁ Z ∧ st' = (Zᵀ * H₁ * Z, st.2.1 * Z, false)))
 
-/-- **A pass of Algorithm 7.5.2 is the book's loop body** (exact arithmetic): on a state with
-`H` upper Hessenberg, `qrPass` is a deflation followed by a Francis step on the unreduced block
-`H₂₂` (`IsQRPass`). -/
+/-- **Algorithm 7.5.2** of [golub2013matrix], the loop body. Let $\mathrm{tol} \in \mathbb{R}$, and
+let $(H, Q, \mathrm{done})$ be a state with $H$ upper Hessenberg. Then the exact pass
+`GolubVanLoan.Chapter07.qrPass` relates the state to its result by
+`GolubVanLoan.Chapter07.IsQRPass`: a finished state is kept, and an unfinished state is deflated
+and then either marked as finished or changed by a Francis step on the unreduced block $H_{22}$. -/
 theorem qrPass_isQRPass (tol : ℝ)
     {st : Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ × Bool}
     (hH : st.1.IsUpperHessenberg) : IsQRPass tol st (Id.run (qrPass pure tol st)) := by
@@ -3002,20 +3346,18 @@ theorem qrPass_isQRPass (tol : ℝ)
     · exact Or.inl h
     · exact Or.inr ⟨p, N, h, Z, hF, hrun⟩
 
-/-- **The invariant of the passes of Algorithm 7.5.2**: `H = Qᵀ (A + E) Q` upper Hessenberg with
-`Q` orthogonal and `‖E‖_F ≤ (c - 1) ‖A‖_F` (`E = 0` when `tol = 0`), and no two consecutive
-subdiagonal entries of `H` nonzero once `done`. -/
+/-- The invariant of the passes of Algorithm 7.5.2: $Q$ is orthogonal, $H = Q^T (A + E) Q$ is upper
+Hessenberg for some $E$ with $\|E\|_F \le (c - 1) \|A\|_F$ and $E = 0$ if $\mathrm{tol} = 0$,
+and no two consecutive subdiagonal entries of $H$ are nonzero once done is set. -/
 private def QRPassInv (tol : ℝ) (A : Matrix (Fin n) (Fin n) ℝ) (c : ℝ)
     (st : Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ × Bool) : Prop :=
   st.2.1 ∈ orthogonalGroup (Fin n) ℝ ∧ st.1.IsUpperHessenberg ∧
     (st.2.2 = true → NoTwoSubdiag st.1) ∧
     ∃ E, st.1 = st.2.1ᵀ * (A + E) * st.2.1 ∧ ‖E‖ ≤ (c - 1) * ‖A‖ ∧ (tol = 0 → E = 0)
 
-/-- **One pass of Algorithm 7.5.2 keeps the invariant**, with the perturbation factor multiplied
-by `(1 + 2 tol)^n` (the deflation, `qrDeflate_spec`); the Francis step on the window `[p, m)`
-together with the off-block updates is the exact similarity by `diag(I_p, Z, I_q)`
-(`algorithm_7_5_1_window`, `francisOffBlock_foldl`, `offBlockConj_blockConj`), and `q = n`
-means no two consecutive subdiagonal entries are nonzero (`schurTrailingStart_spec`). -/
+/-- One pass of Algorithm 7.5.2 keeps the invariant, with the perturbation factor $c$ multiplied by
+$(1 + 2\,\mathrm{tol})^n$ for the deflation, since the Francis step and the off-block updates
+are together an exact similarity by $\operatorname{diag}(I_p, Z, I_q)$. -/
 private theorem qrPass_inv {tol : ℝ} (htol : 0 ≤ tol) {A : Matrix (Fin n) (Fin n) ℝ} {c : ℝ}
     (hc : 1 ≤ c) {st : Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ × Bool}
     (hst : QRPassInv tol A c st) :
@@ -3040,8 +3382,8 @@ private theorem qrPass_inv {tol : ℝ} (htol : 0 ≤ tol) {A : Matrix (Fin n) (F
       rw [hH₁E, transpose_mul]
       simp only [Matrix.mul_assoc]
 
-/-- The passes of Algorithm 7.5.2 keep the invariant, the perturbation factor growing by
-`(1 + 2 tol)^n` per pass. -/
+/-- The passes of Algorithm 7.5.2 keep the invariant, with the perturbation factor multiplied by
+$(1 + 2\,\mathrm{tol})^n$ for each pass. -/
 private theorem qrPass_foldl {tol : ℝ} (htol : 0 ≤ tol) (A : Matrix (Fin n) (Fin n) ℝ) :
     ∀ (l : List ℕ) (c : ℝ) (st : Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ × Bool),
       1 ≤ c → QRPassInv tol A c st →
@@ -3057,19 +3399,31 @@ private theorem qrPass_foldl {tol : ℝ} (htol : 0 ≤ tol) (A : Matrix (Fin n) 
         rw [List.length_cons, Nat.mul_succ, pow_add]; ring]
     exact this
 
-/-- **Algorithm 7.5.2 (the QR algorithm), exact semantics.** For `0 ≤ tol` and
-`(Q, T, done) = Algorithm 7.5.2 (A, tol)` run for at most `fuel` passes with exact arithmetic:
-`Q` is orthogonal and `T = Qᵀ (A + E) Q` is upper Hessenberg for a perturbation `E` with
-`‖E‖_F ≤ ((1 + 2 tol)^(n·fuel) - 1) ‖A‖_F` (each of the at most `n` deflations of a pass perturbs
-by `tol (|h_ii| + |h_{i-1,i-1}|) ≤ 2 tol ‖H‖_F`; everything else is an exact orthogonal
-similarity), `E = 0` when `tol = 0`; if the loop ended (`q = n`, `done`), `T` is upper
-quasi-triangular and every `2 × 2` diagonal block with a nonzero subdiagonal entry has complex
-eigenvalues, `(t_ii - t_jj)² + 4 t_ij t_ji < 0`: `T` is the real Schur form of `A + E`
-("upper triangularize all 2-by-2 diagonal blocks in `H` that have real eigenvalues"). And the
-iteration is the book's: the states `(H_k, Q_k, done_k)` start from the Hessenberg reduction
-`H₀ = Q₀ᵀ A Q₀`, each pass is a deflation followed by a Francis QR step on the unreduced block
-`H₂₂` (`IsQRPass`), and `(Q, T)` is `(Q_fuel G, Gᵀ H_fuel G)` for the orthogonal `G` of the final
-standardization. -/
+/-- **Algorithm 7.5.2** of [golub2013matrix] (QR algorithm), exact semantics. Let
+$A \in \mathbb{R}^{n \times n}$, $\mathrm{tol} \ge 0$ and $\mathrm{fuel} \in \mathbb{N}$, and
+let $(Q, T, \mathrm{done})$ be the exact output of the program with at most fuel passes. Then:
+* $Q$ is orthogonal;
+* $T = Q^T (A + E) Q$ for some $E$ with $\|E\|_F \le ((1 + 2\,\mathrm{tol})^{n \cdot
+  \mathrm{fuel}} - 1) \|A\|_F$, and $E = 0$ if $\mathrm{tol} = 0$;
+* $T$ is upper Hessenberg;
+* if done is set (the loop ended with $q = n$), then $T$ is upper quasi-triangular, and every
+  $2 \times 2$ diagonal block with $t_{ji} \neq 0$, $j = i + 1$, has complex eigenvalues:
+  $(t_{ii} - t_{jj})^2 + 4 t_{ij} t_{ji} < 0$. So $T$ is the real Schur form of $A + E$;
+* the iteration is the one of the source: there are an orthogonal $Q_0$ with $H_0 = Q_0^T A Q_0$
+  upper Hessenberg and states $(H_k, Q_k, \mathrm{done}_k)$ that start at
+  $(H_0, Q_0, \mathrm{false})$, each related to the next by a pass
+  (`GolubVanLoan.Chapter07.IsQRPass`) for $k < \mathrm{fuel}$, with
+  $\mathrm{done}_{\mathrm{fuel}} = \mathrm{done}$ and $(Q, T) = (Q_{\mathrm{fuel}} G, G^T
+  H_{\mathrm{fuel}} G)$ for an orthogonal $G$, the final standardization.
+
+**Reading.** The source says that the algorithm computes the real Schur form $Q^T A Q = T$. Each
+deflation sets nonzero subdiagonal entries to zero, so even in exact arithmetic $T$ is the real
+Schur form of a perturbation $A + E$. Each of the at most $n$ deflations of a pass changes the
+matrix by at most $\mathrm{tol} (|h_{ii}| + |h_{i-1,i-1}|) \le 2\,\mathrm{tol}\,\|H\|_F$, and
+everything else is an exact orthogonal similarity. The loop of the source need not end; the
+program stops after fuel passes, and the flag done says whether the loop ended.
+
+The norm $\|\cdot\|_F$ is the Frobenius norm. -/
 theorem algorithm_7_5_2_spec {tol : ℝ} (htol : 0 ≤ tol) (A : Matrix (Fin n) (Fin n) ℝ)
     (fuel : ℕ) {Q T : Matrix (Fin n) (Fin n) ℝ} {done : Bool}
     (h : Id.run (algorithm_7_5_2 pure tol A fuel) = (Q, T, done)) :

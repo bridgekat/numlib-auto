@@ -9,45 +9,105 @@ import NumlibSurface.GolubVanLoan.Chapter01.Section02
 import NumlibSurface.GolubVanLoan.Chapter05.Section01
 
 /-!
-# Golub–Van Loan §6.3: total least squares
+# Golub and Van Loan, Section 6.3: Total least squares
 
-Surface file for [golub2013matrix] §6.3: the least-squares problem recast as (6.3.1), the total
-least-squares problem (6.3.2)–(6.3.3) and an instance with no solution, Theorem 6.3.1 (the
-generic condition makes `V₂₂` nonsingular, (6.3.4) is the unique TLS perturbation and `X_TLS` the
-unique TLS solution) and the `τ`-norm of the solution (§6.3.1), the single right-hand side and
-Algorithm 6.3.1 (§6.3.2), the orthogonal-regression reading (6.3.6) and the distance
-interpretation (§6.3.3).
+This module formalizes §6.3 of [golub2013matrix]. The ordinary least-squares problem
+$\min_x \|Ax - b\|_2$ can be recast as $\min \|r\|_2$ over the $r$ with
+$b + r \in \operatorname{ran}(A)$ (6.3.1). The total least-squares (TLS) problem (6.3.2)–(6.3.3)
+also perturbs $A$: for nonsingular diagonal weights $D = \operatorname{diag}(d_1, \dots, d_m)$ and
+$T = \operatorname{diag}(t_1, \dots, t_{n+k})$, it asks for a pair $(E_0, R_0)$ with
+$\operatorname{ran}(B + R_0) \subseteq \operatorname{ran}(A + E_0)$ that minimizes
+$\|D[E_0 \mid R_0]T\|_F$, and a TLS solution is any $X$ with $(A + E_0)X = B + R_0$. The problem can
+fail to have a solution. Theorem 6.3.1 says that under the generic condition
+$\sigma_n(C_1) > \sigma_{n+1}(C)$ for $C = D[A \mid B]T = [C_1 \mid C_2]$, the perturbation (6.3.4)
+built from the SVD of $C$ is the TLS perturbation, $V_{22}$ is nonsingular, and
+$X_{TLS} = -T_1 V_{12} V_{22}^{-1} T_2^{-1}$ is the unique TLS solution.
+
+For one right-hand side $b$ (§6.3.2), the module states the Householder construction of the TLS
+solution from the trailing right singular vectors of $C$, and Algorithm 6.3.1 with its
+exact-arithmetic correctness. §6.3.3 gives two interpretations: $x_{TLS}$ minimizes the
+orthogonal-regression objective (6.3.6), and each term of that objective is the squared distance
+from a data point to a hyperplane. The proofs specialize
+`Numlib.LinearAlgebra.Matrix.LeastSquares.Total` and `Numlib.Analysis.Matrix.SingularValues`.
+
+## Main definitions
+
+* §6.3.2, `GolubVanLoan.Chapter06.trailingColumns`: the trailing columns $V(:, r{+}1{:}n)$ of a
+  matrix.
+* §6.3.2, `GolubVanLoan.Chapter06.tlsMatrix`: the matrix $C = D[A \mid b]T$ of the single right-hand
+  side, with $n + 1$ columns.
+* §6.3.2, `GolubVanLoan.Chapter06.tailStart`: the index $n - p$ where the run
+  $\sigma_{n-p+1} = \dots = \sigma_{n+1}$ of computed singular values starts.
+* §6.3.2, `GolubVanLoan.Chapter06.tlsScale`: the program that forms $D[A \mid b]T$ entry by entry.
+* Algorithm 6.3.1, `GolubVanLoan.Chapter06.algorithm_6_3_1`: total least squares with one right-hand
+  side.
+
+## Main results
+
+* Equation (6.3.1), `GolubVanLoan.Chapter06.equation_6_3_1`: $x$ is a least-squares solution if and
+  only if $\|Ax - b\|_2$ is the least $\|r\|_2$ with $b + r \in \operatorname{ran}(A)$.
+* §6.3, `GolubVanLoan.Chapter06.tls_not_exists_example`: a TLS problem with no solution.
+* Theorem 6.3.1, `GolubVanLoan.Chapter06.theorem_6_3_1_isUnit`: if
+  $\sigma_n(C_1) > \sigma_{n+1}(C)$, then $V_{22}$ is nonsingular.
+* Theorem 6.3.1, `GolubVanLoan.Chapter06.theorem_6_3_1`: under the same condition, (6.3.4) is the
+  unique TLS perturbation and $X_{TLS}$ is the unique TLS solution.
+* §6.3.1, `GolubVanLoan.Chapter06.tls_tauNorm`: $\|X_{TLS}\|_\tau^2 = \|V_{12}V_{22}^{-1}\|_2^2 =
+  (1 - \sigma_k(V_{22})^2)/\sigma_k(V_{22})^2$.
+* §6.3.2, `GolubVanLoan.Chapter06.tls_single`: the Householder construction of $x_{TLS}$ for one
+  right-hand side, and its failure when $\alpha = 0$.
+* Algorithm 6.3.1, `GolubVanLoan.Chapter06.algorithm_6_3_1_spec`: in exact arithmetic the algorithm
+  returns a TLS solution, or reports that none exists.
+* Equation (6.3.6), `GolubVanLoan.Chapter06.equation_6_3_6`: $x_{TLS}$ minimizes $\psi(x) = \sum_i
+  d_i^2 (a_i^T x - b_i)^2 / (x^T T_1^{-2} x + t_{n+1}^{-2})$.
+* §6.3.3, `GolubVanLoan.Chapter06.tls_distance`: each term $\delta_i$ of $\psi$ is the squared
+  $T$-weighted distance from $[a_i; b_i]$ to the hyperplane $\{[a; b] : b = x^T a\}$.
 
 ## Conventions
 
-Real matrices, 0-based. The TLS problem with weights `D = diag(d)`, `T = diag(t)` is the backbone's
-`Matrix.IsTLSPerturbation d t A B E R` (the columns of `[A | B]` indexed by `Fin n ⊕ Fin k`, or
-`Fin n ⊕ Unit` for one right-hand side, a column `b` being `replicateCol Unit b`), and a TLS
-solution is `Matrix.IsTLSSolution`; (6.3.2) is `d = 1`, `t = 1`. The Frobenius norm is the scoped
-`Matrix.Norms.Frobenius` norm, the 2-norm the scoped `Matrix.Norms.L2Operator` one. For
-Theorem 6.3.1 the matrix `C = D[A | B]T = [C₁ | C₂]` is reindexed to `Fin (n + k)` columns
-(`finSumFinEquiv`), and `V₁₂`, `V₂₂` are the blocks `V(1:n, n+1:n+k)`, `V(n+1:n+k, n+1:n+k)`.
-For one right-hand side the book's `C = D[A | b]T` with columns `Fin (n + 1)` is `tlsMatrix`, the
-backbone's `tlsWeighted` reindexed by `finSuccEquivLastSumUnit` (the last column `b`'s), with the
-column weights `tlsWeights t`; the book's index `n − p` of `v_{n+1−p}` is `r` (0-based).
+* Matrices are real and indices are 0-based. The TLS problem with weights
+  $D = \operatorname{diag}(d)$ and $T = \operatorname{diag}(t)$ is
+  `Matrix.IsTLSPerturbation d t A B E R`, and a TLS solution is `Matrix.IsTLSSolution`. The columns
+  of $[A \mid B]$ are indexed by `Fin n ⊕ Fin k`, or by `Fin n ⊕ Unit` for one right-hand side,
+  where a column $b$ is `Matrix.replicateCol Unit b`. Problem (6.3.2) is the case $d = 1$, $t = 1$.
+* The Frobenius norm is the scoped `Matrix.Norms.Frobenius` norm, and the 2-norm is the scoped
+  `Matrix.Norms.L2Operator` norm.
+* In Theorem 6.3.1, the matrix $C = D[A \mid B]T = [C_1 \mid C_2]$ is reindexed to the columns
+  `Fin (n + k)` by `finSumFinEquiv`. The blocks $V_{12} = V(1{:}n, n{+}1{:}n{+}k)$ and
+  $V_{22} = V(n{+}1{:}n{+}k, n{+}1{:}n{+}k)$ are submatrices of $V$.
+* For one right-hand side, the matrix $C = D[A \mid b]T$ with the columns `Fin (n + 1)` is
+  `GolubVanLoan.Chapter06.tlsMatrix`. It is `Matrix.tlsWeighted` reindexed by
+  `finSuccEquivLastSumUnit`, so that the last column belongs to $b$, with the column weights
+  `GolubVanLoan.Chapter06.tlsWeights t`. The index $n - p$ of $v_{n+1-p}$ in the source is the
+  0-based index `r`.
 
-Algorithm 6.3.1 follows the algorithm conventions of `NumlibSurface/GolubVanLoan`: every product
-and quotient through `rnd`; "Compute the SVD" is a monadic parameter (chapter 8's algorithm);
-`p` is read off the computed singular values by exact comparisons; the Householder reflection is
-chapter 5's `houseOn` and `householderApplyRight` on index lists.
+## Implementation notes
 
-## Not formalized here
+* Algorithm 6.3.1 follows the algorithm conventions of the library: every product and quotient is
+  rounded by `rnd`; the step "Compute the SVD" belongs to Chapter 8 and is a monadic parameter; $p$
+  is read off the computed singular values by exact comparisons; and the Householder reflection is
+  `GolubVanLoan.Chapter05.houseOn` with `GolubVanLoan.Chapter05.householderApplyRight` on index
+  lists.
 
-The variants of §6.3.4 and the flop count are not formalized (see the chapter group).
+## Deviations from the source
 
-## Sources and errata
+* **Theorem 6.3.1, nonsingularity of $V_{22}$** (generalization). The source assumes that $D$ and
+  $T$ are nonsingular and $m \ge n + k$. The nonsingularity of $V_{22}$ holds without these
+  hypotheses. See `GolubVanLoan.Chapter06.theorem_6_3_1_isUnit`.
+* **§6.3.2, the single right-hand side** (generalization). The source takes $\tilde Q$ to be a
+  Householder matrix. The statement holds for every orthogonal $\tilde Q$ with the same zero
+  pattern. See `GolubVanLoan.Chapter06.tls_single`.
+* **§6.3.2, the single right-hand side** (reading). The source says that the last column has the
+  largest $(n{+}1)$st component of all vectors in the span. The statement compares absolute values
+  over the unit vectors of the span. See `GolubVanLoan.Chapter06.tls_single`.
 
-Backbone `Numlib/LinearAlgebra/Matrix/LeastSquares/Total`, `Numlib/Analysis/Matrix/SingularValues`
-(`Matrix.l2_opNorm_mul_inv_sq_eq`). The proof of Theorem 6.3.1 cites Corollary 2.4.5 for
-`σ_n(C) ≥ σ_n(C₁)`; that corollary does not give it — it is column interlacing (Corollary 8.6.3).
-The `τ`-norm identity after the proof needs no CS decomposition, only
-`V₁₂ᵀV₁₂ + V₂₂ᵀV₂₂ = I`. The line "… `|t_{n+1}| ‖Db‖₂ ≥ σ_n(DAT₁)`" printed after §6.3.4 is a
-displaced fragment of P6.3.1(b).
+## Not formalized
+
+* **The variants of §6.3.4.**
+* **The flop count of Algorithm 6.3.1.**
+* **The display $[I_{n-1}\ 0; 0\ \tilde Q]\, U^T (D[A \mid b]T)\, V [I_{n-p}\ 0; 0\ \tilde Q] =
+  \Sigma$ of §6.3.2.** Its block sizes do not match.
+* **The line "$|t_{n+1}| \|Db\|_2 \ge \sigma_n(DAT_1)$" printed after §6.3.4.** It is a displaced
+  fragment of Problem P6.3.1(b).
 -/
 
 open Matrix
@@ -56,9 +116,15 @@ namespace GolubVanLoan.Chapter06
 
 variable {m n : ℕ}
 
-/-- **(6.3.1).** "The problem of minimizing `‖Ax − b‖₂` where `A ∈ ℝ^{m×n}` and `b ∈ ℝᵐ` can be
-recast as follows: `min_{b + r ∈ ran(A)} ‖r‖₂`": `x` is a least-squares solution iff `‖Ax − b‖₂`
-is the least norm of an `r` with `b + r ∈ ran(A)` (attained at `r = Ax − b`). -/
+/-- **Equation (6.3.1)** of [golub2013matrix]. Let $A \in \mathbb{R}^{m \times n}$,
+$b \in \mathbb{R}^m$ and $x \in \mathbb{R}^n$. Then $x$ is a least-squares solution, that is,
+$x$ minimizes $\|Ay - b\|_2$ over $y \in \mathbb{R}^n$, if and only if $\|Ax - b\|_2$ is the
+least value of $\|r\|_2$ over the $r \in \mathbb{R}^m$ with $b + r \in \operatorname{ran}(A)$:
+$$\|Ax - b\|_2 = \min_{b + r \in \operatorname{ran}(A)} \|r\|_2.$$
+
+The minimum is attained at $r = Ax - b$. A least-squares solution is
+`Matrix.IsLeastSquaresSolution`, and the least value is `IsLeast` of the image of the feasible
+set under the norm. -/
 theorem equation_6_3_1 {A : Matrix (Fin m) (Fin n) ℝ} {b : EuclideanSpace ℝ (Fin m)}
     {x : EuclideanSpace ℝ (Fin n)} :
     IsLeastSquaresSolution A b x ↔
@@ -78,18 +144,23 @@ section Example
 
 open scoped Matrix.Norms.Frobenius
 
-/-- The weighted matrix with unit weights is `[E | R]`. -/
+/-- With unit weights, the weighted matrix $D[E \mid R]T$ is $[E \mid R]$. -/
 private theorem tlsWeighted_one_one {k : Type*} [Fintype k] [DecidableEq k]
     (E : Matrix (Fin 3) (Fin 2) ℝ) (R : Matrix (Fin 3) k ℝ) :
     tlsWeighted 1 1 E R = fromCols E R := by
   simp [tlsWeighted]
 
-/-- **§6.3, a TLS problem without a solution.** "(6.3.2) may fail to have a solution altogether.
-For example, if `A = [1 0; 0 0; 0 0]`, `b = [1; 1; 1]`, `E_ε = [0 0; 0 ε; 0 ε]`, then for all
-`ε > 0`, `b ∈ ran(A + E_ε)` (the first conjunct). However, there is no smallest value of `‖[E,
-r]‖_F` for which `b + r ∈ ran(A + E)`." A minimizer would have `‖[E | r]‖_F ≤ ‖[E_ε | 0]‖_F = √2 ε`
-for every
-`ε > 0`, so `[E | r] = 0`, and then `b ∈ ran(A)`, which it is not. -/
+/-- **Section 6.3** of [golub2013matrix], a TLS problem without a solution. Let $$A =
+\begin{bmatrix} 1 & 0 \\ 0 & 0 \\ 0 & 0 \end{bmatrix}, \qquad b = \begin{bmatrix} 1 \\ 1 \\ 1
+\end{bmatrix}, \qquad E_\varepsilon = \begin{bmatrix} 0 & 0 \\ 0 & \varepsilon \\ 0 &
+\varepsilon \end{bmatrix}.$$ Then $b \in \operatorname{ran}(A + E_\varepsilon)$ for every
+$\varepsilon > 0$, but the TLS problem (6.3.2) for $A$ and $b$ (with unit weights) has no
+solution: no feasible pair $(E, r)$ has the least value of $\|[E \mid r]\|_F$.
+
+A minimizer would satisfy $\|[E \mid r]\|_F \le \|[E_\varepsilon \mid 0]\|_F = \sqrt 2\,
+\varepsilon$ for every $\varepsilon > 0$, so $[E \mid r] = 0$ and $b \in \operatorname{ran}(A)$,
+which is false. The column $b$ is `Matrix.replicateCol Unit b`, and the TLS problem is
+`Matrix.IsTLSPerturbation 1 1`. -/
 theorem tls_not_exists_example :
     (∀ ε : ℝ, 0 < ε → ∃ x : Fin 2 → ℝ,
       (!![(1 : ℝ), 0; 0, 0; 0, 0] + ε • !![(0 : ℝ), 0; 0, 1; 0, 1]) *ᵥ x = ![1, 1, 1]) ∧
@@ -138,12 +209,21 @@ theorem tls_not_exists_example :
 
 end Example
 
-/-- **Theorem 6.3.1, the nonsingularity of `V₂₂`.** "Suppose `A ∈ ℝ^{m×n}` and `B ∈ ℝ^{m×k}` and
-that `D = diag(d₁, …, d_m)` and `T = diag(t₁, …, t_{n+k})` are nonsingular. … let the SVD of
-`C = D[A | B]T = [C₁ C₂]` be specified by `UᵀCV = diag(σ₁, …, σ_{n+k}) = Σ` … If
-`σ_n(C₁) > σ_{n+1}(C)`, then … `V₂₂` is nonsingular" (the first fact of the proof, on which
-`X_TLS = −T₁V₁₂V₂₂⁻¹T₂⁻¹` rests). Here `T = diag(t₁, t₂)` with `t₁` on the columns of `A` and `t₂`
-on those of `B`. -/
+/-- **Theorem 6.3.1** of [golub2013matrix], nonsingularity of $V_{22}$. Let
+$A \in \mathbb{R}^{m \times n}$, $B \in \mathbb{R}^{m \times k}$, $d \in \mathbb{R}^m$,
+$t_1 \in \mathbb{R}^n$ and $t_2 \in \mathbb{R}^k$, and let $D = \operatorname{diag}(d)$,
+$T_1 = \operatorname{diag}(t_1)$ and $T_2 = \operatorname{diag}(t_2)$. Let $U^T C V = \Sigma =
+\operatorname{diag}(\sigma_1, \dots, \sigma_{n+k})$ be an SVD of $$C = [C_1 \mid C_2] = [DAT_1
+\mid DBT_2].$$ If $\sigma_n(C_1) > \sigma_{n+1}$, then the block
+$V_{22} = V(n{+}1{:}n{+}k, n{+}1{:}n{+}k)$ is nonsingular.
+
+**Generalization.** The source assumes that $D$ and $T$ are nonsingular and that $m \ge n + k$.
+This part of the theorem holds without these hypotheses.
+
+The nonsingularity of $V_{22}$ is the first fact of the proof in the source, and the formula
+$X_{TLS} = -T_1 V_{12} V_{22}^{-1} T_2^{-1}$ rests on it. The SVD is `Matrix.IsSVD` of $C$ with
+its columns reindexed by `finSumFinEquiv`, so `σ n` is $\sigma_{n+1}$. The number
+$\sigma_n(C_1)$ is `sortedSingularValues (n - 1)` of $C_1$. -/
 theorem theorem_6_3_1_isUnit {k : ℕ} {A : Matrix (Fin m) (Fin n) ℝ} {B : Matrix (Fin m) (Fin k) ℝ}
     (d : Fin m → ℝ) (t₁ : Fin n → ℝ) (t₂ : Fin k → ℝ) {U : Matrix (Fin m) (Fin m) ℝ} {σ : ℕ → ℝ}
     {V : Matrix (Fin (n + k)) (Fin (n + k)) ℝ}
@@ -153,16 +233,18 @@ theorem theorem_6_3_1_isUnit {k : ℕ} {A : Matrix (Fin m) (Fin n) ℝ} {B : Mat
     IsUnit (V.submatrix (Fin.natAdd n) (Fin.natAdd n)) :=
   isUnit_lowerRightBlock_of_lt hC hσ
 
-/-- The weighted matrix `D[E | R]T` with `T = diag(t₁, t₂)` is `[D E T₁ | D R T₂]`. -/
+/-- With $T = \operatorname{diag}(t_1, t_2)$, the weighted matrix $D[E \mid R]T$ is
+$[DET_1 \mid DRT_2]$. -/
 private theorem tlsWeighted_sumElim {k : ℕ} (d : Fin m → ℝ) (t₁ : Fin n → ℝ) (t₂ : Fin k → ℝ)
     (E : Matrix (Fin m) (Fin n) ℝ) (R : Matrix (Fin m) (Fin k) ℝ) :
     tlsWeighted d (Sum.elim t₁ t₂) E R =
       fromCols (diagonal d * E * diagonal t₁) (diagonal d * R * diagonal t₂) := by
   ext i (j | j) <;> simp [tlsWeighted, mul_diagonal, diagonal_mul]
 
-/-- The trailing part `U Σ' Vᵀ` of an SVD, `Σ'` keeping the singular values `σ_i`, `i ≥ n`, is
-`U₂ Σ₂ V₂ᵀ` with `U₂ = U(:, n+1:n+k)`, `Σ₂ = diag(σ_{n+1}, …, σ_{n+k})` and `V₂ᵀ = [V₁₂ᵀ | V₂₂ᵀ]`
-when `m ≥ n + k`. -/
+/-- If $m \ge n + k$, the trailing part $U \Sigma' V^T$ of an SVD, where $\Sigma'$ keeps only the
+singular values $\sigma_{n+1}, \dots, \sigma_{n+k}$, equals
+$U_2 \Sigma_2 [V_{12}^T \mid V_{22}^T]$ with $U_2 = U(:, n{+}1{:}n{+}k)$ and $\Sigma_2 =
+\operatorname{diag}(\sigma_{n+1}, \dots, \sigma_{n+k})$. -/
 private theorem mul_rectDiagonal_tail_mul_transpose {k : ℕ} (hmnk : n + k ≤ m)
     (U : Matrix (Fin m) (Fin m) ℝ) (σ : ℕ → ℝ) (V : Matrix (Fin (n + k)) (Fin (n + k)) ℝ) :
     U * (rectDiagonal (fun i => if i < n then 0 else σ i) : Matrix (Fin m) (Fin (n + k)) ℝ) *
@@ -181,22 +263,34 @@ private theorem mul_rectDiagonal_tail_mul_transpose {k : ℕ} (hmnk : n + k ≤ 
   · rw [mul_rectDiagonal_apply]
     split_ifs with h h' <;> simp_all
 
-/-- **Theorem 6.3.1.** "Suppose `A ∈ ℝ^{m×n}` and `B ∈ ℝ^{m×k}` and that `D = diag(d₁, …, d_m)` and
-`T = diag(t₁, …, t_{n+k})` are nonsingular. Assume `m ≥ n + k` and let the SVD of
-`C = D[A | B]T = [C₁ C₂]` be specified by `UᵀCV = diag(σ₁, …, σ_{n+k}) = Σ` where `U`, `V`, and `Σ`
-are partitioned as follows: `U = [U₁ U₂]`, `V = [V₁₁ V₁₂; V₂₁ V₂₂]`, `Σ = [Σ₁ 0; 0 Σ₂]` (`n | k`).
-If `σ_n(C₁) > σ_{n+1}(C)`, then the matrix `[E₀ | R₀]` defined by
-`D[E₀ | R₀]T = −U₂Σ₂[V₁₂ᵀ | V₂₂ᵀ]` (6.3.4) solves (6.3.3). If `T₁ = diag(t₁, …, t_n)` and
-`T₂ = diag(t_{n+1}, …, t_{n+k})`, then the matrix `X_TLS = −T₁V₁₂V₂₂⁻¹T₂⁻¹` exists and is the unique
-TLS solution to `(A + E₀)X = B + R₀`."
+/-- **Theorem 6.3.1** of [golub2013matrix]. Let $A \in \mathbb{R}^{m \times n}$ and
+$B \in \mathbb{R}^{m \times k}$ with $m \ge n + k$. Let
+$D = \operatorname{diag}(d_1, \dots, d_m)$, $T_1 = \operatorname{diag}(t_1, \dots, t_n)$ and
+$T_2 = \operatorname{diag}(t_{n+1}, \dots, t_{n+k})$ be nonsingular, and let
+$T = \operatorname{diag}(T_1, T_2)$. Let the SVD of $$C = D[A \mid B]T = [C_1 \mid C_2]$$ be
+$U^T C V = \operatorname{diag}(\sigma_1, \dots, \sigma_{n+k}) = \Sigma$, and partition $$U =
+[U_1 \mid U_2], \qquad V = \begin{bmatrix} V_{11} & V_{12} \\ V_{21} & V_{22} \end{bmatrix},
+\qquad \Sigma = \begin{bmatrix} \Sigma_1 & 0 \\ 0 & \Sigma_2 \end{bmatrix}$$ with the column
+blocks of sizes $n$ and $k$, so that $U_2 = U(:, n{+}1{:}n{+}k)$ and $\Sigma_2 =
+\operatorname{diag}(\sigma_{n+1}, \dots, \sigma_{n+k})$. If $\sigma_n(C_1) > \sigma_{n+1}(C)$,
+then there are $E_0 \in \mathbb{R}^{m \times n}$ and $R_0 \in \mathbb{R}^{m \times k}$ such
+that:
 
-Here `T = diag(t₁, t₂)` (`Sum.elim t₁ t₂` on the columns `Fin n ⊕ Fin k`), `U₂ = U(:, n+1:n+k)` is
-the book's thin `U₂` and `Σ₂ = diag(σ_{n+1}, …, σ_{n+k})`. The conclusion: `(E₀, R₀)` satisfies
-(6.3.4) and is a TLS perturbation — the only one (backbone
-`Matrix.existsUnique_isTLSPerturbation`); `V₂₂` is nonsingular (`theorem_6_3_1_isUnit`); `X`
-solves `(A + E₀)X = B + R₀` exactly when `X = X_TLS`, and `X_TLS` is the only TLS solution
-(`Matrix.isTLSSolution_iff_eq`). The backbone does not need `m ≥ n + k`; it is used here only to
-read the book's `U₂Σ₂[V₁₂ᵀ | V₂₂ᵀ]`. -/
+* $D[E_0 \mid R_0]T = -U_2 \Sigma_2 [V_{12}^T \mid V_{22}^T]$ (6.3.4);
+* $(E_0, R_0)$ solves the TLS problem (6.3.3), and every solution of (6.3.3) equals
+  $(E_0, R_0)$;
+* $V_{22}$ is nonsingular;
+* a matrix $X \in \mathbb{R}^{n \times k}$ satisfies $(A + E_0) X = B + R_0$ if and only if
+  $X = X_{TLS}$, where $$X_{TLS} = -T_1 V_{12} V_{22}^{-1} T_2^{-1};$$
+* $X$ is a TLS solution if and only if $X = X_{TLS}$.
+
+The source does not state that (6.3.4) is the only TLS perturbation; it follows from
+`Matrix.existsUnique_isTLSPerturbation`. The proof in the source cites Corollary 2.4.5 for
+$\sigma_n(C) \ge \sigma_n(C_1)$, but that corollary does not give it: the inequality is column
+interlacing (Corollary 8.6.3). The backbone does not need $m \ge n + k$; the hypothesis is used
+here only to write $U_2 \Sigma_2 [V_{12}^T \mid V_{22}^T]$. The SVD is `Matrix.IsSVD` of $C$
+with its columns reindexed by `finSumFinEquiv`, $T$ is `Sum.elim t₁ t₂` on the columns
+`Fin n ⊕ Fin k`, and the last two parts come from `Matrix.isTLSSolution_iff_eq`. -/
 theorem theorem_6_3_1 {k : ℕ} (hmnk : n + k ≤ m) {A : Matrix (Fin m) (Fin n) ℝ}
     {B : Matrix (Fin m) (Fin k) ℝ} {d : Fin m → ℝ} {t₁ : Fin n → ℝ} {t₂ : Fin k → ℝ}
     (hd : ∀ i, d i ≠ 0) (ht₁ : ∀ j, t₁ j ≠ 0) (ht₂ : ∀ j, t₂ j ≠ 0)
@@ -250,11 +344,17 @@ theorem theorem_6_3_1 {k : ℕ} (hmnk : n + k ≤ m) {A : Matrix (Fin m) (Fin n)
   congr 3
 
 open scoped Matrix.Norms.L2Operator in
-/-- **§6.3.1, the `τ`-norm of the TLS solution.** "Note … that
-`‖X‖_τ² = ‖V₁₂V₂₂⁻¹‖₂² = (1 − σ_k(V₂₂)²)/σ_k(V₂₂)²` where we define the `τ`-norm on `ℝ^{n×k}` by
-`‖Z‖_τ = ‖T₁⁻¹ZT₂‖₂`", for `X = X_TLS = −T₁V₁₂V₂₂⁻¹T₂⁻¹`, `V` orthogonal and `V₂₂` nonsingular
-(Theorem 6.3.1). The book's `σ_k(V₂₂)` is `V₂₂.sortedSingularValues (k − 1)`; the identity needs
-only `V₁₂ᵀV₁₂ + V₂₂ᵀV₂₂ = I`, not the thin CS decomposition the book cites. -/
+/-- **Section 6.3.1** of [golub2013matrix], the $\tau$-norm of the TLS solution. Let
+$V \in \mathbb{R}^{(n+k) \times (n+k)}$ be orthogonal with $k \ge 1$, partitioned as in Theorem
+6.3.1, and assume that $V_{22}$ is nonsingular. Let $T_1 = \operatorname{diag}(t_1)$ and
+$T_2 = \operatorname{diag}(t_2)$ be nonsingular, and let $X = -T_1 V_{12} V_{22}^{-1} T_2^{-1}$.
+With the $\tau$-norm $\|Z\|_\tau = \|T_1^{-1} Z T_2\|_2$ on $\mathbb{R}^{n \times k}$,
+$$\|X\|_\tau^2 = \|V_{12} V_{22}^{-1}\|_2^2 = \frac{1 -
+\sigma_k(V_{22})^2}{\sigma_k(V_{22})^2}.$$
+
+The source derives the identity from the thin CS decomposition. The proof here needs only
+$V_{12}^T V_{12} + V_{22}^T V_{22} = I$. The number $\sigma_k(V_{22})$ is
+`sortedSingularValues (k - 1)` of $V_{22}$. -/
 theorem tls_tauNorm {k : ℕ} [NeZero k] {V : Matrix (Fin (n + k)) (Fin (n + k)) ℝ}
     (hV : V ∈ orthogonalGroup (Fin (n + k)) ℝ)
     (hV₂₂ : IsUnit (V.submatrix (Fin.natAdd n) (Fin.natAdd n))) {t₁ : Fin n → ℝ}
@@ -295,10 +395,19 @@ theorem tls_tauNorm {k : ℕ} [NeZero k] {V : Matrix (Fin (n + k)) (Fin (n + k))
     have := l2_opNorm_mul_inv_sq_eq hV₂₂ hblk
     rwa [Fintype.card_fin] at this
 
-/-- **(6.3.6).** "It can be shown that the TLS solution `x_TLS` minimizes
-`ψ(x) = ∑ᵢ dᵢ² |aᵢᵀx − bᵢ|² / (xᵀT₁⁻²x + t_{n+1}⁻²)`", in the generic case of Theorem 6.3.1 with one
-right-hand side (`m > n`, `σ_n(C₁) > σ_{n+1}(C)` for `C = D[A | b]T`), where
-`x_TLS = −T₁V₁₂V₂₂⁻¹t_{n+1}⁻¹` reads `x_i = −t_i v_{i,n+1}/(t_{n+1} v_{n+1,n+1})`. -/
+/-- **Equation (6.3.6)** of [golub2013matrix]. Let $A \in \mathbb{R}^{m \times n}$ with $m > n$,
+$b \in \mathbb{R}^m$, $d \in \mathbb{R}^m$, and let $t \in \mathbb{R}^{n+1}$ have nonzero
+entries; let $D = \operatorname{diag}(d)$, $T = \operatorname{diag}(t)$ and
+$T_1 = \operatorname{diag}(t_1, \dots, t_n)$. Let $U^T C V = \operatorname{diag}(\sigma_1,
+\dots, \sigma_{n+1})$ be an SVD of $C = D[A \mid b]T = [C_1 \mid c]$, and assume
+$\sigma_n(C_1) > \sigma_{n+1}$. Then the TLS solution $x_{TLS}$, with entries $$x_i = -\frac{t_i
+v_{i,n+1}}{t_{n+1} v_{n+1,n+1}}, \qquad i = 1, \dots, n,$$ minimizes over all
+$x \in \mathbb{R}^n$ the function $$\psi(x) = \sum_{i=1}^m d_i^2 \frac{(a_i^T x - b_i)^2}{x^T
+T_1^{-2} x + t_{n+1}^{-2}}.$$
+
+This is the generic case of Theorem 6.3.1 with one right-hand side, where
+$x_{TLS} = -T_1 V_{12} V_{22}^{-1} t_{n+1}^{-1}$. The function $\psi$ is
+`Matrix.tlsObjective d t A b`. The statement does not need $d$ to be nonzero. -/
 theorem equation_6_3_6 (hmn : n < m) (d : Fin m → ℝ) {t : Fin (n + 1) → ℝ}
     (ht : ∀ j, t j ≠ 0) (A : Matrix (Fin m) (Fin n) ℝ) (b : Fin m → ℝ)
     {U : Matrix (Fin m) (Fin m) ℝ} {σ : ℕ → ℝ} {V : Matrix (Fin (n + 1)) (Fin (n + 1)) ℝ}
@@ -314,19 +423,20 @@ theorem equation_6_3_6 (hmn : n < m) (d : Fin m → ℝ) {t : Fin (n + 1) → �
 
 /-! ### §6.3.2 The single right-hand side, Algorithm 6.3.1 -/
 
-/-- The trailing columns `V(:, r+1 : n)` of an `n`-column matrix (0-based: the columns
-`r, …, n − 1`). -/
+/-- The trailing columns $V(:, r{+}1{:}n)$ of a matrix $V$ with $n$ columns: the 0-based columns
+$r, \dots, n - 1$. For $r \ge n$ the result has no columns. -/
 def trailingColumns {l n : ℕ} (V : Matrix (Fin l) (Fin n) ℝ) (r : ℕ) :
     Matrix (Fin l) (Fin (n - r)) ℝ :=
   V.submatrix id fun j => ⟨r + j, by omega⟩
 
-/-- The trailing columns are the backbone's `Matrix.lastColumns` (the last `n − r` columns), read
-with the book's offset `r`. -/
+/-- For $r \le n$, the trailing columns $V(:, r{+}1{:}n)$ are the last $n - r$ columns of $V$, as
+given by `Matrix.lastColumns`. -/
 theorem trailingColumns_eq_lastColumns {l n : ℕ} (V : Matrix (Fin l) (Fin n) ℝ) {r : ℕ}
     (hr : r ≤ n) : trailingColumns V r = lastColumns V (Nat.sub_le n r) :=
   (lastColumns_eq_submatrix V _ fun j => by simp only; omega).symm
 
-/-- The trailing columns of an orthogonal matrix are orthonormal. -/
+/-- For an orthogonal $V \in \mathbb{R}^{n \times n}$, the trailing columns $W = V(:, r{+}1{:}n)$
+are orthonormal: $W^T W = I$. -/
 theorem trailingColumns_transpose_mul_self {n : ℕ} {V : Matrix (Fin n) (Fin n) ℝ}
     (hV : V ∈ orthogonalGroup (Fin n) ℝ) (r : ℕ) :
     (trailingColumns V r)ᵀ * trailingColumns V r = 1 := by
@@ -335,8 +445,8 @@ theorem trailingColumns_transpose_mul_self {n : ℕ} {V : Matrix (Fin n) (Fin n)
   rw [trailingColumns, transpose_submatrix, ← submatrix_mul _ _ _ _ _ Function.bijective_id, hVV]
   exact submatrix_one _ fun a b hab => Fin.ext (by simpa using congrArg Fin.val hab)
 
-/-- The span of the trailing columns `v_r, …, v_n` of `V` (rows of `Vᵀ`) consists of the vectors
-`V(:, r:n) y`. -/
+/-- A vector lies in the span of the columns $r, \dots, n$ (0-based) of $V$ if and only if it is
+$V(:, r{+}1{:}n{+}1)\, y$ for some $y$. -/
 private theorem mem_span_iff_exists_trailingColumns_mulVec
     {V : Matrix (Fin (n + 1)) (Fin (n + 1)) ℝ}
     {r : ℕ} (x : EuclideanSpace ℝ (Fin (n + 1))) :
@@ -371,25 +481,30 @@ private theorem mem_span_iff_exists_trailingColumns_mulVec
     ext i
     simp [trailingColumns, mulVec, dotProduct, mul_comm]
 
-/-- The column weights `T = diag(t₁, …, t_{n+1})` of `[A | b]` in the backbone's indexing of the
-columns by `Fin n ⊕ Unit`. -/
+/-- The column weights $T = \operatorname{diag}(t_1, \dots, t_{n+1})$ of $[A \mid b]$, with the
+columns indexed by `Fin n ⊕ Unit`: the weight $t_j$ on column $j$ of $A$ and $t_{n+1}$ on $b$. -/
 def tlsWeights (t : Fin (n + 1) → ℝ) : Fin n ⊕ Unit → ℝ :=
   Sum.elim (fun j => t (Fin.castSucc j)) fun _ => t (Fin.last n)
 
-/-- The book's `C = D[A | b]T` of the single right-hand side, with its columns indexed by
-`Fin (n + 1)` (the last one `b`'s): the backbone's `tlsWeighted` reindexed. -/
+/-- The matrix $C = D[A \mid b]T \in \mathbb{R}^{m \times (n+1)}$ of the single right-hand side in
+§6.3.2 of [golub2013matrix], with $D = \operatorname{diag}(d)$ and $T = \operatorname{diag}(t)$;
+the last column belongs to $b$. It is `Matrix.tlsWeighted` with the weights
+`GolubVanLoan.Chapter06.tlsWeights t`, with its columns reindexed from `Fin n ⊕ Unit` to
+`Fin (n + 1)`. -/
 noncomputable def tlsMatrix (d : Fin m → ℝ) (t : Fin (n + 1) → ℝ) (A : Matrix (Fin m) (Fin n) ℝ)
     (b : Fin m → ℝ) : Matrix (Fin m) (Fin (n + 1)) ℝ :=
   (tlsWeighted d (tlsWeights t) A (replicateCol Unit b)).submatrix id (finSuccEquivLastSumUnit n)
 
-/-- The weights of `[A | b]` are nonzero when the book's `t_j` are. -/
+/-- If the weights $t_1, \dots, t_{n+1}$ are nonzero, then every column weight in
+`GolubVanLoan.Chapter06.tlsWeights t` is nonzero. -/
 theorem tlsWeights_ne_zero {t : Fin (n + 1) → ℝ} (ht : ∀ j, t j ≠ 0) (j : Fin n ⊕ Unit) :
     tlsWeights t j ≠ 0 := by
   rcases j with j | u
   · exact ht _
   · exact ht _
 
-/-- `C w = C' (w ∘ e⁻¹)` for the reindexed `C`. -/
+/-- For $w \in \mathbb{R}^{n+1}$, the product $Cw$ with $C = D[A \mid b]T$ equals the product of the
+weighted matrix with columns indexed by `Fin n ⊕ Unit` and the reindexed vector $w$. -/
 theorem tlsMatrix_mulVec (d : Fin m → ℝ) (t : Fin (n + 1) → ℝ) (A : Matrix (Fin m) (Fin n) ℝ)
     (b : Fin m → ℝ) (w : Fin (n + 1) → ℝ) :
     tlsMatrix d t A b *ᵥ w = tlsWeighted d (tlsWeights t) A (replicateCol Unit b) *ᵥ
@@ -397,7 +512,7 @@ theorem tlsMatrix_mulVec (d : Fin m → ℝ) (t : Fin (n + 1) → ℝ) (A : Matr
   rw [tlsMatrix, submatrix_mulVec_equiv]
   rfl
 
-/-- Reindexing a vector does not change its length. -/
+/-- Reindexing a vector by a bijection does not change its Euclidean norm. -/
 private theorem norm_toLp_comp_equiv {ι κ : Type*} [Fintype ι] [Fintype κ] (e : ι ≃ κ) (v : ι → ℝ) :
     ‖(WithLp.toLp 2 (v ∘ e.symm) : EuclideanSpace ℝ κ)‖ =
       ‖(WithLp.toLp 2 v : EuclideanSpace ℝ ι)‖ := by
@@ -407,8 +522,11 @@ private theorem norm_toLp_comp_equiv {ι κ : Type*} [Fintype ι] [Fintype κ] (
   funext i
   simp
 
-/-- **The least singular value of `D[A | b]T`** is the last diagonal entry of any SVD of the
-reindexed `C`, in the backbone's column-indexed reading. -/
+/-- Let $m > n$ and let $U^T C V = \operatorname{diag}(\sigma_1, \dots, \sigma_{n+1})$ be an SVD of
+$C = D[A \mid b]T$. Then the least singular value of $D[A \mid b]T$ is $\sigma_{n+1}$.
+
+The left side is the infimum of `Matrix.colSingularValues` of the weighted matrix with columns
+indexed by `Fin n ⊕ Unit`. The singular values are 0-based, so $\sigma_{n+1}$ has the index $n$. -/
 theorem iInf_singularValues_tlsWeighted_eq (hmn : n < m) {d : Fin m → ℝ} {t : Fin (n + 1) → ℝ}
     {A : Matrix (Fin m) (Fin n) ℝ} {b : Fin m → ℝ} {U : Matrix (Fin m) (Fin m) ℝ} {σ : ℕ → ℝ}
     {V : Matrix (Fin (n + 1)) (Fin (n + 1)) ℝ} (hC : IsSVD (tlsMatrix d t A b) U σ V) :
@@ -435,20 +553,38 @@ theorem iInf_singularValues_tlsWeighted_eq (hmn : n < m) {d : Fin m → ℝ} {t 
       (WithLp.toLp 2 (WithLp.ofLp y.1 ∘ e.symm))‖ = ‖toEuclideanLin (tlsMatrix d t A b) y.1‖
   rw [toEuclideanLin_apply, toEuclideanLin_toLp, tlsMatrix_mulVec]
 
-/-- **§6.3.2, the single right-hand side.** "Suppose the singular values of `C` satisfy
-`σ_{n−p} > σ_{n−p+1} = ⋯ = σ_{n+1}` and let `V = [v₁ | ⋯ | v_{n+1}]` be a column partitioning of
-`V`. If `Q̃` is a Householder matrix such that `V(:, n+1−p : n+1) Q̃ = [W z; 0 α]`, then the last
-column of this matrix has the largest `(n+1)`st component of all the vectors in
-`span{v_{n+1−p}, …, v_{n+1}}`. If `α = 0`, then the TLS problem has no solution. Otherwise
-`x_TLS = −T₁z/(t_{n+1}α)`. Moreover, … `D[E₀ | r₀]T = −D[A | b]T [z; α][zᵀ | α]`."
+/-- **Section 6.3.2** of [golub2013matrix], the single right-hand side. Let
+$A \in \mathbb{R}^{m \times n}$ with $m > n$ and $b \in \mathbb{R}^m$, and let
+$D = \operatorname{diag}(d_1, \dots, d_m)$ and $T = \operatorname{diag}(t_1, \dots, t_{n+1})$ be
+nonsingular. Let $U^T C V = \operatorname{diag}(\sigma_1, \dots, \sigma_{n+1})$ be an SVD of
+$C = D[A \mid b]T$, with $V = [v_1 \mid \dots \mid v_{n+1}]$. Let $0 \le r \le n$ with
+$$\sigma_1, \dots, \sigma_r > \sigma_{r+1} = \sigma_{n+1}$$ (the source writes $r = n - p$), and
+let $\tilde Q \in \mathbb{R}^{(p+1) \times (p+1)}$ be orthogonal with $$V(:, r{+}1{:}n{+}1)\,
+\tilde Q = \begin{bmatrix} W & z \\ 0 & \alpha \end{bmatrix},$$ that is, the last row of the
+product is zero except in its last entry $\alpha$. Then:
 
-Here `C = D[A | b]T` is `tlsMatrix d t A b` (`m > n`) with an SVD `UᵀCV = Σ`; `r` is the
-0-based index `n − p` of `v_{n+1−p}`, so `σ_j > σ_n` for `j < r` and `σ_r = σ_n`; the vectors of
-the span are `V(:, r:n) y`; `Q̃` is any orthogonal matrix with the zero pattern (a Householder
-matrix is one). Part (a) is stated for unit `y`, (b) and (c) through the backbone's TLS problem
-with weights `d`, `tlsWeights t`. The book's display
-`[I_{n−1} 0; 0 Q̃] Uᵀ(D[A|b]T) V [I_{n−p} 0; 0 Q̃] = Σ` has mismatched block sizes and is not
-stated. -/
+* the last column $[z; \alpha]$ has the largest $(n{+}1)$st component in absolute value among
+  the unit vectors of $\operatorname{span}\{v_{r+1}, \dots, v_{n+1}\}$:
+  $|(V(:, r{+}1{:}n{+}1)\, y)_{n+1}| \le |\alpha|$ for every unit vector
+  $y \in \mathbb{R}^{p+1}$;
+* if $\alpha = 0$, then the TLS problem has no solution;
+* if $\alpha \neq 0$, then there is a TLS perturbation $(E_0, r_0)$ with
+  $(A + E_0)\, x_{TLS} = b + r_0$ for $x_{TLS} = -T_1 z / (t_{n+1} \alpha)$, where
+  $T_1 = \operatorname{diag}(t_1, \dots, t_n)$, and $$D[E_0 \mid r_0]T = -D[A \mid b]T
+  \begin{bmatrix} z \\ \alpha \end{bmatrix} [z^T \mid \alpha].$$
+
+**Generalization.** The source takes $\tilde Q$ to be a Householder matrix. Any orthogonal
+matrix with the zero pattern works, and a Householder matrix is one.
+
+**Reading.** The source says that the last column has the largest $(n{+}1)$st component of all
+the vectors in the span. The statement reads this as a comparison of absolute values over the
+unit vectors of the span.
+
+The source also prints the display $[I_{n-1}\ 0; 0\ \tilde Q]\, U^T (D[A \mid b]T)\, V [I_{n-p}\
+0; 0\ \tilde Q] = \Sigma$. Its block sizes do not match, and it is not stated. Here $C$ is
+`GolubVanLoan.Chapter06.tlsMatrix d t A b`, $V(:, r{+}1{:}n{+}1)$ is
+`GolubVanLoan.Chapter06.trailingColumns V r`, and the TLS problem is `Matrix.IsTLSPerturbation`
+with the weights `d` and `GolubVanLoan.Chapter06.tlsWeights t`. -/
 theorem tls_single (hmn : n < m) {d : Fin m → ℝ} (hd : ∀ i, d i ≠ 0) {t : Fin (n + 1) → ℝ}
     (ht : ∀ j, t j ≠ 0) (A : Matrix (Fin m) (Fin n) ℝ) (b : Fin m → ℝ)
     {U : Matrix (Fin m) (Fin m) ℝ} {σ : ℕ → ℝ} {V : Matrix (Fin (n + 1)) (Fin (n + 1)) ℝ}
@@ -544,7 +680,7 @@ theorem tls_single (hmn : n < m) {d : Fin m → ℝ} (hd : ∀ i, d i ≠ 0) {t 
     · rw [hER]
       rfl
 
-/-- The entries of `C = D[A | b]T`: `c_ij = d_i a_ij t_j`, with `a_{i,n+1} = b_i`. -/
+/-- The entries of $C = D[A \mid b]T$ are $c_{ij} = d_i a_{ij} t_j$, where $a_{i,n+1} = b_i$. -/
 theorem tlsMatrix_apply (d : Fin m → ℝ) (t : Fin (n + 1) → ℝ) (A : Matrix (Fin m) (Fin n) ℝ)
     (b : Fin m → ℝ) (i : Fin m) (j : Fin (n + 1)) :
     tlsMatrix d t A b i j = d i * Fin.lastCases (b i) (A i) j * t j := by
@@ -552,12 +688,14 @@ theorem tlsMatrix_apply (d : Fin m → ℝ) (t : Fin (n + 1) → ℝ) (A : Matri
   refine Fin.lastCases ?_ (fun j => ?_) j <;>
     simp [finSuccEquivLastSumUnit, tlsWeights]
 
-/-- The start `r` of the run of computed singular values equal to the last one,
-`σ_r = ⋯ = σ_n` (0-based), found by exact comparisons: the book's `n − p`. -/
+/-- The start $r$ of the run of values equal to the last one, $\sigma_r = \dots = \sigma_n$
+(0-based), found by exact comparisons: $r = n + 1 - \#\{j \le n : \sigma_j = \sigma_n\}$. This
+is the index $n - p$ of Algorithm 6.3.1 of [golub2013matrix]. -/
 noncomputable def tailStart (σ : ℕ → ℝ) (n : ℕ) : ℕ :=
   open Classical in n + 1 - ((Finset.range (n + 1)).filter fun j => σ j = σ n).card
 
-/-- For sorted values, `σ_j = σ_n` exactly from `tailStart σ n` on. -/
+/-- For a nonincreasing sequence $\sigma$ and $j \le n$, $\sigma_j = \sigma_n$ if and only if $j$ is
+at least `GolubVanLoan.Chapter06.tailStart σ n`. -/
 private theorem eq_iff_tailStart_le {σ : ℕ → ℝ} (hσ : Antitone σ) {j : ℕ} (hj : j ≤ n) :
     σ j = σ n ↔ tailStart σ n ≤ j := by
   classical
@@ -587,8 +725,9 @@ private theorem eq_iff_tailStart_le {σ : ℕ → ℝ} (hσ : Antitone σ) {j : 
     rw [Nat.card_Ioc] at this
     omega
 
-/-- The book's `p`: the run `σ_{r} = ⋯ = σ_n` starts at `r ≤ n`, is preceded by larger values, and
-`σ_r = σ_n`. -/
+/-- For a nonincreasing sequence $\sigma$, the index $r$ = `GolubVanLoan.Chapter06.tailStart σ n`
+satisfies $r \le n$, $\sigma_j > \sigma_n$ for all $j < r$, and $\sigma_r = \sigma_n$ (0-based).
+This determines the $p$ of Algorithm 6.3.1 of [golub2013matrix]. -/
 theorem tailStart_spec {σ : ℕ → ℝ} (hσ : Antitone σ) :
     tailStart σ n ≤ n ∧ (∀ j < tailStart σ n, σ n < σ j) ∧ σ (tailStart σ n) = σ n := by
   have hn := (eq_iff_tailStart_le (n := n) (j := n) hσ le_rfl).1 rfl
@@ -597,30 +736,33 @@ theorem tailStart_spec {σ : ℕ → ℝ} (hσ : Antitone σ) :
   have := (eq_iff_tailStart_le hσ (by omega)).1 h.symm
   omega
 
-/-- The index list `[n, n − 1, …, r]` of the columns `V(:, r:n)` read backwards, pivot `n`. -/
+/-- The index list $[n, n - 1, \dots, r]$ in `Fin (n + 1)`: the columns $V(:, r{:}n)$ (0-based) in
+reverse order, with the pivot $n$ first. -/
 def tailIndices (n r : ℕ) : List (Fin (n + 1)) :=
   (List.finRange (n + 1)).reverse.filter fun j => r ≤ (j : ℕ)
 
-/-- Membership in `tailIndices n r`. -/
+/-- An index $j$ is in `GolubVanLoan.Chapter06.tailIndices n r` if and only if $r \le j$. -/
 theorem mem_tailIndices {r : ℕ} {j : Fin (n + 1)} : j ∈ tailIndices n r ↔ r ≤ (j : ℕ) := by
   simp [tailIndices]
 
-/-- `tailIndices n r` has no duplicates. -/
+/-- The list `GolubVanLoan.Chapter06.tailIndices n r` has no duplicates. -/
 theorem tailIndices_nodup (r : ℕ) : (tailIndices n r).Nodup :=
   (List.nodup_reverse.2 (List.nodup_finRange _)).filter _
 
-/-- For `r ≤ n`, `tailIndices n r` is nonempty with head `n`. -/
+/-- For $r \le n$, the list `GolubVanLoan.Chapter06.tailIndices n r` is nonempty. -/
 theorem tailIndices_ne_nil {r : ℕ} (hr : r ≤ n) : tailIndices n r ≠ [] :=
   List.ne_nil_of_mem (mem_tailIndices.2 (by simpa using hr) : Fin.last n ∈ tailIndices n r)
 
-/-- `tailIndices n r` starts with the pivot `n`. -/
+/-- For $r \le n$, the list `GolubVanLoan.Chapter06.tailIndices n r` is $n$ followed by the indices
+$j$ with $r \le j < n$ in decreasing order. -/
 private theorem tailIndices_eq_cons {r : ℕ} (hr : r ≤ n) :
     tailIndices n r = Fin.last n ::
       ((List.finRange n).map Fin.castSucc).reverse.filter fun j => r ≤ (j : ℕ) := by
   rw [tailIndices, List.finRange_succ_last, List.reverse_append, List.reverse_singleton,
     List.singleton_append, List.filter_cons_of_pos (by simpa using hr)]
 
-/-- The pivot of `tailIndices n r` is `n`. -/
+/-- For $r \le n$, the first element (the pivot) of `GolubVanLoan.Chapter06.tailIndices n r` is $n$.
+-/
 theorem tailIndices_head {r : ℕ} (hr : r ≤ n) :
     (tailIndices n r).head (tailIndices_ne_nil hr) = Fin.last n := by
   have key : ∀ (l : List (Fin (n + 1))) (hl : l ≠ []) (t : List (Fin (n + 1))),
@@ -633,7 +775,9 @@ section Programs
 
 variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 
-/-- Forming `C = D[A | b]T` entry by entry, `fl(fl(d_i a_ij) t_j)`. -/
+/-- The program that forms $C = D[A \mid b]T$ entry by entry, as
+$c_{ij} = fl(fl(d_i a_{ij})\, t_j)$, where $a_{i,n+1} = b_i$. It is the first step of Algorithm
+6.3.1 of [golub2013matrix]. -/
 def tlsScale (d : Fin m → ℝ) (t : Fin (n + 1) → ℝ) (A : Matrix (Fin m) (Fin n) ℝ)
     (b : Fin m → ℝ) : M (Matrix (Fin m) (Fin (n + 1)) ℝ) := do
   let C ← (List.finRange m).foldlM (fun (C : Fin m → Fin (n + 1) → ℝ) i => do
@@ -643,10 +787,12 @@ def tlsScale (d : Fin m → ℝ) (t : Fin (n + 1) → ℝ) (A : Matrix (Fin m) (
     pure (Function.update C i row)) 0
   pure (Matrix.of C)
 
-/-- **Algorithm 6.3.1 (total least squares, one right-hand side).** "Given `A ∈ ℝ^{m×n}` (`m > n`),
-`b ∈ ℝᵐ`, nonsingular `D = diag(d₁, …, d_m)`, and nonsingular `T = diag(t₁, …, t_{n+1})`, the
-following algorithm computes (if possible) a vector `x_TLS ∈ ℝⁿ` such that
-`(A + E₀)x_TLS = (b + r₀)` and `‖D[E₀ | r₀]T‖_F` is minimal.
+/-- **Algorithm 6.3.1** of [golub2013matrix] (total least squares). Given
+$A \in \mathbb{R}^{m \times n}$ with $m > n$, $b \in \mathbb{R}^m$, nonsingular
+$D = \operatorname{diag}(d_1, \dots, d_m)$ and nonsingular
+$T = \operatorname{diag}(t_1, \dots, t_{n+1})$, the algorithm computes, if possible, a vector
+$x_{TLS} \in \mathbb{R}^n$ such that $(A + E_0)\, x_{TLS} = b + r_0$ and
+$\|D[E_0 \mid r_0]T\|_F$ is minimal.
 ```
 Compute the SVD Uᵀ(D[A | b]T)V = diag(σ₁, …, σ_{n+1}) and save V.
 Determine p such that σ₁ ≥ ⋯ ≥ σ_{n−p} > σ_{n−p+1} = ⋯ = σ_{n+1}.
@@ -657,12 +803,14 @@ if ṽ_{n+1,n+1} ≠ 0
     end
     x_TLS = x
 end
-```"
-`D[A | b]T` is formed entry by entry (`tlsScale`); "Compute the SVD" is the parameter `svd`; `p`
-is read off the computed `σ` by exact comparisons (`tailStart`, the index `n − p`); the
-Householder `P` is chapter 5's `houseOn` on the last row of `V` over the index list
-`[n, n−1, …, n−p]` (pivot `n`), applied to the columns of `V` by `householderApplyRight`. The
-output is `some x` or, when `ṽ_{n+1,n+1} = 0`, `none`. -/
+```
+The program forms $D[A \mid b]T$ entry by entry with `GolubVanLoan.Chapter06.tlsScale`, and
+calls the parameter `svd` for the SVD. It finds $n - p$ by exact comparisons of the computed
+$\sigma$ with `GolubVanLoan.Chapter06.tailStart`. The Householder $P$ is
+`GolubVanLoan.Chapter05.houseOn` on the last row of $V$ over the index list
+$[n, n - 1, \dots, n - p]$ with the pivot $n$, applied to the columns of $V$ by
+`GolubVanLoan.Chapter05.householderApplyRight`. The output is `some x`, or `none` when
+$\tilde v_{n+1,n+1} = 0$. -/
 noncomputable def algorithm_6_3_1
     (svd : Matrix (Fin m) (Fin (n + 1)) ℝ →
       M (Matrix (Fin m) (Fin m) ℝ × (ℕ → ℝ) × Matrix (Fin (n + 1)) (Fin (n + 1)) ℝ))
@@ -685,8 +833,8 @@ noncomputable def algorithm_6_3_1
 
 end Programs
 
-/-- In exact arithmetic, a loop writing each listed entry from a value independent of the state
-writes the listed entries and keeps the others. -/
+/-- In exact arithmetic, a loop that writes each listed entry with a value that does not depend on
+the state sets the listed entries to these values and keeps the other entries. -/
 private theorem idRun_foldlM_update_const {ι β : Type} [DecidableEq ι] (g : ι → Id β)
     (l : List ι) (hl : l.Nodup) (y₀ : ι → β) (i : ι) :
     Id.run (l.foldlM (fun (y : ι → β) a => do
@@ -694,14 +842,15 @@ private theorem idRun_foldlM_update_const {ι β : Type} [DecidableEq ι] (g : �
       if i ∈ l then Id.run (g i) else y₀ i :=
   List.idRun_foldlM_update_apply (fun a _ => g a) l hl y₀ i
 
-/-- The pure form of `idRun_foldlM_update_const`. -/
+/-- In exact arithmetic, a loop that writes each listed entry $a$ with the value $g(a)$ sets the
+listed entries to these values and keeps the other entries. -/
 private theorem idRun_foldlM_update_pure {ι β : Type} [DecidableEq ι] (g : ι → β)
     (l : List ι) (hl : l.Nodup) (y₀ : ι → β) (i : ι) :
     Id.run (l.foldlM (fun (y : ι → β) a => pure (Function.update y a (g a))) y₀) i =
       if i ∈ l then g i else y₀ i :=
   idRun_foldlM_update_const (fun a => pure (g a)) l hl y₀ i
 
-/-- In exact arithmetic `tlsScale` forms `D[A | b]T`. -/
+/-- In exact arithmetic, `GolubVanLoan.Chapter06.tlsScale` returns $C = D[A \mid b]T$. -/
 theorem tlsScale_spec (d : Fin m → ℝ) (t : Fin (n + 1) → ℝ) (A : Matrix (Fin m) (Fin n) ℝ)
     (b : Fin m → ℝ) : Id.run (tlsScale pure d t A b) = tlsMatrix d t A b := by
   ext i j
@@ -710,8 +859,9 @@ theorem tlsScale_spec (d : Fin m → ℝ) (t : Fin (n + 1) → ℝ) (A : Matrix 
     idRun_foldlM_update_pure _ _ (List.nodup_finRange _), List.mem_finRange, ite_true]
   rw [tlsMatrix_apply]
 
-/-- The block of a Householder matrix acting on the columns `r, …, n` is orthogonal, and the
-product with the trailing columns agrees with the full product on those columns. -/
+/-- Let $P = I - \beta v v^T$ be orthogonal with $v_i = 0$ for $i < r$. Then the block of $P$ on the
+indices $r, \dots, n$ is orthogonal, and on the columns $r, \dots, n$ the product $VP$ equals
+$V(:, r{:}n)$ times that block. -/
 private theorem householder_tail {V : Matrix (Fin (n + 1)) (Fin (n + 1)) ℝ} {r : ℕ}
     {v : Fin (n + 1) → ℝ} {β : ℝ} (hv : ∀ i : Fin (n + 1), (i : ℕ) < r → v i = 0)
     (hP : (1 - β • vecMulVec v v) ∈ orthogonalGroup (Fin (n + 1)) ℝ) :
@@ -756,11 +906,16 @@ private theorem householder_tail {V : Matrix (Fin (n + 1)) (Fin (n + 1)) ℝ} {r
     exact (Fintype.sum_of_injective f hfinj _ _ (fun l hl => by rw [hoff l hl k, mul_zero])
       (fun k' => rfl)).symm
 
-/-- **Algorithm 6.3.1 is correct in exact arithmetic**: for `m > n`, nonzero weights and an `svd`
-subroutine returning SVDs, the algorithm returns `some x` with `x` a TLS solution of
-`(A + E₀)x = b + r₀` (weights `D`, `T`), or `none`, and then the TLS problem has no solution —
-"computes (if possible) a vector `x_TLS` such that `(A + E₀)x_TLS = b + r₀` and
-`‖D[E₀ | r₀]T‖_F` is minimal". -/
+/-- **Algorithm 6.3.1** of [golub2013matrix], exact arithmetic. Let $A \in \mathbb{R}^{m \times n}$
+with $m > n$ and $b \in \mathbb{R}^m$, let $d_1, \dots, d_m$ and $t_1, \dots, t_{n+1}$ be
+nonzero, and let `svd` return an SVD of every matrix. If the algorithm returns a vector $x$,
+then $x$ is a TLS solution of $(A + E_0)x = b + r_0$ with the weights
+$D = \operatorname{diag}(d)$ and $T = \operatorname{diag}(t)$. If it returns `none`, then the
+TLS problem has no solution.
+
+The run is at `M := Id` with `rnd := pure`. A TLS solution is `Matrix.IsTLSSolution` with the
+weights `d` and `GolubVanLoan.Chapter06.tlsWeights t`, for the columns
+`Matrix.replicateCol Unit b` and `Matrix.replicateCol Unit x`. -/
 theorem algorithm_6_3_1_spec (hmn : n < m)
     (svd : Matrix (Fin m) (Fin (n + 1)) ℝ →
       Id (Matrix (Fin m) (Fin m) ℝ × (ℕ → ℝ) × Matrix (Fin (n + 1)) (Fin (n + 1)) ℝ))
@@ -839,7 +994,8 @@ theorem algorithm_6_3_1_spec (hmn : n < m)
 
 /-! ### §6.3.3 A geometric interpretation -/
 
-/-- The normal `[x; −1]` of the subspace `P_x` against a vector `w`. -/
+/-- For $x \in \mathbb{R}^n$ and $w \in \mathbb{R}^{n+1}$, the normal $[x; -1]$ satisfies
+$[x; -1]^T w = x^T w_{1:n} - w_{n+1}$. -/
 private theorem snoc_neg_one_dotProduct (x : Fin n → ℝ) (w : Fin (n + 1) → ℝ) :
     (Fin.snoc x (-1) : Fin (n + 1) → ℝ) ⬝ᵥ w =
       (x ⬝ᵥ fun j => w (Fin.castSucc j)) - w (Fin.last n) := by
@@ -847,17 +1003,25 @@ private theorem snoc_neg_one_dotProduct (x : Fin n → ℝ) (w : Fin (n + 1) →
   simp only [Fin.snoc_castSucc]
   ring
 
-/-- The weighted squared length of the normal `[x; −1]`. -/
+/-- For $x \in \mathbb{R}^n$ and $t \in \mathbb{R}^{n+1}$, $\sum_j ([x; -1]_j / t_j)^2 = \sum_{j \le
+n} x_j^2 / t_j^2 + 1 / t_{n+1}^2$. -/
 private theorem sum_snoc_neg_one_div_sq (x : Fin n → ℝ) (t : Fin (n + 1) → ℝ) :
     ∑ j, ((Fin.snoc x (-1) : Fin (n + 1) → ℝ) j / t j) ^ 2 =
       ∑ j : Fin n, x j ^ 2 / t (Fin.castSucc j) ^ 2 + 1 / t (Fin.last n) ^ 2 := by
   rw [Fin.sum_univ_castSucc, Fin.snoc_last]
   simp only [Fin.snoc_castSucc, div_pow, neg_one_sq]
 
-/-- **§6.3.3, the geometric interpretation.** "`δᵢ = |aᵢᵀx − bᵢ|² / (xᵀT₁⁻²x + t_{n+1}⁻²)` is the
-square of the distance from `[aᵢ; bᵢ] ∈ ℝ^{n+1}` to the nearest point in the subspace
-`P_x = {[a; b] : a ∈ ℝⁿ, b ∈ ℝ, b = xᵀa}` where the distance in `ℝ^{n+1}` is measured by the norm
-`‖z‖ = ‖Tz‖₂`", and the nearest point exists. -/
+/-- **Section 6.3.3** of [golub2013matrix], the geometric interpretation. Let
+$t \in \mathbb{R}^{n+1}$ have nonzero entries, $T = \operatorname{diag}(t)$ and
+$T_1 = \operatorname{diag}(t_1, \dots, t_n)$, and let $a, x \in \mathbb{R}^n$ and
+$\beta \in \mathbb{R}$. Let $P_x = \{[a'; b'] : a' \in \mathbb{R}^n,\ b' \in \mathbb{R},\ b' =
+x^T a'\}$, and measure distances in $\mathbb{R}^{n+1}$ by the norm $\|z\| = \|Tz\|_2$. Then the
+squared distance from $[a; \beta]$ to $P_x$ is $$\inf_{w \in P_x} \|T([a; \beta] - w)\|_2^2 =
+\frac{|a^T x - \beta|^2}{x^T T_1^{-2} x + t_{n+1}^{-2}},$$ and some $w \in P_x$ attains this
+value.
+
+For $[a; \beta] = [a_i; b_i]$, the right side is the term $\delta_i$ of the objective $\psi$ of
+(6.3.6). -/
 theorem tls_distance {t : Fin (n + 1) → ℝ} (ht : ∀ j, t j ≠ 0) (a : Fin n → ℝ) (β : ℝ)
     (x : Fin n → ℝ) :
     (⨅ w : {w : Fin (n + 1) → ℝ // w (Fin.last n) = x ⬝ᵥ fun j => w (Fin.castSucc j)},

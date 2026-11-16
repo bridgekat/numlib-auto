@@ -15,41 +15,141 @@ import NumlibSurface.GolubVanLoan.Chapter07.Section03
 import NumlibSurface.GolubVanLoan.Chapter08.Section01
 
 /-!
-# Golub–Van Loan §8.7: generalized eigenvalue problems with symmetry
+# Golub and Van Loan, Section 8.7: Generalized eigenvalue problems with symmetry
 
-Surface file for [golub2013matrix] §8.7: the symmetric-definite problem (congruence invariance,
-Theorem 8.7.1, Corollary 8.7.2, the Crawford number (8.7.4) and a corrected Theorem 8.7.3), the
-generalized Rayleigh quotient ((8.7.5)–(8.7.7)), the generalized singular value decomposition
-(the column relations of §8.7.4, the subspace identity after Algorithm 8.7.2), the Kogbetliantz
-`2 × 2` facts (§8.7.7), and the quadratic eigenvalue problem ((8.7.12)–(8.7.18)).
+This module formalizes §8.7 of [golub2013matrix], the generalized eigenvalue problem
+$Ax = \lambda Bx$ with symmetry. For a symmetric-definite pencil $A - \lambda B$, with $A$ symmetric
+and $B$ positive definite, it proves that congruence preserves the eigenvalues, that $A$ and $B$ can
+be diagonalized by one congruence (Theorem 8.7.1, Corollary 8.7.2), and a corrected form of the
+perturbation bound of Theorem 8.7.3 in terms of the Crawford number (8.7.4). It states Algorithm
+8.7.1, which reduces the pencil to a symmetric eigenvalue problem through the Cholesky factorization
+of $B$, and the generalized Rayleigh quotient (8.7.5)–(8.7.8). For $A \in \mathbb{R}^{m_1 \times n}$
+and $B \in \mathbb{R}^{m_2 \times n}$ it treats the generalized singular value decomposition (GSVD)
+$U_1^T A X = D_A$, $U_2^T B X = D_B$: Theorem 8.7.4, the relations between its columns, Algorithm
+8.7.2, and the $2 \times 2$ step of the Kogbetliantz approach. Last, it treats the quadratic
+eigenvalue problem $(\lambda^2 M + \lambda C + K) x = 0$ of (8.7.12): the scalar equation
+(8.7.13)–(8.7.14), the linearizations (8.7.15)–(8.7.16), the real parts of the eigenvalues in the
+damped and the gyroscopic cases, and palindromic problems (8.7.17)–(8.7.18).
+
+The proofs specialize the backbone modules `Numlib.Eigen.Pencil` (the eigenvalues of a pencil),
+`Numlib.Eigen.SymmetricPencil` (the sorted eigenvalues of a symmetric-definite pencil and the
+Crawford number) and `Numlib.LinearAlgebra.Matrix.SVD`. The algorithms call the programs of Chapters
+3–5 of the library.
+
+## Main definitions
+
+* Equation (8.7.4), `GolubVanLoan.Chapter08.crawfordNumber`: the Crawford number $c(A, B) =
+  \min_{\|x\|_2 = 1} \sqrt{(x^T A x)^2 + (x^T B x)^2}$.
+* Algorithm 8.7.1, `GolubVanLoan.Chapter08.algorithm_8_7_1`: the symmetric-definite problem through
+  the Cholesky factorization $B = GG^T$ and the Schur decomposition of $G^{-1} A G^{-T}$.
+* Equation (8.7.5), `GolubVanLoan.Chapter08.generalizedRayleighQuotientIteration`: the generalized
+  Rayleigh quotient iteration.
+* Algorithm 8.7.2, `GolubVanLoan.Chapter08.algorithm_8_7_2`: the GSVD of a tall pair through a QR
+  factorization and a CS decomposition.
+
+## Main results
+
+* §8.7.1, `GolubVanLoan.Chapter08.pencil_congruence`: for nonsingular $X$,
+  $\lambda(X^T A X, X^T B X) = \lambda(A, B)$.
+* Theorem 8.7.1, `GolubVanLoan.Chapter08.theorem_8_7_1`: if some $C(\mu) = \mu A + (1 - \mu) B$ with
+  $\mu \in [0, 1]$ is positive semidefinite with $\operatorname{null}(C(\mu)) =
+  \operatorname{null}(A) \cap \operatorname{null}(B)$, then one congruence diagonalizes $A$ and $B$.
+* Corollary 8.7.2, `GolubVanLoan.Chapter08.corollary_8_7_2`: a symmetric-definite pencil is
+  diagonalized by a congruence whose columns are eigenvectors.
+* Theorem 8.7.3, `GolubVanLoan.Chapter08.theorem_8_7_3`: the corrected perturbation bound $\sin
+  |\arctan \lambda_i - \arctan \mu_i| \le \epsilon / c(A, B)$.
+* Theorem 8.7.3, `GolubVanLoan.Chapter08.theorem_8_7_3_counterexample`: the bound as printed fails
+  for a $1 \times 1$ pencil.
+* Algorithm 8.7.1, `GolubVanLoan.Chapter08.algorithm_8_7_1_spec`: in exact arithmetic the output
+  $(X, a)$ satisfies $X^T A X = \operatorname{diag}(a)$ and $X^T B X = I$.
+* §8.7.2, `GolubVanLoan.Chapter08.pencil_eq_cholesky_spectrum`: $\lambda(A, B)$ is the spectrum of
+  $G^{-1} A G^{-T}$ and the set of the numbers $a_i$ that Algorithm 8.7.1 returns.
+* Equation (8.7.5), `GolubVanLoan.Chapter08.generalizedRayleighQuotientIteration_succ`: the
+  iteration is Rayleigh quotient iteration on $B^{-1} A$.
+* Equation (8.7.7), `GolubVanLoan.Chapter08.equation_8_7_7`: $x^T A x / x^T B x$ minimizes
+  $\|Ax - \lambda Bx\|_{B^{-1}}$.
+* Equation (8.7.8), `GolubVanLoan.Chapter08.equation_8_7_8`: generalized orthogonal iteration is
+  orthogonal iteration on $B^{-1} A$.
+* Theorem 8.7.4, `GolubVanLoan.Chapter08.theorem_8_7_4`: the GSVD of a tall pair exists.
+* §8.7.4, `GolubVanLoan.Chapter08.gsvd_columns_and_pencil`: the column relations of a GSVD and the
+  eigenvalues of $A^T A - \lambda B^T B$.
+* Algorithm 8.7.2, `GolubVanLoan.Chapter08.algorithm_8_7_2_spec`: in exact arithmetic the algorithm
+  computes a GSVD.
+* §8.7.5, `GolubVanLoan.Chapter08.gsvd_subspace_via_rq`: an RQ factorization of $V^T R$ gives
+  orthonormal bases of the spans of the leading columns of $X$.
+* §8.7.7, `GolubVanLoan.Chapter08.kogbetliantz_twoByTwo`: the $2 \times 2$ step of the Kogbetliantz
+  approach.
+* Equations (8.7.13)–(8.7.14), `GolubVanLoan.Chapter08.equation_8_7_13`: an eigenpair of the
+  quadratic problem gives the scalar equation $m\lambda^2 + c\lambda + k = 0$.
+* Equations (8.7.15)–(8.7.16), `GolubVanLoan.Chapter08.equation_8_7_15`: the two linearizations of
+  the quadratic problem.
+* §8.7.9, `GolubVanLoan.Chapter08.qep_re_nonpos`: with $M$, $C$ positive definite and $K$ positive
+  semidefinite, every eigenvalue has nonpositive real part.
+* §8.7.9, `GolubVanLoan.Chapter08.gyroscopic_eigenvalues_imaginary`: the eigenvalues of a gyroscopic
+  problem with $K$ positive semidefinite are purely imaginary.
+* §8.7.9, `GolubVanLoan.Chapter08.gyroscopic_counterexample`: without $K \succeq 0$ an eigenvalue
+  can have nonzero real part.
+* §8.7.9, `GolubVanLoan.Chapter08.palindromic_reciprocal`: the eigenvalues of a palindromic problem
+  come in pairs $\lambda$, $1/\lambda$.
+* Equation (8.7.18), `GolubVanLoan.Chapter08.equation_8_7_18`: a solution of the linearization
+  (8.7.17) gives an eigenvector $y + z$ of the palindromic problem.
 
 ## Conventions
 
-`λ(A, B)` is `Matrix.pencilSpectrum A B` (`{λ | det(A - λB) = 0}`), a symmetric-definite pencil
-has `A` symmetric and `B` positive definite (`Matrix.PosDef`). The quadratic eigenvalue problem is
-stated over `ℂ`, where `λ` and `x` live; a real symmetric (skew-symmetric, positive definite)
-matrix is in particular a complex Hermitian (skew-Hermitian, positive definite) one.
+* $\lambda(A, B)$ is `Matrix.pencilSpectrum A B`, the set $\{\lambda : \det(A - \lambda B) = 0\}$. A
+  symmetric-definite pencil has $A$ symmetric (`Matrix.IsSymm`) and $B$ positive definite
+  (`Matrix.PosDef`). Its eigenvalues $\lambda_1 \ge \dots \ge \lambda_n$ are
+  `Matrix.pencilEigenvalues`, with 0-based indices.
+* A nonsingular matrix $X$ is `IsUnit X.det` or `IsUnit X`, and an orthogonal matrix is a member of
+  `Matrix.orthogonalGroup`. The rectangular diagonal matrices $D_A$ and $D_B$ of a GSVD are
+  `Matrix.rectDiagonal`.
+* The quadratic eigenvalue problem is stated over $\mathbb{C}$, where $\lambda$ and $x$ live. A real
+  symmetric (skew-symmetric, positive definite) matrix is in particular a complex Hermitian
+  (skew-Hermitian, positive definite) matrix, so the hypotheses on $M$, $C$ and $K$ are stated in
+  the complex Hermitian form.
 
-Algorithms 8.7.1–8.7.2 call the programs of chapters 3–5 (Cholesky, forward and back
-substitution, modified Gram–Schmidt) and take the two steps with no exact program — the symmetric
-Schur decomposition and the CS decomposition — as monadic parameters whose specifications the spec
-theorems assume (convention 5); the triangular solves with a matrix right-hand side run column by
-column. `(8.7.8)` is stated against chapter 7's orthogonal iteration. Theorem 8.7.4 restates
-chapter 6's Theorem 6.1.1, whose `p = max(r − m₂, 0)` vanishes for a tall `B`.
+## Implementation notes
 
-## Readings and errata
+* Algorithms 8.7.1 and 8.7.2 are programs generic in a monad `M` and a rounding hook `rnd`, as in
+  the algorithm conventions of `NumlibSurface.GolubVanLoan`. They call the programs of Chapters 3–5:
+  the Cholesky factorization (Algorithm 4.2.1), forward and back substitution (Algorithms 3.1.1 and
+  3.1.2), and modified Gram–Schmidt (Algorithm 5.2.6). A triangular solve with a matrix right-hand
+  side runs column by column.
+* The two steps that have no exact program, the symmetric Schur decomposition and the CS
+  decomposition, are monadic parameters of the programs, and the exact-semantics theorems assume
+  their specifications (convention 5 of the library).
+* Equation (8.7.8) is stated with the orthogonal iteration
+  `GolubVanLoan.Chapter07.orthogonalIteration` of Chapter 7.
+* Theorem 8.7.4 restates Theorem 6.1.1 of Chapter 6 (`GolubVanLoan.Chapter06.theorem_6_1_1`), whose
+  number $p = \max(r - m_2, 0)$ is $0$ when $B$ has at least as many rows as columns.
 
-(1) Theorem 8.7.3 is false as printed (`theorem_8_7_3_counterexample`); the corrected bound is
-`sin |arctan λ_i - arctan μ_i| ≤ ε / c(A, B)`, with `B + E_B` positive definite assumed, and
-(8.7.4) needs the square root. (2) §8.7.7 should read `U₁ᵀ F = Σ (U₂ᵀ G)`. (3) §8.7.9: the
-gyroscopic eigenvalues are purely imaginary only when `K` is positive semidefinite
-(`gyroscopic_counterexample`).
+## Deviations from the source
+
+* **Equation (8.7.4)** (correction). The source's display of the Crawford number has no square root.
+  The definition takes the square root, which the ratio $\epsilon / c(A, B)$ of Theorem 8.7.3 needs.
+  See `GolubVanLoan.Chapter08.crawfordNumber`.
+* **Theorem 8.7.3** (correction). The printed bound $|\arctan \lambda_i - \arctan \mu_i| \le
+  \arctan(\epsilon / c(A, B))$ is false. The library proves $\sin |\arctan \lambda_i - \arctan
+  \mu_i| \le \epsilon / c(A, B)$ and assumes that $B + E_B$ is positive definite. See
+  `GolubVanLoan.Chapter08.theorem_8_7_3` and `GolubVanLoan.Chapter08.theorem_8_7_3_counterexample`.
+* **Algorithm 8.7.1** (typo). The source cites Algorithm 4.2.2 for the Cholesky factorization. The
+  intended algorithm is Algorithm 4.2.1. See `GolubVanLoan.Chapter08.algorithm_8_7_1`.
+* **Algorithm 8.7.2** (typo). The source writes the hypothesis as $\operatorname{null}(A) \cap
+  \operatorname{null}(B) = \emptyset$. The intended hypothesis is $\operatorname{null}(A) \cap
+  \operatorname{null}(B) = \{0\}$. See `GolubVanLoan.Chapter08.algorithm_8_7_2_spec`.
+* **§8.7.7** (typo). The source prints $U_1^T F = (U_2^T G) \Sigma$. The correct identity is
+  $U_1^T F = \Sigma (U_2^T G)$. See `GolubVanLoan.Chapter08.kogbetliantz_twoByTwo`.
+* **§8.7.9, gyroscopic systems** (correction). The source says that the eigenvalues are purely
+  imaginary. This holds only when $K$ is positive semidefinite, which the library assumes. See
+  `GolubVanLoan.Chapter08.gyroscopic_eigenvalues_imaginary` and
+  `GolubVanLoan.Chapter08.gyroscopic_counterexample`.
 
 ## Not formalized
 
-The overdamping theorem of §8.7.9 (quoted from Duffin/Veselić), the stationary-value
-characterization of generalized singular values, §8.7.8's product and restricted SVDs, §8.7.6's
-accuracy discussion.
+* The overdamping theorem of §8.7.9, which the source quotes from Duffin and Veselić.
+* The characterization of the generalized singular values as stationary values.
+* The product SVD and the restricted SVD of §8.7.8.
+* The accuracy discussion of §8.7.6.
 -/
 
 open Matrix
@@ -60,17 +160,27 @@ variable {n : ℕ}
 
 /-! ### §8.7.1 Mathematical background -/
 
-/-- **§8.7.1, congruence.** For nonsingular `X`, `A - λB` is singular iff `XᵀAX - λXᵀBX` is:
-`λ(A, B) = λ(XᵀAX, XᵀBX)`. -/
+/-- **§8.7.1** of [golub2013matrix], invariance under congruence. Let
+$A, B, X \in \mathbb{R}^{n \times n}$ with $X$ nonsingular. Then $A - \lambda B$ is singular if
+and only if $X^T A X - \lambda X^T B X$ is singular, that is,
+$$\lambda(X^T A X, X^T B X) = \lambda(A, B).$$
+
+No symmetry is assumed. The sets are `Matrix.pencilSpectrum`. -/
 theorem pencil_congruence (A B : Matrix (Fin n) (Fin n) ℝ) {X : Matrix (Fin n) (Fin n) ℝ}
     (hX : IsUnit X.det) : pencilSpectrum (Xᵀ * A * X) (Xᵀ * B * X) = pencilSpectrum A B := by
   have hXu : IsUnit X := (isUnit_iff_isUnit_det X).2 hX
   have hXt : IsUnit Xᵀ := (isUnit_iff_isUnit_det Xᵀ).2 (by rw [det_transpose]; exact hX)
   exact pencilSpectrum_mul_mul_of_isUnit A B hXt hXu
 
-/-- **Theorem 8.7.1** with (8.7.3). For symmetric `A`, `B` and `C(μ) = μA + (1 - μ)B`, if some
-`μ ∈ [0, 1]` has `C(μ)` positive semidefinite with `null(C(μ)) = null(A) ∩ null(B)`, there is a
-nonsingular `X` with `XᵀAX` and `XᵀBX` both diagonal. -/
+/-- **Theorem 8.7.1** of [golub2013matrix]. Let $A, B \in \mathbb{R}^{n \times n}$ be symmetric, and
+let $C(\mu) = \mu A + (1 - \mu) B$ as in (8.7.3). If some $\mu \in [0, 1]$ makes $C(\mu)$
+positive semidefinite with
+$$\operatorname{null}(C(\mu)) = \operatorname{null}(A) \cap \operatorname{null}(B),$$
+then there is a nonsingular $X \in \mathbb{R}^{n \times n}$ such that $X^T A X$ and $X^T B X$
+are both diagonal.
+
+The null space condition is stated pointwise: $C(\mu) x = 0$ if and only if $Ax = 0$ and
+$Bx = 0$. -/
 theorem theorem_8_7_1 {A B : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) (hB : B.IsSymm) {μ : ℝ}
     (hμ : μ ∈ Set.Icc (0 : ℝ) 1) (hC : (μ • A + (1 - μ) • B).PosSemidef)
     (hker : ∀ x, (μ • A + (1 - μ) • B) *ᵥ x = 0 ↔ A *ᵥ x = 0 ∧ B *ᵥ x = 0) :
@@ -83,9 +193,12 @@ theorem theorem_8_7_1 {A B : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) (hB : B
   · simpa [star_eq_conjTranspose, conjTranspose_eq_transpose_of_trivial] using ha
   · simpa [star_eq_conjTranspose, conjTranspose_eq_transpose_of_trivial] using hb
 
-/-- **Corollary 8.7.2.** If `A - λB` is symmetric-definite, there is a nonsingular
-`X = [x_1 | ⋯ | x_n]` with `XᵀAX = diag(a)`, `XᵀBX = diag(b)`, and `A x_i = λ_i B x_i` with
-`λ_i = a_i / b_i`. -/
+/-- **Corollary 8.7.2** of [golub2013matrix]. Let $A \in \mathbb{R}^{n \times n}$ be symmetric and
+$B \in \mathbb{R}^{n \times n}$ positive definite. Then there is a nonsingular
+$X = [x_1 | \cdots | x_n]$ and vectors $a, b \in \mathbb{R}^n$ with
+$$X^T A X = \operatorname{diag}(a_1, \dots, a_n), \qquad X^T B X = \operatorname{diag}(b_1,
+  \dots, b_n),$$
+and $A x_i = \lambda_i B x_i$ with $\lambda_i = a_i / b_i$ for every $i$. -/
 theorem corollary_8_7_2 {A B : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) (hB : B.PosDef) :
     ∃ X : Matrix (Fin n) (Fin n) ℝ, IsUnit X ∧ ∃ a b : Fin n → ℝ,
       Xᵀ * A * X = diagonal a ∧ Xᵀ * B * X = diagonal b ∧
@@ -99,15 +212,35 @@ theorem corollary_8_7_2 {A B : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) (hB :
   · have h := (hasPencilEigenvector_col_of_conj_eq_diagonal hM hMB hMA' i).2
     simpa using h
 
-/-- **(8.7.4), the Crawford number** `c(A, B) = min_{‖x‖₂ = 1} √((xᵀAx)² + (xᵀBx)²)` (with the
-square root the book's display omits). -/
+/-- **Equation (8.7.4)** of [golub2013matrix] (the Crawford number). For
+$A, B \in \mathbb{R}^{n \times n}$, the **Crawford number** is
+$$c(A, B) = \min_{\|x\|_2 = 1} \sqrt{(x^T A x)^2 + (x^T B x)^2}.$$
+
+**Correction.** The source's display has no square root. With the square root, $c(A, B)$ scales
+like the matrices, which the ratio $\epsilon / c(A, B)$ of Theorem 8.7.3 needs.
+
+The definition is the backbone's `Matrix.crawfordNumber`, an infimum over the unit sphere. It is
+$0$ for $n = 0$, where the sphere is empty. -/
 noncomputable def crawfordNumber (A B : Matrix (Fin n) (Fin n) ℝ) : ℝ :=
   Matrix.crawfordNumber A B
 
-/-- **Theorem 8.7.3, corrected.** For a symmetric-definite `A - λB` with eigenvalues
-`λ_1 ≥ ⋯ ≥ λ_n`, symmetric `E_A`, `E_B` with `ε = √(‖E_A‖₂² + ‖E_B‖₂²) < c(A, B)` and `B + E_B`
-positive definite, the eigenvalues `μ_1 ≥ ⋯ ≥ μ_n` of `(A + E_A) - λ(B + E_B)` satisfy
-`sin |arctan λ_i - arctan μ_i| ≤ ε / c(A, B)`. -/
+/-- **Theorem 8.7.3** of [golub2013matrix], corrected. Let $A - \lambda B$ be symmetric-definite,
+with $A \in \mathbb{R}^{n \times n}$ symmetric and $B$ positive definite, and with eigenvalues
+$\lambda_1 \ge \dots \ge \lambda_n$. Let $E_A, E_B \in \mathbb{R}^{n \times n}$ be such that
+$A + E_A$ is symmetric and $B + E_B$ is positive definite, and let $\mu_1 \ge \dots \ge \mu_n$
+be the eigenvalues of $(A + E_A) - \lambda (B + E_B)$. If
+$$\epsilon = \sqrt{\|E_A\|_2^2 + \|E_B\|_2^2} < c(A, B),$$
+then for every $i$
+$$\sin |\arctan \lambda_i - \arctan \mu_i| \le \frac{\epsilon}{c(A, B)}.$$
+
+**Correction.** The source prints the bound $|\arctan \lambda_i - \arctan \mu_i| \le
+\arctan(\epsilon / c(A, B))$, which is false: see
+`GolubVanLoan.Chapter08.theorem_8_7_3_counterexample`. The statement here bounds the sine of the
+angle by $\epsilon / c(A, B)$, and it assumes that $B + E_B$ is positive definite. The Crawford
+number is the corrected (8.7.4), with the square root.
+
+The eigenvalues are `Matrix.pencilEigenvalues`, sorted decreasingly and indexed from 0. The norm
+$\|\cdot\|_2$ is `Matrix.lpOpNorm 2`. -/
 theorem theorem_8_7_3 {A B EA EB : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) (hB : B.PosDef)
     (hA' : (A + EA).IsSymm) (hB' : (B + EB).PosDef)
     (hε : Real.sqrt (lpOpNorm 2 EA ^ 2 + lpOpNorm 2 EB ^ 2) < crawfordNumber A B) (i : Fin n) :
@@ -118,9 +251,12 @@ theorem theorem_8_7_3 {A B EA EB : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) (
       Real.sqrt (lpOpNorm 2 EA ^ 2 + lpOpNorm 2 EB ^ 2) / crawfordNumber A B :=
   sin_abs_arctan_pencilEigenvalues_sub_le _ hB _ hB' hε _
 
-/-- **Theorem 8.7.3 is false as printed.** For `n = 1`, `A = 0`, `B = 1`, `E_A = √3/4`,
-`E_B = -1/4`: `ε² = ‖E_A‖₂² + ‖E_B‖₂² = 1/4 < 1 = c(A, B)`, `λ(A, B) = {0}`,
-`λ(A + E_A, B + E_B) = {1/√3}`, and `|arctan 0 - arctan (1/√3)| = π/6 > arctan(ε / c(A, B))`. -/
+/-- **Theorem 8.7.3** of [golub2013matrix], counterexample to the printed bound. Let $n = 1$,
+$A = 0$, $B = 1$, $E_A = \sqrt{3}/4$ and $E_B = -1/4$. Then $\|E_A\|_2^2 + \|E_B\|_2^2 = 1/4$,
+so $\epsilon = 1/2 < 1 = c(A, B)$. Moreover $\lambda(A, B) = \{0\}$ and
+$\lambda(A + E_A, B + E_B) = \{1/\sqrt{3}\}$, and
+$$|\arctan 0 - \arctan(1/\sqrt{3})| = \pi/6 > \arctan(\epsilon / c(A, B)).$$
+So the bound as printed in the source fails. -/
 theorem theorem_8_7_3_counterexample :
     let A : Matrix (Fin 1) (Fin 1) ℝ := 0
     let B : Matrix (Fin 1) (Fin 1) ℝ := 1
@@ -184,29 +320,35 @@ section Programs
 
 variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 
-/-- The triangular solves of Algorithms 8.7.1–8.7.2, one right-hand side at a time: column `j` of
-`Y` is overwritten by `solve (Y(:, j))`. -/
+/-- The column-by-column triangular solve of Algorithms 8.7.1 and 8.7.2: column $j$ of $Y$ is
+replaced by `solve` applied to that column. -/
 private def solveCols (solve : (Fin n → ℝ) → M (Fin n → ℝ)) (Y : Matrix (Fin n) (Fin n) ℝ) :
     M (Matrix (Fin n) (Fin n) ℝ) :=
   (List.finRange n).foldlM (fun (Z : Matrix (Fin n) (Fin n) ℝ) j => do
     let z ← solve (Y.col j)
     pure (Z.updateCol j z)) Y
 
-/-- **Algorithm 8.7.1** (symmetric-definite `Ax = λBx`): "Given `A = Aᵀ` and `B = Bᵀ` positive
-definite, the following algorithm computes a nonsingular `X` such that `XᵀAX = diag(a₁, …, a_n)`
-and `XᵀBX = I_n`."
+/-- **Algorithm 8.7.1** of [golub2013matrix] (symmetric-definite $Ax = \lambda Bx$). "Given
+$A = A^T$ and $B = B^T$ positive definite, the following algorithm computes a nonsingular $X$
+such that $X^T A X = \operatorname{diag}(a_1, \dots, a_n)$ and $X^T B X = I_n$."
 ```
 Compute the Cholesky factorization B = GGᵀ using Algorithm 4.2.1.
 Compute C = G⁻¹AG⁻ᵀ.
 Use the symmetric QR algorithm to compute the Schur decomposition QᵀCQ = diag(a₁, …, a_n).
 Set X = G⁻ᵀQ.
 ```
-(The book cites "Algorithm 4.2.2", a misprint.) `G` is the lower triangle of chapter 4's
-Algorithm 4.2.1 (an exact copy); `C` is two column-by-column forward substitutions (chapter 3's
-Algorithm 3.1.1), `Y = G⁻¹ A` and `C = G⁻¹ Yᵀ` (`A` symmetric); `X` is back substitution
-(Algorithm 3.1.2) on `Gᵀ`, column by column. The symmetric Schur decomposition is the monadic
-parameter `schur` (convention 5): Algorithm 8.3.3 returns a diagonal matrix only up to its
-deflation perturbation. -/
+The program takes $G$ as the lower triangle of the output of Algorithm 4.2.1. It computes
+$Y = G^{-1} A$ and then $C = G^{-1} Y^T$ by forward substitution (Algorithm 3.1.1), which gives
+$G^{-1} A G^{-T}$ because $A$ is symmetric. It computes $X$ from $G^T X = Q$ by back
+substitution (Algorithm 3.1.2). It returns $X$ and $a$.
+
+**Typo.** The source cites Algorithm 4.2.2 for the Cholesky factorization. The intended
+algorithm is Algorithm 4.2.1.
+
+The symmetric Schur decomposition is the monadic parameter `schur` (convention 5 of the
+library), which returns $Q$ and $a$: Algorithm 8.3.3 returns a diagonal matrix only up to its
+deflation perturbation, so it is not an exact program. The triangular solves run column by
+column. -/
 noncomputable def algorithm_8_7_1
     (schur : Matrix (Fin n) (Fin n) ℝ → M (Matrix (Fin n) (Fin n) ℝ × (Fin n → ℝ)))
     (A B : Matrix (Fin n) (Fin n) ℝ) : M (Matrix (Fin n) (Fin n) ℝ × (Fin n → ℝ)) := do
@@ -220,7 +362,8 @@ noncomputable def algorithm_8_7_1
 
 end Programs
 
-/-- The column solves in exact arithmetic. -/
+/-- In exact arithmetic, the column solves return the matrix whose column $j$ is `solve` applied to
+column $j$ of $Y$. -/
 private theorem solveCols_id (solve : (Fin n → ℝ) → Id (Fin n → ℝ))
     (Y : Matrix (Fin n) (Fin n) ℝ) :
     Id.run (solveCols solve Y) = of fun i j => Id.run (solve (Y.col j)) i := by
@@ -246,7 +389,8 @@ private theorem solveCols_id (solve : (Fin n → ℝ) → Id (Fin n → ℝ))
   ext i j
   simp
 
-/-- If every column solve inverts `G`, the column solves compute `G⁻¹ Y`: `G X = Y`. -/
+/-- If `solve b` solves $Gx = b$ for every $b$, then the column solves of $Y$ return $X$ with
+$GX = Y$. -/
 private theorem mul_solveCols {G : Matrix (Fin n) (Fin n) ℝ}
     {solve : (Fin n → ℝ) → Id (Fin n → ℝ)} (h : ∀ b, G *ᵥ Id.run (solve b) = b)
     (Y : Matrix (Fin n) (Fin n) ℝ) : G * Id.run (solveCols solve Y) = Y := by
@@ -255,12 +399,16 @@ private theorem mul_solveCols {G : Matrix (Fin n) (Fin n) ℝ}
   rw [solveCols_id]
   simpa [Matrix.mul_apply, mulVec, dotProduct] using this
 
-/-- **Algorithm 8.7.1, exact semantics**: if `schur` returns an orthogonal `Q` and `a` with
-`QᵀCQ = diag(a)` for symmetric `C`, then for symmetric `A` and positive definite `B` the output
-`(X, a)` has `XᵀAX = diag(a)` and `XᵀBX = I`. The Cholesky step is chapter 4's Algorithm 4.2.1
-(`G = Matrix.cholesky B`, lower triangular with positive diagonal, `B = GGᵀ`), the solves are
-chapter 3's Algorithms 3.1.1–3.1.2: `GY = A`, `GC = Yᵀ`, `GᵀX = Q`, so `A = GCGᵀ` and
-`XᵀAX = QᵀCQ`, `XᵀBX = QᵀQ`. -/
+/-- **Algorithm 8.7.1** of [golub2013matrix], exact semantics. Suppose that, for every symmetric
+$C \in \mathbb{R}^{n \times n}$, the Schur step returns an orthogonal $Q$ and a vector $a$ with
+$Q^T C Q = \operatorname{diag}(a)$. Let $A \in \mathbb{R}^{n \times n}$ be symmetric and
+$B \in \mathbb{R}^{n \times n}$ positive definite. Then in exact arithmetic the output $(X, a)$
+of Algorithm 8.7.1 satisfies
+$$X^T A X = \operatorname{diag}(a), \qquad X^T B X = I.$$
+
+The Cholesky step gives $G = $ `Matrix.cholesky B`, lower triangular with positive diagonal and
+$B = GG^T$. The solves give $GY = A$, $GC = Y^T$ and $G^T X = Q$, so $A = GCG^T$,
+$X^T A X = Q^T C Q$ and $X^T B X = Q^T Q$. -/
 theorem algorithm_8_7_1_spec
     (schur : Matrix (Fin n) (Fin n) ℝ → Id (Matrix (Fin n) (Fin n) ℝ × (Fin n → ℝ)))
     (hschur : ∀ C : Matrix (Fin n) (Fin n) ℝ, C.IsSymm →
@@ -310,10 +458,18 @@ theorem algorithm_8_7_1_spec
   · rw [hBG, show Xᵀ * (G * Gᵀ) * X = (Gᵀ * X)ᵀ * (Gᵀ * X) by
       simp only [transpose_mul, transpose_transpose, Matrix.mul_assoc], hX, hQQ]
 
-/-- **§8.7.2, after Algorithm 8.7.1**: `λ(A, B) = λ(A, GGᵀ) = λ(G⁻¹AG⁻ᵀ, I) = λ(C) =
-{a₁, …, a_n}`: with `G = Matrix.cholesky B` (so `B = GGᵀ`), `λ(A, B)` is the spectrum of
-`G⁻¹ A G⁻ᵀ` (`pencil_congruence` with `X = G⁻ᵀ`), and, for the output `(X, a)` of Algorithm 8.7.1
-with a correct Schur step, the set of the `a_i`. -/
+/-- **§8.7.2** of [golub2013matrix], the identity after Algorithm 8.7.1. Let
+$A \in \mathbb{R}^{n \times n}$ be symmetric and $B \in \mathbb{R}^{n \times n}$ positive
+definite, with Cholesky factor $G$, so that $B = GG^T$. Then
+$$\lambda(A, B) = \lambda(A, GG^T) = \lambda(G^{-1} A G^{-T}, I) = \lambda(C),$$
+that is, $\lambda(A, B)$ is the spectrum of $C = G^{-1} A G^{-T}$. If, in addition, the Schur
+step returns for every symmetric $C$ an orthogonal $Q$ and a vector $a$ with
+$Q^T C Q = \operatorname{diag}(a)$, then $\lambda(A, B) = \{a_1, \dots, a_n\}$ for the output
+$(X, a)$ of Algorithm 8.7.1 in exact arithmetic.
+
+The factor $G$ is `Matrix.cholesky B`. The first identity is
+`GolubVanLoan.Chapter08.pencil_congruence` with $X = G^{-T}$. The hypothesis on the Schur step
+is also present for the first identity, which does not use it. -/
 theorem pencil_eq_cholesky_spectrum
     (schur : Matrix (Fin n) (Fin n) ℝ → Id (Matrix (Fin n) (Fin n) ℝ × (Fin n → ℝ)))
     (hschur : ∀ C : Matrix (Fin n) (Fin n) ℝ, C.IsSymm →
@@ -346,9 +502,14 @@ theorem pencil_eq_cholesky_spectrum
 
 /-! ### §8.7.2 The generalized Rayleigh quotient -/
 
-/-- **(8.7.5), the generalized Rayleigh quotient iteration**: `x_0` given; `μ_k = x_kᵀAx_k /
-x_kᵀBx_k`, `(A - μ_k B) z_{k+1} = B x_k`, `x_{k+1} = z_{k+1} / ‖z_{k+1}‖₂` (the solve is
-`Matrix.inv`, total). -/
+/-- **Equation (8.7.5)** of [golub2013matrix] (generalized Rayleigh quotient iteration). For
+$A, B \in \mathbb{R}^{n \times n}$ and a start vector $x_0$, the iteration is
+$$\mu_k = \frac{x_k^T A x_k}{x_k^T B x_k}, \qquad (A - \mu_k B) z_{k+1} = B x_k, \qquad
+  x_{k+1} = \frac{z_{k+1}}{\|z_{k+1}\|_2}.$$
+
+The solve uses the Lean inverse `Matrix.inv`, which is total: if $A - \mu_k B$ is singular, then
+$z_{k+1} = 0$ and $x_{k+1} = 0$. If $x_k^T B x_k = 0$, then $\mu_k = 0$, and if $z_{k+1} = 0$,
+then $x_{k+1} = 0$. -/
 noncomputable def generalizedRayleighQuotientIteration (A B : Matrix (Fin n) (Fin n) ℝ)
     (x₀ : Fin n → ℝ) : ℕ → Fin n → ℝ
   | 0 => x₀
@@ -357,9 +518,11 @@ noncomputable def generalizedRayleighQuotientIteration (A B : Matrix (Fin n) (Fi
     let z := (A - ((x ⬝ᵥ A *ᵥ x) / (x ⬝ᵥ B *ᵥ x)) • B)⁻¹ *ᵥ (B *ᵥ x)
     ‖(WithLp.toLp 2 z : EuclideanSpace ℝ (Fin n))‖⁻¹ • z
 
-/-- **(8.7.5) is Rayleigh quotient iteration on `B⁻¹A`**: for nonsingular `B`, each step solves
-`(B⁻¹A - μ_k I) z_{k+1} = x_k` — inverse iteration (7.6.1) on `B⁻¹A` with the generalized Rayleigh
-quotient `μ_k = x_kᵀAx_k / x_kᵀBx_k` as shift — and normalizes. -/
+/-- **Equation (8.7.5)** of [golub2013matrix], as Rayleigh quotient iteration on $B^{-1} A$. Let $B$
+be nonsingular. Then each step of the generalized Rayleigh quotient iteration solves
+$$(B^{-1} A - \mu_k I) z_{k+1} = x_k, \qquad \mu_k = \frac{x_k^T A x_k}{x_k^T B x_k},$$
+and sets $x_{k+1} = z_{k+1} / \|z_{k+1}\|_2$. This is inverse iteration (7.6.1) on $B^{-1} A$
+with the generalized Rayleigh quotient $\mu_k$ as shift. -/
 theorem generalizedRayleighQuotientIteration_succ {A B : Matrix (Fin n) (Fin n) ℝ}
     (hB : IsUnit B.det) (x₀ : Fin n → ℝ) (k : ℕ) :
     let x := generalizedRayleighQuotientIteration A B x₀ k
@@ -377,19 +540,33 @@ theorem generalizedRayleighQuotientIteration_succ {A B : Matrix (Fin n) (Fin n) 
       EuclideanSpace ℝ (Fin n))‖⁻¹ • ((A - ((x ⬝ᵥ A *ᵥ x) / (x ⬝ᵥ B *ᵥ x)) • B)⁻¹ *ᵥ (B *ᵥ x)) = _
   rw [key]
 
-/-- **(8.7.6)–(8.7.7).** For positive definite `B` and `x ≠ 0`, `λ = xᵀAx / xᵀBx` minimizes
-`f(λ) = ‖Ax - λBx‖_B`, `‖z‖_B² = zᵀB⁻¹z` (`A` need not be symmetric). -/
+/-- **Equations (8.7.6)–(8.7.7)** of [golub2013matrix]. Let $A \in \mathbb{R}^{n \times n}$, let
+$B \in \mathbb{R}^{n \times n}$ be positive definite, and let $x \neq 0$. For the norm
+$\|z\|_{B^{-1}}^2 = z^T B^{-1} z$, the number
+$$\lambda = \frac{x^T A x}{x^T B x}$$
+minimizes $f(\lambda) = \|Ax - \lambda Bx\|_{B^{-1}}$ over $\lambda \in \mathbb{R}$.
+
+The matrix $A$ need not be symmetric. -/
 theorem equation_8_7_7 (A : Matrix (Fin n) (Fin n) ℝ) {B : Matrix (Fin n) (Fin n) ℝ}
     (hB : B.PosDef) {x : Fin n → ℝ} (hx : x ≠ 0) :
     IsMinOn (fun μ : ℝ => Real.sqrt ((A *ᵥ x - μ • B *ᵥ x) ⬝ᵥ B⁻¹ *ᵥ (A *ᵥ x - μ • B *ᵥ x)))
       Set.univ ((x ⬝ᵥ A *ᵥ x) / (x ⬝ᵥ B *ᵥ x)) :=
   fun _ hμ => Real.sqrt_le_sqrt (isMinOn_pencil_residual (A := A) hB hx hμ)
 
-/-- **(8.7.8), the generalized orthogonal iteration** (`Q₀ᵀQ₀ = I_p`; for `k ≥ 1`: solve
-`B Z_k = A Q_{k-1}`, `Z_k = Q_k R_k` a thin QR factorization) "is mathematically equivalent to
-(7.3.6) with `A` replaced by `B⁻¹A`": for nonsingular `B`, a sequence `Q_k` with triangular factors
-`R_k` satisfies (8.7.8) for some `Z_k` iff each `(Q_k, R_k)` is a thin QR factorization of
-`B⁻¹ A Q_{k-1}`, and then `Q_k` is an orthogonal iteration (chapter 7's (7.3.6)) of `B⁻¹ A`. -/
+/-- **Equation (8.7.8)** of [golub2013matrix] (generalized orthogonal iteration). Let
+$A, B \in \mathbb{R}^{n \times n}$ with $B$ nonsingular, and let
+$Q_k \in \mathbb{R}^{n \times p}$ and $R_k \in \mathbb{R}^{p \times p}$ for $k \ge 0$ be
+arbitrary sequences. The iteration (8.7.8) solves $B Z_k = A Q_{k-1}$ and takes a thin QR
+factorization $Z_k = Q_k R_k$ for $k \ge 1$. The source says that it "is mathematically
+equivalent to (7.3.6) with $A$ replaced by $B^{-1} A$". Precisely:
+
+* there are $Z_k$ that satisfy (8.7.8) if and only if, for every $k \ge 1$, $Q_k R_k$ is a thin
+  QR factorization of $B^{-1} A Q_{k-1}$;
+* if $Q_0^T Q_0 = I_p$ and these factorizations hold, then $(Q_k)$ is an orthogonal iteration
+  (7.3.6) for $B^{-1} A$.
+
+The thin QR factorizations are `Matrix.IsThinQR`, which includes that $R_k$ is upper triangular,
+and the orthogonal iteration is `GolubVanLoan.Chapter07.orthogonalIteration`. -/
 theorem equation_8_7_8 {p : ℕ} {A B : Matrix (Fin n) (Fin n) ℝ} (hB : IsUnit B.det)
     (Q : ℕ → Matrix (Fin n) (Fin p) ℝ) (R : ℕ → Matrix (Fin p) (Fin p) ℝ) :
     ((∃ Z : ℕ → Matrix (Fin n) (Fin p) ℝ, ∀ k,
@@ -409,12 +586,18 @@ theorem equation_8_7_8 {p : ℕ} {A B : Matrix (Fin n) (Fin n) ℝ} (hB : IsUnit
 
 /-! ### §8.7.4 The generalized singular value problem -/
 
-/-- **Theorem 8.7.4 (Tall Rectangular Version).** "If `A ∈ ℝ^{m₁×n}` and `B ∈ ℝ^{m₂×n}` have at
-least as many rows as columns, then there exists an orthogonal matrix `U₁ ∈ ℝ^{m₁×m₁}`, an
-orthogonal matrix `U₂ ∈ ℝ^{m₂×m₂}`, and a nonsingular matrix `X ∈ ℝ^{n×n}` such that
-`U₁ᵀAX = diag(α₁, …, α_n)`, `U₂ᵀBX = diag(β₁, …, β_n)`." The diagonals are `rectDiagonal α` and
-`rectDiagonal β`. Chapter 6's Theorem 6.1.1, where `p = max(r − m₂, 0) = 0` because
-`r = rank [A; B] ≤ n ≤ m₂`. -/
+/-- **Theorem 8.7.4** of [golub2013matrix] (GSVD, tall rectangular version). "If
+$A \in \mathbb{R}^{m_1 \times n}$ and $B \in \mathbb{R}^{m_2 \times n}$ have at least as many
+rows as columns, then there exists an orthogonal matrix $U_1 \in \mathbb{R}^{m_1 \times m_1}$,
+an orthogonal matrix $U_2 \in \mathbb{R}^{m_2 \times m_2}$, and a nonsingular matrix
+$X \in \mathbb{R}^{n \times n}$ such that
+$$U_1^T A X = \operatorname{diag}(\alpha_1, \dots, \alpha_n), \qquad U_2^T B X =
+  \operatorname{diag}(\beta_1, \dots, \beta_n)."$$
+
+The diagonal matrices are the rectangular diagonal matrices `Matrix.rectDiagonal α` and
+`Matrix.rectDiagonal β`. The proof uses Theorem 6.1.1 of Chapter 6,
+`GolubVanLoan.Chapter06.theorem_6_1_1`, where $p = \max(r - m_2, 0) = 0$ because $r =
+\operatorname{rank} \begin{bmatrix} A \\ B \end{bmatrix} \le n \le m_2$. -/
 theorem theorem_8_7_4 {m₁ m₂ : ℕ} (hm₁ : n ≤ m₁) (hm₂ : n ≤ m₂) (A : Matrix (Fin m₁) (Fin n) ℝ)
     (B : Matrix (Fin m₂) (Fin n) ℝ) :
     ∃ (U₁ : Matrix (Fin m₁) (Fin m₁) ℝ) (U₂ : Matrix (Fin m₂) (Fin m₂) ℝ)
@@ -427,12 +610,23 @@ theorem theorem_8_7_4 {m₁ m₂ : ℕ} (hm₁ : n ≤ m₁) (hm₂ : n ≤ m₂
   refine ⟨U₁, U₂, X, α, β, hU₁, hU₂, (isUnit_iff_isUnit_det X).1 hX, hA, ?_⟩
   rwa [hp, shiftedRectDiagonal_zero] at hB
 
-/-- **§8.7.4, after Theorem 8.7.4.** From a GSVD `U₁ᵀ A X = D_A = diag(α)`,
-`U₂ᵀ B X = D_B = diag(β)` (`U₁`, `U₂` orthogonal, `X` nonsingular, `m₁, m₂ ≥ n`):
-`A x_k = α_k u_k`, `B x_k = β_k v_k`;
-`Xᵀ (AᵀA - λ BᵀB) X = diag(α_k² - λ β_k²)`; every `x_k` with `β_k ≠ 0` is a generalized
-eigenvector of `AᵀA - λ BᵀB` for `λ = (α_k/β_k)²`; and when all `β_k ≠ 0` the eigenvalues of the
-pencil are exactly the squares of the generalized singular values `σ(A, B) = {α_k/β_k}`. -/
+/-- **§8.7.4** of [golub2013matrix], the consequences of a GSVD. Let
+$A \in \mathbb{R}^{m_1 \times n}$ and $B \in \mathbb{R}^{m_2 \times n}$ with $m_1, m_2 \ge n$,
+and let $U_1$, $U_2$ be orthogonal and $X = [x_1 | \cdots | x_n]$ nonsingular with
+$U_1^T A X = D_A = \operatorname{diag}(\alpha)$ and
+$U_2^T B X = D_B = \operatorname{diag}(\beta)$. Let $u_k$ and $v_k$ be the columns of $U_1$ and
+$U_2$. Then:
+
+* $A x_k = \alpha_k u_k$ and $B x_k = \beta_k v_k$ for every $k$;
+* $X^T (A^T A - \lambda B^T B) X = \operatorname{diag}(\alpha_k^2 - \lambda \beta_k^2)$ for
+  every $\lambda \in \mathbb{R}$;
+* if $\beta_k \neq 0$, then $x_k$ is an eigenvector of the pencil $A^T A - \lambda B^T B$ with
+  eigenvalue $(\alpha_k / \beta_k)^2$;
+* if $\beta_k \neq 0$ for all $k$, then $\lambda(A^T A, B^T B) = \{(\alpha_k / \beta_k)^2 : k =
+  1, \dots, n\}$, the squares of the generalized singular values
+  $\sigma(A, B) = \{\alpha_k / \beta_k\}$.
+
+The eigenvector condition is `Matrix.HasPencilEigenvector`. -/
 theorem gsvd_columns_and_pencil {m₁ m₂ : ℕ} {A : Matrix (Fin m₁) (Fin n) ℝ}
     {B : Matrix (Fin m₂) (Fin n) ℝ} (hm₁ : n ≤ m₁) (hm₂ : n ≤ m₂)
     {U₁ : Matrix (Fin m₁) (Fin m₁) ℝ} {U₂ : Matrix (Fin m₂) (Fin m₂) ℝ}
@@ -488,13 +682,21 @@ section Programs
 
 variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 
-/-- **Algorithm 8.7.2 (GSVD, tall full-rank version).** For `A ∈ ℝ^{m₁×n}`, `B ∈ ℝ^{m₂×n}` with
-`null(A) ∩ null(B) = {0}`: "compute the QR factorization `[A; B] = [Q₁; Q₂] R`; compute the CS
-decomposition `U₁ᵀ Q₁ V = D_A = diag(α₁, …, α_n)`, `U₂ᵀ Q₂ V = D_B = diag(β₁, …, β_n)`; solve
-`R X = V` for `X`." The QR factorization is chapter 5's modified Gram–Schmidt (Algorithm 5.2.6) on
-the stacked `(m₁ + m₂) × n` matrix, `R X = V` is back substitution (chapter 3's Algorithm 3.1.2)
-column by column, and the CS decomposition is the monadic parameter `cs` (convention 5: the book
-gives no algorithm for it), returning `(U₁, U₂, V, α, β)`. -/
+/-- **Algorithm 8.7.2** of [golub2013matrix] (GSVD, tall full-rank version). For
+$A \in \mathbb{R}^{m_1 \times n}$ and $B \in \mathbb{R}^{m_2 \times n}$ with
+$\operatorname{null}(A) \cap \operatorname{null}(B) = \{0\}$, the algorithm does the following.
+
+* Compute the QR factorization $\begin{bmatrix} A \\ B \end{bmatrix} = \begin{bmatrix} Q_1 \\
+  Q_2 \end{bmatrix} R$.
+* Compute the CS decomposition $U_1^T Q_1 V = D_A = \operatorname{diag}(\alpha_1, \dots,
+  \alpha_n)$, $U_2^T Q_2 V = D_B = \operatorname{diag}(\beta_1, \dots, \beta_n)$.
+* Solve $RX = V$ for $X$.
+
+The program returns $(U_1, U_2, X, \alpha, \beta)$. The QR factorization is modified
+Gram–Schmidt (Algorithm 5.2.6) on the stacked $(m_1 + m_2) \times n$ matrix, and $RX = V$ is
+solved by back substitution (Algorithm 3.1.2) column by column. The source gives no algorithm
+for the CS decomposition, so it is the monadic parameter `cs` (convention 5 of the library),
+which returns $(U_1, U_2, V, \alpha, \beta)$. -/
 noncomputable def algorithm_8_7_2 {m₁ m₂ : ℕ}
     (cs : Matrix (Fin m₁) (Fin n) ℝ → Matrix (Fin m₂) (Fin n) ℝ →
       M (Matrix (Fin m₁) (Fin m₁) ℝ × Matrix (Fin m₂) (Fin m₂) ℝ × Matrix (Fin n) (Fin n) ℝ ×
@@ -509,13 +711,24 @@ noncomputable def algorithm_8_7_2 {m₁ m₂ : ℕ}
 
 end Programs
 
-/-- **Algorithm 8.7.2, exact semantics**: if `cs` returns a thin CS decomposition — for `Q₁`, `Q₂`
-with `Q₁ᵀQ₁ + Q₂ᵀQ₂ = I`, orthogonal `U₁`, `U₂`, `V` with `U₁ᵀ Q₁ V = D_A`, `U₂ᵀ Q₂ V = D_B`
-(chapter 2's Theorem 2.5.2 gives one when `m₁, m₂ ≥ n`) — then for `A`, `B` with
-`null(A) ∩ null(B) = {0}` (the book writes `= ∅`) the output `(U₁, U₂, X, α, β)` satisfies
-`U₁ᵀ A X = D_A`, `U₂ᵀ B X = D_B` with `U₁`, `U₂` orthogonal and `X` nonsingular — a GSVD as in
-Theorem 8.7.4. The stacked matrix has full column rank, so chapter 5's Algorithm 5.2.6 computes a
-thin QR factorization with positive diagonal; `A X = Q₁ R X = Q₁ V`. -/
+/-- **Algorithm 8.7.2** of [golub2013matrix], exact semantics. Suppose that, for every
+$Q_1 \in \mathbb{R}^{m_1 \times n}$ and $Q_2 \in \mathbb{R}^{m_2 \times n}$ with
+$Q_1^T Q_1 + Q_2^T Q_2 = I$, the CS step returns orthogonal $U_1$, $U_2$, $V$ and vectors
+$\alpha$, $\beta$ with $U_1^T Q_1 V = \operatorname{diag}(\alpha)$ and
+$U_2^T Q_2 V = \operatorname{diag}(\beta)$. Let $A \in \mathbb{R}^{m_1 \times n}$ and
+$B \in \mathbb{R}^{m_2 \times n}$ satisfy $\operatorname{null}(A) \cap \operatorname{null}(B) =
+\{0\}$. Then in exact arithmetic the output $(U_1, U_2, X, \alpha, \beta)$ satisfies: $U_1$ and
+$U_2$ are orthogonal, $X$ is nonsingular, and
+$$U_1^T A X = \operatorname{diag}(\alpha), \qquad U_2^T B X = \operatorname{diag}(\beta),$$
+which is a GSVD as in Theorem 8.7.4.
+
+**Typo.** The source writes the hypothesis as $\operatorname{null}(A) \cap
+\operatorname{null}(B) = \emptyset$. The intended hypothesis, stated here, is
+$\operatorname{null}(A) \cap \operatorname{null}(B) = \{0\}$.
+
+The hypothesis on the CS step is a thin CS decomposition; Theorem 2.5.2 of Chapter 2 gives one
+when $m_1, m_2 \ge n$. The stacked matrix has full column rank, so Algorithm 5.2.6 computes a
+thin QR factorization with positive diagonal, and $AX = Q_1 RX = Q_1 V$. -/
 theorem algorithm_8_7_2_spec {m₁ m₂ : ℕ}
     (cs : Matrix (Fin m₁) (Fin n) ℝ → Matrix (Fin m₂) (Fin n) ℝ →
       Id (Matrix (Fin m₁) (Fin m₁) ℝ × Matrix (Fin m₂) (Fin m₂) ℝ × Matrix (Fin n) (Fin n) ℝ ×
@@ -592,10 +805,14 @@ theorem algorithm_8_7_2_spec {m₁ m₂ : ℕ}
   · rw [hB1, show out.2.1ᵀ * (Q₂ * QR.2) * X = out.2.1ᵀ * Q₂ * (QR.2 * X) by
       simp only [Matrix.mul_assoc], hRX, hDB]
 
-/-- **§8.7.5, after Algorithm 8.7.2.** If `X = R⁻¹ V` (`V` orthogonal; the book's `R` is
-nonsingular, which the identity does not need) and
-`T Zᵀ = Vᵀ R` with `Z` orthogonal and `T` upper triangular and nonsingular, then `Z T⁻¹ = R⁻¹ V = X`
-and, for every `k`, `span{x_1, …, x_k} = span{z_1, …, z_k}`. -/
+/-- **§8.7.5** of [golub2013matrix], the subspaces after Algorithm 8.7.2. Let
+$R, V, Z, T \in \mathbb{R}^{n \times n}$ with $V$ and $Z$ orthogonal and $T$ upper triangular
+and nonsingular, and suppose that $T Z^T = V^T R$. Then $Z T^{-1} = R^{-1} V$, and for
+$X = R^{-1} V$ and every $k \le n$,
+$$\operatorname{span}\{x_1, \dots, x_k\} = \operatorname{span}\{z_1, \dots, z_k\}.$$
+
+The source assumes that $R$ is nonsingular. The statement does not need this hypothesis, because
+$V^T R = T Z^T$ is then nonsingular. -/
 theorem gsvd_subspace_via_rq {R V Z T : Matrix (Fin n) (Fin n) ℝ}
     (hV : V ∈ orthogonalGroup (Fin n) ℝ) (hZ : Z ∈ orthogonalGroup (Fin n) ℝ)
     (hT : T.IsUpperTriangular) (hTu : IsUnit T.det) (hTZ : T * Zᵀ = Vᵀ * R) :
@@ -642,11 +859,21 @@ theorem gsvd_subspace_via_rq {R V Z T : Matrix (Fin n) (Fin n) ℝ}
 
 /-! ### §8.7.7 The Kogbetliantz approach -/
 
-/-- **§8.7.7, the `2 × 2` GSVD step.** For `F`, `G` with `G` nonsingular and an SVD
-`U₁ᵀ (F G⁻¹) U₂ = Σ = diag(σ₁, σ₂)` (only `U₂`'s orthogonality is used): `U₁ᵀ F = Σ (U₂ᵀ G)`
-(the book prints `(U₂ᵀ G) Σ`); if `Z` is
-orthogonal with `U₂ᵀ G Z` upper triangular, then `U₁ᵀ F Z = Σ (U₂ᵀ G Z)` is upper triangular; and
-`X = G⁻¹ U₂` gives the GSVD `U₁ᵀ F X = Σ`, `U₂ᵀ G X = I`, so `σ(F, G) = {σ₁, σ₂}`. -/
+/-- **§8.7.7** of [golub2013matrix], the $2 \times 2$ GSVD step. Let
+$F, G, U_1, U_2 \in \mathbb{R}^{2 \times 2}$ with $G$ nonsingular and $U_2$ orthogonal, and
+suppose that $U_1^T (F G^{-1}) U_2 = \Sigma = \operatorname{diag}(\sigma_1, \sigma_2)$. Then:
+
+* $U_1^T F = \Sigma (U_2^T G)$;
+* if $Z$ is orthogonal and $U_2^T G Z$ is upper triangular, then
+  $U_1^T F Z = \Sigma (U_2^T G Z)$, and $U_1^T F Z$ is upper triangular;
+* $X = G^{-1} U_2$ satisfies $U_1^T F X = \Sigma$ and $U_2^T G X = I$, a GSVD of $(F, G)$ with
+  generalized singular values $\sigma_1$, $\sigma_2$.
+
+**Typo.** The source prints $U_1^T F = (U_2^T G) \Sigma$. The correct identity has $\Sigma$ on
+the left.
+
+The source takes $U_1^T (F G^{-1}) U_2 = \Sigma$ to be an SVD. Only the orthogonality of $U_2$
+is used, so $U_1$ is not assumed orthogonal. -/
 theorem kogbetliantz_twoByTwo {F G U₁ U₂ : Matrix (Fin 2) (Fin 2) ℝ} (hG : IsUnit G.det)
     (hU₂ : U₂ ∈ orthogonalGroup (Fin 2) ℝ)
     {σ : Fin 2 → ℝ} (hSig : U₁ᵀ * (F * G⁻¹) * U₂ = diagonal σ) :
@@ -671,9 +898,11 @@ theorem kogbetliantz_twoByTwo {F G U₁ U₂ : Matrix (Fin 2) (Fin 2) ℝ} (hG :
 
 /-! ### §8.7.9 The quadratic eigenvalue problem -/
 
-/-- **(8.7.13)–(8.7.14).** If `(λ² M + λ C + K) x = 0`, then with `m = xᴴMx`, `c = xᴴCx`,
-`k = xᴴKx`: `m λ² + c λ + k = 0`, hence `(2mλ + c)² = c² - 4mk` — the quadratic formula (8.7.14)
-for `m ≠ 0`. -/
+/-- **Equations (8.7.13)–(8.7.14)** of [golub2013matrix]. Let $M, C, K \in \mathbb{C}^{n \times n}$,
+$\lambda \in \mathbb{C}$ and $x \in \mathbb{C}^n$ with $(\lambda^2 M + \lambda C + K) x = 0$.
+With $m = x^H M x$, $c = x^H C x$ and $k = x^H K x$,
+$$m \lambda^2 + c \lambda + k = 0, \qquad (2m\lambda + c)^2 = c^2 - 4mk.$$
+For $m \neq 0$ the second identity is the quadratic formula (8.7.14). -/
 theorem equation_8_7_13 (M C K : Matrix (Fin n) (Fin n) ℂ) {l : ℂ} {x : Fin n → ℂ}
     (h : (l ^ 2 • M + l • C + K) *ᵥ x = 0) :
     (star x ⬝ᵥ M *ᵥ x) * l ^ 2 + (star x ⬝ᵥ C *ᵥ x) * l + star x ⬝ᵥ K *ᵥ x = 0 ∧
@@ -686,7 +915,9 @@ theorem equation_8_7_13 (M C K : Matrix (Fin n) (Fin n) ℂ) {l : ℂ} {x : Fin 
     linear_combination this
   exact ⟨h1, by linear_combination 4 * (star x ⬝ᵥ M *ᵥ x) * h1⟩
 
-/-- A `2 × 2` block equation `[A₁ B₁; C₁ D₁] [x; u] = λ [A₂ B₂; C₂ D₂] [x; u]` is its two rows. -/
+/-- A $2 \times 2$ block equation $\begin{bmatrix} A_1 & B_1 \\ C_1 & D_1 \end{bmatrix}
+\begin{bmatrix} x \\ u \end{bmatrix} = \lambda \begin{bmatrix} A_2 & B_2 \\ C_2 & D_2
+\end{bmatrix} \begin{bmatrix} x \\ u \end{bmatrix}$ holds if and only if both block rows hold. -/
 private theorem fromBlocks_eq_smul_iff {m : ℕ}
     (A₁ B₁ C₁ D₁ A₂ B₂ C₂ D₂ : Matrix (Fin m) (Fin m) ℂ) (l : ℂ) (x u : Fin m → ℂ) :
     fromBlocks A₁ B₁ C₁ D₁ *ᵥ Sum.elim x u = l • (fromBlocks A₂ B₂ C₂ D₂ *ᵥ Sum.elim x u) ↔
@@ -695,10 +926,20 @@ private theorem fromBlocks_eq_smul_iff {m : ℕ}
   simp only [fromBlocks_mulVec, Sum.elim_comp_inl, Sum.elim_comp_inr, funext_iff, Sum.forall,
     Sum.elim_inl, Sum.elim_inr, Pi.smul_apply]
 
-/-- **(8.7.15)–(8.7.16), linearizations.** For nonsingular `N`, `(λ, x)` solves (8.7.12) iff
-`(λ, (x, λx))` solves `[0 N; K C][x; u] = λ[N 0; 0 -M][x; u]` (8.7.15), iff it solves
-`[-K 0; 0 N][x; u] = λ[C M; N 0][x; u]` (8.7.16); and every solution `(x, u)` of either
-linearization has `u = λx` (so `x ≠ 0` for an eigenvector). -/
+/-- **Equations (8.7.15)–(8.7.16)** of [golub2013matrix] (linearizations). Let
+$M, C, K, N \in \mathbb{C}^{n \times n}$ with $N$ nonsingular, and let $\lambda \in \mathbb{C}$.
+For every $x \in \mathbb{C}^n$, $(\lambda^2 M + \lambda C + K) x = 0$ if and only if
+$$\begin{bmatrix} 0 & N \\ K & C \end{bmatrix} \begin{bmatrix} x \\ \lambda x \end{bmatrix} =
+  \lambda \begin{bmatrix} N & 0 \\ 0 & -M \end{bmatrix} \begin{bmatrix} x \\ \lambda x
+  \end{bmatrix} \quad (8.7.15),$$
+and if and only if
+$$\begin{bmatrix} -K & 0 \\ 0 & N \end{bmatrix} \begin{bmatrix} x \\ \lambda x \end{bmatrix} =
+  \lambda \begin{bmatrix} C & M \\ N & 0 \end{bmatrix} \begin{bmatrix} x \\ \lambda x
+  \end{bmatrix} \quad (8.7.16).$$
+Moreover, every solution $(x, u)$ of either linearization has $u = \lambda x$, so an eigenvector
+of a linearization has $x \neq 0$.
+
+Block matrices are `Matrix.fromBlocks`, and the vector $(x, u)$ is `Sum.elim x u`. -/
 theorem equation_8_7_15 (M C K : Matrix (Fin n) (Fin n) ℂ) {N : Matrix (Fin n) (Fin n) ℂ}
     (hN : IsUnit N) (l : ℂ) :
     (∀ x : Fin n → ℂ, (l ^ 2 • M + l • C + K) *ᵥ x = 0 ↔
@@ -738,9 +979,12 @@ theorem equation_8_7_15 (M C K : Matrix (Fin n) (Fin n) ℂ) {N : Matrix (Fin n)
     exact hNrow x u h.2
 
 open scoped ComplexOrder in
-/-- **§8.7.9.** If `M`, `C` are symmetric positive definite and `K` symmetric positive
-semidefinite (here in the complex Hermitian form), every eigenvalue `λ` of (8.7.12) has
-nonpositive real part. -/
+/-- **§8.7.9** of [golub2013matrix], damped systems. Let $M, C, K \in \mathbb{C}^{n \times n}$ with
+$M$ and $C$ positive definite and $K$ positive semidefinite. If $x \neq 0$ and
+$(\lambda^2 M + \lambda C + K) x = 0$, then $\operatorname{Re} \lambda \le 0$.
+
+The source takes $M$, $C$ and $K$ real symmetric. The statement uses the complex Hermitian forms
+of these hypotheses. -/
 theorem qep_re_nonpos {M C K : Matrix (Fin n) (Fin n) ℂ} (hM : M.PosDef) (hC : C.PosDef)
     (hK : K.PosSemidef) {l : ℂ} {x : Fin n → ℂ} (hx : x ≠ 0)
     (h : (l ^ 2 • M + l • C + K) *ᵥ x = 0) : l.re ≤ 0 := by
@@ -767,10 +1011,21 @@ theorem qep_re_nonpos {M C K : Matrix (Fin n) (Fin n) ℂ} (hM : M.PosDef) (hC :
   nlinarith [mul_pos hm.1 (mul_pos hpos hpos), mul_pos hc.1 hpos]
 
 open scoped ComplexOrder in
-/-- **§8.7.9, the gyroscopic QEP**, corrected: if `M` is symmetric positive definite, `C` skew
-(`Cᴴ = -C`) and `K` symmetric **positive semidefinite** (the hypothesis the book omits, see
-`gyroscopic_counterexample`), every eigenvalue is purely imaginary; and (8.7.12) is equivalent to
-the structured linearization `[0 -K; M 0][u; x] = λ[M C; 0 M][u; x]` with `u = λx`. -/
+/-- **§8.7.9** of [golub2013matrix], gyroscopic systems, corrected. Let
+$M, C, K \in \mathbb{C}^{n \times n}$ with $M$ positive definite, $C$ skew-Hermitian
+($C^H = -C$) and $K$ positive semidefinite. Then:
+
+* if $x \neq 0$ and $(\lambda^2 M + \lambda C + K) x = 0$, then $\lambda$ is purely imaginary,
+  $\operatorname{Re} \lambda = 0$;
+* for all $\lambda$, $u$ and $x$,
+$$\begin{bmatrix} 0 & -K \\ M & 0 \end{bmatrix} \begin{bmatrix} u \\ x \end{bmatrix} = \lambda
+  \begin{bmatrix} M & C \\ 0 & M \end{bmatrix} \begin{bmatrix} u \\ x \end{bmatrix}$$
+holds if and only if $u = \lambda x$ and $(\lambda^2 M + \lambda C + K) x = 0$.
+
+**Correction.** The source states that the eigenvalues are purely imaginary for $M$ symmetric
+positive definite, $C$ skew-symmetric and $K$ symmetric. This requires $K$ to be positive
+semidefinite, which the statement assumes; see
+`GolubVanLoan.Chapter08.gyroscopic_counterexample`. -/
 theorem gyroscopic_eigenvalues_imaginary {M C K : Matrix (Fin n) (Fin n) ℂ} (hM : M.PosDef)
     (hC : Cᴴ = -C) (hK : K.PosSemidef) :
     (∀ {l : ℂ} {x : Fin n → ℂ}, x ≠ 0 → (l ^ 2 • M + l • C + K) *ᵥ x = 0 → l.re = 0) ∧
@@ -832,8 +1087,11 @@ theorem gyroscopic_eigenvalues_imaginary {M C K : Matrix (Fin n) (Fin n) ℂ} (h
       linear_combination -this
 
 open scoped ComplexOrder in
-/-- **The book's gyroscopic claim needs `K ⪰ 0`**: for `n = 1`, `M = 1`, `C = 0` (skew) and
-`K = -1` (symmetric), `λ = 1` is an eigenvalue of (8.7.12), not purely imaginary. -/
+/-- **§8.7.9** of [golub2013matrix], counterexample for gyroscopic systems. Let $n = 1$, $M = 1$,
+$C = 0$ and $K = -1$. Then $M$ is positive definite, $C^H = -C$ and $K$ is Hermitian, and there
+are $\lambda$ and $x \neq 0$ with $(\lambda^2 M + \lambda C + K) x = 0$ and
+$\operatorname{Re} \lambda \neq 0$ (for example $\lambda = 1$). So the gyroscopic claim of the
+source needs $K \succeq 0$. -/
 theorem gyroscopic_counterexample :
     let M : Matrix (Fin 1) (Fin 1) ℂ := 1
     let C : Matrix (Fin 1) (Fin 1) ℂ := 0
@@ -844,8 +1102,11 @@ theorem gyroscopic_counterexample :
   refine ⟨PosDef.one, by simp [C], by simp [K, IsHermitian], 1, 1, one_ne_zero, ?_, by simp⟩
   simp [M, C, K]
 
-/-- **§8.7.9, the palindromic QEP** `Q(λ) = λ²M + λC + Mᵀ` with `Cᵀ = C`: for `λ ≠ 0`, `Q(λ)` is
-singular iff `Q(1/λ)` is. -/
+/-- **§8.7.9** of [golub2013matrix], palindromic problems. Let $M, C \in \mathbb{C}^{n \times n}$
+with $C^T = C$, and let $Q(\lambda) = \lambda^2 M + \lambda C + M^T$. For $\lambda \neq 0$,
+$Q(\lambda)$ is singular if and only if $Q(1/\lambda)$ is singular.
+
+The transpose is the plain transpose, not the conjugate transpose. -/
 theorem palindromic_reciprocal {M C : Matrix (Fin n) (Fin n) ℂ} (hC : Cᵀ = C) {l : ℂ}
     (hl : l ≠ 0) :
     (l ^ 2 • M + l • C + Mᵀ).det = 0 ↔ (l⁻¹ ^ 2 • M + l⁻¹ • C + Mᵀ).det = 0 := by
@@ -859,8 +1120,12 @@ theorem palindromic_reciprocal {M C : Matrix (Fin n) (Fin n) ℂ} (hC : Cᵀ = C
   rw [key, det_smul, det_transpose, mul_eq_zero, or_iff_right (pow_ne_zero _ (pow_ne_zero _
     (inv_ne_zero hl)))]
 
-/-- **(8.7.17) ⇒ (8.7.18).** If
-`[Mᵀ Mᵀ; C - M Mᵀ][y; z] = λ[-M Mᵀ - C; -M -M][y; z]` then `(λ²M + λC + Mᵀ)(y + z) = 0`. -/
+/-- **Equations (8.7.17)–(8.7.18)** of [golub2013matrix]. Let $M, C \in \mathbb{C}^{n \times n}$,
+$\lambda \in \mathbb{C}$ and $y, z \in \mathbb{C}^n$. If
+$$\begin{bmatrix} M^T & M^T \\ C - M & M^T \end{bmatrix} \begin{bmatrix} y \\ z \end{bmatrix} =
+  \lambda \begin{bmatrix} -M & M^T - C \\ -M & -M \end{bmatrix} \begin{bmatrix} y \\ z
+  \end{bmatrix},$$
+then $(\lambda^2 M + \lambda C + M^T)(y + z) = 0$. -/
 theorem equation_8_7_18 {M C : Matrix (Fin n) (Fin n) ℂ} {l : ℂ} {y z : Fin n → ℂ}
     (h : fromBlocks Mᵀ Mᵀ (C - M) Mᵀ *ᵥ Sum.elim y z =
       l • (fromBlocks (-M) (Mᵀ - C) (-M) (-M) *ᵥ Sum.elim y z)) :

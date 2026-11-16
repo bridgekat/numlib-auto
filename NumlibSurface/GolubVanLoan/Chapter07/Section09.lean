@@ -8,34 +8,123 @@ import Numlib.Eigen.Pseudospectrum
 import NumlibSurface.GolubVanLoan.Chapter07.Section03
 
 /-!
-# Golub–Van Loan §7.9: pseudospectra
+# Golub and Van Loan, Section 7.9: Pseudospectra
 
-Surface file for Gene H. Golub and Charles F. Van Loan, *Matrix Computations*, 4th edition
-[golub2013matrix], §7.9: matrix powers and the spectral radius ((7.9.1)–(7.9.3) and the `2 × 2`
-power bound), the `ε`-pseudospectrum and its three definitions ((7.9.5)–(7.9.7)), monotonicity and
-the connected components, the elementary properties (Theorems 7.9.1–7.9.8 with Corollaries
-7.9.3, 7.9.5, 7.9.7), computing `σ_min(zI - A)` through a Schur form (§7.9.5), the pseudospectral
-abscissa and radius ((7.9.8)–(7.9.9)) with the ray-crossing matrix (7.9.10) and the
-characterization of the largest crossing, and transient growth (7.9.11).
+This module formalizes §7.9 of [golub2013matrix]. For $A \in \mathbb{C}^{n \times n}$ and
+$\varepsilon \ge 0$, the $\varepsilon$-pseudospectrum is $$\Lambda_\varepsilon(A) = \{z \in
+\mathbb{C} : \sigma_{\min}(A - zI) \le \varepsilon\}$$ (7.9.5), and its elements are the
+$\varepsilon$-pseudoeigenvalues of $A$. The section starts from the powers of a matrix: $\|A^k\|_2$
+behaves like $\rho(A)^k$ for large $k$ (7.9.1), but the example $\begin{bmatrix} \lambda_1 & M \\ 0
+& \lambda_2 \end{bmatrix}$ ((7.9.2), (7.9.3)) shows that the powers can grow for a long time before
+they decay. It then gives two other forms of $\Lambda_\varepsilon(A)$: the resolvent form
+$\|(zI - A)^{-1}\|_2 \ge 1/\varepsilon$ (7.9.6) and the perturbation form $z \in \lambda(A + E)$
+with $\|E\|_2 \le \varepsilon$ (7.9.7).
+
+The elementary properties are Theorems 7.9.1–7.9.8 and Corollaries 7.9.3, 7.9.5 and 7.9.7: the
+behaviour of $\Lambda_\varepsilon$ under shifts, scalings and similarities, the pseudospectra of
+diagonal, normal and block triangular matrices, and a lower bound on the distance of a point from
+$\Lambda_\varepsilon(A)$. The module also states the reduction of $\sigma_{\min}(zI - A)$ to a Schur
+form (§7.9.5), the pseudospectral abscissa and radius ((7.9.8), (7.9.9)), the matrix (7.9.10) whose
+imaginary eigenvalues locate the crossings of a ray with the boundary of $\Lambda_\varepsilon(A)$,
+and the lower bound (7.9.11) on transient growth. The proofs specialize the backbone module
+`Numlib.Eigen.Pseudospectrum`.
+
+## Main definitions
+
+* (7.9.5), `GolubVanLoan.Chapter07.pseudospectrum`: $\Lambda_\varepsilon(A) = \{z :
+  \sigma_{\min}(A - zI) \le \varepsilon\}$.
+* (7.9.8), `GolubVanLoan.Chapter07.pseudospectralAbscissa`: $\alpha_\varepsilon(A) =
+  \max\{\operatorname{Re} z : z \in \Lambda_\varepsilon(A)\}$.
+* (7.9.9), `GolubVanLoan.Chapter07.pseudospectralRadius`: $\rho_\varepsilon(A) = \max\{|z| : z \in
+  \Lambda_\varepsilon(A)\}$.
+* (7.9.10), `GolubVanLoan.Chapter07.rayCrossingMatrix`: the matrix $\begin{bmatrix} i e^{i\theta}
+  A^H & -\varepsilon I \\ \varepsilon I & i e^{-i\theta} A \end{bmatrix}$.
+
+## Main results
+
+* (7.9.1), `GolubVanLoan.Chapter07.equation_7_9_1`: $\|A^k\|_2^{1/k} \to \rho(A)$, and
+  $\|A^k\|_2 \le C(\rho(A) + \varepsilon)^k$ for every $\varepsilon > 0$.
+* (7.9.2), `GolubVanLoan.Chapter07.equation_7_9_2`: the diagonalization of $\begin{bmatrix}
+  \lambda_1 & M \\ 0 & \lambda_2 \end{bmatrix}$ for $\lambda_1 \neq \lambda_2$.
+* (7.9.3), `GolubVanLoan.Chapter07.equation_7_9_3`: the powers of $\begin{bmatrix} \lambda_1 & M \\
+  0 & \lambda_2 \end{bmatrix}$.
+* §7.9.1, `GolubVanLoan.Chapter07.two_by_two_power_bound`: when the powers of the $2 \times 2$
+  example tend to $0$, and a bound on their norms.
+* §7.9.2–7.9.3, `GolubVanLoan.Chapter07.pseudospectrum_zero`: $\Lambda_0(A) = \lambda(A)$, and
+  $\Lambda_\varepsilon(A)$ grows with $\varepsilon$.
+* (7.9.6), `GolubVanLoan.Chapter07.equation_7_9_6`: the resolvent form of $\Lambda_\varepsilon(A)$.
+* (7.9.7), `GolubVanLoan.Chapter07.equation_7_9_7`: the perturbation form of
+  $\Lambda_\varepsilon(A)$.
+* §7.9.3, `GolubVanLoan.Chapter07.pseudospectrum_component`: each connected component of
+  $\Lambda_\varepsilon(A)$ contains an eigenvalue of $A$.
+* Theorem 7.9.1, `GolubVanLoan.Chapter07.theorem_7_9_1`: $\Lambda_{\varepsilon|\beta|}(\alpha I +
+  \beta A) = \alpha + \beta \Lambda_\varepsilon(A)$.
+* Theorem 7.9.2, `GolubVanLoan.Chapter07.theorem_7_9_2`: $\Lambda_\varepsilon(X^{-1} A X) \subseteq
+  \Lambda_{\varepsilon \kappa_2(X)}(A)$.
+* Corollary 7.9.3, `GolubVanLoan.Chapter07.corollary_7_9_3`: a unitary similarity preserves
+  $\Lambda_\varepsilon$.
+* Theorem 7.9.4, `GolubVanLoan.Chapter07.theorem_7_9_4`: the pseudospectrum of a diagonal matrix is
+  the union of the closed discs of radius $\varepsilon$ about its diagonal entries.
+* Corollary 7.9.5, `GolubVanLoan.Chapter07.corollary_7_9_5`: the same holds for a normal matrix and
+  its eigenvalues.
+* Theorem 7.9.6, `GolubVanLoan.Chapter07.theorem_7_9_6`: $\Lambda_\varepsilon(T_{11}) \cup
+  \Lambda_\varepsilon(T_{22}) \subseteq \Lambda_\varepsilon(T)$ for a block upper triangular $T$.
+* Corollary 7.9.7, `GolubVanLoan.Chapter07.corollary_7_9_7`: equality for a block diagonal $T$.
+* Theorem 7.9.8, `GolubVanLoan.Chapter07.theorem_7_9_8`: $\operatorname{dist}(z_0,
+  \Lambda_\varepsilon(A)) \ge 1/\|(z_0 I - A)^{-1}\|_2 - \varepsilon$.
+* §7.9.5, `GolubVanLoan.Chapter07.sigmaMin_schur`: $\sigma_{\min}(zI - A) = \sigma_{\min}(zI - T)$
+  for a Schur form $T$ of $A$, and an upper bound from one linear solve.
+* (7.9.10), `GolubVanLoan.Chapter07.equation_7_9_10`: the imaginary eigenvalues $ir$ of the matrix
+  (7.9.10) are the $r$ for which $\varepsilon$ is a singular value of $A - re^{i\theta} I$.
+* §7.9.6, `GolubVanLoan.Chapter07.equation_7_9_10_max`: at the largest such $r$, $\varepsilon =
+  \sigma_{\min}(A - re^{i\theta} I)$.
+* (7.9.11), `GolubVanLoan.Chapter07.equation_7_9_11`: $\sup_{k \ge 0} \|A^k\|_2 \ge
+  (\rho_\varepsilon(A) - 1)/\varepsilon$.
 
 ## Conventions
 
-Complex matrices; the 2-norm is the scoped `Matrix.Norms.L2Operator` norm and
-`σ_min(M) = ⨅ i, M.colSingularValues i` (the backbone's column-indexed
-`Matrix.colSingularValues`). The surface defines `pseudospectrum ε A` literally by (7.9.5),
-`{z | σ_min(A - z I) ≤ ε}` (the book writes `λ` for `z` inside the set-builder, a misprint), for
-a matrix over any finite index type — the book's `n × n`, and the block matrices of Theorem 7.9.6
-on `Fin p ⊕ Fin q` — and proves it equal to the backbone's
-`(toEuclideanCLM A).closedPseudospectrum ε`, the approximate-eigenvector form (`pseudospectrum_eq`,
-for a nonempty index type). The resolvent form (7.9.6) is stated for `ε > 0` with
-`λ(A) ⊆ Λ_ε(A)` explicit, since `‖(zI - A)⁻¹‖ ≥ 1/ε` has no meaning at an eigenvalue (Lean's
-matrix inverse is `0` there).
+* The matrices are complex. The 2-norm is the operator norm of the scoped instance
+  `Matrix.Norms.L2Operator`.
+* The least singular value is $\sigma_{\min}(M) = $ `⨅ i, M.colSingularValues i`, the infimum of the
+  backbone's column-indexed `Matrix.colSingularValues`.
+* `GolubVanLoan.Chapter07.pseudospectrum` is defined for a square matrix over any finite index type:
+  the source's $n \times n$, and the block matrices of Theorem 7.9.6 on `Fin p ⊕ Fin q`.
+
+## Implementation notes
+
+* For a nonempty index type, `GolubVanLoan.Chapter07.pseudospectrum` is the backbone's closed
+  pseudospectrum `ContinuousLinearMap.closedPseudospectrum` of the Euclidean operator of $A$, the
+  set of $z$ with a unit vector $w$ such that $\|Aw - zw\|_2 \le \varepsilon$
+  (`GolubVanLoan.Chapter07.pseudospectrum_eq`).
+* Lean's matrix inverse is $0$ at a singular matrix. The resolvent norm $\|(zI - A)^{-1}\|_2$ is
+  therefore $0$ at an eigenvalue, and the statements that use it name the eigenvalues explicitly.
+
+## Deviations from the source
+
+* **(7.9.5)** (typo). The source writes $\lambda$ for $z$ inside the set-builder. See
+  `GolubVanLoan.Chapter07.pseudospectrum`.
+* **(7.9.6)** (reading). The resolvent form is stated for $\varepsilon > 0$ with
+  $\lambda(A) \subseteq \Lambda_\varepsilon(A)$ explicit, since
+  $\|(zI - A)^{-1}\|_2 \ge 1/\varepsilon$ has no meaning at an eigenvalue. See
+  `GolubVanLoan.Chapter07.equation_7_9_6`.
+* **(7.9.1)** (reading). The source says that $A^k$ decays "like $\rho(A)^k$"; the theorem states
+  Gelfand's formula and a bound $C(\rho(A) + \varepsilon)^k$. See
+  `GolubVanLoan.Chapter07.equation_7_9_1`.
+* **(7.9.3)** (generalization). The source derives the formula from (7.9.2) under
+  $\lambda_1 \neq \lambda_2$; it holds without this hypothesis. See
+  `GolubVanLoan.Chapter07.equation_7_9_3`.
+* **§7.9.1, the power bound of the $2 \times 2$ example** (correction). The source states the bound
+  for any $\varepsilon > 0$; at $k = 0$ it reads $1 \le M/\varepsilon$, so $\varepsilon \le M$ is
+  needed. See `GolubVanLoan.Chapter07.two_by_two_power_bound`.
 
 ## Not formalized
 
-(7.9.4) (it repeats (7.9.1) and illustrates transient growth); the Eigtool plots and the Kahan,
-Demmel and `Gallery(5)` matrices; the strategies of §7.9.5 for computing pseudospectra and the
-Burke–Lewis–Overton and Mengi–Overton algorithms; "`σ_min(zI - T) ≈ 1/‖y‖₂`" (heuristic).
+* **Display (7.9.4).** It repeats (7.9.1) and illustrates transient growth.
+* **The Eigtool plots and the Kahan, Demmel and `Gallery(5)` matrices.**
+* **The strategies of §7.9.5 for computing pseudospectra, and the Burke–Lewis–Overton and
+  Mengi–Overton algorithms.**
+* **The estimate $\sigma_{\min}(zI - T) \approx 1/\|y\|_2$.** It is a heuristic; the rigorous upper
+  bound is `GolubVanLoan.Chapter07.sigmaMin_schur`.
 -/
 
 open Matrix Filter Topology Metric
@@ -50,9 +139,15 @@ section L2
 
 open scoped Matrix.Norms.L2Operator
 
-/-- **(7.9.1), rigorous.** For every `ε > 0` there is `C` with `‖A^k‖₂ ≤ C (ρ(A) + ε)^k` for all
-`k`, and `‖A^k‖₂^{1/k} → ρ(A)` (Gelfand's formula): if `ρ(A) < 1` then `A^k → 0`, and the decay is
-"like `ρ(A)^k`" in this sense. -/
+/-- **Equation (7.9.1)** of [golub2013matrix], in a rigorous form. Let
+$A \in \mathbb{C}^{n \times n}$ and let $\rho(A)$ be its spectral radius. Then $$\lim_{k \to
+\infty} \|A^k\|_2^{1/k} = \rho(A)$$ (Gelfand's formula), and for every $\varepsilon > 0$ there
+is $C$ such that $\|A^k\|_2 \le C (\rho(A) + \varepsilon)^k$ for all $k \ge 0$.
+
+**Reading.** The source says that if $\rho(A) < 1$ then $A^k \to 0$ and the decay is "like
+$\rho(A)^k$". The theorem makes this precise in the two forms above.
+
+The spectral radius is `GolubVanLoan.Chapter07.spectralRadius` of (7.1.1). -/
 theorem equation_7_9_1 (A : Matrix (Fin n) (Fin n) ℂ) :
     Tendsto (fun k : ℕ => ‖A ^ k‖ ^ (1 / k : ℝ)) atTop (𝓝 (spectralRadius A)) ∧
       ∀ ε > 0, ∃ C : ℝ, ∀ k : ℕ, ‖A ^ k‖ ≤ C * (spectralRadius A + ε) ^ k := by
@@ -94,7 +189,10 @@ theorem equation_7_9_1 (A : Matrix (Fin n) (Fin n) ℂ) :
 
 end L2
 
-/-- **(7.9.2).** For `λ₁ ≠ λ₂`, `[λ₁ M; 0 λ₂] = X diag(λ₁, λ₂) X⁻¹` with `X = [1 M/(λ₂ - λ₁); 0 1]`.
+/-- **Equation (7.9.2)** of [golub2013matrix]. Let $\lambda_1, \lambda_2, M \in \mathbb{C}$ with
+$\lambda_1 \neq \lambda_2$. Then $$\begin{bmatrix} \lambda_1 & M \\ 0 & \lambda_2
+\end{bmatrix} = X \begin{bmatrix} \lambda_1 & 0 \\ 0 & \lambda_2 \end{bmatrix} X^{-1}, \qquad
+X = \begin{bmatrix} 1 & M/(\lambda_2 - \lambda_1) \\ 0 & 1 \end{bmatrix}.$$
 -/
 theorem equation_7_9_2 {l₁ l₂ M : ℂ} (hl : l₁ ≠ l₂) :
     !![l₁, M; 0, l₂] = !![1, M / (l₂ - l₁); 0, 1] * diagonal ![l₁, l₂] *
@@ -114,8 +212,13 @@ theorem equation_7_9_2 {l₁ l₂ M : ℂ} (hl : l₁ ≠ l₂) :
     · simp [X, Matrix.mul_apply, Fin.sum_univ_two]
   rw [← hAX, Matrix.mul_assoc, mul_nonsing_inv _ hXd, Matrix.mul_one]
 
-/-- **(7.9.3).** `[λ₁ M; 0 λ₂]^k = [λ₁^k, M ∑_{j=0}^{k-1} λ₁^{k-1-j} λ₂^j; 0, λ₂^k]` (no hypothesis
-`λ₁ ≠ λ₂` is needed, although the book derives it from (7.9.2)). -/
+/-- **Equation (7.9.3)** of [golub2013matrix]. Let $\lambda_1, \lambda_2, M \in \mathbb{C}$ and
+$k \ge 0$. Then $$\begin{bmatrix} \lambda_1 & M \\ 0 & \lambda_2 \end{bmatrix}^k =
+\begin{bmatrix} \lambda_1^k & M \sum_{j=0}^{k-1} \lambda_1^{k-1-j} \lambda_2^j \\ 0 &
+\lambda_2^k \end{bmatrix}.$$
+
+**Generalization.** The source derives the formula from (7.9.2), which assumes
+$\lambda_1 \neq \lambda_2$. The formula holds without this hypothesis. -/
 theorem equation_7_9_3 (l₁ l₂ M : ℂ) (k : ℕ) :
     !![l₁, M; 0, l₂] ^ k =
       !![l₁ ^ k, M * ∑ j ∈ Finset.range k, l₂ ^ j * l₁ ^ (k - 1 - j); 0, l₂ ^ k] := by
@@ -133,14 +236,16 @@ theorem equation_7_9_3 (l₁ l₂ M : ℂ) (k : ℕ) :
     · simp [Matrix.mul_apply, Fin.sum_univ_two]
     · simp [Matrix.mul_apply, Fin.sum_univ_two, pow_succ']
 
-/-- The strictly upper part of the `2 × 2` upper triangular example. -/
+/-- The strictly upper triangular part of $\begin{bmatrix} \lambda_1 & M \\ 0 & \lambda_2
+\end{bmatrix}$ is $\begin{bmatrix} 0 & M \\ 0 & 0 \end{bmatrix}$. -/
 private theorem strictUpper_two_by_two (l₁ l₂ M : ℂ) :
     strictUpper !![l₁, M; 0, l₂] = !![0, M; 0, 0] := by
   ext i j
   fin_cases i <;> fin_cases j <;> simp [strictUpper_apply]
 
 open scoped Matrix.Norms.Frobenius in
-/-- The Frobenius norm of the strictly upper part of `[λ₁ M; 0 λ₂]` is `M` for `M ≥ 0`. -/
+/-- For real $M \ge 0$, the Frobenius norm of the strictly upper triangular part of $\begin{bmatrix}
+\lambda_1 & M \\ 0 & \lambda_2 \end{bmatrix}$ is $M$. -/
 private theorem frobenius_norm_strictUpper_two_by_two (l₁ l₂ : ℂ) {M : ℝ} (hM : 0 ≤ M) :
     ‖strictUpper !![l₁, (M : ℂ); 0, l₂]‖ = M := by
   rw [strictUpper_two_by_two, frobenius_norm_def]
@@ -154,11 +259,19 @@ section L2
 
 open scoped Matrix.Norms.L2Operator
 
-/-- **§7.9.1**: for `A = [λ₁ M; 0 λ₂]` with `M > 0`, (a) `‖A^k‖₂ → 0` iff `|λ₁| < 1` and
-`|λ₂| < 1`, and (b) `‖A^k‖₂ ≤ (M/ε)(ρ(A) + ε)^k` for all `k`, with `ρ(A) = max{|λ₁|, |λ₂|}`, for
-every `0 < ε ≤ M` — Lemma 7.3.2 with `n = 2` and `1 + μ = M/ε` (the book cites it as "Lemma
-7.3.1"). The book says "for any `ε > 0`"; at `k = 0` the bound reads `1 ≤ M/ε`, so `ε ≤ M` is
-needed. -/
+/-- **§7.9.1** of [golub2013matrix], the powers of a $2 \times 2$ upper triangular matrix. Let
+$\lambda_1, \lambda_2 \in \mathbb{C}$, let $M > 0$ be real, and let $A = \begin{bmatrix}
+\lambda_1 & M \\ 0 & \lambda_2 \end{bmatrix}$. Then $\|A^k\|_2 \to 0$ as $k \to \infty$ if and
+only if $|\lambda_1| < 1$ and $|\lambda_2| < 1$. Moreover, for every $\varepsilon$ with
+$0 < \varepsilon \le M$ and every $k \ge 0$, $$\|A^k\|_2 \le \frac{M}{\varepsilon}
+\bigl(\max\{|\lambda_1|, |\lambda_2|\} + \varepsilon\bigr)^k,$$ where
+$\max\{|\lambda_1|, |\lambda_2|\} = \rho(A)$.
+
+**Correction.** The source states the bound "for any $\varepsilon > 0$". At $k = 0$ the bound
+reads $1 \le M/\varepsilon$, so the hypothesis $\varepsilon \le M$ is needed.
+
+The bound is Lemma 7.3.2 with $n = 2$ and $1 + \mu = M/\varepsilon$; the source cites it as
+"Lemma 7.3.1". -/
 theorem two_by_two_power_bound {l₁ l₂ : ℂ} {M : ℝ} (hM : 0 < M) :
     (Tendsto (fun k : ℕ => ‖!![l₁, (M : ℂ); 0, l₂] ^ k‖) atTop (𝓝 0) ↔
         ‖l₁‖ < 1 ∧ ‖l₂‖ < 1) ∧
@@ -222,21 +335,29 @@ section Pseudospectrum
 
 variable {m : Type*} [Fintype m] [DecidableEq m]
 
-/-- **(7.9.5), the `ε`-pseudospectrum** `Λ_ε(A) = {z ∈ ℂ : σ_min(A - z I) ≤ ε}`, with
-`σ_min(M) = ⨅ i, M.colSingularValues i`. Its members are the `ε`-pseudoeigenvalues; for a nonempty
-index type it is the backbone's closed pseudospectrum of the Euclidean operator of `A`
-(`pseudospectrum_eq`). -/
+/-- **Equation (7.9.5)** of [golub2013matrix], the $\varepsilon$-pseudospectrum. Let $A$ be a square
+complex matrix and $\varepsilon \in \mathbb{R}$. The **$\varepsilon$-pseudospectrum** of $A$ is
+$$\Lambda_\varepsilon(A) = \{z \in \mathbb{C} : \sigma_{\min}(A - zI) \le \varepsilon\},$$ and
+its elements are the **$\varepsilon$-pseudoeigenvalues** of $A$.
+
+**Typo.** The source writes $\lambda$ for $z$ inside the set-builder.
+
+The least singular value is `⨅ i, (A - z • 1).colSingularValues i`. For an empty index type this
+infimum is $0$, so that $\Lambda_\varepsilon(A) = \mathbb{C}$ for $\varepsilon \ge 0$. For a
+nonempty index type, $\Lambda_\varepsilon(A)$ is the backbone's closed pseudospectrum of the
+Euclidean operator of $A$ (`GolubVanLoan.Chapter07.pseudospectrum_eq`). -/
 noncomputable def pseudospectrum (ε : ℝ) (A : Matrix m m ℂ) : Set ℂ :=
   {z | ⨅ i, (A - z • 1).colSingularValues i ≤ ε}
 
-/-- The residual `‖A w - z w‖` is the image of `w` under `A - z I`. -/
+/-- The Euclidean operator of $A - zI$ maps $w$ to the residual $Aw - zw$. -/
 private theorem toEuclideanLin_sub_smul (A : Matrix m m ℂ) (z : ℂ) (w : EuclideanSpace ℂ m) :
     toEuclideanLin (A - z • 1) w = toEuclideanCLM (n := m) (𝕜 := ℂ) A w - z • w := by
   rw [map_sub, map_smul, toLpLin_one, LinearMap.sub_apply, LinearMap.smul_apply,
     LinearMap.id_apply]
   rfl
 
-/-- The least singular value of `A - z I` is the least residual on the unit sphere. -/
+/-- The least singular value of $A - zI$ is the least residual $\|Aw - zw\|_2$ over the unit vectors
+$w$. -/
 private theorem iInf_colSingularValues_sub_smul (A : Matrix m m ℂ) (z : ℂ) :
     ⨅ i, (A - z • 1).colSingularValues i =
       ⨅ w : {w : EuclideanSpace ℂ m // ‖w‖ = 1},
@@ -244,8 +365,12 @@ private theorem iInf_colSingularValues_sub_smul (A : Matrix m m ℂ) (z : ℂ) :
   rw [iInf_colSingularValues_eq_iInf_norm]
   simp only [toEuclideanLin_sub_smul]
 
-/-- The pseudospectrum (7.9.5) is the backbone's closed pseudospectrum of the Euclidean operator
-of `A`: `σ_min(A - z I)` is the least residual `min_{‖w‖₂ = 1} ‖(A - z I) w‖₂`. -/
+/-- Let $A$ be a square complex matrix over a nonempty index type, and $\varepsilon \in \mathbb{R}$.
+The pseudospectrum (7.9.5) is the set of $z \in \mathbb{C}$ for which some unit vector $w$
+satisfies $\|Aw - zw\|_2 \le \varepsilon$, because $\sigma_{\min}(A - zI) = \min_{\|w\|_2 = 1}
+\|(A - zI) w\|_2$.
+
+The right side is `ContinuousLinearMap.closedPseudospectrum` of `Matrix.toEuclideanCLM A`. -/
 theorem pseudospectrum_eq [Nonempty m] (ε : ℝ) (A : Matrix m m ℂ) :
     pseudospectrum ε A = (toEuclideanCLM (n := m) (𝕜 := ℂ) A).closedPseudospectrum ε := by
   ext z
@@ -257,7 +382,9 @@ private theorem spectrum_toEuclideanCLM (A : Matrix m m ℂ) :
     spectrum ℂ (toEuclideanCLM (n := m) (𝕜 := ℂ) A) = spectrum ℂ A :=
   AlgEquiv.spectrum_eq (toEuclideanCLM (n := m) (𝕜 := ℂ)) A
 
-/-- **§7.9.2–7.9.3**: `Λ₀(A) = λ(A)`, and `ε₁ ≤ ε₂ → Λ_{ε₁}(A) ⊆ Λ_{ε₂}(A)`. -/
+/-- **§7.9.2–7.9.3** of [golub2013matrix]. Let $A$ be a square complex matrix over a nonempty index
+type. Then $\Lambda_0(A) = \lambda(A)$, and $\Lambda_{\varepsilon_1}(A) \subseteq
+\Lambda_{\varepsilon_2}(A)$ for all real $\varepsilon_1 \le \varepsilon_2$. -/
 theorem pseudospectrum_zero [Nonempty m] (A : Matrix m m ℂ) :
     pseudospectrum 0 A = spectrum ℂ A ∧
       ∀ ε₁ ε₂ : ℝ, ε₁ ≤ ε₂ → pseudospectrum ε₁ A ⊆ pseudospectrum ε₂ A := by
@@ -270,7 +397,8 @@ section L2
 
 open scoped Matrix.Norms.L2Operator
 
-/-- The Euclidean operator of the matrix inverse is the ring inverse of the Euclidean operator. -/
+/-- The Euclidean operator of the matrix inverse $M^{-1}$ is the ring inverse of the Euclidean
+operator of $M$. -/
 private theorem toEuclideanCLM_inv (M : Matrix m m ℂ) :
     toEuclideanCLM (n := m) (𝕜 := ℂ) M⁻¹ = Ring.inverse (toEuclideanCLM (n := m) (𝕜 := ℂ) M) := by
   by_cases hM : IsUnit M.det
@@ -294,16 +422,24 @@ private theorem toEuclideanCLM_inv (M : Matrix m m ℂ) :
       rwa [map_mul, StarAlgEquiv.symm_apply_apply, map_one] at h3
     rw [nonsing_inv_apply_not_isUnit _ hM, map_zero, Ring.inverse_non_unit _ hT]
 
-/-- **(7.9.6)**: for `ε > 0`, `z ∈ Λ_ε(A)` exactly when `z ∈ λ(A)` or `‖(zI - A)⁻¹‖₂ ≥ 1/ε` (the
-book's resolvent form, with the eigenvalues included explicitly). -/
+/-- **Equation (7.9.6)** of [golub2013matrix], the resolvent form. Let $A$ be a square complex
+matrix over a nonempty index type, let $\varepsilon > 0$ and $z \in \mathbb{C}$. Then
+$z \in \Lambda_\varepsilon(A)$ if and only if $z \in \lambda(A)$ or $$\|(zI - A)^{-1}\|_2 \ge
+\frac{1}{\varepsilon}.$$
+
+**Reading.** The source writes the condition $\|(zI - A)^{-1}\|_2 \ge 1/\varepsilon$ alone. It
+has no meaning at an eigenvalue, where Lean's inverse is $0$, so the theorem names the
+eigenvalues explicitly and assumes $\varepsilon > 0$. -/
 theorem equation_7_9_6 [Nonempty m] {ε : ℝ} (hε : 0 < ε) (A : Matrix m m ℂ) (z : ℂ) :
     z ∈ pseudospectrum ε A ↔ z ∈ spectrum ℂ A ∨ 1 / ε ≤ ‖(z • 1 - A)⁻¹‖ := by
   rw [pseudospectrum_eq, ContinuousLinearMap.mem_closedPseudospectrum_iff_resolvent hε,
     spectrum_toEuclideanCLM, ← l2_opNorm_toEuclideanCLM, toEuclideanCLM_inv, map_sub, map_smul,
     map_one]
 
-/-- **(7.9.7)**: `z ∈ Λ_ε(A)` exactly when `z` is an eigenvalue of `A + E` for some `E` with
-`‖E‖₂ ≤ ε`. -/
+/-- **Equation (7.9.7)** of [golub2013matrix]. Let $A$ be a square complex matrix over a nonempty
+index type, $\varepsilon \in \mathbb{R}$ and $z \in \mathbb{C}$. Then
+$z \in \Lambda_\varepsilon(A)$ if and only if there is a matrix $E$ with
+$\|E\|_2 \le \varepsilon$ such that $z$ is an eigenvalue of $A + E$. -/
 theorem equation_7_9_7 [Nonempty m] (ε : ℝ) (A : Matrix m m ℂ) (z : ℂ) :
     z ∈ pseudospectrum ε A ↔ ∃ E : Matrix m m ℂ, ‖E‖ ≤ ε ∧ z ∈ spectrum ℂ (A + E) := by
   rw [pseudospectrum_eq,
@@ -319,7 +455,11 @@ theorem equation_7_9_7 [Nonempty m] (ε : ℝ) (A : Matrix m m ℂ) (z : ℂ) :
 
 end L2
 
-/-- **§7.9.3**: "each connected component of `Λ_ε(A)` contains at least one eigenvalue of `A`". -/
+/-- **§7.9.3** of [golub2013matrix]: "each connected component of $\Lambda_\varepsilon(A)$ contains
+at least one eigenvalue of $A$". Let $A$ be a square complex matrix over a nonempty index type
+and $\varepsilon \in \mathbb{R}$. For every $z \in \Lambda_\varepsilon(A)$ there is an
+eigenvalue $\mu$ of $A$ in the connected component of $\Lambda_\varepsilon(A)$ that contains
+$z$. -/
 theorem pseudospectrum_component [Nonempty m] {ε : ℝ} (A : Matrix m m ℂ) {z : ℂ}
     (hz : z ∈ pseudospectrum ε A) :
     ∃ μ ∈ spectrum ℂ A, μ ∈ connectedComponentIn (pseudospectrum ε A) z := by
@@ -329,8 +469,13 @@ theorem pseudospectrum_component [Nonempty m] {ε : ℝ} (A : Matrix m m ℂ) {z
 
 /-! ### §7.9.4 Some elementary properties -/
 
-/-- **Theorem 7.9.1**: `Λ_{ε|β|}(αI + βA) = α + β Λ_ε(A)` for `β ≠ 0`; at `β = 0` both sides are
-`{α}` (for `ε ≥ 0`). (The book's proof's first chain ends in `= Λ_ε(A)` for `α + Λ_ε(A)`.) -/
+/-- **Theorem 7.9.1** of [golub2013matrix]. Let $A$ be a square complex matrix over a nonempty index
+type, let $\alpha, \beta \in \mathbb{C}$ and $\varepsilon \ge 0$. Then
+$$\Lambda_{\varepsilon|\beta|}(\alpha I + \beta A) = \alpha + \beta \Lambda_\varepsilon(A) =
+\{\alpha + \beta z : z \in \Lambda_\varepsilon(A)\}.$$
+
+The theorem includes $\beta = 0$, where both sides are $\{\alpha\}$. In the source's proof, the
+first chain ends in $= \Lambda_\varepsilon(A)$ where $\alpha + \Lambda_\varepsilon(A)$ is meant. -/
 theorem theorem_7_9_1 [Nonempty m] (A : Matrix m m ℂ) (α β : ℂ) {ε : ℝ} (hε : 0 ≤ ε) :
     pseudospectrum (ε * ‖β‖) (α • 1 + β • A) = (fun z => α + β * z) '' pseudospectrum ε A := by
   rcases eq_or_ne β 0 with rfl | hβ
@@ -350,8 +495,13 @@ section L2
 
 open scoped Matrix.Norms.L2Operator
 
-/-- **Theorem 7.9.2**: if `B = X⁻¹ A X` then `Λ_ε(B) ⊆ Λ_{ε κ₂(X)}(A)`. (The book's proof writes
-`X⁻¹ (zI - A)⁻¹ X⁻¹` for `X⁻¹ (zI - A)⁻¹ X`.) -/
+/-- **Theorem 7.9.2** of [golub2013matrix]. Let $A, X$ be square complex matrices over a nonempty
+index type, with $X$ nonsingular, and let $\varepsilon \in \mathbb{R}$. Then
+$$\Lambda_\varepsilon(X^{-1} A X) \subseteq \Lambda_{\varepsilon \kappa_2(X)}(A),$$ where
+$\kappa_2(X) = \|X\|_2 \|X^{-1}\|_2$.
+
+The condition number is `NormedRing.condNumber X` for the operator 2-norm. The source's proof
+writes $X^{-1} (zI - A)^{-1} X^{-1}$ where $X^{-1} (zI - A)^{-1} X$ is meant. -/
 theorem theorem_7_9_2 [Nonempty m] {X : Matrix m m ℂ} (hX : IsUnit X) (A : Matrix m m ℂ)
     (ε : ℝ) :
     pseudospectrum ε (X⁻¹ * A * X) ⊆ pseudospectrum (ε * NormedRing.condNumber X) A := by
@@ -360,34 +510,51 @@ theorem theorem_7_9_2 [Nonempty m] {X : Matrix m m ℂ} (hX : IsUnit X) (A : Mat
 
 end L2
 
-/-- **Corollary 7.9.3**: for unitary `X`, `Λ_ε(X⁻¹ A X) = Λ_ε(A)`. -/
+/-- **Corollary 7.9.3** of [golub2013matrix]. Let $A, X$ be square complex matrices over a nonempty
+index type, with $X$ unitary. Then $\Lambda_\varepsilon(X^{-1} A X) = \Lambda_\varepsilon(A)$
+for every $\varepsilon \in \mathbb{R}$. -/
 theorem corollary_7_9_3 [Nonempty m] {X : Matrix m m ℂ} (hX : X ∈ unitaryGroup m ℂ)
     (A : Matrix m m ℂ) (ε : ℝ) : pseudospectrum ε (X⁻¹ * A * X) = pseudospectrum ε A := by
   rw [Matrix.inv_eq_left_inv (mem_unitaryGroup_iff'.1 hX), pseudospectrum_eq, pseudospectrum_eq]
   exact closedPseudospectrum_unitary_conj hX A ε
 
-/-- **Theorem 7.9.4**: `Λ_ε(diag(λ₁, …, λₙ)) = {λ₁, …, λₙ} + Δ_ε`, the union of the closed discs of
-radius `ε` about the diagonal entries. -/
+/-- **Theorem 7.9.4** of [golub2013matrix]. Let $d$ be a vector over a nonempty index type and
+$\varepsilon \in \mathbb{R}$. Then $$\Lambda_\varepsilon(\operatorname{diag}(d_1, \dots, d_n)) =
+\{d_1, \dots, d_n\} + \Delta_\varepsilon = \bigcup_i \{z : |z - d_i| \le \varepsilon\},$$ the
+union of the closed discs of radius $\varepsilon$ about the diagonal entries. -/
 theorem theorem_7_9_4 [Nonempty m] (d : m → ℂ) (ε : ℝ) :
     pseudospectrum ε (diagonal d) = ⋃ i, closedBall (d i) ε := by
   rw [pseudospectrum_eq]
   exact closedPseudospectrum_diagonal d ε
 
-/-- **Corollary 7.9.5**: if `A` is normal, `Λ_ε(A) = Λ(A) + Δ_ε`. -/
+/-- **Corollary 7.9.5** of [golub2013matrix]. Let $A$ be a normal complex matrix over a nonempty
+index type and $\varepsilon \in \mathbb{R}$. Then $$\Lambda_\varepsilon(A) = \lambda(A) +
+\Delta_\varepsilon = \bigcup_{\mu \in \lambda(A)} \{z : |z - \mu| \le \varepsilon\}.$$
+
+Normality is `IsStarNormal A`. -/
 theorem corollary_7_9_5 [Nonempty m] {A : Matrix m m ℂ} (hA : IsStarNormal A) (ε : ℝ) :
     pseudospectrum ε A = ⋃ μ ∈ spectrum ℂ A, closedBall μ ε := by
   rw [pseudospectrum_eq]
   exact closedPseudospectrum_of_isStarNormal hA ε
 
-/-- **Theorem 7.9.6**: for `T = [T₁₁ T₁₂; 0 T₂₂]` with square diagonal blocks,
-`Λ_ε(T₁₁) ∪ Λ_ε(T₂₂) ⊆ Λ_ε(T)`. -/
+/-- **Theorem 7.9.6** of [golub2013matrix]. Let $p, q \ge 1$, let
+$T_{11} \in \mathbb{C}^{p \times p}$, $T_{12} \in \mathbb{C}^{p \times q}$ and
+$T_{22} \in \mathbb{C}^{q \times q}$, and let $T = \begin{bmatrix} T_{11} & T_{12} \\ 0 & T_{22}
+\end{bmatrix}$. Then for every $\varepsilon \in \mathbb{R}$, $$\Lambda_\varepsilon(T_{11}) \cup
+\Lambda_\varepsilon(T_{22}) \subseteq \Lambda_\varepsilon(T).$$
+
+The block matrix is `Matrix.fromBlocks T₁₁ T₁₂ 0 T₂₂`, indexed by `Fin p ⊕ Fin q`. -/
 theorem theorem_7_9_6 {p q : ℕ} [NeZero p] [NeZero q] (T₁₁ : Matrix (Fin p) (Fin p) ℂ)
     (T₁₂ : Matrix (Fin p) (Fin q) ℂ) (T₂₂ : Matrix (Fin q) (Fin q) ℂ) (ε : ℝ) :
     pseudospectrum ε T₁₁ ∪ pseudospectrum ε T₂₂ ⊆ pseudospectrum ε (fromBlocks T₁₁ T₁₂ 0 T₂₂) := by
   rw [pseudospectrum_eq, pseudospectrum_eq, pseudospectrum_eq]
   exact closedPseudospectrum_fromBlocks_zero₂₁_supset T₁₁ T₁₂ T₂₂ ε
 
-/-- **Corollary 7.9.7**: `Λ_ε(diag(T₁₁, T₂₂)) = Λ_ε(T₁₁) ∪ Λ_ε(T₂₂)`. -/
+/-- **Corollary 7.9.7** of [golub2013matrix]. Let $p, q \ge 1$, $T_{11} \in \mathbb{C}^{p \times p}$
+and $T_{22} \in \mathbb{C}^{q \times q}$. Then for every $\varepsilon \in \mathbb{R}$,
+$$\Lambda_\varepsilon(\operatorname{diag}(T_{11}, T_{22})) = \Lambda_\varepsilon(T_{11}) \cup
+\Lambda_\varepsilon(T_{22}).$$
+-/
 theorem corollary_7_9_7 {p q : ℕ} [NeZero p] [NeZero q] (T₁₁ : Matrix (Fin p) (Fin p) ℂ)
     (T₂₂ : Matrix (Fin q) (Fin q) ℂ) (ε : ℝ) :
     pseudospectrum ε (fromBlocks T₁₁ 0 0 T₂₂) = pseudospectrum ε T₁₁ ∪ pseudospectrum ε T₂₂ := by
@@ -398,9 +565,15 @@ section L2
 
 open scoped Matrix.Norms.L2Operator
 
-/-- **Theorem 7.9.8**: every `z₀` is at distance at least `σ_min(z₀ I - A) - ε` from `Λ_ε(A)` (for
-`ε ≥ 0`); for `z₀ ∉ λ(A)` this is the book's `dist(z₀, Λ_ε(A)) ≥ 1/‖(z₀ I - A)⁻¹‖₂ - ε`, since then
-`σ_min(z₀ I - A) = 1/‖(z₀ I - A)⁻¹‖₂`. -/
+/-- **Theorem 7.9.8** of [golub2013matrix]. Let $A$ be a square complex matrix over a nonempty index
+type, let $\varepsilon \ge 0$ and $z_0 \in \mathbb{C}$. Then $$\operatorname{dist}(z_0,
+\Lambda_\varepsilon(A)) \ge \sigma_{\min}(z_0 I - A) - \varepsilon,$$ and if
+$z_0 \notin \lambda(A)$, then $$\operatorname{dist}(z_0, \Lambda_\varepsilon(A)) \ge
+\frac{1}{\|(z_0 I - A)^{-1}\|_2} - \varepsilon.$$
+
+The second inequality is the source's statement; it follows from the first, because
+$\sigma_{\min}(z_0 I - A) = 1/\|(z_0 I - A)^{-1}\|_2$ when $z_0 \notin \lambda(A)$. The distance
+is `Metric.infDist`. -/
 theorem theorem_7_9_8 [Nonempty m] {ε : ℝ} (hε : 0 ≤ ε) (A : Matrix m m ℂ) (z₀ : ℂ) :
     (⨅ i, (z₀ • 1 - A).colSingularValues i) - ε ≤ infDist z₀ (pseudospectrum ε A) ∧
       (z₀ ∉ spectrum ℂ A → 1 / ‖(z₀ • 1 - A)⁻¹‖ - ε ≤ infDist z₀ (pseudospectrum ε A)) := by
@@ -423,8 +596,12 @@ end L2
 
 /-! ### §7.9.5 Computing pseudospectra -/
 
-/-- **§7.9.5**: for a Schur decomposition `Qᴴ A Q = T`, `σ_min(zI - A) = σ_min(zI - T)`; and if
-`‖d‖₂ = 1` and `(zI - T) y = d`, then `σ_min(zI - T) ≤ 1/‖y‖₂`. -/
+/-- **§7.9.5** of [golub2013matrix], computing $\sigma_{\min}(zI - A)$ through a Schur form. Let
+$n \ge 1$, let $A, Q, T \in \mathbb{C}^{n \times n}$ with $Q$ unitary and $Q^H A Q = T$, and let
+$z \in \mathbb{C}$. Then $\sigma_{\min}(zI - A) = \sigma_{\min}(zI - T)$. Moreover, if
+$d, y \in \mathbb{C}^n$ satisfy $\|d\|_2 = 1$ and $(zI - T) y = d$, then $$\sigma_{\min}(zI - T)
+\le \frac{1}{\|y\|_2}.$$
+-/
 theorem sigmaMin_schur [NeZero n] {A Q T : Matrix (Fin n) (Fin n) ℂ}
     (hQ : Q ∈ unitaryGroup (Fin n) ℂ) (hT : star Q * A * Q = T) (z : ℂ) :
     ⨅ i, (z • 1 - A).colSingularValues i = ⨅ i, (z • 1 - T).colSingularValues i ∧
@@ -444,22 +621,34 @@ theorem sigmaMin_schur [NeZero n] {A Q T : Matrix (Fin n) (Fin n) ℂ}
       rw [le_div_iff₀ (norm_pos_iff.2 hy0)]
       exact h
 
-/-! ### §7.9.6 Computing the ε-pseudospectral abscissa and radius -/
+/-! ### §7.9.6 Computing the $\varepsilon$-pseudospectral abscissa and radius -/
 
-/-- **(7.9.8), the pseudospectral abscissa** `α_ε(A) = max {Re(z) : z ∈ Λ_ε(A)}`, attained for a
-nonempty index type and `ε ≥ 0`; it is the backbone's `Matrix.pseudospectralAbscissa`
-(`pseudospectralAbscissa_spec`). -/
+/-- **Equation (7.9.8)** of [golub2013matrix], the pseudospectral abscissa. For a square complex
+matrix $A$ and $\varepsilon \in \mathbb{R}$, the **$\varepsilon$-pseudospectral abscissa** is
+$$\alpha_\varepsilon(A) = \sup\{\operatorname{Re} z : z \in \Lambda_\varepsilon(A)\}.$$
+
+The supremum is the real `sSup`, which is $0$ for an empty or an unbounded set. For a nonempty
+index type and $\varepsilon \ge 0$ the supremum is a maximum, and the definition agrees with the
+backbone's `Matrix.pseudospectralAbscissa`
+(`GolubVanLoan.Chapter07.pseudospectralAbscissa_spec`). -/
 noncomputable def pseudospectralAbscissa (ε : ℝ) (A : Matrix m m ℂ) : ℝ :=
   sSup (Complex.re '' pseudospectrum ε A)
 
-/-- **(7.9.9), the pseudospectral radius** `ρ_ε(A) = max {|z| : z ∈ Λ_ε(A)}`, attained for a
-nonempty index type and `ε ≥ 0`; it is the backbone's `Matrix.pseudospectralRadius`
-(`pseudospectralAbscissa_spec`). -/
+/-- **Equation (7.9.9)** of [golub2013matrix], the pseudospectral radius. For a square complex
+matrix $A$ and $\varepsilon \in \mathbb{R}$, the **$\varepsilon$-pseudospectral radius** is
+$$\rho_\varepsilon(A) = \sup\{|z| : z \in \Lambda_\varepsilon(A)\}.$$
+
+The supremum is the real `sSup`, which is $0$ for an empty or an unbounded set. For a nonempty
+index type and $\varepsilon \ge 0$ the supremum is a maximum, and the definition agrees with the
+backbone's `Matrix.pseudospectralRadius` (`GolubVanLoan.Chapter07.pseudospectralAbscissa_spec`). -/
 noncomputable def pseudospectralRadius (ε : ℝ) (A : Matrix m m ℂ) : ℝ :=
   sSup ((‖·‖) '' pseudospectrum ε A)
 
-/-- The pseudospectral abscissa and radius (7.9.8)–(7.9.9) are the backbone's, and both maxima are
-attained. -/
+/-- Let $A$ be a square complex matrix over a nonempty index type and $\varepsilon \ge 0$. The
+pseudospectral abscissa (7.9.8) and radius (7.9.9) equal the backbone's
+`Matrix.pseudospectralAbscissa` and `Matrix.pseudospectralRadius`, and both suprema are
+attained: there are $z, z' \in \Lambda_\varepsilon(A)$ with
+$\operatorname{Re} z = \alpha_\varepsilon(A)$ and $|z'| = \rho_\varepsilon(A)$. -/
 theorem pseudospectralAbscissa_spec [Nonempty m] {ε : ℝ} (hε : 0 ≤ ε) (A : Matrix m m ℂ) :
     pseudospectralAbscissa ε A = Matrix.pseudospectralAbscissa ε A ∧
       pseudospectralRadius ε A = Matrix.pseudospectralRadius ε A ∧
@@ -475,26 +664,30 @@ theorem pseudospectralAbscissa_spec [Nonempty m] {ε : ℝ} (hε : 0 ≤ ε) (A 
   rw [ha, hr, pseudospectrum_eq]
   exact ⟨rfl, rfl, h1, h2⟩
 
-/-- **(7.9.10), the matrix** `M = [i e^{iθ} Aᴴ, -ε I; ε I, i e^{-iθ} A]` of §7.9.6, whose purely
-imaginary eigenvalues `i r` locate the points `r e^{iθ}` of the ray of angle `θ` at which `ε` is a
-singular value of `A - r e^{iθ} I` (Byers; Mengi and Overton). -/
+/-- **Equation (7.9.10)** of [golub2013matrix], the matrix of §7.9.6. For a square complex matrix
+$A$ and $\theta, \varepsilon \in \mathbb{R}$, $$M = \begin{bmatrix} i e^{i\theta} A^H &
+-\varepsilon I \\ \varepsilon I & i e^{-i\theta} A \end{bmatrix}.$$ Its purely imaginary
+eigenvalues $ir$ locate the points $re^{i\theta}$ on the ray of angle $\theta$ at which
+$\varepsilon$ is a singular value of $A - re^{i\theta} I$
+(`GolubVanLoan.Chapter07.equation_7_9_10`). The source attributes the method to Byers and to
+Mengi and Overton. -/
 noncomputable def rayCrossingMatrix (θ ε : ℝ) (A : Matrix m m ℂ) : Matrix (m ⊕ m) (m ⊕ m) ℂ :=
   fromBlocks ((Complex.I * Complex.exp (θ * Complex.I)) • Aᴴ) (-(ε : ℂ) • 1) ((ε : ℂ) • 1)
     ((Complex.I * Complex.exp (-(θ * Complex.I))) • A)
 
-/-- `e^{iθ} e^{-iθ} = 1`. -/
+/-- $e^{i\theta} e^{-i\theta} = 1$ for real $\theta$. -/
 private theorem exp_mul_exp_neg_mul_I (θ : ℝ) :
     Complex.exp (θ * Complex.I) * Complex.exp (-(θ * Complex.I)) = 1 := by
   rw [← Complex.exp_add, add_neg_cancel, Complex.exp_zero]
 
-/-- `(i e^{iθ}) (-(i e^{-iθ})) = 1`. -/
+/-- $(i e^{i\theta}) \cdot (-i e^{-i\theta}) = 1$ for real $\theta$. -/
 private theorem I_exp_mul_neg_I_exp (θ : ℝ) :
     Complex.I * Complex.exp (θ * Complex.I) * -(Complex.I * Complex.exp (-(θ * Complex.I))) =
       1 := by
   linear_combination (-Complex.I ^ 2) * exp_mul_exp_neg_mul_I θ - Complex.I_sq
 
 omit [Fintype m] in
-/-- `(A - r e^{iθ} I)ᴴ = Aᴴ - r e^{-iθ} I`. -/
+/-- $(A - re^{i\theta} I)^H = A^H - re^{-i\theta} I$ for real $r$ and $\theta$. -/
 private theorem conjTranspose_sub_ray (θ r : ℝ) (A : Matrix m m ℂ) :
     (A - ((r : ℂ) * Complex.exp (θ * Complex.I)) • 1)ᴴ =
       Aᴴ - ((r : ℂ) * Complex.exp (-(θ * Complex.I))) • 1 := by
@@ -502,8 +695,10 @@ private theorem conjTranspose_sub_ray (θ r : ℝ) (A : Matrix m m ℂ) :
     Complex.conj_ofReal, ← Complex.exp_conj, map_mul, Complex.conj_ofReal, Complex.conj_I,
     mul_neg]
 
-/-- The eigen-equation `M [f; g] = i r [f; g]` of (7.9.10), block row by block row, in terms of
-`B = A - r e^{iθ} I`: `i e^{iθ} Bᴴ f = ε g` and `ε f = -i e^{-iθ} B g`. -/
+/-- The eigenvalue equation $M \begin{bmatrix} f \\ g \end{bmatrix} = ir \begin{bmatrix} f \\ g
+\end{bmatrix}$ for the matrix (7.9.10) holds if and only if
+$i e^{i\theta} B^H f = \varepsilon g$ and $\varepsilon f = -i e^{-i\theta} B g$, where
+$B = A - re^{i\theta} I$. -/
 private theorem rayCrossingMatrix_mulVec_eq_iff (θ r ε : ℝ) (A : Matrix m m ℂ) (f g : m → ℂ) :
     rayCrossingMatrix θ ε A *ᵥ Sum.elim f g = (Complex.I * r) • Sum.elim f g ↔
       (Complex.I * Complex.exp (θ * Complex.I)) •
@@ -534,12 +729,22 @@ private theorem rayCrossingMatrix_mulVec_eq_iff (θ r ε : ℝ) (A : Matrix m m 
       linear_combination (norm := module) h2 + (Complex.I * r * hcc) • g
     rw [e1, e2]
 
-/-- **(7.9.10)**: "if `i · r` is an eigenvalue of the matrix `M`, then `ε` is a singular value of
-`A - r e^{iθ} I`. To see this, observe that if `M [f; g] = i · r [f; g]`, then
-`(A - r e^{iθ} I)ᴴ (A - r e^{iθ} I) g = ε² g`" — the Gram identity holds for every eigenvector
-`[f; g]` of `M` for `i r`, and for `ε > 0` (where `g = 0` forces `f = 0`) the eigenvalues `i r` of
-`M` are exactly the `r` for which `ε` is a singular value of `A - r e^{iθ} I` (the converse from a
-singular pair). -/
+/-- **Equation (7.9.10)** of [golub2013matrix], the singular value property. Let $A$ be a square
+complex matrix, let $\theta, r, \varepsilon \in \mathbb{R}$, let $M$ be the matrix (7.9.10), and
+let $B = A - re^{i\theta} I$. The following hold.
+
+1. If $M \begin{bmatrix} f \\ g \end{bmatrix} = ir \begin{bmatrix} f \\ g \end{bmatrix}$, then
+   $B^H B g = \varepsilon^2 g$.
+2. If $\varepsilon > 0$, then $ir$ is an eigenvalue of $M$ if and only if $\varepsilon$ is a
+   singular value of $B$.
+
+The source states: "if $i \cdot r$ is an eigenvalue of the matrix $M$, then $\varepsilon$ is a
+singular value of $A - re^{i\theta} I$. To see this, observe that if
+$M [f; g] = i \cdot r [f; g]$, then $(A - re^{i\theta} I)^H (A - re^{i\theta} I) g =
+\varepsilon^2 g$". For $\varepsilon > 0$, $g = 0$ forces $f = 0$, so the eigenvector gives a
+singular vector; the converse is built from a singular pair. The eigenvalue condition is the
+existence of $v \neq 0$ with $Mv = irv$, and "$\varepsilon$ is a singular value of $B$" is
+$\varepsilon = $ `B.colSingularValues i` for some `i`. -/
 theorem equation_7_9_10 (θ r ε : ℝ) (A : Matrix m m ℂ) :
     (∀ f g : m → ℂ, rayCrossingMatrix θ ε A *ᵥ Sum.elim f g = (Complex.I * r) • Sum.elim f g →
       ((A - ((r : ℂ) * Complex.exp (θ * Complex.I)) • 1)ᴴ *
@@ -597,12 +802,17 @@ theorem equation_7_9_10 (θ r ε : ℝ) (A : Matrix m m ℂ) :
       linear_combination (norm := module) (d' * hεinv) • (B *ᵥ g)
 
 open scoped Matrix.Norms.L2Operator in
-/-- **§7.9.6**: "It can be shown that if `i r_max` is the largest pure imaginary eigenvalue of `M`,
-then `ε = σ_min(A - r_max e^{iθ} I)`" — for `ε > 0`, with `σ_min = ⨅ i, σ_i`. `≤` is (7.9.10);
-if it were `<`, the continuous `r ↦ σ_min(A - r e^{iθ} I)`, which grows like `|r|`, would take the
-value `ε` at some `r > r_max` (intermediate value theorem), and `i r` would be an eigenvalue of `M`
-by the converse of (7.9.10). So `r_max e^{iθ}` is the farthest point of the ray `{r e^{iθ}}` on the
-boundary of `Λ_ε(A)`. -/
+/-- **§7.9.6** of [golub2013matrix], the largest crossing. Let $A$ be a square complex matrix, let
+$\theta \in \mathbb{R}$ and $\varepsilon > 0$, and let $M$ be the matrix (7.9.10). Suppose that
+$ir_{\max}$ is an eigenvalue of $M$ and that no $ir$ with $r > r_{\max}$ is an eigenvalue of
+$M$. Then $$\sigma_{\min}(A - r_{\max} e^{i\theta} I) = \varepsilon.$$ Therefore
+$r_{\max} e^{i\theta}$ is the farthest point of the ray $\{re^{i\theta}\}$ on the boundary of
+$\Lambda_\varepsilon(A)$.
+
+The source states this with "It can be shown that". The inequality $\le$ follows from (7.9.10).
+If it were strict, the continuous function $r \mapsto \sigma_{\min}(A - re^{i\theta} I)$, which
+grows like $|r|$, would take the value $\varepsilon$ at some $r > r_{\max}$ by the intermediate
+value theorem, and $ir$ would be an eigenvalue of $M$ by the converse in (7.9.10). -/
 theorem equation_7_9_10_max {θ ε rmax : ℝ} (hε : 0 < ε) {A : Matrix m m ℂ}
     (hmax : ∃ v : m ⊕ m → ℂ, v ≠ 0 ∧ rayCrossingMatrix θ ε A *ᵥ v = (Complex.I * rmax) • v)
     (hnot : ∀ r : ℝ, rmax < r → ∀ v : m ⊕ m → ℂ,
@@ -667,8 +877,13 @@ section L2
 
 open scoped Matrix.Norms.L2Operator
 
-/-- **(7.9.11)** (Trefethen–Embree pp. 160–161): for `ε > 0`, `sup_{k ≥ 0} ‖A^k‖₂ ≥ (ρ_ε(A) - 1)/ε`,
-stated as: if `‖A^k‖₂ ≤ M` for all `k`, then `(ρ_ε(A) - 1)/ε ≤ M`. -/
+/-- **Equation (7.9.11)** of [golub2013matrix], transient growth. Let $A$ be a square complex matrix
+over a nonempty index type and $\varepsilon > 0$. Then $$\sup_{k \ge 0} \|A^k\|_2 \ge
+\frac{\rho_\varepsilon(A) - 1}{\varepsilon}.$$
+
+The source takes the bound from Trefethen and Embree, pp. 160–161. The supremum is stated
+through its upper bounds: if $\|A^k\|_2 \le M$ for all $k \ge 0$, then
+$(\rho_\varepsilon(A) - 1)/\varepsilon \le M$. -/
 theorem equation_7_9_11 [Nonempty m] {ε : ℝ} (hε : 0 < ε) (A : Matrix m m ℂ) {M : ℝ}
     (hM : ∀ k : ℕ, ‖A ^ k‖ ≤ M) : (pseudospectralRadius ε A - 1) / ε ≤ M := by
   rw [(pseudospectralAbscissa_spec hε.le A).2.1]

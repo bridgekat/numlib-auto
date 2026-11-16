@@ -8,70 +8,169 @@ import Numlib.Direct.Updating
 import NumlibSurface.GolubVanLoan.Chapter05.Section02
 
 /-!
-# Golub–Van Loan §6.5: updating matrix factorizations
+# Golub and Van Loan, Section 6.5: Updating matrix factorizations
 
-Surface file for [golub2013matrix] §6.5: the QR factorization after a rank-one change
-((6.5.1)–(6.5.3)), after deleting or appending a column ((6.5.4)) and after appending or deleting a
-row; Cholesky updating ((6.5.5)–(6.5.7)) and downdating with hyperbolic rotations
-((6.5.8)–(6.5.15), Theorem 6.5.1); the exact content of the rank-revealing ULV decomposition
-(6.5.16) and its approximate null space.
+This module formalizes §6.5 of [golub2013matrix]: how a QR or Cholesky factorization changes when
+the matrix changes slightly. If $A = QR$ and $\tilde A = A + uv^T$, then $\tilde A = Q(R + wv^T)$
+with $w = Q^T u$ (6.5.1), and two sweeps of Givens rotations restore the triangular form through an
+upper Hessenberg matrix ((6.5.2)–(6.5.3)). Similar sweeps update the QR factorization after a column
+is deleted or appended (§6.5.2) and after a row is appended or deleted (§6.5.3). For a Cholesky
+factorization $A = GG^T$, the update $\tilde A = A + zz^T$ is a QR factorization of the stacked
+matrix $[G^T; z^T]$ ((6.5.5)–(6.5.7)). The downdate $\tilde A = A - zz^T$ uses $S$-orthogonal
+matrices for $S = \operatorname{diag}(I_n, -1)$ and hyperbolic rotations ((6.5.8)–(6.5.15), Theorem
+6.5.1). Finally, the module states the exact content of the rank-revealing ULV decomposition
+(6.5.16) and its approximate null space (§6.5.5).
+
+The section has no numbered algorithm. Its procedures are programs named by their content, each with
+a theorem on its exact-arithmetic correctness. The proofs specialize `Numlib.Direct.Updating` (the
+structure of the sweeps, the existence of the updated factorizations, the Gram identities of the
+stacked matrices, and Theorem 6.5.1 as `Matrix.hyperbolicDowndate_step`),
+`Numlib.LinearAlgebra.Matrix.PlaneRotation` (hyperbolic rotations, `Matrix.hyperbolicPair` and
+`Matrix.IsJOrthogonal`) and `Numlib.Analysis.Matrix.OperatorNorm`, together with the programs of
+Chapter 5 and Algorithms 1.1.2–1.1.3 of Chapter 1.
+
+## Main definitions
+
+* §6.5.1, `GolubVanLoan.Chapter06.qrUpdateRankOne`: the QR factorization of $A + uv^T$ from that of
+  $A$.
+* §6.5.2, `GolubVanLoan.Chapter06.qrDeleteColumn`: the QR factorization after a column is deleted.
+* §6.5.2, `GolubVanLoan.Chapter06.qrInsertColumn`: the QR factorization after a column is inserted.
+* §6.5.3, `GolubVanLoan.Chapter06.qrInsertRow`: the QR factorization after a row is inserted.
+* §6.5.3, `GolubVanLoan.Chapter06.qrDeleteFirstRow`: the QR factorization after the first row is
+  deleted.
+* §6.5.4, `GolubVanLoan.Chapter06.choleskyUpdate`: the Cholesky factor of $A + zz^T$ by Givens
+  rotations.
+* Equation (6.5.11), `GolubVanLoan.Chapter06.IsSOrthogonal`: $H S H^T = S$ for
+  $S = \operatorname{diag}(I_n, -1)$.
+* §6.5.4, `GolubVanLoan.Chapter06.choleskyDowndate`: the Cholesky factor of $A - zz^T$ by hyperbolic
+  rotations.
+
+## Main results
+
+* Equation (6.5.1), `GolubVanLoan.Chapter06.equation_6_5_1`: $A + uv^T = Q(R + wv^T)$ with
+  $w = Q^T u$.
+* Equation (6.5.2), `GolubVanLoan.Chapter06.equation_6_5_2`: a sweep of rotations in adjacent planes
+  maps an upper triangular $R$ to an upper Hessenberg matrix.
+* Equation (6.5.3), `GolubVanLoan.Chapter06.equation_6_5_3`: if the sweep maps $w$ to $\rho e_1$,
+  then it maps $R + wv^T$ to the upper Hessenberg matrix $H + \rho e_1 v^T$.
+* §6.5.1, `GolubVanLoan.Chapter06.qrUpdateRankOne_spec`: in exact arithmetic the rank-one update
+  returns a QR factorization of $A + uv^T$.
+* §6.5.2, `GolubVanLoan.Chapter06.qrDeleteColumn_spec`: in exact arithmetic the column deletion
+  returns a QR factorization.
+* §6.5.2, `GolubVanLoan.Chapter06.qrInsertColumn_spec`: in exact arithmetic the column insertion
+  returns a QR factorization.
+* §6.5.3, `GolubVanLoan.Chapter06.qrInsertRow_spec`: in exact arithmetic the row insertion returns a
+  QR factorization.
+* §6.5.3, `GolubVanLoan.Chapter06.qrDeleteFirstRow_spec`: in exact arithmetic the deletion of the
+  first row returns a QR factorization.
+* §6.5.3, `GolubVanLoan.Chapter06.qrDeleteRow_exists`: after any row is deleted, a QR factorization
+  exists.
+* Equation (6.5.6), `GolubVanLoan.Chapter06.equation_6_5_6`: $A + zz^T = [G^T; z^T]^T [G^T; z^T]$.
+* Equation (6.5.7), `GolubVanLoan.Chapter06.equation_6_5_7`: if $Q^T [G^T; z^T] = [R; 0]$ with $Q$
+  orthogonal, then $A + zz^T = R^T R$.
+* §6.5.4, `GolubVanLoan.Chapter06.choleskyUpdate_spec`: in exact arithmetic the Cholesky update
+  returns a Cholesky factor of $A + zz^T$, up to the signs of its diagonal.
+* Equation (6.5.10), `GolubVanLoan.Chapter06.equation_6_5_10`:
+  $A - zz^T = [G^T; z^T]^T S [G^T; z^T]$.
+* §6.5.4, `GolubVanLoan.Chapter06.IsSOrthogonal.mul`: a product of $S$-orthogonal matrices is
+  $S$-orthogonal.
+* Equation (6.5.12), `GolubVanLoan.Chapter06.equation_6_5_12`: if $H^T [G^T; z^T] = [R; 0]$ with $H$
+  $S$-orthogonal, then $A - zz^T = R^T R$.
+* §6.5.4, `GolubVanLoan.Chapter06.hyperbolicRotation_isSOrthogonal`: a hyperbolic rotation is
+  $S$-orthogonal.
+* Equation (6.5.13), `GolubVanLoan.Chapter06.equation_6_5_13`: the hyperbolic rotation computed from
+  $\tau = x_2/x_1$ zeroes $x_2$ when $|x_2| < |x_1|$.
+* §6.5.4, `GolubVanLoan.Chapter06.hyperbolic_not_exists`: no hyperbolic rotation zeroes $x_2$ when
+  $|x_1| \le |x_2|$ and $x_2 \neq 0$.
+* §6.5.4, `GolubVanLoan.Chapter06.abs_lt_of_posDef_sub`: if $A - zz^T$ is positive definite, then
+  $|z_1| < |g_{11}|$.
+* Theorem 6.5.1, `GolubVanLoan.Chapter06.theorem_6_5_1`: one hyperbolic rotation zeroes the first
+  entry of $z$ and leaves a smaller positive definite downdating problem.
+* Equation (6.5.14), `GolubVanLoan.Chapter06.equation_6_5_14`: the first row and the trailing block
+  of a Cholesky factor.
+* Equation (6.5.15), `GolubVanLoan.Chapter06.equation_6_5_15`: the cosh–sinh pair of the first
+  downdating step.
+* §6.5.4, `GolubVanLoan.Chapter06.choleskyDowndate_exists`: the factorization (6.5.12) exists with a
+  product of hyperbolic rotations.
+* §6.5.4, `GolubVanLoan.Chapter06.choleskyDowndate_spec`: in exact arithmetic the Cholesky downdate
+  returns the Cholesky factor of $A - zz^T$.
+* Equation (6.5.16), `GolubVanLoan.Chapter06.equation_6_5_16`: pivoted QR followed by a QR
+  factorization of $R^T$ gives a ULV decomposition.
+* §6.5.5, `GolubVanLoan.Chapter06.ulv_nullspace_norm`: $\|AV_2\|_2 = \|L_{22}\|_2$.
 
 ## Conventions
 
-Real matrices, 0-based: the book's `n`-by-`n` matrices are `Matrix (Fin n) (Fin n) ℝ`. The book's
-QR factorization `A = QR` is `Matrix.IsQR A Q R` (`Q` orthogonal — `unitaryGroup` over `ℝ` — and
-`R` upper trapezoidal). The book's Cholesky factorization `A = G Gᵀ` with `G` lower triangular is
-the backbone's `Matrix.IsCholesky A Gᵀ` (upper triangular factor with positive diagonal,
-`(Gᵀ)ᵀ Gᵀ = A`). The stacked matrix `[Gᵀ; zᵀ]` of (6.5.6) and (6.5.10) is
-`Matrix.fromRows Gᵀ (replicateRow Unit z)`, with rows `Fin n ⊕ Unit`; the signature
-`S = diag(I_n, −1)` of (6.5.9) is Mathlib's `LieAlgebra.Orthogonal.indefiniteDiagonal (Fin n) Unit`.
-A sweep of rotations in the adjacent planes `(k, k + 1)` is a product of the backbone's
-`Matrix.adjacentEmbed k (G k)`; the hyperbolic rotation `H_k` of §6.5.4 is
-`Matrix.hyperbolicRotation (Sum.inl k) (Sum.inr ()) c s`. The partitions `[R; 0]` of (6.5.16) are
-`Matrix.fromRows` over `Fin n ⊕ Fin p`, the rows of `A : Matrix (Fin (n + p)) (Fin n) ℝ` being
-reindexed by `finSumFinEquiv`.
+* Matrices are real and indices are 0-based: the $n \times n$ matrices of the source are
+  `Matrix (Fin n) (Fin n) ℝ`.
+* The QR factorization $A = QR$ is `Matrix.IsQR A Q R`: $Q$ is orthogonal (in `Matrix.unitaryGroup`
+  over $\mathbb{R}$) and $R$ is upper trapezoidal.
+* The Cholesky factorization $A = GG^T$ with $G$ lower triangular is `Matrix.IsCholesky A Gᵀ`: the
+  factor $G^T$ is upper triangular with positive diagonal, and $(G^T)^T G^T = A$.
+* The stacked matrix $[G^T; z^T]$ of (6.5.6) and (6.5.10) is
+  `Matrix.fromRows Gᵀ (replicateRow Unit z)`, with the rows indexed by `Fin n ⊕ Unit`. The signature
+  $S = \operatorname{diag}(I_n, -1)$ of (6.5.9) is Mathlib's
+  `LieAlgebra.Orthogonal.indefiniteDiagonal (Fin n) Unit`.
+* A sweep of rotations in the adjacent planes $(k, k + 1)$ is a product of the matrices
+  `Matrix.adjacentEmbed k (G k)`. The hyperbolic rotation $H_k$ of §6.5.4 is
+  `Matrix.hyperbolicRotation (Sum.inl k) (Sum.inr ()) c s`.
+* In (6.5.16), the partitions $[R; 0]$ are `Matrix.fromRows` over `Fin n ⊕ Fin p`, and the rows of
+  `A : Matrix (Fin (n + p)) (Fin n) ℝ` are reindexed by `finSumFinEquiv`.
 
-The section has no numbered algorithm. Its prose procedures are programs named by content, in the
-algorithm conventions of `NumlibSurface/GolubVanLoan`: every product, difference, quotient and
-square root is passed through the rounding hook `rnd`, loops are `List.foldlM`, and the exact
-semantics (`M := Id`, `rnd := pure`) is a `_spec` theorem against the backbone. The Cholesky
-downdate `choleskyDowndate` writes its hyperbolic rotations out (they are not Givens rotations),
-through chapter 5's row helper `Chapter05.hyperbolicApplyLeft`. The Givens-based procedures
-(`qrUpdateRankOne`, `qrDeleteColumn`, `qrInsertColumn`, `qrInsertRow`, `qrDeleteFirstRow`,
-`choleskyUpdate`) call chapter 5's shared programs (conventions 5 and 13): the pair
-`[c, s] = givens(a, b)` is `Chapter05.algorithm_5_1_3`, "rotate rows `i`, `k`" is
-`Chapter05.givensApplyLeft`, "rotate columns `i`, `k` of `Q`" is `Chapter05.givensApplyRight`,
-"rotate entries `i`, `k` of `w`" is `Chapter05.givensRotateVec`; the products `Qᵀu` are chapter 1's
-gaxpy (Algorithm 1.1.3) and the rank-one change of the first row its saxpy (Algorithm 1.1.2). Two
-sweeps of chapter 5 are shared: the top-down triangularization of an upper Hessenberg matrix
-(`Chapter05.givensHessenbergSweep`, after Algorithm 5.2.5) and the bottom-up sweep driven by a
-vector (`Chapter05.givensVectorSweep`). Every rotation is applied to all the columns (resp. rows) of
-its matrix; the book leaves the column ranges implicit, and the extra columns are zero in both
-rotated rows.
-## Sources
+## Implementation notes
 
-Backbone `Numlib/Direct/Updating` (the structural lemmas of the sweeps, the existence of the
-updated factorizations, the stacked Gram identities, Theorem 6.5.1 as
-`Matrix.hyperbolicDowndate_step`), `Numlib/LinearAlgebra/Matrix/PlaneRotation` (hyperbolic
-rotations, `Matrix.hyperbolicPair`, `Matrix.IsJOrthogonal`), `Numlib/Analysis/Matrix/OperatorNorm`;
-the programs and exact specifications of chapter 5 (`Chapter05.algorithm_5_1_3_spec`,
-`givensApplyLeft_spec`, `givensApplyRight_spec`) and chapter 1 (Algorithms 1.1.2–1.1.3).
+* The programs follow the algorithm conventions of the library: every product, difference, quotient
+  and square root is rounded by `rnd`, loops are `List.foldlM`, and the exact semantics (`M := Id`,
+  `rnd := pure`) is a `_spec` theorem against the backbone.
+* The Cholesky downdate `GolubVanLoan.Chapter06.choleskyDowndate` writes out its hyperbolic
+  rotations, which are not Givens rotations, through the row helper
+  `GolubVanLoan.Chapter05.hyperbolicApplyLeft`.
+* The Givens procedures call the shared programs of Chapter 5: the pair
+  $[c, s] = \operatorname{givens}(a, b)$ is `GolubVanLoan.Chapter05.algorithm_5_1_3`; the rotations
+  of two rows, of two columns of $Q$, and of two entries of a vector are
+  `GolubVanLoan.Chapter05.givensApplyLeft`, `GolubVanLoan.Chapter05.givensApplyRight` and
+  `GolubVanLoan.Chapter05.givensRotateVec`. The products $Q^T u$ are the gaxpy
+  `GolubVanLoan.Chapter01.algorithm_1_1_3`, and the rank-one change of the first row is the saxpy
+  `GolubVanLoan.Chapter01.algorithm_1_1_2`.
+* Two sweeps of Chapter 5 are shared: the top-down triangularization of an upper Hessenberg matrix,
+  `GolubVanLoan.Chapter05.givensHessenbergSweep` (after Algorithm 5.2.5), and the bottom-up sweep
+  driven by a vector, `GolubVanLoan.Chapter05.givensVectorSweep`.
+* Every rotation is applied to all the columns (or all the rows) of its matrix. The source leaves
+  the column ranges implicit; the extra columns are zero in both rotated rows.
 
-Errata ([golub2013matrix] §6.5): "Following Algorithm 5.2.4" in §6.5.1 means Algorithm 5.2.5
-(Hessenberg QR); §6.5.4 prints `Ã = RRᵀ` for `RᵀR`, and `G̃ = Rᵀ` is the Cholesky factor only up
-to the signs of its diagonal when the rotations are Givens rotations (a Givens `r` may be
-negative), which `equation_6_5_7` normalizes; the statement of Theorem 6.5.1 is mangled in print
-("If / and / A = …"), and the "Schur complement of `α`" in its proof is the Schur complement of the
-`(1,1)` entry `α − μ²` of `Ã`; in §6.5.5, `‖AV₂‖₂ = ‖U₂L₂₂‖₂` uses `U₂ = U(:, r+1:m)`, which does
-not match the `n − r` rows of `L₂₂` — the columns `r+1:n` of `U` are meant, and either way the norm
-is `‖L₂₂‖₂` (`ulv_nullspace_norm`).
+## Deviations from the source
+
+* **§6.5.1** (typo). "Following Algorithm 5.2.4" means Algorithm 5.2.5, the QR factorization of an
+  upper Hessenberg matrix. See `GolubVanLoan.Chapter06.qrUpdateRankOne`.
+* **Equation (6.5.7)** (typo). The source prints $\tilde A = RR^T$. The correct identity is
+  $\tilde A = R^T R$. See `GolubVanLoan.Chapter06.equation_6_5_7`.
+* **Equation (6.5.7)** (correction). The source says that $\tilde G = R^T$ is the updated Cholesky
+  factor. When the rotations are Givens rotations, the diagonal of $R$ can have negative entries, so
+  $R^T$ is the Cholesky factor only after the signs of its diagonal are normalized. See
+  `GolubVanLoan.Chapter06.equation_6_5_7` and `GolubVanLoan.Chapter06.choleskyUpdate_spec`.
+* **Equation (6.5.12)** (correction). The source says that $\tilde G = R^T$ is the Cholesky factor
+  of $A - zz^T$. The statement normalizes the signs of the diagonal of $R$, as for (6.5.7). See
+  `GolubVanLoan.Chapter06.equation_6_5_12`.
+* **§6.5.4, nonexistence of a hyperbolic rotation** (generalization). The source treats
+  $|x_2| > |x_1|$. The statement also covers $|x_2| = |x_1| \neq 0$. See
+  `GolubVanLoan.Chapter06.hyperbolic_not_exists`.
+* **Theorem 6.5.1** (typo). The statement is garbled in print ("If / and / A = …"). See
+  `GolubVanLoan.Chapter06.theorem_6_5_1`.
+* **Equation (6.5.16)** (generalization). The source obtains $\Pi$ and $R$ from QR with column
+  pivoting. The statement holds for every orthogonal $\Pi$ and every $R$ with $U^T A \Pi = [R; 0]$.
+  See `GolubVanLoan.Chapter06.equation_6_5_16`.
+* **§6.5.5** (typo). In $\|AV_2\|_2 = \|U_2 L_{22}\|_2$, the source takes $U_2 = U(:, r{+}1{:}m)$,
+  which does not match the $n - r$ rows of $L_{22}$. The columns $r{+}1{:}n$ of $U$ are meant; in
+  both readings the norm is $\|L_{22}\|_2$. See `GolubVanLoan.Chapter06.ulv_nullspace_norm`.
 
 ## Not formalized
 
-The ULV updating procedure of §6.5.5 beyond (6.5.16) (condition estimation, "small" entries,
-"`≈ σ_min`", zero chasing), the rank-revealing smallness of `L₂₁`, `L₂₂`, the numerical caveats on
-hyperbolic rotations with `|x₁| ≈ |x₂|`, and the flop counts (`26n²`, `O(n²)`, `O(mn)`). (6.5.4),
-(6.5.5), (6.5.8), (6.5.9) only name data.
+* **The ULV updating procedure of §6.5.5 beyond (6.5.16):** condition estimation, the "small"
+  entries, "$\approx \sigma_{\min}$", and zero chasing.
+* **The rank-revealing smallness of $L_{21}$ and $L_{22}$ in (6.5.16).** It is a heuristic property
+  of QR with column pivoting.
+* **The numerical caveats on hyperbolic rotations with $|x_1| \approx |x_2|$.**
+* **The flop counts** ($26n^2$, $O(n^2)$, $O(mn)$).
+* **Displays (6.5.4), (6.5.5), (6.5.8) and (6.5.9).** They only name data.
 -/
 
 open Matrix
@@ -80,21 +179,27 @@ namespace GolubVanLoan.Chapter06
 
 /-! ### §6.5.1 Rank-one changes -/
 
-/-- **(6.5.1).** "Suppose we have the QR factorization `QR = A ∈ ℝⁿˣⁿ` … Observe that
-`Ã = A + uvᵀ = Q(R + wvᵀ)` where `w = Qᵀu`." -/
+/-- **Equation (6.5.1)** of [golub2013matrix]. Suppose $A = QR$ is a QR factorization of
+$A \in \mathbb{R}^{n \times n}$, and let $u, v \in \mathbb{R}^n$. Then $$\tilde A = A + uv^T =
+Q(R + wv^T), \qquad w = Q^T u.$$
+-/
 theorem equation_6_5_1 {n : ℕ} {A Q R : Matrix (Fin n) (Fin n) ℝ} (h : IsQR A Q R)
     (u v : Fin n → ℝ) : A + vecMulVec u v = Q * (R + vecMulVec (Qᵀ *ᵥ u) v) := by
   have hQ : Q * Qᵀ = 1 := by
     exact (mem_orthogonalGroup_iff _ ℝ).1 h.mem_unitaryGroup
   rw [Matrix.mul_add, h.mul_eq, mul_vecMulVec, mulVec_mulVec, hQ, one_mulVec]
 
-/-- **(6.5.2).** "Suppose rotations `J_{n−1}, …, J₂, J₁` are computed such that
-`J₁ᵀ ⋯ J_{n−1}ᵀ w = ±‖w‖₂ e₁` where each `J_k` is a Givens rotation in planes `k` and `k + 1`. If
-these same rotations are applied to `R`, then `H = J₁ᵀ ⋯ J_{n−1}ᵀ R` is upper Hessenberg."
+/-- **Equation (6.5.2)** of [golub2013matrix]. Let $R \in \mathbb{R}^{n \times n}$ be upper
+triangular, and let $J_1, \dots, J_{n-1}$ be matrices such that $J_k^T$ acts only in the planes
+$k$ and $k + 1$. Then $$H = J_1^T \cdots J_{n-1}^T R$$ is upper Hessenberg: $h_{il} = 0$
+whenever $i > l + 1$.
 
-The shape holds whatever the rotations are: `J_kᵀ` (0-based plane `(k, k + 1)`) is
-`Matrix.adjacentEmbed k (G k)` for an arbitrary `2 × 2` block `G k`, and the sweep
-`P = J₁ᵀ ⋯ J_{n−1}ᵀ` applies `J_{n−1}ᵀ` first. -/
+**Generalization.** The source takes Givens rotations computed so that
+$J_1^T \cdots J_{n-1}^T w = \pm\|w\|_2 e_1$. The shape holds whatever the rotations are.
+
+The factor $J_k^T$ is `Matrix.adjacentEmbed (k - 1) (G (k - 1))` for an arbitrary $2 \times 2$
+block, which acts in the 0-based plane $(k - 1, k)$. The product $P = J_1^T \cdots J_{n-1}^T$
+applies $J_{n-1}^T$ first. -/
 theorem equation_6_5_2 {n : ℕ} {R : Matrix (Fin n) (Fin n) ℝ} (hR : R.IsUpperTriangular)
     (G : ℕ → Matrix (Fin 2) (Fin 2) ℝ) {P : Matrix (Fin n) (Fin n) ℝ}
     (hP : P = (List.map (fun j => adjacentEmbed j (G j)) (List.range (n - 1))).prod)
@@ -106,9 +211,13 @@ theorem equation_6_5_2 {n : ℕ} {R : Matrix (Fin n) (Fin n) ℝ} (hR : R.IsUppe
   rw [hP, List.range_eq_range', prod_map_range'_eq_prodFwd]
   exact prodFwd_adjacentEmbed_mul_apply_eq_zero hT G 0 (n - 1) (Or.inl hil)
 
-/-- **(6.5.3).** "Consequently, `(J₁ᵀ ⋯ J_{n−1}ᵀ)(R + wvᵀ) = H ± ‖w‖₂ e₁vᵀ = H₁` is also upper
-Hessenberg": if the sweep `P` of (6.5.2) maps `w` to `ρ e₁` (the book's `ρ = ±‖w‖₂`), then
-`P (R + wvᵀ) = P R + ρ e₁ vᵀ`, and it vanishes below the subdiagonal. -/
+/-- **Equation (6.5.3)** of [golub2013matrix]. Let $R \in \mathbb{R}^{n \times n}$ be upper
+triangular with $n \ge 1$, let $P = J_1^T \cdots J_{n-1}^T$ be a sweep of rotations in adjacent
+planes as in (6.5.2), and let $w, v \in \mathbb{R}^n$ with $Pw = \rho e_1$. Then $$P(R + wv^T) =
+PR + \rho e_1 v^T = H_1,$$ and $H_1$ is upper Hessenberg.
+
+The source has $\rho = \pm\|w\|_2$. As in (6.5.2), the $2 \times 2$ blocks of the rotations are
+arbitrary. -/
 theorem equation_6_5_3 {n : ℕ} {R : Matrix (Fin n) (Fin n) ℝ} (hR : R.IsUpperTriangular)
     (G : ℕ → Matrix (Fin 2) (Fin 2) ℝ) {P : Matrix (Fin n) (Fin n) ℝ}
     (hP : P = (List.map (fun j => adjacentEmbed j (G j)) (List.range (n - 1))).prod)
@@ -123,8 +232,10 @@ theorem equation_6_5_3 {n : ℕ} {R : Matrix (Fin n) (Fin n) ℝ} (hR : R.IsUppe
 
 /-! ### §6.5.3 Appending or deleting a row -/
 
-/-- **§6.5.3**, "(The procedure is similar when an arbitrary row is deleted.)": if `A = QR` with
-`A ∈ ℝ^{(m+1)×n}`, then `A` with its row `k` deleted has a QR factorization. -/
+/-- **Section 6.5.3** of [golub2013matrix], deleting an arbitrary row ("The procedure is similar
+when an arbitrary row is deleted."). If $A = QR$ is a QR factorization of
+$A \in \mathbb{R}^{(m+1) \times n}$ and $k$ is a row index, then the matrix $A$ with its row $k$
+deleted has a QR factorization. -/
 theorem qrDeleteRow_exists {m n : ℕ} {A : Matrix (Fin (m + 1)) (Fin n) ℝ}
     {Q : Matrix (Fin (m + 1)) (Fin (m + 1)) ℝ} {R : Matrix (Fin (m + 1)) (Fin n) ℝ}
     (h : IsQR A Q R) (k : Fin (m + 1)) :
@@ -134,17 +245,32 @@ theorem qrDeleteRow_exists {m n : ℕ} {A : Matrix (Fin (m + 1)) (Fin n) ℝ}
 
 /-! ### §6.5.4 Cholesky updating -/
 
-/-- **(6.5.6).** "`Ã = [Gᵀ; zᵀ]ᵀ [Gᵀ; zᵀ]`" for `Ã = A + zzᵀ` (6.5.5) and `A = GGᵀ`. -/
+/-- **Equation (6.5.6)** of [golub2013matrix]. Let $G \in \mathbb{R}^{n \times n}$ with $GG^T = A$,
+and let $z \in \mathbb{R}^n$. Then $\tilde A = A + zz^T$ (6.5.5) satisfies $$\tilde A =
+\begin{bmatrix} G^T \\ z^T \end{bmatrix}^T \begin{bmatrix} G^T \\ z^T \end{bmatrix}.$$
+-/
 theorem equation_6_5_6 {n : ℕ} {A G : Matrix (Fin n) (Fin n) ℝ} (hA : G * Gᵀ = A)
     (z : Fin n → ℝ) :
     A + vecMulVec z z =
       (fromRows Gᵀ (replicateRow Unit z))ᵀ * fromRows Gᵀ (replicateRow Unit z) := by
   rw [transpose_mul_self_fromRows, transpose_transpose, hA]
 
-/-- **(6.5.7).** "we can solve this problem by computing a product of Givens rotations
-`Q = Q₁ ⋯ Q_n` so that `Qᵀ [Gᵀ; zᵀ] = [R; 0]` is upper triangular. It follows that `Ã = RRᵀ` and
-so the updated Cholesky factor is given by `G̃ = Rᵀ`." For any orthogonal `Q`, `Ã = RᵀR` (the book's
-`RRᵀ` is a typo); with the signs of the diagonal of `R` normalized, `Rᵀ` is the Cholesky factor. -/
+/-- **Equation (6.5.7)** of [golub2013matrix]. Let $G \in \mathbb{R}^{n \times n}$ with $GG^T = A$
+and $z \in \mathbb{R}^n$, and let $Q \in \mathbb{R}^{(n+1) \times (n+1)}$ be orthogonal with
+$$Q^T \begin{bmatrix} G^T \\ z^T \end{bmatrix} = \begin{bmatrix} R \\ 0 \end{bmatrix}.$$ Then
+$A + zz^T = R^T R$. If moreover $R$ is upper triangular with nonzero diagonal, and $D =
+\operatorname{diag}(\operatorname{sign}(r_{ii}))$, then $DR$ is the upper triangular Cholesky
+factor of $A + zz^T$, so the updated Cholesky factor is $\tilde G = R^T D$.
+
+**Typo.** The source prints $\tilde A = RR^T$. The correct identity is $\tilde A = R^T R$.
+
+**Correction.** The source says that $\tilde G = R^T$ is the updated Cholesky factor. A Givens
+rotation can produce a negative diagonal entry $r$, so $R^T$ is the Cholesky factor only after
+the signs of its diagonal are normalized.
+
+The source takes $Q = Q_1 \cdots Q_n$, a product of Givens rotations; the statement holds for
+every orthogonal $Q$. The stacked matrix is `Matrix.fromRows Gᵀ (replicateRow Unit z)`, and the
+Cholesky factor is `Matrix.IsCholesky`. -/
 theorem equation_6_5_7 {n : ℕ} {A G R : Matrix (Fin n) (Fin n) ℝ} (hA : G * Gᵀ = A)
     {z : Fin n → ℝ} {Q : Matrix (Fin n ⊕ Unit) (Fin n ⊕ Unit) ℝ}
     (hQ : Q ∈ orthogonalGroup (Fin n ⊕ Unit) ℝ)
@@ -156,9 +282,13 @@ theorem equation_6_5_7 {n : ℕ} {A G R : Matrix (Fin n) (Fin n) ℝ} (hA : G * 
     rw [equation_6_5_6 hA, transpose_mul_self_eq_of_mem_orthogonalGroup hQ h]
   exact ⟨e, fun hR hd => isCholesky_diagonal_sign_mul hR hd e.symm⟩
 
-/-! ### §6.5.4 Cholesky downdating: `S`-orthogonality and hyperbolic rotations -/
+/-! ### §6.5.4 Cholesky downdating: $S$-orthogonality and hyperbolic rotations -/
 
-/-- **(6.5.10).** "`Ã = GGᵀ − zzᵀ = [Gᵀ; zᵀ]ᵀ S [Gᵀ; zᵀ]`" with `S = diag(I_n, −1)` (6.5.9). -/
+/-- **Equation (6.5.10)** of [golub2013matrix]. Let $G \in \mathbb{R}^{n \times n}$ with $GG^T = A$,
+let $z \in \mathbb{R}^n$, and let $S = \operatorname{diag}(I_n, -1)$ (6.5.9). Then $$\tilde A =
+GG^T - zz^T = \begin{bmatrix} G^T \\ z^T \end{bmatrix}^T S \begin{bmatrix} G^T \\ z^T
+\end{bmatrix}.$$
+-/
 theorem equation_6_5_10 {n : ℕ} {A G : Matrix (Fin n) (Fin n) ℝ} (hA : G * Gᵀ = A)
     (z : Fin n → ℝ) :
     A - vecMulVec z z =
@@ -167,20 +297,30 @@ theorem equation_6_5_10 {n : ℕ} {A G : Matrix (Fin n) (Fin n) ℝ} (hA : G * G
           fromRows Gᵀ (replicateRow Unit z) := by
   rw [transpose_mul_indefiniteDiagonal_mul_fromRows, transpose_transpose, hA]
 
-/-- **§6.5.4, (6.5.11).** "A matrix `H` that satisfies (6.5.11) [`HSHᵀ = S`] is said to be
-`S`-orthogonal", for `S = diag(I_n, −1)`. -/
+/-- **Equation (6.5.11)** of [golub2013matrix]. A matrix $H \in \mathbb{R}^{(n+1) \times (n+1)}$ is
+**$S$-orthogonal** if $$H S H^T = S, \qquad S = \operatorname{diag}(I_n, -1).$$
+
+It is `Matrix.IsJOrthogonal` for the signature `LieAlgebra.Orthogonal.indefiniteDiagonal (Fin n)
+Unit ℝ`. -/
 def IsSOrthogonal {n : ℕ} (H : Matrix (Fin n ⊕ Unit) (Fin n ⊕ Unit) ℝ) : Prop :=
   IsJOrthogonal (LieAlgebra.Orthogonal.indefiniteDiagonal (Fin n) Unit ℝ) H
 
-/-- **§6.5.4.** "Note that the product of `S`-orthogonal matrices is also `S`-orthogonal." -/
+/-- **Section 6.5.4** of [golub2013matrix]. The product of $S$-orthogonal matrices is
+$S$-orthogonal. -/
 theorem IsSOrthogonal.mul {n : ℕ} {H₁ H₂ : Matrix (Fin n ⊕ Unit) (Fin n ⊕ Unit) ℝ}
     (h₁ : IsSOrthogonal H₁) (h₂ : IsSOrthogonal H₂) : IsSOrthogonal (H₁ * H₂) :=
   IsJOrthogonal.mul h₁ h₂
 
-/-- **(6.5.11)–(6.5.12).** "we seek a matrix `H` … that satisfies two properties: `HSHᵀ = S`,
-`Hᵀ [Gᵀ; zᵀ] = [R; 0]` … If this can be accomplished, then it follows … `Ã = RᵀR` … that the
-Cholesky factor of `Ã = A − zzᵀ` is given by `G̃ = Rᵀ`" — once the signs of the diagonal of the
-triangular `R` are normalized. -/
+/-- **Equation (6.5.12)** of [golub2013matrix]. Let $G \in \mathbb{R}^{n \times n}$ with $GG^T = A$
+and $z \in \mathbb{R}^n$, and let $H \in \mathbb{R}^{(n+1) \times (n+1)}$ be $S$-orthogonal with
+$$H^T \begin{bmatrix} G^T \\ z^T \end{bmatrix} = \begin{bmatrix} R \\ 0 \end{bmatrix}.$$ Then
+$A - zz^T = R^T R$. If moreover $R$ is upper triangular with nonzero diagonal, and $D =
+\operatorname{diag}(\operatorname{sign}(r_{ii}))$, then $DR$ is the upper triangular Cholesky
+factor of $A - zz^T$, so the Cholesky factor of $\tilde A = A - zz^T$ is $\tilde G = R^T D$.
+
+**Correction.** The source says that $\tilde G = R^T$ is the Cholesky factor of $\tilde A$. The
+diagonal of $R$ can have negative entries, so $R^T$ is the Cholesky factor only after the signs
+of its diagonal are normalized. -/
 theorem equation_6_5_12 {n : ℕ} {A G R : Matrix (Fin n) (Fin n) ℝ} (hA : G * Gᵀ = A)
     {z : Fin n → ℝ} {H : Matrix (Fin n ⊕ Unit) (Fin n ⊕ Unit) ℝ} (hH : IsSOrthogonal H)
     (h : Hᵀ * fromRows Gᵀ (replicateRow Unit z) = fromRows R 0) :
@@ -191,19 +331,26 @@ theorem equation_6_5_12 {n : ℕ} {A G R : Matrix (Fin n) (Fin n) ℝ} (hA : G *
     rw [← transpose_mul_self_sub_eq_of_isJOrthogonal hH h, transpose_transpose, hA]
   exact ⟨e, fun hR hd => isCholesky_diagonal_sign_mul hR hd e.symm⟩
 
-/-- **§6.5.4, hyperbolic rotations.** "`H_k ∈ ℝ^{(n+1)×(n+1)}` is a hyperbolic rotation if it
-agrees with `I_{n+1}` except in four locations: `[H_k]_{kk} = [H_k]_{n+1,n+1} = cosh(θ)`,
-`[H_k]_{k,n+1} = [H_k]_{n+1,k} = −sinh(θ)`. … The `S`-orthogonality of this matrix follows from
-`cosh(θ)² − sinh(θ)² = 1`." -/
+/-- **Section 6.5.4** of [golub2013matrix], hyperbolic rotations. For $k \in \{1, \dots, n\}$ and
+$\theta \in \mathbb{R}$, let $H_k \in \mathbb{R}^{(n+1) \times (n+1)}$ agree with $I_{n+1}$
+except in four entries: $$[H_k]_{kk} = [H_k]_{n+1,n+1} = \cosh(\theta), \qquad [H_k]_{k,n+1} =
+[H_k]_{n+1,k} = -\sinh(\theta).$$ Then $H_k$ is $S$-orthogonal.
+
+The source derives this from $\cosh(\theta)^2 - \sinh(\theta)^2 = 1$. The matrix is
+`Matrix.hyperbolicRotation (Sum.inl k) (Sum.inr ()) (Real.cosh θ) (Real.sinh θ)`. -/
 theorem hyperbolicRotation_isSOrthogonal {n : ℕ} (k : Fin n) (θ : ℝ) :
     IsSOrthogonal (hyperbolicRotation (Sum.inl k) (Sum.inr ()) (Real.cosh θ) (Real.sinh θ)) :=
   isJOrthogonal_hyperbolicRotation Sum.inl_ne_inr (ε := Sum.elim (fun _ => 1) fun _ => -1)
     rfl rfl (by rw [Real.cosh_sq θ]; ring)
 
-/-- **(6.5.13).** "if `|x₁| > |x₂|`, then `{c, s} = {cosh(θ), sinh(θ)}` can be computed as follows:
-`τ = x₂/x₁`, `c = 1/√(1 − τ²)`, `s = c · τ`", and then `[c −s; −s c][x₁; x₂] = [r; 0]` (with
-`r = sign(x₁) √(x₁² − x₂²)`). The pair is the backbone's `Matrix.hyperbolicPair x₁ x₂`; `c > 0`
-and `c² − s² = 1` make it `(cosh θ, sinh θ)` for `θ = arsinh s`. -/
+/-- **Equation (6.5.13)** of [golub2013matrix]. Let $x_1, x_2 \in \mathbb{R}$ with $|x_1| > |x_2|$,
+and let $$\tau = x_2 / x_1, \qquad c = 1 / \sqrt{1 - \tau^2}, \qquad s = c \cdot \tau.$$ Then
+$c^2 - s^2 = 1$, and $(c, s) = (\cosh(\theta), \sinh(\theta))$ for
+$\theta = \operatorname{arsinh}(s)$. Moreover $$\begin{bmatrix} c & -s \\ -s & c \end{bmatrix}
+\begin{bmatrix} x_1 \\ x_2 \end{bmatrix} = \begin{bmatrix} r \\ 0 \end{bmatrix}, \qquad r =
+\operatorname{sign}(x_1) \sqrt{x_1^2 - x_2^2}.$$
+
+The pair $(c, s)$ is `Matrix.hyperbolicPair x₁ x₂`. -/
 theorem equation_6_5_13 {x₁ x₂ c s : ℝ} (h : |x₂| < |x₁|)
     (hc : c = 1 / √(1 - (x₂ / x₁) ^ 2)) (hs : s = c * (x₂ / x₁)) :
     c ^ 2 - s ^ 2 = 1 ∧ Real.cosh (Real.arsinh s) = c ∧ Real.sinh (Real.arsinh s) = s ∧
@@ -221,15 +368,24 @@ theorem equation_6_5_13 {x₁ x₂ c s : ℝ} (h : |x₂| < |x₁|)
   rw [Real.cosh_arsinh]
   rw [show 1 + s ^ 2 = c ^ 2 by linarith, Real.sqrt_sq hc0.le]
 
-/-- **§6.5.4.** "Since we always have `|cosh(θ)| > |sinh(θ)|`, there is no real solution to
-`−sx₁ + cx₂ = 0` if `|x₂| > |x₁|`" — nor if `|x₂| = |x₁| ≠ 0`. -/
+/-- **Section 6.5.4** of [golub2013matrix], nonexistence of a hyperbolic rotation. Let
+$x_1, x_2 \in \mathbb{R}$ with $|x_1| \le |x_2|$ and $x_2 \neq 0$. Then there are no real $c, s$
+with $c^2 - s^2 = 1$ and $-s x_1 + c x_2 = 0$.
+
+**Generalization.** The source argues from $|\cosh(\theta)| > |\sinh(\theta)|$ that there is no
+real solution if $|x_2| > |x_1|$. The statement also covers $|x_2| = |x_1| \neq 0$. -/
 theorem hyperbolic_not_exists {x₁ x₂ : ℝ} (h : |x₁| ≤ |x₂|) (hx₂ : x₂ ≠ 0) :
     ¬ ∃ c s : ℝ, c ^ 2 - s ^ 2 = 1 ∧ -s * x₁ + c * x₂ = 0 :=
   not_exists_hyperbolic_of_abs_le h hx₂
 
-/-- **§6.5.4.** "Since `Ã = GGᵀ − zzᵀ` is positive definite, `[Ã]₁₁ = g₁₁² − z₁² > 0`. It follows
-that `|g₁₁| > |z₁|` which guarantees that the cosh-sinh computations (6.5.13) go through." Here
-`g₁₁` is the `(0, 0)` entry of the upper triangular factor `Gᵀ`. -/
+/-- **Section 6.5.4** of [golub2013matrix]. Let $A = H^T H$ be a Cholesky factorization of
+$A \in \mathbb{R}^{(n+1) \times (n+1)}$ with $H = G^T$ upper triangular, and let
+$z \in \mathbb{R}^{n+1}$. If $\tilde A = A - zz^T$ is positive definite, then $$[\tilde
+A]_{11} = g_{11}^2 - z_1^2 > 0,$$ and therefore $|z_1| < |g_{11}|$. This guarantees that the
+cosh–sinh computations (6.5.13) go through.
+
+The entry $g_{11}$ is the entry $(0, 0)$ of the upper triangular factor $H$, and the
+factorization is `Matrix.IsCholesky A H`. -/
 theorem abs_lt_of_posDef_sub {n : ℕ} {A H : Matrix (Fin (n + 1)) (Fin (n + 1)) ℝ}
     (hH : IsCholesky A H) {z : Fin (n + 1) → ℝ} (hA : (A - vecMulVec z z).PosDef) :
     (A - vecMulVec z z) 0 0 = H 0 0 ^ 2 - z 0 ^ 2 ∧ 0 < H 0 0 ^ 2 - z 0 ^ 2 ∧
@@ -243,15 +399,26 @@ theorem abs_lt_of_posDef_sub {n : ℕ} {A H : Matrix (Fin (n + 1)) (Fin (n + 1))
   have hpos : 0 < H 0 0 ^ 2 - z 0 ^ 2 := e ▸ hA.diag_pos
   exact ⟨e, hpos, sq_lt_sq.1 (by linarith)⟩
 
-/-- **Theorem 6.5.1.** "If `A = [α vᵀ; v B] = [g₁₁ 0; g₁ G₁][g₁₁ g₁ᵀ; 0 G₁ᵀ]` and
-`Ã = A − zzᵀ = A − [μ; w][μ; w]ᵀ` are positive definite, then it is possible to determine
-`c = cosh(θ)` and `s = sinh(θ)` so
-`[c 0 −s; 0 I_{n−1} 0; −s 0 c][g₁₁ g₁ᵀ; 0 G₁ᵀ; μ wᵀ] = [g̃₁₁ g̃₁ᵀ; 0 G₁ᵀ; 0 w₁ᵀ]`. Moreover, the
-matrix `Ã₁ = G₁G₁ᵀ − w₁w₁ᵀ` is positive definite."
+/-- **Theorem 6.5.1** of [golub2013matrix]. Let $$A = \begin{bmatrix} \alpha & v^T \\ v & B
+\end{bmatrix} = \begin{bmatrix} g_{11} & 0 \\ g_1 & G_1 \end{bmatrix} \begin{bmatrix} g_{11} &
+g_1^T \\ 0 & G_1^T \end{bmatrix}$$ be a Cholesky factorization of
+$A \in \mathbb{R}^{(n+1) \times (n+1)}$, let $z = [\mu; w] \in \mathbb{R}^{n+1}$, and assume
+that $\tilde A = A - zz^T$ is positive definite. Then there are $\theta \in \mathbb{R}$,
+$c = \cosh(\theta)$ and $s = \sinh(\theta)$ such that $$\begin{bmatrix} c & 0 & -s \\ 0 & I_n &
+0 \\ -s & 0 & c \end{bmatrix} \begin{bmatrix} g_{11} & g_1^T \\ 0 & G_1^T \\ \mu & w^T
+\end{bmatrix} = \begin{bmatrix} \tilde g_{11} & \tilde g_1^T \\ 0 & G_1^T \\ 0 & w_1^T
+\end{bmatrix}$$ for some $\tilde g_{11}$, $\tilde g_1$ and $w_1$. Moreover, the matrix
+$\tilde A_1 = G_1 G_1^T - w_1 w_1^T$ is positive definite.
 
-The factorization is `Matrix.IsCholesky A H` with `H = [g₁₁ g₁ᵀ; 0 G₁ᵀ]` on `Fin (n + 1)`, the
-first index carrying `α`, `g₁₁`, `μ`; the rotated stacked matrix is `[R'; z'ᵀ]` with `R'` equal to
-`H` off its first row, `z'₀ = 0`, and `w₁ = z'(1:)`. -/
+**Typo.** The statement of the theorem is garbled in print ("If / and / A = …"). The statement
+here is the one that the proof establishes.
+
+The factorization is `Matrix.IsCholesky A H` with $H = [g_{11}\ g_1^T; 0\ G_1^T]$ indexed by
+`Fin (n + 1)`, where the first index carries $\alpha$, $g_{11}$ and $\mu$. The rotated stacked
+matrix is $[R'; z'^T]$, where $R'$ equals $H$ off its first row, $z'_1 = 0$, and $w_1$ is the
+rest of $z'$. In the proof, the source calls the trailing block the Schur complement of
+$\alpha$; it is the Schur complement of the entry $(1, 1)$ of $\tilde A$, which is
+$\alpha - \mu^2$. The theorem is `Matrix.hyperbolicDowndate_step`. -/
 theorem theorem_6_5_1 {n : ℕ} {A H : Matrix (Fin (n + 1)) (Fin (n + 1)) ℝ}
     (hH : IsCholesky A H) {z : Fin (n + 1) → ℝ} (hA : (A - vecMulVec z z).PosDef) :
     ∃ θ : ℝ, ∃ (R' : Matrix (Fin (n + 1)) (Fin (n + 1)) ℝ) (z' : Fin (n + 1) → ℝ),
@@ -275,9 +442,13 @@ theorem theorem_6_5_1 {n : ℕ} {A H : Matrix (Fin (n + 1)) (Fin (n + 1)) ℝ}
   rw [hcosh, Real.sinh_arsinh]
   exact e
 
-/-- **(6.5.14).** "The blocks in `A`'s Cholesky factor are given by `g₁₁ = √α`, `g₁ = v/g₁₁`,
-`G₁G₁ᵀ = B − (1/α)vvᵀ`", for `A = [α vᵀ; v B]` on `Fin (n + 1)` and its Cholesky factorization
-`Matrix.IsCholesky A H`, `H = [g₁₁ g₁ᵀ; 0 G₁ᵀ]`. -/
+/-- **Equation (6.5.14)** of [golub2013matrix]. Let $$A = \begin{bmatrix} \alpha & v^T \\ v & B
+\end{bmatrix} \in \mathbb{R}^{(n+1) \times (n+1)}$$ have the Cholesky factorization $A = H^T H$
+with $H = [g_{11}\ g_1^T; 0\ G_1^T]$ upper triangular with positive diagonal. Then the blocks of
+the Cholesky factor are $$g_{11} = \sqrt{\alpha}, \qquad g_1 = v / g_{11}, \qquad G_1 G_1^T =
+B - \frac{1}{\alpha} v v^T.$$
+
+The factorization is `Matrix.IsCholesky A H`. -/
 theorem equation_6_5_14 {n : ℕ} {A H : Matrix (Fin (n + 1)) (Fin (n + 1)) ℝ}
     (hH : IsCholesky A H) :
     H 0 0 = √(A 0 0) ∧ (∀ j : Fin n, H 0 j.succ = A j.succ 0 / H 0 0) ∧
@@ -309,9 +480,18 @@ theorem equation_6_5_14 {n : ℕ} {A H : Matrix (Fin (n + 1)) (Fin (n + 1)) ℝ}
     field_simp
     ring
 
-/-- **(6.5.15).** "Since `A − zzᵀ` is positive definite, `a₁₁ − z₁² = g₁₁² − μ² > 0` and so from
-(6.5.13) with `τ = μ/g₁₁` we see that `c = √α/√(α − μ²)`, `s = μ/√(α − μ²)`", and the rotation
-zeroes `μ` (`−s g₁₁ + c μ = 0`) and produces the new last row `w₁ = −s g₁ + c w`. -/
+/-- **Equation (6.5.15)** of [golub2013matrix]. Let $A = [\alpha\ v^T; v\ B] = H^T H$ be a Cholesky
+factorization as in Theorem 6.5.1, with first row $[g_{11}\ g_1^T]$ of $H$, and let
+$z = [\mu; w] \in \mathbb{R}^{n+1}$ with $A - zz^T$ positive definite. Then the pair (6.5.13)
+for $x_1 = g_{11}$, $x_2 = \mu$ is $$c = \frac{\sqrt{\alpha}}{\sqrt{\alpha - \mu^2}}, \qquad s =
+\frac{\mu}{\sqrt{\alpha - \mu^2}}.$$ The rotation zeroes $\mu$, that is,
+$-s g_{11} + c \mu = 0$, and it produces the new last row $[0\ w_1^T]$ with $$w_1 = -s g_1 + c
+w.$$
+
+The source derives the formulas from $a_{11} - z_1^2 = g_{11}^2 - \mu^2 > 0$, which is
+`GolubVanLoan.Chapter06.abs_lt_of_posDef_sub`. The pair is
+`Matrix.hyperbolicPair (H 0 0) (z 0)`, and the rotation is `Matrix.hyperbolicRotation` in the
+planes of the first row of $H$ and the row $z^T$. -/
 theorem equation_6_5_15 {n : ℕ} {A H : Matrix (Fin (n + 1)) (Fin (n + 1)) ℝ}
     (hH : IsCholesky A H) {z : Fin (n + 1) → ℝ} (hA : (A - vecMulVec z z).PosDef) :
     hyperbolicPair (H 0 0) (z 0) =
@@ -348,11 +528,16 @@ theorem equation_6_5_15 {n : ℕ} {A H : Matrix (Fin (n + 1)) (Fin (n + 1)) ℝ}
     field_simp
     ring
 
-/-- **§6.5.4.** "The theorem provides the key step in an induction proof that the factorization
-(6.5.12) exists": if `A = GGᵀ` and `A − zzᵀ` are positive definite, there are hyperbolic rotations
-`H₁, …, H_n` (planes `(k, n+1)`) whose product `H = H₁ ⋯ H_n` is `S`-orthogonal with
-`Hᵀ [Gᵀ; zᵀ] = [R; 0]`, `R` upper triangular — indeed `R` is the (upper) Cholesky factor of
-`A − zzᵀ`. -/
+/-- **Section 6.5.4** of [golub2013matrix], existence of the factorization (6.5.12). Let $A = GG^T$
+be a Cholesky factorization of $A \in \mathbb{R}^{n \times n}$, and let $z \in \mathbb{R}^n$
+with $A - zz^T$ positive definite. Then there are numbers $c_k, s_k$ with $c_k^2 - s_k^2 = 1$
+for $k = 1, \dots, n$, such that the hyperbolic rotations $H_k$ in the planes $(k, n + 1)$ have
+an $S$-orthogonal product $H = H_1 \cdots H_n$ with $$H^T \begin{bmatrix} G^T \\ z^T
+\end{bmatrix} = \begin{bmatrix} R \\ 0 \end{bmatrix},$$ where $R$ is upper triangular and is the
+upper triangular Cholesky factor of $A - zz^T$.
+
+The source says that Theorem 6.5.1 is the key step in an induction proof of this fact. The
+hypothesis $A = GG^T$ is `Matrix.IsCholesky A Gᵀ`. -/
 theorem choleskyDowndate_exists {n : ℕ} {A G : Matrix (Fin n) (Fin n) ℝ} (hG : IsCholesky A Gᵀ)
     {z : Fin n → ℝ} (hA : (A - vecMulVec z z).PosDef) :
     ∃ c s : Fin n → ℝ, (∀ k, c k ^ 2 - s k ^ 2 = 1) ∧ ∃ R : Matrix (Fin n) (Fin n) ℝ,
@@ -370,12 +555,16 @@ section Programs
 
 variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 
-/-- **§6.5.4, Cholesky downdating with hyperbolic rotations.** "Given a Cholesky factorization
-`A = GGᵀ` and a vector `z ∈ ℝⁿ` … compute the Cholesky factorization `Ã = G̃G̃ᵀ` where
-`Ã = A − zzᵀ`", by the hyperbolic rotations `H_k` in the planes `(k, n + 1)` of the stacked
-matrix `[Gᵀ; zᵀ]`, each computed by (6.5.13): `τ = x₂/x₁`, `c = 1/√(1 − τ²)`, `s = cτ` with
-`x₁`, `x₂` the current entries `(k, k)` and `(n + 1, k)`; `G̃ = Rᵀ` for the triangular block `R`
-of the result. `√` is `Real.sqrt` followed by one rounding. -/
+/-- **Section 6.5.4** of [golub2013matrix], Cholesky downdating with hyperbolic rotations. Given a
+Cholesky factorization $A = GG^T$ and a vector $z \in \mathbb{R}^n$, the program computes the
+Cholesky factorization $\tilde A = \tilde G \tilde G^T$ of $\tilde A = A - zz^T$. It applies to
+the stacked matrix $[G^T; z^T]$ the hyperbolic rotations $H_k$ in the planes $(k, n + 1)$, for
+$k = 1, \dots, n$. Each is computed by (6.5.13), $$\tau = x_2 / x_1, \qquad c = 1 / \sqrt{1 -
+\tau^2}, \qquad s = c \tau,$$ where $x_1$ and $x_2$ are the current entries $(k, k)$ and
+$(n + 1, k)$. The output is $\tilde G = R^T$ for the triangular block $R$ of the result.
+
+Every arithmetic result is rounded, and $\sqrt{\cdot}$ is `Real.sqrt` followed by one rounding.
+The rotations are applied by `GolubVanLoan.Chapter05.hyperbolicApplyLeft`. -/
 noncomputable def choleskyDowndate {n : ℕ} (G : Matrix (Fin n) (Fin n) ℝ) (z : Fin n → ℝ) :
     M (Matrix (Fin n) (Fin n) ℝ) := do
   let S ← (List.finRange n).foldlM (fun (S : Matrix (Fin n ⊕ Unit) (Fin n) ℝ) (k : Fin n) => do
@@ -388,8 +577,9 @@ noncomputable def choleskyDowndate {n : ℕ} (G : Matrix (Fin n) (Fin n) ℝ) (z
 
 end Programs
 
-/-- One step of `choleskyDowndate` at `Id`: the hyperbolic rotation with the pair (6.5.13) of the
-current entries `(k, k)`, `(n + 1, k)`, applied on the left. -/
+/-- In exact arithmetic, one step of `GolubVanLoan.Chapter06.choleskyDowndate` multiplies the
+current matrix on the left by the hyperbolic rotation in the planes $(k, n + 1)$ with the pair
+(6.5.13) of its entries $(k, k)$ and $(n + 1, k)$. -/
 private theorem choleskyDowndate_step_run {n : ℕ} (k : Fin n)
     (S : Matrix (Fin n ⊕ Unit) (Fin n) ℝ) :
     Id.run (do
@@ -415,7 +605,8 @@ private theorem choleskyDowndate_step_run {n : ℕ} (k : Fin n)
   rw [hp]
   exact hspec
 
-/-- The downdating sweep at `Id` is a left fold of hyperbolic rotations. -/
+/-- In exact arithmetic, the downdating sweep of `GolubVanLoan.Chapter06.choleskyDowndate` is a left
+fold of multiplications by hyperbolic rotations. -/
 private theorem choleskyDowndate_fold_run {n : ℕ} (l : List (Fin n))
     (S : Matrix (Fin n ⊕ Unit) (Fin n) ℝ) :
     Id.run (l.foldlM (fun (S : Matrix (Fin n ⊕ Unit) (Fin n) ℝ) (k : Fin n) => do
@@ -433,12 +624,17 @@ private theorem choleskyDowndate_fold_run {n : ℕ} (l : List (Fin n))
     rw [List.foldl_cons, ← choleskyDowndate_step_run, ← ih]
     rfl
 
-/-- **§6.5.4, the downdate is correct in exact arithmetic**: if `A = GGᵀ` is a Cholesky
-factorization (`Matrix.IsCholesky A Gᵀ`) and `Ã = A − zzᵀ` is positive definite, the output `G̃`
-of `choleskyDowndate` is the Cholesky factor of `Ã`: `Matrix.IsCholesky (A − zzᵀ) G̃ᵀ`. At step
-`k` the current `[R; z'ᵀ]` keeps `RᵀR − z'z'ᵀ = Ã` (the rotations are `S`-orthogonal), so
-`|z'_k| < r_kk` and the hyperbolic pair (6.5.13) exists (Theorem 6.5.1's argument); the new
-diagonal entry `√(r_kk² − z'_k²)` is positive, so no sign normalization is needed. -/
+/-- **Section 6.5.4** of [golub2013matrix], correctness of the downdate in exact arithmetic. Let
+$A = GG^T$ be a Cholesky factorization of $A \in \mathbb{R}^{n \times n}$, and let
+$z \in \mathbb{R}^n$ with $\tilde A = A - zz^T$ positive definite. Then the output $\tilde G$ of
+`GolubVanLoan.Chapter06.choleskyDowndate` is the Cholesky factor of $\tilde A$: $\tilde G$ is
+lower triangular with positive diagonal and $\tilde G \tilde G^T = \tilde A$.
+
+The run is at `M := Id` with `rnd := pure`, and the conclusion is
+`Matrix.IsCholesky (A - zzᵀ) G̃ᵀ`. At step $k$ the current matrix $[R; z'^T]$ satisfies
+$R^T R - z' z'^T = \tilde A$, because the rotations are $S$-orthogonal. So $|z'_k| < r_{kk}$ and
+the pair (6.5.13) exists, as in the proof of Theorem 6.5.1. The new diagonal entry
+$\sqrt{r_{kk}^2 - z_k'^2}$ is positive, so no normalization of signs is needed. -/
 theorem choleskyDowndate_spec {n : ℕ} {A G : Matrix (Fin n) (Fin n) ℝ} (hG : IsCholesky A Gᵀ)
     {z : Fin n → ℝ} (hA : (A - vecMulVec z z).PosDef) :
     IsCholesky (A - vecMulVec z z) (Id.run (choleskyDowndate pure G z))ᵀ := by
@@ -525,12 +721,20 @@ section GivensPrograms
 
 variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 
-/-- **§6.5.1, the rank-one QR update.** "Suppose we have the QR factorization `QR = A ∈ ℝⁿˣⁿ` and
-that we need to compute the QR factorization `Ã = A + uvᵀ = Q₁R₁`": `w = Qᵀu` (a gaxpy,
-Algorithm 1.1.3); the rotations `J_{n−1}, …, J₁` reducing `w` to `±‖w‖₂e₁`, applied to `R` and
-accumulated into `Q` (`givensVectorSweep`), which leave `H` upper Hessenberg; `H₁ = H ± ‖w‖₂e₁vᵀ`
-(a saxpy on the first row, Algorithm 1.1.2); the rotations `G₁, …, G_{n−1}` triangularizing `H₁`
-(`givensHessenbergSweep`). Returns `(Q₁, R₁)`, `Q₁ = QJ_{n−1}⋯J₁G₁⋯G_{n−1}`. -/
+/-- **Section 6.5.1** of [golub2013matrix], the rank-one QR update. Given a QR factorization
+$A = QR$ of $A \in \mathbb{R}^{n \times n}$ and $u, v \in \mathbb{R}^n$, the program computes a
+QR factorization $\tilde A = A + uv^T = Q_1 R_1$. It computes $w = Q^T u$ by a gaxpy (Algorithm
+1.1.3). It then computes the rotations $J_{n-1}, \dots, J_1$ that reduce $w$ to
+$\pm\|w\|_2 e_1$, applies them to $R$ and accumulates them into $Q$; this leaves an upper
+Hessenberg $H$. It forms $H_1 = H \pm \|w\|_2 e_1 v^T$ by a saxpy on the first row (Algorithm
+1.1.2), and finally computes the rotations $G_1, \dots, G_{n-1}$ that triangularize $H_1$. The
+output is $(Q_1, R_1)$ with $Q_1 = Q J_{n-1} \cdots J_1 G_1 \cdots G_{n-1}$.
+
+**Typo.** The source says "Following Algorithm 5.2.4" for the second sweep. It means Algorithm
+5.2.5, the QR factorization of an upper Hessenberg matrix.
+
+The first sweep is `GolubVanLoan.Chapter05.givensVectorSweep`, and the second is
+`GolubVanLoan.Chapter05.givensHessenbergSweep`. -/
 noncomputable def qrUpdateRankOne {n : ℕ} (Q R : Matrix (Fin n) (Fin n) ℝ) (u v : Fin n → ℝ) :
     M (Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ) := do
   let w ← Chapter01.algorithm_1_1_3 rnd Qᵀ u 0
@@ -541,22 +745,30 @@ noncomputable def qrUpdateRankOne {n : ℕ} (Q R : Matrix (Fin n) (Fin n) ℝ) (
     else pure st.2.2
   Chapter05.givensHessenbergSweep rnd 0 (n - 1) st.2.1 H
 
-/-- **§6.5.2, deleting a column.** "`Qᵀ Ã = H` is upper Hessenberg … the unwanted subdiagonal
-elements `h_{k+1,k}, …, h_{n,n−1}` can be zeroed by a sequence of Givens rotations:
-`G_{n−1}ᵀ ⋯ G_kᵀ H = R₁` … if `Q₁ = QG_k ⋯ G_{n−1}` then `Ã = Q₁R₁` is the QR factorization of `Ã`."
-For `A ∈ ℝ^{m×(n+1)}` with its column `k` (0-based) deleted, `H` is `R` with its column `k`
-deleted (no flops). -/
+/-- **Section 6.5.2** of [golub2013matrix], deleting a column. Given a QR factorization $A = QR$ of
+$A \in \mathbb{R}^{m \times (n+1)}$ and a column index $k$ (0-based), let $\tilde A$ be $A$ with
+its column $k$ deleted. Then $Q^T \tilde A = H$ is $R$ with its column $k$ deleted, which is
+upper Hessenberg. The program zeroes the unwanted subdiagonal entries by a sequence of Givens
+rotations, $G_{n-1}^T \cdots G_k^T H = R_1$, and returns $(Q_1, R_1)$ with
+$Q_1 = Q G_k \cdots G_{n-1}$, a QR factorization of $\tilde A$.
+
+Forming $H$ needs no arithmetic. The sweep is `GolubVanLoan.Chapter05.givensHessenbergSweep`
+from column $k$. -/
 noncomputable def qrDeleteColumn {m n : ℕ} (Q : Matrix (Fin m) (Fin m) ℝ)
     (R : Matrix (Fin m) (Fin (n + 1)) ℝ) (k : Fin (n + 1)) :
     M (Matrix (Fin m) (Fin m) ℝ × Matrix (Fin m) (Fin n) ℝ) :=
   Chapter05.givensHessenbergSweep rnd k (n - k) Q (R.submatrix id k.succAbove)
 
-/-- **§6.5.2, appending a column.** "if `w = Qᵀz` then `QᵀÃ = [Qᵀa₁| ⋯ |Qᵀa_k|w|Qᵀa_{k+1}| ⋯ ]` is
-upper triangular except for the presence of a 'spike' … It is possible to determine a sequence of
-Givens rotations that restores the triangular form": `w = Qᵀz` (Algorithm 1.1.3), `H` is `R` with
-`w` inserted as its column `k` (0-based), then for `j = m − 2, …, k`,
-`[c, s] = givens(H(j, k), H(j + 1, k))` zeroes `H(j + 1, k)` (the book's `J_{m−1}, …, J_{k+1}`), the
-rows `j`, `j + 1` of `H` are rotated and the rotation is accumulated into `Q`. -/
+/-- **Section 6.5.2** of [golub2013matrix], appending a column. Given a QR factorization $A = QR$ of
+$A \in \mathbb{R}^{m \times n}$, a vector $z \in \mathbb{R}^m$ and a column index $k$ (0-based),
+let $\tilde A$ be $A$ with $z$ inserted as its column $k$. With $w = Q^T z$, the matrix $$Q^T
+\tilde A = [Q^T a_1 \mid \dots \mid Q^T a_k \mid w \mid Q^T a_{k+1} \mid \dots]$$ is upper
+triangular except for a "spike" in column $k$. The program computes $w$ by Algorithm 1.1.3,
+inserts it into $R$ as column $k$ to obtain $H$, and then, for $j = m - 2, \dots, k$, computes
+$[c, s] = \operatorname{givens}(H(j, k), H(j + 1, k))$ to zero $H(j + 1, k)$, rotates the rows
+$j$ and $j + 1$ of $H$, and accumulates the rotation into $Q$.
+
+These rotations are the $J_{m-1}, \dots, J_{k+1}$ of the source. -/
 noncomputable def qrInsertColumn {m n : ℕ} (Q : Matrix (Fin m) (Fin m) ℝ)
     (R : Matrix (Fin m) (Fin n) ℝ) (z : Fin m → ℝ) (k : Fin (n + 1)) :
     M (Matrix (Fin m) (Fin m) ℝ × Matrix (Fin m) (Fin (n + 1)) ℝ) := do
@@ -572,33 +784,49 @@ noncomputable def qrInsertColumn {m n : ℕ} (Q : Matrix (Fin m) (Fin m) ℝ)
         pure (Q, H)
       else pure st) (Q, of fun i => k.insertNth (w i) (R i))
 
-/-- **§6.5.3, inserting a row.** "`diag(1, Qᵀ)Ã = [wᵀ; R] = H` is upper Hessenberg. Thus, rotations
-`J₁, …, J_n` can be determined so `J_nᵀ ⋯ J₁ᵀH = R₁` is upper triangular. It follows that
-`Ã = Q₁R₁` … where `Q₁ = diag(1, Q)J₁ ⋯ J_n`. See Algorithm 5.2.5. No essential complications
-result if the new row is added between rows `k` and `k + 1` of `A`", through the permutation `P`:
-the new row `wᵀ` becomes row `k` (0-based), and the starting orthogonal factor is
-`Pᵀ diag(1, Q)`, the rows of `diag(1, Q)` permuted by `Fin.cycleRange k` (no flops). -/
+/-- **Section 6.5.3** of [golub2013matrix], inserting a row. Given a QR factorization $A = QR$ of
+$A \in \mathbb{R}^{m \times n}$, a vector $w \in \mathbb{R}^n$ and a row index $k$ (0-based),
+let $\tilde A$ be $A$ with $w^T$ inserted as its row $k$. For $k = 0$, $$\operatorname{diag}(1,
+Q^T)\, \tilde A = \begin{bmatrix} w^T \\ R \end{bmatrix} = H$$ is upper Hessenberg, so rotations
+$J_1, \dots, J_n$ can be determined with $J_n^T \cdots J_1^T H = R_1$ upper triangular. Then
+$\tilde A = Q_1 R_1$ with $Q_1 = \operatorname{diag}(1, Q) J_1 \cdots J_n$ (see Algorithm
+5.2.5). For other $k$ the source notes that no essential complications result, through a
+permutation $P$.
+
+The starting orthogonal factor is $P^T \operatorname{diag}(1, Q)$: the rows of
+`Matrix.consDiag 1 Q` are permuted by `Fin.cycleRange k`, which needs no arithmetic. The sweep
+is `GolubVanLoan.Chapter05.givensHessenbergSweep`. -/
 noncomputable def qrInsertRow {m n : ℕ} (Q : Matrix (Fin m) (Fin m) ℝ)
     (R : Matrix (Fin m) (Fin n) ℝ) (w : Fin n → ℝ) (k : Fin (m + 1)) :
     M (Matrix (Fin (m + 1)) (Fin (m + 1)) ℝ × Matrix (Fin (m + 1)) (Fin n) ℝ) :=
   Chapter05.givensHessenbergSweep rnd 0 n ((consDiag 1 Q).submatrix k.cycleRange id)
     (of (Fin.cons w R))
 
-/-- **§6.5.3, deleting the first row.** "Let `qᵀ` be the first row of `Q` and compute Givens
-rotations `G₁, …, G_{m−1}` such that `G₁ᵀ ⋯ G_{m−1}ᵀq = αe₁` where `α = ±1`. Note that
-`H = G₁ᵀ ⋯ G_{m−1}ᵀR = [vᵀ; R₁]` is upper Hessenberg and that `QG_{m−1} ⋯ G₁ = [α 0; 0 Q₁]`":
-the bottom-up sweep driven by `q` (`givensVectorSweep`), then `(Q₁, R₁)` are read off. -/
+/-- **Section 6.5.3** of [golub2013matrix], deleting the first row. Given a QR factorization
+$A = QR$ of $A \in \mathbb{R}^{(m+1) \times n}$, let $q^T$ be the first row of $Q$. The program
+computes Givens rotations $G_1, \dots, G_m$ with $G_1^T \cdots G_m^T q = \alpha e_1$, where
+$\alpha = \pm 1$. Then $$H = G_1^T \cdots G_m^T R = \begin{bmatrix} v^T \\ R_1 \end{bmatrix}$$
+is upper Hessenberg and $Q G_m \cdots G_1 = \operatorname{diag}(\alpha, Q_1)$. The program
+returns $(Q_1, R_1)$.
+
+In the source, $A$ has $m$ rows and the rotations are $G_1, \dots, G_{m-1}$. The sweep is
+`GolubVanLoan.Chapter05.givensVectorSweep` driven by $q$. -/
 noncomputable def qrDeleteFirstRow {m n : ℕ} (Q : Matrix (Fin (m + 1)) (Fin (m + 1)) ℝ)
     (R : Matrix (Fin (m + 1)) (Fin n) ℝ) :
     M (Matrix (Fin m) (Fin m) ℝ × Matrix (Fin m) (Fin n) ℝ) := do
   let st ← Chapter05.givensVectorSweep rnd 0 m (Q 0) Q R
   pure (st.2.1.submatrix Fin.succ Fin.succ, st.2.2.submatrix Fin.succ id)
 
-/-- **§6.5.4, Cholesky updating.** "`Ã = [Gᵀ; zᵀ]ᵀ [Gᵀ; zᵀ]`, we can solve this problem by computing
-a product of Givens rotations `Q = Q₁ ⋯ Q_n` so that `Qᵀ [Gᵀ; zᵀ] = [R; 0]` … The `Q_k` update
-involves only rows `k` and `n + 1`": the stacked matrix `[Gᵀ; zᵀ]` on `Fin (n + 1)` rows, for
-`k = 0, …, n − 1` the pair `[c, s] = givens(M(k, k), M(n, k))` (Algorithm 5.1.3) and the rotation of
-the rows `k` and `n` (`givensApplyLeft`); returns `G̃ = (M(0:n−1, :))ᵀ`. -/
+/-- **Section 6.5.4** of [golub2013matrix], Cholesky updating. Given a Cholesky factorization
+$A = GG^T$ and $z \in \mathbb{R}^n$, the program computes a factor $\tilde G$ with
+$\tilde G \tilde G^T = A + zz^T$. It computes Givens rotations $Q = Q_1 \cdots Q_n$ with
+$Q^T [G^T; z^T] = [R; 0]$, where the update by $Q_k$ involves only the rows $k$ and $n + 1$: for
+$k = 1, \dots, n$ it computes $[c, s] = \operatorname{givens}(M(k, k), M(n + 1, k))$ by
+Algorithm 5.1.3 and rotates the rows $k$ and $n + 1$ of the current stacked matrix $M$. The
+output is $\tilde G = R^T$, the transpose of the first $n$ rows of $M$.
+
+The stacked matrix has the rows `Fin (n + 1)`, and the rotation is
+`GolubVanLoan.Chapter05.givensApplyLeft`. -/
 noncomputable def choleskyUpdate {n : ℕ} (G : Matrix (Fin n) (Fin n) ℝ) (z : Fin n → ℝ) :
     M (Matrix (Fin n) (Fin n) ℝ) := do
   let S ← (List.finRange n).foldlM (fun (S : Matrix (Fin (n + 1)) (Fin n) ℝ) (k : Fin n) => do
@@ -609,13 +837,16 @@ noncomputable def choleskyUpdate {n : ℕ} (G : Matrix (Fin n) (Fin n) ℝ) (z :
 
 end GivensPrograms
 
-/-! #### Correctness of the procedures -/
+/-! ### Correctness of the procedures -/
 
-/-- **§6.5.1, the rank-one update is correct in exact arithmetic**: if `A = QR` (`Matrix.IsQR`),
-the output `(Q₁, R₁)` of `qrUpdateRankOne` is a QR factorization of `A + uvᵀ`. The first sweep
-keeps `Q R = A` and leaves `H` upper Hessenberg with `w` reduced to its first entry (`(6.5.2)`),
-so `Q H₁ = A + uvᵀ` with `H₁` still upper Hessenberg (`(6.5.3)`); the second sweep
-triangularizes it. -/
+/-- **Section 6.5.1** of [golub2013matrix], correctness of the rank-one update in exact arithmetic.
+If $A = QR$ is a QR factorization of $A \in \mathbb{R}^{n \times n}$ and
+$u, v \in \mathbb{R}^n$, then the output $(Q_1, R_1)$ of
+`GolubVanLoan.Chapter06.qrUpdateRankOne` is a QR factorization of $A + uv^T$.
+
+The run is at `M := Id` with `rnd := pure`. The first sweep keeps $QR = A$, leaves $H$ upper
+Hessenberg and reduces $w$ to its first entry (6.5.2). So $QH_1 = A + uv^T$ with $H_1$ still
+upper Hessenberg (6.5.3), and the second sweep triangularizes $H_1$. -/
 theorem qrUpdateRankOne_spec {n : ℕ} {A Q R : Matrix (Fin n) (Fin n) ℝ} (h : IsQR A Q R)
     (u v : Fin n → ℝ) :
     IsQR (A + vecMulVec u v) (Id.run (qrUpdateRankOne pure Q R u v)).1
@@ -668,10 +899,14 @@ theorem qrUpdateRankOne_spec {n : ℕ} {A Q R : Matrix (Fin n) (Fin n) ℝ} (h :
   exact Chapter05.givensHessenbergSweep_spec (by rw [h2]; exact mul_mem hQ hPt) hprod hHH
     (fun i j _ hj => absurd hj (Nat.not_lt_zero _)) (Or.inr (by omega))
 
-/-- **§6.5.2, deleting a column is correct in exact arithmetic**: if `A = QR` then the output of
-`qrDeleteColumn` is a QR factorization of `A` with its column `k` deleted. `QᵀÃ = H` is upper
-Hessenberg and triangular before column `k` (`Matrix.IsQR.conjTranspose_mul_deleteColumn`), and the
-sweep from column `k` triangularizes it. -/
+/-- **Section 6.5.2** of [golub2013matrix], correctness of the column deletion in exact arithmetic.
+If $A = QR$ is a QR factorization of $A \in \mathbb{R}^{m \times (n+1)}$, then the output of
+`GolubVanLoan.Chapter06.qrDeleteColumn` is a QR factorization of $A$ with its column $k$
+deleted.
+
+The run is at `M := Id` with `rnd := pure`. The matrix $Q^T \tilde A = H$ is upper Hessenberg
+and upper triangular before column $k$ (`Matrix.IsQR.conjTranspose_mul_deleteColumn`), and the
+sweep from column $k$ triangularizes it. -/
 theorem qrDeleteColumn_spec {m n : ℕ} {A : Matrix (Fin m) (Fin (n + 1)) ℝ}
     {Q : Matrix (Fin m) (Fin m) ℝ} {R : Matrix (Fin m) (Fin (n + 1)) ℝ} (h : IsQR A Q R)
     (k : Fin (n + 1)) :
@@ -685,7 +920,9 @@ theorem qrDeleteColumn_spec {m n : ℕ} {A : Matrix (Fin m) (Fin (n + 1)) ℝ}
   rw [← h1, ← Matrix.mul_assoc, conjTranspose_eq_transpose_of_trivial,
     (mem_orthogonalGroup_iff _ ℝ).1 hQ, Matrix.one_mul]
 
-/-- The exact step of `qrInsertColumn`. -/
+/-- The exact-arithmetic step $j$ of `GolubVanLoan.Chapter06.qrInsertColumn`: if $j + 1 < m$,
+compute the Givens pair of the entries $(j, k)$ and $(j + 1, k)$ of the current $H$ and rotate
+the rows $j$, $j + 1$ of $H$ and the columns $j$, $j + 1$ of $Q$; otherwise do nothing. -/
 private noncomputable def insColStep {m n : ℕ} (k : Fin (n + 1))
     (st : Matrix (Fin m) (Fin m) ℝ × Matrix (Fin m) (Fin (n + 1)) ℝ) (j : ℕ) :
     Matrix (Fin m) (Fin m) ℝ × Matrix (Fin m) (Fin (n + 1)) ℝ :=
@@ -694,11 +931,15 @@ private noncomputable def insColStep {m n : ℕ} (k : Fin (n + 1))
       (Id.run (Chapter05.algorithm_5_1_3 pure (st.2 ⟨j, by omega⟩ k) (st.2 ⟨j + 1, h⟩ k))) st
   else st
 
-/-- **§6.5.2, appending a column is correct in exact arithmetic**: if `A = QR` then the output of
-`qrInsertColumn` is a QR factorization of `A` with `z` inserted as its column `k`. Invariant of the
-bottom-up sweep: `QH = Ã`; `H` is triangular off the spike column `k`; the diagonal entries right of
-the spike vanish in the rows not yet rotated (so a rotation of the rows `j`, `j + 1` creates no
-subdiagonal entry); the spike vanishes below the rows already rotated. -/
+/-- **Section 6.5.2** of [golub2013matrix], correctness of the column insertion in exact arithmetic.
+If $A = QR$ is a QR factorization of $A \in \mathbb{R}^{m \times n}$, $z \in \mathbb{R}^m$ and
+$k$ is a column index, then the output of `GolubVanLoan.Chapter06.qrInsertColumn` is a QR
+factorization of $A$ with $z$ inserted as its column $k$.
+
+The run is at `M := Id` with `rnd := pure`. The invariant of the bottom-up sweep is:
+$QH = \tilde A$; $H$ is upper triangular off the spike column $k$; the diagonal entries right of
+the spike vanish in the rows not yet rotated, so a rotation of the rows $j$ and $j + 1$ creates
+no subdiagonal entry; and the spike vanishes below the rows already rotated. -/
 theorem qrInsertColumn_spec {m n : ℕ} {A : Matrix (Fin m) (Fin n) ℝ}
     {Q : Matrix (Fin m) (Fin m) ℝ} {R : Matrix (Fin m) (Fin n) ℝ} (h : IsQR A Q R)
     (z : Fin m → ℝ) (k : Fin (n + 1)) :
@@ -808,10 +1049,14 @@ theorem qrInsertColumn_spec {m n : ℕ} {A : Matrix (Fin m) (Fin n) ℝ}
     exact hspike' i hij
   · exact hab' i j hij hjk
 
-/-- **§6.5.3, inserting a row is correct in exact arithmetic**: if `A = QR` then the output of
-`qrInsertRow` is a QR factorization of `A` with `wᵀ` inserted as its row `k`. With
-`σ = (Fin.cycleRange k)⁻¹`, `diag(1, Qᵀ) P Ã = [wᵀ; R]` is upper Hessenberg
-(`Matrix.IsQR.conjTranspose_mul_insertRow`), and the sweep triangularizes it. -/
+/-- **Section 6.5.3** of [golub2013matrix], correctness of the row insertion in exact arithmetic. If
+$A = QR$ is a QR factorization of $A \in \mathbb{R}^{m \times n}$, $w \in \mathbb{R}^n$ and $k$
+is a row index, then the output of `GolubVanLoan.Chapter06.qrInsertRow` is a QR factorization of
+$A$ with $w^T$ inserted as its row $k$.
+
+The run is at `M := Id` with `rnd := pure`. With the permutation $P$ given by
+`Fin.cycleRange k`, the matrix $\operatorname{diag}(1, Q^T) P \tilde A = [w^T; R]$ is upper
+Hessenberg (`Matrix.IsQR.conjTranspose_mul_insertRow`), and the sweep triangularizes it. -/
 theorem qrInsertRow_spec {m n : ℕ} {A : Matrix (Fin m) (Fin n) ℝ} {Q : Matrix (Fin m) (Fin m) ℝ}
     {R : Matrix (Fin m) (Fin n) ℝ} (h : IsQR A Q R) (w : Fin n → ℝ) (k : Fin (m + 1)) :
     IsQR (of (k.insertNth w A)) (Id.run (qrInsertRow pure Q R w k)).1
@@ -826,10 +1071,13 @@ theorem qrInsertRow_spec {m n : ℕ} {A : Matrix (Fin m) (Fin n) ℝ} {Q : Matri
     ← star_eq_conjTranspose, mem_unitaryGroup_iff.1 hQ, consDiag_one, Matrix.one_mul,
     submatrix_submatrix, Equiv.symm_comp_self, Function.comp_id, submatrix_id_id]
 
-/-- **§6.5.3, deleting the first row is correct in exact arithmetic**: if `A = QR` with
-`A ∈ ℝ^{(m+1)×n}`, the output of `qrDeleteFirstRow` is a QR factorization of `A(2:m+1, :)`. After
-the sweep the first row of `QG_{m−1} ⋯ G₁` is `αe₁ᵀ` (`α² = 1`), so its first column is `αe₁` too,
-and `A = [α 0; 0 Q₁][vᵀ; R₁]` with `[vᵀ; R₁]` upper Hessenberg. -/
+/-- **Section 6.5.3** of [golub2013matrix], correctness of the deletion of the first row in exact
+arithmetic. If $A = QR$ is a QR factorization of $A \in \mathbb{R}^{(m+1) \times n}$, then the
+output of `GolubVanLoan.Chapter06.qrDeleteFirstRow` is a QR factorization of $A(2{:}m{+}1, :)$.
+
+The run is at `M := Id` with `rnd := pure`. After the sweep, the first row of $Q G_m \cdots G_1$
+is $\alpha e_1^T$ with $\alpha^2 = 1$, so its first column is $\alpha e_1$ as well, and $A =
+\operatorname{diag}(\alpha, Q_1) [v^T; R_1]$ with $[v^T; R_1]$ upper Hessenberg. -/
 theorem qrDeleteFirstRow_spec {m n : ℕ} {A : Matrix (Fin (m + 1)) (Fin n) ℝ}
     {Q : Matrix (Fin (m + 1)) (Fin (m + 1)) ℝ} {R : Matrix (Fin (m + 1)) (Fin n) ℝ}
     (h : IsQR A Q R) :
@@ -879,27 +1127,38 @@ theorem qrDeleteFirstRow_spec {m n : ℕ} {A : Matrix (Fin (m + 1)) (Fin n) ℝ}
     rw [Matrix.mul_apply, Fin.sum_univ_succ, hcol0, zero_mul, zero_add] at this
     simpa [Matrix.mul_apply] using this
 
-/-- The exact step of `choleskyUpdate`. -/
+/-- The exact-arithmetic step $k$ of `GolubVanLoan.Chapter06.choleskyUpdate`: multiply the stacked
+matrix on the left by the transpose of the Givens rotation in the rows $k$ and $n + 1$ computed
+from its entries $(k, k)$ and $(n + 1, k)$. -/
 private noncomputable def cholUpdStep {n : ℕ} (S : Matrix (Fin (n + 1)) (Fin n) ℝ) (k : Fin n) :
     Matrix (Fin (n + 1)) (Fin n) ℝ :=
   (Chapter05.givensRotation k.castSucc (Fin.last n)
     (Id.run (Chapter05.algorithm_5_1_3 pure (S k.castSucc k) (S (Fin.last n) k))).1
     (Id.run (Chapter05.algorithm_5_1_3 pure (S k.castSucc k) (S (Fin.last n) k))).2)ᵀ * S
 
-/-- The Gram matrix of a matrix on `Fin (n + 1)` rows splits off its last row. -/
+/-- For $S \in \mathbb{R}^{(n+1) \times p}$, the Gram matrix splits off the last row:
+$S^T S = S_{1:n}^T S_{1:n} + s_{n+1} s_{n+1}^T$, where $s_{n+1}^T$ is the last row of $S$. -/
 private theorem transpose_mul_self_castSucc {n p : ℕ} (S : Matrix (Fin (n + 1)) (Fin p) ℝ) :
     Sᵀ * S = (S.submatrix Fin.castSucc id)ᵀ * S.submatrix Fin.castSucc id +
       vecMulVec (S (Fin.last n)) (S (Fin.last n)) := by
   ext i j
   simp [Matrix.mul_apply, Fin.sum_univ_castSucc, vecMulVec_apply]
 
-/-- **§6.5.4, Cholesky updating is correct in exact arithmetic**: if `A = GGᵀ`
-(`Matrix.IsCholesky A Gᵀ`), the output `G̃` of `choleskyUpdate` is lower triangular with nonzero
-diagonal and `G̃G̃ᵀ = A + zzᵀ`; with the signs of its diagonal normalized it is the Cholesky factor
-of `A + zzᵀ` ("the updated Cholesky factor is given by `G̃ = Rᵀ`", up to the signs a Givens `r`
-may carry: `equation_6_5_7`). Invariant: the rotations keep the Gram matrix `MᵀM = A + zzᵀ` of the
-stacked `M`, keep its top block triangular with nonzero diagonal (`|r| = √(a² + b²)`), and zero the
-appended row before the current column. -/
+/-- **Section 6.5.4** of [golub2013matrix], correctness of the Cholesky update in exact arithmetic.
+Let $A = GG^T$ be a Cholesky factorization of $A \in \mathbb{R}^{n \times n}$, and let
+$z \in \mathbb{R}^n$. Then the output $\tilde G$ of `GolubVanLoan.Chapter06.choleskyUpdate` is
+lower triangular with nonzero diagonal and $\tilde G \tilde G^T = A + zz^T$. With $D =
+\operatorname{diag}(\operatorname{sign}(\tilde g_{ii}))$, the matrix $D \tilde G^T$ is the upper
+triangular Cholesky factor of $A + zz^T$.
+
+**Correction.** The source says that the updated Cholesky factor is $\tilde G = R^T$. A Givens
+rotation can produce a negative diagonal entry $r$, so $\tilde G$ is the Cholesky factor only
+after the signs of its diagonal are normalized; see `GolubVanLoan.Chapter06.equation_6_5_7`.
+
+The run is at `M := Id` with `rnd := pure`. The invariant is: the rotations keep the Gram matrix
+$M^T M = A + zz^T$ of the stacked matrix $M$, keep its top block upper triangular with nonzero
+diagonal (because $|r| = \sqrt{a^2 + b^2}$), and zero the appended row before the current
+column. -/
 theorem choleskyUpdate_spec {n : ℕ} {A G : Matrix (Fin n) (Fin n) ℝ} (hG : IsCholesky A Gᵀ)
     (z : Fin n → ℝ) :
     (Id.run (choleskyUpdate pure G z))ᵀ.IsUpperTriangular ∧
@@ -1000,13 +1259,24 @@ theorem choleskyUpdate_spec {n : ℕ} {A G : Matrix (Fin n) (Fin n) ℝ} (hG : I
 
 /-! ### §6.5.5 The ULV decomposition -/
 
-/-- **(6.5.16)**, its exact content. "A rank-revealing ULV decomposition of a matrix `A ∈ ℝ^{m×n}`
-has the form `UᵀAV = [L; 0]`, `UᵀU = I_m`, `VᵀV = I_n` … Such a decomposition can be obtained by
-applying QR with column pivoting `UᵀAΠ = [R; 0]` followed by a QR factorization `V₁ᵀRᵀ = Lᵀ`. In
-this case the matrix `V` in (6.5.16) is given by `V = ΠV₁`." With `m = n + p`, `U`, `P = Π`
-and `V₁` orthogonal (a permutation matrix is) and `Lᵀ` upper triangular, `L` is lower triangular.
-The rank-revealing smallness of `L₂₁`, `L₂₂` is a heuristic property of pivoted QR, not
-formalized. -/
+/-- **Equation (6.5.16)** of [golub2013matrix], its exact content. A rank-revealing ULV
+decomposition of $A \in \mathbb{R}^{m \times n}$ has the form $$U^T A V = \begin{bmatrix} L \\ 0
+\end{bmatrix}, \qquad U^T U = I_m, \qquad V^T V = I_n,$$ with $L$ lower triangular. Such a
+decomposition can be obtained by QR with column pivoting, $U^T A \Pi = [R; 0]$, followed by a QR
+factorization $V_1^T R^T = L^T$; then $V = \Pi V_1$. The theorem says: let $m = n + p$, let
+$U \in \mathbb{R}^{m \times m}$, $\Pi \in \mathbb{R}^{n \times n}$ and
+$V_1 \in \mathbb{R}^{n \times n}$ be orthogonal, and let $R, L \in \mathbb{R}^{n \times n}$ with
+$U^T A \Pi = [R; 0]$, $V_1^T R^T = L^T$ and $L^T$ upper triangular. Then
+$U^T A (\Pi V_1) = [L; 0]$, $L$ is lower triangular, $U^T U = I_m$ and
+$(\Pi V_1)^T (\Pi V_1) = I_n$.
+
+**Generalization.** The source obtains $\Pi$ and $R$ from QR with column pivoting. The statement
+holds for every orthogonal $\Pi$ (a permutation matrix is one) and every $R$ with
+$U^T A \Pi = [R; 0]$.
+
+The rank-revealing smallness of $L_{21}$ and $L_{22}$ is a heuristic property of pivoted QR and
+is not formalized. The rows of $A$ are reindexed by `finSumFinEquiv`, and $[L; 0]$ is
+`Matrix.fromRows L 0`. -/
 theorem equation_6_5_16 {n p : ℕ} {A : Matrix (Fin (n + p)) (Fin n) ℝ}
     {U : Matrix (Fin (n + p)) (Fin (n + p)) ℝ} (hU : U ∈ orthogonalGroup (Fin (n + p)) ℝ)
     {P V₁ R L : Matrix (Fin n) (Fin n) ℝ} (hP : P ∈ orthogonalGroup (Fin n) ℝ)
@@ -1032,10 +1302,19 @@ theorem equation_6_5_16 {n p : ℕ} {A : Matrix (Fin (n + p)) (Fin n) ℝ}
   · exact (mem_orthogonalGroup_iff' _ ℝ).1 ((orthogonalGroup (Fin n) ℝ).mul_mem hP hV₁)
 
 open scoped Matrix.Norms.L2Operator in
-/-- **§6.5.5.** "Note that if `V = [V₁ V₂]` (`r | n − r`), `U = [U₁ U₂]`, then the columns of `V₂`
-define an approximate nullspace: `‖AV₂‖₂ = ‖U₂L₂₂‖₂ = ‖L₂₂‖₂`." With `n = r + q`, `m = n + p` and
-`L = [L₁₁ 0; L₂₁ L₂₂]` lower triangular, `AV₂ = U [0; L₂₂; 0]`, whose 2-norm is `‖L₂₂‖₂` (the book's
-`U₂` should be the columns `r + 1 : n` of `U`). -/
+/-- **Section 6.5.5** of [golub2013matrix], the approximate null space. Let $n = r + q$ and
+$m = n + p$, let $U \in \mathbb{R}^{m \times m}$ be orthogonal, let
+$V \in \mathbb{R}^{n \times n}$, and let $L = [L_{11}\ 0; L_{21}\ L_{22}] \in \mathbb{R}^{n
+\times n}$ be lower triangular with $$U^T A V = \begin{bmatrix} L \\ 0 \end{bmatrix}.$$ If
+$V = [V_1 \mid V_2]$ with $V_2 = V(:, r{+}1{:}n)$, then $$\|AV_2\|_2 = \|L_{22}\|_2.$$ So when
+$L_{22}$ is small, the columns of $V_2$ define an approximate null space of $A$.
+
+**Typo.** The source writes $\|AV_2\|_2 = \|U_2 L_{22}\|_2 = \|L_{22}\|_2$ with
+$U_2 = U(:, r{+}1{:}m)$, which does not match the $n - r$ rows of $L_{22}$. The columns
+$r{+}1{:}n$ of $U$ are meant; in both readings the norm is $\|L_{22}\|_2$.
+
+The proof writes $AV_2 = U [0; L_{22}; 0]$. The statement does not need $V$ to be orthogonal.
+The norm is the scoped `Matrix.Norms.L2Operator` norm. -/
 theorem ulv_nullspace_norm {r q p : ℕ} {A : Matrix (Fin (r + q + p)) (Fin (r + q)) ℝ}
     {U : Matrix (Fin (r + q + p)) (Fin (r + q + p)) ℝ}
     (hU : U ∈ orthogonalGroup (Fin (r + q + p)) ℝ) {V L : Matrix (Fin (r + q)) (Fin (r + q)) ℝ}

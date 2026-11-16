@@ -12,46 +12,113 @@ import NumlibSurface.GolubVanLoan.Chapter05.Section04
 import NumlibSurface.GolubVanLoan.Chapter06.Section03
 
 /-!
-# Golub–Van Loan §6.4: subspace computations with the SVD
+# Golub and Van Loan, Section 6.4: Subspace computations with the SVD
 
-Surface file for [golub2013matrix] §6.4: the orthogonal Procrustes problem (6.4.1)–(6.4.2) and
-Algorithm 6.4.1, with the polar decomposition read off an SVD (§6.4.1); the intersection of null
-spaces (Theorem 6.4.1, Algorithm 6.4.2, §6.4.2); principal angles and vectors (6.4.3)–(6.4.6) and
-the distance of equal-dimensional subspaces (§6.4.3); the intersection of ranges
-(Theorem 6.4.2, §6.4.4).
+This module formalizes §6.4 of [golub2013matrix], which uses the SVD to compare and combine
+subspaces. §6.4.1 solves the orthogonal Procrustes problem (6.4.1): for
+$A, B \in \mathbb{R}^{m \times p}$, minimize $\|A - BQ\|_F$ over orthogonal $Q$. If
+$U^T (B^T A) V = \Sigma$ is an SVD, then $Q = UV^T$ is a minimizer (Algorithm 6.4.1), and an SVD
+$A = U \Sigma V^T$ gives the polar decomposition $A = (UV^T)(V \Sigma V^T)$. §6.4.2 computes an
+orthonormal basis of $\operatorname{null}(A) \cap \operatorname{null}(B)$ from two SVDs (Theorem
+6.4.1, Algorithm 6.4.2). §6.4.3 defines the principal angles $0 \le \theta_1 \le \dots \le \theta_q
+\le \pi/2$ and the principal vectors between two subspaces $F$ and $G$ (6.4.3), shows that the
+cosines $\cos\theta_i$ are the singular values of $Q_A^T Q_B$ for orthonormal bases $Q_A$ and $Q_B$,
+and computes them by Algorithm 6.4.3. §6.4.4 shows that the principal vectors with
+$\cos\theta_i = 1$ span $\operatorname{ran}(A) \cap \operatorname{ran}(B)$ (Theorem 6.4.2).
+
+The proofs specialize `Numlib.LinearAlgebra.Matrix.Procrustes`, `Numlib.LinearAlgebra.Matrix.Polar`
+and `Numlib.Analysis.InnerProductSpace.PrincipalAngles`, together with Mathlib's
+`Submodule.map_comap_eq` and the subspace distance `GolubVanLoan.Chapter02.subspaceDist` of §2.5.
+
+## Main definitions
+
+* Algorithm 6.4.1, `GolubVanLoan.Chapter06.algorithm_6_4_1`: the orthogonal Procrustes problem.
+* Algorithm 6.4.2, `GolubVanLoan.Chapter06.algorithm_6_4_2`: the intersection of null spaces.
+* Algorithm 6.4.3, `GolubVanLoan.Chapter06.algorithm_6_4_3`: principal angles and vectors.
+
+## Main results
+
+* §6.4.1, `GolubVanLoan.Chapter06.procrustes_iff_trace`: for orthogonal $Q$, $\|A - BQ\|_F^2 =
+  \|A\|_F^2 + \|B\|_F^2 - 2\operatorname{tr}(Q^T B^T A)$, so (6.4.1) is the maximization of
+  $\operatorname{tr}(Q^T B^T A)$.
+* Equation (6.4.2), `GolubVanLoan.Chapter06.equation_6_4_2`: $\operatorname{tr}(C_1^T C_2) =
+  \operatorname{tr}(C_2^T C_1)$.
+* §6.4.1, `GolubVanLoan.Chapter06.procrustes_solution`: $\operatorname{tr}(Q^T B^T A) \le \sum_i
+  \sigma_i$, with equality at $Q = UV^T$, which solves (6.4.1).
+* §6.4.1, `GolubVanLoan.Chapter06.procrustes_solution_of_isPolarDecomposition`: the orthogonal polar
+  factor of $B^T A$ solves (6.4.1).
+* Algorithm 6.4.1, `GolubVanLoan.Chapter06.algorithm_6_4_1_spec`: in exact arithmetic the algorithm
+  returns a solution of (6.4.1).
+* §6.4.1, `GolubVanLoan.Chapter06.polar_of_svd`: $A = (UV^T)(V \Sigma V^T)$ is a polar
+  decomposition.
+* Theorem 6.4.1, `GolubVanLoan.Chapter06.theorem_6_4_1`: the columns of $ZW$ form an orthonormal
+  basis of $\operatorname{null}(A) \cap \operatorname{null}(B)$.
+* §6.4.2, `GolubVanLoan.Chapter06.range_trailingColumns_eq_ker`: the trailing right singular vectors
+  $V_A(:, r{+}1{:}n)$ span $\operatorname{null}(A)$.
+* Algorithm 6.4.2, `GolubVanLoan.Chapter06.algorithm_6_4_2_spec`: in exact arithmetic the algorithm
+  returns an orthonormal basis of $\operatorname{null}(A) \cap \operatorname{null}(B)$.
+* Equation (6.4.3), `GolubVanLoan.Chapter06.equation_6_4_3`: the recursive definition of the
+  principal angles and vectors is well posed.
+* §6.4.3, `GolubVanLoan.Chapter06.principalAngle_mono`: $0 \le \theta_1 \le \dots \le \theta_q \le
+  \pi/2$.
+* §6.4.3, `GolubVanLoan.Chapter06.dist_eq_sin_principalAngle`: for subspaces of equal dimension $p$,
+  $\operatorname{dist}(F, G) = \sqrt{1 - \cos(\theta_p)^2} = \sin(\theta_p)$.
+* §6.4.3, `GolubVanLoan.Chapter06.singularValues_transpose_mul_eq_cosPrincipalAngle`: the singular
+  values of $Q_A^T Q_B$ are the cosines $\cos\theta_i$, and they lie in $[0, 1]$.
+* Equation (6.4.6), `GolubVanLoan.Chapter06.equation_6_4_6`: $(Q_A u)^T (Q_B v) = \sum_i \sigma_i
+  (y_i^T u)(z_i^T v)$.
+* §6.4.3, `GolubVanLoan.Chapter06.isPrincipalVectors_of_isSVD`: the SVD of $Q_A^T Q_B$ gives the
+  principal angles and vectors.
+* Algorithm 6.4.3, `GolubVanLoan.Chapter06.algorithm_6_4_3_spec`: in exact arithmetic the algorithm
+  returns the cosines of the principal angles and principal vectors.
+* Theorem 6.4.2, `GolubVanLoan.Chapter06.theorem_6_4_2`: $\operatorname{ran}(A) \cap
+  \operatorname{ran}(B) = \operatorname{span}\{f_1, \dots, f_s\} = \operatorname{span}\{g_1, \dots,
+  g_s\}$.
 
 ## Conventions
 
-Real matrices, 0-based. Subspaces of `ℝᵐ` are `Submodule ℝ (EuclideanSpace ℝ (Fin m))`; the range
-of `A` is `LinearMap.range (toEuclideanLin A)`, its null space `LinearMap.ker (toEuclideanLin A)`.
-"The columns of `Z` are orthonormal" is `Zᵀ * Z = 1`. The Frobenius norm is the scoped
-`Matrix.Norms.Frobenius` norm, the 2-norm the scoped `Matrix.Norms.L2Operator` one, each opened in
-the declarations that use it. An SVD is the factorization `Matrix.IsSVD A U σ V`
-(`Uᵀ A V = rectDiagonal σ`), the book's principal angles and vectors are the backbone's
-`Submodule.cosPrincipalAngle`, `Submodule.principalAngle` (0-based: `θ_{i+1}` is
-`principalAngle F G i`) and `Submodule.IsPrincipalVectors`.
+* Matrices are real and indices are 0-based. A subspace of $\mathbb{R}^m$ is a
+  `Submodule ℝ (EuclideanSpace ℝ (Fin m))`. The range of $A$ is
+  `LinearMap.range (toEuclideanLin A)`, and its null space is `LinearMap.ker (toEuclideanLin A)`.
+  The null spaces of Theorem 6.4.1 and Algorithm 6.4.2 are those of `Matrix.mulVecLin`, which needs
+  no Euclidean structure.
+* "The columns of $Z$ are orthonormal" is `Zᵀ * Z = 1`.
+* The Frobenius norm is the scoped `Matrix.Norms.Frobenius` norm, and the 2-norm is the scoped
+  `Matrix.Norms.L2Operator` norm. Each is opened in the declarations that use it.
+* An SVD is `Matrix.IsSVD A U σ V`, which says $U^T A V = \Sigma$ with the sorted diagonal $\sigma$.
+* The principal angles and vectors are `Submodule.cosPrincipalAngle`, `Submodule.principalAngle` and
+  `Submodule.IsPrincipalVectors`. They are 0-based: $\theta_{i+1}$ is
+  `Submodule.principalAngle F G i`.
 
-Algorithms 6.4.1–6.4.3 follow the algorithm conventions of `NumlibSurface/GolubVanLoan`: the
-matrix products are chapter 1's `algorithm_1_1_5` (every product and sum through the rounding hook
-`rnd`), and "Compute the SVD" is a monadic parameter `svd` (the book's SVD algorithm is chapter
-8's), whose specification the exact-arithmetic theorems assume. The ranks "`r = rank(A)`",
-"`q = rank(C)`" of Algorithm 6.4.2 are the numbers of nonzero computed singular values, a comparison
-on the values the program holds, and its column ranges are `trailingColumns` (§6.3).
-The thin QR factorizations of Algorithm 6.4.3 are chapter 5's Householder QR
-(`Chapter05.algorithm_5_2_1`) with the orthogonal factor accumulated forward from the returned
-reflector data (`Chapter05.forwardAccumulation`, `Chapter05.storedReflectors`), of which the first
-columns (`Matrix.firstColumns`) are kept. The null spaces of Theorem 6.4.1 and Algorithm 6.4.2 are
-those of `mulVecLin` (no Euclidean structure is needed).
+## Implementation notes
 
-## Sources and errata
+* Algorithms 6.4.1–6.4.3 follow the algorithm conventions of the library. The matrix products are
+  `GolubVanLoan.Chapter01.algorithm_1_1_5`, which rounds every product and sum with `rnd`. The step
+  "Compute the SVD" belongs to Chapter 8 and is a monadic parameter `svd`; the exact-arithmetic
+  theorems assume that it returns an SVD.
+* In Algorithm 6.4.2, the ranks $r = \operatorname{rank}(A)$ and $q = \operatorname{rank}(C)$ are
+  the numbers of nonzero computed singular values, found by comparisons on the values the program
+  holds. The column ranges are `GolubVanLoan.Chapter06.trailingColumns` of §6.3.
+* In Algorithm 6.4.3, the thin QR factorizations are the Householder QR
+  `GolubVanLoan.Chapter05.algorithm_5_2_1`. The orthogonal factor is accumulated forward from the
+  returned reflector data by `GolubVanLoan.Chapter05.forwardAccumulation` and
+  `GolubVanLoan.Chapter05.storedReflectors`, and its first columns (`Matrix.firstColumns`) are kept.
 
-Backbone `Numlib/LinearAlgebra/Matrix/{Procrustes,Polar}`,
-`Numlib/Analysis/InnerProductSpace/PrincipalAngles`; Mathlib's `Submodule.map_comap_eq`; chapter
-2's `subspaceDist`. Algorithm 6.4.3's heading "computes the cosines of the principal angles
-`θ₁ ≥ ⋯ ≥ θ_q`" has the order reversed: the cosines decrease, the angles increase. The one-line
-proof of Theorem 6.4.2 ("if `cos(θ_i) = 1`, then `f_i = g_i`") gives only the inclusion `⊇`; the
-backbone proves both. §6.4.3 says the subspaces lie in `ℝᵐ` while `A ∈ ℝ^{n×p}`, and writes
-"`v = Q_B z₁ = g₁`" for `g = …`.
+## Deviations from the source
+
+* **Algorithm 6.4.3** (typo). The heading says that the algorithm computes the cosines of the
+  principal angles $\theta_1 \ge \dots \ge \theta_q$. The order is reversed: the cosines decrease
+  and the angles increase. See `GolubVanLoan.Chapter06.algorithm_6_4_3`.
+* **§6.4.3** (typo). The source says that the subspaces lie in $\mathbb{R}^m$ but takes
+  $A \in \mathbb{R}^{n \times p}$. The library takes $A \in \mathbb{R}^{m \times p}$. See
+  `GolubVanLoan.Chapter06.algorithm_6_4_3`.
+* **§6.4.3** (typo). The source writes "$v = Q_B z_1 = g_1$" where it means $g_1 = Q_B z_1$. See
+  `GolubVanLoan.Chapter06.isPrincipalVectors_of_isSVD`.
+* **Equation (6.4.6)** (generalization). The source states the identity for unit vectors $u$ and
+  $v$. It holds for all $u$ and $v$. See `GolubVanLoan.Chapter06.equation_6_4_6`.
+* **Theorem 6.4.2** (generalization). The source states the theorem for the principal vectors
+  computed by Algorithm 6.4.3. It holds for any principal vectors of
+  $(\operatorname{ran}(A), \operatorname{ran}(B))$. See `GolubVanLoan.Chapter06.theorem_6_4_2`.
 -/
 
 open Matrix
@@ -66,10 +133,12 @@ section Procrustes
 
 open scoped Matrix.Norms.Frobenius
 
-/-- **§6.4.1, the Procrustes expansion.** "If `Q ∈ ℝ^{p×p}` is orthogonal, then
-`‖A − BQ‖_F² = ‖A‖_F² + ‖B‖_F² − 2 tr(Qᵀ(BᵀA))`. Thus, (6.4.1) is equivalent to the problem
-`max_{QᵀQ = I_p} tr(QᵀBᵀA)`": an orthogonal `Q` minimizes `‖A − BQ‖_F` iff it maximizes
-`tr(QᵀBᵀA)`. -/
+/-- **Section 6.4.1** of [golub2013matrix], the Procrustes expansion. Let
+$A, B \in \mathbb{R}^{m \times p}$ and let $Q \in \mathbb{R}^{p \times p}$ be orthogonal. Then
+$$\|A - BQ\|_F^2 = \|A\|_F^2 + \|B\|_F^2 - 2 \operatorname{tr}(Q^T (B^T A)).$$ Thus (6.4.1) is
+equivalent to the problem $\max_{Q^T Q = I_p} \operatorname{tr}(Q^T B^T A)$: the matrix $Q$
+minimizes $\|A - BQ'\|_F$ over all orthogonal $Q'$ if and only if it maximizes
+$\operatorname{tr}(Q'^T B^T A)$ over all orthogonal $Q'$. -/
 theorem procrustes_iff_trace {A B : Matrix (Fin m) (Fin p) ℝ} {Q : Matrix (Fin p) (Fin p) ℝ}
     (hQ : Q ∈ orthogonalGroup (Fin p) ℝ) :
     ‖A - B * Q‖ ^ 2 = ‖A‖ ^ 2 + ‖B‖ ^ 2 - 2 * trace (Qᵀ * (Bᵀ * A)) ∧
@@ -83,13 +152,15 @@ theorem procrustes_iff_trace {A B : Matrix (Fin m) (Fin p) ℝ} {Q : Matrix (Fin
   rw [← pow_le_pow_iff_left₀ (norm_nonneg _) (norm_nonneg _) two_ne_zero, key Q hQ, key Q' hQ']
   constructor <;> intro h <;> linarith
 
-/-- **(6.4.2).** "If `C₁` and `C₂` have the same row and column dimension, then
-`tr(C₁ᵀC₂) = tr(C₂ᵀC₁)`." -/
+/-- **Equation (6.4.2)** of [golub2013matrix]. If $C_1, C_2 \in \mathbb{R}^{m \times n}$, then
+$$\operatorname{tr}(C_1^T C_2) = \operatorname{tr}(C_2^T C_1).$$
+-/
 theorem equation_6_4_2 {n : ℕ} (C₁ C₂ : Matrix (Fin m) (Fin n) ℝ) :
     trace (C₁ᵀ * C₂) = trace (C₂ᵀ * C₁) := by
   rw [← trace_transpose, transpose_mul, transpose_transpose]
 
-/-- The trace of `V Uᵀ C` for an SVD `Uᵀ C V = Σ` is the sum of the diagonal of `Σ`. -/
+/-- If $U^T C V = \Sigma$ is an SVD of $C \in \mathbb{R}^{p \times p}$, then
+$\operatorname{tr}((UV^T)^T C) = \sum_i \sigma_i$. -/
 private theorem trace_mul_transpose_mul_eq_sum {C U V : Matrix (Fin p) (Fin p) ℝ} {σ : ℕ → ℝ}
     (h : IsSVD C U σ V) : trace ((U * Vᵀ)ᵀ * C) = ∑ i : Fin p, σ i := by
   have hS := h.star_mul_mul
@@ -97,10 +168,18 @@ private theorem trace_mul_transpose_mul_eq_sum {C U V : Matrix (Fin p) (Fin p) �
   rw [transpose_mul, transpose_transpose, Matrix.mul_assoc, trace_mul_comm, hS]
   simp [trace, rectDiagonal_apply]
 
-/-- **§6.4.1, the solution of the Procrustes problem.** "If `Uᵀ(BᵀA)V = Σ = diag(σ₁, …, σ_p)` is
-the SVD of `BᵀA` and we define the orthogonal matrix `Z` by `Z = VᵀQᵀU`, then …
-`tr(QᵀBᵀA) = tr(ZΣ) = ∑ z_ii σ_i ≤ ∑ σ_i`. The upper bound is clearly attained by setting
-`Z = I_p`, i.e., `Q = UVᵀ`": the trace bound, its attainment, and the minimality of `UVᵀ`. -/
+/-- **Section 6.4.1** of [golub2013matrix], the solution of the Procrustes problem. Let
+$A, B \in \mathbb{R}^{m \times p}$, and let $U^T (B^T A) V = \Sigma =
+\operatorname{diag}(\sigma_1, \dots, \sigma_p)$ be an SVD of $B^T A$. Then:
+
+* $\operatorname{tr}(Q^T B^T A) \le \sum_{i=1}^p \sigma_i$ for every orthogonal
+  $Q \in \mathbb{R}^{p \times p}$;
+* the bound is attained at $Q = UV^T$;
+* $UV^T$ is orthogonal;
+* $Q = UV^T$ solves (6.4.1): $\|A - BUV^T\|_F \le \|A - BQ\|_F$ for every orthogonal $Q$.
+
+The source proves the bound with the orthogonal matrix $Z = V^T Q^T U$: $\operatorname{tr}(Q^T
+B^T A) = \operatorname{tr}(Z \Sigma) = \sum_i z_{ii} \sigma_i \le \sum_i \sigma_i$. -/
 theorem procrustes_solution {A B : Matrix (Fin m) (Fin p) ℝ} {U V : Matrix (Fin p) (Fin p) ℝ}
     {σ : ℕ → ℝ} (h : IsSVD (Bᵀ * A) U σ V) :
     (∀ Q ∈ orthogonalGroup (Fin p) ℝ, trace (Qᵀ * (Bᵀ * A)) ≤ ∑ i : Fin p, σ i) ∧
@@ -122,9 +201,13 @@ theorem procrustes_solution {A B : Matrix (Fin m) (Fin p) ℝ} {U V : Matrix (Fi
   rw [hsum]
   simpa using this
 
-/-- **§6.4.1, the Procrustes solution as a polar factor.** The minimizer `UVᵀ` is the orthogonal
-factor of the polar decomposition `BᵀA = QP` ("if `B = I_p`, then the problem (6.4.1) is related to
-the polar decomposition"): any orthogonal polar factor of `BᵀA` minimizes `‖A − BQ‖_F`. -/
+/-- **Section 6.4.1** of [golub2013matrix], the Procrustes solution as a polar factor. Let
+$A, B \in \mathbb{R}^{m \times p}$, and let $B^T A = Q_0 P$ be a polar decomposition. Then $Q_0$
+is orthogonal and solves (6.4.1): $\|A - BQ_0\|_F \le \|A - BQ\|_F$ for every orthogonal
+$Q \in \mathbb{R}^{p \times p}$.
+
+The source remarks that for $B = I_p$ the problem (6.4.1) is related to the polar decomposition;
+the statement holds for every $B$. A polar decomposition is `Matrix.IsPolarDecomposition`. -/
 theorem procrustes_solution_of_isPolarDecomposition {A B : Matrix (Fin m) (Fin p) ℝ}
     {Q₀ P : Matrix (Fin p) (Fin p) ℝ} (h : IsPolarDecomposition (Bᵀ * A) Q₀ P) :
     Q₀ ∈ orthogonalGroup (Fin p) ℝ ∧
@@ -138,15 +221,16 @@ section Programs
 
 variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 
-/-- **Algorithm 6.4.1 (orthogonal Procrustes).** "Given `A` and `B` in `ℝ^{m×p}`, the following
-algorithm finds an orthogonal `Q ∈ ℝ^{p×p}` such that `‖A − BQ‖_F` is minimum.
+/-- **Algorithm 6.4.1** of [golub2013matrix] (orthogonal Procrustes). Given $A$ and $B$ in
+$\mathbb{R}^{m \times p}$, the algorithm finds an orthogonal $Q \in \mathbb{R}^{p \times p}$
+such that $\|A - BQ\|_F$ is minimum.
 ```
 C = BᵀA
 Compute the SVD UᵀCV = Σ and save U and V.
 Q = UVᵀ
-```"
-The products are chapter 1's `algorithm_1_1_5` (from `0`); "Compute the SVD" is the parameter
-`svd`, returning `(U, σ, V)`. -/
+```
+The products are `GolubVanLoan.Chapter01.algorithm_1_1_5`, started from the zero matrix. The
+step "Compute the SVD" is the parameter `svd`, which returns $(U, \sigma, V)$. -/
 def algorithm_6_4_1
     (svd : Matrix (Fin p) (Fin p) ℝ →
       M (Matrix (Fin p) (Fin p) ℝ × (ℕ → ℝ) × Matrix (Fin p) (Fin p) ℝ))
@@ -161,8 +245,12 @@ section ProcrustesAlgorithm
 
 open scoped Matrix.Norms.Frobenius
 
-/-- **Algorithm 6.4.1 is correct in exact arithmetic**: if the `svd` subroutine returns an SVD,
-the output `Q` is orthogonal and minimizes `‖A − BQ‖_F` over all orthogonal matrices. -/
+/-- **Algorithm 6.4.1** of [golub2013matrix], exact arithmetic. Let
+$A, B \in \mathbb{R}^{m \times p}$, and let `svd` return an SVD of every matrix. Then the output
+$Q$ of the algorithm is orthogonal, and $\|A - BQ\|_F \le \|A - BQ'\|_F$ for every orthogonal
+$Q' \in \mathbb{R}^{p \times p}$.
+
+The run is at `M := Id` with `rnd := pure`. -/
 theorem algorithm_6_4_1_spec
     (svd : Matrix (Fin p) (Fin p) ℝ →
       Id (Matrix (Fin p) (Fin p) ℝ × (ℕ → ℝ) × Matrix (Fin p) (Fin p) ℝ))
@@ -184,9 +272,12 @@ theorem algorithm_6_4_1_spec
 
 end ProcrustesAlgorithm
 
-/-- **§6.4.1, the polar decomposition from the SVD.** "If `A = UΣVᵀ` is the SVD of `A`, then
-`A = (UVᵀ)(VΣVᵀ)` is its polar decomposition": `UVᵀ` is orthogonal and `VΣVᵀ` symmetric positive
-semidefinite. -/
+/-- **Section 6.4.1** of [golub2013matrix], the polar decomposition from the SVD. If
+$A = U \Sigma V^T$ is an SVD of $A \in \mathbb{R}^{n \times n}$, then $$A = (UV^T)(V \Sigma
+V^T)$$ is a polar decomposition of $A$: $UV^T$ is orthogonal and $V \Sigma V^T$ is symmetric
+positive semidefinite.
+
+A polar decomposition is `Matrix.IsPolarDecomposition`. -/
 theorem polar_of_svd {n : ℕ} {A U V : Matrix (Fin n) (Fin n) ℝ} {σ : ℕ → ℝ}
     (h : IsSVD A U σ V) :
     IsPolarDecomposition A (U * Vᵀ) (V * diagonal (fun i : Fin n => σ i) * Vᵀ) ∧
@@ -197,10 +288,14 @@ theorem polar_of_svd {n : ℕ} {A U V : Matrix (Fin n) (Fin n) ℝ} {σ : ℕ �
 
 /-! ### §6.4.2 Intersection of null spaces -/
 
-/-- **Theorem 6.4.1.** "Suppose `A ∈ ℝ^{m×n}` and let `{z₁, …, z_t}` be an orthonormal basis for
-`null(A)`. Define `Z = [z₁ | ⋯ | z_t]` and let `{w₁, …, w_q}` be an orthonormal basis for
-`null(BZ)` where `B ∈ ℝ^{p×n}`. If `W = [w₁ | ⋯ | w_q]`, then the columns of `ZW` form an
-orthonormal basis for `null(A) ∩ null(B)`." Null spaces and ranges are those of `mulVecLin`. -/
+/-- **Theorem 6.4.1** of [golub2013matrix]. Suppose $A \in \mathbb{R}^{m \times n}$ and
+$B \in \mathbb{R}^{p \times n}$. Let $Z = [z_1 \mid \dots \mid z_t] \in \mathbb{R}^{n \times t}$
+have orthonormal columns that span $\operatorname{null}(A)$, and let $W = [w_1 \mid \dots \mid
+w_q] \in \mathbb{R}^{t \times q}$ have orthonormal columns that span $\operatorname{null}(BZ)$.
+Then the columns of $ZW$ are orthonormal and span $\operatorname{null}(A) \cap
+\operatorname{null}(B)$, so they form an orthonormal basis of this intersection.
+
+The null spaces and ranges are those of `Matrix.mulVecLin`. -/
 theorem theorem_6_4_1 {n t q : ℕ} {A : Matrix (Fin m) (Fin n) ℝ} {B : Matrix (Fin p) (Fin n) ℝ}
     {Z : Matrix (Fin n) (Fin t) ℝ} {W : Matrix (Fin t) (Fin q) ℝ} (hZ : Zᵀ * Z = 1)
     (hZA : LinearMap.range Z.mulVecLin = LinearMap.ker A.mulVecLin) (hW : Wᵀ * W = 1)
@@ -215,9 +310,9 @@ theorem theorem_6_4_1 {n t q : ℕ} {A : Matrix (Fin m) (Fin n) ℝ} {B : Matrix
 
 section NullSpaces
 
-/-- For sorted nonnegative values, the nonzero ones among the first `k` are exactly the first
-`Chapter05.deltaRank k 0 σ`: chapter 5's numerical rank (5.4.5) at `δ = 0` is the book's
-"`r = rank(A)`" read off a computed diagonal of singular values (§5.4.1). -/
+/-- Let $\sigma$ be nonincreasing and nonnegative, and let $i < k$. Then $\sigma_i \neq 0$ if and
+only if $i$ is less than `GolubVanLoan.Chapter05.deltaRank k 0 σ`, the numerical rank (5.4.5) at
+$\delta = 0$. So this numerical rank is the number of nonzero values among the first $k$. -/
 private theorem ne_zero_iff_lt_deltaRank {σ : ℕ → ℝ} (hσ : Antitone σ) (h0 : ∀ i, 0 ≤ σ i)
     {k i : ℕ} (hi : i < k) : σ i ≠ 0 ↔ i < Chapter05.deltaRank k 0 σ := by
   obtain ⟨-, h1, h2⟩ := Chapter05.deltaRank_spec (n := k) (δ := 0) hσ
@@ -228,8 +323,14 @@ private theorem ne_zero_iff_lt_deltaRank {σ : ℕ → ℝ} (hσ : Antitone σ) 
   · intro h
     exact (h1 i h).ne'
 
-/-- **The null space from an SVD**: if `U_Aᵀ A V_A = diag(σ_i)` and `r` is the number of nonzero
-`σ_i`, the trailing columns `V_A(:, r+1:n)` span `null(A)`. -/
+/-- **Section 6.4.2** of [golub2013matrix], the null space from an SVD. Let
+$U_A^T A V_A = \operatorname{diag}(\sigma_i)$ be an SVD of $A \in \mathbb{R}^{m \times n}$, and
+let $r$ be the number of nonzero values among $\sigma_1, \dots, \sigma_{\min(m,n)}$. Then the
+columns of $V_A(:, r{+}1{:}n)$ span $\operatorname{null}(A)$.
+
+The number $r$ is `GolubVanLoan.Chapter05.deltaRank (min m n) 0 σ`, the columns are
+`GolubVanLoan.Chapter06.trailingColumns`, and the range and null space are those of
+`Matrix.mulVecLin`. -/
 theorem range_trailingColumns_eq_ker {n : ℕ} {A : Matrix (Fin m) (Fin n) ℝ}
     {U : Matrix (Fin m) (Fin m) ℝ} {σ : ℕ → ℝ} {V : Matrix (Fin n) (Fin n) ℝ}
     (h : IsSVD A U σ V) :
@@ -275,13 +376,14 @@ theorem range_trailingColumns_eq_ker {n : ℕ} {A : Matrix (Fin m) (Fin n) ℝ}
     congr 1
     exact Fin.ext (by rw [Fin.val_mk]; omega)
 
-/-- A matrix with no columns has trivial range. -/
+/-- A matrix with no columns has the zero range. -/
 private theorem range_mulVecLin_eq_bot {n k : ℕ} (Y : Matrix (Fin n) (Fin k) ℝ) (hk : k = 0) :
     LinearMap.range Y.mulVecLin = ⊥ := by
   subst hk
   rw [range_mulVecLin, Set.range_eq_empty, Submodule.span_empty]
 
-/-- A matrix with orthonormal columns spanning `K` has as many columns as `K` has dimensions. -/
+/-- If $Y \in \mathbb{R}^{n \times s}$ has orthonormal columns that span a subspace $K$, then
+$s = \dim K$. -/
 private theorem eq_finrank_of_range_eq {n s : ℕ} {Y : Matrix (Fin n) (Fin s) ℝ}
     {K : Submodule ℝ (Fin n → ℝ)} (hY : Yᵀ * Y = 1) (hK : LinearMap.range Y.mulVecLin = K) :
     s = Module.finrank ℝ K := by
@@ -294,9 +396,11 @@ section Programs
 
 variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 
-/-- **Algorithm 6.4.2 (intersection of null spaces).** "Given `A ∈ ℝ^{m×n}` and `B ∈ ℝ^{p×n}`,
-the following algorithm computes an integer `s` and a matrix `Y = [y₁ | ⋯ | y_s]` having
-orthonormal columns which span `null(A) ∩ null(B)`. If the intersection is trivial, then `s = 0`.
+/-- **Algorithm 6.4.2** of [golub2013matrix] (intersection of null spaces). Given
+$A \in \mathbb{R}^{m \times n}$ and $B \in \mathbb{R}^{p \times n}$, the algorithm computes an
+integer $s$ and a matrix $Y = [y_1 \mid \dots \mid y_s]$ with orthonormal columns that span
+$\operatorname{null}(A) \cap \operatorname{null}(B)$. If the intersection is trivial, then
+$s = 0$.
 ```
 Compute the SVD U_Aᵀ A V_A = diag(σ_i), save V_A, and set r = rank(A).
 if r < n
@@ -311,10 +415,11 @@ if r < n
 else
     s = 0
 end
-```"
-The two SVDs are the parameters `svdA`, `svdC` (the latter for each column count), the ranks the
-numbers of nonzero computed singular values (`Chapter05.deltaRank` at `δ = 0`), the products chapter
-1's `algorithm_1_1_5`. -/
+```
+The two SVDs are the parameters `svdA` and `svdC`; `svdC` takes the number of columns as an
+argument. The ranks are the numbers of nonzero computed singular values,
+`GolubVanLoan.Chapter05.deltaRank` at $\delta = 0$. The products are
+`GolubVanLoan.Chapter01.algorithm_1_1_5`. The output is the pair $(s, Y)$. -/
 noncomputable def algorithm_6_4_2 {n : ℕ}
     (svdA : Matrix (Fin m) (Fin n) ℝ →
       M (Matrix (Fin m) (Fin m) ℝ × (ℕ → ℝ) × Matrix (Fin n) (Fin n) ℝ))
@@ -337,7 +442,8 @@ noncomputable def algorithm_6_4_2 {n : ℕ}
 
 end Programs
 
-/-- The output `⟨0, 0⟩` meets the specification when the intersection is trivial. -/
+/-- If a subspace $K$ is trivial, then the output $(0, 0)$ meets the specification of Algorithm
+6.4.2: its columns are orthonormal, span $K$, and their number is $\dim K$. -/
 private theorem spec_of_eq_zero {n : ℕ} {K : Submodule ℝ (Fin n → ℝ)} (hK : K = ⊥) {s : ℕ}
     {Y : Matrix (Fin n) (Fin s) ℝ} (h : (⟨0, 0⟩ : Σ s : ℕ, Matrix (Fin n) (Fin s) ℝ) = ⟨s, Y⟩) :
     Yᵀ * Y = 1 ∧ LinearMap.range Y.mulVecLin = K ∧ s = Module.finrank ℝ K := by
@@ -346,9 +452,13 @@ private theorem spec_of_eq_zero {n : ℕ} {K : Submodule ℝ (Fin n → ℝ)} (h
   obtain rfl := eq_of_heq h'.symm
   exact ⟨Subsingleton.elim _ _, range_mulVecLin_eq_bot _ rfl, by simp⟩
 
-/-- **Algorithm 6.4.2 is correct in exact arithmetic**: if both SVD subroutines return SVDs, the
-output `⟨s, Y⟩` has orthonormal columns spanning `null(A) ∩ null(B)`, and
-`s = dim(null(A) ∩ null(B))`, so `s = 0` exactly when the intersection is trivial. -/
+/-- **Algorithm 6.4.2** of [golub2013matrix], exact arithmetic. Let $A \in \mathbb{R}^{m \times n}$
+and $B \in \mathbb{R}^{p \times n}$, and let `svdA` and `svdC` return an SVD of every matrix. If
+the algorithm returns $(s, Y)$, then $Y^T Y = I$, the columns of $Y$ span
+$\operatorname{null}(A) \cap \operatorname{null}(B)$, and $s = \dim(\operatorname{null}(A) \cap
+\operatorname{null}(B))$. In particular, $s = 0$ exactly when the intersection is trivial.
+
+The run is at `M := Id` with `rnd := pure`. The null spaces are those of `Matrix.mulVecLin`. -/
 theorem algorithm_6_4_2_spec {n : ℕ}
     (svdA : Matrix (Fin m) (Fin n) ℝ →
       Id (Matrix (Fin m) (Fin m) ℝ × (ℕ → ℝ) × Matrix (Fin n) (Fin n) ℝ))
@@ -397,13 +507,23 @@ section Angles
 
 variable (F G : Submodule ℝ (EuclideanSpace ℝ (Fin m)))
 
-/-- **(6.4.3).** "The principal angles `{θ_i}` between these two subspaces and the associated
-principal vectors `{f_i, g_i}` are defined recursively by
-`cos(θ_k) = f_kᵀg_k = max_{f ∈ F, ‖f‖₂ = 1} max_{g ∈ G, ‖g‖₂ = 1} fᵀg` subject to
-`fᵀ[f₁, …, f_{k−1}] = 0`, `gᵀ[g₁, …, g_{k−1}] = 0`", for `dim F ≥ dim G`: (a) principal vectors
-exist; (b) for principal vectors, `cos θ_k` is the maximum of the recursion at step `k`, attained at
-`(f_k, g_k)`; (c) any sequence produced by the recursion has `f_kᵀg_k = cos θ_k`, so the recursion
-defines the angles unambiguously. -/
+/-- **Equation (6.4.3)** of [golub2013matrix]. Let $F$ and $G$ be subspaces of $\mathbb{R}^m$ with
+$q = \dim G \le \dim F$. The principal angles $\theta_k$ between $F$ and $G$ and the principal
+vectors $f_k, g_k$ are defined recursively by $$\cos(\theta_k) = f_k^T g_k = \max_{\substack{f
+\in F,\ \|f\|_2 = 1 \\ f^T [f_1, \dots, f_{k-1}] = 0}} \ \max_{\substack{g \in G,\ \|g\|_2 = 1
+\\ g^T [g_1, \dots, g_{k-1}] = 0}} f^T g.$$ The theorem says that this definition is well posed:
+
+* principal vectors $f_1, \dots, f_q$ and $g_1, \dots, g_q$ exist;
+* for any principal vectors, $\cos\theta_k$ is the maximum of the $k$-th step of the recursion,
+  and it is attained at $(f_k, g_k)$;
+* any sequence of unit vectors produced by the recursion satisfies $f_k^T g_k = \cos\theta_k$,
+  so the recursion determines the angles whatever maximizers it chooses.
+
+The cosines are `Submodule.cosPrincipalAngle`, the singular values of the projection onto $F$
+restricted to $G$. Principal vectors are `Submodule.IsPrincipalVectors`: $g$ is an orthonormal
+basis of $G$, $f$ is orthonormal in $F$, and the projection of $g_k$ onto $F$ is
+$\cos\theta_k \, f_k$. A sequence produced by the recursion is
+`Submodule.IsRecursivePrincipalVectors`. -/
 theorem equation_6_4_3 (h : Module.finrank ℝ G ≤ Module.finrank ℝ F) :
     (∃ f g : Fin (Module.finrank ℝ G) → EuclideanSpace ℝ (Fin m), F.IsPrincipalVectors G f g) ∧
       (∀ {q : ℕ} {f g : Fin q → EuclideanSpace ℝ (Fin m)}, F.IsPrincipalVectors G f g →
@@ -416,13 +536,21 @@ theorem equation_6_4_3 (h : Module.finrank ℝ G ≤ Module.finrank ℝ F) :
   · simpa using hfg.isGreatest_re_inner k
   · simpa using F.cosPrincipalAngle_eq_of_isRecursivePrincipalVectors G h hfg k
 
-/-- **§6.4.3.** "Note that the principal angles satisfy `0 ≤ θ₁ ≤ ⋯ ≤ θ_q ≤ π/2`." -/
+/-- **Section 6.4.3** of [golub2013matrix]. The principal angles between two subspaces $F$ and $G$
+satisfy $$0 \le \theta_1 \le \dots \le \theta_q \le \pi/2.$$
+
+The statement says that `Submodule.principalAngle F G` is monotone and that every value lies in
+$[0, \pi/2]$. Beyond the dimension of $G$ the cosine is $0$ and the angle is $\pi/2$. -/
 theorem principalAngle_mono :
     Monotone (F.principalAngle G) ∧ ∀ i, F.principalAngle G i ∈ Set.Icc 0 (Real.pi / 2) :=
   ⟨F.monotone_principalAngle G, F.principalAngle_mem_Icc G⟩
 
-/-- **§6.4.3, the distance of equal-dimensional subspaces.** "If `p = q`, then
-`dist(F, G) = √(1 − cos(θ_p)²) = sin(θ_p)`", `dist` the subspace distance of §2.5.3. -/
+/-- **Section 6.4.3** of [golub2013matrix], the distance of subspaces of equal dimension. Let $F$
+and $G$ be subspaces of $\mathbb{R}^m$ with $\dim F = \dim G = p \ge 1$. Then
+$$\operatorname{dist}(F, G) = \sqrt{1 - \cos(\theta_p)^2} = \sin(\theta_p).$$
+
+The distance is the subspace distance `GolubVanLoan.Chapter02.subspaceDist` of §2.5.3. The
+hypothesis is stated as $\dim F = \dim G = q + 1$, and $\theta_p$ has the 0-based index $q$. -/
 theorem dist_eq_sin_principalAngle {q : ℕ} (hF : Module.finrank ℝ F = q + 1)
     (hG : Module.finrank ℝ G = q + 1) :
     Chapter02.subspaceDist F G = Real.sqrt (1 - F.cosPrincipalAngle G q ^ 2) ∧
@@ -438,9 +566,15 @@ section Matrices
 variable {q : ℕ}
 
 open scoped Matrix.Norms.L2Operator in
-/-- **§6.4.3, the singular values of `Q_AᵀQ_B`.** With `A = Q_AR_A`, `B = Q_BR_B` thin QR
-factorizations (`Q_A`, `Q_B` with orthonormal columns): "Since `‖Q_AᵀQ_B‖₂ ≤ 1`, all the singular
-values are between 0 and 1 and we may write `σ_i = cos(θ_i)`." -/
+/-- **Section 6.4.3** of [golub2013matrix], the singular values of $Q_A^T Q_B$. Let
+$Q_A \in \mathbb{R}^{m \times p}$ and $Q_B \in \mathbb{R}^{m \times q}$ have orthonormal
+columns, as the orthogonal factors of thin QR factorizations $A = Q_A R_A$ and $B = Q_B R_B$.
+Then $\|Q_A^T Q_B\|_2 \le 1$, and for every $i$ the $i$-th singular value $\sigma_i$ of
+$Q_A^T Q_B$ is the cosine $\cos(\theta_i)$ of the $i$-th principal angle between
+$\operatorname{ran}(Q_A)$ and $\operatorname{ran}(Q_B)$, with $0 \le \sigma_i \le 1$.
+
+The singular values are `LinearMap.singularValues` of `toEuclideanLin (QAᵀ * QB)`, 0-based, and
+the equality holds for every index $i$. -/
 theorem singularValues_transpose_mul_eq_cosPrincipalAngle {QA : Matrix (Fin m) (Fin p) ℝ}
     {QB : Matrix (Fin m) (Fin q) ℝ}
     (hA : QAᵀ * QA = 1) (hB : QBᵀ * QB = 1) :
@@ -465,10 +599,15 @@ theorem singularValues_transpose_mul_eq_cosPrincipalAngle {QA : Matrix (Fin m) (
     · rw [← e]; exact Submodule.cosPrincipalAngle_nonneg _ _ i
     · rw [← e]; exact Submodule.cosPrincipalAngle_le_one _ _ i
 
-/-- **(6.4.6).** "If `f ∈ F` and `g ∈ G` are unit vectors, then there exist unit vectors
-`u ∈ ℝᵖ` and `v ∈ ℝ^q` so that `f = Q_A u` and `g = Q_B v`. Thus,
-`fᵀg = uᵀ(Q_AᵀQ_B)v = (Yᵀu)ᵀΣ(Zᵀv) = ∑_{i=1}^q σ_i (y_iᵀu)(z_iᵀv)`", for the SVD
-`Q_AᵀQ_B = YΣZᵀ` (`p ≥ q`); the identity holds for all `u`, `v`. -/
+/-- **Equation (6.4.6)** of [golub2013matrix]. Let $Q_A \in \mathbb{R}^{m \times p}$ and
+$Q_B \in \mathbb{R}^{m \times q}$ with $q \le p$, and let $Y^T (Q_A^T Q_B) Z = \Sigma$ be an SVD
+with $Y = [y_1 \mid \dots \mid y_p]$ and $Z = [z_1 \mid \dots \mid z_q]$. Then for all
+$u \in \mathbb{R}^p$ and $v \in \mathbb{R}^q$, with $f = Q_A u$ and $g = Q_B v$, $$f^T g = u^T
+(Q_A^T Q_B) v = (Y^T u)^T \Sigma (Z^T v) = \sum_{i=1}^q \sigma_i (y_i^T u)(z_i^T v).$$
+
+**Generalization.** The source takes unit vectors $f \in F$ and $g \in G$, written as
+$f = Q_A u$ and $g = Q_B v$ with unit vectors $u$ and $v$. The identity holds for all $u$ and
+$v$, and it needs no hypothesis on the columns of $Q_A$ and $Q_B$. -/
 theorem equation_6_4_6 {QA : Matrix (Fin m) (Fin p) ℝ} {QB : Matrix (Fin m) (Fin q) ℝ}
     (hqp : q ≤ p) {Y : Matrix (Fin p) (Fin p) ℝ} {σ : ℕ → ℝ} {Z : Matrix (Fin q) (Fin q) ℝ}
     (h : IsSVD (QAᵀ * QB) Y σ Z) (u : Fin p → ℝ) (v : Fin q → ℝ) :
@@ -507,23 +646,33 @@ section Programs
 
 variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 
-/-- **Algorithm 6.4.3 (principal angles and vectors).** "Given `A ∈ ℝ^{m×p}` and `B ∈ ℝ^{m×q}`
-(`p ≥ q`) each with linearly independent columns, the following algorithm computes the cosines of
-the principal angles `θ₁ ≥ ⋯ ≥ θ_q` between `ran(A)` and `ran(B)`. The vectors `f₁, …, f_q` and
-`g₁, …, g_q` are the associated principal vectors.
+/-- **Algorithm 6.4.3** of [golub2013matrix] (principal angles and vectors). Given
+$A \in \mathbb{R}^{m \times p}$ and $B \in \mathbb{R}^{m \times q}$ with $p \ge q$, each with
+linearly independent columns, the algorithm computes the cosines of the principal angles
+$\theta_1 \le \dots \le \theta_q$ between $\operatorname{ran}(A)$ and $\operatorname{ran}(B)$.
+The vectors $f_1, \dots, f_q$ and $g_1, \dots, g_q$ are the associated principal vectors.
 ```
 Compute the thin QR factorizations A = Q_A R_A and B = Q_B R_B.
 C = Q_Aᵀ Q_B
 Compute the SVD YᵀCZ = diag(cos(θ_k)).
 Q_A Y(:, 1:q) = [f₁ | ⋯ | f_q]
 Q_B Z(:, 1:q) = [g₁ | ⋯ | g_q]
-```"
-The thin QR factorizations are chapter 5's Householder QR (Algorithm 5.2.1) with the orthogonal
-factor accumulated forward from the returned reflector data (`storedReflectors`, the returned
-`β`), of which the first `p` (resp. `q`) columns are kept; the products are chapter 1's
-`algorithm_1_1_5`; "Compute the SVD" is the parameter `svd`. The output is the diagonal returned
-by `svd` and the matrices `[f₁ | ⋯ | f_q]`, `[g₁ | ⋯ | g_q]`. The shape conditions `q ≤ p ≤ m` of
-the book (independent columns) are explicit arguments. -/
+```
+
+**Typo.** The source writes the angles as $\theta_1 \ge \dots \ge \theta_q$. The order is
+reversed: the cosines decrease and the angles increase.
+
+**Typo.** The source says that the subspaces lie in $\mathbb{R}^m$ but takes
+$A \in \mathbb{R}^{n \times p}$. Here $A \in \mathbb{R}^{m \times p}$.
+
+The thin QR factorizations are the Householder QR `GolubVanLoan.Chapter05.algorithm_5_2_1`. The
+orthogonal factor is accumulated forward from the returned reflector data and the returned
+$\beta$ by `GolubVanLoan.Chapter05.forwardAccumulation` and
+`GolubVanLoan.Chapter05.storedReflectors`, and its first $p$ (or $q$) columns are kept. The
+products are `GolubVanLoan.Chapter01.algorithm_1_1_5`, and the step "Compute the SVD" is the
+parameter `svd`. The output is the diagonal that `svd` returns and the matrices
+$[f_1 \mid \dots \mid f_q]$ and $[g_1 \mid \dots \mid g_q]$. The shape conditions
+$q \le p \le m$, which follow from the independence of the columns, are explicit arguments. -/
 noncomputable def algorithm_6_4_3
     (svd : Matrix (Fin p) (Fin q) ℝ →
       M (Matrix (Fin p) (Fin p) ℝ × (ℕ → ℝ) × Matrix (Fin q) (Fin q) ℝ))
@@ -542,7 +691,7 @@ noncomputable def algorithm_6_4_3
 
 end Programs
 
-/-- The columns of a matrix with `Mᵀ M = 1` are orthonormal vectors of Euclidean space. -/
+/-- If $N^T N = I$, then the columns of $N$ are orthonormal vectors of Euclidean space. -/
 private theorem orthonormal_toLp_col {k : ℕ} {N : Matrix (Fin m) (Fin k) ℝ} (hN : Nᵀ * N = 1) :
     Orthonormal ℝ fun j => (WithLp.toLp 2 (N.col j) : EuclideanSpace ℝ (Fin m)) := by
   rw [orthonormal_iff_ite]
@@ -553,7 +702,8 @@ private theorem orthonormal_toLp_col {k : ℕ} {N : Matrix (Fin m) (Fin k) ℝ} 
   refine Finset.sum_congr rfl fun r _ => ?_
   simp [col_apply, mul_comm]
 
-/-- Ranges spanned by the same columns agree as ranges of the Euclidean operators. -/
+/-- If the range of $N$ is contained in the range of $N'$ as maps on coordinate vectors, then the
+same holds for the Euclidean operators of $N$ and $N'$. -/
 private theorem range_toEuclideanLin_le_of_range_mulVecLin_le {k l : ℕ}
     {N : Matrix (Fin m) (Fin k) ℝ} {N' : Matrix (Fin m) (Fin l) ℝ}
     (h : LinearMap.range N.mulVecLin ≤ LinearMap.range N'.mulVecLin) :
@@ -564,8 +714,8 @@ private theorem range_toEuclideanLin_le_of_range_mulVecLin_le {k l : ℕ}
   rw [toEuclideanLin_toLp, toEuclideanLin_apply]
   exact congrArg _ hy
 
-/-- The first columns of the orthogonal factor of a QR factorization of a matrix with independent
-columns span its range. -/
+/-- Let $N = QR$ be a QR factorization of $N \in \mathbb{R}^{m \times k}$ with linearly independent
+columns. Then the first $k$ columns of $Q$ span the range of $N$. -/
 private theorem range_toEuclideanLin_firstColumns {k : ℕ} {N : Matrix (Fin m) (Fin k) ℝ}
     {Q : Matrix (Fin m) (Fin m) ℝ} {R : Matrix (Fin m) (Fin k) ℝ} (h : IsQR N Q R) (hkm : k ≤ m)
     (hN : LinearIndependent ℝ Nᵀ) :
@@ -576,9 +726,16 @@ private theorem range_toEuclideanLin_firstColumns {k : ℕ} {N : Matrix (Fin m) 
   exact le_antisymm (range_toEuclideanLin_le_of_range_mulVecLin_le hr.le)
     (range_toEuclideanLin_le_of_range_mulVecLin_le hr.ge)
 
-/-- **The SVD step of Algorithm 6.4.3**: for `Q_A`, `Q_B` with orthonormal columns and an SVD
-`Q_AᵀQ_B = YΣZᵀ`, the diagonal of `Σ` is the list of cosines of the principal angles between the
-ranges, and the columns of `Q_A Y(:, 1:q)`, `Q_B Z` are principal vectors: the backbone's
+/-- **Section 6.4.3** of [golub2013matrix], the SVD step of Algorithm 6.4.3. Let
+$Q_A \in \mathbb{R}^{m \times p}$ and $Q_B \in \mathbb{R}^{m \times q}$ have orthonormal
+columns, with $q \le p$, and let $F = \operatorname{ran}(Q_A)$ and
+$G = \operatorname{ran}(Q_B)$. Let $Y^T (Q_A^T Q_B) Z = \Sigma = \operatorname{diag}(\sigma_1,
+\dots, \sigma_q)$ be an SVD. Then $\sigma_k = \cos(\theta_k)$ for $k = 1, \dots, q$, and the
+columns $f_k$ of $Q_A Y(:, 1{:}q)$ and $g_k$ of $Q_B Z$ are principal vectors of $(F, G)$.
+
+**Typo.** The source writes "$v = Q_B z_1 = g_1$" where it means $g_1 = Q_B z_1$.
+
+Principal vectors are `Submodule.IsPrincipalVectors`. The statement specializes
 `Submodule.cosPrincipalAngle_eq_of_isSVD` and `Submodule.isPrincipalVectors_of_isSVD`. -/
 theorem isPrincipalVectors_of_isSVD {QA : Matrix (Fin m) (Fin p) ℝ}
     {QB : Matrix (Fin m) (Fin q) ℝ} (hA : QAᵀ * QA = 1) (hB : QBᵀ * QB = 1) (hqp : q ≤ p)
@@ -597,11 +754,16 @@ theorem isPrincipalVectors_of_isSVD {QA : Matrix (Fin m) (Fin p) ℝ}
   exact ⟨fun k hk => (Submodule.cosPrincipalAngle_eq_of_isSVD hA' hB' h' (by omega) hk).symm,
     Submodule.isPrincipalVectors_of_isSVD hA' hB' hqp h'⟩
 
-/-- **Algorithm 6.4.3 is correct in exact arithmetic**: for `A`, `B` with linearly independent
-columns (`q ≤ p ≤ m`; the Householder QR factorizations of chapter 5 need no further hypothesis)
-and an `svd` subroutine returning SVDs, the output `(c, F, G)` has `c k = cos θ_{k+1}` for `k < q`
-and the columns of `F` and `G` are principal vectors of `(ran(A), ran(B))`: orthonormal, in the
-ranges, and `P_{ran A} g_k = cos θ_k f_k`. -/
+/-- **Algorithm 6.4.3** of [golub2013matrix], exact arithmetic. Let $A \in \mathbb{R}^{m \times p}$
+and $B \in \mathbb{R}^{m \times q}$ with $q \le p \le m$ have linearly independent columns, and
+let `svd` return an SVD of every matrix. If the algorithm returns $(c, F, G)$, then
+$c_k = \cos(\theta_k)$ for $k = 1, \dots, q$, and the columns of $F$ and $G$ are principal
+vectors of $(\operatorname{ran}(A), \operatorname{ran}(B))$: they are orthonormal, they lie in
+the two ranges, and the projection of $g_k$ onto $\operatorname{ran}(A)$ is
+$\cos(\theta_k) f_k$.
+
+The run is at `M := Id` with `rnd := pure`. The Householder QR factorizations of Chapter 5 need
+no further hypothesis. The index $k$ is 0-based in the Lean statement. -/
 theorem algorithm_6_4_3_spec
     (svd : Matrix (Fin p) (Fin q) ℝ →
       Id (Matrix (Fin p) (Fin p) ℝ × (ℕ → ℝ) × Matrix (Fin q) (Fin q) ℝ))
@@ -644,11 +806,19 @@ end PrincipalAnglesAlgorithm
 
 /-! ### §6.4.4 Intersection of subspaces -/
 
-/-- **Theorem 6.4.2.** "Let `{cos(θ_i)}` and `{f_i, g_i}` be defined by Algorithm 6.4.3. If the
-index `s` is defined by `1 = cos(θ₁) = ⋯ = cos(θ_s) > cos(θ_{s+1})`, then
-`ran(A) ∩ ran(B) = span{f₁, …, f_s} = span{g₁, …, g_s}`." Stated for any principal vectors of
-`(ran(A), ran(B))`, which is what Algorithm 6.4.3 computes; `s` is characterized by
-`cos θ_{i+1} = 1 ↔ i < s`. -/
+/-- **Theorem 6.4.2** of [golub2013matrix]. Let $A \in \mathbb{R}^{m \times p}$ and
+$B \in \mathbb{R}^{m \times q}$, and let $f_1, \dots, f_q$ and $g_1, \dots, g_q$ be principal
+vectors of $(\operatorname{ran}(A), \operatorname{ran}(B))$, with principal angles $\theta_i$.
+If the index $s$ is defined by $$1 = \cos(\theta_1) = \dots = \cos(\theta_s) >
+\cos(\theta_{s+1}),$$ then $$\operatorname{ran}(A) \cap \operatorname{ran}(B) =
+\operatorname{span}\{f_1, \dots, f_s\} = \operatorname{span}\{g_1, \dots, g_s\}.$$
+
+**Generalization.** The source takes the $\theta_i$, $f_i$ and $g_i$ computed by Algorithm
+6.4.3. The theorem holds for any principal vectors, which is what Algorithm 6.4.3 computes.
+
+The index $s$ is given by the condition that $\cos(\theta_{i+1}) = 1$ if and only if $i < s$,
+for every 0-based $i < q$. The one-line proof in the source ("if $\cos(\theta_i) = 1$, then
+$f_i = g_i$") gives only the inclusion $\supseteq$; the backbone proves both inclusions. -/
 theorem theorem_6_4_2 {q : ℕ} {A : Matrix (Fin m) (Fin p) ℝ} {B : Matrix (Fin m) (Fin q) ℝ}
     {f g : Fin q → EuclideanSpace ℝ (Fin m)}
     (hfg : (LinearMap.range (toEuclideanLin A)).IsPrincipalVectors

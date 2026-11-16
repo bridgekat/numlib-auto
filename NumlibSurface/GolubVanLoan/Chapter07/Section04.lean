@@ -12,40 +12,101 @@ import NumlibSurface.GolubVanLoan.Chapter05.Section02
 import NumlibSurface.GolubVanLoan.Chapter07.Section03
 
 /-!
-# Golub–Van Loan §7.4: the Hessenberg and real Schur forms
+# Golub and Van Loan, Section 7.4: The Hessenberg and Real Schur Forms
 
-Surface file for Gene H. Golub and Charles F. Van Loan, *Matrix Computations*, 4th edition
-[golub2013matrix], §7.4: the real Schur decomposition (Theorem 7.4.1), the Hessenberg
-decomposition (7.4.3) and the array reading of Algorithm 7.4.2 (`hessenbergPart`), the implicit Q
-theorem (Theorem 7.4.2), Krylov matrices and unreduced Hessenberg matrices (Theorem 7.4.3),
-geometric multiplicity one (Theorem 7.4.4), and the companion matrix decomposition (7.4.4) with
-nonderogatory matrices (§7.4.6).
+This module formalizes §7.4 of [golub2013matrix] for real matrices $A \in \mathbb{R}^{n \times n}$.
+It covers the real Schur decomposition (Theorem 7.4.1), the QR step on an upper Hessenberg matrix by
+Givens rotations (Algorithm 7.4.1), the Hessenberg decomposition $U_0^T A U_0 = H$ (7.4.3) and its
+computation by Householder reflections (Algorithm 7.4.2) with Wilkinson's backward error bound, the
+implicit Q theorem (Theorem 7.4.2), Krylov matrices and unreduced Hessenberg matrices (Theorem
+7.4.3), the geometric multiplicity of the eigenvalues of an unreduced Hessenberg matrix (Theorem
+7.4.4), and the companion matrix decomposition (7.4.4) with nonderogatory matrices (§7.4.6).
+
+The proofs specialize the backbone modules `Numlib.LinearAlgebra.Matrix.RealSchur` (quasi-triangular
+matrices), `Numlib.LinearAlgebra.Matrix.UnreducedHessenberg` (unreduced Hessenberg and Krylov
+matrices), `Numlib.LinearAlgebra.Matrix.Companion` (companion matrices) and
+`Numlib.FloatingPoint.Householder` (the rounding analysis of the Householder reduction). The
+algorithms reuse the Householder and Givens programs of §5.1 and Algorithm 5.2.5.
+
+## Main definitions
+
+* Algorithm 7.4.1, `GolubVanLoan.Chapter07.algorithm_7_4_1`: one QR step on an upper Hessenberg
+  matrix by $n - 1$ Givens rotations.
+* §7.4.3, `GolubVanLoan.Chapter07.hessenbergPart`: the upper Hessenberg part of the array that
+  Algorithm 7.4.2 returns.
+* Algorithm 7.4.2, `GolubVanLoan.Chapter07.algorithm_7_4_2`: the Householder reduction to Hessenberg
+  form.
+* §7.4.5, `GolubVanLoan.Chapter07.IsUnreduced`: an upper Hessenberg matrix with no zero subdiagonal
+  entries.
+* §7.4.5, `GolubVanLoan.Chapter07.krylovMatrix`: the Krylov matrix $K(A, v, j) = [v \mid Av \mid
+  \cdots \mid A^{j-1} v]$.
+* (7.4.4), `GolubVanLoan.Chapter07.companion`: the companion matrix of $c_0, \dots, c_{n-1}$.
+* §7.4.6, `GolubVanLoan.Chapter07.IsNonderogatory`: every eigenvalue has geometric multiplicity at
+  most one.
+
+## Main results
+
+* Theorem 7.4.1, `GolubVanLoan.Chapter07.theorem_7_4_1`: every real matrix is orthogonally similar
+  to an upper quasi-triangular matrix whose $2 \times 2$ diagonal blocks have no real eigenvalue.
+* Algorithm 7.4.1, `GolubVanLoan.Chapter07.algorithm_7_4_1_spec`: in exact arithmetic the algorithm
+  computes $H_+ = RQ$ for $H = QR$, and $Q$ and $H_+$ are upper Hessenberg.
+* (7.4.3), `GolubVanLoan.Chapter07.equation_7_4_3`: every real matrix has a Hessenberg decomposition
+  $U_0^T A U_0 = H$ with $U_0 e_1 = e_1$.
+* Algorithm 7.4.2, `GolubVanLoan.Chapter07.algorithm_7_4_2_spec`: in exact arithmetic the algorithm
+  computes a Hessenberg decomposition.
+* §7.4.3, `GolubVanLoan.Chapter07.algorithm_7_4_2_rounds`: every run in the rounding model is a
+  sequence of computed Householder steps of the backbone.
+* §7.4.3, `GolubVanLoan.Chapter07.algorithm_7_4_2_rounding`: the computed $\hat H$ satisfies
+  $\hat H = Q^T (A + E) Q$ with $Q$ orthogonal and $\|E\|_F$ of order $n^2 u \|A\|_F$.
+* Theorem 7.4.2, `GolubVanLoan.Chapter07.theorem_7_4_2`: the implicit Q theorem.
+* Theorem 7.4.2, `GolubVanLoan.Chapter07.theorem_7_4_2_essential`: if $H$ is unreduced, then
+  $Z = QD$ and $G = DHD$ with $D = \operatorname{diag}(\pm 1)$.
+* Theorem 7.4.3, `GolubVanLoan.Chapter07.theorem_7_4_3`: $Q^T A Q$ is unreduced upper Hessenberg if
+  and only if $Q^T K(A, Q(:,1), n)$ is nonsingular upper triangular.
+* Theorem 7.4.4, `GolubVanLoan.Chapter07.theorem_7_4_4`: every eigenvalue of an unreduced upper
+  Hessenberg matrix has geometric multiplicity one.
+* (7.4.4), `GolubVanLoan.Chapter07.equation_7_4_4`: if $K(A, x, n) c = -A^n x$, then $A K = K C$ for
+  the companion matrix $C$.
+* §7.4.6, `GolubVanLoan.Chapter07.isNonderogatory_of_isSimilar_unreduced`: a matrix similar to an
+  unreduced Hessenberg matrix is nonderogatory.
 
 ## Conventions
 
-Real: `Matrix (Fin n) (Fin n) ℝ`, orthogonal `Q ∈ Matrix.orthogonalGroup (Fin n) ℝ`, `Qᵀ`. Upper
-quasi-triangular is the backbone's `Matrix.IsQuasiUpperTriangular`; unreduced is
-`Matrix.IsUnreducedUpperHessenberg` (the surface's `IsUnreduced`). Indices are 0-based: the book's
-`H(k+1, k)`, `k = 1:n-1`, is `H ⟨k+1, _⟩ ⟨k, _⟩`, `k < n - 1`. Complex eigenvalues of a real matrix
-are those of `Matrix.complexify`.
+* The matrices are real, `Matrix (Fin n) (Fin n) ℝ`. An orthogonal matrix is an element of
+  `Matrix.orthogonalGroup (Fin n) ℝ`, and the transpose $Q^T$ is `Qᵀ`. The complex eigenvalues of a
+  real matrix are those of `Matrix.complexify`.
+* Upper quasi-triangular is `Matrix.IsQuasiUpperTriangular`. Unreduced upper Hessenberg is
+  `Matrix.IsUnreducedUpperHessenberg`, which is `GolubVanLoan.Chapter07.IsUnreduced` here.
+* Indices are 0-based. The source's $h_{k+1,k}$ for $k = 1, \dots, n - 1$ is `H ⟨k+1, _⟩ ⟨k, _⟩` for
+  $k < n - 1$.
 
-## Algorithms
+## Implementation notes
 
-Algorithm 7.4.1 (the Hessenberg QR step) calls chapter 5's Algorithm 5.2.5 for its first loop (the
-book: "See Algorithm 5.2.5") and `givensApplyRight` on the index lists `indexTo (k + 1) (j + 1)` for
-its second; `algorithm_7_4_1_spec` is its exact semantics (a QR step with an upper Hessenberg `Q`;
-the book gives no rounding analysis). Algorithm 7.4.2 (Householder reduction to Hessenberg form) is
-`houseOn`, `householderApplyLeft` and `householderApplyRight` on index lists, one pass
-`hessenbergReduceStep` per column; it stores the Householder vectors below the subdiagonal and
-returns the reflector data `(v, β)` (convention 13). `algorithm_7_4_2_spec` is the exact Hessenberg
-decomposition with `U₀ = householderProduct data`, `algorithm_7_4_2_rounds` the bridge to the
-backbone's `FloatingPoint.RoundsHessenbergReducePert`, and `algorithm_7_4_2_rounding` Wilkinson's
-backward error `‖E‖_F ≤ c n² u ‖A‖_F` with an explicit constant.
+* Algorithm 7.4.1 calls Algorithm 5.2.5 for its first loop, as the source does ("See Algorithm
+  5.2.5"). Its second loop applies `GolubVanLoan.Chapter05.givensApplyRight` on the index lists
+  `GolubVanLoan.Chapter05.indexTo`. The theorem `GolubVanLoan.Chapter07.algorithm_7_4_1_spec` gives
+  its exact semantics; the source gives no rounding analysis.
+* Algorithm 7.4.2 is built from the programs `GolubVanLoan.Chapter05.houseOn`,
+  `GolubVanLoan.Chapter05.householderApplyLeft` and `GolubVanLoan.Chapter05.householderApplyRight`
+  on index lists, with one pass `GolubVanLoan.Chapter07.hessenbergReduceStep` per column. It stores
+  the Householder vectors below the subdiagonal, and it also returns the reflector data, the pairs
+  $(v, \beta)$ with the $\beta$ that `house` returned.
+* The orthogonal factor is `GolubVanLoan.Chapter05.householderProduct` of the returned data. It is
+  never rebuilt from a stored vector with $\beta = 2/(v^T v)$: when `house` returns $\beta = 0$, the
+  rebuilt matrix $I - 2 e_1 e_1^T$ is not the identity that was applied.
+* The exact semantics of Algorithm 7.4.2 is `GolubVanLoan.Chapter07.algorithm_7_4_2_spec`. The
+  theorem `GolubVanLoan.Chapter07.algorithm_7_4_2_rounds` relates every run in the relational
+  rounding model to `FloatingPoint.RoundsHessenbergReducePert`, and
+  `GolubVanLoan.Chapter07.algorithm_7_4_2_rounding` is Wilkinson's backward error bound with an
+  explicit constant.
 
 ## Not formalized
 
-§7.4.4 (level-3 block Hessenberg reduction and the WY form: BLAS-level discussion); flop counts;
-"this calculation can be highly unstable" for companion-matrix methods (no statement).
+* **§7.4.4, the level-3 block Hessenberg reduction and the WY form.** It is a discussion at the
+  level of BLAS operations.
+* **The flop counts.**
+* **The remark that the computation of eigenvalues through the companion matrix "can be highly
+  unstable".** The source makes no precise statement.
 -/
 
 open Matrix Polynomial
@@ -56,10 +117,16 @@ variable {n : ℕ}
 
 /-! ### §7.4.1 The real Schur decomposition -/
 
-/-- **Theorem 7.4.1 (real Schur decomposition)** (7.4.2). For `A ∈ ℝ^{n×n}` there is an orthogonal
-`Q` with `Qᵀ A Q` upper quasi-triangular: block upper triangular for a monotone block index `p` with
-blocks `R_ii` of size `1` or `2`, each `2 × 2` block having a pair of complex conjugate (nonreal)
-eigenvalues — it has no real eigenvalue. -/
+/-- **Theorem 7.4.1** of [golub2013matrix] (real Schur decomposition). For every
+$A \in \mathbb{R}^{n \times n}$ there is an orthogonal $Q \in \mathbb{R}^{n \times n}$ such that
+$Q^T A Q$ is upper quasi-triangular, as in (7.4.2): it is block upper triangular with diagonal
+blocks $R_{ii}$ of size $1 \times 1$ or $2 \times 2$, and each $2 \times 2$ diagonal block has
+no real eigenvalue, so that its eigenvalues are a pair of complex conjugate nonreal numbers.
+
+The block structure is a monotone block index `p : Fin n → ℕ` whose fibres have at most two
+elements, with $Q^T A Q$ block triangular for it in the sense of `Matrix.BlockTriangular`. That
+a $2 \times 2$ block has no real eigenvalue is stated as: no real $\mu$ is in the real spectrum
+of the block. -/
 theorem theorem_7_4_1 (A : Matrix (Fin n) (Fin n) ℝ) :
     ∃ Q ∈ orthogonalGroup (Fin n) ℝ, (Qᵀ * A * Q).IsQuasiUpperTriangular ∧
       ∃ p : Fin n → ℕ, Monotone p ∧ (∀ k, (Finset.univ.filter fun i => p i = k).card ≤ 2) ∧
@@ -76,9 +143,9 @@ section HessenbergQRStep
 
 open GolubVanLoan.Chapter05
 
-/-- **Algorithm 7.4.1** (the Hessenberg QR step): "If `H` is an `n`-by-`n` upper Hessenberg
-matrix, then this algorithm overwrites `H` with `H₊ = RQ` where `H = QR` is the QR factorization
-of `H`":
+/-- **Algorithm 7.4.1** of [golub2013matrix] (Hessenberg QR step). "If $H$ is an $n$-by-$n$ upper
+Hessenberg matrix, then this algorithm overwrites $H$ with $H_+ = RQ$ where $H = QR$ is the QR
+factorization of $H$":
 ```
 for k = 1:n-1
     [c_k, s_k] = givens(H(k, k), H(k+1, k))
@@ -88,9 +155,12 @@ for k = 1:n-1
     H(1:k+1, k:k+1) = H(1:k+1, k:k+1) [c_k s_k; -s_k c_k]
 end
 ```
-With `n = k + 1`. The first loop is chapter 5's Algorithm 5.2.5 ("See Algorithm 5.2.5"), which
-returns the rotations `(c_k, s_k)`; the second applies them on the rows `0, …, k + 1`
-(`givensApplyRight` on `indexTo`). -/
+
+The matrix has size $n = k + 1$ for the Lean argument $k$. The first loop is Algorithm 5.2.5,
+`GolubVanLoan.Chapter05.algorithm_5_2_5`, which also returns the rotations $(c_k, s_k)$. The
+second loop applies them with `GolubVanLoan.Chapter05.givensApplyRight`, in step $k$ of the loop
+on the rows $1, \dots, k + 1$ of the source. Every arithmetic result passes through the rounding
+hook `rnd`; the hook `pure` in the monad `Id` gives exact arithmetic. -/
 noncomputable def algorithm_7_4_1 {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ) {k : ℕ}
     (H : Matrix (Fin (k + 1)) (Fin (k + 1)) ℝ) : M (Matrix (Fin (k + 1)) (Fin (k + 1)) ℝ) := do
   let st ← algorithm_5_2_5 rnd H
@@ -98,10 +168,9 @@ noncomputable def algorithm_7_4_1 {M : Type → Type} [Monad M] (rnd : ℝ → M
     givensApplyRight rnd j.castSucc j.succ (st.2 j).1 (st.2 j).2 (indexTo (k + 1) (j + 1)) H)
     st.1
 
-/-- The second loop of Algorithm 7.4.1 multiplies `R` by the rotations: after `t` passes the
-array is `R G₁ ⋯ G_t`. The rows `> t + 1` of the columns `t, t + 1` of `R G₁ ⋯ G_{t-1}` vanish
-(`R` is upper triangular, the partial product Hessenberg and the identity beyond column `t`), so
-restricting the update to the rows `≤ t + 1` changes nothing. -/
+/-- In the second loop of Algorithm 7.4.1 started from an upper triangular $R$, the array after $t$
+passes is $R G_1 \cdots G_t$, because the rows that each update leaves out are zero in the
+affected columns. -/
 private theorem foldl_givensApplyRight_eq {k : ℕ} (cs : Fin k → ℝ × ℝ)
     {R : Matrix (Fin (k + 1)) (Fin (k + 1)) ℝ} (hR : R.IsUpperTriangular) :
     ∀ t ≤ k, ((List.finRange k).take t).foldl
@@ -155,12 +224,18 @@ private theorem foldl_givensApplyRight_eq {k : ℕ} (cs : Fin k → ℝ × ℝ)
       · rw [hzero a (by omega), hzero b (by omega), hqb, hzero b (by omega)]; ring
       · rfl
 
-/-- **Algorithm 7.4.1 computes a QR step**, exactly (no rounding analysis in the book): for
-upper Hessenberg `H`, `H₊ = Id.run (algorithm_7_4_1 pure H)` is a QR step
-(`Matrix.IsShiftedQrStep 0 H H₊`) for `H = Q R` with `Q = G₁ ⋯ G_{n-1}` orthogonal and `R` upper
-triangular, `H₊ = R Q`; "It is easy to confirm that the matrix `Q = G₁ ⋯ G_{n-1}` is upper
-Hessenberg. Thus, `RQ = H₊` is also upper Hessenberg." Chapter 5's `algorithm_5_2_5_spec` gives
-the factorization, `foldl_givensApplyRight_eq` the product `R Q`. -/
+/-- **Algorithm 7.4.1** of [golub2013matrix], correctness in exact arithmetic. Let
+$H \in \mathbb{R}^{n \times n}$ be upper Hessenberg with $n \ge 1$, and let $H_+$ be the output
+of Algorithm 7.4.1 in exact arithmetic. Then there are an orthogonal $Q$ and an upper triangular
+$R$ with
+$$H = QR, \qquad H_+ = RQ,$$
+so that $H_+$ is obtained from $H$ by a QR step. Moreover $Q$ and $H_+$ are upper Hessenberg:
+"It is easy to confirm that the matrix $Q = G_1 \cdots G_{n-1}$ is upper Hessenberg. Thus,
+$RQ = H_+$ is also upper Hessenberg."
+
+The output in exact arithmetic is `Id.run (algorithm_7_4_1 pure H)`, and the QR step is also
+stated as `Matrix.IsShiftedQrStep` with shift $0$. The source gives no rounding analysis of the
+algorithm. The proof uses `GolubVanLoan.Chapter05.algorithm_5_2_5_spec` for the factorization. -/
 theorem algorithm_7_4_1_spec {k : ℕ} {H : Matrix (Fin (k + 1)) (Fin (k + 1)) ℝ}
     (hH : H.IsUpperHessenberg) :
     IsShiftedQrStep 0 H (Id.run (algorithm_7_4_1 pure H)) ∧
@@ -190,9 +265,13 @@ end HessenbergQRStep
 
 /-! ### §7.4.3 The Hessenberg decomposition -/
 
-/-- **(7.4.3), the Hessenberg decomposition**: for `A ∈ ℝ^{n×n}` there is an orthogonal `U₀` with
-`U₀ᵀ A U₀` upper Hessenberg and `U₀ e₁ = e₁` (the Householder reduction's reflectors act on the
-coordinates `≥ 2` only). -/
+/-- **Equation (7.4.3)** of [golub2013matrix] (Hessenberg decomposition). For every
+$A \in \mathbb{R}^{n \times n}$ with $n \ge 1$ there is an orthogonal
+$U_0 \in \mathbb{R}^{n \times n}$ such that $U_0^T A U_0$ is upper Hessenberg and
+$U_0 e_1 = e_1$.
+
+The condition $U_0 e_1 = e_1$ holds because the reflectors of the Householder reduction act only
+on the coordinates $2, \dots, n$. -/
 theorem equation_7_4_3 {N : ℕ} (A : Matrix (Fin (N + 1)) (Fin (N + 1)) ℝ) :
     ∃ U₀ ∈ orthogonalGroup (Fin (N + 1)) ℝ, (U₀ᵀ * A * U₀).IsUpperHessenberg ∧
       U₀ *ᵥ Pi.single 0 1 = Pi.single 0 1 := by
@@ -202,10 +281,12 @@ theorem equation_7_4_3 {N : ℕ} (A : Matrix (Fin (N + 1)) (Fin (N + 1)) ℝ) :
   · ext i
     rw [mulVec_single_one, col_apply, hessenbergQ_apply_zero, Matrix.one_apply, Pi.single_apply]
 
-/-- **§7.4.3, the array of Algorithm 7.4.2**: the book's reading of an array that holds `H` in its
-upper Hessenberg part and the essential parts of the Householder vectors below the subdiagonal
-("The `k`th Householder matrix can be represented in `A(k+2:n, k)`"): the entries on or above the
-subdiagonal, `hessenbergPart A i j = A i j` for `i ≤ j + 1`, and `0` below. -/
+/-- **Section 7.4.3** of [golub2013matrix], the array of Algorithm 7.4.2. For
+$A \in \mathbb{R}^{n \times n}$, the matrix with the entries $a_{ij}$ of $A$ on and above the
+subdiagonal ($i \le j + 1$) and $0$ below it. Algorithm 7.4.2 returns an array that holds $H$ in
+its upper Hessenberg part and the essential parts of the Householder vectors below the
+subdiagonal ("The $k$th Householder matrix can be represented in $A(k+2{:}n, k)$"); this
+function reads $H$ from the array. -/
 def hessenbergPart (A : Matrix (Fin n) (Fin n) ℝ) : Matrix (Fin n) (Fin n) ℝ :=
   Matrix.of fun i j => if (i : ℕ) ≤ j + 1 then A i j else 0
 
@@ -219,18 +300,21 @@ section Programs
 
 variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 
-/-- **One pass of Algorithm 7.4.2** (0-based `k < n - 2`, the book's `k + 1`), on the state
-(array, reflector data):
+/-- One pass of Algorithm 7.4.2 of [golub2013matrix], on a state that consists of the array and the
+list of reflector data. For the source's step $k$, with $k = 1, \dots, n - 2$ and Lean argument
+$k - 1$, the pass computes
 ```
 [v, β] = house(A(k+1:n, k))
 A(k+1:n, k:n) = (I - β v vᵀ) A(k+1:n, k:n)
 A(1:n, k+1:n) = A(1:n, k+1:n) (I - β v vᵀ)
 ```
-then `v(k+2:n)` is stored in `A(k+2:n, k)` ("The `k`th Householder matrix can be represented in
-`A(k+2:n, k)`"; copies, not rounded) and `(v, β)` — with the `β` that `house` returned
-(convention 13) — is appended to the data. `house` is chapter 5's `houseOn` on the index list
-`[k+1, …, n-1]` (`v` is zero off it and `1` at `k + 1`), the updates are `householderApplyLeft`
-and `householderApplyRight` on index lists (convention 10). -/
+then stores $v(k+2{:}n)$ in $A(k+2{:}n, k)$ and appends the pair $(v, \beta)$ to the data.
+
+The copy of $v$ into the array is exact. Here `house` is `GolubVanLoan.Chapter05.houseOn` on the
+0-based index list $[k, \dots, n-1]$, so $v$ is zero off this list and $1$ at its first index,
+and $\beta$ is the value that `house` returned. The two updates are
+`GolubVanLoan.Chapter05.householderApplyLeft` and `GolubVanLoan.Chapter05.householderApplyRight`
+on index lists. -/
 noncomputable def hessenbergReduceStep
     (st : Matrix (Fin n) (Fin n) ℝ × List ((Fin n → ℝ) × ℝ)) (k : Fin (n - 2)) :
     M (Matrix (Fin n) (Fin n) ℝ × List ((Fin n → ℝ) × ℝ)) := do
@@ -240,23 +324,30 @@ noncomputable def hessenbergReduceStep
   pure (of fun i j => if j = Fin.castLE (Nat.sub_le n 2) k ∧ (k : ℕ) + 2 ≤ i then vβ.1 i
     else A i j, st.2 ++ [vβ])
 
-/-- **Algorithm 7.4.2 (Householder Reduction to Hessenberg Form)**: "Given `A ∈ ℝ^{n×n}`, the
-following algorithm overwrites `A` with `H = U₀ᵀ A U₀` where `H` is upper Hessenberg and `U₀` is a
-product of Householder matrices": `for k = 1:n-2` the pass `hessenbergReduceStep`. Returns the
-array (`H` in its upper Hessenberg part, `hessenbergPart`, the Householder vectors below it) and
-the reflector data `[(v₁, β₁), …, (v_{n-2}, β_{n-2})]`, so that `U₀ = householderProduct data`
-without rebuilding a reflector from a stored vector. -/
+/-- **Algorithm 7.4.2** of [golub2013matrix] (Householder reduction to Hessenberg form). "Given
+$A \in \mathbb{R}^{n \times n}$, the following algorithm overwrites $A$ with $H = U_0^T A U_0$
+where $H$ is upper Hessenberg and $U_0$ is a product of Householder matrices": for
+$k = 1, \dots, n - 2$ it runs one pass, `GolubVanLoan.Chapter07.hessenbergReduceStep`. The
+program returns the array, which holds $H$ in its upper Hessenberg part and the Householder
+vectors below it, together with the reflector data $[(v_1, \beta_1), \dots, (v_{n-2},
+\beta_{n-2})]$.
+
+The data give $U_0$ as `GolubVanLoan.Chapter05.householderProduct`, without rebuilding a
+reflector from a stored vector. The matrix $H$ is `GolubVanLoan.Chapter07.hessenbergPart` of the
+array. Every arithmetic result passes through the rounding hook `rnd`. -/
 noncomputable def algorithm_7_4_2 (A : Matrix (Fin n) (Fin n) ℝ) :
     M (Matrix (Fin n) (Fin n) ℝ × List ((Fin n → ℝ) × ℝ)) :=
   (List.finRange (n - 2)).foldlM (hessenbergReduceStep rnd) (A, [])
 
 end Programs
 
-/-- **The invariant of Algorithm 7.4.2 after `t` passes**, exact arithmetic: `t` reflectors,
-each with `β = 0` or `β vᵀv = 2` and the `l`-th vanishing on the indices `≤ l`; with
-`W = U_tᵀ A₀ U_t` (`U_t` the product of the data), `W` vanishes below the subdiagonal in the columns
-`< t`, and the array agrees with `W` everywhere else (below the subdiagonal of those columns it
-holds the stored vectors). -/
+/-- The invariant of Algorithm 7.4.2 after $t$ passes, in exact arithmetic. A state (array, data)
+satisfies it for the input $A_0$ when the following hold. The data has $t$ entries $(v, \beta)$,
+each with $\beta = 0$ or $\beta v^T v = 2$, and the $l$-th vector (0-based) vanishes at the
+indices $\le l$. Let $U_t$ be the product of the reflectors of the data and $W = U_t^T A_0 U_t$;
+then $W$ vanishes below the subdiagonal in the columns $j < t$, and the array agrees with $W$ at
+all other entries. The invariant puts no condition on the array below the subdiagonal in the
+columns $j < t$, where the algorithm stores the Householder vectors. -/
 def HessenbergReduceInv (A₀ : Matrix (Fin n) (Fin n) ℝ) (t : ℕ)
     (st : Matrix (Fin n) (Fin n) ℝ × List ((Fin n → ℝ) × ℝ)) : Prop :=
   st.2.length = t ∧
@@ -267,14 +358,16 @@ def HessenbergReduceInv (A₀ : Matrix (Fin n) (Fin n) ℝ) (t : ℕ)
     (¬((j : ℕ) < t ∧ (j : ℕ) + 2 ≤ i) →
       st.1 i j = ((householderProduct st.2)ᵀ * A₀ * householderProduct st.2) i j)
 
-/-- A reflector `1 - β v vᵀ` with `v` zero off `o` is the identity in the rows off `o`. -/
+/-- A reflector $I - \beta v v^T$ with $v$ zero off the list $o$ agrees with the identity in the
+rows that are not in $o$. -/
 private theorem reflector_apply_of_not_mem {o : List (Fin n)} {v : Fin n → ℝ}
     (hv : ∀ i, i ∉ o → v i = 0) (β : ℝ) {i : Fin n} (hi : i ∉ o) (j : Fin n) :
     (1 - β • vecMulVec v v : Matrix (Fin n) (Fin n) ℝ) i j =
       (1 : Matrix (Fin n) (Fin n) ℝ) i j := by
   simp [vecMulVec_apply, hv i hi]
 
-/-- Right multiplication by a reflector acting on `o` sees only the columns in `o`. -/
+/-- If $v$ is zero off the list $o$, the entries of $N (I - \beta v v^T)$ in the columns of $o$
+depend only on the entries of $N$ in the columns of $o$. -/
 private theorem mul_reflector_apply_congr {o : List (Fin n)} {v : Fin n → ℝ}
     (hv : ∀ i, i ∉ o → v i = 0) (β : ℝ) {N₁ N₂ : Matrix (Fin n) (Fin n) ℝ} {i : Fin n}
     (hN : ∀ l ∈ o, N₁ i l = N₂ i l) {j : Fin n} (hj : j ∈ o) :
@@ -286,11 +379,11 @@ private theorem mul_reflector_apply_congr {o : List (Fin n)} {v : Fin n → ℝ}
   · rw [reflector_apply_of_not_mem hv β hl, one_apply_ne (fun h => hl (by rw [h]; exact hj)),
       mul_zero, mul_zero]
 
-/-- **One exact pass keeps the invariant** (the book's derivation of Algorithm 7.4.2: with
-`P_k = diag(I_k, P̃_k)`, `(P₁ ⋯ P_k)ᵀ A (P₁ ⋯ P_k)` is upper Hessenberg through its first `k`
-columns). `houseOn_spec` maps the tail of column `k` to a multiple of `e_{k+1}`;
-`householderApplyLeft_spec` and `householderApplyRight_spec` give `P W P` on the active columns,
-the columns `< k` being untouched because `W` vanishes there on the active rows. -/
+/-- One exact pass of Algorithm 7.4.2 keeps the invariant: if a state satisfies
+`GolubVanLoan.Chapter07.HessenbergReduceInv` for $A_0$ after $k$ passes, then the state after
+the next pass satisfies it after $k + 1$ passes. This is the derivation of the algorithm in the
+source: with $P_k = \operatorname{diag}(I_k, \tilde P_k)$, the matrix
+$(P_1 \cdots P_k)^T A (P_1 \cdots P_k)$ is upper Hessenberg in its first $k$ columns. -/
 theorem hessenbergReduceStep_inv {A₀ : Matrix (Fin n) (Fin n) ℝ} (k : Fin (n - 2))
     {st : Matrix (Fin n) (Fin n) ℝ × List ((Fin n → ℝ) × ℝ)}
     (h : HessenbergReduceInv A₀ k st) :
@@ -399,7 +492,8 @@ theorem hessenbergReduceStep_inv {A₀ : Matrix (Fin n) (Fin n) ℝ} (k : Fin (n
           ite_eq_left (by rw [mem_indexFrom]; omega)]
         rfl
 
-/-- The invariant holds after the first `t` passes of Algorithm 7.4.2 (exact arithmetic). -/
+/-- In exact arithmetic, the state of Algorithm 7.4.2 after its first $t$ passes, $t \le n - 2$,
+satisfies `GolubVanLoan.Chapter07.HessenbergReduceInv` for the input $A$ and $t$ passes. -/
 theorem hessenbergReduce_inv (A : Matrix (Fin n) (Fin n) ℝ) :
     ∀ t ≤ n - 2, HessenbergReduceInv A t (((List.finRange (n - 2)).take t).foldl
       (fun st k => Id.run (hessenbergReduceStep pure st k)) (A, [])) := by
@@ -418,13 +512,22 @@ theorem hessenbergReduce_inv (A : Matrix (Fin n) (Fin n) ℝ) :
     rw [hget]
     exact hessenbergReduceStep_inv ⟨t, by omega⟩ (ih (by omega))
 
-/-- **Algorithm 7.4.2 computes a Hessenberg decomposition** (7.4.3), exactly: with
-`(A', data) = Id.run (algorithm_7_4_2 pure A)` and `U₀ = householderProduct data` (the reflectors
-built from the returned `(v, β)`, never from the stored vectors): `U₀` is orthogonal,
-`hessenbergPart A' = U₀ᵀ A U₀` is upper Hessenberg, `U₀ e₁ = e₁`, and `data` has `n - 2` entries,
-the `k`-th vanishing on the indices `≤ k`. The statement is not made with `β = 2/(vᵀv)` rebuilt
-from the array: for `A = [[1,2,3],[4,5,6],[0,7,8]]`, `house` returns `β = 0` at `k = 0`, and the
-rebuilt `diag(1, -1, 1)` does not reproduce `H = A`. -/
+/-- **Algorithm 7.4.2** of [golub2013matrix], correctness in exact arithmetic. Let
+$A \in \mathbb{R}^{n \times n}$ with $n \ge 1$, let $(A', \mathrm{data})$ be the output of
+Algorithm 7.4.2 in exact arithmetic, and let $U_0$ be the product of the reflectors
+$I - \beta v v^T$ of the data. Then $U_0$ is orthogonal, the upper Hessenberg part $H$ of $A'$
+satisfies
+$$H = U_0^T A U_0,$$
+$H$ is upper Hessenberg, $U_0 e_1 = e_1$, and the data has $n - 2$ entries, the $l$-th vector
+(0-based) vanishing at the indices $\le l$. So the algorithm computes the Hessenberg
+decomposition (7.4.3).
+
+The product is `GolubVanLoan.Chapter05.householderProduct` of the returned data. It is built
+from the returned pairs $(v, \beta)$ and never from the stored vectors. A reflector rebuilt from
+the array with $\beta = 2/(v^T v)$ would be wrong: for $A = \begin{bmatrix} 1 & 2 & 3 \\ 4 & 5 &
+6 \\ 0 & 7 & 8 \end{bmatrix}$, `house` returns $\beta = 0$ at the first step, and the rebuilt
+reflector $\operatorname{diag}(1, -1, 1)$ does not reproduce $H = A$. The number of entries is
+the natural number $n - 2$, which is $0$ for $n \le 2$. -/
 theorem algorithm_7_4_2_spec {N : ℕ} (A : Matrix (Fin (N + 1)) (Fin (N + 1)) ℝ) :
     householderProduct (Id.run (algorithm_7_4_2 pure A)).2 ∈ orthogonalGroup (Fin (N + 1)) ℝ ∧
       hessenbergPart (Id.run (algorithm_7_4_2 pure A)).1 =
@@ -458,26 +561,30 @@ theorem algorithm_7_4_2_spec {N : ℕ} (A : Matrix (Fin (N + 1)) (Fin (N + 1)) �
     obtain ⟨l, hl, rfl⟩ := List.getElem_of_mem hp
     exact hsupp l hl 0 (Nat.zero_le _)
 
-/-! ### The bridge -/
+/-! ### The rounding bridge of Algorithm 7.4.2 -/
 
-/-- The array of Algorithm 7.4.2 after `t` steps with the stored Householder vectors (columns
-`< t`, rows below the subdiagonal) replaced by zeros. -/
+/-- The array of Algorithm 7.4.2 after $t$ passes with the stored Householder vectors replaced by
+zeros: the entries $(i, j)$ with $j < t$ and $i \ge j + 2$ (0-based) are set to $0$, and all
+other entries are kept. -/
 def zeroStored (t : ℕ) (A : Matrix (Fin n) (Fin n) ℝ) : Matrix (Fin n) (Fin n) ℝ :=
   of fun i j => if (j : ℕ) < t ∧ (j : ℕ) + 2 ≤ i then 0 else A i j
 
-/-- The active rows `k + 1, …` as a list and as a subtype. -/
+/-- The positions in the 0-based index list $[k + 1, \dots, n - 1]$ correspond to the indices $i$
+with $i \ge k + 1$. -/
 private def tailEquiv (k : ℕ) :
     {i : Fin n // i ∈ indexFrom n (k + 1)} ≃ {i : Fin n // k + 1 ≤ (i : ℕ)} :=
   Equiv.subtypeEquivRight fun _ => mem_indexFrom
 
-/-- `indexFrom n j` has at most `n` entries. -/
+/-- The 0-based index list $[j, \dots, n - 1]$ has at most $n$ entries. -/
 private theorem length_indexFrom_le (j : ℕ) : (indexFrom n j).length ≤ n := by
   rw [indexFrom]
   exact (List.length_filter_le _ _).trans (by simp)
 
-/-- **The bridge of one step of Algorithm 7.4.2**: every run of the step maps the zeroed array
-after `k` steps to the zeroed array after `k + 1` steps by a computed step
-`FloatingPoint.RoundsHessenbergStepPert` of order `18 n + 31`. -/
+/-- The rounding bridge of one pass of Algorithm 7.4.2. Let the rounding model be idempotent, with
+unit roundoff $u$ such that $(18 n + 31) u < 1$. Then every run of pass $k$ in the relational
+rounding model takes the array after $k$ passes to the array after $k + 1$ passes, both with the
+stored vectors replaced by zeros, by a computed step `FloatingPoint.RoundsHessenbergStepPert` of
+order $18 n + 31$. -/
 theorem hessenbergReduceStep_rounds {fp : RoundingModel ℝ} (hfp : fp.IsIdempotent)
     (hu : ((18 * n + 31 : ℕ) : ℝ) * fp.u < 1) (k : Fin (n - 2))
     {st st' : Matrix (Fin n) (Fin n) ℝ × List ((Fin n → ℝ) × ℝ)}
@@ -561,12 +668,19 @@ theorem hessenbergReduceStep_rounds {fp : RoundingModel ℝ} (hfp : fp.IsIdempot
       exact h1 ⟨by omega, by have := h2.2; have := congrArg Fin.val h2.1; omega⟩
     · exact hB₂out i j (Or.inr hjo)
 
-/-- **The bridge of Algorithm 7.4.2** (convention 12): over an idempotent model with
-`(18 n + 31) u < 1`, every run `(A', data)` has a sequence `Â` of arrays — the run's array after `k`
-passes with the stored vectors replaced by zeros (they are never read again) — with
-`Â (n - 2) = hessenbergPart A'` and `FloatingPoint.RoundsHessenbergReducePert` of order
-`18 n + 31`: each pass is a computed step `FloatingPoint.RoundsHessenbergStepPert`
-(`hessenbergReduceStep_rounds`). -/
+/-- **Section 7.4.3** of [golub2013matrix], the rounding bridge of Algorithm 7.4.2. Let the rounding
+model be idempotent, with unit roundoff $u$ such that $(18 n + 31) u < 1$, and let
+$A \in \mathbb{R}^{n \times n}$. For every run $(A', \mathrm{data})$ of Algorithm 7.4.2 in the
+relational rounding model there is a sequence of arrays $\hat A_0, \hat A_1, \dots$ such that
+$\hat A_{n-2}$ is the upper Hessenberg part of $A'$, $\hat A_0 = A$, and each $\hat A_{k+1}$
+with $k < n - 2$ is a computed Householder step of order $18 n + 31$ from $\hat A_k$.
+
+The relation is `FloatingPoint.RoundsHessenbergReducePert`, and a step is
+`FloatingPoint.RoundsHessenbergStepPert`. The array $\hat A_k$ is the array of the run after $k$
+passes with the stored vectors replaced by zeros; the algorithm never reads them again. A
+rounding model is idempotent (`FloatingPoint.RoundingModel.IsIdempotent`) when a rounded value
+rounds only to itself. The bridge of one pass is
+`GolubVanLoan.Chapter07.hessenbergReduceStep_rounds`. -/
 theorem algorithm_7_4_2_rounds {fp : RoundingModel ℝ} (hfp : fp.IsIdempotent)
     (hu : ((18 * n + 31 : ℕ) : ℝ) * fp.u < 1) (A : Matrix (Fin n) (Fin n) ℝ)
     {out : Matrix (Fin n) (Fin n) ℝ × List ((Fin n → ℝ) × ℝ)}
@@ -601,14 +715,23 @@ theorem algorithm_7_4_2_rounds {fp : RoundingModel ℝ} (hfp : fp.IsIdempotent)
   split_ifs with h1 h2 h2 <;> first | rfl | (exfalso; have := i.2; omega)
 
 open scoped Matrix.Norms.Frobenius in
-/-- **§7.4.3, Wilkinson's backward error of the Hessenberg reduction**, rigorous: "the computed
-Hessenberg matrix `Ĥ` satisfies `Ĥ = Qᵀ (A + E) Q` where `Q` is orthogonal and
-`‖E‖_F ≤ c n² u ‖A‖_F`". Over an idempotent model with `K = 18 n + 31`, `(3K + n + 3) u < 1` and
-`2 (n - 2) ε < 1` for `ε = 3 γ_{3K+n+3}`, every run `(A', data)` of Algorithm 7.4.2 has
-`hessenbergPart A'` upper Hessenberg and `= Qᵀ (A + E) Q` with `Q` orthogonal and
-`‖E‖_F ≤ γ_{2(n-2)}(ε) ‖A‖_F` (`≈ 6 (55 n + 96)(n - 2) u`): `algorithm_7_4_2_rounds` and the
-backbone's `FloatingPoint.exists_roundsHessenbergReducePert_eq`. The constants are the relational
-calculus's, not Wilkinson's. -/
+/-- **Section 7.4.3** of [golub2013matrix], Wilkinson's backward error bound for the Hessenberg
+reduction. The source states that "the computed Hessenberg matrix $\hat H$ satisfies
+$\hat H = Q^T (A + E) Q$ where $Q$ is orthogonal and $\|E\|_F \le c n^2 u \|A\|_F$". Let the
+rounding model be idempotent with unit roundoff $u$, let $K = 18 n + 31$, and let
+$\gamma_m = m u / (1 - m u)$. Assume $(3K + n + 3) u < 1$ and $2 (n - 2) \varepsilon < 1$ for
+$\varepsilon = 3 \gamma_{3K+n+3}$. Then for every run $(A', \mathrm{data})$ of Algorithm 7.4.2
+in the relational rounding model, the upper Hessenberg part $\hat H$ of $A'$ is upper
+Hessenberg, and there are an orthogonal $Q$ and a matrix $E$ with
+$$\hat H = Q^T (A + E) Q, \qquad \|E\|_F \le \frac{2 (n - 2) \varepsilon}{1 - 2 (n - 2)
+  \varepsilon} \|A\|_F.$$
+
+The constant is explicit: to first order in $u$ it is $6 (55 n + 96)(n - 2) u$, which has the
+form $c n^2 u$ of the source. It comes from the relational calculus of the backbone, not from
+Wilkinson's analysis. The matrix $\hat H$ is `GolubVanLoan.Chapter07.hessenbergPart` of the
+returned array, and the factor in the bound is `FloatingPoint.gamma ε (2 * (n - 2))`. The proof
+combines `GolubVanLoan.Chapter07.algorithm_7_4_2_rounds` with
+`FloatingPoint.exists_roundsHessenbergReducePert_eq`. -/
 theorem algorithm_7_4_2_rounding {fp : RoundingModel ℝ} (hfp : fp.IsIdempotent)
     (hcard : ((3 * (18 * n + 31) + n + 3 : ℕ) : ℝ) * fp.u < 1)
     (hr : ((2 * (n - 2) : ℕ) : ℝ) * (3 * gamma fp.u (3 * (18 * n + 31) + n + 3)) < 1)
@@ -627,24 +750,35 @@ end HessenbergReduction
 
 /-! ### §7.4.5 The implicit Q theorem -/
 
-/-- **§7.4.5, Definition**: an upper Hessenberg matrix is *unreduced* if it has no zero subdiagonal
-entries — the backbone's `Matrix.IsUnreducedUpperHessenberg`; `isUnreduced_iff` spells it out
-along the subdiagonal. -/
+/-- **Section 7.4.5** of [golub2013matrix], definition of unreduced. An upper Hessenberg matrix
+$H \in \mathbb{R}^{n \times n}$ is **unreduced** if it has no zero subdiagonal entries:
+$h_{k+1,k} \neq 0$ for $k = 1, \dots, n - 1$.
+
+The definition is the backbone's `Matrix.IsUnreducedUpperHessenberg`. The theorem
+`GolubVanLoan.Chapter07.isUnreduced_iff` spells it out along the subdiagonal. -/
 def IsUnreduced (H : Matrix (Fin n) (Fin n) ℝ) : Prop :=
   H.IsUnreducedUpperHessenberg
 
-/-- An unreduced upper Hessenberg matrix: upper Hessenberg with `h_{k+1,k} ≠ 0` for every
-`k < n - 1` (0-based). -/
+/-- A matrix $H \in \mathbb{R}^{n \times n}$ is unreduced upper Hessenberg if and only if it is
+upper Hessenberg and $h_{k+1,k} \neq 0$ for every $k < n - 1$, with 0-based indices. -/
 theorem isUnreduced_iff {H : Matrix (Fin n) (Fin n) ℝ} :
     IsUnreduced H ↔
       H.IsUpperHessenberg ∧ ∀ (k : ℕ) (hk : k + 1 < n), H ⟨k + 1, hk⟩ ⟨k, by omega⟩ ≠ 0 :=
   isUnreducedUpperHessenberg_iff_fin
 
-/-- **Theorem 7.4.2 (implicit Q theorem).** Let `Q`, `V` be orthogonal with `Qᵀ A Q = H` and
-`Vᵀ A V = G` upper Hessenberg and the same first column, `q₁ = v₁`. If the first `k` subdiagonal
-entries `h_{i+1,i}`, `i < k` (0-based), are nonzero — the book's "`k + 1` is the smallest index with
-`h_{k+1,k} = 0`", or `k = n - 1` when `H` is unreduced — then `v_i = ± q_i` for `i ≤ k`,
-`|g_{i+1,i}| = |h_{i+1,i}|` for `i < k`, and `g_{k+1,k} = 0` when `h_{k+1,k} = 0`. -/
+/-- **Theorem 7.4.2** of [golub2013matrix] (implicit Q theorem). Let
+$A \in \mathbb{R}^{n \times n}$, and let $Q = [q_1 \mid \cdots \mid q_n]$ and
+$V = [v_1 \mid \cdots \mid v_n]$ be orthogonal, with $Q^T A Q = H$ and $V^T A V = G$ upper
+Hessenberg and $v_1 = q_1$. Let $0 \le k \le n - 1$, and assume $h_{i+1,i} \neq 0$ for
+$i = 1, \dots, k$. Then $v_i = \pm q_i$ for $i = 1, \dots, k + 1$, and
+$|g_{i+1,i}| = |h_{i+1,i}|$ for $i = 1, \dots, k$. Moreover, if $k < n - 1$ and
+$h_{k+2,k+1} = 0$, then $g_{k+2,k+1} = 0$.
+
+The source takes for $k$ the position of the first zero subdiagonal entry of $H$, with the
+convention for an unreduced $H$ that all subdiagonal entries are nonzero. Here $k$ is any number
+such that the first $k$ subdiagonal entries are nonzero. In Lean the matrices have size `N + 1`
+and the indices are 0-based: the hypothesis is on the entries `(Qᵀ * A * Q) i.succ i.castSucc`
+for $i < k$, and the columns are `Q.col i` and `V.col i`. -/
 theorem theorem_7_4_2 {N : ℕ} {A Q V : Matrix (Fin (N + 1)) (Fin (N + 1)) ℝ}
     (hQ : Q ∈ orthogonalGroup (Fin (N + 1)) ℝ) (hV : V ∈ orthogonalGroup (Fin (N + 1)) ℝ)
     (hH : (Qᵀ * A * Q).IsUpperHessenberg) (hG : (Vᵀ * A * V).IsUpperHessenberg)
@@ -657,9 +791,12 @@ theorem theorem_7_4_2 {N : ℕ} {A Q V : Matrix (Fin (N + 1)) (Fin (N + 1)) ℝ}
         (Vᵀ * A * V) i.succ i.castSucc = 0) :=
   implicitQ_of_apply_eq_zero_real hQ hV hH hG h0 hk hsub
 
-/-- **The gist of Theorem 7.4.2**: if `Qᵀ A Q = H` is unreduced upper Hessenberg, `Zᵀ A Z = G` is
-upper Hessenberg, and `Q`, `Z` have the same first column, then `Z = Q D` and `G = D H D` for a
-diagonal `D = diag(±1, …, ±1)` (`D⁻¹ = D`) — "`G` and `H` are essentially equal". -/
+/-- **Theorem 7.4.2** of [golub2013matrix], essential uniqueness. Let
+$A \in \mathbb{R}^{n \times n}$ with $n \ge 1$, and let $Q$ and $Z$ be orthogonal with the same
+first column, $Q^T A Q = H$ unreduced upper Hessenberg, and $Z^T A Z = G$ upper Hessenberg. Then
+there is $D = \operatorname{diag}(d_1, \dots, d_n)$ with $d_i = \pm 1$ and $d_1 = 1$ such that
+$$Z = Q D, \qquad G = D H D.$$
+Since $D^{-1} = D$, this says that "$G$ and $H$ are essentially equal". -/
 theorem theorem_7_4_2_essential {N : ℕ} {A Q Z : Matrix (Fin (N + 1)) (Fin (N + 1)) ℝ}
     (hQ : Q ∈ orthogonalGroup (Fin (N + 1)) ℝ) (hZ : Z ∈ orthogonalGroup (Fin (N + 1)) ℝ)
     (hH : IsUnreduced (Qᵀ * A * Q)) (hG : (Zᵀ * A * Z).IsUpperHessenberg)
@@ -668,14 +805,20 @@ theorem theorem_7_4_2_essential {N : ℕ} {A Q Z : Matrix (Fin (N + 1)) (Fin (N 
       Zᵀ * A * Z = diagonal d * (Qᵀ * A * Q) * diagonal d :=
   implicitQ_real hQ hZ hH hG h0
 
-/-- **§7.4.5, Definition: the Krylov matrix** `K(A, v, j) = [v | Av | ⋯ | A^{j-1} v] ∈ ℝ^{n×j}`,
-the backbone's `Matrix.krylovMatrix`. -/
+/-- **Section 7.4.5** of [golub2013matrix], definition of the Krylov matrix. For
+$A \in \mathbb{R}^{n \times n}$, $v \in \mathbb{R}^n$ and $j \ge 0$, the **Krylov matrix** is
+$$K(A, v, j) = [v \mid Av \mid A^2 v \mid \cdots \mid A^{j-1} v] \in \mathbb{R}^{n \times j}.$$
+
+This is the backbone's `Matrix.krylovMatrix` for real matrices. -/
 def krylovMatrix (A : Matrix (Fin n) (Fin n) ℝ) (v : Fin n → ℝ) (j : ℕ) :
     Matrix (Fin n) (Fin j) ℝ :=
   Matrix.krylovMatrix A v j
 
-/-- **Theorem 7.4.3.** For orthogonal `Q`, `Qᵀ A Q = H` is unreduced upper Hessenberg if and only if
-`Qᵀ K(A, Q(:, 1), n) = R` is nonsingular and upper triangular. -/
+/-- **Theorem 7.4.3** of [golub2013matrix]. Let $A, Q \in \mathbb{R}^{n \times n}$ with $n \ge 1$
+and $Q$ orthogonal. Then $Q^T A Q = H$ is an unreduced upper Hessenberg matrix if and only if
+$R = Q^T K(A, Q(:,1), n)$ is nonsingular and upper triangular.
+
+Nonsingularity of $R$ is stated as `IsUnit R.det`, and the first column $Q(:,1)$ is `Q.col 0`. -/
 theorem theorem_7_4_3 {N : ℕ} {Q : Matrix (Fin (N + 1)) (Fin (N + 1)) ℝ}
     (hQ : Q ∈ orthogonalGroup (Fin (N + 1)) ℝ) (A : Matrix (Fin (N + 1)) (Fin (N + 1)) ℝ) :
     IsUnreduced (Qᵀ * A * Q) ↔
@@ -684,7 +827,7 @@ theorem theorem_7_4_3 {N : ℕ} {Q : Matrix (Fin (N + 1)) (Fin (N + 1)) ℝ}
   have h := isUnreducedUpperHessenberg_conj_iff_krylovMatrix hQ A
   rwa [star_eq_conjTranspose, conjTranspose_eq_transpose_of_trivial] at h
 
-/-- The geometric multiplicity of an eigenvalue is at least one. -/
+/-- Every eigenvalue of a complex matrix has geometric multiplicity at least one. -/
 private theorem one_le_finrank_eigenspace {m : ℕ} {M : Matrix (Fin m) (Fin m) ℂ} {μ : ℂ}
     (hμ : μ ∈ spectrum ℂ M) : 1 ≤ Module.finrank ℂ (Module.End.eigenspace (toLin' M) μ) := by
   obtain ⟨v, hv0, hv⟩ := (Matrix.mem_spectrum_iff_exists_mulVec_eq_smul M μ).1 hμ
@@ -694,8 +837,8 @@ private theorem one_le_finrank_eigenspace {m : ℕ} {M : Matrix (Fin m) (Fin m) 
   rw [h, Submodule.mem_bot] at hmem
   exact hmem
 
-/-- The geometric multiplicity of every eigenvalue of an unreduced upper Hessenberg matrix is at
-most one (the backbone's rank argument, after complexification). -/
+/-- Every eigenvalue of the complexification of an unreduced upper Hessenberg matrix has geometric
+multiplicity at most one. -/
 private theorem finrank_eigenspace_le_one_of_isUnreduced {H : Matrix (Fin n) (Fin n) ℝ}
     (hH : IsUnreduced H) (μ : ℂ) :
     Module.finrank ℂ (Module.End.eigenspace (toLin' H.complexify) μ) ≤ 1 := by
@@ -707,9 +850,15 @@ private theorem finrank_eigenspace_le_one_of_isUnreduced {H : Matrix (Fin n) (Fi
     exact IsUnreducedUpperHessenberg.finrank_eigenspace_le_one
       (hH.map (f := Complex.ofRealHom) Complex.ofReal_injective) μ
 
-/-- **Theorem 7.4.4.** If `λ` is an eigenvalue of an unreduced upper Hessenberg `H ∈ ℝ^{n×n}`, its
-geometric multiplicity is `1`: `rank(H - λI) ≥ n - 1` because the first `n - 1` columns of
-`H - λI` are independent. (The book writes `A - λI` for `H - λI` in the proof.) -/
+/-- **Theorem 7.4.4** of [golub2013matrix]. If $\lambda \in \mathbb{C}$ is an eigenvalue of an
+unreduced upper Hessenberg matrix $H \in \mathbb{R}^{n \times n}$, then its geometric
+multiplicity is $1$:
+$$\dim \operatorname{null}(H - \lambda I) = 1.$$
+
+The proof uses that the first $n - 1$ columns of $H - \lambda I$ are linearly independent, so
+that $\operatorname{rank}(H - \lambda I) \ge n - 1$. The source writes $A - \lambda I$ for
+$H - \lambda I$ in this proof. The eigenvalue and the null space are those of
+`Matrix.complexify H`. -/
 theorem theorem_7_4_4 {H : Matrix (Fin n) (Fin n) ℝ} (hH : IsUnreduced H) {μ : ℂ}
     (hμ : μ ∈ spectrum ℂ H.complexify) :
     Module.finrank ℂ (Module.End.eigenspace (toLin' H.complexify) μ) = 1 :=
@@ -717,13 +866,18 @@ theorem theorem_7_4_4 {H : Matrix (Fin n) (Fin n) ℝ} (hH : IsUnreduced H) {μ 
 
 /-! ### §7.4.6 The companion matrix decomposition -/
 
-/-- **(7.4.4), the companion matrix** in the book's layout: ones on the subdiagonal, last column
-`-c`, zeros elsewhere. Its relation to the backbone's `Matrix.companion` (first-row layout) is
-`companion_eq`. -/
+/-- **Equation (7.4.4)** of [golub2013matrix], the companion matrix. For
+$c = (c_0, \dots, c_{n-1}) \in \mathbb{R}^n$, the companion matrix $C$ has ones on the
+subdiagonal, last column $-c$, and zeros elsewhere:
+$$C = \begin{bmatrix} 0 & 0 & \cdots & 0 & -c_0 \\ 1 & 0 & \cdots & 0 & -c_1 \\ 0 & 1 & \cdots &
+  0 & -c_2 \\ \vdots & & \ddots & & \vdots \\ 0 & 0 & \cdots & 1 & -c_{n-1} \end{bmatrix}.$$
+
+The backbone's `Matrix.companion` puts the coefficients in the first row;
+`GolubVanLoan.Chapter07.companion_eq` relates the two layouts. -/
 def companion (c : Fin n → ℝ) : Matrix (Fin n) (Fin n) ℝ :=
   Matrix.of fun i j => if (j : ℕ) + 1 = n then -c i else if (i : ℕ) = j + 1 then 1 else 0
 
-/-- The monic polynomial `z^n + c_{n-1} z^{n-1} + ⋯ + c₀` with coefficients `c`. -/
+/-- The coefficient of $z^i$ in $z^n + c_{n-1} z^{n-1} + \cdots + c_0$ is $c_i$ for $i < n$. -/
 private theorem coeff_X_pow_add_sum (c : Fin n → ℝ) (i : Fin n) :
     (X ^ n + ∑ j : Fin n, C (c j) * X ^ (j : ℕ)).coeff i = c i := by
   have hi : (i : ℕ) ≠ n := i.isLt.ne
@@ -734,8 +888,8 @@ private theorem coeff_X_pow_add_sum (c : Fin n → ℝ) (i : Fin n) :
     intro h
     exact absurd (Fin.ext h).symm hji
 
-/-- The companion matrix (7.4.4) is the transpose of the backbone's `Matrix.companion p n` of
-`p = z^n + ∑ c_i z^i`, read in reverse order. -/
+/-- The companion matrix (7.4.4) of $c$ is the transpose of the backbone's `Matrix.companion p n`
+for $p(z) = z^n + \sum_{i<n} c_i z^i$, with its rows and columns in reverse order. -/
 theorem companion_eq (c : Fin n → ℝ) :
     companion c = ((Matrix.companion (X ^ n + ∑ j : Fin n, C (c j) * X ^ (j : ℕ)) n)ᵀ).submatrix
       Fin.rev Fin.rev := by
@@ -750,8 +904,8 @@ theorem companion_eq (c : Fin n → ℝ) :
     have h3 : ((i : ℕ) = j + 1) ↔ (n - ((j : ℕ) + 1) = n - ((i : ℕ) + 1) + 1) := by omega
     simp only [hjn, h1, ↓reduceIte, h3]
 
-/-- **§7.4.6**: `det(zI - C) = c₀ + c₁ z + ⋯ + c_{n-1} z^{n-1} + z^n` for the companion matrix
-(7.4.4). -/
+/-- The characteristic polynomial of the companion matrix $C$ of (7.4.4) is $\det(zI - C) = c_0 +
+c_1 z + \cdots + c_{n-1} z^{n-1} + z^n$, as stated in §7.4.6. -/
 theorem charpoly_companion' (c : Fin n → ℝ) :
     (companion c).charpoly = X ^ n + ∑ j : Fin n, C (c j) * X ^ (j : ℕ) := by
   have hdeg := degree_sum_fin_lt c
@@ -762,10 +916,13 @@ theorem charpoly_companion' (c : Fin n → ℝ) :
       reindex Fin.revPerm Fin.revPerm M from fun M => rfl, charpoly_reindex, charpoly_transpose,
     charpoly_companion hmonic hnat]
 
-/-- **§7.4.6 with (7.4.4).** If the Krylov matrix `K = K(A, x, n)` satisfies `K c = -A^n x`, then
-`A K = K C` for the companion matrix `C` of `c`, whose characteristic polynomial is
-`c₀ + c₁ z + ⋯ + c_{n-1} z^{n-1} + z^n`; so if `K` is nonsingular, `K⁻¹ A K = C` displays `A`'s
-characteristic polynomial. -/
+/-- **Equation (7.4.4)** of [golub2013matrix], the companion matrix decomposition. Let
+$A \in \mathbb{R}^{n \times n}$ and $x, c \in \mathbb{R}^n$, and let $K = K(A, x, n)$ be the
+Krylov matrix. If $K c = -A^n x$, then
+$$A K = K C,$$
+where $C$ is the companion matrix of $c$, and $\det(zI - C) = c_0 + c_1 z + \cdots + c_{n-1}
+z^{n-1} + z^n$. If moreover $K$ is nonsingular, then $K^{-1} A K = C$, and the characteristic
+polynomial of $A$ is $c_0 + c_1 z + \cdots + c_{n-1} z^{n-1} + z^n$. -/
 theorem equation_7_4_4 {A : Matrix (Fin n) (Fin n) ℝ} {x c : Fin n → ℝ}
     (hc : krylovMatrix A x n *ᵥ c = -(A ^ n *ᵥ x)) :
     A * krylovMatrix A x n = krylovMatrix A x n * companion c ∧
@@ -802,13 +959,23 @@ theorem equation_7_4_4 {A : Matrix (Fin n) (Fin n) ℝ} {x c : Fin n → ℝ}
     rw [hsim.charpoly_eq, Matrix.mul_assoc, hAK, ← Matrix.mul_assoc,
       Matrix.nonsing_inv_mul _ ((isUnit_iff_isUnit_det K).1 hK), Matrix.one_mul, hchar]
 
-/-- **§7.4.6, Definition**: `A` is *nonderogatory* if each (complex) eigenvalue has unit geometric
-multiplicity, `dim null(A - λI) ≤ 1` for every `λ`. -/
+/-- **Section 7.4.6** of [golub2013matrix], definition of nonderogatory. A matrix
+$A \in \mathbb{R}^{n \times n}$ is **nonderogatory** if each of its complex eigenvalues has
+geometric multiplicity one: $\dim \operatorname{null}(A - \lambda I) \le 1$ for every
+$\lambda \in \mathbb{C}$.
+
+The condition is stated for every $\lambda \in \mathbb{C}$; it holds trivially when $\lambda$ is
+not an eigenvalue. The null space is that of `Matrix.complexify A`. -/
 def IsNonderogatory (A : Matrix (Fin n) (Fin n) ℝ) : Prop :=
   ∀ μ : ℂ, Module.finrank ℂ (Module.End.eigenspace (toLin' A.complexify) μ) ≤ 1
 
-/-- **§7.4.6: "`A` is similar to an unreduced Hessenberg matrix only if each eigenvalue has unit
-geometric multiplicity"** — Theorem 7.4.4 transported along the (complexified) similarity. -/
+/-- **Section 7.4.6** of [golub2013matrix]. Let $A, H \in \mathbb{R}^{n \times n}$, with $A$ similar
+to $H$ and $H$ unreduced upper Hessenberg. Then $A$ is nonderogatory. This is the remark that
+"$A$ is similar to an unreduced Hessenberg matrix only if each eigenvalue has unit geometric
+multiplicity".
+
+Similarity is `Matrix.IsSimilar`: $H = C^{-1} A C$ for a nonsingular real $C$. The proof
+transports Theorem 7.4.4 along the complexified similarity. -/
 theorem isNonderogatory_of_isSimilar_unreduced {A H : Matrix (Fin n) (Fin n) ℝ}
     (hs : IsSimilar A H) (hH : IsUnreduced H) : IsNonderogatory A := by
   obtain ⟨X, hX, rfl⟩ := hs

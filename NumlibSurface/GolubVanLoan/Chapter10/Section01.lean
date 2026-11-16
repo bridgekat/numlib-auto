@@ -12,51 +12,123 @@ import NumlibSurface.GolubVanLoan.Chapter01.Section02
 import NumlibSurface.GolubVanLoan.Chapter08.Section04
 
 /-!
-# Golub–Van Loan §10.1: the symmetric Lanczos process
+# Golub and Van Loan, Section 10.1: The symmetric Lanczos process
 
-Surface file for Gene H. Golub and Charles F. Van Loan, *Matrix Computations*, 4th edition, §10.1:
-the gradient of the Rayleigh quotient (10.1.1), Algorithm 10.1.1 (Lanczos tridiagonalization) and
-Theorem 10.1.1 with (10.1.4) and (10.1.6), Ritz approximations (10.1.7)–(10.1.8) with the residual
-bound and Golub's rank-one modification with its bracketing intervals (via chapter 8's
-Theorem 8.1.8), the Kaniel–Paige–Saad bounds Theorem 10.1.2,
-Corollary 10.1.3 and Theorem 10.1.4, and the power-method comparison (10.1.11).
+This module formalizes §10.1 of [golub2013matrix], the symmetric Lanczos process. Let
+$A \in \mathbb{R}^{n \times n}$ be symmetric and let $q_1 \in \mathbb{R}^n$ be a unit vector. The
+Lanczos process computes orthonormal vectors $q_1, q_2, \dots$ and the coefficients $\alpha_j$,
+$\beta_j$ of a symmetric tridiagonal matrix $T_k$ such that $Q_k = [q_1 | \cdots | q_k]$ satisfies
+$A Q_k = Q_k T_k + r_k e_k^T$ and the columns of $Q_k$ span the Krylov subspace $\mathcal{K}(A, q_1,
+k) = \operatorname{span}\{q_1, A q_1, \dots, A^{k-1} q_1\}$. The module states Algorithm 10.1.1 as a
+program and proves that in exact arithmetic it computes these quantities (Theorem 10.1.1). It then
+proves the properties of the Ritz approximations, the eigenvalues $\theta_1 \ge \dots \ge \theta_k$
+of $T_k$: the residual bound (10.1.8), Golub's rank-one modification with its bracketing intervals,
+the Kaniel–Paige–Saad bounds (Theorem 10.1.2, Corollary 10.1.3 and Theorem 10.1.4) in terms of
+Chebyshev polynomials, and the comparison (10.1.11) with the power method.
+
+The proofs specialize the backbone modules `Numlib.Krylov.Lanczos` and `Numlib.Krylov.Decomposition`
+(the Lanczos process as Gram–Schmidt orthogonalization of the Krylov sequence, and the matrix form
+of the Lanczos relation), `Numlib.Eigen.RayleighRitz` and `Numlib.Eigen.KrylovEigen` (Ritz pairs and
+the Kaniel–Paige–Saad bound), `Numlib.Eigen.Perturbation` (the residual bound) and
+`Numlib.Eigen.Sturm` (unreduced tridiagonal matrices), together with Theorem 8.1.8 and (8.4.2) of
+Chapter 8.
+
+## Main definitions
+
+* Algorithm 10.1.1, `GolubVanLoan.Chapter10.algorithm_10_1_1`: the Lanczos tridiagonalization, as a
+  program with a rounding hook.
+
+## Main results
+
+* Equation (10.1.1), `GolubVanLoan.Chapter10.equation_10_1_1`: the gradient of the Rayleigh quotient
+  is $\nabla r(x) = (2/x^T x)(Ax - r(x) x)$, which lies in $\operatorname{span}\{x, Ax\}$.
+* Algorithm 10.1.1, `GolubVanLoan.Chapter10.algorithm_10_1_1_spec`: in exact arithmetic, the
+  algorithm computes the Lanczos vectors and coefficients of the backbone and stops at the grade of
+  $q_1$.
+* Equation (10.1.4), `GolubVanLoan.Chapter10.equation_10_1_4`: $A Q_k = Q_k T_k + r_k e_k^T$.
+* Equation (10.1.6), `GolubVanLoan.Chapter10.equation_10_1_6`: below the grade, $Q_k^T A Q_k = T_k$
+  and $Q_k^T r_k = 0$.
+* Theorem 10.1.1, `GolubVanLoan.Chapter10.theorem_10_1_1`: the algorithm runs until
+  $k = \operatorname{rank} K(A, q_1, n)$, and the computed $Q_k$ has orthonormal columns that span
+  $\mathcal{K}(A, q_1, k)$ and satisfy (10.1.4).
+* §10.1.4, `GolubVanLoan.Chapter10.isRitzPair_lanczos`: an eigenpair $(\theta, s)$ of $T_k$ gives
+  the Ritz pair $(\theta, Q_k s)$ of $A$ with respect to $\mathcal{K}(A, q_1, k)$.
+* Equation (10.1.8), `GolubVanLoan.Chapter10.equation_10_1_8`: the residual of a Ritz pair is
+  $s_k r_k$, of norm $|\beta_k| |s_k|$.
+* §10.1.4, `GolubVanLoan.Chapter10.exists_eigenvalue_dist_le_ritz`: some eigenvalue $\mu$ of $A$
+  satisfies $|\theta - \mu| \le |\beta_k| |s_k|$.
+* §10.1.4, `GolubVanLoan.Chapter10.golub_rankOne_modification`: Golub's rank-one modification
+  $A + \tau w w^T$ has the eigenpairs $(\theta, Q_k y)$ of the modified $\tilde T_k$.
+* §10.1.4, `GolubVanLoan.Chapter10.golub_rankOne_bracket`: each interval between consecutive
+  eigenvalues of $\tilde T_k$ contains an eigenvalue of $A$.
+* Theorem 10.1.2, `GolubVanLoan.Chapter10.theorem_10_1_2`: the Kaniel–Paige bound for the largest
+  Ritz value $\theta_1$.
+* Corollary 10.1.3, `GolubVanLoan.Chapter10.corollary_10_1_3`: the same bound for the smallest Ritz
+  value $\theta_k$.
+* Theorem 10.1.4, `GolubVanLoan.Chapter10.theorem_10_1_4`: the Kaniel–Paige–Saad bound for the
+  $i$-th Ritz value $\theta_i$.
+* Equation (10.1.11), `GolubVanLoan.Chapter10.equation_10_1_11`: the corresponding bound for the
+  Rayleigh quotient of $A^{k-1} q_1$ in the power method.
 
 ## Conventions
 
-The symmetric `A ∈ ℝ^{n×n}` is `A : Matrix (Fin n) (Fin n) ℝ` with `hA : A.IsSymm`, acting on
-`EuclideanSpace ℝ (Fin n)` through `Matrix.toEuclideanLin` (symmetric by
-`Matrix.IsSymm.isSymmetric_toEuclideanLin`). Indices are `0`-based: the book's `q_{j+1}`, `α_{j+1}`,
-`β_{j+1}` are `Arnoldi.vec (toEuclideanLin A) q₁ j`, `Lanczos.alpha _ q₁ j`, `Lanczos.beta _ q₁ j`;
-`Q_k` is `Arnoldi.basisMatrix A q₁ k`, `T_k` is `Lanczos.tridiag _ q₁ k`, `r_k` is
-`(Arnoldi.w _ q₁ (k − 1)).ofLp` and `e_k` is `Krylov.lastVec 1 k`. The Schur decomposition
-(10.1.9) is any `Z ∈ orthogonalGroup` with `Zᵀ * A * Z = diagonal λ` and `Antitone λ`
-(`λ_1 ≥ ⋯ ≥ λ_n`, `λ_i` at index `i − 1`), with `z_i = Matrix.euclideanCol Z (i − 1)`; the
-theorems hold for every such decomposition, also when eigenvalues repeat and `Z` is not unique
-(`schurBasis`, and `eigenvalues_eq_of_schur` identifies `λ` with the sorted eigenvalues). The
-Ritz values `θ_1 ≥ ⋯ ≥ θ_k` are `Lanczos.ritzValues (toEuclideanLin A) q₁ k`, the sorted
-eigenvalues of `T_k`, and the Ritz pairs of (10.1.7) are stated for every eigenpair of `T_k`, so
-for every Schur decomposition `S_kᵀ T_k S_k = Θ_k`.
+* The symmetric $A \in \mathbb{R}^{n \times n}$ is `A : Matrix (Fin n) (Fin n) ℝ` with `A.IsSymm`.
+  It acts on `EuclideanSpace ℝ (Fin n)` through `Matrix.toEuclideanLin`, which is symmetric by
+  `Matrix.IsSymm.isSymmetric_toEuclideanLin`.
+* Indices are 0-based. The source's $q_{j+1}$, $\alpha_{j+1}$ and $\beta_{j+1}$ are
+  `Arnoldi.vec (toEuclideanLin A) q₁ j`, `Lanczos.alpha (toEuclideanLin A) q₁ j` and
+  `Lanczos.beta (toEuclideanLin A) q₁ j`. The matrix $Q_k$ is `Arnoldi.basisMatrix A q₁ k`, $T_k$ is
+  `Lanczos.tridiag (toEuclideanLin A) q₁ k`, $r_k$ is
+  `(Arnoldi.w (toEuclideanLin A) q₁ (k - 1)).ofLp` and $e_k$ is `Krylov.lastVec 1 k`.
+* The grade $m$ of $q_1$ is `Krylov.grade (toEuclideanLin A) q₁`, the dimension of
+  $\mathcal{K}(A, q_1, n)$.
+* A Schur decomposition (10.1.9) is an orthogonal $Z$ with $Z^T A Z = \operatorname{diag}(\lambda)$
+  and $\lambda_1 \ge \dots \ge \lambda_n$. It is given by `Z ∈ orthogonalGroup`,
+  `Zᵀ * A * Z = diagonal lam` and `Antitone lam`, the $i$-th eigenvalue is `lam (i - 1)`, and the
+  column $z_i$ is `Matrix.euclideanCol Z (i - 1)`. The theorems hold for every such decomposition,
+  also when eigenvalues repeat and $Z$ is not unique, and
+  `GolubVanLoan.Chapter10.eigenvalues_eq_of_schur` identifies $\lambda$ with the sorted eigenvalues
+  of $A$.
+* The Ritz values $\theta_1 \ge \dots \ge \theta_k$ are
+  `Lanczos.ritzValues (toEuclideanLin A) q₁ k`, the sorted eigenvalues of $T_k$. The Ritz pairs of
+  (10.1.7) are stated for every eigenpair of $T_k$, and so for every Schur decomposition
+  $S_k^T T_k S_k = \Theta_k$.
 
-The monotonicity `M_1 ≤ M_2 ≤ ⋯` of §10.1.1 (the largest Ritz values increase with `k`) is the
-backbone's `LinearMap.IsSymmetric.eigenvalues_compression_mono`.
+## Implementation notes
 
-## The algorithm
+* Algorithm 10.1.1 is a monadic program with a rounding hook `rnd`, as in the algorithm conventions
+  of `NumlibSurface.GolubVanLoan`. The `while` loop, which runs while $\beta_k \neq 0$, is a fold
+  over `List.range fuel` with a `done` flag. The product $A q_k$ is the row gaxpy
+  `GolubVanLoan.Chapter01.algorithm_1_1_3`, the inner products are
+  `GolubVanLoan.Chapter01.algorithm_1_1_1`, and the update $r_k = (A - \alpha_k I) q_k - \beta_{k-1}
+  q_{k-1}$ is two saxpys `GolubVanLoan.Chapter01.algorithm_1_1_2`. The normalization
+  $q_{k+1} = r_k / \beta_k$ is `GolubVanLoan.Chapter10.vecDiv`, with one rounded quotient per entry,
+  and $\beta_k = \|r_k\|_2$ is `GolubVanLoan.Chapter10.vecNorm`, the rounded square root of a
+  rounded dot product.
+* The exact semantics `GolubVanLoan.Chapter10.algorithm_10_1_1_spec` identifies every computed
+  quantity with the Gram–Schmidt definition of the Lanczos process in `Numlib.Krylov.Lanczos`.
+* The monotonicity $M_1 \le M_2 \le \cdots$ of §10.1.1, which says that the largest Ritz value
+  increases with $k$, is the backbone's `LinearMap.IsSymmetric.eigenvalues_compression_mono`.
+* A quotient with a zero denominator, such as $\rho_1$ in Theorem 10.1.2 when
+  $\lambda_2 = \lambda_n$, has the value $0$ (Lean's $x / 0 = 0$).
 
-Algorithm 10.1.1 is a monadic program with a rounding hook `rnd` (conventions 1–14 of
-`NumlibSurface/GolubVanLoan`): the `while β_k ≠ 0` loop runs over `List.range fuel` with a `done`
-flag (convention 3), the matrix–vector product `A q_k` is chapter 1's row gaxpy
-(`GolubVanLoan.Chapter01.algorithm_1_1_3`), the inner products are its Algorithm 1.1.1, the
-updates `r_k = (A − α_k I) q_k − β_{k−1} q_{k−1}` are two of its saxpys (Algorithm 1.1.2), the
-normalization `q_{k+1} = r_k / β_k` is `vecDiv` (one rounded quotient per entry) and
-`β_k = ‖r_k‖₂` is `vecNorm` (the rounded square root of a rounded dot product). Its exact semantics
-`algorithm_10_1_1_spec` identifies every computed quantity with the backbone's Gram–Schmidt
-definition of the Lanczos process (`Numlib/Krylov/Lanczos`).
+## Deviations from the source
+
+* **Theorem 10.1.2** (reading). The hypothesis $q_1^T z_1 \neq 0$, implicit in the source, is
+  explicit. The source's $\rho_1$ is undefined when $\lambda_2 = \lambda_n$; the statement takes
+  $\rho_1 = 0$ and needs no gap hypothesis. See `GolubVanLoan.Chapter10.theorem_10_1_2`.
+* **Corollary 10.1.3** (typo). The source writes $\cos\phi_n = q_1^T z_n$ without the absolute
+  value. See `GolubVanLoan.Chapter10.corollary_10_1_3`.
+* **Golub's rank-one modification, §10.1.4** (generalization). The source takes
+  $\tau \in \{-1, 1\}$; the statement holds for every real $\tau$. See
+  `GolubVanLoan.Chapter10.golub_rankOne_modification`.
 
 ## Not formalized
 
-(10.1.2)–(10.1.3) (the motivation through `M_k`, `m_k`), (10.1.5) (the display of the tridiagonal
-`T_k`, the backbone's `Lanczos.tridiag`), Figure 10.1.1 and the comparison after (10.1.11)
-(numerical), operation counts.
+* **(10.1.2)–(10.1.3).** The motivation of the Lanczos process through $M_k$ and $m_k$.
+* **(10.1.5).** The display of the tridiagonal $T_k$, which is the backbone's `Lanczos.tridiag`.
+* **Figure 10.1.1 and the comparison after (10.1.11).** They are numerical.
+* **Operation counts.**
 -/
 
 open Matrix Krylov FloatingPoint Polynomial
@@ -72,39 +144,48 @@ section Helpers
 
 variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 
-/-- The entrywise rounded quotient `fl(x / β)` of a vector by a scalar, one `rnd` per entry, in
-place: the normalization `q = r / β` of the Lanczos, Arnoldi and Golub–Kahan processes. -/
+/-- The entrywise rounded quotient $\mathrm{fl}(x / \beta)$ of a vector $x \in \mathbb{R}^n$ by a
+scalar $\beta$, with one rounding per entry, computed in place. It is the normalization
+$q = r / \beta$ of the Lanczos, Arnoldi and Golub–Kahan processes. -/
 noncomputable def vecDiv (x : Fin n → ℝ) (β : ℝ) : M (Fin n → ℝ) :=
   (List.finRange n).foldlM (fun y i => do
     let c ← rnd (y i / β)
     pure (Function.update y i c)) x
 
-/-- The rounded Euclidean norm `fl(√(fl(xᵀx)))` of a vector: chapter 1's dot product followed by
-one rounded square root. -/
+/-- The rounded Euclidean norm $\mathrm{fl}(\sqrt{\mathrm{fl}(x^T x)})$ of a vector
+$x \in \mathbb{R}^n$: the dot product of Algorithm 1.1.1, followed by one rounded square root. -/
 noncomputable def vecNorm (x : Fin n → ℝ) : M ℝ := do
   let s ← algorithm_1_1_1 rnd x x
   rnd (Real.sqrt s)
 
 end Helpers
 
-/-- Exact semantics of `vecDiv`: `x / β = β⁻¹ • x`. -/
+/-- In exact arithmetic, `GolubVanLoan.Chapter10.vecDiv` computes $x / \beta = \beta^{-1} x$. For
+$\beta = 0$ the result is $0$. -/
 theorem vecDiv_spec (x : Fin n → ℝ) (β : ℝ) : Id.run (vecDiv pure x β) = β⁻¹ • x := by
   funext k
   rw [vecDiv, List.idRun_foldlM_update_apply (fun k b => (pure (b / β) : Id ℝ)) _
     (List.nodup_finRange n), ite_eq_left (List.mem_finRange k)]
   simp [div_eq_inv_mul]
 
-/-- Exact semantics of `vecNorm`: the Euclidean norm. -/
+/-- In exact arithmetic, `GolubVanLoan.Chapter10.vecNorm` computes the Euclidean norm $\|x\|_2$. -/
 theorem vecNorm_spec (x : Fin n → ℝ) :
     Id.run (vecNorm pure x) = ‖(WithLp.toLp 2 x : EuclideanSpace ℝ (Fin n))‖ := by
   rw [vecNorm, Id.run_bind, algorithm_1_1_1_spec, EuclideanSpace.norm_eq]
   simp [dotProduct, sq]
 
-/-! ### (10.1.1): the gradient of the Rayleigh quotient -/
+/-! ### Equation (10.1.1): the gradient of the Rayleigh quotient -/
 
-/-- **(10.1.1).** For a symmetric `A` and `x ≠ 0`, the Rayleigh quotient `r(x) = xᵀAx / xᵀx` has
-gradient `∇r(x) = (2/xᵀx)(A x − r(x) x)`; hence (the display after (10.1.3)) `∇r(x)` lies in
-`span {x, A x}`. Backbone `ContinuousLinearMap.hasGradientAt_rayleighQuotient`. -/
+/-- **Equation (10.1.1)** of [golub2013matrix]. Let $A \in \mathbb{R}^{n \times n}$ be symmetric and
+let $x \in \mathbb{R}^n$ be nonzero. The Rayleigh quotient $r(x) = x^T A x / x^T x$ has the
+gradient
+$$\nabla r(x) = \frac{2}{x^T x} \bigl(Ax - r(x) x\bigr),$$
+and this gradient lies in $\operatorname{span}\{x, Ax\}$.
+
+The second claim is the remark after (10.1.3) of the source. The Rayleigh quotient is
+`ContinuousLinearMap.rayleighQuotient` of $A$ as a continuous linear map on
+`EuclideanSpace ℝ (Fin n)`, and the gradient is `HasGradientAt` for the Euclidean inner product.
+The proof specializes `ContinuousLinearMap.hasGradientAt_rayleighQuotient`. -/
 theorem equation_10_1_1 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
     {x : EuclideanSpace ℝ (Fin n)} (hx : x ≠ 0) :
     let T := toEuclideanCLM (n := Fin n) (𝕜 := ℝ) A
@@ -119,34 +200,35 @@ theorem equation_10_1_1 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
 
 /-! ### Algorithm 10.1.1 -/
 
-/-- The state of Algorithm 10.1.1: the number `k` of Lanczos vectors computed so far, the vectors
-(`q j` is the book's `q_{j+1}`), the coefficients (`alpha j`, `beta j` are the book's `α_{j+1}`,
-`β_{j+1}`), the current residual `r` (the book's `r_k`) and the `done` flag of the `while` loop
-(set once a computed `β_k` is `0`). -/
+/-- The state of Algorithm 10.1.1: the number $k$ of Lanczos vectors computed so far, the Lanczos
+vectors, the coefficients $\alpha_j$ and $\beta_j$, the current residual $r_k$, and a flag that
+records that the `while` loop has stopped. Indices are 0-based: `q j`, `alpha j` and `beta j`
+are the source's $q_{j+1}$, $\alpha_{j+1}$ and $\beta_{j+1}$. -/
 structure LanczosState (n : ℕ) where
-  /-- The book's step counter `k`. -/
+  /-- The step counter $k$ of the source. -/
   k : ℕ
-  /-- The Lanczos vectors, `0`-based. -/
+  /-- The Lanczos vectors; `q j` is the source's $q_{j+1}$. -/
   q : ℕ → Fin n → ℝ
-  /-- The diagonal coefficients `α`, `0`-based. -/
+  /-- The diagonal coefficients; `alpha j` is the source's $\alpha_{j+1}$. -/
   alpha : ℕ → ℝ
-  /-- The off-diagonal coefficients `β`, `0`-based. -/
+  /-- The off-diagonal coefficients; `beta j` is the source's $\beta_{j+1}$. -/
   beta : ℕ → ℝ
-  /-- The residual `r_k`. -/
+  /-- The current residual $r_k$. -/
   r : Fin n → ℝ
-  /-- Whether the loop has stopped (`β_k = 0`). -/
+  /-- Whether the loop has stopped, that is, whether the last computed $\beta_k$ is $0$. -/
   done : Bool
 
 section Algorithm
 
 variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 
-/-- One pass of the `while` loop of Algorithm 10.1.1 (a no-op once `done`):
+/-- One pass of the `while` loop of Algorithm 10.1.1:
 ```
 q_{k+1} = r_k/β_k,  k = k + 1,  α_k = q_kᵀ A q_k,
 r_k = (A − α_k I) q_k − β_{k−1} q_{k−1},  β_k = ‖r_k‖₂
 ```
-with `β_0 = 1` and `q_0 = 0` at the first pass. -/
+At the first pass the program uses $\beta_0 = 1$ and $q_0 = 0$. Once the flag `done` is set, a
+pass returns the state unchanged. -/
 noncomputable def lanczosStep (A : Matrix (Fin n) (Fin n) ℝ) (s : LanczosState n) :
     M (LanczosState n) :=
   if s.done then pure s else do
@@ -165,9 +247,10 @@ noncomputable def lanczosStep (A : Matrix (Fin n) (Fin n) ℝ) (s : LanczosState
         r := r
         done := decide (b = 0) }
 
-/-- **Algorithm 10.1.1 (Lanczos Tridiagonalization).** "Given a symmetric `A ∈ ℝ^{n×n}` and a unit
-2-norm `q₁ ∈ ℝⁿ`, the following algorithm computes a matrix `Q_k = [q_1 | ⋯ | q_k]` with orthonormal
-columns and a tridiagonal `T_k ∈ ℝ^{k×k}` so that `A Q_k = Q_k T_k`":
+/-- **Algorithm 10.1.1** of [golub2013matrix] (Lanczos tridiagonalization). Given a symmetric
+$A \in \mathbb{R}^{n \times n}$ and a unit 2-norm $q_1 \in \mathbb{R}^n$, the algorithm computes
+a matrix $Q_k = [q_1 | \cdots | q_k]$ with orthonormal columns and a tridiagonal
+$T_k \in \mathbb{R}^{k \times k}$ so that $A Q_k = Q_k T_k$:
 ```
 k = 0, β_0 = 1, q_0 = 0, r_0 = q₁
 while β_k ≠ 0
@@ -175,7 +258,10 @@ while β_k ≠ 0
   r_k = (A − α_k I) q_k − β_{k−1} q_{k−1},  β_k = ‖r_k‖₂
 end
 ```
-The `while` loop is at most `fuel` passes of `lanczosStep` (convention 3). -/
+
+The program is generic in the monad `M` and the rounding hook `rnd`. The `while` loop is at most
+`fuel` passes of `GolubVanLoan.Chapter10.lanczosStep`. The program has no hypothesis on $A$ or
+$q_1$; its exact semantics is `GolubVanLoan.Chapter10.algorithm_10_1_1_spec`. -/
 noncomputable def algorithm_10_1_1 (A : Matrix (Fin n) (Fin n) ℝ) (q₁ : Fin n → ℝ) (fuel : ℕ) :
     M (LanczosState n) :=
   (List.range fuel).foldlM (fun s _ => lanczosStep rnd A s)
@@ -183,20 +269,27 @@ noncomputable def algorithm_10_1_1 (A : Matrix (Fin n) (Fin n) ℝ) (q₁ : Fin 
 
 end Algorithm
 
-/-- The exact run after `t + 1` passes is one more pass. -/
+/-- In exact arithmetic, the run with $t + 1$ passes is one more pass after the run with $t$ passes.
+-/
 private theorem algorithm_10_1_1_succ (A : Matrix (Fin n) (Fin n) ℝ) (q₁ : Fin n → ℝ) (t : ℕ) :
     Id.run (algorithm_10_1_1 pure A q₁ (t + 1)) =
       Id.run (lanczosStep pure A (Id.run (algorithm_10_1_1 pure A q₁ t))) := by
   simp only [algorithm_10_1_1, List.range_succ, List.foldlM_append, List.foldlM_cons,
     List.foldlM_nil, bind_pure, Id.run_bind]
 
-/-- **Exact semantics of Algorithm 10.1.1.** For a symmetric `A` and a unit `q₁`, the exact run
-stops after `min fuel m` passes, `m` the grade of `q₁` (the dimension of `𝒦(A, q₁, n)`), and every
-computed quantity is the backbone's: `q_{j+1} = Arnoldi.vec`, `α_{j+1} = Lanczos.alpha`,
-`β_{j+1} = Lanczos.beta` (so the book's positive choice `β_k = ‖r_k‖₂` is the backbone's) and the
-last residual is `r_k = Arnoldi.w _ q₁ (k − 1)`. Induction on the passes with the invariant "the
-state is the backbone's at step `k`": `Lanczos.w_succ_eq` is the residual update,
-`Arnoldi.vec_succ_eq` the normalization and `Lanczos.beta_eq_zero_iff` the exit test. -/
+/-- **Algorithm 10.1.1** of [golub2013matrix], exact semantics. Let $A \in \mathbb{R}^{n \times n}$
+be symmetric, let $q_1 \in \mathbb{R}^n$ satisfy $\|q_1\|_2 = 1$, and let $m$ be the grade of
+$q_1$, the dimension of $\mathcal{K}(A, q_1, n)$. Run the algorithm in exact arithmetic with at
+most `fuel` passes of the loop. Then the final step counter is $k = \min(\mathit{fuel}, m)$, the
+computed $q_j$, $\alpha_j$ and $\beta_j$ for $j \le k$ are the Lanczos vectors and coefficients
+of $A$ and $q_1$, and, if $k \ge 1$, the final residual is the Lanczos residual $r_k = (A -
+\alpha_k I) q_k - \beta_{k-1} q_{k-1}$.
+
+The Lanczos vectors and coefficients are the backbone's `Arnoldi.vec`, `Lanczos.alpha` and
+`Lanczos.beta` of `toEuclideanLin A` and $q_1$, at the 0-based index $j - 1$, and the final
+residual is `Arnoldi.w` at index $k - 1$. In particular the source's choice
+$\beta_k = \|r_k\|_2 \ge 0$ is the backbone's. The proof is an induction on the passes, with the
+invariant that the state is the backbone's at step $k$. -/
 theorem algorithm_10_1_1_spec {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) {q₁ : Fin n → ℝ}
     (hq : ‖(WithLp.toLp 2 q₁ : EuclideanSpace ℝ (Fin n))‖ = 1) (fuel : ℕ) :
     let s := Id.run (algorithm_10_1_1 pure A q₁ fuel)
@@ -296,10 +389,13 @@ theorem algorithm_10_1_1_spec {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) {
 
 /-! ### The Lanczos relation and Theorem 10.1.1 -/
 
-/-- **(10.1.4).** For a symmetric `A` and every `k ≥ 1`, `A Q_k = Q_k T_k + r_k e_kᵀ`, with
-`Q_k = Arnoldi.basisMatrix A q₁ k`, `T_k = Lanczos.tridiag _ q₁ k` and
-`r_k = Arnoldi.w _ q₁ (k − 1)`
-(the orthonormality of `Q_k` needs `k ≤ grade`; the relation does not). Backbone
+/-- **Equation (10.1.4)** of [golub2013matrix]. Let $A \in \mathbb{R}^{n \times n}$ be symmetric,
+let $q_1 \in \mathbb{R}^n$, and let $k \ge 1$. Then the Lanczos quantities of $A$ and $q_1$
+satisfy
+$$A Q_k = Q_k T_k + r_k e_k^T.$$
+
+The relation holds for every $k \ge 1$. The orthonormality of the columns of $Q_k$ needs
+$k \le m$, the grade of $q_1$, but the relation does not. The proof specializes
 `Lanczos.mul_basisMatrix`. -/
 theorem equation_10_1_4 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
     (q₁ : EuclideanSpace ℝ (Fin n)) {k : ℕ} (hk : 1 ≤ k) :
@@ -310,16 +406,20 @@ theorem equation_10_1_4 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
   have h := Lanczos.mul_basisMatrix hA.isSymmetric_toEuclideanLin q₁ k
   simpa using h
 
-/-- Over `ℝ`, `Q_kᵀ Q_k = I` below the grade. -/
+/-- For $k$ at most the grade of $q_1$, the Lanczos basis satisfies $Q_k^T Q_k = I$. -/
 private theorem transpose_basisMatrix_mul_self {A : Matrix (Fin n) (Fin n) ℝ}
     (q₁ : EuclideanSpace ℝ (Fin n)) {k : ℕ} (hk : k ≤ grade (toEuclideanLin A) q₁) :
     (Arnoldi.basisMatrix A q₁ k)ᵀ * Arnoldi.basisMatrix A q₁ k = 1 := by
   have h := Arnoldi.conjTranspose_basisMatrix_mul_self A q₁ hk
   rwa [conjTranspose_eq_transpose_of_trivial] at h
 
-/-- **(10.1.6)** and its consequences in the proof of Theorem 10.1.1: for `1 ≤ k ≤ m` (the grade),
-`Q_kᵀ A Q_k = T_k + Q_kᵀ r_k e_kᵀ`, and in fact `Q_kᵀ A Q_k = T_k` and `Q_kᵀ r_k = 0`, so that
-`T_{ij} = q_iᵀ A q_j`. Backbone `Arnoldi.conjTranspose_basisMatrix_mulVec_w`. -/
+/-- **Equation (10.1.6)** of [golub2013matrix]. Let $A \in \mathbb{R}^{n \times n}$ be symmetric,
+let $q_1 \in \mathbb{R}^n$, and let $1 \le k \le m$, where $m$ is the grade of $q_1$. Then
+$$Q_k^T A Q_k = T_k + Q_k^T r_k e_k^T,$$
+and in fact $Q_k^T A Q_k = T_k$ and $Q_k^T r_k = 0$.
+
+The last two claims are consequences that the source draws in the proof of Theorem 10.1.1; they
+give $t_{ij} = q_i^T A q_j$. The proof specializes `Arnoldi.conjTranspose_basisMatrix_mulVec_w`. -/
 theorem equation_10_1_6 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
     (q₁ : EuclideanSpace ℝ (Fin n)) {k : ℕ} (hk1 : 1 ≤ k) (hk : k ≤ grade (toEuclideanLin A) q₁) :
     let Q := Arnoldi.basisMatrix A q₁ k
@@ -341,14 +441,22 @@ theorem equation_10_1_6 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
   refine ⟨h1, ?_, h3⟩
   rw [h1, h3, zero_vecMulVec, add_zero]
 
-/-- **Theorem 10.1.1.** Let `A` be symmetric and `q₁` a unit vector. With enough fuel (`n` passes),
-Algorithm 10.1.1 runs until `k = m = rank K(A, q₁, n)`, and for every `1 ≤ k ≤ m` the computed
-`Q_k = [q_1 | ⋯ | q_k]` and `T_k` (the tridiagonal matrix of the computed `α`, `β`, (10.1.5)) are
-the backbone's `Arnoldi.basisMatrix` and `Lanczos.tridiag`, and
-`A Q_k = Q_k T_k + r_k e_kᵀ` (10.1.4), `Q_kᵀ Q_k = I_k`, `ran(Q_k) = 𝒦(A, q₁, k)`. The book's
-induction (orthogonality from the three-term recurrence) is the backbone's Gram–Schmidt
-definition read backwards (`algorithm_10_1_1_spec`), and `m` is the rank of the Krylov matrix by
-`Krylov.grade_eq_rank_krylovMatrix`. -/
+/-- **Theorem 10.1.1** of [golub2013matrix]. Let $A \in \mathbb{R}^{n \times n}$ be symmetric and
+let $q_1 \in \mathbb{R}^n$ be a unit vector. Run Algorithm 10.1.1 in exact arithmetic with at
+least $n$ passes of the loop. Then the algorithm stops at $k = m$, where
+$m = \operatorname{rank} K(A, q_1, n)$ is the rank of the Krylov matrix
+$[q_1 | A q_1 | \cdots | A^{n-1} q_1]$. For every $1 \le k \le m$, the computed
+$Q_k = [q_1 | \cdots | q_k]$ and the tridiagonal matrix $T_k$ of the computed $\alpha_j$ and
+$\beta_j$ are the Lanczos quantities, and
+$$A Q_k = Q_k T_k + r_k e_k^T, \qquad Q_k^T Q_k = I_k, \qquad \operatorname{ran}(Q_k) =
+  \mathcal{K}(A, q_1, k).$$
+
+The computed $Q_k$ and $T_k$ are identified with the backbone's `Arnoldi.basisMatrix` and
+`Lanczos.tridiag`; the computed $T_k$ is `Matrix.symmTridiagonalOf` of the computed
+coefficients, and the Krylov matrix is `Matrix.krylovMatrix A q₁ n`. The source proves the
+orthogonality by induction from the three-term recurrence. Here it comes from the Gram–Schmidt
+definition of the backbone, through `GolubVanLoan.Chapter10.algorithm_10_1_1_spec`, and $m$ is
+the rank of the Krylov matrix by `Krylov.grade_eq_rank_krylovMatrix`. -/
 theorem theorem_10_1_1 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) {q₁ : Fin n → ℝ}
     (hq : ‖(WithLp.toLp 2 q₁ : EuclideanSpace ℝ (Fin n))‖ = 1) {fuel : ℕ} (hfuel : n ≤ fuel) :
     let s := Id.run (algorithm_10_1_1 pure A q₁ fuel)
@@ -387,7 +495,8 @@ theorem theorem_10_1_1 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) {q₁ : 
 
 /-! ### Ritz approximations (§10.1.4) -/
 
-/-- `Q_k y` as a combination of the Lanczos vectors: `Q_k y = ∑ⱼ yⱼ q_{j+1}`. -/
+/-- For any $A$, $q_1$ and $y \in \mathbb{R}^k$, the vector $Q_k y$ is the combination
+$\sum_{j=1}^{k} y_j q_j$ of the Lanczos vectors. -/
 theorem toLp_basisMatrix_mulVec (A : Matrix (Fin n) (Fin n) ℝ) (q₁ : EuclideanSpace ℝ (Fin n))
     (k : ℕ) (y : Fin k → ℝ) :
     (WithLp.toLp 2 (Arnoldi.basisMatrix A q₁ k *ᵥ y) : EuclideanSpace ℝ (Fin n)) =
@@ -396,12 +505,18 @@ theorem toLp_basisMatrix_mulVec (A : Matrix (Fin n) (Fin n) ℝ) (q₁ : Euclide
   refine Finset.sum_congr rfl fun j _ => ?_
   congr 1
 
-/-- **Ritz pairs from the Lanczos process** (§10.1.4, the claim after (10.1.7)): if
-`S_kᵀ T_k S_k = Θ_k = diag(θ_1, …, θ_k)` is a Schur decomposition of `T_k` and `Y_k = Q_k S_k`,
-then every `(θ_i, y_i)` is a Ritz pair of `A` with respect to `𝒦(A, q₁, k)`: `y_i ∈ 𝒦`, `y_i ≠ 0`
-and `A y_i − θ_i y_i ⟂ 𝒦` (`k ≤ m`). Stated for each column: any eigenpair `T_k s = θ s`,
-`s ≠ 0`, of `T_k`, so for every Schur decomposition. Backbone
-`Arnoldi.isRitzPair_of_mulVec_eq_smul` with `Lanczos.hessenbergSq_eq_map_tridiag`. -/
+/-- **Section 10.1.4** of [golub2013matrix], Ritz pairs from the Lanczos process (the claim after
+(10.1.7)). Let $A \in \mathbb{R}^{n \times n}$ be symmetric, let $q_1 \in \mathbb{R}^n$, and let
+$k \le m$, the grade of $q_1$. If $s \in \mathbb{R}^k$ is nonzero and $T_k s = \theta s$, then
+$(\theta, Q_k s)$ is a Ritz pair of $A$ with respect to $\mathcal{K}(A, q_1, k)$: the vector
+$y = Q_k s$ lies in $\mathcal{K}(A, q_1, k)$, $y \neq 0$, and $Ay - \theta y$ is orthogonal to
+$\mathcal{K}(A, q_1, k)$.
+
+The source takes a Schur decomposition $S_k^T T_k S_k = \Theta_k = \operatorname{diag}(\theta_1,
+\dots, \theta_k)$ and $Y_k = Q_k S_k$, and claims that every $(\theta_i, y_i)$ is a Ritz pair.
+The statement here is for one eigenpair of $T_k$, and so it holds for every Schur decomposition.
+A Ritz pair is `Krylov.IsRitzPair`. The proof specializes `Arnoldi.isRitzPair_of_mulVec_eq_smul`
+with `Lanczos.hessenbergSq_eq_map_tridiag`. -/
 theorem isRitzPair_lanczos {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
     (q₁ : EuclideanSpace ℝ (Fin n)) {k : ℕ} (hk : k ≤ grade (toEuclideanLin A) q₁) {θ : ℝ}
     {s : Fin k → ℝ} (hs : s ≠ 0) (hTs : Lanczos.tridiag (toEuclideanLin A) q₁ k *ᵥ s = θ • s) :
@@ -412,8 +527,8 @@ theorem isRitzPair_lanczos {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
   rw [Lanczos.hessenbergSq_eq_map_tridiag q₁ hA.isSymmetric_toEuclideanLin]
   simpa using hTs
 
-/-- The residual of a Lanczos Ritz pair: `A y − θ y = s_{k} r_k`, `s_k` the last entry of the
-eigenvector `s` of `T_k` (`k = k' + 1`). -/
+/-- If $T_{k+1} s = \theta s$, then the residual of $y = Q_{k+1} s$ is
+$Ay - \theta y = s_{k+1} r_{k+1}$, where $s_{k+1}$ is the last entry of $s$. -/
 private theorem ritz_residual_eq {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
     (q₁ : EuclideanSpace ℝ (Fin n)) (k : ℕ) {θ : ℝ} {s : Fin (k + 1) → ℝ}
     (hTs : Lanczos.tridiag (toEuclideanLin A) q₁ (k + 1) *ᵥ s = θ • s) :
@@ -432,11 +547,16 @@ private theorem ritz_residual_eq {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm
     congr 1
     field_simp
 
-/-- **(10.1.8).** In the setting of `isRitzPair_lanczos`, for `1 ≤ k` and a unit eigenvector `s`
-of `T_k` (a column of `S_k`) with eigenvalue `θ`, and `y = Q_k s`:
-`A y − θ y = s_k r_k`, hence `‖A y − θ y‖₂ = |β_k| |s_k|` (`β_k` the book's, the
-backbone's `Lanczos.beta _ q₁ (k − 1)`, and `s_k` the last entry of `s`), and `|s_k| ≤ 1`.
-Backbone `Arnoldi.apply_sub_smul_sum_eq`. -/
+/-- **Equation (10.1.8)** of [golub2013matrix]. Let $A \in \mathbb{R}^{n \times n}$ be symmetric,
+let $q_1 \in \mathbb{R}^n$, and let $k \ge 1$. Let $s \in \mathbb{R}^k$ be a unit vector with
+$T_k s = \theta s$, let $y = Q_k s$, and let $s_k$ be the last entry of $s$. Then
+$$Ay - \theta y = s_k r_k, \qquad \|Ay - \theta y\|_2 = |\beta_k| \, |s_k|,$$
+and $|s_k| \le 1$.
+
+The vector $s$ is a column of $S_k$ in the notation of
+`GolubVanLoan.Chapter10.isRitzPair_lanczos`. The coefficient $\beta_k$ is
+`Lanczos.beta (toEuclideanLin A) q₁ (k - 1)`. The statement needs no bound on $k$ by the grade.
+The proof specializes `Arnoldi.apply_sub_smul_sum_eq`. -/
 theorem equation_10_1_8 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
     (q₁ : EuclideanSpace ℝ (Fin n)) {k : ℕ} (hk1 : 1 ≤ k) {θ : ℝ} {s : Fin k → ℝ}
     (hs : ‖(WithLp.toLp 2 s : EuclideanSpace ℝ (Fin k))‖ = 1)
@@ -460,12 +580,17 @@ theorem equation_10_1_8 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
   · rw [← Real.norm_eq_abs, ← hs]
     exact PiLp.norm_apply_le (WithLp.toLp 2 s : EuclideanSpace ℝ (Fin (k + 1))) _
 
-/-- **The Ritz value error bound** (§10.1.4, the display after (10.1.8)): for a unit eigenvector
-`s` of `T_k` with eigenvalue `θ`, some eigenvalue `μ` of `A` satisfies `|θ − μ| ≤ |β_k| |s_k|`.
-The book derives it from Corollary 8.1.6 with `E = −s_k r_k yᵀ`, which is not symmetric, so that
-corollary does not apply as cited; the statement is true by the symmetric residual bound
-`LinearMap.IsSymmetric.exists_hasEigenvalue_dist_le` (some eigenvalue lies within `‖A y − θ y‖` of
-`θ` for a unit `y`), with `equation_10_1_8`. -/
+/-- **Section 10.1.4** of [golub2013matrix], the error bound of a Ritz value (the display after
+(10.1.8)). Let $A \in \mathbb{R}^{n \times n}$ be symmetric, let $q_1 \in \mathbb{R}^n$, and let
+$1 \le k \le m$, the grade of $q_1$. If $s \in \mathbb{R}^k$ is a unit vector with
+$T_k s = \theta s$ and $s_k$ is its last entry, then some eigenvalue $\mu$ of $A$ satisfies
+$$|\theta - \mu| \le |\beta_k| \, |s_k|.$$
+
+The source derives the bound from Corollary 8.1.6 with $E = -s_k r_k y^T$. This $E$ is not
+symmetric, so that corollary does not apply as cited. The bound is true: it follows from
+(10.1.8) and the residual bound for symmetric operators,
+`LinearMap.IsSymmetric.exists_hasEigenvalue_dist_le`, which says that for a unit vector $y$ some
+eigenvalue lies within $\|Ay - \theta y\|$ of $\theta$. -/
 theorem exists_eigenvalue_dist_le_ritz {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
     (q₁ : EuclideanSpace ℝ (Fin n)) {k : ℕ} (hk1 : 1 ≤ k)
     (hk : k ≤ grade (toEuclideanLin A) q₁) {θ : ℝ} {s : Fin k → ℝ}
@@ -490,12 +615,20 @@ theorem exists_eigenvalue_dist_le_ritz {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.
   rw [abs_sub_comm, ← h2]
   exact hle'
 
-/-- **Golub's rank-one modification** (§10.1.4, Golub (1974)): in the setting of (10.1.4), for
-`1 ≤ k ≤ m`, scalars `τ, a, b` and `w = a q_k + b r_k`, `E = τ w wᵀ`,
-`(A + E) Q_k = Q_k (T_k + τ a² e_k e_kᵀ) + (1 + τ a b) r_k e_kᵀ`. Hence if `1 + τ a b = 0`, every
-eigenpair `(θ, y)` of `T̃_k = T_k + τ a² e_k e_kᵀ` gives the eigenpair `(θ, Q_k y)` of `A + E`. The
-book takes `τ ∈ {−1, 1}`; the identity holds for every `τ`. Proof: `wᵀ Q_k = a e_kᵀ` (orthonormal
-columns and `Q_kᵀ r_k = 0`, (10.1.6)), so `E Q_k = τ a w e_kᵀ`. -/
+/-- **Section 10.1.4** of [golub2013matrix], Golub's rank-one modification. Let
+$A \in \mathbb{R}^{n \times n}$ be symmetric, let $q_1 \in \mathbb{R}^n$, and let
+$1 \le k \le m$, the grade of $q_1$. For real $\tau$, $a$ and $b$, let $w = a q_k + b r_k$,
+$E = \tau w w^T$ and $\tilde T_k = T_k + \tau a^2 e_k e_k^T$. Then
+$$(A + E) Q_k = Q_k \tilde T_k + (1 + \tau a b) r_k e_k^T.$$
+Hence, if $1 + \tau a b = 0$, then for every eigenpair $\tilde T_k y = \theta y$ with
+$y \neq 0$, the vector $Q_k y$ is nonzero and $(A + E) Q_k y = \theta Q_k y$.
+
+**Generalization.** The source takes $\tau \in \{-1, 1\}$. The identity holds for every real
+$\tau$.
+
+The modification is due to Golub (1974). In the Lean statement $q_k$ is $Q_k e_k$. The proof
+uses $w^T Q_k = a e_k^T$, which follows from the orthonormal columns of $Q_k$ and from
+$Q_k^T r_k = 0$ (10.1.6); then $E Q_k = \tau a w e_k^T$. -/
 theorem golub_rankOne_modification {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
     (q₁ : EuclideanSpace ℝ (Fin n)) {k : ℕ} (hk1 : 1 ≤ k) (hk : k ≤ grade (toEuclideanLin A) q₁)
     (τ a b : ℝ) :
@@ -531,13 +664,14 @@ theorem golub_rankOne_modification {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSy
     have := congrArg (Qᵀ *ᵥ ·) h
     simpa only [mulVec_mulVec, hQ, one_mulVec, mulVec_zero] using this
 
-/-- The diagonal of Golub's modified tridiagonal matrix `T_k + c e_k e_kᵀ`: the Lanczos `α_j`, with
-`c` added to the last one (`0`-based index `k − 1`). -/
+/-- The diagonal of $T_k + c e_k e_k^T$: the Lanczos coefficients $\alpha_j$, with $c$ added to the
+last one. -/
 private noncomputable def rankOneDiag (A : Matrix (Fin n) (Fin n) ℝ)
     (q₁ : EuclideanSpace ℝ (Fin n)) (k : ℕ) (c : ℝ) : ℕ → ℝ :=
   fun j => Lanczos.alpha (toEuclideanLin A) q₁ j + if j + 1 = k then c else 0
 
-/-- `T_k + c e_k e_kᵀ` is the symmetric tridiagonal matrix of `rankOneDiag` and the Lanczos `β`. -/
+/-- The matrix $T_k + c e_k e_k^T$ is the symmetric tridiagonal matrix with the diagonal
+`rankOneDiag` and the Lanczos coefficients $\beta_j$ off the diagonal. -/
 private theorem tridiag_add_eq_symmTridiagonalOf (A : Matrix (Fin n) (Fin n) ℝ)
     (q₁ : EuclideanSpace ℝ (Fin n)) (k : ℕ) (c : ℝ) :
     Lanczos.tridiag (toEuclideanLin A) q₁ k +
@@ -559,7 +693,8 @@ private theorem tridiag_add_eq_symmTridiagonalOf (A : Matrix (Fin n) (Fin n) ℝ
       · rw [ite_eq_right hi, zero_mul]
     rw [h0, mul_zero, add_zero]
 
-/-- Golub's modified tridiagonal matrix `T_k + c e_k e_kᵀ` is symmetric. -/
+/-- For any $A$, $q_1$, $k$ and $c \in \mathbb{R}$, Golub's modified tridiagonal matrix
+$T_k + c e_k e_k^T$ is symmetric. -/
 theorem isSymm_tridiag_add_vecMulVec_lastVec (A : Matrix (Fin n) (Fin n) ℝ)
     (q₁ : EuclideanSpace ℝ (Fin n)) (k : ℕ) (c : ℝ) :
     (Lanczos.tridiag (toEuclideanLin A) q₁ k +
@@ -567,16 +702,25 @@ theorem isSymm_tridiag_add_vecMulVec_lastVec (A : Matrix (Fin n) (Fin n) ℝ)
   (Lanczos.tridiag_isSymm _ _ _).add
     ((Matrix.IsSymm.ext fun i j => by simp only [vecMulVec_apply, mul_comm]).smul c)
 
-/-- **Golub's bracketing intervals** (§10.1.4, "Using Theorem 8.1.8, it can be shown that the
-interval `[λ_i(T̃_k), λ_{i−1}(T̃_k)]` contains an eigenvalue of `A` for `i = 2 : k`"): with
-`T̃_k = T_k + τ a² e_k e_kᵀ` and `1 + τ a b = 0`, for `1 ≤ k ≤ m` and every `0`-based `i ≥ 1`, some
-eigenvalue `μ` of `A` satisfies `λ_{i+1}(T̃_k) ≤ μ ≤ λ_i(T̃_k)` (`Chapter08.symmEigenvalue`, sorted
-decreasingly). Also the determinant formula `det(T̃_k − λI) = (α_k + τ a² − λ) p_{k−1}(λ) −
-β_{k−1}² p_{k−2}(λ)`, `p_i(λ) = det(T_i − λ I_i)` (`k ≥ 2`). Proof: `T̃_k` is unreduced
-(`β_j ≠ 0` below the grade), so its eigenvalues are simple (`Sturm.strictAnti_eigenvalues`); each is
-an eigenvalue of `A + τ w wᵀ` (`golub_rankOne_modification`), and between two distinct eigenvalues
-of `A + τ w wᵀ` lies an eigenvalue of `A = (A + τ w wᵀ) − τ w wᵀ` by the rank-one interlacing of
-Theorem 8.1.8. The determinant is (8.4.2) (`Chapter08.equation_8_4_2`) for `T̃_k`. -/
+/-- **Section 10.1.4** of [golub2013matrix], Golub's bracketing intervals. Let
+$A \in \mathbb{R}^{n \times n}$ be symmetric, let $q_1 \in \mathbb{R}^n$, let $1 \le k \le m$,
+the grade of $q_1$, and let $\tau$, $a$ and $b$ be real. Let
+$\tilde T_k = T_k + \tau a^2 e_k e_k^T$, with eigenvalues $\lambda_1(\tilde T_k) \ge \dots \ge
+\lambda_k(\tilde T_k)$. Then the following hold.
+* If $1 + \tau a b = 0$, then for $i = 2, \dots, k$ the interval $[\lambda_i(\tilde T_k),
+  \lambda_{i-1}(\tilde T_k)]$ contains an eigenvalue of $A$.
+* If $k \ge 2$, then for every real $\lambda$, with $p_i(\lambda) = \det(T_i - \lambda I_i)$,
+$$\det(\tilde T_k - \lambda I) = (\alpha_k + \tau a^2 - \lambda) p_{k-1}(\lambda) -
+  \beta_{k-1}^2 p_{k-2}(\lambda).$$
+
+The first claim is the source's "Using Theorem 8.1.8, it can be shown that the interval
+$[\lambda_i(\tilde T_k), \lambda_{i-1}(\tilde T_k)]$ contains an eigenvalue of $A$ for
+$i = 2:k$". The eigenvalues of $\tilde T_k$ are `GolubVanLoan.Chapter08.symmEigenvalue`, sorted
+decreasingly and 0-based. The matrix $\tilde T_k$ is unreduced below the grade, so its
+eigenvalues are simple (`Sturm.strictAnti_eigenvalues`); each of them is an eigenvalue of
+$A + \tau w w^T$ by `GolubVanLoan.Chapter10.golub_rankOne_modification`, and the rank-one
+interlacing of Theorem 8.1.8 puts an eigenvalue of $A$ between two of them. The determinant
+formula is (8.4.2), `GolubVanLoan.Chapter08.equation_8_4_2`, for $\tilde T_k$. -/
 theorem golub_rankOne_bracket {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
     (q₁ : EuclideanSpace ℝ (Fin n)) {k : ℕ} (hk1 : 1 ≤ k) (hk : k ≤ grade (toEuclideanLin A) q₁)
     (τ a b : ℝ) :
@@ -668,8 +812,9 @@ section Schur
 
 variable {A Z : Matrix (Fin n) (Fin n) ℝ} {lam : Fin n → ℝ}
 
-/-- The columns `z_1, …, z_n` of an orthogonal `Z` (`Matrix.euclideanCol`), as an orthonormal basis
-of `ℝⁿ`: the eigenvectors of a Schur decomposition `Zᵀ A Z = diag(λ)` (10.1.9). -/
+/-- The columns $z_1, \dots, z_n$ of an orthogonal matrix $Z \in \mathbb{R}^{n \times n}$, as an
+orthonormal basis of $\mathbb{R}^n$. For a Schur decomposition
+$Z^T A Z = \operatorname{diag}(\lambda)$ (10.1.9), these are eigenvectors of $A$. -/
 noncomputable def schurBasis (hZ : Z ∈ orthogonalGroup (Fin n) ℝ) :
     OrthonormalBasis (Fin n) ℝ (EuclideanSpace ℝ (Fin n)) :=
   OrthonormalBasis.mk (orthonormal_euclideanCol (by
@@ -677,12 +822,15 @@ noncomputable def schurBasis (hZ : Z ∈ orthogonalGroup (Fin n) ℝ) :
     (span_range_euclideanCol_eq_top
       (isUnit_det_of_left_inverse ((mem_orthogonalGroup_iff' _ ℝ).1 hZ))).ge
 
+/-- The $i$-th vector of the basis `GolubVanLoan.Chapter10.schurBasis` is the column $z_i$ of $Z$.
+-/
 @[simp]
 theorem schurBasis_apply (hZ : Z ∈ orthogonalGroup (Fin n) ℝ) (i : Fin n) :
     schurBasis hZ i = euclideanCol Z i := by
   simp only [schurBasis, OrthonormalBasis.coe_mk]
 
-/-- The columns of the Schur factor are eigenvectors: `A z_i = λ_i z_i`. -/
+/-- If $Z \in \mathbb{R}^{n \times n}$ is orthogonal and $Z^T A Z = \operatorname{diag}(\lambda)$,
+then the columns of $Z$ are eigenvectors of $A$: $A z_i = \lambda_i z_i$. -/
 theorem toEuclideanLin_euclideanCol_of_schur (hZ : Z ∈ orthogonalGroup (Fin n) ℝ)
     (hZA : Zᵀ * A * Z = diagonal lam) (i : Fin n) :
     toEuclideanLin A (euclideanCol Z i) = lam i • euclideanCol Z i := by
@@ -691,8 +839,8 @@ theorem toEuclideanLin_euclideanCol_of_schur (hZ : Z ∈ orthogonalGroup (Fin n)
     ((isUnit_iff_isUnit_det Z).2 (isUnit_det_of_left_inverse hZZ))
     (by rwa [inv_eq_left_inv hZZ]) i
 
-/-- A matrix with a Schur decomposition `Zᵀ A Z = diag(λ)`, `Z` orthogonal, is symmetric:
-`A = Z diag(λ) Zᵀ`. -/
+/-- If $Z \in \mathbb{R}^{n \times n}$ is orthogonal and $Z^T A Z = \operatorname{diag}(\lambda)$,
+then $A = Z \operatorname{diag}(\lambda) Z^T$ is symmetric. -/
 theorem isSymm_of_schur (hZ : Z ∈ orthogonalGroup (Fin n) ℝ)
     (hZA : Zᵀ * A * Z = diagonal lam) : A.IsSymm := by
   have hZZ : Z * Zᵀ = 1 := (mem_orthogonalGroup_iff _ ℝ).1 hZ
@@ -703,16 +851,20 @@ theorem isSymm_of_schur (hZ : Z ∈ orthogonalGroup (Fin n) ℝ)
   rw [hA, Matrix.IsSymm, transpose_mul, transpose_mul, transpose_transpose, diagonal_transpose,
     Matrix.mul_assoc]
 
-/-- The sorted eigenvalues of `A` are the `λ` of any Schur decomposition with
-`λ_1 ≥ ⋯ ≥ λ_n` (`LinearMap.IsSymmetric.eigenvalues_eq_of_apply_eq_ofReal_smul`). -/
+/-- Let $A \in \mathbb{R}^{n \times n}$ be symmetric, let $Z$ be orthogonal, and let
+$Z^T A Z = \operatorname{diag}(\lambda)$ with $\lambda_1 \ge \dots \ge \lambda_n$. Then
+$\lambda$ is the list of the eigenvalues of $A$ in decreasing order, as given by
+`LinearMap.IsSymmetric.eigenvalues`. The proof uses
+`LinearMap.IsSymmetric.eigenvalues_eq_of_apply_eq_ofReal_smul`. -/
 theorem eigenvalues_eq_of_schur (hA : A.IsSymm) (hZ : Z ∈ orthogonalGroup (Fin n) ℝ)
     (hZA : Zᵀ * A * Z = diagonal lam) (hlam : Antitone lam) :
     hA.isSymmetric_toEuclideanLin.eigenvalues finrank_euclideanSpace_fin = lam :=
   hA.isSymmetric_toEuclideanLin.eigenvalues_eq_of_apply_eq_ofReal_smul _ (schurBasis hZ)
     (fun i => by rw [schurBasis_apply]; exact toEuclideanLin_euclideanCol_of_schur hZ hZA i) hlam
 
-/-- The Schur decomposition of `−A`, with the order reversed: `Z' = [z_n ⋯ z_1]` and
-`λ' = (−λ_n, …, −λ_1)`, again decreasing when `λ` is. -/
+/-- If $Z$ is orthogonal and $Z^T A Z = \operatorname{diag}(\lambda)$, then
+$Z' = [z_n | \cdots | z_1]$ is orthogonal and $Z'^T (-A) Z' = \operatorname{diag}(-\lambda_n,
+\dots, -\lambda_1)$. The new diagonal is decreasing when $\lambda$ is. -/
 theorem schur_neg (hZ : Z ∈ orthogonalGroup (Fin n) ℝ) (hZA : Zᵀ * A * Z = diagonal lam) :
     Z.submatrix id Fin.rev ∈ orthogonalGroup (Fin n) ℝ ∧
       (Z.submatrix id Fin.rev)ᵀ * (-A) * Z.submatrix id Fin.rev =
@@ -736,8 +888,9 @@ end Schur
 
 /-! ### The Kaniel–Paige–Saad bounds (§10.1.5–10.1.6) -/
 
-/-- The quadratic form of an operator with an orthonormal eigenbasis, minus its largest eigenvalue,
-is bounded by the spread: `|xᵀAx − λ_1 ‖x‖²| ≤ (λ_1 − λ_n) ‖x‖²`. -/
+/-- For an operator with an orthonormal eigenbasis whose largest and smallest eigenvalues are
+$\lambda_{\max}$ and $\lambda_{\min}$, every $x$ satisfies $|x^T A x - \lambda_{\max} \|x\|^2|
+\le (\lambda_{\max} - \lambda_{\min}) \|x\|^2$. -/
 private theorem abs_re_inner_sub_top_le {E : Type*} [NormedAddCommGroup E]
     [InnerProductSpace ℝ E] {T : E →ₗ[ℝ] E} {N : ℕ} (b : OrthonormalBasis (Fin N) ℝ E)
     {lam : Fin N → ℝ} (hb : ∀ i, T (b i) = lam i • b i) (i0 il : Fin N)
@@ -756,8 +909,9 @@ private theorem abs_re_inner_sub_top_le {E : Type*} [NormedAddCommGroup E]
   rw [abs_sub_comm, abs_of_nonneg hnn]
   exact hle
 
-/-- The quadratic form minus the smallest eigenvalue is bounded by the spread:
-`|xᵀAx − λ_n ‖x‖²| ≤ (λ_1 − λ_n) ‖x‖²` — `abs_re_inner_sub_top_le` for `−A`. -/
+/-- For an operator with an orthonormal eigenbasis whose largest and smallest eigenvalues are
+$\lambda_{\max}$ and $\lambda_{\min}$, every $x$ satisfies $|x^T A x - \lambda_{\min} \|x\|^2|
+\le (\lambda_{\max} - \lambda_{\min}) \|x\|^2$. -/
 private theorem abs_re_inner_sub_bot_le {E : Type*} [NormedAddCommGroup E]
     [InnerProductSpace ℝ E] {T : E →ₗ[ℝ] E} {N : ℕ} (b : OrthonormalBasis (Fin N) ℝ E)
     {lam : Fin N → ℝ} (hb : ∀ i, T (b i) = lam i • b i) (i0 il : Fin N)
@@ -772,7 +926,8 @@ private theorem abs_re_inner_sub_bot_le {E : Type*} [NormedAddCommGroup E]
   rw [abs_le] at h ⊢
   constructor <;> linarith [h.1, h.2]
 
-/-- The Ritz values of `−A` are those of `A`, negated and in reverse order (below the grade). -/
+/-- If $\dim \mathcal{K}(A, q_1, k) = k$, the Ritz values of $-A$ are those of $A$, negated and in
+reverse order. -/
 private theorem ritzValues_neg {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
     {q₁ : EuclideanSpace ℝ (Fin n)} {k : ℕ}
     (hk : Module.finrank ℝ (Krylov.subspace (toEuclideanLin A) q₁ k) = k) (i : Fin k) :
@@ -791,19 +946,32 @@ private theorem ritzValues_neg {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
       (compression.neg T (Krylov.subspace T q₁ k)) hk,
     (compression.isSymmetric T (Krylov.subspace T q₁ k) hT).eigenvalues_neg hk]
 
-/-- **Theorem 10.1.2 (Kaniel–Paige).** Let `A ∈ ℝ^{n×n}` be symmetric with Schur decomposition
-`Zᵀ A Z = diag(λ_1, …, λ_n)` (10.1.9), `λ_1 ≥ ⋯ ≥ λ_n`, `Z = [z_1 ⋯ z_n]` orthogonal (any such
-decomposition; `z_i` is `Matrix.euclideanCol Z`), and suppose `k` steps of the Lanczos iteration
-have been performed (`dim 𝒦(A, q₁, k) = k`). If `θ_1` is the largest eigenvalue of `T_k`
-(`Lanczos.ritzValues`), then `λ_1 ≥ θ_1 ≥ λ_1 − (λ_1 − λ_n) (tan φ_1 / c_{k−1}(1 + 2ρ_1))²`, where
-`cos φ_1 = |q₁ᵀ z_1|`, `ρ_1 = (λ_1 − λ_2)/(λ_2 − λ_n)` (10.1.10) and `c_{k−1}` is the Chebyshev
-polynomial of degree `k − 1`. The symmetry of `A` follows from the decomposition
-(`isSymm_of_schur`). The book's implicit hypothesis is `q₁ᵀ z_1 ≠ 0` (so `tan φ_1` is
-finite); **no gap hypothesis**: when `λ_2 = λ_n` or `λ_2 = λ_1`, `ρ_1` is `0` (Lean's `x / 0 = 0`),
-`c_{k−1}(1) = 1`, and the claim is the `k`-free bound of the largest Ritz value
-(`LinearMap.IsSymmetric.ritz_value_error_le` with the angle to `q₁`). Otherwise `λ_n < λ_2 < λ_1`
-and this is the backbone's `Lanczos.kaniel_paige_saad` for the eigenbasis `z` at the first index
-(empty deflation product). -/
+/-- **Theorem 10.1.2** of [golub2013matrix] (Kaniel–Paige). Let $A \in \mathbb{R}^{n \times n}$,
+with $n \ge 2$, have the Schur decomposition $Z^T A Z = \operatorname{diag}(\lambda_1, \dots,
+\lambda_n)$ (10.1.9), with $Z = [z_1 | \cdots | z_n]$ orthogonal and
+$\lambda_1 \ge \dots \ge \lambda_n$. Let $q_1 \in \mathbb{R}^n$ be a unit vector with
+$q_1^T z_1 \neq 0$, and suppose that $k \ge 1$ steps of the Lanczos iteration have been
+performed, that is, $\dim \mathcal{K}(A, q_1, k) = k$. Let $\theta_1$ be the largest eigenvalue
+of $T_k$, let $\phi_1$ be the angle between $z_1$ and $\operatorname{span}\{q_1\}$, and let
+$\rho_1 = (\lambda_1 - \lambda_2)/(\lambda_2 - \lambda_n)$ as in (10.1.10). Then
+$\cos\phi_1 = |q_1^T z_1|$ and
+$$\lambda_1 \ge \theta_1 \ge \lambda_1 - (\lambda_1 - \lambda_n)
+  \left(\frac{\tan\phi_1}{c_{k-1}(1 + 2\rho_1)}\right)^2,$$
+where $c_{k-1}$ is the Chebyshev polynomial of degree $k - 1$.
+
+**Reading.** The source leaves the hypothesis $q_1^T z_1 \neq 0$ implicit; it makes $\tan\phi_1$
+finite. The source's $\rho_1$ is undefined when $\lambda_2 = \lambda_n$. The statement takes
+$\rho_1 = 0$ there, so it needs no gap hypothesis. In that case, and when
+$\lambda_2 = \lambda_1$, $c_{k-1}(1) = 1$ and the claim is the bound of the largest Ritz value
+that does not depend on $k$.
+
+The statement holds for every Schur decomposition, and the symmetry of $A$ follows from the
+decomposition (`GolubVanLoan.Chapter10.isSymm_of_schur`). The Ritz value $\theta_1$ is
+`Lanczos.ritzValues (toEuclideanLin A) q₁ k` at index $0$, the angle is `Submodule.angle` for
+$\operatorname{span}\{q_1\}$, and $c_{k-1}$ is `Polynomial.Chebyshev.T ℝ (k - 1)`. If
+$\lambda_n < \lambda_2 < \lambda_1$, the proof specializes `Lanczos.kaniel_paige_saad` for the
+eigenbasis $z$ at the first index, with an empty deflation product. In the degenerate cases it
+uses `LinearMap.IsSymmetric.ritz_value_error_le`. -/
 theorem theorem_10_1_2 {A Z : Matrix (Fin n) (Fin n) ℝ} {lam : Fin n → ℝ}
     (hZ : Z ∈ orthogonalGroup (Fin n) ℝ) (hZA : Zᵀ * A * Z = diagonal lam) (hlam : Antitone lam)
     (hn : 2 ≤ n) {q₁ : EuclideanSpace ℝ (Fin n)} (hq₁ : ‖q₁‖ = 1) {k : ℕ} (hk0 : 1 ≤ k)
@@ -897,13 +1065,23 @@ theorem theorem_10_1_2 {A Z : Matrix (Fin n) (Fin n) ℝ} {lam : Fin n → ℝ}
       exact h.2
     linarith [h2, hsq]
 
-/-- **Corollary 10.1.3.** In the setting of Theorem 10.1.2, with `θ_k` the smallest eigenvalue of
-`T_k`, `ρ_n = (λ_{n−1} − λ_n)/(λ_1 − λ_{n−1})` and `cos φ_n = |q₁ᵀ z_n|` (the book omits the
-absolute value): `λ_n ≤ θ_k ≤ λ_n + (λ_1 − λ_n) (tan φ_n / c_{k−1}(1 + 2ρ_n))²`. As in the book,
-"apply Theorem 10.1.2 with `A` replaced by `−A`": the Schur decomposition of `−A` with the order
-reversed (`schur_neg`), whose first eigenvector is `z_n`, and the Ritz values of `−A`, which are
-those of `A` negated and reversed (`Krylov.subspace_neg`, `LinearMap.IsSymmetric.eigenvalues_neg`).
-No gap hypothesis is needed. -/
+/-- **Corollary 10.1.3** of [golub2013matrix]. Let $A \in \mathbb{R}^{n \times n}$, with $n \ge 2$,
+have the Schur decomposition $Z^T A Z = \operatorname{diag}(\lambda_1, \dots, \lambda_n)$, with
+$Z = [z_1 | \cdots | z_n]$ orthogonal and $\lambda_1 \ge \dots \ge \lambda_n$. Let
+$q_1 \in \mathbb{R}^n$ be a unit vector with $q_1^T z_n \neq 0$, and let $k \ge 1$ with
+$\dim \mathcal{K}(A, q_1, k) = k$. Let $\theta_k$ be the smallest eigenvalue of $T_k$, let
+$\phi_n$ be the angle between $z_n$ and $\operatorname{span}\{q_1\}$, and let $\rho_n =
+(\lambda_{n-1} - \lambda_n)/(\lambda_1 - \lambda_{n-1})$. Then $\cos\phi_n = |q_1^T z_n|$ and
+$$\lambda_n \le \theta_k \le \lambda_n + (\lambda_1 - \lambda_n)
+  \left(\frac{\tan\phi_n}{c_{k-1}(1 + 2\rho_n)}\right)^2.$$
+
+**Typo.** The source writes $\cos\phi_n = q_1^T z_n$, without the absolute value.
+
+As in the source, the proof applies Theorem 10.1.2 with $A$ replaced by $-A$. The Schur
+decomposition of $-A$ with the order reversed (`GolubVanLoan.Chapter10.schur_neg`) has $z_n$ as
+its first vector, and the Ritz values of $-A$ are those of $A$, negated and reversed
+(`Krylov.subspace_neg`, `LinearMap.IsSymmetric.eigenvalues_neg`). No gap hypothesis is needed:
+$\rho_n = 0$ when $\lambda_1 = \lambda_{n-1}$. -/
 theorem corollary_10_1_3 {A Z : Matrix (Fin n) (Fin n) ℝ} {lam : Fin n → ℝ}
     (hZ : Z ∈ orthogonalGroup (Fin n) ℝ) (hZA : Zᵀ * A * Z = diagonal lam) (hlam : Antitone lam)
     (hn : 2 ≤ n) {q₁ : EuclideanSpace ℝ (Fin n)} (hq₁ : ‖q₁‖ = 1) {k : ℕ} (hk0 : 1 ≤ k)
@@ -952,14 +1130,25 @@ theorem corollary_10_1_3 {A Z : Matrix (Fin n) (Fin n) ℝ} {lam : Fin n → ℝ
   simp only [φₙ]
   linarith
 
-/-- **Theorem 10.1.4 (Kaniel–Paige–Saad).** In the setting of Theorem 10.1.2 (any Schur
-decomposition `Zᵀ A Z = diag(λ)`, `λ_1 ≥ ⋯ ≥ λ_n`), for `1 ≤ i ≤ k` (`i` is `0`-based here) with
-`θ_i = λ_i(T_k)`: `λ_i ≥ θ_i ≥ λ_i − (λ_1 − λ_n) (κ_i tan φ_i / c_{k−i}(1 + 2ρ_i))²`, where
-`ρ_i = (λ_i − λ_{i+1})/(λ_{i+1} − λ_n)`, `κ_i = ∏_{j<i} (θ_j − λ_n)/(θ_j − λ_i)` and
-`cos φ_i = |q₁ᵀ z_i|`. The hypotheses make the quantities meaningful: `λ_n < λ_{i+1} < λ_i`,
-`θ_j > λ_i` for `j < i` (so `κ_i` is defined) and `q₁ᵀ z_i ≠ 0`. Backbone
-`Lanczos.kaniel_paige_saad` for the eigenbasis `z`, whose `κ_i` is built from the Ritz values
-exactly as here, with `Lanczos.ritzValues_eq_eigenvalues_compression`. -/
+/-- **Theorem 10.1.4** of [golub2013matrix] (Kaniel–Paige–Saad). Let $A \in \mathbb{R}^{n \times n}$
+have the Schur decomposition $Z^T A Z = \operatorname{diag}(\lambda_1, \dots, \lambda_n)$, with
+$Z = [z_1 | \cdots | z_n]$ orthogonal and $\lambda_1 \ge \dots \ge \lambda_n$. Let
+$q_1 \in \mathbb{R}^n$ with $\dim \mathcal{K}(A, q_1, k) = k$, and let
+$\theta_1 \ge \dots \ge \theta_k$ be the eigenvalues of $T_k$. Let $1 \le i \le k$ with $i < n$,
+and assume that $\lambda_n < \lambda_{i+1} < \lambda_i$, that $\theta_j > \lambda_i$ for
+$j < i$, and that $q_1^T z_i \neq 0$. Let $\phi_i$ be the angle between $z_i$ and
+$\operatorname{span}\{q_1\}$, and let
+$$\rho_i = \frac{\lambda_i - \lambda_{i+1}}{\lambda_{i+1} - \lambda_n}, \qquad \kappa_i =
+  \prod_{j=1}^{i-1} \frac{\theta_j - \lambda_n}{\theta_j - \lambda_i}.$$
+Then
+$$\lambda_i \ge \theta_i \ge \lambda_i - (\lambda_1 - \lambda_n) \left(\frac{\kappa_i
+  \tan\phi_i}{c_{k-i}(1 + 2\rho_i)}\right)^2.$$
+
+The hypotheses make every quantity of the bound defined. For a unit $q_1$,
+$\cos\phi_i = |q_1^T z_i|$, as in the source. In the Lean statement $i$ is 0-based, so the
+source's $\theta_i$ is `Lanczos.ritzValues (toEuclideanLin A) q₁ k i` for the Lean index $i$.
+The proof specializes `Lanczos.kaniel_paige_saad` for the eigenbasis $z$, whose $\kappa_i$ is
+built from the Ritz values as here, with `Lanczos.ritzValues_eq_eigenvalues_compression`. -/
 theorem theorem_10_1_4 {A Z : Matrix (Fin n) (Fin n) ℝ} {lam : Fin n → ℝ}
     (hZ : Z ∈ orthogonalGroup (Fin n) ℝ) (hZA : Zᵀ * A * Z = diagonal lam) (hlam : Antitone lam)
     {q₁ : EuclideanSpace ℝ (Fin n)} {k : ℕ}
@@ -998,14 +1187,26 @@ theorem theorem_10_1_4 {A Z : Matrix (Fin n) (Fin n) ℝ} {lam : Fin n → ℝ}
   rw [htan]
   constructor <;> linarith [hkps.1, hkps.2]
 
-/-- **(10.1.11), the power-method comparison.** For a Schur decomposition `Zᵀ A Z = diag(λ)` with
-`λ_1 ≥ ⋯ ≥ λ_n ≥ 0`, `q₁ᵀ z_1 ≠ 0`, `v = A^{k−1} q₁` and `γ_1 = vᵀAv / vᵀv` (the Rayleigh quotient
-of `v`): `λ_1 ≥ γ_1 ≥ λ_1 − (λ_1 − λ_n) tan²φ_1 (λ_2/λ_1)^{2(k−1)}`. "Set `p(x) = x^{k−1}` in the
-proof of Theorem 10.1.2": `γ_1` is the Rayleigh quotient of the projection of `z_1` on `span {v}`
-(`LinearMap.IsSymmetric.abs_sub_rayleighQuotient_starProjection_le`), and the angle between `z_1`
-and `span {v}` has tangent at most `tan φ_1 (λ_2/λ_1)^{k−1}` by the eigen-expansion of
-`A^{k−1} q₁` (`OrthonormalBasis.norm_aeval_apply_le_of_forall_repr`); `λ_n ≥ 0` gives
-`|λ_i| ≤ λ_2` for `i ≥ 2`. When `λ_1 = 0` every eigenvalue vanishes and both sides are `0`. -/
+/-- **Equation (10.1.11)** of [golub2013matrix], the comparison with the power method. Let
+$A \in \mathbb{R}^{n \times n}$, with $n \ge 2$, have the Schur decomposition $Z^T A Z =
+\operatorname{diag}(\lambda_1, \dots, \lambda_n)$, with $Z = [z_1 | \cdots | z_n]$ orthogonal
+and $\lambda_1 \ge \dots \ge \lambda_n \ge 0$. Let $q_1 \in \mathbb{R}^n$ with
+$q_1^T z_1 \neq 0$, and let $\phi_1$ be the angle between $z_1$ and
+$\operatorname{span}\{q_1\}$. For $k \ge 1$ let $v = A^{k-1} q_1$ and let
+$\gamma_1 = v^T A v / v^T v$ be the Rayleigh quotient of $v$. Then
+$$\lambda_1 \ge \gamma_1 \ge \lambda_1 - (\lambda_1 - \lambda_n) \tan^2\phi_1
+  \left(\frac{\lambda_2}{\lambda_1}\right)^{2(k-1)}.$$
+
+The Lean statement is for every natural number $k$; for $k = 0$ the exponent $k - 1$ is $0$, so
+this case is the case $k = 1$. The vector $q_1$ need not be a unit vector. When $\lambda_1 = 0$,
+every eigenvalue is $0$, the quotient $\lambda_2 / \lambda_1$ is $0$ (Lean's $x / 0 = 0$), and
+both bounds are $0$. The source's proof is "set $p(x) = x^{k-1}$ in the proof of Theorem
+10.1.2". Here $\gamma_1$ is compared with the Rayleigh quotient of the projection of $z_1$ on
+$\operatorname{span}\{v\}$ (`LinearMap.IsSymmetric.abs_sub_rayleighQuotient_starProjection_le`),
+and the tangent of the angle between $z_1$ and $\operatorname{span}\{v\}$ is at most
+$\tan\phi_1 (\lambda_2/\lambda_1)^{k-1}$ by the eigen-expansion of $A^{k-1} q_1$
+(`OrthonormalBasis.norm_aeval_apply_le_of_forall_repr`); the hypothesis $\lambda_n \ge 0$ gives
+$|\lambda_i| \le \lambda_2$ for $i \ge 2$. -/
 theorem equation_10_1_11 {A Z : Matrix (Fin n) (Fin n) ℝ} {lam : Fin n → ℝ}
     (hZ : Z ∈ orthogonalGroup (Fin n) ℝ) (hZA : Zᵀ * A * Z = diagonal lam) (hlam : Antitone lam)
     (hn : 2 ≤ n) {q₁ : EuclideanSpace ℝ (Fin n)} (k : ℕ) (hnonneg : 0 ≤ lam ⟨n - 1, by omega⟩)

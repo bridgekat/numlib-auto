@@ -7,52 +7,147 @@ import Numlib.FloatingPoint.LU
 import NumlibSurface.GolubVanLoan.Chapter03.Section01
 
 /-!
-# Golub–Van Loan §3.2: the LU factorization
+# Golub and Van Loan, Section 3.2: The LU factorization
 
-Surface file for Gene H. Golub and Charles F. Van Loan, *Matrix Computations*, 4th edition, §3.2:
-Gauss transformations and their rounding errors (§3.2.1–3.2.3), Gaussian elimination as the
-factorization `A = L U` ((3.2.3)–(3.2.7), Theorem 3.2.1), the outer product LU of Algorithm 3.2.1
-with its rounding bridge into the backbone's `FloatingPoint.RoundsLU`, the rectangular factorization
-(§3.2.10), the gaxpy LU of Algorithm 3.2.2 with its bridge, the Schur complement (3.2.9) and the
-block LU Algorithms 3.2.3–3.2.4.
+This module formalizes §3.2 of [golub2013matrix], Gaussian elimination as the factorization $A = LU$
+of $A \in \mathbb{R}^{n \times n}$, with $L$ unit lower triangular and $U$ upper triangular. A Gauss
+transformation is a matrix $M_k = I_n - \tau e_k^T$ whose Gauss vector $\tau$ vanishes in its first
+$k$ components. Gaussian elimination applies the Gauss transformations $M_1, \dots, M_{n-1}$ that
+zero the subdiagonal columns one after the other, so that $M_{n-1} \cdots M_1 A = U$ and
+$L = M_1^{-1} \cdots M_{n-1}^{-1}$ ((3.2.3)–(3.2.7)). Theorem 3.2.1 says that the factorization
+exists if the leading principal submatrices $A(1{:}k, 1{:}k)$ are nonsingular for
+$k = 1, \dots, n-1$, that it is then unique, and that $\det A = u_{11} \cdots u_{nn}$.
 
-## Design
+The module defines the outer product LU (Algorithm 3.2.1) and the gaxpy LU (Algorithm 3.2.2) as
+programs, with rounding bridges into the relation `FloatingPoint.RoundsLU` of
+`Numlib.FloatingPoint.LU` and exact specifications. It also treats the rounding of one Gauss
+transformation (§3.2.3), the rectangular LU factorization and its outer product algorithm (§3.2.10,
+(3.2.8)), the block factorization through the Schur complement (3.2.9), and the recursive and
+nonrecursive block LU Algorithms 3.2.3 and 3.2.4. The exact statements specialize the backbone
+modules `Numlib.LinearAlgebra.Matrix.LU` and `Numlib.LinearAlgebra.Matrix.LU.Elimination`.
 
-Indices are 0-based: the book's step `k = 1:n-1` is `k : Fin n` with a harmless empty last step,
-its `A^{(k)}` (the matrix after `k - 1` steps in (3.2.3)) is `gaussStage A (k - 1) =
-Matrix.gemStage A (k - 1)`, and "`A(1:k,1:k)` is nonsingular for `k = 1:n-1`" is
-`∀ k : Fin n, (A.strictLeadingPrincipalSubmatrix k).det ≠ 0` (the order-`0` block is empty).
+## Main definitions
 
-The Gauss transformation `M_k = I - τ e_kᵀ` is `gaussTransformation τ k`; built from the column of a
-matrix by the Gauss vector `gaussVector`, it is the backbone's `Matrix.gaussTransform`
-(`gaussTransformation_gaussVector_eq_gaussTransform`), through which (3.2.3)–(3.2.7) are the
-backbone's statements about `Matrix.gemStage` and `Matrix.gemLower`.
-
-Algorithm 3.2.1 is a program in the conventions of `NumlibSurface/GolubVanLoan` overwriting the
-matrix entry by entry (`Matrix.updateRow A i (Function.update (A i) j a)`); its packed output is
-read by `packedL F = 1 + F.strictLower` and `packedU F = F - F.strictLower`. Its bridge
-`algorithm_3_2_1_rounds` puts every run in the relational model into `FloatingPoint.RoundsLU`, and
-the exact specification is read off the bridge at the exact model
-(`FloatingPoint.roundsLU_exact_iff`).
-The loops write one matrix entry per step, reading only entries outside the loop's own positions;
-`SetM.mem_run_foldlM_updateRow_update_of_nodup` gives the run set of such a loop, entry by entry.
+* §3.2.1, `GolubVanLoan.Chapter03.gaussVector`: the Gauss vector $\tau$ of $v$ at $k$, with
+  $\tau_i = v_i / v_k$ below $k$.
+* (3.2.2), `GolubVanLoan.Chapter03.gaussTransformation`: the matrix $M_k = I_n - \tau e_k^T$.
+* §3.2.1, `GolubVanLoan.Chapter03.IsGaussTransformation`: $M = I_n - \tau e_k^T$ with
+  $\tau_1 = \dots = \tau_k = 0$.
+* §3.2.2, `GolubVanLoan.Chapter03.gaussUpdate`: the computed Gauss vector and the computed product
+  $M_k C$.
+* (3.2.3), `GolubVanLoan.Chapter03.gaussStage`: the matrices $A^{(k)}$ of Gaussian elimination.
+* §3.2.4, `GolubVanLoan.Chapter03.pivot`: the pivots $a_{kk}^{(k)}$.
+* §3.2.8, `GolubVanLoan.Chapter03.packedL` and `GolubVanLoan.Chapter03.packedU`: the factors $L$ and
+  $U$ stored in one packed matrix.
+* Algorithm 3.2.1, `GolubVanLoan.Chapter03.algorithm_3_2_1`: outer product LU.
+* Algorithm 3.2.2, `GolubVanLoan.Chapter03.algorithm_3_2_2`: gaxpy LU, with its column computation
+  `GolubVanLoan.Chapter03.gaxpyColumn`.
+* (3.2.8), `GolubVanLoan.Chapter03.tallOuterProductLU`: outer product LU of a tall matrix, with the
+  factors `GolubVanLoan.Chapter03.tallPackedL` and `GolubVanLoan.Chapter03.tallPackedU`.
+* Algorithm 3.2.3, `GolubVanLoan.Chapter03.algorithm_3_2_3`: recursive block LU.
+* Algorithm 3.2.4, `GolubVanLoan.Chapter03.algorithm_3_2_4`: nonrecursive block LU.
 
 ## Main results
 
-* `gaussTransformation`, `gaussVector`, `IsGaussTransformation` and their algebra (§3.2.1–3.2.2,
-  §3.2.5);
-* `gaussUpdate`, `gaussVector_rounding`, `gaussUpdate_rounding` (§3.2.3);
-* `equation_3_2_3` … `equation_3_2_7`, `theorem_3_2_1` (with `_unique`, `_det`);
-* `algorithm_3_2_1`, `algorithm_3_2_1_rounds`, `algorithm_3_2_1_spec`;
-* `gaxpyColumn`, `algorithm_3_2_2`, `algorithm_3_2_2_rounds` (invariant `GaxpyInv`, column step
-  `gaxpyInv_succ`, shared with Algorithm 3.4.2), `algorithm_3_2_2_spec`;
-* `rectangularLU_exists` (§3.2.10), `equation_3_2_9`, `blockLU_of_schur`,
-  `outerProduct_decomposition`;
-* `equation_3_2_8` (the rectangular outer product LU computes `A = L U`, by a simulation of
-  Algorithm 3.2.1 on the bordered square `[A | [0; I]]`) and `algorithm_3_2_3_spec` (strong
-  induction on `n` through `blockLU_of_schur`);
-* `algorithm_3_2_4` (nonrecursive block LU, blocks by `Fin.divNat`) and `algorithm_3_2_4_spec`
-  (invariant: finished factors where `min(i,j) < k r`, Schur complement values elsewhere).
+* (3.2.1), `GolubVanLoan.Chapter03.equation_3_2_1`: if $A = LU$, $Ly = b$ and $Ux = y$, then
+  $Ax = b$.
+* §3.2.1, `GolubVanLoan.Chapter03.gaussTransformation_gaussVector_mulVec` and
+  `GolubVanLoan.Chapter03.isUnitLowerTriangular_gaussTransformation`: the Gauss transformation of
+  $v$ zeroes $v$ below $k$, and every Gauss transformation is unit lower triangular.
+* §3.2.2, `GolubVanLoan.Chapter03.gaussTransformation_mul`: $M_k C = C - \tau C(k, :)$ is an outer
+  product update.
+* §3.2.3, `GolubVanLoan.Chapter03.gaussVector_rounding` and
+  `GolubVanLoan.Chapter03.gaussUpdate_rounding`: the computed Gauss vector has relative error at
+  most $u$, and the computed $M_k C$ is $M_k C + E$ with $|E| \le u|C| + \gamma_3 |\tau| |C(k,:)|$.
+* (3.2.3), `GolubVanLoan.Chapter03.equation_3_2_3`: $A^{(k+1)} = M_k A^{(k)}$.
+* (3.2.4)–(3.2.5), `GolubVanLoan.Chapter03.equation_3_2_4`: with nonzero pivots, the last stage is
+  upper triangular and $A = LU$ with $L$ the matrix of multipliers.
+* (3.2.5), `GolubVanLoan.Chapter03.equation_3_2_5`: $M_1^{-1} \cdots M_{n-1}^{-1}$ is the matrix of
+  multipliers.
+* §3.2.5, `GolubVanLoan.Chapter03.gaussTransformation_inv`:
+  $(I_n - \tau e_k^T)^{-1} = I_n + \tau e_k^T$.
+* Theorem 3.2.1, `GolubVanLoan.Chapter03.theorem_3_2_1`,
+  `GolubVanLoan.Chapter03.theorem_3_2_1_unique` and `GolubVanLoan.Chapter03.theorem_3_2_1_det`:
+  existence, uniqueness and the determinant of the LU factorization.
+* (3.2.6), `GolubVanLoan.Chapter03.equation_3_2_6`: the leading principal minors are products of
+  pivots.
+* (3.2.7), `GolubVanLoan.Chapter03.equation_3_2_7`: column $k$ of $L$ holds the multipliers of step
+  $k$.
+* §3.2.7, `GolubVanLoan.Chapter03.outerProduct_decomposition`: the first step of elimination as a
+  block decomposition.
+* Algorithm 3.2.1, `GolubVanLoan.Chapter03.algorithm_3_2_1_rounds` and
+  `GolubVanLoan.Chapter03.algorithm_3_2_1_spec`: every run computes an LU factorization in the sense
+  of `FloatingPoint.RoundsLU`, and the exact run computes $A = LU$.
+* Algorithm 3.2.2, `GolubVanLoan.Chapter03.algorithm_3_2_2_rounds` and
+  `GolubVanLoan.Chapter03.algorithm_3_2_2_spec`: the same for the gaxpy LU.
+* §3.2.10, `GolubVanLoan.Chapter03.rectangularLU_exists`: existence of the rectangular LU
+  factorization.
+* (3.2.8), `GolubVanLoan.Chapter03.equation_3_2_8`: the exact outer product LU of a tall matrix
+  computes its rectangular LU factorization.
+* (3.2.9), `GolubVanLoan.Chapter03.equation_3_2_9`: the block factorization through the Schur
+  complement $A_{22} - A_{21} A_{11}^{-1} A_{12}$.
+* §3.2.11, `GolubVanLoan.Chapter03.blockLU_of_schur`: an LU factorization of the Schur complement
+  gives an LU factorization of $A$.
+* Algorithm 3.2.3, `GolubVanLoan.Chapter03.algorithm_3_2_3_spec`: the exact recursive block LU
+  computes $A = LU$.
+* Algorithm 3.2.4, `GolubVanLoan.Chapter03.algorithm_3_2_4_spec`: the exact nonrecursive block LU
+  computes $A = LU$.
+
+## Conventions
+
+* Indices are 0-based. The source's step $k = 1{:}n-1$ is `k : Fin n`, with an empty last step. Its
+  $A^{(k)}$, the matrix after $k - 1$ steps in (3.2.3), is `gaussStage A (k - 1)`, which is
+  `Matrix.gemStage A (k - 1)`. Its hypothesis "$A(1{:}k, 1{:}k)$ is nonsingular for $k = 1{:}n-1$"
+  is `∀ k : Fin n, (A.strictLeadingPrincipalSubmatrix k).det ≠ 0`, where the block of order $0$ is
+  empty.
+* The source's first-order bound $|E| \le 3u(|C| + |\tau| |C(k,:)|) + O(u^2)$ of §3.2.3 is stated in
+  the rigorous form $|E| \le u|C| + \gamma_3 |\tau| |C(k,:)|$, which implies it because
+  $\gamma_3 = 3u + O(u^2)$.
+* In Algorithms 3.2.2–3.2.4 the unit lower triangular solves do not divide by the unit diagonal, and
+  the level-3 updates $B - LX$ are computed entrywise as running differences
+  (`FloatingPoint.runningDiff`).
+
+## Implementation notes
+
+* The Gauss transformation built from column $k$ of a matrix is the backbone's
+  `Matrix.gaussTransform`
+  (`GolubVanLoan.Chapter03.gaussTransformation_gaussVector_eq_gaussTransform`). Through this
+  identity, (3.2.3)–(3.2.7) are the backbone's statements about `Matrix.gemStage` and
+  `Matrix.gemLower`.
+* Algorithm 3.2.1 is a program in the algorithm conventions of `NumlibSurface.GolubVanLoan`. It
+  overwrites the matrix entry by entry, by `Matrix.updateRow A i (Function.update (A i) j a)`, and
+  its packed output $F$ is read by `packedL F = 1 + F.strictLower` and
+  `packedU F = F - F.strictLower`. Its bridge `GolubVanLoan.Chapter03.algorithm_3_2_1_rounds` puts
+  every run in the rounding model into `FloatingPoint.RoundsLU`, and the exact specification is read
+  off the bridge at the exact model (`FloatingPoint.roundsLU_exact_iff`).
+* The loops write one matrix entry per step and read only entries outside the positions that the
+  loop writes. `SetM.mem_run_foldlM_updateRow_update_of_nodup` gives the run set of such a loop
+  entry by entry.
+* The bridge of Algorithm 3.2.2 uses the invariant `GolubVanLoan.Chapter03.GaxpyInv` and the column
+  step `GolubVanLoan.Chapter03.gaxpyInv_succ`, which Algorithm 3.4.2 shares.
+* The exact correctness of (3.2.8) is proved by a simulation of Algorithm 3.2.1 on the bordered
+  square matrix $[A \mid [0; I]]$. The exact correctness of Algorithm 3.2.3 is proved by strong
+  induction on $n$ through `GolubVanLoan.Chapter03.blockLU_of_schur`. Algorithm 3.2.4 takes its
+  blocks by `Fin.divNat`, and its exact correctness is proved with the invariant that the entries
+  with $\min(i, j) < kr$ hold the finished factors and the other entries hold Schur complement
+  values.
+
+## Deviations from the source
+
+* **§3.2.5, the inverse of a Gauss transformation** (generalization). The source states
+  $M_k^{-1} = I_n + \tau e_k^T$ for a Gauss transformation. The theorem needs only $\tau_k = 0$. See
+  `GolubVanLoan.Chapter03.gaussTransformation_inv`.
+* **Algorithm 3.2.3** (correction). The source assumes that $A$ has an LU factorization. This does
+  not exclude a zero pivot, for example $A = \begin{bmatrix} 0 & 1 \\ 0 & 1 \end{bmatrix}$, and the
+  algorithm then fails. The specification assumes that $A(1{:}k, 1{:}k)$ is nonsingular for
+  $k = 1, \dots, n-1$. See `GolubVanLoan.Chapter03.algorithm_3_2_3_spec`.
+* **Algorithm 3.2.4** (correction). The same hypothesis replaces "$A$ has an LU factorization". See
+  `GolubVanLoan.Chapter03.algorithm_3_2_4_spec`.
+
+## Not formalized
+
+* **Operation counts and level-3 fractions.** Operation counts are out of scope for the library.
+* **The Problems of §3.2.** Problems are out of scope for the library.
 -/
 
 open FloatingPoint Matrix
@@ -65,35 +160,53 @@ section Gauss
 
 variable {n : ℕ}
 
-/-- (3.2.1): if `A = L U`, `L y = b` and `U x = y`, then `A x = b` — "the solution to the original
-`A x = b` problem is then found by a two-step triangular solve process". -/
+/-- **Equation (3.2.1)** of [golub2013matrix]. Let $A, L, U \in \mathbb{R}^{n \times n}$ with
+$A = LU$, and let $b, y, x \in \mathbb{R}^n$ with $Ly = b$ and $Ux = y$. Then $Ax = b$.
+
+The source says that the solution of $Ax = b$ is then found by a two-step triangular solve
+process. -/
 theorem equation_3_2_1 {A L U : Matrix (Fin n) (Fin n) ℝ} (hA : A = L * U) {b y x : Fin n → ℝ}
     (hy : L *ᵥ y = b) (hx : U *ᵥ x = y) : A *ᵥ x = b := by
   rw [hA, ← mulVec_mulVec, hx, hy]
 
-/-- §3.2.1, the Gauss vector of `v` at `k`: `τ_i = v_i / v_k` for `i > k` and `τ_i = 0` for
-`i ≤ k` (0-based). -/
+/-- **Section 3.2.1** of [golub2013matrix], the Gauss vector. For $v \in \mathbb{R}^n$ and an index
+$k$, the **Gauss vector** $\tau \in \mathbb{R}^n$ of $v$ at $k$ has
+$$\tau_i = v_i / v_k \quad (i > k), \qquad \tau_i = 0 \quad (i \le k).$$
+
+Indices are 0-based. If $v_k = 0$, then $\tau = 0$, by the convention $x / 0 = 0$. -/
 noncomputable def gaussVector (v : Fin n → ℝ) (k : Fin n) : Fin n → ℝ :=
   fun i => if k < i then v i / v k else 0
 
-/-- §3.2.1, (3.2.2): the matrix `M_k = I_n - τ e_kᵀ`. -/
+/-- **Equation (3.2.2)** of [golub2013matrix]. For $\tau \in \mathbb{R}^n$ and an index $k$, the
+matrix
+$$M_k = I_n - \tau e_k^T.$$
+
+The outer product $\tau e_k^T$ is `vecMulVec τ (Pi.single k 1)`. The definition has no condition
+on $\tau$; `GolubVanLoan.Chapter03.IsGaussTransformation` adds it. -/
 noncomputable def gaussTransformation (τ : Fin n → ℝ) (k : Fin n) : Matrix (Fin n) (Fin n) ℝ :=
   1 - vecMulVec τ (Pi.single k 1)
 
-/-- §3.2.1: "a matrix of the form `M_k = I_n - τ e_kᵀ ∈ ℝ^{n×n}` is a Gauss transformation if
-the first `k` components of `τ ∈ ℝⁿ` are zero" (0-based: the components `≤ k`). The components below
-are the *multipliers*, `τ` the *Gauss vector*. -/
+/-- **Section 3.2.1** of [golub2013matrix], definition of a Gauss transformation. A matrix
+$M \in \mathbb{R}^{n \times n}$ is a **Gauss transformation** at $k$ if $M = I_n - \tau e_k^T$
+for some $\tau \in \mathbb{R}^n$ whose first $k$ components are zero. The components of $\tau$
+below $k$ are the **multipliers**, and $\tau$ is the **Gauss vector**.
+
+Indices are 0-based, so the condition is $\tau_i = 0$ for $i \le k$. -/
 def IsGaussTransformation (M : Matrix (Fin n) (Fin n) ℝ) (k : Fin n) : Prop :=
   ∃ τ : Fin n → ℝ, (∀ i, i ≤ k → τ i = 0) ∧ M = gaussTransformation τ k
 
-/-- The entries of a Gauss transformation. -/
+/-- The entry $(i, j)$ of $M_k = I_n - \tau e_k^T$ is $\delta_{ij} - \tau_i$ if $j = k$, and
+$\delta_{ij}$ otherwise. -/
 theorem gaussTransformation_apply (τ : Fin n → ℝ) (k i j : Fin n) :
     gaussTransformation τ k i j =
       (1 : Matrix (Fin n) (Fin n) ℝ) i j - if j = k then τ i else 0 := by
   simp [gaussTransformation, vecMulVec_apply, Pi.single_apply]
 
-/-- §3.2.2: "`M_k C = (I_n - τ e_kᵀ) C = C - τ (e_kᵀ C) = C - τ C(k,:)` is an outer product update",
-and when the first `k` components of `τ` vanish only the rows below `k` change. -/
+/-- **Section 3.2.2** of [golub2013matrix]. Let $\tau \in \mathbb{R}^n$, let $k$ be an index and let
+$C \in \mathbb{R}^{n \times r}$. Then
+$$M_k C = (I_n - \tau e_k^T) C = C - \tau C(k, :)$$
+is an outer product update. If moreover $\tau_i = 0$ for $i \le k$, then the rows $i \le k$ of
+$M_k C$ are those of $C$. -/
 theorem gaussTransformation_mul {r : ℕ} (τ : Fin n → ℝ) (k : Fin n)
     (C : Matrix (Fin n) (Fin r) ℝ) :
     gaussTransformation τ k * C = C - vecMulVec τ (C k) ∧
@@ -107,15 +220,19 @@ theorem gaussTransformation_mul {r : ℕ} (τ : Fin n → ℝ) (k : Fin n)
   ext j
   simp [vecMulVec_apply, hτ i hi]
 
-/-- A Gauss transformation applied to a vector: `(I - τ e_kᵀ) v = v - v_k τ`. -/
+/-- A Gauss transformation applied to a vector: $(I_n - \tau e_k^T) v = v - v_k \tau$ for
+$v \in \mathbb{R}^n$. -/
 theorem gaussTransformation_mulVec (τ : Fin n → ℝ) (k : Fin n) (v : Fin n → ℝ) :
     gaussTransformation τ k *ᵥ v = fun i => v i - τ i * v k := by
   ext i
   simp [gaussTransformation, mulVec, dotProduct, vecMulVec_apply, Pi.single_apply, sub_mul,
     Finset.sum_sub_distrib, Matrix.one_apply, ite_mul]
 
-/-- §3.2.1, the display after (3.2.2): if `v_k ≠ 0`, the Gauss transformation of the Gauss vector
-of `v` zeroes the components of `v` below `k` and keeps the others. -/
+/-- **Section 3.2.1** of [golub2013matrix], the display after (3.2.2). Let $v \in \mathbb{R}^n$ with
+$v_k \neq 0$, and let $\tau$ be the Gauss vector of $v$ at $k$. Then $M_k = I_n - \tau e_k^T$
+zeroes the components of $v$ below $k$ and keeps the others:
+$$(M_k v)_i = v_i \quad (i \le k), \qquad (M_k v)_i = 0 \quad (i > k).$$
+-/
 theorem gaussTransformation_gaussVector_mulVec {v : Fin n → ℝ} {k : Fin n} (hv : v k ≠ 0) :
     gaussTransformation (gaussVector v k) k *ᵥ v = fun i => if i ≤ k then v i else 0 := by
   ext i
@@ -125,7 +242,8 @@ theorem gaussTransformation_gaussVector_mulVec {v : Fin n → ℝ} {k : Fin n} (
   · have hki : k < i := not_le.1 hik
     simp [gaussVector, hki, hik, div_mul_cancel₀ _ hv]
 
-/-- §3.2.1: "such a matrix is unit lower triangular". -/
+/-- **Section 3.2.1** of [golub2013matrix]. Every Gauss transformation
+$M \in \mathbb{R}^{n \times n}$ is unit lower triangular. -/
 theorem isUnitLowerTriangular_gaussTransformation {M : Matrix (Fin n) (Fin n) ℝ} {k : Fin n}
     (hM : IsGaussTransformation M k) : M.IsUnitLowerTriangular := by
   obtain ⟨τ, hτ, rfl⟩ := hM
@@ -140,8 +258,16 @@ theorem isUnitLowerTriangular_gaussTransformation {M : Matrix (Fin n) (Fin n) �
     · rw [hτ i hik.le, sub_zero]
     · rw [sub_zero]
 
-/-- §3.2.5: "if `M_k = I_n - τ e_kᵀ` then its inverse is prescribed by `M_k⁻¹ = I_n + τ e_kᵀ`":
-when `τ_k = 0`, `(I - τ e_kᵀ)(I + τ e_kᵀ) = I`, since `(τ e_kᵀ)² = τ (e_kᵀ τ) e_kᵀ = 0`. -/
+/-- **Section 3.2.5** of [golub2013matrix], the inverse of a Gauss transformation. Let
+$\tau \in \mathbb{R}^n$ with $\tau_k = 0$. Then
+$$(I_n - \tau e_k^T)(I_n + \tau e_k^T) = I_n, \qquad (I_n - \tau e_k^T)^{-1} = I_n + \tau
+  e_k^T.$$
+
+**Generalization.** The source states the inverse for a Gauss transformation, whose first $k$
+components of $\tau$ vanish. The proof needs only $\tau_k = 0$, because then
+$(\tau e_k^T)^2 = \tau (e_k^T \tau) e_k^T = 0$.
+
+The matrix $I_n + \tau e_k^T$ is written as `gaussTransformation (-τ) k`. -/
 theorem gaussTransformation_inv {τ : Fin n → ℝ} {k : Fin n} (hτ : τ k = 0) :
     gaussTransformation τ k * gaussTransformation (-τ) k = 1 ∧
       (gaussTransformation τ k)⁻¹ = gaussTransformation (-τ) k := by
@@ -152,9 +278,13 @@ theorem gaussTransformation_inv {τ : Fin n → ℝ} {k : Fin n} (hτ : τ k = 0
       simp [gaussTransformation, vecMulVec_apply, Matrix.one_apply, hτ, hij, hjk, eq_comm (a := k)]
   exact ⟨h, inv_eq_right_inv h⟩
 
-/-- **The book's `M_k` built from column `k` of `M` is the backbone's Gaussian transformation**
-`Matrix.gaussTransform M k`, which performs one elimination step: `M_k M = Matrix.elimStep M k`
-(`Matrix.gaussTransform_mul`). The bridge through which (3.2.3)–(3.2.7) are backbone statements. -/
+/-- The Gauss transformation built from column $k$ of $M \in \mathbb{R}^{n \times n}$, that is
+$I_n - \tau e_k^T$ with $\tau$ the Gauss vector of $M(:, k)$ at $k$, is the backbone's Gaussian
+transformation `Matrix.gaussTransform M k`.
+
+The backbone matrix performs one elimination step: its product with $M$ is `Matrix.elimStep M k`
+(`Matrix.gaussTransform_mul`). Through this identity, (3.2.3)–(3.2.7) are statements of the
+backbone. -/
 theorem gaussTransformation_gaussVector_eq_gaussTransform (M : Matrix (Fin n) (Fin n) ℝ)
     (k : Fin n) :
     gaussTransformation (gaussVector (fun i => M i k) k) k = gaussTransform M k := by
@@ -174,14 +304,17 @@ section GaussUpdate
 
 variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 
-/-- §3.2.2–3.2.3, applying a computed Gauss transformation: from the pivot column `v` the computed
-Gauss vector `τ̂_i = fl(v_i / v_k)`, `i > k`, then the update "row by row":
+/-- **Section 3.2.2** of [golub2013matrix], the application of a computed Gauss transformation. Let
+$v \in \mathbb{R}^n$, an index $k$ and $C \in \mathbb{R}^{n \times r}$ be given. The program
+computes the Gauss vector $\hat\tau_i = \mathrm{fl}(v_i / v_k)$ for $i > k$, with
+$\hat\tau_i = 0$ for $i \le k$, and then updates $C$ row by row,
 ```
 for i = k+1:n
     C(i,:) = C(i,:) - τ_i · C(k,:)
 end
 ```
-entrywise `c_ij = fl(c_ij - fl(τ̂_i c_kj))`. Returns `(τ̂, fl((I - τ̂ e_kᵀ) C))`. -/
+entrywise as $c_{ij} \leftarrow \mathrm{fl}(c_{ij} - \mathrm{fl}(\hat\tau_i c_{kj}))$. It
+returns the pair $(\hat\tau, \mathrm{fl}((I_n - \hat\tau e_k^T) C))$. -/
 noncomputable def gaussUpdate {n r : ℕ} (v : Fin n → ℝ) (k : Fin n)
     (C : Matrix (Fin n) (Fin r) ℝ) : M ((Fin n → ℝ) × Matrix (Fin n) (Fin r) ℝ) := do
   let τ ← ((List.finRange n).filter (k < ·)).foldlM (fun (τ : Fin n → ℝ) i => do
@@ -196,9 +329,11 @@ noncomputable def gaussUpdate {n r : ℕ} (v : Fin n → ℝ) (k : Fin n)
 
 variable {fp : RoundingModel ℝ} {n r : ℕ}
 
-/-- The run set of `gaussUpdate`, entry by entry: the computed Gauss vector rounds `v_i / v_k`
-below `k` and vanishes elsewhere; every entry below row `k` is `fl(c_ij - fl(τ̂_i c_kj))`, and the
-rows up to `k` are unchanged. -/
+/-- The run set of `GolubVanLoan.Chapter03.gaussUpdate`, entry by entry. Every output
+$(\hat\tau, \hat C)$ in the rounding model `fp` has $\hat\tau_i = 0$ for $i \le k$ and
+$\hat\tau_i$ a rounding of $v_i / v_k$ for $i > k$; the rows $i \le k$ of $\hat C$ are those of
+$C$, and for $i > k$ each $\hat c_{ij}$ is a rounding of $c_{ij} - p$ for some rounding $p$ of
+$\hat\tau_i c_{kj}$. -/
 theorem mem_run_gaussUpdate {v : Fin n → ℝ} {k : Fin n} {C : Matrix (Fin n) (Fin r) ℝ}
     {out : (Fin n → ℝ) × Matrix (Fin n) (Fin r) ℝ} (h : out ∈ (gaussUpdate fp.round v k C).run) :
     (∀ i, ¬ k < i → out.1 i = 0) ∧ (∀ i, k < i → fp.Rounds (v i / v k) (out.1 i)) ∧
@@ -242,8 +377,14 @@ theorem mem_run_gaussUpdate {v : Fin n → ℝ} {k : Fin n} {C : Matrix (Fin n) 
   · obtain ⟨p, hp, hc⟩ := SetM.mem_run_bind.1 (hC₂ (i, j) ((hlmem i j).2 hi))
     exact ⟨p, hp, hc⟩
 
-/-- §3.2.3, "`τ̂ = τ + e`, `|e| ≤ u |τ|`": the computed Gauss vector of every run is within `u` of
-the exact one, componentwise (one rounded division; exact, with no `O(u²)`). -/
+/-- **Section 3.2.3** of [golub2013matrix], the computed Gauss vector. Let $v \in \mathbb{R}^n$, an
+index $k$ and $C \in \mathbb{R}^{n \times r}$ be given, and let $\tau$ be the exact Gauss vector
+of $v$ at $k$. For every output of `GolubVanLoan.Chapter03.gaussUpdate` in the rounding model
+`fp`, the computed Gauss vector $\hat\tau$ satisfies, for every $i$,
+$$|\hat\tau_i - \tau_i| \le u |\tau_i|.$$
+
+The source writes this as $\hat\tau = \tau + e$ with $|e| \le u|\tau|$. Each component is one
+rounded division, so the bound has no $O(u^2)$ term. -/
 theorem gaussVector_rounding (v : Fin n → ℝ) (k : Fin n) (C : Matrix (Fin n) (Fin r) ℝ) :
     ∀ out ∈ (gaussUpdate fp.round v k C).run,
       ∀ i, |out.1 i - gaussVector v k i| ≤ fp.u * |gaussVector v k i| := by
@@ -254,7 +395,8 @@ theorem gaussVector_rounding (v : Fin n → ℝ) (k : Fin n) (C : Matrix (Fin n)
     exact fp.abs_sub_le (h₂ i hi)
   · simp [gaussVector, hi, h₁ i hi]
 
-/-- `|(1 + δ₀)(1 + δ₁)(1 + δ₂) - 1| ≤ γ₃` for three relative errors bounded by `u`. -/
+/-- For three relative errors $|\delta_0|, |\delta_1|, |\delta_2| \le u$ with $u \ge 0$ and
+$3u < 1$, $|(1 + \delta_0)(1 + \delta_1)(1 + \delta_2) - 1| \le \gamma_3$. -/
 private theorem abs_three_mul_sub_one_le {u δ₀ δ₁ δ₂ : ℝ} (hu : 0 ≤ u) (h3 : 3 * u < 1)
     (h₀ : |δ₀| ≤ u) (h₁ : |δ₁| ≤ u) (h₂ : |δ₂| ≤ u) :
     |(1 + δ₀) * (1 + δ₁) * (1 + δ₂) - 1| ≤ gamma u 3 := by
@@ -263,12 +405,19 @@ private theorem abs_three_mul_sub_one_le {u δ₀ δ₁ δ₂ : ℝ} (hu : 0 ≤
     (fun _ => Or.inl rfl)
   simpa [Fin.prod_univ_three] using h
 
-/-- **§3.2.3, rounding of a Gauss transform update**, rigorous form: every run of
-`gaussUpdate fp.round v k C` returns `fl((I - τ̂ e_kᵀ) C) = (I - τ e_kᵀ) C + E` with `τ` the exact
-Gauss vector and `|E| ≤ u |C| + γ₃ |τ| |C(k,:)|` entrywise, `E` vanishing in the rows up to `k`.
-Entry `(i, j)` below row `k` is `(c_ij - τ_i (1 + δ₀) c_kj (1 + δ₁))(1 + δ₂)`, so
-`E_ij = δ₂ c_ij - τ_i c_kj ((1 + δ₀)(1 + δ₁)(1 + δ₂) - 1)`. The book's
-`|E| ≤ 3u (|C| + |τ| |C(k,:)|) + O(u²)` follows (`u ≤ 3u`, `γ₃ = 3u + O(u²)`). -/
+/-- **Section 3.2.3** of [golub2013matrix], the rounding of a Gauss transformation update. Let
+$v \in \mathbb{R}^n$, an index $k$ and $C \in \mathbb{R}^{n \times r}$ be given, let $\tau$ be
+the exact Gauss vector of $v$ at $k$, and let the unit roundoff $u$ satisfy $3u < 1$. For every
+output $(\hat\tau, \hat C)$ of `GolubVanLoan.Chapter03.gaussUpdate` in the rounding model `fp`,
+there is $E \in \mathbb{R}^{n \times r}$ with
+$$\hat C = (I_n - \tau e_k^T) C + E, \qquad |e_{ij}| \le u |c_{ij}| + \gamma_3 |\tau_i|
+  |c_{kj}|,$$
+and $e_{ij} = 0$ for $i \le k$.
+
+The source prints $|E| \le 3u(|C| + |\tau| |C(k,:)|) + O(u^2)$, which follows because $u \le 3u$
+and $\gamma_3 = 3u + O(u^2)$. For $i > k$ the entry is $\hat c_{ij} = (c_{ij} - \tau_i (1 +
+\delta_0) c_{kj} (1 + \delta_1))(1 + \delta_2)$, so $e_{ij} = \delta_2 c_{ij} - \tau_i c_{kj}
+((1 + \delta_0)(1 + \delta_1)(1 + \delta_2) - 1)$. -/
 theorem gaussUpdate_rounding (h3 : 3 * fp.u < 1) (v : Fin n → ℝ) (k : Fin n)
     (C : Matrix (Fin n) (Fin r) ℝ) :
     ∀ out ∈ (gaussUpdate fp.round v k C).run, ∃ E : Matrix (Fin n) (Fin r) ℝ,
@@ -323,49 +472,72 @@ section Elimination
 
 variable {n : ℕ}
 
-/-- (3.2.3), the matrices of Gaussian elimination: the book's `A^{(k+1)} = M_k A^{(k)}` (1-based,
-`A^{(1)} = A`) is the stage after `k` steps, `gaussStage A k = Matrix.gemStage A k` (0-based). -/
+/-- **Equation (3.2.3)** of [golub2013matrix], the matrices of Gaussian elimination. For
+$A \in \mathbb{R}^{n \times n}$ and $k \in \mathbb{N}$, `gaussStage A k` is the matrix after $k$
+steps of Gaussian elimination, which is `Matrix.gemStage A k`.
+
+The source's $A^{(k+1)} = M_k A^{(k)}$, with $A^{(1)} = A$, is 1-based, so its $A^{(k+1)}$ is
+`gaussStage A k`. Beyond $n$ steps the stage does not change. -/
 noncomputable abbrev gaussStage (A : Matrix (Fin n) (Fin n) ℝ) (k : ℕ) : Matrix (Fin n) (Fin n) ℝ :=
   gemStage A k
 
-/-- **(3.2.3)**, the step of Gaussian elimination: "for `i = k+1:n`, determine the multipliers
-`τ_i^{(k)} = a_ik^{(k)} / a_kk^{(k)}`; apply `M_k = I - τ^{(k)} e_kᵀ` to obtain
-`A^{(k+1)} = M_k A^{(k)}`". -/
+/-- **Equation (3.2.3)** of [golub2013matrix], one step of Gaussian elimination. For
+$A \in \mathbb{R}^{n \times n}$ and every index $k$, let $\tau^{(k)}$ be the Gauss vector of
+column $k$ of $A^{(k)}$ at $k$, so that $\tau_i^{(k)} = a_{ik}^{(k)} / a_{kk}^{(k)}$ for
+$i > k$, and let $M_k = I_n - \tau^{(k)} e_k^T$. Then
+$$A^{(k+1)} = M_k A^{(k)}.$$
+
+Here $A^{(k)}$ is the stage after $k$ steps (0-based). The statement has no pivot hypothesis: at
+a zero pivot the multipliers are $0$ by the convention $x / 0 = 0$, and both sides equal
+$A^{(k)}$. -/
 theorem equation_3_2_3 (A : Matrix (Fin n) (Fin n) ℝ) (k : Fin n) :
     gaussStage A (k + 1) =
       gaussTransformation (gaussVector (fun i => gaussStage A k i k) k) k * gaussStage A k := by
   rw [gaussTransformation_gaussVector_eq_gaussTransform]
   exact gemStage_succ_eq_gaussTransform_mul A k.2
 
-/-- §3.2.4, "these quantities are called pivots": the pivot `a_kk^{(k)}` of the `k`-th step
-(0-based), the diagonal entry of the stage after `k` steps. -/
+/-- **Section 3.2.4** of [golub2013matrix], the pivots. The **pivot** of step $k$ of Gaussian
+elimination on $A \in \mathbb{R}^{n \times n}$ is $a_{kk}^{(k)}$, the diagonal entry $(k, k)$ of
+the stage after $k$ steps (0-based). -/
 noncomputable def pivot (A : Matrix (Fin n) (Fin n) ℝ) (k : Fin n) : ℝ :=
   gaussStage A k k k
 
-/-- The book's pivot hypothesis in the backbone's form. -/
+/-- The pivots of the steps $k$ with $k + 1 < n$ are nonzero if and only if, for every $m$ with
+$m + 1 < n$, the entry $(m, m)$ of `Matrix.gemStage A m` is nonzero; this is the pivot
+hypothesis in the form of the backbone. -/
 theorem pivot_ne_zero_iff (A : Matrix (Fin n) (Fin n) ℝ) :
     (∀ k : Fin n, (k : ℕ) + 1 < n → pivot A k ≠ 0) ↔
       ∀ (m : ℕ) (hm : m < n), m + 1 < n → gemStage A m ⟨m, hm⟩ ⟨m, hm⟩ ≠ 0 :=
   ⟨fun h m hm hmn => h ⟨m, hm⟩ hmn, fun h k hk => h k k.2 hk⟩
 
-/-- **(3.2.4)–(3.2.5)**, §3.2.5: "if no zero pivots are encountered in (3.2.3), then Gauss
-transformations `M_1, …, M_{n-1}` are generated such that `M_{n-1} ⋯ M_1 A = U` is upper
-triangular", and `A = L U` with `L = M_1⁻¹ ⋯ M_{n-1}⁻¹` unit lower triangular — the backbone's
-multiplier matrix `Matrix.gemLower A`. The last pivot divides nothing and may vanish. -/
+/-- **Equations (3.2.4)–(3.2.5)** of [golub2013matrix]. Let $A \in \mathbb{R}^{n \times n}$, and
+assume that no zero pivots are encountered in (3.2.3), that is, the pivots of the steps
+$1, \dots, n-1$ are nonzero. Then the last stage $U = A^{(n)}$, which is $M_{n-1} \cdots M_1 A$
+by (3.2.3), is upper triangular, and
+$$A = LU$$
+with $L = M_1^{-1} \cdots M_{n-1}^{-1}$ the unit lower triangular matrix of multipliers.
+
+The matrix $L$ is the backbone's `Matrix.gemLower A`, and $U$ is `gaussStage A n`. The last
+pivot divides nothing and may vanish. -/
 theorem equation_3_2_4 {A : Matrix (Fin n) (Fin n) ℝ}
     (hpiv : ∀ k : Fin n, (k : ℕ) + 1 < n → pivot A k ≠ 0) :
     IsLU A (gemLower A) (gaussStage A n) :=
   isLU_gemLower_gemStage A ((pivot_ne_zero_iff A).1 hpiv)
 
-/-- The inverse of the book's `M_k` is the backbone's unipotent factor `Matrix.elimMul`. -/
+/-- The inverse of the Gauss transformation built from column $k$ of $M \in \mathbb{R}^{n \times n}$
+is the backbone's unipotent factor `Matrix.elimMul M k`. -/
 theorem inv_gaussTransformation_gaussVector (M : Matrix (Fin n) (Fin n) ℝ) (k : Fin n) :
     (gaussTransformation (gaussVector (fun i => M i k) k) k)⁻¹ = elimMul M k := by
   rw [gaussTransformation_gaussVector_eq_gaussTransform]
   exact inv_eq_left_inv (elimMul_mul_gaussTransform M k)
 
-/-- **(3.2.5)** with §3.2.6: `L = M_1⁻¹ ⋯ M_{n-1}⁻¹ = I_n + ∑_k τ^{(k)} e_kᵀ` is the matrix of
-multipliers `Matrix.gemLower A` — the ordered product of the inverse Gauss transformations of the
-stages, with no pivot hypothesis. -/
+/-- **Equation (3.2.5)** of [golub2013matrix], with §3.2.6. Let $A \in \mathbb{R}^{n \times n}$, and
+let $M_k$ be the Gauss transformation of step $k$ of (3.2.3). Then
+$$M_1^{-1} \cdots M_{n-1}^{-1} = I_n + \sum_k \tau^{(k)} e_k^T,$$
+the matrix of multipliers `Matrix.gemLower A`.
+
+The product is the ordered product over all $n$ steps; the last factor is the identity. The
+statement has no pivot hypothesis. -/
 theorem equation_3_2_5 (A : Matrix (Fin n) (Fin n) ℝ) :
     ((List.finRange n).map fun k : Fin n =>
       (gaussTransformation (gaussVector (fun i => gaussStage A k i k) k) k)⁻¹).prod =
@@ -389,32 +561,47 @@ theorem equation_3_2_5 (A : Matrix (Fin n) (Fin n) ℝ) :
       simp only [F, show k < n by omega, ↓reduceDIte]
   rw [hmap, key n le_rfl, gemLowerStage_of_le A le_rfl]
 
-/-- **Theorem 3.2.1 (LU Factorization), existence**: "if `A ∈ ℝ^{n×n}` and
-`det(A(1:k,1:k)) ≠ 0` for `k = 1:n-1`, then there exists a unit lower triangular `L ∈ ℝ^{n×n}` and
-an upper triangular `U ∈ ℝ^{n×n}` such that `A = LU`". -/
+/-- **Theorem 3.2.1** of [golub2013matrix] (LU factorization), existence. Let
+$A \in \mathbb{R}^{n \times n}$ with $\det(A(1{:}k, 1{:}k)) \neq 0$ for $k = 1, \dots, n-1$.
+Then there exist a unit lower triangular $L \in \mathbb{R}^{n \times n}$ and an upper triangular
+$U \in \mathbb{R}^{n \times n}$ with $A = LU$.
+
+The hypothesis is on `A.strictLeadingPrincipalSubmatrix k` for `k : Fin n`, which has order $k$
+(0-based); the block of order $0$ is empty. The conclusion is `Matrix.IsLU A L U`. -/
 theorem theorem_3_2_1 {A : Matrix (Fin n) (Fin n) ℝ}
     (hA : ∀ k : Fin n, (A.strictLeadingPrincipalSubmatrix k).det ≠ 0) :
     ∃ L U, IsLU A L U :=
   exists_isLU_of_forall_isUnit_strictLeadingPrincipalSubmatrix fun k =>
     (isUnit_iff_isUnit_det _).2 (isUnit_iff_ne_zero.2 (hA k))
 
-/-- **Theorem 3.2.1, uniqueness**: "if this is the case and `A` is nonsingular, then the
-factorization is unique". The leading-minor hypothesis alone suffices (`Matrix.IsLU.unique`); the
-book's nonsingularity of `A` is carried for faithfulness. -/
+/-- **Theorem 3.2.1** of [golub2013matrix], uniqueness. Let $A \in \mathbb{R}^{n \times n}$ with
+$\det(A(1{:}k, 1{:}k)) \neq 0$ for $k = 1, \dots, n-1$, and let $A$ be nonsingular. If
+$A = L_1 U_1$ and $A = L_2 U_2$ are two LU factorizations, then $L_1 = L_2$ and $U_1 = U_2$.
+
+The hypothesis on the leading submatrices alone suffices (`Matrix.IsLU.unique`); the
+nonsingularity of $A$ is kept because the source states it. -/
 theorem theorem_3_2_1_unique {A : Matrix (Fin n) (Fin n) ℝ}
     (hA : ∀ k : Fin n, (A.strictLeadingPrincipalSubmatrix k).det ≠ 0) (_hdet : A.det ≠ 0)
     {L₁ U₁ L₂ U₂ : Matrix (Fin n) (Fin n) ℝ} (h₁ : IsLU A L₁ U₁) (h₂ : IsLU A L₂ U₂) :
     L₁ = L₂ ∧ U₁ = U₂ :=
   h₁.unique h₂ fun k => (isUnit_iff_isUnit_det _).2 (isUnit_iff_ne_zero.2 (hA k))
 
-/-- **Theorem 3.2.1, determinant**: "if `A = LU`, then `det(A) = u₁₁ ⋯ u_nn`". -/
+/-- **Theorem 3.2.1** of [golub2013matrix], determinant. If $A = LU$ with
+$L \in \mathbb{R}^{n \times n}$ unit lower triangular and $U \in \mathbb{R}^{n \times n}$ upper
+triangular, then
+$$\det A = u_{11} \cdots u_{nn}.$$
+-/
 theorem theorem_3_2_1_det {A L U : Matrix (Fin n) (Fin n) ℝ} (h : IsLU A L U) :
     A.det = ∏ i, U i i :=
   h.det_eq_prod_diag
 
-/-- **(3.2.6)**: if the pivots of the first `k` steps are nonzero, the leading principal minor of
-order `k + 1` is the product of the leading diagonal entries of the stage after `k` steps,
-`det(A(1:k+1,1:k+1)) = a_11^{(k)} ⋯ a_{k+1,k+1}^{(k)}` (0-based). -/
+/-- **Equation (3.2.6)** of [golub2013matrix]. Let $A \in \mathbb{R}^{n \times n}$ and let $k$ be an
+index such that the pivots of the steps before $k$ are nonzero. Then the leading principal minor
+of order $k + 1$ is the product of the leading diagonal entries of the stage after $k$ steps:
+$$\det(A(1{:}k{+}1, 1{:}k{+}1)) = \prod_{i \le k} a_{ii}^{(k)}.$$
+
+The indices are 0-based. Since row $i$ does not change after step $i$, these diagonal entries
+are the pivots of the steps $0, \dots, k$. -/
 theorem equation_3_2_6 {A : Matrix (Fin n) (Fin n) ℝ} {k : Fin n}
     (hpiv : ∀ m : Fin n, m < k → pivot A m ≠ 0) :
     (A.leadingPrincipalSubmatrix k).det = ∏ i : {i // i ≤ k}, gaussStage A k i i := by
@@ -424,8 +611,12 @@ theorem equation_3_2_6 {A : Matrix (Fin n) (Fin n) ℝ} {k : Fin n}
   convert h.det_eq_prod_diag using 2
   all_goals rfl
 
-/-- **(3.2.7)**, "the `k`-th column of `L` is defined by the multipliers that arise in the `k`-th
-step of (3.2.3)": `L(k+1:n, k) = τ^{(k)}(k+1:n)`. -/
+/-- **Equation (3.2.7)** of [golub2013matrix]. The $k$-th column of $L$ is defined by the
+multipliers that arise in the $k$-th step of (3.2.3): for $A \in \mathbb{R}^{n \times n}$ and
+indices $k < i$,
+$$\ell_{ik} = \tau_i^{(k)},$$
+where $L$ is the matrix of multipliers `Matrix.gemLower A` and $\tau^{(k)}$ is the Gauss vector
+of column $k$ of $A^{(k)}$ at $k$. -/
 theorem equation_3_2_7 (A : Matrix (Fin n) (Fin n) ℝ) {i k : Fin n} (hki : k < i) :
     gemLower A i k = gaussVector (fun i => gaussStage A k i k) k i := by
   simp [gemLower, gaussVector, hki]
@@ -438,28 +629,41 @@ section Packed
 
 variable {n : ℕ}
 
-/-- The unit lower factor stored below the diagonal of a packed matrix (§3.2.8: "`A(i+1:n, i)` is
-overwritten by `L(i+1:n, i)`"): `packedL F = I + strictLower F`. -/
+/-- **Section 3.2.8** of [golub2013matrix], the packed lower factor. For
+$F \in \mathbb{R}^{n \times n}$, `packedL F` is $I_n$ plus the strictly lower triangular part of
+$F$: the unit lower triangular matrix $L$ with $\ell_{ij} = f_{ij}$ for $i > j$.
+
+The source says that $A(i{+}1{:}n, i)$ is overwritten by $L(i{+}1{:}n, i)$. -/
 def packedL (F : Matrix (Fin n) (Fin n) ℝ) : Matrix (Fin n) (Fin n) ℝ := 1 + F.strictLower
 
-/-- The upper factor stored on and above the diagonal of a packed matrix ("`A(i, i:n)` is
-overwritten by `U(i, i:n)`"): `packedU F = F - strictLower F`. -/
+/-- **Section 3.2.8** of [golub2013matrix], the packed upper factor. For
+$F \in \mathbb{R}^{n \times n}$, `packedU F` is $F$ minus its strictly lower triangular part:
+the upper triangular matrix $U$ with $u_{ij} = f_{ij}$ for $i \le j$.
+
+The source says that $A(i, i{:}n)$ is overwritten by $U(i, i{:}n)$. -/
 def packedU (F : Matrix (Fin n) (Fin n) ℝ) : Matrix (Fin n) (Fin n) ℝ := F - F.strictLower
 
 variable (F : Matrix (Fin n) (Fin n) ℝ)
 
+/-- Below the diagonal, the packed lower factor has the entries of the packed matrix:
+$\ell_{ij} = f_{ij}$ for $j < i$. -/
 theorem packedL_apply_of_lt {i j : Fin n} (h : j < i) : packedL F i j = F i j := by
   simp [packedL, h, h.ne']
 
+/-- The packed lower factor has unit diagonal. -/
 theorem packedL_apply_self (i : Fin n) : packedL F i i = 1 := by
   simp [packedL]
 
+/-- The packed lower factor vanishes above the diagonal: $\ell_{ij} = 0$ for $i < j$. -/
 theorem packedL_apply_of_lt' {i j : Fin n} (h : i < j) : packedL F i j = 0 := by
   simp [packedL, h.ne, not_lt.2 h.le]
 
+/-- On and above the diagonal, the packed upper factor has the entries of the packed matrix:
+$u_{ij} = f_{ij}$ for $i \le j$. -/
 theorem packedU_apply_of_le {i j : Fin n} (h : i ≤ j) : packedU F i j = F i j := by
   simp [packedU, not_lt.2 h]
 
+/-- The packed upper factor vanishes below the diagonal: $u_{ij} = 0$ for $j < i$. -/
 theorem packedU_apply_of_lt {i j : Fin n} (h : j < i) : packedU F i j = 0 := by
   simp [packedU, h]
 
@@ -471,10 +675,14 @@ section Algorithm321
 
 variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 
-/-- One step `k` of the outer product LU (the body of Algorithm 3.2.1, shared with the pivoting
-Algorithms 3.4.1 and 3.4.3): with `ρ = k+1:n`, `A(ρ,k) = A(ρ,k)/A(k,k)` entry by entry, then the
-outer product update `A(ρ,ρ) = A(ρ,ρ) - A(ρ,k) · A(k,ρ)` row by row, every quotient, product and
-difference rounded. -/
+/-- One step $k$ of the outer product LU on $A \in \mathbb{R}^{n \times n}$. With
+$\rho = \{k+1, \dots, n\}$, the program computes
+$a_{ik} \leftarrow \mathrm{fl}(a_{ik} / a_{kk})$ for $i \in \rho$, and then the outer product
+update $A(\rho, \rho) = A(\rho, \rho) - A(\rho, k) A(k, \rho)$ row by row, as $a_{ij} \leftarrow
+\mathrm{fl}(a_{ij} - \mathrm{fl}(a_{ik} a_{kj}))$.
+
+This is the body of the loop of Algorithm 3.2.1, and the pivoting Algorithms 3.4.1 and 3.4.3
+share it. -/
 noncomputable def outerProductStep {n : ℕ} (k : Fin n) (A : Matrix (Fin n) (Fin n) ℝ) :
     M (Matrix (Fin n) (Fin n) ℝ) := do
   let A ← ((List.finRange n).filter (k < ·)).foldlM (fun (A : Matrix (Fin n) (Fin n) ℝ) i => do
@@ -486,10 +694,11 @@ noncomputable def outerProductStep {n : ℕ} (k : Fin n) (A : Matrix (Fin n) (Fi
       let a ← rnd (A i j - p)
       pure (A.updateRow i (Function.update (A i) j a))) A) A
 
-/-- **Algorithm 3.2.1 (Outer Product LU).** "Suppose `A ∈ ℝ^{n×n}` has the property that
-`A(1:k,1:k)` is nonsingular for `k = 1:n-1`. This algorithm computes the factorization `A = LU`
-where `L` is unit lower triangular and `U` is upper triangular. For `i = 1:n-1`, `A(i,i:n)` is
-overwritten by `U(i,i:n)` while `A(i+1:n,i)` is overwritten by `L(i+1:n,i)`."
+/-- **Algorithm 3.2.1** of [golub2013matrix] (outer product LU). Suppose that
+$A \in \mathbb{R}^{n \times n}$ has the property that $A(1{:}k, 1{:}k)$ is nonsingular for
+$k = 1{:}n-1$. The algorithm computes the factorization $A = LU$, where $L$ is unit lower
+triangular and $U$ is upper triangular. For $i = 1{:}n-1$, $A(i, i{:}n)$ is overwritten by
+$U(i, i{:}n)$ while $A(i{+}1{:}n, i)$ is overwritten by $L(i{+}1{:}n, i)$.
 ```
 for k = 1:n-1
     ρ = k+1:n
@@ -497,17 +706,24 @@ for k = 1:n-1
     A(ρ,ρ) = A(ρ,ρ) - A(ρ,k)·A(k,ρ)
 end
 ```
-The outer product update is carried out row by row (the `kij` form of §3.2.9); every quotient,
-product and difference is rounded. The last step `k = n` is empty. -/
+The program runs the step `GolubVanLoan.Chapter03.outerProductStep` for $k = 1, \dots, n$; the
+last step is empty.
+
+The outer product update is carried out row by row, the $kij$ form of §3.2.9, and every
+quotient, product and difference is rounded. The program has no hypothesis on $A$. The factors
+are read from the output by `GolubVanLoan.Chapter03.packedL` and
+`GolubVanLoan.Chapter03.packedU`. -/
 noncomputable def algorithm_3_2_1 {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ) :
     M (Matrix (Fin n) (Fin n) ℝ) :=
   (List.finRange n).foldlM (fun A k => outerProductStep rnd k A) A
 
 variable {fp : RoundingModel ℝ} {n : ℕ}
 
-/-- **The run set of one step `k` of the outer product LU**: the multipliers of column `k` below
-the pivot are rounded quotients, the trailing block receives one rounded update from the new
-multipliers and the pivot row, and every other entry is unchanged. -/
+/-- The run set of one step $k$ of the outer product LU. For every output $S'$ of
+`GolubVanLoan.Chapter03.outerProductStep` on $S$ in the rounding model `fp`: every entry
+$(i, j)$ outside the rows $i > k$ and the columns $j \ge k$ is unchanged; for $i > k$, $s'_{ik}$
+is a rounding of $s_{ik} / s_{kk}$; and for $i > k$ and $j > k$, $s'_{ij}$ is a rounding of
+$s_{ij} - p$ for some rounding $p$ of $s'_{ik} s'_{kj}$. -/
 theorem mem_run_outerProductStep (k : Fin n) {S S' : Matrix (Fin n) (Fin n) ℝ}
     (h : S' ∈ (outerProductStep fp.round k S).run) :
     (∀ i j, ¬ (k < i ∧ (j = k ∨ k < j)) → S' i j = S i j) ∧
@@ -583,34 +799,44 @@ theorem mem_run_outerProductStep (k : Fin n) {S S' : Matrix (Fin n) (Fin n) ℝ}
     rw [← hS₁ i j fun h => hj.ne' ((hl₁mem i j).1 h).2]
     exact hc
 
-/-- An entry on or above the diagonal, finished: a running difference over `r < i`. -/
+/-- Entry $(i, j)$, $i \le j$, of a packed matrix $S$ is a finished upper entry for $A$ if $s_{ij}$
+is obtained from $a_{ij}$ by subtracting roundings of the products $s_{ir} s_{rj}$, $r < i$, one
+after the other in some order, with one rounding per subtraction. -/
 def LUUpperEntry (fp : RoundingModel ℝ) (A S : Matrix (Fin n) (Fin n) ℝ) (i j : Fin n) : Prop :=
   ∃ (o : List (Fin n)) (p : Fin n → ℝ), o.Nodup ∧ (∀ r, r ∈ o ↔ r < i) ∧
     (∀ r ∈ o, fp.Rounds (S i r * S r j) (p r)) ∧
     RoundsSumFrom fp (A i j) (o.map fun r => -p r) (S i j)
 
-/-- An entry below the diagonal, finished: a running difference over `r < j`, then divided. -/
+/-- Entry $(i, j)$, $j < i$, of a packed matrix $S$ is a finished lower entry for $A$ if $s_{ij}$ is
+a rounding of $t / s_{jj}$, where $t$ is obtained from $a_{ij}$ by subtracting roundings of the
+products $s_{ir} s_{rj}$, $r < j$, one after the other in some order, with one rounding per
+subtraction. -/
 def LULowerEntry (fp : RoundingModel ℝ) (A S : Matrix (Fin n) (Fin n) ℝ) (i j : Fin n) : Prop :=
   ∃ (o : List (Fin n)) (p : Fin n → ℝ) (t : ℝ), o.Nodup ∧ (∀ r, r ∈ o ↔ r < j) ∧
     (∀ r ∈ o, fp.Rounds (S i r * S r j) (p r)) ∧
     RoundsSumFrom fp (A i j) (o.map fun r => -p r) t ∧ fp.Rounds (t / S j j) (S i j)
 
-/-- An entry of the trailing block after `k` steps: a running difference over `r < k`. -/
+/-- Entry $(i, j)$ of a packed matrix $S$ is a trailing entry after $k$ steps for $A$ if $s_{ij}$ is
+obtained from $a_{ij}$ by subtracting roundings of the products $s_{ir} s_{rj}$, $r < k$, one
+after the other in some order, with one rounding per subtraction. -/
 def LUTrailingEntry (fp : RoundingModel ℝ) (A : Matrix (Fin n) (Fin n) ℝ) (k : ℕ)
     (S : Matrix (Fin n) (Fin n) ℝ) (i j : Fin n) : Prop :=
   ∃ (o : List (Fin n)) (p : Fin n → ℝ), o.Nodup ∧ (∀ r : Fin n, r ∈ o ↔ (r : ℕ) < k) ∧
     (∀ r ∈ o, fp.Rounds (S i r * S r j) (p r)) ∧
     RoundsSumFrom fp (A i j) (o.map fun r => -p r) (S i j)
 
-/-- The invariant of Algorithm 3.2.1 after `k` steps: rows and columns before `k` finished, the
-trailing block holding running differences over `r < k`. -/
+/-- The invariant of Algorithm 3.2.1 after $k$ steps: the entries $(i, j)$ with $i < k$ and
+$i \le j$ are finished upper entries, the entries with $j < k$ and $j < i$ are finished lower
+entries, and the entries with $i, j \ge k$ are trailing entries after $k$ steps. -/
 def LUStageInv (fp : RoundingModel ℝ) (A : Matrix (Fin n) (Fin n) ℝ) (k : ℕ)
     (S : Matrix (Fin n) (Fin n) ℝ) : Prop :=
   ∀ i j : Fin n, ((i : ℕ) < k → i ≤ j → LUUpperEntry fp A S i j) ∧
     ((j : ℕ) < k → j < i → LULowerEntry fp A S i j) ∧
     (k ≤ (i : ℕ) → k ≤ (j : ℕ) → LUTrailingEntry fp A k S i j)
 
-/-- One step of Algorithm 3.2.1 keeps the invariant. -/
+/-- One step of Algorithm 3.2.1 keeps the invariant. If $S$ satisfies the invariant after $k$ steps
+and $S'$ is related to $S$ as in `GolubVanLoan.Chapter03.mem_run_outerProductStep`, then $S'$
+satisfies the invariant after $k + 1$ steps. -/
 theorem luStageInv_step (A : Matrix (Fin n) (Fin n) ℝ) (k : Fin n)
     {S S' : Matrix (Fin n) (Fin n) ℝ} (hS : LUStageInv fp A k S)
     (hunch : ∀ i j, ¬ (k < i ∧ (j = k ∨ k < j)) → S' i j = S i j)
@@ -687,14 +913,15 @@ theorem luStageInv_step (A : Matrix (Fin n) (Fin n) ℝ) (k : Fin n)
       rw [hmap, roundsSumFrom_append_singleton]
       exact ⟨S i j, hsum, by rw [← sub_eq_add_neg]; exact hq'⟩
 
-/-- Before the first step the invariant holds: nothing is finished, and the trailing block is the
-matrix itself. -/
+/-- Before the first step the invariant holds: nothing is finished, and every entry of $A$ is a
+trailing entry after $0$ steps. -/
 theorem luStageInv_zero (A : Matrix (Fin n) (Fin n) ℝ) : LUStageInv fp A 0 A := fun _ _ =>
   ⟨fun h => absurd h (Nat.not_lt_zero _), fun h => absurd h (Nat.not_lt_zero _),
     fun _ _ => ⟨[], fun _ => 0, List.nodup_nil, fun r => by simp, by simp, .nil _⟩⟩
 
-/-- **The finished invariant is a computed LU factorization**: after all `n` steps every entry is
-finished, and the packed matrix read as `packedL`, `packedU` satisfies `FloatingPoint.RoundsLU`. -/
+/-- If a packed matrix $F$ satisfies the invariant of Algorithm 3.2.1 after $n$ steps, then every
+entry is finished, and the factors `packedL F` and `packedU F` form a computed LU factorization
+of $A$ in the sense of `FloatingPoint.RoundsLU`. -/
 theorem roundsLU_of_luStageInv {A F : Matrix (Fin n) (Fin n) ℝ} (hinv : LUStageInv fp A n F) :
     RoundsLU fp A (packedL F) (packedU F) := by
   refine ⟨fun i j hij => packedL_apply_of_lt' F hij, packedL_apply_self F,
@@ -716,11 +943,20 @@ theorem roundsLU_of_luStageInv {A F : Matrix (Fin n) (Fin n) ℝ} (hinv : LUStag
     · rw [packedL_apply_of_lt F hij, packedU_apply_of_le F le_rfl]
       exact hx
 
-/-- **The bridge of Algorithm 3.2.1**: every run in the relational model returns packed factors
-that are an admissible computed LU factorization, `FloatingPoint.RoundsLU fp A (packedL F)
-(packedU F)`, with no hypothesis on `A` (a zero pivot gives junk quotients that `RoundsLU` allows
-as well). Invariant after `k` steps: the rows and columns before `k` are finished entries of the
-Doolittle recurrence, and the trailing block holds the running differences over `r < k`. -/
+/-- **Algorithm 3.2.1** of [golub2013matrix], rounding bridge. Let $A \in \mathbb{R}^{n \times n}$
+be arbitrary. For every packed matrix $F$ that Algorithm 3.2.1 can compute in the rounding model
+`fp`, the factors $\hat L$ and $\hat U$ stored in $F$ form a computed LU factorization of $A$:
+$\hat L$ is unit lower triangular and $\hat U$ is upper triangular; for $i \le j$, $\hat u_{ij}$
+is obtained from $a_{ij}$ by subtracting roundings of the products $\hat\ell_{ir} \hat u_{rj}$,
+$r < i$, one after the other in some order, with one rounding per subtraction; and for $j < i$,
+$\hat\ell_{ij}$ is a rounding of $t / \hat u_{jj}$ with $t$ obtained in the same way from
+$a_{ij}$ over $r < j$.
+
+The relation is `FloatingPoint.RoundsLU fp A (packedL F) (packedU F)`. It needs no hypothesis on
+$A$: a zero pivot gives quotients $x / 0 = 0$, which the relation also allows. The invariant
+after $k$ steps is `GolubVanLoan.Chapter03.LUStageInv`: the rows and columns before $k$ are
+finished entries of the Doolittle recurrence, and the trailing block holds the running
+differences over $r < k$. -/
 theorem algorithm_3_2_1_rounds (A : Matrix (Fin n) (Fin n) ℝ) :
     ∀ F ∈ (algorithm_3_2_1 fp.round A).run, RoundsLU fp A (packedL F) (packedU F) := by
   intro F hF
@@ -730,21 +966,27 @@ theorem algorithm_3_2_1_rounds (A : Matrix (Fin n) (Fin n) ℝ) :
       exact luStageInv_step A k hS h₁ h₂ h₃) F hF
   exact roundsLU_of_luStageInv hinv
 
-/-- The exact run of Algorithm 3.2.1 is a run of the exact model. -/
+/-- The exact run of Algorithm 3.2.1 is one of its runs in the exact rounding model. -/
 private theorem algorithm_3_2_1_mem_exact (A : Matrix (Fin n) (Fin n) ℝ) :
     Id.run (algorithm_3_2_1 pure A) ∈ (algorithm_3_2_1 (RoundingModel.exact ℝ).round A).run := by
   rw [RoundingModel.round_exact]
   simp only [algorithm_3_2_1, outerProductStep, pure_bind, List.foldlM_pure, SetM.mem_run_pure]
   rfl
 
-/-- In exact arithmetic Algorithm 3.2.1 computes the Doolittle factors, for every `A`. -/
+/-- In exact arithmetic, for every $A \in \mathbb{R}^{n \times n}$, the factors stored in the output
+of Algorithm 3.2.1 are the Doolittle factors `Matrix.luLower A` and `Matrix.luUpper A`. -/
 theorem algorithm_3_2_1_packed_eq (A : Matrix (Fin n) (Fin n) ℝ) :
     packedL (Id.run (algorithm_3_2_1 pure A)) = A.luLower ∧
       packedU (Id.run (algorithm_3_2_1 pure A)) = A.luUpper :=
   roundsLU_exact_iff.1 (algorithm_3_2_1_rounds A _ (algorithm_3_2_1_mem_exact A))
 
-/-- **Exact correctness of Algorithm 3.2.1**: if `A(1:k,1:k)` is nonsingular for `k = 1:n-1`, the
-packed output holds the LU factorization `A = L U`. Read off the bridge at the exact model. -/
+/-- **Algorithm 3.2.1** of [golub2013matrix], exact correctness. Let $A \in \mathbb{R}^{n \times n}$
+with $A(1{:}k, 1{:}k)$ nonsingular for $k = 1, \dots, n-1$. In exact arithmetic, the factors $L$
+and $U$ stored in the output of Algorithm 3.2.1 form the LU factorization $A = LU$, with $L$
+unit lower triangular and $U$ upper triangular.
+
+The proof reads the result off `GolubVanLoan.Chapter03.algorithm_3_2_1_rounds` at the exact
+model. -/
 theorem algorithm_3_2_1_spec {A : Matrix (Fin n) (Fin n) ℝ}
     (hA : ∀ k : Fin n, (A.strictLeadingPrincipalSubmatrix k).det ≠ 0) :
     IsLU A (packedL (Id.run (algorithm_3_2_1 pure A)))
@@ -759,9 +1001,13 @@ end Algorithm321
 
 section Rectangular
 
-/-- §3.2.10: "the LU factorization of `A ∈ ℝ^{n×r}` is guaranteed to exist if `A(1:k,1:k)` is
-nonsingular for `k = 1:min{n, r}`" — a unit lower trapezoidal `L ∈ ℝ^{n×p}` and an upper
-trapezoidal `U ∈ ℝ^{p×r}`, `p = min{n, r}`, with `A = LU`. -/
+/-- **Section 3.2.10** of [golub2013matrix], existence of the rectangular LU factorization. Let
+$A \in \mathbb{R}^{n \times r}$ and $p = \min\{n, r\}$. If $A(1{:}k, 1{:}k)$ is nonsingular for
+$k = 1, \dots, p$, then there are a unit lower trapezoidal $L \in \mathbb{R}^{n \times p}$ and
+an upper trapezoidal $U \in \mathbb{R}^{p \times r}$ with $A = LU$.
+
+The conclusion is `Matrix.IsRectLU A L U`: $\ell_{ij} = 0$ for $i < j$, $\ell_{ii} = 1$, and
+$u_{ij} = 0$ for $j < i$. -/
 theorem rectangularLU_exists {n r : ℕ} {A : Matrix (Fin n) (Fin r) ℝ}
     (hA : ∀ k (hk : k + 1 ≤ min n r),
       (A.submatrix (Fin.castLE (hk.trans (min_le_left _ _)))
@@ -777,12 +1023,19 @@ section BlockLU
 
 variable {r s : ℕ}
 
-/-- **(3.2.9)**, the Schur complement: if `[A₁₁; A₂₁] = [L₁₁; L₂₁] U₁₁` and `L₁₁ U₁₂ = A₁₂`, then
-```
-[A₁₁ A₁₂; A₂₁ A₂₂] = [L₁₁ 0; L₂₁ I] [I 0; 0 Ã] [U₁₁ U₁₂; 0 I],   Ã = A₂₂ - L₂₁ U₁₂,
-```
-and when `L₁₁` is unit lower triangular and `U₁₁` nonsingular, `Ã = A₂₂ - A₂₁ A₁₁⁻¹ A₁₂` "is the
-Schur complement of `A₁₁` in `A`". Blocks over `Fin r ⊕ Fin s`. -/
+/-- **Equation (3.2.9)** of [golub2013matrix], the Schur complement. Let $A_{11}, L_{11}, U_{11} \in
+\mathbb{R}^{r \times r}$, $A_{12}, U_{12} \in \mathbb{R}^{r \times s}$,
+$A_{21}, L_{21} \in \mathbb{R}^{s \times r}$ and $A_{22} \in \mathbb{R}^{s \times s}$, with
+$$\begin{bmatrix} A_{11} \\ A_{21} \end{bmatrix} = \begin{bmatrix} L_{11} \\ L_{21}
+  \end{bmatrix} U_{11}, \qquad L_{11} U_{12} = A_{12}.$$
+Then, with $\tilde A = A_{22} - L_{21} U_{12}$,
+$$\begin{bmatrix} A_{11} & A_{12} \\ A_{21} & A_{22} \end{bmatrix} = \begin{bmatrix} L_{11} & 0
+  \\ L_{21} & I \end{bmatrix} \begin{bmatrix} I & 0 \\ 0 & \tilde A \end{bmatrix}
+  \begin{bmatrix} U_{11} & U_{12} \\ 0 & I \end{bmatrix}.$$
+If moreover $L_{11}$ is unit lower triangular and $U_{11}$ is nonsingular, then
+$\tilde A = A_{22} - A_{21} A_{11}^{-1} A_{12}$, the Schur complement of $A_{11}$ in $A$.
+
+The block matrices are `Matrix.fromBlocks` over `Fin r ⊕ Fin s`. -/
 theorem equation_3_2_9 {A₁₁ L₁₁ U₁₁ : Matrix (Fin r) (Fin r) ℝ} {A₁₂ U₁₂ : Matrix (Fin r) (Fin s) ℝ}
     {A₂₁ L₂₁ : Matrix (Fin s) (Fin r) ℝ} (A₂₂ : Matrix (Fin s) (Fin s) ℝ)
     (h₁₁ : A₁₁ = L₁₁ * U₁₁) (h₂₁ : A₂₁ = L₂₁ * U₁₁) (h₁₂ : L₁₁ * U₁₂ = A₁₂) :
@@ -803,7 +1056,8 @@ theorem equation_3_2_9 {A₁₁ L₁₁ U₁₁ : Matrix (Fin r) (Fin r) ℝ} {A
     rw [← Matrix.mul_assoc L₁₁⁻¹ L₁₁, nonsing_inv_mul _ hLd, Matrix.one_mul,
       ← Matrix.mul_assoc U₁₁ U₁₁⁻¹, mul_nonsing_inv _ hUd, Matrix.one_mul]
 
-/-- The two-block matrix read on `Fin (r + s)`. -/
+/-- The entry $(i, j)$ of a $2 \times 2$ block matrix read on `Fin (r + s)` through `finSumFinEquiv`
+is the entry of the block matrix at the pair of block indices that corresponds to $(i, j)$. -/
 theorem reindex_fromBlocks_apply {α : Type*} (A₁₁ : Matrix (Fin r) (Fin r) α)
     (A₁₂ : Matrix (Fin r) (Fin s) α) (A₂₁ : Matrix (Fin s) (Fin r) α)
     (A₂₂ : Matrix (Fin s) (Fin s) α) (i j : Fin (r + s)) :
@@ -811,9 +1065,17 @@ theorem reindex_fromBlocks_apply {α : Type*} (A₁₁ : Matrix (Fin r) (Fin r) 
       fromBlocks A₁₁ A₁₂ A₂₁ A₂₂ (finSumFinEquiv.symm i) (finSumFinEquiv.symm j) :=
   rfl
 
-/-- §3.2.11, after (3.2.9): "if `Ã = L₂₂ U₂₂` is the LU factorization of `Ã`, then
-`A = [L₁₁ 0; L₂₁ L₂₂] [U₁₁ U₁₂; 0 U₂₂]` is the LU factorization of `A`" — on `Fin (r + s)`
-through `finSumFinEquiv`; the step of the recursion of Algorithm 3.2.3. -/
+/-- **Section 3.2.11** of [golub2013matrix], block LU through the Schur complement. Let
+$A_{11} = L_{11} U_{11}$ be an LU factorization in $\mathbb{R}^{r \times r}$, let
+$A_{21} = L_{21} U_{11}$ and $L_{11} U_{12} = A_{12}$, and let $\tilde A = A_{22} - L_{21}
+U_{12} = L_{22} U_{22}$ be an LU factorization in $\mathbb{R}^{s \times s}$. Then
+$$A = \begin{bmatrix} A_{11} & A_{12} \\ A_{21} & A_{22} \end{bmatrix} = \begin{bmatrix} L_{11}
+  & 0 \\ L_{21} & L_{22} \end{bmatrix} \begin{bmatrix} U_{11} & U_{12} \\ 0 & U_{22}
+  \end{bmatrix}$$
+is the LU factorization of $A$.
+
+The three block matrices are read on `Fin (r + s)` through `finSumFinEquiv`. This is the step of
+the recursion of Algorithm 3.2.3. -/
 theorem blockLU_of_schur {A₁₁ L₁₁ U₁₁ : Matrix (Fin r) (Fin r) ℝ}
     {A₁₂ U₁₂ : Matrix (Fin r) (Fin s) ℝ} {A₂₁ L₂₁ : Matrix (Fin s) (Fin r) ℝ}
     {A₂₂ L₂₂ U₂₂ : Matrix (Fin s) (Fin s) ℝ} (h₁₁ : IsLU A₁₁ L₁₁ U₁₁) (h₂₁ : A₂₁ = L₂₁ * U₁₁)
@@ -858,10 +1120,20 @@ section OuterProduct
 
 variable {s : ℕ}
 
-/-- **§3.2.7**: with `A = [α wᵀ; z B]` and `α ≠ 0`, the first step of Gaussian elimination is the
-decomposition `A = [1 0; z/α I] [1 0; 0 B - zwᵀ/α] [α wᵀ; 0 I]`, and if `B - zwᵀ/α = L₁ U₁` then
-`A = [1 0; z/α L₁] [α wᵀ; 0 U₁]` is the LU factorization of `A` (on `Fin (1 + s)` through
-`finSumFinEquiv`). The case `r = 1` of (3.2.9) and of `blockLU_of_schur`. -/
+/-- **Section 3.2.7** of [golub2013matrix], the outer product point of view. Let
+$\alpha \in \mathbb{R}$ with $\alpha \neq 0$, let $w, z \in \mathbb{R}^s$ and
+$B \in \mathbb{R}^{s \times s}$, and let $A = \begin{bmatrix} \alpha & w^T \\ z & B
+\end{bmatrix}$. Then the first step of Gaussian elimination is the decomposition
+$$A = \begin{bmatrix} 1 & 0 \\ z/\alpha & I \end{bmatrix} \begin{bmatrix} 1 & 0 \\ 0 & B -
+  zw^T/\alpha \end{bmatrix} \begin{bmatrix} \alpha & w^T \\ 0 & I \end{bmatrix},$$
+and if $B - zw^T/\alpha = L_1 U_1$ is an LU factorization, then
+$$A = \begin{bmatrix} 1 & 0 \\ z/\alpha & L_1 \end{bmatrix} \begin{bmatrix} \alpha & w^T \\ 0 &
+  U_1 \end{bmatrix}$$
+is the LU factorization of $A$.
+
+The first identity is over `Fin 1 ⊕ Fin s`, and the factorization is read on `Fin (1 + s)`
+through `finSumFinEquiv`. This is the case $r = 1$ of (3.2.9) and of
+`GolubVanLoan.Chapter03.blockLU_of_schur`. -/
 theorem outerProduct_decomposition {α : ℝ} (hα : α ≠ 0) (w z : Fin s → ℝ)
     (B : Matrix (Fin s) (Fin s) ℝ) :
     fromBlocks (of fun _ _ => α : Matrix (Fin 1) (Fin 1) ℝ) (of fun _ j => w j)
@@ -904,22 +1176,28 @@ section Gaxpy
 
 variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 
-/-- **The column of the gaxpy LU** (Algorithms 3.2.2 and 3.4.2), for the column `ã` of `A` and the
-current `L`: "solve `L(1:j-1,1:j-1) z = ã(1:j-1)`, `v(j:n) = ã(j:n) - L(j:n,1:j-1) z`", in one
-loop over the rows. Entry `i` is the running difference (`FloatingPoint.runningDiff`) of `ã(i)`
-and the rounded products `L(i,r) v(r)` over `r < min(i, j)`: for `i < j` the row-oriented unit
-lower triangular solve, which does not divide by the unit diagonal (convention 2, §3.1.7), for
-`i ≥ j` the gaxpy, both reading the solved `z = v(1:j-1)`. -/
+/-- **Algorithm 3.2.2** of [golub2013matrix], the column of the gaxpy LU. Let
+$L \in \mathbb{R}^{n \times n}$, let $\tilde a \in \mathbb{R}^n$ be column $j$ of $A$, and let
+$j$ be an index. The algorithm solves $L(1{:}j{-}1, 1{:}j{-}1) z = \tilde a(1{:}j{-}1)$ and
+forms $v(j{:}n) = \tilde a(j{:}n) - L(j{:}n, 1{:}j{-}1) z$, in one loop over the rows: for each
+$i$ in increasing order, $v_i$ is obtained from $\tilde a_i$ by subtracting
+$\mathrm{fl}(\ell_{ir} v_r)$ for $r < \min(i, j)$ in increasing order, with one rounding per
+subtraction.
+
+For $i < j$ this is the row-oriented unit lower triangular solve, which does not divide by the
+unit diagonal; for $i \ge j$ it is the gaxpy. Both read the solved $z = v(1{:}j{-}1)$. Each
+$v_i$ is `FloatingPoint.runningDiff`. Algorithm 3.4.2 shares this program. -/
 noncomputable def gaxpyColumn {n : ℕ} (L : Matrix (Fin n) (Fin n) ℝ) (ã : Fin n → ℝ) (j : Fin n) :
     M (Fin n → ℝ) :=
   (List.finRange n).foldlM (fun (v : Fin n → ℝ) i => do
     let vi ← runningDiff rnd ((List.finRange n).filter (fun r => r < i ∧ r < j)) (L i) v (ã i)
     pure (Function.update v i vi)) ã
 
-/-- **Algorithm 3.2.2 (Gaxpy LU).** "Suppose `A ∈ ℝ^{n×n}` has the property that `A(1:k,1:k)` is
-nonsingular for `k = 1:n-1`. This algorithm computes the factorization `A = LU` where `L` is unit
-lower triangular and `U` is upper triangular. Initialize `L` to the identity and `U` to the zero
-matrix."
+/-- **Algorithm 3.2.2** of [golub2013matrix] (gaxpy LU). Suppose that
+$A \in \mathbb{R}^{n \times n}$ has the property that $A(1{:}k, 1{:}k)$ is nonsingular for
+$k = 1{:}n-1$. The algorithm computes the factorization $A = LU$, where $L$ is unit lower
+triangular and $U$ is upper triangular. It initializes $L$ to the identity and $U$ to the zero
+matrix.
 ```
 for j = 1:n
     if j = 1
@@ -932,8 +1210,12 @@ for j = 1:n
     U(j,j) = v(j),  L(j+1:n,j) = v(j+1:n)/v(j)
 end
 ```
-The column `v` is `gaxpyColumn`: the unit lower triangular solve and the gaxpy `v(j:n)`, both
-running differences without division by the unit diagonal. The state is the pair `(L, U)`. -/
+For each column $j$ the program computes $v$ by `GolubVanLoan.Chapter03.gaxpyColumn`, sets
+$\ell_{ij} \leftarrow \mathrm{fl}(v_i / v_j)$ for $i > j$, and sets column $j$ of $U$ to $v_i$
+for $i \le j$ and to $0$ below.
+
+The state is the pair $(L, U)$. The unit lower triangular solve and the gaxpy are both running
+differences, without division by the unit diagonal. The program has no hypothesis on $A$. -/
 noncomputable def algorithm_3_2_2 {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ) :
     M (Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ) :=
   (List.finRange n).foldlM (fun (st : Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ) j => do
@@ -943,8 +1225,8 @@ noncomputable def algorithm_3_2_2 {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ) :
       pure (L.updateRow i (Function.update (L i) j l))) st.1
     pure (L, st.2.updateCol j fun i => if i ≤ j then v i else 0)) (1, 0)
 
-/-- **(3.2.8)**, the outer product LU of a tall `A ∈ ℝ^{n×r}`, `r ≤ n`: "Algorithm 3.2.1
-modifies to the following"
+/-- **Equation (3.2.8)** of [golub2013matrix], outer product LU of a tall matrix. Let
+$A \in \mathbb{R}^{n \times r}$ with $r \le n$. Algorithm 3.2.1 is modified as follows:
 ```
 for k = 1:r
     ρ = k+1:n
@@ -955,8 +1237,15 @@ for k = 1:r
     end
 end
 ```
-"Upon completion, `A` is overwritten by the strictly lower triangular portion of `L ∈ ℝ^{n×r}` and
-the upper triangular portion of `U ∈ ℝ^{r×r}`." The guard `k < r` is the emptiness of `μ`. -/
+Upon completion, $A$ is overwritten by the strictly lower triangular part of
+$L \in \mathbb{R}^{n \times r}$ and the upper triangular part of
+$U \in \mathbb{R}^{r \times r}$.
+
+The program computes $a_{ik} \leftarrow \mathrm{fl}(a_{ik} / a_{kk})$ for $i > k$, and then
+$a_{ij} \leftarrow \mathrm{fl}(a_{ij} - \mathrm{fl}(a_{ik} a_{kj}))$ for $i > k$ and
+$k < j \le r$, row by row. The guard $k < r$ of the source is the emptiness of $\mu$. The
+factors are read by `GolubVanLoan.Chapter03.tallPackedL` and
+`GolubVanLoan.Chapter03.tallPackedU`. -/
 noncomputable def tallOuterProductLU {n r : ℕ} (hrn : r ≤ n) (A : Matrix (Fin n) (Fin r) ℝ) :
     M (Matrix (Fin n) (Fin r) ℝ) :=
   (List.finRange r).foldlM (fun (A : Matrix (Fin n) (Fin r) ℝ) k => do
@@ -979,9 +1268,10 @@ section BlockLUAlgorithm
 
 variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 
-/-- **Algorithm 3.2.3 (Recursive Block LU).** "Suppose `A ∈ ℝ^{n×n}` has an LU factorization and
-`r` is a positive integer. The following algorithm computes unit lower triangular `L ∈ ℝ^{n×n}` and
-upper triangular `U ∈ ℝ^{n×n}` so `A = LU`."
+/-- **Algorithm 3.2.3** of [golub2013matrix] (recursive block LU). Suppose that
+$A \in \mathbb{R}^{n \times n}$ has an LU factorization and $r$ is a positive integer. The
+algorithm computes a unit lower triangular $L \in \mathbb{R}^{n \times n}$ and an upper
+triangular $U \in \mathbb{R}^{n \times n}$ with $A = LU$.
 ```
 function [L, U] = BlockLU(A, n, r)
 if n ≤ r
@@ -994,11 +1284,16 @@ else
     L = [L₁₁ 0; L₂₁ L₂₂],  U = [U₁₁ U₁₂; 0 U₂₂]
 end
 ```
-Recursion on `n`; the split `Fin n ≃ Fin r ⊕ Fin (n - r)` is `finSumFinEquiv` up to `finCongr`.
-`L₁₁ U₁₂ = A₁₂` is solved column by column by the unit lower triangular solve
-`unitForwardSubstColOn` (Algorithm 3.1.3 without the division by the unit diagonal, convention 2),
-and `Ã = A₂₂ - L₂₁ U₁₂` entrywise in running differences (`FloatingPoint.runningDiff`), the level-3
-update order of (3.1.4) (the book does not analyse the rounding of its level-3 product). -/
+For $n \le r$ the program runs Algorithm 3.2.1. Otherwise it runs (3.2.8) on the first $r$
+columns, solves $L_{11} U_{12} = A_{12}$ column by column by the unit lower triangular solve
+`GolubVanLoan.Chapter03.unitForwardSubstColOn`, computes each entry of
+$\tilde A = A_{22} - L_{21} U_{12}$ as a running difference, calls itself on $\tilde A$, and
+assembles the blocks.
+
+The recursion is on $n$, and the split `Fin n ≃ Fin r ⊕ Fin (n - r)` is `finSumFinEquiv`
+followed by `finCongr`. The unit solve is Algorithm 3.1.3 without the division by the unit
+diagonal. The running differences (`FloatingPoint.runningDiff`) follow the order of the level-3
+update of (3.1.4); the source does not analyse the rounding of its level-3 product. -/
 noncomputable def algorithm_3_2_3 (r : ℕ) (hr : 0 < r) :
     (n : ℕ) → Matrix (Fin n) (Fin n) ℝ → M (Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ)
   | n, A =>
@@ -1034,9 +1329,10 @@ section GaxpyBridge
 
 variable {fp : RoundingModel ℝ} {n : ℕ}
 
-/-- **The run set of the gaxpy column**: entry `i` of every run of `gaxpyColumn` is a running
-difference of `ã(i)` over `r < min(i, j)`, against the entries `v(r)` of the run itself (the
-finished `z(r)` of the unit solve). -/
+/-- The run set of `GolubVanLoan.Chapter03.gaxpyColumn`. For every output $v$ in the rounding model
+`fp` and every $i$, $v_i$ is obtained from $\tilde a_i$ by subtracting roundings of the products
+$\ell_{ir} v_r$, $r < \min(i, j)$, in increasing order, with one rounding per subtraction; the
+$v_r$ are the entries of the output itself. -/
 theorem gaxpyColumn_rounds (L : Matrix (Fin n) (Fin n) ℝ) (ã : Fin n → ℝ) (j : Fin n) :
     ∀ v ∈ (gaxpyColumn fp.round L ã j).run, ∀ i, RoundsRunningDiff fp
       ((List.finRange n).filter (fun r => r < i ∧ r < j)) (L i) v (ã i) (v i) := by
@@ -1055,9 +1351,12 @@ theorem gaxpyColumn_rounds (L : Matrix (Fin n) (Fin n) ℝ) (ã : Fin n → ℝ)
     exact List.mem_prefix_of_pairwise (List.pairwise_lt_finRange n) hl
       (List.mem_finRange r) (ne_of_lt hri) (lt_asymm hri)
 
-/-- The invariant of Algorithm 3.2.2 after the columns before `j`: those columns hold finished
-entries of the Doolittle recurrence (the fields of `FloatingPoint.RoundsLU`), and the later columns
-of `L` and `U` are still those of the identity and of the zero matrix. -/
+/-- The invariant of Algorithm 3.2.2 after the first $j$ columns, for a state $(L, U)$. In each
+column $c < j$, the entries $u_{ic}$, $i \le c$, are running differences of $a_{ic}$ over
+$r < i$, and the entries $\ell_{ic}$, $c < i$, are roundings of $t / u_{cc}$ with $t$ a running
+difference of $a_{ic}$ over $r < c$, as in `FloatingPoint.RoundsLU`. The columns $c \ge j$ of
+$L$ and $U$ are those of the identity and of the zero matrix. Moreover $L$ is unit lower
+triangular and $U$ is upper triangular. -/
 def GaxpyInv (fp : RoundingModel ℝ) (A : Matrix (Fin n) (Fin n) ℝ) (j : ℕ)
     (st : Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ) : Prop :=
   (∀ i c : Fin n, (c : ℕ) < j → i ≤ c → ∃ o : List (Fin n), o.Nodup ∧ (∀ r, r ∈ o ↔ r < i) ∧
@@ -1070,14 +1369,17 @@ def GaxpyInv (fp : RoundingModel ℝ) (A : Matrix (Fin n) (Fin n) ℝ) (j : ℕ)
   (∀ i c : Fin n, i < c → st.1 i c = 0) ∧ (∀ i, st.1 i i = 1) ∧
   (∀ i c : Fin n, c < i → st.2 i c = 0)
 
-/-- Before the first column the invariant holds: `(L, U) = (I, 0)`. -/
+/-- Before the first column the invariant of Algorithm 3.2.2 holds for $(L, U) = (I, 0)$. -/
 theorem gaxpyInv_zero (A : Matrix (Fin n) (Fin n) ℝ) : GaxpyInv fp A 0 (1, 0) :=
   ⟨fun _ _ h => absurd h (Nat.not_lt_zero _), fun _ _ h => absurd h (Nat.not_lt_zero _),
     fun i c _ => by simp [Matrix.one_apply], fun _ _ _ => rfl,
     fun i c h => by simp [h.ne],
     fun i => by simp, fun _ _ _ => rfl⟩
 
-/-- A new entry `l_ij`, `j < i`, of the gaxpy: its running difference `v(i)` is over `r < j`. -/
+/-- A new entry $\ell_{ij}$, $j < i$, of the gaxpy LU. If $v_i$ is a running difference of $a_{ij}$
+over $r < \min(i, j) = j$ against row $i$ of $L$ and $v$, and $L'$ agrees with $L$ in row $i$ on
+the columns $r < j$, then $v_i$ is a running difference of $a_{ij}$ over $r < j$ against row $i$
+of $L'$ and the new column $j$ of $U$. -/
 theorem gaxpy_newCol_lower {A L L' : Matrix (Fin n) (Fin n) ℝ} {i j : Fin n} (hji : j < i)
     {v : Fin n → ℝ} (hvi : RoundsRunningDiff fp
       ((List.finRange n).filter (fun r => r < i ∧ r < j)) (L i) v (A i j) (v i))
@@ -1091,9 +1393,14 @@ theorem gaxpy_newCol_lower {A L L' : Matrix (Fin n) (Fin n) ℝ} {i j : Fin n} (
   · exact hLc r (by simpa using hr : r < i ∧ r < j).2
   · rw [updateCol_self, ite_eq_left (by simpa using hr : r < i ∧ r < j).2.le]
 
-/-- **One column of the gaxpy LU keeps its invariant**, given the column `v` (running differences
-over `r < min(i, j)` against `L` and `v` itself) and the new `L'`, which differs from `L` only in
-the multipliers `l_ij = fl(v(i)/v(j))`, `i > j`. Shared by Algorithms 3.2.2 and 3.4.2. -/
+/-- One column of the gaxpy LU keeps its invariant. Let $(L, U)$ satisfy the invariant after $j$
+columns, let $v$ satisfy, for every $i$, that $v_i$ is a running difference of $a_{ij}$ over
+$r < \min(i, j)$ against row $i$ of $L$ and $v$, and let $L'$ differ from $L$ only in the
+entries $\ell'_{ij}$, $i > j$, each a rounding of $v_i / v_j$. Then $L'$ and $U$ with column $j$
+replaced by $v$ on the rows $i \le j$ and by $0$ below satisfy the invariant after $j + 1$
+columns.
+
+Algorithms 3.2.2 and 3.4.2 share this step. -/
 theorem gaxpyInv_succ {A L U : Matrix (Fin n) (Fin n) ℝ} {j : Fin n}
     (hst : GaxpyInv fp A j (L, U)) {v : Fin n → ℝ}
     (hv : ∀ i, RoundsRunningDiff fp ((List.finRange n).filter (fun r => r < i ∧ r < j)) (L i) v
@@ -1165,8 +1472,9 @@ theorem gaxpyInv_succ {A L U : Matrix (Fin n) (Fin n) ℝ} {j : Fin n}
     · rw [hU'o i c hcj]
       exact hUup i c hci
 
-/-- **The multipliers loop** of Algorithms 3.2.2 and 3.4.2: every run of the loop writing
-`l_ij = fl(v(i)/v(j))` for `i > j` into `L₀` changes only those entries, each a rounded quotient. -/
+/-- The multiplier loop of Algorithms 3.2.2 and 3.4.2. Every output $L'$ of the loop that writes
+$\ell_{ij} = \mathrm{fl}(v_i / v_j)$ for $i > j$ into $L_0$, in the rounding model `fp`, agrees
+with $L_0$ outside these entries, and each $\ell'_{ij}$, $i > j$, is a rounding of $v_i / v_j$. -/
 theorem mem_run_multipliers {j : Fin n} {v : Fin n → ℝ} {L₀ L' : Matrix (Fin n) (Fin n) ℝ}
     (h : L' ∈ (((List.finRange n).filter (j < ·)).foldlM
       (fun (L : Matrix (Fin n) (Fin n) ℝ) i => do
@@ -1200,7 +1508,8 @@ theorem mem_run_multipliers {j : Fin n} {v : Fin n → ℝ} {L₀ L' : Matrix (F
   exact ⟨fun i c hic => hL'₁ i c fun hm => hic ((hl₁mem i c).1 hm),
     fun i hi => hL'₂ (i, j) ((hl₁mem i j).2 ⟨hi, rfl⟩)⟩
 
-/-- One column of Algorithm 3.2.2 keeps its invariant. -/
+/-- One column step of Algorithm 3.2.2 in the rounding model maps every state that satisfies the
+invariant after $j$ columns to states that satisfy it after $j + 1$ columns. -/
 theorem gaxpyInv_step (A : Matrix (Fin n) (Fin n) ℝ) (j : Fin n)
     (st : Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ) (hst : GaxpyInv fp A j st)
     (st' : Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ)
@@ -1222,11 +1531,16 @@ theorem gaxpyInv_step (A : Matrix (Fin n) (Fin n) ℝ) (j : Fin n)
   obtain ⟨hL'o, hL'j⟩ := mem_run_multipliers hL'
   exact gaxpyInv_succ hst (gaxpyColumn_rounds L _ j v hv) hL'o hL'j
 
-/-- **The bridge of Algorithm 3.2.2**: every run `(L̂, Û)` in the relational model is an
-admissible computed LU factorization, `FloatingPoint.RoundsLU fp A L̂ Û`, with no hypothesis on
-`A`: each `û_ij`, `i ≤ j`, is the running difference of `a_ij` over `r < i` (the unit triangular
-solve for `i < j`, the gaxpy for `i = j`), and each `l̂_ij`, `i > j`, the gaxpy's running
-difference over `r < j` divided by `û_jj`. -/
+/-- **Algorithm 3.2.2** of [golub2013matrix], rounding bridge. Let $A \in \mathbb{R}^{n \times n}$
+be arbitrary. Every pair $(\hat L, \hat U)$ that Algorithm 3.2.2 can compute in the rounding
+model `fp` is a computed LU factorization of $A$ in the sense of `FloatingPoint.RoundsLU`: for
+$i \le j$, $\hat u_{ij}$ is the running difference of $a_{ij}$ over $r < i$, and for $j < i$,
+$\hat\ell_{ij}$ is the running difference of $a_{ij}$ over $r < j$ divided by $\hat u_{jj}$ with
+one rounding.
+
+The entries $\hat u_{ij}$ with $i < j$ come from the unit triangular solve, the entry
+$\hat u_{jj}$ and the entries $\hat\ell_{ij}$ from the gaxpy. The bridge needs no hypothesis on
+$A$. -/
 theorem algorithm_3_2_2_rounds (A : Matrix (Fin n) (Fin n) ℝ) :
     ∀ out ∈ (algorithm_3_2_2 fp.round A).run, RoundsLU fp A out.1 out.2 := by
   intro out hout
@@ -1235,7 +1549,7 @@ theorem algorithm_3_2_2_rounds (A : Matrix (Fin n) (Fin n) ℝ) :
     out hout
   exact ⟨hLlow, hLdiag, hUup, fun i j hij => hU i j j.2 hij, fun i j hji => hL i j j.2 hji⟩
 
-/-- The exact run of Algorithm 3.2.2 is a run of the exact model. -/
+/-- The exact run of Algorithm 3.2.2 is one of its runs in the exact rounding model. -/
 private theorem algorithm_3_2_2_mem_exact (A : Matrix (Fin n) (Fin n) ℝ) :
     Id.run (algorithm_3_2_2 pure A) ∈ (algorithm_3_2_2 (RoundingModel.exact ℝ).round A).run := by
   rw [RoundingModel.round_exact]
@@ -1243,9 +1557,13 @@ private theorem algorithm_3_2_2_mem_exact (A : Matrix (Fin n) (Fin n) ℝ) :
     SetM.mem_run_pure]
   rfl
 
-/-- **Exact correctness of Algorithm 3.2.2**: its exact output is the Doolittle pair
-`(luLower A, luUpper A)` for every `A`, the LU factorization when `A(1:k,1:k)` is nonsingular for
-`k = 1:n-1`. Read off the bridge at the exact model. -/
+/-- **Algorithm 3.2.2** of [golub2013matrix], exact correctness. For every
+$A \in \mathbb{R}^{n \times n}$, the exact output $(L, U)$ of Algorithm 3.2.2 is the pair of
+Doolittle factors (`Matrix.luLower A`, `Matrix.luUpper A`). If moreover $A(1{:}k, 1{:}k)$ is
+nonsingular for $k = 1, \dots, n-1$, then $A = LU$ is the LU factorization of $A$.
+
+The proof reads the result off `GolubVanLoan.Chapter03.algorithm_3_2_2_rounds` at the exact
+model. -/
 theorem algorithm_3_2_2_spec (A : Matrix (Fin n) (Fin n) ℝ) :
     (Id.run (algorithm_3_2_2 pure A)).1 = A.luLower ∧
       (Id.run (algorithm_3_2_2 pure A)).2 = A.luUpper ∧
@@ -1262,8 +1580,8 @@ end GaxpyBridge
 
 section TallLU
 
-/-- One step `k` of (3.2.8): the multipliers of column `k` below the pivot row, then the update of
-the columns `k+1:r` of the rows below the pivot. -/
+/-- One step $k$ of (3.2.8): the multipliers of column $k$ below the pivot row, then the update of
+the columns $k+1, \dots, r$ in the rows below the pivot row. -/
 private noncomputable def tallOuterProductStep {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
     {n r : ℕ} (hrn : r ≤ n) (k : Fin r) (A : Matrix (Fin n) (Fin r) ℝ) :
     M (Matrix (Fin n) (Fin r) ℝ) := do
@@ -1286,9 +1604,9 @@ private theorem tallOuterProductLU_eq_foldlM {M : Type → Type} [Monad M] (rnd 
       (List.finRange r).foldlM (fun A k => tallOuterProductStep rnd hrn k A) A :=
   rfl
 
-/-- The run set of one step of (3.2.8), as `mem_run_outerProductStep` for Algorithm 3.2.1: the
-multipliers below the pivot row are rounded quotients, the entries right of column `k` below the
-pivot row receive one rounded update, every other entry is unchanged. -/
+/-- The run set of one step of (3.2.8), as `GolubVanLoan.Chapter03.mem_run_outerProductStep` for
+Algorithm 3.2.1: the multipliers below the pivot row are rounded quotients, the entries right of
+column $k$ below the pivot row receive one rounded update, and every other entry is unchanged. -/
 private theorem mem_run_tallOuterProductStep {fp : RoundingModel ℝ} (hrn : r ≤ n) (k : Fin r)
     {S S' : Matrix (Fin n) (Fin r) ℝ} (h : S' ∈ (tallOuterProductStep fp.round hrn k S).run) :
     (∀ i j, ¬ (Fin.castLE hrn k < i ∧ (j = k ∨ k < j)) → S' i j = S i j) ∧
@@ -1367,7 +1685,7 @@ private theorem mem_run_tallOuterProductStep {fp : RoundingModel ℝ} (hrn : r �
     rw [← hS₁ i j fun h => hj.ne' ((hl₁mem i j).1 h).2]
     exact hc
 
-/-- One exact step of (3.2.8), entrywise. -/
+/-- One exact step of (3.2.8), entry by entry. -/
 private theorem tallOuterProductStep_exact (hrn : r ≤ n) (k : Fin r)
     (S : Matrix (Fin n) (Fin r) ℝ) :
     (∀ i j, ¬ (Fin.castLE hrn k < i ∧ (j = k ∨ k < j)) →
@@ -1389,7 +1707,7 @@ private theorem tallOuterProductStep_exact (hrn : r ≤ n) (k : Fin r)
   rw [RoundingModel.exact_rounds_iff] at hp hq
   rw [hq, hp]
 
-/-- One exact step of Algorithm 3.2.1, entrywise. -/
+/-- One exact step of Algorithm 3.2.1, entry by entry. -/
 private theorem outerProductStep_exact (k : Fin n) (S : Matrix (Fin n) (Fin n) ℝ) :
     (∀ i j, ¬ (k < i ∧ (j = k ∨ k < j)) → Id.run (outerProductStep pure k S) i j = S i j) ∧
       (∀ i, k < i → Id.run (outerProductStep pure k S) i k = S i k / S k k) ∧
@@ -1407,14 +1725,14 @@ private theorem outerProductStep_exact (k : Fin n) (S : Matrix (Fin n) (Fin n) �
   rw [RoundingModel.exact_rounds_iff] at hp hq
   rw [hq, hp]
 
-/-- The square matrix `[A | [0; I]]` bordering a tall `A ∈ ℝ^{n×r}`: its first `r` columns are
-those of `A`, its last `n - r` columns those of the identity. -/
+/-- The square matrix $[A \mid [0; I]]$ that borders a tall $A \in \mathbb{R}^{n \times r}$: its
+first $r$ columns are those of $A$, and its last $n - r$ columns are those of the identity. -/
 private def tallBorder (A : Matrix (Fin n) (Fin r) ℝ) : Matrix (Fin n) (Fin n) ℝ :=
   of fun i j => if h : (j : ℕ) < r then A i ⟨j, h⟩ else if i = j then 1 else 0
 
-/-- **Simulation**: in exact arithmetic, the steps `k < r` of Algorithm 3.2.1 on a square matrix
-act on its first `r` columns as the steps of (3.2.8) on a tall matrix holding them, and the steps
-`k ≥ r` leave those columns alone. -/
+/-- In exact arithmetic, the steps $k < r$ of Algorithm 3.2.1 on a square matrix act on its first
+$r$ columns as the steps of (3.2.8) on a tall matrix that holds these columns, and the steps
+$k \ge r$ do not change these columns. -/
 private theorem foldl_outerProductStep_castLE (hrn : r ≤ n) (l : List (Fin n))
     (S : Matrix (Fin n) (Fin n) ℝ) (T : Matrix (Fin n) (Fin r) ℝ)
     (hST : ∀ i j, S i (Fin.castLE hrn j) = T i j) (i : Fin n) (j : Fin r) :
@@ -1455,9 +1773,9 @@ private theorem foldl_outerProductStep_castLE (hrn : r ≤ n) (l : List (Fin n))
       · exact hk (by rw [← h]; exact hjr)
       · exact hk (lt_trans (Fin.lt_def.1 h) hjr)
 
-/-- The strict leading principal submatrices of the bordered matrix `[A | [0; I]]` are nonsingular
-when the leading blocks of `A` of order `≤ r` are: below order `r` they are those blocks, beyond it
-block lower triangular with diagonal blocks `A(1:r,1:r)` and `I`. -/
+/-- If the leading blocks of $A \in \mathbb{R}^{n \times r}$ of order at most $r$ are nonsingular,
+then the strict leading principal submatrices of the bordered matrix $[A \mid [0; I]]$ are
+nonsingular. -/
 private theorem tallBorder_det_ne_zero (hrn : r ≤ n) {A : Matrix (Fin n) (Fin r) ℝ}
     (hA : ∀ k (hk : k ≤ r), (A.submatrix (Fin.castLE (hk.trans hrn)) (Fin.castLE hk)).det ≠ 0)
     (k : Fin n) : ((tallBorder A).strictLeadingPrincipalSubmatrix k).det ≠ 0 := by
@@ -1508,23 +1826,32 @@ private theorem tallBorder_det_ne_zero (hrn : r ≤ n) {A : Matrix (Fin n) (Fin 
     rw [h₁₂, h₂₂, h₁₁, det_fromBlocks_zero₁₂, det_one, mul_one]
     exact hA r le_rfl
 
-/-- The unit lower trapezoidal factor `L ∈ ℝ^{n×r}` held by the output `F` of (3.2.8): the strictly
-lower part of `F`, ones on the diagonal, zeros above it. -/
+/-- **Equation (3.2.8)** of [golub2013matrix], the lower factor. For
+$F \in \mathbb{R}^{n \times r}$, `tallPackedL F` is the unit lower trapezoidal
+$L \in \mathbb{R}^{n \times r}$ with $\ell_{ik} = f_{ik}$ for $i > k$, $\ell_{kk} = 1$ and
+$\ell_{ik} = 0$ for $i < k$. -/
 def tallPackedL (F : Matrix (Fin n) (Fin r) ℝ) : Matrix (Fin n) (Fin r) ℝ :=
   of fun i k => if (k : ℕ) < i then F i k else if (i : ℕ) = k then 1 else 0
 
-/-- The upper triangular factor `U ∈ ℝ^{r×r}` held by the output `F` of (3.2.8): the upper
-triangular part of its first `r` rows. -/
+/-- **Equation (3.2.8)** of [golub2013matrix], the upper factor. For $F \in \mathbb{R}^{n \times r}$
+with $r \le n$, `tallPackedU F` is the upper triangular $U \in \mathbb{R}^{r \times r}$ with
+$u_{ik} = f_{ik}$ for $i \le k$ and $u_{ik} = 0$ for $i > k$: the upper triangular part of the
+first $r$ rows of $F$. -/
 def tallPackedU (hrn : r ≤ n) (F : Matrix (Fin n) (Fin r) ℝ) : Matrix (Fin r) (Fin r) ℝ :=
   of fun i k => if i ≤ k then F (Fin.castLE hrn i) k else 0
 
-/-- **(3.2.8) computes a rectangular LU factorization**: if `A(1:k,1:k)` is nonsingular for
-`k = 1:r` (the order-`0` block is empty), the exact output of (3.2.8) holds a rectangular LU
-factorization `A = L U`, `L ∈ ℝ^{n×r}` unit lower trapezoidal (`tallPackedL`), `U ∈ ℝ^{r×r}`
-upper triangular (`tallPackedU`). Proof: on the bordered square matrix `[A | [0; I]]`, whose strict
-leading principal submatrices are nonsingular, the first `r` columns of Algorithm 3.2.1 perform
-the operations of (3.2.8) (a simulation in exact arithmetic), and its LU factorization
-(`algorithm_3_2_1_spec`) restricted to the first `r` columns is `A = L U`. -/
+/-- **Equation (3.2.8)** of [golub2013matrix], exact correctness. Let
+$A \in \mathbb{R}^{n \times r}$ with $r \le n$, and let $A(1{:}k, 1{:}k)$ be nonsingular for
+$k = 1, \dots, r$. Then the exact output of (3.2.8) holds a rectangular LU factorization
+$A = LU$, with $L \in \mathbb{R}^{n \times r}$ unit lower trapezoidal and
+$U \in \mathbb{R}^{r \times r}$ upper triangular.
+
+The factors are `GolubVanLoan.Chapter03.tallPackedL` and `GolubVanLoan.Chapter03.tallPackedU` of
+the output, and the conclusion is `Matrix.IsRectLU`. The hypothesis also covers the empty block
+of order $0$. The proof borders $A$ to the square matrix $[A \mid [0; I]]$, whose strict leading
+principal submatrices are nonsingular. In exact arithmetic, Algorithm 3.2.1 performs the
+operations of (3.2.8) on the first $r$ columns of this matrix, and its LU factorization
+(`GolubVanLoan.Chapter03.algorithm_3_2_1_spec`), restricted to these columns, is $A = LU$. -/
 theorem equation_3_2_8 (hrn : r ≤ n) {A : Matrix (Fin n) (Fin r) ℝ}
     (hA : ∀ k (hk : k ≤ r), (A.submatrix (Fin.castLE (hk.trans hrn)) (Fin.castLE hk)).det ≠ 0) :
     IsRectLU A (tallPackedL (Id.run (tallOuterProductLU pure hrn A)))
@@ -1579,8 +1906,8 @@ end TallLU
 
 section BlockLUSpec
 
-/-- A double loop writing entry `(i, j)` with a value `g i j` fixed in advance sets the listed
-entries. -/
+/-- A double loop that writes entry $(i, j)$ with a value $g_{ij}$ fixed in advance sets the listed
+entries to these values and keeps the others. -/
 private theorem foldl_foldl_updateEntry_const {m q : ℕ} (g : Fin m → Fin q → ℝ)
     (R : List (Fin m)) (C : List (Fin q)) (X₀ : Matrix (Fin m) (Fin q) ℝ) (i : Fin m)
     (j : Fin q) :
@@ -1590,8 +1917,8 @@ private theorem foldl_foldl_updateEntry_const {m q : ℕ} (g : Fin m → Fin q �
       if i ∈ R ∧ j ∈ C then g i j else X₀ i j :=
   congrFun (congrFun (List.foldl_foldl_update_update_eq_ite g R C X₀) i) j
 
-/-- An LU factorization of a block matrix read on `Fin n` through `finSumFinEquiv` followed by a
-cast of `Fin (r + s)` to `Fin n` (an order isomorphism). -/
+/-- An LU factorization of a block matrix read on `Fin (r + s)` through `finSumFinEquiv` stays an LU
+factorization after the cast of `Fin (r + s)` to `Fin n`, which is an order isomorphism. -/
 private theorem isLU_reindex_finSumFinEquiv_trans {r s n : ℕ} (h : r + s = n)
     {A L U : Matrix (Fin r ⊕ Fin s) (Fin r ⊕ Fin s) ℝ}
     (hLU : IsLU (reindex finSumFinEquiv finSumFinEquiv A) (reindex finSumFinEquiv finSumFinEquiv L)
@@ -1603,13 +1930,24 @@ private theorem isLU_reindex_finSumFinEquiv_trans {r s n : ℕ} (h : r + s = n)
   exact (isBlockLU_comp_iff (f := finCongr h) (b := id ∘ finSumFinEquiv)
     (fun a b hab => hab)).2 hLU
 
-/-- **Exact correctness of Algorithm 3.2.3**: if `A(1:k,1:k)` is nonsingular for `k = 1:n-1` (the
-book's "A has an LU factorization" does not prevent a zero pivot, e.g. `!![0, 1; 0, 1]`), the exact
-output `(L, U)` of the recursive block LU is the LU factorization `A = L U`. Strong induction on
-`n`: the block column is factored by (3.2.8) (`equation_3_2_8`), `U₁₂` solves `L₁₁ U₁₂ = A₁₂`
-(`unitForwardSubstColOn_id_eq`, `algorithm_3_1_3_spec`), `Ã = A₂₂ - L₂₁ U₁₂` has nonsingular
-strict leading blocks (their determinants times `det U₁₁` are those of `A`, by (3.2.9)), and the
-factors assemble by `blockLU_of_schur`. -/
+/-- **Algorithm 3.2.3** of [golub2013matrix], exact correctness. Let $r > 0$ and let
+$A \in \mathbb{R}^{n \times n}$ with $A(1{:}k, 1{:}k)$ nonsingular for $k = 1, \dots, n-1$. Then
+the exact output $(L, U)$ of the recursive block LU is the LU factorization $A = LU$, with $L$
+unit lower triangular and $U$ upper triangular.
+
+**Correction.** The source assumes only that $A$ has an LU factorization. This does not exclude
+a zero pivot: $A = \begin{bmatrix} 0 & 1 \\ 0 & 1 \end{bmatrix} = \begin{bmatrix} 1 & 0 \\ 1 & 1
+\end{bmatrix} \begin{bmatrix} 0 & 1 \\ 0 & 0 \end{bmatrix}$ has an LU factorization, but the
+elimination divides by the pivot $a_{11} = 0$. The theorem assumes that the leading principal
+submatrices of orders $1, \dots, n-1$ are nonsingular.
+
+The proof is by strong induction on $n$. The block column is factored by (3.2.8)
+(`GolubVanLoan.Chapter03.equation_3_2_8`), and $U_{12}$ solves $L_{11} U_{12} = A_{12}$
+(`GolubVanLoan.Chapter03.unitForwardSubstColOn_id_eq`,
+`GolubVanLoan.Chapter03.algorithm_3_1_3_spec`). The strict leading blocks of
+$\tilde A = A_{22} - L_{21} U_{12}$ are nonsingular, because by (3.2.9) their determinants times
+$\det U_{11}$ are those of $A$. The factors are assembled by
+`GolubVanLoan.Chapter03.blockLU_of_schur`. -/
 theorem algorithm_3_2_3_spec (r : ℕ) (hr : 0 < r) {n : ℕ} {A : Matrix (Fin n) (Fin n) ℝ}
     (hA : ∀ k : Fin n, (A.strictLeadingPrincipalSubmatrix k).det ≠ 0) :
     IsLU A (Id.run (algorithm_3_2_3 pure r hr n A)).1
@@ -1790,9 +2128,10 @@ section Program
 
 variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 
-/-- **Algorithm 3.2.4 (Nonrecursive Block LU).** "Suppose `A ∈ ℝ^{n×n}` has an LU factorization
-and `r` is a positive integer. The following algorithm computes unit lower triangular
-`L ∈ ℝ^{n×n}` and upper triangular `U ∈ ℝ^{n×n}` so `A = LU`."
+/-- **Algorithm 3.2.4** of [golub2013matrix] (nonrecursive block LU). Suppose that
+$A \in \mathbb{R}^{n \times n}$ has an LU factorization and $r$ is a positive integer. The
+algorithm computes a unit lower triangular $L \in \mathbb{R}^{n \times n}$ and an upper
+triangular $U \in \mathbb{R}^{n \times n}$ with $A = LU$.
 ```
 for k = 1:N
     Rectangular Gaussian elimination:  [A_kk; …; A_Nk] = [L_kk; …; L_Nk] U_kk
@@ -1800,16 +2139,20 @@ for k = 1:N
     Level-3 updates:                   A_ij = A_ij - L_ik U_kj,  i = k+1:N, j = k+1:N
 end
 ```
-For `n = N r` ("for clarity"), the blocks are `r` consecutive indices: the block of
-`i : Fin (N * r)` is `i.divNat`. `A` is overwritten in place and its blocks are index lists of the
-full matrix (convention 10): the rectangular elimination (3.2.8) of the block column is, for each
-pivot `p` of block `k`, the outer product step of Algorithm 3.2.1 with its update restricted to the
-columns of block `k`; the multiple right-hand side solve is the unit lower triangular solve on the
-rows of block `k` (`unitForwardSubstColOn`, Algorithm 3.1.3 without the division by the unit
-diagonal), column by column, against the unit lower triangular `L_kk` held below the diagonal of
-`A_kk`; the level-3 update is entrywise, `a_ij - L_ik(i,:) · U_kj(:,j)` in running differences
-(`FloatingPoint.runningDiff`) over the indices of block `k`, the order of (3.1.4). The packed output
-is read by `packedL` and `packedU`. -/
+Here $n = Nr$, and block $k$ consists of $r$ consecutive indices: the block of an index $i$ is
+`i.divNat`. The program overwrites $A$ in place, and its blocks are index lists of the full
+matrix. The rectangular elimination (3.2.8) of the block column is, for each pivot $p$ of block
+$k$, the outer product step of Algorithm 3.2.1 with its update restricted to the columns of
+block $k$. The multiple right-hand side solve is the unit lower triangular solve
+`GolubVanLoan.Chapter03.unitForwardSubstColOn` on the rows of block $k$, column by column,
+against the unit lower triangular $L_{kk}$ stored below the diagonal of $A_{kk}$. The level-3
+update computes each entry $a_{ij} - L_{ik}(i, :) \cdot U_{kj}(:, j)$ as a running difference
+over the indices of block $k$.
+
+The source writes $n = Nr$ "for clarity". The unit solve is Algorithm 3.1.3 without the division
+by the unit diagonal, and the running differences (`FloatingPoint.runningDiff`) follow the order
+of (3.1.4). The factors are read from the output by `GolubVanLoan.Chapter03.packedL` and
+`GolubVanLoan.Chapter03.packedU`. -/
 noncomputable def algorithm_3_2_4 {N r : ℕ} (A : Matrix (Fin (N * r)) (Fin (N * r)) ℝ) :
     M (Matrix (Fin (N * r)) (Fin (N * r)) ℝ) :=
   (List.finRange N).foldlM (fun (A : Matrix (Fin (N * r)) (Fin (N * r)) ℝ) k => do
@@ -1848,11 +2191,11 @@ section Exact
 
 variable {n : ℕ}
 
-/-- The trailing values after the pivots below `P`: `a_ij - ∑_{t < P} ℓ_it u_tj`. -/
+/-- The trailing values after the pivots below $P$: $a_{ij} - \sum_{t < P} \ell_{it} u_{tj}$. -/
 private def schurRest (A L U : Matrix (Fin n) (Fin n) ℝ) (P : ℕ) (i j : Fin n) : ℝ :=
   A i j - ∑ t : Fin n, if (t : ℕ) < P then L i t * U t j else 0
 
-/-- The factors `L`, `U` packed in one matrix: `U` on and above the diagonal, `L` below. -/
+/-- The factors $L$ and $U$ packed in one matrix: $U$ on and above the diagonal, $L$ below it. -/
 private def packLU (L U : Matrix (Fin n) (Fin n) ℝ) : Matrix (Fin n) (Fin n) ℝ :=
   of fun i j => if j < i then L i j else U i j
 
@@ -1905,10 +2248,10 @@ private theorem schurRest_succ (p : Fin n) (i j : Fin n) :
 
 end Schur
 
-/-! #### Loops of Algorithm 3.2.4 in exact arithmetic -/
+/-! ### Loops of Algorithm 3.2.4 in exact arithmetic -/
 
-/-- The division loop of the block column elimination: the listed rows of column `p` are divided
-by the pivot. -/
+/-- The division loop of the block column elimination divides the listed rows of column $p$ by the
+pivot $s_{pp}$ and keeps every other entry. -/
 private theorem foldl_divCol_apply (p : Fin n) {R : List (Fin n)} (hR : R.Nodup) (hpR : p ∉ R)
     (S : Matrix (Fin n) (Fin n) ℝ) (i j : Fin n) :
     R.foldl (fun (S : Matrix (Fin n) (Fin n) ℝ) i =>
@@ -1923,8 +2266,8 @@ private theorem foldl_divCol_apply (p : Fin n) {R : List (Fin n)} (hR : R.Nodup)
     (fun S i _ => S i p / S p p) hh S) i) j).trans ?_
   simp only [List.mem_singleton, and_comm]
 
-/-- A double loop subtracting from each listed entry `(i, j)` a quantity `g S i j` read off entries
-outside the listed block writes every listed entry once, from its initial value. -/
+/-- A double loop that subtracts from each listed entry $(i, j)$ a quantity $g(S)_{ij}$ that reads
+only entries outside the listed block writes every listed entry once, from its initial value. -/
 private theorem foldl_foldl_sub_apply {R C : List (Fin n)} (hR : R.Nodup) (hC : C.Nodup)
     (g : Matrix (Fin n) (Fin n) ℝ → Fin n → Fin n → ℝ)
     (hg : ∀ S S' : Matrix (Fin n) (Fin n) ℝ, (∀ a b, ¬ (a ∈ R ∧ b ∈ C) → S a b = S' a b) →
@@ -1937,8 +2280,9 @@ private theorem foldl_foldl_sub_apply {R C : List (Fin n)} (hR : R.Nodup) (hC : 
   congrFun (congrFun (List.foldl_foldl_update_update_of_nodup hR hC (fun S i j => S i j - g S i j)
     (fun y y' hy i _ j _ hij => by rw [hij, hg y y' hy]) S) i) j
 
-/-- Uniqueness of the solution of a unit lower triangular system on a sorted index list: two
-vectors satisfying the same equations `∑_{j ∈ o} L(i,j) x(j) = b(i)`, `i ∈ o`, agree on `o`. -/
+/-- Two solutions of the same lower triangular system on a sorted index list agree on the list: if
+$\sum_{j \in o} \ell_{ij} y_j = \sum_{j \in o} \ell_{ij} z_j$ for all $i \in o$ and
+$\ell_{ii} \neq 0$ on $o$, then $y_i = z_i$ for all $i \in o$. -/
 private theorem eq_on_of_sum_eq {o : List (Fin n)} (ho : o.Pairwise (· < ·))
     {L : Matrix (Fin n) (Fin n) ℝ} (hL : L.IsLowerTriangular) (hd : ∀ i ∈ o, L i i ≠ 0)
     {y z : Fin n → ℝ}
@@ -1962,10 +2306,10 @@ private theorem eq_on_of_sum_eq {o : List (Fin n)} (ho : o.Pairwise (· < ·))
   · intro h
     exact absurd (List.mem_toFinset.2 hi) h
 
-/-- One pivot `p` of the block column elimination of Algorithm 3.2.4, in exact arithmetic: if the
-columns of the block (`B j`) hold the finished factors where `min(i,j) < p` and the trailing values
-`a_ij - ∑_{t<p} ℓ_it u_tj` elsewhere, then after the division and the update restricted to the
-block they do so with `p + 1`; the other columns are untouched. -/
+/-- One pivot $p$ of the block column elimination of Algorithm 3.2.4, in exact arithmetic: if the
+columns of the block hold the finished factors where $\min(i, j) < p$ and the trailing values
+$a_{ij} - \sum_{t < p} \ell_{it} u_{tj}$ elsewhere, then after the division and the update
+restricted to the block they do so with $p + 1$, and the other columns are not changed. -/
 private theorem elimStep {A L U : Matrix (Fin n) (Fin n) ℝ} (hLU : IsLU A L U)
     (hpiv : ∀ p i : Fin n, p < i → U p p ≠ 0) (B : Fin n → Prop) [DecidablePred B] (p : Fin n)
     (hp : B p) (S₀ E : Matrix (Fin n) (Fin n) ℝ)
@@ -2053,7 +2397,9 @@ private theorem elimStep {A L U : Matrix (Fin n) (Fin n) ℝ} (hLU : IsLU A L U)
             exact hjp ⟨Fin.ext (by omega), (hmemR i).2 (Fin.lt_def.2 (by omega))⟩
       · simp only [hBj, ↓reduceIte]
 
-/-- Removing the pivots of one block from the trailing values. -/
+/-- Removing the pivots of one block from the trailing values: the trailing values after $K + r$
+pivots are those after $K$ pivots minus $\sum_{t} \ell_{it} u_{tj}$ over the indices $t$ of the
+block $K \le t < K + r$. -/
 private theorem schurRest_add_block {A L U : Matrix (Fin n) (Fin n) ℝ} (K r : ℕ)
     (B : Fin n → Prop) [DecidablePred B] (hB : ∀ t : Fin n, B t ↔ K ≤ (t : ℕ) ∧ (t : ℕ) < K + r)
     (i j : Fin n) :
@@ -2068,13 +2414,22 @@ private theorem schurRest_add_block {A L U : Matrix (Fin n) (Fin n) ℝ} (K r : 
     · rw [ite_eq_left h2, ite_eq_right h1, ite_eq_left (by rw [hB]; omega), zero_add]
     · rw [ite_eq_right h2, ite_eq_right h1, ite_eq_right (by rw [hB]; omega), add_zero]
 
-/-- **Exact correctness of Algorithm 3.2.4**: if `A(1:k,1:k)` is nonsingular for `k = 1:n-1`, the
-exact packed output of the nonrecursive block LU holds the LU factorization `A = L U`. Invariant
-over the block steps: after the blocks before `k`, the entries with `min(i,j) < k r` hold the
-finished factors and the others `a_ij - ∑_{t < k r} ℓ_it u_tj`, the Schur complement of the leading
-`k r × k r` block (`equation_3_2_9`); within a step the block column is finished pivot by pivot,
-the block row by the unit lower triangular solve (whose solution is unique), and the trailing
-block receives the contributions of the block. -/
+/-- **Algorithm 3.2.4** of [golub2013matrix], exact correctness. Let $n = Nr$ and let
+$A \in \mathbb{R}^{n \times n}$ with $A(1{:}k, 1{:}k)$ nonsingular for $k = 1, \dots, n-1$. In
+exact arithmetic, the factors $L$ and $U$ stored in the output of the nonrecursive block LU form
+the LU factorization $A = LU$, with $L$ unit lower triangular and $U$ upper triangular.
+
+**Correction.** The source assumes only that $A$ has an LU factorization, which does not exclude
+a zero pivot (see `GolubVanLoan.Chapter03.algorithm_3_2_3_spec`). The theorem assumes that the
+leading principal submatrices of orders $1, \dots, n-1$ are nonsingular.
+
+The factors are `GolubVanLoan.Chapter03.packedL` and `GolubVanLoan.Chapter03.packedU` of the
+output. The proof uses an invariant over the block steps: after the blocks before $k$, the
+entries with $\min(i, j) < kr$ hold the finished factors, and the other entries hold
+$a_{ij} - \sum_{t < kr} \ell_{it} u_{tj}$, the Schur complement of the leading block of order
+$kr$ (`GolubVanLoan.Chapter03.equation_3_2_9`). Within a step, the block column is finished
+pivot by pivot, the block row by the unit lower triangular solve, whose solution is unique, and
+the trailing block receives the contributions of the block. -/
 theorem algorithm_3_2_4_spec {N r : ℕ} {A : Matrix (Fin (N * r)) (Fin (N * r)) ℝ}
     (hA : ∀ k : Fin (N * r), (A.strictLeadingPrincipalSubmatrix k).det ≠ 0) :
     IsLU A (packedL (Id.run (algorithm_3_2_4 pure A)))

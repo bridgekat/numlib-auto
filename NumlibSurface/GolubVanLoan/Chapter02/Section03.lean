@@ -8,42 +8,94 @@ import Numlib.LinearAlgebra.Matrix.SVD
 import NumlibSurface.GolubVanLoan.Chapter02.Section02
 
 /-!
-# Golub–Van Loan §2.3: matrix norms
+# Golub and Van Loan, Section 2.3: Matrix norms
 
-Surface file for [golub2013matrix] §2.3: the definition of a matrix norm, the Frobenius norm
-(2.3.1) and the `p`-norms (2.3.2), consistency of the `p`-norms (2.3.3) with the book's
-counterexample for `‖·‖_Δ` (the definition (2.3.4) of consistent norms is used only in prose and is
-not formalized),
-subordinate norms (2.3.5)–(2.3.6), the norm comparisons (2.3.7)–(2.3.13), convergence of matrix
-sequences (§2.3.2), the 2-norm through `AᵀA` (Theorem 2.3.1, Corollary 2.3.2), the Neumann series
-and the perturbation of the inverse (Lemma 2.3.3, Theorem 2.3.4), and orthogonal invariance
-(2.3.14)–(2.3.15).
+This module formalizes §2.3 of [golub2013matrix] on norms of matrices
+$A \in \mathbb{R}^{m \times n}$. A matrix norm is a vector norm on $\mathbb{R}^{m \times n}$. The
+two main examples are the Frobenius norm $\|A\|_F = (\sum_{i,j} |a_{ij}|^2)^{1/2}$ (2.3.1) and the
+$p$-norms $\|A\|_p = \sup_{x \neq 0} \|Ax\|_p / \|x\|_p$ (2.3.2), and more generally the subordinate
+norms $\|A\|_{\alpha,\beta}$ of (2.3.5). The module proves that the $p$-norms are consistent
+(2.3.3), gives the counterexample $\|A\|_\Delta = \max |a_{ij}|$ to consistency, proves the
+comparisons (2.3.7)–(2.3.13) between the norms, and shows that convergence of a matrix sequence does
+not depend on the norm. It then characterizes $\|A\|_2$ through $A^T A$ (Theorem 2.3.1, Corollary
+2.3.2), proves the Neumann series bound for $(I - F)^{-1}$ (Lemma 2.3.3) and the perturbation bound
+for the inverse (Theorem 2.3.4), and proves the orthogonal invariance (2.3.14)–(2.3.15) of the
+Frobenius norm and the 2-norm.
+
+The proofs specialize the backbone modules `Numlib.Analysis.Matrix.OperatorNorm` (the comparison
+constants and the Neumann series), `Numlib.Analysis.Normed.Ring.Inverse` (Theorem 2.3.4 in a normed
+ring) and `Numlib.LinearAlgebra.Matrix.SVD` (the singular values behind the 2-norm).
+
+## Main definitions
+
+* §2.3.1, `GolubVanLoan.Chapter02.IsMatrixNorm`: a function on $\mathbb{R}^{m \times n}$ is a matrix
+  norm if it satisfies the three vector norm axioms.
+
+## Main results
+
+* Equation (2.3.1), `GolubVanLoan.Chapter02.equation_2_3_1`: the Frobenius norm is
+  $\|A\|_F = (\sum_{i,j} |a_{ij}|^2)^{1/2}$, and it is a matrix norm.
+* Equation (2.3.2), `GolubVanLoan.Chapter02.equation_2_3_2`: $\|A\|_p$ is the supremum of
+  $\|Ax\|_p / \|x\|_p$, it is attained on the unit sphere, and it is a matrix norm.
+* Equation (2.3.3), `GolubVanLoan.Chapter02.equation_2_3_3`: $\|AB\|_p \le \|A\|_p \|B\|_p$.
+* §2.3.1, `GolubVanLoan.Chapter02.maxAbs_not_consistent`: the norm $\|A\|_\Delta = \max |a_{ij}|$ is
+  not consistent.
+* §2.3.1, `GolubVanLoan.Chapter02.norm_mulVec_le`: $\|Ax\|_p \le \|A\|_p \|x\|_p$.
+* Equation (2.3.5), `GolubVanLoan.Chapter02.equation_2_3_5`: the subordinate norm
+  $\|A\|_{\alpha,\beta}$ satisfies $\|Ax\|_\beta \le \|A\|_{\alpha,\beta} \|x\|_\alpha$.
+* Equation (2.3.6), `GolubVanLoan.Chapter02.equation_2_3_6`: the supremum that defines
+  $\|A\|_{\alpha,\beta}$ is attained.
+* Equations (2.3.7)–(2.3.12), `GolubVanLoan.Chapter02.equation_2_3_7` to
+  `GolubVanLoan.Chapter02.equation_2_3_12`: the comparisons between $\|A\|_2$, $\|A\|_F$,
+  $\max |a_{ij}|$, $\|A\|_1$ and $\|A\|_\infty$, and the column sum and row sum formulas for
+  $\|A\|_1$ and $\|A\|_\infty$.
+* Equation (2.3.13), `GolubVanLoan.Chapter02.equation_2_3_13`: a submatrix has a $p$-norm at most
+  $\|A\|_p$.
+* §2.3.2, `GolubVanLoan.Chapter02.tendsto_iff_of_isMatrixNorm`: a matrix sequence converges if and
+  only if it converges in any one matrix norm.
+* Theorem 2.3.1, `GolubVanLoan.Chapter02.theorem_2_3_1`: there is a unit vector $z$ with
+  $A^T A z = \mu^2 z$, $\mu = \|A\|_2$.
+* §2.3.3, `GolubVanLoan.Chapter02.l2_opNorm_eq_sqrt_lambdaMax`:
+  $\|A\|_2 = \sqrt{\lambda_{\max}(A^T A)}$.
+* Corollary 2.3.2, `GolubVanLoan.Chapter02.corollary_2_3_2`:
+  $\|A\|_2 \le \sqrt{\|A\|_1 \|A\|_\infty}$.
+* Lemma 2.3.3, `GolubVanLoan.Chapter02.lemma_2_3_3`: if $\|F\|_p < 1$, then $I - F$ is nonsingular,
+  $(I - F)^{-1} = \sum_k F^k$ and $\|(I - F)^{-1}\|_p \le 1/(1 - \|F\|_p)$.
+* §2.3.4, `GolubVanLoan.Chapter02.norm_inv_one_sub_sub_one_le`: $\|(I - F)^{-1} - I\|_p \le \|F\|_p
+  / (1 - \|F\|_p)$.
+* Theorem 2.3.4, `GolubVanLoan.Chapter02.theorem_2_3_4`: the perturbation bound $\|(A + E)^{-1} -
+  A^{-1}\|_p \le \|E\|_p \|A^{-1}\|_p^2 / (1 - r)$.
+* Equations (2.3.14)–(2.3.15), `GolubVanLoan.Chapter02.equation_2_3_14` and
+  `GolubVanLoan.Chapter02.equation_2_3_15`: $\|QAZ\|_F = \|A\|_F$ and $\|QAZ\|_2 = \|A\|_2$ for
+  orthogonal $Q$ and $Z$.
+
+## Proof outline
+
+The proofs that the source leaves as exercises (Problems P2.3.1–P2.3.6) are the backbone lemmas that
+the declarations cite. Theorem 2.3.1 is proved through the right singular vector of the largest
+singular value, not through the gradient computation of the source. Theorem 2.3.4 is proved through
+the factorization $A + E = A(I + A^{-1}E)$. The proof in the source factors $A + E = (I + F)A$ with
+$F = -EA^{-1}$ and claims $\|F\|_p = r = \|A^{-1}E\|_p$, which is false in general; the statement is
+not affected.
 
 ## Conventions
 
-A matrix norm (`IsMatrixNorm`) is the vector-norm predicate `IsVectorNorm` of §2.2 on
-`ℝ^{m×n}`, exactly as the book defines it. The matrix `p`-norm `‖A‖_p` is the backbone's
-`Matrix.lpOpNorm p A` for `p : ℝ≥0∞` with `[Fact (1 ≤ p)]` (the book's `1 ≤ p ≤ ∞`), rectangular;
-the subordinate norm `‖A‖_{α,β}` of (2.3.5) is `Matrix.inducedNorm β α A` for definite seminorms
-`α`, `β` (vector norms, by `IsVectorNorm.exists_seminorm`). The Frobenius norm is Mathlib's scoped
-`Matrix.Norms.Frobenius` norm and `‖·‖_Δ` the scoped elementwise norm, each opened for the
-declarations that use it. The book's 1-based block `A(i₁:i₂, j₁:j₂)` is the 0-based
-`A.submatrix` on consecutive indices.
+* A matrix norm, `GolubVanLoan.Chapter02.IsMatrixNorm`, is the vector norm predicate
+  `GolubVanLoan.Chapter02.IsVectorNorm` of §2.2 on $\mathbb{R}^{m \times n}$, as in the source.
+* The matrix $p$-norm $\|A\|_p$ is `Matrix.lpOpNorm p A` for `p : ℝ≥0∞` with `[Fact (1 ≤ p)]`, which
+  is the condition $1 \le p \le \infty$ of the source. It is defined for rectangular matrices.
+* The subordinate norm $\|A\|_{\alpha,\beta}$ of (2.3.5) is `Matrix.inducedNorm β α A` for seminorms
+  $\alpha$ and $\beta$ with $\alpha$ definite. A vector norm is such a seminorm by
+  `GolubVanLoan.Chapter02.IsVectorNorm.exists_seminorm`.
+* The Frobenius norm is the scoped norm `Matrix.Norms.Frobenius` of Mathlib, and $\|\cdot\|_\Delta$
+  is the scoped norm `Matrix.Norms.Elementwise`. Each is opened only in the sections that use it.
+* The 1-based block $A(i_1{:}i_2, j_1{:}j_2)$ of the source is the 0-based `A.submatrix` on
+  consecutive indices.
 
-## Sources
+## Not formalized
 
-Backbone `Numlib/Analysis/Matrix/OperatorNorm` (the comparison constants, the Neumann series),
-`Numlib/Analysis/Normed/Ring/Inverse` (Theorem 2.3.4 in a normed ring) and
-`Numlib/LinearAlgebra/Matrix/SVD` (the singular values behind the 2-norm). The proofs the book
-leaves as exercises (P2.3.1–P2.3.6) are the backbone lemmas cited. Theorem 2.3.1 is proved through
-the right singular vector of the largest singular value rather than the book's gradient
-computation.
-
-## Readings and errata
-
-The book's proof of Theorem 2.3.4 writes `A + E = (I + F) A` with `F = -E A⁻¹` and claims
-`‖F‖_p = r = ‖A⁻¹ E‖_p`, which is false in general; the statement is true through
-`A + E = A (I + A⁻¹ E)`, the backbone's route.
+* **Equation (2.3.4)**, the definition of a consistent family of norms. The source uses it only in
+  prose.
 -/
 
 open Filter Finset Matrix Topology WithLp
@@ -55,9 +107,14 @@ variable {m n : ℕ}
 
 /-! ### §2.3.1 Definitions -/
 
-/-- **§2.3.1, matrix norm.** `f : ℝ^{m×n} → ℝ` is a *matrix norm* if it satisfies the three
-vector-norm properties on `ℝ^{m×n}`: `f(A) ≥ 0` with `f(A) = 0` iff `A = 0`,
-`f(A + B) ≤ f(A) + f(B)`, `f(αA) = |α| f(A)`. -/
+/-- **Section 2.3.1** of [golub2013matrix], definition of a matrix norm. A function
+$f : \mathbb{R}^{m \times n} \to \mathbb{R}$ is a **matrix norm** if it satisfies the three
+vector norm properties on $\mathbb{R}^{m \times n}$: $f(A) \ge 0$, with $f(A) = 0$ if and only
+if $A = 0$; $f(A + B) \le f(A) + f(B)$; and $f(\alpha A) = |\alpha| f(A)$ for
+$\alpha \in \mathbb{R}$.
+
+The definition is `GolubVanLoan.Chapter02.IsVectorNorm` on the vector space
+`Matrix (Fin m) (Fin n) ℝ`. -/
 def IsMatrixNorm (f : Matrix (Fin m) (Fin n) ℝ → ℝ) : Prop :=
   IsVectorNorm f
 
@@ -65,7 +122,12 @@ section Frobenius
 
 open scoped Matrix.Norms.Frobenius
 
-/-- **(2.3.1), the Frobenius norm** `‖A‖_F = √(∑ᵢ ∑ⱼ |aᵢⱼ|²)`, a matrix norm. -/
+/-- **Equation (2.3.1)** of [golub2013matrix]. For $A \in \mathbb{R}^{m \times n}$, the **Frobenius
+norm** is
+$$\|A\|_F = \Big( \sum_{i=1}^m \sum_{j=1}^n |a_{ij}|^2 \Big)^{1/2},$$
+and $\|\cdot\|_F$ is a matrix norm.
+
+The Frobenius norm is the scoped norm `Matrix.Norms.Frobenius` of Mathlib. -/
 theorem equation_2_3_1 (A : Matrix (Fin m) (Fin n) ℝ) :
     ‖A‖ = √(∑ i, ∑ j, |A i j| ^ 2) ∧ IsMatrixNorm (fun B : Matrix (Fin m) (Fin n) ℝ => ‖B‖) := by
   refine ⟨?_, isVectorNorm_norm⟩
@@ -74,8 +136,8 @@ theorem equation_2_3_1 (A : Matrix (Fin m) (Fin n) ℝ) :
 
 end Frobenius
 
-/-- The matrix `p`-norm is a matrix norm: it is the induced seminorm of the vector `p`-norm, which
-is definite. -/
+/-- The matrix $p$-norm is a matrix norm, because it is the seminorm induced by the vector $p$-norm,
+which is definite. -/
 private theorem isMatrixNorm_lpOpNorm (p : ℝ≥0∞) [Fact (1 ≤ p)] :
     IsMatrixNorm (lpOpNorm p : Matrix (Fin m) (Fin n) ℝ → ℝ) :=
   IsVectorNorm.exists_seminorm.2
@@ -84,9 +146,15 @@ private theorem isMatrixNorm_lpOpNorm (p : ℝ≥0∞) [Fact (1 ≤ p)] :
       fun A hA => (inducedNorm_eq_zero_iff (lpSeminorm_definite p) (lpSeminorm_definite p) A).1
         hA⟩
 
-/-- **(2.3.2), the `p`-norms** `‖A‖_p = sup_{x ≠ 0} ‖Ax‖_p / ‖x‖_p`, and for `n ≥ 1` the display
-after it: the supremum is a maximum over the unit `p`-sphere, `‖A‖_p = ‖A x‖_p` for some `x` with
-`‖x‖_p = 1`; `‖·‖_p` is a matrix norm. -/
+/-- **Equation (2.3.2)** of [golub2013matrix]. Let $1 \le p \le \infty$ and
+$A \in \mathbb{R}^{m \times n}$. The **$p$-norm** of $A$ satisfies
+$$\|A\|_p = \sup_{x \neq 0} \frac{\|Ax\|_p}{\|x\|_p}.$$
+If $n \ge 1$, the supremum is attained on the unit sphere: $\|A\|_p = \|Ax\|_p$ for some $x$
+with $\|x\|_p = 1$. Moreover $\|\cdot\|_p$ is a matrix norm.
+
+The second part is the display after (2.3.2) in the source. The $p$-norm is
+`Matrix.lpOpNorm p A`, and the vector $p$-norm $\|x\|_p$ is `‖WithLp.toLp p x‖`. For $n = 0$
+both sides of the first equation are $0$. -/
 theorem equation_2_3_2 (p : ℝ≥0∞) [Fact (1 ≤ p)] (A : Matrix (Fin m) (Fin n) ℝ) :
     lpOpNorm p A = ⨆ x : {x : Fin n → ℝ // x ≠ 0},
         ‖WithLp.toLp p (A *ᵥ (x : Fin n → ℝ))‖ / ‖WithLp.toLp p (x : Fin n → ℝ)‖ ∧
@@ -100,8 +168,12 @@ theorem equation_2_3_2 (p : ℝ≥0∞) [Fact (1 ≤ p)] (A : Matrix (Fin m) (Fi
     rw [lpOpNorm_eq_inducedNorm]
     exact exists_inducedNorm_eq (lpSeminorm_definite p) A
 
-/-- **(2.3.3)**: `‖AB‖_p ≤ ‖A‖_p ‖B‖_p` for `A ∈ ℝ^{m×n}`, `B ∈ ℝ^{n×q}` — an inequality between
-three different norms. -/
+/-- **Equation (2.3.3)** of [golub2013matrix]. Let $1 \le p \le \infty$,
+$A \in \mathbb{R}^{m \times n}$ and $B \in \mathbb{R}^{n \times q}$. Then
+$$\|AB\|_p \le \|A\|_p \|B\|_p.$$
+
+This is an inequality between three different norms, on $\mathbb{R}^{m \times q}$,
+$\mathbb{R}^{m \times n}$ and $\mathbb{R}^{n \times q}$. -/
 theorem equation_2_3_3 {q : ℕ} (p : ℝ≥0∞) [Fact (1 ≤ p)] (A : Matrix (Fin m) (Fin n) ℝ)
     (B : Matrix (Fin n) (Fin q) ℝ) : lpOpNorm p (A * B) ≤ lpOpNorm p A * lpOpNorm p B :=
   lpOpNorm_mul_le p A B
@@ -110,8 +182,13 @@ section Elementwise
 
 open scoped Matrix.Norms.Elementwise
 
-/-- **§2.3.1, after (2.3.4): not every matrix norm is consistent.** `‖A‖_Δ = max |aᵢⱼ|` is a
-matrix norm, but for `A = B = [1 1; 1 1]`, `‖AB‖_Δ = 2 > 1 = ‖A‖_Δ ‖B‖_Δ`. -/
+/-- **Section 2.3.1** of [golub2013matrix], after (2.3.4): not every matrix norm is consistent. The
+function $\|A\|_\Delta = \max_{i,j} |a_{ij}|$ is a matrix norm on $\mathbb{R}^{2 \times 2}$. For
+$$A = B = \begin{bmatrix} 1 & 1 \\ 1 & 1 \end{bmatrix}$$
+it gives $\|AB\|_\Delta = 2$ and $\|A\|_\Delta \|B\|_\Delta = 1$, so
+$\|AB\|_\Delta > \|A\|_\Delta \|B\|_\Delta$.
+
+The norm $\|\cdot\|_\Delta$ is the scoped norm `Matrix.Norms.Elementwise` of Mathlib. -/
 theorem maxAbs_not_consistent :
     IsMatrixNorm (fun A : Matrix (Fin 2) (Fin 2) ℝ => ‖A‖) ∧
       ‖(!![1, 1; 1, 1] : Matrix (Fin 2) (Fin 2) ℝ) * !![1, 1; 1, 1]‖ = 2 ∧
@@ -138,23 +215,35 @@ theorem maxAbs_not_consistent :
 
 end Elementwise
 
-/-- **§2.3.1**: the `p`-norms are consistent with the vector `p`-norms,
-`‖Ax‖_p ≤ ‖A‖_p ‖x‖_p`. -/
+/-- **Section 2.3.1** of [golub2013matrix], consistency with the vector norms. Let
+$1 \le p \le \infty$, $A \in \mathbb{R}^{m \times n}$ and $x \in \mathbb{R}^n$. Then
+$$\|Ax\|_p \le \|A\|_p \|x\|_p.$$
+-/
 theorem norm_mulVec_le (p : ℝ≥0∞) [Fact (1 ≤ p)] (A : Matrix (Fin m) (Fin n) ℝ)
     (x : Fin n → ℝ) : ‖WithLp.toLp p (A *ᵥ x)‖ ≤ lpOpNorm p A * ‖WithLp.toLp p x‖ :=
   lpSeminorm_mulVec_le p A x
 
-/-- **(2.3.5), subordinate norms.** For vector norms `‖·‖_α` on `ℝⁿ` and `‖·‖_β` on `ℝᵐ`, the
-matrix norm `‖A‖_{α,β} = sup_{x ≠ 0} ‖Ax‖_β / ‖x‖_α` (the backbone's `Matrix.inducedNorm β α A`)
-satisfies `‖Ax‖_β ≤ ‖A‖_{α,β} ‖x‖_α`. -/
+/-- **Equation (2.3.5)** of [golub2013matrix], subordinate norms. Let $\|\cdot\|_\alpha$ be a vector
+norm on $\mathbb{R}^n$ and let $\|\cdot\|_\beta$ be a seminorm on $\mathbb{R}^m$. For
+$A \in \mathbb{R}^{m \times n}$, the subordinate norm satisfies
+$$\|A\|_{\alpha,\beta} = \sup_{x \neq 0} \frac{\|Ax\|_\beta}{\|x\|_\alpha},$$
+and $\|Ax\|_\beta \le \|A\|_{\alpha,\beta} \|x\|_\alpha$ for every $x \in \mathbb{R}^n$.
+
+The norm $\|A\|_{\alpha,\beta}$ is `Matrix.inducedNorm β α A`, which is defined as the supremum
+of $\|Ax\|_\beta$ over $\|x\|_\alpha \le 1$. The norm $\alpha$ is a `Seminorm` with the
+definiteness hypothesis `hα`; $\beta$ need not be definite. -/
 theorem equation_2_3_5 (α : Seminorm ℝ (Fin n → ℝ)) (β : Seminorm ℝ (Fin m → ℝ))
     (hα : ∀ x, α x = 0 → x = 0) (A : Matrix (Fin m) (Fin n) ℝ) :
     inducedNorm β α A = ⨆ x : {x : Fin n → ℝ // x ≠ 0}, β (A *ᵥ (x : Fin n → ℝ)) / α x ∧
       ∀ x, β (A *ᵥ x) ≤ inducedNorm β α A * α x :=
   ⟨inducedNorm_eq_iSup_div hα A, le_inducedNorm_mul hα A⟩
 
-/-- **(2.3.6)**: the supremum (2.3.5) is attained, `‖A‖_{α,β} = ‖A x_*‖_β` for some `x_*` of unit
-`α`-norm (`n ≥ 1`). -/
+/-- **Equation (2.3.6)** of [golub2013matrix]. Let $\|\cdot\|_\alpha$ be a vector norm on
+$\mathbb{R}^n$ with $n \ge 1$, let $\|\cdot\|_\beta$ be a seminorm on $\mathbb{R}^m$, and let
+$A \in \mathbb{R}^{m \times n}$. Then the supremum (2.3.5) is attained: there is
+$x_* \in \mathbb{R}^n$ with $\|x_*\|_\alpha = 1$ and
+$$\|A\|_{\alpha,\beta} = \|A x_*\|_\beta.$$
+-/
 theorem equation_2_3_6 (α : Seminorm ℝ (Fin n → ℝ)) (β : Seminorm ℝ (Fin m → ℝ))
     (hα : ∀ x, α x = 0 → x = 0) (A : Matrix (Fin m) (Fin n) ℝ) (hn : 0 < n) :
     ∃ x : Fin n → ℝ, α x = 1 ∧ inducedNorm β α A = β (A *ᵥ x) :=
@@ -167,7 +256,9 @@ section Frobenius
 
 open scoped Matrix.Norms.Frobenius
 
-/-- **(2.3.7)**: `‖A‖₂ ≤ ‖A‖_F ≤ √(min{m, n}) ‖A‖₂`. -/
+/-- **Equation (2.3.7)** of [golub2013matrix]. For $A \in \mathbb{R}^{m \times n}$,
+$$\|A\|_2 \le \|A\|_F \le \sqrt{\min\{m, n\}} \, \|A\|_2.$$
+-/
 theorem equation_2_3_7 (A : Matrix (Fin m) (Fin n) ℝ) :
     lpOpNorm 2 A ≤ ‖A‖ ∧ ‖A‖ ≤ √((min m n : ℕ) : ℝ) * lpOpNorm 2 A := by
   refine ⟨l2_opNorm_le_frobenius_norm A, (frobenius_norm_le_sqrt_rank_mul_l2_opNorm A).trans ?_⟩
@@ -176,7 +267,10 @@ theorem equation_2_3_7 (A : Matrix (Fin m) (Fin n) ℝ) :
 
 end Frobenius
 
-/-- **(2.3.8)**: `max_{i,j} |aᵢⱼ| ≤ ‖A‖₂ ≤ √(mn) max_{i,j} |aᵢⱼ|`. -/
+/-- **Equation (2.3.8)** of [golub2013matrix]. For $A \in \mathbb{R}^{m \times n}$,
+$$\max_{i,j} |a_{ij}| \le \|A\|_2 \le \sqrt{mn} \, \max_{i,j} |a_{ij}|.$$
+
+The maximum is a supremum over `Fin m` and `Fin n`, which is $0$ when $m = 0$ or $n = 0$. -/
 theorem equation_2_3_8 (A : Matrix (Fin m) (Fin n) ℝ) :
     (⨆ i, ⨆ j, |A i j|) ≤ lpOpNorm 2 A ∧
       lpOpNorm 2 A ≤ √((m : ℝ) * n) * ⨆ i, ⨆ j, |A i j| := by
@@ -192,7 +286,10 @@ theorem equation_2_3_8 (A : Matrix (Fin m) (Fin n) ℝ) :
         (le_ciSup (Set.finite_range fun i => ⨆ j, |A i j|).bddAbove i)
     simpa using h
 
-/-- **(2.3.9)**: `‖A‖₁ = max_j ∑ᵢ |aᵢⱼ|`, the largest column sum. -/
+/-- **Equation (2.3.9)** of [golub2013matrix]. For $A \in \mathbb{R}^{m \times n}$, the 1-norm is
+the largest column sum of $|A|$:
+$$\|A\|_1 = \max_{1 \le j \le n} \sum_{i=1}^m |a_{ij}|.$$
+-/
 theorem equation_2_3_9 (A : Matrix (Fin m) (Fin n) ℝ) :
     lpOpNorm 1 A = ⨆ j, ∑ i, |A i j| := by
   rw [lpOpNorm_one_eq_sup_sum_norm, Finset.sup_univ_eq_ciSup, NNReal.coe_iSup]
@@ -202,7 +299,10 @@ section Operator
 
 open scoped Matrix.Norms.Operator
 
-/-- **(2.3.10)**: `‖A‖_∞ = max_i ∑ⱼ |aᵢⱼ|`, the largest row sum. -/
+/-- **Equation (2.3.10)** of [golub2013matrix]. For $A \in \mathbb{R}^{m \times n}$, the
+$\infty$-norm is the largest row sum of $|A|$:
+$$\|A\|_\infty = \max_{1 \le i \le m} \sum_{j=1}^n |a_{ij}|.$$
+-/
 theorem equation_2_3_10 (A : Matrix (Fin m) (Fin n) ℝ) :
     lpOpNorm ∞ A = ⨆ i, ∑ j, |A i j| := by
   rw [lpOpNorm_top, linfty_opNorm_def, Finset.sup_univ_eq_ciSup, NNReal.coe_iSup]
@@ -210,7 +310,8 @@ theorem equation_2_3_10 (A : Matrix (Fin m) (Fin n) ℝ) :
 
 end Operator
 
-/-- From `a ≤ √c b` to `(1/√c) a ≤ b`, including the degenerate `c = 0`. -/
+/-- If $b \ge 0$ and $a \le \sqrt{c}\, b$, then $(1/\sqrt{c})\, a \le b$, also in the degenerate
+case $c = 0$, where $1/\sqrt{0} = 0$. -/
 private theorem one_div_sqrt_mul_le {a b c : ℝ} (hb : 0 ≤ b) (h : a ≤ √c * b) :
     1 / √c * a ≤ b := by
   rcases (Real.sqrt_nonneg c).eq_or_lt with hc | hc
@@ -219,22 +320,33 @@ private theorem one_div_sqrt_mul_le {a b c : ℝ} (hb : 0 ≤ b) (h : a ≤ √c
   · rw [one_div, inv_mul_le_iff₀ hc]
     exact h
 
-/-- **(2.3.11)**: `(1/√n) ‖A‖_∞ ≤ ‖A‖₂ ≤ √m ‖A‖_∞`. -/
+/-- **Equation (2.3.11)** of [golub2013matrix]. For $A \in \mathbb{R}^{m \times n}$,
+$$\frac{1}{\sqrt{n}} \|A\|_\infty \le \|A\|_2 \le \sqrt{m} \, \|A\|_\infty.$$
+
+For $n = 0$ the Lean value of $1/\sqrt{n}$ is $0$. -/
 theorem equation_2_3_11 (A : Matrix (Fin m) (Fin n) ℝ) :
     1 / √(n : ℝ) * lpOpNorm ∞ A ≤ lpOpNorm 2 A ∧ lpOpNorm 2 A ≤ √(m : ℝ) * lpOpNorm ∞ A := by
   obtain ⟨h1, h2⟩ := l2_opNorm_le_sqrt_card_mul_linfty_opNorm A
   simp only [Fintype.card_fin] at h1 h2
   exact ⟨one_div_sqrt_mul_le (lpOpNorm_nonneg _ _) h2, h1⟩
 
-/-- **(2.3.12)**: `(1/√m) ‖A‖₁ ≤ ‖A‖₂ ≤ √n ‖A‖₁`. -/
+/-- **Equation (2.3.12)** of [golub2013matrix]. For $A \in \mathbb{R}^{m \times n}$,
+$$\frac{1}{\sqrt{m}} \|A\|_1 \le \|A\|_2 \le \sqrt{n} \, \|A\|_1.$$
+
+For $m = 0$ the Lean value of $1/\sqrt{m}$ is $0$. -/
 theorem equation_2_3_12 (A : Matrix (Fin m) (Fin n) ℝ) :
     1 / √(m : ℝ) * lpOpNorm 1 A ≤ lpOpNorm 2 A ∧ lpOpNorm 2 A ≤ √(n : ℝ) * lpOpNorm 1 A := by
   obtain ⟨h1, h2⟩ := l2_opNorm_le_sqrt_card_mul_lpOpNorm_one A
   simp only [Fintype.card_fin] at h1 h2
   exact ⟨one_div_sqrt_mul_le (lpOpNorm_nonneg _ _) h1, h2⟩
 
-/-- **(2.3.13)**: a block `A(i₁:i₂, j₁:j₂)` has `‖A(i₁:i₂, j₁:j₂)‖_p ≤ ‖A‖_p`. The book's 1-based
-`1 ≤ i₁ ≤ i₂ ≤ m` is the 0-based `i₁ ≤ i₂ < m` here, the block's rows being `i₁, …, i₂`. -/
+/-- **Equation (2.3.13)** of [golub2013matrix]. Let $1 \le p \le \infty$ and
+$A \in \mathbb{R}^{m \times n}$. For $1 \le i_1 \le i_2 \le m$ and $1 \le j_1 \le j_2 \le n$,
+the submatrix $A(i_1{:}i_2, j_1{:}j_2)$ satisfies
+$$\|A(i_1{:}i_2, j_1{:}j_2)\|_p \le \|A\|_p.$$
+
+The indices are 0-based in Lean: the hypotheses are $i_1 \le i_2 < m$ and $j_1 \le j_2 < n$, and
+the submatrix has the rows $i_1, \dots, i_2$ and the columns $j_1, \dots, j_2$. -/
 theorem equation_2_3_13 (p : ℝ≥0∞) [Fact (1 ≤ p)] (A : Matrix (Fin m) (Fin n) ℝ)
     {i₁ i₂ j₁ j₂ : ℕ} (hi : i₁ ≤ i₂) (hi₂ : i₂ < m) (hj : j₁ ≤ j₂) (hj₂ : j₂ < n) :
     lpOpNorm p (A.submatrix (fun k : Fin (i₂ - i₁ + 1) => (⟨i₁ + k, by omega⟩ : Fin m))
@@ -242,8 +354,13 @@ theorem equation_2_3_13 (p : ℝ≥0∞) [Fact (1 ≤ p)] (A : Matrix (Fin m) (F
   lpOpNorm_submatrix_le p A (fun a b h => Fin.ext (by simpa using congrArg Fin.val h))
     (fun a b h => Fin.ext (by simpa using congrArg Fin.val h))
 
-/-- **§2.3.2, convergence**: a sequence of matrices converges iff `‖A⁽ᵏ⁾ - A‖ → 0` in any matrix
-norm; "the choice of norm is immaterial". -/
+/-- **Section 2.3.2** of [golub2013matrix], convergence of matrix sequences. Let $f$ be a matrix
+norm on $\mathbb{R}^{m \times n}$, let $A^{(k)} \in \mathbb{R}^{m \times n}$ for $k \ge 0$, and
+let $A \in \mathbb{R}^{m \times n}$. Then $f(A^{(k)} - A) \to 0$ if and only if $A^{(k)} \to A$.
+So the choice of norm does not matter for convergence.
+
+The convergence $A^{(k)} \to A$ is in the topology of Mathlib on `Matrix (Fin m) (Fin n) ℝ`,
+which is entrywise convergence. -/
 theorem tendsto_iff_of_isMatrixNorm {f : Matrix (Fin m) (Fin n) ℝ → ℝ} (hf : IsMatrixNorm f)
     (A : ℕ → Matrix (Fin m) (Fin n) ℝ) (A₀ : Matrix (Fin m) (Fin n) ℝ) :
     Tendsto (fun k => f (A k - A₀)) atTop (𝓝 0) ↔ Tendsto A atTop (𝓝 A₀) := by
@@ -253,7 +370,8 @@ theorem tendsto_iff_of_isMatrixNorm {f : Matrix (Fin m) (Fin n) ℝ → ℝ} (hf
 
 /-! ### §2.3.3 The matrix 2-norm -/
 
-/-- The 2-norm of a rectangular matrix is its largest singular value, attained at an index. -/
+/-- For $n \ge 1$, the 2-norm of $A \in \mathbb{R}^{m \times n}$ is one of its column-indexed
+singular values, and it is at least each of them. -/
 private theorem exists_colSingularValues_eq_lpOpNorm_two (A : Matrix (Fin m) (Fin n) ℝ)
     (hn : 0 < n) :
     ∃ i, A.colSingularValues i = lpOpNorm 2 A ∧ ∀ j, A.colSingularValues j ≤ lpOpNorm 2 A := by
@@ -262,8 +380,12 @@ private theorem exists_colSingularValues_eq_lpOpNorm_two (A : Matrix (Fin m) (Fi
   exact ⟨i₀, by rw [lpOpNorm_two, l2_opNorm_eq_iSup_colSingularValues, hi₀],
     colSingularValues_le_lpOpNorm_two A⟩
 
-/-- **Theorem 2.3.1.** For `A ∈ ℝ^{m×n}` (`n ≥ 1`) there is a unit 2-norm `n`-vector `z` with
-`AᵀA z = μ² z`, `μ = ‖A‖₂`. -/
+/-- **Theorem 2.3.1** of [golub2013matrix]. Let $A \in \mathbb{R}^{m \times n}$ with $n \ge 1$, and
+let $\mu = \|A\|_2$. Then there is $z \in \mathbb{R}^n$ with $\|z\|_2 = 1$ and
+$$A^T A z = \mu^2 z.$$
+
+The proof takes for $z$ a right singular vector of the largest singular value of $A$, not the
+gradient computation of the source. -/
 theorem theorem_2_3_1 (A : Matrix (Fin m) (Fin n) ℝ) (hn : 0 < n) :
     ∃ z : Fin n → ℝ, ‖WithLp.toLp 2 z‖ = 1 ∧ (Aᵀ * A) *ᵥ z = lpOpNorm 2 A ^ 2 • z := by
   obtain ⟨i, hi, -⟩ := exists_colSingularValues_eq_lpOpNorm_two A hn
@@ -272,9 +394,14 @@ theorem theorem_2_3_1 (A : Matrix (Fin m) (Fin n) ℝ) (hn : 0 < n) :
   have h := congrArg WithLp.ofLp (A.toEuclideanLin_conjTranspose_mul_self_rightSingularBasis i)
   simpa [toEuclideanLin_apply, conjTranspose_eq_transpose_of_trivial, hi] using h
 
-/-- **§2.3.3, after Theorem 2.3.1**: `‖A‖₂ = √λ_max(AᵀA)` (for `n ≥ 1`), `λ_max` the first sorted
-eigenvalue of `AᵀA` (§2.1's convention; over `ℝ`, `Aᴴ = Aᵀ`), and `‖A‖₂²` is a zero of
-`p(λ) = det(AᵀA - λI)`. -/
+/-- **Section 2.3.3** of [golub2013matrix], after Theorem 2.3.1. Let $A \in \mathbb{R}^{m \times n}$
+with $n \ge 1$. Then
+$$\|A\|_2 = \sqrt{\lambda_{\max}(A^T A)},$$
+and $\|A\|_2^2$ is a zero of the polynomial $p(\lambda) = \det(A^T A - \lambda I)$.
+
+The eigenvalue $\lambda_{\max}(A^T A)$ is the first sorted eigenvalue
+`Matrix.IsHermitian.sortedEigenvalues` at index $0$, as in §2.1. The Hermitian matrix is
+$A^H A$, which is $A^T A$ over $\mathbb{R}$. -/
 theorem l2_opNorm_eq_sqrt_lambdaMax (A : Matrix (Fin m) (Fin n) ℝ) (hn : 0 < n) :
     lpOpNorm 2 A = √((isHermitian_conjTranspose_mul_self A).sortedEigenvalues ⟨0, hn⟩) ∧
       (Aᵀ * A - lpOpNorm 2 A ^ 2 • (1 : Matrix (Fin n) (Fin n) ℝ)).det = 0 := by
@@ -300,15 +427,20 @@ theorem l2_opNorm_eq_sqrt_lambdaMax (A : Matrix (Fin m) (Fin n) ℝ) (hn : 0 < n
   refine exists_mulVec_eq_zero_iff.1 ⟨z, fun h0 => by simp [h0] at hz1, ?_⟩
   rw [sub_mulVec, hz, smul_mulVec, one_mulVec, sub_self]
 
-/-- **Corollary 2.3.2**: `‖A‖₂ ≤ √(‖A‖₁ ‖A‖_∞)`. -/
+/-- **Corollary 2.3.2** of [golub2013matrix]. For $A \in \mathbb{R}^{m \times n}$,
+$$\|A\|_2 \le \sqrt{\|A\|_1 \|A\|_\infty}.$$
+-/
 theorem corollary_2_3_2 (A : Matrix (Fin m) (Fin n) ℝ) :
     lpOpNorm 2 A ≤ √(lpOpNorm 1 A * lpOpNorm ∞ A) :=
   (le_abs_self _).trans (Real.abs_le_sqrt (l2_opNorm_sq_le_lpOpNorm_one_mul_linfty_opNorm A))
 
 /-! ### §2.3.4 Perturbations and the inverse -/
 
-/-- **Lemma 2.3.3.** For `1 ≤ p ≤ ∞` and `F ∈ ℝ^{n×n}` with `‖F‖_p < 1`, `I - F` is nonsingular,
-`(I - F)⁻¹ = ∑_{k ≥ 0} Fᵏ`, and `‖(I - F)⁻¹‖_p ≤ 1 / (1 - ‖F‖_p)`. -/
+/-- **Lemma 2.3.3** of [golub2013matrix]. Let $1 \le p \le \infty$ and
+$F \in \mathbb{R}^{n \times n}$ with $\|F\|_p < 1$. Then $I - F$ is nonsingular,
+$$(I - F)^{-1} = \sum_{k=0}^\infty F^k, \qquad \|(I - F)^{-1}\|_p \le \frac{1}{1 - \|F\|_p}.$$
+
+The series is a `HasSum` statement in the topology of matrices. -/
 theorem lemma_2_3_3 (p : ℝ≥0∞) [Fact (1 ≤ p)] {F : Matrix (Fin n) (Fin n) ℝ}
     (hF : lpOpNorm p F < 1) :
     IsUnit (1 - F) ∧ HasSum (fun k => F ^ k) (1 - F)⁻¹ ∧
@@ -322,16 +454,26 @@ theorem lemma_2_3_3 (p : ℝ≥0∞) [Fact (1 ≤ p)] {F : Matrix (Fin n) (Fin n
     exact div_nonneg zero_le_one (by linarith)
   · exact inducedNorm_inv_one_sub_le hp hF
 
-/-- **§2.3.4, after Lemma 2.3.3**: `‖(I - F)⁻¹ - I‖_p ≤ ‖F‖_p / (1 - ‖F‖_p)`, so `O(ε)`
-perturbations of the identity induce `O(ε)` perturbations of the inverse. -/
+/-- **Section 2.3.4** of [golub2013matrix], after Lemma 2.3.3. Let $1 \le p \le \infty$ and
+$F \in \mathbb{R}^{n \times n}$ with $\|F\|_p < 1$. Then
+$$\|(I - F)^{-1} - I\|_p \le \frac{\|F\|_p}{1 - \|F\|_p}.$$
+So a perturbation of order $\epsilon$ of the identity gives a perturbation of order $\epsilon$
+of its inverse. -/
 theorem norm_inv_one_sub_sub_one_le (p : ℝ≥0∞) [Fact (1 ≤ p)] {F : Matrix (Fin n) (Fin n) ℝ}
     (hF : lpOpNorm p F < 1) :
     lpOpNorm p ((1 - F)⁻¹ - 1) ≤ lpOpNorm p F / (1 - lpOpNorm p F) := by
   simp only [lpOpNorm_eq_inducedNorm] at hF ⊢
   exact inducedNorm_inv_one_sub_sub_one_le (lpSeminorm_definite p) hF
 
-/-- **Theorem 2.3.4.** If `A` is nonsingular and `r = ‖A⁻¹E‖_p < 1`, then `A + E` is nonsingular and
-`‖(A + E)⁻¹ - A⁻¹‖_p ≤ ‖E‖_p ‖A⁻¹‖_p² / (1 - r)`. -/
+/-- **Theorem 2.3.4** of [golub2013matrix]. Let $1 \le p \le \infty$, let
+$A \in \mathbb{R}^{n \times n}$ be nonsingular, let $E \in \mathbb{R}^{n \times n}$, and let
+$r = \|A^{-1}E\|_p < 1$. Then $A + E$ is nonsingular and
+$$\|(A + E)^{-1} - A^{-1}\|_p \le \frac{\|E\|_p \|A^{-1}\|_p^2}{1 - r}.$$
+
+The proof uses the factorization $A + E = A(I + A^{-1}E)$ and Lemma 2.3.3, through the normed
+ring result of `Numlib.Analysis.Normed.Ring.Inverse`. The proof in the source writes
+$A + E = (I + F)A$ with $F = -EA^{-1}$ and claims $\|F\|_p = r = \|A^{-1}E\|_p$, which is false
+in general. The statement is true as printed. -/
 theorem theorem_2_3_4 (p : ℝ≥0∞) [Fact (1 ≤ p)] {A E : Matrix (Fin n) (Fin n) ℝ} (hA : IsUnit A)
     (hr : lpOpNorm p (A⁻¹ * E) < 1) :
     IsUnit (A + E) ∧
@@ -355,7 +497,10 @@ section Frobenius
 
 open scoped Matrix.Norms.Frobenius
 
-/-- **(2.3.14)**: `‖QAZ‖_F = ‖A‖_F` for orthogonal `Q`, `Z`. -/
+/-- **Equation (2.3.14)** of [golub2013matrix]. Let $A \in \mathbb{R}^{m \times n}$, and let
+$Q \in \mathbb{R}^{m \times m}$ and $Z \in \mathbb{R}^{n \times n}$ be orthogonal. Then
+$$\|QAZ\|_F = \|A\|_F.$$
+-/
 theorem equation_2_3_14 {Q : Matrix (Fin m) (Fin m) ℝ} {Z : Matrix (Fin n) (Fin n) ℝ}
     (hQ : Q ∈ orthogonalGroup (Fin m) ℝ) (hZ : Z ∈ orthogonalGroup (Fin n) ℝ)
     (A : Matrix (Fin m) (Fin n) ℝ) : ‖Q * A * Z‖ = ‖A‖ :=
@@ -363,7 +508,10 @@ theorem equation_2_3_14 {Q : Matrix (Fin m) (Fin m) ℝ} {Z : Matrix (Fin n) (Fi
 
 end Frobenius
 
-/-- **(2.3.15)**: `‖QAZ‖₂ = ‖A‖₂` for orthogonal `Q`, `Z`. -/
+/-- **Equation (2.3.15)** of [golub2013matrix]. Let $A \in \mathbb{R}^{m \times n}$, and let
+$Q \in \mathbb{R}^{m \times m}$ and $Z \in \mathbb{R}^{n \times n}$ be orthogonal. Then
+$$\|QAZ\|_2 = \|A\|_2.$$
+-/
 theorem equation_2_3_15 {Q : Matrix (Fin m) (Fin m) ℝ} {Z : Matrix (Fin n) (Fin n) ℝ}
     (hQ : Q ∈ orthogonalGroup (Fin m) ℝ) (hZ : Z ∈ orthogonalGroup (Fin n) ℝ)
     (A : Matrix (Fin m) (Fin n) ℝ) : lpOpNorm 2 (Q * A * Z) = lpOpNorm 2 A := by

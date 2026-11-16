@@ -7,36 +7,89 @@ import Numlib.Eigen.PeriodicSchur
 import NumlibSurface.GolubVanLoan.Chapter07.Section04
 
 /-!
-# Golub–Van Loan §7.8: Hamiltonian and product eigenvalue problems
+# Golub and Van Loan, Section 7.8: Hamiltonian and product eigenvalue problems
 
-Surface file for Gene H. Golub and Charles F. Van Loan, *Matrix Computations*, 4th edition
-[golub2013matrix], §7.8: the skew-Hamiltonian and orthogonal symplectic rows of Figure 7.8.1, the
-four facts (1)–(4) of §7.8.1, symplectic Householder and Givens transformations, the deflation
-step by a unit eigenvector of a real eigenvalue, the real Hamiltonian–Schur form (7.8.1) and the
-algebraic Riccati equation (7.8.2), the Paige–Van Loan form (7.8.3), the skew-Hamiltonian
-Hessenberg form (7.8.4) of `M²` and its real Schur form, and the product
-decompositions (7.8.5)–(7.8.6) with their block-cyclic restatement and its perfect-shuffle
-Hessenberg form.
+This module formalizes §7.8 of [golub2013matrix]. Let $J = \begin{bmatrix} 0 & I_n \\ -I_n & 0
+\end{bmatrix}$. A real $2n \times 2n$ matrix $M$ is Hamiltonian if $JMJ^T = -M^T$, skew-Hamiltonian
+if $JMJ^T = M^T$, and symplectic if $M^T J M = J$. §7.8.1 states the block forms of these classes
+(Figure 7.8.1) and four facts: symplectic similarities preserve the Hamiltonian structure, the
+square of a Hamiltonian matrix is skew-Hamiltonian, the eigenvalues of a Hamiltonian matrix come in
+pairs $\pm\lambda$, and those of a symplectic matrix in pairs $\lambda, 1/\lambda$. It then reduces
+a Hamiltonian matrix by orthogonal symplectic transformations: one deflation step by a real
+eigenvector, the real Hamiltonian–Schur form (7.8.1) and the algebraic Riccati equation (7.8.2), the
+Paige–Van Loan form (7.8.3), and the Hessenberg (7.8.4) and real Schur forms of the skew-Hamiltonian
+matrix $M^2$.
+
+§7.8.2 treats the eigenvalues of a product $A = A_3 A_2 A_1$ of $n \times n$ matrices without
+forming the product. Orthogonal $U_1, U_2, U_3$ reduce the three factors to
+Hessenberg–triangular–triangular form (7.8.5) and to the periodic real Schur form (7.8.6). The same
+reduction is a reduction of the block-cyclic matrix $\begin{bmatrix} 0 & 0 & A_3 \\ A_1 & 0 & 0 \\ 0
+& A_2 & 0 \end{bmatrix}$, which becomes upper Hessenberg after a perfect shuffle of its rows and
+columns. The proofs specialize the backbone modules `Numlib.LinearAlgebra.Matrix.Hamiltonian`,
+`Numlib.Eigen.HamiltonianSchur` and `Numlib.Eigen.PeriodicSchur`.
+
+## Main results
+
+* Figure 7.8.1, `GolubVanLoan.Chapter07.figure_7_8_1_skewHamiltonian`: $JN$ is skew-symmetric if and
+  only if $N = \begin{bmatrix} A & G \\ F & A^T \end{bmatrix}$ with $F$ and $G$ skew-symmetric.
+* Figure 7.8.1, `GolubVanLoan.Chapter07.figure_7_8_1_orthogonalSymplectic`: an orthogonal $Q$ is
+  symplectic if and only if $JQ = QJ$, if and only if $Q = \begin{bmatrix} Q_1 & Q_2 \\ -Q_2 & Q_1
+  \end{bmatrix}$ with $Q_1^T Q_2$ symmetric and $Q_1^T Q_1 + Q_2^T Q_2 = I$.
+* §7.8.1 (1), `GolubVanLoan.Chapter07.hamiltonian_symplectic_conj`: a symplectic similarity
+  preserves Hamiltonian and skew-Hamiltonian structure.
+* §7.8.1 (2), `GolubVanLoan.Chapter07.hamiltonian_sq_skewHamiltonian`: the square of a Hamiltonian
+  matrix is skew-Hamiltonian.
+* §7.8.1 (3), `GolubVanLoan.Chapter07.hamiltonian_neg_mem_spectrum`: if $\lambda$ is an eigenvalue
+  of a Hamiltonian matrix, so is $-\lambda$.
+* §7.8.1 (4), `GolubVanLoan.Chapter07.symplectic_inv_mem_spectrum`: if $\lambda$ is an eigenvalue of
+  a symplectic matrix, then $\lambda \neq 0$ and $1/\lambda$ is an eigenvalue.
+* §7.8.1, `GolubVanLoan.Chapter07.symplectic_householder_givens`: symplectic Householder and Givens
+  transformations are orthogonal symplectic, and they map every vector to a multiple of $e_1$.
+* §7.8.1, `GolubVanLoan.Chapter07.hamiltonian_deflation_structure`: the deflation of a Hamiltonian
+  matrix by a unit eigenvector of a real eigenvalue.
+* (7.8.1), `GolubVanLoan.Chapter07.equation_7_8_1`: the real Hamiltonian–Schur decomposition.
+* (7.8.2), `GolubVanLoan.Chapter07.equation_7_8_2`: the Hamiltonian–Schur form gives a symmetric
+  solution of the algebraic Riccati equation.
+* (7.8.3), `GolubVanLoan.Chapter07.equation_7_8_3`: the Paige–Van Loan form $\begin{bmatrix} H & R
+  \\ D & -H^T \end{bmatrix}$.
+* (7.8.4), `GolubVanLoan.Chapter07.equation_7_8_4`: $M^2$ is orthogonally symplectically similar to
+  $\begin{bmatrix} H & R \\ 0 & H^T \end{bmatrix}$ with $H$ upper Hessenberg.
+* §7.8.1, `GolubVanLoan.Chapter07.skewHamiltonian_schur`: the real skew-Hamiltonian Schur form of
+  $M^2$.
+* (7.8.5), `GolubVanLoan.Chapter07.equation_7_8_5`: the Hessenberg–triangular–triangular form of
+  $A_3 A_2 A_1$.
+* (7.8.6), `GolubVanLoan.Chapter07.equation_7_8_6`: the periodic real Schur form of $A_3 A_2 A_1$.
+* §7.8.2, `GolubVanLoan.Chapter07.blockCyclic_restatement`: the reduction of the factors is a
+  block-diagonal orthogonal transformation of the block-cyclic matrix.
+* §7.8.2, `GolubVanLoan.Chapter07.blockCyclic_shuffle_isUpperHessenberg`: the perfect shuffle of the
+  reduced block-cyclic matrix is upper Hessenberg.
 
 ## Conventions
 
-Real matrices on `Fin n ⊕ Fin n` (the book's `2n × 2n` with `n × n` blocks, `Matrix.fromBlocks`).
-The book's `J = [0 I; -I 0]` is `-Matrix.J (Fin n) ℝ` (Mathlib's `J = [0 -I; I 0]`); every structure
-here is invariant under `J ↦ -J`, so this section states everything with Mathlib's `J` (chapter 1
-instead states §1.3.10 with the book's `GolubVanLoan.Chapter01.bookJ` and proves the two forms
-equivalent). The Hamiltonian and symplectic rows of Figure 7.8.1 are chapter 1's
-`GolubVanLoan.Chapter01.isHamiltonian_iff` and `GolubVanLoan.Chapter01.symplectic_blocks`; this
-section adds the skew-Hamiltonian row (`figure_7_8_1_skewHamiltonian`). Hamiltonian is the
-backbone's `Matrix.IsHamiltonian`, skew-Hamiltonian
-`Matrix.IsSkewHamiltonian`, symplectic Mathlib's `Matrix.symplecticGroup (Fin n) ℝ`. The complex
-eigenvalues of a real matrix are those of `Matrix.complexify`. The product problem uses
-`A₁, A₂, A₃` as the book does, `A = A₃ A₂ A₁`; the backbone indexes them by `Fin 3`.
+* A $2n \times 2n$ matrix with $n \times n$ blocks is a real matrix indexed by `Fin n ⊕ Fin n`, and
+  a block matrix $\begin{bmatrix} A & B \\ C & D \end{bmatrix}$ is `Matrix.fromBlocks A B C D`.
+* The source's $J = \begin{bmatrix} 0 & I \\ -I & 0 \end{bmatrix}$ is `-Matrix.J (Fin n) ℝ`, since
+  Mathlib's `Matrix.J` is $\begin{bmatrix} 0 & -I \\ I & 0 \end{bmatrix}$. Every structure in this
+  section is invariant under $J \mapsto -J$, so the section states everything with Mathlib's
+  `Matrix.J`. Chapter 1 states §1.3.10 with the source's $J$, `GolubVanLoan.Chapter01.bookJ`, and
+  proves the two forms equivalent.
+* Hamiltonian is the backbone's `Matrix.IsHamiltonian`, skew-Hamiltonian is
+  `Matrix.IsSkewHamiltonian`, and symplectic is membership in Mathlib's
+  `Matrix.symplecticGroup (Fin n) ℝ`. The Hamiltonian and symplectic rows of Figure 7.8.1 are
+  `GolubVanLoan.Chapter01.isHamiltonian_iff` and `GolubVanLoan.Chapter01.symplectic_blocks` of
+  Chapter 1; this section adds the skew-Hamiltonian and orthogonal symplectic rows.
+* The complex eigenvalues of a real matrix $M$ are the elements of `spectrum ℂ M.complexify`.
+* The product problem uses $A_1, A_2, A_3$ as the source does, with $A = A_3 A_2 A_1$. The
+  block-cyclic theorems index the factors by `Fin 3`, with `A 0` for $A_1$, `A 1` for $A_2$ and
+  `A 2` for $A_3$.
 
 ## Not formalized
 
-(7.8.7) (the iterates stay in Hessenberg–triangular–triangular form: no convergence statement);
-"a structure-preserving QR iteration … has yet to be devised" and the quality of eigenvalues
-computed from `M²` (no precise claims); rectangular and inverted factors (mentioned only).
+* **Display (7.8.7).** It says that the iterates stay in Hessenberg–triangular–triangular form; the
+  source makes no convergence statement.
+* **The remark that a structure-preserving QR iteration has yet to be devised, and the quality of
+  the eigenvalues computed from $M^2$.** The source makes no precise claims.
+* **Rectangular and inverted factors in the product problem.** The source only mentions them.
 -/
 
 open Matrix
@@ -47,15 +100,24 @@ variable {n : ℕ}
 
 /-! ### §7.8.1 Hamiltonian matrix eigenproblems -/
 
-/-- **Figure 7.8.1, skew-Hamiltonian row**: `J N` is skew-symmetric, `J N = -(J N)ᵀ`, exactly when
-`N = [A G; F Aᵀ]` with `G` and `F` skew-symmetric. -/
+/-- **Figure 7.8.1** of [golub2013matrix], skew-Hamiltonian row. Let
+$A, F, G, H \in \mathbb{R}^{n \times n}$ and $N = \begin{bmatrix} A & G \\ F & H \end{bmatrix}$.
+Then $JN$ is skew-symmetric, $(JN)^T = -JN$, if and only if $$H = A^T, \qquad F^T = -F, \qquad
+G^T = -G.$$
+
+Here $J$ is Mathlib's `Matrix.J (Fin n) ℝ`. -/
 theorem figure_7_8_1_skewHamiltonian (A G F H : Matrix (Fin n) (Fin n) ℝ) :
     (J (Fin n) ℝ * fromBlocks A G F H)ᵀ = -(J (Fin n) ℝ * fromBlocks A G F H) ↔
       H = Aᵀ ∧ Fᵀ = -F ∧ Gᵀ = -G := by
   rw [← isSkewHamiltonian_iff_transpose_J_mul, isSkewHamiltonian_fromBlocks_iff]
 
-/-- **Figure 7.8.1, orthogonal symplectic row**: an orthogonal `Q` is symplectic iff `J Q = Q J` iff
-`Q = [Q₁ Q₂; -Q₂ Q₁]`, and then `Q₁ᵀ Q₂` is symmetric and `I = Q₁ᵀ Q₁ + Q₂ᵀ Q₂`. -/
+/-- **Figure 7.8.1** of [golub2013matrix], orthogonal symplectic row. Let
+$Q \in \mathbb{R}^{2n \times 2n}$ be orthogonal. Then $Q$ is symplectic if and only if
+$JQ = QJ$. Also, $Q$ is symplectic if and only if there are
+$Q_1, Q_2 \in \mathbb{R}^{n \times n}$ with $$Q = \begin{bmatrix} Q_1 & Q_2 \\ -Q_2 & Q_1
+\end{bmatrix}, \qquad Q_1^T Q_2 \text{ symmetric}, \qquad Q_1^T Q_1 + Q_2^T Q_2 = I.$$
+
+The commutation $JQ = QJ$ is `Commute (Matrix.J (Fin n) ℝ) Q`. -/
 theorem figure_7_8_1_orthogonalSymplectic {Q : Matrix (Fin n ⊕ Fin n) (Fin n ⊕ Fin n) ℝ}
     (hQ : Q ∈ orthogonalGroup (Fin n ⊕ Fin n) ℝ) :
     (Q ∈ symplecticGroup (Fin n) ℝ ↔ Commute (J (Fin n) ℝ) Q) ∧
@@ -65,8 +127,12 @@ theorem figure_7_8_1_orthogonalSymplectic {Q : Matrix (Fin n ⊕ Fin n) (Fin n �
     rw [← mem_orthogonalGroup_symplecticGroup_iff]
     exact ⟨fun h => ⟨hQ, h⟩, fun h => h.2⟩⟩
 
-/-- **§7.8.1 (1)**: "Symplectic similarity transformations preserve Hamiltonian structure", and
-likewise skew-Hamiltonian structure (the remark before (7.8.4)). -/
+/-- **§7.8.1 (1)** of [golub2013matrix]. Let $S \in \mathbb{R}^{2n \times 2n}$ be symplectic. If $M$
+is Hamiltonian, then $S^{-1} M S$ is Hamiltonian, and if $N$ is skew-Hamiltonian, then
+$S^{-1} N S$ is skew-Hamiltonian.
+
+The source states "Symplectic similarity transformations preserve Hamiltonian structure"; it
+remarks the skew-Hamiltonian case before (7.8.4). -/
 theorem hamiltonian_symplectic_conj {S : Matrix (Fin n ⊕ Fin n) (Fin n ⊕ Fin n) ℝ}
     (hS : S ∈ symplecticGroup (Fin n) ℝ) :
     (∀ M : Matrix (Fin n ⊕ Fin n) (Fin n ⊕ Fin n) ℝ, M.IsHamiltonian →
@@ -75,23 +141,30 @@ theorem hamiltonian_symplectic_conj {S : Matrix (Fin n ⊕ Fin n) (Fin n ⊕ Fin
       (S⁻¹ * N * S).IsSkewHamiltonian :=
   ⟨fun _ hM => hM.conj_symplectic hS, fun _ hN => hN.conj_symplectic hS⟩
 
-/-- **§7.8.1 (2)**: the square of a Hamiltonian matrix is skew-Hamiltonian. -/
+/-- **§7.8.1 (2)** of [golub2013matrix]. If $M \in \mathbb{R}^{2n \times 2n}$ is Hamiltonian, then
+$M^2$ is skew-Hamiltonian. -/
 theorem hamiltonian_sq_skewHamiltonian {M : Matrix (Fin n ⊕ Fin n) (Fin n ⊕ Fin n) ℝ}
     (hM : M.IsHamiltonian) : (M * M).IsSkewHamiltonian :=
   hM.isSkewHamiltonian_mul_self
 
-/-- The complexification of Mathlib's `J`. -/
+/-- The complexification of Mathlib's real $J$ is the complex $J$. -/
 private theorem complexify_J : (J (Fin n) ℝ).complexify = J (Fin n) ℂ := by
   ext (i | i) (j | j) <;> by_cases h : i = j <;> simp [J, complexify, h]
 
-/-- `J [u; v] = [-v; u]` for Mathlib's `J`, so `[v; -u] = -J [u; v]`. -/
+/-- For Mathlib's $J$ and $x = (u, v)$, $Jx = (-v, u)$, so that $(v, -u) = -Jx$. -/
 private theorem J_mulVec_eq (x : Fin n ⊕ Fin n → ℂ) :
     J (Fin n) ℂ *ᵥ x = -Sum.elim (x ∘ Sum.inr) (-(x ∘ Sum.inl)) := by
   rw [J, fromBlocks_mulVec]
   ext (i | i) <;> simp [neg_mulVec]
 
-/-- **§7.8.1 (3)**: if `M` is Hamiltonian and `λ ∈ λ(M)`, then `-λ ∈ λ(M)`; the book's witness:
-`M [u; v] = λ [u; v]` implies `Mᵀ [v; -u] = -λ [v; -u]`. -/
+/-- **§7.8.1 (3)** of [golub2013matrix]. Let $M \in \mathbb{R}^{2n \times 2n}$ be Hamiltonian. If
+$\lambda \in \mathbb{C}$ is an eigenvalue of $M$, then $-\lambda$ is an eigenvalue of $M$. More
+precisely, for every $u, v \in \mathbb{C}^n$ and $\lambda \in \mathbb{C}$, $$M \begin{bmatrix} u
+\\ v \end{bmatrix} = \lambda \begin{bmatrix} u \\ v \end{bmatrix} \implies M^T \begin{bmatrix} v
+\\ -u \end{bmatrix} = -\lambda \begin{bmatrix} v \\ -u \end{bmatrix}.$$
+
+The second part is the witness of the source's proof. The eigenvalues are those of
+`Matrix.complexify M`, and the vector $(u, v)$ is a function on `Fin n ⊕ Fin n`. -/
 theorem hamiltonian_neg_mem_spectrum {M : Matrix (Fin n ⊕ Fin n) (Fin n ⊕ Fin n) ℝ}
     (hM : M.IsHamiltonian) :
     (∀ μ ∈ spectrum ℂ M.complexify, -μ ∈ spectrum ℂ M.complexify) ∧
@@ -109,8 +182,15 @@ theorem hamiltonian_neg_mem_spectrum {M : Matrix (Fin n ⊕ Fin n) (Fin n ⊕ Fi
   rw [J_mulVec_eq, mulVec_neg, smul_neg, neg_inj] at key
   exact key
 
-/-- **§7.8.1 (4)**: if `S` is symplectic and `λ ∈ λ(S)`, then `λ ≠ 0` and `1/λ ∈ λ(S)`; the book's
-witness: `S [u; v] = λ [u; v]` implies `Sᵀ [v; -u] = (1/λ) [v; -u]`. -/
+/-- **§7.8.1 (4)** of [golub2013matrix]. Let $S \in \mathbb{R}^{2n \times 2n}$ be symplectic. If
+$\lambda \in \mathbb{C}$ is an eigenvalue of $S$, then $\lambda \neq 0$ and $1/\lambda$ is an
+eigenvalue of $S$. More precisely, for every $u, v \in \mathbb{C}^n$ and $\lambda \neq 0$, $$S
+\begin{bmatrix} u \\ v \end{bmatrix} = \lambda \begin{bmatrix} u \\ v \end{bmatrix} \implies S^T
+\begin{bmatrix} v \\ -u \end{bmatrix} = \frac{1}{\lambda} \begin{bmatrix} v \\ -u
+\end{bmatrix}.$$
+
+The second part is the witness of the source's proof. The eigenvalues are those of
+`Matrix.complexify S`. -/
 theorem symplectic_inv_mem_spectrum {S : Matrix (Fin n ⊕ Fin n) (Fin n ⊕ Fin n) ℝ}
     (hS : S ∈ symplecticGroup (Fin n) ℝ) :
     (∀ μ ∈ spectrum ℂ S.complexify, μ ≠ 0 ∧ μ⁻¹ ∈ spectrum ℂ S.complexify) ∧
@@ -131,11 +211,19 @@ theorem symplectic_inv_mem_spectrum {S : Matrix (Fin n ⊕ Fin n) (Fin n ⊕ Fin
   rw [J_mulVec_eq, mulVec_neg, smul_neg, neg_inj] at key
   exact key
 
-/-- **§7.8.1, symplectic Householder and Givens transformations.** If `P` is orthogonal (a
-Householder matrix `I - 2vvᵀ`, for instance), `diag(P, P)` is orthogonal symplectic; a Givens
-rotation in the planes `i` and `n + i` is orthogonal symplectic; and (the
-Householder–Givens–Householder sequence) every `x ∈ ℝ^{2n}` is mapped to a multiple of `e₁` by an
-orthogonal symplectic `Qᵀ`. -/
+/-- **§7.8.1** of [golub2013matrix], symplectic Householder and Givens transformations. The
+following hold.
+
+1. If $P \in \mathbb{R}^{n \times n}$ is orthogonal, for example a Householder matrix
+   $I - 2vv^T$, then $\operatorname{diag}(P, P)$ is orthogonal and symplectic.
+2. If $c^2 + s^2 = 1$ and $1 \le i \le n$, then the Givens rotation in the coordinate planes $i$
+   and $n + i$ is orthogonal and symplectic.
+3. For every $x \in \mathbb{R}^{2n}$ and every $1 \le i_0 \le n$ there is an orthogonal
+   symplectic $Q$ with $Q^T x = \|x\|_2 e_{i_0}$.
+
+The third part is the result of the source's Householder–Givens–Householder sequence; the source
+takes $i_0 = 1$. The Givens rotation is `Matrix.planeRotation (Sum.inl i) (Sum.inr i) c s`, and
+$e_{i_0}$ is `Pi.single (Sum.inl i₀) 1`. -/
 theorem symplectic_householder_givens :
     (∀ P : Matrix (Fin n) (Fin n) ℝ, P ∈ orthogonalGroup (Fin n) ℝ →
       fromBlocks P 0 0 P ∈ orthogonalGroup (Fin n ⊕ Fin n) ℝ ∧
@@ -152,12 +240,16 @@ theorem symplectic_householder_givens :
       obtain ⟨Q, ⟨hQo, hQs⟩, hQ⟩ := exists_orthogonalSymplectic_mulVec_eq x i₀
       exact ⟨Q, hQo, hQs, hQ⟩⟩
 
-/-- **§7.8.1, the deflation step displayed before (7.8.1).** If `M` is Hamiltonian, `M x = λ x`
-with `λ` real, and `Q₁` is orthogonal symplectic with `Q₁ᵀ x = e₁` (so `‖x‖₂ = 1`), then
-`Q₁ᵀ M Q₁` has first column `λ e₁` and its row `n + 1` is `-λ e_{n+1}ᵀ` — "the 'extra' zeros follow
-from the Hamiltonian structure of `Q₁ᵀ M Q₁`" — and the rows and columns `2:n, n+2:2n` define a
-`(2n-2) × (2n-2)` Hamiltonian submatrix, on which "the process can be repeated". Here `2n = 2(N+1)`
-is indexed by `Fin (N+1) ⊕ Fin (N+1)`, `e₁` is `Sum.inl 0`, row `n + 1` is `Sum.inr 0`, and the
+/-- **§7.8.1** of [golub2013matrix], the deflation step displayed before (7.8.1). Let $n \ge 1$, let
+$M \in \mathbb{R}^{2n \times 2n}$ be Hamiltonian, and let $Mx = \lambda x$ with
+$\lambda \in \mathbb{R}$ and $x \in \mathbb{R}^{2n}$. Let $Q_1$ be orthogonal and symplectic
+with $Q_1^T x = e_1$, so that $\|x\|_2 = 1$. Then $Q_1^T M Q_1$ is Hamiltonian, its first column
+is $\lambda e_1$, its row $n + 1$ is $-\lambda e_{n+1}^T$, and the submatrix in the rows and
+columns $2{:}n$ and $n{+}2{:}2n$ is a $(2n-2) \times (2n-2)$ Hamiltonian matrix.
+
+In the words of the source, "the 'extra' zeros follow from the Hamiltonian structure of
+$Q_1^T M Q_1$", and on the submatrix "the process can be repeated". Here $n = N + 1$, the index
+type is `Fin (N+1) ⊕ Fin (N+1)`, $e_1$ is at `Sum.inl 0`, row $n + 1$ is `Sum.inr 0`, and the
 submatrix is the reindexing by `Sum.map Fin.succ Fin.succ`. -/
 theorem hamiltonian_deflation_structure {N : ℕ}
     {M Q₁ : Matrix (Fin (N + 1) ⊕ Fin (N + 1)) (Fin (N + 1) ⊕ Fin (N + 1)) ℝ}
@@ -209,9 +301,14 @@ theorem hamiltonian_deflation_structure {N : ℕ}
     · rw [transpose_submatrix, hF]
     · rw [transpose_submatrix, hG]
 
-/-- **(7.8.1), the real Hamiltonian–Schur decomposition.** If `M` is Hamiltonian with no purely
-imaginary eigenvalue, there is an orthogonal symplectic `Q = [Q₁ Q₂; -Q₂ Q₁]` with
-`Qᵀ M Q = [T R; 0 -Tᵀ]`, `T` upper quasi-triangular with `λ(T)` in the open left half-plane. -/
+/-- **Equation (7.8.1)** of [golub2013matrix], the real Hamiltonian–Schur decomposition. Let
+$M \in \mathbb{R}^{2n \times 2n}$ be Hamiltonian with no eigenvalue on the imaginary axis. Then
+there are $Q_1, Q_2, T, R \in \mathbb{R}^{n \times n}$ such that $Q = \begin{bmatrix} Q_1 & Q_2
+\\ -Q_2 & Q_1 \end{bmatrix}$ is orthogonal and symplectic, $$Q^T M Q = \begin{bmatrix} T & R \\
+0 & -T^T \end{bmatrix},$$ $T$ is upper quasi-triangular, and every eigenvalue of $T$ has
+negative real part.
+
+The hypothesis is that every complex eigenvalue of $M$ has nonzero real part. -/
 theorem equation_7_8_1 {M : Matrix (Fin n ⊕ Fin n) (Fin n ⊕ Fin n) ℝ} (hM : M.IsHamiltonian)
     (hre : ∀ μ ∈ spectrum ℂ M.complexify, μ.re ≠ 0) :
     ∃ Q₁ Q₂ T R : Matrix (Fin n) (Fin n) ℝ,
@@ -223,11 +320,17 @@ theorem equation_7_8_1 {M : Matrix (Fin n ⊕ Fin n) (Fin n ⊕ Fin n) ℝ} (hM 
   obtain ⟨Q₁, Q₂, rfl, -, -⟩ := (figure_7_8_1_orthogonalSymplectic hQo).2.1 hQs
   exact ⟨Q₁, Q₂, T, R, hQo, hQs, hQM, hT, hst⟩
 
-/-- **(7.8.2), the algebraic Riccati equation.** In the Hamiltonian–Schur form (7.8.1) of
-`M = [A F; G -Aᵀ]` with `Q₁` nonsingular, `X = Q₂ Q₁⁻¹` is symmetric and satisfies
-`G + X A + Aᵀ X - X F X = 0`, and `A - F X = Q₁ T Q₁⁻¹`, so `λ(A - F X) = λ(T)` (in the open left
-half-plane when `T` is chosen so). (The book derives the symmetry of `X` "from
-`I_n = Q₁ᵀ Q₁ + Q₂ᵀ Q₂`"; it follows from the symmetry of `Q₁ᵀ Q₂`.) -/
+/-- **Equation (7.8.2)** of [golub2013matrix], the algebraic Riccati equation. Let $A, F, G, T, R,
+Q_1, Q_2 \in \mathbb{R}^{n \times n}$. Suppose that $Q = \begin{bmatrix} Q_1 & Q_2 \\ -Q_2 & Q_1
+\end{bmatrix}$ is orthogonal, that $$Q^T \begin{bmatrix} A & F \\ G & -A^T \end{bmatrix} Q =
+\begin{bmatrix} T & R \\ 0 & -T^T \end{bmatrix},$$ and that $Q_1$ is nonsingular. Let
+$X = Q_2 Q_1^{-1}$. Then $X$ is symmetric, $$G + XA + A^T X - XFX = 0,$$
+$A - FX = Q_1 T Q_1^{-1}$, and therefore $\lambda(A - FX) = \lambda(T)$.
+
+If $T$ is chosen as in (7.8.1), the eigenvalues of $A - FX$ lie in the open left half-plane. The
+source derives the symmetry of $X$ "from $I_n = Q_1^T Q_1 + Q_2^T Q_2$"; it follows from the
+symmetry of $Q_1^T Q_2$. The theorem assumes neither that $F$ and $G$ are symmetric nor that $Q$
+is symplectic. -/
 theorem equation_7_8_2 {A F G T R Q₁ Q₂ : Matrix (Fin n) (Fin n) ℝ}
     (hQ : fromBlocks Q₁ Q₂ (-Q₂) Q₁ ∈ orthogonalGroup (Fin n ⊕ Fin n) ℝ)
     (hS : (fromBlocks Q₁ Q₂ (-Q₂) Q₁)ᵀ * fromBlocks A F G (-Aᵀ) * fromBlocks Q₁ Q₂ (-Q₂) Q₁ =
@@ -246,10 +349,13 @@ theorem equation_7_8_2 {A F G T R Q₁ Q₂ : Matrix (Fin n) (Fin n) ℝ}
       nonsing_inv_mul _ ((isUnit_iff_isUnit_det _).1 hQ₁), Matrix.one_mul]
   exact IsSimilar.spectrum_eq hsim
 
-/-- **(7.8.3), the Paige–Van Loan form**: "If `M` is Hamiltonian, then it is easy to compute an
-orthogonal symplectic `U₀` such that `U₀ᵀ M U₀ = [H R; D -Hᵀ]` where `H` is upper Hessenberg and
-`D` is diagonal" — the backbone's `Matrix.IsHamiltonian.exists_orthogonalSymplectic_paigeVanLoan`
-(the book gives no algorithm). -/
+/-- **Equation (7.8.3)** of [golub2013matrix], the Paige–Van Loan form. If
+$M \in \mathbb{R}^{2n \times 2n}$ is Hamiltonian, then there is an orthogonal symplectic $U_0$
+and there are $H, R, D \in \mathbb{R}^{n \times n}$ such that $$U_0^T M U_0 = \begin{bmatrix} H
+& R \\ D & -H^T \end{bmatrix},$$ where $H$ is upper Hessenberg and $D$ is diagonal.
+
+The source says that $U_0$ is "easy to compute" but gives no algorithm. The proof is
+`Matrix.IsHamiltonian.exists_orthogonalSymplectic_paigeVanLoan`. -/
 theorem equation_7_8_3 {M : Matrix (Fin n ⊕ Fin n) (Fin n ⊕ Fin n) ℝ} (hM : M.IsHamiltonian) :
     ∃ U₀ ∈ orthogonalGroup (Fin n ⊕ Fin n) ℝ, U₀ ∈ symplecticGroup (Fin n) ℝ ∧
       ∃ H R D : Matrix (Fin n) (Fin n) ℝ,
@@ -257,11 +363,14 @@ theorem equation_7_8_3 {M : Matrix (Fin n ⊕ Fin n) (Fin n ⊕ Fin n) ℝ} (hM 
   obtain ⟨U₀, ⟨hUo, hUs⟩, H, R, D, h, hH, hD⟩ := hM.exists_orthogonalSymplectic_paigeVanLoan
   exact ⟨U₀, hUo, hUs, H, R, D, h, hH, hD⟩
 
-/-- **(7.8.4)**: for Hamiltonian `M` there is an orthogonal symplectic `V₀` with
-`V₀ᵀ M² V₀ = [H R; 0 Hᵀ]`, `H` upper Hessenberg: `M²` is skew-Hamiltonian
-(`hamiltonian_sq_skewHamiltonian`), and "because the (2,1) block of a skew-Hamiltonian matrix is
-skew-symmetric, it has a zero diagonal" — the backbone's
-`Matrix.IsSkewHamiltonian.exists_orthogonalSymplectic_hessenberg`. -/
+/-- **Equation (7.8.4)** of [golub2013matrix]. If $M \in \mathbb{R}^{2n \times 2n}$ is Hamiltonian,
+then there is an orthogonal symplectic $V_0$ and there are $H, R \in \mathbb{R}^{n \times n}$
+such that $$V_0^T M^2 V_0 = \begin{bmatrix} H & R \\ 0 & H^T \end{bmatrix},$$ where $H$ is upper
+Hessenberg.
+
+The matrix $M^2$ is skew-Hamiltonian (`GolubVanLoan.Chapter07.hamiltonian_sq_skewHamiltonian`),
+and "because the (2,1) block of a skew-Hamiltonian matrix is skew-symmetric, it has a zero
+diagonal". The proof applies `Matrix.IsSkewHamiltonian.exists_orthogonalSymplectic_hessenberg`. -/
 theorem equation_7_8_4 {M : Matrix (Fin n ⊕ Fin n) (Fin n ⊕ Fin n) ℝ} (hM : M.IsHamiltonian) :
     ∃ V₀ ∈ orthogonalGroup (Fin n ⊕ Fin n) ℝ, V₀ ∈ symplecticGroup (Fin n) ℝ ∧
       ∃ H R : Matrix (Fin n) (Fin n) ℝ,
@@ -270,11 +379,19 @@ theorem equation_7_8_4 {M : Matrix (Fin n ⊕ Fin n) (Fin n ⊕ Fin n) ℝ} (hM 
     (hamiltonian_sq_skewHamiltonian hM).exists_orthogonalSymplectic_hessenberg
   exact ⟨V₀, hVo, hVs, H, R, h, hH⟩
 
-/-- **§7.8.1, the real skew-Hamiltonian Schur form**: "If `Uᵀ H U = T` is the real Schur form of
-`H` and `Q = V₀ diag(U, U)`, then `Qᵀ M² Q = [T UᵀRU; 0 Tᵀ]`". Two parts: the displayed block
-identity for any `V₀` of (7.8.4) and any orthogonal `U`, and the resulting existence of an
-orthogonal symplectic `Q` with `Qᵀ M² Q = [T R'; 0 Tᵀ]`, `T` upper quasi-triangular
-(`Matrix.IsSkewHamiltonian.exists_orthogonalSymplectic_schur`). -/
+/-- **§7.8.1** of [golub2013matrix], the real skew-Hamiltonian Schur form. Let
+$M \in \mathbb{R}^{2n \times 2n}$ be Hamiltonian. The following hold.
+
+1. If $V_0 \in \mathbb{R}^{2n \times 2n}$ and $H, R, U \in \mathbb{R}^{n \times n}$ satisfy
+   $V_0^T M^2 V_0 = \begin{bmatrix} H & R \\ 0 & H^T \end{bmatrix}$, then
+   $Q = V_0 \operatorname{diag}(U, U)$ satisfies $$Q^T M^2 Q = \begin{bmatrix} U^T H U & U^T R U
+   \\ 0 & (U^T H U)^T \end{bmatrix}.$$
+2. There is an orthogonal symplectic $Q$ and there are $T, R \in \mathbb{R}^{n \times n}$ with
+   $Q^T M^2 Q = \begin{bmatrix} T & R \\ 0 & T^T \end{bmatrix}$ and $T$ upper quasi-triangular.
+
+The source states the first part for the $V_0$ of (7.8.4) and the orthogonal $U$ of a real Schur
+form $U^T H U = T$; the identity holds for every $V_0$ and $U$. The second part is
+`Matrix.IsSkewHamiltonian.exists_orthogonalSymplectic_schur`. -/
 theorem skewHamiltonian_schur {M : Matrix (Fin n ⊕ Fin n) (Fin n ⊕ Fin n) ℝ}
     (hM : M.IsHamiltonian) :
     (∀ {V₀ : Matrix (Fin n ⊕ Fin n) (Fin n ⊕ Fin n) ℝ} {H R U : Matrix (Fin n) (Fin n) ℝ},
@@ -298,11 +415,13 @@ theorem skewHamiltonian_schur {M : Matrix (Fin n ⊕ Fin n) (Fin n ⊕ Fin n) �
 
 /-! ### §7.8.2 Product eigenvalue problems -/
 
-/-- **(7.8.5) and the display after it**: for `A₁, A₂, A₃ ∈ ℝ^{n×n}` there are orthogonal `U₁`,
-`U₂`, `U₃` with `U₁ᵀ A₃ U₃ = H₃` upper Hessenberg and `U₃ᵀ A₂ U₂ = T₂`, `U₂ᵀ A₁ U₁ = T₁` upper
-triangular; then `U₁ᵀ (A₃ A₂ A₁) U₁ = H₃ T₂ T₁` is upper Hessenberg. (The book's "procedure" — QR
-factorizations, then Givens rotations with bulge chasing — is described, not given as an algorithm.)
--/
+/-- **Equation (7.8.5)** of [golub2013matrix] and the display after it. For
+$A_1, A_2, A_3 \in \mathbb{R}^{n \times n}$ there are orthogonal $U_1, U_2, U_3$ such that
+$U_1^T A_3 U_3 = H_3$ is upper Hessenberg, $U_3^T A_2 U_2 = T_2$ and $U_2^T A_1 U_1 = T_1$ are
+upper triangular, and $$U_1^T (A_3 A_2 A_1) U_1 = H_3 T_2 T_1$$ is upper Hessenberg.
+
+The source describes a procedure, QR factorizations followed by Givens rotations with bulge
+chasing, but gives no algorithm. -/
 theorem equation_7_8_5 (A₁ A₂ A₃ : Matrix (Fin n) (Fin n) ℝ) :
     ∃ U₁ ∈ orthogonalGroup (Fin n) ℝ, ∃ U₂ ∈ orthogonalGroup (Fin n) ℝ,
       ∃ U₃ ∈ orthogonalGroup (Fin n) ℝ,
@@ -323,9 +442,11 @@ theorem equation_7_8_5 (A₁ A₂ A₃ : Matrix (Fin n) (Fin n) ℝ) :
   rw [hprod]
   exact (hH₃.mul_isUpperTriangular hT₂).mul_isUpperTriangular hT₁
 
-/-- **(7.8.6), the periodic real Schur form** of `A = A₃ A₂ A₁`: orthogonal `Q₁`, `Q₂`, `Q₃` with
-`Q₁ᵀ A₃ Q₃ = T₃` upper quasi-triangular and `Q₃ᵀ A₂ Q₂ = T₂`, `Q₂ᵀ A₁ Q₁ = T₁` upper triangular, so
-that `Q₁ᵀ A Q₁ = T₃ T₂ T₁` is a real Schur form of the product. -/
+/-- **Equation (7.8.6)** of [golub2013matrix], the periodic real Schur form. For
+$A_1, A_2, A_3 \in \mathbb{R}^{n \times n}$ there are orthogonal $Q_1, Q_2, Q_3$ such that
+$Q_1^T A_3 Q_3 = T_3$ is upper quasi-triangular, $Q_3^T A_2 Q_2 = T_2$ and $Q_2^T A_1 Q_1 = T_1$
+are upper triangular, and $Q_1^T (A_3 A_2 A_1) Q_1 = T_3 T_2 T_1$ is upper quasi-triangular, a
+real Schur form of the product. -/
 theorem equation_7_8_6 (A₁ A₂ A₃ : Matrix (Fin n) (Fin n) ℝ) :
     ∃ Q₁ ∈ orthogonalGroup (Fin n) ℝ, ∃ Q₂ ∈ orthogonalGroup (Fin n) ℝ,
       ∃ Q₃ ∈ orthogonalGroup (Fin n) ℝ,
@@ -347,18 +468,32 @@ theorem equation_7_8_6 (A₁ A₂ A₃ : Matrix (Fin n) (Fin n) ℝ) :
   rw [hprod]
   exact (hH₃.mul_isUpperTriangular hT₂).mul_isUpperTriangular hT₁
 
-/-- **§7.8.2, the block-cyclic restatement**: with `U = diag(U₁, U₂, U₃)`,
-`Uᵀ [0 0 A₃; A₁ 0 0; 0 A₂ 0] U = [0 0 U₁ᵀA₃U₃; U₂ᵀA₁U₁ 0 0; 0 U₃ᵀA₂U₂ 0]` (the factors indexed by
-`Fin 3`, `A 0 = A₁`, `U 0 = U₁`), which for the `U_i` of (7.8.5) is `[0 0 H₃; T₁ 0 0; 0 T₂ 0] = H̃`.
--/
+/-- **§7.8.2** of [golub2013matrix], the block-cyclic restatement. Let $A_1, A_2, A_3, U_1, U_2, U_3
+\in \mathbb{R}^{n \times n}$ and $U = \operatorname{diag}(U_1, U_2, U_3)$. Then $$U^T
+\begin{bmatrix} 0 & 0 & A_3 \\ A_1 & 0 & 0 \\ 0 & A_2 & 0 \end{bmatrix} U = \begin{bmatrix} 0 &
+0 & U_1^T A_3 U_3 \\ U_2^T A_1 U_1 & 0 & 0 \\ 0 & U_3^T A_2 U_2 & 0 \end{bmatrix}.$$ For the
+$U_i$ of (7.8.5) the right side is the source's $\tilde H = \begin{bmatrix} 0 & 0 & H_3 \\ T_1 &
+0 & 0 \\ 0 & T_2 & 0 \end{bmatrix}$.
+
+The factors are indexed by `Fin 3`: `A 0` is $A_1$ and `U 0` is $U_1$. The block-cyclic matrix
+is `Matrix.blockCyclic A`, whose block $(i + 1, i)$ is `A i` with indices modulo 3, and $U$ is
+Mathlib's `Matrix.blockDiagonal U`. Both are indexed by `Fin n × Fin 3`, with the block index
+second. -/
 theorem blockCyclic_restatement (A U : Fin 3 → Matrix (Fin n) (Fin n) ℝ) :
     (blockDiagonal U)ᵀ * blockCyclic A * blockDiagonal U =
       blockCyclic fun i => (U (i + 1))ᵀ * A i * U i :=
   blockDiagonal_conj_blockCyclic A U
 
-/-- **§7.8.2, the perfect shuffle**: "`𝒫 H̃ 𝒫ᵀ` is a highly structured upper Hessenberg matrix", for
-every `n` (the book shows `n = 4`): if `T₁ = A 0`, `T₂ = A 1` are upper triangular and `H₃ = A 2` is
-upper Hessenberg, the perfect-shuffle reindexing of the block-cyclic `H̃` is upper Hessenberg. -/
+/-- **§7.8.2** of [golub2013matrix], the perfect shuffle. Let $T_1, T_2 \in \mathbb{R}^{n \times n}$
+be upper triangular and $H_3 \in \mathbb{R}^{n \times n}$ upper Hessenberg, and let $\tilde H =
+\begin{bmatrix} 0 & 0 & H_3 \\ T_1 & 0 & 0 \\ 0 & T_2 & 0 \end{bmatrix}$. If $\mathcal{P}$ is
+the perfect shuffle permutation, then $\mathcal{P} \tilde H \mathcal{P}^T$ is upper Hessenberg.
+
+The source says that "$\mathcal{P} \tilde H \mathcal{P}^T$ is a highly structured upper
+Hessenberg matrix" and displays the case $n = 4$; the theorem holds for every $n$. The factors
+are `A 0` $= T_1$, `A 1` $= T_2$ and `A 2` $= H_3$. The shuffle is the reindexing of
+`Matrix.blockCyclic A` by `finProdFinEquiv.symm`, which puts row $i$ of block $k$ at position
+$3i + k$ (0-based). -/
 theorem blockCyclic_shuffle_isUpperHessenberg {A : Fin 3 → Matrix (Fin n) (Fin n) ℝ}
     (hA : ∀ i : Fin 2, (A i.castSucc).IsUpperTriangular) (hH : (A 2).IsUpperHessenberg) :
     ((blockCyclic A).submatrix finProdFinEquiv.symm finProdFinEquiv.symm).IsUpperHessenberg :=

@@ -18,63 +18,173 @@ import NumlibSurface.GolubVanLoan.Chapter11.Section02
 import NumlibSurface.GolubVanLoan.Chapter11.Section04
 
 /-!
-# Golub–Van Loan §11.5: preconditioning
+# Golub and Van Loan, Section 11.5: Preconditioning
 
-Surface file for Gene H. Golub and Charles F. Van Loan, *Matrix Computations*, 4th edition,
-§11.5, *Preconditioning*: the transformed system (§11.5.1), the preconditioned CG method
-(Algorithm 11.5.1, (11.5.1)–(11.5.2)), the SSOR preconditioner (§11.5.3), sparse approximate
-inverses (§11.5.5), polynomial preconditioners ((11.5.3) and the truncated Neumann loop of
-§11.5.6), PCG as an accelerated splitting ((11.5.4)–(11.5.5)), incomplete Cholesky
-((11.5.6)–(11.5.9), Lemma 11.5.1, Theorem 11.5.2, the recursive `incChol`, the Lin–Moré
-factorization), incomplete block preconditioners ((11.5.10)), the saddle-point factorizations of
-§11.5.10, and the domain-decomposition and Schwarz preconditioners of §11.5.11.
+This module formalizes §11.5 of [golub2013matrix], on preconditioners for the iterative solution of
+$Ax = b$ with $A \in \mathbb{R}^{n \times n}$. A preconditioner is a nonsingular matrix $M$ for
+which systems $Mz = r$ are cheap to solve and which makes the Krylov method converge faster. The
+module states the transformed system (§11.5.1), the preconditioned conjugate gradient method PCG
+(equation (11.5.1), Algorithm 11.5.1 and the orthogonality relations (11.5.2)) and preconditioned
+GMRES (Algorithm 11.5.2). It then treats the SSOR preconditioner (§11.5.3), sparse approximate
+inverses (§11.5.5), polynomial preconditioners ((11.5.3) and the truncated Neumann loop, §11.5.6),
+PCG as an accelerated splitting ((11.5.4)–(11.5.5), §11.5.7), incomplete Cholesky factorizations
+((11.5.6)–(11.5.9), Lemma 11.5.1, Theorem 11.5.2, the recursive factorization
+`GolubVanLoan.Chapter11.incChol` and the Lin–Moré factorization, §11.5.8), incomplete block
+preconditioners ((11.5.10), §11.5.9), factorizations and splittings of saddle-point matrices
+(§11.5.10), and domain decomposition and Schwarz preconditioners ((11.5.11), §11.5.11).
 
-## Design
+The proofs specialize the backbone. `Numlib.Krylov.Preconditioned` gives PCG as CG for $M^{-1}A$ in
+the $M$-inner product (`Krylov.PCG.iterate`). `Numlib.Preconditioner.ILU` gives incomplete Cholesky
+factorizations (`Matrix.IsIC`), `Numlib.LinearAlgebra.Matrix.MMatrix` gives Stieltjes matrices
+(`Matrix.IsStieltjes`), and `Numlib.Preconditioner.ApproximateInverse` and
+`Numlib.Preconditioner.Polynomial` give sparse approximate inverses and Neumann polynomials.
+`Numlib.LinearAlgebra.Matrix.BlockTridiagonal` gives the block Cholesky factorization, and
+`Numlib.Projection.Additive` gives the additive and multiplicative Schwarz steps. The source
+analyses no rounding error in this section, so only exact specifications are stated.
 
-Matrices are real, `Matrix (Fin n) (Fin n) ℝ`, 0-based. A splitting `A = M₁ − N₁` is a
-`Stationary.Splitting A`, its iteration matrix `G = M₁⁻¹N₁` is `s.iterationOperator`, and `ρ(G)` is
-`Matrix.complexSpectralRadius`. The preconditioned Krylov theory is the backbone's
-`Numlib/Krylov/Preconditioned` (`Krylov.PCG.iterate`: PCG is CG for `M⁻¹A` in the `M`-inner
-product); incomplete factorizations are `Numlib/Preconditioner/ILU` (`Matrix.IsIC`), Stieltjes
-matrices `Numlib/LinearAlgebra/Matrix/MMatrix` (`Matrix.IsStieltjes`), sparse approximate inverses
-`Numlib/Preconditioner/ApproximateInverse`, and the Neumann polynomials
-`Numlib/Preconditioner/Polynomial`.
+## Main definitions
 
-Algorithms follow the conventions of `NumlibSurface/GolubVanLoan`: generic in a monad `M` with a
-rounding hook `rnd`; a solve with the preconditioner is a routine argument `solveM` whose exact
-semantics is the inverse. The book analyses no rounding error in this section; only exact
-specifications are stated.
-
-The book's incomplete Cholesky condition (11.5.7) asks `HHᵀ` to agree with `A` on the nonzeros of
-`A`, while the backbone's `Matrix.IsIC P A H` (which the recursive `incChol` produces) asks
-agreement off the dropped pattern `P`; the book's conditions follow from the backbone's when `P`
-avoids the nonzeros of `A` (`isIncompleteCholesky_of_isIC`).
+* Algorithm 11.5.1, `GolubVanLoan.Chapter11.algorithm_11_5_1`: preconditioned conjugate gradients,
+  with the state `GolubVanLoan.Chapter11.PCGState` and one pass `GolubVanLoan.Chapter11.pcgStep`.
+* Algorithm 11.5.2, `GolubVanLoan.Chapter11.algorithm_11_5_2`: preconditioned $m$-step GMRES.
+* §11.5.6, `GolubVanLoan.Chapter11.neumannLoop`: the truncated Neumann loop that applies a
+  polynomial preconditioner.
+* Equation (11.5.5), `GolubVanLoan.Chapter11.concusGolubOLearyPCG`: the Concus–Golub–O'Leary form of
+  PCG, with the state `GolubVanLoan.Chapter11.CGOState` and one pass
+  `GolubVanLoan.Chapter11.cgoStep`.
+* Equations (11.5.6)–(11.5.8), `GolubVanLoan.Chapter11.IsIncompleteCholesky`: $H$ is an incomplete
+  Cholesky factor of $A$ for a zero pattern $P$.
+* §11.5.8, `GolubVanLoan.Chapter11.incChol`: the recursive incomplete Cholesky factorization.
+* §11.5.8, `GolubVanLoan.Chapter11.linMoreIC`: the Lin–Moré incomplete Cholesky factorization.
+* §11.5.9, `GolubVanLoan.Chapter11.blockTridiag` and `GolubVanLoan.Chapter11.blockLowerBidiag`:
+  block tridiagonal and block lower bidiagonal matrices.
+* Equation (11.5.11), `GolubVanLoan.Chapter11.ddInterior`, `GolubVanLoan.Chapter11.ddCoupling`,
+  `GolubVanLoan.Chapter11.ddCoupling'` and `GolubVanLoan.Chapter11.ddMultipliers`: the blocks of the
+  domain-decomposition matrix and of its block LU factorization.
 
 ## Main results
 
-* `preconditioned_system_iff` — the two-sided preconditioned system.
-* `algorithm_11_5_1`, `algorithm_11_5_1_spec`, `equation_11_5_1`, `equation_11_5_2` — PCG is the
-  backbone's `Krylov.PCG.iterate`, derived from CG on `C⁻¹AC⁻¹`.
-* `ssorPreconditioner_posDef`, `spai_column_decouple`, `spai_reduced_ls`.
-* `neumann_inv_eq_tsum`, `neumannLoop_spec` (the loop needs `m + 1` steps), `equation_11_5_3`.
-* `equation_11_5_4`, `concusGolubOLearyPCG`, `equation_11_5_5` — the Concus–Golub–O'Leary form of
-  PCG is PCG, through the three-term form of CG.
-* `IsIncompleteCholesky`, `equation_11_5_9`, `equation_11_5_9_cholesky`, `lemma_11_5_1`,
-  `theorem_11_5_2`, `incChol_spec`, `incChol_isIncompleteCholesky`, `isIncompleteCholesky_of_isIC`,
-  `poissonMatrix_isStieltjes`, `linMoreIC_nnz_le_add` (the printed bound needs `+ n`).
-* `blockTridiagonal_cholesky`, `equation_11_5_10`, `blockIC_forwardSolve`.
-* `saddlePoint_factorization`, `saddlePoint_splitting`.
-* `equation_11_5_11_blockLU` (the printed block `LU` is wrong in the interface block,
-  `equation_11_5_11_counterexample`), `ddPreconditioner_rank_le`, `schwarz_update_affine`.
-* `algorithm_11_5_2`, `algorithm_11_5_2_spec` — preconditioned GMRES, written with the loop of
-  Algorithm 11.4.2 (`gmresCore`) and `M`-solves.
+* §11.5.1, `GolubVanLoan.Chapter11.preconditioned_system_iff`: the transformed system
+  $M_1^{-1} A M_2^{-1} \tilde x = M_1^{-1} b$ is equivalent to $Ax = b$ with
+  $x = M_2^{-1} \tilde x$.
+* Equation (11.5.1), `GolubVanLoan.Chapter11.equation_11_5_1`: CG on $C^{-1} A C^{-1}$, transformed
+  back, is PCG with $M = C^2$.
+* Algorithm 11.5.1, `GolubVanLoan.Chapter11.algorithm_11_5_1_spec`: in exact arithmetic the
+  algorithm computes the PCG iterates, which are Galerkin iterates over
+  $x_0 + \mathcal{K}(M^{-1}A, M^{-1}r_0, k)$.
+* Equation (11.5.2), `GolubVanLoan.Chapter11.equation_11_5_2`: the PCG residuals are
+  $M^{-1}$-orthogonal and the directions are $A$-conjugate.
+* Algorithm 11.5.2, `GolubVanLoan.Chapter11.algorithm_11_5_2_spec`: in exact arithmetic the
+  algorithm is GMRES for $M^{-1}A x = M^{-1}b$.
+* §11.5.3, `GolubVanLoan.Chapter11.ssorPreconditioner_posDef`: the SSOR preconditioner of a
+  symmetric matrix with positive diagonal is positive definite.
+* §11.5.5, `GolubVanLoan.Chapter11.spai_column_decouple` and
+  `GolubVanLoan.Chapter11.spai_reduced_ls`: the Frobenius-norm approximate inverse problem decouples
+  into column problems, each a small least-squares problem.
+* §11.5.6, `GolubVanLoan.Chapter11.neumann_inv_eq_tsum`: if $\rho(G) < 1$, then
+  $A^{-1} = (\sum_k G^k) M_1^{-1}$.
+* §11.5.6, `GolubVanLoan.Chapter11.neumannLoop_spec`: $m$ steps of the truncated Neumann loop apply
+  $(I + G + \dots + G^{m-1}) M_1^{-1}$.
+* Equation (11.5.3), `GolubVanLoan.Chapter11.equation_11_5_3`: the algebra of polynomial
+  preconditioners.
+* Equation (11.5.4), `GolubVanLoan.Chapter11.equation_11_5_4`: with $\omega_k = \gamma_k = 1$ the
+  accelerated step is the splitting step.
+* Equation (11.5.5), `GolubVanLoan.Chapter11.equation_11_5_5`: in exact arithmetic the
+  Concus–Golub–O'Leary loop computes the PCG iterates.
+* §11.5.8, `GolubVanLoan.Chapter11.isIncompleteCholesky_of_isIC`: the incomplete Cholesky factor of
+  the backbone is one of the source when the zero pattern avoids the nonzeros of $A$.
+* Equation (11.5.9), `GolubVanLoan.Chapter11.equation_11_5_9` and
+  `GolubVanLoan.Chapter11.equation_11_5_9_cholesky`: one step of the bordered Cholesky
+  factorization.
+* Lemma 11.5.1, `GolubVanLoan.Chapter11.lemma_11_5_1`: the inverse of a Stieltjes matrix is
+  entrywise nonnegative.
+* Theorem 11.5.2, `GolubVanLoan.Chapter11.theorem_11_5_2`: one incomplete elimination step maps a
+  Stieltjes matrix to a Stieltjes matrix.
+* §11.5.8, `GolubVanLoan.Chapter11.poissonMatrix_isStieltjes`: the model problem matrices are
+  Stieltjes matrices.
+* §11.5.8, `GolubVanLoan.Chapter11.incChol_spec` and
+  `GolubVanLoan.Chapter11.incChol_isIncompleteCholesky`: for a Stieltjes matrix, `incChol` runs to
+  completion and gives an incomplete Cholesky factor.
+* §11.5.8, `GolubVanLoan.Chapter11.linMoreIC_nnz_le_add`: the Lin–Moré factor has at most
+  $pn + N_1 + \dots + N_n + n$ nonzero entries.
+* §11.5.9, `GolubVanLoan.Chapter11.blockTridiagonal_cholesky`: the block Cholesky factorization of a
+  block tridiagonal matrix.
+* Equation (11.5.10), `GolubVanLoan.Chapter11.equation_11_5_10`: the modified diagonal blocks stay
+  tridiagonal, and their Cholesky factors are bidiagonal.
+* §11.5.9, `GolubVanLoan.Chapter11.blockIC_forwardSolve`: the block bidiagonal solve does not need
+  the blocks $\tilde F_k$.
+* §11.5.10, `GolubVanLoan.Chapter11.saddlePoint_factorization` and
+  `GolubVanLoan.Chapter11.saddlePoint_splitting`: the block factorization of a saddle-point matrix
+  and its splitting into a symmetric and a skew-symmetric part.
+* §11.5.11, `GolubVanLoan.Chapter11.schwarz_update_affine`: multiplicative and additive Schwarz
+  steps have the form $u^{(\mathrm{new})} = u^{(\mathrm{old})} + M^{-1}(f - Au^{(\mathrm{old})})$.
+* Equation (11.5.11), `GolubVanLoan.Chapter11.equation_11_5_11_blockLU` and
+  `GolubVanLoan.Chapter11.equation_11_5_11_counterexample`: the corrected block LU factorization of
+  the domain-decomposition matrix, and a counterexample to the printed one.
+* §11.5.11, `GolubVanLoan.Chapter11.ddPreconditioner_rank_le`: for the block ILU preconditioner $M$,
+  $A - M$ has rank at most the number of interface unknowns.
 
-## Not formalized here
+## Conventions
 
-§11.5.4 (Toeplitz and circulant preconditioners: T. Chan's and Strang's choices are definitions
-with no claim), the drop-tolerance and `ILU(ℓ)` variants, the HSS saddle-point preconditioner
-(its effectiveness is cited), the cost inequality and Criteria 1–2 of §11.5.1, the heuristic
-choices of `Λ_k` in §11.5.9, and the Problems.
+* Matrices are real, `Matrix (Fin n) (Fin n) ℝ`, and indices are 0-based.
+* A splitting $A = M_1 - N_1$ is a `Stationary.Splitting A`, with $M_1$ = `s.m` and $N_1$ = `s.n`.
+  Its iteration matrix $G = M_1^{-1} N_1$ is `Stationary.Splitting.iterationOperator`, and the
+  spectral radius $\rho(G)$ is `Matrix.complexSpectralRadius`.
+* A solve with the preconditioner is a routine argument `solveM` of the program. Its exact semantics
+  is multiplication by $M^{-1}$.
+
+## Implementation notes
+
+* The algorithms follow the algorithm conventions of `NumlibSurface.GolubVanLoan`: each program is
+  generic in a monad `M` and a rounding hook `rnd`, and a `while` loop runs at most `fuel` passes.
+* The condition (11.5.7) of the source asks $HH^T$ to agree with $A$ on the nonzero entries of $A$.
+  The backbone's `Matrix.IsIC P A H`, which `GolubVanLoan.Chapter11.incChol` produces, asks
+  agreement off the dropped pattern $P$. The conditions of the source follow from the backbone's
+  when $P$ avoids the nonzero entries of $A$
+  (`GolubVanLoan.Chapter11.isIncompleteCholesky_of_isIC`).
+
+## Deviations from the source
+
+* **Equation (11.5.1)** (typo). The printed recurrence mixes the gradient and residual sign
+  conventions and writes $\tilde p_+ = \tilde r_c + \tau \tilde p_c$ for
+  $\tilde r_+ + \tau \tilde p_c$; the consistent recurrence is stated. See
+  `GolubVanLoan.Chapter11.equation_11_5_1`.
+* **Algorithm 11.5.1** (typo). The source prints $x_k = x_{k-1} - \mu p_k$; the program uses
+  $x_k = x_{k-1} + \mu p_k$. See `GolubVanLoan.Chapter11.algorithm_11_5_1`.
+* **Equation (11.5.2)** (reading). The printed relation $p_j^T (C^{-1} A C^{-1}) p_i = 0$ holds for
+  the transformed directions $\tilde p = Cp$; for the directions of Algorithm 11.5.1 it is stated as
+  $p_j^T A p_i = 0$. See `GolubVanLoan.Chapter11.equation_11_5_2`.
+* **Algorithm 11.5.2**, closing remark (reading). The sign of $\rho_k$ depends on the rotations, so
+  the residual norm is stated as $|\rho_k|$. See `GolubVanLoan.Chapter11.algorithm_11_5_2_spec`.
+* **§11.5.5**, the pattern condition (reading). The condition $\mathrm{sp}(T) = Z$ is read as "$T$
+  vanishes where $Z$ does". See `GolubVanLoan.Chapter11.spai_column_decouple`.
+* **§11.5.5**, the reduced problem (typo). The source writes $T(\mathit{rows}, k) = \tau$ for
+  $T(\mathit{cols}, k) = \tau$. See `GolubVanLoan.Chapter11.spai_reduced_ls`.
+* **§11.5.6**, the truncated Neumann loop (correction). The source says that $m$ steps apply
+  $(\sum_{k=0}^{m} G^k) M_1^{-1}$; they apply $(\sum_{k=0}^{m-1} G^k) M_1^{-1}$, so $m + 1$ steps
+  are needed. See `GolubVanLoan.Chapter11.neumannLoop_spec`.
+* **§11.5.7**, the Concus–Golub–O'Leary loop (reading). The display is untagged in the source and is
+  taken to be (11.5.5). See `GolubVanLoan.Chapter11.concusGolubOLearyPCG`.
+* **§11.5.8**, the Lin–Moré nonzero count (correction). The printed bound $pn + N_1 + \dots + N_n$
+  fails; the bound is $pn + N_1 + \dots + N_n + n$. See
+  `GolubVanLoan.Chapter11.linMoreIC_nnz_le_add`.
+* **Equation (11.5.10)** (generalization). The source takes $\Lambda_k$ symmetric tridiagonal; the
+  statement needs only $\Lambda_k$ tridiagonal. See `GolubVanLoan.Chapter11.equation_11_5_10`.
+* **Equation (11.5.11)**, the block LU factorization (correction). The off-diagonal interface blocks
+  of $U$ are $-FA_1^{-1}C$ and $-GA_1^{-1}B$, not $0$ as printed. See
+  `GolubVanLoan.Chapter11.equation_11_5_11_blockLU` and
+  `GolubVanLoan.Chapter11.equation_11_5_11_counterexample`.
+
+## Not formalized
+
+* **§11.5.4** (Toeplitz and circulant preconditioners). T. Chan's and Strang's choices are
+  definitions with no claim.
+* **§11.5.8**, the drop-tolerance and $\mathrm{ILU}(\ell)$ variants.
+* **§11.5.10**, the HSS saddle-point preconditioner. The source cites its effectiveness and proves
+  nothing.
+* **§11.5.1**, the cost inequality and Criteria 1–2.
+* **§11.5.9**, the heuristic choices of $\Lambda_k$.
+* The Problems.
 -/
 
 open Matrix Finset
@@ -83,9 +193,15 @@ namespace GolubVanLoan.Chapter11
 
 /-! ### §11.5.1: the transformed system -/
 
-/-- §11.5.1: with `M = M₁ M₂` nonsingular, `Ã = M₁⁻¹ A M₂⁻¹` and `b̃ = M₁⁻¹ b`, "solve the tilde
-problem … and then determine `x` by solving `M₂ x = x̃`": `Ã x̃ = b̃` exactly when `x = M₂⁻¹ x̃`
-solves `A x = b`. -/
+/-- **Section 11.5.1** of [golub2013matrix], the transformed system. Let
+$A, M_1, M_2 \in \mathbb{R}^{n \times n}$ with $M_1$ nonsingular, put
+$\tilde A = M_1^{-1} A M_2^{-1}$ and $\tilde b = M_1^{-1} b$, and let
+$\tilde x \in \mathbb{R}^n$. Then
+$$\tilde A \tilde x = \tilde b \iff A (M_2^{-1} \tilde x) = b.$$
+So one can "solve the tilde problem and then determine $x$ by solving $M_2 x = \tilde x$".
+
+The source assumes that $M = M_1 M_2$ is nonsingular. The equivalence needs only $M_1$
+nonsingular; $M_2^{-1}$ is the Lean inverse, which is $0$ for a singular $M_2$. -/
 theorem preconditioned_system_iff {n : ℕ} {A M₁ M₂ : Matrix (Fin n) (Fin n) ℝ} (h₁ : IsUnit M₁)
     (b xt : Fin n → ℝ) :
     (M₁⁻¹ * A * M₂⁻¹) *ᵥ xt = M₁⁻¹ *ᵥ b ↔ A *ᵥ (M₂⁻¹ *ᵥ xt) = b := by
@@ -96,31 +212,37 @@ theorem preconditioned_system_iff {n : ℕ} {A M₁ M₂ : Matrix (Fin n) (Fin n
 
 /-! ### §11.5.2: the preconditioned conjugate gradient method -/
 
-/-- The state of Algorithm 11.5.1 after `k` passes: the iterate `x_k`, the residual `r_k`, the
-preconditioned residual `z_k`, the last direction `p_k`, the last `r_{k−1}ᵀz_{k−1}`, and whether
-the `while` test has failed. -/
+/-- The state of Algorithm 11.5.1 of [golub2013matrix] after $k$ passes of its loop: the iterate
+$x_k$, the residual $r_k$, the preconditioned residual $z_k$, the last direction $p_k$, the last
+value $r_{k-1}^T z_{k-1}$, and a flag that records whether the `while` test has failed. -/
 structure PCGState (n : ℕ) where
-  /-- The iteration count `k`. -/
+  /-- The iteration count $k$. -/
   k : ℕ
-  /-- The iterate `x_k`. -/
+  /-- The iterate $x_k$. -/
   x : Fin n → ℝ
-  /-- The residual `r_k`. -/
+  /-- The residual $r_k$. -/
   r : Fin n → ℝ
-  /-- The preconditioned residual `z_k`, `M z_k = r_k`. -/
+  /-- The preconditioned residual $z_k$, with $M z_k = r_k$. -/
   z : Fin n → ℝ
-  /-- The last search direction `p_k`. -/
+  /-- The last search direction $p_k$. -/
   p : Fin n → ℝ
-  /-- The last computed `r_{k−1}ᵀ z_{k−1}`. -/
+  /-- The last computed value $r_{k-1}^T z_{k-1}$. -/
   rz : ℝ
-  /-- Whether the `while` test `‖r_k‖₂ > 0` has failed. -/
+  /-- Whether the `while` test $\|r_k\|_2 > 0$ has failed. -/
   done : Bool
 
 section Programs
 
 variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 
-/-- One pass of the `while` loop of Algorithm 11.5.1 (the test `‖r_k‖₂ > 0` is `r_kᵀr_k ≠ 0` on
-the computed dot product). -/
+/-- One pass of the `while` loop of Algorithm 11.5.1 of [golub2013matrix]. If the loop has stopped,
+the pass does nothing. Otherwise it computes $\rho = r_k^T r_k$ and stops if $\rho = 0$; else it
+forms the direction, the step length $\mu$, the new iterate, the new residual and the new
+preconditioned residual.
+
+The test $\|r_k\|_2 > 0$ is evaluated as $\rho \neq 0$ on the computed inner product. The inner
+products are Algorithm 1.1.1, the vector updates Algorithm 1.1.2, and the product $Ap$ Algorithm
+1.1.3; every quotient is rounded. -/
 noncomputable def pcgStep {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ)
     (solveM : (Fin n → ℝ) → M (Fin n → ℝ)) (s : PCGState n) : M (PCGState n) := do
   if s.done then return s
@@ -138,9 +260,9 @@ noncomputable def pcgStep {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ)
   let z ← solveM r
   return { k := s.k + 1, x := x, r := r, z := z, p := p, rz := rz, done := false }
 
-/-- **Algorithm 11.5.1 (Preconditioned Conjugate Gradients).** "If `A` and `M` are symmetric
-positive definite, `b ∈ ℝⁿ`, and `Ax₀ ≈ b`, then this algorithm computes `x_*` so that
-`Ax_* = b`":
+/-- **Algorithm 11.5.1** of [golub2013matrix] (Preconditioned Conjugate Gradients). "If $A$ and $M$
+are symmetric positive definite, $b \in \mathbb{R}^n$, and $Ax_0 \approx b$, then this algorithm
+computes $x_*$ so that $Ax_* = b$":
 ```
 k = 0, r₀ = b − Ax₀, Solve Mz₀ = r₀
 while ‖r_k‖₂ > 0
@@ -153,9 +275,13 @@ while ‖r_k‖₂ > 0
     Solve Mz_k = r_k
 end
 ```
-The book prints `x_k = x_{k−1} − μp_k`, which contradicts `r_k = r_{k−1} − μAp_k` for
-`r = b − Ax`; the program uses `+`. The solves with `M` are the routine `solveM`, the `while` loop
-runs at most `fuel` passes. -/
+
+**Typo.** The source prints $x_k = x_{k-1} - \mu p_k$. This contradicts
+$r_k = r_{k-1} - \mu A p_k$ for $r = b - Ax$, and the program uses $x_k = x_{k-1} + \mu p_k$.
+
+The solves with $M$ are the routine `solveM`, and the `while` loop runs at most `fuel` passes of
+`GolubVanLoan.Chapter11.pcgStep`. The residual $r_0 = b - Ax_0$ is computed by Algorithm 1.1.3
+as $(-A)x_0 + b$. -/
 noncomputable def algorithm_11_5_1 {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ)
     (solveM : (Fin n → ℝ) → M (Fin n → ℝ)) (b x₀ : Fin n → ℝ) (fuel : ℕ) : M (PCGState n) := do
   let r₀ ← Chapter01.algorithm_1_1_3 rnd (-A) x₀ b
@@ -169,7 +295,8 @@ section PCGSpec
 
 variable {n : ℕ}
 
-/-- A positive definite `A` is coercive relative to any `M`: `c ⟪Mx, x⟫ ≤ ⟪Ax, x⟫`. -/
+/-- A positive definite $A$ is coercive relative to any $M$: there is $c > 0$ with $c \langle Mx, x
+\rangle \le \langle Ax, x \rangle$ for all $x$. -/
 private theorem exists_relCoercive {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosDef)
     (Mp : Matrix (Fin n) (Fin n) ℝ) : ∃ c : ℝ, 0 < c ∧ ∀ x : EuclideanSpace ℝ (Fin n),
       c * RCLike.re (inner ℝ (toEuclideanLin Mp x) x) ≤
@@ -196,18 +323,18 @@ private theorem exists_relCoercive {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosD
         nlinarith [mul_nonneg hcA.le hx2]
     _ ≤ _ := h2
 
-/-- An exact pass that finds the test failed is the identity. -/
+/-- An exact pass of Algorithm 11.5.1 after the test has failed leaves the state unchanged. -/
 private theorem pcgStep_done (A Mi : Matrix (Fin n) (Fin n) ℝ) (s : PCGState n)
     (h : s.done = true) : Id.run (pcgStep pure A (fun v => pure (Mi *ᵥ v)) s) = s := by
   simp [pcgStep, h]
 
-/-- An exact pass that meets `r_k = 0` stops. -/
+/-- An exact pass of Algorithm 11.5.1 that meets $r_k^T r_k = 0$ sets the stop flag. -/
 private theorem pcgStep_stop (A Mi : Matrix (Fin n) (Fin n) ℝ) (s : PCGState n)
     (h : s.done = false) (hρ : s.r ⬝ᵥ s.r = 0) :
     Id.run (pcgStep pure A (fun v => pure (Mi *ᵥ v)) s) = { s with done := true } := by
   simp [pcgStep, h, Chapter01.algorithm_1_1_1_spec, hρ]
 
-/-- An exact pass of Algorithm 11.5.1 with `r_k ≠ 0`. -/
+/-- An exact pass of Algorithm 11.5.1 with $r_k^T r_k \neq 0$, in closed form. -/
 private theorem pcgStep_go (A Mi : Matrix (Fin n) (Fin n) ℝ) (s : PCGState n)
     (h : s.done = false) (hρ : s.r ⬝ᵥ s.r ≠ 0) :
     Id.run (pcgStep pure A (fun v => pure (Mi *ᵥ v)) s) =
@@ -230,12 +357,12 @@ private theorem pcgStep_go (A Mi : Matrix (Fin n) (Fin n) ℝ) (s : PCGState n)
     simp [pcgStep, h, hk, Chapter01.algorithm_1_1_1_spec, Chapter01.algorithm_1_1_2_spec,
       Chapter01.algorithm_1_1_3_spec, hρ]
 
-/-- The backbone's PCG iterates for the Euclidean operators of `A` and `Mi = M⁻¹`. -/
+/-- The backbone's PCG iterates for the Euclidean operators of $A$ and $M^{-1}$. -/
 private noncomputable abbrev pcgIter (A Mi : Matrix (Fin n) (Fin n) ℝ) (b x₀ : Fin n → ℝ)
     (k : ℕ) : Krylov.PCG.State (EuclideanSpace ℝ (Fin n)) :=
   Krylov.PCG.iterate (toEuclideanLin A) (toEuclideanLin Mi) (WithLp.toLp 2 b) (WithLp.toLp 2 x₀) k
 
-/-- One backbone PCG step in coordinates. -/
+/-- One step of the backbone's PCG iteration, in coordinates. -/
 private theorem pcgIter_succ (A Mi : Matrix (Fin n) (Fin n) ℝ) (b x₀ : Fin n → ℝ) (k : ℕ)
     (r p r' : Fin n → ℝ) (α : ℝ) (hr : r = (pcgIter A Mi b x₀ k).r.ofLp)
     (hp : p = (pcgIter A Mi b x₀ k).p.ofLp) (hα : α = (Mi *ᵥ r ⬝ᵥ r) / (p ⬝ᵥ A *ᵥ p))
@@ -263,7 +390,7 @@ private theorem pcgIter_succ (A Mi : Matrix (Fin n) (Fin n) ℝ) (b x₀ : Fin n
         Mi *ᵥ u.ofLp ⬝ᵥ u.ofLp := fun u => rfl
     rw [e1, e1, hR, ← hr, ← hp, toEuclideanLin_apply, WithLp.ofLp_toLp, hR]
 
-/-- The book's state after `k` exact passes, read off the backbone iterates. -/
+/-- The state of Algorithm 11.5.1 after $k$ exact passes agrees with the backbone's PCG iterates. -/
 private def PCGGood (A Mi : Matrix (Fin n) (Fin n) ℝ) (b x₀ : Fin n → ℝ) (k : ℕ)
     (s : PCGState n) : Prop :=
   s.k = k ∧ s.x = (pcgIter A Mi b x₀ k).x.ofLp ∧ s.r = (pcgIter A Mi b x₀ k).r.ofLp ∧
@@ -272,7 +399,8 @@ private def PCGGood (A Mi : Matrix (Fin n) (Fin n) ℝ) (b x₀ : Fin n → ℝ)
     (∀ j, k = j + 1 → s.p = (pcgIter A Mi b x₀ j).p.ofLp ∧
       s.rz = Mi *ᵥ (pcgIter A Mi b x₀ j).r.ofLp ⬝ᵥ (pcgIter A Mi b x₀ j).r.ofLp)
 
-/-- A pass of Algorithm 11.5.1 with `r_k ≠ 0` advances the book's state by one backbone step. -/
+/-- A pass of Algorithm 11.5.1 with $r_k \neq 0$ advances the state by one step of the backbone's
+PCG iteration. -/
 private theorem pcgGood_step (A Mi : Matrix (Fin n) (Fin n) ℝ) (b x₀ : Fin n → ℝ) (k : ℕ)
     (s : PCGState n) (hs : PCGGood A Mi b x₀ k s) (h : s.done = false)
     (hρ : s.r ⬝ᵥ s.r ≠ 0) :
@@ -302,13 +430,13 @@ private theorem pcgGood_step (A Mi : Matrix (Fin n) (Fin n) ℝ) (b x₀ : Fin n
   · obtain rfl : k = j := by omega
     exact ⟨hp, hrz⟩
 
-/-- The loop invariant of the exact run of Algorithm 11.5.1 after `f` passes. -/
+/-- The loop invariant of the exact run of Algorithm 11.5.1 after $f$ passes. -/
 private def PCGLoop (A Mi : Matrix (Fin n) (Fin n) ℝ) (b x₀ : Fin n → ℝ) (f : ℕ)
     (t : PCGState n) : Prop :=
   PCGGood A Mi b x₀ t.k t ∧ t.k ≤ f ∧ (t.done = false → t.k = f) ∧
     (t.done = true → t.r ⬝ᵥ t.r = 0)
 
-/-- The loop invariant of the exact run. -/
+/-- The exact run of Algorithm 11.5.1 satisfies the loop invariant. -/
 private theorem algorithm_11_5_1_loop (A Mi : Matrix (Fin n) (Fin n) ℝ) (b x₀ : Fin n → ℝ)
     (fuel : ℕ) :
     PCGLoop A Mi b x₀ fuel
@@ -349,13 +477,22 @@ private theorem algorithm_11_5_1_loop (A Mi : Matrix (Fin n) (Fin n) ℝ) (b x�
         exact ⟨hstep, by dsimp only; omega, fun _ => by dsimp only; omega,
           fun h => by simp at h⟩
 
-/-- **Algorithm 11.5.1 computes the PCG iterates.** For symmetric positive definite `A` and `M`
-and the exact solve `solveM = M⁻¹`, the exact run of at most `fuel` passes stops after `k ≤ fuel`
-passes (`k = fuel` unless the test failed) in the state `x_k`, `r_k` of the backbone's
-preconditioned CG iteration `Krylov.PCG.iterate` for `A` and `M` (PCG is CG for `M⁻¹A` in the
-`M`-inner product); so `x_k` is the Galerkin iterate of `Ax = b` over
-`x₀ + 𝒦(M⁻¹A, M⁻¹r₀, k)` — it minimizes `‖x − x_*‖_A` there — and when the loop stops by its test
-`A x_k = b`: the book's "computes `x_*` so that `Ax_* = b`". -/
+/-- **Algorithm 11.5.1** of [golub2013matrix], exact semantics. Let
+$A, M \in \mathbb{R}^{n \times n}$ be symmetric positive definite, let
+$b, x_0 \in \mathbb{R}^n$, and run the algorithm in exact arithmetic with the solve
+$z = M^{-1} r$ and at most `fuel` passes. Let $k$ be the final iteration count. Then
+$k \le \mathit{fuel}$, and $k = \mathit{fuel}$ unless the loop stopped by its test. The returned
+$x_k$ and $r_k$ are the iterate and residual of the backbone's PCG iteration
+`Krylov.PCG.iterate` for $A$ and $M$ after $k$ steps. The iterate is the Galerkin iterate of
+$Ax = b$ over the Krylov space:
+$$x_k - x_0 \in \mathcal{K}(M^{-1}A, M^{-1}r_0, k), \qquad b - Ax_k \perp \mathcal{K}(M^{-1}A,
+  M^{-1}r_0, k),$$
+with $r_0 = b - Ax_0$. Equivalently, $x_k$ minimizes $\|x - x_*\|_A$ over
+$x_0 + \mathcal{K}(M^{-1}A, M^{-1}r_0, k)$. If the loop stopped by its test, then $Ax_k = b$,
+which is the claim of the source that the algorithm "computes $x_*$ so that $Ax_* = b$".
+
+The orthogonality is in the Euclidean inner product (`IsGalerkin`). The backbone defines PCG as
+CG for $M^{-1}A$ in the $M$-inner product. -/
 theorem algorithm_11_5_1_spec {A Mp : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosDef)
     (hM : Mp.PosDef) (b x₀ : Fin n → ℝ) (fuel : ℕ) :
     let s := Id.run (algorithm_11_5_1 pure A (fun v => pure (Mp⁻¹ *ᵥ v)) b x₀ fuel)
@@ -388,11 +525,18 @@ theorem algorithm_11_5_1_spec {A Mp : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosDef
     simp only [WithLp.ofLp_sub] at this
     exact (sub_eq_zero.1 this.symm).symm
 
-/-- **(11.5.2).** "The residuals and search directions satisfy `r_jᵀM⁻¹r_i = 0`,
-`p_jᵀ(C⁻¹AC⁻¹)p_i = 0` for all `i ≠ j`": for symmetric positive definite `A` and `M`, the PCG
-residuals are `M⁻¹`-orthogonal and the directions `A`-conjugate. (The printed second relation holds
-for the transformed directions `p̃ = Cp`; for the `p` of Algorithm 11.5.1 it is `p_jᵀAp_i = 0`.) By
-`algorithm_11_5_1_spec` these are the residuals and directions of Algorithm 11.5.1. -/
+/-- **Equation (11.5.2)** of [golub2013matrix]. Let $A, M \in \mathbb{R}^{n \times n}$ be symmetric
+positive definite, let $b, x_0 \in \mathbb{R}^n$, and let $r_i$ and $p_i$ be the residuals and
+directions of the PCG iteration `Krylov.PCG.iterate` for $A$ and $M$. Then for all $i \neq j$,
+$$r_j^T M^{-1} r_i = 0, \qquad p_j^T A p_i = 0.$$
+
+**Reading.** The source prints "$r_j^T M^{-1} r_i = 0$, $p_j^T (C^{-1} A C^{-1}) p_i = 0$ for
+all $i \neq j$". The second relation holds for the transformed directions $\tilde p = Cp$. For
+the directions $p$ of Algorithm 11.5.1 it reads $p_j^T A p_i = 0$, which is the form stated
+here.
+
+By `GolubVanLoan.Chapter11.algorithm_11_5_1_spec`, these are the residuals and directions of
+Algorithm 11.5.1. -/
 theorem equation_11_5_2 {A Mp : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosDef) (hM : Mp.PosDef)
     (b x₀ : Fin n → ℝ) {i j : ℕ} (hij : i ≠ j) :
     let S := Krylov.PCG.iterate (toEuclideanLin A) (toEuclideanLin Mp⁻¹) (WithLp.toLp 2 b)
@@ -412,7 +556,9 @@ theorem equation_11_5_2 {A Mp : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosDef) (hM 
 
 end PCGSpec
 
-/-- The transport of CG on `C⁻¹ T C⁻¹` to PCG with `M⁻¹ = C⁻¹C⁻¹`, for abstract operators. -/
+/-- CG for $\tilde T = C^{-1} T C^{-1}$, transported back by $C$, is PCG for $T$ with
+$M^{-1} = C^{-1} C^{-1}$, for operators on an inner product space and a self-adjoint invertible
+$C$. -/
 private theorem cg_tilde_eq_pcg {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
     (T Tt Cm Ci Mi : E →ₗ[ℝ] E) (hCiC : ∀ z, Ci (Cm z) = z) (hCCi : ∀ z, Cm (Ci z) = z)
     (hMi : ∀ z, Mi z = Ci (Ci z)) (hTt : ∀ z, Tt z = Ci (T (Ci z)))
@@ -445,13 +591,21 @@ private theorem cg_tilde_eq_pcg {E : Type*} [NormedAddCommGroup E] [InnerProduct
     · rw [CG.step_x, Krylov.PCG.step_x, hα, hx, hp, map_add, map_smul]
     · rw [CG.step_p, Krylov.PCG.step_p, hβ, hr', hp, map_add, map_smul, hMi, hCCi]
 
-/-- **(11.5.1) and the derivation of PCG.** For `M = C²` with `C` symmetric and nonsingular (the
-book's symmetric positive definite square root `C = M^{1/2}` is one such `C`), CG applied to the
-"tilde" system `Ã x̃ = b̃`, `Ã = C⁻¹AC⁻¹`, `b̃ = C⁻¹b`, from `x̃₀ = C x₀`, and transported back by
-`x = C⁻¹x̃`, `r = C r̃`, `p = C⁻¹p̃`, is the preconditioned CG iteration `Krylov.PCG.iterate` for
-`A` with the preconditioner `M`: "in the end its action is felt only through the preconditioner
-`M = C²`". The printed (11.5.1) mixes the gradient and residual sign conventions and writes
-`p̃₊ = r̃_c + τp̃_c` for `r̃₊ + τp̃_c`; the statement is the consistent recurrence. -/
+/-- **Equation (11.5.1)** of [golub2013matrix], the derivation of PCG. Let
+$A \in \mathbb{R}^{n \times n}$, and let $C \in \mathbb{R}^{n \times n}$ be symmetric and
+nonsingular with $C^2 = M$. Apply CG to the transformed system $\tilde A \tilde x = \tilde b$,
+with $\tilde A = C^{-1} A C^{-1}$ and $\tilde b = C^{-1} b$, from $\tilde x_0 = C x_0$. Then
+after $k$ steps, the iterate, residual and direction of CG and those of the PCG iteration
+`Krylov.PCG.iterate` for $A$ with the preconditioner $M$ are related by
+$$x_k = C^{-1} \tilde x_k, \qquad r_k = C \tilde r_k, \qquad p_k = C^{-1} \tilde p_k.$$
+So "in the end its action is felt only through the preconditioner $M = C^2$".
+
+**Typo.** The printed (11.5.1) mixes the gradient and residual sign conventions, and it writes
+$\tilde p_+ = \tilde r_c + \tau \tilde p_c$ for $\tilde p_+ = \tilde r_+ + \tau \tilde p_c$. The
+statement uses the consistent recurrence.
+
+The source takes for $C$ the symmetric positive definite square root $M^{1/2}$, which is one
+such $C$. No hypothesis on $A$ is needed. CG is `CG.iterate`. -/
 theorem equation_11_5_1 {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ) {Mp C : Matrix (Fin n) (Fin n) ℝ}
     (hC : C.IsSymm) (hCu : IsUnit C) (hCM : C * C = Mp) (b x₀ : Fin n → ℝ) (k : ℕ) :
     let St := CG.iterate (toEuclideanLin (C⁻¹ * A * C⁻¹)) (WithLp.toLp 2 (C⁻¹ *ᵥ b))
@@ -476,10 +630,16 @@ theorem equation_11_5_1 {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ) {Mp C : Matri
 
 /-! ### §11.5.3: the SSOR preconditioner -/
 
-/-- §11.5.3: for symmetric `A = D − L − Lᵀ` with positive diagonal `D` (here `L = −(strictly lower
-part of A)`, the sign convention of this subsection) and any real `ω`, the SSOR preconditioner
-`M = (D − ωL) D⁻¹ (D − ωL)ᵀ` "is also symmetric positive definite and so it can be used with PCG".
-For `0 < ω < 2` it is `ω(2 − ω)` times the `M` of the SSOR splitting of §11.2.7. -/
+/-- **Section 11.5.3** of [golub2013matrix], the SSOR preconditioner. Let
+$A \in \mathbb{R}^{n \times n}$ be symmetric with positive diagonal, and write $A = D - L - L^T$
+with $D$ diagonal and $L$ strictly lower triangular. Then for every real $\omega$ the SSOR
+preconditioner
+$$M = (D - \omega L) D^{-1} (D - \omega L)^T$$
+is symmetric positive definite, so "it can be used with PCG". If moreover $0 < \omega < 2$, then
+$M$ is $\omega(2 - \omega)$ times the matrix $M$ of the SSOR splitting of §11.2.7.
+
+The matrix $L$ is `-strictLower A`, the sign convention of this subsection, and $D$ is
+`Matrix.diagPart A`. The SSOR splitting is `Matrix.ssorSplitting`. -/
 theorem ssorPreconditioner_posDef {n : ℕ} {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
     (hd : ∀ i, 0 < A i i) (ω : ℝ) :
     ((diagPart A - ω • -strictLower A) * (diagPart A)⁻¹ *
@@ -508,10 +668,16 @@ theorem ssorPreconditioner_posDef {n : ℕ} {A : Matrix (Fin n) (Fin n) ℝ} (hA
 /-! ### §11.5.5: sparse approximate inverses -/
 
 open scoped Matrix.Norms.Frobenius in
-/-- §11.5.5: `‖AT − I‖_F² = ∑_k ‖A T(:,k) − e_k‖₂²`, so minimizing `‖AT − I‖_F` over the matrices
-`T` with zero pattern prescribed by `Z` (the book's `sp(T) = Z`, read as "`T` vanishes where `Z`
-does") decouples into `n` independent column problems: `T` is a minimizer exactly when each column
-`T(:,k)` minimizes `‖Aτ − e_k‖₂` over the `τ` vanishing where `Z(:,k)` does. -/
+/-- **Section 11.5.5** of [golub2013matrix], decoupling of the approximate inverse problem. Let
+$A, Z, T \in \mathbb{R}^{n \times n}$ with $T_{ik} = 0$ wherever $Z_{ik} = 0$. Then
+$$\|AT - I\|_F^2 = \sum_k \|A T(:, k) - e_k\|_2^2,$$
+and $T$ minimizes $\|AT' - I\|_F$ over the matrices $T'$ that vanish where $Z$ vanishes if and
+only if, for each $k$, the column $T(:, k)$ minimizes $\|A\tau - e_k\|_2$ over the vectors
+$\tau$ that vanish where $Z(:, k)$ vanishes. So the problem decouples into $n$ independent
+column problems.
+
+**Reading.** The source writes the pattern condition as $\mathrm{sp}(T) = Z$. It is read as "$T$
+vanishes where $Z$ does". -/
 theorem spai_column_decouple {n : ℕ} (A Z T : Matrix (Fin n) (Fin n) ℝ)
     (hT : ∀ i k, Z i k = 0 → T i k = 0) :
     ‖A * T - 1‖ ^ 2 = ∑ k, ‖WithLp.toLp 2 ((A *ᵥ fun i => T i k) - Pi.single k 1)‖ ^ 2 ∧
@@ -551,11 +717,16 @@ theorem spai_column_decouple {n : ℕ} (A Z T : Matrix (Fin n) (Fin n) ℝ)
     exact h k (show (fun i => T' i k) ∈ {τ : Fin n → ℝ | ∀ i, Z i k = 0 → τ i = 0} from
       fun i hz => hT' i k hz)
 
-/-- §11.5.5, the reduced least-squares problem: let `cols` (`J`) be the allowed support of
-`T(:,k)` and `rows` (`I`) a set of rows containing the nonzero rows of `A(:, cols)`. Then `τ`
-solves `min ‖A(rows, cols) τ − e_k(rows)‖₂` exactly when `T(:,k)`, equal to `τ` on `cols` and zero
-elsewhere, minimizes `‖Aτ' − e_k‖₂` over the `τ'` supported on `cols`. The book's "`T(rows, k) = τ`"
-should read `T(cols, k) = τ`. -/
+/-- **Section 11.5.5** of [golub2013matrix], the reduced least-squares problem. Let
+$A \in \mathbb{R}^{n \times n}$, let $J$ (the source's $\mathit{cols}$) be the allowed support
+of the column $T(:, k)$, and let $I$ (the source's $\mathit{rows}$) be a set of rows that
+contains every row $i$ with $a_{ij} \neq 0$ for some $j \in J$. Let $\tau \in \mathbb{R}^J$, and
+let $x \in \mathbb{R}^n$ equal $\tau$ on $J$ and $0$ elsewhere. Then $\tau$ minimizes
+$\|A(I, J)\sigma - e_k(I)\|_2$ over all $\sigma \in \mathbb{R}^J$ if and only if $x$ minimizes
+$\|Ax' - e_k\|_2$ over the vectors $x'$ supported on $J$.
+
+**Typo.** The source writes $T(\mathit{rows}, k) = \tau$. It should read
+$T(\mathit{cols}, k) = \tau$. -/
 theorem spai_reduced_ls {n : ℕ} {A : Matrix (Fin n) (Fin n) ℝ} {I J : Finset (Fin n)}
     (hI : ∀ i j, j ∈ J → A i j ≠ 0 → i ∈ I) (k : Fin n) {τ : J → ℝ} :
     IsMinOn (fun σ : J → ℝ => ‖WithLp.toLp 2 ((A.submatrix (Subtype.val : I → Fin n)
@@ -568,8 +739,11 @@ theorem spai_reduced_ls {n : ℕ} {A : Matrix (Fin n) (Fin n) ℝ} {I J : Finset
 
 /-! ### §11.5.6: polynomial preconditioners -/
 
-/-- §11.5.6: for a splitting `A = M₁ − N₁` with `ρ(G) < 1`, `G = M₁⁻¹N₁`,
-`A⁻¹ = (∑_{k=0}^∞ G^k) M₁⁻¹`. -/
+/-- **Section 11.5.6** of [golub2013matrix], the Neumann series. Let $A = M_1 - N_1$ be a splitting
+of $A \in \mathbb{R}^{n \times n}$ with iteration matrix $G = M_1^{-1} N_1$ and $\rho(G) < 1$.
+Then the series $\sum_{k \ge 0} G^k M_1^{-1}$ converges, and
+$$A^{-1} = \Big(\sum_{k=0}^\infty G^k\Big) M_1^{-1}.$$
+-/
 theorem neumann_inv_eq_tsum {n : ℕ} {A : Matrix (Fin n) (Fin n) ℝ} (s : Stationary.Splitting A)
     (h : s.iterationOperator.complexSpectralRadius < 1) :
     HasSum (fun k => s.iterationOperator ^ k * s.m⁻¹) A⁻¹ := by
@@ -583,7 +757,7 @@ section Programs
 
 variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 
-/-- **The truncated-Neumann loop** of §11.5.6:
+/-- **Section 11.5.6** of [golub2013matrix], the truncated Neumann loop:
 ```
 z_c = 0
 for k = 1:m
@@ -592,8 +766,8 @@ for k = 1:m
 end
 z = z_c
 ```
-The product `N₁ z_c + r` is a gaxpy (Algorithm 1.1.3); the solve with `M₁` is a routine argument
-`solveM₁`. -/
+The product $N_1 z_c + r$ is a gaxpy (Algorithm 1.1.3), and the solve with $M_1$ is the routine
+argument `solveM₁`. -/
 def neumannLoop {n : ℕ} (solveM₁ : (Fin n → ℝ) → M (Fin n → ℝ)) (N₁ : Matrix (Fin n) (Fin n) ℝ)
     (r : Fin n → ℝ) (m : ℕ) : M (Fin n → ℝ) :=
   (List.range m).foldlM (fun z _ => do
@@ -602,10 +776,15 @@ def neumannLoop {n : ℕ} (solveM₁ : (Fin n → ℝ) → M (Fin n → ℝ)) (N
 
 end Programs
 
-/-- **The truncated-Neumann loop computes the polynomial preconditioner.** With `solveM₁ = M₁⁻¹`,
-`m` exact steps return `z = (I + G + ⋯ + G^{m−1}) M₁⁻¹ r`; so the preconditioner
-`M⁻¹ = (∑_{k=0}^{m} G^k) M₁⁻¹` of the text needs `m + 1` steps: the printed "`m` steps" is off by
-one. -/
+/-- **Section 11.5.6** of [golub2013matrix], exact semantics of the truncated Neumann loop. Let
+$A = M_1 - N_1$ be a splitting of $A \in \mathbb{R}^{n \times n}$ with $G = M_1^{-1} N_1$, and
+let $r \in \mathbb{R}^n$. Then $m$ exact steps of `GolubVanLoan.Chapter11.neumannLoop` with the
+solve $z = M_1^{-1} w$ return
+$$z = (I + G + \dots + G^{m-1}) M_1^{-1} r.$$
+
+**Correction.** The source says that $m$ steps apply the preconditioner
+$M^{-1} = (\sum_{k=0}^{m} G^k) M_1^{-1}$. By this theorem $m$ steps give the sum up to $G^{m-1}$
+only, so this preconditioner needs $m + 1$ steps. -/
 theorem neumannLoop_spec {n : ℕ} {A : Matrix (Fin n) (Fin n) ℝ} (s : Stationary.Splitting A)
     (r : Fin n → ℝ) (m : ℕ) :
     Id.run (neumannLoop pure (fun v => pure (s.m⁻¹ *ᵥ v)) s.n r m) =
@@ -625,10 +804,18 @@ theorem neumannLoop_spec {n : ℕ} {A : Matrix (Fin n) (Fin n) ℝ} (s : Station
     congr 3
     exact funext fun j => (pow_succ' s.iterationOperator j).symm
 
-/-- **(11.5.3) and the paragraph after it.** For `M⁻¹ = p(M₁⁻¹A) M₁⁻¹` the preconditioned matrix is
-`M⁻¹A = p(B) B` with `B = M₁⁻¹A`; with `M₁ = I`, `I − p(A)A = q(A)` for `q(z) = 1 − z p(z)`, which
-has `q(0) = 1` and degree `deg p + 1`; and the truncated Neumann choice `p = ∑_{j≤m} (1 − z)^j`
-(after `M₁`) gives `M⁻¹A = I − G^{m+1}`, `G = I − M₁⁻¹A`. -/
+/-- **Equation (11.5.3)** of [golub2013matrix] and the paragraph after it. Let
+$A, M_1 \in \mathbb{R}^{n \times n}$, let $p$ be a real polynomial, and let $m \in \mathbb{N}$.
+Then:
+* for $M^{-1} = p(M_1^{-1} A) M_1^{-1}$, the preconditioned matrix is $M^{-1}A = p(B) B$ with
+  $B = M_1^{-1} A$;
+* with $M_1 = I$, $I - p(A) A = q(A)$ for $q(z) = 1 - z p(z)$, which has $q(0) = 1$, and, if
+  $p \neq 0$, degree $\deg p + 1$;
+* the truncated Neumann choice $M^{-1} = (\sum_{j=0}^{m} G^j) M_1^{-1}$ with
+  $G = I - M_1^{-1} A$ gives $M^{-1} A = I - G^{m+1}$.
+
+The sum $\sum_{j=0}^{m} G^j$ is `Preconditioner.neumannPolyOf G m`. No hypothesis on $M_1$ is
+needed; $M_1^{-1}$ is the Lean inverse. -/
 theorem equation_11_5_3 {n : ℕ} (A M₁ : Matrix (Fin n) (Fin n) ℝ) (p : Polynomial ℝ) (m : ℕ) :
     Polynomial.aeval (M₁⁻¹ * A) p * M₁⁻¹ * A = Polynomial.aeval (M₁⁻¹ * A) p * (M₁⁻¹ * A) ∧
       (1 - Polynomial.aeval A p * A = Polynomial.aeval A (1 - Polynomial.X * p) ∧
@@ -644,9 +831,14 @@ theorem equation_11_5_3 {n : ℕ} (A M₁ : Matrix (Fin n) (Fin n) ℝ) (p : Pol
 
 /-! ### §11.5.7: PCG as an accelerated splitting -/
 
-/-- **(11.5.4)** at `ω_k = γ_k = 1`: the step `x_k = x_{k−2} + ω_k(γ_{k−1} z_{k−1} + x_{k−1} −
-x_{k−2})` with `M z_{k−1} = b − A x_{k−1}` is `M x_k = N x_{k−1} + b` (`A = M − N`), the step of the
-splitting. -/
+/-- **Equation (11.5.4)** of [golub2013matrix] at $\omega_k = \gamma_k = 1$. Let $A = M - N$ be a
+splitting of $A \in \mathbb{R}^{n \times n}$, let $b, x_{k-1}, x_{k-2} \in \mathbb{R}^n$, and
+let $M z_{k-1} = b - A x_{k-1}$. Then the accelerated step
+$$x_k = x_{k-2} + \omega_k(\gamma_{k-1} z_{k-1} + x_{k-1} - x_{k-2})$$
+with $\omega_k = \gamma_{k-1} = 1$ is the step $x_k = M^{-1}(N x_{k-1} + b)$ of the splitting.
+
+The splitting step is `Stationary.Splitting.mulVecStep`. The arguments `x₁` and `x₂` of the Lean
+statement are the two previous iterates, in this order. -/
 theorem equation_11_5_4 {n : ℕ} {A : Matrix (Fin n) (Fin n) ℝ} (s : Stationary.Splitting A)
     (b x₁ x₂ z : Fin n → ℝ) (hz : s.m *ᵥ z = b - A *ᵥ x₁) :
     x₂ + (1 : ℝ) • ((1 : ℝ) • z + x₁ - x₂) = s.mulVecStep b x₁ := by
@@ -656,33 +848,37 @@ theorem equation_11_5_4 {n : ℕ} {A : Matrix (Fin n) (Fin n) ℝ} (s : Stationa
 
 /-! ### §11.5.7: the Concus–Golub–O'Leary form of PCG -/
 
-/-- The state of the Concus–Golub–O'Leary loop after `k` passes: `x_{k−1}`, `x_k`, `r_k`, and the
-last `γ_{k−1}`, `z_{k−1}ᵀMz_{k−1}` and `ω_k`. -/
+/-- The state of the Concus–Golub–O'Leary loop of §11.5.7 of [golub2013matrix] after $k$ passes: the
+iterates $x_{k-1}$ and $x_k$, the residual $r_k$, the last values $\gamma_{k-1}$ and
+$z_{k-1}^T M z_{k-1}$, the last $\omega_k$, and a flag that records whether the `while` test has
+failed. -/
 structure CGOState (n : ℕ) where
-  /-- The iteration count `k`. -/
+  /-- The iteration count $k$. -/
   k : ℕ
-  /-- The previous iterate `x_{k−1}` (the book's `x_{−1} = 0` at `k = 0`). -/
+  /-- The previous iterate $x_{k-1}$; at $k = 0$ it is the source's $x_{-1} = 0$. -/
   xPrev : Fin n → ℝ
-  /-- The iterate `x_k`. -/
+  /-- The iterate $x_k$. -/
   x : Fin n → ℝ
-  /-- The residual `r_k = b − Ax_k`. -/
+  /-- The residual $r_k = b - Ax_k$. -/
   r : Fin n → ℝ
-  /-- The last `γ_{k−1}`. -/
+  /-- The last value $\gamma_{k-1}$. -/
   gam : ℝ
-  /-- The last `z_{k−1}ᵀMz_{k−1}`. -/
+  /-- The last value $z_{k-1}^T M z_{k-1}$. -/
   zMz : ℝ
-  /-- The last `ω_k`. -/
+  /-- The last value $\omega_k$. -/
   om : ℝ
-  /-- Whether the test `r_k ≠ 0` has failed. -/
+  /-- Whether the `while` test $r_k \neq 0$ has failed. -/
   done : Bool
 
 section Programs
 
 variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 
-/-- One pass of the Concus–Golub–O'Leary loop (§11.5.7); the update
-`x_k = x_{k−2} + ω_k(γ_{k−1} z_{k−1} + x_{k−1} − x_{k−2})` is evaluated left to right, as
-printed. -/
+/-- One pass of the Concus–Golub–O'Leary loop of §11.5.7 of [golub2013matrix]. If the loop has
+stopped, the pass does nothing; if $r_k = 0$, it stops. Otherwise it solves $M z = r_k$,
+computes $\gamma$ and $\omega$, and forms the new iterate and residual. The update $x_k =
+x_{k-2} + \omega_k(\gamma_{k-1} z_{k-1} + x_{k-1} - x_{k-2})$ is evaluated from left to right,
+as printed. -/
 noncomputable def cgoStep {n : ℕ} (A Mp : Matrix (Fin n) (Fin n) ℝ)
     (solveM : (Fin n → ℝ) → M (Fin n → ℝ)) (b : Fin n → ℝ) (s : CGOState n) :
     M (CGOState n) := do
@@ -707,8 +903,7 @@ noncomputable def cgoStep {n : ℕ} (A Mp : Matrix (Fin n) (Fin n) ℝ)
   let r ← Chapter01.algorithm_1_1_3 rnd (-A) x b
   return ⟨s.k + 1, s.x, x, r, γ, zMz, om, false⟩
 
-/-- **The Concus–Golub–O'Leary form of PCG** (§11.5.7; the display is untagged in the source and
-is taken to be the lost (11.5.5)):
+/-- **Equation (11.5.5)** of [golub2013matrix], the Concus–Golub–O'Leary form of PCG:
 ```
 x_{−1} = 0, k = 0, r₀ = b − Ax₀
 while r_k ≠ 0
@@ -721,8 +916,13 @@ while r_k ≠ 0
     r_k = b − Ax_k
 end
 ```
-The test `r_k ≠ 0` compares the computed vector with zero exactly; the solves with `M` are the
-routine `solveM`, and the `while` loop runs at most `fuel` passes. -/
+
+**Reading.** The display is untagged in the source. It is taken to be (11.5.5), whose tag is
+missing.
+
+The test $r_k \neq 0$ compares the computed vector with zero exactly. The solves with $M$ are
+the routine `solveM`, and the `while` loop runs at most `fuel` passes of
+`GolubVanLoan.Chapter11.cgoStep`. -/
 noncomputable def concusGolubOLearyPCG {n : ℕ} (A Mp : Matrix (Fin n) (Fin n) ℝ)
     (solveM : (Fin n → ℝ) → M (Fin n → ℝ)) (b x₀ : Fin n → ℝ) (fuel : ℕ) : M (CGOState n) := do
   let r₀ ← Chapter01.algorithm_1_1_3 rnd (-A) x₀ b
@@ -735,19 +935,20 @@ section CGOSpec
 
 variable {n : ℕ}
 
-/-- An exact pass after the test failed is the identity. -/
+/-- An exact pass of the Concus–Golub–O'Leary loop after the test has failed leaves the state
+unchanged. -/
 private theorem cgoStep_done (A Mp Mi : Matrix (Fin n) (Fin n) ℝ) (b : Fin n → ℝ)
     (s : CGOState n) (h : s.done = true) :
     Id.run (cgoStep pure A Mp (fun v => pure (Mi *ᵥ v)) b s) = s := by
   simp [cgoStep, h]
 
-/-- An exact pass meeting `r_k = 0` stops. -/
+/-- An exact pass of the Concus–Golub–O'Leary loop that meets $r_k = 0$ sets the stop flag. -/
 private theorem cgoStep_stop (A Mp Mi : Matrix (Fin n) (Fin n) ℝ) (b : Fin n → ℝ)
     (s : CGOState n) (h : s.done = false) (hr : s.r = 0) :
     Id.run (cgoStep pure A Mp (fun v => pure (Mi *ᵥ v)) b s) = { s with done := true } := by
   simp [cgoStep, h, hr]
 
-/-- An exact pass with `r_k ≠ 0`. -/
+/-- An exact pass of the Concus–Golub–O'Leary loop with $r_k \neq 0$, in closed form. -/
 private theorem cgoStep_go (A Mp Mi : Matrix (Fin n) (Fin n) ℝ) (b : Fin n → ℝ)
     (s : CGOState n) (h : s.done = false) (hr : s.r ≠ 0) :
     Id.run (cgoStep pure A Mp (fun v => pure (Mi *ᵥ v)) b s) =
@@ -761,17 +962,17 @@ private theorem cgoStep_go (A Mp Mi : Matrix (Fin n) (Fin n) ℝ) (b : Fin n →
     simp [cgoStep, h, hr, hk, Chapter01.algorithm_1_1_1_spec, Chapter01.algorithm_1_1_2_spec,
       Chapter01.algorithm_1_1_3_spec, Chapter01.vecSub_spec]
 
-/-- The preconditioned PCG residuals `z_j = M⁻¹ r_j`. -/
+/-- The preconditioned PCG residuals $z_j = M^{-1} r_j$. -/
 private noncomputable def cgoZ (A Mp : Matrix (Fin n) (Fin n) ℝ) (b x₀ : Fin n → ℝ) (j : ℕ) :
     Fin n → ℝ :=
   Mp⁻¹ *ᵥ (pcgIter A Mp⁻¹ b x₀ j).r.ofLp
 
-/-- The scalars `γ_j = z_jᵀMz_j / z_jᵀAz_j`. -/
+/-- The scalars $\gamma_j = z_j^T M z_j / z_j^T A z_j$. -/
 private noncomputable def cgoGam (A Mp : Matrix (Fin n) (Fin n) ℝ) (b x₀ : Fin n → ℝ) (j : ℕ) :
     ℝ :=
   (cgoZ A Mp b x₀ j ⬝ᵥ Mp *ᵥ cgoZ A Mp b x₀ j) / (cgoZ A Mp b x₀ j ⬝ᵥ A *ᵥ cgoZ A Mp b x₀ j)
 
-/-- The scalars `ω_{j+1}`: `CG.rho` of `M⁻¹A` in the `M`-inner product. -/
+/-- The scalars $\omega_{j+1}$, defined as `CG.rho` for $M^{-1}A$ in the $M$-inner product. -/
 private noncomputable def cgoRho (A Mp : Matrix (Fin n) (Fin n) ℝ) (hM : Mp.PosDef)
     (b x₀ : Fin n → ℝ) : ℕ → ℝ :=
   CG.rho (hM.isPreconditioner_toEuclideanLin.energyEnd
@@ -779,8 +980,8 @@ private noncomputable def cgoRho (A Mp : Matrix (Fin n) (Fin n) ℝ) (hM : Mp.Po
     (hM.isPreconditioner_toEuclideanLin.toEnergy (toEuclideanLin Mp⁻¹ (WithLp.toLp 2 b)))
     (hM.isPreconditioner_toEuclideanLin.toEnergy (WithLp.toLp 2 x₀))
 
-/-- The facts about PCG in the `M`-inner product that the Concus–Golub–O'Leary recurrence uses:
-the three-term recurrence of the iterates and the recurrence of `ω`. -/
+/-- The three-term recurrence of the PCG iterates and the recurrence of $\omega$, which the
+Concus–Golub–O'Leary loop uses. -/
 private theorem cgo_threeTerm {A Mp : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosDef) (hM : Mp.PosDef)
     (b x₀ : Fin n → ℝ) (m : ℕ) (hr : ∀ j ≤ m, (pcgIter A Mp⁻¹ b x₀ j).r ≠ 0) :
     (pcgIter A Mp⁻¹ b x₀ (m + 1)).x.ofLp =
@@ -837,8 +1038,8 @@ private theorem cgo_threeTerm {A Mp : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosDef
   · rw [cgoRho, CG.rho, hγ, hγ, hnorm, hnorm]
     rfl
 
-/-- The book's state after `k` exact passes of the Concus–Golub–O'Leary loop, read off the PCG
-iterates. -/
+/-- The state of the Concus–Golub–O'Leary loop after $k$ exact passes agrees with the PCG iterates.
+-/
 private def CGOGood (A Mp : Matrix (Fin n) (Fin n) ℝ) (hM : Mp.PosDef) (b x₀ : Fin n → ℝ)
     (k : ℕ) (s : CGOState n) : Prop :=
   s.k = k ∧ s.x = (pcgIter A Mp⁻¹ b x₀ k).x.ofLp ∧ s.r = (pcgIter A Mp⁻¹ b x₀ k).r.ofLp ∧
@@ -847,7 +1048,7 @@ private def CGOGood (A Mp : Matrix (Fin n) (Fin n) ℝ) (hM : Mp.PosDef) (b x₀
       s.gam = cgoGam A Mp b x₀ j ∧ s.zMz = cgoZ A Mp b x₀ j ⬝ᵥ Mp *ᵥ cgoZ A Mp b x₀ j ∧
       s.om = cgoRho A Mp hM b x₀ j
 
-/-- A pass of the loop with `r_k ≠ 0` advances the state by one PCG step. -/
+/-- A pass of the Concus–Golub–O'Leary loop with $r_k \neq 0$ advances the state by one PCG step. -/
 private theorem cgoGood_step {A Mp : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosDef) (hM : Mp.PosDef)
     (b x₀ : Fin n → ℝ) (k : ℕ) (s : CGOState n) (hs : CGOGood A Mp hM b x₀ k s)
     (h : s.done = false) (hr : s.r ≠ 0) :
@@ -900,12 +1101,12 @@ private theorem cgoGood_step {A Mp : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosDef)
   · obtain rfl : k = j := by omega
     exact ⟨hx, rfl, rfl, rfl⟩
 
-/-- The loop invariant of the exact run of the Concus–Golub–O'Leary loop after `f` passes. -/
+/-- The loop invariant of the exact run of the Concus–Golub–O'Leary loop after $f$ passes. -/
 private def CGOLoop (A Mp : Matrix (Fin n) (Fin n) ℝ) (hM : Mp.PosDef) (b x₀ : Fin n → ℝ)
     (f : ℕ) (t : CGOState n) : Prop :=
   CGOGood A Mp hM b x₀ t.k t ∧ t.k ≤ f ∧ (t.done = false → t.k = f) ∧ (t.done = true → t.r = 0)
 
-/-- The loop invariant of the exact run. -/
+/-- The exact run of the Concus–Golub–O'Leary loop satisfies the loop invariant. -/
 private theorem concusGolubOLearyPCG_loop {A Mp : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosDef)
     (hM : Mp.PosDef) (b x₀ : Fin n → ℝ) (fuel : ℕ) :
     CGOLoop A Mp hM b x₀ fuel
@@ -946,14 +1147,18 @@ private theorem concusGolubOLearyPCG_loop {A Mp : Matrix (Fin n) (Fin n) ℝ} (h
         exact ⟨hstep, by dsimp only; omega, fun _ => by dsimp only; omega,
           fun h => by simp at h⟩
 
-/-- **The Concus–Golub–O'Leary loop computes the PCG iterates** (the exact semantics of the
-display taken as (11.5.5)): for symmetric positive definite `A` and `M` and the exact solve
-`solveM = M⁻¹`, the run of at most `fuel` passes stops after `k ≤ fuel` passes (`k = fuel` unless
-`r_k = 0`) at the PCG iterate `x_k` of `Krylov.PCG.iterate`, and on exit by the test `A x_k = b`.
-So "any iterative method based on the splitting `A = M − N` can be accelerated by the conjugate
-gradient algorithm as long as `M` is symmetric positive definite". The coefficients are the
-three-term form of CG (`CG.iterate_succ_eq_three_term`) for `M⁻¹A` in the `M`-inner product:
-`γ_k` is `CG.gamma` and `ω_{k+1}` is `CG.rho`. -/
+/-- **Equation (11.5.5)** of [golub2013matrix], exact semantics of the Concus–Golub–O'Leary loop.
+Let $A, M \in \mathbb{R}^{n \times n}$ be symmetric positive definite, let
+$b, x_0 \in \mathbb{R}^n$, and run the loop in exact arithmetic with the solve $z = M^{-1} r$
+and at most `fuel` passes. Let $k$ be the final iteration count. Then $k \le \mathit{fuel}$, and
+$k = \mathit{fuel}$ unless the loop stopped with $r_k = 0$. The returned $x_k$ is the PCG
+iterate of `Krylov.PCG.iterate` for $A$ and $M$ after $k$ steps. If the loop stopped by its
+test, then $Ax_k = b$. So "any iterative method based on the splitting $A = M - N$ can be
+accelerated by the conjugate gradient algorithm as long as $M$ is symmetric positive definite".
+
+The coefficients are those of the three-term form of CG (`CG.iterate_succ_eq_three_term`) for
+$M^{-1}A$ in the $M$-inner product: the scalar $\gamma_k$ is `CG.gamma`, and `CG.rho` gives the
+scalar $\omega_{k+1}$. -/
 theorem equation_11_5_5 {A Mp : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosDef) (hM : Mp.PosDef)
     (b x₀ : Fin n → ℝ) (fuel : ℕ) :
     let s := Id.run (concusGolubOLearyPCG pure A Mp (fun v => pure (Mp⁻¹ *ᵥ v)) b x₀ fuel)
@@ -979,22 +1184,28 @@ end CGOSpec
 
 /-! ### §11.5.8: incomplete Cholesky -/
 
-/-- **The incomplete Cholesky factor** of (11.5.6)–(11.5.8): for a set `P` of subdiagonal index
-pairs, `H` is lower triangular, `R = HHᵀ − A` vanishes wherever `A` does not ((11.5.6)–(11.5.7):
-"`a_ij ≠ 0 ⇒ r_ij = 0`"), and `H` vanishes on `P` ((11.5.8)). -/
+/-- **Equations (11.5.6)–(11.5.8)** of [golub2013matrix], the incomplete Cholesky factor. Let
+$A, H \in \mathbb{R}^{n \times n}$ and let $P$ be a set of index pairs. Then $H$ is an
+**incomplete Cholesky factor** of $A$ for the zero pattern $P$ if $H$ is lower triangular, the
+residual $R = HH^T - A$ vanishes wherever $A$ is nonzero ((11.5.6)–(11.5.7):
+"$a_{ij} \neq 0 \Rightarrow r_{ij} = 0$"), and $h_{ij} = 0$ for $(i, j) \in P$ ((11.5.8)).
+
+In the source $P$ is a set of subdiagonal positions; the definition does not require this. -/
 structure IsIncompleteCholesky {n : ℕ} (P : Set (Fin n × Fin n))
     (A H : Matrix (Fin n) (Fin n) ℝ) : Prop where
-  /-- `H` is lower triangular. -/
+  /-- $H$ is lower triangular. -/
   lower : ∀ i j, i < j → H i j = 0
-  /-- (11.5.7): `[HHᵀ]_ij = a_ij` for every nonzero `a_ij`. -/
+  /-- Equation (11.5.7): $[HH^T]_{ij} = a_{ij}$ for every nonzero $a_{ij}$. -/
   agree : ∀ i j, A i j ≠ 0 → (H * Hᵀ - A) i j = 0
-  /-- (11.5.8): `(i, j) ∈ P ⇒ h_ij = 0`. -/
+  /-- Equation (11.5.8): $h_{ij} = 0$ for $(i, j) \in P$. -/
   zero : ∀ i j, (i, j) ∈ P → H i j = 0
 
-/-- The backbone's incomplete Cholesky factor gives the book's when the pattern avoids the
-nonzeros of `A`: for symmetric `A` and a set `P` of positions where `A` vanishes, a
-`Matrix.IsIC (P ∪ Pᵀ) A H` factor satisfies (11.5.6)–(11.5.8). (The converse fails: (11.5.7) does
-not constrain `HHᵀ` at the zeros of `A` outside `P`.) -/
+/-- **Section 11.5.8** of [golub2013matrix], the backbone's incomplete Cholesky factor as one of the
+source. Let $A \in \mathbb{R}^{n \times n}$ be symmetric, and let $P$ be a set of positions
+where $A$ vanishes. If $H$ is an incomplete Cholesky factor of $A$ in the sense of `Matrix.IsIC`
+for the symmetric pattern $P \cup P^T$, then $H$ satisfies (11.5.6)–(11.5.8) for $P$.
+
+The converse fails: (11.5.7) does not constrain $HH^T$ at the zeros of $A$ outside $P$. -/
 theorem isIncompleteCholesky_of_isIC {n : ℕ} {P : Set (Fin n × Fin n)}
     {A H : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) (hP : ∀ i j, (i, j) ∈ P → A i j = 0)
     (h : IsIC (P ∪ {x | x.swap ∈ P}) A H) : IsIncompleteCholesky P A H where
@@ -1006,11 +1217,15 @@ theorem isIncompleteCholesky_of_isIC {n : ℕ} {P : Set (Fin n × Fin n)}
     · exact hij (by rw [hA.apply j i]; exact hP j i hm)
   zero := fun i j hij => h.l_eq_zero_of_mem i j (Or.inl hij)
 
-/-- **(11.5.9) and the sentence after it.** For `A = [α vᵀ; v B]` with `α > 0`, `w = v/√α` and
-`A₁ = B − wwᵀ`: `A = [√α 0; w I] [1 0; 0 A₁] [√α wᵀ; 0 I]`; and if `G₁` is the Cholesky factor of
-`A₁` then `G = [√α 0; w G₁]` is the Cholesky factor of `A`. In the second clause `A` is a matrix
-on `Fin (n+1)` with pivot `0`, trailing block `B = A(2:n, 2:n)`, and the factors are written
-upper, `H = Gᵀ` (`Matrix.IsCholesky A₁ H₁`). -/
+/-- **Equation (11.5.9)** of [golub2013matrix]. Let $\alpha > 0$, $v \in \mathbb{R}^n$ and
+$B \in \mathbb{R}^{n \times n}$, and put $w = v / \sqrt{\alpha}$ and $A_1 = B - ww^T$. Then
+$$\begin{bmatrix} \alpha & v^T \\ v & B \end{bmatrix} = \begin{bmatrix} \sqrt{\alpha} & 0 \\ w &
+  I \end{bmatrix} \begin{bmatrix} 1 & 0 \\ 0 & A_1 \end{bmatrix} \begin{bmatrix} \sqrt{\alpha} &
+  w^T \\ 0 & I \end{bmatrix}.$$
+
+The sentence after (11.5.9), on the Cholesky factor, is
+`GolubVanLoan.Chapter11.equation_11_5_9_cholesky`. The blocks are indexed by `Fin 1` and
+`Fin n`. -/
 theorem equation_11_5_9 {n : ℕ} {α : ℝ} (hα : 0 < α) (v : Fin n → ℝ)
     (B : Matrix (Fin n) (Fin n) ℝ) :
     fromBlocks (of fun _ _ => α) (of fun (_ : Fin 1) j => v j) (of fun i (_ : Fin 1) => v i) B =
@@ -1026,9 +1241,16 @@ theorem equation_11_5_9 {n : ℕ} {α : ℝ} (hα : 0 < α) (v : Fin n → ℝ)
   rw [e]
   exact (equation_11_1_3 hα v B).1
 
-/-- The Cholesky clause of (11.5.9): with `A` on `Fin (n+1)` symmetric, `α = a₁₁ > 0`,
-`w = A(2:n, 1)/√α`, if `H₁` is the (upper) Cholesky factor of `A₁ = A(2:n,2:n) − wwᵀ` then the
-bordered `H = [√α wᵀ; 0 H₁]` is the Cholesky factor of `A` (the book's `G = Hᵀ = [√α 0; w G₁]`). -/
+/-- **Equation (11.5.9)** of [golub2013matrix], the sentence after it. Let
+$A \in \mathbb{R}^{(n+1) \times (n+1)}$ be symmetric with $\alpha = a_{11} > 0$, put
+$w = A(2{:}n{+}1, 1) / \sqrt{\alpha}$ and $A_1 = A(2{:}n{+}1, 2{:}n{+}1) - ww^T$, and let $H_1$
+be the Cholesky factor of $A_1$. Then
+$$H = \begin{bmatrix} \sqrt{\alpha} & w^T \\ 0 & H_1 \end{bmatrix}$$
+is the Cholesky factor of $A$.
+
+The Cholesky factors are written upper triangular, $A = H^T H$, as in `Matrix.IsCholesky`; the
+source's lower factor is $G = H^T = [\sqrt{\alpha}\ 0;\ w\ G_1]$. In Lean the pivot has index
+$0$ and the trailing block is indexed by `Fin.succ`. -/
 theorem equation_11_5_9_cholesky {n : ℕ} {A : Matrix (Fin (n + 1)) (Fin (n + 1)) ℝ}
     (hA : A.IsSymm) (hα : 0 < A 0 0) {H₁ : Matrix (Fin n) (Fin n) ℝ}
     (h₁ : (Matrix.of fun i j : Fin n =>
@@ -1073,16 +1295,22 @@ theorem equation_11_5_9_cholesky {n : ℕ} {A : Matrix (Fin (n + 1)) (Fin (n + 1
         simp only [transpose_apply, of_apply, Fin.cases_succ, Fin.cases_zero, this]
         ring
 
-/-- **Lemma 11.5.1.** "If `A ∈ ℝ^{n×n}` is a Stieltjes matrix, then `A⁻¹ ≥ 0`." A Stieltjes matrix
-(symmetric positive definite with nonpositive off-diagonal entries, §11.5.8) is an M-matrix, whose
-inverse is entrywise nonnegative. -/
+/-- **Lemma 11.5.1** of [golub2013matrix]. "If $A \in \mathbb{R}^{n \times n}$ is a Stieltjes
+matrix, then $A^{-1} \ge 0$": the inverse of a Stieltjes matrix is entrywise nonnegative.
+
+A Stieltjes matrix is a symmetric positive definite matrix with nonpositive off-diagonal entries
+(`Matrix.IsStieltjes`). The proof uses that it is an M-matrix. -/
 theorem lemma_11_5_1 {n : ℕ} {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsStieltjes) :
     A⁻¹.EntrywiseNonneg :=
   hA.inv_entrywiseNonneg
 
-/-- **Theorem 11.5.2.** "If `A = [α vᵀ; v B]` is a Stieltjes matrix and `ṽ` is obtained from `v` by
-setting any subset of its components to zero, then `B̃ = B − ṽṽᵀ/α` is a Stieltjes matrix." Here
-`A` is on `Fin (n+1)` with pivot `0`, `v = A(2:n, 1)`, and `ṽ` keeps the components in `S`. -/
+/-- **Theorem 11.5.2** of [golub2013matrix]. "If $A = \begin{bmatrix} \alpha & v^T \\ v & B
+\end{bmatrix}$ is a Stieltjes matrix and $\tilde v$ is obtained from $v$ by setting any subset
+of its components to zero, then $\tilde B = B - \tilde v \tilde v^T / \alpha$ is a Stieltjes
+matrix."
+
+In Lean $A$ is indexed by `Fin (n + 1)` with pivot $0$, $v = A(2{:}n{+}1, 1)$, and $\tilde v$
+keeps the components with index in a finite set $S$ and sets the others to zero. -/
 theorem theorem_11_5_2 {n : ℕ} {A : Matrix (Fin (n + 1)) (Fin (n + 1)) ℝ} (hA : A.IsStieltjes)
     (S : Finset (Fin n)) :
     (Matrix.of fun i j : Fin n => A i.succ j.succ -
@@ -1099,8 +1327,12 @@ theorem theorem_11_5_2 {n : ℕ} {A : Matrix (Fin (n + 1)) (Fin (n + 1)) ℝ} (h
   ext i j
   simp only [of_apply, submatrix_apply, hmem, hA.isSymm.apply 0 j.succ]
 
-/-- §11.5.8, "the model problem matrices in §4.8.3 are Stieltjes matrices": `T_m = tridiag(−1, 2,
-−1)` and the Poisson matrix `I ⊗ T_{n₂} + T_{n₁} ⊗ I` of (11.2.10) are Stieltjes. -/
+/-- **Section 11.5.8** of [golub2013matrix], "the model problem matrices in §4.8.3 are Stieltjes
+matrices". For all $m, n_1, n_2$, the matrix $T_m = \mathrm{tridiag}(-1, 2, -1) \in
+\mathbb{R}^{m \times m}$ and the Poisson matrix $I_{n_1} \otimes T_{n_2} + T_{n_1} \otimes
+I_{n_2}$ of (11.2.10) are Stieltjes matrices.
+
+The matrices are `GolubVanLoan.Chapter11.modelT` and `GolubVanLoan.Chapter11.poissonMatrix`. -/
 theorem poissonMatrix_isStieltjes (m n₁ n₂ : ℕ) :
     (modelT m).IsStieltjes ∧ (poissonMatrix n₁ n₂).IsStieltjes := by
   have hT : ∀ m (i j : Fin m), i ≠ j → modelT m i j ≤ 0 := by
@@ -1122,7 +1354,8 @@ section Programs
 
 variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 
-/-- **The recursive incomplete Cholesky `incChol(A, Z, n)`** of §11.5.8:
+/-- **Section 11.5.8** of [golub2013matrix], the recursive incomplete Cholesky factorization
+`incChol(A, Z, n)`:
 ```
 function H = incChol(A, Z, n)
 if n = 1
@@ -1134,10 +1367,13 @@ else
     H = [√α 0; w H₁]
 end
 ```
-The masking `.* Z` by the `0–1` matrix `Z` is exact (an entry is kept or set to zero), and the
-entries it sets to zero are not computed; every `√`, `/`, product and difference is rounded. The
-matrix size is `n + 1` (the book's `n`), the trailing block `A(2:n, 2:n)` is
-`A.submatrix Fin.succ Fin.succ`, and `[√α 0; w H₁]` is assembled by `Fin.cases`. -/
+Here $Z$ is a $0$–$1$ pattern matrix.
+
+The masking `.* Z` is exact: an entry is kept or set to zero, and an entry that it sets to zero
+is not computed. Every square root, quotient, product and difference is rounded. The matrix size
+is $n + 1$ (the source's $n$), the trailing block $A(2{:}n, 2{:}n)$ is
+`A.submatrix Fin.succ Fin.succ`, and the block matrix $[\sqrt{\alpha}\ 0;\ w\ H_1]$ is assembled
+by `Fin.cases`. -/
 noncomputable def incChol : {n : ℕ} → Matrix (Fin (n + 1)) (Fin (n + 1)) ℝ →
     Matrix (Fin (n + 1)) (Fin (n + 1)) ℝ → M (Matrix (Fin (n + 1)) (Fin (n + 1)) ℝ)
   | 0, A, _ => do
@@ -1160,12 +1396,13 @@ noncomputable def incChol : {n : ℕ} → Matrix (Fin (n + 1)) (Fin (n + 1)) ℝ
 
 end Programs
 
-/-- A loop writing entry `i` of a vector at step `i` of `finRange` computes the whole vector. -/
+/-- A loop that writes entry $i$ of a vector at step $i$ of `List.finRange` computes the whole
+vector. -/
 private theorem foldl_finRange_update {m : ℕ} {β : Type} (g : Fin m → β) (w₀ : Fin m → β) :
     (List.finRange m).foldl (fun w i => Function.update w i (g i)) w₀ = g :=
   (List.foldl_update_eq_ite g _ w₀).trans (funext fun i => ite_eq_left (List.mem_finRange i))
 
-/-- A double loop writing entry `(i, j)` of a matrix computes the whole matrix. -/
+/-- A double loop that writes entry $(i, j)$ of a matrix computes the whole matrix. -/
 private theorem foldl_finRange_updateRow {m : ℕ} (g : Fin m → Fin m → ℝ)
     (A₀ : Matrix (Fin m) (Fin m) ℝ) :
     (List.finRange m).foldl (fun (A : Matrix (Fin m) (Fin m) ℝ) i =>
@@ -1181,7 +1418,7 @@ private theorem foldl_finRange_updateRow {m : ℕ} (g : Fin m → Fin m → ℝ)
   simp only [hrow]
   exact foldl_finRange_update (β := Fin m → ℝ) g A₀
 
-/-- A branch between two writes of one entry is one write of a branch. -/
+/-- A branch between two writes of one vector entry is one write of a branch. -/
 private theorem ite_update {m : ℕ} {β : Type} (w : Fin m → β) (i : Fin m) (c : Prop)
     [Decidable c] (a b : β) :
     (if c then Function.update w i a else Function.update w i b) =
@@ -1196,16 +1433,17 @@ private theorem ite_updateRow {m : ℕ} (A : Matrix (Fin m) (Fin m) ℝ) (i j : 
       A.updateRow i (Function.update (A i) j (if c then a else b)) := by
   split_ifs <;> rfl
 
-/-- `Id.run` of a two-way branch between pure values. -/
+/-- `Id.run` of a two-way branch between pure values is the branch of the values. -/
 private theorem idRun_ite_pure {α : Type} (c : Prop) [Decidable c] (a b : α) :
     Id.run (if c then pure a else pure b : Id α) = if c then a else b := by
   split_ifs <;> rfl
 
-/-- The exact run of `incChol` on a `1 × 1` matrix. -/
+/-- The exact run of `GolubVanLoan.Chapter11.incChol` on a $1 \times 1$ matrix returns
+$\sqrt{a_{11}}$. -/
 private theorem incChol_zero (A Z : Matrix (Fin 1) (Fin 1) ℝ) :
     Id.run (incChol pure A Z) = Matrix.of fun _ _ => √(A 0 0) := rfl
 
-/-- The exact run of `incChol` in closed form: one bordering step. -/
+/-- The exact run of `GolubVanLoan.Chapter11.incChol` in closed form: one bordering step. -/
 private theorem incChol_succ {n : ℕ} (A Z : Matrix (Fin (n + 2)) (Fin (n + 2)) ℝ) :
     Id.run (incChol pure A Z) =
       let w : Fin (n + 1) → ℝ := fun i => if Z i.succ 0 = 0 then 0 else A i.succ 0 / √(A 0 0)
@@ -1217,16 +1455,23 @@ private theorem incChol_succ {n : ℕ} (A Z : Matrix (Fin (n + 2)) (Fin (n + 2))
   simp only [incChol, Id.run_bind, Id.run_pure, pure_bind, List.idRun_foldlM, idRun_ite_pure,
     ite_update, ite_updateRow, foldl_finRange_update, foldl_finRange_updateRow]
 
-/-- **`incChol` computes an incomplete Cholesky factor of a Stieltjes matrix** (§11.5.8, "if the
-algorithm runs to completion, then Equations (11.5.6), (11.5.7), and (11.5.8) are satisfied … this
-turns out to be the case if `A` is a Stieltjes matrix"; [the book's P11.5.4]). For a Stieltjes
-`A` and a symmetric pattern matrix `Z` with nonzero diagonal, every pivot `α` met by the exact run
-is positive (each `A₁` is again Stieltjes: Theorem 11.5.2 for the dropped entries of `w`, then the
-entrywise comparison theorem for the dropped entries of `B − wwᵀ`, a step the book's argument
-omits), and `H` satisfies the backbone's `Matrix.IsIC P A H` with positive diagonal, where `P` is
-the zero pattern of `Z`. If `P` avoids the nonzeros of `A`, `H` is an incomplete Cholesky factor
-in the sense of (11.5.6)–(11.5.8); with `Z` all ones, `H` is the Cholesky factor
-(`A = HHᵀ`). -/
+/-- **Section 11.5.8** of [golub2013matrix], `incChol` on a Stieltjes matrix. Let
+$A \in \mathbb{R}^{(n+1) \times (n+1)}$ be a Stieltjes matrix, and let
+$Z \in \mathbb{R}^{(n+1) \times (n+1)}$ be symmetric with nonzero diagonal. Let $H$ be the
+result of the exact run of `GolubVanLoan.Chapter11.incChol` on $A$ and $Z$, and let $P$ be the
+zero pattern of $Z$. Then $H$ is an incomplete Cholesky factor of $A$ for $P$ in the sense of
+`Matrix.IsIC`: $H$ is lower triangular, $H$ vanishes on $P$, and $(HH^T)_{ij} = a_{ij}$ for
+$(i, j) \notin P$. Moreover $H$ has positive diagonal.
+
+This is the claim of the source that "if the algorithm runs to completion, then Equations
+(11.5.6), (11.5.7), and (11.5.8) are satisfied … this turns out to be the case if $A$ is a
+Stieltjes matrix" (Problem P11.5.4 of the source). The consequences in the terms of the source
+are `GolubVanLoan.Chapter11.incChol_isIncompleteCholesky`.
+
+The proof shows that every pivot $\alpha$ of the run is positive, because each $A_1$ is again a
+Stieltjes matrix. For the dropped entries of $w$ this is Theorem 11.5.2. For the dropped entries
+of $B - ww^T$ it is the entrywise comparison theorem for M-matrices, a step that the argument of
+the source omits. -/
 theorem incChol_spec : ∀ {n : ℕ} {A Z : Matrix (Fin (n + 1)) (Fin (n + 1)) ℝ},
     A.IsStieltjes → Z.IsSymm → (∀ i, Z i i ≠ 0) →
     IsIC {x | Z x.1 x.2 = 0} A (Id.run (incChol pure A Z)) ∧
@@ -1337,9 +1582,15 @@ theorem incChol_spec : ∀ {n : ℕ} {A Z : Matrix (Fin (n + 1)) (Fin (n + 1)) �
       | zero => simpa using hd
       | succ i => simpa using hpos i
 
-/-- The consequences of `incChol_spec` the book states: with `Z` all ones `incChol` is the
-Cholesky factorization (`A = HHᵀ`), and when the dropped pattern avoids the nonzeros of `A` the
-result satisfies (11.5.6)–(11.5.8) for the set `P` of subdiagonal pairs where `Z` vanishes. -/
+/-- **Section 11.5.8** of [golub2013matrix], the consequences of
+`GolubVanLoan.Chapter11.incChol_spec` that the source states. Let
+$A \in \mathbb{R}^{(n+1) \times (n+1)}$ be a Stieltjes matrix, let $Z$ be symmetric with nonzero
+diagonal, and let $H$ be the result of the exact run of `GolubVanLoan.Chapter11.incChol` on $A$
+and $Z$. Then:
+* if every entry of $Z$ is nonzero, $H$ is the Cholesky factor of $A$: $A = HH^T$ with $H^T$
+  upper triangular with positive diagonal;
+* if $a_{ij} = 0$ wherever $z_{ij} = 0$, then $H$ satisfies (11.5.6)–(11.5.8) for the set
+  $P = \{(i, j) : j < i,\ z_{ij} = 0\}$ of subdiagonal positions where $Z$ vanishes. -/
 theorem incChol_isIncompleteCholesky {n : ℕ} {A Z : Matrix (Fin (n + 1)) (Fin (n + 1)) ℝ}
     (hA : A.IsStieltjes) (hZs : Z.IsSymm) (hZd : ∀ i, Z i i ≠ 0) :
     ((∀ i j, Z i j ≠ 0) → A.IsCholesky (Id.run (incChol pure A Z))ᵀ) ∧
@@ -1368,7 +1619,8 @@ section Programs
 
 variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 
-/-- **The Lin–Moré incomplete Cholesky factorization** of §11.5.8:
+/-- **Section 11.5.8** of [golub2013matrix], the Lin–Moré incomplete Cholesky factorization with
+fill parameter $p$:
 ```
 for j = 1:n
     v(j:n) = A(j:n, j) − H(j:n, 1:j−1) H(j, 1:j−1)ᵀ
@@ -1379,9 +1631,11 @@ for j = 1:n
     H(j+1:n, j) = v(j+1:n)/H(j,j)
 end
 ```
-The entries kept are the first `N_j + p` indices of `j:n` sorted by decreasing `|v_i|` (a stable
-sort, so ties go to the smaller index; the selection compares computed values, exactly), and the
-dropped entries of column `j` are set to zero without computing them. The count `N_j` is exact. -/
+
+The entries kept are the first $N_j + p$ indices of $j{:}n$ sorted by decreasing $|v_i|$. The
+sort is stable, so ties go to the smaller index, and the selection compares the computed values
+exactly. The dropped entries of column $j$ are set to zero without being computed. The count
+$N_j$ is exact. -/
 noncomputable def linMoreIC {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ) (p : ℕ) :
     M (Matrix (Fin n) (Fin n) ℝ) :=
   (List.finRange n).foldlM (fun (H : Matrix (Fin n) (Fin n) ℝ) j => do
@@ -1402,12 +1656,21 @@ noncomputable def linMoreIC {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ) (p : ℕ)
 
 end Programs
 
-/-- **The nonzero count of the Lin–Moré factor, corrected.** Every run of `linMoreIC`, whatever the
-rounding, has at most `N_j + p` nonzeros strictly below the diagonal in column `j`, so
-`nnz(H) ≤ pn + N₁ + ⋯ + N_n + n`. The printed bound `pn + N₁ + ⋯ + N_n` fails when the diagonal
-`v(j)` is not among the `N_j + p` largest entries of `|v(j:n)|` (then `N_j + p` subdiagonal entries
-are kept besides `H(j,j)`): for `A = [1 .9 .9; .9 1 0; .9 0 10]` and `p = 0`, column 2 keeps
-`v(3) = −.81` (`|v(3)| > v(2) = .19`) besides `H(2,2)`, and `nnz(H) = 6 > N₁ + N₂ + N₃ = 5`. -/
+/-- **Section 11.5.8** of [golub2013matrix], the nonzero count of the Lin–Moré factor. Let
+$A \in \mathbb{R}^{n \times n}$, $p \in \mathbb{N}$, and let $N_j$ be the number of nonzero
+entries of $A(j{:}n, j)$. Then every result $H$ of `GolubVanLoan.Chapter11.linMoreIC` in any
+rounding model `fp` satisfies
+$$\mathrm{nnz}(H) \le pn + N_1 + \dots + N_n + n.$$
+
+**Correction.** The source prints the bound $pn + N_1 + \dots + N_n$. It fails when the diagonal
+value $v(j)$ is not among the $N_j + p$ largest entries of $|v(j{:}n)|$, because then $N_j + p$
+subdiagonal entries are kept besides $H(j, j)$. For
+$$A = \begin{bmatrix} 1 & .9 & .9 \\ .9 & 1 & 0 \\ .9 & 0 & 10 \end{bmatrix}$$
+and $p = 0$, column 2 keeps $v(3) = -.81$ besides $H(2, 2)$, since $|v(3)| > v(2) = .19$, and
+$\mathrm{nnz}(H) = 6 > N_1 + N_2 + N_3 = 5$.
+
+The proof shows that column $j$ has at most $N_j + p$ nonzero entries strictly below the
+diagonal, whatever the rounding. -/
 theorem linMoreIC_nnz_le_add {n : ℕ} (fp : FloatingPoint.RoundingModel ℝ)
     (A : Matrix (Fin n) (Fin n) ℝ) (p : ℕ) :
     ∀ H ∈ (linMoreIC fp.round A p).run,
@@ -1501,24 +1764,31 @@ section Block
 
 variable {p q : ℕ}
 
-/-- The block tridiagonal matrix `[A₁ E₁ᵀ; E₁ A₂ E₂ᵀ; ⋱]` of §11.5.9 on `Fin p × Fin q` (block row
-and column indices first): diagonal blocks `Ad k`, subdiagonal blocks `E k` in block row `k + 1`,
-superdiagonal blocks `(E k)ᵀ`. -/
+/-- **Section 11.5.9** of [golub2013matrix], the block tridiagonal matrix
+$$\begin{bmatrix} A_1 & E_1^T & & \\ E_1 & A_2 & E_2^T & \\ & \ddots & \ddots & \ddots
+  \end{bmatrix}$$
+with $p$ block rows of size $q$: the diagonal blocks are $A_k$, the block in block row $k + 1$
+and block column $k$ is $E_k$, and the block in block row $k$ and block column $k + 1$ is
+$E_k^T$.
+
+The index type is `Fin p × Fin q`, with the block index first. -/
 def blockTridiag (Ad E : Fin p → Matrix (Fin q) (Fin q) ℝ) :
     Matrix (Fin p × Fin q) (Fin p × Fin q) ℝ :=
   Matrix.of fun x y => if y.1 = x.1 then Ad x.1 x.2 y.2
     else if (y.1 : ℕ) + 1 = x.1 then E y.1 x.2 y.2
     else if (x.1 : ℕ) + 1 = y.1 then E x.1 y.2 x.2 else 0
 
-/-- The block lower bidiagonal matrix `[G₁ 0; F₁ G₂ 0; ⋱]` of §11.5.9: diagonal blocks `Gd k`,
-subdiagonal blocks `F k` in block row `k + 1`. -/
+/-- **Section 11.5.9** of [golub2013matrix], the block lower bidiagonal matrix
+$$\begin{bmatrix} G_1 & & \\ F_1 & G_2 & \\ & \ddots & \ddots \end{bmatrix}$$
+with $p$ block rows of size $q$: the diagonal blocks are $G_k$, and the block in block row
+$k + 1$ and block column $k$ is $F_k$. -/
 def blockLowerBidiag (Gd F : Fin p → Matrix (Fin q) (Fin q) ℝ) :
     Matrix (Fin p × Fin q) (Fin p × Fin q) ℝ :=
   Matrix.of fun x y => if y.1 = x.1 then Gd x.1 x.2 y.2
     else if (y.1 : ℕ) + 1 = x.1 then F y.1 x.2 y.2 else 0
 
-/-- A row of a block lower bidiagonal matrix against a vector: the diagonal block and the one
-subdiagonal block. -/
+/-- A row of a block lower bidiagonal matrix times a vector involves only the diagonal block and the
+one subdiagonal block of that row. -/
 private theorem sum_blockLowerBidiag (Gd F : Fin p → Matrix (Fin q) (Fin q) ℝ) (k : Fin p)
     (i : Fin q) (f : Fin p × Fin q → ℝ) :
     ∑ y, blockLowerBidiag Gd F (k, i) y * f y =
@@ -1538,17 +1808,22 @@ private theorem sum_blockLowerBidiag (Gd F : Fin p → Matrix (Fin q) (Fin q) �
   rw [Finset.sum_congr rfl fun m _ => hm m, Finset.sum_add_distrib, Finset.sum_ite_eq']
   simp
 
-/-- `(F Fᵀ) = E (G Gᵀ)⁻¹ Eᵀ` for `F = E G⁻ᵀ`. -/
+/-- For $F = E G^{-T}$, $FF^T = E (GG^T)^{-1} E^T$. -/
 private theorem mul_transpose_eq {E G : Matrix (Fin q) (Fin q) ℝ} :
     E * (G⁻¹)ᵀ * (E * (G⁻¹)ᵀ)ᵀ = E * (G * Gᵀ)⁻¹ * Eᵀ := by
   rw [Matrix.mul_inv_rev, ← transpose_nonsing_inv, transpose_mul, transpose_transpose]
   simp only [Matrix.mul_assoc]
 
-/-- **§11.5.9, block Cholesky of a block tridiagonal matrix.** With `G₁G₁ᵀ = A₁` and, for each
-`k`, `F_k = E_kG_k⁻ᵀ` and `G_{k+1}G_{k+1}ᵀ = A_{k+1} − E_k(G_kG_kᵀ)⁻¹E_kᵀ` (nonsingular `G_k`),
-the block tridiagonal `A = [A₁ E₁ᵀ; E₁ A₂ E₂ᵀ; ⋱]` factors as `A = GGᵀ` with the block lower
-bidiagonal `G = [G₁ 0; F₁ G₂ 0; ⋱]`: the backbone's `Matrix.blockTridiagonal_eq_mul_transpose`,
-once the blocks are read as `ℕ`-indexed sequences. -/
+/-- **Section 11.5.9** of [golub2013matrix], the block Cholesky factorization of a block tridiagonal
+matrix. Let $A_k, E_k, G_k \in \mathbb{R}^{q \times q}$ for $k = 1, \dots, p$, with every $G_k$
+nonsingular, $G_1 G_1^T = A_1$, and
+$$G_{k+1} G_{k+1}^T = A_{k+1} - E_k (G_k G_k^T)^{-1} E_k^T.$$
+Put $F_k = E_k G_k^{-T}$. Then the block tridiagonal matrix $A$ with diagonal blocks $A_k$ and
+off-diagonal blocks $E_k$ factors as $A = GG^T$, with $G$ the block lower bidiagonal matrix with
+diagonal blocks $G_k$ and subdiagonal blocks $F_k$.
+
+The proof specializes `Matrix.blockTridiagonal_eq_mul_transpose`, with the blocks read as
+sequences indexed by $\mathbb{N}$. -/
 theorem blockTridiagonal_cholesky (Ad E Gd : Fin p → Matrix (Fin q) (Fin q) ℝ)
     (hG : ∀ k, IsUnit (Gd k)) (h0 : ∀ k : Fin p, (k : ℕ) = 0 → Gd k * (Gd k)ᵀ = Ad k)
     (hS : ∀ k l : Fin p, (k : ℕ) + 1 = l →
@@ -1585,12 +1860,21 @@ theorem blockTridiagonal_cholesky (Ad E Gd : Fin p → Matrix (Fin q) (Fin q) �
   · rw [hext' _ (i + 1) (by omega), hext' _ (i + 1) (by omega), hext' _ i (by omega),
       hS ⟨i, by omega⟩ ⟨i + 1, by omega⟩ rfl, hF, mul_transpose_eq, sub_add_cancel]
 
-/-- **(11.5.10)**, "with this strategy each `G̃_k` is lower bidiagonal": if `A_{k+1}` is
-tridiagonal, `E_k` diagonal and `Λ_k` symmetric tridiagonal, then `A_{k+1} − E_kΛ_kE_kᵀ` is
-tridiagonal, and the Cholesky factor of a positive definite tridiagonal matrix is bidiagonal: with
-`G̃ = Hᵀ`
-(`Matrix.IsCholesky T H`), `h_ij = 0` unless `j = i` or `j = i + 1`. (Tridiagonal matrices have no
-Cholesky fill.) -/
+/-- **Equation (11.5.10)** of [golub2013matrix], "with this strategy each $\tilde G_k$ is lower
+bidiagonal". Let $A_{k+1}, \Lambda_k \in \mathbb{R}^{q \times q}$ be tridiagonal and let $E_k$
+be diagonal. Then:
+* $A_{k+1} - E_k \Lambda_k E_k^T$ is tridiagonal;
+* if $T$ is tridiagonal with Cholesky factorization $T = H^T H$, $H$ upper triangular with
+  positive diagonal, then $h_{ij} = 0$ unless $j = i$ or $j = i + 1$.
+
+So the Cholesky factor $\tilde G = H^T$ of a tridiagonal matrix is lower bidiagonal: tridiagonal
+matrices have no Cholesky fill.
+
+**Generalization.** The source takes $\Lambda_k$ symmetric tridiagonal. The statement needs only
+$\Lambda_k$ tridiagonal.
+
+"Tridiagonal" means that the entries with $|i - j| > 1$ vanish. The Cholesky factorization is
+`Matrix.IsCholesky T H`. -/
 theorem equation_11_5_10 {Ak Λ : Matrix (Fin q) (Fin q) ℝ} (e : Fin q → ℝ)
     (hA : ∀ i j : Fin q, (i : ℕ) + 1 < j ∨ (j : ℕ) + 1 < i → Ak i j = 0)
     (hΛ : ∀ i j : Fin q, (i : ℕ) + 1 < j ∨ (j : ℕ) + 1 < i → Λ i j = 0) :
@@ -1619,9 +1903,13 @@ theorem equation_11_5_10 {Ak Λ : Matrix (Fin q) (Fin q) ℝ} (e : Fin q → ℝ
         omega
       exact hTH.apply_eq_zero_of_not_isCholeskyFill hgt hnf
 
-/-- §11.5.9, the display after (11.5.10): the block lower bidiagonal system
-`[G̃₁ 0; F̃₁ G̃₂ 0; ⋱] w = r` with `F̃_k = E_kG̃_k⁻ᵀ` is solved by `G̃₁w₁ = r₁`,
-`G̃_{k+1}w_{k+1} = r_{k+1} − E_kG̃_k⁻ᵀw_k` — "the `F̃_k` … do not have to actually be formed". -/
+/-- **Section 11.5.9** of [golub2013matrix], the display after (11.5.10). Let
+$\tilde G_k, E_k \in \mathbb{R}^{q \times q}$, put $\tilde F_k = E_k \tilde G_k^{-T}$, and let
+$w, r \in \mathbb{R}^{pq}$ have blocks $w_k, r_k$. Then the block lower bidiagonal system with
+diagonal blocks $\tilde G_k$ and subdiagonal blocks $\tilde F_k$ holds, $\tilde G w = r$, if and
+only if
+$$\tilde G_1 w_1 = r_1, \qquad \tilde G_{k+1} w_{k+1} = r_{k+1} - E_k \tilde G_k^{-T} w_k.$$
+So "the $\tilde F_k$ … do not have to actually be formed". -/
 theorem blockIC_forwardSolve (Gd E : Fin p → Matrix (Fin q) (Fin q) ℝ)
     (w r : Fin p × Fin q → ℝ) :
     blockLowerBidiag Gd (fun k => E k * ((Gd k)⁻¹)ᵀ) *ᵥ w = r ↔
@@ -1665,9 +1953,15 @@ end Block
 
 /-! ### §11.5.10: saddle-point systems -/
 
-/-- §11.5.10: "if `A` is nonsingular and `C = 0`, then
-`[A B₁; B₂ᵀ 0] = [I 0; B₂ᵀA⁻¹ I] [A 0; 0 S] [I A⁻¹B₁; 0 I]`, `S = −B₂ᵀA⁻¹B₁`." (The book first
-writes the system as `[A B₁ᵀ; B₂ −C]` and then transposes the off-diagonal blocks.) -/
+/-- **Section 11.5.10** of [golub2013matrix], the block factorization of a saddle-point matrix. Let
+$A \in \mathbb{R}^{n \times n}$ be nonsingular and let $B_1, B_2 \in \mathbb{R}^{n \times m}$.
+Then, with $S = -B_2^T A^{-1} B_1$,
+$$\begin{bmatrix} A & B_1 \\ B_2^T & 0 \end{bmatrix} = \begin{bmatrix} I & 0 \\ B_2^T A^{-1} & I
+  \end{bmatrix} \begin{bmatrix} A & 0 \\ 0 & S \end{bmatrix} \begin{bmatrix} I & A^{-1} B_1 \\ 0
+  & I \end{bmatrix}.$$
+
+This is the case $C = 0$ of the source. The source first writes the system as
+$[A\ B_1^T;\ B_2\ -C]$ and then transposes the off-diagonal blocks. -/
 theorem saddlePoint_factorization {n m : ℕ} {A : Matrix (Fin n) (Fin n) ℝ} (hA : IsUnit A)
     (B₁ B₂ : Matrix (Fin n) (Fin m) ℝ) :
     fromBlocks A B₁ B₂ᵀ 0 = fromBlocks 1 0 (B₂ᵀ * A⁻¹) 1 * fromBlocks A 0 0 (-(B₂ᵀ * A⁻¹ * B₁)) *
@@ -1679,9 +1973,13 @@ theorem saddlePoint_factorization {n m : ℕ} {A : Matrix (Fin n) (Fin n) ℝ} (
   congr 1
   abel
 
-/-- §11.5.10: with `H₁ = (A + Aᵀ)/2`, `H₂ = (A − Aᵀ)/2`,
-`[A B; −Bᵀ C] = [H₁ 0; 0 C] + [H₂ B; −Bᵀ 0] = K₁ + K₂`, a splitting into a symmetric `K₁` — positive
-definite when `C` is and `xᵀAx > 0` for `x ≠ 0` — and a skew-symmetric `K₂`. -/
+/-- **Section 11.5.10** of [golub2013matrix], the symmetric and skew-symmetric splitting. Let
+$A \in \mathbb{R}^{n \times n}$, $B \in \mathbb{R}^{n \times m}$ and
+$C \in \mathbb{R}^{m \times m}$, and put $H_1 = (A + A^T)/2$ and $H_2 = (A - A^T)/2$. Then
+$$\begin{bmatrix} A & B \\ -B^T & C \end{bmatrix} = \begin{bmatrix} H_1 & 0 \\ 0 & C
+  \end{bmatrix} + \begin{bmatrix} H_2 & B \\ -B^T & 0 \end{bmatrix} = K_1 + K_2,$$
+where $K_1$ is symmetric if $C$ is symmetric, $K_2$ is skew-symmetric, and $K_1$ is positive
+definite if $C$ is positive definite and $x^T A x > 0$ for all $x \neq 0$. -/
 theorem saddlePoint_splitting {n m : ℕ} (A : Matrix (Fin n) (Fin n) ℝ)
     (B : Matrix (Fin n) (Fin m) ℝ) (C : Matrix (Fin m) (Fin m) ℝ) :
     fromBlocks A B (-Bᵀ) C = fromBlocks ((1 / 2 : ℝ) • (A + Aᵀ)) 0 0 C +
@@ -1734,13 +2032,22 @@ theorem saddlePoint_splitting {n m : ℕ} (A : Matrix (Fin n) (Fin n) ℝ)
 
 /-! ### §11.5.11: domain decomposition -/
 
-/-- §11.5.11: "for either the multiplicative or additive approach, it is possible to relate
-`u^(new)` to `u^(old)` via an expression of the form `u^(new) = u^(old) + M⁻¹(f − Au^(old))`". For a
-nonsingular `A`, subdomain solves given by projection pairs `(K_i, L_i)` (the exact subdomain solves
-of the book are `K_i = L_i`, `A`-orthogonal projections for symmetric positive definite `A`), a
-multiplicative sweep over the subdomains in the order `l` and an additive sweep with weights `ω`
-are both of this form, with a fixed linear `M⁻¹` (independent of `f` and `u^(old)`):
-`M⁻¹ = A⁻¹(I − R)` for the residual propagation operator `R` of the sweep. -/
+/-- **Section 11.5.11** of [golub2013matrix], "for either the multiplicative or additive approach,
+it is possible to relate $u^{(\mathrm{new})}$ to $u^{(\mathrm{old})}$ via an expression of the
+form $u^{(\mathrm{new})} = u^{(\mathrm{old})} + M^{-1}(f - Au^{(\mathrm{old})})$". Let
+$A \in \mathbb{R}^{n \times n}$ be nonsingular, and let $(K_i, L_i)_{i \in \iota}$ be a finite
+family of nondegenerate pairs of subspaces for $A$, which define the subdomain solves. Then:
+* for every order $l$ of the subdomains, there is a linear map $B$ such that the multiplicative
+  sweep over the subdomains in the order $l$ maps $u$ to $u + B(f - Au)$ for all $f$ and $u$;
+* for all weights $\omega$, there is a linear map $B$ such that the additive step with weights
+  $\omega$ maps $u$ to $u + B(f - Au)$ for all $f$ and $u$.
+
+The map $B$ plays the part of $M^{-1}$ and does not depend on $f$ or $u$; it is $A^{-1}(I - R)$
+for the residual propagation operator $R$ of the sweep. The exact subdomain solves of the source
+are the pairs with $K_i = L_i$, which give $A$-orthogonal projections when $A$ is symmetric
+positive definite. The pairs are `Projection.IsNondegeneratePair`, and the sweeps are
+`Projection.multiplicativeStep` and `Projection.additiveStep`. The order $l$ is a list of
+subdomains. -/
 theorem schwarz_update_affine {n : ℕ} {A : Matrix (Fin n) (Fin n) ℝ} (hA : IsUnit A) {ι : Type*}
     [Fintype ι] (K L : ι → Submodule ℝ (EuclideanSpace ℝ (Fin n)))
     (h : ∀ i, Projection.IsNondegeneratePair (toEuclideanLin A) (K i) (L i)) :
@@ -1769,40 +2076,60 @@ section DomainDecomposition
 
 variable {a b c d e : ℕ}
 
-/-- The interior block `diag(A₁, A₂, A₃)` of (11.5.11), on `Fin a ⊕ (Fin b ⊕ Fin c)`. -/
+/-- **Equation (11.5.11)** of [golub2013matrix], the interior block $\mathrm{diag}(A_1, A_2, A_3)$
+of the domain-decomposition matrix.
+
+The index type is `Fin a ⊕ (Fin b ⊕ Fin c)`. -/
 abbrev ddInterior (A₁ : Matrix (Fin a) (Fin a) ℝ) (A₂ : Matrix (Fin b) (Fin b) ℝ)
     (A₃ : Matrix (Fin c) (Fin c) ℝ) :
     Matrix (Fin a ⊕ (Fin b ⊕ Fin c)) (Fin a ⊕ (Fin b ⊕ Fin c)) ℝ :=
   fromBlocks A₁ 0 0 (fromBlocks A₂ 0 0 A₃)
 
-/-- The interior-to-interface coupling `[B C; D 0; 0 E]` of (11.5.11). -/
+/-- **Equation (11.5.11)** of [golub2013matrix], the coupling from the interface unknowns to the
+interior unknowns,
+$$\begin{bmatrix} B & C \\ D & 0 \\ 0 & E \end{bmatrix}.$$
+-/
 abbrev ddCoupling (B : Matrix (Fin a) (Fin d) ℝ) (C : Matrix (Fin a) (Fin e) ℝ)
     (D : Matrix (Fin b) (Fin d) ℝ) (E : Matrix (Fin c) (Fin e) ℝ) :
     Matrix (Fin a ⊕ (Fin b ⊕ Fin c)) (Fin d ⊕ Fin e) ℝ :=
   fromBlocks B C (fromRows D 0) (fromRows 0 E)
 
-/-- The interface-to-interior coupling `[F H 0; G 0 K]` of (11.5.11). -/
+/-- **Equation (11.5.11)** of [golub2013matrix], the coupling from the interior unknowns to the
+interface unknowns,
+$$\begin{bmatrix} F & H & 0 \\ G & 0 & K \end{bmatrix}.$$
+-/
 abbrev ddCoupling' (F : Matrix (Fin d) (Fin a) ℝ) (H : Matrix (Fin d) (Fin b) ℝ)
     (G : Matrix (Fin e) (Fin a) ℝ) (K : Matrix (Fin e) (Fin c) ℝ) :
     Matrix (Fin d ⊕ Fin e) (Fin a ⊕ (Fin b ⊕ Fin c)) ℝ :=
   fromBlocks F (fromCols H 0) G (fromCols 0 K)
 
-/-- The multipliers `[FA₁⁻¹ HA₂⁻¹ 0; GA₁⁻¹ 0 KA₃⁻¹]` below the diagonal of the book's `L`. -/
+/-- **Equation (11.5.11)** of [golub2013matrix], the multipliers below the diagonal of the factor
+$L$ in the block LU factorization,
+$$\begin{bmatrix} FA_1^{-1} & HA_2^{-1} & 0 \\ GA_1^{-1} & 0 & KA_3^{-1} \end{bmatrix}.$$
+-/
 noncomputable abbrev ddMultipliers (A₁ : Matrix (Fin a) (Fin a) ℝ)
     (A₂ : Matrix (Fin b) (Fin b) ℝ) (A₃ : Matrix (Fin c) (Fin c) ℝ) (F : Matrix (Fin d) (Fin a) ℝ)
     (H : Matrix (Fin d) (Fin b) ℝ) (G : Matrix (Fin e) (Fin a) ℝ) (K : Matrix (Fin e) (Fin c) ℝ) :
     Matrix (Fin d ⊕ Fin e) (Fin a ⊕ (Fin b ⊕ Fin c)) ℝ :=
   fromBlocks (F * A₁⁻¹) (fromCols (H * A₂⁻¹) 0) (G * A₁⁻¹) (fromCols 0 (K * A₃⁻¹))
 
-/-- **(11.5.11) and the factorization after it, corrected.** For the nonoverlapping decomposition
-of the L-shaped domain, with interior blocks `A₁, A₂, A₃` nonsingular,
-`A = [A₁ 0 0 B C; 0 A₂ 0 D 0; 0 0 A₃ 0 E; F H 0 Q₄ 0; G 0 K 0 Q₅]` factors as `A = L U` with `L`
-unit block lower triangular (`FA₁⁻¹, HA₂⁻¹, GA₁⁻¹, KA₃⁻¹` below the diagonal, as printed) and `U`
-block upper triangular with the Schur complement `S = Q − [F H 0; G 0 K] diag(A₁, A₂, A₃)⁻¹ [B C;
-D 0; 0 E]` in its interface block. The diagonal blocks of `S` are the book's
-`S₄ = Q₄ − FA₁⁻¹B − HA₂⁻¹D` and `S₅ = Q₅ − GA₁⁻¹C − KA₃⁻¹E`, but its off-diagonal blocks are
-`−FA₁⁻¹C` and `−GA₁⁻¹B`, not `0` as printed: both interfaces touch `Ω₁`
-(`equation_11_5_11_counterexample`). -/
+/-- **Equation (11.5.11)** of [golub2013matrix] and the factorization after it. Consider the
+nonoverlapping decomposition of the L-shaped domain, with interior blocks $A_1, A_2, A_3$
+nonsingular and the matrix
+$$A = \begin{bmatrix} A_1 & 0 & 0 & B & C \\ 0 & A_2 & 0 & D & 0 \\ 0 & 0 & A_3 & 0 & E \\ F & H
+  & 0 & Q_4 & 0 \\ G & 0 & K & 0 & Q_5 \end{bmatrix}.$$
+Then $A = LU$, where $L$ is unit block lower triangular with the multipliers
+$FA_1^{-1}, HA_2^{-1}, GA_1^{-1}, KA_3^{-1}$ below the diagonal, as printed, and $U$ is block
+upper triangular with $\mathrm{diag}(A_1, A_2, A_3)$ and the coupling blocks in its first block
+row, and the Schur complement
+$$S = \begin{bmatrix} S_4 & -FA_1^{-1}C \\ -GA_1^{-1}B & S_5 \end{bmatrix}, \qquad S_4 = Q_4 -
+  FA_1^{-1}B - HA_2^{-1}D, \quad S_5 = Q_5 - GA_1^{-1}C - KA_3^{-1}E,$$
+in its interface block.
+
+**Correction.** The source prints $S = \mathrm{diag}(S_4, S_5)$, with zero off-diagonal blocks.
+The off-diagonal blocks are $-FA_1^{-1}C$ and $-GA_1^{-1}B$, because both interfaces touch
+$\Omega_1$. The printed factorization is false by
+`GolubVanLoan.Chapter11.equation_11_5_11_counterexample`. -/
 theorem equation_11_5_11_blockLU {A₁ : Matrix (Fin a) (Fin a) ℝ} {A₂ : Matrix (Fin b) (Fin b) ℝ}
     {A₃ : Matrix (Fin c) (Fin c) ℝ} (h₁ : IsUnit A₁) (h₂ : IsUnit A₂) (h₃ : IsUnit A₃)
     (B : Matrix (Fin a) (Fin d) ℝ) (C : Matrix (Fin a) (Fin e) ℝ) (D : Matrix (Fin b) (Fin d) ℝ)
@@ -1824,9 +2151,11 @@ theorem equation_11_5_11_blockLU {A₁ : Matrix (Fin a) (Fin a) ℝ} {A₂ : Mat
     nonsing_inv_mul _ h₁', nonsing_inv_mul _ h₂', nonsing_inv_mul _ h₃', Matrix.mul_one]
   congr 2 <;> abel
 
-/-- The printed factorization of §11.5.11 (with `S₄`, `S₅` on the diagonal of `U` and zero
-off-diagonal interface blocks) is **false**: with every block `1 × 1` and equal to `1`, the
-`(4, 5)` block of `LU` is `FA₁⁻¹C = 1`, while that of `A` is `0`. -/
+/-- **Equation (11.5.11)** of [golub2013matrix], a counterexample to the printed factorization. Take
+every block $1 \times 1$ and equal to $1$. Then $A \neq LU_{\mathrm{printed}}$, where
+$U_{\mathrm{printed}}$ has $S_4$ and $S_5$ on its interface diagonal and zero off-diagonal
+interface blocks: the $(4, 5)$ block of $LU_{\mathrm{printed}}$ is $FA_1^{-1}C = 1$, while that
+of $A$ is $0$. -/
 theorem equation_11_5_11_counterexample :
     let o : Matrix (Fin 1) (Fin 1) ℝ := 1
     fromBlocks (ddInterior o o o) (ddCoupling o o o o) (ddCoupling' o o o o) (fromBlocks o 0 0 o) ≠
@@ -1837,10 +2166,15 @@ theorem equation_11_5_11_counterexample :
   have := congrFun (congrFun h (Sum.inr (Sum.inl 0))) (Sum.inr (Sum.inr 0))
   simp [o, fromBlocks_multiply, fromCols_mul_fromRows] at this
 
-/-- §11.5.11, "a consequence of (b) is that `A − M` has low rank": for the block ILU preconditioner
-`M = L U_M`, where `U_M` is `U` with approximations `St₄ ≈ S₄`, `St₅ ≈ S₅` in place of the interface
-Schur complement, `A − M = L (U − U_M)` has rank at most the number `d + e` of interface
-unknowns. -/
+/-- **Section 11.5.11** of [golub2013matrix], "a consequence of (b) is that $A - M$ has low rank".
+Let $A$ be the domain-decomposition matrix of (11.5.11) with $A_1, A_2, A_3$ nonsingular, let
+$\tilde S_4 \in \mathbb{R}^{d \times d}$ and $\tilde S_5 \in \mathbb{R}^{e \times e}$ be
+arbitrary, and let $M = L U_M$ be the block ILU preconditioner, where $U_M$ is $U$ with
+$\mathrm{diag}(\tilde S_4, \tilde S_5)$ in place of the interface Schur complement. Then
+$$\operatorname{rank}(A - M) \le d + e,$$
+the number of interface unknowns.
+
+The proof writes $A - M = L(U - U_M)$. -/
 theorem ddPreconditioner_rank_le {A₁ : Matrix (Fin a) (Fin a) ℝ} {A₂ : Matrix (Fin b) (Fin b) ℝ}
     {A₃ : Matrix (Fin c) (Fin c) ℝ} (h₁ : IsUnit A₁) (h₂ : IsUnit A₂) (h₃ : IsUnit A₃)
     (B : Matrix (Fin a) (Fin d) ℝ) (C : Matrix (Fin a) (Fin e) ℝ) (D : Matrix (Fin b) (Fin d) ℝ)
@@ -1878,12 +2212,17 @@ open Krylov
 
 variable {n m : ℕ}
 
-/-- **Algorithm 11.5.2 (Preconditioned `m`-step GMRES).** "If `A ∈ ℝ^{n×n}` and `M ∈ ℝ^{n×n}`
-are nonsingular, `b ∈ ℝⁿ`, `Ax₀ ≈ b`, and `m` is a positive iteration limit, then this algorithm
-computes `x̃ ∈ ℝⁿ` where either `x̃` solves `Ax = b` or minimizes `‖M⁻¹(Ax − b)‖₂` over the affine
-space `x₀ + 𝒦(M⁻¹A, M⁻¹r₀, m)` where `r₀ = b − Ax₀`": Algorithm 11.4.2 with `r₀` replaced by
-`z₀`, `M z₀ = r₀`, and `Aq_k` by `z_k`, `M z_k = Aq_k`; the same rotations and back substitution
-(`gmresCore`). The solves with `M` are the routine `solveM`. -/
+/-- **Algorithm 11.5.2** of [golub2013matrix] (Preconditioned $m$-step GMRES). "If
+$A \in \mathbb{R}^{n \times n}$ and $M \in \mathbb{R}^{n \times n}$ are nonsingular,
+$b \in \mathbb{R}^n$, $Ax_0 \approx b$, and $m$ is a positive iteration limit, then this
+algorithm computes $\tilde x \in \mathbb{R}^n$ where either $\tilde x$ solves $Ax = b$ or
+minimizes $\|M^{-1}(Ax - b)\|_2$ over the affine space
+$x_0 + \mathcal{K}(M^{-1}A, M^{-1}r_0, m)$ where $r_0 = b - Ax_0$." The algorithm is Algorithm
+11.4.2 with $r_0$ replaced by $z_0$, $M z_0 = r_0$, and $Aq_k$ replaced by $z_k$,
+$M z_k = Aq_k$; the rotations and the back substitution are the same.
+
+The program calls `GolubVanLoan.Chapter11.gmresCore`, the loop of Algorithm 11.4.2, with the
+operator $q \mapsto M^{-1}(Aq)$. The solves with $M$ are the routine `solveM`. -/
 noncomputable def algorithm_11_5_2 {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
     (A : Matrix (Fin n) (Fin n) ℝ) (solveM : (Fin n → ℝ) → M (Fin n → ℝ)) (b x₀ : Fin n → ℝ)
     (m : ℕ) : M (GMRESState n m × (Fin n → ℝ)) := do
@@ -1893,12 +2232,24 @@ noncomputable def algorithm_11_5_2 {M : Type → Type} [Monad M] (rnd : ℝ → 
     let w ← GolubVanLoan.Chapter01.algorithm_1_1_3 rnd A q 0
     solveM w) x₀ z₀ m
 
-/-- **Exact semantics of Algorithm 11.5.2** (`A`, `M` nonsingular, `solveM = M⁻¹`): the run is
-GMRES on the preconditioned system `(M⁻¹A) x = M⁻¹b` — it makes `k = min(m, grade)` Arnoldi steps
-on `z₀ = M⁻¹r₀`, `x̃` minimizes `‖M⁻¹(b − Ax)‖₂` over `x₀ + 𝒦(M⁻¹A, z₀, k)`
-(`Krylov.IsMinResidualIterate`), `|ρ_k| = ‖M⁻¹(b − Ax̃)‖₂` (the book's closing remark, up to the
-sign of `ρ_k`, which depends on the rotations), and if the loop stopped on `β_k = 0` then
-`Ax̃ = b`. From `gmresCore_spec` with `B = M⁻¹A`. -/
+/-- **Algorithm 11.5.2** of [golub2013matrix], exact semantics. Let
+$A, M \in \mathbb{R}^{n \times n}$ be nonsingular, let $b, x_0 \in \mathbb{R}^n$ and
+$m \in \mathbb{N}$, and run the algorithm in exact arithmetic with the solve $z = M^{-1} r$. Put
+$z_0 = M^{-1}(b - Ax_0)$. Then the run is GMRES for the preconditioned system
+$M^{-1}A x = M^{-1}b$:
+* it makes $k = \min(m, g)$ Arnoldi steps, where $g$ is the grade of $z_0$ with respect to
+  $M^{-1}A$;
+* the result $\tilde x$ minimizes $\|M^{-1}(b - Ax)\|_2$ over
+  $x_0 + \mathcal{K}(M^{-1}A, z_0, k)$;
+* the entry $\rho_k$ of the rotated right-hand side satisfies
+  $|\rho_k| = \|M^{-1}(b - A\tilde x)\|_2$;
+* if the loop stopped because $\beta_k = 0$, then $A\tilde x = b$.
+
+**Reading.** The closing remark of the source identifies $\rho_k$ with the residual norm. The
+sign of $\rho_k$ depends on the rotations, so the statement gives $|\rho_k|$.
+
+The minimization is `Krylov.IsMinResidualIterate` for $M^{-1}A$, and the grade is
+`Krylov.grade`. The proof applies `GolubVanLoan.Chapter11.gmresCore_spec` with $B = M^{-1}A$. -/
 theorem algorithm_11_5_2_spec {A Mp : Matrix (Fin n) (Fin n) ℝ} (hA : IsUnit A)
     (hM : IsUnit Mp) (b x₀ : Fin n → ℝ) (m : ℕ) :
     let out := Id.run (algorithm_11_5_2 pure A (fun r => pure (Mp⁻¹ *ᵥ r)) b x₀ m)

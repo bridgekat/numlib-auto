@@ -10,55 +10,169 @@ import NumlibSurface.GolubVanLoan.Chapter03.Section04
 import NumlibSurface.GolubVanLoan.Chapter04.Section01
 
 /-!
-# Golub–Van Loan §4.2: positive definite systems
+# Golub and Van Loan, Section 4.2: Positive definite systems
 
-Surface file for [golub2013matrix] §4.2: positive definiteness of a general (unsymmetric) matrix
-(Theorems 4.2.1–4.2.6 with Corollaries 4.2.2 and 4.2.4, and the backward error (4.2.7) of LU
-without pivoting that Theorem 4.2.6 supports), the Cholesky factorization (Theorem
-4.2.7) and gaxpy Cholesky (Algorithm 4.2.1) with its rounding bridge, the facts of §4.2.6 on the
-stability of the Cholesky process (with Wilkinson's backward error bound for the computed factor and
-the two triangular solves), the pivoted outer-product `L D Lᵀ` (Algorithm 4.2.2, (4.2.10)), the
-semidefinite case (Theorem 4.2.8, (4.2.11), (4.2.17)) with the exact specification of Algorithm
-4.2.2 through its invariant (4.2.16), the block equations of block Cholesky
-((4.2.18)–(4.2.19)) and the block algorithms, recursive (Algorithm 4.2.3) and nonrecursive
-(Algorithm 4.2.4), with their exact specifications.
+This module formalizes §4.2 of [golub2013matrix]. A matrix $A \in \mathbb{R}^{n \times n}$ is
+positive definite if $x^T A x > 0$ for every nonzero $x \in \mathbb{R}^n$; no symmetry is assumed.
+Such a matrix is positive definite exactly when its symmetric part $T = (A + A^T)/2$ is (Theorems
+4.2.1–4.2.3), it has an LU factorization (Corollary 4.2.4), and Theorem 4.2.6 bounds the growth
+$\| |L| |U| \|_F$ of its factors, which gives the backward error (4.2.7) of Gaussian elimination
+without pivoting. A symmetric positive definite matrix has a unique Cholesky factorization
+$A = GG^T$ (Theorem 4.2.7), and the entries of $G$ are bounded by the diagonal of $A$. A symmetric
+positive semidefinite matrix satisfies the entry bounds of Theorem 4.2.8 and has a pivoted
+factorization $PAP^T = LDL^T$ that reveals its rank, (4.2.17).
+
+The module defines gaxpy Cholesky (Algorithm 4.2.1), the outer product $LDL^T$ factorization with
+diagonal pivoting (Algorithm 4.2.2), and recursive and nonrecursive block Cholesky (Algorithms 4.2.3
+and 4.2.4) as programs. It proves a rounding bridge and Wilkinson's backward error bound for
+Algorithm 4.2.1, and the exact correctness of all four algorithms, with the invariant (4.2.16) of
+Algorithm 4.2.2 and the block equations (4.2.18) and (4.2.19). The proofs specialize
+`Numlib.LinearAlgebra.Matrix.HermitianPart`, `Numlib.LinearAlgebra.Matrix.Cholesky`,
+`Numlib.Analysis.Matrix.OperatorNorm` and `Numlib.FloatingPoint.LU`.
+
+## Main definitions
+
+* §4.2, `GolubVanLoan.Chapter04.IsPositiveDefinite`: $x^T A x > 0$ for every nonzero $x$, without
+  symmetry.
+* Theorem 4.2.5, `GolubVanLoan.Chapter04.blockPD`: the matrix $\begin{bmatrix} \alpha & v^T \\ v & B
+  \end{bmatrix} + \begin{bmatrix} 0 & -w^T \\ w & C \end{bmatrix}$ of the theorem.
+* Algorithm 4.2.1, `GolubVanLoan.Chapter04.algorithm_4_2_1`: gaxpy Cholesky.
+* §4.2.6, `GolubVanLoan.Chapter04.solveCholesky`: the two triangular solves with the computed
+  Cholesky factor.
+* Algorithm 4.2.2, `GolubVanLoan.Chapter04.algorithm_4_2_2`: outer product $LDL^T$ with diagonal
+  pivoting, with its pivot `GolubVanLoan.Chapter04.diagPivot` and its step
+  `GolubVanLoan.Chapter04.ldltPivotStep`.
+* (4.2.16), `GolubVanLoan.Chapter04.pivotedLower` and `GolubVanLoan.Chapter04.pivotedMiddle`: the
+  factors $L_k$ and $\operatorname{diag}(D_k, A_k)$ after $k$ steps of Algorithm 4.2.2, and
+  `GolubVanLoan.Chapter04.pivotElim`, one exact elimination step.
+* Algorithm 4.2.3, `GolubVanLoan.Chapter04.algorithm_4_2_3`: recursive block Cholesky, with its
+  parts `GolubVanLoan.Chapter04.choleskyLower`, `GolubVanLoan.Chapter04.solveRowsLower` and
+  `GolubVanLoan.Chapter04.mulTransposeDiff`.
+* (4.2.19), `GolubVanLoan.Chapter04.blockOf` and `GolubVanLoan.Chapter04.updateBlock`: reading and
+  overwriting the block $A_{ij}$.
+* Algorithm 4.2.4, `GolubVanLoan.Chapter04.algorithm_4_2_4`: nonrecursive block Cholesky, with its
+  step `GolubVanLoan.Chapter04.blockCholeskyStep`.
+
+## Main results
+
+* §4.2.2, `GolubVanLoan.Chapter04.isPositiveDefinite_iff`: $A$ is positive definite if and only if
+  $T = (A + A^T)/2$ is symmetric positive definite.
+* Theorem 4.2.1, `GolubVanLoan.Chapter04.theorem_4_2_1`: if $A$ is positive definite and $X$ has
+  full column rank, then $X^T A X$ is positive definite.
+* Corollary 4.2.2, `GolubVanLoan.Chapter04.corollary_4_2_2`: the principal submatrices of a positive
+  definite matrix are positive definite, and its diagonal is positive.
+* Theorem 4.2.3, `GolubVanLoan.Chapter04.theorem_4_2_3`: $A$ is positive definite if and only if $T$
+  has positive eigenvalues.
+* Corollary 4.2.4, `GolubVanLoan.Chapter04.corollary_4_2_4`: a positive definite matrix has an LU
+  factorization, and the diagonal of $U$ is positive.
+* Theorem 4.2.5, `GolubVanLoan.Chapter04.theorem_4_2_5`: one step of elimination on a positive
+  definite matrix, (4.2.1)–(4.2.3).
+* Theorem 4.2.6, `GolubVanLoan.Chapter04.theorem_4_2_6`: $\| |L| |U| \|_F \le n (\|T\|_2 + \|S
+  T^{-1} S\|_2)$.
+* (4.2.7), `GolubVanLoan.Chapter04.equation_4_2_7`: the backward error of Gaussian elimination
+  without pivoting on a positive definite matrix.
+* §4.2.2, `GolubVanLoan.Chapter04.l2_opNorm_symmPart_le`: $\|T\|_2 \le \|A\|_2$.
+* Theorem 4.2.7, `GolubVanLoan.Chapter04.theorem_4_2_7`: existence and uniqueness of the Cholesky
+  factorization.
+* (4.2.9), `GolubVanLoan.Chapter04.equation_4_2_9`: the column equations of $A = GG^T$.
+* Algorithm 4.2.1, `GolubVanLoan.Chapter04.algorithm_4_2_1_rounds`,
+  `GolubVanLoan.Chapter04.algorithm_4_2_1_run_nonempty` and
+  `GolubVanLoan.Chapter04.algorithm_4_2_1_spec`: every run with a nonzero diagonal is a computed
+  Cholesky factorization, the runs exist over a total rounding model, and the exact run is the
+  Cholesky factor.
+* §4.2.6, `GolubVanLoan.Chapter04.cholesky_entry_bound`: $g_{ij}^2 \le a_{ii}$.
+* §4.2.6, `GolubVanLoan.Chapter04.l2_opNorm_cholesky_sq`: $\|G\|_2^2 = \|A\|_2$.
+* §4.2.6, `GolubVanLoan.Chapter04.condNumber_eq_div_eigenvalues`: $\kappa_2(A) = \lambda_{\max}(A) /
+  \lambda_{\min}(A)$.
+* §4.2.6, `GolubVanLoan.Chapter04.cholesky_backward_error`: Wilkinson's backward error bound for the
+  solution computed through Algorithm 4.2.1.
+* (4.2.10), `GolubVanLoan.Chapter04.equation_4_2_10`: $PAP^T = LDL^T$ with
+  $d_1 \ge \dots \ge d_n > 0$ for a symmetric positive definite $A$.
+* (4.2.11), `GolubVanLoan.Chapter04.equation_4_2_11`: a symmetric positive semidefinite matrix of
+  rank $r$ has nonnegative eigenvalues, exactly $r$ of them nonzero.
+* Theorem 4.2.8, `GolubVanLoan.Chapter04.theorem_4_2_8`: the bounds (4.2.12)–(4.2.15) on the entries
+  of a symmetric positive semidefinite matrix, also stated one by one in
+  `GolubVanLoan.Chapter04.theorem_4_2_8_a`, `GolubVanLoan.Chapter04.theorem_4_2_8_b`,
+  `GolubVanLoan.Chapter04.theorem_4_2_8_c` and `GolubVanLoan.Chapter04.theorem_4_2_8_d`.
+* (4.2.16), `GolubVanLoan.Chapter04.equation_4_2_16`: the factorization of the state after $k$ steps
+  of Algorithm 4.2.2.
+* Algorithm 4.2.2, `GolubVanLoan.Chapter04.algorithm_4_2_2_spec`: the exact run gives
+  $PAP^T = LDL^T$ with a nonnegative, nonincreasing diagonal $D$.
+* (4.2.17), `GolubVanLoan.Chapter04.equation_4_2_17`, `GolubVanLoan.Chapter04.equation_4_2_17_sum`
+  and `GolubVanLoan.Chapter04.equation_4_2_17_algorithm`: the rank-revealing factorization of a
+  symmetric positive semidefinite matrix, its rank-one expansion, and its computation by Algorithm
+  4.2.2.
+* (4.2.18), `GolubVanLoan.Chapter04.equation_4_2_18`: the $2 \times 2$ block equations of the
+  Cholesky factorization.
+* Algorithm 4.2.3, `GolubVanLoan.Chapter04.algorithm_4_2_3_spec`: the exact run is the Cholesky
+  factor.
+* (4.2.19), `GolubVanLoan.Chapter04.equation_4_2_19`: the $N \times N$ block equations of the
+  Cholesky factorization.
+* Algorithm 4.2.4, `GolubVanLoan.Chapter04.algorithm_4_2_4_spec`: the lower triangle of the exact
+  run is the Cholesky factor.
 
 ## Conventions
 
-Real square matrices, 0-based. "Positive definite" for a general matrix is the surface predicate
-`IsPositiveDefinite A` (`xᵀAx > 0` for `x ≠ 0`, no symmetry), which is positive definiteness of
-the symmetric part `T = (A + Aᵀ)/2 = Matrix.hermitianPart A` (`isPositiveDefinite_iff`);
-"symmetric positive (semi)definite" is Mathlib's `Matrix.PosDef` / `Matrix.PosSemidef`. The book's
-lower Cholesky factor `G` is the backbone's `Matrix.cholesky A` (whose transpose is the upper factor
-of `Matrix.IsCholesky`). `‖·‖₂` is the scoped `Matrix.Norms.L2Operator` norm and `κ₂` the backbone's
-`Matrix.condNumberLp 2`. A permutation `P` acts as `A.submatrix σ σ = P A Pᵀ`.
+* Matrices are real and indexed by `Fin n`, so indices are 0-based.
+* "Positive definite" for a general matrix is `GolubVanLoan.Chapter04.IsPositiveDefinite`.
+  "Symmetric positive definite" and "symmetric positive semidefinite" are Mathlib's `Matrix.PosDef`
+  and `Matrix.PosSemidef`. The symmetric part $T = (A + A^T)/2$ is `Matrix.hermitianPart A`.
+* The lower Cholesky factor $G$ of the source is `Matrix.cholesky A`. Its transpose is the upper
+  factor of `Matrix.IsCholesky`.
+* The norm $\|\cdot\|_2$ is `Matrix.lpOpNorm 2`.
+* The condition number $\kappa_2$ is `Matrix.condNumberLp 2`.
+* The matrix $|A|$ of absolute values is `Matrix.abs A`.
+* For a permutation $\sigma$ with permutation matrix $P$, the matrix $PAP^T$ is `A.submatrix σ σ`.
 
-Algorithm 4.2.1 follows the algorithm conventions of `NumlibSurface/GolubVanLoan`: the gaxpy
-`A(j:n, j) − A(j:n, 1:j−1) · A(j, 1:j−1)ᵀ` is a running difference from the entry of `A`
-(`FloatingPoint.runningDiff`), the square root is `Real.sqrt` followed by one rounding, and the
-whole column, diagonal included, is divided by the rounded square root, so the computed diagonal
-is `fl(t / fl(√t))` — the operation order of the backbone relation
-`FloatingPoint.RoundsCholeskyDiv`. The triangular solves call chapter 3's column-oriented
-substitutions (Algorithms 3.1.3–3.1.4). The block algorithms store the lower triangle of Algorithm
-4.2.1 (`choleskyLower`), solve `X Gᵀ = B` row by row (`solveRowsLower`) and form the updates
-`A₂₂ − G₂₁G₂₁ᵀ`, `A_ij − ∑_{k<j} G_ik G_jkᵀ` by running differences (`mulTransposeDiff`); their
-exact specifications compare the blocks with (4.2.18) and (4.2.19). The exact specification of
-Algorithm 4.2.2 reads the state after `k` steps as `L_k diag(D_k, A_k) L_kᵀ` (`pivotedLower`,
-`pivotedMiddle`); one step is a symmetric interchange (which commutes with both, the pivot being at
-or after `k`) followed by a congruence with the column operator of the multipliers.
+## Implementation notes
 
-## Sources
+* Algorithm 4.2.1 follows the algorithm conventions of `NumlibSurface.GolubVanLoan`. The gaxpy
+  $A(j{:}n, j) - A(j{:}n, 1{:}j-1) A(j, 1{:}j-1)^T$ is a running difference from the entry of $A$
+  (`FloatingPoint.runningDiff`). The square root is `Real.sqrt` followed by one rounding, and the
+  whole column, diagonal included, is divided by the rounded square root. So the computed diagonal
+  is $\mathrm{fl}(t / \mathrm{fl}(\sqrt t))$, the operation order of the backbone relation
+  `FloatingPoint.RoundsCholeskyDiv`.
+* In exact arithmetic, Algorithm 4.2.1 computes the backbone recurrence `Matrix.cholesky` for every
+  input. Off the positive definite cone both compute the same values, because the square root of a
+  negative number is $0$ and $x / 0 = 0$.
+* The triangular solves call the column-oriented substitutions of Chapter 3, Algorithms 3.1.3 and
+  3.1.4.
+* The block algorithms store the lower triangle of the output of Algorithm 4.2.1
+  (`GolubVanLoan.Chapter04.choleskyLower`), solve $XG^T = B$ row by row
+  (`GolubVanLoan.Chapter04.solveRowsLower`), and form the updates $A_{22} - G_{21} G_{21}^T$ and
+  $A_{ij} - \sum_{k<j} G_{ik} G_{jk}^T$ by running differences
+  (`GolubVanLoan.Chapter04.mulTransposeDiff`). Their exact specifications compare the blocks with
+  (4.2.18) and (4.2.19).
+* The exact specification of Algorithm 4.2.2 writes the state after $k$ steps as
+  $L_k \operatorname{diag}(D_k, A_k) L_k^T$. One step is a symmetric interchange, which commutes
+  with both factors because the pivot is at or after $k$, followed by a congruence with the column
+  operator of the multipliers.
 
-Backbone `Numlib/LinearAlgebra/Matrix/{HermitianPart,Cholesky}`,
-`Numlib/Analysis/Matrix/OperatorNorm`, `Numlib/FloatingPoint/LU`. The exact semantics of
-Algorithm 4.2.1 is the backbone recurrence `Matrix.cholesky` for *every* input (off the positive
-definite cone both compute the same junk: `√` of a negative number is `0` and `x / 0 = 0`).
+## Deviations from the source
 
-## Not formalized here
+* **(4.2.7)** (generalization). The source prints a first-order bound with the extra term
+  $2n \|A\|_F$. The library proves the rigorous bound $\|E\|_F \le \gamma_{3n} c n (\|T\|_2 + \|S
+  T^{-1} S\|_2)$. See `GolubVanLoan.Chapter04.equation_4_2_7`.
+* **Theorem 4.2.8, (4.2.13)** (generalization). The source states
+  $|a_{ij}| \le \sqrt{a_{ii} a_{jj}}$ for $i \neq j$. The library states it for all $i, j$. See
+  `GolubVanLoan.Chapter04.theorem_4_2_8_b`.
+* **Algorithm 4.2.2** (correction). The source gives $d_n > 0$ for a semidefinite input. For a
+  singular $A$ the computed $d_n$ is $0$; the library states $d_i \ge 0$, and $d_i > 0$ when $A$ is
+  positive definite. See `GolubVanLoan.Chapter04.algorithm_4_2_2_spec`.
+* **Algorithm 4.2.2** (reading). The source writes $P = P_1 \cdots P_n$. The library takes the
+  product of the interchanges in the order in which they are applied. See
+  `GolubVanLoan.Chapter04.algorithm_4_2_2_spec`.
 
-§4.2.4 (matrix square roots, chapter 9), §4.2.10 (packed formats), the flop counts, the numerical
-example `[ε m; −m ε]`, Wilkinson's completion criterion `q_n u κ₂(A) ≤ 1` and the numerical-rank
-threshold (§4.2.8), which the book quotes without derivation.
+## Not formalized
+
+* **§4.2.4, matrix square roots.** They are the subject of Chapter 9.
+* **§4.2.10, packed formats.**
+* **Flop counts.**
+* **The numerical example with the matrix $\begin{bmatrix} \epsilon & m \\ -m & \epsilon
+  \end{bmatrix}$.**
+* **Wilkinson's completion criterion $q_n u \kappa_2(A) \le 1$ (§4.2.6).** The source quotes it
+  without derivation.
+* **The numerical-rank threshold of §4.2.8.** The source quotes it without derivation.
 -/
 
 open FloatingPoint Matrix Finset
@@ -69,19 +183,31 @@ variable {n : ℕ}
 
 /-! ### §4.2.1–4.2.2 Positive definiteness of a general matrix -/
 
-/-- **§4.2, positive definite.** "A matrix `A ∈ ℝⁿˣⁿ` is positive definite if `xᵀAx > 0` for all
-nonzero `x ∈ ℝⁿ`" — no symmetry is assumed. -/
+/-- **Section 4.2** of [golub2013matrix], definition of a positive definite matrix. A matrix
+$A \in \mathbb{R}^{n \times n}$ is **positive definite** if
+$$x^T A x > 0 \quad \text{for all nonzero } x \in \mathbb{R}^n.$$
+No symmetry is assumed.
+
+The index type is any finite type. For a symmetric matrix the predicate is Mathlib's
+`Matrix.PosDef` (`GolubVanLoan.Chapter04.isPositiveDefinite_iff_posDef`). -/
 def IsPositiveDefinite {ι : Type*} [Fintype ι] (A : Matrix ι ι ℝ) : Prop :=
   ∀ x : ι → ℝ, x ≠ 0 → 0 < x ⬝ᵥ (A *ᵥ x)
 
-/-- **§4.2.2**: "the positive definiteness of a general matrix `A` is inherited from its symmetric
-part `T = (A + Aᵀ)/2`" (`xᵀSx = 0` for the skew-symmetric part `S`). -/
+/-- **Section 4.2.2** of [golub2013matrix]. A matrix $A \in \mathbb{R}^{n \times n}$ is positive
+definite if and only if its symmetric part $T = (A + A^T)/2$ is symmetric positive definite: the
+positive definiteness of a general matrix is inherited from its symmetric part.
+
+The reason is that $x^T S x = 0$ for the skew-symmetric part $S = (A - A^T)/2$. The matrix $T$
+is `Matrix.hermitianPart A`, and "symmetric positive definite" is `Matrix.PosDef`. The index
+type is any finite type. -/
 theorem isPositiveDefinite_iff {ι : Type*} [Fintype ι] (A : Matrix ι ι ℝ) :
     IsPositiveDefinite A ↔ (hermitianPart A).PosDef := by
   rw [posDef_hermitianPart_iff_forall_dotProduct_mulVec_pos]
   simp [IsPositiveDefinite]
 
-/-- For a symmetric matrix the surface's positive definiteness is Mathlib's `Matrix.PosDef`. -/
+/-- Let $A \in \mathbb{R}^{n \times n}$ be symmetric. Then $A$ is positive definite in the sense of
+`GolubVanLoan.Chapter04.IsPositiveDefinite` if and only if it is positive definite in the sense
+of Mathlib's `Matrix.PosDef`. -/
 theorem isPositiveDefinite_iff_posDef {ι : Type*} [Fintype ι] {A : Matrix ι ι ℝ}
     (hA : A.IsSymm) : IsPositiveDefinite A ↔ A.PosDef := by
   have h : hermitianPart A = A := by
@@ -90,8 +216,9 @@ theorem isPositiveDefinite_iff_posDef {ι : Type*} [Fintype ι] {A : Matrix ι �
     ring
   rw [isPositiveDefinite_iff, h]
 
-/-- **Theorem 4.2.1.** "If `A ∈ ℝⁿˣⁿ` is positive definite and `X ∈ ℝⁿˣᵏ` has rank `k`, then
-`B = XᵀAX ∈ ℝᵏˣᵏ` is also positive definite." -/
+/-- **Theorem 4.2.1** of [golub2013matrix]. Let $A \in \mathbb{R}^{n \times n}$ be positive definite
+and let $X \in \mathbb{R}^{n \times k}$ have rank $k$. Then
+$B = X^T A X \in \mathbb{R}^{k \times k}$ is positive definite. -/
 theorem theorem_4_2_1 {k : ℕ} {A : Matrix (Fin n) (Fin n) ℝ} (hA : IsPositiveDefinite A)
     {X : Matrix (Fin n) (Fin k) ℝ} (hX : X.rank = k) : IsPositiveDefinite (Xᵀ * A * X) := by
   have hinj : Function.Injective X.mulVec := by
@@ -107,9 +234,11 @@ theorem theorem_4_2_1 {k : ℕ} {A : Matrix (Fin n) (Fin n) ℝ} (hA : IsPositiv
   have := hA _ hXz
   rwa [← mulVec_mulVec, ← mulVec_mulVec, dotProduct_mulVec, vecMul_transpose]
 
-/-- **Corollary 4.2.2.** "If `A` is positive definite, then all its principal submatrices are
-positive definite. In particular, all the diagonal entries are positive." A principal submatrix
-`A(v, v)` is `A.submatrix e e` for an injective `e`. -/
+/-- **Corollary 4.2.2** of [golub2013matrix]. Let $A \in \mathbb{R}^{n \times n}$ be positive
+definite. Then all principal submatrices of $A$ are positive definite. In particular, all
+diagonal entries of $A$ are positive.
+
+A principal submatrix $A(v, v)$ is `A.submatrix e e` for an injective map `e : Fin k → Fin n`. -/
 theorem corollary_4_2_2 {k : ℕ} {A : Matrix (Fin n) (Fin n) ℝ} (hA : IsPositiveDefinite A)
     {e : Fin k → Fin n} (he : Function.Injective e) :
     IsPositiveDefinite (A.submatrix e e) ∧ ∀ i, 0 < A i i := by
@@ -119,19 +248,24 @@ theorem corollary_4_2_2 {k : ℕ} {A : Matrix (Fin n) (Fin n) ℝ} (hA : IsPosit
   · have := hA (Pi.single i 1) (by simp)
     simpa [mulVec, dotProduct, Pi.single_apply] using this
 
-/-- **Theorem 4.2.3.** "The matrix `A ∈ ℝⁿˣⁿ` is positive definite if and only if the symmetric
-matrix `T = (A + Aᵀ)/2` has positive eigenvalues." -/
+/-- **Theorem 4.2.3** of [golub2013matrix]. A matrix $A \in \mathbb{R}^{n \times n}$ is positive
+definite if and only if all eigenvalues of the symmetric matrix $T = (A + A^T)/2$ are positive.
+
+The eigenvalues are `Matrix.IsHermitian.eigenvalues` of `Matrix.hermitianPart A`. -/
 theorem theorem_4_2_3 (A : Matrix (Fin n) (Fin n) ℝ) :
     IsPositiveDefinite A ↔ ∀ i, 0 < (hermitianPart_isHermitian A).eigenvalues i :=
   (isPositiveDefinite_iff A).trans (hermitianPart_isHermitian A).posDef_iff_eigenvalues_pos
 
-/-- **Corollary 4.2.4.** "If `A` is positive definite, then it has an LU factorization and the
-diagonal entries of `U` are positive." -/
+/-- **Corollary 4.2.4** of [golub2013matrix]. If $A \in \mathbb{R}^{n \times n}$ is positive
+definite, then it has an LU factorization $A = LU$, with $L$ unit lower triangular and $U$ upper
+triangular, and the diagonal entries of $U$ are positive.
+
+The factorization is `Matrix.IsLU A L U`. -/
 theorem corollary_4_2_4 {A : Matrix (Fin n) (Fin n) ℝ} (hA : IsPositiveDefinite A) :
     ∃ L U, IsLU A L U ∧ ∀ i, 0 < U i i := by
   simpa using exists_isLU_of_posDef_hermitianPart ((isPositiveDefinite_iff A).1 hA)
 
-/-- A matrix with `Mᵀ = -M` has a vanishing quadratic form. -/
+/-- If $M \in \mathbb{R}^{n \times n}$ satisfies $M^T = -M$, then $x^T M x = 0$ for every $x$. -/
 private theorem dotProduct_mulVec_eq_zero_of_transpose_eq_neg {ι : Type*} [Fintype ι]
     {M : Matrix ι ι ℝ} (hM : Mᵀ = -M) (x : ι → ℝ) : x ⬝ᵥ (M *ᵥ x) = 0 := by
   have h : x ⬝ᵥ (M *ᵥ x) = -(x ⬝ᵥ (M *ᵥ x)) := by
@@ -139,7 +273,8 @@ private theorem dotProduct_mulVec_eq_zero_of_transpose_eq_neg {ι : Type*} [Fint
       dotProduct_comm]
   linarith
 
-/-- The quadratic form of a rank-one matrix: `zᵀ (a bᵀ) z = (zᵀa)(bᵀz)`. -/
+/-- For $a, b, z \in \mathbb{R}^n$, the quadratic form of the rank-one matrix $ab^T$ is
+$z^T (ab^T) z = (z^T a)(b^T z)$. -/
 private theorem dotProduct_vecMulVec_mulVec (a b z : Fin n → ℝ) :
     z ⬝ᵥ (vecMulVec a b *ᵥ z) = (z ⬝ᵥ a) * (b ⬝ᵥ z) := by
   rw [dotProduct, dotProduct, dotProduct, Finset.sum_mul_sum]
@@ -147,14 +282,18 @@ private theorem dotProduct_vecMulVec_mulVec (a b z : Fin n → ℝ) :
   rw [mulVec, dotProduct, Finset.mul_sum]
   exact Finset.sum_congr rfl fun j _ => by rw [vecMulVec_apply]; ring
 
-/-- The matrix `A = [α vᵀ; v B] + [0 −wᵀ; w C]` of Theorem 4.2.5, on `Fin 1 ⊕ Fin n`. -/
+/-- The matrix of Theorem 4.2.5 of [golub2013matrix]. For $\alpha \in \mathbb{R}$,
+$v, w \in \mathbb{R}^n$ and $B, C \in \mathbb{R}^{n \times n}$, it is
+$$A = \begin{bmatrix} \alpha & v^T \\ v & B \end{bmatrix} + \begin{bmatrix} 0 & -w^T \\ w & C
+  \end{bmatrix} \in \mathbb{R}^{(1+n) \times (1+n)}.$$
+The matrix is indexed by `Fin 1 ⊕ Fin n`. -/
 abbrev blockPD (α : ℝ) (v w : Fin n → ℝ) (B C : Matrix (Fin n) (Fin n) ℝ) :
     Matrix (Fin 1 ⊕ Fin n) (Fin 1 ⊕ Fin n) ℝ :=
   fromBlocks (of fun _ _ => α) (replicateRow (Fin 1) v) (replicateCol (Fin 1) v) B +
     fromBlocks 0 (-replicateRow (Fin 1) w) (replicateCol (Fin 1) w) C
 
-/-- The quadratic form of the matrix of Theorem 4.2.5 at `[μ; z]`: the skew-symmetric part
-contributes nothing. -/
+/-- If $C^T = -C$, then the quadratic form of the matrix of Theorem 4.2.5 at the vector $(\mu, z)$
+is $\mu^2 \alpha + 2 \mu v^T z + z^T B z$: the skew-symmetric part contributes nothing. -/
 private theorem quad_blockPD {α μ : ℝ} {v w z : Fin n → ℝ} {B C : Matrix (Fin n) (Fin n) ℝ}
     (hC : Cᵀ = -C) :
     Sum.elim (fun _ : Fin 1 => μ) z ⬝ᵥ (blockPD α v w B C *ᵥ Sum.elim (fun _ => μ) z) =
@@ -178,10 +317,22 @@ private theorem quad_blockPD {α μ : ℝ} {v w z : Fin n → ℝ} {B C : Matrix
   simp only [dotProduct_add, dotProduct_smul, smul_eq_mul, dotProduct_comm z v]
   ring
 
-/-- **Theorem 4.2.5** with (4.2.1)–(4.2.3). "Suppose `A = [α vᵀ; v B] + [0 −wᵀ; w C]` is positive
-definite and that `B` is symmetric and `C` is skew-symmetric. Then
-`A = [1 0; (v+w)/α I] [α (v−w)ᵀ; 0 B₁ + C₁]` (4.2.1) where `B₁ = B − (vvᵀ − wwᵀ)/α` (4.2.2) is
-symmetric positive definite and `C₁ = C − (wvᵀ − vwᵀ)/α` (4.2.3) is skew-symmetric." -/
+/-- **Theorem 4.2.5** of [golub2013matrix], with (4.2.1)–(4.2.3). Let $\alpha \in \mathbb{R}$ and
+$v, w \in \mathbb{R}^n$, let $B \in \mathbb{R}^{n \times n}$ be symmetric and
+$C \in \mathbb{R}^{n \times n}$ skew-symmetric, and suppose that
+$$A = \begin{bmatrix} \alpha & v^T \\ v & B \end{bmatrix} + \begin{bmatrix} 0 & -w^T \\ w & C
+  \end{bmatrix}$$
+is positive definite. Then
+$$A = \begin{bmatrix} 1 & 0 \\ (v + w)/\alpha & I_n \end{bmatrix} \begin{bmatrix} \alpha & (v -
+  w)^T \\ 0 & B_1 + C_1 \end{bmatrix}, \qquad (4.2.1)$$
+where
+$$B_1 = B - \frac{1}{\alpha}(vv^T - ww^T) \qquad (4.2.2)$$
+is symmetric positive definite and
+$$C_1 = C - \frac{1}{\alpha}(wv^T - vw^T) \qquad (4.2.3)$$
+is skew-symmetric.
+
+The matrix $A$ is `GolubVanLoan.Chapter04.blockPD`, indexed by `Fin 1 ⊕ Fin n`. Since $A$ is
+positive definite, $\alpha > 0$. -/
 theorem theorem_4_2_5 {α : ℝ} {v w : Fin n → ℝ} {B C : Matrix (Fin n) (Fin n) ℝ} (hB : Bᵀ = B)
     (hC : Cᵀ = -C) (hA : IsPositiveDefinite (blockPD α v w B C)) :
     blockPD α v w B C =
@@ -238,12 +389,12 @@ theorem theorem_4_2_5 {α : ℝ} {v w : Fin n → ℝ} {B C : Matrix (Fin n) (Fi
     simp only [Matrix.sub_apply, Matrix.neg_apply, Matrix.smul_apply, smul_eq_mul]
     ring
 
-/-- The book's `T = (A + Aᵀ)/2` is the backbone's `Matrix.hermitianPart A`. -/
+/-- The matrix $(A + A^T)/2$ is `Matrix.hermitianPart A`. -/
 private theorem half_add_transpose_eq_hermitianPart (A : Matrix (Fin n) (Fin n) ℝ) :
     (2 : ℝ)⁻¹ • (A + Aᵀ) = hermitianPart A := by
   rw [hermitianPart, conjTranspose_eq_transpose_of_trivial]
 
-/-- The book's `S = (A − Aᵀ)/2` is `A − T`. -/
+/-- The matrix $(A - A^T)/2$ is $A - T$, where $T$ is `Matrix.hermitianPart A`. -/
 private theorem half_sub_transpose_eq_sub_hermitianPart (A : Matrix (Fin n) (Fin n) ℝ) :
     (2 : ℝ)⁻¹ • (A - Aᵀ) = A - hermitianPart A := by
   rw [hermitianPart, conjTranspose_eq_transpose_of_trivial]
@@ -252,11 +403,15 @@ private theorem half_sub_transpose_eq_sub_hermitianPart (A : Matrix (Fin n) (Fin
   ring
 
 open scoped Matrix.Norms.Frobenius in
-/-- **Theorem 4.2.6**, (4.2.5): "Let `A ∈ ℝ^{n×n}` be positive definite and set `T = (A + Aᵀ)/2`
-and `S = (A − Aᵀ)/2`. If `A = LU` is the LU factorization, then
-`‖|L||U|‖_F ≤ n (‖T‖₂ + ‖S T⁻¹ S‖₂)`." The book refers to Golub and Van Loan (1979) for the proof;
-the backbone `Matrix.IsLU.frobenius_norm_abs_mul_abs_le` bounds each rank-one term `|ℓ_k| |u_kᵀ|`
-through `A T⁻¹ Aᵀ = T − S T⁻¹ S`. -/
+/-- **Theorem 4.2.6** of [golub2013matrix]. Let $A \in \mathbb{R}^{n \times n}$ be positive
+definite, and set $T = (A + A^T)/2$ and $S = (A - A^T)/2$. If $A = LU$ is an LU factorization of
+$A$, then
+$$\| |L| |U| \|_F \le n \left( \|T\|_2 + \|S T^{-1} S\|_2 \right). \qquad (4.2.5)$$
+
+The source refers to Golub and Van Loan (1979) for the proof. The proof here applies
+`Matrix.IsLU.frobenius_norm_abs_mul_abs_le`, which bounds each rank-one term $|\ell_k| |u_k^T|$
+through $A T^{-1} A^T = T - S T^{-1} S$. The norm $\|\cdot\|_2$ is `Matrix.lpOpNorm 2`, and the
+Frobenius norm is the scoped norm of `Matrix.Norms.Frobenius`. -/
 theorem theorem_4_2_6 {A L U T S : Matrix (Fin n) (Fin n) ℝ} (hA : IsPositiveDefinite A)
     (hT : T = (2 : ℝ)⁻¹ • (A + Aᵀ)) (hS : S = (2 : ℝ)⁻¹ • (A - Aᵀ)) (h : IsLU A L U) :
     ‖L.abs * U.abs‖ ≤ n * (lpOpNorm 2 T + lpOpNorm 2 (S * T⁻¹ * S)) := by
@@ -267,17 +422,28 @@ theorem theorem_4_2_6 {A L U T S : Matrix (Fin n) (Fin n) ℝ} (hA : IsPositiveD
   exact this
 
 open scoped Matrix.Norms.Frobenius in
-/-- **(4.2.7)**, rigorous: "Assume that the computed factors `L̂` and `Û` satisfy
-`‖|L̂||Û|‖_F ≤ c ‖|L||U|‖_F` (4.2.6), where `c` is a constant of modest size. It follows from
-(4.2.1) and the analysis in §3.3 that if these factors are used to compute a solution to
-`Ax = b`, then the computed solution `x̂` satisfies `(A + E) x̂ = b` with
-`‖E‖_F ≤ u (2n ‖A‖_F + 4cn² (‖T‖₂ + ‖S T⁻¹ S‖₂)) + O(u²)`." Here the computed factors and the two
-triangular solves are the relational rounding models `FloatingPoint.RoundsLU`,
-`FloatingPoint.RoundsForwardSubst`, `FloatingPoint.RoundsBackSubst` (primed names for the hats),
-with nonzero pivots, and the bound is the stronger, non-asymptotic
-`‖E‖_F ≤ γ_{3n} c n (‖T‖₂ + ‖S T⁻¹ S‖₂)` (the term `2n ‖A‖_F` is not needed and `γ_{3n} ≤ 4nu`
-when `3nu ≤ 1/4`): `|E| ≤ γ_{3n} |L̂||Û|` (`FloatingPoint.exists_roundsLU_solve_eq`) and
-Theorem 4.2.6. -/
+/-- **Equation (4.2.7)** of [golub2013matrix]. Let $A \in \mathbb{R}^{n \times n}$ be positive
+definite, let $T = (A + A^T)/2$ and $S = (A - A^T)/2$, and let $A = LU$ be an LU factorization
+of $A$. Let the unit roundoff $u$ satisfy $u < 1$ and $3nu < 1$. Let $\hat L$ and $\hat U$ be
+computed LU factors of $A$ whose diagonal entries $\hat u_{jj}$ are nonzero, let $\hat y$ be
+computed from $\hat L y = b$ by forward substitution, and let $\hat x$ be computed from
+$\hat U x = \hat y$ by back substitution. If $c \ge 0$ and
+$$\| |\hat L| |\hat U| \|_F \le c \, \| |L| |U| \|_F, \qquad (4.2.6)$$
+then there is $E \in \mathbb{R}^{n \times n}$ with
+$$(A + E) \hat x = b, \qquad \|E\|_F \le \gamma_{3n} \, c \, n \left( \|T\|_2 + \|S T^{-1} S\|_2
+  \right).$$
+
+**Generalization.** The source assumes (4.2.6) with a constant $c$ of modest size and prints the
+first-order bound $\|E\|_F \le u \left( 2n \|A\|_F + 4cn^2 (\|T\|_2 + \|S T^{-1} S\|_2)
+\right) + O(u^2)$, which it derives from (4.2.1) and the analysis of §3.3. The bound here is
+rigorous and does not need the term $2n \|A\|_F$. It implies the printed bound, because
+$\gamma_{3n} \le 4nu$ when $3nu \le 1/4$.
+
+The computed factors and the two solves are the relations `FloatingPoint.RoundsLU`,
+`FloatingPoint.RoundsForwardSubst` and `FloatingPoint.RoundsBackSubst`, and the primed names
+`L'`, `U'` and `x'` stand for $\hat L$, $\hat U$ and $\hat x$. The proof combines
+$|E| \le \gamma_{3n} |\hat L| |\hat U|$ (`FloatingPoint.exists_roundsLU_solve_eq`) with Theorem
+4.2.6. -/
 theorem equation_4_2_7 {fp : RoundingModel ℝ} {A L U L' U' T S : Matrix (Fin n) (Fin n) ℝ}
     {b y x' : Fin n → ℝ} {c : ℝ} (hA : IsPositiveDefinite A) (hT : T = (2 : ℝ)⁻¹ • (A + Aᵀ))
     (hS : S = (2 : ℝ)⁻¹ • (A - Aᵀ)) (h : IsLU A L U) (hu : fp.u < 1)
@@ -302,26 +468,34 @@ theorem equation_4_2_7 {fp : RoundingModel ℝ} {A L U L' U' T S : Matrix (Fin n
 
 /-! ### §4.2.3–4.2.6 The Cholesky factorization -/
 
-/-- `‖T‖₂ ≤ ‖A‖₂` for the symmetric part (§4.2.2, before (4.2.8): "It is easy to show"). -/
+/-- **Section 4.2.2** of [golub2013matrix], the remark before (4.2.8). For
+$A \in \mathbb{R}^{n \times n}$, the symmetric part $T = (A + A^T)/2$ satisfies
+$$\|T\|_2 \le \|A\|_2.$$
+
+The source says that this is easy to show. The matrix $T$ is `Matrix.hermitianPart A`. -/
 theorem l2_opNorm_symmPart_le (A : Matrix (Fin n) (Fin n) ℝ) :
     lpOpNorm 2 (hermitianPart A) ≤ lpOpNorm 2 A := by
   rw [lpOpNorm_two, lpOpNorm_two]
   exact l2_opNorm_hermitianPart_le A
 
-/-- The lower triangular Cholesky factor multiplies to `A`: `A = G Gᵀ` with `G = cholesky A`. -/
+/-- Let $A \in \mathbb{R}^{n \times n}$ be symmetric positive definite. Then its lower triangular
+Cholesky factor $G$, which is `Matrix.cholesky A`, satisfies $GG^T = A$. -/
 theorem cholesky_mul_transpose {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosDef) :
     cholesky A * (cholesky A)ᵀ = A := by
   simpa [conjTranspose_eq_transpose_of_trivial] using
     (isCholesky_cholesky hA).conjTranspose_mul_self
 
-/-- The Cholesky factor has a positive diagonal. -/
+/-- If $A \in \mathbb{R}^{n \times n}$ is symmetric positive definite, then every diagonal entry of
+its Cholesky factor `Matrix.cholesky A` is positive. -/
 theorem cholesky_diag_pos {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosDef) (i : Fin n) :
     0 < cholesky A i i := by
   simpa [conjTranspose_eq_transpose_of_trivial] using (isCholesky_cholesky hA).diag_pos i
 
-/-- **Theorem 4.2.7 (Cholesky factorization).** "If `A ∈ ℝⁿˣⁿ` is symmetric positive definite,
-then there exists a unique lower triangular `G ∈ ℝⁿˣⁿ` with positive diagonal entries such that
-`A = GGᵀ`"; it is the backbone's `Matrix.cholesky A`. -/
+/-- **Theorem 4.2.7** of [golub2013matrix] (Cholesky factorization). If
+$A \in \mathbb{R}^{n \times n}$ is symmetric positive definite, then there is a unique lower
+triangular $G \in \mathbb{R}^{n \times n}$ with positive diagonal entries such that $A = GG^T$.
+This matrix is `Matrix.cholesky A`: it is lower triangular, its diagonal entries are positive,
+and $A = GG^T$. -/
 theorem theorem_4_2_7 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosDef) :
     (∃! G : Matrix (Fin n) (Fin n) ℝ, G.IsLowerTriangular ∧ (∀ i, 0 < G i i) ∧ A = G * Gᵀ) ∧
       (cholesky A).IsLowerTriangular ∧ (∀ i, 0 < cholesky A i i) ∧
@@ -335,8 +509,11 @@ theorem theorem_4_2_7 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosDef) :
     rw [conjTranspose_eq_transpose_of_trivial, transpose_transpose, hGG]
   rw [cholesky_eq_of_isCholesky h, conjTranspose_eq_transpose_of_trivial, transpose_transpose]
 
-/-- **(4.2.9)**: comparing columns in `A = GGᵀ`,
-`G(j,j) G(:,j) = A(:,j) − ∑_{k<j} G(j,k) G(:,k)`. -/
+/-- **Equation (4.2.9)** of [golub2013matrix]. Let $A, G \in \mathbb{R}^{n \times n}$, with $G$
+lower triangular and $A = GG^T$. Then for every column index $j$,
+$$G(j, j) \, G(:, j) = A(:, j) - \sum_{k < j} G(j, k) \, G(:, k).$$
+
+The source obtains this equation by comparing the $j$th columns in $A = GG^T$. -/
 theorem equation_4_2_9 {A G : Matrix (Fin n) (Fin n) ℝ} (hG : G.IsLowerTriangular)
     (hA : A = G * Gᵀ) (j : Fin n) :
     G j j • (fun i => G i j) =
@@ -354,8 +531,14 @@ theorem equation_4_2_9 {A G : Matrix (Fin n) (Fin n) ℝ} (hG : G.IsLowerTriangu
   rw [this]
   ring
 
-/-- **§4.2.6**: "the entries in the Cholesky triangle are nicely bounded",
-`g_ij² ≤ ∑_{k ≤ i} g_ik² = a_ii`. -/
+/-- **Section 4.2.6** of [golub2013matrix], the bound on the entries of the Cholesky factor. Let
+$A \in \mathbb{R}^{n \times n}$ be symmetric positive definite and let $G$ be its Cholesky
+factor. Then for all $i$ and $j$,
+$$g_{ij}^2 \le \sum_{k \le i} g_{ik}^2 = a_{ii}.$$
+
+The source says that the entries in the Cholesky triangle are nicely bounded. The Lean statement
+gives $g_{ij}^2 \le a_{ii}$ and $\sum_{k \le i} g_{ik}^2 = a_{ii}$ separately, with $G$ =
+`Matrix.cholesky A`. -/
 theorem cholesky_entry_bound {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosDef) (i j : Fin n) :
     cholesky A i j ^ 2 ≤ A i i ∧
       ∑ k ∈ univ.filter (· ≤ i), cholesky A i k ^ 2 = A i i := by
@@ -368,14 +551,23 @@ theorem cholesky_entry_bound {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosDef) (i
     have hik : i < k := not_le.1 fun h => hk (mem_filter.2 ⟨mem_univ _, h⟩)
     rw [isLowerTriangular_cholesky A (OrderDual.toDual_lt_toDual.2 hik), zero_mul]
 
-/-- **§4.2.6**: "the same conclusion can be reached from the equation `‖G‖₂² = ‖A‖₂`". -/
+/-- **Section 4.2.6** of [golub2013matrix]. Let $A \in \mathbb{R}^{n \times n}$ be symmetric
+positive definite and let $G$ be its Cholesky factor. Then
+$$\|G\|_2^2 = \|A\|_2.$$
+
+The source says that the bound on the entries of $G$ can also be reached from this equation. -/
 theorem l2_opNorm_cholesky_sq {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosDef) :
     lpOpNorm 2 (cholesky A) ^ 2 = lpOpNorm 2 A := by
   rw [lpOpNorm_two, lpOpNorm_two]
   exact Matrix.l2_opNorm_cholesky_sq hA
 
 open scoped Matrix.Norms.L2Operator in
-/-- **§4.2.6**: for a symmetric positive definite `A`, `κ₂(A) = λ_max(A)/λ_min(A)`. -/
+/-- **Section 4.2.6** of [golub2013matrix]. Let $A \in \mathbb{R}^{n \times n}$ be symmetric
+positive definite, with $n \ge 1$. Then
+$$\kappa_2(A) = \frac{\lambda_{\max}(A)}{\lambda_{\min}(A)}.$$
+
+The condition number is `Matrix.condNumberLp 2 A`. The numbers $\lambda_{\max}(A)$ and
+$\lambda_{\min}(A)$ are the supremum and the infimum of `Matrix.IsHermitian.eigenvalues`. -/
 theorem condNumber_eq_div_eigenvalues [NeZero n] {A : Matrix (Fin n) (Fin n) ℝ}
     (hA : A.PosDef) :
     condNumberLp 2 A = (⨆ i, hA.1.eigenvalues i) / ⨅ i, hA.1.eigenvalues i := by
@@ -388,9 +580,9 @@ section Programs
 
 variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 
-/-- **Algorithm 4.2.1 (Gaxpy Cholesky).** "Given a symmetric positive definite `A ∈ ℝⁿˣⁿ`, the
-following algorithm computes a lower triangular `G` such that `A = GGᵀ`. For all `i ≥ j`, `G(i, j)`
-overwrites `A(i, j)`":
+/-- **Algorithm 4.2.1** of [golub2013matrix] (gaxpy Cholesky). Given a symmetric positive definite
+$A \in \mathbb{R}^{n \times n}$, the algorithm computes a lower triangular $G$ such that
+$A = GG^T$. For all $i \ge j$, $G(i, j)$ overwrites $A(i, j)$.
 ```
 for j = 1:n
     if j > 1
@@ -399,10 +591,12 @@ for j = 1:n
     A(j:n, j) = A(j:n, j) / sqrt(A(j, j))
 end
 ```
-The gaxpy is a running difference from each entry of `A(j:n, j)` (`runningDiff`, empty for the
-first column), reading the row `A(j, 1:j−1)` of the state at the start of the column (which the
-column update does not change); the square root is rounded once and the whole column, diagonal
-included, is divided by it. The strict upper triangle keeps the entries of `A`. -/
+
+The gaxpy is a running difference from each entry of $A(j{:}n, j)$ (`FloatingPoint.runningDiff`,
+empty for the first column). It reads the row $A(j, 1{:}j-1)$ of the state at the start of the
+column, which the column update does not change. The square root is rounded once, and the whole
+column, diagonal included, is divided by it. The strict upper triangle keeps the entries of $A$.
+The program has no hypothesis on $A$. -/
 noncomputable def algorithm_4_2_1 (A : Matrix (Fin n) (Fin n) ℝ) : M (Matrix (Fin n) (Fin n) ℝ) :=
   (List.finRange n).foldlM (fun (A : Matrix (Fin n) (Fin n) ℝ) (j : Fin n) => do
     let B ← ((List.finRange n).filter (j ≤ ·)).foldlM
@@ -421,9 +615,11 @@ section Bridge
 
 variable (fp : RoundingModel ℝ)
 
-/-- Column `j` of the state `S` is a finished column of Algorithm 4.2.1: the pivot `t` is the
-running difference of `a_jj` and the products `g_jk g_jk`, `sh` a rounding of `√t`, and the entries
-on and below the diagonal are the rounded quotients by `sh` of the running differences. -/
+/-- Column $j$ of the state $S$ is a finished column of Algorithm 4.2.1: there are a pivot $t$, the
+running difference of $a_{jj}$ and the rounded products $s_{jk} s_{jk}$ for $k < j$, and a
+rounding $\hat s$ of $\sqrt t$, such that $s_{jj}$ is a rounding of $t / \hat s$ and, for
+$i > j$, $s_{ij}$ is a rounding of $r / \hat s$ for a running difference $r$ of $a_{ij}$ and the
+rounded products $s_{ik} s_{jk}$. -/
 private def CholDone (A S : Matrix (Fin n) (Fin n) ℝ) (j : Fin n) : Prop :=
   ∃ t sh : ℝ, RoundsRunningDiff fp (below j) (S j) (S j) (A j j) t ∧ fp.Rounds (Real.sqrt t) sh ∧
     fp.Rounds (t / sh) (S j j) ∧
@@ -438,11 +634,12 @@ private theorem CholDone.congr {A S S' : Matrix (Fin n) (Fin n) ℝ} {j : Fin n}
   obtain ⟨r, hr, hl⟩ := hcol i hi
   exact ⟨r, hr.congr (hb i) (hb j), by rw [hS i j le_rfl]; exact hl⟩
 
-/-- The loop invariant of Algorithm 4.2.1 after `c` columns. -/
+/-- The loop invariant of Algorithm 4.2.1 after $c$ columns: the columns from $c$ on are those of
+$A$, and the columns before $c$ are finished. -/
 private def CholInv (A : Matrix (Fin n) (Fin n) ℝ) (c : ℕ) (S : Matrix (Fin n) (Fin n) ℝ) : Prop :=
   (∀ i k : Fin n, c ≤ k.val → S i k = A i k) ∧ ∀ j : Fin n, j.val < c → CholDone fp A S j
 
-/-- One column step of Algorithm 4.2.1 keeps the invariant. -/
+/-- One column step of Algorithm 4.2.1 keeps the loop invariant. -/
 private theorem cholInv_step (A : Matrix (Fin n) (Fin n) ℝ) (j : Fin n)
     (S : Matrix (Fin n) (Fin n) ℝ) (hS : CholInv fp A j S) (S' : Matrix (Fin n) (Fin n) ℝ)
     (hS' : S' ∈ ((do
@@ -515,16 +712,26 @@ private theorem cholDone_of_mem_run (A : Matrix (Fin n) (Fin n) ℝ)
     ⟨fun _ _ _ => rfl, fun _ hj => absurd hj (Nat.not_lt_zero _)⟩
     (fun j S hS S' hS' => cholInv_step fp A j S hS S' hS') F hF).2 j j.isLt
 
-/-- The lower triangle of the packed output agrees with the output on and below the diagonal. -/
+/-- On and below the diagonal, $F - \operatorname{strictUpper}(F)$ agrees with $F$. -/
 private theorem sub_strictUpper_apply_of_le (F : Matrix (Fin n) (Fin n) ℝ) {i k : Fin n}
     (hki : k ≤ i) : (F - F.strictUpper) i k = F i k := by
   simp [strictUpper, not_lt.2 hki]
 
-/-- **The rounding bridge of Algorithm 4.2.1**: every run whose returned diagonal is nonzero is an
-admissible Cholesky factorization in the operation order of the algorithm,
-`FloatingPoint.RoundsCholeskyDiv`, with `Ĝ` the lower triangle of the output. The hypothesis on
-the returned diagonal (convention 9) forces every computed pivot `t_j` positive: a pivot `t_j ≤ 0`
-has `√t_j = 0`, whose rounding is `0`, and then `ĝ_jj = fl(t_j / 0) = 0`. -/
+/-- **Algorithm 4.2.1** of [golub2013matrix], rounding bridge. Let $A \in \mathbb{R}^{n \times n}$
+be arbitrary. Let $F$ be a matrix that Algorithm 4.2.1 can compute from $A$ in the rounding
+model `fp`, with every diagonal entry $f_{jj}$ nonzero, and let $\hat G$ be the lower triangle
+of $F$. Then $\hat G$ is a computed Cholesky factor of $A$ in the operation order of the
+algorithm. That is, for each $j$ there are a number $t_j \ge 0$, obtained from $a_{jj}$ by
+subtracting roundings of the products $\hat g_{jk}^2$, $k < j$, one after the other with one
+rounding per subtraction, and a rounding $\hat s_j$ of $\sqrt{t_j}$, such that $\hat g_{jj}$ is
+a rounding of $t_j / \hat s_j$ and, for $i > j$, $\hat g_{ij}$ is a rounding of
+$t_{ij} / \hat s_j$, with $t_{ij}$ obtained in the same way from $a_{ij}$ and the products
+$\hat g_{ik} \hat g_{jk}$, $k < j$.
+
+The relation is `FloatingPoint.RoundsCholeskyDiv fp A (F - F.strictUpper)`. The hypothesis is on
+the returned diagonal, not on the intermediate pivots, and it forces every computed pivot $t_j$
+to be positive: if $t_j \le 0$, then $\sqrt{t_j} = 0$, whose rounding is $0$, and then
+$\hat g_{jj} = \mathrm{fl}(t_j / 0) = 0$. -/
 theorem algorithm_4_2_1_rounds (A : Matrix (Fin n) (Fin n) ℝ) :
     ∀ F ∈ (algorithm_4_2_1 fp.round A).run, (∀ j, F j j ≠ 0) →
       RoundsCholeskyDiv fp A (F - F.strictUpper) := by
@@ -554,9 +761,12 @@ theorem algorithm_4_2_1_rounds (A : Matrix (Fin n) (Fin n) ℝ) :
       exact hp k hk
     · rw [hG i j hji.le]; exact hl
 
-/-- **Nonemptiness** (review M8): over a total model the run set of Algorithm 4.2.1 is nonempty, for
-every input, so `algorithm_4_2_1_rounds` and the stability statements built on it are not
-vacuous. -/
+/-- **Algorithm 4.2.1** of [golub2013matrix], existence of runs. If every real number has an
+admissible rounding in the rounding model `fp`, then for every $A \in \mathbb{R}^{n \times n}$
+the set of runs of Algorithm 4.2.1 on $A$ is nonempty.
+
+So `GolubVanLoan.Chapter04.algorithm_4_2_1_rounds` and the stability statements built on it are
+not vacuous. The hypothesis is `FloatingPoint.RoundingModel.IsTotal`. -/
 theorem algorithm_4_2_1_run_nonempty {fp : RoundingModel ℝ} (hfp : fp.IsTotal)
     (A : Matrix (Fin n) (Fin n) ℝ) : (algorithm_4_2_1 fp.round A).run.Nonempty :=
   SetM.run_foldlM_nonempty (fun _ _ _ => SetM.run_bind_nonempty
@@ -568,17 +778,19 @@ theorem algorithm_4_2_1_run_nonempty {fp : RoundingModel ℝ} (hfp : fp.IsTotal)
 
 end Bridge
 
-/-- The exact semantics of Algorithm 4.2.1 is one of its runs in the exact model. -/
+/-- The exact run of Algorithm 4.2.1 is one of its runs in the exact rounding model. -/
 private theorem algorithm_4_2_1_mem_exact (A : Matrix (Fin n) (Fin n) ℝ) :
     Id.run (algorithm_4_2_1 pure A) ∈ (algorithm_4_2_1 (RoundingModel.exact ℝ).round A).run := by
   rw [RoundingModel.round_exact]
   simp only [algorithm_4_2_1, runningDiff, pure_bind, List.foldlM_pure, SetM.mem_run_pure]
   rfl
 
-/-- **The exact semantics of Algorithm 4.2.1 is the backbone's Cholesky recurrence**, for every
-input: the lower triangle of the exact run is `Matrix.cholesky A` (off the positive definite cone
-both compute the same junk, `√` of a negative number being `0` and `x / 0 = 0`). Read off the
-relational invariant at the exact model, column by column. -/
+/-- In exact arithmetic, for every $A \in \mathbb{R}^{n \times n}$, the lower triangle of the output
+of Algorithm 4.2.1 is the backbone Cholesky recurrence `Matrix.cholesky A`.
+
+Off the positive definite cone both compute the same values, because the square root of a
+negative number is $0$ and $x / 0 = 0$. The proof reads the relational invariant at the exact
+model, column by column. -/
 theorem algorithm_4_2_1_lower_eq_cholesky (A : Matrix (Fin n) (Fin n) ℝ) :
     Id.run (algorithm_4_2_1 pure A) - (Id.run (algorithm_4_2_1 pure A)).strictUpper =
       cholesky A := by
@@ -619,8 +831,12 @@ theorem algorithm_4_2_1_lower_eq_cholesky (A : Matrix (Fin n) (Fin n) ℝ) :
   · rw [sub_strictUpper_apply_of_le F hki, key k i hki]
   · simp [strictUpper, hik, cholesky_apply_of_gt A hik]
 
-/-- **Exact correctness of Algorithm 4.2.1**: for a symmetric positive definite `A`, the lower
-triangle `G` of the exact run is the Cholesky factor, `G = cholesky A` and `A = GGᵀ`. -/
+/-- **Algorithm 4.2.1** of [golub2013matrix], exact correctness. Let $A \in \mathbb{R}^{n \times n}$
+be symmetric positive definite, and let $G$ be the lower triangle of the output of Algorithm
+4.2.1 in exact arithmetic. Then $G$ is the Cholesky factor `Matrix.cholesky A`, and $A = GG^T$.
+
+The lower triangle of the output `F` is `F - F.strictUpper`. Exact arithmetic is the monad `Id`
+with the hook `pure`. -/
 theorem algorithm_4_2_1_spec {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosDef) :
     Id.run (algorithm_4_2_1 pure A) - (Id.run (algorithm_4_2_1 pure A)).strictUpper =
         cholesky A ∧
@@ -633,9 +849,13 @@ section Solve
 
 variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 
-/-- **The solve stage of §4.2.6** on the output `F` of Algorithm 4.2.1: with `Ĝ = F − strictUpper F`
-the computed lower triangle, "`Ĝy = b`, `Ĝᵀx = y`" by chapter 3's column-oriented substitutions,
-Algorithm 3.1.3 and Algorithm 3.1.4. -/
+/-- **Section 4.2.6** of [golub2013matrix], the solve stage. Let $F$ be an output of Algorithm
+4.2.1, with lower triangle $\hat G = F - \operatorname{strictUpper}(F)$, and let
+$b \in \mathbb{R}^n$. The program solves $\hat G y = b$ and then $\hat G^T x = y$, and returns
+$x$.
+
+The two solves are the column-oriented substitutions of Chapter 3,
+`GolubVanLoan.Chapter03.algorithm_3_1_3` and `GolubVanLoan.Chapter03.algorithm_3_1_4`. -/
 noncomputable def solveCholesky (F : Matrix (Fin n) (Fin n) ℝ) (b : Fin n → ℝ) :
     M (Fin n → ℝ) := do
   let y ← Chapter03.algorithm_3_1_3 rnd (F - F.strictUpper) b
@@ -643,13 +863,20 @@ noncomputable def solveCholesky (F : Matrix (Fin n) (Fin n) ℝ) (b : Fin n → 
 
 end Solve
 
-/-- **§4.2.6, Wilkinson's bound**, rigorous form: "if `x̂` is the computed solution to `Ax = b`,
-obtained via the Cholesky process, then `x̂` solves the perturbed system `(A + E)x̂ = b`,
-`‖E‖₂ ≤ c_n u ‖A‖₂`, where `c_n` is a small constant that depends upon `n`". For a symmetric `A`, a
-run `F` of Algorithm 4.2.1 with nonzero returned diagonal (which forces every computed pivot
-positive, `algorithm_4_2_1_rounds`) and a solution `x̂` computed from it by `solveCholesky`:
-`‖E‖₂ ≤ n γ_{3n+3} ‖A‖₂ / (1 − n γ_{n+3})`, the constant `c_n ≈ 3n²` made explicit. The
-companion claim that the process runs to completion when `q_n u κ₂(A) ≤ 1` is not formalized. -/
+/-- **Section 4.2.6** of [golub2013matrix] (Wilkinson's backward error bound). Let
+$A \in \mathbb{R}^{n \times n}$ be symmetric and $b \in \mathbb{R}^n$, and let the unit roundoff
+$u$ satisfy $(3n + 3)u < 1$ and $n \gamma_{n+3} < 1$. Let $F$ be a matrix that Algorithm 4.2.1
+can compute from $A$, with every diagonal entry nonzero, and let $\hat x$ be a vector that
+`GolubVanLoan.Chapter04.solveCholesky` can compute from $F$ and $b$. Then there is
+$E \in \mathbb{R}^{n \times n}$ with
+$$(A + E) \hat x = b, \qquad \|E\|_2 \le \frac{n \gamma_{3n+3}}{1 - n \gamma_{n+3}} \|A\|_2.$$
+
+The source says that the computed solution $\hat x$ obtained via the Cholesky process solves
+$(A + E) \hat x = b$ with $\|E\|_2 \le c_n u \|A\|_2$, where $c_n$ is a small constant that
+depends on $n$. The theorem makes this constant explicit, $c_n \approx 3n^2$. The hypothesis on
+the returned diagonal forces every computed pivot to be positive
+(`GolubVanLoan.Chapter04.algorithm_4_2_1_rounds`). The claim of the source that the process runs
+to completion when $q_n u \kappa_2(A) \le 1$ is not formalized. -/
 theorem cholesky_backward_error {fp : RoundingModel ℝ} (hn : ((3 * n + 3 : ℕ) : ℝ) * fp.u < 1)
     (hγ : n * gamma fp.u (n + 3) < 1) {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
     (b : Fin n → ℝ) :
@@ -671,19 +898,25 @@ theorem cholesky_backward_error {fp : RoundingModel ℝ} (hn : ((3 * n + 3 : ℕ
     (Chapter03.algorithm_3_1_3_rounds fp _ b y hy) (Chapter03.algorithm_3_1_4_rounds fp _ y x hx)
   exact ⟨E, hAx, by simpa using hE⟩
 
-/-! ### §4.2.7 The `L D Lᵀ` factorization with symmetric pivoting -/
+/-! ### §4.2.7 The $LDL^T$ factorization with symmetric pivoting -/
 
 section Programs
 
 variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 
-/-- The pivot of step `k` of Algorithm 4.2.2: the first index `j ≥ k` with
-`a_jj = max {a_kk, …, a_nn}` (exact comparisons of the stored values). -/
+/-- The pivot of step $k$ of Algorithm 4.2.2 of [golub2013matrix]: the first index $j \ge k$ with
+$a_{jj} = \max\{a_{kk}, \dots, a_{nn}\}$. The comparisons of the stored values are exact. -/
 noncomputable def diagPivot (A : Matrix (Fin n) (Fin n) ℝ) (k : Fin n) : Fin n :=
   ((List.finRange n).filter (k ≤ ·)).foldl (fun (b i : Fin n) => if A b b < A i i then i else b) k
 
-/-- Step `k` of Algorithm 4.2.2, the loop body: the pivot `diagPivot`, the symmetric interchange,
-the multipliers `v/α` and the update of the trailing block (see `algorithm_4_2_2`). -/
+/-- One step of Algorithm 4.2.2 of [golub2013matrix], the body of its loop. Step $k$ takes the state
+$(A, \mathrm{piv})$ and chooses the pivot $j$ by `GolubVanLoan.Chapter04.diagPivot`. It
+interchanges rows $k$ and $j$ and columns $k$ and $j$ of $A$, and sets $\alpha = a_{kk}$ and
+$v = A(k{+}1{:}n, k)$. It overwrites $a_{ik}$, $i > k$, with $\mathrm{fl}(v_i / \alpha)$ and
+$a_{il}$, $i, l > k$, with $\mathrm{fl}(a_{il} - \mathrm{fl}(\mathrm{fl}(v_i v_l) / \alpha))$.
+It records $\mathrm{piv}(k) = j$.
+
+See `GolubVanLoan.Chapter04.algorithm_4_2_2` for the conventions. -/
 noncomputable def ldltPivotStep (st : Matrix (Fin n) (Fin n) ℝ × (Fin n → Fin n)) (k : Fin n) :
     M (Matrix (Fin n) (Fin n) ℝ × (Fin n → Fin n)) := do
   let j := diagPivot st.1 k
@@ -704,10 +937,11 @@ noncomputable def ldltPivotStep (st : Matrix (Fin n) (Fin n) ℝ × (Fin n → F
           pure (C.updateRow i (Function.update (C i) l c))) C) B
   pure (C, Function.update st.2 k j)
 
-/-- **Algorithm 4.2.2 (Outer Product `L D Lᵀ` with Pivoting).** "Given a symmetric positive
-semidefinite `A ∈ ℝⁿˣⁿ`, the following algorithm computes a permutation `P`, a unit lower
-triangular `L`, and a diagonal matrix `D = diag(d₁, …, d_n)` so `PAPᵀ = LDLᵀ` … The matrix element
-`a_ij` is overwritten by `d_i` if `i = j` and by `ℓ_ij` if `i > j`":
+/-- **Algorithm 4.2.2** of [golub2013matrix] (outer product $LDL^T$ with pivoting). Given a
+symmetric positive semidefinite $A \in \mathbb{R}^{n \times n}$, the algorithm computes a
+permutation $P$, a unit lower triangular $L$, and a diagonal matrix
+$D = \operatorname{diag}(d_1, \dots, d_n)$ such that $PAP^T = LDL^T$. The entry $a_{ij}$ is
+overwritten by $d_i$ if $i = j$ and by $\ell_{ij}$ if $i > j$.
 ```
 for k = 1:n
     piv(k) = j where a_jj = max{a_kk, …, a_nn}
@@ -719,10 +953,12 @@ for k = 1:n
     A(k+1:n, k+1:n) = A(k+1:n, k+1:n) − vvᵀ/α
 end
 ```
-The state is the matrix and the pivot vector (`piv k = j`, starting from the identity); the
-interchanges act on whole rows and columns; `v` is a copy; the update `a_il ← fl(a_il − fl(fl(v_i
-v_l)/α))` is in the book's order. No guard on `α = 0` (for a semidefinite input the trailing block
-then vanishes, and `x / 0 = 0`). -/
+
+The state is the matrix and the pivot vector, with $\mathrm{piv}(k) = j$; the pivot vector
+starts as the identity. The interchanges act on whole rows and columns, and $v$ is a copy. The
+update $a_{il} \leftarrow \mathrm{fl}(a_{il} - \mathrm{fl}(\mathrm{fl}(v_i v_l) / \alpha))$ is
+in the order of the source. The program has no guard on $\alpha = 0$: for a semidefinite input
+the trailing block then vanishes, and $x / 0 = 0$. -/
 noncomputable def algorithm_4_2_2 (A : Matrix (Fin n) (Fin n) ℝ) :
     M (Matrix (Fin n) (Fin n) ℝ × (Fin n → Fin n)) :=
   (List.finRange n).foldlM (ldltPivotStep rnd) (A, fun i => i)
@@ -731,25 +967,41 @@ end Programs
 
 /-! ### §4.2.8 The symmetric semidefinite case -/
 
-/-- **(4.2.11)**: a symmetric positive semidefinite `A` of rank `r` has nonnegative eigenvalues,
-exactly `r` of them nonzero (Mathlib's eigenvalues are unordered; the book's ordering
-`0 = λ_n = ⋯ = λ_{r+1} < λ_r ≤ ⋯ ≤ λ_1` is a relabelling). -/
+/-- **Equation (4.2.11)** of [golub2013matrix]. Let $A \in \mathbb{R}^{n \times n}$ be symmetric
+positive semidefinite of rank $r$. Then all eigenvalues of $A$ are nonnegative, and exactly $r$
+of them are nonzero.
+
+The source orders the eigenvalues as $0 = \lambda_n = \dots = \lambda_{r+1} < \lambda_r \le
+\dots \le \lambda_1$. The eigenvalues `Matrix.IsHermitian.eigenvalues` of Mathlib are not
+ordered, so the ordering is a relabelling. -/
 theorem equation_4_2_11 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosSemidef) :
     (∀ i, 0 ≤ hA.1.eigenvalues i) ∧ Fintype.card {i // hA.1.eigenvalues i ≠ 0} = A.rank :=
   ⟨hA.eigenvalues_nonneg, hA.1.rank_eq_card_non_zero_eigs.symm⟩
 
-/-- **Theorem 4.2.8, (4.2.12)**: `|a_ij| ≤ (a_ii + a_jj)/2`. -/
+/-- **Theorem 4.2.8** of [golub2013matrix], inequality (4.2.12). Let $A \in \mathbb{R}^{n \times n}$
+be symmetric positive semidefinite. Then for all $i$ and $j$,
+$$|a_{ij}| \le (a_{ii} + a_{jj}) / 2.$$
+-/
 theorem theorem_4_2_8_a {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosSemidef) (i j : Fin n) :
     |A i j| ≤ (A i i + A j j) / 2 := by
   simpa using hA.norm_apply_le_add_re_diag_div_two i j
 
-/-- **Theorem 4.2.8, (4.2.13)**: `|a_ij| ≤ √(a_ii a_jj)` (for all `i, j`; the book states it for
-`i ≠ j`). -/
+/-- **Theorem 4.2.8** of [golub2013matrix], inequality (4.2.13). Let $A \in \mathbb{R}^{n \times n}$
+be symmetric positive semidefinite. Then for all $i$ and $j$,
+$$|a_{ij}| \le \sqrt{a_{ii} a_{jj}}.$$
+
+**Generalization.** The source states the inequality for $i \neq j$. It also holds for $i = j$,
+where it says $|a_{ii}| \le a_{ii}$. -/
 theorem theorem_4_2_8_b {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosSemidef) (i j : Fin n) :
     |A i j| ≤ Real.sqrt (A i i * A j j) :=
   Real.abs_le_sqrt (by simpa [sq_abs] using hA.norm_apply_sq_le_mul_re_diag i j)
 
-/-- **Theorem 4.2.8, (4.2.14)**: `max |a_ij| = max a_ii`, entrywise and as a supremum. -/
+/-- **Theorem 4.2.8** of [golub2013matrix], equation (4.2.14). Let $A \in \mathbb{R}^{n \times n}$
+be symmetric positive semidefinite. Then $|a_{ij}| \le \max\{a_{ii}, a_{jj}\}$ for all $i$ and
+$j$, and, if $n \ge 1$,
+$$\max_{i, j} |a_{ij}| = \max_i a_{ii}.$$
+
+The maxima are the suprema `⨆` over the finite index sets. -/
 theorem theorem_4_2_8_c {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosSemidef) :
     (∀ i j, |A i j| ≤ max (A i i) (A j j)) ∧
       ∀ [NeZero n], (⨆ i, ⨆ j, |A i j|) = ⨆ i, A i i := by
@@ -766,14 +1018,27 @@ theorem theorem_4_2_8_c {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosSemidef) :
       _ ≤ ⨆ j, |A i j| := le_ciSup (hb i) i
       _ ≤ ⨆ i, ⨆ j, |A i j| := le_ciSup hb' i
 
-/-- **Theorem 4.2.8, (4.2.15)**: `a_ii = 0 ⇒ A(i, :) = 0, A(:, i) = 0`. -/
+/-- **Theorem 4.2.8** of [golub2013matrix], implication (4.2.15). Let
+$A \in \mathbb{R}^{n \times n}$ be symmetric positive semidefinite. If $a_{ii} = 0$, then
+$A(i, :) = 0$ and $A(:, i) = 0$. -/
 theorem theorem_4_2_8_d {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosSemidef) {i : Fin n}
     (hi : A i i = 0) : (∀ j, A i j = 0) ∧ ∀ j, A j i = 0 :=
   ⟨fun j => (hA.apply_eq_zero_of_diag_eq_zero hi j).1,
     fun j => (hA.apply_eq_zero_of_diag_eq_zero hi j).2⟩
 
-/-- **Theorem 4.2.8.** "If `A ∈ ℝⁿˣⁿ` is symmetric positive semidefinite, then (4.2.12)–(4.2.15)
-hold." -/
+/-- **Theorem 4.2.8** of [golub2013matrix]. If $A \in \mathbb{R}^{n \times n}$ is symmetric positive
+semidefinite, then for all $i$ and $j$
+$$|a_{ij}| \le (a_{ii} + a_{jj}) / 2, \qquad (4.2.12)$$
+$$|a_{ij}| \le \sqrt{a_{ii} a_{jj}}, \qquad (4.2.13)$$
+$$|a_{ij}| \le \max\{a_{ii}, a_{jj}\}, \quad \text{and} \quad \max_{i, j} |a_{ij}| = \max_i
+  a_{ii} \text{ if } n \ge 1, \qquad (4.2.14)$$
+$$a_{ii} = 0 \implies A(i, :) = 0, \ A(:, i) = 0. \qquad (4.2.15)$$
+
+**Generalization.** The source states (4.2.13) for $i \neq j$. It holds for all $i$ and $j$.
+
+The four parts are `GolubVanLoan.Chapter04.theorem_4_2_8_a`,
+`GolubVanLoan.Chapter04.theorem_4_2_8_b`, `GolubVanLoan.Chapter04.theorem_4_2_8_c` and
+`GolubVanLoan.Chapter04.theorem_4_2_8_d`. -/
 theorem theorem_4_2_8 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosSemidef) :
     (∀ i j, |A i j| ≤ (A i i + A j j) / 2) ∧ (∀ i j, |A i j| ≤ Real.sqrt (A i i * A j j)) ∧
       ((∀ i j, |A i j| ≤ max (A i i) (A j j)) ∧
@@ -781,9 +1046,13 @@ theorem theorem_4_2_8 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosSemidef) :
       ∀ i, A i i = 0 → (∀ j, A i j = 0) ∧ ∀ j, A j i = 0 :=
   ⟨theorem_4_2_8_a hA, theorem_4_2_8_b hA, theorem_4_2_8_c hA, fun _ => theorem_4_2_8_d hA⟩
 
-/-- **(4.2.10)**: a symmetric positive definite `A` has a permutation `P`, a unit lower triangular
-`L` and `D = diag(d₁, …, d_n)` with `PAPᵀ = LDLᵀ` and `d₁ ≥ d₂ ≥ ⋯ ≥ d_n > 0` (the diagonal
-pivoting strategy). -/
+/-- **Equation (4.2.10)** of [golub2013matrix]. Let $A \in \mathbb{R}^{n \times n}$ be symmetric
+positive definite. Then there are a permutation matrix $P$, a unit lower triangular
+$L \in \mathbb{R}^{n \times n}$ and $D = \operatorname{diag}(d_1, \dots, d_n)$ with
+$$PAP^T = LDL^T, \qquad d_1 \ge d_2 \ge \dots \ge d_n > 0.$$
+
+This is the factorization that the diagonal pivoting strategy produces. The permutation is
+`σ : Equiv.Perm (Fin n)`, and $PAP^T$ is `A.submatrix σ σ`. -/
 theorem equation_4_2_10 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosDef) :
     ∃ (σ : Equiv.Perm (Fin n)) (L : Matrix (Fin n) (Fin n) ℝ) (d : Fin n → ℝ),
       L.IsUnitLowerTriangular ∧ A.submatrix σ σ = L * diagonal d * Lᵀ ∧ Antitone d ∧
@@ -793,16 +1062,24 @@ theorem equation_4_2_10 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosDef) :
   refine ⟨σ, L, d, hL, by simpa [conjTranspose_eq_transpose_of_trivial] using heq, hanti,
     fun i => hpos i (by rw [hr]; exact i.isLt)⟩
 
-/-- An entry of `X D Xᵀ` for a diagonal `D`. -/
+/-- For a diagonal matrix $D = \operatorname{diag}(d)$, the entry $(a, b)$ of $XDX^T$ is
+$\sum_k x_{ak} d_k x_{bk}$. -/
 private theorem mul_diagonal_mul_transpose_apply {ι κ : Type*} [Fintype κ] [DecidableEq κ]
     (X : Matrix ι κ ℝ) (d : κ → ℝ) (a b : ι) :
     (X * diagonal d * Xᵀ) a b = ∑ k, X a k * d k * X b k := by
   rw [Matrix.mul_apply]
   simp only [mul_diagonal, transpose_apply]
 
-/-- **(4.2.17)**: a symmetric positive semidefinite `A` of rank `r` satisfies
-`PAPᵀ = [L₁₁; L₂₁] D_r [L₁₁ᵀ L₂₁ᵀ]` with `D_r = diag(d₁, …, d_r)` positive and `L₁₁` (the first
-`r` rows of the `n × r` matrix `L = [L₁₁; L₂₁]`) unit lower triangular. -/
+/-- **Equation (4.2.17)** of [golub2013matrix]. Let $A \in \mathbb{R}^{n \times n}$ be symmetric
+positive semidefinite of rank $r$. Then there are a permutation matrix $P$, a matrix $L =
+\begin{bmatrix} L_{11} \\ L_{21} \end{bmatrix} \in \mathbb{R}^{n \times r}$ whose first $r$ rows
+$L_{11}$ form a unit lower triangular matrix, and $D_r = \operatorname{diag}(d_1, \dots, d_r)$
+with $d_1, \dots, d_r > 0$, such that
+$$PAP^T = \begin{bmatrix} L_{11} \\ L_{21} \end{bmatrix} D_r \begin{bmatrix} L_{11}^T & L_{21}^T
+  \end{bmatrix}.$$
+
+The block $L_{11}$ is `L.submatrix (Fin.castLE _) id`, and the rank is `Matrix.rank A`. The
+permutation is `σ`, and $PAP^T$ is `A.submatrix σ σ`. -/
 theorem equation_4_2_17 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosSemidef) :
     ∃ (σ : Equiv.Perm (Fin n)) (L : Matrix (Fin n) (Fin A.rank) ℝ) (d : Fin A.rank → ℝ),
       (L.submatrix (Fin.castLE (A.rank_le_width)) id).IsUnitLowerTriangular ∧
@@ -821,9 +1098,13 @@ theorem equation_4_2_17 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosSemidef) :
     simp only [submatrix_apply, id, Function.comp_apply]
     exact Fin.sum_eq_sum_castLE_of_forall_le h _ fun k hk => by rw [hzero k hk]; ring
 
-/-- **§4.2.8, the rank-one expansion**: `PAPᵀ = ∑_{j=1}^{r} d_j ℓ_j ℓ_jᵀ` with `ℓ_j` the `j`th
-column of the `L`-matrix of (4.2.17) — "a relatively cheap alternative to the SVD rank-1
-expansion". -/
+/-- **Section 4.2.8** of [golub2013matrix], the rank-one expansion. Let
+$A \in \mathbb{R}^{n \times n}$ be symmetric positive semidefinite of rank $r$. Then there are
+$P$, $L \in \mathbb{R}^{n \times r}$ and $d_1, \dots, d_r$ as in (4.2.17) with
+$$PAP^T = \sum_{j=1}^{r} d_j \ell_j \ell_j^T,$$
+where $\ell_j$ is the $j$th column of $L$.
+
+The source calls this expansion a relatively cheap alternative to the SVD rank-1 expansion. -/
 theorem equation_4_2_17_sum {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosSemidef) :
     ∃ (σ : Equiv.Perm (Fin n)) (L : Matrix (Fin n) (Fin A.rank) ℝ) (d : Fin A.rank → ℝ),
       (L.submatrix (Fin.castLE (A.rank_le_width)) id).IsUnitLowerTriangular ∧
@@ -839,11 +1120,21 @@ theorem equation_4_2_17_sum {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosSemidef)
 
 /-! ### §4.2.9 Block Cholesky -/
 
-/-- **(4.2.18)** and the block equations: for a symmetric positive definite `A` blocked as
-`[A₁₁ A₂₁ᵀ; A₂₁ A₂₂]` (`A₁₁` of size `r`) and `G = [G₁₁ 0; G₂₁ G₂₂]` its Cholesky factor,
-blocked conformably: `A₁₁ = G₁₁G₁₁ᵀ`, `A₂₁ = G₂₁G₁₁ᵀ`, `A₂₂ = G₂₁G₂₁ᵀ + G₂₂G₂₂ᵀ`; `G₁₁` is the
-Cholesky factor of `A₁₁` and `G₂₂` that of `A₂₂ − G₂₁G₂₁ᵀ = A₂₂ − A₂₁A₁₁⁻¹A₂₁ᵀ` ("Step 3"). The
-blocks are read along `finSumFinEquiv : Fin r ⊕ Fin s ≃ Fin (r + s)`. -/
+/-- **Equation (4.2.18)** of [golub2013matrix], with the block equations of block Cholesky. Let
+$A \in \mathbb{R}^{(r+s) \times (r+s)}$ be symmetric positive definite, blocked as
+$$A = \begin{bmatrix} A_{11} & A_{21}^T \\ A_{21} & A_{22} \end{bmatrix}, \qquad A_{11} \in
+  \mathbb{R}^{r \times r},$$
+and let $G = \begin{bmatrix} G_{11} & G_{12} \\ G_{21} & G_{22} \end{bmatrix}$ be its Cholesky
+factor, blocked in the same way. Then $G_{12} = 0$,
+$$A_{11} = G_{11} G_{11}^T, \qquad A_{21} = G_{21} G_{11}^T, \qquad A_{22} = G_{21} G_{21}^T +
+  G_{22} G_{22}^T,$$
+and $A_{22} - G_{21} G_{21}^T = A_{22} - A_{21} A_{11}^{-1} A_{21}^T$. Moreover $G_{11}$ is the
+Cholesky factor of $A_{11}$, and $G_{22}$ is the Cholesky factor of
+$A_{22} - A_{21} A_{11}^{-1} A_{21}^T$.
+
+The last statement is Step 3 of the derivation in the source. The blocks are read along
+`finSumFinEquiv : Fin r ⊕ Fin s ≃ Fin (r + s)` with `Matrix.toBlocks₁₁` and its companions, and
+the Cholesky factor is `Matrix.cholesky`. -/
 theorem equation_4_2_18 {r s : ℕ} {A : Matrix (Fin (r + s)) (Fin (r + s)) ℝ} (hA : A.PosDef) :
     let A' := A.submatrix finSumFinEquiv finSumFinEquiv
     let G' := (cholesky A).submatrix finSumFinEquiv finSumFinEquiv
@@ -908,16 +1199,24 @@ theorem equation_4_2_18 {r s : ℕ} {A : Matrix (Fin (r + s)) (Fin (r + s)) ℝ}
       ← Matrix.mul_assoc G'.toBlocks₁₁⁻¹, nonsing_inv_mul _ hdet, Matrix.one_mul]
   refine ⟨h12, h11', h21', by rw [hprod]; simp, by rw [hschur], h11, by rw [h22, hS]⟩
 
-/-- The `r × r` block `(i, j)` of a matrix on `Fin (N * r)`, the book's `A_ij` in the blocking
-(4.2.19), read along `finProdFinEquiv : Fin N × Fin r ≃ Fin (N * r)`. -/
+/-- The $r \times r$ block $A_{ij}$ of a matrix $A \in \mathbb{R}^{Nr \times Nr}$ in the blocking
+(4.2.19) of [golub2013matrix]. With 0-based indices, the entry $(p, q)$ of $A_{ij}$ is
+$a_{ir + p, \, jr + q}$; the index pairs are read along
+`finProdFinEquiv : Fin N × Fin r ≃ Fin (N * r)`. -/
 def blockOf {N r : ℕ} (A : Matrix (Fin (N * r)) (Fin (N * r)) ℝ) (i j : Fin N) :
     Matrix (Fin r) (Fin r) ℝ :=
   of fun p q => A (finProdFinEquiv (i, p)) (finProdFinEquiv (j, q))
 
-/-- **(4.2.19)** and the block equations below it: for `n = N r`, a symmetric positive definite `A`
-and its Cholesky factor `G`, both blocked into `r × r` blocks, `G` is block lower triangular,
-`A_ij = ∑_{k ≤ j} G_ik G_jkᵀ` for `i ≥ j`, and with `S = A_ij − ∑_{k<j} G_ik G_jkᵀ`: `G_jj` is
-the Cholesky factor of `S` if `i = j`, and `G_ij G_jjᵀ = S` if `i > j`. -/
+/-- **Equation (4.2.19)** of [golub2013matrix], with the block equations of Algorithm 4.2.4. Let
+$n = Nr$, let $A \in \mathbb{R}^{n \times n}$ be symmetric positive definite, and let $G$ be its
+Cholesky factor, both blocked into $r \times r$ blocks $A_{ij}$ and $G_{ij}$,
+$1 \le i, j \le N$. Then for all block indices $i$ and $j$:
+* $G_{ij} = 0$ if $i < j$;
+* $A_{ij} = \sum_{k \le j} G_{ik} G_{jk}^T$ if $i \ge j$;
+* $G_{jj}$ is the Cholesky factor of $A_{jj} - \sum_{k < j} G_{jk} G_{jk}^T$;
+* $G_{ij} G_{jj}^T = A_{ij} - \sum_{k < j} G_{ik} G_{jk}^T$ if $i > j$.
+
+The blocks are `GolubVanLoan.Chapter04.blockOf`, and the Cholesky factor is `Matrix.cholesky`. -/
 theorem equation_4_2_19 {N r : ℕ} {A : Matrix (Fin (N * r)) (Fin (N * r)) ℝ} (hA : A.PosDef)
     (i j : Fin N) :
     (i < j → blockOf (cholesky A) i j = 0) ∧
@@ -976,26 +1275,37 @@ section Programs
 
 variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 
-/-- **The lower triangle of Algorithm 4.2.1**, the Cholesky factor that the block algorithms store:
-`F − strictUpper F` for the output `F` of Algorithm 4.2.1 (zeroing the untouched upper triangle is
-exact). -/
+/-- The Cholesky factorization of a block in Algorithms 4.2.3 and 4.2.4 of [golub2013matrix]. For
+$A \in \mathbb{R}^{m \times m}$, the program runs Algorithm 4.2.1 on $A$ and returns the lower
+triangle $F - \operatorname{strictUpper}(F)$ of its output $F$. The block algorithms store this
+lower triangle as the Cholesky factor.
+
+Setting the strict upper triangle to zero is exact. -/
 noncomputable def choleskyLower {m : ℕ} (A : Matrix (Fin m) (Fin m) ℝ) :
     M (Matrix (Fin m) (Fin m) ℝ) := do
   let F ← algorithm_4_2_1 rnd A
   pure (F - F.strictUpper)
 
-/-- **The multiple-right-hand-side triangular solve** `X Gᵀ = B` (Step 2 of Algorithm 4.2.3), row
-by row: row `i` of `B` is overwritten by the solution of `G xᵀ = B(i, :)ᵀ`, computed by chapter 3's
-Algorithm 3.1.3. -/
+/-- The triangular solve $XG^T = B$ with several right-hand sides, Step 2 of Algorithm 4.2.3 of
+[golub2013matrix]. For $G \in \mathbb{R}^{r \times r}$ and $B \in \mathbb{R}^{m \times r}$, the
+program overwrites each row $B(i, :)$, $i = 1, \dots, m$, with the solution $x$ of
+$Gx = B(i, :)^T$.
+
+Each row is solved by Algorithm 3.1.3 of Chapter 3, `GolubVanLoan.Chapter03.algorithm_3_1_3`. -/
 noncomputable def solveRowsLower {m r : ℕ} (G : Matrix (Fin r) (Fin r) ℝ)
     (B : Matrix (Fin m) (Fin r) ℝ) : M (Matrix (Fin m) (Fin r) ℝ) :=
   (List.finRange m).foldlM (fun (X : Matrix (Fin m) (Fin r) ℝ) (i : Fin m) => do
     let x ← Chapter03.algorithm_3_1_3 rnd G (B i)
     pure (X.updateRow i x)) B
 
-/-- **The block update** `C − X Yᵀ` of block Cholesky (the book's `Ã = A₂₂ − G₂₁G₂₁ᵀ` and
-`S = A_ij − ∑_{k<j} G_ik G_jkᵀ`), entry by entry: the entry `(i, j)` is the running difference of
-`C i j` and the products `X i k * Y j k`, `k` along `o` (`runningDiff`). -/
+/-- The block update $C - XY^T$ of block Cholesky in [golub2013matrix]: the matrix
+$\tilde A = A_{22} - G_{21} G_{21}^T$ of Algorithm 4.2.3 and the matrix
+$S = A_{ij} - \sum_{k<j} G_{ik} G_{jk}^T$ of Algorithm 4.2.4. For
+$C \in \mathbb{R}^{m \times m'}$, matrices $X$ and $Y$ with $m$ and $m'$ rows and a common
+column index type, and a list $o$ of column indices, the entry $(i, j)$ of the result is the
+running difference of $c_{ij}$ and the rounded products $x_{ik} y_{jk}$, $k$ along $o$.
+
+The running difference is `FloatingPoint.runningDiff`. -/
 noncomputable def mulTransposeDiff {m m' : ℕ} {ι : Type} (o : List ι)
     (C : Matrix (Fin m) (Fin m') ℝ) (X : Matrix (Fin m) ι ℝ) (Y : Matrix (Fin m') ι ℝ) :
     M (Matrix (Fin m) (Fin m') ℝ) :=
@@ -1004,9 +1314,9 @@ noncomputable def mulTransposeDiff {m m' : ℕ} {ι : Type} (o : List ι)
       let t ← runningDiff rnd o (X i) (Y j) (C i j)
       pure (D.updateRow i (Function.update (D i) j t))) D) C
 
-/-- **Algorithm 4.2.3 (Recursive Block Cholesky).** "Suppose `A ∈ ℝⁿˣⁿ` is symmetric positive
-definite and `r` is a positive integer. The following algorithm computes a lower triangular
-`G ∈ ℝⁿˣⁿ` so `A = GGᵀ`":
+/-- **Algorithm 4.2.3** of [golub2013matrix] (recursive block Cholesky). Suppose that
+$A \in \mathbb{R}^{n \times n}$ is symmetric positive definite and $r$ is a positive integer.
+The algorithm computes a lower triangular $G \in \mathbb{R}^{n \times n}$ such that $A = GG^T$.
 ```
 function G = BlockCholesky(A, n, r)
 if n ≤ r
@@ -1019,12 +1329,13 @@ else
     G = [G₁₁ 0; G₂₁ G₂₂]
 end
 ```
+
 The Cholesky factorizations are Algorithm 4.2.1, whose lower triangle is returned
-(`choleskyLower`); `G₂₁` is solved row by row by chapter 3's
-Algorithm 3.1.3 (`solveRowsLower`); `Ã` is formed by running differences (`mulTransposeDiff`,
-without exploiting symmetry). The blocks are read along
-`finSumFinEquiv : Fin r ⊕ Fin (n − r) ≃ Fin (r + (n − r))` and `n = r + (n − r)`; the recursion is
-on `n`, which decreases since `0 < r`. -/
+(`GolubVanLoan.Chapter04.choleskyLower`). The block $G_{21}$ is solved row by row by Algorithm
+3.1.3 (`GolubVanLoan.Chapter04.solveRowsLower`). The matrix $\tilde A$ is formed by running
+differences (`GolubVanLoan.Chapter04.mulTransposeDiff`), without use of its symmetry. The blocks
+are read along `finSumFinEquiv : Fin r ⊕ Fin (n - r) ≃ Fin (r + (n - r))` and $n = r + (n - r)$.
+The recursion is on $n$, which decreases because $r > 0$. -/
 noncomputable def algorithm_4_2_3 (r : ℕ) (hr : 0 < r) :
     (n : ℕ) → Matrix (Fin n) (Fin n) ℝ → M (Matrix (Fin n) (Fin n) ℝ)
   | n, A =>
@@ -1042,13 +1353,15 @@ noncomputable def algorithm_4_2_3 (r : ℕ) (hr : 0 < r) :
 
 end Programs
 
-/-- In exact arithmetic the stored lower triangle of Algorithm 4.2.1 is the Cholesky factor. -/
+/-- In exact arithmetic, for every $A \in \mathbb{R}^{m \times m}$,
+`GolubVanLoan.Chapter04.choleskyLower` returns the Cholesky factor `Matrix.cholesky A`. -/
 theorem choleskyLower_id {m : ℕ} (A : Matrix (Fin m) (Fin m) ℝ) :
     Id.run (choleskyLower (M := Id) pure A) = cholesky A := by
   rw [choleskyLower, Id.run_bind, Id.run_pure]
   exact algorithm_4_2_1_lower_eq_cholesky A
 
-/-- In exact arithmetic the row-by-row solve computes forward substitution on every row. -/
+/-- In exact arithmetic, `GolubVanLoan.Chapter04.solveRowsLower` replaces each row $B(i, :)$ by the
+forward substitution solution `Matrix.forwardSubst G (B i)`. -/
 theorem solveRowsLower_id {m r : ℕ} (G : Matrix (Fin r) (Fin r) ℝ)
     (B : Matrix (Fin m) (Fin r) ℝ) :
     Id.run (solveRowsLower (M := Id) pure G B) = of fun i => G.forwardSubst (B i) := by
@@ -1072,7 +1385,8 @@ theorem solveRowsLower_id {m r : ℕ} (G : Matrix (Fin r) (Fin r) ℝ)
       by_cases hl : i ∈ l <;> simp [hl]
     · by_cases hl : i ∈ l <;> simp [hl, hi]
 
-/-- In exact arithmetic the block update computes `C − ∑_{k ∈ o} X i k Y j k` in every entry. -/
+/-- In exact arithmetic, the entry $(i, j)$ of the result of
+`GolubVanLoan.Chapter04.mulTransposeDiff` is $c_{ij} - \sum_{k \in o} x_{ik} y_{jk}$. -/
 theorem mulTransposeDiff_id {m m' : ℕ} {ι : Type} (o : List ι) (C : Matrix (Fin m) (Fin m') ℝ)
     (X : Matrix (Fin m) ι ℝ) (Y : Matrix (Fin m') ι ℝ) :
     Id.run (mulTransposeDiff (M := Id) pure o C X Y) =
@@ -1116,18 +1430,22 @@ theorem mulTransposeDiff_id {m m' : ℕ} {ι : Type} (o : List ι) (C : Matrix (
   ext a b
   simp
 
-/-- Reindexing along a cast of `Fin` commutes with the Cholesky factor. -/
+/-- Reindexing along a cast `finCongr` of `Fin` commutes with the Cholesky factor. -/
 private theorem cholesky_submatrix_finCongr {m k : ℕ} (h : m = k) (A : Matrix (Fin k) (Fin k) ℝ) :
     cholesky (A.submatrix (finCongr h) (finCongr h)) =
       (cholesky A).submatrix (finCongr h) (finCongr h) := by
   subst h
   simp
 
-/-- **Exact correctness of Algorithm 4.2.3**: for a symmetric positive definite `A` and `0 < r`,
-the exact run is the Cholesky factor, `G = cholesky A`. By strong induction on `n`: the base case
-is `algorithm_4_2_1_lower_eq_cholesky`; the step compares the blocks with (4.2.18): `G₁₁` is the
-Cholesky factor of `A₁₁`, the rows of `G₂₁` solve `G₁₁ gᵀ = a` (unique, `G₁₁` lower triangular
-with positive diagonal), and `Ã = A₂₂ − G₂₁G₂₁ᵀ` is the positive definite Schur complement. -/
+/-- **Algorithm 4.2.3** of [golub2013matrix], exact correctness. Let $A \in \mathbb{R}^{n \times n}$
+be symmetric positive definite and let $r > 0$. Then Algorithm 4.2.3 in exact arithmetic returns
+the Cholesky factor `Matrix.cholesky A`.
+
+The proof is by strong induction on $n$. The base case is
+`GolubVanLoan.Chapter04.algorithm_4_2_1_lower_eq_cholesky`. The step compares the blocks with
+(4.2.18): $G_{11}$ is the Cholesky factor of $A_{11}$, the rows of $G_{21}$ are the unique
+solutions of the triangular systems with $G_{11}$, and $\tilde A = A_{22} - G_{21} G_{21}^T$ is
+the positive definite Schur complement. -/
 theorem algorithm_4_2_3_spec {r : ℕ} (hr : 0 < r) {A : Matrix (Fin n) (Fin n) ℝ}
     (hA : A.PosDef) : Id.run (algorithm_4_2_3 pure r hr n A) = cholesky A := by
   induction n using Nat.strong_induction_on with
@@ -1178,8 +1496,11 @@ theorem algorithm_4_2_3_spec {r : ℕ} (hr : 0 < r) {A : Matrix (Fin n) (Fin n) 
   ext i j
   simp
 
-/-- `updateBlock A i j X` overwrites the `r × r` block `(i, j)` of `A`, in the blocking (4.2.19)
-along `finProdFinEquiv`, with `X`. -/
+/-- For $A \in \mathbb{R}^{Nr \times Nr}$, block indices $i$ and $j$, and
+$X \in \mathbb{R}^{r \times r}$, `updateBlock A i j X` is the matrix $A$ with its block $A_{ij}$
+in the blocking (4.2.19) of [golub2013matrix] replaced by $X$.
+
+The blocks are read along `finProdFinEquiv`, as in `GolubVanLoan.Chapter04.blockOf`. -/
 def updateBlock {N r : ℕ} (A : Matrix (Fin (N * r)) (Fin (N * r)) ℝ) (i j : Fin N)
     (X : Matrix (Fin r) (Fin r) ℝ) : Matrix (Fin (N * r)) (Fin (N * r)) ℝ :=
   of fun a b => if (finProdFinEquiv.symm a).1 = i ∧ (finProdFinEquiv.symm b).1 = j then
@@ -1189,12 +1510,15 @@ section Programs
 
 variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 
-/-- One block of Algorithm 4.2.4, the pair `(i, j)` with `i ≥ j`: "Compute
-`S = A_ij − ∑_{k=1}^{j−1} G_ik G_jkᵀ`. If `i = j` compute the Cholesky factorization
-`S = G_jj G_jjᵀ`, else solve `G_ij G_jjᵀ = S` for `G_ij`. `A_ij = G_ij`". `S` is formed by running
-differences over the pairs `(k, s)`, `k < j`, of the block columns already overwritten
-(`mulTransposeDiff`); the Cholesky factor is `choleskyLower`, the solve is row by row by
-Algorithm 3.1.3 (`solveRowsLower`) with the stored `G_jj`. -/
+/-- One block step of Algorithm 4.2.4 of [golub2013matrix], for the block pair $(i, j)$ with
+$i \ge j$. The step computes $S = A_{ij} - \sum_{k=1}^{j-1} G_{ik} G_{jk}^T$. If $i = j$, it
+computes the Cholesky factorization $S = G_{jj} G_{jj}^T$; otherwise it solves
+$G_{ij} G_{jj}^T = S$ for $G_{ij}$. Then it overwrites $A_{ij}$ with $G_{ij}$.
+
+The matrix $S$ is formed by running differences over the pairs $(k, s)$ with $k < j$ of the
+block columns already overwritten (`GolubVanLoan.Chapter04.mulTransposeDiff`). The Cholesky
+factor is `GolubVanLoan.Chapter04.choleskyLower`, and the solve is row by row by Algorithm 3.1.3
+(`GolubVanLoan.Chapter04.solveRowsLower`) with the stored block $G_{jj}$. -/
 noncomputable def blockCholeskyStep {N r : ℕ} (j i : Fin N)
     (A : Matrix (Fin (N * r)) (Fin (N * r)) ℝ) : M (Matrix (Fin (N * r)) (Fin (N * r)) ℝ) := do
   let S ← mulTransposeDiff rnd ((List.finRange N).filter (· < j) ×ˢ List.finRange r)
@@ -1203,10 +1527,10 @@ noncomputable def blockCholeskyStep {N r : ℕ} (j i : Fin N)
   let G ← (if i = j then choleskyLower rnd S else solveRowsLower rnd (blockOf A j j) S)
   pure (updateBlock A i j G)
 
-/-- **Algorithm 4.2.4 (Nonrecursive Block Cholesky).** "Given a symmetric positive definite
-`A ∈ ℝⁿˣⁿ` with `n = Nr` with blocking (4.2.19), the following algorithm computes a lower
-triangular `G ∈ ℝⁿˣⁿ` such that `A = GGᵀ`. The lower triangular part of `A` is overwritten by the
-lower triangular part of `G`":
+/-- **Algorithm 4.2.4** of [golub2013matrix] (nonrecursive block Cholesky). Given a symmetric
+positive definite $A \in \mathbb{R}^{n \times n}$ with $n = Nr$ and the blocking (4.2.19), the
+algorithm computes a lower triangular $G \in \mathbb{R}^{n \times n}$ such that $A = GG^T$. The
+lower triangular part of $A$ is overwritten by the lower triangular part of $G$.
 ```
 for j = 1:N
     for i = j:N
@@ -1220,9 +1544,11 @@ for j = 1:N
     end
 end
 ```
-The input is `Matrix (Fin (N * r)) (Fin (N * r)) ℝ`, its blocks `blockOf A i j` read along
-`finProdFinEquiv`; the loop body is `blockCholeskyStep`. The diagonal blocks store the lower
-triangle of the factor, so their strict upper triangles are zeroed. -/
+
+The input is `Matrix (Fin (N * r)) (Fin (N * r)) ℝ`, and its blocks
+`GolubVanLoan.Chapter04.blockOf A i j` are read along `finProdFinEquiv`. The loop body is
+`GolubVanLoan.Chapter04.blockCholeskyStep`. The diagonal blocks store the lower triangle of the
+factor, so their strict upper triangles are set to zero. -/
 noncomputable def algorithm_4_2_4 (N r : ℕ) (A : Matrix (Fin (N * r)) (Fin (N * r)) ℝ) :
     M (Matrix (Fin (N * r)) (Fin (N * r)) ℝ) :=
   (List.finRange N).foldlM (fun (A : Matrix (Fin (N * r)) (Fin (N * r)) ℝ) (j : Fin N) =>
@@ -1232,7 +1558,8 @@ noncomputable def algorithm_4_2_4 (N r : ℕ) (A : Matrix (Fin (N * r)) (Fin (N 
 
 end Programs
 
-/-- The matrix whose blocks `(i, k)` with `P i k` are those of `G`, the others those of `A`. -/
+/-- The matrix whose blocks $(i, k)$ with $P(i, k)$ true are those of $G$, and whose other blocks
+are those of $A$. -/
 private def blockMix {N r : ℕ} (A G : Matrix (Fin (N * r)) (Fin (N * r)) ℝ)
     (P : Fin N → Fin N → Bool) : Matrix (Fin (N * r)) (Fin (N * r)) ℝ :=
   of fun a b => if P (finProdFinEquiv.symm a).1 (finProdFinEquiv.symm b).1 then G a b else A a b
@@ -1268,7 +1595,9 @@ private theorem updateBlock_blockMix {N r : ℕ} (A G : Matrix (Fin (N * r)) (Fi
     · rw [ite_eq_left hP, ite_eq_left (Or.inl hP)]
     · rw [ite_eq_right hP, ite_eq_right (by tauto)]
 
-/-- One step of Algorithm 4.2.4 in exact arithmetic. -/
+/-- In exact arithmetic, the step of Algorithm 4.2.4 for the block pair $(i, j)$ overwrites the
+block $(i, j)$ with the Cholesky factor of $S = A_{ij} - \sum_{k<j} G_{ik} G_{jk}^T$ if $i = j$,
+and with the row-wise forward substitution solution of $X A_{jj}^T = S$ otherwise. -/
 private theorem blockCholeskyStep_id {N r : ℕ} (j i : Fin N)
     (A : Matrix (Fin (N * r)) (Fin (N * r)) ℝ) :
     Id.run (blockCholeskyStep (M := Id) pure j i A) = updateBlock A i j
@@ -1286,12 +1615,15 @@ private theorem blockCholeskyStep_id {N r : ℕ} (j i : Fin N)
   · exact choleskyLower_id _
   · exact solveRowsLower_id _ _
 
-/-- **Exact correctness of Algorithm 4.2.4**: for a symmetric positive definite `A` with
-`n = N r`, the lower triangle of the exact run is the Cholesky factor, `G = cholesky A`. Induction
-over the block columns, and within a column over the block rows, with the invariant that the blocks
-already visited are those of `G`: the block `S` is then `A_ij − ∑_{k<j} G_ik G_jkᵀ`, whose
-Cholesky factor is `G_jj` and for which `G_ij G_jjᵀ = S` (4.2.19), the solution of the triangular
-system being unique. -/
+/-- **Algorithm 4.2.4** of [golub2013matrix], exact correctness. Let $n = Nr$ and let
+$A \in \mathbb{R}^{n \times n}$ be symmetric positive definite. Then the lower triangle of the
+output of Algorithm 4.2.4 in exact arithmetic is the Cholesky factor `Matrix.cholesky A`.
+
+The proof is by induction over the block columns, and within a column over the block rows, with
+the invariant that the blocks already visited are those of $G$. The block $S$ is then
+$A_{ij} - \sum_{k<j} G_{ik} G_{jk}^T$, whose Cholesky factor is $G_{jj}$ and for which
+$G_{ij} G_{jj}^T = S$ by (4.2.19); the solution of the triangular system is unique. The lower
+triangle of the output `F` is `F - F.strictUpper`. -/
 theorem algorithm_4_2_4_spec {N r : ℕ} {A : Matrix (Fin (N * r)) (Fin (N * r)) ℝ}
     (hA : A.PosDef) :
     Id.run (algorithm_4_2_4 pure N r A) - (Id.run (algorithm_4_2_4 pure N r A)).strictUpper =
@@ -1433,13 +1765,21 @@ theorem algorithm_4_2_4_spec {N r : ℕ} {A : Matrix (Fin (N * r)) (Fin (N * r))
 
 /-! ### Algorithm 4.2.2: the exact specification ((4.2.16), (4.2.17)) -/
 
-/-- One elimination step of Algorithm 4.2.2 in exact arithmetic: the multipliers
-`a_ik / a_kk` below the pivot and the update `a_il − a_ik a_lk / a_kk` of the trailing block. -/
+/-- One elimination step of Algorithm 4.2.2 of [golub2013matrix] in exact arithmetic. For an index
+$k$ and $A \in \mathbb{R}^{n \times n}$, the result has the entries
+$$a_{il} - a_{ik} a_{lk} / a_{kk} \quad (i, l > k), \qquad a_{ik} / a_{kk} \quad (i > k, \ l =
+  k),$$
+and $a_{il}$ elsewhere.
+
+The step contains no interchange. If $a_{kk} = 0$, the quotients are $0$, by the convention
+$x / 0 = 0$. -/
 noncomputable def pivotElim (k : Fin n) (A : Matrix (Fin n) (Fin n) ℝ) : Matrix (Fin n) (Fin n) ℝ :=
   of fun i l => if k < i ∧ k < l then A i l - A i k * A l k / A k k
     else if l = k ∧ k < i then A i k / A k k else A i l
 
-/-- A fold writing one entry of a fixed column per row, with values not depending on the state. -/
+/-- A loop that writes one entry of a fixed column $k$ per row, with values $w_i$ that do not depend
+on the state, sets the entries $(i, k)$ for the rows $i$ of the list to $w_i$ and keeps the
+other entries. -/
 private theorem foldl_updateRow_col_const (k : Fin n) (w : Fin n → ℝ) (L : List (Fin n))
     (D : Matrix (Fin n) (Fin n) ℝ) :
     L.foldl (fun (B : Matrix (Fin n) (Fin n) ℝ) (i : Fin n) =>
@@ -1455,7 +1795,8 @@ private theorem foldl_updateRow_col_const (k : Fin n) (w : Fin n → ℝ) (L : L
       by_cases hb : b = k <;> simp [hb]
     · by_cases hb : b = k <;> simp [hb, ha]
 
-/-- A fold subtracting from the entries `(i, l)`, `l` along a duplicate-free list. -/
+/-- A loop over a duplicate-free list of columns $l$ that subtracts $w_l$ from the entry $(i, l)$
+subtracts $w_l$ exactly at those entries. -/
 private theorem foldl_updateRow_sub (i : Fin n) (w : Fin n → ℝ) {L : List (Fin n)}
     (hL : L.Nodup) (D : Matrix (Fin n) (Fin n) ℝ) :
     L.foldl (fun (C : Matrix (Fin n) (Fin n) ℝ) (l : Fin n) =>
@@ -1470,7 +1811,8 @@ private theorem foldl_updateRow_sub (i : Fin n) (w : Fin n → ℝ) {L : List (F
   · subst ha; simp
   · simp [ha]
 
-/-- The rank-one update of the trailing block, rows and columns along a duplicate-free list. -/
+/-- The rank-one update loop over a duplicate-free list of rows and columns subtracts $w_{al}$ from
+exactly the entries $(a, l)$ with $a$ and $l$ in the list. -/
 private theorem foldl_foldl_updateRow_sub (w : Fin n → Fin n → ℝ) {L : List (Fin n)}
     (hL : L.Nodup) (D : Matrix (Fin n) (Fin n) ℝ) :
     L.foldl (fun (C : Matrix (Fin n) (Fin n) ℝ) (i : Fin n) =>
@@ -1495,7 +1837,9 @@ private theorem foldl_foldl_updateRow_sub (w : Fin n → Fin n → ℝ) {L : Lis
       simp [hc]
     · simp [ha]
 
-/-- **The exact step of Algorithm 4.2.2**: interchange by the diagonal pivot, then eliminate. -/
+/-- In exact arithmetic, step $k$ of Algorithm 4.2.2 interchanges rows and columns $k$ and $j$ of
+the state, where $j$ is `GolubVanLoan.Chapter04.diagPivot` of the state at $k$, then applies
+`GolubVanLoan.Chapter04.pivotElim` at $k$, and records $\mathrm{piv}(k) = j$. -/
 theorem ldltPivotStep_id (st : Matrix (Fin n) (Fin n) ℝ × (Fin n → Fin n)) (k : Fin n) :
     Id.run (ldltPivotStep (M := Id) pure st k) =
       (pivotElim k (st.1.submatrix (Equiv.swap k (diagPivot st.1 k))
@@ -1510,17 +1854,24 @@ theorem ldltPivotStep_id (st : Matrix (Fin n) (Fin n) ℝ × (Fin n → Fin n)) 
   · rw [ite_eq_right hab, ite_eq_right hab]
 
 
-/-- The unit lower triangular `L_k` of the pivoted `L D Lᵀ` after `k` steps ((4.2.16)): the first
-`k` columns of the packed state `S` below the diagonal, and the identity elsewhere. -/
+/-- The unit lower triangular factor $L_k$ of (4.2.16) of [golub2013matrix], after $k$ steps of
+Algorithm 4.2.2. For a packed state $S$, $L_k$ has the entry $s_{ij}$ at the positions $(i, j)$
+with $j < k$ and $j < i$, ones on the diagonal, and zeros elsewhere.
+
+The index $k$ counts steps, and the column indices $j < k$ are 0-based. -/
 def pivotedLower (k : ℕ) (S : Matrix (Fin n) (Fin n) ℝ) : Matrix (Fin n) (Fin n) ℝ :=
   of fun i j => if (j : ℕ) < k ∧ j < i then S i j else if i = j then 1 else 0
 
-/-- The middle factor `diag(D_k, A_k)` of the pivoted `L D Lᵀ` after `k` steps ((4.2.16)): the
-diagonal `d₁, …, d_k` of the packed state `S` and its trailing block `A_k = S(k+1:n, k+1:n)`. -/
+/-- The middle factor $\operatorname{diag}(D_k, A_k)$ of (4.2.16) of [golub2013matrix], after $k$
+steps of Algorithm 4.2.2. For a packed state $S$, it has the diagonal entries $d_1, \dots, d_k$
+of $S$ in the first $k$ positions, the trailing block $A_k = S(k{+}1{:}n, k{+}1{:}n)$, and zeros
+elsewhere. -/
 def pivotedMiddle (k : ℕ) (S : Matrix (Fin n) (Fin n) ℝ) : Matrix (Fin n) (Fin n) ℝ :=
   of fun i j => if (i : ℕ) < k ∨ (j : ℕ) < k then (if i = j then S i j else 0) else S i j
 
-/-- `L_k` commutes with a symmetric permutation that fixes the first `k` indices. -/
+/-- For a symmetric permutation $\sigma$ that fixes the first $k$ indices and maps the other indices
+to indices at or after $k$, $L_k$ of the permuted state is $L_k$ of the state, permuted by
+$\sigma$. -/
 private theorem pivotedLower_submatrix {k : ℕ} (S : Matrix (Fin n) (Fin n) ℝ)
     (σ : Equiv.Perm (Fin n)) (h1 : ∀ m : Fin n, (m : ℕ) < k → σ m = m)
     (h2 : ∀ m : Fin n, k ≤ (m : ℕ) → k ≤ (σ m : ℕ)) :
@@ -1539,7 +1890,9 @@ private theorem pivotedLower_submatrix {k : ℕ} (S : Matrix (Fin n) (Fin n) ℝ
   · have hσl : ¬ ((σ l : ℕ) < k) := not_lt.2 (h2 l (not_lt.1 hl))
     simp [hl, hσl]
 
-/-- `diag(D_k, A_k)` commutes with a symmetric permutation that fixes the first `k` indices. -/
+/-- For a symmetric permutation $\sigma$ that fixes the first $k$ indices and maps the other indices
+to indices at or after $k$, $\operatorname{diag}(D_k, A_k)$ of the permuted state is that of the
+state, permuted by $\sigma$. -/
 private theorem pivotedMiddle_submatrix {k : ℕ} (S : Matrix (Fin n) (Fin n) ℝ)
     (σ : Equiv.Perm (Fin n)) (h1 : ∀ m : Fin n, (m : ℕ) < k → σ m = m)
     (h2 : ∀ m : Fin n, k ≤ (m : ℕ) → k ≤ (σ m : ℕ)) :
@@ -1550,7 +1903,8 @@ private theorem pivotedMiddle_submatrix {k : ℕ} (S : Matrix (Fin n) (Fin n) �
   ext i l
   simp only [pivotedMiddle, of_apply, submatrix_apply, σ.injective.eq_iff, hk]
 
-/-- The interchange of step `k` fixes the indices below `k` and keeps the others at or above `k`. -/
+/-- The interchange of step $k$ with a pivot $j \ge k$ fixes the indices below $k$ and maps the
+other indices to indices at or after $k$. -/
 private theorem swap_fixes {k j : Fin n} (hkj : k ≤ j) :
     (∀ m : Fin n, (m : ℕ) < k → Equiv.swap k j m = m) ∧
       ∀ m : Fin n, (k : ℕ) ≤ m → (k : ℕ) ≤ (Equiv.swap k j m : ℕ) := by
@@ -1562,7 +1916,8 @@ private theorem swap_fixes {k j : Fin n} (hkj : k ≤ j) :
   · exact le_rfl
   · exact hm
 
-/-- The column operator of step `k`: the identity plus `w` below the diagonal of column `k`. -/
+/-- The column operator of step $k$: the identity matrix with $w_i$ added at the positions $(i, k)$,
+$i > k$. -/
 private def colOp (k : Fin n) (w : Fin n → ℝ) : Matrix (Fin n) (Fin n) ℝ :=
   of fun i l => if l = k ∧ k < i then w i else if i = l then 1 else 0
 
@@ -1589,7 +1944,7 @@ private theorem mul_colOp_transpose_apply (k : Fin n) (w : Fin n → ℝ)
   rw [← transpose_apply (X * (colOp k w)ᵀ), transpose_mul, transpose_transpose, h]
   simp [transpose_apply, mul_comm]
 
-/-- The inverse of the column operator. -/
+/-- The column operator with $-w$ is the inverse of the column operator with $w$. -/
 private theorem colOp_neg_mul_colOp (k : Fin n) (w : Fin n → ℝ) :
     colOp k (-w) * colOp k w = 1 := by
   ext i l
@@ -1601,12 +1956,12 @@ private theorem colOp_neg_mul_colOp (k : Fin n) (w : Fin n → ℝ) :
     · simp [colOp, hi, Matrix.one_apply]
   · simp [colOp, hl, Ne.symm hl, Matrix.one_apply]
 
-/-- The multipliers of step `k`. -/
+/-- The multipliers $a_{ik} / a_{kk}$ of step $k$. -/
 private noncomputable def multipliers (k : Fin n) (A : Matrix (Fin n) (Fin n) ℝ) : Fin n → ℝ :=
   fun i => A i k / A k k
 
-/-- (4.2.16), the unit lower factor: `L_{k+1} = L_k E_k` with `E_k` the column operator of the
-multipliers of step `k`. -/
+/-- The unit lower factor in (4.2.16): $L_{k+1} = L_k E_k$, where $E_k$ is the column operator of
+the multipliers of step $k$. -/
 private theorem pivotedLower_succ (k : Fin n) (A : Matrix (Fin n) (Fin n) ℝ) :
     pivotedLower ((k : ℕ) + 1) (pivotElim k A) =
       pivotedLower k A * colOp k (multipliers k A) := by
@@ -1640,8 +1995,9 @@ private theorem pivotedLower_succ (k : Fin n) (A : Matrix (Fin n) (Fin n) ℝ) :
       simp only [colOp, of_apply, hl, hal, false_and, ite_false, mul_zero]
     · simp
 
-/-- (4.2.16), the middle factor: `diag(D_k, A_k) = E_k diag(D_{k+1}, A_{k+1}) E_kᵀ`, provided a zero
-pivot has a zero column below it and the trailing block is symmetric in its first row. -/
+/-- The middle factor in (4.2.16): $\operatorname{diag}(D_k, A_k) = E_k \operatorname{diag}(D_{k+1},
+A_{k+1}) E_k^T$, provided that a zero pivot has a zero column below it and that the entries
+$(k, i)$ and $(i, k)$, $i > k$, agree. -/
 private theorem pivotedMiddle_eq (k : Fin n) (A : Matrix (Fin n) (Fin n) ℝ)
     (h0 : A k k = 0 → ∀ i, k < i → A i k = 0) (hsym : ∀ i, k < i → A k i = A i k) :
     pivotedMiddle k A = colOp k (multipliers k A) * pivotedMiddle ((k : ℕ) + 1) (pivotElim k A) *
@@ -1691,7 +2047,8 @@ private theorem pivotedMiddle_eq (k : Fin n) (A : Matrix (Fin n) (Fin n) ℝ)
       · field_simp
         ring
 
-/-- The pivot of step `k` lies at or after `k` and carries the largest diagonal entry there. -/
+/-- The pivot of step $k$ is at or after $k$, and its diagonal entry is the largest among the
+diagonal entries at or after $k$. -/
 private theorem diagPivot_spec (A : Matrix (Fin n) (Fin n) ℝ) (k : Fin n) :
     k ≤ diagPivot A k ∧ ∀ i, k ≤ i → A i i ≤ A (diagPivot A k) (diagPivot A k) := by
   have key : ∀ (l : List (Fin n)) (b : Fin n), k ≤ b → (∀ i ∈ l, k ≤ i) →
@@ -1724,7 +2081,7 @@ private theorem diagPivot_spec (A : Matrix (Fin n) (Fin n) ℝ) (k : Fin n) :
     fun i hi => by simpa using hi
   exact ⟨h1, fun i hi => h3 i (by simp [hi])⟩
 
-/-- The invariant (4.2.16) of Algorithm 4.2.2 after the steps of a prefix of `0, …, n − 1`. -/
+/-- The invariant (4.2.16) of Algorithm 4.2.2 after the steps of a prefix of $0, \dots, n-1$. -/
 private theorem ldltPivot_invariant {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosSemidef)
     (l : List (Fin n)) (hl : l <+: List.finRange n) :
     A.submatrix
@@ -1870,13 +2227,24 @@ private theorem ldltPivot_invariant {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.Pos
         exact hmax _ (Fin.le_def.2 (hge l (Fin.le_def.1 hil)))
 
 
-/-- **(4.2.16)**: after `k` steps of Algorithm 4.2.2 on a symmetric positive semidefinite `A` (the
-exact run of the first `k` iterations), with `P̃` the product of the interchanges so far,
-`P̃ A P̃ᵀ = [L₁₁ 0; L₂₁ I] [D_k 0; 0 A_k] [L₁₁ 0; L₂₁ I]ᵀ` (`pivotedLower`, `pivotedMiddle`), where
-`diag(D_k, A_k)` is positive semidefinite (so `d₁, …, d_k ≥ 0` and `A_k` is positive semidefinite),
-each pivot dominates every later diagonal entry (so `d₁ ≥ ⋯ ≥ d_k` and `A_k`'s diagonal is at most
-`d_k`), and "`A_k = 0` as soon as `d_k = 0`" (by (4.2.15), since the pivot is the largest diagonal
-entry). -/
+/-- **Equation (4.2.16)** of [golub2013matrix]. Let $A \in \mathbb{R}^{n \times n}$ be symmetric
+positive semidefinite and let $k \le n$. Let $S$ be the matrix after the first $k$ steps of
+Algorithm 4.2.2 in exact arithmetic, and let $\tilde P$ be the product of the interchanges of
+these steps. Then
+$$\tilde P A \tilde P^T = \begin{bmatrix} L_{11} & 0 \\ L_{21} & I \end{bmatrix} \begin{bmatrix}
+  D_k & 0 \\ 0 & A_k \end{bmatrix} \begin{bmatrix} L_{11} & 0 \\ L_{21} & I \end{bmatrix}^T,$$
+where:
+* the matrix $\operatorname{diag}(D_k, A_k)$ is positive semidefinite;
+* for $i < k$ and $j \ge i$, $s_{jj} \le s_{ii}$;
+* if $s_{mm} = 0$ for some $m < k$, then $A_k = 0$.
+
+The second statement gives $d_1, \dots, d_k \ge 0$ and $A_k$ positive semidefinite. The third
+says that each pivot dominates every later diagonal entry, so $d_1 \ge \dots \ge d_k$ and the
+diagonal of $A_k$ is at most $d_k$. The last is the remark of the source that $A_k = 0$ as soon
+as $d_k = 0$; it follows from (4.2.15), because the pivot is the largest diagonal entry. The two
+factors are `GolubVanLoan.Chapter04.pivotedLower` and `GolubVanLoan.Chapter04.pivotedMiddle` of
+$S$. The matrix $\tilde P A \tilde P^T$ is `A.submatrix σ σ` with
+`σ = GolubVanLoan.Chapter03.pivPermUpTo piv k`, and indices are 0-based. -/
 theorem equation_4_2_16 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosSemidef) {k : ℕ} (hk : k ≤ n) :
     let st := ((List.finRange n).take k).foldl
       (fun st i => Id.run (ldltPivotStep (M := Id) pure st i)) (A, fun i => i)
@@ -1910,7 +2278,8 @@ private theorem algorithm_4_2_2_id (A : Matrix (Fin n) (Fin n) ℝ) :
       (fun st i => Id.run (ldltPivotStep (M := Id) pure st i)) (A, fun i => i) := by
   rw [algorithm_4_2_2, List.idRun_foldlM]
 
-/-- After all `n` steps, `L_n` is the unit lower triangle of the packed state. -/
+/-- After all $n$ steps, $L_n$ is the unit lower triangular matrix
+`GolubVanLoan.Chapter03.packedL S` stored in the packed state. -/
 private theorem pivotedLower_self (S : Matrix (Fin n) (Fin n) ℝ) :
     pivotedLower n S = Chapter03.packedL S := by
   ext i j
@@ -1920,7 +2289,7 @@ private theorem pivotedLower_self (S : Matrix (Fin n) (Fin n) ℝ) :
     · simp [pivotedLower, Chapter03.packedL_apply_self]
     · simp [pivotedLower, Chapter03.packedL_apply_of_lt' S hij, hji, ne_of_lt hij]
 
-/-- After all `n` steps, `diag(D_n, A_n)` is the diagonal of the packed state. -/
+/-- After all $n$ steps, $\operatorname{diag}(D_n, A_n)$ is the diagonal of the packed state. -/
 private theorem pivotedMiddle_self (S : Matrix (Fin n) (Fin n) ℝ) :
     pivotedMiddle n S = diagonal S.diag := by
   ext i j
@@ -1929,13 +2298,24 @@ private theorem pivotedMiddle_self (S : Matrix (Fin n) (Fin n) ℝ) :
     simp [pivotedMiddle]
   · simp [pivotedMiddle, hij]
 
-/-- **Exact correctness of Algorithm 4.2.2**: for a symmetric positive semidefinite `A`, the exact
-run `(F, piv)` gives, with `σ = Chapter03.pivPerm piv` (the product of the interchanges in the order
-applied), `L = Chapter03.packedL F` and `d = diag(F)`: `A(σ, σ) = L diag(d) Lᵀ` with `L` unit lower
-triangular, `d ≥ 0`, `d₁ ≥ d₂ ≥ ⋯ ≥ d_n`, and `d > 0` when `A` is positive definite. (The book
-writes `P = P₁ ⋯ P_n` and `d_n > 0` for a semidefinite input; the permutation is the product in the
-order applied and `d_n = 0` when `A` is singular.) By the invariant (4.2.16) of
-`equation_4_2_16`. -/
+/-- **Algorithm 4.2.2** of [golub2013matrix], exact correctness. Let $A \in \mathbb{R}^{n \times n}$
+be symmetric positive semidefinite, and let $(F, \mathrm{piv})$ be the output of Algorithm 4.2.2
+in exact arithmetic. Let $P$ be the permutation matrix of the interchanges, let $L$ be the unit
+lower triangular matrix stored below the diagonal of $F$, and let $d_i = f_{ii}$. Then
+$$PAP^T = L \operatorname{diag}(d_1, \dots, d_n) L^T,$$
+with $L$ unit lower triangular, $d_i \ge 0$ for all $i$, $d_1 \ge d_2 \ge \dots \ge d_n$, and
+$d_i > 0$ for all $i$ if $A$ is positive definite.
+
+**Correction.** The source gives $d_n > 0$ for a semidefinite input. This fails when $A$ is
+singular: then $d_n = 0$ (`GolubVanLoan.Chapter04.equation_4_2_17_algorithm`). The theorem
+states $d_i \ge 0$, and $d_i > 0$ only when $A$ is positive definite.
+
+**Reading.** The source writes $P = P_1 \cdots P_n$. Here $P$ is the product of the interchanges
+in the order in which they are applied, `GolubVanLoan.Chapter03.pivPerm piv`.
+
+The factorization is `Matrix.IsLDM`, with $PAP^T$ as `A.submatrix σ σ`, $L$ as
+`GolubVanLoan.Chapter03.packedL F` and $D$ as `Matrix.diagonal F.diag`. The proof uses the
+invariant `GolubVanLoan.Chapter04.equation_4_2_16` at $k = n$. -/
 theorem algorithm_4_2_2_spec {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosSemidef) :
     IsLDM (A.submatrix (Chapter03.pivPerm (Id.run (algorithm_4_2_2 pure A)).2)
         (Chapter03.pivPerm (Id.run (algorithm_4_2_2 pure A)).2))
@@ -1976,11 +2356,16 @@ theorem algorithm_4_2_2_spec {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosSemidef
     rw [conjTranspose_eq_transpose_of_trivial, ← hD] at hPDD
     simpa using hPDD.diag_pos (i := i)
 
-/-- **(4.2.17) for the output of Algorithm 4.2.2**: for a symmetric positive semidefinite `A` of
-rank `r`, the exact run returns `d_i > 0` for `i < r` and `d_i = 0` for `i ≥ r`, so that its `P`,
-`L(:, 1:r)` and `D_r = diag(d₁, …, d_r)` realize (4.2.17): `P A Pᵀ = L(:, 1:r) D_r L(:, 1:r)ᵀ`
-(`algorithm_4_2_2_spec`). The rank of `P A Pᵀ = L D Lᵀ` is that of `D`, the number of nonzero
-pivots, and the pivots are nonincreasing and nonnegative. -/
+/-- **Equation (4.2.17)** of [golub2013matrix], for the output of Algorithm 4.2.2. Let
+$A \in \mathbb{R}^{n \times n}$ be symmetric positive semidefinite of rank $r$, and let
+$d_1, \dots, d_n$ be the diagonal of the output of Algorithm 4.2.2 in exact arithmetic. Then
+$d_i > 0$ for $i \le r$ and $d_i = 0$ for $i > r$.
+
+With `GolubVanLoan.Chapter04.algorithm_4_2_2_spec`, the computed $P$, $L(:, 1{:}r)$ and
+$D_r = \operatorname{diag}(d_1, \dots, d_r)$ therefore realize (4.2.17):
+$PAP^T = L(:, 1{:}r) D_r L(:, 1{:}r)^T$. The proof uses that the rank of $PAP^T = LDL^T$ is the
+number of nonzero pivots, and that the pivots are nonnegative and nonincreasing. The Lean
+statement is 0-based: $d_i > 0$ for $i < r$ and $d_i = 0$ for $r \le i$. -/
 theorem equation_4_2_17_algorithm {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosSemidef) (i : Fin n) :
     ((i : ℕ) < A.rank → 0 < (Id.run (algorithm_4_2_2 pure A)).1 i i) ∧
       (A.rank ≤ i → (Id.run (algorithm_4_2_2 pure A)).1 i i = 0) := by

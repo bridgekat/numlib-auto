@@ -7,27 +7,140 @@ import Numlib.Krylov.Bidiagonalization
 import NumlibSurface.GolubVanLoan.Chapter10.Section01
 
 /-!
-# Golub–Van Loan §10.4: large sparse SVD frameworks
+# Golub and Van Loan, Section 10.4: Large sparse SVD frameworks
 
-Surface file for Gene H. Golub and Charles F. Van Loan, *Matrix Computations*, 4th edition, §10.4:
-the upper bidiagonal form (10.4.1) and its column equations (10.4.2)–(10.4.7), the Golub–Kahan
-relations (10.4.9)–(10.4.12), Ritz approximations (10.4.13)–(10.4.15), the lower form (10.4.18)
-and the Paige–Saunders relation (10.4.19), the truncated SVD of the low-rank approximation
-problem (10.4.20), and the deterministic identities of the CUR sketch (10.4.22)–(10.4.24).
+This module formalizes §10.4 of [golub2013matrix], which reduces the singular value problem for a
+large sparse $A \in \mathbb{R}^{m \times n}$ to bidiagonal form. For $m \ge n$ there are orthogonal
+$U$ and $V$ such that $U^T A V = B$ is upper bidiagonal (10.4.1). The columns of $AV = UB$ and
+$A^T U = V B^T$ give the Golub–Kahan recurrences (10.4.2)–(10.4.3),
+$$A v_k = \alpha_k u_k + \beta_{k-1} u_{k-1}, \qquad A^T u_k = \alpha_k v_k + \beta_k v_{k+1}.$$
+Run from a unit vector $v_c$ (Algorithm 10.4.1), they produce $V_k = [v_1 | \cdots | v_k]$,
+$U_k = [u_1 | \cdots | u_k]$ and the upper bidiagonal $B_k$ of (10.4.8) with $A V_k = U_k B_k$ and
+$A^T U_k = V_k B_k^T + p_k e_k^T$ (10.4.9)–(10.4.10). The columns of $V_k$ and $U_k$ span the Krylov
+subspaces $\mathcal{K}(A^T A, v_c, k)$ and $\mathcal{K}(A A^T, A v_c, k)$, and $B_k^T B_k$ is the
+Lanczos tridiagonal matrix of $A^T A$, so that the singular values of $B_k$ approximate singular
+values of $A$.
+
+The module also formalizes the Ritz approximations (10.4.13)–(10.4.15), the tridiagonal–bidiagonal
+connection of §10.4.3, the Paige–Saunders lower bidiagonalization (10.4.18)–(10.4.19) with Algorithm
+10.4.2, the truncated SVD as a best approximation of rank $k$ (10.4.20), and the identities
+(10.4.22)–(10.4.24) behind the CUR approximation of §10.4.5. The proofs specialize the Golub–Kahan
+process of `Numlib.Krylov.Bidiagonalization` and the SVD results of
+`Numlib.LinearAlgebra.Matrix.SVD` and `Numlib.Analysis.Matrix.SingularValues`.
+
+## Main definitions
+
+* Algorithm 10.4.1, `GolubVanLoan.Chapter10.algorithm_10_4_1`: Golub–Kahan bidiagonalization, as a
+  program with a rounding hook.
+* Algorithm 10.4.2, `GolubVanLoan.Chapter10.algorithm_10_4_2`: Paige–Saunders lower
+  bidiagonalization, as a program with a rounding hook.
+
+## Main results
+
+* Equation (10.4.1), `GolubVanLoan.Chapter10.equation_10_4_1`: for $m \ge n$ there are orthogonal
+  $U$, $V$ with $U^T A V$ upper bidiagonal, and $U^T A V$ has the singular values of $A$.
+* Equation (10.4.2), `GolubVanLoan.Chapter10.equation_10_4_2`:
+  $A v_k = \alpha_k u_k + \beta_{k-1} u_{k-1}$, column $k$ of $AV = UB$.
+* Equation (10.4.3), `GolubVanLoan.Chapter10.equation_10_4_3`:
+  $A^T u_k = \alpha_k v_k + \beta_k v_{k+1}$, column $k$ of $A^T U = V B^T$.
+* Equation (10.4.6), `GolubVanLoan.Chapter10.equation_10_4_6`: $A V(:, 1:k) = U(:, 1:k) B(1:k, 1:k)$
+  for every $k \le n$.
+* Equation (10.4.7), `GolubVanLoan.Chapter10.equation_10_4_7`: if $\beta_k = 0$, then
+  $A^T A V(:, 1:k) = V(:, 1:k) B_k^T B_k$ with $B_k = B(1:k, 1:k)$.
+* §10.4.1, `GolubVanLoan.Chapter10.singularValues_bidiag_subset`: if $\beta_k = 0$, every singular
+  value of $B(1:k, 1:k)$ is a singular value of $A$.
+* Algorithm 10.4.1, `GolubVanLoan.Chapter10.algorithm_10_4_1_spec`: in exact arithmetic the
+  algorithm computes the Golub–Kahan vectors and coefficients.
+* Equation (10.4.9), `GolubVanLoan.Chapter10.equation_10_4_9`: $A V_k = U_k B_k$.
+* Equation (10.4.10), `GolubVanLoan.Chapter10.equation_10_4_10`: $A^T U_k = V_k B_k^T + p_k e_k^T$
+  with $p_k = \beta_k v_{k+1}$.
+* Equation (10.4.11), `GolubVanLoan.Chapter10.equation_10_4_11`: $\operatorname{span}\{v_1, \dots,
+  v_k\} = \mathcal{K}(A^T A, v_c, k)$.
+* Equation (10.4.12), `GolubVanLoan.Chapter10.equation_10_4_12`: $\operatorname{span}\{u_1, \dots,
+  u_k\} = \mathcal{K}(A A^T, A v_c, k)$.
+* §10.4.1, `GolubVanLoan.Chapter10.bidiag_transpose_mul_bidiag`: $B_k^T B_k$ is the Lanczos
+  tridiagonal matrix of $A^T A$ from $v_c$.
+* Equation (10.4.14), `GolubVanLoan.Chapter10.equation_10_4_14`: an SVD $F_k^T B_k G_k = \Gamma$
+  gives $A Y_k = Z_k \Gamma$ for $Y_k = V_k G_k$ and $Z_k = U_k F_k$.
+* Equation (10.4.15), `GolubVanLoan.Chapter10.equation_10_4_15`:
+  $A^T Z_k = Y_k \Gamma + p_k e_k^T F_k$.
+* §10.4.2, `GolubVanLoan.Chapter10.isRitzPair_gram`: $(\gamma_i^2, y_i)$ is a Ritz pair of $A^T A$
+  with respect to $\mathcal{K}(A^T A, v_c, k)$.
+* §10.4.3, `GolubVanLoan.Chapter10.lanczos_jordanWielandt`: the Lanczos process of the
+  Jordan–Wielandt matrix of $A$ has zero diagonal and off-diagonal
+  $\alpha_1, \beta_1, \alpha_2, \beta_2, \dots$.
+* Equation (10.4.18), `GolubVanLoan.Chapter10.equation_10_4_18`: there are orthogonal $U$, $V$ with
+  $U^T A V$ lower bidiagonal.
+* Algorithm 10.4.2, `GolubVanLoan.Chapter10.algorithm_10_4_2_spec`: in exact arithmetic the
+  algorithm is the Golub–Kahan process of $A^T$ from $u_c$.
+* Equation (10.4.19), `GolubVanLoan.Chapter10.equation_10_4_19`: $A V(:, 1:k) = U(:, 1:k) B(1:k,
+  1:k) + p_k e_k^T$ for the lower bidiagonalization.
+* Equation (10.4.20), `GolubVanLoan.Chapter10.equation_10_4_20`: the truncated SVD $\tilde A_k$
+  equals $Z_1 Z_1^T A$, has rank $k$, and is a closest matrix of rank at most $k$ in the 2-norm.
+* Equation (10.4.20), `GolubVanLoan.Chapter10.equation_10_4_20_frobenius`: $\tilde A_k$ is a closest
+  matrix of rank at most $k$ in the Frobenius norm.
+* Equation (10.4.22), `GolubVanLoan.Chapter10.equation_10_4_22`: $C \Phi = Z_1 \Sigma_1^{-1} Y_1^T$
+  for $\Phi = Y_1 \Sigma_1^{-2} Y_1^T$.
+* Equation (10.4.23), `GolubVanLoan.Chapter10.equation_10_4_23`: the SVD of $C$ substituted in the
+  selected rows of $\Psi^T R$.
+* Equation (10.4.24), `GolubVanLoan.Chapter10.equation_10_4_24`: $C U R = Z_1 (D_R Z_1(\mathrm{row},
+  :))^T D_R A(\mathrm{row}, :)$ for $U = \Phi \Psi^T$.
 
 ## Conventions
 
-`A : Matrix (Fin m) (Fin n) ℝ`; the backbone is `Numlib/Krylov/Bidiagonalization` (namespace
-`GolubKahan`), instantiated with `toEuclideanLin A` and `toEuclideanLin Aᵀ`: the book's `v_{j+1}`,
-`u_{j+1}`, `α_{j+1}`, `β_{j+1}` are `GolubKahan.rightVec/leftVec/alpha/beta … j`, the matrices
-`V_k`, `U_k`, `B_k` are `GolubKahan.rightMatrix A v k`, `GolubKahan.leftMatrix A v k`,
-`GolubKahan.bidiag … k`. Paige–Saunders (Algorithm 10.4.2) is Golub–Kahan of `Aᵀ`. Submatrices
-`X(:, 1:k)` are `X.submatrix id (Fin.castLE _)`. Indices are `0`-based.
+* $A \in \mathbb{R}^{m \times n}$ is `A : Matrix (Fin m) (Fin n) ℝ`, and indices are 0-based. A
+  submatrix $X(:, 1:k)$ is `X.submatrix id (Fin.castLE _)`.
+* The Golub–Kahan vectors are defined from the starting vector $v_c$ by Gram–Schmidt
+  orthonormalization of Krylov sequences: $v_1, v_2, \dots$ are the Arnoldi vectors of $A^T A$ from
+  $v_c$, and $u_1, u_2, \dots$ are the Arnoldi vectors of $A A^T$ from $A v_c$. The coefficients are
+  $\alpha_j = u_j^T A v_j$ and $\beta_j = v_{j+1}^T A^T u_j$. Hence $v_1 = v_c / \|v_c\|_2$, and the
+  identities do not need $\|v_c\|_2 = 1$. After a breakdown the vectors and the coefficients are
+  $0$.
+* With `T = Matrix.toEuclideanLin A` and `Ts = Matrix.toEuclideanLin Aᵀ`, the source's $v_{j+1}$,
+  $u_{j+1}$, $\alpha_{j+1}$, $\beta_{j+1}$ are `GolubKahan.rightVec T Ts v j`,
+  `GolubKahan.leftVec T Ts v j`, `GolubKahan.alpha T Ts v j` and `GolubKahan.beta T Ts v j`. The
+  matrices $V_k$, $U_k$, $B_k$ are `GolubKahan.rightMatrix A v k`, `GolubKahan.leftMatrix A v k` and
+  `GolubKahan.bidiag T Ts v k`.
+* The Krylov subspace $\mathcal{K}(M, x, k) = \operatorname{span}\{x, Mx, \dots, M^{k-1}x\}$ is
+  `Krylov.subspace (Matrix.toEuclideanLin M) x k`. The grade of $x$ for $M$ is the dimension of
+  $\bigcup_k \mathcal{K}(M, x, k)$, `Krylov.grade`.
+* The Paige–Saunders lower bidiagonalization of $A$ from $u_c$ (Algorithm 10.4.2) is the Golub–Kahan
+  process of $A^T$ from $u_c$.
+
+## Implementation notes
+
+* Algorithms 10.4.1 and 10.4.2 are one loop, `GolubVanLoan.Chapter10.bidiagLoop`, for the pairs
+  $(A, A^T)$ and $(A^T, A)$, with the state `GolubVanLoan.Chapter10.BidiagState`. Every arithmetic
+  result passes through the rounding hook `rnd`, and the `while` loop is at most `fuel` passes.
+
+## Deviations from the source
+
+* **Equation (10.4.6)** (typo). The source prints $A U(:, 1:k) = V(:, 1:k) B(1:k, 1:k)$, with $U$
+  and $V$ exchanged. See `GolubVanLoan.Chapter10.equation_10_4_6`.
+* **Equation (10.4.6)** (generalization). The source attributes the identity to $\beta_k = 0$. It
+  holds for every $k \le n$. See `GolubVanLoan.Chapter10.equation_10_4_6`.
+* **Equation (10.4.7)** (typo). The source prints $A^T V(:, 1:k) = U(:, 1:k) B(1:k, 1:k)^T$, with
+  $U$ and $V$ exchanged. See `GolubVanLoan.Chapter10.equation_10_4_7`.
+* **Algorithm 10.4.1** (generalization). The source assumes that $A$ has full column rank. The exact
+  semantics holds for every $A$; full column rank only makes every $\alpha_j$ positive. See
+  `GolubVanLoan.Chapter10.algorithm_10_4_1_spec`.
+* **§10.4.2, Ritz pairs of $A^T A$** (correction). The source prints
+  $A^T A y_i = \gamma_i^2 z_i + [F_k]_{ki} p_k$. The identity is $A^T A y_i = \gamma_i^2 y_i +
+  \gamma_i [F_k]_{ki} p_k$. See `GolubVanLoan.Chapter10.isRitzPair_gram`.
+* **§10.4.2, Ritz pairs of $A^T A$** (reading). The source names the Ritz pair $\{\gamma_i, y_i\}$.
+  The Ritz value of $A^T A$ is $\gamma_i^2$. See `GolubVanLoan.Chapter10.isRitzPair_gram`.
+* **Algorithm 10.4.2** (typo). The source states $u_c \in \mathbb{R}^n$. The starting vector is
+  $u_c \in \mathbb{R}^m$. See `GolubVanLoan.Chapter10.algorithm_10_4_2`.
+* **Algorithm 10.4.2** (generalization). The source assumes that $A(1:n, 1:n)$ is nonsingular. The
+  exact semantics holds for every $A$. See `GolubVanLoan.Chapter10.algorithm_10_4_2_spec`.
+* **Equation (10.4.24)** (typo). The source prints $(C\Phi)(\Psi R)$. The product is
+  $(C\Phi)(\Psi^T R)$, as in (10.4.23). See `GolubVanLoan.Chapter10.equation_10_4_24`.
 
 ## Not formalized
 
-The randomized sampling of §10.4.5 and its probabilistic bound, the 4 × 3 permutation example of
-§10.4.3, operation counts.
+* **The randomized sampling of §10.4.5** and its probabilistic error bound.
+* **The $4 \times 3$ permutation example of §10.4.3.**
+* **Operation counts.**
 -/
 
 open Matrix Krylov FloatingPoint
@@ -37,10 +150,14 @@ namespace GolubVanLoan.Chapter10
 
 /-! ### The upper bidiagonal form (§10.4.1) -/
 
-/-- **(10.4.1)**: for `A ∈ ℝ^{m×n}`, `m ≥ n`, there are orthogonal `U`, `V` with `Uᵀ A V = B` zero
-below row `n` and upper bidiagonal on top, and `A`, `B` have the same singular values. Backbone
-`Matrix.exists_unitary_mul_mul_unitary_isUpperBidiagonal` (chapter 5's Householder
-bidiagonalization computes it). -/
+/-- **Equation (10.4.1)** of [golub2013matrix]. Let $A \in \mathbb{R}^{m \times n}$ with $m \ge n$.
+There are orthogonal $U \in \mathbb{R}^{m \times m}$ and $V \in \mathbb{R}^{n \times n}$ such
+that $B = U^T A V$ is zero below row $n$, its leading block $B(1:n, 1:n)$ is upper bidiagonal,
+and $B$ and $A$ have the same singular values.
+
+The singular values are compared as sorted sequences, `Matrix.sortedSingularValues`. The proof
+specializes `Matrix.exists_unitary_mul_mul_unitary_isUpperBidiagonal`. The Householder
+bidiagonalization of Chapter 5 computes such a factorization. -/
 theorem equation_10_4_1 {m n : ℕ} (hnm : n ≤ m) (A : Matrix (Fin m) (Fin n) ℝ) :
     ∃ U ∈ orthogonalGroup (Fin m) ℝ, ∃ V ∈ orthogonalGroup (Fin n) ℝ,
       (∀ (i : Fin m) (j : Fin n), n ≤ (i : ℕ) → (Uᵀ * A * V) i j = 0) ∧
@@ -56,21 +173,27 @@ section Columns
 variable {m n : ℕ} {A : Matrix (Fin m) (Fin n) ℝ} {U : Matrix (Fin m) (Fin m) ℝ}
   {V : Matrix (Fin n) (Fin n) ℝ} {B : Matrix (Fin m) (Fin n) ℝ}
 
-/-- `A V = U B` from `Uᵀ A V = B` with `U` orthogonal. -/
+/-- If $U$ is orthogonal and $U^T A V = B$, then $A V = U B$. -/
 private theorem mul_eq_mul_of_transpose_mul_mul (hU : U ∈ orthogonalGroup (Fin m) ℝ)
     (hB : Uᵀ * A * V = B) : A * V = U * B := by
   rw [← hB, ← Matrix.mul_assoc, ← Matrix.mul_assoc, (mem_orthogonalGroup_iff _ _).1 hU,
     Matrix.one_mul]
 
-/-- `Aᵀ U = V Bᵀ` from `Uᵀ A V = B` with `V` orthogonal. -/
+/-- If $V$ is orthogonal and $U^T A V = B$, then $A^T U = V B^T$. -/
 private theorem transpose_mul_eq_mul_transpose (hV : V ∈ orthogonalGroup (Fin n) ℝ)
     (hB : Uᵀ * A * V = B) : Aᵀ * U = V * Bᵀ := by
   rw [← hB, transpose_mul, transpose_mul, transpose_transpose, ← Matrix.mul_assoc,
     ← Matrix.mul_assoc, (mem_orthogonalGroup_iff _ _).1 hV, Matrix.one_mul]
 
-/-- **(10.4.2)**: in the setting of (10.4.1) (`Uᵀ A V = B` upper bidiagonal, `U`, `V` orthogonal,
-`n ≤ m`), `A v_k = α_k u_k + β_{k−1} u_{k−1}` for `k = 1 : n` (`β_0 u_0 = 0`), with `α_k`, `β_{k−1}`
-the entries `B(k, k)`, `B(k−1, k)`: column `k` of `A V = U B`. -/
+/-- **Equation (10.4.2)** of [golub2013matrix]. Let $A \in \mathbb{R}^{m \times n}$ with $n \le m$,
+let $U \in \mathbb{R}^{m \times m}$ be orthogonal, let $V \in \mathbb{R}^{n \times n}$, and let
+$B = U^T A V$ be upper bidiagonal. Let $u_k$ and $v_k$ be the columns of $U$ and $V$, and let
+$\alpha_k = b_{kk}$ and $\beta_{k-1} = b_{k-1,k}$. Then for $k = 1, \dots, n$
+$$A v_k = \alpha_k u_k + \beta_{k-1} u_{k-1},$$
+where the term $\beta_0 u_0$ is zero. This is column $k$ of $AV = UB$.
+
+The orthogonality of $V$ is not needed. Upper bidiagonal is `Matrix.IsUpperBidiagonalRect`. The
+index `k : Fin n` is 0-based, and $u_k$ is `U.col (Fin.castLE hnm k)`. -/
 theorem equation_10_4_2 (hnm : n ≤ m) (hU : U ∈ orthogonalGroup (Fin m) ℝ)
     (hB : Uᵀ * A * V = B) (hBb : B.IsUpperBidiagonalRect) (k : Fin n) :
     A *ᵥ V.col k = B (Fin.castLE hnm k) k • U.col (Fin.castLE hnm k) +
@@ -93,8 +216,14 @@ theorem equation_10_4_2 (hnm : n ≤ m) (hU : U ∈ orthogonalGroup (Fin m) ℝ)
       (fun i hi => hz i (fun h => hi (Fin.ext (by simpa using h))) (by omega))]
     simp [mul_comm]
 
-/-- **(10.4.3)**: in the setting of (10.4.1), `Aᵀ u_k = α_k v_k + β_k v_{k+1}` for `k = 1 : n`
-(`β_n v_{n+1} = 0`), with `α_k = B(k, k)`, `β_k = B(k, k+1)`: column `k` of `Aᵀ U = V Bᵀ`. -/
+/-- **Equation (10.4.3)** of [golub2013matrix]. Let $A \in \mathbb{R}^{m \times n}$ with $n \le m$,
+let $U \in \mathbb{R}^{m \times m}$, let $V \in \mathbb{R}^{n \times n}$ be orthogonal, and let
+$B = U^T A V$ be upper bidiagonal. Let $u_k$ and $v_k$ be the columns of $U$ and $V$, and let
+$\alpha_k = b_{kk}$ and $\beta_k = b_{k,k+1}$. Then for $k = 1, \dots, n$
+$$A^T u_k = \alpha_k v_k + \beta_k v_{k+1},$$
+where the term $\beta_n v_{n+1}$ is zero. This is column $k$ of $A^T U = V B^T$.
+
+The orthogonality of $U$ is not needed. The index `k : Fin n` is 0-based. -/
 theorem equation_10_4_3 (hnm : n ≤ m) (hV : V ∈ orthogonalGroup (Fin n) ℝ)
     (hB : Uᵀ * A * V = B) (hBb : B.IsUpperBidiagonalRect) (k : Fin n) :
     Aᵀ *ᵥ U.col (Fin.castLE hnm k) = B (Fin.castLE hnm k) k • V.col k +
@@ -117,7 +246,7 @@ theorem equation_10_4_3 (hnm : n ≤ m) (hV : V ∈ orthogonalGroup (Fin n) ℝ)
   · rw [Fintype.sum_eq_single k (fun i hi => hz i hi (by have := i.isLt; omega))]
     simp [mul_comm]
 
-/-- A sum over `Fin m` whose terms vanish from index `k` on is the sum over `Fin k`. -/
+/-- A sum over $i < m$ whose terms vanish for $i \ge k$ is the sum over $i < k$. -/
 private theorem sum_fin_eq_sum_castLE {M : Type*} [AddCommMonoid M] {k m : ℕ} (hkm : k ≤ m)
     (f : Fin m → M) (hf : ∀ i : Fin m, k ≤ (i : ℕ) → f i = 0) :
     ∑ i, f i = ∑ i : Fin k, f (Fin.castLE hkm i) := by
@@ -127,9 +256,16 @@ private theorem sum_fin_eq_sum_castLE {M : Type*} [AddCommMonoid M] {k m : ℕ} 
   by_contra h
   exact hi (Finset.mem_map.2 ⟨⟨i, by omega⟩, Finset.mem_univ _, Fin.ext rfl⟩)
 
-/-- **(10.4.6)**: in the setting of (10.4.2), `A V(:, 1:k) = U(:, 1:k) B(1:k, 1:k)` for every
-`k ≤ n`. The book prints `A U(:, 1:k) = V(:, 1:k) B(1:k, 1:k)`, which does not typecheck, and
-attributes the identity to `β_k = 0`, which only (10.4.7) needs. -/
+/-- **Equation (10.4.6)** of [golub2013matrix]. Let $A \in \mathbb{R}^{m \times n}$ with $n \le m$,
+let $U \in \mathbb{R}^{m \times m}$ be orthogonal, let $V \in \mathbb{R}^{n \times n}$, and let
+$B = U^T A V$ be upper bidiagonal. Then for every $k \le n$
+$$A V(:, 1:k) = U(:, 1:k) B(1:k, 1:k).$$
+
+**Typo.** The source prints $A U(:, 1:k) = V(:, 1:k) B(1:k, 1:k)$, which exchanges $U$ and $V$;
+the product $AU$ is not defined unless $m = n$.
+
+**Generalization.** The source attributes the identity to $\beta_k = 0$. It holds for every
+$k \le n$; only (10.4.7) needs $\beta_k = 0$. -/
 theorem equation_10_4_6 (hnm : n ≤ m) (hU : U ∈ orthogonalGroup (Fin m) ℝ)
     (hB : Uᵀ * A * V = B) (hBb : B.IsUpperBidiagonalRect) {k : ℕ} (hk : k ≤ n) :
     A * V.submatrix id (Fin.castLE hk) =
@@ -144,9 +280,17 @@ theorem equation_10_4_6 (hnm : n ≤ m) (hU : U ∈ orthogonalGroup (Fin m) ℝ)
     rw [hBb i _ (by simp; omega) (by simp; omega), mul_zero]]
   rfl
 
-/-- **(10.4.7)**: if `β_k = 0` (`B(k, k+1) = 0`), then `Aᵀ U(:, 1:k) = V(:, 1:k) B(1:k, 1:k)ᵀ` (the
-book's `Aᵀ V(:, 1:k) = U(:, 1:k) …` swaps `U` and `V`), and hence
-`Aᵀ A V(:, 1:k) = V(:, 1:k) B(1:k, 1:k)ᵀ B(1:k, 1:k)`. -/
+/-- **Equation (10.4.7)** of [golub2013matrix]. Let $A \in \mathbb{R}^{m \times n}$ with $n \le m$,
+let $U \in \mathbb{R}^{m \times m}$ and $V \in \mathbb{R}^{n \times n}$ be orthogonal, and let
+$B = U^T A V$ be upper bidiagonal. Let $1 \le k \le n$, assume that $\beta_k = b_{k,k+1} = 0$ if
+$k < n$, and let $B_k = B(1:k, 1:k)$. Then
+$$A^T U(:, 1:k) = V(:, 1:k) B_k^T \quad \text{and} \quad A^T A V(:, 1:k) = V(:, 1:k) B_k^T
+  B_k.$$
+
+**Typo.** The source prints $A^T V(:, 1:k) = U(:, 1:k) B_k^T$, which exchanges $U$ and $V$.
+
+For $k = n$ the hypothesis on $\beta_k$ is empty. In 0-based indices it is on the entry
+`B ⟨k - 1, _⟩ ⟨k, _⟩`. -/
 theorem equation_10_4_7 (hnm : n ≤ m) (hU : U ∈ orthogonalGroup (Fin m) ℝ)
     (hV : V ∈ orthogonalGroup (Fin n) ℝ) (hB : Uᵀ * A * V = B) (hBb : B.IsUpperBidiagonalRect)
     {k : ℕ} (hk1 : 1 ≤ k) (hk : k ≤ n) (hβ : ∀ h : k < n, B ⟨k - 1, by omega⟩ ⟨k, h⟩ = 0) :
@@ -181,11 +325,18 @@ theorem equation_10_4_7 (hnm : n ≤ m) (hU : U ∈ orthogonalGroup (Fin m) ℝ)
 
 end Columns
 
-/-- **The singular values of `B(1:k, 1:k)` are singular values of `A`** (§10.4.1, after (10.4.7)):
-if `β_k = 0`, every singular value of `B_k = B(1:k, 1:k)` is a singular value of `A`: the range of
-`V(:, 1:k)` is `AᵀA`-invariant with `AᵀA` acting as `B_kᵀ B_k` there ((10.4.7)), so an eigenvector
-`y` of `B_kᵀ B_k` gives the eigenvector `V(:, 1:k) y` of `AᵀA` for the same eigenvalue, and singular
-values are the square roots of these eigenvalues (`Matrix.sq_colSingularValues`). -/
+/-- **Section 10.4.1** of [golub2013matrix], the singular values of $B(1:k, 1:k)$. Let
+$A \in \mathbb{R}^{m \times n}$ with $n \le m$, let $U \in \mathbb{R}^{m \times m}$ and
+$V \in \mathbb{R}^{n \times n}$ be orthogonal, and let $B = U^T A V$ be upper bidiagonal. Let
+$1 \le k \le n$ and assume that $\beta_k = b_{k,k+1} = 0$ if $k < n$. Then every singular value
+of $B_k = B(1:k, 1:k)$ is a singular value of $A$.
+
+The singular values are `Matrix.colSingularValues`, listed with multiplicity in no fixed order:
+for each index $i$ of $B_k$ there is an index $j$ of $A$ with $\sigma_i(B_k) = \sigma_j(A)$. By
+(10.4.7) the range of $V(:, 1:k)$ is invariant under $A^T A$, which acts there as $B_k^T B_k$.
+So an eigenvector $y$ of $B_k^T B_k$ gives the eigenvector $V(:, 1:k) y$ of $A^T A$ for the same
+eigenvalue, and the singular values are the square roots of these eigenvalues
+(`Matrix.sq_colSingularValues`). -/
 theorem singularValues_bidiag_subset {m n : ℕ} {A : Matrix (Fin m) (Fin n) ℝ}
     {U : Matrix (Fin m) (Fin m) ℝ} {V : Matrix (Fin n) (Fin n) ℝ} {B : Matrix (Fin m) (Fin n) ℝ}
     (hnm : n ≤ m) (hU : U ∈ orthogonalGroup (Fin m) ℝ) (hV : V ∈ orthogonalGroup (Fin n) ℝ)
@@ -242,9 +393,15 @@ section GolubKahan
 
 variable {m n : ℕ} (A : Matrix (Fin m) (Fin n) ℝ) (v : EuclideanSpace ℝ (Fin n))
 
-/-- **(10.4.9)**: `A V_k = U_k B_k` for the Golub–Kahan matrices, `B_k` the upper bidiagonal
-matrix (10.4.8) of the `α_j`, `β_j` (at every `k`; past breakdown both sides have zero columns).
-Backbone `GolubKahan.mul_rightMatrix`. -/
+/-- **Equation (10.4.9)** of [golub2013matrix]. Let $A \in \mathbb{R}^{m \times n}$,
+$v_c \in \mathbb{R}^n$ and $k \ge 0$. Let $V_k$ and $U_k$ be the matrices of the first $k$
+Golub–Kahan vectors of $A$ from $v_c$, and let $B_k$ be the $k \times k$ upper bidiagonal matrix
+(10.4.8) with diagonal $\alpha_1, \dots, \alpha_k$ and superdiagonal
+$\beta_1, \dots, \beta_{k-1}$. Then
+$$A V_k = U_k B_k.$$
+
+The identity holds for every $k$: after a breakdown both sides have zero columns. The proof
+specializes `GolubKahan.mul_rightMatrix`. -/
 theorem equation_10_4_9 (k : ℕ) :
     A * GolubKahan.rightMatrix A v k =
       GolubKahan.leftMatrix A v k *
@@ -253,9 +410,15 @@ theorem equation_10_4_9 (k : ℕ) :
   rw [conjTranspose_eq_transpose_of_trivial] at h
   simpa using h
 
-/-- **(10.4.10)**: `Aᵀ U_k = V_k B_kᵀ + p_k e_kᵀ` with `p_k = β_k v_{k+1}` (`k ≥ 1`; the backbone's
-`β_{k−1}` and `v_k`, `0`-based). Backbone `GolubKahan.conjTranspose_mul_leftMatrix`
-(`Aᵀ U_k = V_{k+1} B̄_k`) split into the first `k` columns of `V_{k+1}` and the last. -/
+/-- **Equation (10.4.10)** of [golub2013matrix]. Let $A \in \mathbb{R}^{m \times n}$,
+$v_c \in \mathbb{R}^n$ and $k \ge 1$, with $V_k$, $U_k$ and $B_k$ as in (10.4.9). Then
+$$A^T U_k = V_k B_k^T + p_k e_k^T, \qquad p_k = \beta_k v_{k+1},$$
+where $e_k$ is the last unit vector of $\mathbb{R}^k$.
+
+In 0-based indices $\beta_k$ and $v_{k+1}$ are `GolubKahan.beta T Ts v (k - 1)` and
+`GolubKahan.rightVec T Ts v k`, and $e_k$ is `Krylov.lastVec 1 k`. The proof splits
+`GolubKahan.conjTranspose_mul_leftMatrix`, which is $A^T U_k = V_{k+1} \bar B_k$, into the first
+$k$ columns of $V_{k+1}$ and the last one. -/
 theorem equation_10_4_10 {k : ℕ} (hk : 1 ≤ k) :
     Aᵀ * GolubKahan.leftMatrix A v k =
       GolubKahan.rightMatrix A v k *
@@ -287,23 +450,38 @@ theorem equation_10_4_10 {k : ℕ} (hk : 1 ≤ k) :
     · rw [ite_eq_right (by omega), ite_eq_right (by omega), ite_eq_right h1]
       ring
 
-/-- **(10.4.11)**: `span {v_1, …, v_k} = 𝒦(AᵀA, v_c, k)`. Backbone `GolubKahan.span_rightVec`. -/
+/-- **Equation (10.4.11)** of [golub2013matrix]. Let $A \in \mathbb{R}^{m \times n}$,
+$v_c \in \mathbb{R}^n$ and $k \ge 0$. The first $k$ right Golub–Kahan vectors of $A$ from $v_c$
+span the Krylov subspace of $A^T A$:
+$$\operatorname{span}\{v_1, \dots, v_k\} = \mathcal{K}(A^T A, v_c, k).$$
+
+The proof specializes `GolubKahan.span_rightVec`. -/
 theorem equation_10_4_11 (k : ℕ) :
     Submodule.span ℝ (GolubKahan.rightVec (toEuclideanLin A) (toEuclideanLin Aᵀ) v '' Set.Iio k) =
       Krylov.subspace (toEuclideanLin (Aᵀ * A)) v k := by
   rw [GolubKahan.span_rightVec, toEuclideanLin_mul]
 
-/-- **(10.4.12)**: `span {u_1, …, u_k} = 𝒦(AAᵀ, A v_c, k)`. Backbone `GolubKahan.span_leftVec`. -/
+/-- **Equation (10.4.12)** of [golub2013matrix]. Let $A \in \mathbb{R}^{m \times n}$,
+$v_c \in \mathbb{R}^n$ and $k \ge 0$. The first $k$ left Golub–Kahan vectors of $A$ from $v_c$
+span the Krylov subspace of $A A^T$ from $A v_c$:
+$$\operatorname{span}\{u_1, \dots, u_k\} = \mathcal{K}(A A^T, A v_c, k).$$
+
+The proof specializes `GolubKahan.span_leftVec`. -/
 theorem equation_10_4_12 (k : ℕ) :
     Submodule.span ℝ (GolubKahan.leftVec (toEuclideanLin A) (toEuclideanLin Aᵀ) v '' Set.Iio k) =
       Krylov.subspace (toEuclideanLin (A * Aᵀ)) (toEuclideanLin A v) k := by
   rw [GolubKahan.span_leftVec, toEuclideanLin_mul]
 
-/-- **The Lanczos connection** (§10.4.1, "the symmetric Lanczos convergence theory … can be
-applied"): `B_kᵀ B_k = T_k(AᵀA, v_c)`, the Lanczos tridiagonal matrix of `AᵀA` from `v_c`; so the
-squared singular values of `B_k` are the Ritz values of `AᵀA` on `𝒦(AᵀA, v_c, k)`
-(`Lanczos.ritzValues`), which Theorems 10.1.2–10.1.4 bound. Backbone
-`GolubKahan.bidiag_conjTranspose_mul_bidiag`. -/
+/-- **Section 10.4.1** of [golub2013matrix], the connection with the Lanczos process. Let
+$A \in \mathbb{R}^{m \times n}$, $v_c \in \mathbb{R}^n$ and $k \ge 0$, and let $B_k$ be as in
+(10.4.9). Then
+$$B_k^T B_k = T_k(A^T A, v_c),$$
+the $k \times k$ Lanczos tridiagonal matrix of $A^T A$ from $v_c$.
+
+So the squares of the singular values of $B_k$ are the Ritz values of $A^T A$ on
+$\mathcal{K}(A^T A, v_c, k)$ (`Lanczos.ritzValues`), which Theorems 10.1.2–10.1.4 bound; this is
+how the source applies the convergence theory of the symmetric Lanczos process. The Lanczos
+matrix is `Lanczos.tridiag`. The proof specializes `GolubKahan.bidiag_conjTranspose_mul_bidiag`. -/
 theorem bidiag_transpose_mul_bidiag (k : ℕ) :
     (GolubKahan.bidiag (toEuclideanLin A) (toEuclideanLin Aᵀ) v k)ᵀ *
         GolubKahan.bidiag (toEuclideanLin A) (toEuclideanLin Aᵀ) v k =
@@ -317,9 +495,15 @@ theorem bidiag_transpose_mul_bidiag (k : ℕ) :
 
 /-! ### Ritz approximations (§10.4.2) -/
 
-/-- **(10.4.14)**: with an SVD `F_kᵀ B_k G_k = Γ = diag(γ_1, …, γ_k)` (10.4.13) of `B_k`
-(`F_k`, `G_k` orthogonal), `Y_k = V_k G_k` and `Z_k = U_k F_k` satisfy `A Y_k = Z_k Γ`, i.e.
-`A y_i = γ_i z_i`. From (10.4.9). -/
+/-- **Equation (10.4.14)** of [golub2013matrix]. Let $A \in \mathbb{R}^{m \times n}$,
+$v_c \in \mathbb{R}^n$ and $k \ge 0$, with $V_k$, $U_k$ and $B_k$ as in (10.4.9). Let
+$F_k, G_k \in \mathbb{R}^{k \times k}$ with $F_k$ orthogonal, and let $\gamma \in \mathbb{R}^k$
+satisfy (10.4.13), $F_k^T B_k G_k = \Gamma = \operatorname{diag}(\gamma_1, \dots, \gamma_k)$.
+Then $Y_k = V_k G_k$ and $Z_k = U_k F_k$ satisfy
+$$A Y_k = Z_k \Gamma,$$
+that is, $A y_i = \gamma_i z_i$ for every column.
+
+The orthogonality of $G_k$ is not needed. The proof uses (10.4.9). -/
 theorem equation_10_4_14 {k : ℕ} {F G : Matrix (Fin k) (Fin k) ℝ}
     (hF : F ∈ orthogonalGroup (Fin k) ℝ) {γ : Fin k → ℝ}
     (hSVD : Fᵀ * GolubKahan.bidiag (toEuclideanLin A) (toEuclideanLin Aᵀ) v k * G = diagonal γ) :
@@ -329,8 +513,14 @@ theorem equation_10_4_14 {k : ℕ} {F G : Matrix (Fin k) (Fin k) ℝ}
   rw [Matrix.mul_assoc (GolubKahan.leftMatrix A v k) F Fᵀ, (mem_orthogonalGroup_iff _ _).1 hF,
     Matrix.mul_one]
 
-/-- **(10.4.15)**: in the setting of (10.4.14), with `G_k` orthogonal as well,
-`Aᵀ Z_k = Y_k Γ + p_k e_kᵀ F_k`, i.e. `Aᵀ z_i = γ_i y_i + [F_k]_{ki} p_k`. From (10.4.10). -/
+/-- **Equation (10.4.15)** of [golub2013matrix]. Let $A \in \mathbb{R}^{m \times n}$,
+$v_c \in \mathbb{R}^n$ and $k \ge 1$, let $F_k, G_k \in \mathbb{R}^{k \times k}$ be orthogonal,
+and let $F_k^T B_k G_k = \Gamma = \operatorname{diag}(\gamma_1, \dots, \gamma_k)$. With
+$Y_k = V_k G_k$, $Z_k = U_k F_k$ and $p_k = \beta_k v_{k+1}$ as in (10.4.10),
+$$A^T Z_k = Y_k \Gamma + p_k e_k^T F_k,$$
+that is, $A^T z_i = \gamma_i y_i + [F_k]_{ki} p_k$ for every column.
+
+The row vector $e_k^T F_k$ is `Krylov.lastVec 1 k ᵥ* F`. The proof uses (10.4.10). -/
 theorem equation_10_4_15 {k : ℕ} (hk : 1 ≤ k) {F G : Matrix (Fin k) (Fin k) ℝ}
     (hF : F ∈ orthogonalGroup (Fin k) ℝ) (hG : G ∈ orthogonalGroup (Fin k) ℝ) {γ : Fin k → ℝ}
     (hSVD : Fᵀ * GolubKahan.bidiag (toEuclideanLin A) (toEuclideanLin Aᵀ) v k * G = diagonal γ) :
@@ -355,9 +545,13 @@ end GolubKahan
 
 /-! ### The lower bidiagonal form (§10.4.4) -/
 
-/-- **(10.4.18)**: for `A ∈ ℝ^{m×n}` there are orthogonal `U`, `V` with `Uᵀ A V = B` lower
-bidiagonal (entries only at `(i, i)` and `(i + 1, i)`, so that for `m > n` only the first `n + 1`
-rows can be nonzero): the transpose of the upper bidiagonalization of `Aᵀ`
+/-- **Equation (10.4.18)** of [golub2013matrix]. For every $A \in \mathbb{R}^{m \times n}$ there are
+orthogonal $U \in \mathbb{R}^{m \times m}$ and $V \in \mathbb{R}^{n \times n}$ such that
+$U^T A V$ is lower bidiagonal: its only nonzero entries are at the positions $(i, i)$ and
+$(i + 1, i)$. In particular, for $m > n$ only the first $n + 1$ rows can be nonzero.
+
+Lower bidiagonal is `Matrix.IsLowerBidiagonalRect`. No relation between $m$ and $n$ is assumed.
+The factorization is the transpose of an upper bidiagonalization of $A^T$
 (`Matrix.exists_unitary_mul_mul_unitary_apply_eq_zero`). -/
 theorem equation_10_4_18 {m n : ℕ} (A : Matrix (Fin m) (Fin n) ℝ) :
     ∃ U ∈ orthogonalGroup (Fin m) ℝ, ∃ V ∈ orthogonalGroup (Fin n) ℝ,
@@ -371,12 +565,18 @@ theorem equation_10_4_18 {m n : ℕ} (A : Matrix (Fin m) (Fin n) ℝ) :
   rw [e, transpose_apply]
   exact this
 
-/-- **(10.4.19)**, Paige–Saunders: the lower bidiagonalization of `A` from `u_c ∈ ℝ^m` is the
-Golub–Kahan process of `Aᵀ` from `u_c` (Algorithm 10.4.2 is Algorithm 10.4.1 for `Aᵀ`): its `u_j`
-are `GolubKahan.rightVec (toEuclideanLin Aᵀ) (toEuclideanLin A) u_c (j − 1)` and its `v_j` the
-corresponding `leftVec`, and after `k` steps `A V(:, 1:k) = U(:, 1:k) B(1:k, 1:k) + p_k e_kᵀ` with
-`B(1:k, 1:k)` lower bidiagonal (the transpose of the upper `B_k` of `Aᵀ`) and `p_k = β_{k+1}
-u_{k+1}`. Equation (10.4.10) for `Aᵀ`. -/
+/-- **Equation (10.4.19)** of [golub2013matrix] (Paige–Saunders lower bidiagonalization). Let
+$A \in \mathbb{R}^{m \times n}$, $u_c \in \mathbb{R}^m$ and $k \ge 1$. Let
+$u_1, u_2, \dots \in \mathbb{R}^m$ and $v_1, v_2, \dots \in \mathbb{R}^n$ be the vectors of the
+lower bidiagonalization of $A$ from $u_c$, that is, the right and the left Golub–Kahan vectors
+of $A^T$ from $u_c$, and let $B(1:k, 1:k)$ be the $k \times k$ lower bidiagonal matrix of its
+coefficients. Then
+$$A V(:, 1:k) = U(:, 1:k) B(1:k, 1:k) + p_k e_k^T, \qquad p_k = \beta_{k+1} u_{k+1}.$$
+
+The source's $u_j$ is `GolubKahan.rightVec (toEuclideanLin Aᵀ) (toEuclideanLin A) u_c (j - 1)`
+and its $v_j$ is the corresponding `GolubKahan.leftVec`. The matrix $B(1:k, 1:k)$ is the
+transpose of the upper bidiagonal `GolubKahan.bidiag` of the pair $(A^T, A)$. The statement is
+(10.4.10) for $A^T$. -/
 theorem equation_10_4_19 {m n : ℕ} (A : Matrix (Fin m) (Fin n) ℝ) (u : EuclideanSpace ℝ (Fin m))
     {k : ℕ} (hk : 1 ≤ k) :
     A * GolubKahan.leftMatrix Aᵀ u k =
@@ -390,8 +590,9 @@ theorem equation_10_4_19 {m n : ℕ} (A : Matrix (Fin m) (Fin n) ℝ) (u : Eucli
 
 /-! ### Randomized low-rank approximation (§10.4.5) -/
 
-/-- `Z̃₁ Z̃₁ᵀ = U P_k Uᵀ` for the first `k` columns `Z̃₁ = U(:, 1:k)` of `U`, `P_k` the diagonal
-projector onto the first `k` coordinates. -/
+/-- For the first $k$ columns $\tilde Z_1 = U(:, 1:k)$ of $U$,
+$\tilde Z_1 \tilde Z_1^T = U P_k U^T$, where $P_k$ is the diagonal projector onto the first $k$
+coordinates. -/
 private theorem submatrix_castLE_mul_transpose {m k : ℕ} (hkm : k ≤ m)
     (U : Matrix (Fin m) (Fin m) ℝ) :
     U.submatrix id (Fin.castLE hkm) * (U.submatrix id (Fin.castLE hkm))ᵀ =
@@ -419,13 +620,22 @@ private theorem submatrix_castLE_mul_transpose {m k : ℕ} (hkm : k ≤ m)
   omega
 
 open scoped Matrix.Norms.L2Operator in
-/-- **(10.4.20)**: for an SVD `A = Z̃ Σ̃ Ỹᵀ` (`IsSVD A Z̃ σ Ỹ`) and `k ≤ rank A`, the truncation
-`Ã_k = Z̃₁ Σ̃₁ Ỹ₁ᵀ` (`Matrix.svdTruncation`, (2.4.3)) equals `Z̃₁ Z̃₁ᵀ A`, `Z̃₁ = Z̃(:, 1:k)`, has
-rank `k`, and is a closest matrix of rank at most `k` to `A` in the 2-norm (Eckart–Young,
-chapter 2's Theorem 2.4.8; the Frobenius half is `equation_10_4_20_frobenius`). Backbone
+/-- **Equation (10.4.20)** of [golub2013matrix]. Let $A \in \mathbb{R}^{m \times n}$ have the SVD
+$A = \tilde Z \tilde \Sigma \tilde Y^T$, with $\tilde Z$ and $\tilde Y$ orthogonal and singular
+values $\sigma_1 \ge \sigma_2 \ge \dots \ge 0$, and let $k \le \operatorname{rank} A$. Let
+$\tilde Z_1 = \tilde Z(:, 1:k)$ and let $\tilde A_k = \tilde Z_1 \tilde \Sigma_1 \tilde Y_1^T =
+\sum_{i \le k} \sigma_i \tilde z_i \tilde y_i^T$ be the truncation (2.4.3). Then
+$\tilde A_k = \tilde Z_1 \tilde Z_1^T A$, $\operatorname{rank} \tilde A_k = k$, and $\tilde A_k$
+is a closest matrix of rank at most $k$ to $A$ in the 2-norm:
+$$\|A - \tilde A_k\|_2 \le \|A - B\|_2 \quad \text{for every } B \in \mathbb{R}^{m \times n}
+  \text{ with } \operatorname{rank} B \le k.$$
+
+The SVD is `Matrix.IsSVD A U σ V` with the orthogonal factors `U` and `V`, and the truncation is
+`Matrix.svdTruncation U σ V k`. The minimality is the Eckart–Young theorem, Theorem 2.4.8
+(`GolubVanLoan.Chapter02.theorem_2_4_8`); the Frobenius-norm form is
+`GolubVanLoan.Chapter10.equation_10_4_20_frobenius`. The proof specializes
 `Matrix.rank_svdTruncation`, `Matrix.l2_opNorm_sub_svdTruncation` and
-`Matrix.isLeast_l2_opNorm_sub_of_rank_le` (the backbone form of chapter 2's
-`Chapter02.theorem_2_4_8`). -/
+`Matrix.isLeast_l2_opNorm_sub_of_rank_le`, the backbone form of Theorem 2.4.8. -/
 theorem equation_10_4_20 {m n : ℕ} {A : Matrix (Fin m) (Fin n) ℝ}
     {U : Matrix (Fin m) (Fin m) ℝ} {σ : ℕ → ℝ} {V : Matrix (Fin n) (Fin n) ℝ} (h : IsSVD A U σ V)
     {k : ℕ} (hk : k ≤ A.rank) :
@@ -457,9 +667,15 @@ theorem equation_10_4_20 {m n : ℕ} {A : Matrix (Fin m) (Fin n) ℝ}
     exact (isLeast_l2_opNorm_sub_of_rank_le A k).2 ⟨B, hB, rfl⟩
 
 open scoped Matrix.Norms.Frobenius in
-/-- **(10.4.20), Frobenius half**: the truncation `Ã_k` of an SVD is a closest matrix of rank at
-most `k` to `A` in the Frobenius norm (the Eckart–Young–Mirsky remark after chapter 2's
-Theorem 2.4.8). Backbone `Matrix.frobenius_norm_sub_svdTruncation` and
+/-- **Equation (10.4.20)** of [golub2013matrix], the Frobenius norm. Let
+$A \in \mathbb{R}^{m \times n}$ have an SVD as in (10.4.20), let $k \ge 0$, and let $\tilde A_k$
+be the truncation (2.4.3). Then $\tilde A_k$ is a closest matrix of rank at most $k$ to $A$ in
+the Frobenius norm:
+$$\|A - \tilde A_k\|_F \le \|A - B\|_F \quad \text{for every } B \in \mathbb{R}^{m \times n}
+  \text{ with } \operatorname{rank} B \le k.$$
+
+This is the Eckart–Young–Mirsky remark after Theorem 2.4.8. No bound on $k$ is needed. The proof
+specializes `Matrix.frobenius_norm_sub_svdTruncation` and
 `Matrix.isLeast_frobenius_norm_sub_of_rank_le`. -/
 theorem equation_10_4_20_frobenius {m n : ℕ} {A : Matrix (Fin m) (Fin n) ℝ}
     {U : Matrix (Fin m) (Fin m) ℝ} {σ : ℕ → ℝ} {V : Matrix (Fin n) (Fin n) ℝ} (h : IsSVD A U σ V)
@@ -477,9 +693,16 @@ variable {m c k r s : ℕ} {C : Matrix (Fin m) (Fin c) ℝ} {Z₁ : Matrix (Fin 
   {Z₂ : Matrix (Fin m) (Fin r) ℝ} {σ₁ : Fin k → ℝ} {σ₂ : Fin r → ℝ}
   {Y₁ : Matrix (Fin c) (Fin k) ℝ} {Y₂ : Matrix (Fin c) (Fin r) ℝ}
 
-/-- **(10.4.22)**: for `C ∈ ℝ^{m×c}` with SVD `C = Z₁ Σ₁ Y₁ᵀ + Z₂ Σ₂ Y₂ᵀ` (`Y = [Y₁ | Y₂]`
-orthogonal, so `Y₁ᵀ Y₁ = I` and `Y₂ᵀ Y₁ = 0`; `Σ₁ = diag(σ₁)` nonsingular) and
-`Φ = Y₁ Σ₁⁻² Y₁ᵀ`: `C Φ = Z₁ Σ₁⁻¹ Y₁ᵀ`. -/
+/-- **Equation (10.4.22)** of [golub2013matrix]. Let $C \in \mathbb{R}^{m \times c}$ have the split
+SVD $C = Z_1 \Sigma_1 Y_1^T + Z_2 \Sigma_2 Y_2^T$ with $Z_1 \in \mathbb{R}^{m \times k}$,
+$Z_2 \in \mathbb{R}^{m \times r}$, $Y_1 \in \mathbb{R}^{c \times k}$,
+$Y_2 \in \mathbb{R}^{c \times r}$ and diagonal $\Sigma_1 \in \mathbb{R}^{k \times k}$,
+$\Sigma_2 \in \mathbb{R}^{r \times r}$. Assume that $Y_1^T Y_1 = I$, $Y_2^T Y_1 = 0$ and that
+$\Sigma_1$ is nonsingular, and let $\Phi = Y_1 \Sigma_1^{-2} Y_1^T$. Then
+$$C \Phi = Z_1 \Sigma_1^{-1} Y_1^T.$$
+
+In the source $Y = [Y_1 | Y_2]$ is orthogonal; only the two relations $Y_1^T Y_1 = I$ and
+$Y_2^T Y_1 = 0$ are used. The diagonals of $\Sigma_1$ and $\Sigma_2$ are vectors `σ₁` and `σ₂`. -/
 theorem equation_10_4_22 (hC : C = Z₁ * diagonal σ₁ * Y₁ᵀ + Z₂ * diagonal σ₂ * Y₂ᵀ)
     (hY₁ : Y₁ᵀ * Y₁ = 1) (hY₂₁ : Y₂ᵀ * Y₁ = 0) (hσ : ∀ i, σ₁ i ≠ 0) :
     C * (Y₁ * diagonal (fun i => (σ₁ i)⁻¹ ^ 2) * Y₁ᵀ) =
@@ -499,17 +722,26 @@ theorem equation_10_4_22 (hC : C = Z₁ * diagonal σ₁ * Y₁ᵀ + Z₂ * diag
     rw [← Matrix.mul_assoc Y₂ᵀ Y₁, hY₂₁, Matrix.zero_mul, Matrix.mul_zero, Matrix.mul_zero]
   rw [e1, e2, add_zero]
 
-/-- Selecting rows commutes with multiplying on the right: `(M N)(row, :) = M(row, :) N`. -/
+/-- Selecting rows commutes with multiplication on the right:
+$(MN)(\mathrm{row}, :) = M(\mathrm{row}, :) N$. -/
 private theorem submatrix_mul_id {p q t : ℕ} (M : Matrix (Fin p) (Fin q) ℝ)
     (N : Matrix (Fin q) (Fin t) ℝ) (row : Fin s → Fin p) :
     (M * N).submatrix row id = M.submatrix row id * N := by
   ext i j
   simp [Matrix.mul_apply]
 
-/-- **(10.4.23)**: with a row selection `row : Fin s → Fin m`, a diagonal scaling `D_R = diag(d)`,
-`R = D_R A(row, :)` and `Ψ = D_R C(row, :)`:
-`Ψᵀ R = (D_R (Z₁(row, :) Σ₁ Y₁ᵀ + Z₂(row, :) Σ₂ Y₂ᵀ))ᵀ D_R A(row, :)` — the SVD substituted in the
-selected rows. The book's left side is printed `Ψᵀ R` here but `Ψ R` in (10.4.24). -/
+/-- **Equation (10.4.23)** of [golub2013matrix]. Let $C \in \mathbb{R}^{m \times c}$ have the split
+SVD $C = Z_1 \Sigma_1 Y_1^T + Z_2 \Sigma_2 Y_2^T$ as in (10.4.22), and let
+$A \in \mathbb{R}^{m \times n}$. Select $s$ rows by indices
+$\mathrm{row}(1), \dots, \mathrm{row}(s)$, let $D_R = \operatorname{diag}(d)$ for
+$d \in \mathbb{R}^s$, and let $R = D_R A(\mathrm{row}, :)$ and $\Psi = D_R C(\mathrm{row}, :)$.
+Then
+$$\Psi^T R = \bigl(D_R (Z_1(\mathrm{row}, :) \Sigma_1 Y_1^T + Z_2(\mathrm{row}, :) \Sigma_2
+  Y_2^T)\bigr)^T D_R A(\mathrm{row}, :).$$
+
+This is the SVD of $C$ substituted in the selected rows; no relation between the factors is
+needed. The source writes the left side as $\Psi^T R$ here and as $\Psi R$ in (10.4.24). The
+selection is a map `row : Fin s → Fin m`, which need not be injective. -/
 theorem equation_10_4_23 {n : ℕ} (A : Matrix (Fin m) (Fin n) ℝ) (row : Fin s → Fin m)
     (d : Fin s → ℝ) (hC : C = Z₁ * diagonal σ₁ * Y₁ᵀ + Z₂ * diagonal σ₂ * Y₂ᵀ) :
     (diagonal d * C.submatrix row id)ᵀ * (diagonal d * A.submatrix row id) =
@@ -518,8 +750,15 @@ theorem equation_10_4_23 {n : ℕ} (A : Matrix (Fin m) (Fin n) ℝ) (row : Fin s
   rw [hC, submatrix_add, Pi.add_apply, Pi.add_apply, submatrix_mul_id, submatrix_mul_id,
     submatrix_mul_id, submatrix_mul_id]
 
-/-- **(10.4.24)**: with `U = Φ Ψᵀ`, `C U R = (C Φ)(Ψᵀ R) = Z₁ (D_R Z₁(row, :))ᵀ (D_R A(row, :))` —
-the book prints `(CΦ)(ΨR)` and omits the transpose. From (10.4.22), (10.4.23) and `Y₁ᵀ Y₂ = 0`. -/
+/-- **Equation (10.4.24)** of [golub2013matrix]. Let $C$, $Z_1$, $Y_1$, $\Sigma_1$ and $\Phi$ be as
+in (10.4.22), with $Y_1^T Y_1 = I$, $Y_2^T Y_1 = 0$ and $\Sigma_1$ nonsingular, and let $A$,
+$D_R$, $R$ and $\Psi$ be as in (10.4.23). Then $U = \Phi \Psi^T$ satisfies
+$$C U R = (C \Phi)(\Psi^T R) = Z_1 (D_R Z_1(\mathrm{row}, :))^T (D_R A(\mathrm{row}, :)).$$
+
+**Typo.** The source prints $(C\Phi)(\Psi R)$ and omits the transpose. The product $\Psi R$ is
+not defined unless $s = c$, and (10.4.23) has $\Psi^T R$.
+
+The proof combines (10.4.22), (10.4.23) and $Y_1^T Y_2 = 0$. -/
 theorem equation_10_4_24 {n : ℕ} (A : Matrix (Fin m) (Fin n) ℝ) (row : Fin s → Fin m)
     (d : Fin s → ℝ) (hC : C = Z₁ * diagonal σ₁ * Y₁ᵀ + Z₂ * diagonal σ₂ * Y₂ᵀ)
     (hY₁ : Y₁ᵀ * Y₁ = 1) (hY₂₁ : Y₂ᵀ * Y₁ = 0) (hσ : ∀ i, σ₁ i ≠ 0) :
@@ -544,13 +783,28 @@ theorem equation_10_4_24 {n : ℕ} (A : Matrix (Fin m) (Fin n) ℝ) (row : Fin s
 
 end CUR
 
-/-! ### Ritz pairs of `AᵀA` (§10.4.2) -/
+/-! ### Ritz pairs of $A^T A$ (§10.4.2) -/
 
-/-- **Ritz pairs of `AᵀA`** (§10.4.2, after (10.4.15)): in the setting of (10.4.14)–(10.4.15),
-`AᵀA y_i = γ_i² y_i + γ_i [F_k]_{ki} p_k` (the book prints `γ_i² z_i + [F_k]_{ki} p_k`), and
-`(γ_i², y_i)` is a Ritz pair of `AᵀA` with respect to `ran(V_k) = 𝒦(AᵀA, v_c, k)` (the book writes
-`{γ_i, y_i}`): `B_kᵀ B_k = T_k(AᵀA)` has the eigenvector `G_k e_i` for `γ_i²`
-(`Arnoldi.isRitzPair_of_mulVec_eq_smul`). Here `y_i = Y_k e_i`, `k ≤` the grade of `v_c`. -/
+/-- **Section 10.4.2** of [golub2013matrix], Ritz pairs of $A^T A$. Let
+$A \in \mathbb{R}^{m \times n}$ and $v_c \in \mathbb{R}^n$, and let $1 \le k \le g$, where $g$
+is the grade of $v_c$ for $A^T A$. Let $F_k, G_k \in \mathbb{R}^{k \times k}$ be orthogonal with
+$F_k^T B_k G_k = \operatorname{diag}(\gamma_1, \dots, \gamma_k)$ as in (10.4.13), let
+$1 \le i \le k$, and let $y_i = V_k G_k e_i$ and $p_k = \beta_k v_{k+1}$. Then
+$$A^T A y_i = \gamma_i^2 y_i + \gamma_i [F_k]_{ki} p_k,$$
+and $(\gamma_i^2, y_i)$ is a Ritz pair of $A^T A$ with respect to $\mathcal{K}(A^T A, v_c, k)$:
+$y_i$ is a nonzero vector of this subspace, and $A^T A y_i - \gamma_i^2 y_i$ is orthogonal to
+it.
+
+**Correction.** The source prints $A^T A y_i = \gamma_i^2 z_i + [F_k]_{ki} p_k$. The vector
+$z_i \in \mathbb{R}^m$ does not belong in this identity, and the coefficient of $p_k$ has the
+factor $\gamma_i$. The stated identity follows from (10.4.14) and (10.4.15).
+
+**Reading.** The source names the Ritz pair $\{\gamma_i, y_i\}$. The Ritz value of $A^T A$ is
+$\gamma_i^2$, the square of the singular value estimate $\gamma_i$.
+
+The Ritz pair is `Krylov.IsRitzPair` and the grade is `Krylov.grade`. The proof uses that
+$B_k^T B_k = T_k(A^T A)$ has the eigenvector $G_k e_i$ for the eigenvalue $\gamma_i^2$, and
+applies `Arnoldi.isRitzPair_of_mulVec_eq_smul`. -/
 theorem isRitzPair_gram {m n : ℕ} (A : Matrix (Fin m) (Fin n) ℝ) (v : EuclideanSpace ℝ (Fin n))
     {k : ℕ} (hk1 : 1 ≤ k) (hk : k ≤ grade (toEuclideanLin (Aᵀ * A)) v)
     {F G : Matrix (Fin k) (Fin k) ℝ} (hF : F ∈ orthogonalGroup (Fin k) ℝ)
@@ -635,38 +889,38 @@ theorem isRitzPair_gram {m n : ℕ} (A : Matrix (Fin m) (Fin n) ℝ) (v : Euclid
 
 /-! ### Algorithms 10.4.1 and 10.4.2 -/
 
-/-- The state of the bidiagonalization programs: the number `k` of steps taken, the right and
-left vectors (`v j`, `u j` are the book's `v_{j+1}`, `u_{j+1}` in Algorithm 10.4.1), the
-coefficients (`alpha j`, `beta j` are `α_{j+1}`, `β_{j+1}`), the vector `p` (the book's `p_k`) and
-the `done` flag of the `while β_k ≠ 0` loop. -/
+/-- The state of the bidiagonalization programs of Algorithms 10.4.1 and 10.4.2: the step counter
+$k$, the right and the left vectors, the coefficients $\alpha$ and $\beta$, the vector $p_k$,
+and a flag that records that the loop "while $\beta_k \neq 0$" has stopped. -/
 structure BidiagState (m n : ℕ) where
-  /-- The book's step counter `k`. -/
+  /-- The step counter $k$ of the source. -/
   k : ℕ
-  /-- The right vectors, `0`-based. -/
+  /-- The right vectors: `v j` is the source's $v_{j+1}$ in Algorithm 10.4.1. -/
   v : ℕ → Fin n → ℝ
-  /-- The left vectors, `0`-based. -/
+  /-- The left vectors: `u j` is the source's $u_{j+1}$ in Algorithm 10.4.1. -/
   u : ℕ → Fin m → ℝ
-  /-- The diagonal coefficients `α`, `0`-based. -/
+  /-- The diagonal coefficients: `alpha j` is the source's $\alpha_{j+1}$ in Algorithm 10.4.1. -/
   alpha : ℕ → ℝ
-  /-- The off-diagonal coefficients `β`, `0`-based. -/
+  /-- The off-diagonal coefficients: `beta j` is the source's $\beta_{j+1}$ in Algorithm 10.4.1. -/
   beta : ℕ → ℝ
-  /-- The vector `p_k`. -/
+  /-- The current vector $p_k$. -/
   p : Fin n → ℝ
-  /-- Whether the loop has stopped (`β_k = 0`). -/
+  /-- Whether the loop has stopped because $\beta_k = 0$. -/
   done : Bool
 
 section BidiagProgram
 
 variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ) {m n : ℕ}
 
-/-- One pass of the `while` loop of Algorithm 10.4.1 for the pair `(B, C)` (`C` playing `Bᵀ`), a
-no-op once `done`:
+/-- One pass of the `while` loop of Algorithm 10.4.1 for a pair of matrices $(B, C)$, where $C$
+plays the role of $B^T$; once the loop has stopped, the pass does nothing. The pass computes
 ```
 v_{k+1} = p_k/β_k,  k = k + 1,  r_k = B v_k − β_{k−1} u_{k−1},  α_k = ‖r_k‖₂,  u_k = r_k/α_k,
 p_k = C u_k − α_k v_k,  β_k = ‖p_k‖₂
 ```
-with `β_0 = 1` and `u_0 = 0` at the first pass. For `(B, C) = (A, Aᵀ)` it is Algorithm 10.4.1; for
-`(Aᵀ, A)` it is Algorithm 10.4.2 with the roles of `u` and `v` exchanged. -/
+with $\beta_0 = 1$ and $u_0 = 0$ at the first pass. For $(B, C) = (A, A^T)$ it is the loop body
+of Algorithm 10.4.1, and for $(A^T, A)$ it is the loop body of Algorithm 10.4.2 with the roles
+of $u$ and $v$ exchanged. -/
 noncomputable def bidiagStep (B : Matrix (Fin m) (Fin n) ℝ) (C : Matrix (Fin n) (Fin m) ℝ)
     (s : BidiagState m n) : M (BidiagState m n) :=
   if s.done then pure s else do
@@ -688,17 +942,18 @@ noncomputable def bidiagStep (B : Matrix (Fin m) (Fin n) ℝ) (C : Matrix (Fin n
         p := p
         done := decide (b = 0) }
 
-/-- The bidiagonalization loop for the pair `(B, C)` from `v₀`: at most `fuel` passes of
-`bidiagStep`. -/
+/-- The bidiagonalization loop for a pair $(B, C)$ from the starting vector $v_0$: at most `fuel`
+passes of `GolubVanLoan.Chapter10.bidiagStep`, from the state with $k = 0$, $p = v_0$ and all
+vectors and coefficients zero. -/
 noncomputable def bidiagLoop (B : Matrix (Fin m) (Fin n) ℝ) (C : Matrix (Fin n) (Fin m) ℝ)
     (v₀ : Fin n → ℝ) (fuel : ℕ) : M (BidiagState m n) :=
   (List.range fuel).foldlM (fun s _ => bidiagStep rnd B C s)
     { k := 0, v := fun _ => 0, u := fun _ => 0, alpha := fun _ => 0, beta := fun _ => 0,
       p := v₀, done := false }
 
-/-- **Algorithm 10.4.1 (Golub–Kahan Bidiagonalization).** "Given a matrix `A ∈ ℝ^{m×n}` with full
-column rank and a unit 2-norm `v_c ∈ ℝⁿ`, the following algorithm computes the factorization
-`AV = UB`":
+/-- **Algorithm 10.4.1** of [golub2013matrix] (Golub–Kahan bidiagonalization). Given
+$A \in \mathbb{R}^{m \times n}$ with full column rank and a unit vector $v_c \in \mathbb{R}^n$,
+the algorithm computes the factorization $AV = UB$:
 ```
 k = 0, p_0 = v_c, β_0 = 1, u_0 = 0
 while β_k ≠ 0
@@ -707,14 +962,18 @@ while β_k ≠ 0
   p_k = Aᵀ u_k − α_k v_k,  β_k = ‖p_k‖₂
 end
 ```
-The `while` loop is at most `fuel` passes (convention 3). -/
+
+The program is `GolubVanLoan.Chapter10.bidiagLoop` for the pair $(A, A^T)$. The `while` loop is
+at most `fuel` passes, and every arithmetic result passes through the rounding hook `rnd`. The
+exact semantics is `GolubVanLoan.Chapter10.algorithm_10_4_1_spec`. -/
 noncomputable def algorithm_10_4_1 (A : Matrix (Fin m) (Fin n) ℝ) (vc : Fin n → ℝ) (fuel : ℕ) :
     M (BidiagState m n) :=
   bidiagLoop rnd A Aᵀ vc fuel
 
-/-- **Algorithm 10.4.2 (Paige–Saunders Lower Bidiagonalization).** "Given a matrix `A ∈ ℝ^{m×n}`
-with the property that `A(1:n, 1:n)` is nonsingular and a unit 2-norm `u_c ∈ ℝ^m` (the book prints
-`ℝⁿ`), the following algorithm computes the factorization `AV(:, 1:k) = U(:, 1:k+1) B(1:k+1, 1:k)`":
+/-- **Algorithm 10.4.2** of [golub2013matrix] (Paige–Saunders lower bidiagonalization). Given
+$A \in \mathbb{R}^{m \times n}$ such that $A(1:n, 1:n)$ is nonsingular and a unit vector
+$u_c \in \mathbb{R}^m$, the algorithm computes the factorization
+$AV(:, 1:k) = U(:, 1:k+1) B(1:k+1, 1:k)$:
 ```
 k = 1, p_0 = u_c, β_1 = 1, v_0 = 0
 while β_k > 0
@@ -722,15 +981,21 @@ while β_k > 0
   p_k = A v_k − α_k u_k,  β_{k+1} = ‖p_k‖₂,  k = k + 1
 end
 ```
-It is the loop of Algorithm 10.4.1 for the pair `(Aᵀ, A)`: the state's right vectors (`v`) are the
-book's `u_k` and its left vectors (`u`) the book's `v_k`. -/
+
+**Typo.** The source states $u_c \in \mathbb{R}^n$. The vector $u_c$ is multiplied by $A^T$, so
+$u_c \in \mathbb{R}^m$.
+
+The program is `GolubVanLoan.Chapter10.bidiagLoop` for the pair $(A^T, A)$: the right vectors
+`v` of the state are the source's $u_k$, and its left vectors `u` are the source's $v_k$. The
+exact semantics is `GolubVanLoan.Chapter10.algorithm_10_4_2_spec`. -/
 noncomputable def algorithm_10_4_2 (A : Matrix (Fin m) (Fin n) ℝ) (uc : Fin m → ℝ) (fuel : ℕ) :
     M (BidiagState n m) :=
   bidiagLoop rnd Aᵀ A uc fuel
 
 end BidiagProgram
 
-/-- `‖c • x‖ = c` for `c ≥ 0` and `x` a unit vector or `x = 0` with `c = 0`. -/
+/-- If $c \ge 0$, $x$ is a unit vector unless $x = 0$, and $x = 0$ forces $c = 0$, then
+$\|c x\| = c$. -/
 private theorem norm_smul_of_unit_or {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
     {c : ℝ} (hc : 0 ≤ c) {x : E} (hx : x ≠ 0 → ‖x‖ = 1) (h0 : x = 0 → c = 0) :
     ‖c • x‖ = c := by
@@ -739,7 +1004,8 @@ private theorem norm_smul_of_unit_or {E : Type*} [NormedAddCommGroup E] [InnerPr
   · rw [h0 h, zero_mul]
   · rw [hx h, mul_one]
 
-/-- The exact run after `t + 1` passes is one more pass. -/
+/-- The exact run with $t + 1$ passes is one pass of `GolubVanLoan.Chapter10.bidiagStep` after the
+exact run with $t$ passes. -/
 private theorem bidiagLoop_succ {m n : ℕ} (B : Matrix (Fin m) (Fin n) ℝ)
     (C : Matrix (Fin n) (Fin m) ℝ) (v₀ : Fin n → ℝ) (t : ℕ) :
     Id.run (bidiagLoop pure B C v₀ (t + 1)) =
@@ -747,9 +1013,11 @@ private theorem bidiagLoop_succ {m n : ℕ} (B : Matrix (Fin m) (Fin n) ℝ)
   simp only [bidiagLoop, List.range_succ, List.foldlM_append, List.foldlM_cons,
     List.foldlM_nil, bind_pure, Id.run_bind]
 
-/-- Exact semantics of the bidiagonalization loop, for `C = Bᵀ` and a unit `v₀`: the run stops
-after `min fuel m` passes (`m` the grade of `v₀` for `BᵀB`) and every computed quantity is the
-backbone's Golub–Kahan one. -/
+/-- Exact semantics of `GolubVanLoan.Chapter10.bidiagLoop` for the pair $(B, B^T)$. Let
+$B \in \mathbb{R}^{m \times n}$ and let $v_0 \in \mathbb{R}^n$ be a unit vector. In exact
+arithmetic the run ends with the step counter $\min(\mathrm{fuel}, g)$, where $g$ is the grade
+of $v_0$ for $B^T B$, and for every $j$ below this counter the computed $v_{j+1}$, $u_{j+1}$,
+$\alpha_{j+1}$, $\beta_{j+1}$ are the Golub–Kahan vectors and coefficients of $B$ from $v_0$. -/
 theorem bidiagLoop_spec {m n : ℕ} (B : Matrix (Fin m) (Fin n) ℝ) {v₀ : Fin n → ℝ}
     (hv : ‖(WithLp.toLp 2 v₀ : EuclideanSpace ℝ (Fin n))‖ = 1) (fuel : ℕ) :
     let s := Id.run (bidiagLoop pure B Bᵀ v₀ fuel)
@@ -887,14 +1155,23 @@ theorem bidiagLoop_spec {m n : ℕ} (B : Matrix (Fin m) (Fin n) ℝ) {v₀ : Fin
   obtain ⟨hk, -, hvec, -⟩ := hP fuel
   exact ⟨hk, hvec⟩
 
-/-- **Exact semantics of Algorithm 10.4.1.** For a unit `v_c` the exact run stops after
-`min fuel m` passes, `m = grade(AᵀA, v_c)`, and for `j` below that `v_{j+1}`, `u_{j+1}`, `α_{j+1}`,
-`β_{j+1}` are the backbone's `GolubKahan.rightVec/leftVec/alpha/beta … j` (so each `α_j`, `β_j` is
-a nonnegative norm, `GolubKahan.alpha_nonneg`). The book's full-column-rank hypothesis is not
-needed for this identification; under it (`ker A = 0`) every computed `α_j` is positive, so the
-loop never divides by zero (the grades of `AᵀA` from `v_c` and of `AAᵀ` from `A v_c` agree,
-`GolubKahan.grade_comp_adjoint_add_finrank`). Invariant induction with `GolubKahan.apply_rightVec`,
-`GolubKahan.adjoint_apply_leftVec`. -/
+/-- **Algorithm 10.4.1** of [golub2013matrix], exact semantics. Let $A \in \mathbb{R}^{m \times n}$,
+let $v_c \in \mathbb{R}^n$ be a unit vector, and let $g$ be the grade of $v_c$ for $A^T A$. In
+exact arithmetic, the run with at most `fuel` passes ends with $k = \min(\mathrm{fuel}, g)$, and
+for $j = 1, \dots, k$ the computed $v_j$, $u_j$, $\alpha_j$ and $\beta_j$ are the Golub–Kahan
+vectors and coefficients of $A$ from $v_c$. If moreover $A$ has full column rank, then every
+computed $\alpha_j$ is positive, so that the loop never divides by zero.
+
+**Generalization.** The source assumes that $A$ has full column rank. The identification with
+the Golub–Kahan process holds for every $A$; full column rank is used only for $\alpha_j > 0$.
+
+In 0-based indices the computed quantities are `GolubKahan.rightVec T Ts q (j - 1)`,
+`GolubKahan.leftVec T Ts q (j - 1)`, `GolubKahan.alpha T Ts q (j - 1)` and
+`GolubKahan.beta T Ts q (j - 1)`, and full column rank is `LinearMap.ker T = ⊥`. Each $\alpha_j$
+and $\beta_j$ is a norm and so nonnegative (`GolubKahan.alpha_nonneg`). Positivity uses that the
+grades of $v_c$ for $A^T A$ and of $A v_c$ for $A A^T$ agree when $\ker A = 0$
+(`GolubKahan.grade_comp_adjoint_add_finrank`). The proof is an induction on an invariant of the
+loop, with `GolubKahan.apply_rightVec` and `GolubKahan.adjoint_apply_leftVec`. -/
 theorem algorithm_10_4_1_spec {m n : ℕ} (A : Matrix (Fin m) (Fin n) ℝ) {vc : Fin n → ℝ}
     (hv : ‖(WithLp.toLp 2 vc : EuclideanSpace ℝ (Fin n))‖ = 1) (fuel : ℕ) :
     let s := Id.run (algorithm_10_4_1 pure A vc fuel)
@@ -922,12 +1199,21 @@ theorem algorithm_10_4_1_spec {m n : ℕ} (A : Matrix (Fin m) (Fin n) ℝ) {vc :
   rw [hsα]
   exact lt_of_le_of_ne (GolubKahan.alpha_nonneg _ _ _ _) (Ne.symm hα)
 
-/-- **Exact semantics of Algorithm 10.4.2**: it is Algorithm 10.4.1 for `Aᵀ` started from `u_c`,
-the Golub–Kahan process of the pair `(Aᵀ, A)`: the book's `u_j`, `v_j`, `α_j`, `β_{j+1}` are
-`GolubKahan.rightVec/leftVec/alpha/beta (toEuclideanLin Aᵀ) (toEuclideanLin A) u_c (j − 1)`, for `j`
-up to the stopping index `min fuel (grade (A Aᵀ) u_c)`. The book's hypothesis "`A(1:n, 1:n)`
-nonsingular" is not what the algorithm needs (full column rank is); the identification needs
-neither. -/
+/-- **Algorithm 10.4.2** of [golub2013matrix], exact semantics. Let $A \in \mathbb{R}^{m \times n}$,
+let $u_c \in \mathbb{R}^m$ be a unit vector, and let $g$ be the grade of $u_c$ for $A A^T$. In
+exact arithmetic, the run with at most `fuel` passes ends with the step counter
+$\min(\mathrm{fuel}, g)$, and for every $j$ up to this counter the computed $u_j$, $v_j$,
+$\alpha_j$ and $\beta_{j+1}$ are the Golub–Kahan vectors and coefficients of $A^T$ from $u_c$.
+So Algorithm 10.4.2 is Algorithm 10.4.1 for $A^T$ from $u_c$.
+
+**Generalization.** The source assumes that $A(1:n, 1:n)$ is nonsingular. The identification
+holds for every $A$. This hypothesis is also not what the algorithm needs to avoid a division by
+zero; that is full column rank.
+
+In 0-based indices the computed quantities are `GolubKahan.rightVec T Ts q (j - 1)`,
+`GolubKahan.leftVec T Ts q (j - 1)`, `GolubKahan.alpha T Ts q (j - 1)` and
+`GolubKahan.beta T Ts q (j - 1)` for `T = Matrix.toEuclideanLin Aᵀ` and
+`Ts = Matrix.toEuclideanLin A`. -/
 theorem algorithm_10_4_2_spec {m n : ℕ} (A : Matrix (Fin m) (Fin n) ℝ) {uc : Fin m → ℝ}
     (hu : ‖(WithLp.toLp 2 uc : EuclideanSpace ℝ (Fin m))‖ = 1) (fuel : ℕ) :
     let s := Id.run (algorithm_10_4_2 pure A uc fuel)
@@ -943,15 +1229,24 @@ theorem algorithm_10_4_2_spec {m n : ℕ} (A : Matrix (Fin m) (Fin n) ℝ) {uc :
 
 /-! ### The tridiagonal–bidiagonal connection (§10.4.3) -/
 
-/-- **The tridiagonal–bidiagonal connection** (§10.4.3 with (10.4.16)–(10.4.17)): the Lanczos
-process of the Jordan–Wielandt matrix of `A`, started from the vector with `v_c` in the `ℝⁿ` block,
-has zero diagonal and off-diagonal `α_1, β_1, α_2, β_2, …` (the Golub–Kahan coefficients): its
-`k`-th Lanczos matrix `T_k` is `[0 α_1; α_1 0 β_1; …]`. The book's `C = [0 A; Aᵀ 0]` acts on
-`ℝ^{m+n}` from `[0; v_c]`; here the two blocks are exchanged, `C = [0 Aᵀ; A 0]` on `ℝ^{n+m}` from
-`[v_c; 0]` (the same operator up to the permutation of the blocks, and the same Lanczos
-coefficients), which is the backbone's Hermitian dilation `LinearMap.hermitianDilation` read in
-coordinates. Backbone `GolubKahan.lanczos_jordanWielandt`, carried to coordinates by
-`Arnoldi.coeff_conj_linearIsometryEquiv` along `PiLp.sumPiLpEquivProdLpPiLp`. -/
+/-- **Section 10.4.3** of [golub2013matrix], the tridiagonal–bidiagonal connection, with
+(10.4.16)–(10.4.17). Let $A \in \mathbb{R}^{m \times n}$, $v_c \in \mathbb{R}^n$ and $k \ge 0$.
+Let
+$$C = \begin{bmatrix} 0 & A^T \\ A & 0 \end{bmatrix} \in \mathbb{R}^{(n+m) \times (n+m)},$$
+and let $T_k$ be the $k \times k$ Lanczos tridiagonal matrix of $C$ from $(v_c, 0)$. Then $T_k$
+has zero diagonal and the off-diagonal $\alpha_1, \beta_1, \alpha_2, \beta_2, \dots$, where
+$\alpha_j$ and $\beta_j$ are the Golub–Kahan coefficients of $A$ from $v_c$:
+$$T_k = \begin{bmatrix} 0 & \alpha_1 & & & \\ \alpha_1 & 0 & \beta_1 & & \\ & \beta_1 & 0 &
+  \alpha_2 & \\ & & \alpha_2 & 0 & \ddots \\ & & & \ddots & \ddots \end{bmatrix}.$$
+
+The source's matrix is $\begin{bmatrix} 0 & A \\ A^T & 0 \end{bmatrix}$ on $\mathbb{R}^{m+n}$
+with the starting vector $(0, v_c)$. Here the two blocks are exchanged; the two operators differ
+by a permutation of the blocks and have the same Lanczos coefficients. In 0-based indices the
+entry $(i, i+1)$ is `GolubKahan.alpha T Ts v (i / 2)` for even $i$ and
+`GolubKahan.beta T Ts v (i / 2)` for odd $i$. The matrix $C$ is the Hermitian dilation
+`LinearMap.hermitianDilation` in coordinates. The proof carries
+`GolubKahan.lanczos_jordanWielandt` to coordinates by `Arnoldi.coeff_conj_linearIsometryEquiv`
+along `PiLp.sumPiLpEquivProdLpPiLp`. -/
 theorem lanczos_jordanWielandt {m n : ℕ} (A : Matrix (Fin m) (Fin n) ℝ)
     (v : EuclideanSpace ℝ (Fin n)) (k : ℕ) :
     Lanczos.tridiag (toEuclideanLin (Matrix.fromBlocks 0 Aᵀ A 0))

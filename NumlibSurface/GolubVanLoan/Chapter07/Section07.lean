@@ -10,53 +10,137 @@ import NumlibSurface.GolubVanLoan.Chapter07.Section04
 import NumlibSurface.GolubVanLoan.Chapter07.Section05
 
 /-!
-# Golub–Van Loan §7.7: the generalized eigenvalue problem
+# Golub and Van Loan, Section 7.7: The generalized eigenvalue problem
 
-Surface file for Gene H. Golub and Charles F. Van Loan, *Matrix Computations*, 4th edition
-[golub2013matrix], §7.7: the spectrum `λ(A, B)` of a pencil and its basic properties (§7.7.1),
-equivalent pencils (7.7.2), the generalized Schur decomposition (Theorem 7.7.1) and its real form
-(Theorem 7.7.2), the Hessenberg–triangular form (§7.7.4), the first deflation of §7.7.5, generalized
-inverse iteration and deflating subspaces (§7.7.8), and the linearization of a cubic polynomial
-eigenvalue problem ((7.7.3)–(7.7.5)).
+This module formalizes §7.7 of [golub2013matrix]. For $A, B \in \mathbb{C}^{n \times n}$, the
+eigenvalues of the pencil $A - \lambda B$ are the elements of $\lambda(A, B) = \{\lambda \in
+\mathbb{C} : \det(A - \lambda B) = 0\}$. §7.7.1 shows that there are $n$ eigenvalues exactly when
+$B$ has full rank, that $\lambda(A, B)$ can be finite, empty or all of $\mathbb{C}$ when $B$ is
+singular, and that equivalent pencils $Q^{-1} A Z - \lambda Q^{-1} B Z$ have the same eigenvalues
+(7.7.2). The generalized Schur decomposition (Theorem 7.7.1) makes $Q^H A Z$ and $Q^H B Z$ upper
+triangular with unitary $Q$ and $Z$, and the eigenvalues are the ratios of the diagonal entries. Its
+real form (Theorem 7.7.2) makes $Q^T A Z$ upper quasi-triangular and $Q^T B Z$ upper triangular with
+orthogonal $Q$ and $Z$.
+
+The QZ algorithm computes the real form. Algorithm 7.7.1 reduces $(A, B)$ to Hessenberg–triangular
+form. A zero subdiagonal entry of $A$ decouples the pencil (§7.7.5), and a zero diagonal entry of
+$B$ can be chased down to deflate it. The QZ step (Algorithm 7.7.2) is a Francis double-shift step
+on $AB^{-1}$ that never forms $AB^{-1}$, and the QZ algorithm (Algorithm 7.7.3) repeats deflation,
+zero chasing and QZ steps. The module also treats generalized inverse iteration and deflating
+subspaces (§7.7.8), and the linearization of a polynomial eigenvalue problem ((7.7.3)–(7.7.6)). The
+proofs specialize the backbone modules `Numlib.Eigen.Pencil` and
+`Numlib.LinearAlgebra.Matrix.GeneralizedSchur`, and the QR algorithm of §7.5.
+
+## Main definitions
+
+* Algorithm 7.7.1, `GolubVanLoan.Chapter07.algorithm_7_7_1`: the Hessenberg–triangular reduction.
+* §7.7.5, `GolubVanLoan.Chapter07.qzZeroChase`: the zero chase that moves a zero diagonal entry of
+  $B$ to the bottom of a block and zeroes the last subdiagonal entry of $A$.
+* Algorithm 7.7.2, `GolubVanLoan.Chapter07.algorithm_7_7_2`: the QZ step, with its shift vector
+  `GolubVanLoan.Chapter07.qzShiftVector` and loop body `GolubVanLoan.Chapter07.qzStep`.
+* Algorithm 7.7.3, `GolubVanLoan.Chapter07.algorithm_7_7_3`: the QZ algorithm, with one pass
+  `GolubVanLoan.Chapter07.qzPass` and the deflation sweep `GolubVanLoan.Chapter07.qzDeflate`.
+* (7.7.5), `GolubVanLoan.Chapter07.cubicPencil`: the companion pencil of a cubic matrix polynomial.
+* (7.7.6), `GolubVanLoan.Chapter07.linearizationS`, `GolubVanLoan.Chapter07.linearizationDiag`,
+  `GolubVanLoan.Chapter07.linearizationT` and `GolubVanLoan.Chapter07.linearizationPencil`: the
+  factors $S(\lambda)$, $\operatorname{diag}(P(\lambda), I)$, $T(\lambda)$ and the pencil
+  $L(\lambda)$ of the linearization.
+
+## Main results
+
+* §7.7.1, `GolubVanLoan.Chapter07.pencilSpectrum_card`: $\det(A - \lambda B)$ has degree $n$ if and
+  only if $\operatorname{rank} B = n$.
+* §7.7.1, `GolubVanLoan.Chapter07.pencil_examples`: three pencils with a finite, an empty and the
+  full spectrum.
+* §7.7.1, `GolubVanLoan.Chapter07.pencilSpectrum_inv`: $1/\lambda \in \lambda(B, A)$ for
+  $0 \neq \lambda \in \lambda(A, B)$, and $\lambda(A, B) = \lambda(B^{-1} A)$ for nonsingular $B$.
+* (7.7.2), `GolubVanLoan.Chapter07.equation_7_7_2`: equivalent pencils have the same eigenvalues and
+  corresponding eigenvectors.
+* Theorem 7.7.1, `GolubVanLoan.Chapter07.theorem_7_7_1` and
+  `GolubVanLoan.Chapter07.theorem_7_7_1_spectrum`: the generalized Schur decomposition and the
+  eigenvalues that it shows.
+* Theorem 7.7.2, `GolubVanLoan.Chapter07.theorem_7_7_2`: the generalized real Schur decomposition.
+* §7.7.4, `GolubVanLoan.Chapter07.exists_hessenbergTriangular`: the Hessenberg–triangular form
+  exists.
+* Algorithm 7.7.1, `GolubVanLoan.Chapter07.algorithm_7_7_1_spec`: the reduction computes a
+  Hessenberg–triangular form.
+* §7.7.5, `GolubVanLoan.Chapter07.pencil_decouple`: a block upper triangular pencil decouples.
+* §7.7.5, `GolubVanLoan.Chapter07.qzZeroChase_spec`: the zero chase moves a zero of $B$'s diagonal
+  to the end of the block and zeroes the last subdiagonal entry of $A$ there.
+* Algorithm 7.7.2, `GolubVanLoan.Chapter07.algorithm_7_7_2_spec`: the QZ step is a Francis step on
+  $AB^{-1}$.
+* Algorithm 7.7.2, `GolubVanLoan.Chapter07.algorithm_7_7_2_window`: the QZ step on a diagonal block
+  is a Francis step on $A_{22} B_{22}^{-1}$.
+* Algorithm 7.7.3, `GolubVanLoan.Chapter07.qzPass_isQZPass`: each pass of the QZ algorithm is a
+  deflation followed by a zero chase or a QZ step.
+* Algorithm 7.7.3, `GolubVanLoan.Chapter07.algorithm_7_7_3_spec`: the QZ algorithm computes a
+  generalized real Schur form of a small perturbation of the pencil when it finishes.
+* §7.7.8, `GolubVanLoan.Chapter07.generalizedInverseIteration_eq`: generalized inverse iteration is
+  inverse iteration for $B^{-1} A$.
+* §7.7.8, `GolubVanLoan.Chapter07.deflatingSubspace_of_generalizedSchur`: the leading columns of $Z$
+  in a generalized Schur form span deflating subspaces.
+* (7.7.3)–(7.7.5), `GolubVanLoan.Chapter07.equation_7_7_5`: a cubic eigenvalue problem and its
+  companion pencil have the same eigenvalues.
+* (7.7.6), `GolubVanLoan.Chapter07.equation_7_7_6`: $S(\lambda) \operatorname{diag}(P(\lambda), I)
+  T(\lambda) = L(\lambda)$ with constant nonzero determinants of $S(\lambda)$ and $T(\lambda)$.
 
 ## Conventions
 
-`λ(A, B)` is the backbone's `Matrix.pencilSpectrum A B = {z | det(A - z B) = 0}`, its eigenvectors
-`Matrix.HasPencilEigenvector`, its characteristic polynomial `Matrix.pencilPoly`; complex
-`Matrix (Fin n) (Fin n) ℂ` for the theory and real for the real Schur form. Block partitions are
-`Matrix.fromBlocks`.
+* $\lambda(A, B)$ is the backbone's `Matrix.pencilSpectrum A B` $= \{z : \det(A - zB) = 0\}$, an
+  eigenvector of the pencil is `Matrix.HasPencilEigenvector`, and $\det(A - \lambda B)$ as a
+  polynomial in $\lambda$ is `Matrix.pencilPoly A B`.
+* The theory of §7.7.1–7.7.2 and §7.7.8–7.7.9 is over `Matrix (Fin n) (Fin n) ℂ`. The real Schur
+  form and the algorithms are over `Matrix (Fin n) (Fin n) ℝ`.
+* Indices are 0-based. A block partition is `Matrix.fromBlocks`. The source's "diagonal block
+  $A_{22}$" of the QZ algorithm is the block of consecutive indices $p, \dots, r$.
 
-## Algorithms
+## Implementation notes
 
-The Hessenberg–triangular reduction (`algorithm_7_7_1`), the zero chase of §7.7.5 (`qzZeroChase`),
-the QZ step (`algorithm_7_7_2`, with `qzShiftVector` and the loop body `qzStep`) and the QZ
-algorithm (`algorithm_7_7_3`, one pass `qzPass`, the deflation sweep `qzDeflate`) are monadic
-programs with a rounding hook (conventions 1–14 of `NumlibSurface/GolubVanLoan`), calling chapter
-5's Householder QR (`algorithm_5_2_1`), `houseOn`, `householderApplyLeft/Right`, `algorithm_5_1_3`
-(`givens`) and `givensApplyLeft/Right`. The arrays are carried in `QZArrays` (`A`, `B` and the
-accumulated `Q`, `Z`); the QZ step and the zero chase act on a block `p, …, r` of consecutive
-indices of the whole arrays (the book's `diag(I_p, ·, I_q)` updates). A Householder matrix acting
-on a row is `house` on the reversed index list. `algorithm_7_7_1_spec` and `qzZeroChase_spec` are
-the exact semantics, through the invariant `QZArrays.IsEquiv` (`(A, B) = (Qᵀ A₀ Z, Qᵀ B₀ Z)`).
-The QZ step's exact semantics on a block (`algorithm_7_7_2_block`) rests on the bulge-chasing
-invariant `QZStepInv` (the bulge of `A` below the subdiagonal, of `B` below the diagonal); on the
-whole pencil it is a Francis step on `A B⁻¹` (`algorithm_7_7_2_spec`), by the implicit Q theorem
-and the first column `(M - aI)(M - bI) e₁` computed by `qzShiftVector` (`isFrancisStep_of_qz`);
-on a window it is a QZ step on the blocks `A₂₂`, `B₂₂` (`algorithm_7_7_2_window`, `IsQZStepOn`).
-The QZ algorithm's exact semantics (`algorithm_7_7_3_spec`) is a statement with a perturbation:
-its deflation sweep is Algorithm 7.5.2's (`qzDeflate_pure_eq`, `qrDeflate_spec`), the zero chase
-and the QZ steps are exact equivalences; and each pass is the book's loop body
-(`qzPass_isQZPass`, `IsQZPass`): a deflation, then the zero chase (`IsQZChasePass`) or a QZ step
-on the unreduced block (`IsQZStepPass`).
+* Algorithms 7.7.1–7.7.3 and the zero chase are programs in the algorithm conventions of
+  `NumlibSurface.GolubVanLoan`, with a rounding hook. They call the programs of Chapter 5:
+  Householder QR (`GolubVanLoan.Chapter05.algorithm_5_2_1`), `GolubVanLoan.Chapter05.houseOn`,
+  `GolubVanLoan.Chapter05.householderApplyLeft`, `GolubVanLoan.Chapter05.householderApplyRight`,
+  `GolubVanLoan.Chapter05.algorithm_5_1_3` (the source's `givens`),
+  `GolubVanLoan.Chapter05.givensApplyLeft` and `GolubVanLoan.Chapter05.givensApplyRight`.
+* The arrays are carried in `GolubVanLoan.Chapter07.QZArrays`: $A$, $B$ and the accumulated $Q$ and
+  $Z$. The QZ step and the zero chase act on a block $p, \dots, r$ of consecutive indices of the
+  whole arrays; this is the source's update by $\operatorname{diag}(I_p, \cdot, I_q)$. A Householder
+  matrix that acts on a row is `house` on the reversed index list.
+* The exact semantics of Algorithm 7.7.1 and of the zero chase use the invariant
+  `GolubVanLoan.Chapter07.QZArrays.IsEquiv`, $(A, B) = (Q^T A_0 Z, Q^T B_0 Z)$ with orthogonal $Q$
+  and $Z$.
+* The exact semantics of the QZ step on a block (`GolubVanLoan.Chapter07.algorithm_7_7_2_block`)
+  rests on a bulge-chasing invariant: the bulge of $A$ below the subdiagonal and of $B$ below the
+  diagonal. On the whole pencil the step is a Francis step on $AB^{-1}$
+  (`GolubVanLoan.Chapter07.algorithm_7_7_2_spec`), by the implicit Q theorem and the first column
+  $(M - aI)(M - bI) e_1$ that `GolubVanLoan.Chapter07.qzShiftVector` computes
+  (`GolubVanLoan.Chapter07.isFrancisStep_of_qz`). On a window it is a QZ step on the blocks $A_{22}$
+  and $B_{22}$ (`GolubVanLoan.Chapter07.algorithm_7_7_2_window`,
+  `GolubVanLoan.Chapter07.IsQZStepOn`).
+* The exact semantics of the QZ algorithm (`GolubVanLoan.Chapter07.algorithm_7_7_3_spec`) is a
+  statement with a perturbation. Its deflation sweep is the sweep of Algorithm 7.5.2
+  (`GolubVanLoan.Chapter07.qzDeflate_pure_eq`, `GolubVanLoan.Chapter07.qrDeflate_spec`), while the
+  zero chase and the QZ steps are exact equivalences. Each pass is the source's loop body
+  (`GolubVanLoan.Chapter07.qzPass_isQZPass`, `GolubVanLoan.Chapter07.IsQZPass`): a deflation, then
+  the zero chase (`GolubVanLoan.Chapter07.IsQZChasePass`) or a QZ step on the unreduced block
+  (`GolubVanLoan.Chapter07.IsQZStepPass`).
+* `GolubVanLoan.Chapter07.equation_7_7_6` states the linearization on the index type
+  `Fin d × Fin n`, through `Matrix.comp` of block matrices.
 
-`equation_7_7_6` states the linearization on `Fin d × Fin n` through `Matrix.comp` of block
-matrices (`linearizationS`, `linearizationDiag`, `linearizationT`, `linearizationPencil`).
+## Deviations from the source
+
+* **§7.7.8, generalized inverse iteration** (typo). The source prints the eigenvalue estimate as
+  $\lambda^{(k)} = q^{(k)H} A q^{(k)} / q^{(k)H} A q^{(k)}$; the denominator is
+  $q^{(k)H} B q^{(k)}$. See `GolubVanLoan.Chapter07.generalizedInverseIteration_eq`.
 
 ## Not formalized
 
-The Kronecker canonical form (mentioned, not stated); the `7`-digit example; Stewart's
-chordal-metric bound (first order, quoted without proof) and Wilkinson's remark on
-`t_kk = s_kk = 0`; the backward stability of QZ (`≈`, no derivation); flop counts.
+* **The Kronecker canonical form.** The source mentions it but does not state it.
+* **The 7-digit example.**
+* **Stewart's chordal-metric bound and Wilkinson's remark on $t_{kk} = s_{kk} = 0$.** The bound is
+  first order and quoted without proof.
+* **The backward stability of QZ.** The source states it with $\approx$ and gives no derivation.
+* **Flop counts.**
 -/
 
 open Matrix Polynomial
@@ -67,8 +151,11 @@ variable {n : ℕ}
 
 /-! ### §7.7.1 Background -/
 
-/-- **§7.7.1: "there are `n` eigenvalues if and only if `rank(B) = n`"**: the characteristic
-polynomial `det(A - λB)` has degree `n` exactly when `B` has full rank. -/
+/-- **§7.7.1** of [golub2013matrix]: "there are $n$ eigenvalues if and only if
+$\operatorname{rank}(B) = n$". Let $A, B \in \mathbb{C}^{n \times n}$. The characteristic
+polynomial $\det(A - \lambda B)$ has degree $n$ if and only if $\operatorname{rank} B = n$.
+
+The polynomial is `Matrix.pencilPoly A B`, and its degree is `Polynomial.natDegree`. -/
 theorem pencilSpectrum_card (A B : Matrix (Fin n) (Fin n) ℂ) :
     (pencilPoly A B).natDegree = n ↔ B.rank = n := by
   have h := natDegree_pencilPoly_eq_card_iff A B
@@ -77,9 +164,13 @@ theorem pencilSpectrum_card (A B : Matrix (Fin n) (Fin n) ℂ) :
   exact ⟨fun h => by rw [rank_of_isUnit B h, Fintype.card_fin], fun h =>
     isUnit_of_rank_eq_card (by rw [h, Fintype.card_fin])⟩
 
-/-- **§7.7.1, the three pencils**: with a rank-deficient `B`, `λ(A, B)` may be finite, empty or
-all of `ℂ`: `λ([1 2; 0 3], [1 0; 0 0]) = {1}`, `λ([1 2; 0 3], [0 1; 0 0]) = ∅`,
-`λ([1 2; 0 0], [1 0; 0 0]) = ℂ`. -/
+/-- **§7.7.1** of [golub2013matrix], the three pencils. When $B$ is singular, $\lambda(A, B)$ can be
+finite, empty or all of $\mathbb{C}$: $$\lambda\left(\begin{bmatrix} 1 & 2 \\ 0 & 3
+\end{bmatrix}, \begin{bmatrix} 1 & 0 \\ 0 & 0 \end{bmatrix}\right) = \{1\}, \quad
+\lambda\left(\begin{bmatrix} 1 & 2 \\ 0 & 3 \end{bmatrix}, \begin{bmatrix} 0 & 1 \\ 0 & 0
+\end{bmatrix}\right) = \emptyset, \quad \lambda\left(\begin{bmatrix} 1 & 2 \\ 0 & 0
+\end{bmatrix}, \begin{bmatrix} 1 & 0 \\ 0 & 0 \end{bmatrix}\right) = \mathbb{C}.$$
+-/
 theorem pencil_examples :
     pencilSpectrum !![(1 : ℂ), 2; 0, 3] !![1, 0; 0, 0] = {1} ∧
       pencilSpectrum !![(1 : ℂ), 2; 0, 3] !![0, 1; 0, 0] = ∅ ∧
@@ -110,8 +201,10 @@ theorem pencil_examples :
   · rw [mem_pencilSpectrum_iff_det, hc]
     simp
 
-/-- **§7.7.1**: if `0 ≠ λ ∈ λ(A, B)` then `1/λ ∈ λ(B, A)`; and if `B` is nonsingular,
-`λ(A, B) = λ(B⁻¹ A, I) = λ(B⁻¹ A)`. -/
+/-- **§7.7.1** of [golub2013matrix]. Let $A, B \in \mathbb{C}^{n \times n}$. If
+$\lambda \in \lambda(A, B)$ and $\lambda \neq 0$, then $1/\lambda \in \lambda(B, A)$. If $B$ is
+nonsingular, then $$\lambda(A, B) = \lambda(B^{-1} A, I) = \lambda(B^{-1} A).$$
+-/
 theorem pencilSpectrum_inv (A B : Matrix (Fin n) (Fin n) ℂ) :
     (∀ μ : ℂ, μ ≠ 0 → μ ∈ pencilSpectrum A B → μ⁻¹ ∈ pencilSpectrum B A) ∧
       (IsUnit B → pencilSpectrum A B = pencilSpectrum (B⁻¹ * A) 1 ∧
@@ -120,8 +213,12 @@ theorem pencilSpectrum_inv (A B : Matrix (Fin n) (Fin n) ℂ) :
     ⟨by rw [pencilSpectrum_one, pencilSpectrum_eq_spectrum_of_isUnit A hB],
       pencilSpectrum_one _⟩⟩
 
-/-- **(7.7.2), equivalent pencils.** For nonsingular `Q`, `Z` and `A₁ = Q⁻¹ A Z`, `B₁ = Q⁻¹ B Z`,
-`λ(A, B) = λ(A₁, B₁)`, and `A x = λ B x ⇔ A₁ y = λ B₁ y` with `x = Z y`. -/
+/-- **Equation (7.7.2)** of [golub2013matrix], equivalent pencils. Let
+$A, B, Q, Z \in \mathbb{C}^{n \times n}$ with $Q$ and $Z$ nonsingular, and let
+$A_1 = Q^{-1} A Z$ and $B_1 = Q^{-1} B Z$. Then $\lambda(A, B) = \lambda(A_1, B_1)$, and for
+every $\lambda \in \mathbb{C}$ and $y \in \mathbb{C}^n$, $$A_1 y = \lambda B_1 y \iff Ax =
+\lambda Bx, \qquad x = Zy.$$
+-/
 theorem equation_7_7_2 {A B Q Z : Matrix (Fin n) (Fin n) ℂ} (hQ : IsUnit Q) (hZ : IsUnit Z) :
     pencilSpectrum A B = pencilSpectrum (Q⁻¹ * A * Z) (Q⁻¹ * B * Z) ∧
       ∀ (μ : ℂ) (y : Fin n → ℂ),
@@ -141,17 +238,24 @@ theorem equation_7_7_2 {A B Q Z : Matrix (Fin n) (Fin n) ℂ} (hQ : IsUnit Q) (h
 
 /-! ### §7.7.2 The generalized Schur decomposition -/
 
-/-- **Theorem 7.7.1 (generalized Schur decomposition), existence.** For `A, B ∈ ℂ^{n×n}` there are
-unitary `Q`, `Z` with `Qᴴ A Z = T` and `Qᴴ B Z = S` upper triangular (for every pair, regular or
-not). -/
+/-- **Theorem 7.7.1** of [golub2013matrix] (generalized Schur decomposition), existence. For
+$A, B \in \mathbb{C}^{n \times n}$ there are unitary $Q$ and $Z$ such that $Q^H A Z = T$ and
+$Q^H B Z = S$ are upper triangular.
+
+The decomposition exists for every pair, whether the pencil is regular or not. The proof applies
+the backbone's generalized Schur decomposition of
+`Numlib.LinearAlgebra.Matrix.GeneralizedSchur`. -/
 theorem theorem_7_7_1 (A B : Matrix (Fin n) (Fin n) ℂ) :
     ∃ Q ∈ unitaryGroup (Fin n) ℂ, ∃ Z ∈ unitaryGroup (Fin n) ℂ,
       (star Q * A * Z).IsUpperTriangular ∧ (star Q * B * Z).IsUpperTriangular :=
   exists_generalizedSchur A B
 
-/-- **Theorem 7.7.1, the eigenvalue claims.** With `T = Qᴴ A Z`, `S = Qᴴ B Z` upper triangular
-(`Q`, `Z` unitary), `det(A - λB) = det(Q Zᴴ) ∏ (t_ii - λ s_ii)`; if `t_kk = s_kk = 0` for some `k`
-then `λ(A, B) = ℂ`; otherwise `λ(A, B) = {t_ii / s_ii : s_ii ≠ 0}`. -/
+/-- **Theorem 7.7.1** of [golub2013matrix], the eigenvalues. Let
+$A, B, Q, Z \in \mathbb{C}^{n \times n}$ with $Q$ and $Z$ unitary, and let $T = Q^H A Z$ and
+$S = Q^H B Z$ be upper triangular. Then for every $\lambda \in \mathbb{C}$, $$\det(A - \lambda
+B) = \det(Q Z^H) \prod_{i=1}^n (t_{ii} - \lambda s_{ii}).$$ If $t_{kk} = s_{kk} = 0$ for some
+$k$, then $\lambda(A, B) = \mathbb{C}$. Otherwise $\lambda(A, B) = \{t_{ii} / s_{ii} : s_{ii}
+\neq 0\}$. -/
 theorem theorem_7_7_1_spectrum {A B Q Z : Matrix (Fin n) (Fin n) ℂ}
     (hQ : Q ∈ unitaryGroup (Fin n) ℂ) (hZ : Z ∈ unitaryGroup (Fin n) ℂ)
     (hT : (star Q * A * Z).IsUpperTriangular) (hS : (star Q * B * Z).IsUpperTriangular) :
@@ -192,8 +296,9 @@ theorem theorem_7_7_1_spectrum {A B Q Z : Matrix (Fin n) (Fin n) ℂ}
     · rintro ⟨i, hSi, rfl⟩
       exact ⟨i, by rw [div_mul_cancel₀ _ hSi]⟩
 
-/-- **Theorem 7.7.2 (generalized real Schur decomposition).** For `A, B ∈ ℝ^{n×n}` there are
-orthogonal `Q`, `Z` with `Qᵀ A Z` upper quasi-triangular and `Qᵀ B Z` upper triangular. -/
+/-- **Theorem 7.7.2** of [golub2013matrix] (generalized real Schur decomposition). For
+$A, B \in \mathbb{R}^{n \times n}$ there are orthogonal $Q$ and $Z$ such that $Q^T A Z$ is upper
+quasi-triangular and $Q^T B Z$ is upper triangular. -/
 theorem theorem_7_7_2 (A B : Matrix (Fin n) (Fin n) ℝ) :
     ∃ Q ∈ orthogonalGroup (Fin n) ℝ, ∃ Z ∈ orthogonalGroup (Fin n) ℝ,
       (Qᵀ * A * Z).IsQuasiUpperTriangular ∧ (Qᵀ * B * Z).IsUpperTriangular :=
@@ -201,26 +306,28 @@ theorem theorem_7_7_2 (A B : Matrix (Fin n) (Fin n) ℝ) :
 
 /-! ### §7.7.4 Hessenberg–triangular form -/
 
-/-- **§7.7.4: the Hessenberg–triangular form exists.** For real `A`, `B` there are orthogonal `Q`,
-`Z` with `Qᵀ A Z` upper Hessenberg and `Qᵀ B Z` upper triangular (from Theorem 7.7.2: an upper
-quasi-triangular matrix is upper Hessenberg). -/
+/-- **§7.7.4** of [golub2013matrix], existence of the Hessenberg–triangular form. For
+$A, B \in \mathbb{R}^{n \times n}$ there are orthogonal $Q$ and $Z$ such that $Q^T A Z$ is upper
+Hessenberg and $Q^T B Z$ is upper triangular.
+
+The proof applies Theorem 7.7.2, since an upper quasi-triangular matrix is upper Hessenberg. -/
 theorem exists_hessenbergTriangular (A B : Matrix (Fin n) (Fin n) ℝ) :
     ∃ Q ∈ orthogonalGroup (Fin n) ℝ, ∃ Z ∈ orthogonalGroup (Fin n) ℝ,
       (Qᵀ * A * Z).IsUpperHessenberg ∧ (Qᵀ * B * Z).IsUpperTriangular := by
   obtain ⟨Q, hQ, Z, hZ, hA, hB⟩ := theorem_7_7_2 A B
   exact ⟨Q, hQ, Z, hZ, hA.isUpperHessenberg, hB⟩
 
-/-- **The working arrays of the QZ programs**: the pencil `(A, B)` being overwritten by
-`(Qᵀ A Z, Qᵀ B Z)` and the accumulated orthogonal factors `Q`, `Z` (the book's "if `Q` and `Z` are
-desired"). -/
+/-- The working arrays of the QZ programs: the pencil $(A, B)$, which the programs overwrite with
+$(Q^T A Z, Q^T B Z)$, and the accumulated orthogonal factors $Q$ and $Z$ (the source's "if $Q$
+and $Z$ are desired"). -/
 structure QZArrays (n : ℕ) where
-  /-- The array overwritten by `Qᵀ A Z`. -/
+  /-- The array that is overwritten by $Q^T A Z$. -/
   A : Matrix (Fin n) (Fin n) ℝ
-  /-- The array overwritten by `Qᵀ B Z`. -/
+  /-- The array that is overwritten by $Q^T B Z$. -/
   B : Matrix (Fin n) (Fin n) ℝ
-  /-- The accumulated left factor `Q`. -/
+  /-- The accumulated left factor $Q$. -/
   Q : Matrix (Fin n) (Fin n) ℝ
-  /-- The accumulated right factor `Z`. -/
+  /-- The accumulated right factor $Z$. -/
   Z : Matrix (Fin n) (Fin n) ℝ
 
 section Programs
@@ -229,7 +336,8 @@ open GolubVanLoan.Chapter05
 
 variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 
-/-- **One rotation pair of Algorithm 7.7.1** (row `i ≥ j + 2`, `k = i - 1`, 0-based):
+/-- One rotation pair of Algorithm 7.7.1 of [golub2013matrix], for the column $j$ and a row
+$i \ge j + 2$, with $k = i - 1$ (0-based):
 ```
 [c, s] = givens(A(i-1, j), A(i, j))
 A(i-1:i, j:n) = [c s; -s c]ᵀ A(i-1:i, j:n)
@@ -238,8 +346,8 @@ B(i-1:i, i-1:n) = [c s; -s c]ᵀ B(i-1:i, i-1:n)
 B(1:i, i-1:i) = B(1:i, i-1:i) [c s; -s c]
 A(1:n, i-1:i) = A(1:n, i-1:i) [c s; -s c]
 ```
-with the rotations accumulated into `Q` (on the right, all rows) and `Z` (on the right, all rows).
-The negation `-B(i, i)` is exact (convention 1). -/
+The first rotation is accumulated into $Q$ and the second into $Z$, each by a multiplication on
+the right that acts on all rows. The negation $-B(i, i)$ is exact. -/
 noncomputable def hessTriStep (j i : Fin n) (st : QZArrays n) : M (QZArrays n) := do
   let k : Fin n := ⟨(i : ℕ) - 1, lt_of_le_of_lt (Nat.sub_le _ _) i.isLt⟩
   let g ← algorithm_5_1_3 rnd (st.A k j) (st.A i j)
@@ -252,24 +360,28 @@ noncomputable def hessTriStep (j i : Fin n) (st : QZArrays n) : M (QZArrays n) :
   let Z ← givensApplyRight rnd k i h.1 h.2 (List.finRange n) st.Z
   pure ⟨A, B, Q, Z⟩
 
-/-- **Algorithm 7.7.1 (Hessenberg–Triangular Reduction)**: "Given `A` and `B` in `ℝ^{n×n}`, the
-following algorithm overwrites `A` with an upper Hessenberg matrix `QᵀAZ` and `B` with an upper
-triangular matrix `QᵀBZ` where both `Q` and `Z` are orthogonal":
+/-- **Algorithm 7.7.1** of [golub2013matrix] (Hessenberg–triangular reduction). Given $A$ and $B$ in
+$\mathbb{R}^{n \times n}$, the algorithm overwrites $A$ with an upper Hessenberg matrix
+$Q^T A Z$ and $B$ with an upper triangular matrix $Q^T B Z$, where $Q$ and $Z$ are orthogonal:
 ```
-Compute the factorization B = QR using Algorithm 5.2.1 and overwrite A with QᵀA and B with QᵀB.
+Compute the factorization B = QR using Algorithm 5.2.1
+    and overwrite A with QᵀA and B with QᵀB.
 for j = 1:n-2
     for i = n:-1:j+2
-        (the rotation pair of `hessTriStep`)
+        (the rotation pair of hessTriStep)
     end
 end
 ```
-`QᵀA` applies the reflector data of Algorithm 5.2.1 — the stored vectors with the returned `β`
-(convention 13), never rebuilt — to `A` in order (`householderApplyLeft`, rows the support of
-each vector, all columns), and `QᵀB = R` is the upper triangular part of the overwritten array.
-`Q` is accumulated from the same data (`backwardAccumulation`) and then updated with every row
-rotation, `Z` starts at `I` and is updated with every column rotation; the program returns
-`(QᵀAZ, QᵀBZ, Q, Z)`. The inner loop `i = n:-1:j+2` is the reversed index list with the guard
-`j + 2 ≤ i`. -/
+The program returns $(Q^T A Z, Q^T B Z, Q, Z)$ as a `GolubVanLoan.Chapter07.QZArrays`. Its exact
+semantics is `GolubVanLoan.Chapter07.algorithm_7_7_1_spec`.
+
+The product $Q^T A$ applies the reflector data of Algorithm 5.2.1, the stored vectors with the
+returned $\beta$, to $A$ in order (`GolubVanLoan.Chapter05.householderApplyLeft` on the rows
+from $j$ on and all columns); the reflectors are never rebuilt from the vectors. The product
+$Q^T B = R$ is the upper triangular part of the overwritten array. $Q$ is accumulated from the
+same data by `GolubVanLoan.Chapter05.backwardAccumulation` and then updated by every row
+rotation; $Z$ starts at $I$ and is updated by every column rotation. The inner loop
+$i = n{:}{-1}{:}j{+}2$ runs over the reversed index list with the guard $j + 2 \le i$. -/
 noncomputable def algorithm_7_7_1 (A B : Matrix (Fin n) (Fin n) ℝ) : M (QZArrays n) := do
   let qr ← algorithm_5_2_1 rnd B
   let A ← (List.finRange n).foldlM (fun A j =>
@@ -303,18 +415,21 @@ open GolubVanLoan.Chapter05
 
 variable {A₀ B₀ : Matrix (Fin n) (Fin n) ℝ}
 
-/-- The invariant of the QZ programs: `(A, B) = (Qᵀ A₀ Z, Qᵀ B₀ Z)` with `Q`, `Z` orthogonal and
-`B` upper triangular. -/
+/-- The invariant of the QZ programs for the initial pencil $(A_0, B_0)$: $Q$ and $Z$ are
+orthogonal, $A = Q^T A_0 Z$ and $B = Q^T B_0 Z$. -/
 def QZArrays.IsEquiv (A₀ B₀ : Matrix (Fin n) (Fin n) ℝ) (st : QZArrays n) : Prop :=
   st.Q ∈ orthogonalGroup (Fin n) ℝ ∧ st.Z ∈ orthogonalGroup (Fin n) ℝ ∧
     st.A = st.Qᵀ * A₀ * st.Z ∧ st.B = st.Qᵀ * B₀ * st.Z
 
-/-- Columns `< j` of `A` are Hessenberg and column `j` vanishes below row `b`. -/
+/-- The columns $c < j$ of $A$ are upper Hessenberg, and column $j$ vanishes below the row $b$:
+$a_{rc} = 0$ whenever $r > c + 1$ and either $c < j$, or $c = j$ and $r > b$. -/
 def HessCols (A : Matrix (Fin n) (Fin n) ℝ) (j b : ℕ) : Prop :=
   ∀ r c : Fin n, (c : ℕ) + 1 < r → ((c : ℕ) < j ∨ ((c : ℕ) = j ∧ b < r)) → A r c = 0
 
-/-- A row rotation `G(i, k, θ)ᵀ` applied to both arrays and accumulated into `Q` keeps the
-equivalence. -/
+/-- A row rotation applied to both arrays keeps the invariant
+`GolubVanLoan.Chapter07.QZArrays.IsEquiv`. Let $i \neq k$, $c^2 + s^2 = 1$ and
+$G = G(i, k, \theta)$ the Givens rotation with cosine $c$ and sine $s$. If $(A, B, Q, Z)$
+satisfies the invariant, then so does $(G^T A, G^T B, QG, Z)$. -/
 theorem QZArrays.IsEquiv.rot_left {st : QZArrays n} (h : st.IsEquiv A₀ B₀) {i k : Fin n}
     (hik : i ≠ k) {c s : ℝ} (hcs : c ^ 2 + s ^ 2 = 1) :
     (⟨(givensRotation i k c s)ᵀ * st.A, (givensRotation i k c s)ᵀ * st.B,
@@ -323,8 +438,10 @@ theorem QZArrays.IsEquiv.rot_left {st : QZArrays n} (h : st.IsEquiv A₀ B₀) {
   refine ⟨Submonoid.mul_mem _ hQ (givensRotation_mem_orthogonalGroup hik hcs), hZ, ?_, ?_⟩ <;>
     simp only [hA, hB, transpose_mul, Matrix.mul_assoc]
 
-/-- A column rotation `G(i, k, θ)` applied to both arrays and accumulated into `Z` keeps the
-equivalence. -/
+/-- A column rotation applied to both arrays keeps the invariant
+`GolubVanLoan.Chapter07.QZArrays.IsEquiv`. Let $i \neq k$, $c^2 + s^2 = 1$ and
+$G = G(i, k, \theta)$ the Givens rotation with cosine $c$ and sine $s$. If $(A, B, Q, Z)$
+satisfies the invariant, then so does $(AG, BG, Q, ZG)$. -/
 theorem QZArrays.IsEquiv.rot_right {st : QZArrays n} (h : st.IsEquiv A₀ B₀) {i k : Fin n}
     (hik : i ≠ k) {c s : ℝ} (hcs : c ^ 2 + s ^ 2 = 1) :
     (⟨st.A * givensRotation i k c s, st.B * givensRotation i k c s, st.Q,
@@ -333,8 +450,11 @@ theorem QZArrays.IsEquiv.rot_right {st : QZArrays n} (h : st.IsEquiv A₀ B₀) 
   refine ⟨hQ, Submonoid.mul_mem _ hZ (givensRotation_mem_orthogonalGroup hik hcs), ?_, ?_⟩ <;>
     simp only [hA, hB, Matrix.mul_assoc]
 
-/-- One rotation pair of Algorithm 7.7.1 keeps the equivalence and the triangular `B`, and
-zeroes `A(i, j)`. -/
+/-- One rotation pair of Algorithm 7.7.1, in exact arithmetic. Let the state satisfy the invariant
+`GolubVanLoan.Chapter07.QZArrays.IsEquiv`, let $B$ be upper triangular, let $j + 2 \le i$, and
+let the columns of $A$ before $j$ be upper Hessenberg and column $j$ vanish below row $i$. Then
+after the step the invariant holds, $B$ is upper triangular, and column $j$ of $A$ vanishes
+below row $i - 1$. -/
 theorem hessTriStep_spec {st : QZArrays n} (h : st.IsEquiv A₀ B₀)
     (hB : st.B.IsUpperTriangular) {j i : Fin n} (hji : (j : ℕ) + 2 ≤ i)
     (hA : HessCols st.A j i) :
@@ -452,12 +572,14 @@ theorem hessTriStep_spec {st : QZArrays n} (h : st.IsEquiv A₀ B₀)
           · exact h1
 
 
-/-- `HessCols` is monotone in the row bound. -/
+/-- `GolubVanLoan.Chapter07.HessCols` is monotone in the row bound: if it holds for $b$, it holds
+for every $b' \ge b$. -/
 theorem HessCols.mono {A : Matrix (Fin n) (Fin n) ℝ} {j b b' : ℕ} (h : HessCols A j b)
     (hb : b ≤ b') : HessCols A j b' := fun r c hrc hc =>
   h r c hrc (hc.imp_right fun ⟨h1, h2⟩ => ⟨h1, lt_of_le_of_lt hb h2⟩)
 
-/-- A column cleared below its subdiagonal extends the Hessenberg columns by one. -/
+/-- If the columns of $A$ before $j$ are upper Hessenberg and column $j$ vanishes below row $j + 1$,
+then the columns before $j + 1$ are upper Hessenberg. -/
 theorem HessCols.succ {A : Matrix (Fin n) (Fin n) ℝ} {j : ℕ} (h : HessCols A j (j + 1)) :
     HessCols A (j + 1) (n - 1) := fun r c hrc hc => by
   rcases hc with hc | ⟨-, hr⟩
@@ -466,7 +588,10 @@ theorem HessCols.succ {A : Matrix (Fin n) (Fin n) ℝ} {j : ℕ} (h : HessCols A
     · exact h r c hrc (Or.inr ⟨hc, by omega⟩)
   · exact absurd r.isLt (by omega)
 
-/-- The inner loop of Algorithm 7.7.1 for column `j`. -/
+/-- The inner loop of Algorithm 7.7.1 for the column $j$, in exact arithmetic. If the state
+satisfies the invariant `GolubVanLoan.Chapter07.QZArrays.IsEquiv`, $B$ is upper triangular and
+the columns of $A$ before $j$ are upper Hessenberg, then after the loop the invariant holds, $B$
+is upper triangular and the columns of $A$ before $j + 1$ are upper Hessenberg. -/
 theorem hessTri_inner_spec {st : QZArrays n} (h : st.IsEquiv A₀ B₀)
     (hB : st.B.IsUpperTriangular) (j : Fin n) (hA : HessCols st.A j (n - 1)) :
     let st' := Id.run ((List.finRange n).reverse.foldlM (fun st (i : Fin n) =>
@@ -504,8 +629,12 @@ theorem hessTri_inner_spec {st : QZArrays n} (h : st.IsEquiv A₀ B₀)
   simp only [List.length_reverse, List.length_finRange]
   omega
 
-/-- **Algorithm 7.7.1, exact semantics**: `(A', B', Q, Z) = Id.run (algorithm_7_7_1 pure A B)` has
-`Q`, `Z` orthogonal, `A' = Qᵀ A Z` upper Hessenberg and `B' = Qᵀ B Z` upper triangular. -/
+/-- **Algorithm 7.7.1** of [golub2013matrix], exact semantics. Let
+$A, B \in \mathbb{R}^{n \times n}$ and let $(A', B', Q, Z)$ be the output of Algorithm 7.7.1 in
+exact arithmetic. Then $Q$ and $Z$ are orthogonal, $$A' = Q^T A Z, \qquad B' = Q^T B Z,$$ $A'$
+is upper Hessenberg and $B'$ is upper triangular.
+
+Exact arithmetic is the hook `pure` in the monad `Id`. -/
 theorem algorithm_7_7_1_spec (A B : Matrix (Fin n) (Fin n) ℝ) :
     (Id.run (algorithm_7_7_1 pure A B)).Q ∈ orthogonalGroup (Fin n) ℝ ∧
       (Id.run (algorithm_7_7_1 pure A B)).Z ∈ orthogonalGroup (Fin n) ℝ ∧
@@ -570,9 +699,16 @@ end HessTri
 
 /-! ### §7.7.5 Deflation -/
 
-/-- **§7.7.5, the first deflation**: if `a_{k+1,k} = 0` in a Hessenberg–triangular pencil, then
-`A - λB = [A₁₁ - λB₁₁, A₁₂ - λB₁₂; 0, A₂₂ - λB₂₂]`, so `det(A - λB)` factors and
-`λ(A, B) = λ(A₁₁, B₁₁) ∪ λ(A₂₂, B₂₂)`. -/
+/-- **§7.7.5** of [golub2013matrix], the first deflation. Let
+$A_{11}, B_{11} \in \mathbb{C}^{p \times p}$, $A_{12}, B_{12} \in \mathbb{C}^{p \times q}$ and
+$A_{22}, B_{22} \in \mathbb{C}^{q \times q}$. Then for every $\lambda \in \mathbb{C}$,
+$$\det\left(\begin{bmatrix} A_{11} & A_{12} \\ 0 & A_{22} \end{bmatrix} - \lambda
+\begin{bmatrix} B_{11} & B_{12} \\ 0 & B_{22} \end{bmatrix}\right) = \det(A_{11} - \lambda
+B_{11}) \det(A_{22} - \lambda B_{22}),$$ and therefore the spectrum of the block pencil is
+$\lambda(A_{11}, B_{11}) \cup \lambda(A_{22}, B_{22})$.
+
+The source applies this when $a_{k+1,k} = 0$ in a Hessenberg–triangular pencil, which makes the
+pencil block upper triangular. -/
 theorem pencil_decouple {p q : ℕ} (A₁₁ B₁₁ : Matrix (Fin p) (Fin p) ℂ)
     (A₁₂ B₁₂ : Matrix (Fin p) (Fin q) ℂ) (A₂₂ B₂₂ : Matrix (Fin q) (Fin q) ℂ) :
     (∀ μ : ℂ, (fromBlocks A₁₁ A₁₂ 0 A₂₂ - μ • fromBlocks B₁₁ B₁₂ 0 B₂₂).det =
@@ -594,10 +730,10 @@ open GolubVanLoan.Chapter05
 
 variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 
-/-- A column rotation in the columns `(l, m)` zeroing `A(t, l)`: `[c, s] = givens(-A(t, m),
-A(t, l))` (the negation exact) and `A = A G`, `B = B G`, `Z = Z G` for
-`G = G(l, m, θ)` on all rows — the step of Algorithm 7.7.1 that restores `B`, here zeroing an
-entry of `A`. -/
+/-- A column rotation in the columns $l, m$ that zeroes $a_{tl}$, a step of the zero chase:
+$[c, s] = \mathtt{givens}(-a_{tm}, a_{tl})$, with the negation exact, and then
+$A \leftarrow AG$, $B \leftarrow BG$ and $Z \leftarrow ZG$ for $G = G(l, m, \theta)$ on all
+rows. It is the step of Algorithm 7.7.1 that restores $B$, used here to zero an entry of $A$. -/
 noncomputable def qzColumnZero (l m t : Fin n) (st : QZArrays n) : M (QZArrays n) := do
   let g ← algorithm_5_1_3 rnd (-st.A t m) (st.A t l)
   let A ← givensApplyRight rnd l m g.1 g.2 (List.finRange n) st.A
@@ -605,10 +741,11 @@ noncomputable def qzColumnZero (l m t : Fin n) (st : QZArrays n) : M (QZArrays n
   let Z ← givensApplyRight rnd l m g.1 g.2 (List.finRange n) st.Z
   pure ⟨A, B, st.Q, Z⟩
 
-/-- One step of the zero chase of §7.7.5: the row rotation `Q_{j,j+1}` in the rows `(j, j+1)`
-that zeroes `b_{j+1,j+1}` (`[c, s] = givens(b_{j,j+1}, b_{j+1,j+1})`, applied to `A`, `B` on all
-columns and to `Q`), then, if `j` is not the first index `p` of the block, the column rotation
-`Z_{j-1,j}` that zeroes the fill-in `a_{j+1,j-1}`. -/
+/-- One step $j$ of the zero chase of §7.7.5 of [golub2013matrix]. The row rotation in the rows
+$j, j + 1$ that zeroes $b_{j+1,j+1}$, $[c, s] = \mathtt{givens}(b_{j,j+1}, b_{j+1,j+1})$, is
+applied to $A$ and $B$ on all columns and accumulated into $Q$. Then, if $j$ is not the first
+index $p$ of the block, the column rotation in the columns $j - 1, j$ zeroes the fill-in
+$a_{j+1,j-1}$. -/
 noncomputable def qzZeroChaseStep (p : ℕ) (j j₁ : Fin n) (st : QZArrays n) : M (QZArrays n) := do
   let g ← algorithm_5_1_3 rnd (st.B j j₁) (st.B j₁ j₁)
   let A ← givensApplyLeft rnd j j₁ g.1 g.2 (List.finRange n) st.A
@@ -618,13 +755,18 @@ noncomputable def qzZeroChaseStep (p : ℕ) (j j₁ : Fin n) (st : QZArrays n) :
     qzColumnZero rnd ⟨(j : ℕ) - 1, lt_of_le_of_lt (Nat.sub_le _ _) j.isLt⟩ j j₁ ⟨A, B, Q, st.Z⟩
   else pure ⟨A, B, Q, st.Z⟩
 
-/-- **§7.7.5, zero chasing**: "if `b_kk = 0` for some `k`, then it is possible to introduce a zero
-in `A`'s `(n, n-1)` position and thereby deflate … The zero on `B`'s diagonal can be 'pushed down'
-to the `(n, n)` position": on the block of consecutive indices `p, …, r` (the book's display is
-`p = 0`, `r = n - 1`; Algorithm 7.7.3 runs it on its unreduced block), with the zero at `k`: for
-`j = k, …, r - 1` the rotations `Q_{j,j+1}ᵀ` (zeroing `b_{j+1,j+1}`) and, for `j > p`, `Z_{j-1,j}`
-(zeroing the fill-in `a_{j+1,j-1}`); finally `Z_{r-1,r}`, zeroing `a_{r,r-1}`. All rotations are
-applied to the whole arrays and accumulated into `Q` and `Z`. -/
+/-- **§7.7.5** of [golub2013matrix], zero chasing: "if $b_{kk} = 0$ for some $k$, then it is
+possible to introduce a zero in $A$'s $(n, n-1)$ position and thereby deflate. … The zero on
+$B$'s diagonal can be 'pushed down' to the $(n, n)$ position". The program acts on the block of
+consecutive indices $p, \dots, r$, with the zero of $B$'s diagonal at $k$. For
+$j = k, \dots, r - 1$ it applies the row rotation in the rows $j, j + 1$ that zeroes
+$b_{j+1,j+1}$ and, for $j > p$, the column rotation in the columns $j - 1, j$ that zeroes the
+fill-in $a_{j+1,j-1}$. Finally, if $p < r$, the column rotation in the columns $r - 1, r$ zeroes
+$a_{r,r-1}$. All rotations act on the whole arrays and are accumulated into $Q$ and $Z$. If
+$r \ge n$, the program returns the state unchanged.
+
+The source's display is the case $p = 0$, $r = n - 1$; Algorithm 7.7.3 runs the program on its
+unreduced block. The exact semantics is `GolubVanLoan.Chapter07.qzZeroChase_spec`. -/
 noncomputable def qzZeroChase (p k r : ℕ) (st : QZArrays n) : M (QZArrays n) := do
   let st ← (List.finRange n).foldlM (fun st (j : Fin n) =>
     if h : k ≤ (j : ℕ) ∧ (j : ℕ) < r ∧ r < n then
@@ -638,27 +780,27 @@ end Programs
 
 /-! ### §7.7.6 The QZ step -/
 
-/-- The entry `(i, j)` of a matrix read on natural indices (a copy; `0` out of range). The QZ
-programs address the neighbours of a block's corners with it. -/
+/-- The entry $(i, j)$ of a matrix at natural indices: `A i j` if $i, j < n$, and $0$ otherwise. The
+QZ programs read the neighbours of the corners of a block with it. -/
 def qzEntry (A : Matrix (Fin n) (Fin n) ℝ) (i j : ℕ) : ℝ :=
   if h : i < n ∧ j < n then A ⟨i, h.1⟩ ⟨j, h.2⟩ else 0
 
-/-- The state of the QZ step's loop: the arrays, the reflector data applied so far on each side
-(convention 13) and the current `x, y, z`. -/
+/-- The state of the loop of the QZ step: the arrays, the reflector data applied so far on each
+side, and the current $x, y, z$. -/
 structure QZStepState (n : ℕ) where
-  /-- The array overwritten by `Qᵀ A Z`. -/
+  /-- The array that is overwritten by $Q^T A Z$. -/
   A : Matrix (Fin n) (Fin n) ℝ
-  /-- The array overwritten by `Qᵀ B Z`. -/
+  /-- The array that is overwritten by $Q^T B Z$. -/
   B : Matrix (Fin n) (Fin n) ℝ
-  /-- The left reflector data, in order of application. -/
+  /-- The left reflector data, in the order of application. -/
   dQ : List ((Fin n → ℝ) × ℝ)
-  /-- The right reflector data, in order of application. -/
+  /-- The right reflector data, in the order of application. -/
   dZ : List ((Fin n → ℝ) × ℝ)
-  /-- The book's `x`. -/
+  /-- The source's $x$. -/
   x : ℝ
-  /-- The book's `y`. -/
+  /-- The source's $y$. -/
   y : ℝ
-  /-- The book's `z`. -/
+  /-- The source's $z$. -/
   z : ℝ
 
 section Programs
@@ -667,18 +809,19 @@ open GolubVanLoan.Chapter05
 
 variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 
-/-- **The shift vector of the QZ step**: "Let `M = AB⁻¹` and compute `(M - aI)(M - bI)e₁ =
-[x, y, z, 0, …, 0]ᵀ` where `a` and `b` are the eigenvalues of `M`'s lower 2-by-2" — on the block
-`p, …, r` (0-based). "`v` can be calculated in `O(1)` flops": `M` is upper Hessenberg, and the
-entries it needs (the leading `3 × 2` corner and the trailing `2 × 2` block) are row forward
-substitutions `m_i B = a_i` over at most three columns,
-```
-m₁₁ = a₁₁/b₁₁,  m₂₁ = a₂₁/b₁₁,  m₁₂ = (a₁₂ - m₁₁ b₁₂)/b₂₂,  m₂₂ = (a₂₂ - m₂₁ b₁₂)/b₂₂,
-m₃₂ = a₃₂/b₂₂,  e = m_{N-1,N-1},  f = m_{N-1,N},  g = m_{N,N-1},  h = m_{NN},
-s = e + h,  t = e h - f g,
-x = m₁₁² + m₁₂ m₂₁ - s m₁₁ + t,  y = m₂₁ (m₁₁ + m₂₂ - s),  z = m₂₁ m₃₂
-```
-(`a + b = s`, `ab = t`; for a `2 × 2` block `z` is `0`). Every operation is rounded. -/
+/-- The shift vector of the QZ step of [golub2013matrix] §7.7.6: "Let $M = AB^{-1}$ and compute
+$(M - aI)(M - bI)e_1 = [x, y, z, 0, \dots, 0]^T$ where $a$ and $b$ are the eigenvalues of $M$'s
+lower 2-by-2", on the block $p, \dots, r$. The source adds that "$v$ can be calculated in $O(1)$
+flops": $M$ is upper Hessenberg, and the entries that are needed, in the leading $3 \times 2$
+corner and the trailing $2 \times 2$ block, come from row forward substitutions $m_i B = a_i$
+over at most three columns. In the local 1-based indices of a block of order $N$,
+$$\begin{aligned} &m_{11} = a_{11}/b_{11}, \quad m_{21} = a_{21}/b_{11}, \quad m_{12} =
+  (a_{12} - m_{11} b_{12})/b_{22}, \quad m_{22} = (a_{22} - m_{21} b_{12})/b_{22}, \\ &m_{32} =
+  a_{32}/b_{22}, \quad e = m_{N-1,N-1}, \quad f = m_{N-1,N}, \quad g = m_{N,N-1}, \quad h =
+  m_{NN}, \\ &s = e + h, \quad t = eh - fg, \\ &x = m_{11}^2 + m_{12} m_{21} - s m_{11} + t,
+  \quad y = m_{21}(m_{11} + m_{22} - s), \quad z = m_{21} m_{32}. \end{aligned}$$
+Here $a + b = s$ and $ab = t$. For a block of order $2$, $z = 0$. Every arithmetic operation is
+rounded. -/
 noncomputable def qzShiftVector (p r : ℕ) (A B : Matrix (Fin n) (Fin n) ℝ) : M (ℝ × ℝ × ℝ) := do
   let a := qzEntry A
   let b := qzEntry B
@@ -705,7 +848,8 @@ noncomputable def qzShiftVector (p r : ℕ) (A B : Matrix (Fin n) (Fin n) ℝ) :
     else pure 0
   pure (x, y, z)
 
-/-- **The loop body of Algorithm 7.7.2** at the rows `j, j+1, j+2` (the book's `k, k+1, k+2`):
+/-- The loop body of Algorithm 7.7.2 of [golub2013matrix] at the rows $j, j + 1, j + 2$ (the
+source's $k, k + 1, k + 2$):
 ```
 Find Householder Q_k so Q_k [x; y; z] = [*; 0; 0].
 A = diag(I_{k-1}, Q_k, I_{n-k-2}) · A;  B = diag(I_{k-1}, Q_k, I_{n-k-2}) · B
@@ -715,9 +859,9 @@ Find Householder Z_{k2} so [b_{k+1,k} | b_{k+1,k+1}] Z_{k2} = [0 | *].
 A = A · diag(I_{k-1}, Z_{k2}, I_{n-k-1});  B = B · diag(I_{k-1}, Z_{k2}, I_{n-k-1})
 x = a_{k+1,k};  y = a_{k+2,k};  if k < n - 2: z = a_{k+3,k}
 ```
-`Q_k` is `house` on the list `[j, j+1, j+2]`; a Householder matrix on a row is `house` on the
-reversed list (`[j+2, j+1, j]`, `[j+1, j]`), whose pivot is the last entry (§7.7.6's design,
-report). The reflectors are applied to the whole arrays (`diag(I, ·, I)`) and recorded. -/
+The reflector $Q_k$ is `house` on the index list $[j, j+1, j+2]$. A Householder matrix that acts
+on a row is `house` on the reversed list, $[j+2, j+1, j]$ or $[j+1, j]$, whose pivot is the last
+entry. The reflectors act on the whole arrays and are recorded in the state. -/
 noncomputable def qzStep (r : ℕ) (j j₁ j₂ : Fin n) (st : QZStepState n) : M (QZStepState n) := do
   let u : Fin n → ℝ := fun i =>
     if i = j then st.x else if i = j₁ then st.y else if i = j₂ then st.z else 0
@@ -733,22 +877,32 @@ noncomputable def qzStep (r : ℕ) (j j₁ j₂ : Fin n) (st : QZStepState n) : 
   pure ⟨A, B, st.dQ ++ [q], st.dZ ++ [z₁, z₂], A j₁ j, A j₂ j,
     if (j : ℕ) + 3 ≤ r then qzEntry A ((j : ℕ) + 3) j else st.z⟩
 
-/-- **Algorithm 7.7.2 (The QZ Step)**: "Given an unreduced upper Hessenberg matrix `A ∈ ℝ^{n×n}`
-and a nonsingular upper triangular matrix `B ∈ ℝ^{n×n}`, the following algorithm overwrites `A`
-with the upper Hessenberg matrix `QᵀAZ` and `B` with the upper triangular matrix `QᵀBZ` where `Q`
-and `Z` are orthogonal and `Q` has the same first column as the orthogonal similarity
-transformation in Algorithm 7.5.1 when it is applied to `AB⁻¹`" — on the block of consecutive
-indices `p, …, r` (`p < r < n`; the book's is `p = 0`, `r = n - 1`, and Algorithm 7.7.3 runs it on
-its unreduced block `A₂₂`): `qzShiftVector`, the loop body `qzStep` for `k = 1:n-2`, then
+/-- **Algorithm 7.7.2** of [golub2013matrix] (the QZ step). "Given an unreduced upper Hessenberg
+matrix $A \in \mathbb{R}^{n \times n}$ and a nonsingular upper triangular matrix
+$B \in \mathbb{R}^{n \times n}$, the following algorithm overwrites $A$ with the upper
+Hessenberg matrix $Q^T A Z$ and $B$ with the upper triangular matrix $Q^T B Z$ where $Q$ and $Z$
+are orthogonal and $Q$ has the same first column as the orthogonal similarity transformation in
+Algorithm 7.5.1 when it is applied to $AB^{-1}$." The program acts on the block of consecutive
+indices $p, \dots, r$ with $p < r < n$. It computes the shift vector
+(`GolubVanLoan.Chapter07.qzShiftVector`), runs the loop body `GolubVanLoan.Chapter07.qzStep` for
+$k = 1{:}n{-}2$, and finishes with
 ```
 Find Householder Q_{n-1} so Q_{n-1} [x; y] = [*; 0].
 A = diag(I_{n-2}, Q_{n-1}) · A;  B = diag(I_{n-2}, Q_{n-1}) · B
 Find Householder Z_{n-1} so [b_{n,n-1} | b_{nn}] Z_{n-1} = [0 | *].
 A = A · diag(I_{n-2}, Z_{n-1});  B = B · diag(I_{n-2}, Z_{n-1})
 ```
-The reflectors act on the whole arrays, so on a block this is the book's update
-`A = diag(I_p, Q, I_q)ᵀ A diag(I_p, Z, I_q)` of Algorithm 7.7.3. Returns the arrays and the left
-and right reflector data (`Q = householderProduct dQ`, `Z = householderProduct dZ`). -/
+It returns the arrays and the left and right reflector data, with $Q$ =
+`GolubVanLoan.Chapter05.householderProduct dQ` and $Z$ =
+`GolubVanLoan.Chapter05.householderProduct dZ`. If $p < r < n$ fails, it returns $(A, B)$ with
+empty data.
+
+The source's algorithm is the case $p = 0$, $r = n - 1$; Algorithm 7.7.3 runs the program on its
+unreduced block $A_{22}$. Since the reflectors act on the whole arrays, the program on a block
+performs the source's update $A = \operatorname{diag}(I_p, Q, I_q)^T A \operatorname{diag}(I_p,
+Z, I_q)$ of Algorithm 7.7.3. The program has no hypotheses; the exact semantics are
+`GolubVanLoan.Chapter07.algorithm_7_7_2_block`, `GolubVanLoan.Chapter07.algorithm_7_7_2_spec`
+and `GolubVanLoan.Chapter07.algorithm_7_7_2_window`. -/
 noncomputable def algorithm_7_7_2 (p r : ℕ) (A B : Matrix (Fin n) (Fin n) ℝ) :
     M (Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ × List ((Fin n → ℝ) × ℝ) ×
       List ((Fin n → ℝ) × ℝ)) :=
@@ -777,24 +931,27 @@ open GolubVanLoan.Chapter05
 
 variable {A₀ B₀ : Matrix (Fin n) (Fin n) ℝ}
 
-/-- `qzEntry` at `Fin` indices is the entry. -/
+/-- At indices `i j : Fin n`, `GolubVanLoan.Chapter07.qzEntry A i j` is the entry `A i j`. -/
 theorem qzEntry_fin (A : Matrix (Fin n) (Fin n) ℝ) (i j : Fin n) : qzEntry A i j = A i j := by
   simp [qzEntry]
 
-/-- `qzEntry` in range is the entry. -/
+/-- At natural indices $i, j < n$, `GolubVanLoan.Chapter07.qzEntry A i j` is the entry $a_{ij}$. -/
 theorem qzEntry_of_lt (A : Matrix (Fin n) (Fin n) ℝ) {i j : ℕ} (hi : i < n) (hj : j < n) :
     qzEntry A i j = A ⟨i, hi⟩ ⟨j, hj⟩ := by
   simp [qzEntry, hi, hj]
 
-/-- `qzEntry` out of range is `0`. -/
+/-- At natural indices with $i \ge n$ or $j \ge n$, `GolubVanLoan.Chapter07.qzEntry A i j` is $0$.
+-/
 theorem qzEntry_of_not_lt (A : Matrix (Fin n) (Fin n) ℝ) {i j : ℕ} (h : ¬ (i < n ∧ j < n)) :
     qzEntry A i j = 0 := by
   simp only [qzEntry]
   split_ifs
   rfl
 
-/-- The exact run of a column rotation of the zero chase: a rotation with `c² + s² = 1` zeroing
-`A(t, l)`, applied to `A`, `B` and `Z`. -/
+/-- The exact run of a column rotation of the zero chase. For $l \neq m$ there are $c, s$ with
+$c^2 + s^2 = 1$ and $c\,a_{tl} - s\,a_{tm} = 0$ such that the step replaces $(A, B, Q, Z)$ by
+$(AG, BG, Q, ZG)$, where $G = G(l, m, \theta)$ is
+`GolubVanLoan.Chapter05.givensRotation l m c s`. -/
 theorem qzColumnZero_run {l m : Fin n} (hlm : l ≠ m) (t : Fin n) (st : QZArrays n) :
     ∃ c s : ℝ, c ^ 2 + s ^ 2 = 1 ∧ s * -st.A t m + c * st.A t l = 0 ∧
       Id.run (qzColumnZero pure l m t st) = ⟨st.A * givensRotation l m c s,
@@ -806,7 +963,12 @@ theorem qzColumnZero_run {l m : Fin n} (hlm : l ≠ m) (t : Fin n) (st : QZArray
   simp only [givensApplyRight_spec_of_forall_mem hlm _ _ (List.nodup_finRange n)
     List.mem_finRange]
 
-/-- One step of the zero chase. -/
+/-- One step $j$ of the zero chase, in exact arithmetic. Let $p \le j$ and let the state satisfy the
+invariant `GolubVanLoan.Chapter07.QZArrays.IsEquiv`, with $A$ upper Hessenberg, $B$ upper
+triangular, $b_{jj} = 0$, and $a_{p,p-1} = 0$ if $p > 0$. Then after the step the invariant
+holds, $A$ is upper Hessenberg, $B$ is upper triangular, $b_{j+1,j+1} = 0$, $a_{p,p-1} = 0$
+still holds if $p > 0$, and the entries $a_{rc}$ with $r > j + 1$ and $c \ge j + 1$ are
+unchanged. -/
 theorem qzZeroChaseStep_spec {p : ℕ} {j j₁ : Fin n} (hj : (j₁ : ℕ) = j + 1) (hpj : p ≤ j)
     {st : QZArrays n} (h : st.IsEquiv A₀ B₀) (hA : st.A.IsUpperHessenberg)
     (hB : st.B.IsUpperTriangular) (hBj : st.B j j = 0)
@@ -989,14 +1151,18 @@ open GolubVanLoan.Chapter05
 
 variable {A₀ B₀ : Matrix (Fin n) (Fin n) ℝ}
 
-/-- **§7.7.5, "This zero-chasing technique is perfectly general and can be used to zero
-`a_{n,n-1}` regardless of where the zero appears along `B`'s diagonal"**: on the block `p, …, r`
-of a Hessenberg–triangular pair decoupled from the rest (`a_{p,p-1} = 0`, `a_{r+1,r} = 0`) with
-`b_kk = 0` for some `p ≤ k ≤ r`, the zero chase keeps the equivalence `(A, B) = (Qᵀ A₀ Z,
-Qᵀ B₀ Z)` with orthogonal `Q`, `Z` (`QZArrays.IsEquiv`), keeps `A` upper Hessenberg and `B` upper
-triangular and the block decoupled, pushes the zero to `b_rr`, and zeroes `a_{r,r-1}` (for a block
-of size at least two). With `p = 0`, `r = n - 1` and `Q = Z = I` on entry this is the book's
-display: the output is `(Qᵀ A Z, Qᵀ B Z)` with `(Qᵀ A Z)_{n,n-1} = 0` and `(Qᵀ B Z)_{nn} = 0`. -/
+/-- **§7.7.5** of [golub2013matrix], the exact semantics of the zero chase: "This zero-chasing
+technique is perfectly general and can be used to zero $a_{n,n-1}$ regardless of where the zero
+appears along $B$'s diagonal". Let $p \le k \le r < n$. Let the state satisfy the invariant
+`GolubVanLoan.Chapter07.QZArrays.IsEquiv` for $(A_0, B_0)$, with $A$ upper Hessenberg and $B$
+upper triangular, let $b_{kk} = 0$, and let the block $p, \dots, r$ be decoupled from the rest:
+$a_{p,p-1} = 0$ if $p > 0$, and $a_{r+1,r} = 0$ if $r + 1 < n$. Then after the zero chase (in
+exact arithmetic) the invariant holds, $A$ is upper Hessenberg, $B$ is upper triangular,
+$b_{rr} = 0$, $a_{r,r-1} = 0$ if $p < r$, and the block is still decoupled.
+
+With $p = 0$, $r = n - 1$ and $Q = Z = I$ at the start this is the source's display: the output
+is $(Q^T A Z, Q^T B Z)$ with $(Q^T A Z)_{n,n-1} = 0$ and $(Q^T B Z)_{nn} = 0$. The entries at
+natural indices are read with `GolubVanLoan.Chapter07.qzEntry`, which is $0$ out of range. -/
 theorem qzZeroChase_spec {p k r : ℕ} (hpk : p ≤ k) (hkr : k ≤ r) (hr : r < n)
     {st : QZArrays n} (h : st.IsEquiv A₀ B₀) (hA : st.A.IsUpperHessenberg)
     (hB : st.B.IsUpperTriangular) (hk : qzEntry st.B k k = 0)
@@ -1139,14 +1305,15 @@ end ZeroChaseSpec
 
 /-! ### §7.7.7 The overall QZ process -/
 
-/-- The trailing block from index `s` on is upper quasi-triangular and decoupled, for an upper
-Hessenberg array: `a_{s,s-1} = 0` (or `s = 0`), and no two consecutive subdiagonal entries of the
-block are nonzero (its diagonal blocks have size one or two). -/
+/-- The trailing block of an upper Hessenberg array from the index $s$ on is decoupled and upper
+quasi-triangular: $s = 0$ or $a_{s,s-1} = 0$, and for every $i$ with $s < i$ and $i + 1 < n$,
+$a_{i,i-1} = 0$ or $a_{i+1,i} = 0$. Entries out of range count as $0$. -/
 def qzTrailingQuasi (A : Matrix (Fin n) (Fin n) ℝ) (s : ℕ) : Prop :=
   (s = 0 ∨ qzEntry A s (s - 1) = 0) ∧
     ∀ i < n, s < i → i + 1 < n → qzEntry A i (i - 1) = 0 ∨ qzEntry A (i + 1) i = 0
 
-/-- The block `r - d + 1, …, r` has nonzero subdiagonal entries (it is unreduced). -/
+/-- The subdiagonal entries $a_{i,i-1}$ with $r - d < i \le r$ are nonzero, so that the block ending
+at $r$ is unreduced. Here $r - d$ is truncated subtraction. -/
 def qzUnreducedTail (A : Matrix (Fin n) (Fin n) ℝ) (r d : ℕ) : Prop :=
   ∀ i ≤ r, r - d < i → qzEntry A i (i - 1) ≠ 0
 
@@ -1156,9 +1323,11 @@ open GolubVanLoan.Chapter05
 
 variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 
-/-- **The deflation sweep of Algorithm 7.7.3**: "Set to zero subdiagonal entries that satisfy
-`|a_{i,i-1}| ≤ ε(|a_{i-1,i-1}| + |a_ii|)`", with the right side rounded (`fl(ε · fl(|·| + |·|))`)
-and `|·|` and the comparison exact (convention 1). -/
+/-- The deflation sweep of Algorithm 7.7.3 of [golub2013matrix]: "Set to zero subdiagonal entries
+that satisfy $|a_{i,i-1}| \le \varepsilon(|a_{i-1,i-1}| + |a_{ii}|)$", for $i = 1, \dots, n-1$
+in order. The right side is rounded, $\mathrm{fl}(\varepsilon \cdot \mathrm{fl}(|a_{i-1,i-1}| +
+|a_{ii}|))$; the absolute values and the comparison are exact.
+-/
 noncomputable def qzDeflate (ε : ℝ) (A : Matrix (Fin n) (Fin n) ℝ) :
     M (Matrix (Fin n) (Fin n) ℝ) :=
   (List.finRange n).foldlM (fun A (i : Fin n) =>
@@ -1170,14 +1339,20 @@ noncomputable def qzDeflate (ε : ℝ) (A : Matrix (Fin n) (Fin n) ℝ) :
     else pure A) A
 
 open Classical in
-/-- **One pass of Algorithm 7.7.3's `until q = n` loop** (a finished state is kept): deflate;
-"find the largest nonnegative `q` and the smallest nonnegative `p` such that
-`A = [A₁₁ A₁₂ A₁₃; 0 A₂₂ A₂₃; 0 0 A₃₃]` (sizes `p, n-p-q, q`) … `A₃₃` is upper quasi-triangular and
-`A₂₂` is upper Hessenberg and unreduced" (`Nat.findGreatest` over `qzTrailingQuasi` and
-`qzUnreducedTail`); if `q = n` the state is finished; else, on the block `p, …, r = n-q-1`: "if
-`B₂₂` is singular, zero `a_{n-q,n-q-1}`" (the zero chase from the last zero on the block's diagonal
-of `B`, an exact test), "else apply Algorithm 7.7.2 to `A₂₂` and `B₂₂` and update" (the reflector
-data accumulated into `Q` and `Z` with `householderApplyRight` on the block's columns). -/
+/-- One pass of the `until q = n` loop of Algorithm 7.7.3 of [golub2013matrix]. A finished state is
+kept. Otherwise the pass deflates $A$ and then, in the words of the source, it finds "the
+largest nonnegative $q$ and the smallest nonnegative $p$ such that" $$A = \begin{bmatrix} A_{11}
+& A_{12} & A_{13} \\ 0 & A_{22} & A_{23} \\ 0 & 0 & A_{33} \end{bmatrix}$$ with blocks of sizes
+$p$, $n - p - q$ and $q$, where "$A_{33}$ is upper quasi-triangular and $A_{22}$ is upper
+Hessenberg and unreduced". If $q = n$, the state is finished. Otherwise, on the block
+$p, \dots, r$ with $r = n - q - 1$: "if $B_{22}$ is singular, zero $a_{n-q,n-q-1}$", by the zero
+chase from the last zero on the diagonal of $B$ in the block; "else apply Algorithm 7.7.2 to
+$A_{22}$ and $B_{22}$ and update", by accumulating the reflector data into $Q$ and $Z$.
+
+The integers $q$ and $p$ are found by `Nat.findGreatest` over
+`GolubVanLoan.Chapter07.qzTrailingQuasi` and `GolubVanLoan.Chapter07.qzUnreducedTail`. The
+singularity test of $B_{22}$ compares its diagonal entries with $0$ exactly. The reflector data
+are accumulated by `GolubVanLoan.Chapter05.householderApplyRight` on the columns of the block. -/
 noncomputable def qzPass (ε : ℝ) (st : QZArrays n × Bool) : M (QZArrays n × Bool) :=
   if st.2 then pure st else do
     let A ← qzDeflate rnd ε st.1.A
@@ -1198,18 +1373,20 @@ noncomputable def qzPass (ε : ℝ) (st : QZArrays n × Bool) : M (QZArrays n ×
           householderApplyRight rnd d.1 d.2 (List.finRange n) blk Z) st.1.Z
         pure (⟨out.1, out.2.1, Q, Z⟩, false)
 
-/-- **Algorithm 7.7.3 (the QZ algorithm, Moler–Stewart)**: "Given `A ∈ ℝ^{n×n}` and
-`B ∈ ℝ^{n×n}`, the following algorithm computes orthogonal `Q` and `Z` such that `QᵀAZ = T` is
-upper quasi-triangular and `QᵀBZ = S` is upper triangular. `A` is overwritten by `T` and `B` by
-`S`":
+/-- **Algorithm 7.7.3** of [golub2013matrix] (the QZ algorithm, Moler and Stewart). "Given
+$A \in \mathbb{R}^{n \times n}$ and $B \in \mathbb{R}^{n \times n}$, the following algorithm
+computes orthogonal $Q$ and $Z$ such that $Q^T A Z = T$ is upper quasi-triangular and
+$Q^T B Z = S$ is upper triangular. $A$ is overwritten by $T$ and $B$ by $S$":
 ```
-Using Algorithm 7.7.1, overwrite A with QᵀAZ (upper Hessenberg) and B with QᵀBZ (upper triangular).
+Using Algorithm 7.7.1, overwrite A with QᵀAZ (upper Hessenberg)
+    and B with QᵀBZ (upper triangular).
 until q = n
-    (one `qzPass`)
+    (one qzPass)
 end
 ```
-The `until` loop is at most `fuel` passes (convention 3); the result is `(T, S, Q, Z)` and the
-flag `done` (`q = n` was reached). -/
+The `until` loop runs at most `fuel` passes. The result is $(T, S, Q, Z)$ together with the flag
+`done`, which says that $q = n$ was reached. The exact semantics is
+`GolubVanLoan.Chapter07.algorithm_7_7_3_spec`. -/
 noncomputable def algorithm_7_7_3 (ε : ℝ) (A B : Matrix (Fin n) (Fin n) ℝ) (fuel : ℕ) :
     M (QZArrays n × Bool) := do
   let st ← algorithm_7_7_1 rnd A B
@@ -1219,10 +1396,16 @@ end Programs
 
 /-! ### §7.7.8 Generalized inverse iteration and deflating subspaces -/
 
-/-- **§7.7.8, generalized inverse iteration.** Solving `(A - μB) z^(k) = B q^(k-1)` is inverse
-iteration (7.6.1) for `B⁻¹ A` with the same shift when `B` is nonsingular:
-`(A - μB)⁻¹ B = (B⁻¹ A - μ I)⁻¹`. (The book prints the eigenvalue estimate as
-`λ^(k) = q^(k)ᴴ A q^(k) / q^(k)ᴴ A q^(k)`, a misprint for `/ q^(k)ᴴ B q^(k)`.) -/
+/-- **§7.7.8** of [golub2013matrix], generalized inverse iteration. Let
+$A, B \in \mathbb{C}^{n \times n}$ with $B$ nonsingular, and $\mu \in \mathbb{C}$. Then $$(A -
+\mu B)^{-1} B = (B^{-1} A - \mu I)^{-1}.$$ So the iteration $(A - \mu B) z^{(k)} = B q^{(k-1)}$
+is inverse iteration (7.6.1) for $B^{-1} A$ with the same shift.
+
+**Typo.** The source prints the eigenvalue estimate as $\lambda^{(k)} = q^{(k)H} A q^{(k)} /
+q^{(k)H} A q^{(k)}$; the denominator is $q^{(k)H} B q^{(k)}$.
+
+With Lean's convention that a singular matrix has inverse $0$, the identity holds for every
+$\mu$: when $A - \mu B$ is singular, both sides are $0$. -/
 theorem generalizedInverseIteration_eq {A B : Matrix (Fin n) (Fin n) ℂ} (hB : IsUnit B) (μ : ℂ) :
     (A - μ • B)⁻¹ * B = (B⁻¹ * A - μ • 1)⁻¹ := by
   have hBd : IsUnit B.det := (isUnit_iff_isUnit_det B).1 hB
@@ -1231,10 +1414,17 @@ theorem generalizedInverseIteration_eq {A B : Matrix (Fin n) (Fin n) ℂ} (hB : 
       Matrix.mul_smul, Matrix.mul_one]
   rw [hfac, Matrix.mul_inv_rev, Matrix.mul_assoc, nonsing_inv_mul _ hBd, Matrix.mul_one]
 
-/-- **§7.7.8, deflating subspaces from the generalized Schur form.** With `Qᴴ A Z = T` and
-`Qᴴ B Z = S` upper triangular, for every `k` `span{A z₀, …, A z_k} ⊆ span{q₀, …, q_k}` and
-`span{B z₀, …, B z_k} ⊆ span{q₀, …, q_k}`, so `span{z₀, …, z_k}` is a deflating subspace of
-`A - λB` (`{A x + B y : x, y ∈ S}` has dimension at most `dim S`). -/
+/-- **§7.7.8** of [golub2013matrix], deflating subspaces from the generalized Schur form. Let
+$A, B, Q, Z \in \mathbb{C}^{n \times n}$ with $Q$ and $Z$ unitary, and let $Q^H A Z$ and
+$Q^H B Z$ be upper triangular. Let $q_j$ and $z_j$ be the columns of $Q$ and $Z$. Then for every
+$k$, $$\operatorname{span}\{A z_1, \dots, A z_k\} \subseteq \operatorname{span}\{q_1, \dots,
+q_k\}, \qquad \operatorname{span}\{B z_1, \dots, B z_k\} \subseteq \operatorname{span}\{q_1,
+\dots, q_k\},$$ and $\operatorname{span}\{z_1, \dots, z_k\}$ is a deflating subspace of
+$A - \lambda B$.
+
+A subspace $S$ is deflating (`Matrix.IsDeflatingSubspace`) if $\{Ax + By : x, y \in S\}$ has
+dimension at most $\dim S$. The index `k : Fin n` is 0-based, so the spans are over the columns
+$0, \dots, k$. -/
 theorem deflatingSubspace_of_generalizedSchur {A B Q Z : Matrix (Fin n) (Fin n) ℂ}
     (hQ : Q ∈ unitaryGroup (Fin n) ℂ) (hZ : Z ∈ unitaryGroup (Fin n) ℂ)
     (hT : (star Q * A * Z).IsUpperTriangular) (hS : (star Q * B * Z).IsUpperTriangular)
@@ -1254,15 +1444,18 @@ theorem deflatingSubspace_of_generalizedSchur {A B Q Z : Matrix (Fin n) (Fin n) 
 
 /-! ### §7.7.9 The polynomial eigenvalue problem -/
 
-/-- **(7.7.5), the companion pencil of a cubic** `P(λ) = A₀ + λ A₁ + λ² A₂ + λ³ A₃`:
-`L(λ) = [0 0 A₀; -I 0 A₁; 0 -I A₂] + λ [I 0 0; 0 I 0; 0 0 A₃]`, on the index
-`(Fin n ⊕ Fin n) ⊕ Fin n` of the three block rows. -/
+/-- **Equation (7.7.5)** of [golub2013matrix], the companion pencil of a cubic $P(\lambda) = A_0 +
+\lambda A_1 + \lambda^2 A_2 + \lambda^3 A_3$ with $A_i \in \mathbb{C}^{n \times n}$:
+$$L(\lambda) = \begin{bmatrix} 0 & 0 & A_0 \\ -I & 0 & A_1 \\ 0 & -I & A_2 \end{bmatrix} +
+\lambda \begin{bmatrix} I & 0 & 0 \\ 0 & I & 0 \\ 0 & 0 & A_3 \end{bmatrix}.$$
+
+The three block rows are indexed by `(Fin n ⊕ Fin n) ⊕ Fin n`. -/
 def cubicPencil (A₀ A₁ A₂ A₃ : Matrix (Fin n) (Fin n) ℂ) (l : ℂ) :
     Matrix ((Fin n ⊕ Fin n) ⊕ Fin n) ((Fin n ⊕ Fin n) ⊕ Fin n) ℂ :=
   fromBlocks (fromBlocks 0 0 (-1) 0) (fromRows A₀ A₁) (fromCols 0 (-1)) A₂ +
     l • fromBlocks 1 0 0 A₃
 
-/-- A function on a sum type vanishes exactly when both of its restrictions do. -/
+/-- A function on a sum type is $0$ if and only if both of its restrictions are $0$. -/
 private theorem sum_elim_eq_zero_iff {α β : Type*} {a : α → ℂ} {b : β → ℂ} :
     Sum.elim a b = 0 ↔ a = 0 ∧ b = 0 := by
   refine ⟨fun h => ⟨funext fun i => congrFun h (Sum.inl i), funext fun i => congrFun h (Sum.inr i)⟩,
@@ -1270,8 +1463,8 @@ private theorem sum_elim_eq_zero_iff {α β : Type*} {a : α → ℂ} {b : β �
   rintro ⟨rfl, rfl⟩
   exact Sum.elim_zero_zero
 
-/-- The block rows of `L(λ) [u₁; u₂; x]`: `λ u₁ + A₀ x`, `-u₁ + λ u₂ + A₁ x` and
-`-u₂ + (A₂ + λ A₃) x`. -/
+/-- The block rows of $L(\lambda) [u_1; u_2; x]$ for the pencil (7.7.5) are $\lambda u_1 + A_0 x$,
+$-u_1 + \lambda u_2 + A_1 x$ and $-u_2 + (A_2 + \lambda A_3) x$. -/
 private theorem cubicPencil_mulVec (A₀ A₁ A₂ A₃ : Matrix (Fin n) (Fin n) ℂ) (l : ℂ)
     (u₁ u₂ x : Fin n → ℂ) :
     cubicPencil A₀ A₁ A₂ A₃ l *ᵥ Sum.elim (Sum.elim u₁ u₂) x =
@@ -1281,12 +1474,20 @@ private theorem cubicPencil_mulVec (A₀ A₁ A₂ A₃ : Matrix (Fin n) (Fin n)
     simp [cubicPencil, add_mulVec, smul_mulVec, fromBlocks_mulVec, fromRows_mulVec,
       fromCols_mulVec, neg_mulVec, one_mulVec] <;> ring
 
-/-- **(7.7.3)–(7.7.5).** For the cubic `P(λ) = A₀ + λ A₁ + λ² A₂ + λ³ A₃` (7.7.4) and its companion
-pencil `L(λ)` (7.7.5): `L(λ) [u₁; u₂; x] = 0` forces `P(λ) x = 0` (7.7.3) — the rows give
-`u₂ = (A₂ + λ A₃) x`, `u₁ = A₁ x + λ u₂` and `λ u₁ + A₀ x = P(λ) x` (the book's chain writes
-`A₀ + …` for `A₀ x + …`); conversely `P(λ) x = 0` gives `L(λ) [u₁; u₂; x] = 0` with these `u₁`,
-`u₂`; and the stacked vector is nonzero exactly when `x` is, so `L` and `P` have the same
-eigenvalues. -/
+/-- **Equations (7.7.3)–(7.7.5)** of [golub2013matrix]. Let
+$A_0, A_1, A_2, A_3 \in \mathbb{C}^{n \times n}$ and $\lambda \in \mathbb{C}$, let $P(\lambda) =
+A_0 + \lambda A_1 + \lambda^2 A_2 + \lambda^3 A_3$ be the cubic (7.7.4), and let $L(\lambda)$ be
+its companion pencil (7.7.5). The following hold.
+
+1. If $L(\lambda) [u_1; u_2; x] = 0$, then $P(\lambda) x = 0$, the problem (7.7.3).
+2. If $P(\lambda) x = 0$, then $L(\lambda) [u_1; u_2; x] = 0$ for $u_2 = (A_2 + \lambda A_3) x$
+   and $u_1 = A_1 x + \lambda u_2$.
+3. There is $v \neq 0$ with $L(\lambda) v = 0$ if and only if there is $x \neq 0$ with
+   $P(\lambda) x = 0$, so $L$ and $P$ have the same eigenvalues.
+
+The block rows give $u_2 = (A_2 + \lambda A_3) x$, $u_1 = A_1 x + \lambda u_2$ and
+$\lambda u_1 + A_0 x = P(\lambda) x$. The source's chain writes $A_0 + \dots$ where
+$A_0 x + \dots$ is meant. -/
 theorem equation_7_7_5 (A₀ A₁ A₂ A₃ : Matrix (Fin n) (Fin n) ℂ) (l : ℂ) :
     (∀ u₁ u₂ x : Fin n → ℂ, cubicPencil A₀ A₁ A₂ A₃ l *ᵥ Sum.elim (Sum.elim u₁ u₂) x = 0 →
       (A₀ + l • A₁ + l ^ 2 • A₂ + l ^ 3 • A₃) *ᵥ x = 0) ∧
@@ -1342,14 +1543,17 @@ section Linearization
 
 variable {e : ℕ}
 
-/-- **The `λ`-matrices of §7.7.9** `P_k(λ) = A_k + λ A_{k+1} + ⋯ + λ^{d-k} A_d` for
-`A₀, …, A_d` (`A : Fin (d + 1) → ℂ^{n×n}`); `P₀(λ) = P(λ)` is (7.7.4), and `P_k = 0` for
-`k > d`. -/
+/-- The $\lambda$-matrices of §7.7.9 of [golub2013matrix]. For
+$A_0, \dots, A_d \in \mathbb{C}^{n \times n}$, $k \ge 0$ and $\lambda \in \mathbb{C}$,
+$$P_k(\lambda) = A_k + \lambda A_{k+1} + \dots + \lambda^{d-k} A_d.$$ Then
+$P_0(\lambda) = P(\lambda)$ is (7.7.4), and $P_k(\lambda) = 0$ for $k > d$.
+
+The coefficients are `A : Fin (d + 1) → Matrix (Fin n) (Fin n) ℂ`. -/
 noncomputable def lambdaTail {d : ℕ} (A : Fin (d + 1) → Matrix (Fin n) (Fin n) ℂ) (k : ℕ)
     (l : ℂ) : Matrix (Fin n) (Fin n) ℂ :=
   ∑ j : Fin (d + 1), if k ≤ (j : ℕ) then l ^ ((j : ℕ) - k) • A j else 0
 
-/-- "`P_k(λ) = A_k + λ P_{k+1}(λ)`" (§7.7.9). -/
+/-- §7.7.9 of [golub2013matrix]: $P_k(\lambda) = A_k + \lambda P_{k+1}(\lambda)$ for $k \le d$. -/
 theorem lambdaTail_eq_add {d : ℕ} (A : Fin (d + 1) → Matrix (Fin n) (Fin n) ℂ) {k : ℕ}
     (hk : k < d + 1) (l : ℂ) :
     lambdaTail A k l = A ⟨k, hk⟩ + l • lambdaTail A (k + 1) l := by
@@ -1371,7 +1575,7 @@ theorem lambdaTail_eq_add {d : ℕ} (A : Fin (d + 1) → Matrix (Fin n) (Fin n) 
   simp only [lambdaTail, h, Finset.sum_add_distrib, Finset.sum_ite_eq', Finset.mem_univ,
     ↓reduceIte, Finset.smul_sum]
 
-/-- `P_d(λ) = A_d`. -/
+/-- $P_d(\lambda) = A_d$. -/
 theorem lambdaTail_self {d : ℕ} (A : Fin (d + 1) → Matrix (Fin n) (Fin n) ℂ) (l : ℂ) :
     lambdaTail A d l = A (Fin.last d) := by
   rw [lambdaTail, Finset.sum_eq_single (Fin.last d)]
@@ -1382,12 +1586,13 @@ theorem lambdaTail_self {d : ℕ} (A : Fin (d + 1) → Matrix (Fin n) (Fin n) �
     simp [this]
   · simp
 
-/-- The coefficient `A_k` read on a natural index (`0` beyond the degree). -/
+/-- The coefficient $A_k$ at a natural index $k$, and $0$ for $k > d$. -/
 private noncomputable def coeffAt {d : ℕ} (A : Fin (d + 1) → Matrix (Fin n) (Fin n) ℂ) (k : ℕ) :
     Matrix (Fin n) (Fin n) ℂ :=
   if h : k < d + 1 then A ⟨k, h⟩ else 0
 
-/-- A sum over `Fin m` of a term selected by the value of the index. -/
+/-- A sum over `Fin m` of a term that is selected by the value of the index is the term if $t < m$,
+and $0$ otherwise. -/
 private theorem sum_ite_val_eq {X : Type*} [AddCommMonoid X] (m t : ℕ) (Y : X) :
     (∑ b : Fin m, if (b : ℕ) = t then Y else 0) = if t < m then Y else 0 := by
   split_ifs with ht
@@ -1401,52 +1606,59 @@ private theorem sum_ite_val_eq {X : Type*} [AddCommMonoid X] (m t : ℕ) (Y : X)
     have : (b : ℕ) ≠ t := fun h => ht (h ▸ b.isLt)
     simp [this]
 
-/-- The blocks of `S(λ)`: `I` on the diagonal, `-λ I` on the superdiagonal. -/
+/-- The blocks of $S(\lambda)$: $I$ on the diagonal and $-\lambda I$ on the superdiagonal. -/
 private def sBlocks (l : ℂ) : Matrix (Fin (e + 1)) (Fin (e + 1)) (Matrix (Fin n) (Fin n) ℂ) :=
   of fun a b => if (a : ℕ) = b then 1 else if (b : ℕ) = a + 1 then -(l • 1) else 0
 
-/-- The blocks of `diag(P(λ), I_{(d-1)n})`. -/
+/-- The blocks of $\operatorname{diag}(P(\lambda), I_{(d-1)n})$. -/
 private noncomputable def dBlocks (A : Fin (e + 2) → Matrix (Fin n) (Fin n) ℂ) (l : ℂ) :
     Matrix (Fin (e + 1)) (Fin (e + 1)) (Matrix (Fin n) (Fin n) ℂ) :=
   of fun a b => if (a : ℕ) = b then (if (a : ℕ) = 0 then lambdaTail A 0 l else 1) else 0
 
-/-- The blocks of `T(λ)`: first block row `[0 ⋯ 0 I]`, `-I` on the subdiagonal, last block
-column `[I; P₁(λ); …; P_{d-1}(λ)]`. -/
+/-- The blocks of $T(\lambda)$: the first block row $[0 \ \cdots \ 0 \ I]$, $-I$ on the subdiagonal,
+and the last block column $[I; P_1(\lambda); \dots; P_{d-1}(\lambda)]$. -/
 private noncomputable def tBlocks (A : Fin (e + 2) → Matrix (Fin n) (Fin n) ℂ) (l : ℂ) :
     Matrix (Fin (e + 1)) (Fin (e + 1)) (Matrix (Fin n) (Fin n) ℂ) :=
   of fun a b => if (b : ℕ) = e then (if (a : ℕ) = 0 then 1 else lambdaTail A a l)
     else if (a : ℕ) = b + 1 then -1 else 0
 
-/-- The blocks of `L(λ)`, written as `L₀ + λ L₁`. -/
+/-- The blocks of $L(\lambda)$, written as $L_0 + \lambda L_1$. -/
 private def lBlocks (A : Fin (e + 2) → Matrix (Fin n) (Fin n) ℂ) (l : ℂ) :
     Matrix (Fin (e + 1)) (Fin (e + 1)) (Matrix (Fin n) (Fin n) ℂ) :=
   of fun a b => (if (b : ℕ) = e then A a.castSucc else if (a : ℕ) = b + 1 then -1 else 0) +
     l • (if (a : ℕ) = b then (if (a : ℕ) = e then A (Fin.last (e + 1)) else 1) else 0)
 
-/-- **`S(λ)` of (7.7.6)** (`d = e + 1` block rows of size `n`, on `Fin d × Fin n`): identity blocks
-on the diagonal, `-λ I_n` on the block superdiagonal. -/
+/-- The matrix $S(\lambda)$ of (7.7.6) in [golub2013matrix], with $d = e + 1$ block rows of size
+$n$: identity blocks on the diagonal and $-\lambda I_n$ on the block superdiagonal.
+
+The matrix is indexed by `Fin d × Fin n`, the block index first. -/
 def linearizationS (l : ℂ) : Matrix (Fin (e + 1) × Fin n) (Fin (e + 1) × Fin n) ℂ :=
   comp _ _ _ _ ℂ (sBlocks l)
 
-/-- **`diag(P(λ), I_{(d-1)n})` of (7.7.6)**. -/
+/-- The matrix $\operatorname{diag}(P(\lambda), I_{(d-1)n})$ of (7.7.6) in [golub2013matrix], with
+$d = e + 1$ block rows of size $n$ and $P = P_0$ (`GolubVanLoan.Chapter07.lambdaTail`). -/
 noncomputable def linearizationDiag (A : Fin (e + 2) → Matrix (Fin n) (Fin n) ℂ) (l : ℂ) :
     Matrix (Fin (e + 1) × Fin n) (Fin (e + 1) × Fin n) ℂ :=
   comp _ _ _ _ ℂ (dBlocks A l)
 
-/-- **`T(λ)` of (7.7.6)**: first block row `[0 ⋯ 0 I]`, `-I_n` on the block subdiagonal, last
-block column `[I; P₁(λ); …; P_{d-1}(λ)]`. -/
+/-- The matrix $T(\lambda)$ of (7.7.6) in [golub2013matrix], with $d = e + 1$ block rows of size
+$n$: the first block row is $[0 \ \cdots \ 0 \ I]$, the block subdiagonal is $-I_n$, and the
+last block column is $[I; P_1(\lambda); \dots; P_{d-1}(\lambda)]$. -/
 noncomputable def linearizationT (A : Fin (e + 2) → Matrix (Fin n) (Fin n) ℂ) (l : ℂ) :
     Matrix (Fin (e + 1) × Fin n) (Fin (e + 1) × Fin n) ℂ :=
   comp _ _ _ _ ℂ (tBlocks A l)
 
-/-- **The companion-form pencil `L(λ)` of (7.7.6)**: block rows `[λI 0 ⋯ A₀]`,
-`[-I λI ⋯ A₁]`, …, `[0 ⋯ -I, A_{d-1} + λ A_d]`, i.e. `L₀ + λ L₁` with `L₀` the `-I` subdiagonal
-and last block column `[A₀; …; A_{d-1}]`, `L₁ = diag(I, …, I, A_d)`. -/
+/-- The companion-form pencil $L(\lambda)$ of (7.7.6) in [golub2013matrix], with $d = e + 1$ block
+rows of size $n$. Its block rows are $$[\lambda I \ \ 0 \ \cdots \ A_0], \quad [-I \ \ \lambda I
+\ \cdots \ A_1], \quad \dots, \quad [0 \ \cdots \ -I \ \ A_{d-1} + \lambda A_d],$$ so
+$L(\lambda) = L_0 + \lambda L_1$, where $L_0$ has $-I$ on the block subdiagonal and the last
+block column $[A_0; \dots; A_{d-1}]$, and $L_1 = \operatorname{diag}(I, \dots, I, A_d)$. -/
 def linearizationPencil (A : Fin (e + 2) → Matrix (Fin n) (Fin n) ℂ) (l : ℂ) :
     Matrix (Fin (e + 1) × Fin n) (Fin (e + 1) × Fin n) ℂ :=
   comp _ _ _ _ ℂ (lBlocks A l)
 
-/-- The block identity behind (7.7.6). -/
+/-- The block identity behind (7.7.6): the product of the blocks of $S(\lambda)$,
+$\operatorname{diag}(P(\lambda), I)$ and $T(\lambda)$ is the block matrix of $L(\lambda)$. -/
 private theorem blocks_mul (A : Fin (e + 2) → Matrix (Fin n) (Fin n) ℂ) (l : ℂ) :
     sBlocks l * dBlocks A l * tBlocks A l = lBlocks A l := by
   refine Matrix.ext fun a c => ?_
@@ -1513,8 +1725,8 @@ private theorem blocks_mul (A : Fin (e + 2) → Matrix (Fin n) (Fin n) ℂ) (l :
         simp [hy, hxy]
       · simp [hy, hxy, hx0]
 
-/-- A block matrix that is block upper triangular with identity diagonal blocks has
-determinant `1`. -/
+/-- A block matrix that is block upper triangular with identity diagonal blocks has determinant $1$.
+-/
 private theorem det_comp_eq_one
     {X : Matrix (Fin (e + 1)) (Fin (e + 1)) (Matrix (Fin n) (Fin n) ℂ)}
     (hX : ∀ a b, b < a → X a b = 0) (hd : ∀ a, X a a = 1) :
@@ -1532,17 +1744,19 @@ private theorem det_comp_eq_one
       Matrix.one_apply, Subtype.mk.injEq, Prod.mk.injEq, true_and]
   rw [h1, det_one]
 
-/-- The constant factor of `T(λ)`: `I` in block `(0, d-1)` and `-I` on the block subdiagonal. -/
+/-- The constant factor $T_0$ of $T(\lambda)$: $I$ in block $(0, d-1)$ and $-I$ on the block
+subdiagonal. -/
 private def t0Blocks : Matrix (Fin (e + 1)) (Fin (e + 1)) (Matrix (Fin n) (Fin n) ℂ) :=
   of fun a b => if (b : ℕ) = e then (if (a : ℕ) = 0 then 1 else 0)
     else if (a : ℕ) = b + 1 then -1 else 0
 
-/-- The unit upper triangular factor of `T(λ)`: `T(λ) = T₀ V(λ)`. -/
+/-- The unit upper triangular factor $V(\lambda)$ of $T(\lambda) = T_0 V(\lambda)$. -/
 private noncomputable def vBlocks (A : Fin (e + 2) → Matrix (Fin n) (Fin n) ℂ) (l : ℂ) :
     Matrix (Fin (e + 1)) (Fin (e + 1)) (Matrix (Fin n) (Fin n) ℂ) :=
   of fun a b => if (a : ℕ) = b then 1 else if (b : ℕ) = e then -lambdaTail A (a + 1) l else 0
 
-/-- A sum over `Fin m` whose left factor is supported at one index value. -/
+/-- A sum over `Fin m` whose left factor is supported at one index value $t < m$ is the term at $t$.
+-/
 private theorem sum_single_mul_left {X : Type*} [NonUnitalNonAssocSemiring X] {m t : ℕ}
     (ht : t < m) (x : X) (g : Fin m → X) :
     ∑ b : Fin m, (if (b : ℕ) = t then x else 0) * g b = x * g ⟨t, ht⟩ := by
@@ -1553,8 +1767,8 @@ private theorem sum_single_mul_left {X : Type*} [NonUnitalNonAssocSemiring X] {m
     simp [this]
   · simp
 
-/-- The rows of `T₀`: row `a` has its one nonzero block in column `a - 1` (`d - 1` for
-`a = 0`). -/
+/-- The rows of $T_0$: row $a$ has its only nonzero block in column $a - 1$, or in column $d - 1$
+for $a = 0$. -/
 private theorem t0Blocks_row (a b : Fin (e + 1)) :
     (t0Blocks : Matrix _ _ (Matrix (Fin n) (Fin n) ℂ)) a b =
       if (b : ℕ) = (if (a : ℕ) = 0 then e else (a : ℕ) - 1) then
@@ -1564,8 +1778,8 @@ private theorem t0Blocks_row (a b : Fin (e + 1)) :
   simp only [t0Blocks, of_apply]
   split_ifs <;> first | rfl | omega
 
-/-- The columns of `T₀`: column `b` has its one nonzero block in row `b + 1` (`0` for
-`b = d - 1`). -/
+/-- The columns of $T_0$: column $b$ has its only nonzero block in row $b + 1$, or in row $0$ for
+$b = d - 1$. -/
 private theorem t0Blocks_col (a b : Fin (e + 1)) :
     (t0Blocks : Matrix _ _ (Matrix (Fin n) (Fin n) ℂ)) a b =
       if (a : ℕ) = (if (b : ℕ) = e then 0 else (b : ℕ) + 1) then
@@ -1598,7 +1812,7 @@ private theorem tBlocks_eq_mul (A : Fin (e + 2) → Matrix (Fin n) (Fin n) ℂ) 
       simp only [ha0, hce, ↓reduceIte, h1]
       split_ifs <;> simp
 
-/-- The block transpose of `T₀` is its inverse. -/
+/-- The block transpose of $T_0$ is its inverse. -/
 private theorem t0Blocks_transpose_mul :
     (of fun a b => (t0Blocks : Matrix _ _ (Matrix (Fin n) (Fin n) ℂ)) b a) * t0Blocks =
       (1 : Matrix (Fin (e + 1)) (Fin (e + 1)) (Matrix (Fin n) (Fin n) ℂ)) := by
@@ -1618,12 +1832,19 @@ private theorem t0Blocks_transpose_mul :
     rw [one_apply_ne hac]
     split_ifs <;> first | (exfalso; omega) | simp
 
-/-- **(7.7.6), the linearization of a polynomial eigenvalue problem** (§7.7.9): for
-`A₀, …, A_d ∈ ℂ^{n×n}` (`d = e + 1 ≥ 1`), `P(λ) = A₀ + λ A₁ + ⋯ + λ^d A_d` and every `λ`,
-`S(λ) [P(λ) 0; 0 I_{(d-1)n}] T(λ) = L(λ)` with the companion-form pencil `L(λ)` of unit degree,
-and `S(λ)`, `T(λ)` have constant nonzero determinants: `det S(λ) = 1` and `det T(λ) = ±1`,
-independent of `λ` — "`L(λ)` is a linearization of `P(λ)`". The book's two displayed steps are
-the cases `d = 2, 3` of the block identity. -/
+/-- **Equation (7.7.6)** of [golub2013matrix], the linearization of a polynomial eigenvalue problem.
+Let $d \ge 1$, let $A_0, \dots, A_d \in \mathbb{C}^{n \times n}$, and let $P(\lambda) = A_0 +
+\lambda A_1 + \dots + \lambda^d A_d$. Then for every $\lambda \in \mathbb{C}$, $$S(\lambda)
+\begin{bmatrix} P(\lambda) & 0 \\ 0 & I_{(d-1)n} \end{bmatrix} T(\lambda) = L(\lambda),$$ where
+$L(\lambda)$ is the companion-form pencil of degree one. Moreover $\det S(\lambda) = 1$,
+$\det T(\lambda) = \pm 1$, and $\det T(\lambda)$ does not depend on $\lambda$. In the words of
+the source, "$L(\lambda)$ is a linearization of $P(\lambda)$".
+
+The source displays the steps for $d = 2$ and $d = 3$; the theorem holds for every $d \ge 1$.
+The degree is $d = e + 1$, and the coefficients are
+`A : Fin (e + 2) → Matrix (Fin n) (Fin n) ℂ`. The factors are
+`GolubVanLoan.Chapter07.linearizationS`, `GolubVanLoan.Chapter07.linearizationDiag`,
+`GolubVanLoan.Chapter07.linearizationT` and `GolubVanLoan.Chapter07.linearizationPencil`. -/
 theorem equation_7_7_6 (A : Fin (e + 2) → Matrix (Fin n) (Fin n) ℂ) (l : ℂ) :
     linearizationS l * linearizationDiag A l * linearizationT A l = linearizationPencil A l ∧
       (linearizationS (n := n) (e := e) l).det = 1 ∧
@@ -1671,8 +1892,9 @@ section Reflectors
 
 open GolubVanLoan.Chapter05
 
-/-- The exact output of `house` on an index list: supported on the list, the `β` dichotomy, and
-the reflector maps `x` to a multiple of `e_head` on the list. -/
+/-- The exact output $(v, \beta)$ of `house` on a duplicate-free nonempty index list $o$: $v$
+vanishes off $o$, either $\beta = 0$ or $\beta\, v^T v = 2$, and $(I - \beta v v^T) x$ vanishes
+at every index of $o$ other than its head. -/
 private theorem houseOn_exact {o : List (Fin n)} (ho : o.Nodup) (hne : o ≠ []) (x : Fin n → ℝ) :
     (∀ l, l ∉ o → (Id.run (houseOn pure o x)).1 l = 0) ∧
       ((Id.run (houseOn pure o x)).2 = 0 ∨
@@ -1703,11 +1925,11 @@ section QZStepInvariant
 
 open GolubVanLoan.Chapter05
 
-/-- The loop invariant of the QZ step on the block `p, …, r`, before the step at `j`: the
-equivalence with the reflector data, the `β` dichotomy and support of the data, the bulge of `A`
-(only at `(j+1, j-1)`, `(j+2, j-1)`, `(j+2, j)` once `j > p`), `B` upper triangular, the block
-decoupled from column `p - 1` and row `r + 1`, the current `x, y, z` read from column `j - 1`,
-the initial state at `j = p`, and the first left reflector. -/
+/-- The loop invariant of the QZ step on the block $p, \dots, r$ before the step at $j$: the
+equivalence with the reflector data, the support of the data and the dichotomy for $\beta$, the
+bulge of $A$ (only at $(j+1, j-1)$, $(j+2, j-1)$ and $(j+2, j)$ once $j > p$), $B$ upper
+triangular, the block decoupled from column $p - 1$ and row $r + 1$, the current $x, y, z$ read
+from column $j - 1$, the initial state at $j = p$, and the first left reflector. -/
 private structure QZStepInv (A₀ B₀ : Matrix (Fin n) (Fin n) ℝ) (p r j : ℕ) (x₀ y₀ z₀ : ℝ)
     (st : QZStepState n) : Prop where
   eqA : st.A = (householderProduct st.dQ)ᵀ * A₀ * householderProduct st.dZ
@@ -1732,7 +1954,8 @@ private structure QZStepInv (A₀ B₀ : Matrix (Fin n) (Fin n) ℝ) (p r j : �
 
 variable {A₀ B₀ : Matrix (Fin n) (Fin n) ℝ}
 
-/-- One step of the QZ step's loop keeps the invariant, moving the bulge from `j` to `j + 1`. -/
+/-- One step of the loop of the QZ step keeps the invariant and moves the bulge from $j$ to $j + 1$.
+-/
 private theorem qzStep_inv {p r : ℕ} (hr : r < n) {x₀ y₀ z₀ : ℝ} {j : Fin n} (hpj : p ≤ j)
     (hjr : (j : ℕ) + 2 ≤ r) {st : QZStepState n}
     (h : QZStepInv A₀ B₀ p r j x₀ y₀ z₀ st) :
@@ -2038,7 +2261,7 @@ private theorem qzStepInv_init {p r : ℕ} (hr : r < n) {A B : Matrix (Fin n) (F
       convert hr₁ using 2 <;> exact Fin.ext (by simp; omega)
     · exact hA i c (by omega)
 
-/-- The loop of the QZ step keeps the invariant; after it the bulge sits at `j = r - 1`. -/
+/-- The loop of the QZ step keeps the invariant; after the loop the bulge is at $j = r - 1$. -/
 private theorem qzLoop_inv {p r : ℕ} (hpr : p < r) (hr : r < n) {x₀ y₀ z₀ : ℝ}
     {st : QZStepState n} (h : QZStepInv A₀ B₀ p r p x₀ y₀ z₀ st) :
     QZStepInv A₀ B₀ p r (r - 1) x₀ y₀ z₀
@@ -2062,7 +2285,7 @@ private theorem qzLoop_inv {p r : ℕ} (hpr : p < r) (hr : r < n) {x₀ y₀ z�
     · simp only [hc, ↓reduceDIte, Id.run_pure]
       rwa [show min (max (t + 1) p) (r - 1) = min (max t p) (r - 1) by omega]
 
-/-- The state after the loop of Algorithm 7.7.2, exact arithmetic. -/
+/-- The state after the loop of Algorithm 7.7.2, in exact arithmetic. -/
 private noncomputable def qzLoopState (p : ℕ) {r : ℕ} (hr : r < n)
     (A B : Matrix (Fin n) (Fin n) ℝ) :
     QZStepState n :=
@@ -2073,7 +2296,7 @@ private noncomputable def qzLoopState (p : ℕ) {r : ℕ} (hr : r < n)
     ⟨A, B, [], [], (Id.run (qzShiftVector pure p r A B)).1,
       (Id.run (qzShiftVector pure p r A B)).2.1, (Id.run (qzShiftVector pure p r A B)).2.2⟩
 
-/-- The unfolded exact run of Algorithm 7.7.2. -/
+/-- The exact run of Algorithm 7.7.2, unfolded. -/
 private theorem algorithm_7_7_2_pure {p r : ℕ} (hpr : p < r) (hr : r < n)
     (A B : Matrix (Fin n) (Fin n) ℝ) :
     Id.run (algorithm_7_7_2 pure p r A B) =
@@ -2102,12 +2325,20 @@ private theorem algorithm_7_7_2_pure {p r : ℕ} (hpr : p < r) (hr : r < n)
     householderApplyRight_spec_of_forall_mem (List.nodup_finRange n) hnd' List.mem_finRange
       (houseOn_spec hnd' (List.cons_ne_nil _ _) _).2.1]
 
-/-- **Algorithm 7.7.2 on a block, exact arithmetic**: for `A` upper Hessenberg with the block
-`p, …, r` decoupled (`a_{p,p-1} = 0`, `a_{r+1,r} = 0`) and `B` upper triangular, the run
-`(A', B', dQ, dZ)` has `Q = householderProduct dQ` and `Z = householderProduct dZ` orthogonal and
-acting on the block, `A' = Qᵀ A Z` upper Hessenberg and `B' = Qᵀ B Z` upper triangular; if the
-block has at least three indices, the first reflector maps the shift vector `(x, y, z)` (at
-`p, p+1, p+2`) to a multiple of `e_p` and the others fix `e_p`. -/
+/-- Algorithm 7.7.2 on a block, in exact arithmetic. Let $p < r < n$, let
+$A \in \mathbb{R}^{n \times n}$ be upper Hessenberg with the block $p, \dots, r$ decoupled
+($a_{p,p-1} = 0$ if $p > 0$, and $a_{r+1,r} = 0$ if $r + 1 < n$), and let $B$ be upper
+triangular. Let $(A', B', d_Q, d_Z)$ be the exact run of the QZ step on the block, and let $Q$
+and $Z$ be the products of the reflectors in $d_Q$ and $d_Z$. Then $Q$ and $Z$ are orthogonal,
+$A' = Q^T A Z$ is upper Hessenberg, $B' = Q^T B Z$ is upper triangular, and all reflector
+vectors vanish outside the block. If the block has at least three indices, then the first left
+reflector $(v_0, \beta_0)$ satisfies $\beta_0 = 0$ or $\beta_0 v_0^T v_0 = 2$, it maps the shift
+vector, $(x, y, z)$ at the indices $p, p+1, p+2$, to a multiple of $e_p$, and the vectors of the
+other left reflectors vanish at $p$.
+
+The products are `GolubVanLoan.Chapter05.householderProduct dQ` and
+`GolubVanLoan.Chapter05.householderProduct dZ`, and the shift vector is the exact run of
+`GolubVanLoan.Chapter07.qzShiftVector`. -/
 theorem algorithm_7_7_2_block {p r : ℕ} (hpr : p < r) (hr : r < n)
     {A B A' B' : Matrix (Fin n) (Fin n) ℝ} {dQ dZ : List ((Fin n → ℝ) × ℝ)}
     (hA : A.IsUpperHessenberg) (hB : B.IsUpperTriangular)
@@ -2275,13 +2506,14 @@ theorem algorithm_7_7_2_block {p r : ℕ} (hpr : p < r) (hr : r < n)
 
 end QZStepSpec
 
-/-! ### Algorithm 7.7.2 performs a Francis step on `A B⁻¹` -/
+/-! ### Algorithm 7.7.2 performs a Francis step on $AB^{-1}$ -/
 
 section QZFrancis
 
 open GolubVanLoan.Chapter05
 
-/-- The entries of a product of an upper Hessenberg and an upper triangular matrix. -/
+/-- The entries of the product of an upper Hessenberg matrix $M$ and an upper triangular matrix $B$:
+$(MB)_{ic} = \sum_{i - 1 \le k \le c} m_{ik} b_{kc}$. -/
 private theorem hess_mul_tri_apply {M B : Matrix (Fin n) (Fin n) ℝ} (hM : M.IsUpperHessenberg)
     (hB : B.IsUpperTriangular) (i c : Fin n) :
     (M * B) i c =
@@ -2294,20 +2526,20 @@ private theorem hess_mul_tri_apply {M B : Matrix (Fin n) (Fin n) ℝ} (hM : M.Is
     · rw [isUpperHessenberg_iff_fin.1 hM i k (by omega), zero_mul]
     · rw [isUpperTriangular_iff_fin.1 hB k c (by omega), mul_zero]
 
-/-- A sum with one term. -/
+/-- A sum with exactly one selected term is that term. -/
 private theorem sum_ite_one {f : Fin n → ℝ} {P : Fin n → Prop} [DecidablePred P] (a : Fin n)
     (hP : ∀ k, P k ↔ k = a) : (∑ k, if P k then f k else 0) = f a := by
   rw [Finset.sum_eq_single a (fun b _ hb => by rw [ite_eq_right ((hP b).not.2 hb)])
     (fun h => absurd (Finset.mem_univ a) h), ite_eq_left ((hP a).2 rfl)]
 
-/-- A sum with two terms. -/
+/-- A sum with exactly two selected terms is their sum. -/
 private theorem sum_ite_two {f : Fin n → ℝ} {P : Fin n → Prop} [DecidablePred P] {a b : Fin n}
     (hab : a ≠ b) (hP : ∀ k, P k ↔ k = a ∨ k = b) :
     (∑ k, if P k then f k else 0) = f a + f b := by
   rw [Fintype.sum_eq_add a b hab (fun x hx => ite_eq_right ((hP x).not.2 (by tauto))),
     ite_eq_left ((hP a).2 (Or.inl rfl)), ite_eq_left ((hP b).2 (Or.inr rfl))]
 
-/-- A sum with three terms. -/
+/-- A sum with exactly three selected terms is their sum. -/
 private theorem sum_ite_three {f : Fin n → ℝ} {P : Fin n → Prop} [DecidablePred P]
     {a b c : Fin n} (hab : a ≠ b) (hac : a ≠ c) (hbc : b ≠ c)
     (hP : ∀ k, P k ↔ k = a ∨ k = b ∨ k = c) :
@@ -2319,9 +2551,10 @@ private theorem sum_ite_three {f : Fin n → ℝ} {P : Fin n → Prop} [Decidabl
 
 variable {N : ℕ}
 
-/-- **The shift vector of the QZ step is the first column of `(M - aI)(M - bI)`** for
-`M = A B⁻¹` (upper Hessenberg), `a + b`, `ab` the trace and determinant of `M`'s trailing `2 × 2`
-block: the forward substitutions of `qzShiftVector` compute the entries of `M` it needs. -/
+/-- The shift vector of the QZ step is the first column of $(M - aI)(M - bI)$ for $M = AB^{-1}$,
+where $a + b$ and $ab$ are the trace and the determinant of the trailing $2 \times 2$ block of
+$M$: the forward substitutions of `GolubVanLoan.Chapter07.qzShiftVector` compute the entries of
+$M$ that it needs. -/
 private theorem qzShiftVector_full {A B M : Matrix (Fin (N + 3)) (Fin (N + 3)) ℝ}
     (hA : A.IsUpperHessenberg) (hB : B.IsUpperTriangular) (hBd : ∀ i, B i i ≠ 0)
     (hMdef : M = A * B⁻¹) :
@@ -2417,8 +2650,10 @@ private theorem qzShiftVector_full {A B M : Matrix (Fin (N + 3)) (Fin (N + 3)) �
   dsimp only
   rw [m00, m10, m01, m11, m21, mba, mbb, mbc, mcb, mcc]
 
-/-- **A two-sided orthogonal equivalence of a pencil is a similarity of `A B⁻¹`**:
-`(Qᵀ A Z)(Qᵀ B Z)⁻¹ = Qᵀ (A B⁻¹) Q` for orthogonal `Q`, `Z` and nonsingular `B`. -/
+/-- A two-sided orthogonal equivalence of a pencil is a similarity of $AB^{-1}$. Let
+$A, B, Q, Z \in \mathbb{R}^{k \times k}$ with $Q$ and $Z$ orthogonal and $B$ nonsingular. Then
+$$(Q^T A Z)(Q^T B Z)^{-1} = Q^T (AB^{-1}) Q.$$
+-/
 theorem transpose_mul_mul_mul_inv {k : ℕ} {A B Q Z : Matrix (Fin k) (Fin k) ℝ}
     (hQ : Q ∈ orthogonalGroup (Fin k) ℝ) (hZ : Z ∈ orthogonalGroup (Fin k) ℝ)
     (hB : IsUnit B.det) : Qᵀ * A * Z * (Qᵀ * B * Z)⁻¹ = Qᵀ * (A * B⁻¹) * Q := by
@@ -2433,19 +2668,25 @@ theorem transpose_mul_mul_mul_inv {k : ℕ} {A B Q Z : Matrix (Fin k) (Fin k) �
     simp only [Matrix.mul_assoc], hZZ, Matrix.mul_one]
   simp only [Matrix.mul_assoc]
 
-/-- An upper triangular matrix with a nonzero diagonal is nonsingular. -/
+/-- An upper triangular matrix with nonzero diagonal entries is nonsingular. -/
 private theorem isUnit_det_of_diag {k : ℕ} {B : Matrix (Fin k) (Fin k) ℝ}
     (hB : B.IsUpperTriangular) (hBd : ∀ i, B i i ≠ 0) : IsUnit B.det := by
   rw [det_of_isUpperTriangular hB, isUnit_iff_ne_zero, Finset.prod_ne_zero_iff]
   exact fun i _ => hBd i
 
-/-- **The QZ step is a Francis step on `A B⁻¹`** ([golub2013matrix] §7.7.6, "`Ā B̄⁻¹` is
+/-- The QZ step is a Francis step on $AB^{-1}$ ([golub2013matrix] §7.7.6: "$\bar A \bar B^{-1}$ is
 essentially the same matrix that would result if a Francis QR step were explicitly applied to
-`A B⁻¹`"): for `A` unreduced upper Hessenberg, `B` nonsingular upper triangular, `Q`, `Z`
-orthogonal with `Qᵀ A Z` upper Hessenberg and `Qᵀ B Z` upper triangular, and a first reflector
-`P` (`P² = I`, `Q e₁ = P e₁`) mapping `(M - a₁ I)(M - a₂ I) e₁` to a multiple of `e₁`,
-`M = A B⁻¹`: `(Qᵀ A Z)(Qᵀ B Z)⁻¹ = Qᵀ M Q` is a Francis step of `M`
-(`isFrancisStep_of_first_reflector`; `M` is unreduced since `m_{k+1,k} b_kk = a_{k+1,k}`). -/
+$AB^{-1}$"). Let $n \ge 3$, let $A \in \mathbb{R}^{n \times n}$ be unreduced upper Hessenberg,
+let $B$ be upper triangular with nonzero diagonal entries, and let $M = AB^{-1}$, with $s$ and
+$t$ the trace and the determinant of its trailing $2 \times 2$ block. Let $Q$ and $Z$ be
+orthogonal with $Q^T A Z$ upper Hessenberg and $Q^T B Z$ upper triangular. Let $P$ satisfy
+$P^2 = I$ and $Q e_1 = P e_1$, and let $P$ map the first column of $M^2 - sM + tI$ to a multiple
+of $e_1$. Then $(Q^T A Z)(Q^T B Z)^{-1} = Q^T M Q$, the matrix $Q^T (M^2 - sM + tI)$ is upper
+triangular, and $(Q^T A Z)(Q^T B Z)^{-1}$ is a Francis step of $M$ with the shifts $s, t$
+(`Matrix.IsFrancisStep`).
+
+The proof applies `GolubVanLoan.Chapter07.isFrancisStep_of_first_reflector`. The matrix $M$ is
+unreduced since $m_{k+1,k} b_{kk} = a_{k+1,k}$. -/
 theorem isFrancisStep_of_qz {N : ℕ} {A B Q Z P : Matrix (Fin (N + 3)) (Fin (N + 3)) ℝ}
     (hA : IsUnreduced A) (hB : B.IsUpperTriangular) (hBd : ∀ i, B i i ≠ 0)
     (hQ : Q ∈ orthogonalGroup (Fin (N + 3)) ℝ) (hZ : Z ∈ orthogonalGroup (Fin (N + 3)) ℝ)
@@ -2477,7 +2718,7 @@ theorem isFrancisStep_of_qz {N : ℕ} {A B Q Z P : Matrix (Fin (N + 3)) (Fin (N 
   exact hF
 
 /-- The shift vector of the QZ step on the whole pencil is the first column of
-`(M - a₁ I)(M - a₂ I)`, `M = A B⁻¹` (`qzShiftVector_full`, with `M` upper Hessenberg). -/
+$(M - a_1 I)(M - a_2 I)$, $M = AB^{-1}$. -/
 private theorem qzShift_col {A B : Matrix (Fin (N + 3)) (Fin (N + 3)) ℝ}
     (hA : A.IsUpperHessenberg) (hB : B.IsUpperTriangular) (hBd : ∀ i, B i i ≠ 0) :
     (A * B⁻¹ * (A * B⁻¹) - trailingTrace (A * B⁻¹) • (A * B⁻¹) +
@@ -2538,16 +2779,23 @@ private theorem qzShift_col {A B : Matrix (Fin (N + 3)) (Fin (N + 3)) ℝ}
     rw [ite_eq_right h2, hi0', hi1']
     ring
 
-/-- **Algorithm 7.7.2 (the QZ step), exact semantics.** For `A` unreduced upper Hessenberg and
-`B` nonsingular upper triangular (`n ≥ 3`), the exact run `(A', B', dQ, dZ)` on the whole pencil
-has `Q = householderProduct dQ` and `Z = householderProduct dZ` orthogonal, `A' = Qᵀ A Z` upper
-Hessenberg and `B' = Qᵀ B Z` upper triangular, `A' B'⁻¹ = Qᵀ (A B⁻¹) Q`, and this is a Francis
-step on `M = A B⁻¹` with `s`, `t` the trace and determinant of `M`'s trailing `2 × 2` block — "`Q`
-has the same first column as the orthogonal similarity transformation in Algorithm 7.5.1 when it
-is applied to `A B⁻¹`", and "`Ā B̄⁻¹` is essentially the same matrix that would result if a
-Francis QR step were explicitly applied to `A B⁻¹`": `Q e₁ ∥ (M - aI)(M - bI) e₁`, so
-`Qᵀ (M - aI)(M - bI)` is upper triangular by the implicit Q theorem
-(`Matrix.IsUnreducedUpperHessenberg.isUpperTriangular_star_mul_aeval`). -/
+/-- **Algorithm 7.7.2** of [golub2013matrix], exact semantics. Let $n \ge 3$, let
+$A \in \mathbb{R}^{n \times n}$ be unreduced upper Hessenberg, and let
+$B \in \mathbb{R}^{n \times n}$ be upper triangular with nonzero diagonal entries. Let
+$M = AB^{-1}$, and let $s$ and $t$ be the trace and the determinant of the trailing $2 \times 2$
+block of $M$. Let $(A', B', d_Q, d_Z)$ be the exact run of the QZ step on the whole pencil, and
+let $Q$ and $Z$ be the products of the reflectors in $d_Q$ and $d_Z$. Then $Q$ and $Z$ are
+orthogonal, $$A' = Q^T A Z, \qquad B' = Q^T B Z,$$ $A'$ is upper Hessenberg, $B'$ is upper
+triangular, $A' B'^{-1} = Q^T M Q$, and $A' B'^{-1}$ is a Francis step of $M$ with the shifts
+$s, t$.
+
+This is the source's claim that "$Q$ has the same first column as the orthogonal similarity
+transformation in Algorithm 7.5.1 when it is applied to $AB^{-1}$", and that
+"$\bar A \bar B^{-1}$ is essentially the same matrix that would result if a Francis QR step were
+explicitly applied to $AB^{-1}$". Since $Q e_1$ is parallel to $(M - aI)(M - bI) e_1$, the
+matrix $Q^T (M - aI)(M - bI)$ is upper triangular by the implicit Q theorem
+(`Matrix.IsUnreducedUpperHessenberg.isUpperTriangular_star_mul_aeval`). Here $n = N + 3$, the
+run is on the block $p = 0$, $r = N + 2$, and a Francis step is `Matrix.IsFrancisStep`. -/
 theorem algorithm_7_7_2_spec {N : ℕ} {A B A' B' : Matrix (Fin (N + 3)) (Fin (N + 3)) ℝ}
     {dQ dZ : List ((Fin (N + 3) → ℝ) × ℝ)} (hA : IsUnreduced A) (hB : B.IsUpperTriangular)
     (hBd : ∀ i, B i i ≠ 0) (h : Id.run (algorithm_7_7_2 pure 0 (N + 2) A B) = (A', B', dQ, dZ)) :
@@ -2586,14 +2834,15 @@ theorem algorithm_7_7_2_spec {N : ℕ} {A B A' B' : Matrix (Fin (N + 3)) (Fin (N
     exact hPu₀ i fun e => hi (Fin.ext e)
   exact ⟨hQo, hZo, rfl, rfl, hA'H, hB'T, hMQ, hF⟩
 
-/-- `qzEntry` of a window block is `qzEntry` of the matrix at the shifted indices. -/
+/-- `GolubVanLoan.Chapter07.qzEntry` of the diagonal block on the window $[p, p + k)$ at the indices
+$i, j < k$ is `GolubVanLoan.Chapter07.qzEntry` of the matrix at $p + i, p + j$. -/
 theorem qzEntry_windowBlock {p k : ℕ} (h : p + k ≤ n) (A : Matrix (Fin n) (Fin n) ℝ) {i j : ℕ}
     (hi : i < k) (hj : j < k) : qzEntry (windowBlock p h A) i j = qzEntry A (p + i) (p + j) := by
   rw [qzEntry_of_lt _ hi hj, qzEntry_of_lt _ (by omega) (by omega)]
   rfl
 
-/-- The shift vector of the QZ step on the block `p, …, p + N + 2` is the one of the window
-blocks. -/
+/-- The shift vector of the QZ step on the block $p, \dots, p + N + 2$ is the shift vector of the
+diagonal blocks on that window. -/
 private theorem qzShiftVector_windowBlock {p : ℕ} (h : p + (N + 3) ≤ n)
     (A B : Matrix (Fin n) (Fin n) ℝ) :
     Id.run (qzShiftVector pure p (p + (N + 2)) A B) =
@@ -2604,12 +2853,19 @@ private theorem qzShiftVector_windowBlock {p : ℕ} (h : p + (N + 3) ≤ n)
   simp only [show p + (N + 2) - 1 = p + (N + 2 - 1) by omega,
     show p + (N + 2) - 2 = p + (N + 2 - 2) by omega, Nat.add_zero, Nat.zero_add]
 
-/-- **A QZ step on the window `[p, p + N + 3)`** (the loop body of Algorithm 7.7.3, "apply
-Algorithm 7.7.2 to `A₂₂` and `B₂₂`"): `Q`, `Z` are orthogonal and act on the window only,
-`Q₂₂ᵀ A₂₂ Z₂₂` is upper Hessenberg, `Q₂₂ᵀ B₂₂ Z₂₂` upper triangular, and
-`Q₂₂ᵀ (M - a₁ I)(M - a₂ I)` upper triangular for `M = A₂₂ B₂₂⁻¹` and `a₁, a₂` the eigenvalues of
-its trailing `2 × 2` block — so the new `A₂₂ B₂₂⁻¹` is a Francis step of `M`
-(`IsQZStepOn.isFrancisStep`). -/
+/-- A QZ step on the window $[p, p + N + 3)$, the loop body of Algorithm 7.7.3 of [golub2013matrix]
+("apply Algorithm 7.7.2 to $A_{22}$ and $B_{22}$"). Let $A_{22}$, $B_{22}$, $Q_{22}$ and
+$Z_{22}$ be the diagonal blocks of $A$, $B$, $Q$ and $Z$ on the window, let
+$M = A_{22} B_{22}^{-1}$, and let $s$ and $t$ be the trace and the determinant of the trailing
+$2 \times 2$ block of $M$. The pair $(Q, Z)$ is a **QZ step on the window** if $Q$ and $Z$ are
+orthogonal and equal to the identity outside the window, $Q_{22}^T A_{22} Z_{22}$ is upper
+Hessenberg, $Q_{22}^T B_{22} Z_{22}$ is upper triangular, and $Q_{22}^T (M^2 - sM + tI)$ is
+upper triangular.
+
+If $B_{22}$ is upper triangular with nonzero diagonal entries, then the new $A_{22} B_{22}^{-1}$
+is a Francis step of $M$ (`GolubVanLoan.Chapter07.IsQZStepOn.isFrancisStep`). The diagonal
+blocks are `GolubVanLoan.Chapter07.windowBlock`, and "equal to the identity outside the window"
+is `GolubVanLoan.Chapter07.IsBlockSupported`. -/
 def IsQZStepOn (p N : ℕ) (h : p + (N + 3) ≤ n) (A B Q Z : Matrix (Fin n) (Fin n) ℝ) : Prop :=
   Q ∈ orthogonalGroup (Fin n) ℝ ∧ Z ∈ orthogonalGroup (Fin n) ℝ ∧
     IsBlockSupported p (p + (N + 3)) Q ∧ IsBlockSupported p (p + (N + 3)) Z ∧
@@ -2621,8 +2877,11 @@ def IsQZStepOn (p N : ℕ) (h : p + (N + 3) ≤ n) (A B Q Z : Matrix (Fin n) (Fi
         (windowBlock p h A * (windowBlock p h B)⁻¹) +
       trailingDet (windowBlock p h A * (windowBlock p h B)⁻¹) • 1)).IsUpperTriangular
 
-/-- A QZ step on the window, for `B₂₂` nonsingular upper triangular: the new window blocks have
-`A₂₂' B₂₂'⁻¹ = Q₂₂ᵀ (A₂₂ B₂₂⁻¹) Q₂₂`, a Francis step of `A₂₂ B₂₂⁻¹` (`Matrix.IsFrancisStep`). -/
+/-- Let $(Q, Z)$ be a QZ step on the window $[p, p + N + 3)$ for $(A, B)$, and let $B_{22}$ be upper
+triangular with nonzero diagonal entries. Let $M = A_{22} B_{22}^{-1}$. Then the new window
+blocks satisfy $$(Q^T A Z)_{22} \, ((Q^T B Z)_{22})^{-1} = Q_{22}^T M Q_{22},$$ and this matrix
+is a Francis step of $M$ (`Matrix.IsFrancisStep`) with the trace and the determinant of the
+trailing $2 \times 2$ block of $M$ as shifts. -/
 theorem IsQZStepOn.isFrancisStep {p N : ℕ} {h : p + (N + 3) ≤ n}
     {A B Q Z : Matrix (Fin n) (Fin n) ℝ} (hS : IsQZStepOn p N h A B Q Z)
     (hB : (windowBlock p h B).IsUpperTriangular) (hBd : ∀ i, windowBlock p h B i i ≠ 0) :
@@ -2640,14 +2899,19 @@ theorem IsQZStepOn.isFrancisStep {p N : ℕ} {h : p + (N + 3) ≤ n}
   rw [windowBlock_transpose_mul_mul h hQS hZS, windowBlock_transpose_mul_mul h hQS hZS]
   exact ⟨hMQ, windowBlock p h Q, hQ₂, hMQ, hA'.mul_isUpperTriangular hB'.inv, htri⟩
 
-/-- **Algorithm 7.7.2 on a window performs a QZ step** (what Algorithm 7.7.3 runs on its
-unreduced block): for `A` upper Hessenberg and `B` upper triangular with the block
-`p, …, p + N + 2` decoupled, `A₂₂` unreduced and `B₂₂` nonsingular, the exact run
-`(A', B', dQ, dZ)` has `A' = Qᵀ A Z`, `B' = Qᵀ B Z` for `Q = householderProduct dQ`,
-`Z = householderProduct dZ`, and `(Q, Z)` is a QZ step on the window (`IsQZStepOn`): the first
-left reflector maps the shift vector, the first column of `(M - a₁ I)(M - a₂ I)` for
-`M = A₂₂ B₂₂⁻¹` (`qzShiftVector`), to a multiple of `e_p`, and the others fix `e_p`
-(`algorithm_7_7_2_block`, `isFrancisStep_of_qz`). -/
+/-- **Algorithm 7.7.2** of [golub2013matrix] on a window, the step that Algorithm 7.7.3 runs on its
+unreduced block. Let $p + N + 3 \le n$, let $A \in \mathbb{R}^{n \times n}$ be upper Hessenberg
+with the block $p, \dots, p + N + 2$ decoupled ($a_{p,p-1} = 0$ if $p > 0$, and
+$a_{p+N+3,p+N+2} = 0$ if $p + N + 3 < n$), and let $B$ be upper triangular. Let the diagonal
+block $A_{22}$ on the window be unreduced and the diagonal block $B_{22}$ have nonzero diagonal
+entries. Let $(A', B', d_Q, d_Z)$ be the exact run of the QZ step on the block, and let $Q$ and
+$Z$ be the products of the reflectors in $d_Q$ and $d_Z$. Then $A' = Q^T A Z$, $B' = Q^T B Z$,
+and $(Q, Z)$ is a QZ step on the window (`GolubVanLoan.Chapter07.IsQZStepOn`).
+
+The first left reflector maps the shift vector, which is the first column of
+$(M - a_1 I)(M - a_2 I)$ for $M = A_{22} B_{22}^{-1}$, to a multiple of $e_p$, and the other
+left reflectors fix $e_p$. The proof combines `GolubVanLoan.Chapter07.algorithm_7_7_2_block` and
+`GolubVanLoan.Chapter07.isFrancisStep_of_qz`. -/
 theorem algorithm_7_7_2_window {p N : ℕ} (hm : p + (N + 3) ≤ n)
     {A B A' B' : Matrix (Fin n) (Fin n) ℝ} {dQ dZ : List ((Fin n → ℝ) × ℝ)}
     (hA : A.IsUpperHessenberg) (hB : B.IsUpperTriangular)
@@ -2726,7 +2990,8 @@ open GolubVanLoan.Chapter05
 
 open scoped Matrix.Norms.Frobenius
 
-/-- The deflation sweep of Algorithm 7.7.3 is the one of Algorithm 7.5.2 (exact arithmetic). -/
+/-- In exact arithmetic, the deflation sweep of Algorithm 7.7.3 gives the same matrix as the
+deflation sweep `GolubVanLoan.Chapter07.qrDeflate` of Algorithm 7.5.2. -/
 theorem qzDeflate_pure_eq (ε : ℝ) (A : Matrix (Fin n) (Fin n) ℝ) :
     Id.run (qzDeflate pure ε A) = Id.run (qrDeflate pure ε A) := by
   unfold qzDeflate qrDeflate
@@ -2748,15 +3013,17 @@ theorem qzDeflate_pure_eq (ε : ℝ) (A : Matrix (Fin n) (Fin n) ℝ) :
     · rfl
   · simp only [hi, ↓reduceDIte, ↓reduceIte, Id.run_pure]
 
-/-- `qzEntry` of the subdiagonal and `SubdiagZero`. -/
+/-- `GolubVanLoan.Chapter07.SubdiagZero A i` holds if and only if $a_{i,i-1} = 0$ whenever
+$0 < i < n$. -/
 theorem subdiagZero_iff_qzEntry {A : Matrix (Fin n) (Fin n) ℝ} {i : ℕ} :
     SubdiagZero A i ↔ (i < n → 0 < i → qzEntry A i (i - 1) = 0) :=
   ⟨fun h hi hpos => by rw [qzEntry_of_lt A hi (by omega)]; exact h hi hpos,
     fun h hi hpos => by have := h hi hpos; rwa [qzEntry_of_lt A hi (by omega)] at this⟩
 
-/-- **The invariant of the passes of Algorithm 7.7.3**: `(A, B) = (Qᵀ (A₀ + E) Z, Qᵀ B₀ Z)` with
-`Q`, `Z` orthogonal, `A` upper Hessenberg and `B` upper triangular, `‖E‖_F ≤ (c - 1) ‖A₀‖_F`
-(`E = 0` when `ε = 0`), and no two consecutive subdiagonal entries of `A` nonzero once `done`. -/
+/-- The invariant of the passes of Algorithm 7.7.3: $(A, B) = (Q^T (A_0 + E) Z, Q^T B_0 Z)$ with $Q$
+and $Z$ orthogonal, $A$ upper Hessenberg, $B$ upper triangular, $\|E\|_F \le (c - 1) \|A_0\|_F$
+and $E = 0$ when $\varepsilon = 0$, and no two consecutive nonzero subdiagonal entries of $A$
+once the state is finished. -/
 private def QZPassInv (ε : ℝ) (A₀ B₀ : Matrix (Fin n) (Fin n) ℝ) (c : ℝ)
     (st : QZArrays n × Bool) : Prop :=
   st.1.Q ∈ orthogonalGroup (Fin n) ℝ ∧ st.1.Z ∈ orthogonalGroup (Fin n) ℝ ∧
@@ -2765,7 +3032,7 @@ private def QZPassInv (ε : ℝ) (A₀ B₀ : Matrix (Fin n) (Fin n) ℝ) (c : �
     ∃ E, st.1.A = st.1.Qᵀ * (A₀ + E) * st.1.Z ∧ ‖E‖ ≤ (c - 1) * ‖A₀‖ ∧ (ε = 0 → E = 0)
 
 open Classical in
-/-- The unfolded exact run of an unfinished pass of Algorithm 7.7.3. -/
+/-- The exact run of an unfinished pass of Algorithm 7.7.3, unfolded. -/
 private theorem qzPass_false_pure (ε : ℝ) (st : QZArrays n) :
     Id.run (qzPass pure ε (st, false)) =
       let A := Id.run (qzDeflate pure ε st.A)
@@ -2787,8 +3054,9 @@ private theorem qzPass_false_pure (ε : ℝ) (st : QZArrays n) :
   simp only [qzPass, Bool.false_eq_true, ↓reduceIte]
   rfl
 
-/-- Accumulating reflector data supported on the block into `Q` (`householderApplyRight` on the
-block's columns) multiplies `Q` by their product. -/
+/-- Accumulating reflector data that are supported on the block into $Q$, by
+`GolubVanLoan.Chapter05.householderApplyRight` on the columns of the block, multiplies $Q$ by
+the product of the reflectors. -/
 private theorem foldlM_householderApplyRight {blk : List (Fin n)} (hblk : blk.Nodup)
     {data : List ((Fin n → ℝ) × ℝ)} (hdata : ∀ d ∈ data, ∀ l, l ∉ blk → d.1 l = 0)
     (Q : Matrix (Fin n) (Fin n) ℝ) :
@@ -2803,10 +3071,13 @@ private theorem foldlM_householderApplyRight {blk : List (Fin n)} (hblk : blk.No
       ih (fun d' hd' => hdata d' (List.mem_cons_of_mem _ hd')), householderProduct_cons,
       Matrix.mul_assoc]
 
-/-- **The zero-chase branch of a pass of Algorithm 7.7.3** on the deflated `A₁` and `B`: the
-block `p, …, r` (`A₂₂`) is unreduced and decoupled with `A₃₃` quasi-triangular, `b_kk = 0` for some
-`p ≤ k ≤ r` ("if `B₂₂` is singular, zero `a_{n-q,n-q-1}`"), and the zero chase is an orthogonal
-equivalence `(Q₂ᵀ A₁ Z₂, Q₂ᵀ B Z₂)`, Hessenberg–triangular, with `b_rr = 0` and `a_{r,r-1} = 0`. -/
+/-- The zero-chase branch of a pass of Algorithm 7.7.3 of [golub2013matrix], on the deflated matrix
+$A_1$ and on $B$. It says: $p \le k \le r < n$; the block $A_{22}$ with the indices
+$p, \dots, r$ is unreduced and decoupled ($a_{p,p-1} = 0$ if $p > 0$), and the trailing block
+from $r + 1$ on is decoupled and upper quasi-triangular; $b_{kk} = 0$, so that $B_{22}$ is
+singular ("if $B_{22}$ is singular, zero $a_{n-q,n-q-1}$"); $Q_2$ and $Z_2$ are orthogonal,
+$Q_2^T A_1 Z_2$ is upper Hessenberg and $Q_2^T B Z_2$ is upper triangular,
+$(Q_2^T B Z_2)_{rr} = 0$, and $(Q_2^T A_1 Z_2)_{r,r-1} = 0$ if $p < r$. -/
 def IsQZChasePass (p r k : ℕ) (A₁ B Q₂ Z₂ : Matrix (Fin n) (Fin n) ℝ) : Prop :=
   p ≤ k ∧ k ≤ r ∧ r < n ∧ (0 < p → qzEntry A₁ p (p - 1) = 0) ∧ qzTrailingQuasi A₁ (r + 1) ∧
     qzUnreducedTail A₁ r (r - p) ∧ qzEntry B k k = 0 ∧
@@ -2814,10 +3085,13 @@ def IsQZChasePass (p r k : ℕ) (A₁ B Q₂ Z₂ : Matrix (Fin n) (Fin n) ℝ) 
     (Q₂ᵀ * A₁ * Z₂).IsUpperHessenberg ∧ (Q₂ᵀ * B * Z₂).IsUpperTriangular ∧
     qzEntry (Q₂ᵀ * B * Z₂) r r = 0 ∧ (p < r → qzEntry (Q₂ᵀ * A₁ * Z₂) r (r - 1) = 0)
 
-/-- **The QZ-step branch of a pass of Algorithm 7.7.3** on the deflated `A₁` and `B`: the block
-`A₂₂ = A₁(p:p+N+3, p:p+N+3)` is unreduced and decoupled with `A₃₃` quasi-triangular, `B₂₂` is
-nonsingular, and `(Q₂, Z₂) = (diag(I_p, Q, I_q), diag(I_p, Z, I_q))` is a QZ step on `(A₂₂, B₂₂)`
-(`IsQZStepOn`) with `Q₂ᵀ A₁ Z₂` upper Hessenberg and `Q₂ᵀ B Z₂` upper triangular. -/
+/-- The QZ-step branch of a pass of Algorithm 7.7.3 of [golub2013matrix], on the deflated matrix
+$A_1$ and on $B$. It says: the block $A_{22}$ with the indices $p, \dots, p + N + 2$ is
+unreduced and decoupled ($a_{p,p-1} = 0$ if $p > 0$), and the trailing block from $p + N + 3$ on
+is decoupled and upper quasi-triangular; the diagonal entries of $B_{22}$ are nonzero;
+$(Q_2, Z_2)$ is a QZ step on the window (`GolubVanLoan.Chapter07.IsQZStepOn`), so that
+$Q_2 = \operatorname{diag}(I_p, Q, I_q)$ and $Z_2 = \operatorname{diag}(I_p, Z, I_q)$; and
+$Q_2^T A_1 Z_2$ is upper Hessenberg and $Q_2^T B Z_2$ is upper triangular. -/
 def IsQZStepPass (p N : ℕ) (h : p + (N + 3) ≤ n) (A₁ B Q₂ Z₂ : Matrix (Fin n) (Fin n) ℝ) :
     Prop :=
   (0 < p → qzEntry A₁ p (p - 1) = 0) ∧ qzTrailingQuasi A₁ (p + (N + 3)) ∧
@@ -2825,11 +3099,14 @@ def IsQZStepPass (p N : ℕ) (h : p + (N + 3) ≤ n) (A₁ B Q₂ Z₂ : Matrix 
     IsQZStepOn p N h A₁ B Q₂ Z₂ ∧ (Q₂ᵀ * A₁ * Z₂).IsUpperHessenberg ∧
     (Q₂ᵀ * B * Z₂).IsUpperTriangular
 
-/-- **One unfinished pass of Algorithm 7.7.3, exact arithmetic**: for a state with `Q`, `Z`
-orthogonal, `A` upper Hessenberg and `B` upper triangular, and `A₁` the deflated `A`, the pass
-either finishes (`A₁` has no two consecutive nonzero subdiagonal entries), or runs the zero chase
-(`IsQZChasePass`), or a QZ step on the unreduced block (`IsQZStepPass`), the transformations
-accumulated into `Q` and `Z`. -/
+/-- One unfinished pass of Algorithm 7.7.3, in exact arithmetic. Let $Q$ and $Z$ be orthogonal, $A$
+upper Hessenberg and $B$ upper triangular, and let $A_1$ be the deflation of $A$ by
+`GolubVanLoan.Chapter07.qrDeflate`. Then one of the following describes the pass: $A_1$ has no
+two consecutive nonzero subdiagonal entries and the pass returns $(A_1, B, Q, Z)$ as finished;
+or the pass is a zero chase (`GolubVanLoan.Chapter07.IsQZChasePass`) with some $Q_2, Z_2$ and
+returns $(Q_2^T A_1 Z_2, Q_2^T B Z_2, Q Q_2, Z Z_2)$ as unfinished; or the pass is a QZ step on
+the unreduced block (`GolubVanLoan.Chapter07.IsQZStepPass`) with some $Q_2, Z_2$ and returns the
+same form of state as unfinished. -/
 theorem qzPass_false_spec (ε : ℝ) {st : QZArrays n} {A₁ : Matrix (Fin n) (Fin n) ℝ}
     (hA₁ : Id.run (qrDeflate pure ε st.A) = A₁) (hQ : st.Q ∈ orthogonalGroup (Fin n) ℝ)
     (hZ : st.Z ∈ orthogonalGroup (Fin n) ℝ) (hA : st.A.IsUpperHessenberg)
@@ -2989,12 +3266,14 @@ theorem qzPass_false_spec (ε : ℝ) {st : QZArrays n} {A₁ : Matrix (Fin n) (F
         by rw [← hA'eq]; exact hA'H, by rw [← hB'eq]; exact hB'T⟩, ?_⟩
     rw [hA'eq, hB'eq]
 
-/-- **One pass of Algorithm 7.7.3 in exact arithmetic**, as a relation between the states
-`(⟨A, B, Q, Z⟩, done)` before and after: a finished state is kept; an unfinished one is deflated
-(`IsQRDeflation`) to `A₁`, and then either `A₁` has no two consecutive nonzero subdiagonal
-entries and the state is finished, or the zero chase runs on a block with a zero on the diagonal
-of `B₂₂` (`IsQZChasePass`), or a QZ step runs on the unreduced block (`IsQZStepPass`, a Francis
-step on `A₂₂ B₂₂⁻¹`), accumulated into `Q` and `Z`. -/
+/-- One pass of Algorithm 7.7.3 of [golub2013matrix] in exact arithmetic, as a relation between the
+states $((A, B, Q, Z), \mathit{done})$ before and after. A finished state is kept. An unfinished
+state is deflated (`GolubVanLoan.Chapter07.IsQRDeflation`) to $A_1$, and then one of three
+things happens: $A_1$ has no two consecutive nonzero subdiagonal entries and the state
+$(A_1, B, Q, Z)$ is finished; or the zero chase runs on a block with a zero on the diagonal of
+$B_{22}$ (`GolubVanLoan.Chapter07.IsQZChasePass`); or a QZ step runs on the unreduced block
+(`GolubVanLoan.Chapter07.IsQZStepPass`), which is a Francis step on $A_{22} B_{22}^{-1}$. In the
+last two cases the new state is $(Q_2^T A_1 Z_2, Q_2^T B Z_2, Q Q_2, Z Z_2)$ and is unfinished. -/
 def IsQZPass (ε : ℝ) (st st' : QZArrays n × Bool) : Prop :=
   (st.2 = true → st' = st) ∧
     (st.2 = false → ∃ A₁, IsQRDeflation ε st.1.A A₁ ∧
@@ -3006,9 +3285,11 @@ def IsQZPass (ε : ℝ) (st st' : QZArrays n × Bool) : Prop :=
           IsQZStepPass p N h A₁ st.1.B Q₂ Z₂ ∧
           st' = (⟨Q₂ᵀ * A₁ * Z₂, Q₂ᵀ * st.1.B * Z₂, st.1.Q * Q₂, st.1.Z * Z₂⟩, false)))
 
-/-- **A pass of Algorithm 7.7.3 is the book's loop body** (exact arithmetic): on a state with
-`Q`, `Z` orthogonal, `A` upper Hessenberg and `B` upper triangular, `qzPass` is a deflation
-followed by the zero chase or a QZ step on the unreduced block (`IsQZPass`). -/
+/-- **Algorithm 7.7.3** of [golub2013matrix], a pass is the source's loop body. Let
+$\varepsilon \in \mathbb{R}$ and let the state have $Q$ and $Z$ orthogonal, $A$ upper Hessenberg
+and $B$ upper triangular. Then the exact run of one pass is related to the state by
+`GolubVanLoan.Chapter07.IsQZPass`: a deflation followed by the zero chase or by a QZ step on the
+unreduced block. -/
 theorem qzPass_isQZPass (ε : ℝ) {st : QZArrays n × Bool}
     (hQ : st.1.Q ∈ orthogonalGroup (Fin n) ℝ) (hZ : st.1.Z ∈ orthogonalGroup (Fin n) ℝ)
     (hA : st.1.A.IsUpperHessenberg) (hB : st.1.B.IsUpperTriangular) :
@@ -3020,10 +3301,10 @@ theorem qzPass_isQZPass (ε : ℝ) {st : QZArrays n × Bool}
     exact ⟨fun h => absurd h (by simp), fun _ => ⟨_, qrDeflate_isQRDeflation ε st.A,
       qzPass_false_spec ε rfl hQ hZ hA hB⟩⟩
 
-/-- **One pass of Algorithm 7.7.3 keeps the invariant**, with the perturbation factor multiplied
-by `(1 + 2 ε)^n` (the deflation, `qrDeflate_spec`); the zero chase (`qzZeroChase_spec`) and the QZ
-step on the block (`algorithm_7_7_2_block`, its reflector data accumulated into `Q`, `Z`) are
-exact equivalences, and `q = n` means no two consecutive subdiagonal entries are nonzero. -/
+/-- One pass of Algorithm 7.7.3 keeps the invariant of the passes, with the perturbation factor
+multiplied by $(1 + 2\varepsilon)^n$ for the deflation
+(`GolubVanLoan.Chapter07.qrDeflate_spec`); the zero chase and the QZ step are exact
+equivalences. -/
 private theorem qzPass_inv {ε : ℝ} (hε : 0 ≤ ε) {A₀ B₀ : Matrix (Fin n) (Fin n) ℝ} {c : ℝ}
     (hc : 1 ≤ c) {st : QZArrays n × Bool} (hst : QZPassInv ε A₀ B₀ c st) :
     QZPassInv ε A₀ B₀ ((1 + 2 * ε) ^ n * c) (Id.run (qzPass pure ε st)) := by
@@ -3055,8 +3336,8 @@ private theorem qzPass_inv {ε : ℝ} (hε : 0 ≤ ε) {A₀ B₀ : Matrix (Fin 
         rw [hA₁E, transpose_mul]
         simp only [Matrix.mul_assoc]
 
-/-- The passes of Algorithm 7.7.3 keep the invariant, the perturbation factor growing by
-`(1 + 2 ε)^n` per pass. -/
+/-- The passes of Algorithm 7.7.3 keep the invariant, and the perturbation factor grows by
+$(1 + 2\varepsilon)^n$ per pass. -/
 private theorem qzPass_foldl {ε : ℝ} (hε : 0 ≤ ε) (A₀ B₀ : Matrix (Fin n) (Fin n) ℝ) :
     ∀ (l : List ℕ) (c : ℝ) (st : QZArrays n × Bool), 1 ≤ c → QZPassInv ε A₀ B₀ c st →
       QZPassInv ε A₀ B₀ ((1 + 2 * ε) ^ (n * l.length) * c)
@@ -3071,16 +3352,24 @@ private theorem qzPass_foldl {ε : ℝ} (hε : 0 ≤ ε) (A₀ B₀ : Matrix (Fi
         rw [List.length_cons, Nat.mul_succ, pow_add]; ring]
     exact this
 
-/-- **Algorithm 7.7.3 (the QZ algorithm), exact semantics.** For `0 ≤ ε` and
-`(⟨T, S, Q, Z⟩, done) = Algorithm 7.7.3 (A, B, ε)` run for at most `fuel` passes with exact
-arithmetic: `Q` and `Z` are orthogonal, `S = Qᵀ B Z` is upper triangular, and `T = Qᵀ (A + E) Z` is
-upper Hessenberg for a perturbation `E` with `‖E‖_F ≤ ((1 + 2ε)^(n·fuel) - 1) ‖A‖_F` (the
-deflations; the zero chase and the QZ steps are exact equivalences), `E = 0` when `ε = 0`; if
-the loop ended (`q = n`, `done`), `T` is upper quasi-triangular: `(T, S)` is the generalized real
-Schur form of `(A + E, B)` (Theorem 7.7.2, made constructive up to the deflation perturbation).
-And the iteration is the book's: the states start from the Hessenberg–triangular reduction
-(Algorithm 7.7.1) and each pass is a deflation followed by the zero chase or a QZ step on the
-unreduced block, a Francis step on `A₂₂ B₂₂⁻¹` (`IsQZPass`). -/
+/-- **Algorithm 7.7.3** of [golub2013matrix], exact semantics. Let
+$A, B \in \mathbb{R}^{n \times n}$ and $\varepsilon \ge 0$, and let
+$((T, S, Q, Z), \mathit{done})$ be the output of the QZ algorithm in exact arithmetic after at
+most `fuel` passes. Then $Q$ and $Z$ are orthogonal, $S = Q^T B Z$ is upper triangular, and
+there is a perturbation $E$ with $$T = Q^T (A + E) Z, \qquad \|E\|_F \le \bigl((1 +
+2\varepsilon)^{n \cdot \mathit{fuel}} - 1\bigr) \|A\|_F,$$ and $E = 0$ when $\varepsilon = 0$.
+The matrix $T$ is upper Hessenberg, and if the loop ended ($q = n$, `done`), then $T$ is upper
+quasi-triangular. Moreover the iteration is the source's: there is a sequence of states whose
+first state is unfinished, is Hessenberg–triangular and satisfies the invariant
+`GolubVanLoan.Chapter07.QZArrays.IsEquiv` for $(A, B)$, as the output of Algorithm 7.7.1 does,
+in which each state comes from the previous one by a pass in the sense of
+`GolubVanLoan.Chapter07.IsQZPass`, and which ends at $((T, S, Q, Z), \mathit{done})$ after
+`fuel` passes.
+
+When the loop ended, $(T, S)$ is a generalized real Schur form of $(A + E, B)$: this is Theorem
+7.7.2 made constructive, up to the perturbation of the deflations. The zero chase and the QZ
+steps are exact equivalences, so $E$ comes from the deflations alone. The norm is the Frobenius
+norm. -/
 theorem algorithm_7_7_3_spec {ε : ℝ} (hε : 0 ≤ ε) (A B : Matrix (Fin n) (Fin n) ℝ) (fuel : ℕ)
     {st : QZArrays n} {done : Bool}
     (h : Id.run (algorithm_7_7_3 pure ε A B fuel) = (st, done)) :

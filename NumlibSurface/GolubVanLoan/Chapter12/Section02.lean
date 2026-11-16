@@ -8,34 +8,159 @@ import NumlibSurface.GolubVanLoan.Chapter05.Section01
 import NumlibSurface.GolubVanLoan.Chapter12.Section01
 
 /-!
-# Golub–Van Loan §12.2: structured-rank problems
+# Golub and Van Loan, Section 12.2: Structured-rank problems
 
-Surface file for §12.2 of Golub and Van Loan, *Matrix Computations* (4th edition): semiseparable and
-quasiseparable matrices (12.2.1)–(12.2.8), the inverse facts of §12.2.3, triangular semiseparable
-matrices and the fast product (12.2.9), the LU Algorithm 12.2.1, the Givens-vector representation
-(12.2.11) and the QR Algorithm 12.2.2 with (12.2.14), (12.2.16), the banded inverses of §12.2.8, and
-the orthogonal Hessenberg eigenproblem (12.2.18)–(12.2.19) with the facts of §12.2.10.
+This module formalizes §12.2 of [golub2013matrix], on matrices whose off-diagonal blocks have rank
+at most one. A matrix $A \in \mathbb{R}^{n \times n}$ is semiseparable if every submatrix
+$A(i_1{:}i_2, j_1{:}j_2)$ with $j_2 \le i_1$ or $i_2 \le j_1$ has rank at most one, and
+quasiseparable if this holds for the submatrices with $j_2 < i_1$ or $i_2 < j_1$, which lie strictly
+below or strictly above the diagonal. The module proves the characterizations (12.2.1) and (12.2.5),
+the generator representation (12.2.6) and the quasiseparable representation (12.2.8), and the facts
+of §12.2.3 on inverses: the inverse of a tridiagonal matrix is semiseparable, and the inverse of a
+quasiseparable matrix is quasiseparable. It treats triangular semiseparable matrices with the fast
+product and solve (12.2.9), the LU factorization Algorithm 12.2.1, the Givens-vector representation
+(12.2.11), the QR factorization Algorithm 12.2.2 with (12.2.14) and (12.2.16), the banded inverses
+of §12.2.8, and the orthogonal Hessenberg eigenproblem (12.2.18)–(12.2.19) with the facts of
+§12.2.10.
 
-## Design
+The proofs specialize `Numlib.LinearAlgebra.Matrix.Semiseparable`, which rests on the nullity
+theorem, and `Numlib.LinearAlgebra.Matrix.RealSchur`. The Givens pairs of Algorithm 12.2.2 come from
+Algorithm 5.1.3, `GolubVanLoan.Chapter05.algorithm_5_1_3`.
 
-Matrices are real, `Matrix (Fin n) (Fin n) ℝ`, 0-based. The book's `B(r)` with `r ∈ ℝ^{n−1}` is the
-backbone's `Matrix.unitBidiagonal n r` with `r : ℕ → ℝ` (entries past `n − 2` unused);
-`𝐒(u, v, t, d, p, q, r)` is `Matrix.quasiseparableOf u v t d p q r` (the book's (12.2.8) order),
-whose entries use the products `t_j ⋯ t_{i−1}`; the corrected quasiseparable representation with the
-Eidelman–Gohberg transfer products `t_{j+1} ⋯ t_{i−1}` is `Matrix.quasiseparableRep`. MATLAB's
-`tril(A, −1)`, `triu(A, 1)` and `diag` are `Matrix.strictLower`, `Matrix.strictUpper` and
-`Matrix.diagPart`; `.*` is `⊙`. The chain `Qᵀ = G₁ ⋯ G_{n−1}` of `2 × 2` blocks in consecutive
-coordinate planes is `Matrix.givensChain`. Algorithm 12.2.2 follows the algorithm conventions of
-`NumlibSurface/GolubVanLoan`: its Givens pairs are chapter 5's Algorithm 5.1.3, its state the
-structure `SemiseparableQRState`, and its exact specification is a downward induction on the book's
-`A⁽ᵏ⁾`.
+## Main definitions
 
-## Not formalized here
+* Algorithm 12.2.1, `GolubVanLoan.Chapter12.algorithm_12_2_1`: the LU factorization of a
+  semiseparable matrix $\mathbf{S}(u, v, t, u .* v, p, q, r)$ from its representation.
+* Algorithm 12.2.2, `GolubVanLoan.Chapter12.SemiseparableQRState`: the state of the loop of
+  Algorithm 12.2.2.
+* Algorithm 12.2.2, `GolubVanLoan.Chapter12.algorithm_12_2_2Step`: one step of the loop of Algorithm
+  12.2.2.
+* Algorithm 12.2.2, `GolubVanLoan.Chapter12.algorithm_12_2_2`: the QR factorization of
+  $\operatorname{tril}(uv^T) + \operatorname{triu}(pq^T, 1)$ by $n - 1$ Givens rotations.
 
-The operation and storage counts, §12.2.8's misprinted `{p, q}`-semiseparable definition and the
-extended, sequentially semiseparable and hierarchical classes ((12.2.17) is a shape), §12.2.9
-(eigenvalue methods: prose with citations), the pivoting variant of Algorithm 12.2.1 (described in
-words), and Fact 3 of §12.2.10 (it names neither the perfect shuffles nor the block positions).
+## Main results
+
+* Equation (12.2.1), `GolubVanLoan.Chapter12.equation_12_2_1`: the characterization of semiseparable
+  matrices by the rank of all their blocks that do not cross the diagonal.
+* Equation (12.2.3), `GolubVanLoan.Chapter12.equation_12_2_3`: the entries of $B(r)^{-1}$, which is
+  semiseparable.
+* §12.2.1, `GolubVanLoan.Chapter12.unitBidiagonal_introduces_zeros`: $B(r)^T x = x_1 e_1$ for
+  $r = x(2{:}n) ./ x(1{:}n-1)$.
+* Equation (12.2.4), `GolubVanLoan.Chapter12.equation_12_2_4`: the entries of a product of
+  $2 \times 2$ blocks in consecutive coordinate planes, which is quasiseparable.
+* Equation (12.2.5), `GolubVanLoan.Chapter12.equation_12_2_5`: the characterization of
+  quasiseparable matrices, and semiseparable matrices are quasiseparable.
+* Equation (12.2.6), `GolubVanLoan.Chapter12.equation_12_2_6`: the generator representation is
+  $\mathbf{S}(u, v, 1, d, p, q, 1)$, quasiseparable, and semiseparable if $d = u .* v = p .* q$.
+* §12.2.3, `GolubVanLoan.Chapter12.unitBidiagonal_not_generatorRepresentable`: for $n \ge 3$, $B(r)$
+  has no generator representation.
+* Equation (12.2.7), `GolubVanLoan.Chapter12.equation_12_2_7`: the entrywise product of two
+  quasiseparable matrices is quasiseparable.
+* Equation (12.2.8), `GolubVanLoan.Chapter12.equation_12_2_8`: a matrix is quasiseparable if and
+  only if it has a quasiseparable representation, in corrected form.
+* Equation (12.2.8), `GolubVanLoan.Chapter12.equation_12_2_8_b`: the special cases of
+  $\mathbf{S}(u, v, t, d, p, q, r)$: semiseparable, symmetric, and semiseparable plus diagonal.
+* Fact 1 of §12.2.3, `GolubVanLoan.Chapter12.inv_tridiagonal_isSemiseparable`: the inverse of a
+  nonsingular tridiagonal matrix is semiseparable.
+* Fact 2 of §12.2.3, `GolubVanLoan.Chapter12.inv_isQuasiseparable`: the inverse of a nonsingular
+  quasiseparable matrix is quasiseparable.
+* Fact 3 of §12.2.3, `GolubVanLoan.Chapter12.inv_diagonal_add_semiseparable`: the inverse of
+  diagonal plus semiseparable is diagonal plus semiseparable.
+* §12.2.4, `GolubVanLoan.Chapter12.triangular_semiseparable_rep`: the representations of lower and
+  upper triangular semiseparable matrices.
+* Equation (12.2.9), `GolubVanLoan.Chapter12.equation_12_2_9`: the fast product with
+  $\operatorname{triu}(pq^T) .* B(r)^{-1}$ and the solution of the corresponding system.
+* §12.2.5, `GolubVanLoan.Chapter12.semiseparable_lu_factors`: the LU factors of a semiseparable
+  matrix are semiseparable, in corrected form.
+* Algorithm 12.2.1, `GolubVanLoan.Chapter12.algorithm_12_2_1_spec`: in exact arithmetic, Algorithm
+  12.2.1 returns an LU factorization, with closed forms for $\tau$ and $\tilde p$.
+* Equation (12.2.11), `GolubVanLoan.Chapter12.equation_12_2_11`: the Givens-vector representation of
+  a lower triangular semiseparable matrix.
+* Equation (12.2.14), `GolubVanLoan.Chapter12.equation_12_2_14`: the rotations of the Givens-vector
+  representation reduce $A$ to upper triangular form.
+* Algorithm 12.2.2, `GolubVanLoan.Chapter12.algorithm_12_2_2_spec`: in exact arithmetic, Algorithm
+  12.2.2 returns an orthogonal $Q^T$ with $Q^T A = \operatorname{triu}(fg^T + hq^T)$.
+* Equation (12.2.16), `GolubVanLoan.Chapter12.equation_12_2_16`: the factor $R$ is the upper
+  triangular part of a matrix of rank at most two.
+* §12.2.8, `GolubVanLoan.Chapter12.inv_banded_of_generatorRepresentable`: the inverse of a
+  nonsingular $\{p, q\}$-generator representable matrix is banded.
+* Equation (12.2.18), `GolubVanLoan.Chapter12.equation_12_2_18`: the product form of an orthogonal
+  upper Hessenberg matrix, in corrected form.
+* Equation (12.2.19), `GolubVanLoan.Chapter12.equation_12_2_19`: the eigenvalues of an orthogonal
+  matrix of order $2m$ with determinant $1$ are $m$ conjugate pairs $e^{\pm i\theta_k}$.
+* §12.2.10, `GolubVanLoan.Chapter12.orthogonalHessenberg_isQuasiseparable`: an orthogonal upper
+  Hessenberg matrix is quasiseparable.
+* Fact 1 of §12.2.10, `GolubVanLoan.Chapter12.orthogonalHessenberg_fact_1`: $H = G_1 \cdots G_n$ is
+  similar to $H_o H_e$.
+* Fact 2 of §12.2.10, `GolubVanLoan.Chapter12.orthogonalHessenberg_fact_2`: the eigenvalues of
+  $(H_o \pm H_e)/2$ are $\pm\cos(\theta_k/2)$ and $\pm\sin(\theta_k/2)$.
+
+## Conventions
+
+* Indices are 0-based. $B(r)$ for $r \in \mathbb{R}^{n-1}$, the unit upper bidiagonal matrix with
+  $-r_i$ in position $(i, i+1)$, is `Matrix.unitBidiagonal n r` with `r : ℕ → ℝ`; the entries of `r`
+  after the index $n - 2$ are not used.
+* The matrix $\mathbf{S}(u, v, t, d, p, q, r)$ of (12.2.8) has the entries
+  $u_i t_j \cdots t_{i-1} v_j$ below the diagonal, $d_i$ on the diagonal and
+  $p_i r_i \cdots r_{j-1} q_j$ above the diagonal. It is `Matrix.quasiseparableOf u v t d p q r`,
+  with the arguments in the order of the source.
+* The MATLAB operations $\operatorname{tril}(A, -1)$, $\operatorname{triu}(A, 1)$ and
+  $\operatorname{diag}(A)$ are `Matrix.strictLower`, `Matrix.strictUpper` and `Matrix.diagPart`, and
+  the entrywise product $.*$ of matrices is `⊙`. The entrywise product and quotient of vectors are
+  `*` and `/` of functions.
+* The product $G_1 \cdots G_{n-1}$ of $2 \times 2$ blocks embedded in the coordinate planes
+  $(k, k+1)$ is `Matrix.givensChain`.
+
+## Implementation notes
+
+* The quasiseparable representation with the transfer products $t_{j+1} \cdots t_{i-1}$ and
+  $r_{i+1} \cdots r_{j-1}$ of Eidelman and Gohberg is `Matrix.quasiseparableRep`. It has one
+  transfer factor fewer than $\mathbf{S}(u, v, t, d, p, q, r)$, and it represents every
+  quasiseparable matrix.
+* Algorithms 12.2.1 and 12.2.2 are monadic programs with a rounding hook `rnd`, as in the algorithm
+  conventions of `NumlibSurface.GolubVanLoan`. The state of Algorithm 12.2.2 is the structure
+  `GolubVanLoan.Chapter12.SemiseparableQRState`. The source analyses no rounding errors in this
+  section, so there are only exact specifications. The exact specification of Algorithm 12.2.2 is a
+  downward induction on the source's matrices $A^{(k)} = G_k \cdots G_{n-1} A$.
+
+## Deviations from the source
+
+* **§12.2.3, $B(r)$ has no generator representation** (generalization). The source takes $r$ with
+  nonzero entries; $r_1 \neq 0$ and $r_2 \neq 0$ suffice. See
+  `GolubVanLoan.Chapter12.unitBidiagonal_not_generatorRepresentable`.
+* **Equation (12.2.8)** (correction). Not every quasiseparable matrix is
+  $\mathbf{S}(u, v, t, d, p, q, r)$: for $n \ge 3$ and $r_1 r_2 \neq 0$, $B(r)$ is not. The
+  statement uses the representation of Eidelman and Gohberg. See
+  `GolubVanLoan.Chapter12.equation_12_2_8`.
+* **§12.2.5** (correction). The lower LU factor of a semiseparable matrix need not be semiseparable
+  when $A$ is singular. The statement assumes that the leading principal submatrices are
+  nonsingular. See `GolubVanLoan.Chapter12.semiseparable_lu_factors`.
+* **Algorithm 12.2.1** (correction). The hypothesis "$A$ has an LU factorization" does not ensure
+  the divisions by $u_k$. The statement assumes $u_k \neq 0$ for $k = 1, \dots, n - 1$. See
+  `GolubVanLoan.Chapter12.algorithm_12_2_1_spec`.
+* **Algorithm 12.2.1** (typo). The text's "$M = B(\tau)$" should read $M = B(\tau)^T$. See
+  `GolubVanLoan.Chapter12.algorithm_12_2_1_spec`.
+* **Equation (12.2.11)** (correction). The Givens-vector representation needs $(A_L)_{n1} \neq 0$.
+  See `GolubVanLoan.Chapter12.equation_12_2_11`.
+* **Algorithm 12.2.2** (typo). The update of $g_k$ prints $u_k$ for $\tilde u_k$. See
+  `GolubVanLoan.Chapter12.algorithm_12_2_2Step`.
+* **Algorithm 12.2.2** (generalization). The correctness does not need the hypothesis
+  $u .* v = p .* q$. See `GolubVanLoan.Chapter12.algorithm_12_2_2_spec`.
+* **Equation (12.2.18)** (correction). The source assumes a nonzero subdiagonal. The statement
+  assumes a positive subdiagonal, even order and $\det H = 1$. See
+  `GolubVanLoan.Chapter12.equation_12_2_18`.
+
+## Not formalized
+
+* **The operation and storage counts.** Operation counts are out of scope for the library.
+* **The $\{p, q\}$-semiseparable definition of §12.2.8.** It is misprinted.
+* **The extended, sequentially semiseparable and hierarchical classes of §12.2.8.** The display
+  (12.2.17) shows only a shape.
+* **§12.2.9.** It describes eigenvalue methods in prose with citations.
+* **The pivoting variant of Algorithm 12.2.1.** The source describes it in words only.
+* **Fact 3 of §12.2.10.** It names neither the perfect shuffles nor the positions of the bidiagonal
+  blocks, and the source proves nothing.
+* **The Problems of §12.2.** Problems are out of scope for the library.
 -/
 
 open Matrix
@@ -46,33 +171,50 @@ variable {n : ℕ}
 
 /-! ### Semiseparable and quasiseparable matrices (§12.2.1–12.2.3) -/
 
-/-- **(12.2.1)** as a characterization: `A` is semiseparable, every submatrix `A(i₁:i₂, j₁:j₂)` with
-`j₂ ≤ i₁` or `i₂ ≤ j₁` having rank at most one, iff the maximal such blocks do
-(`Matrix.IsSemiseparable`). -/
+/-- **Equation (12.2.1)** of [golub2013matrix]. A matrix $A \in \mathbb{R}^{n \times n}$ is
+semiseparable if and only if every submatrix $A(i_1{:}i_2, j_1{:}j_2)$ with $j_2 \le i_1$ or
+$i_2 \le j_1$ has rank at most one.
+
+The definition `Matrix.IsSemiseparable` asks this only of the maximal such blocks
+$A(k{:}n, 1{:}k)$ and $A(1{:}k, k{:}n)$. The submatrix $A(i_1{:}i_2, j_1{:}j_2)$ is `A.toBlock`
+for the index intervals `Set.Icc i₁ i₂` and `Set.Icc j₁ j₂`. -/
 theorem equation_12_2_1 (A : Matrix (Fin n) (Fin n) ℝ) :
     A.IsSemiseparable ↔ ∀ i₁ i₂ j₁ j₂ : Fin n, j₂ ≤ i₁ ∨ i₂ ≤ j₁ →
       (A.toBlock (· ∈ Set.Icc i₁ i₂) (· ∈ Set.Icc j₁ j₂)).rank ≤ 1 := by
   convert isSemiseparable_iff_forall_rank_toBlock_Icc_le (A := A)
 
-/-- **(12.2.3)** and the sentence before it: `B(r)⁻¹` has the entries `r_i ⋯ r_{j−1}` on and above
-the diagonal (`1` on it) and zero below, and it is semiseparable (P12.2.1). -/
+/-- **Equation (12.2.3)** of [golub2013matrix] and the sentence before it. Let
+$r \in \mathbb{R}^{n-1}$. The inverse of $B(r)$ is upper triangular, with the entries
+$$[B(r)^{-1}]_{ij} = r_i r_{i+1} \cdots r_{j-1} \qquad (i \le j),$$ in particular $1$ on the
+diagonal, and $B(r)^{-1}$ is semiseparable.
+
+The source leaves the proof to Problem P12.2.1. -/
 theorem equation_12_2_3 (r : ℕ → ℝ) :
     (unitBidiagonal n r)⁻¹ =
         of (fun (i j : Fin n) => if i ≤ j then ∏ l ∈ Finset.Ico (i : ℕ) j, r l else 0) ∧
       (unitBidiagonal n r)⁻¹.IsSemiseparable :=
   ⟨inv_unitBidiagonal r, isSemiseparable_inv_unitBidiagonal r⟩
 
-/-- **§12.2.1**: if `x_1, …, x_{n−1} ≠ 0` and `r = x(2:n) ./ x(1:n−1)`, then `B(r)ᵀ x = x₁ e₁`. -/
+/-- **§12.2.1** of [golub2013matrix], zeros introduced by $B(r)$. Let $x \in \mathbb{R}^n$ with
+$x_1, \dots, x_{n-1} \neq 0$, and let $r = x(2{:}n) ./ x(1{:}n-1)$, that is,
+$r_k = x_{k+1}/x_k$. Then $$B(r)^T x = x_1 e_1.$$
+
+The order of the matrix is `n + 1` in the Lean statement. -/
 theorem unitBidiagonal_introduces_zeros {x : Fin (n + 1) → ℝ} {r : ℕ → ℝ}
     (hx : ∀ (l : ℕ) (h : l < n), x ⟨l, by omega⟩ ≠ 0)
     (hr : ∀ (l : ℕ) (h : l < n), r l = x ⟨l + 1, by omega⟩ / x ⟨l, by omega⟩) :
     (unitBidiagonal (n + 1) r)ᵀ *ᵥ x = Pi.single 0 (x 0) :=
   unitBidiagonal_transpose_mulVec_eq_single hx hr
 
-/-- **(12.2.4)**: the product `M = M₁ ⋯ M_{n−1}` of the `2 × 2` blocks `M_k = [α_k β_k; γ_k δ_k]`
-embedded in the consecutive coordinate planes has the displayed entries — `γ_j` on the subdiagonal,
-`δ_{i−1} β_i ⋯ β_{j−1} α_j` on and above the diagonal (with `δ_0 = 1` in the first row and `α_{n−1}
-= 1` in the last column), zero below the subdiagonal — and it is quasiseparable. -/
+/-- **Equation (12.2.4)** of [golub2013matrix]. Let $M_k = \begin{bmatrix} \alpha_k & \beta_k \\
+\gamma_k & \delta_k \end{bmatrix}$ for $k = 1, \dots, n - 1$, and let $M = M_1 \cdots M_{n-1}$
+be the product of these blocks embedded in the coordinate planes $(k, k+1)$ of $\mathbb{R}^n$.
+Then $$m_{ij} = \begin{cases} \gamma_j & \text{if } i = j + 1, \\ \delta_{i-1} \beta_i \cdots
+\beta_{j-1} \alpha_j & \text{if } i \le j, \\ 0 & \text{if } i > j + 1, \end{cases}$$ with
+$\delta_0 = 1$ and $\alpha_n = 1$, and $M$ is quasiseparable.
+
+Here $n = N + 1$, and $M$ is `Matrix.givensChain N M`. The Lean statement is 0-based: the block
+$M_k$ is `M (k - 1)`. -/
 theorem equation_12_2_4 {N : ℕ} (M : ℕ → Matrix (Fin 2) (Fin 2) ℝ) :
     (∀ i j : Fin (N + 1), givensChain N M i j =
       if (i : ℕ) = j + 1 then M j 1 0
@@ -83,9 +225,13 @@ theorem equation_12_2_4 {N : ℕ} (M : ℕ → Matrix (Fin 2) (Fin 2) ℝ) :
       (givensChain N M).IsQuasiseparable :=
   ⟨givensChain_apply, givensChain_isQuasiseparable⟩
 
-/-- **(12.2.5)** as a characterization: `A` is quasiseparable, every submatrix `A(i₁:i₂, j₁:j₂)`
-with `j₂ < i₁` or `i₂ < j₁` having rank at most one, iff the maximal such blocks do; and every
-semiseparable matrix is quasiseparable (the sentence after (12.2.5)). -/
+/-- **Equation (12.2.5)** of [golub2013matrix] and the sentence after it. A matrix
+$A \in \mathbb{R}^{n \times n}$ is quasiseparable if and only if every submatrix
+$A(i_1{:}i_2, j_1{:}j_2)$ with $j_2 < i_1$ or $i_2 < j_1$ has rank at most one. Every
+semiseparable matrix is quasiseparable.
+
+The definition `Matrix.IsQuasiseparable` asks this only of the maximal such blocks
+$A(k+1{:}n, 1{:}k)$ and $A(1{:}k, k+1{:}n)$. -/
 theorem equation_12_2_5 (A : Matrix (Fin n) (Fin n) ℝ) :
     (A.IsQuasiseparable ↔ ∀ i₁ i₂ j₁ j₂ : Fin n, j₂ < i₁ ∨ i₂ < j₁ →
       (A.toBlock (· ∈ Set.Icc i₁ i₂) (· ∈ Set.Icc j₁ j₂)).rank ≤ 1) ∧
@@ -93,8 +239,12 @@ theorem equation_12_2_5 (A : Matrix (Fin n) (Fin n) ℝ) :
   refine ⟨?_, IsSemiseparable.isQuasiseparable⟩
   convert isQuasiseparable_iff_forall_rank_toBlock_Icc_le (A := A)
 
-/-- **(12.2.6)**: the generator representation `tril(u vᵀ, −1) + diag(d) + triu(p qᵀ, 1)` is
-`𝐒(u, v, 1, d, p, q, 1)`; it is quasiseparable, and semiseparable when `d = u .* v = p .* q`. -/
+/-- **Equation (12.2.6)** of [golub2013matrix]. Let $u, v, d, p, q \in \mathbb{R}^n$. The generator
+representation $$\operatorname{tril}(uv^T, -1) + \operatorname{diag}(d) +
+\operatorname{triu}(pq^T, 1)$$ is the matrix $\mathbf{S}(u, v, 1, d, p, q, 1)$. It is
+quasiseparable, and it is semiseparable if $d = u .* v = p .* q$.
+
+The vectors of ones $t = r = 1$ are the constant sequence `1`. -/
 theorem equation_12_2_6 (u v d p q : Fin n → ℝ) :
     (vecMulVec u v).strictLower + diagonal d + (vecMulVec p q).strictUpper =
         quasiseparableOf u v 1 d p q 1 ∧
@@ -110,24 +260,41 @@ theorem equation_12_2_6 (u v d p q : Fin n → ℝ) :
   · simp
   · simp [h, h.ne, not_lt.2 h.le]
 
-/-- **§12.2.3**: for `n ≥ 3` and `r` with nonzero entries (`r₁, r₂ ≠ 0` suffice), `B(r)` has no
-generator representation (12.2.6). -/
+/-- **§12.2.3** of [golub2013matrix], $B(r)$ has no generator representation. Let $n \ge 3$ and let
+$r \in \mathbb{R}^{n-1}$ with $r_1 \neq 0$ and $r_2 \neq 0$. Then $B(r)$ has no generator
+representation (12.2.6): $B(r) \neq \mathbf{S}(u, v, 1, d, p, q, 1)$ for all
+$u, v, d, p, q \in \mathbb{R}^n$.
+
+**Generalization.** The source takes $r$ with nonzero entries. The first two entries suffice.
+
+In the 0-based Lean statement, $r_1$ and $r_2$ are `r 0` and `r 1`. -/
 theorem unitBidiagonal_not_generatorRepresentable {r : ℕ → ℝ} (hn : 3 ≤ n) (h₀ : r 0 ≠ 0)
     (h₁ : r 1 ≠ 0) (u v d p q : Fin n → ℝ) :
     unitBidiagonal n r ≠ quasiseparableOf u v 1 d p q 1 :=
   unitBidiagonal_ne_generatorRep hn h₀ h₁ u v d p q
 
-/-- **(12.2.7)**: the Hadamard product of two quasiseparable matrices is quasiseparable (P12.2.8).
--/
+/-- **Equation (12.2.7)** of [golub2013matrix]. If $A, B \in \mathbb{R}^{n \times n}$ are
+quasiseparable, then their entrywise product $A .* B$ is quasiseparable.
+
+The source leaves the proof to Problem P12.2.8. The entrywise product is `A ⊙ B`. -/
 theorem equation_12_2_7 {A B : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsQuasiseparable)
     (hB : B.IsQuasiseparable) : (A ⊙ B).IsQuasiseparable :=
   hA.hadamard hB
 
-/-- **(12.2.8)**, corrected: `A` is quasiseparable iff it has the Eidelman–Gohberg representation
-`Matrix.quasiseparableRep u v t d p q r` (subdiagonal entries `u_i t_{j+1} ⋯ t_{i−1} v_j`,
-superdiagonal ones `p_i r_{i+1} ⋯ r_{j−1} q_j`). **As printed the book's claim is false for `n ≥
-3`**: the quasiseparable `B(r)` with `r₀ r₁ ≠ 0` has no representation `𝐒(u, v, t, d, p, q, r')` of
-(12.2.8), whose entries force `a₀₁ a₁₂ = a₀₂ p₁ q₁`. -/
+/-- **Equation (12.2.8)** of [golub2013matrix], in corrected form. A matrix
+$A \in \mathbb{R}^{n \times n}$ is quasiseparable if and only if there are
+$u, v, d, p, q \in \mathbb{R}^n$ and sequences $t$ and $r$ with $$a_{ij} = \begin{cases} u_i
+\bigl(\prod_{j < l < i} t_l\bigr) v_j & \text{if } i > j, \\ d_i & \text{if } i = j, \\ p_i
+\bigl(\prod_{i < l < j} r_l\bigr) q_j & \text{if } i < j. \end{cases}$$ Moreover, if $n \ge 3$
+and $r \in \mathbb{R}^{n-1}$ has $r_1 \neq 0$ and $r_2 \neq 0$, then $B(r)$ is quasiseparable,
+but $B(r) \neq \mathbf{S}(u, v, t, d, p, q, r')$ for all $u, v, t, d, p, q, r'$.
+
+**Correction.** The source states that $A$ is quasiseparable if and only if
+$A = \mathbf{S}(u, v, t, d, p, q, r)$ for some $u, v, t, d, p, q, r$. This is false for
+$n \ge 3$. The entries of $\mathbf{S}(u, v, t, d, p, q, r)$ satisfy
+$a_{12} a_{23} = a_{13} p_2 q_2$, but $B(r)$ with $r_1 r_2 \neq 0$ has
+$a_{12} a_{23} = r_1 r_2 \neq 0$ and $a_{13} = 0$. The statement uses instead the representation
+of Eidelman and Gohberg, `Matrix.quasiseparableRep`, which has one transfer factor fewer. -/
 theorem equation_12_2_8 (A : Matrix (Fin n) (Fin n) ℝ) :
     (A.IsQuasiseparable ↔ ∃ u v t d p q r, A = quasiseparableRep u v t d p q r) ∧
       (3 ≤ n → ∀ r : ℕ → ℝ, r 0 ≠ 0 → r 1 ≠ 0 → (unitBidiagonal n r).IsQuasiseparable ∧
@@ -136,10 +303,15 @@ theorem equation_12_2_8 (A : Matrix (Fin n) (Fin n) ℝ) :
     ⟨isQuasiseparable_unitBidiagonal r,
       fun u v t d p q r' => unitBidiagonal_ne_quasiseparableOf hn h₀ h₁ u v t d p q r'⟩⟩
 
-/-- **The specializations listed after (12.2.8)**: `d = u .* v = p .* q` gives a semiseparable
-matrix, `t = r = 1` the generator representation (12.2.6), `u = q`, `v = p`, `t = r` a symmetric
-matrix, and `u .* v = p .* q` with free `d` the semiseparable-plus-diagonal class:
-`𝐒(u, v, t, d, p, q, r) − diag(d − u .* v)` is semiseparable. -/
+/-- **Equation (12.2.8)** of [golub2013matrix], the special cases listed after it. Let
+$u, v, d, p, q \in \mathbb{R}^n$, and let $t$ and $r$ be sequences. If $d = u .* v = p .* q$,
+then $\mathbf{S}(u, v, t, d, p, q, r)$ is semiseparable. The matrix
+$\mathbf{S}(u, v, t, d, v, u, t)$, with $q = u$, $p = v$ and $r = t$, is symmetric. If
+$u .* v = p .* q$, then $\mathbf{S}(u, v, t, d, p, q, r) - \operatorname{diag}(d - u .* v)$ is
+semiseparable, so $\mathbf{S}(u, v, t, d, p, q, r)$ is semiseparable plus diagonal.
+
+The case $t = r = 1$, the generator representation (12.2.6), is
+`GolubVanLoan.Chapter12.equation_12_2_6`. -/
 theorem equation_12_2_8_b (u v d p q : Fin n → ℝ) (t r : ℕ → ℝ) :
     (d = u * v → d = p * q → (quasiseparableOf u v t d p q r).IsSemiseparable) ∧
       (quasiseparableOf u v t d v u t)ᵀ = quasiseparableOf u v t d v u t ∧
@@ -159,8 +331,11 @@ theorem equation_12_2_8_b (u v d p q : Fin n → ℝ) (t r : ℕ → ℝ) :
   rw [this]
   exact isSemiseparable_quasiseparableOf _ _ _ _ _ _ _ rfl h
 
-/-- **Fact 1 of §12.2.3**: the inverse of a nonsingular tridiagonal matrix is semiseparable, and
-generator-representable when the sub- and superdiagonal entries are nonzero. -/
+/-- **Fact 1 of §12.2.3** of [golub2013matrix]. Let $A \in \mathbb{R}^{n \times n}$ be nonsingular
+and tridiagonal. Then $A^{-1}$ is semiseparable. If moreover all subdiagonal and superdiagonal
+entries of $A$ are nonzero, then $A^{-1}$ has a generator representation:
+$A^{-1} = \mathbf{S}(u, v, 1, u .* v, p, q, 1)$ for some $u, v, p, q \in \mathbb{R}^n$ with
+$u .* v = p .* q$. -/
 theorem inv_tridiagonal_isSemiseparable {A : Matrix (Fin n) (Fin n) ℝ} (hT : A.IsTridiagonal)
     (hA : IsUnit A) :
     A⁻¹.IsSemiseparable ∧
@@ -168,13 +343,16 @@ theorem inv_tridiagonal_isSemiseparable {A : Matrix (Fin n) (Fin n) ℝ} (hT : A
         ∃ u v p q, u * v = p * q ∧ A⁻¹ = quasiseparableOf u v 1 (u * v) p q 1) :=
   ⟨hT.isSemiseparable_inv hA, fun hsub hsup => hT.inv_eq_generatorRep hA hsub hsup⟩
 
-/-- **Fact 2 of §12.2.3**: the inverse of a nonsingular quasiseparable matrix is quasiseparable. -/
+/-- **Fact 2 of §12.2.3** of [golub2013matrix]. If $A \in \mathbb{R}^{n \times n}$ is nonsingular
+and quasiseparable, then $A^{-1}$ is quasiseparable. -/
 theorem inv_isQuasiseparable {A : Matrix (Fin n) (Fin n) ℝ} (h : A.IsQuasiseparable)
     (hA : IsUnit A) : A⁻¹.IsQuasiseparable :=
   h.inv hA
 
-/-- **Fact 3 of §12.2.3**: if `A = D + S` is nonsingular with `D` diagonal nonsingular and `S`
-semiseparable, then `A⁻¹ = D⁻¹ + S₁` with `S₁` semiseparable. -/
+/-- **Fact 3 of §12.2.3** of [golub2013matrix]. Let $D = \operatorname{diag}(\delta) \in
+\mathbb{R}^{n \times n}$ with $\delta_i \neq 0$ for all $i$, let $S \in \mathbb{R}^{n \times n}$
+be semiseparable, and let $D + S$ be nonsingular. Then $(D + S)^{-1} = D^{-1} + S_1$ for some
+semiseparable $S_1$. -/
 theorem inv_diagonal_add_semiseparable {δ : Fin n → ℝ} (hδ : ∀ i, δ i ≠ 0)
     {S : Matrix (Fin n) (Fin n) ℝ} (hS : S.IsSemiseparable) (hu : IsUnit (diagonal δ + S)) :
     ∃ S₁ : Matrix (Fin n) (Fin n) ℝ, S₁.IsSemiseparable ∧
@@ -183,8 +361,11 @@ theorem inv_diagonal_add_semiseparable {δ : Fin n → ℝ} (hδ : ∀ i, δ i �
 
 /-! ### Triangular semiseparable matrices (§12.2.4–12.2.5) -/
 
-/-- **§12.2.4**: a lower triangular semiseparable `L` is `𝐒(u, v, t, u .* v, 0, 0, 0)`, and an upper
-triangular semiseparable `U` is `𝐒(0, 0, 0, p .* q, p, q, r)`, for suitable vectors. -/
+/-- **§12.2.4** of [golub2013matrix], triangular semiseparable matrices. A lower triangular
+semiseparable matrix $L \in \mathbb{R}^{n \times n}$ is $\mathbf{S}(u, v, t, u .* v, 0, 0, 0)$
+for some $u, v \in \mathbb{R}^n$ and some sequence $t$. An upper triangular semiseparable matrix
+$U \in \mathbb{R}^{n \times n}$ is $\mathbf{S}(0, 0, 0, p .* q, p, q, r)$ for some
+$p, q \in \mathbb{R}^n$ and some sequence $r$. -/
 theorem triangular_semiseparable_rep (L U : Matrix (Fin n) (Fin n) ℝ) :
     (L.IsSemiseparable → L.IsLowerTriangular → ∃ u v t, L = quasiseparableOf u v t (u * v) 0 0 0) ∧
       (U.IsSemiseparable → U.IsUpperTriangular →
@@ -194,10 +375,16 @@ theorem triangular_semiseparable_rep (L U : Matrix (Fin n) (Fin n) ℝ) :
   refine ⟨v, u, t, ?_⟩
   rw [← transpose_transpose U, h, transpose_quasiseparableOf, mul_comm v u]
 
-/-- **(12.2.9)** and the displays after it: `(triu(p qᵀ) .* B(r)⁻¹) x = p .* (B(r)⁻¹ (q .* x))` —
-the upper triangular semiseparable matrix is `diag(p) B(r)⁻¹ diag(q)` (`triu` is immaterial,
-`B(r)⁻¹` being upper triangular) — and for `p`, `q` with nonzero entries the system `(triu(p qᵀ) .*
-B(r)⁻¹) x = y` is solved by `x = (B(r) (y ./ p)) ./ q`. -/
+/-- **Equation (12.2.9)** of [golub2013matrix] and the displays after it. Let
+$p, q \in \mathbb{R}^n$ and $r \in \mathbb{R}^{n-1}$. For every $x \in \mathbb{R}^n$,
+$$\bigl(\operatorname{triu}(pq^T) .* B(r)^{-1}\bigr) x = p .* \bigl(B(r)^{-1} (q .* x)\bigr),$$
+that is, the upper triangular semiseparable matrix $\operatorname{triu}(pq^T) .* B(r)^{-1}$ is
+$\operatorname{diag}(p) B(r)^{-1} \operatorname{diag}(q)$. If all entries of $p$ and $q$ are
+nonzero, then every solution of $\bigl(\operatorname{triu}(pq^T) .* B(r)^{-1}\bigr) x = y$ is
+$$x = \bigl(B(r)(y ./ p)\bigr) ./ q.$$
+
+The Lean statement writes $pq^T .* B(r)^{-1}$ without $\operatorname{triu}$. This is the same
+matrix, because $B(r)^{-1}$ is upper triangular. -/
 theorem equation_12_2_9 (p q : Fin n → ℝ) (r : ℕ → ℝ) :
     (∀ x, (vecMulVec p q ⊙ (unitBidiagonal n r)⁻¹) *ᵥ x = p * ((unitBidiagonal n r)⁻¹ *ᵥ (q * x))) ∧
       ((∀ i, p i ≠ 0) → (∀ i, q i ≠ 0) → ∀ x y,
@@ -206,10 +393,19 @@ theorem equation_12_2_9 (p q : Fin n → ℝ) (r : ℕ → ℝ) :
   ⟨vecMulVec_hadamard_inv_unitBidiagonal_mulVec p q r, fun hp hq _ _ h =>
     eq_div_of_vecMulVec_hadamard_inv_unitBidiagonal_mulVec_eq r hp hq h⟩
 
-/-- **§12.2.5**: if the semiseparable `A` has an LU factorization then `U` is semiseparable, and so
-is `L` when the strict leading principal submatrices of `A` are nonsingular. The book's unqualified
-claim for `L` is false for singular `A`: `L = [1 0 0; 0 1 0; 1 0 1]`, `U = [0 0 0; 0 1 z; 0 0 1]`
-give `A = L U = U` semiseparable while `L(2:3, 1:2)` has rank two. -/
+/-- **§12.2.5** of [golub2013matrix], the LU factors of a semiseparable matrix. Let
+$A \in \mathbb{R}^{n \times n}$ be semiseparable, and let $A = LU$ with $L$ unit lower
+triangular and $U$ upper triangular. Then $U$ is semiseparable. If moreover the leading
+principal submatrices of $A$ of orders $1, \dots, n - 1$ are nonsingular, then $L$ is
+semiseparable.
+
+**Correction.** The source states that both factors are semiseparable, without a condition. The
+claim for $L$ fails for singular $A$: for $$L = \begin{bmatrix} 1 & 0 & 0 \\ 0 & 1 & 0 \\ 1 & 0
+& 1 \end{bmatrix}, \qquad U = \begin{bmatrix} 0 & 0 & 0 \\ 0 & 1 & z \\ 0 & 0 & 1
+\end{bmatrix},$$ the product $A = LU = U$ is semiseparable, but $L(2{:}3, 1{:}2)$ has rank two.
+
+The factorization is `Matrix.IsLU`, and the leading principal submatrices are
+`Matrix.strictLeadingPrincipalSubmatrix`. -/
 theorem semiseparable_lu_factors {A L U : Matrix (Fin n) (Fin n) ℝ} (h : IsLU A L U)
     (hA : A.IsSemiseparable) :
     U.IsSemiseparable ∧
@@ -220,29 +416,49 @@ theorem semiseparable_lu_factors {A L U : Matrix (Fin n) (Fin n) ℝ} (h : IsLU 
 
 section LU
 
-/-- One step of Algorithm 12.2.1 (0-based `k`, the book's `k + 1`): `τ_k = t_k u_{k+1} / u_k` (two
-roundings) and `p̃_{k+1} = p_{k+1} − p_k τ_k r_k` (three roundings, left to right). -/
+/-- One step of Algorithm 12.2.1, with the 0-based index $k$ for the source's $k + 1$:
+$\tau_k = t_k u_{k+1}/u_k$, with two roundings, and $\tilde p_{k+1} = p_{k+1} - p_k \tau_k r_k$,
+with three roundings from left to right. -/
 noncomputable def algorithm_12_2_1Step {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
     (u p : Fin n → ℝ) (t r : ℕ → ℝ) (k : Fin (n - 1)) : M (ℝ × ℝ) := do
   let τk ← rnd ((← rnd (t k * u ⟨k + 1, by omega⟩)) / u ⟨k, by omega⟩)
   let pk ← rnd (p ⟨k + 1, by omega⟩ - (← rnd ((← rnd (p ⟨k, by omega⟩ * τk)) * r k)))
   pure (τk, pk)
 
-/-- **Algorithm 12.2.1**: for `A = 𝐒(u, v, t, u .* v, p, q, r)` with `u .* v = p .* q`, the vectors
-`p̃ ∈ ℝⁿ` and `τ ∈ ℝ^{n−1}` of `A = L U`, `L = B(τ)⁻ᵀ`, `U = triu(p̃ qᵀ) .* B(r)⁻¹`:
-`for k = n−1:−1:1, τ_k = t_k u_{k+1}/u_k, p̃_{k+1} = p_{k+1} − p_k τ_k r_k, end; p̃₁ = p₁`. The loop
-stores the pair `(τ_k, p̃_{k+1})` of step `k`; `v`, `q` enter only the specification. -/
+/-- **Algorithm 12.2.1** of [golub2013matrix]. Let $u, v, p, q \in \mathbb{R}^n$ with
+$u .* v = p .* q$, let $t, r \in \mathbb{R}^{n-1}$, and let
+$A = \mathbf{S}(u, v, t, u .* v, p, q, r)$. The algorithm computes $\tilde p \in \mathbb{R}^n$
+and $\tau \in \mathbb{R}^{n-1}$ such that $A = LU$ with $L = B(\tau)^{-T}$ and $U =
+\operatorname{triu}(\tilde p q^T) .* B(r)^{-1}$. For $k = n - 1, n - 2, \dots, 1$ it sets
+$$\tau_k = t_k u_{k+1}/u_k, \qquad \tilde p_{k+1} = p_{k+1} - p_k \tau_k r_k,$$ and then it sets
+$\tilde p_1 = p_1$.
+
+Every arithmetic result passes through the rounding hook `rnd`. The loop stores the pair
+$(\tau_k, \tilde p_{k+1})$ of step $k$, computed by
+`GolubVanLoan.Chapter12.algorithm_12_2_1Step`. The vectors $v$ and $q$ enter only the
+specification. The returned $\tau$ is a sequence `ℕ → ℝ` that is zero after the index $n - 2$. -/
 noncomputable def algorithm_12_2_1 {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ) (u p : Fin n → ℝ)
     (t r : ℕ → ℝ) : M ((Fin n → ℝ) × (ℕ → ℝ)) := do
   let st ← vecLoopOn (List.finRange (n - 1)).reverse (algorithm_12_2_1Step rnd u p t r)
   pure (fun i => if h : (i : ℕ) = 0 then p i else (st ⟨i - 1, by omega⟩).2,
     fun k => if h : k < n - 1 then (st ⟨k, h⟩).1 else 0)
 
-/-- **Correctness of Algorithm 12.2.1**: if `u .* v = p .* q` and `u_k ≠ 0` for `k < n` (the book's
-`1 : n − 1`; its "has an LU factorization" does not ensure these divisions), the computed `(p̃, τ)`
-satisfy `A = B(τ)⁻ᵀ (triu(p̃ qᵀ) .* B(r)⁻¹)` for `A = 𝐒(u, v, t, u .* v, p, q, r)`, with the closed
-forms after the algorithm: `τ = (u(2:n) .* t) ./ u(1:n−1)`, `p̃ = [p₁; p(2:n) − p(1:n−1) .* τ .*
-r]`. The text's "`M = B(τ)`" should read `M = B(τ)ᵀ`. -/
+/-- **Algorithm 12.2.1** of [golub2013matrix], correctness in exact arithmetic. Let
+$u, v, p, q \in \mathbb{R}^n$ with $u .* v = p .* q$ and $u_k \neq 0$ for $k = 1, \dots, n - 1$,
+let $t$ and $r$ be sequences, and let $A = \mathbf{S}(u, v, t, u .* v, p, q, r)$. Then the
+vectors $\tilde p$ and $\tau$ that the algorithm computes in exact arithmetic give the LU
+factorization $$A = B(\tau)^{-T} \bigl(\operatorname{triu}(\tilde p q^T) .* B(r)^{-1}\bigr),$$
+and they have the closed forms $$\tau = (u(2{:}n) .* t) ./ u(1{:}n-1), \qquad \tilde p =
+\begin{bmatrix} p_1 \\ p(2{:}n) - p(1{:}n-1) .* \tau .* r \end{bmatrix}.$$
+
+**Correction.** The source assumes only that $A$ has an LU factorization. This does not ensure
+that the divisions by $u_k$ are defined, so the statement assumes $u_k \neq 0$ for
+$k = 1, \dots, n - 1$.
+
+**Typo.** The text's "$M = B(\tau)$" should read $M = B(\tau)^T$.
+
+The factorization is `Matrix.IsLU`. The Lean statement writes $\tilde p q^T .* B(r)^{-1}$
+without $\operatorname{triu}$, which is the same matrix because $B(r)^{-1}$ is upper triangular. -/
 theorem algorithm_12_2_1_spec (u v p q : Fin n → ℝ) (t r : ℕ → ℝ) (huv : u * v = p * q)
     (hu : ∀ k : Fin n, (k : ℕ) + 1 < n → u k ≠ 0) :
     IsLU (quasiseparableOf u v t (u * v) p q r)
@@ -286,11 +502,18 @@ end LU
 
 /-! ### The Givens-vector representation and QR (§12.2.6–12.2.7) -/
 
-/-- **(12.2.11)**, the Givens-vector representation: a lower triangular semiseparable `A_L` with
-`(A_L)_{n1} ≠ 0` equals `B(s)⁻ᵀ .* tril(c vᵀ)`: `(A_L)_{ij} = c_i s_j ⋯ s_{i−1} v_j` for `j ≤ i`,
-with `c = [c₁, …, c_{n−1}, 1]` and `(c_k, s_k)` cosine–sine pairs, `s_k ≠ 0`. The hypothesis
-`(A_L)_{n1} ≠ 0` is what the book's "it is not hard to show" needs (with a zero first column the
-form forces `A_L` diagonal). -/
+/-- **Equation (12.2.11)** of [golub2013matrix], the Givens-vector representation. Let
+$A_L \in \mathbb{R}^{n \times n}$ be lower triangular and semiseparable with
+$(A_L)_{n1} \neq 0$. Then there are cosine–sine pairs $(c_k, s_k)$, with $c_k^2 + s_k^2 = 1$ and
+$s_k \neq 0$, and a vector $v \in \mathbb{R}^n$ such that $$(A_L)_{ij} = c_i s_j s_{j+1} \cdots
+s_{i-1} v_j \qquad (j \le i),$$ with $c_n = 1$. That is,
+$A_L = B(s)^{-T} .* \operatorname{tril}(cv^T)$ with $c = (c_1, \dots, c_{n-1}, 1)$.
+
+**Correction.** The source states the representation without the hypothesis $(A_L)_{n1} \neq 0$.
+Its argument ("it is not hard to show") needs this hypothesis: with $s_k \neq 0$ and $c_n = 1$,
+the representation forces the first column to vanish when $(A_L)_{n1} = 0$.
+
+Here $n = m + 1$, and the pairs are sequences `ℕ → ℝ`. -/
 theorem equation_12_2_11 {m : ℕ} {A : Matrix (Fin (m + 1)) (Fin (m + 1)) ℝ}
     (hA : A.IsSemiseparable) (hL : A.IsLowerTriangular) (h0 : A (Fin.last m) 0 ≠ 0) :
     ∃ c s : ℕ → ℝ, (∀ k, c k ^ 2 + s k ^ 2 = 1) ∧ (∀ k, s k ≠ 0) ∧ ∃ v : Fin (m + 1) → ℝ,
@@ -299,10 +522,21 @@ theorem equation_12_2_11 {m : ℕ} {A : Matrix (Fin (m + 1)) (Fin (m + 1)) ℝ}
         else 0 :=
   exists_givensVector_rep hA hL h0
 
-/-- **(12.2.14)** and the sentences after it: with `Qᵀ = G₁ ⋯ G_{n−1}` built from the Givens-vector
-representation of `tril(A)`, `Qᵀ tril(A) = triu((𝒟_n c) vᵀ) .* B(s)⁻¹`, `Qᵀ` is upper Hessenberg and
-`Qᵀ triu(A, 1)` is upper triangular, so `Qᵀ A = R` is upper triangular (a QR factorization,
-P12.2.9). -/
+/-- **Equation (12.2.14)** of [golub2013matrix] and the sentences after it. Let $n = N + 1$, let
+$(c_k, s_k)$ be cosine–sine pairs, $c_k^2 + s_k^2 = 1$, and let $A \in \mathbb{R}^{n \times n}$
+have the lower triangle $\operatorname{tril}(A) = B(s)^{-T} .* \operatorname{tril}(cv^T)$ of the
+Givens-vector representation (12.2.11), with $c = (c_1, \dots, c_{n-1}, 1)$. Let
+$Q^T = G_1 \cdots G_{n-1}$, where $G_k$ is the rotation $\begin{bmatrix} c_k & s_k \\ -s_k & c_k
+\end{bmatrix}$ in the plane $(k, k+1)$. Then $$Q^T \operatorname{tril}(A) =
+\operatorname{triu}\bigl((\mathcal{D}_n c) v^T\bigr) .* B(s)^{-1},$$ where
+$\mathcal{D}_n c = (1, c_1, \dots, c_{n-1})$. Moreover $Q^T$ is upper Hessenberg,
+$Q^T \operatorname{triu}(A, 1)$ is upper triangular, and so $Q^T A = R$ is upper triangular.
+Since each $G_k$ is orthogonal, this is a QR factorization of $A$.
+
+The source cites Problem P12.2.9 for the QR factorization. The lower triangle
+$\operatorname{tril}(A)$ is `A.strictLower + A.diagPart`, and $Q^T$ is `Matrix.givensChain`. The
+Lean statement writes the first product without $\operatorname{triu}$, which is the same matrix
+because $B(s)^{-1}$ is upper triangular. -/
 theorem equation_12_2_14 {N : ℕ} {c s : ℕ → ℝ} (hcs : ∀ k, c k ^ 2 + s k ^ 2 = 1)
     {A : Matrix (Fin (N + 1)) (Fin (N + 1)) ℝ} {v : Fin (N + 1) → ℝ}
     (hA : ∀ i j : Fin (N + 1), j ≤ i →
@@ -329,37 +563,46 @@ theorem equation_12_2_14 {N : ℕ} {c s : ℕ → ℝ} (hcs : ∀ k, c k ^ 2 + s
   rw [Matrix.add_apply, h2 hij, add_zero, hadamard_apply, inv_unitBidiagonal, of_apply,
     ite_eq_right (not_le.2 hij'), mul_zero]
 
-/-! #### Algorithm 12.2.2 -/
+/-! ### Algorithm 12.2.2 -/
 
-/-- The state of Algorithm 12.2.2 before the step `k` (0-based): `ũ_{k+1}`, `f̃_{k+1}` and the
-arrays `c`, `s`, `f`, `g`, `h` (the entry `h_{k+1}` holding the book's `h̃_{k+1}`). -/
+/-- **Algorithm 12.2.2** of [golub2013matrix], the state of the loop before the step $k$ (0-based).
+It consists of the scalars $\tilde u_{k+1}$ and $\tilde f_{k+1}$ and the arrays $c$, $s$, $f$,
+$g$ and $h$. The entry $h_{k+1}$ holds the source's $\tilde h_{k+1}$. -/
 structure SemiseparableQRState (N : ℕ) where
-  /-- The book's `ũ`. -/
+  /-- The scalar $\tilde u$ of the source. -/
   ut : ℝ
-  /-- The book's `f̃`. -/
+  /-- The scalar $\tilde f$ of the source. -/
   ft : ℝ
-  /-- The cosines `c_k`. -/
+  /-- The cosines $c_k$. -/
   c : ℕ → ℝ
-  /-- The sines `s_k`. -/
+  /-- The sines $s_k$. -/
   s : ℕ → ℝ
-  /-- The vector `f`. -/
+  /-- The vector $f$. -/
   f : Fin (N + 1) → ℝ
-  /-- The vector `g`. -/
+  /-- The vector $g$. -/
   g : Fin (N + 1) → ℝ
-  /-- The vector `h`. -/
+  /-- The vector $h$. -/
   h : Fin (N + 1) → ℝ
 
 section QR
 
 variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ) {N : ℕ}
 
-/-- One step of Algorithm 12.2.2 (0-based `k`, the book's `k + 1`): "Determine `c_k` and `s_k`
-so that `[c_k s_k; −s_k c_k] [u_k; ũ_{k+1}] = [ũ_k; 0]`; `f̃_k = s_k f̃_{k+1}`,
-`f_{k+1} = c_k f̃_{k+1}`; `[h_k; h_{k+1}] = [c_k s_k; −s_k c_k] [p_k; h_{k+1}]`;
-`g_k = (ũ_k v_k − h_k q_k)/f̃_k`". The pair is chapter 5's Algorithm 5.1.3 on `(u_k, ũ_{k+1})`,
-whose rotation is the transpose of the book's here (so `s_k` is its sine negated, exactly); `ũ_k`
-is the rotated first entry; `g_k` uses `ũ_k`, as the derivation does (the book's display prints
-`u_k`). Every product, sum and quotient is rounded. -/
+/-- **Algorithm 12.2.2** of [golub2013matrix], one step of the loop, with the 0-based index $k$ for
+the source's $k + 1$. The step determines $c_k$ and $s_k$ such that $$\begin{bmatrix} c_k & s_k
+\\ -s_k & c_k \end{bmatrix} \begin{bmatrix} u_k \\ \tilde u_{k+1} \end{bmatrix} =
+\begin{bmatrix} \tilde u_k \\ 0 \end{bmatrix},$$ sets $\tilde f_k = s_k \tilde f_{k+1}$ and
+$f_{k+1} = c_k \tilde f_{k+1}$, computes $$\begin{bmatrix} h_k \\ h_{k+1} \end{bmatrix} =
+\begin{bmatrix} c_k & s_k \\ -s_k & c_k \end{bmatrix} \begin{bmatrix} p_k \\ h_{k+1}
+\end{bmatrix},$$ and sets $g_k = (\tilde u_k v_k - h_k q_k)/\tilde f_k$.
+
+**Typo.** The display of the source computes $g_k$ with $u_k$ for $\tilde u_k$. The derivation
+in the source uses $\tilde u_k$.
+
+The pair $(c_k, s_k)$ is Algorithm 5.1.3, `GolubVanLoan.Chapter05.algorithm_5_1_3`, applied to
+$(u_k, \tilde u_{k+1})$. Its rotation is the transpose of the rotation here, so $s_k$ is its
+sine with the sign changed, which is exact. The value $\tilde u_k$ is the first entry of the
+rotated vector. Every product, sum and quotient is rounded. -/
 noncomputable def algorithm_12_2_2Step (u v p q : Fin (N + 1) → ℝ) (st : SemiseparableQRState N)
     (k : Fin N) : M (SemiseparableQRState N) := do
   let cs ← Chapter05.algorithm_5_1_3 rnd (u k.castSucc) st.ut
@@ -380,19 +623,19 @@ noncomputable def algorithm_12_2_2Step (u v p q : Fin (N + 1) → ℝ) (st : Sem
       g := Function.update st.g k.castSucc gk
       h := Function.update (Function.update st.h k.succ hk') k.castSucc hk }
 
-/-- **Algorithm 12.2.2.** "Suppose `u`, `v`, `p` and `q` are `n`-vectors that satisfy `u .* v =
-p .* q` and `u_n ≠ 0`. If `A = tril(u vᵀ) + triu(p qᵀ, 1)`, then this algorithm computes cosine-sine
-pairs `{c₁, s₁}, …, {c_{n−1}, s_{n−1}}` and vectors `f, g, h ∈ ℝⁿ` so that if `Q` is defined by
-(12.2.12) and (12.2.13), then `QᵀA = R = triu(f gᵀ + h qᵀ)`":
-```
-ũ_n = u_n, f̃_n = u_n, g_n = v_n, h_n = 0
-for k = n − 1 : −1 : 1
-    (the step algorithm_12_2_2Step)
-end
-f₁ = f̃₁
-```
-On `Fin (N + 1)` (`n = N + 1`), 0-based; it returns `(c, s, f, g, h)`, the pairs `ℕ`-indexed for
-`Matrix.givensChain`. -/
+/-- **Algorithm 12.2.2** of [golub2013matrix]. Let $u, v, p, q \in \mathbb{R}^n$ with
+$u .* v = p .* q$ and $u_n \neq 0$, and let $A = \operatorname{tril}(uv^T) +
+\operatorname{triu}(pq^T, 1)$. The algorithm computes cosine–sine pairs
+$(c_1, s_1), \dots, (c_{n-1}, s_{n-1})$ and vectors $f, g, h \in \mathbb{R}^n$ such that
+$Q^T A = R = \operatorname{triu}(fg^T + hq^T)$, where $Q$ is defined by (12.2.12) and (12.2.13).
+It sets $\tilde u_n = u_n$, $\tilde f_n = u_n$, $g_n = v_n$ and $h_n = 0$, performs the step
+`GolubVanLoan.Chapter12.algorithm_12_2_2Step` for $k = n - 1, n - 2, \dots, 1$, and sets
+$f_1 = \tilde f_1$.
+
+The program works on `Fin (N + 1)`, so $n = N + 1$, with 0-based indices. It returns
+$(c, s, f, g, h)$, with the pairs as sequences `ℕ → ℝ`, the form that `Matrix.givensChain`
+takes. The hypotheses on $u$, $v$, $p$ and $q$ belong to the specification
+`GolubVanLoan.Chapter12.algorithm_12_2_2_spec`. -/
 noncomputable def algorithm_12_2_2 (u v p q : Fin (N + 1) → ℝ) :
     M ((ℕ → ℝ) × (ℕ → ℝ) × (Fin (N + 1) → ℝ) × (Fin (N + 1) → ℝ) × (Fin (N + 1) → ℝ)) := do
   let st ← (List.finRange N).reverse.foldlM (algorithm_12_2_2Step rnd u v p q)
@@ -402,20 +645,23 @@ noncomputable def algorithm_12_2_2 (u v p q : Fin (N + 1) → ℝ) :
 
 end QR
 
-/-- The rotation block of Algorithm 12.2.2, `[c s; −s c]`. -/
+/-- The rotation block $\begin{bmatrix} c_k & s_k \\ -s_k & c_k \end{bmatrix}$ of Algorithm 12.2.2.
+-/
 private abbrev rotBlock (c s : ℕ → ℝ) (k : ℕ) : Matrix (Fin 2) (Fin 2) ℝ := !![c k, s k; -s k, c k]
 
-/-- The matrix `A⁽ᵗ⁾ = G_t ⋯ G_{n−1} A` of the book's derivation, from the state before step
-`t − 1`: rows above `t` are those of `A`; row `t` is `ũ_t v_j` left of the diagonal and
-`f̃_t g_j + h̃_t q_j` from it on; rows below `t` are `triu(f gᵀ + h qᵀ)`. -/
+/-- The matrix $A^{(t)} = G_t \cdots G_{n-1} A$ of the source's derivation, built from the state
+before the step $t - 1$: the rows above $t$ are those of $A$, row $t$ is $\tilde u_t v_j$ left
+of the diagonal and $\tilde f_t g_j + \tilde h_t q_j$ from the diagonal on, and the rows below
+$t$ are those of $\operatorname{triu}(fg^T + hq^T)$. -/
 private def stage {N : ℕ} (u v p q : Fin (N + 1) → ℝ) (t : ℕ) (st : SemiseparableQRState N) :
     Matrix (Fin (N + 1)) (Fin (N + 1)) ℝ :=
   of fun i j => if (i : ℕ) < t then (if j ≤ i then u i * v j else p i * q j)
     else if (i : ℕ) = t then (if (j : ℕ) < t then st.ut * v j else st.ft * st.g j + st.h i * q j)
     else if j < i then 0 else st.f i * st.g j + st.h i * q j
 
-/-- One rotation of the derivation: `G_k A⁽ᵏ⁺¹⁾ = A⁽ᵏ⁾`, for a pair `(c, s)` that annihilates
-`ũ_{k+1}` (`−s u_k + c ũ_{k+1} = 0`) and a nonzero `f̃_k = s f̃_{k+1}`. -/
+/-- One rotation of the derivation, $G_k A^{(k+1)} = A^{(k)}$, for a pair $(c, s)$ that annihilates
+$\tilde u_{k+1}$, that is $-s u_k + c \tilde u_{k+1} = 0$, and with
+$\tilde f_k = s \tilde f_{k+1} \neq 0$. -/
 private theorem stage_step {N : ℕ} (u v p q : Fin (N + 1) → ℝ) (st : SemiseparableQRState N)
     (a : Fin N) {c s : ℝ} {c' s' : ℕ → ℝ} (hz : -s * u a.castSucc + c * st.ut = 0)
     (hft : s * st.ft ≠ 0) :
@@ -446,19 +692,22 @@ private theorem stage_step {N : ℕ} (u v p q : Fin (N + 1) → ℝ) (st : Semis
     ring
   · linear_combination (v j) * hz
 
-/-- A `givensFactor` only reads its own block. -/
+/-- A factor `Matrix.givensFactor N M k` of a chain depends only on the block $M_k$. -/
 private theorem givensFactor_congr {N : ℕ} {M M' : ℕ → Matrix (Fin 2) (Fin 2) ℝ} {k : ℕ}
     (h : M k = M' k) : givensFactor N M k = givensFactor N M' k := by
   simp only [givensFactor, h]
 
-/-- The factor `G_k` of the chain, `k < N`, is the block in the plane `(k, k + 1)`. -/
+/-- For $k < N$, the factor $G_k$ of a chain is the block $M_k$ embedded in the plane $(k, k + 1)$.
+-/
 private theorem givensFactor_of_lt {N : ℕ} (M : ℕ → Matrix (Fin 2) (Fin 2) ℝ) (a : Fin N) :
     givensFactor N M a = planeEmbed a.castSucc a.succ (M a) := by
   rw [givensFactor, dite_eq_left_of_eq_true (eq_true a.isLt)]
   rfl
 
-/-- The exact run of one step of Algorithm 12.2.2: the rotation `[c s; −s c]` of Algorithm 5.1.3
-zeroing `ũ_{k+1}` against `u_k`, and the updates of `ũ`, `f̃`, `c`, `s`, `f`, `g`, `h`. -/
+/-- In exact arithmetic, one step of Algorithm 12.2.2 takes the rotation
+$\begin{bmatrix} c & s \\ -s & c \end{bmatrix}$ from Algorithm 5.1.3 on $(u_k, \tilde u_{k+1})$,
+with $s$ the sine of Algorithm 5.1.3 with the sign changed, and updates $\tilde u$, $\tilde f$,
+$c$, $s$, $f$, $g$ and $h$ by the formulas of the step, without rounding. -/
 theorem algorithm_12_2_2Step_pure {N : ℕ} (u v p q : Fin (N + 1) → ℝ)
     (st : SemiseparableQRState N) (a : Fin N) :
     Id.run (algorithm_12_2_2Step pure u v p q st a) =
@@ -488,13 +737,21 @@ theorem algorithm_12_2_2Step_pure {N : ℕ} (u v p q : Fin (N + 1) → ℝ)
               st.h a.succ) } :=
   rfl
 
-/-- **Correctness of Algorithm 12.2.2**: if `u_n ≠ 0` and `A = tril(u vᵀ) + triu(p qᵀ, 1)`, the
-exact run `(c, s, f, g, h)` gives an orthogonal `Qᵀ = G₁ ⋯ G_{n−1}` ((12.2.12)–(12.2.13), the
-`Matrix.givensChain` of the blocks `[c_k s_k; −s_k c_k]`) with `QᵀA = R = triu(f gᵀ + h qᵀ)`, and
-"the `s_k` are nonzero because `|ũ_k| = ‖u(k:n)‖₂ ≠ 0`", so that every division `/ f̃_k` of the
-algorithm is by `f̃_k = s_k ⋯ s_{n−1} u_n ≠ 0`. The hypothesis `u .* v = p .* q` is not needed.
-Downward induction on the book's `A⁽ᵏ⁾ = G_k ⋯ G_{n−1} A`, one rotation per step
-(`stage_step`). -/
+/-- **Algorithm 12.2.2** of [golub2013matrix], correctness in exact arithmetic. Let $n = N + 1$, let
+$u, v, p, q \in \mathbb{R}^n$ with $u_n \neq 0$, and let $A = \operatorname{tril}(uv^T) +
+\operatorname{triu}(pq^T, 1)$. Let $(c, s, f, g, h)$ be the output of the algorithm in exact
+arithmetic, and let $Q^T = G_1 \cdots G_{n-1}$ as in (12.2.12)–(12.2.13), with the rotations
+$G_k = \begin{bmatrix} c_k & s_k \\ -s_k & c_k \end{bmatrix}$ in the planes $(k, k+1)$. Then
+$Q^T$ is orthogonal, $$Q^T A = R = \operatorname{triu}(fg^T + hq^T),$$ and $s_k \neq 0$ for
+$k = 1, \dots, n - 1$.
+
+**Generalization.** The source assumes $u .* v = p .* q$. The statement does not need this
+hypothesis.
+
+The source argues that the $s_k$ are nonzero because $|\tilde u_k| = \|u(k{:}n)\|_2 \neq 0$. So
+every division of the algorithm by $\tilde f_k = s_k \cdots s_{n-1} u_n$ is by a nonzero number.
+The matrix $Q^T$ is `Matrix.givensChain` of the blocks $G_k$. The proof is a downward induction
+on the source's $A^{(k)} = G_k \cdots G_{n-1} A$, one rotation per step. -/
 theorem algorithm_12_2_2_spec {N : ℕ} (u v p q : Fin (N + 1) → ℝ) (hu : u (Fin.last N) ≠ 0) :
     givensChain N (fun k => !![(Id.run (algorithm_12_2_2 pure u v p q)).1 k,
         (Id.run (algorithm_12_2_2 pure u v p q)).2.1 k;
@@ -644,10 +901,13 @@ theorem algorithm_12_2_2_spec {N : ℕ} (u v p q : Fin (N + 1) → ℝ) (hu : u 
       · rw [ite_eq_left hji, ite_eq_right (not_le.2 hji)]
       · rw [ite_eq_right hji, ite_eq_left (not_lt.1 hji)]
 
-/-- **(12.2.16)**: for `A = tril(u vᵀ) + triu(p qᵀ, 1)` (the generator representation
-(12.2.15)) with `u_n ≠ 0`, "`R` is the upper triangular portion of a rank-2 matrix, i.e.,
-`R = triu(f gᵀ + h qᵀ)`, `f, g, h ∈ ℝⁿ`": some orthogonal `Qᵀ` has `QᵀA = triu(f gᵀ + h qᵀ)` —
-the one of Algorithm 12.2.2 (`algorithm_12_2_2_spec`). -/
+/-- **Equation (12.2.16)** of [golub2013matrix]. Let $u, v, p, q \in \mathbb{R}^n$ with
+$u_n \neq 0$, and let $A = \operatorname{tril}(uv^T) + \operatorname{triu}(pq^T, 1)$, the
+generator representation (12.2.15). Then there are an orthogonal matrix $Q^T$ and vectors
+$f, g, h \in \mathbb{R}^n$ with $$Q^T A = R = \operatorname{triu}(fg^T + hq^T).$$ So $R$ is the
+upper triangular part of a matrix of rank at most two.
+
+The matrix $Q^T$ is that of Algorithm 12.2.2, `GolubVanLoan.Chapter12.algorithm_12_2_2_spec`. -/
 theorem equation_12_2_16 {N : ℕ} (u v p q : Fin (N + 1) → ℝ) (hu : u (Fin.last N) ≠ 0) :
     ∃ Qt ∈ orthogonalGroup (Fin (N + 1)) ℝ, ∃ f g h : Fin (N + 1) → ℝ,
       Qt * (of fun i j => if j ≤ i then u i * v j else p i * q j) =
@@ -657,9 +917,14 @@ theorem equation_12_2_16 {N : ℕ} (u v p q : Fin (N + 1) → ℝ) (hu : u (Fin.
 
 /-! ### Banded inverses (§12.2.8) -/
 
-/-- **§12.2.8**: a nonsingular `{p, q}`-generator representable matrix (`tril(A, p−1) = tril(U Vᵀ,
-p−1)`, `triu(A, −q+1) = triu(P Qᵀ, −q+1)`, `U, V ∈ ℝ^{n×p}`, `P, Q ∈ ℝ^{n×q}`) has an inverse of
-lower bandwidth `p` and upper bandwidth `q`. -/
+/-- **§12.2.8** of [golub2013matrix], banded inverses. Let $A \in \mathbb{R}^{n \times n}$ be
+nonsingular and $\{p, q\}$-generator representable: there are $U, V \in \mathbb{R}^{n \times p}$
+and $P, Q \in \mathbb{R}^{n \times q}$ with $\operatorname{tril}(A, p - 1) =
+\operatorname{tril}(UV^T, p - 1)$ and $\operatorname{triu}(A, -q + 1) =
+\operatorname{triu}(PQ^T, -q + 1)$. Then $A^{-1}$ has lower bandwidth $p$ and upper bandwidth
+$q$: $[A^{-1}]_{ij} = 0$ if $i > j + p$ or $j > i + q$.
+
+The hypothesis is `Matrix.IsGeneratorRepresentableOfOrder`. -/
 theorem inv_banded_of_generatorRepresentable {A : Matrix (Fin n) (Fin n) ℝ} {p q : ℕ}
     (h : A.IsGeneratorRepresentableOfOrder p q) (hA : IsUnit A) :
     A⁻¹.HasLowerBandwidth p ∧ A⁻¹.HasUpperBandwidth q :=
@@ -667,10 +932,19 @@ theorem inv_banded_of_generatorRepresentable {A : Matrix (Fin n) (Fin n) ℝ} {p
 
 /-! ### The orthogonal Hessenberg eigenproblem (§12.2.10) -/
 
-/-- **(12.2.18)**: an orthogonal upper Hessenberg `H` with positive subdiagonal, `det H = 1` and
-even order (the cases the text deflates away) is `G₁ ⋯ G_{n−1} G_n` with the reflections `G_k =
-G(φ_k)`, `0 < φ_k < π`, in the planes `(k, k+1)` and `G_n = diag(1, …, 1, −1)`. The book assumes a
-nonzero subdiagonal; positivity is reached by a diagonal `±1` similarity. -/
+/-- **Equation (12.2.18)** of [golub2013matrix]. Let $H \in \mathbb{R}^{n \times n}$ be orthogonal
+and upper Hessenberg, with positive subdiagonal entries and $\det H = 1$, and let $n$ be even.
+Then there are angles $\varphi_1, \dots, \varphi_{n-1}$ with $0 < \varphi_k < \pi$ and $$H = G_1
+\cdots G_{n-1} G_n,$$ where $G_k$ is the reflection $R(\varphi_k) = \begin{bmatrix}
+-\cos\varphi_k & \sin\varphi_k \\ \sin\varphi_k & \cos\varphi_k \end{bmatrix}$ in the plane
+$(k, k+1)$ for $k < n$, and $G_n = \operatorname{diag}(1, \dots, 1, -1)$.
+
+**Correction.** The source assumes only a nonzero subdiagonal. A positive subdiagonal is reached
+by a diagonal similarity with entries $\pm 1$. Even order and $\det H = 1$ are the cases that
+remain after the text deflates the others.
+
+Here $n = N + 1$, $R(\varphi)$ is `Matrix.planeReflector φ`, and $G_1 \cdots G_{n-1}$ is
+`Matrix.givensChain`. -/
 theorem equation_12_2_18 {N : ℕ} {H : Matrix (Fin (N + 1)) (Fin (N + 1)) ℝ}
     (hH : H ∈ orthogonalGroup (Fin (N + 1)) ℝ) (hHess : H.IsUpperHessenberg)
     (hsub : ∀ i : Fin N, 0 < H i.succ i.castSucc) (hdet : H.det = 1) (heven : Even (N + 1)) :
@@ -679,9 +953,14 @@ theorem equation_12_2_18 {N : ℕ} {H : Matrix (Fin (N + 1)) (Fin (N + 1)) ℝ}
         diagonal fun i : Fin (N + 1) => if (i : ℕ) = N then -1 else 1 :=
   exists_orthogonalHessenberg_eq_prod_planeReflector hH hHess hsub hdet heven
 
-/-- **(12.2.19)**: the eigenvalues of an orthogonal upper Hessenberg `H ∈ ℝ^{2m×2m}` with `det H =
-1` are `cos θ_k ± i sin θ_k = e^{± iθ_k}`, `k = 1 : m` — `m` conjugate pairs on the unit circle — as
-the characteristic polynomial of `H` over `ℂ`. (The Hessenberg structure plays no role.) -/
+/-- **Equation (12.2.19)** of [golub2013matrix]. Let $H \in \mathbb{R}^{2m \times 2m}$ be orthogonal
+and upper Hessenberg with $\det H = 1$. Then there are angles $\theta_1, \dots, \theta_m$ such
+that the eigenvalues of $H$ are $\cos\theta_k \pm i \sin\theta_k = e^{\pm i\theta_k}$ for
+$k = 1, \dots, m$: $m$ conjugate pairs on the unit circle. Precisely, the characteristic
+polynomial of $H$ over $\mathbb{C}$ is $$\prod_{k=1}^m (x - e^{i\theta_k})(x -
+e^{-i\theta_k}).$$
+
+The Hessenberg structure is not used in the proof. -/
 theorem equation_12_2_19 {m : ℕ} {H : Matrix (Fin (2 * m)) (Fin (2 * m)) ℝ}
     (hH : H ∈ orthogonalGroup (Fin (2 * m)) ℝ) (_hHess : H.IsUpperHessenberg) (hdet : H.det = 1) :
     ∃ θ : Fin m → ℝ, (H.map (algebraMap ℝ ℂ)).charpoly =
@@ -690,25 +969,43 @@ theorem equation_12_2_19 {m : ℕ} {H : Matrix (Fin (2 * m)) (Fin (2 * m)) ℝ}
   exists_charpoly_eq_prod_of_mem_specialOrthogonalGroup
     (mem_specialOrthogonalGroup_iff.2 ⟨hH, hdet⟩)
 
-/-- **§12.2.10**: "(12.2.4) and (12.2.18) tell us that `H` is quasiseparable": every orthogonal
-upper Hessenberg matrix is quasiseparable. -/
+/-- **§12.2.10** of [golub2013matrix], quasiseparability. Every orthogonal upper Hessenberg matrix
+$H \in \mathbb{R}^{n \times n}$ is quasiseparable. The source derives this from (12.2.4) and
+(12.2.18). -/
 theorem orthogonalHessenberg_isQuasiseparable {H : Matrix (Fin n) (Fin n) ℝ}
     (hH : H ∈ orthogonalGroup (Fin n) ℝ) (hHess : H.IsUpperHessenberg) : H.IsQuasiseparable :=
   Matrix.orthogonalHessenberg_isQuasiseparable hH hHess
 
-/-- **Fact 1 of §12.2.10**: `H = G₁ ⋯ G_n` is similar to `H̃ = H_o H_e` with
-`H_o = G₁ G₃ ⋯ G_{n−1} = diag(R(φ₁), R(φ₃), …)` and `H_e = G₂ G₄ ⋯ G_n = diag(1, R(φ₂), …,
-R(φ_{n−2}), −1)` (0-based, the even-indexed and odd-indexed factors of `Matrix.reflectorFactor`). -/
+/-- **Fact 1 of §12.2.10** of [golub2013matrix]. Let $\varphi_1, \dots, \varphi_{n-1}$ be angles,
+let $G_1, \dots, G_n$ be the factors of the product form (12.2.18), and let
+$H = G_1 \cdots G_n$. Let $H_o = G_1 G_3 \cdots$ be the product of the factors with odd index
+and $H_e = G_2 G_4 \cdots$ the product of the factors with even index. Then $H$ is similar to
+$\tilde H = H_o H_e$. For even $n$, $H_o = \operatorname{diag}(R(\varphi_1), R(\varphi_3),
+\dots, R(\varphi_{n-1}))$ and $H_e = \operatorname{diag}(1, R(\varphi_2), \dots,
+R(\varphi_{n-2}), -1)$.
+
+The factors are `Matrix.reflectorFactor N φ`, with $n = N + 1$, and $H$ is
+`prodFwd (Matrix.reflectorFactor N φ) (N + 1)`. With 0-based indices, $H_o$ is the product
+`prodFwdEven` of the factors with even index and $H_e$ is the product `prodFwdOdd` of the
+factors with odd index. The statement holds for every order $n$ and all angles. -/
 theorem orthogonalHessenberg_fact_1 {N : ℕ} (φ : ℕ → ℝ) :
     (prodFwd (reflectorFactor N φ) (N + 1)).IsSimilar
       (prodFwdEven (reflectorFactor N φ) (N + 1) * prodFwdOdd (reflectorFactor N φ) (N + 1)) :=
   isSimilar_prod_planeReflector_oddEven φ
 
-/-- **Fact 2 of §12.2.10**: for `H = G₁ ⋯ G_n` of (12.2.18) of order `n = 2m` with eigenvalues
-`e^{± iθ_k}` (12.2.19), `C = (H_o + H_e)/2` and `S = (H_o − H_e)/2` are symmetric tridiagonal with
-`λ(C) = {± cos(θ_k/2)}` and `λ(S) = {± sin(θ_k/2)}`. The angles `θ` exist by (12.2.19), `H` being
-special orthogonal (`Matrix.prodFwd_reflectorFactor_mem_specialOrthogonalGroup`: a product of `2m`
-reflections). -/
+/-- **Fact 2 of §12.2.10** of [golub2013matrix]. Let $n = 2m$, let $\varphi_1, \dots, \varphi_{n-1}$
+be angles, let $H = G_1 \cdots G_n$ be the product form (12.2.18), and let $H_o$ and $H_e$ be as
+in Fact 1. Then there are angles $\theta_1, \dots, \theta_m$ such that the characteristic
+polynomial of $H$ over $\mathbb{C}$ is $\prod_k (x - e^{i\theta_k})(x - e^{-i\theta_k})$, and
+such that the matrices $C = (H_o + H_e)/2$ and $S = (H_o - H_e)/2$ are symmetric and tridiagonal
+with the characteristic polynomials $$\prod_{k=1}^m \bigl(x - \cos(\theta_k/2)\bigr)\bigl(x +
+\cos(\theta_k/2)\bigr) \quad \text{and} \quad \prod_{k=1}^m \bigl(x -
+\sin(\theta_k/2)\bigr)\bigl(x + \sin(\theta_k/2)\bigr).$$ So
+$\lambda(C) = \{\pm\cos(\theta_k/2)\}$ and $\lambda(S) = \{\pm\sin(\theta_k/2)\}$.
+
+The angles $\theta_k$ exist by (12.2.19), because $H$ is a product of $2m$ reflections and so
+special orthogonal (`Matrix.prodFwd_reflectorFactor_mem_specialOrthogonalGroup`). No condition
+on the angles $\varphi_k$ is needed. -/
 theorem orthogonalHessenberg_fact_2 {N m : ℕ} (hNm : N + 1 = 2 * m) (φ : ℕ → ℝ) :
     ∃ θ : Fin m → ℝ,
       ((prodFwd (reflectorFactor N φ) (N + 1)).map (algebraMap ℝ ℂ)).charpoly =

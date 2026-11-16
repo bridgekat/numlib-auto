@@ -10,51 +10,131 @@ import Numlib.Analysis.Matrix.Function.Sqrt
 import NumlibSurface.GolubVanLoan.Chapter09.Section03
 
 /-!
-# Golub–Van Loan §9.4: the sign, square root, and log of a matrix
+# Golub and Van Loan, Section 9.4: The sign, square root, and log of a matrix
 
-Surface file for [golub2013matrix] §9.4: the matrix sign function, its Jordan-form expression and
-the half-plane projector; Newton's sign iteration (9.4.1) with (9.4.2)–(9.4.4), its convergence and
-the Newton–Schulz step (9.4.5); the principal square root, Newton's square-root iteration (9.4.7)
-and the Denman–Beavers iteration (9.4.8)–(9.4.10) with `sign([0 A; I 0])`; the polar decomposition
-(Theorem 9.4.1), its factors and Newton's polar iteration (9.4.11)–(9.4.12); the principal logarithm
-with the Maclaurin and Gregory series, the `(3,3)` Padé approximant of `log(1 + x)` and the identity
-behind inverse scaling and squaring.
+This module formalizes §9.4 of [golub2013matrix], three special matrix functions and the iterations
+that compute them. For the matrix sign function $\operatorname{sign}(A)$ it proves the Jordan-form
+expression, the half-plane projector $(I + \operatorname{sign}(A))/2$, the properties
+(9.4.2)–(9.4.4) of Newton's iteration (9.4.1) and its quadratic convergence, and the Newton–Schulz
+step (9.4.5). For the principal square root $A^{1/2}$ it proves existence and uniqueness, the
+convergence of Newton's square-root iteration (9.4.7), and the properties (9.4.8)–(9.4.10) of the
+Denman–Beavers iteration, with $\operatorname{sign}\left(\begin{bmatrix} 0 & A \\ I & 0
+\end{bmatrix}\right)$. For the polar decomposition it proves existence (Theorem 9.4.1), the formulas
+for the factors, Newton's polar iteration (9.4.11)–(9.4.12) and its convergence, the expression of
+the polar factor through $\operatorname{sign}\left(\begin{bmatrix} 0 & A \\ A^T & 0
+\end{bmatrix}\right)$, and a corrected form of the Li–Sun perturbation bound. For the principal
+logarithm $\log(A)$ it proves existence and uniqueness of the real logarithm, the Maclaurin and
+Gregory series, the $(3, 3)$ Padé approximant of $\log(1 + x)$, and the identity behind inverse
+scaling and squaring.
+
+The proofs specialize the backbone modules `Numlib.Analysis.Matrix.Function.Sign`,
+`Numlib.Analysis.Matrix.Function.Sqrt`, `Numlib.Analysis.Matrix.Function.Log`,
+`Numlib.Analysis.Matrix.Function.Polar` and `Numlib.LinearAlgebra.Matrix.Polar`.
+
+## Main definitions
+
+* §9.4.2, `GolubVanLoan.Chapter09.IsPrincipalSqrt`: $F$ is the principal square root of $A$ if
+  $F^2 = A$ and every eigenvalue of $F$ has positive real part.
+
+## Main results
+
+* §9.4.1, `GolubVanLoan.Chapter09.matrixSign_eq_conj`: $\operatorname{sign}(A) = X
+  \operatorname{diag}(-I_{m_1}, I_{m_2}) X^{-1}$ for a block diagonalization that separates the two
+  half planes.
+* §9.4.1, `GolubVanLoan.Chapter09.sign_projector`: $(I + \operatorname{sign}(A))/2$ is the
+  projection onto the invariant subspace of the eigenvalues in the right half plane.
+* §9.4.1, `GolubVanLoan.Chapter09.newtonSign_isUnit`: the Newton iterates $S_k$ of (9.4.1) are well
+  defined and $\operatorname{sign}(S_k) = \operatorname{sign}(A)$.
+* Equation (9.4.2), `GolubVanLoan.Chapter09.equation_9_4_2`:
+  $S_{k+1} - S = \frac12 S_k^{-1} (S_k - S)^2$.
+* Equation (9.4.3), `GolubVanLoan.Chapter09.equation_9_4_3`:
+  $S_{k+1} + S = \frac12 S_k^{-1} (S_k + S)^2$.
+* §9.4.1, `GolubVanLoan.Chapter09.isUnit_add_sign`: $M + \operatorname{sign}(M)$ is nonsingular.
+* Equation (9.4.4), `GolubVanLoan.Chapter09.equation_9_4_4`: $G_k = (S_k - S)(S_k + S)^{-1}$
+  satisfies $G_k = G_0^{2^k}$, and the eigenvalues of $G_0$ have modulus less than $1$.
+* §9.4.1, `GolubVanLoan.Chapter09.newtonSign_tendsto`: $S_k \to \operatorname{sign}(A)$
+  quadratically.
+* Equation (9.4.5), `GolubVanLoan.Chapter09.equation_9_4_5`: the Newton–Schulz step
+  $\frac12 S_k (3I - S_k^2)$.
+* §9.4.2, `GolubVanLoan.Chapter09.principalSqrt_existsUnique`: a matrix with no eigenvalue on
+  $(-\infty, 0]$ has exactly one principal square root.
+* Equation (9.4.7), `GolubVanLoan.Chapter09.newtonSqrt_tendsto`: Newton's square-root iteration
+  converges to $A^{1/2}$.
+* Equation (9.4.8), `GolubVanLoan.Chapter09.equation_9_4_8`: the Newton sign iterates of
+  $\begin{bmatrix} 0 & A \\ I & 0 \end{bmatrix}$ are the Denman–Beavers iterates.
+* Equation (9.4.9), `GolubVanLoan.Chapter09.equation_9_4_9`: $X_k = A Y_k$.
+* Equation (9.4.10), `GolubVanLoan.Chapter09.equation_9_4_10`: the decoupled forms of the
+  Denman–Beavers iteration.
+* §9.4.2, `GolubVanLoan.Chapter09.sign_block_sqrt`: $X_k \to A^{1/2}$, $Y_k \to A^{-1/2}$ and
+  $\operatorname{sign}\left(\begin{bmatrix} 0 & A \\ I & 0 \end{bmatrix}\right) = \begin{bmatrix} 0
+  & A^{1/2} \\ A^{-1/2} & 0 \end{bmatrix}$.
+* Theorem 9.4.1, `GolubVanLoan.Chapter09.theorem_9_4_1`: every $A \in \mathbb{R}^{m \times n}$ with
+  $m \ge n$ has a polar decomposition $A = UP$.
+* §9.4.3, `GolubVanLoan.Chapter09.polar_factors`: $P = (A^T A)^{1/2}$, and $U = A (A^T A)^{-1/2}$
+  when $\operatorname{rank}(A) = n$.
+* Equations (9.4.11)–(9.4.12), `GolubVanLoan.Chapter09.equation_9_4_12`: Newton's polar iterates
+  satisfy $X_k = U P_k$.
+* §9.4.3, `GolubVanLoan.Chapter09.newtonPolar_tendsto`: Newton's polar iteration converges
+  quadratically to $U$.
+* §9.4.3, `GolubVanLoan.Chapter09.sign_block_polar`: $\operatorname{sign}\left(\begin{bmatrix} 0 & A
+  \\ A^T & 0 \end{bmatrix}\right) = \begin{bmatrix} 0 & U \\ U^T & 0 \end{bmatrix}$ for nonsingular
+  $A$.
+* §9.4.3, `GolubVanLoan.Chapter09.li_sun`: the Li–Sun bound on $\|U - \tilde U\|_F$, under
+  $\det A \cdot \det \tilde A > 0$.
+* §9.4.4, `GolubVanLoan.Chapter09.realLog_existsUnique`: the real principal logarithm exists and is
+  unique.
+* §9.4.4, `GolubVanLoan.Chapter09.log_maclaurin`: the Maclaurin series of $\log(A)$.
+* §9.4.4, `GolubVanLoan.Chapter09.log_gregory`: the Gregory series of $\log(A)$.
+* §9.4.4, `GolubVanLoan.Chapter09.log_pade_33`: the $(3, 3)$ Padé approximant of $\log(1 + x)$.
+* §9.4.4, `GolubVanLoan.Chapter09.log_inverse_scaling`: $\log(A) = 2^k \log(A_k)$ for the repeated
+  square roots $A_k$.
 
 ## Conventions
 
-`A : Matrix (Fin n) (Fin n) ℂ` (the book's `ℂ^{n×n}`) except for the real logarithm. `sign(A)` is
-the backbone's `Matrix.matrixSign A = pfc (z ↦ sign (Re z)) A`, `A^{1/2}` is
-`Matrix.principalSqrt A` and `log(A)` is `Matrix.principalLog A`. "No eigenvalue on the imaginary
-axis" is `∀ μ ∈ spectrum ℂ A, μ.re ≠ 0`; "no eigenvalue on `(-∞, 0]`" is
-`spectrum ℂ A ⊆ Complex.slitPlane`. Block matrices `[P Q; R S]` are `Matrix.fromBlocks` over
-`Fin m ⊕ Fin n`; a partition `X = [X₁ X₂]` of the columns is a reindexing
-`e : Fin m₁ ⊕ Fin m₂ ≃ Fin n` with `X_i = X.submatrix id (e ∘ Sum.in_)`, and the columns of
-`X⁻ᴴ = [Y₁ Y₂]` are read through the rows of `X⁻¹`, `Y_iᴴ = X⁻¹.submatrix (e ∘ Sum.in_) id`
-(written `Z_i` in statements). `‖·‖₂` is the scoped `Matrix.Norms.L2Operator`.
+* The matrix is $A \in \mathbb{C}^{n \times n}$, `A : Matrix (Fin n) (Fin n) ℂ`, except for the real
+  logarithm and the polar decomposition.
+* $\operatorname{sign}(A)$ is `Matrix.matrixSign A`, which is `pfc` of $z \mapsto
+  \operatorname{sign}(\operatorname{Re} z)$. $A^{1/2}$ is `Matrix.principalSqrt A`, and $\log(A)$ is
+  `Matrix.principalLog A`.
+* "No eigenvalue on the imaginary axis" is `∀ μ ∈ spectrum ℂ A, μ.re ≠ 0`. "No eigenvalue on
+  $(-\infty, 0]$" is `spectrum ℂ A ⊆ Complex.slitPlane`.
+* Block matrices $\begin{bmatrix} P & Q \\ R & S \end{bmatrix}$ are `Matrix.fromBlocks` over
+  `Fin m ⊕ Fin n`. A partition $X = [X_1 \; X_2]$ of the columns is given by a bijection
+  `e : Fin m₁ ⊕ Fin m₂ ≃ Fin n`, with $X_i$ = `X.submatrix id (e ∘ Sum.in_)`. The columns of
+  $X^{-H} = [Y_1 \; Y_2]$ are read through the rows of $X^{-1}$: $Y_i^H$ =
+  `X⁻¹.submatrix (e ∘ Sum.in_) id`, written $Z_i$ in the statements.
+* The norm $\|\cdot\|_2$ is the operator norm of the scope `Matrix.Norms.L2Operator`.
+* A polar decomposition $A = UP$ is `Matrix.IsPolarDecomposition A U P`. Over $\mathbb{R}$ the
+  conjugate transpose in its definition is the transpose.
 
-## Sources
+## Deviations from the source
 
-`Numlib/Analysis/Matrix/Function/{Sign,Sqrt,Log,Polar}`, `Numlib/LinearAlgebra/Matrix/Polar`.
-"A polar decomposition `A = U P`" is the hypothesis `Matrix.IsPolarDecomposition A U P` (`ᴴ = ᵀ`
-over `ℝ`).
+* **§9.4.1** (typo). The source derives the Jordan-form expression of $\operatorname{sign}(A)$ "from
+  Theorem 9.1.1", which does not exist; the expression follows from the definition (9.1.3)–(9.1.4).
+  The source also writes $S^2 = S$ for $S^2 = I$. See `GolubVanLoan.Chapter09.matrixSign_eq_conj`.
+* **§9.4.2, the principal square root** (reading). The source leaves implicit that $A$ has no
+  eigenvalue on $(-\infty, 0]$. The statement assumes it. See
+  `GolubVanLoan.Chapter09.principalSqrt_existsUnique`.
+* **Equation (9.4.11)** (reading). The body of the iteration is lost in the source. It is read off
+  (9.4.12) as $X_{k+1} = (X_k + X_k^{-T})/2$. See `GolubVanLoan.Chapter09.equation_9_4_12`.
+* **§9.4.3, $\operatorname{sign}\left(\begin{bmatrix} 0 & A \\ A^T & 0 \end{bmatrix}\right) =
+  \begin{bmatrix} 0 & U \\ U^T & 0 \end{bmatrix}$** (correction). The identity needs $A$ to be
+  nonsingular, which the source omits. See `GolubVanLoan.Chapter09.sign_block_polar`.
+* **§9.4.3, the Li–Sun bound** (correction). The bound is false for nonsingular $A$ and $\tilde A$
+  alone. The statement assumes $\det A \cdot \det \tilde A > 0$. See
+  `GolubVanLoan.Chapter09.li_sun`.
+* **§9.4.3, the citation of Li and Sun** (typo). The source dates the paper "(2003)". It appeared in
+  SIAM J. Matrix Anal. Appl. 23 (2002). See `GolubVanLoan.Chapter09.li_sun`.
 
 ## Not formalized
 
-The four square roots of `[4 10; 0 9]` (a numerical example), the scaled iteration (9.4.6) and its
-choices of `μ_k`, QR with column pivoting on `(I + sign(A))/2` (only the range statement is
-formalized), the inverse-scaling-and-squaring `while` loop (only its identity
-`log(A) = 2^k log(A_k)` is formalized), the Problems.
-
-## Errata
-
-§9.4.1 derives the Jordan-form expression of `sign(A)` "from Theorem 9.1.1", which does not exist
-(it is the definition (9.1.3)–(9.1.4)), and uses "`S² = S`" for `S² = I`. §9.4.2's principal square
-root needs no eigenvalue of `A` on `(-∞, 0]`, which the book leaves implicit. §9.4.3's
-`sign([0 A; Aᵀ 0]) = [0 U; Uᵀ 0]` needs `A` nonsingular. The Li–Sun bound quoted at the end of
-§9.4.3 is false for nonsingular `A`, `Ã` alone: `A = diag(1, ε)`, `Ã = diag(1, −ε)` with
-`0 < ε < 1` have `‖U − Ũ‖_F = 2 > 4 · 2ε/(2 + 2ε)`; it needs `det A · det Ã > 0` (Li and Sun
-assume `‖A − Ã‖₂ < σ_n(A) + σ_n(Ã)`, which implies it), and the book's "(2003)" is SIAM J. Matrix
-Anal. Appl. 23 (2002).
+* The four square roots of $\begin{bmatrix} 4 & 10 \\ 0 & 9 \end{bmatrix}$, a numerical example.
+* The scaled Newton iteration (9.4.6) and its choices of $\mu_k$.
+* QR with column pivoting on $(I + \operatorname{sign}(A))/2$; only the statement about the range of
+  this projection is formalized.
+* The `while` loop of inverse scaling and squaring; only its identity $\log(A) = 2^k \log(A_k)$ is
+  formalized.
+* The Problems.
 -/
 
 open Polynomial Finset Filter Topology Asymptotics
@@ -65,9 +145,19 @@ variable {n : ℕ}
 
 /-! ### §9.4.1 The matrix sign function -/
 
-/-- §9.4.1: if `X⁻¹ A X = [J₁ 0; 0 J₂]` with the eigenvalues of `J₁` (of size `m₁`) in the open
-left half plane and those of `J₂` (of size `m₂`) in the open right half plane, then
-`sign(A) = X [-I_{m₁} 0; 0 I_{m₂}] X⁻¹`. -/
+/-- **§9.4.1** of [golub2013matrix], the Jordan-form expression of the sign function. Let
+$A, X \in \mathbb{C}^{n \times n}$ with $X$ nonsingular and
+$$X^{-1} A X = \begin{bmatrix} J_1 & 0 \\ 0 & J_2 \end{bmatrix},$$
+where $J_1 \in \mathbb{C}^{m_1 \times m_1}$ has its eigenvalues in the open left half plane and
+$J_2 \in \mathbb{C}^{m_2 \times m_2}$ has its eigenvalues in the open right half plane. Then
+$$\operatorname{sign}(A) = X \begin{bmatrix} -I_{m_1} & 0 \\ 0 & I_{m_2} \end{bmatrix} X^{-1}.$$
+
+**Typo.** The source derives this expression "from Theorem 9.1.1", which does not exist; it
+follows from the definition (9.1.3)–(9.1.4) of $f(A)$. The text of §9.4.1 also writes $S^2 = S$
+for $S^2 = I$.
+
+The blocks $J_1$ and $J_2$ need not be Jordan blocks. The block matrix is placed in `Fin n` by
+the bijection `e`. -/
 theorem matrixSign_eq_conj {m₁ m₂ : ℕ} (e : Fin m₁ ⊕ Fin m₂ ≃ Fin n)
     {A X : Matrix (Fin n) (Fin n) ℂ} (hX : IsUnit X) {J₁ : Matrix (Fin m₁) (Fin m₁) ℂ}
     {J₂ : Matrix (Fin m₂) (Fin m₂) ℂ}
@@ -76,7 +166,8 @@ theorem matrixSign_eq_conj {m₁ m₂ : ℕ} (e : Fin m₁ ⊕ Fin m₂ ≃ Fin 
     Matrix.matrixSign A = X * Matrix.reindex e e (Matrix.fromBlocks (-1) 0 0 1) * X⁻¹ :=
   Matrix.matrixSign_conj_fromBlocks e hX h h₁ h₂
 
-/-- The column partition of `X X⁻¹ = I`: `I = X₁ Y₁ᴴ + X₂ Y₂ᴴ`. -/
+/-- For a nonsingular $X$ with the column partition $X = [X_1 \; X_2]$ and the conformal row
+partition of $X^{-1}$ into $Y_1^H$ and $Y_2^H$, $I = X_1 Y_1^H + X_2 Y_2^H$. -/
 private theorem one_eq_add_blocks {m₁ m₂ : ℕ} (e : Fin m₁ ⊕ Fin m₂ ≃ Fin n)
     {X : Matrix (Fin n) (Fin n) ℂ} (hX : IsUnit X) :
     (1 : Matrix (Fin n) (Fin n) ℂ) =
@@ -88,10 +179,16 @@ private theorem one_eq_add_blocks {m₁ m₂ : ℕ} (e : Fin m₁ ⊕ Fin m₂ �
     id_eq]
   rw [← Equiv.sum_comp e, Fintype.sum_sum_type]
 
-/-- §9.4.1, the half-plane projector: with the partitions `X = [X₁ X₂]`, `X⁻ᴴ = [Y₁ Y₂]` of
-`matrixSign_eq_conj`, `sign(A) = X₂ Y₂ᴴ - X₁ Y₁ᴴ`, `I_n = X₁ Y₁ᴴ + X₂ Y₂ᴴ`, and
-`X₂ Y₂ᴴ = (I_n + sign(A))/2`, a projection whose range is `ran(X₂)`, the invariant subspace of the
-right half-plane eigenvalues, of dimension `m₂`. -/
+/-- **§9.4.1** of [golub2013matrix], the half-plane projector. Let $A$, $X$, $J_1$ and $J_2$ be as
+in `GolubVanLoan.Chapter09.matrixSign_eq_conj`, and partition $X = [X_1 \; X_2]$ and
+$X^{-H} = [Y_1 \; Y_2]$ conformally. Then
+$$\operatorname{sign}(A) = X_2 Y_2^H - X_1 Y_1^H, \qquad I_n = X_1 Y_1^H + X_2 Y_2^H, \qquad X_2
+  Y_2^H = \tfrac12 (I_n + \operatorname{sign}(A)).$$
+The matrix $\frac12 (I_n + \operatorname{sign}(A))$ is idempotent, its range is
+$\operatorname{ran}(X_2)$, the invariant subspace of the eigenvalues in the right half plane,
+and this range has dimension $m_2$.
+
+The rows $Y_i^H$ of $X^{-1}$ are written `Z₁` and `Z₂` in the statement. -/
 theorem sign_projector {m₁ m₂ : ℕ} (e : Fin m₁ ⊕ Fin m₂ ≃ Fin n)
     {A X : Matrix (Fin n) (Fin n) ℂ} (hX : IsUnit X) {J₁ : Matrix (Fin m₁) (Fin m₁) ℂ}
     {J₂ : Matrix (Fin m₂) (Fin m₂) ℂ}
@@ -117,9 +214,13 @@ theorem sign_projector {m₁ m₂ : ℕ} (e : Fin m₁ ⊕ Fin m₂ ≃ Fin n)
   rw [hS, hP, hI]
   module
 
-/-- §9.4.1, "this iteration is well-defined": for `A` without eigenvalues on the imaginary axis
-every Newton iterate `S_k` ((9.4.1): `S₀ = A`, `S_{k+1} = (S_k + S_k⁻¹)/2`) is nonsingular and has
-no eigenvalue on the imaginary axis, and `sign(S_k) = sign(A)`. -/
+/-- **§9.4.1** of [golub2013matrix], "this iteration is well-defined". Let
+$A \in \mathbb{C}^{n \times n}$ have no eigenvalue on the imaginary axis, and let $S_k$ be the
+Newton iterates (9.4.1), $S_0 = A$ and $S_{k+1} = (S_k + S_k^{-1})/2$. Then every $S_k$ is
+nonsingular and has no eigenvalue on the imaginary axis, and $\operatorname{sign}(S_k) =
+\operatorname{sign}(A)$.
+
+The iterates are `Matrix.newtonSignIterate A k`. -/
 theorem newtonSign_isUnit {A : Matrix (Fin n) (Fin n) ℂ} (hA : ∀ μ ∈ spectrum ℂ A, μ.re ≠ 0)
     (k : ℕ) :
     IsUnit (Matrix.newtonSignIterate A k) ∧
@@ -128,7 +229,8 @@ theorem newtonSign_isUnit {A : Matrix (Fin n) (Fin n) ℂ} (hA : ∀ μ ∈ spec
   ⟨(Matrix.isUnit_newtonSignIterate hA k).1, (Matrix.isUnit_newtonSignIterate hA k).2,
     Matrix.matrixSign_newtonSignIterate hA k⟩
 
-/-- The iterates commute with `sign(A)`, whose square is `I`. -/
+/-- For $A$ with no eigenvalue on the imaginary axis, $\operatorname{sign}(A)^2 = I$, and every
+Newton iterate $S_k$ commutes with $\operatorname{sign}(A)$. -/
 private theorem newtonSign_aux {A : Matrix (Fin n) (Fin n) ℂ} (hA : ∀ μ ∈ spectrum ℂ A, μ.re ≠ 0)
     (k : ℕ) :
     Matrix.matrixSign A * Matrix.matrixSign A = 1 ∧
@@ -137,7 +239,11 @@ private theorem newtonSign_aux {A : Matrix (Fin n) (Fin n) ℂ} (hA : ∀ μ ∈
   rw [← Matrix.matrixSign_newtonSignIterate hA k]
   exact Matrix.commute_matrixSign _
 
-/-- **(9.4.2)**: with `S = sign(A)`, `S_{k+1} - S = ½ S_k⁻¹ (S_k - S)²`. -/
+/-- **Equation (9.4.2)** of [golub2013matrix]. Let $A \in \mathbb{C}^{n \times n}$ have no
+eigenvalue on the imaginary axis, let $S = \operatorname{sign}(A)$, and let $S_k$ be the Newton
+iterates (9.4.1). Then for every $k$
+$$S_{k+1} - S = \tfrac12 S_k^{-1} (S_k - S)^2.$$
+-/
 theorem equation_9_4_2 {A : Matrix (Fin n) (Fin n) ℂ} (hA : ∀ μ ∈ spectrum ℂ A, μ.re ≠ 0)
     (k : ℕ) :
     Matrix.newtonSignIterate A (k + 1) - Matrix.matrixSign A =
@@ -147,7 +253,11 @@ theorem equation_9_4_2 {A : Matrix (Fin n) (Fin n) ℂ} (hA : ∀ μ ∈ spectru
   rw [Matrix.newtonSignIterate_succ, Matrix.nonsing_inv_eq_ringInverse]
   exact half_smul_add_inverse_sub_eq_of_commute (newtonSign_isUnit hA k).1 hS hc
 
-/-- **(9.4.3)**: `S_{k+1} + S = ½ S_k⁻¹ (S_k + S)²`. -/
+/-- **Equation (9.4.3)** of [golub2013matrix]. Let $A \in \mathbb{C}^{n \times n}$ have no
+eigenvalue on the imaginary axis, let $S = \operatorname{sign}(A)$, and let $S_k$ be the Newton
+iterates (9.4.1). Then for every $k$
+$$S_{k+1} + S = \tfrac12 S_k^{-1} (S_k + S)^2.$$
+-/
 theorem equation_9_4_3 {A : Matrix (Fin n) (Fin n) ℂ} (hA : ∀ μ ∈ spectrum ℂ A, μ.re ≠ 0)
     (k : ℕ) :
     Matrix.newtonSignIterate A (k + 1) + Matrix.matrixSign A =
@@ -157,13 +267,16 @@ theorem equation_9_4_3 {A : Matrix (Fin n) (Fin n) ℂ} (hA : ∀ μ ∈ spectru
   rw [Matrix.newtonSignIterate_succ, Matrix.nonsing_inv_eq_ringInverse]
   exact half_smul_add_inverse_add_eq_of_commute (newtonSign_isUnit hA k).1 hS hc
 
-/-- §9.4.1: if `sign(M)` is defined (no eigenvalue of `M` on the imaginary axis), then
-`M + sign(M)` is nonsingular. -/
+/-- **§9.4.1** of [golub2013matrix]. Let $M \in \mathbb{C}^{n \times n}$ have no eigenvalue on the
+imaginary axis, so that $\operatorname{sign}(M)$ is defined. Then $M + \operatorname{sign}(M)$
+is nonsingular. -/
 theorem isUnit_add_sign {M : Matrix (Fin n) (Fin n) ℂ} (hM : ∀ μ ∈ spectrum ℂ M, μ.re ≠ 0) :
     IsUnit (M + Matrix.matrixSign M) :=
   Matrix.isUnit_add_matrixSign hM
 
-/-- `|λ - sign λ| < |λ + sign λ|` off the imaginary axis. -/
+/-- For $z \in \mathbb{C}$ off the imaginary axis, $|z - \operatorname{sign}(\operatorname{Re} z)| <
+|z + \operatorname{sign}(\operatorname{Re} z)|$.
+-/
 private theorem norm_sub_sign_lt {z : ℂ} (hz : z.re ≠ 0) :
     ‖z - ((SignType.sign z.re : SignType) : ℂ)‖ < ‖z + ((SignType.sign z.re : SignType) : ℂ)‖ := by
   rw [← sq_lt_sq₀ (norm_nonneg _) (norm_nonneg _), Complex.sq_norm, Complex.sq_norm,
@@ -177,9 +290,14 @@ private theorem norm_sub_sign_lt {z : ℂ} (hz : z.re ≠ 0) :
       Complex.add_im, Complex.one_re, Complex.one_im]
     nlinarith
 
-/-- **(9.4.4)**: `G_k = (S_k - S)(S_k + S)⁻¹` satisfies `G_{k+1} = G_k²`, hence `G_k = G₀^{2^k}`;
-and every eigenvalue of `G₀ = (A - S)(A + S)⁻¹` is `μ = (λ - sign λ)/(λ + sign λ)` for an
-eigenvalue `λ` of `A`, with `|μ| < 1`. -/
+/-- **Equation (9.4.4)** of [golub2013matrix]. Let $A \in \mathbb{C}^{n \times n}$ have no
+eigenvalue on the imaginary axis, let $S = \operatorname{sign}(A)$, let $S_k$ be the Newton
+iterates (9.4.1), and let $G_k = (S_k - S)(S_k + S)^{-1}$. Then $G_{k+1} = G_k^2$, hence
+$G_k = G_0^{2^k}$ for every $k$. Every eigenvalue $\mu$ of $G_0 = (A - S)(A + S)^{-1}$ has the
+form
+$$\mu = \frac{\lambda - \operatorname{sign}(\operatorname{Re} \lambda)}{\lambda +
+  \operatorname{sign}(\operatorname{Re} \lambda)}$$
+for an eigenvalue $\lambda$ of $A$, and $|\mu| < 1$. -/
 theorem equation_9_4_4 {A : Matrix (Fin n) (Fin n) ℂ} (hA : ∀ μ ∈ spectrum ℂ A, μ.re ≠ 0) :
     let S := Matrix.matrixSign A
     let G := fun k => (Matrix.newtonSignIterate A k - S) * (Matrix.newtonSignIterate A k + S)⁻¹
@@ -278,8 +396,12 @@ theorem equation_9_4_4 {A : Matrix (Fin n) (Fin n) ℂ} (hA : ∀ μ ∈ spectru
   exact hlt
 
 open scoped Matrix.Norms.L2Operator in
-/-- §9.4.1: for `A` without eigenvalues on the imaginary axis, `S_k → sign(A)`, quadratically:
-`‖S_{k+1} - S‖₂ ≤ ½ ‖S_k⁻¹‖₂ ‖S_k - S‖₂²`. -/
+/-- **§9.4.1** of [golub2013matrix], convergence of Newton's sign iteration. Let
+$A \in \mathbb{C}^{n \times n}$ have no eigenvalue on the imaginary axis, let
+$S = \operatorname{sign}(A)$, and let $S_k$ be the Newton iterates (9.4.1). Then $S_k \to S$,
+and the convergence is quadratic:
+$$\|S_{k+1} - S\|_2 \le \tfrac12 \|S_k^{-1}\|_2 \|S_k - S\|_2^2.$$
+-/
 theorem newtonSign_tendsto {A : Matrix (Fin n) (Fin n) ℂ} (hA : ∀ μ ∈ spectrum ℂ A, μ.re ≠ 0) :
     Tendsto (Matrix.newtonSignIterate A) atTop (𝓝 (Matrix.matrixSign A)) ∧
     ∀ k, ‖Matrix.newtonSignIterate A (k + 1) - Matrix.matrixSign A‖ ≤
@@ -287,8 +409,11 @@ theorem newtonSign_tendsto {A : Matrix (Fin n) (Fin n) ℂ} (hA : ∀ μ ∈ spe
         ‖Matrix.newtonSignIterate A k - Matrix.matrixSign A‖ ^ 2 :=
   ⟨Matrix.tendsto_newtonSignIterate hA, Matrix.norm_newtonSignIterate_sub_le hA⟩
 
-/-- **(9.4.5)**, the Newton–Schulz step: replacing `S_k⁻¹` by its Newton approximation
-`S_k (2I - S_k²)` in (9.4.1) gives `½ (S_k + S_k (2I - S_k²)) = ½ S_k (3I - S_k²)`. -/
+/-- **Equation (9.4.5)** of [golub2013matrix] (the Newton–Schulz step). For every
+$S \in \mathbb{C}^{n \times n}$, replacing $S^{-1}$ by its Newton approximation $S(2I - S^2)$ in
+the Newton step (9.4.1) gives
+$$\tfrac12 \big(S + S(2I - S^2)\big) = \tfrac12 S (3I - S^2).$$
+-/
 theorem equation_9_4_5 (S : Matrix (Fin n) (Fin n) ℂ) :
     (2 : ℂ)⁻¹ • (S + S * (2 • 1 - S ^ 2)) = (2 : ℂ)⁻¹ • (S * (3 • 1 - S ^ 2)) := by
   congr 1
@@ -296,13 +421,21 @@ theorem equation_9_4_5 (S : Matrix (Fin n) (Fin n) ℂ) :
 
 /-! ### §9.4.2 The matrix square root -/
 
-/-- §9.4.2's definition: `F` is **the principal square root** of `A` if (a) `F² = A` and (b) every
-eigenvalue of `F` has positive real part. -/
+/-- **§9.4.2** of [golub2013matrix], definition of the principal square root. For
+$F, A \in \mathbb{C}^{n \times n}$, $F$ is **the principal square root** of $A$ if (a) $F^2 = A$
+and (b) every eigenvalue of $F$ has positive real part. -/
 def IsPrincipalSqrt (F A : Matrix (Fin n) (Fin n) ℂ) : Prop :=
   F ^ 2 = A ∧ ∀ μ ∈ spectrum ℂ F, 0 < μ.re
 
-/-- §9.4.2, "we designate this matrix by `A^{1/2}`": if no eigenvalue of `A` lies on `(-∞, 0]`,
-`A` has exactly one principal square root, `Matrix.principalSqrt A`. -/
+/-- **§9.4.2** of [golub2013matrix], "we designate this matrix by $A^{1/2}$". Let
+$A \in \mathbb{C}^{n \times n}$ have no eigenvalue on $(-\infty, 0]$. Then $A$ has exactly one
+principal square root, and it is $A^{1/2}$.
+
+**Reading.** The source leaves implicit the hypothesis that no eigenvalue of $A$ lies on
+$(-\infty, 0]$. The statement assumes it.
+
+The matrix $A^{1/2}$ is `Matrix.principalSqrt A`, that is, `pfc` of the principal branch
+`Complex.sqrt`. -/
 theorem principalSqrt_existsUnique {A : Matrix (Fin n) (Fin n) ℂ}
     (hA : spectrum ℂ A ⊆ Complex.slitPlane) :
     (∃! F, IsPrincipalSqrt F A) ∧ IsPrincipalSqrt (Matrix.principalSqrt A) A :=
@@ -310,11 +443,14 @@ theorem principalSqrt_existsUnique {A : Matrix (Fin n) (Fin n) ℂ}
     ⟨(Matrix.principalSqrt_sq hA).1, (Matrix.principalSqrt_sq hA).2.2⟩⟩
 
 open scoped Matrix.Norms.L2Operator in
-/-- **(9.4.7)** and §9.4.2: Newton's square-root iteration `X₀ = A`,
-`X_{k+1} = (X_k + X_k⁻¹ A)/2` satisfies `X_k = A^{1/2} S_k`, `S_k` the Newton sign iterates of
-`A^{1/2}`, and converges to `A^{1/2}` when no eigenvalue of `A` lies on `(-∞, 0]`; "global
-convergence and local quadratic convergence follow from what we know about (9.4.1)": the `S_k`
-converge quadratically, `‖S_{k+1} - S‖₂ ≤ ½ ‖S_k⁻¹‖₂ ‖S_k - S‖₂²` with `S = sign(A^{1/2})`. -/
+/-- **Equation (9.4.7)** of [golub2013matrix] and §9.4.2, Newton's square-root iteration. Let
+$A \in \mathbb{C}^{n \times n}$ have no eigenvalue on $(-\infty, 0]$, and let $X_0 = A$ and
+$X_{k+1} = (X_k + X_k^{-1} A)/2$. Then $X_k = A^{1/2} S_k$, where $S_k$ are the Newton sign
+iterates (9.4.1) of $A^{1/2}$, and $X_k \to A^{1/2}$. "Global convergence and local quadratic
+convergence follow from what we know about (9.4.1)": with $S = \operatorname{sign}(A^{1/2})$,
+$$\|S_{k+1} - S\|_2 \le \tfrac12 \|S_k^{-1}\|_2 \|S_k - S\|_2^2.$$
+
+The iterates $X_k$ are `Matrix.newtonSqrtIterate A k`. -/
 theorem newtonSqrt_tendsto {A : Matrix (Fin n) (Fin n) ℂ}
     (hA : spectrum ℂ A ⊆ Complex.slitPlane) :
     (∀ k, Matrix.newtonSqrtIterate A k =
@@ -329,9 +465,15 @@ theorem newtonSqrt_tendsto {A : Matrix (Fin n) (Fin n) ℂ}
     (newtonSign_tendsto fun μ hμ =>
       ((principalSqrt_existsUnique hA).2.2 μ hμ).ne').2⟩
 
-/-- **(9.4.8)**: the Newton sign iterates `S̃_k` of `Ã = [0 A; I 0]` have the form
-`[0 X_k; Y_k 0]`, with `X₀ = A`, `Y₀ = I`, `X_{k+1} = (X_k + Y_k⁻¹)/2`,
-`Y_{k+1} = (Y_k + X_k⁻¹)/2` (the Denman–Beavers iteration), `X_k`, `Y_k` nonsingular. -/
+/-- **Equation (9.4.8)** of [golub2013matrix] (the Denman–Beavers iteration). Let
+$A \in \mathbb{C}^{n \times n}$ have no eigenvalue on $(-\infty, 0]$, and let $\tilde S_k$ be
+the Newton sign iterates (9.4.1) of $\tilde A = \begin{bmatrix} 0 & A \\ I & 0 \end{bmatrix}$.
+Then
+$$\tilde S_k = \begin{bmatrix} 0 & X_k \\ Y_k & 0 \end{bmatrix},$$
+where $X_0 = A$, $Y_0 = I$, $X_{k+1} = (X_k + Y_k^{-1})/2$ and $Y_{k+1} = (Y_k + X_k^{-1})/2$,
+and every $X_k$ and $Y_k$ is nonsingular.
+
+The pairs $(X_k, Y_k)$ are `Matrix.denmanBeavers A k`. -/
 theorem equation_9_4_8 {A : Matrix (Fin n) (Fin n) ℂ} (hA : spectrum ℂ A ⊆ Complex.slitPlane)
     (k : ℕ) :
     Matrix.newtonSignIterate (Matrix.fromBlocks 0 A 1 0) k =
@@ -344,12 +486,20 @@ theorem equation_9_4_8 {A : Matrix (Fin n) (Fin n) ℂ} (hA : spectrum ℂ A ⊆
   ⟨(Matrix.newtonSignIterate_fromBlocks hA k).1, rfl, rfl,
     (Matrix.newtonSignIterate_fromBlocks hA k).2.1, (Matrix.newtonSignIterate_fromBlocks hA k).2.2⟩
 
-/-- **(9.4.9)** (the book's P9.4.4): `X_k = A Y_k` for all `k`. -/
+/-- **Equation (9.4.9)** of [golub2013matrix]. Let $A \in \mathbb{C}^{n \times n}$ have no
+eigenvalue on $(-\infty, 0]$, and let $X_k$, $Y_k$ be the Denman–Beavers iterates (9.4.8). Then
+$X_k = A Y_k$ for every $k$.
+
+The source leaves this identity to Problem P9.4.4. -/
 theorem equation_9_4_9 {A : Matrix (Fin n) (Fin n) ℂ} (hA : spectrum ℂ A ⊆ Complex.slitPlane)
     (k : ℕ) : (Matrix.denmanBeavers A k).1 = A * (Matrix.denmanBeavers A k).2 :=
   (Matrix.denmanBeavers_fst_eq_mul_snd hA k).1
 
-/-- **(9.4.10)**: `X_{k+1} = (X_k + A X_k⁻¹)/2` and `Y_{k+1} = (Y_k + A⁻¹ Y_k⁻¹)/2`. -/
+/-- **Equation (9.4.10)** of [golub2013matrix]. Let $A \in \mathbb{C}^{n \times n}$ have no
+eigenvalue on $(-\infty, 0]$, and let $X_k$, $Y_k$ be the Denman–Beavers iterates (9.4.8). Then
+for every $k$
+$$X_{k+1} = \tfrac12 (X_k + A X_k^{-1}), \qquad Y_{k+1} = \tfrac12 (Y_k + A^{-1} Y_k^{-1}).$$
+-/
 theorem equation_9_4_10 {A : Matrix (Fin n) (Fin n) ℂ} (hA : spectrum ℂ A ⊆ Complex.slitPlane)
     (k : ℕ) :
     (Matrix.denmanBeavers A (k + 1)).1 =
@@ -389,8 +539,12 @@ theorem equation_9_4_10 {A : Matrix (Fin n) (Fin n) ℂ} (hA : spectrum ℂ A �
   · change (2 : ℂ)⁻¹ • (Y + X⁻¹) = _
     rw [hXi]
 
-/-- §9.4.2: `X_k → A^{1/2}`, `Y_k → A^{-1/2}`, and `sign([0 A; I 0]) = [0 A^{1/2}; A^{-1/2} 0]`,
-for `A` without eigenvalues on `(-∞, 0]`. -/
+/-- **§9.4.2** of [golub2013matrix], convergence of the Denman–Beavers iteration. Let
+$A \in \mathbb{C}^{n \times n}$ have no eigenvalue on $(-\infty, 0]$, and let $X_k$, $Y_k$ be
+the iterates (9.4.8). Then $X_k \to A^{1/2}$, $Y_k \to A^{-1/2}$, and
+$$\operatorname{sign}\left(\begin{bmatrix} 0 & A \\ I & 0 \end{bmatrix}\right) = \begin{bmatrix}
+  0 & A^{1/2} \\ A^{-1/2} & 0 \end{bmatrix}.$$
+-/
 theorem sign_block_sqrt {A : Matrix (Fin n) (Fin n) ℂ} (hA : spectrum ℂ A ⊆ Complex.slitPlane) :
     Tendsto (fun k => (Matrix.denmanBeavers A k).1) atTop (𝓝 (Matrix.principalSqrt A)) ∧
     Tendsto (fun k => (Matrix.denmanBeavers A k).2) atTop (𝓝 (Matrix.principalSqrt A)⁻¹) ∧
@@ -403,18 +557,25 @@ theorem sign_block_sqrt {A : Matrix (Fin n) (Fin n) ℂ} (hA : spectrum ℂ A �
 
 open scoped Matrix
 
-/-- **Theorem 9.4.1 (Polar Decomposition).** If `A ∈ ℝ^{m×n}` and `m ≥ n`, then there are
-`U ∈ ℝ^{m×n}` with orthonormal columns and a symmetric positive semidefinite `P ∈ ℝ^{n×n}` with
-`A = U P`: `Matrix.IsPolarDecomposition A U P` (fields `Uᵀ U = I` — `ᴴ = ᵀ` over `ℝ` —, `P ⪰ 0`,
-`A = U P`). The backbone `Matrix.exists_isPolarDecomposition`, from an SVD as in the book. -/
+/-- **Theorem 9.4.1** of [golub2013matrix] (polar decomposition). "If
+$A \in \mathbb{R}^{m \times n}$ and $m \ge n$, then there exists a matrix
+$U \in \mathbb{R}^{m \times n}$ with orthonormal columns and a symmetric positive semidefinite
+$P \in \mathbb{R}^{n \times n}$ so that $A = UP$."
+
+The conclusion is `Matrix.IsPolarDecomposition A U P`: $U^T U = I$, $P$ is positive
+semidefinite, and $A = UP$. The proof specializes `Matrix.exists_isPolarDecomposition`, which
+constructs the factors from an SVD, as the source does. -/
 theorem theorem_9_4_1 {m : ℕ} (A : Matrix (Fin m) (Fin n) ℝ) (hmn : n ≤ m) :
     ∃ U P, Matrix.IsPolarDecomposition A U P :=
   Matrix.exists_isPolarDecomposition A (by simpa using hmn)
 
 open scoped MatrixOrder in
-/-- **§9.4.3, the polar factors**: in a polar decomposition `A = U P` of `A ∈ ℝ^{m×n}`,
-`P = (AᵀA)^{1/2}` (the positive semidefinite square root), and if `rank(A) = n` then
-`U = A (AᵀA)^{-1/2}`. -/
+/-- **§9.4.3** of [golub2013matrix], the polar factors. Let $A = UP$ be a polar decomposition of
+$A \in \mathbb{R}^{m \times n}$. Then $P = (A^T A)^{1/2}$, the positive semidefinite square
+root, and if $\operatorname{rank}(A) = n$, then
+$$U = A (A^T A)^{-1/2}.$$
+
+The positive semidefinite square root is `CFC.sqrt`. -/
 theorem polar_factors {m : ℕ} {A U : Matrix (Fin m) (Fin n) ℝ} {P : Matrix (Fin n) (Fin n) ℝ}
     (h : Matrix.IsPolarDecomposition A U P) :
     P = CFC.sqrt (Aᵀ * A) ∧ (A.rank = n → U = A * (CFC.sqrt (Aᵀ * A))⁻¹) := by
@@ -426,11 +587,16 @@ theorem polar_factors {m : ℕ} {A U : Matrix (Fin m) (Fin n) ℝ} {P : Matrix (
   exact hT ▸ h.eq_mul_inv_cfcSqrt
     ((Matrix.posSemidef_conjTranspose_mul_self A).posDef_iff_isUnit.2 hunit)
 
-/-- **(9.4.11)–(9.4.12), Newton's polar iteration.** For nonsingular `A ∈ ℝ^{n×n}` with polar
-decomposition `A = U P`, the iteration `X₀ = A`, `X_{k+1} = (X_k + X_k⁻ᵀ)/2`
-(`Matrix.newtonPolarIterate`; the body of (9.4.11) is lost in the source and read off (9.4.12)) is
-well defined — every `X_k` is nonsingular — and `X_k = U P_k`, where `P₀ = P`,
-`P_{k+1} = (P_k + P_k⁻¹)/2` and every `P_k` is positive definite. -/
+/-- **Equations (9.4.11)–(9.4.12)** of [golub2013matrix] (Newton's polar iteration). Let
+$A \in \mathbb{R}^{n \times n}$ be nonsingular with polar decomposition $A = UP$, and let
+$X_0 = A$ and $X_{k+1} = (X_k + X_k^{-T})/2$. Then every $X_k$ is nonsingular, and
+$X_k = U P_k$, where $P_0 = P$, $P_{k+1} = (P_k + P_k^{-1})/2$ and every $P_k$ is positive
+definite.
+
+**Reading.** The body of the iteration (9.4.11) is lost in the source. It is read off (9.4.12).
+
+The iterates $X_k$ and $P_k$ are `Matrix.newtonPolarIterate A k` and
+`Matrix.newtonPolarIterate P k`. -/
 theorem equation_9_4_12 {A U P : Matrix (Fin n) (Fin n) ℝ} (hA : IsUnit A)
     (h : Matrix.IsPolarDecomposition A U P) (k : ℕ) :
     Matrix.newtonPolarIterate A (k + 1) =
@@ -450,10 +616,14 @@ section Newton
 
 open scoped Matrix.Norms.L2Operator
 
-/-- **§9.4.3, convergence of Newton's polar iteration**: for nonsingular `A = U P`,
-`‖X_k - U‖₂ = ‖P_k - I‖₂`, the `P_k` converge quadratically
-(`‖P_{k+1} - I‖₂ ≤ ‖P_k⁻¹‖₂ ‖P_k - I‖₂² / 2`, the Newton sign iteration of `P` with
-`sign(P) = I`), and `X_k → U`. -/
+/-- **§9.4.3** of [golub2013matrix], convergence of Newton's polar iteration. Let
+$A \in \mathbb{R}^{n \times n}$ be nonsingular with polar decomposition $A = UP$, and let $X_k$
+and $P_k$ be as in (9.4.12). Then $\|X_k - U\|_2 = \|P_k - I\|_2$ for every $k$, the $P_k$
+converge quadratically,
+$$\|P_{k+1} - I\|_2 \le \tfrac12 \|P_k^{-1}\|_2 \|P_k - I\|_2^2,$$
+and $X_k \to U$.
+
+The iteration for $P_k$ is the Newton sign iteration of $P$, and $\operatorname{sign}(P) = I$. -/
 theorem newtonPolar_tendsto {A U P : Matrix (Fin n) (Fin n) ℝ} (hA : IsUnit A)
     (h : Matrix.IsPolarDecomposition A U P) :
     (∀ k, ‖Matrix.newtonPolarIterate A k - U‖ = ‖Matrix.newtonPolarIterate P k - 1‖) ∧
@@ -467,7 +637,7 @@ theorem newtonPolar_tendsto {A U P : Matrix (Fin n) (Fin n) ℝ} (hA : IsUnit A)
 
 end Newton
 
-/-! ### `sign([0 A; Aᵀ 0])` and the polar factor -/
+/-! ### The sign of $\begin{bmatrix} 0 & A \\ A^T & 0 \end{bmatrix}$ and the polar factor -/
 
 section SignBlock
 
@@ -475,7 +645,7 @@ open Matrix
 
 variable {A U V : Matrix (Fin n) (Fin n) ℝ} {σ : ℕ → ℝ}
 
-/-- A real SVD is a complex SVD of the complexified matrix. -/
+/-- A real SVD of $A$ is a complex SVD of the complexified matrix. -/
 private theorem isSVD_complexify (h : IsSVD A U σ V) :
     IsSVD (complexify A) (complexify U) σ (complexify V) := by
   have hunit : ∀ {W : Matrix (Fin n) (Fin n) ℝ}, W ∈ unitaryGroup (Fin n) ℝ →
@@ -489,7 +659,8 @@ private theorem isSVD_complexify (h : IsSVD A U σ V) :
   simp only [complexify_apply, rectDiagonal_apply]
   split_ifs <;> simp
 
-/-- The complexified real Jordan–Wielandt matrix `[0 A; Aᵀ 0]` is `[0 A; Aᴴ 0]`. -/
+/-- The complexified real matrix $\begin{bmatrix} 0 & A \\ A^T & 0 \end{bmatrix}$ is
+$\begin{bmatrix} 0 & A \\ A^H & 0 \end{bmatrix}$. -/
 private theorem complexify_fromBlocks_zero (A : Matrix (Fin n) (Fin n) ℝ) :
     complexify (fromBlocks 0 A Aᵀ 0) = fromBlocks 0 (complexify A) (complexify A)ᴴ 0 := by
   ext (i | i) (j | j) <;> simp [complexify_apply]
@@ -497,14 +668,27 @@ private theorem complexify_fromBlocks_zero (A : Matrix (Fin n) (Fin n) ℝ) :
 private theorem inv_sqrt_two_mul_self : (√2)⁻¹ * (√2)⁻¹ = (2 : ℝ)⁻¹ := by
   rw [← mul_inv, Real.mul_self_sqrt (by norm_num)]
 
-/-- **§9.4.3, `sign([0 A; Aᵀ 0])`**: if `A = U_A Σ_A V_Aᵀ` is the SVD of `A ∈ ℝ^{n×n}`
-(`Matrix.IsSVD A U_A σ V_A`) and `Q = (1/√2) [U_A 0; 0 V_A] [I_n I_n; I_n −I_n]`, then `Q` is
-orthogonal, `Qᵀ [0 A; Aᵀ 0] Q = [Σ_A 0; 0 −Σ_A]` and `Q [I_n 0; 0 −I_n] Qᵀ = [0 U; Uᵀ 0]`, where
-`U = U_A V_Aᵀ` is the orthogonal polar factor of `A` (with `P = V_A Σ_A V_Aᵀ`); "it follows that"
-`sign([0 A; Aᵀ 0]) = [0 U; Uᵀ 0]` when `A` is nonsingular. The sign of a real matrix is that of its
-complexification (`Matrix.complexify`), and the backbone is
-`Matrix.matrixSign_hermitianDilation`. The book omits "nonsingular", which is needed: a zero
-singular value is a zero eigenvalue of `[0 A; Aᵀ 0]`, where `sign` is not defined. -/
+/-- **§9.4.3** of [golub2013matrix], $\operatorname{sign}\left(\begin{bmatrix} 0 & A \\ A^T & 0
+\end{bmatrix}\right)$. Let $A = U_A \Sigma_A V_A^T$ be an SVD of
+$A \in \mathbb{R}^{n \times n}$, and let
+$$Q = \frac{1}{\sqrt 2} \begin{bmatrix} U_A & 0 \\ 0 & V_A \end{bmatrix} \begin{bmatrix} I_n &
+  I_n \\ I_n & -I_n \end{bmatrix}.$$
+Then $Q$ is orthogonal,
+$$Q^T \begin{bmatrix} 0 & A \\ A^T & 0 \end{bmatrix} Q = \begin{bmatrix} \Sigma_A & 0 \\ 0 &
+  -\Sigma_A \end{bmatrix}, \qquad Q \begin{bmatrix} I_n & 0 \\ 0 & -I_n \end{bmatrix} Q^T =
+  \begin{bmatrix} 0 & U \\ U^T & 0 \end{bmatrix},$$
+where $U = U_A V_A^T$, and $A = UP$ with $P = V_A \Sigma_A V_A^T$ is a polar decomposition. If
+$A$ is nonsingular, then "it follows that"
+$$\operatorname{sign}\left(\begin{bmatrix} 0 & A \\ A^T & 0 \end{bmatrix}\right) =
+  \begin{bmatrix} 0 & U \\ U^T & 0 \end{bmatrix}.$$
+
+**Correction.** The source omits the hypothesis that $A$ is nonsingular, which the last identity
+needs: a zero singular value of $A$ is a zero eigenvalue of
+$\begin{bmatrix} 0 & A \\ A^T & 0 \end{bmatrix}$, where the sign function is not defined.
+
+The SVD is `Matrix.IsSVD A U σ V`, where the Lean names `U` and `V` stand for $U_A$ and $V_A$.
+The sign of a real matrix is the sign of its complexification `Matrix.complexify`. The proof
+specializes `Matrix.matrixSign_hermitianDilation`. -/
 theorem sign_block_polar {Q : Matrix (Fin n ⊕ Fin n) (Fin n ⊕ Fin n) ℝ} (h : IsSVD A U σ V)
     (hQ : Q = (√2)⁻¹ • (fromBlocks U 0 0 V * fromBlocks 1 1 1 (-1))) :
     Qᵀ * Q = 1 ∧
@@ -573,13 +757,27 @@ theorem sign_block_polar {Q : Matrix (Fin n ⊕ Fin n) (Fin n ⊕ Fin n) ℝ} (h
 end SignBlock
 
 open scoped Matrix.Norms.Frobenius in
-/-- **§9.4.3, the Li–Sun bound**: "the orthogonal polar factors `U` and `Ũ` for nonsingular
-`A, Ã ∈ ℝ^{n×n}` satisfy
-`‖U − Ũ‖_F ≤ 4 ‖A − Ã‖_F / (σ_{n−1}(A) + σ_n(A) + σ_{n−1}(Ã) + σ_n(Ã))`", the book's 1-based
-`σ_{n−1}`, `σ_n` being the 0-based `sortedSingularValues (n - 2)`, `sortedSingularValues (n - 1)`
-(the two smallest). "Nonsingular" is strengthened to `det A · det Ã > 0`, without which the bound
-is false (see the errata above); Li and Sun's own hypothesis `‖A − Ã‖₂ < σ_n(A) + σ_n(Ã)` implies
-it. The backbone `Matrix.frobenius_norm_polar_sub_le`. -/
+/-- **§9.4.3** of [golub2013matrix], the Li–Sun bound, corrected. Let $A = UP$ and
+$\tilde A = \tilde U \tilde P$ be polar decompositions of
+$A, \tilde A \in \mathbb{R}^{n \times n}$ with $\det A \cdot \det \tilde A > 0$. Then
+$$\|U - \tilde U\|_F \le \frac{4 \|A - \tilde A\|_F}{\sigma_{n-1}(A) + \sigma_n(A) +
+  \sigma_{n-1}(\tilde A) + \sigma_n(\tilde A)},$$
+where $\sigma_{n-1}$ and $\sigma_n$ are the two smallest singular values.
+
+**Correction.** The source states the bound for nonsingular $A$ and $\tilde A$. The bound is
+false under this hypothesis alone: $A = \operatorname{diag}(1, \epsilon)$ and
+$\tilde A = \operatorname{diag}(1, -\epsilon)$ with $0 < \epsilon < 1$ have $\|U - \tilde
+U\|_F = 2 > 4 \cdot 2\epsilon / (2 + 2\epsilon)$. The statement assumes
+$\det A \cdot \det \tilde A > 0$; the hypothesis $\|A - \tilde A\|_2 < \sigma_n(A) +
+\sigma_n(\tilde A)$ of Li and Sun implies it.
+
+**Typo.** The source dates the paper of Li and Sun "(2003)". It appeared in SIAM J. Matrix Anal.
+Appl. 23 (2002).
+
+The 1-based $\sigma_{n-1}$ and $\sigma_n$ are the 0-based `Matrix.sortedSingularValues (n - 2)`
+and `Matrix.sortedSingularValues (n - 1)`; for $n \le 1$ the truncated subtraction makes both
+indices $0$. The norms are Frobenius norms. The proof specializes
+`Matrix.frobenius_norm_polar_sub_le`. -/
 theorem li_sun {A Ã U Ũ P P' : Matrix (Fin n) (Fin n) ℝ} (h : Matrix.IsPolarDecomposition A U P)
     (h' : Matrix.IsPolarDecomposition Ã Ũ P') (hdet : 0 < A.det * Ã.det) :
     ‖U - Ũ‖ ≤ 4 * ‖A - Ã‖ / (A.sortedSingularValues (n - 2) + A.sortedSingularValues (n - 1) +
@@ -588,10 +786,15 @@ theorem li_sun {A Ã U Ũ P P' : Matrix (Fin n) (Fin n) ℝ} (h : Matrix.IsPolar
 
 /-! ### §9.4.4 The matrix logarithm -/
 
-/-- §9.4.4: if the real eigenvalues of `A ∈ ℝ^{n×n}` are all positive, there is a unique real `X`
-with `e^X = A` and `λ(X) ⊆ {z : -π < Im z < π}`: the principal logarithm `log(A)`; and it is the
-complex principal logarithm `Matrix.principalLog` of the later nodes, `X = log(A)` read in
-`ℂ^{n×n}`. -/
+/-- **§9.4.4** of [golub2013matrix], the real principal logarithm. Let
+$A \in \mathbb{R}^{n \times n}$ be such that every real eigenvalue of $A$ is positive. Then
+there is a unique $X \in \mathbb{R}^{n \times n}$ with $e^X = A$ and $\lambda(X) \subseteq \{z :
+-\pi < \operatorname{Im} z < \pi\}$, the principal logarithm $\log(A)$. Moreover, every such
+$X$, read in $\mathbb{C}^{n \times n}$, is the complex principal logarithm `Matrix.principalLog`
+of $A$.
+
+The eigenvalues of a real matrix are those of its image under the entrywise embedding of
+$\mathbb{R}$ in $\mathbb{C}$. -/
 theorem realLog_existsUnique {A : Matrix (Fin n) (Fin n) ℝ}
     (hA : ∀ μ ∈ spectrum ℂ (A.map Complex.ofReal), μ.im = 0 → 0 < μ.re) :
     (∃! X : Matrix (Fin n) (Fin n) ℝ, NormedSpace.exp X = A ∧
@@ -612,27 +815,36 @@ theorem realLog_existsUnique {A : Matrix (Fin n) (Fin n) ℝ}
   rw [hLuniq _ ⟨hexp, hXs⟩, ← hLuniq _ (Matrix.exp_principalLog hB)]
 
 open scoped Matrix.Norms.L2Operator in
-/-- §9.4.4, the Maclaurin approximant `M_q(A) = ∑_{k=1}^{q} (-1)^{k+1} (A - I)ᵏ/k`: if
-`ρ(A - I) < 1` (every eigenvalue within `1` of `1`), then `M_q(A) → log(A)`, and `log(A)` is
-Mathlib's series logarithm (in the spectral norm). -/
+/-- **§9.4.4** of [golub2013matrix], the Maclaurin approximants $M_q(A) = \sum_{k=1}^{q} (-1)^{k+1}
+(A - I)^k / k$. Let $A \in \mathbb{C}^{n \times n}$ with $|\lambda - 1| < 1$ for every
+eigenvalue $\lambda$, that is, $\rho(A - I) < 1$. Then $M_q(A) \to \log(A)$, that is,
+$$\log(A) = \sum_{k=1}^{\infty} \frac{(-1)^{k+1}}{k} (A - I)^k,$$
+and $\log(A)$ is Mathlib's series logarithm `NormedSpace.log A`.
+
+Mathlib's logarithm is taken with the norm $\|\cdot\|_2$. -/
 theorem log_maclaurin {A : Matrix (Fin n) (Fin n) ℂ} (hA : ∀ μ ∈ spectrum ℂ A, ‖μ - 1‖ < 1) :
     HasSum (fun k : ℕ => ((-1) ^ k / (k + 1) : ℂ) • (A - 1) ^ (k + 1)) (Matrix.principalLog A) ∧
     Matrix.principalLog A = NormedSpace.log A :=
   ⟨Matrix.hasSum_principalLog hA,
     pfc_log_eq_normedSpace_log (Algebra.IsIntegral.isIntegral A) hA⟩
 
-/-- §9.4.4, the Gregory approximant
-`G_q(A) = -2 ∑_{k=0}^{q} ((I - A)(I + A)⁻¹)^{2k+1}/(2k + 1)`: if every eigenvalue of `A` has
-positive real part, then `G_q(A) → log(A)`. -/
+/-- **§9.4.4** of [golub2013matrix], the Gregory approximants $G_q(A) = -2 \sum_{k=0}^{q} ((I -
+A)(I + A)^{-1})^{2k+1} / (2k + 1)$. Let $A \in \mathbb{C}^{n \times n}$ have only eigenvalues
+with positive real part. Then $G_q(A) \to \log(A)$, that is,
+$$\log(A) = -2 \sum_{k=0}^{\infty} \frac{1}{2k + 1} \big((I - A)(I + A)^{-1}\big)^{2k+1}.$$
+-/
 theorem log_gregory {A : Matrix (Fin n) (Fin n) ℂ} (hA : ∀ μ ∈ spectrum ℂ A, 0 < μ.re) :
     HasSum (fun k : ℕ => (-2 / (2 * k + 1) : ℂ) • ((1 - A) * (1 + A)⁻¹) ^ (2 * k + 1))
       (Matrix.principalLog A) :=
   Matrix.hasSum_principalLog_gregory hA
 
-/-- §9.4.4: `r₃₃(x) = N(x)/D(x)` with `D(x) = 60 + 90x + 36x² + 3x³` and
-`N(x) = 60x + 60x² + 11x³` (the book writes them at `x = A - I`) is the `(3,3)` Padé approximant
-of `log(1 + x)`: `D` does not vanish near `x = 0` (so `r₃₃` is defined there) and
-`r₃₃(x) - log(1 + x) = O(x⁷)` as `x → 0`. -/
+/-- **§9.4.4** of [golub2013matrix], the $(3, 3)$ Padé approximant of $\log(1 + x)$. Let
+$$r_{33}(x) = \frac{N(x)}{D(x)}, \qquad N(x) = 60x + 60x^2 + 11x^3, \qquad D(x) = 60 + 90x +
+  36x^2 + 3x^3.$$
+Then $D$ does not vanish near $x = 0$, so $r_{33}$ is defined there, and
+$$r_{33}(x) - \log(1 + x) = O(x^7) \quad \text{as } x \to 0 \text{ in } \mathbb{C}.$$
+
+The source writes $N$ and $D$ at $x = A - I$. -/
 theorem log_pade_33 :
     (∀ᶠ x in 𝓝 (0 : ℂ), (60 + 90 * x + 36 * x ^ 2 + 3 * x ^ 3 : ℂ) ≠ 0) ∧
     (fun x : ℂ => (60 * x + 60 * x ^ 2 + 11 * x ^ 3) / (60 + 90 * x + 36 * x ^ 2 + 3 * x ^ 3) -
@@ -681,8 +893,11 @@ theorem log_pade_33 :
   rw [div_eq_mul_inv]
   linear_combination (-Complex.logTaylor 7 x) * hDD
 
-/-- §9.4.4, inverse scaling and squaring: with `A₀ = A` and `A_k = A_{k-1}^{1/2}`,
-`log(A) = 2^k log(A_k)` for every `k`, when no eigenvalue of `A` lies on `(-∞, 0]`. -/
+/-- **§9.4.4** of [golub2013matrix], the identity behind inverse scaling and squaring. Let
+$A \in \mathbb{C}^{n \times n}$ have no eigenvalue on $(-\infty, 0]$, and let $A_0 = A$ and
+$A_k = A_{k-1}^{1/2}$. Then for every $k$
+$$\log(A) = 2^k \log(A_k).$$
+-/
 theorem log_inverse_scaling {A : Matrix (Fin n) (Fin n) ℂ}
     (hA : spectrum ℂ A ⊆ Complex.slitPlane) (k : ℕ) :
     Matrix.principalLog A = (2 ^ k : ℂ) • Matrix.principalLog (Matrix.principalSqrt^[k] A) :=

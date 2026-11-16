@@ -20,37 +20,136 @@ import NumlibSurface.GolubVanLoan.Chapter02.Section05
 import NumlibSurface.GolubVanLoan.Chapter07.Section02
 
 /-!
-# Golub–Van Loan §8.1: properties and decompositions of symmetric matrices
+# Golub and Van Loan, Section 8.1: Properties and decompositions of symmetric matrices
 
-Surface file for [golub2013matrix] §8.1: the symmetric Schur decomposition, the min–max
-characterization, eigenvalue perturbation (Gershgorin, Wielandt–Hoffman, Weyl, interlacing,
-rank-one updates), invariant subspaces and their perturbation, approximate invariant subspaces and
-Ritz pairs, and Sylvester's law of inertia.
+This module formalizes §8.1 of [golub2013matrix], the basic theory of the symmetric eigenvalue
+problem. For a symmetric $A \in \mathbb{R}^{n \times n}$ the eigenvalues are real, and the source
+writes them in decreasing order as $\lambda_1(A) \ge \lambda_2(A) \ge \dots \ge \lambda_n(A)$. The
+module proves the symmetric Schur decomposition $Q^T A Q = \operatorname{diag}(\lambda_1, \dots,
+\lambda_n)$ with $Q$ orthogonal, the Courant–Fischer characterization of $\lambda_k(A)$ by the
+Rayleigh quotient $r(x) = x^T A x / x^T x$, and the perturbation results for eigenvalues: Gershgorin
+intervals, the Wielandt–Hoffman theorem, Weyl's inequality, interlacing for leading principal
+submatrices and for rank-one updates. It then treats invariant subspaces and their perturbation
+through the separation $\operatorname{sep}(D_1, D_2)$ of (8.1.2), approximate invariant subspaces
+and Ritz pairs (§8.1.4), and Sylvester's law of inertia (§8.1.5).
+
+The proofs specialize the backbone modules `Numlib.Eigen.MinMax`, `Numlib.Eigen.Perturbation`,
+`Numlib.Eigen.RayleighRitz`, `Numlib.Eigen.InvariantSubspace`, `Numlib.Eigen.Inertia`,
+`Numlib.LinearAlgebra.Matrix.Schur`, `Numlib.LinearAlgebra.Matrix.Sylvester`,
+`Numlib.LinearAlgebra.Matrix.Polar`, `Numlib.LinearAlgebra.Matrix.SVD`,
+`Numlib.Analysis.Matrix.SingularValues` and `Numlib.Analysis.Matrix.SpectralNorm`. Theorem 8.1.3
+uses Theorem 7.2.1 (`GolubVanLoan.Chapter07.theorem_7_2_1`), and Corollary 8.1.11 and Theorem 8.1.12
+use the distance between subspaces `GolubVanLoan.Chapter02.subspaceDist` of §2.5.
+
+## Main definitions
+
+* §8.1.1, `GolubVanLoan.Chapter08.symmEigenvalue`: the eigenvalues $\lambda_k(A)$ of a symmetric
+  matrix in decreasing order.
+* §8.1.1, `GolubVanLoan.Chapter08.rayleighQuotient`: the Rayleigh quotient $r(x) = x^T A x / x^T x$.
+* (8.1.2), `GolubVanLoan.Chapter08.sepSymm`: the separation $\min |\lambda - \mu|$ over
+  $\lambda \in \lambda(B)$ and $\mu \in \lambda(C)$.
+* §8.1.5, `GolubVanLoan.Chapter08.inertia`: the inertia $(m, z, p)$ of a symmetric matrix.
+
+## Main results
+
+* Theorem 8.1.1, `GolubVanLoan.Chapter08.theorem_8_1_1`: the symmetric Schur decomposition $Q^T A
+  Q = \operatorname{diag}(\lambda_1(A), \dots, \lambda_n(A))$.
+* §8.1.1, `GolubVanLoan.Chapter08.l2_opNorm_eq_max_abs_symmEigenvalue`: the singular values of a
+  symmetric $A$ are the $|\lambda_k(A)|$, and $\|A\|_2 = \max\{|\lambda_1(A)|, |\lambda_n(A)|\}$.
+* Theorem 8.1.2, `GolubVanLoan.Chapter08.theorem_8_1_2` and
+  `GolubVanLoan.Chapter08.theorem_8_1_2_minmax`: the Courant–Fischer max–min and min–max
+  characterizations of $\lambda_k(A)$.
+* §8.1.1, `GolubVanLoan.Chapter08.symmEigenvalue_pos_of_posDef`: a symmetric positive definite
+  matrix has positive eigenvalues.
+* Theorem 8.1.3, `GolubVanLoan.Chapter08.theorem_8_1_3`: the eigenvalues lie in the union of the
+  Gershgorin intervals of $Q^T A Q$.
+* Theorem 8.1.4, `GolubVanLoan.Chapter08.theorem_8_1_4`: the Wielandt–Hoffman bound $\sum_k
+  (\lambda_k(A + E) - \lambda_k(A))^2 \le \|E\|_F^2$.
+* Theorem 8.1.5, `GolubVanLoan.Chapter08.theorem_8_1_5`: $\lambda_k(A) + \lambda_n(E) \le
+  \lambda_k(A + E) \le \lambda_k(A) + \lambda_1(E)$.
+* Corollary 8.1.6, `GolubVanLoan.Chapter08.corollary_8_1_6`: Weyl's inequality
+  $|\lambda_k(A + E) - \lambda_k(A)| \le \|E\|_2$.
+* Theorem 8.1.7, `GolubVanLoan.Chapter08.theorem_8_1_7`: the eigenvalues of $A(1{:}r, 1{:}r)$
+  interlace those of $A(1{:}r{+}1, 1{:}r{+}1)$.
+* Theorem 8.1.8, `GolubVanLoan.Chapter08.theorem_8_1_8` and
+  `GolubVanLoan.Chapter08.theorem_8_1_8_b`: interlacing for the rank-one update $A + \tau c c^T$,
+  and the shifts $\lambda_i(A + \tau c c^T) = \lambda_i(A) + m_i \tau$ with $m_i \ge 0$ and
+  $\sum m_i = 1$.
+* Theorem 8.1.9, `GolubVanLoan.Chapter08.theorem_8_1_9`: an invariant subspace block-diagonalizes
+  $A$ and splits its spectrum.
+* (8.1.2), `GolubVanLoan.Chapter08.sepSymm_eq_sep`: for symmetric matrices the separation of (7.2.5)
+  is the eigenvalue gap.
+* Theorem 8.1.10, `GolubVanLoan.Chapter08.theorem_8_1_10`: a perturbed invariant subspace
+  $\operatorname{ran}((Q_1 + Q_2 P)(I + P^T P)^{-1/2})$ of $A + E$ with $\|P\|_F \le
+  (4/\operatorname{sep}(D_1, D_2)) \|E_{21}\|_F$.
+* (8.1.3), `GolubVanLoan.Chapter08.equation_8_1_3`: $\|P (I + P^T P)^{-1/2}\|_2 \le \|P\|_2 \le
+  \|P\|_F$.
+* Corollary 8.1.11, `GolubVanLoan.Chapter08.corollary_8_1_11`: the distance between the unperturbed
+  and the perturbed invariant subspace is at most $(4/\operatorname{sep}(D_1, D_2)) \|E_{21}\|_F$.
+* Theorem 8.1.12, `GolubVanLoan.Chapter08.theorem_8_1_12`: the perturbation of a single eigenvector.
+* Theorem 8.1.13, `GolubVanLoan.Chapter08.theorem_8_1_13` and
+  `GolubVanLoan.Chapter08.theorem_8_1_13_weak`: the eigenvalues of $S$ are within
+  $\sqrt{2}\|A Q_1 - Q_1 S\|_2$ of distinct eigenvalues of $A$, and each is within
+  $\|A Q_1 - Q_1 S\|_2$ of some eigenvalue of $A$.
+* Theorem 8.1.14, `GolubVanLoan.Chapter08.theorem_8_1_14`: $S = Q_1^T A Q_1$ minimizes
+  $\|A Q_1 - Q_1 S\|_F$.
+* Theorem 8.1.15, `GolubVanLoan.Chapter08.theorem_8_1_15`: the residual of a Ritz pair is bounded by
+  $\|(I - Q_1 Q_1^T) A Q_1\|_2$.
+* §8.1.4, `GolubVanLoan.Chapter08.ritzPair_isRitzPair`: the Ritz pairs of $A$ on
+  $\operatorname{ran}(Q_1)$ are the pairs $(\theta_k, Q_1 z_k)$ from the Schur decomposition of
+  $Q_1^T A Q_1$.
+* (8.1.5), (8.1.6) and (8.1.7), `GolubVanLoan.Chapter08.equation_8_1_5`,
+  `GolubVanLoan.Chapter08.equation_8_1_6` and `GolubVanLoan.Chapter08.equation_8_1_7`: the three
+  estimates in the proof of Theorem 8.1.16.
+* Theorem 8.1.16, `GolubVanLoan.Chapter08.theorem_8_1_16`: the eigenvalue bound of Theorem 8.1.13
+  for a basis $X_1$ that is only nearly orthonormal.
+* Theorem 8.1.17, `GolubVanLoan.Chapter08.theorem_8_1_17`: Sylvester's law of inertia.
+
+## Proof outline
+
+Corollary 8.1.11 and Theorem 8.1.12 bound the distance between the two subspaces in the coordinates
+of $Q$, where the subspaces are the ranges of $\begin{bmatrix} I \\ 0 \end{bmatrix}$ and
+$\begin{bmatrix} I \\ P \end{bmatrix}$, by `Matrix.gap_range_fromRows_le`. The route of the source
+through $\operatorname{dist} = \|Q_2^T \hat Q_1\|_2$ is not used. The proof of Theorem 8.1.16 in the
+source asserts $1 - \sigma_r^2 = \tau$, which is not true in general; the conclusion of (8.1.7) is
+true and is proved through the polar factor of $X_1$. The proofs do not use Problem P8.1.5.
 
 ## Conventions
 
-The book's `λ_k(A)`, the `k`-th largest eigenvalue of a symmetric `A` (`λ_n ≤ ⋯ ≤ λ_1`), is
-`symmEigenvalue hA ⟨k - 1, _⟩`: a reindexing to `Fin n` of Mathlib's sorted
-`Matrix.IsHermitian.eigenvalues₀` (the backbone's `Matrix.IsHermitian.sortedEigenvalues`), for
-`hA : A.IsSymm` (over `ℝ` the same as `A.IsHermitian`, `Matrix.isHermitian_iff_isSymm`). Orthogonal
-matrices are elements of `Matrix.orthogonalGroup (Fin n) ℝ`, `‖·‖₂` is `Matrix.lpOpNorm 2`, `‖·‖_F`
-the scoped `Matrix.Norms.Frobenius` norm.
+* The eigenvalue $\lambda_k(A)$ of a symmetric $A$ is `GolubVanLoan.Chapter08.symmEigenvalue hA ⟨k -
+  1, _⟩` for `hA : A.IsSymm`. It is the backbone's `Matrix.IsHermitian.sortedEigenvalues`, a
+  reindexing to `Fin n` of Mathlib's sorted `Matrix.IsHermitian.eigenvalues₀`. Over $\mathbb{R}$,
+  `A.IsSymm` and `A.IsHermitian` are the same condition (`Matrix.isHermitian_iff_isSymm`).
+* Orthogonal matrices are the elements of `Matrix.orthogonalGroup (Fin n) ℝ`. The norm $\|\cdot\|_2$
+  is `Matrix.lpOpNorm 2`, and $\|\cdot\|_F$ is the norm of the scoped instance
+  `Matrix.Norms.Frobenius`.
+* A partition $Q = [Q_1 \; Q_2]$ is `Matrix.fromCols Q₁ Q₂`, and a block matrix $\begin{bmatrix} D_1
+  & 0 \\ 0 & D_2 \end{bmatrix}$ is `Matrix.fromBlocks D₁ 0 0 D₂`, both indexed by `Fin r ⊕ Fin s`.
 
-## Readings
+## Deviations from the source
 
-Theorem 8.1.13 is planned in the paired form its proof gives (`μ_k = λ_{σ(k)}(A)` for an injection
-`σ`); the unpaired constant-`1` form is `theorem_8_1_13_weak`. Theorem 8.1.16 is paired likewise.
-Corollary 8.1.11 and Theorem 8.1.12 bound `dist` in the coordinates of `Q`
-(`Matrix.gap_range_fromRows_le`) rather than through the book's `‖Q₂ᵀ Q̂₁‖₂`. In the proof of
-Theorem 8.1.16 the book's "`1 − σ_r² = τ`" is not true in general; (8.1.7)'s conclusion is. P8.1.5
-is not used.
-
-## Sources
-
-Backbone `Numlib/Eigen/{MinMax, Perturbation, RayleighRitz, Inertia, InvariantSubspace}`,
-`Numlib/LinearAlgebra/Matrix/{Polar, Schur, Sylvester, SVD}`,
-`Numlib/Analysis/Matrix/{SingularValues, SpectralNorm}`; chapter 7's Theorem 7.2.1 (Gershgorin) for
-Theorem 8.1.3; chapter 2's `subspaceDist` for Corollary 8.1.11 and Theorem 8.1.12.
+* **Theorem 8.1.3** (generalization). The source assumes that $A$ is symmetric. The inclusion holds
+  for the real eigenvalues of every real $A$. See `GolubVanLoan.Chapter08.theorem_8_1_3`.
+* **Theorem 8.1.7** (generalization). The source assumes that $A$ is symmetric. Only the leading
+  principal submatrices $A(1{:}r, 1{:}r)$ and $A(1{:}r{+}1, 1{:}r{+}1)$ need to be symmetric. See
+  `GolubVanLoan.Chapter08.theorem_8_1_7`.
+* **Theorem 8.1.8** (generalization). The source normalizes $\|c\|_2 = 1$. The interlacing holds for
+  every $c$. See `GolubVanLoan.Chapter08.theorem_8_1_8`.
+* **Theorem 8.1.10 and Corollary 8.1.11** (generalization). The theorems do not need $E$ to be
+  symmetric, and they hold for every symmetric square root of $I + P^T P$. See
+  `GolubVanLoan.Chapter08.theorem_8_1_10`.
+* **Theorem 8.1.12** (generalization). The source assumes that $A + E$ is symmetric. Only $A$ needs
+  to be symmetric. See `GolubVanLoan.Chapter08.theorem_8_1_12`.
+* **Theorem 8.1.13** (reading). The source says that there exist
+  $\mu_1, \dots, \mu_r \in \lambda(A)$. The theorem gives $\mu_k = \lambda_{\sigma(k)}(A)$ for an
+  injective $\sigma$, as the proof of the source produces them. See
+  `GolubVanLoan.Chapter08.theorem_8_1_13`.
+* **Theorem 8.1.15** (generalization). The source takes $Q_1$ with orthonormal columns. The identity
+  and the bound hold for every $Q_1$. See `GolubVanLoan.Chapter08.theorem_8_1_15`.
+* **Equation (8.1.5)** (generalization). The source takes $Q$ with orthonormal columns. The bound
+  holds for every $Q$. See `GolubVanLoan.Chapter08.equation_8_1_5`.
+* **Theorem 8.1.16** (reading). As in Theorem 8.1.13, the eigenvalues $\mu_k$ are
+  $\lambda_{\sigma(k)}(A)$ for an injective $\sigma$. See `GolubVanLoan.Chapter08.theorem_8_1_16`.
 -/
 
 open Matrix
@@ -59,30 +158,38 @@ namespace GolubVanLoan.Chapter08
 
 variable {n : ℕ}
 
-/-! ### §8.1.1 Eigenvalue and eigenvector properties -/
+/-! ### Eigenvalue and eigenvector properties (§8.1.1) -/
 
-/-- **§8.1.1, `λ_k(A)`**: the eigenvalues of a symmetric `A`, sorted decreasingly and indexed by
-`Fin n`; the book's `λ_k(A)` is `symmEigenvalue hA ⟨k - 1, _⟩`. -/
+/-- **Section 8.1.1** of [golub2013matrix], the eigenvalues $\lambda_k(A)$. For a symmetric
+$A \in \mathbb{R}^{n \times n}$, `symmEigenvalue hA` lists the eigenvalues of $A$, counted with
+multiplicity, in decreasing order: $\lambda_1(A) \ge \lambda_2(A) \ge \dots \ge \lambda_n(A)$.
+
+The index is 0-based: $\lambda_k(A)$ is `symmEigenvalue hA ⟨k - 1, _⟩`. The definition is
+`Matrix.IsHermitian.sortedEigenvalues` for the Hermitian matrix that
+`Matrix.isHermitian_iff_isSymm` gives. -/
 noncomputable def symmEigenvalue {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) (k : Fin n) : ℝ :=
   (isHermitian_iff_isSymm.2 hA).sortedEigenvalues k
 
-/-- `symmEigenvalue` is the backbone's `sortedEigenvalues`, for any proof of Hermitianness. -/
+/-- For every proof `hH` that $A$ is Hermitian, `GolubVanLoan.Chapter08.symmEigenvalue hA` is
+`hH.sortedEigenvalues`. -/
 theorem symmEigenvalue_eq_sortedEigenvalues {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
     (hH : A.IsHermitian) : symmEigenvalue hA = hH.sortedEigenvalues :=
   rfl
 
-/-- `λ_1(A) ≥ λ_2(A) ≥ ⋯ ≥ λ_n(A)`. -/
+/-- The eigenvalues are in decreasing order: $\lambda_1(A) \ge \lambda_2(A) \ge \dots \ge
+\lambda_n(A)$. -/
 theorem antitone_symmEigenvalue {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) :
     Antitone (symmEigenvalue hA) :=
   (isHermitian_iff_isSymm.2 hA).sortedEigenvalues_antitone
 
-/-- The roots of the characteristic polynomial, with multiplicity, are the `λ_k(A)`. -/
+/-- The roots of the characteristic polynomial of a symmetric $A$, counted with multiplicity, are
+$\lambda_1(A), \dots, \lambda_n(A)$. -/
 theorem roots_charpoly_eq_symmEigenvalue {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) :
     A.charpoly.roots = Multiset.map (symmEigenvalue hA) Finset.univ.val := by
   rw [(isHermitian_iff_isSymm.2 hA).roots_charpoly_eq_sortedEigenvalues]
   congr 1
 
-/-- The eigenvalues `λ_k(A)` are exactly the (real) spectrum of `A`. -/
+/-- The real spectrum of a symmetric $A$ is the set $\{\lambda_1(A), \dots, \lambda_n(A)\}$. -/
 theorem spectrum_eq_range_symmEigenvalue {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) :
     spectrum ℝ A = Set.range (symmEigenvalue hA) := by
   rw [(isHermitian_iff_isSymm.2 hA).spectrum_real_eq_range_eigenvalues]
@@ -97,7 +204,7 @@ theorem spectrum_eq_range_symmEigenvalue {A : Matrix (Fin n) (Fin n) ℝ} (hA : 
     exact ⟨Fintype.equivOfCardEq (Fintype.card_fin _) (Fin.cast (Fintype.card_fin n).symm k),
       by simp⟩
 
-/-- Each `λ_k(A)` is an eigenvalue of `A`. -/
+/-- Each $\lambda_k(A)$ is an eigenvalue of the symmetric matrix $A$. -/
 theorem symmEigenvalue_mem_spectrum {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) (k : Fin n) :
     symmEigenvalue hA k ∈ spectrum ℝ A := by
   rw [spectrum_eq_range_symmEigenvalue hA]
@@ -111,7 +218,8 @@ private theorem eigenvalues_cast {E : Type*} [NormedAddCommGroup E] [InnerProduc
   subst h
   rfl
 
-/-- `λ_k(A)` is the `k`-th sorted eigenvalue of any operator equal to `toEuclideanLin A`. -/
+/-- $\lambda_k(A)$ is the $k$-th sorted eigenvalue of every symmetric operator that equals
+`Matrix.toEuclideanLin A`. -/
 private theorem symmEigenvalue_eq_eigenvalues {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
     {T : EuclideanSpace ℝ (Fin n) →ₗ[ℝ] EuclideanSpace ℝ (Fin n)} (hT : T.IsSymmetric)
     (h : toEuclideanLin A = T) (hm : Module.finrank ℝ (EuclideanSpace ℝ (Fin n)) = n)
@@ -121,24 +229,33 @@ private theorem symmEigenvalue_eq_eigenvalues {A : Matrix (Fin n) (Fin n) ℝ} (
   rw [eigenvalues_cast hT finrank_euclideanSpace hm (Fintype.card_fin n)]
   rfl
 
-/-- The symmetric operator of a symmetric matrix. -/
+/-- The operator `Matrix.toEuclideanLin A` of a symmetric matrix $A$ is symmetric. -/
 private theorem isSymmetric_toEuclideanLin {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) :
     (toEuclideanLin A).IsSymmetric :=
   isSymmetric_toEuclideanLin_iff.mpr (isHermitian_iff_isSymm.2 hA)
 
-/-- **§8.1.1, the Rayleigh quotient** `r(x) = xᵀAx / xᵀx` (also (8.2.6)). -/
+/-- **Section 8.1.1** of [golub2013matrix], the Rayleigh quotient. For
+$A \in \mathbb{R}^{n \times n}$ and $x \in \mathbb{R}^n$, the **Rayleigh quotient** is
+$$r(x) = \frac{x^T A x}{x^T x}.$$
+
+The same quotient is (8.2.6). At $x = 0$ the value is $0$, because division by zero gives $0$ in
+Lean. -/
 noncomputable def rayleighQuotient (A : Matrix (Fin n) (Fin n) ℝ) (x : Fin n → ℝ) : ℝ :=
   (x ⬝ᵥ A *ᵥ x) / (x ⬝ᵥ x)
 
-/-- The book's Rayleigh quotient is Mathlib's `re ⟪T x, x⟫ / ‖x‖²` for `T = toEuclideanLin A`. -/
+/-- The Rayleigh quotient $r(x)$ of $A$ is Mathlib's `LinearMap.rayleighQuotient` of the operator
+`Matrix.toEuclideanLin A` at $x$, that is $\langle Ax, x \rangle / \|x\|^2$. -/
 theorem rayleighQuotient_eq (A : Matrix (Fin n) (Fin n) ℝ) (x : Fin n → ℝ) :
     rayleighQuotient A x = (toEuclideanLin A).rayleighQuotient (WithLp.toLp 2 x) := by
   rw [rayleighQuotient, LinearMap.rayleighQuotient, ← real_inner_self_eq_norm_sq,
     toEuclideanLin_toLp]
   simp only [EuclideanSpace.inner_toLp_toLp, RCLike.re_to_real, star_trivial]
 
-/-- **Theorem 8.1.1 (symmetric Schur decomposition).** A symmetric `A` has an orthogonal `Q` with
-`Qᵀ A Q = Λ = diag(λ_1, …, λ_n)`, and `A Q(:, k) = λ_k Q(:, k)`. -/
+/-- **Theorem 8.1.1** of [golub2013matrix] (symmetric Schur decomposition). Let
+$A \in \mathbb{R}^{n \times n}$ be symmetric. Then there is an orthogonal
+$Q \in \mathbb{R}^{n \times n}$ with
+$$Q^T A Q = \Lambda = \operatorname{diag}(\lambda_1(A), \dots, \lambda_n(A)),$$
+and $A Q(:, k) = \lambda_k(A) Q(:, k)$ for $k = 1, \dots, n$. -/
 theorem theorem_8_1_1 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) :
     ∃ Q ∈ orthogonalGroup (Fin n) ℝ, Qᵀ * A * Q = diagonal (symmEigenvalue hA) ∧
       ∀ k, A *ᵥ Q.col k = symmEigenvalue hA k • Q.col k := by
@@ -152,8 +269,13 @@ theorem theorem_8_1_1 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) :
   · convert h2 k using 2
     simp [symmEigenvalue]
 
-/-- **§8.1.1, after Theorem 8.1.1**: the singular values of a symmetric `A` are the `|λ_k(A)|`, and
-`‖A‖₂ = max(|λ_1(A)|, |λ_n(A)|)`. -/
+/-- **Section 8.1.1** of [golub2013matrix], the remark after Theorem 8.1.1. Let
+$A \in \mathbb{R}^{n \times n}$ be symmetric with $n \ge 1$. Then the singular values of $A$ are
+$|\lambda_1(A)|, \dots, |\lambda_n(A)|$ in some order, and
+$$\|A\|_2 = \max\{|\lambda_1(A)|, |\lambda_n(A)|\}.$$
+
+The singular values are the column-indexed `Matrix.colSingularValues`, and "in some order" is a
+permutation $e$ of the indices with `A.colSingularValues (e k)` $= |\lambda_k(A)|$. -/
 theorem l2_opNorm_eq_max_abs_symmEigenvalue {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
     (hn : 0 < n) :
     (∃ e : Fin n ≃ Fin n, ∀ k, A.colSingularValues (e k) = |symmEigenvalue hA k|) ∧
@@ -185,9 +307,15 @@ theorem l2_opNorm_eq_max_abs_symmEigenvalue {A : Matrix (Fin n) (Fin n) ℝ} (hA
       · exact ⟨_, (hspec _).2 (symmEigenvalue_mem_spectrum hA ⟨0, hn⟩), by simp [M, h]⟩
       · exact ⟨_, (hspec _).2 (symmEigenvalue_mem_spectrum hA ⟨n - 1, by omega⟩), by simp [M, h]⟩
 
-/-- **Theorem 8.1.2 (Courant–Fischer minimax).** For symmetric `A` and `k = 1:n`,
-`λ_k(A) = max_{dim(S) = k} min_{0 ≠ y ∈ S} yᵀAy / yᵀy` (0-based: `dim S = k + 1`), both extrema
-attained. -/
+/-- **Theorem 8.1.2** of [golub2013matrix] (Courant–Fischer minimax theorem), max–min form. Let
+$A \in \mathbb{R}^{n \times n}$ be symmetric and $1 \le k \le n$. Then
+$$\lambda_k(A) = \max_{\dim(S) = k} \; \min_{0 \neq y \in S} \frac{y^T A y}{y^T y},$$
+where $S$ ranges over the subspaces of $\mathbb{R}^n$, and the maximum and every minimum are
+attained.
+
+The index `k : Fin n` is 0-based, so the subspaces have dimension `k + 1`. The statement says
+that $\lambda_k(A)$ is the greatest element (`IsGreatest`) of the set of the least values
+(`IsLeast`) of the Rayleigh quotient on $S \setminus \{0\}$. -/
 theorem theorem_8_1_2 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) (k : Fin n) :
     IsGreatest {c | ∃ S : Submodule ℝ (Fin n → ℝ), Module.finrank ℝ S = k + 1 ∧
       IsLeast (rayleighQuotient A '' {y | y ∈ S ∧ y ≠ 0}) c} (symmEigenvalue hA k) := by
@@ -216,8 +344,13 @@ theorem theorem_8_1_2 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) (k : Fin 
       have := hc.2 ⟨y, ⟨hy, fun h0 => hx0 (by rw [h0, map_zero])⟩, rfl⟩
       rwa [rayleighQuotient_eq] at this
 
-/-- **Theorem 8.1.2, the min–max form**: `λ_k(A) = min_{dim(S) = n-k+1} max_{0 ≠ y ∈ S} r(y)`
-(0-based: `dim S = n - k`). -/
+/-- **Theorem 8.1.2** of [golub2013matrix] (Courant–Fischer minimax theorem), min–max form. Let
+$A \in \mathbb{R}^{n \times n}$ be symmetric and $1 \le k \le n$. Then
+$$\lambda_k(A) = \min_{\dim(S) = n - k + 1} \; \max_{0 \neq y \in S} r(y),$$
+where $S$ ranges over the subspaces of $\mathbb{R}^n$, $r$ is the Rayleigh quotient, and the
+minimum and every maximum are attained.
+
+The index `k : Fin n` is 0-based, so the subspaces have dimension `n - k`. -/
 theorem theorem_8_1_2_minmax {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) (k : Fin n) :
     IsLeast {c | ∃ S : Submodule ℝ (Fin n → ℝ), Module.finrank ℝ S = n - k ∧
       IsGreatest (rayleighQuotient A '' {y | y ∈ S ∧ y ≠ 0}) c} (symmEigenvalue hA k) := by
@@ -246,8 +379,8 @@ theorem theorem_8_1_2_minmax {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) (k
       have := hc.2 ⟨y, ⟨hy, fun h0 => hx0 (by rw [h0, map_zero])⟩, rfl⟩
       rwa [rayleighQuotient_eq] at this
 
-/-- **§8.1.1, last sentence**: a symmetric positive definite `A` has `λ_n(A) > 0`, hence all
-`λ_k(A) > 0`. -/
+/-- **Section 8.1.1** of [golub2013matrix], last sentence. If $A \in \mathbb{R}^{n \times n}$ is
+symmetric positive definite, then $\lambda_k(A) > 0$ for every $k$. -/
 theorem symmEigenvalue_pos_of_posDef {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
     (hP : A.PosDef) (k : Fin n) : 0 < symmEigenvalue hA k := by
   obtain ⟨i, hi⟩ : symmEigenvalue hA k ∈ Set.range hP.isHermitian.eigenvalues := by
@@ -256,10 +389,16 @@ theorem symmEigenvalue_pos_of_posDef {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.Is
   rw [← hi]
   exact hP.eigenvalues_pos i
 
-/-- **Theorem 8.1.3 (Gershgorin).** For orthogonal `Q` with `Qᵀ A Q = D + F`, `D = diag(d)` and `F`
-with zero diagonal, `λ(A) ⊆ ⋃ᵢ [dᵢ - rᵢ, dᵢ + rᵢ]` with `rᵢ = ∑ⱼ |f_ij|`. Chapter 7's Theorem 7.2.1
-for the complexifications, whose discs meet the real line in these intervals. (The book assumes `A`
-symmetric, which makes `λ(A)` real; the inclusion of the real eigenvalues holds for every `A`.) -/
+/-- **Theorem 8.1.3** of [golub2013matrix] (Gershgorin). Let $A, Q, F \in \mathbb{R}^{n \times n}$
+and $d \in \mathbb{R}^n$, with $Q$ orthogonal, $Q^T A Q = \operatorname{diag}(d) + F$ and
+$f_{ii} = 0$ for all $i$. Then every real eigenvalue $\lambda$ of $A$ satisfies
+$$\lambda \in \bigcup_{i=1}^n [d_i - r_i, d_i + r_i], \qquad r_i = \sum_{j=1}^n |f_{ij}|.$$
+
+**Generalization.** The source assumes that $A$ is symmetric, so that all eigenvalues of $A$ are
+real. The inclusion holds for the real eigenvalues of every real matrix $A$.
+
+The proof applies Theorem 7.2.1 (`GolubVanLoan.Chapter07.theorem_7_2_1`) to the complexified
+matrices, whose Gershgorin discs meet the real line in these intervals. -/
 theorem theorem_8_1_3 {A Q F : Matrix (Fin n) (Fin n) ℝ} {d : Fin n → ℝ}
     (hQ : Q ∈ orthogonalGroup (Fin n) ℝ) (h : Qᵀ * A * Q = diagonal d + F) (hF : ∀ i, F i i = 0) :
     spectrum ℝ A ⊆ ⋃ i, Set.Icc (d i - ∑ j, |F i j|) (d i + ∑ j, |F i j|) := by
@@ -282,14 +421,17 @@ theorem theorem_8_1_3 {A Q F : Matrix (Fin n) (Fin n) ℝ} {d : Fin n → ℝ}
   obtain ⟨h1, h2⟩ := abs_le.1 hi
   exact Set.mem_iUnion.2 ⟨i, ⟨by linarith, by linarith⟩⟩
 
-/-! ### §8.1.2 Eigenvalue sensitivity -/
+/-! ### Eigenvalue sensitivity (§8.1.2) -/
 
 section Frobenius
 
 open scoped Matrix.Norms.Frobenius
 
-/-- **Theorem 8.1.4 (Wielandt–Hoffman).** For symmetric `A` and `E`,
-`∑_k (λ_k(A + E) - λ_k(A))² ≤ ‖E‖_F²`. -/
+/-- **Theorem 8.1.4** of [golub2013matrix] (Wielandt–Hoffman). Let
+$A, E \in \mathbb{R}^{n \times n}$ with $A$ and $A + E$ symmetric. Then
+$$\sum_{k=1}^n (\lambda_k(A + E) - \lambda_k(A))^2 \le \|E\|_F^2.$$
+
+Since $A$ and $A + E$ are symmetric, $E$ is symmetric too. -/
 theorem theorem_8_1_4 {A E : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) (hAE : (A + E).IsSymm) :
     ∑ k, (symmEigenvalue hAE k - symmEigenvalue hA k) ^ 2 ≤ ‖E‖ ^ 2 := by
   have h := IsHermitian.hoffman_wielandt (isHermitian_iff_isSymm.2 hAE)
@@ -302,15 +444,20 @@ theorem theorem_8_1_4 {A E : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) (hAE : 
 
 end Frobenius
 
-/-- The trace is the sum of the `λ_k(A)`. -/
+/-- The trace of a symmetric $A$ is the sum of its eigenvalues:
+$\operatorname{tr}(A) = \sum_k \lambda_k(A)$. -/
 theorem trace_eq_sum_symmEigenvalue {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) :
     A.trace = ∑ k, symmEigenvalue hA k := by
   rw [(isHermitian_iff_isSymm.2 hA).trace_eq_sum_eigenvalues₀]
   simp only [RCLike.ofReal_real_eq_id, id]
   exact (Equiv.sum_comp (finCongr (Fintype.card_fin n).symm) _).symm
 
-/-- **Theorem 8.1.5.** For symmetric `A`, `E` (`n > 0`) and every `k`,
-`λ_k(A) + λ_n(E) ≤ λ_k(A + E) ≤ λ_k(A) + λ_1(E)`. -/
+/-- **Theorem 8.1.5** of [golub2013matrix]. Let $A, E \in \mathbb{R}^{n \times n}$ be symmetric,
+with $n \ge 1$. Then for $k = 1, \dots, n$,
+$$\lambda_k(A) + \lambda_n(E) \le \lambda_k(A + E) \le \lambda_k(A) + \lambda_1(E).$$
+
+The Lean statement also takes a proof that $A + E$ is symmetric, which
+`GolubVanLoan.Chapter08.symmEigenvalue` needs; it follows from the other two hypotheses. -/
 theorem theorem_8_1_5 {A E : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) (hE : E.IsSymm)
     (hAE : (A + E).IsSymm) (hn : 0 < n) (k : Fin n) :
     symmEigenvalue hA k + symmEigenvalue hE ⟨n - 1, by omega⟩ ≤ symmEigenvalue hAE k ∧
@@ -329,7 +476,11 @@ theorem theorem_8_1_5 {A E : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) (hE : E
     symmEigenvalue_eq_eigenvalues hAE hTAE (map_add _ _ _) hm]
   exact h
 
-/-- **Corollary 8.1.6 (Weyl).** For symmetric `A` and `E`, `|λ_k(A + E) - λ_k(A)| ≤ ‖E‖₂`. -/
+/-- **Corollary 8.1.6** of [golub2013matrix] (Weyl). Let $A, E \in \mathbb{R}^{n \times n}$ be
+symmetric. Then for $k = 1, \dots, n$,
+$$|\lambda_k(A + E) - \lambda_k(A)| \le \|E\|_2.$$
+
+The Lean statement also takes a proof that $A + E$ is symmetric. -/
 theorem corollary_8_1_6 {A E : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) (hE : E.IsSymm)
     (hAE : (A + E).IsSymm) (k : Fin n) :
     |symmEigenvalue hAE k - symmEigenvalue hA k| ≤ lpOpNorm 2 E := by
@@ -341,8 +492,16 @@ theorem corollary_8_1_6 {A E : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) (hE :
   rw [abs_le] at h1 h2 ⊢
   constructor <;> linarith [h.1, h.2]
 
-/-- **Theorem 8.1.7 (interlacing).** For symmetric `A` and `r + 1 ≤ n`, with `A_r = A(1:r, 1:r)`,
-`λ_{k+1}(A_{r+1}) ≤ λ_k(A_r) ≤ λ_k(A_{r+1})` for every `k < r` (0-based). -/
+/-- **Theorem 8.1.7** of [golub2013matrix] (interlacing property). Let
+$A \in \mathbb{R}^{n \times n}$, let $r + 1 \le n$, and let $A_r = A(1{:}r, 1{:}r)$ and
+$A_{r+1} = A(1{:}r{+}1, 1{:}r{+}1)$ be symmetric. Then for $k = 1, \dots, r$,
+$$\lambda_{k+1}(A_{r+1}) \le \lambda_k(A_r) \le \lambda_k(A_{r+1}).$$
+
+**Generalization.** The source assumes that $A$ is symmetric. Only the two leading principal
+submatrices $A_r$ and $A_{r+1}$ need to be symmetric.
+
+The index `k : Fin r` is 0-based, and the submatrices are
+`A.submatrix (Fin.castLE _) (Fin.castLE _)`. -/
 theorem theorem_8_1_7 {A : Matrix (Fin n) (Fin n) ℝ} {r : ℕ} (hr : r + 1 ≤ n)
     (hAr : (A.submatrix (Fin.castLE (by omega : r ≤ n)) (Fin.castLE (by omega))).IsSymm)
     (hAr1 : (A.submatrix (Fin.castLE hr) (Fin.castLE hr)).IsSymm) (k : Fin r) :
@@ -356,7 +515,9 @@ theorem theorem_8_1_7 {A : Matrix (Fin n) (Fin n) ℝ} {r : ℕ} (hr : r + 1 ≤
   rw [IsHermitian.sortedEigenvalues_congr hsub _ (isHermitian_iff_isSymm.2 hAr)] at h
   exact h
 
-/-- The case `τ ≥ 0` of Theorem 8.1.8, in the form of the backbone's rank-one interlacing. -/
+/-- The case $\tau \ge 0$ of Theorem 8.1.8, from the backbone's rank-one interlacing:
+$\lambda_i(A) \le \lambda_i(A + \tau c c^T)$, and
+$\lambda_{i+1}(A + \tau c c^T) \le \lambda_i(A)$ for $i < n$. -/
 private theorem rankOne_interlace {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) (c : Fin n → ℝ)
     {τ : ℝ} (hτ : 0 ≤ τ) (hB : (A + τ • vecMulVec c c).IsSymm) (i : Fin n) :
     symmEigenvalue hA i ≤ symmEigenvalue hB i ∧
@@ -385,10 +546,18 @@ private theorem rankOne_interlace {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSym
   rw [LinearMap.sub_apply, inner_sub_left, map_sub] at this
   linarith
 
-/-- **Theorem 8.1.8.** For symmetric `A`, `c ∈ ℝⁿ`, `τ ∈ ℝ` and `B = A + τ ccᵀ`: if `τ ≥ 0` then
-`λ_i(B) ∈ [λ_i(A), λ_{i-1}(A)]` for `i = 2:n` (and `λ_1(A) ≤ λ_1(B)`); if `τ ≤ 0` then
-`λ_i(B) ∈ [λ_{i+1}(A), λ_i(A)]` for `i = 1:n-1` (and `λ_n(B) ≤ λ_n(A)`). 0-based indices; the
-book's normalization `‖c‖₂ = 1` is not needed. -/
+/-- **Theorem 8.1.8** of [golub2013matrix]. Let $A \in \mathbb{R}^{n \times n}$ be symmetric,
+$c \in \mathbb{R}^n$, $\tau \in \mathbb{R}$, and $B = A + \tau c c^T$. If $\tau \ge 0$, then
+$$\lambda_i(B) \in [\lambda_i(A), \lambda_{i-1}(A)] \quad (i = 2, \dots, n), \qquad \lambda_1(A)
+  \le \lambda_1(B).$$
+If $\tau \le 0$, then
+$$\lambda_i(B) \in [\lambda_{i+1}(A), \lambda_i(A)] \quad (i = 1, \dots, n - 1), \qquad
+  \lambda_n(B) \le \lambda_n(A).$$
+
+**Generalization.** The source assumes $\|c\|_2 = 1$. The interlacing holds for every
+$c \in \mathbb{R}^n$.
+
+The indices are 0-based. The Lean statement also takes a proof that $B$ is symmetric. -/
 theorem theorem_8_1_8 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) (c : Fin n → ℝ) (τ : ℝ)
     (hB : (A + τ • vecMulVec c c).IsSymm) :
     (0 ≤ τ → ∀ i : Fin n, symmEigenvalue hA i ≤ symmEigenvalue hB i ∧
@@ -410,8 +579,12 @@ theorem theorem_8_1_8 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) (c : Fin 
       IsHermitian.sortedEigenvalues_congr hBA _ (isHermitian_iff_isSymm.2 hA)] at h
     exact ⟨h.1, fun hi => h.2 hi⟩
 
-/-- **Theorem 8.1.8, last clause.** With `cᵀc = 1` (and `n ≥ 1`), there are `m_i ≥ 0` with
-`∑ m_i = 1` and `λ_i(B) = λ_i(A) + m_i τ` for all `i`. -/
+/-- **Theorem 8.1.8** of [golub2013matrix], last part. Let $A \in \mathbb{R}^{n \times n}$ be
+symmetric with $n \ge 1$, let $c \in \mathbb{R}^n$ with $c^T c = 1$, let $\tau \in \mathbb{R}$
+and $B = A + \tau c c^T$. Then there are $m_1, \dots, m_n \ge 0$ with $m_1 + \dots + m_n = 1$
+and
+$$\lambda_i(B) = \lambda_i(A) + m_i \tau, \qquad i = 1, \dots, n.$$
+-/
 theorem theorem_8_1_8_b {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) {c : Fin n → ℝ}
     (hc : c ⬝ᵥ c = 1) (τ : ℝ) (hB : (A + τ • vecMulVec c c).IsSymm) (hn : 0 < n) :
     ∃ m : Fin n → ℝ, (∀ i, 0 ≤ m i) ∧ ∑ i, m i = 1 ∧
@@ -434,9 +607,10 @@ theorem theorem_8_1_8_b {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) {c : Fi
     · rw [div_mul_cancel₀ _ hτ]
       ring
 
-/-! ### §8.1.3 Invariant subspaces -/
+/-! ### Invariant subspaces (§8.1.3) -/
 
-/-- If the range of `Q₁` (orthonormal columns) is `A`-invariant, then `A Q₁ = Q₁ (Q₁ᵀ A Q₁)`. -/
+/-- If $Q_1$ has orthonormal columns and $\operatorname{ran}(Q_1)$ is $A$-invariant, then
+$A Q_1 = Q_1 (Q_1^T A Q_1)$. -/
 private theorem mul_eq_mul_of_invariant {A : Matrix (Fin n) (Fin n) ℝ} {r : ℕ}
     {Q₁ : Matrix (Fin n) (Fin r) ℝ} (hQ : Q₁ᵀ * Q₁ = 1)
     (hinv : ∀ x ∈ LinearMap.range (toLin' Q₁), A *ᵥ x ∈ LinearMap.range (toLin' Q₁)) :
@@ -449,9 +623,17 @@ private theorem mul_eq_mul_of_invariant {A : Matrix (Fin n) (Fin n) ℝ} {r : �
   congr 1
   rw [mulVec_mulVec, hQ, one_mulVec]
 
-/-- **Theorem 8.1.9 with (8.1.1).** If `A` is symmetric, `Q = [Q₁ Q₂]` is orthogonal and
-`ran(Q₁)` is `A`-invariant, then `Qᵀ A Q = diag(D₁, D₂)` with `D₁ = Q₁ᵀ A Q₁`, `D₂ = Q₂ᵀ A Q₂`, and
-`λ(A) = λ(D₁) ∪ λ(D₂)` with multiplicity: `det(A - λI) = det(D₁ - λI) det(D₂ - λI)`. -/
+/-- **Theorem 8.1.9** of [golub2013matrix], with (8.1.1). Let $A \in \mathbb{R}^{n \times n}$ be
+symmetric, and let $Q = [Q_1 \; Q_2]$ be orthogonal with $Q_1 \in \mathbb{R}^{n \times r}$ and
+$Q_2 \in \mathbb{R}^{n \times s}$. If $\operatorname{ran}(Q_1)$ is $A$-invariant, then
+$$Q^T A Q = \begin{bmatrix} D_1 & 0 \\ 0 & D_2 \end{bmatrix}, \qquad D_1 = Q_1^T A Q_1, \quad
+  D_2 = Q_2^T A Q_2,$$
+and $\det(\lambda I - A) = \det(\lambda I - D_1) \det(\lambda I - D_2)$, so that
+$\lambda(A) = \lambda(D_1) \cup \lambda(D_2)$ with multiplicity.
+
+Orthogonality of $Q$ is stated as $Q^T Q = I$ and $Q Q^T = I$. Invariance is stated as
+$Ax \in \operatorname{ran}(Q_1)$ for all $x \in \operatorname{ran}(Q_1)$, and the determinants
+are Mathlib's `Matrix.charpoly`. -/
 theorem theorem_8_1_9 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) {r s : ℕ}
     {Q₁ : Matrix (Fin n) (Fin r) ℝ} {Q₂ : Matrix (Fin n) (Fin s) ℝ}
     (hQ : (fromCols Q₁ Q₂)ᵀ * fromCols Q₁ Q₂ = 1) (hQ' : fromCols Q₁ Q₂ * (fromCols Q₁ Q₂)ᵀ = 1)
@@ -468,14 +650,25 @@ theorem theorem_8_1_9 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) {r s : �
   exact ⟨hH.conjTranspose_mul_mul_fromCols_eq_fromBlocks hQ hAQ,
     hH.charpoly_eq_mul_of_mul_eq_mul hQ hQ' hAQ⟩
 
-/-- **(8.1.2), the separation** of the spectra of two symmetric matrices,
-`sep(B, C) = min_{λ ∈ λ(B), μ ∈ λ(C)} |λ - μ|`. -/
+/-- **Equation (8.1.2)** of [golub2013matrix], the separation of two symmetric matrices. For
+$B \in \mathbb{R}^{p \times p}$ and $C \in \mathbb{R}^{q \times q}$,
+$$\operatorname{sep}(B, C) = \min_{\lambda \in \lambda(B), \, \mu \in \lambda(C)} |\lambda -
+  \mu|.$$
+
+The definition is the infimum over the real eigenvalues of $B$ and $C$, for any real square
+matrices. If $B$ or $C$ has no real eigenvalue, for example when $p = 0$ or $q = 0$, the value
+is $0$. -/
 noncomputable def sepSymm {p q : ℕ} (B : Matrix (Fin p) (Fin p) ℝ)
     (C : Matrix (Fin q) (Fin q) ℝ) : ℝ :=
   sInf {d | ∃ l ∈ spectrum ℝ B, ∃ m ∈ spectrum ℝ C, d = |l - m|}
 
-/-- **P8.1.9**: for symmetric `B`, `C`, the Sylvester separation
-`min_{X ≠ 0} ‖BX - XC‖_F / ‖X‖_F` of chapter 7 is the eigenvalue gap (8.1.2). -/
+/-- **Equation (8.1.2)** of [golub2013matrix], with Problem P8.1.9. Let
+$B \in \mathbb{R}^{p \times p}$ and $C \in \mathbb{R}^{q \times q}$ be symmetric with
+$p, q \ge 1$. Then the separation (7.2.5) of the Sylvester operator,
+$$\min_{X \neq 0} \frac{\|BX - XC\|_F}{\|X\|_F},$$
+equals the eigenvalue gap $\operatorname{sep}(B, C)$ of (8.1.2).
+
+The left side is the backbone's `Matrix.sep`. -/
 theorem sepSymm_eq_sep {p q : ℕ} {B : Matrix (Fin p) (Fin p) ℝ} {C : Matrix (Fin q) (Fin q) ℝ}
     (hB : B.IsSymm) (hC : C.IsSymm) (hp : 0 < p) (hq : 0 < q) : sep B C = sepSymm B C := by
   have : Nonempty (Fin p) := ⟨⟨0, hp⟩⟩
@@ -500,7 +693,7 @@ section Frobenius
 
 open scoped Matrix.Norms.Frobenius
 
-/-- The Frobenius norm is invariant under `X ↦ Qᵀ X Q` for a `Q` with `Q Qᵀ = I`. -/
+/-- The Frobenius norm is invariant under $X \mapsto Q^T X Q$ for every $Q$ with $Q Q^T = I$. -/
 private theorem frobenius_norm_transpose_mul_mul {ι : Type*} [Fintype ι] [DecidableEq ι]
     (E : Matrix (Fin n) (Fin n) ℝ) {Q : Matrix (Fin n) ι ℝ} (hQ : Q * Qᵀ = 1) :
     ‖Qᵀ * E * Q‖ = ‖E‖ := by
@@ -515,7 +708,7 @@ private theorem frobenius_norm_transpose_mul_mul {ι : Type*} [Fintype ι] [Deci
   rw [htr, ← h2] at h1
   exact (pow_left_inj₀ (norm_nonneg _) (norm_nonneg _) two_ne_zero).1 h1
 
-/-- A symmetric positive semidefinite matrix has a symmetric square root. -/
+/-- A symmetric positive semidefinite matrix $M$ has a symmetric square root $S$, with $S^2 = M$. -/
 private theorem exists_isSymm_mul_self_eq {M : Matrix (Fin n) (Fin n) ℝ} (hM : M.IsSymm)
     (hpos : M.PosSemidef) : ∃ S : Matrix (Fin n) (Fin n) ℝ, S.IsSymm ∧ S * S = M := by
   obtain ⟨V, hV, hVM, -⟩ := theorem_8_1_1 hM
@@ -547,12 +740,27 @@ private theorem exists_isSymm_mul_self_eq {M : Matrix (Fin n) (Fin n) ℝ} (hM :
           simp only [Matrix.mul_assoc]
       _ = V * diagonal (symmEigenvalue hM) * Vᵀ := by rw [hVV', Matrix.mul_one, this]
 
-/-- **Theorem 8.1.10.** Let `A` be symmetric (`E` need not be), `Q = [Q₁ Q₂]` orthogonal with
-`Qᵀ A Q = diag(D₁, D₂)` (so `ran(Q₁)` is `A`-invariant), `Qᵀ E Q = [E₁₁ E₂₁ᵀ; E₂₁ E₂₂]`. If
-`sep(D₁, D₂) > 0` and `‖E‖_F ≤ sep(D₁, D₂)/5`, there is `P` with
-`‖P‖_F ≤ (4/sep(D₁, D₂)) ‖E₂₁‖_F` such that the columns of `Q̂₁ = (Q₁ + Q₂P)(I + PᵀP)^{-1/2}` are
-orthonormal and span an `(A + E)`-invariant subspace. The square root is any symmetric
-`S` with `S² = I + PᵀP` (one exists). -/
+/-- **Theorem 8.1.10** of [golub2013matrix]. Let $A, E \in \mathbb{R}^{n \times n}$ with $A$
+symmetric, and let $Q = [Q_1 \; Q_2]$ be orthogonal with $Q_1 \in \mathbb{R}^{n \times r}$ and
+$Q_2 \in \mathbb{R}^{n \times s}$. Assume
+$$Q^T A Q = \begin{bmatrix} D_1 & 0 \\ 0 & D_2 \end{bmatrix}, \qquad Q^T E Q = \begin{bmatrix}
+  E_{11} & E_{12} \\ E_{21} & E_{22} \end{bmatrix},$$
+so that $\operatorname{ran}(Q_1)$ is $A$-invariant. If $\operatorname{sep}(D_1, D_2) > 0$ and
+$\|E\|_F \le \operatorname{sep}(D_1, D_2)/5$, then there is $P \in \mathbb{R}^{s \times r}$ with
+$$\|P\|_F \le \frac{4}{\operatorname{sep}(D_1, D_2)} \|E_{21}\|_F$$
+such that the following holds. There is a symmetric $S \in \mathbb{R}^{r \times r}$ with
+$S^2 = I + P^T P$, and for every such $S$ the columns of $\hat Q_1 = (Q_1 + Q_2 P) S^{-1}$ are
+orthonormal and $\operatorname{ran}(\hat Q_1)$ is invariant for $A + E$, that is,
+$(A + E) \hat Q_1 = \hat Q_1 M$ for some $M \in \mathbb{R}^{r \times r}$.
+
+**Generalization.** The theorem does not need $E$ to be symmetric. The source takes
+$\hat Q_1 = (Q_1 + Q_2 P)(I + P^T P)^{-1/2}$; the theorem holds for every symmetric square root
+$S$ of $I + P^T P$, and the positive definite square root is one of them.
+
+The block $E_{21}$ is `toBlocks₂₁` of $Q^T E Q$, and the separation (8.1.2) is
+`GolubVanLoan.Chapter08.sepSymm`. The matrix $S$ is nonsingular because $S^2 = I + P^T P$ is
+positive definite, and $S^{-1}$ is the matrix inverse. The theorem restates Theorem 7.2.4 of
+[golub2013matrix] for symmetric $A$. -/
 theorem theorem_8_1_10 {A E : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) {r s : ℕ}
     {Q₁ : Matrix (Fin n) (Fin r) ℝ} {Q₂ : Matrix (Fin n) (Fin s) ℝ}
     (hQ : (fromCols Q₁ Q₂)ᵀ * fromCols Q₁ Q₂ = 1) (hQ' : fromCols Q₁ Q₂ * (fromCols Q₁ Q₂)ᵀ = 1)
@@ -642,16 +850,18 @@ theorem theorem_8_1_10 {A E : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) {r s :
     rw [← Matrix.mul_assoc S⁻¹ S, hSi, Matrix.one_mul]
 
 open scoped MatrixOrder in
-/-- **(8.1.3)**: for `P ∈ ℝ^{s×r}`, `‖P (I + PᵀP)^{-1/2}‖₂ ≤ ‖P‖₂ ≤ ‖P‖_F` (the bound used for
-Corollary 8.1.11), the square root being `CFC.sqrt`. -/
+/-- **Equation (8.1.3)** of [golub2013matrix]. For every $P \in \mathbb{R}^{s \times r}$,
+$$\|P (I + P^T P)^{-1/2}\|_2 \le \|P\|_2 \le \|P\|_F.$$
+
+The square root is `CFC.sqrt`, the positive semidefinite square root. Corollary 8.1.11 uses this
+bound. -/
 theorem equation_8_1_3 {r s : ℕ} (P : Matrix (Fin s) (Fin r) ℝ) :
     lpOpNorm 2 (P * (CFC.sqrt (1 + Pᵀ * P))⁻¹) ≤ lpOpNorm 2 P ∧ lpOpNorm 2 P ≤ ‖P‖ := by
   have h := l2_opNorm_mul_inv_sqrt_one_add_gram_le P
   rwa [conjTranspose_eq_transpose_of_trivial] at h
 
-/-- For a square orthogonal `Q` (rows `Fin n`, columns any `ι`), the distance between the column
-spaces of `Q M` and `Q N` is the gap between those of `M` and `N`: `Q` is an isometry of the
-coordinate spaces. -/
+/-- For a square orthogonal $Q$, the distance between the column spaces of $QM$ and $QN$ equals the
+gap between the column spaces of $M$ and $N$, because $Q$ is an isometry. -/
 private theorem subspaceDist_range_mul {ι κ : Type*} [Fintype ι] [DecidableEq ι] [Fintype κ]
     [DecidableEq κ] {Q : Matrix (Fin n) ι ℝ} (hQ : Qᵀ * Q = 1) (hQ' : Q * Qᵀ = 1)
     (M N : Matrix ι κ ℝ) :
@@ -663,13 +873,23 @@ private theorem subspaceDist_range_mul {ι κ : Type*} [Fintype ι] [DecidableEq
   simp only [Chapter02.subspaceDist, range_mul_eq_map_of_mul_conjTranspose_eq_one hQh hQh']
   rw [Submodule.gap_map_linearIsometryEquiv]
 
-/-- **Corollary 8.1.11.** "If the conditions of the theorem hold, then
-`dist(ran(Q₁), ran(Q̂₁)) ≤ (4/sep(D₁, D₂)) ‖E₂₁‖_F`", for the `P` and `Q̂₁ = (Q₁ + Q₂P) S⁻¹` of
-Theorem 8.1.10 (`theorem_8_1_10`, whose conclusions are repeated), `dist` being chapter 2's
-`subspaceDist` of the column spaces. `ran Q̂₁ = ran(Q₁ + Q₂P) = ran(Q [I; P])` and
-`ran Q₁ = ran(Q [I; 0])`; in the coordinates of `Q` their distance is at most `‖P‖₂ ≤ ‖P‖_F`
-(`Matrix.gap_range_fromRows_le` and (8.1.3)), so the book's route through
-`dist = ‖Q₂ᵀ Q̂₁‖₂ = ‖P (I + PᵀP)^{-1/2}‖₂` is not needed. -/
+/-- **Corollary 8.1.11** of [golub2013matrix]. Under the hypotheses of Theorem 8.1.10, there is
+$P \in \mathbb{R}^{s \times r}$ with $\|P\|_F \le (4/\operatorname{sep}(D_1, D_2)) \|E_{21}\|_F$
+such that a symmetric $S$ with $S^2 = I + P^T P$ exists, and for every such $S$ the matrix
+$\hat Q_1 = (Q_1 + Q_2 P) S^{-1}$ has the properties of Theorem 8.1.10 and
+$$\operatorname{dist}(\operatorname{ran}(Q_1), \operatorname{ran}(\hat Q_1)) \le
+  \frac{4}{\operatorname{sep}(D_1, D_2)} \|E_{21}\|_F.$$
+
+**Generalization.** As in Theorem 8.1.10, $E$ need not be symmetric and $S$ is any symmetric
+square root of $I + P^T P$.
+
+The conclusions of `GolubVanLoan.Chapter08.theorem_8_1_10` are repeated, so that the bound
+refers to the same $P$ and $\hat Q_1$. The distance is `GolubVanLoan.Chapter02.subspaceDist` of
+the column spaces. Since $\operatorname{ran}(\hat Q_1) = \operatorname{ran}(Q \begin{bmatrix} I
+\\ P \end{bmatrix})$ and $\operatorname{ran}(Q_1) = \operatorname{ran}(Q \begin{bmatrix} I \\ 0
+\end{bmatrix})$, the proof bounds the distance by $\|P\|_2 \le \|P\|_F$ with
+`Matrix.gap_range_fromRows_le` and (8.1.3), instead of the route of the source through
+$\operatorname{dist} = \|Q_2^T \hat Q_1\|_2 = \|P (I + P^T P)^{-1/2}\|_2$. -/
 theorem corollary_8_1_11 {A E : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) {r s : ℕ}
     {Q₁ : Matrix (Fin n) (Fin r) ℝ} {Q₂ : Matrix (Fin n) (Fin s) ℝ}
     (hQ : (fromCols Q₁ Q₂)ᵀ * fromCols Q₁ Q₂ = 1) (hQ' : fromCols Q₁ Q₂ * (fromCols Q₁ Q₂)ᵀ = 1)
@@ -712,7 +932,7 @@ theorem corollary_8_1_11 {A E : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) {r s
   rw [hrange, hd]
   exact (gap_range_fromRows_le P).trans ((equation_8_1_3 P).2.trans hP)
 
-/-- A column `x` with `xᵀ x = 1` is a unit vector. -/
+/-- A column $x$ with $x^T x = 1$ is a unit vector. -/
 private theorem norm_toLp_eq_one_of_transpose_mul_self {x : Fin n → ℝ}
     (h : (replicateCol (Fin 1) x)ᵀ * replicateCol (Fin 1) x = 1) : ‖WithLp.toLp 2 x‖ = 1 := by
   have h00 := congrFun (congrFun h 0) 0
@@ -722,8 +942,10 @@ private theorem norm_toLp_eq_one_of_transpose_mul_self {x : Fin n → ℝ}
     simpa [sq] using h00
   exact (pow_left_inj₀ (norm_nonneg _) zero_le_one two_ne_zero).1 (by rw [h2, one_pow])
 
-/-- For unit vectors `q`, `u`, `sin θ(q, span{u}) = √(1 − ⟪u, q⟫²)` (Pythagoras; the chapter's one
-copy, also used by §8.2). -/
+/-- For unit vectors $q$ and $u$ of a real inner product space, the sine of the angle between $q$
+and $\operatorname{span}\{u\}$ is $\sqrt{1 - \langle u, q \rangle^2}$.
+
+Section 8.2 also uses this lemma. -/
 theorem sinAngle_span_singleton_eq {E : Type*} [NormedAddCommGroup E]
     [InnerProductSpace ℝ E] {q u : E} (hq : ‖q‖ = 1) (hu : ‖u‖ = 1) :
     (ℝ ∙ u).sinAngle q = √(1 - inner ℝ u q ^ 2) := by
@@ -734,8 +956,8 @@ theorem sinAngle_span_singleton_eq {E : Type*} [NormedAddCommGroup E]
   rw [Submodule.sinAngle, hq, div_one, hP,
     show 1 - inner ℝ u q ^ 2 = ‖q - inner ℝ u q • u‖ ^ 2 by linarith, Real.sqrt_sq (norm_nonneg _)]
 
-/-- **The distance between two lines**: for unit `u`, `v`,
-`dist(span{u}, span{v}) = √(1 − (uᵀv)²)`. -/
+/-- For unit vectors $u, v \in \mathbb{R}^n$, $\operatorname{dist}(\operatorname{span}\{u\},
+\operatorname{span}\{v\}) = \sqrt{1 - (u^T v)^2}$. -/
 private theorem subspaceDist_span_singleton {u v : Fin n → ℝ} (hu : ‖WithLp.toLp 2 u‖ = 1)
     (hv : ‖WithLp.toLp 2 v‖ = 1) :
     Chapter02.subspaceDist (ℝ ∙ WithLp.toLp 2 u) (ℝ ∙ WithLp.toLp 2 v) = √(1 - (u ⬝ᵥ v) ^ 2) := by
@@ -744,15 +966,27 @@ private theorem subspaceDist_span_singleton {u v : Fin n → ℝ} (hu : ‖WithL
   rw [Chapter02.subspaceDist, Submodule.gap_span_singleton_eq_sinAngle hu hv,
     sinAngle_span_singleton_eq hu hv, hi]
 
-/-- **Theorem 8.1.12** (eigenvector perturbation). "Suppose `A` and `A + E` are `n`-by-`n`
-symmetric matrices and that `Q = [q₁ | Q₂]` is an orthogonal matrix such that `q₁` is an
-eigenvector for `A`. Partition `QᵀAQ = [λ 0; 0 D₂]`, `QᵀEQ = [ε eᵀ; e E₂₂]`. If
-`d = min_{μ ∈ λ(D₂)} |λ − μ| > 0` and `‖E‖_F ≤ d/5`, then there exists `p ∈ ℝ^{n−1}` satisfying
-`‖p‖₂ ≤ (4/d)‖e‖₂` such that `q̂₁ = (q₁ + Q₂p)/√(1 + pᵀp)` is a unit 2-norm eigenvector for
-`A + E`. Moreover, `dist(span{q₁}, span{q̂₁}) = √(1 − (q₁ᵀq̂₁)²) ≤ (4/d)‖e‖₂`." Here `Q₂` has `s`
-columns, `e` is the first column of the `(2,1)` block of `QᵀEQ` (symmetry of `E` is not needed),
-and `dist` is chapter 2's `subspaceDist`. The case `r = 1` of Theorem 8.1.10 and Corollary 8.1.11,
-where `d = sep((λ), D₂)` and the square root of `1 + pᵀp` is a scalar. -/
+/-- **Theorem 8.1.12** of [golub2013matrix] (eigenvector perturbation). Let
+$A, E \in \mathbb{R}^{n \times n}$ with $A$ symmetric, and let $Q = [q_1 \; Q_2]$ be orthogonal
+with $q_1 \in \mathbb{R}^n$ and $Q_2 \in \mathbb{R}^{n \times s}$. Partition
+$$Q^T A Q = \begin{bmatrix} \lambda & 0 \\ 0 & D_2 \end{bmatrix}, \qquad Q^T E Q =
+  \begin{bmatrix} \epsilon & e^T \\ e & E_{22} \end{bmatrix},$$
+so that $q_1$ is an eigenvector of $A$. Let $d = \min_{\mu \in \lambda(D_2)} |\lambda - \mu|$.
+If $d > 0$ and $\|E\|_F \le d/5$, then there is $p \in \mathbb{R}^s$ with
+$\|p\|_2 \le (4/d) \|e\|_2$ such that
+$$\hat q_1 = \frac{q_1 + Q_2 p}{\sqrt{1 + p^T p}}$$
+is a unit 2-norm eigenvector of $A + E$, and
+$$\operatorname{dist}(\operatorname{span}\{q_1\}, \operatorname{span}\{\hat q_1\}) = \sqrt{1 -
+  (q_1^T \hat q_1)^2} \le \frac{4}{d} \|e\|_2.$$
+
+**Generalization.** The source assumes that $A + E$ is symmetric. The theorem needs only $A$ to
+be symmetric.
+
+The source has $s = n - 1$; here orthogonality of $Q$ forces it. The vector $e$ is the column of
+the $(2,1)$ block `toBlocks₂₁` of $Q^T E Q$, $d$ is the infimum over the real spectrum of $D_2$,
+and the distance is `GolubVanLoan.Chapter02.subspaceDist`. The theorem is the case $r = 1$ of
+Theorem 8.1.10 and Corollary 8.1.11, with $d = \operatorname{sep}((\lambda), D_2)$ and the
+scalar square root of $1 + p^T p$. -/
 theorem theorem_8_1_12 {A E : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) {s : ℕ}
     {q₁ : Fin n → ℝ} {Q₂ : Matrix (Fin n) (Fin s) ℝ}
     (hQ : (fromCols (replicateCol (Fin 1) q₁) Q₂)ᵀ * fromCols (replicateCol (Fin 1) q₁) Q₂ = 1)
@@ -834,15 +1068,24 @@ theorem theorem_8_1_12 {A E : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) {s : �
 
 end Frobenius
 
-/-! ### §8.1.4 Approximate invariant subspaces -/
+/-! ### Approximate invariant subspaces (§8.1.4) -/
 
-/-- **Theorem 8.1.13** (paired form). "Suppose `A ∈ ℝ^{n×n}` and `S ∈ ℝ^{r×r}` are symmetric and
-that `AQ₁ − Q₁S = E₁` where `Q₁ ∈ ℝ^{n×r}` satisfies `Q₁ᵀQ₁ = I_r`. Then there exist
-`μ₁, …, μ_r ∈ λ(A)` such that `|μ_k − λ_k(S)| ≤ √2 ‖E₁‖₂` for `k = 1:r`." The `μ_k` are
-`λ_{σ(k)}(A)` for an injection `σ`, as the book's proof produces them (Weyl's inequality pairs the
-sorted eigenvalues of `A` with those of `B = diag(S, Q₂ᵀAQ₂)`, among which the eigenvalues of `S`
-sit at distinct positions): the backbone's
-`Matrix.IsHermitian.exists_embedding_abs_sub_le_of_mul_sub_mul`. -/
+/-- **Theorem 8.1.13** of [golub2013matrix]. Let $A \in \mathbb{R}^{n \times n}$ and
+$S \in \mathbb{R}^{r \times r}$ be symmetric, and let $Q_1 \in \mathbb{R}^{n \times r}$ satisfy
+$Q_1^T Q_1 = I_r$. Let $E_1 = A Q_1 - Q_1 S$. Then there is an injective map
+$\sigma : \{1, \dots, r\} \to \{1, \dots, n\}$ such that
+$$|\lambda_{\sigma(k)}(A) - \lambda_k(S)| \le \sqrt{2} \, \|E_1\|_2, \qquad k = 1, \dots, r.$$
+
+**Reading.** The source says that there exist $\mu_1, \dots, \mu_r \in \lambda(A)$ with
+$|\mu_k - \lambda_k(S)| \le \sqrt{2} \|E_1\|_2$. The theorem takes
+$\mu_k = \lambda_{\sigma(k)}(A)$ with $\sigma$ injective, as the proof of the source produces
+them: Weyl's inequality pairs the sorted eigenvalues of $A$ with those of
+$B = \operatorname{diag}(S, Q_2^T A Q_2)$, among which the eigenvalues of $S$ sit at distinct
+positions.
+
+The map $\sigma$ is an embedding `Fin r ↪ Fin n`. The proof specializes
+`Matrix.IsHermitian.exists_embedding_abs_sub_le_of_mul_sub_mul`. The unpaired form with constant
+$1$ is `GolubVanLoan.Chapter08.theorem_8_1_13_weak`. -/
 theorem theorem_8_1_13 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) {r : ℕ}
     {S : Matrix (Fin r) (Fin r) ℝ} (hS : S.IsSymm) {Q₁ : Matrix (Fin n) (Fin r) ℝ}
     (hQ : Q₁ᵀ * Q₁ = 1) :
@@ -857,9 +1100,15 @@ theorem theorem_8_1_13 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) {r : ℕ
     Equiv.coe_toEmbedding, finCongr_apply, Fin.cast_cast, Fin.cast_eq_self]
   exact h
 
-/-- **Theorem 8.1.13, unpaired form.** For symmetric `A` and `S`, `Q₁` with `Q₁ᵀ Q₁ = I_r`, every
-eigenvalue `θ` of `S` has an eigenvalue `μ` of `A` with `|μ - θ| ≤ ‖A Q₁ - Q₁ S‖₂` (constant `1`,
-without the pairing of `theorem_8_1_13`). -/
+/-- **Theorem 8.1.13** of [golub2013matrix], unpaired form. Let $A \in \mathbb{R}^{n \times n}$ and
+$S \in \mathbb{R}^{r \times r}$ be symmetric, and let $Q_1 \in \mathbb{R}^{n \times r}$ satisfy
+$Q_1^T Q_1 = I_r$. Then for every eigenvalue $\theta$ of $S$ there is an eigenvalue $\mu$ of $A$
+with
+$$|\mu - \theta| \le \|A Q_1 - Q_1 S\|_2.$$
+
+The constant is $1$ instead of $\sqrt{2}$, but distinct eigenvalues $\theta$ need not get
+distinct $\mu$, unlike `GolubVanLoan.Chapter08.theorem_8_1_13`. This form is not a corollary of
+the paired form. -/
 theorem theorem_8_1_13_weak {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) {r : ℕ}
     {S : Matrix (Fin r) (Fin r) ℝ} (hS : S.IsSymm) {Q₁ : Matrix (Fin n) (Fin r) ℝ}
     (hQ : Q₁ᵀ * Q₁ = 1) {θ : ℝ} (hθ : θ ∈ spectrum ℝ S) :
@@ -871,8 +1120,14 @@ section Frobenius
 
 open scoped Matrix.Norms.Frobenius
 
-/-- **Theorem 8.1.14.** For `Q₁` with orthonormal columns, `S = Q₁ᵀ A Q₁` minimizes
-`‖A Q₁ - Q₁ S‖_F`, and the minimum is `‖(I - Q₁ Q₁ᵀ) A Q₁‖_F`. -/
+/-- **Theorem 8.1.14** of [golub2013matrix]. Let $A \in \mathbb{R}^{n \times n}$, and let
+$Q_1 \in \mathbb{R}^{n \times r}$ have orthonormal columns. Then
+$$\min_{S \in \mathbb{R}^{r \times r}} \|A Q_1 - Q_1 S\|_F = \|(I - Q_1 Q_1^T) A Q_1\|_F,$$
+and the minimum is attained at $S = Q_1^T A Q_1$.
+
+The statement says that the right side is the least element (`IsLeast`) of the set of values of
+$\|A Q_1 - Q_1 S\|_F$. It is the value at $S = Q_1^T A Q_1$, since $(I - Q_1 Q_1^T) A Q_1 = A
+Q_1 - Q_1 (Q_1^T A Q_1)$. The matrix $A$ need not be symmetric. -/
 theorem theorem_8_1_14 (A : Matrix (Fin n) (Fin n) ℝ) {r : ℕ} {Q₁ : Matrix (Fin n) (Fin r) ℝ}
     (hQ : Q₁ᵀ * Q₁ = 1) :
     IsLeast (Set.range fun S : Matrix (Fin r) (Fin r) ℝ => ‖A * Q₁ - Q₁ * S‖)
@@ -883,8 +1138,9 @@ theorem theorem_8_1_14 (A : Matrix (Fin n) (Fin n) ℝ) {r : ℕ} {Q₁ : Matrix
 
 end Frobenius
 
-/-- The residual identity behind Theorem 8.1.15: with `Zᵀ (Q₁ᵀ A Q₁) Z = diag(θ)` for an
-orthogonal `Z`, `A y_k - θ_k y_k = (I - Q₁ Q₁ᵀ) A Q₁ Z e_k` for `y_k = Q₁ Z e_k`. -/
+/-- The residual identity behind Theorem 8.1.15: if $Z$ is orthogonal with $Z^T (Q_1^T A Q_1) Z =
+\operatorname{diag}(\theta)$ and $y_k = Q_1 Z e_k$, then $A y_k - \theta_k y_k = (I - Q_1 Q_1^T)
+A Q_1 Z e_k$. -/
 private theorem ritz_residual_eq (A : Matrix (Fin n) (Fin n) ℝ) {r : ℕ}
     {Q₁ : Matrix (Fin n) (Fin r) ℝ} {Z : Matrix (Fin r) (Fin r) ℝ}
     (hZ : Z ∈ orthogonalGroup (Fin r) ℝ) {θ : Fin r → ℝ}
@@ -901,9 +1157,17 @@ private theorem ritz_residual_eq (A : Matrix (Fin n) (Fin n) ℝ) {r : ℕ}
   congr 1
   simp only [Matrix.sub_mul, Matrix.one_mul, Matrix.mul_assoc]
 
-/-- **Theorem 8.1.15.** For `Q₁` with orthonormal columns, an orthogonal `Z` with
-`Zᵀ (Q₁ᵀ A Q₁) Z = diag(θ_1, …, θ_r)` and `[y_1, …, y_r] = Q₁ Z`:
-`‖A y_k - θ_k y_k‖₂ = ‖(I - Q₁Q₁ᵀ) A Q₁ Z e_k‖₂ ≤ ‖(I - Q₁Q₁ᵀ) A Q₁‖₂`. -/
+/-- **Theorem 8.1.15** of [golub2013matrix]. Let $A \in \mathbb{R}^{n \times n}$ and
+$Q_1 \in \mathbb{R}^{n \times r}$, and let $Z \in \mathbb{R}^{r \times r}$ be orthogonal with
+$$Z^T (Q_1^T A Q_1) Z = \operatorname{diag}(\theta_1, \dots, \theta_r).$$
+Let $[y_1, \dots, y_r] = Q_1 Z$. Then for $k = 1, \dots, r$,
+$$A y_k - \theta_k y_k = (I - Q_1 Q_1^T) A Q_1 Z e_k, \qquad \|A y_k - \theta_k y_k\|_2 \le
+  \|(I - Q_1 Q_1^T) A Q_1\|_2.$$
+
+**Generalization.** The source takes $Q_1$ with orthonormal columns. The identity and the bound
+hold for every $Q_1$.
+
+The matrix $A$ need not be symmetric. -/
 theorem theorem_8_1_15 (A : Matrix (Fin n) (Fin n) ℝ) {r : ℕ} {Q₁ : Matrix (Fin n) (Fin r) ℝ}
     {Z : Matrix (Fin r) (Fin r) ℝ} (hZ : Z ∈ orthogonalGroup (Fin r) ℝ) {θ : Fin r → ℝ}
     (hZθ : Zᵀ * (Q₁ᵀ * A * Q₁) * Z = diagonal θ) (k : Fin r) :
@@ -920,9 +1184,18 @@ theorem theorem_8_1_15 (A : Matrix (Fin n) (Fin n) ℝ) {r : ℕ} {Q₁ : Matrix
     simp
   exact (norm_toEuclideanLin_apply_le _ _).trans_eq (by rw [hcol, mul_one])
 
-/-- **§8.1.4, Ritz pairs.** In the setting of Theorem 8.1.15, each `(θ_k, y_k)` is a Ritz pair
-of `A` on `ran(Q₁)` (`y_k ∈ ran(Q₁)`, `y_k ≠ 0`, residual orthogonal to `ran(Q₁)`); and conversely
-every Ritz pair `(μ, u)` of `A` on `ran(Q₁)` is `u = Q₁ w` with `(Q₁ᵀ A Q₁) w = μ w`, `w ≠ 0`. -/
+/-- **Section 8.1.4** of [golub2013matrix], Ritz pairs. Let $A \in \mathbb{R}^{n \times n}$, let
+$Q_1 \in \mathbb{R}^{n \times r}$ satisfy $Q_1^T Q_1 = I$, and let
+$Z \in \mathbb{R}^{r \times r}$ be orthogonal with $Z^T (Q_1^T A Q_1) Z =
+\operatorname{diag}(\theta_1, \dots, \theta_r)$ and $[y_1, \dots, y_r] = Q_1 Z$. Then:
+* each $(\theta_k, y_k)$ is a Ritz pair of $A$ on $\operatorname{ran}(Q_1)$:
+  $y_k \in \operatorname{ran}(Q_1)$, $y_k \neq 0$, and $A y_k - \theta_k y_k$ is orthogonal to
+  $\operatorname{ran}(Q_1)$;
+* conversely, every Ritz pair $(\mu, u)$ of $A$ on $\operatorname{ran}(Q_1)$ has $u = Q_1 w$ for
+  some $w \neq 0$ with $(Q_1^T A Q_1) w = \mu w$.
+
+A Ritz pair is `Krylov.IsRitzPair` for the operator `Matrix.toEuclideanLin A` and the subspace
+`LinearMap.range (Matrix.toEuclideanLin Q₁)`. -/
 theorem ritzPair_isRitzPair (A : Matrix (Fin n) (Fin n) ℝ) {r : ℕ}
     {Q₁ : Matrix (Fin n) (Fin r) ℝ} (hQ : Q₁ᵀ * Q₁ = 1) {Z : Matrix (Fin r) (Fin r) ℝ}
     (hZ : Z ∈ orthogonalGroup (Fin r) ℝ) {θ : Fin r → ℝ}
@@ -977,9 +1250,13 @@ section L2
 
 open scoped Matrix.Norms.L2Operator
 
-/-- **(8.1.5).** For `S = X₁ᵀ A X₁`, `F₁ = A X₁ - X₁ S` and any `Q`, `E₁ = A Q - Q S` satisfies
-`‖E₁‖₂ ≤ ‖F₁‖₂ + ‖Q - X₁‖₂ ‖A‖₂ (1 + ‖X₁‖₂²)`. (The book takes `Q` with orthonormal columns; the
-bound does not need it.) -/
+/-- **Equation (8.1.5)** of [golub2013matrix]. Let $A \in \mathbb{R}^{n \times n}$ and
+$X_1, Q \in \mathbb{R}^{n \times r}$, and let $S = X_1^T A X_1$ and $F_1 = A X_1 - X_1 S$. Then
+$E_1 = A Q - Q S$ satisfies
+$$\|E_1\|_2 \le \|F_1\|_2 + \|Q - X_1\|_2 \, \|A\|_2 \, (1 + \|X_1\|_2^2).$$
+
+**Generalization.** The source takes $Q$ with orthonormal columns. The bound holds for every
+$Q$. -/
 theorem equation_8_1_5 (A : Matrix (Fin n) (Fin n) ℝ) {r : ℕ} (X₁ Q : Matrix (Fin n) (Fin r) ℝ) :
     lpOpNorm 2 (A * Q - Q * (X₁ᵀ * A * X₁)) ≤ lpOpNorm 2 (A * X₁ - X₁ * (X₁ᵀ * A * X₁)) +
       lpOpNorm 2 (Q - X₁) * lpOpNorm 2 A * (1 + lpOpNorm 2 X₁ ^ 2) := by
@@ -1002,7 +1279,8 @@ theorem equation_8_1_5 (A : Matrix (Fin n) (Fin n) ℝ) {r : ℕ} (X₁ Q : Matr
     _ ≤ ‖A * X₁ - X₁ * S‖ + (‖A‖ * ‖Q - X₁‖ + ‖Q - X₁‖ * (‖X₁‖ ^ 2 * ‖A‖)) := by gcongr
     _ = _ := by ring
 
-/-- **(8.1.6).** If `‖X₁ᵀ X₁ - I_r‖₂ = τ`, then `‖X₁‖₂² ≤ 1 + τ`. -/
+/-- **Equation (8.1.6)** of [golub2013matrix]. Let $X_1 \in \mathbb{R}^{n \times r}$ with
+$\|X_1^T X_1 - I_r\|_2 = \tau$. Then $\|X_1\|_2^2 \le 1 + \tau$. -/
 theorem equation_8_1_6 {r : ℕ} (X₁ : Matrix (Fin n) (Fin r) ℝ) {τ : ℝ}
     (hτ : lpOpNorm 2 (X₁ᵀ * X₁ - 1) = τ) : lpOpNorm 2 X₁ ^ 2 ≤ 1 + τ := by
   have h1 : lpOpNorm 2 (1 : Matrix (Fin r) (Fin r) ℝ) ≤ 1 := by
@@ -1013,8 +1291,8 @@ theorem equation_8_1_6 {r : ℕ} (X₁ : Matrix (Fin n) (Fin r) ℝ) {τ : ℝ}
     _ ≤ ‖X₁ᵀ * X₁ - 1‖ + ‖(1 : Matrix (Fin r) (Fin r) ℝ)‖ := norm_add_le _ _
     _ ≤ 1 + τ := by linarith
 
-/-- If `‖X₁ᵀ X₁ - I_r‖₂ < 1` then `r ≤ n`: otherwise some `v ≠ 0` has `X₁ v = 0`, and
-`(X₁ᵀ X₁ - I) v = -v`. -/
+/-- If $\|X_1^T X_1 - I_r\|_2 < 1$, then $r \le n$: otherwise some $v \neq 0$ has $X_1 v = 0$, and
+then $(X_1^T X_1 - I) v = -v$. -/
 private theorem le_of_l2_opNorm_transpose_mul_self_sub_one_lt {r : ℕ}
     {X₁ : Matrix (Fin n) (Fin r) ℝ} (h : lpOpNorm 2 (X₁ᵀ * X₁ - 1) < 1) : r ≤ n := by
   by_contra hrn
@@ -1029,11 +1307,15 @@ private theorem le_of_l2_opNorm_transpose_mul_self_sub_one_lt {r : ℕ}
     norm_pos_iff.2 (fun h0 => hv0 (by simpa using congrArg WithLp.ofLp h0))
   nlinarith
 
-/-- **(8.1.7)** (in the proof of Theorem 8.1.16): if `‖X₁ᵀ X₁ - I_r‖₂ = τ < 1` there is `Q` with
-orthonormal columns and `‖Q - X₁‖₂ ≤ τ` — the book's `Q = U Vᵀ` from the thin SVD
-`Uᵀ X₁ V = Σ`, i.e. the polar factor of `X₁` (`Matrix.exists_orthonormal_cols_norm_sub_le`). The
-book's intermediate `1 - σ_r² = τ` is not needed (and holds only when `σ_r` is the singular value
-farthest from `1`). -/
+/-- **Equation (8.1.7)** of [golub2013matrix], in the proof of Theorem 8.1.16. Let
+$X_1 \in \mathbb{R}^{n \times r}$ with $\|X_1^T X_1 - I_r\|_2 = \tau < 1$. Then there is
+$Q \in \mathbb{R}^{n \times r}$ with $Q^T Q = I_r$ and
+$$\|Q - X_1\|_2 \le \tau.$$
+
+The matrix $Q$ is the $Q = U V^T$ of the source, from the thin SVD $U^T X_1 V = \Sigma$, that
+is, the polar factor of $X_1$ (`Matrix.exists_orthonormal_cols_norm_sub_le`). The intermediate
+claim $1 - \sigma_r^2 = \tau$ of the source is not needed. It holds only when $\sigma_r$ is the
+singular value farthest from $1$. -/
 theorem equation_8_1_7 {r : ℕ} (X₁ : Matrix (Fin n) (Fin r) ℝ) {τ : ℝ}
     (hτ : lpOpNorm 2 (X₁ᵀ * X₁ - 1) = τ) (hτ1 : τ < 1) :
     ∃ Q : Matrix (Fin n) (Fin r) ℝ, Qᵀ * Q = 1 ∧ lpOpNorm 2 (Q - X₁) ≤ τ := by
@@ -1044,12 +1326,21 @@ theorem equation_8_1_7 {r : ℕ} (X₁ : Matrix (Fin n) (Fin r) ℝ) {τ : ℝ}
 
 end L2
 
-/-- **Theorem 8.1.16** (paired form). "Suppose `A ∈ ℝ^{n×n}` is symmetric and that
-`AX₁ − X₁S = F₁` where `X₁ ∈ ℝ^{n×r}` and `S = X₁ᵀAX₁`. If `‖X₁ᵀX₁ − I_r‖₂ = τ < 1` (8.1.4), then
-there exist `μ₁, …, μ_r ∈ λ(A)` such that `|μ_k − λ_k(S)| ≤ √2 (‖F₁‖₂ + τ(2 + τ)‖A‖₂)` for
-`k = 1:r`." As in Theorem 8.1.13 the `μ_k` are `λ_{σ(k)}(A)` for an injection `σ`. The book's
-proof: `Q` with orthonormal columns and `‖Q − X₁‖₂ ≤ τ` from (8.1.7), (8.1.5) with (8.1.6) bounds
-`‖AQ − QS‖₂ ≤ ‖F₁‖₂ + τ(2 + τ)‖A‖₂`, and Theorem 8.1.13 applies to `Q`. -/
+/-- **Theorem 8.1.16** of [golub2013matrix]. Let $A \in \mathbb{R}^{n \times n}$ be symmetric, let
+$X_1 \in \mathbb{R}^{n \times r}$, and let $S = X_1^T A X_1$ and $F_1 = A X_1 - X_1 S$. If
+$\|X_1^T X_1 - I_r\|_2 = \tau < 1$, which is (8.1.4), then there is an injective map
+$\sigma : \{1, \dots, r\} \to \{1, \dots, n\}$ such that
+$$|\lambda_{\sigma(k)}(A) - \lambda_k(S)| \le \sqrt{2} \left(\|F_1\|_2 + \tau (2 + \tau)
+  \|A\|_2\right), \qquad k = 1, \dots, r.$$
+
+**Reading.** The source says that there exist $\mu_1, \dots, \mu_r \in \lambda(A)$ with this
+bound. As in Theorem 8.1.13, the theorem takes $\mu_k = \lambda_{\sigma(k)}(A)$ with $\sigma$
+injective.
+
+The proof follows the source: (8.1.7) gives $Q$ with orthonormal columns and
+$\|Q - X_1\|_2 \le \tau$; (8.1.5) with (8.1.6) gives $\|A Q - Q S\|_2 \le \|F_1\|_2 + \tau (2 +
+\tau) \|A\|_2$; and Theorem 8.1.13 applies to $Q$. The symmetry of $S$ is
+`hA.transpose_mul_mul X₁`. -/
 theorem theorem_8_1_16 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) {r : ℕ}
     (X₁ : Matrix (Fin n) (Fin r) ℝ) {τ : ℝ} (hτ : lpOpNorm 2 (X₁ᵀ * X₁ - 1) = τ) (hτ1 : τ < 1) :
     ∃ σ : Fin r ↪ Fin n, ∀ k,
@@ -1072,14 +1363,18 @@ theorem theorem_8_1_16 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) {r : ℕ
       _ = τ * (2 + τ) * lpOpNorm 2 A := by ring
   linarith
 
-/-! ### §8.1.5 The law of inertia -/
+/-! ### The law of inertia (§8.1.5) -/
 
-/-- **§8.1.5, the inertia** `(m, z, p)` of a symmetric `A`: the numbers of negative, zero and
-positive eigenvalues. -/
+/-- **Section 8.1.5** of [golub2013matrix], the inertia. The **inertia** of a symmetric
+$A \in \mathbb{R}^{n \times n}$ is the triple $(m, z, p)$ of the numbers of negative, zero and
+positive eigenvalues of $A$, counted with multiplicity.
+
+The definition is the backbone's `Matrix.IsHermitian.inertia`. -/
 noncomputable def inertia {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) : ℕ × ℕ × ℕ :=
   (isHermitian_iff_isSymm.2 hA).inertia
 
-/-- The inertia counts the `λ_k(A)` that are negative, zero and positive. -/
+/-- The inertia $(m, z, p)$ of a symmetric $A$ counts the $\lambda_k(A)$ that are negative, zero and
+positive. -/
 theorem inertia_eq {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) :
     inertia hA = ((Finset.univ.filter fun k => symmEigenvalue hA k < 0).card,
       (Finset.univ.filter fun k => symmEigenvalue hA k = 0).card,
@@ -1094,8 +1389,8 @@ theorem inertia_eq {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) :
   · exact (Finset.card_filter_comp_equiv (finCongr (Fintype.card_fin n).symm)
       (fun j => 0 < hH.eigenvalues₀ j)).symm
 
-/-- Counting the `λ_k(A)` with a property is counting Mathlib's `IsHermitian.eigenvalues` with it:
-both are `eigenvalues₀` composed with an equivalence. -/
+/-- For every property $p$ of real numbers, the number of $\lambda_k(A)$ with property $p$ equals
+the number of entries of Mathlib's `Matrix.IsHermitian.eigenvalues` with property $p$. -/
 theorem card_filter_symmEigenvalue {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) (p : ℝ → Prop)
     [DecidablePred p] :
     (Finset.univ.filter fun k => p (symmEigenvalue hA k)).card =
@@ -1105,14 +1400,18 @@ theorem card_filter_symmEigenvalue {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSy
     (Finset.card_filter_comp_equiv (Fintype.equivOfCardEq (Fintype.card_fin _)).symm
       (fun j => p ((isHermitian_iff_isSymm.2 hA).eigenvalues₀ j))).symm
 
-/-- The inertia depends on the matrix only. -/
+/-- The inertia depends only on the matrix, not on the proof of its symmetry. -/
 private theorem inertia_congr {A B : Matrix (Fin n) (Fin n) ℝ} (h : A = B) (hA : A.IsSymm)
     (hB : B.IsSymm) : inertia hA = inertia hB := by
   subst h
   rfl
 
-/-- **Theorem 8.1.17 (Sylvester law of inertia).** For symmetric `A` and nonsingular `X`, `A` and
-`Xᵀ A X` have the same inertia. -/
+/-- **Theorem 8.1.17** of [golub2013matrix] (Sylvester law of inertia). Let
+$A \in \mathbb{R}^{n \times n}$ be symmetric and $X \in \mathbb{R}^{n \times n}$ nonsingular.
+Then $A$ and $X^T A X$ have the same inertia.
+
+The Lean statement also takes a proof that $X^T A X$ is symmetric. Nonsingularity is
+`IsUnit X.det`. -/
 theorem theorem_8_1_17 {A X : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) (hX : IsUnit X.det)
     (hXAX : (Xᵀ * A * X).IsSymm) : inertia hXAX = inertia hA := by
   have hc : Xᴴ * A * X = Xᵀ * A * X := by rw [conjTranspose_eq_transpose_of_trivial]

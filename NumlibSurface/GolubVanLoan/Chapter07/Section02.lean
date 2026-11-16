@@ -8,44 +8,105 @@ import Numlib.Eigen.Perturbation
 import NumlibSurface.GolubVanLoan.Chapter07.Section01
 
 /-!
-# Golub–Van Loan §7.2: perturbation theory
+# Golub and Van Loan, Section 7.2: Perturbation Theory
 
-Surface file for Gene H. Golub and Charles F. Van Loan, *Matrix Computations*, 4th edition
-[golub2013matrix], §7.2: Gershgorin's theorem for a similarity transform (Theorem 7.2.1) and its
-isolated discs, the Bauer–Fike theorem in every `p`-norm (Theorem 7.2.2), the resolvent step
-(7.2.1) behind Theorems 7.2.1–7.2.3, the Schur-form bound (Theorem 7.2.3), the condition `1/s(λ)`
-of a simple eigenvalue ((7.2.2) and its first-order derivation), the `2 × 2` repeated-eigenvalue
-example (§7.2.3), the separation (7.2.5), Stewart's invariant-subspace perturbation theorem
-(Theorem 7.2.4) with (7.2.6) and Corollary 7.2.5, and eigenvector sensitivity (Corollary 7.2.6,
-`sep(λ, T₂₂) = σ_min(T₂₂ - λI)`).
+This module formalizes §7.2 of [golub2013matrix], which studies how the eigenvalues and the
+invariant subspaces of a complex matrix $A \in \mathbb{C}^{n \times n}$ change under a perturbation
+$A + E$. It covers the Gershgorin theorem (Theorem 7.2.1) and its isolated discs, the Bauer–Fike
+theorem (Theorem 7.2.2) in every $p$-norm, the step (7.2.1) that the proofs of Theorems 7.2.1–7.2.3
+share, the bound of Theorem 7.2.3 through a Schur decomposition $Q^H A Q = D + N$, the quantity
+$s(\lambda) = |y^H x|$ whose reciprocal is the condition of a simple eigenvalue (7.2.2), the
+$2 \times 2$ example of a repeated eigenvalue, the separation $\operatorname{sep}(T_{11}, T_{22})$
+of (7.2.5), Stewart's theorem on the perturbation of an invariant subspace (Theorem 7.2.4) with
+(7.2.6) and Corollary 7.2.5, and the sensitivity of an eigenvector (Corollary 7.2.6), where
+$\operatorname{sep}(\lambda, T_{22}) = \sigma_{\min}(T_{22} - \lambda I)$.
+
+The proofs specialize the backbone: `Numlib.Eigen.Perturbation` supplies the Gershgorin and
+Bauer–Fike theorems, the resolvent step, Theorem 7.2.3, the eigenvalue condition number and the
+differentiable eigenvalue branch; `Numlib.LinearAlgebra.Matrix.Sylvester` supplies the separation
+`Matrix.sep`; and `Numlib.Eigen.InvariantSubspace` supplies Stewart's invariant graph
+`Matrix.exists_invariant_graph_of_sep` and the gap bound `Matrix.gap_range_fromRows_le`.
+
+## Main definitions
+
+* §7.2.2, `GolubVanLoan.Chapter07.eigenvalueSensitivity`: the quantity $s(\lambda) = |y^H x|$ of
+  (7.2.2).
+* Theorem 7.2.4, `GolubVanLoan.Chapter07.stewartBasis`: the matrix
+  $\tilde Q_1 = (Q_1 + Q_2 P)(I + P^H P)^{-1/2}$.
+* Corollary 7.2.6, `GolubVanLoan.Chapter07.stewartVector`: the vector
+  $\tilde q_1 = (q_1 + Q_2 p)/\sqrt{1 + p^H p}$.
+
+## Main results
+
+* Theorem 7.2.1, `GolubVanLoan.Chapter07.theorem_7_2_1`: if $X^{-1} A X = D + F$ with $F$ of zero
+  diagonal, the eigenvalues of $A$ lie in the union of the Gershgorin discs.
+* §7.2.1, `GolubVanLoan.Chapter07.gershgorin_isolated`: a Gershgorin disc disjoint from the others
+  contains exactly one eigenvalue, counted with multiplicity.
+* Theorem 7.2.2, `GolubVanLoan.Chapter07.theorem_7_2_2`: the Bauer–Fike bound $\min_{\lambda \in
+  \lambda(A)} |\lambda - \mu| \le \kappa_p(X) \|E\|_p$ for a diagonalizable $A$.
+* (7.2.1), `GolubVanLoan.Chapter07.equation_7_2_1`: if
+  $\mu \in \lambda(A + E) \setminus \lambda(A)$, then $1 \le \|(\mu I - A)^{-1} E\|_2 \le \|(\mu I -
+  A)^{-1}\|_2 \|E\|_2$.
+* Theorem 7.2.3, `GolubVanLoan.Chapter07.theorem_7_2_3`: the bound $\max(\theta, \theta^{1/p})$ on
+  the distance from an eigenvalue of $A + E$ to $\lambda(A)$.
+* §7.2.2, `GolubVanLoan.Chapter07.inner_ne_zero_of_simple`: $y^H x \neq 0$ for a simple eigenvalue.
+* (7.2.2), `GolubVanLoan.Chapter07.equation_7_2_2`: a simple eigenvalue has a differentiable branch
+  with $|\lambda'(0)| \le \|F\|_2 / s(\lambda)$, and the bound is attained.
+* §7.2.3, `GolubVanLoan.Chapter07.repeated_eigenvalue_example`: for $A = \begin{bmatrix} 1 & a \\ 0
+  & 1 \end{bmatrix}$ with $a \neq 0$, no eigenvalue branch of $A + \varepsilon F$ is differentiable
+  at $0$.
+* (7.2.5), `GolubVanLoan.Chapter07.equation_7_2_5`: $\operatorname{sep}(T_{11}, T_{22})$ is the
+  minimum of $\|T_{11} X - X T_{22}\|_F / \|X\|_F$ over $X \neq 0$.
+* Theorem 7.2.4, `GolubVanLoan.Chapter07.theorem_7_2_4`: Stewart's theorem, the existence of a
+  nearby invariant subspace of $A + E$ with an orthonormal basis $\tilde Q_1$.
+* (7.2.6), `GolubVanLoan.Chapter07.equation_7_2_6`: $\|P (I + P^H P)^{-1/2}\|_2 \le \|P\|_2 \le
+  \|P\|_F$.
+* Corollary 7.2.5, `GolubVanLoan.Chapter07.corollary_7_2_5`:
+  $\operatorname{dist}(\operatorname{ran}(Q_1), \operatorname{ran}(\tilde Q_1)) \le 4 \|E_{21}\|_F /
+  \operatorname{sep}(T_{11}, T_{22})$.
+* §7.2.5, `GolubVanLoan.Chapter07.sep_one_eq_sigmaMin`: $\operatorname{sep}(\lambda, T_{22}) =
+  \sigma_{\min}(T_{22} - \lambda I) \le \min_{\mu \in \lambda(T_{22})} |\mu - \lambda|$.
+* Corollary 7.2.6, `GolubVanLoan.Chapter07.corollary_7_2_6`: the perturbation bound for an
+  eigenvector.
 
 ## Conventions
 
-Complex, `A : Matrix (Fin n) (Fin n) ℂ`, as in §7.1 (`GolubVanLoan.Chapter07.Section01`). The
-2-norm is the scoped `Matrix.Norms.L2Operator` norm and the Frobenius norm the scoped
-`Matrix.Norms.Frobenius` norm, each opened in its own section. A right eigenvector is
-`A *ᵥ x = λ • x`, a left eigenvector `star y ᵥ* A = λ • star y` (the book's `yᴴ A = λ yᴴ`), and unit
-length is `‖WithLp.toLp 2 x‖ = 1`. The separation `sep(T₁₁, T₂₂)` is the backbone's `Matrix.sep`.
-For Theorem 7.2.4 the index type is `Fin r ⊕ Fin s` (`s = n - r`), so that `Q = [Q₁ Q₂]` and the
-blocks of `Qᴴ A Q` are `Matrix.fromBlocks`; for Corollary 7.2.6 it is `Unit ⊕ Fin s`. The inverse
-square root `(I + Pᴴ P)^{-1/2}` is `(CFC.sqrt (1 + Pᴴ * P))⁻¹` (scoped `MatrixOrder`), the
-distance of two subspaces the gap `Submodule.gap`, and where the 2-norm and the Frobenius norm meet
-in one statement the 2-norm is `Matrix.lpOpNorm 2`.
+* The matrices of this section are complex, `A : Matrix (Fin n) (Fin n) ℂ`, as in §7.1.
+* A right eigenvector satisfies $Ax = \lambda x$, which is `A *ᵥ x = λ • x`. A left eigenvector
+  satisfies $y^H A = \lambda y^H$, which is `star y ᵥ* A = λ • star y`. A unit vector $x$ has
+  `‖WithLp.toLp 2 x‖ = 1`.
+* $\|\cdot\|_2$ is the scoped norm `Matrix.Norms.L2Operator`, and $\|\cdot\|_F$ is the scoped norm
+  `Matrix.Norms.Frobenius`; each is opened in its own section. Where both norms occur in one
+  statement, the 2-norm is `Matrix.lpOpNorm 2`.
+* The separation $\operatorname{sep}(T_{11}, T_{22})$ is `Matrix.sep`. The distance
+  $\operatorname{dist}$ of two subspaces is the gap `Submodule.gap`. For a square matrix $B$,
+  $\sigma_{\min}(B)$ is the least singular value `⨅ i, B.colSingularValues i`.
 
-## Sources
+## Implementation notes
 
-`Numlib/Eigen/Perturbation` (Gershgorin, Bauer–Fike, the resolvent step, Theorem 7.2.3, the
-eigenvalue condition number and the differentiable eigenvalue branch),
-`Numlib/LinearAlgebra/Matrix/Sylvester` (`sep`), `Numlib/Eigen/InvariantSubspace` (Stewart's
-invariant graph `Matrix.exists_invariant_graph_of_sep`, the gap of a graph
-`Matrix.gap_range_fromRows_le`).
+* In Theorem 7.2.4 and Corollary 7.2.5 the index type is `Fin r ⊕ Fin s` with $s = n - r$, so that
+  $Q = [Q_1\ Q_2]$ and the blocks of $Q^H A Q$ are given by `Matrix.fromBlocks`. In Corollary 7.2.6
+  the index type is `Unit ⊕ Fin s`.
+* The inverse square root $(I + P^H P)^{-1/2}$ is `(CFC.sqrt (1 + Pᴴ * P))⁻¹`, with the scoped order
+  `MatrixOrder`.
+
+## Deviations from the source
+
+* **Theorem 7.2.3** (generalization). The source takes a Schur decomposition, with $N$ strictly
+  upper triangular, and the least $p$ with $|N|^p = 0$. The theorem holds for every $p \ge 1$ with
+  $|N|^p = 0$ and every such $N$. See `GolubVanLoan.Chapter07.theorem_7_2_3`.
+* **§7.2.3** (reading). The source says that the rate of change of the eigenvalues at the origin is
+  infinite. The statement reads this as: no branch of eigenvalues is differentiable at
+  $\varepsilon = 0$. See `GolubVanLoan.Chapter07.repeated_eigenvalue_example`.
 
 ## Not formalized
 
-Wilkinson's nearest-multiple-eigenvalue bound `‖E‖₂/‖A‖₂ ≤ s(λ)/√(1 - s(λ)²)` (quoted from
-Wilkinson 1972 without proof or construction of `E`); the heuristic "`O(ε)` perturbations can move a
-defective eigenvalue by `O(ε^{1/p})`" (its rigorous content is Theorem 7.2.3's `θ^{1/p}`); the
-"wobbly eigenvectors" discussion.
+* **Wilkinson's bound on the distance to a matrix with a multiple eigenvalue**, $\|E\|_2 / \|A\|_2
+  \le s(\lambda) / \sqrt{1 - s(\lambda)^2}$. The source quotes it from Wilkinson (1972) without a
+  proof or a construction of $E$.
+* **The heuristic that perturbations of size $O(\varepsilon)$ can move a defective eigenvalue by
+  $O(\varepsilon^{1/p})$.** Its rigorous content is the term $\theta^{1/p}$ of Theorem 7.2.3.
+* **The discussion of "wobbly" eigenvectors.**
 -/
 
 open Matrix Polynomial Filter Topology Metric
@@ -56,12 +117,13 @@ variable {n : ℕ}
 
 /-! ### §7.2.1 Eigenvalue sensitivity -/
 
-/-- The diagonal of `diag(d) + F` is `d` when `F` has zero diagonal. -/
+/-- The diagonal of $\operatorname{diag}(d) + F$ is $d$ when $F$ has zero diagonal. -/
 private theorem diagonal_add_apply_self {d : Fin n → ℂ} {F : Matrix (Fin n) (Fin n) ℂ}
     (hF : ∀ i, F i i = 0) (i : Fin n) : (diagonal d + F) i i = d i := by
   simp [hF i]
 
-/-- The off-diagonal absolute row sums of `diag(d) + F` are the absolute row sums of `F`. -/
+/-- When $F$ has zero diagonal, the off-diagonal absolute row sums of $\operatorname{diag}(d) + F$
+are the absolute row sums of $F$. -/
 private theorem sum_erase_norm_diagonal_add {d : Fin n → ℂ} {F : Matrix (Fin n) (Fin n) ℂ}
     (hF : ∀ i, F i i = 0) (i : Fin n) :
     ∑ j ∈ Finset.univ.erase i, ‖(diagonal d + F) i j‖ = ∑ j, ‖F i j‖ := by
@@ -70,9 +132,15 @@ private theorem sum_erase_norm_diagonal_add {d : Fin n → ℂ} {F : Matrix (Fin
   refine Finset.sum_congr rfl fun j hj => ?_
   rw [Matrix.add_apply, diagonal_apply_ne _ (Finset.ne_of_mem_erase hj).symm, zero_add]
 
-/-- **Theorem 7.2.1 (Gershgorin circle theorem).** If `X⁻¹ A X = D + F` with
-`D = diag(d₁, …, dₙ)` and `F` of zero diagonal, then `λ(A) ⊆ ⋃ D_i` with
-`D_i = {z : |z - d_i| ≤ ∑_j |f_ij|}`. -/
+/-- **Theorem 7.2.1** of [golub2013matrix] (Gershgorin circle theorem). Let
+$A, X, F \in \mathbb{C}^{n \times n}$ with $X$ nonsingular, and let $d \in \mathbb{C}^n$. If
+$X^{-1} A X = D + F$ with $D = \operatorname{diag}(d_1, \dots, d_n)$ and $F$ has zero diagonal,
+then
+$$\lambda(A) \subseteq \bigcup_{i=1}^n D_i, \qquad D_i = \Big\{ z \in \mathbb{C} : |z - d_i| \le
+  \sum_{j=1}^n |f_{ij}| \Big\}.$$
+
+The set $\lambda(A)$ is `spectrum ℂ A`, and the disc $D_i$ is
+`Metric.closedBall (d i) (∑ j, ‖F i j‖)`. -/
 theorem theorem_7_2_1 {A X F : Matrix (Fin n) (Fin n) ℂ} {d : Fin n → ℂ} (hX : IsUnit X)
     (h : X⁻¹ * A * X = diagonal d + F) (hF : ∀ i, F i i = 0) :
     spectrum ℂ A ⊆ ⋃ i, closedBall (d i) (∑ j, ‖F i j‖) := by
@@ -82,10 +150,16 @@ theorem theorem_7_2_1 {A X F : Matrix (Fin n) (Fin n) ℂ} {d : Fin n → ℂ} (
   rw [diagonal_add_apply_self hF, sum_erase_norm_diagonal_add hF] at hi
   exact Set.mem_iUnion.2 ⟨i, hi⟩
 
-/-- **§7.2.1: "if the Gershgorin disk `D_i` is isolated from the other disks, then it contains
-precisely one eigenvalue of `A`"**, counted with multiplicity: with the notation of Theorem 7.2.1,
-if `D_i` is disjoint from the union of the other discs then exactly one root of the characteristic
-polynomial of `A` lies in `D_i`. -/
+/-- **Section 7.2.1** of [golub2013matrix], isolated Gershgorin discs. Let
+$A, X, F \in \mathbb{C}^{n \times n}$ and $d \in \mathbb{C}^n$ with $X$ nonsingular,
+$X^{-1} A X = \operatorname{diag}(d) + F$ and $F$ of zero diagonal, and let $D_1, \dots, D_n$ be
+the Gershgorin discs of Theorem 7.2.1. If $D_i$ is disjoint from the union of the discs $D_k$
+with $k \neq i$, then $D_i$ contains exactly one eigenvalue of $A$, counted with algebraic
+multiplicity.
+
+The source says that such a disc "contains precisely one eigenvalue of $A$". The count is
+`Polynomial.countRootsIn` of the characteristic polynomial of $A$, which counts roots with
+multiplicity. -/
 theorem gershgorin_isolated {A X F : Matrix (Fin n) (Fin n) ℂ} {d : Fin n → ℂ} (hX : IsUnit X)
     (h : X⁻¹ * A * X = diagonal d + F) (hF : ∀ i, F i i = 0) (i : Fin n)
     (hdisj : Disjoint (closedBall (d i) (∑ j, ‖F i j‖))
@@ -99,10 +173,16 @@ theorem gershgorin_isolated {A X F : Matrix (Fin n) (Fin n) ℂ} {d : Fin n → 
   · simp only [diagonal_add_apply_self hF, sum_erase_norm_diagonal_add hF]
   · exact hdisj
 
-/-- **Theorem 7.2.2 (Bauer–Fike).** "If `μ` is an eigenvalue of `A + E ∈ ℂ^{n×n}` and
-`X⁻¹ A X = D = diag(λ₁, …, λₙ)`, then `min_{λ ∈ λ(A)} |λ - μ| ≤ κ_p(X) ‖E‖_p` where `‖·‖_p` denotes
-any of the `p`-norms." With `p : ℝ≥0∞`, `1 ≤ p`: the backbone's `Matrix.bauer_fike_lpOpNorm` for
-`A = X D X⁻¹`. -/
+/-- **Theorem 7.2.2** of [golub2013matrix] (Bauer–Fike theorem). Let
+$A, X, E \in \mathbb{C}^{n \times n}$ with $X$ nonsingular and $X^{-1} A X = D =
+\operatorname{diag}(\lambda_1, \dots, \lambda_n)$, and let $1 \le p \le \infty$. If $\mu$ is an
+eigenvalue of $A + E$, then
+$$\min_{\lambda \in \lambda(A)} |\lambda - \mu| \le \kappa_p(X) \|E\|_p.$$
+
+The diagonal of $D$ is `d`, and the minimum is stated as the existence of an index $i$ with
+$|d_i - \mu| \le \kappa_p(X) \|E\|_p$. The exponent is `p : ENNReal` with `1 ≤ p`, $\kappa_p(X)$
+is `Matrix.condNumberLp p X`, and $\|E\|_p$ is `Matrix.lpOpNorm p E`. The proof applies
+`Matrix.bauer_fike_lpOpNorm` to $A = X D X^{-1}$. -/
 theorem theorem_7_2_2 (p : ENNReal) [Fact (1 ≤ p)] {A X E : Matrix (Fin n) (Fin n) ℂ}
     {d : Fin n → ℂ} (hX : IsUnit X) (hXA : X⁻¹ * A * X = diagonal d) {μ : ℂ}
     (hμ : μ ∈ spectrum ℂ (A + E)) :
@@ -118,17 +198,31 @@ section L2
 
 open scoped Matrix.Norms.L2Operator
 
-/-- **(7.2.1)**, the step shared by Theorems 7.2.1–7.2.3 (the book's appeal to its Lemma 2.3.3): if
-`μ ∈ λ(A + E)` and `μ ∉ λ(A)` then `1 ≤ ‖(μI - A)⁻¹ E‖₂ ≤ ‖(μI - A)⁻¹‖₂ ‖E‖₂`. -/
+/-- **Equation (7.2.1)** of [golub2013matrix]. Let $A, E \in \mathbb{C}^{n \times n}$. If $\mu$ is
+an eigenvalue of $A + E$ and not an eigenvalue of $A$, then
+$$1 \le \|(\mu I - A)^{-1} E\|_2 \le \|(\mu I - A)^{-1}\|_2 \|E\|_2.$$
+
+This is the step that the proofs of Theorems 7.2.1–7.2.3 share; the source derives it from its
+Lemma 2.3.3. The norm is the scoped 2-norm `Matrix.Norms.L2Operator`. -/
 theorem equation_7_2_1 {A E : Matrix (Fin n) (Fin n) ℂ} {μ : ℂ} (hμ : μ ∈ spectrum ℂ (A + E))
     (hA : μ ∉ spectrum ℂ A) :
     1 ≤ ‖(μ • 1 - A)⁻¹ * E‖ ∧ ‖(μ • 1 - A)⁻¹ * E‖ ≤ ‖(μ • 1 - A)⁻¹‖ * ‖E‖ :=
   ⟨one_le_norm_mul_of_mem_spectrum_add hμ hA, norm_mul_le _ _⟩
 
-/-- **Theorem 7.2.3.** Let `Qᴴ A Q = D + N` be a Schur decomposition, `μ ∈ λ(A + E)`, and `p ≥ 1`
-with `|N|^p = 0` (entrywise absolute value; the book takes the least such `p`, which only improves
-the bound). Then `min_{λ ∈ λ(A)} |λ - μ| ≤ max(θ, θ^{1/p})` with
-`θ = ‖E‖₂ ∑_{k=0}^{p-1} ‖N‖₂^k`. (The strict upper triangularity of `N` is not needed.) -/
+/-- **Theorem 7.2.3** of [golub2013matrix]. Let $A, Q, N, E \in \mathbb{C}^{n \times n}$ and
+$d \in \mathbb{C}^n$, with $Q$ unitary and $Q^H A Q = D + N$, where
+$D = \operatorname{diag}(d_1, \dots, d_n)$. Let $p \ge 1$ be an integer with $|N|^p = 0$, where
+$|N|$ is the matrix of the absolute values of the entries of $N$. If $\mu$ is an eigenvalue of
+$A + E$, then
+$$\min_{1 \le i \le n} |d_i - \mu| \le \max(\theta, \theta^{1/p}), \qquad \theta = \|E\|_2
+  \sum_{k=0}^{p-1} \|N\|_2^k.$$
+
+**Generalization.** The source takes a Schur decomposition, so that $N$ is strictly upper
+triangular, and the least $p$ with $|N|^p = 0$. The theorem needs neither: it holds for every
+$N$ and every $p \ge 1$ with $|N|^p = 0$. The least such $p$ gives the best bound.
+
+The matrix $|N|$ is `N.map (‖·‖)`, the minimum is stated as the existence of an index $i$, and
+the norm is the scoped 2-norm `Matrix.Norms.L2Operator`. -/
 theorem theorem_7_2_3 {A Q N E : Matrix (Fin n) (Fin n) ℂ} {d : Fin n → ℂ}
     (hQ : Q ∈ unitaryGroup (Fin n) ℂ) (hQA : star Q * A * Q = diagonal d + N) {p : ℕ}
     (hp : 1 ≤ p) (hN : (N.map (‖·‖)) ^ p = 0) {μ : ℂ} (hμ : μ ∈ spectrum ℂ (A + E)) :
@@ -142,14 +236,21 @@ end L2
 
 /-! ### §7.2.2 The condition of a simple eigenvalue -/
 
-/-- **(7.2.2): `s(λ) = |yᴴ x|`**, for unit right and left eigenvectors `x`, `y` of a simple
-eigenvalue `λ`; the condition of `λ` is `1/s(λ)`. For unit vectors this is the reciprocal of the
-backbone's eigenvalue condition number (`eigenvalueSensitivity_eq_inv_eigenvalueCondNumber`). -/
+/-- **Section 7.2.2** of [golub2013matrix], the quantity $s(\lambda)$ of (7.2.2). For
+$x, y \in \mathbb{C}^n$,
+$$s(\lambda) = |y^H x|.$$
+When $x$ and $y$ are unit right and left eigenvectors of a simple eigenvalue $\lambda$, the
+condition of $\lambda$ is $1/s(\lambda)$.
+
+The definition takes only the two vectors. For unit vectors it is the reciprocal of the
+backbone's eigenvalue condition number `Module.End.eigenvalueCondNumber`; see
+`GolubVanLoan.Chapter07.eigenvalueSensitivity_eq_inv_eigenvalueCondNumber`. -/
 noncomputable def eigenvalueSensitivity (x y : Fin n → ℂ) : ℝ :=
   ‖star y ⬝ᵥ x‖
 
-/-- For unit `x`, `y`, `s(λ)` is the reciprocal of the backbone's condition number
-`‖x‖ ‖y‖ / |⟪y, x⟫|`. -/
+/-- For unit vectors $x, y \in \mathbb{C}^n$, $s(\lambda) = |y^H x|$ is the reciprocal of the
+backbone's condition number $\|x\| \|y\| / |\langle y, x \rangle|$,
+`Module.End.eigenvalueCondNumber`. Both sides are $0$ when $y^H x = 0$. -/
 theorem eigenvalueSensitivity_eq_inv_eigenvalueCondNumber {x y : Fin n → ℂ}
     (hx : ‖WithLp.toLp 2 x‖ = 1) (hy : ‖WithLp.toLp 2 y‖ = 1) :
     eigenvalueSensitivity x y =
@@ -158,7 +259,7 @@ theorem eigenvalueSensitivity_eq_inv_eigenvalueCondNumber {x y : Fin n → ℂ}
     eigenvalueSensitivity]
   simp
 
-/-- A left eigenvector tests the image of `A` as it tests the vector: `⟪y, A z⟫ = λ ⟪y, z⟫`. -/
+/-- If $y^H A = \mu y^H$, then $\langle y, A z \rangle = \mu \langle y, z \rangle$ for every $z$. -/
 private theorem inner_toEuclideanLin_of_left {A : Matrix (Fin n) (Fin n) ℂ} {μ : ℂ}
     {y : Fin n → ℂ} (hy : star y ᵥ* A = μ • star y) (z : EuclideanSpace ℂ (Fin n)) :
     (inner ℂ (WithLp.toLp 2 y) (toEuclideanLin A z) : ℂ) = μ * inner ℂ (WithLp.toLp 2 y) z := by
@@ -167,21 +268,26 @@ private theorem inner_toEuclideanLin_of_left {A : Matrix (Fin n) (Fin n) ℂ} {�
     EuclideanSpace.inner_toLp_toLp, dotProduct_comm, dotProduct_mulVec, hy, smul_dotProduct,
     smul_eq_mul, dotProduct_comm]
 
-/-- The right eigenvector equation in `EuclideanSpace`. -/
+/-- The right eigenvector equation $A x = \mu x$, transferred to `EuclideanSpace ℂ (Fin n)` with
+`Matrix.toEuclideanLin`. -/
 private theorem toEuclideanLin_of_right {A : Matrix (Fin n) (Fin n) ℂ} {μ : ℂ} {x : Fin n → ℂ}
     (hx : A *ᵥ x = μ • x) : toEuclideanLin A (WithLp.toLp 2 x) = μ • WithLp.toLp 2 x := by
   rw [toLpLin_toLp, toLin'_apply, hx, WithLp.toLp_smul]
 
-/-- A simple eigenvalue has a one-dimensional generalized eigenspace. -/
+/-- The generalized eigenspace of a simple eigenvalue has dimension one. -/
 private theorem finrank_maxGenEigenspace_of_simple {A : Matrix (Fin n) (Fin n) ℂ} {μ : ℂ}
     (hμ : IsSimpleEigenvalue A μ) :
     Module.finrank ℂ (Module.End.maxGenEigenspace (toEuclideanLin A) μ) = 1 := by
   rw [finrank_maxGenEigenspace_toEuclideanLin]
   exact hμ
 
-/-- **§7.2.2: `yᴴ x ≠ 0` for a simple eigenvalue**, so `s(λ) > 0`. The book's argument through the
-Jordan form is replaced by the backbone's: the generalized eigenspace of a simple eigenvalue is a
-line. -/
+/-- **Section 7.2.2** of [golub2013matrix], $y^H x \neq 0$ for a simple eigenvalue. Let
+$A \in \mathbb{C}^{n \times n}$ and let $\lambda$ be a simple eigenvalue of $A$. If $x \neq 0$
+satisfies $A x = \lambda x$ and $y \neq 0$ satisfies $y^H A = \lambda y^H$, then $y^H x \neq 0$.
+Hence $s(\lambda) > 0$.
+
+The source argues through the Jordan form. The proof here uses instead that the generalized
+eigenspace of a simple eigenvalue is a line. -/
 theorem inner_ne_zero_of_simple {A : Matrix (Fin n) (Fin n) ℂ} {μ : ℂ}
     (hμ : IsSimpleEigenvalue A μ) {x y : Fin n → ℂ} (hx : A *ᵥ x = μ • x) (hx0 : x ≠ 0)
     (hy : star y ᵥ* A = μ • star y) (hy0 : y ≠ 0) : star y ⬝ᵥ x ≠ 0 := by
@@ -194,11 +300,22 @@ section L2
 
 open scoped Matrix.Norms.L2Operator
 
-/-- **§7.2.2, the derivation of (7.2.2), rigorous.** For a simple eigenvalue `λ` of `A` with unit
-right and left eigenvectors `x`, `y` and any `F`, there are an eigenvalue branch `λ(ε)` and an
-eigenvector branch `x(ε)` of `A + εF` through `(λ, x)`, differentiable at `0`, with
-`λ'(0) = yᴴ F x / yᴴ x`, so `|λ'(0)| ≤ ‖F‖₂ / s(λ)` (the book's `1/s(λ)` for `‖F‖₂ = 1`). The bound
-is attained for `F = y xᴴ`, which has `‖F‖₂ = 1`. -/
+/-- **Equation (7.2.2)** of [golub2013matrix], with its derivation. Let
+$A, F \in \mathbb{C}^{n \times n}$, let $\lambda$ be a simple eigenvalue of $A$, and let $x$ and
+$y$ be unit vectors with $A x = \lambda x$ and $y^H A = \lambda y^H$. Then there are functions
+$\varepsilon \mapsto \lambda(\varepsilon) \in \mathbb{C}$ and $\varepsilon \mapsto
+x(\varepsilon) \in \mathbb{C}^n$ with $\lambda(0) = \lambda$ and $x(0) = x$ such that $(A +
+\varepsilon F) x(\varepsilon) = \lambda(\varepsilon) x(\varepsilon)$ for all $\varepsilon$ near
+$0$, $x(\varepsilon)$ is differentiable at $0$, and $\lambda(\varepsilon)$ has at $0$ the
+derivative
+$$\lambda'(0) = \frac{y^H F x}{y^H x}, \qquad |\lambda'(0)| \le \frac{\|F\|_2}{s(\lambda)}.$$
+The bound is attained: $F = y x^H$ has $\|F\|_2 = 1$ and $|y^H F x / y^H x| = 1/s(\lambda)$.
+
+The source derives (7.2.2) by a first-order argument; here the existence of the differentiable
+branches is part of the conclusion. For $\|F\|_2 = 1$ the bound is the condition $1/s(\lambda)$.
+The parameter $\varepsilon$ is complex, the vectors $x(\varepsilon)$ are in
+`EuclideanSpace ℂ (Fin n)`, $y x^H$ is `Matrix.vecMulVec y (star x)`, and the norm is the scoped
+2-norm `Matrix.Norms.L2Operator`. -/
 theorem equation_7_2_2 {A F : Matrix (Fin n) (Fin n) ℂ} {μ : ℂ} (hμ : IsSimpleEigenvalue A μ)
     {x y : Fin n → ℂ} (hx : A *ᵥ x = μ • x) (hxn : ‖WithLp.toLp 2 x‖ = 1)
     (hy : star y ᵥ* A = μ • star y) (hyn : ‖WithLp.toLp 2 y‖ = 1) :
@@ -276,10 +393,20 @@ end L2
 
 /-! ### §7.2.3 Sensitivity of repeated eigenvalues -/
 
-/-- **§7.2.3.** For `A = [1 a; 0 1]` and `F = [0 0; 1 0]`, `λ(A + εF) = {z : (z - 1)² = ε a}` (the
-book's `{1 ± √(εa)}`), and for `a ≠ 0` no branch of eigenvalues is differentiable at `ε = 0` — the
-rigorous form of "their rate of change at the origin is infinite": a differentiable `z(ε)` with
-`(z(ε) - 1)² = εa` would give `a = 2 (z(0) - 1) z'(0) = 0`. -/
+/-- **Section 7.2.3** of [golub2013matrix], the $2 \times 2$ example. Let $a \in \mathbb{C}$,
+$$A = \begin{bmatrix} 1 & a \\ 0 & 1 \end{bmatrix}, \qquad F = \begin{bmatrix} 0 & 0 \\ 1 & 0
+  \end{bmatrix}.$$
+For every $\varepsilon \in \mathbb{C}$, $\lambda(A + \varepsilon F) = \{ z \in \mathbb{C} : (z -
+1)^2 = \varepsilon a \}$, which is the source's $\{1 \pm \sqrt{\varepsilon a}\}$. If $a \neq 0$,
+then no function $f$ with $f(\varepsilon) \in \lambda(A + \varepsilon F)$ for all $\varepsilon$
+near $0$ is differentiable at $\varepsilon = 0$.
+
+**Reading.** The source says that "their rate of change at the origin is infinite". The
+statement reads this as the nonexistence of a branch of eigenvalues that is differentiable at
+$0$.
+
+A differentiable branch $z(\varepsilon)$ with $(z(\varepsilon) - 1)^2 = \varepsilon a$ would
+give $a = 2 (z(0) - 1) z'(0) = 0$. -/
 theorem repeated_eigenvalue_example (a : ℂ) :
     (∀ ε : ℂ, spectrum ℂ (!![1, a; 0, 1] + ε • !![0, 0; 1, 0]) = {z | (z - 1) ^ 2 = ε * a}) ∧
     (a ≠ 0 → ∀ f : ℂ → ℂ,
@@ -318,9 +445,15 @@ section Frobenius
 
 open scoped Matrix.Norms.Frobenius
 
-/-- **(7.2.5): `sep(T₁₁, T₂₂) = min_{X ≠ 0} ‖T₁₁ X - X T₂₂‖_F / ‖X‖_F`**: the backbone's
-`Matrix.sep` (the least value of `‖T₁₁ X - X T₂₂‖_F` on the Frobenius unit sphere) is the least
-value of the book's quotient over nonzero `X`, and it is attained. -/
+/-- **Equation (7.2.5)** of [golub2013matrix]. Let $p, q \ge 1$,
+$T_{11} \in \mathbb{C}^{p \times p}$ and $T_{22} \in \mathbb{C}^{q \times q}$. Then
+$$\operatorname{sep}(T_{11}, T_{22}) = \min_{X \neq 0} \frac{\|T_{11} X - X
+  T_{22}\|_F}{\|X\|_F},$$
+where $X$ ranges over $\mathbb{C}^{p \times q}$, and the minimum is attained.
+
+The backbone defines `Matrix.sep` as the least value of $\|T_{11} X - X T_{22}\|_F$ on the
+Frobenius unit sphere. The statement says that `Matrix.sep T₁₁ T₂₂` is the least element of the
+set of the quotients. -/
 theorem equation_7_2_5 {p q : ℕ} [NeZero p] [NeZero q] (T₁₁ : Matrix (Fin p) (Fin p) ℂ)
     (T₂₂ : Matrix (Fin q) (Fin q) ℂ) :
     IsLeast {r | ∃ X : Matrix (Fin p) (Fin q) ℂ, X ≠ 0 ∧ ‖T₁₁ * X - X * T₂₂‖ / ‖X‖ = r}
@@ -337,10 +470,16 @@ end Frobenius
 
 /-! ### §7.2.4–7.2.5 Invariant subspace and eigenvector sensitivity -/
 
-/-- **§7.2.5**: "if `T₁₁ = λ`, then `sep(T₁₁, T₂₂) = σ_min(T₂₂ - λI)`" (the observation in the
-proof of Corollary 7.2.6), and "`sep(λ, T₂₂) = σ_min(T₂₂ - λI) ≤ min_{μ ∈ λ(T₂₂)} |μ - λ|`". The
-`1 × 1` block `λ` is `of fun _ _ => c` on `Unit`, `σ_min` the least column-indexed singular value
-(`Matrix.sep_eq_iInf_colSingularValues`, `Matrix.sep_le_norm_sub`). -/
+/-- **Section 7.2.5** of [golub2013matrix], the separation from a $1 \times 1$ block. Let
+$\lambda \in \mathbb{C}$ and $T_{22} \in \mathbb{C}^{q \times q}$. Then
+$$\operatorname{sep}(\lambda, T_{22}) = \sigma_{\min}(T_{22} - \lambda I),$$
+and $\operatorname{sep}(\lambda, T_{22}) \le |\mu - \lambda|$ for every eigenvalue $\mu$ of
+$T_{22}$.
+
+The source makes the first observation in the proof of Corollary 7.2.6. Here $\sigma_{\min}$ is
+the least column singular value, and for $q = 0$ both sides of the identity are $0$. In Lean the
+scalar is `c` and the block is `of fun _ _ => c` on `Unit`. The proof uses
+`Matrix.sep_eq_iInf_colSingularValues` and `Matrix.sep_le_norm_sub`. -/
 theorem sep_one_eq_sigmaMin {q : ℕ} (c : ℂ) (T₂₂ : Matrix (Fin q) (Fin q) ℂ) :
     sep (of fun _ _ => c : Matrix Unit Unit ℂ) T₂₂ = ⨅ i, (T₂₂ - c • 1).colSingularValues i ∧
       ∀ μ ∈ spectrum ℂ T₂₂, sep (of fun _ _ => c : Matrix Unit Unit ℂ) T₂₂ ≤ ‖μ - c‖ := by
@@ -361,8 +500,9 @@ open scoped ComplexOrder MatrixOrder
 
 variable {r s : ℕ}
 
-/-- The facts about `S = (I + Pᴴ P)^{1/2}` behind Theorem 7.2.4: `S² = I + Pᴴ P`, `S` Hermitian and
-nonsingular. -/
+/-- Let $P \in \mathbb{C}^{k \times r}$ and let $S = (I + P^H P)^{1/2}$ be the positive square root.
+Then $S^2 = I + P^H P$, $S$ is Hermitian, and $S$ is nonsingular. These are the facts about $S$
+that Theorem 7.2.4 uses. -/
 theorem sqrt_one_add_conjTranspose_mul_self {k : ℕ} (P : Matrix (Fin k) (Fin r) ℂ) :
     CFC.sqrt (1 + Pᴴ * P) * CFC.sqrt (1 + Pᴴ * P) = 1 + Pᴴ * P ∧
       (CFC.sqrt (1 + Pᴴ * P))ᴴ = CFC.sqrt (1 + Pᴴ * P) ∧
@@ -378,7 +518,8 @@ theorem sqrt_one_add_conjTranspose_mul_self {k : ℕ} (P : Matrix (Fin k) (Fin r
   rw [det_mul] at h
   exact isUnit_of_mul_isUnit_left h
 
-/-- `‖y‖ ≤ ‖(I + Pᴴ P)^{1/2} y‖`: the square of the right side is `‖y‖² + ‖P y‖²`. -/
+/-- For $S = (I + P^H P)^{1/2}$ and every $y$, $\|y\| \le \|S y\|$, because
+$\|S y\|^2 = \|y\|^2 + \|P y\|^2$. -/
 private theorem norm_le_norm_sqrt_apply {k : ℕ} (P : Matrix (Fin k) (Fin r) ℂ)
     (y : EuclideanSpace ℂ (Fin r)) :
     ‖y‖ ≤ ‖toEuclideanLin (CFC.sqrt (1 + Pᴴ * P)) y‖ := by
@@ -398,10 +539,13 @@ private theorem norm_le_norm_sqrt_apply {k : ℕ} (P : Matrix (Fin k) (Fin r) �
     (by nlinarith [sq_nonneg ‖toEuclideanLin P y‖])
 
 open scoped Matrix.Norms.Frobenius in
-/-- **(7.2.6)**: "Using the SVD of `P`, it can be shown that
-`‖P (I + Pᴴ P)^{-1/2}‖₂ ≤ ‖P‖₂ ≤ ‖P‖_F`" — here without the SVD: with `S = (I + Pᴴ P)^{1/2}`
-(`CFC.sqrt`), `‖S y‖² = ‖y‖² + ‖P y‖²`, so `S⁻¹` does not increase norms. The 2-norm is
-`lpOpNorm 2`, the Frobenius norm the scoped one. -/
+/-- **Equation (7.2.6)** of [golub2013matrix]. For every $P \in \mathbb{C}^{k \times r}$,
+$$\|P (I + P^H P)^{-1/2}\|_2 \le \|P\|_2 \le \|P\|_F.$$
+
+The source says that the first inequality can be shown with the SVD of $P$. The proof here does
+not use the SVD: with $S = (I + P^H P)^{1/2}$, $\|S y\|^2 = \|y\|^2 + \|P y\|^2$, so $S^{-1}$
+does not increase norms. The 2-norm is `Matrix.lpOpNorm 2`, and the Frobenius norm is the scoped
+norm `Matrix.Norms.Frobenius`. -/
 theorem equation_7_2_6 {k : ℕ} (P : Matrix (Fin k) (Fin r) ℂ) :
     lpOpNorm 2 (P * (CFC.sqrt (1 + Pᴴ * P))⁻¹) ≤ lpOpNorm 2 P ∧ lpOpNorm 2 P ≤ ‖P‖ := by
   refine ⟨ContinuousLinearMap.opNorm_le_bound _ (lpOpNorm_nonneg 2 P) fun x => ?_,
@@ -421,15 +565,22 @@ theorem equation_7_2_6 {k : ℕ} (P : Matrix (Fin k) (Fin r) ℂ) :
         conv_rhs => rw [← hx]
         exact norm_le_norm_sqrt_apply P y
 
-/-- **The book's `Q̃₁ = (Q₁ + Q₂ P)(I + Pᴴ P)^{-1/2}`** of Theorem 7.2.4, for `Q = [Q₁ Q₂]` with
-`Q₁ = Q [I; 0]` (the first `r` columns) and `Q₂ = Q [0; I]`. -/
+/-- **Theorem 7.2.4** of [golub2013matrix], the matrix $\tilde Q_1$. Let
+$Q \in \mathbb{C}^{n \times n}$ with $n = r + s$, partitioned as $Q = [Q_1\ Q_2]$ with
+$Q_1 \in \mathbb{C}^{n \times r}$, and let $P \in \mathbb{C}^{s \times r}$. Then
+$$\tilde Q_1 = (Q_1 + Q_2 P)(I + P^H P)^{-1/2} \in \mathbb{C}^{n \times r}.$$
+
+The index type is `Fin r ⊕ Fin s`. The block $Q_1$ is $Q \begin{bmatrix} I \\ 0 \end{bmatrix}$
+and $Q_2$ is $Q \begin{bmatrix} 0 \\ I \end{bmatrix}$. The inverse square root is
+`(CFC.sqrt (1 + Pᴴ * P))⁻¹`. -/
 noncomputable def stewartBasis (Q : Matrix (Fin r ⊕ Fin s) (Fin r ⊕ Fin s) ℂ)
     (P : Matrix (Fin s) (Fin r) ℂ) : Matrix (Fin r ⊕ Fin s) (Fin r) ℂ :=
   (Q * fromRows (1 : Matrix (Fin r) (Fin r) ℂ) (0 : Matrix (Fin s) (Fin r) ℂ) +
     Q * fromRows (0 : Matrix (Fin r) (Fin s) ℂ) (1 : Matrix (Fin s) (Fin s) ℂ) * P) *
       (CFC.sqrt (1 + Pᴴ * P))⁻¹
 
-/-- `Q̃₁ = Q [I; P] (I + Pᴴ P)^{-1/2}`. -/
+/-- The matrix $\tilde Q_1$ of `GolubVanLoan.Chapter07.stewartBasis` is $Q \begin{bmatrix} I \\ P
+\end{bmatrix} (I + P^H P)^{-1/2}$. -/
 theorem stewartBasis_eq (Q : Matrix (Fin r ⊕ Fin s) (Fin r ⊕ Fin s) ℂ)
     (P : Matrix (Fin s) (Fin r) ℂ) :
     stewartBasis Q P = Q * fromRows 1 P * (CFC.sqrt (1 + Pᴴ * P))⁻¹ := by
@@ -438,7 +589,7 @@ theorem stewartBasis_eq (Q : Matrix (Fin r ⊕ Fin s) (Fin r ⊕ Fin s) ℂ)
   congr 2
   ext (i | i) j <;> simp
 
-/-- The range of `Q M` is the image of the range of `M` under the isometry `Q`. -/
+/-- If $Q$ is unitary, the range of $Q M$ is the image of the range of $M$ under $Q$. -/
 private theorem range_unitary_mul {ι κ : Type*} [Fintype ι] [DecidableEq ι] [Fintype κ]
     [DecidableEq κ] {Q : Matrix ι ι ℂ} (hQ : Q ∈ unitaryGroup ι ℂ) (M : Matrix ι κ ℂ) :
     LinearMap.range (toEuclideanLin (Q * M)) = (LinearMap.range (toEuclideanLin M)).map
@@ -449,8 +600,9 @@ private theorem range_unitary_mul {ι κ : Type*} [Fintype ι] [DecidableEq ι] 
     rw [toEuclideanLin_mul_apply, LinearMap.comp_apply]
     rfl
 
-/-- **Corollary 7.2.5's estimate in the coordinates of `Q`**: the gap between the ranges of
-`Q [I; 0]` and `Q [I; P]` is at most `‖P‖₂`. -/
+/-- If $Q$ is unitary, the gap between the ranges of $Q \begin{bmatrix} I \\ 0 \end{bmatrix}$ and
+$Q \begin{bmatrix} I \\ P \end{bmatrix}$ is at most $\|P\|_2$, which is the estimate of
+Corollary 7.2.5 in the coordinates of $Q$. -/
 private theorem gap_range_unitary_mul_fromRows_le {ι κ : Type*} [Fintype ι] [DecidableEq ι]
     [Fintype κ] [DecidableEq κ] {Q : Matrix (ι ⊕ κ) (ι ⊕ κ) ℂ} (hQ : Q ∈ unitaryGroup (ι ⊕ κ) ℂ)
     (P : Matrix κ ι ℂ) :
@@ -460,8 +612,7 @@ private theorem gap_range_unitary_mul_fromRows_le {ι κ : Type*} [Fintype ι] [
   rw [Submodule.gap_map_linearIsometryEquiv]
   exact gap_range_fromRows_le P
 
-/-- An invariant graph in the coordinates of a unitary `Q` is an invariant subspace of `A + E`: if
-`Qᴴ A Q = B` and `(B + Qᴴ E Q) X = X M`, then `(A + E) (Q X) = (Q X) M`. -/
+/-- If $Q$ is unitary, $Q^H A Q = B$ and $(B + Q^H E Q) X = X M$, then $(A + E)(Q X) = (Q X) M$. -/
 private theorem mul_unitary_mul_eq {ι κ : Type*} [Fintype ι] [DecidableEq ι] [Fintype κ]
     {A E Q B : Matrix ι ι ℂ} (hQ : Q ∈ unitaryGroup ι ℂ) (hT : star Q * A * Q = B)
     {X : Matrix ι κ ℂ} {M : Matrix κ κ ℂ} (hX : (B + star Q * E * Q) * X = X * M) :
@@ -477,16 +628,26 @@ private theorem mul_unitary_mul_eq {ι κ : Type*} [Fintype ι] [DecidableEq ι]
 
 open scoped Matrix.Norms.Frobenius
 
-/-- **Theorem 7.2.4 (Stewart).** "Suppose that (7.2.3) and (7.2.4) hold and that for any matrix
-`E ∈ ℂ^{n×n}` we partition `Qᴴ E Q` as `[E₁₁ E₁₂; E₂₁ E₂₂]`. If `sep(T₁₁, T₂₂) > 0` and
-`‖E‖_F (1 + 5 ‖T₁₂‖_F / sep(T₁₁, T₂₂)) ≤ sep(T₁₁, T₂₂)/5`, then there exists a
-`P ∈ ℂ^{(n-r)×r}` with `‖P‖_F ≤ 4 ‖E₂₁‖_F / sep(T₁₁, T₂₂)` such that the columns of
-`Q̃₁ = (Q₁ + Q₂ P)(I + Pᴴ P)^{-1/2}` are an orthonormal basis for a subspace invariant for `A + E`."
-On `Fin r ⊕ Fin s` (`s = n - r`), `Q` unitary with `Qᴴ A Q = [T₁₁ T₁₂; 0 T₂₂]` (a Schur form is
-not needed), `E₂₁ = (Qᴴ E Q).toBlocks₂₁`, `Q̃₁ = stewartBasis Q P`; "orthonormal" is
-`Q̃₁ᴴ Q̃₁ = I` and "invariant" is `(A + E) Q̃₁ = Q̃₁ M`. The backbone's
-`Matrix.exists_invariant_graph_of_sep` in the coordinates of `Q` (the Frobenius norm is unitarily
-invariant). -/
+/-- **Theorem 7.2.4** of [golub2013matrix] (Stewart). Let $A, E \in \mathbb{C}^{n \times n}$ with
+$n = r + s$, and let $Q \in \mathbb{C}^{n \times n}$ be unitary with
+$$Q^H A Q = \begin{bmatrix} T_{11} & T_{12} \\ 0 & T_{22} \end{bmatrix}, \qquad Q^H E Q =
+  \begin{bmatrix} E_{11} & E_{12} \\ E_{21} & E_{22} \end{bmatrix},$$
+where $T_{11}, E_{11} \in \mathbb{C}^{r \times r}$. Assume that
+$\operatorname{sep}(T_{11}, T_{22}) > 0$ and
+$$\|E\|_F \left( 1 + \frac{5 \|T_{12}\|_F}{\operatorname{sep}(T_{11}, T_{22})} \right) \le
+  \frac{\operatorname{sep}(T_{11}, T_{22})}{5}.$$
+Then there is $P \in \mathbb{C}^{s \times r}$ with
+$$\|P\|_F \le \frac{4 \|E_{21}\|_F}{\operatorname{sep}(T_{11}, T_{22})}$$
+such that the columns of $\tilde Q_1 = (Q_1 + Q_2 P)(I + P^H P)^{-1/2}$ are an orthonormal basis
+of a subspace that is invariant for $A + E$.
+
+"Orthonormal" is $\tilde Q_1^H \tilde Q_1 = I$, and "invariant" is
+$(A + E) \tilde Q_1 = \tilde Q_1 M$ for some $M \in \mathbb{C}^{r \times r}$. A Schur form is
+not needed: $T_{11}$ and $T_{22}$ can be any square blocks. In Lean the index type is
+`Fin r ⊕ Fin s`, the lower left block of `star Q * E * Q` is `(star Q * E * Q).toBlocks₂₁`, and
+the basis is `GolubVanLoan.Chapter07.stewartBasis Q P`. The proof applies
+`Matrix.exists_invariant_graph_of_sep` in the coordinates of the unitary matrix, where the
+Frobenius norm is unitarily invariant. -/
 theorem theorem_7_2_4 {A E Q : Matrix (Fin r ⊕ Fin s) (Fin r ⊕ Fin s) ℂ}
     (hQ : Q ∈ unitaryGroup (Fin r ⊕ Fin s) ℂ) {T₁₁ : Matrix (Fin r) (Fin r) ℂ}
     {T₁₂ : Matrix (Fin r) (Fin s) ℂ} {T₂₂ : Matrix (Fin s) (Fin s) ℂ}
@@ -521,11 +682,19 @@ theorem theorem_7_2_4 {A E Q : Matrix (Fin r ⊕ Fin s) (Fin r ⊕ Fin s) ℂ}
     simp only [Matrix.mul_assoc]
     rw [← Matrix.mul_assoc S⁻¹ S, nonsing_inv_mul _ hSdet, Matrix.one_mul]
 
-/-- **Corollary 7.2.5.** "If the assumptions in Theorem 7.2.4 hold, then
-`dist(ran(Q₁), ran(Q̃₁)) ≤ 4 ‖E₂₁‖_F / sep(T₁₁, T₂₂)`", with `dist` the gap
-(`Submodule.gap`) of the column spaces. `ran Q̃₁ = ran(Q [I; P])`, and in the coordinates of `Q`
-the gap of `ran [I; 0]` and `ran [I; P]` is at most `‖P‖₂ ≤ ‖P‖_F` (`Matrix.gap_range_fromRows_le`,
-(7.2.6)); the book's route through `‖Q₂ᴴ Q̃₁‖₂` is not needed. -/
+/-- **Corollary 7.2.5** of [golub2013matrix]. Let $A$, $E$, $Q$, $T_{11}$, $T_{12}$, $T_{22}$ and
+$E_{21}$ satisfy the hypotheses of Theorem 7.2.4. Then there is $P \in \mathbb{C}^{s \times r}$
+such that the columns of $\tilde Q_1 = (Q_1 + Q_2 P)(I + P^H P)^{-1/2}$ are an orthonormal basis
+of a subspace that is invariant for $A + E$, and
+$$\operatorname{dist}(\operatorname{ran}(Q_1), \operatorname{ran}(\tilde Q_1)) \le \frac{4
+  \|E_{21}\|_F}{\operatorname{sep}(T_{11}, T_{22})}.$$
+
+The distance is the gap `Submodule.gap` of the column spaces. The proof uses
+$\operatorname{ran}(\tilde Q_1) = \operatorname{ran}(Q \begin{bmatrix} I \\ P \end{bmatrix})$.
+In the coordinates of $Q$ the gap between $\operatorname{ran} \begin{bmatrix} I \\ 0
+\end{bmatrix}$ and $\operatorname{ran} \begin{bmatrix} I \\ P \end{bmatrix}$ is at most
+$\|P\|_2 \le \|P\|_F$, by `Matrix.gap_range_fromRows_le` and (7.2.6). The route of the source
+through $\|Q_2^H \tilde Q_1\|_2$ is not needed. -/
 theorem corollary_7_2_5 {A E Q : Matrix (Fin r ⊕ Fin s) (Fin r ⊕ Fin s) ℂ}
     (hQ : Q ∈ unitaryGroup (Fin r ⊕ Fin s) ℂ) {T₁₁ : Matrix (Fin r) (Fin r) ℂ}
     {T₁₂ : Matrix (Fin r) (Fin s) ℂ} {T₂₂ : Matrix (Fin s) (Fin s) ℂ}
@@ -551,7 +720,8 @@ theorem corollary_7_2_5 {A E Q : Matrix (Fin r ⊕ Fin s) (Fin r ⊕ Fin s) ℂ}
   exact (gap_range_unitary_mul_fromRows_le hQ P).trans
     ((equation_7_2_6 P).2.trans hP)
 
-/-- A one-column matrix `w` with `X w = w M` is an eigenvector: `X w = M₁₁ w`. -/
+/-- If a one-column matrix $w$ satisfies $X w = w M$ with $M \in \mathbb{C}^{1 \times 1}$, then $w$
+satisfies $X w = M_{11} w$. -/
 private theorem mulVec_eq_smul_of_mul_replicateCol {κ : Type*} [Fintype κ] {X : Matrix κ κ ℂ}
     {w : κ → ℂ} {M : Matrix Unit Unit ℂ} (h : X * replicateCol Unit w = replicateCol Unit w * M) :
     X *ᵥ w = M () () • w := by
@@ -559,21 +729,35 @@ private theorem mulVec_eq_smul_of_mul_replicateCol {κ : Type*} [Fintype κ] {X 
   have := congrFun (congrFun h i) ()
   simpa [Matrix.mul_apply, replicateCol_apply, mulVec, dotProduct, mul_comm] using this
 
-/-- **The book's `q̃₁ = (q₁ + Q₂ p)/√(1 + pᴴ p)`** of Corollary 7.2.6, for `Q = [q₁ | Q₂]`
-(`q₁ + Q₂ p = Q [1; p]`). -/
+/-- **Corollary 7.2.6** of [golub2013matrix], the vector $\tilde q_1$. Let
+$Q = [q_1 \mid Q_2] \in \mathbb{C}^{n \times n}$ with $n = 1 + s$, and let $p \in \mathbb{C}^s$.
+Then
+$$\tilde q_1 = \frac{q_1 + Q_2 p}{\sqrt{1 + p^H p}}.$$
+
+The index type is `Unit ⊕ Fin s`, and $q_1 + Q_2 p$ is $Q \begin{bmatrix} 1 \\ p \end{bmatrix}$. -/
 noncomputable def stewartVector (Q : Matrix (Unit ⊕ Fin s) (Unit ⊕ Fin s) ℂ) (p : Fin s → ℂ) :
     Unit ⊕ Fin s → ℂ :=
   (((√(1 + ‖WithLp.toLp 2 p‖ ^ 2) : ℝ) : ℂ))⁻¹ • (Q *ᵥ Sum.elim (fun _ => 1) p)
 
-/-- **Corollary 7.2.6** (eigenvector sensitivity). "Suppose `A, E ∈ ℂ^{n×n}` and that
-`Q = [q₁ | Q₂]` is unitary with `Qᴴ A Q = [λ vᴴ; 0 T₂₂]`, `Qᴴ E Q = [ε γᴴ; δ E₂₂]`. If
-`σ = σ_min(T₂₂ - λI) > 0` and `‖E‖_F (1 + 5 ‖v‖₂ / σ) ≤ σ/5`, then there exists `p ∈ ℂ^{n-1}` with
-`‖p‖₂ ≤ 4 ‖δ‖₂ / σ` such that `q̃₁ = (q₁ + Q₂ p)/√(1 + pᴴ p)` is a unit 2-norm eigenvector for
-`A + E`. Moreover, `dist(span{q₁}, span{q̃₁}) ≤ 4 ‖δ‖₂ / σ`." On `Unit ⊕ Fin s`; `σ` is the least
-singular value, `δ` the first column of `Qᴴ E Q` below the corner and `q̃₁ = stewartVector Q p`.
-The `r = 1` case of Theorem 7.2.4 and Corollary 7.2.5 through `sep_one_eq_sigmaMin`, taken from
-the backbone's `Matrix.exists_invariant_graph_of_sep` directly (for `r = 1` the inverse square root
-is the scalar `1/√(1 + pᴴ p)` and a one-dimensional invariant subspace is an eigenvector). -/
+/-- **Corollary 7.2.6** of [golub2013matrix]. Let $A, E \in \mathbb{C}^{n \times n}$ with
+$n = 1 + s$, and let $Q = [q_1 \mid Q_2]$ be unitary with
+$$Q^H A Q = \begin{bmatrix} \lambda & v^H \\ 0 & T_{22} \end{bmatrix}, \qquad Q^H E Q =
+  \begin{bmatrix} \epsilon & \gamma^H \\ \delta & E_{22} \end{bmatrix}.$$
+If $\sigma = \sigma_{\min}(T_{22} - \lambda I) > 0$ and
+$$\|E\|_F \left( 1 + \frac{5 \|v\|_2}{\sigma} \right) \le \frac{\sigma}{5},$$
+then there is $p \in \mathbb{C}^s$ with $\|p\|_2 \le 4 \|\delta\|_2 / \sigma$ such that
+$\tilde q_1 = (q_1 + Q_2 p)/\sqrt{1 + p^H p}$ is a unit 2-norm eigenvector of $A + E$. Moreover,
+$$\operatorname{dist}(\operatorname{span}\{q_1\}, \operatorname{span}\{\tilde q_1\}) \le \frac{4
+  \|\delta\|_2}{\sigma}.$$
+
+Here $\sigma$ is the least column singular value of $T_{22} - \lambda I$, and $\delta$ is the
+first column of $Q^H E Q$ below the corner entry. The statement is the case $r = 1$ of Theorem
+7.2.4 and Corollary 7.2.5, with $\operatorname{sep}(\lambda, T_{22}) = \sigma$. For $r = 1$ the
+inverse square root is the scalar $1/\sqrt{1 + p^H p}$, and a one-dimensional invariant subspace
+is spanned by an eigenvector. In Lean the index type is `Unit ⊕ Fin s`, the scalar is `μ`, the
+vector is `GolubVanLoan.Chapter07.stewartVector Q p`, and the distance is `Submodule.gap`. The
+proof uses `GolubVanLoan.Chapter07.sep_one_eq_sigmaMin` and applies
+`Matrix.exists_invariant_graph_of_sep` directly. -/
 theorem corollary_7_2_6 {A E Q : Matrix (Unit ⊕ Fin s) (Unit ⊕ Fin s) ℂ}
     (hQ : Q ∈ unitaryGroup (Unit ⊕ Fin s) ℂ) {μ : ℂ} {v : Fin s → ℂ}
     {T₂₂ : Matrix (Fin s) (Fin s) ℂ}

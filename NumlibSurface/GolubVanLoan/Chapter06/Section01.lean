@@ -6,53 +6,141 @@ import Numlib.LinearAlgebra.Matrix.LeastSquares.Regularized
 import Numlib.LinearAlgebra.Matrix.LeastSquares.Weighted
 
 /-!
-# Golub–Van Loan §6.1: weighting and regularization
+# Golub and Van Loan, Section 6.1: Weighting and regularization
 
-Surface file for [golub2013matrix] §6.1: row weighting and its normal equations (6.1.1)–(6.1.5),
-the generalized least-squares problem and Paige's method (6.1.7)–(6.1.10), column weighting
-(§6.1.3), ridge regression and cross-validation (6.1.11)–(6.1.19), Tikhonov regularization
-(6.1.20)–(6.1.21), and the generalized singular value decomposition (Theorem 6.1.1 with
-(6.1.22)–(6.1.23), and (6.1.26)).
+This module formalizes §6.1 of [golub2013matrix]: least-squares problems with weights on the rows or
+the columns, and problems with a regularization term. Row weighting with
+$D = \operatorname{diag}(d_1, \dots, d_m)$ replaces $\min \|Ax - b\|_2$ by $\min \|D(Ax - b)\|_2$.
+For this problem the module proves the normal equations (6.1.2), the difference (6.1.3) from the
+unweighted solution, the derivative (6.1.4) of a residual with respect to its weight, and the
+augmented system (6.1.5). The generalized least-squares problem $\min_{b = Ax + Bv} v^T v$ is solved
+by Paige's method (6.1.7)–(6.1.10), and column weighting gives the least-squares minimizer of least
+$G$-norm (§6.1.3). Ridge regression minimizes $\|Ax - b\|_2^2 + \lambda \|x\|_2^2$; the module
+proves its normal equations, its SVD form (6.1.14), its limit as $\lambda \to 0$, and the formulas
+(6.1.15)–(6.1.19) for cross-validation. Tikhonov regularization replaces $\|x\|_2$ by $\|Bx\|_2$
+((6.1.20)–(6.1.21)). Last, the generalized singular value decomposition (Theorem 6.1.1) diagonalizes
+the Tikhonov problem (6.1.26).
+
+The proofs specialize the backbone modules `Numlib.LinearAlgebra.Matrix.LeastSquares.Weighted`,
+`Numlib.LinearAlgebra.Matrix.LeastSquares.Regularized` and `Numlib.LinearAlgebra.Matrix.GSVD`.
+
+## Main definitions
+
+* §6.1.1, `GolubVanLoan.Chapter06.IsWeightedLeastSquaresSolution`: $x$ minimizes $\|D(Ax - b)\|_2$.
+* Equation (6.1.15), `GolubVanLoan.Chapter06.ridgeDeleted`: the ridge solution $x_k(\lambda)$ of the
+  problem without the $k$-th equation.
+* §6.1.4, `GolubVanLoan.Chapter06.crossValidationError`: the cross-validation weighted square error
+  $C(\lambda)$.
+
+## Main results
+
+* Equation (6.1.1), `GolubVanLoan.Chapter06.equation_6_1_1`: $\|D(Ax - b)\|_2^2 = \sum_i d_i^2
+  (a_i^T x - b_i)^2$.
+* Equation (6.1.2), `GolubVanLoan.Chapter06.equation_6_1_2`: for full column rank, the weighted
+  solution solves $(A^T D^2 A) x = A^T D^2 b$.
+* Equation (6.1.3), `GolubVanLoan.Chapter06.equation_6_1_3`: $x_D - x_{LS} = (A^T D^2 A)^{-1} A^T
+  (D^2 - I)(b - A x_{LS})$.
+* Equation (6.1.4), `GolubVanLoan.Chapter06.equation_6_1_4`: the derivative of the residual
+  $r_k(\delta)$ with respect to the perturbation $\delta$ of the $k$-th weight.
+* §6.1.1, `GolubVanLoan.Chapter06.abs_weightedResidual_antitoneOn`: $|r_k(\delta)|$ is nonincreasing
+  in $\delta$.
+* Equation (6.1.5), `GolubVanLoan.Chapter06.equation_6_1_5`: a solution of the augmented system
+  gives a weighted least-squares solution.
+* Equations (6.1.7)–(6.1.8), `GolubVanLoan.Chapter06.equation_6_1_8`: for nonsingular $B$, the
+  weighted problem is the generalized least-squares problem.
+* Equations (6.1.9)–(6.1.10), `GolubVanLoan.Chapter06.equation_6_1_9`: Paige's method solves the
+  generalized least-squares problem.
+* Equation (6.1.10), `GolubVanLoan.Chapter06.equation_6_1_10`: the simplification of the top half of
+  Paige's equations.
+* §6.1.3, `GolubVanLoan.Chapter06.isLeastSquaresSolution_columnWeighting`: $x_G = G^{-1} y$
+  minimizes $\|Ax - b\|_2$.
+* §6.1.3, `GolubVanLoan.Chapter06.norm_columnWeighting_le`: $x_G$ has the smallest $G$-norm of all
+  minimizers.
+* Equation (6.1.11), `GolubVanLoan.Chapter06.equation_6_1_11`: ridge regression is the least-squares
+  problem of a stacked matrix.
+* Equation (6.1.12), `GolubVanLoan.Chapter06.equation_6_1_12`: the normal equations
+  $(A^T A + \lambda I) x = A^T b$ of ridge regression.
+* Equation (6.1.14), `GolubVanLoan.Chapter06.equation_6_1_14`: $x(\lambda) = \sum_i (\sigma_i u_i^T
+  b / (\sigma_i^2 + \lambda)) v_i$.
+* §6.1.4, `GolubVanLoan.Chapter06.tendsto_ridge_leastSquares`: $x(\lambda) \to x_{LS}$ as
+  $\lambda \to 0^+$.
+* §6.1.4, `GolubVanLoan.Chapter06.norm_ridge_antitoneOn`: $\|x(\lambda)\|_2$ is nonincreasing in
+  $\lambda$.
+* Equation (6.1.15), `GolubVanLoan.Chapter06.ridgeDeleted_spec`: $x_k(\lambda)$ is the unique ridge
+  solution without the $k$-th equation.
+* Equation (6.1.16), `GolubVanLoan.Chapter06.equation_6_1_16`: $x_k(\lambda)$ as a rank-one update
+  of $x(\lambda)$.
+* Equation (6.1.17), `GolubVanLoan.Chapter06.equation_6_1_17`: the leave-one-out residual
+  $b_k - a_k^T x_k(\lambda)$.
+* Equation (6.1.18), `GolubVanLoan.Chapter06.equation_6_1_18`: $C(\lambda)$ in terms of the residual
+  $r$ and $\partial r_k / \partial b_k$.
+* Equation (6.1.19), `GolubVanLoan.Chapter06.equation_6_1_19`: $C(\lambda)$ in terms of an SVD of
+  $A$.
+* Equation (6.1.20), `GolubVanLoan.Chapter06.equation_6_1_20`: Tikhonov regularization is the
+  least-squares problem of a stacked matrix.
+* Equation (6.1.21), `GolubVanLoan.Chapter06.equation_6_1_21`: the normal equations of Tikhonov
+  regularization are nonsingular if and only if $\operatorname{null}(A) \cap
+  \operatorname{null}(B) = \{0\}$.
+* Theorem 6.1.1, `GolubVanLoan.Chapter06.theorem_6_1_1`: existence of the generalized singular value
+  decomposition.
+* Theorem 6.1.1, `GolubVanLoan.Chapter06.theorem_6_1_1_b`: the decomposition can be chosen with
+  $\alpha_i^2 + \beta_i^2 = 1$.
+* §6.1.6, `GolubVanLoan.Chapter06.gsvd_one`: the GSVD of $(A, I)$ gives $U_1^T A U_2 =
+  \operatorname{diag}(\alpha_i / \beta_i)$.
+* §6.1.6, `GolubVanLoan.Chapter06.gsvd_generalizedEigen`: the columns of $X$ are eigenvectors of the
+  pencil $A^T A - \mu^2 B^T B$.
+* Equation (6.1.26), `GolubVanLoan.Chapter06.equation_6_1_26`: the solution of the Tikhonov problem
+  in GSVD coordinates.
 
 ## Conventions
 
-Real matrices `A : Matrix (Fin m) (Fin n) ℝ`, 0-based. Vectors of a least-squares statement are
-`EuclideanSpace ℝ (Fin n)` and matrices act through `Matrix.toEuclideanLin`, the convention of the
-backbone's `LeastSquares`; the entrywise formulas of §6.1.4 (the cross-validation of Golub, Heath
-and Wahba) use plain vectors `Fin m → ℝ` and `Matrix.mulVec`, as the backbone's leave-one-out
-lemmas do. The book's weight matrix `D = diag(d₁, …, d_m)` is `diagonal d`; `a_kᵀ = A(k, :)` is the
-row `A k`. The ridge solution `x(λ) = (AᵀA + λI)⁻¹Aᵀb` is the backbone's Tikhonov regularization
-`A.tikhonov λ` applied to `b`. An SVD is a factorization `Matrix.IsSVD A U σ V` (`Uᵀ A V = Σ`,
-`σ` sorted and nonnegative), the book's `u_i`, `v_i` the columns of `U` and `V` (the rows
-`Uᵀ i`, `Vᵀ i` of the transposes), and a GSVD is
-`Matrix.IsGSVD A B U₁ U₂ X α β` in Theorem 6.1.1's block order (`D_A = rectDiagonal α`,
-`D_B = shiftedRectDiagonal p β`, `p = max(r − m₂, 0)`). The book's parameter `λ` is written `μ`
-(`λ` is reserved in Lean).
+* Matrices are real and indices are 0-based. Vectors of a least-squares statement are in
+  `EuclideanSpace ℝ (Fin n)`, where a matrix acts through `Matrix.toEuclideanLin`. The entrywise
+  formulas of the cross-validation of Golub, Heath and Wahba (§6.1.4) use plain vectors `Fin m → ℝ`
+  and `Matrix.mulVec`, as the leave-one-out lemmas of the backbone do.
+* The weight matrix $D = \operatorname{diag}(d_1, \dots, d_m)$ is `diagonal d`, and the row
+  $a_k^T = A(k, :)$ is `A k`.
+* The parameter $\lambda$ of the source is written `μ` in Lean, because `λ` is a keyword.
+* The ridge solution $x(\lambda) = (A^T A + \lambda I)^{-1} A^T b$ is the Tikhonov regularization
+  `Matrix.tikhonov` of $A$ at $\lambda$, applied to $b$.
+* An SVD is `Matrix.IsSVD A U σ V`. The source's $u_i$ and $v_i$ are the columns of $U$ and $V$,
+  which appear as the rows `Uᵀ i` and `Vᵀ i` of the transposes.
+* A GSVD is `Matrix.IsGSVD A B U₁ U₂ X α β`, in the block order of Theorem 6.1.1: $D_A$ is
+  `Matrix.rectDiagonal α` and $D_B$ is `Matrix.shiftedRectDiagonal p β`, with
+  $p = \max\{r - m_2, 0\}$.
+
+## Deviations from the source
+
+* **Remark after (6.1.4)** (correction). The source derives the monotonicity of $|r_k(\delta)|$ from
+  $\frac{d}{d\delta} [r_k(\delta)^2] < 0$, which fails when $a_k = 0$ or $r_k(\delta) = 0$. The
+  library states the non-strict monotonicity. See
+  `GolubVanLoan.Chapter06.abs_weightedResidual_antitoneOn`.
+* **Paige's method, (6.1.9)–(6.1.10)** (generalization). The source assumes that $A$ has full column
+  rank and $B$ is nonsingular; the statement needs only that $S$ is nonsingular. See
+  `GolubVanLoan.Chapter06.equation_6_1_9`.
+* **§6.1.3, column weighting** (generalization). $x_G = G^{-1} y$ minimizes $\|Ax - b\|_2$ for every
+  least-squares solution $y$, not only for the minimum-norm one. See
+  `GolubVanLoan.Chapter06.isLeastSquaresSolution_columnWeighting`.
+* **§6.1.3, the least $G$-norm** (generalization). The source states the property for
+  $\operatorname{rank}(A) < n$; it holds for every rank. See
+  `GolubVanLoan.Chapter06.norm_columnWeighting_le`.
+* **Equation (6.1.19)** (typo). The numerator has $\tilde b_k$ where $b_k$ is meant. See
+  `GolubVanLoan.Chapter06.equation_6_1_19`.
+* **Theorem 6.1.1** (typo). The row labels $p$, $r - p$, $m_2 - r$ of the blocks of $D_B$ are
+  $r - p$, $m_2 - r + p$, and $n_{1-r}$ is $n_1 - r$. See `GolubVanLoan.Chapter06.theorem_6_1_1`.
+* **§6.1.6, the GSVD of $(A, I)$** (correction). The source sets $X = U_2$ to obtain the SVD of $A$;
+  in fact $X = U_2 D_B$ and $U_1^T A U_2 = \operatorname{diag}(\alpha_i / \beta_i)$. See
+  `GolubVanLoan.Chapter06.gsvd_one`.
 
 ## Not formalized
 
-(6.1.6) (a statistical model), (6.1.13) (recalls the SVD), (6.1.24)–(6.1.25) (steps of the proof of
-Theorem 6.1.1), Paige's stability claim, van der Sluis's "`κ₂(AG⁻¹)` is approximately minimized",
-the choice of `λ` minimizing `C(λ)`, the flop counts.
-
-## Errata
-
-* (6.1.4) and after: the book's `d/dδ [r_k(δ)²] < 0` fails when `a_k = 0` or `r_k(δ) = 0`; only the
-  non-strict monotonicity of `|r_k(δ)|` holds (`abs_weightedResidual_antitoneOn`).
-* §6.1.3: the least-`G`-norm property of `x_G` holds for every rank, not only `rank(A) < n`.
-* (6.1.19): the numerator's `b̃_k` must be `b_k` (as `λ → ∞` the leave-one-out residual tends to
-  `b_k`); `equation_6_1_19` states the corrected formula.
-* Theorem 6.1.1: the printed row labels of `D_B` (`p, r − p, m₂ − r`) should be
-  `r − p, m₂ − r + p`, and `n_{1−r}` is `n₁ − r`; the proof cites "(6.1.21) and (6.1.22)" for
-  (6.1.22)–(6.1.23). The theorem never states `α_i² + β_i² = 1`, which its proof gives
-  (`theorem_6_1_1_b`).
-* §6.1.6: "if `B = I` and we set `X = U₂`, then we obtain the SVD of `A`" is loose: `X = U₂ D_B`,
-  and `U₁ᵀ A U₂ = diag(α_i / β_i)` (`gsvd_one`).
-
-## Sources
-
-Backbone `Numlib/LinearAlgebra/Matrix/LeastSquares/{Weighted,Regularized}`,
-`Numlib/LinearAlgebra/Matrix/GSVD`.
+* **Equation (6.1.6).** It is a statistical model.
+* **Equation (6.1.13).** It recalls the SVD.
+* **Equations (6.1.24)–(6.1.25).** They are steps of the proof of Theorem 6.1.1.
+* **Paige's claim on the stability of his method.**
+* **The remark of van der Sluis that $\kappa_2(AG^{-1})$ is approximately minimized.**
+* **The choice of $\lambda$ that minimizes $C(\lambda)$.**
+* **The flop counts.** Operation counts are out of scope for the library.
 -/
 
 open Matrix Finset Filter Topology
@@ -63,15 +151,20 @@ variable {m n : ℕ}
 
 /-! ### §6.1.1 Row weighting -/
 
-/-- **§6.1.1, the weighted least-squares problem (6.1.1).** "Note that if `x_D` minimizes this
-summation, then it minimizes `‖Ãx − b̃‖₂` where `Ã = DA` and `b̃ = Db`": for the weights
-`d : Fin m → ℝ` (the book's `D = diag(d₁, …, d_m)`), `x` solves the weighted problem when it is a
-least-squares solution of `DAx = Db`. -/
+/-- **§6.1.1** of [golub2013matrix], the weighted least-squares problem (6.1.1). Let
+$A \in \mathbb{R}^{m \times n}$, $b \in \mathbb{R}^m$ and $d \in \mathbb{R}^m$, and let
+$D = \operatorname{diag}(d_1, \dots, d_m)$. A vector $x \in \mathbb{R}^n$ is a **weighted
+least-squares solution** if it minimizes $\|D(Ax - b)\|_2$, that is, if it is a least-squares
+solution of $DAx = Db$. As the source notes, "if $x_D$ minimizes this summation, then it
+minimizes $\|\tilde A x - \tilde b\|_2$ where $\tilde A = DA$ and $\tilde b = Db$".
+
+The definition is `Matrix.IsLeastSquaresSolution` for `diagonal d * A` and $Db$. It puts no
+condition on the weights. -/
 def IsWeightedLeastSquaresSolution (d : Fin m → ℝ) (A : Matrix (Fin m) (Fin n) ℝ)
     (b : EuclideanSpace ℝ (Fin m)) (x : EuclideanSpace ℝ (Fin n)) : Prop :=
   IsLeastSquaresSolution (diagonal d * A) (toEuclideanLin (diagonal d) b) x
 
-/-- The weighted objective in coordinates: `‖D(Ax − b)‖₂² = ∑ᵢ dᵢ² (aᵢᵀx − bᵢ)²`. -/
+/-- The weighted objective in coordinates: $\|D(Ax - b)\|_2^2 = \sum_i d_i^2 (a_i^T x - b_i)^2$. -/
 private theorem norm_sq_weighted_eq (d : Fin m → ℝ) (A : Matrix (Fin m) (Fin n) ℝ)
     (b : EuclideanSpace ℝ (Fin m)) (x : EuclideanSpace ℝ (Fin n)) :
     ‖toEuclideanLin (diagonal d * A) x - toEuclideanLin (diagonal d) b‖ ^ 2 =
@@ -83,9 +176,13 @@ private theorem norm_sq_weighted_eq (d : Fin m → ℝ) (A : Matrix (Fin m) (Fin
   rw [← mul_sub, mul_pow]
   rfl
 
-/-- **(6.1.1).** "`min ‖D(Ax − b)‖₂² = min ∑ᵢ dᵢ² (aᵢᵀx − bᵢ)²`": the weighted objective is the
-weighted sum of squared discrepancies, so `x` solves the weighted problem iff it minimizes that
-sum. -/
+/-- **Equation (6.1.1)** of [golub2013matrix]. Let $A \in \mathbb{R}^{m \times n}$,
+$b, d \in \mathbb{R}^m$ and $x \in \mathbb{R}^n$, and let
+$D = \operatorname{diag}(d_1, \dots, d_m)$. Then
+$$\|D(Ax - b)\|_2^2 = \sum_{i=1}^{m} d_i^2 (a_i^T x - b_i)^2,$$
+and $x$ is a weighted least-squares solution if and only if it minimizes this sum.
+
+The row $a_i^T$ is `A i`. -/
 theorem equation_6_1_1 (d : Fin m → ℝ) (A : Matrix (Fin m) (Fin n) ℝ)
     (b : EuclideanSpace ℝ (Fin m)) (x : EuclideanSpace ℝ (Fin n)) :
     (‖toEuclideanLin (diagonal d * A) x - toEuclideanLin (diagonal d) b‖ ^ 2 =
@@ -99,18 +196,18 @@ theorem equation_6_1_1 (d : Fin m → ℝ) (A : Matrix (Fin m) (Fin n) ℝ)
   rw [← norm_sq_weighted_eq, ← norm_sq_weighted_eq]
   exact (pow_le_pow_iff_left₀ (norm_nonneg _) (norm_nonneg _) two_ne_zero).symm
 
-/-- `D D = diag(dᵢ²)`. -/
+/-- $DD = \operatorname{diag}(d_i^2)$. -/
 private theorem diagonal_mul_diagonal_self (d : Fin m → ℝ) :
     diagonal d * diagonal d = diagonal fun i => d i ^ 2 := by
   rw [diagonal_mul_diagonal]
   simp only [sq]
 
-/-- `(DA)ᵀ = AᵀD` for a real diagonal `D`. -/
+/-- $(DA)^T = A^T D$ for a real diagonal matrix $D$. -/
 private theorem conjTranspose_diagonal_mul (d : Fin m → ℝ) (A : Matrix (Fin m) (Fin n) ℝ) :
     (diagonal d * A)ᴴ = Aᵀ * diagonal d := by
   rw [conjTranspose_eq_transpose_of_trivial, transpose_mul, diagonal_transpose]
 
-/-- `DᵀD = diag(dᵢ²)` for a real diagonal `D`. -/
+/-- $D^T D = \operatorname{diag}(d_i^2)$ for a real diagonal matrix $D$. -/
 private theorem conjTranspose_diagonal_mul_self (d : Fin m → ℝ) :
     (diagonal d)ᴴ * diagonal d = diagonal fun i => d i ^ 2 := by
   rw [conjTranspose_eq_transpose_of_trivial, diagonal_transpose, diagonal_mul_diagonal_self]
@@ -126,10 +223,18 @@ private theorem isUnit_diagonal_of_ne_zero {d : Fin m → ℝ} (hd : ∀ i, d i 
 private theorem sq_weight_pos {d : Fin m → ℝ} (hd : ∀ i, d i ≠ 0) (i : Fin m) : 0 < d i ^ 2 :=
   lt_of_le_of_ne (sq_nonneg _) (Ne.symm (pow_ne_zero 2 (hd i)))
 
-/-- **(6.1.2).** "If `A` has full column rank and we apply the method of normal equations, then we
-are led to the following positive definite system: `(AᵀD²A)x_D = AᵀD²b`": for `d` nowhere zero,
-`AᵀD²A` is positive definite, the weighted solutions are the solutions of this system, and the
-solution is `x_D = (AᵀD²A)⁻¹AᵀD²b`. -/
+/-- **Equation (6.1.2)** of [golub2013matrix]. Let $A \in \mathbb{R}^{m \times n}$ have full column
+rank, let $d \in \mathbb{R}^m$ have no zero entry, let
+$D = \operatorname{diag}(d_1, \dots, d_m)$, and let $b \in \mathbb{R}^m$ and
+$x \in \mathbb{R}^n$. The method of normal equations leads to "the following positive definite
+system":
+$$(A^T D^2 A) x_D = A^T D^2 b.$$
+Precisely, $A^T D^2 A$ is positive definite, $x$ is a weighted least-squares solution if and
+only if $(A^T D^2 A) x = A^T D^2 b$, and $x$ is a weighted least-squares solution if and only if
+$x = (A^T D^2 A)^{-1} A^T D^2 b$.
+
+Full column rank is `LinearIndependent ℝ Aᵀ`. The matrix $(A^T D^2 A)^{-1} A^T D^2$ is
+`Matrix.weightedLeastSquaresOp`. -/
 theorem equation_6_1_2 {A : Matrix (Fin m) (Fin n) ℝ} (hA : LinearIndependent ℝ Aᵀ)
     {d : Fin m → ℝ} (hd : ∀ i, d i ≠ 0) (b : EuclideanSpace ℝ (Fin m))
     (x : EuclideanSpace ℝ (Fin n)) :
@@ -151,8 +256,12 @@ theorem equation_6_1_2 {A : Matrix (Fin m) (Fin n) ℝ} (hA : LinearIndependent 
       isLeastSquaresSolution_weightedLeastSquaresOp (isUnit_diagonal_of_ne_zero hd) hA,
       conjTranspose_diagonal_mul_self]
 
-/-- **(6.1.3).** "Subtracting the unweighted system `AᵀAx_LS = Aᵀb` we see that
-`x_D − x_LS = (AᵀD²A)⁻¹Aᵀ(D² − I)(b − Ax_LS)`", for `A` of full column rank and `d` nowhere zero. -/
+/-- **Equation (6.1.3)** of [golub2013matrix]. Let $A \in \mathbb{R}^{m \times n}$ have full column
+rank, let $d \in \mathbb{R}^m$ have no zero entry, let
+$D = \operatorname{diag}(d_1, \dots, d_m)$, and let $b \in \mathbb{R}^m$. If $x_D$ is a weighted
+least-squares solution and $x_{LS}$ is a least-squares solution of $\min \|Ax - b\|_2$, then
+$$x_D - x_{LS} = (A^T D^2 A)^{-1} A^T (D^2 - I)(b - A x_{LS}).$$
+The source obtains this by "subtracting the unweighted system $A^T A x_{LS} = A^T b$". -/
 theorem equation_6_1_3 {A : Matrix (Fin m) (Fin n) ℝ} (hA : LinearIndependent ℝ Aᵀ)
     {d : Fin m → ℝ} (hd : ∀ i, d i ≠ 0) {b : EuclideanSpace ℝ (Fin m)}
     {xD xLS : EuclideanSpace ℝ (Fin n)} (hxD : IsWeightedLeastSquaresSolution d A b xD)
@@ -166,14 +275,15 @@ theorem equation_6_1_3 {A : Matrix (Fin m) (Fin n) ℝ} (hA : LinearIndependent 
     exact hpd.isUnit
   rw [weightedLeastSquaresOp_mulVec_sub_pinv_mulVec hW b, conjTranspose_eq_transpose_of_trivial]
 
-/-- The book's `D(δ)²` has diagonal `d²` with its `k`-th entry replaced by `d_k²(1 + δ)`; the
-residual `r_k(δ) = e_kᵀ(b − Ax(δ))` of the weighted solution `x(δ)`. -/
+/-- Replacing the $k$-th entry of the squared weights twice is the same as replacing it once by the
+second value. -/
 private theorem update_update_weights (d : Fin m → ℝ) (k : Fin m) (s t : ℝ) :
     Function.update (Function.update (fun i => d i ^ 2) k s) k t =
       Function.update (fun i => d i ^ 2) k t :=
   Function.update_idem _ _ _
 
-/-- The perturbed weights are positive. -/
+/-- If no $d_i$ is zero and $t > 0$, the squared weights $d_i^2$ with the $k$-th entry replaced by
+$t$ are positive. -/
 private theorem update_weights_pos {d : Fin m → ℝ} (hd : ∀ i, d i ≠ 0) (k : Fin m) {t : ℝ}
     (ht : 0 < t) (i : Fin m) : 0 < Function.update (fun i => d i ^ 2) k t i := by
   by_cases hi : i = k
@@ -182,10 +292,19 @@ private theorem update_weights_pos {d : Fin m → ℝ} (hd : ∀ i, d i ≠ 0) (
   · rw [Function.update_of_ne hi]
     exact sq_weight_pos hd i
 
-/-- **(6.1.4).** With `D(δ) = diag(d₁, …, d_k√(1 + δ), …, d_m)`, `δ > −1`, `x(δ)` minimizing
-`‖D(δ)(Ax − b)‖₂` and `r_k(δ) = e_kᵀ(b − Ax(δ))`, "it can be shown that
-`d/dδ r_k(δ) = −d_k² (a_kᵀ (AᵀD(δ)²A)⁻¹ a_k) r_k(δ)`", for `A` of full column rank and `d` nowhere
-zero. The residual is the backbone's `weightedResidual A b w k` at the weights `w = diag(D(δ)²)`. -/
+/-- **Equation (6.1.4)** of [golub2013matrix]. Let $A \in \mathbb{R}^{m \times n}$ have full column
+rank, let $d \in \mathbb{R}^m$ have no zero entry, let $b \in \mathbb{R}^m$, let
+$1 \le k \le m$, and let $\delta > -1$. Let
+$$D(\delta) = \operatorname{diag}(d_1, \dots, d_{k-1}, d_k \sqrt{1 + \delta}, d_{k+1}, \dots,
+  d_m),$$
+let $x(\delta)$ minimize $\|D(\delta)(Ax - b)\|_2$, and let
+$r_k(\delta) = e_k^T (b - A x(\delta))$. Then $r_k$ is differentiable at $\delta$, and
+$$\frac{d}{d\delta} r_k(\delta) = -d_k^2 \left(a_k^T (A^T D(\delta)^2 A)^{-1} a_k\right)
+  r_k(\delta).$$
+
+The residual $r_k(\delta)$ is `Matrix.weightedResidual A b w k` at the weights $w$ on the
+diagonal of $D(\delta)^2$: $w_i = d_i^2$ for $i \neq k$ and $w_k = d_k^2 (1 + \delta)$. Its
+weighted solution is $x(\delta) = (A^T D(\delta)^2 A)^{-1} A^T D(\delta)^2 b$. -/
 theorem equation_6_1_4 {A : Matrix (Fin m) (Fin n) ℝ} (hA : LinearIndependent ℝ Aᵀ)
     {d : Fin m → ℝ} (hd : ∀ i, d i ≠ 0) (b : Fin m → ℝ) (k : Fin m) {δ : ℝ} (hδ : -1 < δ) :
     HasDerivAt
@@ -208,10 +327,14 @@ theorem equation_6_1_4 {A : Matrix (Fin m) (Fin n) ℝ} (hA : LinearIndependent 
     simp only [Function.comp_apply, hw, update_update_weights]
   · ring
 
-/-- **§6.1.1.** "It follows that `|r_k(δ)|` is a monotone decreasing function of `δ`": for `A` of
-full column rank and `d` nowhere zero, `δ ↦ |r_k(δ)|` is antitone on `δ > −1`. The book's
-derivation claims `d/dδ [r_k(δ)²] < 0`, which fails when `a_k = 0` or `r_k(δ) = 0`; the non-strict
-statement is the theorem. -/
+/-- **§6.1.1** of [golub2013matrix]. Let $A \in \mathbb{R}^{m \times n}$ have full column rank, let
+$d \in \mathbb{R}^m$ have no zero entry, let $b \in \mathbb{R}^m$ and $1 \le k \le m$, and let
+$r_k(\delta)$ be the residual of (6.1.4). Then "$|r_k(\delta)|$ is a monotone decreasing
+function of $\delta$": the map $\delta \mapsto |r_k(\delta)|$ is nonincreasing on $\delta > -1$.
+
+**Correction.** The source derives the claim from $\frac{d}{d\delta} [r_k(\delta)^2] < 0$. This
+inequality fails when $a_k = 0$ or $r_k(\delta) = 0$. The statement here is the non-strict
+monotonicity, which holds in all cases. -/
 theorem abs_weightedResidual_antitoneOn {A : Matrix (Fin m) (Fin n) ℝ}
     (hA : LinearIndependent ℝ Aᵀ) {d : Fin m → ℝ} (hd : ∀ i, d i ≠ 0) (b : Fin m → ℝ)
     (k : Fin m) :
@@ -227,8 +350,14 @@ theorem abs_weightedResidual_antitoneOn {A : Matrix (Fin m) (Fin n) ℝ}
     (Set.mem_Ioi.2 (mul_pos hdk (by linarith))) ?_
   exact mul_le_mul_of_nonneg_left (by linarith) hdk.le
 
-/-- **(6.1.5).** "If `[D⁻² A; Aᵀ 0][r; x] = [b; 0]` then `x` minimizes (6.1.1)", for `d` nowhere
-zero. -/
+/-- **Equation (6.1.5)** of [golub2013matrix]. Let $d \in \mathbb{R}^m$ have no zero entry, let
+$D = \operatorname{diag}(d_1, \dots, d_m)$, and let $A \in \mathbb{R}^{m \times n}$,
+$b, r \in \mathbb{R}^m$ and $x \in \mathbb{R}^n$. If
+$$\begin{bmatrix} D^{-2} & A \\ A^T & 0 \end{bmatrix} \begin{bmatrix} r \\ x \end{bmatrix} =
+  \begin{bmatrix} b \\ 0 \end{bmatrix},$$
+then $x$ minimizes (6.1.1), that is, $x$ is a weighted least-squares solution.
+
+The two block rows are the hypotheses $D^{-2} r + Ax = b$ and $A^T r = 0$. -/
 theorem equation_6_1_5 {d : Fin m → ℝ} (hd : ∀ i, d i ≠ 0) {A : Matrix (Fin m) (Fin n) ℝ}
     {b r : EuclideanSpace ℝ (Fin m)} {x : EuclideanSpace ℝ (Fin n)}
     (h1 : toEuclideanLin (diagonal fun i => d i ^ 2)⁻¹ r + toEuclideanLin A x = b)
@@ -239,9 +368,14 @@ theorem equation_6_1_5 {d : Fin m → ℝ} (hd : ∀ i, d i ≠ 0) {A : Matrix (
 
 /-! ### §6.1.2 Generalized least squares -/
 
-/-- **(6.1.7)–(6.1.8).** For `B` nonsingular (`W = BBᵀ`), "(6.1.7) is equivalent to the generalized
-least squares problem `min_{b = Ax + Bv} vᵀv`": `x` minimizes `‖B⁻¹(Ax − b)‖₂` iff
-`(x, B⁻¹(b − Ax))` solves (6.1.8). -/
+/-- **Equations (6.1.7)–(6.1.8)** of [golub2013matrix]. Let $A \in \mathbb{R}^{m \times n}$, let
+$B \in \mathbb{R}^{m \times m}$ be nonsingular, so that $W = BB^T$, and let $b \in \mathbb{R}^m$
+and $x \in \mathbb{R}^n$. Then $x$ minimizes $\|B^{-1}(Ax - b)\|_2$, which is (6.1.7) for
+$W = BB^T$, if and only if the pair $(x, B^{-1}(b - Ax))$ solves the generalized least-squares
+problem (6.1.8)
+$$\min_{b = Ax + Bv} v^T v.$$
+
+The generalized least-squares problem is `Matrix.IsGeneralizedLeastSquaresSolution`. -/
 theorem equation_6_1_8 {A : Matrix (Fin m) (Fin n) ℝ} {B : Matrix (Fin m) (Fin m) ℝ}
     (hB : IsUnit B) {b : EuclideanSpace ℝ (Fin m)} {x : EuclideanSpace ℝ (Fin n)} :
     IsLeastSquaresSolution (B⁻¹ * A) (toEuclideanLin B⁻¹ b) x ↔
@@ -249,12 +383,25 @@ theorem equation_6_1_8 {A : Matrix (Fin m) (Fin n) ℝ} {B : Matrix (Fin m) (Fin
   rw [isGeneralizedLeastSquaresSolution_iff hB]
   exact ⟨fun h => ⟨h, rfl⟩, fun h => h.1⟩
 
-/-- **(6.1.9)–(6.1.10), Paige's method.** For `A ∈ ℝ^{(n+q)×n}` with QR factorization
-`QᵀA = [R₁; 0]`, `Q = [Q₁ Q₂]`, and an orthogonal `Z = [Z₁ Z₂]` with `(Q₂ᵀB)Z = [0 S]`: "The bottom
-half of this equation determines `v` while the top half prescribes `x`: `Su = Q₂ᵀb`, `v = Z₂u`,
-`R₁x = Q₁ᵀb − Q₁ᵀBZ₂u`", and `(x, v)` solves the generalized problem (6.1.8). The book assumes `A`
-of full column rank and `B` nonsingular, so that `S` (upper triangular) and `R₁` are nonsingular;
-the statement needs only that `S` is. -/
+/-- **Equations (6.1.9)–(6.1.10)** of [golub2013matrix], Paige's method. Let
+$A \in \mathbb{R}^{(n+q) \times n}$ have a QR factorization $A = QR$, with $Q = [Q_1\ Q_2]$,
+$Q_1 \in \mathbb{R}^{(n+q) \times n}$ and $R_1 = R(1{:}n, 1{:}n)$, so that $Q^T A = [R_1; 0]$.
+Let $B \in \mathbb{R}^{(n+q) \times (n+q)}$, let $Z = [Z_1\ Z_2] \in \mathbb{R}^{(n+q) \times
+(n+q)}$ be orthogonal with $Z_2 \in \mathbb{R}^{(n+q) \times q}$, and let
+$S \in \mathbb{R}^{q \times q}$ be nonsingular with $(Q_2^T B) Z = [0\ S]$. Let
+$b \in \mathbb{R}^{n+q}$, and let $u \in \mathbb{R}^q$ and $x \in \mathbb{R}^n$ satisfy
+$$S u = Q_2^T b, \qquad R_1 x = Q_1^T b - Q_1^T B Z_2 u.$$
+Then $(x, v)$ with $v = Z_2 u$ solves the generalized least-squares problem (6.1.8). In the
+words of the source, "the bottom half of this equation determines $v$ while the top half
+prescribes $x$".
+
+**Generalization.** The source assumes that $A$ has full column rank and that $B$ is
+nonsingular, so that $R_1$ and the upper triangular $S$ are nonsingular. The statement needs
+only that $S$ is nonsingular.
+
+The blocks are submatrices of columns: $Q_1$ is `Matrix.firstColumns Q`, $Q_2$ and $Z_2$ are the
+last $q$ columns (through `Fin.natAdd n`), $Z_1$ is the first $n$ columns (through
+`Fin.castAdd q`), and $R_1$ is `Matrix.firstRows R`. -/
 theorem equation_6_1_9 {q : ℕ} {A : Matrix (Fin (n + q)) (Fin n) ℝ}
     {Q : Matrix (Fin (n + q)) (Fin (n + q)) ℝ} {R : Matrix (Fin (n + q)) (Fin n) ℝ}
     (hQR : IsQR A Q R) {B Z : Matrix (Fin (n + q)) (Fin (n + q)) ℝ}
@@ -274,8 +421,13 @@ theorem equation_6_1_9 {q : ℕ} {A : Matrix (Fin (n + q)) (Fin n) ℝ}
     at hZ₁ hZ₂ hu hx ⊢
   exact isGeneralizedLeastSquaresSolution_of_paige hQR hZ hS hZ₁ hZ₂ hu hx
 
-/-- **(6.1.10), the simplification.** "`R₁x = Q₁ᵀb − (Q₁ᵀBZ₁Z₁ᵀ + Q₁ᵀBZ₂Z₂ᵀ)v = Q₁ᵀb − Q₁ᵀBZ₂u`"
-for `v = Z₂u` and `Z = [Z₁ Z₂]` orthogonal; here `C` stands for `Q₁ᵀB` and `c` for `Q₁ᵀb`. -/
+/-- **Equation (6.1.10)** of [golub2013matrix], the simplification. Let $Z = [Z_1\ Z_2] \in
+\mathbb{R}^{(n+q) \times (n+q)}$ be orthogonal, with $Z_1$ the first $n$ columns, let
+$C \in \mathbb{R}^{k \times (n+q)}$, $c \in \mathbb{R}^k$ and $u \in \mathbb{R}^q$, and let
+$v = Z_2 u$. Then
+$$c - (C Z_1 Z_1^T + C Z_2 Z_2^T) v = c - C Z_2 u.$$
+In the source $C = Q_1^T B$ and $c = Q_1^T b$, and the equation reads "$R_1 x = Q_1^T b - (Q_1^T
+B Z_1 Z_1^T + Q_1^T B Z_2 Z_2^T) v = Q_1^T b - Q_1^T B Z_2 u$". -/
 theorem equation_6_1_10 {k q : ℕ} {Z : Matrix (Fin (n + q)) (Fin (n + q)) ℝ}
     (hZ : Z ∈ orthogonalGroup (Fin (n + q)) ℝ) (C : Matrix (Fin k) (Fin (n + q)) ℝ)
     (c : Fin k → ℝ) (u : Fin q → ℝ) :
@@ -295,18 +447,28 @@ theorem equation_6_1_10 {k q : ℕ} {Z : Matrix (Fin (n + q)) (Fin (n + q)) ℝ}
 
 /-! ### §6.1.3 Column weighting -/
 
-/-- **§6.1.3.** "If … we compute the minimum 2-norm solution `y_LS` to `min ‖(AG⁻¹)y − b‖₂`, then
-`x_G = G⁻¹y_LS` is a minimizer of `‖Ax − b‖₂`", for `G` nonsingular (for any least-squares
-solution `y` in fact). -/
+/-- **§6.1.3** of [golub2013matrix], column weighting. Let $A \in \mathbb{R}^{m \times n}$, let
+$G \in \mathbb{R}^{n \times n}$ be nonsingular, let $b \in \mathbb{R}^m$, and let $y$ be a
+least-squares solution of $\min_y \|(AG^{-1}) y - b\|_2$. Then $x_G = G^{-1} y$ minimizes
+$\|Ax - b\|_2$.
+
+**Generalization.** The source takes for $y$ the minimum 2-norm solution $y_{LS}$. Every
+least-squares solution $y$ gives a minimizer. -/
 theorem isLeastSquaresSolution_columnWeighting {A : Matrix (Fin m) (Fin n) ℝ}
     {G : Matrix (Fin n) (Fin n) ℝ} (hG : IsUnit G) {b : EuclideanSpace ℝ (Fin m)}
     {y : EuclideanSpace ℝ (Fin n)} (hy : IsLeastSquaresSolution (A * G⁻¹) b y) :
     IsLeastSquaresSolution A b (toEuclideanLin G⁻¹ y) :=
   (isLeastSquaresSolution_mul_inv_iff hG).1 hy
 
-/-- **§6.1.3.** "If `rank(A) < n`, then within the set of minimizers, `x_G` has the smallest
-`G`-norm", `‖z‖_G = ‖Gz‖₂`: for `y_LS` the minimum-norm solution of `min ‖(AG⁻¹)y − b‖₂` and every
-minimizer `x` of `‖Ax − b‖₂`, `‖G⁻¹y_LS‖_G ≤ ‖x‖_G`. It holds for every rank. -/
+/-- **§6.1.3** of [golub2013matrix]. Let $A \in \mathbb{R}^{m \times n}$, let
+$G \in \mathbb{R}^{n \times n}$ be nonsingular, let $b \in \mathbb{R}^m$, and let
+$\|z\|_G = \|Gz\|_2$. Let $y_{LS}$ be the minimum 2-norm solution of
+$\min_y \|(AG^{-1}) y - b\|_2$, and let $x_G = G^{-1} y_{LS}$. Then $\|x_G\|_G \le \|x\|_G$ for
+every minimizer $x$ of $\|Ax - b\|_2$: "within the set of minimizers, $x_G$ has the smallest
+$G$-norm".
+
+**Generalization.** The source states the property for $\operatorname{rank}(A) < n$. It holds
+for every rank. -/
 theorem norm_columnWeighting_le {A : Matrix (Fin m) (Fin n) ℝ} {G : Matrix (Fin n) (Fin n) ℝ}
     (hG : IsUnit G) {b : EuclideanSpace ℝ (Fin m)} {y x : EuclideanSpace ℝ (Fin n)}
     (hy : IsMinNormLeastSquaresSolution (A * G⁻¹) b y) (hx : IsLeastSquaresSolution A b x) :
@@ -316,7 +478,8 @@ theorem norm_columnWeighting_le {A : Matrix (Fin m) (Fin n) ℝ} {G : Matrix (Fi
 
 /-! ### §6.1.4 Ridge regression -/
 
-/-- `‖√μ x‖² = μ ‖x‖²` for `μ ≥ 0`, the regularization term of a stacked problem. -/
+/-- For $\mu \ge 0$, $\|\sqrt{\mu} M x - 0\|_2^2 = \mu \|Mx\|_2^2$: the regularization term of a
+stacked problem. -/
 private theorem norm_sqrt_smul_sub_zero_sq {k : ℕ} {μ : ℝ} (hμ : 0 ≤ μ)
     (M : Matrix (Fin k) (Fin n) ℝ) (x : EuclideanSpace ℝ (Fin n)) :
     ‖toEuclideanLin (Real.sqrt μ • M) x - WithLp.toLp 2 0‖ ^ 2 =
@@ -324,8 +487,15 @@ private theorem norm_sqrt_smul_sub_zero_sq {k : ℕ} {μ : ℝ} (hμ : 0 ≤ μ)
   rw [WithLp.toLp_zero, sub_zero, toEuclideanLin_smul_apply, norm_smul, mul_pow,
     Real.norm_eq_abs, sq_abs, Real.sq_sqrt hμ]
 
-/-- **(6.1.11).** "`min ‖[A; √λ I]x − [b; 0]‖₂² = min ‖Ax − b‖₂² + λ‖x‖₂²`": for `λ ≥ 0` the two
-objectives agree, so the ridge problem is the least-squares problem of the stacked matrix. -/
+/-- **Equation (6.1.11)** of [golub2013matrix], ridge regression. Let
+$A \in \mathbb{R}^{m \times n}$, $b \in \mathbb{R}^m$, $\lambda \ge 0$ and $x \in \mathbb{R}^n$.
+Then
+$$\left\| \begin{bmatrix} A \\ \sqrt{\lambda} I \end{bmatrix} x - \begin{bmatrix} b \\ 0
+  \end{bmatrix} \right\|_2^2 = \|Ax - b\|_2^2 + \lambda \|x\|_2^2,$$
+and $x$ is a least-squares solution of the stacked problem if and only if it minimizes
+$\|Ax - b\|_2^2 + \lambda \|x\|_2^2$.
+
+The stacked matrix is `Matrix.fromRows`, and the stacked vector is `Sum.elim b 0`. -/
 theorem equation_6_1_11 (A : Matrix (Fin m) (Fin n) ℝ) (b : EuclideanSpace ℝ (Fin m)) {μ : ℝ}
     (hμ : 0 ≤ μ) (x : EuclideanSpace ℝ (Fin n)) :
     (‖toEuclideanLin (fromRows A (Real.sqrt μ • (1 : Matrix (Fin n) (Fin n) ℝ))) x -
@@ -344,9 +514,14 @@ theorem equation_6_1_11 (A : Matrix (Fin m) (Fin n) ℝ) (b : EuclideanSpace ℝ
       sub_zero, RCLike.ofReal_real_eq_id, id_eq] at h
     exact h
 
-/-- **(6.1.12).** "The normal equation system for this problem is given by `(AᵀA + λI)x = Aᵀb`":
-for `λ > 0`, `x` minimizes `‖Ax − b‖₂² + λ‖x‖₂²` iff it solves the normal equations, iff it is the
-ridge solution `x(λ) = (AᵀA + λI)⁻¹Aᵀb`, the backbone's `A.tikhonov λ` applied to `b`. -/
+/-- **Equation (6.1.12)** of [golub2013matrix]. Let $A \in \mathbb{R}^{m \times n}$, $\lambda > 0$,
+$b \in \mathbb{R}^m$ and $x \in \mathbb{R}^n$. Then $x$ minimizes
+$\|Ax - b\|_2^2 + \lambda \|x\|_2^2$ if and only if it solves "the normal equation system for
+this problem"
+$$(A^T A + \lambda I) x = A^T b,$$
+and if and only if $x = x(\lambda) = (A^T A + \lambda I)^{-1} A^T b$.
+
+The ridge solution $x(\lambda)$ is `Matrix.tikhonov` of $A$ at $\lambda$, applied to $b$. -/
 theorem equation_6_1_12 (A : Matrix (Fin m) (Fin n) ℝ) {μ : ℝ} (hμ : 0 < μ)
     (b : EuclideanSpace ℝ (Fin m)) (x : EuclideanSpace ℝ (Fin n)) :
     ((∀ y, ‖toEuclideanLin A x - b‖ ^ 2 + μ * ‖x‖ ^ 2 ≤
@@ -365,9 +540,12 @@ theorem equation_6_1_12 (A : Matrix (Fin m) (Fin n) ℝ) {μ : ℝ} (hμ : 0 < �
   rw [e, conjTranspose_eq_transpose_of_trivial]
   rfl
 
-/-- **(6.1.14).** "If `A = UΣVᵀ = ∑ᵢ σᵢuᵢvᵢᵀ` is the SVD of `A`, then (6.1.12) converts to …
-`x(λ) = ∑_{i=1}^r (σᵢuᵢᵀb/(σᵢ² + λ)) vᵢ`": for any SVD `Matrix.IsSVD A U σ V` and `λ > 0`. The sum
-runs over `i < min(m, n)`; its terms with `σᵢ = 0` (those past the rank `r`) vanish. -/
+/-- **Equation (6.1.14)** of [golub2013matrix]. Let $U^T A V = \Sigma$ be an SVD of
+$A \in \mathbb{R}^{m \times n}$, let $\lambda > 0$, and let $b \in \mathbb{R}^m$. Then the ridge
+solution is
+$$x(\lambda) = \sum_{i=1}^{\min(m, n)} \frac{\sigma_i u_i^T b}{\sigma_i^2 + \lambda} v_i.$$
+The terms with $\sigma_i = 0$, which are those after the rank $r$, vanish, so this is the sum to
+$r$ of the source. -/
 theorem equation_6_1_14 {A : Matrix (Fin m) (Fin n) ℝ} {U : Matrix (Fin m) (Fin m) ℝ} {σ : ℕ → ℝ}
     {V : Matrix (Fin n) (Fin n) ℝ} (h : IsSVD A U σ V) {μ : ℝ} (hμ : 0 < μ)
     (b : EuclideanSpace ℝ (Fin m)) :
@@ -378,8 +556,10 @@ theorem equation_6_1_14 {A : Matrix (Fin m) (Fin n) ℝ} {U : Matrix (Fin m) (Fi
   refine sum_congr rfl fun i _ => ?_
   rw [smul_smul, RCLike.ofReal_real_eq_id, id_eq, mul_div_right_comm]
 
-/-- **§6.1.4.** "By inspection, it is clear that `lim_{λ→0} x(λ) = x_LS`", `x_LS = A⁺b` the minimum
-norm least-squares solution. -/
+/-- **§6.1.4** of [golub2013matrix]. For $A \in \mathbb{R}^{m \times n}$ and $b \in \mathbb{R}^m$,
+the ridge solution $x(\lambda)$ tends to the minimum-norm least-squares solution
+$x_{LS} = A^+ b$ as $\lambda \to 0^+$: "by inspection, it is clear that
+$\lim_{\lambda \to 0} x(\lambda) = x_{LS}$". -/
 theorem tendsto_ridge_leastSquares (A : Matrix (Fin m) (Fin n) ℝ) (b : EuclideanSpace ℝ (Fin m)) :
     Tendsto (fun μ => toEuclideanLin (A.tikhonov μ) b) (𝓝[>] 0)
       (𝓝 (toEuclideanLin A.pinv b)) := by
@@ -388,8 +568,10 @@ theorem tendsto_ridge_leastSquares (A : Matrix (Fin m) (Fin n) ℝ) (b : Euclide
     exact (PiLp.continuous_toLp 2 _).comp (continuous_id.matrix_mulVec continuous_const)
   exact (hc.tendsto _).comp (tendsto_tikhonov_pinv A)
 
-/-- **§6.1.4.** "… and `‖x(λ)‖₂` is a monotone decreasing function of `λ`": antitone on `λ > 0`,
-strictly decreasing when `Aᵀb ≠ 0`. -/
+/-- **§6.1.4** of [golub2013matrix]. For $A \in \mathbb{R}^{m \times n}$ and $b \in \mathbb{R}^m$,
+"$\|x(\lambda)\|_2$ is a monotone decreasing function of $\lambda$": the map
+$\lambda \mapsto \|x(\lambda)\|_2$ is nonincreasing on $\lambda > 0$, and it is strictly
+decreasing there if $A^T b \neq 0$. -/
 theorem norm_ridge_antitoneOn (A : Matrix (Fin m) (Fin n) ℝ) (b : EuclideanSpace ℝ (Fin m)) :
     AntitoneOn (fun μ => ‖toEuclideanLin (A.tikhonov μ) b‖) (Set.Ioi 0) ∧
       (toEuclideanLin Aᵀ b ≠ 0 →
@@ -398,16 +580,25 @@ theorem norm_ridge_antitoneOn (A : Matrix (Fin m) (Fin n) ℝ) (b : EuclideanSpa
   rw [← conjTranspose_eq_transpose_of_trivial] at hb
   exact strictAntiOn_norm_toEuclideanLin_tikhonov A hb
 
-/-- **§6.1.4, (6.1.15).** "Let `x_k(λ)` solve `min ‖D_k(Ax − b)‖₂² + λ‖x‖₂²`", with
-`D_k = I − e_ke_kᵀ = diag(1, …, 1, 0, 1, …, 1)` (the `k`-th equation deleted): the ridge solution of
-the reduced problem, `x_k(λ) = ((D_kA)ᵀ(D_kA) + λI)⁻¹(D_kA)ᵀ(D_kb)` (`ridgeDeleted_spec`). -/
+/-- **Equation (6.1.15)** of [golub2013matrix], ridge regression without the $k$-th equation. Let
+$A \in \mathbb{R}^{m \times n}$, $b \in \mathbb{R}^m$, $\lambda \in \mathbb{R}$ and
+$1 \le k \le m$, and let $D_k = I - e_k e_k^T = \operatorname{diag}(1, \dots, 1, 0, 1, \dots,
+1)$. The source lets "$x_k(\lambda)$ solve $\min \|D_k(Ax - b)\|_2^2 + \lambda \|x\|_2^2$". Here
+$x_k(\lambda)$ is defined as
+$$x_k(\lambda) = \left((D_k A)^T (D_k A) + \lambda I\right)^{-1} (D_k A)^T (D_k b).$$
+
+The definition applies `Matrix.tikhonov` of $D_k A$ to $D_k b$. Where the matrix is singular,
+Lean's inverse is zero. For $\lambda > 0$ it is the minimizer
+(`GolubVanLoan.Chapter06.ridgeDeleted_spec`). -/
 noncomputable def ridgeDeleted (A : Matrix (Fin m) (Fin n) ℝ) (b : Fin m → ℝ) (μ : ℝ)
     (k : Fin m) : Fin n → ℝ :=
   (diagonal (Function.update (1 : Fin m → ℝ) k 0) * A).tikhonov μ *ᵥ
     (diagonal (Function.update (1 : Fin m → ℝ) k 0) *ᵥ b)
 
-/-- **(6.1.15).** For `λ > 0`, `x_k(λ)` is the unique solution of
-`min ‖D_k(Ax − b)‖₂² + λ‖x‖₂²`. -/
+/-- **Equation (6.1.15)** of [golub2013matrix]. Let $A \in \mathbb{R}^{m \times n}$,
+$b \in \mathbb{R}^m$, $\lambda > 0$ and $1 \le k \le m$. Then $x_k(\lambda)$ is the unique
+minimizer of $\|D_k(Ax - b)\|_2^2 + \lambda \|x\|_2^2$: a vector $x$ is equal to $x_k(\lambda)$
+if and only if it minimizes this function. -/
 theorem ridgeDeleted_spec (A : Matrix (Fin m) (Fin n) ℝ) (b : Fin m → ℝ) {μ : ℝ} (hμ : 0 < μ)
     (k : Fin m) (x : EuclideanSpace ℝ (Fin n)) :
     x = WithLp.toLp 2 (ridgeDeleted A b μ k) ↔
@@ -421,9 +612,12 @@ theorem ridgeDeleted_spec (A : Matrix (Fin m) (Fin n) ℝ) (b : Fin m → ℝ) {
     (WithLp.toLp 2 (diagonal (Function.update (1 : Fin m → ℝ) k 0) *ᵥ b)) x).trans
     isMinOn_univ_iff
 
-/-- **(6.1.16).** "Assuming that `λ > 0`, an algebraic manipulation shows that
-`x_k(λ) = x(λ) + ((a_kᵀx(λ) − b_k)/(1 − z_kᵀa_k)) z_k` where `z_k = (AᵀA + λI)⁻¹a_k` and
-`x(λ) = (AᵀA + λI)⁻¹Aᵀb`"; the denominator is positive. -/
+/-- **Equation (6.1.16)** of [golub2013matrix]. Let $A \in \mathbb{R}^{m \times n}$,
+$b \in \mathbb{R}^m$, $\lambda > 0$ and $1 \le k \le m$. Let
+$x(\lambda) = (A^T A + \lambda I)^{-1} A^T b$ and $z_k = (A^T A + \lambda I)^{-1} a_k$. Then
+$1 - z_k^T a_k > 0$, and
+$$x_k(\lambda) = x(\lambda) + \frac{a_k^T x(\lambda) - b_k}{1 - z_k^T a_k} z_k.$$
+-/
 theorem equation_6_1_16 (A : Matrix (Fin m) (Fin n) ℝ) (b : Fin m → ℝ) {μ : ℝ} (hμ : 0 < μ)
     (k : Fin m) :
     ridgeDeleted A b μ k = A.tikhonov μ *ᵥ b +
@@ -434,9 +628,11 @@ theorem equation_6_1_16 (A : Matrix (Fin m) (Fin n) ℝ) (b : Fin m → ℝ) {μ
   rw [dotProduct_comm]
   exact one_sub_dotProduct_inv_gram_pos A hμ k
 
-/-- **(6.1.17).** "`r_k = b_k − a_kᵀx_k(λ) =
-e_kᵀ(I − A(AᵀA + λI)⁻¹Aᵀ)b / e_kᵀ(I − A(AᵀA + λI)⁻¹Aᵀ)e_k`",
-for `λ > 0`; the denominator is positive. -/
+/-- **Equation (6.1.17)** of [golub2013matrix]. Let $A \in \mathbb{R}^{m \times n}$,
+$b \in \mathbb{R}^m$, $\lambda > 0$ and $1 \le k \le m$. Then
+$$r_k = b_k - a_k^T x_k(\lambda) = \frac{e_k^T (I - A(A^T A + \lambda I)^{-1} A^T) b}{e_k^T (I -
+  A(A^T A + \lambda I)^{-1} A^T) e_k},$$
+and the denominator is positive. -/
 theorem equation_6_1_17 (A : Matrix (Fin m) (Fin n) ℝ) (b : Fin m → ℝ) {μ : ℝ} (hμ : 0 < μ)
     (k : Fin m) :
     b k - A k ⬝ᵥ ridgeDeleted A b μ k =
@@ -445,14 +641,18 @@ theorem equation_6_1_17 (A : Matrix (Fin m) (Fin n) ℝ) (b : Fin m → ℝ) {μ
       0 < (1 - A * (Aᵀ * A + μ • 1)⁻¹ * Aᵀ : Matrix (Fin m) (Fin m) ℝ) k k :=
   tikhonov_deleteRow_residual_eq A b hμ k
 
-/-- **§6.1.4, the cross-validation weighted square error.** "Now consider choosing `λ` so as to
-minimize the cross-validation weighted square error `C(λ)` defined by
-`C(λ) = (1/m) ∑_{k=1}^m w_k (a_kᵀx_k(λ) − b_k)²`. Here, `w₁, …, w_m` are nonnegative weights." -/
+/-- **§6.1.4** of [golub2013matrix], the cross-validation weighted square error. Let
+$w \in \mathbb{R}^m$, $A \in \mathbb{R}^{m \times n}$, $b \in \mathbb{R}^m$ and
+$\lambda \in \mathbb{R}$. The **cross-validation weighted square error** is
+$$C(\lambda) = \frac{1}{m} \sum_{k=1}^{m} w_k (a_k^T x_k(\lambda) - b_k)^2.$$
+In the source, "$w_1, \dots, w_m$ are nonnegative weights"; the definition does not need this
+condition. -/
 noncomputable def crossValidationError (w : Fin m → ℝ) (A : Matrix (Fin m) (Fin n) ℝ)
     (b : Fin m → ℝ) (μ : ℝ) : ℝ :=
   (1 / m : ℝ) * ∑ k, w k * (A k ⬝ᵥ ridgeDeleted A b μ k - b k) ^ 2
 
-/-- The residual `r = (I − H)b` is affine in `b_k` with slope the diagonal entry `(I − H)_{kk}`. -/
+/-- For a matrix $M$, the $k$-th entry of $Mb$, as a function of $b_k$, has the derivative $M_{kk}$.
+-/
 private theorem hasDerivAt_mulVec_update (M : Matrix (Fin m) (Fin m) ℝ) (b : Fin m → ℝ)
     (k : Fin m) :
     HasDerivAt (fun t => (M *ᵥ Function.update b k t) k) (M k k) (b k) := by
@@ -471,9 +671,15 @@ private theorem hasDerivAt_mulVec_update (M : Matrix (Fin m) (Fin m) ℝ) (b : F
   rw [e]
   simpa using (((hasDerivAt_id (b k)).sub_const (b k)).const_mul (M k k)).const_add ((M *ᵥ b) k)
 
-/-- **(6.1.18).** "Noting that the residual `r = [r₁, …, r_m]ᵀ = b − Ax(λ)` is given by the formula
-`r = [I − A(AᵀA + λI)⁻¹Aᵀ]b` we see that `C(λ) = (1/m) ∑_k w_k (r_k / (∂r_k/∂b_k))²`", for `λ > 0`:
-`∂r_k/∂b_k` is the diagonal entry `(I − A(AᵀA + λI)⁻¹Aᵀ)_{kk}`. -/
+/-- **Equation (6.1.18)** of [golub2013matrix]. Let $w, b \in \mathbb{R}^m$,
+$A \in \mathbb{R}^{m \times n}$ and $\lambda > 0$. Let $H = A(A^T A + \lambda I)^{-1} A^T$, so
+that the residual $r = b - A x(\lambda)$ "is given by the formula $r = [I - H] b$". Then
+$\partial r_k / \partial b_k = (I - H)_{kk}$ for every $k$, and
+$$C(\lambda) = \frac{1}{m} \sum_{k=1}^{m} w_k \left(\frac{r_k}{\partial r_k / \partial
+  b_k}\right)^2.$$
+
+The partial derivative is the derivative at $t = b_k$ of the $k$-th entry of $(I - H) b'$, where
+$b'$ is $b$ with its $k$-th entry replaced by $t$. -/
 theorem equation_6_1_18 (w : Fin m → ℝ) (A : Matrix (Fin m) (Fin n) ℝ) (b : Fin m → ℝ) {μ : ℝ}
     (hμ : 0 < μ) :
     (∀ k, HasDerivAt
@@ -489,8 +695,9 @@ theorem equation_6_1_18 (w : Fin m → ℝ) (A : Matrix (Fin m) (Fin n) ℝ) (b 
   refine sum_congr rfl fun k _ => ?_
   rw [← neg_sub, neg_sq, (equation_6_1_17 A b hμ k).1]
 
-/-- The ridge hat matrix in an SVD: `A(AᵀA + λI)⁻¹Aᵀ = U diag(cᵢ) Uᵀ` with
-`cᵢ = σᵢ²/(σᵢ² + λ)` for `i < n` and `0` beyond. -/
+/-- For an SVD $U^T A V = \Sigma$ and $\lambda > 0$, $A(A^T A + \lambda I)^{-1} A^T = U
+\operatorname{diag}(c_i) U^T$, with $c_i = \sigma_i^2 / (\sigma_i^2 + \lambda)$ for $i < n$ and
+$c_i = 0$ otherwise. -/
 private theorem hat_eq_of_isSVD {A : Matrix (Fin m) (Fin n) ℝ} {U : Matrix (Fin m) (Fin m) ℝ}
     {σ : ℕ → ℝ} {V : Matrix (Fin n) (Fin n) ℝ} (h : IsSVD A U σ V) {μ : ℝ} (hμ : 0 < μ) :
     A * (Aᵀ * A + μ • 1)⁻¹ * Aᵀ = U * diagonal (fun i : Fin m =>
@@ -512,12 +719,17 @@ private theorem hat_eq_of_isSVD {A : Matrix (Fin m) (Fin n) ℝ} {U : Matrix (Fi
   rw [e, rectDiagonal_mul_rectDiagonal, rectDiagonal_eq_diagonal, star_eq_conjTranspose,
     conjTranspose_eq_transpose_of_trivial]
 
-/-- **(6.1.19).** "Using the SVD (6.1.13) and Equations (6.1.17) and (6.1.18), it can be shown
-that `C(λ) = (1/m) ∑_k w_k [(b_k − ∑_{j=1}^r u_{kj} b̃_j (σ_j²/(σ_j² + λ))) /
-(1 − ∑_{j=1}^r u_{kj}² (σ_j²/(σ_j² + λ)))]²` where `b̃ = Uᵀb`", for any SVD `Matrix.IsSVD A U σ V`
-and `λ > 0`. The sums run over `j < min(m, n)` (the terms past the rank vanish). The book prints
-`b̃_k` in the numerator; the correct entry is `b_k` (as `λ → ∞` the numerator must tend to
-`b_k`). -/
+/-- **Equation (6.1.19)** of [golub2013matrix]. Let $U^T A V = \Sigma$ be an SVD of
+$A \in \mathbb{R}^{m \times n}$ with $U = (u_{kj})$, let $w, b \in \mathbb{R}^m$, let
+$\lambda > 0$, and let $\tilde b = U^T b$. Then
+$$C(\lambda) = \frac{1}{m} \sum_{k=1}^{m} w_k \left[\frac{b_k - \sum_{j=1}^{\min(m, n)} u_{kj}
+  \tilde b_j \frac{\sigma_j^2}{\sigma_j^2 + \lambda}}{1 - \sum_{j=1}^{\min(m, n)} u_{kj}^2
+  \frac{\sigma_j^2}{\sigma_j^2 + \lambda}}\right]^2.$$
+The terms with $j > r = \operatorname{rank}(A)$ vanish, so the inner sums are the sums to $r$ of
+the source.
+
+**Typo.** The source prints $\tilde b_k$ in the numerator. The correct entry is $b_k$: as
+$\lambda \to \infty$, the numerator must tend to $b_k$. -/
 theorem equation_6_1_19 (w : Fin m → ℝ) {A : Matrix (Fin m) (Fin n) ℝ}
     {U : Matrix (Fin m) (Fin m) ℝ} {σ : ℕ → ℝ} {V : Matrix (Fin n) (Fin n) ℝ} (h : IsSVD A U σ V)
     (b : Fin m → ℝ) {μ : ℝ} (hμ : 0 < μ) :
@@ -567,9 +779,13 @@ theorem equation_6_1_19 (w : Fin m → ℝ) {A : Matrix (Fin m) (Fin n) ℝ}
 
 /-! ### §6.1.5 Tikhonov regularization -/
 
-/-- **(6.1.20).** "`min ‖[A; √λ B]x − [b; 0]‖₂² = min ‖Ax − b‖₂² + λ‖Bx‖₂²`": for `λ ≥ 0` and
-`B ∈ ℝ^{n×n}` the two objectives agree, so the Tikhonov problem is the least-squares problem of the
-stacked matrix. -/
+/-- **Equation (6.1.20)** of [golub2013matrix], Tikhonov regularization. Let
+$A \in \mathbb{R}^{m \times n}$, $B \in \mathbb{R}^{n \times n}$, $b \in \mathbb{R}^m$,
+$\lambda \ge 0$ and $x \in \mathbb{R}^n$. Then
+$$\left\| \begin{bmatrix} A \\ \sqrt{\lambda} B \end{bmatrix} x - \begin{bmatrix} b \\ 0
+  \end{bmatrix} \right\|_2^2 = \|Ax - b\|_2^2 + \lambda \|Bx\|_2^2,$$
+and $x$ is a least-squares solution of the stacked problem if and only if it minimizes
+$\|Ax - b\|_2^2 + \lambda \|Bx\|_2^2$. -/
 theorem equation_6_1_20 (A : Matrix (Fin m) (Fin n) ℝ) (B : Matrix (Fin n) (Fin n) ℝ)
     (b : EuclideanSpace ℝ (Fin m)) {μ : ℝ} (hμ : 0 ≤ μ) (x : EuclideanSpace ℝ (Fin n)) :
     (‖toEuclideanLin (fromRows A (Real.sqrt μ • B)) x -
@@ -586,10 +802,14 @@ theorem equation_6_1_20 (A : Matrix (Fin m) (Fin n) ℝ) (B : Matrix (Fin n) (Fi
       RCLike.ofReal_real_eq_id, id_eq] at h
     exact h
 
-/-- **(6.1.21).** "The normal equations for this problem have the form `(AᵀA + λBᵀB)x = Aᵀb`. This
-system is nonsingular if `null(A) ∩ null(B) = {0}`": for `λ > 0`, `AᵀA + λBᵀB` is positive definite
-iff (so in particular nonsingular if) the null spaces meet trivially, and then the minimizers of
-(6.1.20) are exactly the solutions of the normal equations. -/
+/-- **Equation (6.1.21)** of [golub2013matrix]. Let $A \in \mathbb{R}^{m \times n}$,
+$B \in \mathbb{R}^{n \times n}$ and $\lambda > 0$. "The normal equations for this problem have
+the form $(A^T A + \lambda B^T B) x = A^T b$. This system is nonsingular if
+$\operatorname{null}(A) \cap \operatorname{null}(B) = \{0\}$." Precisely,
+$A^T A + \lambda B^T B$ is positive definite if and only if $\operatorname{null}(A) \cap
+\operatorname{null}(B) = \{0\}$. In that case, for every $b \in \mathbb{R}^m$, a vector $x$
+minimizes $\|Ax - b\|_2^2 + \lambda \|Bx\|_2^2$ if and only if
+$(A^T A + \lambda B^T B) x = A^T b$. -/
 theorem equation_6_1_21 (A : Matrix (Fin m) (Fin n) ℝ) (B : Matrix (Fin n) (Fin n) ℝ) {μ : ℝ}
     (hμ : 0 < μ) :
     ((Aᵀ * A + μ • (Bᵀ * B)).PosDef ↔
@@ -609,14 +829,29 @@ theorem equation_6_1_21 (A : Matrix (Fin m) (Fin n) ℝ) (B : Matrix (Fin n) (Fi
 
 /-! ### §6.1.6 The generalized singular value decomposition -/
 
-/-- **Theorem 6.1.1 (Generalized Singular Value Decomposition).** "Assume that `A ∈ ℝ^{m₁×n₁}` and
-`B ∈ ℝ^{m₂×n₁}` with `m₁ ≥ n₁` and `r = rank([A; B])`. There exist orthogonal `U₁ ∈ ℝ^{m₁×m₁}` and
-`U₂ ∈ ℝ^{m₂×m₂}` and invertible `X ∈ ℝ^{n₁×n₁}` such that `U₁ᵀAX = D_A` (6.1.22),
-`U₂ᵀBX = D_B` (6.1.23), where `p = max{r − m₂, 0}`": `D_A = rectDiagonal α` with `α_i = 1` for
-`i < p` and `α_i = 0` for `i ≥ r` (the blocks `I`, `diag(α_{p+1}, …, α_r)`, `0`), and
-`D_B = shiftedRectDiagonal p β` with `β_i = 0` for `i < p` and `i ≥ r` (row `i` of `D_B` carries
-`β_{i+p}` in column `i + p`: the blocks `0`, `diag(β_{p+1}, …, β_r)`, `0`). The printed row labels
-of `D_B` (`p, r − p, m₂ − r`) are a conversion error for `r − p, m₂ − r + p`. -/
+/-- **Theorem 6.1.1** of [golub2013matrix] (generalized singular value decomposition). Let
+$A \in \mathbb{R}^{m_1 \times n_1}$ and $B \in \mathbb{R}^{m_2 \times n_1}$ with $m_1 \ge n_1$,
+let $r = \operatorname{rank}([A; B])$, and let $p = \max\{r - m_2, 0\}$. There exist orthogonal
+$U_1 \in \mathbb{R}^{m_1 \times m_1}$ and $U_2 \in \mathbb{R}^{m_2 \times m_2}$, an invertible
+$X \in \mathbb{R}^{n_1 \times n_1}$, and real numbers $\alpha_1, \alpha_2, \dots$ and
+$\beta_1, \beta_2, \dots$ such that
+$$U_1^T A X = D_A, \qquad U_2^T B X = D_B,$$
+which are (6.1.22) and (6.1.23). Here $D_A \in \mathbb{R}^{m_1 \times n_1}$ has the diagonal
+$\alpha_1, \dots, \alpha_{n_1}$ and zeros elsewhere, and $D_B \in \mathbb{R}^{m_2 \times n_1}$
+has the entry $\beta_{i+p}$ at the position $(i, i + p)$ and zeros elsewhere. Moreover
+$\alpha_i = 1$ and $\beta_i = 0$ for $i \le p$, and $\alpha_i = \beta_i = 0$ for $i > r$. In
+block form, $D_A$ has the diagonal blocks $I_p$, $\operatorname{diag}(\alpha_{p+1}, \dots,
+\alpha_r)$ and $0$, and $D_B$ has the blocks $0$, $\operatorname{diag}(\beta_{p+1}, \dots,
+\beta_r)$ and $0$.
+
+**Typo.** The source labels the rows of the blocks of $D_B$ with $p$, $r - p$ and $m_2 - r$. The
+correct labels are $r - p$ and $m_2 - r + p$. The source also writes $n_{1-r}$ for $n_1 - r$.
+
+The matrix $D_A$ is `Matrix.rectDiagonal α`, and $D_B$ is `Matrix.shiftedRectDiagonal p β`.
+Indices are 0-based, so the condition for $i \le p$ is stated for `i < p`. The theorem as
+printed does not state $\alpha_i^2 + \beta_i^2 = 1$, which its proof gives; this is
+`GolubVanLoan.Chapter06.theorem_6_1_1_b`. The proof in the source cites "(6.1.21) and (6.1.22)"
+for (6.1.22)–(6.1.23). -/
 theorem theorem_6_1_1 {m₁ m₂ n₁ : ℕ} (hmn : n₁ ≤ m₁) (A : Matrix (Fin m₁) (Fin n₁) ℝ)
     (B : Matrix (Fin m₂) (Fin n₁) ℝ) :
     ∃ (U₁ : Matrix (Fin m₁) (Fin m₁) ℝ) (U₂ : Matrix (Fin m₂) (Fin m₂) ℝ)
@@ -638,16 +873,28 @@ theorem theorem_6_1_1 {m₁ m₂ n₁ : ℕ} (hmn : n₁ ≤ m₁) (A : Matrix (
       RCLike.ofReal_real_eq_id, id_eq] at e
     exact e
 
-/-- **Theorem 6.1.1, the unprinted clause.** The decomposition can be chosen with
-`α_i² + β_i² = 1` and `α_i, β_i ≥ 0` for `p < i ≤ r` (the cosine–sine pairs of the proof's CS
-decomposition (6.1.25)): the whole specification `Matrix.IsGSVD`. -/
+/-- **Theorem 6.1.1** of [golub2013matrix], with the clause that the source does not print. Let
+$A \in \mathbb{R}^{m_1 \times n_1}$ and $B \in \mathbb{R}^{m_2 \times n_1}$ with $m_1 \ge n_1$.
+There is a decomposition as in `GolubVanLoan.Chapter06.theorem_6_1_1` in which, moreover,
+$\alpha_i \ge 0$ and $\beta_i \ge 0$ for all $i$, and $\alpha_i^2 + \beta_i^2 = 1$ for
+$p < i \le r$.
+
+The pairs $(\alpha_i, \beta_i)$ for $p < i \le r$ are the cosine–sine pairs of the CS
+decomposition (6.1.25) in the proof. The conclusion is the full specification `Matrix.IsGSVD`. -/
 theorem theorem_6_1_1_b {m₁ m₂ n₁ : ℕ} (hmn : n₁ ≤ m₁) (A : Matrix (Fin m₁) (Fin n₁) ℝ)
     (B : Matrix (Fin m₂) (Fin n₁) ℝ) : ∃ U₁ U₂ X α β, IsGSVD A B U₁ U₂ X α β :=
   exists_isGSVD hmn A B
 
-/-- **§6.1.6.** "Note that if `B = I_{n₁}` and we set `X = U₂`, then we obtain the SVD of `A`": for
-a GSVD of `(A, I)`, every `β_i` (`i < n₁`) is positive and `U₁ᵀAU₂ = diag(α_i/β_i)`. (The book's
-"set `X = U₂`" is loose: `X = U₂D_B`.) -/
+/-- **§6.1.6** of [golub2013matrix]. Let $A \in \mathbb{R}^{m_1 \times n_1}$, and let
+$U_1^T A X = D_A$ and $U_2^T I X = D_B$ be a GSVD of $(A, I_{n_1})$. Then $\beta_i > 0$ for
+$1 \le i \le n_1$, and
+$$U_1^T A U_2 = \operatorname{diag}(\alpha_1 / \beta_1, \dots, \alpha_{n_1} / \beta_{n_1}).$$
+
+**Correction.** The source says "if $B = I_{n_1}$ and we set $X = U_2$, then we obtain the SVD
+of $A$". This is loose: the GSVD gives $X = U_2 D_B$, and the diagonal factor is
+$\operatorname{diag}(\alpha_i / \beta_i)$.
+
+The diagonal matrix is `Matrix.rectDiagonal` of $i \mapsto \alpha_i / \beta_i$. -/
 theorem gsvd_one {m₁ n₁ : ℕ} {A : Matrix (Fin m₁) (Fin n₁) ℝ} {U₁ : Matrix (Fin m₁) (Fin m₁) ℝ}
     {U₂ X : Matrix (Fin n₁) (Fin n₁) ℝ} {α β : ℕ → ℝ} (h : IsGSVD A 1 U₁ U₂ X α β) :
     (∀ i < n₁, 0 < β i) ∧ U₁ᵀ * A * U₂ = rectDiagonal fun i => α i / β i := by
@@ -657,9 +904,12 @@ theorem gsvd_one {m₁ n₁ : ℕ} {A : Matrix (Fin m₁) (Fin n₁) ℝ} {U₁ 
     RCLike.ofReal_real_eq_id, id_eq] at e
   exact ⟨hβ, e⟩
 
-/-- **§6.1.6.** "The GSVD is related to the generalized eigenvalue problem `AᵀAx = μ²BᵀBx`": for
-`m₁ ≥ n₁` and every column `x_i` of `X`, `β_i² AᵀA x_i = α_i² BᵀB x_i`, so `x_i` is a generalized
-eigenvector with `μ_i = α_i/β_i` when `β_i ≠ 0`. -/
+/-- **§6.1.6** of [golub2013matrix]. "The GSVD is related to the generalized eigenvalue problem
+$A^T A x = \mu^2 B^T B x$": let $U_1^T A X = D_A$, $U_2^T B X = D_B$ be a GSVD of $(A, B)$ with
+$m_1 \ge n_1$, and let $x_i$ be the $i$-th column of $X$. Then
+$$\beta_i^2 A^T A x_i = \alpha_i^2 B^T B x_i,$$
+and if $\beta_i \neq 0$, then $A^T A x_i = (\alpha_i / \beta_i)^2 B^T B x_i$, so $x_i$ is a
+generalized eigenvector with $\mu_i = \alpha_i / \beta_i$. -/
 theorem gsvd_generalizedEigen {m₁ m₂ n₁ : ℕ} {A : Matrix (Fin m₁) (Fin n₁) ℝ}
     {B : Matrix (Fin m₂) (Fin n₁) ℝ} {U₁ : Matrix (Fin m₁) (Fin m₁) ℝ}
     {U₂ : Matrix (Fin m₂) (Fin m₂) ℝ} {X : Matrix (Fin n₁) (Fin n₁) ℝ} {α β : ℕ → ℝ}
@@ -672,11 +922,18 @@ theorem gsvd_generalizedEigen {m₁ m₂ n₁ : ℕ} {A : Matrix (Fin m₁) (Fin
   have hβ2 : β i ^ 2 ≠ 0 := pow_ne_zero 2 hβ
   rw [div_pow, div_eq_inv_mul, mul_smul, ← e, smul_smul, inv_mul_cancel₀ hβ2, one_smul]
 
-/-- **(6.1.26)** and the display before it. "If `B` is square and nonsingular, then the GSVD …
-transforms the system (6.1.21) to `(D_AᵀD_A + λD_BᵀD_B)y = D_Aᵀb̃` where `x = Xy`, `b̃ = U₁ᵀb`, and
-`D_AᵀD_A + λD_BᵀD_B = diag(α₁² + λβ₁², …, α_n² + λβ_n²)`. Thus … `x(λ) = ∑_{k=1}^n
-(α_k b̃_k/(α_k² + λβ_k²)) x_k` solves (6.1.20)", for `m ≥ n` and `λ > 0`
-(`Xᵀ(AᵀA + λBᵀB)X = D_AᵀD_A + λD_BᵀD_B`). -/
+/-- **Equation (6.1.26)** of [golub2013matrix], and the display before it. Let
+$A \in \mathbb{R}^{m \times n}$ with $m \ge n$, let $B \in \mathbb{R}^{n \times n}$ be
+nonsingular, and let $U_1^T A X = D_A$, $U_2^T B X = D_B$ be a GSVD of $(A, B)$, with columns
+$x_k$ of $X$. Let $\lambda > 0$, $b \in \mathbb{R}^m$ and $\tilde b = U_1^T b$. Then
+$$X^T (A^T A + \lambda B^T B) X = \operatorname{diag}(\alpha_1^2 + \lambda \beta_1^2, \dots,
+  \alpha_n^2 + \lambda \beta_n^2),$$
+which is $D_A^T D_A + \lambda D_B^T D_B$, and
+$$x(\lambda) = \sum_{k=1}^{n} \frac{\alpha_k \tilde b_k}{\alpha_k^2 + \lambda \beta_k^2} x_k$$
+minimizes $\|Ax - b\|_2^2 + \lambda \|Bx\|_2^2$, so it solves (6.1.20).
+
+In the source, the GSVD "transforms the system (6.1.21) to $(D_A^T D_A + \lambda D_B^T D_B) y =
+D_A^T \tilde b$ where $x = Xy$". -/
 theorem equation_6_1_26 {A : Matrix (Fin m) (Fin n) ℝ} {B : Matrix (Fin n) (Fin n) ℝ}
     (hB : IsUnit B) {U₁ : Matrix (Fin m) (Fin m) ℝ} {U₂ X : Matrix (Fin n) (Fin n) ℝ}
     {α β : ℕ → ℝ} (h : IsGSVD A B U₁ U₂ X α β) (hnm : n ≤ m) {μ : ℝ} (hμ : 0 < μ)

@@ -12,47 +12,168 @@ import NumlibSurface.GolubVanLoan.Chapter04.Section02
 import NumlibSurface.GolubVanLoan.Chapter05.Section02
 
 /-!
-# Golub–Van Loan §5.3: the full-rank least-squares problem
+# Golub and Van Loan, Section 5.3: The full-rank least-squares problem
 
-Surface file for [golub2013matrix] §5.3: the normal equations and the gradient (§5.3.1), the
-method of normal equations (Algorithm 5.3.1) and its accuracy (5.3.4), also for the runs of its
-Cholesky stage (`equation_5_3_4_rounding`), the SVD expansion (5.3.2)–(5.3.3), the QR solution
-(5.3.5) and the Householder LS solution (Algorithm 5.3.2 as printed, with its backward error
-(5.3.6)–(5.3.8), and `householderLS`, the same with the returned `β`, which the later sections
-call), the sensitivity of the LS problem (Theorem 5.3.1 with
-(5.3.9), (5.3.15), (5.3.16)), the augmented system, its QR solution and iterative improvement
-(§5.3.8, (5.3.20)), and the cross-product nearness problems of §5.3.9 ((5.3.21)–(5.3.29)).
+This module formalizes §5.3 of [golub2013matrix]. Let $A \in \mathbb{R}^{m \times n}$ have full
+column rank and let $b \in \mathbb{R}^m$. The least-squares problem asks for the vector $x_{LS}$
+that minimizes $\|Ax - b\|_2$. This vector is unique, it solves the normal equations $A^TAx = A^Tb$,
+and its residual is $r_{LS} = b - Ax_{LS}$ with $\rho_{LS} = \|r_{LS}\|_2$.
+
+The module states the normal equations and the gradient of $\frac12\|Ax - b\|_2^2$ (§5.3.1), the SVD
+expansion (5.3.2)–(5.3.3), the method of normal equations (Algorithm 5.3.1) and its accuracy
+(5.3.4), the QR solution (5.3.5), the Householder LS solution (Algorithm 5.3.2) with its backward
+error (5.3.6)–(5.3.8), least squares by modified Gram–Schmidt (§5.3.5), the sensitivity of the
+problem (Theorem 5.3.1 with (5.3.9), (5.3.10), (5.3.15) and (5.3.16)), the augmented system (5.3.20)
+with its QR solution and iterative improvement (§5.3.8), and the nearness problems for points, lines
+and planes in $\mathbb{R}^3$ of §5.3.9, (5.3.21)–(5.3.29). The proofs use the least-squares theory
+of `Numlib.LinearAlgebra.Matrix.LeastSquares` and `Numlib.Conditioning.LeastSquares`, and the
+programs and rounding results of §3.1, §4.2, §5.1 and §5.2.
+
+## Main definitions
+
+* Algorithm 5.3.1, `GolubVanLoan.Chapter05.algorithm_5_3_1`: the method of normal equations: form
+  $A^TA$ and $A^Tb$, factor $A^TA = GG^T$ by Cholesky, and solve two triangular systems.
+* Algorithm 5.3.2, `GolubVanLoan.Chapter05.algorithm_5_3_2`: the Householder LS solution as printed:
+  Householder QR, then $Q^Tb$ with each $\beta_j$ recomputed as $2/v^Tv$, then back substitution.
+* Algorithm 5.3.2, `GolubVanLoan.Chapter05.householderLSSolve`: the stages of the printed algorithm
+  after the QR factorization.
+* Algorithm 5.3.2 with the returned $\beta$, `GolubVanLoan.Chapter05.householderLS`: the same solver
+  with the $\beta_j$ that Householder QR returned.
+* Equation (5.3.10), `GolubVanLoan.Chapter05.nuLS`: $\nu_{LS} =
+  \|Ax_{LS}\|_2/(\sigma_n(A)\|x_{LS}\|_2)$.
+* Theorem 5.3.1, `GolubVanLoan.Chapter05.thetaLS`: the angle $\theta_{LS}$ with
+  $\sin\theta_{LS} = \|r_{LS}\|_2/\|b\|_2$.
+* §5.3.8, `GolubVanLoan.Chapter05.lsIterativeImprovement`: iterative improvement of the augmented
+  system, with the residuals in higher precision.
+* §5.3.9, `GolubVanLoan.Chapter05.crossMatrix`: the cross-product matrix $v^c$ with
+  $p \times q = p^cq$.
+
+## Main results
+
+* §5.3.1, `GolubVanLoan.Chapter05.isLeastSquaresSolution_iff_normalEquations`: $x$ minimizes
+  $\|Ax - b\|_2$ if and only if $A^TAx = A^Tb$; for full column rank the minimizer is unique and
+  $A^TA$ is positive definite.
+* §5.3.1, `GolubVanLoan.Chapter05.gradient_leastSquaresObjective`: $\frac12\|Ax - b\|_2^2$ has the
+  gradient $A^T(Ax - b)$.
+* Equation (5.3.2), `GolubVanLoan.Chapter05.equation_5_3_2`:
+  $x_{LS} = \sum_{i=1}^n (u_i^Tb/\sigma_i)v_i$.
+* Equation (5.3.3), `GolubVanLoan.Chapter05.equation_5_3_3`:
+  $\rho_{LS}^2 = \sum_{i=n+1}^m (u_i^Tb)^2$.
+* Algorithm 5.3.1, `GolubVanLoan.Chapter05.algorithm_5_3_1_spec`: in exact arithmetic the output
+  minimizes $\|Ax - b\|_2$.
+* Equation (5.3.4), `GolubVanLoan.Chapter05.equation_5_3_4`: a solution of the normal equations
+  perturbed by $\eta$ has relative error at most $\eta\kappa_2(A)^2/(1 - \eta\kappa_2(A)^2)$.
+* Equation (5.3.4), `GolubVanLoan.Chapter05.equation_5_3_4_rounding`: the same bound for the runs of
+  the Cholesky stage of Algorithm 5.3.1.
+* Equation (5.3.5), `GolubVanLoan.Chapter05.equation_5_3_5`: with $A = QR$ and $Q^Tb = [c; d]$,
+  $\|Ax - b\|_2^2 = \|R_1x - c\|_2^2 + \|d\|_2^2$, and $x_{LS} = R_1^{-1}c$.
+* Algorithm 5.3.2, `GolubVanLoan.Chapter05.algorithm_5_3_2_spec`: in exact arithmetic the output
+  minimizes $\|Ax - b\|_2$ when every returned $\beta_j$ is nonzero.
+* Algorithm 5.3.2, `GolubVanLoan.Chapter05.algorithm_5_3_2_counterexample`: for $A = I_2$ and
+  $b = (1, 0)^T$ the printed algorithm returns $(-1, 0)^T$.
+* Algorithm 5.3.2 with the returned $\beta$, `GolubVanLoan.Chapter05.householderLS_spec`: in exact
+  arithmetic the output minimizes $\|Ax - b\|_2$ for every $A$ of full column rank.
+* Equation (5.3.6), `GolubVanLoan.Chapter05.equation_5_3_6`: the computed Householder LS solution
+  solves exactly a nearby least-squares problem.
+* Equation (5.3.7), `GolubVanLoan.Chapter05.equation_5_3_7`: the bound on $\|\delta A\|_F$ in
+  (5.3.6).
+* Equation (5.3.8), `GolubVanLoan.Chapter05.equation_5_3_8`: the bound on $\|\delta b\|_2$ in
+  (5.3.6).
+* §5.3.5, `GolubVanLoan.Chapter05.mgs_augmented`: modified Gram–Schmidt on $[A \mid b]$ gives
+  $z = Q_1^Tb$, the least-squares solutions are the solutions of $R_1x = z$, and
+  $|\rho| = \rho_{LS}$.
+* Equation (5.3.9), `GolubVanLoan.Chapter05.equation_5_3_9`: the 2-norms of $A(A^TA)^{-1}A^T$,
+  $(A^TA)^{-1}A^T$, $I - A(A^TA)^{-1}A^T$ and $(A^TA)^{-1}$.
+* §5.3.6, `GolubVanLoan.Chapter05.nuLS_le_kappa2`: $\nu_{LS} \le \kappa_2(A)$.
+* Theorem 5.3.1, `GolubVanLoan.Chapter05.theorem_5_3_1`: the bounds (5.3.11) on $x_{LS}$ and
+  (5.3.12) on $r_{LS}$ under perturbations of relative size $\varepsilon$, up to $K\varepsilon^2$.
+* Theorem 5.3.1, `GolubVanLoan.Chapter05.theorem_5_3_1_a`: the bound (5.3.11) in rigorous form.
+* Theorem 5.3.1, `GolubVanLoan.Chapter05.theorem_5_3_1_b`: the bound (5.3.12) in rigorous form.
+* Equation (5.3.15), `GolubVanLoan.Chapter05.equation_5_3_15`: the derivative of
+  $x(t) = (A + tE)^+(b + tf)$ at $t = 0$.
+* Equation (5.3.16), `GolubVanLoan.Chapter05.equation_5_3_16`:
+  $\cos\theta_{LS} = \|Ax_{LS}\|_2/\|b\|_2$ and $\tan\theta_{LS} = \|r_{LS}\|_2/\|Ax_{LS}\|_2$.
+* Equation (5.3.20), `GolubVanLoan.Chapter05.equation_5_3_20`: a solution of the augmented system
+  gives a least-squares solution, and the augmented matrix is nonsingular if and only if
+  $\operatorname{rank}(A) = n$.
+* §5.3.8, `GolubVanLoan.Chapter05.augmentedSolve_qr`: the solution of the augmented system through
+  the QR factorization of $A$.
+* Equations (5.3.21)–(5.3.25), `GolubVanLoan.Chapter05.equation_5_3_21` to
+  `GolubVanLoan.Chapter05.equation_5_3_25`: identities for the cross product and the cross-product
+  matrix.
+* Equation (5.3.26), `GolubVanLoan.Chapter05.equation_5_3_26`: the point of a line closest to a
+  point.
+* Equations (5.3.27)–(5.3.28), `GolubVanLoan.Chapter05.equation_5_3_27` and
+  `GolubVanLoan.Chapter05.equation_5_3_28`: the closest points of two non-parallel lines.
+* Equation (5.3.29), `GolubVanLoan.Chapter05.equation_5_3_29`: the point of a plane closest to a
+  point.
 
 ## Conventions
 
-Least-squares statements are on `EuclideanSpace ℝ (Fin m)` (the backbone's
-`Matrix.IsLeastSquaresSolution A b x`: `x` minimizes `‖A x - b‖₂`), vectors of algorithms are
-`Fin m → ℝ` and are converted with `WithLp.toLp 2`. Matrix norms are the operator 2-norms
-(`Matrix.Norms.L2Operator`), `κ₂(A)` is `kappa2 A` ((5.2.4)) and `σ_n(A)` is the least singular
-value `⨅ i, A.colSingularValues i`. Theorem 5.3.1 and (5.3.4) are proved in rigorous form (no
-`O(ε²)`), the printed first-order form following from them; so are (5.3.6)–(5.3.8), over an
-idempotent `FloatingPoint.RoundingModel`, with explicit `γ` constants in place of Lawson–Hanson's
-first-order ones. Programs follow the conventions of
-`NumlibSurface/GolubVanLoan`: Algorithm 5.3.1 calls Algorithms 1.1.1 and 4.2.1 and the
-Cholesky solve of §4.2 (`Chapter04.solveCholesky`, Algorithms 3.1.3 and 3.1.4), Algorithm 5.3.2
-calls Algorithms 5.2.1 and 3.1.2. The book's `u_i`, `v_i` are the columns of
-the SVD factors (`Matrix.IsSVD A U σ V`), `u_iᵀ b` is `U.col i ⬝ᵥ b`. Indices are 0-based. The
-cross-product matrix of `v ∈ ℝ³` is `crossMatrix v` (Mathlib has the cross product `⨯₃` but no
-matrix form).
+* Least-squares statements are on `EuclideanSpace ℝ (Fin m)`. "$x$ minimizes $\|Ax - b\|_2$" is
+  `Matrix.IsLeastSquaresSolution A b x`. The vectors of the programs have type `Fin m → ℝ` and are
+  converted by `WithLp.toLp 2`.
+* "$A$ has full column rank", $\operatorname{rank}(A) = n$, is `LinearIndependent ℝ Aᵀ`. The
+  solution $x_{LS}$ is the pseudoinverse `A.pinv` applied to $b$, and $r_{LS} = b - Ax_{LS}$.
+* Matrix norms are operator 2-norms (`Matrix.Norms.L2Operator`), except the Frobenius norms of
+  (5.3.6)–(5.3.7). $\kappa_2(A)$ is `GolubVanLoan.Chapter05.kappa2`, (5.2.4), and $\sigma_n(A)$ is
+  the least singular value `⨅ i, A.colSingularValues i`.
+* In (5.3.2)–(5.3.3), $u_i$ and $v_i$ are the columns of the factors of an SVD
+  `Matrix.IsSVD A U σ V`, and $u_i^Tb$ is `U.col i ⬝ᵥ b`. Indices are 0-based: the book's
+  $u_{n+1}, \dots, u_m$ are the columns `i` with `n ≤ i`.
+* The programs follow the conventions of `NumlibSurface.GolubVanLoan`. Algorithm 5.3.1 calls
+  Algorithm 1.1.1, Algorithm 4.2.1 and the Cholesky solve `GolubVanLoan.Chapter04.solveCholesky`
+  (Algorithms 3.1.3 and 3.1.4). Algorithm 5.3.2 calls Algorithms 5.2.1 and 3.1.2. A computed
+  quantity is an element of the run set of its program in a rounding model `fp`, with the hook
+  `fp.round`; exact arithmetic is the monad `Id` with the hook `pure`.
 
-## Book slips carried
+## Implementation notes
 
-(5.3.3)'s upper summation limit is printed `2` (read `m`); Algorithm 5.3.2 recomputes
-`β = 2/vᵀv`, which is wrong when `house` returned `β = 0` (`algorithm_5_3_2_counterexample`);
-(5.3.26)–(5.3.29) need non-parallel lines (`r ≠ 0`) and non-collinear points (`v ≠ 0`), which the
-book omits.
+* The rounding results (5.3.6)–(5.3.8) assume an idempotent rounding model
+  (`FloatingPoint.RoundingModel.IsIdempotent`), and they state explicit constants
+  $\gamma_k = ku/(1 - ku)$.
+* The cross-product matrix is defined here, because Mathlib has the cross product `⨯₃` but no matrix
+  form of it.
+
+## Deviations from the source
+
+* **Equation (5.3.3)** (typo). The source prints the upper summation limit as $2$; it is $m$. See
+  `GolubVanLoan.Chapter05.equation_5_3_3`.
+* **Equation (5.3.4)** (reading). The source estimates the relative error as
+  $\approx u\kappa_2(A)^2$. The theorem states the rigorous bound
+  $\eta\kappa_2(A)^2/(1 - \eta\kappa_2(A)^2)$. See `GolubVanLoan.Chapter05.equation_5_3_4`.
+* **Algorithm 5.3.2** (correction). The source recomputes $\beta_j = 2/v^Tv$, which is wrong when
+  `house` returned $\beta_j = 0$; the correctness statement needs every returned $\beta_j \neq 0$.
+  See `GolubVanLoan.Chapter05.algorithm_5_3_2_spec`,
+  `GolubVanLoan.Chapter05.algorithm_5_3_2_counterexample` and
+  `GolubVanLoan.Chapter05.householderLS`.
+* **Equations (5.3.6)–(5.3.8)** (reading). The source states first-order bounds with the constants
+  of Lawson and Hanson. The theorems state rigorous bounds with explicit $\gamma$ constants, for
+  runs with nonzero computed $\beta_j$ and nonsingular $\hat R_1$. See
+  `GolubVanLoan.Chapter05.equation_5_3_6`.
+* **Theorem 5.3.1** (reading). The terms $O(\varepsilon^2)$ are read as $K\varepsilon^2$ for
+  $\varepsilon \le \varepsilon_0$. See `GolubVanLoan.Chapter05.theorem_5_3_1`.
+* **Theorem 5.3.1, (5.3.11)** (generalization). A rigorous form with $\sigma_n(A) - \|\delta A\|_2$
+  in place of $\sigma_n(A)$ holds without the hypothesis $r_{LS} \neq 0$. See
+  `GolubVanLoan.Chapter05.theorem_5_3_1_a`.
+* **Theorem 5.3.1, (5.3.12)** (reading). A rigorous form holds with
+  $\|A\|_2/(\sigma_n(A) - \|\delta A\|_2)$ in place of $\kappa_2(A)$ in the last term. See
+  `GolubVanLoan.Chapter05.theorem_5_3_1_b`.
+* **Equations (5.3.27)–(5.3.28)** (correction). The source omits the hypothesis that the lines are
+  not parallel, $r \neq 0$; for $r = 0$ the formulas divide by zero. See
+  `GolubVanLoan.Chapter05.equation_5_3_27`.
+* **Equation (5.3.29)** (correction). Three distinct points do not determine a plane; the points
+  must not be collinear, $v \neq 0$. See `GolubVanLoan.Chapter05.equation_5_3_29`.
 
 ## Not formalized
 
-The `p`-norm example of the introduction, the numerical examples of §5.3.1 and §5.3.2
-(`fl(AᵀA)` singular), the heuristic readings (5.3.18)–(5.3.19), the comparison of §5.3.7 (prose),
-Björck's digit-gain claim (§5.3.8), the first-order expansion (5.3.17) inside the proof of
-Theorem 5.3.1, the Problems.
+* **The $p$-norm example of the introduction.**
+* **The numerical examples of §5.3.1 and §5.3.2**, in which $\mathrm{fl}(A^TA)$ is singular.
+* **Equations (5.3.18)–(5.3.19).** They are heuristic readings.
+* **The comparison of methods in §5.3.7.** It is prose.
+* **Björck's claim on the gain of correct digits in iterative improvement (§5.3.8).**
+* **Equation (5.3.17).** It is the first-order expansion inside the proof of Theorem 5.3.1.
+* **The Problems.**
 -/
 
 open FloatingPoint Matrix WithLp
@@ -65,9 +186,16 @@ variable {m n : ℕ}
 
 section FullRank
 
-/-- **§5.3.1, the normal equations**: `x` minimizes `‖Ax - b‖₂` iff `Aᵀ(Ax - b) = 0`, i.e.
-`AᵀA x = Aᵀb`; if `x` and `x + z` are both minimizers then `Az = 0`; and for full column rank the
-minimizer `x_LS` is unique and `AᵀA` is positive definite. -/
+/-- **Section 5.3.1** of [golub2013matrix], the normal equations. Let
+$A \in \mathbb{R}^{m \times n}$ and $b \in \mathbb{R}^m$. A vector $x \in \mathbb{R}^n$
+minimizes $\|Ax - b\|_2$ if and only if it solves the normal equations
+$$A^TAx = A^Tb.$$
+If $x$ and $y$ both minimize $\|Ax - b\|_2$, then $A(y - x) = 0$. If $A$ has full column rank,
+then the minimizer $x_{LS}$ is unique and $A^TA$ is positive definite.
+
+The source states the second part for minimizers $x$ and $x + z$: then $Az = 0$. Full column
+rank is `LinearIndependent ℝ Aᵀ`, and "$x$ minimizes $\|Ax - b\|_2$" is
+`Matrix.IsLeastSquaresSolution A b x`. -/
 theorem isLeastSquaresSolution_iff_normalEquations {A : Matrix (Fin m) (Fin n) ℝ}
     (b : EuclideanSpace ℝ (Fin m)) :
     (∀ x, IsLeastSquaresSolution A b x ↔ toEuclideanLin (Aᵀ * A) x = toEuclideanLin Aᵀ b) ∧
@@ -80,8 +208,11 @@ theorem isLeastSquaresSolution_iff_normalEquations {A : Matrix (Fin m) (Fin n) �
     have := posDef_conjTranspose_mul_self_of_linearIndependent hA
     rwa [conjTranspose_eq_transpose_of_trivial] at this
 
-/-- **§5.3.1, the gradient**: `φ(x) = ½ ‖Ax - b‖₂²` has `∇φ(x) = Aᵀ(Ax - b)`, "so solving the
-normal equations is tantamount to solving the gradient equation `∇φ = 0`". -/
+/-- **Section 5.3.1** of [golub2013matrix], the gradient. Let $A \in \mathbb{R}^{m \times n}$ and
+$b \in \mathbb{R}^m$. At every $x \in \mathbb{R}^n$ the function
+$\phi(x) = \frac12\|Ax - b\|_2^2$ has the gradient
+$$\nabla\phi(x) = A^T(Ax - b).$$
+So solving the normal equations is the same as solving the gradient equation $\nabla\phi = 0$. -/
 theorem gradient_leastSquaresObjective (A : Matrix (Fin m) (Fin n) ℝ)
     (b : EuclideanSpace ℝ (Fin m)) (x : EuclideanSpace ℝ (Fin n)) :
     HasGradientAt (fun y => ‖toEuclideanLin A y - b‖ ^ 2 / 2)
@@ -98,9 +229,9 @@ section Programs
 
 variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 
-/-- The first step of Algorithm 5.3.1, "compute the lower triangular portion of `C = AᵀA`": row by
-row, each `c_ij = A(:, i)ᵀ A(:, j)` for `j ≤ i` by Algorithm 1.1.1; the strict upper triangle is
-left `0`. -/
+/-- The first step of Algorithm 5.3.1 of [golub2013matrix]: the lower triangle of $C = A^TA$. Row by
+row, each entry $c_{ij} = A(:, i)^TA(:, j)$ with $j \le i$ is computed by Algorithm 1.1.1 with
+the hook `rnd`, and the strict upper triangle is $0$. -/
 noncomputable def gramLower (A : Matrix (Fin m) (Fin n) ℝ) : M (Matrix (Fin n) (Fin n) ℝ) :=
   (List.finRange n).foldlM (fun (L : Matrix (Fin n) (Fin n) ℝ) i => do
     let r ← ((List.finRange n).filter (· ≤ i)).foldlM (fun (r : Fin n → ℝ) j => do
@@ -108,27 +239,30 @@ noncomputable def gramLower (A : Matrix (Fin m) (Fin n) ℝ) : M (Matrix (Fin n)
       pure (Function.update r j c)) 0
     pure (L.updateRow i r)) 0
 
-/-- The second step of Algorithm 5.3.1, "form the matrix-vector product `d = Aᵀb`": each
-`d_i = A(:, i)ᵀ b` by Algorithm 1.1.1. -/
+/-- The second step of Algorithm 5.3.1 of [golub2013matrix]: the product $d = A^Tb$, each entry
+$d_i = A(:, i)^Tb$ computed by Algorithm 1.1.1 with the hook `rnd`. -/
 noncomputable def transposeMulVec (A : Matrix (Fin m) (Fin n) ℝ) (b : Fin m → ℝ) :
     M (Fin n → ℝ) :=
   (List.finRange n).foldlM (fun (d : Fin n → ℝ) i => do
     let c ← Chapter01.algorithm_1_1_1 rnd (fun k => A k i) b
     pure (Function.update d i c)) 0
 
-/-- **Algorithm 5.3.1 (Normal Equations)**: "Given `A ∈ ℝ^{m×n}` with the property that
-`rank(A) = n` and `b ∈ ℝ^m`, this algorithm computes a vector `x_LS` that minimizes `‖Ax - b‖₂`":
+/-- **Algorithm 5.3.1** of [golub2013matrix] (Normal Equations). Given
+$A \in \mathbb{R}^{m \times n}$ with $\operatorname{rank}(A) = n$ and $b \in \mathbb{R}^m$, the
+algorithm computes a vector $x_{LS}$ that minimizes $\|Ax - b\|_2$:
 ```
 Compute the lower triangular portion of C = AᵀA.
 Form the matrix-vector product d = Aᵀb.
 Compute the Cholesky factorization C = GGᵀ.
 Solve Gy = d and Gᵀx_LS = y.
 ```
-The lower triangle is `gramLower` and `d` is `transposeMulVec`; the upper triangle of `C` is filled
-by symmetry (an assignment). The Cholesky factorization is Algorithm 4.2.1, whose output holds `G`
-in its lower triangle, and the two triangular solves are those of §4.2 (`Chapter04.solveCholesky`:
-Algorithms 3.1.3 and 3.1.4 on the lower triangle and its transpose), the stage whose rounding
-errors §4.2.6 analyses (`equation_5_3_4_rounding`). -/
+The program computes the lower triangle of $C$ by `GolubVanLoan.Chapter05.gramLower` and $d$ by
+`GolubVanLoan.Chapter05.transposeMulVec`, and it fills the upper triangle of $C$ by symmetry,
+with no rounding. The Cholesky factorization is Algorithm 4.2.1, whose output holds $G$ in its
+lower triangle. The two triangular solves are `GolubVanLoan.Chapter04.solveCholesky`, that is,
+Algorithms 3.1.3 and 3.1.4 on the lower triangle and on its transpose; §4.2.6 analyses their
+rounding errors (see `GolubVanLoan.Chapter05.equation_5_3_4_rounding`). The program has no
+hypothesis on $A$. -/
 noncomputable def algorithm_5_3_1 (A : Matrix (Fin m) (Fin n) ℝ) (b : Fin m → ℝ) :
     M (Fin n → ℝ) := do
   let L ← gramLower rnd A
@@ -139,14 +273,16 @@ noncomputable def algorithm_5_3_1 (A : Matrix (Fin m) (Fin n) ℝ) (b : Fin m �
 
 end Programs
 
-/-- A loop writing each listed row of a matrix from a value independent of the state. -/
+/-- A loop that writes each listed row $i$ of a matrix with a value $g_i$ that does not depend on
+the state gives the matrix with row $g_i$ at each listed $i$ and the initial row elsewhere. -/
 private theorem foldl_updateRow_eq {k l : ℕ} (g : Fin k → Fin l → ℝ) (L : List (Fin k))
     (L₀ : Matrix (Fin k) (Fin l) ℝ) :
     L.foldl (fun (N : Matrix (Fin k) (Fin l) ℝ) i => N.updateRow i (g i)) L₀ =
       of fun i => if i ∈ L then g i else L₀ i :=
   List.foldl_update_eq_ite g L L₀
 
-/-- In exact arithmetic `gramLower` computes the lower triangle of `AᵀA`. -/
+/-- In exact arithmetic, `GolubVanLoan.Chapter05.gramLower` computes the lower triangle of $A^TA$:
+its entry $(i, j)$ is $(A^TA)_{ij}$ for $j \le i$ and $0$ for $j > i$. -/
 theorem gramLower_pure (A : Matrix (Fin m) (Fin n) ℝ) :
     Id.run (gramLower pure A) = of fun i j => if j ≤ i then (Aᵀ * A) i j else 0 := by
   simp only [gramLower, List.idRun_foldlM, Id.run_bind, Chapter01.algorithm_1_1_1_spec,
@@ -159,7 +295,7 @@ theorem gramLower_pure (A : Matrix (Fin m) (Fin n) ℝ) :
   · simp [Matrix.mul_apply, dotProduct]
   · rfl
 
-/-- In exact arithmetic `transposeMulVec` computes `Aᵀb`. -/
+/-- In exact arithmetic, `GolubVanLoan.Chapter05.transposeMulVec` computes $A^Tb$. -/
 theorem transposeMulVec_pure (A : Matrix (Fin m) (Fin n) ℝ) (b : Fin m → ℝ) :
     Id.run (transposeMulVec pure A b) = Aᵀ *ᵥ b := by
   simp only [transposeMulVec, List.idRun_foldlM, Id.run_bind, Chapter01.algorithm_1_1_1_spec,
@@ -168,10 +304,13 @@ theorem transposeMulVec_pure (A : Matrix (Fin m) (Fin n) ℝ) (b : Fin m → ℝ
   ext i
   simp [mulVec, dotProduct]
 
-/-- **Algorithm 5.3.1 solves the least-squares problem** (exact arithmetic): for `A` of full
-column rank, the output minimizes `‖Ax - b‖₂`. `AᵀA` is positive definite, Algorithm 4.2.1 returns
-its Cholesky factor `G` (`AᵀA = GGᵀ`), and the two triangular solves give `GGᵀx = Aᵀb`, the normal
-equations. -/
+/-- **Algorithm 5.3.1** of [golub2013matrix], correctness in exact arithmetic. Let
+$A \in \mathbb{R}^{m \times n}$ have full column rank and let $b \in \mathbb{R}^m$. Then the
+output of Algorithm 5.3.1 in exact arithmetic minimizes $\|Ax - b\|_2$.
+
+The matrix $A^TA$ is positive definite, Algorithm 4.2.1 returns its Cholesky factor $G$ with
+$A^TA = GG^T$, and the two triangular solves give $GG^Tx = A^Tb$, the normal equations. Exact
+arithmetic is the monad `Id` with the hook `pure`. -/
 theorem algorithm_5_3_1_spec {A : Matrix (Fin m) (Fin n) ℝ} (hA : LinearIndependent ℝ Aᵀ)
     (b : Fin m → ℝ) :
     IsLeastSquaresSolution A (toLp 2 b) (toLp 2 (Id.run (algorithm_5_3_1 pure A b))) := by
@@ -204,7 +343,7 @@ theorem algorithm_5_3_1_spec {A : Matrix (Fin m) (Fin n) ℝ} (hA : LinearIndepe
   rw [(isLeastSquaresSolution_iff_normalEquations (toLp 2 b)).1, toEuclideanLin_toLp,
     toEuclideanLin_toLp, ← hGG, ← mulVec_mulVec, h2, h1]
 
-/-- A nonzero vector of `ℝⁿ` forces `n ≥ 1`. -/
+/-- A nonzero vector of $\mathbb{R}^n$ forces $n \ge 1$. -/
 private theorem neZero_of_ne_zero {x : EuclideanSpace ℝ (Fin n)} (hx : x ≠ 0) :
     NeZero n := by
   refine ⟨fun hn => hx ?_⟩
@@ -213,11 +352,23 @@ private theorem neZero_of_ne_zero {x : EuclideanSpace ℝ (Fin n)} (hx : x ≠ 0
   exact i.elim0
 
 open scoped Matrix.Norms.L2Operator in
-/-- **(5.3.4)**, rigorous in the form the book derives it: if the computed `x̂_LS` solves the
-perturbed normal equations `(AᵀA + E) x̂_LS = Aᵀb` with `‖E‖₂ ≤ η ‖AᵀA‖₂` ("from what we know
-about the roundoff properties of the Cholesky factorization", `η = c u`) and `η κ₂(A)² < 1`, then
-`‖x̂_LS - x_LS‖₂/‖x_LS‖₂ ≤ η κ₂(A)²/(1 - η κ₂(A)²)`, since `κ₂(AᵀA) = κ₂(A)²` (the second clause).
-The book's "`≈ u κ₂(A)²`" is the first-order reading. -/
+/-- **Equation (5.3.4)** of [golub2013matrix]. Let $A \in \mathbb{R}^{m \times n}$ have full column
+rank, and let $b \in \mathbb{R}^m$ be such that $x_{LS} = A^+b$ is nonzero. Let
+$E \in \mathbb{R}^{n \times n}$ and $\eta \in \mathbb{R}$ satisfy $\|E\|_2 \le \eta\|A^TA\|_2$
+and $\eta\kappa_2(A)^2 < 1$. If $\hat x_{LS}$ solves the perturbed normal equations
+$(A^TA + E)\hat x_{LS} = A^Tb$, then
+$$\frac{\|\hat x_{LS} - x_{LS}\|_2}{\|x_{LS}\|_2} \le \frac{\eta\kappa_2(A)^2}{1 -
+  \eta\kappa_2(A)^2}.$$
+Moreover $\kappa_2(A^TA) = \kappa_2(A)^2$.
+
+**Reading.** The source argues "from what we know about the roundoff properties of the Cholesky
+factorization" that the computed solution satisfies such perturbed normal equations with
+$\eta = cu$, and it concludes that the relative error is $\approx u\kappa_2(A)^2$. The theorem
+states the rigorous bound for every perturbation of this size; the printed estimate is its
+first-order form.
+
+Here $\kappa_2$ and $x_{LS}$ are `GolubVanLoan.Chapter05.kappa2` and `A.pinv` applied to $b$.
+For the runs of Algorithm 5.3.1 see `GolubVanLoan.Chapter05.equation_5_3_4_rounding`. -/
 theorem equation_5_3_4 {A : Matrix (Fin m) (Fin n) ℝ} (hA : LinearIndependent ℝ Aᵀ)
     {b : EuclideanSpace ℝ (Fin m)} {E : Matrix (Fin n) (Fin n) ℝ} {x : EuclideanSpace ℝ (Fin n)}
     (hx : toEuclideanLin (Aᵀ * A + E) x = toEuclideanLin Aᵀ b) {η : ℝ}
@@ -234,13 +385,22 @@ theorem equation_5_3_4 {A : Matrix (Fin m) (Fin n) ℝ} (hA : LinearIndependent 
   rwa [conjTranspose_eq_transpose_of_trivial] at h
 
 open scoped Matrix.Norms.L2Operator in
-/-- **(5.3.4) for the runs of Algorithm 5.3.1**, with the book's assumption "that no roundoff
-errors occur during the formation of `C = AᵀA` and `d = Aᵀb`": every run `F` of the Cholesky stage
-(Algorithm 4.2.1 on `C`, nonzero returned diagonal) followed by a run `x̂` of its triangular solves
-(`Chapter04.solveCholesky`, the solve stage of `algorithm_5_3_1`) satisfies
-`‖x̂ - x_LS‖₂/‖x_LS‖₂ ≤ η κ₂(A)²/(1 - η κ₂(A)²)` for every `η ≥ n γ_{3n+3}/(1 - n γ_{n+3})` with
-`η κ₂(A)² < 1`: §4.2.6's `(AᵀA + E) x̂ = Aᵀb`, `‖E‖₂ ≤ η ‖AᵀA‖₂`
-(`Chapter04.cholesky_backward_error`) fed to `equation_5_3_4`. -/
+/-- **Equation (5.3.4)** of [golub2013matrix], for the runs of Algorithm 5.3.1. Let
+$A \in \mathbb{R}^{m \times n}$ have full column rank, and let $b \in \mathbb{R}^m$ be such that
+$x_{LS} = A^+b$ is nonzero. Let the unit roundoff $u$ satisfy $(3n + 3)u < 1$ and
+$n\gamma_{n+3} < 1$, where $\gamma_k = ku/(1 - ku)$, and let $\eta$ satisfy
+$$\eta \ge \frac{n\gamma_{3n+3}}{1 - n\gamma_{n+3}}, \qquad \eta\kappa_2(A)^2 < 1.$$
+Let $F$ be computed by Algorithm 4.2.1 from $C = A^TA$, with every diagonal entry of $F$
+nonzero, and let $\hat x$ be computed from $F$ and $d = A^Tb$ by the triangular solves of
+Algorithm 5.3.1. Then
+$$\frac{\|\hat x - x_{LS}\|_2}{\|x_{LS}\|_2} \le \frac{\eta\kappa_2(A)^2}{1 -
+  \eta\kappa_2(A)^2}.$$
+
+As in the source, no roundoff errors occur in the formation of $C = A^TA$ and $d = A^Tb$. The
+triangular solves are `GolubVanLoan.Chapter04.solveCholesky`, the solve stage of
+`GolubVanLoan.Chapter05.algorithm_5_3_1`. The proof gives the backward error
+$(A^TA + E)\hat x = A^Tb$ with $\|E\|_2 \le \eta\|A^TA\|_2$ of §4.2.6
+(`GolubVanLoan.Chapter04.cholesky_backward_error`) to `GolubVanLoan.Chapter05.equation_5_3_4`. -/
 theorem equation_5_3_4_rounding {fp : RoundingModel ℝ} (hn : ((3 * n + 3 : ℕ) : ℝ) * fp.u < 1)
     (hγ : n * gamma fp.u (n + 3) < 1) {A : Matrix (Fin m) (Fin n) ℝ}
     (hA : LinearIndependent ℝ Aᵀ) (b : Fin m → ℝ) {η : ℝ}
@@ -270,7 +430,11 @@ section SVD
 variable {A : Matrix (Fin m) (Fin n) ℝ} {U : Matrix (Fin m) (Fin m) ℝ} {σ : ℕ → ℝ}
   {V : Matrix (Fin n) (Fin n) ℝ}
 
-/-- The pseudoinverse from an SVD applied to `b`: `A⁺ b = ∑_i (u_iᵀ b / σ_i) v_i` (`n ≤ m`). -/
+/-- Let $A \in \mathbb{R}^{m \times n}$ with $n \le m$ have an SVD $U^TAV = \Sigma$ with singular
+values $\sigma_1 \ge \dots \ge \sigma_n$, and let $u_i$ and $v_i$ be the columns of $U$ and $V$.
+Then for every $b \in \mathbb{R}^m$ the pseudoinverse satisfies
+$$A^+b = \sum_{i=1}^n \frac{u_i^Tb}{\sigma_i}v_i,$$
+where a term with $\sigma_i = 0$ is $0$. -/
 theorem pinv_mulVec_eq_sum_of_isSVD (h : IsSVD A U σ V) (hnm : n ≤ m) (b : Fin m → ℝ) :
     A.pinv *ᵥ b = ∑ i : Fin n, ((U.col (Fin.castLE hnm i) ⬝ᵥ b) / σ i) • V.col i := by
   rw [h.pinv_eq, ← mulVec_mulVec, ← mulVec_mulVec]
@@ -288,8 +452,14 @@ theorem pinv_mulVec_eq_sum_of_isSVD (h : IsSVD A U σ V) (hnm : n ≤ m) (b : Fi
   change ∑ i, V p i * _ = _
   simp only [hD, mul_comm]
 
-/-- **(5.3.2)**: if `Uᵀ A V = Σ` is an SVD of a full-column-rank `A ∈ ℝ^{m×n}` (`m ≥ n`), then
-`x_LS = ∑_{i=1}^{n} (u_iᵀ b / σ_i) v_i` minimizes `‖Ax - b‖₂`. -/
+/-- **Equation (5.3.2)** of [golub2013matrix]. Let $A \in \mathbb{R}^{m \times n}$ have full column
+rank, with $m \ge n$, and let $U^TAV = \Sigma$ be an SVD of $A$ with singular values
+$\sigma_1 \ge \dots \ge \sigma_n$, where $u_i$ and $v_i$ are the columns of $U$ and $V$. Then
+for every $b \in \mathbb{R}^m$ the vector
+$$x_{LS} = \sum_{i=1}^n \frac{u_i^Tb}{\sigma_i}v_i$$
+minimizes $\|Ax - b\|_2$.
+
+The SVD is `Matrix.IsSVD A U σ V`, and $u_i^Tb$ is `U.col i ⬝ᵥ b` with 0-based $i$. -/
 theorem equation_5_3_2 (h : IsSVD A U σ V) (hA : LinearIndependent ℝ Aᵀ) (hnm : n ≤ m)
     (b : Fin m → ℝ) :
     IsLeastSquaresSolution A (toLp 2 b)
@@ -297,8 +467,16 @@ theorem equation_5_3_2 (h : IsSVD A U σ V) (hA : LinearIndependent ℝ Aᵀ) (h
   rw [isLeastSquaresSolution_iff_eq_pinv_of_linearIndependent hA, toEuclideanLin_toLp,
     pinv_mulVec_eq_sum_of_isSVD h hnm]
 
-/-- **(5.3.3)**: `ρ_LS² = ‖A x_LS - b‖₂² = ∑_{i=n+1}^{m} (u_iᵀ b)²` (the book prints the upper
-limit as `2`). -/
+/-- **Equation (5.3.3)** of [golub2013matrix]. Let $A \in \mathbb{R}^{m \times n}$ have full column
+rank, with $m \ge n$, let $U^TAV = \Sigma$ be an SVD of $A$, and let $x_{LS}$ be the vector
+(5.3.2) for $b \in \mathbb{R}^m$. Then the minimum residual $\rho_{LS} = \|Ax_{LS} - b\|_2$
+satisfies
+$$\rho_{LS}^2 = \sum_{i=n+1}^m (u_i^Tb)^2.$$
+
+**Typo.** The source prints the upper summation limit as $2$. The sum runs over the last $m - n$
+columns of $U$, up to $m$.
+
+In 0-based indices, the sum is over the columns $i$ with $n \le i < m$. -/
 theorem equation_5_3_3 (h : IsSVD A U σ V) (hA : LinearIndependent ℝ Aᵀ) (hnm : n ≤ m)
     (b : Fin m → ℝ) :
     ‖toEuclideanLin A (toLp 2 (∑ i : Fin n, ((U.col (Fin.castLE hnm i) ⬝ᵥ b) / σ i) • V.col i)) -
@@ -320,9 +498,20 @@ end SVD
 
 section QR
 
-/-- **(5.3.5) and §5.3.3**: if `Q` is orthogonal with `QᵀA = R = [R₁; 0]` (`n ≤ m`) and
-`Qᵀb = [c; d]`, then `‖Ax - b‖₂² = ‖R₁x - c‖₂² + ‖d‖₂²` for every `x`; for full column rank,
-`x_LS = R₁⁻¹ c` solves the LS problem and `ρ_LS² = ‖d‖₂²`. -/
+/-- **Equation (5.3.5)** of [golub2013matrix], with §5.3.3. Let $A \in \mathbb{R}^{m \times n}$ with
+$n \le m$ have a QR factorization $A = QR$, with $Q \in \mathbb{R}^{m \times m}$ orthogonal and
+$R \in \mathbb{R}^{m \times n}$ upper triangular. For $b \in \mathbb{R}^m$ write
+$$R = \begin{bmatrix} R_1 \\ 0 \end{bmatrix}, \qquad Q^Tb = \begin{bmatrix} c \\ d
+  \end{bmatrix}$$
+with $R_1 \in \mathbb{R}^{n \times n}$ and $c \in \mathbb{R}^n$. Then
+$\|Ax - b\|_2^2 = \|R_1x - c\|_2^2 + \|d\|_2^2$ for every $x \in \mathbb{R}^n$. If moreover $A$
+has full column rank, then $x_{LS} = R_1^{-1}c$ minimizes $\|Ax - b\|_2$, and every minimizer
+has the residual $\rho_{LS}^2 = \|d\|_2^2$.
+
+The QR factorization is `Matrix.IsQR A Q R`. The block $R_1$ is `R.firstRows hnm`, and
+$c = Q_1^Tb$ for the first $n$ columns $Q_1$ of $Q$, `Q.firstColumns hnm`. The number
+$\|d\|_2^2$ is the sum of the squares of the entries $(Q^Tb)_i$ with $n \le i$, in 0-based
+indices. -/
 theorem equation_5_3_5 {A : Matrix (Fin m) (Fin n) ℝ} {Q : Matrix (Fin m) (Fin m) ℝ}
     {R : Matrix (Fin m) (Fin n) ℝ} (h : IsQR A Q R) (hnm : n ≤ m) (b : EuclideanSpace ℝ (Fin m)) :
     (∀ x, ‖toEuclideanLin A x - b‖ ^ 2 =
@@ -343,15 +532,25 @@ theorem equation_5_3_5 {A : Matrix (Fin m) (Fin n) ℝ} {Q : Matrix (Fin m) (Fin
   · have := norm_sub_sq_eq_of_isQR_of_isLeastSquaresSolution h hnm hA hx
     simpa only [conjTranspose_eq_transpose_of_trivial] using this
 
-/-! #### §5.3.5 LS solution via MGS -/
+/-! ### §5.3.5 LS solution via MGS -/
 
-/-- The augmented matrix `A₊ = [A | b]` of §5.3.5. -/
+/-- The augmented matrix $A_+ = [A \mid b] \in \mathbb{R}^{m \times (n+1)}$ of §5.3.5 of
+[golub2013matrix]: the columns of $A$ followed by the column $b$. -/
 def augmentCol (A : Matrix (Fin m) (Fin n) ℝ) (b : Fin m → ℝ) : Matrix (Fin m) (Fin (n + 1)) ℝ :=
   of fun i => Fin.snoc (α := fun _ => ℝ) (A i) (b i)
 
-/-- **§5.3.5, least squares by MGS on the augmented matrix**: if MGS applied to `A₊ = [A | b]`
-(full column rank `n + 1`) gives `A₊ = [Q₁ | q_{n+1}] [R₁ z; 0 ρ]`, then `z = Q₁ᵀ b`, the solutions
-of `R₁ x = z` are exactly the least-squares solutions (`x_LS`), and `|ρ| = ρ_LS`. -/
+/-- **Section 5.3.5** of [golub2013matrix], least squares by modified Gram–Schmidt. Let
+$A \in \mathbb{R}^{m \times n}$ and $b \in \mathbb{R}^m$ be such that $A_+ = [A \mid b]$ has
+full column rank $n + 1$. Let modified Gram–Schmidt (Algorithm 5.2.6) in exact arithmetic give
+$$A_+ = [Q_1 \mid q_{n+1}]\begin{bmatrix} R_1 & z \\ 0 & \rho \end{bmatrix}$$
+with $Q_1 \in \mathbb{R}^{m \times n}$, $R_1 \in \mathbb{R}^{n \times n}$, $z \in \mathbb{R}^n$
+and $\rho \in \mathbb{R}$. Then $z = Q_1^Tb$; a vector $x \in \mathbb{R}^n$ minimizes
+$\|Ax - b\|_2$ if and only if $R_1x = z$; and every such minimizer satisfies
+$|\rho| = \|Ax - b\|_2 = \rho_{LS}$.
+
+The factors are the output of `GolubVanLoan.Chapter05.algorithm_5_2_6` at `Id` on
+`GolubVanLoan.Chapter05.augmentCol A b`. The blocks $R_1$, $z$ and $\rho$ of its triangular
+factor are indexed through `Fin.castSucc` and `Fin.last n`. -/
 theorem mgs_augmented {A : Matrix (Fin m) (Fin n) ℝ} {b : Fin m → ℝ}
     (hA : LinearIndependent ℝ (augmentCol A b)ᵀ) :
     (fun j => (Id.run (algorithm_5_2_6 pure (augmentCol A b))).2 j.castSucc (Fin.last n)) =
@@ -447,14 +646,15 @@ section Programs
 
 variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 
-/-- One pass of the `b`-loop of Algorithm 5.3.2, as printed:
+/-- One pass $j$ of the $b$-loop of Algorithm 5.3.2 of [golub2013matrix], as printed:
 ```
 v = [1; A(j+1:m, j)]
 β = 2/vᵀv
 b(j:m) = b(j:m) - β(vᵀb(j:m))v
 ```
-`vᵀv` and `vᵀb(j:m)` are Algorithm 1.1.1 over the rows `j:m`; `β`, `β(vᵀb)`, the products with
-`v` and the differences are rounded, in the printed association. -/
+The inner products $v^Tv$ and $v^Tb(j{:}m)$ are Algorithm 1.1.1 over the rows $j{:}m$. The
+quotient $\beta$, the product $\beta(v^Tb)$, the products with $v$ and the differences are
+rounded, in the printed order. -/
 noncomputable def householderLSStep (A : Matrix (Fin m) (Fin n) ℝ) (b : Fin m → ℝ) (j : Fin n) :
     M (Fin m → ℝ) := do
   let v := storedHouseholderVec A j
@@ -467,17 +667,23 @@ noncomputable def householderLSStep (A : Matrix (Fin m) (Fin n) ℝ) (b : Fin m 
     let c ← rnd (b i - p)
     pure (Function.update b i c)) b
 
-/-- The stages of Algorithm 5.3.2 after the QR factorization, on its output `QR = (A', β)`: the
-`b`-loop with the recomputed `β` (`householderLSStep`) and the back substitution
-`R(1:n, 1:n) x_LS = b(1:n)` (Algorithm 3.1.2). -/
+/-- **Algorithm 5.3.2** of [golub2013matrix], the stages after the QR factorization. Let $n \le m$.
+Given the output $(A', \beta)$ of Algorithm 5.2.1 and $b \in \mathbb{R}^m$, the program runs the
+$b$-loop with recomputed $\beta_j$ (`GolubVanLoan.Chapter05.householderLSStep` for
+$j = 1, \dots, n$), and then it solves $R(1{:}n, 1{:}n)x_{LS} = b(1{:}n)$ by back substitution
+(Algorithm 3.1.2).
+
+The returned $\beta$ of the factorization is not used. The factor $R$ is the upper triangle
+`GolubVanLoan.Chapter05.upperPart` of $A'$. The rounding results (5.3.6)–(5.3.8) are stated for
+the runs of this program. -/
 noncomputable def householderLSSolve (hnm : n ≤ m) (QR : Matrix (Fin m) (Fin n) ℝ × (Fin n → ℝ))
     (b : Fin m → ℝ) : M (Fin n → ℝ) := do
   let b ← (List.finRange n).foldlM (householderLSStep rnd QR.1) b
   Chapter03.algorithm_3_1_2 rnd ((upperPart QR.1).firstRows hnm) fun i => b (Fin.castLE hnm i)
 
-/-- **Algorithm 5.3.2 (Householder LS Solution)**: "If `A ∈ ℝ^{m×n}` has full column rank and
-`b ∈ ℝ^m`, then the following algorithm computes a vector `x_LS ∈ ℝⁿ` such that `‖Ax_LS - b‖₂` is
-minimum":
+/-- **Algorithm 5.3.2** of [golub2013matrix] (Householder LS Solution). If
+$A \in \mathbb{R}^{m \times n}$ has full column rank and $b \in \mathbb{R}^m$, then the
+algorithm computes a vector $x_{LS} \in \mathbb{R}^n$ such that $\|Ax_{LS} - b\|_2$ is minimum:
 ```
 Use Algorithm 5.2.1 to overwrite A with its QR factorization.
 for j = 1:n
@@ -485,10 +691,11 @@ for j = 1:n
 end
 Solve R(1:n, 1:n) · x_LS = b(1:n).
 ```
-As printed, the `β_j` returned by Algorithm 5.2.1 are discarded and recomputed from the stored
-vectors (`householderLSStep`), and the triangular solve is Algorithm 3.1.2 on the leading `n × n`
-block of the upper triangle (the two stages after the factorization are `householderLSSolve`).
-The program takes `n ≤ m`. -/
+The program is Algorithm 5.2.1 followed by `GolubVanLoan.Chapter05.householderLSSolve`. As
+printed, it discards the $\beta_j$ that Algorithm 5.2.1 returns and recomputes each $\beta_j$
+from the stored vector. This is wrong when `house` returned $\beta_j = 0$ (see
+`GolubVanLoan.Chapter05.algorithm_5_3_2_spec`); `GolubVanLoan.Chapter05.householderLS` uses the
+returned $\beta_j$. The program takes $n \le m$ as an argument. -/
 noncomputable def algorithm_5_3_2 (hnm : n ≤ m) (A : Matrix (Fin m) (Fin n) ℝ)
     (b : Fin m → ℝ) : M (Fin n → ℝ) := do
   let QR ← algorithm_5_2_1 rnd A
@@ -496,7 +703,8 @@ noncomputable def algorithm_5_3_2 (hnm : n ≤ m) (A : Matrix (Fin m) (Fin n) �
 
 end Programs
 
-/-- A dot product over `indexFrom m j` with a vector vanishing off it is the full dot product. -/
+/-- A sum over the rows $j{:}m$ of the products of the stored Householder vector $v^{(j)}$ with $w$
+is the full inner product $v^{(j)T}w$, because $v^{(j)}$ vanishes above row $j$. -/
 private theorem sum_indexFrom_eq_dotProduct (A : Matrix (Fin m) (Fin n) ℝ) (j : Fin n)
     (w : Fin m → ℝ) :
     ((indexFrom m j).map fun i => storedHouseholderVec A j i * w i).sum =
@@ -504,7 +712,9 @@ private theorem sum_indexFrom_eq_dotProduct (A : Matrix (Fin m) (Fin n) ℝ) (j 
   (sum_eq_sum_map_of_nodup (nodup_indexFrom m j) fun i hi => by
     rw [storedHouseholderVec_eq_zero A j hi, zero_mul]).symm
 
-/-- In exact arithmetic one pass of the `b`-loop applies the reflector with the recomputed `β`. -/
+/-- In exact arithmetic, one pass $j$ of the $b$-loop of Algorithm 5.3.2 of [golub2013matrix] maps
+$b$ to $(I - \beta vv^T)b$, where $v$ is the stored Householder vector of column $j$ and
+$\beta = 2/v^Tv$ is the recomputed scalar `GolubVanLoan.Chapter05.recomputedBeta`. -/
 theorem householderLSStep_pure (A : Matrix (Fin m) (Fin n) ℝ) (b : Fin m → ℝ) (j : Fin n) :
     Id.run (householderLSStep pure A b j) =
       (1 - recomputedBeta A j • vecMulVec (storedHouseholderVec A j)
@@ -521,7 +731,8 @@ theorem householderLSStep_pure (A : Matrix (Fin m) (Fin n) ℝ) (b : Fin m → �
   · rw [storedHouseholderVec_eq_zero A j hi]
     ring
 
-/-- A loop premultiplying a vector by symmetric matrices applies the transpose of their product. -/
+/-- A loop that premultiplies a vector $b$ by symmetric matrices $P_1, \dots, P_k$ in turn gives
+$(P_1 \cdots P_k)^Tb$. -/
 private theorem foldl_mulVec_eq_transpose_prod_mulVec {α : Type} (P : α → Matrix (Fin m) (Fin m) ℝ)
     (hP : ∀ a, (P a)ᵀ = P a) (l : List α) (b : Fin m → ℝ) :
     l.foldl (fun b a => P a *ᵥ b) b = ((l.map P).prod)ᵀ *ᵥ b := by
@@ -530,9 +741,10 @@ private theorem foldl_mulVec_eq_transpose_prod_mulVec {α : Type} (P : α → Ma
   | cons a l ih =>
     rw [List.foldl_cons, ih, List.map_cons, List.prod_cons, transpose_mul, hP, mulVec_mulVec]
 
-/-- **The back-substitution stage of Algorithm 5.3.2** (exact arithmetic, (5.3.5)): for a QR
-factorization `A = QR` of a full column rank `A`, Algorithm 3.1.2 on `R₁ x = (Qᵀb)(1:n)` returns a
-least-squares solution. Shared by `algorithm_5_3_2_spec` and `householderLS_spec`. -/
+/-- The back-substitution stage of Algorithm 5.3.2 of [golub2013matrix], in exact arithmetic. Let
+$A \in \mathbb{R}^{m \times n}$ have full column rank, with $n \le m$, and let $A = QR$ be a QR
+factorization. Then for every $b \in \mathbb{R}^m$, Algorithm 3.1.2 applied to
+$R_1x = (Q^Tb)(1{:}n)$, with $R_1 = R(1{:}n, 1{:}n)$, returns a minimizer of $\|Ax - b\|_2$. -/
 theorem isLeastSquaresSolution_solve_firstRows (hnm : n ≤ m) {A : Matrix (Fin m) (Fin n) ℝ}
     {Q : Matrix (Fin m) (Fin m) ℝ} {R : Matrix (Fin m) (Fin n) ℝ} (hQR : IsQR A Q R)
     (hA : LinearIndependent ℝ Aᵀ) (b : Fin m → ℝ) :
@@ -556,11 +768,21 @@ theorem isLeastSquaresSolution_solve_firstRows (hnm : n ≤ m) {A : Matrix (Fin 
   nlinarith [sq_nonneg ‖toEuclideanLin (R.firstRows hnm) y -
     toEuclideanLin (Q.firstColumns hnm)ᵀ (toLp 2 b)‖]
 
-/-- **Algorithm 5.3.2 solves the least-squares problem** (exact arithmetic) for `A` of full column
-rank **when no Householder step of Algorithm 5.2.1 was degenerate** (every returned `β_j ≠ 0`): the
-recomputed `β_j = 2/vᵀv` are then the actual ones (`equation_5_1_4_beta`), the `b`-loop computes
-`Qᵀb` ((5.1.4)), and the back substitution solves `R₁ x = c`, `Qᵀb = [c; d]` ((5.3.5)). Without the
-hypothesis the statement is false (`algorithm_5_3_2_counterexample`). -/
+/-- **Algorithm 5.3.2** of [golub2013matrix], correctness in exact arithmetic. Let
+$A \in \mathbb{R}^{m \times n}$ have full column rank, with $n \le m$, and let
+$b \in \mathbb{R}^m$. Assume that every $\beta_j$ that Algorithm 5.2.1 returns for $A$ in exact
+arithmetic is nonzero. Then the output of Algorithm 5.3.2 in exact arithmetic minimizes
+$\|Ax - b\|_2$.
+
+**Correction.** The source claims the result for every $A$ of full column rank. When `house`
+returns $\beta_j = 0$, the recomputed $\beta_j = 2/v^Tv$ differs from it, and the claim fails:
+see `GolubVanLoan.Chapter05.algorithm_5_3_2_counterexample`. The hypothesis excludes this case.
+For the program that uses the returned $\beta_j$, `GolubVanLoan.Chapter05.householderLS_spec`
+proves the claim without the hypothesis.
+
+Under the hypothesis, the recomputed $\beta_j$ are the returned ones
+(`GolubVanLoan.Chapter05.equation_5_1_4_beta`), the $b$-loop computes $Q^Tb$ as in (5.1.4), and
+the back substitution solves $R_1x = c$ for $Q^Tb = [c; d]$ as in (5.3.5). -/
 theorem algorithm_5_3_2_spec (hnm : n ≤ m) {A : Matrix (Fin m) (Fin n) ℝ}
     (hA : LinearIndependent ℝ Aᵀ) (hβ : ∀ j, (Id.run (algorithm_5_2_1 pure A)).2 j ≠ 0)
     (b : Fin m → ℝ) :
@@ -583,8 +805,8 @@ theorem algorithm_5_3_2_spec (hnm : n ≤ m) {A : Matrix (Fin m) (Fin n) ℝ}
   rw [hrun]
   exact isLeastSquaresSolution_solve_firstRows hnm hQR hA b
 
-/-- A step of Algorithm 5.2.1 on a column that is already `[x_j; 0]` with `x_j ≥ 0` below row `j`
-changes nothing but records `β_j = 0` (`house` meets `σ = 0` and `x(1) ≥ 0`). -/
+/-- A step $j$ of Algorithm 5.2.1 on a column whose entries below row $j$ vanish and whose entry in
+row $j$ is nonnegative changes nothing except that it records $\beta_j = 0$. -/
 private theorem householderQRStep_of_col_zero (B : Matrix (Fin m) (Fin n) ℝ) (β : Fin n → ℝ)
     (j : Fin n) (hjm : (j : ℕ) < m) (hzero : ∀ i : Fin m, (j : ℕ) < i → B i j = 0)
     (hpos : 0 ≤ B ⟨j, hjm⟩ j) :
@@ -636,7 +858,8 @@ private theorem householderQRStep_of_col_zero (B : Matrix (Fin m) (Fin n) ℝ) (
   · rw [updateCol_ne hq]
     rfl
 
-/-- Algorithm 5.2.1 leaves the identity unchanged, with every `β_j = 0`. -/
+/-- Algorithm 5.2.1 in exact arithmetic leaves the identity matrix unchanged and returns
+$\beta = 0$. -/
 private theorem algorithm_5_2_1_one {k : ℕ} :
     Id.run (algorithm_5_2_1 pure (1 : Matrix (Fin k) (Fin k) ℝ)) = (1, 0) := by
   rw [algorithm_5_2_1, List.idRun_foldlM]
@@ -645,10 +868,14 @@ private theorem algorithm_5_2_1_one {k : ℕ} :
   · simp
   · exact one_apply_ne fun e => by rw [e] at hi; exact lt_irrefl _ hi
 
-/-- **Algorithm 5.3.2 as printed is wrong when `house` returns `β = 0`**: for `A = I₂` and
-`b = [1; 0]`, every Householder step of Algorithm 5.2.1 meets `σ = 0`, `x₁ = 1 ≥ 0`, so `A` is left
-unchanged with `β = 0`; the printed recomputation `β = 2/vᵀv = 2` then flips `b(1)`, and the
-output is `[-1; 0]`, which is not the least-squares (here the exact) solution `[1; 0]`. -/
+/-- **Algorithm 5.3.2** of [golub2013matrix], a counterexample to the printed algorithm. For
+$A = I_2$, Algorithm 5.2.1 in exact arithmetic returns $\beta_1 = \beta_2 = 0$. For
+$b = (1, 0)^T$, Algorithm 5.3.2 in exact arithmetic returns $(-1, 0)^T$, and $(-1, 0)^T$ does
+not minimize $\|I_2x - b\|_2$.
+
+Every Householder step of Algorithm 5.2.1 meets $\sigma = 0$ and $x_1 \ge 0$, so `house` returns
+$\beta = 0$ and leaves $A$ unchanged. The printed recomputation $\beta = 2/v^Tv = 2$ then flips
+the sign of $b_1$. The exact solution is $(1, 0)^T$. -/
 theorem algorithm_5_3_2_counterexample :
     (Id.run (algorithm_5_2_1 pure (1 : Matrix (Fin 2) (Fin 2) ℝ))).2 = 0 ∧
       Id.run (algorithm_5_3_2 pure le_rfl (1 : Matrix (Fin 2) (Fin 2) ℝ) ![1, 0]) = ![-1, 0] ∧
@@ -691,10 +918,11 @@ end HouseholderLS
 
 section HouseholderLSRounding
 
-/-- **The bridge of one pass of the `b`-loop of Algorithm 5.3.2**: a run leaves `b` unchanged off
-the rows `j:m`, and on them it is a computed Householder application `b - v(β̂(vᵀb))` with the
-stored vector `v` and a computed `β̂ = fl(2/fl(vᵀv))` (`RoundsHouseholderApply`, the product
-`fl(t v_i)` being its `fl(v_i t)`). -/
+/-- Every run of one pass $j$ of the $b$-loop of Algorithm 5.3.2 leaves $b$ unchanged outside the
+rows $j{:}m$, and on these rows it is a computed Householder application
+(`FloatingPoint.RoundsHouseholderApply`) with the stored vector $v$ and a computed
+$\hat\beta = \mathrm{fl}(2/\mathrm{fl}(v^Tv))$, where the rounded product $\mathrm{fl}(tv_i)$ of
+the program is the product $\mathrm{fl}(v_it)$ of that predicate. -/
 private theorem householderLSStep_rounds {fp : RoundingModel ℝ} (hfp : fp.IsIdempotent)
     (A : Matrix (Fin m) (Fin n) ℝ) (b : Fin m → ℝ) (j : Fin n) {y : Fin m → ℝ}
     (h : y ∈ (householderLSStep fp.round A b j).run) :
@@ -723,11 +951,11 @@ private theorem householderLSStep_rounds {fp : RoundingModel ℝ} (hfp : fp.IsId
   exact ⟨hout, vv, βhat, roundsDot_subtype_of_mem_run_dotAccum hfp hnd hvv, hβ, s, t, p,
     roundsDot_subtype_of_mem_run_dotAccum hfp hnd hs, ht, hp, hyp⟩
 
-/-- **One pass of the `b`-loop is nearly an exact reflection** ([higham2002accuracy] Lemma 19.2,
-with the recomputed `β`): if the stored vector `v̂` of column `j` is entrywise a relative
-perturbation of order `K` of `v`, `v` vanishes off the rows `j:m`, and `1 - β v vᵀ` is orthogonal
-with `β ≠ 0` (so `β = 2/vᵀv`), then every run `y` of the pass on `b` has
-`‖y - (1 - β v vᵀ) b‖₂ ≤ 3 γ_{3(4K + 2m + 1) + m + 3} ‖b‖₂`. -/
+/-- If the stored vector of column $j$ is entrywise a relative perturbation of order $K$ of a vector
+$v$ that vanishes outside the rows $j{:}m$, and $I - \beta vv^T$ is orthogonal with
+$\beta \neq 0$ (so that $\beta = 2/v^Tv$), then every run $y$ of one pass of the $b$-loop of
+Algorithm 5.3.2 on $b$ satisfies $\|y - (I - \beta vv^T)b\|_2 \le 3\gamma_{3(4K + 2m + 1) + m +
+3}\|b\|_2$, as in [higham2002accuracy] Lemma 19.2 with the recomputed $\beta$. -/
 private theorem householderLSStep_rounding {fp : RoundingModel ℝ} (hfp : fp.IsIdempotent)
     {K : ℕ} (hu : ((3 * (4 * K + 2 * m + 1) + m + 3 : ℕ) : ℝ) * fp.u < 1)
     (A : Matrix (Fin m) (Fin n) ℝ) (j : Fin n) (hjm : (j : ℕ) < m) {v : Fin m → ℝ} {β : ℝ}
@@ -804,11 +1032,11 @@ private theorem householderLSStep_rounding {fp : RoundingModel ℝ} (hfp : fp.Is
   have := gamma_nonneg hu0 hu
   positivity
 
-/-- **The `b`-loop of Algorithm 5.3.2 applies the QR reflectors exactly to a nearby `b`**
-([higham2002accuracy] Lemma 19.3, with the recomputed `β`): if every step `q` of the QR run `st`
-has reflector data `(v_q, β_q)` and every returned `β̂_q ≠ 0`, every run `c` of the loop on `b` is
-`c = P_{n-1} ⋯ P_0 (b + Δb)` with `‖Δb‖₂ ≤ ((1 + ε')ⁿ - 1) ‖b‖₂`,
-`ε' = 3 γ_{3(4(18m + 31) + 2m + 1) + m + 3}`. -/
+/-- If every step $q$ of a run of Algorithm 5.2.1 has exact reflector data $(v_q, \beta_q)$ with
+orthogonal reflectors $P_q$ and every returned $\hat\beta_q$ is nonzero, then every run $c$ of
+the $b$-loop of Algorithm 5.3.2 on $b$ is $c = P_{n-1} \cdots P_0(b + \Delta b)$ with $\|\Delta
+b\|_2 \le ((1 + \varepsilon')^n - 1)\|b\|_2$ and $\varepsilon' = 3\gamma_{3(4(18m + 31) +
+2m + 1) + m + 3}$, as in [higham2002accuracy] Lemma 19.3 with the recomputed $\beta$. -/
 private theorem householderLSLoop_rounding {fp : RoundingModel ℝ} (hfp : fp.IsIdempotent)
     (hnm : n ≤ m) (hu : ((3 * (4 * (18 * m + 31) + 2 * m + 1) + m + 3 : ℕ) : ℝ) * fp.u < 1)
     {st : Matrix (Fin m) (Fin n) ℝ × (Fin n → ℝ)} {v : ℕ → Fin m → ℝ} {β : ℕ → ℝ}
@@ -844,20 +1072,38 @@ private theorem householderLSLoop_rounding {fp : RoundingModel ℝ} (hfp : fp.Is
   exact ⟨db', by rw [hy'eq, prodRev_succ], hdb'⟩
 
 open scoped Matrix.Norms.Frobenius in
-/-- **(5.3.6)–(5.3.8), rigorous** (Lawson–Hanson; [higham2002accuracy] Theorem 20.3): over an
-idempotent model with `(3(4(18m + 31) + 2m + 1) + m + 3) u < 1`, for every run `(Â, β̂)` of the
-QR stage of Algorithm 5.3.2 (Algorithm 5.2.1 on `A`) that is nondegenerate (every computed
-`β̂_j ≠ 0`, which the printed recomputation of `β` needs, cf. `algorithm_5_3_2_spec`) and has a
-nonsingular `R̂₁`, every `x̂` computed from it by the remaining stages (`householderLSSolve`)
-"solves exactly a nearby LS problem": `x̂` is a least-squares solution of `(A + δA) x = b + δb` with
-`‖δA‖_F ≤ ((1 + ε)ⁿ (1 + γ_n) - 1) ‖A‖_F` and `‖δb‖₂ ≤ ((1 + ε')ⁿ - 1) ‖b‖₂`, where
-`ε = 3 γ_{3(18m + 31) + m + 3}` (one computed QR step, `algorithm_5_2_1_rounding`) and
-`ε' = 3 γ_{3(4(18m + 31) + 2m + 1) + m + 3}` (one pass of the `b`-loop with its recomputed `β`).
-With `Z` the product of the exact reflectors, `δA = E + Z [ΔR; 0]` collects the backward error `E`
-of the QR factorization and that of the back substitution, `(R̂₁ + ΔR) x̂ = ĉ`,
-`|ΔR| ≤ γ_n |R̂₁|`, and `δb` is the backward error of the `b`-loop, `ĉ = Zᵀ(b + δb)`. The book's
-`(6m - 3n + 41) n u + O(u²)` and `(6m - 3n + 40) n u + O(u²)` are the first-order readings of
-bounds of this shape (with Lawson–Hanson's constants in place of the `γ`s). -/
+/-- **Equation (5.3.6)** of [golub2013matrix] (Lawson and Hanson). Let
+$A \in \mathbb{R}^{m \times n}$ with $n \le m$ and $b \in \mathbb{R}^m$. Let the rounding model
+be idempotent, with unit roundoff $u$ such that $(3(4(18m + 31) + 2m + 1) + m + 3)u < 1$, and
+put
+$$\varepsilon = 3\gamma_{3(18m + 31) + m + 3}, \qquad \varepsilon' = 3\gamma_{3(4(18m + 31) +
+  2m + 1) + m + 3},$$
+where $\gamma_k = ku/(1 - ku)$. Let $(\hat A, \hat\beta)$ be computed by Algorithm 5.2.1 from
+$A$, with every $\hat\beta_j \neq 0$ and with nonzero diagonal entries of
+$\hat R_1 = \hat R(1{:}n, 1{:}n)$, and let $\hat x$ be computed from $(\hat A, \hat\beta)$ and
+$b$ by the remaining stages of Algorithm 5.3.2. Then $\hat x$ solves exactly a nearby
+least-squares problem: there are $\delta A \in \mathbb{R}^{m \times n}$ and
+$\delta b \in \mathbb{R}^m$ such that $\hat x$ minimizes
+$\|(A + \delta A)x - (b + \delta b)\|_2$ and
+$$\|\delta A\|_F \le ((1 + \varepsilon)^n(1 + \gamma_n) - 1)\|A\|_F, \qquad \|\delta b\|_2 \le
+  ((1 + \varepsilon')^n - 1)\|b\|_2.$$
+
+**Reading.** The source states the first-order bounds $\|\delta A\|_F \le (6m - 3n +
+41)nu\|A\|_F + O(u^2)$ and $\|\delta b\|_2 \le (6m - 3n + 40)nu\|b\|_2 + O(u^2)$, with the
+constants of Lawson and Hanson. The theorem states rigorous bounds of the same shape, with
+explicit $\gamma$ constants in place of these constants. The hypothesis $\hat\beta_j \neq 0$ is
+needed by the printed recomputation of $\beta$ (see
+`GolubVanLoan.Chapter05.algorithm_5_3_2_spec`), and the hypothesis on $\hat R_1$ by the back
+substitution.
+
+The remaining stages are `GolubVanLoan.Chapter05.householderLSSolve`. The constant $\varepsilon$
+bounds the error of one computed step of Algorithm 5.2.1, and $\varepsilon'$ bounds the error of
+one pass of the $b$-loop with its recomputed $\beta$. With $Z$ the product of the exact
+reflectors, $\delta A = E + Z[\Delta R; 0]$ collects the backward error $E$ of the QR
+factorization (`GolubVanLoan.Chapter05.algorithm_5_2_1_rounding`) and the backward error
+$(\hat R_1 + \Delta R)\hat x = \hat c$, $|\Delta R| \le \gamma_n|\hat R_1|$, of the back
+substitution; $\delta b$ is the backward error $\hat c = Z^T(b + \delta b)$ of the $b$-loop. The
+proof follows [higham2002accuracy] Theorem 20.3. -/
 theorem equation_5_3_6 {fp : RoundingModel ℝ} (hfp : fp.IsIdempotent) (hnm : n ≤ m)
     (hu : ((3 * (4 * (18 * m + 31) + 2 * m + 1) + m + 3 : ℕ) : ℝ) * fp.u < 1)
     (A : Matrix (Fin m) (Fin n) ℝ) (b : Fin m → ℝ) :
@@ -964,9 +1210,19 @@ theorem equation_5_3_6 {fp : RoundingModel ℝ} (hfp : fp.IsIdempotent) (hnm : n
     nlinarith
 
 open scoped Matrix.Norms.Frobenius in
-/-- **(5.3.7)**: the `δA` of (5.3.6), `‖δA‖_F ≤ ((1 + ε)ⁿ (1 + γ_n) - 1) ‖A‖_F` with
-`ε = 3 γ_{3(18m + 31) + m + 3}` — the rigorous form of the book's
-`‖δA‖_F ≤ (6m - 3n + 41) n u ‖A‖_F + O(u²)` (`equation_5_3_6`). -/
+/-- **Equation (5.3.7)** of [golub2013matrix]. Let $A \in \mathbb{R}^{m \times n}$ with $n \le m$
+and $b \in \mathbb{R}^m$, let the rounding model be idempotent with
+$(3(4(18m + 31) + 2m + 1) + m + 3)u < 1$, and let $\hat x$ be computed by Algorithm 5.3.2 from a
+run of Algorithm 5.2.1 with every $\hat\beta_j \neq 0$ and nonsingular $\hat R_1$, as in
+(5.3.6). Then there are $\delta A$ and $\delta b$ such that $\hat x$ minimizes
+$\|(A + \delta A)x - (b + \delta b)\|_2$ and
+$$\|\delta A\|_F \le ((1 + \varepsilon)^n(1 + \gamma_n) - 1)\|A\|_F, \qquad \varepsilon =
+  3\gamma_{3(18m + 31) + m + 3}.$$
+
+**Reading.** The source prints $\|\delta A\|_F \le (6m - 3n + 41)nu\|A\|_F + O(u^2)$. The
+theorem states the rigorous bound with explicit $\gamma$ constants.
+
+This is the first bound of `GolubVanLoan.Chapter05.equation_5_3_6`. -/
 theorem equation_5_3_7 {fp : RoundingModel ℝ} (hfp : fp.IsIdempotent) (hnm : n ≤ m)
     (hu : ((3 * (4 * (18 * m + 31) + 2 * m + 1) + m + 3 : ℕ) : ℝ) * fp.u < 1)
     (A : Matrix (Fin m) (Fin n) ℝ) (b : Fin m → ℝ) :
@@ -981,9 +1237,19 @@ theorem equation_5_3_7 {fp : RoundingModel ℝ} (hfp : fp.IsIdempotent) (hnm : n
   obtain ⟨δA, δb, h, hA, -⟩ := equation_5_3_6 hfp hnm hu A b st hst hβ hR x hx
   exact ⟨δA, δb, h, hA⟩
 
-/-- **(5.3.8)**: the `δb` of (5.3.6), `‖δb‖₂ ≤ ((1 + ε')ⁿ - 1) ‖b‖₂` with
-`ε' = 3 γ_{3(4(18m + 31) + 2m + 1) + m + 3}` — the rigorous form of the book's
-`‖δb‖₂ ≤ (6m - 3n + 40) n u ‖b‖₂ + O(u²)` (`equation_5_3_6`). -/
+/-- **Equation (5.3.8)** of [golub2013matrix]. Let $A \in \mathbb{R}^{m \times n}$ with $n \le m$
+and $b \in \mathbb{R}^m$, let the rounding model be idempotent with
+$(3(4(18m + 31) + 2m + 1) + m + 3)u < 1$, and let $\hat x$ be computed by Algorithm 5.3.2 from a
+run of Algorithm 5.2.1 with every $\hat\beta_j \neq 0$ and nonsingular $\hat R_1$, as in
+(5.3.6). Then there are $\delta A$ and $\delta b$ such that $\hat x$ minimizes
+$\|(A + \delta A)x - (b + \delta b)\|_2$ and
+$$\|\delta b\|_2 \le ((1 + \varepsilon')^n - 1)\|b\|_2, \qquad \varepsilon' =
+  3\gamma_{3(4(18m + 31) + 2m + 1) + m + 3}.$$
+
+**Reading.** The source prints $\|\delta b\|_2 \le (6m - 3n + 40)nu\|b\|_2 + O(u^2)$. The
+theorem states the rigorous bound with explicit $\gamma$ constants.
+
+This is the second bound of `GolubVanLoan.Chapter05.equation_5_3_6`. -/
 theorem equation_5_3_8 {fp : RoundingModel ℝ} (hfp : fp.IsIdempotent) (hnm : n ≤ m)
     (hu : ((3 * (4 * (18 * m + 31) + 2 * m + 1) + m + 3 : ℕ) : ℝ) * fp.u < 1)
     (A : Matrix (Fin m) (Fin n) ℝ) (b : Fin m → ℝ) :
@@ -1005,18 +1271,33 @@ end HouseholderLSRounding
 
 section Sensitivity
 
-/-- **Theorem 5.3.1's angle** `θ_LS ∈ [0, π/2]`, `sin θ_LS = ‖r_LS‖₂ / ‖b‖₂`, for the
-least-squares solution `x_LS = A⁺ b` and its residual `r_LS = b - A x_LS`. -/
+/-- **Theorem 5.3.1** of [golub2013matrix], the angle $\theta_{LS}$. For
+$A \in \mathbb{R}^{m \times n}$ and $b \in \mathbb{R}^m$, let $x_{LS} = A^+b$ and
+$r_{LS} = b - Ax_{LS}$. The **angle** of the least-squares problem is
+$$\theta_{LS} = \arcsin\frac{\|r_{LS}\|_2}{\|b\|_2} \in [0, \pi/2],$$
+so that $\sin\theta_{LS} = \|r_{LS}\|_2/\|b\|_2$.
+
+For $b = 0$ the quotient is $0$ in Lean, and $\theta_{LS} = 0$. -/
 noncomputable def thetaLS (A : Matrix (Fin m) (Fin n) ℝ) (b : EuclideanSpace ℝ (Fin m)) : ℝ :=
   Real.arcsin (‖b - toEuclideanLin A (toEuclideanLin A.pinv b)‖ / ‖b‖)
 
-/-- **(5.3.10)**: `ν_LS = ‖A x_LS‖₂ / (σ_n(A) ‖x_LS‖₂)`, with `σ_n(A) = min_i σ_i(A)`. -/
+/-- **Equation (5.3.10)** of [golub2013matrix]. For $A \in \mathbb{R}^{m \times n}$ and
+$b \in \mathbb{R}^m$ with $x_{LS} = A^+b$, the number $\nu_{LS}$ is
+$$\nu_{LS} = \frac{\|Ax_{LS}\|_2}{\sigma_n(A)\|x_{LS}\|_2}.$$
+Here $\sigma_n(A)$ is the least singular value `⨅ i, A.colSingularValues i`, and the quotient is
+$0$ when the denominator is $0$. -/
 noncomputable def nuLS (A : Matrix (Fin m) (Fin n) ℝ) (b : EuclideanSpace ℝ (Fin m)) : ℝ :=
   ‖toEuclideanLin A (toEuclideanLin A.pinv b)‖ /
     ((⨅ i, A.colSingularValues i) * ‖toEuclideanLin A.pinv b‖)
 
-/-- **(5.3.16)**: for `b ≠ 0` and `A x_LS ≠ 0`, `cos θ_LS = ‖A x_LS‖₂ / ‖b‖₂` and
-`tan θ_LS = ‖r_LS‖₂ / ‖A x_LS‖₂`, from `b = A x_LS + r_LS` with `A x_LS ⊥ r_LS`. -/
+/-- **Equation (5.3.16)** of [golub2013matrix]. Let $A \in \mathbb{R}^{m \times n}$ and
+$b \in \mathbb{R}^m$, with $x_{LS} = A^+b$ and $r_{LS} = b - Ax_{LS}$. If $b \neq 0$ and
+$Ax_{LS} \neq 0$, then
+$$\cos\theta_{LS} = \frac{\|Ax_{LS}\|_2}{\|b\|_2}, \qquad \tan\theta_{LS} =
+  \frac{\|r_{LS}\|_2}{\|Ax_{LS}\|_2}.$$
+
+The proof uses $b = Ax_{LS} + r_{LS}$ with $Ax_{LS} \perp r_{LS}$. The angle is
+`GolubVanLoan.Chapter05.thetaLS`. -/
 theorem equation_5_3_16 (A : Matrix (Fin m) (Fin n) ℝ) {b : EuclideanSpace ℝ (Fin m)}
     (hb : b ≠ 0) (hAx : toEuclideanLin A (toEuclideanLin A.pinv b) ≠ 0) :
     Real.cos (thetaLS A b) = ‖toEuclideanLin A (toEuclideanLin A.pinv b)‖ / ‖b‖ ∧
@@ -1049,7 +1330,7 @@ section SensitivityBounds
 
 open scoped Matrix.Norms.L2Operator
 
-/-- Independent columns: `A x = 0` forces `x = 0`. -/
+/-- If $A$ has linearly independent columns and $x \neq 0$, then $Ax \neq 0$. -/
 private theorem toEuclideanLin_ne_zero {A : Matrix (Fin m) (Fin n) ℝ}
     (hA : LinearIndependent ℝ Aᵀ) {x : EuclideanSpace ℝ (Fin n)} (hx : x ≠ 0) :
     toEuclideanLin A x ≠ 0 := by
@@ -1064,7 +1345,8 @@ private theorem toEuclideanLin_ne_zero {A : Matrix (Fin m) (Fin n) ℝ}
   ext i
   simpa using congrFun this i
 
-/-- Pythagoras for the least-squares split `b = A x_LS + r_LS`. -/
+/-- Pythagoras for the least-squares split $b = Ax_{LS} + r_{LS}$:
+$\|b\|_2^2 = \|r_{LS}\|_2^2 + \|Ax_{LS}\|_2^2$. -/
 private theorem norm_sq_eq_residual_add (A : Matrix (Fin m) (Fin n) ℝ)
     (b : EuclideanSpace ℝ (Fin m)) :
     ‖b‖ ^ 2 = ‖b - toEuclideanLin A (toEuclideanLin A.pinv b)‖ ^ 2 +
@@ -1073,7 +1355,7 @@ private theorem norm_sq_eq_residual_add (A : Matrix (Fin m) (Fin n) ℝ)
   rwa [map_zero, zero_sub, norm_neg, zero_sub, map_neg, norm_neg,
     ← norm_neg (toEuclideanLin A (toEuclideanLin A.pinv b) - b), neg_sub] at this
 
-/-- `sin θ_LS = ‖r_LS‖₂ / ‖b‖₂`. -/
+/-- For $b \neq 0$, $\sin\theta_{LS} = \|r_{LS}\|_2/\|b\|_2$. -/
 private theorem sin_thetaLS (A : Matrix (Fin m) (Fin n) ℝ) {b : EuclideanSpace ℝ (Fin m)}
     (hb : b ≠ 0) :
     Real.sin (thetaLS A b) = ‖b - toEuclideanLin A (toEuclideanLin A.pinv b)‖ / ‖b‖ := by
@@ -1086,9 +1368,11 @@ private theorem sin_thetaLS (A : Matrix (Fin m) (Fin n) ℝ) {b : EuclideanSpace
       exact le_trans (by norm_num) (div_nonneg (norm_nonneg _) hN.le))
     ((div_le_one hN).2 hle)]
 
-/-- The absolute bounds of Theorem 5.3.1 in terms of the relative size `ε` of the perturbations:
-`‖x̂ - x‖ ≤ ε ((‖b‖ + ‖A‖ ‖x‖)/σ' + ‖A‖ ‖r‖/σ'²)` and
-`‖r̂ - r‖ ≤ ε (‖b‖ + ‖A‖ ‖x‖ + ‖A‖ ‖r‖/σ')`, `σ' = σ_min(A) - ‖δA‖₂`. -/
+/-- If $\|\delta A\|_2 < \sigma_n(A)$, $\|\delta A\|_2 \le \varepsilon\|A\|_2$ and
+$\|\delta b\|_2 \le \varepsilon\|b\|_2$, then with $\sigma' = \sigma_n(A) - \|\delta A\|_2$ the
+perturbed solution and residual satisfy $\|\hat x - x\|_2 \le \varepsilon((\|b\|_2 +
+\|A\|_2\|x\|_2)/\sigma' + \|A\|_2\|r\|_2/\sigma'^2)$ and $\|\hat r - r\|_2 \le
+\varepsilon(\|b\|_2 + \|A\|_2\|x\|_2 + \|A\|_2\|r\|_2/\sigma')$. -/
 private theorem ls_perturbation_bounds {A δA : Matrix (Fin m) (Fin n) ℝ}
     {b δb r r' : EuclideanSpace ℝ (Fin m)} {x x' : EuclideanSpace ℝ (Fin n)}
     (hδA : ‖δA‖ < ⨅ i, A.colSingularValues i) (hx : x = toEuclideanLin A.pinv b)
@@ -1112,7 +1396,10 @@ private theorem ls_perturbation_bounds {A δA : Matrix (Fin m) (Fin n) ℝ}
           gcongr
       _ = _ := by ring
 
-/-- The relative size `ε = max(‖δA‖₂/‖A‖₂, ‖δb‖₂/‖b‖₂)` of a perturbation bounds each part. -/
+/-- Let $A, \delta A \in \mathbb{R}^{m \times n}$ and $b, \delta b \in \mathbb{R}^m$ with
+$\|A\|_2 > 0$ and $\|b\|_2 > 0$, and let $\varepsilon = \max(\|\delta A\|_2/\|A\|_2, \|\delta
+b\|_2/\|b\|_2)$. Then $\|\delta A\|_2 \le \varepsilon\|A\|_2$,
+$\|\delta b\|_2 \le \varepsilon\|b\|_2$ and $\varepsilon \ge 0$. -/
 theorem le_max_div_mul {A δA : Matrix (Fin m) (Fin n) ℝ} {b δb : EuclideanSpace ℝ (Fin m)}
     (hA : 0 < ‖A‖) (hb : 0 < ‖b‖) :
     ‖δA‖ ≤ max (‖δA‖ / ‖A‖) (‖δb‖ / ‖b‖) * ‖A‖ ∧
@@ -1120,12 +1407,22 @@ theorem le_max_div_mul {A δA : Matrix (Fin m) (Fin n) ℝ} {b δb : EuclideanSp
   ⟨(div_le_iff₀ hA).1 (le_max_left _ _), (div_le_iff₀ hb).1 (le_max_right _ _),
     le_max_of_le_left (div_nonneg (norm_nonneg _) hA.le)⟩
 
-/-- **Theorem 5.3.1, (5.3.11), rigorous**: for `A` of rank `n`, `‖δA‖₂ < σ_n(A)`, `b ≠ 0`,
-`x_LS ≠ 0`, `ε = max(‖δA‖₂/‖A‖₂, ‖δb‖₂/‖b‖₂)`, and with `σ' = σ_n(A) - ‖δA‖₂`,
-`κ' = ‖A‖₂/σ'`, `ν' = ‖A x_LS‖₂/(σ' ‖x_LS‖₂)`:
-`‖x̂_LS - x_LS‖₂/‖x_LS‖₂ ≤ ε (ν'/cos θ_LS + [1 + ν' tan θ_LS] κ')` — the bracket of (5.3.11) with
-`σ_n(A)` replaced by `σ'`, and no `O(ε²)` term. (The book's hypothesis `r_LS ≠ 0` is not needed.)
--/
+/-- **Theorem 5.3.1** of [golub2013matrix], the bound (5.3.11) in rigorous form. Let
+$A \in \mathbb{R}^{m \times n}$ have rank $n$, let $\delta A \in \mathbb{R}^{m \times n}$ with
+$\|\delta A\|_2 < \sigma_n(A)$, and let $b, \delta b \in \mathbb{R}^m$ with $b \neq 0$. Let
+$x_{LS} = A^+b$ be nonzero, and let $\hat x_{LS} = (A + \delta A)^+(b + \delta b)$. Put
+$$\varepsilon = \max\left(\frac{\|\delta A\|_2}{\|A\|_2}, \frac{\|\delta b\|_2}{\|b\|_2}\right),
+  \quad \sigma' = \sigma_n(A) - \|\delta A\|_2, \quad \kappa' = \frac{\|A\|_2}{\sigma'}, \quad
+  \nu' = \frac{\|Ax_{LS}\|_2}{\sigma'\|x_{LS}\|_2}.$$
+Then
+$$\frac{\|\hat x_{LS} - x_{LS}\|_2}{\|x_{LS}\|_2} \le
+  \varepsilon\left(\frac{\nu'}{\cos\theta_{LS}} + (1 + \nu'\tan\theta_{LS})\kappa'\right).$$
+
+**Generalization.** This is the bracket of (5.3.11) with $\sigma_n(A)$ replaced by $\sigma'$ and
+with no $O(\varepsilon^2)$ term. The hypothesis $r_{LS} \neq 0$ of the source is not needed.
+
+The angle is `GolubVanLoan.Chapter05.thetaLS`, and $\sigma_n(A)$ is
+`⨅ i, A.colSingularValues i`. For the printed form see `GolubVanLoan.Chapter05.theorem_5_3_1`. -/
 theorem theorem_5_3_1_a {A δA : Matrix (Fin m) (Fin n) ℝ} (hA : LinearIndependent ℝ Aᵀ)
     {b δb : EuclideanSpace ℝ (Fin m)} {x x' : EuclideanSpace ℝ (Fin n)}
     (hδA : ‖δA‖ < ⨅ i, A.colSingularValues i) (hb : b ≠ 0) (hx0 : x ≠ 0)
@@ -1152,10 +1449,22 @@ theorem theorem_5_3_1_a {A δA : Matrix (Fin m) (Fin n) ℝ} (hA : LinearIndepen
   field_simp
   ring
 
-/-- **Theorem 5.3.1, (5.3.12), rigorous**: under the hypotheses of `theorem_5_3_1_a` and
-`r_LS ≠ 0`, with `r̂_LS = (b + δb) - (A + δA) x̂_LS`:
-`‖r̂_LS - r_LS‖₂/‖r_LS‖₂ ≤ ε (1/sin θ_LS + [1/(ν_LS tan θ_LS)] κ₂(A) + κ')`, which is (5.3.12)
-with `κ' = ‖A‖₂/(σ_n(A) - ‖δA‖₂)` in place of `κ₂(A)` in its last term and no `O(ε²)` term. -/
+/-- **Theorem 5.3.1** of [golub2013matrix], the bound (5.3.12) in rigorous form. Let
+$A \in \mathbb{R}^{m \times n}$ have rank $n$, let $\delta A \in \mathbb{R}^{m \times n}$ with
+$\|\delta A\|_2 < \sigma_n(A)$, and let $b, \delta b \in \mathbb{R}^m$ with $b \neq 0$. Let
+$x_{LS} = A^+b$ and $r_{LS} = b - Ax_{LS}$ be nonzero, and let
+$\hat x_{LS} = (A + \delta A)^+(b + \delta b)$ and $\hat r_{LS} = (b + \delta b) - (A + \delta
+A)\hat x_{LS}$. With $\varepsilon$ and $\kappa' = \|A\|_2/(\sigma_n(A) - \|\delta A\|_2)$ as in
+(5.3.11),
+$$\frac{\|\hat r_{LS} - r_{LS}\|_2}{\|r_{LS}\|_2} \le
+  \varepsilon\left(\frac{1}{\sin\theta_{LS}} + \frac{\kappa_2(A)}{\nu_{LS}\tan\theta_{LS}} +
+  \kappa'\right).$$
+
+**Reading.** The source states (5.3.12) up to a term $O(\varepsilon^2)$, with $\kappa_2(A)$ in
+the last term. The rigorous bound has $\kappa'$ in the last term and no $O(\varepsilon^2)$ term.
+
+The number $\nu_{LS}$ is (5.3.10), `GolubVanLoan.Chapter05.nuLS`, and the angle is
+`GolubVanLoan.Chapter05.thetaLS`. -/
 theorem theorem_5_3_1_b {A δA : Matrix (Fin m) (Fin n) ℝ} (hA : LinearIndependent ℝ Aᵀ)
     {b δb r r' : EuclideanSpace ℝ (Fin m)} {x x' : EuclideanSpace ℝ (Fin n)}
     (hδA : ‖δA‖ < ⨅ i, A.colSingularValues i) (hb : b ≠ 0) (hx0 : x ≠ 0) (hr0 : r ≠ 0)
@@ -1182,7 +1491,8 @@ theorem theorem_5_3_1_b {A δA : Matrix (Fin m) (Fin n) ℝ} (hA : LinearIndepen
   rw [hsin, htan, kappa2_eq_div hA, nuLS, ← hx]
   field_simp
 
-/-- `1/σ' ≤ 1/σ + 2t/σ²` and `1/σ'² ≤ 1/σ² + 6t/σ³` for `σ' ≥ σ - t`, `0 ≤ t ≤ σ/2`. -/
+/-- Let $\sigma > 0$ and $0 \le t \le \sigma/2$. If $\sigma' \ge \sigma - t$, then
+$1/\sigma' \le 1/\sigma + 2t/\sigma^2$ and $1/\sigma'^2 \le 1/\sigma^2 + 6t/\sigma^3$. -/
 theorem one_div_le_add_of_sub_le {σ σ' t : ℝ} (hσ : 0 < σ) (ht0 : 0 ≤ t) (ht : 2 * t ≤ σ)
     (h : σ - t ≤ σ') :
     1 / σ' ≤ 1 / σ + 2 * t / σ ^ 2 ∧ 1 / σ' ^ 2 ≤ 1 / σ ^ 2 + 6 * t / σ ^ 3 := by
@@ -1209,13 +1519,31 @@ theorem one_div_le_add_of_sub_le {σ σ' t : ℝ} (hσ : 0 < σ) (ht0 : 0 ≤ t)
     div_nonneg (mul_nonneg (by linarith) (by linarith)) (by positivity)
   linarith
 
-/-- **Theorem 5.3.1** as printed, the `+ O(ε²)` reading: for `A` of rank `n` and `b` with `b`,
-`r_LS` and `x_LS` nonzero there are `K` and `ε₀ > 0` such that for all perturbations with
-`ε = max(‖δA‖₂/‖A‖₂, ‖δb‖₂/‖b‖₂) ≤ ε₀`,
-`‖x̂_LS - x_LS‖₂/‖x_LS‖₂ ≤ ε {ν_LS/cos θ_LS + [1 + ν_LS tan θ_LS] κ₂(A)} + K ε²` (5.3.11) and
-`‖r̂_LS - r_LS‖₂/‖r_LS‖₂ ≤ ε {1/sin θ_LS + [1/(ν_LS tan θ_LS) + 1] κ₂(A)} + K ε²` (5.3.12). From
-the rigorous bounds behind `theorem_5_3_1_a` and `theorem_5_3_1_b` and
-`1/(σ_n - ε‖A‖₂) ≤ 1/σ_n + 2ε‖A‖₂/σ_n²` for `ε ≤ ε₀ = σ_n/(2‖A‖₂)`. -/
+/-- **Theorem 5.3.1** of [golub2013matrix]. Let $A \in \mathbb{R}^{m \times n}$ have rank $n$, and
+let $b \in \mathbb{R}^m$ be such that $b$, $x_{LS} = A^+b$ and $r_{LS} = b - Ax_{LS}$ are
+nonzero. Then there are constants $K$ and $\varepsilon_0 > 0$ with the following property. Let
+$\delta A \in \mathbb{R}^{m \times n}$ and $\delta b \in \mathbb{R}^m$ satisfy
+$$\varepsilon = \max\left(\frac{\|\delta A\|_2}{\|A\|_2}, \frac{\|\delta b\|_2}{\|b\|_2}\right)
+  \le \varepsilon_0,$$
+and let $\hat x_{LS} = (A + \delta A)^+(b + \delta b)$ and $\hat r_{LS} = (b + \delta b) - (A +
+\delta A)\hat x_{LS}$. Then
+$$\frac{\|\hat x_{LS} - x_{LS}\|_2}{\|x_{LS}\|_2} \le
+  \varepsilon\left\{\frac{\nu_{LS}}{\cos\theta_{LS}} + (1 +
+  \nu_{LS}\tan\theta_{LS})\kappa_2(A)\right\} + K\varepsilon^2 \qquad (5.3.11)$$
+and
+$$\frac{\|\hat r_{LS} - r_{LS}\|_2}{\|r_{LS}\|_2} \le
+  \varepsilon\left\{\frac{1}{\sin\theta_{LS}} + \left(\frac{1}{\nu_{LS}\tan\theta_{LS}} +
+  1\right)\kappa_2(A)\right\} + K\varepsilon^2. \qquad (5.3.12)$$
+
+**Reading.** The source writes the remainder as $O(\varepsilon^2)$. The theorem reads it as
+$K\varepsilon^2$ for $\varepsilon \le \varepsilon_0$, where $K$ and $\varepsilon_0$ depend on
+$A$ and $b$.
+
+The proof combines the rigorous bounds behind `GolubVanLoan.Chapter05.theorem_5_3_1_a` and
+`GolubVanLoan.Chapter05.theorem_5_3_1_b` with $1/(\sigma_n - \varepsilon\|A\|_2) \le
+1/\sigma_n + 2\varepsilon\|A\|_2/\sigma_n^2$ for $\varepsilon \le \varepsilon_0 =
+\sigma_n/(2\|A\|_2)$. The number $\nu_{LS}$ is `GolubVanLoan.Chapter05.nuLS`, and the angle is
+`GolubVanLoan.Chapter05.thetaLS`. -/
 theorem theorem_5_3_1 {A : Matrix (Fin m) (Fin n) ℝ} (hA : LinearIndependent ℝ Aᵀ)
     {b : EuclideanSpace ℝ (Fin m)} (hb : b ≠ 0)
     (hr0 : b - toEuclideanLin A (toEuclideanLin A.pinv b) ≠ 0)
@@ -1306,9 +1634,13 @@ theorem theorem_5_3_1 {A : Matrix (Fin m) (Fin n) ℝ} (hA : LinearIndependent �
           gcongr
           exact le_add_of_nonneg_left hK1
 
-/-- **(5.3.9)**, "easily verified using the SVD": for `A ∈ ℝ^{m×n}` of full column rank
-(`n ≥ 1`) and `m > n`, `‖A(AᵀA)⁻¹Aᵀ‖₂ = 1`, `‖(AᵀA)⁻¹Aᵀ‖₂ = 1/σ_n(A)`,
-`‖I - A(AᵀA)⁻¹Aᵀ‖₂ = 1` and `‖(AᵀA)⁻¹‖₂ = 1/σ_n(A)²`. (`(AᵀA)⁻¹Aᵀ` is the pseudoinverse `A⁺`.) -/
+/-- **Equation (5.3.9)** of [golub2013matrix]. Let $A \in \mathbb{R}^{m \times n}$ have full column
+rank, with $1 \le n < m$. Then
+$$\|A(A^TA)^{-1}A^T\|_2 = 1, \quad \|(A^TA)^{-1}A^T\|_2 = \frac{1}{\sigma_n(A)}, \quad \|I -
+  A(A^TA)^{-1}A^T\|_2 = 1, \quad \|(A^TA)^{-1}\|_2 = \frac{1}{\sigma_n(A)^2}.$$
+
+The source says that these facts are easily verified using the SVD. The matrix $(A^TA)^{-1}A^T$
+is the pseudoinverse $A^+$. The condition $n \ge 1$ is `[NeZero n]`. -/
 theorem equation_5_3_9 [NeZero n] {A : Matrix (Fin m) (Fin n) ℝ} (hA : LinearIndependent ℝ Aᵀ)
     (hmn : n < m) :
     ‖A * (Aᵀ * A)⁻¹ * Aᵀ‖ = 1 ∧ ‖(Aᵀ * A)⁻¹ * Aᵀ‖ = 1 / ⨅ i, A.colSingularValues i ∧
@@ -1327,8 +1659,14 @@ theorem equation_5_3_9 [NeZero n] {A : Matrix (Fin m) (Fin n) ℝ} (hA : LinearI
     rw [conjTranspose_eq_transpose_of_trivial] at h
     rw [h, one_div, inv_pow]
 
-/-- **§5.3.6**: `ν_LS = ‖A x_LS‖₂/(σ_n(A) ‖x_LS‖₂) ≤ ‖A‖₂/σ_n(A) = κ₂(A)`, since
-`‖A x_LS‖₂ ≤ ‖A‖₂ ‖x_LS‖₂`. -/
+/-- **Section 5.3.6** of [golub2013matrix], the bound $\nu_{LS} \le \kappa_2(A)$. Let
+$A \in \mathbb{R}^{m \times n}$ have full column rank, with $n \ge 1$, and let
+$b \in \mathbb{R}^m$. Then
+$$\nu_{LS} = \frac{\|Ax_{LS}\|_2}{\sigma_n(A)\|x_{LS}\|_2} \le \frac{\|A\|_2}{\sigma_n(A)} =
+  \kappa_2(A).$$
+
+The bound follows from $\|Ax_{LS}\|_2 \le \|A\|_2\|x_{LS}\|_2$. For $x_{LS} = 0$ the number
+$\nu_{LS}$ is $0$ by the convention of `GolubVanLoan.Chapter05.nuLS`. -/
 theorem nuLS_le_kappa2 [NeZero n] {A : Matrix (Fin m) (Fin n) ℝ} (hA : LinearIndependent ℝ Aᵀ)
     (b : EuclideanSpace ℝ (Fin m)) : nuLS A b ≤ kappa2 A := by
   have hσ := iInf_colSingularValues_pos_of_linearIndependent hA
@@ -1344,8 +1682,12 @@ theorem nuLS_le_kappa2 [NeZero n] {A : Matrix (Fin m) (Fin n) ℝ} (hA : LinearI
           exact norm_toEuclideanLin_apply_le _ _
       _ = ‖A‖ * ((⨅ i, A.colSingularValues i) * ‖toEuclideanLin A.pinv b‖) := by ring
 
-/-- **(5.3.15)**: with `x(t) = (A + tE)⁺(b + tf)`, the solution of (5.3.13) near `t = 0`,
-`ẋ(0) = (AᵀA)⁻¹Aᵀ(f - E x_LS) + (AᵀA)⁻¹Eᵀ r_LS`. -/
+/-- **Equation (5.3.15)** of [golub2013matrix]. Let $A \in \mathbb{R}^{m \times n}$ have full column
+rank, let $E \in \mathbb{R}^{m \times n}$ and $b, f \in \mathbb{R}^m$, and let
+$x(t) = (A + tE)^+(b + tf)$ be the solution of the perturbed problem (5.3.13) for $t$ near $0$.
+Then $x$ is differentiable at $t = 0$, with
+$$\dot x(0) = (A^TA)^{-1}A^T(f - Ex_{LS}) + (A^TA)^{-1}E^Tr_{LS},$$
+where $x_{LS} = A^+b$ and $r_{LS} = b - Ax_{LS}$. -/
 theorem equation_5_3_15 {A : Matrix (Fin m) (Fin n) ℝ} (hA : LinearIndependent ℝ Aᵀ)
     (E : Matrix (Fin m) (Fin n) ℝ) (b f : EuclideanSpace ℝ (Fin m)) :
     HasDerivAt (fun t : ℝ => toEuclideanLin (A + t • E).pinv (b + t • f))
@@ -1355,8 +1697,12 @@ theorem equation_5_3_15 {A : Matrix (Fin m) (Fin n) ℝ} (hA : LinearIndependent
   nth_rw 1 [pinv_eq_inv_conjTranspose_mul_self_mul_conjTranspose hA] at h
   simpa only [conjTranspose_eq_transpose_of_trivial] using h
 
-/-- **The residual's derivative** in the proof of Theorem 5.3.1: with
-`r(t) = (b + tf) - (A + tE) x(t)`, `ṙ(0) = (I - A(AᵀA)⁻¹Aᵀ)(f - E x_LS) - A(AᵀA)⁻¹Eᵀ r_LS`. -/
+/-- The derivative of the residual in the proof of Theorem 5.3.1 of [golub2013matrix]. Let
+$A \in \mathbb{R}^{m \times n}$ have full column rank, let $E \in \mathbb{R}^{m \times n}$ and
+$b, f \in \mathbb{R}^m$, and let $x(t) = (A + tE)^+(b + tf)$ and
+$r(t) = (b + tf) - (A + tE)x(t)$. Then $r$ is differentiable at $t = 0$, with
+$$\dot r(0) = (I - A(A^TA)^{-1}A^T)(f - Ex_{LS}) - A(A^TA)^{-1}E^Tr_{LS}.$$
+-/
 theorem equation_5_3_15_residual {A : Matrix (Fin m) (Fin n) ℝ} (hA : LinearIndependent ℝ Aᵀ)
     (E : Matrix (Fin m) (Fin n) ℝ) (b f : EuclideanSpace ℝ (Fin m)) :
     HasDerivAt (fun t : ℝ => (b + t • f) -
@@ -1406,8 +1752,16 @@ end SensitivityBounds
 
 section Augmented
 
-/-- **(5.3.20)**: if `[I_m A; Aᵀ 0][r; x] = [b; 0]` then `‖b - Ax‖₂ = min`; and the augmented
-matrix is nonsingular iff `rank(A) = n`. -/
+/-- **Equation (5.3.20)** of [golub2013matrix]. Let $A \in \mathbb{R}^{m \times n}$ and
+$b \in \mathbb{R}^m$. If $r \in \mathbb{R}^m$ and $x \in \mathbb{R}^n$ solve the augmented
+system
+$$\begin{bmatrix} I_m & A \\ A^T & 0 \end{bmatrix}\begin{bmatrix} r \\ x \end{bmatrix} =
+  \begin{bmatrix} b \\ 0 \end{bmatrix},$$
+that is, $r + Ax = b$ and $A^Tr = 0$, then $x$ minimizes $\|Ax - b\|_2$. The augmented matrix is
+nonsingular if and only if $\operatorname{rank}(A) = n$.
+
+The condition $\operatorname{rank}(A) = n$ is `LinearIndependent ℝ Aᵀ`, and nonsingularity is
+`IsUnit`. -/
 theorem equation_5_3_20 (A : Matrix (Fin m) (Fin n) ℝ) :
     (∀ (b r : EuclideanSpace ℝ (Fin m)) (x : EuclideanSpace ℝ (Fin n)),
         r + toEuclideanLin A x = b → toEuclideanLin Aᵀ r = 0 → IsLeastSquaresSolution A b x) ∧
@@ -1420,11 +1774,19 @@ theorem equation_5_3_20 (A : Matrix (Fin m) (Fin n) ℝ) :
   · have := isUnit_augmented_iff A
     rwa [conjTranspose_eq_transpose_of_trivial] at this
 
-/-- **§5.3.8, solving the augmented system by QR**: if `A = QR` (`n ≤ m`, `R₁ = R(1:n, 1:n)`),
-`Qᵀf = [f₁; f₂]`, `R₁ᵀ h = g`, `R₁ z = f₁ - h` and `p = Q [h; f₂]`, then
-`[I A; Aᵀ 0][p; z] = [f; g]` (the transformed system
-`[I_n 0 R₁; 0 I_{m-n} 0; R₁ᵀ 0 0][h; f₂; z] = [f₁; f₂; g]`). The vector `[h; f₂]` is `h` in the
-first `n` positions and `Qᵀf` below. -/
+/-- **Section 5.3.8** of [golub2013matrix], the solution of the augmented system by QR. Let
+$A \in \mathbb{R}^{m \times n}$ with $n \le m$ have a QR factorization $A = QR$, and let
+$R_1 = R(1{:}n, 1{:}n)$. Let $f \in \mathbb{R}^m$ and $g \in \mathbb{R}^n$, write
+$Q^Tf = [f_1; f_2]$ with $f_1 \in \mathbb{R}^n$, and let $h, z \in \mathbb{R}^n$ solve
+$R_1^Th = g$ and $R_1z = f_1 - h$. Then $p = Q[h; f_2]$ satisfies
+$$\begin{bmatrix} I & A \\ A^T & 0 \end{bmatrix}\begin{bmatrix} p \\ z \end{bmatrix} =
+  \begin{bmatrix} f \\ g \end{bmatrix}.$$
+
+The source obtains this from the transformed system
+$$\begin{bmatrix} I_n & 0 & R_1 \\ 0 & I_{m-n} & 0 \\ R_1^T & 0 & 0 \end{bmatrix}\begin{bmatrix}
+  h \\ f_2 \\ z \end{bmatrix} = \begin{bmatrix} f_1 \\ f_2 \\ g \end{bmatrix}.$$
+The vector $[h; f_2]$ is $h$ in the first $n$ positions and $Q^Tf$ below. No rank condition is
+needed, because $h$ and $z$ are given. -/
 theorem augmentedSolve_qr {A : Matrix (Fin m) (Fin n) ℝ} {Q : Matrix (Fin m) (Fin m) ℝ}
     {R : Matrix (Fin m) (Fin n) ℝ} (hQR : IsQR A Q R) (hnm : n ≤ m) (f : Fin m → ℝ)
     (g : Fin n → ℝ) {h z : Fin n → ℝ} (hh : (firstRows R hnm)ᵀ *ᵥ h = g)
@@ -1487,9 +1849,10 @@ section Programs
 
 variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 
-/-- `Qᵀ y` for the factored form stored by Algorithm 5.2.1 with the `β` it **returned**
-(convention 13): the reflectors `H₁, …, H_n` applied in turn, each by `householderApplyLeft` on the
-rows `j:m` of the single column `y`. -/
+/-- The product $Q^Ty$ for the factored form $Q = H_1 \cdots H_n$ that Algorithm 5.2.1 of
+[golub2013matrix] stores, with the $\beta_j$ that the factorization returned: the reflectors
+$H_1, \dots, H_n$ are applied in turn, each by `GolubVanLoan.Chapter05.householderApplyLeft` on
+the rows $j{:}m$ of the single column $y$. -/
 noncomputable def storedQTransposeMulVec (A : Matrix (Fin m) (Fin n) ℝ) (β : Fin n → ℝ)
     (y : Fin m → ℝ) : M (Fin m → ℝ) := do
   let Y ← (List.finRange n).foldlM (fun (Y : Matrix (Fin m) (Fin 1) ℝ) j =>
@@ -1497,8 +1860,9 @@ noncomputable def storedQTransposeMulVec (A : Matrix (Fin m) (Fin n) ℝ) (β : 
     (of fun i _ => y i)
   pure fun i => Y i 0
 
-/-- `Q y` for the factored form stored by Algorithm 5.2.1 with the returned `β`: the reflectors
-applied in the reverse order `H_n, …, H₁`. The twin of `storedQTransposeMulVec`. -/
+/-- The product $Qy$ for the factored form $Q = H_1 \cdots H_n$ that Algorithm 5.2.1 of
+[golub2013matrix] stores, with the returned $\beta_j$: the reflectors are applied in the reverse
+order $H_n, \dots, H_1$. -/
 noncomputable def storedQMulVec (A : Matrix (Fin m) (Fin n) ℝ) (β : Fin n → ℝ)
     (y : Fin m → ℝ) : M (Fin m → ℝ) := do
   let Y ← (List.finRange n).reverse.foldlM (fun (Y : Matrix (Fin m) (Fin 1) ℝ) j =>
@@ -1506,11 +1870,12 @@ noncomputable def storedQMulVec (A : Matrix (Fin m) (Fin n) ℝ) (β : Fin n →
     (of fun i _ => y i)
   pure fun i => Y i 0
 
-/-- One step of the iterative improvement of §5.3.8 at the iterate `(r, x)`, with the QR
-factorization `(A', β)` of Algorithm 5.2.1: the residuals `f = b - r - A x`, `g = -Aᵀ r` in the
-higher precision `rndHi`, then the QR solution of `[I A; Aᵀ 0][p; z] = [f; g]`
-(`augmentedSolve_qr`: `[f₁; f₂] = Qᵀ f`, `R₁ᵀ h = g`, `R₁ z = f₁ - h`, `p = Q [h; f₂]`), then
-`[r; x] += [p; z]`. -/
+/-- One step of the iterative improvement of §5.3.8 of [golub2013matrix] at the iterate $(r, x)$,
+with the QR factorization $(A', \beta)$ of Algorithm 5.2.1. The step computes the residuals
+$f = b - r - Ax$ and $g = -A^Tr$ with the higher-precision hook `rndHi`, solves the augmented
+system with right-hand side $[f; g]$ by QR as in `GolubVanLoan.Chapter05.augmentedSolve_qr`
+($[f_1; f_2] = Q^Tf$, $R_1^Th = g$, $R_1z = f_1 - h$, $p = Q[h; f_2]$), and returns
+$(r + p, x + z)$. -/
 noncomputable def lsImprovementStep (rndHi : ℝ → M ℝ) (hnm : n ≤ m)
     (A : Matrix (Fin m) (Fin n) ℝ) (b : Fin m → ℝ) (QR : Matrix (Fin m) (Fin n) ℝ × (Fin n → ℝ))
     (st : (Fin m → ℝ) × (Fin n → ℝ)) : M ((Fin m → ℝ) × (Fin n → ℝ)) := do
@@ -1538,7 +1903,8 @@ noncomputable def lsImprovementStep (rndHi : ℝ → M ℝ) (hnm : n ≤ m)
     pure (Function.update x k e)) st.2
   pure (r, x)
 
-/-- **§5.3.8, iterative improvement of the augmented system** (displayed, unnumbered):
+/-- **Section 5.3.8** of [golub2013matrix], iterative improvement of the augmented system (a
+displayed, unnumbered algorithm):
 ```
 r⁽⁰⁾ = 0, x⁽⁰⁾ = 0
 for k = 0, 1, …
@@ -1547,9 +1913,10 @@ for k = 0, 1, …
     [r⁽ᵏ⁺¹⁾; x⁽ᵏ⁺¹⁾] = [r⁽ᵏ⁾; x⁽ᵏ⁾] + [p⁽ᵏ⁾; z⁽ᵏ⁾]
 end
 ```
-"The residuals `f⁽ᵏ⁾` and `g⁽ᵏ⁾` must be computed in higher precision": a second rounding hook
-`rndHi`. The augmented systems are solved through the QR factorization of Algorithm 5.2.1, computed
-once, "stored in factored form" (`lsImprovementStep`). `fuel` is the number of iterations. -/
+The source requires that the residuals $f^{(k)}$ and $g^{(k)}$ be computed in higher precision;
+the program has a second rounding hook `rndHi` for them. The augmented systems are solved
+through the QR factorization of Algorithm 5.2.1, computed once and stored in factored form
+(`GolubVanLoan.Chapter05.lsImprovementStep`). The argument `fuel` is the number of iterations. -/
 noncomputable def lsIterativeImprovement (rndHi : ℝ → M ℝ) (hnm : n ≤ m)
     (A : Matrix (Fin m) (Fin n) ℝ) (b : Fin m → ℝ) (fuel : ℕ) :
     M ((Fin m → ℝ) × (Fin n → ℝ)) := do
@@ -1558,7 +1925,8 @@ noncomputable def lsIterativeImprovement (rndHi : ℝ → M ℝ) (hnm : n ≤ m)
 
 end Programs
 
-/-- A reflector with a vector vanishing off `indexFrom m j`, applied to a single column. -/
+/-- In exact arithmetic, the reflector $I - \beta vv^T$ with the stored Householder vector $v$ of
+column $j$, applied on the rows $j{:}m$ of a single column $Y$, gives $(I - \beta vv^T)Y$. -/
 private theorem householderApplyLeft_col_pure (A : Matrix (Fin m) (Fin n) ℝ) (β : ℝ) (j : Fin n)
     (Y : Matrix (Fin m) (Fin 1) ℝ) :
     Id.run (householderApplyLeft pure (storedHouseholderVec A j) β (indexFrom m j) [0] Y) =
@@ -1567,7 +1935,8 @@ private theorem householderApplyLeft_col_pure (A : Matrix (Fin m) (Fin n) ℝ) (
     (fun q => by rw [Fin.fin_one_eq_zero q]; exact List.mem_singleton_self 0)
     (fun _ hi => storedHouseholderVec_eq_zero A j hi) β Y
 
-/-- In exact arithmetic `storedQTransposeMulVec` computes `Qᵀ y` for `Q = factoredQ β A`. -/
+/-- In exact arithmetic, `GolubVanLoan.Chapter05.storedQTransposeMulVec` computes $Q^Ty$ for the
+factored form $Q$ = `GolubVanLoan.Chapter05.factoredQ β A`. -/
 theorem storedQTransposeMulVec_pure (A : Matrix (Fin m) (Fin n) ℝ) (β : Fin n → ℝ)
     (y : Fin m → ℝ) : Id.run (storedQTransposeMulVec pure A β y) = (factoredQ β A)ᵀ *ᵥ y := by
   simp only [storedQTransposeMulVec, Id.run_bind, Id.run_pure, List.idRun_foldlM,
@@ -1577,19 +1946,29 @@ theorem storedQTransposeMulVec_pure (A : Matrix (Fin m) (Fin n) ℝ) (β : Fin n
   funext i
   simp [Matrix.mul_apply, mulVec, dotProduct]
 
-/-- **Algorithm 5.3.2 with the returned `β`** (convention 13; the corrected reading of
-book-errata Ch. 5 #2): Algorithm 5.2.1, then `Qᵀb` from the stored vectors and the `β` that
-Algorithm 5.2.1 returned (`storedQTransposeMulVec`), then Algorithm 3.1.2 on
-`R(1:n, 1:n) x = (Qᵀb)(1:n)`. The least-squares solver of every consumer of §5.3 (as printed,
-`algorithm_5_3_2` fails when a returned `β_j` is `0`). -/
+/-- **Algorithm 5.3.2** of [golub2013matrix], with the returned $\beta$. The program runs Algorithm
+5.2.1 on $A$, computes $Q^Tb$ from the stored vectors and the $\beta_j$ that Algorithm 5.2.1
+returned (`GolubVanLoan.Chapter05.storedQTransposeMulVec`), and solves
+$R(1{:}n, 1{:}n)x = (Q^Tb)(1{:}n)$ by Algorithm 3.1.2.
+
+**Correction.** The printed Algorithm 5.3.2 recomputes $\beta_j = 2/v^Tv$ and fails when a
+returned $\beta_j$ is $0$ (`GolubVanLoan.Chapter05.algorithm_5_3_2_counterexample`). This
+program uses the returned $\beta_j$ instead.
+
+This is the least-squares solver that the later sections call. -/
 noncomputable def householderLS {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ) (hnm : n ≤ m)
     (A : Matrix (Fin m) (Fin n) ℝ) (b : Fin m → ℝ) : M (Fin n → ℝ) := do
   let QR ← algorithm_5_2_1 rnd A
   let c ← storedQTransposeMulVec rnd QR.1 QR.2 b
   Chapter03.algorithm_3_1_2 rnd ((upperPart QR.1).firstRows hnm) fun i => c (Fin.castLE hnm i)
 
-/-- **The Householder LS solution with the returned `β` solves the least-squares problem** (exact
-arithmetic) for every `A` of full column rank, with no condition on the Householder steps. -/
+/-- **Algorithm 5.3.2** of [golub2013matrix], with the returned $\beta$, correctness in exact
+arithmetic. Let $A \in \mathbb{R}^{m \times n}$ have full column rank, with $n \le m$, and let
+$b \in \mathbb{R}^m$. Then the output of `GolubVanLoan.Chapter05.householderLS` in exact
+arithmetic minimizes $\|Ax - b\|_2$.
+
+No condition on the Householder steps is needed, in contrast to
+`GolubVanLoan.Chapter05.algorithm_5_3_2_spec`. -/
 theorem householderLS_spec (hnm : n ≤ m) {A : Matrix (Fin m) (Fin n) ℝ}
     (hA : LinearIndependent ℝ Aᵀ) (b : Fin m → ℝ) :
     IsLeastSquaresSolution A (toLp 2 b) (toLp 2 (Id.run (householderLS pure hnm A b))) := by
@@ -1597,7 +1976,8 @@ theorem householderLS_spec (hnm : n ≤ m) {A : Matrix (Fin m) (Fin n) ℝ}
   simp only [householderLS, Id.run_bind, storedQTransposeMulVec_pure]
   exact isLeastSquaresSolution_solve_firstRows hnm hQR hA b
 
-/-- In exact arithmetic `storedQMulVec` computes `Q y` for `Q = factoredQ β A`. -/
+/-- In exact arithmetic, `GolubVanLoan.Chapter05.storedQMulVec` computes $Qy$ for the factored form
+$Q$ = `GolubVanLoan.Chapter05.factoredQ β A`. -/
 theorem storedQMulVec_pure (A : Matrix (Fin m) (Fin n) ℝ) (β : Fin n → ℝ) (y : Fin m → ℝ) :
     Id.run (storedQMulVec pure A β y) = factoredQ β A *ᵥ y := by
   simp only [storedQMulVec, Id.run_bind, Id.run_pure, List.idRun_foldlM,
@@ -1618,8 +1998,8 @@ theorem storedQMulVec_pure (A : Matrix (Fin m) (Fin n) ℝ) (β : Fin n → ℝ)
   funext i
   simp [Matrix.mul_apply, mulVec, dotProduct]
 
-/-- One exact step of the iterative improvement lands on the solution of the augmented system
-(5.3.20): whatever the current iterate, `r + A x = b` and `Aᵀ r = 0` afterwards. -/
+/-- One step of the iterative improvement in exact arithmetic, from any iterate $(r, x)$, gives the
+solution of the augmented system (5.3.20): afterwards $r + Ax = b$ and $A^Tr = 0$. -/
 private theorem lsImprovementStep_pure (hnm : n ≤ m) {A : Matrix (Fin m) (Fin n) ℝ}
     (hA : LinearIndependent ℝ Aᵀ) (b : Fin m → ℝ) (st : (Fin m → ℝ) × (Fin n → ℝ)) :
     (Id.run (lsImprovementStep pure pure hnm A b (Id.run (algorithm_5_2_1 pure A)) st)).1 +
@@ -1676,9 +2056,10 @@ private theorem lsImprovementStep_pure (hnm : n ≤ m) {A : Matrix (Fin m) (Fin 
   · simp only
     rw [mulVec_add, e2, hg, add_neg_cancel]
 
-/-- **Iterative improvement in exact arithmetic**: after at least one iteration the iterate is the
-exact solution of the augmented system (5.3.20) — `r + A x = b`, `Aᵀ r = 0` — hence `x` is the
-least-squares solution `x_LS` and `r = r_LS`. (Björck's digit-gain claim is not formalized.) -/
+/-- Iterative improvement of §5.3.8 of [golub2013matrix] in exact arithmetic. Let
+$A \in \mathbb{R}^{m \times n}$ have full column rank, with $n \le m$, let $b \in \mathbb{R}^m$,
+and run at least one iteration. Then the output $(r, x)$ solves the augmented system (5.3.20),
+that is, $r + Ax = b$ and $A^Tr = 0$, and so $x$ minimizes $\|Ax - b\|_2$. -/
 theorem lsIterativeImprovement_spec (hnm : n ≤ m) {A : Matrix (Fin m) (Fin n) ℝ}
     (hA : LinearIndependent ℝ Aᵀ) (b : Fin m → ℝ) {fuel : ℕ} (hfuel : 0 < fuel) :
     let out := Id.run (lsIterativeImprovement pure pure hnm A b fuel)
@@ -1706,12 +2087,16 @@ end Augmented
 
 section CrossProduct
 
-/-- **§5.3.9, the cross-product matrix** `v^c = [0 -v₃ v₂; v₃ 0 -v₁; -v₂ v₁ 0]` of `v ∈ ℝ³`, with
-`p × q = p^c q` (`crossMatrix_mulVec`). -/
+/-- **Section 5.3.9** of [golub2013matrix], the cross-product matrix. The **cross-product matrix**
+of $v \in \mathbb{R}^3$ is
+$$v^c = \begin{bmatrix} 0 & -v_3 & v_2 \\ v_3 & 0 & -v_1 \\ -v_2 & v_1 & 0 \end{bmatrix},$$
+so that $p \times q = p^cq$ (`GolubVanLoan.Chapter05.crossMatrix_mulVec`).
+
+The entries $v_1, v_2, v_3$ are `v 0`, `v 1`, `v 2`. -/
 def crossMatrix (v : Fin 3 → ℝ) : Matrix (Fin 3) (Fin 3) ℝ :=
   !![0, -v 2, v 1; v 2, 0, -v 0; -v 1, v 0, 0]
 
-/-- `p × q = p^c q = -q^c p = -(q × p)`. -/
+/-- For $p, q \in \mathbb{R}^3$, $p \times q = p^cq = -q^cp = -(q \times p)$. -/
 theorem crossMatrix_mulVec (p q : Fin 3 → ℝ) :
     p ⨯₃ q = crossMatrix p *ᵥ q ∧ p ⨯₃ q = -(crossMatrix q *ᵥ p) ∧ p ⨯₃ q = -(q ⨯₃ p) := by
   refine ⟨?_, ?_, (cross_anticomm q p).symm⟩ <;>
@@ -1719,16 +2104,20 @@ theorem crossMatrix_mulVec (p q : Fin 3 → ℝ) :
     fin_cases i <;> simp [crossMatrix, cross_apply, mulVec, dotProduct, Fin.sum_univ_three] <;>
       ring
 
-/-- The entries of `(a bᵀ) x = a (bᵀx)`. -/
+/-- For $a, b, x \in \mathbb{R}^k$, the entries of $(ab^T)x$ are $((ab^T)x)_i = a_i(b^Tx)$. -/
 theorem vecMulVec_mulVec_apply {k : ℕ} (a b x : Fin k → ℝ) (i : Fin k) :
     (vecMulVec a b *ᵥ x) i = a i * (b ⬝ᵥ x) := by
   simp only [mulVec, dotProduct, vecMulVec_apply, Finset.mul_sum, mul_assoc]
 
-/-- **(5.3.21)**: `p × q ∈ span{p, q}⊥`. -/
+/-- **Equation (5.3.21)** of [golub2013matrix]. For $p, q \in \mathbb{R}^3$, the cross product
+$p \times q$ is orthogonal to $p$ and to $q$, that is, $p \times q \in \operatorname{span}\{p,
+q\}^\perp$. -/
 theorem equation_5_3_21 (p q : Fin 3 → ℝ) : p ⬝ᵥ (p ⨯₃ q) = 0 ∧ q ⬝ᵥ (p ⨯₃ q) = 0 :=
   ⟨dot_self_cross p q, dot_cross_self p q⟩
 
-/-- **(5.3.22)**: `(p × q) × r = (p^c q)^c r = (q pᵀ - p qᵀ) r = (pᵀr) q - (qᵀr) p`. -/
+/-- **Equation (5.3.22)** of [golub2013matrix]. For $p, q, r \in \mathbb{R}^3$,
+$$(p \times q) \times r = (p^cq)^cr = (qp^T - pq^T)r = (p^Tr)q - (q^Tr)p.$$
+-/
 theorem equation_5_3_22 (p q r : Fin 3 → ℝ) :
     (p ⨯₃ q) ⨯₃ r = crossMatrix (crossMatrix p *ᵥ q) *ᵥ r ∧
       (p ⨯₃ q) ⨯₃ r = (vecMulVec q p - vecMulVec p q) *ᵥ r ∧
@@ -1739,12 +2128,17 @@ theorem equation_5_3_22 (p q r : Fin 3 → ℝ) :
   ext i
   simp [mul_comm]
 
-/-- **(5.3.23)**: `(p × q)ᵀ(r × s) = det([p q]ᵀ[r s])` (the Binet–Cauchy identity). -/
+/-- **Equation (5.3.23)** of [golub2013matrix] (the Binet–Cauchy identity). For
+$p, q, r, s \in \mathbb{R}^3$,
+$$(p \times q)^T(r \times s) = \det\left([p\ q]^T[r\ s]\right) = \det\begin{bmatrix} p^Tr & p^Ts
+  \\ q^Tr & q^Ts \end{bmatrix}.$$
+-/
 theorem equation_5_3_23 (p q r s : Fin 3 → ℝ) :
     (p ⨯₃ q) ⬝ᵥ (r ⨯₃ s) = det !![p ⬝ᵥ r, p ⬝ᵥ s; q ⬝ᵥ r, q ⬝ᵥ s] := by
   rw [cross_dot_cross, det_fin_two_of]
 
-/-- **(5.3.24)**: `p^c p^c = p pᵀ - ‖p‖₂² I₃`. -/
+/-- **Equation (5.3.24)** of [golub2013matrix]. For $p \in \mathbb{R}^3$,
+$p^cp^c = pp^T - \|p\|_2^2I_3$. -/
 theorem equation_5_3_24 (p : Fin 3 → ℝ) :
     crossMatrix p * crossMatrix p = vecMulVec p p - (p ⬝ᵥ p) • (1 : Matrix (Fin 3) (Fin 3) ℝ) := by
   ext i j
@@ -1752,7 +2146,10 @@ theorem equation_5_3_24 (p : Fin 3 → ℝ) :
     simp [crossMatrix, Matrix.mul_apply, Fin.sum_univ_three, vecMulVec_apply, dotProduct] <;>
     ring
 
-/-- **(5.3.25)**: `‖p^c q‖₂² = ‖p‖₂² ‖q‖₂² (1 - (pᵀq / (‖p‖₂ ‖q‖₂))²)` for `p, q ≠ 0`. -/
+/-- **Equation (5.3.25)** of [golub2013matrix]. For nonzero $p, q \in \mathbb{R}^3$,
+$$\|p^cq\|_2^2 = \|p\|_2^2\|q\|_2^2\left(1 -
+  \left(\frac{p^Tq}{\|p\|_2\|q\|_2}\right)^2\right).$$
+-/
 theorem equation_5_3_25 {p q : Fin 3 → ℝ} (hp : p ≠ 0) (hq : q ≠ 0) :
     ‖(toLp 2 (crossMatrix p *ᵥ q) : EuclideanSpace ℝ (Fin 3))‖ ^ 2 =
       ‖(toLp 2 p : EuclideanSpace ℝ (Fin 3))‖ ^ 2 * ‖(toLp 2 q : EuclideanSpace ℝ (Fin 3))‖ ^ 2 *
@@ -1767,8 +2164,7 @@ theorem equation_5_3_25 {p q : Fin 3 → ℝ} (hp : p ≠ 0) (hq : q ≠ 0) :
   have hq' : q ⬝ᵥ q ≠ 0 := by rw [dotProduct_self_eq_norm_sq]; positivity
   field_simp
 
-/-- `(z - y) ⊥ v` makes `z` the point of the line `{z + τ v}` closest to `y`: the squared distance
-from `y` to `z + τ v` is `‖z - y‖² + τ² ‖v‖²`. -/
+/-- If $v^Tw = 0$, then $\|w\|_2 \le \|w + \tau v\|_2$ for every $\tau \in \mathbb{R}$. -/
 private theorem norm_le_of_dotProduct_eq_zero {v w : Fin 3 → ℝ} (h : v ⬝ᵥ w = 0) (τ : ℝ) :
     ‖(toLp 2 w : EuclideanSpace ℝ (Fin 3))‖ ≤
       ‖(toLp 2 (w + τ • v) : EuclideanSpace ℝ (Fin 3))‖ := by
@@ -1782,9 +2178,13 @@ private theorem norm_le_of_dotProduct_eq_zero {v w : Fin 3 → ℝ} (h : v ⬝�
   rw [this]
   nlinarith [sq_nonneg τ]
 
-/-- **(5.3.26), point–line**: for `p₁ ≠ p₂`, `v = p₂ - p₁`, the point
-`z = y + (1/vᵀv) v^c v^c (y - p₁)` lies on the line `L = {p₁ + τ v}` and is the point of `L`
-closest to `y`. -/
+/-- **Equation (5.3.26)** of [golub2013matrix], the nearness of a point and a line. Let
+$p_1 \neq p_2$ in $\mathbb{R}^3$, let $v = p_2 - p_1$, and let
+$L = \{p_1 + \tau v : \tau \in \mathbb{R}\}$ be the line through $p_1$ and $p_2$. For
+$y \in \mathbb{R}^3$ the point
+$$z = y + \frac{1}{v^Tv}v^cv^c(y - p_1)$$
+lies on $L$, and it is the point of $L$ closest to $y$: $\|z - y\|_2 \le \|p_1 + \tau v - y\|_2$
+for every $\tau \in \mathbb{R}$. -/
 theorem equation_5_3_26 {p₁ p₂ : Fin 3 → ℝ} (hp : p₁ ≠ p₂) (y : Fin 3 → ℝ) :
     let v := p₂ - p₁
     let z := y + (1 / (v ⬝ᵥ v)) • ((crossMatrix v * crossMatrix v) *ᵥ (y - p₁))
@@ -1811,9 +2211,9 @@ theorem equation_5_3_26 {p₁ p₂ : Fin 3 → ℝ} (hp : p₁ ≠ p₂) (y : Fi
   have := norm_le_of_dotProduct_eq_zero horth (τ - t)
   rwa [show z - y + (τ - t) • v = p₁ + τ • v - y by rw [hz, sub_smul]; abel] at this
 
-/-- The two closest points of two non-parallel lines, as coefficients along the lines: with
-`d₀ = q₁ - p₁`, `r = v × w ≠ 0`, `α = wᵀ r^c d₀ / rᵀr`, `β = vᵀ r^c d₀ / rᵀr`, the difference
-`(p₁ + α v) - (q₁ + β w)` is orthogonal to both `v` and `w`. -/
+/-- For $v, w, d_0 \in \mathbb{R}^3$ with $r = v \times w \neq 0$, the numbers
+$\alpha = w^Tr^cd_0/r^Tr$ and $\beta = v^Tr^cd_0/r^Tr$ make $\alpha v - \beta w - d_0$
+orthogonal to $v$ and to $w$. -/
 private theorem lineLine_orthogonal {v w d₀ : Fin 3 → ℝ} (hr : v ⨯₃ w ≠ 0) :
     let α := w ⬝ᵥ (crossMatrix (v ⨯₃ w) *ᵥ d₀) / ((v ⨯₃ w) ⬝ᵥ (v ⨯₃ w))
     let β := v ⬝ᵥ (crossMatrix (v ⨯₃ w) *ᵥ d₀) / ((v ⨯₃ w) ⬝ᵥ (v ⨯₃ w))
@@ -1830,11 +2230,17 @@ private theorem lineLine_orthogonal {v w d₀ : Fin 3 → ℝ} (hr : v ⨯₃ w 
   rw [dotProduct_comm w v] at *
   constructor <;> field_simp <;> rw [hNe] <;> ring
 
-/-- **(5.3.27), line–line**: for lines `L₁ = {p₁ + τ v}`, `L₂ = {q₁ + τ w}` through `p₁, p₂` and
-`q₁, q₂` (`v = p₂ - p₁`, `w = q₂ - q₁`) with `r = v^c w` **nonzero** (non-parallel lines; the book
-omits the hypothesis, and for `r = 0` the formula divides by zero), the points
-`z₁ = p₁ + (1/rᵀr) v wᵀ r^c (q₁ - p₁)` and `z₂ = q₁ + (1/rᵀr) w vᵀ r^c (q₁ - p₁)` lie on `L₁`
-and `L₂` and minimize `‖z₁ - z₂‖₂` over all pairs of points of the two lines. -/
+/-- **Equation (5.3.27)** of [golub2013matrix], the nearness of two lines. Let
+$p_1, p_2, q_1, q_2 \in \mathbb{R}^3$, let $v = p_2 - p_1$ and $w = q_2 - q_1$, and let
+$L_1 = \{p_1 + \tau v\}$ and $L_2 = \{q_1 + \tau w\}$. Assume that $r = v^cw$ is nonzero, that
+is, the lines are not parallel. Then the points
+$$z_1 = p_1 + \frac{1}{r^Tr}vw^Tr^c(q_1 - p_1), \qquad z_2 = q_1 + \frac{1}{r^Tr}wv^Tr^c(q_1 -
+  p_1)$$
+lie on $L_1$ and $L_2$, and they minimize the distance between the lines: $\|z_1 - z_2\|_2 \le
+\|(p_1 + \tau_1v) - (q_1 + \tau_2w)\|_2$ for all $\tau_1, \tau_2 \in \mathbb{R}$.
+
+**Correction.** The source omits the hypothesis $r \neq 0$. For $r = 0$ the formulas divide by
+zero. -/
 theorem equation_5_3_27 {p₁ p₂ q₁ q₂ : Fin 3 → ℝ}
     (hr : crossMatrix (p₂ - p₁) *ᵥ (q₂ - q₁) ≠ 0) :
     let v := p₂ - p₁
@@ -1876,8 +2282,15 @@ theorem equation_5_3_27 {p₁ p₂ q₁ q₂ : Fin 3 → ℝ}
   rw [add_dotProduct, dotProduct_add, dotProduct_add, hge, dotProduct_comm g e, hge]
   linarith
 
-/-- **(5.3.28)**: the point `z₂ = q₁ + (1/rᵀr) w vᵀ r^c (q₁ - p₁)` of `L₂` closest to `L₁` (the
-second half of `equation_5_3_27`, under the same non-parallelism hypothesis). -/
+/-- **Equation (5.3.28)** of [golub2013matrix]. Let $p_1, p_2, q_1, q_2$, $v$, $w$, $r$, $z_1$,
+$z_2$ and the lines $L_1$, $L_2$ be as in (5.3.27), with $r = v^cw \neq 0$. Then the point
+$$z_2 = q_1 + \frac{1}{r^Tr}wv^Tr^c(q_1 - p_1)$$
+lies on $L_2$, and $\|z_1 - z_2\|_2 \le \|(p_1 + \tau_1v) - (q_1 + \tau_2w)\|_2$ for all
+$\tau_1, \tau_2 \in \mathbb{R}$: $z_2$ is the point of $L_2$ closest to $L_1$.
+
+**Correction.** As for (5.3.27), the source omits the hypothesis $r \neq 0$.
+
+This is the second half of `GolubVanLoan.Chapter05.equation_5_3_27`. -/
 theorem equation_5_3_28 {p₁ p₂ q₁ q₂ : Fin 3 → ℝ}
     (hr : crossMatrix (p₂ - p₁) *ᵥ (q₂ - q₁) ≠ 0) :
     let v := p₂ - p₁
@@ -1890,10 +2303,16 @@ theorem equation_5_3_28 {p₁ p₂ q₁ q₂ : Fin 3 → ℝ}
         ‖(toLp 2 ((p₁ + τ₁ • v) - (q₁ + τ₂ • w)) : EuclideanSpace ℝ (Fin 3))‖ :=
   ⟨(equation_5_3_27 hr).2.1, (equation_5_3_27 hr).2.2⟩
 
-/-- **(5.3.29), point–plane**: for `p₁, p₂, p₃` **not collinear** (`v = (p₂ - p₁)^c (p₃ - p₁) ≠ 0`;
-the book's "three distinct points" is not enough), the point
-`z = p₁ - (1/vᵀv) v^c v^c (y - p₁)` lies on the plane `P = {x : xᵀv = p₁ᵀv}` through the three
-points, and is the point of `P` closest to `y`. -/
+/-- **Equation (5.3.29)** of [golub2013matrix], the nearness of a point and a plane. Let
+$p_1, p_2, p_3 \in \mathbb{R}^3$ be such that $v = (p_2 - p_1)^c(p_3 - p_1)$ is nonzero, that
+is, the points are not collinear, and let $P = \{x : x^Tv = p_1^Tv\}$. Then $p_1$, $p_2$ and
+$p_3$ lie on $P$. For $y \in \mathbb{R}^3$ the point
+$$z = p_1 - \frac{1}{v^Tv}v^cv^c(y - p_1)$$
+lies on $P$, and it is the point of $P$ closest to $y$: $\|z - y\|_2 \le \|x - y\|_2$ for every
+$x \in P$.
+
+**Correction.** The source assumes three distinct points. This is not enough: the points must
+not be collinear, so that $v \neq 0$. -/
 theorem equation_5_3_29 {p₁ p₂ p₃ : Fin 3 → ℝ}
     (hv : crossMatrix (p₂ - p₁) *ᵥ (p₃ - p₁) ≠ 0) (y : Fin 3 → ℝ) :
     let v := crossMatrix (p₂ - p₁) *ᵥ (p₃ - p₁)

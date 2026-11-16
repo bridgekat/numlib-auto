@@ -9,55 +9,113 @@ import Numlib.LinearAlgebra.Matrix.SymmetricIndefinite
 import NumlibSurface.GolubVanLoan.Chapter04.Section02
 
 /-!
-# Golub–Van Loan §4.4: symmetric indefinite systems
+# Golub and Van Loan, Section 4.4: Symmetric indefinite systems
 
-Surface file for [golub2013matrix] §4.4: the Aasen factorization `P A Pᵀ = L T Lᵀ` (4.4.1) and the
-block `L D Lᵀ` factorization of the diagonal pivoting methods (4.4.2), with their solve chains; the
-Parlett–Reid update at the heart of (4.4.3); the Hessenberg relation (4.4.5) behind Aasen's
-method, and Aasen's method without pivoting (4.4.14) as a program (`aasenNoPivot`) with its exact
-specification; the pivot step (4.4.15) of Bunch and Parlett and the true multiplier bound of
-their pivot strategy; the equilibrium systems of §4.4.5 ((4.4.18), the Cholesky-based
-factorization, (4.4.20)). The section has no numbered theorem and no numbered algorithm.
+This module formalizes §4.4 of [golub2013matrix], the factorizations of a symmetric matrix
+$A \in \mathbb{R}^{n \times n}$ that need not be definite. Aasen's method computes $PAP^T = LTL^T$
+with $P$ a permutation, $L$ unit lower triangular and $T$ symmetric tridiagonal, (4.4.1). The
+diagonal pivoting methods compute $PAP^T = LDL^T$ with $D$ a direct sum of $1 \times 1$ and
+$2 \times 2$ pivot blocks, (4.4.2). Each factorization reduces $Ax = b$ to three simpler systems.
+The section has no numbered theorem and no numbered algorithm.
+
+The module states the existence of both factorizations with their solve chains, the Parlett–Reid
+update of §4.4.1, the Hessenberg relation (4.4.5) behind Aasen's method, and Aasen's method without
+pivoting (4.4.14) as a program with its exact correctness. For the diagonal pivoting methods it
+states the pivot step (4.4.15), the growth bounds (4.4.16)–(4.4.17) of the Bunch–Parlett strategy,
+its parameter $\alpha = (1 + \sqrt{17})/8$, and the true bound on its multipliers. For the
+equilibrium systems $\begin{bmatrix} C & B \\ B^T & 0 \end{bmatrix}$ of §4.4.5 it states
+nonsingularity (4.4.18), a Cholesky-based factorization, the formula (4.4.20) for $y$, and the bound
+(4.4.21). The proofs specialize `Numlib.LinearAlgebra.Matrix.SymmetricIndefinite`,
+`Numlib.LinearAlgebra.Matrix.SchurComplement` and `Numlib.Direct.SymmetricIndefinite`, and use the
+Cholesky factor of §4.2.
+
+## Main definitions
+
+* (4.4.14), `GolubVanLoan.Chapter04.aasenNoPivot`: Aasen's method without pivoting, with its parts
+  `GolubVanLoan.Chapter04.aasenH` and `GolubVanLoan.Chapter04.aasenColumn`.
+
+## Main results
+
+* (4.4.1), `GolubVanLoan.Chapter04.equation_4_4_1`: every symmetric $A$ has an Aasen factorization
+  $PAP^T = LTL^T$ with $|\ell_{ij}| \le 1$.
+* (4.4.2), `GolubVanLoan.Chapter04.equation_4_4_2`: every symmetric $A$ has a block factorization
+  $PAP^T = LDL^T$.
+* (4.4.2), `GolubVanLoan.Chapter04.equation_4_4_2_multipliers`: the factorization can be chosen with
+  $|\ell_{ij}| \le \max(1/\alpha, 1/(1 - \alpha))$.
+* §4.4, `GolubVanLoan.Chapter04.aasen_solve` and `GolubVanLoan.Chapter04.blockLDL_solve`: the solve
+  chains of (4.4.1) and (4.4.2).
+* §4.4.1, `GolubVanLoan.Chapter04.parlettReid_update`: $(I - we_1^T) B (I - we_1^T)^T = B - wu^T -
+  uw^T$.
+* (4.4.5), `GolubVanLoan.Chapter04.equation_4_4_5`: $H = TL^T$ is upper Hessenberg and $A = LH$.
+* (4.4.14), `GolubVanLoan.Chapter04.equation_4_4_14`: Aasen's method without pivoting computes an
+  Aasen factorization.
+* (4.4.15), `GolubVanLoan.Chapter04.equation_4_4_15`: the block factorization with a nonsingular
+  pivot block $E$.
+* §4.4.3, `GolubVanLoan.Chapter04.exists_nonsingular_pivot`: a nonzero symmetric matrix has a
+  nonsingular pivot of order one or two.
+* (4.4.16), `GolubVanLoan.Chapter04.equation_4_4_16`: the growth bound $(1 + \alpha^{-1}) \mu_0$ for
+  a $1 \times 1$ pivot.
+* (4.4.17), `GolubVanLoan.Chapter04.equation_4_4_17`: the growth bound
+  $\frac{3 - \alpha}{1 - \alpha} \mu_0$ for a $2 \times 2$ pivot.
+* §4.4.3, `GolubVanLoan.Chapter04.bunchParlett_alpha`: $\alpha = (1 + \sqrt{17})/8$ equates the two
+  growth factors.
+* §4.4.5, `GolubVanLoan.Chapter04.equilibrium_factorization`: the factorization of the equilibrium
+  matrix through Cholesky factors.
+* (4.4.18), `GolubVanLoan.Chapter04.equation_4_4_18`: the equilibrium matrix is nonsingular.
+* (4.4.20), `GolubVanLoan.Chapter04.equation_4_4_20`: $y = (B^T C^{-1} B)^{-1} B^T C^{-1} f$ when
+  $g = 0$.
+* (4.4.21), `GolubVanLoan.Chapter04.equation_4_4_21`: $\|(B^T C^{-1} B)^{-1} B^T C^{-1}\|_2$ is
+  bounded independently of the positive diagonal $C$.
 
 ## Conventions
 
-Real symmetric `A : Matrix (Fin n) (Fin n) ℝ`, 0-based. A permutation `P` is a
-`σ : Equiv.Perm (Fin n)` acting as `A.submatrix σ σ = P A Pᵀ`. The factorizations are the backbone
-specifications `Matrix.IsAasen A L T` (`A = L T Lᵀ`, `L` unit lower triangular with first column
-`e₁`, `T` symmetric tridiagonal) and `Matrix.IsBlockLDL A L D` (`A = L D Lᵀ`, `D` a direct sum of
-`1 × 1` and `2 × 2` pivot blocks). The equilibrium matrix `[C B; Bᵀ 0]` is the backbone's
-`Matrix.saddleMatrix C B 0 = fromBlocks C B Bᴴ 0`, which over `ℝ` is `fromBlocks C B Bᵀ 0`.
+* Matrices are real, `A : Matrix (Fin n) (Fin n) ℝ`, and indices are 0-based.
+* A permutation $P$ is a permutation `σ : Equiv.Perm (Fin n)`, and $PAP^T$ is `A.submatrix σ σ`.
+* The Aasen factorization $A = LTL^T$ is `Matrix.IsAasen A L T`: $L$ is unit lower triangular with
+  first column $e_1$, and $T$ is symmetric tridiagonal.
+* The block factorization $A = LDL^T$ is `Matrix.IsBlockLDL A L D`: $L$ is unit lower triangular,
+  $D$ is a direct sum of $1 \times 1$ and $2 \times 2$ pivot blocks, and $L$ is the identity on each
+  $2 \times 2$ diagonal block.
+* The equilibrium matrix $\begin{bmatrix} C & B \\ B^T & 0 \end{bmatrix}$ is `fromBlocks C B Bᵀ 0`,
+  which is the saddle-point matrix `Matrix.saddleMatrix C B 0` of the backbone.
+* "$B$ has full column rank" is `Function.Injective B.mulVec`.
 
-Aasen's method (4.4.14) is the book's only form of the method, a display rather than a numbered
-algorithm, so it is a content-named program whose exact specification carries the display's
-number (`equation_4_4_14`). It follows the algorithm conventions of `NumlibSurface/GolubVanLoan`:
-every product, sum, difference and quotient passes through the rounding hook, the inner products
-`L(j, 1:j−1) · h(1:j−1)` are running differences from the entry of `A`, and the state holds the
-arrays `α`, `β`, `L` of the book, `ℕ`-indexed. The exact specification is read off the run in
-the exact model through a loop invariant: after step `j`, the columns `≤ j` satisfy the
-recurrences (4.4.10)–(4.4.13), which is what `A = L H`, `H = T Lᵀ`, asks of them.
+## Implementation notes
 
-## Sources
+* Aasen's method (4.4.14) is the only form of the method in the source. It is a display, not a
+  numbered algorithm, so it is the program `GolubVanLoan.Chapter04.aasenNoPivot`, and its exact
+  specification carries the number of the display.
+* The program follows the algorithm conventions of `NumlibSurface.GolubVanLoan`. Every product, sum,
+  difference and quotient passes through the rounding hook. The inner products
+  $L(j, 1{:}j-1) \cdot h(1{:}j-1)$ are running differences from the entry of $A$. The state holds
+  the arrays $\alpha$, $\beta$ and $L$ of the source, indexed by `ℕ`.
+* The exact specification is read off the run in the exact model through a loop invariant: after
+  step $j$, the columns up to $j$ satisfy the recurrences (4.4.10)–(4.4.13), which is what $A = LH$
+  with $H = TL^T$ requires of them.
+* The growth bounds (4.4.16)–(4.4.17), the parameter $\alpha = (1 + \sqrt{17})/8$ and the bound
+  (4.4.21) of Stewart and Todd are restatements of results of `Numlib.Direct.SymmetricIndefinite`.
 
-Backbone `Numlib/LinearAlgebra/Matrix/SymmetricIndefinite` (the specifications, their existence
-theorems, the Bunch–Parlett multiplier bound, the solve chains) and
-`Numlib/LinearAlgebra/Matrix/SchurComplement` (the block factorization and the saddle-point
-matrix), chapter 4's §4.2 surface for the Cholesky factor. The derivation steps (4.4.3)–(4.4.4),
-(4.4.6)–(4.4.13) (the content of `equation_4_4_14`), the Bunch–Kaufman strategy and
-the stability claims of §4.4.4 are not formalized. The growth bounds (4.4.16)–(4.4.17), the
-parameter `α = (1 + √17)/8` and the Stewart–Todd bound (4.4.21) are restatements of the backbone
-module `Numlib/Direct/SymmetricIndefinite`.
+## Deviations from the source
 
-## Readings and errata
+* **(4.4.2)** (correction). The source says that $P$ is chosen so that $|\ell_{ij}| \le 1$. This is
+  false for the Bunch–Parlett strategy of the section. The library proves
+  $|\ell_{ij}| \le \max(1/\alpha, 1/(1 - \alpha))$. See
+  `GolubVanLoan.Chapter04.equation_4_4_2_multipliers`.
+* **(4.4.9)** (typo). The vector $[0; \ell_{52}; \ell_{53}; \ell_{53}; \ell_{54}]$ should read
+  $[0; \ell_{52}; \ell_{53}; \ell_{54}; 1]$. See `GolubVanLoan.Chapter04.equation_4_4_14`.
+* **(4.4.10)** (typo). The loop starts at $k = 1$, which needs an undefined $\beta_0$. The program
+  follows (4.4.14), whose loop starts at $k = 2$. See `GolubVanLoan.Chapter04.aasenNoPivot`.
+* **(4.4.15)** (generalization). The pivot block $E$ need not be symmetric for the displayed
+  factorization. See `GolubVanLoan.Chapter04.equation_4_4_15`.
+* **(4.4.20)** (generalization). The source assumes that $C$ is diagonal. The library assumes only
+  that $C$ is symmetric positive definite. See `GolubVanLoan.Chapter04.equation_4_4_20`.
 
-(4.4.2) states that `P` "is chosen so that the entries in the unit lower triangular `L` satisfy
-`|ℓ_ij| ≤ 1`"; this is false for the Bunch–Parlett strategy the section describes (at
-`α = (1 + √17)/8`, `A = [1 3/2; 3/2 0]` takes a `1 × 1` pivot with multiplier `3/2`). The true
-bound is `max(1/α, 1/(1 − α))` (`equation_4_4_2_multipliers`). (4.4.20) is stated for a diagonal
-`C`; the diagonality is not needed. In (4.4.9) the vector `[0; ℓ₅₂; ℓ₅₃; ℓ₅₃; ℓ₅₄]` should read
-`[0; ℓ₅₂; ℓ₅₃; ℓ₅₄; 1]`, and (4.4.10) loops from `k = 1`, which needs an undefined `β₀`; the program
-follows (4.4.14), whose loop starts at `k = 2`. The symmetric pivot block `E` of (4.4.15) need
-not be symmetric for the displayed factorization.
+## Not formalized
+
+* **The derivation steps (4.4.3)–(4.4.4) and (4.4.6)–(4.4.13).** Their content is
+  `GolubVanLoan.Chapter04.equation_4_4_14`.
+* **The Bunch–Kaufman strategy.**
+* **The stability claims of §4.4.4.**
 -/
 
 open FloatingPoint Finset Matrix
@@ -68,43 +126,76 @@ variable {n : ℕ}
 
 /-! ### (4.4.1)–(4.4.2) and their solve chains -/
 
-/-- **(4.4.1).** Aasen's factorization "`P A Pᵀ = L T Lᵀ` where `L = (ℓ_ij)` is unit lower
-triangular and `T` is tridiagonal. `P` is a permutation chosen such that `|ℓ_ij| ≤ 1`": every
-symmetric `A` has such a factorization, with `L(:, 1) = e₁` and `T` symmetric. -/
+/-- **Equation (4.4.1)** of [golub2013matrix] (Aasen's factorization). Let
+$A \in \mathbb{R}^{n \times n}$ be symmetric. Then there are a permutation matrix $P$, a unit
+lower triangular $L$ with $L(:, 1) = e_1$ and a symmetric tridiagonal $T$ such that
+$$PAP^T = LTL^T, \qquad |\ell_{ij}| \le 1 \text{ for all } i, j.$$
+
+The source says that $P$ is a permutation chosen such that $|\ell_{ij}| \le 1$. The
+factorization is `Matrix.IsAasen (A.submatrix σ σ) L T`. -/
 theorem equation_4_4_1 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) :
     ∃ (σ : Equiv.Perm (Fin n)) (L T : Matrix (Fin n) (Fin n) ℝ),
       IsAasen (A.submatrix σ σ) L T ∧ ∀ i j, |L i j| ≤ 1 :=
   exists_perm_isAasen hA
 
-/-- **(4.4.2).** The diagonal pivoting method "computes a permutation `P` such that
-`P A Pᵀ = L D Lᵀ` where `D` is a direct sum of 1-by-1 and 2-by-2 pivot blocks": every symmetric
-`A` has such a factorization with `L` unit lower triangular. (The book's claim that `P` can be
-chosen with `|ℓ_ij| ≤ 1` is false for its pivot strategy; see `equation_4_4_2_multipliers`.) -/
+/-- **Equation (4.4.2)** of [golub2013matrix] (the diagonal pivoting factorization). Let
+$A \in \mathbb{R}^{n \times n}$ be symmetric. Then there are a permutation matrix $P$, a unit
+lower triangular $L$ and a matrix $D$ that is a direct sum of $1 \times 1$ and $2 \times 2$
+pivot blocks such that
+$$PAP^T = LDL^T,$$
+with $L$ the identity on each $2 \times 2$ diagonal block.
+
+**Correction.** The source also says that $P$ can be chosen so that $|\ell_{ij}| \le 1$. This is
+false for the pivot strategy of the section, and the theorem omits it. The true bound is
+`GolubVanLoan.Chapter04.equation_4_4_2_multipliers`.
+
+The factorization is `Matrix.IsBlockLDL (A.submatrix σ σ) L D`. -/
 theorem equation_4_4_2 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) :
     ∃ (σ : Equiv.Perm (Fin n)) (L D : Matrix (Fin n) (Fin n) ℝ),
       IsBlockLDL (A.submatrix σ σ) L D :=
   exists_perm_isBlockLDL hA
 
-/-- **(4.4.2), the multiplier clause in its true form.** With the Bunch–Parlett pivot strategy of
-§4.4.3 at a parameter `α ∈ (0, 1)`, the factorization (4.4.2) can be chosen with
-`|ℓ_ij| ≤ max(1/α, 1/(1 − α))`: a `1 × 1` pivot has `|e| ≥ α μ₀`, so its multipliers are at most
-`1/α`, and a `2 × 2` pivot has `|det E| ≥ (1 − α²) μ₀²`, so its multipliers are at most
-`1/(1 − α)`. (At the book's `α = (1 + √17)/8` the bound is about `2.78`, not the printed `1`.) -/
+/-- **Equation (4.4.2)** of [golub2013matrix], the bound on the multipliers. Let
+$A \in \mathbb{R}^{n \times n}$ be symmetric and let $0 < \alpha < 1$. Then there are a
+permutation matrix $P$, a unit lower triangular $L$ and a direct sum $D$ of $1 \times 1$ and
+$2 \times 2$ pivot blocks with $PAP^T = LDL^T$ and
+$$|\ell_{ij}| \le \max\left( \frac{1}{\alpha}, \frac{1}{1 - \alpha} \right) \quad \text{for all
+  } i, j.$$
+
+**Correction.** The source prints the bound $|\ell_{ij}| \le 1$. It is false for the
+Bunch–Parlett strategy of §4.4.3: at $\alpha = (1 + \sqrt{17})/8$, the matrix $\begin{bmatrix} 1
+& 3/2 \\ 3/2 & 0 \end{bmatrix}$ takes a $1 \times 1$ pivot with multiplier $3/2$. At this
+$\alpha$ the true bound is about $2.78$.
+
+The factorization comes from the Bunch–Parlett strategy with parameter $\alpha$. A $1 \times 1$
+pivot $e$ has $|e| \ge \alpha \mu_0$, so its multipliers are at most $1/\alpha$; a $2 \times 2$
+pivot $E$ has $|\det E| \ge (1 - \alpha^2) \mu_0^2$, so its multipliers are at most
+$1/(1 - \alpha)$. Here $\mu_0 = \max_{i,j} |a_{ij}|$. -/
 theorem equation_4_4_2_multipliers {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) {α : ℝ}
     (hα0 : 0 < α) (hα1 : α < 1) :
     ∃ (σ : Equiv.Perm (Fin n)) (L D : Matrix (Fin n) (Fin n) ℝ),
       IsBlockLDL (A.submatrix σ σ) L D ∧ ∀ i j, |L i j| ≤ max α⁻¹ (1 - α)⁻¹ :=
   exists_perm_isBlockLDL_abs_le hA hα0 hα1
 
-/-- **§4.4, the solve chain of (4.4.1).** "`P A Pᵀ = L T Lᵀ`, `L z = P b`, `T w = z`, `Lᵀ y = w`,
-`x = Pᵀ y` ⇒ `A x = b`" (`P b = b ∘ σ`, `Pᵀ y = y ∘ σ⁻¹`). -/
+/-- **Section 4.4** of [golub2013matrix], the solve chain of (4.4.1). Let
+$A, L, T \in \mathbb{R}^{n \times n}$ and let $P$ be a permutation matrix with $PAP^T = LTL^T$
+an Aasen factorization. If $b, z, w, y \in \mathbb{R}^n$ satisfy
+$$Lz = Pb, \qquad Tw = z, \qquad L^T y = w,$$
+then $x = P^T y$ satisfies $Ax = b$.
+
+The vector $Pb$ is `b ∘ σ`, and $P^T y$ is `y ∘ σ.symm`. -/
 theorem aasen_solve {A L T : Matrix (Fin n) (Fin n) ℝ} {σ : Equiv.Perm (Fin n)}
     (h : IsAasen (A.submatrix σ σ) L T) {b z w y : Fin n → ℝ} (hz : L *ᵥ z = b ∘ σ)
     (hw : T *ᵥ w = z) (hy : Lᵀ *ᵥ y = w) : A *ᵥ (y ∘ σ.symm) = b :=
   h.solve hz hw hy
 
-/-- **§4.4, the solve chain of (4.4.2).** "`P A Pᵀ = L D Lᵀ`, `L z = P b`, `D w = z`, `Lᵀ y = w`,
-`x = Pᵀ y` ⇒ `A x = b`". -/
+/-- **Section 4.4** of [golub2013matrix], the solve chain of (4.4.2). Let
+$A, L, D \in \mathbb{R}^{n \times n}$ and let $P$ be a permutation matrix with $PAP^T = LDL^T$ a
+block factorization as in (4.4.2). If $b, z, w, y \in \mathbb{R}^n$ satisfy
+$$Lz = Pb, \qquad Dw = z, \qquad L^T y = w,$$
+then $x = P^T y$ satisfies $Ax = b$.
+
+The vector $Pb$ is `b ∘ σ`, and $P^T y$ is `y ∘ σ.symm`. -/
 theorem blockLDL_solve {A L D : Matrix (Fin n) (Fin n) ℝ} {σ : Equiv.Perm (Fin n)}
     (h : IsBlockLDL (A.submatrix σ σ) L D) {b z w y : Fin n → ℝ} (hz : L *ᵥ z = b ∘ σ)
     (hw : D *ᵥ w = z) (hy : Lᵀ *ᵥ y = w) : A *ᵥ (y ∘ σ.symm) = b :=
@@ -112,9 +203,12 @@ theorem blockLDL_solve {A L D : Matrix (Fin n) (Fin n) ℝ} {σ : Equiv.Perm (Fi
 
 /-! ### §4.4.1 The Parlett–Reid algorithm -/
 
-/-- **§4.4.1, the update at the heart of (4.4.3).** "Suppose `B = Bᵀ` and that we wish to form
-`B₊ = (I − w e₁ᵀ) B (I − w e₁ᵀ)ᵀ` … If we set `u = B e₁ − (b₁₁/2) w` then
-`B₊ = B − w uᵀ − u wᵀ`." Here `e₁` is `Pi.single 0 1` on `Fin (m + 1)`. -/
+/-- **Section 4.4.1** of [golub2013matrix], the update in the Parlett–Reid algorithm (4.4.3). Let
+$B \in \mathbb{R}^{(m+1) \times (m+1)}$ be symmetric and $w \in \mathbb{R}^{m+1}$, and set
+$u = Be_1 - (b_{11}/2) w$. Then
+$$B_+ = (I - we_1^T) B (I - we_1^T)^T = B - wu^T - uw^T.$$
+
+The vector $e_1$ is `Pi.single 0 1` on `Fin (m + 1)`. -/
 theorem parlettReid_update {m : ℕ} {B : Matrix (Fin (m + 1)) (Fin (m + 1)) ℝ} (hB : B.IsSymm)
     (w : Fin (m + 1) → ℝ) :
     (1 - vecMulVec w (Pi.single 0 1)) * B * (1 - vecMulVec w (Pi.single 0 1))ᵀ =
@@ -140,9 +234,12 @@ theorem parlettReid_update {m : ℕ} {B : Matrix (Fin (m + 1)) (Fin (m + 1)) ℝ
 
 /-! ### §4.4.2 The method of Aasen -/
 
-/-- **(4.4.5).** If `A = L T Lᵀ` is an Aasen factorization (no pivoting), then `H = T Lᵀ` is upper
-Hessenberg and `A = L H`, so that `A(:, j) = L H(:, j) = ∑_{k ≤ j+1} L(:, k) h_k` — the relation
-from which Aasen's method computes `L` column by column. -/
+/-- **Equation (4.4.5)** of [golub2013matrix]. Let $A = LTL^T$ be an Aasen factorization of
+$A \in \mathbb{R}^{n \times n}$, without pivoting. Then $H = TL^T$ is upper Hessenberg and
+$A = LH$.
+
+So $A(:, j) = LH(:, j) = \sum_{k \le j+1} L(:, k) h_k$. Aasen's method computes $L$ column by
+column from this relation. -/
 theorem equation_4_4_5 {A L T : Matrix (Fin n) (Fin n) ℝ} (h : IsAasen A L T) :
     (T * Lᵀ).IsUpperHessenberg ∧ A = L * (T * Lᵀ) :=
   ⟨h.isUpperHessenberg_mul_transpose, h.eq_mul_mul_transpose⟩
@@ -151,10 +248,12 @@ section Programs
 
 variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 
-/-- The column `h(1:j)` of `H = T Lᵀ` in step `j` of Aasen's method (4.4.14), 0-based: from the
-state `(α, β, L)`, `h₀ = β₀ ℓ_{j1}`, `h_k = β_{k−1} ℓ_{j,k−1} + α_k ℓ_{jk} + β_k ℓ_{j,k+1}` for
-`0 < k < j` ((4.4.10)), and `h_j = a_jj − L(j, 0:j−1) · h(0:j−1)` ((4.4.11)) as a running
-difference. -/
+/-- The column $h(1{:}j)$ of $H = TL^T$ in step $j$ of Aasen's method (4.4.14) of [golub2013matrix],
+computed from the state $(\alpha, \beta, L)$. With 0-based indices,
+$$h_0 = \beta_0 \ell_{j1}, \qquad h_k = \beta_{k-1} \ell_{j,k-1} + \alpha_k \ell_{jk} + \beta_k
+  \ell_{j,k+1} \quad (0 < k < j),$$
+which is (4.4.10), and $h_j = a_{jj} - L(j, 0{:}j-1) \cdot h(0{:}j-1)$, which is (4.4.11), as a
+running difference. Every product and sum is rounded. -/
 def aasenH {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ) (s : (ℕ → ℝ) × (ℕ → ℝ) × (ℕ → ℕ → ℝ))
     (j : Fin n) : M (ℕ → ℝ) := do
   let h ← (List.range j).foldlM (fun (h : ℕ → ℝ) (k : ℕ) => do
@@ -170,9 +269,11 @@ def aasenH {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ) (s : (ℕ → ℝ) × (ℕ
     rnd (t - p)) (A j j)
   pure (Function.update h j hj)
 
-/-- Step `j` of Aasen's method (4.4.14) up to the new column of `L`: the diagonal entry `α_j` and
-the vector `v(j+1:n)` ((4.4.7), a running difference from `A(i, j)`); at `j = 0` the book's
-`α₁ = a₁₁`, `v(2:n) = A(2:n, 1)`. -/
+/-- Step $j$ of Aasen's method (4.4.14) of [golub2013matrix] up to the new column of $L$. The
+program returns the diagonal entry $\alpha_j = h_j - \beta_{j-1} \ell_{j,j-1}$ and the vector
+$v(j{+}1{:}n) = A(j{+}1{:}n, j) - L(j{+}1{:}n, 1{:}j) \cdot h(1{:}j)$ of (4.4.7), a running
+difference from the entries $A(i, j)$. At $j = 1$ it returns $\alpha_1 = a_{11}$ and
+$v(2{:}n) = A(2{:}n, 1)$ without rounding. -/
 def aasenColumn {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ)
     (s : (ℕ → ℝ) × (ℕ → ℝ) × (ℕ → ℕ → ℝ)) (j : Fin n) : M (ℝ × (ℕ → ℝ)) :=
   if (j : ℕ) = 0 then pure (A j j, fun i : ℕ => if h : i < n then A ⟨i, h⟩ j else 0) else do
@@ -186,7 +287,8 @@ def aasenColumn {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ)
       pure (Function.update v i vi)) 0
     pure (αj, v)
 
-/-- **(4.4.14), Aasen's method without pivoting**, in the book's operation order (0-based):
+/-- **Equation (4.4.14)** of [golub2013matrix] (Aasen's method without pivoting), in the operation
+order of the source:
 ```
 L = I_n
 for j = 1:n
@@ -205,10 +307,16 @@ for j = 1:n
     if j ≤ n−2:  L(j+2:n, j+1) = v(j+2:n)/v(j+1)
 end
 ```
-The state `(α, β, L)` holds the diagonal and subdiagonal of `T` and the unit lower triangular
-`L` as `ℕ`-indexed arrays (entries outside `0 ≤ i, k < n` are never read); `h(1:j)` is
-`aasenH`, `α_j` and `v` are `aasenColumn`. Every product, sum, difference and quotient is
-rounded; the copies `α₁ = a₁₁`, `v = A(:, 1)`, `β_j = v(j+1)` are exact. -/
+
+**Typo.** The source prints the loop of (4.4.10) from $k = 1$, which needs an undefined
+$\beta_0$. The program follows (4.4.14), whose loop starts at $k = 2$.
+
+The state $(\alpha, \beta, L)$ holds the diagonal and the subdiagonal of $T$ and the unit lower
+triangular $L$, as arrays indexed by `ℕ`; the entries outside $0 \le i, k < n$ are never read.
+The indices are 0-based. The column $h(1{:}j)$ is `GolubVanLoan.Chapter04.aasenH`, and
+$\alpha_j$ and $v$ are `GolubVanLoan.Chapter04.aasenColumn`. Every product, sum, difference and
+quotient is rounded; the copies $\alpha_1 = a_{11}$, $v = A(:, 1)$ and $\beta_j = v(j+1)$ are
+exact. -/
 noncomputable def aasenNoPivot {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ) :
     M ((ℕ → ℝ) × (ℕ → ℝ) × (ℕ → ℕ → ℝ)) :=
   (List.finRange n).foldlM (fun (s : (ℕ → ℝ) × (ℕ → ℝ) × (ℕ → ℕ → ℝ)) (j : Fin n) => do
@@ -223,41 +331,43 @@ noncomputable def aasenNoPivot {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ) :
 
 end Programs
 
-/-! #### Exact semantics of (4.4.14) -/
+/-! ### Exact semantics of (4.4.14) -/
 
-/-- The Aasen state: diagonal, subdiagonal and the lower factor, `ℕ`-indexed. -/
+/-- The state of Aasen's method: the diagonal, the subdiagonal and the lower factor, indexed by `ℕ`.
+-/
 private abbrev St := (ℕ → ℝ) × (ℕ → ℝ) × (ℕ → ℕ → ℝ)
 
-/-- The entries `h_k = H(k, j)`, `k < j`, from the state (the book's (4.4.10), exact). -/
+/-- The entries $h_k = H(k, j)$, $k < j$, computed exactly from the state by (4.4.10). -/
 private def hval (s : St) (j k : ℕ) : ℝ :=
   if k = 0 then s.2.1 0 * s.2.2 j 1 else
     s.2.1 (k - 1) * s.2.2 j (k - 1) + s.1 k * s.2.2 j k + s.2.1 k * s.2.2 j (k + 1)
 
-/-- The diagonal entry `h_j` of (4.4.11), exact. -/
+/-- The diagonal entry $h_j$ of (4.4.11), computed exactly. -/
 private def hdiag (A : Matrix (Fin n) (Fin n) ℝ) (s : St) (j : Fin n) : ℝ :=
   A j j - ∑ k ∈ Finset.range j, s.2.2 j k * hval s j k
 
-/-- The column `h(0:j)` of `H = T Lᵀ`. -/
+/-- The column $h(0{:}j)$ of $H = TL^T$, computed exactly. -/
 private def hfull (A : Matrix (Fin n) (Fin n) ℝ) (s : St) (j : Fin n) : ℕ → ℝ :=
   Function.update (hval s j) j (hdiag A s j)
 
-/-- The vector `v` of (4.4.7), exact. -/
+/-- The vector $v$ of (4.4.7), computed exactly. -/
 private def vval (A : Matrix (Fin n) (Fin n) ℝ) (s : St) (j i : Fin n) : ℝ :=
   if (j : ℕ) = 0 then A i j else
     A i j - ∑ k ∈ Finset.range (j + 1), s.2.2 i k * hfull A s j k
 
-/-- The diagonal entry `α_j` of (4.4.12), exact. -/
+/-- The diagonal entry $\alpha_j$ of (4.4.12), computed exactly. -/
 private def αval (A : Matrix (Fin n) (Fin n) ℝ) (s : St) (j : Fin n) : ℝ :=
   if (j : ℕ) = 0 then A j j else hdiag A s j - s.2.1 (j - 1) * s.2.2 j (j - 1)
 
-/-- Column `j` of the state is a finished column of Aasen's method. -/
+/-- Column $j$ of the state is a finished column of Aasen's method: $\alpha_j$, $\beta_j$ and the
+new column $j + 1$ of $L$ have their exact values. -/
 private def ColDone (A : Matrix (Fin n) (Fin n) ℝ) (s : St) (j : Fin n) : Prop :=
   s.1 j = αval A s j ∧
     (∀ h : (j : ℕ) + 1 < n, s.2.1 j = vval A s j ⟨j + 1, h⟩) ∧
     ∀ (h : (j : ℕ) + 1 < n) (i : Fin n), (j : ℕ) + 2 ≤ i →
       s.2.2 i (j + 1) = vval A s j i / vval A s j ⟨j + 1, h⟩
 
-/-- Two states agree on everything a column `≤ m` formula reads. -/
+/-- Two states agree on all entries that the formulas for the columns up to $m$ read. -/
 private def Agree (m : ℕ) (s s' : St) : Prop :=
   (∀ k < m, s'.1 k = s.1 k ∧ s'.2.1 k = s.2.1 k) ∧ ∀ r c, c ≤ m → s'.2.2 r c = s.2.2 r c
 
@@ -305,7 +415,8 @@ private theorem αval_congr (A : Matrix (Fin n) (Fin n) ℝ) {m : ℕ} {s s' : S
   · rfl
   · rw [hdiag_congr A h hj, (h.1 (j - 1) (by omega)).2, h.2 j (j - 1) (by omega)]
 
-/-- A finished column stays finished under agreement on it. -/
+/-- A finished column stays finished in a state that agrees with the original state on the columns
+up to it. -/
 private theorem ColDone.congr (A : Matrix (Fin n) (Fin n) ℝ) {s s' : St} {j : Fin n}
     (hc : ColDone A s j) (h : Agree (j + 1) s s') : ColDone A s' j := by
   have h' : Agree j s s' := ⟨fun k hk => h.1 k (by omega), fun r c hc => h.2 r c (by omega)⟩
@@ -318,14 +429,16 @@ private theorem ColDone.congr (A : Matrix (Fin n) (Fin n) ℝ) {s s' : St} {j : 
   · rw [h.2 i (j + 1) le_rfl, vval_congr A h' le_rfl, vval_congr A h' le_rfl]
     exact e3 hn i hi
 
-/-- The loop invariant after `c` columns. -/
+/-- The loop invariant of Aasen's method after $c$ columns: $L$ is unit lower triangular, its
+columns $0$ and those after $c$ are those of the identity, and the columns before $c$ are
+finished. -/
 private def Inv (A : Matrix (Fin n) (Fin n) ℝ) (c : ℕ) (s : St) : Prop :=
   (∀ r k, r ≤ k → s.2.2 r k = if r = k then 1 else 0) ∧
     (∀ r k, (k = 0 ∨ c < k) → s.2.2 r k = if r = k then 1 else 0) ∧
     ∀ j : Fin n, (j : ℕ) < c → ColDone A s j
 
 
-/-- A list sum over `List.range` is the `Finset` sum. -/
+/-- The sum of a list over `List.range j` is the sum over `Finset.range j`. -/
 private theorem list_sum_range (g : ℕ → ℝ) (j : ℕ) :
     ((List.range j).map g).sum = ∑ k ∈ Finset.range j, g k := by
   induction j with
@@ -334,13 +447,14 @@ private theorem list_sum_range (g : ℕ → ℝ) (j : ℕ) :
     rw [List.range_succ, List.map_append, List.sum_append, ih, Finset.sum_range_succ]
     simp
 
-/-- A loop writing entry `k` from a value that does not depend on the state. -/
+/-- A loop that writes entry $k$ from a value $F(k)$ that does not depend on the state leaves $F(k)$
+at entry $k$, for $k$ in a duplicate-free list. -/
 private theorem foldl_update_const (F : ℕ → ℝ) (l : List ℕ) (hl : l.Nodup) (g : ℕ → ℝ) {k : ℕ}
     (hk : k ∈ l) : l.foldl (fun h k => Function.update h k (F k)) g k = F k :=
   List.foldl_update_apply_of_pairwise (fun k : ℕ => k) (fun k _ => F k)
     (hl.imp fun hab => ⟨hab, fun _ _ _ => rfl⟩) g hk
 
-/-- The exact column `h(0:j)`. -/
+/-- In exact arithmetic, `GolubVanLoan.Chapter04.aasenH` computes the column $h(0{:}j)$. -/
 private theorem aasenH_exact (A : Matrix (Fin n) (Fin n) ℝ) (s : St) (j : Fin n) :
     ∀ h ∈ (aasenH (M := SetM) pure A s j).run, ∀ k ≤ (j : ℕ), h k = hfull A s j k := by
   intro h hh k hk
@@ -357,7 +471,7 @@ private theorem aasenH_exact (A : Matrix (Fin n) (Fin n) ℝ) (s : St) (j : Fin 
     exact Finset.sum_congr rfl fun k' hk' => by rw [hF k' (Finset.mem_range.1 hk')]
   · rw [Function.update_of_ne (ne_of_lt hk), hfull, Function.update_of_ne (ne_of_lt hk), hF k hk]
 
-/-- The exact column step: `α_j` and `v`. -/
+/-- In exact arithmetic, `GolubVanLoan.Chapter04.aasenColumn` computes $\alpha_j$ and $v$. -/
 private theorem aasenColumn_exact (A : Matrix (Fin n) (Fin n) ℝ) (s : St) (j : Fin n) :
     ∀ r ∈ (aasenColumn (M := SetM) pure A s j).run,
       r.1 = αval A s j ∧ ∀ i : Fin n, j < i → r.2 i = vval A s j i := by
@@ -386,7 +500,7 @@ private theorem aasenColumn_exact (A : Matrix (Fin n) (Fin n) ℝ) (s : St) (j :
         rw [hH k (Nat.lt_succ_iff.1 (Finset.mem_range.1 hk))]
 
 
-/-- The exact run of Aasen's method is one of its runs in the exact model. -/
+/-- The exact run of Aasen's method is one of its runs in the exact rounding model. -/
 private theorem aasenNoPivot_mem_exact (A : Matrix (Fin n) (Fin n) ℝ) :
     Id.run (aasenNoPivot pure A) ∈ (aasenNoPivot (RoundingModel.exact ℝ).round A).run := by
   rw [RoundingModel.round_exact]
@@ -394,7 +508,7 @@ private theorem aasenNoPivot_mem_exact (A : Matrix (Fin n) (Fin n) ℝ) :
     SetM.mem_run_pure]
   rfl
 
-/-- The exact run of Aasen's method keeps the invariant. -/
+/-- The exact run of Aasen's method satisfies the loop invariant after all $n$ columns. -/
 private theorem aasenNoPivot_inv (A : Matrix (Fin n) (Fin n) ℝ) :
     Inv A n (Id.run (aasenNoPivot pure A)) := by
   have hmem := aasenNoPivot_mem_exact A
@@ -463,12 +577,24 @@ private theorem aasenNoPivot_inv (A : Matrix (Fin n) (Fin n) ℝ) :
         rw [hLnew i hi, vval_congr A hagree le_rfl, vval_congr A hagree le_rfl,
           ← hr2 i (Fin.lt_def.2 (by omega)), ← hr2 ⟨m + 1, hn⟩ (Fin.lt_def.2 (Nat.lt_succ_self _))]
 
-/-- **(4.4.14) computes Aasen's factorization.** "Combining these equations … we obtain the Aasen
-method without pivoting": for symmetric `A` (of order `N + 1`), if every `v(j+1)` used as a divisor
-is nonzero — these are the returned `β_j`, `j + 2 ≤ N` — then the exact run of `aasenNoPivot`
-returns `L` and `T = tridiag(β, α, β)` with `A = L T Lᵀ`, `L` unit lower triangular and
-`L(:, 1) = e₁`. The invariant of the loop is the book's derivation (4.4.5)–(4.4.13): the columns
-`≤ j` of `A = L H`, `H = T Lᵀ` upper Hessenberg, hold with `h(1:j)` the column `j` of `H`. -/
+/-- **Equation (4.4.14)** of [golub2013matrix], exact correctness of Aasen's method without
+pivoting. Let $A \in \mathbb{R}^{(N+1) \times (N+1)}$ be symmetric, and let $(\alpha, \beta, L)$
+be the output of `GolubVanLoan.Chapter04.aasenNoPivot` on $A$ in exact arithmetic. If
+$\beta_j \neq 0$ for $j = 1, \dots, N - 1$, then
+$$A = LTL^T, \qquad T = \begin{bmatrix} \alpha_1 & \beta_1 & & \\ \beta_1 & \alpha_2 & \ddots &
+  \\ & \ddots & \ddots & \beta_N \\ & & \beta_N & \alpha_{N+1} \end{bmatrix},$$
+with $L$ unit lower triangular and $L(:, 1) = e_1$.
+
+**Typo.** In the derivation, the vector $[0; \ell_{52}; \ell_{53}; \ell_{53}; \ell_{54}]$ of
+(4.4.9) should read $[0; \ell_{52}; \ell_{53}; \ell_{54}; 1]$. The theorem does not depend on
+the misprint.
+
+The numbers $\beta_1, \dots, \beta_{N-1}$ are the numbers $v(j+1)$ that the method uses as
+divisors; with 0-based indices the hypothesis is on $\beta_j$ for $j + 1 < N$. The source
+obtains the method by combining the equations of its derivation. The loop invariant is that
+derivation, (4.4.5)–(4.4.13): the columns up to $j$ of $A = LH$, with $H = TL^T$ upper
+Hessenberg, hold with $h(1{:}j)$ the column $j$ of $H$. The conclusion is `Matrix.IsAasen` with
+$T$ = `Matrix.tridiagonalOf β α β`. -/
 theorem equation_4_4_14 {N : ℕ} {A : Matrix (Fin (N + 1)) (Fin (N + 1)) ℝ} (hA : A.IsSymm)
     (hβ : ∀ j : ℕ, j + 1 < N → (Id.run (aasenNoPivot pure A)).2.1 j ≠ 0) :
     IsAasen A (of fun i k : Fin (N + 1) => (Id.run (aasenNoPivot pure A)).2.2 i k)
@@ -599,13 +725,19 @@ theorem equation_4_4_14 {N : ℕ} {A : Matrix (Fin (N + 1)) (Fin (N + 1)) ℝ} (
 
 /-! ### §4.4.3 Diagonal pivoting methods -/
 
-/-- **(4.4.15) with the displayed factorization.** "Suppose `P₁ A P₁ᵀ = [E Cᵀ; C B]` where `P₁` is a
-permutation matrix and `s = 1` or `2`. If `A` is nonzero, then it is always possible to choose
-these quantities so that `E` is nonsingular, thereby enabling us to write
-`P₁ A P₁ᵀ = [I_s 0; C E⁻¹ I_{n−s}] [E 0; 0 B − C E⁻¹ Cᵀ] [I_s E⁻¹ Cᵀ; 0 I_{n−s}]`."
-The factorization holds for any nonsingular pivot block `E` (symmetry is not needed), with the
-reduced matrix `Ã = B − C E⁻¹ Cᵀ` of (4.4.15). The existence of a nonsingular pivot is
-`exists_nonsingular_pivot`. -/
+/-- **Equation (4.4.15)** of [golub2013matrix], with the displayed block factorization. Let
+$E \in \mathbb{R}^{s \times s}$ be nonsingular, $C \in \mathbb{R}^{m \times s}$ and
+$B \in \mathbb{R}^{m \times m}$. Then
+$$\begin{bmatrix} E & C^T \\ C & B \end{bmatrix} = \begin{bmatrix} I_s & 0 \\ CE^{-1} & I_m
+  \end{bmatrix} \begin{bmatrix} E & 0 \\ 0 & B - CE^{-1}C^T \end{bmatrix} \begin{bmatrix} I_s &
+  E^{-1}C^T \\ 0 & I_m \end{bmatrix}.$$
+
+**Generalization.** The source writes this for $P_1 A P_1^T = \begin{bmatrix} E & C^T \\ C & B
+\end{bmatrix}$ with $A$ symmetric, $s = 1$ or $2$ and $m = n - s$. The factorization holds for
+every nonsingular pivot block $E$, symmetric or not.
+
+The matrix $\tilde A = B - CE^{-1}C^T$ is the reduced matrix of (4.4.15). The existence of a
+nonsingular pivot block is `GolubVanLoan.Chapter04.exists_nonsingular_pivot`. -/
 theorem equation_4_4_15 {s m : ℕ} {E : Matrix (Fin s) (Fin s) ℝ} (hE : IsUnit E)
     (C : Matrix (Fin m) (Fin s) ℝ) (B : Matrix (Fin m) (Fin m) ℝ) :
     fromBlocks E Cᵀ C B =
@@ -617,30 +749,47 @@ theorem equation_4_4_15 {s m : ℕ} {E : Matrix (Fin s) (Fin s) ℝ} (hE : IsUni
     Matrix.zero_mul, add_zero, zero_add, ← Matrix.mul_assoc, hinv]
   rw [Matrix.mul_assoc C E⁻¹ E, hinv', Matrix.mul_one, add_sub_cancel]
 
-/-- **§4.4.3, the choice of the pivot in (4.4.15).** "If `A` is nonzero, then it is always possible
-to choose these quantities so that `E` is nonsingular": a nonzero symmetric `A` has a nonsingular
-principal pivot of order one (a nonzero diagonal entry) or two (a pair `i ≠ j` with nonzero
-principal minor), the book's P4.4.1. -/
+/-- **Section 4.4.3** of [golub2013matrix], the choice of the pivot in (4.4.15). Let
+$A \in \mathbb{R}^{n \times n}$ be symmetric and nonzero. Then $A$ has a nonsingular principal
+pivot of order one or two: either $a_{ii} \neq 0$ for some $i$, or there are $i \neq j$ with
+$a_{ii} a_{jj} - a_{ij} a_{ji} \neq 0$.
+
+The source says that if $A$ is nonzero, then it is always possible to choose $P_1$ and $s$ so
+that $E$ is nonsingular. This is Problem P4.4.1 of the source. -/
 theorem exists_nonsingular_pivot {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) (hA0 : A ≠ 0) :
     (∃ i, A i i ≠ 0) ∨ ∃ i j, i ≠ j ∧ A i i * A j j - A i j * A j i ≠ 0 :=
   exists_principal_pivot_ne_zero hA hA0
 
-/-- **(4.4.16).** In the Bunch–Parlett strategy with `μ₀ = max |a_ij|` and `μ₁ = max |a_ii|`, "it is
-easy to verify from (4.4.15) that if `s = 1`, then `|ã_ij| ≤ (1 + α⁻¹) μ₀`": the `1 × 1` pivot
-`a_pp` needs only `α μ₀ ≤ |a_pp|` (the maximal diagonal entry is one such pivot when
-`μ₁ ≥ α μ₀`), and the reduced matrix `Ã = B − v vᵀ / a_pp` is
-`Matrix.schurComplementSingle A p`. -/
+/-- **Equation (4.4.16)** of [golub2013matrix]. Let $A \in \mathbb{R}^{n \times n}$, let
+$\alpha > 0$ and $\mu_0 > 0$ with $|a_{ij}| \le \mu_0$ for all $i, j$, and let $p$ be an index
+with $\alpha \mu_0 \le |a_{pp}|$. Then the reduced matrix $\tilde A$ of the $1 \times 1$ pivot
+$a_{pp}$, with entries $\tilde a_{ij} = a_{ij} - a_{ip} a_{pj} / a_{pp}$ for $i, j \neq p$,
+satisfies
+$$|\tilde a_{ij}| \le (1 + \alpha^{-1}) \mu_0$$
+for all indices $i, j \neq p$.
+
+For a symmetric $A$, the matrix $\tilde A$ is the matrix $B - vv^T / a_{pp}$ of (4.4.15) with
+$s = 1$; the theorem does not need the symmetry. In the Bunch–Parlett strategy,
+$\mu_0 = \max |a_{ij}|$ and $\mu_1 = \max |a_{ii}|$; when $\mu_1 \ge \alpha \mu_0$, the maximal
+diagonal entry is such a pivot. The source says that the bound is easy to verify from (4.4.15)
+for $s = 1$. The reduced matrix is `Matrix.schurComplementSingle A p`. -/
 theorem equation_4_4_16 {A : Matrix (Fin n) (Fin n) ℝ} {p : Fin n} {α μ₀ : ℝ} (hα : 0 < α)
     (hμ₀ : 0 < μ₀) (hA : ∀ i j, |A i j| ≤ μ₀) (hp : α * μ₀ ≤ |A p p|)
     (i j : {i : Fin n // i ≠ p}) :
     |A.schurComplementSingle p i j| ≤ (1 + α⁻¹) * μ₀ :=
   BunchParlett.abs_schurComplementSingle_le hα hμ₀ hA hp i j
 
-/-- **(4.4.17).** "… while `s = 2` implies `|ã_ij| ≤ (3 − α)/(1 − α) μ₀`": for a symmetric `A`
-with `|a_ij| ≤ μ₀`, `α ∈ (0, 1)` and the `2 × 2` pivot block `E` on the indices `p, q` with
-`|a_qp| = μ₀` and `|a_pp|, |a_qq| ≤ α μ₀` (which `μ₁ < α μ₀` gives), `E` is nonsingular and
-every entry of the reduced matrix `Ã = B − C E⁻¹ Cᵀ` (the Schur complement of the reindexing
-`{p, q} ⊕ rest`) is bounded by `(3 − α)/(1 − α) μ₀`. -/
+/-- **Equation (4.4.17)** of [golub2013matrix]. Let $A \in \mathbb{R}^{n \times n}$ be symmetric,
+let $0 < \alpha < 1$ and $\mu_0 > 0$ with $|a_{ij}| \le \mu_0$ for all $i, j$, and let $p, q$ be
+indices with $|a_{qp}| = \mu_0$, $|a_{pp}| \le \alpha \mu_0$ and $|a_{qq}| \le \alpha \mu_0$.
+Then the $2 \times 2$ pivot block $E = A(\{p, q\}, \{p, q\})$ is nonsingular, and the reduced
+matrix $\tilde A = B - CE^{-1}C^T$ satisfies
+$$|\tilde a_{ij}| \le \frac{3 - \alpha}{1 - \alpha} \mu_0$$
+for all indices $i, j \notin \{p, q\}$.
+
+In the Bunch–Parlett strategy, the bounds on $a_{pp}$ and $a_{qq}$ follow from
+$\mu_1 < \alpha \mu_0$. The reduced matrix is `Matrix.schurComplement` of $A$ reindexed along
+`Sum.elim ![p, q] Subtype.val`, that is, along the pivot pair followed by the other indices. -/
 theorem equation_4_4_17 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) {p q : Fin n}
     {α μ₀ : ℝ} (hα₀ : 0 < α) (hα₁ : α < 1) (hμ₀ : 0 < μ₀) (hAμ : ∀ i j, |A i j| ≤ μ₀)
     (hqp : |A q p| = μ₀) (hpp : |A p p| ≤ α * μ₀) (hqq : |A q q| ≤ α * μ₀) :
@@ -650,27 +799,38 @@ theorem equation_4_4_17 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) {p q : 
           (Sum.elim ![p, q] Subtype.val)).schurComplement i j| ≤ (3 - α) / (1 - α) * μ₀ :=
   BunchParlett.abs_schurComplement_two_le hA hα₀ hα₁ hμ₀ hAμ hqp hpp hqq
 
-/-- **§4.4.3, the Bunch–Parlett parameter.** "By equating `(1 + α⁻¹)²`, the growth factor that is
-associated with two `s = 1` steps, and `(3 − α)/(1 − α)`, the corresponding `s = 2` factor, Bunch
-and Parlett conclude that `α = (1 + √17)/8` is optimum from the standpoint of minimizing the bound
-on element growth": `(1 + √17)/8` is the unique `α ∈ (0, 1)` equating the two factors. -/
+/-- **Section 4.4.3** of [golub2013matrix], the Bunch–Parlett parameter. The number
+$\alpha = (1 + \sqrt{17})/8$ is the unique $\alpha \in (0, 1)$ with
+$$(1 + \alpha^{-1})^2 = \frac{3 - \alpha}{1 - \alpha}.$$
+
+The left side is the growth factor of two $s = 1$ steps and the right side that of one $s = 2$
+step. By equating them, Bunch and Parlett conclude that this $\alpha$ is optimum from the
+standpoint of minimizing the bound on element growth. -/
 theorem bunchParlett_alpha :
     {α : ℝ | 0 < α ∧ α < 1 ∧ (1 + α⁻¹) ^ 2 = (3 - α) / (1 - α)} = {(1 + √17) / 8} :=
   BunchParlett.alpha_eq
 
 /-! ### §4.4.5 Equilibrium systems -/
 
-/-- The equilibrium matrix `[C B; Bᵀ 0]` is the backbone's saddle-point matrix over `ℝ`. -/
+/-- For $C \in \mathbb{R}^{n \times n}$ and $B \in \mathbb{R}^{n \times p}$, the equilibrium matrix
+$\begin{bmatrix} C & B \\ B^T & 0 \end{bmatrix}$ is the saddle-point matrix
+`Matrix.saddleMatrix C B 0` of the backbone. -/
 theorem fromBlocks_transpose_zero_eq_saddleMatrix {p : ℕ} (C : Matrix (Fin n) (Fin n) ℝ)
     (B : Matrix (Fin n) (Fin p) ℝ) : fromBlocks C B Bᵀ 0 = C.saddleMatrix B 0 := by
   rw [saddleMatrix, conjTranspose_eq_transpose_of_trivial]
 
-/-- **§4.4.5, the tempting factorization.** "Step 1. Compute the Cholesky factorization
-`C = G Gᵀ`. Step 2. Solve `G K = B` for `K`. Step 3. Compute the Cholesky factorization
-`H Hᵀ = Kᵀ K = Bᵀ C⁻¹ B`. From this it follows that `A = [G 0; Kᵀ H] [Gᵀ K; 0 −Hᵀ]`": for `C`
-symmetric positive definite with Cholesky factor `G = cholesky C` (Theorem 4.2.7), `B` of full
-column rank and `G K = B`, the matrix `Kᵀ K = Bᵀ C⁻¹ B` is positive definite and, with
-`H = cholesky (Kᵀ K)`, the equilibrium matrix factors as displayed. -/
+/-- **Section 4.4.5** of [golub2013matrix], the factorization of the equilibrium matrix through
+Cholesky factors. Let $C \in \mathbb{R}^{n \times n}$ be symmetric positive definite with
+Cholesky factor $G$, let $B \in \mathbb{R}^{n \times p}$ have full column rank, and let
+$K \in \mathbb{R}^{n \times p}$ satisfy $GK = B$. Then $K^T K = B^T C^{-1} B$, this matrix is
+symmetric positive definite, and with $H$ its Cholesky factor,
+$$\begin{bmatrix} C & B \\ B^T & 0 \end{bmatrix} = \begin{bmatrix} G & 0 \\ K^T & H
+  \end{bmatrix} \begin{bmatrix} G^T & K \\ 0 & -H^T \end{bmatrix}.$$
+
+The source describes the computation in three steps: compute the Cholesky factorization
+$C = GG^T$, solve $GK = B$ for $K$, and compute the Cholesky factorization
+$HH^T = K^T K = B^T C^{-1} B$. The Cholesky factors are `Matrix.cholesky C` and
+`Matrix.cholesky (Kᵀ * K)` (Theorem 4.2.7). -/
 theorem equilibrium_factorization {p : ℕ} {C : Matrix (Fin n) (Fin n) ℝ}
     {B : Matrix (Fin n) (Fin p) ℝ} (hC : C.PosDef) (hB : Function.Injective B.mulVec)
     {K : Matrix (Fin n) (Fin p) ℝ} (hK : cholesky C * K = B) :
@@ -702,18 +862,27 @@ theorem equilibrium_factorization {p : ℕ} {C : Matrix (Fin n) (Fin n) ℝ}
   rw [fromBlocks_transpose_zero_eq_saddleMatrix, h]
   simp only [conjTranspose_eq_transpose_of_trivial]
 
-/-- **(4.4.18).** "A very important class of symmetric indefinite matrices have the form
-`A = [C B; Bᵀ 0]` where `C` is symmetric positive definite and `B` has full column rank. These
-conditions ensure that `A` is nonsingular." -/
+/-- **Equation (4.4.18)** of [golub2013matrix]. Let $C \in \mathbb{R}^{n \times n}$ be symmetric
+positive definite and let $B \in \mathbb{R}^{n \times p}$ have full column rank. Then the
+symmetric indefinite matrix
+$$A = \begin{bmatrix} C & B \\ B^T & 0 \end{bmatrix}$$
+is nonsingular. -/
 theorem equation_4_4_18 {p : ℕ} {C : Matrix (Fin n) (Fin n) ℝ} {B : Matrix (Fin n) (Fin p) ℝ}
     (hC : C.PosDef) (hB : Function.Injective B.mulVec) : IsUnit (fromBlocks C B Bᵀ 0) := by
   rw [fromBlocks_transpose_zero_eq_saddleMatrix]
   exact isUnit_saddleMatrix_zero hC hB
 
-/-- **(4.4.20).** "In several important applications, `g = 0`, `C` is diagonal, and the solution
-subvector `y` is of primary importance. A manipulation shows that this vector is specified by
-`y = (Bᵀ C⁻¹ B)⁻¹ Bᵀ C⁻¹ f`": for the equilibrium system (4.4.19) with `g = 0`, `C` symmetric
-positive definite (diagonality is not needed) and `B` of full column rank. -/
+/-- **Equation (4.4.20)** of [golub2013matrix]. Let $C \in \mathbb{R}^{n \times n}$ be symmetric
+positive definite and let $B \in \mathbb{R}^{n \times p}$ have full column rank. If
+$x, f \in \mathbb{R}^n$ and $y \in \mathbb{R}^p$ satisfy the equilibrium system (4.4.19) with
+$g = 0$,
+$$\begin{bmatrix} C & B \\ B^T & 0 \end{bmatrix} \begin{bmatrix} x \\ y \end{bmatrix} =
+  \begin{bmatrix} f \\ 0 \end{bmatrix},$$
+then
+$$y = (B^T C^{-1} B)^{-1} B^T C^{-1} f.$$
+
+**Generalization.** The source assumes that $C$ is diagonal. The theorem needs only that $C$ is
+symmetric positive definite. -/
 theorem equation_4_4_20 {p : ℕ} {C : Matrix (Fin n) (Fin n) ℝ} {B : Matrix (Fin n) (Fin p) ℝ}
     (hC : C.PosDef) (hB : Function.Injective B.mulVec) {x f : Fin n → ℝ} {y : Fin p → ℝ}
     (h : fromBlocks C B Bᵀ 0 *ᵥ Sum.elim x y = Sum.elim f 0) :
@@ -723,10 +892,14 @@ theorem equation_4_4_20 {p : ℕ} {C : Matrix (Fin n) (Fin n) ℝ} {B : Matrix (
     saddleMatrix_zero_mulVec_snd_eq hC hB h
 
 open scoped Matrix.Norms.L2Operator in
-/-- **(4.4.21).** "It can be shown that `‖(Bᵀ C⁻¹ B)⁻¹ Bᵀ C⁻¹‖ ≤ ψ_B` where the upper bound `ψ_B`
-is independent of `C`": for `B` of full column rank there is one `ψ_B` bounding the `2`-norm of
-`(Bᵀ C⁻¹ B)⁻¹ Bᵀ C⁻¹` for every positive diagonal `C = diag(c)` (Stewart, Todd), the backbone's
-bound on the weighted least-squares operators at the weights `C⁻¹`. -/
+/-- **Equation (4.4.21)** of [golub2013matrix] (the bound of Stewart and Todd). Let
+$B \in \mathbb{R}^{n \times p}$ have full column rank. Then there is a number $\psi_B$ such that
+$$\|(B^T C^{-1} B)^{-1} B^T C^{-1}\|_2 \le \psi_B$$
+for every positive diagonal matrix $C = \operatorname{diag}(c)$.
+
+The source says that the upper bound $\psi_B$ is independent of $C$. The norm is the scoped
+operator norm of `Matrix.Norms.L2Operator`. The proof specializes the bound of the backbone on
+the weighted least-squares operators at the weights $C^{-1}$. -/
 theorem equation_4_4_21 {p : ℕ} {B : Matrix (Fin n) (Fin p) ℝ}
     (hB : Function.Injective B.mulVec) :
     ∃ ψ : ℝ, ∀ c : Fin n → ℝ, (∀ i, 0 < c i) →

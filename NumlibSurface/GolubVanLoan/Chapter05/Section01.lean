@@ -9,79 +9,222 @@ import Numlib.LinearAlgebra.Matrix.WY
 import NumlibSurface.GolubVanLoan.Chapter01.Section01
 
 /-!
-# Golub–Van Loan §5.1: Householder and Givens transformations
+# Golub and Van Loan, Section 5.1: Householder and Givens transformations
 
-Surface file for [golub2013matrix] §5.1.
+This module formalizes §5.1 of [golub2013matrix], the two orthogonal transformations that introduce
+zeros into a vector. A Householder reflection $P = I - \beta v v^T$ with $\beta = 2 / v^T v$ maps
+$x \in \mathbb{R}^m$ to a multiple of $e_1$ when $v = x \pm \|x\|_2 e_1$. A Givens rotation
+$G(i, k, \theta)$ rotates the plane of the coordinates $i$ and $k$, and a suitable angle makes the
+entry $k$ of a vector zero. The module defines the computation of a Householder vector (Algorithm
+5.1.1), the updates $PA$ and $AP$ (§5.1.4), the factored form (5.1.3) of a product of reflections
+and its accumulation (§5.1.6), the WY representation (§5.1.7 and Algorithm 5.1.2), the computation
+of a Givens rotation (Algorithm 5.1.3), the Givens updates (§5.1.9), Stewart's encoding of a
+rotation by one number (§5.1.11), and the complex case (§5.1.13). For each program it proves the
+exact semantics and, where the source analyses the program, a bound on its rounding errors (§5.1.5,
+§5.1.10, §5.1.12).
 
-## Conventions
+In the bounds, $\mathrm{fl}(\cdot)$ is a rounded result, $u$ is the unit roundoff and
+$\gamma_K = Ku/(1 - Ku)$. A computed $\hat y$ is a relative perturbation of order $K$ of $y$ if
+$\hat y = y(1 + \theta)$ with $|\theta| \le \gamma_K$. For a list $o$ of indices, $x|_o$ is the
+restriction of $x$ to the listed indices. Computed data $(\hat v, \hat \beta)$ are reflector data of
+order $K$ for $x$, with pivot $p$ and target $c$, if they are relative perturbations of order $K$ of
+exact $(v, \beta)$ such that $I - \beta v v^T$ is orthogonal, $(I - \beta v v^T) x = c\, e_p$ and
+$|\beta| v^T v \le 2$. The proofs specialize the backbone modules `Numlib.FloatingPoint.Householder`
+and `Numlib.FloatingPoint.Givens`, which define the rounding relations of the Householder and Givens
+computations and bound their errors, and `Numlib.LinearAlgebra.Matrix.WY`.
 
-Vectors are `Fin m → ℝ`, 0-based: `x 0` is the book's `x(1)`, `e₁` is `Pi.single 0 1`. The matrix
-`P = I - β v vᵀ` is `1 - β • vecMulVec v v`; the book's Householder matrix `I - 2vvᵀ/vᵀv` is
-`householderMatrix v`, the backbone's `Matrix.reflector v`. The Givens rotation `G(i, k, θ)` of
-(5.1.7) is `givensRotation i k c s = Matrix.planeRotation i k c (-s)`: the backbone's plane
-rotation has the Jacobi sign convention, and the rounding relations of
-`Numlib/FloatingPoint/Givens` are stated in the book's.
+## Main definitions
 
-**The shared helper family** (conventions 10, 13 and 14 of `NumlibSurface/GolubVanLoan`, which
-every later chapter calls): `houseOn` (Algorithm 5.1.1 on the entries listed by an index list;
-`algorithm_5_1_1` is its instance at the full list), `householderApplyLeft` /
-`householderApplyRight` (§5.1.4, in place on the full matrix over row and column index lists),
-`givensRotation`, `givensRotateVec` (exact semantics `givensRotateVec_pure`), `givensApplyLeft` /
-`givensApplyRight` (§5.1.9), and for reflector data
-`List ((Fin m → ℝ) × ℝ)` — pairs `(v, β)` in order of application, `v` full length and zero off
-its active rows, `β` the value `house` returned — `householderProduct`, `forwardAccumulation`,
-`backwardAccumulation`. A block `A(j:m, k:n)` is never copied into a `Fin (m - j)`-typed array.
-
-Every program is written once, generic in a monad `M` and a rounding hook `rnd : ℝ → M ℝ`
-(`Numlib/FloatingPoint/Program`). Each carries `_rounds` (every run in the relational model
-`M := SetM`, `rnd := fp.round` satisfies the backbone relation), `_spec` (the exact semantics at
-`M := Id`, `rnd := pure`, read off the bridge at the exact model `RoundingModel.exact ℝ`) and,
-where the book analyses it, `_rounding` (the book's error bound, with explicit `γ` constants in
-place of the book's `O(u)`).
-
-## Errata carried
-
-Algorithm 5.1.1's `σ = 0 & x(1) < 0` branch sets `β = 2` (the book prints `β = -2`, which makes
-`P` not orthogonal). The retrieval `β_j = 2/(1 + ‖A(j+1:m, j)‖²)` of (5.1.4)–(5.1.5) is wrong when
-`house` returned `β = 0`; those displays are specified against the recomputed `β`
-(`recomputedBeta`), every other consumer uses the returned `β`.
+* Equation (5.1.1), `GolubVanLoan.Chapter05.householderMatrix`: the Householder matrix
+  $I - (2 / v^T v) v v^T$ of a vector $v$.
+* Algorithm 5.1.1, `GolubVanLoan.Chapter05.algorithm_5_1_1`: the computation of a Householder vector
+  $v$ and of $\beta$ for $x$ (the source's `house`).
+* Algorithm 5.1.1, `GolubVanLoan.Chapter05.houseOn`: the same computation on the entries of a vector
+  listed by an index list.
+* §5.1.4, `GolubVanLoan.Chapter05.householderApplyLeft` and
+  `GolubVanLoan.Chapter05.householderApplyRight`: the updates $A - (\beta v)(v^T A)$ and
+  $A - (A v)(\beta v)^T$ of a block of $A$.
+* Equation (5.1.3), `GolubVanLoan.Chapter05.householderProduct`,
+  `GolubVanLoan.Chapter05.storedHouseholderVec`, `GolubVanLoan.Chapter05.storedReflectors` and
+  `GolubVanLoan.Chapter05.factoredQ`: the factored form $Q = Q_1 \cdots Q_r$,
+  $Q_j = I - \beta_j v_j v_j^T$, of a product of reflections, and its storage in an array.
+* Equations (5.1.4) and (5.1.5), `GolubVanLoan.Chapter05.recomputedBeta`,
+  `GolubVanLoan.Chapter05.factoredQTransposeMul` and `GolubVanLoan.Chapter05.factoredQFirstColumns`:
+  the programs that compute $Q^T C$ and the first $k$ columns of $Q$ from the factored form, with
+  $\beta_j$ recomputed from the stored vector.
+* Equation (5.1.5), `GolubVanLoan.Chapter05.storedQFirstColumns`: the first $k$ columns of $Q$ with
+  the $\beta_j$ that Algorithm 5.1.1 returned.
+* §5.1.6, `GolubVanLoan.Chapter05.forwardAccumulation` and
+  `GolubVanLoan.Chapter05.backwardAccumulation`: the two orders of accumulating
+  $Q = Q_1 \cdots Q_r$.
+* Algorithm 5.1.2, `GolubVanLoan.Chapter05.algorithm_5_1_2`: the WY representation of a product of
+  reflections.
+* Equation (5.1.7), `GolubVanLoan.Chapter05.givensRotation`: the Givens rotation $G(i, k, \theta)$.
+* Algorithm 5.1.3, `GolubVanLoan.Chapter05.algorithm_5_1_3`: the computation of $c$ and $s$ (the
+  source's `givens`).
+* §5.1.9, `GolubVanLoan.Chapter05.givensApplyLeft` and `GolubVanLoan.Chapter05.givensApplyRight`:
+  the updates $G^T A$ and $A G$ of two rows or two columns.
+* Equations (5.1.9) and (5.1.10), `GolubVanLoan.Chapter05.rotationCode` and
+  `GolubVanLoan.Chapter05.rotationDecode`: Stewart's encoding of a rotation by one number, and the
+  reconstruction.
+* §5.1.12, `GolubVanLoan.Chapter05.orthogonalToWorkingPrecision`: a matrix within distance
+  $\varepsilon$ of an orthogonal matrix in the 2-norm.
+* §6.5.4, `GolubVanLoan.Chapter05.hyperbolicApplyLeft`: a hyperbolic rotation applied to two rows.
 
 ## Main results
 
-* `householderMatrix` (5.1.1), `equation_5_1_2`, `parlett_formula`; `houseOn`, `algorithm_5_1_1`
-  (`house`) with `houseOn_rounds` (the bridge to `FloatingPoint.RoundsHouseholderVectorParlett`),
-  `houseOn_spec`, `algorithm_5_1_1_spec`, `houseOn_rounding`, `algorithm_5_1_1_rounding` (§5.1.5)
-  and `householderMatrix_computed_sub_le` (`‖P̂ - P‖₂ ≤ 8 γ_K`).
-* `householderApplyLeft`, `householderApplyRight` (§5.1.4), their bridges to
-  `FloatingPoint.RoundsHouseholderApplyScaled`, exact specifications and rounding bounds (§5.1.5).
-* The factored form (5.1.3): `householderProduct`, `storedHouseholderVec`, `storedReflectors`,
-  `factoredQ`, `recomputedBeta`; (5.1.4) and (5.1.5) as programs (`factoredQTransposeMul`,
-  `factoredQFirstColumns`) with `equation_5_1_4`, `equation_5_1_5`; the first columns of the
-  factored `Q` with the returned `β`, `storedQFirstColumns` (`storedQFirstColumns_spec`, the helper
-  consumers use); `forwardAccumulation`, `backwardAccumulation` and their specifications.
-* The WY representation: `equation_5_1_6`, `lemma_5_1_1`, `algorithm_5_1_2` with its
-  specification, `blockReflector_mem_orthogonalGroup`.
-* Givens rotations: `givensRotation` (5.1.7), `equation_5_1_8`, `algorithm_5_1_3` (`givens`) with
-  its bridge to `FloatingPoint.RoundsGivensPair`, specification and rounding (§5.1.10);
-  `givensApplyLeft`, `givensApplyRight` (§5.1.9) with bridges to
-  `FloatingPoint.RoundsGivensRowUpdate`/`ColUpdate`, specifications and rounding bounds.
-* Stewart's encoding (5.1.9)–(5.1.10), `rotationDecode_rotationCode`.
-* §5.1.12: `orthogonalToWorkingPrecision` and its corollary, the Givens and Householder cases
-  (the latter both for the book's rebuilt `householderMatrix v̂` and for the applied
-  `I - β̂ v̂ v̂ᵀ`, `one_sub_smul_vecMulVec_computed_sub_le`);
-  `equation_5_1_11` (the two-sided accumulation of computed updates).
-* §5.1.13: `complexHouseholder`, `complexGivens_mem_unitaryGroup`, `equation_5_1_12`.
+* §5.1.2, `GolubVanLoan.Chapter05.householderMatrix_isSymm` and
+  `GolubVanLoan.Chapter05.householderMatrix_mem_orthogonalGroup`: Householder matrices are symmetric
+  and orthogonal.
+* Equation (5.1.2), `GolubVanLoan.Chapter05.equation_5_1_2`: if $v = x \pm \|x\|_2 e_1 \neq 0$, then
+  $Px = \mp \|x\|_2 e_1$.
+* §5.1.3, `GolubVanLoan.Chapter05.parlett_formula`: Parlett's formula $x_1 - \|x\|_2 = -(x_2^2 +
+  \cdots + x_m^2)/(x_1 + \|x\|_2)$.
+* Algorithm 5.1.1, `GolubVanLoan.Chapter05.houseOn_rounds`: every computed result satisfies the
+  rounding relation `FloatingPoint.RoundsHouseholderVectorParlett` of the backbone.
+* Algorithm 5.1.1, `GolubVanLoan.Chapter05.houseOn_spec` and
+  `GolubVanLoan.Chapter05.algorithm_5_1_1_spec`: in exact arithmetic $v_1 = 1$, and
+  $I - \beta v v^T$ is orthogonal and maps $x$ to $\|x\|_2 e_1$.
+* §5.1.5, `GolubVanLoan.Chapter05.houseOn_rounding` and
+  `GolubVanLoan.Chapter05.algorithm_5_1_1_rounding`: the computed $(\hat v, \hat \beta)$ are
+  reflector data of order $18m + 31$.
+* §5.1.4, `GolubVanLoan.Chapter05.householderApplyLeft_rounds`,
+  `GolubVanLoan.Chapter05.householderApplyRight_rounds`,
+  `GolubVanLoan.Chapter05.householderApplyLeft_spec` and
+  `GolubVanLoan.Chapter05.householderApplyRight_spec`: the rounding bridges and the exact semantics
+  of the Householder updates.
+* §5.1.5, `GolubVanLoan.Chapter05.householderApplyLeft_rounding` and
+  `GolubVanLoan.Chapter05.householderApplyRight_rounding`: the computed update differs from the
+  exact update $PA$ or $AP$ by at most $3\gamma_{3K + \ell + 3}$ times the norm of the block, where
+  $\ell$ is the length of the reflector.
+* §5.1.5, `GolubVanLoan.Chapter05.householderMatrix_computed_sub_le`:
+  $\|\hat P - P\|_2 \le 8\gamma_{18m + 31}$ for the Householder matrix $\hat P$ of a computed
+  vector.
+* Equations (5.1.4) and (5.1.5), `GolubVanLoan.Chapter05.equation_5_1_4` and
+  `GolubVanLoan.Chapter05.equation_5_1_5`: the programs compute $Q^T C$ and $Q(:, 1{:}k)$ for the
+  factored form with the recomputed $\beta_j$.
+* Equation (5.1.5), `GolubVanLoan.Chapter05.storedQFirstColumns_spec`: the program with the returned
+  $\beta_j$ computes $Q(:, 1{:}k)$.
+* §5.1.6, `GolubVanLoan.Chapter05.forwardAccumulation_spec` and
+  `GolubVanLoan.Chapter05.backwardAccumulation_spec`: both accumulations compute $Q_1 \cdots Q_r$.
+* Equation (5.1.6), `GolubVanLoan.Chapter05.equation_5_1_6`: a product of $r$ reflections is
+  $I - W Y^T$ with $W, Y \in \mathbb{R}^{m \times r}$.
+* Lemma 5.1.1, `GolubVanLoan.Chapter05.lemma_5_1_1`: $(I - W Y^T)(I - \beta v v^T) = I - W_+ Y_+^T$
+  with $W_+ = [W \mid z]$, $Y_+ = [Y \mid v]$, $z = \beta (I - W Y^T) v$.
+* Algorithm 5.1.2, `GolubVanLoan.Chapter05.algorithm_5_1_2_spec`: the algorithm computes the WY
+  representation.
+* §5.1.7, `GolubVanLoan.Chapter05.blockReflector_mem_orthogonalGroup`: $I - 2 V V^T$ is orthogonal
+  if $V^T V = I$.
+* §5.1.8, `GolubVanLoan.Chapter05.givensRotation_mem_orthogonalGroup`: Givens rotations are
+  orthogonal.
+* Equation (5.1.8), `GolubVanLoan.Chapter05.equation_5_1_8`: the choice of $c$ and $s$ that makes
+  the entry $k$ of $G^T x$ zero.
+* Algorithm 5.1.3, `GolubVanLoan.Chapter05.algorithm_5_1_3_rounds` and
+  `GolubVanLoan.Chapter05.algorithm_5_1_3_spec`: the rounding bridge, and in exact arithmetic
+  $c^2 + s^2 = 1$ and $sa + cb = 0$.
+* §5.1.10, `GolubVanLoan.Chapter05.algorithm_5_1_3_rounding`: the computed $\hat c$ and $\hat s$ are
+  relative perturbations of order $13$ of an exact rotation.
+* §5.1.9, `GolubVanLoan.Chapter05.givensApplyLeft_rounds`,
+  `GolubVanLoan.Chapter05.givensApplyRight_rounds`, `GolubVanLoan.Chapter05.givensApplyLeft_spec`
+  and `GolubVanLoan.Chapter05.givensApplyRight_spec`: the rounding bridges and the exact semantics
+  of the Givens updates.
+* §5.1.10, `GolubVanLoan.Chapter05.givensApplyLeft_rounding` and
+  `GolubVanLoan.Chapter05.givensApplyRight_rounding`: the computed update differs from the exact
+  update by at most $\sqrt 2\, \gamma_{K+2}$ times the norm of $A$.
+* §5.1.11, `GolubVanLoan.Chapter05.rotationDecode_rotationCode`: decoding the code of $(c, s)$ gives
+  $(c, s)$ or $(-c, -s)$.
+* §5.1.12, `GolubVanLoan.Chapter05.orthogonalToWorkingPrecision_transpose_mul_self`: $\|\hat Q^T
+  \hat Q - I\|_2 \le 2\varepsilon + \varepsilon^2$.
+* §5.1.12, `GolubVanLoan.Chapter05.givensRotation_orthogonalToWorkingPrecision`,
+  `GolubVanLoan.Chapter05.householderMatrix_orthogonalToWorkingPrecision`,
+  `GolubVanLoan.Chapter05.one_sub_smul_vecMulVec_computed_sub_le` and
+  `GolubVanLoan.Chapter05.one_sub_smul_vecMulVec_orthogonalToWorkingPrecision`: the matrices built
+  from the outputs of Algorithms 5.1.3 and 5.1.1 are orthogonal to working precision.
+* Equation (5.1.11), `GolubVanLoan.Chapter05.equation_5_1_11`: a sequence of computed two-sided
+  orthogonal updates is an exact orthogonal update of a nearby matrix.
+* §5.1.13, `GolubVanLoan.Chapter05.complexHouseholder` and
+  `GolubVanLoan.Chapter05.complexGivens_mem_unitaryGroup`: complex Householder matrices and complex
+  Givens rotations are unitary.
+* Equation (5.1.12), `GolubVanLoan.Chapter05.equation_5_1_12`: a complex Givens rotation built from
+  three real ones.
+* §6.5.4, `GolubVanLoan.Chapter05.hyperbolicApplyLeft_spec`: the exact semantics of the hyperbolic
+  row update.
 
-The run-set lemmas `mem_run_foldlM_updateCol_of_nodup` and `mem_run_foldlM_updateRow_of_nodup`
-(one column, or one row, rewritten per step) are the loop rules of the helpers. Later chapters
-also share the entry lemmas of `(I - β v vᵀ) M` and `M (I - β v vᵀ)` for `v` supported on a set
-(`one_sub_smul_vecMulVec_mul_apply` and its variants), the selection matrix `selCols`, the index
-lists `indexFrom`/`indexTo`, and the hyperbolic row update `hyperbolicApplyLeft` of §6.5.4.
+## Conventions
+
+* Vectors are `Fin m → ℝ`, and indices are 0-based: the source's $x(1)$ is `x 0`, and $e_1$ is
+  `Pi.single 0 1`. A vector of type `Fin (k + 1) → ℝ` has length $m = k + 1 \ge 1$.
+* The matrix $I - \beta v v^T$ is `1 - β • vecMulVec v v`. The source's Householder matrix
+  $I - 2 v v^T / v^T v$ is `GolubVanLoan.Chapter05.householderMatrix v`, which is the backbone's
+  `Matrix.reflector v`.
+* The Givens rotation $G(i, k, \theta)$ of (5.1.7) is
+  `GolubVanLoan.Chapter05.givensRotation i k c s`, which is `Matrix.planeRotation i k c (-s)`. The
+  backbone's plane rotation has the sign convention of the Jacobi method; the rounding relations of
+  `Numlib.FloatingPoint.Givens` are stated in the convention of the source.
+* A block $A(j{:}m, k{:}n)$ is the full matrix together with the lists of its row and column
+  indices, such as `GolubVanLoan.Chapter05.indexFrom m j`. A subvector is the full vector together
+  with its list of active indices.
+* The source's first-order bounds $O(u)$ are stated with explicit constants $\gamma_K$.
+
+## Implementation notes
+
+* Every program is written once, generic in a monad `M` and a rounding hook `rnd : ℝ → M ℝ`, as in
+  the algorithm conventions of `NumlibSurface.GolubVanLoan` and `Numlib.FloatingPoint.Program`. A
+  theorem `…_rounds` says that every run in the rounding model (`M := SetM`, `rnd := fp.round`)
+  satisfies a rounding relation of the backbone. A theorem `…_spec` gives the exact semantics
+  (`M := Id`, `rnd := pure`), read off the bridge at the exact model
+  `FloatingPoint.RoundingModel.exact`. A theorem `…_rounding` gives the error bound of the source,
+  where the source analyses the program.
+* The Householder and Givens programs of this module are the shared helpers of the library, and
+  later chapters call them instead of defining variants: `GolubVanLoan.Chapter05.houseOn`,
+  `GolubVanLoan.Chapter05.householderApplyLeft`, `GolubVanLoan.Chapter05.householderApplyRight`,
+  `GolubVanLoan.Chapter05.givensRotation`, `GolubVanLoan.Chapter05.givensRotateVec` (with exact
+  semantics `GolubVanLoan.Chapter05.givensRotateVec_pure`),
+  `GolubVanLoan.Chapter05.givensApplyLeft`, `GolubVanLoan.Chapter05.givensApplyRight`,
+  `GolubVanLoan.Chapter05.householderProduct`, `GolubVanLoan.Chapter05.forwardAccumulation` and
+  `GolubVanLoan.Chapter05.backwardAccumulation`. The update programs work in place on the full
+  matrix over lists of row and column indices; a block is never copied into an array of type
+  `Fin (m - j)`.
+* Reflector data are lists `List ((Fin m → ℝ) × ℝ)` of pairs $(v, \beta)$ in order of application.
+  Each $v$ has full length and is zero outside its active rows, and each $\beta$ is the value that
+  Algorithm 5.1.1 returned. A reflector is never rebuilt as $\beta = 2 / v^T v$ from a stored $v$:
+  when Algorithm 5.1.1 returns $\beta = 0$, the rebuilt matrix is a reflection and not the identity
+  that was applied.
+* The rounding theorems for Algorithm 5.1.1 and the Householder updates assume an idempotent
+  rounding model (`FloatingPoint.RoundingModel.IsIdempotent`), because their inner products are
+  accumulated from $0$.
+* Later chapters also use the loop lemmas `GolubVanLoan.Chapter05.mem_run_foldlM_updateCol_of_nodup`
+  and `GolubVanLoan.Chapter05.mem_run_foldlM_updateRow_of_nodup`, the entry formulas for
+  $(I - \beta v v^T) M$ and $M (I - \beta v v^T)$ with $v$ supported on a set
+  (`GolubVanLoan.Chapter05.one_sub_smul_vecMulVec_mul_apply` and its variants), the selection matrix
+  `GolubVanLoan.Chapter05.selCols`, the index lists `GolubVanLoan.Chapter05.indexFrom` and
+  `GolubVanLoan.Chapter05.indexTo`, and the hyperbolic row update
+  `GolubVanLoan.Chapter05.hyperbolicApplyLeft` of §6.5.4.
+
+## Deviations from the source
+
+* **Algorithm 5.1.1** (correction). The source sets $\beta = -2$ in the branch $\sigma = 0$,
+  $x(1) < 0$, which makes $P$ not orthogonal. The program sets $\beta = 2$. See
+  `GolubVanLoan.Chapter05.algorithm_5_1_1`.
+* **Equations (5.1.4) and (5.1.5)** (correction). The source recovers
+  $\beta_j = 2/(1 + \|A(j+1{:}m, j)\|_2^2)$ from the stored vector, which is wrong when Algorithm
+  5.1.1 returned $\beta_j = 0$. The displays are stated for the recomputed $\beta_j$, and the first
+  columns of $Q$ with the returned $\beta_j$ are a separate program. See
+  `GolubVanLoan.Chapter05.equation_5_1_4`, `GolubVanLoan.Chapter05.equation_5_1_5` and
+  `GolubVanLoan.Chapter05.storedQFirstColumns`.
+* **Lemma 5.1.1** (generalization). The source assumes that $Q$ is orthogonal. The identity holds
+  without this assumption. See `GolubVanLoan.Chapter05.lemma_5_1_1`.
+* **Equation (5.1.11)** (reading). The orthogonal matrices $Q_k$ and $Z_k$ are the exact
+  transformations determined by the computed data at each step. See
+  `GolubVanLoan.Chapter05.equation_5_1_11`.
 
 ## Not formalized
 
-The 2-by-2 preview of §5.1.1 (prose), flop counts, the level-2/level-3 discussion of §5.1.7, the
-Problems. The rounding bound of Algorithm 5.1.2 is not claimed by the book.
+* **The 2-by-2 preview of §5.1.1.** It is prose.
+* **The flop counts of §5.1.** Operation counts are out of scope for the library.
+* **The level-2 and level-3 discussion of §5.1.7.**
+* **A rounding bound for Algorithm 5.1.2.** The source states none.
+* **The Problems of §5.1.** Problems are out of scope for the library.
 -/
 
 open FloatingPoint Matrix WithLp
@@ -92,22 +235,23 @@ namespace GolubVanLoan.Chapter05
 
 section Generic
 
-/-- In the exact model a relative perturbation is an equality. -/
+/-- With unit roundoff $0$, a relative perturbation $y$ of $x$ of any order is equal to $x$. -/
 theorem eq_of_isRelPert_zero {n : ℕ} {x y : ℝ} (h : IsRelPert 0 n x y) : y = x := by
   obtain ⟨θ, hθ, rfl⟩ := h
   have hθ0 : θ = 0 := abs_nonpos_iff.1 (by simpa [gamma] using hθ)
   simp [hθ0]
 
-/-- The inner-product accumulation along a mapped list is the accumulation of the composed
-vectors. -/
+/-- The inner product of $x$ and $y$ accumulated along the image of a list $o$ under a map $f$ is
+the inner product of $x \circ f$ and $y \circ f$ accumulated along $o$. -/
 theorem dotAccum_map {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ) {ι κ : Type} (f : κ → ι)
     (o : List κ) (x y : ι → ℝ) (c : ℝ) :
     dotAccum rnd (o.map f) x y c = dotAccum rnd o (x ∘ f) (y ∘ f) c := by
   simp only [dotAccum, List.foldlM_map, Function.comp_apply]
 
-/-- **An accumulation from `0` along a duplicate-free index list is an inner product over the
-listed indices**: over an idempotent model, a run of `dotAccum` along `l` is a `RoundsDot` of the
-restrictions of `x` and `y` to the subtype `{i // i ∈ l}`. -/
+/-- Let the rounding model be idempotent, and let $l$ be a list of indices without duplicates. Every
+result $s$ of the accumulation of $x^T y$ along $l$, started from $0$, is a computed inner
+product (`FloatingPoint.RoundsDot`) of the restrictions $x|_l$ and $y|_l$, which are indexed by
+the subtype `{i // i ∈ l}`. -/
 theorem roundsDot_subtype_of_mem_run_dotAccum {fp : RoundingModel ℝ} (hfp : fp.IsIdempotent)
     {ι : Type} {l : List ι} (hl : l.Nodup) {x y : ι → ℝ} {s : ℝ}
     (h : s ∈ (dotAccum fp.round l x y 0).run) :
@@ -121,19 +265,23 @@ theorem roundsDot_subtype_of_mem_run_dotAccum {fp : RoundingModel ℝ} (hfp : fp
 
 variable {ι : Type} [Fintype ι] [DecidableEq ι]
 
-/-! #### The entries of `(I - β v vᵀ) M` and `M (I - β v vᵀ)` -/
+/-! ### The entries of $(I - \beta v v^T) M$ and $M (I - \beta v v^T)$ -/
 
 variable {κ : Type*}
 
-/-- The entries of `(I - β v vᵀ) M`: column `q` of the product is `I - β v vᵀ` applied to column
-`q` of `M`. -/
+/-- Let $\beta \in \mathbb{R}$, let $v$ be a vector and let $M$ be a matrix whose rows have the
+indices of $v$. The entries of $(I - \beta v v^T) M$ are
+$$((I - \beta v v^T) M)_{iq} = M_{iq} - \beta v_i \, (v^T M(:, q)).$$
+-/
 theorem one_sub_smul_vecMulVec_mul_apply (β : ℝ) (v : ι → ℝ) (M : Matrix ι κ ℝ) (i : ι) (q : κ) :
     ((1 - β • vecMulVec v v : Matrix ι ι ℝ) * M) i q = M i q - β * v i * (v ⬝ᵥ fun r => M r q) := by
   change ((1 - β • vecMulVec v v) *ᵥ fun r => M r q) i = _
   rw [one_sub_smul_vecMulVec_mulVec_apply]
 
-/-- The entries of `M (I - β v vᵀ)`: row `r` of the product is `I - β v vᵀ` applied to row `r` of
-`M`. -/
+/-- Let $\beta \in \mathbb{R}$, let $v$ be a vector and let $M$ be a matrix whose columns have the
+indices of $v$. The entries of $M (I - \beta v v^T)$ are
+$$(M (I - \beta v v^T))_{rq} = M_{rq} - \beta \, (M(r, :) \, v) \, v_q.$$
+-/
 theorem mul_one_sub_smul_vecMulVec_apply (β : ℝ) (v : ι → ℝ) (M : Matrix κ ι ℝ) (r : κ) (q : ι) :
     (M * (1 - β • vecMulVec v v : Matrix ι ι ℝ)) r q = M r q - β * (M r ⬝ᵥ v) * v q := by
   change (M * (1 - β • vecMulVec v v : Matrix ι ι ℝ))ᵀ q r = _
@@ -142,26 +290,30 @@ theorem mul_one_sub_smul_vecMulVec_apply (β : ℝ) (v : ι → ℝ) (M : Matrix
   change M r q - β * v q * (M r ⬝ᵥ v) = _
   ring
 
-/-- Right multiplication by `I - β v vᵀ` acts on each row as `I - β v vᵀ` (a symmetric matrix). -/
+/-- Row $r$ of $M (I - \beta v v^T)$ is $(I - \beta v v^T)$ applied to row $r$ of $M$, because
+$I - \beta v v^T$ is symmetric. -/
 theorem mul_one_sub_smul_vecMulVec_apply_eq_mulVec (β : ℝ) (v : ι → ℝ) (M : Matrix κ ι ℝ)
     (r : κ) (q : ι) :
     (M * (1 - β • vecMulVec v v : Matrix ι ι ℝ)) r q = ((1 - β • vecMulVec v v) *ᵥ M r) q := by
   rw [mul_one_sub_smul_vecMulVec_apply, one_sub_smul_vecMulVec_mulVec_apply, dotProduct_comm]
   ring
 
-/-- For `v` supported on `S`, `(I - β v vᵀ) M` agrees with `M` in the rows outside `S`. -/
+/-- Let $v$ vanish outside a set $S$ of indices. Then $(I - \beta v v^T) M$ agrees with $M$ in every
+row $i \notin S$. -/
 theorem one_sub_smul_vecMulVec_mul_apply_of_notMem {v : ι → ℝ} {S : ι → Prop}
     (hv : ∀ l, ¬ S l → v l = 0) (β : ℝ) (M : Matrix ι κ ℝ) {i : ι} (hi : ¬ S i) (q : κ) :
     ((1 - β • vecMulVec v v : Matrix ι ι ℝ) * M) i q = M i q := by
   rw [one_sub_smul_vecMulVec_mul_apply, hv i hi, mul_zero, zero_mul, sub_zero]
 
-/-- For `v` supported on `S`, `M (I - β v vᵀ)` agrees with `M` in the columns outside `S`. -/
+/-- Let $v$ vanish outside a set $S$ of indices. Then $M (I - \beta v v^T)$ agrees with $M$ in every
+column $q \notin S$. -/
 theorem mul_one_sub_smul_vecMulVec_apply_of_notMem {v : ι → ℝ} {S : ι → Prop}
     (hv : ∀ l, ¬ S l → v l = 0) (β : ℝ) (M : Matrix κ ι ℝ) (r : κ) {q : ι} (hq : ¬ S q) :
     (M * (1 - β • vecMulVec v v : Matrix ι ι ℝ)) r q = M r q := by
   rw [mul_one_sub_smul_vecMulVec_apply, hv q hq, mul_zero, sub_zero]
 
-/-- For `v` supported on `S`, `I - β v vᵀ` fixes a column of `M` that vanishes on `S`. -/
+/-- Let $v$ vanish outside a set $S$ of indices. If column $q$ of $M$ vanishes on $S$, then column
+$q$ of $(I - \beta v v^T) M$ is column $q$ of $M$. -/
 theorem one_sub_smul_vecMulVec_mul_apply_of_forall {v : ι → ℝ} {S : ι → Prop}
     (hv : ∀ l, ¬ S l → v l = 0) (β : ℝ) (M : Matrix ι κ ℝ) {q : κ} (hM : ∀ l, S l → M l q = 0)
     (i : ι) : ((1 - β • vecMulVec v v : Matrix ι ι ℝ) * M) i q = M i q := by
@@ -171,7 +323,8 @@ theorem one_sub_smul_vecMulVec_mul_apply_of_forall {v : ι → ℝ} {S : ι → 
     · simp [hv l hl]
   rw [one_sub_smul_vecMulVec_mul_apply, h0, mul_zero, sub_zero]
 
-/-- For `v` supported on `S`, `I - β v vᵀ` fixes on the right a row of `M` that vanishes on `S`. -/
+/-- Let $v$ vanish outside a set $S$ of indices. If row $r$ of $M$ vanishes on $S$, then row $r$ of
+$M (I - \beta v v^T)$ is row $r$ of $M$. -/
 theorem mul_one_sub_smul_vecMulVec_apply_of_forall {v : ι → ℝ} {S : ι → Prop}
     (hv : ∀ l, ¬ S l → v l = 0) (β : ℝ) (M : Matrix κ ι ℝ) {r : κ} (hM : ∀ l, S l → M r l = 0)
     (q : ι) : (M * (1 - β • vecMulVec v v : Matrix ι ι ℝ)) r q = M r q := by
@@ -181,8 +334,9 @@ theorem mul_one_sub_smul_vecMulVec_apply_of_forall {v : ι → ℝ} {S : ι → 
     · simp [hv l hl]
   rw [mul_one_sub_smul_vecMulVec_apply, h0, mul_zero, zero_mul, sub_zero]
 
-/-- For `v` supported on `S`, the rows `S` of `(I - β v vᵀ) M` see a column of `M` only through
-its entries on `S`. -/
+/-- Let $v$ vanish outside a set $S$ of indices, and let the vector $u$ agree with column $q$ of $M$
+on $S$. Then $((I - \beta v v^T) M)_{iq} = ((I - \beta v v^T) u)_i$ for every $i \in S$: the
+rows in $S$ of the product depend on column $q$ of $M$ only through its entries in $S$. -/
 theorem one_sub_smul_vecMulVec_mul_apply_eq_mulVec {v : ι → ℝ} {S : ι → Prop}
     (hv : ∀ l, ¬ S l → v l = 0) (β : ℝ) (M : Matrix ι κ ℝ) (u : ι → ℝ) {q : κ}
     (hMu : ∀ l, S l → M l q = u l) {i : ι} (hi : S i) :
@@ -193,14 +347,16 @@ theorem one_sub_smul_vecMulVec_mul_apply_eq_mulVec {v : ι → ℝ} {S : ι → 
     · simp [hv l hl]
   rw [one_sub_smul_vecMulVec_mul_apply, one_sub_smul_vecMulVec_mulVec_apply, hMu i hi, h]
 
-/-! #### Selecting columns of the identity -/
+/-! ### Selecting columns of the identity -/
 
-/-- The columns of `I` listed by `l`: the matrix `E = [e_{l₀} ⋯ e_{l_{k-1}}]`. -/
+/-- For a list $l = [l_0, \dots, l_{k-1}]$ of indices, `selCols l` is the matrix
+$E = [e_{l_0} \cdots e_{l_{k-1}}]$ whose column $a$ is the unit vector $e_{l_a}$. -/
 def selCols (l : List ι) : Matrix ι (Fin l.length) ℝ :=
   of fun r a => if l.get a = r then 1 else 0
 
 omit [Fintype ι] in
-/-- Row `l.get a` of `E N` is row `a` of `N`. -/
+/-- If the list $l$ has no duplicates, row $l_a$ of $E N$ is row $a$ of $N$, where $E$ is
+`GolubVanLoan.Chapter05.selCols l`. -/
 theorem selCols_mul_apply_get {l : List ι} (hl : l.Nodup) (N : Matrix (Fin l.length) κ ℝ)
     (a : Fin l.length) (c : κ) : (selCols l * N) (l.get a) c = N a c := by
   rw [Matrix.mul_apply, Finset.sum_eq_single a]
@@ -211,7 +367,8 @@ theorem selCols_mul_apply_get {l : List ι} (hl : l.Nodup) (N : Matrix (Fin l.le
   · simp
 
 omit [Fintype ι] in
-/-- The rows of `E N` outside `l` vanish. -/
+/-- Every row of $E N$ whose index is not in the list $l$ is zero, where $E$ is
+`GolubVanLoan.Chapter05.selCols l`. -/
 theorem selCols_mul_apply_of_notMem {l : List ι} (N : Matrix (Fin l.length) κ ℝ) {r : ι}
     (hr : r ∉ l) (c : κ) : (selCols l * N) r c = 0 := by
   rw [Matrix.mul_apply]
@@ -220,7 +377,8 @@ theorem selCols_mul_apply_of_notMem {l : List ι} (N : Matrix (Fin l.length) κ 
   simp only [selCols, of_apply, this, ite_false, zero_mul]
 
 omit [Fintype ι] in
-/-- Column `l.get e` of `N Eᵀ` is column `e` of `N`. -/
+/-- If the list $l$ has no duplicates, column $l_e$ of $N E^T$ is column $e$ of $N$, where $E$ is
+`GolubVanLoan.Chapter05.selCols l`. -/
 theorem mul_selCols_transpose_apply_get {l : List ι} (hl : l.Nodup)
     (N : Matrix κ (Fin l.length) ℝ) (r : κ) (e : Fin l.length) :
     (N * (selCols l)ᵀ) r (l.get e) = N r e := by
@@ -232,7 +390,8 @@ theorem mul_selCols_transpose_apply_get {l : List ι} (hl : l.Nodup)
   · simp
 
 omit [Fintype ι] in
-/-- The columns of `N Eᵀ` outside `l` vanish. -/
+/-- Every column of $N E^T$ whose index is not in the list $l$ is zero, where $E$ is
+`GolubVanLoan.Chapter05.selCols l`. -/
 theorem mul_selCols_transpose_apply_of_notMem {l : List ι} (N : Matrix κ (Fin l.length) ℝ)
     (r : κ) {c : ι} (hc : c ∉ l) : (N * (selCols l)ᵀ) r c = 0 := by
   rw [Matrix.mul_apply]
@@ -240,28 +399,33 @@ theorem mul_selCols_transpose_apply_of_notMem {l : List ι} (N : Matrix κ (Fin 
   have : l.get e ≠ c := fun h => hc (h ▸ List.get_mem l e)
   simp only [transpose_apply, selCols, of_apply, this, ite_false, mul_zero]
 
-/-- Row `a` of `Eᵀ A` is row `l.get a` of `A`. -/
+/-- Row $a$ of $E^T A$ is row $l_a$ of $A$, where $E$ is `GolubVanLoan.Chapter05.selCols l`. -/
 theorem selCols_transpose_mul_apply (l : List ι) (A : Matrix ι κ ℝ) (a : Fin l.length) (c : κ) :
     ((selCols l)ᵀ * A) a c = A (l.get a) c := by
   simp [Matrix.mul_apply, selCols]
 
-/-- Column `a` of `A E` is column `l.get a` of `A`. -/
+/-- Column $a$ of $A E$ is column $l_a$ of $A$, where $E$ is `GolubVanLoan.Chapter05.selCols l`. -/
 theorem mul_selCols_apply (l : List ι) (A : Matrix κ ι ℝ) (r : κ) (a : Fin l.length) :
     (A * selCols l) r a = A r (l.get a) := by
   simp [Matrix.mul_apply, selCols]
 
 end Generic
 
-/-! ### Loops writing one column, or one row, per step -/
+/-! ### Loops that rewrite one column, or one row, per step -/
 
 section Loops
 
 variable {m n : ℕ}
 
-/-- **A loop rewriting one column per step**, over a duplicate-free column list: step `q`
-replaces column `q` by a result of `g q` applied to its current value. Its runs are the matrices
-that agree with `A` off the listed columns and whose column `q` is, for each listed `q`, a result
-of `g q` on column `q` of `A`. The column form of `SetM.mem_run_foldlM_update_of_nodup`. -/
+/-- A loop that rewrites one column per step. For each column index $q$, let $g_q$ be a
+nondeterministic program on vectors of $\mathbb{R}^m$, and let `cols` be a list of column
+indices without duplicates. Consider the loop that starts from $A \in \mathbb{R}^{m \times n}$
+and, for each $q$ in `cols` in turn, replaces column $q$ by a result of $g_q$ applied to its
+current value. A matrix $B$ is a result of this loop if and only if $B$ agrees with $A$ in every
+column that is not in `cols`, and for every $q$ in `cols` column $q$ of $B$ is a result of $g_q$
+applied to column $q$ of $A$.
+
+This is the column form of `SetM.mem_run_foldlM_update_of_nodup`. -/
 theorem mem_run_foldlM_updateCol_of_nodup (g : Fin n → (Fin m → ℝ) → SetM (Fin m → ℝ))
     {cols : List (Fin n)} (hcols : cols.Nodup) (A B : Matrix (Fin m) (Fin n) ℝ) :
     B ∈ (cols.foldlM (fun (A : Matrix (Fin m) (Fin n) ℝ) q => do
@@ -298,8 +462,14 @@ theorem mem_run_foldlM_updateCol_of_nodup (g : Fin n → (Fin m → ℝ) → Set
     refine ⟨fun q i => B i q, (h _).2 ⟨fun q hq => funext fun i => hout q hq i, hin⟩, ?_⟩
     rfl
 
-/-- **A loop rewriting one row per step**, over a duplicate-free row list: the row form of
-`mem_run_foldlM_updateCol_of_nodup`, directly `SetM.mem_run_foldlM_update_of_nodup` on the rows. -/
+/-- A loop that rewrites one row per step. For each row index $r$, let $g_r$ be a nondeterministic
+program on vectors of $\mathbb{R}^n$, and let `rows` be a list of row indices without
+duplicates. A matrix $B$ is a result of the loop that starts from $A$ and, for each $r$ in
+`rows` in turn, replaces row $r$ by a result of $g_r$ applied to its current value, if and only
+if $B$ agrees with $A$ in every row that is not in `rows`, and for every $r$ in `rows` row $r$
+of $B$ is a result of $g_r$ applied to row $r$ of $A$.
+
+This is `SetM.mem_run_foldlM_update_of_nodup` applied to the rows. -/
 theorem mem_run_foldlM_updateRow_of_nodup (g : Fin m → (Fin n → ℝ) → SetM (Fin n → ℝ))
     {rows : List (Fin m)} (hrows : rows.Nodup) (A B : Matrix (Fin m) (Fin n) ℝ) :
     B ∈ (rows.foldlM (fun (A : Matrix (Fin m) (Fin n) ℝ) r => do
@@ -316,28 +486,42 @@ section Reflections
 
 variable {m : ℕ}
 
-/-- **§5.1.2, (5.1.1): the Householder reflection** `P = I - β v vᵀ`, `β = 2 / vᵀv`, with
-Householder vector `v`: "if a vector `x` is multiplied by `P`, then it is reflected in the
-hyperplane `span{v}⊥`". (For `v = 0` it is the identity, the value of `2 / 0 = 0`.) -/
+/-- **Equation (5.1.1)** of [golub2013matrix] (Householder reflection). For $v \in \mathbb{R}^m$,
+the **Householder matrix** of $v$ is
+$$P = I - \beta v v^T, \qquad \beta = \frac{2}{v^T v},$$
+and $v$ is its **Householder vector**. In the words of the source, if a vector $x$ is multiplied
+by $P$, then it is reflected in the hyperplane $\operatorname{span}\{v\}^\perp$.
+
+For $v = 0$ the definition gives $P = I$, because $2 / 0 = 0$ in Lean. The matrix is the
+backbone's `Matrix.reflector v` (`GolubVanLoan.Chapter05.householderMatrix_eq_reflector`). -/
 noncomputable def householderMatrix (v : Fin m → ℝ) : Matrix (Fin m) (Fin m) ℝ :=
   1 - (2 / (v ⬝ᵥ v)) • vecMulVec v v
 
-/-- The Householder matrix is the backbone's reflector `Matrix.reflector v`. -/
+/-- The Householder matrix of $v$ is the backbone's reflector `Matrix.reflector v`, which is
+$I - (2 / v^T v) v v^T$. -/
 theorem householderMatrix_eq_reflector (v : Fin m → ℝ) : householderMatrix v = reflector v :=
   (reflector_eq_one_sub_smul_vecMulVec v).symm
 
-/-- **§5.1.2**: "Householder matrices are symmetric …". -/
+/-- **Section 5.1.2** of [golub2013matrix], symmetry. For every $v \in \mathbb{R}^m$, the
+Householder matrix $P = I - (2 / v^T v) v v^T$ is symmetric: $P^T = P$. -/
 theorem householderMatrix_isSymm (v : Fin m → ℝ) : (householderMatrix v).IsSymm :=
   transpose_one_sub_smul_vecMulVec _ _
 
-/-- **§5.1.2**: "… and orthogonal". -/
+/-- **Section 5.1.2** of [golub2013matrix], orthogonality. For every $v \in \mathbb{R}^m$, the
+Householder matrix $P = I - (2 / v^T v) v v^T$ is orthogonal. This includes $v = 0$, where
+$P = I$. -/
 theorem householderMatrix_mem_orthogonalGroup (v : Fin m → ℝ) :
     householderMatrix v ∈ orthogonalGroup (Fin m) ℝ := by
   rw [householderMatrix_eq_reflector]
   exact reflector_mem_orthogonalGroup v
 
-/-- **(5.1.2)**: for `α = ±‖x‖₂` and `v = x + α e₁ ≠ 0`,
-`P x = (I - 2 v vᵀ / vᵀv) x = -α e₁`, i.e. "`v = x ± ‖x‖₂ e₁ ⇒ P x = ∓ ‖x‖₂ e₁`". -/
+/-- **Equation (5.1.2)** of [golub2013matrix]. Let $m \ge 1$ and $x \in \mathbb{R}^m$, let
+$\alpha = \|x\|_2$ or $\alpha = -\|x\|_2$, and let $v = x + \alpha e_1 \neq 0$. Then
+$$P x = \Bigl(I - \frac{2 v v^T}{v^T v}\Bigr) x = -\alpha e_1.$$
+In the notation of the source: $v = x \pm \|x\|_2 e_1$ implies $P x = \mp \|x\|_2 e_1$.
+
+Here $m = k + 1$, $e_1$ is `Pi.single 0 1`, and $P$ is
+`GolubVanLoan.Chapter05.householderMatrix v`. -/
 theorem equation_5_1_2 {k : ℕ} (x : Fin (k + 1) → ℝ) {α : ℝ}
     (hα : α = ‖(toLp 2 x : EuclideanSpace ℝ (Fin (k + 1)))‖ ∨
       α = -‖(toLp 2 x : EuclideanSpace ℝ (Fin (k + 1)))‖)
@@ -348,9 +532,12 @@ theorem equation_5_1_2 {k : ℕ} (x : Fin (k + 1) → ℝ) {α : ℝ}
   simp only [star_trivial, RCLike.ofReal_real_eq_id, id]
   rcases hα with rfl | rfl <;> ring
 
-/-- **§5.1.3, Parlett's formula**: if `x₁ + ‖x‖₂ ≠ 0`, then
-`x₁ - ‖x‖₂ = -(x₂² + ⋯ + x_m²) / (x₁ + ‖x‖₂)`, the cancellation-free form of `v₁ = x₁ - ‖x‖₂`
-when `x₁ > 0`. -/
+/-- **Section 5.1.3** of [golub2013matrix] (Parlett's formula). Let $m \ge 1$ and
+$x \in \mathbb{R}^m$ with $x_1 + \|x\|_2 \neq 0$. Then
+$$x_1 - \|x\|_2 = \frac{-(x_2^2 + \cdots + x_m^2)}{x_1 + \|x\|_2}.$$
+For $x_1 > 0$, the right-hand side computes $v_1 = x_1 - \|x\|_2$ without cancellation.
+
+Here $m = k + 1$, $x_1$ is `x 0`, and the sum runs over `Fin k` through `Fin.succ`. -/
 theorem parlett_formula {k : ℕ} (x : Fin (k + 1) → ℝ)
     (h : x 0 + ‖(toLp 2 x : EuclideanSpace ℝ (Fin (k + 1)))‖ ≠ 0) :
     x 0 - ‖(toLp 2 x : EuclideanSpace ℝ (Fin (k + 1)))‖ =
@@ -364,24 +551,25 @@ theorem parlett_formula {k : ℕ} (x : Fin (k + 1) → ℝ)
 
 end Reflections
 
-/-! ### §5.1.3 Computing the Householder vector: `house` -/
+/-! ### §5.1.3 Computing the Householder vector -/
 
 section House
 
 variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ) {m : ℕ}
 
-/-- The pivot entry `v(1)` of `house`: `x(1) - μ` if `x(1) ≤ 0`, else Parlett's cancellation-free
-`-σ / (x(1) + μ)` (§5.1.3), each operation rounded. -/
+/-- The pivot entry $v_1$ of Algorithm 5.1.1, computed from $x_1$, $\mu$ and $\sigma$ with every
+operation rounded: $\mathrm{fl}(x_1 - \mu)$ if $x_1 \le 0$, and Parlett's form
+$\mathrm{fl}(-\sigma / \mathrm{fl}(x_1 + \mu))$ if $x_1 > 0$. -/
 noncomputable def parlettPivot (x₁ μ σ : ℝ) : M ℝ :=
   if x₁ ≤ 0 then rnd (x₁ - μ) else do rnd (-σ / (← rnd (x₁ + μ)))
 
-/-- **Algorithm 5.1.1 (`house`) on the entries of `x` listed by `o`** — convention 10's form of the
-book's `house(A(j:m, j))`. The pivot `p = o.head` is the book's `x(1)`, the tail `t = o.tail` its
-`x(2:m)`:
+/-- **Algorithm 5.1.1** of [golub2013matrix] (`house`), on the entries of $x \in \mathbb{R}^m$
+listed by an index list $o$. The first index $p$ of $o$ plays the role of the source's $x(1)$,
+and the other indices $t$ of $o$ play the role of $x(2{:}m)$. The program computes
 ```
 σ = x(2:m)ᵀ x(2:m),  v = [1; x(2:m)]
 if σ = 0 and x(1) >= 0:      β = 0
-elseif σ = 0 & x(1) < 0:     β = 2          (the book prints -2)
+elseif σ = 0 & x(1) < 0:     β = 2          (the source prints -2)
 else
     μ = √(x(1)² + σ)
     if x(1) <= 0:  v(1) = x(1) - μ
@@ -389,9 +577,19 @@ else
     β = 2 v(1)² / (σ + v(1)²)
     v = v / v(1)
 ```
-`σ` is Algorithm 1.1.1 over the tail (`FloatingPoint.dotAccum`); `v(1)²` is computed once; `v` is
-`1` at the pivot, `x i / v(1)` on the tail and `0` off `o`. For `o = []` the result is `(0, 0)`.
--/
+with every arithmetic result rounded. The sum $\sigma$ is accumulated from $0$ as in Algorithm
+1.1.1, and $v(1)^2$ is computed once. The output $v$ is $1$ at $p$; at each index $i$ of $t$ it is
+$\mathrm{fl}(x_i / v(1))$, or $x_i$ in the two branches with $\sigma = 0$; and it is $0$ at every
+index that is not in $o$. For the empty list the output is $(0, 0)$.
+
+**Correction.** In the branch $\sigma = 0$, $x(1) < 0$ the source sets $\beta = -2$. Then
+$I - \beta v v^T = I + 2 e_1 e_1^T$ is not orthogonal. The program sets $\beta = 2$, for which
+$I - \beta v v^T = I - 2 e_1 e_1^T$ is orthogonal and maps $x = x_1 e_1$ to $|x_1| e_1$.
+
+This is the form in which later algorithms apply `house` to a block such as $A(j{:}m, j)$: the
+full vector together with the list of the active indices. The sum $\sigma$ is
+`FloatingPoint.dotAccum` over $t$. The program is generic in the monad `M` and the rounding hook
+`rnd`. -/
 noncomputable def houseOn (o : List (Fin m)) (x : Fin m → ℝ) : M ((Fin m → ℝ) × ℝ) :=
   match o with
   | [] => pure (0, 0)
@@ -410,28 +608,36 @@ noncomputable def houseOn (o : List (Fin m)) (x : Fin m → ℝ) : M ((Fin m →
         pure (Function.update w i b)) v
       pure (w, β)
 
-/-- **Algorithm 5.1.1 (`house`)**: "Given `x ∈ ℝ^m`, this function computes `v ∈ ℝ^m` with
-`v(1) = 1` and `β ∈ ℝ` such that `P = I_m - β v vᵀ` is orthogonal and `P x = ‖x‖₂ e₁`" — `houseOn`
-at the full index list (convention 10). -/
+/-- **Algorithm 5.1.1** of [golub2013matrix] (`house`). Given $x \in \mathbb{R}^m$ with $m \ge 1$,
+the algorithm computes $v \in \mathbb{R}^m$ with $v(1) = 1$ and $\beta \in \mathbb{R}$ such that
+$P = I_m - \beta v v^T$ is orthogonal and $P x = \|x\|_2 e_1$. It is
+`GolubVanLoan.Chapter05.houseOn` on the full index list, which lists the program.
+
+**Correction.** In the branch $\sigma = 0$, $x(1) < 0$ the source sets $\beta = -2$, which makes
+$P = I + 2 e_1 e_1^T$ not orthogonal. The program sets $\beta = 2$.
+
+Here $m = k + 1$, and the index list is `List.finRange (k + 1)`. -/
 noncomputable def algorithm_5_1_1 {k : ℕ} (x : Fin (k + 1) → ℝ) :
     M ((Fin (k + 1) → ℝ) × ℝ) :=
   houseOn rnd (List.finRange (k + 1)) x
 
 end House
 
-/-! ### `house`: the bridge, the exact semantics and the rounding bound -/
+/-! ### Algorithm 5.1.1: rounding bridge, exact semantics and rounding bound -/
 
 section HouseRuns
 
 variable {m : ℕ}
 
-/-- The number of listed indices of a duplicate-free list. -/
+/-- For a list $l$ without duplicates, the subtype `{i // i ∈ l}` of the listed indices has $|l|$
+elements. -/
 theorem card_subtype_mem_of_nodup {ι : Type} [DecidableEq ι] {l : List ι} (hl : l.Nodup) :
     Fintype.card {i // i ∈ l} = l.length := by
   rw [Fintype.card_of_subtype l.toFinset (fun x => List.mem_toFinset),
     List.toFinset_card_of_nodup hl]
 
-/-- The tail of `p :: t` inside the subtype of `p :: t`, as the subtype of `t` (for `p ∉ t`). -/
+/-- For $p \notin t$, the indices of the list $p :: t$ other than $p$ correspond to the indices of
+$t$. -/
 private def consTailEquiv {p : Fin m} {t : List (Fin m)} (hp : p ∉ t) :
     {j : {i // i ∈ p :: t} // j ≠ ⟨p, List.mem_cons_self⟩} ≃ {i // i ∈ t} where
   toFun j := ⟨j.1.1, (List.mem_cons.1 j.1.2).resolve_left fun h => j.2 (Subtype.ext h)⟩
@@ -441,11 +647,18 @@ private def consTailEquiv {p : Fin m} {t : List (Fin m)} (hp : p ∉ t) :
   left_inv _ := rfl
   right_inv _ := rfl
 
-/-- **The bridge of `house`** (convention 12): over an idempotent model, for a duplicate-free
-nonempty index list `o`, every run `(v̂, β̂)` of `houseOn fp.round o x` vanishes off `o`, and on
-the subtype `{i // i ∈ o}` it is a computed Householder vector of Parlett's formula
-(`FloatingPoint.RoundsHouseholderVectorParlett`) with pivot `o.head`. The tail sum is a `RoundsDot`
-because the accumulation starts from `0` (convention 6). -/
+/-- **Algorithm 5.1.1** of [golub2013matrix] on an index list, rounding bridge. Let the rounding
+model be idempotent, and let $o$ be a nonempty list of indices of $\mathbb{R}^m$ without
+duplicates, with first entry $p$. Every result $(\hat v, \hat\beta)$ of Algorithm 5.1.1 on the
+entries of $x$ listed by $o$, in the rounding model, satisfies two conditions. First,
+$\hat v_i = 0$ for every $i$ that is not in $o$. Second, $x|_o$, $\hat v|_o$ and $\hat\beta$
+satisfy the relation of a computed Householder vector with Parlett's formula and pivot $p$: the
+tail sum $\hat\sigma$ is a computed inner product, $\hat v_p = 1$, and the other quantities are
+rounded results of the steps of the algorithm in the branch that $\hat\sigma$ and $x_p$ select.
+
+The relation is `FloatingPoint.RoundsHouseholderVectorParlett` on the subtype `{i // i ∈ o}`.
+The tail sum is a `FloatingPoint.RoundsDot` because the accumulation starts from $0$; this step
+uses the idempotence of the model. -/
 theorem houseOn_rounds {fp : RoundingModel ℝ} (hfp : fp.IsIdempotent) {o : List (Fin m)}
     (ho : o.Nodup) (hne : o ≠ []) (x : Fin m → ℝ) {vβ : (Fin m → ℝ) × ℝ}
     (h : vβ ∈ (houseOn fp.round o x).run) :
@@ -503,7 +716,8 @@ theorem houseOn_rounds {fp : RoundingModel ℝ} (hfp : fp.IsIdempotent) {o : Lis
       · simp only [hxp, ↓reduceIte, SetM.mem_run_bind] at hv₁
         exact Or.inr ⟨lt_of_not_ge hxp, hv₁⟩
 
-/-- The exact run of `house` is the run of the exact model. -/
+/-- The exact output of `GolubVanLoan.Chapter05.houseOn` is a result of the program in the exact
+rounding model. -/
 private theorem houseOn_mem_exact (o : List (Fin m)) (x : Fin m → ℝ) :
     Id.run (houseOn pure o x) ∈ (houseOn (RoundingModel.exact ℝ).round o x).run := by
   rw [RoundingModel.round_exact]
@@ -513,7 +727,10 @@ private theorem houseOn_mem_exact (o : List (Fin m)) (x : Fin m → ℝ) :
     simp only [houseOn, parlettPivot, dotAccum_pure, pure_bind, List.foldlM_pure]
     split_ifs <;> simp only [pure_bind, SetM.mem_run_pure] <;> rfl
 
-/-- **Transport of reflector data along an equivalence of index types.** -/
+/-- Reflector data are invariant under a change of index type. Let $e : \kappa \simeq \iota$ be a
+bijection. If $(\hat v \circ e, \hat\beta)$ are reflector data of order $K$ for $x \circ e$ with
+pivot $e^{-1}(i)$ and target $c$, then $(\hat v, \hat\beta)$ are reflector data of order $K$ for
+$x$ with pivot $i$ and target $c$ (`FloatingPoint.IsReflectorPert`). -/
 theorem IsReflectorPert.of_comp_equiv {ι κ : Type} [Fintype ι] [DecidableEq ι] [Fintype κ]
     [DecidableEq κ] (e : κ ≃ ι) {u : ℝ} {K : ℕ} {x : ι → ℝ} {i : ι} {c : ℝ} {vhat : ι → ℝ}
     {βhat : ℝ} (h : IsReflectorPert u K (x ∘ e) (e.symm i) c (vhat ∘ e) βhat) :
@@ -545,12 +762,18 @@ theorem IsReflectorPert.of_comp_equiv {ι κ : Type} [Fintype ι] [DecidableEq �
     · subst hji; simp
     · rw [Pi.single_eq_of_ne hji, Pi.single_eq_of_ne (fun h => hji (e.symm.injective h))]
 
-/-- **Exact semantics of `house` on an index list** (read off the bridge at the exact model,
-convention 11): for a duplicate-free nonempty `o` with head `p`, the exact output `(v, β)` has
-`v p = 1`, vanishes off `o`, `β = 0 ∨ β vᵀv = 2` (so `1 - β v vᵀ` is `1` or
-`householderMatrix v`), `1 - β v vᵀ` is orthogonal, and it maps `x` to the vector that is
-`‖x|_o‖₂` at the pivot, `0` on the tail and `x` off `o`: the reflector acts on the coordinates of
-`o` only. -/
+/-- **Algorithm 5.1.1** of [golub2013matrix] on an index list, exact semantics. Let $o$ be a
+nonempty list of indices of $\mathbb{R}^m$ without duplicates, with first entry $p$, and let
+$x \in \mathbb{R}^m$. In exact arithmetic, the output $(v, \beta)$ of Algorithm 5.1.1 on the
+entries of $x$ listed by $o$ satisfies the following: $v_p = 1$; $v_i = 0$ for every $i$ that is
+not in $o$; $\beta = 0$ or $\beta v^T v = 2$, so that $I - \beta v v^T$ is $I$ or the
+Householder matrix of $v$; $I - \beta v v^T$ is orthogonal; and $(I - \beta v v^T) x = y$ with
+$$y_i = \begin{cases} \|x|_o\|_2 & \text{if } i = p, \\ 0 & \text{if } i \in o,\ i \neq p, \\
+  x_i & \text{if } i \notin o. \end{cases}$$
+The reflection acts only on the coordinates listed by $o$.
+
+The exact output is `Id.run (houseOn pure o x)`. The proof reads it off
+`GolubVanLoan.Chapter05.houseOn_rounds` at the exact model. -/
 theorem houseOn_spec {o : List (Fin m)} (ho : o.Nodup) (hne : o ≠ []) (x : Fin m → ℝ) :
     (Id.run (houseOn pure o x)).1 (o.head hne) = 1 ∧
       (∀ i, i ∉ o → (Id.run (houseOn pure o x)).1 i = 0) ∧
@@ -596,12 +819,20 @@ theorem houseOn_spec {o : List (Fin m)} (ho : o.Nodup) (hne : o ≠ []) (x : Fin
     · have hih : i ≠ o.head hne := fun e => hio (e ▸ List.head_mem hne)
       simp [hio, hih]
 
-/-- **§5.1.5, first claim, rigorous** ("house produces a Householder vector `v̂` that is very
-close to the exact `v`"), on an index list: with `n = |o|`, `K = 18 n + 31`, `K u < 1` and an
-idempotent model, every run `(v̂, β̂)` of `houseOn fp.round o x` vanishes off `o` and on
-`{i // i ∈ o}` is reflector data of order `K` (`FloatingPoint.IsReflectorPert`): exact `(v, β)`
-with `1 - β v vᵀ` orthogonal, sending `x|_o` to `‖x|_o‖₂ e_head`, `|β| vᵀv ≤ 2`, and
-`β̂ = β (1 + θ)`, `v̂_i = v_i (1 + θ_i)` with `|θ|, |θ_i| ≤ γ_K`. The book's `O(u)` is `γ_K`. -/
+/-- **Section 5.1.5** of [golub2013matrix], accuracy of the computed Householder vector, on an index
+list. Let the rounding model be idempotent, let $o$ be a nonempty list of indices of
+$\mathbb{R}^m$ without duplicates, with first entry $p$ and length $n$, and let $K = 18 n + 31$
+with $K u < 1$. Every result $(\hat v, \hat\beta)$ of Algorithm 5.1.1 on the entries of $x$
+listed by $o$, in the rounding model, vanishes outside $o$, and on the indices of $o$ it is
+reflector data of order $K$ for $x|_o$ with pivot $p$ and target $\|x|_o\|_2$. That is, there
+are exact $v$ and $\beta$, indexed by the entries of $o$, such that $I - \beta v v^T$ is
+orthogonal, $(I - \beta v v^T)\, x|_o = \|x|_o\|_2\, e_p$, $|\beta| v^T v \le 2$, and
+$$\hat\beta = \beta (1 + \theta), \qquad \hat v_i = v_i (1 + \theta_i), \qquad |\theta|,
+  |\theta_i| \le \gamma_K.$$
+
+The source says that `house` produces a vector $\hat v$ that is very close to the exact $v$,
+with a relative error of order $O(u)$. The formal statement gives the bound $\gamma_K$. The
+relation is `FloatingPoint.IsReflectorPert` on the subtype `{i // i ∈ o}`. -/
 theorem houseOn_rounding {fp : RoundingModel ℝ} (hfp : fp.IsIdempotent) {o : List (Fin m)}
     (ho : o.Nodup) (hne : o ≠ []) (hu : ((18 * o.length + 31 : ℕ) : ℝ) * fp.u < 1)
     (x : Fin m → ℝ) {vβ : (Fin m → ℝ) × ℝ} (h : vβ ∈ (houseOn fp.round o x).run) :
@@ -624,11 +855,11 @@ section HouseVector
 
 variable {k : ℕ}
 
-/-- The subtype of the full index list is the whole index type. -/
+/-- The subtype of the indices listed in `List.finRange (k + 1)` is all of `Fin (k + 1)`. -/
 private def finRangeEquiv (k : ℕ) : {i // i ∈ List.finRange (k + 1)} ≃ Fin (k + 1) :=
   Equiv.subtypeUnivEquiv List.mem_finRange
 
-/-- The Euclidean norm of the restriction to the full index list is the norm. -/
+/-- The Euclidean norm of the restriction of $x$ to the full index list is $\|x\|_2$. -/
 private theorem norm_toLp_finRange (x : Fin (k + 1) → ℝ) :
     ‖(toLp 2 (fun j : {j // j ∈ List.finRange (k + 1)} => x j) :
         EuclideanSpace ℝ {j // j ∈ List.finRange (k + 1)})‖ =
@@ -637,16 +868,21 @@ private theorem norm_toLp_finRange (x : Fin (k + 1) → ℝ) :
   congr 1
   exact Fintype.sum_equiv (finRangeEquiv k) _ _ fun _ => rfl
 
-/-- The head of the full index list is `0`. -/
+/-- The first entry of `List.finRange (k + 1)` is $0$. -/
 private theorem head_finRange (h : List.finRange (k + 1) ≠ []) :
     (List.finRange (k + 1)).head h = 0 := by
   simp [List.finRange_succ]
 
-/-- **Algorithm 5.1.1, exact semantics**: with `(v, β) = house(x)` in exact arithmetic, `v(1) = 1`,
-`P = I - β v vᵀ` is orthogonal, `P x = ‖x‖₂ e₁`, and `β = 0 ∨ β vᵀv = 2` (so `P` is `I` or the
-Householder matrix of `v`). The cases of the book: `σ = 0` (`x = x₁ e₁`; `β = 0` for `x₁ ≥ 0`,
-`P = I - 2 e₁ e₁ᵀ` for `x₁ < 0`), otherwise `v = (x - ‖x‖₂ e₁) / (x₁ - ‖x‖₂)` with Parlett's
-formula for `x₁ > 0`. -/
+/-- **Algorithm 5.1.1** of [golub2013matrix], exact semantics. Let $m \ge 1$ and
+$x \in \mathbb{R}^m$. In exact arithmetic, the output $(v, \beta)$ of Algorithm 5.1.1 satisfies
+$v_1 = 1$, the matrix $P = I - \beta v v^T$ is orthogonal,
+$$P x = \|x\|_2 e_1,$$
+and $\beta = 0$ or $\beta v^T v = 2$, so that $P$ is $I$ or the Householder matrix of $v$.
+
+The algorithm has three cases. If $\sigma = 0$, then $x = x_1 e_1$; the output has $\beta = 0$
+for $x_1 \ge 0$ and gives $P = I - 2 e_1 e_1^T$ for $x_1 < 0$. Otherwise
+$v = (x - \|x\|_2 e_1) / (x_1 - \|x\|_2)$, with Parlett's formula for $x_1 - \|x\|_2$ when
+$x_1 > 0$. Here $m = k + 1$, and $v_1$ is `v 0`. -/
 theorem algorithm_5_1_1_spec (x : Fin (k + 1) → ℝ) :
     (Id.run (algorithm_5_1_1 pure x)).1 0 = 1 ∧
       (1 - (Id.run (algorithm_5_1_1 pure x)).2 •
@@ -668,11 +904,18 @@ theorem algorithm_5_1_1_spec (x : Fin (k + 1) → ℝ) :
   · subst hi; simp
   · simp [hi]
 
-/-- **§5.1.5, first claim, for the book's `house` on a whole vector**: with `K = 18 (k + 1) + 31`,
-`K u < 1` and an idempotent model, every run `(v̂, β̂)` of Algorithm 5.1.1 is reflector data of
-order `K` for `x` with target `‖x‖₂ e₁`: there are exact `(v, β)` (the exact output of the same
-branch) with `P = 1 - β v vᵀ` orthogonal, `P x = ‖x‖₂ e₁`, `|β| vᵀv ≤ 2`, and
-`β̂ = β (1 + θ)`, `v̂_i = v_i (1 + θ_i)`, `|θ|, |θ_i| ≤ γ_K`. -/
+/-- **Section 5.1.5** of [golub2013matrix], accuracy of the computed Householder vector. Let the
+rounding model be idempotent, let $m \ge 1$ and $x \in \mathbb{R}^m$, and let $K = 18 m + 31$
+with $K u < 1$. Every result $(\hat v, \hat\beta)$ of Algorithm 5.1.1 in the rounding model is
+reflector data of order $K$ for $x$ with pivot $1$ and target $\|x\|_2$. That is, there are
+exact $v \in \mathbb{R}^m$ and $\beta \in \mathbb{R}$ such that $P = I - \beta v v^T$ is
+orthogonal, $P x = \|x\|_2 e_1$, $|\beta| v^T v \le 2$, and
+$$\hat\beta = \beta (1 + \theta), \qquad \hat v_i = v_i (1 + \theta_i), \qquad |\theta|,
+  |\theta_i| \le \gamma_K.$$
+
+The source states the relative error as $O(u)$; the formal statement gives the bound $\gamma_K$.
+In the proof, $(v, \beta)$ is the exact output of the same branch of the algorithm. Here
+$m = k + 1$, and the relation is `FloatingPoint.IsReflectorPert`. -/
 theorem algorithm_5_1_1_rounding {fp : RoundingModel ℝ} (hfp : fp.IsIdempotent)
     (hu : ((18 * (k + 1) + 31 : ℕ) : ℝ) * fp.u < 1) (x : Fin (k + 1) → ℝ)
     {vβ : (Fin (k + 1) → ℝ) × ℝ} (h : vβ ∈ (algorithm_5_1_1 fp.round x).run) :
@@ -696,15 +939,17 @@ section Apply
 
 variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ) {m n : ℕ}
 
-/-- The scaled Householder vector `w = fl(β v)` on the listed entries (the book's `βv`, formed
-once). -/
+/-- The scaled Householder vector $w = \mathrm{fl}(\beta v)$ on the indices of the list $l$, and $0$
+at the other indices: the source's $\beta v$, formed once. -/
 def householderScaled (v : Fin m → ℝ) (β : ℝ) (l : List (Fin m)) : M (Fin m → ℝ) :=
   l.foldlM (fun (w : Fin m → ℝ) i => do
     let b ← rnd (β * v i)
     pure (Function.update w i b)) 0
 
-/-- One column of the premultiplication `A - (βv)(vᵀA)`: `s = vᵀ a` over `rows` by
-Algorithm 1.1.1, then `a(i) ← fl(a(i) - fl(w(i) s))` for `i ∈ rows`, with `w = fl(βv)`. -/
+/-- One column of the premultiplication $A - (\beta v)(v^T A)$. For a column $a$ and a given
+$w = \mathrm{fl}(\beta v)$, the program computes $s = v^T a$ over the indices in `rows` by
+Algorithm 1.1.1, and then sets $a_i \leftarrow \mathrm{fl}(a_i - \mathrm{fl}(w_i s))$ for each
+$i$ in `rows`. -/
 def householderLeftColumn (w v : Fin m → ℝ) (rows : List (Fin m)) (a : Fin m → ℝ) :
     M (Fin m → ℝ) := do
   let s ← dotAccum rnd rows v a 0
@@ -712,11 +957,18 @@ def householderLeftColumn (w v : Fin m → ℝ) (rows : List (Fin m)) (a : Fin m
     let b ← (do let t ← rnd (w i * s); rnd (a i - t))
     pure (Function.update a i b)) a
 
-/-- **§5.1.4, premultiplication** `PA = A - (βv)(vᵀA)`, "a matrix-vector product and a rank-1
-update", in place on the block `A(rows, cols)` of the full matrix (convention 10): the book's
-`A(rows, cols) = (I - β v vᵀ) A(rows, cols)`. `w = fl(βv)` is formed once; then for each column
-`q ∈ cols`, `s = vᵀ A(rows, q)` by Algorithm 1.1.1 and `A(i, q) ← fl(A(i, q) - fl(w(i) s))`.
-Entries outside `rows × cols` are untouched. -/
+/-- **Section 5.1.4** of [golub2013matrix], premultiplication by a Householder matrix. Let
+$v \in \mathbb{R}^m$, $\beta \in \mathbb{R}$, $A \in \mathbb{R}^{m \times n}$, and let `rows`
+and `cols` be lists of row and column indices. The program overwrites the block
+$A(\mathrm{rows}, \mathrm{cols})$ with $(I - \beta v v^T) A(\mathrm{rows}, \mathrm{cols})$ in
+the form of the source,
+$$P A = A - (\beta v)(v^T A),$$
+a matrix-vector product and a rank-1 update. It forms $w = \mathrm{fl}(\beta v)$ on `rows` once.
+Then for each $q$ in `cols` it computes $s = v^T A(\mathrm{rows}, q)$ by Algorithm 1.1.1 and
+sets $A(i, q) \leftarrow \mathrm{fl}(A(i, q) - \mathrm{fl}(w_i s))$ for each $i$ in `rows`. The
+entries outside the block are not changed.
+
+The program works in place on the full matrix over the two index lists. -/
 def householderApplyLeft (v : Fin m → ℝ) (β : ℝ) (rows : List (Fin m)) (cols : List (Fin n))
     (A : Matrix (Fin m) (Fin n) ℝ) : M (Matrix (Fin m) (Fin n) ℝ) := do
   let w ← householderScaled rnd v β rows
@@ -724,8 +976,10 @@ def householderApplyLeft (v : Fin m → ℝ) (β : ℝ) (rows : List (Fin m)) (c
     let c ← householderLeftColumn rnd w v rows (fun i => A i q)
     pure (A.updateCol q c)) A
 
-/-- One row of the postmultiplication `A - (Av)(βv)ᵀ`: `s = aᵀ v` over `cols` by Algorithm 1.1.1,
-then `a(j) ← fl(a(j) - fl(s w(j)))` for `j ∈ cols`, with `w = fl(βv)`. -/
+/-- One row of the postmultiplication $A - (A v)(\beta v)^T$. For a row $a$ and a given
+$w = \mathrm{fl}(\beta v)$, the program computes $s = a^T v$ over the indices in `cols` by
+Algorithm 1.1.1, and then sets $a_j \leftarrow \mathrm{fl}(a_j - \mathrm{fl}(s w_j))$ for each
+$j$ in `cols`. -/
 def householderRightRow (w v : Fin n → ℝ) (cols : List (Fin n)) (a : Fin n → ℝ) :
     M (Fin n → ℝ) := do
   let s ← dotAccum rnd cols a v 0
@@ -733,10 +987,17 @@ def householderRightRow (w v : Fin n → ℝ) (cols : List (Fin n)) (a : Fin n �
     let b ← (do let t ← rnd (s * w j); rnd (a j - t))
     pure (Function.update a j b)) a
 
-/-- **§5.1.4, postmultiplication** `AP = A - (Av)(βv)ᵀ`, in place on the block `A(rows, cols)`:
-the book's `A(rows, cols) = A(rows, cols)(I - β v vᵀ)`. `w = fl(βv)` is formed once; then for each
-row `r ∈ rows`, `s = A(r, cols) v` by Algorithm 1.1.1 and `A(r, j) ← fl(A(r, j) - fl(s w(j)))`.
-The symmetric twin of `householderApplyLeft` (convention 14). -/
+/-- **Section 5.1.4** of [golub2013matrix], postmultiplication by a Householder matrix. Let
+$v \in \mathbb{R}^n$, $\beta \in \mathbb{R}$, $A \in \mathbb{R}^{m \times n}$, and let `rows`
+and `cols` be lists of row and column indices. The program overwrites the block
+$A(\mathrm{rows}, \mathrm{cols})$ with $A(\mathrm{rows}, \mathrm{cols})(I - \beta v v^T)$ in the
+form
+$$A P = A - (A v)(\beta v)^T.$$
+It forms $w = \mathrm{fl}(\beta v)$ on `cols` once. Then for each $r$ in `rows` it computes
+$s = A(r, \mathrm{cols})\, v$ by Algorithm 1.1.1 and sets $A(r, j) \leftarrow \mathrm{fl}(A(r,
+j) - \mathrm{fl}(s w_j))$ for each $j$ in `cols`. The entries outside the block are not changed.
+
+This is the symmetric twin of `GolubVanLoan.Chapter05.householderApplyLeft`. -/
 def householderApplyRight (v : Fin n → ℝ) (β : ℝ) (rows : List (Fin m)) (cols : List (Fin n))
     (A : Matrix (Fin m) (Fin n) ℝ) : M (Matrix (Fin m) (Fin n) ℝ) := do
   let w ← householderScaled rnd v β cols
@@ -746,26 +1007,33 @@ def householderApplyRight (v : Fin n → ℝ) (β : ℝ) (rows : List (Fin m)) (
 
 end Apply
 
-/-! ### The Householder updates: bridges, exact semantics, rounding bounds -/
+/-! ### The Householder updates: rounding bridges, exact semantics and rounding bounds -/
 
 section ApplyRuns
 
 variable {m n : ℕ} {fp : RoundingModel ℝ}
 
-/-- `RoundsDot` in the exact model is the exact inner product. -/
+/-- In the exact rounding model, a computed inner product of $x$ and $y$ is the exact inner product
+$x^T y$. -/
 theorem eq_dotProduct_of_roundsDot_exact {ι : Type} [Fintype ι] {x y : ι → ℝ} {s : ℝ}
     (h : RoundsDot (RoundingModel.exact ℝ) x y s) : s = x ⬝ᵥ y := by
   have := abs_sub_le_of_roundsDot (by simp) (by simp) h
   simp only [RoundingModel.exact_u, gamma, mul_zero, zero_div, sub_zero, zero_mul] at this
   exact sub_eq_zero.1 (abs_nonpos_iff.1 this)
 
-/-- Every run of `householderScaled` rounds `β v i` on the listed entries. -/
+/-- For a list $l$ without duplicates, every result $w$ of
+`GolubVanLoan.Chapter05.householderScaled` in the rounding model has $w_i$ a rounding of
+$\beta v_i$ for every $i$ in $l$. -/
 theorem householderScaled_rounds {l : List (Fin m)} (hl : l.Nodup) {v w : Fin m → ℝ} {β : ℝ}
     (h : w ∈ (householderScaled fp.round v β l).run) : ∀ i ∈ l, fp.Rounds (β * v i) (w i) :=
   ((SetM.mem_run_foldlM_update_of_nodup (fun i _ (_ : Fin m → ℝ) => fp.round (β * v i)) l hl
     (fun _ _ _ _ _ _ => rfl) 0 w).1 h).2
 
-/-- The bridge of one column of the premultiplication. -/
+/-- Rounding bridge of one column of the premultiplication. Let the rounding model be idempotent,
+let `rows` have no duplicates, and let $w_i$ be a rounding of $\beta v_i$ for every $i$ in
+`rows`. Every result $b$ of `GolubVanLoan.Chapter05.householderLeftColumn` on a column $a$
+agrees with $a$ outside `rows`, and on `rows` it is a computed update $a - (\beta v)(v^T a)$ for
+$\beta$ and $v|_{\mathrm{rows}}$ (`FloatingPoint.RoundsHouseholderApplyScaled`). -/
 theorem householderLeftColumn_rounds (hfp : fp.IsIdempotent) {rows : List (Fin m)}
     (hrows : rows.Nodup) {β : ℝ} {w v a b : Fin m → ℝ}
     (hw : ∀ i ∈ rows, fp.Rounds (β * v i) (w i))
@@ -783,8 +1051,13 @@ theorem householderLeftColumn_rounds (hfp : fp.IsIdempotent) {rows : List (Fin m
   have := hin i i.2
   simpa only [SetM.mem_run_bind, RoundingModel.mem_run_round] using this
 
-/-- The bridge of one row of the postmultiplication (the products `fl(s w_j)` are the relation's
-`fl(w_j s)`, and the inner product `aᵀv` its `vᵀa`). -/
+/-- Rounding bridge of one row of the postmultiplication. Let the rounding model be idempotent, let
+the list `cols` have no duplicates, and for every index $j$ of this list let $w_j$ be a rounding
+of $\beta v_j$. Every result $b$ of `GolubVanLoan.Chapter05.householderRightRow` on a row $a$
+agrees with $a$ outside `cols`, and on `cols` it is a computed update for $\beta$ and
+$v|_{\mathrm{cols}}$ (`FloatingPoint.RoundsHouseholderApplyScaled`). The products
+$\mathrm{fl}(s w_j)$ are the relation's $\mathrm{fl}(w_j s)$, and the inner product $a^T v$ is its
+$v^T a$. -/
 theorem householderRightRow_rounds (hfp : fp.IsIdempotent) {cols : List (Fin n)}
     (hcols : cols.Nodup) {β : ℝ} {w v a b : Fin n → ℝ}
     (hw : ∀ j ∈ cols, fp.Rounds (β * v j) (w j))
@@ -806,11 +1079,16 @@ theorem householderRightRow_rounds (hfp : fp.IsIdempotent) {cols : List (Fin n)}
     obtain ⟨t, ht, hb⟩ := this
     exact ⟨t, by rwa [mul_comm], hb⟩
 
-/-- **The bridge of the premultiplication** (convention 12): over an idempotent model and for
-duplicate-free `rows`, `cols`, every run `B` of `householderApplyLeft fp.round v β rows cols A`
-agrees with `A` outside `rows × cols`, and for every `q ∈ cols` the column `B(rows, q)` is a
-computed update `FloatingPoint.RoundsHouseholderApplyScaled` of `A(rows, q)` with `(β, v(rows))`.
--/
+/-- **Section 5.1.4** of [golub2013matrix], rounding bridge of the premultiplication. Let the
+rounding model be idempotent, and let `rows` and `cols` be lists without duplicates. Every
+result $B$ of `GolubVanLoan.Chapter05.householderApplyLeft` with $v$ and $\beta$ on $A$, in the
+rounding model, agrees with $A$ outside $\mathrm{rows} \times \mathrm{cols}$. For every $q$ in
+`cols`, the column $B(\mathrm{rows}, q)$ is a computed update of $A(\mathrm{rows}, q)$ for
+$\beta$ and $v|_{\mathrm{rows}}$: there are a computed inner product $s$ of $v|_{\mathrm{rows}}$
+and $A(\mathrm{rows}, q)$, roundings $w_i$ of $\beta v_i$ and roundings $t_i$ of $w_i s$ such
+that $B(i, q)$ is a rounding of $A(i, q) - t_i$.
+
+The relation is `FloatingPoint.RoundsHouseholderApplyScaled` on the subtype `{i // i ∈ rows}`. -/
 theorem householderApplyLeft_rounds (hfp : fp.IsIdempotent) {rows : List (Fin m)}
     {cols : List (Fin n)} (hrows : rows.Nodup) (hcols : cols.Nodup) (v : Fin m → ℝ) (β : ℝ)
     (A : Matrix (Fin m) (Fin n) ℝ) {B : Matrix (Fin m) (Fin n) ℝ}
@@ -830,10 +1108,13 @@ theorem householderApplyLeft_rounds (hfp : fp.IsIdempotent) {rows : List (Fin m)
     exact (householderLeftColumn_rounds hfp hrows hw' (hin q hq)).1 i hi
   · exact hout q hq i
 
-/-- **The bridge of the postmultiplication**, rowwise: every run `B` of
-`householderApplyRight fp.round v β rows cols A` agrees with `A` outside `rows × cols`, and for
-every `r ∈ rows` the row `B(r, cols)` is a computed update `RoundsHouseholderApplyScaled` of
-`A(r, cols)` with `(β, v(cols))`. -/
+/-- **Section 5.1.4** of [golub2013matrix], rounding bridge of the postmultiplication. Let the
+rounding model be idempotent, and let `rows` and `cols` be lists without duplicates. Every
+result $B$ of `GolubVanLoan.Chapter05.householderApplyRight` with $v$ and $\beta$ on $A$, in the
+rounding model, agrees with $A$ outside $\mathrm{rows} \times \mathrm{cols}$. For every $r$ in
+`rows`, the row $B(r, \mathrm{cols})$ is a computed update of $A(r, \mathrm{cols})$ for $\beta$
+and $v|_{\mathrm{cols}}$, in the sense of `FloatingPoint.RoundsHouseholderApplyScaled` on the
+subtype `{j // j ∈ cols}`. -/
 theorem householderApplyRight_rounds (hfp : fp.IsIdempotent) {rows : List (Fin m)}
     {cols : List (Fin n)} (hrows : rows.Nodup) (hcols : cols.Nodup) (v : Fin n → ℝ) (β : ℝ)
     (A : Matrix (Fin m) (Fin n) ℝ) {B : Matrix (Fin m) (Fin n) ℝ}
@@ -853,7 +1134,8 @@ theorem householderApplyRight_rounds (hfp : fp.IsIdempotent) {rows : List (Fin m
     exact (householderRightRow_rounds hfp hcols hw' (hin r hr)).1 j hj
   · exact congrFun (hout r hr) j
 
-/-- In the exact model the computed update is the exact one. -/
+/-- In the exact rounding model, a computed update $y$ of $b$ for $\beta$ and $v$ is the exact
+update $y_i = b_i - \beta v_i (v^T b)$. -/
 theorem eq_of_roundsHouseholderApplyScaled_exact {ι : Type} [Fintype ι] {β : ℝ}
     {v b y : ι → ℝ} (h : RoundsHouseholderApplyScaled (RoundingModel.exact ℝ) β v b y) (i : ι) :
     y i = b i - β * v i * (v ⬝ᵥ b) := by
@@ -880,9 +1162,14 @@ private theorem householderApplyRight_mem_exact (v : Fin n → ℝ) (β : ℝ) (
     pure_bind, List.foldlM_pure, SetM.mem_run_pure]
   rfl
 
-/-- **Exact semantics of the premultiplication** (read off the bridge at the exact model,
-convention 11): for duplicate-free lists and `v` vanishing off `rows`, the result is
-`(I - β v vᵀ) A` in the columns of `cols` and `A` elsewhere. -/
+/-- **Section 5.1.4** of [golub2013matrix], exact semantics of the premultiplication. Let `rows` and
+`cols` be lists without duplicates, and let the vector $v$ of length $m$ vanish outside `rows`. In
+exact arithmetic, `GolubVanLoan.Chapter05.householderApplyLeft` with $v$ and $\beta$ on $A$ returns
+the matrix whose column $q$ is column $q$ of $(I - \beta v v^T) A$ for $q$ in `cols`, and column
+$q$ of $A$ otherwise.
+
+The proof reads the result off `GolubVanLoan.Chapter05.householderApplyLeft_rounds` at the exact
+model. -/
 theorem householderApplyLeft_spec {rows : List (Fin m)} {cols : List (Fin n)}
     (hrows : rows.Nodup) (hcols : cols.Nodup) {v : Fin m → ℝ} (hv : ∀ i, i ∉ rows → v i = 0)
     (β : ℝ) (A : Matrix (Fin m) (Fin n) ℝ) :
@@ -905,7 +1192,9 @@ theorem householderApplyLeft_spec {rows : List (Fin m)} {cols : List (Fin n)}
     · exact hout i q (Or.inl hi)
   · exact hout i q (Or.inr hq)
 
-/-- The premultiplication on all columns is `(I - β v vᵀ) A`. -/
+/-- Let `rows` and `cols` be lists without duplicates, let every column index be in `cols`, and let
+$v$ vanish outside `rows`. In exact arithmetic, `GolubVanLoan.Chapter05.householderApplyLeft`
+with $v$ and $\beta$ on $A$ returns $(I - \beta v v^T) A$. -/
 theorem householderApplyLeft_spec_of_forall_mem {rows : List (Fin m)} {cols : List (Fin n)}
     (hrows : rows.Nodup) (hcols : cols.Nodup) (hall : ∀ q, q ∈ cols) {v : Fin m → ℝ}
     (hv : ∀ i, i ∉ rows → v i = 0) (β : ℝ) (A : Matrix (Fin m) (Fin n) ℝ) :
@@ -914,8 +1203,11 @@ theorem householderApplyLeft_spec_of_forall_mem {rows : List (Fin m)} {cols : Li
   ext i q
   simp [hall q]
 
-/-- **Exact semantics of the postmultiplication**: for duplicate-free lists and `v` vanishing off
-`cols`, the result is `A (I - β v vᵀ)` in the rows of `rows` and `A` elsewhere. -/
+/-- **Section 5.1.4** of [golub2013matrix], exact semantics of the postmultiplication. Let `rows`
+and `cols` be lists without duplicates, and let the vector $v$ of length $n$ vanish outside `cols`.
+In exact arithmetic, `GolubVanLoan.Chapter05.householderApplyRight` with $v$ and $\beta$ on $A$
+returns the matrix whose row $r$ is row $r$ of $A (I - \beta v v^T)$ for $r$ in `rows`, and row
+$r$ of $A$ otherwise. -/
 theorem householderApplyRight_spec {rows : List (Fin m)} {cols : List (Fin n)}
     (hrows : rows.Nodup) (hcols : cols.Nodup) {v : Fin n → ℝ} (hv : ∀ j, j ∉ cols → v j = 0)
     (β : ℝ) (A : Matrix (Fin m) (Fin n) ℝ) :
@@ -939,7 +1231,9 @@ theorem householderApplyRight_spec {rows : List (Fin m)} {cols : List (Fin n)}
     · exact hout r j (Or.inr hj)
   · exact hout r j (Or.inl hr)
 
-/-- The postmultiplication on all rows is `A (I - β v vᵀ)`. -/
+/-- Let `rows` and `cols` be lists without duplicates, let every row index be in `rows`, and let $v$
+vanish outside `cols`. In exact arithmetic, `GolubVanLoan.Chapter05.householderApplyRight` with
+$v$ and $\beta$ on $A$ returns $A (I - \beta v v^T)$. -/
 theorem householderApplyRight_spec_of_forall_mem {rows : List (Fin m)} {cols : List (Fin n)}
     (hrows : rows.Nodup) (hcols : cols.Nodup) (hall : ∀ r, r ∈ rows) {v : Fin n → ℝ}
     (hv : ∀ j, j ∉ cols → v j = 0) (β : ℝ) (A : Matrix (Fin m) (Fin n) ℝ) :
@@ -952,14 +1246,25 @@ section Frobenius
 
 open scoped Matrix.Norms.Frobenius
 
-/-- **§5.1.5, second claim, rigorous**: `fl(P̂ A) = P A + F` with `‖F‖ ≤ ε ‖A‖`, on the block. If
-the computed `(v̂, β̂)` are relative perturbations of order `K` of exact `(v, β)` with
-`|β| vᵀv ≤ 2`, `v` vanishing off `rows`, the model idempotent and `(3K + |rows| + 3) u < 1`, then
-every run `B` of `householderApplyLeft fp.round v̂ β̂ rows cols A` agrees with `A` outside
-`rows × cols`, and on the block, with `P = I - β v vᵀ` restricted to `rows`, every column satisfies
-`‖B(rows, q) - P A(rows, q)‖₂ ≤ ε ‖A(rows, q)‖₂` and `‖B(rows, cols) - P A(rows, cols)‖_F ≤
-ε ‖A(rows, cols)‖_F`, `ε = 3 γ_{3K + |rows| + 3}`. With `P` orthogonal this is the book's
-`fl(P̂ A) = P (A + E)`, `E = Pᵀ fl(P̂ A) - A`, `‖E‖ = ‖fl(P̂ A) - P A‖`. -/
+/-- **Section 5.1.5** of [golub2013matrix], rounding error of the premultiplication. Let the
+rounding model be idempotent, let `rows` and `cols` be lists without duplicates, and let
+$K \in \mathbb{N}$ with $(3K + |\mathrm{rows}| + 3)\, u < 1$. Let $v \in \mathbb{R}^m$ vanish
+outside `rows`, let $\beta \in \mathbb{R}$ with $|\beta|\, v^T v \le 2$, and let $\hat v_i$ and
+$\hat\beta$ be relative perturbations of order $K$ of $v_i$ and $\beta$. Write
+$P = I - \beta v v^T$ for the matrix on the indices of `rows`, and $\varepsilon = 3 \gamma_{3K +
+|\mathrm{rows}| + 3}$. Every result $B$ of `GolubVanLoan.Chapter05.householderApplyLeft` with
+$\hat v$ and $\hat\beta$ on $A$, in the rounding model, agrees with $A$ outside
+$\mathrm{rows} \times \mathrm{cols}$, and
+$$\|B(\mathrm{rows}, q) - P A(\mathrm{rows}, q)\|_2 \le \varepsilon \|A(\mathrm{rows}, q)\|_2$$
+for every $q$ in `cols`, and
+$$\|B(\mathrm{rows}, \mathrm{cols}) - P A(\mathrm{rows}, \mathrm{cols})\|_F \le \varepsilon
+  \|A(\mathrm{rows}, \mathrm{cols})\|_F.$$
+
+The source states $\mathrm{fl}(\hat P A) = P (A + E)$ with $\|E\|_2 = O(u) \|A\|_2$. For
+orthogonal $P$ this is the bound above with $E = P^T \mathrm{fl}(\hat P A) - A$, because then
+$\|E\| = \|\mathrm{fl}(\hat P A) - P A\|$. The theorem itself uses only $|\beta|\, v^T v \le 2$
+and not the orthogonality of $P$. The blocks are `Matrix.submatrix` on the subtypes of the two
+lists. -/
 theorem householderApplyLeft_rounding (hfp : fp.IsIdempotent) {rows : List (Fin m)}
     {cols : List (Fin n)} (hrows : rows.Nodup) (hcols : cols.Nodup) {K : ℕ}
     (hu : ((3 * K + rows.length + 3 : ℕ) : ℝ) * fp.u < 1) {v vhat : Fin m → ℝ}
@@ -996,10 +1301,22 @@ theorem householderApplyLeft_rounding (hfp : fp.IsIdempotent) {rows : List (Fin 
   rw [hcard] at this
   exact ⟨hout, this⟩
 
-/-- **§5.1.5, the postmultiplication form** `fl(A P̂) = A P + F`, rowwise and in the Frobenius
-norm on the block: under the hypotheses of `householderApplyLeft_rounding` with `v` vanishing off
-`cols`, every row satisfies `‖B(r, cols) - A(r, cols) P‖₂ ≤ ε ‖A(r, cols)‖₂` and
-`‖B(rows, cols) - A(rows, cols) P‖_F ≤ ε ‖A(rows, cols)‖_F`, `ε = 3 γ_{3K + |cols| + 3}`. -/
+/-- **Section 5.1.5** of [golub2013matrix], rounding error of the postmultiplication. Let the
+rounding model be idempotent, let `rows` and `cols` be lists without duplicates, and let
+$K \in \mathbb{N}$ with $(3K + |\mathrm{cols}| + 3)\, u < 1$. Let $v \in \mathbb{R}^n$ vanish
+outside `cols`, let $\beta \in \mathbb{R}$ with $|\beta|\, v^T v \le 2$, and let $\hat v_j$ and
+$\hat\beta$ be relative perturbations of order $K$ of $v_j$ and $\beta$. Write
+$P = I - \beta v v^T$ for the matrix on the indices of `cols`, and $\varepsilon = 3 \gamma_{3K +
+|\mathrm{cols}| + 3}$. Every result $B$ of `GolubVanLoan.Chapter05.householderApplyRight` with
+$\hat v$ and $\hat\beta$ on $A$, in the rounding model, agrees with $A$ outside
+$\mathrm{rows} \times \mathrm{cols}$, and
+$$\|B(r, \mathrm{cols}) - A(r, \mathrm{cols}) P\|_2 \le \varepsilon \|A(r, \mathrm{cols})\|_2$$
+for every $r$ in `rows`, and
+$$\|B(\mathrm{rows}, \mathrm{cols}) - A(\mathrm{rows}, \mathrm{cols}) P\|_F \le \varepsilon
+  \|A(\mathrm{rows}, \mathrm{cols})\|_F.$$
+
+This is the postmultiplication form $\mathrm{fl}(A \hat P) = A P + F$ of the bound of
+`GolubVanLoan.Chapter05.householderApplyLeft_rounding`. -/
 theorem householderApplyRight_rounding (hfp : fp.IsIdempotent) {rows : List (Fin m)}
     {cols : List (Fin n)} (hrows : rows.Nodup) (hcols : cols.Nodup) {K : ℕ}
     (hu : ((3 * K + cols.length + 3 : ℕ) : ℝ) * fp.u < 1) {v vhat : Fin n → ℝ}
@@ -1039,9 +1356,9 @@ theorem householderApplyRight_rounding (hfp : fp.IsIdempotent) {rows : List (Fin
   rw [hcard] at this
   exact ⟨hout, this⟩
 
-/-- The perturbation of a scaled rank-one update `I - β a aᵀ` by relative perturbations of `β`
-and of the entries of `a`: if `β̂ = β (1 + θ)` and `b_i = a_i (1 + θ_i)` with `|θ|, |θ_i| ≤ γ`,
-then `‖(I - β̂ b bᵀ) - (I - β a aᵀ)‖₂ ≤ ((1 + γ)³ - 1) |β| ‖a‖₂²` (through the Frobenius norm). -/
+/-- If $\hat\beta = \beta (1 + \theta)$ and $b_i = a_i (1 + \theta_i)$ with
+$|\theta|, |\theta_i| \le \gamma_K$, then $\|(I - \hat\beta b b^T) - (I - \beta a a^T)\|_2 \le
+((1 + \gamma_K)^3 - 1)\, |\beta|\, \|a\|_2^2$. -/
 private theorem lpOpNorm_two_one_sub_smul_vecMulVec_sub_le {K : ℕ} {a b : Fin m → ℝ}
     {β β' : ℝ} (hg : 0 ≤ gamma fp.u K) (hβ : IsRelPert fp.u K β β')
     (hb : ∀ i, IsRelPert fp.u K (a i) (b i)) :
@@ -1082,11 +1399,18 @@ section L2
 
 open scoped Matrix.Norms.L2Operator
 
-/-- **§5.1.5, "`P̂ = I - 2v̂v̂ᵀ/v̂ᵀv̂` satisfies `‖P̂ - P‖₂ = O(u)`"**, rigorous: for every run
-`(v̂, β̂)` of Algorithm 5.1.1 (idempotent model, `K u < 1`, `K = 18 (k + 1) + 31`) there are
-exact `(v, β)` — `I - β v vᵀ` orthogonal and mapping `x` to `‖x‖₂ e₁` — with `v̂_i = v_i (1 + θ_i)`,
-`|θ_i| ≤ γ_K`, and the Householder matrices of the computed and the exact vector differ by at most
-`8 γ_K` in the 2-norm. -/
+/-- **Section 5.1.5** of [golub2013matrix], accuracy of the computed Householder matrix. Let the
+rounding model be idempotent, let $m \ge 1$ and $x \in \mathbb{R}^m$, and let $K = 18 m + 31$
+with $K u < 1$. For every result $(\hat v, \hat\beta)$ of Algorithm 5.1.1 in the rounding model,
+there are $v \in \mathbb{R}^m$ and $\beta \in \mathbb{R}$ such that $I - \beta v v^T$ is
+orthogonal, $(I - \beta v v^T) x = \|x\|_2 e_1$, $\hat v_i = v_i (1 + \theta_i)$ with
+$|\theta_i| \le \gamma_K$ for every $i$, and the Householder matrices $\hat P = I - 2 \hat v
+\hat v^T / \hat v^T \hat v$ and $P = I - 2 v v^T / v^T v$ satisfy
+$$\|\hat P - P\|_2 \le 8 \gamma_K.$$
+
+The source states $\|\hat P - P\|_2 = O(u)$. Here $\hat P$ is rebuilt from $\hat v$ alone, as in
+the source. `GolubVanLoan.Chapter05.one_sub_smul_vecMulVec_computed_sub_le` bounds instead the
+matrix $I - \hat\beta \hat v \hat v^T$ that the update programs apply. Here $m = k + 1$. -/
 theorem householderMatrix_computed_sub_le {k : ℕ} (hfp : fp.IsIdempotent)
     (hu : ((18 * (k + 1) + 31 : ℕ) : ℝ) * fp.u < 1) (x : Fin (k + 1) → ℝ)
     {vβ : (Fin (k + 1) → ℝ) × ℝ} (h : vβ ∈ (algorithm_5_1_1 fp.round x).run) :
@@ -1110,13 +1434,19 @@ theorem householderMatrix_computed_sub_le {k : ℕ} (hfp : fp.IsIdempotent)
   rw [householderMatrix_eq_reflector, householderMatrix_eq_reflector]
   exact l2_opNorm_reflector_sub_le hv0 hv
 
-/-- **§5.1.12, "the matrix defined by the floating point output of `house` is orthogonal to
-working precision", for the matrix the helpers apply**: `P̂ = I - β̂ v̂ v̂ᵀ` with the computed
-`β̂` (the companion of `householderMatrix_computed_sub_le`, whose `P̂ = I - 2 v̂ v̂ᵀ/v̂ᵀv̂` is the
-book's literal reading, rebuilt from `v̂` alone). For every run `(v̂, β̂)` of Algorithm 5.1.1 there
-are exact `(v, β)` — `P = I - β v vᵀ` orthogonal and mapping `x` to `‖x‖₂ e₁` — with
-`‖P̂ - P‖₂ ≤ 2 ((1 + γ_K)³ - 1)`, `K = 18 (k + 1) + 31`. This covers the `σ = 0`, `x₁ ≥ 0` branch,
-where `P = I` while `householderMatrix v` is a reflection. -/
+/-- **Section 5.1.12** of [golub2013matrix], the computed reflection that the update programs apply.
+Let the rounding model be idempotent, let $m \ge 1$ and $x \in \mathbb{R}^m$, and let
+$K = 18 m + 31$ with $K u < 1$. For every result $(\hat v, \hat\beta)$ of Algorithm 5.1.1 in the
+rounding model, there are $v \in \mathbb{R}^m$ and $\beta \in \mathbb{R}$ such that
+$P = I - \beta v v^T$ is orthogonal, $P x = \|x\|_2 e_1$, and
+$$\|(I - \hat\beta \hat v \hat v^T) - P\|_2 \le 2 \bigl((1 + \gamma_K)^3 - 1\bigr).$$
+
+The source says that the matrix defined by the floating point output of `house` is orthogonal to
+working precision. `GolubVanLoan.Chapter05.householderMatrix_computed_sub_le` reads this matrix
+literally as $I - 2 \hat v \hat v^T / \hat v^T \hat v$, rebuilt from $\hat v$ alone. This
+theorem reads it as $I - \hat\beta \hat v \hat v^T$ with the computed $\hat\beta$, the matrix
+that the update programs apply. It covers the branch $\sigma = 0$, $x_1 \ge 0$, where $P = I$
+while the Householder matrix of $v$ is a reflection. Here $m = k + 1$. -/
 theorem one_sub_smul_vecMulVec_computed_sub_le {k : ℕ} (hfp : fp.IsIdempotent)
     (hu : ((18 * (k + 1) + 31 : ℕ) : ℝ) * fp.u < 1) (x : Fin (k + 1) → ℝ)
     {vβ : (Fin (k + 1) → ℝ) × ℝ} (h : vβ ∈ (algorithm_5_1_1 fp.round x).run) :
@@ -1148,27 +1478,27 @@ section FactoredForm
 
 variable {m n : ℕ}
 
-/-- The index list `[j, j+1, …, m-1]` of `Fin m`: the rows `j:m` (or columns `j:n`) of a block
-`A(j:m, j:n)` in 0-based form (convention 10). -/
+/-- The index list $[j, j+1, \dots, m-1]$ of `Fin m`, which is empty for $j \ge m$: the source's
+rows $j{:}m$ (or columns $j{:}n$) of a block $A(j{:}m, j{:}n)$, in 0-based form. -/
 def indexFrom (m j : ℕ) : List (Fin m) := (List.finRange m).filter fun i => j ≤ (i : ℕ)
 
-/-- Membership in `indexFrom m j`. -/
+/-- An index $i$ is in `GolubVanLoan.Chapter05.indexFrom m j` if and only if $j \le i$. -/
 @[simp]
 theorem mem_indexFrom {j : ℕ} {i : Fin m} : i ∈ indexFrom m j ↔ j ≤ (i : ℕ) := by
   simp [indexFrom]
 
-/-- `indexFrom m j` has no duplicates. -/
+/-- The list `GolubVanLoan.Chapter05.indexFrom m j` has no duplicates. -/
 theorem nodup_indexFrom (m j : ℕ) : (indexFrom m j).Nodup :=
   (List.nodup_finRange m).filter _
 
-/-- `indexFrom m j` is nonempty for `j < m`. -/
+/-- For $j < m$, the list `GolubVanLoan.Chapter05.indexFrom m j` is nonempty. -/
 theorem indexFrom_ne_nil {j : ℕ} (hj : j < m) : indexFrom m j ≠ [] := by
   intro h
   have : (⟨j, hj⟩ : Fin m) ∈ indexFrom m j := by simp
   rw [h] at this
   exact List.not_mem_nil this
 
-/-- The head of a strictly increasing list is below each of its elements. -/
+/-- The first entry of a strictly increasing list is at most each of its entries. -/
 private theorem head_le_of_pairwise {α : Type*} [Preorder α] {l : List α}
     (hp : l.Pairwise (· < ·)) (h : l ≠ []) {b : α} (hb : b ∈ l) : l.head h ≤ b := by
   cases l with
@@ -1178,7 +1508,8 @@ private theorem head_le_of_pairwise {α : Type*} [Preorder α] {l : List α}
     · exact le_rfl
     · exact (List.rel_of_pairwise_cons hp hb).le
 
-/-- The head of `indexFrom m j` is `j` (the rows `j:m` start at row `j`). -/
+/-- For $j < m$, the first entry of `GolubVanLoan.Chapter05.indexFrom m j` is $j$: the rows $j{:}m$
+start at row $j$. -/
 theorem head_indexFrom {j : ℕ} (hj : j < m) (h : indexFrom m j ≠ []) :
     (indexFrom m j).head h = ⟨j, hj⟩ := by
   have hp : (indexFrom m j).Pairwise (· < ·) :=
@@ -1188,20 +1519,21 @@ theorem head_indexFrom {j : ℕ} (hj : j < m) (h : indexFrom m j ≠ []) :
   have h2 : j ≤ ((indexFrom m j).head h : ℕ) := mem_indexFrom.1 (List.head_mem h)
   exact le_antisymm h1 (Fin.mk_le_of_le_val h2)
 
-/-- The index list `[0, 1, …, j]` of `Fin m`: the rows `1:j+1` of the book in 0-based form
-(convention 10; the twin of `indexFrom`). -/
+/-- The index list $[0, 1, \dots, j]$ of `Fin m`, which is all of `Fin m` for $j \ge m - 1$: the
+source's rows $1{:}j+1$ in 0-based form. It is the twin of `GolubVanLoan.Chapter05.indexFrom`. -/
 def indexTo (m j : ℕ) : List (Fin m) := (List.finRange m).filter fun i => (i : ℕ) ≤ j
 
-/-- Membership in `indexTo m j`. -/
+/-- An index $i$ is in `GolubVanLoan.Chapter05.indexTo m j` if and only if $i \le j$. -/
 @[simp]
 theorem mem_indexTo {j : ℕ} {i : Fin m} : i ∈ indexTo m j ↔ (i : ℕ) ≤ j := by
   simp [indexTo]
 
-/-- `indexTo m j` has no duplicates. -/
+/-- The list `GolubVanLoan.Chapter05.indexTo m j` has no duplicates. -/
 theorem nodup_indexTo (m j : ℕ) : (indexTo m j).Nodup :=
   (List.nodup_finRange m).filter _
 
-/-- A sum of a function vanishing off a duplicate-free list is the sum along the list. -/
+/-- If $f$ vanishes outside a list $l$ without duplicates, then $\sum_i f(i)$ is the sum of $f$
+along $l$. -/
 theorem sum_eq_sum_map_of_nodup {ι : Type} [Fintype ι] {l : List ι}
     (hl : l.Nodup) {f : ι → ℝ} (hf : ∀ i, i ∉ l → f i = 0) : ∑ i, f i = (l.map f).sum := by
   classical
@@ -1209,9 +1541,13 @@ theorem sum_eq_sum_map_of_nodup {ι : Type} [Fintype ι] {l : List ι}
   exact (Finset.sum_subset (Finset.subset_univ _) fun i _ hi =>
     hf i (by simpa using hi)).symm
 
-/-- **The orthogonal matrix of reflector data** (convention 13, §5.1.6): for reflector data
-`data = [(v₁, β₁), …, (v_r, β_r)]` in order of application, `Q = Q₁ Q₂ ⋯ Q_r` with
-`Q_j = I - β_j v_j v_jᵀ`. -/
+/-- **Section 5.1.6** of [golub2013matrix], the product of reflector data. For reflector data
+$[(v_1, \beta_1), \dots, (v_r, \beta_r)]$, listed in order of application, the matrix is
+$$Q = Q_1 Q_2 \cdots Q_r, \qquad Q_j = I - \beta_j v_j v_j^T.$$
+For the empty list $Q = I$.
+
+Reflector data are lists `List ((Fin m → ℝ) × ℝ)`. Each $\beta_j$ is the value that the program
+which computed $v_j$ returned, and it is not recomputed from $v_j$. -/
 noncomputable def householderProduct (data : List ((Fin m → ℝ) × ℝ)) :
     Matrix (Fin m) (Fin m) ℝ :=
   (data.map fun p => 1 - p.2 • vecMulVec p.1 p.1).prod
@@ -1220,24 +1556,27 @@ noncomputable def householderProduct (data : List ((Fin m → ℝ) × ℝ)) :
 @[simp]
 theorem householderProduct_nil : householderProduct ([] : List ((Fin m → ℝ) × ℝ)) = 1 := rfl
 
-/-- The product of `p :: data` is `(I - β v vᵀ)` times the product of `data`. -/
+/-- The product of reflector data $(v, \beta)$ followed by $D$ is $(I - \beta v v^T)$ times the
+product of $D$. -/
 @[simp]
 theorem householderProduct_cons (p : (Fin m → ℝ) × ℝ) (data : List ((Fin m → ℝ) × ℝ)) :
     householderProduct (p :: data) = (1 - p.2 • vecMulVec p.1 p.1) * householderProduct data :=
   rfl
 
-/-- The product of `data ++ [p]` is the product of `data` times `(I - β v vᵀ)`. -/
+/-- The product of reflector data $D$ followed by $(v, \beta)$ is the product of $D$ times
+$(I - \beta v v^T)$. -/
 theorem householderProduct_concat (data : List ((Fin m → ℝ) × ℝ)) (p : (Fin m → ℝ) × ℝ) :
     householderProduct (data ++ [p]) = householderProduct data * (1 - p.2 • vecMulVec p.1 p.1) := by
   simp [householderProduct, List.prod_append]
 
-/-- The product of concatenated reflector data. -/
+/-- The product of reflector data $D$ followed by $E$ is the product of $D$ times the product of
+$E$. -/
 theorem householderProduct_append (D E : List ((Fin m → ℝ) × ℝ)) :
     householderProduct (D ++ E) = householderProduct D * householderProduct E := by
   simp [householderProduct, List.prod_append]
 
-/-- The product of reversed reflector data, transposed, is the product in order (every factor is
-symmetric). -/
+/-- The transpose of the product of the reversed reflector data is the product of the data, because
+every factor $I - \beta v v^T$ is symmetric. -/
 theorem householderProduct_reverse_transpose (data : List ((Fin m → ℝ) × ℝ)) :
     (householderProduct data.reverse)ᵀ = householderProduct data := by
   induction data with
@@ -1246,8 +1585,8 @@ theorem householderProduct_reverse_transpose (data : List ((Fin m → ℝ) × �
     rw [List.reverse_cons, householderProduct_concat, transpose_mul,
       transpose_one_sub_smul_vecMulVec, ih, householderProduct_cons]
 
-/-- **The product of reflector data is orthogonal** when every `(v, β)` has `β = 0` or
-`β vᵀv = 2` (each factor is then `I` or a Householder matrix). -/
+/-- If every pair $(v, \beta)$ of the reflector data has $\beta = 0$ or $\beta v^T v = 2$, then the
+product of the data is orthogonal, because each factor is then $I$ or a Householder matrix. -/
 theorem householderProduct_mem_orthogonalGroup {data : List ((Fin m → ℝ) × ℝ)}
     (h : ∀ p ∈ data, p.2 = 0 ∨ p.2 * (p.1 ⬝ᵥ p.1) = 2) :
     householderProduct data ∈ orthogonalGroup (Fin m) ℝ := by
@@ -1258,7 +1597,8 @@ theorem householderProduct_mem_orthogonalGroup {data : List ((Fin m → ℝ) × 
   · rw [h0, zero_mul]
   · rw [h2, sub_self, mul_zero]
 
-/-- A product of reflectors whose vectors vanish at `p` fixes `e_p`. -/
+/-- If every vector of the reflector data vanishes at $p$, then the product of the data fixes $e_p$.
+-/
 theorem householderProduct_mulVec_single {data : List ((Fin m → ℝ) × ℝ)} {p : Fin m}
     (h : ∀ q ∈ data, q.1 p = 0) :
     householderProduct data *ᵥ Pi.single p 1 = Pi.single p 1 := by
@@ -1269,45 +1609,66 @@ theorem householderProduct_mulVec_single {data : List ((Fin m → ℝ) × ℝ)} 
       ih fun r hr => h r (List.mem_cons_of_mem _ hr),
       one_sub_smul_vecMulVec_mulVec_single (h q List.mem_cons_self)]
 
-/-- **The Householder vector `v^{(j)}` read from a factored-form array** ((5.1.3), §5.1.6): zeros
-above position `j`, `1` at `j`, and the essential part `A(j+1:m, j)` below. -/
+/-- **Equation (5.1.3)** of [golub2013matrix], the Householder vector stored in a factored-form
+array. For $A \in \mathbb{R}^{m \times n}$ and a column $j$, the vector
+$v^{(j)} \in \mathbb{R}^m$ has
+$$v^{(j)}_i = 0 \ (i < j), \qquad v^{(j)}_j = 1, \qquad v^{(j)}_i = a_{ij} \ (i > j):$$
+zeros above position $j$, $1$ at position $j$, and the essential part $A(j+1{:}m, j)$ below.
+
+Indices are 0-based. For $j \ge m$ the vector is $0$. -/
 def storedHouseholderVec (A : Matrix (Fin m) (Fin n) ℝ) (j : Fin n) : Fin m → ℝ :=
   fun i => if (i : ℕ) < j then 0 else if (i : ℕ) = j then 1 else A i j
 
-/-- The stored vector vanishes above its position `j`. -/
+/-- The stored vector $v^{(j)}$ vanishes at every row $i$ that is not in
+`GolubVanLoan.Chapter05.indexFrom m j`, that is, at every $i < j$. -/
 theorem storedHouseholderVec_eq_zero (A : Matrix (Fin m) (Fin n) ℝ) (j : Fin n) {i : Fin m}
     (hi : i ∉ indexFrom m j) : storedHouseholderVec A j i = 0 := by
   rw [mem_indexFrom, not_le] at hi
   simp [storedHouseholderVec, hi]
 
-/-- **The reflector data of a factored-form array** ((5.1.3), §5.1.6: "the Householder vectors and
-the corresponding `β_j`"): the vectors read from the array, with the `β` that the program
-returned (convention 13). -/
+/-- **Equation (5.1.3)** of [golub2013matrix], the reflector data of a factored-form array. For
+$A \in \mathbb{R}^{m \times n}$ and $\beta \in \mathbb{R}^n$, the data are
+$$[(v^{(1)}, \beta_1), \dots, (v^{(n)}, \beta_n)],$$
+with the vectors $v^{(j)}$ read from the array and the given $\beta_j$. In the source these are
+the Householder vectors and the corresponding $\beta_j$.
+
+The $\beta_j$ are the values that the factorization returned; they are not recomputed from the
+stored vectors. -/
 def storedReflectors (A : Matrix (Fin m) (Fin n) ℝ) (β : Fin n → ℝ) :
     List ((Fin m → ℝ) × ℝ) :=
   List.ofFn fun j => (storedHouseholderVec A j, β j)
 
-/-- **(5.1.3), the factored form** `Q = Q₁ Q₂ ⋯ Q_n`, `Q_j = I_m - β_j v^{(j)} v^{(j)ᵀ}`, with the
-vectors stored in the array `A` and the given `β`. -/
+/-- **Equation (5.1.3)** of [golub2013matrix], the factored form. For
+$A \in \mathbb{R}^{m \times n}$ and $\beta \in \mathbb{R}^n$,
+$$Q = Q_1 Q_2 \cdots Q_n, \qquad Q_j = I_m - \beta_j v^{(j)} v^{(j)T},$$
+where $v^{(j)}$ is the Householder vector stored in column $j$ of $A$. -/
 noncomputable def factoredQ (β : Fin n → ℝ) (A : Matrix (Fin m) (Fin n) ℝ) :
     Matrix (Fin m) (Fin m) ℝ :=
   householderProduct (storedReflectors A β)
 
-/-- The factored form as a product over `Fin n` in order. -/
+/-- The factored form is the product of the matrices $I - \beta_j v^{(j)} v^{(j)T}$ over
+$j = 0, \dots, n - 1$ in increasing order. -/
 theorem factoredQ_eq_prod (β : Fin n → ℝ) (A : Matrix (Fin m) (Fin n) ℝ) :
     factoredQ β A = ((List.finRange n).map fun j =>
       1 - β j • vecMulVec (storedHouseholderVec A j) (storedHouseholderVec A j)).prod := by
   simp only [factoredQ, householderProduct, storedReflectors, List.ofFn_eq_map, List.map_map]
   rfl
 
-/-- **The `β` that (5.1.4), (5.1.5) and Algorithm 5.3.2 recompute from a stored vector**,
-`β_j = 2 / v^{(j)ᵀ} v^{(j)}` (the book's `2/(1 + ‖A(j+1:m, j)‖₂²)`). It is the `β` that `house`
-returned exactly when that was nonzero; when `house` returned `β = 0` it is `2`. -/
+/-- **Equations (5.1.4) and (5.1.5)** of [golub2013matrix], the recomputed $\beta_j$. For
+$A \in \mathbb{R}^{m \times n}$ and a column $j$,
+$$\beta_j = \frac{2}{v^{(j)T} v^{(j)}},$$
+where $v^{(j)}$ is the stored Householder vector. For $j < m$ this is the source's
+$2 / (1 + \|A(j+1{:}m, j)\|_2^2)$. Algorithm 5.3.2 uses the same value.
+
+The value is the $\beta$ that Algorithm 5.1.1 returned when that $\beta$ was nonzero. When
+Algorithm 5.1.1 returned $\beta = 0$, the value is $2$. For $j \ge m$ the stored vector is $0$
+and the value is $2 / 0 = 0$. -/
 noncomputable def recomputedBeta (A : Matrix (Fin m) (Fin n) ℝ) (j : Fin n) : ℝ :=
   2 / (storedHouseholderVec A j ⬝ᵥ storedHouseholderVec A j)
 
-/-- `v^{(j)ᵀ} v^{(j)} = 1 + ‖A(j+1:m, j)‖₂²`, the sum along the index list of the essential part.
--/
+/-- For $j < m$, the stored vector satisfies $v^{(j)T} v^{(j)} = 1 + \|A(j+1{:}m, j)\|_2^2$, with
+the squared norm written as the sum of the squares of the stored entries along
+`GolubVanLoan.Chapter05.indexFrom m (j + 1)`. -/
 theorem storedHouseholderVec_dotProduct_self (A : Matrix (Fin m) (Fin n) ℝ) (j : Fin n)
     (hj : (j : ℕ) < m) :
     storedHouseholderVec A j ⬝ᵥ storedHouseholderVec A j =
@@ -1337,8 +1698,8 @@ theorem storedHouseholderVec_dotProduct_self (A : Matrix (Fin m) (Fin n) ℝ) (j
   rw [Finset.sum_congr rfl fun i _ => hsplit i, Finset.sum_add_distrib, Finset.sum_ite_eq', htail]
   simp only [Finset.mem_univ, ↓reduceIte]
 
-/-- A loop premultiplying by symmetric matrices computes the transpose of their product:
-`Q_{l_k} ⋯ Q_{l_1} C = (Q_{l_1} ⋯ Q_{l_k})ᵀ C`. -/
+/-- If every $Q_a$ is symmetric, the loop that premultiplies $C$ by $Q_{a_1}, \dots, Q_{a_k}$ in
+turn computes $Q_{a_k} \cdots Q_{a_1} C = (Q_{a_1} \cdots Q_{a_k})^T C$. -/
 theorem foldl_mul_eq_transpose_prod_mul {α : Type} {p : ℕ} (Q : α → Matrix (Fin m) (Fin m) ℝ)
     (hQ : ∀ a, (Q a)ᵀ = Q a) (l : List α) (C : Matrix (Fin m) (Fin p) ℝ) :
     l.foldl (fun C a => Q a * C) C = ((l.map Q).prod)ᵀ * C := by
@@ -1352,8 +1713,9 @@ section Programs
 
 variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 
-/-- **(5.1.4) as a program**: overwriting `C ∈ ℝ^{m×p}` with `Qᵀ C` from the factored form stored
-in `A`:
+/-- **Equation (5.1.4)** of [golub2013matrix], as a program. Given $A \in \mathbb{R}^{m \times n}$
+that holds a factored form and $C \in \mathbb{R}^{m \times p}$, the program overwrites $C$ with
+$Q^T C$:
 ```
 for j = 1:n
     v(j:m) = [1; A(j+1:m, j)]
@@ -1361,8 +1723,9 @@ for j = 1:n
     C(j:m, :) = C(j:m, :) - (β_j v(j:m))(v(j:m)ᵀ C(j:m, :))
 end
 ```
-with the book's recomputation of `β_j` (a rounded dot product, `1 +`, a division) and the update
-`householderApplyLeft` on the rows `j:m` and all columns. -/
+The recomputation of $\beta_j$ is rounded as in the source: a computed inner product, the
+addition of $1$, and a division. The update is `GolubVanLoan.Chapter05.householderApplyLeft` on
+the rows $j{:}m$ and all columns. -/
 noncomputable def factoredQTransposeMul {p : ℕ} (A : Matrix (Fin m) (Fin n) ℝ)
     (C : Matrix (Fin m) (Fin p) ℝ) : M (Matrix (Fin m) (Fin p) ℝ) :=
   (List.finRange n).foldlM (fun (C : Matrix (Fin m) (Fin p) ℝ) j => do
@@ -1371,8 +1734,8 @@ noncomputable def factoredQTransposeMul {p : ℕ} (A : Matrix (Fin m) (Fin n) �
     let β ← rnd (2 / (← rnd (1 + s)))
     householderApplyLeft rnd v β (indexFrom m j) (List.finRange p) C) C
 
-/-- **(5.1.5) as a program**, backward accumulation of `Q(:, 1:k)` from the factored form stored
-in `A`:
+/-- **Equation (5.1.5)** of [golub2013matrix], as a program: backward accumulation of the first $k$
+columns $Q(:, 1{:}k)$ of the factored form stored in $A \in \mathbb{R}^{m \times n}$.
 ```
 Q = I_m(:, 1:k)
 for j = n:-1:1
@@ -1381,8 +1744,9 @@ for j = n:-1:1
     Q(j:m, j:k) = Q(j:m, j:k) - (β_j v(j:m))(v(j:m)ᵀ Q(j:m, j:k))
 end
 ```
-(the columns `< j` of the partial product are still those of the identity, which the reflector
-`Q_j` fixes). -/
+The $\beta_j$ are recomputed as in `GolubVanLoan.Chapter05.factoredQTransposeMul`. The update
+can be restricted to the columns $j{:}k$, because the columns $< j$ of the partial product are
+still columns of the identity, which the reflector $Q_j$ fixes. -/
 noncomputable def factoredQFirstColumns (A : Matrix (Fin m) (Fin n) ℝ) (k : ℕ) :
     M (Matrix (Fin m) (Fin k) ℝ) :=
   (List.finRange n).reverse.foldlM (fun (Q : Matrix (Fin m) (Fin k) ℝ) j => do
@@ -1392,39 +1756,63 @@ noncomputable def factoredQFirstColumns (A : Matrix (Fin m) (Fin n) ℝ) (k : �
     householderApplyLeft rnd v β (indexFrom m j) (indexFrom k j) Q)
     (of fun i c => if (i : ℕ) = c then 1 else 0)
 
-/-- **(5.1.5) with the returned `β`** (convention 13): the backward accumulation of `Q(:, 1:k)`
-from the vectors stored in `A` and the `β` that `house` returned, `Q = I_m(:, 1:k)`,
-`for j = n:-1:1, Q(j:m, j:k) = Q(j:m, j:k) - (β_j v(j:m))(v(j:m)ᵀ Q(j:m, j:k))`. The loop of
-`factoredQFirstColumns` without the erroneous retrieval of `β_j`; the helper every consumer that
-needs the first columns of a factored `Q` calls. -/
+/-- **Equation (5.1.5)** of [golub2013matrix] with the returned $\beta$. Given
+$A \in \mathbb{R}^{m \times n}$ that holds the stored Householder vectors and the
+$\beta \in \mathbb{R}^n$ that Algorithm 5.1.1 returned, the program computes the first $k$
+columns of $Q$ by backward accumulation: $Q = I_m(:, 1{:}k)$ and, for $j = n, n - 1, \dots, 1$,
+$$Q(j{:}m, j{:}k) = Q(j{:}m, j{:}k) - (\beta_j v(j{:}m)) (v(j{:}m)^T Q(j{:}m, j{:}k)).$$
+
+**Correction.** This is the loop of `GolubVanLoan.Chapter05.factoredQFirstColumns` without the
+recomputation of $\beta_j$ from the stored vector, which is wrong when Algorithm 5.1.1 returned
+$\beta_j = 0$ (see `GolubVanLoan.Chapter05.equation_5_1_5`).
+
+Every later algorithm that needs the first columns of a factored $Q$ calls this program. -/
 noncomputable def storedQFirstColumns (A : Matrix (Fin m) (Fin n) ℝ) (β : Fin n → ℝ) (k : ℕ) :
     M (Matrix (Fin m) (Fin k) ℝ) :=
   (List.finRange n).reverse.foldlM (fun (Q : Matrix (Fin m) (Fin k) ℝ) j =>
     householderApplyLeft rnd (storedHouseholderVec A j) (β j) (indexFrom m j) (indexFrom k j) Q)
     (of fun i c => if (i : ℕ) = c then 1 else 0)
 
-/-- **§5.1.6, forward accumulation** `Q = I; for j = 1:r, Q = Q Q_j` over reflector data. -/
+/-- **Section 5.1.6** of [golub2013matrix], forward accumulation. For reflector data
+$[(v_1, \beta_1), \dots, (v_r, \beta_r)]$, the program sets $Q = I$ and then, for
+$j = 1, \dots, r$, $Q \leftarrow Q Q_j$ with $Q_j = I - \beta_j v_j v_j^T$. Each update is
+`GolubVanLoan.Chapter05.householderApplyRight` on all rows and columns. -/
 def forwardAccumulation (data : List ((Fin m → ℝ) × ℝ)) : M (Matrix (Fin m) (Fin m) ℝ) :=
   data.foldlM (fun (Q : Matrix (Fin m) (Fin m) ℝ) p =>
     householderApplyRight rnd p.1 p.2 (List.finRange m) (List.finRange m) Q) 1
 
-/-- **§5.1.6, backward accumulation** `Q = I; for j = r:-1:1, Q = Q_j Q` (the one the book
-recommends), over reflector data. The symmetric twin of `forwardAccumulation` (convention 14). -/
+/-- **Section 5.1.6** of [golub2013matrix], backward accumulation, which the source recommends. For
+reflector data $[(v_1, \beta_1), \dots, (v_r, \beta_r)]$, the program sets $Q = I$ and then, for
+$j = r, r - 1, \dots, 1$, $Q \leftarrow Q_j Q$ with $Q_j = I - \beta_j v_j v_j^T$. Each update
+is `GolubVanLoan.Chapter05.householderApplyLeft` on all rows and columns.
+
+This is the symmetric twin of `GolubVanLoan.Chapter05.forwardAccumulation`. -/
 def backwardAccumulation (data : List ((Fin m → ℝ) × ℝ)) : M (Matrix (Fin m) (Fin m) ℝ) :=
   data.reverse.foldlM (fun (Q : Matrix (Fin m) (Fin m) ℝ) p =>
     householderApplyLeft rnd p.1 p.2 (List.finRange m) (List.finRange m) Q) 1
 
 end Programs
 
-/-- The exact step of (5.1.4) and (5.1.5): the recomputed `β` is `recomputedBeta`. -/
+/-- In exact arithmetic, the value of $\beta_j$ that the programs of (5.1.4) and (5.1.5) compute is
+`GolubVanLoan.Chapter05.recomputedBeta A j`. -/
 private theorem recomputed_beta_eq (A : Matrix (Fin m) (Fin n) ℝ) (j : Fin n)
     (hj : (j : ℕ) < m) :
     2 / (1 + (0 + ((indexFrom m (j + 1)).map fun i =>
       storedHouseholderVec A j i * storedHouseholderVec A j i).sum)) = recomputedBeta A j := by
   rw [zero_add, recomputedBeta, storedHouseholderVec_dotProduct_self A j hj]
 
-/-- **(5.1.4) computes `Qᵀ C`**, for the reflectors with the recomputed `β` (unconditionally; they
-are the reflectors of the factorization exactly when no `β` returned by `house` was `0`). -/
+/-- **Equation (5.1.4)** of [golub2013matrix]. Let $n \le m$, $A \in \mathbb{R}^{m \times n}$ and
+$C \in \mathbb{R}^{m \times p}$. In exact arithmetic, the program of (5.1.4) returns $Q^T C$,
+where $Q$ is the factored form (5.1.3) stored in $A$ with the recomputed values
+$\beta_j = 2 / v^{(j)T} v^{(j)}$.
+
+**Correction.** The source recovers $\beta_j = 2 / (1 + \|A(j+1{:}m, j)\|_2^2)$ from the stored
+vector. This equals the $\beta_j$ that Algorithm 5.1.1 returned only when that value was
+nonzero; when Algorithm 5.1.1 returned $\beta_j = 0$, the recovered value is $2$. The theorem
+states the result for the recomputed values, with no condition. These are the reflectors of the
+factorization exactly when no $\beta_j$ that Algorithm 5.1.1 returned was $0$.
+
+The recomputed values are `GolubVanLoan.Chapter05.recomputedBeta A`. -/
 theorem equation_5_1_4 {p : ℕ} (hnm : n ≤ m) (A : Matrix (Fin m) (Fin n) ℝ)
     (C : Matrix (Fin m) (Fin p) ℝ) :
     Id.run (factoredQTransposeMul pure A C) = (factoredQ (recomputedBeta A) A)ᵀ * C := by
@@ -1437,7 +1825,8 @@ theorem equation_5_1_4 {p : ℕ} (hnm : n ≤ m) (A : Matrix (Fin m) (Fin n) ℝ
     List.mem_finRange (fun i hi => storedHouseholderVec_eq_zero A j hi),
     recomputed_beta_eq A j (by omega)]
 
-/-- A reflector with a vector vanishing at `c` fixes the `c`-th column of the identity block. -/
+/-- If $v$ vanishes at the row $c$ and column $c$ of $X$ is the unit vector $e_c$, then column $c$
+of $(I - \beta v v^T) X$ is column $c$ of $X$. -/
 private theorem one_sub_smul_vecMulVec_mul_idCols_col {k : ℕ} {v : Fin m → ℝ} {β : ℝ}
     {X : Matrix (Fin m) (Fin k) ℝ} (c : Fin k)
     (hX : ∀ i, X i c = if (i : ℕ) = c then 1 else 0)
@@ -1453,9 +1842,10 @@ private theorem one_sub_smul_vecMulVec_mul_idCols_col {k : ℕ} {v : Fin m → �
   change ((1 - β • vecMulVec v v) *ᵥ fun r => X r c) i = X i c
   rw [one_sub_smul_vecMulVec_mulVec_apply, hdot, mul_zero, sub_zero]
 
-/-- The exact loop of (5.1.5) for any `β`, as a right fold over the increasing indices: the
-restriction of each update to the columns `j:k` is exact because the columns `< j` of the partial
-product `Q_{j+1} ⋯ Q_n I_m(:, 1:k)` are columns of the identity, which `Q_j` fixes. -/
+/-- For any $\beta$ and $k \le m$, the exact loop of (5.1.5), with the update at step $j$ restricted
+to the columns $j{:}k$, gives the first $k$ columns of the factored form, because the columns
+$< j$ of the partial product $Q_{j+1} \cdots Q_n I_m(:, 1{:}k)$ are columns of the identity,
+which $Q_j$ fixes. -/
 private theorem foldr_firstColumns_eq {k : ℕ} (hk : k ≤ m) (A : Matrix (Fin m) (Fin n) ℝ)
     (β : Fin n → ℝ) :
     (List.finRange n).foldr (fun (j : Fin n) (X : Matrix (Fin m) (Fin k) ℝ) =>
@@ -1511,8 +1901,17 @@ private theorem foldr_firstColumns_eq {k : ℕ} (hk : k ≤ m) (A : Matrix (Fin 
     simp [this]
   · simp
 
-/-- **(5.1.5) computes `Q(:, 1:k)`** for the reflectors with the recomputed `β`
-(`k ≤ m`, `n ≤ m`). -/
+/-- **Equation (5.1.5)** of [golub2013matrix]. Let $k \le m$, $n \le m$ and
+$A \in \mathbb{R}^{m \times n}$. In exact arithmetic, the program of (5.1.5) returns the first
+$k$ columns $Q(:, 1{:}k)$ of the factored form $Q$ stored in $A$, with the recomputed values
+$\beta_j = 2 / v^{(j)T} v^{(j)}$.
+
+**Correction.** As in (5.1.4), the source recovers $\beta_j = 2 / (1 + \|A(j+1{:}m, j)\|_2^2)$
+from the stored vector, and this value is $2$ when Algorithm 5.1.1 returned $\beta_j = 0$. The
+theorem states the result for the recomputed values. The first columns of $Q$ with the returned
+values are `GolubVanLoan.Chapter05.storedQFirstColumns_spec`.
+
+The first $k$ columns are `(factoredQ (recomputedBeta A) A).submatrix id (Fin.castLE hk)`. -/
 theorem equation_5_1_5 {k : ℕ} (hk : k ≤ m) (hnm : n ≤ m) (A : Matrix (Fin m) (Fin n) ℝ) :
     Id.run (factoredQFirstColumns pure A k) =
       (factoredQ (recomputedBeta A) A).submatrix id (Fin.castLE hk) := by
@@ -1533,8 +1932,11 @@ theorem equation_5_1_5 {k : ℕ} (hk : k ≤ m) (hnm : n ≤ m) (A : Matrix (Fin
   simp only [hstep]
   exact foldr_firstColumns_eq hk A _
 
-/-- **The first columns of the factored `Q` with the returned `β`**: `storedQFirstColumns`
-computes `Q(:, 1:k)` of `factoredQ β A` for any `β` (`k ≤ m`), with no condition on the `β`. -/
+/-- **Equation (5.1.5)** of [golub2013matrix] with the returned $\beta$. Let $k \le m$,
+$A \in \mathbb{R}^{m \times n}$ and $\beta \in \mathbb{R}^n$. In exact arithmetic,
+`GolubVanLoan.Chapter05.storedQFirstColumns` returns the first $k$ columns of the factored form
+$Q = Q_1 \cdots Q_n$, $Q_j = I - \beta_j v^{(j)} v^{(j)T}$, stored in $A$. There is no condition
+on $\beta$. -/
 theorem storedQFirstColumns_spec {k : ℕ} (hk : k ≤ m) (A : Matrix (Fin m) (Fin n) ℝ)
     (β : Fin n → ℝ) :
     Id.run (storedQFirstColumns pure A β k) = (factoredQ β A).submatrix id (Fin.castLE hk) := by
@@ -1550,7 +1952,9 @@ theorem storedQFirstColumns_spec {k : ℕ} (hk : k ≤ m) (A : Matrix (Fin m) (F
   simp only [hstep]
   exact foldr_firstColumns_eq hk A β
 
-/-- **Forward accumulation computes `Q = Q₁ ⋯ Q_r`** of the reflector data. -/
+/-- **Section 5.1.6** of [golub2013matrix], forward accumulation, exact semantics. For reflector
+data $[(v_1, \beta_1), \dots, (v_r, \beta_r)]$, forward accumulation in exact arithmetic returns
+$Q = Q_1 \cdots Q_r$, $Q_j = I - \beta_j v_j v_j^T$. -/
 theorem forwardAccumulation_spec (data : List ((Fin m → ℝ) × ℝ)) :
     Id.run (forwardAccumulation pure data) = householderProduct data := by
   have key : ∀ Q₀ : Matrix (Fin m) (Fin m) ℝ,
@@ -1569,7 +1973,9 @@ theorem forwardAccumulation_spec (data : List ((Fin m → ℝ) × ℝ)) :
         householderProduct_cons, Matrix.mul_assoc]
   rw [forwardAccumulation, key, Matrix.one_mul]
 
-/-- **Backward accumulation computes `Q = Q₁ ⋯ Q_r`** of the reflector data. -/
+/-- **Section 5.1.6** of [golub2013matrix], backward accumulation, exact semantics. For reflector
+data $[(v_1, \beta_1), \dots, (v_r, \beta_r)]$, backward accumulation in exact arithmetic
+returns $Q = Q_1 \cdots Q_r$, $Q_j = I - \beta_j v_j v_j^T$. -/
 theorem backwardAccumulation_spec (data : List ((Fin m → ℝ) × ℝ)) :
     Id.run (backwardAccumulation pure data) = householderProduct data := by
   have key : ∀ Q₀ : Matrix (Fin m) (Fin m) ℝ,
@@ -1596,15 +2002,22 @@ section WY
 variable {m : ℕ}
 
 /-- The product of reflector data indexed by `Fin r` is the backbone's product
-`List.ofFn fun j => 1 - β j • vecMulVec (v j) (star (v j))` over `ℝ`. -/
+$\prod_j (I - \beta_j v_j v_j^*)$ over $\mathbb{R}$, in which the transpose is written with
+`star`. -/
 theorem householderProduct_ofFn {r : ℕ} (β : Fin r → ℝ) (v : Fin r → Fin m → ℝ) :
     householderProduct (List.ofFn fun j => (v j, β j)) =
       (List.ofFn fun j => 1 - β j • vecMulVec (v j) (star (v j))).prod := by
   simp [householderProduct, List.map_ofFn, Function.comp_def]
 
-/-- **(5.1.6)**: a product `Q = Q₁ ⋯ Q_r` of rank-one modifications `Q_j = I - β_j v_j v_jᵀ` of the
-identity (in particular of `r` Householder matrices) is a rank-`r` modification of the identity,
-`Q = I_m - W Yᵀ` with `W, Y ∈ ℝ^{m×r}`. -/
+/-- **Equation (5.1.6)** of [golub2013matrix]. Let $v_1, \dots, v_r \in \mathbb{R}^m$ and
+$\beta_1, \dots, \beta_r \in \mathbb{R}$. The product $Q = Q_1 \cdots Q_r$ with
+$Q_j = I - \beta_j v_j v_j^T$ has the form
+$$Q = I_m - W Y^T$$
+for some $W, Y \in \mathbb{R}^{m \times r}$. In particular, a product of $r$ Householder
+matrices is a rank-$r$ modification of the identity.
+
+The statement holds for any rank-one modifications $Q_j$ of the identity, not only for
+Householder matrices. -/
 theorem equation_5_1_6 {r : ℕ} (β : Fin r → ℝ) (v : Fin r → Fin m → ℝ) :
     ∃ W Y : Matrix (Fin m) (Fin r) ℝ,
       householderProduct (List.ofFn fun j => (v j, β j)) = 1 - W * Yᵀ := by
@@ -1612,9 +2025,15 @@ theorem equation_5_1_6 {r : ℕ} (β : Fin r → ℝ) (v : Fin r → Fin m → �
   rw [householderProduct_ofFn, ← conjTranspose_eq_transpose_of_trivial]
   exact isWY_prod β v
 
-/-- **Lemma 5.1.1**: if `Q = I_m - W Yᵀ` with `W, Y ∈ ℝ^{m×j}`, `P = I_m - β v vᵀ` and `z = β Q v`,
-then `Q₊ = Q P = I_m - W₊ Y₊ᵀ` with `W₊ = [W | z]`, `Y₊ = [Y | v]`. (The book assumes `Q`
-orthogonal; the identity does not need it.) -/
+/-- **Lemma 5.1.1** of [golub2013matrix]. Let $Q = I_m - W Y^T$ with
+$W, Y \in \mathbb{R}^{m \times j}$, let $P = I_m - \beta v v^T$ with $v \in \mathbb{R}^m$ and
+$\beta \in \mathbb{R}$, and let $z = \beta Q v$. Then
+$$Q_+ = Q P = I_m - W_+ Y_+^T, \qquad W_+ = [\, W \mid z \,], \quad Y_+ = [\, Y \mid v \,].$$
+
+**Generalization.** The source assumes that $Q$ is orthogonal. The identity holds without this
+assumption.
+
+The new last columns are appended with `Fin.snoc`. -/
 theorem lemma_5_1_1 {j : ℕ} {Q : Matrix (Fin m) (Fin m) ℝ} {W Y : Matrix (Fin m) (Fin j) ℝ}
     (hQ : Q = 1 - W * Yᵀ) (β : ℝ) (v : Fin m → ℝ) :
     Q * (1 - β • vecMulVec v v) =
@@ -1625,10 +2044,13 @@ theorem lemma_5_1_1 {j : ℕ} {Q : Matrix (Fin m) (Fin m) ℝ} {W Y : Matrix (Fi
   rw [IsWY, conjTranspose_eq_transpose_of_trivial, star_trivial] at this
   exact this
 
-/-- One step of Algorithm 5.1.2: with `v = v⁽ʲ⁾`, `β = β_j` and the previous columns `k < j`,
-`t = Y(:, 1:j-1)ᵀ v` (Algorithm 1.1.1 per column), `z = β (v - W(:, 1:j-1) t)` (an accumulation,
-a subtraction and a scaling per entry, each rounded), then `W(:, j) = z`, `Y(:, j) = v`. The first
-step (no previous columns) is the book's `W = β₁ v⁽¹⁾`: one rounding per entry, no subtraction. -/
+/-- One step of Algorithm 5.1.2, which fills column $j$ of $W$ and $Y$. With $v = v^{(j)}$,
+$\beta = \beta_j$ and the previous columns $k < j$, the step computes $t = Y(:, 1{:}j-1)^T v$ by
+Algorithm 1.1.1 for each column, then $z_i = \mathrm{fl}(\beta\, \mathrm{fl}(v_i - W(i,
+1{:}j-1)\, t))$ with the inner product accumulated and rounded, and sets $W(:, j) = z$ and
+$Y(:, j) = v$. At the first step there are no previous columns, and
+$z_i = \mathrm{fl}(\beta v_i)$: the source's $W = \beta_1 v^{(1)}$, with one rounding per entry
+and no subtraction. -/
 noncomputable def wyStep {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
     (data : List ((Fin m → ℝ) × ℝ))
     (st : Matrix (Fin m) (Fin data.length) ℝ × Matrix (Fin m) (Fin data.length) ℝ)
@@ -1647,8 +2069,9 @@ noncomputable def wyStep {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
     pure (Function.update z i b)) 0
   pure (st.1.updateCol j z, st.2.updateCol j v)
 
-/-- **Algorithm 5.1.2** (the WY representation from the factored form): for reflector data
-`data = [(v⁽¹⁾, β₁), …, (v⁽ʳ⁾, β_r)]` (convention 13),
+/-- **Algorithm 5.1.2** of [golub2013matrix] (the WY representation from the factored form). For
+reflector data $[(v^{(1)}, \beta_1), \dots, (v^{(r)}, \beta_r)]$ the algorithm computes
+$W, Y \in \mathbb{R}^{m \times r}$:
 ```
 Y = v⁽¹⁾; W = β₁ v⁽¹⁾
 for j = 2:r
@@ -1656,16 +2079,17 @@ for j = 2:r
     W = [W | z];  Y = [Y | v⁽ʲ⁾]
 end
 ```
-`W`, `Y` are kept as `m × r` arrays whose not-yet-filled columns are zero, and column `j` is
-written at step `j` (`wyStep`; the first step forms `β₁ v⁽¹⁾` directly). The
-product `(I - W Yᵀ) v` is formed as `v - W (Yᵀ v)` over the previous columns. -/
+The arrays $W$ and $Y$ have size $m \times r$ from the start, and the columns that are not yet
+filled are zero. Step $j$ writes column $j$ (`GolubVanLoan.Chapter05.wyStep`), and the first
+step forms $\beta_1 v^{(1)}$ directly. The product $(I - W Y^T) v$ is formed as $v - W (Y^T v)$
+over the previous columns. -/
 noncomputable def algorithm_5_1_2 {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
     (data : List ((Fin m → ℝ) × ℝ)) :
     M (Matrix (Fin m) (Fin data.length) ℝ × Matrix (Fin m) (Fin data.length) ℝ) :=
   (List.finRange data.length).foldlM (wyStep rnd data) (0, 0)
 
-/-- The exact step of Algorithm 5.1.2, when the columns `≥ j` of `W` are zero:
-`W(:, j) = β (I - W Yᵀ) v`, `Y(:, j) = v`. -/
+/-- If the columns $\ge j$ of $W$ are zero, the exact step $j$ of Algorithm 5.1.2 sets
+$W(:, j) = \beta_j (I - W Y^T) v^{(j)}$ and $Y(:, j) = v^{(j)}$. -/
 private theorem wyStep_pure (data : List ((Fin m → ℝ) × ℝ))
     (W Y : Matrix (Fin m) (Fin data.length) ℝ) (j : Fin data.length)
     (hW : ∀ i (k : Fin data.length), j ≤ k → W i k = 0) :
@@ -1710,10 +2134,14 @@ private theorem wyStep_pure (data : List ((Fin m → ℝ) × ℝ))
     · simp only [hk, ↓reduceIte, Pi.zero_apply, mul_zero]
       rw [hW i k (by simpa [hprev] using hk), zero_mul]
 
-/-- **Algorithm 5.1.2 computes the WY representation**: in exact arithmetic the output `(W, Y)`
-satisfies `Q₁ ⋯ Q_r = I_m - W Yᵀ`, and the columns of `Y` are the Householder vectors ("`Y` is
-merely the matrix of Householder vectors", so for vectors of the shape (5.1.3) it is unit lower
-triangular). -/
+/-- **Algorithm 5.1.2** of [golub2013matrix], exact semantics. For reflector data $[(v^{(1)},
+\beta_1), \dots, (v^{(r)}, \beta_r)]$ in $\mathbb{R}^m$, the output $(W, Y)$ of Algorithm 5.1.2
+in exact arithmetic satisfies
+$$Q_1 \cdots Q_r = I_m - W Y^T, \qquad Q_j = I - \beta_j v^{(j)} v^{(j)T},$$
+and column $k$ of $Y$ is $v^{(k)}$ for every $k$.
+
+In the words of the source, $Y$ is merely the matrix of Householder vectors; for vectors of the
+shape (5.1.3) it is unit lower triangular. -/
 theorem algorithm_5_1_2_spec (data : List ((Fin m → ℝ) × ℝ)) :
     householderProduct data =
         1 - (Id.run (algorithm_5_1_2 pure data)).1 * (Id.run (algorithm_5_1_2 pure data)).2ᵀ ∧
@@ -1785,8 +2213,9 @@ theorem algorithm_5_1_2_spec (data : List ((Fin m → ℝ) × ℝ)) :
   rw [List.take_of_length_le (le_of_eq hR.symm)] at hQ
   exact ⟨hQ.symm, fun i k => hY i k k.2⟩
 
-/-- **§5.1.7, block reflectors**: "True block reflectors have the form `Q = I - 2VVᵀ` where
-`V ∈ ℝ^{n×r}` satisfies `VᵀV = I_r`" — such a `Q` is orthogonal. -/
+/-- **Section 5.1.7** of [golub2013matrix], block reflectors. Let $V \in \mathbb{R}^{m \times r}$
+with $V^T V = I_r$. Then $Q = I - 2 V V^T$ is orthogonal. The source calls such matrices true
+block reflectors. -/
 theorem blockReflector_mem_orthogonalGroup {r : ℕ} {V : Matrix (Fin m) (Fin r) ℝ}
     (hV : Vᵀ * V = 1) : 1 - (2 : ℝ) • (V * Vᵀ) ∈ orthogonalGroup (Fin m) ℝ := by
   have := one_sub_two_mul_conjTranspose_mem_unitaryGroup (R := ℝ)
@@ -1801,19 +2230,28 @@ section Givens
 
 variable {m n : ℕ}
 
-/-- **(5.1.7), the Givens rotation** `G(i, k, θ)`: the identity except for `c` at `(i, i)` and
-`(k, k)`, `s` at `(i, k)` and `-s` at `(k, i)`, with `c = cos θ`, `s = sin θ`. The backbone's
-`Matrix.planeRotation i k c s` has rows `(c, -s)`, `(s, c)`, hence the sign. -/
+/-- **Equation (5.1.7)** of [golub2013matrix], the Givens rotation. For indices $i$, $k$ and
+$c, s \in \mathbb{R}$, the matrix $G(i, k, \theta)$ is the identity except for the entries
+$$g_{ii} = g_{kk} = c, \qquad g_{ik} = s, \qquad g_{ki} = -s,$$
+where $c = \cos\theta$ and $s = \sin\theta$.
+
+The backbone's `Matrix.planeRotation i k c s` has the rows $(c, -s)$ and $(s, c)$ in the plane
+of the coordinates $i$ and $k$, so $G(i, k, \theta)$ is `Matrix.planeRotation i k c (-s)`. The
+definition takes $c$ and $s$ directly and does not assume $c^2 + s^2 = 1$. The results below
+assume $i \neq k$. -/
 def givensRotation (i k : Fin m) (c s : ℝ) : Matrix (Fin m) (Fin m) ℝ :=
   planeRotation i k c (-s)
 
-/-- **§5.1.8, "Givens rotations are clearly orthogonal"** (`c² + s² = 1`, `i ≠ k`). -/
+/-- **Section 5.1.8** of [golub2013matrix], orthogonality. Let $i \neq k$ and $c^2 + s^2 = 1$. Then
+the Givens rotation $G(i, k, \theta)$ is orthogonal. The source says that Givens rotations are
+clearly orthogonal. -/
 theorem givensRotation_mem_orthogonalGroup {i k : Fin m} (hik : i ≠ k) {c s : ℝ}
     (hcs : c ^ 2 + s ^ 2 = 1) : givensRotation i k c s ∈ orthogonalGroup (Fin m) ℝ :=
   planeRotation_mem_orthogonalGroup hik (by rwa [neg_sq])
 
-/-- **§5.1.8, the action of `G(i, k, θ)ᵀ`**: `y = G(i, k, θ)ᵀ x` has `y_i = c x_i - s x_k`,
-`y_k = s x_i + c x_k` and `y_j = x_j` otherwise. -/
+/-- **Section 5.1.8** of [golub2013matrix], the action of $G(i, k, \theta)^T$. Let $i \neq k$. The
+vector $y = G(i, k, \theta)^T x$ has $y_i = c x_i - s x_k$, $y_k = s x_i + c x_k$, and
+$y_j = x_j$ for every other $j$. -/
 theorem givensRotation_transpose_mulVec_apply {i k : Fin m} (hik : i ≠ k) (c s : ℝ)
     (x : Fin m → ℝ) (p : Fin m) :
     ((givensRotation i k c s)ᵀ *ᵥ x) p =
@@ -1821,8 +2259,10 @@ theorem givensRotation_transpose_mulVec_apply {i k : Fin m} (hik : i ≠ k) (c s
   rw [givensRotation, transpose_planeRotation_mulVec_apply hik]
   split_ifs <;> ring
 
-/-- **(5.1.8)**: with `c = x_i / √(x_i² + x_k²)` and `s = -x_k / √(x_i² + x_k²)` (not both entries
-zero), `y = G(i, k, θ)ᵀ x` has `y_k = 0` (and `y_i = √(x_i² + x_k²)`). -/
+/-- **Equation (5.1.8)** of [golub2013matrix]. Let $i \neq k$ and $x \in \mathbb{R}^m$ with
+$x_i \neq 0$ or $x_k \neq 0$, and let
+$$c = \frac{x_i}{\sqrt{x_i^2 + x_k^2}}, \qquad s = \frac{-x_k}{\sqrt{x_i^2 + x_k^2}}.$$
+Then $y = G(i, k, \theta)^T x$ has $y_k = 0$ and $y_i = \sqrt{x_i^2 + x_k^2}$. -/
 theorem equation_5_1_8 {i k : Fin m} (hik : i ≠ k) (x : Fin m → ℝ) (hx : x i ≠ 0 ∨ x k ≠ 0) :
     ((givensRotation i k (x i / √(x i ^ 2 + x k ^ 2)) (-x k / √(x i ^ 2 + x k ^ 2)))ᵀ *ᵥ x) k
         = 0 ∧
@@ -1846,14 +2286,16 @@ section Programs
 
 variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 
-/-- **Algorithm 5.1.3 (`givens`)**: "Given scalars `a` and `b`, this function computes
-`c = cos(θ)` and `s = sin(θ)` so `[c s; -s c]ᵀ [a; b] = [r; 0]`":
+/-- **Algorithm 5.1.3** of [golub2013matrix] (`givens`). Given scalars $a$ and $b$, the algorithm
+computes $c = \cos\theta$ and $s = \sin\theta$ such that
+$$\begin{bmatrix} c & s \\ -s & c \end{bmatrix}^T \begin{bmatrix} a \\ b \end{bmatrix} =
+  \begin{bmatrix} r \\ 0 \end{bmatrix}:$$
 ```
 if b = 0:           c = 1; s = 0
 elseif |b| > |a|:   τ = -a/b; s = 1/√(1 + τ²); c = s τ
 else                τ = -b/a; c = 1/√(1 + τ²); s = c τ
 ```
-The comparisons act on the inputs (convention 1); every arithmetic result is rounded. -/
+The comparisons act on the inputs and are exact; every arithmetic result is rounded. -/
 noncomputable def algorithm_5_1_3 (a b : ℝ) : M (ℝ × ℝ) :=
   if b = 0 then pure (1, 0)
   else if |b| > |a| then do
@@ -1867,37 +2309,49 @@ noncomputable def algorithm_5_1_3 (a b : ℝ) : M (ℝ × ℝ) :=
     let s ← rnd (c * τ)
     pure (c, s)
 
-/-- One computed rotation of the entries `i, k` of a vector (§5.1.9's loop body):
-`x_i ← fl(fl(c x_i) - fl(s x_k))`, `x_k ← fl(fl(s x_i) + fl(c x_k))` from the old values. -/
+/-- One computed rotation of the entries $i$ and $k$ of a vector $x$, the loop body of §5.1.9: from
+the old values, $x_i \leftarrow \mathrm{fl}(\mathrm{fl}(c x_i) - \mathrm{fl}(s x_k))$ and $x_k
+\leftarrow \mathrm{fl}(\mathrm{fl}(s x_i) + \mathrm{fl}(c x_k))$. -/
 def givensRotateVec {p : ℕ} (i k : Fin p) (c s : ℝ) (x : Fin p → ℝ) : M (Fin p → ℝ) := do
   let y₁ ← rnd ((← rnd (c * x i)) - (← rnd (s * x k)))
   let y₂ ← rnd ((← rnd (s * x i)) + (← rnd (c * x k)))
   pure (Function.update (Function.update x i y₁) k y₂)
 
-/-- **§5.1.9, the row update** `A([i, k], cols) = G(i, k, θ)ᵀ A([i, k], cols)`, in place on the
-full matrix (conventions 10, 13): for each `j ∈ cols`, `τ₁ = A(i, j)`, `τ₂ = A(k, j)`,
-`A(i, j) = c τ₁ - s τ₂`, `A(k, j) = s τ₁ + c τ₂`, each product and sum rounded. -/
+/-- **Section 5.1.9** of [golub2013matrix], the row update $A([i, k], \mathrm{cols}) = G(i, k,
+\theta)^T A([i, k], \mathrm{cols})$, in place on the full matrix. For each $j$ in the list
+`cols`, with $\tau_1 = a_{ij}$ and $\tau_2 = a_{kj}$, the program sets
+$$a_{ij} = c \tau_1 - s \tau_2, \qquad a_{kj} = s \tau_1 + c \tau_2,$$
+with each product and each sum rounded. -/
 def givensApplyLeft (i k : Fin m) (c s : ℝ) (cols : List (Fin n))
     (A : Matrix (Fin m) (Fin n) ℝ) : M (Matrix (Fin m) (Fin n) ℝ) :=
   cols.foldlM (fun (A : Matrix (Fin m) (Fin n) ℝ) q => do
     let y ← givensRotateVec rnd i k c s (fun r => A r q)
     pure (A.updateCol q y)) A
 
-/-- **§5.1.9, the column update** `A(rows, [i, k]) = A(rows, [i, k]) G(i, k, θ)`: for each
-`r ∈ rows`, `τ₁ = A(r, i)`, `τ₂ = A(r, k)`, `A(r, i) = c τ₁ - s τ₂`, `A(r, k) = s τ₁ + c τ₂`.
-The symmetric twin of `givensApplyLeft` (convention 14). -/
+/-- **Section 5.1.9** of [golub2013matrix], the column update $A(\mathrm{rows}, [i, k]) =
+A(\mathrm{rows}, [i, k])\, G(i, k, \theta)$, in place on the full matrix. For each $r$ in the
+list `rows`, with $\tau_1 = a_{ri}$ and $\tau_2 = a_{rk}$, the program sets
+$$a_{ri} = c \tau_1 - s \tau_2, \qquad a_{rk} = s \tau_1 + c \tau_2,$$
+with each product and each sum rounded.
+
+This is the symmetric twin of `GolubVanLoan.Chapter05.givensApplyLeft`. -/
 def givensApplyRight (i k : Fin n) (c s : ℝ) (rows : List (Fin m))
     (A : Matrix (Fin m) (Fin n) ℝ) : M (Matrix (Fin m) (Fin n) ℝ) :=
   rows.foldlM (fun (A : Matrix (Fin m) (Fin n) ℝ) r => do
     let y ← givensRotateVec rnd i k c s (A r)
     pure (A.updateRow r y)) A
 
-/-- **§6.5.4, a hyperbolic rotation applied to two rows.** "`[c −s; −s c]`" applied to the rows
-`i`, `k` of `S` on the columns `cols`, in place:
-`S(i, j) ← c S(i, j) − s S(k, j)`, `S(k, j) ← c S(k, j) − s S(i, j)`, every product and
-difference rounded. The hyperbolic counterpart of chapter 5's Givens row update; its exact
-semantics is left multiplication by `Matrix.hyperbolicRotation i k c s` on the columns `cols`
-(`hyperbolicApplyLeft_spec`). -/
+/-- **Section 6.5.4** of [golub2013matrix], a hyperbolic rotation applied to two rows. For rows $i$
+and $k$ of a matrix $S$, scalars $c$ and $s$, and a list `cols` of columns, the program applies
+$\begin{bmatrix} c & -s \\ -s & c \end{bmatrix}$ to the rows $i$ and $k$ in the listed columns,
+in place. For each $j$ in `cols`, from the old values,
+$$S(i, j) \leftarrow c\, S(i, j) - s\, S(k, j), \qquad S(k, j) \leftarrow c\, S(k, j) - s\, S(i,
+  j),$$
+with every product and every difference rounded.
+
+This is the hyperbolic counterpart of the Givens row update
+`GolubVanLoan.Chapter05.givensApplyLeft`. Its exact semantics is
+`GolubVanLoan.Chapter05.hyperbolicApplyLeft_spec`. -/
 def hyperbolicApplyLeft {ι : Type} [DecidableEq ι] {n : ℕ} (i k : ι) (c s : ℝ)
     (cols : List (Fin n)) (S : Matrix ι (Fin n) ℝ) : M (Matrix ι (Fin n) ℝ) :=
   cols.foldlM (fun (S : Matrix ι (Fin n) ℝ) (j : Fin n) => do
@@ -1908,7 +2362,8 @@ def hyperbolicApplyLeft {ι : Type} [DecidableEq ι] {n : ℕ} (i k : ι) (c s :
 
 end Programs
 
-/-- **Exact semantics of the vector rotation**: `givensRotateVec` computes `G(i, k, θ)ᵀ x`. -/
+/-- For $i \neq i'$, the exact rotation of the entries $i$ and $i'$ of $x$ is
+$G(i, i', \theta)^T x$. -/
 theorem givensRotateVec_pure {N : ℕ} {i i' : Fin N} (hii' : i ≠ i') (c s : ℝ) (x : Fin N → ℝ) :
     Id.run (givensRotateVec pure i i' c s x) = (givensRotation i i' c s)ᵀ *ᵥ x := by
   ext t
@@ -1925,8 +2380,14 @@ theorem givensRotateVec_pure {N : ℕ} {i i' : Fin N} (hii' : i ≠ i') (c s : �
 
 variable {fp : RoundingModel ℝ}
 
-/-- **The bridge of `givens`** (convention 12): every run `(ĉ, ŝ)` of Algorithm 5.1.3 is a computed
-pair `FloatingPoint.RoundsGivensPair` of the `τ`-formula. -/
+/-- **Algorithm 5.1.3** of [golub2013matrix], rounding bridge. Let $a, b \in \mathbb{R}$. Every
+result $(\hat c, \hat s)$ of Algorithm 5.1.3 in the rounding model is a computed pair of the
+$\tau$-formula: $(\hat c, \hat s) = (1, 0)$ if $b = 0$; if $|a| < |b|$, then $\hat\tau$ is a
+rounding of $-a/b$, $\hat s$ comes from $\hat\tau$ by rounding $\hat\tau^2$, $1 + \hat\tau^2$,
+the square root and the reciprocal in turn, and $\hat c$ is a rounding of $\hat s \hat\tau$;
+otherwise the same holds with $a, b$ and $c, s$ exchanged.
+
+The relation is `FloatingPoint.RoundsGivensPair`. It needs no hypothesis on the rounding model. -/
 theorem algorithm_5_1_3_rounds (a b : ℝ) {cs : ℝ × ℝ}
     (h : cs ∈ (algorithm_5_1_3 fp.round a b).run) : RoundsGivensPair fp a b cs.1 cs.2 := by
   unfold algorithm_5_1_3 at h
@@ -1948,9 +2409,13 @@ private theorem algorithm_5_1_3_mem_exact (a b : ℝ) :
   unfold algorithm_5_1_3
   split_ifs <;> simp only [pure_bind, SetM.mem_run_pure] <;> rfl
 
-/-- **Algorithm 5.1.3, exact semantics**: the output `(c, s)` satisfies `c² + s² = 1` and
-`[c s; -s c]ᵀ [a; b] = [r; 0]`, i.e. `s a + c b = 0`, with `r = c a - s b` of absolute value
-`√(a² + b²)` (the sign of `r` is not controlled, P5.1.11). -/
+/-- **Algorithm 5.1.3** of [golub2013matrix], exact semantics. Let $a, b \in \mathbb{R}$. In exact
+arithmetic, the output $(c, s)$ of Algorithm 5.1.3 satisfies $c^2 + s^2 = 1$ and
+$$\begin{bmatrix} c & s \\ -s & c \end{bmatrix}^T \begin{bmatrix} a \\ b \end{bmatrix} =
+  \begin{bmatrix} r \\ 0 \end{bmatrix}, \qquad |r| = \sqrt{a^2 + b^2},$$
+that is, $s a + c b = 0$ and $r = c a - s b$.
+
+The sign of $r$ is not controlled; the source treats it in Problem P5.1.11. -/
 theorem algorithm_5_1_3_spec (a b : ℝ) :
     (Id.run (algorithm_5_1_3 pure a b)).1 ^ 2 + (Id.run (algorithm_5_1_3 pure a b)).2 ^ 2 = 1 ∧
       (Id.run (algorithm_5_1_3 pure a b)).2 * a + (Id.run (algorithm_5_1_3 pure a b)).1 * b = 0 ∧
@@ -1965,16 +2430,23 @@ theorem algorithm_5_1_3_spec (a b : ℝ) :
   congr 1
   linear_combination (a ^ 2 + b ^ 2) * hcs - (s * a + c * b) * hz
 
-/-- **§5.1.10, "the computed `ĉ`, `ŝ` satisfy `ĉ = c(1 + ε_c)`, `ŝ = s(1 + ε_s)`, `ε = O(u)`"**,
-rigorous: for `13 u < 1`, every run `(ĉ, ŝ)` of Algorithm 5.1.3 has an exact rotation `(c, s)`,
-`c² + s² = 1`, `s a + c b = 0`, of which it is a relative perturbation of order `13`. -/
+/-- **Section 5.1.10** of [golub2013matrix], accuracy of the computed rotation. Let $13 u < 1$ and
+$a, b \in \mathbb{R}$. For every result $(\hat c, \hat s)$ of Algorithm 5.1.3 in the rounding
+model, there are $c, s \in \mathbb{R}$ with $c^2 + s^2 = 1$ and $s a + c b = 0$ such that
+$$\hat c = c (1 + \varepsilon_c), \qquad \hat s = s (1 + \varepsilon_s), \qquad |\varepsilon_c|,
+  |\varepsilon_s| \le \gamma_{13}.$$
+
+The source states $\varepsilon_c, \varepsilon_s = O(u)$; the formal statement gives the bound
+$\gamma_{13}$. -/
 theorem algorithm_5_1_3_rounding (hu : ((13 : ℕ) : ℝ) * fp.u < 1) (a b : ℝ) {cs : ℝ × ℝ}
     (h : cs ∈ (algorithm_5_1_3 fp.round a b).run) :
     ∃ c s : ℝ, c ^ 2 + s ^ 2 = 1 ∧ s * a + c * b = 0 ∧ IsRelPert fp.u 13 c cs.1 ∧
       IsRelPert fp.u 13 s cs.2 :=
   (algorithm_5_1_3_rounds a b h).exists_isRelPert hu
 
-/-- The bridge of one computed rotation of two entries. -/
+/-- For $i \neq k$, every result $y$ of `GolubVanLoan.Chapter05.givensRotateVec` in the rounding
+model is a computed rotation of the entries $i$ and $k$ of $x$
+(`FloatingPoint.RoundsGivensApply`). -/
 theorem givensRotateVec_rounds {p : ℕ} {i k : Fin p} (hik : i ≠ k) {c s : ℝ} {x y : Fin p → ℝ}
     (h : y ∈ (givensRotateVec fp.round i k c s x).run) : RoundsGivensApply fp c s i k x y := by
   simp only [givensRotateVec, SetM.mem_run_bind, RoundingModel.mem_run_round,
@@ -1985,7 +2457,9 @@ theorem givensRotateVec_rounds {p : ℕ} {i k : Fin p} (hik : i ≠ k) {c s : �
   · rwa [Function.update_self]
   · rw [Function.update_of_ne hlk, Function.update_of_ne hli]
 
-/-- In the exact model a computed rotation is the exact one. -/
+/-- In the exact rounding model, a computed rotation $y$ of the entries $i$ and $k$ of $x$ is the
+exact one: $y_i = c x_i - s x_k$, $y_k = s x_i + c x_k$, and $y_l = x_l$ for every
+$l \neq i, k$. -/
 theorem eq_of_roundsGivensApply_exact {p : ℕ} {i k : Fin p} {c s : ℝ} {x y : Fin p → ℝ}
     (h : RoundsGivensApply (RoundingModel.exact ℝ) c s i k x y) :
     y i = c * x i - s * x k ∧ y k = s * x i + c * x k ∧ ∀ l, l ≠ i → l ≠ k → y l = x l := by
@@ -1993,10 +2467,15 @@ theorem eq_of_roundsGivensApply_exact {p : ℕ} {i k : Fin p} {c s : ℝ} {x y :
   simp only [RoundingModel.exact_rounds_iff] at hp₁ hq₁ h₁ hp₂ hq₂ h₂
   exact ⟨by rw [h₁, hp₁, hq₁], by rw [h₂, hp₂, hq₂], h₃⟩
 
-/-- **The bridge of the row update** (convention 12): for `i ≠ k` and a duplicate-free column
-list, every run `B` of `givensApplyLeft fp.round i k c s cols A` agrees with `A` off the listed
-columns and off the rows `i, k`, and on the listed columns it is a computed row update
-`FloatingPoint.RoundsGivensRowUpdate` of `A`. -/
+/-- **Section 5.1.9** of [golub2013matrix], rounding bridge of the row update. Let $i \neq k$, let
+$c, s \in \mathbb{R}$, and let the list `cols` have no duplicates. Every result $B$ of
+`GolubVanLoan.Chapter05.givensApplyLeft` on $A$ in the rounding model agrees with $A$ in the
+columns that are not in `cols` and in the rows other than $i$ and $k$. On the columns of `cols`,
+$B$ is a computed row update of $A$: each listed column of $B$ is a computed rotation of the
+entries $i$ and $k$ of the same column of $A$.
+
+The relation is `FloatingPoint.RoundsGivensRowUpdate` on the columns of the subtype
+`{q // q ∈ cols}`. -/
 theorem givensApplyLeft_rounds {i k : Fin m} (hik : i ≠ k) (c s : ℝ) {cols : List (Fin n)}
     (hcols : cols.Nodup) (A : Matrix (Fin m) (Fin n) ℝ) {B : Matrix (Fin m) (Fin n) ℝ}
     (h : B ∈ (givensApplyLeft fp.round i k c s cols A).run) :
@@ -2011,10 +2490,15 @@ theorem givensApplyLeft_rounds {i k : Fin m} (hik : i ≠ k) (c s : ℝ) {cols :
   · exact (givensRotateVec_rounds hik (hin q hq)).2.2 r hri hrk
   · exact hout q hq r
 
-/-- **The bridge of the column update**, rowwise: every run `B` of
-`givensApplyRight fp.round i k c s rows A` agrees with `A` off the listed rows and off the columns
-`i, k`, and on the listed rows it is a computed column update
-`FloatingPoint.RoundsGivensColUpdate` of `A`. -/
+/-- **Section 5.1.9** of [golub2013matrix], rounding bridge of the column update. Let $i \neq k$,
+let $c, s \in \mathbb{R}$, and let the list `rows` have no duplicates. Every result $B$ of
+`GolubVanLoan.Chapter05.givensApplyRight` on $A$ in the rounding model agrees with $A$ in the
+rows that are not in `rows` and in the columns other than $i$ and $k$. On the rows of `rows`,
+$B$ is a computed column update of $A$: each listed row of $B$ is a computed rotation of the
+entries $i$ and $k$ of the same row of $A$.
+
+The relation is `FloatingPoint.RoundsGivensColUpdate` on the rows of the subtype
+`{r // r ∈ rows}`. -/
 theorem givensApplyRight_rounds {i k : Fin n} (hik : i ≠ k) (c s : ℝ) {rows : List (Fin m)}
     (hrows : rows.Nodup) (A : Matrix (Fin m) (Fin n) ℝ) {B : Matrix (Fin m) (Fin n) ℝ}
     (h : B ∈ (givensApplyRight fp.round i k c s rows A).run) :
@@ -2045,9 +2529,13 @@ private theorem givensApplyRight_mem_exact (i k : Fin n) (c s : ℝ) (rows : Lis
   simp only [givensApplyRight, givensRotateVec, pure_bind, List.foldlM_pure, SetM.mem_run_pure]
   rfl
 
-/-- **Exact semantics of the row update** (read off the bridge at the exact model, convention 11):
-for `i ≠ k` and a duplicate-free column list, the result is `G(i, k, θ)ᵀ A` in the listed columns
-and `A` elsewhere. -/
+/-- **Section 5.1.9** of [golub2013matrix], exact semantics of the row update. Let $i \neq k$ and
+let the list `cols` have no duplicates. In exact arithmetic,
+`GolubVanLoan.Chapter05.givensApplyLeft` on $A$ returns the matrix whose column $q$ is column
+$q$ of $G(i, k, \theta)^T A$ for $q$ in `cols`, and column $q$ of $A$ otherwise.
+
+The proof reads the result off `GolubVanLoan.Chapter05.givensApplyLeft_rounds` at the exact
+model. -/
 theorem givensApplyLeft_spec {i k : Fin m} (hik : i ≠ k) (c s : ℝ) {cols : List (Fin n)}
     (hcols : cols.Nodup) (A : Matrix (Fin m) (Fin n) ℝ) :
     Id.run (givensApplyLeft pure i k c s cols A) =
@@ -2068,7 +2556,9 @@ theorem givensApplyLeft_spec {i k : Fin m} (hik : i ≠ k) (c s : ℝ) {cols : L
     · exact h3 r hri hrk
   · exact hout r q hq
 
-/-- The row update on all columns is `G(i, k, θ)ᵀ A`. -/
+/-- Let $i \neq k$, let the list `cols` have no duplicates, and let every column index be in `cols`.
+In exact arithmetic, `GolubVanLoan.Chapter05.givensApplyLeft` on $A$ returns
+$G(i, k, \theta)^T A$. -/
 theorem givensApplyLeft_spec_of_forall_mem {i k : Fin m} (hik : i ≠ k) (c s : ℝ)
     {cols : List (Fin n)} (hcols : cols.Nodup) (hall : ∀ q, q ∈ cols)
     (A : Matrix (Fin m) (Fin n) ℝ) :
@@ -2077,8 +2567,10 @@ theorem givensApplyLeft_spec_of_forall_mem {i k : Fin m} (hik : i ≠ k) (c s : 
   ext r q
   simp [hall q]
 
-/-- **Exact semantics of the column update**: for `i ≠ k` and a duplicate-free row list, the
-result is `A G(i, k, θ)` in the listed rows and `A` elsewhere. -/
+/-- **Section 5.1.9** of [golub2013matrix], exact semantics of the column update. Let $i \neq k$ and
+let the list `rows` have no duplicates. In exact arithmetic,
+`GolubVanLoan.Chapter05.givensApplyRight` on $A$ returns the matrix whose row $r$ is row $r$ of
+$A\, G(i, k, \theta)$ for $r$ in `rows`, and row $r$ of $A$ otherwise. -/
 theorem givensApplyRight_spec {i k : Fin n} (hik : i ≠ k) (c s : ℝ) {rows : List (Fin m)}
     (hrows : rows.Nodup) (A : Matrix (Fin m) (Fin n) ℝ) :
     Id.run (givensApplyRight pure i k c s rows A) =
@@ -2099,7 +2591,9 @@ theorem givensApplyRight_spec {i k : Fin n} (hik : i ≠ k) (c s : ℝ) {rows : 
     · exact h3 q hqi hqk
   · exact hout r q hr
 
-/-- The column update on all rows is `A G(i, k, θ)`. -/
+/-- Let $i \neq k$, let the list `rows` have no duplicates, and let every row index be in `rows`. In
+exact arithmetic, `GolubVanLoan.Chapter05.givensApplyRight` on $A$ returns
+$A\, G(i, k, \theta)$. -/
 theorem givensApplyRight_spec_of_forall_mem {i k : Fin n} (hik : i ≠ k) (c s : ℝ)
     {rows : List (Fin m)} (hrows : rows.Nodup) (hall : ∀ r, r ∈ rows)
     (A : Matrix (Fin m) (Fin n) ℝ) :
@@ -2112,12 +2606,21 @@ section Frobenius
 
 open scoped Matrix.Norms.Frobenius
 
-/-- **§5.1.10, "`fl[Ĝ(i,k,θ)ᵀ A] = G(i,k,θ)ᵀ (A + E)`, `‖E‖₂ ≈ u ‖A‖₂`"**, rigorous: if the computed
-`(ĉ, ŝ)` are relative perturbations of order `K` of an exact `(c, s)` with `c² + s² = 1` and
-`(K + 2) u < 1`, every run `B` of `givensApplyLeft fp.round i k ĉ ŝ cols A` agrees with `A` off the
-listed columns, and on them `‖B(:, q) - G(i,k,θ)ᵀ A(:, q)‖₂ ≤ √2 γ_{K+2} ‖A(:, q)‖₂` for every
-column and `‖B - Gᵀ A‖_F ≤ √2 γ_{K+2} ‖A‖_F` (so `E = G B - A` has the same bounds). With the data
-of `algorithm_5_1_3_rounding` (`K = 13`) the constant is `√2 γ₁₅`. -/
+/-- **Section 5.1.10** of [golub2013matrix], rounding error of the row update. Let $i \neq k$, let
+$c, s \in \mathbb{R}$ with $c^2 + s^2 = 1$, let $K \in \mathbb{N}$ with $(K + 2)\, u < 1$, let
+$\hat c$ and $\hat s$ be relative perturbations of order $K$ of $c$ and $s$, and let the list
+`cols` have no duplicates. Write $G = G(i, k, \theta)$ for the exact rotation. Every result $B$
+of `GolubVanLoan.Chapter05.givensApplyLeft` with $\hat c$ and $\hat s$ on $A$, in the rounding
+model, agrees with $A$ in the columns that are not in `cols`, and
+$$\|B(:, q) - G^T A(:, q)\|_2 \le \sqrt 2\, \gamma_{K+2}\, \|A(:, q)\|_2$$
+for every $q$ in `cols`, and
+$$\|B(:, \mathrm{cols}) - G^T A(:, \mathrm{cols})\|_F \le \sqrt 2\, \gamma_{K+2}\, \|A(:,
+  \mathrm{cols})\|_F.$$
+
+The source states $\mathrm{fl}[\hat G^T A] = G^T (A + E)$ with $\|E\|_2 \approx u \|A\|_2$.
+Because $G$ is orthogonal, $E = G B - A$ satisfies the same bounds. With the data of
+`GolubVanLoan.Chapter05.algorithm_5_1_3_rounding`, $K = 13$ and the constant is
+$\sqrt 2\, \gamma_{15}$. The rounding model need not be idempotent. -/
 theorem givensApplyLeft_rounding {K : ℕ} (hu : ((K + 2 : ℕ) : ℝ) * fp.u < 1) {i k : Fin m}
     (hik : i ≠ k) {c s chat shat : ℝ} (hcs : c ^ 2 + s ^ 2 = 1) (hc : IsRelPert fp.u K c chat)
     (hs : IsRelPert fp.u K s shat) {cols : List (Fin n)} (hcols : cols.Nodup)
@@ -2136,11 +2639,18 @@ theorem givensApplyLeft_rounding {K : ℕ} (hu : ((K + 2 : ℕ) : ℝ) * fp.u < 
   obtain ⟨hout, -, hrel⟩ := givensApplyLeft_rounds hik chat shat hcols A h
   exact ⟨hout, hrel.col_norm_sub_le hu hik hcs hc hs, hrel.frobenius_norm_sub_le hu hik hcs hc hs⟩
 
-/-- **§5.1.10, the column form** `fl[A Ĝ(i,k,θ)] = (A + E) G(i,k,θ)`, rigorous: under the
-hypotheses of `givensApplyLeft_rounding`, every run `B` of
-`givensApplyRight fp.round i k ĉ ŝ rows A` agrees with `A` off the listed rows, and on them
-`‖B(r, :) - A(r, :) G‖₂ ≤ √2 γ_{K+2} ‖A(r, :)‖₂` for every row and
-`‖B - A G‖_F ≤ √2 γ_{K+2} ‖A‖_F`. -/
+/-- **Section 5.1.10** of [golub2013matrix], rounding error of the column update. Let $i \neq k$,
+let $c, s \in \mathbb{R}$ with $c^2 + s^2 = 1$, let $K \in \mathbb{N}$ with $(K + 2)\, u < 1$,
+let $\hat c$ and $\hat s$ be relative perturbations of order $K$ of $c$ and $s$, and let the
+list `rows` have no duplicates. Write $G = G(i, k, \theta)$ for the exact rotation. Every result
+$B$ of `GolubVanLoan.Chapter05.givensApplyRight` with $\hat c$ and $\hat s$ on $A$, in the
+rounding model, agrees with $A$ in the rows that are not in `rows`, and
+$$\|B(r, :) - A(r, :)\, G\|_2 \le \sqrt 2\, \gamma_{K+2}\, \|A(r, :)\|_2$$
+for every $r$ in `rows`, and
+$$\|B(\mathrm{rows}, :) - A(\mathrm{rows}, :)\, G\|_F \le \sqrt 2\, \gamma_{K+2}\,
+  \|A(\mathrm{rows}, :)\|_F.$$
+
+This is the column form $\mathrm{fl}[A \hat G] = (A + E)\, G$ of the source. -/
 theorem givensApplyRight_rounding {K : ℕ} (hu : ((K + 2 : ℕ) : ℝ) * fp.u < 1) {i k : Fin n}
     (hik : i ≠ k) {c s chat shat : ℝ} (hcs : c ^ 2 + s ^ 2 = 1) (hc : IsRelPert fp.u K c chat)
     (hs : IsRelPert fp.u K s shat) {rows : List (Fin m)} (hrows : rows.Nodup)
@@ -2161,7 +2671,9 @@ theorem givensApplyRight_rounding {K : ℕ} (hu : ((K + 2 : ℕ) : ℝ) * fp.u <
 
 end Frobenius
 
-/-- The entries of a hyperbolic rotation times a matrix. -/
+/-- For $i \neq k$, row $i$ of $H S$ is $c\, S(i, :) - s\, S(k, :)$, row $k$ is
+$c\, S(k, :) - s\, S(i, :)$, and the other rows are those of $S$, where $H$ is the hyperbolic
+rotation `Matrix.hyperbolicRotation i k c s`. -/
 private theorem hyperbolicRotation_mul_apply {ι κ : Type*} [Fintype ι] [DecidableEq ι] {i k : ι}
     (hik : i ≠ k) (c s : ℝ) (S : Matrix ι κ ℝ) (p : ι) (q : κ) :
     (hyperbolicRotation i k c s * S) p q =
@@ -2171,9 +2683,14 @@ private theorem hyperbolicRotation_mul_apply {ι κ : Type*} [Fintype ι] [Decid
   rw [planeEmbed_mulVec_apply _ hik]
   split_ifs <;> simp <;> ring
 
-/-- **Exact semantics of `hyperbolicApplyLeft`**: on the columns of a duplicate-free list `cols`
-it is left multiplication by the hyperbolic rotation `[c −s; −s c]` in the rows `i`, `k`; the
-other columns are unchanged. -/
+/-- **Section 6.5.4** of [golub2013matrix], exact semantics of the hyperbolic row update. Let
+$i \neq k$ and let the list `cols` have no duplicates. In exact arithmetic,
+`GolubVanLoan.Chapter05.hyperbolicApplyLeft` on $S$ returns the matrix whose column $j$ is
+column $j$ of $H S$ for $j$ in `cols`, and column $j$ of $S$ otherwise. Here $H$ is the identity
+except for the block $\begin{bmatrix} c & -s \\ -s & c \end{bmatrix}$ in the rows and columns
+$i$ and $k$.
+
+The matrix $H$ is `Matrix.hyperbolicRotation i k c s`. -/
 theorem hyperbolicApplyLeft_spec {ι : Type} [Fintype ι] [DecidableEq ι] {n : ℕ} {i k : ι}
     (hik : i ≠ k) (c s : ℝ) {cols : List (Fin n)} (hcols : cols.Nodup) (S : Matrix ι (Fin n) ℝ) :
     Id.run (hyperbolicApplyLeft pure i k c s cols S) =
@@ -2223,19 +2740,28 @@ end Givens
 
 section Encoding
 
-/-- **(5.1.9), Stewart's encoding** of `Z = [c s; -s c]` by one number:
-`ρ = 1` if `c = 0`; `ρ = sign(c) s / 2` if `|s| < |c|`; `ρ = 2 sign(s) / c` otherwise. -/
+/-- **Equation (5.1.9)** of [golub2013matrix] (Stewart's encoding). The rotation $Z =
+\begin{bmatrix} c & s \\ -s & c \end{bmatrix}$ is encoded by the single number
+$$\rho = \begin{cases} 1 & \text{if } c = 0, \\ \operatorname{sign}(c)\, s / 2 & \text{if } |s|
+  < |c|, \\ 2 \operatorname{sign}(s) / c & \text{otherwise.} \end{cases}$$
+
+The sign function is `Real.sign`, with $\operatorname{sign}(0) = 0$. -/
 noncomputable def rotationCode (c s : ℝ) : ℝ :=
   if c = 0 then 1 else if |s| < |c| then Real.sign c * s / 2 else 2 * Real.sign s / c
 
-/-- **(5.1.10), the reconstruction**: `(c, s) = (0, 1)` if `ρ = 1`; `s = 2ρ`, `c = √(1 - s²)` if
-`|ρ| < 1`; `c = 2/ρ`, `s = √(1 - c²)` otherwise. -/
+/-- **Equation (5.1.10)** of [golub2013matrix], the reconstruction of a rotation from its code
+$\rho$:
+$$(c, s) = \begin{cases} (0, 1) & \text{if } \rho = 1, \\ (\sqrt{1 - s^2},\ s) \text{ with } s =
+  2\rho & \text{if } |\rho| < 1, \\ (c,\ \sqrt{1 - c^2}) \text{ with } c = 2/\rho &
+  \text{otherwise.} \end{cases}$$
+-/
 noncomputable def rotationDecode (ρ : ℝ) : ℝ × ℝ :=
   if ρ = 1 then (0, 1)
   else if |ρ| < 1 then (√(1 - (2 * ρ) ^ 2), 2 * ρ) else (2 / ρ, √(1 - (2 / ρ) ^ 2))
 
-/-- **§5.1.11, "it is possible to reconstruct `Z` (or `-Z`)"**: for `c² + s² = 1`, decoding the
-code of `(c, s)` gives `(c, s)` or `(-c, -s)`. -/
+/-- **Section 5.1.11** of [golub2013matrix], reconstruction of a rotation. Let $c^2 + s^2 = 1$.
+Decoding the code $\rho$ of $(c, s)$ by (5.1.10) gives $(c, s)$ or $(-c, -s)$. In the words of
+the source, it is possible to reconstruct $Z$ or $-Z$. -/
 theorem rotationDecode_rotationCode {c s : ℝ} (hcs : c ^ 2 + s ^ 2 = 1) :
     rotationDecode (rotationCode c s) = (c, s) ∨ rotationDecode (rotationCode c s) = (-c, -s) := by
   have hs1 : |s| ≤ 1 := by
@@ -2306,22 +2832,31 @@ open scoped Matrix.Norms.L2Operator
 
 variable {m n : ℕ}
 
-/-- **§5.1.12, orthogonal to working precision**: `Q̂` is orthogonal to working precision `ε` if
-there is an orthogonal `Q` with `‖Q̂ - Q‖₂ ≤ ε` (the book's `‖Q̂ - Q‖ = O(u)`, with the `O(u)` an
-explicit parameter). -/
+/-- **Section 5.1.12** of [golub2013matrix], definition. A matrix
+$\hat Q \in \mathbb{R}^{m \times m}$ is **orthogonal to working precision** $\varepsilon$ if
+there is an orthogonal $Q \in \mathbb{R}^{m \times m}$ with
+$$\|\hat Q - Q\|_2 \le \varepsilon.$$
+
+The source writes $\|\hat Q - Q\|_2 = O(u)$; the definition makes the $O(u)$ an explicit
+parameter $\varepsilon$. -/
 def orthogonalToWorkingPrecision (ε : ℝ) (Qhat : Matrix (Fin m) (Fin m) ℝ) : Prop :=
   ∃ Q ∈ orthogonalGroup (Fin m) ℝ, ‖Qhat - Q‖ ≤ ε
 
-/-- **§5.1.12, "A corollary of this is that `‖Q̂ᵀQ̂ - I_m‖ = O(u)`"**: `‖Q̂ᵀQ̂ - I‖₂ ≤ 2ε + ε²`. -/
+/-- **Section 5.1.12** of [golub2013matrix], corollary. If $\hat Q$ is orthogonal to working
+precision $\varepsilon$, then
+$$\|\hat Q^T \hat Q - I\|_2 \le 2 \varepsilon + \varepsilon^2.$$
+The source states this as $\|\hat Q^T \hat Q - I_m\| = O(u)$. -/
 theorem orthogonalToWorkingPrecision_transpose_mul_self {ε : ℝ}
     {Qhat : Matrix (Fin m) (Fin m) ℝ} (h : orthogonalToWorkingPrecision ε Qhat) :
     ‖Qhatᵀ * Qhat - 1‖ ≤ 2 * ε + ε ^ 2 := by
   obtain ⟨Q, hQ, hε⟩ := h
   exact l2_opNorm_transpose_mul_self_sub_one_le hQ hε
 
-/-- **§5.1.12, "The matrices defined by the floating point output of … givens are orthogonal to
-working precision"**: for `13 u < 1`, `i ≠ k` and a run `(ĉ, ŝ)` of Algorithm 5.1.3, the rotation
-`G(i, k)` built from `(ĉ, ŝ)` is orthogonal to working precision `γ₁₃`. -/
+/-- **Section 5.1.12** of [golub2013matrix], the Givens case. Let $13 u < 1$, $i \neq k$ and
+$a, b \in \mathbb{R}$. If $(\hat c, \hat s)$ is a result of Algorithm 5.1.3 in the rounding
+model, then the rotation $G(i, k)$ built from $\hat c$ and $\hat s$ is orthogonal to working
+precision $\gamma_{13}$. The source says that the matrices defined by the floating point output
+of `givens` are orthogonal to working precision. -/
 theorem givensRotation_orthogonalToWorkingPrecision {fp : RoundingModel ℝ}
     (hu : ((13 : ℕ) : ℝ) * fp.u < 1) {i k : Fin m} (hik : i ≠ k) (a b : ℝ) {cs : ℝ × ℝ}
     (h : cs ∈ (algorithm_5_1_3 fp.round a b).run) :
@@ -2330,8 +2865,11 @@ theorem givensRotation_orthogonalToWorkingPrecision {fp : RoundingModel ℝ}
   exact ⟨givensRotation i k c s, givensRotation_mem_orthogonalGroup hik hcs,
     l2_opNorm_planeRotation_sub_le (gamma_nonneg fp.u_nonneg hu) hik hcs hc hs⟩
 
-/-- **§5.1.12, the `house` half**: the Householder matrix of a run of Algorithm 5.1.1 is orthogonal
-to working precision `8 γ_K`, `K = 18 (k + 1) + 31`. -/
+/-- **Section 5.1.12** of [golub2013matrix], the Householder case. Let the rounding model be
+idempotent, let $m \ge 1$ and $x \in \mathbb{R}^m$, and let $K = 18 m + 31$ with $K u < 1$. For
+every result $(\hat v, \hat\beta)$ of Algorithm 5.1.1 in the rounding model, the Householder
+matrix $I - 2 \hat v \hat v^T / \hat v^T \hat v$ is orthogonal to working precision
+$8 \gamma_K$. Here $m = k + 1$. -/
 theorem householderMatrix_orthogonalToWorkingPrecision {fp : RoundingModel ℝ} {k : ℕ}
     (hfp : fp.IsIdempotent) (hu : ((18 * (k + 1) + 31 : ℕ) : ℝ) * fp.u < 1)
     (x : Fin (k + 1) → ℝ) {vβ : (Fin (k + 1) → ℝ) × ℝ}
@@ -2341,9 +2879,14 @@ theorem householderMatrix_orthogonalToWorkingPrecision {fp : RoundingModel ℝ} 
   obtain ⟨v, -, -, -, -, hle⟩ := householderMatrix_computed_sub_le hfp hu x h
   exact ⟨householderMatrix v, householderMatrix_mem_orthogonalGroup v, hle⟩
 
-/-- **§5.1.12, the `house` half, for the matrix the helpers apply**: `I - β̂ v̂ v̂ᵀ` of a run
-`(v̂, β̂)` of Algorithm 5.1.1 is orthogonal to working precision `2 ((1 + γ_K)³ - 1)`,
-`K = 18 (k + 1) + 31` (`one_sub_smul_vecMulVec_computed_sub_le`). -/
+/-- **Section 5.1.12** of [golub2013matrix], the Householder case for the matrix that the update
+programs apply. Let the rounding model be idempotent, let $m \ge 1$ and $x \in \mathbb{R}^m$,
+and let $K = 18 m + 31$ with $K u < 1$. For every result $(\hat v, \hat\beta)$ of Algorithm
+5.1.1 in the rounding model, the matrix $I - \hat\beta \hat v \hat v^T$ is orthogonal to working
+precision $2((1 + \gamma_K)^3 - 1)$.
+
+The proof uses `GolubVanLoan.Chapter05.one_sub_smul_vecMulVec_computed_sub_le`. Here
+$m = k + 1$. -/
 theorem one_sub_smul_vecMulVec_orthogonalToWorkingPrecision {fp : RoundingModel ℝ} {k : ℕ}
     (hfp : fp.IsIdempotent) (hu : ((18 * (k + 1) + 31 : ℕ) : ℝ) * fp.u < 1)
     (x : Fin (k + 1) → ℝ) {vβ : (Fin (k + 1) → ℝ) × ℝ}
@@ -2361,17 +2904,33 @@ open scoped Matrix.Norms.Frobenius
 
 variable {m n : ℕ}
 
-/-- **(5.1.11), rigorous.** Let `A₀ = A ∈ ℝ^{m×n}` and `A₁, …, A_p = B` be generated by computed
-two-sided orthogonal updates: at each step there are orthogonal `Q_k`, `Z_k` (the exact
-transformations determined by the *computed* data — the only reading under which the claim holds)
-with `‖A_{k+1} - Q_k A_k Z_k‖_F ≤ ε ‖A_k‖_F` (for full-width updates — a left update on all
-columns or a right update on all rows — the per-step bounds of `householderApplyLeft/Right_rounding`
-and `givensApplyLeft/Right_rounding`, with `Z_k = I` or `Q_k = I`; those theorems bound only the
-updated block, so an in-place factorization that stores its vectors in the columns a reflector
-skips, such as Algorithm 5.2.1, needs its own accumulation, `algorithm_5_2_1_rounding`). If
-`p ε < 1`, then `B = (Q_p ⋯ Q_1)(A + E)(Z_1 ⋯ Z_p)` with `‖E‖_F ≤ γ_p(ε) ‖A‖_F` and
-`‖E‖₂ ≤ √(min(m, n)) γ_p(ε) ‖A‖₂`: the book's `‖E‖₂ ≤ c u ‖A‖₂`, `c` depending mildly on `m`,
-`n`, `p`. -/
+/-- **Equation (5.1.11)** of [golub2013matrix]. Let $A_0, A_1, \dots, A_p \in \mathbb{R}^{m \times
+n}$, let $Q_0, Q_1, \dots \in \mathbb{R}^{m \times m}$ and
+$Z_0, Z_1, \dots \in \mathbb{R}^{n \times n}$ be orthogonal, and let $\varepsilon \ge 0$ with
+$p \varepsilon < 1$. Assume that the matrices are generated by computed two-sided orthogonal
+updates:
+$$\|A_{k+1} - Q_k A_k Z_k\|_F \le \varepsilon \|A_k\|_F, \qquad k = 0, \dots, p - 1.$$
+Then there is $E \in \mathbb{R}^{m \times n}$ with
+$$A_p = (Q_{p-1} \cdots Q_0)(A_0 + E)(Z_0 \cdots Z_{p-1}),$$
+$$\|E\|_F \le \gamma_p(\varepsilon)\, \|A_0\|_F, \qquad \|E\|_2 \le \sqrt{\min(m, n)}\,
+  \gamma_p(\varepsilon)\, \|A_0\|_2,$$
+where $\gamma_p(\varepsilon) = p \varepsilon / (1 - p \varepsilon)$. This is the source's bound
+$\|E\|_2 \le c\, u\, \|A\|_2$, with $c$ depending mildly on $m$, $n$ and $p$.
+
+**Reading.** The source does not say which orthogonal transformations $Q_k$ and $Z_k$ appear in
+its statement. The formal statement takes them to be the exact transformations determined by the
+computed data at each step; this is the only reading under which the claim holds.
+
+For full-width updates (a left update on all columns, or a right update on all rows), the
+hypothesis at each step is the bound of `GolubVanLoan.Chapter05.householderApplyLeft_rounding`,
+`GolubVanLoan.Chapter05.householderApplyRight_rounding`,
+`GolubVanLoan.Chapter05.givensApplyLeft_rounding` or
+`GolubVanLoan.Chapter05.givensApplyRight_rounding`, with $Z_k = I$ or $Q_k = I$. Those theorems
+bound only the updated block. An in-place factorization that stores its vectors in the columns
+that a reflector skips, such as Algorithm 5.2.1, therefore needs its own accumulation
+(`GolubVanLoan.Chapter05.algorithm_5_2_1_rounding`). The products are `prodRev Q p` and
+`prodFwd Z p`, the sequences are 0-based, and $\gamma_p(\varepsilon)$ is
+`FloatingPoint.gamma ε p`. -/
 theorem equation_5_1_11 {Q : ℕ → Matrix (Fin m) (Fin m) ℝ} {Z : ℕ → Matrix (Fin n) (Fin n) ℝ}
     (hQ : ∀ k, Q k ∈ orthogonalGroup (Fin m) ℝ) (hZ : ∀ k, Z k ∈ orthogonalGroup (Fin n) ℝ)
     {A : ℕ → Matrix (Fin m) (Fin n) ℝ} {ε : ℝ} (hε : 0 ≤ ε) {p : ℕ} (hp : (p : ℝ) * ε < 1)
@@ -2404,9 +2963,16 @@ open Complex
 
 variable {m : ℕ}
 
-/-- **§5.1.13, the complex Householder transformation**: for `x ∈ ℂ^m` with `x₁ = r e^{iθ}`
-(`e^{iθ}` is `Matrix.phase x₁`, `1` at `x₁ = 0`) and `v = x ± e^{iθ} ‖x‖₂ e₁ ≠ 0`, the matrix
-`P = I - (2 / vᴴv) v vᴴ` (`Matrix.reflector v`) is unitary and `P x = ∓ e^{iθ} ‖x‖₂ e₁`. -/
+/-- **Section 5.1.13** of [golub2013matrix], the complex Householder transformation. Let
+$x \in \mathbb{C}^{m+1}$ with $x_1 = r e^{i\theta}$, let $\sigma \in \{1, -1\}$, and let
+$v = x + \sigma e^{i\theta} \|x\|_2 e_1 \neq 0$. Then $P = I - (2 / v^H v)\, v v^H$ is unitary
+and
+$$P x = -\sigma e^{i\theta} \|x\|_2 e_1.$$
+In the notation of the source, $v = x \pm e^{i\theta} \|x\|_2 e_1$ gives
+$P x = \mp e^{i\theta} \|x\|_2 e_1$.
+
+The factor $e^{i\theta}$ is `Matrix.phase (x 0)`, which is $x_1 / |x_1|$ for $x_1 \neq 0$ and
+$1$ for $x_1 = 0$. The matrix $P$ is `Matrix.reflector v`. -/
 theorem complexHouseholder (x : Fin (m + 1) → ℂ) {σ : ℝ} (hσ : σ = 1 ∨ σ = -1)
     (hv : x + ((σ : ℂ) * phase (x 0) * (‖(toLp 2 x : EuclideanSpace ℂ (Fin (m + 1)))‖ : ℂ)) •
       Pi.single 0 1 ≠ 0) :
@@ -2436,10 +3002,15 @@ theorem complexHouseholder (x : Fin (m + 1) → ℂ) {σ : ℝ} (hσ : σ = 1 �
       linear_combination ((σ : ℂ) * (‖(toLp 2 x : EuclideanSpace ℂ (Fin (m + 1)))‖ : ℂ)) * this
     rw [h, Complex.star_def, Complex.conj_ofReal]
 
-/-- **§5.1.13, complex Givens rotations**: "it is easy to verify that a 2-by-2 matrix of the form
-`Q = [cos θ, sin θ e^{iφ}; -sin θ e^{-iφ}, cos θ]` is unitary" — for real `c` and complex `s`
-with `c² + |s|² = 1`, `[c s; -s̄ c]` is unitary, and so is its embedding in the plane `(i, k)` of
-`ℂ^{m×m}`. -/
+/-- **Section 5.1.13** of [golub2013matrix], complex Givens rotations. Let $c \in \mathbb{R}$ and
+$s \in \mathbb{C}$ with $c^2 + |s|^2 = 1$. Then
+$$Q = \begin{bmatrix} c & s \\ -\bar s & c \end{bmatrix}$$
+is unitary, and for all indices $i \neq k$ so is its embedding in the plane of the coordinates
+$i$ and $k$ of $\mathbb{C}^{m \times m}$. The source writes $Q = \begin{bmatrix} \cos\theta &
+\sin\theta\, e^{i\phi} \\ -\sin\theta\, e^{-i\phi} & \cos\theta \end{bmatrix}$ and says that it
+is easy to verify that $Q$ is unitary.
+
+The embedding is `Matrix.planeEmbed i k Q`. -/
 theorem complexGivens_mem_unitaryGroup {c : ℝ} {s : ℂ} (h : c ^ 2 + ‖s‖ ^ 2 = 1) :
     !![(c : ℂ), s; -starRingEnd ℂ s, (c : ℂ)] ∈ unitaryGroup (Fin 2) ℂ ∧
       ∀ {i k : Fin m}, i ≠ k →
@@ -2458,11 +3029,17 @@ theorem complexGivens_mem_unitaryGroup {c : ℝ} {s : ℂ} (h : c ^ 2 + ‖s‖ 
       first | ring1 | linear_combination hc + hs
   exact ⟨hG, fun hik => (planeEmbed_mem_unitaryGroup_iff _ hik).2 hG⟩
 
-/-- **(5.1.12), a complex Givens rotation from three real ones**: for `u = u₁ + i u₂`,
-`v = v₁ + i v₂`, let `givens` (Algorithm 5.1.3, exact) give `(c_α, s_α)` for `(u₁, u₂)` with
-`r_u = c_α u₁ - s_α u₂`, `(c_β, s_β)` for `(v₁, v₂)` with `r_v`, and `(c_θ, s_θ)` for
-`(r_u, r_v)`; set `e^{iφ} = (c_α c_β + s_α s_β) + i (c_α s_β - c_β s_α)`, `c = c_θ`,
-`s = s_θ e^{iφ}`. Then `[c s; -s̄ c]ᴴ [u; v] = [r; 0]`, i.e. `s̄ u + c v = 0`. -/
+/-- **Equation (5.1.12)** of [golub2013matrix], a complex Givens rotation from three real ones. Let
+$u = u_1 + i u_2$ and $v = v_1 + i v_2$ be complex numbers. Let Algorithm 5.1.3 in exact
+arithmetic give $(c_\alpha, s_\alpha)$ for $(u_1, u_2)$, $(c_\beta, s_\beta)$ for $(v_1, v_2)$,
+and $(c_\theta, s_\theta)$ for $(r_u, r_v)$, where $r_u = c_\alpha u_1 - s_\alpha u_2$ and
+$r_v = c_\beta v_1 - s_\beta v_2$. Set
+$$e^{i\phi} = (c_\alpha c_\beta + s_\alpha s_\beta) + i\, (c_\alpha s_\beta - c_\beta s_\alpha),
+  \qquad c = c_\theta, \qquad s = s_\theta e^{i\phi}.$$
+Then $\bar s u + c v = 0$, which is the second row of
+$$\begin{bmatrix} c & s \\ -\bar s & c \end{bmatrix}^H \begin{bmatrix} u \\ v \end{bmatrix} =
+  \begin{bmatrix} r \\ 0 \end{bmatrix}.$$
+-/
 theorem equation_5_1_12 (u v : ℂ) {cα sα cβ sβ cθ sθ : ℝ}
     (hgα : Id.run (algorithm_5_1_3 pure u.re u.im) = (cα, sα))
     (hgβ : Id.run (algorithm_5_1_3 pure v.re v.im) = (cβ, sβ))

@@ -5,59 +5,133 @@ Released under Apache 2.0 license as described in the file LICENSE.
 import Numlib.LinearAlgebra.Tensor.MultilinearProduct
 
 /-!
-# Golub–Van Loan §12.4: tensor unfoldings and contractions
+# Golub and Van Loan, Section 12.4: Tensor unfoldings and contractions
 
-Surface file for §12.4 of Golub and Van Loan, *Matrix Computations* (4th edition): order-`d`
-tensors, subtensors and the Frobenius norm (§12.4.2), `vec` (12.4.2)–(12.4.5), transposition
-(§12.4.4), modal and general unfoldings (12.4.6), (12.4.8), outer products and rank-one tensors
-(12.4.9)–(12.4.10), contractions (12.4.11)–(12.4.13), modal and multilinear products
-(12.4.14)–(12.4.19) and Theorem 12.4.1.
+This module formalizes §12.4 of [golub2013matrix], the basic operations on an order-$d$ tensor
+$\mathcal{A} \in \mathbb{R}^{n_1 \times \cdots \times n_d}$, a real array with one entry
+$\mathcal{A}(i)$ for each index tuple $i = (i_1, \dots, i_d)$. It covers fibers, slices, subtensors
+and the Frobenius norm (§12.4.2), the vectorization $\operatorname{vec}(\mathcal{A})$
+(12.4.2)–(12.4.5), tensor transposition (§12.4.4), the mode-$k$ unfolding $\mathcal{A}_{(k)}$
+(12.4.6) and the general unfolding $\mathcal{A}_{r \times c}$ (12.4.8), outer products and rank-one
+tensors (12.4.9)–(12.4.10), contractions (12.4.11)–(12.4.13), and the mode-$k$ product
+$\mathcal{S} \times_k M$ and the multilinear product $\mathcal{S} \times_1 M_1 \cdots \times_d M_d$
+(12.4.14)–(12.4.19). Theorem 12.4.1 gives the unfoldings of a multilinear product:
+$\mathcal{A}_{(k)} = M_k \mathcal{S}_{(k)} (M_d \otimes \cdots \otimes M_{k+1} \otimes M_{k-1}
+\otimes \cdots \otimes M_1)^T$.
 
-## Design
+The proofs specialize the backbone modules `Numlib.LinearAlgebra.Tensor.Basic`,
+`Numlib.LinearAlgebra.Tensor.Unfolding` and `Numlib.LinearAlgebra.Tensor.MultilinearProduct`, which
+work with tensors on arbitrary index types and with unfoldings whose rows and columns are index
+tuples.
 
-The book's `ℝ^{n₁ × ⋯ × n_d}` is `RTensor n := Tensor (fun k : Fin d => Fin (n k)) ℝ`, the
-backbone's concrete tensors (`Numlib/LinearAlgebra/Tensor/Basic`); the entry `𝒜(i)` is `A i` for a
-0-based index tuple `i : ∀ k, Fin (n k)`. The book's `col(i, n)` is Mathlib's little-endian
-`finPiFinEquiv` (the first index runs fastest), and the book's `vec` is `Tensor.vecFin`.
+## Main definitions
 
-The backbone's unfoldings are typed (`Tensor.modeUnfold`, `Tensor.unfold`: rows and columns are
-index tuples); the book's are flattened matrices on `Fin`. The surface definitions
-`modalUnfolding` and `generalUnfolding` flatten the typed ones by `finPiFinEquiv` in the book's
-column order, and every flattened statement carries the Kronecker products in the book's reversed
-order `M_d ⊗ ⋯ ⊗ M_1` as the flattening of the backbone's family product `Matrix.piKronecker` by
-`finPiFinEquiv` (`Matrix.piKronecker_reindex_finPiFinEquiv` identifies it with the positional
-`Matrix.kroneckerFin` product, last factor outermost).
-
-A general unfolding `𝒜_{r × c}` lists its row modes `r` and column modes `c`; here the listing is
-an equivalence `p : Fin e ⊕ Fin f ≃ Fin d`, the row modes being `p (inl 0), …, p (inl (e−1))` and
-the column modes `p (inr 0), …`, in the book's listed order.
-
-The mode-`k` product with a rectangular `M ∈ ℝ^{m × n_k}` changes the `k`-th size, so its result
-has shape `Function.update n k m`; `modeProduct` is the backbone's rectangular mode product
-`Tensor.rectModeProd`, the shapes off `k` matched by `Function.update_of_ne`. Its laws
-(12.4.14)–(12.4.17) are the backbone's (`Tensor.modeUnfold_rectModeProd`,
-`Tensor.vecFin_rectModeProd`, `Tensor.rectModeProd_comm`, `Tensor.rectModeProd_rectModeProd`), read
-through `castShape` where two shapes are only propositionally equal. The table after (12.4.19)
-(the multilinear product as a sequence of mode products, in any order) is stated for square
-factors, through the backbone's shape-preserving `Tensor.modeProd`.
+* §12.4.2, `GolubVanLoan.Chapter12.RTensor`: the space $\mathbb{R}^{n_1 \times \cdots \times n_d}$
+  of order-$d$ tensors.
+* §12.4.2, `GolubVanLoan.Chapter12.fiber`, `GolubVanLoan.Chapter12.slice` and
+  `GolubVanLoan.Chapter12.subtensor`: the subtensors obtained by fixing all indices but one, all
+  indices but two, or by restricting each index to an interval.
+* §12.4.5, `GolubVanLoan.Chapter12.modalUnfolding`: the mode-$k$ unfolding $\mathcal{A}_{(k)}$,
+  whose columns are the mode-$k$ fibers in the vec order.
+* §12.4.6, `GolubVanLoan.Chapter12.generalUnfolding`: the general unfolding
+  $\mathcal{A}_{r \times c}$ for a list $r$ of row modes and a list $c$ of column modes.
+* §12.4.10, `GolubVanLoan.Chapter12.modeProduct`: the mode-$k$ product $\mathcal{S} \times_k M$ with
+  a rectangular matrix $M \in \mathbb{R}^{m \times n_k}$.
 
 ## Main results
 
-* `RTensor`, `fiber`, `slice`, `subtensor`, `frobenius_norm_tensor` — §12.4.2.
-* `equation_12_4_4`, `equation_12_4_2` — `vec`.
-* `tensorTranspose_apply` — §12.4.4.
-* `modalUnfolding`, `equation_12_4_6`; `generalUnfolding`, `equation_12_4_8`; `outer_kronecker`.
-* `equation_12_4_9`, `equation_12_4_10`, `eq_sum_rankOne` — rank-one tensors.
-* `equation_12_4_11`, `equation_12_4_13` — contractions.
-* `modeProduct`, `equation_12_4_14` … `equation_12_4_19`, `theorem_12_4_1`, `theorem_12_4_1_b`;
-  `lowerSize`, `upperSize` for (12.4.15).
+* §12.4.2, `GolubVanLoan.Chapter12.frobenius_norm_tensor`: $\|\mathcal{A}\|_F$ is the square root of
+  the sum of the squares of the entries.
+* Equations (12.4.2)–(12.4.3), `GolubVanLoan.Chapter12.equation_12_4_2`:
+  $\operatorname{vec}(\mathcal{A})$ stacks the vectorizations of the slices of $\mathcal{A}$ in the
+  last mode.
+* Equations (12.4.4)–(12.4.5), `GolubVanLoan.Chapter12.equation_12_4_4`:
+  $\operatorname{vec}(\mathcal{A})(\operatorname{col}(i, n)) = \mathcal{A}(i)$.
+* §12.4.4, `GolubVanLoan.Chapter12.tensorTranspose_apply`: the $p$-transpose satisfies
+  $\mathcal{A}^{\langle p \rangle}(j(p)) = \mathcal{A}(j)$.
+* Equation (12.4.6), `GolubVanLoan.Chapter12.equation_12_4_6`: $\mathcal{A}_{(k)}(i_k,
+  \operatorname{col}(\tilde\imath_k, \tilde n_k)) = \mathcal{A}(i)$.
+* Equation (12.4.8), `GolubVanLoan.Chapter12.equation_12_4_8`: the entries of
+  $\mathcal{A}_{r \times c}$, and the modal unfolding and $\operatorname{vec}(\mathcal{A})$ as
+  special cases.
+* §12.4.7, `GolubVanLoan.Chapter12.outer_kronecker`: for matrices $B$ and $C$, the unfolding
+  $(B \circ C)_{[3\,1] \times [4\,2]}$ is $B \otimes C$.
+* §12.4.8, `GolubVanLoan.Chapter12.eq_sum_rankOne`: every tensor is the sum of its entries times
+  rank-one tensors of unit vectors.
+* Equation (12.4.9), `GolubVanLoan.Chapter12.equation_12_4_9`: the mode-$k$ unfolding of a rank-one
+  tensor.
+* Equation (12.4.10), `GolubVanLoan.Chapter12.equation_12_4_10`: the general unfolding of a rank-one
+  tensor.
+* Equation (12.4.11), `GolubVanLoan.Chapter12.equation_12_4_11`: a contraction of an order-4 and an
+  order-5 tensor is a matrix product of slices.
+* Equations (12.4.12)–(12.4.13), `GolubVanLoan.Chapter12.equation_12_4_13`: the unfolding of a
+  contraction is the product of the unfoldings.
+* Equation (12.4.14), `GolubVanLoan.Chapter12.equation_12_4_14`: $(\mathcal{S} \times_k M)_{(k)} = M
+  \mathcal{S}_{(k)}$, and the entries of $\mathcal{S} \times_k M$.
+* Equation (12.4.15), `GolubVanLoan.Chapter12.equation_12_4_15`: $\operatorname{vec}(\mathcal{S}
+  \times_k M) = (I \otimes M \otimes I) \operatorname{vec}(\mathcal{S})$.
+* Equation (12.4.16), `GolubVanLoan.Chapter12.equation_12_4_16`: mode products in distinct modes
+  commute.
+* Equation (12.4.17), `GolubVanLoan.Chapter12.equation_12_4_17`: $(\mathcal{S} \times_k F) \times_k
+  G = \mathcal{S} \times_k (GF)$.
+* Equations (12.4.18)–(12.4.19), `GolubVanLoan.Chapter12.equation_12_4_19`: for order 4, the entries
+  and the vectorization of a multilinear product, and the multilinear product as a sequence of mode
+  products.
+* Theorem 12.4.1, `GolubVanLoan.Chapter12.theorem_12_4_1`: $\mathcal{A}_{(k)} = M_k
+  \mathcal{S}_{(k)} (M_d \otimes \cdots \otimes M_{k+1} \otimes M_{k-1} \otimes \cdots \otimes
+  M_1)^T$ for $\mathcal{A} = \mathcal{S} \times_1 M_1 \cdots \times_d M_d$.
+* Theorem 12.4.1, `GolubVanLoan.Chapter12.theorem_12_4_1_b`: if every $M_k$ is nonsingular, then
+  $\mathcal{S} = \mathcal{A} \times_1 M_1^{-1} \cdots \times_d M_d^{-1}$.
 
-## Not formalized here
+## Conventions
 
-The loops (12.4.1) and (12.4.12), the numerical examples (the `2 × 2 × 3 × 4` unfolding of
-§12.4.1, the vec and transposition examples of §12.4.3–12.4.4, (12.4.7)), the misprinted vec formula
-for `𝒜^{<[3 2 1]>}` (the correct one is `(𝒫_{n₂,n₁} ⊗ I_{n₃}) 𝒫_{n₃,n₁n₂}`), the space–time
-contraction example of §12.4.12 and all flop counts.
+* The space $\mathbb{R}^{n_1 \times \cdots \times n_d}$ is `GolubVanLoan.Chapter12.RTensor n`, the
+  backbone's `Tensor (fun k : Fin d => Fin (n k)) ℝ`. Indices are 0-based: the entry
+  $\mathcal{A}(i)$ is `A i` for `i : ∀ k, Fin (n k)`, and mode $k$ of the source is mode `k - 1` in
+  Lean.
+* The position $\operatorname{col}(i, n) - 1$ is Mathlib's little-endian `finPiFinEquiv i`, in which
+  the first index runs fastest. The source's $\operatorname{vec}$ is `Tensor.vecFin`.
+* A Kronecker product in the reversed order $M_d \otimes \cdots \otimes M_1$ of the source is the
+  backbone's family product `Matrix.piKronecker M`, flattened by `finPiFinEquiv` in rows and
+  columns. `Matrix.piKronecker_reindex_finPiFinEquiv` identifies it with the positional product
+  `Matrix.kroneckerFin`, last factor outermost.
+* The lists $r$ of row modes and $c$ of column modes of a general unfolding are an equivalence
+  `p : Fin e ⊕ Fin f ≃ Fin d`: the row modes are `p (inl 0), …, p (inl (e - 1))` and the column
+  modes `p (inr 0), …, p (inr (f - 1))`, in the listed order.
+
+## Implementation notes
+
+* The backbone's unfoldings `Tensor.modeUnfold` and `Tensor.unfold` are typed: their rows and
+  columns are index tuples. The unfoldings of the source are matrices on `Fin`. The surface
+  definitions `GolubVanLoan.Chapter12.modalUnfolding` and `GolubVanLoan.Chapter12.generalUnfolding`
+  flatten the typed ones by `finPiFinEquiv`, in the column order of the source.
+* The mode-$k$ product with $M \in \mathbb{R}^{m \times n_k}$ changes the $k$-th size, so its result
+  has the shape `Function.update n k m`. It is the backbone's rectangular mode product
+  `Tensor.rectModeProd`, and the sizes off $k$ are matched by `Function.update_of_ne`. Where two
+  shapes are only propositionally equal, a tensor is read in the other shape through
+  `GolubVanLoan.Chapter12.castShape`. The laws (12.4.14)–(12.4.17) specialize
+  `Tensor.modeUnfold_rectModeProd`, `Tensor.vecFin_rectModeProd`, `Tensor.rectModeProd_comm` and
+  `Tensor.rectModeProd_rectModeProd`.
+* The multilinear product as a sequence of mode products, in the table after (12.4.19), is stated
+  for square factors through the backbone's shape-preserving `Tensor.modeProd`, for order 4 and for
+  the two orders $1, 2, 3, 4$ and $4, 1, 2, 3$ of the mode products.
+
+## Deviations from the source
+
+* **Equation (12.4.17)** (correction). The source prints $\mathcal{S} \times_k (FG)$. The correct
+  right side is $\mathcal{S} \times_k (GF)$. See `GolubVanLoan.Chapter12.equation_12_4_17`.
+
+## Not formalized
+
+* **The loops (12.4.1) and (12.4.12).**
+* **The numerical examples**: the $2 \times 2 \times 3 \times 4$ unfolding of §12.4.1, the vec and
+  transposition examples of §12.4.3–12.4.4, and (12.4.7). Numerical examples are out of scope for
+  the library.
+* **The vec formula for $\mathcal{A}^{\langle [3\,2\,1] \rangle}$** in the transposition example.
+  The source misprints it; the correct formula is $(\mathcal{P}_{n_2, n_1} \otimes I_{n_3})
+  \mathcal{P}_{n_3, n_1 n_2}$.
+* **The space–time contraction example of §12.4.12.**
+* **The flop counts.** Operation counts are out of scope for the library.
 -/
 
 open Matrix
@@ -66,52 +140,88 @@ namespace GolubVanLoan.Chapter12
 
 variable {d : ℕ}
 
-/-! ### Order-`d` tensors (§12.4.2) -/
+/-! ### Order-$d$ tensors (§12.4.2) -/
 
-/-- **§12.4**, the book's order-`d` tensor space `ℝ^{n₁ × ⋯ × n_d}`, 0-based: an entry `𝒜(i)` is
-`A i` for `i : ∀ k, Fin (n k)`. -/
+/-- **Section 12.4.2** of [golub2013matrix], definition of a tensor. For $d \in \mathbb{N}$ and
+sizes $n = (n_1, \dots, n_d)$, the space $\mathbb{R}^{n_1 \times \cdots \times n_d}$ of
+**order-$d$ tensors** consists of the real arrays $\mathcal{A}$ with one entry $\mathcal{A}(i)$
+for each index tuple $i = (i_1, \dots, i_d)$ with $1 \le i_k \le n_k$.
+
+The type is the backbone's `Tensor (fun k : Fin d => Fin (n k)) ℝ`. Indices are 0-based: the
+entry $\mathcal{A}(i)$ is `A i` for `i : ∀ k, Fin (n k)`. The norm of this type is the Frobenius
+norm (`GolubVanLoan.Chapter12.frobenius_norm_tensor`). -/
 abbrev RTensor (n : Fin d → ℕ) : Type :=
   Tensor (fun k : Fin d => Fin (n k)) ℝ
 
-/-- **§12.4.2**, a fiber: the order-1 subtensor obtained by fixing every index but the `k`-th
-(the book's `𝒜(1, :, 2, 4)`). -/
+/-- **Section 12.4.2** of [golub2013matrix], definition of a fiber. Let $\mathcal{A} \in
+\mathbb{R}^{n_1 \times \cdots \times n_d}$, let $k$ be a mode, and fix an index $c_i$ of every
+mode $i \neq k$. The **fiber** of $\mathcal{A}$ at $c$ is the order-1 subtensor obtained by
+fixing every index except the $k$-th to $c$, such as $\mathcal{A}(1, :, 2, 4)$. It is
+`Tensor.restrict` for the predicate $i = k$. -/
 def fiber {n : Fin d → ℕ} (A : RTensor n) (k : Fin d) (c : ∀ i : {i // ¬i = k}, Fin (n i)) :
     Tensor (fun i : {i // i = k} => Fin (n i)) ℝ :=
   Tensor.restrict (· = k) c A
 
-/-- **§12.4.2**, a slice: the order-2 subtensor obtained by fixing every index but the `k`-th and
-the `l`-th. -/
+/-- **Section 12.4.2** of [golub2013matrix], definition of a slice. Let $\mathcal{A} \in
+\mathbb{R}^{n_1 \times \cdots \times n_d}$, let $k$ and $l$ be modes, and fix an index $c_i$ of
+every mode $i \notin \{k, l\}$. The **slice** of $\mathcal{A}$ at $c$ is the order-2 subtensor
+obtained by fixing every index except the $k$-th and the $l$-th to $c$. It is `Tensor.restrict`
+for the predicate $i = k \lor i = l$. -/
 def slice {n : Fin d → ℕ} (A : RTensor n) (k l : Fin d)
     (c : ∀ i : {i // ¬(i = k ∨ i = l)}, Fin (n i)) :
     Tensor (fun i : {i // i = k ∨ i = l} => Fin (n i)) ℝ :=
   Tensor.restrict (fun i => i = k ∨ i = l) c A
 
-/-- **§12.4.2**, the colon subtensor `𝒜(L:R)`: the entries whose `k`-th index lies in
-`[L_k, R_k]` for every `k`. -/
+/-- **Section 12.4.2** of [golub2013matrix], the colon subtensor. For $\mathcal{A} \in
+\mathbb{R}^{n_1 \times \cdots \times n_d}$ and index tuples $L$ and $R$, the **subtensor**
+$\mathcal{A}(L{:}R)$ consists of the entries $\mathcal{A}(i)$ with $L_k \le i_k \le R_k$ for
+every $k$. Mode $k$ of the subtensor has no indices if $L_k > R_k$. -/
 def subtensor {n : Fin d → ℕ} (A : RTensor n) (L R : ∀ k, Fin (n k)) :
     Tensor (fun k => {x : Fin (n k) // L k ≤ x ∧ x ≤ R k}) ℝ :=
   Tensor.of fun a => A fun k => a k
 
-/-- **§12.4.2**: the Frobenius norm of a tensor, `‖𝒜‖_F = √(∑_{i=1}^{n} 𝒜(i)²)`. -/
+/-- **Section 12.4.2** of [golub2013matrix], the Frobenius norm of a tensor. For every $\mathcal{A}
+\in \mathbb{R}^{n_1 \times \cdots \times n_d}$,
+$$\|\mathcal{A}\|_F = \sqrt{\sum_{i=1}^{n} \mathcal{A}(i)^2},$$
+where the sum runs over all index tuples $i$ with $1 \le i_k \le n_k$.
+
+The norm $\|\mathcal{A}\|_F$ is the norm `‖A‖` of the backbone's `Tensor`, which comes from the
+Frobenius inner product $\langle \mathcal{A}, \mathcal{B} \rangle = \sum_i \mathcal{A}(i)
+\mathcal{B}(i)$. -/
 theorem frobenius_norm_tensor {n : Fin d → ℕ} (A : RTensor n) : ‖A‖ = √(∑ i, A i ^ 2) := by
   rw [Tensor.frobenius_norm_def]
   simp only [Real.norm_eq_abs, sq_abs]
 
 /-! ### Vectorization (12.4.2)–(12.4.5) -/
 
-/-- **(12.4.4)–(12.4.5)**: with `col(i, n) = i₁ + (i₂ − 1) n₁ + ⋯ + (i_d − 1) n₁ ⋯ n_{d−1}`, the
-vector `a = vec(𝒜)` satisfies `a(col(i, n)) = 𝒜(i)`. 0-based, `col(i, n) − 1` is `finPiFinEquiv i`,
-whose value is `∑_k i_k ∏_{j < k} n_j`. -/
+/-- **Equations (12.4.4)–(12.4.5)** of [golub2013matrix]. Let $\mathcal{A} \in \mathbb{R}^{n_1
+\times \cdots \times n_d}$, and for an index tuple $i$ let
+$$\operatorname{col}(i, n) = i_1 + (i_2 - 1) n_1 + (i_3 - 1) n_1 n_2 + \cdots + (i_d - 1) n_1
+  \cdots n_{d-1}.$$
+Then the vector $a = \operatorname{vec}(\mathcal{A})$ satisfies
+$a(\operatorname{col}(i, n)) = \mathcal{A}(i)$ for every $i$.
+
+Indices are 0-based. The 0-based position $\operatorname{col}(i, n) - 1$ is `finPiFinEquiv i`,
+and the first part of the statement says that its value is $\sum_k i_k \prod_{j < k} n_j$ for
+the 0-based indices $i_k$. The vector $\operatorname{vec}(\mathcal{A})$ is `Tensor.vecFin A`. -/
 theorem equation_12_4_4 {n : Fin d → ℕ} (A : RTensor n) (i : ∀ k, Fin (n k)) :
     ((finPiFinEquiv i : Fin (∏ k, n k)) : ℕ) =
         ∑ k, (i k : ℕ) * ∏ j : Fin k, n (Fin.castLE k.2.le j) ∧
       Tensor.vecFin A (finPiFinEquiv i) = A i :=
   ⟨finPiFinEquiv_apply i, Tensor.vecFin_apply A i⟩
 
-/-- **(12.4.2)–(12.4.3)**: `vec(𝒜) = [vec(𝒜⁽¹⁾); ⋯; vec(𝒜⁽ⁿᵈ⁾)]` with the last-mode slices
-`𝒜⁽ˣ⁾(i₁, …, i_{d−1}) = 𝒜(i₁, …, i_{d−1}, x)`: the block `x` of `vec(𝒜)` (in the positional layout
-`finProdFinEquiv`) is `vec(𝒜⁽ˣ⁾)`. So the book's recursive definition agrees with the closed form
-(12.4.4)–(12.4.5) (P12.4.2). -/
+/-- **Equations (12.4.2)–(12.4.3)** of [golub2013matrix]. Let $\mathcal{A} \in \mathbb{R}^{n_1
+\times \cdots \times n_d}$ with $d \ge 1$, and for $1 \le x \le n_d$ let $\mathcal{A}^{(x)} \in
+\mathbb{R}^{n_1 \times \cdots \times n_{d-1}}$ be the slice $\mathcal{A}^{(x)}(i_1, \dots,
+i_{d-1}) = \mathcal{A}(i_1, \dots, i_{d-1}, x)$. Then
+$$\operatorname{vec}(\mathcal{A}) = \begin{bmatrix} \operatorname{vec}(\mathcal{A}^{(1)}) \\
+  \vdots \\ \operatorname{vec}(\mathcal{A}^{(n_d)}) \end{bmatrix}.$$
+So the recursive definition of $\operatorname{vec}$ in the source agrees with the closed form
+(12.4.4)–(12.4.5), as Problem P12.4.2 of the source asks.
+
+The Lean tensor has order `d + 1`. The statement is entrywise: entry $t$ of block $x$ of
+`Tensor.vecFin A`, at the position `finProdFinEquiv (x, t)` of the positional block layout, is
+entry $t$ of the vectorization of the slice $\mathcal{A}^{(x)}$, which is built with `Fin.snoc`. -/
 theorem equation_12_4_2 {n : Fin (d + 1) → ℕ} (A : RTensor n) (x : Fin (n (Fin.last d)))
     (t : Fin (∏ k : Fin d, n k.castSucc)) :
     Tensor.vecFin A (Fin.cast (by rw [Fin.prod_univ_castSucc, mul_comm]) (finProdFinEquiv (x, t)))
@@ -121,8 +231,15 @@ theorem equation_12_4_2 {n : Fin (d + 1) → ℕ} (A : RTensor n) (x : Fin (n (F
 
 /-! ### Transposition (§12.4.4) -/
 
-/-- **§12.4.4**, Definition: for a permutation `p` of `1:d`, the `p`-transpose
-`𝒜^{<p>} ∈ ℝ^{n_{p₁} × ⋯ × n_{p_d}}` (`Tensor.permute p A`) satisfies `𝒜^{<p>}(j(p)) = 𝒜(j)`. -/
+/-- **Section 12.4.4** of [golub2013matrix], definition of tensor transposition. Let $\mathcal{A}
+\in \mathbb{R}^{n_1 \times \cdots \times n_d}$ and let $p$ be a permutation of $1{:}d$. The
+**$p$-transpose** $\mathcal{A}^{\langle p \rangle} \in \mathbb{R}^{n_{p_1} \times \cdots \times
+n_{p_d}}$ satisfies
+$$\mathcal{A}^{\langle p \rangle}(j(p)) = \mathcal{A}(j)$$
+for every index tuple $j$, where $j(p) = (j_{p_1}, \dots, j_{p_d})$.
+
+The transpose is the backbone's `Tensor.permute p A`, of shape `n ∘ p`, and the theorem states
+its defining property. -/
 theorem tensorTranspose_apply {n : Fin d → ℕ} (p : Equiv.Perm (Fin d)) (A : RTensor n)
     (j : ∀ k, Fin (n k)) :
     (Tensor.permute p A : RTensor (n ∘ p)) (fun k => j (p k)) = A j :=
@@ -134,21 +251,25 @@ section Modal
 
 variable {n : Fin (d + 1) → ℕ}
 
-/-- The column order of the mode-`k` unfolding: the tuple of the other indices, relabelled by
-`Fin d` through `k.succAbove`, then flattened by `col` (`finPiFinEquiv`). -/
+/-- The column order of the mode-$k$ unfolding of a tensor of order $d + 1$. A tuple of indices of
+the modes other than $k$ is relabelled by $0, \dots, d - 1$ in increasing order of the modes,
+through `Fin.succAbove k`. The relabelled tuple is then flattened by `finPiFinEquiv`, which is
+$\operatorname{col}$. -/
 def modalColumnEquiv (n : Fin (d + 1) → ℕ) (k : Fin (d + 1)) :
     (∀ j : {j // j ≠ k}, Fin (n j)) ≃ Fin (∏ j : Fin d, n (k.succAbove j)) :=
   (Equiv.piCongrLeft' (fun j : {j // j ≠ k} => Fin (n j)) (finSuccAboveEquiv k).symm).trans
     (finPiFinEquiv (n := fun j : Fin d => n (k.succAbove j)))
 
-/-- The column of the mode-`k` unfolding holding the entry `𝒜(i)`: `col` of `i` with its `k`-th
-index deleted. -/
+/-- For an index tuple $i$, the column of the mode-$k$ unfolding that holds the entry
+$\mathcal{A}(i)$ is $\operatorname{col}(\tilde\imath_k, \tilde n_k)$, where $\tilde\imath_k$ and
+$\tilde n_k$ are $i$ and $n$ with their $k$-th entries deleted. -/
 theorem modalColumnEquiv_apply (k : Fin (d + 1)) (i : ∀ j, Fin (n j)) :
     modalColumnEquiv n k (fun j => i j) = finPiFinEquiv fun j => i (k.succAbove j) :=
   rfl
 
-/-- The index tuple of the column `c` of the mode-`k` unfolding, read at the `i`-th remaining
-mode. -/
+/-- For a tuple $c$ of indices of the modes other than $k$, the index tuple decoded from the column
+`modalColumnEquiv n k c` has, at position $i$, the index that $c$ gives to the $i$-th mode other
+than $k$, which is mode `k.succAbove i`. -/
 theorem modalColumnEquiv_symm_apply (k : Fin (d + 1)) (c : ∀ j : {j // j ≠ k}, Fin (n j))
     (i : Fin d) :
     finPiFinEquiv.symm (modalColumnEquiv n k c) i = c ⟨k.succAbove i, Fin.succAbove_ne k i⟩ :=
@@ -156,15 +277,27 @@ theorem modalColumnEquiv_symm_apply (k : Fin (d + 1)) (c : ∀ j : {j // j ≠ k
     (Equiv.piCongrLeft' _ (finSuccAboveEquiv k).symm c :
       ∀ j : Fin d, Fin (n (k.succAbove j)))) i
 
-/-- **§12.4.5**, Definition: the book's mode-`k` unfolding `𝒜_(k) ∈ ℝ^{n_k × (n₁ ⋯ n_d / n_k)}`,
-the columns being the mode-`k` fibers ordered "left to right according to the vec ordering": the
-backbone's typed `Tensor.modeUnfold` with its columns flattened by `modalColumnEquiv`. -/
+/-- **Section 12.4.5** of [golub2013matrix], definition of the modal unfolding. Let $\mathcal{A} \in
+\mathbb{R}^{n_1 \times \cdots \times n_d}$ and let $k$ be a mode. The **mode-$k$ unfolding**
+$\mathcal{A}_{(k)} \in \mathbb{R}^{n_k \times (n_1 \cdots n_d / n_k)}$ is the matrix whose
+columns are the mode-$k$ fibers of $\mathcal{A}$, ordered "left to right according to the vec
+ordering" of the remaining indices.
+
+The Lean tensor has order `d + 1`, so that a mode exists. The number of columns is
+$\prod_{j \neq k} n_j$, which is $n_1 \cdots n_d / n_k$ when $n_k \neq 0$. The definition is the
+backbone's typed unfolding `Tensor.modeUnfold`, whose columns are the tuples of the other
+indices, with the columns flattened by `GolubVanLoan.Chapter12.modalColumnEquiv`. -/
 def modalUnfolding (A : RTensor n) (k : Fin (d + 1)) :
     Matrix (Fin (n k)) (Fin (∏ j : Fin d, n (k.succAbove j))) ℝ :=
   (A.modeUnfold k).reindex (Equiv.refl _) (modalColumnEquiv n k)
 
-/-- **(12.4.6)**: `𝒜_(k)(i_k, col(ĩ_k, ñ_k)) = 𝒜(i)`, `ĩ_k` and `ñ_k` being `i` and `n` with their
-`k`-th entries deleted. -/
+/-- **Equation (12.4.6)** of [golub2013matrix]. Let $\mathcal{A} \in \mathbb{R}^{n_1 \times \cdots
+\times n_d}$ and let $k$ be a mode. For an index tuple $i$, let $\tilde\imath_k$ and
+$\tilde n_k$ be $i$ and $n$ with their $k$-th entries deleted. Then
+$$\mathcal{A}_{(k)}(i_k, \operatorname{col}(\tilde\imath_k, \tilde n_k)) = \mathcal{A}(i).$$
+
+The Lean tensor has order `d + 1`, and $\mathcal{A}_{(k)}$ is
+`GolubVanLoan.Chapter12.modalUnfolding A k`. -/
 theorem equation_12_4_6 (A : RTensor n) (k : Fin (d + 1)) (i : ∀ j, Fin (n j)) :
     modalUnfolding A k (i k) (finPiFinEquiv fun j => i (k.succAbove j)) = A i := by
   rw [modalUnfolding, reindex_apply, submatrix_apply, ← modalColumnEquiv_apply,
@@ -179,15 +312,27 @@ section General
 
 variable {e f : ℕ} {n : Fin d → ℕ}
 
-/-- **§12.4.6**, Definition: the general unfolding `𝒜_{r × c}` with row modes
-`r = (p (inl 0), …, p (inl (e−1)))` and column modes `c = (p (inr 0), …, p (inr (f−1)))`, rows and
-columns flattened by `col` in the listed orders. -/
+/-- **Section 12.4.6** of [golub2013matrix], definition of the general unfolding. Let $\mathcal{A}
+\in \mathbb{R}^{n_1 \times \cdots \times n_d}$, and split the modes $1{:}d$ into a list
+$r = (r_1, \dots, r_e)$ of row modes and a list $c = (c_1, \dots, c_f)$ of column modes, so that
+each mode is in exactly one list. The **general unfolding** $\mathcal{A}_{r \times c}$ is the
+$(n_{r_1} \cdots n_{r_e}) \times (n_{c_1} \cdots n_{c_f})$ matrix whose rows are the index
+tuples of the row modes and whose columns are the index tuples of the column modes, each
+flattened by $\operatorname{col}$ in the listed order. Its entries are given by (12.4.8).
+
+The two lists are the equivalence `p : Fin e ⊕ Fin f ≃ Fin d`, with row modes
+`p (inl 0), …, p (inl (e - 1))` and column modes `p (inr 0), …, p (inr (f - 1))`. The definition
+transposes $\mathcal{A}$ by `Tensor.permute p` and decodes the row and the column by
+`finPiFinEquiv.symm`. -/
 def generalUnfolding (A : RTensor n) (p : Fin e ⊕ Fin f ≃ Fin d) :
     Matrix (Fin (∏ j : Fin e, n (p (.inl j)))) (Fin (∏ j : Fin f, n (p (.inr j)))) ℝ :=
   Matrix.of fun R C => (Tensor.permute p A : Tensor (fun s => Fin (n (p s))) ℝ)
     (Sum.rec (motive := fun s => Fin (n (p s))) (finPiFinEquiv.symm R) (finPiFinEquiv.symm C))
 
-/-- The entries of a general unfolding. -/
+/-- For every index tuple $i$, the general unfolding $\mathcal{A}_{r \times c}$ has the entry
+$\mathcal{A}(i)$ in row $\operatorname{col}(i(r), n(r))$ and column
+$\operatorname{col}(i(c), n(c))$, where $i(r)$ and $n(r)$ are $i$ and $n$ restricted to the row
+modes, in the listed order, and likewise for $c$. -/
 theorem generalUnfolding_apply (A : RTensor n) (p : Fin e ⊕ Fin f ≃ Fin d)
     (i : ∀ k, Fin (n k)) :
     generalUnfolding A p (finPiFinEquiv fun j => i (p (.inl j)))
@@ -200,8 +345,8 @@ theorem generalUnfolding_apply (A : RTensor n) (p : Fin e ⊕ Fin f ≃ Fin d)
   rw [h]
   exact Tensor.permute_apply p A i
 
-/-- The listing of the modes of the mode-`k` unfolding: row mode `k`, then the column modes in
-increasing order. -/
+/-- The listing of the modes of a tensor of order $d + 1$ that gives the mode-$k$ unfolding: the
+single row mode $k$, then the other modes, in increasing order, as the column modes. -/
 def modalModes (k : Fin (d + 1)) : Fin 1 ⊕ Fin d ≃ Fin (d + 1) where
   toFun := Sum.elim (fun _ => k) k.succAbove
   invFun x := if h : x = k then .inl 0 else .inr ((finSuccAboveEquiv k).symm ⟨x, h⟩)
@@ -220,9 +365,21 @@ def modalModes (k : Fin (d + 1)) : Fin 1 ⊕ Fin d ≃ Fin (d + 1) where
       simp only [finSuccAboveEquiv_apply, Subtype.ext_iff] at this
       simp [h, this]
 
-/-- **(12.4.8)**: `𝒜_{r × c}(col(i(r), n(r)), col(i(c), n(c))) = 𝒜(i)`; and its special cases (the
-sentences after (12.4.8)): `r = [k]`, `c = [1, …, k−1, k+1, …, d]` gives the modal unfolding, and
-`r = 1:d`, `c = ∅` gives `vec(𝒜)` as a one-column matrix. -/
+/-- **Equation (12.4.8)** of [golub2013matrix], with the special cases in the sentences after it.
+Let $\mathcal{A} \in \mathbb{R}^{n_1 \times \cdots \times n_d}$ with row modes $r$ and column
+modes $c$. Then:
+
+* for every index tuple $i$, $$\mathcal{A}_{r \times c}(\operatorname{col}(i(r), n(r)),
+  \operatorname{col}(i(c), n(c))) = \mathcal{A}(i);$$
+* for every tensor of order at least $1$ and every mode $k$, the general unfolding with
+  $r = [k]$ and $c = [1, \dots, k-1, k+1, \dots, d]$ is the mode-$k$ unfolding
+  $\mathcal{A}_{(k)}$;
+* with $r = 1{:}d$ and $c = \emptyset$, the general unfolding $\mathcal{A}_{r \times c}$ is
+  $\operatorname{vec}(\mathcal{A})$ as a one-column matrix.
+
+The second part uses the listing `GolubVanLoan.Chapter12.modalModes k`, and compares the two
+unfoldings at the position of each entry $\mathcal{A}(i)$. The third part uses the listing
+`Equiv.sumEmpty (Fin d) (Fin 0)`. -/
 theorem equation_12_4_8 (A : RTensor n) (p : Fin e ⊕ Fin f ≃ Fin d) (i : ∀ k, Fin (n k)) :
     generalUnfolding A p (finPiFinEquiv fun j => i (p (.inl j)))
         (finPiFinEquiv fun j => i (p (.inr j))) = A i ∧
@@ -248,19 +405,25 @@ section Outer
 
 variable {m₁ n₁ m₂ n₂ : ℕ}
 
-/-- The listing `r = [3 1]`, `c = [4 2]` of the modes of an order-4 tensor (0-based: rows `2, 0`,
-columns `3, 1`). -/
+/-- The listing $r = [3\ 1]$, $c = [4\ 2]$ of the modes of an order-4 tensor. In 0-based modes, the
+row modes are $2, 0$ and the column modes are $3, 1$. -/
 def kroneckerModes : Fin 2 ⊕ Fin 2 ≃ Fin 4 where
   toFun := Sum.elim ![2, 0] ![3, 1]
   invFun := ![.inl 1, .inr 1, .inl 0, .inr 0]
   left_inv s := by rcases s with s | s <;> fin_cases s <;> rfl
   right_inv x := by fin_cases x <;> rfl
 
-/-- **§12.4.7**: for matrices `B ∈ ℝ^{n₁×n₂}`, `C ∈ ℝ^{n₃×n₄}` and the order-4 tensor `𝒜 = B ∘ C`,
-`𝒜(i₁, i₂, j₁, j₂) = B(i₁, i₂) C(j₁, j₂)`, the unfolding `𝒜_{[3 1] × [4 2]}` is the Kronecker
-product `B ⊗ C` (`Matrix.kroneckerFin`, the book's layout), up to the identification of the sizes
-`n₃ n₁ = n₁ n₃`, `n₄ n₂ = n₂ n₄`: the Kronecker product of two matrices is their outer product as
-tensors. -/
+/-- **Section 12.4.7** of [golub2013matrix], the Kronecker product as an unfolding of an outer
+product. Let $B \in \mathbb{R}^{n_1 \times n_2}$ and $C \in \mathbb{R}^{n_3 \times n_4}$, and
+let $\mathcal{A} = B \circ C \in \mathbb{R}^{n_1 \times n_2 \times n_3 \times n_4}$ be their
+outer product, $\mathcal{A}(i_1, i_2, j_1, j_2) = B(i_1, i_2) C(j_1, j_2)$. Then
+$$\mathcal{A}_{[3\,1] \times [4\,2]} = B \otimes C.$$
+So the Kronecker product of two matrices is their outer product as tensors.
+
+The Kronecker product is `Matrix.kroneckerFin B C`, in the layout of the source. The unfolding
+has $n_3 n_1$ rows and $n_4 n_2$ columns, and the Kronecker product has $n_1 n_3$ rows and
+$n_2 n_4$ columns; the statement identifies these sizes by `finCongr`. The listing of the modes
+is `GolubVanLoan.Chapter12.kroneckerModes`. -/
 theorem outer_kronecker {n : Fin 4 → ℕ} (B : Matrix (Fin (n 0)) (Fin (n 1)) ℝ)
     (C : Matrix (Fin (n 2)) (Fin (n 3)) ℝ) :
     generalUnfolding (Tensor.of fun i => B (i 0) (i 1) * C (i 2) (i 3) : RTensor n)
@@ -298,16 +461,24 @@ section RankOne
 
 variable {n : Fin d → ℕ}
 
-/-- **§12.4.8**, last display: `𝒜 = ∑_{i=1}^{n} 𝒜(i) I_{n₁}(:, i₁) ∘ ⋯ ∘ I_{n_d}(:, i_d)`, the
-column `I_{n_k}(:, i_k)` being `Pi.single (i k) 1`. -/
+/-- **Section 12.4.8** of [golub2013matrix], last display. Every $\mathcal{A} \in \mathbb{R}^{n_1
+\times \cdots \times n_d}$ is the sum
+$$\mathcal{A} = \sum_{i=1}^{n} \mathcal{A}(i) \, I_{n_1}(:, i_1) \circ \cdots \circ I_{n_d}(:,
+  i_d)$$
+over all index tuples $i$, of rank-one tensors of columns of identity matrices.
+
+The column $I_{n_k}(:, i_k)$ is `Pi.single (i k) 1`, and the outer product of the columns is
+`Tensor.rankOne`. -/
 theorem eq_sum_rankOne (A : RTensor n) :
     A = ∑ i, A i • Tensor.rankOne (κ := fun k : Fin d => Fin (n k))
       (fun k => (Pi.single (i k) (1 : ℝ) : Fin (n k) → ℝ)) :=
   Tensor.eq_sum_rankOne_single A
 
-/-- The vectorization of a rank-one tensor is the Kronecker product `z⁽ᵈ⁾ ⊗ ⋯ ⊗ z⁽¹⁾` of its
-factors, each a one-column matrix (the flattened family product,
-`Matrix.piKronecker_reindex_finPiFinEquiv`), e.g. `vec(u ∘ v ∘ w) = w ⊗ v ⊗ u`. -/
+/-- For vectors $z^{(k)} \in \mathbb{R}^{n_k}$, the vectorization of the rank-one tensor
+$z^{(1)} \circ \cdots \circ z^{(d)}$ is the Kronecker product
+$z^{(d)} \otimes \cdots \otimes z^{(1)}$; for example, $\operatorname{vec}(u \circ v \circ w) =
+w \otimes v \otimes u$. The Kronecker product is the family product `Matrix.piKronecker` of the
+one-column matrices $z^{(k)}$, flattened by `finPiFinEquiv` and read in its only column. -/
 theorem vecFin_rankOne (z : ∀ k, Fin (n k) → ℝ) (t : Fin (∏ k, n k)) :
     Tensor.vecFin (Tensor.rankOne z : RTensor n) t =
       ((piKronecker fun k => replicateCol (Fin 1) (z k)).reindex finPiFinEquiv finPiFinEquiv) t
@@ -315,9 +486,15 @@ theorem vecFin_rankOne (z : ∀ k, Fin (n k) → ℝ) (t : Fin (∏ k, n k)) :
   obtain ⟨a, rfl⟩ := finPiFinEquiv.surjective t
   simp [reindex_apply, replicateCol_apply]
 
-/-- **(12.4.9)**: for `𝒜 = z⁽¹⁾ ∘ ⋯ ∘ z⁽ᵈ⁾`, `𝒜_(k) = z⁽ᵏ⁾ (z⁽ᵈ⁾ ⊗ ⋯ ⊗ z⁽ᵏ⁺¹⁾ ⊗ z⁽ᵏ⁻¹⁾ ⊗ ⋯ ⊗
-z⁽¹⁾)ᵀ`, the Kronecker product of the other factors being the vectorization of their rank-one tensor
-(`vecFin_rankOne`). -/
+/-- **Equation (12.4.9)** of [golub2013matrix]. Let $z^{(k)} \in \mathbb{R}^{n_k}$ for
+$k = 1, \dots, d$, and let $\mathcal{A} = z^{(1)} \circ \cdots \circ z^{(d)}$. Then for every
+mode $k$,
+$$\mathcal{A}_{(k)} = z^{(k)} \bigl(z^{(d)} \otimes \cdots \otimes z^{(k+1)} \otimes z^{(k-1)}
+  \otimes \cdots \otimes z^{(1)}\bigr)^T.$$
+
+The Lean tensor has order `d + 1`. The product $x y^T$ is `Matrix.vecMulVec x y`. The Kronecker
+product of the other factors is written as the vectorization of their rank-one tensor, which is
+that Kronecker product by `GolubVanLoan.Chapter12.vecFin_rankOne`. -/
 theorem equation_12_4_9 {n : Fin (d + 1) → ℕ} (z : ∀ k, Fin (n k) → ℝ) (k : Fin (d + 1)) :
     modalUnfolding (Tensor.rankOne z : RTensor n) k =
       vecMulVec (z k) (Tensor.vecFin (Tensor.rankOne fun j : Fin d => z (k.succAbove j) :
@@ -330,9 +507,15 @@ theorem equation_12_4_9 {n : Fin (d + 1) → ℕ} (z : ∀ k, Fin (n k) → ℝ)
     Fin.prod_univ_succAbove _ k]
   simp [Fin.insertNth_apply_same, Fin.insertNth_apply_succAbove]
 
-/-- **(12.4.10)**: for a rank-one `𝒜` and row and column modes `r = p(1:e)`, `c = p(e+1:d)`,
-`𝒜_{r × c} = (z⁽ᵖᵉ⁾ ⊗ ⋯ ⊗ z⁽ᵖ¹⁾)(z⁽ᵖᵈ⁾ ⊗ ⋯ ⊗ z⁽ᵖᵉ⁺¹⁾)ᵀ`, each Kronecker product of vectors being the
-vectorization of the rank-one tensor of its factors. -/
+/-- **Equation (12.4.10)** of [golub2013matrix]. Let $\mathcal{A} = z^{(1)} \circ \cdots \circ
+z^{(d)}$ with $z^{(k)} \in \mathbb{R}^{n_k}$, and let the row modes be $r = p(1{:}e)$ and the
+column modes $c = p(e+1{:}d)$ for a permutation $p$ of $1{:}d$. Then
+$$\mathcal{A}_{r \times c} = \bigl(z^{(p_e)} \otimes \cdots \otimes z^{(p_1)}\bigr)
+  \bigl(z^{(p_d)} \otimes \cdots \otimes z^{(p_{e+1})}\bigr)^T.$$
+
+The permutation is the listing `p : Fin e ⊕ Fin f ≃ Fin d`. The product $x y^T$ is
+`Matrix.vecMulVec x y`, and each Kronecker product of vectors is written as the vectorization of
+the rank-one tensor of its factors (`GolubVanLoan.Chapter12.vecFin_rankOne`). -/
 theorem equation_12_4_10 {e f : ℕ} (z : ∀ k, Fin (n k) → ℝ) (p : Fin e ⊕ Fin f ≃ Fin d) :
     generalUnfolding (Tensor.rankOne z : RTensor n) p =
       vecMulVec (Tensor.vecFin (Tensor.rankOne fun j : Fin e => z (p (.inl j)) :
@@ -356,10 +539,17 @@ end RankOne
 
 /-! ### Contractions (12.4.11)–(12.4.13) -/
 
-/-- **(12.4.11)** and the slice form after it: the contraction
-`𝒜(i, j, α₃, α₄, β₃, β₄, β₅) = ∑_{k=1}^{n₂} ℬ(i, k, α₃, α₄) 𝒞(k, j, β₃, β₄, β₅)` is, at every fixed
-`(α, β)`, the matrix product of the slices, `𝒜(:, :, α, β) = ℬ(:, :, α) 𝒞(:, :, β)`. The tensors are
-read as functions of their indices (`ℬ ∈ ℝ^{n₁ × t × p₃ × p₄}`, `𝒞 ∈ ℝ^{t × n₂ × q₃ × q₄ × q₅}`). -/
+/-- **Equation (12.4.11)** of [golub2013matrix], with the slice form after it. Let $\mathcal{B} \in
+\mathbb{R}^{n_1 \times t \times p_3 \times p_4}$ and $\mathcal{C} \in \mathbb{R}^{t \times n_2
+\times q_3 \times q_4 \times q_5}$, and let $\mathcal{A} \in \mathbb{R}^{n_1 \times n_2 \times
+p_3 \times p_4 \times q_3 \times q_4 \times q_5}$ be their contraction
+$$\mathcal{A}(i, j, \alpha_3, \alpha_4, \beta_3, \beta_4, \beta_5) = \sum_{k=1}^{t}
+  \mathcal{B}(i, k, \alpha_3, \alpha_4) \, \mathcal{C}(k, j, \beta_3, \beta_4, \beta_5).$$
+Then for every fixed $\alpha = (\alpha_3, \alpha_4)$ and $\beta = (\beta_3, \beta_4, \beta_5)$,
+the slices satisfy
+$$\mathcal{A}(:, :, \alpha, \beta) = \mathcal{B}(:, :, \alpha) \, \mathcal{C}(:, :, \beta).$$
+
+The three tensors are curried functions of their indices, not values of `Tensor`. -/
 theorem equation_12_4_11 {n₁ t n₂ p₃ p₄ q₃ q₄ q₅ : ℕ}
     (B : Fin n₁ → Fin t → Fin p₃ → Fin p₄ → ℝ) (C : Fin t → Fin n₂ → Fin q₃ → Fin q₄ → Fin q₅ → ℝ)
     (A : Fin n₁ → Fin n₂ → Fin p₃ → Fin p₄ → Fin q₃ → Fin q₄ → Fin q₅ → ℝ)
@@ -371,11 +561,24 @@ theorem equation_12_4_11 {n₁ t n₂ p₃ p₄ q₃ q₄ q₅ : ℕ}
   rw [of_apply, hA, Matrix.mul_apply]
   rfl
 
-/-- **(12.4.12)–(12.4.13)** and the display after it: the contraction `𝒜(i, j) = ∑_k ℬ(i, k) 𝒞(k,
-j)` over a multi-index `k` satisfies `𝒜_{[1 2] × [3 4 5]} = ℬ_{[1 2] × [3 4]} 𝒞_{[1 2] × [3 4 5]}`:
-typed, `𝒜 = Tensor.contract ℬ 𝒞` with the free modes of `ℬ`, the contracted modes and the free modes
-of `𝒞` as the three blocks of a `Sum`-indexed family, and the unfolding identity is
-`Tensor.sumUnfold_contract`. -/
+/-- **Equations (12.4.12)–(12.4.13)** of [golub2013matrix], with the display after (12.4.13). Let
+$\mathcal{B}$ be a tensor on the free modes $\iota_1$ and the contracted modes $\iota_2$, and
+let $\mathcal{C}$ be a tensor on the same contracted modes $\iota_2$, with the same index sets,
+and the free modes $\iota_3$. Assume that there are finitely many contracted modes and that each
+has a finite index set. The contraction $\mathcal{A}$ of $\mathcal{B}$ and $\mathcal{C}$ is a
+tensor on the modes $\iota_1$ and $\iota_3$ with
+$$\mathcal{A}(x, z) = \sum_{y} \mathcal{B}(x, y) \, \mathcal{C}(y, z),$$
+the sum over all index tuples $y$ of the contracted modes. Its unfolding with the rows $\iota_1$
+and the columns $\iota_3$ is the product of the unfoldings of $\mathcal{B}$ and $\mathcal{C}$:
+$$\mathcal{A}_{\iota_1 \times \iota_3} = \mathcal{B}_{\iota_1 \times \iota_2} \,
+  \mathcal{C}_{\iota_2 \times \iota_3}.$$
+In the example of the source this is $\mathcal{A}_{[1\,2] \times [3\,4\,5]} =
+\mathcal{B}_{[1\,2] \times [3\,4]} \, \mathcal{C}_{[1\,2] \times [3\,4\,5]}$.
+
+The contraction is `Tensor.contract B C`. The modes of each tensor are two blocks of a
+`Sum`-indexed family, the index $(x, y)$ is `(Equiv.sumPiEquivProdPi _).symm (x, y)`, and the
+unfoldings are the typed unfoldings `Tensor.sumUnfold`, whose rows and columns are index tuples.
+The unfolding identity is the backbone's `Tensor.sumUnfold_contract`. -/
 theorem equation_12_4_13 {ι₁ ι₂ ι₃ : Type} [Fintype ι₂] [DecidableEq ι₂] {κ₁ : ι₁ → Type}
     {κ₂ : ι₂ → Type} {κ₃ : ι₃ → Type} [∀ j, Fintype (κ₂ j)]
     (B : Tensor (Sum.elim κ₁ κ₂) ℝ) (C : Tensor (Sum.elim κ₂ κ₃) ℝ) :
@@ -392,33 +595,52 @@ section ModeProduct
 
 variable {n : Fin d → ℕ}
 
-/-- **§12.4.10**, Definition: the mode-`k` product `𝒮 ×_k M` with a rectangular `M ∈ ℝ^{m × n_k}`,
-of shape `Function.update n k m`: the backbone's rectangular mode product `Tensor.rectModeProd`,
-the shapes off `k` matched by `Function.update_of_ne`. -/
+/-- **Section 12.4.10** of [golub2013matrix], definition of the mode-$k$ product. Let $\mathcal{S}
+\in \mathbb{R}^{n_1 \times \cdots \times n_d}$, let $k$ be a mode, and let
+$M \in \mathbb{R}^{m \times n_k}$. The **mode-$k$ product** $\mathcal{S} \times_k M \in
+\mathbb{R}^{n_1 \times \cdots \times n_{k-1} \times m \times n_{k+1} \times \cdots \times n_d}$
+is the multilinear product of $\mathcal{S}$ with $M$ in mode $k$ and identity matrices in the
+other modes. Its entries are given in `GolubVanLoan.Chapter12.equation_12_4_14`.
+
+The result has the shape `Function.update n k m`. The definition is the backbone's rectangular
+mode product `Tensor.rectModeProd`, with the sizes off $k$ matched by `Function.update_of_ne`. -/
 def modeProduct (n : Fin d → ℕ) (S : RTensor n) (k : Fin d) {m : ℕ}
     (M : Matrix (Fin m) (Fin (n k)) ℝ) : RTensor (Function.update n k m) :=
   S.rectModeProd k (μ := fun i => Fin (Function.update n k m i))
     (fun _ h => finCongr (Function.update_of_ne h m n))
     (M.reindex (finCongr (Function.update_self k m n).symm) (Equiv.refl _))
 
-/-- The index of `𝒮` met by the entry `a` of `𝒮 ×_k M` at the summation index `y` of mode `k`: `a`
-with its `k`-th entry replaced by `y`, read in the shape `n`. -/
+/-- For an index tuple $a$ of $\mathcal{S} \times_k M$ and an index $y$ of mode $k$ of
+$\mathcal{S}$, the index tuple of $\mathcal{S}$ that is $y$ at mode $k$ and agrees with $a$ at
+the other modes. It is the index of $\mathcal{S}$ that the entry $a$ of $\mathcal{S} \times_k M$
+meets at the summation index $y$. -/
 def spliceIndex (k : Fin d) {m : ℕ} (a : ∀ i, Fin (Function.update n k m i)) (y : Fin (n k)) :
     ∀ i, Fin (n i) := fun i =>
   if h : i = k then Fin.cast (congrArg n h.symm) y
   else Fin.cast (Function.update_of_ne h m n) (a i)
 
-/-- The value of `spliceIndex k a y` at mode `i`: `y` at `k`, the entry of `a` elsewhere. -/
+/-- The index tuple `spliceIndex k a y` has the value $y$ at mode $k$ and the value $a_i$ at every
+mode $i \neq k$. -/
 theorem val_spliceIndex (k : Fin d) {m : ℕ} (a : ∀ i, Fin (Function.update n k m i))
     (y : Fin (n k)) (i : Fin d) :
     (spliceIndex k a y i : ℕ) = if i = k then (y : ℕ) else a i := by
   unfold spliceIndex
   split_ifs <;> simp
 
-/-- **(12.4.14)** and the entry formula after it: `(𝒮 ×_k M)_(k) = M 𝒮_(k)` (typed, up to the
-identifications `Function.update n k m k = m` and `Function.update n k m j = n j` for `j ≠ k`), and
-`(𝒮 ×_k M)(α₁, …, i, …, α_d) = ∑_j M(i, j) 𝒮(α₁, …, j, …, α_d)`. The backbone's
-`Tensor.modeUnfold_rectModeProd`. -/
+/-- **Equation (12.4.14)** of [golub2013matrix], with the entry formula after it. Let $\mathcal{S}
+\in \mathbb{R}^{n_1 \times \cdots \times n_d}$, let $k$ be a mode, and let
+$M \in \mathbb{R}^{m \times n_k}$. Then
+$$(\mathcal{S} \times_k M)_{(k)} = M \, \mathcal{S}_{(k)},$$
+and for every index tuple $\alpha$ of $\mathcal{S} \times_k M$ with $\alpha_k = i$,
+$$(\mathcal{S} \times_k M)(\alpha_1, \dots, \alpha_{k-1}, i, \alpha_{k+1}, \dots, \alpha_d) =
+  \sum_{j=1}^{n_k} M(i, j) \, \mathcal{S}(\alpha_1, \dots, \alpha_{k-1}, j, \alpha_{k+1}, \dots,
+  \alpha_d).$$
+
+The unfoldings are the typed unfoldings `Tensor.modeUnfold`. The first identity holds up to the
+identifications of the size `Function.update n k m k` with $m$ and of `Function.update n k m j`
+with $n_j$ for $j \neq k$. In the second identity the index of $\mathcal{S}$ is
+`GolubVanLoan.Chapter12.spliceIndex` applied to $k$, $\alpha$ and $j$. The first identity is the
+backbone's `Tensor.modeUnfold_rectModeProd`. -/
 theorem equation_12_4_14 (S : RTensor n) (k : Fin d) {m : ℕ} (M : Matrix (Fin m) (Fin (n k)) ℝ) :
     (modeProduct n S k M).modeUnfold k =
         (M * S.modeUnfold k).reindex (finCongr (Function.update_self k m n).symm)
@@ -449,25 +671,31 @@ theorem equation_12_4_14 (S : RTensor n) (k : Fin d) {m : ℕ} (M : Matrix (Fin 
     simp [spliceIndex, Equiv.piSplitAt_symm_apply]
   · simp [spliceIndex, Equiv.piSplitAt_symm_apply, h]
 
-/-- The entries of a rectangular mode product (the second half of `equation_12_4_14`). -/
+/-- The entries of a mode-$k$ product with $M \in \mathbb{R}^{m \times n_k}$: $(\mathcal{S} \times_k
+M)(\alpha) = \sum_{j=1}^{n_k} M(\alpha_k, j) \, \mathcal{S}(\alpha')$, where $\alpha'$ is
+$\alpha$ with its $k$-th index replaced by $j$. This is the second part of
+`GolubVanLoan.Chapter12.equation_12_4_14`. -/
 theorem modeProduct_apply (S : RTensor n) (k : Fin d) {m : ℕ} (M : Matrix (Fin m) (Fin (n k)) ℝ)
     (a : ∀ i, Fin (Function.update n k m i)) :
     modeProduct n S k M a = ∑ y : Fin (n k),
       M (Fin.cast (Function.update_self k m n) (a k)) y * S (spliceIndex k a y) :=
   (equation_12_4_14 S k M).2 a
 
-/-- A tensor read in an equal shape: the transport of `A : RTensor n` along `n = n'`. -/
+/-- A tensor read in an equal shape: for shapes $n = n'$, the tensor of shape $n'$ that has the same
+entries as $\mathcal{A}$. -/
 def castShape {n' : Fin d → ℕ} (h : n = n') (A : RTensor n) : RTensor n' :=
   h ▸ A
 
-/-- Reading a tensor through an equality of shapes: the entries are those at the cast indices. -/
+/-- The entry of a tensor read in an equal shape, at an index tuple $i$, is the entry of the
+original tensor at the same indices, cast to the original shape. -/
 theorem castShape_apply {n' : Fin d → ℕ} (h : n = n') (A : RTensor n) (i : ∀ k, Fin (n' k)) :
     castShape h A i = A fun k => Fin.cast (congrFun h k).symm (i k) := by
   subst h
   rfl
 
-/-- A rectangular mode product read in an equal shape is the rectangular mode product into that
-shape, the equivalences and the rows of the factor read through the casts. -/
+/-- A rectangular mode product $\mathcal{S} \times_k M$ of shape $s$, read in an equal shape $s'$,
+is the rectangular mode product into the shape $s'$, with the equivalences of the sizes off $k$
+and the rows of $M$ read through the casts. -/
 theorem castShape_rectModeProd {s s' : Fin d → ℕ} (h : s = s') (S : RTensor n) (k : Fin d)
     (e : ∀ i, i ≠ k → Fin (s i) ≃ Fin (n i)) (M : Matrix (Fin (s k)) (Fin (n k)) ℝ) :
     castShape h (S.rectModeProd k (μ := fun i => Fin (s i)) e M) =
@@ -477,10 +705,16 @@ theorem castShape_rectModeProd {s s' : Fin d → ℕ} (h : s = s') (S : RTensor 
   subst h
   rfl
 
-/-- **(12.4.16)**: mode products in distinct modes commute, `(𝒮 ×_k F) ×_j G = (𝒮 ×_j G) ×_k F` for
-`j ≠ k` and rectangular `F ∈ ℝ^{p × n_k}`, `G ∈ ℝ^{q × n_j}`; the two shapes are identified along
-`Function.update_comm` (and each second factor reads its columns in the updated shape). The
-backbone's `Tensor.rectModeProd_comm`. -/
+/-- **Equation (12.4.16)** of [golub2013matrix]. Let $\mathcal{S} \in \mathbb{R}^{n_1 \times \cdots
+\times n_d}$, let $j \neq k$ be two modes, and let $F \in \mathbb{R}^{p \times n_k}$ and
+$G \in \mathbb{R}^{q \times n_j}$. Then mode products in the distinct modes commute:
+$$(\mathcal{S} \times_k F) \times_j G = (\mathcal{S} \times_j G) \times_k F.$$
+
+The two sides have the shapes `Function.update (Function.update n k p) j q` and
+`Function.update (Function.update n j q) k p`. These are equal by `Function.update_comm`, and
+the right side is read in the shape of the left side through `GolubVanLoan.Chapter12.castShape`.
+Each second factor has its columns re-indexed into the corresponding size of the updated shape.
+The proof specializes the backbone's `Tensor.rectModeProd_comm`. -/
 theorem equation_12_4_16 (S : RTensor n) {j k : Fin d} (hjk : j ≠ k) {p q : ℕ}
     (F : Matrix (Fin p) (Fin (n k)) ℝ) (G : Matrix (Fin q) (Fin (n j)) ℝ) :
     modeProduct (Function.update n k p) (modeProduct n S k F) j
@@ -497,11 +731,18 @@ theorem equation_12_4_16 (S : RTensor n) {j k : Fin d} (hjk : j ≠ k) {p q : �
     ext x
     simp
 
-/-- **(12.4.17)**, corrected: `(𝒮 ×_k F) ×_k G = 𝒮 ×_k (G F)` for rectangular `F ∈ ℝ^{p × n_k}`,
-`G ∈ ℝ^{q × p}`; the two shapes are identified along `Function.update_idem`. The book prints
-`𝒮 ×_k (F G)`, which is false (`(𝒮 ×_k F)_(k) = F 𝒮_(k)`, so the second product gives `G F 𝒮_(k)`)
-and does not typecheck for rectangular `F`, `G`. The backbone's `Tensor.rectModeProd_rectModeProd`.
--/
+/-- **Equation (12.4.17)** of [golub2013matrix]. Let $\mathcal{S} \in \mathbb{R}^{n_1 \times \cdots
+\times n_d}$, let $k$ be a mode, and let $F \in \mathbb{R}^{p \times n_k}$ and
+$G \in \mathbb{R}^{q \times p}$. Then
+$$(\mathcal{S} \times_k F) \times_k G = \mathcal{S} \times_k (GF).$$
+
+**Correction.** The source prints $\mathcal{S} \times_k (FG)$. This is false: $(\mathcal{S}
+\times_k F)_{(k)} = F \mathcal{S}_{(k)}$ by (12.4.14), so the second product gives
+$G F \mathcal{S}_{(k)}$. For rectangular $F$ and $G$ the product $FG$ is not even defined.
+
+The two sides have the shapes `Function.update (Function.update n k p) k q` and
+`Function.update n k q`, identified along `Function.update_idem`. The proof specializes the
+backbone's `Tensor.rectModeProd_rectModeProd`. -/
 theorem equation_12_4_17 (S : RTensor n) (k : Fin d) {p q : ℕ} (F : Matrix (Fin p) (Fin (n k)) ℝ)
     (G : Matrix (Fin q) (Fin p) ℝ) :
     modeProduct (Function.update n k p) (modeProduct n S k F) k
@@ -515,8 +756,9 @@ theorem equation_12_4_17 (S : RTensor n) (k : Fin d) {p q : ℕ} (F : Matrix (Fi
   rw [← (finCongr (Function.update_self k p n)).sum_comp]
   rfl
 
-/-- **(12.4.14)** for a square factor: the rectangular mode product agrees with the backbone's
-shape-preserving `Tensor.modeProd` up to the identification `Function.update n k (n k) = n`. -/
+/-- Equation (12.4.14) for a square factor: for $M \in \mathbb{R}^{n_k \times n_k}$, the mode-$k$
+product $\mathcal{S} \times_k M$ agrees with the backbone's shape-preserving mode product
+`Tensor.modeProd`, up to the identification of the shape `Function.update n k (n k)` with $n$. -/
 theorem modeProduct_eq_modeProd (S : RTensor n) (k : Fin d)
     (M : Matrix (Fin (n k)) (Fin (n k)) ℝ) :
     modeProduct n S k M = castShape (Function.update_eq_self k n).symm (S.modeProd k M) := by
@@ -529,15 +771,17 @@ end ModeProduct
 
 section VecModeProduct
 
-/-- The size `n₁ ⋯ n_{k−1}` of the modes before mode `k` (0-based: the modes `0, …, k − 1`). -/
+/-- The product $n_1 \cdots n_{k-1}$ of the sizes of the modes before mode $k$ (in 0-based modes,
+the modes $0, \dots, k - 1$). It is $1$ for the first mode. -/
 def lowerSize (n : Fin d → ℕ) (k : Fin d) : ℕ :=
   ∏ j : Fin k, n (Fin.castLE k.2.le j)
 
-/-- The size `n_{k+1} ⋯ n_d` of the modes after mode `k`. -/
+/-- The product $n_{k+1} \cdots n_d$ of the sizes of the modes after mode $k$. It is $1$ for the
+last mode. -/
 def upperSize (n : Fin d → ℕ) (k : Fin d) : ℕ :=
   ∏ j : Fin (d - (k + 1)), n ⟨k + 1 + j, by have := j.2; omega⟩
 
-/-- `n₁ ⋯ n_d = (n_{k+1} ⋯ n_d) n_k (n₁ ⋯ n_{k−1})`. -/
+/-- For every mode $k$, $n_1 \cdots n_d = (n_{k+1} \cdots n_d) \, n_k \, (n_1 \cdots n_{k-1})$. -/
 theorem prod_eq_upperSize_mul (n : Fin d → ℕ) (k : Fin d) :
     ∏ i, n i = upperSize n k * n k * lowerSize n k := by
   set g : ℕ → ℕ := fun l => if h : l < d then n ⟨l, h⟩ else 1 with hg
@@ -556,7 +800,10 @@ theorem prod_eq_upperSize_mul (n : Fin d → ℕ) (k : Fin d) :
     Finset.prod_range_add, Finset.prod_range_succ, hk]
   ring
 
-/-- The size of `𝒮 ×_k M` for `M ∈ ℝ^{m × n_k}`: `(n_{k+1} ⋯ n_d) m (n₁ ⋯ n_{k−1})`. -/
+/-- For every mode $k$ and every $m$, the product of the sizes
+$n_1, \dots, n_{k-1}, m, n_{k+1}, \dots, n_d$, which is the number of entries of
+$\mathcal{S} \times_k M$ for $M \in \mathbb{R}^{m \times n_k}$, is $(n_{k+1} \cdots n_d) \, m \,
+(n_1 \cdots n_{k-1})$. -/
 theorem prod_update_eq_upperSize_mul (n : Fin d → ℕ) (k : Fin d) (m : ℕ) :
     ∏ i, Function.update n k m i = upperSize n k * m * lowerSize n k := by
   have hU : upperSize (Function.update n k m) k = upperSize n k :=
@@ -567,7 +814,8 @@ theorem prod_update_eq_upperSize_mul (n : Fin d → ℕ) (k : Fin d) (m : ℕ) :
       (Fin.ne_of_val_ne (show (j : ℕ) ≠ k by omega)) _ _
   rw [prod_eq_upperSize_mul (Function.update n k m) k, Function.update_self, hU, hL]
 
-/-- Reading the middle factor of `I ⊗ M ⊗ I` through an equality of its row count. -/
+/-- Re-indexing the rows of the middle factor $M$ of $I_H \otimes M \otimes I_L$ along an equality
+of row counts does not change the product, after the matching casts of its rows. -/
 private theorem kroneckerFin_reindex_cast {R : Type*} [CommSemiring R] {H L a b p N P : ℕ}
     (h : a = b) (M : Matrix (Fin a) (Fin p) R) (hN : N = H * b * L) (hN' : N = H * a * L)
     (c : Fin P → Fin (H * p * L)) :
@@ -579,10 +827,16 @@ private theorem kroneckerFin_reindex_cast {R : Type*} [CommSemiring R] {H L a b 
   subst h
   rfl
 
-/-- **(12.4.15)**: `vec(𝒮 ×_k M) = (I_{n_{k+1}⋯n_d} ⊗ M ⊗ I_{n₁⋯n_{k−1}}) vec(𝒮)` for a rectangular
-`M ∈ ℝ^{m × n_k}`, with chapter 1's positional `Matrix.kroneckerFin` and the book's `vec`
-(`Tensor.vecFin`, the little-endian `col`), up to the identification of the size products. The
-backbone's `Tensor.vecFin_rectModeProd`. -/
+/-- **Equation (12.4.15)** of [golub2013matrix]. Let $\mathcal{S} \in \mathbb{R}^{n_1 \times \cdots
+\times n_d}$, let $k$ be a mode, and let $M \in \mathbb{R}^{m \times n_k}$. Then
+$$\operatorname{vec}(\mathcal{S} \times_k M) = \bigl(I_{n_{k+1} \cdots n_d} \otimes M \otimes
+  I_{n_1 \cdots n_{k-1}}\bigr) \operatorname{vec}(\mathcal{S}).$$
+
+The Kronecker product is the positional `Matrix.kroneckerFin`, and $\operatorname{vec}$ is
+`Tensor.vecFin`. The sizes are identified by
+`GolubVanLoan.Chapter12.prod_update_eq_upperSize_mul` and
+`GolubVanLoan.Chapter12.prod_eq_upperSize_mul`. The proof specializes the backbone's
+`Tensor.vecFin_rectModeProd`. -/
 theorem equation_12_4_15 {n : Fin d → ℕ} (S : RTensor n) (k : Fin d) {m : ℕ}
     (M : Matrix (Fin m) (Fin (n k)) ℝ) :
     Tensor.vecFin (modeProduct n S k M) =
@@ -602,8 +856,10 @@ end VecModeProduct
 
 section Order4
 
-/-- The positional index of an order-4 index tuple: `col(i, n) − 1` is the big-endian index of
-`(i₄, (i₃, (i₂, i₁)))`. -/
+/-- For an order-4 index tuple $a$ with 0-based indices, the 0-based position $\operatorname{col}(a,
+n) - 1 = a_1 + n_1 a_2 + n_1 n_2 a_3 + n_1 n_2 n_3 a_4$ is the big-endian position of the nested
+pair $(a_4, (a_3, (a_2, a_1)))$ under `finProdFinEquiv`, up to the identification of
+$n_1 n_2 n_3 n_4$ with $n_4 (n_3 (n_2 n_1))$. -/
 theorem finPiFinEquiv_four {n : Fin 4 → ℕ} (h : ∏ k, n k = n 3 * (n 2 * (n 1 * n 0)))
     (a : ∀ k, Fin (n k)) :
     finCongr h (finPiFinEquiv a) =
@@ -613,11 +869,29 @@ theorem finPiFinEquiv_four {n : Fin 4 → ℕ} (h : ∏ k, n k = n 3 * (n 2 * (n
   simp [Fin.sum_univ_four, finProdFinEquiv_apply_val, Fin.prod_univ_succ]
   ring
 
-/-- **(12.4.18) ⇔ (12.4.19)**, order 4: `𝒜(i) = ∑_j 𝒮(j) M₁(i₁, j₁) M₂(i₂, j₂) M₃(i₃, j₃) M₄(i₄,
-j₄)` is `vec(𝒜) = (M₄ ⊗ M₃ ⊗ M₂ ⊗ M₁) vec(𝒮)` (chapter 1's positional `Matrix.kroneckerFin`, up to
-the identification of the size products); and, for square factors, the table after (12.4.19): the
-multilinear product is the sequence of the four mode products, in any order
-(`𝒮 ×₁ M₁ ×₂ M₂ ×₃ M₃ ×₄ M₄ = 𝒮 ×₄ M₄ ×₁ M₁ ×₂ M₂ ×₃ M₃`). -/
+/-- **Equations (12.4.18)–(12.4.19)** of [golub2013matrix], for order 4, with the table after
+(12.4.19). Let $\mathcal{S} \in \mathbb{R}^{n_1 \times n_2 \times n_3 \times n_4}$ and
+$M_k \in \mathbb{R}^{m_k \times n_k}$ for $k = 1, \dots, 4$, and let $\mathcal{A} = \mathcal{S}
+\times_1 M_1 \times_2 M_2 \times_3 M_3 \times_4 M_4$ be their multilinear product. Then for
+every index tuple $i$,
+$$\mathcal{A}(i) = \sum_{j} \mathcal{S}(j) \, M_1(i_1, j_1) \, M_2(i_2, j_2) \, M_3(i_3, j_3) \,
+  M_4(i_4, j_4),$$
+the sum over all index tuples $j$ of $\mathcal{S}$, and
+$$\operatorname{vec}(\mathcal{A}) = (M_4 \otimes M_3 \otimes M_2 \otimes M_1)
+  \operatorname{vec}(\mathcal{S}).$$
+Moreover, for square matrices $N_k \in \mathbb{R}^{n_k \times n_k}$, the multilinear product
+$\mathcal{S} \times_1 N_1 \times_2 N_2 \times_3 N_3 \times_4 N_4$ equals the sequence of the
+four mode products taken in the order $1, 2, 3, 4$, and also in the order $4, 1, 2, 3$:
+$$\mathcal{S} \times_1 N_1 \times_2 N_2 \times_3 N_3 \times_4 N_4 = (((\mathcal{S} \times_1 N_1)
+  \times_2 N_2) \times_3 N_3) \times_4 N_4 = (((\mathcal{S} \times_4 N_4) \times_1 N_1) \times_2
+  N_2) \times_3 N_3.$$
+
+The multilinear product is `Tensor.multilinearProd`, and the sequence of mode products is a fold
+of the shape-preserving `Tensor.modeProd` over the list of modes. The Kronecker product is the
+positional `Matrix.kroneckerFin`, and the sizes are identified by `finCongr`. The source says
+that the mode products can be taken in any order; the statement gives the two orders above, and
+`GolubVanLoan.Chapter12.equation_12_4_16` gives the commutation of mode products in distinct
+modes. -/
 theorem equation_12_4_19 {n m : Fin 4 → ℕ} (M : ∀ k, Matrix (Fin (m k)) (Fin (n k)) ℝ)
     (S : RTensor n) :
     (∀ i, (Tensor.multilinearProd M S : RTensor m) i = ∑ j, S j * ∏ k, M k (i k) (j k)) ∧
@@ -654,11 +928,18 @@ section Theorem1241
 
 variable {n m : Fin (d + 1) → ℕ}
 
-/-- **Theorem 12.4.1**: for `𝒮 ∈ ℝ^{n₁ × ⋯ × n_d}`, `M_k ∈ ℝ^{m_k × n_k}` and
-`𝒜 = 𝒮 ×₁ M₁ ⋯ ×_d M_d` (`Tensor.multilinearProd M S`),
-`𝒜_(k) = M_k 𝒮_(k) (M_d ⊗ ⋯ ⊗ M_{k+1} ⊗ M_{k−1} ⊗ ⋯ ⊗ M₁)ᵀ` for the book's flattened unfoldings,
-the Kronecker product of the other factors being their flattened family product (the book's
-reversed order, `Matrix.piKronecker_reindex_finPiFinEquiv`). -/
+/-- **Theorem 12.4.1** of [golub2013matrix]. Let $\mathcal{S} \in \mathbb{R}^{n_1 \times \cdots
+\times n_d}$ with $d \ge 1$, let $M_k \in \mathbb{R}^{m_k \times n_k}$ for $k = 1, \dots, d$,
+and let $\mathcal{A} = \mathcal{S} \times_1 M_1 \times_2 M_2 \cdots \times_d M_d$. Then for
+every mode $k$,
+$$\mathcal{A}_{(k)} = M_k \, \mathcal{S}_{(k)} \, \bigl(M_d \otimes \cdots \otimes M_{k+1}
+  \otimes M_{k-1} \otimes \cdots \otimes M_1\bigr)^T.$$
+
+The Lean tensors have order `d + 1`. The multilinear product is `Tensor.multilinearProd M S`,
+and the unfoldings are the flattened `GolubVanLoan.Chapter12.modalUnfolding`. The Kronecker
+product of the other factors is the family product `Matrix.piKronecker` flattened by
+`finPiFinEquiv`, which is the product in the reversed order of the source by
+`Matrix.piKronecker_reindex_finPiFinEquiv`. -/
 theorem theorem_12_4_1 (M : ∀ k, Matrix (Fin (m k)) (Fin (n k)) ℝ) (S : RTensor n)
     (k : Fin (d + 1)) :
     modalUnfolding (Tensor.multilinearProd M S : RTensor m) k =
@@ -681,8 +962,13 @@ theorem theorem_12_4_1 (M : ∀ k, Matrix (Fin (m k)) (Fin (n k)) ℝ) (S : RTen
       (modalColumnEquiv n k).symm.bijective,
     Matrix.submatrix_mul _ _ id id _ Function.bijective_id, submatrix_id_id]
 
-/-- **Theorem 12.4.1**, second statement: if `M₁, …, M_d` are all nonsingular then
-`𝒮 = 𝒜 ×₁ M₁⁻¹ ⋯ ×_d M_d⁻¹`. -/
+/-- **Theorem 12.4.1** of [golub2013matrix], second statement. Let $\mathcal{S}, \mathcal{A} \in
+\mathbb{R}^{n_1 \times \cdots \times n_d}$, and let $M_k \in \mathbb{R}^{n_k \times n_k}$ be
+nonsingular for $k = 1, \dots, d$. If $\mathcal{A} = \mathcal{S} \times_1 M_1 \cdots \times_d
+M_d$, then
+$$\mathcal{S} = \mathcal{A} \times_1 M_1^{-1} \cdots \times_d M_d^{-1}.$$
+
+Nonsingularity is `IsUnit (M k)`, and the multilinear product is `Tensor.multilinearProd`. -/
 theorem theorem_12_4_1_b {n : Fin d → ℕ} (M : ∀ k, Matrix (Fin (n k)) (Fin (n k)) ℝ)
     (hM : ∀ k, IsUnit (M k)) (S A : RTensor n) (h : A = Tensor.multilinearProd M S) :
     S = Tensor.multilinearProd (fun k => (M k)⁻¹) A :=

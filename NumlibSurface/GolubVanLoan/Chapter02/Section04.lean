@@ -8,43 +8,99 @@ import NumlibSurface.GolubVanLoan.Chapter02.Section01
 import NumlibSurface.GolubVanLoan.Chapter02.Section03
 
 /-!
-# Golub–Van Loan §2.4: the singular value decomposition
+# Golub and Van Loan, Section 2.4: The singular value decomposition
 
-Surface file for [golub2013matrix] §2.4: existence of the SVD (Theorem 2.4.1), the largest and
-smallest singular values `σ_max`, `σ_min`, the corollaries 2.4.2–2.4.7 with (2.4.1)–(2.4.2), the
-Eckart–Young theorem 2.4.8 with (2.4.3)–(2.4.4) and the two remarks after it (the distance to the
-rank-deficient matrices, the Frobenius-norm version), the thin SVD (§2.4.3) and the complex SVD
-(§2.4.4).
+This module formalizes §2.4 of [golub2013matrix]. Theorem 2.4.1 says that every
+$A \in \mathbb{R}^{m \times n}$ has a singular value decomposition $U^T A V = \Sigma =
+\operatorname{diag}(\sigma_1, \dots, \sigma_p)$ with $U$ and $V$ orthogonal, $p = \min\{m, n\}$ and
+$\sigma_1 \ge \dots \ge \sigma_p \ge 0$. The module defines the largest and the smallest singular
+values $\sigma_{\max}(A)$ and $\sigma_{\min}(A)$, and proves the consequences of the SVD in
+Corollaries 2.4.2–2.4.7 with (2.4.1)–(2.4.2): the singular vectors are eigenvectors of $A^T A$ and
+$A A^T$, $\|A\|_2 = \sigma_1$, $\|A\|_F^2 = \sigma_1^2 + \dots + \sigma_p^2$, the perturbation of
+$\sigma_{\max}$ and $\sigma_{\min}$, the effect of adding a column, the rank, null space and range,
+and the expansion $A = \sum_{i=1}^r \sigma_i u_i v_i^T$. It then proves the Eckart–Young theorem
+(Theorem 2.4.8 with (2.4.3)–(2.4.4)): the truncation $A_k = \sum_{i=1}^k \sigma_i u_i v_i^T$ is a
+closest matrix of rank $k$ to $A$ in the 2-norm, at distance $\sigma_{k+1}$. The two remarks after
+it, the thin SVD of §2.4.3 and the complex SVD of §2.4.4 complete the module.
+
+The proofs specialize the backbone modules `Numlib.LinearAlgebra.Matrix.SVD` (existence,
+`Matrix.IsSVD`, the null space and the range, `Matrix.svdTruncation`, the least singular value as
+the least stretch), `Numlib.Analysis.Matrix.SingularValues` (Weyl's inequality, column deletion, and
+Eckart–Young in the 2-norm and the Frobenius norm) and `Numlib.LinearAlgebra.Matrix.Polar` (the
+first columns of a unitary matrix, for the thin SVD).
+
+## Main definitions
+
+* §2.4.1, `GolubVanLoan.Chapter02.sigmaMax`: the largest singular value
+  $\sigma_{\max}(A) = \sigma_1$.
+* §2.4.1, `GolubVanLoan.Chapter02.sigmaMin`: the smallest singular value
+  $\sigma_{\min}(A) = \sigma_p$, $p = \min\{m, n\}$.
+
+## Main results
+
+* Theorem 2.4.1, `GolubVanLoan.Chapter02.theorem_2_4_1`: every real matrix has an SVD whose diagonal
+  is the sorted singular values.
+* Corollary 2.4.2, `GolubVanLoan.Chapter02.corollary_2_4_2`: for $m \ge n$, $A v_i = \sigma_i u_i$
+  and $A^T u_i = \sigma_i v_i$.
+* Equations (2.4.1)–(2.4.2), `GolubVanLoan.Chapter02.equation_2_4_1` and
+  `GolubVanLoan.Chapter02.equation_2_4_2`: $A^T A v_i = \sigma_i^2 v_i$ and
+  $A A^T u_i = \sigma_i^2 u_i$.
+* Corollary 2.4.3, `GolubVanLoan.Chapter02.corollary_2_4_3`: $\|A\|_2 = \sigma_1$ and $\|A\|_F =
+  \sqrt{\sigma_1^2 + \dots + \sigma_p^2}$.
+* Corollary 2.4.4, `GolubVanLoan.Chapter02.corollary_2_4_4`: $\sigma_{\max}(A + E) \le
+  \sigma_{\max}(A) + \|E\|_2$ and $\sigma_{\min}(A + E) \ge \sigma_{\min}(A) - \|E\|_2$.
+* Corollary 2.4.5, `GolubVanLoan.Chapter02.corollary_2_4_5`: appending a column does not decrease
+  $\sigma_{\max}$ and does not increase $\sigma_{\min}$.
+* Corollary 2.4.6, `GolubVanLoan.Chapter02.corollary_2_4_6`: if exactly $r$ singular values are
+  positive, then $\operatorname{rank}(A) = r$ and the singular vectors span the null space and the
+  range.
+* Corollary 2.4.7, `GolubVanLoan.Chapter02.corollary_2_4_7`: $A = \sum_{i=1}^r \sigma_i u_i v_i^T$
+  for $r = \operatorname{rank}(A)$.
+* Theorem 2.4.8 with (2.4.3)–(2.4.4), `GolubVanLoan.Chapter02.theorem_2_4_8`: the Eckart–Young
+  theorem in the 2-norm.
+* §2.4.2, `GolubVanLoan.Chapter02.sigmaMin_eq_dist_rankDeficient`: $\sigma_{\min}(A)$ is the 2-norm
+  distance from $A$ to the rank-deficient matrices.
+* §2.4.2, `GolubVanLoan.Chapter02.svdTruncation_isLeast_frobenius`: the Eckart–Young theorem in the
+  Frobenius norm.
+* §2.4.3, `GolubVanLoan.Chapter02.thin_svd`: the thin SVD $A = U_1 \Sigma_1 V^T$ for $m \ge n$.
+* §2.4.4, `GolubVanLoan.Chapter02.complex_svd`: the SVD of a complex matrix, and the unitary
+  invariance of the 2-norm and the Frobenius norm.
+
+## Proof outline
+
+The backbone constructs the SVD from an orthonormal eigenbasis of $A^T A$, not by the induction
+through $\|A\|_2$ of the source. The lower bound in the Eckart–Young theorem is Weyl's inequality
+$\sigma_{i+j-1}(A + B) \le \sigma_i(A) + \sigma_j(B)$, whose proof is the kernel intersection
+argument of the source.
 
 ## Conventions
 
-Matrices are `Matrix (Fin m) (Fin n) ℝ`, 0-based. The book's `σ_i(A)` (`1 ≤ i ≤ p = min{m, n}`) is
-the backbone's sorted singular value `A.sortedSingularValues (i - 1)`, defined for every shape and
-zero from the rank on. "An SVD `Uᵀ A V = Σ` of `A`" is the hypothesis `Matrix.IsSVD A U σ V`: `U`,
-`V` orthogonal (the unitary group over `ℝ`, where `star` is the transpose),
-`Uᵀ A V = Matrix.rectDiagonal σ` and `σ` antitone and nonnegative; its diagonal is the sorted
-singular values below `p` (`Matrix.IsSVD.singularValues_eq`). The singular vectors `u_i`, `v_i` are
-the columns `U.col i`, `V.col i`. The `2`-norm is `Matrix.lpOpNorm 2`, the Frobenius norm the scoped
-`Matrix.Norms.Frobenius` norm; ranges and null spaces are those of `Matrix.toEuclideanLin`, as in
-§2.1. The truncation `A_k` of (2.4.3) is the backbone's `Matrix.svdTruncation U σ V k`, built from
-the factors because the SVD is not unique.
+* Matrices are `Matrix (Fin m) (Fin n) ℝ` with 0-based indices. The singular value $\sigma_i(A)$ of
+  the source, $1 \le i \le p = \min\{m, n\}$, is `A.sortedSingularValues (i - 1)`. It is defined for
+  every shape and is $0$ from the rank on.
+* "An SVD $U^T A V = \Sigma$ of $A$" is the hypothesis `Matrix.IsSVD A U σ V`: $U$ and $V$ are
+  orthogonal (the unitary group over $\mathbb{R}$, where `star` is the transpose), $U^T A V = $
+  `Matrix.rectDiagonal σ`, and $\sigma$ is antitone and nonnegative. Its first $p$ values are the
+  sorted singular values (`Matrix.IsSVD.singularValues_eq`).
+* The singular vectors $u_i$ and $v_i$ are the columns `U.col i` and `V.col i`.
+* The 2-norm is `Matrix.lpOpNorm 2`, and the Frobenius norm is the scoped norm
+  `Matrix.Norms.Frobenius`. The range and the null space are those of `Matrix.toEuclideanLin`, as in
+  §2.1.
+* The truncation $A_k$ of (2.4.3) is `Matrix.svdTruncation U σ V k`. It is defined from the factors,
+  because the SVD is not unique.
 
-## Sources
+## Deviations from the source
 
-Backbone `Numlib/LinearAlgebra/Matrix/SVD` (existence, `IsSVD`, kernel and range, `svdTruncation`,
-the least singular value as least stretch), `Numlib/Analysis/Matrix/SingularValues` (Weyl's
-inequality, column deletion, Eckart–Young in the `2`- and Frobenius norms) and
-`Numlib/LinearAlgebra/Matrix/Polar` (the first columns of a unitary matrix, for the thin SVD). The
-backbone's SVD comes from an eigenbasis of `AᵀA`, not from the book's induction through `‖A‖₂`; the
-lower bound of Eckart–Young is Weyl's inequality, whose proof is the book's kernel-intersection
-argument.
+* **Corollary 2.4.5** (reading). The source does not define $\sigma_{\min}$ of an $m \times 0$
+  matrix; the corollary assumes $n \ge 1$. See `GolubVanLoan.Chapter02.corollary_2_4_5`.
+* **Remark after Theorem 2.4.8** (reading). The statement that $\sigma_{\min}(A)$ is the distance to
+  the rank-deficient matrices assumes $m, n \ge 1$. See
+  `GolubVanLoan.Chapter02.sigmaMin_eq_dist_rankDeficient`.
 
-## Readings
+## Not formalized
 
-`σ_min` of an `m × 0` matrix is not defined in the book (`p = 0`); the backbone's junk value `0`
-would make the second half of Corollary 2.4.5 false for `n = 0`, so that corollary assumes `n ≥ 1`.
-The remark after Theorem 2.4.8 on the rank-deficient matrices needs `m, n ≥ 1` (there are none
-otherwise). The hyperellipsoid picture after Corollary 2.4.2 and the pointer to §8.6 are prose.
+* **The hyperellipsoid picture after Corollary 2.4.2.** It is prose.
+* **The pointer to §8.6 for the computation of the SVD.** It is prose.
 -/
 
 open Matrix WithLp
@@ -55,17 +111,26 @@ variable {m n : ℕ}
 
 /-! ### §2.4.1 Derivation -/
 
-/-- **§2.4.1, `σ_max(A)`**: the largest singular value of `A`, `σ₁ = A.sortedSingularValues 0`. -/
+/-- **Section 2.4.1** of [golub2013matrix], the largest singular value. For
+$A \in \mathbb{R}^{m \times n}$, $\sigma_{\max}(A)$ is the largest singular value $\sigma_1$ of
+$A$.
+
+It is `A.sortedSingularValues 0`, which is $0$ when $m = 0$ or $n = 0$. -/
 noncomputable def sigmaMax (A : Matrix (Fin m) (Fin n) ℝ) : ℝ :=
   A.sortedSingularValues 0
 
-/-- **§2.4.1, `σ_min(A)`**: the smallest of the `p = min{m, n}` singular values of `A`,
-`σ_p = A.sortedSingularValues (p - 1)` (zero when `A` is rank deficient). -/
+/-- **Section 2.4.1** of [golub2013matrix], the smallest singular value. For
+$A \in \mathbb{R}^{m \times n}$ and $p = \min\{m, n\}$, $\sigma_{\min}(A)$ is the smallest of
+the $p$ singular values $\sigma_1 \ge \dots \ge \sigma_p$ of $A$. It is $0$ when $A$ is rank
+deficient.
+
+It is `A.sortedSingularValues (p - 1)` with natural number subtraction, so for $p = 0$ it is
+`A.sortedSingularValues 0`, which is $0$. -/
 noncomputable def sigmaMin (A : Matrix (Fin m) (Fin n) ℝ) : ℝ :=
   A.sortedSingularValues (min m n - 1)
 
-/-- `σ_max(A)` is the largest of the backbone's column-indexed singular values
-`Matrix.colSingularValues` (both `0` when `n = 0`). -/
+/-- For $A \in \mathbb{R}^{m \times n}$, $\sigma_{\max}(A)$ is the largest of the column-indexed
+singular values `Matrix.colSingularValues` of the backbone. Both sides are $0$ when $n = 0$. -/
 theorem sigmaMax_eq_iSup_colSingularValues (A : Matrix (Fin m) (Fin n) ℝ) :
     sigmaMax A = ⨆ i, A.colSingularValues i := by
   rcases n.eq_zero_or_pos with rfl | hn
@@ -74,8 +139,9 @@ theorem sigmaMax_eq_iSup_colSingularValues (A : Matrix (Fin m) (Fin n) ℝ) :
   · have : Nonempty (Fin n) := ⟨⟨0, hn⟩⟩
     exact (sortedSingularValues_zero_eq_l2_opNorm A).trans (l2_opNorm_eq_iSup_colSingularValues A)
 
-/-- For `n ≤ m`, `σ_min(A)` is the least of the backbone's column-indexed singular values
-`Matrix.colSingularValues` (both `0` when `n = 0`). -/
+/-- For $A \in \mathbb{R}^{m \times n}$ with $n \le m$, $\sigma_{\min}(A)$ is the least of the
+column-indexed singular values `Matrix.colSingularValues` of the backbone. Both sides are $0$
+when $n = 0$. -/
 theorem sigmaMin_eq_iInf_colSingularValues (A : Matrix (Fin m) (Fin n) ℝ) (hmn : n ≤ m) :
     sigmaMin A = ⨅ i, A.colSingularValues i := by
   rcases n.eq_zero_or_pos with rfl | hn
@@ -85,9 +151,15 @@ theorem sigmaMin_eq_iInf_colSingularValues (A : Matrix (Fin m) (Fin n) ℝ) (hmn
     rw [sigmaMin, min_eq_right hmn, ← sortedSingularValues_eq_iInf_colSingularValues,
       Fintype.card_fin]
 
-/-- **Theorem 2.4.1 (Singular Value Decomposition).** For `A ∈ ℝ^{m×n}` there are orthogonal
-`U ∈ ℝ^{m×m}`, `V ∈ ℝ^{n×n}` with `Uᵀ A V = Σ = diag(σ₁, …, σ_p)`, `σ₁ ≥ ⋯ ≥ σ_p ≥ 0`: an SVD
-whose diagonal is the sorted singular values (backbone `Matrix.exists_svd`). -/
+/-- **Theorem 2.4.1** of [golub2013matrix] (singular value decomposition). For
+$A \in \mathbb{R}^{m \times n}$ there are orthogonal matrices $U \in \mathbb{R}^{m \times m}$
+and $V \in \mathbb{R}^{n \times n}$ with
+$$U^T A V = \Sigma = \operatorname{diag}(\sigma_1, \dots, \sigma_p) \in \mathbb{R}^{m \times n},
+  \qquad p = \min\{m, n\},$$
+where $\sigma_1 \ge \sigma_2 \ge \dots \ge \sigma_p \ge 0$.
+
+The statement is `Matrix.IsSVD A U A.sortedSingularValues V`, so the diagonal is the sorted
+singular values. The proof applies `Matrix.exists_svd`. -/
 theorem theorem_2_4_1 (A : Matrix (Fin m) (Fin n) ℝ) :
     ∃ U V, IsSVD A U A.sortedSingularValues V := by
   obtain ⟨U, hU, V, hV, h⟩ := A.exists_svd
@@ -95,7 +167,8 @@ theorem theorem_2_4_1 (A : Matrix (Fin m) (Fin n) ℝ) :
 
 /-! ### §2.4.2 Properties -/
 
-/-- The columns of an SVD: `A v_j = σ_j u_j` for `j < m`. -/
+/-- If `Matrix.IsSVD A U σ V`, then $A v_j = \sigma_j u_j$ for every column index $j$ with $j < m$.
+-/
 private theorem mulVec_col_of_isSVD {A : Matrix (Fin m) (Fin n) ℝ} {U : Matrix (Fin m) (Fin m) ℝ}
     {σ : ℕ → ℝ} {V : Matrix (Fin n) (Fin n) ℝ} (h : IsSVD A U σ V) (j : Fin n)
     (hj : (j : ℕ) < m) : A *ᵥ V.col j = σ j • U.col ⟨j, hj⟩ := by
@@ -109,8 +182,12 @@ private theorem mulVec_col_of_isSVD {A : Matrix (Fin m) (Fin n) ℝ} {U : Matrix
   rw [hAV, mul_rectDiagonal_apply]
   simp [hj, mul_comm]
 
-/-- **Corollary 2.4.2.** If `Uᵀ A V = Σ` is the SVD of `A ∈ ℝ^{m×n}` and `m ≥ n`, then for
-`i = 1:n`, `A v_i = σ_i u_i` and `Aᵀ u_i = σ_i v_i`. -/
+/-- **Corollary 2.4.2** of [golub2013matrix]. Let $U^T A V = \Sigma$ be an SVD of
+$A \in \mathbb{R}^{m \times n}$ with $m \ge n$. Then for $i = 1, \dots, n$,
+$$A v_i = \sigma_i u_i, \qquad A^T u_i = \sigma_i v_i.$$
+
+The SVD is `Matrix.IsSVD A U σ V`. The index $i$ is 0-based in `Fin n`, and $u_i$ is the column
+`U.col (Fin.castLE hmn i)`. -/
 theorem corollary_2_4_2 {A : Matrix (Fin m) (Fin n) ℝ} {U : Matrix (Fin m) (Fin m) ℝ} {σ : ℕ → ℝ}
     {V : Matrix (Fin n) (Fin n) ℝ} (h : IsSVD A U σ V) (hmn : n ≤ m) (i : Fin n) :
     A *ᵥ V.col i = σ i • U.col (Fin.castLE hmn i) ∧
@@ -120,21 +197,27 @@ theorem corollary_2_4_2 {A : Matrix (Fin m) (Fin n) ℝ} {U : Matrix (Fin m) (Fi
   rw [conjTranspose_eq_transpose_of_trivial] at h'
   exact mulVec_col_of_isSVD h' (Fin.castLE hmn i) i.isLt
 
-/-- **(2.4.1)**: `Aᵀ A v_i = σ_i² v_i` for `i = 1:n` (SVD of `A ∈ ℝ^{m×n}`, `m ≥ n`). -/
+/-- **Equation (2.4.1)** of [golub2013matrix]. Let $U^T A V = \Sigma$ be an SVD of
+$A \in \mathbb{R}^{m \times n}$ with $m \ge n$. Then for $i = 1, \dots, n$,
+$$A^T A v_i = \sigma_i^2 v_i.$$
+-/
 theorem equation_2_4_1 {A : Matrix (Fin m) (Fin n) ℝ} {U : Matrix (Fin m) (Fin m) ℝ} {σ : ℕ → ℝ}
     {V : Matrix (Fin n) (Fin n) ℝ} (h : IsSVD A U σ V) (hmn : n ≤ m) (i : Fin n) :
     (Aᵀ * A) *ᵥ V.col i = σ i ^ 2 • V.col i := by
   obtain ⟨h1, h2⟩ := corollary_2_4_2 h hmn i
   rw [← mulVec_mulVec, h1, mulVec_smul, h2, smul_smul, sq]
 
-/-- **(2.4.2)**: `A Aᵀ u_i = σ_i² u_i` for `i = 1:n` (SVD of `A ∈ ℝ^{m×n}`, `m ≥ n`). -/
+/-- **Equation (2.4.2)** of [golub2013matrix]. Let $U^T A V = \Sigma$ be an SVD of
+$A \in \mathbb{R}^{m \times n}$ with $m \ge n$. Then for $i = 1, \dots, n$,
+$$A A^T u_i = \sigma_i^2 u_i.$$
+-/
 theorem equation_2_4_2 {A : Matrix (Fin m) (Fin n) ℝ} {U : Matrix (Fin m) (Fin m) ℝ} {σ : ℕ → ℝ}
     {V : Matrix (Fin n) (Fin n) ℝ} (h : IsSVD A U σ V) (hmn : n ≤ m) (i : Fin n) :
     (A * Aᵀ) *ᵥ U.col (Fin.castLE hmn i) = σ i ^ 2 • U.col (Fin.castLE hmn i) := by
   obtain ⟨h1, h2⟩ := corollary_2_4_2 h hmn i
   rw [← mulVec_mulVec, h2, mulVec_smul, h1, smul_smul, sq]
 
-/-- `σ₁(A) = ‖A‖₂`. -/
+/-- For $A \in \mathbb{R}^{m \times n}$, $\sigma_1(A) = \|A\|_2$. -/
 private theorem sortedSingularValues_zero_eq_lpOpNorm (A : Matrix (Fin m) (Fin n) ℝ) :
     A.sortedSingularValues 0 = lpOpNorm 2 A :=
   (sortedSingularValues_zero_eq_l2_opNorm A).trans (lpOpNorm_two A).symm
@@ -143,8 +226,11 @@ section Frobenius
 
 open scoped Matrix.Norms.Frobenius
 
-/-- **Corollary 2.4.3.** For `A ∈ ℝ^{m×n}`, `‖A‖₂ = σ₁` and `‖A‖_F = √(σ₁² + ⋯ + σ_p²)`,
-`p = min{m, n}`. -/
+/-- **Corollary 2.4.3** of [golub2013matrix]. For $A \in \mathbb{R}^{m \times n}$ and
+$p = \min\{m, n\}$,
+$$\|A\|_2 = \sigma_1, \qquad \|A\|_F = \sqrt{\sigma_1^2 + \dots + \sigma_p^2}.$$
+
+The singular value $\sigma_i$ is `A.sortedSingularValues (i - 1)`. -/
 theorem corollary_2_4_3 (A : Matrix (Fin m) (Fin n) ℝ) :
     lpOpNorm 2 A = A.sortedSingularValues 0 ∧
       ‖A‖ = √(∑ i ∈ Finset.range (min m n), A.sortedSingularValues i ^ 2) := by
@@ -158,10 +244,12 @@ theorem corollary_2_4_3 (A : Matrix (Fin m) (Fin n) ℝ) :
 
 end Frobenius
 
-/-- **Corollary 2.4.4.** For `A, E ∈ ℝ^{m×n}`, `σ_max(A + E) ≤ σ_max(A) + ‖E‖₂` and
-`σ_min(A + E) ≥ σ_min(A) - ‖E‖₂`: two instances of Weyl's inequality
-`σ_{i+j}(A + B) ≤ σ_i(A) + σ_j(B)` (backbone `Matrix.sortedSingularValues_add_le`), which needs no
-`m ≥ n`. -/
+/-- **Corollary 2.4.4** of [golub2013matrix]. For $A, E \in \mathbb{R}^{m \times n}$,
+$$\sigma_{\max}(A + E) \le \sigma_{\max}(A) + \|E\|_2, \qquad \sigma_{\min}(A + E) \ge
+  \sigma_{\min}(A) - \|E\|_2.$$
+
+Both bounds are instances of Weyl's inequality $\sigma_{i+j-1}(A + B) \le \sigma_i(A) +
+\sigma_j(B)$, `Matrix.sortedSingularValues_add_le`. The proof needs no hypothesis $m \ge n$. -/
 theorem corollary_2_4_4 (A E : Matrix (Fin m) (Fin n) ℝ) :
     sigmaMax (A + E) ≤ sigmaMax A + lpOpNorm 2 E ∧
       sigmaMin A - lpOpNorm 2 E ≤ sigmaMin (A + E) := by
@@ -174,11 +262,20 @@ theorem corollary_2_4_4 (A E : Matrix (Fin m) (Fin n) ℝ) :
     rw [sigmaMin, sigmaMin]
     linarith
 
-/-- **Corollary 2.4.5.** If `A ∈ ℝ^{m×n}`, `m > n` (and `n ≥ 1`, so that `σ_min(A)` exists), and
-`z ∈ ℝ^m`, then `σ_max([A | z]) ≥ σ_max(A)` and `σ_min([A | z]) ≤ σ_min(A)`. The first is column
-deletion (`Matrix.sortedSingularValues_submatrix_le`); for the second both matrices are tall, so
-`σ_min` is the least stretch `min_{‖x‖₂ = 1} ‖A x‖₂` (`Matrix.iInf_colSingularValues_eq_iInf_norm`)
-and `[A | z] [x; 0] = A x`. -/
+/-- **Corollary 2.4.5** of [golub2013matrix]. Let $A \in \mathbb{R}^{m \times n}$ with
+$m > n \ge 1$, and let $z \in \mathbb{R}^m$. Then
+$$\sigma_{\max}([A \mid z]) \ge \sigma_{\max}(A), \qquad \sigma_{\min}([A \mid z]) \le
+  \sigma_{\min}(A).$$
+
+**Reading.** The source assumes only $m > n$. For $n = 0$ the source does not define
+$\sigma_{\min}(A)$, and the Lean value $0$ would make the second inequality false. So the
+corollary assumes $n \ge 1$.
+
+The matrix $[A \mid z]$ is `Matrix.of fun i => Fin.snoc (A i) (z i)`. The first inequality is
+column deletion, `Matrix.sortedSingularValues_submatrix_le`. For the second, both matrices have
+at least as many rows as columns, so $\sigma_{\min}$ is the least stretch
+$\min_{\|x\|_2 = 1} \|Ax\|_2$ (`Matrix.iInf_colSingularValues_eq_iInf_norm`), and $[A \mid z]
+\begin{bmatrix} x \\ 0 \end{bmatrix} = Ax$. -/
 theorem corollary_2_4_5 (A : Matrix (Fin m) (Fin n) ℝ) (hmn : n < m) (hn : 1 ≤ n)
     (z : Fin m → ℝ) :
     sigmaMax A ≤ sigmaMax (Matrix.of fun i => Fin.snoc (α := fun _ => ℝ) (A i) (z i) :
@@ -216,7 +313,8 @@ theorem corollary_2_4_5 (A : Matrix (Fin m) (Fin n) ℝ) (hmn : n < m) (hn : 1 �
         ≤ ‖toEuclideanLin Ã y‖ := ciInf_le hbdd ⟨y, hy1⟩
       _ = ‖toEuclideanLin A x‖ := by rw [hAy]
 
-/-- Membership in a span of vectors transported to `EuclideanSpace`. -/
+/-- A vector of `EuclideanSpace` lies in the span of the images of a set $s$ of vectors if and only
+if the underlying vector lies in the span of $s$. -/
 private theorem mem_span_toLp_image_iff {k : ℕ} (s : Set (Fin k → ℝ))
     (x : EuclideanSpace ℝ (Fin k)) :
     x ∈ Submodule.span ℝ (toLp 2 '' s) ↔ ofLp x ∈ Submodule.span ℝ s := by
@@ -225,11 +323,16 @@ private theorem mem_span_toLp_image_iff {k : ℕ} (s : Set (Fin k → ℝ))
   rw [h, Submodule.span_image_linearEquiv, Submodule.mem_map_equiv]
   rfl
 
-/-- **Corollary 2.4.6.** If the SVD `Uᵀ A V = Σ` has exactly `r` positive singular values
-(`σ_i > 0 ↔ i < r` for `i < p`, 0-based), then `rank(A) = r`,
-`null(A) = span{v_{r+1}, …, v_n}` and `ran(A) = span{u₁, …, u_r}` (0-based: the columns `j ≥ r`
-of `V`, `i < r` of `U`). Backbone `Matrix.IsSVD.ker_mulVecLin_eq_span`,
-`Matrix.IsSVD.range_mulVecLin_eq_span` and `Matrix.sortedSingularValues_eq_zero_iff_rank_le`. -/
+/-- **Corollary 2.4.6** of [golub2013matrix]. Let $U^T A V = \Sigma$ be an SVD of
+$A \in \mathbb{R}^{m \times n}$, let $p = \min\{m, n\}$, and let $r \le p$ be such that for
+$i = 1, \dots, p$ we have $\sigma_i > 0$ if and only if $i \le r$. Then
+$$\operatorname{rank}(A) = r, \qquad \operatorname{null}(A) = \operatorname{span}\{v_{r+1},
+  \dots, v_n\}, \qquad \operatorname{ran}(A) = \operatorname{span}\{u_1, \dots, u_r\}.$$
+
+The indices are 0-based in Lean: the hypothesis is $0 < \sigma_i \iff i < r$ for $i < p$, and
+the spans are over the columns $j \ge r$ of $V$ and the columns $i < r$ of $U$. The proof
+applies `Matrix.IsSVD.ker_mulVecLin_eq_span`, `Matrix.IsSVD.range_mulVecLin_eq_span` and
+`Matrix.sortedSingularValues_eq_zero_iff_rank_le`. -/
 theorem corollary_2_4_6 {A : Matrix (Fin m) (Fin n) ℝ} {U : Matrix (Fin m) (Fin m) ℝ} {σ : ℕ → ℝ}
     {V : Matrix (Fin n) (Fin n) ℝ} (h : IsSVD A U σ V) {r : ℕ} (hr : r ≤ min m n)
     (hσ : ∀ i < min m n, 0 < σ i ↔ i < r) :
@@ -292,7 +395,8 @@ theorem corollary_2_4_6 {A : Matrix (Fin m) (Fin n) ℝ} {U : Matrix (Fin m) (Fi
     · rintro ⟨y, hy⟩
       exact ⟨toLp 2 y, by rw [toEuclideanLin_toLp]; exact congrArg (toLp 2) hy⟩
 
-/-- The truncation (2.4.3) as a sum of rank-one matrices: `U Σ_k Vᵀ = ∑_{i<k} σ_i u_i v_iᵀ`. -/
+/-- The truncation (2.4.3) is a sum of rank-one matrices: $U \Sigma_k V^T = \sum_{i=1}^k \sigma_i
+u_i v_i^T$ for $k \le \min\{m, n\}$. -/
 private theorem svdTruncation_eq_sum (U : Matrix (Fin m) (Fin m) ℝ) (σ : ℕ → ℝ)
     (V : Matrix (Fin n) (Fin n) ℝ) {k : ℕ} (hkm : k ≤ m) (hkn : k ≤ n) :
     svdTruncation U σ V k =
@@ -317,9 +421,12 @@ private theorem svdTruncation_eq_sum (U : Matrix (Fin m) (Fin m) ℝ) (σ : ℕ 
   ring
 
 open scoped Matrix.Norms.L2Operator in
-/-- **Corollary 2.4.7.** If `A ∈ ℝ^{m×n}` has rank `r`, then `A = ∑_{i=1}^r σ_i u_i v_iᵀ` for
-any SVD of `A`. The truncation at the rank has residual norm `σ_{r+1} = 0`
-(`Matrix.l2_opNorm_sub_svdTruncation`). -/
+/-- **Corollary 2.4.7** of [golub2013matrix]. Let $A \in \mathbb{R}^{m \times n}$ have rank $r$, and
+let $U^T A V = \Sigma$ be any SVD of $A$. Then
+$$A = \sum_{i=1}^r \sigma_i u_i v_i^T.$$
+
+The proof uses that the truncation at the rank has the residual norm
+$\|A - A_r\|_2 = \sigma_{r+1} = 0$ (`Matrix.l2_opNorm_sub_svdTruncation`). -/
 theorem corollary_2_4_7 {A : Matrix (Fin m) (Fin n) ℝ} {U : Matrix (Fin m) (Fin m) ℝ} {σ : ℕ → ℝ}
     {V : Matrix (Fin n) (Fin n) ℝ} (h : IsSVD A U σ V) :
     A = ∑ i : Fin A.rank, σ i • vecMulVec (U.col (Fin.castLE A.rank_le_height i))
@@ -330,9 +437,16 @@ theorem corollary_2_4_7 {A : Matrix (Fin m) (Fin n) ℝ} {U : Matrix (Fin m) (Fi
     sub_eq_zero] at h0
   exact h0
 
-/-- **Theorem 2.4.8 (Eckart–Young), (2.4.3)–(2.4.4).** If `k < r = rank(A)` and
-`A_k = ∑_{i=1}^k σ_i u_i v_iᵀ` (2.4.3), then `rank(A_k) = k` and
-`min_{rank(B) = k} ‖A - B‖₂ = ‖A - A_k‖₂ = σ_{k+1}` (2.4.4) (0-based `σ k`). Backbone
+/-- **Theorem 2.4.8** of [golub2013matrix] (Eckart–Young), with (2.4.3) and (2.4.4). Let
+$U^T A V = \Sigma$ be an SVD of $A \in \mathbb{R}^{m \times n}$, and let
+$k < r = \operatorname{rank}(A)$. Let
+$$A_k = \sum_{i=1}^k \sigma_i u_i v_i^T$$
+as in (2.4.3). Then $\operatorname{rank}(A_k) = k$ and, as in (2.4.4),
+$$\min_{\operatorname{rank}(B) = k} \|A - B\|_2 = \|A - A_k\|_2 = \sigma_{k+1}.$$
+
+The matrix $A_k$ is `Matrix.svdTruncation U σ V k`, and the theorem also states that it equals
+the sum (2.4.3). The value $\sigma_{k+1}$ is `σ k` with 0-based indices. The minimum is an
+`IsLeast` statement over the matrices of rank exactly $k$. The proof applies
 `Matrix.rank_svdTruncation`, `Matrix.l2_opNorm_sub_svdTruncation` and the lower bound
 `Matrix.sortedSingularValues_le_l2_opNorm_sub_of_rank_le`. -/
 theorem theorem_2_4_8 {A : Matrix (Fin m) (Fin n) ℝ} {U : Matrix (Fin m) (Fin m) ℝ} {σ : ℕ → ℝ}
@@ -356,9 +470,17 @@ theorem theorem_2_4_8 {A : Matrix (Fin m) (Fin n) ℝ} {U : Matrix (Fin m) (Fin 
   rw [lpOpNorm_two]
   exact sortedSingularValues_le_l2_opNorm_sub_of_rank_le (le_of_eq hB)
 
-/-- **§2.4.2, after Theorem 2.4.8**: "the smallest singular value of `A` is the 2-norm distance of
-`A` to the set of all rank-deficient matrices" (`m, n ≥ 1`): Eckart–Young at `k = p - 1`
-(`Matrix.isLeast_l2_opNorm_sub_of_rank_le`). -/
+/-- **Section 2.4.2** of [golub2013matrix], after Theorem 2.4.8: the smallest singular value of $A$
+is the 2-norm distance from $A$ to the set of all rank-deficient matrices. Let
+$A \in \mathbb{R}^{m \times n}$ with $m, n \ge 1$. Then
+$$\sigma_{\min}(A) = \min \{ \|A - B\|_2 : B \in \mathbb{R}^{m \times n}, \
+  \operatorname{rank}(B) < \min\{m, n\} \}.$$
+
+**Reading.** The source states the remark with no condition on the shape. For $m = 0$ or $n = 0$
+there is no rank-deficient matrix, so the statement assumes $m, n \ge 1$.
+
+Rank deficiency is `GolubVanLoan.Chapter02.IsRankDeficient` of §2.1. The proof is the
+Eckart–Young theorem at $k = p - 1$, `Matrix.isLeast_l2_opNorm_sub_of_rank_le`. -/
 theorem sigmaMin_eq_dist_rankDeficient (A : Matrix (Fin m) (Fin n) ℝ) (hm : 1 ≤ m) (hn : 1 ≤ n) :
     IsLeast ((fun B => lpOpNorm 2 (A - B)) '' {B | IsRankDeficient B}) (sigmaMin A) := by
   have hset : {B : Matrix (Fin m) (Fin n) ℝ | IsRankDeficient B} =
@@ -378,10 +500,14 @@ section Frobenius
 
 open scoped Matrix.Norms.Frobenius
 
-/-- **§2.4.2, after Theorem 2.4.8**: the matrix `A_k` of (2.4.3) is the closest rank-`k` matrix to
-`A` in the Frobenius norm (`k < rank(A)`), at distance `√(σ_{k+1}² + ⋯ + σ_p²)` (stated without
-proof in the book; Mirsky). Backbone `Matrix.isLeast_frobenius_norm_sub_of_rank_le` and
-`Matrix.frobenius_norm_sub_svdTruncation`. -/
+/-- **Section 2.4.2** of [golub2013matrix], after Theorem 2.4.8: the Eckart–Young theorem in the
+Frobenius norm. Let $U^T A V = \Sigma$ be an SVD of $A \in \mathbb{R}^{m \times n}$, let
+$p = \min\{m, n\}$, let $k < \operatorname{rank}(A)$, and let $A_k$ be the truncation (2.4.3).
+Then $A_k$ is a closest matrix of rank $k$ to $A$ in the Frobenius norm, and
+$$\|A - A_k\|_F = \sqrt{\sigma_{k+1}^2 + \dots + \sigma_p^2}.$$
+
+The source states this result without proof; it is due to Mirsky. The proof applies
+`Matrix.isLeast_frobenius_norm_sub_of_rank_le` and `Matrix.frobenius_norm_sub_svdTruncation`. -/
 theorem svdTruncation_isLeast_frobenius {A : Matrix (Fin m) (Fin n) ℝ}
     {U : Matrix (Fin m) (Fin m) ℝ} {σ : ℕ → ℝ} {V : Matrix (Fin n) (Fin n) ℝ} (h : IsSVD A U σ V)
     {k : ℕ} (hk : k < A.rank) :
@@ -404,9 +530,13 @@ end Frobenius
 
 /-! ### §2.4.3 The thin SVD -/
 
-/-- **§2.4.3, the thin SVD.** If `A = U Σ Vᵀ` is the SVD of `A ∈ ℝ^{m×n}` and `m ≥ n`, then
-`A = U₁ Σ₁ Vᵀ` with `U₁ = U(:, 1:n)` (orthonormal columns) and `Σ₁ = Σ(1:n, 1:n) =
-diag(σ₁, …, σ_n)`. -/
+/-- **Section 2.4.3** of [golub2013matrix], the thin SVD. Let $A = U \Sigma V^T$ be an SVD of
+$A \in \mathbb{R}^{m \times n}$ with $m \ge n$. Let $U_1 = U(:, 1{:}n)$ and $\Sigma_1 =
+\Sigma(1{:}n, 1{:}n) = \operatorname{diag}(\sigma_1, \dots, \sigma_n)$. Then $U_1$ has
+orthonormal columns, $U_1^T U_1 = I$, and
+$$A = U_1 \Sigma_1 V^T.$$
+
+The block $U_1$ is `U.submatrix id (Fin.castLE hmn)`. -/
 theorem thin_svd {A : Matrix (Fin m) (Fin n) ℝ} {U : Matrix (Fin m) (Fin m) ℝ} {σ : ℕ → ℝ}
     {V : Matrix (Fin n) (Fin n) ℝ} (h : IsSVD A U σ V) (hmn : n ≤ m) :
     (U.submatrix id (Fin.castLE hmn))ᵀ * U.submatrix id (Fin.castLE hmn) = 1 ∧
@@ -423,10 +553,18 @@ section Complex
 
 open scoped Matrix.Norms.Frobenius
 
-/-- **§2.4.4, the complex SVD.** For `A ∈ ℂ^{m×n}` there are unitary `U`, `V` with
-`Uᴴ A V = diag(σ₁, …, σ_p) ∈ ℝ^{m×n}`, `σ₁ ≥ ⋯ ≥ σ_p ≥ 0`; and unitary transformations preserve
-both the 2-norm and the Frobenius norm. (The book's "all of the real SVD properties have obvious
-complex analogs" is the `RCLike` generality of the backbone.) -/
+/-- **Section 2.4.4** of [golub2013matrix], the complex SVD. For $A \in \mathbb{C}^{m \times n}$
+there are unitary matrices $U \in \mathbb{C}^{m \times m}$ and $V \in \mathbb{C}^{n \times n}$
+with
+$$U^H A V = \operatorname{diag}(\sigma_1, \dots, \sigma_p) \in \mathbb{R}^{m \times n}, \qquad
+  p = \min\{m, n\},$$
+where $\sigma_1 \ge \dots \ge \sigma_p \ge 0$. Moreover, for unitary
+$Q \in \mathbb{C}^{m \times m}$ and $Z \in \mathbb{C}^{n \times n}$,
+$$\|QAZ\|_2 = \|A\|_2, \qquad \|QAZ\|_F = \|A\|_F.$$
+
+The SVD is `Matrix.IsSVD A U A.sortedSingularValues V` over $\mathbb{C}$. The remark of the
+source that "all of the real SVD properties have obvious complex analogs" is the `RCLike`
+generality of the backbone. -/
 theorem complex_svd (A : Matrix (Fin m) (Fin n) ℂ) :
     (∃ U V, IsSVD A U A.sortedSingularValues V) ∧
       ∀ {Q : Matrix (Fin m) (Fin m) ℂ} {Z : Matrix (Fin n) (Fin n) ℂ},

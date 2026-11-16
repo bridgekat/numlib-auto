@@ -7,47 +7,99 @@ import NumlibSurface.GolubVanLoan.Chapter01.Section01
 import NumlibSurface.GolubVanLoan.Chapter03.Section04
 
 /-!
-# Golub–Van Loan §4.5: block tridiagonal systems
+# Golub and Van Loan, Section 4.5: Block tridiagonal systems
 
-Surface file for [golub2013matrix] §4.5: the block LU factorization (4.5.3) with its recurrence
-(4.5.4) and the block substitutions (4.5.5) as programs, block diagonal dominance (4.5.6) and its
-consequences (4.5.7)–(4.5.8), one step of block cyclic reduction and its back substitution (§4.5.3),
-and the block scaling (4.5.13)→(4.5.14) of the
-SPIKE framework. The section has no numbered theorem and no numbered algorithm.
+This module formalizes §4.5 of [golub2013matrix], linear systems $Ax = b$ whose matrix is block
+tridiagonal with $q \times q$ blocks: diagonal blocks $D_i$, subdiagonal blocks $E_i$ and
+superdiagonal blocks $F_i$ (4.5.2). If the pivots $U_i$ of the recurrence $U_0 = D_0$,
+$L_i U_i = E_i$, $U_{i+1} = D_{i+1} - L_i F_i$ (4.5.4) are nonsingular, then $A$ is the product of a
+block unit lower bidiagonal matrix with subdiagonal blocks $L_i$ and a block upper bidiagonal matrix
+with diagonal blocks $U_i$ and superdiagonal blocks $F_i$ (4.5.3). The system is then solved by
+block forward elimination and block back substitution (4.5.5). Under the block diagonal dominance
+(4.5.6), the pivots are nonsingular, $\|L_i\|_1 \le 1$ and $\|U_i\|_1 \le \|A\|_1$
+((4.5.7)–(4.5.8)).
+
+The module also treats one step of block cyclic reduction for the system (4.5.9) with constant
+commuting blocks and the recovery of the eliminated unknowns (§4.5.3), and the block scaling
+(4.5.13)→(4.5.14) of the SPIKE framework (§4.5.4). The section has no numbered theorem and no
+numbered algorithm. The proofs specialize the backbone modules
+`Numlib.LinearAlgebra.Matrix.BlockTridiagonal` and `Numlib.Direct.CyclicReduction`.
+
+## Main definitions
+
+* (4.5.4), `GolubVanLoan.Chapter04.blockTridiagonalLU`: the block LU recurrence as a program, with
+  block solves by Gaussian elimination with partial pivoting.
+* (4.5.5), `GolubVanLoan.Chapter04.blockTridiagonalSolve`: block forward elimination and block back
+  substitution as a program.
+
+## Main results
+
+* (4.5.3), `GolubVanLoan.Chapter04.equation_4_5_3`: if the pivots $U_0, \dots, U_{N-1}$ are
+  nonsingular, then $A$ is the product of the two block bidiagonal factors and $L_i U_i = E_i$.
+* (4.5.4), `GolubVanLoan.Chapter04.equation_4_5_4`: the exact run of
+  `GolubVanLoan.Chapter04.blockTridiagonalLU` computes the multipliers $L_i$ and the pivots $U_i$ of
+  the recurrence.
+* (4.5.5), `GolubVanLoan.Chapter04.equation_4_5_5`: with the exact factors, the exact run of
+  `GolubVanLoan.Chapter04.blockTridiagonalSolve` solves the block tridiagonal system.
+* (4.5.6), `GolubVanLoan.Chapter04.equation_4_5_6`: under block diagonal dominance, every pivot
+  $U_i$ and the matrix $A$ are nonsingular.
+* (4.5.7), `GolubVanLoan.Chapter04.equation_4_5_7`: under block diagonal dominance,
+  $\|L_i\|_1 \le 1$.
+* (4.5.8), `GolubVanLoan.Chapter04.equation_4_5_8`: under block diagonal dominance,
+  $\|U_i\|_1 \le \|A\|_1$.
+* §4.5.3, `GolubVanLoan.Chapter04.cyclicReduction_step`: one step of block cyclic reduction gives a
+  system of the same form with commuting blocks $2F^2 - D^2$ and $F^2$, and repeated steps leave one
+  $q \times q$ system for the middle unknown.
+* §4.5.3, `GolubVanLoan.Chapter04.cyclicReduction_back`: the eliminated unknowns solve $q \times q$
+  systems with matrix $D$.
+* (4.5.13)→(4.5.14), `GolubVanLoan.Chapter04.equation_4_5_14`: premultiplication by the inverse of
+  the block diagonal gives an equivalent block tridiagonal system with identity diagonal blocks.
 
 ## Conventions
 
-The matrix (4.5.2) has `q × q` real blocks, `N + 1` diagonal blocks `D 0, …, D N` (0-based; the
-book's `D_1, …, D_N` with `N` one larger), subdiagonal blocks `E 0, …, E (N − 1)` and superdiagonal
-blocks `F 0, …, F (N − 1)`. In the block ring `Matrix (Fin q) (Fin q) ℝ` it is
-`Matrix.tridiagonalOf E D F`, and the book's scalar matrix is its flattening
-`Matrix.blockTridiagonal E D F : Matrix (Fin (N + 1) × Fin q) (Fin (N + 1) × Fin q) ℝ` by Mathlib's
-`Matrix.comp` (a ring isomorphism, `Matrix.compRingEquiv`). The block recurrence (4.5.4) is the
-backbone's `ℕ`-indexed `Matrix.tridiagonalLUPivot` (`U_i`) and `Matrix.tridiagonalLUMultiplier`
-(`L_i`), so the blocks of the §4.5.1–4.5.2 statements are `ℕ`-indexed families. The book's `‖·‖₁`
-of a block is `Matrix.lpOpNorm 1`. The constant-block system (4.5.9) is the backbone operator
-`CyclicReduction.constBlockTridiagonal D F`, which is `Matrix.blockTridiagonal` applied to the
-flattened vector (`CyclicReduction.constBlockTridiagonal_eq_blockTridiagonal_mulVec`).
+* The matrix (4.5.2) has $N + 1$ diagonal blocks $D_0, \dots, D_N$, indexed from $0$; the source
+  writes $D_1, \dots, D_N$, so its $N$ is one larger. The subdiagonal blocks are
+  $E_0, \dots, E_{N-1}$, with $E_i$ in block row $i + 1$ and block column $i$, and the superdiagonal
+  blocks are $F_0, \dots, F_{N-1}$, with $F_i$ in block row $i$ and block column $i + 1$.
+* The norm $\|\cdot\|_1$ of a block or of $A$ is the matrix norm induced by the vector $1$-norm,
+  `Matrix.lpOpNorm 1`.
 
-The algorithm-shaped displays (4.5.4) and (4.5.5) are the programs `blockTridiagonalLU` and
-`blockTridiagonalSolve` (the algorithm conventions of `NumlibSurface/GolubVanLoan`), with exact
-specifications `equation_4_5_4` (the backbone recurrence) and `equation_4_5_5` (the block system
-is solved). Their block solves call chapter 3's Gaussian elimination with partial pivoting
-(`Chapter03.solveMultipleRHS`, `Chapter03.solveGEPP`) and their block products chapter 1's
-Algorithms 1.1.3 and 1.1.5, as the book suggests.
+## Implementation notes
 
-## Sources
+* Over the block ring `Matrix (Fin q) (Fin q) ℝ` the matrix (4.5.2) is `Matrix.tridiagonalOf E D F`.
+  The scalar matrix of the source is its flattening `Matrix.blockTridiagonal E D F : Matrix (Fin
+  (N + 1) × Fin q) (Fin (N + 1) × Fin q) ℝ` by Mathlib's `Matrix.comp`, which is a ring isomorphism
+  (`Matrix.compRingEquiv`).
+* The recurrence (4.5.4) is the backbone's `Matrix.tridiagonalLUPivot` (the pivots $U_i$) and
+  `Matrix.tridiagonalLUMultiplier` (the multipliers $L_i$). These take $\mathbb{N}$-indexed families
+  of blocks, so the blocks in the statements of §4.5.1–4.5.2 are $\mathbb{N}$-indexed families, of
+  which only the first $N + 1$ or $N$ members are used.
+* The constant-block system (4.5.9) is the backbone operator
+  `CyclicReduction.constBlockTridiagonal D F`. It is `Matrix.blockTridiagonal` applied to the
+  flattened vector (`CyclicReduction.constBlockTridiagonal_eq_blockTridiagonal_mulVec`).
+* The algorithm-shaped displays (4.5.4) and (4.5.5) are the programs
+  `GolubVanLoan.Chapter04.blockTridiagonalLU` and `GolubVanLoan.Chapter04.blockTridiagonalSolve`,
+  written with a rounding hook as in the algorithm conventions of the library index. Their exact
+  specifications are `GolubVanLoan.Chapter04.equation_4_5_4` and
+  `GolubVanLoan.Chapter04.equation_4_5_5`. As the source suggests, their block solves call the
+  Gaussian elimination with partial pivoting of Chapter 3
+  (`GolubVanLoan.Chapter03.solveMultipleRHS`, `GolubVanLoan.Chapter03.solveGEPP`), and their block
+  products call Algorithms 1.1.3 and 1.1.5.
 
-Backbone `Numlib/LinearAlgebra/Matrix/BlockTridiagonal` (the recurrence, the factorization, block
-dominance) and `Numlib/Direct/CyclicReduction`. The flop count of cyclic reduction, Buneman's
-stabilization and the rest of the SPIKE framework (whose displays (4.5.11)–(4.5.12) and the refined
-blockings were lost in conversion) are not formalized.
+## Deviations from the source
 
-## Readings and errata
+* **(4.5.8)** (reading). The source prints $\|U_i\|_1 \le \|A_n\|_1$, whose right-hand side has no
+  referent in the section. It is read as the $1$-norm of the whole matrix $A$. See
+  `GolubVanLoan.Chapter04.equation_4_5_8`.
+* **The display for $N = 7$ in §4.5.3** (typo). The source prints $b_4 = Fx_5 + Dx_4 + Fx_5$ for
+  $b_4 = Fx_3 + Dx_4 + Fx_5$. See `GolubVanLoan.Chapter04.cyclicReduction_step`.
 
-(4.5.8) prints `‖U_i‖₁ ≤ ‖A_n‖₁`, whose right-hand side has no referent in the section; it is read
-as the `1`-norm of the whole matrix `A`. The `N = 7` display of §4.5.3 prints
-`b₄ = F x₅ + D x₄ + F x₅` for `b₄ = F x₃ + D x₄ + F x₅`.
+## Not formalized
+
+* **The flop count of block cyclic reduction.**
+* **Buneman's stabilization of block cyclic reduction.**
+* **The rest of the SPIKE framework of §4.5.4**, including the displays (4.5.11)–(4.5.12) and the
+  refined blockings.
 -/
 
 open Matrix Finset
@@ -58,13 +110,21 @@ variable {N q : ℕ}
 
 /-! ### §4.5.1 Block tridiagonal LU factorization -/
 
-/-- **(4.5.3) with (4.5.4).** "By comparing blocks in `A = L U` we formally obtain the following
-algorithm for computing the `L_i` and `U_i`: `U_1 = D_1`; for `i = 2:N`, solve `L_{i−1} U_{i−1} =
-E_{i−1}` for `L_{i−1}`, `U_i = D_i − L_{i−1} F_{i−1}`. The procedure is defined as long as the `U_i`
-are nonsingular." If the pivots `U_0, …, U_{N−1}` are nonsingular, the block tridiagonal matrix is
-the product of the block unit lower bidiagonal matrix with subdiagonal blocks `L_i` and the block
-upper bidiagonal matrix with diagonal blocks `U_i` and superdiagonal blocks `F_i`; the multipliers
-solve `L_i U_i = E_i`. -/
+/-- **Equation (4.5.3)** of [golub2013matrix], with the recurrence (4.5.4). Let
+$E_i, D_i, F_i \in \mathbb{R}^{q \times q}$ for $i \in \mathbb{N}$, and let $A$ be the block
+tridiagonal matrix with diagonal blocks $D_0, \dots, D_N$, subdiagonal blocks
+$E_0, \dots, E_{N-1}$ and superdiagonal blocks $F_0, \dots, F_{N-1}$. Define the pivots and the
+multipliers by
+$$U_0 = D_0, \qquad L_i = E_i U_i^{-1}, \qquad U_{i+1} = D_{i+1} - E_i U_i^{-1} F_i.$$
+If $U_0, \dots, U_{N-1}$ are nonsingular, then $A = LU$, where $L$ is the block lower bidiagonal
+matrix with identity diagonal blocks and subdiagonal blocks $L_0, \dots, L_{N-1}$, and $U$ is
+the block upper bidiagonal matrix with diagonal blocks $U_0, \dots, U_N$ and superdiagonal
+blocks $F_0, \dots, F_{N-1}$. Moreover $L_i U_i = E_i$ for $i < N$.
+
+The source derives the recurrence by comparing blocks in $A = LU$ and remarks that the procedure
+is defined as long as the $U_i$ are nonsingular. The pivots and the multipliers are
+`Matrix.tridiagonalLUPivot` and `Matrix.tridiagonalLUMultiplier`, with the inverse
+`Ring.inverse`. The matrices $A$, $L$ and $U$ are flattened by `Matrix.blockTridiagonal`. -/
 theorem equation_4_5_3 (E D F : ℕ → Matrix (Fin q) (Fin q) ℝ)
     (hU : ∀ i < N, IsUnit (tridiagonalLUPivot E D F i)) :
     blockTridiagonal (N := N) (fun i => E i) (fun i => D i) (fun i => F i) =
@@ -75,13 +135,15 @@ theorem equation_4_5_3 (E D F : ℕ → Matrix (Fin q) (Fin q) ℝ)
   simp only [blockTridiagonal, ← compRingEquiv_apply, ← map_mul]
   rw [tridiagonalOf_eq_mul_of_isUnit_tridiagonalLUPivot E D F hU]
 
-/-! ### (4.5.4)–(4.5.5): the block programs -/
+/-! ### (4.5.4)–(4.5.5): The block programs -/
 
 section Programs
 
 variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 
-/-- **(4.5.4), the block LU recurrence as a program**:
+/-- **Equation (4.5.4)** of [golub2013matrix], the block LU recurrence as a program. Given $N$ and
+the blocks $E_i, D_i, F_i \in \mathbb{R}^{q \times q}$, the program computes the multipliers
+$L_i$ and the pivots $U_i$ of the factorization (4.5.3):
 ```
 U_1 = D_1
 for i = 2:N
@@ -89,12 +151,14 @@ for i = 2:N
     U_i = D_i − L_{i−1} F_{i−1}
 end
 ```
-0-based, on the state `(L, U)` of `ℕ`-indexed block families. "Each `U_i` must be factored since
-linear systems involving these submatrices are solved. This could be done using Gaussian
-elimination with pivoting": the solve `L U = E` is the transposed system `Uᵀ Lᵀ = Eᵀ` by chapter
-3's multiple right-hand side procedure (3.4.12) (`Chapter03.solveMultipleRHS`, Gaussian
-elimination with partial pivoting; transposition is a copy), and `D_i − L F` is chapter 1's
-Algorithm 1.1.5 on `C = D_i`, `A = −L` (negation is exact). -/
+The program is indexed from $0$. Its state is the pair $(L, U)$ of $\mathbb{N}$-indexed families
+of blocks, which starts with $L = 0$ and with $U_0 = D_0$ and all other $U_i = 0$. Pass
+$i = 0, \dots, N-1$ solves the transposed system $U_i^T X = E_i^T$ by the multiple right-hand
+side procedure (3.4.12) of Chapter 3 (`GolubVanLoan.Chapter03.solveMultipleRHS`, Gaussian
+elimination with partial pivoting), sets $L_i = X^T$, and computes
+$U_{i+1} = D_{i+1} + (-L_i) F_i$ by Algorithm 1.1.5. The source says that each $U_i$ must be
+factored, for example by Gaussian elimination with pivoting. Transposition and negation are
+exact. -/
 noncomputable def blockTridiagonalLU (N : ℕ) (E D F : ℕ → Matrix (Fin q) (Fin q) ℝ) :
     M ((ℕ → Matrix (Fin q) (Fin q) ℝ) × (ℕ → Matrix (Fin q) (Fin q) ℝ)) :=
   (List.range N).foldlM
@@ -104,8 +168,9 @@ noncomputable def blockTridiagonalLU (N : ℕ) (E D F : ℕ → Matrix (Fin q) (
       pure (Function.update st.1 i Xᵀ, Function.update st.2 (i + 1) U))
     (0, Function.update 0 0 (D 0))
 
-/-- **(4.5.5), block forward elimination and block back substitution** with the factors `L_i`,
-`U_i` of (4.5.3) and the superdiagonal blocks `F_i`:
+/-- **Equation (4.5.5)** of [golub2013matrix], block forward elimination and block back substitution
+as a program. Given $N$, the multipliers $L_i$ and the pivots $U_i$ of (4.5.3), the
+superdiagonal blocks $F_i$ and a block vector $b$, the program computes $x$:
 ```
 y_1 = b_1
 for i = 2:N
@@ -116,9 +181,10 @@ for i = N−1:−1:1
     Solve U_i x_i = y_i − F_i x_{i+1} for x_i
 end
 ```
-0-based, with `ℕ`-indexed block vectors (`y` overwrites `b`). The block gaxpys are chapter 1's
-Algorithm 1.1.3 with `A = −L_{i−1}`, `−F_i` (negation is exact), and the solves are Gaussian
-elimination with partial pivoting followed by the triangular solves (`Chapter03.solveGEPP`). -/
+The program is indexed from $0$, with $\mathbb{N}$-indexed block vectors; $y$ overwrites $b$,
+and the entries of $x$ beyond $N$ are $0$. The block updates are Algorithm 1.1.3 with the
+matrices $-L_{i-1}$ and $-F_i$, and each solve is Gaussian elimination with partial pivoting
+followed by the triangular solves (`GolubVanLoan.Chapter03.solveGEPP`). Negation is exact. -/
 noncomputable def blockTridiagonalSolve (N : ℕ) (L U F : ℕ → Matrix (Fin q) (Fin q) ℝ)
     (b : ℕ → Fin q → ℝ) : M (ℕ → Fin q → ℝ) := do
   let y ← (List.range N).foldlM (fun (y : ℕ → Fin q → ℝ) (i : ℕ) => do
@@ -132,10 +198,15 @@ noncomputable def blockTridiagonalSolve (N : ℕ) (L U F : ℕ → Matrix (Fin q
 
 end Programs
 
-/-- **Exact correctness of (4.5.4)**: if the pivots `U_0, …, U_{N−1}` used by the solves are
-nonsingular, the exact run computes the multipliers `L_i = tridiagonalLUMultiplier E D F i`
-(`i < N`) and the pivots `U_i = tridiagonalLUPivot E D F i` (`i ≤ N`) of the backbone recurrence,
-hence the factorization (4.5.3) (`equation_4_5_3`). -/
+/-- **Equation (4.5.4)** of [golub2013matrix], exact correctness. Let
+$E_i, D_i, F_i \in \mathbb{R}^{q \times q}$ for $i \in \mathbb{N}$, and let $U_i$ and $L_i$ be
+the pivots and the multipliers of the recurrence (4.5.4). If $U_0, \dots, U_{N-1}$ are
+nonsingular, then in exact arithmetic `GolubVanLoan.Chapter04.blockTridiagonalLU` returns the
+multipliers $L_i$ for $i < N$ and the pivots $U_i$ for $i \le N$.
+
+With `GolubVanLoan.Chapter04.equation_4_5_3`, the program therefore computes the factorization
+(4.5.3). The pivots and the multipliers are `Matrix.tridiagonalLUPivot` and
+`Matrix.tridiagonalLUMultiplier`. -/
 theorem equation_4_5_4 (E D F : ℕ → Matrix (Fin q) (Fin q) ℝ)
     (hU : ∀ i < N, IsUnit (tridiagonalLUPivot E D F i)) :
     (∀ i < N, (Id.run (blockTridiagonalLU pure N E D F)).1 i = tridiagonalLUMultiplier E D F i) ∧
@@ -178,16 +249,21 @@ theorem equation_4_5_4 (E D F : ℕ → Matrix (Fin q) (Fin q) ℝ)
   rw [List.length_range] at key
   exact key
 
-/-- The exact block forward elimination of (4.5.5): `y_0 = b_0`, `y_{i+1} = b_{i+1} − L_i y_i`. -/
+/-- The exact block forward elimination of (4.5.5): $y_0 = b_0$ and $y_{i+1} = b_{i+1} - L_i y_i$.
+-/
 private noncomputable def blockForwardSeq (L : ℕ → Matrix (Fin q) (Fin q) ℝ)
     (b : ℕ → Fin q → ℝ) : ℕ → Fin q → ℝ
   | 0 => b 0
   | i + 1 => b (i + 1) - L i *ᵥ blockForwardSeq L b i
 
-/-- **Exact correctness of (4.5.5)**: with the exact factors of (4.5.4) — the multipliers
-`L_i = tridiagonalLUMultiplier E D F i` and the pivots `U_i = tridiagonalLUPivot E D F i`, all
-nonsingular — the exact run of the block substitutions solves the block tridiagonal system (4.5.1),
-`E_{i−1} x_{i−1} + D_i x_i + F_i x_{i+1} = b_i` for `i = 0:N` (a missing neighbour omitted). -/
+/-- **Equation (4.5.5)** of [golub2013matrix], exact correctness. Let
+$E_i, D_i, F_i \in \mathbb{R}^{q \times q}$ for $i \in \mathbb{N}$, let $L_i$ and $U_i$ be the
+multipliers and the pivots of the recurrence (4.5.4), and assume that $U_0, \dots, U_N$ are
+nonsingular. Let $b_i \in \mathbb{R}^q$ for $i \in \mathbb{N}$, and let $x$ be the result of
+`GolubVanLoan.Chapter04.blockTridiagonalSolve` in exact arithmetic with the blocks $L_i$, $U_i$
+and $F_i$. Then $x$ solves the block tridiagonal system (4.5.1): for $i = 0, \dots, N$,
+$$E_{i-1} x_{i-1} + D_i x_i + F_i x_{i+1} = b_i,$$
+where the first term is absent for $i = 0$ and the last term is absent for $i = N$. -/
 theorem equation_4_5_5 (E D F : ℕ → Matrix (Fin q) (Fin q) ℝ)
     (hU : ∀ i ≤ N, IsUnit (tridiagonalLUPivot E D F i)) (b : ℕ → Fin q → ℝ) (i : ℕ)
     (hi : i ≤ N) :
@@ -281,10 +357,18 @@ theorem equation_4_5_5 (E D F : ℕ → Matrix (Fin q) (Fin q) ℝ)
 
 /-! ### §4.5.2 Block diagonal dominance -/
 
-/-- **(4.5.6).** "If we have `‖D_i⁻¹‖₁ (‖F_{i−1}‖₁ + ‖E_i‖₁) < 1`, `E_N ≡ F_0 ≡ 0`, for
-`i = 1:N`, then the factorization (4.5.3) exists": every pivot `U_i` is nonsingular (so (4.5.3)
-holds, `equation_4_5_3`), and the matrix `A` itself is nonsingular (the book's P4.5.1(a)). The
-condition is stated 0-based, with the nonsingularity of the `D_i` it presupposes. -/
+/-- **Equation (4.5.6)** of [golub2013matrix]. Let $E_i, D_i, F_i \in \mathbb{R}^{q \times q}$ for
+$i \in \mathbb{N}$, and let $A$ be the block tridiagonal matrix with diagonal blocks
+$D_0, \dots, D_N$. Assume that $A$ is block diagonally dominant: for $i = 0, \dots, N$, the
+block $D_i$ is nonsingular and
+$$\|D_i^{-1}\|_1 \left(\|F_{i-1}\|_1 + \|E_i\|_1\right) < 1,$$
+where $\|F_{-1}\|_1$ and $\|E_N\|_1$ are read as $0$. Then the pivots $U_0, \dots, U_N$ of the
+recurrence (4.5.4) are nonsingular, so that the factorization (4.5.3) exists, and $A$ is
+nonsingular.
+
+The source states the condition with $E_N \equiv F_0 \equiv 0$ in its $1$-based indexing, and it
+presupposes that the $D_i$ are nonsingular. The nonsingularity of $A$ is part (a) of Problem
+P4.5.1 of the source. The norm is `Matrix.lpOpNorm 1`. -/
 theorem equation_4_5_6 (E D F : ℕ → Matrix (Fin q) (Fin q) ℝ)
     (h : ∀ i ≤ N, IsUnit (D i) ∧ lpOpNorm 1 (D i)⁻¹ *
       ((if i = 0 then 0 else lpOpNorm 1 (F (i - 1))) + (if i < N then lpOpNorm 1 (E i) else 0))
@@ -294,8 +378,12 @@ theorem equation_4_5_6 (E D F : ℕ → Matrix (Fin q) (Fin q) ℝ)
   have hdom := (isStrictBlockColDiagDominant_tridiagonalOf_iff (N := N) E D F).2 h
   exact ⟨fun i hi => (hdom.isUnit_tridiagonalLUPivot hi).1, hdom.isUnit_blockTridiagonal⟩
 
-/-- **(4.5.7).** Under the block diagonal dominance (4.5.6), the multipliers of (4.5.3) satisfy
-`‖L_i‖₁ ≤ 1`. -/
+/-- **Equation (4.5.7)** of [golub2013matrix]. Let $E_i, D_i, F_i \in \mathbb{R}^{q \times q}$ for
+$i \in \mathbb{N}$ satisfy the block diagonal dominance (4.5.6): for $i = 0, \dots, N$, $D_i$ is
+nonsingular and $\|D_i^{-1}\|_1 (\|F_{i-1}\|_1 + \|E_i\|_1) < 1$, with $\|F_{-1}\|_1$ and
+$\|E_N\|_1$ read as $0$. Then the multipliers of the factorization (4.5.3) satisfy
+$$\|L_i\|_1 \le 1, \qquad i = 0, \dots, N-1.$$
+-/
 theorem equation_4_5_7 (E D F : ℕ → Matrix (Fin q) (Fin q) ℝ)
     (h : ∀ i ≤ N, IsUnit (D i) ∧ lpOpNorm 1 (D i)⁻¹ *
       ((if i = 0 then 0 else lpOpNorm 1 (F (i - 1))) + (if i < N then lpOpNorm 1 (E i) else 0))
@@ -304,9 +392,15 @@ theorem equation_4_5_7 (E D F : ℕ → Matrix (Fin q) (Fin q) ℝ)
   ((isStrictBlockColDiagDominant_tridiagonalOf_iff (N := N) E D F).2 h
     ).lpOpNorm_tridiagonalLUMultiplier_le hi
 
-/-- **(4.5.8)**, read as `‖U_i‖₁ ≤ ‖A‖₁`: under the block diagonal dominance (4.5.6), the pivots of
-(4.5.3) are bounded by the `1`-norm of the whole block tridiagonal matrix `A` (the printed
-`‖A_n‖₁` has no referent in the section). -/
+/-- **Equation (4.5.8)** of [golub2013matrix]. Let $E_i, D_i, F_i \in \mathbb{R}^{q \times q}$ for
+$i \in \mathbb{N}$ satisfy the block diagonal dominance (4.5.6): for $i = 0, \dots, N$, $D_i$ is
+nonsingular and $\|D_i^{-1}\|_1 (\|F_{i-1}\|_1 + \|E_i\|_1) < 1$, with $\|F_{-1}\|_1$ and
+$\|E_N\|_1$ read as $0$. Let $A$ be the block tridiagonal matrix with diagonal blocks
+$D_0, \dots, D_N$. Then the pivots of the factorization (4.5.3) satisfy
+$$\|U_i\|_1 \le \|A\|_1, \qquad i = 0, \dots, N.$$
+
+**Reading.** The source prints $\|U_i\|_1 \le \|A_n\|_1$. The symbol $A_n$ has no referent in
+the section, and it is read as the whole matrix $A$. -/
 theorem equation_4_5_8 (E D F : ℕ → Matrix (Fin q) (Fin q) ℝ)
     (h : ∀ i ≤ N, IsUnit (D i) ∧ lpOpNorm 1 (D i)⁻¹ *
       ((if i = 0 then 0 else lpOpNorm 1 (F (i - 1))) + (if i < N then lpOpNorm 1 (E i) else 0))
@@ -316,18 +410,34 @@ theorem equation_4_5_8 (E D F : ℕ → Matrix (Fin q) (Fin q) ℝ)
   fun _ hi => ((isStrictBlockColDiagDominant_tridiagonalOf_iff (N := N) E D F).2 h
     ).lpOpNorm_tridiagonalLUPivot_le hi
 
-/-! ### §4.5.3 Block-cyclic reduction -/
+/-! ### §4.5.3 Block cyclic reduction -/
 
 open CyclicReduction in
-/-- **§4.5.3, block cyclic reduction.** For the system (4.5.9) with constant blocks `D`, `F`
-satisfying `D F = F D`: "for `i = 2, 4, 6` we multiply equations `i − 1`, `i`, and `i + 1` by `F`,
-`−D`, and `F`, respectively, and add the resulting equations"; "we have removed the odd-indexed
-`x_i` and are left with a reduced block tridiagonal system … where `D⁽¹⁾ = 2F² − D²` and
-`F⁽¹⁾ = F²` commute." In general (0-based, `2M + 1` unknowns): the unknowns `x_1, x_3, …` solve the
-system of the same form with blocks `D⁽¹⁾ = 2F² − D²` (`reducedDiag`), `F⁽¹⁾ = F²` (`reducedOff`)
-and right-hand side `b⁽¹⁾_j = F (b_{2j} + b_{2j+2}) − D b_{2j+1}` (`reducedRhs`); the new blocks
-commute; and for `N = 2^{k+1} − 1` unknowns (`size (k + 1)`) the reduction repeated `k` times
-leaves "a single `q × q` system" `D_k x_{2^k − 1} = b_k` for the middle unknown. -/
+/-- **Section 4.5.3** of [golub2013matrix], one step of block cyclic reduction. Let
+$D, F \in \mathbb{R}^{q \times q}$ with $DF = FD$, and let $T$ be the operator of the
+constant-block system (4.5.9), $(Tx)_i = F x_{i-1} + D x_i + F x_{i+1}$, where a missing
+neighbour is $0$.
+
+1. For every $M$, if $Tx = b$ for block vectors $x, b$ with $2M + 1$ blocks, then the
+   odd-indexed unknowns $x_1, x_3, \dots, x_{2M-1}$ solve the system of the same form with $M$
+   blocks, the blocks $D^{(1)} = 2F^2 - D^2$ and $F^{(1)} = F^2$, and the right-hand side
+   $b^{(1)}_j = F(b_{2j} + b_{2j+2}) - D b_{2j+1}$.
+2. The new blocks commute: $D^{(1)} F^{(1)} = F^{(1)} D^{(1)}$.
+3. For every $k$, if $Tx = b$ for block vectors with $2^{k+1} - 1$ blocks, then the middle
+   unknown solves the single $q \times q$ system $D^{(k)} x_{2^k - 1} = b^{(k)}$, where
+   $D^{(k)}$ and $b^{(k)}$ are the diagonal block and the right-hand side after $k$ reduction
+   steps.
+
+**Typo.** In the display for $N = 7$, the source prints $b_4 = Fx_5 + Dx_4 + Fx_5$; the intended
+equation is $b_4 = Fx_3 + Dx_4 + Fx_5$.
+
+The source obtains the reduced system by multiplying the equations $i - 1$, $i$ and $i + 1$ by
+$F$, $-D$ and $F$ and adding them, and it illustrates the step for $N = 7$. Indices start at
+$0$, so the source's even-indexed unknowns are the odd-indexed ones here. The operator is
+`CyclicReduction.constBlockTridiagonal`, the new data are `CyclicReduction.reducedDiag`,
+`CyclicReduction.reducedOff` and `CyclicReduction.reducedRhs`, and the data after $k$ steps are
+`CyclicReduction.diagIter` and `CyclicReduction.rhsIter`. The size $2^{k+1} - 1$ is
+`CyclicReduction.size (k + 1)`. -/
 theorem cyclicReduction_step {D F : Matrix (Fin q) (Fin q) ℝ} (hDF : D * F = F * D) :
     (∀ (M : ℕ) (x b : Fin (2 * M + 1) → Fin q → ℝ), constBlockTridiagonal D F x = b →
       constBlockTridiagonal (reducedDiag D F) (reducedOff F)
@@ -339,11 +449,17 @@ theorem cyclicReduction_step {D F : Matrix (Fin q) (Fin q) ℝ} (hDF : D * F = F
     fun k _ _ h => constBlockTridiagonal_iterate_reduce k hDF h⟩
 
 open CyclicReduction in
-/-- **§4.5.3, the back substitution.** "The vectors `x_2` and `x_6` are then found by solving the
-systems `D⁽¹⁾ x_2 = b⁽¹⁾_2 − F⁽¹⁾ x_4`, … Finally, we use the first, third, fifth, and seventh
-equations in the original system to compute `x_1, x_3, x_5`, and `x_7`": once the odd-indexed
-unknowns (0-based) are known, the even-indexed ones solve `q × q` systems with matrix `D`,
-`D x_{2j} = b_{2j} − F (x_{2j−1} + x_{2j+1})`, a missing neighbour being zero (`extend`). -/
+/-- **Section 4.5.3** of [golub2013matrix], the back substitution of block cyclic reduction. Let
+$D, F \in \mathbb{R}^{q \times q}$, and let $x, b$ be block vectors with $2M + 1$ blocks such
+that $Tx = b$ for the constant-block operator of (4.5.9). Then for $j = 0, \dots, M$ the
+even-indexed unknowns solve the $q \times q$ systems
+$$D x_{2j} = b_{2j} - F(x_{2j-1} + x_{2j+1}),$$
+where $x_{-1}$ and $x_{2M+1}$ are read as $0$.
+
+Indices start at $0$, so these are the source's odd-indexed unknowns, which it computes last
+from the first, third, fifth and seventh equations of the original system. The missing
+neighbours are read through the zero extension `CyclicReduction.extend`. The statement needs no
+commutativity of $D$ and $F$. -/
 theorem cyclicReduction_back {D F : Matrix (Fin q) (Fin q) ℝ} {M : ℕ}
     {x b : Fin (2 * M + 1) → Fin q → ℝ} (h : constBlockTridiagonal D F x = b) (j : Fin (M + 1)) :
     D *ᵥ x ⟨2 * j, by omega⟩ =
@@ -352,8 +468,9 @@ theorem cyclicReduction_back {D F : Matrix (Fin q) (Fin q) ℝ} {M : ℕ}
 
 /-! ### §4.5.4 The SPIKE framework -/
 
-/-- The block scaling in the block ring: `diag(D_i⁻¹) · tridiag(E, D, F) = tridiag(Ẽ, I, F̃)` with
-`F̃_i = D_i⁻¹ F_i` and `Ẽ_i = D_{i+1}⁻¹ E_i`. -/
+/-- In the block ring, $\operatorname{diag}(D_i^{-1}) \operatorname{tridiag}(E, D, F) =
+\operatorname{tridiag}(\tilde E, I, \tilde F)$ with $\tilde F_i = D_i^{-1} F_i$ and
+$\tilde E_i = D_{i+1}^{-1} E_i$. -/
 private theorem diagonal_inv_mul_tridiagonalOf (E F : Fin N → Matrix (Fin q) (Fin q) ℝ)
     (D : Fin (N + 1) → Matrix (Fin q) (Fin q) ℝ) (hD : ∀ i, IsUnit (D i)) :
     diagonal (fun i => (D i)⁻¹) * tridiagonalOf E D F =
@@ -372,12 +489,19 @@ private theorem diagonal_inv_mul_tridiagonalOf (E F : Fin N → Matrix (Fin q) (
   · congr 2
   · rw [Matrix.mul_zero]
 
-/-- **(4.5.13)→(4.5.14), the SPIKE scaling.** "If we premultiply the above matrix by the inverse of
-`diag(D_1, D_2, D_3, D_4)`, then … the original linear system (4.5.13) transforms to (4.5.14),
-where `D_i b̃_i = b_i`, `D_i F̃_i = F_i`, and `D_{i+1} Ẽ_i = E_i`": for nonsingular diagonal blocks,
-`diag(D_i⁻¹) A` is the block tridiagonal matrix with identity diagonal blocks, superdiagonal
-blocks `F̃_i = D_i⁻¹ F_i` and subdiagonal blocks `Ẽ_i = D_{i+1}⁻¹ E_i`, and `A x = b` iff
-`(diag(D_i⁻¹) A) x = b̃` with `b̃_i = D_i⁻¹ b_i`. -/
+/-- **Equations (4.5.13)→(4.5.14)** of [golub2013matrix], the SPIKE scaling. Let
+$E_0, \dots, E_{N-1}$, $D_0, \dots, D_N$ and $F_0, \dots, F_{N-1}$ be in
+$\mathbb{R}^{q \times q}$, with every $D_i$ nonsingular, and let $A$ be the block tridiagonal
+matrix with these blocks. Then
+$$\operatorname{diag}(D_0^{-1}, \dots, D_N^{-1})\, A = \tilde A,$$
+where $\tilde A$ is the block tridiagonal matrix with identity diagonal blocks, superdiagonal
+blocks $\tilde F_i = D_i^{-1} F_i$ and subdiagonal blocks $\tilde E_i = D_{i+1}^{-1} E_i$.
+Moreover, for all $x, b \in \mathbb{R}^{(N+1)q}$, $Ax = b$ if and only if
+$\tilde A x = \tilde b$, where $\tilde b_i = D_i^{-1} b_i$.
+
+The source premultiplies by the inverse of $\operatorname{diag}(D_1, D_2, D_3, D_4)$ and writes
+$D_i \tilde b_i = b_i$, $D_i \tilde F_i = F_i$ and $D_{i+1} \tilde E_i = E_i$. The block
+diagonal matrix is the flattening of `Matrix.diagonal` over the block ring by `Matrix.comp`. -/
 theorem equation_4_5_14 (E F : Fin N → Matrix (Fin q) (Fin q) ℝ)
     (D : Fin (N + 1) → Matrix (Fin q) (Fin q) ℝ) (hD : ∀ i, IsUnit (D i)) :
     comp _ _ _ _ ℝ (diagonal fun i => (D i)⁻¹) * blockTridiagonal E D F =

@@ -6,69 +6,110 @@ import Mathlib.LinearAlgebra.Matrix.RowCol
 import Numlib.FloatingPoint.Program
 
 /-!
-# Golub–Van Loan §1.1: basic algorithms and notation
+# Golub and Van Loan, Section 1.1: Basic algorithms and notation
 
-Surface file for Gene H. Golub and Charles F. Van Loan, *Matrix Computations*, 4th edition, §1.1:
-the dot product and the saxpy (Algorithms 1.1.1–1.1.2), the row- and column-oriented gaxpys
-(Algorithms 1.1.3–1.1.4), the four formulations of the update `C = C + A B` — `ijk`, dot product,
-saxpy and outer product (Algorithms 1.1.5–1.1.8) — and the outer-product expansion (1.1.4).
+This module formalizes §1.1 of [golub2013matrix]: the dot product and the saxpy (Algorithms
+1.1.1–1.1.2), the row-oriented and column-oriented gaxpy (Algorithms 1.1.3–1.1.4), the four
+formulations of the update $C = C + AB$ of a matrix product (the `ijk`, dot product, saxpy and outer
+product forms, Algorithms 1.1.5–1.1.8), and the outer product expansion (1.1.4)
+$AB = \sum_k a_k b_k^T$. For each algorithm it proves that in exact arithmetic the algorithm
+computes what the source says. It also describes, entry by entry, the set of all results that the
+algorithm can produce in a rounding model: each entry of a gaxpy or of a matrix product is an
+accumulation of the rounded products onto the initial entry, in whatever loop order the algorithm
+uses. This is the precise content of the remark in §2.7 of the source, at (2.7.19), that the same
+error result applies if a gaxpy or outer product based procedure is used.
 
-## Design
+The programs and their run sets use `Numlib.FloatingPoint.Program`. The rounding bridges connect the
+dot product and the matrix products to the relational inner product `FloatingPoint.RoundsDot` and
+matrix product `FloatingPoint.RoundsMul` of `Numlib.FloatingPoint.InnerProduct`, from which Chapter
+2 reads the bounds $|\mathrm{fl}(x^T y) - x^T y| \le \gamma_n |x|^T |y|$ and
+$|\mathrm{fl}(AB) - AB| \le \gamma_r |A| |B|$.
 
-Every algorithm is written once, as a monadic program in the book's loop order, generic in a monad
-`M` and a rounding hook `rnd : ℝ → M ℝ` through which every product and every sum passes
-(`Numlib/FloatingPoint/Program`, conventions 1–14 of `NumlibSurface/GolubVanLoan`). Data come in
-BLAS order (`a x y` for the saxpy, `A x y` for the gaxpys, `A B C` for the products) and the state
-is overwritten as the book overwrites it: vectors by `Function.update`, matrices by
-`Matrix.updateRow C i (Function.update (C i) j c)` or `Matrix.updateCol`. The colon-notation
-algorithms call the scalar ones: Algorithm 1.1.6's `C(i,j) + A(i,:)·B(:,j)` is the loop of
-Algorithm 1.1.1 accumulating onto `C(i,j)` (`FloatingPoint.dotAccum`), Algorithm 1.1.7's
-`C(:,j) = C(:,j) + A(:,k) B(k,j)` is `algorithm_1_1_2`. Indices are 0-based.
+## Main definitions
 
-Each algorithm carries three kinds of theorem (convention 12):
-
-* `…_mem_run` characterizes the run set in the relational model (`M := SetM`,
-  `rnd := fp.round`) entry by entry: every entry of every run of a gaxpy or of a product is a run
-  of the backbone accumulation `FloatingPoint.dotAccum` onto the initial entry, *whatever the loop
-  order* — the rigorous content of "the same result applies if a gaxpy or outer product based
-  procedure is used" in the book's §2.7 ((2.7.19)).
-* `…_rounds` (Algorithms 1.1.1 and 1.1.5–1.1.8) is the bridge to the backbone's relational
-  inner product `FloatingPoint.RoundsDot` / product `FloatingPoint.RoundsMul`, from which
-  chapter 2 reads the bounds `|fl(xᵀy) − xᵀy| ≤ γ_n |x|ᵀ|y|` and `|fl(AB) − AB| ≤ γ_r |A||B|`. The
-  book's loops start the accumulation at `c = 0` and round `0 + fl(x₁y₁)`; the relation starts from
-  the unrounded first term, so these bridges assume `fp.IsIdempotent` (convention 6).
-* `…_spec` is the exact semantics (`M := Id`, `rnd := pure`), read off `…_mem_run` at the exact
-  model `FloatingPoint.RoundingModel.exact ℝ` (convention 11): the `Id` run is one of the runs
-  there (`…_mem_exact`, private), and there every accumulation is the exact running sum
-  (`FloatingPoint.mem_run_dotAccum_exact_iff`).
-
-The run characterizations rest on three loop facts. A loop whose every step reads and rewrites one
-component of the state only — one entry, one row, one column — is one update of that component by
-the loop run on it alone (`List.foldlM_lens` and its instances `List.foldlM_update_self`,
-`Matrix.foldlM_updateRow`, `Matrix.foldlM_updateCol`, `Matrix.foldlM_updateRow_update`, in any
-lawful monad). A loop over `List.finRange n` whose
-step `i` rewrites entry `i` only has as run set the product of the per-entry run sets
-(`SetM.mem_run_foldlM_update_of_nodup`). A loop whose every step acts on every entry independently
-is, entry by entry, the loop run on that entry (`SetM.mem_run_foldlM_of_pi`, loop interchange in
-the relational model).
+* Algorithm 1.1.1, `GolubVanLoan.Chapter01.algorithm_1_1_1`: the dot product $c = x^T y$.
+* Algorithm 1.1.2, `GolubVanLoan.Chapter01.algorithm_1_1_2`: the saxpy $y \leftarrow y + ax$.
+* Algorithm 1.1.3, `GolubVanLoan.Chapter01.algorithm_1_1_3`: the row-oriented gaxpy
+  $y \leftarrow Ax + y$.
+* Algorithm 1.1.4, `GolubVanLoan.Chapter01.algorithm_1_1_4`: the column-oriented gaxpy
+  $y \leftarrow Ax + y$.
+* Algorithm 1.1.5, `GolubVanLoan.Chapter01.algorithm_1_1_5`: the `ijk` matrix multiplication
+  $C \leftarrow C + AB$.
+* Algorithm 1.1.6, `GolubVanLoan.Chapter01.algorithm_1_1_6`: the dot product matrix multiplication.
+* Algorithm 1.1.7, `GolubVanLoan.Chapter01.algorithm_1_1_7`: the saxpy matrix multiplication.
+* Algorithm 1.1.8, `GolubVanLoan.Chapter01.algorithm_1_1_8`: the outer product matrix
+  multiplication.
 
 ## Main results
 
-* `algorithm_1_1_1` … `algorithm_1_1_8` — Algorithms 1.1.1–1.1.8 as programs.
-* `algorithm_1_1_1_eq_dotAccum` — the dot product is the backbone accumulation from `0`.
-* `algorithm_1_1_N_spec` — the exact specifications `x ⬝ᵥ y`, `y + a • x`, `y + A *ᵥ x`,
-  `C + A * B`.
-* `algorithm_1_1_N_mem_run` — the run sets, entrywise.
-* `algorithm_1_1_1_rounds`, `algorithm_1_1_{5,6,7,8}_rounds` — the bridges to `RoundsDot`,
-  `RoundsMul`.
-* `equation_1_1_4` — `A B = ∑ₖ aₖ bₖᵀ`.
+* Algorithm 1.1.1, `GolubVanLoan.Chapter01.algorithm_1_1_1_eq_dotAccum`: the dot product is the
+  backbone accumulation `FloatingPoint.dotAccum` from $c = 0$.
+* Algorithms 1.1.1–1.1.8, `GolubVanLoan.Chapter01.algorithm_1_1_1_spec` to
+  `GolubVanLoan.Chapter01.algorithm_1_1_8_spec`: in exact arithmetic the algorithms compute $x^T y$,
+  $y + ax$, $y + Ax$ and $C + AB$.
+* Algorithms 1.1.2–1.1.8, `GolubVanLoan.Chapter01.algorithm_1_1_2_mem_run` to
+  `GolubVanLoan.Chapter01.algorithm_1_1_8_mem_run`: the results in a rounding model, entry by entry;
+  every gaxpy and every matrix product has, entry by entry, the run set of an accumulation of
+  rounded products onto the initial entry.
+* Algorithm 1.1.1, `GolubVanLoan.Chapter01.algorithm_1_1_1_rounds`: over an idempotent rounding
+  model, every result of the dot product is a recursive inner product in the sense of
+  `FloatingPoint.RoundsDot`.
+* Algorithm 1.1.1, `GolubVanLoan.Chapter01.algorithm_1_1_1_run_nonempty`: over a total rounding
+  model, the dot product has a result.
+* Algorithms 1.1.5–1.1.8, `GolubVanLoan.Chapter01.algorithm_1_1_5_rounds` to
+  `GolubVanLoan.Chapter01.algorithm_1_1_8_rounds`: over an idempotent rounding model, every result
+  started from $C = 0$ is a computed matrix product in the sense of `FloatingPoint.RoundsMul`.
+* Equation (1.1.4), `GolubVanLoan.Chapter01.equation_1_1_4`: $AB = \sum_{k=1}^r a_k b_k^T$, with
+  $a_k$ the columns of $A$ and $b_k^T$ the rows of $B$.
 
-## Not formalized here
+## Conventions
 
-The notation of §1.1.1–1.1.4 and §1.1.7–1.1.8 ((1.1.1)–(1.1.3) are partition notation), the
-unnumbered `jki`/`kij` loops (Algorithms 1.1.7/1.1.8 are their colon forms), Table 1.1.1, flops,
-big-Oh and the BLAS levels (§1.1.15–1.1.17, Table 1.1.2), §1.1.19's complex notation (Mathlib's
-`ᴴ`), the numerical examples.
+* Indices are 0-based. The source's $x(i)$ is `x (i - 1)`, and its $A(i, j)$ is `A (i - 1) (j - 1)`.
+* The arguments come in BLAS order: `a x y` for the saxpy, `A x y` for the gaxpys, and `A B C` for
+  the matrix products.
+
+## Implementation notes
+
+* Every algorithm is written once, as a monadic program in the loop order of the source. It is
+  generic in a monad `M` and a rounding hook `rnd : ℝ → M ℝ`, and every product and every sum passes
+  through `rnd`, as in the algorithm conventions of `NumlibSurface.GolubVanLoan` and
+  `Numlib.FloatingPoint.Program`. With `M := Id` and `rnd := pure` the program computes in exact
+  arithmetic. With `M := SetM` and `rnd := fp.round` its run set contains every result that
+  floating-point evaluation in the rounding model `fp` can produce.
+* The state is overwritten as the source overwrites it: vectors by `Function.update`, and matrices
+  by `Matrix.updateRow C i (Function.update (C i) j c)` or `Matrix.updateCol`. The colon-notation
+  algorithms call the scalar ones. The update $C(i,j) + A(i,:) \cdot B(:,j)$ of Algorithm 1.1.6 is
+  the loop of Algorithm 1.1.1 accumulating onto $C(i,j)$ (`FloatingPoint.dotAccum`), and the update
+  $C(:,j) = C(:,j) + A(:,k) B(k,j)$ of Algorithm 1.1.7 is `GolubVanLoan.Chapter01.algorithm_1_1_2`.
+* Each algorithm has up to three kinds of theorem. A theorem `…_mem_run` describes the run set in
+  the relational model entry by entry. A theorem `…_rounds` (Algorithms 1.1.1 and 1.1.5–1.1.8) is
+  the bridge to `FloatingPoint.RoundsDot` or `FloatingPoint.RoundsMul`. A theorem `…_spec` is the
+  exact semantics. It is read off the run set at the exact model
+  `FloatingPoint.RoundingModel.exact`: the exact run is one of the runs there, and there every
+  accumulation is the exact running sum (`FloatingPoint.mem_run_dotAccum_exact_iff`).
+* The loops of the source start the accumulation at $c = 0$ and round $0 + \mathrm{fl}(x_1 y_1)$,
+  but `FloatingPoint.RoundsDot` starts from the unrounded first term. The bridges therefore assume
+  `FloatingPoint.RoundingModel.IsIdempotent`, under which this first addition is exact.
+* The run sets rest on three facts about loops. First, a loop whose every step reads and rewrites
+  one component of the state only (one entry, one row or one column) is one update of that component
+  by the loop run on that component alone (`List.foldlM_lens` and its instances
+  `List.foldlM_update_self`, `Matrix.foldlM_updateRow`, `Matrix.foldlM_updateCol` and
+  `Matrix.foldlM_updateRow_update`, in any lawful monad). Second, a loop over `List.finRange n`
+  whose step $i$ rewrites entry $i$ only has as run set the product of the run sets of the entries
+  (`SetM.mem_run_foldlM_update_of_nodup`). Third, a loop whose every step acts on every entry
+  independently is, entry by entry, the loop run on that entry (`SetM.mem_run_foldlM_of_pi`); this
+  is loop interchange in the relational model.
+
+## Not formalized
+
+* **The notation of §1.1.1–1.1.4 and §1.1.7–1.1.8.** The displays (1.1.1)–(1.1.3) are partition
+  notation.
+* **The unnumbered `jki` and `kij` loops.** Algorithms 1.1.7 and 1.1.8 are their colon forms.
+* **Table 1.1.1.**
+* **The flop counts, the big-Oh notation and the BLAS levels of §1.1.15–1.1.17, with Table 1.1.2.**
+  Operation counts are out of scope for the library.
+* **The complex notation of §1.1.19.** Mathlib supplies the conjugate transpose `ᴴ`.
+* **The numerical examples.** Numerical examples are out of scope for the library.
 -/
 
 open FloatingPoint Matrix
@@ -77,8 +118,8 @@ namespace GolubVanLoan.Chapter01
 
 /-! ### Run sets of loops writing one entry per step -/
 
-/-- **One entry per step, over `List.finRange n`.** A loop whose step `i` rewrites entry `i` from
-its current value has as run set the product of the per-entry run sets. -/
+/-- A loop over `List.finRange n` whose step $i$ rewrites entry $i$ from its current value has as
+run set the product of the run sets of the single entries. -/
 private theorem mem_run_foldlM_finRange_update {n : ℕ} {β : Type} (g : Fin n → β → SetM β)
     (y₀ y : Fin n → β) :
     y ∈ ((List.finRange n).foldlM (fun (y : Fin n → β) a => do
@@ -88,7 +129,8 @@ private theorem mem_run_foldlM_finRange_update {n : ℕ} {β : Type} (g : Fin n 
     (List.finRange n) (List.nodup_finRange n) (fun _ _ _ _ _ _ => rfl) y₀ y
   exact h.trans (by simp [List.mem_finRange])
 
-/-- The row form of `mem_run_foldlM_finRange_update`: a loop whose step `i` rewrites row `i`. -/
+/-- The row form of the previous lemma: a loop whose step $i$ rewrites row $i$ from its current
+value. -/
 private theorem mem_run_foldlM_finRange_updateRow {m n : ℕ}
     (g : Fin m → (Fin n → ℝ) → SetM (Fin n → ℝ)) (C₀ C : Matrix (Fin m) (Fin n) ℝ) :
     C ∈ ((List.finRange m).foldlM (fun (C : Matrix (Fin m) (Fin n) ℝ) i => do
@@ -96,8 +138,8 @@ private theorem mem_run_foldlM_finRange_updateRow {m n : ℕ}
       ∀ i, C i ∈ (g i (C₀ i)).run :=
   mem_run_foldlM_finRange_update (β := Fin n → ℝ) g C₀ C
 
-/-- The column form of `mem_run_foldlM_finRange_update`: a loop whose step `j` rewrites column `j`
-from its current value; by transposition. -/
+/-- The column form of the previous lemmas: a loop whose step $j$ rewrites column $j$ from its
+current value; the proof is by transposition. -/
 private theorem mem_run_foldlM_finRange_updateCol {m n : ℕ}
     (g : Fin n → (Fin m → ℝ) → SetM (Fin m → ℝ)) (C₀ C : Matrix (Fin m) (Fin n) ℝ) :
     C ∈ ((List.finRange n).foldlM (fun (C : Matrix (Fin m) (Fin n) ℝ) j => do
@@ -124,46 +166,55 @@ private theorem mem_run_foldlM_finRange_updateCol {m n : ℕ}
   · intro h
     exact ⟨Cᵀ, (mem_run_foldlM_finRange_updateRow g C₀ᵀ Cᵀ).2 h, transpose_transpose C⟩
 
-/-! ### Algorithm 1.1.1: the dot product -/
+/-! ### Algorithms 1.1.1–1.1.8 -/
 
 section Programs
 
 variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 
-/-- **Algorithm 1.1.1 (Dot Product).** "If `x, y ∈ ℝⁿ`, then this algorithm computes their dot
-product `c = xᵀy`":
+/-- **Algorithm 1.1.1** of [golub2013matrix] (dot product). "If $x, y \in \mathbb{R}^n$, then this
+algorithm computes their dot product $c = x^T y$":
 ```
 c = 0
 for i = 1:n
     c = c + x(i) y(i)
 end
 ```
-with the product and the sum each rounded. -/
+The program starts from $c = 0$ and computes $c \leftarrow \mathrm{fl}(c + \mathrm{fl}(x_i
+y_i))$ for $i = 1, \dots, n$, so the product and the sum are each rounded.
+
+The program is generic in the monad `M` and the rounding hook `rnd`. Indices are 0-based. -/
 def algorithm_1_1_1 {n : ℕ} (x y : Fin n → ℝ) : M ℝ :=
   (List.finRange n).foldlM (fun c k => do rnd (c + (← rnd (x k * y k)))) 0
 
-/-- Algorithm 1.1.1 is the backbone's inner-product accumulation from `c = 0` in the natural order,
-which is how chapters 2–3 reach `FloatingPoint.RoundsDot`. -/
+/-- **Algorithm 1.1.1** of [golub2013matrix], as an accumulation. For $x, y \in \mathbb{R}^n$, in
+every monad and for every rounding hook, Algorithm 1.1.1 is the accumulation
+`FloatingPoint.dotAccum` of the rounded products $\mathrm{fl}(x_i y_i)$ onto $c = 0$ in the
+order $i = 1, \dots, n$.
+
+Chapters 2 and 3 reach `FloatingPoint.RoundsDot` through this identity. -/
 theorem algorithm_1_1_1_eq_dotAccum {n : ℕ} (x y : Fin n → ℝ) :
     algorithm_1_1_1 rnd x y = dotAccum rnd (List.finRange n) x y 0 :=
   rfl
 
-/-- **Algorithm 1.1.2 (Saxpy).** "If `x, y ∈ ℝⁿ` and `a ∈ ℝ`, then this algorithm overwrites `y`
-with `y + ax`":
+/-- **Algorithm 1.1.2** of [golub2013matrix] (saxpy). "If $x, y \in \mathbb{R}^n$ and
+$a \in \mathbb{R}$, then this algorithm overwrites $y$ with $y + ax$":
 ```
 for i = 1:n
     y(i) = y(i) + a x(i)
 end
 ```
--/
+The program computes $y_i \leftarrow \mathrm{fl}(y_i + \mathrm{fl}(a x_i))$ for
+$i = 1, \dots, n$. -/
 def algorithm_1_1_2 {n : ℕ} (a : ℝ) (x y : Fin n → ℝ) : M (Fin n → ℝ) :=
   (List.finRange n).foldlM (fun y i => do
     let p ← rnd (a * x i)
     let s ← rnd (y i + p)
     pure (Function.update y i s)) y
 
-/-- **Algorithm 1.1.3 (Row-Oriented Gaxpy).** "If `A ∈ ℝ^{m×n}`, `x ∈ ℝⁿ`, and `y ∈ ℝᵐ`, then this
-algorithm overwrites `y` with `Ax + y`":
+/-- **Algorithm 1.1.3** of [golub2013matrix] (row-oriented gaxpy). "If
+$A \in \mathbb{R}^{m \times n}$, $x \in \mathbb{R}^n$, and $y \in \mathbb{R}^m$, then this
+algorithm overwrites $y$ with $Ax + y$":
 ```
 for i = 1:m
     for j = 1:n
@@ -171,7 +222,8 @@ for i = 1:m
     end
 end
 ```
--/
+The program computes $y_i \leftarrow \mathrm{fl}(y_i + \mathrm{fl}(a_{ij} x_j))$ in this loop
+order. -/
 def algorithm_1_1_3 {m n : ℕ} (A : Matrix (Fin m) (Fin n) ℝ) (x : Fin n → ℝ) (y : Fin m → ℝ) :
     M (Fin m → ℝ) :=
   (List.finRange m).foldlM (fun y i =>
@@ -180,7 +232,9 @@ def algorithm_1_1_3 {m n : ℕ} (A : Matrix (Fin m) (Fin n) ℝ) (x : Fin n → 
       let s ← rnd (y i + p)
       pure (Function.update y i s)) y) y
 
-/-- **Algorithm 1.1.4 (Column-Oriented Gaxpy).** The loops of Algorithm 1.1.3 interchanged:
+/-- **Algorithm 1.1.4** of [golub2013matrix] (column-oriented gaxpy). Let
+$A \in \mathbb{R}^{m \times n}$, $x \in \mathbb{R}^n$ and $y \in \mathbb{R}^m$. The algorithm
+overwrites $y$ with $Ax + y$ by the loops of Algorithm 1.1.3 interchanged:
 ```
 for j = 1:n
     for i = 1:m
@@ -188,7 +242,8 @@ for j = 1:n
     end
 end
 ```
--/
+The program computes $y_i \leftarrow \mathrm{fl}(y_i + \mathrm{fl}(a_{ij} x_j))$ in this loop
+order. -/
 def algorithm_1_1_4 {m n : ℕ} (A : Matrix (Fin m) (Fin n) ℝ) (x : Fin n → ℝ) (y : Fin m → ℝ) :
     M (Fin m → ℝ) :=
   (List.finRange n).foldlM (fun y j =>
@@ -197,8 +252,9 @@ def algorithm_1_1_4 {m n : ℕ} (A : Matrix (Fin m) (Fin n) ℝ) (x : Fin n → 
       let s ← rnd (y i + p)
       pure (Function.update y i s)) y) y
 
-/-- **Algorithm 1.1.5 (`ijk` Matrix Multiplication).** "If `A ∈ ℝ^{m×r}`, `B ∈ ℝ^{r×n}`, and
-`C ∈ ℝ^{m×n}` are given, then this algorithm overwrites `C` with `C + AB`":
+/-- **Algorithm 1.1.5** of [golub2013matrix] (`ijk` matrix multiplication). "If
+$A \in \mathbb{R}^{m \times r}$, $B \in \mathbb{R}^{r \times n}$, and
+$C \in \mathbb{R}^{m \times n}$ are given, then this algorithm overwrites $C$ with $C + AB$":
 ```
 for i = 1:m
     for j = 1:n
@@ -208,7 +264,8 @@ for i = 1:m
     end
 end
 ```
--/
+The program computes $c_{ij} \leftarrow \mathrm{fl}(c_{ij} + \mathrm{fl}(a_{ik} b_{kj}))$ in
+this loop order. -/
 def algorithm_1_1_5 {m r n : ℕ} (A : Matrix (Fin m) (Fin r) ℝ) (B : Matrix (Fin r) (Fin n) ℝ)
     (C : Matrix (Fin m) (Fin n) ℝ) : M (Matrix (Fin m) (Fin n) ℝ) :=
   (List.finRange m).foldlM (fun C i =>
@@ -218,7 +275,9 @@ def algorithm_1_1_5 {m r n : ℕ} (A : Matrix (Fin m) (Fin r) ℝ) (B : Matrix (
         let c ← rnd (C i j + p)
         pure (C.updateRow i (Function.update (C i) j c))) C) C) C
 
-/-- **Algorithm 1.1.6 (Dot Product Matrix Multiplication).**
+/-- **Algorithm 1.1.6** of [golub2013matrix] (dot product matrix multiplication). Let
+$A \in \mathbb{R}^{m \times r}$, $B \in \mathbb{R}^{r \times n}$ and
+$C \in \mathbb{R}^{m \times n}$. The algorithm overwrites $C$ with $C + AB$:
 ```
 for i = 1:m
     for j = 1:n
@@ -226,10 +285,12 @@ for i = 1:m
     end
 end
 ```
-The book introduces it as Algorithm 1.1.5 "which we rewrite using the colon notation to highlight
-the mission of the innermost loop": the update `C(i,j) + A(i,:)·B(:,j)` is the loop of
-Algorithm 1.1.1 accumulating onto `c = C(i,j)` (`FloatingPoint.dotAccum` started at `C(i,j)`), so
-Algorithm 1.1.6 performs exactly the operations of Algorithm 1.1.5. -/
+The source introduces it as Algorithm 1.1.5 "which we rewrite using the colon notation to
+highlight the mission of the innermost loop". The update $C(i,j) + A(i,:) \cdot B(:,j)$ is the
+loop of Algorithm 1.1.1 accumulating onto $c = C(i,j)$, so Algorithm 1.1.6 performs exactly the
+operations of Algorithm 1.1.5.
+
+The update is `FloatingPoint.dotAccum` started at $C(i,j)$. -/
 def algorithm_1_1_6 {m r n : ℕ} (A : Matrix (Fin m) (Fin r) ℝ) (B : Matrix (Fin r) (Fin n) ℝ)
     (C : Matrix (Fin m) (Fin n) ℝ) : M (Matrix (Fin m) (Fin n) ℝ) :=
   (List.finRange m).foldlM (fun C i =>
@@ -237,7 +298,9 @@ def algorithm_1_1_6 {m r n : ℕ} (A : Matrix (Fin m) (Fin r) ℝ) (B : Matrix (
       let c ← dotAccum rnd (List.finRange r) (A i) (fun k => B k j) (C i j)
       pure (C.updateRow i (Function.update (C i) j c))) C) C
 
-/-- **Algorithm 1.1.7 (Saxpy Matrix Multiplication).**
+/-- **Algorithm 1.1.7** of [golub2013matrix] (saxpy matrix multiplication). Let
+$A \in \mathbb{R}^{m \times r}$, $B \in \mathbb{R}^{r \times n}$ and
+$C \in \mathbb{R}^{m \times n}$. The algorithm overwrites $C$ with $C + AB$:
 ```
 for j = 1:n
     for k = 1:r
@@ -245,7 +308,7 @@ for j = 1:n
     end
 end
 ```
-Each update of column `j` is the saxpy, Algorithm 1.1.2, with `a = B(k,j)` and `x = A(:,k)`. -/
+Each update of column $j$ is the saxpy, Algorithm 1.1.2, with $a = B(k,j)$ and $x = A(:,k)$. -/
 def algorithm_1_1_7 {m r n : ℕ} (A : Matrix (Fin m) (Fin r) ℝ) (B : Matrix (Fin r) (Fin n) ℝ)
     (C : Matrix (Fin m) (Fin n) ℝ) : M (Matrix (Fin m) (Fin n) ℝ) :=
   (List.finRange n).foldlM (fun C j =>
@@ -253,14 +316,17 @@ def algorithm_1_1_7 {m r n : ℕ} (A : Matrix (Fin m) (Fin r) ℝ) (B : Matrix (
       let c ← algorithm_1_1_2 rnd (B k j) (fun i => A i k) (fun i => C i j)
       pure (C.updateCol j c)) C) C
 
-/-- **Algorithm 1.1.8 (Outer Product Matrix Multiplication).**
+/-- **Algorithm 1.1.8** of [golub2013matrix] (outer product matrix multiplication). Let
+$A \in \mathbb{R}^{m \times r}$, $B \in \mathbb{R}^{r \times n}$ and
+$C \in \mathbb{R}^{m \times n}$. The algorithm overwrites $C$ with $C + AB$:
 ```
 for k = 1:r
     C = C + A(:,k) B(k,:)
 end
 ```
-The outer-product update `C = C + A(:,k) B(k,:)` is written in the row form of §1.1.9: for
-`i = 1:m`, for `j = 1:n`, `C(i,j) = C(i,j) + A(i,k) B(k,j)`. -/
+The outer product update $C = C + A(:,k) B(k,:)$ is written in the row form of §1.1.9: for
+$i = 1, \dots, m$ and $j = 1, \dots, n$, $c_{ij} \leftarrow \mathrm{fl}(c_{ij} +
+\mathrm{fl}(a_{ik} b_{kj}))$. -/
 def algorithm_1_1_8 {m r n : ℕ} (A : Matrix (Fin m) (Fin r) ℝ) (B : Matrix (Fin r) (Fin n) ℝ)
     (C : Matrix (Fin m) (Fin n) ℝ) : M (Matrix (Fin m) (Fin n) ℝ) :=
   (List.finRange r).foldlM (fun C k =>
@@ -272,13 +338,13 @@ def algorithm_1_1_8 {m r n : ℕ} (A : Matrix (Fin m) (Fin r) ℝ) (B : Matrix (
 
 end Programs
 
-/-! ### Normal forms: the loops fused into per-entry accumulations -/
+/-! ### Normal forms: the loops fused into accumulations of single entries -/
 
 section NormalForms
 
 variable {M : Type → Type} [Monad M] [LawfulMonad M] (rnd : ℝ → M ℝ)
 
-/-- The inner loop of the row gaxpy accumulates into `y i`: Algorithm 1.1.3 is a loop of
+/-- The inner loop of the row-oriented gaxpy accumulates into $y_i$, so Algorithm 1.1.3 is a loop of
 accumulations. -/
 private theorem algorithm_1_1_3_eq {m n : ℕ} (A : Matrix (Fin m) (Fin n) ℝ) (x : Fin n → ℝ)
     (y : Fin m → ℝ) :
@@ -292,7 +358,7 @@ private theorem algorithm_1_1_3_eq {m n : ℕ} (A : Matrix (Fin m) (Fin n) ℝ) 
   simp only [bind_assoc] at this
   exact this
 
-/-- Algorithm 1.1.5 as two loops writing one entry per step around the accumulations. -/
+/-- Algorithm 1.1.5 is two loops that write one entry per step around the accumulations. -/
 private theorem algorithm_1_1_5_eq {m r n : ℕ} (A : Matrix (Fin m) (Fin r) ℝ)
     (B : Matrix (Fin r) (Fin n) ℝ) (C : Matrix (Fin m) (Fin n) ℝ) :
     algorithm_1_1_5 rnd A B C = (List.finRange m).foldlM (fun C i => do
@@ -323,7 +389,7 @@ private theorem algorithm_1_1_6_eq_algorithm_1_1_5 {m r n : ℕ} (A : Matrix (Fi
   exact Matrix.foldlM_updateRow_entrywise i
     (fun j c => dotAccum rnd (List.finRange r) (A i) (fun k => B k j) c) (List.finRange n) C
 
-/-- Algorithm 1.1.7 as a loop writing one column per step around a loop of saxpys. -/
+/-- Algorithm 1.1.7 is a loop that writes one column per step around a loop of saxpys. -/
 private theorem algorithm_1_1_7_eq {m r n : ℕ} (A : Matrix (Fin m) (Fin r) ℝ)
     (B : Matrix (Fin r) (Fin n) ℝ) (C : Matrix (Fin m) (Fin n) ℝ) :
     algorithm_1_1_7 rnd A B C = (List.finRange n).foldlM (fun C j => do
@@ -336,7 +402,7 @@ private theorem algorithm_1_1_7_eq {m r n : ℕ} (A : Matrix (Fin m) (Fin r) ℝ
   exact Matrix.foldlM_updateCol j (fun k c => algorithm_1_1_2 rnd (B k j) (fun i => A i k) c)
     (List.finRange r) C
 
-/-- Each outer-product update of Algorithm 1.1.8 as two loops writing one entry per step. -/
+/-- Each outer product update of Algorithm 1.1.8 is two loops that write one entry per step. -/
 private theorem algorithm_1_1_8_eq {m r n : ℕ} (A : Matrix (Fin m) (Fin r) ℝ)
     (B : Matrix (Fin r) (Fin n) ℝ) (C : Matrix (Fin m) (Fin n) ℝ) :
     algorithm_1_1_8 rnd A B C = (List.finRange r).foldlM (fun C k =>
@@ -361,7 +427,8 @@ end NormalForms
 
 section Exact
 
-/-- In the exact model the run set of the dot product is the `Id` run. -/
+/-- In the exact model, the run set of the dot product contains the result of the program in exact
+arithmetic. -/
 private theorem algorithm_1_1_1_mem_exact {n : ℕ} (x y : Fin n → ℝ) :
     Id.run (algorithm_1_1_1 pure x y) ∈
       (algorithm_1_1_1 (RoundingModel.exact ℝ).round x y).run := by
@@ -424,8 +491,14 @@ section Runs
 
 variable (fp : RoundingModel ℝ)
 
-/-- **The run set of the saxpy**, entrywise: `ŷ` is a run of Algorithm 1.1.2 iff every entry is an
-admissible rounding `fl(y(i) + fl(a x(i)))` — the relation of the book's (2.7.17). -/
+/-- **Algorithm 1.1.2** of [golub2013matrix], run set. Let `fp` be a rounding model, let
+$a \in \mathbb{R}$, and let $x, y, \hat y \in \mathbb{R}^n$. Then $\hat y$ is a result of
+Algorithm 1.1.2 in `fp` if and only if, for every $i$, there is an admissible rounding $p$ of
+$a x_i$ such that $\hat y_i$ is an admissible rounding of $y_i + p$:
+$$\hat y_i = \mathrm{fl}(y_i + \mathrm{fl}(a x_i)).$$
+
+This is the relation of (2.7.17) of the source. The results are the run set of the program with
+`M := SetM` and `rnd := fp.round`. -/
 theorem algorithm_1_1_2_mem_run {n : ℕ} (a : ℝ) (x y ŷ : Fin n → ℝ) :
     ŷ ∈ (algorithm_1_1_2 fp.round a x y).run ↔
       ∀ i, ∃ p, fp.Rounds (a * x i) p ∧ fp.Rounds (y i + p) (ŷ i) := by
@@ -434,8 +507,14 @@ theorem algorithm_1_1_2_mem_run {n : ℕ} (a : ℝ) (x y ŷ : Fin n → ℝ) :
   simp only [bind_assoc] at h
   exact h.trans (by simp)
 
-/-- **The run set of the row gaxpy**, entry by entry an accumulation onto `y(i)`:
-`ŷ(i) = fl(⋯fl(y(i) + fl(a_{i1} x_1))⋯ + fl(a_{in} x_n))`. -/
+/-- **Algorithm 1.1.3** of [golub2013matrix], run set. Let `fp` be a rounding model, let
+$A \in \mathbb{R}^{m \times n}$, $x \in \mathbb{R}^n$, and $y, \hat y \in \mathbb{R}^m$. Then
+$\hat y$ is a result of Algorithm 1.1.3 in `fp` if and only if, for every $i$, $\hat y_i$ is a
+result of the accumulation of the products $a_{ij} x_j$, $j = 1, \dots, n$, onto $y_i$:
+$$\hat y_i = \mathrm{fl}(\cdots \mathrm{fl}(\mathrm{fl}(y_i + \mathrm{fl}(a_{i1} x_1)) +
+  \mathrm{fl}(a_{i2} x_2)) \cdots + \mathrm{fl}(a_{in} x_n)).$$
+
+The accumulation is `FloatingPoint.dotAccum fp.round (List.finRange n) (A i) x (y i)`. -/
 theorem algorithm_1_1_3_mem_run {m n : ℕ} (A : Matrix (Fin m) (Fin n) ℝ) (x : Fin n → ℝ)
     (y ŷ : Fin m → ℝ) :
     ŷ ∈ (algorithm_1_1_3 fp.round A x y).run ↔
@@ -444,10 +523,15 @@ theorem algorithm_1_1_3_mem_run {m n : ℕ} (A : Matrix (Fin m) (Fin n) ℝ) (x 
   exact mem_run_foldlM_finRange_update (fun i b => dotAccum fp.round (List.finRange n) (A i) x b)
     y ŷ
 
-/-- **The column gaxpy rounds exactly as the row gaxpy does**: the run set of Algorithm 1.1.4 is
-that of Algorithm 1.1.3 (the right side of `algorithm_1_1_3_mem_run`). Loop interchange in the
-relational model: the inner loop writes one entry per step, so each outer step acts on every
-entry independently. -/
+/-- **Algorithm 1.1.4** of [golub2013matrix], run set. Let `fp` be a rounding model, let
+$A \in \mathbb{R}^{m \times n}$, $x \in \mathbb{R}^n$, and $y, \hat y \in \mathbb{R}^m$. Then
+$\hat y$ is a result of Algorithm 1.1.4 in `fp` if and only if, for every $i$, $\hat y_i$ is a
+result of the accumulation of the products $a_{ij} x_j$, $j = 1, \dots, n$, onto $y_i$. So the
+column-oriented gaxpy has the same results as the row-oriented gaxpy
+(`GolubVanLoan.Chapter01.algorithm_1_1_3_mem_run`).
+
+The proof is loop interchange in the relational model: the inner loop writes one entry per step,
+so each step of the outer loop acts on every entry independently. -/
 theorem algorithm_1_1_4_mem_run {m n : ℕ} (A : Matrix (Fin m) (Fin n) ℝ) (x : Fin n → ℝ)
     (y ŷ : Fin m → ℝ) :
     ŷ ∈ (algorithm_1_1_4 fp.round A x y).run ↔
@@ -459,8 +543,16 @@ theorem algorithm_1_1_4_mem_run {m n : ℕ} (A : Matrix (Fin m) (Fin n) ℝ) (x 
   simp only [bind_assoc] at h
   exact h
 
-/-- **The run set of the `ijk` product**, entry by entry an accumulation onto `C(i,j)`:
-`Ĉ(i,j) = fl(⋯fl(C(i,j) + fl(a_{i1} b_{1j}))⋯ + fl(a_{ir} b_{rj}))`. -/
+/-- **Algorithm 1.1.5** of [golub2013matrix], run set. Let `fp` be a rounding model, let
+$A \in \mathbb{R}^{m \times r}$, $B \in \mathbb{R}^{r \times n}$, and
+$C, \hat C \in \mathbb{R}^{m \times n}$. Then $\hat C$ is a result of Algorithm 1.1.5 in `fp` if
+and only if, for all $i$ and $j$, $\hat c_{ij}$ is a result of the accumulation of the products
+$a_{ik} b_{kj}$, $k = 1, \dots, r$, onto $c_{ij}$:
+$$\hat c_{ij} = \mathrm{fl}(\cdots \mathrm{fl}(\mathrm{fl}(c_{ij} + \mathrm{fl}(a_{i1}
+  b_{1j})) + \mathrm{fl}(a_{i2} b_{2j})) \cdots + \mathrm{fl}(a_{ir} b_{rj})).$$
+
+The accumulation is `FloatingPoint.dotAccum fp.round (List.finRange r) (A i) (fun k => B k j) (C
+i j)`. -/
 theorem algorithm_1_1_5_mem_run {m r n : ℕ} (A : Matrix (Fin m) (Fin r) ℝ)
     (B : Matrix (Fin r) (Fin n) ℝ) (C Ĉ : Matrix (Fin m) (Fin n) ℝ) :
     Ĉ ∈ (algorithm_1_1_5 fp.round A B C).run ↔
@@ -472,9 +564,12 @@ theorem algorithm_1_1_5_mem_run {m r n : ℕ} (A : Matrix (Fin m) (Fin r) ℝ)
   exact mem_run_foldlM_finRange_update
     (fun j b => dotAccum fp.round (List.finRange r) (A i) (fun k => B k j) b) (C i) (Ĉ i)
 
-/-- **The dot-product matrix multiplication rounds as the `ijk` product does**: the right side of
-`algorithm_1_1_5_mem_run` characterizes its run set, each entry the accumulation of
-`A(i,:)·B(:,j)` onto `C(i,j)`. -/
+/-- **Algorithm 1.1.6** of [golub2013matrix], run set. Let `fp` be a rounding model, let
+$A \in \mathbb{R}^{m \times r}$, $B \in \mathbb{R}^{r \times n}$, and
+$C, \hat C \in \mathbb{R}^{m \times n}$. Then $\hat C$ is a result of Algorithm 1.1.6 in `fp` if
+and only if, for all $i$ and $j$, $\hat c_{ij}$ is a result of the accumulation of
+$A(i,:) \cdot B(:,j)$ onto $c_{ij}$, as for Algorithm 1.1.5
+(`GolubVanLoan.Chapter01.algorithm_1_1_5_mem_run`). -/
 theorem algorithm_1_1_6_mem_run {m r n : ℕ} (A : Matrix (Fin m) (Fin r) ℝ)
     (B : Matrix (Fin r) (Fin n) ℝ) (C Ĉ : Matrix (Fin m) (Fin n) ℝ) :
     Ĉ ∈ (algorithm_1_1_6 fp.round A B C).run ↔
@@ -482,10 +577,16 @@ theorem algorithm_1_1_6_mem_run {m r n : ℕ} (A : Matrix (Fin m) (Fin r) ℝ)
   rw [algorithm_1_1_6_eq_algorithm_1_1_5]
   exact algorithm_1_1_5_mem_run fp A B C Ĉ
 
-/-- **The saxpy product rounds entry by entry as the `ijk` product does**: the right side of
-`algorithm_1_1_5_mem_run` characterizes the run set of Algorithm 1.1.7. The `j` loop writes
-column `j` only; each `k` step is a saxpy on that column, which acts on every entry independently,
-so the `k` loop is, entry by entry, the `k` accumulation. -/
+/-- **Algorithm 1.1.7** of [golub2013matrix], run set. Let `fp` be a rounding model, let
+$A \in \mathbb{R}^{m \times r}$, $B \in \mathbb{R}^{r \times n}$, and
+$C, \hat C \in \mathbb{R}^{m \times n}$. Then $\hat C$ is a result of Algorithm 1.1.7 in `fp` if
+and only if, for all $i$ and $j$, $\hat c_{ij}$ is a result of the accumulation of the products
+$a_{ik} b_{kj}$, $k = 1, \dots, r$, onto $c_{ij}$, as for Algorithm 1.1.5
+(`GolubVanLoan.Chapter01.algorithm_1_1_5_mem_run`).
+
+The loop over $j$ writes column $j$ only. Each step of the loop over $k$ is a saxpy on that
+column, which acts on every entry independently, so the loop over $k$ is, entry by entry, the
+accumulation over $k$. -/
 theorem algorithm_1_1_7_mem_run {m r n : ℕ} (A : Matrix (Fin m) (Fin r) ℝ)
     (B : Matrix (Fin r) (Fin n) ℝ) (C Ĉ : Matrix (Fin m) (Fin n) ℝ) :
     Ĉ ∈ (algorithm_1_1_7 fp.round A B C).run ↔
@@ -498,10 +599,15 @@ theorem algorithm_1_1_7_mem_run {m r n : ℕ} (A : Matrix (Fin m) (Fin r) ℝ)
   rw [algorithm_1_1_2_mem_run]
   simp [mul_comm]
 
-/-- **The outer-product form rounds entry by entry as the `ijk` product does**: the right side of
-`algorithm_1_1_5_mem_run` characterizes the run set of Algorithm 1.1.8. Each rank-one update acts on
-every entry independently, so the `k` loop is, entry by entry, the `k` accumulation; with `r = 1`
-this is the book's (2.7.18). -/
+/-- **Algorithm 1.1.8** of [golub2013matrix], run set. Let `fp` be a rounding model, let
+$A \in \mathbb{R}^{m \times r}$, $B \in \mathbb{R}^{r \times n}$, and
+$C, \hat C \in \mathbb{R}^{m \times n}$. Then $\hat C$ is a result of Algorithm 1.1.8 in `fp` if
+and only if, for all $i$ and $j$, $\hat c_{ij}$ is a result of the accumulation of the products
+$a_{ik} b_{kj}$, $k = 1, \dots, r$, onto $c_{ij}$, as for Algorithm 1.1.5
+(`GolubVanLoan.Chapter01.algorithm_1_1_5_mem_run`). For $r = 1$ this is (2.7.18) of the source.
+
+Each rank-one update acts on every entry independently, so the loop over $k$ is, entry by entry,
+the accumulation over $k$. -/
 theorem algorithm_1_1_8_mem_run {m r n : ℕ} (A : Matrix (Fin m) (Fin r) ℝ)
     (B : Matrix (Fin r) (Fin n) ℝ) (C Ĉ : Matrix (Fin m) (Fin n) ℝ) :
     Ĉ ∈ (algorithm_1_1_8 fp.round A B C).run ↔
@@ -526,7 +632,10 @@ end Runs
 
 /-! ### Exact specifications, read off the run sets at the exact model -/
 
-/-- **Algorithm 1.1.1 computes `c = xᵀy`.** -/
+/-- **Algorithm 1.1.1** of [golub2013matrix], exact correctness. For $x, y \in \mathbb{R}^n$, in
+exact arithmetic Algorithm 1.1.1 returns $c = x^T y$.
+
+Exact arithmetic is the program with `M := Id` and `rnd := pure`. -/
 theorem algorithm_1_1_1_spec {n : ℕ} (x y : Fin n → ℝ) :
     Id.run (algorithm_1_1_1 pure x y) = x ⬝ᵥ y := by
   have h := algorithm_1_1_1_mem_exact x y
@@ -534,7 +643,8 @@ theorem algorithm_1_1_1_spec {n : ℕ} (x y : Fin n → ℝ) :
   rw [h, zero_add, ← Fin.sum_univ_def]
   rfl
 
-/-- **Algorithm 1.1.2 overwrites `y` with `y + ax`.** -/
+/-- **Algorithm 1.1.2** of [golub2013matrix], exact correctness. For $a \in \mathbb{R}$ and
+$x, y \in \mathbb{R}^n$, in exact arithmetic Algorithm 1.1.2 returns $y + ax$. -/
 theorem algorithm_1_1_2_spec {n : ℕ} (a : ℝ) (x y : Fin n → ℝ) :
     Id.run (algorithm_1_1_2 pure a x y) = y + a • x := by
   funext i
@@ -543,7 +653,9 @@ theorem algorithm_1_1_2_spec {n : ℕ} (a : ℝ) (x y : Fin n → ℝ) :
   rw [hs, hp]
   rfl
 
-/-- **Algorithm 1.1.3 overwrites `y` with `Ax + y`.** -/
+/-- **Algorithm 1.1.3** of [golub2013matrix], exact correctness. For
+$A \in \mathbb{R}^{m \times n}$, $x \in \mathbb{R}^n$ and $y \in \mathbb{R}^m$, in exact
+arithmetic Algorithm 1.1.3 returns $Ax + y$. -/
 theorem algorithm_1_1_3_spec {m n : ℕ} (A : Matrix (Fin m) (Fin n) ℝ) (x : Fin n → ℝ)
     (y : Fin m → ℝ) : Id.run (algorithm_1_1_3 pure A x y) = y + A *ᵥ x := by
   funext i
@@ -552,7 +664,9 @@ theorem algorithm_1_1_3_spec {m n : ℕ} (A : Matrix (Fin m) (Fin n) ℝ) (x : F
   rw [h, Pi.add_apply, ← Fin.sum_univ_def]
   rfl
 
-/-- **Algorithm 1.1.4 overwrites `y` with `Ax + y`**, as Algorithm 1.1.3 does. -/
+/-- **Algorithm 1.1.4** of [golub2013matrix], exact correctness. For
+$A \in \mathbb{R}^{m \times n}$, $x \in \mathbb{R}^n$ and $y \in \mathbb{R}^m$, in exact
+arithmetic Algorithm 1.1.4 returns $Ax + y$, as Algorithm 1.1.3 does. -/
 theorem algorithm_1_1_4_spec {m n : ℕ} (A : Matrix (Fin m) (Fin n) ℝ) (x : Fin n → ℝ)
     (y : Fin m → ℝ) : Id.run (algorithm_1_1_4 pure A x y) = y + A *ᵥ x := by
   funext i
@@ -561,8 +675,8 @@ theorem algorithm_1_1_4_spec {m n : ℕ} (A : Matrix (Fin m) (Fin n) ℝ) (x : F
   rw [h, Pi.add_apply, ← Fin.sum_univ_def]
   rfl
 
-/-- An entry that is the exact accumulation of a row of `A` against a column of `B` onto `C(i,j)`
-is the entry of `C + AB`. -/
+/-- If every entry $\hat c_{ij}$ is the exact accumulation of row $i$ of $A$ against column $j$ of
+$B$ onto $c_{ij}$, then $\hat C = C + AB$. -/
 private theorem eq_add_mul_of_forall_mem_run_exact {m r n : ℕ} {A : Matrix (Fin m) (Fin r) ℝ}
     {B : Matrix (Fin r) (Fin n) ℝ} {C Ĉ : Matrix (Fin m) (Fin n) ℝ}
     (h : ∀ i j, Ĉ i j ∈
@@ -573,29 +687,39 @@ private theorem eq_add_mul_of_forall_mem_run_exact {m r n : ℕ} {A : Matrix (Fi
   rw [mem_run_dotAccum_exact_iff.1 (h i j), Matrix.add_apply, ← Fin.sum_univ_def]
   rfl
 
-/-- **Algorithm 1.1.5 overwrites `C` with `C + AB`.** -/
+/-- **Algorithm 1.1.5** of [golub2013matrix], exact correctness. For
+$A \in \mathbb{R}^{m \times r}$, $B \in \mathbb{R}^{r \times n}$ and
+$C \in \mathbb{R}^{m \times n}$, in exact arithmetic Algorithm 1.1.5 returns $C + AB$. -/
 theorem algorithm_1_1_5_spec {m r n : ℕ} (A : Matrix (Fin m) (Fin r) ℝ)
     (B : Matrix (Fin r) (Fin n) ℝ) (C : Matrix (Fin m) (Fin n) ℝ) :
     Id.run (algorithm_1_1_5 pure A B C) = C + A * B :=
   eq_add_mul_of_forall_mem_run_exact
     ((algorithm_1_1_5_mem_run _ A B C _).1 (algorithm_1_1_5_mem_exact A B C))
 
-/-- **Algorithm 1.1.6 overwrites `C` with `C + AB`.** -/
+/-- **Algorithm 1.1.6** of [golub2013matrix], exact correctness. For
+$A \in \mathbb{R}^{m \times r}$, $B \in \mathbb{R}^{r \times n}$ and
+$C \in \mathbb{R}^{m \times n}$, in exact arithmetic Algorithm 1.1.6 returns $C + AB$. -/
 theorem algorithm_1_1_6_spec {m r n : ℕ} (A : Matrix (Fin m) (Fin r) ℝ)
     (B : Matrix (Fin r) (Fin n) ℝ) (C : Matrix (Fin m) (Fin n) ℝ) :
     Id.run (algorithm_1_1_6 pure A B C) = C + A * B := by
   rw [algorithm_1_1_6_eq_algorithm_1_1_5]
   exact algorithm_1_1_5_spec A B C
 
-/-- **Algorithm 1.1.7 overwrites `C` with `C + AB`.** -/
+/-- **Algorithm 1.1.7** of [golub2013matrix], exact correctness. For
+$A \in \mathbb{R}^{m \times r}$, $B \in \mathbb{R}^{r \times n}$ and
+$C \in \mathbb{R}^{m \times n}$, in exact arithmetic Algorithm 1.1.7 returns $C + AB$. -/
 theorem algorithm_1_1_7_spec {m r n : ℕ} (A : Matrix (Fin m) (Fin r) ℝ)
     (B : Matrix (Fin r) (Fin n) ℝ) (C : Matrix (Fin m) (Fin n) ℝ) :
     Id.run (algorithm_1_1_7 pure A B C) = C + A * B :=
   eq_add_mul_of_forall_mem_run_exact
     ((algorithm_1_1_7_mem_run _ A B C _).1 (algorithm_1_1_7_mem_exact A B C))
 
-/-- **Algorithm 1.1.8 overwrites `C` with `C + AB`**; (1.1.4) (`equation_1_1_4`) is the book's
-reading of the same identity. -/
+/-- **Algorithm 1.1.8** of [golub2013matrix], exact correctness. For
+$A \in \mathbb{R}^{m \times r}$, $B \in \mathbb{R}^{r \times n}$ and
+$C \in \mathbb{R}^{m \times n}$, in exact arithmetic Algorithm 1.1.8 returns $C + AB$.
+
+The expansion (1.1.4) (`GolubVanLoan.Chapter01.equation_1_1_4`) is the reading of the same
+identity in the source. -/
 theorem algorithm_1_1_8_spec {m r n : ℕ} (A : Matrix (Fin m) (Fin r) ℝ)
     (B : Matrix (Fin r) (Fin n) ℝ) (C : Matrix (Fin m) (Fin n) ℝ) :
     Id.run (algorithm_1_1_8 pure A B C) = C + A * B :=
@@ -608,21 +732,33 @@ section Bridges
 
 variable {fp : RoundingModel ℝ}
 
-/-- **Every run of Algorithm 1.1.1 is a recursive inner product** in the relational model when
-rounding fixes its outputs: the first addition `0 + fl(x₁y₁)` is then exact — the book's (2.7.9)
-`s₁ = x₁y₁(1 + δ₁)`. Without the hypothesis, `FloatingPoint.abs_sub_le_of_mem_run_dotAccum`
-bounds a run by `γ_{n+1} |x|ᵀ|y|`. -/
+/-- **Algorithm 1.1.1** of [golub2013matrix], rounding bridge. Let `fp` be an idempotent rounding
+model: if $y$ is an admissible rounding of some number and $z$ is an admissible rounding of $y$,
+then $z = y$. Let $x, y \in \mathbb{R}^n$. Then every result $s$ of Algorithm 1.1.1 in `fp` is a
+recursive inner product of $x$ and $y$: there are admissible roundings $p_i$ of the products
+$x_i y_i$ and an order $i_1, \dots, i_n$ of the indices such that $s$ is a result of the
+recursive summation $s_1 = p_{i_1}$, $s_k = \mathrm{fl}(s_{k-1} + p_{i_k})$.
+
+The relation is `FloatingPoint.RoundsDot fp x y s`. Idempotence makes the first addition
+$0 + \mathrm{fl}(x_1 y_1)$ exact, which is what (2.7.9) of the source assumes when it writes
+$s_1 = x_1 y_1 (1 + \delta_1)$. Without this hypothesis,
+`FloatingPoint.abs_sub_le_of_mem_run_dotAccum` bounds a result by $\gamma_{n+1} |x|^T |y|$. -/
 theorem algorithm_1_1_1_rounds (hfp : fp.IsIdempotent) {n : ℕ} (x y : Fin n → ℝ) :
     ∀ s ∈ (algorithm_1_1_1 fp.round x y).run, RoundsDot fp x y s := fun _ hs =>
   roundsDot_of_mem_run_dotAccum hfp (List.nodup_finRange n) List.mem_finRange hs
 
-/-- For a total model the run set of Algorithm 1.1.1 is nonempty, so the statements about every
-run are not vacuous. -/
+/-- **Algorithm 1.1.1** of [golub2013matrix], existence of a result. Let `fp` be a total rounding
+model, in which every real number has an admissible rounding, and let $x, y \in \mathbb{R}^n$.
+Then Algorithm 1.1.1 has at least one result in `fp`.
+
+So the statements about every result of the algorithm are not vacuous. -/
 theorem algorithm_1_1_1_run_nonempty (hfp : fp.IsTotal) {n : ℕ} (x y : Fin n → ℝ) :
     (algorithm_1_1_1 fp.round x y).run.Nonempty :=
   dotAccum_run_nonempty hfp (List.finRange n) x y 0
 
-/-- An accumulation from `0` over a full duplicate-free order is a `RoundsDot`, entrywise. -/
+/-- If every entry $\hat c_{ij}$ is a result of the accumulation of row $i$ of $A$ against column
+$j$ of $B$ onto $0$ in an idempotent model, then $\hat C$ is a computed matrix product in the
+sense of `FloatingPoint.RoundsMul`. -/
 private theorem roundsMul_of_forall_mem_run (hfp : fp.IsIdempotent) {m r n : ℕ}
     {A : Matrix (Fin m) (Fin r) ℝ} {B : Matrix (Fin r) (Fin n) ℝ} {Ĉ : Matrix (Fin m) (Fin n) ℝ}
     (h : ∀ i j, Ĉ i j ∈
@@ -630,29 +766,48 @@ private theorem roundsMul_of_forall_mem_run (hfp : fp.IsIdempotent) {m r n : ℕ
     RoundsMul fp A B Ĉ := fun i j =>
   roundsDot_of_mem_run_dotAccum hfp (List.nodup_finRange r) List.mem_finRange (h i j)
 
-/-- **Every run of Algorithm 1.1.5 with `C = 0` is a relational matrix product**, hence
-`|Ĉ − AB| ≤ γ_r |A||B|` (`FloatingPoint.abs_sub_entrywiseLE_of_roundsMul`, the book's (2.7.19)). -/
+/-- **Algorithm 1.1.5** of [golub2013matrix], rounding bridge. Let `fp` be an idempotent rounding
+model, and let $A \in \mathbb{R}^{m \times r}$ and $B \in \mathbb{R}^{r \times n}$. Then every
+result $\hat C$ of Algorithm 1.1.5 in `fp`, started from $C = 0$, is a computed matrix product:
+each entry $\hat c_{ij}$ is a recursive inner product of row $i$ of $A$ and column $j$ of $B$,
+as in `GolubVanLoan.Chapter01.algorithm_1_1_1_rounds`.
+
+The relation is `FloatingPoint.RoundsMul fp A B Ĉ`. With it,
+`FloatingPoint.abs_sub_entrywiseLE_of_roundsMul` gives $|\hat C - AB| \le \gamma_r |A| |B|$
+entrywise, the bound (2.7.19) of the source. -/
 theorem algorithm_1_1_5_rounds (hfp : fp.IsIdempotent) {m r n : ℕ} (A : Matrix (Fin m) (Fin r) ℝ)
     (B : Matrix (Fin r) (Fin n) ℝ) :
     ∀ Ĉ ∈ (algorithm_1_1_5 fp.round A B 0).run, RoundsMul fp A B Ĉ := fun _ h =>
   roundsMul_of_forall_mem_run hfp ((algorithm_1_1_5_mem_run _ A B 0 _).1 h)
 
-/-- **Every run of Algorithm 1.1.6 with `C = 0` is a relational matrix product**, as for
-Algorithm 1.1.5: from `C(i,j) = 0` each entry is a run of Algorithm 1.1.1 on `A(i,:)`, `B(:,j)`. -/
+/-- **Algorithm 1.1.6** of [golub2013matrix], rounding bridge. Let `fp` be an idempotent rounding
+model, and let $A \in \mathbb{R}^{m \times r}$ and $B \in \mathbb{R}^{r \times n}$. Then every
+result $\hat C$ of Algorithm 1.1.6 in `fp`, started from $C = 0$, is a computed matrix product
+in the sense of `FloatingPoint.RoundsMul`.
+
+From $c_{ij} = 0$, each entry is a result of Algorithm 1.1.1 on $A(i,:)$ and $B(:,j)$. -/
 theorem algorithm_1_1_6_rounds (hfp : fp.IsIdempotent) {m r n : ℕ} (A : Matrix (Fin m) (Fin r) ℝ)
     (B : Matrix (Fin r) (Fin n) ℝ) :
     ∀ Ĉ ∈ (algorithm_1_1_6 fp.round A B 0).run, RoundsMul fp A B Ĉ := fun _ h =>
   roundsMul_of_forall_mem_run hfp ((algorithm_1_1_6_mem_run _ A B 0 _).1 h)
 
-/-- **Every run of Algorithm 1.1.7 with `C = 0` is a relational matrix product** (the book's
-(2.7.19) "for a gaxpy based procedure"). -/
+/-- **Algorithm 1.1.7** of [golub2013matrix], rounding bridge. Let `fp` be an idempotent rounding
+model, and let $A \in \mathbb{R}^{m \times r}$ and $B \in \mathbb{R}^{r \times n}$. Then every
+result $\hat C$ of Algorithm 1.1.7 in `fp`, started from $C = 0$, is a computed matrix product
+in the sense of `FloatingPoint.RoundsMul`.
+
+This is the case "for a gaxpy based procedure" of (2.7.19) of the source. -/
 theorem algorithm_1_1_7_rounds (hfp : fp.IsIdempotent) {m r n : ℕ} (A : Matrix (Fin m) (Fin r) ℝ)
     (B : Matrix (Fin r) (Fin n) ℝ) :
     ∀ Ĉ ∈ (algorithm_1_1_7 fp.round A B 0).run, RoundsMul fp A B Ĉ := fun _ h =>
   roundsMul_of_forall_mem_run hfp ((algorithm_1_1_7_mem_run _ A B 0 _).1 h)
 
-/-- **Every run of Algorithm 1.1.8 with `C = 0` is a relational matrix product** (the book's
-(2.7.19) "or outer product based"). -/
+/-- **Algorithm 1.1.8** of [golub2013matrix], rounding bridge. Let `fp` be an idempotent rounding
+model, and let $A \in \mathbb{R}^{m \times r}$ and $B \in \mathbb{R}^{r \times n}$. Then every
+result $\hat C$ of Algorithm 1.1.8 in `fp`, started from $C = 0$, is a computed matrix product
+in the sense of `FloatingPoint.RoundsMul`.
+
+This is the case "or outer product based" of (2.7.19) of the source. -/
 theorem algorithm_1_1_8_rounds (hfp : fp.IsIdempotent) {m r n : ℕ} (A : Matrix (Fin m) (Fin r) ℝ)
     (B : Matrix (Fin r) (Fin n) ℝ) :
     ∀ Ĉ ∈ (algorithm_1_1_8 fp.round A B 0).run, RoundsMul fp A B Ĉ := fun _ h =>
@@ -660,10 +815,14 @@ theorem algorithm_1_1_8_rounds (hfp : fp.IsIdempotent) {m r n : ℕ} (A : Matrix
 
 end Bridges
 
-/-! ### (1.1.4): matrix multiplication is a sum of outer products -/
+/-! ### Equation (1.1.4): the matrix product as a sum of outer products -/
 
-/-- **(1.1.4)**: `AB = ∑_{k=1}^r a_k b_kᵀ`, where `a_k` is the `k`-th column of `A` and `b_kᵀ` the
-`k`-th row of `B` (the partitionings (1.1.3)). -/
+/-- **Equation (1.1.4)** of [golub2013matrix]. Let $A \in \mathbb{R}^{m \times r}$ and
+$B \in \mathbb{R}^{r \times n}$, let $a_k$ be the $k$-th column of $A$, and let $b_k^T$ be the
+$k$-th row of $B$, as in the partitionings (1.1.3). Then
+$$AB = \sum_{k=1}^{r} a_k b_k^T.$$
+
+The outer product $a_k b_k^T$ is `Matrix.vecMulVec`. -/
 theorem equation_1_1_4 {m r n : ℕ} (A : Matrix (Fin m) (Fin r) ℝ) (B : Matrix (Fin r) (Fin n) ℝ) :
     A * B = ∑ k, vecMulVec (fun i => A i k) (B k) := by
   ext i j

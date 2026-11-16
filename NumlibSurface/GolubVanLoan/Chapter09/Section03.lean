@@ -16,56 +16,141 @@ import NumlibSurface.GolubVanLoan.Chapter07.Section09
 import NumlibSurface.GolubVanLoan.Chapter09.Section02
 
 /-!
-# Golub–Van Loan §9.3: the matrix exponential
+# Golub and Van Loan, Section 9.3: The matrix exponential
 
-Surface file for [golub2013matrix] §9.3: the Padé approximants of the exponential and the
-remainder (9.3.1), the Moler–Van Loan backward error of scaling and squaring, Algorithm 9.3.1
-(scaling and squaring, `scalingSquaring` with exponent offset `1`) with its exact semantics and the
-book's backward-error claim, the corrected variant `algorithm_9_3_1_corrected` (offset `2`) whose
-backward-error claim holds unconditionally, the even/odd
-evaluation of `N_qq`, `D_qq`; the ODE characterization and the perturbation theory of `e^{At}`
-(the variation-of-constants identity, (9.3.2) with the spectral abscissa (9.3.3), the relative
-bound, Van Loan's condition number `ν(A, t)`), normal matrices ((9.3.4)), the `2 × 2` example
-(9.3.5), the pseudospectral lower bound (9.3.6), and the normal case of §9.3.4.
+This module formalizes §9.3 of [golub2013matrix], the computation and the sensitivity of the matrix
+exponential $e^{At}$. For the Padé method it states the Padé approximants
+$R_{pq}(z) = D_{pq}(z)^{-1} N_{pq}(z)$ of $e^z$, the remainder formula (9.3.1), the Moler–Van Loan
+backward error bound of scaling and squaring, and the even and odd splitting of $N_{qq}$ and
+$D_{qq}$. It defines Algorithm 9.3.1 (scaling and squaring) and proves its exact semantics. The
+backward error claim of the algorithm holds only under an extra hypothesis, so the module also
+defines a corrected variant whose claim holds for every $A$. For the perturbation theory it proves
+that $e^{At}$ is the unique solution of $\dot X = AX$, $X(0) = I$, the variation-of-constants
+identity for $e^{(A+E)t} - e^{At}$, the bound (9.3.2) with the spectral abscissa (9.3.3), the
+relative perturbation bound, the properties of Van Loan's condition number $\nu(A, t)$, the identity
+(9.3.4) for normal matrices, the $2 \times 2$ example (9.3.5), the pseudospectral lower bound
+(9.3.6), and the normal case of §9.3.4.
+
+The proofs specialize the backbone modules `Numlib.Analysis.Matrix.Function.Pade` and
+`Numlib.Analysis.Matrix.Function.Exp` (Padé approximants and their error bounds),
+`Numlib.Analysis.Normed.Algebra.Exponential` (the perturbation identity, uniqueness for the
+differential equation, the condition number and the Laplace-transform bound on the resolvent),
+`Numlib.Analysis.Normed.Algebra.SpectralRadius` (the spectral abscissa) and
+`Numlib.LinearAlgebra.Matrix.Schur` (normal matrices have a diagonal Schur form). Algorithm 9.3.1
+calls Algorithm 1.1.5 of Chapter 1 and the solve after Gaussian elimination with partial pivoting of
+Chapter 3, and (9.3.6) uses the pseudospectra of Chapter 7.
+
+## Main definitions
+
+* Algorithm 9.3.1, `GolubVanLoan.Chapter09.updateEntriesM`: the entrywise overwrite of a matrix used
+  by Algorithm 9.3.1.
+* Algorithm 9.3.1, `GolubVanLoan.Chapter09.scalingSquaring`: scaling and squaring with the exponent
+  $j = \max\{0, o + \lfloor \log_2 \|A\|_\infty \rfloor\}$ for an offset $o$.
+* Algorithm 9.3.1, `GolubVanLoan.Chapter09.algorithm_9_3_1`: scaling and squaring as printed, with
+  offset $1$.
+* Algorithm 9.3.1, `GolubVanLoan.Chapter09.algorithm_9_3_1_corrected`: scaling and squaring with the
+  corrected offset $2$.
+
+## Main results
+
+* §9.3.1, `GolubVanLoan.Chapter09.pade_def`: the coefficients of $N_{pq}$ and $D_{pq}$, and $R_{p0}$
+  is the Taylor polynomial of degree $p$.
+* Equation (9.3.1), `GolubVanLoan.Chapter09.equation_9_3_1`: the remainder $e^A - R_{pq}(A)$ as an
+  integral.
+* §9.3.1, `GolubVanLoan.Chapter09.moler_van_loan`: if $\|A\|_\infty / 2^j \le 1/2$, then
+  $R_{pq}(A/2^j)^{2^j} = e^{A+E}$ with $\|E\|_\infty \le \epsilon(p, q) \|A\|_\infty$.
+* §9.3.1, `GolubVanLoan.Chapter09.pade_even_odd`: $N_{qq}(A) = U + AV$ and $D_{qq}(A) = U - AV$ with
+  $U$, $V$ polynomials in $A^2$.
+* Algorithm 9.3.1, `GolubVanLoan.Chapter09.scalingSquaring_spec` and
+  `GolubVanLoan.Chapter09.algorithm_9_3_1_spec`: in exact arithmetic the algorithm returns
+  $R_{qq}(A/2^j)^{2^j}$.
+* Algorithm 9.3.1, `GolubVanLoan.Chapter09.scalingSquaring_spec_backward` and
+  `GolubVanLoan.Chapter09.algorithm_9_3_1_spec_backward`: if $\|A\|_\infty / 2^j \le 1/2$, the
+  output is $e^{A+E}$ with $\|E\|_\infty \le \delta \|A\|_\infty$.
+* Algorithm 9.3.1, `GolubVanLoan.Chapter09.algorithm_9_3_1_corrected_spec_backward`: with the
+  corrected exponent the output is always $e^{A+E}$ with $\|E\|_\infty \le \delta \|A\|_\infty$.
+* §9.3.2, `GolubVanLoan.Chapter09.exp_unique_ode`: $e^{At}$ is the unique solution of
+  $\dot X(t) = A X(t)$, $X(0) = I$.
+* §9.3.2, `GolubVanLoan.Chapter09.exp_perturbation_integral`: $e^{(A+E)t} - e^{At} = \int_0^t
+  e^{A(t-s)} E e^{(A+E)s} \, ds$ and the resulting relative bound.
+* Equation (9.3.3), `GolubVanLoan.Chapter09.equation_9_3_3`: the spectral abscissa $\alpha(A)$ is
+  the largest real part of an eigenvalue.
+* Equation (9.3.2), `GolubVanLoan.Chapter09.equation_9_3_2`:
+  $\|e^{At}\|_2 \le e^{\alpha(A) t} M_S(t)$.
+* §9.3.2, `GolubVanLoan.Chapter09.exp_perturbation_schur`: the relative perturbation bound
+  $t \|E\|_2 M_S(t)^2 \exp(t M_S(t) \|E\|_2)$.
+* §9.3.2, `GolubVanLoan.Chapter09.schurDeparture_eq_one_iff`: $M_S(t) = 1$ for all $t > 0$ if and
+  only if $A$ is normal.
+* §9.3.2, `GolubVanLoan.Chapter09.expCondNumber_ge`: $\nu(A, t) \ge t \|A\|_2$.
+* Equation (9.3.4), `GolubVanLoan.Chapter09.equation_9_3_4`: $\|e^{At}\|_2 = e^{\alpha(A) t}$ for
+  normal $A$.
+* §9.3.2, `GolubVanLoan.Chapter09.expCondNumber_eq_of_isStarNormal`: $\nu(A, t) = t \|A\|_2$ for
+  normal $A$.
+* Equation (9.3.5), `GolubVanLoan.Chapter09.equation_9_3_5`: the exponential of $\begin{bmatrix} -1
+  & 1000 \\ 0 & -1 \end{bmatrix} t$.
+* §9.3.2, `GolubVanLoan.Chapter09.expCondNumber_eq_iff_counterexample`: a matrix that is not normal
+  and has $\nu(A, t) = t \|A\|_2$ for all $t \ge 0$.
+* Equation (9.3.6), `GolubVanLoan.Chapter09.equation_9_3_6`: $\sup_{t > 0} \|e^{At}\|_2 \ge
+  \alpha_\epsilon(A) / \epsilon$.
+* §9.3.4, `GolubVanLoan.Chapter09.normal_squaring`: for normal $A$, $G = R_{qq}(A/2^j)$ is normal
+  and $\|G^m\|_2 = \|G\|_2^m$.
 
 ## Conventions
 
-`e^{At}` is Mathlib's `NormedSpace.exp (t • A)`, which needs no norm on matrices. `A` is real,
-`Matrix (Fin n) (Fin n) ℝ`, where the book is real (§9.3.1, the start of §9.3.2), and complex where
-the book uses the Schur decomposition `Qᴴ A Q = diag(λ_i) + N` (`Q ∈ unitaryGroup`, `star Q = Qᴴ`).
-The `∞`-norm of §9.3.1 is the scoped `Matrix.Norms.Operator`, the `2`-norm of §9.3.2–§9.3.4 the
-scoped `Matrix.Norms.L2Operator`; integrals of matrix-valued functions are taken in whichever of
-them is open (all norms give the same integral). The Padé functions are the backbone's
-`Pade.expNum ℝ p q = N_pq`, `Pade.expDen ℝ p q = D_pq` and `Pade.expApprox ℝ p q A = R_pq(A)`;
-`ε(p, q)` is `Pade.errorBound p q`; Van Loan's `ν(A, t)` is `NormedSpace.expCondNumber A t`, the
-operator norm of the Fréchet derivative `E ↦ ∫₀ᵗ e^{A(t-s)} E e^{As} ds` times `‖A‖₂/‖e^{At}‖₂`,
-which is the book's `max_{‖E‖₂ ≤ 1}`.
+* The exponential $e^{At}$ is Mathlib's `NormedSpace.exp (t • A)`, which needs no norm on matrices.
+* The matrix $A$ is real, `Matrix (Fin n) (Fin n) ℝ`, where the source is real (§9.3.1 and the start
+  of §9.3.2). It is complex where the source uses the Schur decomposition
+  $Q^H A Q = \operatorname{diag}(\lambda_i) + N$, with `Q ∈ Matrix.unitaryGroup` and `star Q` for
+  $Q^H$.
+* The norm $\|\cdot\|_\infty$ of §9.3.1 is the operator norm of the scope `Matrix.Norms.Operator`,
+  and the norm $\|\cdot\|_2$ of §9.3.2–§9.3.4 is the operator norm of the scope
+  `Matrix.Norms.L2Operator`. Integrals of matrix-valued functions are taken in whichever of these
+  norms is open; all norms give the same integral.
+* The Padé polynomials $N_{pq}$ and $D_{pq}$ and the approximant $R_{pq}(A)$ are
+  `Pade.expNum ℝ p q`, `Pade.expDen ℝ p q` and `Pade.expApprox ℝ p q A`. The Moler–Van Loan
+  constant `Pade.errorBound p q` is $\epsilon(p, q)$.
+* The spectral abscissa $\alpha(A)$ is `spectralAbscissa A`.
+* Van Loan's condition number $\nu(A, t)$ is `NormedSpace.expCondNumber A t`: the operator norm of
+  the Fréchet derivative $E \mapsto \int_0^t e^{A(t-s)} E e^{As} \, ds$, times
+  $\|A\|_2 / \|e^{At}\|_2$. The operator norm is the source's $\max_{\|E\|_2 \le 1}$.
 
-## Sources
+## Implementation notes
 
-`Numlib/Analysis/Matrix/Function/{Pade,Exp}`, `Numlib/Analysis/Normed/Algebra/Exponential`
-(`NormedSpace.exp_smul_add_sub_exp_smul`, `NormedSpace.eq_exp_smul_of_hasDerivAt`,
-`NormedSpace.expCondNumber`, `norm_resolvent_le_of_norm_exp_smul_le`),
-`Numlib/Analysis/Normed/Algebra/SpectralRadius` (`spectralAbscissa`),
-`Numlib/LinearAlgebra/Matrix/Schur` (`Matrix.isStarNormal_iff_strictUpper_eq_zero`); chapter 1's
-Algorithm 1.1.5 and chapter 3's solve after Gaussian elimination with partial pivoting
-(`GolubVanLoan.Chapter03.solveMultipleRHS`, (3.4.12)) inside Algorithm 9.3.1, which follows the
-algorithm conventions of `NumlibSurface.GolubVanLoan`; chapter 7's pseudospectra
-(`GolubVanLoan.Chapter07.pseudospectrum`, `pseudospectralAbscissa`, (7.9.6)) for (9.3.6).
+* Algorithm 9.3.1 follows the algorithm conventions of `NumlibSurface.GolubVanLoan`. Its products
+  $X = AX$ and $F = F^2$ are Algorithm 1.1.5 of Chapter 1 from $C = 0$, and the solve $DF = N$ is
+  Gaussian elimination with partial pivoting of Chapter 3,
+  `GolubVanLoan.Chapter03.solveMultipleRHS`, as in (3.4.12).
+* The printed algorithm and the corrected one are both instances of
+  `GolubVanLoan.Chapter09.scalingSquaring`, which takes the offset $o$ of the exponent as a
+  parameter.
+* The pseudospectral abscissa of (9.3.6) is `GolubVanLoan.Chapter07.pseudospectralAbscissa`, (7.9.8)
+  of Chapter 7.
+
+## Deviations from the source
+
+* **Algorithm 9.3.1** (correction). The printed exponent $j = \max\{0, 1 + \lfloor \log_2
+  \|A\|_\infty \rfloor\}$ only guarantees $\|A/2^j\|_\infty < 1$, not the bound
+  $\|A/2^j\|_\infty \le 1/2$ that the Moler–Van Loan bound needs. The library proves the claim of
+  the printed algorithm under this extra hypothesis, and proves it for every $A$ with the exponent
+  $\max\{0, 2 + \lfloor \log_2 \|A\|_\infty \rfloor\}$. See
+  `GolubVanLoan.Chapter09.algorithm_9_3_1_spec_backward` and
+  `GolubVanLoan.Chapter09.algorithm_9_3_1_corrected_spec_backward`.
+* **Equation (9.3.2)** (typo). The source prints $e^{\alpha(A) t M_S(t)}$ for
+  $e^{\alpha(A) t} M_S(t)$. See `GolubVanLoan.Chapter09.equation_9_3_2`.
+* **§9.3.2, the equality case of $\nu(A, t) \ge t \|A\|_2$** (correction). The source states
+  equality for all $t \ge 0$ if and only if $A$ is normal. The "only if" direction is false. The
+  library proves the "if" direction. See `GolubVanLoan.Chapter09.expCondNumber_eq_of_isStarNormal`
+  and `GolubVanLoan.Chapter09.expCondNumber_eq_iff_counterexample`.
+* **Equation (9.3.6)** (typo). The source cites "(7.8.8)" for the pseudospectral abscissa, which is
+  (7.9.8). See `GolubVanLoan.Chapter09.equation_9_3_6`.
 
 ## Not formalized
 
-The flop counts, Figure 9.3.1 and `α_{.01}(A)/.01 ≈ 216`, and the heuristic claims of §9.3.2 ("a
-matrix `E` for which … `≈`") and §9.3.4 (the rounding estimate `γ`, "numerical experiments
-suggest").
-
-## Errata
-
-(9.3.2) prints `e^{α(A) t M_S(t)}` for `e^{α(A) t} M_S(t)`; §9.3.2's "equality holding for all
-nonnegative `t` if and only if the matrix `A` is normal" is false in the "only if" direction
-(`expCondNumber_eq_iff_counterexample`); (9.3.6) cites "(7.8.8)" for (7.9.8); Algorithm 9.3.1's
-`j = max{0, 1 + ⌊log₂ ‖A‖_∞⌋}` only guarantees `‖A/2^j‖_∞ < 1`, not the `≤ 1/2` that the
-Moler–Van Loan bound needs (`2 + ⌊log₂ ‖A‖_∞⌋` does: `algorithm_9_3_1_corrected`).
+* The flop counts.
+* Figure 9.3.1 and the estimate $\alpha_{.01}(A)/.01 \approx 216$.
+* The heuristic claim of §9.3.2 about a matrix $E$ for which an approximate equality holds.
+* The heuristic claims of §9.3.4: the rounding estimate $\gamma$ and what "numerical experiments
+  suggest".
 -/
 
 open Polynomial Finset NormedSpace
@@ -77,10 +162,15 @@ variable {n : ℕ}
 
 /-! ### §9.3.1 A Padé approximation method -/
 
-/-- **The Padé functions** of §9.3.1: `R_pq(z) = D_pq(z)⁻¹ N_pq(z)` with
-`N_pq(z) = ∑_{k=0}^{p} (p+q-k)! p! / ((p+q)! k! (p-k)!) zᵏ` and
-`D_pq(z) = ∑_{k=0}^{q} (p+q-k)! q! / ((p+q)! k! (q-k)!) (-z)ᵏ`; and
-`R_p0(z) = 1 + z + ⋯ + z^p/p!` is the order-`p` Taylor polynomial. -/
+/-- **§9.3.1** of [golub2013matrix], definition of the Padé functions. The $(p, q)$ Padé approximant
+of $e^z$ is $R_{pq}(z) = D_{pq}(z)^{-1} N_{pq}(z)$ with
+$$N_{pq}(z) = \sum_{k=0}^{p} \frac{(p+q-k)! \, p!}{(p+q)! \, k! \, (p-k)!} z^k, \qquad
+  D_{pq}(z) = \sum_{k=0}^{q} \frac{(p+q-k)! \, q!}{(p+q)! \, k! \, (q-k)!} (-z)^k.$$
+For every $A \in \mathbb{R}^{n \times n}$, $R_{pq}(A) = D_{pq}(A)^{-1} N_{pq}(A)$, and
+$R_{p0}(A) = I + A + \dots + A^p/p!$ is the Taylor polynomial of degree $p$.
+
+The statement gives the coefficients of `Pade.expNum ℝ p q` and `Pade.expDen ℝ p q`. The inverse
+is the Lean inverse, which is $0$ for a singular $D_{pq}(A)$. -/
 theorem pade_def (p q : ℕ) :
     (∀ k, (Pade.expNum ℝ p q).coeff k = if k ≤ p then
       (((p + q - k)! * p ! : ℕ) / ((p + q)! * k ! * (p - k)! : ℕ) : ℝ) else 0) ∧
@@ -101,8 +191,11 @@ section Infinity
 
 open scoped Matrix.Norms.Operator
 
-/-- **(9.3.1)**: if `D_pq(A)` is nonsingular, then
-`e^A = R_pq(A) + (-1)^q/(p+q)! A^{p+q+1} D_pq(A)⁻¹ ∫₀¹ u^p (1-u)^q e^{A(1-u)} du`. -/
+/-- **Equation (9.3.1)** of [golub2013matrix]. Let $A \in \mathbb{R}^{n \times n}$ and $p, q \ge 0$,
+and suppose that $D_{pq}(A)$ is nonsingular. Then
+$$e^A = R_{pq}(A) + \frac{(-1)^q}{(p+q)!} A^{p+q+1} D_{pq}(A)^{-1} \int_0^1 u^p (1 - u)^q
+  e^{A(1-u)} \, du.$$
+-/
 theorem equation_9_3_1 (p q : ℕ) (A : Matrix (Fin n) (Fin n) ℝ)
     (hD : IsUnit (aeval A (Pade.expDen ℝ p q))) :
     exp A = Pade.expApprox ℝ p q A + ((-1) ^ q / (p + q)! : ℝ) • (A ^ (p + q + 1) *
@@ -111,10 +204,15 @@ theorem equation_9_3_1 (p q : ℕ) (A : Matrix (Fin n) (Fin n) ℝ)
   rw [Matrix.nonsing_inv_eq_ringInverse]
   exact Pade.exp_eq_expApprox_add p q A hD
 
-/-- **The Moler–Van Loan bound** quoted in §9.3.1: if `‖A‖_∞/2^j ≤ 1/2`, then
-`F_pq = (R_pq(A/2^j))^{2^j} = e^{A+E}` for some `E` with `AE = EA` and
-`‖E‖_∞ ≤ ε(p, q) ‖A‖_∞`, `ε(p, q) = 2^{3-(p+q)} p! q!/((p+q)! (p+q+1)!)`; and consequently
-`‖e^A - F_pq‖_∞ / ‖e^A‖_∞ ≤ ε(p, q) ‖A‖_∞ e^{ε(p, q) ‖A‖_∞}`. -/
+/-- **§9.3.1** of [golub2013matrix], the Moler–Van Loan bound quoted in the source. Let
+$A \in \mathbb{R}^{n \times n}$ with $n \ge 1$, let $p, q, j \ge 0$, and suppose that
+$\|A\|_\infty / 2^j \le 1/2$. Let $F_{pq} = R_{pq}(A/2^j)^{2^j}$ and
+$$\epsilon(p, q) = 2^{3-(p+q)} \frac{p! \, q!}{(p+q)! \, (p+q+1)!}.$$
+Then $F_{pq} = e^{A+E}$ for some $E$ with $AE = EA$ and
+$\|E\|_\infty \le \epsilon(p, q) \|A\|_\infty$, and consequently
+$$\frac{\|e^A - F_{pq}\|_\infty}{\|e^A\|_\infty} \le \epsilon(p, q) \|A\|_\infty e^{\epsilon(p,
+  q) \|A\|_\infty}.$$
+-/
 theorem moler_van_loan [NeZero n] (p q j : ℕ) {A : Matrix (Fin n) (Fin n) ℝ}
     (hA : ‖A‖ / 2 ^ j ≤ 1 / 2) :
     (∃ E : Matrix (Fin n) (Fin n) ℝ,
@@ -134,7 +232,7 @@ theorem moler_van_loan [NeZero n] (p q j : ℕ) {A : Matrix (Fin n) (Fin n) ℝ}
 
 end Infinity
 
-/-- Splitting a sum over `range (2m)` into its even and odd terms. -/
+/-- A sum over $k < 2m$ splits into the sum of its even terms and the sum of its odd terms. -/
 private theorem sum_range_two_mul {M : Type*} [AddCommMonoid M] (f : ℕ → M) (m : ℕ) :
     ∑ i ∈ range (2 * m), f i = ∑ k ∈ range m, f (2 * k) + ∑ k ∈ range m, f (2 * k + 1) := by
   induction m with
@@ -144,9 +242,13 @@ private theorem sum_range_two_mul {M : Type*} [AddCommMonoid M] (f : ℕ → M) 
       ih, Finset.sum_range_succ, Finset.sum_range_succ]
     abel
 
-/-- §9.3.1's cheaper evaluation of the diagonal approximants: with `c_k` the coefficients of
-`N_qq`, `U = ∑_k c_{2k} A^{2k}` and `V = ∑_k c_{2k+1} A^{2k}`, `N_qq(A) = U + A V` and
-`D_qq(A) = U - A V` (for `q = 8` the book's explicit `U`, `V`, evaluated by Horner in `A²`). -/
+/-- **§9.3.1** of [golub2013matrix], the even and odd evaluation of the diagonal approximants. Let
+$A \in \mathbb{R}^{n \times n}$, let $c_k$ be the coefficients of $N_{qq}$, and let
+$$U = \sum_{k=0}^{q} c_{2k} A^{2k}, \qquad V = \sum_{k=0}^{q} c_{2k+1} A^{2k}.$$
+Then $N_{qq}(A) = U + AV$ and $D_{qq}(A) = U - AV$.
+
+For $q = 8$ the source writes $U$ and $V$ explicitly and evaluates them by Horner's scheme in
+$A^2$. The coefficients $c_k$ vanish for $k > q$. -/
 theorem pade_even_odd (q : ℕ) (A : Matrix (Fin n) (Fin n) ℝ) :
     let c := fun k => (Pade.expNum ℝ q q).coeff k
     let U := ∑ k ∈ range (q + 1), c (2 * k) • A ^ (2 * k)
@@ -183,8 +285,9 @@ section Programs
 
 variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 
-/-- A matrix overwritten entry by entry, `c_il ← g(i, l, c_il)`, row by row and left to right: the
-entrywise updates `A = A/2^j`, `N = N + c X`, `D = D + (-1)^k c X` of Algorithm 9.3.1. -/
+/-- **Algorithm 9.3.1** of [golub2013matrix], the entrywise updates. The matrix $C$ is overwritten
+entry by entry, $c_{il} \leftarrow g(i, l, c_{il})$, row by row and from left to right. This is
+the form of the updates $A = A/2^j$, $N = N + cX$ and $D = D + (-1)^k cX$ of Algorithm 9.3.1. -/
 def updateEntriesM (g : Fin n → Fin n → ℝ → M ℝ) (C : Matrix (Fin n) (Fin n) ℝ) :
     M (Matrix (Fin n) (Fin n) ℝ) :=
   (List.finRange n).foldlM (fun C i => do
@@ -193,9 +296,14 @@ def updateEntriesM (g : Fin n → Fin n → ℝ → M ℝ) (C : Matrix (Fin n) (
       pure (Function.update r l b)) (C i)
     pure (C.updateRow i r)) C
 
-/-- **Scaling and squaring with exponent offset `o`**: the loop of Algorithm 9.3.1 with
-`j = max{0, o + ⌊log₂ ‖A‖_∞⌋}`. The book prints `o = 1` (`algorithm_9_3_1`); `o = 2` is the
-corrected choice (`algorithm_9_3_1_corrected`), for which the claimed backward error holds. -/
+/-- **Algorithm 9.3.1** of [golub2013matrix], with an offset $o$ in the exponent. This is the
+program of Algorithm 9.3.1 with the scaling exponent $j = \max\{0, o + \lfloor \log_2
+\|A\|_\infty \rfloor\}$ in place of the printed $j = \max\{0, 1 + \lfloor \log_2 \|A\|_\infty
+\rfloor\}$.
+
+The source prints $o = 1$, which is `GolubVanLoan.Chapter09.algorithm_9_3_1`. The corrected
+choice $o = 2$, for which the claimed backward error holds, is
+`GolubVanLoan.Chapter09.algorithm_9_3_1_corrected`. -/
 noncomputable def scalingSquaring (o : ℤ) (δ : ℝ) (A : Matrix (Fin n) (Fin n) ℝ) :
     M (Matrix (Fin n) (Fin n) ℝ) := do
   let s ← (List.finRange n).foldlM (fun (s : Fin n → ℝ) i => do
@@ -216,8 +324,9 @@ noncomputable def scalingSquaring (o : ℤ) (δ : ℝ) (A : Matrix (Fin n) (Fin 
   let F ← Chapter03.solveMultipleRHS rnd st.1 st.2.1
   (List.range j).foldlM (fun F _ => Chapter01.algorithm_1_1_5 rnd F F 0) F
 
-/-- **Algorithm 9.3.1 (Scaling and Squaring).** "Given `δ > 0` and `A ∈ ℝ^{n×n}`, the following
-algorithm computes `F = e^{A+E}` where `‖E‖_∞ ≤ δ ‖A‖_∞`":
+/-- **Algorithm 9.3.1** of [golub2013matrix] (scaling and squaring). "Given $\delta > 0$ and
+$A \in \mathbb{R}^{n \times n}$, the following algorithm computes $F = e^{A+E}$ where
+$\|E\|_\infty \le \delta \|A\|_\infty$":
 ```
 j = max{0, 1 + floor(log₂(‖A‖_∞))}
 A = A/2^j
@@ -232,25 +341,35 @@ for k = 1:j
     F = F²
 end
 ```
-`‖A‖_∞ = max_i ∑_l |a_il|` is computed with rounded additions (`|·|` and `max` exact); `j` and `q`
-are exact discrete choices on computed values (`q = sInf {q | ε(q, q) ≤ δ}`, `0` if there is
-none); the integer factors of
-the `c` update are exact; `X = AX` and `F = F²` are Algorithm 1.1.5 from `C = 0`; the solve is
-chapter 3's Gaussian elimination with partial pivoting for the multiple right-hand side `N`
-(`GolubVanLoan.Chapter03.solveMultipleRHS`). It is `scalingSquaring` with the printed offset `1`. -/
+The program computes $\|A\|_\infty = \max_i \sum_l |a_{il}|$ with rounded additions; the
+absolute values and the maximum are exact. The numbers $j$ and $q$ are exact discrete choices on
+computed values, with $q$ the least integer such that $\epsilon(q, q) \le \delta$, and $q = 0$
+if there is none. The integer factors of the update of $c$ are exact. The products $X = AX$ and
+$F = F^2$ are Algorithm 1.1.5 of Chapter 1 from $C = 0$, and the solve is Gaussian elimination
+with partial pivoting of Chapter 3 for the multiple right-hand side $N$,
+`GolubVanLoan.Chapter03.solveMultipleRHS`.
+
+The definition is `GolubVanLoan.Chapter09.scalingSquaring` with the printed offset $1$. Its
+backward error claim needs $\|A\|_\infty / 2^j \le 1/2$, which this exponent does not guarantee;
+see `GolubVanLoan.Chapter09.algorithm_9_3_1_spec_backward`. -/
 noncomputable def algorithm_9_3_1 (δ : ℝ) (A : Matrix (Fin n) (Fin n) ℝ) :
     M (Matrix (Fin n) (Fin n) ℝ) :=
   scalingSquaring rnd 1 δ A
 
-/-- **Algorithm 9.3.1 with the corrected scaling exponent** `j = max{0, 2 + ⌊log₂ ‖A‖_∞⌋}`, which
-guarantees `‖A‖_∞/2^j < 1/2` (erratum to the printed `1 + ⌊log₂ ‖A‖_∞⌋`). -/
+/-- **Algorithm 9.3.1** of [golub2013matrix], with the corrected scaling exponent $j = \max\{0, 2 +
+\lfloor \log_2 \|A\|_\infty \rfloor\}$. This exponent guarantees $\|A\|_\infty / 2^j \le 1/2$.
+
+**Correction.** The source prints $j = \max\{0, 1 + \lfloor \log_2 \|A\|_\infty \rfloor\}$,
+which only guarantees $\|A\|_\infty / 2^j < 1$.
+
+The definition is `GolubVanLoan.Chapter09.scalingSquaring` with offset $2$. -/
 noncomputable def algorithm_9_3_1_corrected (δ : ℝ) (A : Matrix (Fin n) (Fin n) ℝ) :
     M (Matrix (Fin n) (Fin n) ℝ) :=
   scalingSquaring rnd 2 δ A
 
 end Programs
 
-/-- The entrywise update in exact arithmetic. -/
+/-- In exact arithmetic, the entrywise update replaces each entry $c_{il}$ by $h(i, l, c_{il})$. -/
 private theorem updateEntriesM_id (h : Fin n → Fin n → ℝ → ℝ) (C : Matrix (Fin n) (Fin n) ℝ) :
     Id.run (updateEntriesM (M := Id) (fun i l x => pure (h i l x)) C) =
       Matrix.of fun i l => h i l (C i l) := by
@@ -267,9 +386,8 @@ private theorem updateEntriesM_id (h : Fin n → Fin n → ℝ → ℝ) (C : Mat
   rw [h1, h2]
   rfl
 
-/-- The recurrence of the Padé coefficients used by Algorithm 9.3.1:
-`c_k = c_{k-1} (q - k + 1)/((2q - k + 1) k)` for `c_k` the `k`-th coefficient of `N_qq`,
-`1 ≤ k ≤ q`. -/
+/-- The recurrence of the Padé coefficients used by Algorithm 9.3.1: for the coefficients $c_k$ of
+$N_{qq}$ and $1 \le k \le q$, $c_k = c_{k-1} (q - k + 1) / ((2q - k + 1) k)$. -/
 private theorem coeff_expNum_succ {q k : ℕ} (hk : k + 1 ≤ q) :
     (Pade.expNum ℝ q q).coeff (k + 1) = (Pade.expNum ℝ q q).coeff k *
       ((q - (k + 1) + 1 : ℕ) : ℝ) / (((2 * q - (k + 1) + 1) * (k + 1) : ℕ) : ℝ) := by
@@ -289,8 +407,8 @@ private theorem coeff_expNum_succ {q k : ℕ} (hk : k + 1 ≤ q) :
   push_cast
   field_simp
 
-/-- The state of Algorithm 9.3.1's `k` loop after `m ≤ q` steps, in exact arithmetic:
-`D = ∑_{k ≤ m} (-1)^k c_k B^k`, `N = ∑_{k ≤ m} c_k B^k`, `X = B^m`, `c = c_m`. -/
+/-- In exact arithmetic, after $m \le q$ steps of the loop over $k$ in Algorithm 9.3.1,
+$D = \sum_{k \le m} (-1)^k c_k B^k$, $N = \sum_{k \le m} c_k B^k$, $X = B^m$ and $c = c_m$. -/
 private theorem padeLoop_id (B : Matrix (Fin n) (Fin n) ℝ) (q : ℕ) :
     ∀ m ≤ q, Id.run ((List.range m).foldlM (fun (st : Matrix (Fin n) (Fin n) ℝ ×
         Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ × ℝ) k₀ => do
@@ -327,7 +445,7 @@ private theorem padeLoop_id (B : Matrix (Fin n) (Fin n) ℝ) (q : ℕ) :
       simp only [Finset.sum_range_succ, Matrix.smul_apply, Matrix.sum_apply, smul_eq_mul,
         pow_succ', Matrix.of_apply]
 
-/-- The squaring loop in exact arithmetic: `F ← F²`, `j` times, is `F^{2^j}`. -/
+/-- In exact arithmetic, the squaring loop $F \leftarrow F^2$, run $j$ times, returns $F^{2^j}$. -/
 private theorem squaring_id (F : Matrix (Fin n) (Fin n) ℝ) (j : ℕ) :
     Id.run ((List.range j).foldlM (fun F _ => Chapter01.algorithm_1_1_5 pure F F 0) F) =
       F ^ 2 ^ j := by
@@ -338,8 +456,9 @@ private theorem squaring_id (F : Matrix (Fin n) (Fin n) ℝ) (j : ℕ) :
     rw [List.range_succ, List.foldl_append, ih, List.foldl_cons, List.foldl_nil,
       Chapter01.algorithm_1_1_5_spec, zero_add, pow_succ, pow_mul, sq]
 
-/-- The Padé polynomials `N_qq`, `D_qq` at a matrix, as the sums the loop of Algorithm 9.3.1
-accumulates. -/
+/-- The Padé polynomials $N_{qq}$ and $D_{qq}$ at a matrix $B$ are the sums that the loop of
+Algorithm 9.3.1 accumulates: $N_{qq}(B) = \sum_{k \le q} c_k B^k$ and
+$D_{qq}(B) = \sum_{k \le q} (-1)^k c_k B^k$. -/
 private theorem aeval_padeNum_denom (B : Matrix (Fin n) (Fin n) ℝ) (q : ℕ) :
     aeval B (Pade.expNum ℝ q q) = ∑ k ∈ range (q + 1), (Pade.expNum ℝ q q).coeff k • B ^ k ∧
       aeval B (Pade.expDen ℝ q q) =
@@ -357,12 +476,19 @@ private theorem aeval_padeNum_denom (B : Matrix (Fin n) (Fin n) ℝ) (q : ℕ) :
   have hkq : k ≤ q := Nat.lt_succ_iff.mp (Finset.mem_range.mp hk)
   rw [Pade.coeff_expDen, Pade.coeff_expNum, ite_eq_left hkq, ite_eq_left hkq]
 
-/-- **Exact semantics of scaling and squaring** with exponent offset `o`: with
-`ν = max_i ∑_l |a_il|` (`= ‖A‖_∞`), `j = max{0, o + ⌊log₂ ν⌋}` and `q` the smallest integer with
-`ε(q, q) ≤ δ`, as the program computes them: if `D_qq(A/2^j)` is nonsingular, it returns
-`R_qq(A/2^j)^{2^j}`. The loop computes `c_k = (2q-k)! q!/((2q)! k! (q-k)!)` (the recurrence
-`c_k = c_{k-1} (q-k+1)/((2q-k+1)k)`), so `N = N_qq(A/2^j)` and `D = D_qq(A/2^j)` (`pade_def`);
-the solve returns `D⁻¹ N` (chapter 3's (3.4.12)); the squarings give the `2^j`-th power. -/
+/-- **Algorithm 9.3.1** of [golub2013matrix], exact semantics with an offset $o$ in the exponent.
+Let $A \in \mathbb{R}^{n \times n}$ and $\delta \in \mathbb{R}$. Let
+$\nu = \max_i \sum_l |a_{il}| = \|A\|_\infty$, $j = \max\{0, o + \lfloor \log_2 \nu \rfloor\}$,
+and let $q$ be the least integer with $\epsilon(q, q) \le \delta$, as the program computes them.
+If $D_{qq}(A/2^j)$ is nonsingular, then in exact arithmetic
+`GolubVanLoan.Chapter09.scalingSquaring` returns
+$$R_{qq}(A/2^j)^{2^j}.$$
+
+The loop computes $c_k = (2q-k)! \, q! / ((2q)! \, k! \, (q-k)!)$ by the recurrence
+$c_k = c_{k-1} (q-k+1)/((2q-k+1)k)$, so $N = N_{qq}(A/2^j)$ and $D = D_{qq}(A/2^j)$ by
+`GolubVanLoan.Chapter09.pade_def`. The solve returns $D^{-1} N$, as in (3.4.12) of Chapter 3,
+and the squarings give the power $2^j$. The integer logarithm `Int.log 2` is $0$ at $\nu = 0$,
+and $q = 0$ if no $q$ has $\epsilon(q, q) \le \delta$. -/
 theorem scalingSquaring_spec (o : ℤ) (δ : ℝ) (A : Matrix (Fin n) (Fin n) ℝ) {j q : ℕ}
     (hj : j = (o + Int.log 2 (⨆ i, ∑ l, |A i l|)).toNat)
     (hq : q = sInf {q : ℕ | Pade.errorBound q q ≤ δ})
@@ -399,11 +525,15 @@ theorem scalingSquaring_spec (o : ℤ) (δ : ℝ) (A : Matrix (Fin n) (Fin n) �
   rw [← hq, Id.run_bind, hloop]
   rw [← hNum, ← hDen, Id.run_bind, hsolve, squaring_id]
 
-/-- **Exact semantics of Algorithm 9.3.1.** With `ν = max_i ∑_l |a_il|` (`= ‖A‖_∞`),
-`j = max{0, 1 + ⌊log₂ ν⌋}` (for `A = 0` the program's `Int.log` gives `j = 1`, which does not
-change the result) and `q` the smallest integer with `ε(q, q) ≤ δ`, as the algorithm computes
-them: if `D_qq(A/2^j)` is nonsingular, the algorithm returns `R_qq(A/2^j)^{2^j}`
-(`scalingSquaring_spec`). -/
+/-- **Algorithm 9.3.1** of [golub2013matrix], exact semantics. Let $A \in \mathbb{R}^{n \times n}$
+and $\delta \in \mathbb{R}$. Let $\nu = \max_i \sum_l |a_{il}| = \|A\|_\infty$,
+$j = \max\{0, 1 + \lfloor \log_2 \nu \rfloor\}$, and let $q$ be the least integer with
+$\epsilon(q, q) \le \delta$, as the algorithm computes them. If $D_{qq}(A/2^j)$ is nonsingular,
+then in exact arithmetic the algorithm returns
+$$R_{qq}(A/2^j)^{2^j}.$$
+
+For $A = 0$ the integer logarithm gives $j = 1$, which does not change the result. The proof
+specializes `GolubVanLoan.Chapter09.scalingSquaring_spec`. -/
 theorem algorithm_9_3_1_spec (δ : ℝ) (A : Matrix (Fin n) (Fin n) ℝ) {j q : ℕ}
     (hj : j = (1 + Int.log 2 (⨆ i, ∑ l, |A i l|)).toNat)
     (hq : q = sInf {q : ℕ | Pade.errorBound q q ≤ δ})
@@ -415,10 +545,17 @@ section Infinity
 
 open scoped Matrix.Norms.Operator
 
-/-- **The backward error of scaling and squaring** with exponent offset `o`, in exact arithmetic,
-whenever the scaling achieves `‖A‖_∞/2^j ≤ 1/2`: then `D_qq(A/2^j)` is nonsingular
-(`‖A/2^j‖_∞ < log 2`, `Pade.isUnit_aeval_expDen`), and the Moler–Van Loan bound with
-`ε(q, q) ≤ δ` gives `F = e^{A+E}` with `AE = EA` and `‖E‖_∞ ≤ δ ‖A‖_∞`. -/
+/-- **Algorithm 9.3.1** of [golub2013matrix], backward error with an offset $o$ in the exponent. Let
+$A \in \mathbb{R}^{n \times n}$ with $n \ge 1$, and let $\delta$ be such that some $q$ has
+$\epsilon(q, q) \le \delta$. Let $j$ and $q$ be as in
+`GolubVanLoan.Chapter09.scalingSquaring_spec`, and suppose that $\|A\|_\infty / 2^j \le 1/2$.
+Then in exact arithmetic `GolubVanLoan.Chapter09.scalingSquaring` returns $F = e^{A+E}$ for some
+$E$ with $AE = EA$ and
+$$\|E\|_\infty \le \delta \|A\|_\infty.$$
+
+Under the hypothesis, $\|A/2^j\|_\infty < \log 2$, so $D_{qq}(A/2^j)$ is nonsingular
+(`Pade.isUnit_aeval_expDen`). The Moler–Van Loan bound with $\epsilon(q, q) \le \delta$ then
+gives the claim. -/
 theorem scalingSquaring_spec_backward [NeZero n] (o : ℤ) {δ : ℝ}
     (hδ : ∃ q, Pade.errorBound q q ≤ δ) (A : Matrix (Fin n) (Fin n) ℝ) {j q : ℕ}
     (hj : j = (o + Int.log 2 (⨆ i, ∑ l, |A i l|)).toNat)
@@ -435,15 +572,24 @@ theorem scalingSquaring_spec_backward [NeZero n] (o : ℤ) {δ : ℝ}
   refine ⟨E, (scalingSquaring_spec o δ A hj hq hD).trans hE, hc, hEn.trans ?_⟩
   exact mul_le_mul_of_nonneg_right hqδ (norm_nonneg A)
 
-/-- **Algorithm 9.3.1's claim**, "computes `F = e^{A+E}` where `‖E‖_∞ ≤ δ ‖A‖_∞`", in exact
-arithmetic, under the hypothesis `‖A‖_∞/2^j ≤ 1/2` that the printed scaling does not deliver.
-With `ν = ‖A‖_∞` and the printed `j = max{0, 1 + ⌊log₂ ν⌋}` the hypothesis is narrow: for
-`ν ≤ 1/2` it holds with `j = 0`, i.e. when no scaling happens at all; for `ν ∈ (1/2, 1)` it
-fails (`j = 0`, ratio `ν`); for `ν ≥ 1` the ratio `ν/2^j` lies in `[1/2, 1)` and equals `1/2`
-only when `ν` is a power of two (`ν = 3`: `j = 2`, ratio `3/4`). So where scaling actually
-happens the bound is (almost) never delivered; the corrected exponent
-`j = max{0, 2 + ⌊log₂ ν⌋}` always delivers it (`algorithm_9_3_1_corrected_spec_backward`, erratum).
-`q` exists for every `δ > 0`; the hypothesis `hδ` says so directly. -/
+/-- **Algorithm 9.3.1** of [golub2013matrix], the claim of the algorithm, under an extra hypothesis.
+Let $A \in \mathbb{R}^{n \times n}$ with $n \ge 1$, and let $\delta$ be such that some $q$ has
+$\epsilon(q, q) \le \delta$. Let $j = \max\{0, 1 + \lfloor \log_2 \|A\|_\infty \rfloor\}$ and
+$q$ be as the algorithm computes them, and suppose that $\|A\|_\infty / 2^j \le 1/2$. Then in
+exact arithmetic the algorithm "computes $F = e^{A+E}$ where
+$\|E\|_\infty \le \delta \|A\|_\infty$", and moreover $AE = EA$.
+
+**Correction.** The source claims the bound with no hypothesis on $A$, but the printed exponent
+does not deliver $\|A\|_\infty / 2^j \le 1/2$, which the Moler–Van Loan bound needs. With
+$\nu = \|A\|_\infty$, the hypothesis holds for $\nu \le 1/2$, where $j = 0$ and no scaling
+happens. It fails for $\nu \in (1/2, 1)$, where $j = 0$ and the ratio is $\nu$. For $\nu \ge 1$
+the ratio $\nu / 2^j$ lies in $[1/2, 1)$, and it equals $1/2$ only when $\nu$ is a power of two;
+for example $\nu = 3$ gives $j = 2$ and the ratio $3/4$. So where scaling happens the hypothesis
+almost never holds. The corrected exponent $\max\{0, 2 + \lfloor \log_2 \nu \rfloor\}$ always
+delivers it; see `GolubVanLoan.Chapter09.algorithm_9_3_1_corrected_spec_backward`.
+
+A suitable $q$ exists for every $\delta > 0$. The hypothesis on $\delta$ states this existence
+directly. -/
 theorem algorithm_9_3_1_spec_backward [NeZero n] {δ : ℝ} (hδ : ∃ q, Pade.errorBound q q ≤ δ)
     (A : Matrix (Fin n) (Fin n) ℝ) {j q : ℕ}
     (hj : j = (1 + Int.log 2 (⨆ i, ∑ l, |A i l|)).toNat)
@@ -452,13 +598,15 @@ theorem algorithm_9_3_1_spec_backward [NeZero n] {δ : ℝ} (hδ : ∃ q, Pade.e
       Id.run (algorithm_9_3_1 pure δ A) = exp (A + E) ∧ A * E = E * A ∧ ‖E‖ ≤ δ * ‖A‖ :=
   scalingSquaring_spec_backward 1 hδ A hj hq hA
 
-/-- `‖A‖_∞` is the largest absolute row sum. -/
+/-- With the norm $\|\cdot\|_\infty$ and $n \ge 1$, $\|A\|_\infty$ is the largest absolute row sum
+$\max_i \sum_l |a_{il}|$. -/
 private theorem norm_eq_iSup_sum_abs [NeZero n] (A : Matrix (Fin n) (Fin n) ℝ) :
     ‖A‖ = ⨆ i, ∑ l, |A i l| := by
   rw [Matrix.linfty_opNorm_def, Finset.sup_univ_eq_ciSup, NNReal.coe_iSup]
   simp [Real.norm_eq_abs]
 
-/-- The corrected exponent `j = max{0, 2 + ⌊log₂ ν⌋}` scales any `ν ≥ 0` below `1/2`. -/
+/-- For every $\nu \ge 0$, the corrected exponent $j = \max\{0, 2 + \lfloor \log_2 \nu \rfloor\}$
+gives $\nu / 2^j \le 1/2$. -/
 private theorem div_two_pow_corrected_le {ν : ℝ} (hν : 0 ≤ ν) :
     ν / 2 ^ (2 + Int.log 2 ν).toNat ≤ 1 / 2 := by
   rcases hν.eq_or_lt with rfl | hν
@@ -475,9 +623,17 @@ private theorem div_two_pow_corrected_le {ν : ℝ} (hν : 0 ≤ ν) :
     rw [show 2 + Int.log 2 ν = 1 + (Int.log 2 ν + 1) by ring, zpow_add₀ (by norm_num), zpow_one]
   nlinarith
 
-/-- **Algorithm 9.3.1 with the corrected exponent delivers its claim**: in exact arithmetic,
-`algorithm_9_3_1_corrected` (`j = max{0, 2 + ⌊log₂ ‖A‖_∞⌋}`) computes `F = e^{A+E}` with `AE = EA`
-and `‖E‖_∞ ≤ δ ‖A‖_∞`, with no hypothesis on `A`. -/
+/-- **Algorithm 9.3.1** of [golub2013matrix], with the corrected exponent, delivers its claim. Let
+$A \in \mathbb{R}^{n \times n}$ with $n \ge 1$, and let $\delta$ be such that some $q$ has
+$\epsilon(q, q) \le \delta$. Then in exact arithmetic
+`GolubVanLoan.Chapter09.algorithm_9_3_1_corrected`, with $j = \max\{0, 2 + \lfloor \log_2
+\|A\|_\infty \rfloor\}$, computes $F = e^{A+E}$ for some $E$ with $AE = EA$ and
+$$\|E\|_\infty \le \delta \|A\|_\infty.$$
+There is no hypothesis on $A$.
+
+**Correction.** The source prints the exponent $j = \max\{0, 1 + \lfloor \log_2 \|A\|_\infty
+\rfloor\}$, for which the claim needs the extra hypothesis of
+`GolubVanLoan.Chapter09.algorithm_9_3_1_spec_backward`. -/
 theorem algorithm_9_3_1_corrected_spec_backward [NeZero n] {δ : ℝ}
     (hδ : ∃ q, Pade.errorBound q q ≤ δ) (A : Matrix (Fin n) (Fin n) ℝ) :
     ∃ E : Matrix (Fin n) (Fin n) ℝ,
@@ -496,7 +652,10 @@ section Two
 
 open scoped Matrix.Norms.L2Operator
 
-/-- §9.3.2: `X(t) = e^{At}` solves `Ẋ(t) = A X(t)`, `X(0) = I`, and is its unique solution. -/
+/-- **§9.3.2** of [golub2013matrix], the differential equation. Let $A \in \mathbb{R}^{n \times n}$.
+Then $X(t) = e^{At}$ satisfies $\dot X(t) = A X(t)$ for every $t \in \mathbb{R}$ and $X(0) = I$,
+and it is the unique function $X : \mathbb{R} \to \mathbb{R}^{n \times n}$ with these
+properties. -/
 theorem exp_unique_ode (A : Matrix (Fin n) (Fin n) ℝ) :
     (∀ t : ℝ, HasDerivAt (fun s : ℝ => exp (s • A)) (A * exp (t • A)) t) ∧
     exp ((0 : ℝ) • A) = 1 ∧
@@ -505,8 +664,13 @@ theorem exp_unique_ode (A : Matrix (Fin n) (Fin n) ℝ) :
   ⟨fun t => hasDerivAt_exp_smul_const' A t, by rw [zero_smul, exp_zero],
     fun _ hX h0 t => eq_exp_smul_of_hasDerivAt hX h0 t⟩
 
-/-- §9.3.2: `e^{(A+E)t} - e^{At} = ∫₀ᵗ e^{A(t-s)} E e^{(A+E)s} ds`, and for `t ≥ 0`
-`‖e^{(A+E)t} - e^{At}‖₂ / ‖e^{At}‖₂ ≤ (‖E‖₂ / ‖e^{At}‖₂) ∫₀ᵗ ‖e^{A(t-s)}‖₂ ‖e^{(A+E)s}‖₂ ds`. -/
+/-- **§9.3.2** of [golub2013matrix], the variation-of-constants identity. Let
+$A, E \in \mathbb{R}^{n \times n}$ and $t \in \mathbb{R}$. Then
+$$e^{(A+E)t} - e^{At} = \int_0^t e^{A(t-s)} E e^{(A+E)s} \, ds,$$
+and for $t \ge 0$
+$$\frac{\|e^{(A+E)t} - e^{At}\|_2}{\|e^{At}\|_2} \le \frac{\|E\|_2}{\|e^{At}\|_2} \int_0^t
+  \|e^{A(t-s)}\|_2 \|e^{(A+E)s}\|_2 \, ds.$$
+-/
 theorem exp_perturbation_integral (A E : Matrix (Fin n) (Fin n) ℝ) (t : ℝ) :
     exp (t • (A + E)) - exp (t • A) =
       ∫ s in (0 : ℝ)..t, exp ((t - s) • A) * E * exp (s • (A + E)) ∧
@@ -516,8 +680,12 @@ theorem exp_perturbation_integral (A E : Matrix (Fin n) (Fin n) ℝ) (t : ℝ) :
   rw [div_mul_eq_mul_div]
   exact div_le_div_of_nonneg_right (norm_exp_smul_add_sub_exp_smul_le A E ht) (norm_nonneg _)
 
-/-- **(9.3.3), the spectral abscissa** `α(A) = max {Re λ : λ ∈ λ(A)}`: it is attained by an
-eigenvalue and bounds the real part of every eigenvalue. -/
+/-- **Equation (9.3.3)** of [golub2013matrix], the spectral abscissa. Let
+$A \in \mathbb{C}^{n \times n}$ with $n \ge 1$. The spectral abscissa $\alpha(A) =
+\max\{\operatorname{Re} \lambda : \lambda \in \lambda(A)\}$ is attained by an eigenvalue of $A$,
+and $\operatorname{Re} \lambda \le \alpha(A)$ for every eigenvalue $\lambda$.
+
+The spectral abscissa is `spectralAbscissa A`, a supremum of real parts. -/
 theorem equation_9_3_3 [NeZero n] (A : Matrix (Fin n) (Fin n) ℂ) :
     (∃ μ ∈ spectrum ℂ A, μ.re = spectralAbscissa A) ∧
     ∀ μ ∈ spectrum ℂ A, μ.re ≤ spectralAbscissa A :=
@@ -525,9 +693,14 @@ theorem equation_9_3_3 [NeZero n] (A : Matrix (Fin n) (Fin n) ℂ) :
       (spectrum.nonempty_of_isAlgClosed_of_finiteDimensional ℂ A),
     fun _ hμ => re_le_spectralAbscissa (Matrix.finite_spectrum A).isBounded hμ⟩
 
-/-- **(9.3.2)**, corrected: if `Qᴴ A Q = diag(λ_i) + N` is a Schur decomposition, then for `t ≥ 0`
-`‖e^{At}‖₂ ≤ e^{α(A) t} M_S(t)`, `M_S(t) = ∑_{k=0}^{n-1} ‖N t‖₂ᵏ / k!`. The book prints
-`e^{α(A) t M_S(t)}`, which fails for `α(A) < 0` and `N ≠ 0`. -/
+/-- **Equation (9.3.2)** of [golub2013matrix], corrected. Let $A, Q \in \mathbb{C}^{n \times n}$
+with $n \ge 1$, $Q$ unitary and $Q^H A Q = \operatorname{diag}(\lambda_i) + N$ upper triangular,
+with $N$ the strictly upper triangular part. Then for $t \ge 0$
+$$\|e^{At}\|_2 \le e^{\alpha(A) t} M_S(t), \qquad M_S(t) = \sum_{k=0}^{n-1}
+  \frac{\|Nt\|_2^k}{k!}.$$
+
+**Typo.** The source prints $e^{\alpha(A) t M_S(t)}$ for $e^{\alpha(A) t} M_S(t)$. As printed
+the bound fails for $\alpha(A) < 0$ and $N \neq 0$. -/
 theorem equation_9_3_2 [NeZero n] {A Q : Matrix (Fin n) (Fin n) ℂ}
     (hQ : Q ∈ Matrix.unitaryGroup (Fin n) ℂ) (hT : (star Q * A * Q).IsUpperTriangular) {t : ℝ}
     (ht : 0 ≤ t) :
@@ -536,8 +709,13 @@ theorem equation_9_3_2 [NeZero n] {A Q : Matrix (Fin n) (Fin n) ℂ}
   simpa only [Matrix.schurExpFactor, Fintype.card_fin] using
     Matrix.l2_opNorm_exp_smul_le_of_schur hQ hT ht
 
-/-- §9.3.2, "with a little manipulation": for `t ≥ 0`,
-`‖e^{(A+E)t} - e^{At}‖₂ / ‖e^{At}‖₂ ≤ t ‖E‖₂ M_S(t)² exp(t M_S(t) ‖E‖₂)`. -/
+/-- **§9.3.2** of [golub2013matrix], the relative perturbation bound obtained "with a little
+manipulation". Let $A, Q, E \in \mathbb{C}^{n \times n}$ with $n \ge 1$, $Q$ unitary and
+$Q^H A Q = \operatorname{diag}(\lambda_i) + N$ upper triangular, and let $M_S(t)$ be as in
+(9.3.2). Then for $t \ge 0$
+$$\frac{\|e^{(A+E)t} - e^{At}\|_2}{\|e^{At}\|_2} \le t \|E\|_2 M_S(t)^2 \exp(t M_S(t)
+  \|E\|_2).$$
+-/
 theorem exp_perturbation_schur [NeZero n] {A Q : Matrix (Fin n) (Fin n) ℂ}
     (hQ : Q ∈ Matrix.unitaryGroup (Fin n) ℂ) (hT : (star Q * A * Q).IsUpperTriangular)
     (E : Matrix (Fin n) (Fin n) ℂ) {t : ℝ} (ht : 0 ≤ t) :
@@ -549,8 +727,12 @@ theorem exp_perturbation_schur [NeZero n] {A Q : Matrix (Fin n) (Fin n) ℂ}
   simp only [Matrix.schurExpFactor, Fintype.card_fin] at h
   exact h
 
-/-- §9.3.2: `M_S(t) = 1` for all `t > 0` if and only if `A` is normal (its Schur form is then
-diagonal, `N = 0`). -/
+/-- **§9.3.2** of [golub2013matrix], the normal case of $M_S$. Let
+$A, Q \in \mathbb{C}^{n \times n}$ with $n \ge 1$, $Q$ unitary and
+$Q^H A Q = \operatorname{diag}(\lambda_i) + N$ upper triangular. Then $M_S(t) = 1$ for all
+$t > 0$ if and only if $A$ is normal.
+
+For normal $A$ the Schur form is diagonal, $N = 0$. -/
 theorem schurDeparture_eq_one_iff [NeZero n] {A Q : Matrix (Fin n) (Fin n) ℂ}
     (hQ : Q ∈ Matrix.unitaryGroup (Fin n) ℂ) (hT : (star Q * A * Q).IsUpperTriangular) :
     (∀ t : ℝ, 0 < t → ∑ k ∈ range n,
@@ -575,25 +757,38 @@ theorem schurDeparture_eq_one_iff [NeZero n] {A Q : Matrix (Fin n) (Fin n) ℂ}
     rw [hN, Finset.sum_range_succ']
     simp
 
-/-- §9.3.2: Van Loan's condition number satisfies `ν(A, t) ≥ t ‖A‖₂` for `t ≥ 0`. -/
+/-- **§9.3.2** of [golub2013matrix], the lower bound on the condition number. Let
+$A \in \mathbb{C}^{n \times n}$ with $n \ge 1$. Then Van Loan's condition number satisfies
+$\nu(A, t) \ge t \|A\|_2$ for every $t \ge 0$. -/
 theorem expCondNumber_ge [NeZero n] (A : Matrix (Fin n) (Fin n) ℂ) {t : ℝ} (ht : 0 ≤ t) :
     t * ‖A‖ ≤ expCondNumber A t :=
   mul_norm_le_expCondNumber A ht
 
-/-- **(9.3.4)**: if `A` is normal, then `‖e^{At}‖₂ = e^{α(A) t}` for `t ≥ 0`. -/
+/-- **Equation (9.3.4)** of [golub2013matrix]. Let $A \in \mathbb{C}^{n \times n}$ be normal, with
+$n \ge 1$. Then for $t \ge 0$
+$$\|e^{At}\|_2 = e^{\alpha(A) t}.$$
+-/
 theorem equation_9_3_4 [NeZero n] {A : Matrix (Fin n) (Fin n) ℂ} (hA : IsStarNormal A) {t : ℝ}
     (ht : 0 ≤ t) : ‖exp (t • A)‖ = Real.exp (spectralAbscissa A * t) :=
   Matrix.l2_opNorm_exp_smul_of_isStarNormal hA ht
 
-/-- §9.3.2, the true half of "equality holding for all nonnegative `t` if and only if the matrix
-`A` is normal": for normal `A`, `ν(A, t) = t ‖A‖₂` for every `t ≥ 0`. -/
+/-- **§9.3.2** of [golub2013matrix], the equality case for normal matrices. Let
+$A \in \mathbb{C}^{n \times n}$ be normal, with $n \ge 1$. Then $\nu(A, t) = t \|A\|_2$ for
+every $t \ge 0$.
+
+**Correction.** The source states "equality holding for all nonnegative $t$ if and only if the
+matrix $A$ is normal". Only the "if" direction, stated here, is true; see
+`GolubVanLoan.Chapter09.expCondNumber_eq_iff_counterexample`. -/
 theorem expCondNumber_eq_of_isStarNormal [NeZero n] {A : Matrix (Fin n) (Fin n) ℂ}
     (hA : IsStarNormal A) {t : ℝ} (ht : 0 ≤ t) : expCondNumber A t = t * ‖A‖ :=
   Matrix.expCondNumber_eq_of_isStarNormal hA ht
 
 end Two
 
-/-- **(9.3.5)**: for `A = [-1 1000; 0 -1]`, `e^{At} = e^{-t} [1 1000t; 0 1]`. -/
+/-- **Equation (9.3.5)** of [golub2013matrix]. For every $t \in \mathbb{R}$,
+$$\exp\left( \begin{bmatrix} -1 & 1000 \\ 0 & -1 \end{bmatrix} t \right) = e^{-t}
+  \begin{bmatrix} 1 & 1000 t \\ 0 & 1 \end{bmatrix}.$$
+-/
 theorem equation_9_3_5 (t : ℝ) :
     exp (t • !![-1, 1000; 0, -1] : Matrix (Fin 2) (Fin 2) ℝ) =
       Real.exp (-t) • !![1, 1000 * t; 0, 1] := by
@@ -616,7 +811,8 @@ section Counterexample
 
 open scoped Matrix.Norms.L2Operator
 
-/-- The exponential of the counterexample matrix `[1] ⊕ [0 1; 0 0]`. -/
+/-- The exponential of the counterexample matrix $A = [1] \oplus \begin{bmatrix} 0 & 1 \\ 0 & 0
+\end{bmatrix}$ is $e^{sA} = [e^s] \oplus \begin{bmatrix} 1 & s \\ 0 & 1 \end{bmatrix}$. -/
 private theorem exp_smul_cex (s : ℝ) :
     exp (s • (!![1, 0, 0; 0, 0, 1; 0, 0, 0] : Matrix (Fin 3) (Fin 3) ℂ)) =
       !![(Real.exp s : ℂ), 0, 0; 0, 1, (s : ℂ); 0, 0, 1] := by
@@ -636,8 +832,8 @@ private theorem exp_smul_cex (s : ℝ) :
     simp [N, Matrix.mul_apply, Fin.sum_univ_three, Pi.exp_def, ← Complex.exp_eq_exp_ℂ,
       Complex.ofReal_exp]
 
-/-- The spectral norm of `e^{sA}` for the counterexample matrix is `e^s`, `s ≥ 0`: the block
-`[1 s; 0 1]` has norm at most `1 + s ≤ e^s`. -/
+/-- For the counterexample matrix $A$ and $s \ge 0$, $\|e^{sA}\|_2 = e^s$, because the block
+$\begin{bmatrix} 1 & s \\ 0 & 1 \end{bmatrix}$ has norm at most $1 + s \le e^s$. -/
 private theorem norm_exp_smul_cex {s : ℝ} (hs : 0 ≤ s) :
     ‖exp (s • (!![1, 0, 0; 0, 0, 1; 0, 0, 0] : Matrix (Fin 3) (Fin 3) ℂ))‖ = Real.exp s := by
   rw [exp_smul_cex]
@@ -688,9 +884,14 @@ private theorem norm_exp_smul_cex {s : ℝ} (hs : 0 ≤ s) :
           ContinuousLinearMap.le_opNorm _ _
       _ = _ := by rw [hx, mul_one]
 
-/-- **§9.3.2's "only if" is false**: `A = [1] ⊕ [0 1; 0 0]` is not normal, and yet
-`ν(A, t) = t ‖A‖₂` for every `t ≥ 0`, because `‖e^{sA}‖₂ = e^s` for `s ≥ 0` (the book: "equality
-holding for all nonnegative `t` if and only if the matrix `A` is normal"). -/
+/-- **§9.3.2** of [golub2013matrix], counterexample to the equality case. The matrix
+$$A = [1] \oplus \begin{bmatrix} 0 & 1 \\ 0 & 0 \end{bmatrix} = \begin{bmatrix} 1 & 0 & 0 \\ 0 &
+  0 & 1 \\ 0 & 0 & 0 \end{bmatrix} \in \mathbb{C}^{3 \times 3}$$
+is not normal, and yet $\nu(A, t) = t \|A\|_2$ for every $t \ge 0$. So the "only if" direction
+of the source's "equality holding for all nonnegative $t$ if and only if the matrix $A$ is
+normal" is false.
+
+The equality holds because $\|e^{sA}\|_2 = e^s$ for $s \ge 0$. -/
 theorem expCondNumber_eq_iff_counterexample :
     ¬ IsStarNormal (!![1, 0, 0; 0, 0, 1; 0, 0, 0] : Matrix (Fin 3) (Fin 3) ℂ) ∧
     ∀ t : ℝ, 0 ≤ t → expCondNumber (!![1, 0, 0; 0, 0, 1; 0, 0, 0] : Matrix (Fin 3) (Fin 3) ℂ) t =
@@ -710,12 +911,20 @@ section Pseudospectra
 open scoped Matrix.Norms.L2Operator
 open Filter Topology
 
-/-- **(9.3.6)**: for every `ε > 0`, `sup_{t > 0} ‖e^{At}‖₂ ≥ α_ε(A)/ε`, with chapter 7's
-`ε`-pseudospectral abscissa `α_ε(A) = sup_{z ∈ Λ_ε(A)} Re z` ((7.9.8), which the book cites as
-"(7.8.8)"), for `A ∈ ℂ^{n×n}`, `n ≥ 1`. Stated without the `sup`: every bound `M` of `‖e^{At}‖₂`
-over `t > 0` has `α_ε(A) ≤ ε M`. The abscissa is attained at some `z ∈ Λ_ε(A)`; if `Re z > 0`
-then `z ∉ λ(A)` and `1/ε ≤ ‖(zI - A)⁻¹‖₂ ≤ M / Re z` ((7.9.6) and the Laplace-transform bound
-`norm_resolvent_le_of_norm_exp_smul_le`, which needs the bound at `t = 0` too, by continuity). -/
+/-- **Equation (9.3.6)** of [golub2013matrix]. Let $A \in \mathbb{C}^{n \times n}$ with $n \ge 1$,
+and let $\epsilon > 0$. If $\|e^{At}\|_2 \le M$ for all $t > 0$, then
+$$\alpha_\epsilon(A) \le \epsilon M,$$
+where $\alpha_\epsilon(A) = \sup_{z \in \Lambda_\epsilon(A)} \operatorname{Re} z$ is the
+$\epsilon$-pseudospectral abscissa. This is the source's $\sup_{t > 0} \|e^{At}\|_2 \ge
+\alpha_\epsilon(A) / \epsilon$, stated for every bound $M$ of the supremum.
+
+**Typo.** The source cites "(7.8.8)" for the pseudospectral abscissa, which is (7.9.8).
+
+The pseudospectral abscissa is `GolubVanLoan.Chapter07.pseudospectralAbscissa`. It is attained
+at some $z \in \Lambda_\epsilon(A)$. If $\operatorname{Re} z > 0$, then $z \notin \lambda(A)$
+and $1/\epsilon \le \|(zI - A)^{-1}\|_2 \le M / \operatorname{Re} z$, by (7.9.6) and the
+Laplace-transform bound `norm_resolvent_le_of_norm_exp_smul_le`; that bound also needs the bound
+at $t = 0$, which follows by continuity. -/
 theorem equation_9_3_6 [NeZero n] {ε : ℝ} (hε : 0 < ε) (A : Matrix (Fin n) (Fin n) ℂ) {M : ℝ}
     (hM : ∀ t : ℝ, 0 < t → ‖exp (t • A)‖ ≤ M) :
     Chapter07.pseudospectralAbscissa ε A ≤ ε * M := by
@@ -749,8 +958,9 @@ section Two
 
 open scoped Matrix.Norms.L2Operator
 
-/-- §9.3.4: if `A` is normal, then so is `G = R_qq(A/2^j)`, and `‖G^m‖₂ = ‖G‖₂^m` for every
-`m`. -/
+/-- **§9.3.4** of [golub2013matrix], the normal case. Let $A \in \mathbb{C}^{n \times n}$ be normal,
+with $n \ge 1$, and let $q, j \ge 0$. Then $G = R_{qq}(A/2^j)$ is normal, and
+$\|G^m\|_2 = \|G\|_2^m$ for every $m \ge 0$. -/
 theorem normal_squaring [NeZero n] {A : Matrix (Fin n) (Fin n) ℂ} (hA : IsStarNormal A)
     (q j : ℕ) :
     IsStarNormal (Pade.expApprox ℂ q q ((2⁻¹ : ℂ) ^ j • A)) ∧

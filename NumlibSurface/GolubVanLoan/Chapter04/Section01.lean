@@ -10,44 +10,85 @@ import NumlibSurface.GolubVanLoan.Chapter02.Section03
 import NumlibSurface.GolubVanLoan.Chapter03.Section02
 
 /-!
-# Golub–Van Loan §4.1: diagonal dominance and symmetry
+# Golub and Van Loan, Section 4.1: Diagonal dominance and symmetry
 
-Surface file for [golub2013matrix] §4.1: LU without pivoting for a column diagonally dominant
-matrix (Theorem 4.1.1, with the one-step factorization (4.1.2)), the dominance bound on `‖A⁻¹‖₁`
-(Theorem 4.1.2), the `L D Lᵀ` factorization of a symmetric matrix (Theorem 4.1.3) with its
-three-step solve, and Algorithm 4.1.1 (LDLT) with its rounding bridge and its exact specification.
+This module formalizes §4.1 of [golub2013matrix]. A matrix $A \in \mathbb{R}^{n \times n}$ is column
+diagonally dominant if $\sum_{i \neq j} |a_{ij}| \le |a_{jj}|$ for every column $j$. Theorem 4.1.1
+says that a nonsingular column diagonally dominant matrix has an LU factorization without pivoting
+with $|\ell_{ij}| \le 1$, and Theorem 4.1.2 bounds $\|A^{-1}\|_1$ by $1/\delta$ when every column is
+dominant with margin $\delta > 0$. Theorem 4.1.3 says that a symmetric matrix whose leading
+principal submatrices $A(1{:}k, 1{:}k)$, $k = 1{:}n-1$, are nonsingular has a unique factorization
+$A = LDL^T$ with $L$ unit lower triangular and $D$ diagonal. Then $Ax = b$ is solved in three steps
+$Lz = b$, $Dy = z$, $L^T x = y$.
+
+Algorithm 4.1.1 computes the $LDL^T$ factorization. The module gives it as a program with a rounding
+bridge into the relation `FloatingPoint.RoundsLDL` and an exact specification, and proves the
+backward error bound (4.1.4) of the solve. The proofs specialize
+`Numlib.LinearAlgebra.Matrix.DiagDominant`, `Numlib.LinearAlgebra.Matrix.LU` and
+`Numlib.FloatingPoint.LU`, with the run calculus of `Numlib.FloatingPoint.Program`.
+
+## Main definitions
+
+* Algorithm 4.1.1, `GolubVanLoan.Chapter04.algorithm_4_1_1`: the $LDL^T$ factorization of a
+  symmetric matrix, overwriting $A$.
+* §4.1.2, `GolubVanLoan.Chapter04.solveLDLT`: the three-step solve $Lz = b$, $Dy = z$, $L^T x = y$
+  with a packed factor.
+
+## Main results
+
+* Theorem 4.1.1, `GolubVanLoan.Chapter04.theorem_4_1_1`: a nonsingular column diagonally dominant
+  matrix has an LU factorization with $|\ell_{ij}| \le 1$.
+* (4.1.2), `GolubVanLoan.Chapter04.equation_4_1_2`: the first step of Gaussian elimination in block
+  form.
+* Theorem 4.1.2, `GolubVanLoan.Chapter04.theorem_4_1_2`: column dominance with margin $\delta > 0$
+  gives a nonsingular $A$ with $\|A^{-1}\|_1 \le 1/\delta$.
+* Theorem 4.1.3, `GolubVanLoan.Chapter04.theorem_4_1_3`: existence and uniqueness of the $LDL^T$
+  factorization.
+* §4.1.2, `GolubVanLoan.Chapter04.ldlt_solve`: the three-step solve solves $Ax = b$.
+* Algorithm 4.1.1, `GolubVanLoan.Chapter04.algorithm_4_1_1_rounds` and
+  `GolubVanLoan.Chapter04.algorithm_4_1_1_spec`: every run computes a factorization in the sense of
+  `FloatingPoint.RoundsLDL`, and the exact run computes $A = LDL^T$.
+* (4.1.4), `GolubVanLoan.Chapter04.equation_4_1_4`: the computed solution satisfies
+  $(A + E)\hat x = b$ with $|E| \le \gamma_{3n+2} |\hat L| |\hat D| |\hat L^T|$.
 
 ## Conventions
 
-Real square matrices `A : Matrix (Fin n) (Fin n) ℝ`, 0-based. Row and column diagonal dominance
-(4.1.1) are the backbone's `Matrix.IsDiagDominant`, `Matrix.IsColDiagDominant` (with `‖·‖ = |·|`
-over `ℝ`); the margin `δ` of (4.1.3) is a hypothesis. The book's `A = L D Lᵀ` is
-`Matrix.IsLDM A L D L`, and "`A(1:k, 1:k)` nonsingular for `k = 1:n−1`" is
-`∀ k, IsUnit (A.strictLeadingPrincipalSubmatrix k)` (the orders `0, …, n − 1`).
+* Indices are 0-based. The hypothesis "$A(1{:}k, 1{:}k)$ is nonsingular for $k = 1{:}n-1$" is `∀ k,
+  IsUnit (A.strictLeadingPrincipalSubmatrix k)`, over the orders $0, \dots, n - 1$; the block of
+  order $0$ is empty.
+* Row and column diagonal dominance (4.1.1) are `Matrix.IsDiagDominant` and
+  `Matrix.IsColDiagDominant`, with the norm $|\cdot|$ on $\mathbb{R}$. The margin $\delta$ of
+  (4.1.3) is a hypothesis.
+* The factorization $A = LDL^T$ is `Matrix.IsLDM A L D L`.
+* The source states the first-order bound $|E| \le nu(2|A| + 4|\hat L||\hat D||\hat L^T|) + O(u^2)$
+  in (4.1.4). The theorem states the rigorous bound $|E| \le \gamma_{3n+2} |\hat L||\hat D||\hat
+  L^T|$, which implies the printed one to first order for $n \ge 2$, since
+  $\gamma_{3n+2} = (3n + 2)u + O(u^2)$ and $3n + 2 \le 4n$.
 
-Reading: the hypothesis of Algorithm 4.1.1, "`A` … has an LU factorization", is read as that of
-Theorem 4.1.3, nonsingular leading principal submatrices of orders `1, …, n − 1`; this is stronger
-than the existence of an LU factorization (a singular `A` may have one), and it is the hypothesis
-under which the book's derivation of the algorithm divides by the pivots `d_j`, `j < n`.
+## Implementation notes
 
-Algorithm 4.1.1 follows the algorithm conventions of `NumlibSurface/GolubVanLoan`: every product
-and difference passes through the rounding hook `rnd`, and the book's inner products
-`A(j, 1:j−1) · v(1:j−1)` and `A(j+1:n, 1:j−1) · v(1:j−1)` are running differences from the entry of
-`A` (the backbone's `FloatingPoint.runningDiff`), the operation order of the backbone relation
-`FloatingPoint.RoundsLDL`. The packed output holds `L` strictly below the diagonal and `D` on it;
-its unit lower factor is chapter 3's `Chapter03.packedL F = 1 + F.strictLower` and its diagonal
-factor
-`Matrix.diagonal F.diag`. The solve stage of (4.1.4) (`solveLDLT`) calls chapter 3's
-column-oriented substitutions, Algorithms 3.1.3 and 3.1.4, with a rounded division by the pivots in
-between.
+* Algorithm 4.1.1 follows the algorithm conventions of `NumlibSurface.GolubVanLoan`: every product
+  and difference passes through the rounding hook `rnd`. The inner products
+  $A(j, 1{:}j-1) \cdot v(1{:}j-1)$ and $A(j{+}1{:}n, 1{:}j-1) \cdot v(1{:}j-1)$ are running
+  differences from the entry of $A$ (`FloatingPoint.runningDiff`), which is the operation order of
+  `FloatingPoint.RoundsLDL`.
+* The packed output $F$ holds $L$ strictly below the diagonal and $D$ on it. Its unit lower factor
+  is `GolubVanLoan.Chapter03.packedL F`, which is $I$ plus the strict lower triangle of $F$, and its
+  diagonal factor is `Matrix.diagonal F.diag`.
+* The solve `GolubVanLoan.Chapter04.solveLDLT` uses the column-oriented substitutions of Chapter 3,
+  Algorithms 3.1.3 and 3.1.4, with a rounded division by the pivots between them.
 
-## Sources
+## Deviations from the source
 
-Backbone `Numlib/LinearAlgebra/Matrix/{DiagDominant,LU}` (Theorems 4.1.1–4.1.3),
-`Numlib/FloatingPoint/LU` (`RoundsLDL` and the rigorous (4.1.4)), `Numlib/FloatingPoint/Program`
-(the run calculus). The book's two references to an "Algorithm 4.1.2" mean Algorithm 4.1.1. The
-book's proof of Theorem 4.1.1 writes a strict inequality in its chain under the weak hypothesis;
-the backbone proof is the weak one.
+* **Algorithm 4.1.1** (reading). The source assumes that $A$ has an LU factorization. The
+  specification assumes the hypothesis of Theorem 4.1.3, nonsingular leading principal submatrices
+  of orders $1, \dots, n-1$. See `GolubVanLoan.Chapter04.algorithm_4_1_1_spec`.
+* **References to "Algorithm 4.1.2"** (typo). The source refers twice to an "Algorithm 4.1.2"; it
+  means Algorithm 4.1.1. See `GolubVanLoan.Chapter04.algorithm_4_1_1`.
+
+## Not formalized
+
+* **Operation counts.**
 -/
 
 open FloatingPoint Matrix Finset
@@ -58,15 +99,26 @@ variable {n : ℕ}
 
 /-! ### §4.1.1 Diagonal dominance -/
 
-/-- **Theorem 4.1.1.** "If `A` is nonsingular and column diagonally dominant, then it has an LU
-factorization and the entries in `L = (ℓ_ij)` satisfy `|ℓ_ij| ≤ 1`." -/
+/-- **Theorem 4.1.1** of [golub2013matrix]. Let $A \in \mathbb{R}^{n \times n}$ be nonsingular and
+column diagonally dominant. Then $A$ has an LU factorization $A = LU$, and the entries of
+$L = (\ell_{ij})$ satisfy $|\ell_{ij}| \le 1$.
+
+Column diagonal dominance is the weak condition $\sum_{i \neq j} |a_{ij}| \le |a_{jj}|$,
+`Matrix.IsColDiagDominant`, and the factorization is `Matrix.IsLU`. The proof of the source
+writes a strict inequality in one step of its chain under this weak hypothesis; the backbone
+proof uses the weak inequality. -/
 theorem theorem_4_1_1 {A : Matrix (Fin n) (Fin n) ℝ} (hA : IsUnit A)
     (hdom : A.IsColDiagDominant) : ∃ L U, IsLU A L U ∧ ∀ i j, |L i j| ≤ 1 := by
   simpa only [Real.norm_eq_abs] using exists_isLU_of_isColDiagDominant hA hdom
 
-/-- **(4.1.2)**, the first step of Gaussian elimination in block form: for `α ≠ 0`,
-`[α wᵀ; v C] = [1 0; v/α I] [1 0; 0 B] [α wᵀ; 0 I]` with `B = C − (1/α) v wᵀ`, over the
-partition `Fin 1 ⊕ Fin n` of the indices of an `(n + 1) × (n + 1)` matrix. -/
+/-- **Equation (4.1.2)** of [golub2013matrix], the first step of Gaussian elimination in block form.
+Let $\alpha \in \mathbb{R}$ with $\alpha \neq 0$, let $v, w \in \mathbb{R}^n$ and let
+$C \in \mathbb{R}^{n \times n}$. Then
+$$\begin{bmatrix} \alpha & w^T \\ v & C \end{bmatrix} = \begin{bmatrix} 1 & 0 \\ v/\alpha & I_n
+  \end{bmatrix} \begin{bmatrix} 1 & 0 \\ 0 & B \end{bmatrix} \begin{bmatrix} \alpha & w^T \\ 0 &
+  I_n \end{bmatrix}, \qquad B = C - \frac{1}{\alpha} v w^T.$$
+
+The matrices of order $n + 1$ are indexed by `Fin 1 ⊕ Fin n`. -/
 theorem equation_4_1_2 {α : ℝ} (hα : α ≠ 0) (w v : Fin n → ℝ) (C : Matrix (Fin n) (Fin n) ℝ) :
     fromBlocks (of fun _ _ => α) (replicateRow (Fin 1) w) (replicateCol (Fin 1) v) C =
       fromBlocks 1 0 (replicateCol (Fin 1) (α⁻¹ • v)) 1 *
@@ -81,8 +133,14 @@ theorem equation_4_1_2 {α : ℝ} (hα : α ≠ 0) (w v : Fin n → ℝ) (C : Ma
   · ext i j
     simp [Matrix.mul_apply, vecMulVec_apply]
 
-/-- **Theorem 4.1.2.** If `δ = min_j (|a_jj| − ∑_{i ≠ j} |a_ij|) > 0` (4.1.3), then `A` is
-nonsingular and `‖A⁻¹‖₁ ≤ 1/δ`. The margin is stated as a lower bound on every column. -/
+/-- **Theorem 4.1.2** of [golub2013matrix]. Let $A \in \mathbb{R}^{n \times n}$ and $\delta > 0$,
+and assume that every column $j$ satisfies
+$$\delta \le |a_{jj}| - \sum_{i \neq j} |a_{ij}|.$$
+Then $A$ is nonsingular and $\|A^{-1}\|_1 \le 1/\delta$.
+
+The source defines $\delta = \min_j (|a_{jj}| - \sum_{i \neq j} |a_{ij}|)$ in (4.1.3) and
+assumes $\delta > 0$. The theorem takes any positive lower bound $\delta$ on these column
+margins. The norm $\|\cdot\|_1$ is `Matrix.lpOpNorm 1`. -/
 theorem theorem_4_1_2 {A : Matrix (Fin n) (Fin n) ℝ} {δ : ℝ} (hδ : 0 < δ)
     (hA : ∀ j, δ ≤ |A j j| - ∑ i ∈ univ.erase j, |A i j|) :
     IsUnit A ∧ lpOpNorm 1 A⁻¹ ≤ 1 / δ := by
@@ -108,11 +166,15 @@ theorem theorem_4_1_2 {A : Matrix (Fin n) (Fin n) ℝ} {δ : ℝ} (hδ : 0 < δ)
   rw [le_div_iff₀ hδ, mul_comm]
   exact hx
 
-/-! ### §4.1.2 Symmetry and the `L D Lᵀ` factorization -/
+/-! ### §4.1.2 Symmetry and the $LDL^T$ factorization -/
 
-/-- **Theorem 4.1.3 (`L D Lᵀ` factorization).** If `A` is symmetric and `A(1:k, 1:k)` is nonsingular
-for `k = 1:n−1`, then there exist a unit lower triangular `L` and a diagonal `D` with
-`A = L D Lᵀ`, and the factorization is unique. -/
+/-- **Theorem 4.1.3** of [golub2013matrix] ($LDL^T$ factorization). Let
+$A \in \mathbb{R}^{n \times n}$ be symmetric, and let $A(1{:}k, 1{:}k)$ be nonsingular for
+$k = 1{:}n-1$. Then there exist a unit lower triangular $L$ and a diagonal $D$ with
+$$A = LDL^T,$$
+and the pair $(L, D)$ is unique.
+
+The factorization is `Matrix.IsLDM A L D L`. -/
 theorem theorem_4_1_3 {A : Matrix (Fin n) (Fin n) ℝ} (hs : A.IsSymm)
     (hA : ∀ k, IsUnit (A.strictLeadingPrincipalSubmatrix k)) :
     ∃! LD : Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ, IsLDM A LD.1 LD.2 LD.1 := by
@@ -124,9 +186,9 @@ theorem theorem_4_1_3 {A : Matrix (Fin n) (Fin n) ℝ} (hs : A.IsSymm)
   simp only [Prod.mk.injEq] at this
   exact Prod.ext this.1 this.2.1
 
-/-- **§4.1.2, the three-step solve.** "Once we have the `L D Lᵀ` factorization, then solving
-`Ax = b` is a 3-step process: `Lz = b`, `Dy = z`, `Lᵀx = y`. This works because
-`Ax = L(D(Lᵀx)) = L(Dy) = Lz = b`." -/
+/-- **Section 4.1.2** of [golub2013matrix], the three-step solve. Let $A = LDL^T$ with $L$ unit
+lower triangular and $D$ diagonal, and let $b, z, y, x \in \mathbb{R}^n$. If $Lz = b$, $Dy = z$
+and $L^T x = y$, then $Ax = b$, because $Ax = L(D(L^T x)) = L(Dy) = Lz = b$. -/
 theorem ldlt_solve {A L D : Matrix (Fin n) (Fin n) ℝ} (h : IsLDM A L D L) {b z y x : Fin n → ℝ}
     (hz : L *ᵥ z = b) (hy : D *ᵥ y = z) (hx : Lᵀ *ᵥ x = y) : A *ᵥ x = b := by
   rw [← h.mul_eq, ← mulVec_mulVec, ← mulVec_mulVec, hx, hy, hz]
@@ -137,10 +199,10 @@ section Programs
 
 variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 
-/-- **Algorithm 4.1.1 (LDLT).** "If `A ∈ ℝⁿˣⁿ` is symmetric and has an LU factorization, then this
-algorithm computes a unit lower triangular matrix `L` and a diagonal matrix
-`D = diag(d₁, …, d_n)` so `A = L D Lᵀ`. The entry `a_ij` is overwritten with `ℓ_ij` if `i > j` and
-with `d_i` if `i = j`":
+/-- **Algorithm 4.1.1** of [golub2013matrix] (LDLT). If $A \in \mathbb{R}^{n \times n}$ is symmetric
+and has an LU factorization, then the algorithm computes a unit lower triangular matrix $L$ and
+a diagonal matrix $D = \operatorname{diag}(d_1, \dots, d_n)$ so that $A = LDL^T$. The entry
+$a_{ij}$ is overwritten with $\ell_{ij}$ if $i > j$ and with $d_i$ if $i = j$.
 ```
 for j = 1:n
     for i = 1:j−1
@@ -150,8 +212,9 @@ for j = 1:n
     A(j+1:n, j) = (A(j+1:n, j) − A(j+1:n, 1:j−1) · v(1:j−1)) / A(j, j)
 end
 ```
-The inner products are running differences from the entry of `A` (`runningDiff`), and the column
-`A(j+1:n, j)` is computed entry by entry (its entries are independent). -/
+
+The inner products are running differences from the entry of $A$ (`FloatingPoint.runningDiff`).
+The column $A(j{+}1{:}n, j)$ is computed entry by entry, since its entries are independent. -/
 noncomputable def algorithm_4_1_1 (A : Matrix (Fin n) (Fin n) ℝ) : M (Matrix (Fin n) (Fin n) ℝ) :=
   (List.finRange n).foldlM (fun (A : Matrix (Fin n) (Fin n) ℝ) (j : Fin n) => do
     let v ← ((List.finRange n).filter (· < j)).foldlM (fun (v : Fin n → ℝ) (i : Fin n) => do
@@ -166,10 +229,12 @@ noncomputable def algorithm_4_1_1 (A : Matrix (Fin n) (Fin n) ℝ) : M (Matrix (
 
 end Programs
 
-/-- **A loop writing one entry of column `j` per row.** Over a duplicate-free list of rows, a loop
-whose step `i` replaces the entry `(i, j)` by a result of `h i` applied to the current row `i` has
-as results the matrices whose rows off the list are unchanged and whose row `i` on the list is the
-initial row with entry `j` replaced by a result of `h i` on the initial row. -/
+/-- A loop that writes one entry of column $j$ per row. Let $l$ be a list of rows without
+duplicates, and consider the loop over $l$ whose step $i$ replaces the entry $(i, j)$ of the
+current matrix by a result of `h i` applied to the current row $i$. Then $S'$ is a result of the
+loop from $S$ if and only if every row of $S'$ off the list equals that row of $S$, and every
+row $i$ on the list is row $i$ of $S$ with entry $j$ replaced by some result of `h i` on row $i$
+of $S$. -/
 theorem mem_run_foldlM_updateRow_iff {m k : ℕ} {l : List (Fin m)} (hl : l.Nodup) (j : Fin k)
     (h : Fin m → (Fin k → ℝ) → SetM ℝ) (S S' : Matrix (Fin m) (Fin k) ℝ) :
     S' ∈ (l.foldlM (fun (B : Matrix (Fin m) (Fin k) ℝ) (i : Fin m) => do
@@ -184,12 +249,14 @@ theorem mem_run_foldlM_updateRow_iff {m k : ℕ} {l : List (Fin m)} (hl : l.Nodu
   simp only [bind_assoc, pure_bind, SetM.mem_run_bind, SetM.mem_run_pure] at key
   exact key
 
-/-- The indices below `j`, in increasing order: the order of the book's inner products
-`A(j, 1:j−1) · v(1:j−1)` in the factorizations of this chapter. -/
+/-- The indices below $j$, in increasing order. This is the order of the inner products
+$A(j, 1{:}j-1) \cdot v(1{:}j-1)$ in the factorizations of this chapter. -/
 abbrev below (j : Fin n) : List (Fin n) := (List.finRange n).filter (· < j)
 
+/-- An index $k$ lies in `GolubVanLoan.Chapter04.below j` if and only if $k < j$. -/
 theorem mem_below {j k : Fin n} : k ∈ below j ↔ k < j := by simp [below]
 
+/-- The list `GolubVanLoan.Chapter04.below j` has no duplicates. -/
 theorem nodup_below (j : Fin n) : (below j).Nodup := (List.nodup_finRange n).filter _
 
 section Bridge
@@ -197,9 +264,9 @@ section Bridge
 variable (fp : RoundingModel ℝ)
 
 
-/-- Column `j` of the packed state `S` is a finished column of Algorithm 4.1.1: with the rounded
-products `v k = fl(ℓ_jk d_k)`, the pivot is the running difference of `a_jj` and the entries below
-it are the rounded quotients of the running differences of `a_ij` by the pivot. -/
+/-- Column $j$ of the packed state $S$ is a finished column of Algorithm 4.1.1: with rounded
+products $v_k = \mathrm{fl}(\ell_{jk} d_k)$, the pivot is the running difference of $a_{jj}$,
+and each entry below it is a rounded quotient of a running difference of $a_{ij}$ by the pivot. -/
 private def ColDone (A S : Matrix (Fin n) (Fin n) ℝ) (j : Fin n) : Prop :=
   ∃ v : Fin n → ℝ, (∀ k ∈ below j, fp.Rounds (S j k * S k k) (v k)) ∧
     RoundsRunningDiff fp (below j) (S j) v (A j j) (S j j) ∧
@@ -221,12 +288,12 @@ private theorem ColDone.congr {A S S' : Matrix (Fin n) (Fin n) ℝ} {j : Fin n}
     rw [hS i j le_rfl, hS j j le_rfl]
     exact hl
 
-/-- The loop invariant of Algorithm 4.1.1 after `c` columns: the columns `≥ c` still hold `A`, the
-columns `< c` are finished. -/
+/-- The loop invariant of Algorithm 4.1.1 after $c$ columns: the columns from $c$ on still hold $A$,
+and the columns before $c$ are finished. -/
 private def Inv (A : Matrix (Fin n) (Fin n) ℝ) (c : ℕ) (S : Matrix (Fin n) (Fin n) ℝ) : Prop :=
   (∀ i k : Fin n, c ≤ k.val → S i k = A i k) ∧ ∀ j : Fin n, j.val < c → ColDone fp A S j
 
-/-- One column step of Algorithm 4.1.1 keeps the invariant. -/
+/-- One column step of Algorithm 4.1.1 keeps the loop invariant. -/
 private theorem inv_step (A : Matrix (Fin n) (Fin n) ℝ) (j : Fin n) (S : Matrix (Fin n) (Fin n) ℝ)
     (hS : Inv fp A j S) (S' : Matrix (Fin n) (Fin n) ℝ)
     (hS' : S' ∈ ((do
@@ -306,9 +373,17 @@ private theorem inv_step (A : Matrix (Fin n) (Fin n) ℝ) (j : Fin n) (S : Matri
         · rw [hdiag, hr, Function.update_self]
           exact hl
 
-/-- **The rounding bridge of Algorithm 4.1.1**: every run in the relational model is an admissible
-`L D Lᵀ` factorization in the operation order of the algorithm, `FloatingPoint.RoundsLDL`, with
-`L = Chapter03.packedL F` and `D = diag(F)`. No hypothesis on `A`. -/
+/-- **Algorithm 4.1.1** of [golub2013matrix], rounding bridge. Let $A \in \mathbb{R}^{n \times n}$
+be arbitrary. For every packed matrix $F$ that Algorithm 4.1.1 can compute in the rounding model
+`fp`, the factors $\hat L$ and $\hat D$ stored in $F$ form a computed $LDL^T$ factorization of
+$A$ in the operation order of the algorithm: $\hat L$ is unit lower triangular, $\hat D$ is
+diagonal, each pivot $\hat d_j$ is a running difference of $a_{jj}$ and rounded products
+$\hat\ell_{jk} v_k$ with $v_k = \mathrm{fl}(\hat\ell_{jk} \hat d_k)$, $k < j$, and each
+$\hat\ell_{ij}$, $j < i$, is a rounding of $t / \hat d_j$ for a running difference $t$ of
+$a_{ij}$ and rounded products $\hat\ell_{ik} v_k$, $k < j$.
+
+The relation is `FloatingPoint.RoundsLDL fp A (GolubVanLoan.Chapter03.packedL F)
+(Matrix.diagonal F.diag)`. It needs no hypothesis on $A$. -/
 theorem algorithm_4_1_1_rounds (A : Matrix (Fin n) (Fin n) ℝ) :
     ∀ F ∈ (algorithm_4_1_1 fp.round A).run,
       RoundsLDL fp A (Chapter03.packedL F) (diagonal F.diag) := by
@@ -342,14 +417,14 @@ theorem algorithm_4_1_1_rounds (A : Matrix (Fin n) (Fin n) ℝ) :
 
 end Bridge
 
-/-- The exact semantics of Algorithm 4.1.1 is one of its runs in the exact model. -/
+/-- The exact run of Algorithm 4.1.1 is one of its runs in the exact rounding model. -/
 private theorem algorithm_4_1_1_mem_exact (A : Matrix (Fin n) (Fin n) ℝ) :
     Id.run (algorithm_4_1_1 pure A) ∈ (algorithm_4_1_1 (RoundingModel.exact ℝ).round A).run := by
   rw [RoundingModel.round_exact]
   simp only [algorithm_4_1_1, runningDiff, pure_bind, List.foldlM_pure, SetM.mem_run_pure]
   rfl
 
-/-- In the exact model, a computed `L D Lᵀ` factorization reproduces `A` on and below the diagonal
+/-- In the exact model, a computed $LDL^T$ factorization reproduces $A$ on and below the diagonal
 wherever the pivot of the column is used as a divisor. -/
 private theorem mul_mul_transpose_apply_of_roundsLDL_exact {A L D : Matrix (Fin n) (Fin n) ℝ}
     (h : RoundsLDL (RoundingModel.exact ℝ) A L D) {i k : Fin n} (hki : k ≤ i)
@@ -379,9 +454,8 @@ private theorem mul_mul_transpose_apply_of_roundsLDL_exact {A L D : Matrix (Fin 
       mul_one, div_mul_cancel₀ _ (hd hki')]
     ring
 
-/-- In the exact model, the pivots of a computed `L D Lᵀ` factorization of a symmetric matrix with
-nonsingular leading principal submatrices that serve as divisors are nonzero: by induction, the
-leading `(j+1) × (j+1)` block of `L D Lᵀ` is that of `A`, whose determinant is `d₁ ⋯ d_{j+1}`. -/
+/-- In the exact model, the pivots used as divisors in a computed $LDL^T$ factorization of a
+symmetric matrix with nonsingular leading principal submatrices are nonzero. -/
 private theorem roundsLDL_exact_diag_ne_zero {A L D : Matrix (Fin n) (Fin n) ℝ}
     (h : RoundsLDL (RoundingModel.exact ℝ) A L D) (hs : A.IsSymm)
     (hA : ∀ k, IsUnit (A.strictLeadingPrincipalSubmatrix k)) :
@@ -418,12 +492,22 @@ private theorem roundsLDL_exact_diag_ne_zero {A L D : Matrix (Fin n) (Fin n) ℝ
       zero_mul]) (by simp), transpose_apply, h.lower_diag, mul_one]
   rwa [hDL] at hj
 
-/-- **Exact correctness of Algorithm 4.1.1**: for a symmetric `A` with `A(1:k, 1:k)` nonsingular for
-`k = 1:n−1`, the exact run computes the `L D Lᵀ` factorization of Theorem 4.1.3, with `L` the unit
-lower triangle `Chapter03.packedL F` of the packed output `F` and `D` its diagonal. Read off the
-bridge at the exact model (convention 11), once the pivots used as divisors are known to be
-nonzero. Reading: the book's "has an LU factorization" is strengthened to the hypothesis of
-Theorem 4.1.3 (see the module doc). -/
+/-- **Algorithm 4.1.1** of [golub2013matrix], exact correctness. Let $A \in \mathbb{R}^{n \times n}$
+be symmetric, with $A(1{:}k, 1{:}k)$ nonsingular for $k = 1{:}n-1$. Let $F$ be the output of
+Algorithm 4.1.1 on $A$ in exact arithmetic, let $L$ be the unit lower triangular matrix stored
+strictly below the diagonal of $F$, and let $D$ be the diagonal of $F$. Then
+$$A = LDL^T,$$
+the factorization of Theorem 4.1.3.
+
+**Reading.** The source assumes that $A$ has an LU factorization. The theorem assumes instead
+the hypothesis of Theorem 4.1.3. This is stronger, since a singular matrix may have an LU
+factorization, and it is the hypothesis under which the derivation of the algorithm in the
+source divides by the pivots $d_j$, $j < n$.
+
+The factors are `GolubVanLoan.Chapter03.packedL F` and `Matrix.diagonal F.diag`. The proof reads
+the bridge `GolubVanLoan.Chapter04.algorithm_4_1_1_rounds` at the exact model, once the pivots
+used as divisors are known to be nonzero; by induction, the leading block of order $j + 1$ of
+$LDL^T$ is that of $A$, whose determinant is $d_1 \cdots d_{j+1}$. -/
 theorem algorithm_4_1_1_spec {A : Matrix (Fin n) (Fin n) ℝ} (hs : A.IsSymm)
     (hA : ∀ k, IsUnit (A.strictLeadingPrincipalSubmatrix k)) :
     IsLDM A (Chapter03.packedL (Id.run (algorithm_4_1_1 pure A)))
@@ -446,16 +530,20 @@ theorem algorithm_4_1_1_spec {A : Matrix (Fin n) (Fin n) ℝ} (hs : A.IsSymm)
       mul_mul_transpose_apply_of_roundsLDL_exact h hik fun hik' => hpiv i k hik']
     exact (hs.apply k i).symm
 
-/-! ### (4.1.4): the backward error of the `L D Lᵀ` solve -/
+/-! ### (4.1.4): the backward error of the $LDL^T$ solve -/
 
 section Solve
 
 variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 
-/-- **The solve stage of (4.1.4)** on a packed `L D Lᵀ` factor `F` (the output of Algorithm
-4.1.1): "`Lz = b`, `Dy = z`, `Lᵀx = y`" with `L = Chapter03.packedL F` and `D = diag(F)` — the
-unit lower system by Algorithm 3.1.3, the diagonal system by the rounded quotients
-`y_i = fl(z_i / f_ii)`, the upper system `Lᵀx = y` by Algorithm 3.1.4. -/
+/-- **Section 4.1.2** of [golub2013matrix], the solve stage of (4.1.4) with a packed $LDL^T$ factor
+$F$, the output of Algorithm 4.1.1: solve $Lz = b$, then $Dy = z$, then $L^T x = y$, where $L$
+is the unit lower triangular matrix stored strictly below the diagonal of $F$ and $D$ is the
+diagonal of $F$.
+
+The system $Lz = b$ is solved by Algorithm 3.1.3, the diagonal system by the rounded quotients
+$y_i = \mathrm{fl}(z_i / f_{ii})$, and $L^T x = y$ by Algorithm 3.1.4. The factor $L$ is
+`GolubVanLoan.Chapter03.packedL F`. -/
 noncomputable def solveLDLT (F : Matrix (Fin n) (Fin n) ℝ) (b : Fin n → ℝ) : M (Fin n → ℝ) := do
   let z ← Chapter03.algorithm_3_1_3 rnd (Chapter03.packedL F) b
   let y ← (List.finRange n).foldlM (fun (y : Fin n → ℝ) (i : Fin n) => do
@@ -465,13 +553,21 @@ noncomputable def solveLDLT (F : Matrix (Fin n) (Fin n) ℝ) (b : Fin n → ℝ)
 
 end Solve
 
-/-- **(4.1.4)**, rigorous form: "the computed solution `x̂` to `Ax = b` obtained via Algorithm
-4.1.1 and the usual triangular system solvers of §3.1 can be shown to satisfy a perturbed system
-`(A + E)x̂ = b`, where `|E| ≤ nu(2|A| + 4|L̂||D̂||L̂ᵀ|) + O(u²)`". For a symmetric `A`, a
-factor `F` computed by Algorithm 4.1.1 with nonzero pivots and a solution `x̂` computed from it by
-the three-step solve (`solveLDLT`), with `L̂ = Chapter03.packedL F` and `D̂ = diag(F)`:
-`(A + E)x̂ = b` with `|E| ≤ γ_{3n+2} |L̂||D̂||L̂ᵀ|` entrywise, which gives the printed first-order
-bound for `n ≥ 2` (`γ_{3n+2} = (3n + 2)u + O(u²)` and `3n + 2 ≤ 4n`). -/
+/-- **Equation (4.1.4)** of [golub2013matrix]. Let $A \in \mathbb{R}^{n \times n}$ be symmetric and
+$b \in \mathbb{R}^n$, and let the unit roundoff satisfy $(3n + 2)u < 1$. Let $F$ be a packed
+matrix computed by Algorithm 4.1.1 from $A$ with every diagonal entry $f_{jj}$ nonzero, and let
+$\hat L$ and $\hat D$ be the unit lower triangular and the diagonal factors stored in $F$. Then
+every solution $\hat x$ computed from $F$ and $b$ by the three-step solve
+`GolubVanLoan.Chapter04.solveLDLT` satisfies $(A + E)\hat x = b$ for some
+$E \in \mathbb{R}^{n \times n}$ with
+$$|E| \le \gamma_{3n+2} |\hat L| |\hat D| |\hat L^T|$$
+entrywise.
+
+The source states that the solution computed via Algorithm 4.1.1 and the triangular solvers of
+§3.1 satisfies $(A + E)\hat x = b$ with $|E| \le nu(2|A| + 4|\hat L||\hat D||\hat L^T|) +
+O(u^2)$. The rigorous bound implies it to first order for $n \ge 2$, since
+$\gamma_{3n+2} = (3n + 2)u + O(u^2)$ and $3n + 2 \le 4n$. The factors are
+`GolubVanLoan.Chapter03.packedL F` and `Matrix.diagonal F.diag`. -/
 theorem equation_4_1_4 {fp : RoundingModel ℝ} (hn : ((3 * n + 2 : ℕ) : ℝ) * fp.u < 1)
     {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) (b : Fin n → ℝ) :
     ∀ F ∈ (algorithm_4_1_1 fp.round A).run, (∀ j, F j j ≠ 0) →

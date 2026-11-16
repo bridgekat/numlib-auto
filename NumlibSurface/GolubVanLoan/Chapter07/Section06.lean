@@ -7,46 +7,140 @@ import NumlibSurface.GolubVanLoan.Chapter05.Section01
 import NumlibSurface.GolubVanLoan.Chapter07.Section05
 
 /-!
-# Golub–Van Loan §7.6: invariant subspace computations
+# Golub and Van Loan, Section 7.6: Invariant subspace computations
 
-Surface file for Gene H. Golub and Charles F. Van Loan, *Matrix Computations*, 4th edition
-[golub2013matrix], §7.6: inverse iteration (7.6.1) and its stopping criterion (7.6.2), the unique
-invariant subspace of a leading Schur block (§7.6.2), the `2 × 2` swap that reorders a Schur form,
-the bounds around the block-diagonalizing Sylvester equation (7.6.6) and the condition of the
-block unit triangular `Y_ij` (§7.6.3), and the Jordan block counts from null space dimensions
-(§7.6.5).
+This module formalizes §7.6 of [golub2013matrix], which computes eigenvectors and invariant
+subspaces of a matrix $A \in \mathbb{R}^{n \times n}$ from an approximate eigenvalue or from a Schur
+decomposition $Q^T A Q = T$. It covers inverse iteration (7.6.1), its convergence and its stopping
+criterion (7.6.2) (§7.6.1); the invariant subspace spanned by the leading columns of $Q$ when the
+diagonal blocks of $T$ have disjoint spectra, the $2 \times 2$ swap, and the reordering of a
+triangular Schur form by Algorithm 7.6.1 (§7.6.2); block diagonalization of $T$ by the matrices
+$Y_{ij}$, the column recurrences (7.6.4)–(7.6.5) of the Sylvester equation $FZ - ZG = C$, the
+Bartels–Stewart algorithm (Algorithm 7.6.2), Algorithm 7.6.3, the bound (7.6.6) through the
+separation, and the condition number of $Y_{ij}$ (§7.6.3); eigenvectors and the eigenvalue condition
+from the Schur form (§7.6.4); and the number of Jordan blocks of each size from the dimensions of
+the null spaces of the powers of $N = C - \lambda I$ (§7.6.5).
+
+The proofs specialize the backbone: inverse iteration is the power method `Krylov.inverseIterate` of
+`Numlib.Eigen.PowerMethod`, the separation is `Matrix.sep` of
+`Numlib.LinearAlgebra.Matrix.Sylvester`, and the Jordan form is `Matrix.jordanForm` of
+`Numlib.LinearAlgebra.Matrix.Jordan`. The invariant subspace result is
+`GolubVanLoan.Chapter07.span_leading_schurVectors_eq` of §7.3. The algorithms call Algorithm 3.1.2
+(back substitution) and the Givens rotations of §5.1.
+
+## Main definitions
+
+* Equation (7.6.1), `GolubVanLoan.Chapter07.inverseIteration`: inverse iteration with shift $\mu$,
+  which returns the vectors $q^{(k)}$ and the Rayleigh quotients $\lambda^{(k)}$.
+* Algorithm 7.6.1, `GolubVanLoan.Chapter07.algorithm_7_6_1`: reordering of a triangular real Schur
+  form by Givens rotations so that the diagonal entries in a set $\Delta$ come first.
+* Algorithm 7.6.2, `GolubVanLoan.Chapter07.algorithm_7_6_2`: the Bartels–Stewart algorithm for
+  $FZ - ZG = C$ with $F$ and $G$ upper triangular.
+* Algorithm 7.6.3, `GolubVanLoan.Chapter07.algorithm_7_6_3`: block diagonalization of a Schur form
+  $T = Q^T A Q$, which overwrites $Q$ with $QY$.
+
+## Main results
+
+* Equation (7.6.1), `GolubVanLoan.Chapter07.equation_7_6_1`: if the shift $\mu$ is closer to the
+  eigenvalue $\lambda_j$ than to every other eigenvalue, then the direction of $q^{(k)}$ converges
+  to an eigenvector for $\lambda_j$ and $\lambda^{(k)} \to \lambda_j$.
+* Equation (7.6.2), `GolubVanLoan.Chapter07.equation_7_6_2`: with $r = (A - \mu I) q$, the pair
+  $(\mu, q)$ is an exact eigenpair of $A - r q^T$, and $\|r q^T\|_\infty \le \sqrt{n} \|r\|_\infty$.
+* §7.6.2, `GolubVanLoan.Chapter07.invariantSubspace_leading_unique`: if $\lambda(T_{11}) \cap
+  \lambda(T_{22}) = \emptyset$, the first $p$ columns of $Q$ span the unique invariant subspace of
+  $A$ for $\lambda(T_{11})$.
+* §7.6.2, `GolubVanLoan.Chapter07.swap_two_by_two`: a Givens rotation that zeroes the second entry
+  of $(t_{12}, \lambda_2 - \lambda_1)$ swaps the diagonal entries $\lambda_1$ and $\lambda_2$ of a
+  $2 \times 2$ upper triangular matrix.
+* Algorithm 7.6.1, `GolubVanLoan.Chapter07.algorithm_7_6_1_spec`: after $n$ passes the output is an
+  orthogonal similarity of $T$, upper triangular, with the diagonal entries in $\Delta$ first.
+* §7.6.3, `GolubVanLoan.Chapter07.blockDiagonalization_update`: $Y_{ij} = I + Z$ has inverse
+  $I - Z$, and $Y_{ij}^{-1} T Y_{ij} = T + TZ - ZT$.
+* Equations (7.6.4)–(7.6.5), `GolubVanLoan.Chapter07.equation_7_6_5`: the columns of $FZ - ZG$ for
+  an upper Hessenberg $G$, in the triangular case and in the case of a $2 \times 2$ diagonal block.
+* Algorithm 7.6.2, `GolubVanLoan.Chapter07.algorithm_7_6_2_spec`: in exact arithmetic the output is
+  the unique solution of $FZ - ZG = C$.
+* Algorithm 7.6.3, `GolubVanLoan.Chapter07.algorithm_7_6_3_spec`: in exact arithmetic the output is
+  $QY$ with $Y$ block unit upper triangular and $Y^{-1} T Y$ block diagonal.
+* Equation (7.6.6), `GolubVanLoan.Chapter07.equation_7_6_6`: $\operatorname{sep}(T_{ii}, T_{jj})$ is
+  at most the distance between the spectra, and a solution of $T_{ii} Z - Z T_{jj} = -T_{ij}$ has
+  $\|Z\|_F \le \|T_{ij}\|_F / \operatorname{sep}(T_{ii}, T_{jj})$.
+* §7.6.3, `GolubVanLoan.Chapter07.kappaF_blockUnit`: $\kappa_F(Y_{ij}) = n_i + n_j + \|Z\|_F^2$.
+* §7.6.4, `GolubVanLoan.Chapter07.schur_eigenvectors`: right and left eigenvectors of $A$ from the
+  Schur form, and the eigenvalue condition $\sqrt{(1 + w^T w)(1 + z^T z)}$.
+* §7.6.5, `GolubVanLoan.Chapter07.jordan_block_count`: $\dim \operatorname{null}(N^{k+1}) - \dim
+  \operatorname{null}(N^k)$ is the number of Jordan blocks for $\lambda$ of size at least $k + 1$.
+
+## Proof outline
+
+Each step of Algorithm 7.6.1 is the $2 \times 2$ swap in the plane $(k, k+1)$, so a pass acts on the
+diagonal as one pass of a bubble sort, and $n$ passes sort it. Algorithm 7.6.3 builds $Y$ as the
+product of the $Y_{ij}$ in the order of the loop. After the pair $(i, j)$ the block $(i, j)$ of
+$Y^{-1} T Y$ is zero, by the Sylvester equation that Algorithm 7.6.2 solves, and it stays zero.
 
 ## Conventions
 
-Real `Matrix (Fin n) (Fin n) ℝ` where the book is real; complex where eigenvalues are complex (the
-unique invariant subspace, stated over `ℂ` with a unitary `Q`, the real orthogonal case being an
-instance); inverse iteration over any `RCLike` field. The `∞`-norm of a matrix is the scoped
-`Matrix.Norms.Operator` norm and the `∞`-norm of a vector the sup norm of `Fin n → ℝ`; the Frobenius
-norm is the scoped `Matrix.Norms.Frobenius` norm.
+* Matrices are real, `Matrix (Fin n) (Fin n) ℝ`, where the source is real. The unique invariant
+  subspace (§7.6.2) and the bound (7.6.6) are stated over `ℂ`, and inverse iteration over any
+  `RCLike` field.
+* Indices are 0-based: the source's $t_{kk}$, $k = 1, \dots, n$, is `T (k - 1) (k - 1)` with
+  `k - 1 : Fin n`.
+* The $\infty$-norm of a matrix is the operator norm of the scope `Matrix.Norms.Operator`, and the
+  $\infty$-norm of a vector is the sup norm of `Fin n → ℝ`. The Frobenius norm is the norm of the
+  scope `Matrix.Norms.Frobenius`.
 
-## Algorithms
+## Implementation notes
 
-Programs generic in a monad and a rounding hook (conventions 1–14 of `NumlibSurface/GolubVanLoan`),
-with their exact semantics; the book analyses none of their rounding errors precisely.
+* The algorithms are programs generic in a monad `M` and a rounding hook `rnd : ℝ → M ℝ`, as in the
+  algorithm conventions of `NumlibSurface.GolubVanLoan`. Each has its exact semantics (`M := Id`,
+  `rnd := pure`); the source analyses none of their rounding errors precisely, and no rounding
+  theorem is stated.
+* Algorithm 7.6.1 calls Algorithm 5.1.3 (`GolubVanLoan.Chapter05.algorithm_5_1_3`) and the Givens
+  updates `GolubVanLoan.Chapter05.givensApplyLeft` and `GolubVanLoan.Chapter05.givensApplyRight`.
+  Its `while` loop is at most `fuel` passes with a `done` flag.
+* Algorithm 7.6.2 calls the back substitution Algorithm 3.1.2
+  (`GolubVanLoan.Chapter03.algorithm_3_1_2`).
+* Algorithm 7.6.3 represents the partitioning (7.6.3) by a block index `b : Fin n → Fin q`, which
+  the specification assumes monotone. It extracts the diagonal blocks for Algorithm 7.6.2 and
+  updates $T$ and $Q$ in place on index lists.
 
-* Algorithm 7.6.1 (reordering the Schur form, no `2 × 2` bumps) calls chapter 5's `givens`
-  (Algorithm 5.1.3) and `givensApplyLeft`/`givensApplyRight`; its `while` loop is `fuel` passes
-  with a `done` flag. `algorithm_7_6_1_spec`: after `n` passes the diagonal entries in `Δ` lead
-  (counted with multiplicity), the proof being the bubble sort of the diagonal.
-* Algorithm 7.6.2 (Bartels–Stewart) calls chapter 3's back substitution (Algorithm 3.1.2);
-  `algorithm_7_6_2_spec`: the unique solution of `F Z - Z G = C` for triangular `F`, `G` with
-  disjoint diagonals.
-* Algorithm 7.6.3 (block diagonalization) extracts the diagonal blocks of the partitioning (7.6.3),
-  given by a monotone block index `b : Fin n → Fin q`, for Algorithm 7.6.2, and updates `T` and `Q`
-  on index lists; `algorithm_7_6_3_spec`: `Q' = Q Y` with `Y⁻¹ T Y` block diagonal, for upper
-  triangular `T` (Algorithm 7.6.2 is stated for triangular blocks only; the quasi-triangular case
-  needs the `2p × 2p` systems (7.6.5), which the book does not spell out as an algorithm).
+## Deviations from the source
+
+* **Equation (7.6.1)** (reading). The source describes the convergence of inverse iteration
+  informally; the statement fixes a precise form, in which $A$ need not be diagonalizable. See
+  `GolubVanLoan.Chapter07.equation_7_6_1`.
+* **Equation (7.6.1)** (generalization). Inverse iteration is defined over any `RCLike` field, not
+  only over $\mathbb{R}$. See `GolubVanLoan.Chapter07.inverseIteration`.
+* **Equation (7.6.2)** (reading). The source leaves the factor $\sqrt{n}$ in the bound on the
+  perturbation implicit; the statement makes it explicit. See
+  `GolubVanLoan.Chapter07.equation_7_6_2`.
+* **§7.6.2, unique invariant subspace** (generalization). The source has a real orthogonal $Q$; the
+  statement has a complex unitary $Q$, of which the real case is an instance. See
+  `GolubVanLoan.Chapter07.invariantSubspace_leading_unique`.
+* **Algorithm 7.6.1** (reading). The test $\{t_{11}, \dots, t_{pp}\} = \Delta$ is read with
+  multiplicities: the diagonal entries in $\Delta$ come first. See
+  `GolubVanLoan.Chapter07.algorithm_7_6_1_spec`.
+* **Algorithm 7.6.3** (reading). The source applies Algorithm 7.6.2, which it states for triangular
+  matrices only, to the blocks of a quasi-triangular $T$; the specification assumes $T$ upper
+  triangular. See `GolubVanLoan.Chapter07.algorithm_7_6_3_spec`.
+* **§7.6.3, condition of $Y_{ij}$** (correction). The source prints
+  $\kappa_F(Y_{ij}) = n_i^2 + n_j^2 + \|Z\|_F^2$; the value is $n_i + n_j + \|Z\|_F^2$, because
+  $\|I_k\|_F^2 = k$. See `GolubVanLoan.Chapter07.kappaF_blockUnit`.
+* **§7.6.4** (generalization). The identities hold without the hypothesis $\lambda \notin
+  \lambda(T_{11}) \cup \lambda(T_{33})$, which the source needs only to solve for $w$ and $z$. See
+  `GolubVanLoan.Chapter07.schur_eigenvectors`.
 
 ## Not formalized
 
-The SVD heuristic for why one step of inverse iteration suffices; the stability claims of §7.6.2
-and the relative error of the Sylvester solve after (7.6.6) (stated with `≈`, no derivation);
-Bavely and Stewart's algorithm; the `7 × 7` Jordan-structure example; flop counts.
+* **The quasi-triangular case of Algorithm 7.6.3.** It needs the $2p \times 2p$ systems (7.6.5),
+  which the source does not write as an algorithm.
+* **The SVD heuristic for why one step of inverse iteration suffices.**
+* **The stability claims of §7.6.2.**
+* **The relative error of the Sylvester solve after (7.6.6).** The source states it with $\approx$
+  and gives no derivation.
+* **The algorithm of Bavely and Stewart.**
+* **The $7 \times 7$ example of a Jordan structure in §7.6.5.**
+* **The flop counts.** Operation counts are out of scope for the library.
 -/
 
 open Matrix Filter Topology
@@ -65,11 +159,23 @@ section RCLike
 
 variable {𝕜 : Type*} [RCLike 𝕜]
 
-/-- **(7.6.1), inverse iteration**, over any `RCLike` field (the book states it over `ℝ`): solve
-`(A - μ I) z^(k) = q^(k-1)`, `q^(k) = z^(k)/‖z^(k)‖₂`, `λ^(k) = q^(k)ᴴ A q^(k)`, returned as the
-pair `(q^(k), λ^(k))`; the solve is `z^(k) = (A - μ I)⁻¹ q^(k-1)`. "Inverse iteration is just the
-power method applied to `(A - μI)⁻¹`": for a unit `q₀` and nonsingular `A - μ I` the vectors are the
-backbone's `Krylov.inverseIterate` (`inverseIteration_fst`). -/
+/-- **Equation (7.6.1)** of [golub2013matrix] (inverse iteration). Let
+$A \in \mathbb{K}^{n \times n}$ with $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, let
+$\mu \in \mathbb{K}$ and $q^{(0)} \in \mathbb{K}^n$. Inverse iteration computes, for
+$k = 1, 2, \dots$,
+$$(A - \mu I) z^{(k)} = q^{(k-1)}, \qquad q^{(k)} = z^{(k)} / \|z^{(k)}\|_2, \qquad
+  \lambda^{(k)} = q^{(k)H} A q^{(k)},$$
+and returns the pair $(q^{(k)}, \lambda^{(k)})$; at $k = 0$ it returns
+$(q^{(0)}, q^{(0)H} A q^{(0)})$.
+
+**Generalization.** The source states inverse iteration over $\mathbb{R}$; the definition is
+over any `RCLike` field.
+
+The solve is $z^{(k)} = (A - \mu I)^{-1} q^{(k-1)}$ with the matrix inverse, which is $0$ when
+$A - \mu I$ is singular; then $z^{(k)} = q^{(k)} = 0$. The source calls inverse iteration the
+power method applied to $(A - \mu I)^{-1}$: for a unit $q^{(0)}$ and nonsingular $A - \mu I$ the
+vectors are the backbone's `Krylov.inverseIterate`
+(`GolubVanLoan.Chapter07.inverseIteration_fst`). -/
 noncomputable def inverseIteration (A : Matrix (Fin n) (Fin n) 𝕜) (μ : 𝕜)
     (q₀ : EuclideanSpace 𝕜 (Fin n)) : ℕ → EuclideanSpace 𝕜 (Fin n) × 𝕜
   | 0 => (q₀, inner 𝕜 q₀ (toEuclideanLin A q₀))
@@ -78,15 +184,16 @@ noncomputable def inverseIteration (A : Matrix (Fin n) (Fin n) 𝕜) (μ : 𝕜)
     let q := (‖z‖ : 𝕜)⁻¹ • z
     (q, inner 𝕜 q (toEuclideanLin A q))
 
-/-- The eigenvalue estimate of inverse iteration is the Rayleigh quotient of its vector. -/
+/-- The eigenvalue estimate $\lambda^{(k)}$ of inverse iteration is the Rayleigh quotient
+$q^{(k)H} A q^{(k)}$ of its vector $q^{(k)}$, for every $k$. -/
 theorem inverseIteration_snd (A : Matrix (Fin n) (Fin n) 𝕜) (μ : 𝕜)
     (q₀ : EuclideanSpace 𝕜 (Fin n)) (k : ℕ) :
     (inverseIteration A μ q₀ k).2 =
       inner 𝕜 (inverseIteration A μ q₀ k).1 (toEuclideanLin A (inverseIteration A μ q₀ k).1) := by
   cases k <;> rfl
 
-/-- The operator of `A - μ I` is `A - μ` on `EuclideanSpace`, and for nonsingular `A - μ I` its
-ring inverse is the operator of the matrix inverse. -/
+/-- For nonsingular $A - \mu I$, the operator of $A - \mu I$ on `EuclideanSpace` is a unit whose
+ring inverse is the operator of $(A - \mu I)^{-1}$. -/
 private theorem ringInverse_toEuclideanLin_sub {A : Matrix (Fin n) (Fin n) 𝕜} {μ : 𝕜}
     (hA : IsUnit (A - μ • 1)) :
     IsUnit (toEuclideanLin A - μ • (1 : Module.End 𝕜 (EuclideanSpace 𝕜 (Fin n)))) ∧
@@ -112,8 +219,9 @@ private theorem ringInverse_toEuclideanLin_sub {A : Matrix (Fin n) (Fin n) 𝕜}
     _ = toEuclideanLin (A - μ • 1)⁻¹ := by
         rw [← mul_assoc, Ring.inverse_mul_cancel _ hu, one_mul]
 
-/-- For a unit starting vector and nonsingular `A - μ I`, the vectors of inverse iteration (7.6.1)
-are the backbone's `Krylov.inverseIterate`, the power method on `(A - μ I)⁻¹`. -/
+/-- Let $A - \mu I$ be nonsingular and $\|q^{(0)}\|_2 = 1$. Then the vectors $q^{(k)}$ of inverse
+iteration (7.6.1) are the backbone's `Krylov.inverseIterate`, the power method on
+$(A - \mu I)^{-1}$. -/
 theorem inverseIteration_fst {A : Matrix (Fin n) (Fin n) 𝕜} {μ : 𝕜} (hA : IsUnit (A - μ • 1))
     {q₀ : EuclideanSpace 𝕜 (Fin n)} (hq₀ : ‖q₀‖ = 1) (k : ℕ) :
     (inverseIteration A μ q₀ k).1 = Krylov.inverseIterate (toEuclideanLin A) μ q₀ k := by
@@ -123,13 +231,24 @@ theorem inverseIteration_fst {A : Matrix (Fin n) (Fin n) 𝕜} {μ : 𝕜} (hA :
   change q₀ = _
   rw [hq₀, RCLike.ofReal_one, inv_one, one_smul]
 
-/-- **§7.6.1, the analysis of (7.6.1), rigorous.** Let `A - μ I` be nonsingular, `q^(0) = u + w`
-with `u ≠ 0` an eigenvector of `A` for `λ_j` and `w` in the sum of the generalized eigenspaces of
-the other eigenvalues (the book's `q^(0) = ∑ β_i x_i` with `β_j ≠ 0`), and suppose `μ` is closer to
-`λ_j` than to every other eigenvalue. Then `q^(k)` converges to the direction of `x_j` — the
-rescaled `((λ_j - μ)/|λ_j - μ|)^k q^(k)` tends to `u/‖u‖` — and `λ^(k) → λ_j`: "if `μ` is much
-closer to an eigenvalue `λ_j` than to the other eigenvalues, then `q^(k)` is rich in the direction
-of `x_j`". -/
+/-- **Equation (7.6.1)** of [golub2013matrix], convergence of inverse iteration. Let
+$A \in \mathbb{K}^{n \times n}$ with $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, and let
+$\mu, \lambda_j \in \mathbb{K}$ with $A - \mu I$ nonsingular. Let $u \neq 0$ satisfy
+$Au = \lambda_j u$, let $w$ lie in the sum of the generalized eigenspaces of $A$ for the
+eigenvalues $\nu \neq \lambda_j$, and let $q^{(0)} = u + w$ with $\|q^{(0)}\|_2 = 1$. Suppose
+that $|\lambda_j - \mu| < |\nu - \mu|$ for every eigenvalue $\nu \neq \lambda_j$ of $A$. Then
+the iterates $(q^{(k)}, \lambda^{(k)})$ of (7.6.1) satisfy
+$$\Bigl(\frac{\lambda_j - \mu}{|\lambda_j - \mu|}\Bigr)^k q^{(k)} \to \frac{u}{\|u\|_2}
+  \quad\text{and}\quad \lambda^{(k)} \to \lambda_j \qquad (k \to \infty).$$
+
+**Reading.** The source argues informally: it writes $q^{(0)} = \sum_i \beta_i x_i$ in
+eigenvectors with $\beta_j \neq 0$, and says that if $\mu$ is much closer to $\lambda_j$ than to
+the other eigenvalues, then $q^{(k)}$ is rich in the direction of $x_j$. The statement makes
+this precise as the convergence of the direction of $q^{(k)}$ and of $\lambda^{(k)}$, and it
+lets the component $w$ lie in generalized eigenspaces, so that $A$ need not be diagonalizable.
+
+The proof specializes `Krylov.tendsto_smul_inverseIterate` and
+`Krylov.tendsto_inner_inverseIterate`. -/
 theorem equation_7_6_1 {A : Matrix (Fin n) (Fin n) 𝕜} {μ l : 𝕜} (hA : IsUnit (A - μ • 1))
     {u w q₀ : EuclideanSpace 𝕜 (Fin n)} (hq₀ : ‖q₀‖ = 1) (hu : toEuclideanLin A u = l • u)
     (hu0 : u ≠ 0)
@@ -153,10 +272,18 @@ section LInfty
 
 open scoped Matrix.Norms.Operator
 
-/-- **(7.6.2) and the sentence after it.** With `r = (A - μ I) q` for a unit `q` and
-`E = -r qᵀ`, `(A + E) q = μ q`, and `‖E‖_∞ = ‖r‖_∞ ‖q‖₁ ≤ √n ‖r‖_∞`: the stopping test
-`‖r‖_∞ ≤ c u ‖A‖_∞` makes `(μ, q)` an exact eigenpair of a matrix within `√n c u ‖A‖_∞` of `A` (the
-book leaves the factor `√n` implicit). -/
+/-- **Equation (7.6.2)** of [golub2013matrix] and the sentence after it. Let
+$A \in \mathbb{R}^{n \times n}$, $\mu \in \mathbb{R}$ and $q \in \mathbb{R}^n$ with
+$\|q\|_2 = 1$. Put $r = (A - \mu I) q$ and $E = -r q^T$. Then
+$$(A + E) q = \mu q, \qquad \|E\|_\infty = \|r\|_\infty \|q\|_1 \le \sqrt{n} \, \|r\|_\infty.$$
+Hence the stopping test $\|r\|_\infty \le c u \|A\|_\infty$ of (7.6.2) makes $(\mu, q)$ an exact
+eigenpair of a matrix $A + E$ with $\|E\|_\infty \le \sqrt{n} \, c u \|A\|_\infty$.
+
+**Reading.** The source leaves the factor $\sqrt{n}$ in the bound on $E$ implicit; the statement
+makes it explicit.
+
+The matrix norm is the $\infty$-operator norm of the scope `Matrix.Norms.Operator`, $\|q\|_1$ is
+written $\sum_i |q_i|$, and $r q^T$ is `Matrix.vecMulVec r q`. -/
 theorem equation_7_6_2 {A : Matrix (Fin n) (Fin n) ℝ} {μ : ℝ} {q : Fin n → ℝ}
     (hq : ‖WithLp.toLp 2 q‖ = 1) :
     (A + -vecMulVec ((A - μ • 1) *ᵥ q) q) *ᵥ q = μ • q ∧
@@ -194,10 +321,21 @@ end LInfty
 
 /-! ### §7.6.2 Orthogonal bases for selected invariant subspaces -/
 
-/-- **§7.6.2.** If `Qᴴ A Q = [T₁₁ T₁₂; 0 T₂₂]` (`Q` unitary — orthogonal in the book's real setting
-— `T₁₁` of size `p`) and `λ(T₁₁) ∩ λ(T₂₂) = ∅`, then the first `p` columns of `Q` span the unique
-invariant subspace associated with `λ(T₁₁)`: every `A`-invariant subspace of dimension `p` on which
-`A` has only eigenvalues from `λ(T₁₁)` equals it (the book's "(See §7.1.4.)"). -/
+/-- **§7.6.2** of [golub2013matrix], the unique invariant subspace. Let
+$A, Q \in \mathbb{C}^{(p+q) \times (p+q)}$ with $Q$ unitary, and suppose that
+$$Q^H A Q = \begin{bmatrix} T_{11} & T_{12} \\ 0 & T_{22} \end{bmatrix}$$
+with $T_{11} \in \mathbb{C}^{p \times p}$, $T_{22} \in \mathbb{C}^{q \times q}$ and
+$\lambda(T_{11}) \cap \lambda(T_{22}) = \emptyset$. Let $S_1$ be the span of the first $p$
+columns of $Q$. Then $S_1$ is the sum of the generalized eigenspaces of $A$ for the eigenvalues
+in $\lambda(T_{11})$. Moreover, every $A$-invariant subspace $S$ of dimension $p$ that contains
+no eigenvector of $A$ for an eigenvalue outside $\lambda(T_{11})$ equals $S_1$. This is the
+unique invariant subspace associated with $\lambda(T_{11})$, as in §7.1.4 of the source.
+
+**Generalization.** The source has a real orthogonal $Q$; the statement has a complex unitary
+$Q$, and the real case is an instance.
+
+The block form is stated through `Matrix.reindex` along `finSumFinEquiv` and
+`Matrix.fromBlocks`. The proof is `GolubVanLoan.Chapter07.span_leading_schurVectors_eq`. -/
 theorem invariantSubspace_leading_unique {p q : ℕ} {A Q : Matrix (Fin (p + q)) (Fin (p + q)) ℂ}
     (hQ : Q ∈ unitaryGroup (Fin (p + q)) ℂ) {T₁₁ : Matrix (Fin p) (Fin p) ℂ}
     {T₁₂ : Matrix (Fin p) (Fin q) ℂ} {T₂₂ : Matrix (Fin q) (Fin q) ℂ}
@@ -211,11 +349,17 @@ theorem invariantSubspace_leading_unique {p q : ℕ} {A Q : Matrix (Fin (p + q))
         S = Submodule.span ℂ (Set.range fun i : Fin p => Q.col (Fin.castAdd q i)) :=
   span_leading_schurVectors_eq hQ hT (Set.disjoint_iff_inter_eq_empty.2 hdisj)
 
-/-- **§7.6.2, the `2 × 2` swap.** For `T_F = [λ₁ t₁₂; 0 λ₂]`, `x = (t₁₂, λ₂ - λ₁)` satisfies
-`T_F x = λ₂ x`; if `Q_D = [c s; -s c]` is a rotation with `(Q_Dᵀ x)₂ = 0` (the output of
-`givens(t₁₂, λ₂ - λ₁)`), then `Q_Dᵀ T_F Q_D = [λ₂ t₁₂; 0 λ₁]`: the diagonal is swapped, the `(2, 1)`
-entry is zero, and — for this sign convention — the `(1, 2)` entry is `t₁₂` itself (the book's
-`±t₁₂`). -/
+/-- **§7.6.2** of [golub2013matrix], the $2 \times 2$ swap. Let $\lambda_1, \lambda_2, t_{12}, c, s
+\in \mathbb{R}$ with $c^2 + s^2 = 1$, and put
+$$T_F = \begin{bmatrix} \lambda_1 & t_{12} \\ 0 & \lambda_2 \end{bmatrix}, \qquad
+  x = \begin{bmatrix} t_{12} \\ \lambda_2 - \lambda_1 \end{bmatrix}, \qquad
+  Q_D = \begin{bmatrix} c & s \\ -s & c \end{bmatrix}.$$
+If the second entry of $Q_D^T x$ is zero, as for the output of
+$\mathtt{givens}(t_{12}, \lambda_2 - \lambda_1)$, then $T_F x = \lambda_2 x$ and
+$$Q_D^T T_F Q_D = \begin{bmatrix} \lambda_2 & t_{12} \\ 0 & \lambda_1 \end{bmatrix}.$$
+
+The source writes the $(1, 2)$ entry of the result as $\pm t_{12}$; with this sign convention
+for $Q_D$ it is $t_{12}$. The second entry of a vector is index `1`. -/
 theorem swap_two_by_two {l₁ l₂ t c s : ℝ} (hcs : c ^ 2 + s ^ 2 = 1)
     (hQx : ((!![c, s; -s, c])ᵀ *ᵥ ![t, l₂ - l₁]) 1 = 0) :
     !![l₁, t; 0, l₂] *ᵥ ![t, l₂ - l₁] = l₂ • ![t, l₂ - l₁] ∧
@@ -247,24 +391,31 @@ section Reorder
 
 variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 
-/-- The test of the `while` loop of Algorithm 7.6.1, `{t₁₁, …, t_pp} = Δ`, read with
-multiplicities: the diagonal entries of `T` that lie in `Δ` come first (every diagonal entry
-above one in `Δ` is in `Δ`). -/
+/-- The test of the `while` loop of Algorithm 7.6.1, $\{t_{11}, \dots, t_{pp}\} = \Delta$, read with
+multiplicities: $T$ satisfies it if every diagonal entry above a diagonal entry in $\Delta$ is
+also in $\Delta$, that is, the diagonal entries in $\Delta$ come first. -/
 def IsDeltaLeading (Δ : Finset ℝ) (T : Matrix (Fin n) (Fin n) ℝ) : Prop :=
   ∀ k j : Fin n, j ≤ k → T k k ∈ Δ → T j j ∈ Δ
 
-/-- The `while` test of Algorithm 7.6.1 is decidable (comparisons of reals, convention 4). -/
+/-- The `while` test of Algorithm 7.6.1 is decidable, through the decidable comparisons of real
+numbers. -/
 noncomputable instance instDecidableIsDeltaLeading (Δ : Finset ℝ)
     (T : Matrix (Fin n) (Fin n) ℝ) : Decidable (IsDeltaLeading Δ T) := by
   unfold IsDeltaLeading
   infer_instance
 
-/-- One step `k` of the inner loop of Algorithm 7.6.1 on the pair `(Q, T)` (the identity unless
-`k + 1 < n`): if `t_kk ∉ Δ` and `t_{k+1,k+1} ∈ Δ` (exact comparisons),
-`[c, s] = givens(T(k, k+1), T(k+1, k+1) - T(k, k))` (chapter 5's Algorithm 5.1.3, the difference
-rounded), then `T(k:k+1, k:n) = [c s; -s c]ᵀ T(k:k+1, k:n)`,
-`T(1:k+1, k:k+1) = T(1:k+1, k:k+1) [c s; -s c]` and `Q(1:n, k:k+1) = Q(1:n, k:k+1) [c s; -s c]`
-(chapter 5's `givensApplyLeft` / `givensApplyRight` on the column and row lists). -/
+/-- One step $k$ of the inner loop of Algorithm 7.6.1 on the pair $(Q, T)$, with $k$ 0-based. If
+$k + 1 < n$, $t_{kk} \notin \Delta$ and $t_{k+1,k+1} \in \Delta$ (exact comparisons), the step
+computes $[c, s] = \mathtt{givens}(t_{k,k+1}, \mathrm{fl}(t_{k+1,k+1} - t_{kk}))$ by Algorithm 5.1.3
+and puts $G = \begin{bmatrix} c & s \\ -s & c \end{bmatrix}$. It then replaces rows $k, k+1$ of $T$
+in the columns $j \ge k$ by their product with $G^T$ on the left, columns $k, k+1$ of $T$ in the
+rows $i \le k + 1$ by their product with $G$ on the right, and columns $k, k+1$ of $Q$ by their
+product with $G$ on the right. These are the source's
+$$T(k{:}k{+}1, k{:}n) = G^T \, T(k{:}k{+}1, k{:}n), \qquad
+  T(1{:}k{+}1, k{:}k{+}1) = T(1{:}k{+}1, k{:}k{+}1) \, G, \qquad
+  Q(1{:}n, k{:}k{+}1) = Q(1{:}n, k{:}k{+}1) \, G,$$
+computed by `GolubVanLoan.Chapter05.givensApplyLeft` and `GolubVanLoan.Chapter05.givensApplyRight`
+on lists of indices. Otherwise the step returns $(Q, T)$ unchanged. -/
 noncomputable def schurSwapStep (Δ : Finset ℝ)
     (QT : Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ) (k : ℕ) :
     M (Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ) :=
@@ -282,9 +433,10 @@ noncomputable def schurSwapStep (Δ : Finset ℝ)
     else pure QT
   else pure QT
 
-/-- One pass of the `while` loop of Algorithm 7.6.1 on the state `((Q, T), done)`: nothing once
-`done`; `done` is set when the test `IsDeltaLeading` holds; otherwise the `for` loop, the fold of
-`schurSwapStep` over `k = 0, …, n-2`. -/
+/-- One pass of the `while` loop of Algorithm 7.6.1 on the state $((Q, T), \mathit{done})$. If
+$\mathit{done}$ is set, the pass does nothing. If $T$ satisfies the test
+`GolubVanLoan.Chapter07.IsDeltaLeading`, it sets $\mathit{done}$. Otherwise it runs the inner
+loop, the fold of `GolubVanLoan.Chapter07.schurSwapStep` over $k = 0, \dots, n-2$. -/
 noncomputable def schurReorderPass (Δ : Finset ℝ)
     (st : (Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ) × Bool) :
     M ((Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ) × Bool) :=
@@ -294,11 +446,12 @@ noncomputable def schurReorderPass (Δ : Finset ℝ)
     let QT ← (List.range (n - 1)).foldlM (schurSwapStep rnd Δ) st.1
     pure (QT, false)
 
-/-- **Algorithm 7.6.1 (reordering the real Schur form, no `2 × 2` bumps)**: "Given an orthogonal
-matrix `Q ∈ ℝ^{n×n}`, an upper triangular matrix `T = QᵀAQ`, and a subset `Δ = {λ₁, …, λ_p}` of
-`λ(A)`, the following algorithm computes an orthogonal matrix `Q_D` such that `Q_Dᵀ T Q_D = S` is
-upper triangular and `{s₁₁, …, s_pp} = Δ`. The matrices `Q` and `T` are overwritten by `Q Q_D` and
-`S`, respectively."
+/-- **Algorithm 7.6.1** of [golub2013matrix] (reordering the real Schur form, no $2 \times 2$
+bumps). Given an orthogonal matrix $Q \in \mathbb{R}^{n \times n}$, an upper triangular matrix
+$T = Q^T A Q$, and a subset $\Delta = \{\lambda_1, \dots, \lambda_p\}$ of $\lambda(A)$, the
+algorithm computes an orthogonal matrix $Q_D$ such that $Q_D^T T Q_D = S$ is upper triangular
+and $\{s_{11}, \dots, s_{pp}\} = \Delta$. The matrices $Q$ and $T$ are overwritten by $Q Q_D$
+and $S$.
 ```
 while {t₁₁, …, t_pp} ≠ Δ
     for k = 1:n-1
@@ -311,9 +464,14 @@ while {t₁₁, …, t_pp} ≠ Δ
     end
 end
 ```
-The `while` loop is at most `fuel` passes with a `done` flag (convention 3); its test is
-`IsDeltaLeading` (the `Δ`-entries of the diagonal on top, counted with multiplicity); a pass is
-`schurReorderPass`, the fold of `schurSwapStep` over `k = 0, …, n-2`. Returns `(Q, T)`. -/
+The program returns the pair $(Q, T)$. It has no hypothesis on its inputs.
+
+**Reading.** The `while` test $\{t_{11}, \dots, t_{pp}\} = \Delta$ is read with multiplicities,
+as `GolubVanLoan.Chapter07.IsDeltaLeading`: the diagonal entries in $\Delta$ come first.
+
+The `while` loop is at most `fuel` passes with a `done` flag, and a pass is
+`GolubVanLoan.Chapter07.schurReorderPass`. The difference $t_{k+1,k+1} - t_{kk}$ and every
+operation of the rotations are rounded by `rnd`. -/
 noncomputable def algorithm_7_6_1 (Q T : Matrix (Fin n) (Fin n) ℝ) (Δ : Finset ℝ) (fuel : ℕ) :
     M (Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ) := do
   let st ← (List.range fuel).foldlM (fun st _ => schurReorderPass rnd Δ st) ((Q, T), false)
@@ -323,28 +481,32 @@ end Reorder
 
 section ReorderDiag
 
-/-! The diagonal of Algorithm 7.6.1 as a bubble sort: `diagSwapStep` is the effect of one step on
-the diagonal, and after `j` passes the last `min j f` diagonal entries are outside `Δ`, `f` their
-number. -/
+/-!
+### The diagonal of Algorithm 7.6.1 as a bubble sort
+
+The private declarations below describe the effect of Algorithm 7.6.1 on the diagonal: one step
+exchanges two neighbouring entries, and after $j$ passes the last $\min(j, f)$ diagonal entries are
+outside $\Delta$, where $f$ is the number of diagonal entries outside $\Delta$.
+-/
 
 variable (Δ : Finset ℝ)
 
-/-- The effect of `schurSwapStep` on the diagonal: the entries `k`, `k + 1` are exchanged when the
-first is outside `Δ` and the second inside. -/
+/-- The effect of one step of Algorithm 7.6.1 on the diagonal: entries $k$ and $k + 1$ are exchanged
+when the first is outside $\Delta$ and the second is in $\Delta$. -/
 private noncomputable def diagSwapStep (d : Fin n → ℝ) (k : ℕ) : Fin n → ℝ :=
   if hk : k + 1 < n then
     if d ⟨k, by omega⟩ ∉ Δ ∧ d ⟨k + 1, hk⟩ ∈ Δ then d ∘ Equiv.swap ⟨k, by omega⟩ ⟨k + 1, hk⟩
     else d
   else d
 
-/-- The number of diagonal entries outside `Δ`. -/
+/-- The number of diagonal entries outside $\Delta$. -/
 private noncomputable def outCount (d : Fin n → ℝ) : ℕ :=
   (Finset.univ.filter fun i => d i ∉ Δ).card
 
-/-- The last `t` entries lie outside `Δ`. -/
+/-- The last $t$ diagonal entries lie outside $\Delta$. -/
 private def TailOut (t : ℕ) (d : Fin n → ℝ) : Prop := ∀ i : Fin n, n ≤ (i : ℕ) + t → d i ∉ Δ
 
-/-- The entries in `Δ` come first. -/
+/-- The diagonal entries in $\Delta$ come first. -/
 private def Leading (d : Fin n → ℝ) : Prop := ∀ k j : Fin n, j ≤ k → d k ∈ Δ → d j ∈ Δ
 
 private theorem foldl_diagSwapStep_perm (l : List ℕ) (d : Fin n → ℝ) :
@@ -402,7 +564,8 @@ private theorem leading_foldl {d : Fin n → ℝ} (hd : Leading Δ d) (l : List 
   | nil => rfl
   | cons a l ih => rw [List.foldl_cons, leading_diagSwapStep Δ hd, ih]
 
-/-- The `Δ`-entries on top: then the last `t ≤ f` entries are outside `Δ`. -/
+/-- If the entries in $\Delta$ come first and $t \le f$, then the last $t$ entries are outside
+$\Delta$. -/
 private theorem tailOut_of_leading {d : Fin n → ℝ} (hd : Leading Δ d) {t : ℕ}
     (ht : t ≤ outCount Δ d) : TailOut Δ t d := by
   intro i hi hin
@@ -420,7 +583,8 @@ private theorem tailOut_of_leading {d : Fin n → ℝ} (hd : Leading Δ d) {t : 
   have := i.2
   omega
 
-/-- If the last `f` entries are outside `Δ`, the entries in `Δ` are exactly the first `n - f`. -/
+/-- If the last $f$ entries are outside $\Delta$, then the entries in $\Delta$ are exactly the first
+$n - f$. -/
 private theorem mem_iff_of_tailOut {d : Fin n → ℝ} (hd : TailOut Δ (outCount Δ d) d)
     (k : Fin n) : d k ∈ Δ ↔ (k : ℕ) + outCount Δ d < n := by
   constructor
@@ -449,7 +613,8 @@ private theorem leading_of_tailOut {d : Fin n → ℝ} (hd : TailOut Δ (outCoun
   rw [Fin.le_def] at hjk
   omega
 
-/-- More than `t` entries outside `Δ`, the last `t` of them at the bottom: one more lies above. -/
+/-- If more than $t$ entries are outside $\Delta$, then some entry above the last $t$ is outside
+$\Delta$. -/
 private theorem exists_out_of_tailOut {d : Fin n → ℝ} {t : ℕ}
     (ht : t < outCount Δ d) : ∃ i : Fin n, (i : ℕ) + t < n ∧ d i ∉ Δ := by
   by_contra h
@@ -465,10 +630,8 @@ private theorem exists_out_of_tailOut {d : Fin n → ℝ} {t : ℕ}
   unfold outCount at ht
   omega
 
-/-- **One pass of the bubble sort.** If `t < f` and the last `t` diagonal entries are outside
-`Δ`, after one pass the last `t + 1` are. Invariant of the pass after its steps `0, …, k-1`: the
-tail is kept, and entry `m = min k (n - t - 1)` is outside `Δ` as soon as some entry at or above
-it is (the first entry outside `Δ` is carried down). -/
+/-- One pass of the bubble sort: if $t < f$ and the last $t$ diagonal entries are outside $\Delta$,
+then after one pass the last $t + 1$ are. -/
 private theorem tailOut_pass {d : Fin n → ℝ} {t : ℕ} (hd : TailOut Δ t d)
     (ht : t < outCount Δ d) :
     TailOut Δ (t + 1) ((List.range (n - 1)).foldl (diagSwapStep Δ) d) := by
@@ -531,10 +694,10 @@ end ReorderDiag
 
 section ReorderSpec
 
-/-- **The swap of §7.6.2 inside an upper triangular matrix.** For `T` upper triangular, `i' = i + 1`
-and a rotation `(c, s)` with `s t_{i,i+1} + c (t_{i+1,i+1} - t_ii) = 0` (the `givens` equation on
-`x = (t₁₂, λ₂ - λ₁)`), `G(i, i+1, θ)ᵀ T G(i, i+1, θ)` is upper triangular with the diagonal entries
-`i`, `i + 1` exchanged (`swap_two_by_two`, embedded in the plane `(i, i+1)`). -/
+/-- For $T$ upper triangular and a rotation $(c, s)$ with
+$s t_{i,i+1} + c (t_{i+1,i+1} - t_{ii}) = 0$, the matrix
+$G(i, i+1, \theta)^T T G(i, i+1, \theta)$ is upper triangular with the diagonal entries $i$ and
+$i + 1$ of $T$ exchanged. -/
 private theorem conj_givensRotation_swap {T : Matrix (Fin n) (Fin n) ℝ} (hT : T.IsUpperTriangular)
     {i i' : Fin n} (hii' : (i' : ℕ) = i + 1) {c s : ℝ} (hcs : c ^ 2 + s ^ 2 = 1)
     (h : s * T i i' + c * (T i' i' - T i i) = 0) :
@@ -591,9 +754,9 @@ private theorem conj_givensRotation_swap {T : Matrix (Fin n) (Fin n) ℝ} (hT : 
         linear_combination T i i * hcs + c * h
       · simp only [Equiv.swap_apply_of_ne_of_ne hri hri', hri, hri', ite_false]
 
-/-- The exact semantics of one step of Algorithm 7.6.1 on `(Q, T)` with `T` upper triangular:
-`(Q G, Gᵀ T G)` for an orthogonal `G` (the rotation, or `1` if nothing is swapped), still upper
-triangular, whose diagonal is `diagSwapStep` of `T`'s. -/
+/-- In exact arithmetic one step of Algorithm 7.6.1 maps $(Q, T)$, with $T$ upper triangular, to
+$(QG, G^T T G)$ for an orthogonal $G$, upper triangular, with the diagonal moved by one step of
+the bubble sort. -/
 private theorem schurSwapStep_pure (Δ : Finset ℝ)
     (QT : Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ) (hT : QT.2.IsUpperTriangular)
     (k : ℕ) :
@@ -680,9 +843,8 @@ end ReorderSpec
 
 section ReorderSpec2
 
-/-- The exact semantics of a sequence of steps of Algorithm 7.6.1 (a pass is the list
-`0, …, n-2`): an orthogonal similarity by the product of the rotations, upper triangularity kept,
-and the diagonal moved by `diagSwapStep`. -/
+/-- In exact arithmetic a sequence of steps of Algorithm 7.6.1 is an orthogonal similarity that
+keeps $T$ upper triangular and moves its diagonal by the corresponding steps of the bubble sort. -/
 private theorem foldlM_schurSwapStep_pure (Δ : Finset ℝ) (l : List ℕ)
     (QT : Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ) (hT : QT.2.IsUpperTriangular) :
     ∃ G ∈ orthogonalGroup (Fin n) ℝ,
@@ -706,14 +868,15 @@ private theorem foldlM_schurSwapStep_pure (Δ : Finset ℝ) (l : List ℕ)
         (Id.run (schurSwapStep pure Δ QT a)))).2 r r) = _
       rw [h4', h4, List.foldl_cons]
 
-/-- The state of Algorithm 7.6.1 after `j` passes of its `while` loop, in exact arithmetic. -/
+/-- The state of Algorithm 7.6.1 after $j$ passes of its `while` loop, in exact arithmetic. -/
 private noncomputable def reorderState (Δ : Finset ℝ) (Q T : Matrix (Fin n) (Fin n) ℝ) (j : ℕ) :
     (Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ) × Bool :=
   Id.run ((List.range j).foldlM (fun st _ => schurReorderPass pure Δ st) ((Q, T), false))
 
-/-- The invariant of the `while` loop of Algorithm 7.6.1 after `j` passes: an orthogonal
-similarity with upper triangular result, whose diagonal is a permutation of `T`'s with its last
-`min j f` entries outside `Δ`, and `done` only when the `Δ`-entries lead. -/
+/-- The invariant of the `while` loop of Algorithm 7.6.1 after $j$ passes: an orthogonal similarity
+with an upper triangular result whose diagonal is a permutation of the diagonal of $T$, with its
+last $\min(j, f)$ entries outside $\Delta$, and with `done` set only when the entries in
+$\Delta$ come first. -/
 private theorem reorderState_inv (Δ : Finset ℝ) (Q T : Matrix (Fin n) (Fin n) ℝ)
     (hT : T.IsUpperTriangular) (j : ℕ) :
     ∃ G ∈ orthogonalGroup (Fin n) ℝ, (reorderState Δ Q T j).1.1 = Q * G ∧
@@ -775,13 +938,24 @@ private theorem reorderState_inv (Δ : Finset ℝ) (Q T : Matrix (Fin n) (Fin n)
             exact h5
         · exact absurd h (by simp)
 
-/-- **Algorithm 7.6.1, exact semantics.** For `T = Qᵀ A Q` upper triangular with `Q` orthogonal,
-`Δ : Finset ℝ` and at least `n` passes (`n ≤ fuel`), the output `(Q', S)` of Algorithm 7.6.1
-satisfies `Q' = Q Q_D` and `S = Q_Dᵀ T Q_D = Q'ᵀ A Q'` with `Q_D` (hence `Q'`) orthogonal, `S` upper
-triangular with the diagonal of `T` permuted, and with `p` the number of diagonal entries of `T`
-in `Δ`, `s_kk ∈ Δ` exactly for `k < p` — the book's `{s₁₁, …, s_pp} = Δ`, with multiplicities.
-Each swap is `swap_two_by_two` in the plane `(k, k+1)`; a pass is one pass of a bubble sort of the
-diagonal (every entry outside `Δ` sinks past the `Δ`-entries below it), and `n` passes sort it. -/
+/-- **Algorithm 7.6.1** of [golub2013matrix], exact semantics. Let
+$A, Q, T \in \mathbb{R}^{n \times n}$ with $Q$ orthogonal and $T = Q^T A Q$ upper triangular,
+let $\Delta$ be a finite set of real numbers, and let $\mathit{fuel} \ge n$. Let $p$ be the
+number of indices $i$ with $t_{ii} \in \Delta$. Then the output $(Q', S)$ of Algorithm 7.6.1 in
+exact arithmetic satisfies:
+* $Q' = Q Q_D$ and $S = Q_D^T T Q_D$ for an orthogonal $Q_D$;
+* $Q'$ is orthogonal and $S = Q'^T A Q'$;
+* $S$ is upper triangular, and its diagonal is a permutation of the diagonal of $T$;
+* $s_{kk} \in \Delta$ if and only if $k < p$ (0-based), which is
+  $\{s_{11}, \dots, s_{pp}\} = \Delta$ with multiplicities.
+
+**Reading.** The source's condition $\{s_{11}, \dots, s_{pp}\} = \Delta$ is read with
+multiplicities, as above.
+
+The statement does not need $\Delta \subseteq \lambda(A)$. Each swap is
+`GolubVanLoan.Chapter07.swap_two_by_two` in the plane $(k, k+1)$. A pass acts on the diagonal as
+one pass of a bubble sort, in which every entry outside $\Delta$ sinks past the entries in
+$\Delta$ below it, and $n$ passes sort the diagonal. -/
 theorem algorithm_7_6_1_spec {A Q T : Matrix (Fin n) (Fin n) ℝ}
     (hQ : Q ∈ orthogonalGroup (Fin n) ℝ) (hTA : T = Qᵀ * A * Q) (hT : T.IsUpperTriangular)
     (Δ : Finset ℝ) {fuel : ℕ} (hfuel : n ≤ fuel) :
@@ -821,12 +995,17 @@ end ReorderSpec2
 
 /-! ### §7.6.3 Block diagonalization -/
 
-/-- **§7.6.3, the `Y_ij` updates.** Let `T` be block upper triangular for a block index `b`, let
-`i < j` be two blocks and `Z` supported in the block position `(i, j)` (the book's `E_i Z_ij E_jᵀ`).
-Then `Y_ij = I + Z` has `Y_ij⁻¹ = I - Z`, and `T̄ = Y_ij⁻¹ T Y_ij = T + T Z - Z T`: read blockwise,
-`T̄` agrees with `T` except `T̄_ij = T_ii Z_ij - Z_ij T_jj + T_ij`, `T̄_ik = T_ik - Z_ij T_jk`
-(`k > j`) and `T̄_kj = T_ki Z_ij + T_kj` (`k < i`). The one cross term `Z T Z` vanishes because
-`T_ji = 0`. -/
+/-- **§7.6.3** of [golub2013matrix], the updates by $Y_{ij}$. Let
+$T, Z \in \mathbb{R}^{n \times n}$, where $T$ is block upper triangular for a partitioning into
+blocks $1, \dots, q$. Let $i < j$ be two blocks, and let $Z$ be zero outside the block position
+$(i, j)$; this is the source's $E_i Z_{ij} E_j^T$. Then $Y_{ij} = I + Z$ satisfies
+$$Y_{ij}^{-1} = I - Z, \qquad Y_{ij}^{-1} T Y_{ij} = T + TZ - ZT.$$
+Read blockwise, $\bar T = Y_{ij}^{-1} T Y_{ij}$ agrees with $T$ except $\bar T_{ij} = T_{ii}
+Z_{ij} - Z_{ij} T_{jj} + T_{ij}$, $\bar T_{ik} = T_{ik} - Z_{ij} T_{jk}$ for $k > j$, and
+$\bar T_{kj} = T_{ki} Z_{ij} + T_{kj}$ for $k < i$.
+
+The partitioning is a block index `b : Fin n → Fin q`, and "block upper triangular" is
+`Matrix.BlockTriangular b`. The cross term $Z T Z$ vanishes because $T_{ji} = 0$. -/
 theorem blockDiagonalization_update {q : ℕ} {b : Fin n → Fin q} {T Z : Matrix (Fin n) (Fin n) ℝ}
     (hT : T.BlockTriangular b) {i j : Fin q} (hij : i < j)
     (hZ : ∀ r c, Z r c ≠ 0 → b r = i ∧ b c = j) :
@@ -860,14 +1039,21 @@ theorem blockDiagonalization_update {q : ℕ} {b : Fin n → Fin q} {T Z : Matri
   calc (1 - Z) * T * (1 + Z) = T + T * Z - Z * T - Z * T * Z := by noncomm_ring
     _ = T + T * Z - Z * T := by rw [hZTZ, sub_zero]
 
-/-- **(7.6.4)–(7.6.5), the column recurrences of the Sylvester equation** `F Z - Z G = C` for an
-upper Hessenberg (in particular upper quasi-triangular) `G`, with `z_k`, `c_k` the columns: in
-general column `k` of `F Z - Z G` is `F z_k - ∑_i g_ik z_i`; if `g_{k+1,k} = 0` (or `k` is the last
-column) it is `(F - g_kk I) z_k - ∑_{i<k} g_ik z_i` — the triangular recurrence (7.6.4); and if
-`g_{k+1,k} ≠ 0` and `g_{k+2,k+1} = 0`, columns `k`, `m = k + 1` are
-`(F - g_kk I) z_k - g_mk z_m - ∑_{i<k} g_ik z_i` and
-`(F - g_mm I) z_m - g_km z_k - ∑_{i<k} g_im z_i`, the rows of the `2p × 2p` system (7.6.5). As a
-matrix is its columns, `F Z - Z G = C` exactly when these equal the columns of `C`. -/
+/-- **Equations (7.6.4) and (7.6.5)** of [golub2013matrix], the column recurrences of the Sylvester
+equation. Let $F \in \mathbb{R}^{p \times p}$, let $G \in \mathbb{R}^{r \times r}$ be upper
+Hessenberg (for example upper quasi-triangular), and let $Z \in \mathbb{R}^{p \times r}$ with
+columns $z_1, \dots, z_r$. Then:
+* for every $k$, column $k$ of $FZ - ZG$ is $F z_k - \sum_i g_{ik} z_i$;
+* if $g_{k+1,k} = 0$, or $k$ is the last column, then column $k$ of $FZ - ZG$ is
+  $(F - g_{kk} I) z_k - \sum_{i<k} g_{ik} z_i$, the triangular recurrence (7.6.4);
+* if $m = k + 1$ is a column and $g_{m+1,m} = 0$, or $m$ is the last column, then column $k$ of
+  $FZ - ZG$ is $(F - g_{kk} I) z_k - g_{mk} z_m - \sum_{i<k} g_{ik} z_i$ and column $m$ is
+  $(F - g_{mm} I) z_m - g_{km} z_k - \sum_{i<k} g_{im} z_i$; these are the rows of the
+  $2p \times 2p$ system (7.6.5).
+
+Hence $FZ - ZG = C$ holds exactly when these columns equal the columns of $C$. The source uses
+the third part when $g_{k+1,k} \neq 0$, but the identity holds without this condition. Upper
+Hessenberg is `Matrix.IsUpperHessenberg`. -/
 theorem equation_7_6_5 {p r : ℕ} (F : Matrix (Fin p) (Fin p) ℝ) {G : Matrix (Fin r) (Fin r) ℝ}
     (hG : G.IsUpperHessenberg) (Z : Matrix (Fin p) (Fin r) ℝ) :
     (∀ k, (F * Z - Z * G).col k = F *ᵥ Z.col k - ∑ i, G i k • Z.col i) ∧
@@ -929,9 +1115,10 @@ section BartelsStewart
 
 variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 
-/-- **Algorithm 7.6.2 (Bartels–Stewart algorithm)**: "Given `C ∈ ℝ^{p×r}` and upper triangular
-matrices `F ∈ ℝ^{p×p}` and `G ∈ ℝ^{r×r}` that satisfy `λ(F) ∩ λ(G) = ∅`, the following algorithm
-overwrites `C` with the solution to the equation `FZ - ZG = C`."
+/-- **Algorithm 7.6.2** of [golub2013matrix] (Bartels–Stewart algorithm). Given
+$C \in \mathbb{R}^{p \times r}$ and upper triangular matrices $F \in \mathbb{R}^{p \times p}$
+and $G \in \mathbb{R}^{r \times r}$ that satisfy $\lambda(F) \cap \lambda(G) = \emptyset$, the
+algorithm overwrites $C$ with the solution of the equation $FZ - ZG = C$.
 ```
 for k = 1:r
     C(1:p, k) = C(1:p, k) + C(1:p, 1:k-1) · G(1:k-1, k)
@@ -939,9 +1126,11 @@ for k = 1:r
     C(1:p, k) = z
 end
 ```
-Entry `i` of the updated column is `fl(c_ik + ∑_{j<k} c_ij g_jk)`, accumulated in the order `j`
-from `c_ik` (`FloatingPoint.dotAccum`); the triangular solve is chapter 3's back substitution
-(Algorithm 3.1.2) on the matrix `F` with diagonal `fl(f_ii - g_kk)`. -/
+Entry $i$ of the updated column is $\mathrm{fl}(c_{ik} + \sum_{j<k} c_{ij} g_{jk})$, accumulated
+from $c_{ik}$ in increasing order of $j$ by `FloatingPoint.dotAccum`. The triangular solve is
+the back substitution Algorithm 3.1.2 (`GolubVanLoan.Chapter03.algorithm_3_1_2`) on the matrix
+$F$ with diagonal entries $\mathrm{fl}(f_{ii} - g_{kk})$. The program has no hypothesis on its
+inputs. -/
 noncomputable def algorithm_7_6_2 {p r : ℕ} (F : Matrix (Fin p) (Fin p) ℝ)
     (G : Matrix (Fin r) (Fin r) ℝ) (C : Matrix (Fin p) (Fin r) ℝ) : M (Matrix (Fin p) (Fin r) ℝ) :=
   (List.finRange r).foldlM (fun (C : Matrix (Fin p) (Fin r) ℝ) k => do
@@ -961,7 +1150,7 @@ section BartelsStewartSpec
 
 variable {p r : ℕ}
 
-/-- The sum over the listed `j < k` is the sum over `Finset.Iio k`. -/
+/-- The sum over the listed indices $j < k$ is the sum over `Finset.Iio k`. -/
 private theorem sum_map_filter_lt (k : Fin r) (f : Fin r → ℝ) :
     (((List.finRange r).filter (· < k)).map f).sum = ∑ j ∈ Finset.Iio k, f j := by
   rw [← List.sum_toFinset _ ((List.nodup_finRange r).filter _)]
@@ -969,13 +1158,16 @@ private theorem sum_map_filter_lt (k : Fin r) (f : Fin r → ℝ) :
   ext j
   simp
 
-/-- The exact column step of Algorithm 7.6.2: column `k` becomes the back-substitution solution of
-`(F - g_kk I) z = c_k + ∑_{j<k} g_jk c_j`. -/
+/-- The exact column step of Algorithm 7.6.2: column $k$ of $C$ is replaced by the back substitution
+solution $z$ of
+$$(F - g_{kk} I) z = c_k + \sum_{j<k} g_{jk} c_j,$$
+where $c_j$ are the current columns of $C$. The solution is `Matrix.backSubst`. -/
 noncomputable def bartelsStewartStep (F : Matrix (Fin p) (Fin p) ℝ) (G : Matrix (Fin r) (Fin r) ℝ)
     (C : Matrix (Fin p) (Fin r) ℝ) (k : Fin r) : Matrix (Fin p) (Fin r) ℝ :=
   C.updateCol k ((F - G k k • 1).backSubst (C.col k + ∑ j ∈ Finset.Iio k, G j k • C.col j))
 
-/-- In exact arithmetic Algorithm 7.6.2 is the fold of `bartelsStewartStep`. -/
+/-- In exact arithmetic, Algorithm 7.6.2 is the fold of `GolubVanLoan.Chapter07.bartelsStewartStep`
+over the columns $k = 0, \dots, r - 1$. -/
 theorem algorithm_7_6_2_pure (F : Matrix (Fin p) (Fin p) ℝ) (G : Matrix (Fin r) (Fin r) ℝ)
     (C : Matrix (Fin p) (Fin r) ℝ) :
     algorithm_7_6_2 (M := Id) pure F G C =
@@ -1001,7 +1193,7 @@ theorem algorithm_7_6_2_pure (F : Matrix (Fin p) (Fin p) ℝ) (G : Matrix (Fin r
     rw [sum_map_filter_lt]
     exact congrArg _ (Finset.sum_congr rfl fun _ _ => mul_comm _ _)
 
-/-- A column of `updateCol`. -/
+/-- A column of `Matrix.updateCol`. -/
 private theorem col_updateCol {m n : ℕ} (A : Matrix (Fin m) (Fin n) ℝ) (k j : Fin n)
     (c : Fin m → ℝ) : (A.updateCol k c).col j = if j = k then c else A.col j := by
   ext i
@@ -1009,8 +1201,8 @@ private theorem col_updateCol {m n : ℕ} (A : Matrix (Fin m) (Fin n) ℝ) (k j 
   · subst h; simp
   · simp [h]
 
-/-- The invariant of Algorithm 7.6.2 after its first `k` columns: those columns solve the
-triangular recurrences (7.6.4), the others are still `C`'s. -/
+/-- The invariant of Algorithm 7.6.2 after its first $k$ columns: these columns solve the triangular
+recurrences (7.6.4), and the other columns are still those of $C$. -/
 private theorem bartelsStewart_take {F : Matrix (Fin p) (Fin p) ℝ} {G : Matrix (Fin r) (Fin r) ℝ}
     (hF : F.IsUpperTriangular) (hFG : ∀ i j, F i i ≠ G j j) (C : Matrix (Fin p) (Fin r) ℝ) :
     ∀ k ≤ r, (∀ j : Fin r, k ≤ (j : ℕ) →
@@ -1058,10 +1250,14 @@ private theorem bartelsStewart_take {F : Matrix (Fin p) (Fin p) ℝ} {G : Matrix
           exact congrArg _ (hcol i (by
             have := Finset.mem_Iio.1 hi; rw [Fin.lt_def] at this; omega)).symm
 
-/-- **Algorithm 7.6.2 solves the Sylvester equation** (exact semantics): for upper triangular `F`,
-`G` with `λ(F) ∩ λ(G) = ∅` — the spectra of triangular matrices being their diagonals, `f_ii ≠ g_jj`
-for all `i`, `j` — the output `Z` satisfies `F Z - Z G = C`, and it is the only solution. Each
-column is the back-substitution solution of `(F - g_kk I) z_k = c_k + ∑_{j<k} g_jk z_j` (7.6.4). -/
+/-- **Algorithm 7.6.2** of [golub2013matrix], exact semantics. Let $F \in \mathbb{R}^{p \times p}$
+and $G \in \mathbb{R}^{r \times r}$ be upper triangular with $f_{ii} \neq g_{jj}$ for all $i$
+and $j$, and let $C \in \mathbb{R}^{p \times r}$. Then the output $Z$ of Algorithm 7.6.2 in
+exact arithmetic satisfies $FZ - ZG = C$, and every $Z'$ with $FZ' - Z'G = C$ equals $Z$.
+
+The spectrum of a triangular matrix is its diagonal, so the hypothesis $f_{ii} \neq g_{jj}$ is
+the source's $\lambda(F) \cap \lambda(G) = \emptyset$. Each column $z_k$ is the back
+substitution solution of $(F - g_{kk} I) z_k = c_k + \sum_{j<k} g_{jk} z_j$, which is (7.6.4). -/
 theorem algorithm_7_6_2_spec {F : Matrix (Fin p) (Fin p) ℝ} {G : Matrix (Fin r) (Fin r) ℝ}
     (hF : F.IsUpperTriangular) (hG : G.IsUpperTriangular) (hFG : ∀ i j, F i i ≠ G j j)
     (C : Matrix (Fin p) (Fin r) ℝ) :
@@ -1121,14 +1317,17 @@ section BlockDiag
 
 variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ) {q : ℕ}
 
-/-- The rows (and columns) of block `i` of the partitioning (7.6.3), given by a block index
+/-- The rows (and columns) of block $i$ of the partitioning (7.6.3), given by a block index
 `b : Fin n → Fin q`, in increasing order. -/
 def blockIndices (b : Fin n → Fin q) (i : Fin q) : List (Fin n) :=
   (List.finRange n).filter fun r => b r = i
 
-/-- The book's `T_ik = T_ik - Z T_jk`, on index lists (convention 10): for each column `c ∈ cols`
-and each row `li[a]` of the block `li`,
-`T(li[a], c) ← fl(T(li[a], c) - fl(∑_e Z(a, e) T(lj[e], c)))`, the sum by Algorithm 1.1.1. -/
+/-- The update $T_{ik} \leftarrow T_{ik} - Z T_{jk}$ of Algorithm 7.6.3, on index lists. Let `li`
+and `lj` list the rows of blocks $i$ and $j$. For each column $c$ in `cols` and each position
+$a$ of `li`,
+$$T(\ell_i[a], c) \leftarrow \mathrm{fl}\Bigl(T(\ell_i[a], c) - \mathrm{fl}\Bigl(\sum_e Z(a, e)
+  \, T(\ell_j[e], c)\Bigr)\Bigr),$$
+where the sum is accumulated by Algorithm 1.1.1. -/
 def blockSubMul (li lj : List (Fin n)) (Z : Matrix (Fin li.length) (Fin lj.length) ℝ)
     (cols : List (Fin n)) (T : Matrix (Fin n) (Fin n) ℝ) : M (Matrix (Fin n) (Fin n) ℝ) :=
   cols.foldlM (fun (T : Matrix (Fin n) (Fin n) ℝ) c => do
@@ -1138,8 +1337,12 @@ def blockSubMul (li lj : List (Fin n)) (Z : Matrix (Fin li.length) (Fin lj.lengt
       pure (Function.update x (li.get a) y)) (fun r => T r c)
     pure (T.updateCol c x)) T
 
-/-- The book's `Q_kj = Q_ki Z + Q_kj` for all block rows `k`, on index lists: for each row `r` and
-each column `lj[e]`, `Q(r, lj[e]) ← fl(fl(∑_a Q(r, li[a]) Z(a, e)) + Q(r, lj[e]))`. -/
+/-- The update $Q_{kj} \leftarrow Q_{ki} Z + Q_{kj}$ of Algorithm 7.6.3 for all block rows $k$, on
+index lists. Let `li` and `lj` list the columns of blocks $i$ and $j$. For each row $r$ and each
+position $e$ of `lj`,
+$$Q(r, \ell_j[e]) \leftarrow \mathrm{fl}\Bigl(\mathrm{fl}\Bigl(\sum_a Q(r, \ell_i[a]) \, Z(a,
+  e)\Bigr) + Q(r, \ell_j[e])\Bigr).$$
+-/
 def blockAddMul (li lj : List (Fin n)) (Z : Matrix (Fin li.length) (Fin lj.length) ℝ)
     (Q : Matrix (Fin n) (Fin n) ℝ) : M (Matrix (Fin n) (Fin n) ℝ) :=
   (List.finRange n).foldlM (fun (Q : Matrix (Fin n) (Fin n) ℝ) r => do
@@ -1150,10 +1353,12 @@ def blockAddMul (li lj : List (Fin n)) (Z : Matrix (Fin li.length) (Fin lj.lengt
       pure (Function.update x (lj.get e) y)) (Q r)
     pure (Q.updateRow r x)) Q
 
-/-- The body of Algorithm 7.6.3 for the pair of blocks `i < j`: solve `T_ii Z - Z T_jj = -T_ij`
-by the Bartels–Stewart algorithm on the extracted blocks (`algorithm_7_6_2`; the negation is
-exact), then `T_ik = T_ik - Z T_jk` for `k > j` (`blockSubMul`) and `Q_kj = Q_ki Z + Q_kj`
-(`blockAddMul`). The block `T_ij`, which is now zero, is left unwritten, as in the book. -/
+/-- The body of Algorithm 7.6.3 for the pair of blocks $i < j$. It solves
+$T_{ii} Z - Z T_{jj} = -T_{ij}$ by Algorithm 7.6.2 on the extracted blocks (the negation is
+exact), then updates $T_{ik} \leftarrow T_{ik} - Z T_{jk}$ for $k > j$ by
+`GolubVanLoan.Chapter07.blockSubMul` and $Q_{kj} \leftarrow Q_{ki} Z + Q_{kj}$ by
+`GolubVanLoan.Chapter07.blockAddMul`. As in the source, it does not write the block $T_{ij}$,
+which is now zero. -/
 noncomputable def blockDiagStep (b : Fin n → Fin q)
     (QT : Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ) (i j : Fin q) :
     M (Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ) := do
@@ -1166,9 +1371,10 @@ noncomputable def blockDiagStep (b : Fin n → Fin q)
   let Q ← blockAddMul rnd (blockIndices b i) (blockIndices b j) Z QT.1
   pure (Q, T)
 
-/-- **Algorithm 7.6.3 (block diagonalization)**: "Given an orthogonal matrix `Q ∈ ℝ^{n×n}`, an
-upper quasi-triangular matrix `T = QᵀAQ`, and the partitioning (7.6.3), the following algorithm
-overwrites `Q` with `QY` where `Y⁻¹TY = diag(T₁₁, …, T_qq)`."
+/-- **Algorithm 7.6.3** of [golub2013matrix] (block diagonalization). Given an orthogonal matrix
+$Q \in \mathbb{R}^{n \times n}$, an upper quasi-triangular matrix $T = Q^T A Q$, and the
+partitioning (7.6.3), the algorithm overwrites $Q$ with $QY$ where $Y^{-1} T Y =
+\operatorname{diag}(T_{11}, \dots, T_{qq})$.
 ```
 for j = 2:q
     for i = 1:j-1
@@ -1182,8 +1388,10 @@ for j = 2:q
     end
 end
 ```
-The partitioning is a block index `b : Fin n → Fin q` (monotone in the specification); the body
-is `blockDiagStep`. Returns `(Q, T)`. -/
+The program returns the pair $(Q, T)$. It has no hypothesis on its inputs.
+
+The partitioning is a block index `b : Fin n → Fin q`, which the specification assumes monotone.
+The body of the loop is `GolubVanLoan.Chapter07.blockDiagStep`. -/
 noncomputable def algorithm_7_6_3 (Q T : Matrix (Fin n) (Fin n) ℝ) (b : Fin n → Fin q) :
     M (Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ) :=
   (List.finRange q).foldlM (fun QT (j : Fin q) =>
@@ -1196,7 +1404,7 @@ section BlockDiagSpec
 
 variable {q : ℕ}
 
-/-- A loop rewriting whole columns, each from its own old values only, is a simultaneous update. -/
+/-- A loop that rewrites each column from its own old values only is a simultaneous update. -/
 private theorem foldl_apply_of_colLocal (f : Matrix (Fin n) (Fin n) ℝ → Fin n →
     Matrix (Fin n) (Fin n) ℝ) (l : List (Fin n)) (hl : l.Nodup)
     (hf₁ : ∀ T c r c', c' ≠ c → f T c r c' = T r c')
@@ -1217,8 +1425,7 @@ private theorem foldl_apply_of_colLocal (f : Matrix (Fin n) (Fin n) ℝ → Fin 
         exact hf₂ _ _ c (fun r' => hf₁ T₀ a r' c hca) r
       · simp [hcl, hca]
 
-/-- A loop rewriting whole rows, each from its own old values only, is a simultaneous update
-(`List.foldl_update_of_nodup` on the rows). -/
+/-- A loop that rewrites whole rows, each from its own old values only, is a simultaneous update. -/
 private theorem foldl_apply_of_rowLocal (f : Matrix (Fin n) (Fin n) ℝ → Fin n →
     Matrix (Fin n) (Fin n) ℝ) (l : List (Fin n)) (hl : l.Nodup)
     (hf₁ : ∀ Q r r' c, r' ≠ r → f Q r r' c = Q r' c)
@@ -1235,9 +1442,8 @@ private theorem foldl_apply_of_rowLocal (f : Matrix (Fin n) (Fin n) ℝ → Fin 
     f Q a a) (fun a _ Q Q' _ h => hf₂ Q Q' a h) Q₀) r) c).trans (by split_ifs <;> rfl)
 
 
-/-- A loop writing the entries `key a` of a vector, each from its own old value and from entries
-outside a set `S` it never writes, is a simultaneous update (`List.foldl_update_apply_of_pairwise`
-and `List.foldl_update_apply_of_forall_ne`). -/
+/-- A loop that writes the entries `key a` of a vector, each from its own old value and from entries
+outside a set $S$ that it never writes, is a simultaneous update. -/
 private theorem foldl_update_of_local {α : Type} (f : (Fin n → ℝ) → α → Fin n → ℝ)
     (key : α → Fin n) (S : Fin n → Prop) (L : List α) (hL : (L.map key).Nodup)
     (hS : ∀ a ∈ L, S (key a)) (hf₁ : ∀ y a s, s ≠ key a → f y a s = y s)
@@ -1259,8 +1465,8 @@ private theorem foldl_update_of_local {α : Type} (f : (Fin n → ℝ) → α �
     fun s hs => List.foldl_update_apply_of_forall_ne key _
       (fun a ha (e : key a = s) => hs (e ▸ List.mem_map_of_mem ha)) y₀⟩
 
-/-- **Exact semantics of `blockSubMul`**: for duplicate-free, disjoint blocks `li`, `lj`, the
-columns `c ∈ cols` of `T` become those of `T - E_i Z E_jᵀ T`, the others are kept. -/
+/-- For duplicate-free and disjoint blocks `li` and `lj`, `blockSubMul` replaces the columns in
+`cols` of $T$ by those of $T - E_i Z E_j^T T$ and keeps the others, in exact arithmetic. -/
 private theorem blockSubMul_pure {li lj : List (Fin n)} (hli : li.Nodup)
     (hdisj : ∀ r ∈ lj, r ∉ li) (Z : Matrix (Fin li.length) (Fin lj.length) ℝ)
     {cols : List (Fin n)} (hcols : cols.Nodup) (T : Matrix (Fin n) (Fin n) ℝ) :
@@ -1303,8 +1509,8 @@ private theorem blockSubMul_pure {li lj : List (Fin n)} (hli : li.Nodup)
   · rw [h2 r (by rwa [hmap]), Matrix.mul_assoc, Matrix.mul_assoc,
       selCols_mul_apply_of_notMem _ hr, sub_zero]
 
-/-- **Exact semantics of `blockAddMul`**: for duplicate-free, disjoint blocks `li`, `lj`, the
-result is `Q (I + E_i Z E_jᵀ)`. -/
+/-- For duplicate-free and disjoint blocks `li` and `lj`, `blockAddMul` returns
+$Q (I + E_i Z E_j^T)$, in exact arithmetic. -/
 private theorem blockAddMul_pure {li lj : List (Fin n)} (hlj : lj.Nodup)
     (hdisj : ∀ r ∈ li, r ∉ lj) (Z : Matrix (Fin li.length) (Fin lj.length) ℝ)
     (Q : Matrix (Fin n) (Fin n) ℝ) :
@@ -1358,7 +1564,7 @@ private theorem blockIndices_strictMono (b : Fin n → Fin q) (i : Fin q) :
     StrictMono (blockIndices b i).get :=
   ((List.sortedLT_finRange n).pairwise.filter _).sortedLT.strictMono_get
 
-/-- The solution `Z` of `T_ii Z - Z T_jj = -T_ij` computed by Algorithm 7.6.2 in exact
+/-- The solution $Z$ of $T_{ii} Z - Z T_{jj} = -T_{ij}$ that Algorithm 7.6.2 computes in exact
 arithmetic. -/
 private noncomputable def blockZ (b : Fin n → Fin q) (T : Matrix (Fin n) (Fin n) ℝ) (i j : Fin q) :
     Matrix (Fin (blockIndices b i).length) (Fin (blockIndices b j).length) ℝ :=
@@ -1366,13 +1572,14 @@ private noncomputable def blockZ (b : Fin n → Fin q) (T : Matrix (Fin n) (Fin 
     (T.submatrix (blockIndices b j).get (blockIndices b j).get)
     (-T.submatrix (blockIndices b i).get (blockIndices b j).get))
 
-/-- The book's `E_i Z_ij E_jᵀ`: `blockZ` in the block position `(i, j)`. -/
+/-- The matrix $E_i Z_{ij} E_j^T$: the solution `blockZ` placed in the block position $(i, j)$. -/
 private noncomputable def blockZf (b : Fin n → Fin q) (T : Matrix (Fin n) (Fin n) ℝ)
     (i j : Fin q) : Matrix (Fin n) (Fin n) ℝ :=
   selCols (blockIndices b i) * blockZ b T i j * (selCols (blockIndices b j))ᵀ
 
-/-- The exact body of Algorithm 7.6.3 for the blocks `i ≠ j`: `Q ← Q (I + E_i Z E_jᵀ)` and
-`T ← T - E_i Z E_jᵀ T` in the columns of the blocks after `j`. -/
+/-- In exact arithmetic the body of Algorithm 7.6.3 for blocks $i \neq j$ sets
+$Q \leftarrow Q (I + E_i Z E_j^T)$ and $T \leftarrow T - E_i Z E_j^T T$ in the columns of the
+blocks after $j$. -/
 private theorem blockDiagStep_pure (b : Fin n → Fin q)
     (QT : Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ) {i j : Fin q} (hij : i ≠ j) :
     Id.run (blockDiagStep pure b QT i j) =
@@ -1398,10 +1605,10 @@ section BlockDiagInv
 
 variable {q : ℕ}
 
-/-- The invariant of Algorithm 7.6.3, `P` the processed block pairs: `Q = Q₀ Y` for a nonsingular
-block unit upper triangular `Y`; `W = Y⁻¹ T₀ Y` is block upper triangular with the diagonal blocks
-of `T₀`, zero in the processed blocks and equal to the current `T` in the unprocessed ones; the
-current `T` keeps the diagonal blocks of `T₀`. -/
+/-- The invariant of Algorithm 7.6.3 for a set $P$ of processed block pairs: $Q = Q_0 Y$ for a
+nonsingular block unit upper triangular $Y$, and $W = Y^{-1} T_0 Y$ is block upper triangular
+with the diagonal blocks of $T_0$, zero in the processed blocks, and equal to the current $T$ in
+the other blocks above the diagonal, while the current $T$ keeps the diagonal blocks of $T_0$. -/
 private def BlockDiagInv (b : Fin n → Fin q) (Q₀ T₀ : Matrix (Fin n) (Fin n) ℝ)
     (P : Fin q → Fin q → Prop) (QT : Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ) :
     Prop :=
@@ -1421,11 +1628,9 @@ private theorem BlockDiagInv.congr {b : Fin n → Fin q} {Q₀ T₀ : Matrix (Fi
   exact ⟨Y, h1, h2, h3, h4, h5, h6, fun r c hrc hP => h7 r c hrc ((hPP _ _ hrc).2 hP),
     fun r c hrc hP => h8 r c hrc fun h => hP ((hPP _ _ hrc).1 h), h9⟩
 
-/-- **One step of Algorithm 7.6.3 keeps the invariant** (§7.6.3's `Y_ij` update,
-`blockDiagonalization_update`): processing `(i, j)` zeroes the block `(i, j)` of `W` (the
-Sylvester equation of `algorithm_7_6_2_spec`), updates the blocks `(i, k)`, `k > j`, as the
-program updates `T`, and leaves the blocks `(k, j)`, `k < i`, alone because `W_ki = 0` already —
-the reason the book's loop needs no update there. -/
+/-- One step of Algorithm 7.6.3 for the pair $(i, j)$ keeps the invariant, with $(i, j)$ added to
+the processed pairs; the blocks $(k, j)$ with $k < i$ need no update because $W_{ki} = 0$
+already. -/
 private theorem BlockDiagInv.step {b : Fin n → Fin q} {Q₀ T₀ : Matrix (Fin n) (Fin n) ℝ}
     (hT₀ : T₀.IsUpperTriangular) (hdiag : ∀ r c, b r ≠ b c → T₀ r r ≠ T₀ c c)
     {P : Fin q → Fin q → Prop} {QT : Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ}
@@ -1614,8 +1819,8 @@ private theorem id_run_foldlM_append_singleton {α β : Type} (f : β → α →
   rw [List.foldlM_append]
   rfl
 
-/-- The inner loop of Algorithm 7.6.3 for the block column `j`: after `i = 0, …, m-1` the
-processed pairs are those of the earlier block columns and `(i, j)`, `i < m`. -/
+/-- After the steps $i = 0, \dots, m - 1$ of the inner loop of Algorithm 7.6.3 for block column $j$,
+the processed pairs are those of the earlier block columns and the pairs $(i, j)$ with $i < m$. -/
 private theorem blockDiagInv_inner {b : Fin n → Fin q} {Q₀ T₀ : Matrix (Fin n) (Fin n) ℝ}
     (hT₀ : T₀.IsUpperTriangular) (hdiag : ∀ r c, b r ≠ b c → T₀ r r ≠ T₀ c c) (j : Fin q)
     (st : Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ)
@@ -1650,7 +1855,8 @@ private theorem blockDiagInv_inner {b : Fin n → Fin q} {Q₀ T₀ : Matrix (Fi
       simp only [Fin.lt_def, Fin.ext_iff]
       omega
 
-/-- The whole inner loop of Algorithm 7.6.3 for the block column `j`. -/
+/-- After the whole inner loop of Algorithm 7.6.3 for block column $j$, the processed pairs are all
+pairs $(i, j')$ with $i < j' \le j$. -/
 private theorem blockDiagInv_inner_full {b : Fin n → Fin q} {Q₀ T₀ : Matrix (Fin n) (Fin n) ℝ}
     (hT₀ : T₀.IsUpperTriangular) (hdiag : ∀ r c, b r ≠ b c → T₀ r r ≠ T₀ c c) (j : Fin q)
     (st : Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ)
@@ -1664,8 +1870,8 @@ private theorem blockDiagInv_inner_full {b : Fin n → Fin q} {Q₀ T₀ : Matri
   simp only [Fin.lt_def, Fin.ext_iff] at hxy ⊢
   omega
 
-/-- The outer loop of Algorithm 7.6.3: after the block columns `j < k`, the processed pairs are
-all `i < j < k`. -/
+/-- After the outer loop of Algorithm 7.6.3 for the block columns $j < k$, the processed pairs are
+all pairs $i < j < k$. -/
 private theorem blockDiagInv_outer {b : Fin n → Fin q} (hb : Monotone b)
     {Q₀ T₀ : Matrix (Fin n) (Fin n) ℝ} (hT₀ : T₀.IsUpperTriangular)
     (hdiag : ∀ r c, b r ≠ b c → T₀ r r ≠ T₀ c c) :
@@ -1695,14 +1901,28 @@ private theorem blockDiagInv_outer {b : Fin n → Fin q} (hb : Monotone b)
     · simp only [Fin.val_cast]
       omega
 
-/-- **Algorithm 7.6.3 block-diagonalizes** (exact semantics; Theorem 7.1.6 made constructive).
-For `T = Qᵀ A Q` upper triangular with `Q` orthogonal (the triangular case of the book's
-quasi-triangular `T`, for which Algorithm 7.6.2 is stated), a monotone block index `b` for the
-partitioning (7.6.3) and the spectra of the diagonal blocks pairwise disjoint (diagonal entries of
-different blocks distinct), the output `Q'` of Algorithm 7.6.3 is `Q Y` with `Y` block unit upper
-triangular and nonsingular, and `Y⁻¹ T Y = diag(T₁₁, …, T_qq)` — so `(QY)⁻¹ A (QY)` is block
-diagonal. `Y = ∏ Y_ij` in the loop order; after `(i, j)` the block `(i, j)` of `Y⁻¹ T Y` is zero
-(`algorithm_7_6_2_spec`, `blockDiagonalization_update`) and stays zero. -/
+/-- **Algorithm 7.6.3** of [golub2013matrix], exact semantics. Let
+$A, Q, T \in \mathbb{R}^{n \times n}$ with $Q$ orthogonal and $T = Q^T A Q$ upper triangular.
+Let the partitioning (7.6.3) be given by a monotone block index $b$, and suppose that diagonal
+entries of $T$ in different blocks are distinct. Then there is a nonsingular
+$Y \in \mathbb{R}^{n \times n}$ that is block unit upper triangular (zero below the diagonal
+blocks and the identity on them) such that the output $Q'$ of Algorithm 7.6.3 in exact
+arithmetic is $QY$, and
+$$Y^{-1} T Y = \operatorname{diag}(T_{11}, \dots, T_{qq}), \qquad
+  (QY)^{-1} A (QY) = \operatorname{diag}(T_{11}, \dots, T_{qq}).$$
+
+**Reading.** The source states the algorithm for an upper quasi-triangular $T$, but Algorithm
+7.6.2, which it calls, is stated for triangular matrices only. The quasi-triangular case needs
+the $2p \times 2p$ systems (7.6.5), which the source does not write as an algorithm. The
+specification assumes $T$ upper triangular.
+
+For triangular $T$, distinct diagonal entries in different blocks mean that the diagonal blocks
+have pairwise disjoint spectra. The block diagonal matrix is written as $T$ with the entries
+outside the diagonal blocks set to zero. The theorem is a constructive form of Theorem 7.1.6
+(`GolubVanLoan.Chapter07.theorem_7_1_6`). In the proof, $Y$ is the product of the $Y_{ij}$ in
+the order of the loop; after the pair $(i, j)$ the block $(i, j)$ of $Y^{-1} T Y$ is zero, by
+`GolubVanLoan.Chapter07.algorithm_7_6_2_spec` and
+`GolubVanLoan.Chapter07.blockDiagonalization_update`, and it stays zero. -/
 theorem algorithm_7_6_3_spec {A Q T : Matrix (Fin n) (Fin n) ℝ}
     (hQ : Q ∈ orthogonalGroup (Fin n) ℝ) (hTA : T = Qᵀ * A * Q) (hT : T.IsUpperTriangular)
     {b : Fin n → Fin q} (hb : Monotone b) (hdiag : ∀ r c, b r ≠ b c → T r r ≠ T c c) :
@@ -1733,9 +1953,18 @@ section Frobenius
 
 open scoped Matrix.Norms.Frobenius
 
-/-- **The two precise claims around (7.6.6).** `sep(T_ii, T_jj) ≤ min_{λ ∈ λ(T_ii), μ ∈ λ(T_jj)}
-|λ - μ|`, and if `Z` solves (7.6.6) `T_ii Z - Z T_jj = -T_ij` then `‖Z‖_F ≤ ‖T_ij‖_F /
-sep(T_ii, T_jj)`. -/
+/-- **Equation (7.6.6)** of [golub2013matrix] and the bound after it. Let
+$T_{ii} \in \mathbb{C}^{p \times p}$, $T_{jj} \in \mathbb{C}^{q \times q}$ and
+$T_{ij} \in \mathbb{C}^{p \times q}$. Then
+$$\operatorname{sep}(T_{ii}, T_{jj}) \le |\mu - \nu| \qquad \text{for all } \mu \in
+  \lambda(T_{ii}), \ \nu \in \lambda(T_{jj}).$$
+If moreover $\operatorname{sep}(T_{ii}, T_{jj}) > 0$, then every solution $Z$ of (7.6.6),
+$T_{ii} Z - Z T_{jj} = -T_{ij}$, satisfies
+$$\|Z\|_F \le \frac{\|T_{ij}\|_F}{\operatorname{sep}(T_{ii}, T_{jj})}.$$
+
+The separation $\operatorname{sep}(A, B) = \min_{\|X\|_F = 1} \|AX - XB\|_F$ of (7.2.5) is
+`Matrix.sep`. The proof specializes `Matrix.sep_le_norm_sub` and
+`Matrix.frobenius_norm_le_div_sep`. -/
 theorem equation_7_6_6 {p q : ℕ} (Tii : Matrix (Fin p) (Fin p) ℂ) (Tjj : Matrix (Fin q) (Fin q) ℂ)
     (Tij : Matrix (Fin p) (Fin q) ℂ) :
     (∀ μ ∈ spectrum ℂ Tii, ∀ ν ∈ spectrum ℂ Tjj, sep Tii Tjj ≤ ‖μ - ν‖) ∧
@@ -1745,7 +1974,8 @@ theorem equation_7_6_6 {p q : ℕ} (Tii : Matrix (Fin p) (Fin p) ℂ) (Tjj : Mat
   have h := frobenius_norm_le_div_sep hs Z
   rwa [hZ, norm_neg] at h
 
-/-- The Frobenius norm of `[I_a Z; 0 I_b]`: `‖Y‖_F² = a + b + ‖Z‖_F²`. -/
+/-- For $Z \in \mathbb{R}^{a \times b}$, the matrix $Y = \begin{bmatrix} I_a & Z \\ 0 & I_b
+\end{bmatrix}$ has $\|Y\|_F^2 = a + b + \|Z\|_F^2$. -/
 private theorem frobenius_norm_sq_fromBlocks_one {a b : ℕ} (Z : Matrix (Fin a) (Fin b) ℝ) :
     ‖(fromBlocks 1 Z 0 1 : Matrix (Fin a ⊕ Fin b) (Fin a ⊕ Fin b) ℝ)‖ ^ 2 = a + b + ‖Z‖ ^ 2 := by
   have hone : ∀ m : ℕ, ∑ i : Fin m, ∑ j : Fin m, ‖(1 : Matrix (Fin m) (Fin m) ℝ) i j‖ ^ 2 = m := by
@@ -1757,9 +1987,17 @@ private theorem frobenius_norm_sq_fromBlocks_one {a b : ℕ} (Z : Matrix (Fin a)
   simp [Matrix.zero_apply]
   ring
 
-/-- **§7.6.3, the condition of `Y_ij`.** For `Y = [I_{n_i} Z; 0 I_{n_j}]`,
-`κ_F(Y) = ‖Y‖_F ‖Y⁻¹‖_F = n_i + n_j + ‖Z‖_F²` (`Y⁻¹ = [I -Z; 0 I]`). The book prints
-`n_i² + n_j² + ‖Z‖_F²`, but `‖I_k‖_F² = k`, not `k²`. -/
+/-- **§7.6.3** of [golub2013matrix], the condition of $Y_{ij}$. Let
+$Z \in \mathbb{R}^{n_i \times n_j}$ and $Y = \begin{bmatrix} I_{n_i} & Z \\ 0 & I_{n_j}
+\end{bmatrix}$. Then
+$$\kappa_F(Y) = \|Y\|_F \, \|Y^{-1}\|_F = n_i + n_j + \|Z\|_F^2.$$
+
+**Correction.** The source prints $\kappa_F(Y_{ij}) = n_i^2 + n_j^2 + \|Z\|_F^2$. This is false
+because $\|I_k\|_F^2 = k$, not $k^2$: for $n_i = n_j = 2$ and $Z = 0$, $Y = I_4$ has
+$\kappa_F(Y) = 4$, but the printed value is $8$.
+
+The proof uses $Y^{-1} = \begin{bmatrix} I & -Z \\ 0 & I \end{bmatrix}$, which has the same
+Frobenius norm as $Y$. -/
 theorem kappaF_blockUnit {a b : ℕ} (Z : Matrix (Fin a) (Fin b) ℝ) :
     ‖(fromBlocks 1 Z 0 1 : Matrix (Fin a ⊕ Fin b) (Fin a ⊕ Fin b) ℝ)‖ *
         ‖(fromBlocks 1 Z 0 1 : Matrix (Fin a ⊕ Fin b) (Fin a ⊕ Fin b) ℝ)⁻¹‖ = a + b + ‖Z‖ ^ 2 := by
@@ -1779,13 +2017,26 @@ end Frobenius
 
 /-! ### §7.6.4 Eigenvectors and eigenvalue condition from the Schur form -/
 
-/-- **§7.6.4, eigenvectors from the real Schur form.** Let `Qᵀ A Q = [T₁₁ u T₁₃; 0 λ vᵀ; 0 0 T₃₃]`
-with blocks of sizes `p`, `1`, `q` (indexed by `(Fin p ⊕ Unit) ⊕ Fin q`) and `Q` orthogonal, and let
-`(T₁₁ - λ I) w = -u` and `(T₃₃ - λ I)ᵀ z = -v` (uniquely solvable when `λ ∉ λ(T₁₁) ∪ λ(T₃₃)`, the
-book's hypothesis, which the identities below do not need). Then `x = Q [w; 1; 0]` and
-`y = Q [0; 1; z]` are right and left eigenvectors of `A` for `λ` (`A x = λ x`, `yᵀ A = λ yᵀ`), with
-`yᵀ x = 1`, `xᵀ x = 1 + wᵀ w` and `yᵀ y = 1 + zᵀ z`; hence the condition
-`1/s(λ) = ‖x‖₂ ‖y‖₂ / |yᵀ x|` (Section 7.2.2) is `√((1 + wᵀ w)(1 + zᵀ z))`. -/
+/-- **§7.6.4** of [golub2013matrix], eigenvectors from the real Schur form. Let
+$A, Q \in \mathbb{R}^{(p+1+q) \times (p+1+q)}$ with $Q$ orthogonal and
+$$Q^T A Q = \begin{bmatrix} T_{11} & u & T_{13} \\ 0 & \lambda & v^T \\ 0 & 0 & T_{33}
+  \end{bmatrix},$$
+with $T_{11} \in \mathbb{R}^{p \times p}$, $T_{33} \in \mathbb{R}^{q \times q}$,
+$u \in \mathbb{R}^p$, $v \in \mathbb{R}^q$ and $\lambda \in \mathbb{R}$. Let
+$w \in \mathbb{R}^p$ and $z \in \mathbb{R}^q$ satisfy $(T_{11} - \lambda I) w = -u$ and
+$(T_{33} - \lambda I)^T z = -v$, and put
+$$x = Q \begin{bmatrix} w \\ 1 \\ 0 \end{bmatrix}, \qquad y = Q \begin{bmatrix} 0 \\ 1 \\ z
+  \end{bmatrix}.$$
+Then $Ax = \lambda x$ and $y^T A = \lambda y^T$, with $y^T x = 1$, $x^T x = 1 + w^T w$ and
+$y^T y = 1 + z^T z$. Hence the condition $1/s(\lambda)$ of $\lambda$ (§7.2.2) is
+$$\frac{1}{s(\lambda)} = \frac{\|x\|_2 \, \|y\|_2}{|y^T x|} = \sqrt{(1 + w^T w)(1 + z^T z)}.$$
+
+**Generalization.** The source assumes $\lambda \notin \lambda(T_{11}) \cup \lambda(T_{33})$, so
+that $w$ and $z$ exist and are unique. The identities hold for any solutions $w$ and $z$, and
+the statement does not need this hypothesis.
+
+The index type is `(Fin p ⊕ Unit) ⊕ Fin q`, and the block matrix is built with
+`Matrix.fromBlocks`, `Matrix.fromRows`, `Matrix.replicateCol` and `Matrix.replicateRow`. -/
 theorem schur_eigenvectors {p q : ℕ}
     {A Q : Matrix ((Fin p ⊕ Unit) ⊕ Fin q) ((Fin p ⊕ Unit) ⊕ Fin q) ℝ}
     (hQ : Q ∈ orthogonalGroup ((Fin p ⊕ Unit) ⊕ Fin q) ℝ) {T₁₁ : Matrix (Fin p) (Fin p) ℝ}
@@ -1877,9 +2128,18 @@ theorem schur_eigenvectors {p q : ℕ}
 
 /-! ### §7.6.5 Ascertaining Jordan block structures -/
 
-/-- **§7.6.5.** For `C = λ I + N` and `p_i = dim null(N^i)`, `p_{i+1} - p_i` is the number of blocks
-of dimension `≥ i + 1` for `λ` in the Jordan form of `C` (any Jordan decomposition `X⁻¹ C X = J`,
-laid out along `Fin n` by `σ`); in particular these dimensions are similarity invariants. -/
+/-- **§7.6.5** of [golub2013matrix], Jordan block counts from null spaces. Let
+$C, N \in \mathbb{C}^{n \times n}$ and $\lambda \in \mathbb{C}$ with $C = \lambda I + N$. Let
+$X^{-1} C X = J$ be a Jordan decomposition, with $X$ nonsingular and $J$ the Jordan form with
+blocks of sizes $e_1, \dots, e_q$ and eigenvalues $\mu_1, \dots, \mu_q$. Put
+$p_k = \dim \operatorname{null}(N^k)$. Then for every $k \ge 0$,
+$$p_{k+1} - p_k = \#\{\, i : \mu_i = \lambda \text{ and } e_i \ge k + 1 \,\},$$
+the number of Jordan blocks for $\lambda$ of size at least $k + 1$. In particular these numbers
+do not depend on the choice of the Jordan decomposition.
+
+The Jordan form is `Matrix.jordanForm e μ` with upper bidiagonal blocks, laid out along `Fin n`
+by the bijection `σ` through `Matrix.reindex`. The subtraction is in $\mathbb{N}$, which is
+exact because $p_k \le p_{k+1}$. The proof specializes `Matrix.card_filter_le_jordanBlocks_eq`. -/
 theorem jordan_block_count {C N X : Matrix (Fin n) (Fin n) ℂ} {c : ℂ} (hC : C = c • 1 + N)
     {q : ℕ} {e : Fin q → ℕ} {μ : Fin q → ℂ} (σ : ((i : Fin q) × Fin (e i)) ≃ Fin n)
     (hX : IsUnit X) (h : X⁻¹ * C * X = reindex σ σ (jordanForm e μ)) (k : ℕ) :

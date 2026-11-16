@@ -15,42 +15,106 @@ import NumlibSurface.GolubVanLoan.Chapter08.Section03
 import NumlibSurface.GolubVanLoan.Chapter08.Section05
 
 /-!
-# Golub–Van Loan §8.6: computing the SVD
+# Golub and Van Loan, Section 8.6: Computing the SVD
 
-Surface file for [golub2013matrix] §8.6: the connection (8.6.1)–(8.6.2) with the symmetric
-eigenproblems of `AᵀA` and `AAᵀ`, the min–max characterization of singular values (Theorem
-8.6.1), their perturbation (Corollary 8.6.2) and interlacing (Corollary 8.6.3), singular subspace
-pairs, the tridiagonal matrix `BᵀB` of a bidiagonal `B` and its decoupling (§8.6.3), the
-counterexample after Theorem 8.6.5, and the Jacobi SVD pieces of §8.6.4 (the `2 × 2` SVD by two
-rotations, and the orthogonality of the one-sided Jacobi iterate).
+This module formalizes §8.6 of [golub2013matrix]. Let $A \in \mathbb{R}^{m \times n}$ with singular
+values $\sigma_1(A) \ge \sigma_2(A) \ge \dots$. The SVD of $A$ is tied to the symmetric
+eigenproblems of $A^T A$, $AA^T$ and the Jordan–Wielandt matrix
+$\begin{bmatrix} 0 & A^T \\ A & 0 \end{bmatrix}$ by (8.6.1)–(8.6.3). Through these connections the
+module states the min-max characterization of singular values (Theorem 8.6.1), their perturbation
+bounds (Corollary 8.6.2 and Theorem 8.6.4, with (8.6.4)), their interlacing under the removal of a
+column (Corollary 8.6.3), and the perturbation of singular subspace pairs (Theorem 8.6.5), together
+with a counterexample to Theorem 8.6.5 as printed.
+
+For the SVD algorithm of §8.6.3 the module states that $T = B^T B$ is tridiagonal for an upper
+bidiagonal $B$, the rules by which a bidiagonal problem decouples, the Golub–Kahan SVD step
+(Algorithm 8.6.1) and the SVD algorithm (Algorithm 8.6.2), with their exact semantics. For the
+Jacobi SVD procedures of §8.6.4 it states the $2 \times 2$ SVD by two rotations and the
+orthogonality condition of one-sided Jacobi. The proofs use the backbone modules
+`Numlib.Analysis.Matrix.SingularValues`, `Numlib.LinearAlgebra.Matrix.SVD`,
+`Numlib.LinearAlgebra.Matrix.Bidiagonal` and `Numlib.Eigen.Jacobi`.
+
+## Main definitions
+
+* §8.6.2, `GolubVanLoan.Chapter08.IsSingularSubspacePair`: subspaces $S \subseteq \mathbb{R}^n$ and
+  $T \subseteq \mathbb{R}^m$ of equal dimension with $AS \subseteq T$ and $A^T T \subseteq S$.
+* Algorithm 8.6.1, `GolubVanLoan.Chapter08.algorithm_8_6_1`: the Golub–Kahan SVD step on a
+  bidiagonal matrix.
+* Algorithm 8.6.2, `GolubVanLoan.Chapter08.algorithm_8_6_2`: the SVD algorithm.
+
+## Main results
+
+* (8.6.1)–(8.6.2), `GolubVanLoan.Chapter08.equation_8_6_1`: an SVD $U^T A V = \Sigma$ diagonalizes
+  $A^T A$ and $AA^T$.
+* (8.6.3), `GolubVanLoan.Chapter08.equation_8_6_3`: an SVD of $A$ gives an orthogonal
+  diagonalization of the Jordan–Wielandt matrix, with eigenvalues $\pm\sigma_i$ and $m - n$ zeros.
+* Theorem 8.6.1, `GolubVanLoan.Chapter08.theorem_8_6_1`: the max-min and min-max characterizations
+  of $\sigma_k(A)$.
+* Corollary 8.6.2, `GolubVanLoan.Chapter08.corollary_8_6_2`: $|\sigma_k(A + E) - \sigma_k(A)| \le
+  \sigma_1(E) = \|E\|_2$.
+* Corollary 8.6.3, `GolubVanLoan.Chapter08.corollary_8_6_3`: the singular values of the first $r$
+  columns of $A$ interlace those of the first $r + 1$ columns.
+* (8.6.4), `GolubVanLoan.Chapter08.equation_8_6_4`: the Jordan–Wielandt matrix of $E$ has Frobenius
+  norm $\sqrt 2 \|E\|_F$ and 2-norm $\|E\|_2$.
+* Theorem 8.6.4, `GolubVanLoan.Chapter08.theorem_8_6_4`: $\sum_{k=1}^n (\sigma_k(A + E) -
+  \sigma_k(A))^2 \le \|E\|_F^2$.
+* Theorem 8.6.5, `GolubVanLoan.Chapter08.theorem_8_6_5`: a singular subspace pair with separated
+  singular values persists under a small perturbation $E$.
+* Theorem 8.6.5, `GolubVanLoan.Chapter08.theorem_8_6_5_counterexample`: the theorem as printed fails
+  for $m > n$.
+* §8.6.3, `GolubVanLoan.Chapter08.gram_bidiagonal`: for upper bidiagonal $B$, the matrix $B^T B$ is
+  symmetric tridiagonal, with explicit entries, and unreduced exactly when every $d_i f_i \ne 0$.
+* §8.6.3, `GolubVanLoan.Chapter08.bidiagonal_decouple`: a zero superdiagonal entry splits $B$, and a
+  zero diagonal entry can be moved by rotations into a zero row or column.
+* Algorithm 8.6.1, `GolubVanLoan.Chapter08.algorithm_8_6_1_spec`: in exact arithmetic, the
+  Golub–Kahan step is the implicit-shift QR step on $B^T B$, up to signs.
+* Algorithm 8.6.2, `GolubVanLoan.Chapter08.algorithm_8_6_2_spec`: in exact arithmetic, the SVD
+  algorithm returns $U^T (A + E) V = B$ with orthogonal $U$, $V$, a bound on $\|E\|_F$, and $B$
+  diagonal if the loop stopped.
+* §8.6.4, `GolubVanLoan.Chapter08.jacobiSVD_twoByTwo`: two rotations diagonalize any real
+  $2 \times 2$ matrix, and the two-sided Jacobi update decreases $\operatorname{off}^2$ by
+  $a_{pq}^2 + a_{qp}^2$.
+* §8.6.4, `GolubVanLoan.Chapter08.oneSidedJacobi_orthogonal`: one-sided Jacobi makes two columns
+  orthogonal, and orthogonal columns give the SVD by scaling.
 
 ## Conventions
 
-`σ_k(A)` for `A : Matrix (Fin m) (Fin n) ℝ` is `A.sortedSingularValues (k - 1)` (Mathlib's sorted
-`LinearMap.singularValues` of `toEuclideanLin A`, 0-based). Bidiagonal matrices are
-`Matrix.IsUpperBidiagonal`.
+* The book's $\sigma_k(A)$ for `A : Matrix (Fin m) (Fin n) ℝ` is `A.sortedSingularValues (k - 1)`,
+  the sorted `LinearMap.singularValues` of `toEuclideanLin A`, indexed from $0$ and zero from the
+  rank on.
+* Square upper bidiagonal matrices are `Matrix.IsUpperBidiagonal`, and rectangular ones are
+  `Matrix.IsUpperBidiagonalRect`.
+* The Jordan–Wielandt matrix $\begin{bmatrix} 0 & A^T \\ A & 0 \end{bmatrix}$ is
+  `Matrix.hermitianDilation A`, with the domain block first.
+* In Theorem 8.6.5 the orthogonal matrices are given by their column blocks, $V = [V_1\ V_2]$ and
+  $U = [U_1\ U_2]$, through `Matrix.fromCols`.
 
-The Jordan–Wielandt matrix is the backbone's `Matrix.hermitianDilation` (`[0 Aᵀ; A 0]`, domain
-block first). Theorem 8.6.5 is the backbone's Wedin theorem
-`Matrix.exists_singularSubspacePair_perturbation` in the coordinates `V = [V₁ V₂]`, `U = [U₁ U₂]`
-(`Matrix.fromCols`) of the pair.
+## Implementation notes
 
-Algorithms 8.6.1–8.6.2 follow the conventions of `NumlibSurface/GolubVanLoan`: chapter 5's
-`givens` and Givens updates on index lists, Algorithm 8.6.1 on a window of consecutive indices of
-the `m × n` array with the accumulators `U`, `V`, Algorithm 8.6.2 on chapter 5's
-bidiagonalization (Algorithm 5.4.2) with a `fuel`-bounded loop and a `done` flag. The exact
-semantics of Algorithm 8.6.1 (square `B`, full window) is the chase of one bulge, alternately
-below the diagonal and right of the superdiagonal, with the implicit-shift argument of
-`algorithm_8_3_2_spec` for `BᵀB`. The exact semantics of Algorithm 8.6.2 is backward, as for
-Algorithm 8.3.3: every step of Algorithm 8.6.1 and every zero-diagonal chase on the window of
-`B₂₂` is a two-sided rotation of an array decoupled along the window, so it is the full rotation
-and changes only the block; the deflations, carried back to `A`, form the backward error.
+* Algorithms 8.6.1 and 8.6.2 follow the algorithm conventions of the library index. They use the
+  `givens` of Chapter 5 (`GolubVanLoan.Chapter05.algorithm_5_1_3`) and the Givens updates on index
+  lists. Algorithm 8.6.1 acts on a window of consecutive indices of the $m \times n$ array and
+  accumulates $U$ and $V$. Algorithm 8.6.2 starts from the bidiagonalization of Chapter 5
+  (`GolubVanLoan.Chapter05.algorithm_5_4_2`) and runs a loop of at most `fuel` passes with a flag
+  `done`.
+* The exact semantics of Algorithm 8.6.1, for a square $B$ and the full window, is the chase of one
+  bulge, alternately below the diagonal and to the right of the superdiagonal, combined with the
+  implicit-shift argument of `GolubVanLoan.Chapter08.algorithm_8_3_2_spec` for $B^T B$.
+* The exact semantics of Algorithm 8.6.2 is a backward error statement, as for
+  `GolubVanLoan.Chapter08.algorithm_8_3_3_spec`. Every step of Algorithm 8.6.1 and every
+  zero-diagonal chase on the window of $B_{22}$ is a two-sided rotation of an array that is
+  decoupled along the window, so it is the full rotation and changes only the block. The deflations,
+  carried back to $A$, form the backward error.
 
-## Readings
+## Deviations from the source
 
-Algorithm 8.6.1 says "`B ∈ ℝ^{m×n}`" for what is square; Theorem 8.6.5 swaps `P` and `Q` and is
-false for `m > n` as printed. The book's proof of Corollary 8.6.3 cites "Corollary 8.1.7" for
-Theorem 8.1.7.
+* **Theorem 8.6.5** (typo). The source swaps $P$ and $Q$: its $Q$ is $(n - r) \times r$. See
+  `GolubVanLoan.Chapter08.theorem_8_6_5`.
+* **Theorem 8.6.5** (correction). As printed, the theorem is false for $m > n$. For $m > n$ the
+  declaration adds Wedin's condition $\delta \le \sigma_{\min}(A_{11})$. See
+  `GolubVanLoan.Chapter08.theorem_8_6_5` and `GolubVanLoan.Chapter08.theorem_8_6_5_counterexample`.
+* **Algorithm 8.6.1** (typo). The source says $B \in \mathbb{R}^{m \times n}$ for a square $B$. See
+  `GolubVanLoan.Chapter08.algorithm_8_6_1`.
 -/
 
 open Matrix
@@ -61,9 +125,16 @@ variable {m n : ℕ}
 
 /-! ### §8.6.1 Connections to the symmetric eigenvalue problem -/
 
-/-- **(8.6.1)–(8.6.2).** If `Uᵀ A V = Σ = diag(σ_1, …, σ_n)` is an SVD of
-`A ∈ ℝ^{m×n}` (`m ≥ n`), then `Vᵀ (AᵀA) V = diag(σ_1², …, σ_n²)` and
-`Uᵀ (AAᵀ) U = diag(σ_1², …, σ_n², 0, …, 0)`. -/
+/-- **Equations (8.6.1)–(8.6.2)** of [golub2013matrix]. Let $A \in \mathbb{R}^{m \times n}$ with
+$m \ge n$, let $U \in \mathbb{R}^{m \times m}$ and $V \in \mathbb{R}^{n \times n}$ be
+orthogonal, and let $U^T A V = \Sigma$, where $\Sigma \in \mathbb{R}^{m \times n}$ has the
+entries $\sigma_1, \dots, \sigma_n$ on its diagonal and zeros elsewhere. Then
+$$V^T (A^T A) V = \operatorname{diag}(\sigma_1^2, \dots, \sigma_n^2), \qquad U^T (AA^T) U =
+  \operatorname{diag}(\sigma_1^2, \dots, \sigma_n^2, 0, \dots, 0),$$
+with $m - n$ zeros.
+
+The numbers $\sigma_i$ need not be sorted or nonnegative. The matrix $\Sigma$ is
+`Matrix.rectDiagonal σ` for `σ : ℕ → ℝ`, indexed from $0$. -/
 theorem equation_8_6_1 {A : Matrix (Fin m) (Fin n) ℝ} (hmn : n ≤ m) {U : Matrix (Fin m) (Fin m) ℝ}
     {V : Matrix (Fin n) (Fin n) ℝ} (hU : U ∈ orthogonalGroup (Fin m) ℝ)
     (hV : V ∈ orthogonalGroup (Fin n) ℝ) {σ : ℕ → ℝ} (hA : Uᵀ * A * V = rectDiagonal σ) :
@@ -103,8 +174,8 @@ theorem equation_8_6_1 {A : Matrix (Fin m) (Fin n) ℝ} (hmn : n ≤ m) {U : Mat
     funext i
     split_ifs <;> simp [sq]
 
-/-- The constant block matrix `M = [I I 0; I -I 0; 0 0 √2 I]` of (8.6.3), before the scaling:
-`Mᵀ M = M Mᵀ = 2 I`. -/
+/-- The constant block matrix $M = \begin{bmatrix} I & I & 0 \\ I & -I & 0 \\ 0 & 0 & \sqrt 2 I
+\end{bmatrix}$ of (8.6.3), before the scaling, satisfies $M^T M = MM^T = 2I$. -/
 private theorem jw_mul_self {n p : ℕ} :
     let M : Matrix (Fin n ⊕ (Fin n ⊕ Fin p)) (Fin n ⊕ (Fin n ⊕ Fin p)) ℝ :=
       fromBlocks 1 (fromCols 1 0) (fromRows 1 0) (fromBlocks (-1) 0 0 (√2 • 1))
@@ -120,7 +191,8 @@ private theorem jw_mul_self {n p : ℕ} :
            simp [M, Matrix.mul_apply, Fintype.sum_sum_type, Matrix.one_apply, h2, h,
                h.symm]]) <;> norm_num
 
-/-- The Jordan–Wielandt sandwich of (8.6.3): `Mᵀ [0 [Σ 0]; [Σ; 0] 0] M = 2 diag(Σ, -Σ, 0)`. -/
+/-- For the matrix $M$ of (8.6.3), $M^T \begin{bmatrix} 0 & [\Sigma\ 0] \\ [\Sigma; 0] & 0
+\end{bmatrix} M = 2 \operatorname{diag}(\Sigma, -\Sigma, 0)$. -/
 private theorem jw_conj {n p : ℕ} (σ : Fin n → ℝ) :
     let M : Matrix (Fin n ⊕ (Fin n ⊕ Fin p)) (Fin n ⊕ (Fin n ⊕ Fin p)) ℝ :=
       fromBlocks 1 (fromCols 1 0) (fromRows 1 0) (fromBlocks (-1) 0 0 (√2 • 1))
@@ -135,12 +207,23 @@ private theorem jw_conj {n p : ℕ} (σ : Fin n → ℝ) :
             two_mul];
          simp [M, Matrix.mul_apply, Fintype.sum_sum_type, Matrix.one_apply, diagonal_apply, h]])
 
-/-- **(8.6.3).** Let `Uᵀ A V = [Σ; 0]`, `Σ = diag(σ₁, …, σ_n)`, be an SVD of `A ∈ ℝ^{m×n}` with
-`U = [U₁ U₂]` (`n` and `m - n` columns) and `V` orthogonal. Then
-`Q = (1/√2) [V V 0; U₁ -U₁ √2 U₂]` (block rows `n`, `m`; block columns `n`, `n`, `m - n`) is
-orthogonal (`QᵀQ = QQᵀ = I`) and `Qᵀ [0 Aᵀ; A 0] Q = diag(σ₁, …, σ_n, -σ₁, …, -σ_n, 0, …, 0)`:
-the eigenvalues of the Jordan–Wielandt matrix `Matrix.hermitianDilation A` are the `±σ_i` and
-`m - n` zeros. -/
+/-- **Equation (8.6.3)** of [golub2013matrix]. Let $A \in \mathbb{R}^{m \times n}$, let
+$U = [U_1\ U_2] \in \mathbb{R}^{m \times m}$ be orthogonal with
+$U_1 \in \mathbb{R}^{m \times n}$ and $U_2 \in \mathbb{R}^{m \times (m - n)}$, let
+$V \in \mathbb{R}^{n \times n}$ be orthogonal, and let
+$$U^T A V = \begin{bmatrix} \Sigma \\ 0 \end{bmatrix}, \qquad \Sigma =
+  \operatorname{diag}(\sigma_1, \dots, \sigma_n).$$
+Then the matrix
+$$Q = \frac{1}{\sqrt 2} \begin{bmatrix} V & V & 0 \\ U_1 & -U_1 & \sqrt 2\, U_2 \end{bmatrix}$$
+satisfies $Q^T Q = QQ^T = I$ and
+$$Q^T \begin{bmatrix} 0 & A^T \\ A & 0 \end{bmatrix} Q = \operatorname{diag}(\sigma_1, \dots,
+  \sigma_n, -\sigma_1, \dots, -\sigma_n, 0, \dots, 0),$$
+with $m - n$ zeros. So the eigenvalues of the Jordan–Wielandt matrix are the $\pm\sigma_i$ and
+$m - n$ zeros.
+
+The block rows of $Q$ have $n$ and $m$ rows, and its block columns have $n$, $n$ and $m - n$
+columns. The hypotheses force $m \ge n$. The orthogonality of $U$ is stated as $U^T U = I$ and
+$UU^T = I$, and the Jordan–Wielandt matrix is `Matrix.hermitianDilation A`. -/
 theorem equation_8_6_3 {A : Matrix (Fin m) (Fin n) ℝ} {U₁ : Matrix (Fin m) (Fin n) ℝ}
     {U₂ : Matrix (Fin m) (Fin (m - n)) ℝ} {V : Matrix (Fin n) (Fin n) ℝ}
     (hU : (fromCols U₁ U₂)ᵀ * fromCols U₁ U₂ = 1) (hU' : fromCols U₁ U₂ * (fromCols U₁ U₂)ᵀ = 1)
@@ -196,9 +279,18 @@ theorem equation_8_6_3 {A : Matrix (Fin m) (Fin n) ℝ} {U₁ : Matrix (Fin m) (
 
 /-! ### §8.6.1 Perturbation theory -/
 
-/-- **Theorem 8.6.1 (min–max for singular values).** For `A ∈ ℝ^{m×n}` and `k < min(m, n)`
-(0-based), `σ_k(A) = max_{dim S = k+1} min_{x ∈ S} ‖Ax‖₂/‖x‖₂` and
-`σ_k(A) = min_{dim S = n-k} max_{x ∈ S, y ∈ ℝᵐ} yᵀAx / (‖x‖₂‖y‖₂)`, over subspaces `S ⊆ ℝⁿ`. -/
+/-- **Theorem 8.6.1** of [golub2013matrix] (min-max characterization of singular values). Let
+$A \in \mathbb{R}^{m \times n}$ and $1 \le k \le \min\{m, n\}$. Then
+$$\sigma_k(A) = \max_{\dim S = k} \ \min_{0 \ne x \in S} \frac{\|Ax\|_2}{\|x\|_2}, \qquad
+  \sigma_k(A) = \min_{\dim S = n - k + 1} \ \max_{0 \ne x \in S,\ 0 \ne y \in \mathbb{R}^m}
+  \frac{y^T A x}{\|x\|_2 \|y\|_2},$$
+where $S$ ranges over the subspaces of $\mathbb{R}^n$.
+
+In Lean the index is 0-based: the statement is about `A.sortedSingularValues k` with $k < m$ and
+$k < n$. The maximum and the minimum are stated without division. The first: $\sigma_k(A)$ is
+the greatest $c$ for which some $S$ of dimension $k$ has $c\|x\|_2 \le \|Ax\|_2$ for all
+$x \in S$. The second: $\sigma_k(A)$ is the least $c$ for which some $S$ of dimension
+$n - k + 1$ has $y^T A x \le c \|x\|_2 \|y\|_2$ for all $x \in S$ and $y \in \mathbb{R}^m$. -/
 theorem theorem_8_6_1 (A : Matrix (Fin m) (Fin n) ℝ) {k : ℕ} (hkm : k < m) (hkn : k < n) :
     IsGreatest {c : ℝ | ∃ S : Submodule ℝ (Fin n → ℝ), Module.finrank ℝ S = k + 1 ∧
       ∀ x ∈ S, c * ‖WithLp.toLp 2 x‖ ≤ ‖WithLp.toLp 2 (A *ᵥ x)‖} (A.sortedSingularValues k) ∧
@@ -238,8 +330,12 @@ theorem theorem_8_6_1 (A : Matrix (Fin m) (Fin n) ℝ) {k : ℕ} (hkm : k < m) (
       dotProduct_comm] using this
 
 open scoped Matrix.Norms.L2Operator in
-/-- **Corollary 8.6.2.** For `A, E ∈ ℝ^{m×n}` and every `k`,
-`|σ_k(A + E) - σ_k(A)| ≤ σ_1(E) = ‖E‖₂`. -/
+/-- **Corollary 8.6.2** of [golub2013matrix]. Let $A, E \in \mathbb{R}^{m \times n}$. Then for every
+$k$,
+$$|\sigma_k(A + E) - \sigma_k(A)| \le \sigma_1(E) = \|E\|_2.$$
+
+The index $k$ is any natural number, 0-based; for $k$ beyond $\min\{m, n\}$ both singular values
+are $0$. The 2-norm is `Matrix.lpOpNorm 2 E`. -/
 theorem corollary_8_6_2 (A E : Matrix (Fin m) (Fin n) ℝ) (k : ℕ) :
     |(A + E).sortedSingularValues k - A.sortedSingularValues k| ≤ E.sortedSingularValues 0 ∧
       E.sortedSingularValues 0 = lpOpNorm 2 E := by
@@ -252,8 +348,8 @@ theorem corollary_8_6_2 (A E : Matrix (Fin m) (Fin n) ℝ) (k : ℕ) :
   exact norm_toEuclideanLin_apply_le E x
 
 open scoped Matrix.Norms.L2Operator in
-/-- The Jordan–Wielandt matrix `[0 Eᵀ; E 0]` has the `2`-norm of `E`: at most by the block bound
-`Matrix.l2_opNorm_fromBlocks_le` (zero diagonal blocks), at least because `E` is a submatrix. -/
+/-- The Jordan–Wielandt matrix $\begin{bmatrix} 0 & E^T \\ E & 0 \end{bmatrix}$ has the same 2-norm
+as $E$. -/
 private theorem lpOpNorm_hermitianDilation (E : Matrix (Fin m) (Fin n) ℝ) :
     lpOpNorm 2 (hermitianDilation E) = lpOpNorm 2 E := by
   apply le_antisymm
@@ -276,10 +372,14 @@ section Frobenius
 
 open scoped Matrix.Norms.Frobenius
 
-/-- **(8.6.4)**: the Jordan–Wielandt matrices `Ã = [0 Aᵀ; A 0]` and
-`Ã + Ẽ = [0 (A + E)ᵀ; A + E 0]` differ by `Ẽ = [0 Eᵀ; E 0]` (`Matrix.hermitianDilation`), and
-`‖Ẽ‖_F² = 2 ‖E‖_F²`, `‖Ẽ‖₂ = ‖E‖₂` — the norms that turn Theorem 8.1.4 and Corollary 8.1.6 for
-`Ã` into Theorem 8.6.4 and Corollary 8.6.2. -/
+/-- **Equation (8.6.4)** of [golub2013matrix]. Let $A, E \in \mathbb{R}^{m \times n}$, and let
+$\tilde A$, $\tilde E$ and $\widetilde{A + E}$ be the Jordan–Wielandt matrices of $A$, $E$ and
+$A + E$. Then
+$$\tilde E = \begin{bmatrix} 0 & E^T \\ E & 0 \end{bmatrix}, \qquad \widetilde{A + E} = \tilde
+  A + \tilde E, \qquad \|\tilde E\|_F^2 = 2 \|E\|_F^2, \qquad \|\tilde E\|_2 = \|E\|_2.$$
+
+These norms turn Theorem 8.1.4 and Corollary 8.1.6 for $\tilde A$ into Theorem 8.6.4 and
+Corollary 8.6.2. The Jordan–Wielandt matrix is `Matrix.hermitianDilation`. -/
 theorem equation_8_6_4 (A E : Matrix (Fin m) (Fin n) ℝ) :
     hermitianDilation E = fromBlocks 0 Eᵀ E 0 ∧
       hermitianDilation (A + E) = hermitianDilation A + hermitianDilation E ∧
@@ -288,10 +388,12 @@ theorem equation_8_6_4 (A E : Matrix (Fin m) (Fin n) ℝ) :
   ⟨by rw [hermitianDilation, conjTranspose_eq_transpose_of_trivial], hermitianDilation_add A E,
     frobenius_norm_hermitianDilation_sq E, lpOpNorm_hermitianDilation E⟩
 
-/-- **Theorem 8.6.4 (Wielandt–Hoffman for singular values).** For `A, E ∈ ℝ^{m×n}` with `m ≥ n`,
-`∑_{k=1}^n (σ_k(A + E) - σ_k(A))² ≤ ‖E‖_F²`. The backbone's
-`Matrix.sum_sq_sortedSingularValues_sub_le`, whose proof is the book's (Theorem 8.1.4 for the
-matrices (8.6.4)). -/
+/-- **Theorem 8.6.4** of [golub2013matrix] (Wielandt–Hoffman theorem for singular values). Let
+$A, E \in \mathbb{R}^{m \times n}$ with $m \ge n$. Then
+$$\sum_{k=1}^n \bigl(\sigma_k(A + E) - \sigma_k(A)\bigr)^2 \le \|E\|_F^2.$$
+
+This is `Matrix.sum_sq_sortedSingularValues_sub_le`, whose proof is the proof of the source:
+Theorem 8.1.4 for the matrices of (8.6.4). -/
 theorem theorem_8_6_4 (hmn : n ≤ m) (A E : Matrix (Fin m) (Fin n) ℝ) :
     ∑ k : Fin n, ((A + E).sortedSingularValues k - A.sortedSingularValues k) ^ 2 ≤ ‖E‖ ^ 2 := by
   have h := sum_sq_sortedSingularValues_sub_le A E
@@ -301,9 +403,16 @@ theorem theorem_8_6_4 (hmn : n ≤ m) (A E : Matrix (Fin m) (Fin n) ℝ) :
 
 end Frobenius
 
-/-- **Corollary 8.6.3 (interlacing).** For `A = [a_1 | ⋯ | a_n] ∈ ℝ^{m×n}` and `A_r` its first `r`
-columns: `σ_k(A_{r+1}) ≥ σ_k(A_r) ≥ σ_{k+1}(A_{r+1})` for `k < r` (0-based), i.e. the chain
-`σ_1(A_{r+1}) ≥ σ_1(A_r) ≥ σ_2(A_{r+1}) ≥ ⋯ ≥ σ_r(A_r) ≥ σ_{r+1}(A_{r+1})`. -/
+/-- **Corollary 8.6.3** of [golub2013matrix] (interlacing). Let $A = [a_1 \mid \dots \mid a_n] \in
+\mathbb{R}^{m \times n}$, let $r + 1 \le n$, and let $A_r = [a_1 \mid \dots \mid a_r]$ be the
+matrix of its first $r$ columns. Then for every $k \ge 1$
+$$\sigma_k(A_{r+1}) \ge \sigma_k(A_r) \ge \sigma_{k+1}(A_{r+1}),$$
+so that $\sigma_1(A_{r+1}) \ge \sigma_1(A_r) \ge \sigma_2(A_{r+1}) \ge \dots \ge \sigma_r(A_r)
+\ge \sigma_{r+1}(A_{r+1})$.
+
+The index is 0-based in Lean, and the inequalities hold for every index; for $k > r$ they are
+trivial because $\sigma_k(A_r) = 0$. The proof in the source cites "Corollary 8.1.7" where it
+means Theorem 8.1.7. -/
 theorem corollary_8_6_3 (A : Matrix (Fin m) (Fin n) ℝ) {r : ℕ} (hr : r + 1 ≤ n) (k : ℕ) :
     (A.submatrix id (Fin.castLE (by omega : r ≤ n))).sortedSingularValues k ≤
         (A.submatrix id (Fin.castLE hr)).sortedSingularValues k ∧
@@ -339,8 +448,10 @@ theorem corollary_8_6_3 (A : Matrix (Fin m) (Fin n) ℝ) {r : ℕ} (hr : r + 1 �
       (toEuclideanLin (A.submatrix id (Fin.castLE hr))) ι hdim k
     rwa [hcomp] at this
 
-/-- **§8.6.2, singular subspace pairs**: subspaces `S ⊆ ℝⁿ`, `T ⊆ ℝᵐ` of equal dimension form a
-singular subspace pair for `A` if `x ∈ S ⟹ Ax ∈ T` and `y ∈ T ⟹ Aᵀy ∈ S`. -/
+/-- **Section 8.6.2** of [golub2013matrix], singular subspace pairs. Let
+$A \in \mathbb{R}^{m \times n}$. Subspaces $S \subseteq \mathbb{R}^n$ and
+$T \subseteq \mathbb{R}^m$ form a **singular subspace pair** for $A$ if $\dim S = \dim T$,
+$Ax \in T$ for every $x \in S$, and $A^T y \in S$ for every $y \in T$. -/
 def IsSingularSubspacePair (A : Matrix (Fin m) (Fin n) ℝ)
     (S : Submodule ℝ (EuclideanSpace ℝ (Fin n)))
     (T : Submodule ℝ (EuclideanSpace ℝ (Fin m))) : Prop :=
@@ -349,8 +460,12 @@ def IsSingularSubspacePair (A : Matrix (Fin m) (Fin n) ℝ)
 
 /-! ### §8.6.3 The SVD algorithm -/
 
-/-- **§8.6.3, first sentence**: a bidiagonalization `Uᵀ A V = B` with `U` orthogonal gives the
-tridiagonal decomposition `Vᵀ (AᵀA) V = BᵀB`. -/
+/-- **Section 8.6.3** of [golub2013matrix], first sentence. Let $A \in \mathbb{R}^{m \times n}$,
+$B \in \mathbb{R}^{m \times n}$ and $V \in \mathbb{R}^{n \times n}$, and let
+$U \in \mathbb{R}^{m \times m}$ be orthogonal. If $U^T A V = B$, then $V^T (A^T A) V = B^T B$.
+
+The source applies this to a bidiagonalization, where $V$ is orthogonal and $B$ is bidiagonal,
+to get a tridiagonal decomposition of $A^T A$. Neither condition is needed for the identity. -/
 theorem gram_of_bidiagonalization {A : Matrix (Fin m) (Fin n) ℝ} {U : Matrix (Fin m) (Fin m) ℝ}
     {V : Matrix (Fin n) (Fin n) ℝ} {B : Matrix (Fin m) (Fin n) ℝ}
     (hU : U ∈ orthogonalGroup (Fin m) ℝ) (h : Uᵀ * A * V = B) : Vᵀ * (Aᵀ * A) * V = Bᵀ * B := by
@@ -358,11 +473,17 @@ theorem gram_of_bidiagonalization {A : Matrix (Fin m) (Fin n) ℝ} {U : Matrix (
   simp only [Matrix.mul_assoc]
   rw [← Matrix.mul_assoc U, (mem_orthogonalGroup_iff (Fin m) ℝ).1 hU, Matrix.one_mul]
 
-/-- **§8.6.3, `BᵀB` of a bidiagonal `B`.** For upper bidiagonal `B` with diagonal `d` and
-superdiagonal `f`, `T = BᵀB` is symmetric tridiagonal with `t_ii = d_i² + f_{i-1}²` and
-`t_{i,i+1} = d_i f_i`, and `T` is unreduced iff every `d_i f_i ≠ 0`. (That a bidiagonalization
-`Uᵀ A V = B` gives the tridiagonal decomposition `Vᵀ (AᵀA) V = BᵀB` is
-`gram_of_bidiagonalization`.) -/
+/-- **Section 8.6.3** of [golub2013matrix], the matrix $B^T B$ of a bidiagonal $B$. Let
+$B \in \mathbb{R}^{n \times n}$ be upper bidiagonal with diagonal $d_1, \dots, d_n$ and
+superdiagonal $f_1, \dots, f_{n-1}$, and put $f_0 = 0$. Then $T = B^T B$ is symmetric and
+tridiagonal, with
+$$t_{ii} = d_i^2 + f_{i-1}^2, \qquad t_{i,i+1} = d_i f_i,$$
+and $T$ is unreduced if and only if $d_i f_i \ne 0$ for $i = 1, \dots, n - 1$.
+
+In Lean, $d_i$ is `B i i`, $f_i$ is `B i j` with $j = i + 1$, and $f_{i-1}^2$ is written as a
+sum over the index $j$ with $j + 1 = i$. That a bidiagonalization $U^T A V = B$ gives the
+tridiagonal decomposition $V^T (A^T A) V = B^T B$ is
+`GolubVanLoan.Chapter08.gram_of_bidiagonalization`. -/
 theorem gram_bidiagonal {B : Matrix (Fin n) (Fin n) ℝ} (hB : B.IsUpperBidiagonal) :
     (Bᵀ * B).IsSymm ∧ (Bᵀ * B).IsTridiagonal ∧
       (∀ i : Fin n, (Bᵀ * B) i i =
@@ -433,25 +554,32 @@ theorem gram_bidiagonal {B : Matrix (Fin n) (Fin n) ℝ} (hB : B.IsUpperBidiagon
 
 /-! ### §8.6.4 Jacobi SVD procedures -/
 
-/-- The book's `2 × 2` rotation `[c s; -s c]` is the plane rotation `planeRotation 0 1 c (-s)`. -/
+/-- The rotation $\begin{bmatrix} c & s \\ -s & c \end{bmatrix}$ is the plane rotation
+`planeRotation 0 1 c (-s)` of order $2$. -/
 private theorem planeRotation_fin_two (c s : ℝ) :
     planeRotation (0 : Fin 2) 1 c (-s) = !![c, s; -s, c] := by
   ext i j
   fin_cases i <;> fin_cases j <;> simp [planeRotation_apply]
 
-/-- A `2 × 2` matrix with vanishing off-diagonal entries is diagonal. -/
+/-- A $2 \times 2$ matrix with zero off-diagonal entries is diagonal. -/
 private theorem eq_diagonal_of_fin_two {N : Matrix (Fin 2) (Fin 2) ℝ} (h01 : N 0 1 = 0)
     (h10 : N 1 0 = 0) : N = diagonal fun i => N i i := by
   ext i j
   fin_cases i <;> fin_cases j <;> simp [h01, h10]
 
-/-- **§8.6.4, the two-sided Jacobi SVD subproblem** (P8.6.5). For every real `2 × 2`
-`M = [a_pp a_pq; a_qp a_qq]` there are rotations `(c₁, s₁)`, `(c₂, s₂)` with
-`[c₁ s₁; -s₁ c₁]ᵀ M [c₂ s₂; -s₂ c₂] = diag(d_p, d_q)`: a rotation that makes `M` symmetric
-(P8.6.5(a)), then the symmetric Schur rotation of Algorithm 8.5.1 (the backbone's
-`Matrix.jacobiRotation`). And the two-sided update `B = J(p,q,θ₁)ᵀ A J(p,q,θ₂)` of an `n × n` `A`
-by these rotations of its `(p, q)` block zeroes `b_pq`, `b_qp` with
-`off(B)² = off(A)² - a_pq² - a_qp²` (P8.6.5(c)). -/
+/-- **Section 8.6.4** of [golub2013matrix], the two-sided Jacobi SVD subproblem (Problem P8.6.5).
+For every $M \in \mathbb{R}^{2 \times 2}$ there are $c_1, s_1, c_2, s_2 \in \mathbb{R}$ with
+$c_1^2 + s_1^2 = 1$, $c_2^2 + s_2^2 = 1$ and
+$$\begin{bmatrix} c_1 & s_1 \\ -s_1 & c_1 \end{bmatrix}^T M \begin{bmatrix} c_2 & s_2 \\ -s_2 &
+  c_2 \end{bmatrix} = \operatorname{diag}(d_1, d_2)$$
+for some $d_1, d_2$. Moreover, for every $A \in \mathbb{R}^{n \times n}$ and $p \ne q$ there are
+such pairs for which $B = J(p, q, \theta_1)^T A J(p, q, \theta_2)$ satisfies
+$b_{pq} = b_{qp} = 0$ and
+$$\operatorname{off}(B)^2 = \operatorname{off}(A)^2 - a_{pq}^2 - a_{qp}^2.$$
+
+The matrix $A$ need not be symmetric. The first rotation makes the $2 \times 2$ block symmetric
+(P8.6.5(a)), and the second is the symmetric Schur rotation of Algorithm 8.5.1,
+`Matrix.jacobiRotation`; the identity for $\operatorname{off}$ is P8.6.5(c). -/
 theorem jacobiSVD_twoByTwo :
     (∀ M : Matrix (Fin 2) (Fin 2) ℝ, ∃ c₁ s₁ c₂ s₂ : ℝ, c₁ ^ 2 + s₁ ^ 2 = 1 ∧
       c₂ ^ 2 + s₂ ^ 2 = 1 ∧ ∃ d : Fin 2 → ℝ,
@@ -572,11 +700,21 @@ theorem jacobiSVD_twoByTwo :
   have eA := offDiagNormSq_add_sum_diag_sq_real A
   linarith
 
-/-- **§8.6.4, one-sided Jacobi.** For `A ∈ ℝ^{m×n}`, `p ≠ q` and a rotation `J = J(p,q,θ)`, the
-inner product of columns `p` and `q` of `A J` is `(Jᵀ(AᵀA)J)_{pq}`, so they are orthogonal iff that
-entry vanishes, and the rotation of Algorithm 8.5.1 for `AᵀA` achieves it. And if `A V` has
-orthogonal columns, then `A V = U Σ` with `Σ = diag(‖(AV)(:, j)‖₂)` and `U` with orthogonal
-columns, the nonzero ones of unit length (the column scaling that finishes the SVD). -/
+/-- **Section 8.6.4** of [golub2013matrix], one-sided Jacobi. Let $A \in \mathbb{R}^{m \times n}$
+and $p \ne q$. Then:
+
+* for all $c, s$ and $J = J(p, q, \theta)$, the inner product of columns $p$ and $q$ of $AJ$ is
+  $(J^T (A^T A) J)_{pq}$, so the two columns are orthogonal if and only if this entry is zero;
+* for the rotation of Algorithm 8.5.1 applied to $A^T A$, columns $p$ and $q$ of $AJ$ are
+  orthogonal;
+* for every $V \in \mathbb{R}^{n \times n}$ such that the columns of $AV$ are pairwise
+  orthogonal, there is $U \in \mathbb{R}^{m \times n}$ with pairwise orthogonal columns such
+  that $AV = U \Sigma$, where $\Sigma = \operatorname{diag}(\|(AV)(:, j)\|_2)$, and $U(:, j)$
+  has unit length whenever $(AV)(:, j) \ne 0$.
+
+The last part is the column scaling that finishes the one-sided Jacobi SVD. The rotation of
+Algorithm 8.5.1 for $A^T A$ is `(Matrix.jacobiCosSmall (Aᵀ * A) p q, Matrix.jacobiSinSmall (Aᵀ *
+A) p q)`. -/
 theorem oneSidedJacobi_orthogonal (A : Matrix (Fin m) (Fin n) ℝ) {p q : Fin n} (hpq : p ≠ q) :
     (∀ c s : ℝ, (A * planeRotation p q c (-s)).col p ⬝ᵥ (A * planeRotation p q c (-s)).col q =
       ((planeRotation p q c (-s))ᵀ * (Aᵀ * A) * planeRotation p q c (-s)) p q) ∧
@@ -626,13 +764,14 @@ theorem oneSidedJacobi_orthogonal (A : Matrix (Fin m) (Fin n) ℝ) {p q : Fin n}
             rw [Finset.mul_sum]; exact Finset.sum_congr rfl fun x _ => by ring
         _ = 1 := by rw [hsq, inv_pow, inv_mul_cancel₀ (pow_ne_zero 2 hne)]
 
-/-! ### §8.6.2 Theorem 8.6.5, and its failure for `m > n` as printed -/
+/-! ### §8.6.2 Theorem 8.6.5, and its failure for $m > n$ as printed -/
 
 section Frobenius
 
 open scoped Matrix.Norms.Frobenius
 
-/-- A basis `W [1; P]` of `W` orthogonal spans an `r`-dimensional subspace. -/
+/-- If $W$ has orthonormal columns, then $W \begin{bmatrix} I \\ P \end{bmatrix}$ has a range of
+dimension $r$. -/
 private theorem finrank_range_mul_fromRows_one {l r s : ℕ}
     {W : Matrix (Fin l) (Fin r ⊕ Fin s) ℝ} (hW : Wᵀ * W = 1) (P : Matrix (Fin s) (Fin r) ℝ) :
     Module.finrank ℝ (LinearMap.range
@@ -652,16 +791,32 @@ private theorem finrank_range_mul_fromRows_one {l r s : ℕ}
     exact this
   rw [LinearMap.finrank_range_of_inj hinj, finrank_euclideanSpace, Fintype.card_fin]
 
-/-- **Theorem 8.6.5**, corrected for `m > n` (Wedin's condition): let `V = [V₁ V₂]` (`n × n`) and
-`U = [U₁ U₂]` (`m × m`) be orthogonal, the first `r` columns splitting off `A₁₁`:
-`Uᵀ A V = [A₁₁ 0; 0 A₂₂]`, so that `(ran V₁, ran U₁)` is a singular subspace pair for `A`; let the
-singular values of `A₁₁` and of `A₂₂` be `δ`-separated (`δ ≤ |σ_i(A₁₁) - σ_j(A₂₂)|`, the book's
-`δ = min |σ - γ| > 0`), and, if `m > n`, `δ ≤ σ_min(A₁₁)` (Wedin's condition, see
-`theorem_8_6_5_counterexample`). If `‖E‖_F ≤ δ/5`, there are `P` (`(n - r) × r`) and
-`Q` (`(m - r) × r`) with `‖[Q; P]‖_F ≤ 4 ‖E‖_F / δ` such that `ran(V₁ + V₂ P)` and
-`ran(U₁ + U₂ Q)` form a singular subspace pair for `A + E`. The book's `P`, `Q` are swapped
-(its `Q` is `(n - r) × r`); the backbone's `Matrix.exists_singularSubspacePair_perturbation`
-(Stewart 1973, Wedin 1972). -/
+/-- **Theorem 8.6.5** of [golub2013matrix] (perturbation of singular subspace pairs). Let
+$A, E \in \mathbb{R}^{m \times n}$ with $m \ge n$, and let
+$V = [V_1\ V_2] \in \mathbb{R}^{n \times n}$ and $U = [U_1\ U_2] \in \mathbb{R}^{m \times m}$ be
+orthogonal, where $V_1$ and $U_1$ have $r$ columns, such that
+$$U^T A V = \begin{bmatrix} A_{11} & 0 \\ 0 & A_{22} \end{bmatrix}, \qquad A_{11} \in
+  \mathbb{R}^{r \times r}.$$
+Let $\delta > 0$ satisfy $\delta \le |\sigma_i(A_{11}) - \sigma_j(A_{22})|$ for
+$i = 1, \dots, r$ and $j = 1, \dots, n - r$, and, if $m > n$, also
+$\delta \le \sigma_{\min}(A_{11})$. If $\|E\|_F \le \delta/5$, then there are
+$P \in \mathbb{R}^{(n - r) \times r}$ and $Q \in \mathbb{R}^{(m - r) \times r}$ with
+$$\left\| \begin{bmatrix} Q \\ P \end{bmatrix} \right\|_F \le \frac{4 \|E\|_F}{\delta}$$
+such that $\operatorname{ran}(V_1 + V_2 P)$ and $\operatorname{ran}(U_1 + U_2 Q)$ form a
+singular subspace pair for $A + E$.
+
+**Correction.** As printed, the theorem is false for $m > n$; see
+`GolubVanLoan.Chapter08.theorem_8_6_5_counterexample`. For $m > n$ the declaration adds Wedin's
+condition $\delta \le \sigma_{\min}(A_{11})$.
+
+**Typo.** The source swaps $P$ and $Q$: its $Q$ is $(n - r) \times r$.
+
+The block form of $U^T A V$ makes $(\operatorname{ran} V_1, \operatorname{ran} U_1)$ a singular
+subspace pair for $A$, the unperturbed pair; the declaration does not state this. The source
+takes $\delta = \min |\sigma - \gamma| > 0$ over the singular values $\sigma$ of $A_{11}$ and
+$\gamma$ of $A_{22}$; here $\delta$ is any positive lower bound of these gaps. The orthogonality
+of $U$ and $V$ is stated as $U^T U = UU^T = I$ and $V^T V = VV^T = I$. The theorem specializes
+`Matrix.exists_singularSubspacePair_perturbation` (Stewart 1973, Wedin 1972). -/
 theorem theorem_8_6_5 (hmn : n ≤ m) {r : ℕ} {A E : Matrix (Fin m) (Fin n) ℝ}
     {V₁ : Matrix (Fin n) (Fin r) ℝ} {V₂ : Matrix (Fin n) (Fin (n - r)) ℝ}
     {U₁ : Matrix (Fin m) (Fin r) ℝ} {U₂ : Matrix (Fin m) (Fin (m - r)) ℝ}
@@ -713,11 +868,19 @@ theorem theorem_8_6_5 (hmn : n ≤ m) {r : ℕ} {A E : Matrix (Fin m) (Fin n) �
     simp only [toEuclideanLin_apply, mulVec_mulVec, ← hN]
 
 
-/-- **Theorem 8.6.5 is false as printed for `m > n`.** For `m = 3`, `n = 2`, `r = 1`,
-`A = [0 0; 0 1; 0 0]`, `U = I₃`, `V = I₂` (so `A₁₁ = [0]`, `A₂₂ = [1; 0]` and the printed gap is
-`δ = 1`) and `E = ε e₃e₁ᵀ` with `0 < ε ≤ 1/5` (so `‖E‖_F = ε ≤ δ/5`), no `P`, `Q` make
-`(ran(V₁ + V₂ P), ran(U₁ + U₂ Q))` a singular subspace pair for `A + E`, whatever their size. The
-corrected hypothesis `δ ≤ σ_min(A₁₁) = 0` of `theorem_8_6_5` fails here. -/
+/-- **Theorem 8.6.5** of [golub2013matrix], counterexample for $m > n$. Let $m = 3$, $n = 2$,
+$r = 1$,
+$$A = \begin{bmatrix} 0 & 0 \\ 0 & 1 \\ 0 & 0 \end{bmatrix}, \qquad E = \begin{bmatrix} 0 & 0 \\
+  0 & 0 \\ \varepsilon & 0 \end{bmatrix} = \varepsilon e_3 e_1^T, \qquad 0 < \varepsilon \le
+  1/5,$$
+and $U = I_3$, $V = I_2$, so that $V_1 = e_1$, $V_2 = e_2$, $U_1 = e_1$ and $U_2 = [e_2\ e_3]$.
+Then $\|E\|_F = \varepsilon \le 1/5$, and there are no $P \in \mathbb{R}^{1 \times 1}$ and
+$Q \in \mathbb{R}^{2 \times 1}$ such that $(\operatorname{ran}(V_1 + V_2 P),
+\operatorname{ran}(U_1 + U_2 Q))$ is a singular subspace pair for $A + E$.
+
+Here $A_{11} = [0]$ and $A_{22} = \begin{bmatrix} 1 \\ 0 \end{bmatrix}$, so the gap of the
+source is $\delta = 1$ and $\|E\|_F \le \delta/5$. The added hypothesis
+$\delta \le \sigma_{\min}(A_{11}) = 0$ of `GolubVanLoan.Chapter08.theorem_8_6_5` fails. -/
 theorem theorem_8_6_5_counterexample {ε : ℝ} (hε : 0 < ε) (hε' : ε ≤ 1 / 5) :
     let A : Matrix (Fin 3) (Fin 2) ℝ := !![0, 0; 0, 1; 0, 0]
     let E : Matrix (Fin 3) (Fin 2) ℝ := !![0, 0; 0, 0; ε, 0]
@@ -752,10 +915,10 @@ theorem theorem_8_6_5_counterexample {ε : ℝ} (hε : 0 < ε) (hε' : ε ≤ 1 
 end Frobenius
 
 
-/-- The row chase of §8.6.3 (the bulge in row `k` moves one column right per rotation): if the
-rows other than `k` have the bidiagonal pattern and row `k` is supported in column `j`, a rotation
-in the plane `(j, k)` with the Givens pair of `(c_jj, c_kj)` keeps the pattern and moves the
-support of row `k` to column `j + 1`. -/
+/-- The row chase of §8.6.3 moves the bulge in row $k$ one column to the right: if the rows other
+than $k$ have the bidiagonal pattern and row $k$ is supported in column $j$, the rotation in the
+plane $(j, k)$ by the Givens pair of $(c_{jj}, c_{kj})$ keeps the pattern and moves the support
+of row $k$ to column $j + 1$. -/
 private theorem rowChase_step {C : Matrix (Fin n) (Fin n) ℝ} {k j : Fin n} (hkj : k < j)
     (hrows : ∀ i l, i ≠ k → C i l ≠ 0 → l = i ∨ (l : ℕ) = i + 1)
     (hrow : ∀ l, C k l ≠ 0 → l = j) :
@@ -796,7 +959,7 @@ private theorem rowChase_step {C : Matrix (Fin n) (Fin n) ℝ} {k j : Fin n} (hk
       · exact absurd h3 hl
       · exact h3
 
-/-- The support of an upper bidiagonal matrix: `b_il ≠ 0` only for `l = i` or `l = i + 1`. -/
+/-- An upper bidiagonal matrix has $b_{il} \ne 0$ only for $l = i$ or $l = i + 1$. -/
 private theorem support_of_isUpperBidiagonal {C : Matrix (Fin n) (Fin n) ℝ}
     (hC : C.IsUpperBidiagonal) (i l : Fin n) (h : C i l ≠ 0) : l = i ∨ (l : ℕ) = i + 1 := by
   by_contra hc
@@ -807,7 +970,8 @@ private theorem support_of_isUpperBidiagonal {C : Matrix (Fin n) (Fin n) ℝ}
   · have : (i : ℕ) ≠ l := fun h' => hc.1 (Fin.ext h'.symm)
     exact Or.inr ⟨⟨i + 1, by omega⟩, Fin.lt_def.2 (by simp), Fin.lt_def.2 (by simp; omega)⟩
 
-/-- A matrix supported on the diagonal and the first superdiagonal is upper bidiagonal. -/
+/-- A matrix whose nonzero entries lie on the diagonal and the first superdiagonal is upper
+bidiagonal. -/
 private theorem isUpperBidiagonal_of_support {C : Matrix (Fin n) (Fin n) ℝ}
     (h : ∀ i l, C i l ≠ 0 → l = i ∨ (l : ℕ) = i + 1) : C.IsUpperBidiagonal := fun i l hil => by
   by_contra h0
@@ -820,8 +984,9 @@ private theorem isUpperBidiagonal_of_support {C : Matrix (Fin n) (Fin n) ℝ}
     · rw [Fin.lt_def] at h2; omega
     · rw [Fin.lt_def] at h2 h3; omega
 
-/-- **§8.6.3 (ii), the row chase**: a zero diagonal entry `b_kk` of an upper bidiagonal `B` is
-removed by row rotations `(k, k+1), …, (k, n)`, giving `GᵀB` upper bidiagonal with zero row `k`. -/
+/-- If $B$ is upper bidiagonal and $b_{kk} = 0$, there is an orthogonal $G$, a product of row
+rotations in the planes $(k, k+1), \dots, (k, n)$, such that $G^T B$ is upper bidiagonal with
+zero row $k$. -/
 private theorem bidiagonal_rowChase :
     ∀ {B : Matrix (Fin n) (Fin n) ℝ}, B.IsUpperBidiagonal → ∀ k : Fin n,
     B k k = 0 → ∃ G ∈ orthogonalGroup (Fin n) ℝ, (Gᵀ * B).IsUpperBidiagonal ∧
@@ -871,8 +1036,8 @@ private theorem bidiagonal_rowChase :
   · subst hik; exact absurd (hzero l) h
   · exact hrows i l hik h
 
-/-- **§8.6.3 (i), the splitting**: if `f_k = 0` the upper bidiagonal `B` is `diag(B₁, B₂)`, and
-`BᵀB` has the characteristic polynomial of `diag(B₁ᵀB₁, B₂ᵀB₂)`. -/
+/-- If $B$ is upper bidiagonal with $f_k = 0$, then $B = \operatorname{diag}(B_1, B_2)$, and $B^T B$
+has the characteristic polynomial of $\operatorname{diag}(B_1^T B_1, B_2^T B_2)$. -/
 private theorem bidiagonal_split {a b : ℕ}
     {B : Matrix (Fin (a + 1 + (b + 1))) (Fin (a + 1 + (b + 1))) ℝ} (hB : B.IsUpperBidiagonal)
     (hf : B (Fin.castAdd (b + 1) (Fin.last a)) (Fin.natAdd (a + 1) 0) = 0) :
@@ -919,9 +1084,8 @@ private theorem bidiagonal_split {a b : ℕ}
   rw [← charpoly_fromBlocks_zero₁₂, ← hgram]
   exact (charpoly_reindex finSumFinEquiv.symm (Bᵀ * B)).symm
 
-/-- **§8.6.3 (iii), the column chase**: a zero last diagonal entry of an upper bidiagonal `B` is
-removed by column rotations, giving `B G` upper bidiagonal with zero last column (the row chase
-of the reversed transpose). -/
+/-- If $B$ is upper bidiagonal with zero last diagonal entry, there is an orthogonal $G$, a product
+of column rotations, such that $BG$ is upper bidiagonal with zero last column. -/
 private theorem bidiagonal_colChase {B : Matrix (Fin n) (Fin n) ℝ} (hB : B.IsUpperBidiagonal)
     (h : 0 < n) (hd : B ⟨n - 1, by omega⟩ ⟨n - 1, by omega⟩ = 0) :
     ∃ G ∈ orthogonalGroup (Fin n) ℝ, (B * G).IsUpperBidiagonal ∧
@@ -964,15 +1128,24 @@ private theorem bidiagonal_colChase {B : Matrix (Fin n) (Fin n) ℝ} (hB : B.IsU
     rw [hentry, e]
     exact hrow _
 
-/-- **§8.6.3, the decoupling rules.** For upper bidiagonal `B` (`n × n`) with diagonal `d` and
-superdiagonal `f`: (i) if `f_k = 0`, then `B = diag(B₁, B₂)` (here of orders `a + 1`, `b + 1`) and
-the singular values of `B` are those of `B₁` and `B₂` together (`BᵀB` has the characteristic
-polynomial of `diag(B₁ᵀB₁, B₂ᵀB₂)`); (ii) if `d_k = 0`, the row rotations in the planes
-`(k, k+1), …, (k, n)` (each by the Givens pair of the current `(j, j)` and `(k, j)` entries,
-chasing the bulge one column right) give an orthogonal `G` with `GᵀB` upper bidiagonal and zero
-`k`-th row; (iii) if `d_n = 0`, column rotations in the planes `(n-1, n), …, (1, n)` give an
-orthogonal `G` with `B G` upper bidiagonal and zero last column. So the SVD problem decouples
-whenever `f_1 ⋯ f_{n-1} = 0` or `d_1 ⋯ d_n = 0`. -/
+/-- **Section 8.6.3** of [golub2013matrix], the decoupling rules. Let $B$ be upper bidiagonal with
+diagonal $d_1, \dots, d_n$ and superdiagonal $f_1, \dots, f_{n-1}$.
+
+* (i) If $f_k = 0$, then $B = \operatorname{diag}(B_1, B_2)$ with $B_1$ of order $k$, and
+  $\det(B^T B - xI) = \det(B_1^T B_1 - xI) \det(B_2^T B_2 - xI)$, so the singular values of $B$
+  are those of $B_1$ and $B_2$ together.
+* (ii) If $d_k = 0$, there is an orthogonal $G$ such that $G^T B$ is upper bidiagonal and its
+  row $k$ is zero.
+* (iii) If $n \ge 1$ and $d_n = 0$, there is an orthogonal $G$ such that $BG$ is upper
+  bidiagonal and its last column is zero.
+
+So the SVD problem decouples whenever $f_1 \cdots f_{n-1} = 0$ or $d_1 \cdots d_n = 0$. In (ii),
+$G$ is the product of the row rotations in the planes $(k, k+1), \dots, (k, n)$, each by the
+Givens pair of the current entries $(j, j)$ and $(k, j)$, which chase the bulge one column to
+the right. In (iii), $G$ is the product of the column rotations in the planes
+$(n-1, n), \dots, (1, n)$. In (i), the orders of $B_1$ and $B_2$ are `a + 1` and `b + 1` in
+Lean, the matrix $B$ is reindexed by `finSumFinEquiv`, and the equality of spectra is the
+equality of characteristic polynomials. -/
 theorem bidiagonal_decouple :
     (∀ {a b : ℕ} {B : Matrix (Fin (a + 1 + (b + 1))) (Fin (a + 1 + (b + 1))) ℝ},
       B.IsUpperBidiagonal → B (Fin.castAdd (b + 1) (Fin.last a)) (Fin.natAdd (a + 1) 0) = 0 →
@@ -999,12 +1172,16 @@ section Programs
 
 variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 
-/-- One chasing pair of Algorithm 8.6.1 on `(B, U, V, prev)` at consecutive window indices
-`(a, b)`: `y, z` are `t₁₁ - μ`, `t₁₂` for the first pair (`prev = none`) and `b_{prev,a}`,
-`b_{prev,b}` afterwards (the book's `y = b_{k,k+1}`, `z = b_{k,k+2}`, copies);
-`[c, s] = givens(y, z)` (`[y z] [c s; -s c] = [* 0]`, the same condition `s y + c z = 0`),
-`B = B G(a,b,θ)` over the window's rows, `V = V G(a,b,θ)`; then `y = b_aa`, `z = b_ba`,
-`[c, s] = givens(y, z)`, `B = G(a,b,θ)ᵀ B` over the window's columns, `U = U G(a,b,θ)`. -/
+/-- One chasing pair of Algorithm 8.6.1 on the state $(B, U, V, \mathit{prev})$ at consecutive
+window indices $(a, b)$. For the first pair ($\mathit{prev}$ empty) let
+$(y, z) = (t_{11} - \mu, t_{12})$, and afterwards $(y, z) = (b_{\mathit{prev}, a},
+b_{\mathit{prev}, b})$, which are the book's $y = b_{k,k+1}$ and $z = b_{k,k+2}$. Compute
+$(c, s) = \mathrm{givens}(y, z)$, set $B = B\,G(a, b, \theta)$ over the rows of the window and
+$V = V\,G(a, b, \theta)$. Then compute $(c, s) = \mathrm{givens}(b_{aa}, b_{ba})$, set
+$B = G(a, b, \theta)^T B$ over the columns of the window and $U = U\,G(a, b, \theta)$.
+
+The condition $[y\ z] \begin{bmatrix} c & s \\ -s & c \end{bmatrix} = [*\ 0]$ of the source is
+the condition $sy + cz = 0$ of `GolubVanLoan.Chapter05.algorithm_5_1_3`. -/
 noncomputable def golubKahanRotate (hnm : n ≤ m) (w : List (Fin n)) (y₀ z₀ : ℝ)
     (st : Matrix (Fin m) (Fin n) ℝ × Matrix (Fin m) (Fin m) ℝ × Matrix (Fin n) (Fin n) ℝ ×
       Option (Fin n)) (ab : Fin n × Fin n) :
@@ -1023,10 +1200,11 @@ noncomputable def golubKahanRotate (hnm : n ≤ m) (w : List (Fin n)) (y₀ z₀
     cs'.2 (List.finRange m) st.2.1
   pure (B₂, U₁, V₁, some ab.1)
 
-/-- **Algorithm 8.6.1 (Golub–Kahan SVD step).** "Given a bidiagonal matrix `B` having no zeros on
-its diagonal or superdiagonal, the following algorithm overwrites `B` with the bidiagonal matrix
-`B̄ = ŪᵀBV̄` where `Ū` and `V̄` are orthogonal and `V̄` is essentially the orthogonal matrix that
-would be obtained by applying Algorithm 8.3.2 to `T = BᵀB`."
+/-- **Algorithm 8.6.1** of [golub2013matrix] (Golub–Kahan SVD step). "Given a bidiagonal matrix $B$
+having no zeros on its diagonal or superdiagonal, the following algorithm overwrites $B$ with
+the bidiagonal matrix $\bar B = \bar U^T B \bar V$ where $\bar U$ and $\bar V$ are orthogonal
+and $\bar V$ is essentially the orthogonal matrix that would be obtained by applying Algorithm
+8.3.2 to $T = B^T B$."
 ```
 Let μ be the eigenvalue of the trailing 2-by-2 submatrix of T = BᵀB that is closer to t_nn.
 y = t₁₁ - μ;  z = t₁₂
@@ -1037,13 +1215,18 @@ for k = 1:n-1
     if k < n-1:  y = b_{k,k+1};  z = b_{k,k+2}
 end
 ```
-On a window `w` of consecutive column indices of an `m × n` array (`n ≤ m`; the rows of the window
-are the same indices; the book's step is `w = List.finRange n`, the book's "`B ∈ ℝ^{m×n}`" being a
-slip for a square `B`), with the accumulations `U = U Ū`, `V = V V̄` that Algorithm 8.6.2 needs.
-`μ` is computed by the formula of Algorithm 8.3.2 from
-`t_{N-1,N-1} = fl(fl(d²_{N-1}) + fl(f²_{N-2}))`
-(no `f_{N-2}` for `N = 2`), `t_NN = fl(fl(d²_N) + fl(f²_{N-1}))`, `t_{N,N-1} = fl(d_{N-1} f_{N-1})`,
-and `y = fl(fl(d₁²) - μ)`, `z = fl(d₁ f₁)`. For `N ≤ 1` nothing is done. -/
+
+**Typo.** The source says $B \in \mathbb{R}^{m \times n}$ for a square $B$.
+
+The program acts on a window $w$ of consecutive column indices of an $m \times n$ array with
+$n \le m$; the rows of the window are the same indices, and the step of the source is the full
+window $w$ = `List.finRange n`. It also accumulates $U = U \bar U$ and $V = V \bar V$, as
+Algorithm 8.6.2 needs. For a window of length $N \ge 2$ with diagonal $d$ and superdiagonal $f$,
+the shift $\mu$ is computed by the formula of Algorithm 8.3.2 from $t_{N-1,N-1} =
+\mathrm{fl}(\mathrm{fl}(d_{N-1}^2) + \mathrm{fl}(f_{N-2}^2))$, where $f_{N-2} = 0$ for $N = 2$,
+from $t_{NN} = \mathrm{fl}(\mathrm{fl}(d_N^2) + \mathrm{fl}(f_{N-1}^2))$ and from
+$t_{N,N-1} = \mathrm{fl}(d_{N-1} f_{N-1})$; then $y = \mathrm{fl}(\mathrm{fl}(d_1^2) - \mu)$ and
+$z = \mathrm{fl}(d_1 f_1)$. For $N \le 1$ the program does nothing. -/
 noncomputable def algorithm_8_6_1 (hnm : n ≤ m) (w : List (Fin n)) (B : Matrix (Fin m) (Fin n) ℝ)
     (U : Matrix (Fin m) (Fin m) ℝ) (V : Matrix (Fin n) (Fin n) ℝ) :
     M (Matrix (Fin m) (Fin n) ℝ × Matrix (Fin m) (Fin m) ℝ × Matrix (Fin n) (Fin n) ℝ) :=
@@ -1066,9 +1249,9 @@ noncomputable def algorithm_8_6_1 (hnm : n ≤ m) (w : List (Fin n)) (B : Matrix
     pure (st.1, st.2.1, st.2.2.1)
   | _ => pure (B, U, V)
 
-/-- The deflation pass of Algorithm 8.6.2: for `i = 1:n-1`, set `b_{i,i+1} = 0` if
-`|b_{i,i+1}| ≤ fl(ε · fl(|b_ii| + |b_{i+1,i+1}|))` (the right side rounded; `|·|` and the
-comparison exact). -/
+/-- The deflation pass of Algorithm 8.6.2: for $i = 1, \dots, n - 1$, set $b_{i,i+1} = 0$ if
+$|b_{i,i+1}| \le \mathrm{fl}(\varepsilon \cdot \mathrm{fl}(|b_{ii}| + |b_{i+1,i+1}|))$. The
+right side is rounded, and the absolute values and the comparison are exact. -/
 noncomputable def svdDeflate (hnm : n ≤ m) (ε : ℝ) (B : Matrix (Fin m) (Fin n) ℝ) :
     M (Matrix (Fin m) (Fin n) ℝ) :=
   (List.finRange n).foldlM (fun (B : Matrix (Fin m) (Fin n) ℝ) (i : Fin n) => do
@@ -1081,19 +1264,21 @@ noncomputable def svdDeflate (hnm : n ≤ m) (ε : ℝ) (B : Matrix (Fin m) (Fin
     else pure B) B
 
 open Classical in
-/-- The block `B₂₂` of Algorithm 8.6.2 as a window of consecutive indices: with the largest `q`
-such that `B₃₃` (the last `q` columns) is diagonal and decoupled and the smallest `p` such that
-`B₂₂` has a nonzero superdiagonal, the window `[p, …, n-q-1]`; empty when `q = n`. -/
+/-- The block $B_{22}$ of Algorithm 8.6.2 as a window of consecutive indices. Let $q$ be the largest
+number such that the last $q$ columns form a diagonal block $B_{33}$ decoupled from the rest,
+and let $p$ be the smallest number such that $B_{22}$ has a nonzero superdiagonal. The window is
+$[p, \dots, n - q - 1]$, and it is empty when $q = n$. -/
 noncomputable def bidiagonalWindow (hnm : n ≤ m) (B : Matrix (Fin m) (Fin n) ℝ) : List (Fin n) :=
   lastRunWindow n fun i => ∃ h : i + 1 < n,
     B (Fin.castLE hnm ⟨i, by omega⟩) ⟨i + 1, h⟩ ≠ 0
 
-/-- The decoupling rotations of Algorithm 8.6.2 on a window `w` of `B` with a zero diagonal entry
-`b_kk` (`k` the first one), `bidiagonal_decouple` (ii)–(iii): if `k` is not the last index of the
-window, rotations of the rows `(j, k)`, `j = k+1, …` (`[c, s] = givens(b_jj, b_kj)`,
-`B = G(j,k,θ)ᵀ B`, `U = U G(j,k,θ)`) zero row `k`; if it is the last, rotations of the columns
-`(j, k)`, `j = k-1, …, p` (`[c, s] = givens(b_jj, b_jk)`, `B = B G(j,k,θ)`, `V = V G(j,k,θ)`) zero
-column `k`. -/
+/-- The decoupling rotations of Algorithm 8.6.2 on a window $w$ of $B$ with a zero diagonal entry
+$b_{kk}$, as in `GolubVanLoan.Chapter08.bidiagonal_decouple` (ii) and (iii). If $k$ is not the
+last index of the window, rotations of the rows $(j, k)$, $j = k + 1, \dots$, zero row $k$:
+$(c, s) = \mathrm{givens}(b_{jj}, b_{kj})$, $B = G(j, k, \theta)^T B$ and
+$U = U\,G(j, k, \theta)$. If $k$ is the last index, rotations of the columns $(j, k)$,
+$j = k - 1, \dots, p$, zero column $k$: $(c, s) = \mathrm{givens}(b_{jj}, b_{jk})$,
+$B = B\,G(j, k, \theta)$ and $V = V\,G(j, k, \theta)$. -/
 noncomputable def zeroDiagonalChase (hnm : n ≤ m) (w : List (Fin n)) (k : Fin n)
     (B : Matrix (Fin m) (Fin n) ℝ) (U : Matrix (Fin m) (Fin m) ℝ) (V : Matrix (Fin n) (Fin n) ℝ) :
     M (Matrix (Fin m) (Fin n) ℝ × Matrix (Fin m) (Fin m) ℝ × Matrix (Fin n) (Fin n) ℝ) :=
@@ -1117,9 +1302,11 @@ noncomputable def zeroDiagonalChase (hnm : n ≤ m) (w : List (Fin n)) (k : Fin 
       pure (B₁, U₁, st.2.2)) (B, U, V)
 
 open Classical in
-/-- One pass of the `until q = n` loop of Algorithm 8.6.2 on `(B, U, V, done)`: deflate, find the
-window of `B₂₂`, stop if it is empty (`q = n`); if `B₂₂` has a zero diagonal entry, decouple by
-`zeroDiagonalChase`, otherwise apply Algorithm 8.6.1 to the window with the accumulators. -/
+/-- One pass of the `until q = n` loop of Algorithm 8.6.2 on the state $(B, U, V, \mathit{done})$.
+The pass deflates $B$ and finds the window of $B_{22}$. If the window is empty ($q = n$), the
+loop stops. Otherwise, if $B_{22}$ has a zero diagonal entry, the pass decouples by
+`GolubVanLoan.Chapter08.zeroDiagonalChase`, and if not, it applies Algorithm 8.6.1 to the window
+with the accumulators. -/
 noncomputable def svdPass (hnm : n ≤ m) (ε : ℝ)
     (st : Matrix (Fin m) (Fin n) ℝ × Matrix (Fin m) (Fin m) ℝ × Matrix (Fin n) (Fin n) ℝ × Bool) :
     M (Matrix (Fin m) (Fin n) ℝ × Matrix (Fin m) (Fin m) ℝ × Matrix (Fin n) (Fin n) ℝ × Bool) :=
@@ -1133,9 +1320,11 @@ noncomputable def svdPass (hnm : n ≤ m) (ε : ℝ)
         | none => algorithm_8_6_1 rnd hnm w B st.2.1 st.2.2.1
       pure (r.1, r.2.1, r.2.2, false)
 
-/-- **Algorithm 8.6.2 (the SVD algorithm).** "Given `A ∈ ℝ^{m×n}` (`m ≥ n`) and `ε`, a small
-multiple of the unit roundoff, the following algorithm overwrites `A` with `UᵀAV = D + E`, where
-`U`, `V` are orthogonal, `D` is diagonal, and `E` satisfies `‖E‖₂ ≈ u‖A‖₂`."
+/-- **Algorithm 8.6.2** of [golub2013matrix] (the SVD algorithm). "Given
+$A \in \mathbb{R}^{m \times n}$ ($m \ge n$) and $\varepsilon$, a small multiple of the unit
+roundoff, the following algorithm overwrites $A$ with $U^T A V = D + E$, where
+$U \in \mathbb{R}^{m \times m}$ is orthogonal, $V \in \mathbb{R}^{n \times n}$ is orthogonal,
+$D \in \mathbb{R}^{m \times n}$ is diagonal, and $E$ satisfies $\|E\|_2 \approx u \|A\|_2$."
 ```
 Use Algorithm 5.4.2 to compute the bidiagonalization [B; 0] = (U₁ ⋯ U_n)ᵀ A (V₁ ⋯ V_{n-2})
 until q = n
@@ -1149,9 +1338,11 @@ until q = n
     end
 end
 ```
-`B` is the bidiagonal part of chapter 5's Algorithm 5.4.2's array, `U` and `V` the forward
-accumulations (§5.1.6) of its stored reflectors with the returned `β`s (convention 13); the loop is
-at most `fuel` passes with a `done` flag (convention 3). The result is `(B, U, V, done)`. -/
+
+The initial $B$ is the bidiagonal part of the array of Algorithm 5.4.2, and $U$ and $V$ are the
+forward accumulations (§5.1.6) of its stored reflectors with the returned values of $\beta$. The
+loop runs at most `fuel` passes, with a flag `done`. The result is the tuple of the final $B$,
+$U$, $V$ and the flag. -/
 noncomputable def algorithm_8_6_2 (hnm : n ≤ m) (ε : ℝ) (A : Matrix (Fin m) (Fin n) ℝ)
     (fuel : ℕ) :
     M (Matrix (Fin m) (Fin n) ℝ × Matrix (Fin m) (Fin m) ℝ × Matrix (Fin n) (Fin n) ℝ × Bool) := do
@@ -1171,9 +1362,10 @@ section SVDAlgorithm
 
 open Chapter07 (francisWindow)
 
-/-! #### Rotations of an `m × n` array, and windows -/
+/-! ### Rotations of an $m \times n$ array, and windows -/
 
-/-- The rows `w.map (Fin.castLE hnm)` of the window `w = [p, q)`. -/
+/-- A row index lies in the rows of the window $[p, q)$ if and only if its value lies in $[p, q)$.
+-/
 private theorem mem_map_castLE_francisWindow (hnm : n ≤ m) {p q : ℕ} (hq : q ≤ n) (r : Fin m) :
     r ∈ (francisWindow n p q).map (Fin.castLE hnm) ↔ p ≤ (r : ℕ) ∧ (r : ℕ) < q := by
   rw [List.mem_map]
@@ -1183,13 +1375,14 @@ private theorem mem_map_castLE_francisWindow (hnm : n ≤ m) {p q : ℕ} (hq : q
   · rintro ⟨h1, h2⟩
     exact ⟨⟨r, by omega⟩, Chapter07.mem_francisWindow.2 ⟨h1, h2⟩, Fin.ext rfl⟩
 
-/-- `X` agrees with `B` off the block `[p, q) × [p, q)` (rows and columns by value). -/
+/-- The matrix $X$ agrees with $B$ off the block $[p, q) \times [p, q)$, rows and columns taken by
+value. -/
 private def AgreeOff (p q : ℕ) (X B : Matrix (Fin m) (Fin n) ℝ) : Prop :=
   ∀ (r : Fin m) (s : Fin n), ¬ ((p ≤ (r : ℕ) ∧ (r : ℕ) < q) ∧ (p ≤ (s : ℕ) ∧ (s : ℕ) < q)) →
     X r s = B r s
 
-/-- `B` is decoupled along the window `[p, q)`: its entries in a row of the window and a column
-off it, or the other way round, vanish. -/
+/-- The matrix $B$ is decoupled along the window $[p, q)$: its entries with the row in the window
+and the column outside it, or the other way round, vanish. -/
 private def IsDecoupledAt (p q : ℕ) (B : Matrix (Fin m) (Fin n) ℝ) : Prop :=
   ∀ (r : Fin m) (s : Fin n), ((p ≤ (r : ℕ) ∧ (r : ℕ) < q) ∧ ¬ (p ≤ (s : ℕ) ∧ (s : ℕ) < q)) ∨
     (¬ (p ≤ (r : ℕ) ∧ (r : ℕ) < q) ∧ (p ≤ (s : ℕ) ∧ (s : ℕ) < q)) → B r s = 0
@@ -1240,7 +1433,8 @@ private theorem agreeOff_givensRotation_transpose_mul {p q : ℕ} {X : Matrix (F
       ring
     · rw [ite_eq_right hra, ite_eq_right hrb]
 
-/-- **The column update over the window's rows** of a decoupled array is the full rotation. -/
+/-- On a decoupled array, the column update over the rows of the window is the full column rotation.
+-/
 private theorem givensApplyRight_window (hnm : n ≤ m) {p q : ℕ} (hq : q ≤ n)
     {X : Matrix (Fin m) (Fin n) ℝ} (hX : IsDecoupledAt p q X) {a b : Fin n}
     (ha : p ≤ (a : ℕ) ∧ (a : ℕ) < q) (hb : p ≤ (b : ℕ) ∧ (b : ℕ) < q) (hab : a ≠ b) (c s : ℝ) :
@@ -1252,7 +1446,7 @@ private theorem givensApplyRight_window (hnm : n ≤ m) {p q : ℕ} (hq : q ≤ 
   rw [mem_map_castLE_francisWindow hnm hq] at hr
   exact ⟨hX r a (Or.inr ⟨hr, ha⟩), hX r b (Or.inr ⟨hr, hb⟩)⟩
 
-/-- **The row update over the window's columns** of a decoupled array is the full rotation. -/
+/-- On a decoupled array, the row update over the columns of the window is the full row rotation. -/
 private theorem givensApplyLeft_window {p q : ℕ} {X : Matrix (Fin m) (Fin n) ℝ}
     (hX : IsDecoupledAt p q X) {a b : Fin m} (ha : p ≤ (a : ℕ) ∧ (a : ℕ) < q)
     (hb : p ≤ (b : ℕ) ∧ (b : ℕ) < q) (hab : a ≠ b) (c s : ℝ) :
@@ -1263,22 +1457,22 @@ private theorem givensApplyLeft_window {p q : ℕ} {X : Matrix (Fin m) (Fin n) �
   rw [Chapter07.mem_francisWindow] at ht
   exact ⟨hX a t (Or.inl ⟨ha, ht⟩), hX b t (Or.inl ⟨hb, ht⟩)⟩
 
-/-! #### Algorithm 8.6.1 on a window of an `m × n` array -/
+/-! ### Algorithm 8.6.1 on a window of an $m \times n$ array -/
 
-/-- The zero pattern of the Golub–Kahan chase before the pair `(a, a + 1)`: upper bidiagonal but
-for the bulge `(a - 1, a + 1)`. -/
+/-- The zero pattern of the Golub–Kahan chase before the pair $(a, a + 1)$: upper bidiagonal except
+for the bulge at $(a - 1, a + 1)$. -/
 private def IsRowBulgeAt (a : ℕ) (X : Matrix (Fin m) (Fin n) ℝ) : Prop :=
   ∀ (i : Fin m) (l : Fin n), ((l : ℕ) < i ∨ (i : ℕ) + 1 < l) →
     ¬ ((i : ℕ) + 1 = a ∧ (l : ℕ) = a + 1) → X i l = 0
 
-/-- The zero pattern after the column rotation of the pair `(a, a + 1)`: upper bidiagonal but for
-the bulge `(a + 1, a)`. -/
+/-- The zero pattern after the column rotation of the pair $(a, a + 1)$: upper bidiagonal except for
+the bulge at $(a + 1, a)$. -/
 private def IsColBulgeAt (a : ℕ) (X : Matrix (Fin m) (Fin n) ℝ) : Prop :=
   ∀ (i : Fin m) (l : Fin n), ((l : ℕ) < i ∨ (i : ℕ) + 1 < l) →
     ¬ ((i : ℕ) = a + 1 ∧ (l : ℕ) = a) → X i l = 0
 
-/-- The column rotation of the pair `(a, a + 1)`, annihilating the bulge `(a - 1, a + 1)`, moves
-it to `(a + 1, a)`. -/
+/-- The column rotation of the pair $(a, a + 1)$, which annihilates the bulge at $(a - 1, a + 1)$,
+moves the bulge to $(a + 1, a)$. -/
 private theorem isColBulgeAt_mul {a : ℕ} {X : Matrix (Fin m) (Fin n) ℝ} (hX : IsRowBulgeAt a X)
     {a' b' : Fin n} (ha : (a' : ℕ) = a) (hb : (b' : ℕ) = a + 1) {c s : ℝ}
     (hz : ∀ pr : Fin m, (pr : ℕ) + 1 = a → s * X pr a' + c * X pr b' = 0) :
@@ -1302,8 +1496,8 @@ private theorem isColBulgeAt_mul {a : ℕ} {X : Matrix (Fin m) (Fin n) ℝ} (hX 
   rw [ite_eq_right hlb]
   exact hX i l hil (fun h => hlb (Fin.ext (by omega)))
 
-/-- The row rotation of the pair `(a, a + 1)`, annihilating the bulge `(a + 1, a)`, moves it to
-`(a, a + 2)`. -/
+/-- The row rotation of the pair $(a, a + 1)$, which annihilates the bulge at $(a + 1, a)$, moves
+the bulge to $(a, a + 2)$. -/
 private theorem isRowBulgeAt_mul {a : ℕ} {X : Matrix (Fin m) (Fin n) ℝ} (hX : IsColBulgeAt a X)
     {ra rb : Fin m} {a' : Fin n} (hra : (ra : ℕ) = a) (hrb : (rb : ℕ) = a + 1)
     (ha : (a' : ℕ) = a) {c s : ℝ} (hz : s * X ra a' + c * X rb a' = 0) :
@@ -1329,9 +1523,9 @@ private theorem isRowBulgeAt_mul {a : ℕ} {X : Matrix (Fin m) (Fin n) ℝ} (hX 
   rw [ite_eq_right hib]
   exact hX i l hil (fun h => hib (Fin.ext (by omega)))
 
-/-- **One chasing pair of Algorithm 8.6.1 on a window of a decoupled array, exactly**: the new
-state is `(G'ᵀ (X G), U G', V G, a)` for the column rotation `G` of the pair and the row rotation
-`G'` of the new `(x_aa, x_ba)`. -/
+/-- In exact arithmetic, one chasing pair of Algorithm 8.6.1 on a window of a decoupled array gives
+the state $(G'^T X G, UG', VG, a)$, where $G$ is the column rotation of the pair and $G'$ is the
+row rotation of the new entries $(x_{aa}, x_{ba})$. -/
 private theorem golubKahanRotate_window (hnm : n ≤ m) {p q : ℕ} (hq : q ≤ n)
     {X : Matrix (Fin m) (Fin n) ℝ} (hX : IsDecoupledAt p q X) {a b : Fin n}
     (ha : p ≤ (a : ℕ) ∧ (a : ℕ) < q) (hb : p ≤ (b : ℕ) ∧ (b : ℕ) < q) (hab : a ≠ b)
@@ -1359,11 +1553,11 @@ private theorem golubKahanRotate_window (hnm : n ≤ m) {p q : ℕ} (hq : q ≤ 
     Chapter05.givensApplyRight_spec_of_forall_mem hcab _ _ (List.nodup_finRange m)
       List.mem_finRange]
 
-/-- The loop invariant of Algorithm 8.6.1 on the window `[p, q)` of an `m × n` array after `j`
-chasing pairs: the state `(X, U', V', prev)` is `(Gᵀ B H, U G, V H, p + j - 1)` for orthogonal
-`G`, `H`, `X` agrees with `B` off the block and has the zero pattern of the chase, and for `j ≥ 1`
-the first column `H e_p` is that of the first rotation `G(p, p + 1, θ₀)`,
-`(c₀, s₀) = givens(y₀, z₀)`. -/
+/-- The loop invariant of Algorithm 8.6.1 on the window $[p, q)$ after $j$ chasing pairs: the state
+is $(G^T B H, UG, VH, p + j - 1)$ for orthogonal $G$ and $H$, the first entry agrees with $B$
+off the block and has the zero pattern of the chase, and for $j \ge 1$ the first column $He_p$
+is that of the first rotation $G(p, p + 1, \theta_0)$ with
+$(c_0, s_0) = \mathrm{givens}(y_0, z_0)$. -/
 private def GKWindowInv (p q : ℕ) (B : Matrix (Fin m) (Fin n) ℝ) (U : Matrix (Fin m) (Fin m) ℝ)
     (V : Matrix (Fin n) (Fin n) ℝ) (y₀ z₀ : ℝ) (f₀ f₁ : Fin n) (j : ℕ)
     (st : Matrix (Fin m) (Fin n) ℝ × Matrix (Fin m) (Fin m) ℝ × Matrix (Fin n) (Fin n) ℝ ×
@@ -1375,8 +1569,8 @@ private def GKWindowInv (p q : ℕ) (B : Matrix (Fin m) (Fin n) ℝ) (U : Matrix
     (1 ≤ j → ∃ c₀ s₀ : ℝ, c₀ ^ 2 + s₀ ^ 2 = 1 ∧ s₀ * y₀ + c₀ * z₀ = 0 ∧
       H *ᵥ Pi.single f₀ 1 = Chapter05.givensRotation f₀ f₁ c₀ s₀ *ᵥ Pi.single f₀ 1)
 
-/-- **The bulge chase of Algorithm 8.6.1 on a window**, the loop: the invariant holds after the
-`q - p - 1` chasing pairs, whatever the first pair `(y₀, z₀)`. -/
+/-- In exact arithmetic, the loop invariant of Algorithm 8.6.1 holds after the $q - p - 1$ chasing
+pairs of the window $[p, q)$, for every first pair $(y_0, z_0)$. -/
 private theorem gkWindowInv_run (hnm : n ≤ m) {p q : ℕ} (hq : q ≤ n) (hpq : p + 2 ≤ q)
     {B : Matrix (Fin m) (Fin n) ℝ} (hB : B.IsUpperBidiagonalRect) (hBd : IsDecoupledAt p q B)
     (U : Matrix (Fin m) (Fin m) ℝ) (V : Matrix (Fin n) (Fin n) ℝ) (y₀ z₀ : ℝ) (f₀ f₁ : Fin n)
@@ -1467,8 +1661,8 @@ private theorem gkWindowInv_run (hnm : n ≤ m) {p q : ℕ} (hq : q ≤ n) (hpq 
       rw [← mulVec_mulVec, givensRotation_mulVec_single_of_ne hab
         (fun e => by rw [e, ha] at hf₀; omega) (fun e => by rw [e, hb] at hf₀; omega), he₀]
 
-/-- A matrix with the zero pattern of the chase after the last pair of the window `[p, q)`, equal
-to an upper bidiagonal matrix off the block, is upper bidiagonal. -/
+/-- A matrix with the zero pattern of the chase after the last pair of the window $[p, q)$ that
+agrees with an upper bidiagonal matrix off the block is upper bidiagonal. -/
 private theorem isUpperBidiagonalRect_of_isRowBulgeAt {p q : ℕ} (hpq : p + 2 ≤ q)
     {X B : Matrix (Fin m) (Fin n) ℝ} (hB : B.IsUpperBidiagonalRect) (hXa : AgreeOff p q X B)
     (hX : IsRowBulgeAt (q - 1) X) : X.IsUpperBidiagonalRect := by
@@ -1478,10 +1672,9 @@ private theorem isUpperBidiagonalRect_of_isRowBulgeAt {p q : ℕ} (hpq : p + 2 �
     exact hB i l h1 h2
   · exact hX i l (by omega) hb
 
-/-- **Algorithm 8.6.1 on a window of an `m × n` array** (what Algorithm 8.6.2 runs on `B₂₂`): for
-an upper bidiagonal `B` decoupled along the window `[p, q)` of at least two indices, the exact run
-`(B', U', V')` has orthogonal `G`, `H` with `B' = Gᵀ B H` upper bidiagonal, `U' = U G`,
-`V' = V H`, and `B'` agrees with `B` off the block. -/
+/-- In exact arithmetic, for an upper bidiagonal $B$ decoupled along a window $[p, q)$ of at least
+two indices, Algorithm 8.6.1 on the window returns $(G^T B H, UG, VH)$ for orthogonal $G$ and
+$H$, and $G^T B H$ is upper bidiagonal and agrees with $B$ off the block. -/
 private theorem algorithm_8_6_1_window (hnm : n ≤ m) {p q : ℕ} (hq : q ≤ n) (hpq : p + 2 ≤ q)
     {B : Matrix (Fin m) (Fin n) ℝ} (hB : B.IsUpperBidiagonalRect) (hBd : IsDecoupledAt p q B)
     (U : Matrix (Fin m) (Fin m) ℝ) (V : Matrix (Fin n) (Fin n) ℝ) :
@@ -1520,10 +1713,10 @@ private theorem algorithm_8_6_1_window (hnm : n ≤ m) {p q : ℕ} (hq : q ≤ n
   exact ⟨G, hG, H, hH, h1, h2, h3, isUpperBidiagonalRect_of_isRowBulgeAt hpq hB ha
     (by rwa [show p + (q - p - 1) = q - 1 by omega] at hc), ha⟩
 
-/-! #### Algorithm 8.6.1 on the whole square array -/
+/-! ### Algorithm 8.6.1 on the whole square array -/
 
-/-- The exact Wilkinson shift that Algorithm 8.6.1 computes from the entries of an upper
-bidiagonal `B` is the Wilkinson shift (8.3.3) of `T = BᵀB`. -/
+/-- In exact arithmetic, the shift that Algorithm 8.6.1 computes from the entries of an upper
+bidiagonal $B$ is the Wilkinson shift (8.3.3) of $T = B^T B$. -/
 private theorem algorithm_8_6_1_shift {N : ℕ} {B : Matrix (Fin (N + 2)) (Fin (N + 2)) ℝ}
     (hB : B.IsUpperBidiagonal) (f₂ : ℝ)
     (hf₂ : f₂ = if h : N = 0 then 0 else B ⟨N - 1, by omega⟩ (Fin.last N).castSucc) :
@@ -1564,17 +1757,25 @@ private theorem algorithm_8_6_1_shift {N : ℕ} {B : Matrix (Fin (N + 2)) (Fin (
   simp only [← ha, ← ha', ← hb]
   rfl
 
-/-- **Exact semantics of Algorithm 8.6.1** (the Golub–Kahan SVD step: "Given a bidiagonal matrix
-`B` having no zeros on its diagonal or superdiagonal, the following algorithm overwrites `B` with
-the bidiagonal matrix `B̄ = ŪᵀBV̄` where `Ū` and `V̄` are orthogonal and `V̄` is essentially the
-orthogonal matrix that would be obtained by applying Algorithm 8.3.2 to `T = BᵀB`"), for square
-`B` of order `n = N + 2` on the full window: the exact run `(B̄, U', V')` has orthogonal `Ū`,
-`V̄` (the products of the `n - 1` row and column rotations) with `B̄ = Ūᵀ B V̄` upper bidiagonal,
-`U' = U Ū`, `V' = V V̄`, `B̄ᵀ B̄ = V̄ᵀ T V̄`, `V̄ e₁` parallel to `(T - μ I) e₁` for the Wilkinson
-shift `μ` of `T` and `V̄ᵀ (T - μ I)` upper triangular; so when `T - μ I` is nonsingular,
-`B̄ᵀ B̄ = D (Matrix.shiftedQrStep μ T) D` for a `±1` diagonal `D` — the same step as Algorithm
-8.3.2 on `T` (`algorithm_8_3_2_spec`), up to signs. The proof is the chase of one bulge,
-alternately below the diagonal and right of the superdiagonal. -/
+/-- **Algorithm 8.6.1** of [golub2013matrix], exact semantics. Let $B \in \mathbb{R}^{n \times n}$,
+$n \ge 2$, be upper bidiagonal with nonzero diagonal and superdiagonal entries, let $T = B^T B$,
+let $\mu$ be the Wilkinson shift of $T$, and let $U, V \in \mathbb{R}^{n \times n}$. In exact
+arithmetic, Algorithm 8.6.1 on the full window returns $(\bar B, U', V')$, and there are
+orthogonal $\bar U$ and $\bar V$ such that:
+
+* $\bar B = \bar U^T B \bar V$ is upper bidiagonal, $U' = U \bar U$ and $V' = V \bar V$;
+* $\bar B^T \bar B = \bar V^T T \bar V$;
+* $\bar V e_1$ is a multiple of $(T - \mu I) e_1$, and $\bar V^T (T - \mu I)$ is upper
+  triangular;
+* if $T - \mu I$ is nonsingular, then $\bar B^T \bar B = D\, \hat T\, D$ for a diagonal matrix
+  $D$ with entries $\pm 1$, where $\hat T$ is the QR step of $T$ with shift $\mu$.
+
+So the step is the step of Algorithm 8.3.2 on $T$, up to signs; see
+`GolubVanLoan.Chapter08.algorithm_8_3_2_spec`. In Lean the order is `N + 2`, the shift is
+`GolubVanLoan.Chapter08.wilkinsonShift (Bᵀ * B)`, and the QR step is `Matrix.shiftedQrStep μ T`.
+The matrices $\bar U$ and $\bar V$ are the products of the $n - 1$ row rotations and of the
+$n - 1$ column rotations. The proof chases one bulge, alternately below the diagonal and to the
+right of the superdiagonal. -/
 theorem algorithm_8_6_1_spec {N : ℕ} {B : Matrix (Fin (N + 2)) (Fin (N + 2)) ℝ}
     (hB : B.IsUpperBidiagonal) (hd : ∀ i, B i i ≠ 0)
     (hf : ∀ i j : Fin (N + 2), (j : ℕ) = i + 1 → B i j ≠ 0)
@@ -1735,12 +1936,12 @@ theorem algorithm_8_6_1_spec {N : ℕ} {B : Matrix (Fin (N + 2)) (Fin (N + 2)) �
     exact (abs_eq zero_le_one).1 this
   · rw [hdd, star_eq_conjTranspose, diagonal_conjTranspose, star_trivial]
 
-/-! #### The zero-diagonal chases of Algorithm 8.6.2 -/
+/-! ### The zero-diagonal chases of Algorithm 8.6.2 -/
 
-/-- **One step of the row chase** of §8.6.3 (`bidiagonal_decouple` (ii)) on an `m × n` array: if
-the rows other than `k` have the bidiagonal pattern and row `k` is supported in column `j > k`,
-the rotation of the rows `(j, k)` by `givens(x_jj, x_kj)` keeps the pattern and moves the support
-of row `k` to column `j + 1`. -/
+/-- One step of the row chase of §8.6.3 on an $m \times n$ array: if the rows other than $k$ have
+the bidiagonal pattern and row $k$ is supported in column $j > k$, the rotation of the rows
+$(j, k)$ by $\mathrm{givens}(x_{jj}, x_{kj})$ keeps the pattern and moves the support of row $k$
+to column $j + 1$. -/
 private theorem rowChase_step' {k j : ℕ} {X : Matrix (Fin m) (Fin n) ℝ} {rj rk : Fin m}
     {cj : Fin n} (hrj : (rj : ℕ) = j) (hrk : (rk : ℕ) = k) (hcj : (cj : ℕ) = j) (hkj : k < j)
     (hrows : ∀ (i : Fin m) (l : Fin n), (i : ℕ) ≠ k → X i l ≠ 0 → (l : ℕ) = i ∨ (l : ℕ) = i + 1)
@@ -1782,10 +1983,10 @@ private theorem rowChase_step' {k j : ℕ} {X : Matrix (Fin m) (Fin n) ℝ} {rj 
       · exact absurd (Fin.ext (by omega)) hl
       · omega
 
-/-- **One step of the column chase** of §8.6.3 (`bidiagonal_decouple` (iii)): if the columns
-other than `k` have the bidiagonal pattern and column `k` is supported in row `j < k`, the rotation
-of the columns `(j, k)` by `givens(x_jj, x_jk)` keeps the pattern and moves the support of column
-`k` to row `j - 1`. -/
+/-- One step of the column chase of §8.6.3: if the columns other than $k$ have the bidiagonal
+pattern and column $k$ is supported in row $j < k$, the rotation of the columns $(j, k)$ by
+$\mathrm{givens}(x_{jj}, x_{jk})$ keeps the pattern and moves the support of column $k$ to row
+$j - 1$. -/
 private theorem colChase_step' {k j : ℕ} {X : Matrix (Fin m) (Fin n) ℝ} {rj : Fin m}
     {cj ck : Fin n} (hrj : (rj : ℕ) = j) (hcj : (cj : ℕ) = j) (hck : (ck : ℕ) = k) (hjk : j < k)
     (hcols : ∀ (i : Fin m) (l : Fin n), (l : ℕ) ≠ k → X i l ≠ 0 → (l : ℕ) = i ∨ (l : ℕ) = i + 1)
@@ -1827,7 +2028,7 @@ private theorem colChase_step' {k j : ℕ} {X : Matrix (Fin m) (Fin n) ℝ} {rj 
       · exact absurd (Fin.ext (by omega)) hi
       · omega
 
-/-- The indices of the window `[p, q)` after `k ≥ p` are the window `[k + 1, q)`. -/
+/-- The indices of the window $[p, q)$ greater than $k \ge p$ form the window $[k + 1, q)$. -/
 private theorem filter_gt_francisWindow {p q : ℕ} (k : Fin n) (hpk : p ≤ (k : ℕ)) :
     (francisWindow n p q).filter (fun j => decide (k < j)) = francisWindow n (k + 1) q := by
   unfold Chapter07.francisWindow
@@ -1837,7 +2038,7 @@ private theorem filter_gt_francisWindow {p q : ℕ} (k : Fin n) (hpk : p ≤ (k 
   simp only [Bool.and_eq_true, decide_eq_true_eq, Fin.lt_def]
   omega
 
-/-- The indices of the window `[p, q)` before `k ≤ q` are the window `[p, k)`. -/
+/-- The indices of the window $[p, q)$ less than $k \le q$ form the window $[p, k)$. -/
 private theorem filter_lt_francisWindow {p q : ℕ} (k : Fin n) (hkq : (k : ℕ) ≤ q) :
     (francisWindow n p q).filter (fun j => decide (j < k)) = francisWindow n p k := by
   unfold Chapter07.francisWindow
@@ -1847,11 +2048,11 @@ private theorem filter_lt_francisWindow {p q : ℕ} (k : Fin n) (hkq : (k : ℕ)
   simp only [Bool.and_eq_true, decide_eq_true_eq, Fin.lt_def]
   omega
 
-/-- **The row chase of Algorithm 8.6.2, exactly** (`bidiagonal_decouple` (ii) on the window
-`[p, q)`): for an upper bidiagonal `B` decoupled along the window with `b_kk = 0`, `k` not the last
-index of the window, the rotations of the rows `(j, k)`, `j = k + 1, …, q - 1`, give
-`G` orthogonal with `Gᵀ B` upper bidiagonal (row `k` zeroed), agreeing with `B` off the block. The
-loop body `f` is any whose exact run is the program's. -/
+/-- In exact arithmetic, for an upper bidiagonal $B$ decoupled along the window $[p, q)$ with
+$b_{kk} = 0$ and $k$ not the last index of the window, the rotations of the rows $(j, k)$,
+$j = k + 1, \dots, q - 1$, give an orthogonal $G$ such that $G^T B$ is upper bidiagonal with
+zero row $k$ and agrees with $B$ off the block; the loop body may be any function whose exact
+run is that of the program. -/
 private theorem rowChase_spec (hnm : n ≤ m) {p q : ℕ} (hq : q ≤ n)
     {B : Matrix (Fin m) (Fin n) ℝ} (hB : B.IsUpperBidiagonalRect) (hBd : IsDecoupledAt p q B)
     {k : Fin n} (hpk : p ≤ (k : ℕ)) (hkq : (k : ℕ) + 1 < q) (hkk : B (Fin.castLE hnm k) k = 0)
@@ -1935,10 +2136,10 @@ private theorem rowChase_spec (hnm : n ≤ m) {p q : ℕ} (hq : q ≤ n)
     exact h0 ((ha i l fun h => by omega).trans (hB i l (by omega) (by omega)))
   · rcases hrows i l hik h0 with h | h <;> omega
 
-/-- **The column chase of Algorithm 8.6.2, exactly** (`bidiagonal_decouple` (iii) on the window
-`[p, q)`): for an upper bidiagonal `B` decoupled along the window with `b_kk = 0`, `k = q - 1` the
-last index of the window, the rotations of the columns `(j, k)`, `j = k - 1, …, p`, give `H`
-orthogonal with `B H` upper bidiagonal (column `k` zeroed), agreeing with `B` off the block. -/
+/-- In exact arithmetic, for an upper bidiagonal $B$ decoupled along the window $[p, q)$ with
+$b_{kk} = 0$ and $k = q - 1$ the last index of the window, the rotations of the columns
+$(j, k)$, $j = k - 1, \dots, p$, give an orthogonal $H$ such that $BH$ is upper bidiagonal with
+zero column $k$ and agrees with $B$ off the block. -/
 private theorem colChase_spec (hnm : n ≤ m) {p q : ℕ} (hq : q ≤ n)
     {B : Matrix (Fin m) (Fin n) ℝ} (hB : B.IsUpperBidiagonalRect) (hBd : IsDecoupledAt p q B)
     {k : Fin n} (hpk : p + 1 ≤ (k : ℕ)) (hkq : (k : ℕ) < q) (hkk : B (Fin.castLE hnm k) k = 0)
@@ -2030,11 +2231,10 @@ private theorem colChase_spec (hnm : n ≤ m) {p q : ℕ} (hq : q ≤ n)
     exact h0 ((ha i l fun h => by omega).trans (hB i l (by omega) (by omega)))
   · rcases hcols i l hlk h0 with h | h <;> omega
 
-/-- **The zero-diagonal branch of Algorithm 8.6.2, exactly**: for an upper bidiagonal `B`
-decoupled along the window `[p, q)` of at least two indices and a window index `k` with
-`b_kk = 0`, `zeroDiagonalChase` (the row chase if `k < q - 1`, the column chase if `k = q - 1`)
-gives orthogonal `G`, `H` with `B' = Gᵀ B H` upper bidiagonal, `U' = U G`, `V' = V H`, and `B'`
-agrees with `B` off the block. -/
+/-- In exact arithmetic, for an upper bidiagonal $B$ decoupled along a window $[p, q)$ of at least
+two indices and a window index $k$ with $b_{kk} = 0$, the zero-diagonal chase gives orthogonal
+$G$ and $H$ such that $B' = G^T B H$ is upper bidiagonal, agrees with $B$ off the block, and the
+accumulators become $UG$ and $VH$. -/
 private theorem zeroDiagonalChase_window (hnm : n ≤ m) {p q : ℕ} (hq : q ≤ n) (hpq : p + 2 ≤ q)
     {B : Matrix (Fin m) (Fin n) ℝ} (hB : B.IsUpperBidiagonalRect) (hBd : IsDecoupledAt p q B)
     {k : Fin n} (hk : p ≤ (k : ℕ) ∧ (k : ℕ) < q) (hkk : B (Fin.castLE hnm k) k = 0)
@@ -2064,17 +2264,17 @@ private theorem zeroDiagonalChase_window (hnm : n ≤ m) {p q : ℕ} (hq : q ≤
     simp only [out, zeroDiagonalChase, hk', ↓reduceIte, filter_gt_francisWindow k hk.1]
     exact rowChase_spec hnm hq hB hBd hk.1 (by omega) hkk U V (by intros; rfl)
 
-/-! #### The deflation pass of Algorithm 8.6.2 -/
+/-! ### The deflation pass of Algorithm 8.6.2 -/
 
-/-- The deflation test of Algorithm 8.6.2 at the superdiagonal entry `a`, exactly:
-`|b_{a,a+1}| ≤ ε (|b_aa| + |b_{a+1,a+1}|)`. -/
+/-- The deflation test of Algorithm 8.6.2 at the superdiagonal entry $a$, in exact arithmetic:
+$|b_{a,a+1}| \le \varepsilon (|b_{aa}| + |b_{a+1,a+1}|)$. -/
 private def IsSmallSuper (hnm : n ≤ m) (ε : ℝ) (D : Matrix (Fin m) (Fin n) ℝ) (a : ℕ) : Prop :=
   ∃ h : a + 1 < n, |D ⟨a, by omega⟩ ⟨a + 1, h⟩| ≤
     ε * (|D ⟨a, by omega⟩ ⟨a, by omega⟩| + |D ⟨a + 1, by omega⟩ ⟨a + 1, h⟩|)
 
 open Classical in
-/-- The array after the first `k` tests of the deflation pass of Algorithm 8.6.2, exactly: the
-small superdiagonal entries among the first `k` set to `0`. -/
+/-- The array after the first $k$ tests of the deflation pass of Algorithm 8.6.2 in exact
+arithmetic: the small superdiagonal entries among the first $k$ are set to $0$. -/
 private noncomputable def svdDeflateStage (hnm : n ≤ m) (ε : ℝ) (D : Matrix (Fin m) (Fin n) ℝ)
     (k : ℕ) : Matrix (Fin m) (Fin n) ℝ :=
   of fun r s => if ∃ a < k, (r : ℕ) = a ∧ (s : ℕ) = a + 1 ∧ IsSmallSuper hnm ε D a then 0
@@ -2114,7 +2314,8 @@ private theorem svdDeflateStage_apply_of_ne (hnm : n ≤ m) (ε : ℝ) (D : Matr
   omega
 
 open Classical in
-/-- The deflation sets the small superdiagonal entries, and only those, to `0`. -/
+/-- The deflation sets the small superdiagonal entries to $0$ and keeps the other superdiagonal
+entries. -/
 private theorem svdDeflateStage_apply_super (hnm : n ≤ m) (ε : ℝ) (D : Matrix (Fin m) (Fin n) ℝ)
     (a : Fin n) (h : (a : ℕ) + 1 < n) :
     svdDeflateStage hnm ε D n (Fin.castLE hnm a) ⟨a + 1, h⟩ =
@@ -2129,8 +2330,8 @@ private theorem svdDeflateStage_apply_super (hnm : n ≤ m) (ε : ℝ) (D : Matr
     exact hs h3
 
 
-/-- **The deflation pass of Algorithm 8.6.2, exactly**: every test reads entries no earlier step
-has changed, so the pass zeroes exactly the small superdiagonal entries of its input. -/
+/-- In exact arithmetic, the deflation pass of Algorithm 8.6.2 sets exactly the small superdiagonal
+entries of its input to $0$, since every test reads entries that no earlier step has changed. -/
 private theorem svdDeflate_pure (hnm : n ≤ m) (ε : ℝ) (D : Matrix (Fin m) (Fin n) ℝ) :
     Id.run (svdDeflate pure hnm ε D) = svdDeflateStage hnm ε D n := by
   unfold svdDeflate
@@ -2175,19 +2376,20 @@ private theorem isUpperBidiagonalRect_svdDeflateStage (hnm : n ≤ m) (ε : ℝ)
   exact hD i j h1 h2
 
 open Classical in
-/-- The zero superdiagonal entries `b_{a,a+1} = 0` of an `m × n` array. -/
+/-- The set of indices $a$ with zero superdiagonal entry $b_{a,a+1} = 0$ of an $m \times n$ array.
+-/
 private noncomputable def zeroSupers (hnm : n ≤ m) (D : Matrix (Fin m) (Fin n) ℝ) :
     Finset (Fin n) :=
   Finset.univ.filter fun a => ∃ h : (a : ℕ) + 1 < n, D (Fin.castLE hnm a) ⟨a + 1, h⟩ = 0
 
 open Classical in
-/-- The superdiagonal entries the deflation of Algorithm 8.6.2 newly sets to zero. -/
+/-- The set of superdiagonal entries that the deflation of Algorithm 8.6.2 newly sets to $0$. -/
 private noncomputable def newSupers (hnm : n ≤ m) (ε : ℝ) (D : Matrix (Fin m) (Fin n) ℝ) :
     Finset (Fin n) :=
   Finset.univ.filter fun a => IsSmallSuper hnm ε D a ∧
     ∃ h : (a : ℕ) + 1 < n, D (Fin.castLE hnm a) ⟨a + 1, h⟩ ≠ 0
 
-/-- There are at most `n - 1` superdiagonal entries. -/
+/-- There are at most $n - 1$ zero superdiagonal entries. -/
 private theorem card_zeroSupers_le (hnm : n ≤ m) (D : Matrix (Fin m) (Fin n) ℝ) :
     (zeroSupers hnm D).card ≤ n - 1 := by
   rcases Nat.eq_zero_or_pos n with rfl | hn
@@ -2236,11 +2438,12 @@ private theorem zeroSupers_svdDeflateStage (hnm : n ≤ m) (ε : ℝ)
     obtain ⟨-, -, h', hne⟩ := hb
     exact hne h0
 
-/-- The part of `D` on the superdiagonal entry `a`: the entry `(a, a + 1)`. -/
+/-- The part of $D$ at the superdiagonal entry $(a, a + 1)$: the matrix with that entry of $D$ and
+zeros elsewhere. -/
 private def superPart (D : Matrix (Fin m) (Fin n) ℝ) (a : Fin n) : Matrix (Fin m) (Fin n) ℝ :=
   of fun r s => if (r : ℕ) = a ∧ (s : ℕ) = a + 1 then D r s else 0
 
-/-- The deflation removes the superdiagonal parts of the new zeros. -/
+/-- The change made by the deflation is the sum of the superdiagonal parts at the new zeros. -/
 private theorem sub_svdDeflateStage_eq_sum (hnm : n ≤ m) (ε : ℝ) (D : Matrix (Fin m) (Fin n) ℝ) :
     D - svdDeflateStage hnm ε D n = ∑ a ∈ newSupers hnm ε D, superPart D a := by
   classical
@@ -2281,7 +2484,8 @@ section Frobenius
 
 open scoped Matrix.Norms.Frobenius
 
-/-- The superdiagonal part of the entry `(a, a + 1)` has the norm of the entry. -/
+/-- The superdiagonal part at the entry $(a, a + 1)$ has Frobenius norm at most the absolute value
+of that entry. -/
 private theorem norm_superPart_le (hnm : n ≤ m) (D : Matrix (Fin m) (Fin n) ℝ) (a : Fin n)
     (h : (a : ℕ) + 1 < n) : ‖superPart D a‖ ≤ |D (Fin.castLE hnm a) ⟨a + 1, h⟩| := by
   have hsq : ‖superPart D a‖ ^ 2 = |D (Fin.castLE hnm a) ⟨a + 1, h⟩| ^ 2 := by
@@ -2299,7 +2503,8 @@ private theorem norm_superPart_le (hnm : n ≤ m) (D : Matrix (Fin m) (Fin n) �
     · simp
   exact ((pow_left_inj₀ (norm_nonneg _) (abs_nonneg _) two_ne_zero).1 hsq).le
 
-/-- **The deflation perturbation**: `‖D - deflated D‖_F ≤ 2 ε ‖D‖_F` per new zero. -/
+/-- The deflation changes $D$ by at most $2 \varepsilon \|D\|_F$ in Frobenius norm for each new
+zero. -/
 private theorem norm_sub_svdDeflateStage_le (hnm : n ≤ m) {ε : ℝ} (hε : 0 ≤ ε)
     (D : Matrix (Fin m) (Fin n) ℝ) :
     ‖D - svdDeflateStage hnm ε D n‖ ≤ (newSupers hnm ε D).card * (2 * ε * ‖D‖) := by
@@ -2316,10 +2521,10 @@ private theorem norm_sub_svdDeflateStage_le (hnm : n ≤ m) {ε : ℝ} (hε : 0 
       |D (Fin.castLE hnm ⟨a + 1, h⟩) ⟨a + 1, h⟩|) := hsm
   nlinarith
 
-/-- The loop invariant of Algorithm 8.6.2 on the state `(B, U, V, done)`: `U`, `V` are orthogonal,
-`B` is upper bidiagonal, `Uᵀ (A + F) V = B` for an `F` (the deflations so far, carried back) of
-norm at most `κ` per zero superdiagonal entry of `B` (when `κ` is large enough), and `B` is
-diagonal once `done`. -/
+/-- The loop invariant of Algorithm 8.6.2 on the state $(B, U, V, \mathit{done})$: $U$ and $V$ are
+orthogonal, $B$ is upper bidiagonal, $U^T (A + F) V = B$ for a matrix $F$ (the deflations so
+far, carried back to $A$) whose norm is at most $\kappa$ for each zero superdiagonal entry of
+$B$ when $\kappa$ is large enough, and $B$ is diagonal once the loop has stopped. -/
 private def SVDInv (hnm : n ≤ m) (A : Matrix (Fin m) (Fin n) ℝ) (ε κ : ℝ)
     (st : Matrix (Fin m) (Fin n) ℝ × Matrix (Fin m) (Fin m) ℝ × Matrix (Fin n) (Fin n) ℝ ×
       Bool) : Prop :=
@@ -2329,9 +2534,10 @@ private def SVDInv (hnm : n ≤ m) (A : Matrix (Fin m) (Fin n) ℝ) (ε κ : ℝ
       (2 * ε * (‖A‖ + κ * (n - 1 : ℕ)) ≤ κ → ‖F‖ ≤ κ * (zeroSupers hnm st.1).card)) ∧
     (st.2.2.2 = true → ∀ (i : Fin m) (j : Fin n), (i : ℕ) ≠ j → st.1 i j = 0)
 
-/-- The invariant after a step of Algorithm 8.6.2 on the window `[p, q)` of the deflated `D₁`
-(Algorithm 8.6.1 or a zero-diagonal chase): a two-sided orthogonal transformation of `D₁` that
-keeps it upper bidiagonal and changes only the block, whose superdiagonal is nonzero. -/
+/-- The loop invariant after a step of Algorithm 8.6.2 on the window $[p, q)$ of the deflated array,
+either Algorithm 8.6.1 or a zero-diagonal chase: the step is a two-sided orthogonal
+transformation that keeps the array upper bidiagonal and changes only the block, whose
+superdiagonal is nonzero. -/
 private theorem svdInv_window_step (hnm : n ≤ m) {A : Matrix (Fin m) (Fin n) ℝ} {ε κ : ℝ}
     (hκ0 : 0 ≤ κ) {p q : ℕ} {D₁ F₁ : Matrix (Fin m) (Fin n) ℝ} {U : Matrix (Fin m) (Fin m) ℝ}
     {V : Matrix (Fin n) (Fin n) ℝ} (hU : U ∈ orthogonalGroup (Fin m) ℝ)
@@ -2368,7 +2574,7 @@ private theorem svdInv_window_step (hnm : n ≤ m) {A : Matrix (Fin m) (Fin n) �
     simp only [Matrix.mul_assoc]
   · exact (hF₁n hκ).trans (mul_le_mul_of_nonneg_left (by exact_mod_cast hzero) hκ0)
 
-/-- **One pass of Algorithm 8.6.2 keeps the invariant.** -/
+/-- In exact arithmetic, one pass of Algorithm 8.6.2 keeps the loop invariant. -/
 private theorem svdPass_inv (hnm : n ≤ m) {A : Matrix (Fin m) (Fin n) ℝ} {ε κ : ℝ} (hε : 0 ≤ ε)
     (hκ0 : 0 ≤ κ)
     {st : Matrix (Fin m) (Fin n) ℝ × Matrix (Fin m) (Fin m) ℝ × Matrix (Fin n) (Fin n) ℝ × Bool}
@@ -2495,20 +2701,26 @@ private theorem svdPass_inv (hnm : n ≤ m) {A : Matrix (Fin m) (Fin n) ℝ} {ε
     · exact svdInv_window_step hnm hκ0 hU hV hF₁eq hF₁n hrun'
         (algorithm_8_6_1_window hnm he2 (by omega) hD₁b hDd U V)
 
-/-- **Exact semantics of Algorithm 8.6.2** (the SVD algorithm: "overwrites `A` with
-`UᵀAV = D + E`, where `U`, `V` are orthogonal, `D` is diagonal, and `E` satisfies
-`‖E‖₂ ≈ u‖A‖₂`"), in exact arithmetic with the deflation tolerance `ε ≥ 0`: for
-`A ∈ ℝ^{m×n}`, `m ≥ n`, and any `fuel`, the run `(B, U, V, done)` has `U`, `V` orthogonal, `B`
-upper bidiagonal (`m × n`, zero below row `n`), and `B = Uᵀ (A + E) V` for an `E` (the
-deflations `b_{i,i+1} := 0`, carried back to `A`) with `‖E‖_F ≤ c ε ‖A‖_F / (1 - c ε)` for
-`c = 2 (n - 1)` whenever `c ε < 1`; and if the loop stopped on its test (`done`, `q = n`) within
-the fuel, `B` is diagonal. Each deflation zeroes an entry `|b_{i,i+1}| ≤ ε (|b_ii| + |b_{i+1,i+1}|)`
-of the current `B`, of size `≤ 2 ε ‖B‖_F ≤ 2 ε (‖A‖_F + ‖E‖_F)`, and a zeroed superdiagonal entry
-stays zero (the steps of Algorithm 8.6.1 and the zero-diagonal chases act on the unreduced block
-`B₂₂` only), so there are at most `n - 1` of them. The forward form `Uᵀ A V = B + E` with `E`
-supported on the deflated positions is false, as for `algorithm_8_3_3_spec`: a later rotation on a
-window `[p, …]` mixes a deflated entry `b_{p-1,p}` into `b_{p-1,p+1}`. Convergence (that some
-finite fuel suffices) is not claimed. -/
+/-- **Algorithm 8.6.2** of [golub2013matrix], exact semantics. Let $A \in \mathbb{R}^{m \times n}$
+with $m \ge n$, let the deflation tolerance satisfy $\varepsilon \ge 0$, and let the number of
+passes be arbitrary. In exact arithmetic, the output $(B, U, V, \mathit{done})$ of Algorithm
+8.6.2 satisfies:
+
+* $U$ and $V$ are orthogonal, and $B \in \mathbb{R}^{m \times n}$ is upper bidiagonal, so zero
+  below row $n$;
+* $B = U^T (A + E) V$ for a matrix $E$ with $\|E\|_F \le c\varepsilon \|A\|_F / (1 -
+  c\varepsilon)$, $c = 2(n - 1)$, whenever $c\varepsilon < 1$;
+* if the loop stopped on its test ($q = n$), then $B$ is diagonal.
+
+The matrix $E$ collects the deflations $b_{i,i+1} := 0$, carried back to $A$. Each deflation
+sets to zero an entry with $|b_{i,i+1}| \le \varepsilon (|b_{ii}| + |b_{i+1,i+1}|)$ of the
+current $B$, of size at most $2\varepsilon \|B\|_F \le 2\varepsilon (\|A\|_F + \|E\|_F)$. A zero
+superdiagonal entry stays zero, because the steps of Algorithm 8.6.1 and the zero-diagonal
+chases act only on the unreduced block $B_{22}$, so there are at most $n - 1$ deflations. The
+forward form $U^T A V = B + E$ with $E$ supported on the deflated positions is false, as for
+`GolubVanLoan.Chapter08.algorithm_8_3_3_spec`: a later rotation on a window starting at $p$
+mixes a deflated entry $b_{p-1,p}$ into $b_{p-1,p+1}$. Convergence, that is, that some finite
+number of passes suffices, is not claimed. -/
 theorem algorithm_8_6_2_spec (hnm : n ≤ m) (A : Matrix (Fin m) (Fin n) ℝ) {ε : ℝ} (hε : 0 ≤ ε)
     (fuel : ℕ) :
     let out := Id.run (algorithm_8_6_2 pure hnm ε A fuel)
@@ -2553,9 +2765,15 @@ theorem algorithm_8_6_2_spec (hnm : n ≤ m) (A : Matrix (Fin m) (Fin n) ℝ) {�
   rw [hκ, hc] at hFn
   exact deflation_bound (by norm_num) hε (norm_nonneg _) hc1 (card_zeroSupers_le hnm out.1) hFn
 
-/-- **Algorithm 8.6.2 in the book's forward form** "`UᵀAV = D + E`": with the backward error `E`
-of `algorithm_8_6_2_spec`, `UᵀAV = B + E'` for `E' = -Uᵀ E V`, of the same Frobenius norm
-(`U`, `V` orthogonal). -/
+/-- **Algorithm 8.6.2** of [golub2013matrix] in the forward form "$U^T A V = D + E$" of the source.
+Let $A \in \mathbb{R}^{m \times n}$ with $m \ge n$ and $\varepsilon \ge 0$. In exact arithmetic,
+the output $(B, U, V, \mathit{done})$ of Algorithm 8.6.2 satisfies $U^T A V = B + E'$ for a
+matrix $E'$ with $\|E'\|_F \le c\varepsilon \|A\|_F / (1 - c\varepsilon)$, $c = 2(n - 1)$,
+whenever $c\varepsilon < 1$.
+
+The matrix $E'$ is $-U^T E V$ for the backward error $E$ of
+`GolubVanLoan.Chapter08.algorithm_8_6_2_spec`; it has the same Frobenius norm because $U$ and
+$V$ are orthogonal. -/
 theorem algorithm_8_6_2_forward (hnm : n ≤ m) (A : Matrix (Fin m) (Fin n) ℝ) {ε : ℝ}
     (hε : 0 ≤ ε) (fuel : ℕ) :
     let out := Id.run (algorithm_8_6_2 pure hnm ε A fuel)

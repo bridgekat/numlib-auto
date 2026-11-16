@@ -9,38 +9,123 @@ import NumlibSurface.GolubVanLoan.Chapter02.Section05
 import NumlibSurface.GolubVanLoan.Chapter05.Section03
 
 /-!
-# Golub–Van Loan §5.4: other orthogonal factorizations
+# Golub and Van Loan, Section 5.4: Other orthogonal factorizations
 
-Surface file for [golub2013matrix] §5.4: numerical rank and the SVD (§5.4.1: the singular value
-perturbation under (5.4.4), the `δ`-rank (5.4.5)); QR with column pivoting ((5.4.6), the norm
-downdate, Algorithm 5.4.1), the termination criterion and the Kahan matrix (§5.4.3; the backward
-error of the runs of Algorithm 5.4.1, `algorithm_5_4_1_rounding`, and the criterion for them,
-`algorithm_5_4_1_sigma_succ_le`); Chan's Theorem 5.4.1 (§5.4.4); the
-rank-revealing update of §5.4.5; the complete orthogonal decomposition ((5.4.12), §5.4.7);
-bidiagonalization ((5.4.13), Algorithm 5.4.2) and `R`-bidiagonalization (§5.4.9).
+This module formalizes §5.4 of [golub2013matrix]. For a matrix $A \in \mathbb{R}^{m \times n}$ that
+may be rank deficient, orthogonal factorizations other than QR reveal the rank and the range of $A$.
+The module states numerical rank through the SVD (§5.4.1: the expansion (5.4.1), the perturbation of
+the singular values, and the $\delta$-rank (5.4.5)), QR with column pivoting ((5.4.6), the
+column-norm downdate, Algorithm 5.4.1), its termination criterion and the Kahan matrix (§5.4.3),
+Chan's Theorem 5.4.1 (§5.4.4), the zero-chasing update of a rank-revealing factorization (§5.4.5),
+the bounds (5.4.10)–(5.4.11) of the UTV framework (§5.4.6), the complete orthogonal decomposition
+((5.4.12), §5.4.7), bidiagonalization ((5.4.13), Algorithm 5.4.2) and $R$-bidiagonalization
+(§5.4.9). For Algorithm 5.4.1 it also gives the backward error of its runs in floating point and the
+termination criterion for these runs.
+
+The proofs specialize `Numlib.LinearAlgebra.Matrix.RankRevealing`,
+`Numlib.LinearAlgebra.Matrix.CompleteOrthogonal` and `Numlib.LinearAlgebra.Matrix.Bidiagonal`, and
+they use the Householder and Givens programs of §5.1–5.2.
+
+## Main definitions
+
+* Equation (5.4.5), `GolubVanLoan.Chapter05.deltaRank`: the $\delta$-rank, the number of computed
+  singular values greater than $\delta$.
+* Algorithm 5.4.1, `GolubVanLoan.Chapter05.algorithm_5_4_1`: Householder QR with column pivoting.
+* §5.4.3, `GolubVanLoan.Chapter05.kahanMatrix`: the Kahan matrix $\mathrm{Kah}_n(s)$.
+* §5.4.5, `GolubVanLoan.Chapter05.givensRevealUpdate`: the zero-chasing update by Givens rotations.
+* §5.4.7, `GolubVanLoan.Chapter05.completeOrthogonalDecomposition`: a complete orthogonal
+  decomposition from QR with column pivoting followed by QR.
+* Algorithm 5.4.2, `GolubVanLoan.Chapter05.algorithm_5_4_2`: Householder bidiagonalization.
+* §5.4.9, `GolubVanLoan.Chapter05.rBidiagonalization`: QR followed by bidiagonalization of the
+  triangular factor.
+
+## Main results
+
+* Equation (5.4.1), `GolubVanLoan.Chapter05.equation_5_4_1`: for $\operatorname{rank}(A) = r$, the
+  singular values after $\sigma_r$ vanish and $A = \sum_{k=1}^r \sigma_ku_kv_k^T$.
+* §5.4.1, `GolubVanLoan.Chapter05.singularValues_perturbation`: the singular values of
+  $A + \Delta A$ with $\|\Delta A\|_2 \le \varepsilon\|A\|_2$ satisfy $|\sigma_k - \hat\sigma_k| \le
+  \varepsilon\sigma_1$.
+* Equation (5.4.5), `GolubVanLoan.Chapter05.deltaRank_spec`: the $\delta$-rank $\hat r$ of a
+  nonincreasing sequence separates the values above $\delta$ from the others.
+* Equation (5.4.6), `GolubVanLoan.Chapter05.equation_5_4_6`: every matrix has a rank-revealing QR
+  factorization with column pivoting, and its first $r$ columns of $Q$ span $\operatorname{ran}(A)$.
+* §5.4.2, `GolubVanLoan.Chapter05.norm_sq_tail_eq`: the column-norm downdate
+  $\|w\|_2^2 = \|z\|_2^2 - \alpha^2$.
+* Algorithm 5.4.1, `GolubVanLoan.Chapter05.algorithm_5_4_1_spec`: in exact arithmetic the algorithm
+  computes a rank-revealing factorization (5.4.6) and $r = \operatorname{rank}(A)$.
+* §5.4.3, `GolubVanLoan.Chapter05.sigma_succ_le_of_colPivot`: the termination criterion
+  $\sigma_{k+1}(A) \le (\varepsilon_1 + \varepsilon_2)\|A\|_2$.
+* §5.4.3, `GolubVanLoan.Chapter05.algorithm_5_4_1_rounding`: every run of Algorithm 5.4.1 in
+  floating point is an exact factorization of $(A + E)\Pi$ with a columnwise small $E$.
+* §5.4.3, `GolubVanLoan.Chapter05.algorithm_5_4_1_sigma_succ_le`: the termination criterion for the
+  runs of Algorithm 5.4.1.
+* §5.4.3, `GolubVanLoan.Chapter05.kahanMatrix_unaltered`: Algorithm 5.4.1 leaves the Kahan matrix
+  unaltered.
+* Theorem 5.4.1, `GolubVanLoan.Chapter05.theorem_5_4_1`: for a unit vector $v$ some column
+  permutation gives $|r_{nn}| \le \sqrt n\|Av\|_2$.
+* Theorem 5.4.1, `GolubVanLoan.Chapter05.theorem_5_4_1_svd`: with the last right singular vector,
+  $|r_{nn}| \le \sqrt n\sigma_n$.
+* §5.4.5, `GolubVanLoan.Chapter05.givensRevealUpdate_spec`: the zero-chasing update keeps $R$ upper
+  triangular and turns $v$ into $\pm e_n$.
+* Equation (5.4.10), `GolubVanLoan.Chapter05.equation_5_4_10`: the distance from
+  $\operatorname{ran}(V_2)$ to the trailing right singular subspace for a URV decomposition.
+* Equation (5.4.11), `GolubVanLoan.Chapter05.equation_5_4_11`: the same for a ULV decomposition.
+* Equation (5.4.12), `GolubVanLoan.Chapter05.equation_5_4_12`: every matrix has a complete
+  orthogonal decomposition, and every such decomposition reveals the rank, the range and the null
+  space.
+* §5.4.7, `GolubVanLoan.Chapter05.completeOrthogonalDecomposition_spec`: the two-step construction
+  gives a complete orthogonal decomposition.
+* Equation (5.4.13), `GolubVanLoan.Chapter05.equation_5_4_13`: every matrix has an orthogonal
+  bidiagonalization.
+* Algorithm 5.4.2, `GolubVanLoan.Chapter05.algorithm_5_4_2_spec`: in exact arithmetic the algorithm
+  computes $U_B^TAV_B = B$ with $B$ upper bidiagonal.
+* §5.4.9, `GolubVanLoan.Chapter05.rBidiagonalization_spec`: $R$-bidiagonalization computes a
+  bidiagonalization.
 
 ## Conventions
 
-The book's sorted `σ_k` (1-based) is `A.sortedSingularValues (k - 1)` (Mathlib's
-`LinearMap.singularValues` of `toEuclideanLin A`, antitone, 0-based). Programs follow the
-conventions of `NumlibSurface/GolubVanLoan`; a Householder step on a block is `houseOn` and
-`householderApplyLeft`/`Right` over index lists (`indexFrom`). Indices are 0-based. A pivoted
-factorization `A Π = QR` with `R = [R₁₁ R₁₂; 0 0]`, `R₁₁` nonsingular, is the backbone's
-`Matrix.IsPivotedQR.IsRankRevealing A Q R π r` (`A Π = A.submatrix id π`); a complete orthogonal
-decomposition is `Matrix.IsCompleteOrthogonal A U V r` (over `ℝ`, `Uᴴ = Uᵀ`).
+* The sorted singular value $\sigma_k$ of the book (1-based) is `A.sortedSingularValues (k - 1)`,
+  that is, Mathlib's `LinearMap.singularValues` of `Matrix.toEuclideanLin A`, nonincreasing and
+  0-based.
+* A pivoted factorization $A\Pi = QR$ with $R = [R_{11}\ R_{12}; 0\ 0]$ and $R_{11}$ nonsingular of
+  order $r$ is `Matrix.IsPivotedQR.IsRankRevealing A Q R π r`, with the column-permuted matrix
+  `A.submatrix id π` in place of $A\Pi$.
+* A complete orthogonal decomposition of order $r$ is `Matrix.IsCompleteOrthogonal A U V r`; over
+  $\mathbb{R}$ the conjugate transpose is the transpose.
+* A trailing block $R(k{+}1{:}m, k{+}1{:}n)$ is a submatrix along `Matrix.tailIdx`, and a leading
+  block along `Fin.castLE`. Indices are 0-based.
+* The programs follow the conventions of `NumlibSurface.GolubVanLoan`. A Householder step on a block
+  is `GolubVanLoan.Chapter05.houseOn` with `GolubVanLoan.Chapter05.householderApplyLeft` or
+  `GolubVanLoan.Chapter05.householderApplyRight` over the index lists
+  `GolubVanLoan.Chapter05.indexFrom`. A computed quantity is an element of the run set of its
+  program in a rounding model `fp`; exact arithmetic is the monad `Id` with the hook `pure`.
 
-## Book slips carried
+## Deviations from the source
 
-§5.4.1 cites "Corollary 2.4.6" for `σ_k = min_{rank B = k-1} ‖A - B‖₂` (it is Theorem 2.4.8, and
-the minimum is over `rank B ≤ k - 1`); Algorithm 5.4.1 prints `A(:r:m, r:n)`.
+* **Algorithm 5.4.1** (typo). The source prints $A(:r{:}m, r{:}n)$; it is $A(r{:}m, r{:}n)$. See
+  `GolubVanLoan.Chapter05.algorithm_5_4_1`.
+* **The Kahan matrix, §5.4.3** (generalization). The source takes $c > 0$; the result needs only
+  $s > 0$ and $c^2 + s^2 = 1$. See `GolubVanLoan.Chapter05.kahanMatrix_unaltered`.
+* **Equation (5.4.10)** (generalization). The source assumes $\sigma_k(A) > \sigma_{k+1}(A)$; the
+  bound holds for every SVD without it. See `GolubVanLoan.Chapter05.equation_5_4_10`.
+* **Equation (5.4.11)** (typo). The source prints $\|L_{12}\|_2$, a zero block; it is
+  $\|L_{21}\|_2$. See `GolubVanLoan.Chapter05.equation_5_4_11`.
+* **Equation (5.4.11)** (generalization). As for (5.4.10), the separation
+  $\sigma_k(A) > \sigma_{k+1}(A)$ is not needed. See `GolubVanLoan.Chapter05.equation_5_4_11`.
+* **Algorithm 5.4.2** (typo). The source prints the second call of `house` as "ho se". See
+  `GolubVanLoan.Chapter05.algorithm_5_4_2`.
 
 ## Not formalized
 
-(5.4.2)–(5.4.3) (approximations `≈`), the backward stability (5.4.4) of the Golub–Kahan–Reinsch SVD
-(a Chapter 8 algorithm, used only as a hypothesis), the numerical claim `σ₃₀₀(Kah₃₀₀(.99)) =
-O(10⁻¹⁹)`, "in practice small trailing submatrices almost always emerge" (empirical), flop counts,
-and the pivot rule (5.4.8) as a separate statement (it is the choice of `k` in
-`algorithm_5_4_1`).
+* **Equations (5.4.2)–(5.4.3).** They are approximations.
+* **Equation (5.4.4).** It is the backward stability of the Golub–Kahan–Reinsch SVD, an algorithm of
+  Chapter 8; it appears only as a hypothesis.
+* **The claim $\sigma_{300}(\mathrm{Kah}_{300}(0.99)) = O(10^{-19})$.** It is numerical.
+* **The remark that in practice small trailing submatrices almost always emerge.** It is empirical.
+* **Flop counts.**
+* **The pivot rule (5.4.8) as a separate statement.** It is the choice of the pivot $k$ in
+  `GolubVanLoan.Chapter05.algorithm_5_4_1`.
 -/
 
 open FloatingPoint Matrix WithLp
@@ -55,11 +140,22 @@ section NumericalRank
 
 open scoped Matrix.Norms.L2Operator
 
-/-- **§5.4.1, the computed singular values are accurate in absolute terms**: if
-`Σ̂ = Wᵀ (A + ΔA) Z` with `W`, `Z` orthogonal and `Σ̂` "diagonal" with sorted nonnegative entries
-`σ̂₁ ≥ σ̂₂ ≥ ⋯ ≥ 0` (the conclusion (5.4.4) of a backward-stable SVD algorithm), and
-`‖ΔA‖₂ ≤ ε ‖A‖₂`, then `|σ_k - σ̂_k| ≤ ε σ₁` for `k = 1:n` (with `σ₁ = ‖A‖₂`). The book's argument
-by Eckart–Young is Weyl's inequality for singular values. -/
+/-- **Section 5.4.1** of [golub2013matrix], the absolute accuracy of computed singular values. Let
+$A, \Delta A \in \mathbb{R}^{m \times n}$, let $W \in \mathbb{R}^{m \times m}$ and
+$Z \in \mathbb{R}^{n \times n}$ be orthogonal, and let
+$\hat\sigma_1 \ge \hat\sigma_2 \ge \dots \ge 0$ satisfy
+$$W^T(A + \Delta A)Z = \hat\Sigma = \operatorname{diag}(\hat\sigma_1, \hat\sigma_2, \dots),$$
+which is the conclusion (5.4.4) of a backward-stable SVD algorithm. If
+$\|\Delta A\|_2 \le \varepsilon\|A\|_2$, then for $k = 1, \dots, \min\{m, n\}$
+$$|\sigma_k - \hat\sigma_k| \le \varepsilon\sigma_1,$$
+where $\sigma_1 \ge \sigma_2 \ge \dots$ are the singular values of $A$ and $\sigma_1 = \|A\|_2$.
+
+The source argues with the Eckart–Young theorem; the proof here is Weyl's inequality for
+singular values. The source cites "Corollary 2.4.6" for $\sigma_k =
+\min_{\operatorname{rank}(B) = k-1}\|A - B\|_2$; the result is Theorem 2.4.8, and the minimum is
+over $\operatorname{rank}(B) \le k - 1$. In Lean, the singular values of $A$ are
+`A.sortedSingularValues` with 0-based indices, and the diagonal matrix is
+`Matrix.rectDiagonal` of a nonincreasing nonnegative sequence on $\mathbb{N}$. -/
 theorem singularValues_perturbation {A ΔA : Matrix (Fin m) (Fin n) ℝ}
     {W : Matrix (Fin m) (Fin m) ℝ} {Z : Matrix (Fin n) (Fin n) ℝ} {σhat : ℕ → ℝ}
     (hW : W ∈ orthogonalGroup (Fin m) ℝ) (hZ : Z ∈ orthogonalGroup (Fin n) ℝ)
@@ -78,15 +174,26 @@ theorem singularValues_perturbation {A ΔA : Matrix (Fin m) (Fin n) ℝ}
   rw [abs_sub_comm]
   exact hweyl
 
-/-- **(5.4.5), the `δ`-rank** of a nonincreasing sequence `σ̂₁ ≥ ⋯ ≥ σ̂_n` of computed singular
-values: the number `r̂` of them exceeding the tolerance `δ`, so that
-`σ̂₁ ≥ ⋯ ≥ σ̂_r̂ > δ ≥ σ̂_{r̂+1} ≥ ⋯ ≥ σ̂_n` (`deltaRank_spec`). -/
+/-- **Equation (5.4.5)** of [golub2013matrix], the $\delta$-rank. Let
+$\hat\sigma_1, \hat\sigma_2, \dots$ be real numbers, such as computed singular values, and let
+$\delta \in \mathbb{R}$. The **$\delta$-rank** $\hat r$ of $\hat\sigma_1, \dots, \hat\sigma_n$
+is the number of indices $i \le n$ with $\hat\sigma_i > \delta$. For a nonincreasing sequence,
+$$\hat\sigma_1 \ge \dots \ge \hat\sigma_{\hat r} > \delta \ge \hat\sigma_{\hat r + 1} \ge \dots
+  \ge \hat\sigma_n$$
+(`GolubVanLoan.Chapter05.deltaRank_spec`).
+
+The sequence is a function on $\mathbb{N}$ with 0-based indices, and only its first $n$ values
+are read. The definition does not need the sequence to be sorted. -/
 noncomputable def deltaRank (n : ℕ) (δ : ℝ) (σhat : ℕ → ℝ) : ℕ :=
   ((Finset.range n).filter fun i => δ < σhat i).card
 
-/-- **(5.4.5)**: for antitone `σ̂`, the `δ`-rank `r̂` is characterized by `σ̂_i > δ` for `i < r̂`
-and `σ̂_i ≤ δ` for `r̂ ≤ i < n` (0-based). For the exact singular values of `A` and `δ = 0` it is
-the rank. -/
+/-- **Equation (5.4.5)** of [golub2013matrix]. Let $\hat\sigma_1 \ge \hat\sigma_2 \ge \dots$ be
+nonincreasing, let $\delta \in \mathbb{R}$, and let $\hat r$ be the $\delta$-rank of
+$\hat\sigma_1, \dots, \hat\sigma_n$. Then $\hat r \le n$, $\hat\sigma_i > \delta$ for
+$i \le \hat r$, and $\hat\sigma_i \le \delta$ for $\hat r < i \le n$.
+
+For the exact singular values of a matrix $A$ and $\delta = 0$, the $\delta$-rank is
+$\operatorname{rank}(A)$. -/
 theorem deltaRank_spec {δ : ℝ} {σhat : ℕ → ℝ} (hσ : Antitone σhat) :
     deltaRank n δ σhat ≤ n ∧ (∀ i, i < deltaRank n δ σhat → δ < σhat i) ∧
       ∀ i, deltaRank n δ σhat ≤ i → i < n → σhat i ≤ δ := by
@@ -120,8 +227,14 @@ theorem deltaRank_spec {δ : ℝ} {σhat : ℕ → ℝ} (hσ : Antitone σhat) :
     rw [hseg, Finset.mem_range] at this
     omega
 
-/-- **(5.4.1)**: if `rank A = r` and `Uᵀ A V = Σ` is an SVD, then `σ_{r+1} = ⋯ = σ_n = 0` and
-`A = ∑_{k=1}^{r} σ_k u_k v_kᵀ` (Corollaries 2.4.6–2.4.7). -/
+/-- **Equation (5.4.1)** of [golub2013matrix]. Let $A \in \mathbb{R}^{m \times n}$ have rank $r$,
+and let $U^TAV = \Sigma$ be an SVD of $A$ with singular values
+$\sigma_1 \ge \sigma_2 \ge \dots$, where $u_k$ and $v_k$ are the columns of $U$ and $V$. Then
+$\sigma_{r+1} = \dots = \sigma_{\min\{m, n\}} = 0$, and
+$$A = \sum_{k=1}^r \sigma_ku_kv_k^T.$$
+
+The source refers to Corollaries 2.4.6 and 2.4.7. In 0-based indices, $\sigma_i = 0$ for
+$r \le i < \min\{m, n\}$. -/
 theorem equation_5_4_1 {A : Matrix (Fin m) (Fin n) ℝ} {U : Matrix (Fin m) (Fin m) ℝ} {σ : ℕ → ℝ}
     {V : Matrix (Fin n) (Fin n) ℝ} (h : IsSVD A U σ V) :
     (∀ i, A.rank ≤ i → i < m → i < n → σ i = 0) ∧
@@ -177,11 +290,16 @@ end NumericalRank
 
 section ColumnPivoting
 
-/-- **(5.4.6)**: every `A ∈ ℝ^{m×n}` has a QR factorization with column pivoting
-`Qᵀ A Π = [R₁₁ R₁₂; 0 0]` with `r = rank A`, `Q` orthogonal, `R₁₁` (`r × r`) upper triangular and
-nonsingular and `Π` a permutation (`A Π = A.submatrix id σ`; the bundle
-`Matrix.IsPivotedQR.IsRankRevealing`); and for any such factorization
-`ran(A) = span{q₁, …, q_r}`. -/
+/-- **Equation (5.4.6)** of [golub2013matrix], QR with column pivoting. Every
+$A \in \mathbb{R}^{m \times n}$ has a factorization
+$$Q^TA\Pi = \begin{bmatrix} R_{11} & R_{12} \\ 0 & 0 \end{bmatrix}$$
+with $r = \operatorname{rank}(A)$, $Q \in \mathbb{R}^{m \times m}$ orthogonal,
+$R_{11} \in \mathbb{R}^{r \times r}$ upper triangular and nonsingular, and $\Pi$ a permutation.
+For every factorization of this form, with any $r$, the first $r$ columns $q_1, \dots, q_r$ of
+$Q$ satisfy $\operatorname{ran}(A) = \operatorname{span}\{q_1, \dots, q_r\}$.
+
+A factorization of this form is `Matrix.IsPivotedQR.IsRankRevealing A Q R σ r`, where $A\Pi$ is
+`A.submatrix id σ`. This structure forces $r = \operatorname{rank}(A)$. -/
 theorem equation_5_4_6 (A : Matrix (Fin m) (Fin n) ℝ) :
     (∃ σ Q R, IsPivotedQR.IsRankRevealing A Q R σ A.rank) ∧
       ∀ {σ : Equiv.Perm (Fin n)} {Q : Matrix (Fin m) (Fin m) ℝ} {R : Matrix (Fin m) (Fin n) ℝ}
@@ -191,9 +309,13 @@ theorem equation_5_4_6 (A : Matrix (Fin m) (Fin n) ℝ) :
             (toLp 2 (Q.col (Fin.castLE h.le_rows i)) : EuclideanSpace ℝ (Fin m))) :=
   ⟨exists_isPivotedQR_rank A, fun h => h.range_eq_span⟩
 
-/-- **§5.4.2, the column-norm update**: for `Q ∈ ℝ^{s×s}` orthogonal and `Qᵀ z = [α; w]`,
-`‖w‖₂² = ‖z‖₂² - α²` — whence Algorithm 5.4.1's downdate `c(i) = c(i) - A(r, i)²` of the squared
-norms of the trailing columns. -/
+/-- **Section 5.4.2** of [golub2013matrix], the column-norm update. Let
+$Q \in \mathbb{R}^{(s+1) \times (s+1)}$ be orthogonal and $z \in \mathbb{R}^{s+1}$, and write
+$Q^Tz = [\alpha; w]$ with $\alpha \in \mathbb{R}$ and $w \in \mathbb{R}^s$. Then
+$$\|w\|_2^2 = \|z\|_2^2 - \alpha^2.$$
+
+This justifies the downdate $c(i) = c(i) - A(r, i)^2$ of the squared norms of the trailing
+columns in Algorithm 5.4.1. -/
 theorem norm_sq_tail_eq {s : ℕ} {Q : Matrix (Fin (s + 1)) (Fin (s + 1)) ℝ}
     (hQ : Q ∈ orthogonalGroup (Fin (s + 1)) ℝ) (z : Fin (s + 1) → ℝ) :
     ∑ i : Fin s, (Qᵀ *ᵥ z) i.succ ^ 2 = ∑ i, z i ^ 2 - (Qᵀ *ᵥ z) 0 ^ 2 := by
@@ -203,28 +325,30 @@ theorem norm_sq_tail_eq {s : ℕ} {Q : Matrix (Fin (s + 1)) (Fin (s + 1)) ℝ}
 
 variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 
-/-- The largest of the listed entries of `c`, and `0` if none (the book's
-`τ = max{c(r+1), …, c(n)}`; the loop test `τ > 0` is unchanged by the default `0`). -/
+/-- The maximum of $0$ and the values $c_i$ for the indices $i$ in a list. It is the number
+$\tau = \max\{c(r+1), \dots, c(n)\}$ of Algorithm 5.4.1 of [golub2013matrix]; the default $0$
+does not change the loop test $\tau > 0$. -/
 noncomputable def listMax (c : Fin n → ℝ) (l : List (Fin n)) : ℝ :=
   (l.map c).foldl max 0
 
-/-- The state of Algorithm 5.4.1: the array, the `β_j`, the pivots `piv`, the column norms
-`c`, the rank counter `r` and the current maximum `τ`. -/
+/-- The state of Algorithm 5.4.1 of [golub2013matrix]: the overwritten array, the scalars $\beta_j$,
+the pivots, the squared column norms $c$, the rank counter $r$ and the current maximum $\tau$. -/
 structure PivotedQRState (m n : ℕ) where
-  /-- The overwritten array. -/
+  /-- The overwritten array $A$. -/
   A : Matrix (Fin m) (Fin n) ℝ
-  /-- The `β_j` returned by `house`. -/
+  /-- The scalars $\beta_j$ that `house` returned. -/
   β : Fin n → ℝ
-  /-- The pivot of step `j` (`Π_j` swaps `j` and `piv j`). -/
+  /-- The pivot of step $j$: the permutation $\Pi_j$ swaps the column $j$ and the column `piv j`. -/
   piv : Fin n → Fin n
-  /-- The (downdated) squared column norms. -/
+  /-- The squared column norms $c(j)$, downdated after each step. -/
   c : Fin n → ℝ
-  /-- The number of steps taken, the computed rank. -/
+  /-- The number $r$ of steps taken, which is the computed rank. -/
   r : ℕ
-  /-- The current maximum of the trailing column norms. -/
+  /-- The current maximum $\tau$ of the squared norms of the trailing columns. -/
   τ : ℝ
 
-/-- One step `r` of Algorithm 5.4.1, performed while `τ > 0`:
+/-- One step $j$ of Algorithm 5.4.1 of [golub2013matrix], performed while $\tau > 0$ (the book's
+step $r$):
 ```
 r = r + 1
 find the smallest k with r ≤ k ≤ n so c(k) = τ;  piv(r) = k
@@ -235,7 +359,9 @@ A(r+1:m, r) = v(2:m-r+1)
 for i = r+1:n:  c(i) = c(i) - A(r, i)²
 τ = max{c(r+1), …, c(n)}
 ```
-Comparisons act on computed values; the downdates are rounded. -/
+The pivot $k$ is the first index $k \ge j$ with $c(k) = \tau$, and $k = j$ if there is none. The
+comparisons act on the computed values, and the downdates are rounded. A step with $\tau \le 0$
+leaves the state unchanged. -/
 noncomputable def pivotedQRStep (hnm : n ≤ m) (st : PivotedQRState m n) (j : Fin n) :
     M (PivotedQRState m n) :=
   if 0 < st.τ then do
@@ -252,18 +378,26 @@ noncomputable def pivotedQRStep (hnm : n ≤ m) (st : PivotedQRState m n) (j : F
       listMax c ((List.finRange n).filter fun i => j < i)⟩
   else pure st
 
-/-- **Algorithm 5.4.1 (Householder QR With Column Pivoting)**: "Given `A ∈ ℝ^{m×n}` with `m ≥ n`,
-the following algorithm computes `r = rank(A)` and the factorization (5.4.6) with
-`Q = H₁ ⋯ H_r` and `Π = Π₁ ⋯ Π_r`. The upper triangular part of `A` is overwritten by the upper
-triangular part of `R` and components `j+1:m` of the `j`th Householder vector are stored in
-`A(j+1:m, j)`. The permutation `Π` is encoded in an integer vector `piv`":
+/-- **Algorithm 5.4.1** of [golub2013matrix] (Householder QR With Column Pivoting). Given
+$A \in \mathbb{R}^{m \times n}$ with $m \ge n$, the algorithm computes
+$r = \operatorname{rank}(A)$ and the factorization (5.4.6) with $Q = H_1 \cdots H_r$ and
+$\Pi = \Pi_1 \cdots \Pi_r$. The upper triangular part of $A$ is overwritten by the upper
+triangular part of $R$, and the components $j{+}1{:}m$ of the $j$th Householder vector are
+stored in $A(j{+}1{:}m, j)$. The permutation $\Pi$ is encoded in an integer vector piv:
 ```
 for j = 1:n:  c(j) = A(1:m, j)ᵀ A(1:m, j)
 r = 0;  τ = max{c(1), …, c(n)}
-while τ > 0 and r < n:  (the body `pivotedQRStep`)
+while τ > 0 and r < n:  (the body pivotedQRStep)
 ```
-The `while` loop is a fold over the `n` possible steps in which a step with `τ ≤ 0` is the
-identity (convention 3); `c(j)` is Algorithm 1.1.1. -/
+
+**Typo.** In the update of the trailing block the source prints $A(:r{:}m, r{:}n)$; it is
+$A(r{:}m, r{:}n)$.
+
+The `while` loop is a fold over the $n$ possible steps, in which a step with $\tau \le 0$ is the
+identity. Each $c(j)$ is computed by Algorithm 1.1.1. The body is
+`GolubVanLoan.Chapter05.pivotedQRStep`, and the state is
+`GolubVanLoan.Chapter05.PivotedQRState`. The pivot rule (5.4.8) is the choice of $k$ in the
+body. -/
 noncomputable def algorithm_5_4_1 (hnm : n ≤ m) (A : Matrix (Fin m) (Fin n) ℝ) :
     M (PivotedQRState m n) := do
   let c ← (List.finRange n).foldlM (fun (c : Fin n → ℝ) (j : Fin n) => do
@@ -279,8 +413,9 @@ section Termination
 
 open scoped Matrix.Norms.L2Operator
 
-/-- A block upper triangular `R = [R₁₁ R₁₂; 0 R₂₂]` whose leading block row has `k` rows has
-`σ_{k+1}(R) ≤ ‖R₂₂‖₂` (`Matrix.sortedSingularValues_le_l2_opNorm_trailing`, reindexed). -/
+/-- If $R \in \mathbb{R}^{m \times n}$ vanishes below row $k$ in its first $k$ columns, so that
+$R = [R_{11}\ R_{12}; 0\ R_{22}]$ with $k$ leading rows, then
+$\sigma_{k+1}(R) \le \|R_{22}\|_2$. -/
 private theorem sortedSingularValues_le_trailing {R : Matrix (Fin m) (Fin n) ℝ} {k : ℕ}
     (hkm : k ≤ m) (hkn : k ≤ n)
     (hR : ∀ (i : Fin m) (j : Fin n), (j : ℕ) < k → k ≤ (i : ℕ) → R i j = 0) :
@@ -299,16 +434,21 @@ private theorem sortedSingularValues_le_trailing {R : Matrix (Fin m) (Fin n) ℝ
     (R.submatrix (Fin.castLE hkm) (tailIdx hkn)) (R.submatrix (tailIdx hkm) (tailIdx hkn))
   rwa [← hblk, sortedSingularValues_submatrix_equiv, Fintype.card_fin] at this
 
-/-- **§5.4.3, the termination criterion of QR with column pivoting**: "`R̂^{(k)}` is the exact
-R-factor of a matrix `A + E_k`" — `Q R̂^{(k)} = (A + E_k) Π` with `Q` orthogonal and
-`R̂^{(k)} = [R̂₁₁ R̂₁₂; 0 R̂₂₂]` (leading block `k × k`) — "where `‖E_k‖₂ ≤ ε₂ ‖A‖₂`"; if the
-reduction is terminated with `‖R̂₂₂^{(k)}‖₂ ≤ ε₁ ‖A‖₂`, then `σ_{k+1}(A) ≤ (ε₁ + ε₂) ‖A‖₂`.
-The two steps: `σ_{k+1}(A + E_k) = σ_{k+1}(R̂^{(k)}) ≤ ‖R̂₂₂^{(k)}‖₂`
-(`Matrix.sortedSingularValues_le_l2_opNorm_trailing`) and
-`σ_{k+1}(A) ≤ σ_{k+1}(A + E_k) + ‖E_k‖₂`. The book cites Corollary 2.4.4, which
-(`Chapter02.corollary_2_4_4`) covers only `σ_max` and `σ_min`; at the index `k + 1` it is the
-Weyl inequality `σ_{i+j}(A + B) ≤ σ_i(A) + σ_j(B)` behind it (`Matrix.sortedSingularValues_add_le`,
-§8.6). -/
+/-- **Section 5.4.3** of [golub2013matrix], the termination criterion of QR with column pivoting.
+Let $A, E, R \in \mathbb{R}^{m \times n}$, let $Q \in \mathbb{R}^{m \times m}$ be orthogonal,
+and let $\Pi$ be a permutation with $QR = (A + E)\Pi$, where
+$$R = \begin{bmatrix} R_{11} & R_{12} \\ 0 & R_{22} \end{bmatrix}, \qquad R_{11} \in
+  \mathbb{R}^{k \times k}.$$
+If $\|E\|_2 \le \varepsilon_2\|A\|_2$ and $\|R_{22}\|_2 \le \varepsilon_1\|A\|_2$, then
+$$\sigma_{k+1}(A) \le (\varepsilon_1 + \varepsilon_2)\|A\|_2.$$
+
+In the source, $R$ is the computed $\hat R^{(k)}$ after $k$ steps, which "is the exact R-factor
+of a matrix $A + E_k$". The proof uses $\sigma_{k+1}(A + E) = \sigma_{k+1}(R) \le \|R_{22}\|_2$
+(`Matrix.sortedSingularValues_le_l2_opNorm_trailing`) and $\sigma_{k+1}(A) \le \sigma_{k+1}(A +
+E) + \|E\|_2$. For the second step the source cites Corollary 2.4.4, which covers only
+$\sigma_{\max}$ and $\sigma_{\min}$ (`GolubVanLoan.Chapter02.corollary_2_4_4`); at the index
+$k + 1$ the step is the Weyl inequality $\sigma_{i+j-1}(A + B) \le \sigma_i(A) + \sigma_j(B)$
+for singular values (`Matrix.sortedSingularValues_add_le`, §8.6). -/
 theorem sigma_succ_le_of_colPivot {A E R : Matrix (Fin m) (Fin n) ℝ}
     {Q : Matrix (Fin m) (Fin m) ℝ} {π : Equiv.Perm (Fin n)} (hQ : Q ∈ orthogonalGroup (Fin m) ℝ)
     (hQR : Q * R = (A + E).submatrix id π) {k : ℕ} (hkm : k ≤ m) (hkn : k ≤ n)
@@ -327,8 +467,13 @@ end Termination
 
 /-! ### §5.4.3 The Kahan matrix -/
 
-/-- **§5.4.3, the Kahan matrix** `Kah_n(s) = diag(1, s, …, s^{n-1}) T`, `T` unit upper triangular
-with `-c` above the diagonal (`c² + s² = 1`, `c, s > 0`). -/
+/-- **Section 5.4.3** of [golub2013matrix], the Kahan matrix. For $c, s \in \mathbb{R}$, the **Kahan
+matrix** of order $n$ is
+$$\mathrm{Kah}_n(s) = \operatorname{diag}(1, s, \dots, s^{n-1})\,T,$$
+where $T$ is unit upper triangular with every entry above the diagonal equal to $-c$.
+
+The source takes $c, s > 0$ with $c^2 + s^2 = 1$. The definition has no condition on $c$ and
+$s$, and the theorems state the conditions that they need. -/
 def kahanMatrix (n : ℕ) (c s : ℝ) : Matrix (Fin n) (Fin n) ℝ :=
   of fun i j => s ^ (i : ℕ) * (if i = j then 1 else if i < j then -c else 0)
 
@@ -340,17 +485,17 @@ variable {c s : ℝ}
 private theorem kahan_below {n : ℕ} {i j : Fin n} (h : j < i) : kahanMatrix n c s i j = 0 := by
   simp [kahanMatrix, h.ne', not_lt.2 h.le]
 
-/-- The entries of the Kahan matrix above the diagonal. -/
+/-- Above the diagonal, the entry $(i, j)$ of the Kahan matrix is $-cs^i$. -/
 private theorem kahan_above {n : ℕ} {i j : Fin n} (h : i < j) :
     kahanMatrix n c s i j = -(c * s ^ (i : ℕ)) := by
   simp only [kahanMatrix, of_apply, h.ne, h, ↓reduceIte]
   ring
 
-/-- The diagonal of the Kahan matrix. -/
+/-- The diagonal entry $(j, j)$ of the Kahan matrix is $s^j$. -/
 private theorem kahan_diag {n : ℕ} (j : Fin n) : kahanMatrix n c s j j = s ^ (j : ℕ) := by
   simp [kahanMatrix]
 
-/-- `c² (1 + s² + ⋯ + s^{2(k-1)}) = 1 - s^{2k}` for `c² + s² = 1`. -/
+/-- If $c^2 + s^2 = 1$, then $c^2(1 + s^2 + \dots + s^{2(k-1)}) = 1 - s^{2k}$. -/
 private theorem kahan_geom (hcs : c ^ 2 + s ^ 2 = 1) (k : ℕ) :
     c ^ 2 * ∑ l ∈ Finset.range k, (s ^ 2) ^ l = 1 - (s ^ 2) ^ k := by
   induction k with
@@ -361,7 +506,7 @@ private theorem kahan_geom (hcs : c ^ 2 + s ^ 2 = 1) (k : ℕ) :
     rw [this]
     ring
 
-/-- Every column of the Kahan matrix has unit 2-norm. -/
+/-- If $c^2 + s^2 = 1$, every column of the Kahan matrix has unit 2-norm. -/
 private theorem kahan_col_norm (hcs : c ^ 2 + s ^ 2 = 1) {n : ℕ} (j : Fin n) :
     (fun i => kahanMatrix n c s i j) ⬝ᵥ (fun i => kahanMatrix n c s i j) = 1 := by
   set f : ℕ → ℝ := fun l => if l < (j : ℕ) then c ^ 2 * (s ^ 2) ^ l else
@@ -401,7 +546,8 @@ private theorem kahan_col_norm (hcs : c ^ 2 + s ^ 2 = 1) {n : ℕ} (j : Fin n) :
   have := key (n - ((j : ℕ) + 1))
   rwa [show (j : ℕ) + 1 + (n - ((j : ℕ) + 1)) = n by omega] at this
 
-/-- `listMax` of a list on which the values are all `a ≥ 0`. -/
+/-- If every listed value equals $a \ge 0$, then `GolubVanLoan.Chapter05.listMax` of the list is
+$a$, or $0$ for the empty list. -/
 private theorem listMax_const {n : ℕ} (c' : Fin n → ℝ) (l : List (Fin n)) {a : ℝ} (ha : 0 ≤ a)
     (hc : ∀ i ∈ l, c' i = a) : listMax c' l = if l = [] then 0 else a := by
   unfold listMax
@@ -419,7 +565,7 @@ private theorem listMax_const {n : ℕ} (c' : Fin n → ℝ) (l : List (Fin n)) 
     · rcases hx with rfl | rfl <;> simp [ha]
     · rfl
 
-/-- The pivot search of Algorithm 5.4.1 returns `j` when the searched predicate is `j ≤ k`. -/
+/-- The pivot search of Algorithm 5.4.1 returns $j$ when the searched predicate is $j \le k$. -/
 private theorem head?_getD_filter_eq {n : ℕ} (j : Fin n) (p : Fin n → Bool)
     (hp : ∀ k, p k = decide (j ≤ k)) : (((List.finRange n).filter p).head?).getD j = j := by
   have h1 : (List.finRange n).filter p = indexFrom n j := by
@@ -428,13 +574,14 @@ private theorem head?_getD_filter_eq {n : ℕ} (j : Fin n) (p : Fin n → Bool)
   rw [h1, List.head?_eq_some_head (indexFrom_ne_nil j.isLt), head_indexFrom j.isLt]
   rfl
 
-/-- The state of Algorithm 5.4.1 on `Kah_n(s)` after `k` steps. -/
+/-- The state of Algorithm 5.4.1 on $\mathrm{Kah}_n(s)$ after $k$ steps. -/
 private noncomputable def kahanState (n : ℕ) (c s : ℝ) (k : ℕ) : PivotedQRState n n :=
   ⟨kahanMatrix n c s, 0, id, fun i => (s ^ 2) ^ min (i : ℕ) k, k,
     if k < n then (s ^ 2) ^ k else 0⟩
 
-/-- One step of Algorithm 5.4.1 on `Kah_n(s)`: nothing is swapped, `house` returns `β = 0`, the
-array is unaltered and the downdated norms of the trailing columns are all `s^{2(k+1)}`. -/
+/-- One exact step of Algorithm 5.4.1 on $\mathrm{Kah}_n(s)$ swaps nothing, gets $\beta = 0$ from
+`house`, leaves the array unchanged, and makes all downdated norms of the trailing columns equal
+to $s^{2(k+1)}$. -/
 private theorem kahan_step (hs : 0 < s) (hcs : c ^ 2 + s ^ 2 = 1) {n k : ℕ} (hk : k < n) :
     Id.run (pivotedQRStep (M := Id) pure le_rfl (kahanState n c s k) ⟨k, hk⟩) =
       kahanState n c s (k + 1) := by
@@ -544,7 +691,8 @@ private theorem kahan_step (hs : 0 < s) (hcs : c ^ 2 + s ^ 2 = 1) {n k : ℕ} (h
       simp only [hi, ↓reduceIte]
       exact hval i ((hmem i).1 hi)
 
-/-- After `k` steps of Algorithm 5.4.1 on `Kah_n(s)` the state is `kahanState n c s k`. -/
+/-- After $k$ exact steps of Algorithm 5.4.1 on $\mathrm{Kah}_n(s)$ the state has the original
+array, trivial pivots, $\beta = 0$, $r = k$ and the squared norms $s^{2\min(i, k)}$. -/
 private theorem kahan_steps (hs : 0 < s) (hcs : c ^ 2 + s ^ 2 = 1) {n : ℕ} :
     ∀ k ≤ n, ((List.finRange n).take k).foldl
       (fun st j => Id.run (pivotedQRStep (M := Id) pure le_rfl st j)) (kahanState n c s 0) =
@@ -562,11 +710,18 @@ private theorem kahan_steps (hs : 0 < s) (hcs : c ^ 2 + s ^ 2 = 1) {n : ℕ} :
     exact kahan_step hs hcs hkn
 
 open scoped Matrix.Norms.L2Operator in
-/-- **§5.4.3, the Kahan matrices are unaltered by Algorithm 5.4.1**: for `s > 0`, `c² + s² = 1`,
-the exact run of QR with column pivoting on `Kah_n(s)` performs `r = n` steps, swaps nothing
-(`piv = id`), returns `β = 0` at every step (each subcolumn is `[x₁; 0]` with `x₁ = s^k > 0`)
-and leaves the array unaltered; "and thus `‖R₂₂^{(k)}‖₂ ≥ s^{n-1}`" for every trailing block
-`R(k:n, k:n)`, `k < n` (its last diagonal entry is `s^{n-1}`). -/
+/-- **Section 5.4.3** of [golub2013matrix], the Kahan matrices are unaltered by QR with column
+pivoting. Let $s > 0$ and $c^2 + s^2 = 1$. Then Algorithm 5.4.1 in exact arithmetic on
+$\mathrm{Kah}_n(s)$ takes $r = n$ steps, swaps no columns, returns $\beta_j = 0$ at every step,
+and leaves the array unchanged. Moreover, every nonempty trailing principal block $R_{22}$ of
+$\mathrm{Kah}_n(s)$ satisfies $\|R_{22}\|_2 \ge s^{n-1}$.
+
+**Generalization.** The source takes $c > 0$. The theorem needs only $s > 0$ and
+$c^2 + s^2 = 1$.
+
+At step $k$ the subcolumn is $[s^k; 0]$ with $s^k > 0$, so `house` returns $\beta = 0$. The last
+diagonal entry of each trailing block is $s^{n-1}$. The pivot vector is the identity, and the
+trailing blocks are indexed by the subtype of indices at least $k$. -/
 theorem kahanMatrix_unaltered (hs : 0 < s) (hcs : c ^ 2 + s ^ 2 = 1) {n : ℕ} :
     (Id.run (algorithm_5_4_1 pure le_rfl (kahanMatrix n c s))).A = kahanMatrix n c s ∧
       (Id.run (algorithm_5_4_1 pure le_rfl (kahanMatrix n c s))).piv = id ∧
@@ -614,17 +769,22 @@ end Kahan
 
 section Chan
 
-/-- **Theorem 5.4.1** (Chan): "if `A ∈ ℝ^{m×n}` and `v ∈ ℝⁿ` is a unit 2-norm vector, then there
-exists a permutation `Π` so that the QR factorization `A Π = QR` satisfies `|r_nn| ≤ √n σ` where
-`σ = ‖Av‖₂`" (`m ≥ n = k + 1`; every QR factorization of `A Π` does). -/
+/-- **Theorem 5.4.1** of [golub2013matrix] (Chan). Let $A \in \mathbb{R}^{m \times n}$ with
+$m \ge n \ge 1$, and let $v \in \mathbb{R}^n$ have $\|v\|_2 = 1$. Then there is a permutation
+$\Pi$ such that every QR factorization $A\Pi = QR$ satisfies
+$$|r_{nn}| \le \sqrt n\,\sigma, \qquad \sigma = \|Av\|_2.$$
+
+The source speaks of the QR factorization of $A\Pi$; the bound holds for every one. The theorem
+assumes $m \ge n$, so that $r_{nn}$ is an entry of $R$. In Lean $n = k + 1$, and $r_{nn}$ is the
+entry of $R$ at row $k$ and column `Fin.last k`. -/
 theorem theorem_5_4_1 {k : ℕ} (A : Matrix (Fin m) (Fin (k + 1)) ℝ) (hkm : k + 1 ≤ m)
     (v : EuclideanSpace ℝ (Fin (k + 1))) (hv : ‖v‖ = 1) :
     ∃ π : Equiv.Perm (Fin (k + 1)), ∀ Q R, IsQR (A.submatrix id π) Q R →
       |R ⟨k, by omega⟩ (Fin.last k)| ≤ √(k + 1 : ℝ) * ‖toEuclideanLin A v‖ := by
   simpa only [Real.norm_eq_abs] using exists_perm_isQR_abs_le A hkm v hv
 
-/-- The columns of an SVD's right factor are stretched by the singular values:
-`‖v_j‖₂ = 1` and `‖A v_j‖₂ = σ_j` for `j < m`. -/
+/-- The columns $v_j$ of the right factor of an SVD have $\|v_j\|_2 = 1$ and $\|Av_j\|_2 = \sigma_j$
+for every $j$ below the number of rows. -/
 private theorem norm_mulVec_col_of_isSVD {A : Matrix (Fin m) (Fin n) ℝ}
     {U : Matrix (Fin m) (Fin m) ℝ} {σ : ℕ → ℝ} {V : Matrix (Fin n) (Fin n) ℝ} (h : IsSVD A U σ V)
     (j : Fin n) (hj : (j : ℕ) < m) :
@@ -657,8 +817,13 @@ private theorem norm_mulVec_col_of_isSVD {A : Matrix (Fin m) (Fin n) ℝ}
       ← toEuclideanLin_toLp, norm_toEuclideanLin_apply_of_mem_unitaryGroup h.mem_unitaryGroup_left,
       PiLp.toLp_single, PiLp.norm_single, Real.norm_eq_abs, abs_of_nonneg (h.nonneg _)]
 
-/-- **Theorem 5.4.1, the closing remark**: "if `v = v_n` is the right singular vector
-corresponding to `σ_min(A)`, then `|r_nn| ≤ √n σ_n`" (`σ_n = σ (n - 1)`, 0-based). -/
+/-- **Theorem 5.4.1** of [golub2013matrix], the closing remark. Let $A \in \mathbb{R}^{m \times n}$
+with $m \ge n \ge 1$ have an SVD $U^TAV = \Sigma$ with singular values
+$\sigma_1 \ge \dots \ge \sigma_n$. Then there is a permutation $\Pi$ such that every QR
+factorization $A\Pi = QR$ satisfies $|r_{nn}| \le \sqrt n\,\sigma_n$: take for $v$ the right
+singular vector $v_n$ of $\sigma_{\min}(A) = \sigma_n$.
+
+In Lean $n = k + 1$, and $\sigma_n$ is `σ k`. -/
 theorem theorem_5_4_1_svd {k : ℕ} {A : Matrix (Fin m) (Fin (k + 1)) ℝ}
     {U : Matrix (Fin m) (Fin m) ℝ} {σ : ℕ → ℝ} {V : Matrix (Fin (k + 1)) (Fin (k + 1)) ℝ}
     (h : IsSVD A U σ V) (hkm : k + 1 ≤ m) :
@@ -676,9 +841,10 @@ section RevealUpdate
 
 variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 
-/-- One step `j` of `givensRevealUpdate` (the plane `(j, j + 1)`) as a named function: the
-flipped rotation zeroing `v_j`, applied to `v`, to the rows `≤ j + 1` of `R` and to `Z_G`, then
-the conventional rotation zeroing the new `r_{j+1,j}`, applied to `R` and `Q_G`. -/
+/-- One step $j$ of `GolubVanLoan.Chapter05.givensRevealUpdate`, in the plane $(j, j + 1)$. A
+flipped rotation that zeros $v_j$ is applied to $v$, to the rows up to $j + 1$ of $R$ from the
+right, and to $Z_G$; then a conventional rotation that zeros the new entry $r_{j+1,j}$ is
+applied to $R$ from the left and to $Q_G$. -/
 noncomputable def givensRevealStep {k : ℕ}
     (st : Matrix (Fin (k + 1)) (Fin (k + 1)) ℝ × (Fin (k + 1) → ℝ) ×
       Matrix (Fin (k + 1)) (Fin (k + 1)) ℝ × Matrix (Fin (k + 1)) (Fin (k + 1)) ℝ) (j : Fin k) :
@@ -696,15 +862,22 @@ noncomputable def givensRevealStep {k : ℕ}
   let Q ← givensApplyRight rnd i i' cs₂.1 cs₂.2 (List.finRange (k + 1)) st.2.2.2
   pure (R, v, Z, Q)
 
-/-- **§5.4.5, the zero-chasing update** (displayed for `n = 4`, "the pattern is clear"): given
-`A Z = Q R` with `R` upper triangular and a unit vector `v`, for `i = 1:n-1`:
-* a "flipped" rotation `G_{i,i+1}` zeroing `v_i` against `v_{i+1}` — Algorithm 5.1.3 with the roles
-  of the entries exchanged (`givens(v_{i+1}, v_i)` and `s ↦ -s`), "a slight modification";
-* `v ← G_{i,i+1}ᵀ v`, `R ← R G_{i,i+1}` (rows `1:i+1`, where `R` can be nonzero), `Z_G ← Z_G G`;
-* a conventional `H_{i,i+1}` zeroing the new `r_{i+1,i}`: `R ← H_{i,i+1}ᵀ R` (columns `i:n`),
-  `Q_G ← Q_G H`.
+/-- **Section 5.4.5** of [golub2013matrix], the zero-chasing update of a rank-revealing
+factorization. Given $AZ = QR$ with $R \in \mathbb{R}^{n \times n}$ upper triangular and a unit
+vector $v \in \mathbb{R}^n$, the update starts from $Z_G = Q_G = I$ and performs for
+$i = 1, \dots, n - 1$:
 
-Returns `(R_new, v_new, Z_G, Q_G)`; `n = k + 1` and the step `i` pairs `i` with `i + 1`. -/
+* a "flipped" rotation $G_{i,i+1}$ that zeros $v_i$ against $v_{i+1}$, which is Algorithm 5.1.3
+  applied to $(v_{i+1}, v_i)$ with the sign of $s$ changed ("a slight modification" in the
+  source);
+* $v \leftarrow G_{i,i+1}^Tv$, $R \leftarrow RG_{i,i+1}$ on the rows $1{:}i{+}1$, where $R$ can
+  be nonzero, and $Z_G \leftarrow Z_GG_{i,i+1}$;
+* a conventional rotation $H_{i,i+1}$ that zeros the new $r_{i+1,i}$:
+  $R \leftarrow H_{i,i+1}^TR$ on the columns $i{:}n$, and $Q_G \leftarrow Q_GH_{i,i+1}$.
+
+The program returns $(R_{\mathrm{new}}, v_{\mathrm{new}}, Z_G, Q_G)$. The source displays the
+update for $n = 4$ and says that "the pattern is clear". In Lean $n = k + 1$, and step $i$ pairs
+the indices $i$ and $i + 1$. -/
 noncomputable def givensRevealUpdate {k : ℕ} (R : Matrix (Fin (k + 1)) (Fin (k + 1)) ℝ)
     (v : Fin (k + 1) → ℝ) :
     M (Matrix (Fin (k + 1)) (Fin (k + 1)) ℝ × (Fin (k + 1) → ℝ) ×
@@ -717,10 +890,17 @@ end RevealUpdate
 
 section CompleteOrthogonal
 
-/-- **(5.4.12), the complete orthogonal decomposition**: every `A ∈ ℝ^{m×n}` has orthogonal `U`,
-`V` with `Uᵀ A V = [T₁₁ 0; 0 0]`, `T₁₁` nonsingular of order `r = rank A`
-(`Matrix.IsCompleteOrthogonal`); "the SVD is obviously an example"; and for any such
-decomposition, `r = rank A`, `ran(A) = span{u₁, …, u_r}` and `null(A) = span{v_{r+1}, …, v_n}`. -/
+/-- **Equation (5.4.12)** of [golub2013matrix], the complete orthogonal decomposition. Every
+$A \in \mathbb{R}^{m \times n}$ has orthogonal $U \in \mathbb{R}^{m \times m}$ and
+$V \in \mathbb{R}^{n \times n}$ with
+$$U^TAV = \begin{bmatrix} T_{11} & 0 \\ 0 & 0 \end{bmatrix},$$
+where $T_{11}$ is nonsingular of order $r = \operatorname{rank}(A)$. Every SVD $U^TAV = \Sigma$
+is such a decomposition ("the SVD is obviously an example"). For every such decomposition of any
+order $r$: $r = \operatorname{rank}(A)$, $\operatorname{ran}(A) = \operatorname{span}\{u_1,
+\dots, u_r\}$, and $\operatorname{null}(A) = \operatorname{span}\{v_{r+1}, \dots, v_n\}$, where
+$u_i$ and $v_i$ are the columns of $U$ and $V$.
+
+A complete orthogonal decomposition of order $r$ is `Matrix.IsCompleteOrthogonal A U V r`. -/
 theorem equation_5_4_12 (A : Matrix (Fin m) (Fin n) ℝ) :
     (∃ U V, IsCompleteOrthogonal A U V A.rank) ∧
       (∀ {U : Matrix (Fin m) (Fin m) ℝ} {σ : ℕ → ℝ} {V : Matrix (Fin n) (Fin n) ℝ},
@@ -735,24 +915,28 @@ theorem equation_5_4_12 (A : Matrix (Fin m) (Fin n) ℝ) :
     fun h => ⟨h.rank_eq, h.range_eq_span, h.ker_eq_span⟩⟩
 
 
-/-- The column permutation `Π = Π₁ ⋯ Π_n` encoded by Algorithm 5.4.1's `piv` (step `j` swaps
-columns `j` and `piv j`; an untaken step has `piv j = j`): `A Π` is
-`A.submatrix id (pivotPerm piv)`. -/
+/-- The column permutation $\Pi = \Pi_1 \cdots \Pi_n$ that the pivot vector of Algorithm 5.4.1 of
+[golub2013matrix] encodes, so that $A\Pi$ permutes the columns of $A$. Step $j$ swaps the columns
+$j$ and `piv j`, and a step that is not taken has `piv j = j`. -/
 def pivotPerm (piv : Fin n → Fin n) : Equiv.Perm (Fin n) :=
   (List.finRange n).foldl (fun p j => p * Equiv.swap j (piv j)) 1
 
-/-- The permutation matrix `Π` of `pivotPerm piv`, so that
-`A * pivotMatrix piv = A.submatrix id (pivotPerm piv)` (`Matrix.mul_toPEquiv_toMatrix`). -/
+/-- The permutation matrix $\Pi$ of `GolubVanLoan.Chapter05.pivotPerm piv`, so that the product
+$A\Pi$ permutes the columns of $A$ (`GolubVanLoan.Chapter05.mul_pivotMatrix`). -/
 def pivotMatrix (piv : Fin n → Fin n) : Matrix (Fin n) (Fin n) ℝ :=
   (pivotPerm piv).symm.toPEquiv.toMatrix
 
 variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 
-/-- **§5.4.7, the two-step construction of a complete orthogonal decomposition**: Algorithm 5.4.1
-gives `Uᵀ A Π = [R₁₁ R₁₂; 0 0]` with `r` steps; Algorithm 5.2.1 on the `n × r` matrix
-`[R₁₁ R₁₂]ᵀ` gives `Qᵀ [R₁₁ R₁₂]ᵀ = [S₁; 0]`; then `V = Π Q` and `T₁₁ = S₁ᵀ`. Returns `(U, V, r)`,
-`U` and `Q` accumulated from the two programs' stored reflectors with the returned `β`
-(`backwardAccumulation`, convention 13); `Π` is exact (a permutation). -/
+/-- **Section 5.4.7** of [golub2013matrix], the two-step construction of a complete orthogonal
+decomposition. Let $A \in \mathbb{R}^{m \times n}$ with $n \le m$. Algorithm 5.4.1 gives
+$U^TA\Pi = [R_{11}\ R_{12}; 0\ 0]$ after $r$ steps. Algorithm 5.2.1 on the $n \times r$ matrix
+$[R_{11}\ R_{12}]^T$ gives $Q^T[R_{11}\ R_{12}]^T = [S_1; 0]$. Then $V = \Pi Q$ and
+$T_{11} = S_1^T$, and the program returns $(U, V, r)$.
+
+The factors $U$ and $Q$ are accumulated from the stored reflectors of the two programs, with the
+$\beta_j$ that the programs returned (`GolubVanLoan.Chapter05.backwardAccumulation`). The
+permutation $\Pi$ is applied exactly. -/
 noncomputable def completeOrthogonalDecomposition (hnm : n ≤ m) (A : Matrix (Fin m) (Fin n) ℝ) :
     M (Matrix (Fin m) (Fin m) ℝ × Matrix (Fin n) (Fin n) ℝ × ℕ) := do
   let st ← algorithm_5_4_1 rnd hnm A
@@ -769,8 +953,8 @@ end CompleteOrthogonal
 
 section PivotedQRSpec
 
-/-- The running maximum from `x₀` dominates `x₀` and every listed value, and is `x₀` or one of
-them. -/
+/-- The running maximum from $x_0$ over a list is at least $x_0$ and at least every listed value,
+and it equals $x_0$ or one of the listed values. -/
 private theorem foldl_max_spec (c : Fin n → ℝ) (l : List (Fin n)) (x₀ : ℝ) :
     x₀ ≤ (l.map c).foldl max x₀ ∧ (∀ q ∈ l, c q ≤ (l.map c).foldl max x₀) ∧
       ((l.map c).foldl max x₀ = x₀ ∨ ∃ q ∈ l, c q = (l.map c).foldl max x₀) := by
@@ -789,20 +973,20 @@ private theorem foldl_max_spec (c : Fin n → ℝ) (l : List (Fin n)) (x₀ : �
         exact Or.inl h3
     · exact Or.inr (Or.inr h3)
 
-/-- `listMax` is nonnegative and dominates the listed values. -/
+/-- `GolubVanLoan.Chapter05.listMax` is nonnegative and at least every listed value. -/
 private theorem le_listMax (c : Fin n → ℝ) (l : List (Fin n)) :
     0 ≤ listMax c l ∧ ∀ q ∈ l, c q ≤ listMax c l :=
   ⟨(foldl_max_spec c l 0).1, (foldl_max_spec c l 0).2.1⟩
 
-/-- A positive `listMax` is attained on the list. -/
+/-- A positive value of `GolubVanLoan.Chapter05.listMax` is attained on the list. -/
 private theorem exists_eq_listMax {c : Fin n → ℝ} {l : List (Fin n)} (h : 0 < listMax c l) :
     ∃ q ∈ l, c q = listMax c l := by
   rcases (foldl_max_spec c l 0).2.2 with h0 | h0
   · exact absurd h0 (ne_of_gt h)
   · exact h0
 
-/-- The pivot of Algorithm 5.4.1: when `τ = max_{q ≥ j} c(q) > 0`, the first `k ≥ j` with
-`c(k) = τ` exists; the search returns it. -/
+/-- If $\tau = \max_{q \ge j} c(q) > 0$, the pivot search of Algorithm 5.4.1 returns an index
+$k \ge j$ with $c(k) = \tau$. -/
 private theorem pivot_spec {c : Fin n → ℝ} {τ : ℝ} (j : Fin n)
     (hτ : τ = listMax c ((List.finRange n).filter fun i => (j : ℕ) ≤ i)) (hpos : 0 < τ) :
     j ≤ (((List.finRange n).filter fun k => j ≤ k ∧ c k = τ).head?).getD j ∧
@@ -819,25 +1003,24 @@ private theorem pivot_spec {c : Fin n → ℝ} {τ : ℝ} (j : Fin n)
   rw [List.mem_filter] at this
   simpa using this.2
 
-/-- The product of the reflectors of the first `k` steps of Algorithm 5.4.1, read from the
-state (the stored vectors and the recorded `β`). -/
+/-- The product of the reflectors of the first $k$ steps of Algorithm 5.4.1, read from the stored
+vectors and the recorded $\beta$ of a state. -/
 private noncomputable def pcQ (k : ℕ) (st : PivotedQRState m n) : Matrix (Fin m) (Fin m) ℝ :=
   householderProduct (((List.finRange n).take k).map fun q => (storedHouseholderVec st.A q, st.β q))
 
-/-- The column permutation of the first `k` steps of Algorithm 5.4.1. -/
+/-- The column permutation of the first $k$ steps of Algorithm 5.4.1. -/
 private def pcP (k : ℕ) (st : PivotedQRState m n) : Equiv.Perm (Fin n) :=
   (((List.finRange n).take k).map fun q => Equiv.swap q (st.piv q)).prod
 
-/-- `C = Q_kᵀ A Π_k`, the matrix the first `k` steps of Algorithm 5.4.1 have produced. -/
+/-- The matrix $C = Q_k^TA\Pi_k$ that the first $k$ steps of Algorithm 5.4.1 produce. -/
 private noncomputable def pcC (A : Matrix (Fin m) (Fin n) ℝ) (k : ℕ) (st : PivotedQRState m n) :
     Matrix (Fin m) (Fin n) ℝ :=
   (pcQ k st)ᵀ * A.submatrix id (pcP k st)
 
-/-- The invariant of Algorithm 5.4.1 after `k` steps: the array holds `C = Q_kᵀ A Π_k` on its
-upper part and its unprocessed columns; the processed columns of `C` vanish below a nonzero
-diagonal; the recorded `β` are `0` or `2/vᵀv` (and `0`, with `piv` the identity, on the steps not
-taken); `c` holds the squared norms of the trailing parts of the unprocessed columns and `τ`
-their maximum. -/
+/-- The invariant of Algorithm 5.4.1 after $k$ steps: the array holds $C = Q_k^TA\Pi_k$ outside the
+stored vectors, the processed columns of $C$ vanish below a nonzero diagonal, each recorded
+$\beta$ is $0$ or $2/v^Tv$ (and $0$, with a trivial pivot, for the steps not taken), $c$ holds
+the squared norms of the trailing parts of the unprocessed columns, and $\tau$ is their maximum. -/
 private def pcInv (A : Matrix (Fin m) (Fin n) ℝ) (k : ℕ) (st : PivotedQRState m n) : Prop :=
   st.r = k ∧
     (∀ (i : Fin m) (q : Fin n), ((i : ℕ) ≤ q ∨ k ≤ (q : ℕ)) → st.A i q = pcC A k st i q) ∧
@@ -850,8 +1033,8 @@ private def pcInv (A : Matrix (Fin m) (Fin n) ℝ) (k : ℕ) (st : PivotedQRStat
       st.c q = ∑ i ∈ Finset.univ.filter (fun i : Fin m => k ≤ (i : ℕ)), pcC A k st i q ^ 2) ∧
     st.τ = listMax st.c ((List.finRange n).filter fun i => k ≤ (i : ℕ))
 
-/-- An orthogonal matrix fixing the coordinates below `j` preserves the squared norm of the
-coordinates from `j` on. -/
+/-- An orthogonal matrix that fixes the coordinates of $y$ before position $j$ preserves the sum of
+squares of the coordinates from position $j$ on. -/
 private theorem sum_sq_mulVec_filter {j : ℕ} {P : Matrix (Fin m) (Fin m) ℝ}
     (hP : P ∈ orthogonalGroup (Fin m) ℝ) (y : Fin m → ℝ)
     (hfix : ∀ l : Fin m, (l : ℕ) < j → (P *ᵥ y) l = y l) :
@@ -869,13 +1052,14 @@ private theorem sum_sq_mulVec_filter {j : ℕ} {P : Matrix (Fin m) (Fin m) ℝ}
       rw [hfix l (by simpa using (Finset.mem_filter.1 hl).2)]
   linarith
 
-/-- The first `j + 1` indices are the first `j` and then `j`. -/
+/-- The first $j + 1$ indices are the first $j$ indices followed by $j$. -/
 private theorem take_succ_finRange (j : Fin n) :
     (List.finRange n).take ((j : ℕ) + 1) = (List.finRange n).take j ++ [j] := by
   rw [List.take_succ_eq_append_getElem (by simp)]
   simp
 
-/-- The reflectors of one more step. -/
+/-- The reflector product of one more step of Algorithm 5.4.1 is the previous product times the new
+reflector. -/
 private theorem pcQ_succ (st st' : PivotedQRState m n) (j : Fin n)
     (hA : ∀ q : Fin n, (q : ℕ) < j → storedHouseholderVec st'.A q = storedHouseholderVec st.A q)
     (hβ : ∀ q : Fin n, (q : ℕ) < j → st'.β q = st.β q) :
@@ -888,7 +1072,8 @@ private theorem pcQ_succ (st st' : PivotedQRState m n) (j : Fin n)
   have := lt_of_mem_take_finRange hq
   rw [hA q this, hβ q this]
 
-/-- The column permutation of one more step. -/
+/-- The column permutation of one more step of Algorithm 5.4.1 is the previous one times the new
+transposition. -/
 private theorem pcP_succ (st st' : PivotedQRState m n) (j : Fin n)
     (hpiv : ∀ q : Fin n, (q : ℕ) < j → st'.piv q = st.piv q) :
     pcP ((j : ℕ) + 1) st' = pcP j st * Equiv.swap j (st'.piv j) := by
@@ -897,7 +1082,8 @@ private theorem pcP_succ (st st' : PivotedQRState m n) (j : Fin n)
   congr 2
   exact List.map_congr_left fun q hq => by rw [hpiv q (lt_of_mem_take_finRange hq)]
 
-/-- `C` of one more step is the new reflector applied to the column-swapped `C`. -/
+/-- The matrix $C$ of one more step of Algorithm 5.4.1 is the new reflector applied to the previous
+$C$ with its columns permuted. -/
 private theorem pcC_succ (A : Matrix (Fin m) (Fin n) ℝ) (st st' : PivotedQRState m n)
     (j : Fin n) {P : Matrix (Fin m) (Fin m) ℝ} {s : Equiv.Perm (Fin n)}
     (hQ : pcQ ((j : ℕ) + 1) st' = pcQ j st * P) (hPs : Pᵀ = P)
@@ -906,7 +1092,8 @@ private theorem pcC_succ (A : Matrix (Fin m) (Fin n) ℝ) (st st' : PivotedQRSta
   rw [pcC, pcC, hQ, hPi, transpose_mul, hPs, Matrix.mul_assoc]
   congr 1
 
-/-- Splitting off the first index of a tail sum. -/
+/-- A sum over the indices from $j$ on is the term at $j$ plus the sum over the indices from $j + 1$
+on. -/
 private theorem sum_filter_le_succ {j : ℕ} (hj : j < m) (f : Fin m → ℝ) :
     ∑ l ∈ Finset.univ.filter (fun l : Fin m => j ≤ (l : ℕ)), f l =
       f ⟨j, hj⟩ + ∑ l ∈ Finset.univ.filter (fun l : Fin m => j + 1 ≤ (l : ℕ)), f l := by
@@ -917,7 +1104,7 @@ private theorem sum_filter_le_succ {j : ℕ} (hj : j < m) (f : Fin m → ℝ) :
     omega
   rw [this, Finset.sum_insert (by simp)]
 
-/-- One step of Algorithm 5.4.1 taken (`τ > 0`) preserves the invariant. -/
+/-- A step of Algorithm 5.4.1 that is taken, with $\tau > 0$, preserves the invariant. -/
 private theorem pcInv_step (hnm : n ≤ m) (A : Matrix (Fin m) (Fin n) ℝ)
     (st : PivotedQRState m n) (j : Fin n) (hI : pcInv A j st) (hτ : 0 < st.τ) :
     pcInv A ((j : ℕ) + 1) (Id.run (pivotedQRStep pure hnm st j)) := by
@@ -1105,17 +1292,18 @@ private theorem pcInv_step (hnm : n ≤ m) (A : Matrix (Fin m) (Fin n) ℝ)
     omega
   simp only [hql, ↓reduceIte, Function.comp_apply]
 
-/-- A step not taken (`τ ≤ 0`) leaves the state unchanged. -/
+/-- A step of Algorithm 5.4.1 that is not taken, with $\tau \le 0$, leaves the state unchanged. -/
 private theorem pivotedQRStep_of_not_pos (hnm : n ≤ m) (st : PivotedQRState m n) (j : Fin n)
     (h : ¬ 0 < st.τ) : Id.run (pivotedQRStep pure hnm st j) = st := by
   simp only [pivotedQRStep, h, ↓reduceIte, Id.run_pure]
 
-/-- The initial state of Algorithm 5.4.1: `c(j)` the squared column norms, `τ` their maximum. -/
+/-- The initial state of Algorithm 5.4.1 in exact arithmetic: $c(j)$ is the squared norm of column
+$j$, and $\tau$ is the maximum of these. -/
 private noncomputable def pcInit (A : Matrix (Fin m) (Fin n) ℝ) : PivotedQRState m n :=
   ⟨A, 0, id, fun q => (fun i => A i q) ⬝ᵥ (fun i => A i q), 0,
     listMax (fun q => (fun i => A i q) ⬝ᵥ (fun i => A i q)) (List.finRange n)⟩
 
-/-- The invariant holds initially. -/
+/-- The invariant of Algorithm 5.4.1 holds for the initial state. -/
 private theorem pcInv_init (A : Matrix (Fin m) (Fin n) ℝ) : pcInv A 0 (pcInit A) := by
   have hC : pcC A 0 (pcInit A) = A := by
     simp [pcC, pcQ, pcP]
@@ -1126,7 +1314,7 @@ private theorem pcInv_init (A : Matrix (Fin m) (Fin n) ℝ) : pcInv A 0 (pcInit 
     simp [pcInit, dotProduct, sq]
   · simp only [pcInit, Nat.zero_le, decide_true, List.filter_true]
 
-/-- The run of Algorithm 5.4.1 at `Id` is the fold of its steps from `pcInit A`. -/
+/-- The exact run of Algorithm 5.4.1 is the fold of its steps from the initial state. -/
 private theorem algorithm_5_4_1_run (hnm : n ≤ m) (A : Matrix (Fin m) (Fin n) ℝ) :
     Id.run (algorithm_5_4_1 pure hnm A) =
       (List.finRange n).foldl (fun st q => Id.run (pivotedQRStep pure hnm st q)) (pcInit A) := by
@@ -1142,8 +1330,8 @@ private theorem algorithm_5_4_1_run (hnm : n ≤ m) (A : Matrix (Fin m) (Fin n) 
   rw [Id.run_bind, hc0, List.idRun_foldlM]
   rfl
 
-/-- The invariant along the fold: after the first `j` indices, `k ≤ j` steps have been taken,
-and if fewer than `j`, the loop has stopped (`τ ≤ 0`). -/
+/-- After the first $j$ indices of the loop of Algorithm 5.4.1, some $k \le j$ steps have been
+taken, the invariant holds for $k$, and if $k < j$ the loop has stopped with $\tau \le 0$. -/
 private theorem pcInv_fold (hnm : n ≤ m) (A : Matrix (Fin m) (Fin n) ℝ) :
     ∀ j ≤ n, ∃ k ≤ j, pcInv A k (((List.finRange n).take j).foldl
         (fun st q => Id.run (pivotedQRStep pure hnm st q)) (pcInit A)) ∧
@@ -1170,7 +1358,7 @@ private theorem pcInv_fold (hnm : n ≤ m) (A : Matrix (Fin m) (Fin n) ℝ) :
     · rw [pivotedQRStep_of_not_pos hnm st _ hτ]
       exact ⟨k, by omega, hI, fun _ => not_lt.1 hτ⟩
 
-/-- The members of `(List.finRange n).drop r` are the indices from `r` on. -/
+/-- Every member of the list of indices from $r$ on is at least $r$. -/
 private theorem le_of_mem_drop_finRange {r : ℕ} {q : Fin n}
     (hq : q ∈ (List.finRange n).drop r) : r ≤ (q : ℕ) := by
   obtain ⟨i, hi, rfl⟩ := List.getElem_of_mem hq
@@ -1178,22 +1366,28 @@ private theorem le_of_mem_drop_finRange {r : ℕ} {q : Fin n}
   change r ≤ r + i
   omega
 
-/-- A right fold of products from `p₀` is `p₀` times the product. -/
+/-- A left fold of products from $p_0$ is $p_0$ times the product of the list. -/
 private theorem foldl_mul_eq_mul_prod {α : Type*} [Monoid α] {ι : Type*} (g : ι → α)
     (l : List ι) (p₀ : α) : l.foldl (fun p q => p * g q) p₀ = p₀ * (l.map g).prod := by
   induction l generalizing p₀ with
   | nil => simp
   | cons a l ih => rw [List.foldl_cons, ih, List.map_cons, List.prod_cons, mul_assoc]
 
-/-- **Algorithm 5.4.1 computes the factorization (5.4.6)** (exact arithmetic, `m ≥ n`): with
-`(A', β, piv, r)` the output, `Q = H₁ ⋯ H_n` the factored form of the stored vectors and the
-returned `β` (the steps not taken have `β_j = 0`, `H_j = I`), `Π` the product of the
-transpositions `(j, piv j)` and `R` the upper triangle of `A'`, `A Π = QR` is a rank-revealing
-QR factorization: the rows of `R` from the `r`-th on vanish and `R₁₁` is nonsingular; hence
-`r = rank A`. Every `β_j` is `0` or `2/v⁽ʲ⁾ᵀv⁽ʲ⁾`. The invariant (5.4.7): after `k` steps the array
-holds `R⁽ᵏ⁾ = H_k ⋯ H₁ A Π₁ ⋯ Π_k` with `R₁₁⁽ᵏ⁾` upper triangular and nonsingular, and `c(j)`
-the squared norms of the columns of `R₂₂⁽ᵏ⁾` (`norm_sq_tail_eq`); the loop stops exactly when
-`R₂₂⁽ᵏ⁾ = 0`. -/
+/-- **Algorithm 5.4.1** of [golub2013matrix], correctness in exact arithmetic. Let
+$A \in \mathbb{R}^{m \times n}$ with $m \ge n$, and let $(A', \beta, \mathrm{piv}, r)$ be the
+output of Algorithm 5.4.1 in exact arithmetic. Let $Q = H_1 \cdots H_n$ be the factored form of
+the stored Householder vectors with the returned $\beta$, let $\Pi$ be the product of the
+transpositions $(j, \mathrm{piv}(j))$, and let $R$ be the upper triangle of $A'$. Then
+$A\Pi = QR$ is a rank-revealing QR factorization: the rows of $R$ after row $r$ vanish, and the
+leading block $R_{11} \in \mathbb{R}^{r \times r}$ is nonsingular. Hence
+$r = \operatorname{rank}(A)$. Every $\beta_j$ is $0$ or $2/v^{(j)T}v^{(j)}$.
+
+A step that is not taken has $\beta_j = 0$, so $H_j = I$. The proof maintains the invariant
+(5.4.7): after $k$ steps the array holds $R^{(k)} = H_k \cdots H_1A\Pi_1 \cdots \Pi_k$ with
+$R_{11}^{(k)}$ upper triangular and nonsingular, and $c(j)$ holds the squared norms of the
+columns of $R_{22}^{(k)}$ (`GolubVanLoan.Chapter05.norm_sq_tail_eq`). The loop stops exactly
+when $R_{22}^{(k)} = 0$. The factors are `GolubVanLoan.Chapter05.factoredQ`,
+`GolubVanLoan.Chapter05.upperPart` and `GolubVanLoan.Chapter05.pivotPerm`. -/
 theorem algorithm_5_4_1_spec (hnm : n ≤ m) (A : Matrix (Fin m) (Fin n) ℝ) :
     IsPivotedQR.IsRankRevealing A
         (factoredQ (Id.run (algorithm_5_4_1 pure hnm A)).β (Id.run (algorithm_5_4_1 pure hnm A)).A)
@@ -1295,8 +1489,8 @@ end PivotedQRSpec
 
 section PivotedQRRounding
 
-/-- A column swap of two unprocessed columns commutes with zeroing the stored vectors of the
-first `k` columns. -/
+/-- A swap of two columns at or after position $k$ commutes with zeroing the stored vectors of the
+first $k$ columns. -/
 private theorem householderQRPartialR_submatrix_swap {k : ℕ} (B : Matrix (Fin m) (Fin n) ℝ)
     {j j' : Fin n} (hj : (j : ℕ) = k) (hjj' : j ≤ j') :
     householderQRPartialR k (B.submatrix id (Equiv.swap j j')) =
@@ -1313,11 +1507,11 @@ private theorem householderQRPartialR_submatrix_swap {k : ℕ} (B : Matrix (Fin 
       split_ifs <;> omega
     simp only [hq, h2, false_and, ↓reduceIte]
 
-/-- The invariant of a floating-point run of Algorithm 5.4.1 after `k` indices of the loop: the
-`r ≤ k` steps taken so far ([higham2002accuracy] Lemma 19.3) give
-`R̂⁽ʳ⁾ = P_{r-1} ⋯ P_0 (A + E) Π_r` for the array `R̂⁽ʳ⁾` with its stored vectors zeroed, exact
-reflectors `P_j` and columnwise `‖E(:, q)‖₂ ≤ ((1 + ε)^r - 1) ‖A(:, q)‖₂`; the loop has stopped if
-`r < k`, and the pivots of the steps not taken are trivial. -/
+/-- The invariant of a run of Algorithm 5.4.1 in floating point after $k$ indices of the loop: the
+$r \le k$ steps taken so far give $\hat R^{(r)} = P_{r-1} \cdots P_0(A + E)\Pi_r$ for the array
+with its stored vectors zeroed, with exact orthogonal reflectors $P_j$ and $\|E(:, q)\|_2 \le
+((1 + \varepsilon)^r - 1)\|A(:, q)\|_2$ for every column $q$, the loop has stopped if $r < k$,
+and the pivots of the steps not taken are trivial. -/
 private def pqRoundInv (ε : ℝ) (A : Matrix (Fin m) (Fin n) ℝ) (k : ℕ)
     (st : PivotedQRState m n) : Prop :=
   st.r ≤ k ∧ (st.r < k → st.τ ≤ 0) ∧ (∀ q : Fin n, st.r ≤ (q : ℕ) → st.piv q = q) ∧
@@ -1328,9 +1522,9 @@ private def pqRoundInv (ε : ℝ) (A : Matrix (Fin m) (Fin n) ℝ) (k : ℕ)
       ∀ q, ‖(toLp 2 (E.col q) : EuclideanSpace ℝ (Fin m))‖ ≤
         ((1 + ε) ^ st.r - 1) * ‖(toLp 2 (A.col q) : EuclideanSpace ℝ (Fin m))‖
 
-/-- One index of the loop of a floating-point run of Algorithm 5.4.1 preserves the invariant: a
-step taken is an exact column swap followed by a step of Algorithm 5.2.1
-(`householderQRStep_rounding_data`), accumulated by `FloatingPoint.exists_eq_mul_add_of_step`. -/
+/-- One index of the loop of a run of Algorithm 5.4.1 in floating point preserves the invariant,
+because a step that is taken is an exact column swap followed by a computed step of Algorithm
+5.2.1. -/
 private theorem pqRoundInv_step {fp : RoundingModel ℝ} (hfp : fp.IsIdempotent) (hnm : n ≤ m)
     (hu : ((3 * (18 * m + 31) + m + 3 : ℕ) : ℝ) * fp.u < 1) (A : Matrix (Fin m) (Fin n) ℝ)
     (k : Fin n) (c : PivotedQRState m n)
@@ -1419,8 +1613,8 @@ private theorem pqRoundInv_step {fp : RoundingModel ℝ} (hfp : fp.IsIdempotent)
     rw [e1] at h
     exact h
 
-/-- The column permutation of the steps taken is `Π` of the whole run when the pivots of the
-steps not taken are trivial. -/
+/-- If the pivots of the steps not taken are trivial, then the column permutation of the steps taken
+is the permutation $\Pi$ of the whole run. -/
 private theorem pcP_eq_pivotPerm (st : PivotedQRState m n)
     (hpiv : ∀ q : Fin n, st.r ≤ (q : ℕ) → st.piv q = q) : pcP st.r st = pivotPerm st.piv := by
   have hdrop : (((List.finRange n).drop st.r).map fun q =>
@@ -1433,13 +1627,20 @@ private theorem pcP_eq_pivotPerm (st : PivotedQRState m n)
     List.prod_append]
   rw [hdrop, mul_one]
 
-/-- **Algorithm 5.4.1's backward error** (§5.4.3 "`R̂⁽ᵏ⁾` is the exact R-factor of a matrix
-`A + E_k`"; [higham2002accuracy] Theorem 19.4 with exact pivot swaps): over an idempotent model
-with `(3(18m + 31) + m + 3) u < 1`, every run, having taken `r ≤ n` steps, gives an orthogonal
-`Z` and `E` with `Z R̂⁽ʳ⁾ = (A + E) Π` — `R̂⁽ʳ⁾` the computed array with its stored vectors zeroed
-(`householderQRPartialR`; its trailing block `R̂₂₂` is the unreduced part), `Π` the computed
-pivoting (`pivotPerm`) — and columnwise `‖E(:, q)‖₂ ≤ ((1 + ε)^r - 1) ‖A(:, q)‖₂`,
-`ε = 3 γ_{3(18m + 31) + m + 3}`. -/
+/-- **Section 5.4.3** of [golub2013matrix], the backward error of Algorithm 5.4.1. Let
+$A \in \mathbb{R}^{m \times n}$ with $n \le m$, and let the rounding model be idempotent, with
+unit roundoff $u$ such that $(3(18m + 31) + m + 3)u < 1$. Put
+$\varepsilon = 3\gamma_{3(18m + 31) + m + 3}$, where $\gamma_k = ku/(1 - ku)$. Then every run of
+Algorithm 5.4.1 takes $r \le n$ steps, and there are an orthogonal
+$Z \in \mathbb{R}^{m \times m}$ and $E \in \mathbb{R}^{m \times n}$ with
+$$Z\hat R^{(r)} = (A + E)\Pi, \qquad \|E(:, q)\|_2 \le ((1 + \varepsilon)^r - 1)\|A(:, q)\|_2$$
+for every column $q$. Here $\hat R^{(r)}$ is the computed array with its stored Householder
+vectors replaced by zeros, and $\Pi$ is the computed column permutation.
+
+This makes precise the statement of the source that $\hat R^{(k)}$ "is the exact R-factor of a
+matrix $A + E_k$", as in [higham2002accuracy] Theorem 19.4 with exact pivot swaps. The array
+$\hat R^{(r)}$ is `GolubVanLoan.Chapter05.householderQRPartialR`, whose trailing block
+$\hat R_{22}$ is the part not yet reduced, and $\Pi$ is `GolubVanLoan.Chapter05.pivotPerm`. -/
 theorem algorithm_5_4_1_rounding {fp : RoundingModel ℝ} (hfp : fp.IsIdempotent) (hnm : n ≤ m)
     (hu : ((3 * (18 * m + 31) + m + 3 : ℕ) : ℝ) * fp.u < 1) (A : Matrix (Fin m) (Fin n) ℝ)
     {st : PivotedQRState m n} (h : st ∈ (algorithm_5_4_1 fp.round hnm A).run) :
@@ -1469,8 +1670,8 @@ theorem algorithm_5_4_1_rounding {fp : RoundingModel ℝ} (hfp : fp.IsIdempotent
     pcP_eq_pivotPerm st hpiv]
 
 open scoped Matrix.Norms.Frobenius in
-/-- A columnwise relative bound `‖E(:, q)‖₂ ≤ c ‖A(:, q)‖₂` gives `‖E‖₂ ≤ c √n ‖A‖₂` (through the
-Frobenius norm, `‖A‖_F ≤ √(rank A) ‖A‖₂`). -/
+/-- A columnwise bound $\|E(:, q)\|_2 \le c\|A(:, q)\|_2$ with $c \ge 0$ gives
+$\|E\|_2 \le c\sqrt n\|A\|_2$, through the Frobenius norm. -/
 private theorem lpOpNorm_two_le_of_col_le {E A : Matrix (Fin m) (Fin n) ℝ} {c : ℝ} (hc : 0 ≤ c)
     (h : ∀ q, ‖(toLp 2 (E.col q) : EuclideanSpace ℝ (Fin m))‖ ≤
       c * ‖(toLp 2 (A.col q) : EuclideanSpace ℝ (Fin m))‖) :
@@ -1495,11 +1696,19 @@ private theorem lpOpNorm_two_le_of_col_le {E A : Matrix (Fin m) (Fin n) ℝ} {c 
     _ = c * √(n : ℝ) * lpOpNorm 2 A := by ring
 
 open scoped Matrix.Norms.L2Operator in
-/-- **§5.4.3, the termination criterion for the runs of Algorithm 5.4.1**: if a run stops after
-`r` steps with `‖R̂₂₂⁽ʳ⁾‖₂ ≤ ε₁ ‖A‖₂` (the trailing block of the computed array), then
-`σ_{r+1}(A) ≤ (ε₁ + ε₂) ‖A‖₂` with `ε₂ = ((1 + ε)^r - 1) √n`, `ε = 3 γ_{3(18m + 31) + m + 3}`:
-`algorithm_5_4_1_rounding` supplies the book's `‖E_r‖₂ ≤ ε₂ ‖A‖₂` (through the columnwise
-bound), and `sigma_succ_le_of_colPivot` concludes. -/
+/-- **Section 5.4.3** of [golub2013matrix], the termination criterion for the runs of Algorithm
+5.4.1. Let $A \in \mathbb{R}^{m \times n}$ with $n \le m$, let the rounding model be idempotent
+with $(3(18m + 31) + m + 3)u < 1$, and let $\varepsilon = 3\gamma_{3(18m + 31) + m + 3}$. Let a
+run of Algorithm 5.4.1 stop after $r \le n$ steps, and let the trailing block $\hat R_{22}$ of
+the computed array satisfy $\|\hat R_{22}\|_2 \le \varepsilon_1\|A\|_2$. Then
+$$\sigma_{r+1}(A) \le (\varepsilon_1 + \varepsilon_2)\|A\|_2, \qquad \varepsilon_2 = ((1 +
+  \varepsilon)^r - 1)\sqrt n.$$
+
+`GolubVanLoan.Chapter05.algorithm_5_4_1_rounding` gives the bound
+$\|E_r\|_2 \le \varepsilon_2\|A\|_2$ of the source through the columnwise bound, and
+`GolubVanLoan.Chapter05.sigma_succ_le_of_colPivot` concludes. The block $\hat R_{22}$ has the
+rows $r{+}1{:}m$ and the columns $r{+}1{:}n$ of `GolubVanLoan.Chapter05.householderQRPartialR`,
+and $\sigma_{r+1}(A)$ is `A.sortedSingularValues r`. -/
 theorem algorithm_5_4_1_sigma_succ_le {fp : RoundingModel ℝ} (hfp : fp.IsIdempotent)
     (hnm : n ≤ m) (hu : ((3 * (18 * m + 31) + m + 3 : ℕ) : ℝ) * fp.u < 1)
     (A : Matrix (Fin m) (Fin n) ℝ) {st : PivotedQRState m n}
@@ -1526,12 +1735,14 @@ end PivotedQRRounding
 
 section CompleteOrthogonalSpec
 
-/-- `A Π = A.submatrix id (pivotPerm piv)` for the permutation matrix `Π = pivotMatrix piv`. -/
+/-- For $A$ with $n$ columns, the product of $A$ with the permutation matrix
+`GolubVanLoan.Chapter05.pivotMatrix piv` is $A$ with its columns permuted by
+`GolubVanLoan.Chapter05.pivotPerm piv`. -/
 theorem mul_pivotMatrix {p : ℕ} (A : Matrix (Fin p) (Fin n) ℝ) (piv : Fin n → Fin n) :
     A * pivotMatrix piv = A.submatrix id (pivotPerm piv) := by
   rw [pivotMatrix, PEquiv.mul_toMatrix_toPEquiv, Equiv.symm_symm]
 
-/-- The permutation matrix `Π` of Algorithm 5.4.1 is orthogonal. -/
+/-- The permutation matrix $\Pi$ of Algorithm 5.4.1 is orthogonal. -/
 theorem pivotMatrix_mem_orthogonalGroup (piv : Fin n → Fin n) :
     pivotMatrix piv ∈ orthogonalGroup (Fin n) ℝ := by
   have h : pivotMatrix piv = (1 : Matrix (Fin n) (Fin n) ℝ).submatrix id (pivotPerm piv) := by
@@ -1540,12 +1751,19 @@ theorem pivotMatrix_mem_orthogonalGroup (piv : Fin n → Fin n) :
   rw [h]
   exact one_submatrix_mem_unitaryGroup (𝕜 := ℝ) (pivotPerm piv)
 
-/-- **§5.4.7, the two-step complete orthogonal decomposition is one** (exact arithmetic): the
-output `(U, V, r)` satisfies `Uᵀ A V = [T₁₁ 0; 0 0]` with `U`, `V` orthogonal and `T₁₁`
-nonsingular of order `r = rank A` (`Matrix.IsCompleteOrthogonal`). From `algorithm_5_4_1_spec`
-(`Uᵀ A Π = [R₁₁ R₁₂; 0 0]`), `algorithm_5_2_1_spec` on `[R₁₁ R₁₂]ᵀ = Q [S₁; 0]` (full column rank
-since `R₁₁` is nonsingular, so `S₁` is nonsingular) and backward accumulation
-(`backwardAccumulation_spec`): `Uᵀ A (Π Q) = [S₁ᵀ 0; 0 0]`. -/
+/-- **Section 5.4.7** of [golub2013matrix], correctness of the two-step construction in exact
+arithmetic. Let $A \in \mathbb{R}^{m \times n}$ with $n \le m$, and let $(U, V, r)$ be the
+output of `GolubVanLoan.Chapter05.completeOrthogonalDecomposition` in exact arithmetic. Then $U$
+and $V$ are orthogonal and
+$$U^TAV = \begin{bmatrix} T_{11} & 0 \\ 0 & 0 \end{bmatrix}$$
+with $T_{11}$ nonsingular of order $r = \operatorname{rank}(A)$.
+
+The proof combines `GolubVanLoan.Chapter05.algorithm_5_4_1_spec`, which gives
+$U^TA\Pi = [R_{11}\ R_{12}; 0\ 0]$, with `GolubVanLoan.Chapter05.algorithm_5_2_1_spec` on
+$[R_{11}\ R_{12}]^T = Q[S_1; 0]$ and with `GolubVanLoan.Chapter05.backwardAccumulation_spec`.
+The matrix $[R_{11}\ R_{12}]^T$ has full column rank because $R_{11}$ is nonsingular, so $S_1$
+is nonsingular, and $U^TA(\Pi Q) = [S_1^T\ 0; 0\ 0]$. The decomposition is
+`Matrix.IsCompleteOrthogonal`. -/
 theorem completeOrthogonalDecomposition_spec (hnm : n ≤ m) (A : Matrix (Fin m) (Fin n) ℝ) :
     IsCompleteOrthogonal A (Id.run (completeOrthogonalDecomposition pure hnm A)).1
         (Id.run (completeOrthogonalDecomposition pure hnm A)).2.1
@@ -1631,8 +1849,10 @@ end CompleteOrthogonalSpec
 
 section Bidiagonalization
 
-/-- **(5.4.13)**: for `A ∈ ℝ^{m×n}` there are orthogonal `U_B ∈ ℝ^{m×m}`, `V_B ∈ ℝ^{n×n}` with
-`U_Bᵀ A V_B` upper bidiagonal (`d_i` on the diagonal, `f_i` above it, zero elsewhere). -/
+/-- **Equation (5.4.13)** of [golub2013matrix], bidiagonalization. For every
+$A \in \mathbb{R}^{m \times n}$ there are orthogonal $U_B \in \mathbb{R}^{m \times m}$ and
+$V_B \in \mathbb{R}^{n \times n}$ such that $U_B^TAV_B$ is upper bidiagonal: its entries vanish
+outside the diagonal, with entries $d_i$, and the superdiagonal, with entries $f_i$. -/
 theorem equation_5_4_13 (A : Matrix (Fin m) (Fin n) ℝ) :
     ∃ U ∈ orthogonalGroup (Fin m) ℝ, ∃ V ∈ orthogonalGroup (Fin n) ℝ,
       ∀ (i : Fin m) (j : Fin n), (j : ℕ) ≠ i → (j : ℕ) ≠ i + 1 → (Uᵀ * A * V) i j = 0 := by
@@ -1645,10 +1865,12 @@ theorem equation_5_4_13 (A : Matrix (Fin m) (Fin n) ℝ) :
 
 variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 
-/-- One step `j` of Algorithm 5.4.2: a left Householder step on column `j` (rows `j:m`, columns
-`j:n`, the vector stored below the diagonal) and, while `j ≤ n - 2` (1-based), a right Householder
-step on row `j` (columns `j+1:n`, rows `j:m`, the vector stored in `A(j, j+2:n)`). The row
-`A(j, j+1:n)` is the function `A j` on the column list (no transpose copy, convention 10). -/
+/-- One step $j$ of Algorithm 5.4.2 of [golub2013matrix]. The step applies a left Householder
+reflector to column $j$, on the rows $j{:}m$ and the columns $j{:}n$, and stores its vector
+below the diagonal. If $j \le n - 2$ (1-based), it then applies a right Householder reflector to
+row $j$, on the columns $j{+}1{:}n$ and the rows $j{:}m$, and stores its vector in
+$A(j, j{+}2{:}n)$. The row $A(j, j{+}1{:}n)$ is read as the function `A j` on the list of
+columns, with no transposed copy. -/
 noncomputable def bidiagonalizationStep (hnm : n ≤ m)
     (st : Matrix (Fin m) (Fin n) ℝ × (Fin n → ℝ) × (Fin n → ℝ)) (j : Fin n) :
     M (Matrix (Fin m) (Fin n) ℝ × (Fin n → ℝ) × (Fin n → ℝ)) := do
@@ -1663,11 +1885,12 @@ noncomputable def bidiagonalizationStep (hnm : n ≤ m)
     pure (A, Function.update st.2.1 j uβ.2, Function.update st.2.2 j wγ.2)
   else pure (A, Function.update st.2.1 j uβ.2, st.2.2)
 
-/-- **Algorithm 5.4.2 (Householder Bidiagonalization)**: "Given `A ∈ ℝ^{m×n}` with `m ≥ n`, the
-following algorithm overwrites `A` with `U_Bᵀ A V_B = B` where `B` is upper bidiagonal and
-`U_B = U₁ ⋯ U_n` and `V_B = V₁ ⋯ V_{n-2}`. The essential part of `U_j`'s Householder vector is
-stored in `A(j+1:m, j)` and the essential part of `V_j`'s Householder vector is stored in
-`A(j, j+2:n)`":
+/-- **Algorithm 5.4.2** of [golub2013matrix] (Householder Bidiagonalization). Given
+$A \in \mathbb{R}^{m \times n}$ with $m \ge n$, the algorithm overwrites $A$ with
+$U_B^TAV_B = B$, where $B$ is upper bidiagonal, $U_B = U_1 \cdots U_n$ and
+$V_B = V_1 \cdots V_{n-2}$. The essential part of the Householder vector of $U_j$ is stored in
+$A(j{+}1{:}m, j)$, and the essential part of the Householder vector of $V_j$ is stored in
+$A(j, j{+}2{:}n)$:
 ```
 for j = 1:n
     [v, β] = house(A(j:m, j))
@@ -1680,7 +1903,11 @@ for j = 1:n
     end
 end
 ```
-(the second call is printed "ho se"). The program returns the array and both lists of `β`. -/
+
+**Typo.** The source prints the second call of `house` as "ho se".
+
+The program returns the array and the two lists of scalars $\beta$ of the left and the right
+reflectors. One step is `GolubVanLoan.Chapter05.bidiagonalizationStep`. -/
 noncomputable def algorithm_5_4_2 (hnm : n ≤ m) (A : Matrix (Fin m) (Fin n) ℝ) :
     M (Matrix (Fin m) (Fin n) ℝ × (Fin n → ℝ) × (Fin n → ℝ)) :=
   (List.finRange n).foldlM (bidiagonalizationStep rnd hnm) (A, 0, 0)
@@ -1691,25 +1918,27 @@ end Bidiagonalization
 
 section BidiagonalizationSpec
 
-/-- **The Householder vector of the right reflector `V_k`** read from row `k` of an array
-overwritten by Algorithm 5.4.2: zeros in positions `≤ k`, `1` at `k + 1`, and the essential part
-`A(k, k+2:n)` stored there. -/
+/-- The Householder vector of the right reflector $V_k$, read from row $k$ of an array that
+Algorithm 5.4.2 of [golub2013matrix] has overwritten: zeros in the positions up to $k$, $1$ at
+position $k + 1$, and the essential part $A(k, k{+}2{:}n)$ after it. -/
 def storedRowVec (hnm : n ≤ m) (A : Matrix (Fin m) (Fin n) ℝ) (k : Fin n) : Fin n → ℝ :=
   fun q => if (q : ℕ) < k + 1 then 0 else if (q : ℕ) = k + 1 then 1 else A (Fin.castLE hnm k) q
 
-/-- **The factored form `V_B = V₁ ⋯ V_n`** of Algorithm 5.4.2's right reflectors: the vectors
-stored in the rows of the array and the returned `γ` (a step without a right reflector records
-`γ_k = 0`, an identity factor). -/
+/-- The factored form $V_B = V_1 \cdots V_n$ of the right reflectors of Algorithm 5.4.2 of
+[golub2013matrix], from the vectors stored in the rows of the array and the returned scalars
+$\gamma_k$. A step without a right reflector records $\gamma_k = 0$, which gives an identity
+factor. -/
 noncomputable def bidiagRightQ (hnm : n ≤ m) (γ : Fin n → ℝ) (A : Matrix (Fin m) (Fin n) ℝ) :
     Matrix (Fin n) (Fin n) ℝ :=
   householderProduct (List.ofFn fun k => (storedRowVec hnm A k, γ k))
 
-/-- **The bidiagonal part** of an array: its diagonal `d_i` and superdiagonal `f_i`, zero
-elsewhere (the book's `B`, read off the overwritten `A`). -/
+/-- The bidiagonal part of an array: its diagonal entries $d_i$ and superdiagonal entries $f_i$, and
+zero elsewhere. It is the matrix $B$ of Algorithm 5.4.2 of [golub2013matrix], read from the
+overwritten array. -/
 def bidiagonalPart (A : Matrix (Fin m) (Fin n) ℝ) : Matrix (Fin m) (Fin n) ℝ :=
   of fun i q => if (q : ℕ) = i ∨ (q : ℕ) = i + 1 then A i q else 0
 
-/-- Two dot products with `v` agree when the second factors agree wherever `v` is nonzero. -/
+/-- Two inner products with $v$ agree when the second factors agree wherever $v$ is nonzero. -/
 private theorem dotProduct_congr_of_ne_zero {ι : Type*} [Fintype ι] {v f g : ι → ℝ}
     (h : ∀ r, v r ≠ 0 → f r = g r) : v ⬝ᵥ f = v ⬝ᵥ g := by
   unfold dotProduct
@@ -1718,24 +1947,24 @@ private theorem dotProduct_congr_of_ne_zero {ι : Type*} [Fintype ι] {v f g : �
   · rw [hr, zero_mul, zero_mul]
   · rw [h r hr]
 
-/-- The product of the left reflectors of the first `j` steps of Algorithm 5.4.2, read from the
-state. -/
+/-- The product of the left reflectors of the first $j$ steps of Algorithm 5.4.2, read from a state.
+-/
 private noncomputable def bidiagLeftPrefix (j : ℕ)
     (st : Matrix (Fin m) (Fin n) ℝ × (Fin n → ℝ) × (Fin n → ℝ)) : Matrix (Fin m) (Fin m) ℝ :=
   householderProduct
     (((List.finRange n).take j).map fun k => (storedHouseholderVec st.1 k, st.2.1 k))
 
-/-- The product of the right reflectors of the first `j` steps of Algorithm 5.4.2, read from the
+/-- The product of the right reflectors of the first $j$ steps of Algorithm 5.4.2, read from a
 state. -/
 private noncomputable def bidiagRightPrefix (hnm : n ≤ m) (j : ℕ)
     (st : Matrix (Fin m) (Fin n) ℝ × (Fin n → ℝ) × (Fin n → ℝ)) : Matrix (Fin n) (Fin n) ℝ :=
   householderProduct
     (((List.finRange n).take j).map fun k => (storedRowVec hnm st.1 k, st.2.2 k))
 
-/-- The invariant of Algorithm 5.4.2 after `j` steps, with `C = U_jᵀ A V_j` for the products of
-the reflectors so far: outside the stored vectors the array holds `C`; the processed columns of
-`C` vanish below the diagonal and its processed rows beyond the superdiagonal; the recorded `β`,
-`γ` are `0` or `2/vᵀv`, and the `γ` of the steps to come are `0`. -/
+/-- The invariant of Algorithm 5.4.2 after $j$ steps, with $C = U_j^TAV_j$ for the products of the
+reflectors so far: outside the stored vectors the array holds $C$, the processed columns of $C$
+vanish below the diagonal and its processed rows beyond the superdiagonal, the recorded $\beta$
+and $\gamma$ are $0$ or $2/v^Tv$, and the $\gamma$ of the later steps are $0$. -/
 private def bidiagInvariant (hnm : n ≤ m) (A : Matrix (Fin m) (Fin n) ℝ) (j : ℕ)
     (st : Matrix (Fin m) (Fin n) ℝ × (Fin n → ℝ) × (Fin n → ℝ)) : Prop :=
   (∀ (i : Fin m) (q : Fin n), ¬ ((q : ℕ) < j ∧ (q : ℕ) < i) → ¬ ((i : ℕ) < j ∧ (i : ℕ) + 1 < q) →
@@ -1750,9 +1979,9 @@ private def bidiagInvariant (hnm : n ≤ m) (A : Matrix (Fin m) (Fin n) ℝ) (j 
       st.2.2 k * (storedRowVec hnm st.1 k ⬝ᵥ storedRowVec hnm st.1 k) = 2) ∧
     ∀ k : Fin n, j ≤ (k : ℕ) → st.2.2 k = 0
 
-/-- The core of one step of Algorithm 5.4.2: given the data of the left reflector `(v, b)`, the
-array `A1` after the left update, the data of the right reflector `(w, g)` (`g = 0` when there is
-none) and the array `B3` after the right update, the invariant advances. -/
+/-- The core of one step of Algorithm 5.4.2: given the data $(v, b)$ of the left reflector, the
+array after the left update, the data $(w, g)$ of the right reflector ($g = 0$ when there is
+none) and the array after the right update, the invariant advances by one step. -/
 private theorem bidiagInvariant_step_core (hnm : n ≤ m) (A B : Matrix (Fin m) (Fin n) ℝ)
     (β γ : Fin n → ℝ) (j : Fin n) (hI : bidiagInvariant hnm A j (B, β, γ))
     (v : Fin m → ℝ) (b : ℝ) (hvout : ∀ i : Fin m, (i : ℕ) < j → v i = 0)
@@ -2056,12 +2285,17 @@ private theorem bidiagInvariant_step (hnm : n ≤ m) (A : Matrix (Fin m) (Fin n)
       omega
     · split_ifs <;> simp
 
-/-- **Algorithm 5.4.2 computes a bidiagonalization** (exact arithmetic, `m ≥ n`): with
-`(A', β, γ) = Id.run (algorithm_5_4_2 pure hnm A)`, the factored forms `U_B = U₁ ⋯ U_n` of the
-column-stored vectors with the returned `β` and `V_B = V₁ ⋯ V_n` of the row-stored vectors with
-the returned `γ` (convention 13; a step without a right reflector has `γ_j = 0`) satisfy
-`U_Bᵀ A V_B = B` for the bidiagonal part `B` of `A'`, both orthogonal — "overwrites `A` with
-`U_Bᵀ A V_B = B` where `B` is upper bidiagonal" — and every `β_j`, `γ_j` is `0` or `2/vᵀv`. -/
+/-- **Algorithm 5.4.2** of [golub2013matrix], correctness in exact arithmetic. Let
+$A \in \mathbb{R}^{m \times n}$ with $m \ge n$, and let $(A', \beta, \gamma)$ be the output of
+Algorithm 5.4.2 in exact arithmetic. Let $U_B = U_1 \cdots U_n$ be the factored form of the
+vectors stored in the columns of $A'$ with the returned $\beta$, and let $V_B = V_1 \cdots V_n$
+be the factored form of the vectors stored in the rows of $A'$ with the returned $\gamma$. Then
+$U_B$ and $V_B$ are orthogonal and $U_B^TAV_B = B$, where $B$ is the bidiagonal part of $A'$.
+Every $\beta_j$ and every $\gamma_j$ is $0$ or $2/v^Tv$ for the corresponding stored vector $v$.
+
+A step without a right reflector has $\gamma_j = 0$. The factors are
+`GolubVanLoan.Chapter05.factoredQ` and `GolubVanLoan.Chapter05.bidiagRightQ`, the matrix $B$ is
+`GolubVanLoan.Chapter05.bidiagonalPart`, and the conclusion is `Matrix.IsBidiagonalization`. -/
 theorem algorithm_5_4_2_spec (hnm : n ≤ m) (A : Matrix (Fin m) (Fin n) ℝ) :
     IsBidiagonalization A
         (factoredQ (Id.run (algorithm_5_4_2 pure hnm A)).2.1
@@ -2134,17 +2368,22 @@ theorem algorithm_5_4_2_spec (hnm : n ≤ m) (A : Matrix (Fin m) (Fin n) ℝ) :
 end BidiagonalizationSpec
 
 
-/-! ### §5.4.9 `R`-bidiagonalization -/
+/-! ### §5.4.9 $R$-bidiagonalization -/
 
 section RBidiagonalization
 
 variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 
-/-- **§5.4.9, `R`-bidiagonalization** (unnumbered): "first compute the QR factorization
-`QᵀA = [R₁; 0]` and then apply Algorithm 5.4.2 to `R₁`": Algorithm 5.2.1 on `A`, then
-Algorithm 5.4.2 on the square top block `R₁ = R(1:n, 1:n)` of its triangular factor. Returns both
-programs' arrays and reflector scalars (`(A', β)` of Algorithm 5.2.1, `(R₁', β_R, γ_R)` of
-Algorithm 5.4.2; convention 13), from which `U_B = Q diag(U_R, I_{m-n})` and `V_B` are read. -/
+/-- **Section 5.4.9** of [golub2013matrix], $R$-bidiagonalization. Let
+$A \in \mathbb{R}^{m \times n}$ with $n \le m$. The source says to "first compute the QR
+factorization $Q^TA = [R_1; 0]$ and then apply Algorithm 5.4.2 to $R_1$". The program runs
+Algorithm 5.2.1 on $A$, and then Algorithm 5.4.2 on the square top block $R_1 = R(1{:}n, 1{:}n)$
+of its triangular factor. It returns the array and the scalars $\beta$ of Algorithm 5.2.1, and
+the array and the scalars $\beta_R$ and $\gamma_R$ of Algorithm 5.4.2.
+
+The procedure is unnumbered in the source. From the output,
+$U_B = Q\operatorname{diag}(U_R, I_{m-n})$ and $V_B$ are read
+(`GolubVanLoan.Chapter05.rBidiagonalization_spec`). -/
 noncomputable def rBidiagonalization (hnm : n ≤ m) (A : Matrix (Fin m) (Fin n) ℝ) :
     M (Matrix (Fin m) (Fin n) ℝ × (Fin n → ℝ) × Matrix (Fin n) (Fin n) ℝ × (Fin n → ℝ) ×
       (Fin n → ℝ)) := do
@@ -2154,10 +2393,14 @@ noncomputable def rBidiagonalization (hnm : n ≤ m) (A : Matrix (Fin m) (Fin n)
 
 end RBidiagonalization
 
-/-- **`R`-bidiagonalization computes a bidiagonalization** (§5.4.9, exact arithmetic): with the
-factored forms `Q` of Algorithm 5.2.1 and `U_R`, `V_B` of Algorithm 5.4.2 on `R₁`,
-`U_B = Q diag(U_R, I_{m-n})` and `V_B` bidiagonalize `A` to `[B₁; 0]`, `B₁` the bidiagonal part of
-Algorithm 5.4.2's output array (`Matrix.IsBidiagonalization.of_isQR`). -/
+/-- **Section 5.4.9** of [golub2013matrix], correctness of $R$-bidiagonalization in exact
+arithmetic. Let $A \in \mathbb{R}^{m \times n}$ with $n \le m$. Let $Q$ be the factored form
+from Algorithm 5.2.1 on $A$, and let $U_R$ and $V_B$ be the factored forms from Algorithm 5.4.2
+on $R_1$. Then $U_B = Q\operatorname{diag}(U_R, I_{m-n})$ and $V_B$ are orthogonal and
+bidiagonalize $A$ to $[B_1; 0]$, where $B_1$ is the bidiagonal part of the array that Algorithm
+5.4.2 returns.
+
+The proof applies `Matrix.IsBidiagonalization.of_isQR`. -/
 theorem rBidiagonalization_spec (hnm : n ≤ m) (A : Matrix (Fin m) (Fin n) ℝ) :
     IsBidiagonalization A
       (factoredQ (Id.run (rBidiagonalization pure hnm A)).2.1
@@ -2179,7 +2422,8 @@ section Programs
 
 variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 
-/-- `givensRevealUpdate` is the fold of `givensRevealStep` from `(R, v, I, I)`. -/
+/-- `GolubVanLoan.Chapter05.givensRevealUpdate` is the fold of
+`GolubVanLoan.Chapter05.givensRevealStep` over $j = 0, \dots, k - 1$ from $(R, v, I, I)$. -/
 theorem givensRevealUpdate_eq_foldlM {k : ℕ} (R : Matrix (Fin (k + 1)) (Fin (k + 1)) ℝ)
     (v : Fin (k + 1) → ℝ) :
     givensRevealUpdate rnd R v = (List.finRange k).foldlM (givensRevealStep rnd) (R, v, 1, 1) :=
@@ -2187,8 +2431,9 @@ theorem givensRevealUpdate_eq_foldlM {k : ℕ} (R : Matrix (Fin (k + 1)) (Fin (k
 
 end Programs
 
-/-- The invariant of the zero-chasing update after `j` steps from `(R₀, v₀, I, I)`: `Z_G`, `Q_G`
-orthogonal, `R = Q_Gᵀ R₀ Z_G` upper triangular, `v = Z_Gᵀ v₀` with `v_p = 0` for `p < j`. -/
+/-- The invariant of the zero-chasing update after $j$ steps from $(R_0, v_0, I, I)$: $Z_G$ and
+$Q_G$ are orthogonal, $R = Q_G^TR_0Z_G$ is upper triangular, and $v = Z_G^Tv_0$ with $v_p = 0$
+for $p < j$. -/
 private def revealInvariant {k : ℕ} (R₀ : Matrix (Fin (k + 1)) (Fin (k + 1)) ℝ)
     (v₀ : Fin (k + 1) → ℝ) (j : ℕ)
     (st : Matrix (Fin (k + 1)) (Fin (k + 1)) ℝ × (Fin (k + 1) → ℝ) ×
@@ -2334,11 +2579,17 @@ private theorem revealInvariant_step {k : ℕ} (R₀ : Matrix (Fin (k + 1)) (Fin
         have : (p : ℕ) ≠ j := fun e => hpi (Fin.ext e)
         omega)
 
-/-- **§5.4.5, the zero-chasing update in exact arithmetic**: for `R` upper triangular and a unit
-vector `v`, with `(R_new, v_new, Z_G, Q_G) = Id.run (givensRevealUpdate pure R v)`: `Z_G` and `Q_G`
-are orthogonal, `R_new = Q_Gᵀ R Z_G` is upper triangular, `v_new = Z_Gᵀ v = ±e_n`, hence (the
-book's display) `‖R_new e_n‖₂ = ‖R v‖₂`, and a factorization `A Z = Q R` is updated to
-`A Z_new = Q_new R_new` with `Z_new = Z Z_G`, `Q_new = Q Q_G`. -/
+/-- **Section 5.4.5** of [golub2013matrix], the zero-chasing update in exact arithmetic. Let
+$R \in \mathbb{R}^{n \times n}$ be upper triangular, let $v \in \mathbb{R}^n$ have
+$\|v\|_2 = 1$, and let $(R_{\mathrm{new}}, v_{\mathrm{new}}, Z_G, Q_G)$ be the output of the
+update in exact arithmetic. Then $Z_G$ and $Q_G$ are orthogonal, $R_{\mathrm{new}} = Q_G^TRZ_G$
+is upper triangular, and $v_{\mathrm{new}} = Z_G^Tv = \pm e_n$. Hence
+$\|R_{\mathrm{new}}e_n\|_2 = \|Rv\|_2$, which is the display of the source. Moreover, for all
+$A \in \mathbb{R}^{m \times n}$, $Z \in \mathbb{R}^{n \times n}$ and
+$Q \in \mathbb{R}^{m \times n}$ with $AZ = QR$, the updated factors $Z_{\mathrm{new}} = ZZ_G$
+and $Q_{\mathrm{new}} = QQ_G$ satisfy $AZ_{\mathrm{new}} = Q_{\mathrm{new}}R_{\mathrm{new}}$.
+
+In Lean $n = k + 1$, and the update is `GolubVanLoan.Chapter05.givensRevealUpdate`. -/
 theorem givensRevealUpdate_spec {k : ℕ} {R : Matrix (Fin (k + 1)) (Fin (k + 1)) ℝ}
     (hR : R.IsUpperTriangular) {v : Fin (k + 1) → ℝ}
     (hv : ‖(toLp 2 v : EuclideanSpace ℝ (Fin (k + 1)))‖ = 1) :
@@ -2434,20 +2685,30 @@ open scoped Matrix.Norms.L2Operator
 
 open Chapter02 (sigmaMin subspaceDist)
 
-/-- `σ_min` of a square block is its last sorted singular value. -/
+/-- For a square matrix $T$ of order $k$, $\sigma_{\min}(T)$ is its last sorted singular value
+$\sigma_k(T)$. -/
 private theorem sigmaMin_square {k : ℕ} (T : Matrix (Fin k) (Fin k) ℝ) :
     sigmaMin T = T.sortedSingularValues (k - 1) := by
   rw [sigmaMin, min_self]
 
-/-- **(5.4.10)** (Stewart 1993): "suppose `σ_k(A) > σ_{k+1}(A)` and `S` is the subspace spanned by
-`A`'s right singular vectors `v_{k+1}, …, v_n`" … "if `Uᵀ A V = R = [R₁₁ R₁₂; 0 R₂₂]` and
-`V = [V₁ | V₂]` is partitioned conformably, then
-`dist(ran(V₂), S) ≤ ‖R₁₂‖₂ / ((1 - ρ_R²) σ_min(R₁₁))` where `ρ_R = ‖R₂₂‖₂ / σ_min(R₁₁)` is
-assumed to be less than 1". `R₁₁` is `k × k`; `S` is spanned by the last `n - k` columns of the
-right factor `Z` of an SVD `A = W Σ Zᵀ`, and the bound holds for every SVD, so the separation
-`σ_k(A) > σ_{k+1}(A)` (which makes `S` unique) is not needed; `σ_min(R₁₁) > 0` is implicit in the
-book's `ρ_R`. `dist` is `Chapter02.subspaceDist`; backbone `Matrix.gap_le_of_urv` on the bundle
-`Matrix.IsURV`. -/
+/-- **Equation (5.4.10)** of [golub2013matrix] (Stewart, 1993). Let $A \in \mathbb{R}^{m \times n}$,
+let $U \in \mathbb{R}^{m \times m}$ and $V \in \mathbb{R}^{n \times n}$ be orthogonal, and let
+$$U^TAV = R = \begin{bmatrix} R_{11} & R_{12} \\ 0 & R_{22} \end{bmatrix}$$
+be upper triangular, with $R_{11} \in \mathbb{R}^{k \times k}$ and $k \le \min\{m, n\}$.
+Partition $V = [V_1 \mid V_2]$ conformably. Let $A = W\Sigma Z^T$ be an SVD of $A$, and let $S$
+be the span of the last $n - k$ columns of $Z$, the right singular vectors
+$v_{k+1}, \dots, v_n$. If $\sigma_{\min}(R_{11}) > 0$ and $\rho_R =
+\|R_{22}\|_2/\sigma_{\min}(R_{11}) < 1$, then
+$$\operatorname{dist}(\operatorname{ran}(V_2), S) \le \frac{\|R_{12}\|_2}{(1 -
+  \rho_R^2)\sigma_{\min}(R_{11})}.$$
+
+**Generalization.** The source assumes $\sigma_k(A) > \sigma_{k+1}(A)$, which makes $S$ unique.
+The bound holds for every SVD, so the separation is not needed. The hypothesis
+$\sigma_{\min}(R_{11}) > 0$ is implicit in the definition of $\rho_R$ in the source.
+
+The distance is `GolubVanLoan.Chapter02.subspaceDist`, (2.5.1), and $\sigma_{\min}$ is
+`GolubVanLoan.Chapter02.sigmaMin`. The proof specializes `Matrix.gap_le_of_urv` for the
+structure `Matrix.IsURV`. -/
 theorem equation_5_4_10 {A R : Matrix (Fin m) (Fin n) ℝ} {U : Matrix (Fin m) (Fin m) ℝ}
     {V : Matrix (Fin n) (Fin n) ℝ} (hU : U ∈ orthogonalGroup (Fin m) ℝ)
     (hV : V ∈ orthogonalGroup (Fin n) ℝ) (hR : Uᵀ * A * V = R)
@@ -2468,11 +2729,23 @@ theorem equation_5_4_10 {A R : Matrix (Fin m) (Fin n) ℝ} {U : Matrix (Fin m) (
     ⟨⟨hU, hV, by rwa [star_eq_conjTranspose, conjTranspose_eq_transpose_of_trivial]⟩, hRtri⟩
     hA hkm hkn ((div_lt_one hσ).1 hρ)
 
-/-- **(5.4.11)** (Stewart 1993): "in the ULV setting we have `Uᵀ A V = L = [L₁₁ 0; L₂₁ L₂₂]`. If
-`V = [V₁ | V₂]` is partitioned conformably, then
-`dist(ran(V₂), S) ≤ ρ_L ‖L₁₂‖₂ / ((1 - ρ_L²) σ_min(L₁₁))` where `ρ_L = ‖L₂₂‖₂ / σ_min(L₁₁)` is also
-assumed to be less than 1", with the printed `L₁₂` (a zero block) read as `L₂₁`. Setting as in
-`equation_5_4_10`; backbone `Matrix.gap_le_of_ulv` on the bundle `Matrix.IsULV`. -/
+/-- **Equation (5.4.11)** of [golub2013matrix] (Stewart, 1993). Let $A \in \mathbb{R}^{m \times n}$,
+let $U \in \mathbb{R}^{m \times m}$ and $V \in \mathbb{R}^{n \times n}$ be orthogonal, and let
+$$U^TAV = L = \begin{bmatrix} L_{11} & 0 \\ L_{21} & L_{22} \end{bmatrix}$$
+be lower triangular, with $L_{11} \in \mathbb{R}^{k \times k}$ and $k \le \min\{m, n\}$.
+Partition $V = [V_1 \mid V_2]$ conformably. Let $A = W\Sigma Z^T$ be an SVD of $A$, and let $S$
+be the span of the last $n - k$ columns of $Z$. If $\sigma_{\min}(L_{11}) > 0$ and $\rho_L =
+\|L_{22}\|_2/\sigma_{\min}(L_{11}) < 1$, then
+$$\operatorname{dist}(\operatorname{ran}(V_2), S) \le \frac{\rho_L\|L_{21}\|_2}{(1 -
+  \rho_L^2)\sigma_{\min}(L_{11})}.$$
+
+**Typo.** The source prints $\|L_{12}\|_2$ in the numerator. The block $L_{12}$ is zero, and the
+bound holds with $L_{21}$.
+
+**Generalization.** As for (5.4.10), the separation $\sigma_k(A) > \sigma_{k+1}(A)$ of the
+source is not needed, and $\sigma_{\min}(L_{11}) > 0$ is implicit in the definition of $\rho_L$.
+
+The proof specializes `Matrix.gap_le_of_ulv` for the structure `Matrix.IsULV`. -/
 theorem equation_5_4_11 {A L : Matrix (Fin m) (Fin n) ℝ} {U : Matrix (Fin m) (Fin m) ℝ}
     {V : Matrix (Fin n) (Fin n) ℝ} (hU : U ∈ orthogonalGroup (Fin m) ℝ)
     (hV : V ∈ orthogonalGroup (Fin n) ℝ) (hL : Uᵀ * A * V = L)

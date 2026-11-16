@@ -7,46 +7,143 @@ import Numlib.Eigen.DivideConquer
 import Numlib.FloatingPoint.Program
 
 /-!
-# Golub–Van Loan §4.7: classical methods for Toeplitz systems
+# Golub and Van Loan, Section 4.7: Classical methods for Toeplitz systems
 
-Surface file for [golub2013matrix] §4.7: persymmetry (§4.7.1), Durbin's algorithm for the
-Yule–Walker equations ((4.7.1), Algorithm 4.7.1), Levinson's algorithm for a general right-hand side
-((4.7.2)–(4.7.3), Algorithm 4.7.2), Trench's algorithm for the inverse ((4.7.4)–(4.7.5), Algorithm
-4.7.3), Cybenko's bounds ((4.7.6)–(4.7.7)), the Cybenko–Van Loan method for the smallest eigenvalue
-(§4.7.7, (4.7.8)–(4.7.11)) and the unsymmetric bordering ((4.7.12)–(4.7.13)).
+This module formalizes §4.7 of [golub2013matrix], the solution of linear systems with a symmetric
+positive definite Toeplitz matrix $T_n = (r_{|i-j|}) \in \mathbb{R}^{n \times n}$ with $r_0 = 1$.
+Such a matrix is persymmetric, $\mathcal{E}_n T_n \mathcal{E}_n = T_n^T$ for the exchange
+permutation $\mathcal{E}_n$, and the inverse of a nonsingular Toeplitz matrix is persymmetric
+(§4.7.1). Durbin's algorithm solves the Yule–Walker systems $T_k y^{(k)} = -(r_1, \dots, r_k)^T$ for
+$k = 1, \dots, n$ by bordering: $y^{(k+1)} = (y^{(k)} + \alpha_k \mathcal{E}_k y^{(k)}, \alpha_k)$,
+with a reflection coefficient $\alpha_k$ and a denominator $\beta_k = 1 + r^T y^{(k)} > 0$ ((4.7.1),
+Algorithm 4.7.1). Levinson's algorithm solves $T_n x = b$ for a general $b$ by the same bordering
+((4.7.2)–(4.7.3), Algorithm 4.7.2), and Trench's algorithm computes $T_n^{-1}$ from $y^{(n-1)}$ and
+the persymmetry of the inverse ((4.7.4)–(4.7.5), Algorithm 4.7.3).
+
+The module also formalizes Cybenko's bounds on $\|T_n^{-1}\|_1$ and $\|y\|_1$ in terms of the
+reflection coefficients ((4.7.6)–(4.7.7)), the method of Cybenko and Van Loan for the smallest
+eigenvalue of $T_n$ (§4.7.7: the secular function, Newton's method on it, and the bisection (4.7.11)
+for a starting value), and the bordering for unsymmetric Toeplitz systems ((4.7.12)–(4.7.13)). The
+proofs specialize the backbone modules `Numlib.LinearAlgebra.Matrix.Toeplitz`,
+`Numlib.Direct.Levinson` and `Numlib.Eigen.DivideConquer`.
+
+## Main definitions
+
+* §4.7.1, `GolubVanLoan.Chapter04.IsPersymmetricExchange`: $B$ is persymmetric if
+  $\mathcal{E}_n B \mathcal{E}_n = B^T$.
+* Algorithm 4.7.1, `GolubVanLoan.Chapter04.algorithm_4_7_1`: Durbin's algorithm, with one pass
+  `GolubVanLoan.Chapter04.durbinStep`.
+* Algorithm 4.7.2, `GolubVanLoan.Chapter04.algorithm_4_7_2`: Levinson's algorithm.
+* Algorithm 4.7.3, `GolubVanLoan.Chapter04.algorithm_4_7_3`: Trench's algorithm.
+* §4.7.7, `GolubVanLoan.Chapter04.shiftedToeplitzSeq`: the data of the normalized shifted matrix
+  $T_\lambda = (T - \lambda I)/(1 - \lambda)$.
+* §4.7.7, `GolubVanLoan.Chapter04.bisectionIndex`: the index $m(\lambda)$ of the first nonpositive
+  $\beta_k$ of Durbin's recurrence for $T_\lambda$.
+* (4.7.11), `GolubVanLoan.Chapter04.durbinIndex`: the program that computes $m(\lambda)$.
+* (4.7.11), `GolubVanLoan.Chapter04.durbinBisection`: the bisection for a starting value of Newton's
+  method.
+
+## Main results
+
+* §4.7.1, `GolubVanLoan.Chapter04.isPersymmetric_iff`: the persymmetry of the source is the
+  entrywise `Matrix.IsPersymmetric`.
+* §4.7.1, `GolubVanLoan.Chapter04.isSymm_exchange_mul`: if $B$ is persymmetric, then
+  $\mathcal{E}_n B$ is symmetric.
+* §4.7.1, `GolubVanLoan.Chapter04.isPersymmetric_inv`: the inverse of a persymmetric matrix is
+  persymmetric.
+* §4.7.1, `GolubVanLoan.Chapter04.isPersymmetric_inv_of_isToeplitz`: the inverse of a Toeplitz
+  matrix is persymmetric.
+* §4.7.3, `GolubVanLoan.Chapter04.durbin_step`: the bordering step from order $k$ to order $k + 1$
+  of the Yule–Walker system.
+* §4.7.3, `GolubVanLoan.Chapter04.durbin_denominator_pos`: the congruence that makes the denominator
+  $1 + r^T y$ positive.
+* (4.7.1), `GolubVanLoan.Chapter04.equation_4_7_1`: for positive definite $T_n$, Durbin's recurrence
+  solves the Yule–Walker systems of every order, with positive denominators.
+* §4.7.3, `GolubVanLoan.Chapter04.durbin_beta_succ`: $\beta_{k+1} = (1 - \alpha_k^2) \beta_k$.
+* Algorithm 4.7.1, `GolubVanLoan.Chapter04.algorithm_4_7_1_spec`: the exact run solves
+  $T_n y = -(r_1, \dots, r_n)^T$.
+* (4.7.2)→(4.7.3), `GolubVanLoan.Chapter04.equation_4_7_3`: the bordering step for a general
+  right-hand side.
+* Algorithm 4.7.2, `GolubVanLoan.Chapter04.algorithm_4_7_2_spec`: the exact run solves $T_n x = b$.
+* (4.7.4), `GolubVanLoan.Chapter04.equation_4_7_4`: the last column and the leading block of
+  $T_n^{-1}$ in terms of $y^{(n-1)}$.
+* (4.7.5), `GolubVanLoan.Chapter04.equation_4_7_5`: the recursion for the entries of $T_n^{-1}$ that
+  Trench's algorithm uses.
+* Algorithm 4.7.3, `GolubVanLoan.Chapter04.algorithm_4_7_3_spec`: the exact run computes $T_n^{-1}$
+  on the upper wedge $i \le j$, $i + j \le n + 1$.
+* §4.7.6, `GolubVanLoan.Chapter04.abs_reflection_lt_one`: for positive definite $T_n$, the
+  reflection coefficients satisfy $|\alpha_k| < 1$.
+* (4.7.6), `GolubVanLoan.Chapter04.equation_4_7_6_lower` and
+  `GolubVanLoan.Chapter04.equation_4_7_6_upper`: Cybenko's lower and upper bounds on
+  $\|T_n^{-1}\|_1$.
+* (4.7.7), `GolubVanLoan.Chapter04.equation_4_7_7`: if all reflection coefficients are nonnegative,
+  then $\|y\|_1 = \prod_k (1 + \alpha_k) - 1$.
+* §4.7.7, `GolubVanLoan.Chapter04.secular_lambdaMin`: an eigenvalue of $T$ below the spectrum of $B$
+  is a zero of the secular function $f(\lambda) = 1 - \lambda - r^T (B - \lambda I)^{-1} r$.
+* §4.7.7, `GolubVanLoan.Chapter04.secular_deriv`: $f'(\lambda) = -1 - \|(B - \lambda I)^{-1} r\|_2^2
+  \le -1$ and $f''(\lambda) = -2 r^T (B - \lambda I)^{-3} r \le 0$.
+* (4.7.9)–(4.7.10), `GolubVanLoan.Chapter04.equation_4_7_10`: Newton's method on $f$ converges to
+  $\lambda_{\min}(T)$ monotonically from the right.
+* §4.7.7, `GolubVanLoan.Chapter04.newton_step_eq`: the Newton step through the shifted Yule–Walker
+  system.
+* §4.7.7, `GolubVanLoan.Chapter04.durbin_beta_pos_iff`: $T(1{:}k{+}1, 1{:}k{+}1)$ is positive
+  definite if and only if $\beta_0, \dots, \beta_k > 0$.
+* §4.7.7, `GolubVanLoan.Chapter04.bisectionIndex_spec`: $m(\lambda) = n - 1$ if and only if
+  $B - \lambda I$ is positive definite and $T - \lambda I$ is not, and $m$ is antitone.
+* §4.7.7, `GolubVanLoan.Chapter04.lambdaMin_bracket`: $0 < \lambda_{\min}(T) \le \lambda_{\min}(B)
+  \le 1 - |r_1|$, stated through shifted matrices.
+* (4.7.11), `GolubVanLoan.Chapter04.durbinIndex_spec`: the exact run of
+  `GolubVanLoan.Chapter04.durbinIndex` is $m(\lambda)$.
+* (4.7.11), `GolubVanLoan.Chapter04.equation_4_7_11`: the exact bisection keeps its bracket, and on
+  exit its value satisfies (4.7.9).
+* (4.7.12)→(4.7.13), `GolubVanLoan.Chapter04.equation_4_7_13`: the bordering step for unsymmetric
+  Toeplitz systems.
 
 ## Conventions
 
-`T_k = Matrix.symmToeplitz k r` with `r : ℕ → ℝ`, `r 0 = 1` (the book normalizes the diagonal);
-"`T_n` positive definite" is `(symmToeplitz n r).PosDef`, the book's `ℰ_k` is `Matrix.exchange k`,
-and the book's vector `r = (r₁, …, r_k)` is `fun i : Fin k => r (i + 1)` (0-based). The book's
-`y^{(k)}`, `β_k`, `α_k` of (4.7.1) are the backbone's `Durbin.sol r k`, `Durbin.beta r k`,
-`Durbin.alpha r k`, `ℕ`-indexed and zero from index `k` on; in §4.7.6 the book reuses the letter
-`α_j` for Cybenko's reflection coefficient `y^{(j)}_j`, which is `Durbin.alpha r (j − 1)`.
+* $T_k$ is `Matrix.symmToeplitz k r` with `r : ℕ → ℝ` and `r 0 = 1`; the source normalizes the
+  diagonal to $1$. "$T_n$ is positive definite" is `(Matrix.symmToeplitz n r).PosDef`.
+* The exchange permutation $\mathcal{E}_k$ is `Matrix.exchange k`, and the vector
+  $r = (r_1, \dots, r_k)$ of the source is `fun i : Fin k => r (i + 1)`, indexed from $0$.
+* The vectors $y^{(k)}$ and the scalars $\beta_k$ and $\alpha_k$ of (4.7.1) are the backbone's
+  `Durbin.sol r k`, `Durbin.beta r k` and `Durbin.alpha r k`. They are $\mathbb{N}$-indexed, and
+  `Durbin.sol r k` is zero from index $k$ on.
+* In §4.7.6 the source reuses the letter $\alpha_j$ for Cybenko's reflection coefficient
+  $y^{(j)}_j$, $j = 1, \dots, n$. It is `Durbin.alpha r (j - 1)`.
 
-The algorithms follow the algorithm conventions of `NumlibSurface/GolubVanLoan`: every `+ − × /`
-passes through the rounding hook `rnd`, negation and copies are exact, loops are `List.foldlM`. The
-growing vectors of Algorithms 4.7.1–4.7.3 are held as `ℕ`-indexed state (`y(1:k)` in the entries
-`0, …, k − 1`), the shape of the backbone recurrences, and the output is read back on `Fin n`.
-Every scalar update of the form "`c ± (inner product)`" — Durbin's and Levinson's `α`, Levinson's
-`μ`, Trench's `γ` — is read literally: the inner product is accumulated from `0` by the backbone's
-`FloatingPoint.dotAccum`, then combined with `c` by one rounded `±`. The bisection (4.7.11) is the
-program `durbinBisection` (a `while` loop with `fuel` and a `done` flag), whose index `m(μ)` is
-`durbinIndex`: the passes of Algorithm 4.7.1 (`durbinStep`) on the rounded entries of
-`T_μ = (T − μI)/(1 − μ)`, stopped at the first nonpositive `β`.
+## Implementation notes
 
-## Sources
+* The algorithms follow the algorithm conventions of the library index: every $+$, $-$, $\times$ and
+  $/$ passes through the rounding hook `rnd`, negation and copies are exact, and loops are
+  `List.foldlM`.
+* The growing vectors of Algorithms 4.7.1–4.7.3 are held as $\mathbb{N}$-indexed state, with
+  $y(1{:}k)$ in the entries $0, \dots, k - 1$, which is the shape of the backbone recurrences. The
+  output is read back on `Fin n`.
+* Every scalar update of the form "$c \pm$ inner product" is read literally: in Durbin's and
+  Levinson's $\alpha$, Levinson's $\mu$ and Trench's $\gamma$, the inner product is accumulated from
+  $0$ by `FloatingPoint.dotAccum` and then combined with $c$ by one rounded $\pm$.
+* The bisection (4.7.11) is the program `GolubVanLoan.Chapter04.durbinBisection`. Its `while`
+  loop has a bound `fuel` on the number of passes and a flag `done`.
+* The program `GolubVanLoan.Chapter04.durbinIndex` computes the index $m(\mu)$ of (4.7.11). It
+  runs the passes of Algorithm 4.7.1 (`GolubVanLoan.Chapter04.durbinStep`) on the rounded entries
+  of $T_\mu = (T - \mu I)/(1 - \mu)$ and stops at the first nonpositive $\beta$.
 
-Backbone `Numlib/LinearAlgebra/Matrix/Toeplitz` (persymmetry, `symmToeplitz`),
-`Numlib/Direct/Levinson` (`Durbin`, `Levinson`, `Trench`, Cybenko's bounds),
-`Numlib/Eigen/DivideConquer` (the bordered secular function of §4.7.7 and Newton's method on it).
+## Deviations from the source
 
-## Readings and errata
+* **(4.7.6), lower bound** (generalization). The source prints the two lower bounds with an extra
+  factor $1/(n - 1)$. The bounds hold without it. See `GolubVanLoan.Chapter04.equation_4_7_6_lower`.
+* **The bracket of §4.7.7** (reading). The source writes $\lambda_{\min}(T) < \lambda_{\min}(B)$,
+  which is the hypothesis (4.7.8). The theorem proves $\lambda_{\min}(T) \le \lambda_{\min}(B)$
+  without it. See `GolubVanLoan.Chapter04.lambdaMin_bracket`.
+* **The invariant after (4.7.11)** (correction). The source prints $m(L) \le n - 1 \le m(R)$. Since
+  $m$ is antitone, the update rule maintains $m(R) \le n - 1 \le m(L)$ instead. See
+  `GolubVanLoan.Chapter04.equation_4_7_11`.
 
-The lower bounds of (4.7.6) hold without the printed factor `1/(n − 1)` (stated so, stronger). The
-invariant printed after (4.7.11), `m(L) ≤ n − 1 ≤ m(R)`, is the reverse of what the update rule
-maintains, `m(R) ≤ n − 1 ≤ m(L)`: `m` is antitone. The error approximations of §4.7.6 (`≈`), the
-`O(log n)` Newton count and the lookahead strategy of §4.7.8 are not formalized.
+## Not formalized
+
+* **The error approximations of §4.7.6**, stated with $\approx$.
+* **The count of $O(\log n)$ Newton steps in §4.7.7.**
+* **The lookahead strategy of §4.7.8.**
 -/
 
 open Matrix Finset FloatingPoint
@@ -57,35 +154,54 @@ variable {n : ℕ}
 
 /-! ### §4.7.1 Persymmetry -/
 
-/-- **§4.7.1, persymmetry.** `B ∈ ℝⁿˣⁿ` is *persymmetric* if `ℰ_n B ℰ_n = Bᵀ`. -/
+/-- **Section 4.7.1** of [golub2013matrix], persymmetry. A matrix $B \in \mathbb{R}^{n \times n}$ is
+**persymmetric** if
+$$\mathcal{E}_n B \mathcal{E}_n = B^T,$$
+where $\mathcal{E}_n$ is the exchange permutation matrix `Matrix.exchange n`. -/
 def IsPersymmetricExchange (B : Matrix (Fin n) (Fin n) ℝ) : Prop :=
   exchange n * B * exchange n = Bᵀ
 
-/-- The book's persymmetry is the backbone's entrywise `Matrix.IsPersymmetric`
-(`b_{rev j, rev i} = b_ij`). -/
+/-- **Section 4.7.1** of [golub2013matrix], persymmetry entrywise. A matrix
+$B \in \mathbb{R}^{n \times n}$ is persymmetric in the sense
+$\mathcal{E}_n B \mathcal{E}_n = B^T$ if and only if $b_{n-1-j, n-1-i} = b_{ij}$ for all $i, j$
+(indices from $0$), that is, $B$ is symmetric about the antidiagonal.
+
+The entrywise form is the backbone's `Matrix.IsPersymmetric`, with the reversal `Fin.rev`. -/
 theorem isPersymmetric_iff {B : Matrix (Fin n) (Fin n) ℝ} :
     IsPersymmetricExchange B ↔ B.IsPersymmetric :=
   isPersymmetric_iff_exchange_mul_mul_exchange.symm
 
-/-- §4.7.1: "If `B` is persymmetric, then `ℰ_n B` is symmetric." -/
+/-- **Section 4.7.1** of [golub2013matrix]. If $B \in \mathbb{R}^{n \times n}$ is persymmetric, then
+$\mathcal{E}_n B$ is symmetric. -/
 theorem isSymm_exchange_mul {B : Matrix (Fin n) (Fin n) ℝ} (hB : IsPersymmetricExchange B) :
     (exchange n * B).IsSymm :=
   (isPersymmetric_iff.1 hB).isSymm_exchange_mul
 
-/-- §4.7.1: "the inverse of a persymmetric matrix is also persymmetric",
-`ℰ_n B⁻¹ ℰ_n = (ℰ_n B ℰ_n)⁻¹ = (Bᵀ)⁻¹ = (B⁻¹)ᵀ` (with Mathlib's inverse, singular `B` included). -/
+/-- **Section 4.7.1** of [golub2013matrix]. If $B \in \mathbb{R}^{n \times n}$ is persymmetric, then
+$B^{-1}$ is persymmetric:
+$$\mathcal{E}_n B^{-1} \mathcal{E}_n = (\mathcal{E}_n B \mathcal{E}_n)^{-1} = (B^T)^{-1} =
+  (B^{-1})^T.$$
+
+The inverse is Mathlib's matrix inverse, which is $0$ for a singular matrix; the statement
+therefore holds for singular $B$ as well. -/
 theorem isPersymmetric_inv {B : Matrix (Fin n) (Fin n) ℝ} (hB : IsPersymmetricExchange B) :
     IsPersymmetricExchange B⁻¹ :=
   isPersymmetric_iff.2 (isPersymmetric_iff.1 hB).inv
 
-/-- §4.7.1: "the inverse of a nonsingular Toeplitz matrix is persymmetric". -/
+/-- **Section 4.7.1** of [golub2013matrix]. If $A \in \mathbb{R}^{n \times n}$ is Toeplitz, then
+$A^{-1}$ is persymmetric.
+
+The source states this for nonsingular $A$. With Mathlib's inverse, which is $0$ for a singular
+matrix, it holds for every Toeplitz $A$. "Toeplitz" is `Matrix.IsToeplitz`: $A$ is
+`Matrix.toeplitz` of a two-sided sequence. -/
 theorem isPersymmetric_inv_of_isToeplitz {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsToeplitz) :
     IsPersymmetricExchange A⁻¹ :=
   isPersymmetric_inv (isPersymmetric_iff.2 hA.isPersymmetric)
 
 /-! ### §4.7.3 The Yule–Walker equations -/
 
-/-- The book's `rᵀ ℰ_k y` for `r = (r₁, …, r_k)`: `∑ᵢ r_{k−i} yᵢ` (0-based). -/
+/-- For $r = (r_1, \dots, r_k)$, $r^T \mathcal{E}_k y = \sum_i r_{k-i} y_i$, with indices from $0$.
+-/
 private theorem dotProduct_exchange_mulVec {k : ℕ} (ρ : ℕ → ℝ) (y : Fin k → ℝ) :
     (fun i : Fin k => ρ (i + 1)) ⬝ᵥ (exchange k *ᵥ y) = ∑ i : Fin k, ρ (k - i) * y i := by
   simp only [dotProduct, exchange_mulVec_apply]
@@ -94,13 +210,14 @@ private theorem dotProduct_exchange_mulVec {k : ℕ} (ρ : ℕ → ℝ) (y : Fin
   congr 2
   omega
 
-/-- The leading principal submatrices of a positive definite `T_n` are positive definite. -/
+/-- If $T_n$ is positive definite and $k \le n$, then $T_k$ is positive definite. -/
 private theorem posDef_symmToeplitz_of_le {r : ℕ → ℝ} {k : ℕ}
     (hT : (symmToeplitz n r).PosDef) (hk : k ≤ n) : (symmToeplitz k r).PosDef := by
   rw [← leadingPrincipal_symmToeplitz hk]
   exact hT.submatrix (Fin.castLE_injective hk)
 
-/-- The Yule–Walker system of a positive definite `T_k` has the unique solution `y^{(k)}`. -/
+/-- If $T_k$ is positive definite, then the Yule–Walker system $T_k y = -(r_1, \dots, r_k)^T$ has
+the unique solution $y^{(k)}$. -/
 private theorem eq_sol_of_mulVec_eq {r : ℕ → ℝ} (hr : r 0 = 1) {k : ℕ}
     (hT : (symmToeplitz k r).PosDef) {y : Fin k → ℝ}
     (hy : symmToeplitz k r *ᵥ y = fun i : Fin _ => -r ((i : ℕ) + 1)) :
@@ -109,9 +226,14 @@ private theorem eq_sol_of_mulVec_eq {r : ℕ → ℝ} (hr : r 0 = 1) {k : ℕ}
   refine mulVec_injective_iff_isUnit.2 hT.isUnit ?_
   rw [hy, Durbin.symmToeplitz_mulVec_sol hr hβ]
 
-/-- **§4.7.3, the Yule–Walker bordering.** If `T_k y = −r = −(r₁, …, r_k)ᵀ` and `1 + rᵀy ≠ 0`, then
-with `α = −(r_{k+1} + rᵀ ℰ_k y)/(1 + rᵀ y)` and `z = y + α ℰ_k y`, the vector `[z; α]` solves the
-`(k+1)`st order Yule–Walker system `T_{k+1} [z; α] = −(r₁, …, r_{k+1})ᵀ`. -/
+/-- **Section 4.7.3** of [golub2013matrix], the bordering step of Durbin's algorithm. Let $r_0 = 1$,
+let $y \in \mathbb{R}^k$ solve the Yule–Walker system $T_k y = -r$ with
+$r = (r_1, \dots, r_k)^T$, and assume $1 + r^T y \neq 0$. Let
+$$\alpha = -\frac{r_{k+1} + r^T \mathcal{E}_k y}{1 + r^T y}, \qquad z = y + \alpha \mathcal{E}_k
+  y.$$
+Then $(z, \alpha)$ solves the Yule–Walker system of order $k + 1$:
+$$T_{k+1} \begin{bmatrix} z \\ \alpha \end{bmatrix} = -(r_1, \dots, r_{k+1})^T.$$
+-/
 theorem durbin_step {r : ℕ → ℝ} (hr : r 0 = 1) {k : ℕ} {y : Fin k → ℝ}
     (hy : symmToeplitz k r *ᵥ y = fun i : Fin _ => -r ((i : ℕ) + 1))
     (hβ : 1 + (fun i : Fin k => r (i + 1)) ⬝ᵥ y ≠ 0) {α : ℝ}
@@ -123,10 +245,15 @@ theorem durbin_step {r : ℕ → ℝ} (hr : r 0 = 1) {k : ℕ} {y : Fin k → �
   change α * (1 + (fun i : Fin k => r (i + 1)) ⬝ᵥ y) = _
   rw [hα, div_mul_cancel₀ _ hβ, dotProduct_exchange_mulVec]
 
-/-- **§4.7.3, the denominator of Durbin's step.** "The denominator is positive because `T_{k+1}` is
-positive definite and because
-`[I ℰ_k y; 0 1]ᵀ [T_k ℰ_k r; rᵀ ℰ_k 1] [I ℰ_k y; 0 1] = diag(T_k, 1 + rᵀ y)`": the congruence holds
-whenever `T_k y = −r`, and `0 < 1 + rᵀ y` when `T_{k+1}` is positive definite. -/
+/-- **Section 4.7.3** of [golub2013matrix], the denominator of Durbin's step. Let $r_0 = 1$ and let
+$y \in \mathbb{R}^k$ solve $T_k y = -r$ with $r = (r_1, \dots, r_k)^T$. Then
+$$\begin{bmatrix} I & \mathcal{E}_k y \\ 0 & 1 \end{bmatrix}^T \begin{bmatrix} T_k &
+  \mathcal{E}_k r \\ r^T \mathcal{E}_k & 1 \end{bmatrix} \begin{bmatrix} I & \mathcal{E}_k y \\
+  0 & 1 \end{bmatrix} = \begin{bmatrix} T_k & 0 \\ 0 & 1 + r^T y \end{bmatrix}.$$
+If moreover $T_{k+1}$ is positive definite, then $1 + r^T y > 0$.
+
+The middle matrix is $T_{k+1}$ in block form. The source uses the congruence to show that the
+denominator in Durbin's step is positive. -/
 theorem durbin_denominator_pos {r : ℕ → ℝ} (hr : r 0 = 1) {k : ℕ} {y : Fin k → ℝ}
     (hy : symmToeplitz k r *ᵥ y = fun i : Fin _ => -r ((i : ℕ) + 1)) :
     (fromBlocks 1 (replicateCol (Fin 1) (exchange k *ᵥ y)) 0 1)ᵀ *
@@ -197,9 +324,15 @@ theorem durbin_denominator_pos {r : ℕ → ℝ} (hr : r 0 = 1) {k : ℕ} {y : F
       ← Fin.sum_univ_eq_sum_range (fun i => r (i + 1) * Durbin.sol r k i)] at hb
     exact hb
 
-/-- **(4.7.1).** If `T_n` is positive definite (`r₀ = 1`), Durbin's recurrence produces the
-solutions of the Yule–Walker systems of every order, `T_k y^{(k)} = −r^{(k)} = −(r₁, …, r_k)ᵀ`
-for `k = 1:n`, and its denominators `β_k` are positive. -/
+/-- **Equation (4.7.1)** of [golub2013matrix], Durbin's recurrence. Let $r_0 = 1$ and let $T_n$ be
+positive definite. Then the vectors $y^{(k)}$ of Durbin's recurrence solve the Yule–Walker
+systems of every order,
+$$T_k y^{(k)} = -(r_1, \dots, r_k)^T, \qquad k = 0, \dots, n,$$
+and the denominators satisfy $\beta_k > 0$ for $k = 0, \dots, n-1$.
+
+The recurrence is $y^{(0)} = 0$ and $y^{(k+1)} = (y^{(k)} + \alpha_k \mathcal{E}_k y^{(k)},
+\alpha_k)$, with $\beta_k = 1 + r^T y^{(k)}$ and $\alpha_k = -(r_{k+1} + r^T \mathcal{E}_k
+y^{(k)})/\beta_k$. These are `Durbin.sol`, `Durbin.beta` and `Durbin.alpha`. -/
 theorem equation_4_7_1 {r : ℕ → ℝ} (hr : r 0 = 1) (hT : (symmToeplitz n r).PosDef) :
     (∀ k ≤ n, symmToeplitz k r *ᵥ (fun i : Fin k => Durbin.sol r k i) =
       fun i : Fin _ => -r ((i : ℕ) + 1)) ∧ ∀ k < n, 0 < Durbin.beta r k :=
@@ -207,8 +340,12 @@ theorem equation_4_7_1 {r : ℕ → ℝ} (hr : r 0 = 1) (hT : (symmToeplitz n r)
       (Durbin.beta_pos hr hT j (by omega)).ne',
     fun k hk => Durbin.beta_pos hr hT k hk⟩
 
-/-- §4.7.3, the recursion for the denominators before Algorithm 4.7.1:
-`β_k = (1 − α_{k−1}²) β_{k−1}` (here with `k + 1` for `k`, whenever `β_k ≠ 0`). -/
+/-- **Section 4.7.3** of [golub2013matrix], the recursion for the denominators. For every sequence
+$r$ and every $k$ with $\beta_k \neq 0$,
+$$\beta_{k+1} = (1 - \alpha_k^2) \beta_k.$$
+
+The source writes $\beta_k = (1 - \alpha_{k-1}^2) \beta_{k-1}$ before Algorithm 4.7.1. The
+scalars are `Durbin.beta` and `Durbin.alpha`. -/
 theorem durbin_beta_succ {r : ℕ → ℝ} {k : ℕ} (h : Durbin.beta r k ≠ 0) :
     Durbin.beta r (k + 1) = (1 - Durbin.alpha r k ^ 2) * Durbin.beta r k :=
   Durbin.beta_succ h
@@ -219,16 +356,21 @@ section Programs
 
 variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 
-/-- **One pass of Algorithm 4.7.1**, the book's `k = p + 1`, on the state `(y, α, β)`:
+/-- **Algorithm 4.7.1** of [golub2013matrix], one pass. Pass $p$ is the source's step $k = p + 1$ on
+the state $(y, \alpha, \beta)$:
 ```
 β = (1 − α²) β
 α = −(r(k+1) + r(k:−1:1)ᵀ y(1:k)) / β
 z(1:k) = y(1:k) + α y(k:−1:1)
 y(1:k+1) = [z(1:k); α]
 ```
-with `β` updated as `fl(fl(1 − fl(α²)) β)` and the inner product accumulated from `0`
-(`FloatingPoint.dotAccum`) before one rounded addition of `r(k+1)`. It is also the pass of the
-index `m(λ)` of (4.7.11) (`durbinIndex`). -/
+The program updates $\beta$ as $\mathrm{fl}(\mathrm{fl}(1 - \mathrm{fl}(\alpha^2)) \beta)$. It
+accumulates the inner product $r(k{:}{-1}{:}1)^T y(1{:}k)$ from $0$ (`FloatingPoint.dotAccum`),
+adds $r_{k+1}$ with one rounding, and then divides with one rounding; the negation is exact. The
+entries are $z_i = \mathrm{fl}(y_i + \mathrm{fl}(\alpha y_{k-1-i}))$, indexed from $0$.
+
+The same pass computes the index $m(\lambda)$ of (4.7.11) in
+`GolubVanLoan.Chapter04.durbinIndex`. -/
 noncomputable def durbinStep (r : ℕ → ℝ) (st : (ℕ → ℝ) × ℝ × ℝ) (p : ℕ) :
     M ((ℕ → ℝ) × ℝ × ℝ) := do
   let a ← rnd (st.2.1 * st.2.1)
@@ -243,9 +385,9 @@ noncomputable def durbinStep (r : ℕ → ℝ) (st : (ℕ → ℝ) × ℝ × ℝ
       pure (Function.update z i zi)) st.1
   pure (Function.update z (p + 1) α, α, β)
 
-/-- **Algorithm 4.7.1 (Durbin).** "Given real numbers `r₀, r₁, …, r_n` with `r₀ = 1` such that
-`T = (r_{|i−j|}) ∈ ℝⁿˣⁿ` is positive definite, the following algorithm computes `y ∈ ℝⁿ` such that
-`T y = −[r₁, …, r_n]ᵀ`":
+/-- **Algorithm 4.7.1** of [golub2013matrix] (Durbin). Given real numbers $r_0, r_1, \dots, r_n$
+with $r_0 = 1$ such that $T = (r_{|i-j|}) \in \mathbb{R}^{n \times n}$ is positive definite, the
+algorithm computes $y \in \mathbb{R}^n$ such that $Ty = -(r_1, \dots, r_n)^T$:
 ```
 y(1) = −r(1); β = 1; α = −r(1)
 for k = 1:n−1
@@ -255,10 +397,9 @@ for k = 1:n−1
     y(1:k+1) = [z(1:k); α]
 end
 ```
-Pass `p` of the loop is the book's `k = p + 1`; the state `(y, α, β)` holds `y(1:k)` in the entries
-`0, …, k − 1` of `y : ℕ → ℝ`. The update of `β` is `fl(fl(1 − fl(α²)) β)` and the inner product
-`r(k:−1:1)ᵀ y(1:k)` is accumulated from `0` (`FloatingPoint.dotAccum`) and then added to `r(k+1)`
-with one rounding; one pass is `durbinStep`. -/
+Pass $p$ of the loop is the source's $k = p + 1$, and it is `GolubVanLoan.Chapter04.durbinStep`.
+The state $(y, \alpha, \beta)$ holds $y(1{:}k)$ in the entries $0, \dots, k - 1$ of `y : ℕ → ℝ`,
+and the output is the first $n$ entries of $y$. -/
 noncomputable def algorithm_4_7_1 (n : ℕ) (r : ℕ → ℝ) : M (Fin n → ℝ) := do
   let st ← (List.range (n - 1)).foldlM (fun st p => durbinStep rnd r st p)
     (Function.update 0 0 (-r 1), -r 1, 1)
@@ -266,7 +407,9 @@ noncomputable def algorithm_4_7_1 (n : ℕ) (r : ℕ → ℝ) : M (Fin n → ℝ
 
 end Programs
 
-/-- A loop overwriting the entries `i < m` of a vector by values that do not depend on it. -/
+/-- Overwriting the entries $i < m$ of a vector, one after the other, by values $g_i$ that do not
+depend on the vector gives the vector with entries $g_i$ for $i < m$ and unchanged entries
+otherwise. -/
 private theorem foldl_range_update (g : ℕ → ℝ) (m : ℕ) (y : ℕ → ℝ) :
     (List.range m).foldl (fun (z : ℕ → ℝ) (i : ℕ) => Function.update z i (g i)) y =
       fun i => if i < m then g i else y i := by
@@ -281,7 +424,7 @@ private theorem foldl_range_update (g : ℕ → ℝ) (m : ℕ) (y : ℕ → ℝ)
     · simp
     · simp [h.ne', not_lt.2 h.le, show ¬ i < m + 1 by omega]
 
-/-- A list sum over `List.range m` is the `Finset` sum over `range m`. -/
+/-- A list sum over `List.range m` is the `Finset` sum over `Finset.range m`. -/
 private theorem sum_map_range (f : ℕ → ℝ) (m : ℕ) :
     ((List.range m).map f).sum = ∑ i ∈ range m, f i := by
   induction m with
@@ -297,13 +440,13 @@ private noncomputable def durbinExactStep (r : ℕ → ℝ) (st : (ℕ → ℝ) 
     (fun (z : ℕ → ℝ) (i : ℕ) => Function.update z i (st.1 i + α * st.1 (p - i))) st.1)
     (p + 1) α, α, β)
 
-/-- The exact semantics of one pass of Algorithm 4.7.1. -/
+/-- In exact arithmetic, one pass of Algorithm 4.7.1 is `GolubVanLoan.Chapter04.durbinExactStep`. -/
 private theorem durbinStep_id (r : ℕ → ℝ) (st : (ℕ → ℝ) × ℝ × ℝ) (p : ℕ) :
     Id.run (durbinStep pure r st p) = durbinExactStep r st p := by
   simp only [durbinStep, dotAccum_pure, pure_bind, List.foldlM_pure]
   rfl
 
-/-- The exact semantics of Algorithm 4.7.1 is a fold of its exact passes. -/
+/-- In exact arithmetic, Algorithm 4.7.1 is a fold of its exact passes. -/
 private theorem algorithm_4_7_1_id (n : ℕ) (r : ℕ → ℝ) :
     Id.run (algorithm_4_7_1 pure n r) =
       fun i : Fin n => ((List.range (n - 1)).foldl (durbinExactStep r)
@@ -311,7 +454,8 @@ private theorem algorithm_4_7_1_id (n : ℕ) (r : ℕ → ℝ) :
   simp only [algorithm_4_7_1, Id.run_bind, List.idRun_foldlM, durbinStep_id]
   rfl
 
-/-- After `p` exact passes, the state of Algorithm 4.7.1 is `(y^{(p+1)}, α_p, β_p)`. -/
+/-- If $\beta_j \neq 0$ for $j < p$, then after $p$ exact passes the state of Algorithm 4.7.1 is
+$(y^{(p+1)}, \alpha_p, \beta_p)$. -/
 private theorem durbin_foldl {r : ℕ → ℝ} (p : ℕ) (hβ : ∀ j < p, Durbin.beta r j ≠ 0) :
     (List.range p).foldl (durbinExactStep r) (Function.update 0 0 (-r 1), -r 1, 1) =
       (Durbin.sol r (p + 1), Durbin.alpha r p, Durbin.beta r p) := by
@@ -348,9 +492,14 @@ private theorem durbin_foldl {r : ℕ → ℝ} (p : ℕ) (hβ : ∀ j < p, Durbi
     · simp
     · simp [h.ne', show ¬ i < p + 1 by omega, Durbin.sol_of_le r h.le]
 
-/-- **Exact correctness of Algorithm 4.7.1**: if `T_n` is positive definite (`r₀ = 1`), the exact
-run solves the Yule–Walker system `T_n y = −(r₁, …, r_n)ᵀ`. After the pass `k` the state is
-`(y^{(k+1)}, α_k, β_k)` of (4.7.1), the book's update `β ← (1 − α²) β` being `Durbin.beta_succ`. -/
+/-- **Algorithm 4.7.1** of [golub2013matrix], exact correctness. Let $r_0 = 1$ and let $T_n$ be
+positive definite. In exact arithmetic, Algorithm 4.7.1 returns a vector $y \in \mathbb{R}^n$
+with
+$$T_n y = -(r_1, \dots, r_n)^T.$$
+
+After $k$ passes of the loop, that is, after the source's step $k$, the state is
+$(y^{(k+1)}, \alpha_k, \beta_k)$ of (4.7.1); the update $\beta \leftarrow (1 - \alpha^2) \beta$
+of the source is `Durbin.beta_succ`. -/
 theorem algorithm_4_7_1_spec {r : ℕ → ℝ} (hr : r 0 = 1) (hT : (symmToeplitz n r).PosDef) :
     symmToeplitz n r *ᵥ Id.run (algorithm_4_7_1 pure n r) = fun i : Fin _ => -r ((i : ℕ) + 1) := by
   rcases Nat.eq_zero_or_pos n with rfl | hn
@@ -364,10 +513,17 @@ theorem algorithm_4_7_1_spec {r : ℕ → ℝ} (hr : r 0 = 1) (hT : (symmToeplit
 
 /-! ### §4.7.4 The general right-hand side -/
 
-/-- **(4.7.2)→(4.7.3).** If `T_k x = b` (4.7.2), `T_k y = −r` and `1 + rᵀ y ≠ 0`, then (4.7.3),
-`[T_k ℰ_k r; rᵀ ℰ_k 1] [v; μ] = [b; b_{k+1}]`, is solved by `v = x + μ ℰ_k y` with
-`μ = (b_{k+1} − rᵀ ℰ_k x)/(1 + rᵀ y)`: "we can effect the transition from (4.7.2) to (4.7.3) in
-`O(k)` flops". -/
+/-- **Equations (4.7.2)→(4.7.3)** of [golub2013matrix], the bordering step for a general right-hand
+side. Let $r_0 = 1$, let $x, y, b \in \mathbb{R}^k$ and $b_{k+1} \in \mathbb{R}$, and let
+$r = (r_1, \dots, r_k)^T$. Assume that $T_k x = b$ (4.7.2), that $T_k y = -r$, and that
+$1 + r^T y \neq 0$. Let
+$$\mu = \frac{b_{k+1} - r^T \mathcal{E}_k x}{1 + r^T y}, \qquad v = x + \mu \mathcal{E}_k y.$$
+Then $(v, \mu)$ solves the system (4.7.3) of order $k + 1$:
+$$\begin{bmatrix} T_k & \mathcal{E}_k r \\ r^T \mathcal{E}_k & 1 \end{bmatrix} \begin{bmatrix} v
+  \\ \mu \end{bmatrix} = \begin{bmatrix} b \\ b_{k+1} \end{bmatrix}.$$
+
+The source remarks that the transition from (4.7.2) to (4.7.3) costs $O(k)$ flops. The block
+matrix is $T_{k+1}$. -/
 theorem equation_4_7_3 {r : ℕ → ℝ} (hr : r 0 = 1) {k : ℕ} {x y b : Fin k → ℝ} (b' : ℝ)
     (hx : symmToeplitz k r *ᵥ x = b)
     (hy : symmToeplitz k r *ᵥ y = fun i : Fin _ => -r ((i : ℕ) + 1))
@@ -383,9 +539,9 @@ section Programs
 
 variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 
-/-- **Algorithm 4.7.2 (Levinson).** "Given `b ∈ ℝⁿ` and real numbers `1 = r₀, r₁, …, r_n` such that
-`T = (r_{|i−j|}) ∈ ℝⁿˣⁿ` is positive definite, the following algorithm computes `x ∈ ℝⁿ` such that
-`T x = b`":
+/-- **Algorithm 4.7.2** of [golub2013matrix] (Levinson). Given $b \in \mathbb{R}^n$ and real numbers
+$1 = r_0, r_1, \dots, r_n$ such that $T = (r_{|i-j|}) \in \mathbb{R}^{n \times n}$ is positive
+definite, the algorithm computes $x \in \mathbb{R}^n$ such that $Tx = b$:
 ```
 y(1) = −r(1); x(1) = b(1); β = 1; α = −r(1)
 for k = 1:n−1
@@ -400,10 +556,12 @@ for k = 1:n−1
     end
 end
 ```
-Pass `p` is the book's `k = p + 1`; the state `(x, y, α, β)` holds `x(1:k)`, `y(1:k)` in the
-entries `0, …, k − 1` of `ℕ`-indexed vectors, as in `algorithm_4_7_1`. The inner product
-`r(1:k)ᵀ x(k:−1:1)` is accumulated from `0` (`FloatingPoint.dotAccum`) and then subtracted from
-`b(k+1)` with one rounding; the one in `α` is accumulated from `0` and then added to `r(k+1)`. -/
+Pass $p$ is the source's $k = p + 1$. The state $(x, y, \alpha, \beta)$ holds $x(1{:}k)$ and
+$y(1{:}k)$ in the entries $0, \dots, k - 1$ of $\mathbb{N}$-indexed vectors, as in
+`GolubVanLoan.Chapter04.algorithm_4_7_1`. The inner product $r(1{:}k)^T x(k{:}{-1}{:}1)$ is
+accumulated from $0$ (`FloatingPoint.dotAccum`) and then subtracted from $b_{k+1}$ with one
+rounding. The inner product in $\alpha$ is accumulated from $0$ and then added to $r_{k+1}$ with
+one rounding. -/
 noncomputable def algorithm_4_7_2 (n : ℕ) (r : ℕ → ℝ) (b : Fin n → ℝ) : M (Fin n → ℝ) := do
   let bv : ℕ → ℝ := fun j => if h : j < n then b ⟨j, h⟩ else 0
   let st ← (List.range (n - 1)).foldlM
@@ -450,7 +608,7 @@ private noncomputable def levinsonExactStep (n : ℕ) (r bv : ℕ → ℝ)
       (p + 1) α, α, β)
   else (Function.update v (p + 1) μ, st.2.1, st.2.2.1, β)
 
-/-- The exact semantics of Algorithm 4.7.2 is a fold of its exact passes. -/
+/-- In exact arithmetic, Algorithm 4.7.2 is a fold of its exact passes. -/
 private theorem algorithm_4_7_2_id (n : ℕ) (r : ℕ → ℝ) (b : Fin n → ℝ) :
     Id.run (algorithm_4_7_2 pure n r b) =
       fun i : Fin n => ((List.range (n - 1)).foldl
@@ -460,7 +618,8 @@ private theorem algorithm_4_7_2_id (n : ℕ) (r : ℕ → ℝ) (b : Fin n → �
   simp only [algorithm_4_7_2, dotAccum_pure, pure_bind, List.foldlM_pure, ite_pure]
   rfl
 
-/-- Reversing the order of an inner product of length `p + 1`. -/
+/-- Reversing the order of an inner product of length $p + 1$: $\sum_{j=0}^{p} f_{j+1} g_{p-j} =
+\sum_{i=0}^{p} f_{p+1-i} g_i$. -/
 private theorem sum_range_succ_reflect (f g : ℕ → ℝ) (p : ℕ) :
     ∑ j ∈ range (p + 1), f (j + 1) * g (p - j) = ∑ i ∈ range (p + 1), f (p + 1 - i) * g i := by
   rw [← Finset.sum_range_reflect (fun i => f (p + 1 - i) * g i) (p + 1)]
@@ -468,7 +627,7 @@ private theorem sum_range_succ_reflect (f g : ℕ → ℝ) (p : ℕ) :
   have := mem_range.1 hj
   rw [show p + 1 - (p + 1 - 1 - j) = j + 1 by omega, show p + 1 - 1 - j = p - j by omega]
 
-/-- Levinson's solutions vanish from index `k` on. -/
+/-- Levinson's solution $x^{(k)}$ vanishes from index $k$ on. -/
 private theorem levinson_sol_of_le {r b : ℕ → ℝ} {k i : ℕ} (h : k ≤ i) :
     Levinson.sol r b k i = 0 := by
   cases k with
@@ -477,7 +636,8 @@ private theorem levinson_sol_of_le {r b : ℕ → ℝ} {k i : ℕ} (h : k ≤ i)
     rw [Levinson.sol_succ]
     split_ifs <;> first | rfl | omega
 
-/-- The update of Durbin's solution in the book's order: `y^{(k+1)} = [y + α_k ℰ y; α_k]`. -/
+/-- The update of Durbin's solution in the order of the source: $y^{(k+1)} = (y^{(k)} + \alpha_k
+\mathcal{E}_k y^{(k)}, \alpha_k)$. -/
 private theorem durbin_sol_update (r : ℕ → ℝ) (p : ℕ) :
     Function.update ((List.range (p + 1)).foldl (fun (z : ℕ → ℝ) (i : ℕ) =>
         Function.update z i (Durbin.sol r (p + 1) i +
@@ -491,8 +651,9 @@ private theorem durbin_sol_update (r : ℕ → ℝ) (p : ℕ) :
   · simp
   · simp [h.ne', show ¬ i < p + 1 by omega, Durbin.sol_of_le r h.le]
 
-/-- After `p` exact passes of Algorithm 4.7.2, `x = x^{(p+1)}` (Levinson), `β = β_p`, and — unless
-the last pass skipped it — `(y, α) = (y^{(p+1)}, α_p)` (Durbin). -/
+/-- If $\beta_j \neq 0$ for $j < n$, then after $p \le n - 1$ exact passes of Algorithm 4.7.2 the
+state has $x = x^{(p+1)}$ of Levinson's recurrence and $\beta = \beta_p$, and, if $p < n - 1$,
+also $(y, \alpha) = (y^{(p+1)}, \alpha_p)$ of Durbin's recurrence. -/
 private theorem levinson_foldl {n : ℕ} {r bv : ℕ → ℝ} (hβ : ∀ j < n, Durbin.beta r j ≠ 0) :
     ∀ p, p ≤ n - 1 →
       ((List.range p).foldl (levinsonExactStep n r bv)
@@ -569,9 +730,15 @@ private theorem levinson_foldl {n : ℕ} {r bv : ℕ → ℝ} (hβ : ∀ j < n, 
       exact ⟨hx, hb, fun _ => ⟨durbin_sol_update r p, rfl⟩⟩
     · exact ⟨hx, hb, fun h => absurd h hlt⟩
 
-/-- **Exact correctness of Algorithm 4.7.2**: if `T_n` is positive definite (`r₀ = 1`), the exact
-run solves `T_n x = b`. After the pass `k` the state is `(x^{(k+1)}, y^{(k+1)}, α_k, β_k)` of
-Levinson's and Durbin's recurrences (`Levinson.sol`, `Durbin.sol`). -/
+/-- **Algorithm 4.7.2** of [golub2013matrix], exact correctness. Let $r_0 = 1$, let $T_n$ be
+positive definite, and let $b \in \mathbb{R}^n$. In exact arithmetic, Algorithm 4.7.2 returns a
+vector $x \in \mathbb{R}^n$ with
+$$T_n x = b.$$
+
+After $k$ passes of the loop, that is, after the source's step $k$, the state has
+$x = x^{(k+1)}$ and $\beta = \beta_k$ of Levinson's and Durbin's recurrences (`Levinson.sol`,
+`Durbin.beta`). For $k < n - 1$ it also has $(y, \alpha) = (y^{(k+1)}, \alpha_k)$ of Durbin's
+recurrence (`Durbin.sol`, `Durbin.alpha`); the last pass does not update $y$ and $\alpha$. -/
 theorem algorithm_4_7_2_spec {r : ℕ → ℝ} (hr : r 0 = 1) (hT : (symmToeplitz n r).PosDef)
     (b : Fin n → ℝ) : symmToeplitz n r *ᵥ Id.run (algorithm_4_7_2 pure n r b) = b := by
   rcases Nat.eq_zero_or_pos n with rfl | hn
@@ -588,9 +755,17 @@ theorem algorithm_4_7_2_spec {r : ℕ → ℝ} (hr : r 0 = 1) (hT : (symmToeplit
 
 /-! ### §4.7.5 The inverse -/
 
-/-- **(4.7.4)** and the formulas after it: for positive definite `T_n` (`n = m + 1`, `r₀ = 1`),
-partition `T_n⁻¹ = [B v; vᵀ γ]`; if `y` solves the order-`(n−1)` Yule–Walker system
-`T_{n−1} y = −r`, then `γ = 1/(1 + rᵀ y)`, `v = γ ℰ_{n−1} y`, and `B = T_{n−1}⁻¹ + v vᵀ/γ`. -/
+/-- **Equation (4.7.4)** of [golub2013matrix], with the formulas after it. Let $r_0 = 1$, let
+$n = m + 1$, and let $T_n$ be positive definite. Partition
+$$T_n^{-1} = \begin{bmatrix} B & v \\ v^T & \gamma \end{bmatrix}, \qquad B \in \mathbb{R}^{m
+  \times m}.$$
+Let $y \in \mathbb{R}^m$ solve the Yule–Walker system $T_m y = -(r_1, \dots, r_m)^T$. Then
+$$\gamma = \frac{1}{1 + r^T y}, \qquad v = \gamma \mathcal{E}_m y, \qquad B = T_m^{-1} + \frac{v
+  v^T}{\gamma}.$$
+
+The theorem takes $\gamma$ and $v$ defined by the first two formulas, and states that the last
+column of $T_n^{-1}$ is $(v, \gamma)$ and that its leading $m \times m$ block is
+$T_m^{-1} + \gamma^{-1} v v^T$. -/
 theorem equation_4_7_4 {r : ℕ → ℝ} (hr : r 0 = 1) {m : ℕ}
     (hT : (symmToeplitz (m + 1) r).PosDef) {y : Fin m → ℝ}
     (hy : symmToeplitz m r *ᵥ y = fun i : Fin _ => -r ((i : ℕ) + 1)) {γ : ℝ} {v : Fin m → ℝ}
@@ -608,9 +783,14 @@ theorem equation_4_7_4 {r : ℕ → ℝ} (hr : r 0 = 1) {m : ℕ}
   rw [hγ', hv']
   exact ⟨Trench.inv_symmToeplitz_last hr hβ, Trench.inv_symmToeplitz_eq hr hβ⟩
 
-/-- **(4.7.5).** With `T_n⁻¹ = [B v; vᵀ γ]` as in (4.7.4) (`n = m + 1`),
-`b_ij = b_{n−j, n−i} + (v_i v_j − v_{n−j} v_{n−i})/γ`; 0-based, the reflected index `n − j` of the
-book is `Fin.rev j` in `B`'s index set `Fin m`. -/
+/-- **Equation (4.7.5)** of [golub2013matrix]. Let $r_0 = 1$, let $n = m + 1$, let $T_n$ be positive
+definite, and partition $T_n^{-1} = \begin{bmatrix} B & v \\ v^T & \gamma \end{bmatrix}$ as in
+(4.7.4). Then for $i, j = 1, \dots, m$,
+$$b_{ij} = b_{n-j, n-i} + \frac{v_i v_j - v_{n-j} v_{n-i}}{\gamma}.$$
+
+The indices here start at $1$, as in the source. In the Lean statement they start at $0$, and
+the reflected index $n - j$ is `Fin.rev j` in the index set `Fin m` of $B$. The entries
+$b_{ij}$, $v_i$ and $\gamma$ are read off $T_n^{-1}$. -/
 theorem equation_4_7_5 {r : ℕ → ℝ} (hr : r 0 = 1) {m : ℕ}
     (hT : (symmToeplitz (m + 1) r).PosDef) (i j : Fin m) :
     (symmToeplitz (m + 1) r)⁻¹ i.castSucc j.castSucc =
@@ -634,21 +814,23 @@ theorem equation_4_7_5 {r : ℕ → ℝ} (hr : r 0 = 1) {m : ℕ}
   rw [hcol, hcol, hcol, hcol, hlast]
   exact Trench.inv_symmToeplitz_apply_succ hr hβ i j
 
-/-- The first row of `B` in Trench's algorithm: `B(1, 1) = γ`, `B(1, 2:n) = v(n−1:−1:1)ᵀ`. -/
+/-- The first row of $B$ in Trench's algorithm: $B(1, 1) = \gamma$ and
+$B(1, 2{:}n) = v(n{-}1{:}{-1}{:}1)^T$. -/
 private def trenchRow0 (n : ℕ) (γ : ℝ) (v : ℕ → ℝ) : ℕ → ℕ → ℝ :=
   Function.update 0 0 fun j => if j = 0 then γ else if j < n then v (n - 1 - j) else 0
 
-/-- The row `i` of Trench's wedge loop in exact arithmetic. -/
+/-- The row $i$ of the loop of Trench's algorithm, in exact arithmetic. -/
 private noncomputable def trenchStep (n : ℕ) (γ : ℝ) (v : ℕ → ℝ) (B : ℕ → ℕ → ℝ) (i : ℕ) :
     ℕ → ℕ → ℝ :=
   (List.range' i (n - 2 * i)).foldl (fun (B : ℕ → ℕ → ℝ) (j : ℕ) =>
     Function.update B i (Function.update (B i) j
       (B (i - 1) (j - 1) + (v (n - 1 - j) * v (n - 1 - i) - v (i - 1) * v (j - 1)) / γ))) B
 
-/-- The book's computation of `B` from its "edges" to its "interior" in exact arithmetic, on
-`ℕ`-indexed entries: the first row `B(1, 1) = γ`, `B(1, 2:n) = v(n−1:−1:1)ᵀ`, then for
-`i = 2:⌊(n−1)/2⌋+1`, `j = i:n−i+1`,
-`B(i, j) = B(i−1, j−1) + (v(n+1−j) v(n+1−i) − v(i−1) v(j−1))/γ` (0-based here). -/
+/-- Trench's computation of $B$ from its edges to its interior, in exact arithmetic and with
+$\mathbb{N}$-indexed entries: the first row, and then for
+$i = 2, \dots, \lfloor (n-1)/2 \rfloor + 1$ and $j = i, \dots, n - i + 1$, $B(i, j) = B(i-1,
+j-1) + (v_{n+1-j} v_{n+1-i} - v_{i-1} v_{j-1})/\gamma$ (indices from $1$ here, from $0$ in the
+code). -/
 private noncomputable def trenchWedge (n : ℕ) (γ : ℝ) (v : ℕ → ℝ) : ℕ → ℕ → ℝ :=
   (List.range' 1 ((n - 1) / 2)).foldl (trenchStep n γ v) (trenchRow0 n γ v)
 
@@ -656,9 +838,10 @@ section Programs
 
 variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 
-/-- **Algorithm 4.7.3 (Trench).** "Given real numbers `1 = r₀, r₁, …, r_n` such that
-`T = (r_{|i−j|}) ∈ ℝⁿˣⁿ` is positive definite, the following algorithm computes `B = T_n⁻¹`. Only
-those `b_ij` for which `i ≤ j` and `i + j ≤ n + 1` are computed":
+/-- **Algorithm 4.7.3** of [golub2013matrix] (Trench). Given real numbers $1 = r_0, r_1, \dots, r_n$
+such that $T = (r_{|i-j|}) \in \mathbb{R}^{n \times n}$ is positive definite, the algorithm
+computes $B = T_n^{-1}$. Only the entries $b_{ij}$ with $i \le j$ and $i + j \le n + 1$ are
+computed:
 ```
 Use Algorithm 4.7.1 to solve T_{n−1} y = −(r₁, …, r_{n−1})ᵀ.
 γ = 1/(1 + r(1:n−1)ᵀ y(1:n−1))
@@ -671,8 +854,9 @@ for i = 2:floor((n−1)/2) + 1
     end
 end
 ```
-0-based, with `B` held as `ℕ`-indexed entries (the first row is copied, not computed); the entries
-outside the "upper wedge" are left `0`. -/
+The program is indexed from $0$, and holds $B$ as $\mathbb{N}$-indexed entries. The first row is
+copied, not computed. The entries outside the upper wedge are $0$. The inner product $r^T y$ is
+accumulated from $0$ (`FloatingPoint.dotAccum`) and then added to $1$ with one rounding. -/
 noncomputable def algorithm_4_7_3 (n : ℕ) (r : ℕ → ℝ) : M (Matrix (Fin n) (Fin n) ℝ) := do
   let y ← algorithm_4_7_1 rnd (n - 1) r
   let yv : ℕ → ℝ := fun j => if h : j < n - 1 then y ⟨j, h⟩ else 0
@@ -695,11 +879,11 @@ noncomputable def algorithm_4_7_3 (n : ℕ) (r : ℕ → ℝ) : M (Matrix (Fin n
 
 end Programs
 
-/-- The exact `γ = 1/(1 + rᵀ y)` of Algorithm 4.7.3. -/
+/-- The exact $\gamma = 1/(1 + r^T y)$ of Algorithm 4.7.3. -/
 private noncomputable def trenchGamma (n : ℕ) (r yv : ℕ → ℝ) : ℝ :=
   1 / (1 + (0 + ((List.range (n - 1)).map fun j => r (j + 1) * yv j).sum))
 
-/-- The exact `v = γ y(n−1:−1:1)` of Algorithm 4.7.3. -/
+/-- The exact $v = \gamma\, y(n{-}1{:}{-1}{:}1)$ of Algorithm 4.7.3. -/
 private def trenchV (n : ℕ) (γ : ℝ) (yv : ℕ → ℝ) : ℕ → ℝ :=
   (List.range (n - 1)).foldl
     (fun (v : ℕ → ℝ) (i : ℕ) => Function.update v i (γ * yv (n - 2 - i))) 0
@@ -716,8 +900,8 @@ private theorem algorithm_4_7_3_id (n : ℕ) (r : ℕ → ℝ) :
   simp only [algorithm_4_7_3, dotAccum_pure, pure_bind, List.foldlM_pure]
   rfl
 
-/-- The exact run of Algorithm 4.7.1 is Durbin's solution, when the recurrence does not break
-down. -/
+/-- If $\beta_j \neq 0$ for $j < n - 1$, then the exact run of Algorithm 4.7.1 returns Durbin's
+solution $y^{(n)}$. -/
 private theorem algorithm_4_7_1_id_eq_sol {r : ℕ → ℝ} (n : ℕ)
     (hβ : ∀ j < n - 1, Durbin.beta r j ≠ 0) :
     Id.run (algorithm_4_7_1 pure n r) = fun i : Fin n => Durbin.sol r n i := by
@@ -729,8 +913,8 @@ private theorem algorithm_4_7_1_id_eq_sol {r : ℕ → ℝ} (n : ℕ)
   change Durbin.sol r (n - 1 + 1) i = _
   rw [Nat.sub_add_cancel hn]
 
-/-- One row of the wedge loop: the entries `(i, l)`, `i ≤ l < i + c`, get `B(i−1, l−1) + e l`, and
-nothing else changes. -/
+/-- One row of the loop of Trench's algorithm: the entries $(i, l)$ with $i \le l < i + c$ become
+$B(i-1, l-1) + e_l$, and no other entry changes. -/
 private theorem foldl_trenchRow (i : ℕ) (hi : 1 ≤ i) (e : ℕ → ℝ) (B : ℕ → ℕ → ℝ) (c : ℕ) :
     (∀ k l, (k ≠ i ∨ l < i ∨ i + c ≤ l) →
       (List.range' i c).foldl (fun (B : ℕ → ℕ → ℝ) (j : ℕ) =>
@@ -764,9 +948,9 @@ private theorem foldl_trenchRow (i : ℕ) (hi : 1 ≤ i) (e : ℕ → ℝ) (B : 
       · rw [Function.update_of_ne hl]
         exact ih2 l h1 (by omega)
 
-/-- **The wedge loop computes the wedge.** If `g` is the book's first row `(γ, v(n−1), …, v(1))`
-on row `0` and satisfies the recursion (4.7.5) of Trench's algorithm on the wedge, then the loop
-reproduces `g` on the wedge `i ≤ j`, `i + j ≤ n − 1`. -/
+/-- If $g$ has the first row $(\gamma, v_{n-1}, \dots, v_1)$ of Trench's algorithm on row $0$ and
+satisfies the recursion (4.7.5) on the wedge, then the loop of Trench's algorithm reproduces $g$
+on the wedge $i \le j$, $i + j \le n - 1$ (indices from $0$). -/
 private theorem trenchWedge_eq {n : ℕ} (hn : 1 ≤ n) {γ : ℝ} {v : ℕ → ℝ} {g : ℕ → ℕ → ℝ}
     (h0 : ∀ j, j ≤ n - 1 → g 0 j = if j = 0 then γ else v (n - 1 - j))
     (hrec : ∀ i j, 1 ≤ i → i ≤ j → i + j ≤ n - 1 →
@@ -801,11 +985,16 @@ private theorem trenchWedge_eq {n : ℕ} (hn : 1 ≤ n) {γ : ℝ} {v : ℕ → 
         ih (by omega) (1 + 1 * c - 1) (j - 1) (by omega) (by omega) (by omega),
         hrec (1 + 1 * c) j (by omega) (by omega) (by omega)]
 
-/-- **Exact correctness of Algorithm 4.7.3**: for positive definite `T_n` (`r₀ = 1`), the computed
-`B` agrees with `T_n⁻¹` on the "upper wedge" `i ≤ j`, `i + j ≤ n − 1` (0-based form of the book's
-`i ≤ j`, `i + j ≤ n + 1`); the other entries follow by symmetry and persymmetry
-(`isPersymmetric_inv_of_isToeplitz`). The first row is (4.7.4) read through persymmetry, and each
-further entry is (4.7.5) applied to the reflected entry. -/
+/-- **Algorithm 4.7.3** of [golub2013matrix], exact correctness. Let $r_0 = 1$ and let $T_n$ be
+positive definite. In exact arithmetic, the matrix $B$ that Algorithm 4.7.3 returns agrees with
+$T_n^{-1}$ on the upper wedge:
+$$b_{ij} = (T_n^{-1})_{ij} \qquad \text{for } i \le j, \; i + j \le n + 1,$$
+with indices from $1$ as in the source.
+
+In the Lean statement the indices start at $0$, and the wedge is $i \le j$, $i + j \le n - 1$.
+The other entries of $T_n^{-1}$ follow by symmetry and persymmetry
+(`GolubVanLoan.Chapter04.isPersymmetric_inv_of_isToeplitz`). The first row is (4.7.4) read
+through persymmetry, and each further entry is (4.7.5) applied to the reflected entry. -/
 theorem algorithm_4_7_3_spec {r : ℕ → ℝ} (hr : r 0 = 1) (hT : (symmToeplitz n r).PosDef)
     (i j : Fin n) (hij : i ≤ j) (hw : (i : ℕ) + j ≤ n - 1) :
     Id.run (algorithm_4_7_3 pure n r) i j = (symmToeplitz n r)⁻¹ i j := by
@@ -890,17 +1079,27 @@ theorem algorithm_4_7_3_spec {r : ℕ → ℝ} (hr : r 0 = 1) (hT : (symmToeplit
 
 /-! ### §4.7.6 Stability issues -/
 
-/-- **§4.7.6.** "In exact arithmetic these scalars satisfy `|α_k| < 1`": for positive definite
-`T_n`, the reflection coefficients determined by `T_n` (Cybenko's `α_j`, `j = 1:n−1`, the
-backbone's `Durbin.alpha r k`, `k + 1 < n`) lie in `(−1, 1)`. -/
+/-- **Section 4.7.6** of [golub2013matrix]. Let $r_0 = 1$ and let $T_n$ be positive definite. Then
+the reflection coefficients satisfy
+$$|\alpha_k| < 1, \qquad k = 0, \dots, n - 2.$$
+
+The source states that "in exact arithmetic these scalars satisfy $|\alpha_k| < 1$". Here
+$\alpha_k$ is `Durbin.alpha r k`, which is Cybenko's $\alpha_{k+1}$; the range $k + 1 < n$ gives
+Cybenko's $\alpha_1, \dots, \alpha_{n-1}$. -/
 theorem abs_reflection_lt_one {r : ℕ → ℝ} (hr : r 0 = 1) (hT : (symmToeplitz n r).PosDef)
     {k : ℕ} (hk : k + 1 < n) : |Durbin.alpha r k| < 1 :=
   Durbin.abs_alpha_lt_one hr hT hk
 
-/-- **(4.7.6), left-hand side**, for `n = m + 1`:
-`max{1/∏_{j=1}^{n−1} (1 − α_j²), 1/∏_{j=1}^{n−1} (1 − α_j)} ≤ ‖T_n⁻¹‖₁`, stronger than the printed
-bound, which carries an extra factor `1/(n − 1)` in both terms. Cybenko's `α_j` is
-`Durbin.alpha r (j − 1)`. -/
+/-- **Equation (4.7.6)** of [golub2013matrix], the lower bounds. Let $r_0 = 1$, let $n = m + 1$, and
+let $T_n$ be positive definite, with Cybenko's reflection coefficients
+$\alpha_1, \dots, \alpha_{n-1}$. Then
+$$\max\left\{ \frac{1}{\prod_{j=1}^{n-1} (1 - \alpha_j^2)}, \; \frac{1}{\prod_{j=1}^{n-1} (1 -
+  \alpha_j)} \right\} \le \|T_n^{-1}\|_1.$$
+
+**Generalization.** The source prints both lower bounds with an extra factor $1/(n - 1)$. The
+bounds hold without it, and the printed bounds follow.
+
+Cybenko's $\alpha_j$ is `Durbin.alpha r (j - 1)`, and the norm is `Matrix.lpOpNorm 1`. -/
 theorem equation_4_7_6_lower {r : ℕ → ℝ} (hr : r 0 = 1) {m : ℕ}
     (hT : (symmToeplitz (m + 1) r).PosDef) :
     max (1 / ∏ j ∈ range m, (1 - Durbin.alpha r j ^ 2))
@@ -908,18 +1107,24 @@ theorem equation_4_7_6_lower {r : ℕ → ℝ} (hr : r 0 = 1) {m : ℕ}
       lpOpNorm 1 (symmToeplitz (m + 1) r)⁻¹ :=
   Durbin.max_inv_prod_le_lpOpNorm_one_inv hr hT
 
-/-- **(4.7.6), right-hand side** (Cybenko's bound), for `n = m + 1`:
-`‖T_n⁻¹‖₁ ≤ ∏_{j=1}^{n−1} (1 + |α_j|)/(1 − |α_j|)`, Cybenko's `α_j` being
-`Durbin.alpha r (j − 1)`. -/
+/-- **Equation (4.7.6)** of [golub2013matrix], the upper bound (Cybenko's bound). Let $r_0 = 1$, let
+$n = m + 1$, and let $T_n$ be positive definite, with Cybenko's reflection coefficients
+$\alpha_1, \dots, \alpha_{n-1}$. Then
+$$\|T_n^{-1}\|_1 \le \prod_{j=1}^{n-1} \frac{1 + |\alpha_j|}{1 - |\alpha_j|}.$$
+
+Cybenko's $\alpha_j$ is `Durbin.alpha r (j - 1)`, and the norm is `Matrix.lpOpNorm 1`. -/
 theorem equation_4_7_6_upper {r : ℕ → ℝ} (hr : r 0 = 1) {m : ℕ}
     (hT : (symmToeplitz (m + 1) r).PosDef) :
     lpOpNorm 1 (symmToeplitz (m + 1) r)⁻¹ ≤
       ∏ j ∈ range m, (1 + |Durbin.alpha r j|) / (1 - |Durbin.alpha r j|) :=
   Durbin.lpOpNorm_one_inv_le hr hT
 
-/-- **(4.7.7).** The solution of the Yule–Walker system `T_n y = −r(1:n)` satisfies
-`‖y‖₁ = ∏_{k=1}^{n} (1 + α_k) − 1` provided all the `α_k` are nonnegative (Cybenko's
-`α_k = Durbin.alpha r (k − 1)`). -/
+/-- **Equation (4.7.7)** of [golub2013matrix]. Let $r_0 = 1$, let $T_n$ be positive definite, and
+let $y \in \mathbb{R}^n$ solve the Yule–Walker system $T_n y = -(r_1, \dots, r_n)^T$. If
+Cybenko's reflection coefficients $\alpha_1, \dots, \alpha_n$ are all nonnegative, then
+$$\|y\|_1 = \prod_{k=1}^{n} (1 + \alpha_k) - 1.$$
+
+Cybenko's $\alpha_k$ is `Durbin.alpha r (k - 1)`, and $\|y\|_1$ is $\sum_i |y_i|$. -/
 theorem equation_4_7_7 {r : ℕ → ℝ} (hr : r 0 = 1) (hT : (symmToeplitz n r).PosDef)
     {y : Fin n → ℝ} (hy : symmToeplitz n r *ᵥ y = fun i : Fin _ => -r ((i : ℕ) + 1))
     (hα : ∀ j < n, 0 ≤ Durbin.alpha r j) :
@@ -929,15 +1134,16 @@ theorem equation_4_7_7 {r : ℕ → ℝ} (hr : r 0 = 1) (hT : (symmToeplitz n r)
 
 /-! ### §4.7.7 A Toeplitz eigenvalue problem -/
 
-/-- Below the spectrum of a symmetric `B`, `B − λ I` is nonsingular. -/
+/-- If $B$ is symmetric and $\lambda$ is less than every eigenvalue of $B$, then $B - \lambda I$ is
+nonsingular. -/
 private theorem isUnit_sub_smul_one_of_lt {m : ℕ} {B : Matrix (Fin m) (Fin m) ℝ}
     (hB : B.IsHermitian) {t : ℝ} (ht : ∀ i, t < hB.eigenvalues i) : IsUnit (B - t • 1) := by
   rw [isUnit_iff_isUnit_det, hB.det_sub_smul_one_eq_prod t]
   refine (Finset.prod_ne_zero_iff.2 fun i _ => sub_ne_zero.2 ?_).isUnit
   simpa using (ht i).ne'
 
-/-- The partition `Fin 1 ⊕ Fin m ≃ Fin (m + 1)` of `T = [1 rᵀ; r B]`: the first index, then the
-others. -/
+/-- The partition of the indices of $T = \begin{bmatrix} 1 & r^T \\ r & B \end{bmatrix}$: the first
+index, then the others. -/
 private def frontEquiv (m : ℕ) : Fin 1 ⊕ Fin m ≃ Fin (m + 1) :=
   finSumFinEquiv.trans (finCongr (Nat.add_comm 1 m))
 
@@ -949,7 +1155,8 @@ private theorem frontEquiv_inr (m : ℕ) (i : Fin m) : frontEquiv m (Sum.inr i) 
   ext
   simp [frontEquiv]
 
-/-- A symmetric Toeplitz matrix with unit diagonal, `T = [1 rᵀ; r B]` with `B = T_{n−1}`. -/
+/-- A symmetric Toeplitz matrix with unit diagonal has the block form $T_{m+1} = \begin{bmatrix} 1 &
+r^T \\ r & T_m \end{bmatrix}$. -/
 private theorem symmToeplitz_submatrix_frontEquiv {ρ : ℕ → ℝ} (hρ : ρ 0 = 1) (m : ℕ) :
     (symmToeplitz (m + 1) ρ).submatrix (frontEquiv m) (frontEquiv m) =
       fromBlocks 1 (replicateRow (Fin 1) fun i : Fin m => ρ (i + 1))
@@ -967,10 +1174,19 @@ private theorem symmToeplitz_submatrix_frontEquiv {ρ : ℕ → ℝ} (hρ : ρ 0
     congr 1
     omega
 
-/-- **§4.7.7, `λ_min(T)` is a zero of the secular function.** For the symmetric Toeplitz matrix
-`T = [1 rᵀ; r B]` (`B = T_{n−1}`, `n = m + 1`) and an eigenpair `T [α; y] = λ [α; y]` whose
-eigenvalue lies below the spectrum of `B` — under (4.7.8), `λ = λ_min(T) < λ_min(B)` — one has
-`α ≠ 0`, `y = −α (B − λ I)⁻¹ r`, and `λ` is a zero of `f(λ) = 1 − λ − rᵀ (B − λ I)⁻¹ r`. -/
+/-- **Section 4.7.7** of [golub2013matrix], $\lambda_{\min}(T)$ as a zero of the secular function.
+Let $\rho_0 = 1$, let $n = m + 1$, and write the symmetric Toeplitz matrix $T = T_n$ as
+$$T = \begin{bmatrix} 1 & r^T \\ r & B \end{bmatrix}, \qquad B = T_{n-1}, \quad r = (\rho_1,
+  \dots, \rho_{n-1})^T.$$
+Let $\lambda$ be less than every eigenvalue of $B$, and let $(\alpha, y) \neq 0$ satisfy
+$T(\alpha, y) = \lambda (\alpha, y)$. Then $\alpha \neq 0$,
+$y = -\alpha (B - \lambda I)^{-1} r$, and $\lambda$ is a zero of the secular function
+$$f(\lambda) = 1 - \lambda - r^T (B - \lambda I)^{-1} r.$$
+
+Under the hypothesis (4.7.8), $\lambda_{\min}(T) < \lambda_{\min}(B)$, the eigenvalue
+$\lambda_{\min}(T)$ satisfies the condition on $\lambda$. The symmetry of $B$ is
+`Matrix.IsHermitian`, its eigenvalues are `Matrix.IsHermitian.eigenvalues`, and $f$ is
+`Matrix.borderedSecularFunction`. -/
 theorem secular_lambdaMin {ρ : ℕ → ℝ} (hρ : ρ 0 = 1) {m : ℕ}
     (hB : (symmToeplitz m ρ).IsHermitian) {t : ℝ} (ht : ∀ i, t < hB.eigenvalues i)
     {x : Fin (m + 1) → ℝ} (hx0 : x ≠ 0) (hx : symmToeplitz (m + 1) ρ *ᵥ x = t • x) :
@@ -1000,8 +1216,15 @@ theorem secular_lambdaMin {ρ : ℕ → ℝ} (hρ : ρ 0 = 1) {m : ℕ}
     rfl
   exact borderedSecularFunction_eq_zero_of_mulVec_eq hU hne hmul
 
-/-- **§4.7.7, the derivatives of the secular function.** "If `λ < λ_min(B)`, then
-`f′(λ) = −1 − ‖(B − λI)⁻¹ r‖₂² ≤ −1` and `f″(λ) = −2 rᵀ (B − λI)⁻³ r ≤ 0`." -/
+/-- **Section 4.7.7** of [golub2013matrix], the derivatives of the secular function. Let
+$B \in \mathbb{R}^{m \times m}$ be symmetric, let $r \in \mathbb{R}^m$, let $f(\lambda) = 1 -
+\lambda - r^T (B - \lambda I)^{-1} r$, and let $\lambda$ be less than every eigenvalue of $B$.
+Then
+$$f'(\lambda) = -1 - \|(B - \lambda I)^{-1} r\|_2^2 \le -1, \qquad f''(\lambda) = -2 r^T (B -
+  \lambda I)^{-3} r \le 0.$$
+
+The statement uses neither the Toeplitz structure nor positive definiteness. The function $f$ is
+`Matrix.borderedSecularFunction r B`, and $f''$ is the derivative of `deriv f`. -/
 theorem secular_deriv {m : ℕ} {r : Fin m → ℝ} {B : Matrix (Fin m) (Fin m) ℝ}
     (hB : B.IsHermitian) {t : ℝ} (ht : ∀ i, t < hB.eigenvalues i) :
     HasDerivAt (borderedSecularFunction r B)
@@ -1015,10 +1238,20 @@ theorem secular_deriv {m : ℕ} {r : Fin m → ℝ} {B : Matrix (Fin m) (Fin m) 
   exact ⟨h1, h3, h2, h4⟩
 
 open Filter Topology in
-/-- **(4.7.9)–(4.7.10).** Under (4.7.8), if `λ_min(T) ≤ λ⁽⁰⁾ < λ_min(B)`, the Newton iteration
-`λ⁽ᵏ⁺¹⁾ = λ⁽ᵏ⁾ − f(λ⁽ᵏ⁾)/f′(λ⁽ᵏ⁾)` "converges to `λ_min(T)` monotonically from the right". Stated
-for `T = [1 rᵀ; r B]` symmetric Toeplitz (`B = T_{n−1}`, `n = m + 1`) and any eigenpair `(λ, x)` of
-`T` with `λ` below the spectrum of `B` (by (4.7.8), `λ = λ_min(T)`). -/
+/-- **Equations (4.7.9)–(4.7.10)** of [golub2013matrix], Newton's method for $\lambda_{\min}(T)$.
+Let $\rho_0 = 1$, let $n = m + 1$, and write $T = T_n = \begin{bmatrix} 1 & r^T \\ r & B
+\end{bmatrix}$ with $B = T_{n-1}$ and $r = (\rho_1, \dots, \rho_{n-1})^T$. Let $\lambda$ be an
+eigenvalue of $T$, with an eigenvector $x \neq 0$, that is less than every eigenvalue of $B$,
+and let $\lambda^{(0)}$ satisfy
+$$\lambda \le \lambda^{(0)} < \lambda_{\min}(B).$$
+Let $\lambda^{(k+1)} = \lambda^{(k)} - f(\lambda^{(k)})/f'(\lambda^{(k)})$ be Newton's iteration
+for the secular function $f$. Then $\lambda \le \lambda^{(k+1)} \le \lambda^{(k)}$ for every
+$k$, and $\lambda^{(k)} \to \lambda$.
+
+The source states that the iteration converges to $\lambda_{\min}(T)$ monotonically from the
+right. Under the hypothesis (4.7.8), $\lambda_{\min}(T)$ is the only eigenvalue of $T$ below the
+spectrum of $B$, so $\lambda = \lambda_{\min}(T)$. The Newton step is `Newton.scalarStep` with
+$f'$ given by `deriv`, and $f$ is `Matrix.borderedSecularFunction`. -/
 theorem equation_4_7_10 {ρ : ℕ → ℝ} (hρ : ρ 0 = 1) {m : ℕ}
     (hB : (symmToeplitz m ρ).IsHermitian) {t : ℝ} (ht : ∀ i, t < hB.eigenvalues i)
     {x : Fin (m + 1) → ℝ} (hx0 : x ≠ 0) (hx : symmToeplitz (m + 1) ρ *ᵥ x = t • x) {x₀ : ℝ}
@@ -1038,9 +1271,14 @@ theorem equation_4_7_10 {ρ : ℕ → ℝ} (hρ : ρ 0 = 1) {m : ℕ}
           (symmToeplitz m ρ))))^[k] x₀) atTop (𝓝 t) :=
   tendsto_newton_borderedSecularFunction hB (secular_lambdaMin hρ hB ht hx0 hx).2.2 htx hx₀
 
-/-- **§4.7.7, the Newton step.** "The iteration has the form
-`λ⁽ᵏ⁺¹⁾ = λ⁽ᵏ⁾ + (1 + rᵀw − λ⁽ᵏ⁾)/(1 + wᵀw)` where `w` solves the 'shifted' Yule–Walker system
-`(B − λ⁽ᵏ⁾ I) w = −r`." -/
+/-- **Section 4.7.7** of [golub2013matrix], the Newton step. Let $B \in \mathbb{R}^{m \times m}$ be
+symmetric, let $r \in \mathbb{R}^m$, let $\lambda$ be less than every eigenvalue of $B$, and let
+$w$ solve the shifted Yule–Walker system $(B - \lambda I) w = -r$. Then the Newton step for the
+secular function $f(\lambda) = 1 - \lambda - r^T (B - \lambda I)^{-1} r$ is
+$$\lambda - \frac{f(\lambda)}{f'(\lambda)} = \lambda + \frac{1 + r^T w - \lambda}{1 + w^T w}.$$
+
+The Newton step is `Newton.scalarStep` with $f'$ given by `deriv`, and $f$ is
+`Matrix.borderedSecularFunction r B`. -/
 theorem newton_step_eq {m : ℕ} {r : Fin m → ℝ} {B : Matrix (Fin m) (Fin m) ℝ}
     (hB : B.IsHermitian) {t : ℝ} (ht : ∀ i, t < hB.eigenvalues i) {w : Fin m → ℝ}
     (hw : (B - t • 1) *ᵥ w = -r) :
@@ -1061,10 +1299,15 @@ theorem newton_step_eq {m : ℕ} {r : Fin m → ℝ} {B : Matrix (Fin m) (Fin m)
   field_simp
   ring
 
-/-- **§4.7.7, Durbin's `β` and definiteness.** For a symmetric Toeplitz matrix with unit diagonal
-(the book's `T_λ`), `T(1:k+1, 1:k+1)` is positive definite iff `β₀, …, β_k > 0`; in particular "if
-`β_k ≤ 0` and `β_1, …, β_{k−1}` are all positive, then `T(1:k, 1:k)` is positive definite but
-`T(1:k+1, 1:k+1)` is not". -/
+/-- **Section 4.7.7** of [golub2013matrix], Durbin's $\beta$ and definiteness. Let $r_0 = 1$ and
+$k \in \mathbb{N}$. Then $T_{k+1}$ is positive definite if and only if $\beta_j > 0$ for
+$j = 0, \dots, k$. In particular, if $\beta_j > 0$ for $j < k$ and $\beta_k \le 0$, then $T_k$
+is positive definite and $T_{k+1}$ is not.
+
+The source applies this to $T_\lambda$: "if $\beta_k \le 0$ and $\beta_1, \dots, \beta_{k-1}$
+are all positive, then $T(1{:}k, 1{:}k)$ is positive definite but $T(1{:}k{+}1, 1{:}k{+}1)$ is
+not". Here $T_k$ is the leading $k \times k$ block $T(1{:}k, 1{:}k)$, and $\beta_j$ is
+`Durbin.beta r j`. -/
 theorem durbin_beta_pos_iff {r : ℕ → ℝ} (hr : r 0 = 1) (k : ℕ) :
     ((symmToeplitz (k + 1) r).PosDef ↔ ∀ j ≤ k, 0 < Durbin.beta r j) ∧
       ((∀ j < k, 0 < Durbin.beta r j) → Durbin.beta r k ≤ 0 →
@@ -1074,13 +1317,17 @@ theorem durbin_beta_pos_iff {r : ℕ → ℝ} (hr : r 0 = 1) (k : ℕ) :
     simp only [Nat.lt_succ_iff]
   · exact absurd hk (not_le.2 ((Durbin.posDef_symmToeplitz_iff hr).1 h k (Nat.lt_succ_self k)))
 
-/-- **§4.7.7, the normalized shift** `T_λ = (T − λI)/(1 − λ)` of a symmetric Toeplitz matrix with
-unit diagonal: again symmetric Toeplitz with unit diagonal, with the off-diagonal data
-`r_j/(1 − λ)`. -/
+/-- **Section 4.7.7** of [golub2013matrix], the normalized shift. For a symmetric Toeplitz matrix
+$T = (r_{|i-j|})$ with $r_0 = 1$ and a scalar $\lambda$, the matrix
+$T_\lambda = (T - \lambda I)/(1 - \lambda)$ is again symmetric Toeplitz with unit diagonal. This
+is its sequence of data: $1$ at index $0$, and $r_j/(1 - \lambda)$ at index $j \ge 1$.
+
+At $\lambda = 1$ the division by zero gives $0$. -/
 noncomputable def shiftedToeplitzSeq (r : ℕ → ℝ) (t : ℝ) (j : ℕ) : ℝ :=
   if j = 0 then 1 else r j / (1 - t)
 
-/-- `T_k − λ I = (1 − λ) T_{k,λ}` for `λ < 1`. -/
+/-- For $\lambda < 1$, $T_k - \lambda I = (1 - \lambda) T_{k,\lambda}$, where $T_{k,\lambda}$ is the
+normalized shift of $T_k$. -/
 private theorem symmToeplitz_sub_smul_one {r : ℕ → ℝ} (hr : r 0 = 1) {t : ℝ} (ht : t < 1)
     (k : ℕ) :
     symmToeplitz k r - t • (1 : Matrix (Fin k) (Fin k) ℝ) =
@@ -1100,7 +1347,8 @@ private theorem symmToeplitz_sub_smul_one {r : ℕ → ℝ} (hr : r 0 = 1) {t : 
     simp only [hij, hd, ↓reduceIte, mul_zero, sub_zero]
     field_simp
 
-/-- For `λ < 1`, `T_k − λ I` is positive definite iff the normalized `T_{k,λ}` is. -/
+/-- For $\lambda < 1$, $T_k - \lambda I$ is positive definite if and only if the normalized shift
+$T_{k,\lambda}$ is positive definite. -/
 private theorem posDef_sub_smul_one_iff {r : ℕ → ℝ} (hr : r 0 = 1) {t : ℝ} (ht : t < 1)
     (k : ℕ) :
     (symmToeplitz k r - t • (1 : Matrix (Fin k) (Fin k) ℝ)).PosDef ↔
@@ -1112,12 +1360,19 @@ private theorem posDef_sub_smul_one_iff {r : ℕ → ℝ} (hr : r 0 = 1) {t : �
   rwa [smul_smul, inv_mul_cancel₀ hc.ne', one_smul] at this
 
 open Classical in
-/-- **§4.7.7, the index `m(λ)`** of (4.7.11): the index of the first nonpositive `β_k` of Durbin's
-recurrence (4.7.1) applied to `T_λ = (T − λI)/(1 − λ)`, `k < n`, and `n` if there is none. -/
+/-- **Section 4.7.7** of [golub2013matrix], the index $m(\lambda)$ of (4.7.11). Apply Durbin's
+recurrence (4.7.1) to the normalized shift $T_\lambda = (T - \lambda I)/(1 - \lambda)$ of
+$T = T_n$. Then **$m(\lambda)$** is the least $k < n$ with $\beta_k \le 0$, and $n$ if there is
+no such $k$.
+
+The source defines $m(\lambda)$ as the index of the first nonpositive $\beta$. The data of
+$T_\lambda$ are `GolubVanLoan.Chapter04.shiftedToeplitzSeq r λ`. Since $\beta_0 = 1$,
+$m(\lambda) \ge 1$ when $n \ge 1$. -/
 noncomputable def bisectionIndex (n : ℕ) (r : ℕ → ℝ) (t : ℝ) : ℕ :=
   if h : ∃ k, k < n ∧ Durbin.beta (shiftedToeplitzSeq r t) k ≤ 0 then Nat.find h else n
 
-/-- `j ≤ m(λ)` iff the first `j` of Durbin's `β_k` for `T_λ` are positive (`j ≤ n`). -/
+/-- For $j \le n$, $j \le m(\lambda)$ if and only if $\beta_k > 0$ for all $k < j$, where the
+$\beta_k$ are Durbin's denominators for $T_\lambda$. -/
 private theorem le_bisectionIndex_iff {n : ℕ} {r : ℕ → ℝ} {t : ℝ} {j : ℕ} (hj : j ≤ n) :
     j ≤ bisectionIndex n r t ↔ ∀ k < j, 0 < Durbin.beta (shiftedToeplitzSeq r t) k := by
   classical
@@ -1131,7 +1386,7 @@ private theorem le_bisectionIndex_iff {n : ℕ} {r : ℕ → ℝ} {t : ℝ} {j :
     by_contra h'
     exact h ⟨k, by omega, not_lt.1 h'⟩
 
-/-- `m(λ) ≤ n`. -/
+/-- $m(\lambda) \le n$. -/
 private theorem bisectionIndex_le (n : ℕ) (r : ℕ → ℝ) (t : ℝ) : bisectionIndex n r t ≤ n := by
   classical
   unfold bisectionIndex
@@ -1139,20 +1394,29 @@ private theorem bisectionIndex_le (n : ℕ) (r : ℕ → ℝ) (t : ℝ) : bisect
   · exact (Nat.find_spec h).1.le
   · exact le_rfl
 
-/-- `j ≤ m(λ)` iff the leading `j × j` block `T_j − λI` is positive definite (`λ < 1`, `j ≤ n`). -/
+/-- For $\lambda < 1$ and $j \le n$, $j \le m(\lambda)$ if and only if $T_j - \lambda I$ is positive
+definite. -/
 private theorem le_bisectionIndex_iff_posDef {n : ℕ} {r : ℕ → ℝ} (hr : r 0 = 1) {t : ℝ}
     (ht : t < 1) {j : ℕ} (hj : j ≤ n) :
     j ≤ bisectionIndex n r t ↔ (symmToeplitz j r - t • (1 : Matrix (Fin j) (Fin j) ℝ)).PosDef := by
   rw [le_bisectionIndex_iff hj, posDef_sub_smul_one_iff hr ht,
     Durbin.posDef_symmToeplitz_iff (by simp [shiftedToeplitzSeq])]
 
-/-- **§4.7.7, the index `m(λ)` read off the shifted matrices.** For `T = T_n` symmetric Toeplitz
-with unit diagonal (`n ≥ 1`), `B = T_{n−1}` its leading (equivalently, by persymmetry, trailing)
-block, and `λ < 1`: `m(λ) ≥ n − 1` iff `B − λI` is positive definite; `m(λ) = n − 1` iff `B − λI`
-is positive definite and `T − λI` is not — "if `m(λ⁽⁰⁾) = n − 1` then `B − λ⁽⁰⁾I` is positive
-definite and `T − λ⁽⁰⁾I` is not, thereby establishing (4.7.9)", i.e.
-`λ_min(T) ≤ λ⁽⁰⁾ < λ_min(B)`; and `m` is antitone in `λ`, so the loop (4.7.11) keeps
-`m(R) ≤ n − 1 ≤ m(L)` (the book prints the reverse, `m(L) ≤ n − 1 ≤ m(R)`). -/
+/-- **Section 4.7.7** of [golub2013matrix], the index $m(\lambda)$ through the shifted matrices. Let
+$r_0 = 1$, let $n \ge 1$, let $T = T_n$ and $B = T_{n-1}$, and let $\lambda < 1$. Then:
+
+1. $m(\lambda) \ge n - 1$ if and only if $B - \lambda I$ is positive definite.
+2. $m(\lambda) = n - 1$ if and only if $B - \lambda I$ is positive definite and $T - \lambda I$
+   is not.
+3. $m$ is antitone: if $\lambda \le \lambda' < 1$, then $m(\lambda') \le m(\lambda)$.
+
+The source concludes that "if $m(\lambda^{(0)}) = n - 1$ then $B - \lambda^{(0)} I$ is positive
+definite and $T - \lambda^{(0)} I$ is not, thereby establishing (4.7.9)", that is,
+$\lambda_{\min}(T) \le \lambda^{(0)} < \lambda_{\min}(B)$. Part 3 shows that the bisection
+(4.7.11) keeps $m(R) \le n - 1 \le m(L)$; see `GolubVanLoan.Chapter04.equation_4_7_11` for the
+invariant that the source prints. The matrix $B$ is the leading block of $T$; by persymmetry it
+is also the trailing block of the source's partition $T = \begin{bmatrix} 1 & r^T \\ r & B
+\end{bmatrix}$. -/
 theorem bisectionIndex_spec {r : ℕ → ℝ} (hr : r 0 = 1) {n : ℕ} (hn : 1 ≤ n) {t : ℝ} (ht : t < 1) :
     (n - 1 ≤ bisectionIndex n r t ↔
       (symmToeplitz (n - 1) r - t • (1 : Matrix (Fin (n - 1)) (Fin (n - 1)) ℝ)).PosDef) ∧
@@ -1180,7 +1444,7 @@ theorem bisectionIndex_spec {r : ℕ → ℝ} (hr : r 0 = 1) {n : ℕ} (hn : 1 �
         symmToeplitz j r - t • 1 by rw [sub_smul]; abel] at this
     exact key _ (bisectionIndex_le n r t') le_rfl
 
-/-- The leading `k × k` block of `T_N − λI` is `T_k − λI`. -/
+/-- The leading $k \times k$ block of $T_N - \lambda I$ is $T_k - \lambda I$. -/
 private theorem symmToeplitz_sub_smul_one_submatrix (r : ℕ → ℝ) (t : ℝ) {k N : ℕ} (h : k ≤ N) :
     (symmToeplitz N r - t • (1 : Matrix (Fin N) (Fin N) ℝ)).submatrix (Fin.castLE h)
         (Fin.castLE h) = symmToeplitz k r - t • (1 : Matrix (Fin k) (Fin k) ℝ) := by
@@ -1188,12 +1452,22 @@ private theorem symmToeplitz_sub_smul_one_submatrix (r : ℕ → ℝ) (t : ℝ) 
   simp only [submatrix_apply, Matrix.sub_apply, Matrix.smul_apply, Matrix.one_apply,
     symmToeplitz_apply, Fin.val_castLE, Fin.castLE_inj]
 
-/-- **§4.7.7, the initial bracket of (4.7.11)**: for a symmetric positive definite Toeplitz
-`T = T_n = [1 rᵀ; r B]` (`n ≥ 3`, `B = T_{n−1}`), `0 < λ_min(T) ≤ λ_min(B) ≤ λ_min([1 r₁; r₁ 1])
-= 1 − |r₁|`, stated through the shifted matrices (`λ < λ_min(A)` iff `A − λI` is positive
-definite): `T − λI` is positive definite for `λ ≤ 0`; if `T − λI` is positive definite so is
-`B − λI`; and if `B − λI` is positive definite then `λ < 1 − |r₁|`. (The book writes
-`λ_min(T) < λ_min(B)` in the middle, which is the hypothesis (4.7.8).) -/
+/-- **Section 4.7.7** of [golub2013matrix], the initial bracket of (4.7.11). Let $r_0 = 1$, let
+$n \ge 3$, let $T = T_n$ be positive definite, and let $B = T_{n-1}$. Then
+$$0 < \lambda_{\min}(T) \le \lambda_{\min}(B) \le 1 - |r_1|,$$
+in the following form, which uses that $\lambda < \lambda_{\min}(A)$ if and only if
+$A - \lambda I$ is positive definite:
+
+1. $T - \lambda I$ is positive definite for every $\lambda \le 0$.
+2. If $T - \lambda I$ is positive definite, then $B - \lambda I$ is positive definite.
+3. If $B - \lambda I$ is positive definite, then $\lambda < 1 - |r_1|$.
+
+**Reading.** The source writes $\lambda_{\min}(T) < \lambda_{\min}(B)$ in the middle, which is
+the hypothesis (4.7.8). The theorem proves $\lambda_{\min}(T) \le \lambda_{\min}(B)$, which
+holds without (4.7.8).
+
+The source obtains the last bound from $\lambda_{\min}(B) \le
+\lambda_{\min}\left(\begin{bmatrix} 1 & r_1 \\ r_1 & 1 \end{bmatrix}\right) = 1 - |r_1|$. -/
 theorem lambdaMin_bracket {r : ℕ → ℝ} (hr : r 0 = 1) {n : ℕ} (hn : 3 ≤ n)
     (hT : (symmToeplitz n r).PosDef) :
     (∀ t : ℝ, t ≤ 0 → (symmToeplitz n r - t • (1 : Matrix (Fin n) (Fin n) ℝ)).PosDef) ∧
@@ -1233,18 +1507,21 @@ theorem lambdaMin_bracket {r : ℕ → ℝ} (hr : r 0 = 1) {n : ℕ} (hn : 3 ≤
     have hts : t * (s * s) = t := by rw [hss, mul_one]
     nlinarith [hsr, hss, hts]
 
-/-! ### (4.7.11): the bisection for a starting value -/
+/-! ### (4.7.11): The bisection for a starting value -/
 
 section Programs
 
 variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 
-/-- **The index `m(λ)` of (4.7.11), computed**: "If [the Durbin] algorithm is applied to
-`T_λ = (T − λI)/(1 − λ)` … let `m(λ)` be the index of the first nonpositive `β`." The entries
-`r_j/(1 − λ)` of `T_λ`, `j = 1:n`, are rounded once each (`fl(r_j / fl(1 − λ))`); then the passes
-of Algorithm 4.7.1 (`durbinStep`) run on them, and the first pass `p` whose `β_{p+1}` is
-nonpositive records the index `p + 1` and stops the loop (the state holds `n` while no `β` has
-been nonpositive; `β₀ = 1`). -/
+/-- **Equation (4.7.11)** of [golub2013matrix], the index $m(\lambda)$ as a program. The source
+applies Durbin's algorithm to $T_\lambda = (T - \lambda I)/(1 - \lambda)$ and lets $m(\lambda)$
+be the index of the first nonpositive $\beta$. The program rounds each entry $r_j/(1 - \lambda)$
+of $T_\lambda$, $j = 1, \dots, n$, once, as $\mathrm{fl}(r_j / \mathrm{fl}(1 - \lambda))$. It
+then runs the passes of Algorithm 4.7.1 (`GolubVanLoan.Chapter04.durbinStep`) on these entries.
+The first pass $p$ whose $\beta_{p+1}$ is nonpositive records the index $p + 1$ and stops the
+loop.
+
+The state holds $n$ while no $\beta$ has been nonpositive, and $\beta_0 = 1$. -/
 noncomputable def durbinIndex (n : ℕ) (r : ℕ → ℝ) (t : ℝ) : M ℕ := do
   let c ← rnd (1 - t)
   let ρ ← (List.range n).foldlM (fun (ρ : ℕ → ℝ) (j : ℕ) => do
@@ -1257,7 +1534,8 @@ noncomputable def durbinIndex (n : ℕ) (r : ℕ → ℝ) (t : ℝ) : M ℕ := d
     ((Function.update 0 0 (-ρ 1), -ρ 1, 1), n)
   pure st.2
 
-/-- **(4.7.11), the bisection for a starting value `λ⁽⁰⁾`**:
+/-- **Equation (4.7.11)** of [golub2013matrix], the bisection for a starting value $\lambda^{(0)}$
+of Newton's method:
 ```
 L = 0; R = 1 − |r₁|; μ = (L + R)/2
 while m(μ) ≠ n − 1
@@ -1270,9 +1548,11 @@ while m(μ) ≠ n − 1
 end
 λ⁽⁰⁾ = μ
 ```
-The `while` loop runs on the state `(L, R, μ, done)` for at most `fuel` passes (convention 3);
-`m(μ)` is `durbinIndex` (computed once per pass), and `λ⁽⁰⁾` is the component `μ` of the returned
-state. -/
+The loop runs on the state $(L, R, \mu, \mathit{done})$ for at most `fuel` passes, as in
+convention 3 of the library index. Each pass computes $m(\mu)$ once, by
+`GolubVanLoan.Chapter04.durbinIndex`. The value $\lambda^{(0)}$ is the component $\mu$ of the
+returned state. Every arithmetic result is rounded: $1 - |r_1|$, each sum $L + R$ and each
+halving. -/
 noncomputable def durbinBisection (n : ℕ) (r : ℕ → ℝ) (fuel : ℕ) : M (ℝ × ℝ × ℝ × Bool) := do
   let R ← rnd (1 - |r 1|)
   let s ← rnd (0 + R)
@@ -1290,7 +1570,8 @@ noncomputable def durbinBisection (n : ℕ) (r : ℕ → ℝ) (fuel : ℕ) : M (
 
 end Programs
 
-/-- A loop writing the entries `j + 1`, `j < m`, of a vector by values fixed in advance. -/
+/-- Writing the entries $j + 1$, $j < m$, of a vector by values $g_{j+1}$ fixed in advance gives the
+vector with entries $g_i$ for $1 \le i \le m$ and unchanged entries otherwise. -/
 private theorem foldl_range_update_succ (g : ℕ → ℝ) (m : ℕ) (y : ℕ → ℝ) :
     (List.range m).foldl (fun (z : ℕ → ℝ) (j : ℕ) => Function.update z (j + 1) (g (j + 1))) y =
       fun i => if 1 ≤ i ∧ i ≤ m then g i else y i := by
@@ -1310,8 +1591,8 @@ private theorem foldl_range_update_succ (g : ℕ → ℝ) (m : ℕ) (y : ℕ →
       · rw [ite_eq_left h', ite_eq_left (by omega)]
       · rw [ite_eq_right h', ite_eq_right (by omega)]
 
-/-- One exact pass of Durbin's algorithm advances `(y^{(p+1)}, α_p, β_p)` to
-`(y^{(p+2)}, α_{p+1}, β_{p+1})` while the `β_j`, `j ≤ p`, are nonzero. -/
+/-- If $\beta_j \neq 0$ for $j \le p$, then one exact pass of Durbin's algorithm takes
+$(y^{(p+1)}, \alpha_p, \beta_p)$ to $(y^{(p+2)}, \alpha_{p+1}, \beta_{p+1})$. -/
 private theorem durbinExactStep_sol {r : ℕ → ℝ} {p : ℕ} (hβ : ∀ j < p + 1, Durbin.beta r j ≠ 0) :
     durbinExactStep r (Durbin.sol r (p + 1), Durbin.alpha r p, Durbin.beta r p) p =
       (Durbin.sol r (p + 2), Durbin.alpha r (p + 1), Durbin.beta r (p + 1)) := by
@@ -1319,8 +1600,9 @@ private theorem durbinExactStep_sol {r : ℕ → ℝ} {p : ℕ} (hβ : ∀ j < p
   rw [List.range_succ, List.foldl_append, durbin_foldl p fun j hj => hβ j (by omega)] at h
   simpa using h
 
-/-- **The exact `m(λ)`**: the exact run of `durbinIndex` is the index `bisectionIndex n r λ`, for
-every `λ`. -/
+/-- **Equation (4.7.11)** of [golub2013matrix], the exact index $m(\lambda)$. For every $n$, every
+sequence $r$ and every $\lambda$, the exact run of `GolubVanLoan.Chapter04.durbinIndex` is
+$m(\lambda)$, `GolubVanLoan.Chapter04.bisectionIndex n r λ`. -/
 theorem durbinIndex_spec (n : ℕ) (r : ℕ → ℝ) (t : ℝ) :
     Id.run (durbinIndex pure n r t) = bisectionIndex n r t := by
   obtain ⟨ρ, hρ⟩ : ∃ ρ : ℕ → ℝ,
@@ -1399,14 +1681,24 @@ theorem durbinIndex_spec (n : ℕ) (r : ℕ → ℝ) (t : ℝ) :
       rw [← hβ S.2 hlt] at this
       exact absurd hle (not_le.2 this)
 
-/-- **(4.7.11), exact correctness of the bisection.** For a symmetric positive definite Toeplitz
-`T = T_n` with unit diagonal (`n ≥ 3`) and `B = T_{n−1}`, after any number of passes the exact
-run `(L, R, μ, done)` of `durbinBisection` keeps the bracket of the loop: `L < R`,
-`n − 1 ≤ m(L)` (equivalently `B − LI` is positive definite) and `B − RI` not positive definite
-(for `R < 1` this is `m(R) < n − 1`; the book prints `m(L) ≤ n − 1 ≤ m(R)`, the reverse); and on
-exit (`done`) the returned `λ⁽⁰⁾ = μ` has `m(μ) = n − 1` and satisfies (4.7.9): `B − μI` is
-positive definite and `T − μI` is not, i.e. `λ_min(T) ≤ λ⁽⁰⁾ < λ_min(B)`. That some finite fuel
-suffices (the bracket halves) is not stated. -/
+/-- **Equation (4.7.11)** of [golub2013matrix], exact correctness of the bisection. Let $r_0 = 1$,
+let $n \ge 3$, let $T = T_n$ be positive definite, and let $B = T_{n-1}$. For every bound `fuel`
+on the number of passes, the exact run of `GolubVanLoan.Chapter04.durbinBisection` returns a
+state $(L, R, \mu, \mathit{done})$ that satisfies:
+
+1. $L < R$;
+2. $m(L) \ge n - 1$, which is equivalent to: $B - LI$ is positive definite;
+3. $B - RI$ is not positive definite, which for $R < 1$ is equivalent to $m(R) < n - 1$;
+4. if $\mathit{done}$ holds, then $m(\mu) = n - 1$, $B - \mu I$ is positive definite and
+   $T - \mu I$ is not, so that $\lambda^{(0)} = \mu$ satisfies (4.7.9), $\lambda_{\min}(T) \le
+   \lambda^{(0)} < \lambda_{\min}(B)$.
+
+**Correction.** The source prints the invariant $m(L) \le n - 1 \le m(R)$. Since $m$ is antitone
+(`GolubVanLoan.Chapter04.bisectionIndex_spec`), the update rule maintains the reverse,
+$m(R) \le n - 1 \le m(L)$, which parts 2 and 3 state.
+
+The theorem does not state that some finite `fuel` suffices for $\mathit{done}$, although the
+bracket halves in every pass. -/
 theorem equation_4_7_11 {r : ℕ → ℝ} (hr : r 0 = 1) {n : ℕ} (hn : 3 ≤ n)
     (hT : (symmToeplitz n r).PosDef) (fuel : ℕ) :
     (Id.run (durbinBisection pure n r fuel)).1 < (Id.run (durbinBisection pure n r fuel)).2.1 ∧
@@ -1485,13 +1777,25 @@ theorem equation_4_7_11 {r : ℕ → ℝ} (hr : r 0 = 1) {n : ℕ} (hn : 3 ≤ n
 
 /-! ### §4.7.8 Unsymmetric Toeplitz systems -/
 
-/-- **(4.7.12)→(4.7.13).** Let `T_{k+1} = [T_k ℰ_k r; pᵀ ℰ_k 1]` be Toeplitz with unit diagonal,
-`T_{k+1} = toeplitz ρ` on `Fin (k + 1)`, `r_j = ρ j` above and `p_j = ρ (−j)` below the diagonal.
-Given the solutions of (4.7.12), `T_kᵀ y = −r`, `T_k w = −p`, `T_k x = b`, the three bordered
-systems (4.7.13) are solved by `[y + α ℰ_k w; α]`, `[w + ν ℰ_k y; ν]` and `[x + μ ℰ_k y; μ]`, where
-`α (1 + rᵀ w) = −(r_{k+1} + rᵀ ℰ_k y)`, `ν (1 + pᵀ y) = −(p_{k+1} + pᵀ ℰ_k w)` and
-`μ (1 + pᵀ y) = b_{k+1} − pᵀ ℰ_k x` (the book: "It can be shown that … in `O(k)` flops"; the
-formulas are its P4.7.11). -/
+/-- **Equations (4.7.12)→(4.7.13)** of [golub2013matrix], the bordering for unsymmetric Toeplitz
+systems. Let $\rho : \mathbb{Z} \to \mathbb{R}$ with $\rho_0 = 1$, and let
+$T_k = (\rho_{j-i}) \in \mathbb{R}^{k \times k}$, so that $T_{k+1} = \begin{bmatrix} T_k &
+\mathcal{E}_k r \\ p^T \mathcal{E}_k & 1 \end{bmatrix}$ with $r_j = \rho_j$ above the diagonal
+and $p_j = \rho_{-j}$ below it. Let $y, w, x, b \in \mathbb{R}^k$ and $b_{k+1} \in \mathbb{R}$
+satisfy (4.7.12):
+$$T_k^T y = -r, \qquad T_k w = -p, \qquad T_k x = b.$$
+Let $\alpha, \nu, \mu \in \mathbb{R}$ satisfy
+$$\alpha (1 + r^T w) = -(r_{k+1} + r^T \mathcal{E}_k y), \quad \nu (1 + p^T y) = -(p_{k+1} + p^T
+  \mathcal{E}_k w), \quad \mu (1 + p^T y) = b_{k+1} - p^T \mathcal{E}_k x.$$
+Then the three bordered systems (4.7.13) are solved:
+$$T_{k+1}^T \begin{bmatrix} y + \alpha \mathcal{E}_k w \\ \alpha \end{bmatrix} = -(r_1, \dots,
+  r_{k+1})^T, \quad T_{k+1} \begin{bmatrix} w + \nu \mathcal{E}_k y \\ \nu \end{bmatrix} =
+  -(p_1, \dots, p_{k+1})^T, \quad T_{k+1} \begin{bmatrix} x + \mu \mathcal{E}_k y \\ \mu
+  \end{bmatrix} = \begin{bmatrix} b \\ b_{k+1} \end{bmatrix}.$$
+
+The source states that the transition "can be shown" to cost $O(k)$ flops; the formulas are its
+Problem P4.7.11. The matrix $T_k$ is `Matrix.toeplitz ρ` on `Fin k`. The scalars are given by
+the equations above rather than as quotients, so that no denominator needs to be nonzero. -/
 theorem equation_4_7_13 {ρ : ℤ → ℝ} (hρ : ρ 0 = 1) {k : ℕ} {y w x b : Fin k → ℝ} (b' : ℝ)
     (hy : (toeplitz ρ)ᵀ *ᵥ y = fun i : Fin k => -ρ ((i : ℤ) + 1))
     (hw : toeplitz ρ *ᵥ w = fun i : Fin k => -ρ (-((i : ℤ) + 1))) (hx : toeplitz ρ *ᵥ x = b)

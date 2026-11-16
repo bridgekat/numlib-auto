@@ -5,52 +5,173 @@ Released under Apache 2.0 license as described in the file LICENSE.
 import NumlibSurface.GolubVanLoan.Chapter03.Section03
 
 /-!
-# Golub–Van Loan §3.4: pivoting
+# Golub and Van Loan, Section 3.4: Pivoting
 
-Surface file for Gene H. Golub and Charles F. Van Loan, *Matrix Computations*, 4th edition, §3.4:
-interchange permutations and the `piv` encoding (§3.4.1), partial pivoting ((3.4.1)–(3.4.5)) and
-the outer product LU with partial pivoting, Algorithm 3.4.1, with its rounding bridge and the
-solves that follow it ((3.4.12)–(3.4.13)); the gaxpy version, Algorithm 3.4.2, with its bridge;
-the backward error (3.4.6) and its normwise forms (3.4.7), (3.4.9) for both algorithms, the growth
-factor (3.4.8) and `2^{n-1}` example; complete pivoting (Algorithm 3.4.3, Wilkinson's bound
-(3.4.10), rank revelation); rook pivoting (§3.4.7); the underdetermined systems (3.4.11) and the
-location of `L` (§3.4.8).
+This module formalizes §3.4 of [golub2013matrix], Gaussian elimination with row and column
+interchanges. An interchange permutation $\Pi$ is the identity with two rows swapped, and a pivot
+vector $\mathrm{piv}$ encodes a product $P = \Pi_{n-1} \cdots \Pi_1$ of interchanges. Partial
+pivoting applies $A \leftarrow M_k \Pi_k A$ at step $k$, where $\Pi_k$ brings the entry of largest
+modulus in column $k$ at or below the diagonal to the pivot position and $M_k$ is a Gauss
+transformation. It computes $PA = LU$ with $|\ell_{ij}| \le 1$ for every $A$ ((3.4.1)–(3.4.5)). The
+module defines the outer product and the gaxpy LU with partial pivoting (Algorithms 3.4.1 and
+3.4.2), each with a rounding bridge into `FloatingPoint.RoundsLU` for $PA$ and an exact
+specification, and the solves that follow them. It proves the componentwise backward error (3.4.6)
+of the solve and its normwise forms (3.4.7) and (3.4.9), and studies the growth factor $\rho$
+(3.4.8), which is at most $2^{n-1}$. On an example that needs no interchange, the entries grow by
+the factor $2^{n-1}$ relative to $\max_{i,j} |a_{ij}|$.
+
+Complete pivoting (Algorithm 3.4.3) computes $PAQ^T = LU$ with interchanges of rows and columns. The
+module proves Wilkinson's bound (3.4.10) on the entries of the stages, and that complete pivoting
+reveals the rank: after $r = \operatorname{rank} A$ steps the trailing block vanishes. Rook pivoting
+(§3.4.7) chooses an entry that is maximal in its row and in its column; the module proves that the
+rook scan terminates and computes $PAQ = LU$. The module also treats underdetermined systems
+(3.4.11) and the solves with several right-hand sides (3.4.12) and with a power of $A$ (3.4.13). The
+exact statements specialize `Numlib.LinearAlgebra.Matrix.LU.Pivoting`, and the rounding statements
+specialize `Numlib.FloatingPoint.LU`.
+
+## Main definitions
+
+* §3.4.1, `GolubVanLoan.Chapter03.interchange`: the interchange permutation matrix $\Pi$ of two
+  indices.
+* §3.4.1, `GolubVanLoan.Chapter03.pivPerm`: the permutation $P = \Pi_{n-1} \cdots \Pi_1$ encoded by
+  a pivot vector.
+* §3.4.1, `GolubVanLoan.Chapter03.applyPiv`: the loop that overwrites $x$ with $Px$.
+* (3.4.1), `GolubVanLoan.Chapter03.partialPivotStage`: the matrix $M_k \Pi_k \cdots M_1 \Pi_1 A$
+  after $k$ steps of partial pivoting.
+* §3.4.3, `GolubVanLoan.Chapter03.pivotedGaussTransformation`: the matrix $\tilde M_k = P' M_k P'^T$
+  of (3.4.5).
+* Algorithm 3.4.1, `GolubVanLoan.Chapter03.algorithm_3_4_1`: outer product LU with partial pivoting.
+* §3.4.3, `GolubVanLoan.Chapter03.solvePLU` and `GolubVanLoan.Chapter03.solveGEPP`: the solves
+  $Ly = Pb$, $Ux = y$ after Algorithm 3.4.1.
+* Algorithm 3.4.2, `GolubVanLoan.Chapter03.algorithm_3_4_2`: gaxpy LU with partial pivoting.
+* (3.4.8), `GolubVanLoan.Chapter03.growthFactorStages`: the growth factor $\rho$ of partial
+  pivoting.
+* §3.4.5, `GolubVanLoan.Chapter03.growthExample`: the matrix with growth factor $2^{n-1}$.
+* Algorithm 3.4.3, `GolubVanLoan.Chapter03.algorithm_3_4_3`: outer product LU with complete
+  pivoting.
+* §3.4.6, `GolubVanLoan.Chapter03.solvePLUQ` and `GolubVanLoan.Chapter03.solveGECP`: the solves
+  $Lz = Pb$, $Uy = z$, $x = Q^T y$ after Algorithm 3.4.3.
+* §3.4.7, `GolubVanLoan.Chapter03.rookPivotSearch` and `GolubVanLoan.Chapter03.rookPivot`: the rook
+  scan and the rook pivoting strategy.
+* (3.4.12), `GolubVanLoan.Chapter03.solveMultipleRHS`: the solve of $AX = B$ column by column.
+* (3.4.13), `GolubVanLoan.Chapter03.solvePowerSystem`: the solve of $A^k x = b$ without forming
+  $A^k$.
 
 ## Main results
 
-* `algorithm_3_4_1`, `algorithm_3_4_1_rounds`, `algorithm_3_4_1_spec`; `solvePLU`, `solveGEPP`,
-  `solveGEPP_spec`, `equation_3_4_12`, `equation_3_4_13`;
-* `equation_3_4_6`, `equation_3_4_7`, `equation_3_4_9` (Algorithm 3.4.1) and `equation_3_4_6_gaxpy`,
-  `equation_3_4_7_gaxpy`, `equation_3_4_9_gaxpy` (Algorithm 3.4.2), through the shared
-  `exists_backward_error_of_roundsLU`;
-* `algorithm_3_4_2`, `algorithm_3_4_2_rounds`, `algorithm_3_4_2_spec` (the column step of
-  Algorithm 3.2.2, `gaxpyInv_succ`, on the row-interchanged matrix, with dominated multipliers);
-* `growthFactorStages`, `growthFactor_le_two_pow`, `growthExample_isLU`,
-  `growthExample_noInterchange`;
-* `algorithm_3_4_3`, `algorithm_3_4_3_spec`, `solveGECP_spec`, `equation_3_4_10`,
-  `completePivoting_rank`, `completePivoting_rank_factorization`;
-* `rookPivotSearch_spec`, `rookPivoting_isLU`; `equation_3_4_11`, `underdetermined_solve`;
-  `equation_3_4_4`, `equation_3_4_5`.
+* §3.4.1, `GolubVanLoan.Chapter03.applyPiv_eq`: the forward loop computes $Px$ and the reverse loop
+  computes $P^T x$.
+* (3.4.1)–(3.4.2), `GolubVanLoan.Chapter03.equation_3_4_2`: each step of partial pivoting is
+  $A \leftarrow M_k \Pi_k A$, and the last stage is upper triangular.
+* (3.4.3), `GolubVanLoan.Chapter03.equation_3_4_3`: partial pivoting computes $PA = LU$ with
+  $|\ell_{ij}| \le 1$ for every $A$.
+* (3.4.4), `GolubVanLoan.Chapter03.equation_3_4_4`: $\tilde M_{n-1} \cdots \tilde M_1 PA = U$, where
+  $\tilde M_k$ is the Gauss transformation of elimination without pivoting on $PA$.
+* (3.4.5), `GolubVanLoan.Chapter03.equation_3_4_5`: $P' M_k P'^T$ is a Gauss transformation with the
+  permuted Gauss vector.
+* Algorithm 3.4.1, `GolubVanLoan.Chapter03.algorithm_3_4_1_rounds`,
+  `GolubVanLoan.Chapter03.algorithm_3_4_1_spec` and
+  `GolubVanLoan.Chapter03.algorithm_3_4_1_eq_gemPivotStage`: every run computes LU factors of $PA$
+  in the sense of `FloatingPoint.RoundsLU`, the exact run computes $PA = LU$ with
+  $|\ell_{ij}| \le 1$, and the exact run is the backbone's partial pivoting recurrence.
+* §3.4.3, `GolubVanLoan.Chapter03.solveGEPP_spec`: for nonsingular $A$ the exact solve gives
+  $Ax = b$.
+* Algorithm 3.4.2, `GolubVanLoan.Chapter03.algorithm_3_4_2_rounds` and
+  `GolubVanLoan.Chapter03.algorithm_3_4_2_spec`: the same for the gaxpy version.
+* (3.4.6), `GolubVanLoan.Chapter03.equation_3_4_6` and
+  `GolubVanLoan.Chapter03.equation_3_4_6_gaxpy`: the computed solution satisfies $(A + E)\hat x = b$
+  with $|E| \le \gamma_{3n} P^T |\hat L| |\hat U|$.
+* (3.4.7), `GolubVanLoan.Chapter03.equation_3_4_7` and
+  `GolubVanLoan.Chapter03.equation_3_4_7_gaxpy`: $\|E\|_\infty \le n(1 + u)\gamma_{3n} \|\hat
+  U\|_\infty$.
+* (3.4.8), `GolubVanLoan.Chapter03.growthFactorStages_eq`: $\rho$ in terms of the backbone's growth
+  factor of $PA$.
+* (3.4.9), `GolubVanLoan.Chapter03.equation_3_4_9` and
+  `GolubVanLoan.Chapter03.equation_3_4_9_gaxpy`: if $|\hat u_{ij}| \le \rho \|A\|_\infty$, then
+  $\|E\|_\infty \le n^2 (1 + u)\gamma_{3n} \rho \|A\|_\infty$.
+* §3.4.5, `GolubVanLoan.Chapter03.growthFactor_le_two_pow`: the growth factor of partial pivoting is
+  at most $2^{n-1}$.
+* §3.4.5, `GolubVanLoan.Chapter03.growthExample_isLU` and
+  `GolubVanLoan.Chapter03.growthExample_noInterchange`: the example matrix has $u_{nn} = 2^{n-1}$,
+  needs no interchange, and has the growth factor `Matrix.growthFactor` equal to $2^{n-1}$.
+* Algorithm 3.4.3, `GolubVanLoan.Chapter03.algorithm_3_4_3_spec`: the exact run computes
+  $PAQ^T = LU$ with $|\ell_{ij}| \le 1$ and $|u_{ij}| \le |u_{ii}|$.
+* §3.4.6, `GolubVanLoan.Chapter03.solveGECP_spec`: for nonsingular $A$ the exact solve with complete
+  pivoting gives $Ax = b$.
+* (3.4.10), `GolubVanLoan.Chapter03.equation_3_4_10`: Wilkinson's bound on the entries of the stages
+  of complete pivoting.
+* §3.4.6, `GolubVanLoan.Chapter03.completePivoting_rank` and
+  `GolubVanLoan.Chapter03.completePivoting_rank_factorization`: complete pivoting reveals the rank.
+* §3.4.7, `GolubVanLoan.Chapter03.rookPivotSearch_spec`,
+  `GolubVanLoan.Chapter03.isRookPivot_rookPivot` and `GolubVanLoan.Chapter03.rookPivoting_isLU`: the
+  rook scan terminates at a rook pivot, and rook pivoting computes $PAQ = LU$ with
+  $|\ell_{ij}| \le 1$ and $|u_{ij}| \le |u_{ii}|$.
+* (3.4.11), `GolubVanLoan.Chapter03.equation_3_4_11`: a matrix of full row rank has a factorization
+  $PAQ^T = L[U_1 \mid U_2]$ with $U_1$ nonsingular.
+* §3.4.8, `GolubVanLoan.Chapter03.underdetermined_solve`: this factorization gives a solution of
+  $Ax = b$ for every choice of $z_2$.
+* (3.4.12), `GolubVanLoan.Chapter03.equation_3_4_12`: the multiple right-hand side solve gives
+  $AX = B$, and $A^{-1}$ for $B = I$.
+* (3.4.13), `GolubVanLoan.Chapter03.equation_3_4_13`: the power solve gives $A^k x = b$.
 
-## Design
+## Conventions
 
-A row permutation `σ` acts as `A.submatrix σ id = σ.permMatrix ℝ * A`; the book's
-`P = Π_{n-1} ⋯ Π_1` encoded by `piv` is `(pivPerm piv).permMatrix ℝ`, with
-`pivPerm piv = swap 0 (piv 0) * ⋯ * swap (n-1) (piv (n-1))` (`Matrix.permMatrix_mul` reverses the
-order). The `piv` vector has `n` entries; the book's last step `k = n` is a trivial interchange.
+* Indices are 0-based. In this section the source's $A^{(k)}$ is the matrix after $k$ steps,
+  `GolubVanLoan.Chapter03.partialPivotStage A k`; in (3.2.3) it was the matrix after $k - 1$ steps.
+* A row permutation $\sigma$ acts as `A.submatrix σ id = σ.permMatrix ℝ * A`, so that
+  $(PA)_{ij} = a_{\sigma(i) j}$. The source's $P = \Pi_{n-1} \cdots \Pi_1$ encoded by $\mathrm{piv}$
+  is `(GolubVanLoan.Chapter03.pivPerm piv).permMatrix ℝ`. The pivot vector has $n$ entries; the last
+  step $k = n$ is a trivial interchange.
+* The $\infty$-norm of a matrix is the scoped `Matrix.Norms.Operator` norm.
+* The source states first-order bounds. The theorems state rigorous bounds with
+  $\gamma_k = ku/(1 - ku)$, which imply the printed bounds to first order. The relational rounding
+  model bounds a computed multiplier of partial pivoting by $1 + u$, not by $1$, so
+  $\|\hat L\|_\infty \le n(1 + u)$ replaces $\|\hat L\|_\infty \le n$.
+* A computed quantity is an element of the run set of its program in the rounding model `fp`, with
+  the hook `fp.round`. The hypotheses of a rounding theorem are about the values that the programs
+  return, such as nonzero returned pivots.
 
-The pivot search of Algorithm 3.4.1 is the backbone's `Matrix.partialPivotRow`, the first row at
-or below `k` maximizing `|a_ik|`: it compares exact absolute values of the entries the program
-holds (convention 1: `|·|` and comparisons are exact), so it is a pure step of the program. The
-book's guard `if A(k,k) ≠ 0` is kept.
+## Implementation notes
 
-The rounding bridge `algorithm_3_4_1_rounds` follows the invariant of Algorithm 3.2.1
-(`GolubVanLoan.Chapter03.LUStageInv`) for the matrix with its rows permuted by the interchanges so
-far: an interchange at step `k` permutes rows at or after `k` only, which moves the finished
-multipliers of those rows and their trailing entries together (`luStageInv_submatrix`). The guard
-is taken whenever the returned pivot is nonzero, which the bridge assumes (convention 9); in the
-exact model a zero pivot comes with a zero column, and the skipped update is then an update, so
-the exact specification holds for every `A` and is read off the same invariant.
+* The pivot search of Algorithm 3.4.1 is the backbone's `Matrix.partialPivotRow`: the first row at
+  or below $k$ that maximizes $|a_{ik}|$. It compares exact absolute values of the entries that the
+  program holds, so it is a step of the program without rounding. The guard `if A(k,k) ≠ 0` of the
+  source is kept.
+* The rounding bridge of Algorithm 3.4.1 follows the invariant `GolubVanLoan.Chapter03.LUStageInv`
+  of Algorithm 3.2.1 for $A$ with its rows permuted by the interchanges so far. An interchange at
+  step $k$ permutes only rows at or after $k$, and it moves the finished multipliers of those rows
+  together with their trailing entries (`GolubVanLoan.Chapter03.pivStageInv_submatrix`). In the
+  exact model a zero pivot comes with a zero column, and the skipped update is then an update; so
+  the exact specification holds for every $A$, and it is read off the same invariant.
+* The search of complete pivoting is `Matrix.completePivotEntry`, which makes no canonical choice
+  among the maximizing entries. Algorithm 3.4.3 has an exact specification and no rounding bridge.
+* The `while` loop of the rook scan is a loop over a fuel parameter with a flag that records the
+  exit.
+
+## Deviations from the source
+
+* **(3.4.8)** (correction). The source defines the growth factor on the computed stages
+  $\hat A^{(k)}$. The definition uses the exact stages, since only these admit bounds. See
+  `GolubVanLoan.Chapter03.growthFactorStages`.
+* **(3.4.9)** (reading). The source's $\rho$ bounds the computed $\hat U$ through
+  $|\hat u_{ij}| \le \rho \|A\|_\infty$. The theorem takes this bound as a hypothesis, with any
+  $\rho \ge 0$. See `GolubVanLoan.Chapter03.equation_3_4_9`.
+* **(3.4.10)** (correction). The source prints the bound with $k$ in place of $k + 1$, which is
+  false for $k = 1$ when $A^{(k)}$ is the matrix after $k$ steps. See
+  `GolubVanLoan.Chapter03.equation_3_4_10`.
+
+## Not formalized
+
+* **The average-case growth $n^{2/3}$ and the statement "$\rho = 10$".** They are heuristics with no
+  rigorous reading.
+* **The reliability of rook pivoting.** The claim that rook pivoting has the same level of
+  reliability as complete pivoting is a heuristic.
+* **The backward stability of complete pivoting (§3.4.6, §3.4.10).** Algorithm 3.4.3 has an exact
+  specification only.
+* **Example 3 of the "LU mentality" and the vocabulary of §3.4.10.**
+* **The algorithm of P3.4.5 behind (3.4.11).** The factorization (3.4.11) is proved from the
+  specification.
+* **Operation counts.**
 -/
 
 open FloatingPoint Matrix
@@ -63,25 +184,37 @@ section Piv
 
 variable {n : ℕ}
 
-/-- §3.4.1, the interchange permutation `Π`: the identity with rows `k` and `l` swapped.
-`Π A` is `A` with rows `k`, `l` interchanged and `A Π` is `A` with columns `k`, `l` swapped. -/
+/-- **Section 3.4.1** of [golub2013matrix], the interchange permutation. For indices $k$ and $l$,
+the **interchange permutation** $\Pi$ is the identity with rows $k$ and $l$ swapped. Then
+$\Pi A$ is $A$ with rows $k$ and $l$ interchanged, and $A\Pi$ is $A$ with columns $k$ and $l$
+interchanged.
+
+The matrix is `(Equiv.swap k l).permMatrix ℝ`. -/
 noncomputable def interchange (k l : Fin n) : Matrix (Fin n) (Fin n) ℝ :=
   (Equiv.swap k l).permMatrix ℝ
 
-/-- The permutation of the first `k` interchanges encoded by `piv`: `swap 0 (piv 0) * ⋯ *
-swap (k-1) (piv (k-1))`. -/
+/-- The permutation of the first $k$ interchanges encoded by $\mathrm{piv}$: $\operatorname{swap}(0,
+\mathrm{piv}(0)) \cdots \operatorname{swap}(k-1, \mathrm{piv}(k-1))$. Steps $j \ge n$ add no
+interchange. -/
 def pivPermUpTo (piv : Fin n → Fin n) : ℕ → Equiv.Perm (Fin n)
   | 0 => 1
   | k + 1 =>
     if h : k < n then pivPermUpTo piv k * Equiv.swap ⟨k, h⟩ (piv ⟨k, h⟩) else pivPermUpTo piv k
 
-/-- §3.4.1, "if `P = Π_m ⋯ Π_1` and each `Π_k` is the identity with rows `k` and `piv(k)`
-interchanged, then `piv(1:m)` encodes `P`": `(pivPerm piv).permMatrix ℝ = Π_n ⋯ Π_1`. -/
+/-- **Section 3.4.1** of [golub2013matrix], the permutation encoded by a pivot vector. If
+$P = \Pi_m \cdots \Pi_1$ and each $\Pi_k$ is the identity with rows $k$ and $\mathrm{piv}(k)$
+interchanged, then $\mathrm{piv}$ **encodes** $P$. For $\mathrm{piv} : \{0, \dots, n-1\} \to
+\{0, \dots, n-1\}$, the permutation is
+$$\operatorname{swap}(0, \mathrm{piv}(0)) \cdots \operatorname{swap}(n-1, \mathrm{piv}(n-1)),$$
+and its permutation matrix is the product of the interchange matrices in the reverse order.
+
+`Matrix.permMatrix_mul` reverses the order of a product, so `(pivPerm piv).permMatrix ℝ` is
+$\Pi_{n-1} \cdots \Pi_0$ in 0-based indices. -/
 def pivPerm (piv : Fin n → Fin n) : Equiv.Perm (Fin n) :=
   pivPermUpTo piv n
 
-/-- The permutation of the first `k` interchanges depends only on the first `k` entries of `piv`.
--/
+/-- The permutation of the first $k$ interchanges depends only on the first $k$ entries of
+$\mathrm{piv}$. -/
 theorem pivPermUpTo_congr {piv piv' : Fin n → Fin n} {k : ℕ}
     (h : ∀ j : Fin n, (j : ℕ) < k → piv j = piv' j) : pivPermUpTo piv k = pivPermUpTo piv' k := by
   induction k with
@@ -92,16 +225,19 @@ theorem pivPermUpTo_congr {piv piv' : Fin n → Fin n} {k : ℕ}
     · rw [ih fun j hj => h j (by omega), h ⟨k, hk⟩ (by simp)]
     · exact ih fun j hj => h j (by omega)
 
-/-- One more interchange. -/
+/-- The permutation of the first $k + 1$ interchanges is that of the first $k$, followed by
+$\operatorname{swap}(k, \mathrm{piv}(k))$. -/
 theorem pivPermUpTo_succ {piv : Fin n → Fin n} (k : Fin n) :
     pivPermUpTo piv (k + 1) = pivPermUpTo piv k * Equiv.swap k (piv k) := by
   simp [pivPermUpTo, k.2]
 
-/-- §3.4.1, the loop "`for k = 1:m, x(k) ↔ x(piv(k))`", which overwrites `x` with `P x`. -/
+/-- **Section 3.4.1** of [golub2013matrix], the loop `for k = 1:m, x(k) ↔ x(piv(k))`, which
+overwrites $x$ with $Px$. -/
 def applyPiv (piv : Fin n → Fin n) (x : Fin n → ℝ) : Fin n → ℝ :=
   (List.finRange n).foldl (fun x k => x ∘ Equiv.swap k (piv k)) x
 
-/-- §3.4.1, the loop "`for k = m:-1:1, x(k) ↔ x(piv(k))`", which overwrites `x` with `Pᵀ x`. -/
+/-- **Section 3.4.1** of [golub2013matrix], the loop `for k = m:-1:1, x(k) ↔ x(piv(k))`, which
+overwrites $x$ with $P^T x$. -/
 def applyPivRev (piv : Fin n → Fin n) (x : Fin n → ℝ) : Fin n → ℝ :=
   (List.finRange n).reverse.foldl (fun x k => x ∘ Equiv.swap k (piv k)) x
 
@@ -123,8 +259,13 @@ private theorem foldr_finRange_eq_foldr_range {β : Type*} (f : Fin n → β →
   funext k b
   simp [k.2]
 
-/-- **§3.4.1**: the forward loop overwrites `x` with `P x`, and — each `Π_k` being symmetric — the
-reverse loop overwrites `x` with `Pᵀ x = Π_1 ⋯ Π_m x`. -/
+/-- **Section 3.4.1** of [golub2013matrix]. Let $\mathrm{piv}$ encode $P$, and let
+$x \in \mathbb{R}^n$. Then the forward loop overwrites $x$ with $Px$, and the reverse loop
+overwrites $x$ with
+$$P^T x = \Pi_1 \cdots \Pi_m x.$$
+
+The reverse loop computes $P^T x$ because each $\Pi_k$ is symmetric. The two loops are
+`GolubVanLoan.Chapter03.applyPiv` and `GolubVanLoan.Chapter03.applyPivRev`. -/
 theorem applyPiv_eq (piv : Fin n → Fin n) (x : Fin n → ℝ) :
     applyPiv piv x = (pivPerm piv).permMatrix ℝ *ᵥ x ∧
       applyPivRev piv x = ((pivPerm piv).permMatrix ℝ)ᵀ *ᵥ x := by
@@ -166,17 +307,30 @@ section Partial
 
 variable {n : ℕ}
 
-/-- (3.4.1), partial pivoting as a sequence of matrices: after `k` steps, the book's
-`M_k Π_k ⋯ M_1 Π_1 A` is the backbone's pivoted stage
-`(Matrix.gemPivotStage A Matrix.partialPivotRow k).1`. -/
+/-- **Equation (3.4.1)** of [golub2013matrix], partial pivoting as a sequence of matrices. For
+$A \in \mathbb{R}^{n \times n}$, the matrix after $k$ steps of Gaussian elimination with partial
+pivoting is
+$$A^{(k)} = M_k \Pi_k \cdots M_1 \Pi_1 A,$$
+computed in exact arithmetic.
+
+It is the backbone's pivoted stage `(Matrix.gemPivotStage A Matrix.partialPivotRow k).1`. For
+$k \ge n$ it is the last stage. -/
 noncomputable abbrev partialPivotStage (A : Matrix (Fin n) (Fin n) ℝ) (k : ℕ) :
     Matrix (Fin n) (Fin n) ℝ :=
   (gemPivotStage A partialPivotRow k).1
 
-/-- **(3.4.1)–(3.4.2)**: each step of partial pivoting is `A ← M_k Π_k A`, with `Π_k` the
-interchange of `k` and the row of the largest `|a_ik|`, `i ≥ k`, and `M_k` the Gauss transformation
-of the interchanged matrix; after the last step, `M_{n-1} Π_{n-1} ⋯ M_1 Π_1 A = U` is upper
-triangular — for every `A` (a zero pivot comes with a zero column, and then `M_k = I`). -/
+/-- **Equations (3.4.1)–(3.4.2)** of [golub2013matrix]. Let $A \in \mathbb{R}^{n \times n}$ and let
+$A^{(k)}$ be the matrix after $k$ steps of partial pivoting. For every step $k$, let $\Pi_k$ be
+the interchange of $k$ with the first row $r \ge k$ that maximizes $|a^{(k)}_{rk}|$, and let
+$M_k = I - \tau e_k^T$ be the Gauss transformation whose Gauss vector $\tau$ is formed from
+column $k$ of $\Pi_k A^{(k)}$. Then
+$$A^{(k+1)} = M_k \Pi_k A^{(k)},$$
+and the last matrix $A^{(n)} = M_{n-1} \Pi_{n-1} \cdots M_1 \Pi_1 A$ is upper triangular.
+
+The theorem holds for every $A$. A zero pivot comes with a zero column below it; the Gauss
+vector is then zero, by the convention $x / 0 = 0$, and $M_k = I$. The row $r$ is
+`Matrix.partialPivotRow`, and the Gauss transformation is
+`GolubVanLoan.Chapter03.gaussTransformation` of `GolubVanLoan.Chapter03.gaussVector`. -/
 theorem equation_3_4_2 (A : Matrix (Fin n) (Fin n) ℝ) :
     (∀ k : Fin n, partialPivotStage A (k + 1) =
       gaussTransformation (gaussVector
@@ -188,8 +342,14 @@ theorem equation_3_4_2 (A : Matrix (Fin n) (Fin n) ℝ) :
   rw [gaussTransformation_gaussVector_eq_gaussTransform]
   exact gemPivotStage_succ_fst_eq_gaussTransform_mul A partialPivotRow k.2
 
-/-- **(3.4.3)**: partial pivoting computes `P A = L U` with `P = Π_{n-1} ⋯ Π_1`, `U` upper
-triangular and `L` unit lower triangular with `|ℓ_ij| ≤ 1` — for every `A`. -/
+/-- **Equation (3.4.3)** of [golub2013matrix]. Let $A \in \mathbb{R}^{n \times n}$ be arbitrary.
+Partial pivoting computes
+$$PA = LU,$$
+where $P = \Pi_{n-1} \cdots \Pi_1$ is the permutation matrix of the interchanges, $U = A^{(n)}$
+is upper triangular, and $L$ is unit lower triangular with $|\ell_{ij}| \le 1$ for all $i, j$.
+
+The permutation is `(Matrix.gemPivotStage A Matrix.partialPivotRow n).2`, and $L$ is
+`Matrix.gemLower` of $PA$, the matrix of multipliers of elimination without pivoting on $PA$. -/
 theorem equation_3_4_3 (A : Matrix (Fin n) (Fin n) ℝ) :
     IsLU ((gemPivotStage A partialPivotRow n).2.permMatrix ℝ * A)
         (gemLower ((gemPivotStage A partialPivotRow n).2.permMatrix ℝ * A))
@@ -206,8 +366,10 @@ section Invariant
 
 variable {fp : RoundingModel ℝ} {n : ℕ}
 
-/-- A finished multiplier of partial pivoting: a lower entry of the Doolittle recurrence whose
-running difference `t` is dominated by its pivot, `|t| ≤ |u_jj|`. -/
+/-- A finished multiplier of partial pivoting in the rounding model `fp`: there are an order of the
+indices $r < j$, roundings $p_r$ of the products $s_{ir} s_{rj}$, and a running difference $t$
+of $a_{ij}$ and the $p_r$, such that $|t| \le |s_{jj}|$ and $s_{ij}$ is a rounding of
+$t / s_{jj}$. -/
 def LULowerEntryDom (fp : RoundingModel ℝ) (A S : Matrix (Fin n) (Fin n) ℝ) (i j : Fin n) :
     Prop :=
   ∃ (o : List (Fin n)) (p : Fin n → ℝ) (t : ℝ), o.Nodup ∧ (∀ r, r ∈ o ↔ r < j) ∧
@@ -215,15 +377,19 @@ def LULowerEntryDom (fp : RoundingModel ℝ) (A S : Matrix (Fin n) (Fin n) ℝ) 
     RoundsSumFrom fp (A i j) (o.map fun r => -p r) t ∧ |t| ≤ |S j j| ∧
     fp.Rounds (t / S j j) (S i j)
 
-/-- The invariant of elimination with partial pivoting after `k` steps: the invariant of Algorithm
-3.2.1 with dominated multipliers. -/
+/-- The invariant of elimination with partial pivoting after $k$ steps: the invariant
+`GolubVanLoan.Chapter03.LUStageInv` of Algorithm 3.2.1, and every entry $s_{ij}$ with $j < k$
+and $j < i$ is a finished multiplier dominated by its pivot
+(`GolubVanLoan.Chapter03.LULowerEntryDom`). -/
 def PivStageInv (fp : RoundingModel ℝ) (A : Matrix (Fin n) (Fin n) ℝ) (k : ℕ)
     (S : Matrix (Fin n) (Fin n) ℝ) : Prop :=
   LUStageInv fp A k S ∧ ∀ i j : Fin n, (j : ℕ) < k → j < i → LULowerEntryDom fp A S i j
 
-/-- **Interchanging rows at or after `k`** keeps the invariant after `k` steps, for the matrix with
-the same rows interchanged: the finished rows do not move, and a row at or after `k` carries its
-multipliers and its trailing entries along. -/
+/-- Interchanging rows at or after $k$ keeps the invariant after $k$ steps. Let $\tau$ be a
+permutation that fixes the indices before $k$ and maps the indices from $k$ on among themselves.
+If $S$ satisfies the invariant after $k$ steps for $A$, then $S$ with its rows permuted by
+$\tau$ satisfies it for $A$ with its rows permuted by $\tau$. The finished rows do not move, and
+a row at or after $k$ carries its multipliers and its trailing entries along. -/
 theorem pivStageInv_submatrix {A S : Matrix (Fin n) (Fin n) ℝ} {k : ℕ} {τ : Equiv.Perm (Fin n)}
     (hfix : ∀ r : Fin n, (r : ℕ) < k → τ r = r) (hmap : ∀ i : Fin n, k ≤ (i : ℕ) → k ≤ (τ i : ℕ))
     (h : PivStageInv fp A k S) :
@@ -264,8 +430,11 @@ theorem pivStageInv_submatrix {A S : Matrix (Fin n) (Fin n) ℝ} {k : ℕ} {τ :
     · simp only [submatrix_apply, id, hfix j hj]
       exact hx
 
-/-- **One elimination step** keeps the invariant, when the pivot dominates its column below and
-every entry of the step is rounded as in `mem_run_outerProductStep`. -/
+/-- One elimination step keeps the invariant. Let $S$ satisfy the invariant after $k$ steps, and let
+the pivot dominate its column, $|s_{ik}| \le |s_{kk}|$ for $i \ge k$. Let $S'$ agree with $S$
+except in the rows $i > k$ and the columns $j \ge k$, let $s'_{ik}$ be a rounding of
+$s_{ik} / s_{kk}$ for $i > k$, and let $s'_{ij}$ be a rounding of $s_{ij} - p$ for a rounding
+$p$ of $s'_{ik} s'_{kj}$, for $i, j > k$. Then $S'$ satisfies the invariant after $k + 1$ steps. -/
 theorem pivStageInv_step {A S S' : Matrix (Fin n) (Fin n) ℝ} (k : Fin n)
     (hS : PivStageInv fp A k S) (hdom : ∀ i : Fin n, k ≤ i → |S i k| ≤ |S k k|)
     (hunch : ∀ i j, ¬ (k < i ∧ (j = k ∨ k < j)) → S' i j = S i j)
@@ -303,8 +472,10 @@ theorem pivStageInv_step {A S S' : Matrix (Fin n) (Fin n) ℝ} (k : Fin n)
     · rw [hrow j j le_rfl]
       exact hdiv i hji
 
-/-- A zero pivot whose column vanishes below it, in a model that rounds every value to itself
-(the exact model): the skipped update is an update. -/
+/-- A zero pivot whose column vanishes below it. Let $S$ satisfy the invariant after $k$ steps, let
+the pivot dominate its column, and let $s_{kk} = 0$. If the model rounds every value to itself,
+as the exact model does, or $k$ is the last index, then $S$ satisfies the invariant after
+$k + 1$ steps: the skipped update is an update. -/
 theorem pivStageInv_step_of_zero {A S : Matrix (Fin n) (Fin n) ℝ} (k : Fin n)
     (hS : PivStageInv fp A k S) (hdom : ∀ i : Fin n, k ≤ i → |S i k| ≤ |S k k|)
     (hzero : S k k = 0) (hrefl : (∀ x, fp.Rounds x x) ∨ ¬ (k : ℕ) + 1 < n) :
@@ -332,10 +503,11 @@ section Algorithm341
 
 variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 
-/-- **Algorithm 3.4.1 (Outer Product LU with Partial Pivoting).** "This algorithm computes the
-factorization `PA = LU` where `P` is a permutation matrix encoded by `piv(1:n-1)`, `L` is unit
-lower triangular with `|ℓ_ij| ≤ 1`, and `U` is upper triangular. For `i = 1:n`, `A(i,i:n)` is
-overwritten by `U(i,i:n)` and `A(i+1:n,i)` is overwritten by `L(i+1:n,i)`."
+/-- **Algorithm 3.4.1** of [golub2013matrix] (Outer Product LU with Partial Pivoting). The algorithm
+computes the factorization $PA = LU$, where $P$ is a permutation matrix encoded by
+$\mathrm{piv}(1{:}n-1)$, $L$ is unit lower triangular with $|\ell_{ij}| \le 1$, and $U$ is upper
+triangular. For $i = 1{:}n$, $A(i, i{:}n)$ is overwritten by $U(i, i{:}n)$ and $A(i{+}1{:}n, i)$
+is overwritten by $L(i{+}1{:}n, i)$.
 ```
 for k = 1:n-1
     Determine μ with k ≤ μ ≤ n so |A(μ,k)| = ‖A(k:n,k)‖_∞
@@ -348,9 +520,12 @@ for k = 1:n-1
     end
 end
 ```
-The search is `Matrix.partialPivotRow` (the first maximizing row, exact comparisons); the updates
-are `outerProductStep` (Algorithm 3.2.1's step). The state is `(A, piv)`, `piv` initially the
-identity; the last step `k = n` is a trivial interchange with empty updates. -/
+The program returns the packed matrix and the pivot vector.
+
+The search is `Matrix.partialPivotRow`, the first maximizing row, with exact comparisons. The
+updates are `GolubVanLoan.Chapter03.outerProductStep`, the step of Algorithm 3.2.1. The state is
+the pair of the matrix and $\mathrm{piv}$, with $\mathrm{piv}$ initially the identity. The last
+step $k = n$ is a trivial interchange with empty updates. -/
 noncomputable def algorithm_3_4_1 {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ) :
     M (Matrix (Fin n) (Fin n) ℝ × (Fin n → Fin n)) :=
   (List.finRange n).foldlM (fun (st : Matrix (Fin n) (Fin n) ℝ × (Fin n → Fin n)) k =>
@@ -363,15 +538,16 @@ noncomputable def algorithm_3_4_1 {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ) :
 
 variable {fp : RoundingModel ℝ} {n : ℕ}
 
-/-- The invariant of Algorithm 3.4.1 after `k` steps: the invariant of elimination for `A` with
-its rows permuted by the first `k` interchanges, or — only in a model that does not round every
-value to itself — a zero pivot already returned. -/
+/-- The invariant of Algorithm 3.4.1 after $k$ steps on the state $(S, \mathrm{piv})$: either $S$
+satisfies `GolubVanLoan.Chapter03.PivStageInv` for $A$ with its rows permuted by the first $k$
+interchanges, or the model does not round every value to itself and a returned pivot $s_{jj}$
+with $j < k$ and $j + 1 < n$ is zero. -/
 def Alg341Inv (fp : RoundingModel ℝ) (A : Matrix (Fin n) (Fin n) ℝ) (k : ℕ)
     (st : Matrix (Fin n) (Fin n) ℝ × (Fin n → Fin n)) : Prop :=
   PivStageInv fp (A.submatrix (pivPermUpTo st.2 k) id) k st.1 ∨
     ((∃ j : Fin n, (j : ℕ) < k ∧ (j : ℕ) + 1 < n ∧ st.1 j j = 0) ∧ ¬ ∀ x, fp.Rounds x x)
 
-/-- One step of Algorithm 3.4.1 keeps its invariant. -/
+/-- One step of Algorithm 3.4.1 keeps its invariant `GolubVanLoan.Chapter03.Alg341Inv`. -/
 theorem alg341Inv_step (A : Matrix (Fin n) (Fin n) ℝ) (k : Fin n)
     (st : Matrix (Fin n) (Fin n) ℝ × (Fin n → Fin n)) (hst : Alg341Inv fp A k st)
     (st' : Matrix (Fin n) (Fin n) ℝ × (Fin n → Fin n))
@@ -451,14 +627,16 @@ theorem alg341Inv_step (A : Matrix (Fin n) (Fin n) ℝ) (k : Fin n)
       rw [hrows S₀ (fun _ _ _ => rfl) j hj]
       exact hj0
 
-/-- The invariant after all steps. -/
+/-- Every run of Algorithm 3.4.1 satisfies the invariant `GolubVanLoan.Chapter03.Alg341Inv` after
+all $n$ steps. -/
 theorem alg341Inv_of_mem_run (A : Matrix (Fin n) (Fin n) ℝ) :
     ∀ out ∈ (algorithm_3_4_1 fp.round A).run, Alg341Inv fp A n out :=
   SetM.forall_mem_run_foldlM_finRange (Alg341Inv fp A)
     (Or.inl ⟨luStageInv_zero _, fun _ _ h => absurd h (Nat.not_lt_zero _)⟩)
     fun k st hst st' hst' => alg341Inv_step A k st hst st' hst'
 
-/-- A dominated multiplier is at most `1 + u` in absolute value. -/
+/-- A multiplier that is dominated by its pivot in the sense of
+`GolubVanLoan.Chapter03.LULowerEntryDom` has modulus at most $1 + u$. -/
 theorem abs_le_one_add_of_lowerEntryDom {A S : Matrix (Fin n) (Fin n) ℝ} {i j : Fin n}
     (h : LULowerEntryDom fp A S i j) : |S i j| ≤ 1 + fp.u := by
   obtain ⟨-, -, t, -, -, -, -, hd, hx⟩ := h
@@ -468,12 +646,17 @@ theorem abs_le_one_add_of_lowerEntryDom {A S : Matrix (Fin n) (Fin n) ℝ} {i j 
     simpa using abs_add_le (S i j - t / S j j) (t / S j j)
   nlinarith [fp.u_nonneg, abs_nonneg (t / S j j)]
 
-/-- **The bridge of Algorithm 3.4.1**: every run `(F, piv)` whose returned pivots `F j j`,
-`j + 1 < n`, are nonzero is an admissible computed LU factorization of the permuted matrix `P A`,
-`FloatingPoint.RoundsLU fp (P A) L̂ Û` with `L̂ = packedL F`, `Û = packedU F`, and its computed
-multipliers are at most `1 + u` in absolute value ([higham2002accuracy] §9.3: the computed factors
-of partial pivoting are the computed factors of elimination without pivoting on `P A`). The
-relational model bounds a rounded quotient of modulus at most one by `1 + u`, not `1`. -/
+/-- **Algorithm 3.4.1** of [golub2013matrix], rounding bridge. Let $A \in \mathbb{R}^{n \times n}$.
+For every output $(F, \mathrm{piv})$ of Algorithm 3.4.1 in the rounding model `fp` whose
+returned pivots $f_{jj}$, $j + 1 < n$, are nonzero, let $P$ be the permutation matrix encoded by
+$\mathrm{piv}$ and let $\hat L$ and $\hat U$ be the factors stored in $F$. Then $\hat L$ and
+$\hat U$ form a computed LU factorization of $PA$ in the sense of `FloatingPoint.RoundsLU`, and
+$$|\hat\ell_{ij}| \le 1 + u \quad \text{for all } i, j.$$
+
+The computed factors of partial pivoting are the computed factors of elimination without
+pivoting on $PA$ ([higham2002accuracy] §9.3). The relational model bounds a rounded quotient of
+modulus at most one by $1 + u$, not by $1$. The factors are `GolubVanLoan.Chapter03.packedL F`
+and `GolubVanLoan.Chapter03.packedU F`, and $PA$ is `A.submatrix (pivPerm piv) id`. -/
 theorem algorithm_3_4_1_rounds (A : Matrix (Fin n) (Fin n) ℝ) :
     ∀ out ∈ (algorithm_3_4_1 fp.round A).run, (∀ j : Fin n, (j : ℕ) + 1 < n → out.1 j j ≠ 0) →
       RoundsLU fp (A.submatrix (pivPerm out.2) id) (packedL out.1) (packedU out.1) ∧
@@ -490,8 +673,12 @@ theorem algorithm_3_4_1_rounds (A : Matrix (Fin n) (Fin n) ℝ) :
       linarith [fp.u_nonneg]
   · exact absurd hj0 (hpiv j hjn)
 
-/-- Over a total model the run set of Algorithm 3.4.1 is nonempty, so its bridge and the bounds
-built on it are not vacuous: every step is binds of `fp.round` and `pure`. -/
+/-- **Algorithm 3.4.1** of [golub2013matrix], existence of runs. If the rounding model `fp` is
+total, that is, every real number has at least one rounding, then for every $A$ the run set of
+Algorithm 3.4.1 is nonempty.
+
+So the bridge and the bounds built on it are not vacuous. Every step of the program is a bind of
+`fp.round` or `pure`. -/
 theorem algorithm_3_4_1_run_nonempty (hfp : fp.IsTotal) (A : Matrix (Fin n) (Fin n) ℝ) :
     (algorithm_3_4_1 fp.round A).run.Nonempty := by
   have hstep : ∀ (k : Fin n) (B : Matrix (Fin n) (Fin n) ℝ),
@@ -507,7 +694,7 @@ theorem algorithm_3_4_1_run_nonempty (hfp : fp.IsTotal) (A : Matrix (Fin n) (Fin
   · exact SetM.run_bind_nonempty (hstep k _) fun _ _ => ⟨_, SetM.mem_run_pure.2 rfl⟩
   · exact ⟨_, SetM.mem_run_pure.2 rfl⟩
 
-/-- The exact run of Algorithm 3.4.1 is a run of the exact model. -/
+/-- The exact run of Algorithm 3.4.1 is one of its runs in the exact rounding model. -/
 private theorem algorithm_3_4_1_mem_exact (A : Matrix (Fin n) (Fin n) ℝ) :
     Id.run (algorithm_3_4_1 pure A) ∈ (algorithm_3_4_1 (RoundingModel.exact ℝ).round A).run := by
   rw [RoundingModel.round_exact]
@@ -515,8 +702,9 @@ private theorem algorithm_3_4_1_mem_exact (A : Matrix (Fin n) (Fin n) ℝ) :
     SetM.mem_run_pure]
   rfl
 
-/-- **The exact factors of a finished invariant**: in the exact model, the packed matrix is an LU
-factorization of `A` with multipliers of modulus at most one (a zero pivot has a zero numerator). -/
+/-- The exact factors of a finished invariant. In the exact model, if $F$ satisfies the invariant of
+partial pivoting after $n$ steps for $A$, then $A = LU$ with $L$ and $U$ the factors stored in
+$F$, and $|\ell_{ij}| \le 1$ for all $i, j$. A zero pivot has a zero numerator. -/
 theorem isLU_of_pivStageInv_exact {A F : Matrix (Fin n) (Fin n) ℝ}
     (h : PivStageInv (RoundingModel.exact ℝ) A n F) :
     IsLU A (packedL F) (packedU F) ∧ ∀ i j, |packedL F i j| ≤ 1 := by
@@ -575,10 +763,17 @@ theorem isLU_of_pivStageInv_exact {A F : Matrix (Fin n) (Fin n) ℝ}
     · rw [packedL_apply_of_lt' _ hij, abs_zero]
       exact zero_le_one
 
-/-- **Exact correctness of Algorithm 3.4.1**: "this algorithm computes the factorization
-`PA = LU` where `P` is a permutation matrix encoded by `piv`, `L` is unit lower triangular with
-`|ℓ_ij| ≤ 1`, and `U` is upper triangular" — for every `A` ("Algorithm 3.4.1 always runs to
-completion"). Read off the invariant of the bridge at the exact model. -/
+/-- **Algorithm 3.4.1** of [golub2013matrix], exact correctness. Let $A \in \mathbb{R}^{n \times n}$
+be arbitrary, and let $(F, \mathrm{piv})$ be the output of Algorithm 3.4.1 in exact arithmetic.
+Let $P$ be the permutation matrix encoded by $\mathrm{piv}$, $L$ the unit lower triangular
+matrix stored below the diagonal of $F$, and $U$ the upper triangular matrix stored on and above
+it. Then
+$$PA = LU, \qquad |\ell_{ij}| \le 1 \text{ for all } i, j.$$
+
+The source notes that Algorithm 3.4.1 always runs to completion; the theorem has no hypothesis
+on $A$. The factors are `GolubVanLoan.Chapter03.packedL F` and
+`GolubVanLoan.Chapter03.packedU F`. The proof reads the invariant of the bridge at the exact
+model. -/
 theorem algorithm_3_4_1_spec (A : Matrix (Fin n) (Fin n) ℝ) :
     IsLU ((pivPerm (Id.run (algorithm_3_4_1 pure A)).2).permMatrix ℝ * A)
         (packedL (Id.run (algorithm_3_4_1 pure A)).1)
@@ -597,25 +792,30 @@ section Solve
 
 variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 
-/-- §3.4.3, "to compute the solution to `Ax = b` after invoking Algorithm 3.4.1, we solve
-`Ly = Pb` for `y` and `Ux = y` for `x`": `b` is overwritten by `P b` through the `piv` loop
-(`applyPiv`, no arithmetic), then the row-oriented substitutions of §3.1 (Algorithms 3.1.1 and
-3.1.2) with the packed factors — the solves of Theorem 3.3.2. The division by the unit diagonal of
-`L` is performed by Algorithm 3.1.1 as the book writes it. -/
+/-- **Section 3.4.3** of [golub2013matrix], the solve after Algorithm 3.4.1: solve $Ly = Pb$ for $y$
+and $Ux = y$ for $x$. Given the packed factor $F$, the pivot vector $\mathrm{piv}$ and $b$, the
+program returns $x$.
+
+The vector $b$ is overwritten by $Pb$ with the loop `GolubVanLoan.Chapter03.applyPiv`, which
+does no arithmetic. Then the row-oriented substitutions of §3.1, Algorithms 3.1.1 and 3.1.2,
+solve with the packed factors; these are the solves of Theorem 3.3.2. Algorithm 3.1.1 performs
+the division by the unit diagonal of $L$, as the source writes it. -/
 noncomputable def solvePLU {n : ℕ} (F : Matrix (Fin n) (Fin n) ℝ) (piv : Fin n → Fin n)
     (b : Fin n → ℝ) : M (Fin n → ℝ) := do
   let y ← algorithm_3_1_1 rnd (packedL F) (applyPiv piv b)
   algorithm_3_1_2 rnd (packedU F) y
 
-/-- Gaussian elimination with partial pivoting, then the solve: Algorithm 3.4.1 followed by
-`solvePLU`. -/
+/-- Gaussian elimination with partial pivoting followed by the solve: Algorithm 3.4.1 on $A$, then
+`GolubVanLoan.Chapter03.solvePLU` with $b$. -/
 noncomputable def solveGEPP {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ) (b : Fin n → ℝ) :
     M (Fin n → ℝ) := do
   let out ← algorithm_3_4_1 rnd A
   solvePLU rnd out.1 out.2 b
 
-/-- (3.4.12), the multiple right-hand side problem `AX = B`: "compute `PA = LU`; for `k = 1:p`,
-solve `Ly = Pb_k` and then `Ux_k = y`". With `B = I` the output approximates `A⁻¹`. -/
+/-- **Equation (3.4.12)** of [golub2013matrix], the multiple right-hand side problem $AX = B$ for
+$B \in \mathbb{R}^{n \times p}$: compute $PA = LU$ by Algorithm 3.4.1; then for $k = 1{:}p$,
+solve $Ly = Pb_k$ and then $Ux_k = y$. The program returns $X = [x_1, \dots, x_p]$. With $B = I$
+the output approximates $A^{-1}$. -/
 noncomputable def solveMultipleRHS {n p : ℕ} (A : Matrix (Fin n) (Fin n) ℝ)
     (B : Matrix (Fin n) (Fin p) ℝ) : M (Matrix (Fin n) (Fin p) ℝ) := do
   let out ← algorithm_3_4_1 rnd A
@@ -623,8 +823,10 @@ noncomputable def solveMultipleRHS {n p : ℕ} (A : Matrix (Fin n) (Fin n) ℝ)
     let x ← solvePLU rnd out.1 out.2 (fun i => B i k)
     pure (X.updateCol k x)) B
 
-/-- (3.4.13), solving `A^k x = b` without forming `A^k`: "compute `PA = LU`; for `j = 1:k`,
-overwrite `b` with the solution to `Ly = Pb`, then overwrite `b` with the solution to `Ux = b`". -/
+/-- **Equation (3.4.13)** of [golub2013matrix], the solve of $A^k x = b$ without forming $A^k$:
+compute $PA = LU$ by Algorithm 3.4.1; then for $j = 1{:}k$, overwrite $b$ with the solution of
+$Ly = Pb$, and then overwrite $b$ with the solution of $Ux = b$. The program returns the last
+$b$. -/
 noncomputable def solvePowerSystem {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ) (k : ℕ)
     (b : Fin n → ℝ) : M (Fin n → ℝ) := do
   let out ← algorithm_3_4_1 rnd A
@@ -632,7 +834,9 @@ noncomputable def solvePowerSystem {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ) (k
 
 variable {n : ℕ}
 
-/-- The exact solve with the exact factors of a nonsingular `A` solves `A x = b`. -/
+/-- Let $A \in \mathbb{R}^{n \times n}$ be nonsingular and $b \in \mathbb{R}^n$. In exact
+arithmetic, the solve `GolubVanLoan.Chapter03.solvePLU` with the output of Algorithm 3.4.1 on
+$A$ returns $x$ with $Ax = b$. -/
 theorem solvePLU_id_eq {A : Matrix (Fin n) (Fin n) ℝ} (hA : IsUnit A) (b : Fin n → ℝ) :
     A *ᵥ Id.run (solvePLU pure (Id.run (algorithm_3_4_1 pure A)).1
       (Id.run (algorithm_3_4_1 pure A)).2 b) = b := by
@@ -651,14 +855,20 @@ theorem solvePLU_id_eq {A : Matrix (Fin n) (Fin n) ℝ} (hA : IsUnit A) (b : Fin
   rw [algorithm_3_1_1_eq_forwardSubst, algorithm_3_1_2_eq_backSubst, (applyPiv_eq _ _).1]
   exact h
 
-/-- **Exact correctness of the solve after Algorithm 3.4.1**: for nonsingular `A`, Gaussian
-elimination with partial pivoting followed by `Ly = Pb`, `Ux = y` solves `Ax = b`. -/
+/-- **Section 3.4.3** of [golub2013matrix], exact correctness of the solve. Let
+$A \in \mathbb{R}^{n \times n}$ be nonsingular and $b \in \mathbb{R}^n$. In exact arithmetic,
+Gaussian elimination with partial pivoting followed by $Ly = Pb$ and $Ux = y$ returns $x$ with
+$$Ax = b.$$
+-/
 theorem solveGEPP_spec {A : Matrix (Fin n) (Fin n) ℝ} (hA : IsUnit A) (b : Fin n → ℝ) :
     A *ᵥ Id.run (solveGEPP pure A b) = b :=
   solvePLU_id_eq hA b
 
-/-- **(3.4.12)** solves `AX = B`: for nonsingular `A` the exact output `X` of the multiple
-right-hand side procedure satisfies `AX = B`, and with `B = I` it is `A⁻¹`. -/
+/-- **Equation (3.4.12)** of [golub2013matrix]. Let $A \in \mathbb{R}^{n \times n}$ be nonsingular
+and $B \in \mathbb{R}^{n \times p}$. In exact arithmetic, the output $X$ of the multiple
+right-hand side procedure satisfies
+$$AX = B,$$
+and for $B = I$ the output is $A^{-1}$. -/
 theorem equation_3_4_12 {p : ℕ} {A : Matrix (Fin n) (Fin n) ℝ} (hA : IsUnit A)
     (B : Matrix (Fin n) (Fin p) ℝ) :
     A * Id.run (solveMultipleRHS pure A B) = B ∧
@@ -684,8 +894,11 @@ theorem equation_3_4_12 {p : ℕ} {A : Matrix (Fin n) (Fin n) ℝ} (hA : IsUnit 
     exact congrFun (solvePLU_id_eq hA (fun i => B i k)) i
   exact ⟨key B, (inv_eq_right_inv (key 1)).symm⟩
 
-/-- **(3.4.13)** solves `A^k x = b`: for nonsingular `A`, the exact output of `solvePowerSystem`
-satisfies `A^k x = b`. -/
+/-- **Equation (3.4.13)** of [golub2013matrix]. Let $A \in \mathbb{R}^{n \times n}$ be nonsingular,
+$k \in \mathbb{N}$ and $b \in \mathbb{R}^n$. In exact arithmetic, the output $x$ of
+`GolubVanLoan.Chapter03.solvePowerSystem` satisfies
+$$A^k x = b.$$
+-/
 theorem equation_3_4_13 {A : Matrix (Fin n) (Fin n) ℝ} (hA : IsUnit A) (k : ℕ) (b : Fin n → ℝ) :
     A ^ k *ᵥ Id.run (solvePowerSystem pure A k b) = b := by
   set out := Id.run (algorithm_3_4_1 pure A)
@@ -707,11 +920,16 @@ section Backward
 
 variable {fp : RoundingModel ℝ} {n : ℕ}
 
-/-- **The backward error of the solve with computed factors of `P A`** (Theorem 3.3.2 for the
-system `(PA) x = Pb`, [higham2002accuracy] Theorem 9.4): if `L̂, Û` is an admissible computed LU
-factorization of the row-permuted `A(σ, :)` with nonzero pivots, every run of `Ly = b(σ)`
-(Algorithm 3.1.1) followed by every run of `Ux = y` (Algorithm 3.1.2) gives `(A + E) x̂ = b` with
-`|E| ≤ γ_{3n} Pᵀ |L̂| |Û|`. Shared by the partial pivoting Algorithms 3.4.1 and 3.4.2. -/
+/-- The backward error of the solve with computed factors of a row-permuted matrix. Let $u < 1$ and
+$3nu < 1$, let $\sigma$ be a permutation with permutation matrix $P$, and let $\hat L$, $\hat U$
+be a computed LU factorization of $PA$ in the sense of `FloatingPoint.RoundsLU`, with every
+$\hat u_{jj}$ nonzero. If $\hat y$ is computed by Algorithm 3.1.1 from $\hat L$ and $Pb$, and
+$\hat x$ by Algorithm 3.1.2 from $\hat U$ and $\hat y$, then there is $E$ with
+$(A + E)\hat x = b$ and $|E| \le \gamma_{3n} P^T |\hat L| |\hat U|$ entrywise.
+
+This is Theorem 3.3.2 for the system $(PA)x = Pb$, which is Theorem 9.4 of [higham2002accuracy].
+It serves both partial pivoting algorithms, 3.4.1 and 3.4.2. Here $Pb$ is `b ∘ σ`, and $P^T M$
+is `M.submatrix σ.symm id`. -/
 theorem exists_backward_error_of_roundsLU (hu : fp.u < 1) (hn : ((3 * n : ℕ) : ℝ) * fp.u < 1)
     {A L U : Matrix (Fin n) (Fin n) ℝ} {σ : Equiv.Perm (Fin n)}
     (hR : RoundsLU fp (A.submatrix σ id) L U) (hpiv : ∀ j, U j j ≠ 0) {b y x : Fin n → ℝ}
@@ -728,12 +946,21 @@ theorem exists_backward_error_of_roundsLU (hu : fp.u < 1) (hn : ((3 * n : ℕ) :
     simp only [mulVec, dotProduct, Matrix.add_apply, submatrix_apply, id, Equiv.apply_symm_apply]
   · simpa [Matrix.abs, smul_eq_mul] using hE' (σ.symm i) j
 
-/-- **(3.4.6)**, rigorous form: every run `(F, piv)` of Algorithm 3.4.1 with nonzero returned
-pivots, followed by every run of the solve `Ly = Pb`, `Ux = y`, gives `(A + E) x̂ = b` with
-`|E| ≤ γ_{3n} Pᵀ |L̂| |Û|` entrywise (`Pᵀ M` is `M` with its rows permuted back,
-`M.submatrix σ⁻¹ id`; no rounding in the permutation). Theorem 3.3.2's bound for the system
-`(PA) x = Pb` ([higham2002accuracy] Theorem 9.4); the book's `nu(2|A| + 4Pᵀ|L̂||Û|) + O(u²)` is
-implied to first order. -/
+/-- **Equation (3.4.6)** of [golub2013matrix]. Let $A \in \mathbb{R}^{n \times n}$ and
+$b \in \mathbb{R}^n$, and let the unit roundoff satisfy $u < 1$ and $3nu < 1$. Let
+$(F, \mathrm{piv})$ be an output of Algorithm 3.4.1 on $A$ whose diagonal entries $f_{jj}$ are
+all nonzero, let $P$ be the permutation matrix encoded by $\mathrm{piv}$, and let $\hat L$ and
+$\hat U$ be the factors stored in $F$. Then every solution $\hat x$ computed from $F$,
+$\mathrm{piv}$ and $b$ by the solve $Ly = Pb$, $Ux = y$ satisfies $(A + E)\hat x = b$ for some
+$E \in \mathbb{R}^{n \times n}$ with
+$$|E| \le \gamma_{3n} P^T |\hat L| |\hat U|$$
+entrywise.
+
+The source prints the first-order bound $|E| \le nu(2|A| + 4P^T|\hat L||\hat U|) + O(u^2)$,
+which the rigorous bound implies. The permutation involves no rounding. The matrix $P^T M$ is
+$M$ with its rows permuted back, `M.submatrix (pivPerm piv).symm id`. The proof applies
+`GolubVanLoan.Chapter03.algorithm_3_4_1_rounds` and
+`GolubVanLoan.Chapter03.exists_backward_error_of_roundsLU`. -/
 theorem equation_3_4_6 (hu : fp.u < 1) (hn : ((3 * n : ℕ) : ℝ) * fp.u < 1)
     (A : Matrix (Fin n) (Fin n) ℝ) (b : Fin n → ℝ) :
     ∀ out ∈ (algorithm_3_4_1 fp.round A).run, (∀ j, out.1 j j ≠ 0) →
@@ -756,8 +983,11 @@ section Complete
 
 variable {fp : RoundingModel ℝ} {n : ℕ}
 
-/-- **Interchanging rows and columns at or after `k`** keeps the invariant after `k` steps, for the
-matrix with the same rows and columns interchanged. -/
+/-- Interchanging rows and columns at or after $k$ keeps the invariant of partial pivoting after $k$
+steps. Let $\tau$ and $\rho$ be permutations that fix the indices before $k$ and map the indices
+from $k$ on among themselves. If $S$ satisfies the invariant after $k$ steps for $A$, then $S$
+with rows permuted by $\tau$ and columns permuted by $\rho$ satisfies it for $A$ with the same
+rows and columns permuted. -/
 theorem pivStageInv_submatrix₂ {A S : Matrix (Fin n) (Fin n) ℝ} {k : ℕ}
     {τ ρ : Equiv.Perm (Fin n)}
     (hfix : ∀ r : Fin n, (r : ℕ) < k → τ r = r) (hmap : ∀ i : Fin n, k ≤ (i : ℕ) → k ≤ (τ i : ℕ))
@@ -808,15 +1038,16 @@ theorem pivStageInv_submatrix₂ {A S : Matrix (Fin n) (Fin n) ℝ} {k : ℕ}
     · simp only [submatrix_apply, hfix j hj, hfix' j hj]
       exact hx
 
-/-- The rows of `U` finished by complete pivoting are dominated by their diagonal entry. -/
+/-- The rows of $U$ finished by complete pivoting are dominated by their diagonal entry:
+$|s_{ij}| \le |s_{ii}|$ for $i < k$ and $j \ge i$. -/
 def RowDom (k : ℕ) (S : Matrix (Fin n) (Fin n) ℝ) : Prop :=
   ∀ i j : Fin n, (i : ℕ) < k → i ≤ j → |S i j| ≤ |S i i|
 
 variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 
-/-- One step of Algorithm 3.4.3: the search for an entry of maximal modulus in the trailing block
-(`Matrix.completePivotEntry`, exact comparisons), the row and column interchanges, and, if the
-pivot is nonzero, the updates of Algorithm 3.2.1. -/
+/-- One step $k$ of Algorithm 3.4.3: the search for an entry of maximal modulus in the trailing
+block (`Matrix.completePivotEntry`, with exact comparisons), the row and column interchanges,
+and, if the new pivot is nonzero, the updates of Algorithm 3.2.1. -/
 noncomputable def completePivotingStep {n : ℕ} (k : Fin n)
     (st : Matrix (Fin n) (Fin n) ℝ × (Fin n → Fin n) × (Fin n → Fin n)) :
     M (Matrix (Fin n) (Fin n) ℝ × (Fin n → Fin n) × (Fin n → Fin n)) :=
@@ -832,10 +1063,10 @@ noncomputable def completePivotingStep {n : ℕ} (k : Fin n)
       Function.update st.2.1 k (completePivotEntry st.1 k).1,
       Function.update st.2.2 k (completePivotEntry st.1 k).2)
 
-/-- **Algorithm 3.4.3 (Outer Product LU with Complete Pivoting).** "This algorithm computes the
-factorization `PAQᵀ = LU` where `P` is a permutation matrix encoded by `rowpiv(1:n-1)`, `Q` is a
-permutation matrix encoded by `colpiv(1:n-1)`, `L` is unit lower triangular with `|ℓ_ij| ≤ 1`, and
-`U` is upper triangular."
+/-- **Algorithm 3.4.3** of [golub2013matrix] (Outer Product LU with Complete Pivoting). The
+algorithm computes the factorization $PAQ^T = LU$, where $P$ is a permutation matrix encoded by
+$\mathrm{rowpiv}(1{:}n-1)$, $Q$ is a permutation matrix encoded by $\mathrm{colpiv}(1{:}n-1)$,
+$L$ is unit lower triangular with $|\ell_{ij}| \le 1$, and $U$ is upper triangular.
 ```
 for k = 1:n-1
     Determine μ with k ≤ μ ≤ n and λ with k ≤ λ ≤ n so
@@ -849,20 +1080,25 @@ for k = 1:n-1
     end
 end
 ```
-The state is `(A, rowpiv, colpiv)`, both `piv` vectors initially the identity. -/
+The program returns the packed matrix, $\mathrm{rowpiv}$ and $\mathrm{colpiv}$.
+
+Both pivot vectors are initially the identity. Each step is
+`GolubVanLoan.Chapter03.completePivotingStep`. -/
 noncomputable def algorithm_3_4_3 {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ) :
     M (Matrix (Fin n) (Fin n) ℝ × (Fin n → Fin n) × (Fin n → Fin n)) :=
   (List.finRange n).foldlM (fun st k => completePivotingStep rnd k st) (A, fun k => k, fun k => k)
 
-/-- The invariant of Algorithm 3.4.3 after `k` steps, in a model that rounds every value to
-itself. -/
+/-- The invariant of Algorithm 3.4.3 after $k$ steps on the state
+$(S, \mathrm{rowpiv}, \mathrm{colpiv})$: $S$ satisfies `GolubVanLoan.Chapter03.PivStageInv` for
+$A$ with its rows and columns permuted by the first $k$ interchanges, and its finished rows are
+dominated by their diagonal entries (`GolubVanLoan.Chapter03.RowDom`). -/
 def Alg343Inv (fp : RoundingModel ℝ) (A : Matrix (Fin n) (Fin n) ℝ) (k : ℕ)
     (st : Matrix (Fin n) (Fin n) ℝ × (Fin n → Fin n) × (Fin n → Fin n)) : Prop :=
   PivStageInv fp (A.submatrix (pivPermUpTo st.2.1 k) (pivPermUpTo st.2.2 k)) k st.1 ∧
     RowDom k st.1
 
-/-- The interchange of `k` with an index at or after `k` fixes the indices before `k` and maps
-the indices from `k` on among themselves. -/
+/-- The interchange of $k$ with an index $\mu \ge k$ fixes the indices before $k$ and maps the
+indices from $k$ on among themselves. -/
 theorem swap_fix_and_map {k μ : Fin n} (hkμ : k ≤ μ) :
     (∀ r : Fin n, (r : ℕ) < k → Equiv.swap k μ r = r) ∧
       ∀ i : Fin n, (k : ℕ) ≤ i → (k : ℕ) ≤ (Equiv.swap k μ i : ℕ) := by
@@ -874,14 +1110,16 @@ theorem swap_fix_and_map {k μ : Fin n} (hkμ : k ≤ μ) :
   · rw [Equiv.swap_apply_right]
   · rw [Equiv.swap_apply_of_ne_of_ne hik hiμ]; exact hi
 
-/-- The permutation after one more interchange. -/
+/-- After setting $\mathrm{piv}(k) = \mu$, the permutation of the first $k + 1$ interchanges is that
+of the first $k$, followed by $\operatorname{swap}(k, \mu)$. -/
 theorem pivPermUpTo_update (piv : Fin n → Fin n) (k μ : Fin n) :
     pivPermUpTo (Function.update piv k μ) (k + 1) = pivPermUpTo piv k * Equiv.swap k μ := by
   rw [pivPermUpTo_succ, Function.update_self,
     pivPermUpTo_congr (piv := Function.update piv k μ) (piv' := piv) (k := k)
       fun j hj => Function.update_of_ne (fun h => by rw [h] at hj; exact lt_irrefl _ hj) _ _]
 
-/-- One step of Algorithm 3.4.3 keeps its invariant. -/
+/-- In a model that rounds every value to itself, one step of Algorithm 3.4.3 keeps its invariant
+`GolubVanLoan.Chapter03.Alg343Inv`. -/
 theorem alg343Inv_step (hrefl : ∀ x, fp.Rounds x x) (A : Matrix (Fin n) (Fin n) ℝ) (k : Fin n)
     (st : Matrix (Fin n) (Fin n) ℝ × (Fin n → Fin n) × (Fin n → Fin n))
     (hst : Alg343Inv fp A k st) (st' : Matrix (Fin n) (Fin n) ℝ × (Fin n → Fin n) × (Fin n → Fin n))
@@ -942,7 +1180,7 @@ theorem alg343Inv_step (hrefl : ∀ x, fp.Rounds x x) (A : Matrix (Fin n) (Fin n
     exact ⟨pivStageInv_step_of_zero k hgood₀ hdom (not_not.1 h0) (Or.inl hrefl),
       hrow' S₀ fun _ _ _ => rfl⟩
 
-/-- The exact run of Algorithm 3.4.3 is a run of the exact model. -/
+/-- The exact run of Algorithm 3.4.3 is one of its runs in the exact rounding model. -/
 private theorem algorithm_3_4_3_mem_exact (A : Matrix (Fin n) (Fin n) ℝ) :
     Id.run (algorithm_3_4_3 pure A) ∈ (algorithm_3_4_3 (RoundingModel.exact ℝ).round A).run := by
   rw [RoundingModel.round_exact]
@@ -950,11 +1188,17 @@ private theorem algorithm_3_4_3_mem_exact (A : Matrix (Fin n) (Fin n) ℝ) :
     List.foldlM_pure, SetM.mem_run_pure]
   rfl
 
-/-- **Exact correctness of Algorithm 3.4.3**: with `(F, rowpiv, colpiv)` its output,
-`P A Qᵀ = L U` with `P = (pivPerm rowpiv).permMatrix ℝ`, `Qᵀ = ((pivPerm colpiv)⁻¹).permMatrix ℝ`
-(the book writes `PAQᵀ` in Algorithm 3.4.3 and `PAQ` in §3.4.7), `L = packedL F` unit lower
-triangular with `|ℓ_ij| ≤ 1` and `U = packedU F` upper triangular with `|u_ij| ≤ |u_ii|`
-(P3.4.2) — for every `A`. -/
+/-- **Algorithm 3.4.3** of [golub2013matrix], exact correctness. Let $A \in \mathbb{R}^{n \times n}$
+be arbitrary, and let $(F, \mathrm{rowpiv}, \mathrm{colpiv})$ be the output of Algorithm 3.4.3
+in exact arithmetic. Let $P$ and $Q$ be the permutation matrices encoded by $\mathrm{rowpiv}$
+and $\mathrm{colpiv}$, $L$ the unit lower triangular matrix stored below the diagonal of $F$,
+and $U$ the upper triangular matrix stored on and above it. Then
+$$PAQ^T = LU, \qquad |\ell_{ij}| \le 1, \qquad |u_{ij}| \le |u_{ii}| \text{ for all } i, j.$$
+
+The bound $|u_{ij}| \le |u_{ii}|$ is the property of P3.4.2. The source writes $PAQ^T$ in
+Algorithm 3.4.3 and $PAQ$ in §3.4.7. Here $P$ is `(pivPerm rowpiv).permMatrix ℝ`, $Q^T$ is
+`((pivPerm colpiv)⁻¹).permMatrix ℝ`, and the factors are `GolubVanLoan.Chapter03.packedL F` and
+`GolubVanLoan.Chapter03.packedU F`. -/
 theorem algorithm_3_4_3_spec (A : Matrix (Fin n) (Fin n) ℝ) :
     IsLU ((pivPerm (Id.run (algorithm_3_4_3 pure A)).2.1).permMatrix ℝ * A *
           ((pivPerm (Id.run (algorithm_3_4_3 pure A)).2.2)⁻¹).permMatrix ℝ)
@@ -977,23 +1221,30 @@ theorem algorithm_3_4_3_spec (A : Matrix (Fin n) (Fin n) ℝ) :
   · rw [packedU_apply_of_lt _ hji, abs_zero]
     exact abs_nonneg _
 
-/-- §3.4.6, Steps 1–3 after Algorithm 3.4.3: "Step 1. Solve `Lz = Pb` for `z`. Step 2. Solve
-`Uy = z` for `y`. Step 3. Set `x = Qᵀy`." With the row-oriented substitutions of §3.1 and the
-`piv` loops (`applyPiv`, `applyPivRev`). -/
+/-- **Section 3.4.6** of [golub2013matrix], the solve after Algorithm 3.4.3: Step 1, solve $Lz = Pb$
+for $z$; Step 2, solve $Uy = z$ for $y$; Step 3, set $x = Q^T y$. Given the packed factor $F$,
+$\mathrm{rowpiv}$, $\mathrm{colpiv}$ and $b$, the program returns $x$.
+
+The solves are the row-oriented substitutions of §3.1, and the permutations are the loops
+`GolubVanLoan.Chapter03.applyPiv` and `GolubVanLoan.Chapter03.applyPivRev`. -/
 noncomputable def solvePLUQ {n : ℕ} (F : Matrix (Fin n) (Fin n) ℝ) (rowpiv colpiv : Fin n → Fin n)
     (b : Fin n → ℝ) : M (Fin n → ℝ) := do
   let z ← algorithm_3_1_1 rnd (packedL F) (applyPiv rowpiv b)
   let y ← algorithm_3_1_2 rnd (packedU F) z
   pure (applyPivRev colpiv y)
 
-/-- Gaussian elimination with complete pivoting, then the solve. -/
+/-- Gaussian elimination with complete pivoting followed by the solve: Algorithm 3.4.3 on $A$, then
+`GolubVanLoan.Chapter03.solvePLUQ` with $b$. -/
 noncomputable def solveGECP {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ) (b : Fin n → ℝ) :
     M (Fin n → ℝ) := do
   let out ← algorithm_3_4_3 rnd A
   solvePLUQ rnd out.1 out.2.1 out.2.2 b
 
-/-- **Exact correctness of the GECP solve**: for nonsingular `A`, complete pivoting followed by
-Steps 1–3 solves `Ax = b`. -/
+/-- **Section 3.4.6** of [golub2013matrix], exact correctness of the solve with complete pivoting.
+Let $A \in \mathbb{R}^{n \times n}$ be nonsingular and $b \in \mathbb{R}^n$. In exact
+arithmetic, Algorithm 3.4.3 followed by Steps 1–3 returns $x$ with
+$$Ax = b.$$
+-/
 theorem solveGECP_spec {A : Matrix (Fin n) (Fin n) ℝ} (hA : IsUnit A) (b : Fin n → ℝ) :
     A *ᵥ Id.run (solveGECP pure A b) = b := by
   obtain ⟨hLU, -, -⟩ := algorithm_3_4_3_spec A
@@ -1030,8 +1281,15 @@ theorem solveGECP_spec {A : Matrix (Fin n) (Fin n) ℝ} (hA : IsUnit A) (b : Fin
   simp only [mulVec, dotProduct, submatrix_apply, Equiv.apply_symm_apply]
   exact (Fintype.sum_equiv ρ _ _ fun j => by simp [ρ]).symm
 
-/-- §3.4.6, rank revelation: "suppose `rank(A) = r < n`. It follows that at the beginning of step
-`r + 1`, `A(r+1:n, r+1:n) = 0`", and the first `r` pivots are nonzero. -/
+/-- **Section 3.4.6** of [golub2013matrix], rank revelation. Let $A \in \mathbb{R}^{n \times n}$
+have rank $r$, and let $A^{(k)}$ be the matrix after $k$ steps of Gaussian elimination with
+complete pivoting in exact arithmetic. Then
+$$a^{(r)}_{ij} = 0 \quad \text{for all } i, j \ge r,$$
+and for every $k < r$ the pivot that complete pivoting chooses in $A^{(k)}$ is nonzero.
+
+The source says that at the beginning of step $r + 1$, $A(r{+}1{:}n, r{+}1{:}n) = 0$; with
+0-based indices this is the block of rows and columns from $r$ on after $r$ steps. The stages
+are the backbone's recurrence `Matrix.gemFullPivotStage A Matrix.completePivotEntry`. -/
 theorem completePivoting_rank (A : Matrix (Fin n) (Fin n) ℝ) {r : ℕ} (hr : A.rank = r) :
     (∀ i j : Fin n, r ≤ (i : ℕ) → r ≤ (j : ℕ) →
         (gemFullPivotStage A completePivotEntry r).1 i j = 0) ∧
@@ -1041,8 +1299,8 @@ theorem completePivoting_rank (A : Matrix (Fin n) (Fin n) ℝ) {r : ℕ} (hr : A
           (completePivotEntry (gemFullPivotStage A completePivotEntry k).1 ⟨k, hk⟩).2 ≠ 0 :=
   gemFullPivotStage_trailing_eq_zero_of_rank A isCompletePivot_completePivotEntry hr
 
-/-- A zero pivot of complete pivoting comes with a zero trailing block: after `k` steps, a zero
-diagonal entry at `p < k` makes every entry in the rows and columns from `p` on vanish. -/
+/-- A zero pivot of complete pivoting comes with a zero trailing block: after $k$ steps, a zero
+diagonal entry at $p < k$ makes every entry in the rows and columns from $p$ on vanish. -/
 private def ZeroPivInv (k : ℕ) (S : Matrix (Fin n) (Fin n) ℝ) : Prop :=
   ∀ p : Fin n, (p : ℕ) < k → S p p = 0 → ∀ i j : Fin n, p ≤ i → p ≤ j → S i j = 0
 
@@ -1100,15 +1358,15 @@ private theorem zeroPivInv_step (k : Fin n)
     subst hst'
     exact hZ₀
 
-/-- The number of indices `i : Fin n` below `p ≤ n` is `p`. -/
+/-- The number of indices $i$ of `Fin n` below $p \le n$ is $p$. -/
 private theorem card_subtype_val_lt {p : ℕ} (hp : p ≤ n) :
     Fintype.card {i : Fin n // (i : ℕ) < p} = p := by
   rw [Fintype.card_congr (β := Fin p)
     ⟨fun i => ⟨i.1, i.2⟩, fun j => ⟨Fin.castLE hp j, j.2⟩, fun _ => rfl, fun _ => rfl⟩,
     Fintype.card_fin]
 
-/-- The rank of an upper triangular matrix whose first `p` diagonal entries are nonzero and whose
-rows from `p` on vanish is `p`. -/
+/-- An upper triangular matrix whose first $p$ diagonal entries are nonzero and whose rows from $p$
+on vanish has rank $p$. -/
 private theorem rank_eq_of_upperTriangular {U : Matrix (Fin n) (Fin n) ℝ} {p : ℕ} (hp : p ≤ n)
     (hU : U.IsUpperTriangular) (hd : ∀ i : Fin n, (i : ℕ) < p → U i i ≠ 0)
     (hz : ∀ i j : Fin n, p ≤ (i : ℕ) → U i j = 0) : U.rank = p := by
@@ -1133,11 +1391,17 @@ private theorem rank_eq_of_upperTriangular {U : Matrix (Fin n) (Fin n) ℝ} {p :
     have := rank_submatrix_le U (Fin.castLE hp) (Fin.castLE hp)
     rwa [rank_of_isUnit _ hdet, Fintype.card_fin] at this
 
-/-- **§3.4.6, rank revelation by complete pivoting, in factored form**: "consequently
-`P A Qᵀ = [L₁₁ 0; L₂₁ I_{n-r}] [U₁₁ U₁₂; 0 0]`" with `r = rank A`, `L₁₁` and `U₁₁` of order `r`
-and `U₁₁` nonsingular: the factors `L = packedL F`, `U = packedU F` of Algorithm 3.4.3
-(`algorithm_3_4_3_spec`) have `u_ij = 0` for `i ≥ r`, `ℓ_ij = [i = j]` for `j ≥ r`, and nonzero
-`u_ii` for `i < r`. -/
+/-- **Section 3.4.6** of [golub2013matrix], rank revelation by complete pivoting, in factored form.
+Let $A \in \mathbb{R}^{n \times n}$ have rank $r$, and let $L$ and $U$ be the factors of
+$PAQ^T = LU$ computed by Algorithm 3.4.3 in exact arithmetic. Then
+$$u_{ij} = 0 \text{ for } i \ge r, \qquad \ell_{ij} = \delta_{ij} \text{ for } j \ge r, \qquad
+  u_{ii} \neq 0 \text{ for } i < r.$$
+That is,
+$$PAQ^T = \begin{bmatrix} L_{11} & 0 \\ L_{21} & I_{n-r} \end{bmatrix} \begin{bmatrix} U_{11} &
+  U_{12} \\ 0 & 0 \end{bmatrix}$$
+with $L_{11}$ and $U_{11}$ of order $r$ and $U_{11}$ nonsingular.
+
+The factors are those of `GolubVanLoan.Chapter03.algorithm_3_4_3_spec`. -/
 theorem completePivoting_rank_factorization (A : Matrix (Fin n) (Fin n) ℝ) :
     (∀ i j : Fin n, A.rank ≤ (i : ℕ) → packedU (Id.run (algorithm_3_4_3 pure A)).1 i j = 0) ∧
       (∀ i j : Fin n, A.rank ≤ (j : ℕ) →
@@ -1189,8 +1453,8 @@ theorem completePivoting_rank_factorization (A : Matrix (Fin n) (Fin n) ℝ) :
   · rw [packedL_apply_of_lt _ hji, ite_eq_right hji.ne']
     exact hblock i j (hj.trans (Fin.le_def.1 hji.le)) hj
 
-/-- The bound of (3.4.10) on every entry of the stage after `k` steps of complete pivoting,
-together with the zeros below the diagonal in the eliminated columns. -/
+/-- The bound of (3.4.10) holds for every entry of the matrix after $k$ steps of complete pivoting,
+and the entries below the diagonal in the eliminated columns are zero. -/
 private theorem frozen_aux (A : Matrix (Fin n) (Fin n) ℝ) (k : ℕ) :
     (∀ i j : Fin n, |(gemFullPivotStage A completePivotEntry k).1 i j| ≤
         wilkinsonGrowthBound (k + 1) * A.supAbs) ∧
@@ -1276,16 +1540,24 @@ private theorem frozen_aux (A : Matrix (Fin n) (Fin n) ℝ) (k : ℕ) :
       have := j.2
       omega
 
-/-- **(3.4.10)**, Wilkinson's bound for complete pivoting in exact arithmetic, with the index
-corrected: "the elements of `A^{(k)}`", the matrix after `k` steps of complete pivoting, satisfy
-`|a_ij^{(k)}| ≤ (k+1)^{1/2} (2 · 3^{1/2} ⋯ (k+1)^{1/k})^{1/2} max |a_ij|`
-(`Matrix.wilkinsonGrowthBound (k + 1) * supAbs A`), for every entry. The book prints the bound with
-`k` in place of `k + 1`, which is false for `k = 1` (`!![1, 1; 1, -1]` produces `-2 > 1 = f(1)`);
-with the (3.2.3) indexing (`A^{(k)}` after `k - 1` steps) the printed form is right. On the
-trailing block it is Wilkinson's theorem (`Matrix.abs_gemFullPivotStage_le_wilkinson`); an entry
-outside it is either an eliminated entry (zero; a zero pivot of complete pivoting comes with a zero
-column) or in a row frozen at an earlier step, where the smaller bound holds
-(`Matrix.wilkinsonGrowthBound_mono`). -/
+/-- **Equation (3.4.10)** of [golub2013matrix] (Wilkinson's bound for complete pivoting). Let
+$A \in \mathbb{R}^{n \times n}$ and $k \in \mathbb{N}$, and let $A^{(k)}$ be the matrix after
+$k$ steps of Gaussian elimination with complete pivoting in exact arithmetic. Then for all
+$i, j$
+$$|a^{(k)}_{ij}| \le f(k + 1) \max_{p,q} |a_{pq}|, \qquad f(m) = m^{1/2} \left(2 \cdot 3^{1/2}
+  \cdots m^{1/(m-1)}\right)^{1/2}.$$
+
+**Correction.** The source prints the bound with $f(k)$ in place of $f(k + 1)$. This is false
+for $k = 1$: for $A = \begin{bmatrix} 1 & 1 \\ 1 & -1 \end{bmatrix}$ one step produces an entry
+of modulus $2 > 1 = f(1)$. With the indexing of (3.2.3), where $A^{(k)}$ is the matrix after
+$k - 1$ steps, the printed form is right.
+
+The function $f$ is `Matrix.wilkinsonGrowthBound`. The largest modulus of an entry of $A$ is
+`Matrix.supAbs A`. On the trailing block the bound is Wilkinson's theorem
+`Matrix.abs_gemFullPivotStage_le_wilkinson`.
+An entry outside the trailing block is either an eliminated entry, which is zero because a zero
+pivot of complete pivoting comes with a zero column, or in a row frozen at an earlier step,
+where the smaller bound holds (`Matrix.wilkinsonGrowthBound_mono`). -/
 theorem equation_3_4_10 (A : Matrix (Fin n) (Fin n) ℝ) (k : ℕ) (i j : Fin n) :
     |(gemFullPivotStage A completePivotEntry k).1 i j| ≤
       wilkinsonGrowthBound (k + 1) * A.supAbs :=
@@ -1299,7 +1571,8 @@ section Simulation341
 
 variable {n : ℕ}
 
-/-- The partial-pivoting row depends only on the column `k` from row `k` on. -/
+/-- The partial pivoting row of column $k$ depends only on the entries of column $k$ from row $k$
+on. -/
 private theorem partialPivotRow_congr {M M' : Matrix (Fin n) (Fin n) ℝ} {k : Fin n}
     (h : ∀ r, k ≤ r → M r k = M' r k) : partialPivotRow M k = partialPivotRow M' k := by
   refine le_antisymm (partialPivotRow_le M k (le_partialPivotRow M' k) fun r' hr' => ?_)
@@ -1324,9 +1597,9 @@ private theorem gemStage_submatrix_of_forall_lt (B : Matrix (Fin n) (Fin n) ℝ)
     · rw [gemStage_succ_of_le _ (not_lt.1 hc), gemStage_succ_of_le _ (not_lt.1 hc),
         ih fun i hi => hτ i (by omega)]
 
-/-- The stages of elimination without pivoting on the matrix with the first `m` interchanges of
-partial pivoting applied are the pivoted stages with their rows permuted by the interchanges
-`c, …, m - 1` (for `m = n` this is `Matrix.gemStage_submatrix_eq_submatrix_gemPivotStage`). -/
+/-- The stages of elimination without pivoting on $A$ with the first $m$ interchanges of partial
+pivoting applied are the pivoted stages with their rows permuted by the interchanges
+$c, \dots, m - 1$. -/
 private theorem gemStage_submatrix_gemPivotStage (A : Matrix (Fin n) (Fin n) ℝ) {m : ℕ}
     (hm : m ≤ n) {c : ℕ} (hc : c ≤ m) :
     gemStage (A.submatrix (gemPivotStage A partialPivotRow m).2 id) c =
@@ -1362,8 +1635,8 @@ private theorem gemStage_submatrix_gemPivotStage (A : Matrix (Fin n) (Fin n) ℝ
         inv_mul_cancel, gemPivotStage_succ_of_lt A partialPivotRow hmn]
       simp only [Equiv.Perm.coe_one, submatrix_id_id, inv_mul_cancel]
 
-/-- The simulation invariant of Algorithm 3.4.1 in exact arithmetic after `k` steps: the
-interchanges are those of the backbone's recurrence, the rows and columns from `k` on hold the
+/-- The simulation invariant of Algorithm 3.4.1 in exact arithmetic after $k$ steps: the
+interchanges are those of the backbone's recurrence, the rows and columns from $k$ on hold the
 pivoted stage, and the finished multipliers are those of elimination without pivoting on the
 matrix with the interchanges so far applied. -/
 private def Sim341 (A : Matrix (Fin n) (Fin n) ℝ) (k : ℕ)
@@ -1509,12 +1782,16 @@ private theorem sim341_step (A : Matrix (Fin n) (Fin n) ℝ) (k : Fin n)
     · simp only [submatrix_apply, id, hcolk, hzero h0' i hi.le, zero_mul, sub_zero]
       rw [hent (τ i) c, ite_eq_right fun h => absurd (Fin.lt_def.2 h.1) (not_lt.2 hc.le)]
 
-/-- **The exact run of Algorithm 3.4.1 is the backbone's partial-pivoting recurrence**: with
-`(F, piv)` its output, `P = (pivPerm piv).permMatrix ℝ` is the permutation matrix of
-`Matrix.gemPivotStage A Matrix.partialPivotRow`, the upper factor `packedU F` is its last stage,
-and the unit lower factor `packedL F` is `Matrix.gemLower (P A)`, the multipliers of elimination
-without pivoting on `P A` — the program's search is `Matrix.partialPivotRow`, so the interchanges
-agree, and the stored multipliers move with their rows. -/
+/-- **Algorithm 3.4.1** of [golub2013matrix], the exact run is the backbone's partial pivoting
+recurrence. Let $A \in \mathbb{R}^{n \times n}$ and let $(F, \mathrm{piv})$ be the output of
+Algorithm 3.4.1 in exact arithmetic. Then the permutation encoded by $\mathrm{piv}$ is the
+permutation of `Matrix.gemPivotStage A Matrix.partialPivotRow` after $n$ steps, the upper factor
+stored in $F$ is the last stage $A^{(n)}$, and the unit lower factor stored in $F$ is the matrix
+of multipliers of elimination without pivoting on $PA$.
+
+The search of the program is `Matrix.partialPivotRow`, so the interchanges agree, and the stored
+multipliers move with their rows. The factors are `GolubVanLoan.Chapter03.packedU F` and
+`GolubVanLoan.Chapter03.packedL F`, and the matrix of multipliers is `Matrix.gemLower`. -/
 theorem algorithm_3_4_1_eq_gemPivotStage (A : Matrix (Fin n) (Fin n) ℝ) :
     pivPerm (Id.run (algorithm_3_4_1 pure A)).2 = (gemPivotStage A partialPivotRow n).2 ∧
       packedU (Id.run (algorithm_3_4_1 pure A)).1 = (gemPivotStage A partialPivotRow n).1 ∧
@@ -1549,17 +1826,29 @@ open scoped Matrix.Norms.Operator
 
 variable {n : ℕ}
 
-/-- **(3.4.8)**, the growth factor as printed, `ρ = max_{i,j,k} |a_ij^{(k)}| / ‖A‖_∞`, over the
-stages `A^{(k)} = M_k Π_k ⋯ M_1 Π_1 A` of partial pivoting (`k = 0, …, n`). The stages are the
-exact ones (the book writes the computed `Â^{(k)}`; only exact stages admit bounds,
-[higham2002accuracy] after Theorem 9.5), and the denominator is the book's `‖A‖_∞`, where
-Wilkinson's (and the backbone's `Matrix.growthFactor`) is `max |a_ij|`. -/
+/-- **Equation (3.4.8)** of [golub2013matrix], the growth factor. Let
+$A \in \mathbb{R}^{n \times n}$, and let $A^{(0)} = A, A^{(1)}, \dots, A^{(n)}$ be the stages
+$A^{(k)} = M_k \Pi_k \cdots M_1 \Pi_1 A$ of Gaussian elimination with partial pivoting in exact
+arithmetic. The **growth factor** is
+$$\rho = \frac{\max_{i,j,k} |a^{(k)}_{ij}|}{\|A\|_\infty}.$$
+
+**Correction.** The source defines $\rho$ on the computed stages $\hat A^{(k)}$. The definition
+uses the exact stages, since only these admit bounds ([higham2002accuracy], after Theorem 9.5).
+
+The denominator is $\|A\|_\infty$, as in the source; Wilkinson's growth factor and the
+backbone's `Matrix.growthFactor` divide by $\max |a_{ij}|$. For $A = 0$ the value is $0$, by the
+convention $x / 0 = 0$. -/
 noncomputable def growthFactorStages (A : Matrix (Fin n) (Fin n) ℝ) : ℝ :=
   (⨆ k : Fin (n + 1), (partialPivotStage A k).supAbs) / ‖A‖
 
-/-- **(3.4.8) against the backbone's growth factor**: `ρ = growthFactor(PA) · max|a_ij| / ‖A‖_∞`
-with `P` the partial-pivoting permutation — the stages of elimination without pivoting on `PA` are
-the pivoted stages with their rows permuted — hence `ρ ≤ growthFactor(PA)`. -/
+/-- **Equation (3.4.8)** of [golub2013matrix] and the backbone's growth factor. Let
+$A \in \mathbb{R}^{n \times n}$ and let $P$ be the permutation matrix of partial pivoting on
+$A$. Then
+$$\rho = g(PA) \frac{\max_{i,j} |a_{ij}|}{\|A\|_\infty}, \qquad \rho \le g(PA),$$
+where $g$ is the growth factor `Matrix.growthFactor` of elimination without pivoting.
+
+The stages of elimination without pivoting on $PA$ are the pivoted stages with their rows
+permuted. The inequality holds because $\max |a_{ij}| \le \|A\|_\infty$. -/
 theorem growthFactorStages_eq (A : Matrix (Fin n) (Fin n) ℝ) :
     growthFactorStages A = growthFactor ((gemPivotStage A partialPivotRow n).2.permMatrix ℝ * A) *
         A.supAbs / ‖A‖ ∧
@@ -1616,9 +1905,13 @@ theorem growthFactorStages_eq (A : Matrix (Fin n) (Fin n) ℝ) :
     refine mul_le_of_le_one_right (growthFactor_nonneg _) ?_
     exact div_le_one_of_le₀ (supAbs_le_linfty_opNorm A) (norm_nonneg _)
 
-/-- §3.4.5, "`ρ` can be as large as `2^{n-1}`", the upper half: with partial pivoting the growth is
-at most `2^{n-1}` (P3.4.1's argument), `growthFactor(PA) ≤ 2^{n-1}`, and so the printed
-`ρ ≤ 2^{n-1}`. -/
+/-- **Section 3.4.5** of [golub2013matrix], the upper half of "$\rho$ can be as large as $2^{n-1}$".
+Let $A \in \mathbb{R}^{n \times n}$ and let $P$ be the permutation matrix of partial pivoting on
+$A$. Then
+$$g(PA) \le 2^{n-1}, \qquad \rho \le 2^{n-1},$$
+where $g$ is the growth factor `Matrix.growthFactor` and $\rho$ is the growth factor (3.4.8).
+
+The proof follows the argument of P3.4.1. -/
 theorem growthFactor_le_two_pow (A : Matrix (Fin n) (Fin n) ℝ) :
     growthFactor ((gemPivotStage A partialPivotRow n).2.permMatrix ℝ * A) ≤ 2 ^ (n - 1) ∧
       growthFactorStages A ≤ 2 ^ (n - 1) :=
@@ -1635,7 +1928,9 @@ open scoped Matrix.Norms.Operator
 
 variable {fp : RoundingModel ℝ} {n : ℕ}
 
-/-- The backward error (3.4.6) in norm: `‖E‖_∞ ≤ γ_{3n} ‖L̂‖_∞ ‖Û‖_∞`. -/
+/-- Let $E, L, U \in \mathbb{R}^{n \times n}$, let $P$ be a permutation matrix and $\gamma \ge 0$.
+If $|E| \le \gamma P^T |L| |U|$ entrywise, then $\|E\|_\infty \le \gamma \|L\|_\infty
+\|U\|_\infty$. -/
 theorem linfty_opNorm_le_of_equation_3_4_6 {E L U : Matrix (Fin n) (Fin n) ℝ}
     {σ : Equiv.Perm (Fin n)} {γ : ℝ} (hγ : 0 ≤ γ)
     (hE : E.abs ≤ₑ γ • (L.abs * U.abs).submatrix σ.symm id) : ‖E‖ ≤ γ * (‖L‖ * ‖U‖) := by
@@ -1644,8 +1939,9 @@ theorem linfty_opNorm_le_of_equation_3_4_6 {E L U : Matrix (Fin n) (Fin n) ℝ}
   calc ‖L.abs * U.abs‖ ≤ ‖L.abs‖ * ‖U.abs‖ := linfty_opNorm_mul _ _
     _ = ‖L‖ * ‖U‖ := by rw [linfty_opNorm_abs, linfty_opNorm_abs]
 
-/-- The backward error (3.4.6) in norm with multipliers at most `1 + u`:
-`‖E‖_∞ ≤ n (1 + u) γ ‖Û‖_∞`. -/
+/-- Let $E, L, U \in \mathbb{R}^{n \times n}$, let $P$ be a permutation matrix and $\gamma \ge 0$.
+If $|E| \le \gamma P^T |L| |U|$ entrywise and $|\ell_{ij}| \le 1 + u$ for all $i, j$, then
+$\|E\|_\infty \le n(1 + u)\gamma \|U\|_\infty$. -/
 theorem linfty_opNorm_le_of_backward_error {E L U : Matrix (Fin n) (Fin n) ℝ}
     {σ : Equiv.Perm (Fin n)} {γ : ℝ} (hγ : 0 ≤ γ)
     (hE : E.abs ≤ₑ γ • (L.abs * U.abs).submatrix σ.symm id) (hL : ∀ i j, |L i j| ≤ 1 + fp.u) :
@@ -1657,8 +1953,10 @@ theorem linfty_opNorm_le_of_backward_error {E L U : Matrix (Fin n) (Fin n) ℝ}
   calc γ * (‖L‖ * ‖U‖) ≤ γ * ((n * (1 + fp.u)) * ‖U‖) := by gcongr
     _ = n * (1 + fp.u) * γ * ‖U‖ := by ring
 
-/-- The backward error (3.4.6) in norm, with multipliers at most `1 + u` and the computed `Û`
-bounded by `ρ ‖A‖_∞`: `‖E‖_∞ ≤ n² (1 + u) γ ρ ‖A‖_∞`. -/
+/-- Let $A, E, L, U \in \mathbb{R}^{n \times n}$, let $P$ be a permutation matrix, and let
+$\gamma, \rho \ge 0$. If $|E| \le \gamma P^T |L| |U|$ entrywise, $|\ell_{ij}| \le 1 + u$ and
+$|u_{ij}| \le \rho \|A\|_\infty$ for all $i, j$, then $\|E\|_\infty \le n^2 (1 + u)\gamma\rho
+\|A\|_\infty$. -/
 theorem linfty_opNorm_le_of_backward_error_growth {A E L U : Matrix (Fin n) (Fin n) ℝ}
     {σ : Equiv.Perm (Fin n)} {γ ρ : ℝ} (hγ : 0 ≤ γ) (hρ : 0 ≤ ρ)
     (hE : E.abs ≤ₑ γ • (L.abs * U.abs).submatrix σ.symm id) (hL : ∀ i j, |L i j| ≤ 1 + fp.u)
@@ -1673,9 +1971,17 @@ theorem linfty_opNorm_le_of_backward_error_growth {A E L U : Matrix (Fin n) (Fin
           (mul_nonneg (mul_nonneg (Nat.cast_nonneg n) (by linarith [fp.u_nonneg])) hγ)
     _ = (n : ℝ) ^ 2 * (1 + fp.u) * γ * ρ * ‖A‖ := by ring
 
-/-- **(3.4.7)**, rigorous form: under the hypotheses of (3.4.6), `‖E‖_∞ ≤ n (1 + u) γ_{3n} ‖Û‖_∞` —
-the computed multipliers are at most `1 + u` in absolute value, so `‖L̂‖_∞ ≤ n (1 + u)`. The book's
-`nu(2‖A‖_∞ + 4n‖Û‖_∞) + O(u²)` is implied to first order. -/
+/-- **Equation (3.4.7)** of [golub2013matrix]. Let $A \in \mathbb{R}^{n \times n}$ and
+$b \in \mathbb{R}^n$, and let $u < 1$ and $3nu < 1$. Let $(F, \mathrm{piv})$ be an output of
+Algorithm 3.4.1 on $A$ whose diagonal entries $f_{jj}$ are all nonzero, and let $\hat U$ be the
+upper factor stored in $F$. Then every solution $\hat x$ computed from $F$, $\mathrm{piv}$ and
+$b$ by the solve $Ly = Pb$, $Ux = y$ satisfies $(A + E)\hat x = b$ for some
+$E \in \mathbb{R}^{n \times n}$ with
+$$\|E\|_\infty \le n(1 + u)\gamma_{3n} \|\hat U\|_\infty.$$
+
+The computed multipliers are at most $1 + u$ in modulus, so $\|\hat L\|_\infty \le n(1 + u)$.
+The source prints the first-order bound $\|E\|_\infty \le nu(2\|A\|_\infty + 4n\|\hat
+U\|_\infty) + O(u^2)$, which the rigorous bound implies. -/
 theorem equation_3_4_7 (hu : fp.u < 1) (hn : ((3 * n : ℕ) : ℝ) * fp.u < 1)
     (A : Matrix (Fin n) (Fin n) ℝ) (b : Fin n → ℝ) :
     ∀ out ∈ (algorithm_3_4_1 fp.round A).run, (∀ j, out.1 j j ≠ 0) →
@@ -1686,12 +1992,22 @@ theorem equation_3_4_7 (hu : fp.u < 1) (hn : ((3 * n : ℕ) : ℝ) * fp.u < 1)
   exact ⟨E, hAx, linfty_opNorm_le_of_backward_error (gamma_nonneg fp.u_nonneg hn) hE
     (algorithm_3_4_1_rounds A out hout fun j _ => hpiv j).2⟩
 
-/-- **(3.4.9)**, its rigorous conditional form (Higham's "illicit manoeuvre" made a hypothesis):
-under the hypotheses of (3.4.6), if the computed `Û` satisfies `|û_ij| ≤ ρ ‖A‖_∞`, then
-`‖E‖_∞ ≤ n² (1 + u) γ_{3n} ρ ‖A‖_∞` — the book's `6 n³ ρ ‖A‖_∞ u + O(u²)` with the better constant
-`3` (`n² γ_{3n} = 3 n³ u + O(u²)`). Here `ρ` is any bound on `|Û|/‖A‖_∞` for the *computed* `Û`,
-the book's reading of the growth factor; the formal (3.4.8), `growthFactorStages`, is defined on
-the exact stages (errata) and does not bound the computed `Û`, so it cannot be plugged in. -/
+/-- **Equation (3.4.9)** of [golub2013matrix]. Let $A \in \mathbb{R}^{n \times n}$ and
+$b \in \mathbb{R}^n$, let $u < 1$ and $3nu < 1$, and let $\rho \ge 0$. Let $(F, \mathrm{piv})$
+be an output of Algorithm 3.4.1 on $A$ whose diagonal entries $f_{jj}$ are all nonzero, and
+assume that the computed upper factor satisfies $|\hat u_{ij}| \le \rho \|A\|_\infty$ for all
+$i, j$. Then every solution $\hat x$ computed from $F$, $\mathrm{piv}$ and $b$ by the solve
+$Ly = Pb$, $Ux = y$ satisfies $(A + E)\hat x = b$ for some $E \in \mathbb{R}^{n \times n}$ with
+$$\|E\|_\infty \le n^2 (1 + u)\gamma_{3n} \rho \|A\|_\infty.$$
+
+**Reading.** In the source, $\rho$ is the growth factor of the computed stages, and the
+derivation uses $|\hat u_{ij}| \le \rho \|A\|_\infty$. The theorem makes this bound a
+hypothesis, which turns what Higham calls an "illicit manoeuvre" into an assumption. The growth
+factor `GolubVanLoan.Chapter03.growthFactorStages` is defined on the exact stages and does not
+bound the computed $\hat U$, so it cannot be used for $\rho$ here.
+
+The source prints $\|E\|_\infty \le 6n^3 \rho \|A\|_\infty u + O(u^2)$. Since
+$n^2 \gamma_{3n} = 3n^3 u + O(u^2)$, the theorem gives this bound with the better constant $3$. -/
 theorem equation_3_4_9 (hu : fp.u < 1) (hn : ((3 * n : ℕ) : ℝ) * fp.u < 1)
     (A : Matrix (Fin n) (Fin n) ℝ) (b : Fin n → ℝ) {ρ : ℝ} (hρ : 0 ≤ ρ) :
     ∀ out ∈ (algorithm_3_4_1 fp.round A).run, (∀ j, out.1 j j ≠ 0) →
@@ -1705,18 +2021,19 @@ theorem equation_3_4_9 (hu : fp.u < 1) (hn : ((3 * n : ℕ) : ℝ) * fp.u < 1)
 
 end Normwise
 
-/-! ### The gaxpy version with pivoting (§3.4.4), the growth example, rook pivoting (§3.4.7) -/
+/-! ### The gaxpy version with pivoting (§3.4.4), the growth example, and rook pivoting (§3.4.7) -/
 
 section MorePivoting
 
 variable {n : ℕ}
 
-/-- The first index `i ≥ k` maximizing `|v i|` (exact comparisons): `Matrix.partialPivotRow` of
-the matrix whose every column is `v`. -/
+/-- The first index $i \ge k$ that maximizes $|v_i|$, with exact comparisons. It is
+`Matrix.partialPivotRow` of the matrix whose every column is $v$. -/
 noncomputable def firstMaxIndex (v : Fin n → ℝ) (k : Fin n) : Fin n :=
   partialPivotRow (of fun i (_ : Fin n) => v i) k
 
-/-- The first maximizing index lies at or after `k` and maximizes `|v i|` over `i ≥ k`. -/
+/-- The first maximizing index of $v$ from $k$ on lies at or after $k$, and $|v_i| \le |v_\mu|$ for
+every $i \ge k$, where $\mu$ is that index. -/
 theorem firstMaxIndex_spec (v : Fin n → ℝ) (k : Fin n) :
     k ≤ firstMaxIndex v k ∧ ∀ i, k ≤ i → |v i| ≤ |v (firstMaxIndex v k)| := by
   refine ⟨le_partialPivotRow _ k, fun i hi => ?_⟩
@@ -1726,8 +2043,8 @@ theorem firstMaxIndex_spec (v : Fin n → ℝ) (k : Fin n) :
 
 variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 
-/-- **Algorithm 3.4.2 (Gaxpy LU with Partial Pivoting).** "Initialize `L` to the identity and `U`
-to the zero matrix."
+/-- **Algorithm 3.4.2** of [golub2013matrix] (Gaxpy LU with Partial Pivoting). Initialize $L$ to the
+identity and $U$ to the zero matrix.
 ```
 for j = 1:n
     if j = 1
@@ -1744,9 +2061,12 @@ for j = 1:n
     end
 end
 ```
-The interchanges recorded so far are applied to `A(:,j)` by the `piv` loop (`applyPiv`, the
-entries at and after `j` still the identity); the triangular solve and the gaxpy are the column
-`gaxpyColumn` of Algorithm 3.2.2. The state is `(L, U, piv)`. -/
+The program returns $(L, U, \mathrm{piv})$.
+
+The interchanges recorded so far are applied to $A(:, j)$ by the loop
+`GolubVanLoan.Chapter03.applyPiv`; the entries of $\mathrm{piv}$ from $j$ on are still the
+identity. The triangular solve and the gaxpy are `GolubVanLoan.Chapter03.gaxpyColumn`, the
+column computation of Algorithm 3.2.2. The search is `GolubVanLoan.Chapter03.firstMaxIndex`. -/
 noncomputable def algorithm_3_4_2 (A : Matrix (Fin n) (Fin n) ℝ) :
     M (Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ × (Fin n → Fin n)) :=
   (List.finRange n).foldlM
@@ -1770,30 +2090,37 @@ section Alg342Bridge
 
 variable {fp : RoundingModel ℝ}
 
-/-- The domination of the multipliers of partial pivoting in the finished columns before `j`: the
-running difference `t` of each `l_ic` is at most the pivot `|u_cc|`. -/
+/-- The domination of the multipliers of partial pivoting in the finished columns before $j$: for
+each $\ell_{ic}$ with $c < j$ and $c < i$, the running difference $t$ of $b_{ic}$ and the
+rounded products $\ell_{ir} u_{rc}$, $r < c$, satisfies $|t| \le |u_{cc}|$, and $\ell_{ic}$ is a
+rounding of $t / u_{cc}$. -/
 def GaxpyDom (fp : RoundingModel ℝ) (B : Matrix (Fin n) (Fin n) ℝ) (j : ℕ)
     (L U : Matrix (Fin n) (Fin n) ℝ) : Prop :=
   ∀ i c : Fin n, (c : ℕ) < j → c < i → ∃ (o : List (Fin n)) (t : ℝ), o.Nodup ∧
     (∀ r, r ∈ o ↔ r < c) ∧ RoundsRunningDiff fp o (L i) (fun r => U r c) (B i c) t ∧
     |t| ≤ |U c c| ∧ fp.Rounds (t / U c c) (L i c)
 
-/-- The invariant of Algorithm 3.4.2 after the columns before `j`, for the matrix `B` with its rows
-permuted by the interchanges so far: the invariant `GaxpyInv` of Algorithm 3.2.2 for `B`, with the
-multipliers dominated by their pivots (`GaxpyDom`). -/
+/-- The invariant of Algorithm 3.4.2 after the columns before $j$, for the matrix $B$ with its rows
+permuted by the interchanges so far: the invariant `GolubVanLoan.Chapter03.GaxpyInv` of
+Algorithm 3.2.2 for $B$, and the domination of the multipliers
+`GolubVanLoan.Chapter03.GaxpyDom`. -/
 def Alg342Core (fp : RoundingModel ℝ) (B : Matrix (Fin n) (Fin n) ℝ) (j : ℕ)
     (L U : Matrix (Fin n) (Fin n) ℝ) : Prop :=
   GaxpyInv fp B j (L, U) ∧ GaxpyDom fp B j L U
 
-/-- The invariant of Algorithm 3.4.2 after `j` columns, or — only in a model that does not round
-every value to itself — a zero pivot already returned. -/
+/-- The invariant of Algorithm 3.4.2 after $j$ columns on the state $(L, U, \mathrm{piv})$: either
+`GolubVanLoan.Chapter03.Alg342Core` holds for $A$ with its rows permuted by the first $j$
+interchanges and $\mathrm{piv}$ is the identity from $j$ on, or the model does not round every
+value to itself and a returned pivot $u_{cc}$ with $c < j$ and $c + 1 < n$ is zero. -/
 def Alg342Inv (fp : RoundingModel ℝ) (A : Matrix (Fin n) (Fin n) ℝ) (j : ℕ)
     (st : Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ × (Fin n → Fin n)) : Prop :=
   (Alg342Core fp (A.submatrix (pivPermUpTo st.2.2 j) id) j st.1 st.2.1 ∧
       ∀ c : Fin n, j ≤ (c : ℕ) → st.2.2 c = c) ∨
     ((∃ c : Fin n, (c : ℕ) < j ∧ (c : ℕ) + 1 < n ∧ st.2.1 c c = 0) ∧ ¬ ∀ x, fp.Rounds x x)
 
-/-- With trivial `piv` entries from `j` on, the `piv` loop applies the first `j` interchanges. -/
+/-- If $\mathrm{piv}(c) = c$ for every $c \ge j$ and $j \le n$, then the loop
+`GolubVanLoan.Chapter03.applyPiv` applies the first $j$ interchanges: it maps $x$ to
+$x \circ \sigma$, where $\sigma$ is the permutation of the first $j$ interchanges. -/
 theorem applyPiv_eq_comp_pivPermUpTo {piv : Fin n → Fin n} {j : ℕ}
     (h : ∀ c : Fin n, j ≤ (c : ℕ) → piv c = c) (hj : j ≤ n) (x : Fin n → ℝ) :
     applyPiv piv x = x ∘ pivPermUpTo piv j := by
@@ -1808,14 +2135,18 @@ theorem applyPiv_eq_comp_pivPermUpTo {piv : Fin n → Fin n} {j : ℕ}
       · exact ih
   rw [(applyPiv_eq piv x).1, permMatrix_mulVec, pivPerm, hup n hj]
 
-/-- The `L` of the interchanged rows: the finished columns before `j` of row `i` are those of row
-`σ i`, the book's `L(j,1:j-1) ↔ L(μ,1:j-1)`. -/
+/-- The $L$ of the interchanged rows: in the finished columns before $j$, row $i$ is row
+$\sigma(i)$, which is the interchange $L(j, 1{:}j-1) \leftrightarrow L(\mu, 1{:}j-1)$ of the
+source. -/
 private abbrev swapFinished (L : Matrix (Fin n) (Fin n) ℝ) (j : Fin n) (σ : Equiv.Perm (Fin n)) :
     Matrix (Fin n) (Fin n) ℝ :=
   of fun i c => if c < j then L (σ i) c else L i c
 
-/-- **Interchanging rows at or after `j`** keeps the invariant of Algorithm 3.2.2, for the matrix
-with the same rows interchanged and the finished columns of `L` interchanged with them. -/
+/-- Interchanging rows at or after $j$ keeps the invariant of Algorithm 3.2.2. Let $\sigma$ be a
+permutation that fixes the indices before $j$ and maps the indices from $j$ on among themselves.
+If $(L, U)$ satisfies `GolubVanLoan.Chapter03.GaxpyInv` after $j$ columns for $B$, then it
+satisfies it for $B$ with its rows permuted by $\sigma$, after the finished columns of $L$ are
+permuted with them. -/
 theorem gaxpyInv_submatrix {B L U : Matrix (Fin n) (Fin n) ℝ} {j : Fin n} {σ : Equiv.Perm (Fin n)}
     (hfix : ∀ i, i < j → σ i = i) (hmap : ∀ i, j ≤ i → j ≤ σ i) (h : GaxpyInv fp B j (L, U)) :
     GaxpyInv fp (B.submatrix σ id) j (swapFinished L j σ, U) := by
@@ -1851,7 +2182,8 @@ theorem gaxpyInv_submatrix {B L U : Matrix (Fin n) (Fin n) ℝ} {j : Fin n} {σ 
     · simp only [of_apply, hij, ↓reduceIte]
       exact hLdiag i
 
-/-- Interchanging rows at or after `j` keeps the domination of the finished multipliers. -/
+/-- Interchanging rows at or after $j$ keeps the domination `GolubVanLoan.Chapter03.GaxpyDom` of the
+finished multipliers, with the finished columns of $L$ permuted with the rows. -/
 theorem gaxpyDom_submatrix {B L U : Matrix (Fin n) (Fin n) ℝ} {j : Fin n} {σ : Equiv.Perm (Fin n)}
     (hfix : ∀ i, i < j → σ i = i) (hmap : ∀ i, j ≤ i → j ≤ σ i) (h : GaxpyDom fp B j L U) :
     GaxpyDom fp (B.submatrix σ id) j (swapFinished L j σ) U := by
@@ -1866,8 +2198,9 @@ theorem gaxpyDom_submatrix {B L U : Matrix (Fin n) (Fin n) ℝ} {j : Fin n} {σ 
     fun _ _ => rfl, hdom, ?_⟩
   simpa [hc'] using hx
 
-/-- The column `v` of the gaxpy, interchanged: row `i` of `v ∘ σ` is the running difference of
-row `σ i`, over the same `r < min(i, j)`, against the interchanged `L`. -/
+/-- The column $v$ of the gaxpy, interchanged: entry $i$ of $v \circ \sigma$ is the running
+difference of row $\sigma(i)$, over the same indices $r < \min(i, j)$, against the interchanged
+$L$. -/
 private theorem gaxpyColumn_rounds_swap {B L : Matrix (Fin n) (Fin n) ℝ} {j : Fin n}
     {σ : Equiv.Perm (Fin n)} (hfix : ∀ i, i < j → σ i = i) (hmap : ∀ i, j ≤ i → j ≤ σ i)
     {v : Fin n → ℝ} (hv : v ∈ (gaxpyColumn fp.round L (fun i => B i j) j).run) (i : Fin n) :
@@ -1886,9 +2219,9 @@ private theorem gaxpyColumn_rounds_swap {B L : Matrix (Fin n) (Fin n) ℝ} {j : 
   exact h.congr (fun r hr => by simp [(by simpa using hr : r < i ∧ r < j).2])
     fun r hr => by simp [hfix r (by simpa using hr : r < i ∧ r < j).2]
 
-/-- One column of Algorithm 3.4.2 keeps its invariant: the column step of Algorithm 3.2.2
-(`gaxpyInv_succ`) for the interchanged matrix, plus the domination of the new multipliers by the
-pivot `|v(μ)|`. -/
+/-- One column of Algorithm 3.4.2 keeps its invariant `GolubVanLoan.Chapter03.Alg342Inv`: the column
+step `GolubVanLoan.Chapter03.gaxpyInv_succ` of Algorithm 3.2.2 for the interchanged matrix,
+together with the domination of the new multipliers by the pivot $|v(\mu)|$. -/
 theorem alg342Inv_step (A : Matrix (Fin n) (Fin n) ℝ) (j : Fin n)
     (st : Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ × (Fin n → Fin n))
     (hst : Alg342Inv fp A j st)
@@ -2017,16 +2350,18 @@ theorem alg342Inv_step (A : Matrix (Fin n) (Fin n) ℝ) (j : Fin n)
       rw [hU'j j, ite_eq_left le_rfl]
       exact h0'
 
-/-- The invariant after all columns. -/
+/-- Every run of Algorithm 3.4.2 satisfies the invariant `GolubVanLoan.Chapter03.Alg342Inv` after
+all $n$ columns. -/
 theorem alg342Inv_of_mem_run (A : Matrix (Fin n) (Fin n) ℝ) :
     ∀ out ∈ (algorithm_3_4_2 fp.round A).run, Alg342Inv fp A n out :=
   SetM.forall_mem_run_foldlM_finRange (Alg342Inv fp A)
     (Or.inl ⟨⟨gaxpyInv_zero _, fun _ _ h => absurd h (Nat.not_lt_zero _)⟩, fun _ _ => rfl⟩)
     fun j st hst st' hst' => alg342Inv_step A j st hst st' hst'
 
-/-- The finished invariant of Algorithm 3.4.2, read on the packed matrix of `L` and `U`: the
-invariant of elimination with partial pivoting after all `n` steps, whose packed factors are `L`
-and `U`. -/
+/-- The finished invariant of Algorithm 3.4.2, read on the packed matrix of $L$ and $U$: if
+`GolubVanLoan.Chapter03.Alg342Core` holds after $n$ columns, then the packed matrix with $L$
+below the diagonal and $U$ on and above it satisfies `GolubVanLoan.Chapter03.PivStageInv` after
+$n$ steps, and its packed factors are $L$ and $U$. -/
 theorem pivStageInv_of_alg342Core {B L U : Matrix (Fin n) (Fin n) ℝ}
     (h : Alg342Core fp B n L U) :
     PivStageInv fp B n (of fun i c => if c < i then L i c else U i c) ∧
@@ -2068,11 +2403,16 @@ theorem pivStageInv_of_alg342Core {B L U : Matrix (Fin n) (Fin n) ℝ}
     · rw [packedU_apply_of_le _ hic, hSu i c hic]
     · rw [packedU_apply_of_lt _ hci, hUup i c hci]
 
-/-- **The bridge of Algorithm 3.4.2**: every run `(L̂, Û, piv)` whose returned pivots `û_jj`,
-`j + 1 < n`, are nonzero is an admissible computed LU factorization of the permuted matrix `P A`,
-`FloatingPoint.RoundsLU fp (P A) L̂ Û`, with computed multipliers at most `1 + u` in absolute
-value — the gaxpy bridge `algorithm_3_2_2_rounds` for `A` with its rows permuted by the recorded
-interchanges, which move the finished rows of `L` together with the rows of `A`. -/
+/-- **Algorithm 3.4.2** of [golub2013matrix], rounding bridge. Let $A \in \mathbb{R}^{n \times n}$.
+For every output $(\hat L, \hat U, \mathrm{piv})$ of Algorithm 3.4.2 in the rounding model `fp`
+whose returned pivots $\hat u_{jj}$, $j + 1 < n$, are nonzero, let $P$ be the permutation matrix
+encoded by $\mathrm{piv}$. Then $\hat L$ and $\hat U$ form a computed LU factorization of $PA$
+in the sense of `FloatingPoint.RoundsLU`, and
+$$|\hat\ell_{ij}| \le 1 + u \quad \text{for all } i, j.$$
+
+The proof is the gaxpy bridge `GolubVanLoan.Chapter03.algorithm_3_2_2_rounds` for $A$ with its
+rows permuted by the recorded interchanges, which move the finished rows of $L$ together with
+the rows of $A$. -/
 theorem algorithm_3_4_2_rounds (A : Matrix (Fin n) (Fin n) ℝ) :
     ∀ out ∈ (algorithm_3_4_2 fp.round A).run,
       (∀ j : Fin n, (j : ℕ) + 1 < n → out.2.1 j j ≠ 0) →
@@ -2094,7 +2434,7 @@ theorem algorithm_3_4_2_rounds (A : Matrix (Fin n) (Fin n) ℝ) :
       linarith [fp.u_nonneg]
   · exact absurd hj0 (hpiv j hjn)
 
-/-- The exact run of Algorithm 3.4.2 is a run of the exact model. -/
+/-- The exact run of Algorithm 3.4.2 is one of its runs in the exact rounding model. -/
 private theorem algorithm_3_4_2_mem_exact (A : Matrix (Fin n) (Fin n) ℝ) :
     Id.run (algorithm_3_4_2 pure A) ∈ (algorithm_3_4_2 (RoundingModel.exact ℝ).round A).run := by
   rw [RoundingModel.round_exact]
@@ -2102,11 +2442,15 @@ private theorem algorithm_3_4_2_mem_exact (A : Matrix (Fin n) (Fin n) ℝ) :
     SetM.mem_run_pure]
   rfl
 
-/-- **Exact correctness of Algorithm 3.4.2**: "this algorithm computes the factorization
-`PA = LU` where `P` is a permutation matrix encoded by `piv(1:n-1)`, `L` is unit lower triangular
-with `|ℓ_ij| ≤ 1`, and `U` is upper triangular" — for every `A`: a zero pivot comes with a zero
-`v(j:n)`, and then the skipped division is the division `0/0 = 0`. Read off the invariant of the
-bridge at the exact model. -/
+/-- **Algorithm 3.4.2** of [golub2013matrix], exact correctness. Let $A \in \mathbb{R}^{n \times n}$
+be arbitrary, and let $(L, U, \mathrm{piv})$ be the output of Algorithm 3.4.2 in exact
+arithmetic, with $P$ the permutation matrix encoded by $\mathrm{piv}$. Then
+$$PA = LU, \qquad |\ell_{ij}| \le 1 \text{ for all } i, j,$$
+with $L$ unit lower triangular and $U$ upper triangular.
+
+The theorem has no hypothesis on $A$: a zero pivot comes with a zero $v(j{:}n)$, and the skipped
+division is then the division $0/0 = 0$. The proof reads the invariant of the bridge at the
+exact model. -/
 theorem algorithm_3_4_2_spec (A : Matrix (Fin n) (Fin n) ℝ) :
     IsLU ((pivPerm (Id.run (algorithm_3_4_2 pure A)).2.2).permMatrix ℝ * A)
         (Id.run (algorithm_3_4_2 pure A)).1 (Id.run (algorithm_3_4_2 pure A)).2.1 ∧
@@ -2127,11 +2471,20 @@ section Alg342Backward
 
 variable {fp : RoundingModel ℝ}
 
-/-- **(3.4.6) for Algorithm 3.4.2**, rigorous form ("`P̂, L̂, Û` are the computed analogs of
-`P, L, U` as produced by the above algorithms"): every run `(L̂, Û, piv)` of the gaxpy LU with
-partial pivoting with nonzero returned pivots, followed by every run of `Ly = Pb`
-(Algorithm 3.1.1) and every run of `Ux = y` (Algorithm 3.1.2), gives `(A + E) x̂ = b` with
-`|E| ≤ γ_{3n} Pᵀ |L̂| |Û|`, through the bridge `algorithm_3_4_2_rounds`. -/
+/-- **Equation (3.4.6)** of [golub2013matrix], for Algorithm 3.4.2. The source states (3.4.6) for
+$\hat P$, $\hat L$, $\hat U$ "as produced by the above algorithms". Let
+$A \in \mathbb{R}^{n \times n}$ and $b \in \mathbb{R}^n$, and let $u < 1$ and $3nu < 1$. Let
+$(\hat L, \hat U, \mathrm{piv})$ be an output of Algorithm 3.4.2 on $A$ whose diagonal entries
+$\hat u_{jj}$ are all nonzero, and let $P$ be the permutation matrix encoded by $\mathrm{piv}$.
+If $\hat y$ is computed by Algorithm 3.1.1 from $\hat L$ and $Pb$, and $\hat x$ by Algorithm
+3.1.2 from $\hat U$ and $\hat y$, then $(A + E)\hat x = b$ for some
+$E \in \mathbb{R}^{n \times n}$ with
+$$|E| \le \gamma_{3n} P^T |\hat L| |\hat U|$$
+entrywise.
+
+The vector $Pb$ is computed exactly by `GolubVanLoan.Chapter03.applyPiv`. The proof applies
+`GolubVanLoan.Chapter03.algorithm_3_4_2_rounds` and
+`GolubVanLoan.Chapter03.exists_backward_error_of_roundsLU`. -/
 theorem equation_3_4_6_gaxpy (hu : fp.u < 1) (hn : ((3 * n : ℕ) : ℝ) * fp.u < 1)
     (A : Matrix (Fin n) (Fin n) ℝ) (b : Fin n → ℝ) :
     ∀ out ∈ (algorithm_3_4_2 fp.round A).run, (∀ j, out.2.1 j j ≠ 0) →
@@ -2148,8 +2501,11 @@ section Normwise
 
 open scoped Matrix.Norms.Operator
 
-/-- **(3.4.7) for Algorithm 3.4.2**, rigorous form: under the hypotheses of `equation_3_4_6_gaxpy`,
-`‖E‖_∞ ≤ n (1 + u) γ_{3n} ‖Û‖_∞`. -/
+/-- **Equation (3.4.7)** of [golub2013matrix], for Algorithm 3.4.2. Under the hypotheses of
+`GolubVanLoan.Chapter03.equation_3_4_6_gaxpy`, the computed solution satisfies
+$(A + E)\hat x = b$ for some $E \in \mathbb{R}^{n \times n}$ with
+$$\|E\|_\infty \le n(1 + u)\gamma_{3n} \|\hat U\|_\infty.$$
+-/
 theorem equation_3_4_7_gaxpy (hu : fp.u < 1) (hn : ((3 * n : ℕ) : ℝ) * fp.u < 1)
     (A : Matrix (Fin n) (Fin n) ℝ) (b : Fin n → ℝ) :
     ∀ out ∈ (algorithm_3_4_2 fp.round A).run, (∀ j, out.2.1 j j ≠ 0) →
@@ -2161,9 +2517,14 @@ theorem equation_3_4_7_gaxpy (hu : fp.u < 1) (hn : ((3 * n : ℕ) : ℝ) * fp.u 
   exact ⟨E, hAx, linfty_opNorm_le_of_backward_error (gamma_nonneg fp.u_nonneg hn) hE
     (algorithm_3_4_2_rounds A out hout fun j _ => hpiv j).2⟩
 
-/-- **(3.4.9) for Algorithm 3.4.2**, rigorous conditional form: under the hypotheses of
-`equation_3_4_6_gaxpy`, if the computed `Û` satisfies `|û_ij| ≤ ρ ‖A‖_∞`, then
-`‖E‖_∞ ≤ n² (1 + u) γ_{3n} ρ ‖A‖_∞`. -/
+/-- **Equation (3.4.9)** of [golub2013matrix], for Algorithm 3.4.2. Let $\rho \ge 0$. Under the
+hypotheses of `GolubVanLoan.Chapter03.equation_3_4_6_gaxpy`, if the computed $\hat U$ satisfies
+$|\hat u_{ij}| \le \rho \|A\|_\infty$ for all $i, j$, then the computed solution satisfies
+$(A + E)\hat x = b$ for some $E \in \mathbb{R}^{n \times n}$ with
+$$\|E\|_\infty \le n^2 (1 + u)\gamma_{3n} \rho \|A\|_\infty.$$
+
+**Reading.** As in `GolubVanLoan.Chapter03.equation_3_4_9`, the bound on the computed $\hat U$,
+which the source derives from the growth factor, is a hypothesis. -/
 theorem equation_3_4_9_gaxpy (hu : fp.u < 1) (hn : ((3 * n : ℕ) : ℝ) * fp.u < 1)
     (A : Matrix (Fin n) (Fin n) ℝ) (b : Fin n → ℝ) {ρ : ℝ} (hρ : 0 ≤ ρ) :
     ∀ out ∈ (algorithm_3_4_2 fp.round A).run, (∀ j, out.2.1 j j ≠ 0) →
@@ -2180,12 +2541,15 @@ end Normwise
 
 end Alg342Backward
 
-/-- §3.4.5, the matrix of the `2^{n-1}` example: `a_ij = 1` if `i = j` or `j = n`, `-1` if
-`i > j`, `0` otherwise (0-based, `j = n - 1`). -/
+/-- **Section 3.4.5** of [golub2013matrix], the matrix of the $2^{n-1}$ example. The matrix
+$A \in \mathbb{R}^{n \times n}$ has $a_{ij} = 1$ if $i = j$ or $j = n$, $a_{ij} = -1$ if $i > j$
+and $j < n$, and $a_{ij} = 0$ otherwise.
+
+With 0-based indices the last column is $j = n - 1$. -/
 noncomputable def growthExample (n : ℕ) : Matrix (Fin n) (Fin n) ℝ :=
   of fun i j => if i = j ∨ (j : ℕ) = n - 1 then 1 else if j < i then -1 else 0
 
-/-- §3.4.7, the rook scan:
+/-- **Section 3.4.7** of [golub2013matrix], the rook scan in the trailing block from $k$ on:
 ```
 μ = k, λ = k, τ = |a_μλ|, s = 0
 while τ < ‖A(k:n,λ)‖_∞ ∨ τ < ‖A(μ,k:n)‖_∞
@@ -2197,9 +2561,11 @@ while τ < ‖A(k:n,λ)‖_∞ ∨ τ < ‖A(μ,k:n)‖_∞
     s = s + 1
 end
 ```
-The `while` loop is a loop over `List.range fuel` with a `done` flag (convention 3); the updates
-choose the first maximizing index (`firstMaxIndex`); comparisons are exact, and nothing is
-rounded. Returns `(μ, λ)`. -/
+The function returns $(\mu, \lambda)$.
+
+The `while` loop is a loop of at most `fuel` passes with a flag that records the exit. The
+updates choose the first maximizing index (`GolubVanLoan.Chapter03.firstMaxIndex`). The
+comparisons are exact, and nothing is rounded. -/
 noncomputable def rookPivotSearch (A : Matrix (Fin n) (Fin n) ℝ) (k : Fin n) (fuel : ℕ) :
     Fin n × Fin n :=
   let st := (List.range fuel).foldl (fun (st : Fin n × Fin n × ℕ × Bool) _ =>
@@ -2211,7 +2577,8 @@ noncomputable def rookPivotSearch (A : Matrix (Fin n) (Fin n) ℝ) (k : Fin n) (
     else (st.1, st.2.1, st.2.2.1, true)) (k, k, 0, false)
   (st.1, st.2.1)
 
-/-- One pass of the rook scan's `while` loop, on the state `(μ, λ, s, done)`. -/
+/-- One pass of the `while` loop of the rook scan, on the state $(\mu, \lambda, s, \mathrm{done})$.
+-/
 private noncomputable def rookPass (A : Matrix (Fin n) (Fin n) ℝ) (k : Fin n)
     (st : Fin n × Fin n × ℕ × Bool) : Fin n × Fin n × ℕ × Bool :=
   if st.2.2.2 then st
@@ -2221,12 +2588,12 @@ private noncomputable def rookPass (A : Matrix (Fin n) (Fin n) ℝ) (k : Fin n)
     else (st.1, firstMaxIndex (fun j => A st.1 j) k, st.2.2.1 + 1, false)
   else (st.1, st.2.1, st.2.2.1, true)
 
-/-- The rook condition at `(μ, λ)`: in the trailing block, `|a_μλ|` is maximal in its column and
-in its row. -/
+/-- The rook condition at $(\mu, \lambda)$: in the trailing block from $k$ on, $|a_{\mu\lambda}|$ is
+maximal in its column and in its row. -/
 private def IsRookEntry (A : Matrix (Fin n) (Fin n) ℝ) (k μ l : Fin n) : Prop :=
   k ≤ μ ∧ k ≤ l ∧ (∀ i, k ≤ i → |A i l| ≤ |A μ l|) ∧ ∀ j, k ≤ j → |A μ j| ≤ |A μ l|
 
-/-- The number of entries of the trailing block from `k` on exceeding `τ` in modulus. -/
+/-- The number of entries of the trailing block from $k$ on whose modulus exceeds $\tau$. -/
 private noncomputable def rookPotential (A : Matrix (Fin n) (Fin n) ℝ) (k : Fin n) (τ : ℝ) : ℕ :=
   ((Finset.Ici k ×ˢ Finset.Ici k).filter fun p : Fin n × Fin n => τ < |A p.1 p.2|).card
 
@@ -2250,7 +2617,7 @@ private theorem rookPotential_lt (A : Matrix (Fin n) (Fin n) ℝ) {k μ l : Fin 
   have := h (Finset.mem_filter.2 ⟨hmem, hτ⟩)
   exact lt_irrefl _ (Finset.mem_filter.1 this).2
 
-/-- The invariant of the rook scan after `t` passes. -/
+/-- The invariant of the rook scan after $t$ passes. -/
 private def RookInv (A : Matrix (Fin n) (Fin n) ℝ) (k : Fin n) (t : ℕ)
     (st : Fin n × Fin n × ℕ × Bool) : Prop :=
   k ≤ st.1 ∧ k ≤ st.2.1 ∧ (st.2.2.2 = true → IsRookEntry A k st.1 st.2.1) ∧
@@ -2316,13 +2683,18 @@ private theorem rookInv_foldl (A : Matrix (Fin n) (Fin n) ℝ) (k : Fin n) (t : 
     rw [List.range_succ, List.foldl_append, List.foldl_cons, List.foldl_nil]
     exact rookInv_pass A k t _ ih
 
-/-- **§3.4.7, termination and correctness of the rook scan**: "the value of `τ` is monotone
-increasing and that ensures termination". Every pass of the `while` loop after the first strictly
-increases `τ = |a_μλ|` or exits, so with at least `(n - k)² + 1` passes (the number of entries of
-the trailing block, plus one) the loop has exited, and on exit `(μ, λ)` lies in the trailing block
-`A(k:n, k:n)` with `|a_μλ|` maximal in its column and in its row there. Hence
-`fun A k => rookPivotSearch A k ((n - k)² + 1)` is a rook-pivoting strategy
-(`Matrix.IsRookPivot`). -/
+/-- **Section 3.4.7** of [golub2013matrix], termination and correctness of the rook scan. Let
+$A \in \mathbb{R}^{n \times n}$, let $k$ be an index, and let the number of passes be at least
+$(n - k)^2 + 1$. Then the rook scan from $(k, k)$ returns $(\mu, \lambda)$ with
+$\mu, \lambda \ge k$ and
+$$|a_{i\lambda}| \le |a_{\mu\lambda}| \text{ for all } i \ge k, \qquad |a_{\mu j}| \le
+  |a_{\mu\lambda}| \text{ for all } j \ge k.$$
+
+The source notes that "the value of $\tau$ is monotone increasing and that ensures termination".
+Every pass after the first strictly increases $\tau = |a_{\mu\lambda}|$ or exits. So after
+$(n - k)^2 + 1$ passes, the number of entries of the trailing block plus one, the loop has
+exited, and on exit $|a_{\mu\lambda}|$ is maximal in its column and in its row of the trailing
+block. -/
 theorem rookPivotSearch_spec (A : Matrix (Fin n) (Fin n) ℝ) (k : Fin n) {fuel : ℕ}
     (hfuel : (n - k) ^ 2 + 1 ≤ fuel) :
     k ≤ (rookPivotSearch A k fuel).1 ∧ k ≤ (rookPivotSearch A k fuel).2 ∧
@@ -2341,23 +2713,32 @@ theorem rookPivotSearch_spec (A : Matrix (Fin n) (Fin n) ℝ) (k : Fin n) {fuel 
     have := ((hrun hd).2.1) (by omega)
     omega
 
-/-- §3.4.7, the rook-pivoting strategy: the rook scan `rookPivotSearch` from `(k, k)` with
-`(n - k)² + 1` passes, enough for the loop to exit (`rookPivotSearch_spec`). -/
+/-- **Section 3.4.7** of [golub2013matrix], the rook pivoting strategy: the rook scan
+`GolubVanLoan.Chapter03.rookPivotSearch` from $(k, k)$ with $(n - k)^2 + 1$ passes, which are
+enough for the loop to exit (`GolubVanLoan.Chapter03.rookPivotSearch_spec`). -/
 noncomputable def rookPivot (M : Matrix (Fin n) (Fin n) ℝ) (k : Fin n) : Fin n × Fin n :=
   rookPivotSearch M k ((n - k) ^ 2 + 1)
 
-/-- The rook scan is a rook-pivoting strategy in the sense of the backbone. -/
+/-- **Section 3.4.7** of [golub2013matrix]. The rook scan is a rook pivoting strategy in the sense
+of the backbone: for every matrix and every $k$, `GolubVanLoan.Chapter03.rookPivot` returns
+indices at or after $k$ whose entry is maximal in modulus in its column and in its row of the
+trailing block. This is `Matrix.IsRookPivot`. -/
 theorem isRookPivot_rookPivot : IsRookPivot (rookPivot (n := n)) :=
   fun A k => by
     simpa only [Real.norm_eq_abs, rookPivot] using rookPivotSearch_spec A k le_rfl
 
-/-- **§3.4.7, rook pivoting "computes the factorization `P A Q = L U`"**: Gaussian elimination
-with the rook strategy (`Matrix.gemFullPivotStage A rookPivot`) gives `P A Q = L U`, `P` and
-`Q = (ρ⁻¹).permMatrix ℝ` the accumulated row and column interchanges, `U` the last pivoted stage
-and `L` the multipliers of elimination without pivoting on `P A Q`, with `|ℓ_ij| ≤ 1` and
-`|u_ij| ≤ |u_ii|` (P3.4.2's question, answered yes). No hypothesis on `A`: column maximality makes
-a zero pivot come with a zero column. The "same level of reliability as complete pivoting" is not
-formalized. -/
+/-- **Section 3.4.7** of [golub2013matrix], rook pivoting computes the factorization $PAQ = LU$. Let
+$A \in \mathbb{R}^{n \times n}$ be arbitrary. Gaussian elimination with the rook strategy, in
+exact arithmetic, gives permutation matrices $P$ and $Q$ with
+$$PAQ = LU, \qquad |\ell_{ij}| \le 1, \qquad |u_{ij}| \le |u_{ii}| \text{ for all } i, j,$$
+where $U$ is the last stage of the elimination and $L$ is the unit lower triangular matrix of
+multipliers of elimination without pivoting on $PAQ$.
+
+The bound $|u_{ij}| \le |u_{ii}|$ answers the question of P3.4.2. There is no hypothesis on $A$:
+the column maximality makes a zero pivot come with a zero column. The elimination is
+`Matrix.gemFullPivotStage A GolubVanLoan.Chapter03.rookPivot`, $P$ and $Q$ are the permutation
+matrices of the accumulated row interchanges and of the inverse of the accumulated column
+interchanges, and $L$ is `Matrix.gemLower` of $PAQ$. -/
 theorem rookPivoting_isLU (A : Matrix (Fin n) (Fin n) ℝ) :
     IsLU ((gemFullPivotStage A rookPivot n).2.1.permMatrix ℝ * A *
           ((gemFullPivotStage A rookPivot n).2.2)⁻¹.permMatrix ℝ)
@@ -2379,16 +2760,17 @@ section GrowthExample
 
 variable {n : ℕ}
 
-/-- The unit lower factor of the growth example: `-1` below the diagonal. -/
+/-- The unit lower factor of the growth example: ones on the diagonal, $-1$ below it, and zero above
+it. -/
 noncomputable def growthExampleL (n : ℕ) : Matrix (Fin n) (Fin n) ℝ :=
   of fun i j => if i = j then 1 else if j < i then -1 else 0
 
-/-- The upper factor of the growth example: the identity except the last column
-`u_in = 2^i` (0-based). -/
+/-- The upper factor of the growth example: the identity except the last column, whose entry in row
+$i$ is $2^i$ (0-based). -/
 noncomputable def growthExampleU (n : ℕ) : Matrix (Fin n) (Fin n) ℝ :=
   of fun i j => if (j : ℕ) = n - 1 then 2 ^ (i : ℕ) else if i = j then 1 else 0
 
-/-- `∑_{r < i} 2^r = 2^i - 1` over `Fin n`. -/
+/-- $\sum_{r < i} 2^r = 2^i - 1$ for an index $i$ of `Fin n`. -/
 private theorem sum_filter_lt_two_pow (i : Fin n) :
     ∑ r ∈ Finset.univ.filter (· < i), (2 : ℝ) ^ (r : ℕ) = 2 ^ (i : ℕ) - 1 := by
   have h : (Finset.univ.filter (· < i)).map Fin.valEmbedding = Finset.range i := by
@@ -2404,9 +2786,14 @@ private theorem sum_filter_lt_two_pow (i : Fin n) :
     ∑ t ∈ Finset.range i, (2 : ℝ) ^ t from this.symm, geom_sum_eq (by norm_num)]
   ring
 
-/-- **§3.4.5, the `2^{n-1}` example**: "`A = LU` and it can be shown that `u_nn = 2^{n-1}`" —
-the growth example is `L U` with `L` unit lower triangular with `-1` below the diagonal and `U`
-the identity except its last column `u_in = 2^i` (0-based), so `u_nn = 2^{n-1}`. -/
+/-- **Section 3.4.5** of [golub2013matrix], the factorization of the $2^{n-1}$ example. The growth
+example $A$ satisfies $A = LU$, where $L$ is unit lower triangular with $-1$ below the diagonal
+and $U$ is the identity except its last column, whose entry in row $i$ is $2^{i-1}$. In
+particular, for $n \ge 1$,
+$$u_{nn} = 2^{n-1}.$$
+
+The factors are `GolubVanLoan.Chapter03.growthExampleL` and
+`GolubVanLoan.Chapter03.growthExampleU`, with 0-based entries $u_{i,n-1} = 2^i$. -/
 theorem growthExample_isLU :
     IsLU (growthExample n) (growthExampleL n) (growthExampleU n) ∧
       ∀ h : 0 < n, growthExampleU n ⟨n - 1, by omega⟩ ⟨n - 1, by omega⟩ = 2 ^ (n - 1) := by
@@ -2451,8 +2838,8 @@ theorem growthExample_isLU :
       rw [Finset.sum_ite_eq']
       simp
 
-/-- The stage `A^{(k)}` of elimination on the growth example: last column `2^{min(i,k)}`, `1` on
-the diagonal, `-1` below it in the columns `k, …, n-2`, `0` elsewhere. -/
+/-- The stage $A^{(k)}$ of elimination on the growth example: last column $2^{\min(i, k)}$, $1$ on
+the diagonal, $-1$ below it in the columns $k, \dots, n - 2$, and $0$ elsewhere. -/
 private noncomputable def growthStage (n k : ℕ) : Matrix (Fin n) (Fin n) ℝ :=
   of fun i j => if (j : ℕ) = n - 1 then 2 ^ min (i : ℕ) k else if i = j then 1
     else if (j : ℕ) < i ∧ k ≤ (j : ℕ) then -1 else 0
@@ -2510,7 +2897,7 @@ private theorem gemStage_growthExample {k : ℕ} (hk : k ≤ n) :
   | succ k ih =>
     rw [gemStage_succ_of_lt _ (by omega), ih (by omega), elimStep_growthStage]
 
-/-- On a stage of the growth example, the first maximizing row of column `k` is `k`. -/
+/-- On a stage of the growth example, the first maximizing row of column $k$ is $k$. -/
 private theorem partialPivotRow_growthStage {k : ℕ} (hk : k < n) :
     partialPivotRow (growthStage n k) ⟨k, hk⟩ = ⟨k, hk⟩ := by
   refine le_antisymm (partialPivotRow_le _ _ le_rfl fun r hr => ?_) (le_partialPivotRow _ _)
@@ -2541,11 +2928,14 @@ private theorem abs_growthStage_le (k : ℕ) (i j : Fin n) :
   · simpa using h1
   · simp
 
-/-- **§3.4.5, no interchanges on the growth example**: "there is no swapping of rows during
-Gaussian elimination with partial pivoting" on `growthExample n` — every interchange of
-`Matrix.gemPivotStage (growthExample n) Matrix.partialPivotRow` is trivial — and the growth
-factor is `2^{n-1}` (for `n ≥ 1`): the stage `A^{(k)}` has last column `2^{min(i,k)}`, the entry
-`u_nn = 2^{n-1}` is the largest, and the entries of `A` are at most `1`. -/
+/-- **Section 3.4.5** of [golub2013matrix], no interchanges on the growth example. Gaussian
+elimination with partial pivoting on the growth example performs no interchange: the accumulated
+permutation of `Matrix.gemPivotStage (GolubVanLoan.Chapter03.growthExample n)
+Matrix.partialPivotRow` is the identity. Its growth factor `Matrix.growthFactor` is $2^{n-1}$
+for $n \ge 1$.
+
+The stage $A^{(k)}$ has last column $2^{\min(i, k)}$, the entry $u_{nn} = 2^{n-1}$ is the
+largest, and the entries of $A$ are at most $1$ in modulus. -/
 theorem growthExample_noInterchange :
     (gemPivotStage (growthExample n) partialPivotRow n).2 = 1 ∧
       (0 < n → growthFactor (growthExample n) = 2 ^ (n - 1)) := by
@@ -2581,7 +2971,9 @@ section Underdetermined
 
 variable {m p : ℕ}
 
-/-- `[U₁ | U₂]` applied to `[z₁; z₂]` is `U₁ z₁ + U₂ z₂`. -/
+/-- For $U_1 \in \mathbb{R}^{m \times m}$, $U_2 \in \mathbb{R}^{m \times p}$, $z_1 \in \mathbb{R}^m$
+and $z_2 \in \mathbb{R}^p$, the block matrix $[U_1 \mid U_2]$ applied to $[z_1; z_2]$ is
+$U_1 z_1 + U_2 z_2$. -/
 theorem fromCols_submatrix_mulVec_append (U₁ : Matrix (Fin m) (Fin m) ℝ)
     (U₂ : Matrix (Fin m) (Fin p) ℝ) (z₁ : Fin m → ℝ) (z₂ : Fin p → ℝ) :
     (fromCols U₁ U₂).submatrix id finSumFinEquiv.symm *ᵥ Fin.append z₁ z₂ =
@@ -2591,11 +2983,17 @@ theorem fromCols_submatrix_mulVec_append (U₁ : Matrix (Fin m) (Fin m) ℝ)
     finSumFinEquiv_symm_apply_castAdd, finSumFinEquiv_symm_apply_natAdd, fromCols_apply_inl,
     fromCols_apply_inr, Fin.append_left, Fin.append_right]
 
-/-- **(3.4.11)**: "if `A ∈ ℝ^{m×n}` with `m < n`, `rank(A) = m`, … it is possible to compute an LU
-factorization of the form `PAQᵀ = L[U₁ | U₂]` where `P` and `Q` are permutations, `L ∈ ℝ^{m×m}` is
-unit lower triangular, and `U₁ ∈ ℝ^{m×m}` is nonsingular and upper triangular" (`n = m + p`,
-`PAQᵀ = A.submatrix σ ρ`). Proof at the level of the specification: `m` independent columns are
-moved first, and their square block has a pivoted LU factorization. -/
+/-- **Equation (3.4.11)** of [golub2013matrix]. Let $A \in \mathbb{R}^{m \times n}$ with $n = m + p$
+and $\operatorname{rank} A = m$. Then there are permutation matrices $P$ and $Q$, a unit lower
+triangular $L \in \mathbb{R}^{m \times m}$, a nonsingular upper triangular
+$U_1 \in \mathbb{R}^{m \times m}$ and $U_2 \in \mathbb{R}^{m \times p}$ with
+$$PAQ^T = L \begin{bmatrix} U_1 & U_2 \end{bmatrix}.$$
+
+The source assumes $m < n$; the theorem also allows $p = 0$. The matrix $PAQ^T$ is
+`A.submatrix σ ρ` for two permutations of the rows and the columns.
+The block matrix $[U_1 \mid U_2]$ is `fromCols U₁ U₂`, read on `Fin (m + p)`. The proof works
+with the specification: $m$ independent columns are moved first, and their square block has a
+pivoted LU factorization. -/
 theorem equation_3_4_11 (A : Matrix (Fin m) (Fin (m + p)) ℝ) (hA : A.rank = m) :
     ∃ (σ : Equiv.Perm (Fin m)) (ρ : Equiv.Perm (Fin (m + p))) (L U₁ : Matrix (Fin m) (Fin m) ℝ)
       (U₂ : Matrix (Fin m) (Fin p) ℝ), L.IsUnitLowerTriangular ∧ U₁.IsUpperTriangular ∧
@@ -2643,9 +3041,16 @@ theorem equation_3_4_11 (A : Matrix (Fin m) (Fin (m + p)) ℝ) (hA : A.rank = m)
     rw [h]
     rfl
 
-/-- **§3.4.8, Steps 1–3**: with the factorization (3.4.11), "`Ax = b ⇔ L(U₁z₁ + U₂z₂) = c`" where
-`c = Pb` and `[z₁; z₂] = Qx`, so for every choice of `z₂` the vector `x = Qᵀ[z₁; z₂]` with `Ly = Pb`
-and `U₁z₁ = y - U₂z₂` solves `Ax = b` ("setting `z₂ = 0` is a natural choice"). -/
+/-- **Section 3.4.8** of [golub2013matrix], Steps 1–3 of the solution of an underdetermined system.
+Let $A \in \mathbb{R}^{m \times (m+p)}$ and let $PAQ^T = L[U_1 \mid U_2]$ with $L$ unit lower
+triangular and $U_1$ nonsingular, as in (3.4.11). Let $b \in \mathbb{R}^m$ and
+$z_2 \in \mathbb{R}^p$. Let $y$ solve $Ly = Pb$, let $z_1$ solve $U_1 z_1 = y - U_2 z_2$, and
+let $x = Q^T [z_1; z_2]$. Then
+$$Ax = b.$$
+
+The source derives this from $Ax = b \iff L(U_1 z_1 + U_2 z_2) = c$ with $c = Pb$ and
+$[z_1; z_2] = Qx$, and notes that $z_2 = 0$ is a natural choice. In Lean, $Pb$ is `b ∘ σ`, and
+$x$ is `Fin.append z₁ z₂ ∘ ρ.symm`. -/
 theorem underdetermined_solve {A : Matrix (Fin m) (Fin (m + p)) ℝ} {σ : Equiv.Perm (Fin m)}
     {ρ : Equiv.Perm (Fin (m + p))} {L U₁ : Matrix (Fin m) (Fin m) ℝ} {U₂ : Matrix (Fin m) (Fin p) ℝ}
     (hL : L.IsUnitLowerTriangular) (hU₁ : IsUnit U₁)
@@ -2668,24 +3073,33 @@ theorem underdetermined_solve {A : Matrix (Fin m) (Fin (m + p)) ℝ} {σ : Equiv
 
 end Underdetermined
 
-/-! ### Where is `L`? (§3.4.3) -/
+/-! ### Where is $L$? (§3.4.3) -/
 
 section WhereIsL
 
 variable {n : ℕ}
 
-/-- Conjugating a Gauss transformation by a permutation fixing the indices up to `k` gives the
-Gauss transformation of the permuted Gauss vector: `P (I - τ e_kᵀ) Pᵀ = I - (Pτ) e_kᵀ`. -/
+/-- Conjugating a Gauss transformation by a permutation that fixes the indices up to $k$ gives the
+Gauss transformation of the permuted Gauss vector: if $P$ is the permutation matrix of such a
+permutation, then $P(I - \tau e_k^T)P^T = I - (P\tau)e_k^T$. -/
 theorem permMatrix_mul_gaussTransformation_mul_transpose {ρ : Equiv.Perm (Fin n)} {k : Fin n}
     (hρ : ∀ r, r ≤ k → ρ r = r) (τ : Fin n → ℝ) :
     ρ.permMatrix ℝ * gaussTransformation τ k * (ρ.permMatrix ℝ)ᵀ =
       gaussTransformation (ρ.permMatrix ℝ *ᵥ τ) k :=
   permMatrix_mul_one_sub_vecMulVec_single_mul_transpose (hρ k le_rfl) τ
 
-/-- **(3.4.5)**: with `P' = Π_{n-1} ⋯ Π_{k+1}` the interchanges of partial pivoting after step `k`
-(`σ_{k+1}⁻¹ σ_n`, which fix the indices up to `k`), `M̃_k = P' M_k P'ᵀ` is a Gauss transformation,
-`M̃_k = I - τ̃ e_kᵀ` with `τ̃ = P' τ`, for every Gauss vector `τ` of step `k` — in particular for
-the multipliers of `M_k`. -/
+/-- **Equation (3.4.5)** of [golub2013matrix]. Let $A \in \mathbb{R}^{n \times n}$, let $k$ be an
+index, and let $\tau \in \mathbb{R}^n$ with $\tau_i = 0$ for $i \le k$. Let $P'$ be the
+permutation matrix of the interchanges of partial pivoting on $A$ after step $k$. Then
+$P'(I - \tau e_k^T)P'^T$ is a Gauss transformation at $k$, and
+$$P'(I - \tau e_k^T)P'^T = I - \tilde\tau e_k^T, \qquad \tilde\tau = P'\tau.$$
+In particular this holds for the Gauss transformation $M_k$ of step $k$, which gives
+$\tilde M_k = P' M_k P'^T$.
+
+The source writes $P' = \Pi_{n-1} \cdots \Pi_{k+1}$. In Lean, $P'$ is the permutation matrix of
+$\sigma_{k+1}^{-1} \sigma_n$, where $\sigma_j$ is the permutation of
+`Matrix.gemPivotStage A Matrix.partialPivotRow` after $j$ steps; this permutation fixes the
+indices up to $k$. -/
 theorem equation_3_4_5 (A : Matrix (Fin n) (Fin n) ℝ) (k : Fin n) (τ : Fin n → ℝ)
     (hτ : ∀ i, i ≤ k → τ i = 0) :
     IsGaussTransformation (((gemPivotStage A partialPivotRow ((k : ℕ) + 1)).2⁻¹ *
@@ -2707,9 +3121,12 @@ theorem equation_3_4_5 (A : Matrix (Fin n) (Fin n) ℝ) (k : Fin n) (τ : Fin n 
   rw [permMatrix_mulVec, Function.comp_apply, hfix i hi]
   exact hτ i hi
 
-/-- §3.4.3, the book's `M̃_k = P' M_k P'ᵀ` (3.4.5) for the Gauss transformation `M_k` of step `k`
-of partial pivoting (as in (3.4.2)) and `P' = Π_{n-1} ⋯ Π_{k+1}` the later interchanges
-(`σ_{k+1}⁻¹ σ_n`). -/
+/-- **Section 3.4.3** of [golub2013matrix], the matrix $\tilde M_k = P' M_k P'^T$ of (3.4.5). Here
+$M_k$ is the Gauss transformation of step $k$ of partial pivoting on $A$, as in (3.4.2), and
+$P'$ is the permutation matrix of the later interchanges.
+
+In Lean, $P'$ is the permutation matrix of $\sigma_{k+1}^{-1} \sigma_n$, where $\sigma_j$ is the
+permutation of `Matrix.gemPivotStage A Matrix.partialPivotRow` after $j$ steps. -/
 noncomputable def pivotedGaussTransformation (A : Matrix (Fin n) (Fin n) ℝ) (k : Fin n) :
     Matrix (Fin n) (Fin n) ℝ :=
   ((gemPivotStage A partialPivotRow ((k : ℕ) + 1)).2⁻¹ *
@@ -2720,12 +3137,20 @@ noncomputable def pivotedGaussTransformation (A : Matrix (Fin n) (Fin n) ℝ) (k
     (((gemPivotStage A partialPivotRow ((k : ℕ) + 1)).2⁻¹ *
       (gemPivotStage A partialPivotRow n).2).permMatrix ℝ)ᵀ
 
-/-- **(3.4.4)**: `M̃_{n-1} ⋯ M̃_1 P A = U` with `M̃_k = P' M_k P'ᵀ` (`pivotedGaussTransformation`)
-— the book's answer to "where is `L`?". Each `M̃_k` is the Gauss transformation of step `k` of
-elimination *without* pivoting on `P A`: `M̃_k (P A)^{(k)} = (P A)^{(k+1)}` (so
-`L = (M̃_{n-1} ⋯ M̃_1)⁻¹` is the unit lower factor of `P A`, whose columns are the permuted
-multipliers, `equation_3_4_5`); the product applied to `P A` is the last stage `U` of partial
-pivoting. -/
+/-- **Equation (3.4.4)** of [golub2013matrix], the answer of the source to "where is $L$?". Let
+$A \in \mathbb{R}^{n \times n}$, let $P$ be the permutation matrix of partial pivoting on $A$,
+and let $(PA)^{(k)}$ be the stages of elimination without pivoting on $PA$. Then for every step
+$k$,
+$$\tilde M_k (PA)^{(k)} = (PA)^{(k+1)},$$
+so each $\tilde M_k$ is the Gauss transformation of step $k$ of elimination without pivoting on
+$PA$, and
+$$\tilde M_{n-1} \cdots \tilde M_1 PA = U,$$
+where $U$ is the last stage of partial pivoting.
+
+Hence $L = (\tilde M_{n-1} \cdots \tilde M_1)^{-1}$ is the unit lower factor of $PA$, whose
+columns are the permuted multipliers (`GolubVanLoan.Chapter03.equation_3_4_5`). The matrices
+$\tilde M_k$ are `GolubVanLoan.Chapter03.pivotedGaussTransformation`, and the stages are
+`Matrix.gemStage`. -/
 theorem equation_3_4_4 (A : Matrix (Fin n) (Fin n) ℝ) :
     (∀ k : Fin n, pivotedGaussTransformation A k *
         gemStage ((gemPivotStage A partialPivotRow n).2.permMatrix ℝ * A) k =

@@ -7,34 +7,123 @@ import Numlib.Krylov.Quadrature
 import NumlibSurface.GolubVanLoan.Chapter10.Section01
 
 /-!
-# Golub–Van Loan §10.2: Lanczos, quadrature, and approximation
+# Golub and Van Loan, Section 10.2: Lanczos, quadrature, and approximation
 
-Surface file for Gene H. Golub and Charles F. Van Loan, *Matrix Computations*, 4th edition, §10.2:
-`uᵀ f(A) u` as a Stieltjes integral against the spectral weight (10.2.2)–(10.2.6), the four
-Gauss-type rules (10.2.7)–(10.2.10) with their remainders and the two-sided bound for `1/λ²`,
-Facts 1–2 on orthogonal polynomials and Jacobi matrices, the Lanczos polynomials (10.2.13), the
-Gauss rule computed by Lanczos (Fact 3 with (10.2.11)–(10.2.12)), the Gauss–Radau modification of
-§10.2.5 and the framework of §10.2.6.
+This module formalizes §10.2 of [golub2013matrix], which estimates quadratic forms $u^T f(A) u$ for
+a symmetric $A \in \mathbb{R}^{n \times n}$ by Gauss quadrature. With the Schur decomposition
+$A = X \Lambda X^T$, the quadratic form is the Riemann–Stieltjes integral
+$u^T f(A) u = \int f(\lambda) \, dw(\lambda)$ against a step function $w$ whose jumps are the
+squared components $[X^T u]_i^2$ ((10.2.2)–(10.2.6)). The module proves the existence of the Gauss,
+Gauss–Radau and Gauss–Lobatto rules (10.2.7)–(10.2.10) for a general weight, their remainders, and
+the two-sided bound for $f(\lambda) = 1/\lambda^2$. It proves Facts 1 and 2 of §10.2.3 on orthogonal
+polynomials and Jacobi matrices, and the three-term recurrence (10.2.13) of the Lanczos polynomials.
+It then shows that $k$ steps of the Lanczos process give the Gauss rule of the spectral weight (Fact
+3 with (10.2.11)–(10.2.12)) and, after a modification of $T_{k+1}$, the Gauss–Radau rule (§10.2.5),
+and it proves the bounds $b_k \le u^T f(A) u \le B_k$ of §10.2.6. The module starts with the
+identity that motivates the section: the squared error of an approximate solution of $Ax = b$ is
+such a quadratic form.
+
+The proofs specialize the backbone modules `Numlib.Approximation.Quadrature`,
+`Numlib.Approximation.GaussLobatto` and `Numlib.Approximation.OrthogonalPolynomial` (quadrature
+rules of a measure, their remainders, and orthogonal polynomials), and
+`Numlib.Krylov.OrthogonalPolynomials` and `Numlib.Krylov.Quadrature` (the spectral measure, the
+Lanczos polynomials, and the quadrature rules that the Lanczos process computes).
+
+## Main definitions
+
+* Equation (10.2.2), `GolubVanLoan.Chapter10.stepWeight`: the step weight with jumps
+  $w_\mu - w_{\mu+1}$ at the points $\lambda_\mu$.
+* Equation (10.2.5), `GolubVanLoan.Chapter10.spectralWeight`: the spectral weight $w(\lambda) =
+  \sum_{\lambda_i \le \lambda} [X^T u]_i^2$ of $A$ and $u$.
+
+## Main results
+
+* §10.2, `GolubVanLoan.Chapter10.norm_error_sq_eq_residual`: $\|A^{-1} b - x\|_2^2 = r^T A^{-2} r$
+  for the residual $r = b - Ax$.
+* Equation (10.2.3), `GolubVanLoan.Chapter10.equation_10_2_3`: the integral against the step weight
+  is $\sum_\mu (w_\mu - w_{\mu+1}) f(\lambda_\mu)$.
+* Equation (10.2.6), `GolubVanLoan.Chapter10.equation_10_2_6`: $u^T f(A) u = \sum_i [X^T u]_i^2
+  f(\lambda_i) = \int f \, dw$.
+* Equation (10.2.7), `GolubVanLoan.Chapter10.equation_10_2_7`: the $k$-point Gauss rule exists and
+  is exact to degree $2k - 1$.
+* Equations (10.2.8) and (10.2.9), `GolubVanLoan.Chapter10.equation_10_2_8` and
+  `GolubVanLoan.Chapter10.equation_10_2_9`: the Gauss–Radau rules with the prescribed node $a$ or
+  $b$ exist and are exact to degree $2k$.
+* Equation (10.2.10), `GolubVanLoan.Chapter10.equation_10_2_10`: the Gauss–Lobatto rule exists and
+  is exact to degree $2k + 1$.
+* §10.2.2, `GolubVanLoan.Chapter10.gauss_remainder`, `GolubVanLoan.Chapter10.gaussRadau_remainder`
+  and `GolubVanLoan.Chapter10.gaussLobatto_remainder`: the remainders of the three kinds of rules.
+* §10.2.2, `GolubVanLoan.Chapter10.gauss_le_integral_le_gaussRadau`: for $f(\lambda) = 1/\lambda^2$
+  and $0 < a$, the Gauss rule and the Gauss–Radau rule bracket the integral.
+* Fact 1 of §10.2.3, `GolubVanLoan.Chapter10.orthonormalPolynomials_threeTerm`: the orthonormal
+  polynomials of a weight satisfy a three-term recurrence and are unique up to sign.
+* Fact 2 of §10.2.3, `GolubVanLoan.Chapter10.roots_orthonormalPolynomial_eq_eigenvalues`: the zeros
+  of $p_k$ are the eigenvalues of the Jacobi matrix $T_k$, and they are distinct.
+* Equation (10.2.13), `GolubVanLoan.Chapter10.equation_10_2_13`: $q_{j+1} = p_j(A) u$ for the
+  Lanczos polynomials, which satisfy the Lanczos recurrence.
+* §10.2.4, `GolubVanLoan.Chapter10.lanczosPolynomials_orthonormal`: the Lanczos polynomials are
+  orthonormal for the spectral weight.
+* Equation (10.2.12), `GolubVanLoan.Chapter10.equation_10_2_12`: the eigenvalues $\theta_j$ of $T_k$
+  and the weights $\|u\|^2 s_{1j}^2$ form a rule that is exact to degree $2k - 1$ for the spectral
+  weight.
+* §10.2.4, `GolubVanLoan.Chapter10.lanczos_gaussRule`: the remainder of the Gauss rule computed by
+  Lanczos.
+* §10.2.5, `GolubVanLoan.Chapter10.gaussRadau_tridiag`: $a$ is an eigenvalue of the modified matrix
+  $\tilde T_{k+1}$.
+* §10.2.5, `GolubVanLoan.Chapter10.gaussRadau_via_lanczos`: the eigenpairs of $\tilde T_{k+1}$ give
+  a rule with the node $a$ that is exact to degree $2k$.
+* §10.2.6, `GolubVanLoan.Chapter10.lanczos_quadrature_bounds`: $b_k \le u^T f(A) u \le B_k$ when
+  $f^{(2k)} \ge 0 \ge f^{(2k+1)}$ on $[a, b]$.
 
 ## Conventions
 
-The chapter's (`GolubVanLoan.Chapter10.Section01`). A Riemann–Stieltjes integral `∫_a^b f dw` is
-read as the Lebesgue–Stieltjes integral against `StieltjesFunction.measure` (for the continuous
-integrands of the section they agree). A *general* weight `w` on `[a, b]` is a measure `μ` with
-`OrthogonalPolynomial.IsWeight μ` (every moment finite, infinite support, so every Gauss rule
-exists) carried by `Icc a b` (`μ (Icc a b)ᶜ = 0`); the *spectral* weight (10.2.5) is finitely
-supported, and its rules exist only up to the grade of `u`, which is why the Lanczos statements
-carry `dim 𝒦(A, u, k) = k`. A quadrature rule is a pair of families `t` (nodes) and `w` (weights)
-indexed by `Fin k`, and exactness to degree `d` is `Quadrature.IsExactOnMeasure μ w t d`. The
-Lanczos quantities are those of `toEuclideanLin A` from `u`: `T_k = Lanczos.tridiag _ u k`, with
-the orthonormal eigenvectors `s_j` and eigenvalues `θ_j` of `Lanczos.tridiag_isHermitian`
-(`0`-based: the book's `s_{1j}` is `s_j 0`); the Lanczos polynomials are `Lanczos.poly`, normalized
-by `p_0 = 1/‖u‖`, so that `q_{j+1} = p_j(A) u`.
+* The conventions of §10.1 (`NumlibSurface.GolubVanLoan.Chapter10.Section01`) apply. The matrix
+  function $f(A)$ is `cfc f A`.
+* A Riemann–Stieltjes integral $\int_a^b f \, dw$ is the Lebesgue–Stieltjes integral against
+  `StieltjesFunction.measure` of $w$. For the continuous integrands of the section the two agree.
+* A general weight on $[a, b]$ is a measure $\mu$ with `OrthogonalPolynomial.IsWeight μ` (every
+  moment is finite and $\mu$ is not carried by a finite set, so every Gauss rule exists) that is
+  carried by $[a, b]$, that is, `μ (Set.Icc a b)ᶜ = 0`. The spectral weight (10.2.5) is carried by a
+  finite set, so its rules exist only up to the grade of $u$; for this reason the statements about
+  the Lanczos rules assume $\dim \mathcal{K}(A, u, k) = k$.
+* A quadrature rule with $k$ nodes is a pair of families `t` (nodes) and `w` (weights) indexed by
+  `Fin k`. Exactness to degree $d$ is `Quadrature.IsExactOnMeasure μ w t d`.
+* The Lanczos quantities are those of `toEuclideanLin A` started at $u$, which need not be a unit
+  vector. The matrix $T_k$ is `Lanczos.tridiag (toEuclideanLin A) u k`, with the orthonormal
+  eigenvectors $s_j$ and the eigenvalues $\theta_j$ of `Lanczos.tridiag_isHermitian`; indices are
+  0-based, so the source's $s_{1j}$ is the entry $0$ of $s_j$. The Lanczos polynomials are
+  `Lanczos.poly`, normalized by $p_0 = 1/\|u\|$, so that $q_{j+1} = p_j(A) u$.
+
+## Deviations from the source
+
+* **Remainder of the Gauss rule, §10.2.2** (typo). The source prints $(2n)!$; the rule has $k$ nodes
+  and the factor is $(2k)!$. See `GolubVanLoan.Chapter10.gauss_remainder`.
+* **Remainder of the Gauss–Lobatto rule, §10.2.2** (typo). The source's list prints this remainder
+  as $R_{GG}$. See `GolubVanLoan.Chapter10.gaussLobatto_remainder`.
+* **(10.2.13)** (correction). The source prints the recurrence with $\beta_{k-1}^2$, which is the
+  recurrence of the monic polynomials $\det(\lambda I - T_k)$; the Lanczos polynomials have
+  $\beta_j$. See `GolubVanLoan.Chapter10.equation_10_2_13`.
+* **(10.2.13)** (typo). The source writes $q_k = p_k(A) q_1$ for a polynomial of degree $k$; the
+  index is off by one. See `GolubVanLoan.Chapter10.equation_10_2_13`.
+* **(10.2.12)** (generalization). The source's weights $s_{1j}^2$ assume $\|u\| = 1$; the statement
+  holds for every $u$, with the weights $\|u\|^2 s_{1j}^2$. See
+  `GolubVanLoan.Chapter10.equation_10_2_12`.
+* **Gauss rule by Lanczos, §10.2.4** (generalization). The source locates $\eta$ in
+  $[\lambda_n, \lambda_1]$; the statement allows any interval that contains the spectrum. See
+  `GolubVanLoan.Chapter10.lanczos_gaussRule`.
+* **Gauss–Radau modification, §10.2.5** (typo). The source prints $\beta_{k+1}^2$ for $\beta_k^2$ in
+  $\tilde\alpha_{k+1}$, and its display of $\tilde T_{k+1}$ omits $\beta_k$ above the diagonal. See
+  `GolubVanLoan.Chapter10.gaussRadau_tridiag`.
 
 ## Not formalized
 
-The Riemann–Stieltjes sums of §10.2.1, the Golub–Welsch weight formula of Fact 3 for a general
-weight (the book uses Fact 3 only through §10.2.4), numerical remarks.
+* **The Riemann–Stieltjes sums of §10.2.1.**
+* **The Golub–Welsch weight formula of Fact 3 for a general weight.** The source uses Fact 3 only
+  through §10.2.4, where it is formalized for the spectral weight.
+* **The strict location $a < \eta < b$ in the remainders of the Gauss–Radau and Gauss–Lobatto
+  rules.** The statements give $\eta \in [a, b]$, which is what the mean value argument of the
+  backbone gives.
+* **Numerical remarks.**
 -/
 
 open MeasureTheory Polynomial Matrix Krylov Quadrature OrthogonalPolynomial
@@ -44,10 +133,14 @@ namespace GolubVanLoan.Chapter10
 
 /-! ### Errors from residuals (§10.2, introduction) -/
 
-/-- **The error from the residual** (§10.2, the display before §10.2.1): for a symmetric positive
-definite `A`, `x* = A⁻¹ b` and `r = b − A x̂`, `‖x* − x̂‖₂² = rᵀ f(A) r` with `f(λ) = 1/λ²`,
-`f(A) = cfc f A` — so the error norm is a quadratic form `uᵀ f(A) u` of the kind §10.2 estimates.
-Mathlib's `cfc_inv` and `cfc_pow_id`: `f(A) = (A²)⁻¹ = A⁻¹ A⁻¹`. -/
+/-- **Section 10.2** of [golub2013matrix], the error from the residual (the display before §10.2.1).
+Let $A \in \mathbb{R}^{n \times n}$ be symmetric positive definite, let $b, x \in \mathbb{R}^n$,
+let $x_* = A^{-1} b$ and let $r = b - Ax$. Then
+$$\|x_* - x\|_2^2 = r^T f(A) r, \qquad f(\lambda) = 1/\lambda^2.$$
+So the norm of the error is a quadratic form $u^T f(A) u$ of the kind that §10.2 estimates.
+
+The source's approximate solution $\hat x$ is `x`, and $f(A)$ is `cfc f A`. The proof uses
+Mathlib's `cfc_inv` and `cfc_pow_id` to get $f(A) = (A^2)^{-1} = A^{-1} A^{-1}$. -/
 theorem norm_error_sq_eq_residual {n : ℕ} {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosDef)
     (b x : Fin n → ℝ) :
     (A⁻¹ *ᵥ b - x) ⬝ᵥ (A⁻¹ *ᵥ b - x) =
@@ -75,9 +168,15 @@ section Rules
 
 variable {μ : Measure ℝ}
 
-/-- **(10.2.7), the Gauss rule**: for a weight `μ` and `k`, there are distinct nodes `t_1, …, t_k`
-and positive weights `w_1, …, w_k` with `∫ p dμ = ∑ w_i p(t_i)` for every polynomial of degree at
-most `2k − 1`. Backbone `Quadrature.exists_gauss`. -/
+/-- **Equation (10.2.7)** of [golub2013matrix], the Gauss rule. Let $\mu$ be a weight, that is, a
+measure on $\mathbb{R}$ with finite moments that is not carried by a finite set, and let
+$k \in \mathbb{N}$. Then there are distinct nodes $t_1, \dots, t_k$ and positive weights
+$w_1, \dots, w_k$ such that
+$$\int p \, d\mu = \sum_{i=1}^k w_i p(t_i)$$
+for every polynomial $p$ of degree at most $2k - 1$.
+
+The weight hypothesis is `OrthogonalPolynomial.IsWeight μ`. The proof specializes
+`Quadrature.exists_gauss`. -/
 theorem equation_10_2_7 (hw : IsWeight μ) (k : ℕ) :
     ∃ t w : Fin k → ℝ, Function.Injective t ∧ (∀ i, 0 < w i) ∧
       ∀ p : ℝ[X], p.degree < ((2 * k : ℕ) : WithBot ℕ) →
@@ -85,10 +184,14 @@ theorem equation_10_2_7 (hw : IsWeight μ) (k : ℕ) :
   obtain ⟨t, w, ht, hpos, hex⟩ := exists_gauss hw k
   exact ⟨t, w, ht, hpos, fun p hp => (hex p hp).symm⟩
 
-/-- **(10.2.8), the Gauss–Radau(a) rule**: for a weight `μ` carried by `[a, b]` and `k`, there are
-distinct nodes `t_0 = a` and `t_1, …, t_k ∈ (a, b]` and positive weights with
-`∫ p dμ = w_a p(a) + ∑ w_i p(t_i)` for every polynomial of degree at most `2k`. Backbone
-`Quadrature.exists_gaussRadau` (the prescribed node first). -/
+/-- **Equation (10.2.8)** of [golub2013matrix], the Gauss–Radau rule with the prescribed node $a$.
+Let $\mu$ be a weight carried by $[a, b]$, and let $k \in \mathbb{N}$. Then there are distinct
+nodes $t_0 = a$ and $t_1, \dots, t_k \in (a, b]$ and positive weights $w_0, \dots, w_k$ such
+that
+$$\int p \, d\mu = w_0 p(a) + \sum_{i=1}^k w_i p(t_i)$$
+for every polynomial $p$ of degree at most $2k$.
+
+The prescribed node is the first node. The proof specializes `Quadrature.exists_gaussRadau`. -/
 theorem equation_10_2_8 (hw : IsWeight μ) {a b : ℝ} (hsupp : μ (Set.Icc a b)ᶜ = 0) (k : ℕ) :
     ∃ t w : Fin (k + 1) → ℝ, Function.Injective t ∧ t 0 = a ∧
       (∀ i, i ≠ 0 → t i ∈ Set.Ioc a b) ∧ (∀ i, 0 < w i) ∧ IsExactOnMeasure μ w t (2 * k) := by
@@ -97,10 +200,16 @@ theorem equation_10_2_8 (hw : IsWeight μ) {a b : ℝ} (hsupp : μ (Set.Icc a b)
   intro h
   exact hi (ht (h0.trans h).symm)
 
-/-- **(10.2.9), the Gauss–Radau(b) rule**: the same with the prescribed node `b`: distinct nodes
-`t_0 = b` and `t_1, …, t_k ∈ [a, b)`, positive weights, exact to degree `2k`. Backbone
-`Quadrature.exists_gaussRadau_right` (the rule of (10.2.8) for the reflected weight, transported
-back). -/
+/-- **Equation (10.2.9)** of [golub2013matrix], the Gauss–Radau rule with the prescribed node $b$.
+Let $\mu$ be a weight carried by $[a, b]$, and let $k \in \mathbb{N}$. Then there are distinct
+nodes $t_0 = b$ and $t_1, \dots, t_k \in [a, b)$ and positive weights $w_0, \dots, w_k$ such
+that
+$$\int p \, d\mu = w_0 p(b) + \sum_{i=1}^k w_i p(t_i)$$
+for every polynomial $p$ of degree at most $2k$.
+
+The prescribed node is the first node. The proof specializes
+`Quadrature.exists_gaussRadau_right`, which is the rule of (10.2.8) for the reflected weight,
+transported back. -/
 theorem equation_10_2_9 (hw : IsWeight μ) {a b : ℝ} (hsupp : μ (Set.Icc a b)ᶜ = 0) (k : ℕ) :
     ∃ t w : Fin (k + 1) → ℝ, Function.Injective t ∧ t 0 = b ∧
       (∀ i, i ≠ 0 → t i ∈ Set.Ico a b) ∧ (∀ i, 0 < w i) ∧ IsExactOnMeasure μ w t (2 * k) := by
@@ -109,11 +218,17 @@ theorem equation_10_2_9 (hw : IsWeight μ) {a b : ℝ} (hsupp : μ (Set.Icc a b)
   intro h
   exact hi (ht (h.trans h0.symm))
 
-/-- **(10.2.10), the Gauss–Lobatto rule**: for a weight carried by `[a, b]`, `a < b`, and `k`,
-there are distinct nodes `t_0 = a`, `t_{k+1} = b` and `k` interior nodes in `[a, b]`, and positive
-weights, with the rule exact to degree `2k + 1`. Backbone `Quadrature.exists_gaussLobatto` on
-`[−1, 1]` (with `n = k + 1`) for the image of `μ` under the affine map `[a, b] → [−1, 1]`,
-transported back (`Quadrature.isExactOnMeasure_map_affine`). -/
+/-- **Equation (10.2.10)** of [golub2013matrix], the Gauss–Lobatto rule. Let $\mu$ be a weight
+carried by $[a, b]$, with $a < b$, and let $k \in \mathbb{N}$. Then there are distinct nodes
+$t_0 = a$, $t_{k+1} = b$ and $t_1, \dots, t_k \in [a, b]$, and positive weights
+$w_0, \dots, w_{k+1}$, such that
+$$\int p \, d\mu = \sum_{i=0}^{k+1} w_i p(t_i)$$
+for every polynomial $p$ of degree at most $2k + 1$.
+
+Since the nodes are distinct, the $k$ interior nodes lie in $(a, b)$. The proof specializes
+`Quadrature.exists_gaussLobatto` on $[-1, 1]$, with $k + 1$ in place of its $n$, for the image
+of $\mu$ under the affine map from $[a, b]$ onto $[-1, 1]$, and transports the rule back
+(`Quadrature.isExactOnMeasure_map_affine`). -/
 theorem equation_10_2_10 (hw : IsWeight μ) {a b : ℝ} (hab : a < b)
     (hsupp : μ (Set.Icc a b)ᶜ = 0) (k : ℕ) :
     ∃ t w : Fin (k + 2) → ℝ, Function.Injective t ∧ t 0 = a ∧ t (Fin.last (k + 1)) = b ∧
@@ -170,11 +285,18 @@ section Remainders
 
 variable {μ : Measure ℝ} [IsFiniteMeasure μ] {a b : ℝ}
 
-/-- **The remainder of the Gauss rule** (§10.2.2, `R_G`): for a rule with `k ≥ 1` distinct nodes
-in `[a, b]`, exact to degree `2k − 1` (the rule of (10.2.7)), and `f` of class `C^{2k}`,
-`∫ f dμ − I_G(f) = f^{(2k)}(η)/(2k)! ∫ ∏_i (λ − t_i)² dμ` for some `η ∈ [a, b]` (the book prints
-`(2n)!`; the rule has `k` nodes). No positivity of `μ` is used. Backbone
-`Quadrature.exists_error_eq_of_hermite` with every node doubled. -/
+/-- **Section 10.2.2** of [golub2013matrix], the remainder $R_G$ of the Gauss rule. Let $\mu$ be a
+finite measure carried by $[a, b]$, and let $k \ge 1$. Let a rule have $k$ distinct nodes
+$t_1, \dots, t_k \in [a, b]$ and weights $w_1, \dots, w_k$, and let it be exact for polynomials
+of degree at most $2k - 1$, as the Gauss rule (10.2.7) is. Then for every $f$ of class $C^{2k}$
+there is $\eta \in [a, b]$ with
+$$\int f \, d\mu - \sum_{i=1}^k w_i f(t_i) = \frac{f^{(2k)}(\eta)}{(2k)!} \int \prod_{i=1}^k
+  (\lambda - t_i)^2 \, d\mu(\lambda).$$
+
+**Typo.** The source prints $(2n)!$. The rule has $k$ nodes, and the factor is $(2k)!$.
+
+The statement needs a finite measure, not a weight, and no sign of the rule's weights. The proof
+specializes `Quadrature.exists_error_eq_of_hermite`, with every node doubled. -/
 theorem gauss_remainder (hsupp : μ (Set.Icc a b)ᶜ = 0) {k : ℕ} (hk : 1 ≤ k) {t w : Fin k → ℝ}
     (ht : Function.Injective t) (hmem : ∀ i, t i ∈ Set.Icc a b)
     (hex : IsExactOnMeasure μ w t (2 * k - 1)) {f : ℝ → ℝ}
@@ -194,20 +316,27 @@ theorem gauss_remainder (hsupp : μ (Set.Icc a b)ᶜ = 0) {k : ℕ} (hk : 1 ≤ 
   rw [he, hN]
   simp [Hermite.nodal, eval_prod]
 
-/-- The nodal polynomial of a rule whose first node is simple and the others double. -/
+/-- The nodal polynomial of a rule whose first node is simple and whose other nodes are double is
+$(x - t_0) \prod_{i \ge 1} (x - t_i)^2$. -/
 private theorem eval_nodal_radau {k : ℕ} (t : Fin (k + 1) → ℝ) (x : ℝ) :
     (Hermite.nodal t (Fin.cases 0 fun _ => 1)).eval x =
       (x - t 0) * ∏ i : Fin k, (x - t i.succ) ^ 2 := by
   simp [Hermite.nodal, eval_prod, Fin.prod_univ_succ]
 
-/-- **The remainders of the Gauss–Radau rules** (§10.2.2, `R_{GR(a)}` and `R_{GR(b)}`): for a rule
-with `k + 1` distinct nodes in `[a, b]`, the first of them `a` (resp. `b`), exact to degree `2k`
-(the rules of (10.2.8)–(10.2.9)), and `f` of class `C^{2k+1}`,
-`∫ f dμ − I_{GR}(f) = f^{(2k+1)}(η)/(2k+1)! ∫ (λ − t_0) ∏_{i ≥ 1} (λ − t_i)² dμ` for some
-`η ∈ [a, b]`, `t_0` being `a` (resp. `b`); the nodal polynomial has constant sign on `[a, b]`.
-The book has `a < η < b`; the closed interval is what the backbone's mean value argument gives.
-Backbone `Quadrature.exists_error_eq_of_hermite` (multiplicity one at the prescribed node, two
-elsewhere). -/
+/-- **Section 10.2.2** of [golub2013matrix], the remainders $R_{GR(a)}$ and $R_{GR(b)}$ of the
+Gauss–Radau rules. Let $\mu$ be a finite measure carried by $[a, b]$, and let
+$k \in \mathbb{N}$. Let a rule have $k + 1$ distinct nodes $t_0, \dots, t_k \in [a, b]$, with
+$t_0 = a$ or $t_0 = b$, and weights $w_0, \dots, w_k$, and let it be exact for polynomials of
+degree at most $2k$, as the rules (10.2.8) and (10.2.9) are. Then for every $f$ of class
+$C^{2k+1}$ there is $\eta \in [a, b]$ with
+$$\int f \, d\mu - \sum_{i=0}^k w_i f(t_i) = \frac{f^{(2k+1)}(\eta)}{(2k+1)!} \int (\lambda -
+  t_0) \prod_{i=1}^k (\lambda - t_i)^2 \, d\mu(\lambda).$$
+
+The nodal polynomial $(\lambda - t_0) \prod_{i \ge 1} (\lambda - t_i)^2$ has constant sign on
+$[a, b]$. The source has $a < \eta < b$. The statement gives only $\eta \in [a, b]$, which is
+what the mean value argument of the backbone gives. The proof specializes
+`Quadrature.exists_error_eq_of_hermite`, with multiplicity one at the prescribed node and two at
+the other nodes. -/
 theorem gaussRadau_remainder (hsupp : μ (Set.Icc a b)ᶜ = 0) {k : ℕ} {t w : Fin (k + 1) → ℝ}
     (ht : Function.Injective t) (hmem : ∀ i, t i ∈ Set.Icc a b) (h0 : t 0 = a ∨ t 0 = b)
     (hex : IsExactOnMeasure μ w t (2 * k)) {f : ℝ → ℝ}
@@ -236,7 +365,8 @@ theorem gaussRadau_remainder (hsupp : μ (Set.Icc a b)ᶜ = 0) {k : ℕ} {t w : 
   rw [he]
   simp only [eval_nodal_radau]
 
-/-- The nodal polynomial of a rule whose two end nodes are simple and the others double. -/
+/-- The nodal polynomial of a rule whose two end nodes are simple and whose other nodes are double
+is $(x - t_0)(x - t_{k+1}) \prod_{i=1}^{k} (x - t_i)^2$. -/
 private theorem eval_nodal_lobatto {k : ℕ} (t : Fin (k + 2) → ℝ) (x : ℝ) :
     (Hermite.nodal t (Fin.cases 0 (Fin.lastCases 0 fun _ => 1))).eval x =
       (x - t 0) * (x - t (Fin.last (k + 1))) * ∏ i : Fin k, (x - t i.castSucc.succ) ^ 2 := by
@@ -247,13 +377,19 @@ private theorem eval_nodal_lobatto {k : ℕ} (t : Fin (k + 2) → ℝ) (x : ℝ)
   rw [Fin.succ_last]
   ring
 
-/-- **The remainder of the Gauss–Lobatto rule** (§10.2.2, `R_{GL}`, printed `R_{GG}` in the list):
-for a rule with `k + 2` distinct nodes in `[a, b]`, the first `a` and the last `b`, exact to degree
-`2k + 1` (the rule of (10.2.10)), and `f` of class `C^{2k+2}`,
-`∫ f dμ − I_{GL}(f) = f^{(2k+2)}(η)/(2k+2)! ∫ (λ − a)(λ − b) ∏ (λ − t_i)² dμ` over the interior
-nodes, for some `η ∈ [a, b]` (the book has `a < η < b`; the closed interval is what the
-backbone's mean value argument gives). Backbone `Quadrature.exists_error_eq_of_hermite`
-(multiplicity one at both ends). -/
+/-- **Section 10.2.2** of [golub2013matrix], the remainder $R_{GL}$ of the Gauss–Lobatto rule. Let
+$\mu$ be a finite measure carried by $[a, b]$, and let $k \in \mathbb{N}$. Let a rule have
+$k + 2$ distinct nodes $t_0, \dots, t_{k+1} \in [a, b]$, with $t_0 = a$ and $t_{k+1} = b$, and
+weights $w_0, \dots, w_{k+1}$, and let it be exact for polynomials of degree at most $2k + 1$,
+as the rule (10.2.10) is. Then for every $f$ of class $C^{2k+2}$ there is $\eta \in [a, b]$ with
+$$\int f \, d\mu - \sum_{i=0}^{k+1} w_i f(t_i) = \frac{f^{(2k+2)}(\eta)}{(2k+2)!} \int
+  (\lambda - a)(\lambda - b) \prod_{i=1}^k (\lambda - t_i)^2 \, d\mu(\lambda).$$
+
+**Typo.** The source's list of remainders prints this remainder as $R_{GG}$.
+
+The source has $a < \eta < b$. The statement gives only $\eta \in [a, b]$, which is what the
+mean value argument of the backbone gives. The proof specializes
+`Quadrature.exists_error_eq_of_hermite`, with multiplicity one at both ends. -/
 theorem gaussLobatto_remainder (hsupp : μ (Set.Icc a b)ᶜ = 0) {k : ℕ} {t w : Fin (k + 2) → ℝ}
     (ht : Function.Injective t) (hmem : ∀ i, t i ∈ Set.Icc a b) (h0 : t 0 = a)
     (hl : t (Fin.last (k + 1)) = b) (hex : IsExactOnMeasure μ w t (2 * k + 1)) {f : ℝ → ℝ}
@@ -281,8 +417,8 @@ theorem gaussLobatto_remainder (hsupp : μ (Set.Icc a b)ᶜ = 0) {k : ℕ} {t w 
   rw [he]
   simp only [eval_nodal_lobatto, h0, hl]
 
-/-- The derivatives of `λ ↦ λ⁻²`: `f^{(j)}(λ) = (−1)^j (j + 1)! λ^{−2−j}`, positive for even `j`
-and negative for odd `j` when `λ > 0`. -/
+/-- The $j$-th derivative of $\lambda \mapsto \lambda^{-2}$ is $(-2)(-3) \cdots (-1-j) \,
+\lambda^{-2-j} = (-1)^j (j+1)! \, \lambda^{-2-j}$. -/
 private theorem iteratedDeriv_inv_sq (j : ℕ) (x : ℝ) :
     iteratedDeriv j (fun y : ℝ => (y ^ 2)⁻¹) x =
       (∏ i ∈ Finset.range j, ((-2 : ℤ) - i : ℝ)) * x ^ ((-2 : ℤ) - j) := by
@@ -298,11 +434,19 @@ private theorem prod_neg_two_sub (j : ℕ) :
   push_cast
   ring
 
-/-- **The two-sided bound for `f(λ) = 1/λ²`** (§10.2.2): for `0 < a < b` and a finite measure
-carried by `[a, b]`, the Gauss rule of (10.2.7) with `k ≥ 1` nodes and the Gauss–Radau(a) rule of
-(10.2.8) with `k + 1` nodes bracket the integral: `I_G(f) ≤ ∫ f dμ ≤ I_{GR(a)}(f)`. The derivatives
-of `λ⁻²` alternate in sign on `(0, ∞)`: `f^{(2k)} > 0`, `f^{(2k+1)} < 0`. Backbone
-`Quadrature.gauss_le_integral_le_gaussRadau` (rules given by their exactness, nodes in `[a, b]`). -/
+/-- **Section 10.2.2** of [golub2013matrix], the two-sided bound for $f(\lambda) = 1/\lambda^2$. Let
+$0 < a$, let $\mu$ be a finite measure carried by $[a, b]$, and let $k \ge 1$. Let $(t, w)$ be a
+rule with $k$ distinct nodes in $[a, b]$ that is exact for polynomials of degree at most
+$2k - 1$, and let $(t', w')$ be a rule with $k + 1$ distinct nodes $t'_0, \dots, t'_k$ in
+$[a, b]$, with $t'_0 = a$, that is exact for polynomials of degree at most $2k$. Then
+$$\sum_{i=1}^k \frac{w_i}{t_i^2} \le \int \frac{d\mu(\lambda)}{\lambda^2} \le \sum_{i=0}^k
+  \frac{w'_i}{(t'_i)^2},$$
+that is, $I_G(f) \le \int f \, d\mu \le I_{GR(a)}(f)$ for the Gauss rule (10.2.7) and the
+Gauss–Radau rule (10.2.8).
+
+The derivatives of $\lambda^{-2}$ alternate in sign on $(0, \infty)$: $f^{(2k)} > 0$ and
+$f^{(2k+1)} < 0$. The proof specializes `Quadrature.gauss_le_integral_le_gaussRadau`, in which
+the rules are given by their exactness. -/
 theorem gauss_le_integral_le_gaussRadau (ha : 0 < a) (hsupp : μ (Set.Icc a b)ᶜ = 0) {k : ℕ}
     (hk : 1 ≤ k) {t w : Fin k → ℝ} (ht : Function.Injective t) (hmem : ∀ i, t i ∈ Set.Icc a b)
     (hex : IsExactOnMeasure μ w t (2 * k - 1)) {t' w' : Fin (k + 1) → ℝ}
@@ -336,8 +480,9 @@ section Weights
 
 open Filter Topology
 
-/-- The Heaviside Stieltjes function with its jump at `c`: `x ↦ 1` for `c ≤ x`, `0` otherwise
-(right-continuous). Its measure is the Dirac mass at `c` (`heavisideStieltjes_measure`). -/
+/-- The Heaviside step at $c \in \mathbb{R}$ as a Stieltjes function: $x \mapsto 1$ for $x \ge c$
+and $x \mapsto 0$ for $x < c$. It is right-continuous, and its measure is the Dirac mass at $c$
+(`GolubVanLoan.Chapter10.heavisideStieltjes_measure`). -/
 noncomputable def heavisideStieltjes (c : ℝ) : StieltjesFunction ℝ where
   toFun x := if c ≤ x then 1 else 0
   mono' x y hxy := by
@@ -354,7 +499,7 @@ noncomputable def heavisideStieltjes (c : ℝ) : StieltjesFunction ℝ where
         simp only [ite_eq_right (not_le.2 hy)]
       · simp only [ite_eq_right hx]
 
-/-- The Stieltjes measure of the unit step at `c` is the Dirac mass at `c`. -/
+/-- The Stieltjes measure of the unit step at $c$ is the Dirac mass $\delta_c$. -/
 theorem heavisideStieltjes_measure (c : ℝ) :
     (heavisideStieltjes c).measure = Measure.dirac c := by
   refine Measure.ext_of_Ioc _ _ fun a b hab => ?_
@@ -378,8 +523,8 @@ private theorem measure_finset_sum {ι : Type*} (s : Finset ι) (g : ι → Stie
   | insert a s ha ih =>
     rw [Finset.sum_insert ha, Finset.sum_insert ha, StieltjesFunction.measure_add, ih]
 
-/-- A finite nonnegative combination of Heaviside functions has the corresponding combination of
-Dirac masses as its measure. -/
+/-- The measure of the Stieltjes function $d + \sum_i \max(c_i, 0) H_{\lambda_i}$, where $H_\lambda$
+is the unit step at $\lambda$, is $\sum_i \max(c_i, 0) \, \delta_{\lambda_i}$. -/
 private theorem measure_sum_smul_heaviside {ι : Type*} [Fintype ι] (c : ι → ℝ) (lam : ι → ℝ)
     (d : ℝ) :
     (StieltjesFunction.const ℝ d +
@@ -391,7 +536,8 @@ private theorem measure_sum_smul_heaviside {ι : Type*} [Fintype ι] (c : ι →
   rw [StieltjesFunction.measure_smul, heavisideStieltjes_measure]
   rfl
 
-/-- The integral of `f` against `∑ c_i δ_{λ_i}` with `c_i ≥ 0`. -/
+/-- For $c_i \ge 0$, the integral of $f$ against $\sum_i c_i \delta_{\lambda_i}$ is
+$\sum_i c_i f(\lambda_i)$. -/
 private theorem integral_sum_smul_dirac {ι : Type*} [Fintype ι] {c : ι → ℝ} (hc : ∀ i, 0 ≤ c i)
     (lam : ι → ℝ) (f : ℝ → ℝ) :
     ∫ x, f x ∂(∑ i, ENNReal.ofReal (c i) • Measure.dirac (lam i)) = ∑ i, c i * f (lam i) := by
@@ -400,18 +546,33 @@ private theorem integral_sum_smul_dirac {ι : Type*} [Fintype ι] {c : ι → �
   exact Finset.sum_congr rfl fun i _ => by
     rw [integral_smul_measure, integral_dirac, ENNReal.toReal_ofReal (hc i), smul_eq_mul]
 
-/-- **(10.2.2), the step weight**: for `λ_n < ⋯ < λ_1` (`0`-based, `λ 0` the largest) and
-`w_1 ≥ ⋯ ≥ w_{n+1} ≥ 0` (`w : Fin (n + 2) → ℝ`), the right-continuous step function with value
-`w_{n+1}` below `λ_n`, `w_μ` on `[λ_μ, λ_{μ−1})` and `w_1` from `λ_1` on:
-`w_{n+1} + ∑_μ (w_μ − w_{μ+1}) 𝟙[λ_μ, ∞)`. -/
+/-- **Equation (10.2.2)** of [golub2013matrix], the step weight. Let $\lambda_1, \dots, \lambda_N$
+and $w_1, \dots, w_{N+1}$ be real numbers. The step weight is the right-continuous step function
+$$w(\lambda) = w_{N+1} + \sum_{\mu=1}^{N} \max(w_\mu - w_{\mu+1}, 0) \, H(\lambda -
+  \lambda_\mu),$$
+where $H(x) = 1$ for $x \ge 0$ and $H(x) = 0$ for $x < 0$. When $\lambda_1 > \dots > \lambda_N$
+and $w_1 \ge \dots \ge w_{N+1}$, as in the source, it is the function of (10.2.2):
+$w(\lambda) = w_{N+1}$ for $\lambda < \lambda_N$, $w(\lambda) = w_\mu$ for
+$\lambda_\mu \le \lambda < \lambda_{\mu-1}$, and $w(\lambda) = w_1$ for $\lambda \ge \lambda_1$.
+
+The source also has $w_{N+1} \ge 0$. In Lean $N$ is `n + 1`: the points are
+`lam : Fin (n + 1) → ℝ`, with `lam 0` the largest, and the values are `w : Fin (n + 2) → ℝ`. The
+jump $\max(w_\mu - w_{\mu+1}, 0)$ is `Real.toNNReal`, and it is $w_\mu - w_{\mu+1}$ when $w$ is
+decreasing. -/
 noncomputable def stepWeight {n : ℕ} (lam : Fin (n + 1) → ℝ) (w : Fin (n + 2) → ℝ) :
     StieltjesFunction ℝ :=
   StieltjesFunction.const ℝ (w (Fin.last (n + 1))) +
     ∑ i, (w i.castSucc - w i.succ).toNNReal • heavisideStieltjes (lam i)
 
-/-- **(10.2.3)**: `∫_a^b f dw = ∑_μ (w_μ − w_{μ+1}) f(λ_μ)` with `a = λ_n`, `b = λ_1`, for every
-`f`: the measure of the step weight is `∑_μ (w_μ − w_{μ+1}) δ_{λ_μ}`
-(`StieltjesFunction.measure_Ioc` on the jumps), all of whose atoms lie in `[a, b]`. -/
+/-- **Equation (10.2.3)** of [golub2013matrix]. Let $\lambda_1 > \dots > \lambda_N$, let
+$w_1 \ge \dots \ge w_{N+1}$, let $w$ be the step weight (10.2.2), and let $a = \lambda_N$ and
+$b = \lambda_1$. Then for every function $f$
+$$\int_a^b f \, dw = \sum_{\mu=1}^{N} (w_\mu - w_{\mu+1}) f(\lambda_\mu).$$
+
+The integral is over the closed interval $[a, b]$, against the measure of
+`GolubVanLoan.Chapter10.stepWeight lam w`. That measure is $\sum_\mu (w_\mu - w_{\mu+1})
+\delta_{\lambda_\mu}$ (by `StieltjesFunction.measure_Ioc` on the jumps), and all its atoms lie
+in $[a, b]$. -/
 theorem equation_10_2_3 {n : ℕ} {lam : Fin (n + 1) → ℝ} (hlam : StrictAnti lam)
     {w : Fin (n + 2) → ℝ} (hw : Antitone w) (f : ℝ → ℝ) :
     ∫ x in Set.Icc (lam (Fin.last n)) (lam 0), f x ∂(stepWeight lam w).measure =
@@ -442,14 +603,22 @@ section Facts
 
 variable {μ : Measure ℝ}
 
-/-- **Fact 1** (§10.2.3): for a weight `μ` there are polynomials `p_0, p_1, …` with `deg p_k = k`
-and `∫ p_i p_j dμ = δ_ij` — the backbone's `OrthogonalPolynomial.orthonormalFamily` — satisfying
-`γ_k p_k = (λ − ω_k) p_{k−1} − γ_{k−1} p_{k−2}` (`p_{−1} = 0`; the book writes `w_k` for `ω_k`),
-here `γ_k = ‖π_k‖/‖π_{k−1}‖` for the monic `π_k` and `ω_k` the backbone's
-`OrthogonalPolynomial.alpha`; and they are unique up to a factor `±1`: a polynomial of degree `k`
-orthogonal to every polynomial of lower degree with `∫ q² dμ = 1` is `±p_k`. Backbone
+/-- **Section 10.2.3** of [golub2013matrix], Fact 1. Let $\mu$ be a weight. For the monic orthogonal
+polynomials $\pi_0, \pi_1, \dots$ of $\mu$, with $\|\pi\|^2 = \int \pi^2 \, d\mu$, let
+$$\gamma_k = \frac{\|\pi_k\|}{\|\pi_{k-1}\|}, \qquad \omega_k = \frac{\int \lambda \,
+  \pi_{k-1}(\lambda)^2 \, d\mu(\lambda)}{\|\pi_{k-1}\|^2} \qquad (k \ge 1).$$
+Then the polynomials $p_k = \pi_k / \|\pi_k\|$ satisfy $\deg p_k = k$ and
+$\int p_i p_j \, d\mu = \delta_{ij}$, and, with $p_{-1} = 0$,
+$$\gamma_k p_k(\lambda) = (\lambda - \omega_k) p_{k-1}(\lambda) - \gamma_{k-1} p_{k-2}(\lambda)
+  \qquad (k \ge 1).$$
+They are unique up to sign: a polynomial $q$ of degree $k$ that is orthogonal to every
+polynomial of lower degree and satisfies $\int q^2 \, d\mu = 1$ is $p_k$ or $-p_k$.
+
+The source writes $w_k$ for $\omega_k$. The proof specializes
 `OrthogonalPolynomial.orthonormalFamily_recurrence` and
-`OrthogonalPolynomial.eq_orthonormalFamily_or_eq_neg`. -/
+`OrthogonalPolynomial.eq_orthonormalFamily_or_eq_neg`. In Lean, $p_k$ is
+`OrthogonalPolynomial.orthonormalFamily μ k`, the norm of the monic polynomial of degree $k$ is
+`OrthogonalPolynomial.normOf μ k`, and `OrthogonalPolynomial.alpha μ (k - 1)` is $\omega_k$. -/
 theorem orthonormalPolynomials_threeTerm (hw : IsWeight μ) :
     (∀ k, (orthonormalFamily μ k).degree = k) ∧
     (∀ i j, ∫ x, (orthonormalFamily μ i).eval x * (orthonormalFamily μ j).eval x ∂μ =
@@ -483,11 +652,17 @@ theorem orthonormalPolynomials_threeTerm (hw : IsWeight μ) :
     ring
   · exact eq_orthonormalFamily_or_eq_neg hw hq horth hq1
 
-/-- **Fact 2** (§10.2.3): the zeros of `p_k` are the eigenvalues of the Jacobi matrix `T_k`
-(diagonal `ω_i`, off-diagonal `γ_i`), and they are distinct: both root multisets are the image of
-one injective family. Backbone `OrthogonalPolynomial.charpoly_jacobiMatrix` (the characteristic
-polynomial is the monic `π_k`) and `OrthogonalPolynomial.exists_injective_family_eq_prod` — the
-book's appeal to Theorem 8.4.1 is replaced by the orthogonal-polynomial argument. -/
+/-- **Section 10.2.3** of [golub2013matrix], Fact 2. Let $\mu$ be a weight and let
+$k \in \mathbb{N}$. The zeros of $p_k$ are the eigenvalues of the Jacobi matrix $T_k$, the
+symmetric tridiagonal matrix with the diagonal $\omega_1, \dots, \omega_k$ and the off-diagonal
+$\gamma_1, \dots, \gamma_{k-1}$ of Fact 1, and they are distinct. Precisely, there are distinct
+real numbers $x_1, \dots, x_k$ such that the multiset of the roots of $p_k$ and the multiset of
+the roots of the characteristic polynomial of $T_k$ are both $\{x_1, \dots, x_k\}$.
+
+The Jacobi matrix is `OrthogonalPolynomial.jacobiMatrix μ k`. The source proves Fact 2 with
+Theorem 8.4.1. The proof here is the orthogonal-polynomial argument: the characteristic
+polynomial of $T_k$ is the monic $\pi_k$ (`OrthogonalPolynomial.charpoly_jacobiMatrix`), whose
+roots are real and simple (`OrthogonalPolynomial.exists_injective_family_eq_prod`). -/
 theorem roots_orthonormalPolynomial_eq_eigenvalues (hw : IsWeight μ) (k : ℕ) :
     ∃ x : Fin k → ℝ, Function.Injective x ∧
       (orthonormalFamily μ k).roots = Finset.univ.val.map x ∧
@@ -510,11 +685,18 @@ open Lanczos
 
 variable {n : ℕ}
 
-/-- **(10.2.5), the spectral weight** of a symmetric `A = X Λ Xᵀ` (10.2.4) and a vector `u`:
-`w(λ) = ∑_{i : λ_i ≤ λ} [Xᵀu]_i²`, the right-continuous step function whose jumps are the squared
-components of `u` along the orthonormal eigenvectors. For distinct eigenvalues it is the step
-weight (10.2.2) with the book's `w_μ = [Xᵀu]_μ² + ⋯ + [Xᵀu]_n²`; this formulation needs no
-distinctness. Its measure is the backbone's `Krylov.spectralMeasure` (`spectralWeight_measure`). -/
+/-- **Equation (10.2.5)** of [golub2013matrix], the spectral weight. Let
+$A \in \mathbb{R}^{n \times n}$ be symmetric with $A = X \Lambda X^T$ as in (10.2.4), where $X$
+is orthogonal and $\Lambda = \operatorname{diag}(\lambda_1, \dots, \lambda_n)$, and let
+$u \in \mathbb{R}^n$. The spectral weight of $A$ and $u$ is the right-continuous step function
+$$w(\lambda) = \sum_{i \,:\, \lambda_i \le \lambda} [X^T u]_i^2,$$
+whose jumps are the squared components of $u$ along the orthonormal eigenvectors of $A$.
+
+The eigenvectors and eigenvalues are Mathlib's `LinearMap.IsSymmetric.eigenvectorBasis` and
+`LinearMap.IsSymmetric.eigenvalues` of `toEuclideanLin A`. When the eigenvalues are distinct,
+$w$ is the step weight (10.2.2) with the source's $w_\mu = [X^T u]_\mu^2 + \dots + [X^T u]_n^2$;
+this definition does not need distinct eigenvalues. Its measure is the backbone's
+`Krylov.spectralMeasure` (`GolubVanLoan.Chapter10.spectralWeight_measure`). -/
 noncomputable def spectralWeight {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
     (u : EuclideanSpace ℝ (Fin n)) : StieltjesFunction ℝ :=
   StieltjesFunction.const ℝ 0 +
@@ -522,7 +704,8 @@ noncomputable def spectralWeight {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm
         u‖ ^ 2).toNNReal •
       heavisideStieltjes ((hA.isSymmetric_toEuclideanLin).eigenvalues finrank_euclideanSpace i)
 
-/-- The measure of the spectral weight is the spectral measure `∑_i [Xᵀu]_i² δ_{λ_i}`. -/
+/-- The measure of the spectral weight of $A$ and $u$ is the spectral measure
+$\sum_i [X^T u]_i^2 \, \delta_{\lambda_i}$, the backbone's `Krylov.spectralMeasure`. -/
 theorem spectralWeight_measure {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
     (u : EuclideanSpace ℝ (Fin n)) :
     (spectralWeight hA u).measure =
@@ -530,9 +713,14 @@ theorem spectralWeight_measure {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
   rw [spectralWeight, measure_sum_smul_heaviside]
   rfl
 
-/-- **(10.2.6)**: for symmetric `A` and every `f`,
-`uᵀ f(A) u = ∑_μ [Xᵀu]_μ² f(λ_μ) = ∫ f dw` with `w` the spectral weight, `f(A) = cfc f A`.
-Backbone `Matrix.IsHermitian.inner_cfc_eq_integral_spectralMeasure`. -/
+/-- **Equation (10.2.6)** of [golub2013matrix]. Let $A \in \mathbb{R}^{n \times n}$ be symmetric
+with $A = X \Lambda X^T$ as in (10.2.4), let $u \in \mathbb{R}^n$, and let $f$ be any real
+function. Then
+$$u^T f(A) u = \sum_{i=1}^n [X^T u]_i^2 f(\lambda_i) = \int f \, dw,$$
+where $w$ is the spectral weight (10.2.5).
+
+The integral is against the measure of `GolubVanLoan.Chapter10.spectralWeight hA u`. The proof
+specializes `Matrix.IsHermitian.inner_cfc_eq_integral_spectralMeasure`. -/
 theorem equation_10_2_6 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
     (u : EuclideanSpace ℝ (Fin n)) (f : ℝ → ℝ) :
     u.ofLp ⬝ᵥ (cfc f A *ᵥ u.ofLp) =
@@ -548,13 +736,29 @@ theorem equation_10_2_6 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
   rw [h2, spectralWeight_measure, Krylov.integral_spectralMeasure]
   simp [Real.norm_eq_abs, sq_abs]
 
-/-- **The Lanczos polynomials** (§10.2.4, (10.2.13)): the Lanczos vectors are polynomials in `A`
-applied to `u`, `q_{j+1} = p_j(A) u` with `deg p_j = j` below the grade (`0`-based; the book's
-"`q_k = p_k(A) q₁` for some degree-`k` polynomial" is off by one), and
-`β_{j+1} p_{j+2}(λ) = (λ − α_{j+1}) p_{j+1}(λ) − β_j p_j(λ)` as long as `β_{j+1} ≠ 0`, with the
-first step `β_0 p_1(λ) = (λ − α_0) p_0(λ)` (the book's `β₀q₀ ≡ 0`) when `β_0 ≠ 0` — the book
-prints `β²_{k−1}`, which is the recurrence of the *monic* polynomials `det(λ − T_k)`, not of these.
-Backbone `Lanczos.poly`, `Lanczos.aeval_poly`, `Lanczos.poly_degree`, `Lanczos.poly_add_two`. -/
+/-- **Equation (10.2.13)** of [golub2013matrix], the Lanczos polynomials. Let
+$A \in \mathbb{R}^{n \times n}$ be symmetric, let $u \in \mathbb{R}^n$, and let $m$ be the grade
+of $u$. Let $q_1, q_2, \dots$ be the Lanczos vectors and $\alpha_1, \alpha_2, \dots$ and
+$\beta_1, \beta_2, \dots$ the Lanczos coefficients of $A$ started at $u$, and let
+$p_0, p_1, \dots$ be the Lanczos polynomials. Then:
+* $q_{j+1} = p_j(A) u$ for every $j \ge 0$;
+* $\deg p_j = j$ for $j < m$;
+* if $m > 1$, then $\beta_1 p_1(\lambda) = (\lambda - \alpha_1) p_0(\lambda)$;
+* if $1 \le j$ and $j + 1 < m$, then $\beta_{j+1} p_{j+1}(\lambda) = (\lambda - \alpha_{j+1})
+  p_j(\lambda) - \beta_j p_{j-1}(\lambda)$.
+
+**Correction.** The source prints the recurrence with $\beta_{k-1}^2$. That is the recurrence of
+the monic polynomials $\det(\lambda I - T_k)$, not of the polynomials $p_j$ with
+$q_{j+1} = p_j(A) u$.
+
+**Typo.** The source writes $q_k = p_k(A) q_1$ for a polynomial $p_k$ of degree $k$. The index
+is off by one: the statement here is $q_{j+1} = p_j(A) u$ with $\deg p_j = j$.
+
+The polynomials are `Lanczos.poly (toEuclideanLin A) u`, normalized by $p_0 = 1/\|u\|$. The
+vector $q_{j+1}$ is `Arnoldi.vec (toEuclideanLin A) u j`, and $\alpha_{j+1}$ and $\beta_{j+1}$
+are `Lanczos.alpha` and `Lanczos.beta` at the index $j$. The first step
+$\beta_1 p_1 = (\lambda - \alpha_1) p_0$ is the source's convention $\beta_0 q_0 \equiv 0$. The
+proof uses `Lanczos.aeval_poly`, `Lanczos.poly_degree` and `Lanczos.poly_add_two`. -/
 theorem equation_10_2_13 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
     (u : EuclideanSpace ℝ (Fin n)) :
     (∀ j, aeval (toEuclideanLin A) (Lanczos.poly (toEuclideanLin A) u j) u =
@@ -583,10 +787,15 @@ theorem equation_10_2_13 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
   simp only [RCLike.ofReal_real_eq_id, id]
   rw [← mul_assoc, ← C_mul, mul_inv_cancel₀ hβ, C_1, one_mul]
 
-/-- **Orthonormality of the Lanczos polynomials** (§10.2.4, the chain after (10.2.13)):
-`∫ p_i p_j dw = q_{i+1}ᵀ q_{j+1} = δ_ij` below the grade, for the spectral weight `w` of `u` — the
-Lanczos polynomials, normalized by `p_0 = 1/‖u‖`, are the orthonormal polynomials of `w`. Backbone
-`Lanczos.polyInner_poly`, `Krylov.polyInner_eq_integral`. -/
+/-- **Section 10.2.4** of [golub2013matrix], orthonormality of the Lanczos polynomials (the chain of
+equalities after (10.2.13)). Let $A \in \mathbb{R}^{n \times n}$ be symmetric, let
+$u \in \mathbb{R}^n$, and let $i, j < m$, where $m$ is the grade of $u$. Then
+$$\int p_i p_j \, dw = q_{i+1}^T q_{j+1} = \delta_{ij},$$
+where $w$ is the spectral weight of $A$ and $u$. So the Lanczos polynomials, normalized by
+$p_0 = 1/\|u\|$, are the orthonormal polynomials of $w$.
+
+The Lean statement is the equality of the outer terms. The proof specializes
+`Lanczos.polyInner_poly` and `Krylov.polyInner_eq_integral`. -/
 theorem lanczosPolynomials_orthonormal {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
     (u : EuclideanSpace ℝ (Fin n)) {i j : ℕ} (hi : i < grade (toEuclideanLin A) u)
     (hj : j < grade (toEuclideanLin A) u) :
@@ -600,11 +809,21 @@ theorem lanczosPolynomials_orthonormal {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.
   rw [spectralWeight_measure]
   simpa using h.symm
 
-/-- **Fact 3 with (10.2.11)–(10.2.12), for the spectral weight**: if `1 ≤ k ≤ grade`, `T_k` is the
-Lanczos matrix from `u` and `Sᵀ T_k S = diag(θ_1, …, θ_k)`, the Gauss rule of the spectral weight
-has nodes `θ_j` and weights `‖u‖² s_{1j}²`: `∫ p dw = ‖u‖² ∑_j s_{1j}² p(θ_j)` for `deg p ≤ 2k − 1`.
-The book's weights `s_{1j}²` assume `∫ dw = 1`, i.e. `‖u‖ = 1`. Backbone
-`Lanczos.gauss_quadrature`, `Lanczos.integral_spectralMeasure_compression_eq_sum_tridiag`. -/
+/-- **Equation (10.2.12)** of [golub2013matrix], with Fact 3 and (10.2.11), for the spectral weight.
+Let $A \in \mathbb{R}^{n \times n}$ be symmetric, let $u \in \mathbb{R}^n$, and let $k \ge 1$
+with $\dim \mathcal{K}(A, u, k) = k$. Let $T_k$ be the Lanczos matrix started at $u$, with the
+orthonormal eigenvectors $s_1, \dots, s_k$ and the eigenvalues $\theta_1, \dots, \theta_k$, so
+that $S^T T_k S = \operatorname{diag}(\theta_1, \dots, \theta_k)$ for
+$S = [s_1 | \cdots | s_k]$. Then for every polynomial $p$ of degree at most $2k - 1$
+$$\int p \, dw = \|u\|^2 \sum_{j=1}^k s_{1j}^2 \, p(\theta_j),$$
+where $w$ is the spectral weight. So the nodes $\theta_j$ and the weights $\|u\|^2 s_{1j}^2$
+form the $k$-point Gauss rule (10.2.7) of $w$.
+
+**Generalization.** The source's weights $s_{1j}^2$ assume $\int dw = 1$, that is, $\|u\| = 1$.
+The statement holds for every $u$, with the weights $\|u\|^2 s_{1j}^2$.
+
+The degree bound is on `natDegree`, so the zero polynomial is included. The proof specializes
+`Lanczos.gauss_quadrature` and `Lanczos.integral_spectralMeasure_compression_eq_sum_tridiag`. -/
 theorem equation_10_2_12 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
     (u : EuclideanSpace ℝ (Fin n)) {k : ℕ} (hk0 : 0 < k)
     (hk : Module.finrank ℝ (Krylov.subspace (toEuclideanLin A) u k) = k) {p : ℝ[X]}
@@ -616,8 +835,8 @@ theorem equation_10_2_12 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
     Lanczos.integral_spectralMeasure_compression_eq_sum_tridiag hA.isSymmetric_toEuclideanLin u
       hk0 hk]
 
-/-- The eigenvalues of `A` in the order of `Matrix.IsHermitian.eigenvalues₀` lie in any interval
-containing its spectrum. -/
+/-- If the spectrum of $A$ lies in $[a, b]$, then every eigenvalue $\lambda_i$ of $A$ lies in
+$[a, b]$. -/
 private theorem eigenvalues_mem_Icc {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) {a b : ℝ}
     (hab : spectrum ℝ A ⊆ Set.Icc a b) (i : Fin (Fintype.card (Fin n))) :
     (hA.isSymmetric_toEuclideanLin).eigenvalues finrank_euclideanSpace i ∈ Set.Icc a b := by
@@ -626,11 +845,22 @@ private theorem eigenvalues_mem_Icc {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsS
   convert h using 1
   simp [Matrix.IsHermitian.eigenvalues, Matrix.IsHermitian.eigenvalues₀]
 
-/-- **The Gauss rule via Lanczos** (§10.2.4, Steps 1–3): `σ = ‖u‖² (s_{11}² f(θ_1) + ⋯ + s_{1k}²
-f(θ_k))` computed from `k` Lanczos steps is the `k`-point Gauss rule of the spectral weight: exact
-on polynomials of degree `≤ 2k − 1` (`equation_10_2_12`), with error `uᵀ f(A) u − σ =
-f^{(2k)}(η)/(2k)! ∫ π_k² dw`, `π_k = det(λ I − T_k)`, for `f` of class `C^{2k}` and some `η` in any
-interval `[a, b]` containing the spectrum (the book's `[λ_n, λ_1]`). Backbone
+/-- **Section 10.2.4** of [golub2013matrix], the Gauss rule computed by Lanczos (Steps 1–3). Let
+$A \in \mathbb{R}^{n \times n}$ be symmetric with spectrum in $[a, b]$, let
+$u \in \mathbb{R}^n$, and let $k \ge 1$ with $\dim \mathcal{K}(A, u, k) = k$. Let $\theta_j$ and
+$s_j$ be as in (10.2.12), and for a function $f$ let
+$$\sigma = \|u\|^2 \bigl(s_{11}^2 f(\theta_1) + \dots + s_{1k}^2 f(\theta_k)\bigr)$$
+be the value computed from $k$ Lanczos steps. If $f$ is of class $C^{2k}$, then there is
+$\eta \in [a, b]$ with
+$$u^T f(A) u - \sigma = \frac{f^{(2k)}(\eta)}{(2k)!} \int \pi_k(\lambda)^2 \, dw(\lambda),$$
+where $\pi_k(\lambda) = \det(\lambda I - T_k)$ and $w$ is the spectral weight.
+
+**Generalization.** The source takes the interval $[\lambda_n, \lambda_1]$. The statement allows
+any interval $[a, b]$ that contains the spectrum of $A$.
+
+The rule is exact for polynomials of degree at most $2k - 1$ by
+`GolubVanLoan.Chapter10.equation_10_2_12`. The polynomial $\pi_k$ is the characteristic
+polynomial of `Lanczos.tridiag (toEuclideanLin A) u k`. The proof specializes
 `Lanczos.exists_gauss_error_eq`. -/
 theorem lanczos_gaussRule {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
     (u : EuclideanSpace ℝ (Fin n)) {k : ℕ} (hk0 : 0 < k)
@@ -650,10 +880,9 @@ theorem lanczos_gaussRule {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
     Lanczos.integral_spectralMeasure_compression_eq_sum_tridiag hA.isSymmetric_toEuclideanLin u
       hk0 hk]
 
-/-- The eigenvector `[x; −1]` of the Gauss–Radau matrix: `T̃ [x; −1] = a [x; −1]` with
-`x = β_k (T_k − a I)⁻¹ e_k` (`x` empty for `k = 0`). The backbone's
-`Lanczos.radauTridiag_hasEigenvalue` builds this vector inside its proof but exports only the
-spectral membership; this is its computation, kept local (a candidate for the backbone). -/
+/-- If $T_k - aI$ is nonsingular, then the Gauss–Radau matrix satisfies
+$\tilde T_{k+1} [x; -1] = a [x; -1]$ for $x = \beta_k (T_k - aI)^{-1} e_k$, which is empty for
+$k = 0$. -/
 private theorem radauTridiag_mulVec_snoc {A : Matrix (Fin n) (Fin n) ℝ}
     (u : EuclideanSpace ℝ (Fin n)) (k : ℕ) {a : ℝ}
     (ha : IsUnit (Lanczos.tridiag (toEuclideanLin A) u k - a • 1).det) :
@@ -731,11 +960,21 @@ private theorem radauTridiag_mulVec_snoc {A : Matrix (Fin n) (Fin n) ℝ}
       rw [ite_eq_right h, ite_eq_right hi]
       ring
 
-/-- **The Gauss–Radau modification** (§10.2.5): with `T̃_{k+1}` equal to `T_{k+1}` except `α̃_{k+1}
-= a + β_k² e_kᵀ (T_k − a I)⁻¹ e_k` (the book prints `β_{k+1}²`, and its displayed `T̃_{k+1}` omits
-`β_k` above the diagonal), `a` is an eigenvalue of `T̃_{k+1}` whenever `T_k − a I` is nonsingular,
-with the eigenvector of the book's derivation: `T̃_{k+1} [x; −1] = a [x; −1]` for some `x ∈ ℝ^k`
-(namely `x = β_k (T_k − a I)⁻¹ e_k`). Backbone `Lanczos.radauTridiag_hasEigenvalue`. -/
+/-- **Section 10.2.5** of [golub2013matrix], the Gauss–Radau modification. Let
+$A \in \mathbb{R}^{n \times n}$, $u \in \mathbb{R}^n$, $k \in \mathbb{N}$ and
+$a \in \mathbb{R}$, and let $T_k - aI$ be nonsingular. Let $\tilde T_{k+1}$ be $T_{k+1}$ with
+the last diagonal entry replaced by
+$$\tilde\alpha_{k+1} = a + \beta_k^2 \, e_k^T (T_k - aI)^{-1} e_k.$$
+Then $a$ is an eigenvalue of $\tilde T_{k+1}$, with an eigenvector of the form of the source's
+derivation: $\tilde T_{k+1} [x; -1] = a [x; -1]$ for some $x \in \mathbb{R}^k$.
+
+**Typo.** The source prints $\beta_{k+1}^2$ in $\tilde\alpha_{k+1}$, and its display of
+$\tilde T_{k+1}$ omits $\beta_k$ above the diagonal.
+
+The matrix $\tilde T_{k+1}$ is `Lanczos.radauTridiag (toEuclideanLin A) u k a`. For $k = 0$,
+$\tilde\alpha_1 = a$. The vector in the proof is $x = \beta_k (T_k - aI)^{-1} e_k$. The
+statement needs no symmetry of $A$ and no bound on $k$. The proof specializes
+`Lanczos.radauTridiag_hasEigenvalue`. -/
 theorem gaussRadau_tridiag {A : Matrix (Fin n) (Fin n) ℝ} (u : EuclideanSpace ℝ (Fin n)) (k : ℕ)
     {a : ℝ} (ha : IsUnit (Lanczos.tridiag (toEuclideanLin A) u k - a • 1).det) :
     a ∈ spectrum ℝ (Lanczos.radauTridiag (toEuclideanLin A) u k a) ∧
@@ -744,11 +983,18 @@ theorem gaussRadau_tridiag {A : Matrix (Fin n) (Fin n) ℝ} (u : EuclideanSpace 
   ⟨Lanczos.radauTridiag_hasEigenvalue (A := toEuclideanLin A) (v := u) (m := k) (a := a) ha,
     radauTridiag_mulVec_snoc u k ha⟩
 
-/-- **The Gauss–Radau rule via Lanczos** (§10.2.5, "Guided by Gauss quadrature theory …"): for
-`k + 1 ≤ grade` and `T_k − a I` nonsingular, the rule with the eigenvalues `θ̃_j` of `T̃_{k+1}` as
-nodes and `‖u‖²` times the squared first components `s̃_{1j}²` of its eigenvectors as weights has
-`a` as a node and integrates every polynomial of degree `≤ 2k` exactly against the spectral weight:
-it is the Gauss–Radau(a) rule (10.2.8) of `w`. Backbone `Lanczos.radau_quadrature`. -/
+/-- **Section 10.2.5** of [golub2013matrix], the Gauss–Radau rule computed by Lanczos ("Guided by
+Gauss quadrature theory …"). Let $A \in \mathbb{R}^{n \times n}$ be symmetric, let
+$u \in \mathbb{R}^n$, let $k \in \mathbb{N}$ with $\dim \mathcal{K}(A, u, k + 1) = k + 1$, and
+let $a \in \mathbb{R}$ with $T_k - aI$ nonsingular. Let $\tilde\theta_j$ and $\tilde s_j$ be the
+eigenvalues and the orthonormal eigenvectors of the matrix $\tilde T_{k+1}$ of the Gauss–Radau
+modification. Then $a$ is one of the $\tilde\theta_j$, and
+$$\int p \, dw = \|u\|^2 \sum_{j=1}^{k+1} \tilde s_{1j}^2 \, p(\tilde\theta_j)$$
+for every polynomial $p$ of degree at most $2k$, where $w$ is the spectral weight. So this rule
+has the node $a$ and the exactness of the Gauss–Radau rule (10.2.8).
+
+The eigenvalues and eigenvectors are those of `Lanczos.radauTridiag_isHermitian`. The proof
+specializes `Lanczos.radau_quadrature`. -/
 theorem gaussRadau_via_lanczos {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
     (u : EuclideanSpace ℝ (Fin n)) {k : ℕ}
     (hk : Module.finrank ℝ (Krylov.subspace (toEuclideanLin A) u (k + 1)) = k + 1) {a : ℝ}
@@ -766,11 +1012,19 @@ theorem gaussRadau_via_lanczos {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
   exact (Lanczos.radau_quadrature (toEuclideanLin A) u k a hA.isSymmetric_toEuclideanLin
     finrank_euclideanSpace hk ha hp).2
 
-/-- **The framework of §10.2.6**: for symmetric `A` with spectrum in `[a, b]` and `f` smooth on an
-open set containing `[a, b]` with `f^{(2k)} ≥ 0 ≥ f^{(2k+1)}` there (for instance `f(λ) = 1/λ²`
-with `0 < a`), the Lanczos-computed Gauss value `b_k` (`k` nodes) and Gauss–Radau(a) value `B_k`
-satisfy `b_k ≤ uᵀ f(A) u ≤ B_k` for every `k ≥ 1` with `k + 1 ≤ grade` and `T_k − a I`
-nonsingular; that `B_k − b_k → 0` is not claimed by the book. Backbone
+/-- **Section 10.2.6** of [golub2013matrix], the bounds of the framework. Let
+$A \in \mathbb{R}^{n \times n}$ be symmetric with spectrum in $[a, b]$, let
+$u \in \mathbb{R}^n$, and let $k \ge 1$ with $\dim \mathcal{K}(A, u, k + 1) = k + 1$ and
+$T_k - aI$ nonsingular. Let $f$ be of class $C^{2k+1}$ on an open set that contains $[a, b]$,
+with $f^{(2k)} \ge 0$ and $f^{(2k+1)} \le 0$ on $[a, b]$. Let
+$$b_k = \|u\|^2 \sum_{j=1}^{k} s_{1j}^2 f(\theta_j), \qquad B_k = \|u\|^2 \sum_{j=1}^{k+1}
+  \tilde s_{1j}^2 f(\tilde\theta_j)$$
+be the Gauss value of `GolubVanLoan.Chapter10.lanczos_gaussRule` and the Gauss–Radau value of
+`GolubVanLoan.Chapter10.gaussRadau_via_lanczos`. Then
+$$b_k \le u^T f(A) u \le B_k.$$
+
+An example is $f(\lambda) = 1/\lambda^2$ with $0 < a$. The source does not claim that
+$B_k - b_k \to 0$, and the statement does not either. The proof specializes
 `Lanczos.gauss_le_integral_le_radau` with (10.2.6). -/
 theorem lanczos_quadrature_bounds {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
     (u : EuclideanSpace ℝ (Fin n)) {k : ℕ} (hk0 : 0 < k)
